@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+#!/usr/bin/perl -w -I/opt/ep2stable/perl_lib
 
 ######################################################################
 #
@@ -81,7 +81,6 @@ use EPrints::Database;
 use EPrints::Utils;
 
 use Sys::Hostname;
-use Cwd;
 use DBI;
 use Unicode::String qw(utf8 latin1);
 

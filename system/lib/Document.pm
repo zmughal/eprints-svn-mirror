@@ -560,17 +560,17 @@ sub get_eprint
 ######################################################################
 =pod
 
-=item $url = $doc->get_url( [$staff] )
+=item $url = $doc->get_baseurl( [$staff] )
 
-Return the full URL of the document. Overrides the stub in DataObj.
+Return the base URL of the document. Overrides the stub in DataObj.
 $staff is currently ignored.
 
 =cut
 ######################################################################
 
-sub get_url
+sub get_baseurl
 {
-	my( $self, $staff ) = @_;
+	my( $self ) = @_;
 
 	# The $staff param is ignored.
 
@@ -594,8 +594,25 @@ sub get_url
 	}
 	return $basepath . "/" . 
 		sprintf( "%08d", $eprint->get_value( "eprintid" )) . "/" .
-		docid_to_path( $archive, $self->get_value( "docid" ) ) . "/" . 
-		$self->get_main();
+		docid_to_path( $archive, $self->get_value( "docid" ) ) . "/";
+}
+
+######################################################################
+=pod
+
+=item $url = $doc->get_url( [$staff] )
+
+Return the full URL of the document. Overrides the stub in DataObj.
+$staff is currently ignored.
+
+=cut
+######################################################################
+
+sub get_url
+{
+	my( $self ) = @_;
+	
+	return $self->get_baseurl.$self->get_main();
 }
 
 
@@ -959,7 +976,7 @@ sub upload_url
 	my $url = URI::Heuristic::uf_uristr( $url_in );
 
 	# save previous dir
-	my $prev_dir = cwd();
+	my $prev_dir = getcwd();
 
 	# Change directory to destination dir., return with failure if this 
 	# fails.

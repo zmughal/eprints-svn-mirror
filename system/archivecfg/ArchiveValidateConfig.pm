@@ -148,7 +148,21 @@ sub validate_eprint_meta
 	my @problems = ();
 
 	# CHECKS IN HERE
-	
+
+	# by default we insist that each item has a sub date OR and issue date.
+	# to disable that rule, remove the following block.	
+	if( !$eprint->is_set( "date_sub" ) && !$eprint->is_set( "date_issue" ) )
+	{
+		push @problems, $session->html_phrase( "validate:need_sub_or_issue" );
+	}
+
+	# If we don't have creators (eg. for a book) then we must have editor(s)
+	# to disable that rule, remove the following block.	
+	if( !$eprint->is_set( "creators" ) && !$eprint->is_set( "editors" ) )
+	{
+		push @problems, $session->html_phrase( "validate:need_creators_or_editors" );
+	}
+
 	return @problems;
 }
 

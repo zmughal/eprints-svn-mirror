@@ -172,7 +172,9 @@ sub parse_xml
 		{	
 			$tmpfile =~ s#/#_#g;
 			$tmpfile = $basepath."/.".$tmpfile;
-			symlink( $file, $tmpfile );
+			symlink( 
+				EPrints::Utils::untaint_file($file),
+				EPrints::Utils::untaint_file($tmpfile) );
 		}
 
 		# For some reason the GDOME constants give an error,
