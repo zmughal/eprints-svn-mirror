@@ -60,7 +60,9 @@ Now follow the instructions for upgrading from 1.0
  UPGRADING FROM 1.0
 ======================================================================
 
-The following changes should be made by hand to SiteInfo.pm
+The following changes should be made by hand to 
+
+IN FILE: /perl_lib/EPrintSite/SiteInfo.pm:
 
 Near the top add:
 ----------------------------------------------------------------------
@@ -173,6 +175,22 @@ $EprintSite::SiteInfo::db_socket = "/var/lib/mysql/mysql.sock";
 
 And of course, modify any of the values in these changes as
 you wish.
+
+IN FILE: /perl_lib/EPrintSite/SiteRoutines.pm:
+
+Change:
+----------------------------------------------------------------------
+elsif( $format eq "dc" )
+----------------------------------------------------------------------
+To:
+----------------------------------------------------------------------
+elsif( $format eq "oai_dc" )
+----------------------------------------------------------------------
+
+You may also wish to modify oams but please note that as of 1.1 we
+are not supporting this format by default. But there is no reason
+you should not keep it in your site version if you want or need it. 
+ 
 
 ======================================================================
  CREDITS
