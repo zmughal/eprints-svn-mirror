@@ -96,8 +96,8 @@ sub eprint_render_full
 
 	my $html = "";
 
-	my $succeeds_field = EPrints::MetaInfo::find_eprint_field( "succeeds" );
-	my $commentary_field = EPrints::MetaInfo::find_eprint_field( "commentary" );
+	my $succeeds_field = $eprint->{session}->{metainfo}->find_eprint_field( "succeeds" );
+	my $commentary_field = $eprint->{session}->{metainfo}->find_eprint_field( "commentary" );
 	my $has_multiple_versions = $eprint->in_thread( $succeeds_field );
 
 	# Citation
@@ -203,7 +203,7 @@ sub eprint_render_full
 
 	if( $eprint->{table} eq $EPrints::Database::table_archive )
 	{
-		my $date_field = EPrints::MetaInfo::find_eprint_field( "datestamp" );
+		my $date_field = $eprint->{session}->{metainfo}->find_eprint_field( "datestamp" );
 		$html .= " on ".$eprint->{session}->{render}->format_field(
 			$date_field,
 			$eprint->{datestamp} );
@@ -215,7 +215,7 @@ sub eprint_render_full
 	{
 		$html .= "<TR><TD VALIGN=TOP><STRONG>Alternative Locations:".
 			"</STRONG></TD><TD>";
-		my $altloc_field = EPrints::MetaInfo::find_eprint_field( "altloc" );
+		my $altloc_field = $eprint->{session}->{metainfo}->find_eprint_field( "altloc" );
 		$html .= $eprint->{session}->{render}->format_field(
 			$altloc_field,
 			$eprint->{altloc} );
@@ -229,8 +229,8 @@ sub eprint_render_full
 	if( $for_staff )
 	{
 		my $additional_field = 
-			EPrints::MetaInfo::find_eprint_field( "additional" );
-		my $reason_field = EPrints::MetaInfo::find_eprint_field( "reasons" );
+			$eprint->{session}->{metainfo}->find_eprint_field( "additional" );
+		my $reason_field = $eprint->{session}->{metainfo}->find_eprint_field( "reasons" );
 
 		# Write suggested extra subject category
 		if( defined $eprint->{additional} )
@@ -347,7 +347,7 @@ sub user_render_full
 		$html .= $user->{country} if( defined $user->{country} );
 		
 		# E-mail and URL last, if available.
-		my @user_fields = EPrints::MetaInfo::get_user_fields();
+		my @user_fields = $user->{session}->{metainfo}->get_user_fields();
 		my $email_field = EPrints::MetaInfo::find_field( \@user_fields, "email" );
 		my $url_field = EPrints::MetaInfo::find_field( \@user_fields, "url" );
 
@@ -369,7 +369,7 @@ sub user_render_full
 		$html= "<p><table border=0 cellpadding=3>\n";
 
 		# Lob the row data into the relevant fields
-		my @fields = EPrints::MetaInfo::get_user_fields();
+		my @fields = $user->{session}->{metainfo}->get_user_fields();
 		my $field;
 
 		foreach $field (@fields)
@@ -596,7 +596,7 @@ sub oai_get_eprint_metadata
 		}
 
 		$tags{date} = "$year-$month-01";
-		$tags{type} = EPrints::MetaInfo::get_eprint_type_name(
+		$tags{type} = $eprint->{session}->{metainfo}->get_eprint_type_name(
 			$eprint->{type} );
 		$tags{identifier} = $eprint->static_page_url();
 
@@ -667,6 +667,14 @@ sub oai_write_eprint_metadata
 sub extract_words
 {
 	my( $text ) = @_;
+
+	# convert acute's etc to their simple version using the map
+	# from SiteInfo.
+	my $mapped_chars = $EPrintSite::SiteInfo::freetext_mapped_chars;
+	# escape [, ], \ and ^ because these mean something in a regexp charlist.
+	$mapped_chars =~ s/\[\]\^\\/\\$&/g;
+	# apply the map to $text
+	$text =~ s/[$mapped_chars]/$EPrintSite::SiteInfo::freetext_char_mapping{$&}/g;
 	
 	# Remove single quotes so "don't" becomes "dont"
 	$text =~ s/'//g;
