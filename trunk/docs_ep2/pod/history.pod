@@ -53,7 +53,11 @@ EPrints 2.0 (Olive) released.
 
 EPrints 2.0.1 (Tuna) released. Mostly bugfixes.
 
-=item B<July 2002>
+=item B<July 1 2002>
+
+EPrints offically joins GNU Project.
+
+=item B<July 4 2002>
 
 EPrints 2.1 (Pineapple) released. Added subscriptions and OAI 2.0 support.
 
@@ -142,6 +146,10 @@ For complex data structures. For example if you want a list of "incidents" which
 =item Chat Forums
 
 A slashdot style chat at the bottom of each abstract page. Possibly using a seperate system such as a PHP bulletin board. Possibly using the d3e system developed at open.ac.uk.
+
+=item Web Log Munger
+
+Something which takes the logs from the website and produces nicely styled inforamtion on how many hits various documents get. Could possibly be a "contributed" feature rather than part of the core system.
 
 =back
 
