@@ -69,4 +69,5 @@ print STDERR "EPrints archives loaded: ".join( ", ",  EPrints::Config::get_archi
 # Tell me more about warnings
 $SIG{__WARN__} = \&Carp::cluck;
 
+$EPrints::SystemSettings::loaded = 1;
 1;

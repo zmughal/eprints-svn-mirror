@@ -103,7 +103,7 @@ used to report errors when initialising modules.
 		my( $errmsg ) = @_;
 
 		my $r;
-		if( $ENV{MOD_PERL} )
+		if( $ENV{MOD_PERL} && $EPrints::SystemSettings::loaded)
 		{
  			$r = Apache->request();
 		}
