@@ -28,7 +28,12 @@ if( !$session->auth_check )
 	$session->terminate();
 	Apache::exit( 0 );
 }
-my $userform = new EPrints::UserForm( $session, "home", 0);
+my $userform = new EPrints::UserForm( 
+	$session, 
+	$session->get_archive->get_conf( "userhome" ),
+	0,
+	undef,
+	"record" );
 
 $userform->process();
 

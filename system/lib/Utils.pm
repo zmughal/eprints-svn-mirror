@@ -49,7 +49,7 @@ undocumented
 ######################################################################
 
 package EPrints::Utils;
-use strict;
+
 use Filesys::DiskSpace;
 use Unicode::String qw(utf8 latin1 utf16);
 use File::Path;
@@ -58,6 +58,10 @@ use Carp;
 
 use EPrints::SystemSettings;
 use EPrints::XML;
+
+use strict;
+
+$EPrints::Utils::FULLTEXT = "_fulltext_";
 
 my $DF_AVAILABLE;
 
@@ -165,9 +169,12 @@ sub render_date
 		return $session->html_phrase( "lib/utils:date_unspecified" );
 	}
 
+	# remove 0'd days and months
+	$datevalue =~ s/(-0+)+$//;
+
 	my @elements = split /\-/, $datevalue;
 
-	if( $elements[0]==0 )
+	if( !defined $elements[0] || $elements[0] eq "undef" || $elements[0]==0 )
 	{
 		return $session->html_phrase( "lib/utils:date_unspecified" );
 	}
@@ -412,6 +419,29 @@ sub send_mail
 	my( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname ) = @_;
 	#   Archive   string   utf8   utf8      utf8      DOM    DOM   string    utf8
 
+	my $mail_func = $archive->get_conf( "send_email" );
+	if( !defined $mail_func )
+	{
+		$mail_func = \&send_mail_via_sendmail;
+	}
+
+	&{$mail_func}( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname );
+}	
+
+######################################################################
+=pod
+
+=item EPrints::Utils::send_mail_via_sendmail( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname )
+
+undocumented
+
+=cut
+######################################################################
+
+sub send_mail_via_sendmail
+{
+	my( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname ) = @_;
+	#   Archive   string   utf8   utf8      utf8      DOM    DOM   string    utf8
 	unless( open( SENDMAIL, "|".$archive->invocation( "sendmail" ) ) )
 	{
 		$archive->log( "Failed to invoke sendmail: ".
@@ -646,7 +676,7 @@ sub is_set
 ######################################################################
 =pod
 
-=item EPrints::Utils::tree_to_utf8( $node, $width, $pre )
+=item EPrints::Utils::tree_to_utf8( $node, $width, $pre, $whitespace_before )
 
 undocumented
 
@@ -655,7 +685,9 @@ undocumented
 
 sub tree_to_utf8
 {
-        my( $node, $width, $pre ) = @_;
+        my( $node, $width, $pre, $whitespace_before ) = @_;
+
+	$whitespace_before = 0 unless defined $whitespace_before;
 
 	unless( EPrints::XML::is_dom( $node ) )
 	{
@@ -665,12 +697,15 @@ sub tree_to_utf8
 	{
 		# Hmm, a node list, not a node.
         	my $string = utf8("");
+		my $ws = $whitespace_before;
         	for( my $i=0 ; $i<$node->getLength ; ++$i )
         	{
                 	$string .= tree_to_utf8( 
 				$node->index( $i ), 
 				$width,
- 				$pre );
+ 				$pre,
+				$ws );
+			$ws = _blank_lines( $ws, $string );
 		}
 		return $string;
 	}
@@ -694,10 +729,15 @@ sub tree_to_utf8
         my $name = $node->getNodeName();
 
         my $string = utf8("");
+	my $ws = $whitespace_before;
         foreach( $node->getChildNodes )
         {
-                $string .= tree_to_utf8( $_, $width, ( $pre || $name eq "pre" || $name eq "mail" )
-);
+                $string .= tree_to_utf8( 
+			$_,
+			$width, 
+			( $pre || $name eq "pre" || $name eq "mail" ),
+			$ws );
+		$ws = _blank_lines( $ws, $string );
         }
 
         if( $name eq "fallback" )
@@ -784,13 +824,19 @@ sub tree_to_utf8
                 }
                 $string->pack( @donechars );
         }
+	$ws = $whitespace_before;
         if( $name eq "p" )
         {
-                $string = "\n".$string."\n";
+		while( $ws < 2 ) { $string="\n".$string; ++$ws; }
+        }
+	$ws = _blank_lines( $whitespace_before, $string );
+        if( $name eq "p" )
+        {
+		while( $ws < 1 ) { $string.="\n"; ++$ws; }
         }
         if( $name eq "br" )
         {
-                $string = "\n";
+		while( $ws < 1 ) { $string.="\n"; ++$ws; }
         }
         if( $name eq "img" )
         {
@@ -798,6 +844,19 @@ sub tree_to_utf8
 		$string = $alt if( defined $alt );
         }
         return $string;
+}
+
+sub _blank_lines
+{
+	my( $n, $str ) = @_;
+
+	$str = "\n"x$n . $str;
+	$str =~ s/\[[^\]]*\]//sg;
+	$str =~ s/[ 	\r]+//sg;
+	my $ws;
+	for( $ws = 0; substr( $str, (length $str) - 1 - $ws, 1 ) eq "\n"; ++$ws ) {;}
+
+	return $ws;
 }
 
 
@@ -818,6 +877,7 @@ sub mkdir
         {
                 return mkpath( $full_path, 0, 0775 );
         };
+	if( defined $@ && $@ ne "" ) { warn $@; }
         return ( scalar @created > 0 )
 }
 
@@ -874,12 +934,7 @@ sub _render_citation_aux
                                 my $field = EPrints::Utils::field_from_config_string( 
 					$obj->get_dataset(), 
 					$_ );
-				$rendered->appendChild( 
-					$field->render_value( 
-						$obj->get_session(),
-						$obj->get_value( $field->get_name ),
-						0,
- 						1 ) );
+				$rendered->appendChild( _citation_field_value( $obj, $field ) );
 				next;
 			}
 
@@ -892,15 +947,13 @@ sub _render_citation_aux
 
 	if( EPrints::XML::is_dom( $node, "EntityReference" ) )
 	{
+		# old style. Deprecated.
+
 		my $fname = $node->getNodeName;
 		my $field = $obj->get_dataset()->get_field( $fname );
-		return $field->render_value( 
-					$obj->get_session(),
-					$obj->get_value( $fname ),
-					0,
- 					1 );
-	}
 
+		return _citation_field_value( $obj, $field );
+	}
 
 	my $addkids = $node->hasChildNodes;
 
@@ -945,11 +998,14 @@ sub _render_citation_aux
 				$match,
 				$merge );
 
-			$addkids = $sf->item_matches( $obj );
+			$addkids = $sf->get_conditions->item_matches( $obj );
+
 			if( $name eq "ifnotmatch" )
 			{
 				$addkids = !$addkids;
 			}
+
+			$rendered = $session->make_doc_fragment;
 		}
 		elsif( $name eq "iflink" )
 		{
@@ -1011,6 +1067,24 @@ sub _render_citation_aux
 	return $rendered;
 }
 
+sub _citation_field_value
+{
+	my( $obj, $field ) = @_;
+
+	my $session = $obj->get_session;
+	my $fname = $field->get_name;
+	my $span = $session->make_element( "span", class=>"field_".$fname );
+	my $value = $obj->get_value( $fname );
+	$span->appendChild( $field->render_value( 
+				$session,
+				$value,
+				0,
+ 				1 ) );
+
+	return $span;
+}
+
+
 
 
 ######################################################################
@@ -1027,20 +1101,45 @@ sub field_from_config_string
 {
 	my( $dataset, $fieldname ) = @_;
 
+	my $modifiers = 0;
+
 	my %q = ();
-	if( $fieldname =~ s/^([^\.]*)\.(.*)$/$1/ )
+	if( $fieldname =~ s/^([^;\.]*)(\.id)?(;(.*))?$/$1/ )
 	{
-		foreach( split( /\./, $2 ) )
+		if( defined $4 )
 		{
-			$q{$_}=1;
+			foreach( split( /;/, $4 ) )
+			{
+				$q{$_}=1;
+				$modifiers = 1;
+			}
+		}
+		if( defined $2 ) 
+		{ 
+			$q{id} = 1; 
+			$modifiers = 1;
 		}
 	}
 
-	my $field = $dataset->get_field( $fieldname );
+	my $field;
+	if( $fieldname eq $EPrints::Utils::FULLTEXT )
+	{
+		$field = new EPrints::MetaField(
+				dataset=>$dataset,
+				multiple=>1,
+				name=>$EPrints::Utils::FULLTEXT,
+				type=>"fulltext" );
+	}
+	else
+	{
+		$field = $dataset->get_field( $fieldname );
+	}
+
 	if( !defined $field )
 	{
 		EPrints::Config::abort( "Can't make field from config_string: $fieldname" );
 	}
+
 	if( $field->get_property( "hasid" ) )
 	{
 		if( $q{id} )
@@ -1054,19 +1153,22 @@ sub field_from_config_string
 		}
 	}
 
-	foreach( "D", "M", "Y" )
+	unless( $modifiers ) { return $field; }
+
+	$field = $field->clone;
+
+	my $opts = {};
+	foreach( keys %q )
 	{
-		if( $q{"res=".$_} )
-		{
-			$field = $field->clone;
-			$field->set_property( "max_resolution", $_ );
-		}
+		my( $k, $v ) = split( /=/, $_ );
+		$v = 1 unless defined $v;
+		$opts->{$k} = $v;
 	}
+
+	$field->set_property( "render_opts", $opts );
 	
 	return $field;
 }
-
-
 
 ######################################################################
 =pod
@@ -1474,7 +1576,7 @@ sub get_UTC_timestamp
 		use POSIX qw(strftime);
 		$stamp = strftime( "%Y-%m-%dT%H:%M:%SZ", gmtime);
 	};
-print STDERR $@;
+
 	return $stamp;
 }
 
@@ -1534,9 +1636,78 @@ sub escape_filename
 
 	return "NULL" if( $fileid eq "" );
 
-	$fileid =~ s/[\s\/]/_/g; 
+	$fileid = utf8( $fileid );
 
-        return $fileid;
+	my $stringobj = Unicode::String->new();
+	$stringobj->utf8( $fileid );
+
+	my $hc = [ 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70 ];
+	
+	my @in = $stringobj->unpack;
+	my @out = ();
+	foreach( @in )
+	{
+		if( $_ < 33 ) { push @out, 95; next; }
+		if( $_ >=48 && $_ <= 57 ) { push @out, $_; next; }
+		if( $_ >=65 && $_ <= 90 ) { push @out, $_; next; }
+		if( $_ >=97 && $_ <= 122 ) { push @out, $_; next; }
+		if( $_ == 44 || $_ == 45 || $_ == 46 || $_ == 58 ) { push @out, $_; next; }
+		if( $_ < 256 )
+		{
+			push @out, 61;
+			push @out, $hc->[($_ / 16 )%16];
+			push @out, $hc->[$_%16];
+			next;
+		}
+		push @out, 61;
+		push @out, 61;
+		push @out, $hc->[($_ / 0x1000 )%16];
+		push @out, $hc->[($_ / 0x100 )%16];
+		push @out, $hc->[($_ / 0x10 )%16];
+		push @out, $hc->[$_%16];
+		
+	}
+	
+	$stringobj->pack( @out );
+
+        return $stringobj;
+}
+
+######################################################################
+=pod
+
+=item $filesize_text = EPrints::Utils::human_filesize( $size_in_bytes )
+
+Return a human readable version of a filesize. If 0-4095b then show 
+as bytes, if 4-4095Kb show as Kb otherwise show as Mb.
+
+eg. Input of 5234 gives "5Kb", input of 3234 gives "3234b".
+
+This is not internationalised, I don't think it needs to be. Let me
+know if this is a problem. support@eprints.org
+
+=cut
+######################################################################
+
+sub human_filesize
+{
+	my( $size_in_bytes ) = @_;
+
+	if( $size_in_bytes < 4096 )
+	{
+		return $size_in_bytes.'b';
+	}
+
+	my $size_in_k = int( $size_in_bytes / 1024 );
+
+	if( $size_in_k < 4096 )
+	{
+		return $size_in_k.'Kb';
+	}
+
+	my $size_in_meg = int( $size_in_k / 1024 );
+
+	return $size_in_meg.'Mb';
 }
 
 1;
