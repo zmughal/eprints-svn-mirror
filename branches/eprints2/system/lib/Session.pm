@@ -1715,9 +1715,16 @@ sub build_page
 		}
 	}
 
+	my $esec = $self->{request}->dir_config( "EPrints_Secure" );
+	my $secure = (defined $esec && $esec eq "yes" );
+	my $template_id;
+	if( $secure ) { $template_id = 'secure'; }
+
 	my $used = {};
 	$self->{page} = $self->_process_page( 
-		$self->{archive}->get_template( $self->get_langid ),
+		$self->{archive}->get_template( 
+			$self->get_langid, 
+			$template_id ),
 		$map,
 		$used,
 		$ph );
