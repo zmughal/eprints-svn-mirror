@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-my $filename="$ARGV[0]/perl_lib/EPrintSite/SiteInfo.pm";
+my $filename=$ARGV[0];
 my $variable="\$EPrintSite::SiteInfo::$ARGV[1]";
 my $value=$ARGV[2];
 
