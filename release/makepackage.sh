@@ -40,6 +40,7 @@ for i in $FILES; do
 	../insert_license.pl $LICENSE_FILE "$PACKAGE_VERSION" $i
 done
 
+
 echo "Making tarfile..."
 
 # Now make the tar.
@@ -47,11 +48,16 @@ echo "Making tarfile..."
 mv eprints/system ../package/eprints
 cd ../package
 
-# Remove group write permission
-chmod -R g-w eprints
-
 # STOPGAP!!!!! Add documents directory
 mkdir eprints/html/documents
+
+# Move the library directories (as of version beta-2)
+mkdir eprints/perl_lib
+mv eprints/lib eprints/perl_lib/EPrints
+mv eprints/site_lib eprints/perl_lib/EPrintSite
+
+# Remove group write permission
+chmod -R g-w eprints
 
 tar czf ../$PACKAGE_FILE eprints
 
