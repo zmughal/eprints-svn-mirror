@@ -195,6 +195,16 @@ sub eprint_render
 		$session->html_phrase( "eprint_fieldname_type" ),
 		$frag ));
 
+	# Additional Info
+	if( $eprint->is_set( "note" ) )
+	{
+		$table->appendChild( _render_row(
+			$session,
+			$session->html_phrase( "eprint_fieldname_note" ),
+			$eprint->render_value( "note" ) ) );
+	}
+
+
 	# Keywords
 	if( $eprint->is_set( "keywords" ) )
 	{
@@ -370,8 +380,7 @@ sub eprint_render_full
 		{
 			$table->appendChild( _render_row(
 				$session,
-				$session->make_text( 
-					$field->display_name( $session ) ),	
+				$field->render_name( $session ),	
 				$eprint->render_value( 
 					$field->get_name(), 
 					1 ) ) );
@@ -387,7 +396,7 @@ sub eprint_render_full
 		{
 			$unspec_fields->appendChild( $session->make_text( ", " ) );
 		}
-		$unspec_fields->appendChild( $session->make_text( $field->display_name( $session ) ) );
+		$unspec_fields->appendChild( $field->render_name( $session ) );
 	}
 
 	$page->appendChild( $session->html_phrase( "page:unspecified", fieldnames=>$unspec_fields ) );
@@ -558,8 +567,7 @@ sub user_render_full
 		next if( $name eq "pinsettime" );
 		$table->appendChild( _render_row(
 			$session,
-			$session->make_text( 
-				$field->display_name( $session ) ),	
+			$field->render_name( $session ),	
 			$user->render_value( $field->get_name(), 1 ) ) );
 
 	}
@@ -574,7 +582,7 @@ sub user_render_full
 		{
 			my $strong;
 			$strong = $session->make_element( "strong" );
-			$strong->appendChild( $session->make_text( $subs_ds->get_field( $_ )->display_name( $session ) ) );
+			$strong->appendChild( $subs_ds->get_field( $_ )->render_name( $session ) );
 			$strong->appendChild( $session->make_text( ": " ) );
 			$rowright->appendChild( $strong );
 			$rowright->appendChild( $subscr->render_value( $_ ) );
@@ -727,7 +735,7 @@ sub _render_fileicon
 	my $a = $session->render_link( $url );
 	$a->appendChild( $session->make_element( 
 		"img", 
-		src=>"/images/fileicons/$type.png",
+		src=>$session->get_archive->get_conf("base_url")."/images/fileicons/$type.png",
 		width=>48,
 		height=>48,
 		border=>0 ));

@@ -59,7 +59,8 @@ EPrints Modules
     <ep:phrase ref="lib/metafield:honourific">Title</ep:phrase>
     <ep:phrase ref="lib/metafield:more_spaces">More Spaces</ep:phrase>
     <ep:phrase ref="lib/metafield:more_langs">More Languages</ep:phrase>
-    <ep:phrase ref="lib/metafield:unspecified">UNSPECIFIED</ep:phrase>
+    <ep:phrase ref="lib/metafield:unspecified"><pin ref="fieldname" /> UNSPECIFIED</ep:phrase>
+    <ep:phrase ref="lib/metafield:unspecified_selection">UNSPECIFIED</ep:phrase>
     <ep:phrase ref="lib/metafield:true">Yes</ep:phrase>
     <ep:phrase ref="lib/metafield:false">No</ep:phrase>
 
@@ -250,8 +251,9 @@ Enter a URL to capture a file from: <ep:pin ref="url" /><br />
     <ep:phrase ref="lib/submissionform:shown_first">This is the primary file. The link from the summary page will point to this file.</ep:phrase>
     <ep:phrase ref="lib/submissionform:show_first">Make Primary</ep:phrase>
     <ep:phrase ref="lib/submissionform:action_next">Next &gt;</ep:phrase>
-    <ep:phrase ref="lib/submissionform:action_prev">&lt; Back</ep:phrase>
+    <ep:phrase ref="lib/submissionform:action_prev">&lt; Previous</ep:phrase>
     <ep:phrase ref="lib/submissionform:action_cancel">Cancel</ep:phrase>
+    <ep:phrase ref="lib/submissionform:action_save">Save for Later</ep:phrase>
     <ep:phrase ref="lib/submissionform:action_confirm">Confirm</ep:phrase>
     <ep:phrase ref="lib/submissionform:action_edit">Edit</ep:phrase>
     <ep:phrase ref="lib/submissionform:action_finished">Finished &gt;</ep:phrase>
@@ -658,10 +660,14 @@ Public CGI Scripts
     <ep:phrase ref="cgi/set_lang:title">Change Language</ep:phrase>
     <ep:phrase ref="cgi/set_lang:blurb"><p>Choose your prefered language:</p></ep:phrase>
     <ep:phrase ref="cgi/set_lang:changed_to"><p>Prefered language set to <ep:pin ref="lang" /></p></ep:phrase>
-    <ep:phrase ref="cgi/set_lang:default_lang"><p>The default language of this archive is <ep:pin ref="lang" /></p></ep:phrase>
+    <ep:phrase ref="cgi/set_lang:cleared"><p>Your language preference has been cleared. From now on EPrints will use the closest language to your browser setting. This is currently <ep:pin ref="lang" />.</p></ep:phrase>
+    <ep:phrase ref="cgi/set_lang:default_lang"><p>The default language of this archive is <ep:pin ref="lang" />.</p></ep:phrase>
+    <ep:phrase ref="cgi/set_lang:cache_warning"><p>Some pages may be cached in your browser. Use your browser "reload" button to get the page in your requested language.</p></ep:phrase>
+    <ep:phrase ref="cgi/set_lang:back_to_lastpage"><p><ep:pin ref="link">Return to the page you were on before</ep:pin></p></ep:phrase>
     <ep:phrase ref="cgi/set_lang:lang_changed">Language Changed</ep:phrase>
     <ep:phrase ref="cgi/set_lang:unknown_lang"><p>Unknown Language id: &quot;<ep:pin ref="id" />&quot;.</p></ep:phrase>
     <ep:phrase ref="cgi/set_lang:failed">Language Change Failed</ep:phrase>
+    <ep:phrase ref="cgi/set_lang:clear_cookie">Clear Cookie - decide language by browser settings</ep:phrase>
 
 <!-- user -->
 
@@ -749,9 +755,10 @@ Public CGI Scripts
     <ep:phrase ref="cgi/latest:day_5">Friday</ep:phrase>
     <ep:phrase ref="cgi/latest:day_6">Saturday</ep:phrase>
 
-<!-- latestn -->
+<!-- latest_tool -->
 
-    <ep:phrase ref="cgi/latestn:title">Latest <ep:pin ref="n" /> Additions to &archivename;</ep:phrase>
+    <ep:phrase ref="cgi/latest_tool:title">Latest <ep:pin ref="n" /> Additions to &archivename;</ep:phrase>
+    <ep:phrase ref="cgi/latest_tool:title_matching">Latest <ep:pin ref="n" /> Additions to &archivename; where <ep:pin ref="search" /></ep:phrase>
 
 <!-- confirm -->
 

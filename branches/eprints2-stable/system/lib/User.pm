@@ -345,7 +345,7 @@ sub validate
 			push @all_problems, 
 			  $self->{session}->html_phrase( 
 			   "lib/user:missed_field", 
-			   field => $self->{session}->make_text( $field->display_name( $self->{session} ) ) );
+			   field => $field->render_name( $self->{session} ) );
 		}
 	}
 

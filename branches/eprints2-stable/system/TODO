@@ -11,14 +11,20 @@ Big New Features
     - mutlihosts for different languages?
  * HTTPS Support [2.4]
  * perl 5.8??
+ * APACHE2.0
 
 Pre-release issues
- * Get rid of "host and path" and just use a PerlVar from apache.conf!
- * Confusing Cancel button in submission form.
- * Bug in cmd line created user code: can't see /perl/users/home!
- * Bug in authez vs multilang from browser
+	* rename latestn?
+
+ * Highlight "problems" blocks
+ * Are cookies broken (setting/getting)?
+ * property to supress "UNSPECIFIED"
+ * Can we just retire CGI.pm?
+ * Status looks crap.. tidy it up
+ * make status page show indexer on/off
+ * indexer status option (cmd line) is crappy
+ * Confusing Cancel button in submission form (files section)
  * GRANT ALTER ON ep2stable.* TO ep2stable@localhost; in update!
- * make status page show indexer on/off last did stuff.
  * remove STDERR prints/make them ->log() instead
  * improve search to have a neater config. 
  * Change config for searches
@@ -26,8 +32,19 @@ Pre-release issues
  * nestids in subjects -> just plain stupid?
  * clean up browse views and write better comments around the
    config
+ * Reminder in STDERR if ordervalue table is missing.
+ * seperate vlit stylesheet... Make CSS in vlit use path!
+ * Make views use filters. 
+ * SECURE files are not properly secured!
+ * REMOVE REMAINING CGI.pm CODE, inc {query}
+ * ECS: BIBTEX
+ * ECS: edit
+ * BUTTONS UP AND DOWN. stopped working. Also don't grey any but top.
+ * main+tardis: USer info includes Password YES/NO & Pending...
+ 
 
 Documentation
+ * Apache::libapreq needed! nb. Iffy test script, force install!
  * deprecated input_style=textarea
  * HowTo's
     - Migrate archives to new machines
@@ -35,6 +52,8 @@ Documentation
  * how to do OL and UL views
 
 Bugs
+ * 404 page is for entire domain not /foo/bar/
+ * fileinfo does not handle paths correctly
  * export_xml broken for GDOME
  * can't change username?
  * bug in refine search on defaulted booleans?
@@ -42,8 +61,6 @@ Bugs
  * frequency of mailings: default to NEVER?
  * Investigate: (subjects_self->{merge})(ANY)
  * does not work except in root of filesystem.
- * interdepentant verifies are a pain - don't get run
-    until LAST page of edit meta.
 
 Wishlist
  * Ted N. wants persistent _named_ urls for articles.
@@ -51,7 +68,8 @@ Wishlist
  * Latest page (limit of n results?)- steal from ECS.
  * Various "form letters" from the editor.
  * Make a permission for users to be able to edit their OWN records.
- 
+ * News Items
+ * OAI/Search/View Filters
 
 Metadata Fields
  ? New field type "time" for datetime SQL fields.
@@ -87,9 +105,6 @@ Database
     SearchExpression.pm and SearchField.pm 
 
 
-Browse Views
-
- * Second level views - eg. /group/year/ - /view/iam/2001.html
 
 
 Search
@@ -158,8 +173,6 @@ CGI Tools
  
  + Option for "subjects" to not appear with heirarchy when presented
   in input forms.
- 
- - Turn Multiple input fields into <ol>'s. maybe?
  
  . Commentary summary page (Psycoloquy style)
  
@@ -368,3 +381,6 @@ CGI Tools
  - Improve name search syntax (?)
  + Munge umlauts etc when searching names. [ part of new indexer? ]
  * Merge int/name/text searches, general merge?
+Browse Views
+
+ * Second level views - eg. /group/year/ - /view/iam/2001.html

@@ -147,7 +147,7 @@ $fields->{eprint} = [
 
 	{ name => "department", type => "text", sql_index => 0 },
 
-	{ name => "thesis_type", type => "set", options=>[ "msc","phd","other"] },
+	{ name => "thesis_type", type => "set", options=>[ "masters", "phd", "other"] },
 
 	{ name => "refereed", type => "boolean", input_style=>"radio" },
 
@@ -156,7 +156,7 @@ $fields->{eprint} = [
 	{ name => "issn", type => "text" },
 
 	{ name => "fileinfo", type => "longtext", sql_index => 0,
-		render_single_value=>\&render_fileinfo },
+		render_value=>\&render_fileinfo },
 
 	{ name => "book_title", type => "text", sql_index => 0 },
 	

@@ -115,7 +115,7 @@ sub render_set_input
 		# If it's not multiple and not required there 
 		# must be a way to unselect it.
 		my $unspec = $session->phrase( 
-			"lib/metafield:unspecified" ) ;
+			"lib/metafield:unspecified_selection" ) ;
 		$pairs = [ [ "", $unspec ], @{$pairs} ];
 	}
 
@@ -162,7 +162,10 @@ sub get_value_label
 
 sub render_search_set_input
 {
-	my( $self, $session, $prefix, $value ) = @_;
+	my( $self, $session, $searchfield ) = @_;
+
+	my $prefix = $searchfield->get_form_prefix;
+	my $value = $searchfield->get_value;
 	
 	my $topsubj = $self->get_top_subject( $session );
 	my ( $pairs ) = $topsubj->get_subjects( 0, 0 );

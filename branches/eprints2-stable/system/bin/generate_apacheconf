@@ -214,18 +214,6 @@ PerlOptions +GlobalRequest
 
 END
 }
-else
-{
-	# apache 1
-	print CONF <<END;
-# If the apache configuration is reloaded the the
-# perl modules (and therefore archive configurations)
-# must be reloaded too.
-# (apache 1.3 only)
-PerlFreshRestart  On
-
-END
-}
 close CONF;
 
 ########################################
@@ -338,6 +326,7 @@ my $adminemail = $archive->get_conf( "adminemail" );
 my $htdocs_path = $archive->get_conf( "htdocs_path" );
 my $htdocs_secure_path = $archive->get_conf( "htdocs_secure_path" );
 my $host = $archive->get_conf( "host" );
+my $urlpath = $archive->get_conf( "urlpath" );
 my $userhome = $archive->get_conf( "userhome" );
 my $securehost = $archive->get_conf( "securehost" );
 my $securepath = '';
@@ -386,13 +375,13 @@ print CONF <<END;
 <VirtualHost $virtualhost>
   ServerName $host
 $aliases
-  DocumentRoot $htdocs_path
   ServerAdmin $adminemail
 
-  Alias /perl $cgidir
+  Alias $urlpath/perl $cgidir
+  Alias $urlpath/ $htdocs_path/
 
-  ErrorDocument 401 /error401.html
-  ErrorDocument 404 /perl/handle_404
+  ErrorDocument 401 $urlpath/error401.html
+  ErrorDocument 404 $urlpath/perl/handle_404
 
   # Include this here, so that it's rewrite ruls come first.
   Include $vhostfile
@@ -514,7 +503,7 @@ $secureconfig
   Alias $securepath/secure/ $htdocs_secure_path/
   Alias $securepath/perl/users/ $cgidir/users/
 
-  RewriteRule ^$securepath/secure/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])/(.*)\$ $securepath/secure/\$1/\$2/\$3/\$4/\$5 [L]
+  #RewriteRule ^$securepath/secure/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])/(.*)\$ $securepath/secure/\$1/\$2/\$3/\$4/\$5 [L]
 
 ##### END OF CONFIG FOR $archiveid
 

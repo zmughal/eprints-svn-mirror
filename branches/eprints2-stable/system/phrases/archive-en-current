@@ -210,7 +210,7 @@
 
     <ep:phrase ref="eprint_fieldname_thesis_type">Thesis Type</ep:phrase>
     <ep:phrase ref="eprint_fieldhelp_thesis_type">Please select the thesis type.</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_thesis_type_msc">MSc</ep:phrase>
+    <ep:phrase ref="eprint_fieldopt_thesis_type_masters">Masters</ep:phrase>
     <ep:phrase ref="eprint_fieldopt_thesis_type_phd">PhD</ep:phrase>
     <ep:phrase ref="eprint_fieldopt_thesis_type_other">Other</ep:phrase>
 
@@ -263,6 +263,16 @@
     <ep:phrase ref="viewname_eprint_status">Status</ep:phrase>
     <ep:phrase ref="viewname_eprint_year">Year</ep:phrase>
     <ep:phrase ref="viewname_eprint_subjects">Subject</ep:phrase>
+
+<!-- Submission Form Page Titles -->
+
+    <ep:phrase ref="metapage_title_core">Core Bibliographic Information</ep:phrase>
+    <ep:phrase ref="metapage_title_pubinfo">Publication Information</ep:phrase>
+    <ep:phrase ref="metapage_title_status">Status of Item</ep:phrase>
+    <ep:phrase ref="metapage_title_event">Details of Conference/Workshop</ep:phrase>
+    <ep:phrase ref="metapage_title_abstract">Abstract and References</ep:phrase>
+    <ep:phrase ref="metapage_title_subjects">Subjects</ep:phrase>
+    <ep:phrase ref="metapage_title_notes">Additional Information</ep:phrase>
 
 <!-- User Field Names -->
 

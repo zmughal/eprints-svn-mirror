@@ -1511,4 +1511,93 @@ before next release. (metadata types & fields)
     conf instead. Much nicer. Making a session from a CGI script
     is now much more straight forward.
 
+2003-10-29 cjg
+
+ - going to the URL of a metadata page without the trailing "/" now
+    neatly redirects rather than giving a 404 eg.
+    http://ep2stable.ecs.soton.ac.uk:8000/foo/bar/archive/00000109
+    to
+    http://ep2stable.ecs.soton.ac.uk:8000/foo/bar/archive/00000109/
+ - Moved vlit related CSS stuff into their own stylesheet.
+ - Added a tardis logo to the eprints information page
+ - Added pauline, jessie & Harry to the AUTHORS and information.xpage
+ - Renamed latestn to latest_tool, including all the related config
+    options.
+ - Replaced search configuration with a new style, although the config
+    code will translate "simple" and "advanced" from old versions into
+    this new format.
+ - Removed "extra" fields from searches in SearchExpression.pm
+ - Simplified serialised searches so that they ALWAYS unserialise into
+    an existing searchexpression. The use "ID" of search paramater if
+    available. 
+ - Removed code using serialisation from oai and oai2 - now clone a
+    search expression instead (to make the deleted search).
+ - Added "clone" method to search expressions.
+ - When a search expression has it's dataset changed it forgets it's
+    cache (and disposes of it if needs-be)
+ - [c] changed ArchiveConfig.pm to use the new search configs.
+ - advsearch deprecated. Now forwards to /perl/search/advanced
+ - Now many named searches can exist as sub-files of /search/ default
+    is "simple".
+ - Searches may now have filters. These may be configured in 
+    the oai and the simple & advanced searches (etc).
+ - Added config options for the newly named "latest_tool". It allows
+    multiple modes. Each mode has it's own filters and citation style.
+    A mode lists the last "n" items matching the filter. Handy for
+    making external sites.
+ - [c] Renamed "msc" in the thesis_type set to be "masters" as this
+    is a more general term. 
+ - [c] fileinfo renderer is now render_value not render_single_value
+    to skip issues with it being unset.
+ - [c] New config option for oai: filters.
+ - [c] Made the "note" appear on the abstract page. It was supposed to.
+ - deprecated $field->display_name. Now use $field->render_name instead.
+ - [c] Edited all code, including RenderConfig, to use 
+    $field->render_name($session) instead of 
+    $session->make_text( $field->display_name( $session )
+ - [c] Changed fileicons renderer so that it uses the proper root URL
+    and does not assume it's in the top directory.
+ - [c] Changed citations file so that unpublished warnings only happen
+    if the item is explicitly not published rather than the field being
+    NULL.
+ - Removed PerlFreshRestart from the apache config - it appeared to 
+    cause load of warnings.
+ - apacheconf now handles eprints in a sub-dir properly.
+*- commented out rewrite rule for "secure". need to fix that.
+ - Changed resumptiontokens in OAI to indicate which set they search
+    as this is no longer easily available from the cache system.
+ - Added "unset cookie" option to setlang.
+ - setlang now knows where it came "from" using the referer, so it can take
+    you back to where you followed the link from.
+ - Removed ARCHIVEMAP code from Config.pm - not needed now we set the
+    ID using PerlVar.
+ - Added some code to Config.pm which skunges any old search configs to
+    look like the new search config. Means I don't have to do any hacks
+    anywhere else in the code.
+ - Fixed a bug in database which returned lists of ID's only as an array
+    not a reference to an array.
+ - Unspecified field values now say "UNSPECIFIED Subject" rather than just
+    "UNSPECIFIED".
+ - Simplified Rewrite.pm; Now it works out the filename itself.
+ - Added Array of all legal options to new() to SearchExpression, as this
+    list is used in both new() and clone()
+ - SearchField: Changed get_help and display_name to render_help and 
+    render_name. Changed all calls to them. Now both return XHTML.
+ - Added more CSS stuff to rendering buttons. Made submission form
+    have optional top buttons as well as the normal bottom bit.
+ - Added to .css to make submission form buttons look nice.
+ - Meta-stages in submission can have custom titles
+ - Renamed submission cancel button to "save for later" and put it on
+    every page of submission.
+ - Fixed bug in Utils which meant ifnotmatch blocks were not removed from
+    citations.
+ - MetaField->render_search_input now just takes a handle to the searchfield
+    rather than lots of options. 
+ - "set" input fields when merged for search now offer all options from all
+    fields included in searchfield.
+ - Added some code to MetaField/Date.pm strings which were "" were considered
+    set.
+ - [c] Added submission form page titles to phrases.
+ - changed submission form "back" to be "previous" instead.
+
 ======================================================================

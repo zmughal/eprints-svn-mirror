@@ -84,7 +84,7 @@ sub validate_field
 			{
 				push @problems,
 					$session->html_phrase( "validate:missing_http",
-					fieldname=>$session->make_text( $field->display_name( $session ) ) );
+					fieldname=>$field->render_name( $session ) );
 			}
 
 			# Check a name has a family part
@@ -92,7 +92,7 @@ sub validate_field
 			{
 				push @problems,
 					$session->html_phrase( "validate:missing_family",
-					fieldname=>$session->make_text( $field->display_name( $session ) ) );
+					fieldname=>$field->render_name( $session ) );
 			}
 
 			# Check a name has a given part
@@ -100,7 +100,7 @@ sub validate_field
 			{
 				push @problems,
 					$session->html_phrase( "validate:missing_given",
-					fieldname=>$session->make_text( $field->display_name( $session ) ) );
+					fieldname=>$field->render_name( $session ) );
 			}
 
 			# Check an email looks "ok". Just checks it has only one "@" and no
@@ -109,7 +109,7 @@ sub validate_field
 			{
 				push @problems,
 					$session->html_phrase( "validate:bad_email",
-					fieldname=>$session->make_text( $field->display_name( $session ) ) );
+					fieldname=>$field->render_name( $session ) );
 			}
 		}
 	}

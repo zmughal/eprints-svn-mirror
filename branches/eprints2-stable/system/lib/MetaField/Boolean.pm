@@ -147,7 +147,7 @@ sub get_unsorted_values
 
 sub render_search_input
 {
-	my( $self, $session, $prefix, $value, $merge ) = @_;
+	my( $self, $session, $searchfield ) = @_;
 	
 	# Boolean: Popup menu
 
@@ -156,9 +156,10 @@ sub render_search_input
 "EITHER" => $session->phrase( "lib/searchfield:bool_nopref" ),
 "TRUE"   => $session->phrase( "lib/searchfield:bool_yes" ),
 "FALSE"  => $session->phrase( "lib/searchfield:bool_no" ) );
-	
+
+	my $value = $searchfield->get_value;	
 	return $session->render_option_list(
-		name => $prefix,
+		name => $searchfield->get_form_prefix,
 		values => \@bool_tags,
 		default => ( defined $value ? $value : $bool_tags[0] ),
 		labels => \%bool_labels );

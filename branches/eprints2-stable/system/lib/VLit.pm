@@ -65,7 +65,6 @@ sub handler
 	if ( ! -r $filename ) {
 		return NOT_FOUND;
 	}
-
 	my $args =  $r->args;
 	my $q =  new CGI( $args );
 
@@ -89,7 +88,7 @@ sub handler
 	# undo eprints rewrite!
 	my $uri = $r->uri;	
 	$uri =~ s#/([0-9]+)/([0-9][0-9])/([0-9][0-9])/([0-9][0-9])/#/$1$2$3$4/#;
-	my $baseurl = $session->get_archive->get_conf("base_url").$uri;
+	my $baseurl = $uri;
 	
 	my $LSMAP = {
 "area" => \&ls_area,
@@ -252,15 +251,6 @@ sub ls_charrange
 	$fh->read( $data, $readlength );
 	$fh->close();
 
-	
-#print STDERR "VLIT SAYZ URI BE: ".$r->uri." ... ".$mode." ..(".$r->is_main.")..(".$r->the_request.")\n";
-#print STDERR "$]\n";
-#use Data::Dumper;
-#my $query = $r->args;
-#my %in    = $r->args;
-#print STDERR $session->{query}."\n";
-#print STDERR Dumper( $query, \%in );
-
 	if( $mode eq "human" || $mode eq "context" || $mode eq "context2" || $mode eq 'spanSelect' || $mode eq 'endSelect' || $mode eq 'link' || $mode eq 'spanSelect2' || $mode eq 'endSelect2' )
 	{
 		my $html = "";
@@ -393,11 +383,12 @@ END
 </div>
 END
 		}
+		my $cssurl = $session->get_archive()->get_conf( "base_url" )."/vlit.css";
 		$r->print( <<END );
 <html>
 <head>
   <title>$title</title>
-  <link rel="stylesheet" type="text/css" href="/eprints.css" title="screen stylesheet" media="screen" />
+  <link rel="stylesheet" type="text/css" href="$cssurl" title="screen stylesheet" media="screen" />
 </head>
 <body class="vlit">
 $msg

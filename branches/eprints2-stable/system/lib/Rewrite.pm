@@ -3,6 +3,11 @@
 package EPrints::Rewrite;
   
 use Apache::Constants qw(DECLINED OK);
+use Apache::Request;
+use Apache::Cookie;
+
+use EPrints::Session;
+
 use strict;
   
 sub handler 
@@ -11,31 +16,36 @@ sub handler
 
 	my $archiveid = $r->dir_config( "EPrints_ArchiveID" );
 	my $archive = EPrints::Archive->new_archive_by_id( $archiveid );
+	my $urlpath = $archive->get_conf( "urlpath" );
+	my $uri = $r->uri;
+	my $lang = EPrints::Session::get_session_language( $archive, $r );
 
-	if( $r->uri =~ m#^/perl/# )
+	unless( $uri =~ s#^$urlpath## )
 	{
 		return DECLINED;
-	} 
-
-	if( $r->uri =~ m#^/secure/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])(.*)$# )
-	{
-		$r->uri( "/secure/$1/$2/$3/$4$5" );
-		$r->document_root( $archive->get_conf( "htdocs_path" ) );
-		return DECLINED;
-	} 
-
-	$r->document_root( $archive->get_conf( "htdocs_path" )."/"."en" );
-
-#	if( $r->uri =~ m#^/archive/([0-9]+)/([0-9][0-9])/([0-9][0-9])/([0-9][0-9])(.*)$# )
-#	{
-#		#??
-#	}
-
-	if( $r->uri =~ m#^/archive/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])(.*)$# )
-	{
-		$r->uri( "/archive/$1/$2/$3/$4$5" );
 	}
 
-	return DECLINED;
+	if( $uri =~ m#^/perl/# )
+	{
+		return DECLINED;
+	} 
+
+	if( $uri =~ s#^/secure/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])#/secure/$1/$2/$3/$4# )
+	{
+		$r->filename( $archive->get_conf( "htdocs_path" )."/".$uri );
+		return OK;
+	}
+
+	$uri =~ s#^/archive/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])#/archive/$1/$2/$3/$4#;
+	$r->filename( $archive->get_conf( "htdocs_path" )."/".$lang.$uri );
+
+	return OK;
 }
+
+
+
+
+
 1;
+
+

@@ -267,7 +267,6 @@ sub item_matches
 	{
 		my @sub_ids = $self->{field}->list_values( 
 			$item->get_value( $self->{field}->get_name ) );
-print STDERR "(".join(")(",@sub_ids).")\n";
 		# true if {value} is the ancestor of any of the subjects
 		# of the item.
 

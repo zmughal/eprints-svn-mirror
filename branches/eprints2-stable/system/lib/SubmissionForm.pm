@@ -251,9 +251,17 @@ sub process
 
 		if( $self->{autosend} )
 		{	
+			my $title_phraseid = "lib/submissionform:title_".$stage;
+			if( defined $self->{title_phrase} && 
+				$self->{session}->get_lang->has_phrase( 
+						$self->{title_phrase} ) )
+			{
+				$title_phraseid = $self->{title_phrase};
+			}
+				
 			$self->{session}->build_page(
 				$self->{session}->html_phrase( 
-					"lib/submissionform:title_".$stage,
+					$title_phraseid,
 					type => $self->{eprint}->render_value( "type" ),
 					eprintid => $self->{eprint}->render_value( "eprintid" ),
 					desc => $self->{eprint}->render_description ),
@@ -266,7 +274,6 @@ sub process
 			$self->{page} = $page;
 		}
 	}
-	
 	return( 1 );
 }
 
@@ -495,16 +502,16 @@ sub _from_stage_type
 {
 	my( $self ) = @_;
 
-	if( $self->{action} eq "cancel" )
-	{
-		# Cancelled, go back to author area.
-		$self->_set_stage_prev();
-		return( 1 );
-	}
-
 	## Process uploaded data
 	$self->_update_from_form( "type" );
 	$self->{eprint}->commit();
+
+	if( $self->{action} eq "save" )
+	{
+		# Saved, return to user home
+		$self->{new_stage} = "return";
+		return( 1 );
+	}
 
 	## Process the action
 
@@ -554,6 +561,13 @@ sub _from_stage_linking
 	$self->{eprint}->commit();
 
 	## What's the next stage?
+
+	if( $self->{action} eq "save" )
+	{
+		# Saved, return to user home
+		$self->{new_stage} = "return";
+		return( 1 );
+	}
 
 	if( $self->{action} eq "next" )
 	{
@@ -659,6 +673,13 @@ sub _from_stage_meta
 		return( 1 );
 	}
 
+	if( $self->{action} eq "save" )
+	{
+		# Saved, return to user home
+		$self->{new_stage} = "return";
+		return( 1 );
+	}
+
 	if( $self->{action} eq "next" )
 	{
 		if( defined $nextpage )
@@ -736,6 +757,13 @@ sub _from_stage_files
 
 	# update an automatics which may relate to documents
 	$self->{eprint}->commit();
+
+	if( $self->{action} eq "save" )
+	{
+		# Saved, return to user home
+		$self->{new_stage} = "return";
+		return( 1 );
+	}
 
 	if( $self->{action} eq "prev" )
 	{
@@ -1202,9 +1230,10 @@ sub _do_stage_type
 	# should this be done with "help?" cjg
 
 	my $submit_buttons = {
-		_order => [ "cancel","next" ],
-		cancel => $self->{session}->phrase(
-				"lib/submissionform:action_cancel" ),
+		_order => [ "save","next" ],
+		_class => "submission_buttons",
+		save => $self->{session}->phrase(
+				"lib/submissionform:action_save" ),
 		next => $self->{session}->phrase( 
 				"lib/submissionform:action_next" ) };
 
@@ -1216,6 +1245,7 @@ sub _do_stage_type
 	        show_help=>1,
 		default_action=>"next",
 	        buttons=>$submit_buttons,
+	        top_buttons=>$submit_buttons,
 	        hidden_fields=>
 		{ 
 			stage => "type", 
@@ -1289,11 +1319,14 @@ sub _do_stage_linking
 			
 
 	my $submit_buttons = {
-		_order => [ "prev", "verify", "next" ],
+		_order => [ "prev", "verify", "save", "next" ],
+		_class => "submission_buttons",
 		prev => $self->{session}->phrase(
 				"lib/submissionform:action_prev" ),
 		verify => $self->{session}->phrase(
 				"lib/submissionform:action_verify" ),
+		save => $self->{session}->phrase(
+				"lib/submissionform:action_save" ),
 		next => $self->{session}->phrase( 
 				"lib/submissionform:action_next" ) };
 
@@ -1307,6 +1340,7 @@ sub _do_stage_linking
 	        show_names=>1,
 	        show_help=>1,
 	        buttons=>$submit_buttons,
+	        top_buttons=>$submit_buttons,
 		default_action=>"next",
 	        hidden_fields=>
 		{ 
@@ -1379,9 +1413,12 @@ sub _do_stage_meta
 		};
 
 	my $submit_buttons = {
-		_order => [ "prev", "next" ],
+		_order => [ "prev", "save", "next" ],
+		_class => "submission_buttons",
 		prev => $self->{session}->phrase(
 				"lib/submissionform:action_prev" ),
+		save => $self->{session}->phrase(
+				"lib/submissionform:action_save" ),
 		next => $self->{session}->phrase( 
 				"lib/submissionform:action_next" ) };
 
@@ -1395,9 +1432,12 @@ sub _do_stage_meta
 			show_names=>1,
 			show_help=>1,
 			buttons=>$submit_buttons,
+	        	top_buttons=>$submit_buttons,
 			default_action=>"next",
 			hidden_fields=>$hidden_fields,
 			dest=>$self->{formtarget}."#t" ) );
+
+	$self->{title_phrase} = "metapage_title_".$self->{pageid};
 
 	return( $page );
 }
@@ -1435,6 +1475,21 @@ sub _do_stage_files
 
 	$form = $self->{session}->render_form( "post", $self->{formtarget}."#t" );
 	$page->appendChild( $form );
+
+	my %buttons;
+	$buttons{prev} = $self->{session}->phrase( "lib/submissionform:action_prev" );
+	$buttons{save} = $self->{session}->phrase( "lib/submissionform:action_save" ),
+	$buttons{_order} = [ "prev", "save" ];
+	$buttons{_class} = "submission_buttons";
+	if( scalar @{$probs} == 0 )
+	{
+		# docs validated ok
+		$buttons{next} = $self->{session}->phrase( "lib/submissionform:action_next" ); 
+		$buttons{_order} = [ "prev", "save", "next" ];
+	}
+
+	# buttons at top.
+	$form->appendChild( $self->{session}->render_action_buttons( %buttons ) );
 
 	my @docs = $self->{eprint}->get_all_documents();
 
@@ -1477,11 +1532,11 @@ sub _do_stage_files
 			my $remove_id = "remove_".$doc->get_value( "docid" );
 			$td->appendChild( 
 				$self->{session}->render_action_buttons(
-				_order => [ $edit_id, $remove_id ],
-				$edit_id => $self->{session}->phrase( 
-					"lib/submissionform:action_edit" ) ,
-				$remove_id => $self->{session}->phrase( 
-					"lib/submissionform:action_remove" ) 
+					_order => [ $edit_id, $remove_id ],
+					$edit_id => $self->{session}->phrase( 
+						"lib/submissionform:action_edit" ) ,
+					$remove_id => $self->{session}->phrase( 
+						"lib/submissionform:action_remove" ) 
 			) );
 		}
 		$form->appendChild( $self->{session}->make_element( "br" ) );
@@ -1496,15 +1551,6 @@ sub _do_stage_files
 	$form->appendChild( $self->{session}->render_hidden_field(
 		"dataset",
 		$self->{eprint}->get_dataset()->id() ) );
-
-	my %buttons;
-	$buttons{prev} = $self->{session}->phrase( "lib/submissionform:action_prev" );
-	if( scalar @{$probs} == 0 )
-	{
-		# docs validated ok
-		$buttons{next} = $self->{session}->phrase( "lib/submissionform:action_next" ); 
-		$buttons{_order} = [ "prev", "next" ];
-	}
 
 	my @reqformats = @{$self->{session}->get_archive()->get_conf( "required_formats" )};	
 	if( scalar @reqformats == 0 )
@@ -1585,6 +1631,7 @@ sub _do_stage_docmeta
 	{	
 		next => $self->{session}->phrase( "lib/submissionform:action_next" ),
 		cancel => $self->{session}->phrase( "lib/submissionform:action_cancel" ),
+		_class => "submission_buttons",
 		_order => [ "cancel", "next" ] 
 	};
 
@@ -1604,6 +1651,7 @@ sub _do_stage_docmeta
 			values=>$self->{document}->get_data(),
 			show_help=>1,
 			buttons=>$submit_buttons,
+	        	top_buttons=>$submit_buttons,
 			default_action=>"next",
 			hidden_fields=>$hidden_fields,
 			dest=>$self->{formtarget}."#t" ) );
@@ -1855,6 +1903,7 @@ sub _do_stage_fileview
 		$self->{session}->render_input_form( 
 			staff=>$self->{staff},
 			buttons=>$submit_buttons,
+	        	top_buttons=>$submit_buttons,
 			hidden_fields=>$hidden_fields,
 			default_action=>"prev",
 			dest=>$self->{formtarget}."#t" ) );
@@ -1902,6 +1951,7 @@ sub _do_stage_verify
 				"lib/submissionform:action_prev" ),
 		later => $self->{session}->phrase(
 				"lib/submissionform:action_later" ),
+		_class => "submission_buttons",
 		_order => [ "prev", "later" ]
 	};
 	my $default_action = "prev";
@@ -1924,13 +1974,12 @@ sub _do_stage_verify
 		$page->appendChild( $self->{session}->render_ruler() );	
 
 		$page->appendChild( $self->{session}->html_phrase( "deposit_agreement_text" ) );
-		$page->appendChild( $self->{session}->render_ruler );
-
 
 		$submit_buttons->{submit} = $self->{session}->phrase( 
 			"lib/submissionform:action_submit" );
 		$default_action = "submit";
 		$submit_buttons->{_order} = [ "prev", "later", "submit" ];
+		$submit_buttons->{_class} = "submission_buttons";
 	}
 
 	$page->appendChild( 
@@ -1938,6 +1987,7 @@ sub _do_stage_verify
 			staff=>$self->{staff},
 			show_help=>1,
 			buttons=>$submit_buttons,
+	        	#top_buttons=>$submit_buttons,
 			hidden_fields=>$hidden_fields,
 			default_action=>$default_action,
 			dest=>$self->{formtarget}."#t" ) );
@@ -2042,6 +2092,8 @@ sub _do_stage_return
 	my( $self ) = @_;
 
 	$self->{session}->redirect( $self->{redirect} );
+
+	return $self->{session}->make_doc_fragment;
 }	
 
 

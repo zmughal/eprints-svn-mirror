@@ -261,7 +261,30 @@ sub get_dataset
 ######################################################################
 =pod
 
+=item $xhtml = $field->render_name( $session )
+
+Render the name of this field as an XHTML object.
+
+=cut
+######################################################################
+
+sub render_name
+{
+	my( $self, $session ) = @_;
+
+	my $phrasename = $self->{confid}."_fieldname_".$self->{name};
+	$phrasename.= "_id" if( $self->get_property( "idpart" ) );
+
+	return $session->html_phrase( $phrasename );
+}
+
+######################################################################
+=pod
+
 =item $label = $field->display_name( $session )
+
+DEPRECATED! Can't be removed because it's used in 2.2's default
+ArchiveRenderConfig.pm
 
 Return the UTF-8 encoded name of this field, in the language of
 the $session.
@@ -273,9 +296,10 @@ sub display_name
 {
 	my( $self, $session ) = @_;
 
+#	print STDERR "CALLED DEPRECATED FUNCTION EPrints::MetaField::display_name\n";
+
 	my $phrasename = $self->{confid}."_fieldname_".$self->{name};
 	$phrasename.= "_id" if( $self->get_property( "idpart" ) );
-
 	return $session->phrase( $phrasename );
 }
 
@@ -546,7 +570,9 @@ sub render_value
 	unless( EPrints::Utils::is_set( $value ) )
 	{
 		# maybe should just return nothing
-		return $session->html_phrase( "lib/metafield:unspecified" );
+		return $session->html_phrase( 
+			"lib/metafield:unspecified",
+			fieldname => $self->render_name( $session ) );
 	}
 
 	my @rendered_values = ();
@@ -691,7 +717,9 @@ sub render_value_no_multilang
 
 	if( !defined $value )
 	{
-		return $session->html_phrase( "lib/metafield:unspecified" );
+		return $session->html_phrase( 
+			"lib/metafield:unspecified",
+			fieldname => $self->render_name( $session ) );
 	}
 
 	if( $self->{render_opts}->{magicstop} )

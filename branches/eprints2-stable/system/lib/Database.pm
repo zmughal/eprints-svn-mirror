@@ -1378,7 +1378,7 @@ sub from_cache
 
 	$self->drop_old_caches();
 
-	return @results;
+	return \@results;
 }
 
 

@@ -33,11 +33,12 @@ use Apache::DBI;
 use Apache::Registry;
 
 
+
+$ENV{MOD_PERL} or EPrints::Utils::abort( "not running under mod_perl!" );
+
 use EPrints::XML;
 use EPrints::Utils;
 use EPrints::Config;
-
-$ENV{MOD_PERL} or EPrints::Utils::abort( "not running under mod_perl!" );
 
 # This code is interpreted *once* when the server starts
 use EPrints::Archive;
@@ -51,6 +52,7 @@ use EPrints::Language;
 use EPrints::Latex;
 use EPrints::MetaField;
 use EPrints::OpenArchives;
+use EPrints::Rewrite;
 use EPrints::SearchExpression;
 use EPrints::SearchField;
 use EPrints::Session;
@@ -63,7 +65,6 @@ use EPrints::UserPage;
 use EPrints::VLit;
 use EPrints::Paracite;
 
-use EPrints::Lang;
 use strict;
 
 print STDERR "********LOADED USE STUFF BONG\n";

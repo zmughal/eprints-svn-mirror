@@ -101,7 +101,7 @@ sub make_page
 				"cgi/register:missing_field",
 				$fieldlist,
 				$v,
-				{fieldname=>$session->make_text( $field->display_name($session) )} );
+				{fieldname=>$field->render_name($session)} );
 		}
 	}
 

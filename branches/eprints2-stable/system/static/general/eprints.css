@@ -182,6 +182,12 @@ dt {
 .subject_browser_selections
 {
 	margin-top: 0.5em;
+	background: #ffffaa;
+}
+
+.subject_browser_selections span.subject
+{
+	font-weight: bold;
 }
 .subject_browser_opts
 {
@@ -206,42 +212,15 @@ th
         font: bold small Helvetica,Arial,Sans-serif;
 }
 
-.vlit-spanlink1 
+.submission_buttons
 {
-	color: #c00000;
+	margin-top: 8pt;
+	text-align: center;
+        border: 1px;
+        padding: 4px;
+        border-style: solid;
+        border-color: #000000 ;
+        background-color: #f0f0f0;
+	text-decoration: none;
 }
-.vlit-spanlink2 
-{
-	color: #008000;
-}
-.status_row_heading
-{
-	text-align: right;
-	font-weight: bold;
-}
-
-body.vlit 
-{
-	margin: 4x;
-}
-
-.vlit-charrange 
-{
-	color: #0000c0;
-}
-.vlit-human
-{
-	margin: 10px;
-}
-
-.vlit-highlight 
-{
-	color: #c00000;
-}
-
-.vlit-controls
-{
-	background: #cccccc;
-	border: 1px black solid;
-	padding: 2px;
-}
+	

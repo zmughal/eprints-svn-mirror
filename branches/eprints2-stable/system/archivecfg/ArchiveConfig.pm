@@ -100,8 +100,9 @@ $c->{base_url} = "http://$c->{host}";
 if( $c->{port} != 80 )
 {
 	# Not SSL port 443 friendly
-	$c->{base_url}.= ":".$c->{port}; 
+	$c->{base_url}.= ":".$c->{port};
 }
+$c->{base_url} .= $c->{urlpath}; 
 
 # Site "home page" address
 $c->{frontpage} = "$c->{base_url}/";
@@ -387,53 +388,97 @@ $c->{browse_views} = [
 # Browse by the type of eprint (poster, report etc).
 #{ id=>"type",  fields=>"type", order=>"-date_effective" }
 
-# Number of results to display on a single search results page
+
+
+
+
+
+# Default number of results to display on a single search results page
+# can be over-ridden per search config.
 $c->{results_page_size} = 100;
 
-# Fields for a simple user search
-$c->{simple_search_fields} =
-[
-	"_fulltext/title/abstract/keywords/creators/date_effective",
-	"creators/editors",
-	"date_effective"
-];
+$c->{search}->{simple} = 
+{
+	search_fields => [
+		{
+			id => "basic",
+			meta_fields => [
+				"_fulltext",
+				"title",
+				"creators",
+				"date_effective" 
+			]
+		},
+		{
+			id => "person",
+			meta_fields => [
+				"creators",
+				"editors"
+			]
+		},
+		{	
+			id => "date",
+			meta_fields => [
+				"date_effective"
+			]
+		}
+	],
+	preamble_phrase => "cgi/search:preamble",
+	title_phrase => "cgi/search:simple_search",
+#	citation => "neat",
+	default_order => "byyear",
+	page_size => 100
+};
+		
 
-# customise the citation used to give simple search results
-$c->{simple_search_citation} = "neat";
+$c->{search}->{advanced} = 
+{
+	search_fields => [
+		{ meta_fields => [ "_fulltext" ] },
+		{ meta_fields => [ "title" ] },
+		{ meta_fields => [ "creators" ] },
+		{ meta_fields => [ "abstract" ] },
+		{ meta_fields => [ "keywords" ] },
+		{ meta_fields => [ "subjects" ] },
+		{ meta_fields => [ "type" ] },
+		{ meta_fields => [ "department" ] },
+		{ meta_fields => [ "editors" ] },
+		{ meta_fields => [ "ispublished" ] },
+		{ meta_fields => [ "refereed" ] },
+		{ meta_fields => [ "publication" ] },
+		{ meta_fields => [ "date_effective" ] }
+	],
+	filters => [
+		{ 
+			meta_fields => [ "creators" ],
+			value => "harnad"
+		}
+	],
+	preamble_phrase => "cgi/advsearch:preamble",
+	title_phrase => "cgi/advsearch:adv_search",
+#	citation => "neat",
+	default_order => "byyear",
+	page_size => 33
+};
 
-# You may specify defaults for the search page. 
-# $c->{simple_search_defaults} =
-# {
-#	"creators/editors" => "Gutteridge",
-# 	"date_effective" => 2002
-# }
+$c->{search}->{dave} = 
+{
+	search_fields => [
+		{ meta_fields => [ "title" ] }
+	],
+	filters => [
+		{ 
+			meta_fields => [ "creators" ],
+			value => "harris"
+		}
+	],
+	preamble_phrase => "cgi/advsearch:preamble",
+	title_phrase => "cgi/advsearch:adv_search",
+	citation => "neat",
+	default_order => "byyear",
+	page_size => 33
+};
 
-# customise the citation used to give advanced search results
-$c->{advanced_search_citation} = "neat";
-
-# Fields for an advanced user search
-$c->{advanced_search_fields} =
-[
-	"title",
-	"creators",
-	"abstract",
-	"keywords",
-	"subjects",
-	"type",
-	"department",
-	"editors",
-	"ispublished",
-	"refereed",
-	"publication",
-	"date_effective"
-];
-
-# You may specify defaults for the advanced search page. 
-# $c->{advanced_search_defaults} =
-# {
-#	"title" => "stuff",
-#	"refereed" => "TRUE"
-# }
 
 
 
@@ -462,9 +507,6 @@ $c->{order_methods}->{eprint} =
 };
 
 
-# The default way of ordering a search result
-#   (must be key to %eprint_order_methods)
-$c->{default_order}->{eprint} = "byname";
 
 # Fields for a staff user search.
 $c->{user_search_fields} =
@@ -494,8 +536,21 @@ $c->{default_order}->{user} = "byname";
 # customise the citation used to give results on the latest page
 $c->{latest_citation} = "neat";
 
-# undef to use default citation for each type.
-$c->{latestn_citation} = "neat";
+# This sets the default for the "latest tool" script, can be
+# overridden in individual modes.
+#$c->{latest_tool_citation} = "neat";
+
+$c->{latest_tool_modes} = {
+	# This mode lists the latest articles and conference items only
+	art_and_conf => {
+		citation => undef,
+		filters => [
+			{ meta_fields => [ "type" ], value => "article conference_item" }
+		],
+		max => 20
+	}
+};
+
 
 ######################################################################
 #

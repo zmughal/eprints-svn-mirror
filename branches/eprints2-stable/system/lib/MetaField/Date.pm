@@ -174,9 +174,9 @@ sub form_value_basic
 	my $month = $session->param( 
 				$self->{name}.$suffix."_month" );
 	my $year = $session->param( $self->{name}.$suffix."_year" );
-	$month = undef if( !defined $month || $month == 0 );
-	$year = undef if( !defined $year || $year == 0 );
-	$day = undef if( !defined $day || $day == 0 );
+	$month = undef if( !EPrints::Utils::is_set($month) || $month == 0 );
+	$year = undef if( !EPrints::Utils::is_set($year) || $year == 0 );
+	$day = undef if( !EPrints::Utils::is_set($day) || $day == 0 );
 	my $res = $self->get_property( "min_resolution" );
 
 	if( defined $year && !defined $month && !defined $day )
@@ -240,13 +240,13 @@ sub get_value_label
 
 sub render_search_input
 {
-	my( $self, $session, $prefix, $value, $merge ) = @_;
+	my( $self, $session, $searchfield ) = @_;
 	
 	return $session->make_element( "input",
 				"accept-charset" => "utf-8",
 				type => "text",
-				name => $prefix,
-				value => $value,
+				name => $searchfield->get_form_prefix,
+				value => $searchfield->get_value,
 				size => 21,
 				maxlength => 21 );
 }

@@ -22,7 +22,7 @@
 <ep:ifset name="publication">@publication@<ep:ifset name="volume">, @volume</ep:ifset><ep:ifset name="number"> (@number@)</ep:ifset>.</ep:ifset>
 <ep:ifset name="pagerange"> @pagerange@.</ep:ifset>
 <ep:ifset name="issn"> ISSN @issn@</ep:ifset>
-<ep:ifnotmatch name="ispublished" value="pub"> (@ispublished@)</ep:ifnotmatch>
+<ep:ifmatch name="ispublished" value="unpub submitted inpress"> (@ispublished@)</ep:ifmatch>
 </span></ep:citation>
 
     <ep:citation type="eprint_book"><span class="citation">
@@ -32,7 +32,7 @@
 <ep:ifset name="series">@series@<ep:ifset name="volume">, @volume</ep:ifset><ep:ifset name="number"> (@number@)</ep:ifset>.</ep:ifset>
 @publisher@<ep:ifset name="place_of_pub">, @place_of_pub</ep:ifset><ep:ifset name="pagerange">, @pagerange@</ep:ifset>.
 <ep:ifset name="isbn"> ISBN @isbn@</ep:ifset>
-<ep:ifnotmatch name="ispublished" value="pub"> (@ispublished@)</ep:ifnotmatch>
+<ep:ifmatch name="ispublished" value="unpub submitted inpress"> (@ispublished@)</ep:ifmatch>
 </span></ep:citation>
 
     <ep:citation type="eprint_book_section"><span class="citation">
@@ -45,7 +45,7 @@ In:
 <ep:ifset name="series">@series@<ep:ifset name="volume">, @volume</ep:ifset><ep:ifset name="number"> (@number@)</ep:ifset>.</ep:ifset>
 @publisher@<ep:ifset name="place_of_pub">, @place_of_pub</ep:ifset><ep:ifset name="pagerange">, @pagerange@</ep:ifset>.
 <ep:ifset name="isbn"> ISBN @isbn@</ep:ifset>
-<ep:ifnotmatch name="ispublished" value="pub"> (@ispublished@)</ep:ifnotmatch>
+<ep:ifmatch name="ispublished" value="unpub submitted inpress"> (@ispublished@)</ep:ifmatch>
 </span></ep:citation>
 
     <ep:citation type="eprint_monograph"><span class="citation">
@@ -54,7 +54,7 @@ In:
 <ep:linkhere><em>@title;magicstop@</em></ep:linkhere>
 @monograph_type@.
 @publisher@<ep:ifset name="place_of_pub">, @place_of_pub</ep:ifset>.
-<ep:ifnotmatch name="ispublished" value="pub"> (@ispublished@)</ep:ifnotmatch>
+<ep:ifmatch name="ispublished" value="unpub submitted inpress"> (@ispublished@)</ep:ifmatch>
 </span></ep:citation>
 
     <ep:citation type="eprint_conference_item"><span class="citation">
@@ -62,7 +62,7 @@ In:
 <ep:ifset name="date_effective">(@date_effective;res=year@)</ep:ifset>
 <ep:linkhere><em>@title;magicstop@</em></ep:linkhere>
 In: @event_title@<ep:ifset name="event_dates">, @event_dates</ep:ifset><ep:ifset name="event_location">, @event_location</ep:ifset>.
-<ep:ifnotmatch name="ispublished" value="pub"> (@ispublished@)</ep:ifnotmatch>
+<ep:ifmatch name="ispublished" value="unpub submitted inpress"> (@ispublished@)</ep:ifmatch>
 </span></ep:citation>
 
     <ep:citation type="eprint_thesis"><span class="citation">
@@ -83,7 +83,7 @@ In: @event_title@<ep:ifset name="event_dates">, @event_dates</ep:ifset><ep:ifset
 <ep:ifset name="date_effective">(@date_effective;res=year@)</ep:ifset>
 <ep:linkhere><em>@title;magicstop@</em></ep:linkhere>
 @publisher@<ep:ifset name="place_of_pub">, @place_of_pub</ep:ifset>.
-<ep:ifnotmatch name="ispublished" value="pub"> (@ispublished@)</ep:ifnotmatch>
+<ep:ifmatch name="ispublished" value="unpub submitted inpress"> (@ispublished@)</ep:ifmatch>
 </span></ep:citation>
 
     <ep:citation type="eprint_thread_succeeds"><ep:linkhere><span class="citation">@title@ (deposited @datestamp@)</span></ep:linkhere></ep:citation>

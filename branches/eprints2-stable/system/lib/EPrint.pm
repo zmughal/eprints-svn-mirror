@@ -682,9 +682,8 @@ sub validate_linking
 		{
 			push @problems, $self->{session}->html_phrase(
 				"lib/eprint:invalid_id",	
-				field => $self->{session}->make_text(
-					$field->display_name( $self->{session}) 
-				) );
+				field => $field->render_name( 
+						$self->{session} ) );
 			next;
 		}
 
@@ -747,8 +746,7 @@ sub validate_meta
 
 		my $problem = $self->{session}->html_phrase( 
 			"lib/eprint:not_done_field" ,
-			fieldname=> $self->{session}->make_text( 
-			   $field->display_name( $self->{session} ) ) );
+			fieldname=> $field->render_name( $self->{session} ) );
 
 		push @all_problems,$problem;
 	}
@@ -812,9 +810,8 @@ sub validate_meta_page
 
 			my $problem = $self->{session}->html_phrase( 
 				"lib/eprint:not_done_field" ,
-				fieldname=> $self->{session}->make_text( 
-			   		$field->display_name( 
-						$self->{session} ) ) );
+				fieldname=> $field->render_name( 
+						$self->{session} ) );
 			push @problems,$problem;
 		}
 

@@ -150,7 +150,7 @@ my @LANGLIST;
 my @SUPPORTEDLANGLIST;
 my %LANGNAMES;
 my %ARCHIVES;
-my %ARCHIVEMAP;
+#my %ARCHIVEMAP;
 my $INIT = 0; 
 
 
@@ -287,11 +287,16 @@ sub load_archive_config
 	{
 		$ainfo->{configmodule}= $ainfo->{archiveroot}."/".$ainfo->{configmodule};
 	}
-	$ARCHIVEMAP{$ainfo->{host}.$ainfo->{urlpath}} = $id;
-	if( EPrints::Utils::is_set( $ainfo->{securehost} ) )
-	{
-		$ARCHIVEMAP{$ainfo->{securehost}.$ainfo->{securepath}} = $id;
-	}
+
+	# remove any trailing slash from the urlpath
+	$ainfo->{urlpath} =~ s#/$##;
+
+#cjg clean this out later
+#	$ARCHIVEMAP{$ainfo->{host}.$ainfo->{urlpath}} = $id;
+#	if( EPrints::Utils::is_set( $ainfo->{securehost} ) )
+#	{
+#		$ARCHIVEMAP{$ainfo->{securehost}.$ainfo->{securepath}} = $id;
+#	}
 	$ainfo->{aliases} = [];
 	foreach $tag ( $conf_tag->getElementsByTagName( "alias" ) )
 	{
@@ -301,7 +306,7 @@ sub load_archive_config
 		$alias->{name} = $val; 
 		$alias->{redirect} = ( $tag->getAttribute( "redirect" ) eq "yes" );
 		push @{$ainfo->{aliases}},$alias;
-		$ARCHIVEMAP{$alias->{name}.$ainfo->{urlpath}} = $id;
+#		$ARCHIVEMAP{$alias->{name}.$ainfo->{urlpath}} = $id;
 	}
 	$ainfo->{languages} = [];
 	foreach $tag ( $conf_tag->getElementsByTagName( "language" ) )
@@ -401,22 +406,24 @@ virutal host specified by $hostpath. eg. "www.fishprints.com/perl/search"
 =cut
 ######################################################################
 
-sub get_id_from_host_and_path
-{
-	my( $hostpath ) = @_;
-
-	ensure_init();
-
-	foreach( keys %ARCHIVEMAP )
-	{
-		if( substr($hostpath,0,length($_)) eq $_ )
-		{
-			return $ARCHIVEMAP{$_};
-		}
-	}
-
-	return undef;
-}
+# cjg DEPRECATE THIS FUNCTION!!
+#
+#sub get_id_from_host_and_path
+#{
+	#my( $hostpath ) = @_;
+#
+	#ensure_init();
+#
+	#foreach( keys %ARCHIVEMAP )
+	#{
+		#if( substr($hostpath,0,length($_)) eq $_ )
+		#{
+			#return $ARCHIVEMAP{$_};
+		#}
+	#}
+#
+	#return undef;
+#}
 
 
 ######################################################################
@@ -496,6 +503,33 @@ END
 
 	my $function = "EPrints::Config::".$id."::get_conf";
 	my $config = &{$function}( $info );
+
+	# Change old search configs into 2.2 format...
+	# cjg (could even translate default etc.)
+
+	foreach my $stype ( "simple", "advanced" )
+	{
+		next if( defined $config->{"search"}->{$stype} );
+
+		$config->{search}->{$stype} = {
+			fieldnames => $config->{$stype."_search_fields"},
+			# don't make search_fields yet!
+			citation => $config->{$stype."_search_citation"} };
+		if( $stype eq "simple" )
+		{
+			$config->{"search"}->{$stype}->{preamble_phrase} =
+						 "cgi/search:preamble";
+			$config->{"search"}->{$stype}->{title_phrase} =
+						 "cgi/search:simple_search";
+		}
+		if( $stype eq "advanced" )
+		{
+			$config->{"search"}->{$stype}->{preamble_phrase} =
+						 "cgi/advsearch:preamble";
+			$config->{"search"}->{$stype}->{title_phrase} =
+						 "cgi/advsearch:adv_search";
+		}
+	}
 
 	return $config;
 }

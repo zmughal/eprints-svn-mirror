@@ -129,7 +129,7 @@ sub render_set_input
 			# must be a way to unselect it.
 			$tags = [ "", @{$tags} ];
 			my $unspec = $session->phrase( 
-				"lib/metafield:unspecified" );
+				"lib/metafield:unspecified_selection" );
 			$labels = { ""=>$unspec, %{$labels} };
 		}
 
@@ -224,14 +224,13 @@ sub ordervalue_single
 
 sub render_search_input
 {
-	my( $self, $session, $prefix, $value, $merge ) = @_;
+	my( $self, $session, $searchfield ) = @_;
 	
 	my $frag = $session->make_doc_fragment;
 	
 	$frag->appendChild( $self->render_search_set_input( 
 				$session,
-				$prefix,
-				$value ) );
+				$searchfield ) );
 
 	if( $self->get_property( "multiple" ) )
 	{
@@ -244,9 +243,9 @@ sub render_search_input
 		$frag->appendChild( $session->make_text(" ") );
 		$frag->appendChild( 
 			$session->render_option_list(
-				name=>$prefix."_merge",
+				name=>$searchfield->get_form_prefix."_merge",
 				values=>\@set_tags,
-				value=>$merge,
+				value=>$searchfield->get_merge,
 				labels=>\%set_labels ) );
 	}
 
@@ -255,9 +254,32 @@ sub render_search_input
 
 sub render_search_set_input
 {
-	my( $self, $session, $prefix, $value ) = @_;
+	my( $self, $session, $searchfield ) = @_;
 
-	my( $tags, $labels ) = $self->tags_and_labels( $session );
+	my $prefix = $searchfield->get_form_prefix;
+	my $value = $searchfield->get_value;
+
+	my( $tags, $labels ) = ( [], {} );
+	# find all the fields we're searching to get their options
+	# too if we need to!
+	my @allfields = @{$searchfield->get_fields};
+	if( scalar @allfields == 1 )
+	{
+		( $tags, $labels ) = $self->tags_and_labels( $session );
+	}
+	else
+	{
+		my( $t ) = {};
+		foreach my $field ( @allfields )
+		{
+			my ( $t2, $l2 ) = $field->tags_and_labels( $session );
+			foreach( @{$t2} ) { $t->{$_}=1; }
+			foreach( keys %{$l2} ) { $labels->{$_}=$l2->{$_}; }
+		}
+		my @tags = keys %{$t};
+		$tags = \@tags;
+	}
+
 	my $max_rows =  $self->get_property( "search_rows" );
 
 	my $height = scalar @$tags;

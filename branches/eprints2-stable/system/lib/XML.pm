@@ -168,6 +168,11 @@ sub parse_xml
 
 #	print "Loading XML: $file\n";
 
+	unless( -r $file )
+	{
+		EPrints::Config::abort( "Can't read XML file: '$file'" );
+	}
+
 	my $doc;
 	if( $gdome )
 	{
@@ -438,7 +443,9 @@ sub to_string
 	if( EPrints::XML::is_dom( $node, "Element" ) )
 	{
 		my $tagname = $node->getTagName;
-		$tagname = "\L$tagname";
+
+		# lowercasing all tags screws up OAI.
+		#$tagname = "\L$tagname";
 
 		push @n, '<', $tagname, ' ';
 		#foreach my $attr ( $node->getChildNodes )

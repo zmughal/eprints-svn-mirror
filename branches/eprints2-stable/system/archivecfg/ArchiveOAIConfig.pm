@@ -112,6 +112,16 @@ $oai->{sets} = [
 	{ id=>"subjects", allow_null=>0, fields=>"subjects" }
 ];
 
+# Filter OAI export. If you want to stop certain records being exported
+# you can add filters here. These work the same as for a search filter.
+
+$oai->{filters} = [
+
+	{ meta_fields => [ "creators" ], value=>"harnad" }
+# Example: don't export any OAI records from before 2003.
+#	{ meta_fields => [ "date-effective" ], value=>"2003-" }
+];
+
 # Number of results to display on a single search results page
 
 # Information for "Identify" responses.

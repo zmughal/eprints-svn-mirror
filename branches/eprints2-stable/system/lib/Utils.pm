@@ -979,6 +979,8 @@ sub _render_citation_aux
 			{
 				$addkids = !$addkids;
 			}
+
+			$rendered = $session->make_doc_fragment;
 		}
 		elsif( $name eq "iflink" )
 		{

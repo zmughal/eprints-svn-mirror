@@ -191,9 +191,8 @@ sub render_input_field_actual
 		{
 			$th = $session->make_element( "th" );
 			$th->appendChild( 
-				$session->make_text( 
-                               	 	$self->get_id_field()->display_name( 
-						$session )));
+				$self->get_id_field()->render_name( 
+								$session ) );
 			$tr->appendChild( $th );
 		}
 		$table->appendChild( $tr );
@@ -983,7 +982,7 @@ sub ordervalue_basic
 
 sub render_search_input
 {
-	my( $self, $session, $prefix, $value, $merge ) = @_;
+	my( $self, $session, $searchfield ) = @_;
 	
 	my $frag = $session->make_doc_fragment;
 
@@ -992,8 +991,8 @@ sub render_search_input
 		$session->make_element( "input",
 			"accept-charset" => "utf-8",
 			type => "text",
-			name => $prefix,
-			value => $value,
+			name => $searchfield->get_form_prefix,
+			value => $searchfield->get_value,
 			size => $self->get_property( "search_cols" ),
 			maxlength => 256 ) );
 	$frag->appendChild( $session->make_text(" ") );
@@ -1003,9 +1002,9 @@ sub render_search_input
 		"ALL" => $session->phrase( "lib/searchfield:text_all" ) );
 	$frag->appendChild( 
 		$session->render_option_list(
-			name=>$prefix."_merge",
+			name=>$searchfield->get_form_prefix."_merge",
 			values=>\@text_tags,
-			default=>$merge,
+			default=>$searchfield->get_merge,
 			labels=>\%text_labels ) );
 	return $frag;
 }

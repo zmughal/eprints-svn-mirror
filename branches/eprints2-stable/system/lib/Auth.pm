@@ -229,27 +229,30 @@ sub authz
 	}
 
 	my $secpath = $archive->get_conf( "secure_url_dir" );
-	my $sechostpath = $archive->get_conf( "securepath" );
+	my $urlpath = $archive->get_conf( "urlpath" );
 
+	$uri =~ s/^$urlpath$secpath//;
 	my $docid;
 	my $eprintid;
-	if( $uri =~ m#^($sechostpath)?$secpath/(\d\d\d\d\d\d\d\d)/(\d+)/# )
+#	unless( $uri =~ s#^$urlpath## )
+
+	if( $uri =~ m#^/(\d\d\d\d\d\d\d\d)/(\d+)/# )
 	{
 		# /archive/00000001/01/.....
 		# or
 		# /$archiveid/archive/00000001/01/.....
 
 		# force it to be integer. (Lose leading zeros)
-		$eprintid = $2+0; 
-		$docid = "$eprintid-$3";
+		$eprintid = $1+0; 
+		$docid = "$eprintid-$2";
 	}
-	elsif( $uri =~ 
-		m#^$sechostpath$secpath/(\d\d)/(\d\d)/(\d\d)/(\d\d)/(\d+)/# )
-	{
-		# /$archiveid/archive/00/00/00/01/01/.....
-		$eprintid = "$1$2$3$4"+0;
-		$docid = "$eprintid-$5";
-	}
+#	elsif( $uri =~ 
+#		m#^$sechostpath$secpath/(\d\d)/(\d\d)/(\d\d)/(\d\d)/(\d+)/# )
+#	{
+#		# /$archiveid/archive/00/00/00/01/01/.....
+#		$eprintid = "$1$2$3$4"+0;
+#		$docid = "$eprintid-$5";
+#	}
 	else
 	{
 
@@ -258,6 +261,7 @@ sub authz
 		$session->terminate();
 		return FORBIDDEN;
 	}
+
 	my $user_sent = $r->connection->user;
 	my $user = EPrints::User::user_with_username( $session, $user_sent );
 	my $document = EPrints::Document->new( $session, $docid );
