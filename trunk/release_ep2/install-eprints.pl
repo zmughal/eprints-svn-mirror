@@ -28,7 +28,7 @@ you to begin configuring EPrints 2.
 INTRO
 
 print "Checking user ... ";
-if (0) #($<!=0) -- removed while testing.
+if ($<!=0)
 {
 	print "Failed!\n";
 	print "Sorry, this installer must be run as root.\n";
@@ -75,11 +75,14 @@ $exesettings{"wget"} 	= detect("wget", @paths);
 $exesettings{"sendmail"} = detect("sendmail", @paths);
 $exesettings{"gunzip"} 	= detect("gunzip", @paths);
 $exesettings{"tar"} 	= detect("tar", @paths);
+my $useradd = detect("useradd", @paths);
+my $groupadd = detect("groupadd", @paths);
 
 $systemsettings{"executable"} = \%exesettings;
 $systemsettings{"version"} = $version;
 $systemsettings{"version_desc"} = $version_desc;
 print <<DIR;
+
 EPrints installs by default to the /opt/eprints directory. If you
 would like to install to a different directory, please specify it
 here.
@@ -242,7 +245,7 @@ GROUP
 		if (!$gexists)
 		{
 			print "Creating group ... ";
-			if (system("/usr/sbin/groupadd $group")==0)
+			if (system("$groupadd $group")==0)
 			{
 				print "OK.\n\n";
 			}
@@ -255,7 +258,7 @@ GROUP
 		}
 	
 		print "Creating user ... ";
-		if (system("/usr/sbin/useradd -s /bin/false -d $dir -g $group $user")==0)
+		if (system("$useradd -s /bin/false -d $dir -g $group $user")==0)
 		{
 			print "OK.\n\n";
 		} 
