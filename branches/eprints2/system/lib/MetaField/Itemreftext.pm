@@ -39,7 +39,14 @@ BEGIN
 }
 
 use EPrints::MetaField::Text;
-require EPrints::MetaField::itemrefutils;
+
+my $file = $EPrints::SystemSettings::conf->{base_path}.
+		"/perl_lib/EPrints/MetaField/itemrefutils.pm";
+unless (my $return = do $file) { 
+	warn "couldn't parse $file: $@" if $@;
+	warn "couldn't do $file: $!"    unless defined $return;
+	warn "couldn't run $file"       unless $return;
+}
 
 
 ######################################################################
