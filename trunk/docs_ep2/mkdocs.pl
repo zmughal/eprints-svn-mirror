@@ -23,7 +23,6 @@ my @ids = (
 	"!erase_archive",
 	"!generate_abstracts",
 	"!generate_apacheconf",
-	"!generate_dtd",
 	"!generate_static",
 	"!generate_views",
 	"!import_subjects",
