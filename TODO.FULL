@@ -166,3 +166,15 @@ Internationalise:
 	./lib/UserForm.pm
  +++ = DB upgrade done.
 *** = constants still need doing
+
+
+When  I search for my own entries (22 I think) I get "no hits" when I
+> search for
+> bullock, t.h.  as well as when I do bullock, t
+> Only when  I do bullock without any initials do i get them + others with
+> other initials.  This has been true for a long time.
+> Can you either allow various kinds of punctuation or provide samples right
+> beside the box where we type in the search target?
+
+
+*** Subscriptions 
