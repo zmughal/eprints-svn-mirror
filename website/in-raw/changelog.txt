@@ -1,0 +1,58 @@
+eprints.org software history
+
+2000-07-04 - Beta-1 Released
+
+
+2000-09-29 - Beta-2 Released.
+
+Changes in core code:
+
+- Slight directory restructure. No longer need symlink into
+/usr/lib/perl5/site_perl (or equivalent), use "PERL5LIB" environment variable
+instead. This is cleaner, and allows >1 eprints service to run on a single
+machine more easily.
+- Now refers to "deposits" rather than "submissions", to avoid journal
+connotations.
+- Minor fix to e-mail parsing code in bin/process_mail.
+- Staff couldn't edit eprints in submission buffer, this resulted in an error.
+Fixed.
+- Flawed disk space calculation fixed.
+- Now uses URI::Heuristic to improve Web grabbing flexibility
+- Better guessing of "show first" file during Web grabbing
+- No longer prepends "Clone of" to titles of cloned eprints - this caused
+confusion and people tended to leave it in
+- Can now add elements to the <HEAD> segment of Web pages
+- Search script now easier to call externally. Now assumes that if any
+parameters are passed in, a search should be attempted. This makes it easy to
+add "quick search" forms or standard searches to other (possibly external) Web
+pages.
+- In the "threads" of eprint versions and commentaries/responses, the date at
+which each was deposited is now displayed.
+- Slight rewording around these "threads" to make them easier to understand.
+- Cleaned up Open Archives interface in anticipation of new protocol. Current
+version still only exports OAMS, however.
+- Changed "spec" field subscription table to be "multitext" rather than "text"
+(in MySQL, TEXT instead of VARCHAR(255)). Some specs turned out to be longer
+than 255 characters long and so weren't stored correctly.
+- Various updates to on-line help.
+- Open Archives exported metadata now properly encoded in UTF-8, using
+Unicode-String module.
+
+Site default configuration changes:
+
+- Added references metadata field to eprints. This can be used by automatic
+citation linkers in the future.
+- Added "expertise" metadata field to user records.
+- Fixed errors in automatic reply to unrecognised autoadmin message.
+- Fixed error in user introduction message.
+- Made it clearer how to set up with a non-standard port.
+- Can specify multiple metadata formats for export via open archives protocols;
+however, N.B. current (Santa Fe) core code will only at present handle "OAMS".
+- Minor fixes to reference renderings.
+- Now ensures authors enter scheme (e.g. "http:" when they enter their "home
+page URL". Too many authors were entering just e.g. "www.foo.bar", meaning the
+link didn't work.
+- No longer insists for page and volume numbers for "unpublished" or "in press"
+journal papers.
+- Changes to wording in default Web pages, including a couple of HTML syntax
+fixes.
