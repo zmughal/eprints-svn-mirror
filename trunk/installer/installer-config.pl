@@ -7,7 +7,11 @@
 	verbose			=> 1,
 	# Display nothing.
 	silent			=> 0,
-
+	# Whether to actually install things.
+	dryrun			=> 0,
+	# Where to get packages (if a valid version not on system, and 
+	# URL not over-ridden by package).
+	package_url		=> "http://ecs.soton.ac.uk/~moj199/",
 	# 0 if we don't want resuming. Unset with --noresuming.
 	resuming		=> 0,
 	# Where to dump the resume file. Set with --resume_file=foo.
@@ -39,7 +43,7 @@
 (
 	{
 		name		=> "perl",
-		min_version	=> "5.6.0",
+	 	min_version	=> "5.6.0",
 	},
 	# Base packages
 	{
@@ -87,22 +91,6 @@
 		long_name	=> "Apache/mod_perl",
 		description	=> "The juicest blend of the Apache HTTP server and the mod_perl embedded Perl interpreter. EPrints - using only the finest ingredients :o)",
 	},
-#	{
-#		name		=> "apache",
-#		min_version	=> "1.3.14",
-#		search_string	=> "apache_([0-9]+)\.([0-9]+)\.([0-9]+)\.tar\.gz",
-#		long_name	=> "Apache web server",
-#		description	=> "HTTP server designed as a plug-in replacement for the NCSA server version 1.4. It fixes numerous bugs in the NCSA server and includes many frequently requested new features, and has an API which allows it to be extended to meet users' needs more easily.",
-#		check_method	=> "standardcheck httpd /home/httpd/bin:/usr/local/apache/bin:/utc/httpd/bin",
-#	},
-#	{
-#		name		=> "modperl",
-#		min_version	=> "1.25",
-#		search_string	=> "mod_perl-([0-9]+)\.([0-9]+)\.tar\.gz",
-#		long_name	=> "mod_perl Apache Perl interpreter",
-#		description	=> "mod_perl links the Perl runtime library into the Apache server, allowing Apache modules written entirely in Perl. The persistent embedded interpreter avoids the overhead of starting an external interpreter and the penalty of Perl start-up (compile) time.",
-#		check_method	=> "perlcheck mod_perl",
-#	},
 	{
 		name		=> "mysql",
 		min_version	=> "3.23.39",
@@ -202,22 +190,12 @@
 		check_method	=> "perlcheck Apache::AuthDBI",
 	},
 	{
-		name		=> "htmlparser",
-		min_version	=> "3.25",
-		search_string	=> "HTML-Parser-([0-9]+)\.([0-9]+)\.tar\.gz",
-		long_name	=> "HTML Parser",
-		description	=> "A collection of modules that parse and extract information from HTML documents.",
-		install_method	=> "perlinstall",
-		check_method	=> "perlcheck HTML::Parser",
-	},
-	{
-		name		=> "libwww",
-		min_version	=> "5.53",
-		search_string	=> "libwww-perl-([0-9]+)\.([0-9]+)\.tar\.gz",
-		long_name	=> "LWP",
-		description	=> "A collection of Perl modules providing a simple API to the World Wide Web. Required by XML::DOM.",
-		install_method	=> "perlinstall",
-		check_method	=> "perlcheck LWP",
+		name		=> "expat",
+		min_version	=> "1.95.2",
+		search_string	=> "expat-([0-9]+)\.([0-9]+)\.([0-9]+)\.tar\.gz",
+		long_name	=> "Expat libraries",
+		description	=> "Provides parsing functionality for XML::Parser.",
+		install_method	=> "standardinstall",
 	},
 	{
 		name		=> "xmlparser",
@@ -228,22 +206,13 @@
 		install_method	=> "perlinstall",
 		check_method	=> "perlcheck XML::Parser",
 	},
-	{
-		name		=> "libenno",
-		min_version	=> "1.02",
-		search_string	=> "libxml-enno-\([0-9]+)\.([0-9]+)\.tar\.gz",
-		long_name	=> "XML::* Packages",
-		description	=> "Contains XML::DOM, XML::XQL, XML::Checker, and several other packages. Also provides XML::RegExp, which is used by ePrints.",
-		install_method	=> "perlinstall",
-		check_method	=> "perlcheck XML::DOM",
-	},
-	{
-		name		=> "eprints",
-		min_version	=> "1.0",
-		search_string	=> "eprints-([0-9]+)\.([0-9]+)\.?([0-9]*)\.tar\.gz",
-		long_name	=> "ePrints",
-		description	=> "ePrints is dedicated to the freeing of the refereed research literature online through author/institution self-archiving. It complements centralised, discipline-based archiving with distributed, institution-based archiving.",
-	},
+#	{
+#		name		=> "eprints",
+#		min_version	=> "1.0",
+#		search_string	=> "eprints-([0-9]+)\.([0-9]+)\.?([0-9]*)\.tar\.gz",
+#		long_name	=> "ePrints",
+#		description	=> "ePrints is dedicated to the freeing of the refereed research literature online through author/institution self-archiving. It complements centralised, discipline-based archiving with distributed, institution-based archiving.",
+#	},
 );
 
 # Custom package check methods
@@ -313,8 +282,10 @@ sub gcc_check
 {
 	my $gcc = "";
 	my @gccs = ();
+
 	@gccs = find_file("gcc");
 	push @gccs, find_file("cc");
+
 	foreach(@gccs)
 	{
 		$gcc = `$_ --version 2>&1` or return 0;
@@ -384,6 +355,11 @@ sub wget_check
 	return 0;
 }
 
+sub expat_check
+{
+	return (get_library_paths("libexpat"));	
+}
+
 sub apachemodperl_check
 {
 }
@@ -417,40 +393,6 @@ sub apachemodperl_install
 	print "	Done.\n";
 	chdir $currdir;	
 }
-
-#sub apache_install
-#{
-#	my($package) = @_;
-#        $currdir = getcwd();
-#        chdir decompress($package->{archive});
-#	print "Configuring		...";
-#	`./configure --enable-module=rewrite --enable-module=auth`;
-#	print "	Done.\n";
-#	print "Making			...";
-#	`$ENVIRONMENT{make} 2>&1 1>/dev/null`;
-#	print "	Done.\n";
-#	`$ENVIRONMENT{make} install`;
-#	chdir $currdir;
-#	return 1;
-#}
-
-#sub modperl_install
-#{
-#	# FIXME
-#	my($package) = @_;
-# 	$currdir = getcwd();
-#        chdir decompress($package->{archive});
-#        print "Configuring		...";
-#	`echo "EVERYTHING=1 DO_HTTPD=1" > makepl_args.mod_perl`;
-#	`perl Makefile.PL`;
-#	print "	Done.\n";
-#	print "Making			...";
-#	`$ENVIRONMENT{make} 2>&1 1>/dev/null`;
-#	print "	Done.\n";
-#	`$ENVIRONMENT{make} install`;
-#	chdir $currdir;
-#	return 1;
-#}
 
 sub mysql_install
 {
@@ -511,9 +453,5 @@ sub eprints_install
 	my($package) = @_;
 	$currdir = getcwd();
 	chdir "eprints";
-	protect("./configure");
-	protect("$ENVIRONMENT{make}");
-	protect("$ENVIRONMENT{make} install");
-	chdir $currdir;
 	return 1;
 }
