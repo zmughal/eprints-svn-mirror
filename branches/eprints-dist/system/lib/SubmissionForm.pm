@@ -1498,6 +1498,10 @@ sub do_stage_verify
 		print $self->{session}->{render}->render_eprint_full( $self->{eprint} );
 	
 		print "<HR>\n<P><CENTER>";
+
+		print $EPrintSite::SiteInfo::deposit_agreement_text."\n"
+			if( defined $EPrintSite::SiteInfo::deposit_agreement_text );
+
 		print $self->{session}->{render}->submit_buttons(
 			[ $EPrints::SubmissionForm::action_prev,
 			  $EPrints::SubmissionForm::action_submit ] );
@@ -1929,11 +1933,12 @@ sub render_file_view
 	foreach $filename (sort keys %files)
 	{
 		$html .= "<TR><TD>";
-		$html .= "<STRONG>Shown First -\&gt;</STRONG>" if( $main eq $filename );
+		$html .= "<STRONG>Shown First -\&gt;</STRONG>"
+			if( defined $main && $main eq $filename );
 		
 		$html .= "</TD><TD>$filename</TD><TD ALIGN=RIGHT>$files{$filename}</TD>".
 			"<TD>";
-		if( $main ne $filename )
+		if( !defined $main || $main ne $filename )
 		{
 			$html .= $self->{session}->{render}->named_submit_button(
 				"main_$filecount",

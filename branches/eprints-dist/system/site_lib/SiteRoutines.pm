@@ -34,8 +34,8 @@ use strict;
 %EPrints::SiteRoutines::citation_specs =
 (
 	"bookchapter" => "{authors} [({year}) ]<i>{title}</i>, in [{editors}, Eds. ][<i>{publication}</i>][, chapter {chapter}][, pages {pages}]. [{publisher}.]",
-	"confpaper"   => "{authors} [({year}) ]{title}. In [{editors}, Eds. ][<i>Proceedings {conference}.</i>][ <B>{volume}</B>][({number})][, pages {pages}][, {confloc}].",
-	"confposter"  => "{authors} [({year}) ]{title}. In [{editors}, Eds. ][<i>Proceedings {conference}.</i>][ <B>{volume}</B>][({number})][, pages {pages}][, {confloc}].",
+	"confpaper"   => "{authors} [({year}) ]{title}. In [{editors}, Eds. ][<i>Proceedings {conference}</i>][ <B>{volume}</B>][({number})][, pages {pages}][, {confloc}].",
+	"confposter"  => "{authors} [({year}) ]{title}. In [{editors}, Eds. ][<i>Proceedings {conference}</i>][ <B>{volume}</B>][({number})][, pages {pages}][, {confloc}].",
 	"techreport"  => "{authors} [({year}) ]{title}. Technical Report[ {reportno}][, {department}][, {institution}].",
 	"journale"    => "{authors} [({year}) ]{title}. <i>{publication}</i>[ {volume}][({number})].",
 	"journalp"    => "{authors} [({year}) ]{title}. <i>{publication}</i>[ {volume}][({number})][:{pages}].",
@@ -80,10 +80,16 @@ sub eprint_short_title
 
 sub eprint_render_full
 {
-	my( $eprint ) = @_;
+	my( $eprint, $for_staff ) = @_;
 
-	# Start with a citation
-	my $html = "<P>";
+	my $html = "";
+
+	my $succeeds_field = EPrints::MetaInfo::find_eprint_field( "succeeds" );
+	my $commentary_field = EPrints::MetaInfo::find_eprint_field( "commentary" );
+	my $has_multiple_versions = $eprint->in_thread( $succeeds_field );
+
+	# Citation
+	$html .= "<P>";
 	$html .= $eprint->{session}->{render}->render_eprint_citation(
 		$eprint,
 		1,
@@ -107,6 +113,25 @@ sub eprint_render_full
 	}
 
 	$html .= "</TD></TR></TABLE>\n";
+
+	# Put in a message describing how this document has other versions
+	# in the archive if appropriate
+	if( $has_multiple_versions)
+	{
+		my $latest = $eprint->last_in_thread( $succeeds_field );
+
+		if( $latest->{eprintid} eq $eprint->{eprintid} )
+		{
+			$html .= "<P ALIGN=CENTER><EM>This is the latest version of this ".
+				"eprint.</EM></P>\n";
+		}
+		else
+		{
+			$html .= "<P ALIGN=CENTER><EM>There is a later version of this ".
+				"eprint available: <A HREF=\"" . $latest->static_page_url() . 
+				"\">Click here to view it.</A></EM></P>\n";
+		}
+	}		
 
 	# Then the abstract
 	$html .= "<H2>Abstract</H2>\n";
@@ -186,6 +211,44 @@ sub eprint_render_full
 	}
 
 	$html .= "</TABLE></P>\n";
+
+	# If being viewed by a staff member, we want to show any suggestions for
+	# additional subject categories
+	if( $for_staff )
+	{
+		my $additional_field = 
+			EPrints::MetaInfo::find_eprint_field( "additional" );
+		my $reason_field = EPrints::MetaInfo::find_eprint_field( "reasons" );
+
+		# Write suggested extra subject category
+		if( defined $eprint->{additional} )
+		{
+			$html .= "<TABLE BORDER=0 CELLPADDING=3>\n";
+			$html .= "<TR><TD><STRONG>$additional_field->{displayname}:</STRONG>".
+				"</TD><TD>$eprint->{additional}</TD></TR>\n";
+			$html .= "<TR><TD><STRONG>$reason_field->{displayname}:</STRONG>".
+				"</TD><TD>$eprint->{reasons}</TD></TR>\n";
+
+			$html .= "</TABLE>\n";
+		}
+	}
+			
+	# Now show the version and commentary response threads
+	if( $has_multiple_versions )
+	{
+		$html .= "<h3>Available Versions of This Paper</h3>\n";
+		$html .= $eprint->{session}->{render}->write_version_thread(
+			$eprint,
+			$succeeds_field );
+	}
+	
+	if( $eprint->in_thread( $commentary_field ) )
+	{
+		$html .= "<h3>Commentary/Response Threads</h3>\n";
+		$html .= $eprint->{session}->{render}->write_version_thread(
+			$eprint,
+			$commentary_field );
+	}
 
 	return( $html );
 }
@@ -491,68 +554,132 @@ sub oai_get_eprint_metadata
 {
 	my( $eprint, $format ) = @_;
 
-	return( undef ) unless( $format eq "oams" );
-	
-	my %tags;
-
-	# Title
-	$tags{title} = $eprint->{title};
-	
-	# Authors
-	my @authors = EPrints::Name::extract( $eprint->{authors} );
-	$tags{author} = [];
-	
-	foreach (@authors)
+	if( $format eq "oams" )
 	{
-		my( $surname, $firstnames ) = @$_;
-		push @{$tags{author}}, { "name" => "$firstnames $surname",
-		                           "organization" => "" };
+		my %tags;
+
+		# Title
+		$tags{title} = $eprint->{title};
+
+		# Authors
+		my @authors = EPrints::Name::extract( $eprint->{authors} );
+		$tags{author} = [];
+
+		foreach (@authors)
+		{
+			my( $surname, $firstnames ) = @$_;
+			push @{$tags{author}}, { "name" => "$firstnames $surname",
+			                         "organization" => "" };
+		}
+
+		# Subject field will just be the subject descriptions
+		my $subject_list = new EPrints::SubjectList( $eprint->{subjects} );
+		my @subjects = $subject_list->get_subjects( $eprint->{session} );
+		$tags{subject} = [];
+
+		foreach (@subjects)
+		{
+			push @{$tags{subject}},
+		   	  $eprint->{session}->{render}->subject_desc( $_, 0, 1, 0 );
+		}
+
+		# Abstract
+		$tags{abstract} = $eprint->{abstract};
+
+		# Comment
+		$tags{comment} = $eprint->{comment} if( defined $eprint->{comment} );
+
+		# Date for discovery. For a month/day we don't have, assume 01.
+		my $year = $eprint->{year};
+		my $month = "01";
+
+		if( defined $eprint->{month} )
+		{
+			my %month_numbers = (
+				unspec => "01",
+				jan => "01",
+				feb => "02",
+				mar => "03",
+				apr => "04",
+				may => "05",
+				jun => "06",
+				jul => "07",
+				aug => "08",
+				sep => "09",
+				oct => "10",
+				nov => "11",
+				dec => "12" );
+
+			$month = $month_numbers{$eprint->{month}};
+		}
+
+		$tags{discovery} = "$year-$month-01";
+
+		return( %tags );
 	}
-
-	# Subject field will just be the subject descriptions
-	my $subject_list = new EPrints::SubjectList( $eprint->{subjects} );
-	my @subjects = $subject_list->get_subjects( $eprint->{session} );
-	$tags{subject} = [];
-
-	foreach (@subjects)
+	elsif( $format eq "dc" )
 	{
-		push @{$tags{subject}},
-		     $eprint->{session}->{render}->subject_desc( $_, 0, 1, 0 );
+		my %tags;
+		
+		$tags{title} = $eprint->{title};
+
+		my @authors = EPrints::Name::extract( $eprint->{authors} );
+		$tags{creator} = [];
+
+		foreach (@authors)
+		{
+			my( $surname, $firstnames ) = @$_;
+			push @{$tags{creator}},"$surname, $firstnames";
+		}
+
+		# Subject field will just be the subject descriptions
+		my $subject_list = new EPrints::SubjectList( $eprint->{subjects} );
+		my @subjects = $subject_list->get_subjects( $eprint->{session} );
+		$tags{subject} = [];
+
+		foreach (@subjects)
+		{
+			push @{$tags{subject}},
+		   	  $eprint->{session}->{render}->subject_desc( $_, 0, 1, 0 );
+		}
+
+		$tags{description} = $eprint->{abstract};
+		
+		# Date for discovery. For a month/day we don't have, assume 01.
+		my $year = $eprint->{year};
+		my $month = "01";
+
+		if( defined $eprint->{month} )
+		{
+			my %month_numbers = (
+				unspec => "01",
+				jan => "01",
+				feb => "02",
+				mar => "03",
+				apr => "04",
+				may => "05",
+				jun => "06",
+				jul => "07",
+				aug => "08",
+				sep => "09",
+				oct => "10",
+				nov => "11",
+				dec => "12" );
+
+			$month = $month_numbers{$eprint->{month}};
+		}
+
+		$tags{date} = "$year-$month-01";
+		$tags{type} = EPrints::MetaInfo::get_eprint_type_name(
+			$eprint->{type} );
+		$tags{identifier} = $eprint->static_page_url();
+
+		return( %tags );
 	}
-	
-	# Abstract
-	$tags{abstract} = $eprint->{abstract};
-
-	# Comment
-	$tags{comment} = $eprint->{comment} if( defined $eprint->{comment} );
-	
-	# Date for discovery. For a month/day we don't have, assume 01.
-	my $year = $eprint->{year};
-	my $month = "01";
-
-	if( defined $eprint->{month} )
+	else
 	{
-		my %month_numbers = (
-			unspec => "01",
-			jan => "01",
-			feb => "02",
-			mar => "03",
-			apr => "04",
-			may => "05",
-			jun => "06",
-			jul => "07",
-			aug => "08",
-			sep => "09",
-			oct => "10",
-			nov => "11",
-			dec => "12" );
-	
-		$month = $month_numbers{$eprint->{month}};
+		return( undef );
 	}
-	
-	$tags{discovery} = "$year-$month-01";
-
-	return( %tags );
 }
 
 

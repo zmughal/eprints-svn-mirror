@@ -33,7 +33,7 @@ use strict;
 
 
 # GLOBAL SITE REVISION NUMBER
-$EPrints::Session::eprints_software_version = "Beta-2";
+$EPrints::Session::eprints_software_version = "Development version";
 
 
 ######################################################################

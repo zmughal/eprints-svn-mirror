@@ -29,10 +29,13 @@ use strict;
 ######################################################################
 
 # Name for the site
-$EPrintSite::SiteInfo::sitename = "Generic EPrint Archive";
+$EPrintSite::SiteInfo::sitename = "Eprints";
 
 # E-mail address for automatic administration account
 $EPrintSite::SiteInfo::automail = "MUST CHANGE";
+
+# Short text description
+$EPrintSite::SiteInfo::description = "Generic Eprint Archive";
 
 # E-mail address for human-read administration mail
 $EPrintSite::SiteInfo::admin = "MUST CHANGE";
@@ -192,8 +195,8 @@ $EPrintSite::SiteInfo::default_user_order = "by surname";
 #  See lib/Citation.pm for information on how to specify this.
 %EPrintSite::SiteInfo::thread_citation_specs =
 (
-	"succeeds"   => "{title} ({datestamp})",
-	"commentary" => "{authors}. {title}. ({datestamp})"
+	"succeeds"   => "{title} (deposited {datestamp})",
+	"commentary" => "{authors}. {title}. (deposited {datestamp})"
 );
 
 
@@ -286,6 +289,26 @@ $EPrintSite::SiteInfo::default_delete_reason =
 "could not be accepted into $EPrintSite::SiteInfo::sitename.\n\n\n\n".
 "The eprint has been deleted.\n";
 
+#  Agreemnt text, for when user completes the depositing process.
+#  Set to "undef" if you don't want it to appear.
+$EPrintSite::SiteInfo::deposit_agreement_text =
+	"<P><EM><STRONG>If the work is being deposited by an author:</STRONG>".
+	"I hereby grant $EPrintSite::SiteInfo::sitename the right to store this ".
+	"collection of files and associated bibiliographic metadata and to make ".
+	"them permanently available publicly on-line. I declare that this material ".
+	"is my own intellectual property and I understand that ".
+	"$EPrintSite::SiteInfo::sitename does not assume any responsibility if ".
+	"there is any breach of copyright in distributing these files or ".
+	"metadata.</EM></P>\n".
+	"<P><EM><STRONG>If the work is a public domain work being deposited by a ".
+	"second party:</STRONG> I hereby declare that the collection of files and ".
+	"associated bibiliographic metadata that I am archiving at ".
+	"$EPrintSite::SiteInfo::sitename is in the public domain. I accept full ".
+	"responsibility for any breach of copyright that distributing these files ".
+	"or metadata may entail.</EM></P><P>Clicking on the <STRONG>deposit".
+	"</STRONG> button below indicates your agreement of these terms.</STRONG>".
+	"</P>";
+
 
 ######################################################################
 #
@@ -341,6 +364,11 @@ $EPrintSite::SiteInfo::diskspace_warn_threshold = 512000;
 	"TARGZ"
 );
 
+
+# Executables for unzip and wget
+$EPrintSite::SiteInfo::unzip_executable = "unzip";
+$EPrintSite::SiteInfo::wget_executable = "wget";
+
 # Command lines to execute to extract files from each type of archive.
 # Note that archive extraction programs should not ever do any prompting,
 # and should be SILENT whatever the error.  _DIR_ will be replaced with the 
@@ -350,7 +378,7 @@ $EPrintSite::SiteInfo::diskspace_warn_threshold = 512000;
 # if everything went OK, non-zero in the case of any error.
 %EPrintSite::SiteInfo::archive_extraction_commands =
 (
-	"ZIP"   => "/usr/bin/unzip 1>/dev/null 2>\&1 -qq -o -d _DIR_ _ARC_",
+	"ZIP"   => "$EPrintSite::SiteInfo::unzip_executable 1>/dev/null 2>\&1 -qq -o -d _DIR_ _ARC_",
 	"TARGZ" => "gunzip -c < _ARC_ 2>/dev/null | /bin/tar xf - -C _DIR_ >/dev/null 2>\&1"
 );
 
@@ -376,7 +404,7 @@ $EPrintSite::SiteInfo::diskspace_warn_threshold = 512000;
 #  - start grabbing at _URL_
 #
 $EPrintSite::SiteInfo::wget_command =
-	"wget -r -L -q -m -nH -np --execute=\"robots=off\" --cut-dirs=_CUTDIRS_ _URL_";
+	"$EPrintSite::SiteInfo::wget_executable -r -L -q -m -nH -np --execute=\"robots=off\" --cut-dirs=_CUTDIRS_ _URL_";
 
 
 ######################################################################
@@ -386,7 +414,9 @@ $EPrintSite::SiteInfo::wget_command =
 ######################################################################
 
 # Command for sending mail
-$EPrintSite::SiteInfo::sendmail = "/usr/sbin/sendmail -oi -t -odb";
+$EPrintSite::SiteInfo::sendmail_executable = "/usr/sbin/sendmail";
+$EPrintSite::SiteInfo::sendmail =
+	"$EPrintSite::SiteInfo::sendmail_executable -oi -t -odb";
 
 # Database information: Since we hold the password here unencrypted, this
 # file should have suitable strict read permissions
@@ -408,8 +438,15 @@ $EPrintSite::SiteInfo::archive_identifier = "MUST CHANGE";
 # Exported metadata formats. The hash should map format ids to namespaces.
 %EPrintSite::SiteInfo::oai_metadata_formats =
 (
+	"dc"   => "http://www.openarchives.org/OAI/dc.xsd",
 	"oams" => "http://www.openarchives.org/sfc/sfc_oams.htm"
 );
+
+# Base URL of OAI
+$EPrintSite::SiteInfo::oai_base_url =
+	$EPrintSite::SiteInfo::server_perl."/oai-0.2";
+
+
 
 
 # Parameters for Dienst software: Required for now, but will not be required

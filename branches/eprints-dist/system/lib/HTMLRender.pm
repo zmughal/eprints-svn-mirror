@@ -75,6 +75,15 @@ my %monthnames =
 );
 
 
+# These are the types of input for which adding a * for "required" fields
+# is inappropriate.  E.g. it looks silly on a checkbox.
+
+my %no_asterisk =
+(
+	"boolean" => 1
+);
+
+
 ######################################################################
 #
 # new( $session, $offline)
@@ -106,17 +115,10 @@ sub new
 
 	foreach $n (@names)
 	{
-#EPrints::Log::debug( "HTMLRender", "Checking: $n" );
-		if( substr($n, 0, 5) eq "name_" )
-		{
-#EPrints::Log::debug( "HTMLRender", "In it goes" );
-			$self->{nameinfo}->{$n} = $self->{query}->param( $n );
-		}
-		if( substr($n, 0, 10) eq "name_more_" )
-		{
-#EPrints::Log::debug( "HTMLRender", "Name Button Pressed" );
-			$self->{namebuttonpressed} = 1;
-		}
+		$self->{nameinfo}->{$n} = $self->{query}->param( $n )
+			if( substr($n, 0, 5) eq "name_" );
+		
+		$self->{namebuttonpressed} = 1 if( substr($n, 0, 10) eq "name_more_" );
 	}
 	
 
@@ -146,8 +148,6 @@ sub start_html
 		$r->content_type( 'text/html' );
 		$r->send_http_header;
 	}
-
-#	$html .= "Content-Type: text/html\r\n\r\n" unless( $self->{offline} );
 
 	# Now the HTML itself.
 	$html .= $self->{query}->start_html(
@@ -201,6 +201,23 @@ sub url
 	my( $self ) = @_;
 	
 	return( $self->{query}->url() );
+}
+
+
+######################################################################
+#
+# $url = absolute url()
+#
+#  Returns the absolute URL of the current script (no http:// or
+#  query string)
+#
+######################################################################
+
+sub absolute_url
+{
+	my( $self ) = @_;
+	
+	return( $self->{query}->url( -absolute=>1 ) );
 }
 
 
@@ -408,10 +425,6 @@ sub input_field
 	
 	my $type = $field->{type};
 
-#	EPrints::Log::debug( "HTMLRender", "Rendering form for $field->{name} type $field->{type}" );
-#	EPrints::Log::debug( "HTMLRender", "type is $type" );
-#	EPrints::Log::debug( "HTMLRender", "Value I have is $value" );
-
 	my $html;
 
 	if( $type eq "text" || $type eq "url" || $type eq "email" )
@@ -591,8 +604,6 @@ sub input_field
 		# Get the names out
 		my @names = EPrints::Name::extract( $value );
 
-#EPrints::Log::debug( "HTMLRender", "input_field got $#names from $value" );
-
 		my $boxcount = $self->{nameinfo}->{"name_boxes_$field->{name}"};
 
 		if( defined $self->{nameinfo}->{"name_more_$field->{name}"} )
@@ -639,9 +650,6 @@ sub input_field
 		                                          	  "More Spaces" );
 			$html .= $self->hidden_field( "name_boxes_$field->{name}", $boxcount );
 			$html .= "</td>";
-
-#			$self->{query}->param( -name=>"name_boxes_$field->{name}",
-#			                       -value=>$boxcount );
 		}
 		
 		$html .= "</tr>\n</table>\n";
@@ -740,7 +748,10 @@ sub input_field_tr
 	my $html;
 
 	# Field name should have a star next to it if it is required
-	my $required_string = ( $field->{required} ? "*" : "" );
+	my $required_string = "";
+	$required_string = "*"
+		if( $field->{required} && !defined $no_asterisk{$field->{type}} );
+
 	my $colspan = ($show_names ? " COLSPAN=2" : "" );
 	my $align = ($show_names ? "" : " ALIGN=CENTER" );
 	
@@ -1053,8 +1064,6 @@ sub form_value
 		my $from = $self->param( "$field->{name}_from" );
 		my $to = $self->param( "$field->{name}_to" );
 
-#EPrints::Log::debug ( "HTMLRender", "from: $from  to: $to" );
-
 		if( !defined $to || $to eq "" )
 		{
 			$value = $from;
@@ -1084,7 +1093,7 @@ sub form_value
 	{
 		my @tags = $self->{query}->param( $field->{name} );
 
-		if( defined @tags )
+		if( scalar @tags > 0 )
 		{
 			$value = join ",", @tags;
 			$value = ":$value:";
@@ -1096,7 +1105,7 @@ sub form_value
 
 		my @tags = $self->{query}->param( $field->{name} );
 		
-		if( defined @tags )
+		if( scalar @tags > 0 )
 		{
 			$subject_list->set_tags( \@tags );
 
@@ -1168,42 +1177,6 @@ sub render_eprint_full
 
 	my $html = EPrintSite::SiteRoutines::eprint_render_full( $eprint,
 	                                                         $for_staff );
-
-	if( $for_staff )
-	{
-		my $additional_field = 
-			EPrints::MetaInfo::find_eprint_field( "additional" );
-		my $reason_field = EPrints::MetaInfo::find_eprint_field( "reasons" );
-
-		# Write suggested extra subject category
-		if( defined $eprint->{additional} )
-		{
-			$html .= "<TABLE BORDER=0 CELLPADDING=3>\n";
-			$html .= "<TR><TD><STRONG>$additional_field->{displayname}:</STRONG>".
-				"</TD><TD>$eprint->{additional}</TD></TR>\n";
-			$html .= "<TR><TD><STRONG>$reason_field->{displayname}:</STRONG>".
-				"</TD><TD>$eprint->{reasons}</TD></TR>\n";
-
-			$html .= "</TABLE>\n";
-		}
-	}
-			
-
-	my $succeeds_field = EPrints::MetaInfo::find_eprint_field( "succeeds" );
-	my $commentary_field = EPrints::MetaInfo::find_eprint_field( "commentary" );
-
-	# Threads
-	if( $eprint->in_thread( $succeeds_field ) )
-	{
-		$html .= "<h3>Available Versions of This Paper</h3>\n";
-		$html .= $self->write_version_thread( $eprint, $succeeds_field );
-	}
-	
-	if( $eprint->in_thread( $commentary_field ) )
-	{
-		$html .= "<h3>Commentary/Response Threads</h3>\n";
-		$html .= $self->write_version_thread( $eprint, $commentary_field );
-	}
 
 	return( $html );
 }
@@ -1295,8 +1268,6 @@ sub subject_tree
 {
 	my( $self, $subject ) = @_;
 
-#EPrints::Log::debug( "HTMLRender", "Called with subject $subject->{subjectid}" );
-	
 	my $opened_lists = 0;
 	my $html = "";
 	
@@ -1315,8 +1286,6 @@ sub subject_tree
 	{
 		$parent = pop @parents;
 		
-#EPrints::Log::debug( "HTMLRender", "Parent: $parent->{subjectid}" );
-
 		$html .= "<UL>\n<LI>".$self->subject_desc( $parent, 1, 0, 1 )."</LI>\n";
 		$opened_lists++;
 	}
@@ -1353,8 +1322,6 @@ sub subject_tree
 sub _render_children
 {
 	my( $self, $subject ) = @_;
-
-#EPrints::Log::debug( "HTMLRender", "_render_children: $subject->{subjectid}" );
 
 	my $html = "";
 	my @children = $subject->children();
@@ -1393,8 +1360,6 @@ sub subject_desc
 {
 	my( $self, $subject, $link, $full, $count ) = @_;
 	
-#EPrints::Log::debug( "HTMLRender", "subject_desc: $subject->{subjectid}" );
-
 	my $html = "";
 	
 	$html .= "<A HREF=\"$EPrintSite::SiteInfo::server_subject_view_stem"
@@ -1465,11 +1430,6 @@ sub _write_version_thread_aux
 	                                             $eprint,
 	                                             1 );
 
-
-#	EPrintSite::SiteRoutines::eprint_render_citation(
-#		$eprint,
-#		1 );
-	
 	# End of the link if appropriate
 	$html .= "</A>" if( $eprint->{eprintid} ne $eprint_shown->{eprintid} );
 
@@ -1496,6 +1456,53 @@ sub _write_version_thread_aux
 	
 	return( $html );
 }
+
+
+######################################################################
+#
+# $html = render_deleted_eprint( $deletion_record )
+#
+#  Render an appropriate error saying that the eprint the user is
+#  trying to access has been removed, and to point to the replacement
+#  if one exists.
+#
+######################################################################
+
+sub render_deleted_eprint
+{
+	my( $self, $deletion_record ) = @_;
+	
+	my $replacement_eprint;
+	
+	$replacement_eprint = new EPrints::EPrint(
+		$self->{session},
+		$EPrints::Database::table_archive,
+		$deletion_record->{replacement} )
+		if( defined $deletion_record->{replacement} );
+	
+	my $html = $self->start_html( "Eprint Removed" );
+	
+	$html .= "<P>You seem to be attempting to access an eprint that has been ".
+		"removed from the archive.</P>\n";
+	
+	if( defined $replacement_eprint )
+	{
+		$html .= "<P>There is a later version of the eprint you are trying to ".
+			"access:</P>\n<P ALIGN=CENTER>";
+
+		$html .= $self->render_eprint_citation(
+			$replacement_eprint,
+			1,
+			1 );
+		
+		$html .= "</P>\n";
+	}
+	
+	$html .= $self->end_html();
+
+	return( $html );
+}
+
 
 
 1; # For use/require success
