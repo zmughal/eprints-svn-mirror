@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+#!/usr/bin/perl -w -I/opt/ep2stable/perl_lib
 
 ######################################################################
 #
@@ -27,6 +27,8 @@ Import a set of subjects into an EPrints archive. The subjects are the heirarchi
 Use the staff admin subject editor for little tweaks. Use this command for the initial setup or bulk editing subjects. Use the exporter to dump the current subjects if you (an administrator) have edited them online.
 
 This script should also be run after B<create_tables>.
+
+Without the B<--force> option, this script asks for confirmation before actually erasing anything.
 
 =head1 ARGUMENTS
 
@@ -74,6 +76,10 @@ Instead of using colon sepearted subject file, the input file is in the XML form
 =item B<--nopurge>
 
 Do not purge the existing records from the subject table before importing this file. Rather than do this, it's probably easier to export the current subjects as XML, then combine in your new file and reimport it.
+
+=item B<--force>
+
+Don't ask before making the changes.
 
 =back   
 
