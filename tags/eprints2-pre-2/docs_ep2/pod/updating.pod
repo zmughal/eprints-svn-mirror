@@ -1,0 +1,272 @@
+=pod
+
+=head1
+Updating from EPrints2 alpha-1 to EPrints 2.0
+
+This path is not currently supported, as the software structure
+underwent fundamental changes. We recommend that you do a clean install of EPrints 2.0.
+
+=head1
+Updating from EPrints2 alpha-2 to EPrints 2.0
+
+=head2
+OAI configuration
+
+All OAI configuration in EPrints 2.0 has been moved into cfg/ArchiveOAIConfig.pm. The
+simplest upgrade path is:
+
+=over 8
+
+=item *
+
+Copy ArchiveOAIConfig.pm into the archive's cfg/ directory.
+
+=item *
+
+Transfer the OAI configuration items from ArchiveConfig.pm into ArchiveOAIConfig.pm
+
+=item *
+
+Add the following lines to ArchiveConfig.pm:
+
+C<< require "cfg/ArchiveOAIConfig.pm";
+$c->{oai} = get_oai_conf(); >>
+
+=back
+
+NB: OAI settings are now declared as C<< $oai->{some_setting} >>, as opposed to the
+C<< $c->{oai_some_setting} >> used in EPrints2 alpha-2.
+
+=head2
+Set configuration
+
+Set configuration is new in EPrints 2.0, and allows the harvesting of specific sets from
+the archive. These are defined in a similar style to browse_views. For example,
+
+C<< $oai->{sets} = [
+	{ id=>"subjects", allow_null=>0, fields=>"subjects" }
+]; >>
+
+[C] - moved the eprints to unqualified DC code in OAIConfig to its own
+function so that it can also be used to make metadata on abstract pages.
+[C] - OAI: Added "format" items to unqualified DC which give format &
+URL of that doc.
+
+=head2
+Metadata configuration
+
+Major change:
+The ID of the public security setting has changed from "public" to "". To update
+your tables, enter the following into MySQL:
+
+UPDATE document SET security='' WHERE security='public';
+
+This update makes it possible to use E<lt>ep:ifset name="security"E<gt> in the citations-E<lt>langE<gt>.xml files.
+
+The C<< make_metadata_oai_dc >> function is now available in ArchiveOAIConfig.pm. This
+converts an EPrint record into an unqualified Dublin Core DOM tree. To provide further
+flexibility for different metadata formats, three mappings are now provided: metadata_functions, metadata_namespaces, and metadata_schemas. More information about these is available in the core documentation.
+
+Finally, the title field (defined in ArchiveMetadataFieldsConfig.pm) is now a longtext
+field instead of a text field.
+
+NB: Qualified Dublin Core is currently unimplemented in EPrints 2.0, but is scheduled for
+a future release.
+
+=head2
+Rendering configuration
+
+All rendering functions have now been moved into ArchiveRenderConfig.pm.
+To transfer your existing functions:
+
+=over 8
+
+=item *
+
+Transfer ArchiveRenderConfig.pm into your archive's cfg/ directory.
+
+=item *
+
+Move eprint_render and user_render into this file.
+
+=item *
+
+Copy the two functions and name them C<< eprint_render_full >> and C<< user_render_full >>, respectively.
+
+=item *
+
+Remove the C<< $show_all >> parameter from the C<< my( $eprint, $session, $show_all
+) = @_; >> line in each function.
+
+=item *
+
+eprint_render_full and user_render_full should now be altered to behave as if C<< $show_all >> had been set to true.
+
+=item *
+
+eprint_render and user_render should now be altered to behave as if C<< $show_all >> had been set to false.
+
+=item *
+
+Insert the line C<< require "cfg/ArchiveRenderConfig.pm"; >> after the OAI require line in
+ArchiveConfig.pm.
+
+=back
+
+Updates since EPrints2-alpha are:
+
+=over 8
+
+=item *
+
+C<< render_eprint >> now optionally returns a 3rd value containing a list of metadata
+links. These links are put into the webpage header of the produced page.
+
+=item *
+
+eprint_render_short_title and user_display_name have now been moved from the
+ArchiveConfig.pm module to the citations XML file. 
+
+=item *
+
+id_label now returns an XHTML-DOM structure instead of a UTF-8 value.
+
+=item *
+
+The suggestions field is now given a border to make it more pronounced.
+
+=back
+
+=head2
+Validation configuration
+
+All validation methods have been moved to ArchiveValidateConfig.pm. To transfer your
+existing functions:
+
+=over 8
+
+=item *
+
+Transfer ArchiveValidateConfig.pm into your archive's cfg/ directory.
+
+=item *
+
+Insert the line C<< require "cfg/ArchiveValidateConfig.pm"; >> after the OAI require line
+in ArchiveConfig.pm.
+
+=back
+
+The following alterations have been made since alpha-2:
+
+=over 8
+
+=item *
+
+Bug-fix: The default field validator now handles multiple URL fields correctly.
+
+=item *
+
+A new function, C<< validate_document_meta >>, has been added to the
+ArchiveValidateConfig.pm module. This checks the metadata of a document.
+
+=back
+
+=head2
+Citation configuration
+
+NB: EPrints tags now use namespaces - so should be prefixed with "ep:". This helps
+to distinguish between XHTML and EPrints tags.
+
+Updates to the citations-E<lt>langE<gt>.xml structure are as follows:
+
+=over 8
+
+=item *
+
+citations-en.xml now includes document citations. These are defined as E<lt>ep:citation
+type="document_E<lt>typeE<gt>"E<gt>, where E<lt>typeE<gt> is the format. The citation gives advice on how to
+view the different file formats. Also, as of EPrints2 "other" and "coverimage" are valid
+types.
+
+=item *
+
+It is now possible to create generic citations with no type
+attribute. These are useful for short or one-line descriptions.
+
+=item *
+
+A default subject citation has been created. This has the type attribute set to "subject".
+
+=item *
+
+Document links are now defined with surrounding E<lt>ep:linkhereE<gt> tags. For example,
+E<lt>ep:linkhereE<gt>viewE<lt>/ep:linkhereE<gt>.
+
+=back
+
+=head2
+Template/Statics updates
+
+=over 8
+
+=item *
+
+The template file now has the title set to text-only (using textonly="yes").
+
+=item *
+
+The static pages have been cleaned up, and the the information has been updated to bring
+it into line with the EPrints2 status.
+
+=item *
+
+An extra entity, &ruler, has been added to the entities.dtd file. This currently inserts
+an E<lt>hr /E<gt> tag, but could be updated to use graphical separators.
+
+=back
+
+=head2
+General configuration updates
+
+=over 8
+
+=item *
+
+displaylines has been renamed to input_rows throughout.
+
+=item *
+
+A section has been added to ArchiveConfig.pm that sets default values for field
+properties. The currently defined defaults are: input_rows (see above), input_cols,
+input_name_cols, input_id_cols, input_add_boxes, input_boxes, and digits.
+
+=item *
+
+The input_rows property of the month field has been set to 1. This produces a pull-down
+menu instead of the previous list.
+
+=item *
+
+Five new options are available to browse views: noindex, nohtml, include, plain, and
+citation. An example of their use is in ArchiveConfig.pm.
+
+=item *
+
+The username and userid fields have been added to user_search_fields in ArchiveConfig.pm.
+As such, it is now possible to search for users by their username or ID number.
+
+=item *
+
+It is now possible to enable or disable VLit (Xanadu) support in the ArchiveConfig module.
+To achieve this, set C<< $c->{enable_vlit_support} >> to 1 or 0.
+
+=item *
+
+System variable phrases have been transferred from the archive phrase file to the system phrase file.
+
+=back
+
+=cut
+
+[C] - removed "nowrapper" opt from views conf: now does no <p> wrapper round
+citations if using custom citation.

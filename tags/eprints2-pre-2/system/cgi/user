@@ -1,0 +1,23 @@
+######################################################################
+#
+#  View User Record (Public)
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints::Session;
+use EPrints::UserPage;
+
+my $session = new EPrints::Session;
+
+EPrints::UserPage::process( $session, 0 );
+
+$session->terminate();
+

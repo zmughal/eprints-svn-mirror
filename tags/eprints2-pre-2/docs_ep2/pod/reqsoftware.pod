@@ -1,0 +1,166 @@
+=head1 What software does EPrints 2.0 need? Where do I get it?
+
+EPrints now bundles some perl modules which it uses, to save you installing them. 
+
+The key requirements are: Perl, Apache with mod_perl, MySQL and the perl module XML::Parser (which in turn needs expat) and the perl module for MySQL DBI support (which requires mysql headers and libraries).
+
+Suggestions to improve these instructions are welcome. 
+
+=head1 Where to get the Required Software From
+
+It's up to you, we have found that installing from source is more effective than RPM's, feel free to use RPMs if you prefer but we've had more problems that way. The best place to get a software tool is the official site, but we've put a mirror of versions known to work at: http://www.eprints.org/files/tools/
+
+=head1 Apache/mod_perl
+
+Tested on: apache 1.3.14 with mod_perl 1.25
+
+The Apache HTTP server was designed as a plug-in replacement for the NCSA server (version 1.4). It fixes numerous bugs in the NCSA server, and includes many new features - including an API to make user extension easier. EPrints requires Apache to be configured with mod_perl, as this allows Apache modules that are entirely written in perl, hence providing much improved efficiency.
+
+http://httpd.apache.org/dist/httpd/
+
+Required modules: mod_perl and mod_rewrite
+
+=head2 Apache with mod_perl Installation
+
+=over 4
+
+=item Download Modperl and apache sources
+
+=item Make mod_perl, I use this command (in the modperl src dir):
+
+ perl Makefile.PL APACHE_PREFIX=/usr/local/apache \
+ APACHE_SRC=../apache-1.3.14/src DO_HTTPD=1 USE_APACI=1 \
+ PERL_AUTHEN=1 PERL_AUTHZ=1 ADD_MODULE=rewrite
+
+=item Make and install apache. From the apache src dir, I use:
+
+ make
+ make install
+
+=back
+
+( mod perl should have already done the ./configure for us. )
+
+
+
+=head1 MySQL
+
+Tested on: 3.23.29a-gamma
+
+Install a recent version of MySQL 3. You will need the .h and library files later to install the MySQL perl module. (more help in later version of docs). MySQL 4 is due soon, but we are not making plans to support it yet.
+
+=head1 Perl 5.6
+
+EPrints is currently begin developed with perl 5.6.1, there are currently no plans for a perl 6 version.
+
+Some perl modules are shipped with the eprints package, others must be installed by you.
+
+
+
+=head2 Installing a Perl Module
+
+This describes the way to simple perl module, some require a bit more effort. We will use DBI as an example.
+
+=head2 How to install a Perl Module
+
+=over 8
+
+=item Unpack the archive:
+
+ tar xzvf DBI-1.14.tar.gz
+
+=item Enter the directory this creates:
+
+ cd DBI-1.14
+
+=item Run the following commands:
+
+ perl Makefile.PL
+ make
+ make test
+ make install
+
+=back
+
+
+=head2 Required Perl Modules
+
+=over 4
+
+=item B<CGI>
+
+Should be installed by default. Tested with: v2.752
+
+=item B<Data::Dumper>
+
+This module is used by the installer, and for debugging. It should be easy to install. Tested with: v2.101 and v2.102
+
+=item B<DBI>
+
+The generic database connection module. No known issues with installation. Tested with: v1.14
+
+=item B<Msql-Mysql modules>
+
+Tested with: v1.2215
+
+This one can be difficult. It requires access to .h and library files from MySQL. I install MySQL from source first, but some installs of MySQL don't put the lib and include dirs where this module expects. 
+The answer to the first question is that you only need MySQL support.
+
+=item B<Filesys::DiskSpace>
+
+Tested with: v0.05
+
+This is an annoying little module as it requires some system headers to be created. If it gives you trouble try the following:
+
+Fixing Filesys::DiskSpace (Linux)
+
+ cd /usr/include
+ h2ph * sys/*
+
+Fixing Filesys::DiskSpace (Solaris)
+
+ cd /usr/include
+ h2ph asm/* bits/*
+
+=item B<Unicode::String>
+
+Used for Unicode support. No known problems.  Tested with v2.06
+
+=item B<URI>
+
+Used for processing URL strings. No known problems. Tested with v1.10
+
+=item B<Apache::AuthDBI>
+
+Allows apache to authenticate users from a database table, via modperl and DBI. The package is called ApacheDBI. Tested with v0.87
+
+=item B<XML::Parser>
+
+Tested with v2.30
+
+Used to parse XML files. Requres the B<expat library>. A .tar.gz and a RedHat Linux RPM are available in the tools dir on eprints.org.
+
+=back
+
+=head1 Other Tools
+
+=head2 File uploads
+
+B<wget>, B<tar>, B<gunzip> and B<unzip> are required to allow users to upload files as .tar.gz or .zip or to captures them from a URL.
+
+These all come installed with most modern versions of linux. If you can get them working, you can remove the option by edditing "archive_formats" in SystemSettings.pm
+
+Tested with wget 1.6.
+
+If there are problems you may need to tweak how these are invoked in SystemSettings.pm
+
+
+=head2 Latex Tools
+
+There is an optional feature which allows you to set eprints to look in certain fields (eg. title and abstract) for stuff which looks like latex equations and display it as an image of that equation instead. These tools are only required if you want to use this feature.
+
+B<latex>, B<dvips> and B<convert> (convert is part of "imagemagick"). These all ship with RedHat Linux. 
+
+This is a "cosmetic" feature, it only affects the rendering of information, so you can always add it later if you want to save time initially.
+
+
