@@ -24,7 +24,10 @@ my $session = new EPrints::Session;
 Apache::exit( 0 ) unless( defined $session );
 
 my $url = $session->get_archive->get_conf( "perl_url" )."/search/advanced";
-$url.= "?".$session->get_request->args;
+if( $session->get_request->args )
+{
+	$url.= "?".$session->get_request->args;
+}
 $session->redirect( $url );
 
 $session->terminate;

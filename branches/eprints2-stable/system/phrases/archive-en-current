@@ -288,7 +288,8 @@
     <ep:phrase ref="user_fieldopt_os_other">Other</ep:phrase>
 
     <ep:phrase ref="user_fieldname_hideemail">Hide Email</ep:phrase>
-    <ep:phrase ref="user_fieldhelp_hideemail">Select this item if you do not wish your email to be displayed on public pages. The EPrints administrators will still be able to see it.</ep:phrase>
+    <ep:phrase ref="user_fieldhelp_hideemail">This option allows or prevents a users email being shown on their public summary page.</ep:phrase>
+    <ep:phrase ref="user_radio_hideemail"><ep:pin ref="false" />Make email visible to all.<br /><ep:pin ref="true" />Hide email to all except archive administrators.</ep:phrase>
 
 
     <ep:phrase ref="user_fieldname_dept">Department</ep:phrase>

@@ -71,7 +71,7 @@ elsif( $newlang eq "" )
 			lang=>$session->make_text( EPrints::Config::lang_title( 
 				$session->get_archive()->get_conf( "defaultlanguage" ) ) ) ) );
 	$page->appendChild( $session->html_phrase( "cgi/set_lang:cache_warning" ) );
-	if( EPrints::Utils::is_set( $referer ) )
+	if( 0 && EPrints::Utils::is_set( $referer ) )
 	{
 		$page->appendChild( $session->html_phrase( "cgi/set_lang:back_to_lastpage",
 			link => $session->render_link( $referer ) ) );
@@ -94,7 +94,7 @@ elsif( grep(/^$newlang$/,@langids) )
 			lang=>$session->make_text( EPrints::Config::lang_title( 
 				$session->get_archive()->get_conf( "defaultlanguage" ) ) ) ) );
 	$page->appendChild( $session->html_phrase( "cgi/set_lang:cache_warning" ) );
-	if( EPrints::Utils::is_set( $referer ) )
+	if( 0 && EPrints::Utils::is_set( $referer ) )
 	{
 		$page->appendChild( $session->html_phrase( "cgi/set_lang:back_to_lastpage",
 			link => $session->render_link( $referer ) ) );

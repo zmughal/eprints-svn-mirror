@@ -499,6 +499,26 @@ sub get_field
 	return $self->{field_index}->{$fieldname};
 }
 
+######################################################################
+=pod
+
+=item $bool = $ds->has_field( $fieldname )
+
+True if the dataset has a field of that name.
+
+=cut
+######################################################################
+
+sub has_field
+{
+	my( $self, $fieldname ) = @_;
+
+	# magic fields which can be searched but do
+	# not really exist.
+	return 1 if( $fieldname =~ m/^_/ );
+	
+	return defined $self->{field_index}->{$fieldname};
+}
 
 ######################################################################
 =pod

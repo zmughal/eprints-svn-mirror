@@ -443,26 +443,21 @@ $c->{search}->{advanced} =
 	page_size => 33
 };
 
-$c->{search}->{dave} = 
+$c->{search}->{mike} = 
 {
 	search_fields => [
-		{ meta_fields => [ "title" ] }
-	],
-	filters => [
-		{ 
-			meta_fields => [ "creators" ],
-			value => "harris"
-		}
+		{ meta_fields => [ "name" ] },
+		{ meta_fields => [ "depositable" ] }
 	],
 	preamble_phrase => "cgi/advsearch:preamble",
 	title_phrase => "cgi/advsearch:adv_search",
-	citation => "neat",
-	default_order => "byyear",
-	page_size => 33
+	dataset_id => "subject"
 };
-
-
-
+$c->{order_methods}->{subject} =
+{
+	"byname" 	 =>  "name",
+	"byrevname"	 =>  "-name" 
+};
 
 # Fields used for specifying a subscription
 $c->{subscription_fields} =

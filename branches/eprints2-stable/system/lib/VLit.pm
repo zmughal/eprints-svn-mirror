@@ -34,8 +34,7 @@ if you object to it for some reason.
 package EPrints::VLit;
 
 use CGI;
-use Apache;
-use Apache::Constants ':common';
+use EPrints::AnApache;
 use Digest::MD5;
 use FileHandle;
 

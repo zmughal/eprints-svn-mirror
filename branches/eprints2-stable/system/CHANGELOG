@@ -1707,4 +1707,25 @@ PACKAGE: 2.2.99.2
  - Added code to upgrade database to v2.3
  - Added "contact" page to statics, rather than email on all pages.
 
+2003-11-25 cjg
+
+ - [c] Added demo subject search. remove it or comment it out before
+    release.
+ - [c] hideemail is now a radio button not a checkbox
+ - Added AnApache.pm which decides if it should "use" Apache or Apache2.
+    it also loads related libraries for that mod_perl. All calls to
+    use Apache now replaced with use EPrints::AnApache
+ - disabled buggy return-to-previous on set_lang
+ - generate_apacheconf now uses correct v1/v2 modperl registry module
+ - s/apache_version/apache/
+ - Added release version of paracite code.
+ - Added $dataset->has_field 
+ - Used it to make paracite cgi script use authors or creators - whichever.
+ - Added new CGI script /users/search which does ALL staffmode searches. This
+    replaces both eprint_search and user_search
+ - Added some missing phrases
+ - Improved examples for date search
+ - Deprecated links to user_search & eprints_search. Scripts now just
+    forward to /users/search 
+
 ======================================================================

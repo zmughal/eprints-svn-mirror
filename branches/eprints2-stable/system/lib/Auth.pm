@@ -35,18 +35,10 @@ package EPrints::Auth;
 use strict;
 
 use Apache::AuthDBI;
-use Apache::Constants qw( OK AUTH_REQUIRED FORBIDDEN DECLINED SERVER_ERROR );
+use EPrints::AnApache;
 
 use EPrints::Session;
 use EPrints::SystemSettings;
-
-my $av =  $EPrints::SystemSettings::conf->{apache_version};
-my $ReqWrapper = "EPrints::RequestWrapper";
-if( defined $av && $av eq "2" )
-{
-	$ReqWrapper = "EPrints::RequestWrapper2";
-}
-eval "require $ReqWrapper"; if( $@ ) { die $@; }
 
 
 ######################################################################
@@ -138,7 +130,7 @@ sub authen
 	# {handler} should really be removed before passing authconfig
 	# to the requestwrapper. cjg
 
-	my $rwrapper = $ReqWrapper->new( $r , $authconfig );
+	my $rwrapper = $EPrints::AnApache::RequestWrapper->new( $r , $authconfig );
 	my $result = &{$handler}( $rwrapper );
 	$session->terminate();
 	return $result;

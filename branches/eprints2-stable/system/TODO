@@ -14,19 +14,16 @@ Big New Features
 
 General
  * "Disable" option for core XML file
- * FIlters in browseviews
  * deleted eprints in search results: put placeholder to say
    they've gone? or filter against archive?
 Bugs
+ * set_lang (return to previous page bug)
+ * lose Citaiton. Move over to "ParaTools"
  * Handling of undef in subpages in views
  * remove CGI.pm from vlit
  * More fields in Userform should generate a sort-of-problem.
- * Error in phrase at top of user seatrch
- * FULLTEXT Phrase
  * import_xml NOTEXISTS apparent error (really a warning)
- * hideemail into non-checkbox
  * Warn on 0byte uploads
- * Users can use staff search
  * FULL TEXT (disable option)
  * fileinfo does not handle paths correctly
  * can't change username?
@@ -34,27 +31,29 @@ Bugs
  * author with name " " is not treated as null in input
  * not stripping " " of start & end in input?
  * Investigate: (subjects_self->{merge})(ANY)
+
 Pre-release issues
  * nestids in subjects -> just plain stupid?
-Render
-CmdLine
 Submission
  * "Save for later" needs different text in staff edit
  * Confusing Cancel button in submission form (files section)
 Views
- * Make views use filters. 
  * clean up browse views and write better comments around the
    config
 UserArea
+
+2.3.1
  * Status looks crap.. tidy it up
  * make status page show indexer on/off
+ * Make views use filters. 
  * make better edit/control page?
  * move staff utils to new page?
-BibTeX
-Local
 
+Local
  * ECS: edit
  * main+tardis: USer info includes Password YES/NO & Pending...
+
+
 
 More Vague 
  * remove STDERR prints/make them ->log() instead
@@ -282,3 +281,7 @@ CGI Tools
  * Metafield undef from config bug.
  * GRANT ALTER ON ep2stable.* TO ep2stable@localhost; in update!
  * lose email in template: make contact page.
+ * Error in phrase at top of user seatrch
+ * FULLTEXT Phrase
+ * hideemail into non-checkbox
+ * Users can use staff search

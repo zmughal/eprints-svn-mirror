@@ -68,7 +68,7 @@ use EPrints::Subject;
 use EPrints::Document;
 
 use Unicode::String qw(utf8 latin1);
-use Apache;
+use EPrints::AnApache;
 use Apache::Cookie;
 
 use URI::Escape;
@@ -225,7 +225,7 @@ sub get_session_language
 #print STDERR "DEBUG: ".$apr->param("stage")."\n";
 
 	# Second choice is cookie
-	my $cookies = Apache::Cookie->fetch; #hash ref
+	my $cookies = Apache::Cookie->fetch( $request ); #hash ref
 	my $cookie = $cookies->{$archive->get_conf( "lang_cookie_name")};
 	if( defined $cookie )
 	{

@@ -472,8 +472,10 @@ END
 	my $function = "EPrints::Config::".$id."::get_conf";
 	my $config = &{$function}( $info );
 
+	##########################################################
+	#
 	# Change old search configs into 2.2 format...
-	# cjg (could even translate default etc.)
+	#
 
 	foreach my $stype ( "simple", "advanced" )
 	{
@@ -528,6 +530,23 @@ END
 			$config->{search}->{$stype}->{"search_fields"} = \@sfields;
 		}
 	}
+
+	if( !defined $config->{"search"}->{"users"} )
+	{
+		$config->{search}->{"users"} = {
+			title_phrase => "cgi/users/user_search:simple_search",
+			preamble_phrase => "cgi/users/user_search:preamble",
+			staff => 1,
+			dataset_id => "user",
+			fieldnames => $config->{"user_search_fields"}
+		};
+	}
+
+	#
+	# End of search format hacks 
+	#
+	##########################################################
+
 
 	return $config;
 }

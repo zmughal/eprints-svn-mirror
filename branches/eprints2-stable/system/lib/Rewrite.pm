@@ -1,8 +1,8 @@
 
 
 package EPrints::Rewrite;
-  
-use Apache::Constants ':response';
+
+use EPrints::AnApache;  
 use Apache::Request;
 
 use EPrints::Session;

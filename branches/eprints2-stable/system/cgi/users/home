@@ -128,14 +128,14 @@ my $tools = [
 	{
 		location=>"staff",
 		code=>"staff_eprint_search",
-		page=>"staff/eprint_search",
+		page=>"search",
 		priv=>"staff-view"
 	},
 	### Staff User Search
 	{
 		location=>"staff",
 		code=>"staff_user_search",
-		page=>"staff/user_search",
+		page=>"search/users",
 		priv=>"staff-view"
 	},
 	### Add New User

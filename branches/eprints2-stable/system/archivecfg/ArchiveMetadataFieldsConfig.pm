@@ -54,7 +54,7 @@ $fields->{user} = [
 
 	{ name => "country", type => "text" },
 
-	{ name => "hideemail", type => "boolean" },
+	{ name => "hideemail", type => "boolean", input_style=>"radio" },
 
 	{ name => "os", type => "set", input_rows => 1,
 		options => [ "win", "unix", "vms", "mac", "other" ] },

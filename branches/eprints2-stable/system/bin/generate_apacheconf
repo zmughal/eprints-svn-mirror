@@ -203,7 +203,7 @@ PerlRequire $startupfile
 
 END
 
-my $av =  $EPrints::SystemSettings::conf->{apache_version};
+my $av =  $EPrints::SystemSettings::conf->{apache};
 if( defined $av && $av eq "2" )
 {
 	# apache 2
@@ -430,6 +430,16 @@ END
 	}
 }
 
+my $registry_module;
+if( $av eq "1" ) 
+{
+	$registry_module = "Apache::Registry";
+}
+else # apache 2
+{
+	$registry_module = "ModPerl::Registry";
+}
+
 print CONF <<END;
   <Directory "$htdocs_path">
     AddType 'text/html; charset=UTF-8' .html
@@ -437,7 +447,7 @@ print CONF <<END;
 
   <Directory "$cgidir">
     SetHandler perl-script
-    PerlHandler Apache::Registry
+    PerlHandler $registry_module
     PerlSendHeader Off
     Options ExecCGI
   </Directory>
@@ -454,7 +464,7 @@ my $secureconfig = <<END;
     require valid-user
 
     SetHandler perl-script
-    PerlHandler Apache::Registry
+    PerlHandler $registry_module
     PerlSendHeader Off
     Options ExecCGI
   </Directory>

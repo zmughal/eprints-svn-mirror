@@ -883,6 +883,12 @@ sub process_webpage
 {
 	my( $self ) = @_;
 
+	if( $self->{staff} && !$self->{session}->auth_check( "staff-view" ) )
+	{
+		$self->{session}->terminate();
+		Apache::exit( 0 );
+	}
+
 	my $pagesize = $self->{page_size};
 
 	my $preamble;

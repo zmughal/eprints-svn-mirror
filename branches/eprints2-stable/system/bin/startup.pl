@@ -18,21 +18,10 @@ print STDERR "EPRINTS: Loading Core Modules\n";
 
 use Carp qw(verbose);
 
-BEGIN
-{
-	use EPrints::SystemSettings;
-	my $av =  $EPrints::SystemSettings::conf->{apache_version};
-	if( defined $av && $av eq "2" )
-	{
-        	eval 'use Apache2; use Apache::compat;'; die $@ if $@;
-	}
-}
+use EPrints::AnApache;
 
 use Apache::DBI;
 #$Apache::DBI::DEBUG = 3;
-use Apache::Registry;
-
-
 
 $ENV{MOD_PERL} or EPrints::Utils::abort( "not running under mod_perl!" );
 
