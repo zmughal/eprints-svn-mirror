@@ -424,7 +424,6 @@ sub send_mail
 	{
 		$mail_func = \&send_mail_via_sendmail;
 	}
-$mail_func = \&send_mail_via_smtp;
 
 	&{$mail_func}( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname );
 }	

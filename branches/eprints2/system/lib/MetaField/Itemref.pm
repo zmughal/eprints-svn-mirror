@@ -1,5 +1,9 @@
 ######################################################################
 #
+# EPrints::MetaField::Itemref;
+#
+######################################################################
+#
 #  __COPYRIGHT__
 #
 # Copyright 2000-2008 University of Southampton. All Rights Reserved.
@@ -7,10 +11,34 @@
 #  __LICENSE__
 #
 ######################################################################
-#
-# This is some functions used by both Itemrefint and Itemreftext 
-#
-######################################################################
+
+=pod
+
+=head1 NAME
+
+B<EPrints::MetaField::Itemref> - Reference to an object with an "int" type of ID field.
+
+=head1 DESCRIPTION
+
+not done
+
+=over 4
+
+=cut
+
+package EPrints::MetaField::Itemref;
+
+use strict;
+use warnings;
+
+BEGIN
+{
+	our( @ISA );
+
+	@ISA = qw( EPrints::MetaField::Int );
+}
+
+use EPrints::MetaField::Int;
 
 sub get_property_defaults
 {
@@ -79,6 +107,7 @@ sub get_input_elements
 
 	return $ex;
 }
+
 
 
 

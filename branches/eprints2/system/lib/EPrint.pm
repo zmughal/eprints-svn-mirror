@@ -33,7 +33,7 @@ metadata fields (plus those defined in ArchiveMetadataFieldsConfig:
 
 The unique numerical ID of this eprint. 
 
-=item userid (itemrefint)
+=item userid (itemref)
 
 The id of the user who deposited this eprint (if any). Scripted importing
 could cause this not to be set.
@@ -51,17 +51,17 @@ The date this record was last modified.
 
 The type of this record, one of the types of the "eprint" dataset.
 
-=item succeeds (itemrefint)
+=item succeeds (itemref)
 
 The ID of the eprint (if any) which this succeeds.  This field should have
 been an int and may be changed in a later upgrade.
 
-=item commentary (itemrefint)
+=item commentary (itemref)
 
 The ID of the eprint (if any) which this eprint is a commentary on.  This 
 field should have been an int and may be changed in a later upgrade.
 
-=item replacedby (itemrefint)
+=item replacedby (itemref)
 
 The ID of the eprint (if any) which has replaced this eprint. This is only set
 on records in the "deletion" dataset.  This field should have
@@ -114,7 +114,7 @@ sub get_system_field_info
 	# may not provide this info. maybe bulk importers should
 	# set a userid of -1 or something.
 
-	{ name=>"userid", type=>"itemrefint", 
+	{ name=>"userid", type=>"itemref", 
 		datasetid=>"user", required=>0 },
 
 	{ name=>"dir", type=>"text", required=>0 },
@@ -124,13 +124,13 @@ sub get_system_field_info
 	{ name=>"type", type=>"datatype", datasetid=>"eprint", required=>1, 
 		input_rows=>"ALL" },
 
-	{ name=>"succeeds", type=>"itemrefint", required=>0,
+	{ name=>"succeeds", type=>"itemref", required=>0,
 		datasetid=>"eprint" },
 
-	{ name=>"commentary", type=>"itemrefint", required=>0,
+	{ name=>"commentary", type=>"itemref", required=>0,
 		datasetid=>"eprint" },
 
-	{ name=>"replacedby", type=>"itemrefint", required=>0,
+	{ name=>"replacedby", type=>"itemref", required=>0,
 		datasetid=>"eprint" },
 
 	);

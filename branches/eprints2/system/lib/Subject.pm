@@ -82,10 +82,10 @@ sub get_system_field_info
 
 		{ name=>"name", type=>"text", required=>1, multilang=>1 },
 
-		{ name=>"parents", type=>"itemreftext", required=>1, 
+		{ name=>"parents", type=>"text", required=>1, 
 			datasetid=>"subject", multiple=>1 },
 
-		{ name=>"ancestors", type=>"itemreftext", required=>0, 
+		{ name=>"ancestors", type=>"text", required=>0, 
 			datasetid=>"subject", multiple=>1,
 			export_as_xml=>0 },
 

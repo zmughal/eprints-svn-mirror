@@ -2257,3 +2257,31 @@ PACKAGE: 2.2.99.2
 02/03/2005 - EPRINTS-2.3.10
 ======================================================================
 
+2005-03-04 cjg
+
+ - Added flag to let us know when mod_perl has finished loading perl
+    modules. Without this errors in startup are sent to the web
+    request, except there isn't one.
+ - [c] Reversed order of years on the browse by year menu page.
+ - [#78] Added two new fieldtypes "Itemrefint" and "Itemreftext" which 
+    each reference objects in the system. They work in the same way 
+    but subclass "int" and "text" respecively so that "int" fields 
+    can be searched logically. They use a require'd file to include 
+    the same subroutines in both packages (slightly easier than 
+    multiple inheritance)
+ - Improved error message for missing required field properties 
+ - Added new method to dataset: get_object which takes an ID and
+    returns an object in the dataset with that id.
+ - itemrefutils was not loading correctly. Now uses a "do" with
+    the full path.
+ - All Sub-classes of DataObj now use itemrefint and itemreftext
+    where appropriate. (not for their OWN Id's though).
+ - EPrint->new() without a dataset now searches all four datasets,
+    before it used to skip deletion for some reason.
+
+2005-03-08 cjg
+
+ - Renamed "itemrefint" to "itemref" and removed "itemreftext" for 
+    now. Hopefully we won't need it.
+ - Combined itemrefutils into Itemref
+ - Renamed itemrefint to itemref throughout

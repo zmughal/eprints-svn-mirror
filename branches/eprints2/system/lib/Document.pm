@@ -37,7 +37,7 @@ number within that eprint.
 This should probably have been and "int" but isn't. I later version
 of EPrints may change this.
 
-=item eprintid (itemrefint)
+=item eprintid (itemref)
 
 The id number of the eprint to which this document belongs.
 
@@ -124,7 +124,7 @@ sub get_system_field_info
 	( 
 		{ name=>"docid", type=>"text", required=>1 },
 
-		{ name=>"eprintid", type=>"itemrefint",
+		{ name=>"eprintid", type=>"itemref",
 			datasetid=>"eprint", required=>1 },
 
 		{ name=>"format", type=>"datatype", required=>1, 
