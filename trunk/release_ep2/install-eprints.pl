@@ -73,6 +73,8 @@ DIR
 my $dirokay = 0;
 my $dir = "";
 my $upgrade = 0;
+my $orig_version = "";
+my $orig_version_desc = "";
 while (!$dirokay)
 {
 	$dir = get_string('[\/a-zA-Z0-9_]+', "Directory", "/opt/eprints");
@@ -81,9 +83,11 @@ while (!$dirokay)
 	{
 		if (-e "$dir/perl_lib/EPrints/SystemSettings.pm")
 		{
-			require "$dir/perl_lib/EPrints/SystemSettings.pm" or die("WAAAAAAH!");
-			print "Required\n";
-			print $EPrints::SystemSettings::conf;	
+			require "$dir/perl_lib/EPrints/SystemSettings.pm" or die("Unable to detect SystemSettings module: Corrupt prevous install?");
+			my $old_version = $EPrints::SystemSettings::conf{"version"};
+			$systemsettings{"orig_version"} = $EPrints::SystemSettings::conf{"orig_version"};
+			$systemsettings{"orig_version_desc"} = $EPrints::SystemSettings::conf{"orig_version_desc"};
+			
 			# Handle versions
 			print <<UPGRADE;
 You already have a version of EPrints installed in this directory which is
