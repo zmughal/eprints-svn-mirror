@@ -25,6 +25,9 @@
 	# the contents of /etc/ld.so.conf if running under Linux.
 	library_paths		=> "/lib:/usr/lib/:/usr/local/lib/",
 
+	temp_dir		=> "/tmp",
+	installer_dir		=> undef,
+
 	# System-specific
 	add_group		=> "/usr/sbin/groupadd",
 	add_user		=> "/usr/sbin/useradd",
@@ -78,21 +81,28 @@
 	},
 	# Bigger packages
 	{
-		name		=> "apache",
-		min_version	=> "1.3.14",
-		search_string	=> "apache_([0-9]+)\.([0-9]+)\.([0-9]+)\.tar\.gz",
-		long_name	=> "Apache web server",
-		description	=> "HTTP server designed as a plug-in replacement for the NCSA server version 1.4. It fixes numerous bugs in the NCSA server and includes many frequently requested new features, and has an API which allows it to be extended to meet users' needs more easily.",
-		check_method	=> "standardcheck httpd /home/httpd/bin:/usr/local/apache/bin:/utc/httpd/bin",
+		name		=> "apachemodperl",
+		min_version	=> "0.0.1",
+		search_string	=> "apachemodperl-([0-9]+)\.([0-9]+)\.([0-9]+)\.tar\.gz",
+		long_name	=> "Apache/mod_perl",
+		description	=> "The juicest blend of the Apache HTTP server and the mod_perl embedded Perl interpreter. EPrints - using only the finest ingredients :o)",
 	},
-	{
-		name		=> "modperl",
-		min_version	=> "1.25",
-		search_string	=> "mod_perl-([0-9]+)\.([0-9]+)\.tar\.gz",
-		long_name	=> "mod_perl Apache Perl interpreter",
-		description	=> "mod_perl links the Perl runtime library into the Apache server, allowing Apache modules written entirely in Perl. The persistent embedded interpreter avoids the overhead of starting an external interpreter and the penalty of Perl start-up (compile) time.",
-		check_method	=> "perlcheck mod_perl",
-	},
+#	{
+#		name		=> "apache",
+#		min_version	=> "1.3.14",
+#		search_string	=> "apache_([0-9]+)\.([0-9]+)\.([0-9]+)\.tar\.gz",
+#		long_name	=> "Apache web server",
+#		description	=> "HTTP server designed as a plug-in replacement for the NCSA server version 1.4. It fixes numerous bugs in the NCSA server and includes many frequently requested new features, and has an API which allows it to be extended to meet users' needs more easily.",
+#		check_method	=> "standardcheck httpd /home/httpd/bin:/usr/local/apache/bin:/utc/httpd/bin",
+#	},
+#	{
+#		name		=> "modperl",
+#		min_version	=> "1.25",
+#		search_string	=> "mod_perl-([0-9]+)\.([0-9]+)\.tar\.gz",
+#		long_name	=> "mod_perl Apache Perl interpreter",
+#		description	=> "mod_perl links the Perl runtime library into the Apache server, allowing Apache modules written entirely in Perl. The persistent embedded interpreter avoids the overhead of starting an external interpreter and the penalty of Perl start-up (compile) time.",
+#		check_method	=> "perlcheck mod_perl",
+#	},
 	{
 		name		=> "mysql",
 		min_version	=> "3.23.39",
@@ -374,6 +384,10 @@ sub wget_check
 	return 0;
 }
 
+sub apachemodperl_check
+{
+}
+
 sub eprints_check
 {
         return 0;
@@ -381,63 +395,86 @@ sub eprints_check
 
 # Custom package install methods
 
-sub apache_install
+sub apachemodperl_install
 {
 	my($package) = @_;
-        $currdir = getcwd();
-        chdir decompress($package->{archive});
-	print "Configuring	...";
-	`./configure --enable-module=rewrite --enable-module=auth`;
+	$currdir = getcwd();
+	$pkgroot = decompress($package->{archive});
+	chdir "$pkgroot/modperl";
+	print "Configuring		...";
+	protect("perl Makefile.PL");
 	print "	Done.\n";
-	print "Making		...";
-	`$ENVIRONMENT{make} 2>&1 1>/dev/null`;
+	print "Making			...";
+	protect("$ENVIRONMENT{make}");
 	print "	Done.\n";
-	`$ENVIRONMENT{make} install`;
+	print "Installing mod_perl	...";
+	protect("$ENVIRONMENT{make}");
+	print "	Done.\n";
 	chdir $currdir;
-	return 1;
+	chdir "$pkgroot/apache";
+	print "Installing apache	...";
+	protect("$ENVIRONMENT{make} install");
+	print "	Done.\n";
+	chdir $currdir;	
 }
 
-sub modperl_install
-{
-	# FIXME
-	my($package) = @_;
- 	$currdir = getcwd();
-        chdir decompress($package->{archive});
-        print "Configuring	...";
-	`echo "EVERYTHING=1 DO_HTTPD=1" > makepl_args.mod_perl`;
-	`perl Makefile.PL`;
-	print "	Done.\n";
-	print "Making		...";
-	`$ENVIRONMENT{make} 2>&1 1>/dev/null`;
-	print "	Done.\n";
-	`$ENVIRONMENT{make} install`;
-	chdir $currdir;
-	return 1;
-}
+#sub apache_install
+#{
+#	my($package) = @_;
+#        $currdir = getcwd();
+#        chdir decompress($package->{archive});
+#	print "Configuring		...";
+#	`./configure --enable-module=rewrite --enable-module=auth`;
+#	print "	Done.\n";
+#	print "Making			...";
+#	`$ENVIRONMENT{make} 2>&1 1>/dev/null`;
+#	print "	Done.\n";
+#	`$ENVIRONMENT{make} install`;
+#	chdir $currdir;
+#	return 1;
+#}
+
+#sub modperl_install
+#{
+#	# FIXME
+#	my($package) = @_;
+# 	$currdir = getcwd();
+#        chdir decompress($package->{archive});
+#        print "Configuring		...";
+#	`echo "EVERYTHING=1 DO_HTTPD=1" > makepl_args.mod_perl`;
+#	`perl Makefile.PL`;
+#	print "	Done.\n";
+#	print "Making			...";
+#	`$ENVIRONMENT{make} 2>&1 1>/dev/null`;
+#	print "	Done.\n";
+#	`$ENVIRONMENT{make} install`;
+#	chdir $currdir;
+#	return 1;
+#}
 
 sub mysql_install
 {
 	my($package) = @_;
 	$currdir = getcwd();
 	chdir decompress($package->{archive});
-	print "Adding users	...";
-	`$ENVIRONMENT{add_group} mysql`;
-	`$ENVIRONMENT{add_user} -g mysql mysql`;
+	print "Adding users		...";
+	protect("$ENVIRONMENT{add_group} mysql");
+	protect("$ENVIRONMENT{add_user} -g mysql mysql");
 	print "	Done.\n";
-	print "Configuring	...";
-	`./configure --prefix=/usr/local/mysql`;
+	print "Configuring		...";
+	protect("./configure --prefix=/usr/local/mysql");
 	print "	Done.\n";
-	print "Making		...";
-	`$ENVIRONMENT{make}`;
+	print "Making			...";
+	protect("$ENVIRONMENT{make}");
 	print "	Done.\n";
-	print "Installing	...";
-	`$ENVIRONMENT{make} install`;
+	print "Installing		...";
+	protect("$ENVIRONMENT{make} install");
 	print "	Done.\n";
-	print "Installing DB	...";
-	`scripts/mysql_install_db`;
+	print "Installing DB		...";
+	protect("scripts/mysql_install_db");
 	print "	Done.\n";
 
-	print "Setting groups	...";
+	print "Setting groups		...";
 	# Get uid/gids
 	(undef, undef, $ruid, $rgid) = getpwnam("root") or 
 		fail_nicely("Root user not found.");
@@ -461,8 +498,8 @@ sub mysql_install
 
 	print "	Done.\n";
 
-	print "Starting up	...";
-	`cp support-files/my-medium.cnf /etc/my.cnf`;
+	print "Starting up		...";
+	protect("cp support-files/my-medium.cnf /etc/my.cnf");
 	system("/usr/local/mysql/bin/safe_mysqld --user=mysql &");
 	print "	Done.\n";
 	chdir $currdir;
@@ -474,9 +511,9 @@ sub eprints_install
 	my($package) = @_;
 	$currdir = getcwd();
 	chdir "eprints";
-	`./configure`;
-	`$ENVIRONMENT{make}`;
-	`$ENVIRONMENT{make} install`;
+	protect("./configure");
+	protect("$ENVIRONMENT{make}");
+	protect("$ENVIRONMENT{make} install");
 	chdir $currdir;
 	return 1;
 }
