@@ -125,7 +125,7 @@ sub do_package
 	opendir(PHRSDIR, "$originaldir/export/eprints/system/phrases");
 	while($item = readdir(PHRSDIR))
 	{
-		if (-d $item || $item =~ /^\./) { next; }	
+		if (-d $item || $item =~ /^\./ ) { next; }	
 		push(@files, $item);
 	}
 	closedir(PHRSDIR);
@@ -171,7 +171,8 @@ sub do_package
 			system("cp $originaldir/export/eprints/system/phrases/archive-en-$enarch eprints/phrases/archive-phrases-$l.xml");
 		}
 	}
-
+	system("cp $originaldir/export/eprints/system/cgi/users/.htaccess eprints/cgi/users/.htaccess");
+	system("cp $originaldir/install-eprints.pl eprints/install-eprints.pl");
 	system("chmod -R g-w eprints")==0 or die("Couldn't change permissions on eprints dir.\n");
 	system("mv eprints $package_file")==0 or die("Couldn't move eprints dir to $package_file.\n");
 	system("tar czf ../$package_file.tar.gz $package_file")==0 or die("Couldn't tar up $package_file");

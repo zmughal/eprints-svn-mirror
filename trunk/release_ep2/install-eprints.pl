@@ -27,7 +27,34 @@ here.
 
 DIR
 
-my $dir = get_string("Directory", "/opt/eprints");
+my $dirokay = 0;
+my $dir = "";
+while (!$dirokay)
+{
+	$dir = get_string('[\/a-zA-Z0-9_]+', "Directory", "/opt/eprints");
+	
+	if (-e $dir)
+	{
+		if (-e "$dir/VERSION")
+		{
+			# Handle versions 
+		}
+		else
+		{
+			print <<DIRWARN;
+This directory already exists, and does not appear to contain a version
+of EPrints. Do you really want to install in here?
+
+DIRWARN
+		my $conf = get_yesno("Sure?", "n");
+		if ($conf eq "y") { $dirokay = 1; }	
+		}
+	}
+	else
+	{
+		$dirokay = 1;
+	}
+}
 print <<USER;
 EPrints must be run as a non-root user (typically 'eprints').
 Please specify the user that you wish to use, or press enter to use
@@ -35,7 +62,7 @@ the default.
 
 USER
 
-my $user = get_string("User", "eprints");
+my $user = get_string('[a-zA-Z0-9_]+', "User", "eprints");
 
 # Check to see if user exists.
 my $exists = 1;
@@ -50,7 +77,7 @@ before it can be created. Please specify the group you would like
 to use.
 
 GROUP
-	$group = get_string("Group", "eprints");
+	$group = get_string('[a-zA-Z0-9_]+', "Group", "eprints");
 	my $gexists = 1;
 	getgrnam($group) or $gexists = 0;
 
@@ -83,7 +110,7 @@ GROUP
 }
 
 print "\nMaking directory...";
-if (!mkdir($dir))
+if (!-d $dir && !mkdir($dir))
 {
 	print "Failed!\n";
 	print "Unable to make installation directory.\n";
@@ -108,7 +135,6 @@ foreach(@normal_dirs)
 	install($_, 0644, $uid, $gid, $dir);
 }
 
-
 sub install
 {
 	my($dir, $perms, $user, $group, $dest) = @_;
@@ -119,14 +145,13 @@ sub install
 	mkdir("$dest/$dir", 0755);
 	while(my $item = readdir(INDIR))
 	{
-		if ($item =~ /^\./) { next; }
+		if ($item =~ /^\./ && $item ne ".htaccess" ) { next; }
 		if (-d "$currdir/$dir/$item") { push(@dirs, $item); }
 		else { push(@files, $item); }
 	}
 	closedir(INDIR);
 	foreach(@files)
 	{
-		print "Install $_\n";
 		open(INFILE, "$currdir/$dir/$_");
 		open(OUTFILE, ">$dest/$dir/$_") or die "Can't write to $dest/$dir/$_";
 		while(my $line=<INFILE>)
@@ -135,27 +160,49 @@ sub install
 		}		
 		close(OUTFILE);
 		close(INFILE);
-		chmod($perms, "$dest/$dir/$_");
+		if ($_ ne ".htaccess")
+		{
+			chmod($perms, "$dest/$dir/$_");
+		}
+		else
+		{
+			chmod(0644, "$dest/$dir/$_");
+		}
 		chown($user, $group, "$dest/$dir/$_");
-		# Copy and stuff.
 	}
 	foreach(@dirs)
 	{
-		print "Go into $_\n";
-		
 		install("$dir/".$_, $perms, $user, $group, $dest);
 	}
 }
 
-sub get_string
+sub get_yesno
 {
 	my($question, $default) = @_;
 	my($response) = "";
-	
-	print "$question [$default] :";
+
+	# Sanity check
+	unless ($default =~ /[yn]/i) { $default = "n"; }
+	print "$question [$default] ";
 	# Get response and set to default if necessary.
 	$response = <STDIN>;
 	chomp($response);
-	if ($response eq "") { $response = $default; }
+	if ($response !~ /[yn]/i) { $response = $default; }
+
+	return $response;
+}
+
+sub get_string
+{
+	my($regexp, $question, $default) = @_;
+	my($response) = "";
+	do
+	{
+		print "$question [$default] :";
+		# Get response and set to default if necessary.
+		$response = <STDIN>;
+		chomp($response);
+		if ($response eq "") { $response = $default; }
+	} while ($response !~ m/^$regexp$/);
 	return $response;
 }
