@@ -1345,5 +1345,24 @@ before next release. (metadata types & fields)
     added new module RequestWrapper2 which Auth will use if directed.
     now does some 1.3/2.0 specific stuff in generate_apacheconf
 
+2003-06-24 cjg
+
+ - [c] New config option to OAIRender {mime_types} to map the document
+    types to mime types for the dublin core conversion.
+ - [c] EPrint->Unqualified Dublin Core now more or less follows Andy
+    Powell's recommendations.
+ - [c] removed place of publication from converence_item (it's not
+    published!)
+ - Fixed bug in $dataobj->get_value which didn't strip the id's as
+    requested on "mainpart" fields.
+ - bugfix: moving an eprint to the deletion buffer deleted the abstract
+    but didn't replace it with the deleted message.
+ - fixed a warning in $field->render_value for dates.
+ - Added a search function to the subject browse input method.
+ - Internal buttons now only count as pressed if they are set to 
+    something other than an empty string.
+ - If a problem occurs in submission form then the problem gets name="t"
+    which should override whichever field currently wants focus
+ 
 
 ======================================================================

@@ -178,6 +178,14 @@ $oai->{comments} = [
 		"http://www.eprints.org/" ) 
 ];
 
+$oai->{mime_types} = {
+	pdf => "application/pdf",
+	ps => "application/postscript",
+	html => "text/html",
+	other => "application/octet-stream",
+	ascii => "text/plain"
+};
+
 return $oai; }
 
 ######################################################################
@@ -324,8 +332,7 @@ sub eprint_to_unqualified_dc
 	my $creators = $eprint->get_value( "creators", 1 );
 	if( defined $creators )
 	{
-		my $creator;
-		foreach $creator ( @{$creators} )
+		foreach my $creator ( @{$creators} )
 		{
 			push @dcdata, [ "creator", EPrints::Utils::make_name_string( $creator ) ];
 		}
@@ -342,49 +349,59 @@ sub eprint_to_unqualified_dc
 
 	push @dcdata, [ "description", $eprint->get_value( "abstract" ) ]; 
 
-	## Date for discovery. For a month/day we don't have, assume 01.
-	my $year = $eprint->get_value( "date_effective" );
+	push @dcdata, [ "publisher", $eprint->get_value( "publisher" ) ]; 
 
-	if( defined $year )
+	my $editors = $eprint->get_value( "editors", 1 );
+	if( defined $editors )
 	{
-		# no point mentioning the date without a year.
-
-		my $month;
-
-		if( $eprint->is_set( "month" ) )
+		foreach my $editor ( @{$editors} )
 		{
-			my %month_numbers = (
-				jan  =>  "01", feb  =>  "02", mar  =>  "03",
-				apr  =>  "04", may  =>  "05", jun  =>  "06",
-				jul  =>  "07", aug  =>  "08", sep  =>  "09",
-				oct  =>  "10", nov  =>  "11", dec  =>  "12" );
-	
-			$month = $month_numbers{$eprint->get_value( "month" )};
+			push @dcdata, [ "contributor", EPrints::Utils::make_name_string( $editor ) ];
 		}
-
-		$month = "01" if( !defined $month );
-		
-		push @dcdata, [ "date", "$year-$month-01" ];
 	}
+
+	## Date for discovery. For a month/day we don't have, assume 01.
+	my $date = $eprint->get_value( "date_effective" );
+        $date =~ s/(-0+)+$//;
+	push @dcdata, [ "date", $date ];
+
 
 	my $ds = $eprint->get_dataset();
 	push @dcdata, [ "type", $ds->get_type_name( $session, $eprint->get_value( "type" ) ) ];
+	
+	my $ref = "NonPeerReviewed";
+	if( $eprint->get_value( "refereed" ) eq "TRUE" )
+	{
+		$ref = "PeerReviewed";
+	}
+	push @dcdata, [ "type", $ref ];
+
 
 	# The identifier is the URL of the abstract page.
 	# possibly this should be the OAI ID, or both.
 	push @dcdata, [ "identifier", $eprint->get_url() ];
 
-	# Export the type and URL of each actual document, this
-	# is far from ideal, but DC offers no easy solution to
-	# this. This information is potentially very useful to
-	# citation linking systems, so better to have it than not.
 
 	my @documents = $eprint->get_all_documents();
+	my $mimetypes = $session->get_archive->get_conf( "oai", "mime_types" );
 	foreach( @documents )
 	{
-		push @dcdata, [ "format", $_->get_value( "format" )." ".$_->get_url() ];
+		my $format = $mimetypes->{$_->get_value("format")};
+		$format = "application/octet-stream" unless defined $format;
+		push @dcdata, [ "format", $format ];
+		push @dcdata, [ "relation", $_->get_url() ];
 	}
-		
+
+	if( $eprint->is_set( "official_url" ) )
+	{
+		push @dcdata, [ "relation", $eprint->get_value( "official_url" ) ];
+	}
+	
+	# dc.language not handled yet.
+	# dc.source not handled yet.
+	# dc.coverage not handled yet.
+	# dc.rights not handled yet.
+
 	return @dcdata;
 }
 

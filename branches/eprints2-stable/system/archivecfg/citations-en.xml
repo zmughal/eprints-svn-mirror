@@ -62,7 +62,6 @@ In:
 <ep:ifset name="date_effective">(@date_effective;res=Y@)</ep:ifset>
 <ep:linkhere><em>@title;magicstop@</em></ep:linkhere>
 In: @event_title@<ep:ifset name="event_dates">, @event_dates</ep:ifset><ep:ifset name="event_location">, @event_location</ep:ifset>.
-@publisher@<ep:ifset name="place_of_pub">, @place_of_pub</ep:ifset><ep:ifset name="pagerange">, @pagerange@</ep:ifset>.
 <ep:ifnotmatch name="ispublished" value="pub"> (@ispublished@)</ep:ifnotmatch>
 </span></ep:citation>
 

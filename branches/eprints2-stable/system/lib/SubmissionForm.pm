@@ -2294,6 +2294,8 @@ sub _render_problems
 	# List the problem(s)
 
 	$p = $self->{session}->make_element( "p" );
+	my $a = $self->{session}->make_element( "a", name=>"t" );
+	$p->appendChild( $a );
 	if( defined $before )
 	{
 		$p->appendChild( $before );

@@ -125,7 +125,6 @@
       <field name="title" required="yes" />
       <field name="date_issue" />
       <field name="date_sub" />
-      <field name="place_of_pub" />
       <field name="pages" />
       <field name="pres_type" required="yes" />
       <field name="official_url" />

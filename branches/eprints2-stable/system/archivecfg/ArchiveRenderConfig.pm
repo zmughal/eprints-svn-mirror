@@ -340,7 +340,7 @@ sub eprint_render_full
 	}
 
 	my $unspec_fields = $session->make_doc_fragment;
-	$unspec_first = 1;
+	my $unspec_first = 1;
 
 	# Show all the other fields
 	$page->appendChild( $session->html_phrase( 

@@ -85,11 +85,14 @@ EPrints Modules
     <ep:phrase ref="lib/metafield:join_datatype">, </ep:phrase>
     <ep:phrase ref="lib/metafield:join_search"> <strong>OR</strong> </ep:phrase>
 
-    <ep:phrase ref="lib/metafield:subject_browser"><div class="subject_browser_selections"><table><tr><td valign="top">Selections:</td><td><ep:pin ref="selections" /></td></tr></table></div><div class="subject_browser_opts"><ep:pin ref="opts" /></div></ep:phrase>
+    <ep:phrase ref="lib/metafield:subject_browser"><div class="subject_browser_selections"><table><tr><td valign="top">Selections:</td><td><ep:pin ref="selections" /></td></tr></table></div><div class="subject_browser_search"><ep:pin ref="search" /></div><div class="subject_browser_opts"><ep:pin ref="opts" /></div></ep:phrase>
     <ep:phrase ref="lib/metafield:subject_browser_none">none</ep:phrase>
     <ep:phrase ref="lib/metafield:subject_browser_remove"> [<ep:pin ref="link">remove</ep:pin>]</ep:phrase>
     <ep:phrase ref="lib/metafield:subject_browser_add"> [<ep:pin ref="link">add</ep:pin>]</ep:phrase>
     <ep:phrase ref="lib/metafield:subject_browser_expandable">...</ep:phrase>
+    <ep:phrase ref="lib/metafield:subject_browser_search">Quick Search: <ep:pin ref="input" /></ep:phrase>
+    <ep:phrase ref="lib/metafield:subject_browser_search_results"><p>Search Results:</p><ep:pin ref="results" /><p><ep:pin ref="browse">browse tree</ep:pin></p></ep:phrase>
+    <ep:phrase ref="lib/metafield:subject_browser_no_matches"><p>No matches</p></ep:phrase>
 
 
 
@@ -268,6 +271,7 @@ Enter a URL to capture a file from: <ep:pin ref="url" /><br />
     <ep:phrase ref="lib/submissionform:title_fileview">Document File Upload</ep:phrase>
     <ep:phrase ref="lib/submissionform:title_upload">Document File Upload</ep:phrase>
     <ep:phrase ref="lib/submissionform:title_verify">Deposit Verification</ep:phrase>
+    <ep:phrase ref="lib/submissionform:title_quickverify">Deposit Verification</ep:phrase>
     <ep:phrase ref="lib/submissionform:title_done">Completed Deposit</ep:phrase>
     <ep:phrase ref="lib/submissionform:title_error">Error</ep:phrase>
     <ep:phrase ref="lib/submissionform:title_return">Go to Author's Home</ep:phrase>

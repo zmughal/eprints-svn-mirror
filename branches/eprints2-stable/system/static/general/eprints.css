@@ -197,7 +197,7 @@ body.vlit {
 	color: #c00000;
 }
 
-.subject_browser_opts, .subject_browser_selections
+.subject_browser_opts, .subject_browser_selections, .subject_browser_search
 {
 	margin-left: 1em;
 	margin-right: 1em;

@@ -1974,7 +1974,7 @@ sub internal_button_pressed
 
 		foreach $p ( $self->param() )
 		{
-			if( $p =~ m/^_internal/ )
+			if( $p =~ m/^_internal/ && EPrints::Utils::is_set( $self->param($p) ) )
 			{
 				$self->{internalbuttonpressed} = 1;
 				last;
