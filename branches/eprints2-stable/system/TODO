@@ -1,14 +1,3 @@
-perl -MCPAN -e 'install Proc::Reliable'
-perl -MCPAN -e 'install Unicode::Normalize'
-ICONS!
-cp /opt/eprints2/defaultcfg/static/general/images/*.png /opt/eprints2/archives/akt/cfg/static/general/images
-indexer warning
-generate_views warning (subheadings not defined)
-
-UPGRADE
- * Proc/Reliable?? (Harrys code)
- * libapreq
- * apache/mod_perl compile.
 
 Big New Features
  * Modular Controls [2.4]
@@ -19,6 +8,9 @@ Big New Features
  * APACHE2.0
  * SOAP
 
+
+ * make quicksearch from frontpage as part of release.
+ * make FILTERS have non exact option.
 General
  * "Disable" option for core XML file
  * deleted eprints in search results: put placeholder to say
@@ -43,7 +35,6 @@ Pre-release issues
  * nestids in subjects -> just plain stupid?
 Submission
  * "Save for later" needs different text in staff edit
- * Confusing Cancel button in submission form (files section)
 Views
  * clean up browse views and write better comments around the
    config

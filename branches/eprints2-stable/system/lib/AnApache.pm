@@ -28,7 +28,6 @@ Plus functions to paper over the cracks between the two interfaces.
 =over 4
 
 =cut
-######################################################################
 
 package EPrints::AnApache;
 
@@ -53,6 +52,42 @@ if( defined $av && $av eq "2" )
 	eval "require ModPerl::Registry"; if( $@ ) { die $@; }
 	eval "require Apache::Const; import Apache::Const;"; if( $@ ) { die $@; }
 	$EPrints::AnApache::RequestWrapper = "EPrints::RequestWrapper2"; 
+
+# hjm Thu Nov 27 16:08:35 GMT 2003
+# This is a workaround for what is apparently a bug in libapreq2-2.02-dev which
+# truncates uploads at around 700K. This should use the bb interface when this
+# bug is fixed.
+
+	eval '
+
+		sub upload_doc_file
+		{
+			my( $session, $document, $paramid ) = @_;
+		
+			require CGI;
+
+			my $cgi = CGI->new;
+		
+			return $document->upload( 
+				$cgi->upload( $paramid ), 
+				$cgi->param( $paramid ) );	
+		}
+
+		sub upload_doc_archive
+		{
+			my( $session, $document, $paramid, $archive_format ) = @_;
+
+			require CGI;
+
+			my $cgi = CGI->new;
+		
+			return $document->upload_archive( 
+				$cgi->upload( $paramid ), 
+				$cgi->param( $paramid ), 
+				$archive_format );	
+		}
+	';
+	
 }
 else
 {
@@ -62,38 +97,39 @@ else
 	eval "require Apache::Registry"; if( $@ ) { die $@; }
 	eval "require Apache::Constants; "; if( $@ ) { die $@; }
 	$EPrints::AnApache::RequestWrapper = "EPrints::RequestWrapper"; 
+	eval '
 
-	sub OK { &Apache::Constants::OK; }
-	sub AUTH_REQUIRED { &Apache::Constants::AUTH_REQUIRED; }
-	sub FORBIDDEN { &Apache::Constants::FORBIDDEN; }
-	sub DECLINED { &Apache::Constants::DECLINED; }
-	sub SERVER_ERROR { &Apache::Constants::SERVER_ERROR; }
-	sub NOT_FOUND { &Apache::Constants::NOT_FOUND; }
-	sub DONE { &Apache::Constants::DONE; }
+		sub OK { &Apache::Constants::OK; }
+		sub AUTH_REQUIRED { &Apache::Constants::AUTH_REQUIRED; }
+		sub FORBIDDEN { &Apache::Constants::FORBIDDEN; }
+		sub DECLINED { &Apache::Constants::DECLINED; }
+		sub SERVER_ERROR { &Apache::Constants::SERVER_ERROR; }
+		sub NOT_FOUND { &Apache::Constants::NOT_FOUND; }
+		sub DONE { &Apache::Constants::DONE; }
 
-	sub upload_doc_file
-	{
-		my( $session, $document, $paramid ) = @_;
-	
-		my $upload = $session->get_apr->upload( $paramid );
-	
-		return $document->upload( 
-			$upload->fh, 
-			$upload->filename );	
-	}
+		sub upload_doc_file
+		{
+			my( $session, $document, $paramid ) = @_;
+		
+			my $upload = $session->get_apr->upload( $paramid );
+		
+			return $document->upload( 
+				$upload->fh, 
+				$upload->filename );	
+		}
 
-	sub upload_doc_archive
-	{
-		my( $session, $document, $paramid, $archive_format ) = @_;
+		sub upload_doc_archive
+		{
+			my( $session, $document, $paramid, $archive_format ) = @_;
 
-		my $upload = $session->get_apr->upload( $paramid );
-	
-		return $document->upload_archive( 
-			$upload->fh, 
-			$upload->filename, 
-			$archive_format );	
-	}
-
+			my $upload = $session->get_apr->upload( $paramid );
+		
+			return $document->upload_archive( 
+				$upload->fh, 
+				$upload->filename, 
+				$archive_format );	
+		}
+	';
 }
 
 

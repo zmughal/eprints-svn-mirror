@@ -7,6 +7,10 @@ Mike Jewell - http://www.mikesroom.org/
 Pre-release testing. The initial versions of scripts for creating and 
 installing an EPrints version 2 package. Some coding assistance.
 
+Harry Mason
+Testing. Document to text conversion wrappers. Document icons. Apache 2.0 
+support.
+
 Robert Tansley
 Creator of EPrints 1 on which EPrints 2 is based.
 
@@ -15,9 +19,6 @@ Assistance in writing the "configure" script for the installer.
 
 Gui Power 
 Adapting the online help for version 2.
-
-Harry Mason
-Testing. Document to text conversion wrappers. Document icons.
 
 TARDIS Project
 Jessie Hey - http://www.ecs.soton.ac.uk/info/people/jmnh

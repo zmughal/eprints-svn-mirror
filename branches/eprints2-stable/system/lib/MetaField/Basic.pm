@@ -295,7 +295,8 @@ sub get_input_elements
 					$arrows->appendChild( $session->make_element(
 						"input",
 						type=>"image",
-						src=> $session->get_archive->get_conf( "base_url" )."/images/up.png",
+						alt=>"up",
+						src=> $session->get_archive->get_conf( "base_url" )."/images/multi_up.png",
                 				name=>"_internal_".$self->{name}."_up_$i",
 						value=>"1" ));
 				}
@@ -303,7 +304,8 @@ sub get_input_elements
 				{
 					$arrows->appendChild( $session->make_element(
 						"img",
-						src=> $session->get_archive->get_conf( "base_url" )."/images/up_dim.png" ));
+						alt=>"up",
+						src=> $session->get_archive->get_conf( "base_url" )."/images/multi_up_dim.png" ));
 				}
 				$arrows->appendChild( $session->make_element( "br" ) );
 				if( 1 )
@@ -311,7 +313,8 @@ sub get_input_elements
 					$arrows->appendChild( $session->make_element(
 						"input",
 						type=>"image",
-						src=> $session->get_archive->get_conf( "base_url" )."/images/down.png",
+						src=> $session->get_archive->get_conf( "base_url" )."/images/multi_down.png",
+						alt=>"down",
                 				name=>"_internal_".$self->{name}."_down_$i",
 						value=>"1" ));
 				}
@@ -319,7 +322,8 @@ sub get_input_elements
 				{
 					$arrows->appendChild( $session->make_element(
 						"img",
-						src=> $session->get_archive->get_conf( "base_url" )."/images/down_dim.png" ));
+						alt=>"down",
+						src=> $session->get_archive->get_conf( "base_url" )."/images/multi_down_dim.png" ));
 				}
 				$lastcol = { el=>$arrows, valign=>"middle" };
 			}

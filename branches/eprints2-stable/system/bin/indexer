@@ -28,6 +28,7 @@ B<indexer> status [B<options>]
 =head1 DESCRIPTION
 
 ???
+
 =over 8
 
 =item B<archiveid> 
@@ -276,7 +277,7 @@ while( 1 )
 			my $session;
 			$SIG{TERM} = sub { 
 				print "indexer jnr exiting $$\n" if( $noise > 1 );
-				$index->dispose if( defined $index );
+				$index->cleanup if( defined $index );
 				$session->terminate if( defined $session );
 				exit;
 			};
@@ -300,7 +301,7 @@ while( 1 )
 				$index->create;
 				$index->build;
 				$index->install;
-				$index->dispose;
+				$index->cleanup;
 				undef $index;
 			}
 

@@ -234,19 +234,22 @@ sub get_session_language
 
 	my $accept_language = $request->header_in( "Accept-Language" );
 
-	# Middle choice is exact browser setting
-	foreach my $browser_lang ( split( /, */, $accept_language ) )
+	if( defined $accept_language )
 	{
-		$browser_lang =~ s/;.*$//;
-		push @prefs, $browser_lang;
-	}
-
-	# Next choice is general browser setting (so fr-ca matches
-	#	'fr' rather than default to 'en')
-	foreach my $browser_lang ( split( /, */, $accept_language ) )
-	{
-		$browser_lang =~ s/-.*$//;
-		push @prefs, $browser_lang;
+		# Middle choice is exact browser setting
+		foreach my $browser_lang ( split( /, */, $accept_language ) )
+		{
+			$browser_lang =~ s/;.*$//;
+			push @prefs, $browser_lang;
+		}
+	
+		# Next choice is general browser setting (so fr-ca matches
+		#	'fr' rather than default to 'en')
+		foreach my $browser_lang ( split( /, */, $accept_language ) )
+		{
+			$browser_lang =~ s/-.*$//;
+			push @prefs, $browser_lang;
+		}
 	}
 		
 	# last choice is always...	

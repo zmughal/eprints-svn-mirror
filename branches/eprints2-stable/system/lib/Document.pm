@@ -917,7 +917,7 @@ name $filename.
 =cut
 ######################################################################
 
-sub add_archive
+sub add_file
 {
 	my( $self, $file, $filename ) = @_;
 

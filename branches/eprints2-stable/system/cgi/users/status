@@ -223,7 +223,6 @@ foreach my $ds_id ( sort @ds_ids )
 			$session,
 			$session->make_text( $ds_id ),
 			$session->make_text( $index->get_last_timestamp ) ) );
-	$index->dispose;
 }
 
 $session->build_page( 

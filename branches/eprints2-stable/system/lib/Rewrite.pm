@@ -56,7 +56,16 @@ sub handler
 	}
 
 	$uri =~ s#^/archive/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])#/archive/$1/$2/$3/$4#;
-	$r->filename( $archive->get_conf( "htdocs_path" )."/".$lang.$uri );
+
+	# apache 2 does not automatically look for index.html so we have to do it ourselves
+	if( $uri =~ m#/$# )
+	{
+		$r->filename( $archive->get_conf( "htdocs_path" )."/".$lang.$uri."index.html" );
+	}
+	else
+	{
+		$r->filename( $archive->get_conf( "htdocs_path" )."/".$lang.$uri );
+	}
 
 	return OK;
 }

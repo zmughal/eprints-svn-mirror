@@ -1753,5 +1753,23 @@ PACKAGE: 2.2.99.2
  - Improved file uploads interface a little (new style)
  - Escaped values in toString'd XML attributes.
 
+2003-11-27
+
+ - Fixed bug that status page erased half-done index tables with "dispose"
+ - renamed $index->dispose to "cleanup" as it's not a required dispose 
+    function.
+ - Made AnApache eval the subroutines for that apache to avoid any 
+    confusion. 
+ - Added apache2 upload file routines to AnApache
+ - fixed typo in Document.pm (add_archive x2. one should have been add_file)
+ - Fixed bug that full text searching lowercased and stemmed words when
+    it shouldn't.
+ - Apache 2 post trans handler does not map "/" to "/index.html" so Rewrite 
+    now does it.
+ - Fixed warning if accept-language is not set.
+ - Userpage list-of-eprints now links to correct new search URL
+ - Renamed arrow images to all start with "multi" so that the upgrading 
+    admins can use "multi*" 
+ 
 
 ======================================================================

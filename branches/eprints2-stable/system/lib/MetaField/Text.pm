@@ -101,14 +101,11 @@ sub get_search_conditions_not_ex
 
 	# free text!
 
-	my $word = EPrints::Index::stem_word( 
-			$session,
-			$search_value );
 	return EPrints::SearchCondition->new( 
 			'index',
  			$dataset,
 			$self, 
-			$word );
+			$search_value );
 }
 
 sub get_search_group { return 'text'; }

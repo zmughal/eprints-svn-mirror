@@ -42,7 +42,7 @@ use strict;
 #$index->create;
 #$index->build;
 #$index->install;
-#$index->dispose;
+#$index->cleanup;
 
 ######################################################################
 =pod
@@ -75,14 +75,14 @@ sub new
 ######################################################################
 =pod
 
-=item $index->dispose();
+=item $index->cleanup();
 
 undocumented
 
 =cut
 ######################################################################
 
-sub dispose
+sub cleanup
 {
 	my( $self ) = @_;
 
@@ -611,14 +611,6 @@ sub split_words
 	return @words;
 }
 
-sub stem_word
-{
-	my( $session, $word ) = @_;
-
-	my $newword = "\L$word";
-	$newword =~ s/s$//;
-	return $newword;
-}
 
 
 sub apply_mapping
