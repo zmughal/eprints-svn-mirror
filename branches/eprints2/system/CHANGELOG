@@ -2139,3 +2139,9 @@ PACKAGE: 2.2.99.2
 
  - Changed tmp files for generate_views to use _tmp.$$ instead so 
     to simultaneous copies won't screw each other up.
+
+2005-01-27 cjg
+
+ - Fixed bug in edit_eprint staff script when the archive has 
+    skipping the file stage set.
+

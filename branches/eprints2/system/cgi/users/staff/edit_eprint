@@ -225,15 +225,27 @@ sub process
 		$laststage = pop @stages;
 		last if( $laststage eq "type" );
 	}
+
 	my $ls = $session->get_archive()->get_conf( "submission_stage_last_for_staff_edit" );
 	$laststage = $ls if( defined $ls );
 
 	if( defined $stage && $laststage eq $stage && defined $action && ($action eq "finished" || $action eq "next") )
-        {
-                # Intercept the verify page, that's what we were doing!
-                $session->redirect( "edit_eprint?dataset=$datasetid&eprintid=$eprintid" );
-                return;
-        }
+	{
+		my $redir = 1;
+		if( $stage eq "meta" )
+		{
+			my @pages = $dataset->get_type_pages( $eprint->get_value( "type" ) );
+			my $pageid = $session->param( "pageid" );
+			$redir = 0;
+			$redir = 1 if( $pageid eq pop @pages );
+		}
+		if( $redir )
+		{
+			# Intercept the verify page, that's what we were doing!
+			$session->redirect( "edit_eprint?dataset=$datasetid&eprintid=$eprintid" );
+			return;
+		}
+	}
 
 	# Give other cases to the edit form
 	my $subform = new EPrints::SubmissionForm(

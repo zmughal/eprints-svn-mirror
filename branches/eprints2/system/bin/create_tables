@@ -117,7 +117,7 @@ if( $session->get_db->has_table( "archive" ) )
 	print STDERR "WARNING: Database is NOT empty. Contains an \"archive\" table.\n";
 	if( !$force )
 	{
-		EPrints::Config::abort( "Cannot create tables Erase the database (erase_archive does this)\nor use --force to override this check." );
+		EPrints::Config::abort( "Cannot create tables. Erase the database (erase_archive does this)\nor use --force to override this check." );
 	}
 }
 foreach my $dsid ( &EPrints::DataSet::get_sql_dataset_ids )
