@@ -28,7 +28,6 @@ cd to the eprints directory (/opt/eprints2 by default) and run bin/configure_arc
 Run
 
  bin/generate_apacheconf archiveid
- bin/generate_dtd archiveid
  bin/create_tables archiveid
  bin/import_subjects archiveid
  bin/generate_static archiveid

@@ -42,7 +42,9 @@ EPrints required that the apache modules B<mod_perl> and B<mod_rewrite> be enabl
  APACHE_SRC=../apache-1.3.14/src DO_HTTPD=1 USE_APACI=1 \
  PERL_AUTHEN=1 PERL_AUTHZ=1 ADD_MODULE=rewrite
 
-=item Make and install apache. From the apache src dir, I use:
+Remeber to change C<../apache-1.3.14/src> to wherever your apache source is relative to this directory.
+
+=item Make and install apache. From the mod_perl src dir, I use:
 
  make
  make install

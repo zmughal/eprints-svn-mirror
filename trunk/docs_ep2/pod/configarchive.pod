@@ -53,7 +53,7 @@ These XML files describe how to turn metadata for an item into a citation (with 
 
 =item B<entities-I<languageid>.dtd>
 
-One of these files for each I<languageid> supported by this archive. These DTD files are generated automaticly by B<generate_dtd> and should not be edited directly.
+One of these files for each I<languageid> supported by this archive. These DTD files are generated automaticly just before eprints loads the archives configuration and should not be edited directly.
 
 =item B<metadata-types.xml>
 
