@@ -152,6 +152,21 @@ sub new
 		$self->set_property( $p_id, $properties{$p_id} );
 	}
 
+	# warn of non-applicable parameters; handy for spotting
+	# typos in the config file.
+	foreach my $p_id ( keys %properties )
+	{
+		# skip warning on ID fields, it's not relevant
+		last if( $self->{type} eq "id" );
+		# no warning if it's a valid param
+		next if( defined $self->{field_defaults}->{$p_id} );
+		# these params are always valid but have no defaults
+		next if( $p_id eq "field_defaults" );
+		next if( $p_id eq "archive" );
+		next if( $p_id eq "dataset" );
+		$self->{archive}->log( "Field '".$self->{name}."' has invalid parameter:\n$p_id => $properties{$p_id}" );
+	}
+
 	return( $self );
 }
 

@@ -219,14 +219,41 @@ sub get_input_elements
 {
 	my( $self, $session, $value, $staff, $obj ) = @_;	
 
+	my $assist;
+	if( $self->{input_assist} )
+	{
+		$assist = $session->make_doc_fragment;
+		$assist->appendChild( $session->render_internal_buttons(
+			$self->{name}."_assist" => 
+				$session->phrase( 
+					"lib/metafield:assist" ) ) );
+	}
+
 	unless( $self->get_property( "multiple" ) )
 	{
-		return $self->get_input_elements_single( 
+		my $elements = $self->get_input_elements_single( 
 				$session, 
 				$value,
 				undef,
 				$staff,
 				$obj );
+		if( defined $self->{input_advice_right} )
+		{
+			my $advice = &{$self->{input_advice_right}}( $session, $self, $value );
+			my $row = pop @{$elements};
+			push @{$row}, { el=>$advice };
+			push @{$elements}, $row;
+		}
+		if( defined $self->{input_advice_below} )
+		{
+			my $advice = &{$self->{input_advice_below}}( $session, $self, $value );
+			push @{$elements}, [ {el=>$advice,colspan=>3} ];
+		}
+		if( defined $assist )
+		{
+			push @{$elements}, [ {el=>$assist,colspan=>3} ];
+		}
+		return $elements;
 	}
 
 	# multiple field...
@@ -332,7 +359,18 @@ sub get_input_elements
 				}
 				$lastcol = { el=>$arrows, valign=>"middle" };
 			}
-			push @{$rows}, [ $col1, @{$section->[$n]}, $lastcol ];
+			my $row =  [ $col1, @{$section->[$n]}, $lastcol ];
+			if( defined $self->{input_advice_right} )
+			{
+				my $advice = &{$self->{input_advice_right}}( $session, $self, $value->[$i-1] );
+				push @{$row}, { el=>$advice };
+			}
+			push @{$rows}, $row;
+			if( defined $self->{input_advice_below} )
+			{
+				my $advice = &{$self->{input_advice_below}}( $session, $self, $value->[$i-1] );
+				push @{$rows}, [ {},{el=>$advice,colspan=>3} ];
+			}
 		}
 	}
 	my $more = $session->make_doc_fragment;
@@ -346,6 +384,10 @@ sub get_input_elements
 		$self->{name}."_morespaces" => 
 			$session->phrase( 
 				"lib/metafield:more_spaces" ) ) );
+	if( defined $assist )
+	{
+		$more->appendChild( $assist );
+	}
 
 	push @{$rows}, [ {}, {el=>$more,colspan=>3} ];
 
@@ -1121,6 +1163,9 @@ sub get_property_defaults
 		id_editors_only	=> 0,
 		idpart 		=> 0, # internal
 		input_add_boxes => $EPrints::MetaField::FROM_CONFIG,
+		input_advice_right => $EPrints::MetaField::UNDEF,
+		input_advice_below => $EPrints::MetaField::UNDEF,
+		input_assist	=> 0,
 		input_boxes 	=> $EPrints::MetaField::FROM_CONFIG,
 		input_cols 	=> $EPrints::MetaField::FROM_CONFIG,
 		input_id_cols	=> $EPrints::MetaField::FROM_CONFIG,

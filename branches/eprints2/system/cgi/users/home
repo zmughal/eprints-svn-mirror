@@ -94,7 +94,7 @@ my $tools = [
 		location=>"user",
 		code=>"change",
 		page=>"record",
-		notpriv=>"no_edit_own_record"
+		invpriv=>"no_edit_own_record"
 	},
 	### Change subscription options
 	{ 

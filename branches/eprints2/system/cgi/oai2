@@ -119,12 +119,11 @@ $session->send_http_header( content_type=>$content );
 
 print <<END;
 <?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet type='text/xsl' href='/oai2.xsl' ?>
 
 END
 print EPrints::XML::to_string( $response );
 EPrints::XML::dispose( $response );
-print "\n\n";
-
 $session->terminate();
 exit;
 

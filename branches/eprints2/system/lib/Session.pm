@@ -218,12 +218,15 @@ sub get_session_language
 	my $cookies = EPrints::AnApache::header_in( 
 				$request,
 				'Cookie' );
-	foreach my $cookie ( split( /;\s*/, $cookies ) )
+	if( defined $cookies )
 	{
-		my( $k, $v ) = split( '=', $cookie );
-		if( $k eq $archive->get_conf( "lang_cookie_name") )
+		foreach my $cookie ( split( /;\s*/, $cookies ) )
 		{
-			push @prefs, $v;
+			my( $k, $v ) = split( '=', $cookie );
+			if( $k eq $archive->get_conf( "lang_cookie_name") )
+			{
+				push @prefs, $v;
+			}
 		}
 	}
 
@@ -2333,7 +2336,7 @@ sub send_http_header
 	EPrints::AnApache::header_out( 
 		$self->{"request"},
 		"Cache-Control",
-		"must-revalidate" );
+		"no-store, no-cache, must-revalidate" );
 
 	#$self->{request}->header_out( "Cache-Control"=>"no-cache, must-revalidate" );
 	# $self->{request}->header_out( "Pragma"=>"no-cache" );

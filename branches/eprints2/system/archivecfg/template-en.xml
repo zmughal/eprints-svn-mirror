@@ -5,7 +5,13 @@
       xmlns:ep="http://eprints.org/ep2/template">
   <head>
     <title>&archivename; - <ep:pin ref="title" textonly="yes" /></title>
-    <link rel="stylesheet" type="text/css" href="&base_url;/eprints.css" title="screen stylesheet" media="screen"/>
+    <style style="text/css" media="screen">
+@import  url("&base_url;/eprints.css");
+    </style>
+    <style style="text/css" media="print">
+@import  url("&base_url;/eprints.css");
+@import  url("&base_url;/print.css");
+    </style>
     <link rel="Top" href="&frontpage;" />
     <link rel="Search" href="&perl_url;/search" />
     <link rel="Help" href="&base_url;/help" />
@@ -13,7 +19,7 @@
   </head>
   <body bgcolor="#ffffff" text="#000000" topmargin="0" rightmargin="0" leftmargin="0" marginwidth="0" marginheight="0" >
     <ep:pin ref="pagetop" />
-    <div class="header">
+    <div class="header noPrint">
       <table cellpadding="5" border="0" cellspacing="0" width="100%">
         <tr>
           <td bgcolor="#cccccc">
@@ -39,7 +45,7 @@
         <ep:pin ref="page" />
       </td></tr></table></div>
     </div>
-    <div class="footer">
+    <div class="footer noPrint">
       <br />
       <table cellpadding="5" border="0" cellspacing="0" width="100%">
         <tr>

@@ -534,6 +534,7 @@ sub get_editable_eprints
 			"buffer" );
 		my $searchexp = EPrints::SearchExpression->new(
 			allow_blank => 1,
+			custom_order => "-datestamp",
 			dataset => $ds,
 			session => $self->{session} );
 		$searchexp->perform_search;
@@ -549,6 +550,9 @@ sub get_editable_eprints
 		my $searchexp = $editperms->make_searchexp(
 			$self->{session},
 			$sv );
+		$searchexp->{custom_order}="-datestamp";
+	        $searchexp->{order} = $EPrints::SearchExpression::CustomOrder;
+
 		$searchexp->perform_search;
 		push @records,  $searchexp->get_records;
 		$searchexp->dispose();

@@ -372,8 +372,11 @@ sub eprint_to_unqualified_dc
 
 	## Date for discovery. For a month/day we don't have, assume 01.
 	my $date = $eprint->get_value( "date_effective" );
-        $date =~ s/(-0+)+$//;
-	push @dcdata, [ "date", $date ];
+	if( defined $date )
+	{
+        	$date =~ s/(-0+)+$//;
+		push @dcdata, [ "date", $date ];
+	}
 
 
 	my $ds = $eprint->get_dataset();

@@ -1669,7 +1669,8 @@ sub _get_records
 			}
 		}
 
-		if( !defined $offset && !defined $count )
+		# quick solutions if we don't need to order anything...
+		if( !defined $offset && !defined $count && !defined $self->{order} )
 		{
 			if( $justids )
 			{
@@ -1685,10 +1686,11 @@ sub _get_records
 				return $self->{session}->get_db->get_all(
 					$self->{dataset} );
 			}
-			
-			# we are returning all matches, but there's no
-			# easy shortcut.
 		}
+
+		# If the above tests failed then	
+		# we are returning all matches, but there's no
+		# easy shortcut. Ah well..
 	}
 
 	if( !defined $self->{cache_id} )

@@ -257,12 +257,12 @@ sub eprint_render
 	}
 
 	# Alternative locations
-	if( $eprint->is_set( "altloc" ) )
+	if( $eprint->is_set( "official_url" ) )
 	{
 		$table->appendChild( _render_row(
 			$session,
-			$session->html_phrase( "eprint_fieldname_altloc" ),
-			$eprint->render_value( "altloc" ) ) );
+			$session->html_phrase( "eprint_fieldname_official_url" ),
+			$eprint->render_value( "official_url" ) ) );
 	}
 
 	# Now show the version and commentary response threads
