@@ -1,7 +1,7 @@
 ONLINEHELPFILES = online-help/latex/online-help.tex online-help/latex/access.tex online-help/latex/deposit.tex online-help/latex/register.tex online-help/latex/subscribe.tex online-help/latex/userarea.tex
 SYSTEMDOCFILES = system/latex/system.tex system/latex/system-body.tex system/latex/images/components.eps system/latex/images/components.jpg system/latex/images/components.fig
 
-all: eprints-install.pdf eprints-install.html eprints-install-headless.html online-help.pdf online-help-final eprints=system.pdf
+all: eprints-install.pdf eprints-install.html eprints-install-headless.html online-help.pdf online-help-final eprints-system.pdf
 
 eprints-install.pdf: installation/latex/eprints-install.tex installation/latex/eprints-install-body.tex
 	cd installation/latex ; pdflatex eprints-install ; pdflatex eprints-install
