@@ -1,4 +1,4 @@
-
+remove "BONG"
 Big New Features
  * Modular Controls [2.4]
  * Improved Indexing [2.4/2.3]
@@ -9,14 +9,12 @@ Big New Features
 * HOWTO: Add harrys icons
 
 * Sendmail option
-* Latex OPtion
+* SeearchExpression given conditions.
 
  * make namematch condition work.A
  * optimise indexer.
- * clean up ArchiveConfig.pm
  * VLIT.css
 
- * "default" mode for latest tool
  * log for indexer
  * rc.d for indexer.
 

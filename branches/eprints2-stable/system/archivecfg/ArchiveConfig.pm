@@ -660,7 +660,7 @@ $c->{cache_maxlife} = 12;
 # package rather than the latex->dvi->ps->png route then enable this
 # option and put the location of the executable "mimetex.cgi" into 
 # SystemSettings.pm
-$c->{use_mimetex} = 1;
+$c->{use_mimetex} = 0;
 
 ######################################################################
 

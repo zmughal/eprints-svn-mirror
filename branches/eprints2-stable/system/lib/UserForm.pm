@@ -76,7 +76,7 @@ undocumented
 
 sub new
 {
-	my( $class, $session, $redirect, $staff, $user ) = @_;
+	my( $class, $session, $redirect, $staff, $user, $dest ) = @_;
 	
 	my $self = {};
 	bless $self, $class;
@@ -85,6 +85,8 @@ sub new
 	$self->{redirect} = $redirect;
 	$self->{staff} = $staff;
 	$self->{user} = $user;
+	$self->{dest} = $dest;
+
 	if( !defined $self->{user} ) 
 	{
 		$self->{user} = $self->{session}->current_user();
@@ -123,6 +125,11 @@ sub process
 	    $self->{session}->internal_button_pressed() ||
 	    $self->{session}->get_action_button() eq "edit" )
 	{
+		if( $self->{session}->internal_button_pressed() )
+		{
+			$self->_update_from_form();
+		}
+
 		my( $page, $p, $a );
 
 		$page = $self->{session}->make_doc_fragment();
@@ -247,6 +254,7 @@ sub _render_user_form
 					show_help=>1,
 					buttons=>$buttons,
 					default_action => "update",
+					dest => $self->{dest}.'#t',
 					hidden_fields=>\%hidden );
 	return $form;
 }

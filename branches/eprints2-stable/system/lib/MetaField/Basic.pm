@@ -482,7 +482,7 @@ sub get_input_elements_no_id
 		$i <= $boxcount || 
 		scalar( keys %langstodo ) > 0 )
 	{
-		my $langid = undef;
+		my $langid = "";
 		my $forced = 0;
 		if( scalar @force )
 		{
@@ -526,7 +526,7 @@ sub get_input_elements_no_id
 		my $elements = $self->get_basic_input_elements( 
 			$session, 
 			$value->{$langid}, 
-			$suffix, 
+			$suffix."_".$i, 
 			$staff );
 
 		my $first = 1;
@@ -602,7 +602,7 @@ sub get_max_input_size
 sub form_value_actual
 {
 	my( $self, $session ) = @_;
-	
+
 	if( $self->get_property( "multiple" ) )
 	{
 		my @values = ();
@@ -688,6 +688,7 @@ sub form_value_no_id
 		if( defined $subvalue )
 		{
 			$value->{$langid} = $subvalue;
+			print STDERR "($langid)($subvalue)\n";
 			#cjg -- does not check that this is a valid langid...
 		}
 	}
@@ -710,7 +711,7 @@ sub form_value_basic
 	
 	my $value = $session->param( $self->{name}.$suffix );
 
-	return undef if( $value eq "" );
+	return undef if( !EPrints::Utils::is_set( $value ) );
 
 	# strip line breaks (turn them to "space")
 	$value=~s/[\n\r]+/ /gs;
@@ -1057,8 +1058,9 @@ sub split_search_value
 {
 	my( $self, $session, $value ) = @_;
 
-	# should use archive whitespaces
-	return split /\s+/ , $value;
+	return EPrints::Index::split_words( 
+			$session,
+			EPrints::Index::apply_mapping( $session, $value ) );
 }
 
 sub get_search_conditions

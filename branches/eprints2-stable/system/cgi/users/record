@@ -31,7 +31,9 @@ if( !$session->auth_check )
 my $userform = new EPrints::UserForm( 
 	$session, 
 	$session->get_archive->get_conf( "userhome" ),
-	0 );
+	0,
+	undef,
+	"record" );
 
 $userform->process();
 

@@ -114,7 +114,8 @@ sub process
 		$session,
 		$session->get_archive()->get_conf( "userhome" ),
 		1,
-		$user );
+		$user,
+		"edit_user" );
 	$userform->process();
 }
 

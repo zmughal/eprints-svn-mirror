@@ -76,14 +76,14 @@ sub render_search_value
 }
 
 
-sub split_search_value
-{
-	my( $self, $session, $value ) = @_;
-
-	return EPrints::Index::split_words( 
-			$session,
-			EPrints::Index::apply_mapping( $session, $value ) );
-}
+#sub split_search_value
+#{
+#	my( $self, $session, $value ) = @_;
+#
+#	my( $codes, $bad ) = _extract_words( $session, $value );
+#
+#	return @{$codes};
+#}
 
 sub get_search_conditions_not_ex
 {
@@ -101,11 +101,20 @@ sub get_search_conditions_not_ex
 
 	# free text!
 
+	# apply stemming and stuff
+	my( $codes, $bad ) = _extract_words( $session, $search_value );
+
+	# Just go "yeah" if stemming removed the word
+	if( !EPrints::Utils::is_set( $codes->[0] ) )
+	{
+		return EPrints::SearchCondition->new( "TRUE" );
+	}
+
 	return EPrints::SearchCondition->new( 
 			'index',
  			$dataset,
 			$self, 
-			$search_value );
+			$codes->[0] );
 }
 
 sub get_search_group { return 'text'; }
@@ -165,7 +174,6 @@ sub get_index_codes_basic
 	my( $self, $session, $value ) = @_;
 
 	return( [], [], [] ) unless( EPrints::Utils::is_set( $value ) );
-
 
 	my( $codes, $badwords ) = _extract_words( $session, $value );
 

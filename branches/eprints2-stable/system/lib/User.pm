@@ -294,7 +294,8 @@ sub user_with_username
 
 	$searchexp->add_field(
 		$user_ds->get_field( "username" ),
-		$username );
+		$username,
+		"EX" );
 
 	my $searchid = $searchexp->perform_search;
 

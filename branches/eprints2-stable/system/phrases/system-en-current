@@ -53,8 +53,8 @@ EPrints Modules
     <ep:phrase ref="lib/metafield:month">Month:</ep:phrase>
     <ep:phrase ref="lib/metafield:day">Day:</ep:phrase>
     <ep:phrase ref="lib/metafield:to">to</ep:phrase>
-    <ep:phrase ref="lib/metafield:family_names">Family Name(s)</ep:phrase>
-    <ep:phrase ref="lib/metafield:given_names">Given Name(s)/Initials</ep:phrase>
+    <ep:phrase ref="lib/metafield:family_names">Family Name</ep:phrase>
+    <ep:phrase ref="lib/metafield:given_names">Given Name / Initials</ep:phrase>
     <ep:phrase ref="lib/metafield:lineage">Lineage</ep:phrase>
     <ep:phrase ref="lib/metafield:honourific">Title</ep:phrase>
     <ep:phrase ref="lib/metafield:more_spaces">More Spaces</ep:phrase>
@@ -571,7 +571,8 @@ Staff CGI Scripts
     <ep:phrase ref="cgi/users/edit_subject:children"><h2>Children</h2></ep:phrase>
     <ep:phrase ref="cgi/users/edit_subject:action_submit">Submit</ep:phrase>
     <ep:phrase ref="cgi/users/edit_subject:action_add">Add Child</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_subject:add_child"><h2>Add Child</h2></ep:phrase>
+    <ep:phrase ref="cgi/users/edit_subject:add_child"><h2>Add Child to <pin ref="subid" /></h2></ep:phrase>
+    <ep:phrase ref="cgi/users/edit_subject:edit_heading"><h2>Edit <pin ref="subid" /></h2></ep:phrase>
     <ep:phrase ref="cgi/users/edit_subject:add_child_help"><p>Enter the ID of an existing child which is NOT an ancestor of the subject, or enter an used subject id to create a new subject.</p></ep:phrase>
     <ep:phrase ref="cgi/users/edit_subject:problem_noid">No ID given for new child</ep:phrase>
     <ep:phrase ref="cgi/users/edit_subject:problems"><h2>Problems</h2></ep:phrase>
@@ -874,6 +875,8 @@ Titles and Help for the System Fields
     <ep:phrase ref="subject_fieldname_depositable">Depositable</ep:phrase>
     <ep:phrase ref="subject_fieldhelp_depositable">Can users add items to this subject?</ep:phrase>
     <ep:phrase ref="subject_radio_depositable"><ep:pin ref="true" />Yes, users can add records to this subject.<br /><ep:pin ref="false" />No. (In which case it should probably have some children.</ep:phrase>
+    <ep:phrase ref="subject_fieldname_newsubjectid">Subject ID String</ep:phrase>
+    <ep:phrase ref="subject_fieldhelp_newsubjectid">This is the internal key for this subject. It is used in the database and to generate the "views" filenames. It shoud contain only a-z, 0-9 and dash "/"and underscore "_". If you enter the ID of an existing subject then that subject will be linked as a child of the current subject.</ep:phrase>
 
 
 </ep:phrases>

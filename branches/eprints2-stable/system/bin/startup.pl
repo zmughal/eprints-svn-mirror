@@ -57,7 +57,6 @@ use EPrints::Paracite;
 
 use strict;
 
-print STDERR "********LOADED USE STUFF BONG\n";
 
 EPrints::Config::ensure_init();
 
@@ -72,6 +71,7 @@ foreach( EPrints::Config::get_archive_ids() )
 	next if $done{$_};
 	EPrints::Archive->new_archive_by_id( $_ );
 }
+print STDERR "EPRINTS: ".join( ", ",  EPrints::Config::get_archive_ids() )."\n";
 print STDERR "EPRINTS: Config Modules Loaded\n";
 
 # Tell me more about warnings

@@ -1793,6 +1793,16 @@ PACKAGE: 2.2.99.2
  - Improved install.pl to rename old files to format ".YYYY-MM-DD.N" 
     rather than ".old"
 
+2003-12-08 cjg
+
+ - Fixed bug in form renderer of multilang fields. 
+ - Improved interface to subject editor (and fixed some bugs)
+ - Added current version to counter script.
+ - Internal Buttons now work again on user forms.
+ - Removed silly BONG message at startup.
+ - Startup now lists all archives which have been loaded.
+ - Text Searches now correctly stem words to be searched.
+
 ======================================================================
 
 
