@@ -9,6 +9,8 @@ my @ids = (
 	"structure", 
 	"configeprints",
 	"configarchive",
+	"metadata",
+	"functions",
 	"troubleshooting",
 	"howto" ,
 	"vlit" ,
@@ -21,6 +23,8 @@ my @ids = (
 	"!create_tables",
 	"!create_user",
 	"!erase_archive",
+	"!erase_fulltext_cache",
+	"!explain_sql_tables",
 	"!export_hashes",
 	"!export_xml",
 	"!force_config_reload",
@@ -30,9 +34,9 @@ my @ids = (
 	"!generate_views",
 	"!import_eprints",
 	"!import_subjects",
+	"!indexer",
 	"!list_user_emails",
 	"!rehash_documents",
-	"!reindex",
 	"!send_subscriptions",
 	"!upgrade"
 
@@ -48,7 +52,9 @@ my %titles = (
 	installation => "How to Install EPrints (and get started)",
 	structure => "EPrints Structure and Terms",
 	configeprints => "Configuring the System",
-	configarchive => "Configuring an Archive",
+	configarchive => "The Archive Configuration Files",
+	metadata => "Configuring the Archive Metadata",
+	functions => "Configuring the functions of an Archive",
 	howto => "How-To Guides",
 	troubleshooting => "Troubleshooting",
 	backup => "Backing-Up your System",
@@ -92,9 +98,9 @@ foreach( @ids )
 }
 		
 
-my $DOCTITLE = "EPrints 2.2 Documentation";
+my $DOCTITLE = "EPrints 2.3 Documentation";
 
-my $BASENAME = "eprints-2.2-docs";
+my $BASENAME = "eprints-docs";
 
 `rm -rf docs`;
 `mkdir docs`;
@@ -396,6 +402,7 @@ if( $website )
 	foreach $id ( @ids )
 	{
 		print INC "<li><a href=\"/docs/php/$id.php\">".$titles{$id}."</a></li>\n";
+		if( $id eq "logo" ) { print INC "</ul><ul>"; }
 	}
 	print INC "</ul>\n";
 	close( INC );
@@ -439,16 +446,14 @@ $p
 $n
 ';
 
-epsw_header( "/documentation.php", "$DOCTITLE - $titles{$id}", \$pagelinks );
+epsw_docs_header( "/documentation.php", "$titles{$id}", \$pagelinks );
 
 ?>
-<h1>$DOCTITLE - $titles{$id}</h1>
-
-<p><a href="/documentation.php">Documentation Contents</a></p>
-<hr />
 END
 
-		print TARGET $_;
+		print TARGET '<div class="docs_index"><h2>Sections</h2>';
+		# kill off FIRST HR only
+		my $gothr = 0;
 		while( <FILE> )
 		{
 			last if( m#CELLPADDING# );
@@ -458,14 +463,17 @@ END
 			s#</h2>#</h3>#ig;
 			s#<h1>#<h2>#ig;
 			s#</h1>#</h2>#ig;
+			s#<!-- INDEX END -->#</div><div class="docs_body">#ig;
+			if( !$gothr && s/<hr>//i ) { $gothr = 1; }
+			s/''/"/ig;
+			s/``/"/ig;
 			print TARGET $_;
 		}
 		s/<table.*//i;
 
 		print TARGET $_;
 print TARGET <<END;
-<hr />
-<p><a href="/documentation.php">Documentation Contents</a></p>
+</div>
 <? 
 epsw_footer( "/documentation.php", "$DOCTITLE - $titles{$id}", \$pagelinks );
 ?>
