@@ -2338,9 +2338,6 @@ sub send_http_header
 		"Cache-Control",
 		"no-store, no-cache, must-revalidate" );
 
-	#$self->{request}->header_out( "Cache-Control"=>"no-cache, must-revalidate" );
-	# $self->{request}->header_out( "Pragma"=>"no-cache" );
-
 	if( defined $opts{lang} )
 	{
 		my $cookie = $self->{query}->cookie(
@@ -2349,7 +2346,10 @@ sub send_http_header
 			-value   => $opts{lang},
 			-expires => "+10y", # really long time
 			-domain  => $self->{archive}->get_conf("lang_cookie_domain") );
-		$self->{request}->header_out( "Set-Cookie"=>$cookie );
+		EPrints::AnApache::header_out( 
+				$self->{"request"},
+				"Set-Cookie",
+				$cookie );
 	}
 
 	EPrints::AnApache::send_http_header( $self->{request} );

@@ -1,4 +1,39 @@
+######################################################################
+#
+# EPrints::Rewrite
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
 
+
+=pod
+
+=head1 NAME
+
+B<EPrints::Rewrite> - rewrite cosmetic URL's to internally useful ones.
+
+=head1 DESCRIPTION
+
+This rewrites the URL apache receives based on certain things, such
+as the current language.
+
+Expands 
+/archive/00000123/*
+to 
+/archive/00/00/01/23/*
+
+and so forth.
+
+=over 4
+
+=cut
 
 package EPrints::Rewrite;
 
@@ -122,7 +157,7 @@ sub redir
 
 	$r->status_line( "302 Close but no Cigar" );
 	EPrints::AnApache::header_out( $r, "Location", $url );
-	$r->send_http_header;
+	EPrints::AnApache::send_http_header( $r );
 	return DONE;
 } 
 
