@@ -184,7 +184,9 @@ sub get_oams_tags
 	# If the EPrint doesn't exist, we will return the empty hash
 	return( () ) unless( defined $eprint );
 	
-	my %tags = ();
+	my %tags = EPrintSite::SiteRoutines::oai_get_eprint_metadata(
+		$eprint,
+		"oams" );
 
 	# Fill out the system tags
 
