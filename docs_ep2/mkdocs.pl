@@ -168,5 +168,5 @@ close INDEX;
 mkdir( '../docs/pod' );
 foreach $file ( @files )
 {
-	`cp $file ../docs/pod`;
+	`cp ../pod/$file.pod ../docs/pod`;
 }

@@ -575,36 +575,276 @@ This is also used internally, it contains the ID part of a field with the hasid 
 
 Field Properties:
 
+=over 8
 
-	browse_link => 1,
-	confid => -1,
-	datasetid => -1,
-	digits => 1,
-	input_rows => 1,
-	input_cols => 1,
-	input_name_cols => 1,
-	input_id_cols => 1,
-	input_add_boxes => 1,
-	input_boxes => 1,
-	input_style => 1,
-	fromform => 1,
-	toform => 1,
-	maxlength => 1,
-	hasid => 1,
-	multilang => 1,
-	multiple => 1,
-	name => -1,
-	options => -1,
-	required => 1,
-	requiredlangs => 1,
-	showall => 1,
-	showtop => 1,
-	idpart => 1,
-	mainpart => 1,
-	render_single_value => 1,
-	render_value => 1,
-	top => 1,
-	type => -1
+=item name
+
+Required by: all
+
+Default: NO DEFAULT
+
+The name of the field. Strongly recommended to only be lowercase a-z only.
+
+=item type
+
+Required by: all
+
+Default: NO DEFAULT
+
+The type of field. One of the list described above.
+
+=item browse_link
+
+Optional on: all
+
+Default: undef
+
+This is the id of a "browse" view. This will hyperlink this value to the browse for that value when rendering it.
+
+=item confid 
+
+Internal use only. Sets the confid if a field is being created without a dataset. The confid is used as a fake dataset for generating phrase ids.
+
+=item datasetid
+
+Required by: datatype
+
+Default: NO DEFAULT
+
+Used to set which dataset's types are this fields options.
+
+=item digits
+
+Optional on: int
+
+Default: 20
+
+Maximum number of digits for this number. 
+
+=item input_rows
+
+Optional on: longtext, set, subject, datatype
+
+Default: set in ArchiveConfig.pm
+
+The number of input rows in a text area, or options to display at once in a menu. Setting to 1 will make a pull down menu (unless this is a "multiple" field).
+
+=item input_cols
+
+Optional on: text, longtext, url, email 
+
+Default: set in ArchiveConfig.pm
+
+The width of the input field.
+
+=item input_name_cols
+
+Optional on: name
+
+Default: set in ArchiveConfig.pm
+
+The width of the input fields of a "name" field. 
+
+=item input_id_cols
+
+Optional on: fields with "hasid" set.
+
+Sets the width of the ID input field on a field with an ID.
+
+Default: set in ArchiveConfig.pm
+
+=item input_add_boxes
+
+Optional on: fields with "multiple" or "multilang" set.
+
+Default: set in ArchiveConfig.pm
+
+How many boxes to add when the user hits the "more spaces" button.
+
+=item input_boxes
+
+Optional on: fields with "multiple" set.
+
+Default: set in ArchiveConfig.pm
+
+How many boxes to initially show on a multiple field.
+
+=item input_style
+
+Optional on: boolean
+
+Default: undef
+
+By default booleans render as a radio button. These other formats look a bit clearer on the input field:
+
+=over 4
+
+=item menu
+
+Display as a pull-down menu. You will need to set the phrases
+I<dataset>_fieldopt_I<fieldname>_TRUE and
+I<dataset>_fieldopt_I<fieldname>_FALSE (where dataset & fieldname are the ids of the dataset and field). These are the menu options.
+
+=item radio
+
+Display as radio buttons (ones which deselect when you select another one). You will need to set the phrase I<dataset>_radio_I<fieldname>. This phrase should have two "pin" elements: true and false, which are the positions to place the radio buttons.
+
+=back
+
+=item fromform
+
+Optional to: all
+
+Default: undef
+
+A reference to a perl function which will process the value from the form before storing it. The function will be passed ($value, $session) where value is the value from the form and session is the current EPrints::Session. It should return the processed value.
+
+This could be used, for example, to turn a username "cjg" into a userid "312" for internal user. 
+
+=item toform
+
+Optional to: all
+
+Default: undef
+
+A reference to a perl function which will process the value just before it is displayed in the form. The function will be passed ($value, $session) where value is the value from the database and session is the current EPrints::Session. It should return the processed value.
+
+This could be used, for example, to turn a userid "312" being used internally by your systems into more human-friendly username "cjg".
+
+If you use toform then you should probably set fromform to change your values back again.
+
+=item maxlength
+
+Optional to: text, email, url, secret
+
+Default: 255
+
+The maximum length of the value.
+
+=item hasid
+
+Optional to: all
+
+Default: 0
+
+This adds an additional "ID" property to the field. This is most useful on a "name" field which is "multiple". It associates an additional value with the name, for example a username, or email address, which can be used to I<uniquely> identify that person. If you want to get an accurate list of all of someones papers then their name is NOT good enough.
+
+You might also wish to make a "publication" text field have an ID which is an optional ISSN, but it makes more sense in "multiple" fields.
+
+=item multilang
+
+Optional to: all (but silly for date, year, int, boolean)
+
+Default: 0
+
+If set this makes the field "multilingual". That is to say it can have more than one value, one value per language.
+
+For example, the "canadian stuff" archive may wish to make your title and abstract multilang so that authors can enter them in both french and english.
+
+This is more useful than having title_en and title_fr as eprints I<understands> it and can render the version of the field appropriate to the viewer (if they set a language preference).
+
+=item multiple
+
+Optional to: all (but silly for date, year, int, boolean)
+
+Default: 0
+
+If set this property makes the field a LIST rather than one value and handles rendering it as a list and inputing it. The input field will appear with a default of 3 inputs and a "more spaces" button which will reload the page with more if you need more than 3.
+
+This causes the field to be stored in a seperate SQL table.
+
+=item options => -1,
+
+Required by: set
+
+Default: NO DEFAULT
+
+This should be a array of options. eg.
+
+ [ "blue", "green", "red" ]
+
+=item required
+
+Optional to: all
+
+Default: 0
+
+This indicates that this field is I<always> required. It is not recommended to set this, but rather indicate requirednes of fields by type in the metadata-types.xml file.
+
+Either way you set it, required fields will cause the item they are in to fail to validate unless the field has a value.
+
+=item requiredlangs
+
+Optional to: fields with "multilang" property
+
+Default: []
+
+A list of languages which are required for this multilang field. eg. you can force an "en" (english) entry, while allowing them to optionally add others.
+
+eg. [ "en", "fr" ] 
+
+A list of codes can be found in languages.xml
+
+=item showall
+
+optional to: subjects
+
+Default: 0
+
+By default subjects are only shown if they are "depositable". This option makes all subjects, depositable or not, options.
+
+=item showtop
+
+optional to: subjects
+
+Default: 0
+
+If set then the topmost item in the subject is shown. Usually this is a container, eg. "subjects", and should remain hidden.
+
+=item top
+
+optional to: subjects
+
+Default: "subjects"
+
+Sets the top node in the tree. The options are all the children (and their children).
+
+=item idpart
+
+Used internally.
+
+=item mainpart
+
+Used internally.
+
+=item render_single_value
+
+Optional to: all
+
+Default: undef
+
+This overrides the rendering of a single item. In a multiple, multilang field it will be called on each value of the language to display. 
+
+This is a reference to a function which takes ( $session, $field, $value ) and
+returns a XHTML DOM fragment.
+
+Set this to \&EPrints::Latex::render_string to make eprints try and spot latex in this fields values and render it as images instead!
+
+=item render_value
+
+Optional to: all
+
+Default: undef
+
+This is a reference to a function which will render the entire value of the field, overriding eprints own renderer. It should take as parameters: ( $session, $field, $value, $alllangs, $nolink )
+
+The function should return an XHTML DOM fragment.
+
+If $alllangs is set then the function should render all values on a multilang field, rather than just the "best" one.
+
+If $nolink is set then no HTML anchor links should be used, eg. to link a URL.
+
+=back
 
 =head2 Defaults
 
@@ -640,7 +880,9 @@ cjg
 
 =head1 ruler.xml
 
-cjg
+This file configures the horizontal divider which eprints uses, which is inserted in place of &ruler;
+
+If you have no great dislike of <lt>hr<gt> horizontal rulers then you can leave it alone.
 
 =head1 The static/ directory
 
