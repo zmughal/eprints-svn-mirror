@@ -1,0 +1,32 @@
+######################################################################
+#
+#  EPrints Advanced Search Form
+#
+#  Now deprecated. Use normal search for with /advanced on the end!
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints::Session;
+use EPrints::EPrint;
+use EPrints::SearchExpression;
+
+use strict;
+
+my $session = new EPrints::Session;
+Apache::exit( 0 ) unless( defined $session );
+
+my $url = $session->get_archive->get_conf( "perl_url" )."/search/advanced";
+$url.= "?".$session->get_request->args;
+$session->redirect( $url );
+
+$session->terminate;
+exit;
+
