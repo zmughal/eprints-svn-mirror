@@ -331,10 +331,10 @@ sub render_workspace
 	{
 		$tr = $session->make_element( "tr", class=>"row_".($row?"b":"a") );
 		$table->appendChild( $tr );	
-		$td = $session->make_element( "td" );
+		$td = $session->make_element( "td", class=>'first_col userpage_table_emph' );
 		$tr->appendChild( $td );
 		$td->appendChild( $e->render_description() );
-		$td = $session->make_element( "td" );
+		$td = $session->make_element( "td", class=>'last_col' );
 		$tr->appendChild( $td );
 	#	$td->appendChild( $session->html_phrase( 
 	#		"cgi/users/home:accepted_at",
@@ -411,10 +411,10 @@ sub render_pending
 		{
 			$tr = $session->make_element( "tr", class=>"row_".($row?"b":"a") );
 			$table->appendChild( $tr );	
-			$td = $session->make_element( "td" );
+			$td = $session->make_element( "td", class=>"first_col userpage_table_emph" );
 			$tr->appendChild( $td );
 			$td->appendChild( $e->render_description() );
-			$td = $session->make_element( "td" );
+			$td = $session->make_element( "td", class=>"last_col" );
 			$tr->appendChild( $td );
 			$td->appendChild( $session->html_phrase( 
 				"cgi/users/home:deposited_at",
@@ -470,12 +470,12 @@ sub render_recent
 			last if( $cnt++ == $max );
 			$tr = $session->make_element( "tr", class=>"row_".($row?"b":"a") );
 			$table->appendChild( $tr );	
-			$td = $session->make_element( "td" );
+			$td = $session->make_element( "td", class=>"first_col userpage_table_emph" );
 			$tr->appendChild( $td );
 		        my $a = $session->render_link( $e->get_url() );
 			$a->appendChild( $e->render_description() );
 			$td->appendChild( $a );
-			$td = $session->make_element( "td" );
+			$td = $session->make_element( "td", class=>"last_col" );
 			$tr->appendChild( $td );
 			$td->appendChild( $session->html_phrase( 
 				"cgi/users/home:accepted_at",

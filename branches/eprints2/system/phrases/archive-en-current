@@ -439,4 +439,8 @@ terms.</p>
 
     </ep:phrase>
 
+    <!-- we now use a style sheet to lay out this, but the core code still
+         makes the seperator be a pipe "|" for back-compatibility. -->
+    <ep:phrase ref="lib/searchexpression:seperator"></ep:phrase>
+
 </ep:phrases>

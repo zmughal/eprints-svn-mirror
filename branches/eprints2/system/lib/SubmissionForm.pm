@@ -1632,9 +1632,13 @@ sub _do_stage_files
 				list=>$list ) );
 	}
 
+	my $buttoncode = "lib/submissionform:action_newdoc";
+	if( scalar @docs == 0 )
+	{
+		$buttoncode = "lib/submissionform:action_firstdoc";
+	}
 	$form->appendChild( $self->{session}->render_action_buttons(
-		newdoc => $self->{session}->phrase( 
-				"lib/submissionform:action_newdoc" ) ) );
+		newdoc => $self->{session}->phrase( $buttoncode ) ) );
 	$form->appendChild( $self->{session}->make_element( "br" ) );
 	$form->appendChild( $self->{session}->render_action_buttons( %buttons ) );
 

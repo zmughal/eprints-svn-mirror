@@ -263,7 +263,7 @@ $c->{field_defaults}->{search_rows} = 12;
 # makes no difference to the actual database,
 # the fields will just be unused.
 $c->{field_defaults}->{hide_honourific} = 0;
-$c->{field_defaults}->{hide_lineage} = 0;
+$c->{field_defaults}->{hide_lineage} = 1;
 
 # By default names are asked for as given,family
 # if you want to swap this to family,given then

@@ -1015,6 +1015,7 @@ sub process_webpage
 		my $escexp = $self->serialise();	
 		$escexp =~ s/ /+/g; # not great way...
 		my $a;
+		my $cspan;
 		if( $offset > 0 ) 
 		{
 			my $bk = $offset-$pagesize;
@@ -1025,7 +1026,9 @@ sub process_webpage
 				$self->{session}->html_phrase( 
 					"lib/searchexpression:prev",
 					n=>$self->{session}->make_text( $pn ) ) );
-			$bits{controls}->appendChild( $a );
+			$cspan = $self->{session}->make_element( 'span', class=>"searchcontrol" );
+			$cspan->appendChild( $a );
+			$bits{controls}->appendChild( $cspan );
 			$bits{controls}->appendChild( $self->{session}->html_phrase( "lib/searchexpression:seperator" ) );
 			$links->appendChild( $self->{session}->make_element( "link",
 							rel=>"Prev",
@@ -1034,12 +1037,16 @@ sub process_webpage
 
 		$a = $self->{session}->render_link( "$url?_cache=".$self->{cache_id}."&_exp=$escexp&_action_update=1" );
 		$a->appendChild( $self->{session}->html_phrase( "lib/searchexpression:refine" ) );
-		$bits{controls}->appendChild( $a );
+		$cspan = $self->{session}->make_element( 'span', class=>"searchcontrol" );
+		$cspan->appendChild( $a );
+		$bits{controls}->appendChild( $cspan );
 		$bits{controls}->appendChild( $self->{session}->html_phrase( "lib/searchexpression:seperator" ) );
 
 		$a = $self->{session}->render_link( $url );
 		$a->appendChild( $self->{session}->html_phrase( "lib/searchexpression:new" ) );
-		$bits{controls}->appendChild( $a );
+		$cspan = $self->{session}->make_element( 'span', class=>"searchcontrol" );
+		$cspan->appendChild( $a );
+		$bits{controls}->appendChild( $cspan );
 
 		if( $offset + $pagesize < $n_results )
 		{
@@ -1050,7 +1057,9 @@ sub process_webpage
 			$a->appendChild( $self->{session}->html_phrase( "lib/searchexpression:next",
 						n=>$self->{session}->make_text( $nn ) ) );
 			$bits{controls}->appendChild( $self->{session}->html_phrase( "lib/searchexpression:seperator" ) );
-			$bits{controls}->appendChild( $a );
+			$cspan = $self->{session}->make_element( 'span', class=>"searchcontrol" );
+			$cspan->appendChild( $a );
+			$bits{controls}->appendChild( $cspan );
 			$links->appendChild( $self->{session}->make_element( "link",
 							rel=>"Next",
 							href=>EPrints::Utils::url_escape( $fullurl ) ) );

@@ -152,12 +152,12 @@ sub render_input_field_actual
 		my $th;
 		if( $self->get_property( "multiple" ) )
 		{
-			$th = $session->make_element( "th" );
+			$th = $session->make_element( "th", class=>"empty_heading" );
 			$tr->appendChild( $th );
 		}
 		if( !defined $col_titles )
 		{
-			$th = $session->make_element( "th" );
+			$th = $session->make_element( "th", class=>"empty_heading" );
 			$tr->appendChild( $th );
 		}	
 		else

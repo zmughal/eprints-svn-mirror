@@ -166,7 +166,7 @@ $html->appendChild( $table );
 $table->appendChild(
 	render_row( 
 		$session,
-		$session->make_doc_fragment,
+		undef,
 		$session->html_phrase( "cgi/users/status:subcount" ),
 		$session->html_phrase( "cgi/users/status:subsent" ) ) );
 foreach my $freq ( "never", "daily", "weekly", "monthly" )
@@ -194,11 +194,13 @@ foreach my $freq ( "never", "daily", "weekly", "monthly" )
 	my $n = $searchexp->count;
 	$searchexp->dispose;
 
+	my $k = $session->make_doc_fragment;
+	$k->appendChild( $session->html_phrase( "subscription_fieldopt_frequency_".$freq ) );
+	$k->appendChild( $session->make_text( ":" ) );
 	$table->appendChild(
 		render_row( 
 			$session,
-			$session->html_phrase( 
-				"subscription_fieldopt_frequency_".$freq ),
+			$k,
 			$session->make_text( $n ),
 			$session->make_text( $sent ) ) );
 }
@@ -210,7 +212,7 @@ $html->appendChild( $table );
 $table->appendChild(
 	render_row( 
 		$session,
-		$session->make_doc_fragment,
+		undef,
 		$session->html_phrase( "cgi/users/status:indexupdate" ) ) );
 my @ds_ids = &EPrints::DataSet::get_sql_dataset_ids;
 foreach my $ds_id ( sort @ds_ids )
@@ -221,7 +223,7 @@ foreach my $ds_id ( sort @ds_ids )
 	$table->appendChild(
 		render_row( 
 			$session,
-			$session->make_text( $ds_id ),
+			$session->make_text( $ds_id.":" ),
 			$session->make_text( $index->get_last_timestamp ) ) );
 }
 
@@ -246,9 +248,17 @@ sub render_row
 	my( $tr, $td );
 	$tr = $session->make_element( "tr" );
 
-	$td = $session->make_element( "td", class=>"status_row_heading" );
-	$tr->appendChild( $td );
-	$td->appendChild( $key );
+	if( !defined $key )
+	{
+		$td = $session->make_element( "td" );
+		$tr->appendChild( $td );
+	}
+	else
+	{
+		$td = $session->make_element( "td", class=>"status_row_heading" );
+		$tr->appendChild( $td );
+		$td->appendChild( $key );
+	}
 
 	foreach( @vals )
 	{

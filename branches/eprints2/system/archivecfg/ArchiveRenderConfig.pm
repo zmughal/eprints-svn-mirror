@@ -127,7 +127,13 @@ sub eprint_render
 		$doctd = $session->make_element( "td" );
 		$doctr->appendChild( $doctd );
 		$doctd->appendChild( $doc->render_citation_link() );
-
+		my %files = $doc->files;
+		if( defined $files{$doc->get_main} )
+		{
+			my $k = int($files{$doc->get_main}/1024)+1;
+			$doctd->appendChild( $session->make_element( 'br' ) );
+			$doctd->appendChild( $session->make_text( $k." Kb" ));
+		}
 		$doctable->appendChild( $doctr );
 	}
 	$page->appendChild( $doctable );
@@ -144,6 +150,10 @@ sub eprint_render
 		$p = $session->make_element( "p" );
 		$p->appendChild( $eprint->render_value( "abstract" ) );
 		$page->appendChild( $p );
+	}
+	else
+	{
+		$page->appendChild( $session->make_element( 'br' ) );
 	}
 	
 	my( $table, $tr, $td, $th );	# this table needs more class cjg
@@ -343,16 +353,11 @@ sub eprint_render_full
 		"page:abstract_intro" ) );
 
 	my( $table, $tr, $td );
-	$table = $session->make_element( "table", border=>1, cellpadding=>20 );
-	$page->appendChild( $table );
+	my( $showdiv );
+	$showdiv = $session->make_element( "div", class=>"preview" );
+	$page->appendChild( $showdiv );
 	my( $abstractpage, $title ) = eprint_render( $eprint, $session );
-
-	$tr = $session->make_element( "tr" );
-	$td = $session->make_element( "td", bgcolor=>"#e0e0e0" );
-	$table->appendChild( $tr );
-	$tr->appendChild( $td );
-	$td->appendChild( $abstractpage );
-
+	$showdiv->appendChild( $abstractpage );
 
 	if( $eprint->is_set( "suggestions" ) )
 	{

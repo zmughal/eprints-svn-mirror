@@ -52,9 +52,9 @@ else
 		"cgi/users/buffer:buffer_blurb",
 		scope=>$user->render_value( "editperms" ) ) );
 
-	$table = $session->make_element( "table", border=>1, cellpadding=>5 );
+	$table = $session->make_element( "table", border=>0, cellpadding=>4, cellspacing=>0 );
 	$page->appendChild( $table );
-	$tr = $session->make_element( "tr" );
+	$tr = $session->make_element( "tr", class=>"header_plain" );
 	$table->appendChild( $tr );
 	
 	$th = $session->make_element( "th" );
@@ -70,13 +70,15 @@ else
 	$tr->appendChild( $th );
 
 	my $e;
+	
+	my $row = 1;
 	foreach $e (@eprints)
 	{
-		$tr = $session->make_element( "tr" );
+		$tr = $session->make_element( "tr", class=>"row_".($row%2?"b":"a") );
 		$table->appendChild( $tr );
 
 		# Title
-		$td = $session->make_element( "td" );
+		$td = $session->make_element( "td", class=>"first_col" );
 		$tr->appendChild( $td );
 		$link = $session->render_link( "edit_eprint?dataset=buffer&eprintid=".$e->get_value("eprintid") );
 		$link->appendChild( $e->render_description() );
@@ -85,7 +87,7 @@ else
 		# Link to user
 		my $user = new EPrints::User( $session, $e->get_value( "userid" ) );
 		
-		$td = $session->make_element( "td" );
+		$td = $session->make_element( "td", class=>"middle_col" );
 		$tr->appendChild( $td );
 		if( defined $user )
 		{
@@ -99,9 +101,10 @@ else
 	
 		my $buffds = $session->get_archive()->get_dataset( "buffer" );	
 		
-		$td = $session->make_element( "td" );
+		$td = $session->make_element( "td", class=>"last_col" );
 		$tr->appendChild( $td );
 		$td->appendChild( $buffds->get_field( "datestamp" )->render_value( $session, $e->get_value( "datestamp" ) ) );
+		++$row;
 	}
 }
 

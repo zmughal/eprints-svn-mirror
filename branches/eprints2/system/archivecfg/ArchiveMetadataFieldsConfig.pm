@@ -69,7 +69,7 @@ $fields->{eprint} = [
 		hasid => 1, input_id_cols=>20, 
 		family_first=>1, hide_honourific=>1, hide_lineage=>1 }, 
 
-	{ name => "title", type => "longtext", multilang=>0 },
+	{ name => "title", type => "longtext", multilang=>0, input_rows => 3 },
 
 	{ name => "ispublished", type => "set", 
 			options => [ "pub","inpress","submitted" , "unpub" ] },

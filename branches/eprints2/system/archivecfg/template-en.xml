@@ -22,19 +22,11 @@
     <div class="header noPrint">
       <table cellpadding="5" border="0" cellspacing="0" width="100%">
         <tr>
-          <td bgcolor="#cccccc">
+          <td>
             <div class="archivetitle">&archivename;</div>
           </td>
-          <td bgcolor="#cccccc">
-            <div class="menu">
-              <a class="menulink" href="&frontpage;">Home</a> ||
-              <a class="menulink" href="&base_url;/information.html">About</a> ||
-              <a class="menulink" href="&base_url;/view/">Browse</a> ||
-              <a class="menulink" href="&perl_url;/search">Search</a> ||
-              <a class="menulink" href="&perl_url;/register">Register</a> ||
-              <a class="menulink" href="&userhome;">User Area</a> ||
-              <a class="menulink" href="&base_url;/help">Help</a>
-            </div>
+          <td>
+            <ul class="menu"><li><a class="menulink" href="&frontpage;">Home</a></li><li><a class="menulink" href="&base_url;/information.html">About</a></li><li><a class="menulink" href="&base_url;/view/">Browse</a></li><li><a class="menulink" href="&perl_url;/search">Search</a></li><li><a class="menulink" href="&perl_url;/register">Register</a></li><li><a class="menulink" href="&userhome;">User Area</a></li><li><a class="menulink" href="&base_url;/help">Help</a></li></ul>
           </td>
         </tr>
       </table>
@@ -46,14 +38,7 @@
       </td></tr></table></div>
     </div>
     <div class="footer noPrint">
-      <br />
-      <table cellpadding="5" border="0" cellspacing="0" width="100%">
-        <tr>
-          <td bgcolor="#cccccc">
-            <small><a href="&base_url;/contact.html">Contact Information</a></small>
-          </td>
-        </tr>
-      </table>
+       <a href="&base_url;/contact.html">Contact Information</a>
     </div>
   </body>
 </html>

@@ -71,18 +71,12 @@ sub get_index_codes_basic
 	my $eprint =  $doc->get_eprint;
 	return( [], [], [] ) unless( defined $eprint );
 
-	my $words_file = $eprint->local_path."/". $doc->get_value( "docid" ).".words";
-	my $indexcodes_file = $eprint->local_path."/". $doc->get_value( "docid" ).".indexcodes";
+	my $words_file = $doc->words_file;
+	my $indexcodes_file = $doc->indexcodes_file;
 	my @s1 = stat( $words_file );
 	my @s2 = stat( $indexcodes_file );
 
-	if( !defined $s1[9] ) 
-	{ 
-		# no words file!
-		return( [], [], [] );
-	}
-
-    if( defined $s2[9] && $s2[9] > $s1[9] )
+    	if( defined $s1[9] && defined $s2[9] && $s2[9] > $s1[9] )
 	{
 		my $codes = [];
 		unless( open( CODELOG, $indexcodes_file ) )

@@ -2056,3 +2056,24 @@ PACKAGE: 2.2.99.2
  - required_formats can now be a function pointer which returns the
     formats required for that eprint. 
 
+2004-10-24 cjg
+
+ - Improved CSS stylesheet to look much nicer, only affects new 
+    archives.
+ - Made "lineage" in names hidden by default, nobody likes it!
+ - Reduced title input to 3 rows, much neater.
+ - Added a number of extra css elements to pages to help new style,
+    should not effect existing archives.
+ - Added filesize to default eprint page renderer
+ - Changed default template to work with new CSS styles.
+ - Made submission buffer look a bit neater
+ - Changed text of "new document" button to be either "new format"
+    or "another format".
+ - Added methods to document to return path of words and indexcodes
+    files and use those throughout, rather than making up the string
+    in multiple places.
+ - Fixed what appears to be a bug in fulltext indexing which was
+    not generating a words file if one didn't exist. 
+ - Added new script: erase_fulltext_cache to force recreation of
+    words and indexcodes files.
+

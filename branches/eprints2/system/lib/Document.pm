@@ -1323,13 +1323,9 @@ sub get_text
 	my( $self ) = @_;
 
 	my $converter = new Convert::PlainText;
-	my $eprint =  $self->get_eprint;
-	if( !defined $eprint )
-	{
-		return "";
-	}
-	my $words_file = $eprint->local_path."/".
-		$self->get_value( "docid" ).".words";
+	my $words_file = $self->words_file;
+	return '' unless defined $words_file;
+
 	my %files = $self->files;
 	my @fullpath_files = ();
 	foreach( keys %files )
@@ -1344,6 +1340,30 @@ sub get_text
 
 	return $words;
 }
+
+sub words_file
+{
+	my( $self ) = @_;
+	return $self->cache_file( 'words' );
+}
+
+sub indexcodes_file
+{
+	my( $self ) = @_;
+	return $self->cache_file( 'indexcodes' );
+}
+
+sub cache_file
+{
+	my( $self, $suffix ) = @_;
+
+	my $eprint =  $self->get_eprint;
+	return unless( defined $eprint );
+
+	return $eprint->local_path."/".
+		$self->get_value( "docid" ).".".$suffix;
+}
+	
 
 1;
 
