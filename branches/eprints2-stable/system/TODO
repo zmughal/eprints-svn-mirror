@@ -1,4 +1,9 @@
-
+UPGRADE
+ * ALTER
+ * remove rindex?
+ * Proc/Reliable
+ * libapreq
+ * apache
 
 Big New Features
  * Modular Controls [2.4]
@@ -7,26 +12,30 @@ Big New Features
  * perl 5.8??
  * RH9 etc.
  * APACHE2.0
+ * SOAP
 
+General
+ * "Disable" option for core XML file
 Bugs
+ * import_xml NOTEXISTS apparent error (really a warning)
  * hideemail into non-checkbox
  * Warn on 0byte uploads
- * File Upload Broke
  * Users can use staff search
- * FULL TEXT
+ * FULL TEXT (disable option)
  * fileinfo does not handle paths correctly
  * can't change username?
  * bug in refine search on defaulted booleans?
  * author with name " " is not treated as null in input
+ * not stripping " " of start & end in input?
  * Investigate: (subjects_self->{merge})(ANY)
 Pre-release issues
  * GRANT ALTER ON ep2stable.* TO ep2stable@localhost; in update!
  * nestids in subjects -> just plain stupid?
- * Reminder in STDERR if ordervalue table is missing.
  * lose email in template: make contact page.
 Render
 CmdLine
 Submission
+ * "Save for later" needs different text in staff edit
  * Confusing Cancel button in submission form (files section)
 Views
  * Make views use filters. 
@@ -37,6 +46,7 @@ UserArea
  * make status page show indexer on/off
  * make better edit/control page?
  * move staff utils to new page?
+BibTeX
 Local
 
  * ECS: edit
@@ -264,3 +274,5 @@ CGI Tools
  * Highlight "problems" blocks
  * 404 page is for entire domain not /foo/bar/
  * Clean up Staff eprint searches
+ * File Upload Broke
+ * Metafield undef from config bug.

@@ -15,7 +15,7 @@
 #
 ######################################################################
 
-package EPrints::Config::foo;
+package EPrints::Config::ep2stable;
 
 foreach my $file ( 
 	"cfg/ArchiveOAIConfig.pm",
@@ -424,7 +424,7 @@ $c->{search}->{simple} =
 	],
 	preamble_phrase => "cgi/search:preamble",
 	title_phrase => "cgi/search:simple_search",
-#	citation => "neat",
+	citation => "neat",
 	default_order => "byyear",
 	page_size => 100
 };
@@ -447,15 +447,9 @@ $c->{search}->{advanced} =
 		{ meta_fields => [ "publication" ] },
 		{ meta_fields => [ "date_effective" ] }
 	],
-	filters => [
-		{ 
-			meta_fields => [ "creators" ],
-			value => "harnad"
-		}
-	],
 	preamble_phrase => "cgi/advsearch:preamble",
 	title_phrase => "cgi/advsearch:adv_search",
-#	citation => "neat",
+	citation => "neat",
 	default_order => "byyear",
 	page_size => 33
 };

@@ -791,9 +791,9 @@ sub render_nbsp
 {
 	my( $self ) = @_;
 
-	my $string = latin1("");
-	$string->pack(160);
-	
+	my $string = latin1(" ");
+	#$string->pack(160);
+	#my $nbsp = $string->utf8;
 	return $self->make_text( $string );
 }
 

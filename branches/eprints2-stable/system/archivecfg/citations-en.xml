@@ -92,7 +92,14 @@ In: @event_title@<ep:ifset name="event_dates">, @event_dates</ep:ifset><ep:ifset
 
 <!-- custom view for search results, if you want to use it -->
 
-    <ep:citation type="eprint_neat"><table border="0"><tr><td><span class="citation">@creators@<br /><ep:linkhere>@title@</ep:linkhere><br /><ep:ifset name="date_issue">@date_issue@, </ep:ifset>@type@.<ep:ifmatch name="full_text_status" value="none"> Item not available online.</ep:ifmatch><ep:ifmatch name="full_text_status" value="restricted"> Item availablity restricted.</ep:ifmatch><span style="color: #ccc"> [Deposited @datestamp@]</span></span></td><td>@fileinfo@</td></tr></table></ep:citation>
+    <ep:citation type="eprint_neat">
+<table border="0">
+  <tr>
+    <td><span class="citation">@creators@<br /><ep:linkhere>@title@</ep:linkhere><br /><ep:ifset name="date_issue">@date_issue@, </ep:ifset>@type@.<ep:ifmatch name="full_text_status" value="none"> Item not available online.</ep:ifmatch><ep:ifmatch name="full_text_status" value="restricted"> Item availablity restricted.</ep:ifmatch><span style="color: #ccc"> [Deposited @datestamp@]</span></span></td>
+    <td>@fileinfo@</td>
+  </tr>
+</table>
+    </ep:citation>
 
 <!-- user citations -->
     <ep:citation type="user"><ep:linkhere><ep:ifset name="name">@name@</ep:ifset><ep:ifnotset name="name">User @username@</ep:ifnotset></ep:linkhere></ep:citation>

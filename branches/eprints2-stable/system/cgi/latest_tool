@@ -73,14 +73,6 @@ $searchexp->dispose();
 my $output = $session->param( "output" );
 if( $output eq "rss" )
 {
-	my $content = "text/xml";
-	#if( $session->param( "debug" ) eq "yes" )
-	#{
-		$content = "text/plain";
-	#}
-
-	$session->send_http_header( content_type=>$content );
-
 	my $response = $session->make_element( "rdf:RDF",
 		"xmlns:rdf"=>"http://www.w3.org/1999/02/22-rdf-syntax-ns#",
 		"xmlns"=>"http://purl.org/rss/1.0/" );
@@ -170,8 +162,11 @@ if( $output eq "rss" )
 		$response->appendChild( $item );		
 	}	
 
+	my $content = "text/xml";
+	$session->send_http_header( content_type=>$content );
+
 	print <<END;
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 
 END
 	print EPrints::XML::to_string( $response );

@@ -154,7 +154,12 @@ sub new
 		{
 			if( defined $props{$p_id} && $props{$p_id} eq $EPrints::MetaField::FROM_CONFIG )
 			{
-				$props{$p_id} = $self->{archive}->get_conf( "field_defaults" )->{$p_id};
+				my $v = $self->{archive}->get_conf( "field_defaults" )->{$p_id};
+				if( !defined $v )
+				{
+					$v = $EPrints::MetaField::UNDEF;
+				}
+				$props{$p_id} = $v;
 			}
 			$self->{field_defaults}->{$p_id} = $props{$p_id};
 		}

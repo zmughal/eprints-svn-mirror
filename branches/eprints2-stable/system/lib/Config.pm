@@ -449,7 +449,6 @@ sub load_archive_config_module
 	my $file = EPrints::Utils::untaint_file( $info->{configmodule} );
 	@! = $@ = undef;
 	my $return = do $file;
-
 	unless( $return )
 	{
 		my $errors = "couldn't run $file";

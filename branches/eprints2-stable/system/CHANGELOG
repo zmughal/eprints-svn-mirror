@@ -1682,4 +1682,11 @@ PACKAGE: 2.2.99.1
 
 PACKAGE: 2.2.99.2
 
+2003-11-14 cjg
+ 
+ - Made searches use "neat" citation again.
+ - Fixed bug in Metadata defaults
+ - Fixed bug in render_nbsp. Didn't always give the right unicode value.
+
+
 ======================================================================
