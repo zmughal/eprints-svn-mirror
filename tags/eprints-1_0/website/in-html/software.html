@@ -1,0 +1,63 @@
+TITLE: eprints.org: About the Software
+
+<BR />
+<BR />
+
+<h1>About the eprints.org Software</h1>
+
+<p align=center><em>This page is available <a href="fr/software.html">in French</a>.</em></p>
+
+<p>The first complete version of the <strong>eprints.org</strong> software is now available. To be notified of releases and other news via e-mail, there is a <a href="list.html">mailing list</a> you can join.</p>
+
+<p>For further information, you can send e-mail to <a href="mailto:info@eprints.org">info@eprints.org</a>.</p>
+
+<h2>Features</h2>
+
+<UL>
+<li><p>Ease of setup and installation. An installation script automates most of the installation process.</p></li>
+
+<li><p>Can store documents in any format that you (as archive administrator) wish to be accepted. Each individual research paper (or <em>eprint</em>) can be stored in more than one document format.</p></li>
+
+<li><p>The archive can use any metadata schema; the administrator decides what metadata fields to held about each eprint. This is decided in three or four stages:
+<ol>
+<li>Decide a maximal set of metadata fields that should be stored (for example, "authors", "title", "journal", "journal volume", etc.)</li>
+<li>Decide what types of eprint should be stored (for example, refereed journal article, thesis, technical report, unpublished preprint)</li>
+<li>For each eprint type, decide which metadata fields should be stored for eprints of that type, and which of those fields are mandatory.</li>
+<li>Decide how these metadata fields should be projected into the <a href="http://www.openarchives.org/sfc/sfc_oams.htm">Open Archives</a> world. (If necessary, interoperability can be switched off, but this is strongly discouraged.)</li>
+</ol>
+</p>
+</li>
+
+<li><p>Eprints can be placed in a configurable, extendible subject hierarchy. This hierarchy can be used to view and search the archive.</p></li>
+
+<li><p>Submission of all eprints is via a simple but extremely powerful WWW-based interface. Papers can be uploaded just as files, in a compressed bundled file (such as a <strong>.zip</strong> file), or automatically mirrored from an existing website by specifying a URL.</p></li>
+
+<li><p>Data integrity checks are performed automatically without the need for adminstrator intervention. Some "stub" routines allow individual sites to add their own integrity checks if they desire. These checks can greatly reduce the workload of the site administrator.</p></li>
+
+<li><P>Authors can have associated metadata. Again, the site administrator can decide what metadata fields will be stored with each author's record.</p></li>
+
+<li><p>Users can subscribe either as authors or readers, via a web form or an automatically processed e-mail account.</p></li>
+
+<li><p>Users can subscribe to an e-mail service. Each user specifies their preferred subject headings, and can then choose to be e-mailed with summaries of new submissions under each of those headings.</p></li>
+
+<li><p>Submitted papers (if administrators desire) go through a moderation process. Submitted papers are placed in a buffer, where they can be approved by a moderator, rejected outright, or returned to the author for amendment. (The extent of this moderation is, of course, up to the individual institution running the archive: at <a href="http://cogprints.soton.ac.uk/">CogPrints</a> we use it to make sure the subject matter is suitable, and that all figures appear correctly.)</p>
+
+<p>This moderation process is also performed using a WWW-based interface. In fact, once the site is up and running, it will require very little maintanence that cannot be performed using the WWW-based maintanence interface.</p></li>
+</UL>
+
+
+<h2>Requirements</h2>
+
+<p>A major objective in this work has been to make the system usable at the minimum possible expense. The only cost of running the archive need be the basic cost of the hardware. The hardware and software requirements are:</p>
+
+<ul>
+<li><p>Any computer capable of running UNIX. Obviously, the faster, the better, but any Intel Pentium II processor will give good performance.</p></li>
+<li><p>A UNIX operating system. <a href="http://www.linux.org">Linux</a> (a very advanced and free UNIX implementation) works just fine, and is in fact the development platform.</p></li>
+<li><p>The <a href="http://www.apache.org/httpd.html">Apache WWW server</a>, another professional-quality free software product, often included with <a href="http://www.linux.org">Linux</a> distributions, such as <a href="http://www.redhat.com">RedHat</a>.</p></li>
+<li><p>The <a href="http://www.perl.com">Perl programming language</a>, also included with most <a href="http://www.linux.org">Linux</a> distributions. (Also a small number of additional modules, detailed in the <a href="eprints-install.html">installation document</a>.</p></li>
+<li><p>The <a href="http://perl.apache.org/">mod_perl</a> module for <a href="http://www.apache.org/httpd.html">Apache</a>, which significantly increases the performance of <a href="http://www.perl.com">Perl</a> scripts. Note that the mod_perl supplied with RedHat 6.2 (i386 architecture) is broken, and should be replaced with <A href="mod_perl-1.23-1.i386.rpm">this RPM</A>.</p></li>
+<li><p>The <a href="http://www.mysql.com/">MySQL Database</a>, a database system that is free for non-commercial use. (The exact terms of the license can be found <a href="http://www.mysql.com/Manual_chapter/manual_Licensing_and_Support.html">here</a>.) All database access is performed in a single module, so the database back-end can be replaced with a minimum of effort, if you require.</p></li>
+<li><p>The <strong>eprints.org</strong> software itself!</p></li>
+</ul>
+
+<p>Once the prerequisite software has been installed, installing the <strong>eprints.org</strong> software is simply a matter of editing some configuration files and running an installation script. You will then have a fully functional, up-and-running archive. After that, you are free to tweak the system to your heart's (and institution's) content.</p>

@@ -1,0 +1,971 @@
+% $Id$
+
+\section{Prerequisites}
+
+The \eprints\ software makes use of a number of other pieces of software, which must all be installed on the server machine in order for it to function properly. Table \ref{install_packages} describes the software packages you need, together with the minimum version you should try and get. The \eprints\ software may work with versions earlier than those indicated but we can't guarantee it.
+
+\begin{table}
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\emph{Package} & \emph{Version} & \emph{Where from}                                   \\
+\hline
+tar \& gunzip  &                & come with most UNIXes                               \\
+               &                & RedHat packages: {\tt tar} \& {\tt gzip}            \\
+unzip          & 5.\emph{x}     & {\tt ftp://ftp.freesoftware.com/pub/infozip/}       \\
+               &                & RedHat packages: {\tt unzip}                        \\
+wget           & 1.5            & {\tt http://www.gnu.org/software/wget/wget.html}    \\
+               &                & RedHat packages: {\tt wget}                         \\
+perl           & 5.005          & {\tt http://www.cpan.org/}                          \\
+               &                & RedHat packages: {\tt perl}                         \\
+apache         & 1.3.9          & {\tt http://www.apache.org/}                        \\
+               &                & RedHat packages: {\tt apache} \& {\tt apache-devel} \\
+mod\_perl      & 1.21           & {\tt http://perl.apache.org/}                       \\
+               &                & RedHat packages: {\tt mod\_perl}                    \\
+MySQL          & 3.22.\emph{x}  & {\tt http://www.mysql.org/}                         \\
+               &                & Not on RedHat CD                                    \\
+sendmail\footnotemark       & 8.9            & comes with most UNIXes                              \\
+               &                & RedHat packages: {\tt sendmail}                     \\
+\hline
+\end{tabular}
+\caption{\label{install_packages} Prerequisite Software Packages}
+\end{center}
+\end{table}
+\footnotetext{or similar mail transport system}
+
+Many of them may be already installed on your system. Also shown is which RedHat package you should install (from the RedHat installer) to install that package on the machine. Note that while MySQL doesn't appear on the RedHat 6.2 CD, suitable RPMs are available from the MySQL Web site.
+
+
+\subsection{Special Notes on Apache and mod\_perl}
+
+Apache and mod\_perl need special attention, since you can configure a myriad of parameters when you compile and install them. The software requires that a few of these are configured in a certain way.
+
+Fortunately, Apache RPM supplied with RedHat Linux 6.2 has a suitable compilation configuration. The mod\_perl distributed with RedHat 6.2 is broken, and should be replaced with {\tt mod\_perl-1.23-1.i386.rpm}, available from the {\tt http://www.eprints.org} Web site.
+
+Apache should be installed with the following modules compiled in (or made available as a .so) and enabled:
+
+\begin{itemize}
+\item rewrite\_module
+\item auth\_module
+\end{itemize}
+
+mod\_perl should be compiled with at least the following hooks enabled:
+
+\begin{itemize}
+\item PERL\_AUTHEN
+\item PERL\_AUTHZ
+\end{itemize}
+
+You can just compile it with ALL\_HOOKS if you like.
+
+
+\subsection{Perl Modules}
+
+The following Perl modules are used by the \eprints archive. They are all available from the CPAN Web site ({\tt http://www.cpan.org/}). The version numbers are the minimum versions you should try and get. You may find that some are already installed with your Perl distribution.
+
+\begin{itemize}
+\item CGI 2.6\emph{x}
+\item POSIX
+\item Data-Dumper 2.\emph{xxx}
+\item DBI 1.1\emph{x}
+\item Msql-MySQL-modules 1.2\emph{xxx} \emph{(don't need mysql-perl emulation)}
+\item Filesys-Diskspace 0.05
+\item MIME-Base-64 2.11
+\item URI-1.06
+\item XML-Writer-0.4
+\item ApacheDBI-0.87
+\item Unicode-String-2.\emph{xx}
+\end{itemize}
+
+Note that there have been reports of difficulties installing Filesys-Diskspace; running the following in {\tt /usr/include} should fix this: 
+
+\begin{verbatim}
+h2ph * sys/*
+\end{verbatim}
+
+on a Solaris machine and
+
+\begin{verbatim}
+h2ph asm/* bits/*
+\end{verbatim}
+
+on a Linux machine. If you still can't get it to work, grep for {\tt statvfs} and run {\tt h2ph} on that file; and tell us!
+
+
+\subsection{E-Mail}
+
+Some operations are performed by e-mail. An \eprints\ archive needs to be able to send e-mails (typically using the {\tt sendmail} package), and also to receive e-mails and process them using a script.
+
+In other words, the \eprints\ software needs an e-mail account, for example {\tt eprints@archive.foo.org}, and every time an e-mail arrives at that account, an \eprints\ script needs to be run and given the contents of the e-mail. This e-mail account is referred to as the \emph{automatic administration account}.
+How this account is set up will probably vary between institutions. You may want a mail server on the local machine, or NFS mount a mail spool directory, or have another mail server machine {\tt rsh} the relevant script. What needs to happen with this is explained later on; for now, just be aware that the software needs a mail account it can send from and automatically process incoming mails.
+
+You'll also need a regular adminstration e-mail account for users needing to contact a person.
+
+Once all of this software is installed, we're ready to proceed with the installation of the \eprints\ archive software.
+
+
+\section{Installing the \eprints\ Software}
+\label{install_software}
+
+Much of the installation process has been automated by the use of some installation scripts.  It is also possible to install the software manually, allowing the maximum amount of flexibility when installing the software on machines that are running other services.  The automatic installation process can also be configured to leave out certain steps which you can perform manually.
+
+Here is an overview of the steps that you can perform automatically or manually:
+
+\begin{enumerate}
+\item Install the code, setting relevant path information
+\item Configure the code to work with the rest of the system
+\item Create the MySQL database for \eprints\
+\item Configure Apache to execute \eprints\ scripts and serve \eprints\ documents
+\item Install a crontab, to periodically execute various \eprints\ scripts
+\end{enumerate}
+
+The automatic installation process is described first.  Where an aspect of this can be performed manually, the reader is referred to the manual installation section (section \ref{install_manual}.)  A few final steps must always be performed manually; these are described in the ``Finishing up'' section (section \ref{finishing_up}.)
+
+
+\subsection{Automatic Installation}
+
+The distribution is a tarred and gzipped file, and the usual way to unpack these is with:
+
+\begin{verbatim}
+> gunzip -c eprints-version.tar.gz | tar xvf -
+\end{verbatim}
+
+Unpack it somewhere temporary, not where you wish it to finally be installed at this stage. You should find that the above command creates an {\tt eprints} directory, with all of the unpacked software inside.
+
+Automatic installation is carried out in three steps:
+
+\begin{enumerate}
+\item Run {\tt ./configure} with relevant parameters.
+\item Run {\tt make}.
+\item Run {\tt make install} as root.
+\end{enumerate}
+
+To view the options that {\tt configure} accepts, enter the {\tt eprints} directory and type:
+
+\begin{verbatim}
+./configure --help
+\end{verbatim}
+
+The options used by \eprints\ are described below. Most of them have sensible defaults, so you probably won't need to specify every single one, however you'll probably need to specify some.
+
+\begin{description}
+\item[{\tt --prefix}]
+
+Specifies where you want the \eprints\ software installed on your system. The default is {\tt /opt/eprints}.
+
+\item[{\tt --with-perl}]
+
+Use this to specify the Perl interpreter to use. Note that you just specify the directory in which the {\tt perl} program resides, for example {\tt /usr/bin}. If Perl is in the standard shell path, you can leave this parameter out and {\tt configure} will find the path automatically.
+
+\item[{\tt --disable-upgrade}]
+
+Normally, the installer will detect whether it needs to upgrade an existing \eprints\ installation. You can explicitly turn this off by specifying {\tt --disable-upgrade}, which forces the scripts to install a fresh copy of \eprints, including the default configuration.
+
+If the installer is performing an upgrade, the parameters described below are ignored, since the existing \eprints\ installation is assumed to have been configured already.
+
+\item[{\tt --with-apache-conf}]
+
+This parameter enables the \emph{experimental} Apache automatic configuration program. You can specify an Apache configuration file, including the full path and filename, for example:
+
+\begin{verbatim}
+--with-apache-conf=/usr/local/apache/conf/httpd.conf
+\end{verbatim}
+
+This is an experimental feature, and it is quite possible that it won't work fully in all circumstances:
+
+\begin{itemize}
+\item The installer assumes that the Apache configuration file is either exactly, or very close to the default {\tt httpd.conf} that Apache 1.3.\emph{x} installs initially.
+\item The installer also assumes that the Apache server will be dedicated to the \eprints\ software. The document root of the server is set to the \eprints\ document root, and the \eprints\ Perl scripts are accessed via {\tt http://server/perl/}. Additionally, 404 (not found) and 401 (authorisation required) errors are handled by \eprints.
+\end{itemize}
+
+The original configuration is copied to a file with a {\tt .bak} extension (e.g. {\tt httpd.conf.bak}) in case it doesn't work properly.
+
+If any assumption doesn't hold in your case, omit {\tt --with-apache-conf}, and you will have to configure your Apache server manually as described in section \ref{manual_apache}. However when it does work it saves a lot of time!
+
+\item[{\tt --disable-crontab}]
+
+The installer can set up the crontab that executes the necessary \eprints\ scripts for the subscription service and for renewing the ``browse by subject'' views. If you're not happy with the defaults, disable this behaviour by specifying {\tt --disable-crontab} in the parameters to {\tt configure}.
+
+The defaults are:
+
+\begin{itemize}
+\item Daily subscriptions processed at midnight (local time)
+\item Weekly subscriptions processed weekly at 12:15am
+\item Monthly subscriptions processed monthly at 12:30am
+\item Subject views updated daily at 01:00am
+\end{itemize}
+
+If you do disable this feature, you'll have to set up a crontab yourself as described in section \ref{manual_crontab}.
+
+\item[{\tt --disable-create-database}]
+
+The installer will normally create and set permissions up for the MySQL database that \eprints\ will use for you. If you want to do this yourself, specify {\tt --disable-create-database} the parameters to {\tt configure}; you will have to create a database yourself as described in \ref{manual_create_db}.
+
+\item[{\tt --with-wget}]
+
+Similar to {\tt --with-perl}. Lets you specify the directory in which the {\tt wget} executable resides. If it's in the standard shell path its detected automatically.
+
+\item[{\tt --with-unzip}]
+
+Location of {\tt unzip} executable, similar to {\tt --with-perl}.
+
+\item[{\tt --with-mysql}]
+
+Similar to {\tt --with-perl}. Location of the {\tt mysql} command line tool.
+
+\item[{\tt --with-sendmail}]
+
+Similar to {\tt --with-perl}. Location of the {\tt sendmail} command line tool. If your site is going to use an alternative mail sender, specify {\tt --without-sendmail}. If you do this, you'll need to configure the alternative by editing {\tt SiteInfo.pm} in the installed \eprints\ code.
+
+\item[{\tt --with-port}]
+
+Use to specify the port number. Default is 80.
+
+\item[{\tt --with-hostname}]
+
+The hostname that will be used to access the archive. By default, this is the automatically-detected hostname of the machine, but in many cases, the archive may be accessed using a different name. For example, your machine might be called {\tt thingy.foo.ac.uk}, but your archive is accessed as {\tt foo-eprints.ac.uk}.
+
+\item[{\tt --with-username}]
+
+This is the UNIX username on the local machine the \eprints\ server (and Apache server) should run as. The default is \eprints. If the user doesn't exist, an account will be created for it, the home of this user will be set to the \eprints\ software prefix, and the shell set to {\tt /bin/false} for security. If the user already exists it won't be altered.
+
+The default is the username {\tt eprints}.
+
+\item[{\tt --with-group}]
+
+UNIX group the \eprints\ server should run as. Will be created if it doesn't exist. If a UNIX user is automatically created, its default group will be this group. The default is the group {\tt eprints}.
+
+\item[{\tt --with-database}]
+
+Name of the MySQL database to use. It will be automatically created if {\tt --disable-create-database} has not been specified.
+
+\item[{\tt --with-db-username}]
+
+The MySQL username \eprints\ (and Apache) should use to access the MySQL database, defaulting to {\tt eprints}. Note that this is independent of the UNIX username specified with {\tt --with-username}, and can be a different name. If the {\tt --disable-create-database} parameter is not specified, this MySQL user will be granted priviledges on the \eprints\ database.
+
+Note that you will be prompted for a password for this MySQL user when you type {\tt make} later on.
+
+\item[{\tt --with-autoadmin}]
+
+Specifies the address automatically processed mails should be sent to. Mails arriving at this address should be piped to {\tt process\_mail}. Default is {\tt (UNIX username)@(hostname)}.
+
+\item[{\tt --with-admin}]
+
+Email address for human-read administrative e-mail. Defaults to {\tt admin@(hostname)}.
+
+\item[{\tt --with-oai-identifier}]
+
+Specifies the unique Open Archives identifier for your archive. There is no default. You will have to ensure that this identifier is unique before you can register as an Open Archives data provider. Should there be a clash, it's trivial to change this in the installed \eprints\ archive at a later time.
+
+\item[{\tt --with-id-stem}]
+
+A small stem that is prepended to the ID codes of eprints in the archive. The only purpose of this is to perhaps make the ID codes more meaningful for people.
+
+\item[{\tt --with-site-name}]
+
+A short site name for your archive. Ideally this should be one word, or as few words as possible. It's used all over the place, in emails and Web pages, so it's a good idea to change this from the default ``Eprint Archive''!
+
+\item[{\tt --with-description}]
+
+A short textual description of the archive and it's content. One or two sentences. No default. Not used as much as the {\tt site-name}.
+
+\end{description}
+
+Once you've run the {\tt configure} script with relevant parameters, run:
+
+\begin{verbatim}
+make
+\end{verbatim}
+
+This will modify the code with your chosen configuration and, if appropriate, ask you for a password to give the MySQL database it will create. However, it will not actually install anything, create the database or update your system in any way. This will not happen until you become {\tt root} and type:
+
+\begin{verbatim}
+make install
+\end{verbatim}
+
+This will install the software in the relevant location, and if appropriate, create the database, install the crontab and/or update the Apache Web server configuration. If the script is creating the database, you will be asked for the MySQL root user password. This password isn't stored anywhere; you're typing it straight into the {\tt mysql} monitor tool prompt.
+
+Depending on the parameters you specified, you may have to perform some extra tasks as described above. In any case, you will also have to follow the steps listed in section \ref{finishing_up} to complete the installation and have a working \eprints\ archive.
+
+
+\subsubsection{Some Example Parameters}
+\label{example_conf_params}
+
+Some example {\tt configure} parameters:
+
+\begin{verbatim}
+./configure --with-apache-conf=/etc/httpd/conf/httpd.conf
+  --with-admin=eprints-admin@foo.ac.uk
+  --with-oai-identifier=fooprints --with-site-name=fooprints
+\end{verbatim}
+
+The above will configure an \eprints\ server to be installed in {\tt /opt/eprints}. The Apache server will be modified, human-read email (from the system and users) will be sent to {\tt admin@foo.ac.uk}, the Open Archives identifier is {\tt fooprints}, as is the site name. Most of the defaults are used. The above set of configuration parameters should work fine on a RedHat Linux system.
+
+\begin{verbatim}
+./configure --prefix=/usr/local/eprints
+  --with-admin=eprints-admin@foo.ac.uk
+  --with-autoadmin=eprints-autoadmin@foo.ac.uk
+  --with-hostname=eprints.foo.ac.uk --with-database=fooprints
+  --with-db-username=fooprints_sql
+  --with-oai-identifier=fooprints --with-site-name=fooprints
+  --with-description="Foo University Eprints Archive"
+\end{verbatim}
+
+The above are a more comprehensive set of parameters. The Apache configuration won't be edited. The software will be installed in {\tt /usr/local/eprints}. The UNIX and username is {\tt fooprints}, the MySQL database is called {\tt fooprints}, and accessed as the MySQL user {\tt fooprints\_sql}. The email addresses and site description have also been given.
+
+\begin{verbatim}
+./configure --prefix=/usr/local/eprints --disable-create-database
+  --disable-crontab --with-username=fooprints
+  --with-group=fooprints --without-sendmail
+\end{verbatim}
+
+This makes the install script do as little as possible, assuming that the fooprints user and group already exist. It won't update the Apache configuration, it won't try to create the database or the crontab, and it won't try to find {\tt sendmail}. You can use parameters like these if you want to do most of the configuration and installation yourself for maximum flexibility.
+
+
+\subsection{Manual Installation}
+\label{install_manual}
+
+It may be the case that the automatic installation method doesn't give you the flexibility you need. For example you might not have root access to the system, or the machine you're installing on might be running several other services. \eprints\ is still straightforward to install by hand.
+
+You may find that a combination of automatic and manual installation works best. See the examples configuration parameters in section \ref{example_conf_params}; the last example shows how you can take advantage of the installer's handling of file system path related issues while doing most of the installation manually.
+
+Choose whereabouts on your system the \eprints\ software should reside. For the remainder of this section it is assumed that the software distribution is unpacked as {\tt /opt/eprints}, and so the cgi directory is {\tt /opt/eprints/cgi} etc. The eprints user should own all of the files in this directory.
+
+For the remainder of this section, examples assume that the \eprints\ software is installed at {\tt /opt/eprints}. You should of course replace this with the actual location of \eprints\ if you are installing it in a different location.
+
+Firstly, you'll need to decide what user and group the software should run as. Ideally it should be the same as the Apache Web server; if you're not happy with this, it's possible to have them run as separate users but they will both need to have write access to the {\tt /opt/eprints/html/documents} directory.
+
+If you're not even using {\tt configure}, {\tt make} and {\tt make install} to install the files in the first place, it's probably easiest to extract the {\tt .tar.gz} distribution file straight into place as the relevant user. Additionally, you'll need to change the first line of each of the scripts in {\tt eprints/bin} to add the {\tt perl\_lib} directory to the Perl library path, for example:
+
+\begin{verbatim}
+#!/usr/bin/perl -I/opt/eprints/perl_lib
+\end{verbatim}
+
+Depending on how you wish to set up your system, you may wish to add the following line to all of the scripts in {\tt cgi}, {\tt cgi/staff} and {\tt cgi/user}:
+
+\begin{verbatim}
+use lib '/opt/eprints/perl_lib';
+\end{verbatim}
+
+Do this if you wish to run more than one \eprints\ archive from a single Apache server. If you are only running one \eprints\ archive on your Apache server, you can perform this change more easily by adding a {\tt PerlSetEnv} directive into your Apache server configuration, as described in section \ref{manual_apache}.
+
+
+
+\subsubsection{Initial Configuration of \eprints}
+
+\eprints\ is a highly configurable piece of software; the various ways in which it can be configured are described in more detail in section \ref{install_configure}. This section describes the technical aspects of the configuration required to get the installation to work.
+
+Configuration information is largely held in two directories: {\tt eprints/cfg} and {\tt eprints/perl\_lib/EPrintSite}. Most of it is set up with reasonable defaults, but you will need to edit {\tt eprints/perl\_lib/EPrintSite/SiteInfo.pm} before anything will work.
+
+{\tt SiteInfo.pm} is fairly well commented, so you should just be able to go down that file and alter any values you need to. It will allow you to configure just about any local file system path, server URL or e-mail address you might need to. Hopefully, network administrators will be knowledgeable enough to know how to set everything up. In the minimal instance, you'll need to change the following values:
+
+\begin{itemize}
+\item {\tt \$EPrintSite::SiteInfo::automail} - Don't forget to backslash the {\tt @} if you use double quotes!
+\item {\tt \$EPrintSite::SiteInfo::admin}
+\item {\tt \$EPrintSite::SiteInfo::local\_root} - the bin, cfg, cgi etc. directories must be subdirectories of this
+\item {\tt \$EPrintSite::SiteInfo::host} - Fully qualified hostname, for example {\tt archive.foo.org}
+\item {\tt \$EPrintSite::SiteInfo::eprint\_id\_stem} - Prepended to all document record ID's in the system
+\item {\tt \$EPrintSite::SiteInfo::password} - The password for your MySQL database (remember it for later)
+\item {\tt \$EPrintSite::SiteInfo::archive\_identifier} - Your archive's Open Archives identifier
+\end{itemize}
+
+If your server is running on a non-standard port (i.e. other than port 80), you will need to add the relevant port numbers to the following variables:
+
+\begin{itemize}
+\item {\tt \$EPrintSite::SiteInfo::server\_static}
+\item {\tt \$EPrintSite::SiteInfo::server\_perl}
+\end{itemize}
+
+For example, if you are running the archive on port 8080, you should change {\tt \$EPrintSite::SiteInfo::server\_static} to:
+
+{\tt http://\$EPrintSite::SiteInfo::host:8080}
+
+and apply a similar change to {\tt \$EPrintSite::SiteInfo::server\_perl}.
+
+You should also verify that the paths to various executables are correct in the command line values, i.e.
+
+\begin{itemize}
+\item {\tt \%EPrintSite::SiteInfo::unzip\_executable}
+\item {\tt \$EPrintSite::SiteInfo::wget\_executable}
+\item {\tt \$EPrintSite::SiteInfo::sendmail\_executable}
+\end{itemize}
+
+For security, you should make sure that {\tt SiteInfo.pm} is readable only by the \eprints\ user.
+
+At this point you should decide on the types of eprints you want to store in the archive, the metadata you want to store with each eprints and your initial subject hierarchy. These are described in section \ref{install_metadata}.
+
+
+\subsubsection{Setting up the MySQL database}
+\label{manual_create_db}
+
+While the \eprints\ software handles most database operations transparently, some initial setting up is required. Usually, after installing MySQL, you'll need to set a root password, using something like:
+
+\begin{verbatim}
+mysqladmin -u root password "password"
+\end{verbatim}
+
+Note that {\tt password} here should \emph{not} be the password you have put in {\tt Siteinfo.pm}. From a security viewpoint, it's probably best to remove all non-root users and all non-localhost access from the privilege system (assuming that no other services need to access the database.)
+
+Now create the archive database, from the {\tt mysql} monitor tool:
+
+\begin{verbatim}
+mysql> create database eprints;
+\end{verbatim}
+
+Then set up the access privileges:
+
+\begin{verbatim}
+mysql> GRANT SELECT, INSERT, UPDATE, DELETE, CREATE ON eprints.*
+TO eprints@localhost IDENTIFIED BY "password";
+\end{verbatim}
+
+{\tt password} in this case should be the password you put in {\tt SiteInfo.pm}. The MySQL database is now ready.
+
+
+\subsubsection{Configuring Apache}
+\label{manual_apache}
+
+Apache needs to be pointed at the \eprints\ software and the password system set up.
+
+Edit your Apache configuration, {\tt httpd.conf} (found in {\tt /etc/httpd/conf} on RedHat systems.) On some earlier versions of Apache, the configuration is split into {\tt httpd.conf}, {\tt access.conf} and {\tt srm.conf}.  In these cases, the {\tt <Directory>} entries should go in {\tt access.conf}, the {\tt Alias} entries in {\tt srm.conf}, and everything else in {\tt httpd.conf}.
+
+Firstly, turn on the authentication using MySQL and Perl DBI by adding these lines (after {\tt mod\_perl} is included:)
+
+\begin{verbatim}
+PerlModule Apache::DBI
+PerlModule Apache::AuthDBI
+\end{verbatim}
+
+The Web server should ideally run as the \eprints\ user, so change the relevant lines (though you may wish to use group nobody). It's possible to run the server as another user (for example, the default nobody), but this does cause problems; both the Apache server and the \eprints\ user need to be able to write to the eprints document filespace ({\tt /opt/eprints/html/documents}).
+
+\begin{verbatim}
+User eprints
+Group eprints
+\end{verbatim}
+
+The library files need to be accessible within the Perl scripts. The automatic installer configures the scripts such that they will find the library files themselves. An alternative is to add the {\tt use lib} line to the top of the scripts in {\tt eprints/cgi} manually, as described in section \ref{install_manual}. However, if you're installing manually, and you are only running one \eprints\ service on your Apache server, you can just insert the following directive into your {\tt httpd.conf} to achieve the same effect:
+
+\begin{verbatim}
+PerlSetEnv PERL5LIB /opt/eprints/perl_lib
+\end{verbatim}
+
+Set the DocumentRoot to point at the HTML root:
+
+\begin{verbatim}
+DocumentRoot "/opt/eprints/html"
+\end{verbatim}
+
+We need to be allowed to override the authorisation for this directory, e.g:
+
+\begin{verbatim}
+<Directory "/opt/eprints/html">
+   Options Includes FollowSymLinks
+   AllowOverride AuthConfig
+   Order allow,deny
+   Allow from all
+</Directory>
+\end{verbatim}
+
+Set up the location for mod\_perl scripts:
+
+\begin{verbatim}
+Alias /perl/ /opt/eprints/cgi/
+<Directory /opt/eprints/cgi>
+    SetHandler perl-script
+    PerlHandler Apache::Registry
+    PerlSendHeader Off
+    Options +ExecCGI
+    AllowOverride AuthConfig
+</Directory>
+\end{verbatim}
+
+Add the engine to run the open archives interoperability software:
+
+\begin{verbatim}
+RewriteEngine on
+RewriteRule ^/Dienst(.*) /opt/eprints/openarchives/Main/dienst.pl
+<Directory /opt/eprints/openarchives/Main>
+    SetHandler perl-script
+    PerlHandler Apache::PerlRun
+    Options +ExecCGI
+    allow from all
+    PerlSendHeader Off
+</Directory>
+\end{verbatim}
+
+Redirect 401 ``authorisation required'' and 404 ``document not found'' errors to be handled by \eprints\ (note that these need to be URLs rather than local filesystem paths) by adding the following paths. However, if you're running more than one \eprints\ archive on a single Apache server, only one 404 document handler, which may end up directing users to incorrect pages, so you may wish to leave that out; likewise, you may wish to change the wording in {\tt error401.html}.
+
+\begin{verbatim}
+ErrorDocument 401 /error401.html
+ErrorDocument 404 /perl/handle_404
+\end{verbatim}
+
+Now restart the server, and ensure that it's started up again with no errors. You'll need to set up the \eprints\ {\tt .htaccess} files so that Apache can read usernames and passwords from the database. Run as the \eprints\ user:
+
+\begin{verbatim}
+/opt/eprints/bin/update_htaccess
+\end{verbatim}
+
+If your \eprints\ user doesn't have a valid shell, run as root:
+
+\begin{verbatim}
+su -s /bin/sh -c /opt/eprints/bin/update_htaccess eprints
+\end{verbatim}
+
+
+\subsubsection{Installing the Crontab}
+\label{manual_crontab}
+
+To operate the subscriptions (alerting service), the {\tt subs\_daily}, {\tt subs\_weekly} and {\tt subs\_monthly} scripts need to be run every day, week and month, respectively, from the \eprints\ account. The \emph{browse by subject} views are static HTML files generated by a script, {\tt generate\_views}. This should be run at least once a day, or maybe more depending on how many incoming eprints you expect and how quickly you'd like them to be browsable\footnote{A search will always pick up any eprint in the system as soon as it's accepted into the archive.}.
+
+So, the \eprints\ user crontab should look something like this:
+
+\begin{verbatim}
+0 0  * * * /opt/eprints/bin/subs_daily
+15 0 * * 0 /opt/eprints/bin/subs_weekly
+30 0 1 * * /opt/eprints/bin/subs_monthly
+0 1  * * * /opt/eprints/bin/generate_views
+\end{verbatim}
+
+Note that the subscription jobs are start at 12.00am, 12.15am and 12.30am respectively, and {\tt generate\_views} is run at 1am. They are spread out like this so that no two such scripts are running at once, which could cause server performance problems for any users online at the time. (You may also wish to {\tt nice} these jobs for the same reason.)
+
+If the \eprints\ user does not have a valid login shell, some operating systems may not allow the above commands to be executed directly by the \eprints\ user. If this is the case, you may need to install something like the following lines in the root crontab:
+
+\begin{verbatim}
+0 0  * * * su -s /bin/sh -c /opt/eprints/bin/subs_daily eprints
+15 0 * * 0 su -s /bin/sh -c /opt/eprints/bin/subs_weekly eprints
+30 0 1 * * su -s /bin/sh -c /opt/eprints/bin/subs_monthly eprints
+0 1  * * * su -s /bin/sh -c /opt/eprints/bin/generate_views eprints
+\end{verbatim}
+
+
+\subsection{Finishing up}
+\label{finishing_up}
+
+Once you have completed the installation steps described above, there are a few more steps that must be performed manually in order to complete the installation.
+
+\begin{enumerate}
+\item Set up the document store
+\item Configure the e-mail system to automatically execute {\tt process\_mail} when mails are received at the automatic administration address
+\item Configure the metadata and subject hierarchy
+\item Construct the database and Web pages
+\item Create an initial staff user account.
+\end{enumerate}
+
+Most of these steps are very simple, and are described below.
+
+
+\subsubsection{The Document Store}
+
+The system needs a directory in which to store the full text document files (and any other data files you may wish to have stored in the archive). Of course, your storage requirements will probably increase over time, so the \eprints\ software has been designed to let you add disk space as simply as possible.
+
+When it needs to store documents for a new eprint, the system looks at the directory {\tt /opt/eprints/html/documents}. It will alphabetically scan each subdirectory, and the first subdirectory it finds with enough space will be used to store the new document files. Of course, the subdirectories can be symbolic links to any physical disk you like.
+
+For example, your {\tt /opt/eprints/html/documents} might contain:
+
+\begin{verbatim}
+lrwxrwxrwx    eprints   eprints       disk0 -> /export/1/data
+lrwxrwxrwx    eprints   eprints       disk1 -> /net/datadisk
+\end{verbatim}
+
+In this case, the system will try and use {\tt disk0} (and thereby {\tt /export/1/data}) first, and if there isn't enough room on that, {\tt disk1} ({\tt /net/datadisk}).
+
+If the amount of free space on the partition with the most space available falls below a threshold value, the system will send a mail to the site administrator advising them that disk space is running low. If there is no space available, then no new documents can be added, and the administrator will be sent an error message.
+
+{\tt /opt/eprints/perl\_lib/EPrintSite/SiteInfo.pm} is where the thresholds may be edited. The defaults are 500~Mb free when a warning is sent out, and 20~Mb free when an error occurs.
+
+To add a new disk partition is simple. Just add a symbolic link to some (empty) directory on the new partition, using a command like:
+
+\begin{verbatim}
+ln -s /export/1/data /opt/eprints/html/documents/disk0
+\end{verbatim}
+
+You will need to do this when you install an \eprints archive, to give the system at least one lot of disk space it can store documents on. Of course, you could just make a directory in {\tt /opt/eprints/html/documents} instead of a symbolic link, but this is not recommended; the contents of the {\tt html} directory should be considered volatile. Both the eprints user and the Apache server (if running as a different user) must be able to write to all of these directories.
+
+
+\subsubsection{Automatic E-mail Processing}
+
+The {\tt process\_mail} script needs to be run, as the \eprints\ user, whenever mail arrives at the automatic administration account, and the contents of that mail should be fed to the script's standard input. You could just use a {\tt .forward} file, but it's probably best to use {\tt procmail}.
+
+In the \eprints\ user {\tt .forward} file:
+
+\begin{verbatim}
+"|IFS=' ' && exec /usr/bin/procmail -f- || exit 75"
+\end{verbatim}
+
+In the {\tt .procmailrc} file:
+
+\begin{verbatim}
+:0:
+* !^FROM_DAEMON
+* !^X-Loop: eprints@archive.foo.org
+|/opt/eprints/bin/process_mail
+\end{verbatim}
+
+Replace {\tt eprints@archive.foo.org} with the automatic administration account address. The reason for using {\tt procmail} is that the recipe above prevents {\tt process\_mail} replying to bounced error mails and mails from mailing lists.
+
+Of course, there are many other ways in which you can achieve the same functionality. The use of {\tt sendmail} and {\tt procmail} is just a suggestion.
+
+
+\subsubsection{Last Steps}
+\label{install_last_steps}
+
+Nearly there! The last thing you need to do is set up your metadata configuration. Details of how to do this section \ref{install_metadata}. \eprints\ is supplied with a comprehensive default set for research literature, developed at Southampton.
+
+When the metadata configuration files have been edited to your satisfaction, get the \eprints\ archive to create its tables in the database:
+
+\begin{verbatim}
+su -s /bin/sh -c /opt/eprints/bin/create_databases eprints
+\end{verbatim}
+
+Then edit the site Web pages in {\tt static/}, and the site ``skin'' in {\tt SiteInfo.pm}, as described in section \ref{install_laf}. To create the actual HTML files to be served by Apache, run:
+
+\begin{verbatim}
+su -s /bin/sh -c /opt/eprints/bin/update_laf eprints
+\end{verbatim}
+
+Now, you should be able to see the front page of your site with a browser, e.g. by looking at:
+
+\begin{verbatim}
+http://archive.foo.org/
+\end{verbatim}
+
+You should create an initial staff member account:
+
+\begin{verbatim}
+su -s /bin/sh -c "/opt/eprints/bin/create_user staff
+  john@smith.com Staff" eprints
+\end{verbatim}
+
+
+Now you should have a working installation that you can play around with. You should try joining the archive (look at the registrations page), submitting a test paper, and checking that it arrives in the submissions buffer in the staff area. The staff area is not linked to the front page by default; you can access it by viewing {\tt http://eprintarchive.foo.org/staff}.
+
+
+\section{\eprints\ Archive Configuration}
+\label{install_configure}
+
+The \eprints\ archive is a highly configurable piece of software. The configuration options are divided into three areas in this document, described in the following sections: Metadata configuration, site look and feel, and alternative system setups.
+
+{\bf Important note:} Although you are of course free to alter the code to suit your needs in any way you wish, it is \emph{strongly} recommended that you do NOT change any code in the {\tt perl\_lib/EPrints} directory, or any of the scripts in the {\tt bin} or {\tt cgi} directories. This will allow you to upgrade your \eprints\ software without having to merge differences into code that you have altered. You should be able to configure the site in any way necessary just by editing code in {\tt perl\_lib/EPrintSite}, and maybe adding scripts to the {\tt cgi} directory; it should NOT be necessary to alter any of the {\tt cgi} scripts that are already there.
+
+
+\subsection{Metadata Configuration}
+\label{install_metadata}
+
+\eprints\ lets you configure what types of eprints you want the software to store, and what metadata should be stored for each eprint. You can also set up the initial subject hierarchy. You firstly need to configure the types, metadata and subjects in the configuration files in the {\tt cfg} directory of the installation. Then, run the {\tt create\_databases} script as described in section \ref{install_last_steps}; this causes \eprints\ to initialise the relevant database tables.
+
+Note that it's possible, but tricky to change the metadata once the archive is up and running; it's best to spend some time considering what metadata you will need so you won't have to change it. If there's no live data in the archive, you can easily experiment with the metadata etc.\ by erasing the database, editing the metadata files, and running {\tt create\_databases} again. The script {\tt erase\_archive} in the {\tt bin} directory will do this for you. (Don't worry, it will request confirmation, so don't worry about accidentally invoking it on a live archive!) If you do make any changes, you will also have to restart your Apache server in order for the \eprints\ scripts to register the changes.
+
+You should decide what metadata you want to hold about each eprints in your archive. Each eprint has an \emph{eprint type}, for example \emph{journal paper}, \emph{tech report} or \emph{thesis}. You can decide on these in {\tt cfg/metadata.eprint-types}. The format of the file is rather similar to the Apache Web server configuration file format.
+
+\begin{verbatim}
+<class class-id "Displayable Name">
+REQUIRE mandatory-field
+REQUIRE mandatory-field-2
+optional-field
+optional-field-2
+</class>
+\end{verbatim}
+
+Each of the fields must then be defined in {\tt cfg/metadata.eprint-fields}:
+
+\begin{verbatim}
+<field fieldname>
+argument = "value"
+argument = "value"
+</field>
+\end{verbatim}
+
+Possible arguments are shown in table \ref{install_meta_args}.
+
+\begin{table}
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\emph{Argument} & \emph{Description}                                       \\
+\hline
+displaydigits   & Size of numerical input box                              \\
+displaylines    & No. of rows in text area input box                       \\
+displayname     & Displayable name                                         \\
+editable        & Is the field user-editable                               \\
+help            & Help information for the input form. Repeatable.         \\
+maxlength       & Maximum no. of characters or digits                      \\
+multiple        & Whether a single value or a list (name and set)          \\
+required        & Is the field required (only used in {\tt metadata.user}) \\
+type            & Type of the field                                        \\
+value           & Repeatable. Possible values in a set/enum.               \\
+                & e.g. {\tt value jan = "January"}                         \\
+visible         & Is the field publically visible?                         \\
+\hline
+\end{tabular}
+\caption{\label{install_meta_args} Arguments to metadata field specifications}
+\end{center}
+\end{table}
+
+The possible types of metadata field, and the arguments they need, are shown in table \ref{install_meta_types}. Note that you always need to specify a type and a displayname, and you can specify editable, help, required and visible for all of them.
+
+\begin{table}
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\emph{Type} & \emph{Description}              & \emph{Arguments} \\
+\hline
+int         & Integer number                  & displaydigits    \\
+date        & Date                            &                  \\
+enum        & One of a set of values          & value            \\
+boolean     & Yes or no                       &                  \\
+set         & One or many of a set of values  & value, multiple  \\
+text        & Single line text field          & maxlength        \\
+multitext   & Multi-line text area            & displaylines     \\
+url         & URL                             &                  \\
+email       & E-mail address                  &                  \\
+pagerange   & Range of pages (or single page) &                  \\
+year        & Year                            &                  \\
+multiurl    & List of URLs                    & displaylines     \\
+name        & A name (or list of names)       & multiple         \\
+\hline
+\end{tabular}
+\caption{\label{install_meta_types} Available metadata types}
+\end{center}
+\end{table}
+
+The system holds some information internally about each eprint, so this need not and should not be duplicated in the site metadata:
+
+\begin{itemize}
+\item Its ID
+\item Its type (from the local archive's options, e.g. journal paper)
+\item The \emph{username} of the user who submitted the eprint (the system does \emph{not} assume this is equivalent to authorship)
+\item When it was submitted
+\item What full texts are stored, and where
+\item The subject categories in the subject hierarchy associated with the eprint (though the hierarchy itself is of course archive-specific)
+\item The ID of any earlier version of the eprint, and of any paper the eprint is a commentary on, if within the archive.
+\end{itemize}
+
+You can also decide what metadata should be held with user records. This can be set in the file {\tt cfg/metadata.user}, with the same file format as used in{\tt cfg/metadata.eprints-fields}. Note that the system always holds the username, password, e-mail address and registration date of each user, so you don't need to include these in {\tt metadata.user}.
+
+The initial subject hierarchy is configured in the file {\tt cfg/subjects}. Each subject is specified on a single line, with four parameters separated by colons:
+
+\begin{verbatim}
+subject-tag:Displayable name:parent:can eprints have this tag?
+\end{verbatim}
+
+For example:
+
+\begin{verbatim}
+engn-arnt:Aeronautics:engn:1
+\end{verbatim}
+
+\begin{description}
+\item[{\tt engn-arnt}] is the unique subject tag. This is used to represent the subject internally in the database. This should not contain spaces, quotes or brackets.
+\item[{\tt Aeronautics}] is the displayable name for the subject. This can be more than one word.
+\item[{\tt engn}] is the subject tag of the parent subject; that is, the tag of the subject one level up from this in the hierarchy. If this is blank, the subject is a top-level subject, for example:
+
+\begin{verbatim}
+engn:Engineering::0
+\end{verbatim}
+
+\item[{\tt 1}] The last parameter can be a {\tt 0} or {\tt 1}. If it's a {\tt 0}, users cannot specify this as a subject tag for their eprint, for example if the subject is too broad. If it's a {\tt 1}, users can specify this tag as a subject for their eprint.
+
+In the above two example subjects, users can deposit eprints with the subject \emph{Aeronautics}, but not with the subject \emph{Engineering}.
+\end{description}
+
+When you run {\tt create\_databases}, the subjects are copied from the {\tt subjects} file into the database. \eprints\ users with Staff access can then modify the subject hierarchy using the Web interface; this just changes the subject hierarchy in the database, not in the configuration file. The configuration file is just used to specify the \emph{initial} subject hierarchy.
+
+
+\subsection{Full Text Formats}
+
+You can decide what document file formats you want to accept in the archive. Look at {\tt SiteInfo.pm}.
+
+\begin{description}
+\item[@EPrintSite::SiteInfo::supported\_formats] is the list of supported formats (as IDs),
+\item[\%EPrintSite::SiteInfo::supported\_format\_names] gives display names for each format,
+\item[@EPrintSite::SiteInfo::required\_formats] Authors will have to upload at least one of the document types in this list, and
+\item[\$EPrintSite::SiteInfo::allow\_arbitrary\_formats] If set, authors will be allowed to upload an arbitrary format that they'll have to name (for example a Word file.)
+\end{description}
+
+
+\subsection{Validation}
+
+The Perl module {\tt /opt/eprints/perl\_lib/EPrintSite/Validate.pm} contains methods which are called by the core code to ensure that uploaded information is valid. You should use these to put in any validation or integrity checks for submissions to your site. If any {\tt validate\_xxx} method returns a problem description string, it is shown to the user at the relevant point, and they will not be able to proceed further with the submission until the problem is fixed.
+
+The comments in the file should make it clear where your checks need to go.
+
+
+\subsection{Searching and Subscriptions}
+
+In {\tt SiteInfo.pm} you can also specify what metadata fields can be used to search for eprint records or users. There are four types of search on eprint records: Simple public search, advanced public search, staff search, and public subscription (alerting service). Only staff may search user records.
+
+An array in {\tt SiteInfo.pm} corresponds to each of those types of search. Just put the field names in (not the displayable name) the relevant array to allow them to be searched. A single search field can be used to search multiple metadata fields. To specify such a field, place the names of each field to be searched in one array element, separated by a forward slash. For example:
+
+\begin{verbatim}
+@EPrintSite::SiteInfo::simple_search_fields =
+(
+   "title/abstract/keywords",
+   "authors",
+   "publication",
+   "year"
+);
+\end{verbatim}
+
+This means that in a simple public search, users are presented with four search fields. One searches the {\tt title}, {\tt abstract} and {\tt keywords} fields, one searches the {\tt authors} field, one the {\tt publication} field and one the {\tt year} field.
+
+You can also specify the way that search results (and subscriptions) are ordered. A hash value maps descriptions of ordering algorithms onto specifications of those algorithms, for example:
+
+\begin{verbatim}
+%EPrintSite::SiteInfo::eprint_order_methods =
+(
+   "by year (most recent first)" => "year DESC, authors, title",
+   "by year (oldest first)"      => "year ASC, authors, title",
+   "by author's name"            => "authors, year DESC, title",
+   "by title"                    => "title, authors, year DESC"
+);
+\end{verbatim}
+
+The first of these orders sorts results by descending year, then author's name\footnote{The system knows to sort names by surname, provided that the relevant metadata field is of the type \emph{name}.}, then title. The default order if {\tt ASC}ending or {\tt DESC}ending are not specified is ascending.
+
+A default order is given as a key to that hash, for example:
+
+\begin{verbatim}
+$EPrintSite::SiteInfo::eprint_default_order = "by author's name";
+\end{verbatim}
+
+You can also specify in a similar manner the order to use for the \emph{browse by subject} views.
+
+
+\subsection{Open Archives Interoperability}
+
+A vital component of the archiving of research literature on-line is the \emph{interoperability} of different eprint archives. Otherwise, in order to find relevant material, one would have to visit many archives in turn and search each individually.
+
+The Open Archives Initiative is developing standards to allow this interoperability to occur. \eprints\ supports this protocol, allowing Open Archives \emph{service providers} to harvest the metadata within the archive, and allow users to search the metadata across several archives at once. It is very likely that other services such as citation linking will emerge.
+
+These standards are developing quickly, so \eprints\ has been designed to allow you to keep up with them as easily as possible. All you have to do is upgrade the core \eprints\ software. The upgraded software will use the same site configuration to allow interoperability using new versions of the Open Archives protocol.
+
+For version 1.0 of the software, the publically available version of the Open Archives protocol is a subset of \emph{Dienst} protocol. It is also known as the \emph{Santa Fe convention}. The \eprints\ software includes the open archives subset of the Dienst software developed at Cornell University, and a core module {\tt OpenArchives.pm} that mediates between an \eprints\ archive and Dienst.
+
+Here at Southampton, we've been involved in the development of the Open Archives protocol, and are registered alpha-testers; thus, we've been able to design the software with future versions in mind. When the Open Archives protocol changes, the changes will almost certainly be transparent to you when you upgrade \eprints; in the unlikely event of you having to change your site configuration, the changes will be extremely minor. You will definitely not have to change your live data.
+
+For version 1.0, the base URL of the Open Archives protocol will be:
+
+\begin{verbatim}
+http://your.eprints.server.edu/Dienst
+\end{verbatim}
+
+You can test you installation by editing and viewing:
+
+\begin{verbatim}
+eprints/openarchives/Tests/InstallTest.htm
+\end{verbatim}
+
+
+\subsubsection{Exporting Metadata}
+
+Firstly, you need to decide on and register an unique archive identifier. For the Dienst-based version of the protocol, information about existing identifiers can be found at:
+
+\begin{verbatim}
+http://www.openarchives.org/sfc/sfc_archives.htm
+\end{verbatim}
+
+The mechanism for registering an identifier is likely to change, but if you register an archive identifier for the Santa Fe convention, you should be able to keep that for the next version of the protocol, due to be released in January 2001.
+
+The Open Archives component of the \eprints\ software uses two methods in {\tt SiteRoutines.pm} to export metadata. One is used to let an Open Archives service know what metadata formats the archive can export; the other is used to retrieve the metadata itself.
+
+In the default configuration, two metadata formats are exported:
+
+\begin{itemize}
+\item Dublin Core metadata.
+\item The Open Archives Metadata Set (OAMS).
+\end{itemize}
+
+The Open Archives Metadata Set is part of the Santa Fe convention, and you need to support this to support the current public version of the protocol. This will be superceded in later versions, so exporting Dublin Core metadata means that your archive will be compliant with the new version of the protocol as soon as you upgrade.
+
+These metadata formats are specified in {\tt SiteInfo.pm} as:
+
+\begin{verbatim}
+%EPrintSite::SiteInfo::oai_metadata_formats
+\end{verbatim}
+
+The {\tt oai\_list\_metadata\_formats} method in {\tt SiteRoutines.pm} merely returns this.
+
+Code in the {\tt oai\_get\_eprint\_metadata} in {\tt SiteRoutines.pm} is used to map your metadata set to these formats. If you decide to go with the default eprint metadata configuration supplied, you don't have to do anything! If you're using a different metadata set, you need to alter {\tt oai\_get\_eprint\_metadata} to export the relevant metadata. Specific details of how to achieve this are given in the comments in {\tt SiteRoutines.pm}.
+
+Further information about the OAMS can be found at:
+
+\begin{verbatim}
+http://www.openarchives.org/sfc/sfc_oams.htm
+\end{verbatim}
+
+Further information about Dublin Core can be found at:
+
+\begin{verbatim}
+http://purl.oclc.org/dc/
+\end{verbatim}
+
+Further information about the Open Archives Initiative can be found at:
+
+\begin{verbatim}
+http://www.openarchives.org/
+\end{verbatim}
+
+
+\subsection{Site Look and Feel}
+\label{install_laf}
+
+You can change the whole look and feel of the site by altering the HTML header and tail in {\tt SiteInfo.pm}. These are applied to every Web page presented by the system, with the exception of those static (information) pages you decide not to apply them to.
+
+Note that whenever you change the site ``skin'' (head and tail in {\tt SiteInfo.pm}, any of the code that renders abstract pages or references, or add any other files to the Web site, you will need to run the following script in order for the changes to take effect:
+
+\begin{verbatim}
+/opt/eprints/bin/update_laf
+\end{verbatim}
+
+You may also need to restart your Apache server in order for the changes to register with the \eprints\ scripts.
+
+You can put any static HTML or other files you want on the archive site. The default pages include a staff menu page, a front page with the \eprints\ logo, a general information page, a registration instructions page, and comprehensive on-line help. Just put your HTML files in the {\tt eprints/static} directory. The {\tt generate\_static} script will pick the files up and install them in the {\tt eprints/html} directory.
+
+If an HTML file in the {\tt static} directory doesn't have an HTML header, but starts with a line of the form:
+
+\begin{verbatim}
+TITLE: Document Title
+\end{verbatim}
+
+then the site HTML header and footer is given to the document and the document given the title ``Document Title''. In this case, don't put any {\tt <DOCTYPE>}, {\tt <HTML>}, {\tt <HEAD>} or {\tt <BODY>} elements in the document.
+
+If a file has an HTML header, then the header is left alone.
+
+Additionally, you can put in the HTML files a variety of placeholders that will be replaced by relevant values by the {\tt generate\_static} script. These are shown in table \ref{install_placeholders}. These substitutions will be made in files with or without HTML headers. It is recommended that you use these placeholders whenever possible.
+
+\begin{table}
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\emph{Placeholder}  & \emph{Replaced With}                                \\
+\hline 
+\_\_sitename\_\_    & name of the site                                    \\
+\_\_description\_\_ & short text description of the site                  \\
+\_\_admin\_\_       & admin email address                                 \\
+\_\_automail\_\_    & email address of automatic mail processing account  \\
+\_\_perlroot\_\_    & URL of perl server                                  \\
+\_\_staticroot\_\_  & URL of static HTTP server                           \\
+\_\_frontpage\_\_   & URL of site front page                              \\
+\_\_subjectroot\_\_ & where on the server the browse by subject views are \\
+\_\_version\_\_     & EPrints software version                            \\
+\hline
+\end{tabular}
+\caption{\label{install_placeholders} Placeholders in Static HTML Pages}
+\end{center}
+\end{table}
+
+You can also place arbitrary elements in the {\tt <HEAD>} elements of all pages (for example, to add a style sheet) by adding them to the {\tt @html\_head\_elements} variable in {\tt SiteInfo.pm}. You need to add them verbatim, for example:
+
+\begin{verbatim}
+@EPrintSite::SiteInfo::html_head_elements = (
+	'<META NAME="description" CONTENT="EPrint Archive Page">',
+	'<META NAME="keywords" CONTENT="Open Preprint Archive">' );
+\end{verbatim}
+
+
+\subsubsection{References and Abstract Pages}
+
+In {\tt /opt/eprints/perl\_lib/EPrintSite/SiteRoutines.pm} you can modify or replace the default code for displaying each eprint's abstract page, title and full reference. Also there is code for displaying a user's full name, and their full record. The comments in the code should make the task of programming any necessary changes straightforward.
+
+The \eprints\ core code provides a method for easing the creation of references. See the examples at the top of the default {\tt SiteRoutines.pm}, and the comments in {\tt perl\_lib/EPrints/Citation.pm} instructions on how to use it.
