@@ -14,7 +14,8 @@ $MILESTONE_VERSION = $EPRINTS_VERSION;
 	"eprints2-alpha-1" => "anchovy",
 	"eprints2-alpha-2" => "pepperoni",
 	"eprints2-pre-1"   => "fishfinger",
-	"eprints2-pre-2"   => "ovenchip"
+	"eprints2-pre-2"   => "ovenchip",
+	"eprints2-pre-3"   => "toast"
 );
 
 sub insert_data
@@ -65,12 +66,12 @@ sub do_package
 	my($version_tag, $package_version, $package_desc, $license_file, $package_file, $type_num) = @_;
 	if (-d "package")
 	{
-		system("/bin/rm -r package")==0 or die "Couldn't remove package dir.\n";
+		system("/bin/rm -rf package")==0 or die "Couldn't remove package dir.\n";
 	}
 	
 	if (-d "export")
 	{
-		system("/bin/rm -r export")==0 or die "Couldn't remove export dir.\n";
+		system("/bin/rm -rf export")==0 or die "Couldn't remove export dir.\n";
 	}
 	
 	print "Making directories...\n";
@@ -285,8 +286,8 @@ sub do_package
 	
 
 	print "Removing temporary directories...\n";
-	system("/bin/rm -r package")==0 or die("Couldn't remove package dir.\n");
-	system("/bin/rm -r export")==0 or die("Couldn't remove export dir.\n");
+	system("/bin/rm -rf package")==0 or die("Couldn't remove package dir.\n");
+	system("/bin/rm -rf export")==0 or die("Couldn't remove export dir.\n");
 
 	print "Done.\n";
 
