@@ -76,7 +76,6 @@
 </sect1>
 
 <sect1><title>The &eprints; logo</title>
-<graphic fileref="eprintslogohuge.eps" width="50" format="PNG" />
 <para>The Folder Jigsaw logo was created by Christopher Gutteridge. It was supposed to encompass "archives","documents", OAI, "skywriting", "modularity/extensibility" and the IAM research groups visual identity. </para>
 
 <para>The base version is a 684x668 XCF file (For the <application class="software">GIMP Editor</application>). You are welcome to modify it for your own archive, maybe have your own logo in the jigsaw.</para>
