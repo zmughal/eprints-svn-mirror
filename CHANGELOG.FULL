@@ -37,16 +37,16 @@ Wed Feb  7 00:06:24 GMT 2001
 
 todo:
 
-# userid/username split.
-username becomes userid
+* userid/username split.
+    + username becomes userid
 	- make it validate on user info too
 	- add a 'strict' option
-userid/name combo field 
+    + userid/name combo field 
 	- make it editable, searchable etc.
-make refs output which dosn't use wrapper.
-make people refs too, configurable.
-add some <BR> to end of left menu
-# document rebuild_sets
+* views
+    + make views output which dosn't use wrapper.
+    + make people views too, configurable.
+* add some <BR> to end of left menu
 # make rebuild sets work nicer?
 * new user type "Local"?
 * "filter" concept for staff.
@@ -55,9 +55,15 @@ add some <BR> to end of left menu
 * trawler, processor to convert eg latex to ps?
 * cgi/user page is a little iffy. Make it look nicer?
 * add bin/site for user created bins?
+* lost dienst code?
+* Incorporate CHANGELOG.TXT and todo.txt into release?
+
+website:
+* french pages dammit.
 
 docs:
 * password change script.
 * add subject to installation notes?
-add "multiple" option to table 2 in system notes?
+# add "multiple" option to table 2 in system notes?
+# document rebuild_sets
 
