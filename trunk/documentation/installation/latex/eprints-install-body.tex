@@ -24,13 +24,14 @@ mod\_perl      & 1.21           & {\tt http://perl.apache.org/}                 
                &                & RedHat packages: {\tt mod\_perl}                    \\
 MySQL          & 3.22.\emph{x}  & {\tt http://www.mysql.org/}                         \\
                &                & Not on RedHat CD                                    \\
-sendmail       & 8.9            & comes with most UNIXes                              \\
+sendmail\footnotemark       & 8.9            & comes with most UNIXes                              \\
                &                & RedHat packages: {\tt sendmail}                     \\
 \hline
 \end{tabular}
 \caption{\label{install_packages} Prerequisite Software Packages}
 \end{center}
 \end{table}
+\footnotetext{or similar mail transport system}
 
 Many of them may be already installed on your system. Also shown is which RedHat package you should install (from the RedHat installer) to install that package on the machine. Note that while MySQL doesn't appear on the RedHat 6.2 CD, suitable RPMs are available from the MySQL Web site.
 
@@ -110,7 +111,7 @@ If your perl executable isn't installed at {\tt /usr/bin/perl}, you'll need to c
 
 \subsection{Configuring \eprints}
 
-Configuration information is largely held in two directories: {\tt eprints/cfg} and {\tt eprints/site\_lib}. Most of it is set up with reasonable defaults, but you will need to edit {\tt eprints/site\_lib/SiteInfo.pm} before anything will work.
+Configuration information is largely held in two directories: {\tt eprints/cfg} and {\tt eprints/perl\_lib/EPrintSite}. Most of it is set up with reasonable defaults, but you will need to edit {\tt eprints/perl\_lib/EPrintSite/SiteInfo.pm} before anything will work.
 
 \eprints\ is a highly configurable piece of software; the various ways in which it can be configured are described in more detail in section \ref{install_configure}. This section describes the technical aspects of the configuration required to get the installation to work.
 
@@ -270,7 +271,7 @@ In this case, the system will try and use {\tt disk0} (and thereby {\tt /export/
 
 If the amount of free space on the partition with the most space available falls below a threshold value, the system will send a mail to the site administrator advising them that disk space is running low. If there is no space available, then no new documents can be added, and the administrator will be sent an error message.
 
-The thresholds can all be set in {\tt /opt/eprints/site\_lib/SiteInfo.pm}. The defaults are 500~Mb free when a warning is sent out, and 20~Mb free when an error occurs.
+{\tt /opt/eprints/perl\_lib/EPrintSite/SiteInfo.pm} is where the thresholds may be edited. The defaults are 500~Mb free when a warning is sent out, and 20~Mb free when an error occurs.
 
 To add a new disk partition is simple. Just add a symbolic link to some (empty) directory on the new partition, using a command like:
 
@@ -340,6 +341,13 @@ PERL5LIB=/opt/eprints/perl_lib
 0 1  * * * /opt/eprints/bin/generate_views
 \end{verbatim}
 
+In some operating systems (e.g. Solaris) the environment variable lines at the top aren't valid in crontab files, so you'll need to put them ``in line,'' e.g. (all as one line):
+
+\begin{verbatim}
+0 0  * * * PERL5LIB=/opt/eprints/perl_lib ; export PERL5LIB ;
+     /opt/eprints/bin/subs_daily
+\end{verbatim}
+
 Note that the subscription jobs are start at 12.00am, 12.15am and 12.30am respectively, and {\tt generate\_views} is run at 1am. They are spread out like this so that no two such scripts are running at once, which could cause server performance problems for any users online at the time. (You may also wish to {\tt nice} these jobs for the same reason.)
 
 The {\tt process\_mail} script needs to be run, as the eprints user, whenever mail arrives at the automatic administration account, and the contents of that mail should be fed to the script's standard input. You could just use a {\tt .forward} file, but it's probably best to use {\tt procmail}.
@@ -363,6 +371,8 @@ PERL5LIB=/opt/eprints/perl_lib
 
 Replace {\tt eprints@archive.foo.org} with the automatic administration account address. The reason for using {\tt procmail} is that the recipe above prevents {\tt process\_mail} replying to bounced error mails and mails from mailing lists.
 
+Of course, there are many other ways in which you can achieve the same functionality. The use of {\tt sendmail} and {\tt procmail} is just a suggestion.
+
 Now you should have a working installation that you can play around with. You should try joining the archive (look at the registrations page), submitting a test paper, a checking that it arrives in the submissions buffer in the staff area. The staff area is not linked to the front page by default; you can access it by viewing {\tt http://eprintarchive.foo.org/staff}.
 
 
@@ -371,7 +381,7 @@ Now you should have a working installation that you can play around with. You sh
 
 The \eprints\ archive is a highly configurable piece of software. The configuration options are divided into three areas in this document, described in the following sections: Metadata configuration, site look and feel, and alternative system setups.
 
-{\bf Important note:} Although you are of course free to alter the code to suit your needs in any way you wish, it is \emph{strongly} recommended that you do NOT change any code in the {\tt lib} directory, or any of the scripts in the {\tt bin} or {\tt cgi} directories. This will allow you to upgrade your \eprints\ software without having to merge differences into code that you have altered. You should be able to configure the site in any way necessary just by editing code in {\tt site\_lib}, and maybe adding scripts to the {\tt cgi} directory; it should NOT be necessary to alter any of the {\tt cgi} scripts that are already there.
+{\bf Important note:} Although you are of course free to alter the code to suit your needs in any way you wish, it is \emph{strongly} recommended that you do NOT change any code in the {\tt perl\_lib/EPrints} directory, or any of the scripts in the {\tt bin} or {\tt cgi} directories. This will allow you to upgrade your \eprints\ software without having to merge differences into code that you have altered. You should be able to configure the site in any way necessary just by editing code in {\tt perl\_lib/EPrintSite}, and maybe adding scripts to the {\tt cgi} directory; it should NOT be necessary to alter any of the {\tt cgi} scripts that are already there.
 
 
 \subsection{Alternative System Setups}
@@ -488,7 +498,7 @@ You can decide what document file formats you want to accept in the archive. Loo
 
 \subsubsection{Validation}
 
-{\tt /opt/eprints/site\_lib/Validate.pm} contains routines which are called by the core code to ensure that uploaded information is valid. You should use these to put in any validation or integrity checks for submissions to your site. If any {\tt validate\_xxx} method returns a problem description string, it is shown to the user at the relevant point, and they will not be able to proceed further with the submission until the problem is fixed.
+{\tt /opt/eprints/perl\_lib/EPrintSite/Validate.pm} contains routines which are called by the core code to ensure that uploaded information is valid. You should use these to put in any validation or integrity checks for submissions to your site. If any {\tt validate\_xxx} method returns a problem description string, it is shown to the user at the relevant point, and they will not be able to proceed further with the submission until the problem is fixed.
 
 The comments in the file should make it clear where your checks need to go.
 
@@ -628,6 +638,6 @@ You can also place arbitrary elements in the {\tt <HEAD>} elements of all pages 
 
 \subsubsection{References and Abstract Pages}
 
-In {\tt /opt/eprints/site\_lib/SiteRoutines.pm} you can modify or replace the default code for displaying each eprint's abstract page, title and full reference. Also there is code for displaying a user's full name, and their full record. The comments in the code should make the task of programming any necessary changes straightforward.
+In {\tt /opt/eprints/perl\_lib/EPrintSite/SiteRoutines.pm} you can modify or replace the default code for displaying each eprint's abstract page, title and full reference. Also there is code for displaying a user's full name, and their full record. The comments in the code should make the task of programming any necessary changes straightforward.
 
-The \eprints\ core code provides a method for easing the creation of references. See the examples at the top of the default {\tt SiteRoutines.pm}, and the comments in {\tt lib/Citation.pm} instructions on how to use it.
+The \eprints\ core code provides a method for easing the creation of references. See the examples at the top of the default {\tt SiteRoutines.pm}, and the comments in {\tt perl\_lib/EPrints/Citation.pm} instructions on how to use it.
