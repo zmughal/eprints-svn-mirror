@@ -1,0 +1,65 @@
+#!/usr/bin/perl -w -I/opt/ep2stable/perl_lib
+
+######################################################################
+#
+# cjg Not doc'd yet, too flakey
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints::Session;
+use EPrints::XML;
+#cjg Nice Command Options
+#cjg man page
+
+if( scalar @ARGV != 2 )
+{
+	print STDERR "export_xml <siteid> <dataset>\n";
+	exit( 1 );
+}
+
+# Set STDOUT to auto flush (without needing a \n)
+$|=1;
+
+my $session = new EPrints::Session( 1 , $ARGV[0] );
+exit( 1 ) unless( defined $session );
+
+my $ds = $session->get_archive()->get_dataset( $ARGV[1] ) ;
+if( !defined $ds )
+{
+	die "Bad Dataset ID";
+}
+my $nsversion = "1";
+my $ns = EPrints::XML::namespace( 'data', $nsversion );
+my $sexp = EPrints::SearchExpression->new( 
+		allow_blank => 1 , 
+		dataset => $ds , 
+		session => $session );
+$sexp->perform_search();
+my $info = { doc => EPrints::XML::make_document() };
+print <<END;
+<?xml version="1.0" encoding="utf-8" ?>
+<eprintsdata xmlns="$ns">
+END
+$sexp->map( \&deal, $info );
+print '</eprintsdata>'."\n";
+$session->terminate();
+
+exit;
+
+sub deal
+{
+	my( $session, $dataset, $item, $info ) = @_;
+
+	my $frag = $item->to_xml( no_xmlns=>1, version=>$nsversion, show_empty=>1 );
+	print EPrints::XML::to_string( $frag )."\n";
+	EPrints::XML::dispose( $frag );
+
+}
