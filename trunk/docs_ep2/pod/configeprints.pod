@@ -37,11 +37,11 @@ This is a perl module which is created and edited by the eprints installer scrip
 
 =head1 languages.xml
 
-cjg 
+This file contains a list of languages and their id's. 
 
 =head1 system-phrases-I<languageid>.xml
 
-cjg 
+This file contains phrases used by the system. It can be translated to make eprints run in other languages. Do not edit it. You may override anything set in here in the archive phrases file.
 
 =head1 SystemSettings.pm
 

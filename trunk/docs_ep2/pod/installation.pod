@@ -45,6 +45,82 @@ Don't just use 'reload' or 'restart' as these do not force mod_perl to reload it
 
 Now connect via the web and check it works...
 
+=head1 Browse Views
+
+Once every so often you should run the "generate_views" script on each archive in your system to regenerate the browse views section of the site.
+
+This is a set of static pages. By default one per subject, and one per year (only years with papers in that year not EVERY year ever!). Some users prefer to
+browse the system than search it. This also gives search engines a way to reach, and index, the abstract pages. 
+
+See the ArchiveConfig.pm config notes on how to edit the views it generates.
+
+=head2 But I don't want this feature...
+
+If you don't want to use this feature: don't, it's your archive. Remove the link from the template and front page.
+
+=head2 Setting it up
+
+This is best done by using the UNIX "cron" command (as user "eprints"). Cron will email "eprints" on that machine with the output, so best use the --quiet option so it only bothers you with errors.
+
+How often you want to run this depends on the size of your archive, and how fast the contents changes. This feature is roughly order "n". Which means if you double the number of items in your archive then you double the time it takes to run (ish). 
+
+Once an hour would seem a good starting point. If your archive gets real big >10000 then maybe once a day is more realistic - the one thing that you don't want to happen is for a new generate_views to start before the old one finishes as they will mess up each others output.
+
+Run generate_views on the command line to find out how long it takes. 
+
+=head2 Neat Stuff with Views
+
+(This will later move into the still-needs-to-be-written HOWTOs section.)
+
+Example situation: On my main website www.foobars.ac.uk I have a page per research project, of which we have hundreds. Each project has a short unique id code, eg. "manticore". I have a field in my eprints archive (eprints.foobars.ac.uk) which is configured: 
+
+ { name=>"projectcodes", type=>"text", multiple=>1 }
+
+I add the following browse view:
+
+ { id=>"by_project", allow_null=>0, fields=>"projectcodes", 
+ order=>"-year/title" }
+
+This will generate a page http://eprints.foobars.ac.uk/views/by_project/manticore.html with a list of all papers in that project, we can link to that URL!
+
+B<But wait!!!>
+
+If you change that to:
+
+ { id=>"by_project", allow_null=>0, fields=>"projectcodes", 
+ order=>"-year/title", noindex=>1, nolink=>1, nohtml=>1, include=>1 }
+  
+This will generate a view which is NOT listed on the /view/ page and it will not skip making the .html file and make a .include file per value. This will only contain the "count" of items and the XHTML of their citations. This can be used as part of a page on the http://www.foobaars.ac.uk/ site; either by using php and capturing it on-the-fly using C<readfile> or scripting it with perl or NFS exporting the filesystem onto the main server (or just doing it all on one computer) and using server side includes to place it in a page.
+
+B<The "total control" configuration>
+
+I want to list the project papers in a strict format in a table with 4 columns:
+title, author(s), year and an icon which links to the document abstract page...
+
+I add some I<more> options to the browse view:
+ 
+ { id=>"by_project", allow_null=>0, fields=>"projectcodes", 
+ order=>"-year/title", noindex=>1, nolink=>1, nohtml=>1, include=>1,
+ nocount=>1, citation=>"project_table" }
+
+Now I add a new citation to the citations config file:
+
+ <ep:citation type="project_table"><tr><td>&title;</td><td>&authors;</td>
+ <td>&year;</td><td><ep:linkhere><img 
+ src="http://www.foobars.ac.uk/images/paperlink.png" alt="view" width="32" 
+ height="64" border="0" /></ep:linkhere></td></tr></ep:citation>
+
+That should generate for the manticore project, in the ".include" file (I've cut the contents of the "img" tag for readability:
+
+ <tr><td>Making Stuff</td><td>Guy, A.</td><td>2001</td><td><a 
+ href="http://eprints.foobar.ac.uk/archive/00000923/"><img ... /></a>
+ </td></tr>
+ <tr><td>Eating Food</td><td>Herring, Walter and Chips, Bob</td><td>
+ 2000</td><td><a href="http://eprints.foobar.ac.uk/archive/00000445/">
+ <img ... /></a></td></tr>
+
+Neat eh?
+
 =head1 Default Configuration
 
 EPrints configures a  new archive with a set of metadata fields aimed at an archive of research papers. 
@@ -63,6 +139,5 @@ Removing and adding types is easy. Removing and adding fields is a bit more work
 
 If you create a good default configuration for a different purpose or language(s) (and would like to share it), please contact the eprints admin who may want to put it online as an example or even include it as an alternate default in a later version.
 
-A 
 
 

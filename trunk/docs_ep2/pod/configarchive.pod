@@ -731,7 +731,7 @@ Default: undef
 
 A reference to a perl function which will process the value from the form before storing it. The function will be passed ($value, $session) where value is the value from the form and session is the current EPrints::Session. It should return the processed value.
 
-This could be used, for example, to turn a username "cjg" into a userid "312" for internal user. 
+This could be used, for example, to turn a username "moj199" into a userid "312" for internal user. 
 
 =item toform
 
@@ -743,7 +743,7 @@ Default: undef
 
 A reference to a perl function which will process the value just before it is displayed in the form. The function will be passed ($value, $session) where value is the value from the database and session is the current EPrints::Session. It should return the processed value.
 
-This could be used, for example, to turn a userid "312" being used internally by your systems into more human-friendly username "cjg".
+This could be used, for example, to turn a userid "312" being used internally by your systems into more human-friendly username "moj199".
 
 If you use toform then you should probably set fromform to change your values back again.
 
@@ -1138,15 +1138,123 @@ Validate a user record.
 
 =head1 citations-I<languageid>.xml
 
-cjg
+The ciations file describes how to render an item (eprint/user/whatever) into a short piece of XHTML. Each citation has a "type". There are 3 kinds of citation:
+
+=over 8
+
+=item default citation
+
+This is a very short description of the item. Usually "the title or failing that, the id". The type id is just the name of the dataset. eg. "eprint"
+
+=item type citation
+
+These are richer descriptions which vary between type of eprint, user or document. The type id is dataset_type eg. eprint_preprint.
+
+=item other citation
+
+Used by custom browse views. Any name you like.
+
+=back
+
+The citation file contains a list of citation elements:
+
+ <ep:citation type="...">
+
+Each one may contain text and tags. The text may include entites, one per field, which will be replaced with the rendered version of that field. eg. &authors;
+
+In addition you may use XHTML elements and the following elements in the eprints namespace. These elements are always removed but they control if their contents is kept or not. Do not place the conditional "if" elements inside each other. linkhere can safely go anywhere.
+
+=over 8 
+
+=item ep:linkhere
+
+This element is replaced with an XHTML anchor linking to the item. If this citation is being rendered without a link then it is just removed (but not the contents).
+
+=item ep:iflink
+
+The contents of this element are only preserved if we are rendering this citation as a link. Maybe an icon which you don't want if it's not a link.
+
+=item ep:ifnotlink
+
+The opposite of iflink. 
+
+=item ep:ifset ref="fieldname"
+
+The contents of this element are only preserved if the field "fieldname" has a value.
+
+=item ep:ifnotset ref="fieldname"
+
+The contents of this element are only preserved if the field "fieldname" does not have a value.
+
+=back
 
 =head1 metadata-types.xml
 
-cjg
+This file allows you to configure the types of eprint, user, document and document security level.
+
+When you add a new type you should add it's name to the archive phrases file(s). The phraseid is "dataset_typename_typename" eg. "document_typename_pdf", and you should add a new citation to the citations file. Any fields which are not required but appear in the citation should probably be inside a  E<lt>ep:ifsetE<gt> so that you don't get see "UNSPECIFIED" if they are not, er, specified.
+
+The main element is "metadatatypes". This contains a list of "dataset" elements each of which has a name attribute.
+
+The "type" elements in user and eprint "dataset"s should contain a list of "field" elements. This describes the fields which may be edited for this type and the order that they appear on the form.
+
+You may include system fields in this list, but be careful if you do.
+
+Attributes for "field" are:
+
+=over 4
+
+=item name
+
+The name of the metadata field.
+
+=item required
+
+If set to "yes" then this field may not be left blank. Some system fields are always required no matter how this is set.
+
+=item staffonly 
+
+This field only appears on the "editor" edit eprint form, not the user one. Or, in the case of the user dataset, the staff edit-user page.
+
+=back
+
+=head2 The "security" dataset
+
+This is a handy place to define the security levels. The type with no name is special. It is the "public" security type. All other types will require a valid username and password. If that username is acceptable for a given document is decided by the can_user_view_document subroutine in ArchiveConfig.pm
+
+=head2 The "document" dataset
+
+By default eprints requires at least one of ps, pdf, ascii or html to be uploaded before an eprint is valid. You may change this list in ArchiveConfig.pm - any more complicated conditions will have to be checked in the eprint validation subroutine.
 
 =head1 phrases-I<languageid>.xml
 
-cjg
+This file contains a list of XML "phrasees". Everything eprints "says" to users is stored in this file and its system-level counterpart. If you want the site to run in more than one language, you need one phrase file per language. 
+
+The phrase file is XML and contains a toplevel "phrases" element. This contains the list of phrases.
+
+Each phrase has a "ref" attribute to identify it and contains text and optionally some XHTML tags. It may also contain eprints entities such as &archivename; and also some phrases should contain "pin" elements, described below.
+
+The phrases in the archive phrase file are specific to that archive, the system phrase file contains non-archive specific phrases.  The id's of most of the phrases in the archive phrases are generated from the id's of the fields, datasets, types etc.
+
+The archive phrase file contains: names of dataset types, names of metadata fields, help on entering each Ametadata field, the names of options in "set" fields, the description of different search ordering options, names of browse views, phrases used in the render and validation routines, mail which eprints sends out and phrases which override those in the system file.
+
+=head2 pins
+
+Some phrases need some "pin" elements to show eprints where to insert values. Usually pins don't contain any elements but occasionally they do when they represent what to place a link around.
+
+=head2 Overriding System Phrases
+
+If you don't like some of the phrases in the main system phrases file you can override them by creating a phrase with the same "ref" in the archive file.
+
+Don't edit the system file, if you upgrade eprints to a newer version it will get over-written.
+
+=head2 Emails
+
+EPrints sends out emails when a user registers/changes their password, when a user changes their email, when a deposited item is rejected/deleted by an editor and when the system is low on resources. These mails can be customised in the phrase file. 
+
+Make sure you wrap your text in paragraph E<lt>pE<gt> tags. EPrints will automatically word wrap these in the email. E<lt>hr /E<gt> elements in a mail are turned into a line of dashes.
+
+When eprints sends a mail it will send it as plain ASCII text, unless it contains latin-1 elements, in which case it will be latin-1 encoded. If it contains unicode characters not in the latin-1 charset then it will be utf-8 encoded.
 
 =head1 ruler.xml
 
@@ -1156,16 +1264,40 @@ If you have no great dislike of <lt>hr<gt> horizontal rulers then you can leave 
 
 =head1 The static/ directory
 
-cjg
+This directory contains the static pages for the site - the frontpage, the help pages, images, the stylesheet etc.
+
+C<static/> contains one directory per language, eg. C<en>. Plus a C<general> directory which contains files which don't need translating like images and the stylesheet.
+
+When you run the C<generate_static> command it copies the files for each language, and the gerneral dir, into the static site for that language.
+
+See the C<generate_static> documentation for more details.
 
 =head1 subjects
 
 This file is not used by the core eprints system. It is used by import_subjects to set up the initial subjects. For more information see the instructions for import_subjects.
 
- bin/import_subjects --man
-
 =head1 template-I<languageid>.xml
 
-cjg
+This file is the shell of every page in the system. It is more or less a normal XHTML page but you can use the eprints &foo; entities in it and it should contain "pin" elements like a phrase. The pins it should contain are:
+
+=over 8
+
+=item I<title>
+
+This is where to put the title of the page. It can be used more than once  - in the title in the page header and somewhere in the body. If placing it in the title in the head of the page you must use the additional attribute textonly="yes" which only works here. It removes images from the title (which can happen if using the "Latex" mode).
+
+=item I<head>
+
+This goes somewhere in the head of the page. It shows eprints where to insert the "meta" and "link" elements.
+
+=item I<pagetop>
+
+This goes at the top of the body. It is sometimes used as a "target".
+
+=item I<page>
+
+Where to place the bulk of the content of the page.
+
+=back
 
 
