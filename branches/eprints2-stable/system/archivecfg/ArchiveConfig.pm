@@ -15,7 +15,7 @@
 #
 ######################################################################
 
-package EPrints::Config::ep2stable;
+package EPrints::Config::foo;
 
 foreach my $file ( 
 	"cfg/ArchiveOAIConfig.pm",

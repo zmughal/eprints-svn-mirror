@@ -99,6 +99,7 @@ __GENERICPOD__
 
 
 use EPrints::Database;
+use EPrints::Archive;
 
 use strict;
 use Getopt::Long;

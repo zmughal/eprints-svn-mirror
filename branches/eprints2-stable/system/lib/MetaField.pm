@@ -75,6 +75,7 @@ use EPrints::MetaField::Date;
 use EPrints::MetaField::Email;
 use EPrints::MetaField::Id;
 use EPrints::MetaField::Int;
+use EPrints::MetaField::Langid;
 use EPrints::MetaField::Longtext;
 use EPrints::MetaField::Name;
 use EPrints::MetaField::Pagerange;
@@ -122,7 +123,6 @@ sub new
 	my( $class, %properties ) = @_;
 
 	my $realclass = "EPrints::MetaField::\u$properties{type}";
-
 	my $self = {};
 	bless $self, $realclass;
 
