@@ -60,6 +60,7 @@ else
 	$package_desc = "EPrints $EPRINTS_VERSION (".$codenames{$type}.") [Born on $DATE]";
 	$package_file = "eprints-".$ids{$type};
 	$ntype = 1;
+	print "YAY - $ids{$type}\n";
 }
 
 do_package($version_tag, $package_version, $package_desc, "licenses/gplin.txt", $package_file, $ntype);
@@ -135,8 +136,6 @@ sub do_package
 	system("/bin/rm `find . -name '.cvsignore'`")==0 or die "Couldn't remove.";
 	print "Copying installer...\n";
 	system("cp $originaldir/install-eprints.pl eprints/system/install-eprints.pl");
-	print "Copying bundled perl modules...\n";
-	system("cp -r $originaldir/perl_mods/* eprints/system/lib/");
 	print "Inserting license information...\n";
 	chdir "eprints/system";
 
@@ -200,7 +199,9 @@ sub do_package
 		($from, $to, $recurse) = split /\t/;
 		$recstr = "";
 		$recstr = "-r" if (defined $recurse);
-		system("cp $recstr $originaldir/export/$from eprints/$to");
+		my $cmd = "cp $recstr $originaldir/export/$from eprints/$to";
+		print "$cmd\n";
+		system( $cmd );
 	}
 	close(FILECONF);
 
