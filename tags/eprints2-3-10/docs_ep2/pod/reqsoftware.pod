@@ -1,0 +1,241 @@
+=head1 What Additional Software does EPrints Require? 
+
+In brief, EPrints requires Apache (with mod_perl), MySQL and Perl with some extra modules. Ideally you also want wget, tar and unzip. 
+
+EPrints bundles some perl modules which it uses, to save you installing them. 
+
+=head2 Where to get the Required Software
+
+It's up to you. We have had best results with installing MySQL from RPM and apache from source.
+
+The best place to get a software tool is the official site, but we've put a mirror of versions known to work at: http://www.eprints.org/files/tools/ - you don't need to install I<everything> in the tools directory - just those described below. 
+
+=head1 MySQL
+
+Tested on: 3.23.29a-gamma
+
+Install a recent version of MySQL 3. You will need the .h and library files later to install the MySQL perl module. MySQL 4 is due soon, but we are not making plans to support it yet (if you try EPrints with MySQL 4 and it works, please let us know)
+
+If installing from RPM you require: B<mysql-server>, B<mysql-devel> and B<mysql> RPMs. 
+
+=head1 Apache/mod_perl
+
+Tested on: apache 1.3.14 with mod_perl 1.25
+
+Apache is the most commonly used webserver in the world, and it's free! EPrints requires Apache to be configured with mod_perl, as this allows Apache modules that are entirely written in perl, hence providing much improved efficiency.
+
+Get Apache from http://httpd.apache.org/dist/httpd/
+
+EPrints requires that the apache module B<mod_perl> is enabled.
+
+=head2 Apache with mod_perl Installation - Step by Step
+
+=over 4
+
+=item Download mod_perl and apache sources
+
+=item Make mod_perl, I use this command (in the modperl src dir):
+
+ % perl Makefile.PL APACHE_PREFIX=/usr/local/apache \
+ APACHE_SRC=../apache-1.3.14/src DO_HTTPD=1 USE_APACI=1 \
+ EVERYTHING=1
+
+Remeber to change C<../apache-1.3.14/src> to wherever your apache source is relative to this directory. The back slashes at the end of the line allow a single command to be split over multiple lines. 
+
+=item Make and install apache. From the mod_perl src dir, I use:
+
+ % make
+ % make install
+
+=back
+
+( mod perl should have already run the apache ./configure script for us. )
+
+=head1 Perl 5.6 and Perl Modules
+
+EPrints is currently begin developed with perl 5.6.1, there are currently no plans for to make EPrints run under perl 6 on the theory of if-it-ain't-broke-don't-fix-it. 
+
+Some perl modules are bundled with the EPrints2 package, others must be installed by you.
+
+=head2 Installing a Perl Module
+
+This describes the way to simple perl module, some require a bit more effort. We will use the non-existant FOO module as an example.
+
+Some archives can be installed direct from CPAN. That's great when it works. It doesn't always work, but it's the quickest and easiest, so give it a go first. To install a perl module from CPAN run:
+
+ % perl -MCPAN -e 'install Foo::Bar'
+
+Where C<Foo::Bar> is the module you're installing. 
+
+I would like to make a list of which modules do/don't install OK from CPAN. If you're reading this before the end of Jan 2003, send me (Christopher Gutteridge) any comments on which ones worked, and on what operating system.
+
+=over 8
+
+=item Download the archive. 
+
+Either from cpan.org, or from the tools directory on eprints.org described at the top of this chapter. Our example archive is C<FOO-5.23.tar.gz>.
+
+=item Unpack the archive:
+
+ % gunzip FOO-5.23.tar.gz
+ % tar xf FOO-5.23.tar
+
+=item Enter the directory this creates:
+
+ % cd FOO-5.23
+
+=item Run the following commands:
+
+ % perl Makefile.PL
+ % make
+ % make test
+ % make install
+
+=back
+
+=head2 Perl Modules Bundled with EPrints
+
+You don't have to install these. They are included as part of the EPrints distribution. 
+
+C<XML::DOM>, C<XML::RegExp>, C<Filesys::DiskSpace>, C<URI>, C<Apache::AuthDBI>, C<Unicode::Normalize>, C<Proc::Reliable>.
+
+Please note that these modules are not part of the EPrints system and are only
+included to make things easier. Please note that XML::DOM has has a few lines
+commented out to prevent it requiring additional modules.
+
+=head2 Required Perl Modules (Which you will probably have to install)
+
+This modules are not built into EPrints - you must install them yourself. We recommend installing them in the order they are listed.
+
+=over 8
+
+
+=item B<Data::ShowTable>
+
+MySQL Interface Module requires this.
+
+=item B<DBI>
+
+Tested with: v1.14
+
+MySQL Interface Module requires this.
+
+=item B<Msql-Mysql Module>
+
+Tested with: v1.2215
+
+This one can be tricky. It requires access to .h and library files from MySQL. I install MySQL from source first, but some installs of MySQL don't put the lib and include dirs where this module expects. 
+The answer to the first question is that you only need MySQL support.
+
+Under Red Hat's GNU/Linux distribution, the B<zlib-devel> RPM should be installed before you install this module.
+
+=item B<MIME::Base64>
+
+Tested with: v2.11
+
+Unicode::String requires this.
+
+=item B<Unicode::String>
+
+Used for Unicode support. No known problems.  Tested with v2.06.
+
+
+=item B<XML::Parser>
+
+Tested with v2.30
+
+Used to parse XML files. Requres the B<expat library>. A .tar.gz and an RPM are available in the tools dir on eprints.org.
+
+=item B<Apache>
+
+The perl Apache.pm module is acutally part of mod_perl - installing mod_perl as part of Apache should also have installed the perl Apache module.
+
+=back 
+
+Since version 2.3.7 The modules "Apache::Request" and "Apache::Test" (aka. "libapreq") are no longer required. They were a pain to install and the software has been redesigned to not use them at all.
+
+=back
+
+=head2 Required Perl Modules (Which you will probably already have)
+
+Most PERL 5.6 or later systems should already include the following modules, but you may have to install some by hand on certain platforms.
+
+C<CGI>, C<Carp>, C<Cwd>, C<Data::Dumper>, C<Digest::MD5>, C<File::Basename>, C<File::Copy>, C<File::Find>, C<File::Path>, C<Getopt::Long>, C<Pod::Usage>, C<Sys::Hostname>.
+
+=head1 Optional GDOME support
+
+Since EPrints 2.2 you may use either XML::DOM or XML::GDOME. XML::GDOME is recommended as it's faster and uses much less RAM, but it does require you to install a whole lot of extra libraries and perl modules. If you are running a pilot or demonstration service then XML::DOM is fine, and you can always switch over later by installing the required tools and setting the GDOME flag in perl_lib/EPrints/SystemSettings.pm
+
+=head2 Addional Libraries Required for GDOME support
+
+ libxml2
+ libxml2-devel
+
+either get the tarball from: ftp://ftp.gnome.org/pub/GNOME/sources/libxml2/
+
+or the RPMs (but we have had problems with complex RPM dependencies):
+
+ http://rpmfind.net/linux/rpm2html/search.php?query=libxml2
+ http://rpmfind.net/linux/rpm2html/search.php?query=libxml2-devel
+
+=head2 The GDOME Library 
+
+Obtain this from
+
+ http://gdome2.cs.unibo.it/#downloads
+
+You may either use the RPMs (gdome2 and gdome2-devel) or the tarball.
+
+=head2 Additional Perl Modules Required for GDOME support
+
+ XML-LibXML-Common
+ XML-NamespaceSupport
+ XML-GDOME
+
+All of which are in http://www.cpan.org/modules/by-module/XML/
+
+=head1 Other Tools
+
+=head2 File uploads
+
+B<wget>, B<tar>, B<gunzip> and B<unzip> are required to allow users to upload files as .tar.gz or .zip or to captures them from a URL.
+
+These all come installed with most modern versions of linux. If you can get them working, you can remove the option by edditing "archive_formats" in SystemSettings.pm
+
+Tested with wget 1.6.
+
+If there are problems you may need to tweak how these are invoked in SystemSettings.pm
+
+=head2 Full Text Indexing
+
+The full text indexer requires various tools to index each kind of document. These tools may or may not be already installed in your system. EPrints uses these tools to build a "words" file for each document (which contains the text of the document in UTF-8). If it can't run the tool, the "words" file will be empty and EPrints will not retry creating it unless you manually remove it.
+
+=over 4 
+
+=item PDF
+
+To index pdfs you need "pdftotext" which is part of the "xpdf" package. RPM's are available.
+
+=item ASCII
+
+To index ASCII files you don't need anything. That's easy.
+
+=item Microsoft Word
+
+To index MS Word files you need a package called "wvware". It can be a bit of a bit of a pain to install.
+
+=item HTML
+
+To index HTML files you need a tool called "lynx". It's a text-based web-browser.
+
+=back
+
+=head2 Latex Tools
+
+There is an optional feature which allows you to set eprints to look in certain fields (eg. title and abstract) for stuff which looks like latex equations and display it as an image of that equation instead. These tools are only required if you want to use this feature.
+
+B<latex>, B<dvips> and B<convert> (convert is part of "imagemagick"). (These all ship with Red Hat's GNU/Linux distribution but you may have to install them yourself on other systems.)
+
+This is a "cosmetic" feature, it only affects the rendering of information, so you can always add it later if you want to save time initially.
+
+
