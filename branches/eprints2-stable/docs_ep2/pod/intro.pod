@@ -19,7 +19,7 @@ We currently expect to release a few more versions of EPrints 2. We plan to make
 
 =head1 What will it run on?
 
-The has been developed under GNU/Linux. It is intended to work on any GNU system. It may well work on other UNIX systems too. Other systems people have got EPrints up and running on include Solaris and MacOSX. There are no plans for a version to run under Microsoft Windows.
+The EPrints software has been developed under GNU/Linux. It is intended to work on any GNU system. It may well work on other UNIX systems too. Other systems people have got EPrints up and running on include Solaris and MacOSX. There are no plans for a version to run under Microsoft Windows.
 
 =head1 This Documentation
 
