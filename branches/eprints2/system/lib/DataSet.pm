@@ -792,6 +792,32 @@ sub make_object
 		$self );
 }
 
+######################################################################
+=pod
+
+=item $obj = $ds->get_object( $session, $id );
+
+Return the object from this dataset with the given id, or undefined.
+
+=cut
+######################################################################
+
+sub get_object
+{
+	my( $self, $session, $id ) = @_;
+
+	my $class= $INFO->{$self->{id}}->{class};
+
+	if( !defined $class )
+	{
+		$session->get_archive->log(
+				"Can't get_object for dataset ".
+				$self->{confid} );
+		return undef;
+	}
+
+	return $class->new( $session, $id, $self );
+}
 
 ######################################################################
 =pod
