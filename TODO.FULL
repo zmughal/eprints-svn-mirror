@@ -61,7 +61,6 @@ release:
 * lose dienst code?
 
 website:
-* french pages dammit.
 * tart up website generator
 * tidy up jitterbug instance
 
@@ -100,13 +99,13 @@ Internationalise:
 ./cfg/template.user-intro
 
 	./cgi/advsearch
-./cgi/handle_404
-./cgi/oai
-./cgi/remind
-./cgi/search
-./cgi/user
-./cgi/user_eprints
-./cgi/view_eprint
+	./cgi/handle_404
+	./cgi/oai
+*	./cgi/remind
+	./cgi/search
+	./cgi/user
+	./cgi/user_eprints
+*	./cgi/view_eprint
 
 *	./cgi/staff/add_user [ shortform ]
 	./cgi/staff/buffer
