@@ -3,6 +3,15 @@
 use Cwd;
 use strict;
 
+# nb.
+#
+# cvs tag eprints2-2-99-0 system docs_ep2
+#
+# ./makepackage.pl  eprints2-2-99-0
+#
+# scp eprints-2.2.99.0-alpha.tar.gz webmaster@www:/home/www.eprints/software/files/eprints2/
+
+
 my %codenames = (
 	"eprints2-alpha-1" => "anchovy",
 	"eprints2-alpha-2" => "pepperoni",
@@ -31,8 +40,42 @@ my %codenames = (
 	"eprints2-3-0-tardis-1" => "devildoll",
 	"eprints2-3-0-tardis-2" => "spacemutiny",
 	"eprints2-3-0-pre-1" => "princeofspace",
-	"eprints2-3-0-pre-2" => "agentforharm"
+	"eprints2-3-0-pre-2" => "agentforharm",
+	"eprints2-2-99-0" => "extracrust",
+	"eprints2-2-99-1" => "webfoot",
+	"eprints2-2-99-2" => "makeroomforthetuna",
+	"eprints2-2-99-3" => "whydoesithurt",
+	"eprints2-2-99-4" => "Hope Springs Eternal",
+	"eprints2-2-99-5" => "Make Mine a Ninety-Nine",
+	"eprints2-2-99-6" => "It will be over by Christmas...",
 
+	"eprints2-3" => "Hoi Sin Duck",
+	"eprints2-3-1" => "Words have power",
+
+	"eprints2-3-1-99-1" => "Never on a School Night",
+	"eprints2-3-1-99-2" => "I'm a Covert Ops",
+	"eprints2-3-1-99-3" => "Firing for Effect",
+
+	"eprints2-3-2" => "Mercury Rising",
+	"eprints2-3-2-99-1" => "Sailor Duck",
+	"eprints2-3-3" => "Hod",
+	"eprints2-3-4" => "Chesed",
+	"eprints2-3-4-99-1" => "Creamcheese",
+	"eprints2-3-5" => "Yesod",
+	"eprints2-3-6" => "Tiphareth",
+	"eprints2-3-6-99-1" => "Binah",
+	"eprints2-3-6-99-2" => "Redruff",
+	"eprints2-3-6-99-3" => "Gentle",
+	"eprints2-3-6-99-4" => "Ringtail",
+	"eprints2-3-7" => "Caroline",
+	"eprints2-3-7-99-1" => "Chimbo",
+	"eprints2-3-7-1" => "George",
+	"eprints2-3-7-2" => "Outside",
+	"eprints2-3-7-3" => "Fishsticks",
+	"eprints2-3-7-99-2" => "Stoker",
+	"eprints2-3-7-99-3" => "Shatner",
+	"eprints2-3-7-99-4" => "Khan",
+	"eprints2-3-8" => "Biscuits",
 );
 
 my %ids = (
@@ -55,7 +98,39 @@ my %ids = (
 	"eprints2-3-0-tardis-1" => "2.3.0-tardis-1",
 	"eprints2-3-0-tardis-2" => "2.3.0-tardis-2",
 	"eprints2-3-0-pre-1" => "2.3.0-pre-1",
-	"eprints2-3-0-pre-2" => "2.3.0-pre-2"
+	"eprints2-3-0-pre-2" => "2.3.0-pre-2",
+	"eprints2-2-99-0" => "2.2.99.0-alpha",
+	"eprints2-2-99-1" => "2.2.99.1-alpha",
+	"eprints2-2-99-2" => "2.2.99.2-alpha",
+	"eprints2-2-99-3" => "2.2.99.3-alpha",
+	"eprints2-2-99-4" => "2.2.99.4-beta",
+	"eprints2-2-99-5" => "2.2.99.5-beta",
+	"eprints2-2-99-6" => "2.2.99.6-beta",
+	"eprints2-3" => "2.3.0",
+	"eprints2-3-1" => "2.3.1",
+	"eprints2-3-1-99-1" => "2.3.1.99.1-beta",
+	"eprints2-3-1-99-2" => "2.3.1.99.2-beta",
+	"eprints2-3-1-99-3" => "2.3.1.99.3-beta",
+	"eprints2-3-2" => "2.3.2",
+	"eprints2-3-2-99-1" => "2.3.2.99.1.alpha",
+	"eprints2-3-3" => "2.3.3",
+	"eprints2-3-4" => "2.3.4",
+	"eprints2-3-4-99-1" => "2.3.4.99.1.beta",
+	"eprints2-3-5" => "2.3.5",
+	"eprints2-3-6" => "2.3.6",
+	"eprints2-3-6-99-1" => "2.3.6.99.1-beta",
+	"eprints2-3-6-99-2" => "2.3.6.99.2-beta",
+	"eprints2-3-6-99-3" => "2.3.6.99.3-beta",
+	"eprints2-3-6-99-4" => "2.3.6.99.4-beta",
+	"eprints2-3-7" => "2.3.7",
+	"eprints2-3-7-99-1" => "2.3.7.99.1-beta",
+	"eprints2-3-7-1" => "2.3.7.1",
+	"eprints2-3-7-2" => "2.3.7.2",
+	"eprints2-3-7-3" => "2.3.7.3",
+	"eprints2-3-7-99-2" => "2.3.7.99.2-beta",
+	"eprints2-3-7-99-3" => "2.3.7.99.3-beta",
+	"eprints2-3-7-99-4" => "2.3.7.99.4-beta",
+	"eprints2-3-8" => "2.3.8",
 );
 
 my( $type ) = @ARGV;
@@ -76,7 +151,7 @@ chomp $date;
 
 if( $type eq "nightly" ) 
 { 
-	$version_tag = "HEAD";
+	$version_tag = "eprints2-stable";
 	$package_version = "eprints-2-cvs-".$date;
 	$package_desc = "EPrints Nightly Build - $package_version";
 	$package_file = "eprints-2-cvs-$date";
@@ -119,11 +194,11 @@ system("/bin/rm `find . -name '.cvsignore'`")==0 or die "Couldn't remove.";
 chdir "eprints/system";
 
 my @installerfiles = ( 
+	'perlmodules.pl',
 	'aclocal.m4',
 	'autogen.sh',
 	'configure.in',
 	'df-check.pl',
-	'install.pl',
 	'install.pl.in' );
 foreach( @installerfiles )
 {
@@ -335,6 +410,7 @@ erase_dir( "package" );
 erase_dir( "export" );
 
 print "Done.\n";
+print "scp $package_file.tar.gz webmaster\@www:/home/www.eprints/software/files/eprints2/\n";
 
 exit;
 

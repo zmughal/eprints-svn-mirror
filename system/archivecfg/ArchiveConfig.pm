@@ -15,20 +15,28 @@
 #
 ######################################################################
 
-package EPrints::Config::lemurprints;
+package EPrints::Config::ep2stable;
 
-do "cfg/ArchiveOAIConfig.pm";
-do "cfg/ArchiveRenderConfig.pm";
-do "cfg/ArchiveValidateConfig.pm";
-do "cfg/ArchiveTextIndexingConfig.pm";
-do "cfg/ArchiveMetadataFieldsConfig.pm";
+foreach my $file ( 
+	"cfg/ArchiveOAIConfig.pm",
+	"cfg/ArchiveRenderConfig.pm",
+	"cfg/ArchiveValidateConfig.pm",
+	"cfg/ArchiveTextIndexingConfig.pm",
+	"cfg/ArchiveMetadataFieldsConfig.pm" )
+{
+	unless (my $return = do $file) {
+		warn "couldn't parse $file: $@" if $@;
+		warn "couldn't do $file: $!"    unless defined $return;
+		warn "couldn't run $file"       unless $return;
+	}
+}
 
-use EPrints::Utils;
-
-use EPrints::XML;
 use Unicode::String qw(utf8 latin1 utf16);
+
 use strict;
 
+use EPrints::Utils;
+use EPrints::XML;
 use EPrints::Latex;
 
 sub get_conf
@@ -91,14 +99,12 @@ $c->{base_url} = "http://$c->{host}";
 if( $c->{port} != 80 )
 {
 	# Not SSL port 443 friendly
-	$c->{base_url}.= ":".$c->{port}; 
+	$c->{base_url}.= ":".$c->{port};
 }
+$c->{base_url} .= $c->{urlpath}; 
 
 # Site "home page" address
 $c->{frontpage} = "$c->{base_url}/";
-
-# URL of document file hierarchy
-$c->{documents_url} = $c->{base_url}."/archive";
 
 # URL of secure document file hierarchy. EPrints needs to know the
 # path from the baseurl as this is used by the authentication module
@@ -112,6 +118,11 @@ $c->{perl_url} = $c->{base_url}."/perl";
 
 # The user area home page URL
 $c->{userhome} = "$c->{perl_url}/users/home";
+
+# Use shorter URLs for records. 
+# Ie. use /23/ instead of /archive/00000023/
+$c->{use_short_urls} = 1;
+
 
 ######################################################################
 #
@@ -133,6 +144,23 @@ $c->{required_formats} =
 	"ascii"
 ];
 
+# if you want to make this depend on the values in the eprint then
+# you can make it a function pointer instead. The function should
+# return a list as above.
+
+# This example requires all normal formats for all eprints except
+# for those of type book where a document is optional.
+#
+# $c->{required_formats} = sub {
+# 	my( $session, $eprint ) = @_;
+# 
+# 	if( $eprint->get_value( 'type' ) eq "book" )
+# 	{
+# 		return [];
+# 	}
+# 	return ['html','pdf','ps','ascii'];
+# };
+
 # This sets the minimum amount of free space allowed on a disk before EPrints
 # starts using the next available disk to store EPrints. Specified in kilobytes.
 $c->{diskspace_error_threshold} = 64*1024;
@@ -150,14 +178,6 @@ $c->{diskspace_warn_threshold} = 512*1024;
 #
 ######################################################################
 
-# You may hide the "lineage" and "honourific"
-# fields in the "name" type field input, if you
-# feel that they will confuse your users. This
-# makes no difference to the actual database,
-# the fields will just be unused.
-$c->{hide_honourific} = 0;
-$c->{hide_lineage} = 0;
-
 # If you are setting up a very simple system or 
 # are starting with lots of data entry you can
 # make user submissions bypass the editor buffer
@@ -171,15 +191,22 @@ $c->{skip_buffer} = 0;
 ######################################################################
 
 # Allow users to sign up for an account on
-# the web. If you disable this you should
-# edit the template file and the error page
-# to not offer this option.
+# the web. 
+# NOTE: If you disable this you should edit the template file 
+#   cfg/template-en.xml
+# and the error page 
+#   cfg/static/en/error401.xpage 
+# to remove the links to web registration.
 $c->{allow_web_signup} = 1;
 
 # The type of user that gets created when someone signs up
 # over the web. This can be modified after they sign up by
 # staff with the right priv. set. 
 $c->{default_user_type} = "user";
+
+# This is a list of fields which the user is asked for when registering
+# in addition to the required username, email and password.
+$c->{user_registration_fields} = [ "name" ];
 
 # See also the user type configuration section.
 
@@ -230,6 +257,19 @@ $c->{field_defaults}->{search_cols} = 40;
 # Maximum rows to display in a subject or set search
 $c->{field_defaults}->{search_rows} = 12;
 
+# You may hide the "lineage" and "honourific"
+# fields in the "name" type field input, if you
+# feel that they will confuse your users. This
+# makes no difference to the actual database,
+# the fields will just be unused.
+$c->{field_defaults}->{hide_honourific} = 0;
+$c->{field_defaults}->{hide_lineage} = 1;
+
+# By default names are asked for as given,family
+# if you want to swap this to family,given then
+# set this flag to 1
+$c->{field_defaults}->{family_first} = 0;
+
 ######################################################################
 #
 #  Submission Form Customisation
@@ -245,7 +285,7 @@ $c->{field_defaults}->{search_rows} = 12;
 $c->{submission_stage_skip}->{type} = 0;
 
 # You can skip "linking" with no ill effects.
-$c->{submission_stage_skip}->{linking} = 0;
+$c->{submission_stage_skip}->{linking} = 1;
 
 # If you skip the main metadata input you must
 # set all the required fields in the default.
@@ -276,12 +316,6 @@ $c->{submission_hide_language} = 1;
 # this if you don't plan to have any secret or
 # confidential contents.
 $c->{submission_hide_security} = 0;
-
-# This option removes the "how many files do you want
-# to upload" from the document file upload page and
-# defaults it to "1" instead. This is useful if your
-# policy only allows one file per document.
-$c->{submission_hide_howmanyfiles} = 0;
 
 # These options allow you to suppress various file
 # upload methods. You almost certainly do not want
@@ -326,10 +360,6 @@ $c->{vlit}->{enable} = 1;
 # The URL which the (C) points to.
 $c->{vlit}->{copyright_url} = $c->{base_url}."/vlit.html";
 
-# The number of characters above & below to
-# show when displaying context.
-$c->{vlit}->{context_size} = 1024;
-
 ######################################################################
 #
 #  Search and subscription information
@@ -343,8 +373,8 @@ $c->{vlit}->{context_size} = 1024;
 #   When specifying ordering, separate the fields with a "/", and specify
 #   proceed the fieldname with a dash "-" for reverse sorting.
 #
-#   To search or sort on the id part of a field eg. "authors" append
-#   ".id" to it's name. eg. "authors.id"
+#   To search or sort on the id part of a field eg. "creators" append
+#   ".id" to it's name. eg. "creators.id"
 #
 ######################################################################
 
@@ -353,65 +383,102 @@ $c->{vlit}->{context_size} = 1024;
 # Multiple fields may be specified for one view, but avoid
 # subject or allowing null in this case.
 $c->{browse_views} = [
-	{ id=>"subjects", fields=>"subjects", order=>"title/authors" },
-	{ id=>"year",  allow_null=>1, fields=>"year", order=>"title/authors" }
+        { id=>"year", allow_null=>1, fields=>"date_effective;res=year", subheadings=>"type", order=>"-date_effective/title", heading_level=>2 },
+        { id=>"subjects", fields=>"subjects", order=>"-date_effective/title", hideempty=>1 }
 ];
 # examples of some other useful views you might want to add
 #
-# Browse by the ID's of authors & editors (CV Pages)
-# { id=>"person", allow_null=>0, fields=>"authors.id/editors.id", order=>"title/authors", noindex=>1, nolink=>1, nohtml=>1, include=>1, citation=>"title_only", nocount=>1 }
+# Browse by the ID's of creators & editors (CV Pages)
+# { id=>"people", allow_null=>0, fields=>"creators.id/editors.id", order=>"title/creators", noindex=>1, nolink=>1, nohtml=>1, include=>1, citation=>"title_only", nocount=>1 }
 #
-# Browse by the names of authors (less reliable than Id's)
-#{ id=>"name",  allow_null=>1, fields=>"authors", order=>"-year" }
+# Browse by the names of creators (less reliable than Id's)
+#{ id=>"people", allow_null=>0, fields=>"creators/editors", order=>"title/creators",  include=>1 }
 #
 # Browse by the type of eprint (poster, report etc).
-#{ id=>"type",  fields=>"type", order=>"-year" }
+#{ id=>"type",  fields=>"type", order=>"-date_effective" }
 
-# Number of results to display on a single search results page
+
+
+
+# Default number of results to display on a single search results page
+# can be over-ridden per search config.
 $c->{results_page_size} = 100;
 
-# Fields for a simple user search
-$c->{simple_search_fields} =
-[
-	"title/abstract/keywords",
-	"authors/editors",
-	"year"
-];
+$c->{search}->{simple} = 
+{
+	search_fields => [
+		{
+			id => "meta",
+			meta_fields => [
+				"title",
+				"abstract",
+				"creators",
+				"date_effective" 
+			]
+		},
+		{
+			id => "full",
+			meta_fields => [
+				$EPrints::Utils::FULLTEXT,
+				"title",
+				"abstract",
+				"creators",
+				"date_effective" 
+			]
+		},
+		{
+			id => "person",
+			meta_fields => [
+				"creators",
+				"editors"
+			]
+		},
+		{	
+			id => "date",
+			meta_fields => [
+				"date_effective"
+			]
+		}
+	],
+	preamble_phrase => "cgi/search:preamble",
+	title_phrase => "cgi/search:simple_search",
+	citation => "neat",
+	default_order => "byyear",
+	page_size => 100,
+	controls => { top=>0, bottom=>1 }
+};
+		
 
-# You may specify defaults for the search page. 
-# $c->{simple_search_defaults} =
-# {
-#	"authors/editors" => "Gutteridge",
-# 	"year" => 2002
-# }
+$c->{search}->{advanced} = 
+{
+	search_fields => [
+		{ meta_fields => [ $EPrints::Utils::FULLTEXT ] },
+		{ meta_fields => [ "title" ] },
+		{ meta_fields => [ "creators" ] },
+		{ meta_fields => [ "abstract" ] },
+		{ meta_fields => [ "keywords" ] },
+		{ meta_fields => [ "subjects" ] },
+		{ meta_fields => [ "type" ] },
+		{ meta_fields => [ "department" ] },
+		{ meta_fields => [ "editors" ] },
+		{ meta_fields => [ "ispublished" ] },
+		{ meta_fields => [ "refereed" ] },
+		{ meta_fields => [ "publication" ] },
+		{ meta_fields => [ "date_effective" ] }
+	],
+	preamble_phrase => "cgi/advsearch:preamble",
+	title_phrase => "cgi/advsearch:adv_search",
+	citation => "neat",
+	default_order => "byyear",
+	page_size => 100,
+	controls => { top=>1, bottom=>1 }
+};
 
-
-# Fields for an advanced user search
-$c->{advanced_search_fields} =
-[
-	"title",
-	"authors",
-	"abstract",
-	"keywords",
-	"subjects",
-	"type",
-	"conference",
-	"department",
-	"editors",
-	"ispublished",
-	"refereed",
-	"publication",
-	"year"
-];
-
-# You may specify defaults for the advanced search page. 
-# $c->{advanced_search_defaults} =
-# {
-#	"title" => "stuff",
-#	"refereed" => "TRUE"
-# }
-
-
+$c->{order_methods}->{subject} =
+{
+	"byname" 	 =>  "name",
+	"byrevname"	 =>  "-name" 
+};
 
 # Fields used for specifying a subscription
 $c->{subscription_fields} =
@@ -431,16 +498,13 @@ $c->{editor_limit_fields} =
 # Ways of ordering search results
 $c->{order_methods}->{eprint} =
 {
-	"byyear" 	 => "-year/authors/title",
-	"byyearoldest"	 => "year/authors/title",
-	"byname"  	 => "authors/-year/title",
-	"bytitle" 	 => "title/authors/-year"
+	"byyear" 	 => "-date_effective/creators/title",
+	"byyearoldest"	 => "date_effective/creators/title",
+	"byname"  	 => "creators/-date_effective/title",
+	"bytitle" 	 => "title/creators/-date_effective"
 };
 
 
-# The default way of ordering a search result
-#   (must be key to %eprint_order_methods)
-$c->{default_order}->{eprint} = "byname";
 
 # Fields for a staff user search.
 $c->{user_search_fields} =
@@ -466,6 +530,36 @@ $c->{order_methods}->{user} =
 # The default way of ordering a search result
 #   (must be key to %eprint_order_methods)
 $c->{default_order}->{user} = "byname";
+
+# customise the citation used to give results on the latest page
+# nb. This is the "last 7 days" page not the "latest_tool" page.
+$c->{latest_citation} = "neat";
+
+
+######################################################################
+#
+# Latest_tool Configuration
+#
+#  the latest_tool script is used to output the last "n" items 
+#  accepted into the archive
+#
+######################################################################
+
+$c->{latest_tool_modes} = {
+	default => { citation => "neat" }
+};
+
+# Example of a latest_tool mode. This makes a mode=articles option
+# which only lists eprints who's type equals "article".
+#	
+#	articles => {
+#		citation => undef,
+#		filters => [
+#			{ meta_fields => [ "type" ], value => "article" }
+#		],
+#		max => 20
+#	}
+
 
 
 ######################################################################
@@ -528,6 +622,8 @@ $c->{userauth} = {
 				"edit-subject", "edit-user" ] }
 };
 
+$c->{disable_userinfo} = 0;
+
 ######################################################################
 #
 # Timeouts
@@ -583,6 +679,29 @@ $c->{cache_maxlife} = 12;
 #	return undef;
 # };
 
+# If you use the Latex render function and want to use the mimetex
+# package rather than the latex->dvi->ps->png route then enable this
+# option and put the location of the executable "mimetex.cgi" into 
+# SystemSettings.pm
+$c->{use_mimetex} = 0;
+
+# If you want to override the way eprints sends email, you can
+# set the send_email config option to be a function to use 
+# instead.
+#
+# The function will have to take the following paramaters.
+# $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname
+# Archive   string   utf8   utf8      utf8      DOM    DOM   string    utf8
+#
+# $c->{send_email} = &some_function;
+
+
+# Log timings on submissions. 
+# This feature creates a log file in the eprints var directory
+# which logs timestamps of users doing the submission process. It's
+# useful for us to monitor time taken on various pages in the submission
+# process and maybe you want to to...
+# $c->{log_submission_timing} = 1; 
 
 ######################################################################
 
