@@ -1439,6 +1439,9 @@ sub generate_static
 			return( @created );
 		};
 
+		# only deleted and live records have a web page.
+		next if( $ds_id ne "archive" && $ds_id ne "deletion" );
+
 		my( $page, $title, $links ) = $self->render();
 
 		$self->{session}->build_page( $title, $page, "abstract", $links );
