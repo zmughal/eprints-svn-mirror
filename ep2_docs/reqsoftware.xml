@@ -98,7 +98,7 @@ This is an annoying little module as it requires some system headers to be creat
 <para>Fixing Filesys::DiskSpace (Linux)
 <screen>
 cd /usr/include
-h2ph * sys/*
+h2ph * */*
 </screen></para>
 <para>Fixing Filesys::DiskSpace (Solaris)
 <screen>
