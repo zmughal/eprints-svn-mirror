@@ -15,13 +15,23 @@
 #
 ######################################################################
 
-package EPrints::Config::lemurprints;
+package EPrints::Config::ep2stable;
 
-do "cfg/ArchiveOAIConfig.pm";
-do "cfg/ArchiveRenderConfig.pm";
-do "cfg/ArchiveValidateConfig.pm";
-do "cfg/ArchiveTextIndexingConfig.pm";
-do "cfg/ArchiveMetadataFieldsConfig.pm";
+my $file = "cfg/ArchiveOAIConfig.pm";
+foreach my $file ( 
+	"cfg/ArchiveOAIConfig.pm",
+	"cfg/ArchiveRenderConfig.pm",
+	"cfg/ArchiveValidateConfig.pm",
+	"cfg/ArchiveTextIndexingConfig.pm",
+	"cfg/ArchiveMetadataFieldsConfig.pm" )
+{
+	unless (my $return = do $file) {
+		warn "couldn't parse $file: $@" if $@;
+		warn "couldn't do $file: $!"    unless defined $return;
+		warn "couldn't run $file"       unless $return;
+	}
+}
+
 
 use EPrints::Utils;
 
@@ -155,8 +165,13 @@ $c->{diskspace_warn_threshold} = 512*1024;
 # feel that they will confuse your users. This
 # makes no difference to the actual database,
 # the fields will just be unused.
-$c->{hide_honourific} = 0;
-$c->{hide_lineage} = 0;
+$c->{hide_honourific} = 1;
+$c->{hide_lineage} = 1;
+
+# By default names are asked for as given,family
+# if you want to swap this to family,given then
+# set this flag to 1
+$c->{invert_name_input} = 1;
 
 # If you are setting up a very simple system or 
 # are starting with lots of data entry you can
@@ -180,6 +195,10 @@ $c->{allow_web_signup} = 1;
 # over the web. This can be modified after they sign up by
 # staff with the right priv. set. 
 $c->{default_user_type} = "user";
+
+# This is a list of fields which the user is asked for when registering
+# in addition to the required username, email and password.
+$c->{user_registration_fields} = [ "name" ];
 
 # See also the user type configuration section.
 
@@ -245,7 +264,7 @@ $c->{field_defaults}->{search_rows} = 12;
 $c->{submission_stage_skip}->{type} = 0;
 
 # You can skip "linking" with no ill effects.
-$c->{submission_stage_skip}->{linking} = 0;
+$c->{submission_stage_skip}->{linking} = 1;
 
 # If you skip the main metadata input you must
 # set all the required fields in the default.
@@ -276,12 +295,6 @@ $c->{submission_hide_language} = 1;
 # this if you don't plan to have any secret or
 # confidential contents.
 $c->{submission_hide_security} = 0;
-
-# This option removes the "how many files do you want
-# to upload" from the document file upload page and
-# defaults it to "1" instead. This is useful if your
-# policy only allows one file per document.
-$c->{submission_hide_howmanyfiles} = 0;
 
 # These options allow you to suppress various file
 # upload methods. You almost certainly do not want
@@ -343,8 +356,8 @@ $c->{vlit}->{context_size} = 1024;
 #   When specifying ordering, separate the fields with a "/", and specify
 #   proceed the fieldname with a dash "-" for reverse sorting.
 #
-#   To search or sort on the id part of a field eg. "authors" append
-#   ".id" to it's name. eg. "authors.id"
+#   To search or sort on the id part of a field eg. "creators" append
+#   ".id" to it's name. eg. "creators.id"
 #
 ######################################################################
 
@@ -353,19 +366,19 @@ $c->{vlit}->{context_size} = 1024;
 # Multiple fields may be specified for one view, but avoid
 # subject or allowing null in this case.
 $c->{browse_views} = [
-	{ id=>"subjects", fields=>"subjects", order=>"title/authors" },
-	{ id=>"year",  allow_null=>1, fields=>"year", order=>"title/authors" }
+	{ id=>"subjects", fields=>"subjects", order=>"title/creators" },
+	{ id=>"date_effective",  allow_null=>1, fields=>"date_effective", order=>"title/creators" }
 ];
 # examples of some other useful views you might want to add
 #
-# Browse by the ID's of authors & editors (CV Pages)
-# { id=>"person", allow_null=>0, fields=>"authors.id/editors.id", order=>"title/authors", noindex=>1, nolink=>1, nohtml=>1, include=>1, citation=>"title_only", nocount=>1 }
+# Browse by the ID's of creators & editors (CV Pages)
+# { id=>"person", allow_null=>0, fields=>"creators.id/editors.id", order=>"title/creators", noindex=>1, nolink=>1, nohtml=>1, include=>1, citation=>"title_only", nocount=>1 }
 #
-# Browse by the names of authors (less reliable than Id's)
-#{ id=>"name",  allow_null=>1, fields=>"authors", order=>"-year" }
+# Browse by the names of creators (less reliable than Id's)
+#{ id=>"name",  allow_null=>1, fields=>"creators", order=>"-date_effective" }
 #
 # Browse by the type of eprint (poster, report etc).
-#{ id=>"type",  fields=>"type", order=>"-year" }
+#{ id=>"type",  fields=>"type", order=>"-date_effective" }
 
 # Number of results to display on a single search results page
 $c->{results_page_size} = 100;
@@ -374,34 +387,38 @@ $c->{results_page_size} = 100;
 $c->{simple_search_fields} =
 [
 	"title/abstract/keywords",
-	"authors/editors",
-	"year"
+	"creators/editors",
+	"date_effective"
 ];
+
+# customise the citation used to give simple search results
+$c->{simple_search_citation} = "neat";
 
 # You may specify defaults for the search page. 
 # $c->{simple_search_defaults} =
 # {
-#	"authors/editors" => "Gutteridge",
-# 	"year" => 2002
+#	"creators/editors" => "Gutteridge",
+# 	"date_effective" => 2002
 # }
 
+# customise the citation used to give advanced search results
+$c->{advanced_search_citation} = "neat";
 
 # Fields for an advanced user search
 $c->{advanced_search_fields} =
 [
 	"title",
-	"authors",
+	"creators",
 	"abstract",
 	"keywords",
 	"subjects",
 	"type",
-	"conference",
 	"department",
 	"editors",
 	"ispublished",
 	"refereed",
 	"publication",
-	"year"
+	"date_effective"
 ];
 
 # You may specify defaults for the advanced search page. 
@@ -431,10 +448,10 @@ $c->{editor_limit_fields} =
 # Ways of ordering search results
 $c->{order_methods}->{eprint} =
 {
-	"byyear" 	 => "-year/authors/title",
-	"byyearoldest"	 => "year/authors/title",
-	"byname"  	 => "authors/-year/title",
-	"bytitle" 	 => "title/authors/-year"
+	"byyear" 	 => "-date_effective/creators/title",
+	"byyearoldest"	 => "date_effective/creators/title",
+	"byname"  	 => "creators/-date_effective/title",
+	"bytitle" 	 => "title/creators/-date_effective"
 };
 
 
@@ -467,6 +484,8 @@ $c->{order_methods}->{user} =
 #   (must be key to %eprint_order_methods)
 $c->{default_order}->{user} = "byname";
 
+# customise the citation used to give results on the latest page
+$c->{latest_citation} = "neat";
 
 ######################################################################
 #

@@ -1155,4 +1155,214 @@ before next release. (metadata types & fields)
  - (in tools/update_phrase_file) improved the layout of the 
     translation flagging and the flags now include the reference code.
 
+2003-05-20 cjg
 
+ - [c] Made default to hide lineage and honourific
+ - [c] Made default to skip linking stage
+ - New option; invert name input - so family name comes first
+*- [c] Made invert name input default to 1. Probably want to change
+    before release.
+*- New option: submission_hide_howmanyfiles, which will cause the 
+    "how many files?" part of the file upload to be supressed. May
+    be removed due to rewrite of that whole section.
+ - [c] TOTAL reworking of all metadata fields, eprint types and
+     some changes to citations (needs more there!). EPrint types
+     now divided into several pages.
+*- [c] Added some defaults & automatics which will need to be 
+    removed before release. Could use them as examples.
+ - [c] view & search default config changed to reflect new fields.
+*- [c] Added input_names to MetadataFieldsConfig.pm as an alternate
+    input method for names. Currently being used by creators and
+    editors. Should be moved to core code?
+ - [c] Changed OAI config to reflect new fields.
+ - [c] put a table around default site template to limit pages
+    to 720 wide for readability.
+ - [api] Added new option to SearchExpression. "citation" which 
+    specifies a citation to use instead of the defaults for each
+    type when rendering results.
+ - [c] Added new options: advanced_search_citation, 
+    simple_search_citation, latest_citation to allow the citation
+    to be used on those pages to be explicitly specified.
+ - [web] Deprecated set_password page, split it into "register"
+    and "reset_password" which should make things a little 
+    less confusing.
+*- [web] Extensively redesign of /perl/users/home - not finished
+    yet.
+ - Fixed small bug in edit_user
+ - Loosened up the regexp for archive id's. is now ^[a-zA-Z0-9_]+$
+ - [api] New method for document; get_baseurl which returns the
+    URL of the document directory, not the first item. get_url
+    now uses this to calculate it's value.
+ - [api] New method for Language: has_phrase(). This tests to see
+    if a phrase is available in the language (without useing
+    the fallback languaage)
+ - [c] New config option for fields: render_input. This overrides
+    the code which renders the input form for that field.
+ - [api] display_help and render_help now take an optional $type
+    parameter, to allow them to provide type specific help if
+    available (tested using $language->has_phrase()
+*- Added date search functionality, although still seems a bit
+    buggy.
+ - [api] Added get_lang method to Session, to get the current
+    language (as oppose to the current language id)
+ - [api] New method to Session: render_nbsp which renders an XHTML
+    DOM non breaking space.
+ - Fixed bug in menus which meant they where always the same 
+    default height as textareas.
+ - New option to $session->render_input_form: above_buttons which
+    is some XHTML data to insert above the buttons but below
+    the input fields.
+*- Significant changes to SubmissionForm. Changed the way in which
+    files are uploaded. Still in progress.
+ - Improved the rendering of emails in EPrints::Utils::tree_to_utf8
+    now does not over-do whitespace between paragraphs.
+ - [api] New function: EPrints::Utils::human_filesize($size_in_bytes)
+    which returns a sensible description of the given filesize 
+    e.g. 5Mb (rather than 5484023bytes)
+*- [c] Help & Fieldnames in the phrase file for all new fields. Not
+    quite done yet. Also improved the registration/password reset 
+    email.
+*- [c] Some changes to the style sheet, including making most of 
+    the system sans-serif.
+*- [c] NEED TO ADD to registration a config option for which fields
+    are asked for.
+
+(eprints2-3-0-tardis-1)
+ 
+2003-06-10 cjg
+
+ - [c] Changed "includes" in ArchiveConfig.pm to give better messages
+    for syntax errors in ArchiveRenderConfig.pm etc.
+ - [c] New config option: "user_registration_fields", allows extra fields
+    to be asked for in registration.
+ - [doc] New custom input renderer for subjects:
+    &EPrints::MetaField::subject_browser_input which does a navigable subject
+    tree rather than the pull-down menu.
+ - [c] Subect field now uses that custom input renderer.
+ - [c] Added more items to the monograph_type field.
+ - [c] Added "lecture" to the presentation_type field.
+ - [c] Made abstract the same width as all other fields again (looked 
+    really ugly being super-wide)
+ - [c] Editors now use custom name input.
+ - [c] Removed institution default, but left comment to show how to do it.
+ - [c] Added automatics to set effective date to issue, or submission if
+    no date of issue.
+ - [c] Added automatic to set full_text_status.
+ - [c] Added code to show subtypes in abstract renderer for thesis,
+    monograph & conf_or_pres.
+ - [c] Abstract page again: datestamp now only renders if specified, will
+    not show UNSPECIFIED.
+ - [c] Full Summary Renderer now just lists unspecified fields to make the
+    page shorter & neater.
+ - [c] Does not bother telling you the password is UNSPECIFIED, duh.
+ - [c] Added two conditions to validation: date_issue AND/OR date_sub must 
+    be set. Same for authors/editors.
+ - [c] Redesigned citations for book & article to be much neater. Also made
+    the search results citation style show stuff like if it's not published 
+    and the full text status (if not available, or restricted)
+ - [c] Swapped order of date_sub & date_issue 
+ - [c] Changed template to link to register instead of deprecated set_password
+ - Rewrote some of export_xml to be more XML module independent. Should fix
+    some errors reported.
+ - Tried to make eprints run in "tainted" mode but didn't get any far.
+ - Added phrase "cgi/register:register_agreement" which can be overriden if
+    some text needs to appear on the "register" page by the "register" button.
+ - reset_password was generating the error title even if it didn't need to.
+    fixed.
+ - reset_password: no such user msg now tells you the email which failed.
+ - user home now renders inbox eprints as a list with links for options next
+    to each item. Much neater!
+ - user home list of recently accepted items links to the abstracts now.
+ - submission form now goes to "userhome" not /perl/users/home -> it was
+    hardwired before. 
+ - removed similar hardwiring in review, record & system-en-current
+ - get_type_fields now returns those fields in the order which they appear
+    in metadata-types.xml
+ - qualifiers for fieldnames (eg. in citations) are now seperated by ";" not
+    ".", although ".id" will continue to work. 
+ - added new qualifier "magicstop" which will, when rendering, add a "." to
+    the *single* value if it does not end with ".","?" or "!"
+ - new metafield property, "render_opts" which is a hash of all such
+    render opts.
+ - render_input_field now gets a list of hidden fields in case it wants
+    to make a GET link instead of the normal POST. This is needed by the
+    new subject_browse renderer.
+ - in normal subject input fields, the selected subjects are moved to the
+    top so they can be easily seen.
+ - added another custom renderer: render_pagerange_pp which renders page
+    range type fields something like the harvard style.
+ - fixed a glitch in searchexpression that if it didn't have an order or
+    a dataset it dereferenced a null {dataset} anyway. This occured in 
+    unserialising an empty string.
+ - added "description" to date searches. Still a bit ropey.
+ - put classed spans around peoples names.
+ - new feature in get_subjects: no cascade label, which will soon be used
+    to make subject lists which DON'T have all the super-subjects as
+    part of each label.
+ - added type, eprintid and desc to the options to the titles in the
+    submission form. They're not all used, but could be if people want.
+ - redesigned file upload section. No functional changes, but extensive
+    cosmetic ones.
+ - User eprints now returned sorted by eprintid
+ - render_date now only shows "Feb 2000" if day == 00
+ - created _citation_field_value to tidy up citation rendering code.
+ - [c] lots more changes to phrase files and stylesheet. Stylesheet really
+    needs a spring clean.
+ - All fields in citations are now class'd with span tags for extra 
+    easy style changes via CSS, and for an easy life for extraction tools.
+
+(eprints2-3-0-tardis-2)
+ 
+2003-06-17 cjg
+ 
+ - [c] removed "chapter" metadata field, no longer used.
+ - [c] added "fileinfo" metadata field, will be used for caching info
+    on available file formats for use when rendering citations.
+ - [c] default editor summary mailing frequency is no "never" not NULL
+ - [c] renamed conf_or_pres type to conference_item
+ - [c] valign="top" added to render_row for abstract page. looks a bit
+    neater.
+ - [c] added harvard style(ish) citation formats for all types. As 
+    good as possible, based on lots of different standards for the 
+    standard. It's bound to be wrong, but at least it's neat and 
+    consistant.
+ - removed a stray debug line from oai2
+ - fixed a bug in oai2, ListMetadataFormats used oai v1.1 config, now
+    uses v2.
+ - [d] removed "max_resolution" metafield option. Now just uses ;res=Y
+    in citations & browse views.
+ - internationalised subject browser.
+ - searchfield now correctly renders descriptions of date searches. 
+ - moved ": " the subject-path-join into the phrase file, and changed
+    it to " > "
+ - swapped the order of the confirm delete buttons to make "confirm"
+    come first.
+
+2003-06-17 cjg/moj
+
+*- [doc] New parameter to SystemSettings: apache_version. 
+ - Support for Apache2 added, changes to VLit, startup.pl and Auth.pm, 
+    added new module RequestWrapper2 which Auth will use if directed.
+    now does some 1.3/2.0 specific stuff in generate_apacheconf
+
+2003-06-24 cjg
+
+ - [c] New config option to OAIRender {mime_types} to map the document
+    types to mime types for the dublin core conversion.
+ - [c] EPrint->Unqualified Dublin Core now more or less follows Andy
+    Powell's recommendations.
+ - [c] removed place of publication from converence_item (it's not
+    published!)
+ - Fixed bug in $dataobj->get_value which didn't strip the id's as
+    requested on "mainpart" fields.
+ - bugfix: moving an eprint to the deletion buffer deleted the abstract
+    but didn't replace it with the deleted message.
+ - fixed a warning in $field->render_value for dates.
+ - Added a search function to the subject browse input method.
+ - Internal buttons now only count as pressed if they are set to 
+    something other than an empty string.
+ - If a problem occurs in submission form then the problem gets name="t"
+    which should override whichever field currently wants focus
+ 
+
+======================================================================

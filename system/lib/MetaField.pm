@@ -119,9 +119,10 @@ my $PROPERTIES =
 	make_value_orderkey => 1,
 	make_single_value_orderkey => 1,
 	min_resolution => 1,
-	max_resolution => 1,
 	render_single_value => 1,
 	render_value => 1,
+	render_input => 1,
+	render_opts => 1,
 	top => 1,
 	type => -1
 };
@@ -266,22 +267,30 @@ sub display_name
 ######################################################################
 =pod
 
-=item $helpstring = $field->display_help( $session )
+=item $helpstring = $field->display_help( $session, [$type] )
 
 Use of this method is not recommended. Use render_help instead.
 
 Return the help information for a user inputing some data for this
 field as a UTF-8 encoded string in the language of the $session.
 
+If an optional type is specified then specific help for that
+type will be used if available. Otherwise the normal help will be
+used.
+
 =cut
 ######################################################################
 
 sub display_help
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $type ) = @_;
 
 	my $phrasename = $self->{confid}."_fieldhelp_".$self->{name};
 	$phrasename.= "_id" if( $self->get_property( "idpart" ) );
+	if( defined $type && $session->get_lang->has_phrase( $phrasename.".".$type ) )
+	{	
+		return $session->phrase( $phrasename.".".$type );
+	}
 
 	return $session->phrase( $phrasename );
 }
@@ -289,20 +298,29 @@ sub display_help
 ######################################################################
 =pod
 
-=item $xhtml = $field->render_help( $session )
+=item $xhtml = $field->render_help( $session, [$type] )
 
 Return the help information for a user inputing some data for this
 field as an XHTML chunk.
+
+If an optional type is specified then specific help for that
+type will be used if available. Otherwise the normal help will be
+used. Eg. help for the title of a book may have different examples to
+the default help for the title field.
 
 =cut
 ######################################################################
 
 sub render_help
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $type ) = @_;
 
 	my $phrasename = $self->{confid}."_fieldhelp_".$self->{name};
 	$phrasename.= "_id" if( $self->get_property( "idpart" ) );
+	if( defined $type && $session->get_lang->has_phrase( $phrasename.".".$type ) )
+	{	
+		return $session->html_phrase( $phrasename.".".$type );
+	}
 
 	return $session->html_phrase( $phrasename );
 }
@@ -344,7 +362,7 @@ of the name.
 
 sub get_sql_type
 {
-        my( $self , $notnull ) = @_;
+	my( $self , $notnull ) = @_;
 
 	my $sqlname = $self->get_sql_name();
 	my $param = "";
@@ -408,7 +426,7 @@ or an empty string if no index is required.
 
 sub get_sql_index
 {
-        my( $self ) = @_;
+	my( $self ) = @_;
 	
 	if( $self->is_type( "longtext", "secret", "search" ) )
 	{
@@ -655,7 +673,8 @@ sub _render_value1
 {
 	my( $self, $session, $value, $alllangs, $nolink ) = @_;
 
-	my $rendered = $self->_render_value2( $session, $value, $alllangs, $nolink );
+	# just main/id if that's what we're rendering
+	$value = $self->which_bit( $value );
 
 	if( $self->get_property( "hasid" ) )
 	{
@@ -663,7 +682,9 @@ sub _render_value1
 		# based on the value of it's ID. 
 		# It will either just pass it through, redo it from scratch
 		# or wrap it in a link.
-		
+
+		my $rendered = $self->get_main_field()->_render_value2( $session, $value->{main}, $alllangs, $nolink );
+
 		return $session->get_archive()->call( 
 			"render_value_with_id",  
 			$self, 
@@ -673,25 +694,22 @@ sub _render_value1
 			$rendered, 
 			$nolink );
 	}
-	else
+
+	my $rendered = $self->_render_value2( $session, $value, $alllangs, $nolink );
+
+	if( defined $self->{browse_link} && !$nolink)
 	{
-		if( defined $self->{browse_link} && !$nolink)
-		{
-			my $url = $session->get_archive()->get_conf( 
-					"base_url" );
-			$url .= "/view/".$self->{browse_link}."/".
-				EPrints::Utils::escape_filename( $value ).
-				".html";
-			my $a = $session->render_link( $url );
-			$a->appendChild( $rendered );
-			return $a;
-		}
-		else
-		{
-			return $rendered;
-		}
+		my $url = $session->get_archive()->get_conf( 
+				"base_url" );
+		$url .= "/view/".$self->{browse_link}."/".
+			EPrints::Utils::escape_filename( $value ).
+			".html";
+		my $a = $session->render_link( $url );
+		$a->appendChild( $rendered );
+		return $a;
 	}
 
+	return $rendered;
 }
 
 ######################################################################
@@ -760,6 +778,17 @@ sub _render_value3
 		return $session->html_phrase( "lib/metafield:unspecified" );
 	}
 
+	if( $self->{render_opts}->{magicstop} )
+	{
+		# add a full stop if the vale does not end with ? ! or .
+		$value =~ s/\s*$//;
+		if( $value !~ m/[\?!\.]$/ )
+		{
+			$value .= '.';
+		}
+	}
+
+
 	if( defined $self->{render_single_value} )
 	{
 		return &{$self->{render_single_value}}( 
@@ -806,9 +835,10 @@ sub _render_value3
 
 	if( $self->is_type( "date" ) )
 	{
+		my $res = $self->get_property( "render_opts" )->{res};
 		my $l = 10;
-		$l = 7 if( $self->get_property( "max_resolution" ) eq "M" );
-		$l = 4 if( $self->get_property( "max_resolution" ) eq "Y" );
+		$l = 7 if( defined $res && $res eq "M" );
+		$l = 4 if( defined $res && $res eq "Y" );
 		return EPrints::Utils::render_date( $session, substr( $value,0,$l ) );
 	}
 
@@ -878,7 +908,7 @@ sub _render_value3
 ######################################################################
 =pod
 
-=item $xhtml = $field->render_input_field( $session, $value, [$dataset, $type], [$staff] )
+=item $xhtml = $field->render_input_field( $session, $value, [$dataset, $type], [$staff], [$hidden_fields] )
 
 Return the XHTML of the fields for an form which will allow a user
 to input metadata to this field. $value is the default value for
@@ -889,11 +919,23 @@ this field.
 
 sub render_input_field
 {
-	my( $self, $session, $value, $dataset, $type, $staff ) = @_;
+	my( $self, $session, $value, $dataset, $type, $staff, $hidden_fields ) = @_;
 
 	if( defined $self->{toform} )
 	{
 		$value = &{$self->{toform}}( $value, $session );
+	}
+
+	if( defined $self->{render_input} )
+	{
+		return &{$self->{render_input}}(
+			$self,
+			$session, 
+			$value, 
+			$dataset, 
+			$type, 
+			$staff,
+			$hidden_fields );
 	}
 
 	my( $html, $frag );
@@ -942,7 +984,9 @@ sub render_input_field
 
 			my ( $pairs ) = $topsubj->get_subjects( 
 				!($self->{showall}), 
-				$self->{showtop} );
+				$self->{showtop},
+				0,
+				($self->{input_style} eq "short"?1:0) );
 			if( !$self->get_property( "multiple" ) && 
 				!$req )
 			{
@@ -958,6 +1002,7 @@ sub render_input_field
 			{
 				$settings{pairs} = $pairs;
 			}
+			$settings{defaults_at_top} = 1;
 		} 
 		else 
 		{
@@ -1002,7 +1047,7 @@ sub render_input_field
 		if( $self->get_property( "input_style" ) eq "long" )
 		{
 			my( $dl, $dt, $dd );
-			$dl = $session->make_element( "dl", class="longset" );
+			$dl = $session->make_element( "dl", class=>"longset" );
 			foreach my $opt ( @{$settings{values}} )
 			{
 				$dt = $session->make_element( "dt" );
@@ -1101,6 +1146,10 @@ sub render_input_field
 
 	return $html;
 }
+
+
+
+	
 
 ######################################################################
 # 
@@ -1277,16 +1326,32 @@ sub _render_input_field_aux
 						"lib/metafield:honourific" ) );
 			$tr->appendChild( $th );
 		}
+		if( $session->get_archive()->get_conf( "invert_name_input" ) )
+		{
+			$th = $session->make_element( "th" );
+			$th->appendChild( $session->html_phrase( 
+						"lib/metafield:family_names" ) );
+			$tr->appendChild( $th );
 
-		$th = $session->make_element( "th" );
-		$th->appendChild( $session->html_phrase( 
-					"lib/metafield:given_names" ) );
-		$tr->appendChild( $th );
+			$th = $session->make_element( "th" );
+			$th->appendChild( $session->html_phrase( 
+						"lib/metafield:given_names" ) );
+			$tr->appendChild( $th );
+	
+		}
+		else
+		{
+			$th = $session->make_element( "th" );
+			$th->appendChild( $session->html_phrase( 
+						"lib/metafield:given_names" ) );
+			$tr->appendChild( $th );
+	
+			$th = $session->make_element( "th" );
+			$th->appendChild( $session->html_phrase( 
+						"lib/metafield:family_names" ) );
+			$tr->appendChild( $th );
 
-		$th = $session->make_element( "th" );
-		$th->appendChild( $session->html_phrase( 
-					"lib/metafield:family_names" ) );
-		$tr->appendChild( $th );
+		}
 
 		unless( $session->get_archive()->get_conf( "hide_lineage" ) )
 		{
@@ -1490,7 +1555,14 @@ FALSE=> $session->phrase( $self->{confid}."_fieldopt_".$self->{name}."_FALSE")
 		{
 			push @namebits, "honourific";
 		}
-		push @namebits, "given", "family";
+		if( $session->get_archive()->get_conf( "invert_name_input" ) )
+		{
+			push @namebits, "family", "given";
+		}
+		else
+		{
+			push @namebits, "given", "family";
+		}
 		unless( $session->get_archive()->get_conf( "hide_lineage" ) )
 		{
 			push @namebits, "lineage";
@@ -1546,12 +1618,22 @@ FALSE=> $session->phrase( $self->{confid}."_fieldopt_".$self->{name}."_FALSE")
 
 	if( $self->is_type( "date" ) )
 	{
-		my( $div, $yearid, $monthid, $dayid );
-		$div = $session->make_element( "div" );	
-		my( %r ) = ( D=>"d", M=>"m", Y=>"y" );
-		$div->appendChild( $session->html_phrase( 
-			"lib/metafield:date_res_".
-			 $r{$self->get_property( "min_resolution" )} ) );
+		my( $frag, $div, $yearid, $monthid, $dayid );
+
+		$frag = $session->make_doc_fragment;
+		
+		my $min_res = $self->get_property( "min_resolution" );
+	
+		if( $min_res eq "M" || $min_res eq "Y" )
+		{	
+			my( %r ) = ( D=>"d", M=>"m", Y=>"y" );
+			$div = $session->make_element( "div", class=>"formfieldhelp" );	
+			$div->appendChild( $session->html_phrase( 
+				"lib/metafield:date_res_".$r{$min_res} ) );
+			$frag->appendChild( $div );
+		}
+
+		$div = $session->make_element( "div" );
 		my( $year, $month, $day ) = ("", "", "");
 		if( defined $value && $value ne "" )
 		{
@@ -1613,7 +1695,8 @@ FALSE=> $session->phrase( $self->{confid}."_fieldopt_".$self->{name}."_FALSE")
 			default => $day,
 			labels => \%daylabels ) );
 
-		return $div;
+		$frag->appendChild( $div );
+		return $frag;
 	}
 
 	if( $self->is_type( "search" ) )
@@ -1758,6 +1841,7 @@ sub _form_value_aux0
 			# especially in "subject"
 			my %v;
 			foreach( @values ) { $v{$_}=1; }
+			delete $v{"-"}; # for the  ------- in defaults at top
 			@values = keys %v;
 			return \@values;
 		}
@@ -2133,8 +2217,8 @@ sub is_browsable
 	# Can never browse:
 	# pagerange , secret , longtext
 
-        # Can't yet browse:
-        # langid 
+	# Can't yet browse:
+	# langid 
 
 	return $self->is_type( "set", "subject", "datatype", "date", "int", 
 				"year", "id", "email", "url", "text",
@@ -2210,11 +2294,12 @@ sub get_values
 		$_ = "" if( !defined $_ );
 	}
 
-	if( $self->is_type( "date" ) && $self->get_property( "max_resolution" ) ne "D" )
+	my $res = $self->get_property( "render_opts" )->{res};
+	if( $self->is_type( "date" ) && $res ne "D" )
 	{
 		my $l = 10;
-		if( $self->get_property( "max_resolution" ) eq "M" ) { $l = 7; }
-		if( $self->get_property( "max_resolution" ) eq "Y" ) { $l = 4; }
+		if( $res eq "M" ) { $l = 7; }
+		if( $res eq "Y" ) { $l = 4; }
 		
 		my %ov = ();
 		foreach( @outvalues )
@@ -2523,7 +2608,6 @@ sub get_property_default
 	return [] if( $property eq "requiredlangs" );
 
 	return "D" if( $property eq "min_resolution" );
-	return "D" if( $property eq "max_resolution" );
 
 	return 0 if( $property eq "input_style" );
 	return 0 if( $property eq "hasid" );
@@ -2550,6 +2634,8 @@ sub get_property_default
 	return undef if( $property eq "make_single_value_orderkey" );
 	return undef if( $property eq "render_single_value" );
 	return undef if( $property eq "render_value" );
+	return undef if( $property eq "render_input" );
+	return {} if( $property eq "render_opts" );
 
 	EPrints::Config::abort( 
 		"Unknown property in get_property_default: $property" );
@@ -2656,6 +2742,338 @@ sub _list_values2
 
 	return $value;
 }
+
+
+
+
+
+
+
+######################################################################
+=pod
+
+=item subject_browser_input
+
+This is an alternate input renderer for "subject" fields. It is 
+intended to be passed by reference to the render_input parameter
+of such a field.
+
+Due to the way this works, it is recommended that the "subjects"
+type field it is used for is by itself on the metadata input page.
+
+=cut
+######################################################################
+
+sub subject_browser_input
+{
+	my( $field, $session, $value, $dataset, $type, $staff, $hidden_fields ) = @_;
+
+	my $values;
+	if( !defined $value )
+	{
+		$values = [];
+	}
+	elsif( !$field->get_property( "multiple" ) )
+	{
+		$values = [ $value ]; 
+	}
+	else
+	{
+		$values = $value; 
+	}
+
+	my $topsubj = $field->get_top_subject( $session );
+ 	my $subject = $topsubj;
+
+	my $html = $session->make_doc_fragment;
+
+	my $search;
+	if( $session->internal_button_pressed )
+	{
+		my $button = $session->get_internal_button();
+		my $rexp;
+		$rexp = $field->get_name."_view_";
+		if( $button =~ m/^$rexp(.*)$/ )
+		{
+			$subject = EPrints::Subject->new( $session, $1 );
+			if( !defined $subject ) 
+			{ 
+				$subject = $topsubj; 
+			}
+		}
+		if( $button eq $field->get_name."_search" )
+		{
+			$search = $session->param( "_internal_".$field->get_name."_search" );
+		}
+	}
+
+	my @param_pairs = ();
+	foreach( keys %{$hidden_fields} )
+	{
+		push @param_pairs, $_.'='.$hidden_fields->{$_};
+	}
+	my $baseurl = '?'.join( '&', @param_pairs );
+
+	my( %bits );
+
+	$bits{selections} = $session->make_doc_fragment;
+
+	foreach my $s_id ( sort @{$values} )
+	{
+		my $s = EPrints::Subject->new( $session, $s_id );
+		next if( !defined $s );
+
+		$html->appendChild( 
+			$session->render_hidden_field(
+				$field->get_name,
+				$s_id ) );
+
+		my $div = $session->make_element( "div" );
+		$div->appendChild( $s->render_description );
+
+		my $url = $baseurl.'&_internal_'.$field->get_name.'_view_'.$subject->get_id.'=1'.$field->get_name.'='.$s->get_id;
+		foreach my $v ( @{$values} )
+		{
+			next if( $v eq $s_id );
+			$url.= '&'.$field->get_name.'='.$v;
+		}
+		$url .= '#t';
+
+		$div->appendChild(  $session->html_phrase(
+                        "lib/metafield:subject_browser_remove",
+			link=>$session->make_element( "a", href=>$url ) ) );
+		$bits{selections}->appendChild( $div );
+	}
+
+	if( scalar @{$values} == 0 )
+	{	
+		my $div = $session->make_element( "div" );
+		$div->appendChild( $session->html_phrase(
+			"lib/metafield:subject_browser_none" ) );
+		$bits{selections}->appendChild( $div );
+	}
+
+	my @paths = $subject->get_paths( $session );
+	my %expanded = ();
+	foreach my $path ( @paths )
+	{
+		my $div = $session->make_element( "div" );
+		my $first = 1;
+		foreach my $s ( @{$path} )
+		{
+			$expanded{$s->get_id}=1;
+		}
+		$bits{selections}->appendChild( $div );
+	}	
+
+	$bits{search} = $session->html_phrase(
+			"lib/metafield:subject_browser_search",
+			input=>$session->make_element( "input", name=>"_internal_".$field->get_name."_search" ) );
+	$bits{topsubj} = $topsubj->render_description;
+
+	if( defined $search ) 
+	{
+		my $subject_ds = $session->get_archive()->get_dataset( "subject" );
+
+		my $searchexp = new EPrints::SearchExpression(
+			session=>$session,
+			dataset=>$subject_ds );
+	
+		$searchexp->add_field(
+			$subject_ds->get_field( "name" ),
+			$search,
+			"IN",
+			"ALL" );
+
+		my $searchid = $searchexp->perform_search;
+
+		my @records = $searchexp->get_records;
+		$searchexp->dispose();
+
+		my $results;
+		if( scalar @records )
+		{
+			$results = $session->make_element( "ul" );
+			foreach my $s ( @records )
+			{
+				$results->appendChild( $field->_subject_browser_input_aux( 
+					$session,
+					$s,
+					$subject,
+					\%expanded,
+					$baseurl,
+					$values ) );
+			}
+		}	
+		else
+		{
+			$results = $session->html_phrase( 
+                        "lib/metafield:subject_browser_no_matches" );
+		}
+
+		my $url = $baseurl.'&_internal_'.$field->get_name.'_view_'.$subject->get_id.'=1'.$field->get_name.'='.$subject->get_id;
+		foreach my $v ( @{$values} )
+		{
+			$url.= '&'.$field->get_name.'='.$v;
+		}
+		$url .= '#t';
+
+		$bits{opts} = $session->html_phrase( 
+			"lib/metafield:subject_browser_search_results", 
+			results=>$results,
+			browse=>$session->render_link( $url ) );
+	}
+	else
+	{	
+		my $ul = $session->make_element( "ul" );
+		foreach my $s ( $topsubj->children() )
+		{
+			$ul->appendChild( $field->_subject_browser_input_aux( 
+				$session,
+				$s,
+				$subject,
+				\%expanded,
+				$baseurl,
+				$values ) );
+		}
+		$bits{opts} = $ul;
+	}
+
+	$html->appendChild( $session->html_phrase( 
+			"lib/metafield:subject_browser",
+			%bits ) );
+
+	return $html;
+}
+
+
+sub _subject_browser_input_aux
+{
+	my( $field, $session, $subject, $current_subj, $expanded, $baseurl, $values ) = @_;
+
+	my $addurl = $baseurl;
+	foreach my $v ( @{$values} )
+	{
+		$addurl.= '&'.$field->get_name.'='.$v;
+	}
+
+	my $li = $session->make_element( "li" );
+
+	my $n_kids = scalar $subject->children();
+	my $exp = 0;
+	if( $n_kids > 0 )
+	{
+		if( $expanded->{$subject->get_id} )
+		#if( $expanded->{$subject->get_id} || $n_kids < 3)
+		{
+			$exp = 1;
+		}
+		else
+		{
+			$exp = -1;
+		}
+	}
+	my $selected = 0;
+	foreach my $v ( @{$values} )
+	{
+		$selected = 1 if( $v eq $subject->get_id );
+	}
+	if( $exp == -1 )
+	{
+		my $url = $addurl.'&_internal_'.$field->get_name.'_view_'.$subject->get_id.'=1#t';
+		my $a = $session->make_element( "a", href=>$url );
+		$a->appendChild( $subject->render_description );
+		$li->appendChild( $a );
+		$li->appendChild( $session->html_phrase(
+                       	"lib/metafield:subject_browser_expandable" ) );
+	}
+	else
+	{
+		my $span = $session->make_element( 
+			"span", 
+			class=>"subject_browser_".($selected?"":"un")."selected" );
+		$span->appendChild( $subject->render_description );
+		$li->appendChild( $span );
+	}
+	if( $subject->can_post && $exp != -1 && !$selected )
+	{
+		my $ibutton = '_internal_'.$field->get_name.'_view_'.$current_subj->get_id.'=1';
+		my $intact = '_internal_'.$session->get_internal_button();
+		$ibutton = $intact.'='.$session->param( $intact );
+		my $url = $addurl.'&'.$ibutton.'&'.$field->get_name.'='.$subject->get_id.'#t';
+		$li->appendChild(  $session->html_phrase(
+                       	"lib/metafield:subject_browser_add",
+			link=>$session->make_element( "a", href=>$url ) ) );
+	}
+	if( $exp == 1 )
+	{
+		$li->appendChild( $session->make_element( "br" ));
+
+		my $ul = $session->make_element( "ul" );
+		foreach my $s ( $subject->children() )
+		{
+				$ul->appendChild( $field->_subject_browser_input_aux(
+					$session, 
+					$s, 
+					$current_subj,
+					$expanded, 
+					$baseurl,
+					$values ) );
+		}
+		$li->appendChild( $ul );
+	}
+
+	return $li;
+}
+
+
+
+######################################################################
+=pod
+
+=item render_pagerange_pp
+
+This is a renderer for pagerange type fields which renders the range
+as:
+pp.100-102
+
+unless both values are equal, in which case it renders:
+p.23
+
+At a later date it may compess ranges eg.
+103-109 becomes 103-9, but I've not found a reliable guide to the
+correct way to do this yet.
+
+=cut
+######################################################################
+
+sub render_pagerange_pp
+{
+	my( $session, $field, $value ) = @_;
+
+	unless( $value =~ m/^(\d+)-(\d+)$/ )
+	{
+		# value not in expected form. Ah, well. Muddle through.
+		return $session->make_text( $value );
+	}
+
+	my( $a, $b ) = ( $1, $2 );
+	
+	if( $a == $b )
+	{
+		return $session->make_text( 'p.'.$a );
+	}
+
+#	if( length $a == length $b )
+#	{
+#	}
+		
+
+	return $session->make_text( 'pp.'.$a.'-'.$b );
+}
+
+
+
 ######################################################################
 
 1;

@@ -278,6 +278,22 @@ sub from_form
 			}
 		}
 	}
+	elsif( $self->is_type( "date" ) )
+	{
+		my $drange = $val;
+		$drange =~ s/-(\d\d\d\d(-\d\d(-\d\d)?)?)$/-/;
+		$drange =~ s/^(\d\d\d\d(-\d\d(-\d\d)?)?)(-?)$/$4/;
+		if( $drange eq "" || $drange eq "-" )
+		{
+			$self->{merge} = ""; # not used
+			$self->{match} = "EQ";
+			$self->{value} = $val;
+		}
+		else
+		{
+			$problem = $self->{session}->phrase( "lib/searchfield:date_err" );
+		}
+	}
 	elsif( $self->is_type( "secret" ) )
 	{
 		$self->{session}->get_archive()->log( "Attempt to search a \"secret\" type field." );
@@ -905,10 +921,21 @@ sub render
 		            "TRUE"   => $self->{session}->phrase( "lib/searchfield:bool_yes" ),
 		            "FALSE"  => $self->{session}->phrase( "lib/searchfield:bool_no" ) );
 
-#cjg NO DATE SEARCH!!!
 	my $frag = $self->{session}->make_doc_fragment();
 
-	
+
+	if( $self->is_type( "date" ) )
+	{
+		$frag->appendChild(
+			$self->{session}->make_element( "input",
+				"accept-charset" => "utf-8",
+				type => "text",
+				name => $self->{form_name_prefix},
+				value => $self->{value},
+				size => 21,
+				maxlength => 21 ) );
+	}
+
 	if( $self->is_type( "boolean" ) )
 	{
 		# Boolean: Popup menu
@@ -1083,7 +1110,7 @@ sub render_description
 		{
 			$phraseid = "lib/searchfield:desc_all_in";
 		}
-		my @list = split( / /,  $self->{value} );
+		my @list = split( ' ',  $self->{value} );
 		for( my $i=0; $i<scalar @list; ++$i )
 		{
 			if( $i>0 )
@@ -1128,6 +1155,57 @@ sub render_description
 		{
 			$valuedesc->appendChild( $self->{session}->make_text(
 				$self->{value} ) );
+		}
+	}
+	elsif( $self->is_type( "date" ) )
+	{
+		# still not very pretty
+		my $drange = $self->{value};
+		my $lastdate;
+		my $firstdate;
+		if( $drange =~ s/-(\d\d\d\d(-\d\d(-\d\d)?)?)$/-/ )
+		{	
+			$lastdate = $1;
+		}
+		if( $drange =~ s/^(\d\d\d\d(-\d\d(-\d\d)?)?)(-?)$/$4/ )
+		{
+			$firstdate = $1;
+		}
+
+
+		if( defined $firstdate && defined $lastdate )
+		{
+			$valuedesc->appendChild( $self->{session}->html_phrase(
+				"lib/searchfield:desc_date_between",
+				from => EPrints::Utils::render_date( 
+						$self->{session}, 
+						$firstdate ),
+				to => EPrints::Utils::render_date( 
+						$self->{session}, 
+						$lastdate ) ) );
+		}
+		elsif( defined $lastdate )
+		{
+			$valuedesc->appendChild( $self->{session}->html_phrase(
+				"lib/searchfield:desc_date_orless",
+				to => EPrints::Utils::render_date( 
+						$self->{session}, 
+						$lastdate ) ) );
+		}
+		elsif( defined $firstdate && $drange eq "-")
+		{
+			$valuedesc->appendChild( $self->{session}->html_phrase(
+				"lib/searchfield:desc_date_ormore",
+				from => EPrints::Utils::render_date( 
+						$self->{session}, 
+						$firstdate ) ) );
+		}
+		else
+		{
+			$valuedesc->appendChild( $self->{session}->make_text(
+				EPrints::Utils::render_date( 
+						$self->{session}, 
+						$self->{value} ) ) );
 		}
 	}
 	elsif( $self->is_type( "email", "url", "text" , "longtext" ) )
@@ -1541,34 +1619,77 @@ sub item_matches
 		return 0;
 	}		
 
-	if( $self->is_type( "date" ) )
+	if ( $self->is_type( "date" ) )
 	{
-		my( $from, $to );
-		if( $self->{value} =~ m/^\d\d\d\d-\d\d-\d\d$/ )
+		foreach my $drange ( split /\s+/ , $self->{value} )
 		{
-			# Simple single date
-			return EPrints::Utils::is_in( 
-				[ $self->{value} ],
-				\@list,
-				1 );
-		}
-		unless( $self->{value} =~ 
-			m/^(\d\d\d\d\-\d\d\-\d\d)?\-(\d\d\d\d\-\d\d\-\d\d)?$/ )
-		{
-			return 0;
-		}
-		my( $min, $max ) = ( $1, $2 );
-		
-		foreach( @list )
-		{
-			my $ok = 1;
-			$ok = 0 unless( defined $_ );
-			$ok = 0 if( defined $min && $_ lt $min );
-			$ok = 0 if( defined $max && $_ gt $max );
-			return 1 if $ok;
+			my $orig = $drange;
+			my $lastdate;
+			my $firstdate;
+			if( $drange =~ s/-(\d\d\d\d(-\d\d(-\d\d)?)?)$/-/ )
+			{	
+				$lastdate = $1;
+			}
+			if( $drange =~ s/^(\d\d\d\d(-\d\d(-\d\d)?)?)(-?)$/$4/ )
+			{
+				$firstdate = $1;
+			}
+
+			if( !defined $firstdate && !defined $lastdate )
+			{
+				$item->get_session->get_archive->log( "Bad date search: \"$drange\"" );
+				return( 0 );
+			}
+	
+			if( $drange ne "-" )
+			{
+				$lastdate = $firstdate;
+			}		
+	
+
+			if( defined $firstdate )
+			{
+				$firstdate = EPrints::Database::pad_date( $firstdate );
+			}
+			my $mode = "lt";
+			if( defined $lastdate )
+			{
+				if( length( $lastdate ) == 10 )
+				{
+					$mode = "le";
+				}
+				else
+				{
+					$lastdate = EPrints::Database::pad_date( $lastdate, 1 );
+				}
+			}
+
+			foreach( @list )
+			{
+				next unless defined $_;
+			
+				if( defined $lastdate )
+				{
+					if( $mode eq "lt" )
+					{
+						next if $_ ge $lastdate;
+					}
+					else
+					{			
+						next if $_ gt $lastdate;
+					}
+				}
+				if( defined $firstdate )
+				{
+					next if $_ lt $firstdate;
+				}
+				return 1;	
+			}
+
 		}
 		return 0;
-	}		
+	}
+
 
 	# text, longtext, url, email:
 

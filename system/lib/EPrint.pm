@@ -1066,6 +1066,21 @@ sub move_to_deletion
 
 	my $success = $self->_transfer( $ds );
 
+	if( $success )
+	{
+		$self->generate_static();
+
+		# Generate static pages for everything in threads, if 
+		# appropriate
+		my @to_update = $self->get_all_related();
+		
+		# Do the actual updates
+		foreach (@to_update)
+		{
+			$_->generate_static();
+		}
+	}
+	
 	return $success;
 }
 

@@ -89,7 +89,7 @@ sub get_value
 
 	return $r unless( $no_id );
 
-	return $r unless( $field->get_property( "hasid" ) );
+	return $r unless( $field->get_property( "hasid" ) || $field->get_property( "mainpart" ) );
 
 	# Ok, we need to strip out the {id} parts. It's easy if
 	# this isn't multiple

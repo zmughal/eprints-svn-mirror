@@ -147,6 +147,10 @@ $ds = $archive->get_dataset( "inbox" );
 #  $self->{default_order}
 #     The default option for "order by?" in a search form.
 #
+#  $self->{type_field_order}
+#     A hash keying typeid->[ list of field id's ] where the list is
+#     the order of the fields in that type.
+#
 ######################################################################
 
 package EPrints::DataSet;
@@ -285,6 +289,7 @@ sub new
 	# eg. The "Editor" filter.
 	$self->{staff_types} = {};
 	$self->{type_order} = [];
+	$self->{type_field_order} = {};
 
 	if( $id eq "language" )
 	{	
@@ -360,11 +365,18 @@ sub new
 
 	if( defined $typesconf->{$self->{confid}} )
 	{
-		my $typeid;
 		$self->{type_order} = $typesconf->{$self->{confid}}->{_order};
-		foreach $typeid ( keys %{$typesconf->{$self->{confid}}} )
+		foreach my $typeid ( keys %{$typesconf->{$self->{confid}}} )
 		{
 			next if( $typeid eq "_order" );
+
+			my $typedata = $typesconf->{$self->{confid}}->{$typeid};
+
+			$self->{type_field_order}->{$typeid} = $typedata->{field_order};
+			if( !defined $self->{type_field_order}->{$typeid} )
+			{
+				$self->{type_field_order}->{$typeid} = keys %{$typedata->{fields}};
+			}
 
 			$self->{types}->{$typeid} = [];
 			$self->{typesreq}->{$typeid} = [];
@@ -378,11 +390,15 @@ sub new
 			#	 push @{$self->{types}->{$typeid}}, $_;
 			# }
 		
-			my $typedata = $typesconf->{$self->{confid}}->{$typeid};
+			#cjg junk///?$self->{field_order}->{$typeid} = $typedata->{page_order};
 		
 #cjg the "sort" is to avoid it accidently looking right.
-			foreach my $fname ( sort keys %{$typedata->{fields}} )
+			foreach my $fname ( @{$self->{type_field_order}->{$typeid}} )
 			{
+				#shouldn't get any not in the type, but paranoia's ok...
+				next unless defined $typedata->{fields}->{$fname}; 
+
+
 				my $f = $typedata->{fields}->{$fname};
 				if( !defined $self->{field_index}->{$f->{id}} )
 				{

@@ -173,7 +173,7 @@ sub process_form
 			if( defined $copy )
 			{
 				# Copied OK, redirect to workspace
-				$session->redirect( "home" );
+				$session->redirect( $session->get_archive->get_conf( "userhome" ) );
 #cjg is the next bit meaningless? (upto return)
 				my $page = $session->make_doc_fragment();
 				my $title = $session->html_phrase( "cgi/users/review:title" );

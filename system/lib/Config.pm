@@ -398,12 +398,18 @@ sub load_archive_config_module
 	$info = $ARCHIVES{$id};
 	return unless( defined $info );
 
-	my $prev_dir = cwd;
-	
-	chdir $info->{archiveroot};
-	my $file = $info->{configmodule};
+	my @oldinc = @INC;
+	local @INC;
+	@INC = (@oldinc, EPrints::Utils::untaint_dir( $info->{archiveroot} ) );
+
+	#my $prev_dir =  EPrints::Utils::untaint_dir( getcwd );
+	#chdir EPrints::Utils::untaint_dir( $info->{archiveroot} );
+	#my $return = do $file;
+	#chdir $prev_dir;
+
+	my $file = EPrints::Utils::untaint_file( $info->{configmodule} );
+	@! = $@ = undef;
 	my $return = do $file;
-	chdir $prev_dir;
 
 	unless( $return )
 	{

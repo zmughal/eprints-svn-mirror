@@ -17,11 +17,11 @@
 
 =head1 NAME
 
-B<EPrints::RequestWrapper> - Pretends to be an apache request.
+B<EPrints::RequestWrapper2> - Pretends to be an apache 2.0 request.
 
 =head1 DESCRIPTION
 
-A EPrints::RequestWrapper is created from a real apache request and
+A EPrints::RequestWrapper2 is created from a real apache request and
 a hash of "dir_config" options. It will pass all methods straight
 through to the origional apache request except for dir_config()
 which it will return its own config instead.
@@ -29,57 +29,33 @@ which it will return its own config instead.
 It's a hack used by EPrints::Auth - you really do not want to go
 near it!
 
-This is the version for use with Apache 1.3. EPrints::Auth will
+This is the version for use with Apache 2.0. EPrints::Auth will
 pick which to use based on EPrints::SystemSettings 
+
+
 
 =over 4
 
 =cut
 
 
-
-package EPrints::RequestWrapper;
-
+package EPrints::RequestWrapper2;
 use strict;
-use Apache;
+use Apache2; 
+use Apache::RequestRec; 
 
+our @ISA = ("Apache::RequestRec");
 
 sub new
 {
 	my( $class , $real_request , $conf ) = @_;
-	my $self ={};
-	bless $self,$class;
-	$self->{real_request} = $real_request;
-	$self->{conf} = $conf;
+	my $self = bless $real_request,"Apache::RequestRec";
+	foreach my $confkey (keys %$conf)
+	{
+		$self->SUPER::dir_config( $confkey => $conf->{$confkey} );
+	}
 	return $self;
 }
-
-
-sub dir_config 
-{
-	my( $self, $key ) = @_; 
-	if( defined $self->{conf}->{$key} )
-	{
-		return $self->{conf}->{$key};
-	}
-	return $self->{real_request}->dir_config( $key ); 
-}
-
-my $thing;
-foreach $thing ( keys %Apache:: )
-{
-	next if( $thing eq "new" || 
-		 $thing eq "dir_config" ||
-		 $thing eq "import" );
-	my $sub = '';
-	$sub.= 'sub '.$thing;
-	$sub.= '{ ';
-	$sub.= '   my( $self , @args ) = @_; ';
-	$sub.= '   return $self->{real_request}->'.$thing.'( @args ); ';
-	$sub.= '}';
-	eval $sub;
-}
-
 
 1;
 ######################################################################

@@ -158,10 +158,31 @@ sub eprint_render
 		}
 	}
 
+	my $frag = $session->make_doc_fragment;
+	$frag->appendChild( $eprint->render_value( "type"  ) );
+	my $type = $eprint->get_value( "type" );
+	if( $type eq "conference_item" )
+	{
+		$frag->appendChild( $session->make_text( " (" ));
+		$frag->appendChild( $eprint->render_value( "pres_type"  ) );
+		$frag->appendChild( $session->make_text( ")" ));
+	}
+	if( $type eq "monograph" )
+	{
+		$frag->appendChild( $session->make_text( " (" ));
+		$frag->appendChild( $eprint->render_value( "monograph_type"  ) );
+		$frag->appendChild( $session->make_text( ")" ));
+	}
+	if( $type eq "thesis" )
+	{
+		$frag->appendChild( $session->make_text( " (" ));
+		$frag->appendChild( $eprint->render_value( "thesis_type"  ) );
+		$frag->appendChild( $session->make_text( ")" ));
+	}
 	$table->appendChild( _render_row(
 		$session,
 		$session->html_phrase( "eprint_fieldname_type" ),
-		$eprint->render_value( "type"  ) ) );
+		$frag ));
 
 	# Keywords
 	if( $eprint->is_set( "keywords" ) )
@@ -206,10 +227,13 @@ sub eprint_render
 		$session->html_phrase( "page:deposited_by" ),
 		$usersname ) );
 
-	$table->appendChild( _render_row(
-		$session,
-		$session->html_phrase( "page:deposited_on" ),
-		$eprint->render_value( "datestamp" ) ) );
+	if( $eprint->is_set( "datestamp" ) )
+	{
+		$table->appendChild( _render_row(
+			$session,
+			$session->html_phrase( "page:deposited_on" ),
+			$eprint->render_value( "datestamp" ) ) );
+	}
 
 	# Alternative locations
 	if( $eprint->is_set( "altloc" ) )
@@ -315,7 +339,8 @@ sub eprint_render_full
 		$td->appendChild( $eprint->render_value( "suggestions" ) );
 	}
 
-
+	my $unspec_fields = $session->make_doc_fragment;
+	my $unspec_first = 1;
 
 	# Show all the other fields
 	$page->appendChild( $session->html_phrase( 
@@ -328,15 +353,35 @@ sub eprint_render_full
 	foreach $field ( $eprint->get_dataset()->get_type_fields(
 		  $eprint->get_value( "type" ) ) )
 	{
-		$table->appendChild( _render_row(
-			$session,
-			$session->make_text( 
-				$field->display_name( $session ) ),	
-			$eprint->render_value( 
-				$field->get_name(), 
-				1 ) ) );
+		next if( $field->get_name() eq "suggestions" );
 
+		if( $eprint->is_set( $field->get_name() ) )
+		{
+			$table->appendChild( _render_row(
+				$session,
+				$session->make_text( 
+					$field->display_name( $session ) ),	
+				$eprint->render_value( 
+					$field->get_name(), 
+					1 ) ) );
+			next;
+		}
+
+		# unspecified value, add it to the list
+		if( $unspec_first )
+		{
+			$unspec_first = 0;
+		}
+		else
+		{
+			$unspec_fields->appendChild( $session->make_text( ", " ) );
+		}
+		$unspec_fields->appendChild( $session->make_text( $field->display_name( $session ) ) );
 	}
+
+	$page->appendChild( $session->html_phrase( "page:unspecified", fieldnames=>$unspec_fields ) );
+		
+
 
 	return( $page, $title );			
 }
@@ -362,12 +407,12 @@ sub _render_row
 
 	$tr = $session->make_element( "tr" );
 
-	$th = $session->make_element( "th" ); 
+	$th = $session->make_element( "th", valign=>"top" ); 
 	$th->appendChild( $key );
 	$th->appendChild( $session->make_text( ":" ) );
 	$tr->appendChild( $th );
 
-	$td = $session->make_element( "td" ); 
+	$td = $session->make_element( "td", valign=>"top" ); 
 	$td->appendChild( $value );
 	$tr->appendChild( $td );
 
@@ -497,6 +542,7 @@ sub user_render_full
 		# and would just confuse the issue to print
 		next if( $name eq "newemail" );
 		next if( $name eq "newpassword" );
+		next if( $name eq "password" );
 		next if( $name eq "pin" );
 		next if( $name eq "pinsettime" );
 		$table->appendChild( _render_row(

@@ -1,5 +1,6 @@
 body {
 	margin: 0pt;
+        font-family: Helvetica,Arial,Sans-serif;
 }
 
 .header TABLE
@@ -14,6 +15,45 @@ body {
 	padding-top: 8px;
 }
 
+input, select, textarea {
+	color: blue;
+	font-weight: bold;
+	font-size: large;
+}
+
+.actionbutton {
+	font-size: medium;
+}
+
+.example
+{
+	font-weight: bold;
+	color: blue;
+}
+.box
+{
+	font-family: sans-serif; 
+	border: outset; 
+	border-width: 2px; 
+	border-color: #bbf #99e #99e #bbf; 
+	padding: 8pt; 
+	background: #eef; 
+	margin-bottom: 1pt
+}
+
+.box h1, .box h2, .box h3
+{
+	margin: 0px;
+	border: outset; 
+	border-width: 2px; 
+	background: #ddf; 
+	color: blue;
+	font-weight: bold;
+	border-color: #bbf #99e #99e #bbf; 
+	padding: 4pt; 
+}
+	
+
 .footer TABLE
 {
 	border: 0px; 
@@ -26,13 +66,11 @@ body {
 h1 {
         font: bold x-large Helvetica,Arial,Sans-serif;
         color: #606060;
-	margin-left: -4pt;
 }
 
 h2 {
         font: bold large Helvetica,Arial,Sans-serif;
         color: #606060;
-	margin-left: -4pt;
 }
 
 h3 {
@@ -49,7 +87,6 @@ a.menulink {
 }
 
 p {
-	font: medium serif;
 }
 
 .menu {
@@ -64,22 +101,22 @@ p {
 }
 
 .searchfieldhelp,.formfieldhelp {
-        font: small serif;
+        font-size: small ;
 }
 
 .searchfieldname {
         padding-top: 12pt;
         padding-bottom: 3pt;
-        font: bold medium serif;
+        font: bold medium;
 }
 
 .formfieldname {
-        padding-top: 3pt;
-        font: bold medium serif;
+        padding-top: 1em;
+        font: bold medium Helvetica,Arial,Sans-serif;
 }
 
 .formfieldidname {
-        font: bold medium serif;
+        font: bold medium Helvetica,Arial,Sans-serif;
 }
 
 
@@ -102,12 +139,12 @@ p {
 
 .alert {
 	color: #ff0000;
-        font: bold medium serif;
+        font: bold medium ;
 }
 
 .namefieldheading {
 	text-align: left;
-	font: small serif;
+	font: small ;
 }
 
 .searchorder {
@@ -160,3 +197,24 @@ body.vlit {
 	color: #c00000;
 }
 
+.subject_browser_opts, .subject_browser_selections, .subject_browser_search
+{
+	margin-left: 1em;
+	margin-right: 1em;
+	padding: 0.5em;
+	border-style: solid;
+	border-color: #ccc;
+	border-width: 1px;
+}
+.subject_browser_selections
+{
+	margin-top: 0.5em;
+}
+.subject_browser_opts
+{
+	margin-bottom: 0.5em;
+}
+.subject_browser_selected
+{
+	font-style: italic;
+}

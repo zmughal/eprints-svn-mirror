@@ -253,7 +253,7 @@ sub _insert_pins
 # 
 # $foo = $language->_phrase_aux( $phraseid, $session )
 #
-# undocumented
+# Return the phrase for the given id or undef if no phrase is defined.
 #
 ######################################################################
 
@@ -281,6 +281,27 @@ sub _phrase_aux
 
 	return undef;
 }
+
+######################################################################
+=pod
+
+=item $boolean = $language->has_phrase( $phraseid, $session )
+
+Return 1 if the phraseid is defined for this language. Return 0 if
+it is only available as a fallback or unavailable.
+
+=cut
+######################################################################
+
+sub has_phrase
+{
+	my( $self, $phraseid, $session ) = @_;
+
+	my( $phrase , $fb ) = $self->_phrase_aux( $phraseid );
+
+	return( defined $phrase && !$fb );
+}
+
 
 ######################################################################
 # 

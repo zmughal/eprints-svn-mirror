@@ -25,7 +25,7 @@
               <a class="menulink" href="&base_url;/information.html">About</a> ||
               <a class="menulink" href="&base_url;/view/">Browse</a> ||
               <a class="menulink" href="&perl_url;/search">Search</a> ||
-              <a class="menulink" href="&perl_url;/set_password">Register</a> ||
+              <a class="menulink" href="&perl_url;/register">Register</a> ||
               <a class="menulink" href="&userhome;">User Area</a> ||
               <a class="menulink" href="&base_url;/help">Help</a>
             </div>
@@ -34,8 +34,10 @@
       </table>
     </div>
     <div class="main">
-      <h1 class="pagetitle"><ep:pin ref="title" /></h1>
-      <ep:pin ref="page" />
+      <div align="center"><table width="720"><tr><td align="left">
+        <h1 class="pagetitle"><ep:pin ref="title" /></h1>
+        <ep:pin ref="page" />
+      </td></tr></table></div>
     </div>
     <div class="footer">
       <br />
