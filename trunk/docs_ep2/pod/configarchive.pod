@@ -200,7 +200,7 @@ This file should be chmod'd so that it can not be read by random users as it con
 The top level element is "archive" which has the attribute "id" which is the id of the archive. It should be the same as the filename. If this file is foo.xml then the id should be foo.
 
 C<< <archive> >> contains a list of XML tags enclosing some text. eg.
-  
+
   <host>stoatprints.org</host>
 
 The following tags are expected in no special order:
@@ -351,7 +351,7 @@ The most common view is to browse by subject:
  { id=>"subject", allow_null=>0, fields=>"subjects", order=>"title/authors" }
 
 A more complex view generates a view on author & editor ID's which are not advertised but may be captured by some other software to build staff CV pages.
- 
+
  { id=>"person", allow_null=>0, fields=>"authors.id/editors.id", nohtml=>1,
    nolink=>1, noindex=>1, include=>1, order=>"-year/title" }
 

@@ -1,5 +1,7 @@
 =head1 HOW TO: Set up a Complex Custom View
 
+Simple instructions are in the ArchiveConfig.pm section.
+
 Example situation: On my main website www.foobars.ac.uk I have a page per research project, of which we have hundreds. Each project has a short unique id code, eg. "manticore". I have a field in my eprints archive (eprints.foobars.ac.uk) which is configured: 
 
  { name=>"projectcodes", type=>"text", multiple=>1 }
@@ -11,13 +13,21 @@ I add the following browse view:
 
 This will generate a page http://eprints.foobars.ac.uk/views/by_project/manticore.html with a list of all papers in that project, we can link to that URL!
 
+=head2 Making the Field link to the Browse Page
+
+If you want a subject to link the subject browse page of that value, add the B<browse_link> property to the field (and regenerate the abstracts if you want). 
+
+If you remove the browse view you should remove the browse_link or it will be a broken link.
+
+Values rendered inside citations which are used to link to the main record will not link into the browse view for obvious reasons.
+
 =head2 Including a view in another page
 
 If you change that to:
 
  { id=>"by_project", allow_null=>0, fields=>"projectcodes", 
  order=>"-year/title", noindex=>1, nolink=>1, nohtml=>1, include=>1 }
-  
+
 This will generate a view which is NOT listed on the /view/ page and it will not skip making the .html file and make a .include file per value. This will only contain the "count" of items and the XHTML of their citations. This can be used as part of a page on the http://www.foobaars.ac.uk/ site; either by using php and capturing it on-the-fly using C<readfile> or scripting it with perl or NFS exporting the filesystem onto the main server (or just doing it all on one computer) and using server side includes to place it in a page.
 
 =head2 Customising the way each item is cited
@@ -26,7 +36,7 @@ I want to list the project papers in a strict format in a table with 4 columns:
 title, author(s), year and an icon which links to the document abstract page...
 
 I add some I<more> options to the browse view:
- 
+
  { id=>"by_project", allow_null=>0, fields=>"projectcodes", 
  order=>"-year/title", noindex=>1, nolink=>1, nohtml=>1, include=>1,
  nocount=>1, citation=>"project_table" }

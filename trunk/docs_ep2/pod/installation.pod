@@ -70,6 +70,18 @@ Once an hour would seem a good starting point. If your archive gets real big, sa
 
 Run generate_views on the command line to find out how long it takes. 
 
+To set up cron, run (as eprints):
+
+ crontab -e
+
+and add the line 
+
+ 23 * * * * /opt/eprints2/bin/generate_views I<archiveid>
+
+This runs at 23 minutes past each hour. If you have more than one archive, don't make them all start rebuilding stuff at the same time, stagger it. Otherwise once an hour everything will slow down as it fights to run several intensive scripts at once.
+
+See the crontab man page C<man 5 crontab> for more information on using cron.
+
 
 =head1 Default Configuration
 
