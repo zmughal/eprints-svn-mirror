@@ -35,7 +35,7 @@ install-online-help: online-help.pdf online-help-final
 	
 eprints-system.pdf: $(SYSTEMDOCFILES)
 	cd system/latex ; pdflatex system ; pdflatex system
-	mv system/latex/system.pdf .
+	mv system/latex/system.pdf eprints-system.pdf
 
 eprints-system.dvi: $(SYSTEMDOCFILES)
 	cd system/latex ; latex system ; latex system
