@@ -16,9 +16,7 @@ sub convert($$) {
 	defined $cache or return 0;
 	defined $input or return 0;
 
-	open(STDIN, "<", $input);
-	open(STDOUT, ">", $cache);
-	exec($lynx, "-display_charset=utf-8", "-nolist", "-stdin", "-dump");
+	exec "$lynx -display_charset=utf-8 -nolist -stdin -dump < $input > $cache";
 }
 
 1;

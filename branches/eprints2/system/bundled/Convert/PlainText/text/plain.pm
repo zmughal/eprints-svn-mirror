@@ -10,9 +10,11 @@ sub convert($$) {
 	defined $cache or return 0;
 	defined $input or return 0;
 
-	open(STDIN, "<", $input);
-	open(STDOUT, ">", $cache);
-	while(<STDIN>) { print; }
+	open(F_IN, "<", $input);
+	open(F_OUT, ">", $cache);
+	while(<F_IN>) { print F_OUT $_; }
+	close F_IN;
+	close F_OUT;
 }
 
 1;
