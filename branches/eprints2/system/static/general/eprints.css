@@ -98,13 +98,8 @@ h4 {
         font-size: small ;
 }
 
-.searchfieldname {
-        padding-top: 12pt;
-        padding-bottom: 3pt;
-        font: bold 100%;
-}
 
-.formfieldname {
+.formfieldname, .searchfieldname {
         padding-top: 1em;
 	font-weight: bold;
 	font-size: 120%;

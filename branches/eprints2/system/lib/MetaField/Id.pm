@@ -41,6 +41,19 @@ BEGIN
 use EPrints::MetaField::Basic;
 
 
+sub get_search_conditions_not_ex
+{
+	my( $self, $session, $dataset, $search_value, $match, $merge,
+	$search_mode ) = @_;
+
+	return EPrints::SearchCondition->new(
+		'=',
+		$dataset,
+		$self,
+		$search_value );
+}
+
+
 
 ######################################################################
 1;

@@ -2082,3 +2082,9 @@ PACKAGE: 2.2.99.2
  - Added config to apache config to allow awstats to be symlinked
     in without getting messed around by mod_perl.
 
+2004-10-25 cjg
+
+ - Search field titles now have the same styling as input field
+    titles.
+ - Search by ID part now works via the web interface.
+
