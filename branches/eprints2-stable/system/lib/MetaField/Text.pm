@@ -32,6 +32,7 @@ use strict;
 use warnings;
 
 use EPrints::MetaField::Basic;
+use EPrints::Session;
 
 BEGIN
 {
@@ -43,31 +44,31 @@ BEGIN
 
 sub render_search_value
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $value ) = trim_params(@_);
 
-	my $valuedesc = $session->make_doc_fragment;
-	$valuedesc->appendChild( $session->make_text( '"' ) );
-	$valuedesc->appendChild( $session->make_text( $value ) );
-	$valuedesc->appendChild( $session->make_text( '"' ) );
-	my( $good, $bad ) = _extract_words( $session, $value );
+	my $valuedesc = &SESSION->make_doc_fragment;
+	$valuedesc->appendChild( &SESSION->make_text( '"' ) );
+	$valuedesc->appendChild( &SESSION->make_text( $value ) );
+	$valuedesc->appendChild( &SESSION->make_text( '"' ) );
+	my( $good, $bad ) = _extract_words( $value );
 
 	if( scalar(@{$bad}) )
 	{
-		my $igfrag = $session->make_doc_fragment;
+		my $igfrag = &SESSION->make_doc_fragment;
 		for( my $i=0; $i<scalar(@{$bad}); $i++ )
 		{
 			if( $i>0 )
 			{
 				$igfrag->appendChild(
-					$session->make_text( 
+					&SESSION->make_text( 
 						', ' ) );
 			}
 			$igfrag->appendChild(
-				$session->make_text( 
+				&SESSION->make_text( 
 					'"'.$bad->[$i].'"' ) );
 		}
 		$valuedesc->appendChild( 
-			$session->html_phrase( 
+			&SESSION->html_phrase( 
 				"lib/searchfield:desc_ignored",
 				list => $igfrag ) );
 	}
@@ -78,17 +79,17 @@ sub render_search_value
 
 #sub split_search_value
 #{
-#	my( $self, $session, $value ) = @_;
+#	my( $self, $value ) = trim_params(@_);
 #
-#	my( $codes, $bad ) = _extract_words( $session, $value );
+#	my( $codes, $bad ) = _extract_words( $value );
 #
 #	return @{$codes};
 #}
 
 sub get_search_conditions_not_ex
 {
-	my( $self, $session, $dataset, $search_value, $match, $merge,
-		$search_mode ) = @_;
+	my( $self, $dataset, $search_value, $match, $merge,
+		$search_mode ) = trim_params(@_);
 	
 	if( $match eq "EQ" )
 	{
@@ -102,12 +103,12 @@ sub get_search_conditions_not_ex
 	# free text!
 
 	# apply stemming and stuff
-	my( $codes, $bad ) = _extract_words( $session, $search_value );
+	my( $codes, $bad ) = _extract_words( $search_value );
 
 	# Just go "yeah" if stemming removed the word
 	if( !EPrints::Utils::is_set( $codes->[0] ) )
 	{
-		return EPrints::SearchCondition->new( "TRUE" );
+		return EPrints::SearchCondition->new( "PASS" );
 	}
 
 	return EPrints::SearchCondition->new( 
@@ -121,18 +122,18 @@ sub get_search_group { return 'text'; }
 
 sub get_index_codes
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $value ) = trim_params(@_);
 
 	return( [], [], [] ) unless( EPrints::Utils::is_set( $value ) );
 
 	if( !$self->get_property( "multiple" ) )
 	{
-		return $self->get_index_codes_single( $session, $value );
+		return $self->get_index_codes_single( $value );
 	}
 	my( $codes, $grepcodes, $ignored ) = ( [], [], [] );
 	foreach my $v (@{$value} )
 	{		
-		my( $c,$g,$i ) = $self->get_index_codes_single( $session, $v );
+		my( $c,$g,$i ) = $self->get_index_codes_single( $v );
 		push @{$codes},@{$c};
 		push @{$grepcodes},@{$g};
 		push @{$ignored},@{$i};
@@ -143,7 +144,7 @@ sub get_index_codes
 
 sub get_index_codes_single
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $value ) = trim_params(@_);
 
 	return( [], [], [] ) unless( EPrints::Utils::is_set( $value ) );
 
@@ -153,14 +154,14 @@ sub get_index_codes_single
 
 	if( !$self->get_property( "multilang" ) )
 	{
-		return $self->get_index_codes_basic( $session, $value );
+		return $self->get_index_codes_basic( $value );
 	}
 
 	my( $codes, $grepcodes, $ignored ) = ( [], [], [] );
 
 	foreach my $k (keys %{$value} )
 	{		
-		my( $c,$g,$i ) = $self->get_index_codes_basic( $session, $value->{$k} );
+		my( $c,$g,$i ) = $self->get_index_codes_basic( $value->{$k} );
 		push @{$codes},@{$c};
 		push @{$grepcodes},@{$g};
 		push @{$ignored},@{$i};
@@ -171,11 +172,11 @@ sub get_index_codes_single
 
 sub get_index_codes_basic
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $value ) = trim_params(@_);
 
 	return( [], [], [] ) unless( EPrints::Utils::is_set( $value ) );
 
-	my( $codes, $badwords ) = _extract_words( $session, $value );
+	my( $codes, $badwords ) = _extract_words( $value );
 
 	return( $codes, [], $badwords );
 }
@@ -184,12 +185,9 @@ sub get_index_codes_basic
 # text indexing config.
 sub _extract_words
 {
-	my( $session, $value ) = @_;
+	my( $value ) = trim_params(@_);
 
-	my( $codes, $badwords ) = 
-		$session->get_archive()->call( 
-			"extract_words" , 
-			$value );
+	my( $codes, $badwords ) = &ARCHIVE->call( "extract_words" , $value );
 	my $newbadwords = [];
 	foreach( @{$badwords} ) 
 	{ 

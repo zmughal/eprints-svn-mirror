@@ -100,6 +100,7 @@ __GENERICPOD__
 
 use EPrints::Database;
 use EPrints::Archive;
+use EPrints::Session;
 
 use strict;
 use Getopt::Long;
@@ -139,17 +140,20 @@ $noise = 1+$verbose if( $verbose );
 # Set STDOUT to auto flush (without needing a \n)
 $|=1;
 
-my $archive = EPrints::Archive->new_archive_by_id( $ARGV[0], 1 );
+my $archiveid = $ARGV[0];
+
+my $archive = EPrints::Archive->new_archive_by_id( $archiveid, 1 );
 unless( defined $archive )
 {
-	print STDERR "Unknown archive id: $ARGV[0]\n";
+	print STDERR "Unknown archive id: $archiveid\n";
 	exit 1;
 }
+EPrints::Session::set_archive( $archive );
 
 
-my $documents_path = $archive->get_conf( "documents_path" );
-my $htdocs_path = $archive->get_conf( "htdocs_path" );
-my $database = $archive->get_conf( "dbname" );
+my $documents_path = &ARCHIVE->get_conf( "documents_path" );
+my $htdocs_path = &ARCHIVE->get_conf( "htdocs_path" );
+my $database = &ARCHIVE->get_conf( "dbname" );
 
 my $input="";
 unless( $force )
@@ -158,7 +162,7 @@ unless( $force )
 	print "You are about to erase:\n";
 	if( $erasedb ) { print "- all database tables\n"; }
 	if( $erasefiles ) { print "- all eprint files\n"; }
-	print "From archive: ".$archive->get_id."\n";
+	print "From archive: ".&ARCHIVE->get_id."\n";
 	print "Are you sure you want this to happen? (yes/no)\n";
 	
 	$input = <STDIN>;
@@ -194,9 +198,9 @@ if( $erasedb )
 	my $dbh = DBI->connect(
 		EPrints::Database::build_connection_string(
 			dbname=>"mysql",
-			dbsock=>$archive->get_conf( "dbsock" ),
-			dbport=>$archive->get_conf( "dbport" ),
-			dbhost=>$archive->get_conf( "dbhost" ) ),
+			dbsock=>&ARCHIVE->get_conf( "dbsock" ),
+			dbport=>&ARCHIVE->get_conf( "dbport" ),
+			dbhost=>&ARCHIVE->get_conf( "dbhost" ) ),
 		"root",
 		$rootpass );
 

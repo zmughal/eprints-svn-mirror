@@ -43,7 +43,7 @@ use strict;
 ######################################################################
 =pod
 
-=item $xhtml = EPrints::Latex::render_string( $session, $field, $value )
+=item $xhtml = EPrints::Latex::render_string( $field, $value )
 
 This function is intended to be passed by reference to the 
 render_single_value property of a metadata field. It returns just
@@ -65,11 +65,11 @@ like to write their equations!
 
 sub render_string
 {
-	my( $session , $field , $value ) = @_;
+	my( $field , $value ) = trim_params(@_);
 	
 	my $i=0;
 	my $mode = 0;
-	my $html = $session->make_doc_fragment();
+	my $html = &SESSION->make_doc_fragment();
 	my $buffer = '';
 
 	my $inslash = 0;
@@ -126,7 +126,7 @@ sub render_string
 		{
 			my $url;
 
-			if( $session->get_archive->get_conf( "use_mimetex" ) ) 
+			if( &ARCHIVE->get_conf( "use_mimetex" ) ) 
 			{
 				my $param = $buffer;
 
@@ -136,7 +136,7 @@ sub render_string
 				# Mimetex can't handle whitespace. Change it to ~'s.
 				$param =~ s/\\?\s/~/g;     
 
-				$url = $session->get_archive->get_conf( 
+				$url = &ARCHIVE->get_conf( 
         				"base_url" )."/cgi/mimetex.cgi?".$param;
 			}
 			else
@@ -149,11 +149,11 @@ sub render_string
 				# strip $ from begining and end.
 				$param =~ s/^\$(.*)\$$/$1/; 
 	
-				$url = $session->get_archive->get_conf( 
+				$url = &ARCHIVE->get_conf( 
 					"perl_url" )."/latex2png?latex=".$param;
 			}
 
-			my $img = $session->make_element( 
+			my $img = &SESSION->make_element( 
 				"img",
 				align=>"absbottom",
 				alt=>$buffer,
@@ -165,13 +165,13 @@ sub render_string
 
 		if ($inlatex && !$oldinlatex )
 		{
-			$html->appendChild( $session->make_text( $buffer ) );
+			$html->appendChild( &SESSION->make_text( $buffer ) );
 			$buffer = '';
 		}
 		if( !$inlatex && $c eq "\n" )
 		{
-			$html->appendChild( $session->make_text( $buffer ) );
-			$html->appendChild( $session->make_element( "br" ) );
+			$html->appendChild( &SESSION->make_text( $buffer ) );
+			$html->appendChild( &SESSION->make_element( "br" ) );
 			$buffer = '';
 		}
 		else
@@ -209,7 +209,7 @@ sub render_string
 		$buffer.=" [math mode missing closing \$]";
 	}
 	$buffer =~ s/\s*$//;
-	$html->appendChild( $session->make_text( $buffer ) );
+	$html->appendChild( &SESSION->make_text( $buffer ) );
 
 	return $html;
 }
@@ -218,7 +218,7 @@ sub render_string
 ######################################################################
 =pod
 
-=item $imgfile = EPrints::Latex::texstring_to_png( $session, $texstring )
+=item $imgfile = EPrints::Latex::texstring_to_png( $texstring )
 
 Return the location of a PNG image file containing the latex fragment
 $texstring. 
@@ -243,14 +243,12 @@ a PNG.
 
 sub texstring_to_png
 {
-	my( $session, $texstring ) = @_;
+	my( $texstring ) = trim_params(@_);
 
 	# create an MD5 of the TexString to use as a cache filename.
 	my $ofile = Digest::MD5::md5_hex( $texstring ).".png";
 
-	my $archive =  $session->get_archive();
-
-	my $cachedir = $archive->get_conf( "htdocs_path" )."/latexcache";
+	my $cachedir = &ARCHIVE->get_conf( "htdocs_path" )."/latexcache";
 
 	unless( -d $cachedir )
 	{
@@ -280,9 +278,9 @@ $texstring
 END
 	close TEX;
 
-	$archive->exec( "latex", SOURCE=>"$fbase.tex" );
-	$archive->exec( "dvips", SOURCE=>"$fbase.dvi", TARGET=>"$fbase.ps" );
-	$archive->exec( 
+	&ARCHIVE->exec( "latex", SOURCE=>"$fbase.tex" );
+	&ARCHIVE->exec( "dvips", SOURCE=>"$fbase.dvi", TARGET=>"$fbase.ps" );
+	&ARCHIVE->exec( 
 		"convert_crop_white", 
 		SOURCE => "$fbase.ps", 
 		TARGET => $ofile );

@@ -16,15 +16,20 @@ sub handler
 	my $archiveid = $r->dir_config( "EPrints_ArchiveID" );
 	if( !defined $archiveid )
 	{
-		return DECLINED;
+		return send_error( $r, "<p>archiveid was not set in the apache configuration.</p>" );
 	}
 	my $archive = EPrints::Archive->new_archive_by_id( $archiveid );
-	my $urlpath = $archive->get_conf( "urlpath" );
+	if( !defined $archive )
+	{
+		return send_error( $r, "<p>Could not find archive with archiveid \"$archiveid\". archiveid was set in the apache configuration.</p>" );
+	}
+	EPrints::Session::set_archive( $archive );
+	
+	my $urlpath = &ARCHIVE->get_conf( "urlpath" );
 	my $uri = $r->uri;
 	my $args = $r->args;
 	if( $args ne "" ) { $args = '?'.$args; }
-       
-	my $lang = EPrints::Session::get_session_language( $archive, $r );
+	my $lang = EPrints::Session::get_session_language( $r );
 
 	# REMOVE the urlpath if any!
 	unless( $uri =~ s#^$urlpath## )
@@ -48,12 +53,12 @@ sub handler
 	# shorturl does not (yet) effect secure docs.
 	if( $uri =~ s#^/secure/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])#/secure/$1/$2/$3/$4# )
 	{
-		$r->filename( $archive->get_conf( "htdocs_path" )."/".$uri );
+		$r->filename( &ARCHIVE->get_conf( "htdocs_path" )."/".$uri );
 		return OK;
 	}
 
 
-	my $shorturl = $archive->get_conf( "use_short_urls" );
+	my $shorturl = &ARCHIVE->get_conf( "use_short_urls" );
 	$shorturl = 0 unless( defined $shorturl );
 
 	if( $uri =~ m#^/archive/([0-9]+)(.*)$# )
@@ -67,7 +72,7 @@ sub handler
 		if( $shorturl )
 		{
 			# redirect to short form
-			return redir( $r, sprintf( "%s/%d%s",$urlpath, $n, $tail ).$args );
+			return send_redir( $r, sprintf( "%s/%d%s",$urlpath, $n, $tail ).$args );
 		}
 
 		my $s8 = sprintf('%08d',$n);
@@ -75,7 +80,7 @@ sub handler
 		if( length $n < 8 || $redir)
 		{
 			# not enough zeros, redirect to correct version
-			return redir( $r, sprintf( "%s/archive/%08d%s",$urlpath, $n, $tail ).$args );
+			return send_redir( $r, sprintf( "%s/archive/%08d%s",$urlpath, $n, $tail ).$args );
 		}
 		$uri = "/archive/$1/$2/$3/$4$tail";
 	}
@@ -91,13 +96,13 @@ sub handler
 		if( !$shorturl )
 		{
 			# redir to long form
-			return redir( $r, sprintf( "%s/archive/%08d%s",$urlpath, $n, $tail ).$args);
+			return send_redir( $r, sprintf( "%s/archive/%08d%s",$urlpath, $n, $tail ).$args);
 		} 
 
 		if( ($n + 0) ne $n || $redir)
 		{
 			# leading zeros
-			return redir( $r, sprintf( "%s/%d%s",$urlpath, $n, $tail ).$args );
+			return send_redir( $r, sprintf( "%s/%d%s",$urlpath, $n, $tail ).$args );
 		}
 		my $s8 = sprintf('%08d',$n);
 		$s8 =~ m/(..)(..)(..)(..)/;	
@@ -107,18 +112,18 @@ sub handler
 	# apache 2 does not automatically look for index.html so we have to do it ourselves
 	if( $uri =~ m#/$# )
 	{
-		$r->filename( $archive->get_conf( "htdocs_path" )."/".$lang.$uri."index.html" );
+		$r->filename( &ARCHIVE->get_conf( "htdocs_path" )."/".$lang.$uri."index.html" );
 	}
 	else
 	{
-		$r->filename( $archive->get_conf( "htdocs_path" )."/".$lang.$uri );
+		$r->filename( &ARCHIVE->get_conf( "htdocs_path" )."/".$lang.$uri );
 	}
 
 	return OK;
 }
 
 
-sub redir
+sub send_redir
 {
 	my( $r, $url ) = @_;
 
@@ -128,6 +133,26 @@ sub redir
 	return DONE;
 } 
 
+sub send_error
+{
+	my( $r, $msg ) = @_;
+
+	$r->content_type( 'text/html' );
+	$r->status_line( "403 EPrints Error" );
+	$r->send_http_header;
+	$r->print( <<END );
+<html>
+  <head>
+    <title>EPrints System Error</title>
+  </head>
+  <body>
+    <h1>EPrints System Error</h1>
+    $msg
+  </body>
+</html>
+END
+	return DONE;
+}
 
 
 1;

@@ -15,16 +15,15 @@
 use EPrints::Session;
 use EPrints::UserPage;
 
-my $session = new EPrints::Session;
+EPrints::Session::start;
 
 # Check we have privs
-if( !$session->auth_check( "staff-view" ) )
+if( !&SESSION->auth_check( "staff-view" ) )
 {
-	$session->terminate();
 	exit( 0 );
 }
 
-EPrints::UserPage::process( $session, 1 );
+EPrints::UserPage::process( 1 );
 
-$session->terminate();
+exit;
 

@@ -20,214 +20,206 @@ use EPrints::User;
 
 use strict;
 
-my $session = new EPrints::Session;
-exit( 0 ) unless( defined $session );
+EPrints::Session::start;
 
 # Check we have privs
-if( !$session->auth_check( "deposit" ) )
+if( !&SESSION->auth_check( "deposit" ) )
 {
-	$session->terminate();
-	exit( 0 );
+	exit;
 }
 
 my $page;
-my $action = $session->get_action_button();
+my $action = &SESSION->get_action_button();
 if( !defined $action )
 {
-	$page = make_form( $session );
+	$page = make_form();
 }
 else
 {
-	$page = process_form( $session, $action );
+	$page = process_form( $action );
 }
-
-$session->terminate();
+exit;
 
 #############################################################
 
 sub make_form
 {
-	my( $session ) = @_;
-
-	my $user = $session->current_user;
+	my $user = &SESSION->current_user;
 
 	# cjg. This should maybe extract stuff you can edit
 	# not just stuff you deposited.
 
-	my $ds = $session->get_archive()->get_dataset( "archive" );	
+	my $ds = &ARCHIVE->get_dataset( "archive" );	
 	my @eprints = $user->get_owned_eprints( $ds );
 
-	my $page = $session->make_doc_fragment();
-	my $title = $session->html_phrase( "cgi/users/review:title" );
+	my $page = &SESSION->make_doc_fragment();
+	my $title = &SESSION->html_phrase( "cgi/users/review:title" );
 
 	if( scalar @eprints == 0 )
 	{
-		$page->appendChild( $session->html_phrase( 
+		$page->appendChild( &SESSION->html_phrase( 
 			"cgi/users/review:no_docs" ) );
 
-		$page->appendChild( $session->html_phrase( 
+		$page->appendChild( &SESSION->html_phrase( 
 			"general:userhome_link" ) );
 
-		$session->build_page( $title, $page, "review_none" );
-		$session->send_page();
+		&SESSION->build_page( $title, $page, "review_none" );
+		&SESSION->send_page();
 		return;
 	}
-	my $r_req = $session->get_archive()->get_conf( 
-			"allow_user_removal_request" ); 
-	my $checkout = $session->get_archive()->get_conf( 
-			"allow_user_checkout_eprint" ); 
+	my $r_req = &ARCHIVE->get_conf( "allow_user_removal_request" ); 
+	my $checkout = &ARCHIVE->get_conf( "allow_user_checkout_eprint" ); 
 
-	$page->appendChild( $session->html_phrase( "cgi/users/review:blurb" ) );
+	$page->appendChild( &SESSION->html_phrase( "cgi/users/review:blurb" ) );
 
 	if( $checkout )
 	{
-		$page->appendChild( $session->html_phrase( 
+		$page->appendChild( &SESSION->html_phrase( 
 			"cgi/users/review:checkout_info" ) );
 	}
 	if( $r_req )
 	{
-		$page->appendChild( $session->html_phrase( 
+		$page->appendChild( &SESSION->html_phrase( 
 			"cgi/users/review:remove_info" ) );
 	}
 
 	my( $form, $table, $tr, $td, $th );
 
-	$form = $session->render_form( "post", "review" );
+	$form = &SESSION->render_form( "post", "review" );
 	$page->appendChild( $form );
-	$table = $session->make_element( "table", border=>1, cellpadding=>3 );
+	$table = &SESSION->make_element( "table", border=>1, cellpadding=>3 );
 	$form->appendChild( $table );
 
-	$tr = $session->make_element( "tr" );
+	$tr = &SESSION->make_element( "tr" );
 	$table->appendChild( $tr );
-	$th = $session->make_element( "th" );
+	$th = &SESSION->make_element( "th" );
 	$tr->appendChild( $th );
-	$th->appendChild( $session->html_phrase( "cgi/users/review:document" ) );
-	$th = $session->make_element( "th" );
+	$th->appendChild( &SESSION->html_phrase( "cgi/users/review:document" ) );
+	$th = &SESSION->make_element( "th" );
 	$tr->appendChild( $th );
 	if( $checkout )
 	{
-		$th = $session->make_element( "th" );
+		$th = &SESSION->make_element( "th" );
 		$tr->appendChild( $th );
 	}
 	if( $r_req )
 	{
-		$th = $session->make_element( "th" );
+		$th = &SESSION->make_element( "th" );
 		$tr->appendChild( $th );
 	}
 	
 	my $eprint;
 	foreach $eprint ( @eprints )
 	{
-		$tr = $session->make_element( "tr" );
+		$tr = &SESSION->make_element( "tr" );
 		$table->appendChild( $tr );
 
-		$td = $session->make_element( "td" );
+		$td = &SESSION->make_element( "td" );
 		$tr->appendChild( $td );
 		$td->appendChild( $eprint->render_citation_link() );
 
-		$td = $session->make_element( "td" );
+		$td = &SESSION->make_element( "td" );
 		$tr->appendChild( $td );
-		$td->appendChild( $session->render_action_buttons(
+		$td->appendChild( &SESSION->render_action_buttons(
 			"clone_".$eprint->get_value( "eprintid" )=>
-				$session->phrase( "cgi/users/review:clone" ) ) );
+				&SESSION->phrase( "cgi/users/review:clone" ) ) );
 
 		if( $checkout )
 		{
-			$td = $session->make_element( "td" );
+			$td = &SESSION->make_element( "td" );
 			$tr->appendChild( $td );
-			$td->appendChild( $session->render_action_buttons(
+			$td->appendChild( &SESSION->render_action_buttons(
 				"checkout_".$eprint->get_value( "eprintid" )=>
-				$session->phrase( "cgi/users/review:req_checkout" ) ) );
+				&SESSION->phrase( "cgi/users/review:req_checkout" ) ) );
 
 		}
 		if( $r_req )
 		{
-			$td = $session->make_element( "td" );
+			$td = &SESSION->make_element( "td" );
 			$tr->appendChild( $td );
-			$td->appendChild( $session->render_action_buttons(
+			$td->appendChild( &SESSION->render_action_buttons(
 				"remove_".$eprint->get_value( "eprintid" )=>
-				$session->phrase( "cgi/users/review:req_remove" ) ) );
+				&SESSION->phrase( "cgi/users/review:req_remove" ) ) );
 
 		}
 	}
-	$session->build_page( $title, $page, "review_list" );
-	$session->send_page();
+	&SESSION->build_page( $title, $page, "review_list" );
+	&SESSION->send_page();
 	return;
 
 }
 
 sub process_form
 {
-	my( $session, $action ) = @_;
+	my( $action ) = @_;
 
-	my $user = $session->current_user;
-	my $ds = $session->get_archive()->get_dataset( "archive" );	
+	my $user = &SESSION->current_user;
+	my $ds = &ARCHIVE->get_dataset( "archive" );	
 
 	if( $action =~ m/^clone_(.+)$/ )
 	{
-		my $eprint = EPrints::EPrint->new( $session, $1, $ds );
-		my $inbox_ds = $session->get_archive()->get_dataset( "inbox" );
+		my $eprint = EPrints::EPrint->new( $1, $ds );
+		my $inbox_ds = &ARCHIVE->get_dataset( "inbox" );
 		if( defined $eprint )
 		{
 			my $copy = $eprint->clone( $inbox_ds, 1 );
 			if( defined $copy )
 			{
 				# Copied OK, redirect to workspace
-				$session->redirect( $session->get_archive->get_conf( "userhome" ) );
+				&SESSION->redirect( &ARCHIVE->get_conf( "userhome" ) );
 #cjg is the next bit meaningless? (upto return)
-				my $page = $session->make_doc_fragment();
-				my $title = $session->html_phrase( "cgi/users/review:title" );
-				$session->build_page( $title, $page );
-				$session->send_page();
+				my $page = &SESSION->make_doc_fragment();
+				my $title = &SESSION->html_phrase( "cgi/users/review:title" );
+				&SESSION->build_page( $title, $page );
+				&SESSION->send_page();
 				return;
 			}
 		}
-		$session->render_error(
-			$session->html_phrase( "cgi/users/review:cant_clone" ) );
+		&SESSION->render_error(
+			&SESSION->html_phrase( "cgi/users/review:cant_clone" ) );
 		return;
 	}
-	my $r_req = $session->get_archive()->get_conf( 
-			"allow_user_removal_request" ); 
+	my $r_req = &ARCHIVE->get_conf( "allow_user_removal_request" ); 
 
 	if( $action=~ m/^remove_(.+)$/ && $r_req )
 	{
-		my $eprint = EPrints::EPrint->new( $session, $1, $ds );
+		my $eprint = EPrints::EPrint->new( $1, $ds );
 		if( !defined $eprint )
 		{
-			$session->render_error(
-				$session->html_phrase( "cgi/users/review:cant_find_it" ) );
+			&SESSION->render_error(
+				&SESSION->html_phrase( "cgi/users/review:cant_find_it" ) );
 			return;
 		}		
 		if( $user->is_owner( $eprint ) )
 		{
-			&removal_request_form( $session, $eprint );
+			&removal_request_form( $eprint );
 			return;
 		}
-		$session->render_error(
-			$session->html_phrase( "cgi/users/review:cant_remove" ) );
+		&SESSION->render_error(
+			&SESSION->html_phrase( "cgi/users/review:cant_remove" ) );
 		return;
 	}
 
-	my $checkout = $session->get_archive()->get_conf( 
+	my $checkout = &ARCHIVE->get_conf( 
 			"allow_user_checkout_eprint" ); 
 
 	if( $action=~ m/^checkout_(.+)$/ && $checkout)
 	{
-		my $eprint = EPrints::EPrint->new( $session, $1, $ds );
+		my $eprint = EPrints::EPrint->new( $1, $ds );
 		if( !defined $eprint )
 		{
-			$session->render_error(
-				$session->html_phrase( "cgi/users/review:cant_find_it" ) );
+			&SESSION->render_error(
+				&SESSION->html_phrase( "cgi/users/review:cant_find_it" ) );
 			return;
 		}		
 		if( $user->is_owner( $eprint ) )
 		{
 			$eprint->move_to_inbox;
-			$session->redirect( $session->get_archive()->get_conf( "userhome" ) );
+			&SESSION->redirect( &ARCHIVE->get_conf( "userhome" ) );
 			return;
 		}
-		$session->render_error(
-			$session->html_phrase( "cgi/users/review:cant_checkout" ) );
+		&SESSION->render_error(
+			&SESSION->html_phrase( "cgi/users/review:cant_checkout" ) );
 		return;
 	}
 
@@ -235,114 +227,110 @@ sub process_form
 	# filled out.
 	if( $action eq "send" )
 	{
-		&handle_removal_request( $session, $user );
+		&handle_removal_request( $user );
 		return;
 	}
 		
 	# no valid action or "cancel" from the remove request.
-	&make_form( $session );
+	&make_form();
 }
 
 
 
 ##
-## remove_request_form( $session, $eprint )
+## remove_request_form( $eprint )
 ##
 ##  Display a removal request form.
 ##
 
 sub removal_request_form
 {
-	my( $session, $eprint ) = @_;
+	my( $eprint ) = @_;
 
-	my $title = $session->html_phrase( "cgi/users/review:remove_title" );
-	my $page = $session->make_doc_fragment();
+	my $title = &SESSION->html_phrase( "cgi/users/review:remove_title" );
+	my $page = &SESSION->make_doc_fragment();
 
-	$page->appendChild( $session->html_phrase( "cgi/users/review:remove_blurb",
+	$page->appendChild( &SESSION->html_phrase( "cgi/users/review:remove_blurb",
 		citation=>$eprint->render_citation_link() ) );
 
 	my( $form, $table, $tr, $td, $th );
 
 
 	my $reason_field = EPrints::MetaField->new(
-		archive=> $session->get_archive(),
 		confid=>'remove_request',
 		name=>'reason',
 		type=>'longtext',
 		input_rows=>15 );
 
 	$page->appendChild(
-		$session->render_input_form(
+		&SESSION->render_input_form(
 			fields=>[ $reason_field ],
 			show_help=>1,
 			default_action=>"send",
 			buttons=>{
 				_order=> [ "send","cancel" ],
-				send => $session->phrase( "cgi/users/review:send" ),
-				cancel => $session->phrase( "cgi/users/review:cancel" )
+				send => &SESSION->phrase( "cgi/users/review:send" ),
+				cancel => &SESSION->phrase( "cgi/users/review:cancel" )
 			},
 			hidden_fields=>{
 				eprintid => $eprint->get_value( "eprintid" )
 			},
 			dest=>"review" ) );
 
-	$session->build_page( $title, $page, "review_remove_form" );
-	$session->send_page();
+	&SESSION->build_page( $title, $page, "review_remove_form" );
+	&SESSION->send_page();
 	return;
 }
 
 
 ##
-## $wrote_page = handle_removal_request( $session, $user )
+## $wrote_page = handle_removal_request( $user )
 ##
 ##  Handle the POSTed information from a removal request form.
 ##
 
 sub handle_removal_request
 {
-	my( $session, $user ) = @_;
+	my( $user ) = @_;
 	
 	# Get the EPrint we're dealing with
-	my $ds = $session->get_archive()->get_dataset( "archive" );	
+	my $ds = &ARCHIVE->get_dataset( "archive" );	
 
-	my $eprint = EPrints::EPrint->new( 
-		$session, 
-		$session->param( "eprintid" ),
-		$ds );
+	my $eprint = EPrints::EPrint->new( &SESSION->param( "eprintid" ), $ds );
 	if( !defined $eprint )
 	{
-		$session->render_error(
-			$session->html_phrase( "cgi/users/review:cant_find_it" ) );
+		&SESSION->render_error(
+			&SESSION->html_phrase( "cgi/users/review:cant_find_it" ) );
 		return;
 	}		
 	if( !$user->is_owner( $eprint ) )
 	{
-		$session->render_error(
-			$session->html_phrase( "cgi/users/review:cant_remove" ) );
+		&SESSION->render_error(
+			&SESSION->html_phrase( "cgi/users/review:cant_remove" ) );
 		return;
 	}
 
-	my $reason = $session->param( "reason" );
-	my $url = $session->get_archive()->get_conf( "perl_url" ).
+	my $reason = &SESSION->param( "reason" );
+	my $url = &ARCHIVE->get_conf( "perl_url" ).
 		"/users/staff/edit_eprint?eprintid=".$eprint->get_value( "eprintid" );
 	
-	$session->mail_administrator( 	
+	&SESSION->mail_administrator( 	
 		"cgi/users/review:remove_mail_subject",
 		"cgi/users/review:remove_mail",
 		citation=>$eprint->render_citation(),
 		user=>$user->render_description(),
 		email=>$user->render_value( "email" ),
-		reason=>( EPrints::Utils::is_set( $reason ) ? $session->make_text( $reason ) 
-			 : $session->html_phrase( "cgi/users/review:no_reason" ) ),
-		url=>$session->make_text( $url ) );
+		reason=>( EPrints::Utils::is_set( $reason ) ? &SESSION->make_text( $reason ) 
+			 : &SESSION->html_phrase( "cgi/users/review:no_reason" ) ),
+		url=>&SESSION->make_text( $url ) );
 	#cjg err sending mail check?
 
-	my $title = $session->html_phrase( "cgi/users/review:remove_title" );
-	my $page = $session->make_doc_fragment();
-	$page->appendChild( $session->html_phrase( "cgi/users/review:done" ) );
-	$page->appendChild( $session->html_phrase( "general:userhome_link" ) );
-	$session->build_page( $title, $page, "review_remove_done" );
-	$session->send_page();
+	my $title = &SESSION->html_phrase( "cgi/users/review:remove_title" );
+	my $page = &SESSION->make_doc_fragment();
+	$page->appendChild( &SESSION->html_phrase( "cgi/users/review:done" ) );
+	$page->appendChild( &SESSION->html_phrase( "general:userhome_link" ) );
+	&SESSION->build_page( $title, $page, "review_remove_done" );
+	&SESSION->send_page();
 	
 	return;
 }

@@ -254,13 +254,13 @@ sub eprint_render
 		$eprint->render_value( "eprintid" ) ) );
 
 	my $user = new EPrints::User( 
-			$eprint->{session},
+			$session,
  			$eprint->get_value( "userid" ) );
 	my $usersname;
 	if( defined $user )
 	{
 		$usersname = $session->make_element( "a", 
-				href=>$eprint->{session}->get_archive()->get_conf( "perl_url" )."/user?userid=".$user->get_value( "userid" ) );
+				href=>$session->get_archive()->get_conf( "perl_url" )."/user?userid=".$user->get_value( "userid" ) );
 		$usersname->appendChild( 
 			$user->render_description() );
 	}

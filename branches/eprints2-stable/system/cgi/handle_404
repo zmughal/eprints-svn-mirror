@@ -19,33 +19,65 @@ use EPrints::Session;
 
 use strict;
 
-my $session = new EPrints::Session();
-exit( 0 ) unless( defined $session );
+EPrints::Session::start;
 
 my $url = $ENV{REDIRECT_URL};
 
-
 my $newurl;
-my $fn = $session->get_archive->get_conf( "catch404" );
+my $fn = &ARCHIVE->get_conf( "catch404" );
 if( defined $fn )
 {
-	$newurl = &{$fn}( $session, $url );
+	$newurl = &{$fn}( $url );
 }
 
 if( defined $newurl )
 {
-	$session->redirect( $newurl );
+	&SESSION->redirect( $newurl );
 }
 elsif( $url =~ m#^/view/# )
 {
-	&noview_404( $session );
+	&noview_404;
 }
 else
 {
-	&plain_404( $session );
+	&plain_404;
+}
+exit;
+
+######################################################################
+#
+# plain_404( $session )
+#
+#  Render a standard Document Not Found error message.
+#
+######################################################################
+
+sub plain_404
+{
+	&SESSION->build_page( 
+		&SESSION->html_phrase( "cgi/handle_http_error:404_title" ),
+		&SESSION->html_phrase( "cgi/handle_http_error:404_blurb", 
+			url => &SESSION->make_text( $ENV{REDIRECT_URL} ) ),
+		"plain_404" );
+
+	&SESSION->send_page();
 }
 
-$session->terminate();
+
+sub noview_404
+{
+	my $error = "The browse views section is missing. The site admin needs to run generate_views. This should be automated with cron. See the documentation for more details.";
+
+	&SESSION->build_page( 
+		&SESSION->html_phrase( "cgi/handle_http_error:404_title" ),
+		&SESSION->make_text( $error ),
+		"noview_404" );
+	&ARCHIVE->log( $error );
+
+        &SESSION->send_page();
+}
+
+
 
 ## Try and work out if the user is trying to access a deleted document
 #my $url = $ENV{REDIRECT_URL};
@@ -126,43 +158,4 @@ $session->terminate();
 #	
 #	print $session->{render}->end_html();
 #}
-
-
-######################################################################
-#
-# plain_404( $session )
-#
-#  Render a standard Document Not Found error message.
-#
-######################################################################
-
-sub plain_404
-{
-	my( $session ) = @_;
-
-	$session->build_page( 
-		$session->html_phrase( "cgi/handle_http_error:404_title" ),
-		$session->html_phrase( "cgi/handle_http_error:404_blurb", 
-			url => $session->make_text( $ENV{REDIRECT_URL} ) ),
-		"plain_404" );
-
-        $session->send_page();
-}
-
-
-sub noview_404
-{
-	my( $session ) = @_;
-
-	my $error = "The browse views section is missing. The site admin needs to run generate_views. This should be automated with cron. See the documentation for more details.";
-
-	$session->build_page( 
-		$session->html_phrase( "cgi/handle_http_error:404_title" ),
-		$session->make_text( $error ),
-		"noview_404" );
-	$session->get_archive()->log( $error );
-
-        $session->send_page();
-}
-
 

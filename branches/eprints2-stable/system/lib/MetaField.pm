@@ -45,9 +45,6 @@ documentation and will not be duplicated here.
 #     to find config info about this field. Most importantly the name
 #     and other information from the phrase file.
 #
-#  $self->{archive}
-#     The archive to which this field belongs.
-#
 # The rest of the instance variables are the properties of the field.
 # The most important properties (which are always required) are:
 #
@@ -72,14 +69,18 @@ use strict;
 
 $EPrints::MetaField::VARCHAR_SIZE 	= 255;
 # get the default value from field defaults in the config
-$EPrints::MetaField::FROM_CONFIG 	= "272b7aa107d30cfa9c67c4bdfca7005d_FROM_CONFIG";
+$EPrints::MetaField::FROM_CONFIG 	= 
+	"272b7aa107d30cfa9c67c4bdfca7005d_FROM_CONFIG";
 # don't use a default, the code may have already set this value. setting it to undef
 # has no effect rather than setting it to default value.
-$EPrints::MetaField::NO_CHANGE	 	= "272b7aa107d30cfa9c67c4bdfca7005d_NO_CHANGE";
+$EPrints::MetaField::NO_CHANGE	 	= 
+	"272b7aa107d30cfa9c67c4bdfca7005d_NO_CHANGE";
 # this field must be explicitly set
-$EPrints::MetaField::REQUIRED 		= "272b7aa107d30cfa9c67c4bdfca7005d_REQUIRED";
+$EPrints::MetaField::REQUIRED 		= 
+	"272b7aa107d30cfa9c67c4bdfca7005d_REQUIRED";
 # this field defaults to undef
-$EPrints::MetaField::UNDEF 		= "272b7aa107d30cfa9c67c4bdfca7005d_UNDEF";
+$EPrints::MetaField::UNDEF 		= 
+	"272b7aa107d30cfa9c67c4bdfca7005d_UNDEF";
 
 ######################################################################
 =pod
@@ -113,29 +114,22 @@ sub new
 	{ 
 		$self->{confid} = $properties{dataset}->confid(); 
 		$self->{dataset} = $properties{dataset};
-		$self->{archive} = $properties{dataset}->get_archive();
-	}
-	else
-	{
-		if( !defined $properties{archive} )
-		{
-			EPrints::Config::abort( 
-				"Tried to create a metafield without a ".
-				"dataset or an archive." );
-		}
-		$self->{archive} = $properties{archive};
 	}
 
-	$self->{field_defaults} = $self->{archive}->get_field_defaults( $properties{type} );
+	$self->{field_defaults} = 
+		&ARCHIVE->get_field_defaults( $properties{type} );
+
 	if( !defined $self->{field_defaults} )
 	{
 		my %props = $self->get_property_defaults;
 		$self->{field_defaults} = {};
 		foreach my $p_id ( keys %props )
 		{
-			if( defined $props{$p_id} && $props{$p_id} eq $EPrints::MetaField::FROM_CONFIG )
+			if( defined $props{$p_id} && $props{$p_id} eq 
+				$EPrints::MetaField::FROM_CONFIG )
 			{
-				my $v = $self->{archive}->get_conf( "field_defaults" )->{$p_id};
+				my $v = &ARCHIVE->
+					get_conf("field_defaults" )->{$p_id};
 				if( !defined $v )
 				{
 					$v = $EPrints::MetaField::UNDEF;
@@ -144,7 +138,7 @@ sub new
 			}
 			$self->{field_defaults}->{$p_id} = $props{$p_id};
 		}
-		$self->{archive}->set_field_defaults( $properties{type}, $self->{field_defaults} );
+		&ARCHIVE->set_field_defaults( $properties{type}, $self->{field_defaults} );
 	}
 
 	foreach my $p_id ( keys %{$self->{field_defaults}} )
@@ -248,7 +242,7 @@ sub get_dataset
 ######################################################################
 =pod
 
-=item $xhtml = $field->render_name( $session )
+=item $xhtml = $field->render_name(
 
 Render the name of this field as an XHTML object.
 
@@ -257,49 +251,50 @@ Render the name of this field as an XHTML object.
 
 sub render_name
 {
-	my( $self, $session ) = @_;
+	my( $self ) = trim_params(@_);
 
 	my $phrasename = $self->{confid}."_fieldname_".$self->{name};
 	$phrasename.= "_id" if( $self->get_property( "idpart" ) );
 
-	return $session->html_phrase( $phrasename );
+	return &SESSION->html_phrase( $phrasename );
 }
 
 ######################################################################
 =pod
 
-=item $label = $field->display_name( $session )
+=item $label = $field->display_name()
 
 DEPRECATED! Can't be removed because it's used in 2.2's default
 ArchiveRenderConfig.pm
 
 Return the UTF-8 encoded name of this field, in the language of
-the $session.
+the current session.
 
 =cut
 ######################################################################
 
 sub display_name
 {
-	my( $self, $session ) = @_;
+	my( $self ) = trim_params(@_);
 
 #	print STDERR "CALLED DEPRECATED FUNCTION EPrints::MetaField::display_name\n";
 
 	my $phrasename = $self->{confid}."_fieldname_".$self->{name};
 	$phrasename.= "_id" if( $self->get_property( "idpart" ) );
-	return $session->phrase( $phrasename );
+	return &SESSION->phrase( $phrasename );
 }
 
 
 ######################################################################
 =pod
 
-=item $helpstring = $field->display_help( $session, [$type] )
+=item $helpstring = $field->display_help( [$type] )
 
 Use of this method is not recommended. Use render_help instead.
 
 Return the help information for a user inputing some data for this
-field as a UTF-8 encoded string in the language of the $session.
+field as a UTF-8 encoded string in the language of the current 
+session.
 
 If an optional type is specified then specific help for that
 type will be used if available. Otherwise the normal help will be
@@ -310,22 +305,22 @@ used.
 
 sub display_help
 {
-	my( $self, $session, $type ) = @_;
+	my( $self, $type ) = trim_params(@_);
 
 	my $phrasename = $self->{confid}."_fieldhelp_".$self->{name};
 	$phrasename.= "_id" if( $self->get_property( "idpart" ) );
-	if( defined $type && $session->get_lang->has_phrase( $phrasename.".".$type ) )
+	if( defined $type && &SESSION->get_lang->has_phrase( $phrasename.".".$type ) )
 	{	
-		return $session->phrase( $phrasename.".".$type );
+		return &SESSION->phrase( $phrasename.".".$type );
 	}
 
-	return $session->phrase( $phrasename );
+	return &SESSION->phrase( $phrasename );
 }
 
 ######################################################################
 =pod
 
-=item $xhtml = $field->render_help( $session, [$type] )
+=item $xhtml = $field->render_help( [$type] )
 
 Return the help information for a user inputing some data for this
 field as an XHTML chunk.
@@ -340,23 +335,23 @@ the default help for the title field.
 
 sub render_help
 {
-	my( $self, $session, $type ) = @_;
+	my( $self, $type ) = trim_params(@_);
 
 	my $phrasename = $self->{confid}."_fieldhelp_".$self->{name};
 	$phrasename.= "_id" if( $self->get_property( "idpart" ) );
-	if( defined $type && $session->get_lang->has_phrase( $phrasename.".".$type ) )
+	if( defined $type && &SESSION->get_lang->has_phrase( $phrasename.".".$type ) )
 	{	
-		return $session->html_phrase( $phrasename.".".$type );
+		return &SESSION->html_phrase( $phrasename.".".$type );
 	}
 
-	return $session->html_phrase( $phrasename );
+	return &SESSION->html_phrase( $phrasename );
 }
 
 
 ######################################################################
 =pod
 
-=item $xhtml = $field->render_input_field( $session, $value, [$dataset, $type], [$staff], [$hidden_fields] )
+=item $xhtml = $field->render_input_field( $value, [$dataset, $type], [$staff], [$hidden_fields] )
 
 Return the XHTML of the fields for an form which will allow a user
 to input metadata to this field. $value is the default value for
@@ -369,18 +364,18 @@ The actual function called may be overridden from the config.
 
 sub render_input_field
 {
-	my( $self, $session, $value, $dataset, $type, $staff, $hidden_fields, $obj ) = @_;
+	my( $self, $value, $dataset, $type, $staff, $hidden_fields, $obj ) = trim_params(@_);
 
 	if( defined $self->{toform} )
 	{
-		$value = &{$self->{toform}}( $value, $session );
+		$value = &{$self->{toform}}( &SESSION, $value );
 	}
 
 	if( defined $self->{render_input} )
 	{
 		return &{$self->{render_input}}(
+			&SESSION,
 			$self,
-			$session, 
 			$value, 
 			$dataset, 
 			$type, 
@@ -390,7 +385,6 @@ sub render_input_field
 	}
 
 	return $self->render_input_field_actual( 
-			$session, 
 			$value, 
 			$dataset, 
 			$type, 
@@ -403,7 +397,7 @@ sub render_input_field
 ######################################################################
 =pod
 
-=item $value = $field->form_value( $session )
+=item $value = $field->form_value()
 
 Get a value for this field from the CGI parameters, assuming that
 the form contained the input fields for this metadata field.
@@ -413,13 +407,13 @@ the form contained the input fields for this metadata field.
 
 sub form_value
 {
-	my( $self, $session ) = @_;
+	my( $self ) = trim_params(@_);
 
-	my $value = $self->form_value_actual( $session );
+	my $value = $self->form_value_actual();
 
 	if( defined $self->{fromform} )
 	{
-		$value = &{$self->{fromform}}( $value, $session );
+		$value = &{$self->{fromform}}( &SESSION, $value );
 	}
 
 	return $value;
@@ -519,7 +513,7 @@ sub is_type
 ######################################################################
 =pod
 
-=item $xhtml = $field->render_value( $session, $value, [$alllangs], [$nolink] )
+=item $xhtml = $field->render_value( $value, [$alllangs], [$nolink] )
 
 Render the given value of this given string as XHTML DOM. If $alllangs 
 is true and this is a multilang field then render all language versions,
@@ -535,12 +529,12 @@ control the rendering instead.
 
 sub render_value
 {
-	my( $self, $session, $value, $alllangs, $nolink ) = @_;
+	my( $self, $value, $alllangs, $nolink ) = trim_params(@_);
 
 	if( defined $self->{render_value} )
 	{
 		return &{$self->{render_value}}( 
-			$session, 
+			&SESSION,
 			$self, 
 			$value, 
 			$alllangs, 
@@ -552,21 +546,20 @@ sub render_value
 	{
 		if( $self->{render_opts}->{quiet} )
 		{
-			return $session->make_doc_fragment;
+			return &SESSION->make_doc_fragment;
 		}
 		else
 		{
 			# maybe should just return nothing
-			return $session->html_phrase( 
+			return &SESSION->html_phrase( 
 				"lib/metafield:unspecified",
-				fieldname => $self->render_name( $session ) );
+				fieldname => $self->render_name );
 		}
 	}
 
 	unless( $self->get_property( "multiple" ) )
 	{
 		return $self->render_value_no_multiple( 
-			$session, 
 			$value, 
 			$alllangs, 
 			$nolink );
@@ -575,7 +568,7 @@ sub render_value
 	my @rendered_values = ();
 
 	my $first = 1;
-	my $html = $session->make_doc_fragment();
+	my $html = &SESSION->make_doc_fragment();
 	
 	for(my $i=0; $i<scalar(@$value); ++$i )
 	{
@@ -584,22 +577,21 @@ sub render_value
 		{
 			my $phrase = "lib/metafield:join_".$self->get_type;
 			my $basephrase = $phrase;
-			if( $i == 1 && $session->get_lang->has_phrase( 
+			if( $i == 1 && &SESSION->get_lang->has_phrase( 
 						$basephrase.".first" ) ) 
 			{ 
 				$phrase = $basephrase.".first";
 			}
 			if( $i == scalar(@$value)-1 && 
-					$session->get_lang->has_phrase( 
+					&SESSION->get_lang->has_phrase( 
 						$basephrase.".last" ) ) 
 			{ 
 				$phrase = $basephrase.".last";
 			}
-			$html->appendChild( $session->html_phrase( $phrase ) );
+			$html->appendChild( &SESSION->html_phrase( $phrase ) );
 		}
 		$html->appendChild( 
 			$self->render_value_no_multiple( 
-				$session, 
 				$sv, 
 				$alllangs, 
 				$nolink ) );
@@ -611,7 +603,7 @@ sub render_value
 
 ######################################################################
 # 
-# $xhtml = $field->render_value_no_multiple( $session, $value, $alllangs, $nolink )
+# $xhtml = $field->render_value_no_multiple( $value, $alllangs, $nolink )
 #
 # undocumented
 #
@@ -619,7 +611,7 @@ sub render_value
 
 sub render_value_no_multiple
 {
-	my( $self, $session, $value, $alllangs, $nolink ) = @_;
+	my( $self, $value, $alllangs, $nolink ) = trim_params(@_);
 
 	# just main/id if that's what we're rendering
 	$value = $self->which_bit( $value );
@@ -631,28 +623,27 @@ sub render_value_no_multiple
 		# It will either just pass it through, redo it from scratch
 		# or wrap it in a link.
 
-		my $rendered = $self->get_main_field()->render_value_no_id( $session, $value->{main}, $alllangs, $nolink );
+		my $rendered = $self->get_main_field()->render_value_no_id( $value->{main}, $alllangs, $nolink );
 
-		return $session->get_archive()->call( 
+		return &ARCHIVE->call( 
 			"render_value_with_id",  
 			$self, 
-			$session, 
+			&SESSION,
 			$value, 
 			$alllangs, 
 			$rendered, 
 			$nolink );
 	}
 
-	my $rendered = $self->render_value_no_id( $session, $value, $alllangs, $nolink );
+	my $rendered = $self->render_value_no_id( $value, $alllangs, $nolink );
 
 	if( !defined $self->{browse_link} || $nolink)
 	{
 		return $rendered;
 	}
 
-	my $url = $session->get_archive()->get_conf(
-			"base_url" );
-	my $views = $session->get_archive()->get_conf( "browse_views" );
+	my $url = &ARCHIVE->get_conf( "base_url" );
+	my $views = &ARCHIVE->get_conf( "browse_views" );
 	my $linkview;
 	foreach my $view ( @{$views} )
 	{
@@ -664,7 +655,7 @@ sub render_value_no_multiple
 
 	if( !defined $linkview )
 	{
-		$session->get_archive()->log( "browse_link to view '".$self->{browse_link}."' not found for field '".$self->{name}."'\n" );
+		&ARCHIVE->log( "browse_link to view '".$self->{browse_link}."' not found for field '".$self->{name}."'\n" );
 		return $rendered;
 	}
 
@@ -682,14 +673,14 @@ sub render_value_no_multiple
 			".html";
 	}
 
-	my $a = $session->render_link( $url );
+	my $a = &SESSION->render_link( $url );
 	$a->appendChild( $rendered );
 	return $a;
 }
 
 ######################################################################
 # 
-# $xhtml = $field->render_value_no_id( $session, $value, $alllangs, $nolink )
+# $xhtml = $field->render_value_no_id( $value, $alllangs, $nolink )
 #
 # undocumented
 #
@@ -697,7 +688,7 @@ sub render_value_no_multiple
 
 sub render_value_no_id
 {
-	my( $self, $session, $value, $alllangs, $nolink ) = @_;
+	my( $self, $value, $alllangs, $nolink ) = trim_params(@_);
 
 	# We don't care about the ID
 	if( $self->get_property( "hasid" ) )
@@ -707,39 +698,38 @@ sub render_value_no_id
 
 	if( !$self->get_property( "multilang" ) )
 	{
-		return $self->render_value_no_multilang( $session, $value, $nolink );
+		return $self->render_value_no_multilang( $value, $nolink );
 	}
 
 	if( !$alllangs )
 	{
 		my $v = EPrints::Session::best_language( 
-			$session->get_archive(), 
-			$session->get_langid(), 
+			&SESSION->get_langid(), 
 			%$value );
-		return $self->render_value_no_multilang( $session, $v, $nolink );
+		return $self->render_value_no_multilang( $v, $nolink );
 	}
 	my( $table, $tr, $td, $th );
-	$table = $session->make_element( "table" );
+	$table = &SESSION->make_element( "table" );
 	foreach( keys %$value )
 	{
-		$tr = $session->make_element( "tr" );
+		$tr = &SESSION->make_element( "tr" );
 		$table->appendChild( $tr );
-		$td = $session->make_element( "td" );
+		$td = &SESSION->make_element( "td" );
 		$tr->appendChild( $td );
 		$td->appendChild( 
-			$self->render_value_no_multilang( $session, $value->{$_} ) );
-		$th = $session->make_element( "th" );
+			$self->render_value_no_multilang( &SESSION, $value->{$_} ) );
+		$th = &SESSION->make_element( "th" );
 		$tr->appendChild( $th );
-		$th->appendChild( $session->make_text( '(' ) );
-		$th->appendChild( $session->render_language_name( $_ ) );
-		$th->appendChild( $session->make_text( ')' ) );
+		$th->appendChild( &SESSION->make_text( '(' ) );
+		$th->appendChild( &SESSION->render_language_name( $_ ) );
+		$th->appendChild( &SESSION->make_text( ')' ) );
 	}
 	return $table;
 }
 
 ######################################################################
 # 
-# $xhtml = $field->render_value_no_multilang( $session, $value, $nolink )
+# $xhtml = $field->render_value_no_multilang( $value, $nolink )
 #
 # undocumented
 #
@@ -747,13 +737,13 @@ sub render_value_no_id
 
 sub render_value_no_multilang
 {
-	my( $self, $session, $value, $nolink ) = @_;
+	my( $self, $value, $nolink ) = trim_params(@_);
 
 	if( !defined $value )
 	{
-		return $session->html_phrase( 
+		return &SESSION->html_phrase( 
 			"lib/metafield:unspecified",
-			fieldname => $self->render_name( $session ) );
+			fieldname => $self->render_name );
 	}
 
 	if( $self->{render_opts}->{magicstop} )
@@ -776,20 +766,17 @@ sub render_value_no_multilang
 
 	if( defined $self->{render_single_value} )
 	{
-		return &{$self->{render_single_value}}( 
-			$session, 
-			$self, 
-			$value );
+		return &{$self->{render_single_value}}( &SESSION, $self, $value );
 	}
 
-	return $self->render_single_value( $session, $value );
+	return $self->render_single_value( $value );
 }
 
 
 ######################################################################
 =pod
 
-=item $out_list = $field->sort_values( $session, $in_list )
+=item $out_list = $field->sort_values( $in_list )
 
 Sorts the in_list into order, based on the "order values" of the 
 values in the in_list. Assumes that the values are not a list of
@@ -801,16 +788,13 @@ May be multilang or has_id.
 
 sub sort_values
 {
-	my( $self, $session, $in_list ) = @_;
+	my( $self, $in_list ) = trim_params(@_);
 
 	my $o_keys = {};
-	my $langid = $session->get_langid;
+	my $langid = &SESSION->get_langid;
 	foreach my $value ( @{$in_list} )
 	{
-		$o_keys->{$value} = $self->ordervalue_basic( 
-						$value,
-						$session,
-						$langid );
+		$o_keys->{$value} = $self->ordervalue_basic( $value, $langid );
 	}
 
 	my @out_list = sort { $o_keys->{$a} cmp $o_keys->{$b} } @{$in_list};
@@ -877,7 +861,7 @@ sub _list_values2
 ######################################################################
 =pod
 
-=item $value = $field->most_local( $session, $value )
+=item $value = $field->most_local( $value )
 
 If this field is a multilang field then return the version of the 
 value most useful for the language of the session. In order of
@@ -890,10 +874,11 @@ then just return $value.
 
 sub most_local
 {
-	my( $self, $session, $value ) = @_;
-	#cjg not done yet
-	my $bestvalue =  EPrints::Session::best_language( 
-		$session->get_archive(), $session->get_langid(), %{$value} );
+	my( $self, $value ) = trim_params(@_);
+
+	my $bestvalue = EPrints::Session::best_language( 
+				&SESSION->get_langid, 
+				%{$value} );
 	return $bestvalue;
 }
 

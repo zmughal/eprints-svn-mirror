@@ -288,7 +288,8 @@ sub dispose
 
 	if( !defined $node )
 	{
-		confess "attempt to dispose an undefined dom node";
+		#confess "attempt to dispose an undefined dom node";
+		return;
 	}
 
 	if( !$gdome )

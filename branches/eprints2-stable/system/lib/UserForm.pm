@@ -56,7 +56,6 @@ use strict;
 
 ######################################################################
 #
-# $userform = new( $session, $redirect, $staff, $user )
 #
 #  Create a new user form session. If $user is unspecified, the current
 #  user (from Apache cookies) is used.
@@ -67,7 +66,7 @@ use strict;
 ######################################################################
 =pod
 
-=item $thing = EPrints::UserForm->new( $session, $redirect, $staff, $user )
+=item $thing = EPrints::UserForm->new( $redirect, $staff, $user )
 
 undocumented
 
@@ -76,12 +75,11 @@ undocumented
 
 sub new
 {
-	my( $class, $session, $redirect, $staff, $user, $dest ) = @_;
+	my( $class, $redirect, $staff, $user, $dest ) = trim_params(@_);
 	
 	my $self = {};
 	bless $self, $class;
 
-	$self->{session} = $session;
 	$self->{redirect} = $redirect;
 	$self->{staff} = $staff;
 	$self->{user} = $user;
@@ -89,7 +87,7 @@ sub new
 
 	if( !defined $self->{user} ) 
 	{
-		$self->{user} = $self->{session}->current_user();
+		$self->{user} = &SESSION->current_user();
 	}
 	
 	return( $self );
@@ -121,37 +119,37 @@ sub process
 	
 	my $full_name = $self->{user}->render_description();
 
-	if( $self->{session}->seen_form() == 0 ||
-	    $self->{session}->internal_button_pressed() ||
-	    $self->{session}->get_action_button() eq "edit" )
+	if( &SESSION->seen_form() == 0 ||
+	    &SESSION->internal_button_pressed() ||
+	    &SESSION->get_action_button() eq "edit" )
 	{
-		if( $self->{session}->internal_button_pressed() )
+		if( &SESSION->internal_button_pressed() )
 		{
 			$self->_update_from_form();
 		}
 
 		my( $page, $p, $a );
 
-		$page = $self->{session}->make_doc_fragment();
+		$page = &SESSION->make_doc_fragment();
 		if( $self->{staff} )
 		{
-			$page->appendChild( $self->{session}->html_phrase( 
+			$page->appendChild( &SESSION->html_phrase( 
 				"lib/userform:staff_blurb" ) );
 		}
 		else
 		{
-			$page->appendChild( $self->{session}->html_phrase( 
+			$page->appendChild( &SESSION->html_phrase( 
 				"lib/userform:blurb" ) );
 		}
 
 		$page->appendChild( $self->_render_user_form() );
-		$self->{session}->build_page(
-			$self->{session}->html_phrase( 
+		&SESSION->build_page(
+			&SESSION->html_phrase( 
 				"lib/userform:record_for", 
 				name => $full_name ),
 			$page,
 			"user_form" );
-		$self->{session}->send_page();
+		&SESSION->send_page();
 
 	}
 	elsif( $self->_update_from_form() )
@@ -161,55 +159,54 @@ sub process
 		# Validate the changes
 		$self->{user}->commit();
 		$self->{user} = EPrints::User->new( 
-			$self->{session}, 
 			$self->{user}->get_value( "userid" ) );
 		my $problems = $self->{user}->validate();
 
 		if( scalar @{$problems} == 0 )
 		{
 			# User has entered everything OK
-			$self->{session}->redirect( $self->{redirect} );
+			&SESSION->redirect( $self->{redirect} );
 			return;
 		}
 
 		my( $page, $p, $ul, $li );
 
-		$page = $self->{session}->make_doc_fragment();
+		$page = &SESSION->make_doc_fragment();
 
-		my $problem_box = $self->{session}->make_element( 
+		my $problem_box = &SESSION->make_element( 
 					"div",
 					class=>"problems" );
 		$page->appendChild( $problem_box );
-		$problem_box->appendChild( $self->{session}->html_phrase( 
+		$problem_box->appendChild( &SESSION->html_phrase( 
 			"lib/userform:form_incorrect" ) );
 
-		$ul = $self->{session}->make_element( "ul" );
+		$ul = &SESSION->make_element( "ul" );
 		my( $problem );
 		foreach $problem (@$problems)
 		{
-			$li = $self->{session}->make_element( "li" );
+			$li = &SESSION->make_element( "li" );
 			$li->appendChild( $problem );
 			$ul->appendChild( $li );
 		}
 		$problem_box->appendChild( $ul );
 
-		$problem_box->appendChild( $self->{session}->html_phrase( 
+		$problem_box->appendChild( &SESSION->html_phrase( 
 			"lib/userform:complete_form" ) );
 	
 		$page->appendChild( $self->_render_user_form() );
 
-		$self->{session}->build_page(
-			$self->{session}->html_phrase( 
+		&SESSION->build_page(
+			&SESSION->html_phrase( 
 				"lib/userform:record_for", 
 				name => $full_name ), 
 			$page,
 			"user_form" );
-		$self->{session}->send_page();
+		&SESSION->send_page();
 	}
 	else 
 	{
-		$self->{session}->render_error( 
-			$self->{session}->html_phrase( 
+		&SESSION->render_error( 
+			&SESSION->html_phrase( 
 				"lib/userform:problem_updating" ),
 			$self->{redirect} );
 	}
@@ -238,13 +235,13 @@ sub _render_user_form
 {
 	my( $self ) = @_;
 	
-	my $user_ds = $self->{session}->get_archive()->get_dataset( "user" );
+	my $user_ds = &ARCHIVE->get_dataset( "user" );
 
 	my @fields = $user_ds->get_type_fields( $self->{user}->get_value( "usertype" ), $self->{staff} );
 
 	my %hidden = ( "userid"=>$self->{user}->get_value( "userid" ) );
-	my $buttons = { update => $self->{session}->phrase( "lib/userform:update_record" ) };
-	my $form = $self->{session}->render_input_form( 
+	my $buttons = { update => &SESSION->phrase( "lib/userform:update_record" ) };
+	my $form = &SESSION->render_input_form( 
 					staff=>$self->{staff},
 					dataset=>$user_ds,
 					type=>$self->{user}->get_value( "usertype" ),
@@ -282,24 +279,24 @@ sub _update_from_form
 	my( $self ) = @_;
 
 	# Ensure correct user
-	if( $self->{session}->param( "userid" ) ne
+	if( &SESSION->param( "userid" ) ne
 		$self->{user}->get_value( "userid" ) )
 	{
-		my $form_id = $self->{session}->param( "username" );
-		$self->{session}->get_archive()->log( 
+		my $form_id = &SESSION->param( "username" );
+		&ARCHIVE->log( 
 			"Username in $form_id doesn't match object username ".
 			 $self->{username} );
 	
 		return( 0 );
 	}
 	
-	my $user_ds = $self->{session}->get_archive()->get_dataset( "user" );
+	my $user_ds = &ARCHIVE->get_dataset( "user" );
 
 	my $usertype;
 	if( $self->{staff} )
 	{
 		# In a search type the usertype can change!
- 		$usertype = $self->{session}->param( "usertype" );   
+ 		$usertype = &SESSION->param( "usertype" );   
 	}
 	if( !defined $usertype )
 	{
@@ -310,7 +307,7 @@ sub _update_from_form
 	my $field;
 	foreach $field ( @fields )
 	{
-		my $param = $field->form_value( $self->{session} );
+		my $param = $field->form_value;
 
 		$self->{user}->set_value( $field->{name} , $param );
 	}

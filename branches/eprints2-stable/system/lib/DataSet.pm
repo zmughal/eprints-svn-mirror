@@ -100,9 +100,6 @@ $ds = $archive->get_dataset( "inbox" );
 #     "eprints" for inbox,archive,buffer,deletion as they share the same
 #     configuration.
 #
-#  $self->{archive}
-#     A reference to the EPrints::Archive to which this dataset belongs.
-#
 #  $self->{fields}
 #     An array of all the EPrints::MetaField's belonging to this dataset.
 #
@@ -156,6 +153,7 @@ $ds = $archive->get_dataset( "inbox" );
 package EPrints::DataSet;
 
 use EPrints::Document;
+use EPrints::Session;
 
 use Carp;
 
@@ -258,26 +256,21 @@ sub new_stub
 ######################################################################
 =pod
 
-=item $ds = EPrints::DataSet->new( $archive, $id, $typesconf )
+=item $ds = EPrints::DataSet->new( id, $typesconf )
 
 Return the dataset specified by $id. It needs the information
 in $typesconf and you probably should not call this directly
-but get access to a dataset via the archive object as described
-above.
-
-Note that dataset know $archive and vice versa - which means they
-will not get garbage collected.
+but get access to a dataset via the archive object it belongs
+to.
 
 =cut
 ######################################################################
 
 sub new
 {
-	my( $class , $archive , $id , $typesconf, $cache ) = @_;
+	my( $class , $id , $typesconf, $cache ) = trim_params(@_);
 	
 	my $self = EPrints::DataSet->new_stub( $id );
-
-	$self->{archive} = $archive;
 
 	$self->{fields} = [];
 	$self->{system_fields} = [];
@@ -302,7 +295,7 @@ sub new
 	}
 	if( $id eq "arclanguage" )
 	{	
-		foreach( @{$archive->get_conf( "languages" )} )
+		foreach( @{&ARCHIVE->get_conf( "languages" )} )
 		{
 			$self->{types}->{$_} = [];
 			$self->{staff_types}->{$_} = [];
@@ -313,8 +306,8 @@ sub new
 
 
 
-	$self->{default_order} = $self->{archive}->
-			get_conf( "default_order" , $self->{confid} );
+	$self->{default_order} = 
+		&ARCHIVE->get_conf( "default_order" , $self->{confid} );
 
 
 	if( defined $cache->{$self->{confid}} )
@@ -344,7 +337,7 @@ sub new
 
 		if( $self->{confid} eq "eprint" )
 		{
-			if( $self->{archive}->get_conf( "submission_long_types" ) )
+			if( &ARCHIVE->get_conf( "submission_long_types" ) )
 			{
 				$self->{field_index}->{type}->set_property( 
 					"input_style", "long" );
@@ -352,7 +345,7 @@ sub new
 		}
 	}
 
-	my $archivefields = $archive->get_conf( "archivefields", $self->{confid} );
+	my $archivefields = &ARCHIVE->get_conf( "archivefields", $self->{confid} );
 	if( $archivefields )
 	{
 		foreach $fielddata ( @{$archivefields} )
@@ -410,7 +403,7 @@ sub new
 				my $field = $self->{field_index}->{$f->{id}};
 				if( !defined $field )
 				{
-					$archive->log( "Unknown field: $_ in ".
+					&ARCHIVE->log( "Unknown field: $_ in ".
 						$self->{confid}."($typeid)" );
 				}
 
@@ -491,7 +484,7 @@ sub get_field
 
 	my $value = $self->{field_index}->{$fieldname};
 	if (!defined $value) {
-		$self->{archive}->log( 
+		&ARCHIVE->log( 
 			"dataset ".$self->{id}." has no field: ".
 			$fieldname );
 		return undef;
@@ -587,7 +580,7 @@ sub id
 ######################################################################
 =pod
 
-=item $n = $ds->count( $session )
+=item $n = $ds->count()
 
 Return the number of records in this dataset.
 
@@ -596,9 +589,9 @@ Return the number of records in this dataset.
 
 sub count
 {
-	my( $self, $session ) = @_;
+	my( $self ) = trim_params(@_);
 
-	return $session->get_db()->count_table( $self->get_sql_table_name() );
+	return &DATABASE->count_table( $self->get_sql_table_name() );
 }
  
 
@@ -757,7 +750,7 @@ sub get_key_field
 ######################################################################
 =pod
 
-=item $obj = $ds->make_object( $session, $data )
+=item $obj = $ds->make_object( $data )
 
 Return an object of the class associated with this dataset, always
 a subclass of EPrints::DataObj.
@@ -771,7 +764,7 @@ Return $data if no class associated with this dataset.
 
 sub make_object
 {
-	my( $self , $session , $data ) = @_;
+	my( $self , $data ) = trim_params(@_);
 
 	my $class = $INFO->{$self->{id}}->{class};
 
@@ -786,10 +779,7 @@ sub make_object
 	## EPrints have a slightly different
 	## constructor.
 
-	return $class->new_from_data( 
-		$session,
-		$data,
-		$self );
+	return $class->new_from_data( $data, $self );
 }
 
 
@@ -815,7 +805,7 @@ sub get_types
 ######################################################################
 =pod
 
-=item $foo = $ds->get_type_names( $session )
+=item $foo = $ds->get_type_names()
 
 Returns a reference to a hash table which maps the id's of types given
 by get_types to printable names in the language of the session (utf-8
@@ -826,12 +816,12 @@ encoded).
 
 sub get_type_names
 {
-	my( $self, $session ) = @_;
+	my( $self ) = trim_params(@_);
 		
 	my %names = ();
 	foreach( keys %{$self->{types}} ) 
 	{
-		$names{$_} = $self->get_type_name( $session, $_ );
+		$names{$_} = $self->get_type_name( $_ );
 	}
 	return( \%names );
 }
@@ -840,7 +830,7 @@ sub get_type_names
 ######################################################################
 =pod
 
-=item $name = $ds->get_type_name( $session, $type )
+=item $name = $ds->get_type_name( $type )
 
 Return a utf-8 string containing a human-readable name for the
 specified type.
@@ -850,26 +840,26 @@ specified type.
 
 sub get_type_name
 {
-	my( $self, $session, $type ) = @_;
+	my( $self, $type ) = trim_params(@_);
 
 	if( $self->{confid} eq "language"  || $self->{confid} eq "arclanguage" )
 	{
 		if( $type eq "?" )
 		{
-			return $session->phrase( "lib/dataset:no_language" );
+			return &SESSION->phrase( "lib/dataset:no_language" );
 		}
 		return EPrints::Utils::tree_to_utf8(
-			$session->render_language_name( $type ) );
+			&SESSION->render_language_name( $type ) );
 	}
 
-        return $session->phrase( $self->confid()."_typename_".$type );
+        return &SESSION->phrase( $self->confid()."_typename_".$type );
 }
 
 
 ######################################################################
 =pod
 
-=item $xhtml = $ds->render_type_name( $session, $type )
+=item $xhtml = $ds->render_type_name( $type )
 
 Return a piece of XHTML describing the name of the given type in the
 language of the session.
@@ -879,13 +869,13 @@ language of the session.
 
 sub render_type_name
 {
-	my( $self, $session, $type ) = @_;
+	my( $self, $type ) = trim_params(@_);
 
 	if( $self->{confid} eq "language"  || $self->{confid} eq "arclanguage" )
 	{
-		return $session->make_text( $self->get_type_name( $session, $type ) );
+		return &SESSION->make_text( $self->get_type_name( $type ) );
 	}
-        return $session->html_phrase( $self->confid()."_typename_".$type );
+        return &SESSION->html_phrase( $self->confid()."_typename_".$type );
 }
 
 
@@ -949,7 +939,7 @@ sub is_valid_type
 ######################################################################
 =pod
 
-=item $ds->map( $session, $fn, $info )
+=item $ds->map( $fn, $info )
 
 Maps the function $fn onto every record in this dataset. See 
 SearchExpression for a full explanation.
@@ -959,40 +949,22 @@ SearchExpression for a full explanation.
 
 sub map
 {
-	my( $self, $session, $fn, $info ) = @_;
+	my( $self, $fn, $info ) = trim_params(@_);
 
 	my $searchexp = EPrints::SearchExpression->new(
 		allow_blank => 1,
-		dataset => $self,
-		session => $session );
+		dataset => $self );
 	$searchexp->perform_search();
 	$searchexp->map( $fn, $info );
 	$searchexp->dispose();
 }
 
 
-######################################################################
-=pod
-
-=item $archive = $ds->get_archive
-
-Returns the EPrints::Archive to which this dataset belongs.
-
-=cut
-######################################################################
-
-sub get_archive
-{
-	my( $self ) = @_;
-	
-	return $self->{archive};
-}
-
 
 ######################################################################
 =pod
 
-=item $ds->reindex( $session )
+=item $ds->reindex()
 
 Reindex all the items in this dataset. This could take a real long 
 time on a large set of records.
@@ -1002,18 +974,18 @@ time on a large set of records.
 
 sub reindex
 {
-	my( $self, $session ) = @_;
+	my( $self ) = trim_params(@_);
 
 	my $fn = sub {
-		my( $session, $dataset, $item ) = @_;
-		if( $session->get_noise() >= 2 )
+		my( $dataset, $item ) = @_;
+		if( &SESSION->get_noise() >= 2 )
 		{
 			print STDERR "Reindexing item: ".$dataset->id()."/".$item->get_id()."\n";
 		}
 		$item->commit();
 	};
 
-	$self->map( $session, $fn );
+	$self->map( $fn );
 }
 
 ######################################################################
@@ -1086,7 +1058,7 @@ sub count_indexes
 ######################################################################
 =pod
 
-=item @ids = $dataset->get_item_ids( $session )
+=item @ids = $dataset->get_item_ids()
 
 Return a list of the id's of all items in this set.
 
@@ -1095,9 +1067,9 @@ Return a list of the id's of all items in this set.
 
 sub get_item_ids
 {
-	my( $self, $session ) = @_;
+	my( $self ) = trim_params(@_);
 
-	return $session->get_db->get_values( $self->get_key_field, $self );
+	return &DATABASE->get_values( $self->get_key_field, $self );
 }
 
 

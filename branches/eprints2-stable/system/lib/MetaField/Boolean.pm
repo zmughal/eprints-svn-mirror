@@ -39,7 +39,7 @@ BEGIN
 }
 
 use EPrints::MetaField::Basic;
-
+use EPrints::Session;
 
 sub get_sql_type
 {
@@ -50,7 +50,7 @@ sub get_sql_type
 
 sub get_index_codes
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $value ) = trim_params(@_);
 
 	return( [], [], [] );
 }
@@ -58,16 +58,16 @@ sub get_index_codes
 
 sub render_single_value
 {
-	my( $self, $session, $value, $dont_link ) = @_;
+	my( $self, $value, $dont_link ) = trim_params(@_);
 
-	return $session->html_phrase(
+	return &SESSION->html_phrase(
 		"lib/metafield:".($value eq "TRUE"?"true":"false") );
 }
 
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
+	my( $self, $value, $suffix, $staff, $obj ) = trim_params(@_);
 
 	my( $div , $id);
  	$id = $self->{name}.$suffix;
@@ -78,20 +78,20 @@ sub get_basic_input_elements
 			height=>2,
 			values=>[ "TRUE", "FALSE" ],
 			labels=>{
-TRUE=> $session->phrase( $self->{confid}."_fieldopt_".$self->{name}."_TRUE"),
-FALSE=> $session->phrase( $self->{confid}."_fieldopt_".$self->{name}."_FALSE")
+TRUE=> &SESSION->phrase( $self->{confid}."_fieldopt_".$self->{name}."_TRUE"),
+FALSE=> &SESSION->phrase( $self->{confid}."_fieldopt_".$self->{name}."_FALSE")
 			},
 			name=>$id,
 			default=>$value
 		);
-		return [[{ el=>$session->render_option_list( %settings ) }]];
+		return [[{ el=>&SESSION->render_option_list( %settings ) }]];
 	}
 
 	if( $self->{input_style} eq "radio" )
 	{
 		# render as radio buttons
 
-		my $true = $session->make_element(
+		my $true = &SESSION->make_element(
 			"input",
 			"accept-charset" => "utf-8",
 			type => "radio",
@@ -99,7 +99,7 @@ FALSE=> $session->phrase( $self->{confid}."_fieldopt_".$self->{name}."_FALSE")
 					"TRUE" ? "checked" : undef ),
 			name => $id,
 			value => "TRUE" );
-		my $false = $session->make_element(
+		my $false = &SESSION->make_element(
 			"input",
 			"accept-charset" => "utf-8",
 			type => "radio",
@@ -107,14 +107,14 @@ FALSE=> $session->phrase( $self->{confid}."_fieldopt_".$self->{name}."_FALSE")
 					"TRUE" ? "checked" : undef ),
 			name => $id,
 			value => "FALSE" );
-		return [[{ el=>$session->html_phrase(
+		return [[{ el=>&SESSION->html_phrase(
 			$self->{confid}."_radio_".$self->{name},
 			true=>$true,
 			false=>$false ) }]];
 	}
 			
 	# render as checkbox (ugly)
-	return [[{ el=>$session->make_element(
+	return [[{ el=>&SESSION->make_element(
 				"input",
 				"accept-charset" => "utf-8",
 				type => "checkbox",
@@ -126,9 +126,9 @@ FALSE=> $session->phrase( $self->{confid}."_fieldopt_".$self->{name}."_FALSE")
 
 sub form_value_basic
 {
-	my( $self, $session, $suffix ) = @_;
+	my( $self, $suffix ) = trim_params(@_);
 	
-	my $form_val = $session->param( $self->{name}.$suffix );
+	my $form_val = &SESSION->param( $self->{name}.$suffix );
 	my $true = 0;
 	if( 
 		$self->{input_style} eq "radio" || 
@@ -145,7 +145,7 @@ sub form_value_basic
 
 sub get_unsorted_values
 {
-	my( $self, $session, $dataset, %opts ) = @_;
+	my( $self, $dataset, %opts ) = trim_params(@_);
 
 	return [ "TRUE", "FALSE" ];
 }
@@ -153,18 +153,18 @@ sub get_unsorted_values
 
 sub render_search_input
 {
-	my( $self, $session, $searchfield ) = @_;
+	my( $self, $searchfield ) = trim_params(@_);
 	
 	# Boolean: Popup menu
 
 	my @bool_tags = ( "EITHER", "TRUE", "FALSE" );
 	my %bool_labels = ( 
-"EITHER" => $session->phrase( "lib/searchfield:bool_nopref" ),
-"TRUE"   => $session->phrase( "lib/searchfield:bool_yes" ),
-"FALSE"  => $session->phrase( "lib/searchfield:bool_no" ) );
+"EITHER" => &SESSION->phrase( "lib/searchfield:bool_nopref" ),
+"TRUE"   => &SESSION->phrase( "lib/searchfield:bool_yes" ),
+"FALSE"  => &SESSION->phrase( "lib/searchfield:bool_no" ) );
 
 	my $value = $searchfield->get_value;	
-	return $session->render_option_list(
+	return &SESSION->render_option_list(
 		name => $searchfield->get_form_prefix,
 		values => \@bool_tags,
 		default => ( defined $value ? $value : $bool_tags[0] ),
@@ -173,9 +173,9 @@ sub render_search_input
 
 sub from_search_form
 {
-	my( $self, $session, $prefix ) = @_;
+	my( $self, $prefix ) = trim_params(@_);
 
-	my $val = $session->param( $prefix );
+	my $val = &SESSION->param( $prefix );
 
 	return unless defined $val;
 
@@ -186,16 +186,16 @@ sub from_search_form
 
 sub render_search_description
 {
-	my( $self, $session, $sfname, $value, $merge, $match ) = @_;
+	my( $self, $sfname, $value, $merge, $match ) = trim_params(@_);
 
 	if( $value eq "TRUE" )
 	{
-		return $session->html_phrase(
+		return &SESSION->html_phrase(
 			"lib/searchfield:desc_true",
 			name => $sfname );
 	}
 
-	return $session->html_phrase(
+	return &SESSION->html_phrase(
 		"lib/searchfield:desc_false",
 		name => $sfname );
 }
@@ -203,8 +203,8 @@ sub render_search_description
 
 sub get_search_conditions_not_ex
 {
-	my( $self, $session, $dataset, $search_value, $match, $merge,
-		$search_mode ) = @_;
+	my( $self, $dataset, $search_value, $match, $merge,
+		$search_mode ) = trim_params(@_);
 	
 	return EPrints::SearchCondition->new( 
 		'=', 

@@ -41,6 +41,7 @@ BEGIN
 }
 
 use EPrints::MetaField::Basic;
+use EPrints::Session;
 
 sub get_sql_type
 {
@@ -60,9 +61,9 @@ sub get_sql_index
 
 sub render_single_value
 {
-	my( $self, $session, $value, $dont_link ) = @_;
+	my( $self, $value, $dont_link ) = trim_params(@_);
 
-	my $searchexp = $self->make_searchexp( $session, $value );
+	my $searchexp = $self->make_searchexp( $value );
 	my $desc = $searchexp->render_description;
 	$searchexp->dispose;
 	return $desc;
@@ -71,7 +72,7 @@ sub render_single_value
 
 ######################################################################
 # 
-# $searchexp = $field->make_searchexp( $session, $value, [$prefix] )
+# $searchexp = $field->make_searchexp( $value, [$prefix] )
 #
 # This method should only be called on fields of type "search". 
 # Return a search expression from the serialised expression in value.
@@ -82,13 +83,11 @@ sub render_single_value
 
 sub make_searchexp
 {
-	my( $self, $session, $value, $prefix ) = @_;
+	my( $self, $value, $prefix ) = trim_params(@_);
 
-	my $ds = $session->get_archive()->get_dataset( 
-			$self->{datasetid} );	
+	my $ds = &ARCHIVE->get_dataset( $self->{datasetid} );	
 
 	my $searchexp = EPrints::SearchExpression->new(
-		session => $session,
 		dataset => $ds,
 		prefix => $prefix,
 		fieldnames => $self->get_property( "fieldnames" ) );
@@ -99,18 +98,17 @@ sub make_searchexp
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
+	my( $self, $value, $suffix, $staff, $obj ) = trim_params(@_);
 
 	#cjg NOT CSS'd properly.
 
-	my $div = $session->make_element( 
+	my $div = &SESSION->make_element( 
 		"div", 
 		style => "padding: 6pt; margin-left: 24pt; " );
 
 	# cjg - make help an option?
 
 	my $searchexp = $self->make_searchexp( 
-		$session,
 		$value,
 		$self->{name}.$suffix."_" );
 	$div->appendChild( $searchexp->render_search_fields( 0 ) );
@@ -126,12 +124,10 @@ sub get_basic_input_elements
 
 sub form_value_basic
 {
-	my( $self, $session, $suffix ) = @_;
+	my( $self, $suffix ) = trim_params(@_);
 	
-	my $ds = $session->get_archive()->get_dataset( 
-			$self->{datasetid} );	
+	my $ds = &ARCHIVE->get_dataset( $self->{datasetid} );	
 	my $searchexp = EPrints::SearchExpression->new(
-		session => $session,
 		dataset => $ds,
 		prefix => $self->{name}.$suffix."_",
 		fieldnames => $self->get_property( "fieldnames" ) );

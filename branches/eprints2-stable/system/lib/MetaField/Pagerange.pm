@@ -39,17 +39,18 @@ BEGIN
 }
 
 use EPrints::MetaField::Text;
+use EPrints::Session;
 
 # note that this renders pages ranges differently from
 # eprints 2.2
 sub render_single_value
 {
-	my( $self, $session, $value, $dont_link ) = @_;
+	my( $self, $value, $dont_link ) = trim_params(@_);
 
 	unless( $value =~ m/^(\d+)-(\d+)$/ )
 	{
 		# value not in expected form. Ah, well. Muddle through.
-		return $session->make_text( $value );
+		return &SESSION->make_text( $value );
 	}
 
 	my( $a, $b ) = ( $1, $2 );
@@ -58,10 +59,10 @@ sub render_single_value
 
 	if( $a == $b )
 	{
-		my $frag = $session->make_doc_fragment();
-		$frag->appendChild( $session->make_text( "p." ) );
-		$frag->appendChild( $session->render_nbsp );
-		$frag->appendChild( $session->make_text( $a ) );
+		my $frag = &SESSION->make_doc_fragment();
+		$frag->appendChild( &SESSION->make_text( "p." ) );
+		$frag->appendChild( &SESSION->render_nbsp );
+		$frag->appendChild( &SESSION->make_text( $a ) );
 	}
 
 #	consider compressing pageranges so that
@@ -71,25 +72,25 @@ sub render_single_value
 #       {
 #       }
 
-	my $frag = $session->make_doc_fragment();
-	$frag->appendChild( $session->make_text( "pp." ) );
-	$frag->appendChild( $session->render_nbsp );
-	$frag->appendChild( $session->make_text( $a.'-'.$b ) );
+	my $frag = &SESSION->make_doc_fragment();
+	$frag->appendChild( &SESSION->make_text( "pp." ) );
+	$frag->appendChild( &SESSION->render_nbsp );
+	$frag->appendChild( &SESSION->make_text( $a.'-'.$b ) );
 
 	return $frag;
 }
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
+	my( $self, $value, $suffix, $staff, $obj ) = trim_params(@_);
 
 	my @pages = split /-/, $value if( defined $value );
  	my $fromid = $self->{name}.$suffix."_from";
  	my $toid = $self->{name}.$suffix."_to";
 		
-	my $frag = $session->make_doc_fragment;
+	my $frag = &SESSION->make_doc_fragment;
 
-	$frag->appendChild( $session->make_element(
+	$frag->appendChild( &SESSION->make_element(
 		"input",
 		"accept-charset" => "utf-8",
 		name => $fromid,
@@ -97,12 +98,12 @@ sub get_basic_input_elements
 		size => 6,
 		maxlength => 120 ) );
 
-	$frag->appendChild( $session->make_text(" ") );
-	$frag->appendChild( $session->html_phrase( 
+	$frag->appendChild( &SESSION->make_text(" ") );
+	$frag->appendChild( &SESSION->html_phrase( 
 		"lib/metafield:to" ) );
-	$frag->appendChild( $session->make_text(" ") );
+	$frag->appendChild( &SESSION->make_text(" ") );
 
-	$frag->appendChild( $session->make_element(
+	$frag->appendChild( &SESSION->make_element(
 		"input",
 		"accept-charset" => "utf-8",
 		name => $toid,
@@ -120,10 +121,10 @@ sub is_browsable
 
 sub form_value_basic
 {
-	my( $self, $session, $suffix ) = @_;
+	my( $self, $suffix ) = trim_params(@_);
 	
-	my $from = $session->param( $self->{name}.$suffix."_from" );
-	my $to = $session->param( $self->{name}.$suffix."_to" );
+	my $from = &SESSION->param( $self->{name}.$suffix."_from" );
+	my $to = &SESSION->param( $self->{name}.$suffix."_to" );
 
 	if( !defined $to || $to eq "" )
 	{

@@ -53,7 +53,7 @@ use XML::Parser;
 ######################################################################
 =pod
 
-=item EPrints::ImportXML::import_file( $session, $filename, $function, 
+=item EPrints::ImportXML::import_file( $filename, $function, 
 $dataset, $info )
 
 Map all the eprints data objects described in the XML file $filename
@@ -69,9 +69,9 @@ specified in $function (which is safer than global variables).
 $function should be a reference to a function. It will be passed the
 following parameters:
 
- &{$function}( $session, $dataset, $item, $info );
+ &{$function}( $dataset, $item, $info );
 
-where $session, $dataset and $info are the values passed to import_file
+where $dataset and $info are the values passed to import_file
 and $item is an item of the type $dataset which has been created from
 the XML.
 
@@ -80,7 +80,7 @@ the XML.
 
 sub import_file
 {
-	my( $session , $filename , $function, $dataset, $info ) = @_;
+	my( $filename , $function, $dataset, $info ) = trim_params(@_);
 	my $parser = new XML::Parser(
 		Style => "Subs", 
 		ErrorContext => 5,
@@ -90,7 +90,6 @@ sub import_file
 			Char => \&_handle_char 
 		} );
 	$parser->{eprints} = {};
-	$parser->{eprints}->{session} = $session;
 	$parser->{eprints}->{theirinfo} = $info;
 	$parser->{eprints}->{function} = $function;
 	$parser->{eprints}->{fields} = {};
@@ -206,13 +205,10 @@ sub _handle_end
 	{
 
 		my $ds = $parser->{eprints}->{dataset};
-		my $item = $ds->make_object(
-			$parser->{eprints}->{session},
-			$parser->{eprints}->{data} );
+		my $item = $ds->make_object( $parser->{eprints}->{data} );
 
 	
 		&{$parser->{eprints}->{function}}( 
-			$parser->{eprints}->{session}, 
 			$parser->{eprints}->{dataset},
 			$item,
 			$parser->{eprints}->{theirinfo});

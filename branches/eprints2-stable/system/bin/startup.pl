@@ -10,8 +10,6 @@ use lib '/opt/ep2stable/perl_lib';
 #
 ######################################################################
 
-print STDERR "EPRINTS: Loading Core Modules\n";
-
 ## Apache::DBI MUST come before other modules using DBI or
 ## you won't get constant connections and everything
 ## will go horribly wrong...
@@ -41,6 +39,7 @@ use EPrints::Language;
 use EPrints::Latex;
 use EPrints::MetaField;
 use EPrints::OpenArchives;
+use EPrints::Plugins;
 use EPrints::Rewrite;
 use EPrints::SearchExpression;
 use EPrints::SearchField;
@@ -60,19 +59,13 @@ use strict;
 
 EPrints::Config::ensure_init();
 
-print STDERR "EPRINTS: Core Modules Loaded\n";
-
-# cjg SYSTEM CONF SHOULD SAY IF TO PRELOAD OR NOT...
-
-print STDERR "EPRINTS: Loading Config Modules\n";
 my %done = ();
 foreach( EPrints::Config::get_archive_ids() )
 {
 	next if $done{$_};
 	EPrints::Archive->new_archive_by_id( $_ );
 }
-print STDERR "EPRINTS: ".join( ", ",  EPrints::Config::get_archive_ids() )."\n";
-print STDERR "EPRINTS: Config Modules Loaded\n";
+print STDERR "Loaded EPrints: ".join( ", ",  EPrints::Config::get_archive_ids() )."\n";
 
 # Tell me more about warnings
 $SIG{__WARN__} = \&Carp::cluck;

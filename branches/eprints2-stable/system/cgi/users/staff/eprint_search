@@ -20,16 +20,14 @@ use EPrints::SearchExpression;
 
 use strict;
 
-my $session = new EPrints::Session;
-exit( 0 ) unless( defined $session );
+EPrints::Session::start;
 
-my $url = $session->get_archive->get_conf( "perl_url" )."/users/search";
-if( $session->get_request->args )
+my $url = &ARCHIVE->get_conf( "perl_url" )."/users/search";
+if( &SESSION->get_request->args )
 {
-	$url.= "?".$session->get_request->args;
+	$url.= "?".&SESSION->get_request->args;
 }
-$session->redirect( $url );
+&SESSION->redirect( $url );
 
-$session->terminate;
 exit;
 

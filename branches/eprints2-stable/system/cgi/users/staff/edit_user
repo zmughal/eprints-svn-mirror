@@ -19,103 +19,94 @@ use EPrints::UserForm;
 
 use strict;
 
-my $session = EPrints::Session->new();
-exit( 0 ) unless( defined $session );
+EPrints::Session::start;
 
 # Check we have privs
-if( !$session->auth_check( "edit-user" ) )
+if( !&SESSION->auth_check( "edit-user" ) )
 {
-	$session->terminate();
 	exit( 0 );
 }
 
-&process( $session );
+my $user = EPrints::UserPage::user_from_param();
 
-$session->terminate();
+exit if( !defined $user );
 
-sub process
+my $action = &SESSION->get_action_button();
+
+my( $page, $title );
+$page = &SESSION->make_doc_fragment();
+
+if( $action eq "delete" )
 {
-	my( $session ) = @_;
-
-	my $user = EPrints::UserPage::user_from_param( $session );
-
-	return if( !defined $user );
-
-	my $action = $session->get_action_button();
-
-	my( $page, $title );
-	$page = $session->make_doc_fragment();
-
-	if( $action eq "delete" )
-	{
-		my( $userinfo, $usertitle ) = $user->render_full();
-		$page->appendChild( $userinfo );
-		$page->appendChild( $session->render_ruler() );
-		$page->appendChild( $session->html_phrase( "cgi/users/edit_user:really_remove" ) );
-		$page->appendChild( $session->render_input_form(
-			default_action=>"confirm",
-			buttons=>{
-				_order => [ "confirm", "cancel" ],
-				confirm=>$session->phrase( "cgi/users/edit_user:action_confirm" ),
-				cancel=>$session->phrase( "cgi/users/edit_user:action_cancel" ) 
-			},
-			hidden_fields=>{
-				userid=>$user->get_value( "userid" )
-			}
-		) );			
-
-		$session->build_page(
-			$session->html_phrase( "cgi/users/edit_user:delete_title" ),
-			$page,
-			"delete_user_form" );
-		$session->send_page();
-
-		return;
-	}
-
-	if( $action eq "confirm" )
-	{
-		my $userid = $user->get_value( "userid" );
-		my $username = $user->get_value( "username" );
-
-		my $success = $user->remove();
-
-		if( !$success )
-		{
-			$session->render_error(
-				$session->html_phrase( "cgi/users/edit_user:could_not_remove" ) );
-			return;
+	my( $userinfo, $usertitle ) = $user->render_full();
+	$page->appendChild( $userinfo );
+	$page->appendChild( &SESSION->render_ruler() );
+	$page->appendChild( &SESSION->html_phrase( "cgi/users/edit_user:really_remove" ) );
+	$page->appendChild( &SESSION->render_input_form(
+		default_action=>"confirm",
+		buttons=>{
+			_order => [ "confirm", "cancel" ],
+			confirm=>&SESSION->phrase( "cgi/users/edit_user:action_confirm" ),
+			cancel=>&SESSION->phrase( "cgi/users/edit_user:action_cancel" ) 
+		},
+		hidden_fields=>{
+			userid=>$user->get_value( "userid" )
 		}
-		
-		$page->appendChild( $session->html_phrase( 
-			"cgi/users/edit_user:deleted",
-			username=>$session->make_text( $username ), 
-			userid=>$session->make_text( $userid ) ) );
+	) );			
 
-		$page->appendChild( $session->html_phrase( "general:userhome_link" ) );
+	&SESSION->build_page(
+		&SESSION->html_phrase( "cgi/users/edit_user:delete_title" ),
+		$page,
+		"delete_user_form" );
+	&SESSION->send_page();
 
-		$session->build_page(
-			$session->html_phrase( "cgi/users/edit_user:delete_title" ),
-			$page,
-			"delete_user_done" );
-		$session->send_page();
+	exit;
+}
 
-		return;
-	}
+if( $action eq "confirm" )
+{
+	my $userid = $user->get_value( "userid" );
+	my $username = $user->get_value( "username" );
 
-	if( $action eq "cancel" )
+	my $success = $user->remove();
+
+	if( !$success )
 	{
-		$session->redirect( $session->get_archive()->get_conf( "userhome" ) );
-		return;
+		&SESSION->render_error(
+			&SESSION->html_phrase( 
+				"cgi/users/edit_user:could_not_remove" ) );
+		exit;
 	}
 	
+	$page->appendChild( &SESSION->html_phrase( 
+		"cgi/users/edit_user:deleted",
+		username=>&SESSION->make_text( $username ), 
+		userid=>&SESSION->make_text( $userid ) ) );
 
-	my $userform = new EPrints::UserForm(
-		$session,
-		$session->get_archive()->get_conf( "userhome" ),
-		1,
-		$user,
-		"edit_user" );
-	$userform->process();
+	$page->appendChild( &SESSION->html_phrase( "general:userhome_link" ) );
+
+	&SESSION->build_page(
+		&SESSION->html_phrase( "cgi/users/edit_user:delete_title" ),
+		$page,
+		"delete_user_done" );
+	&SESSION->send_page();
+
+	exit;
 }
+
+if( $action eq "cancel" )
+{
+	&SESSION->redirect( &ARCHIVE->get_conf( "userhome" ) );
+	exit;
+}
+
+
+my $userform = new EPrints::UserForm(
+	&ARCHIVE->get_conf( "userhome" ),
+	1,
+	$user,
+	"edit_user" );
+$userform->process();
+
+exit;
 

@@ -4,12 +4,10 @@ use EPrints::Session;
 
 use strict;
 
-my $session = new EPrints::Session();
-exit( 1 ) unless( defined $session );
+EPrints::Session::start()
 
-my $url = "http://www.google.com/search?q=".$session->param( "q" );
-$url .= "+site:".$session->get_archive->get_conf( "host" );
+my $url = "http://www.google.com/search?q=".&SESSION->param( "q" );
+$url .= "+site:".&ARCHIVE->get_conf( "host" );
 
-$session->redirect( $url );
-
-$session->terminate();
+&SESSION->redirect( $url );
+exit;

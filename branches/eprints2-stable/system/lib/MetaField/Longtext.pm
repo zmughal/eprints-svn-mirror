@@ -39,6 +39,7 @@ BEGIN
 }
 
 use EPrints::MetaField::Text;
+use EPrints::Session;
 
 sub get_sql_type
 {
@@ -59,48 +60,48 @@ sub get_sql_index
 
 sub render_single_value
 {
-	my( $self, $session, $value, $dont_link ) = @_;
+	my( $self, $value, $dont_link ) = trim_params(@_);
 	
 #	my @paras = split( /\r\n\r\n|\r\r|\n\n/ , $value );
 #
-#	my $frag = $session->make_doc_fragment();
+#	my $frag = &SESSION->make_doc_fragment();
 #	foreach( @paras )
 #	{
-#		my $p = $session->make_element( 
+#		my $p = &SESSION->make_element( 
 #			"p", 
 #			class=>$self->{name}."_paragraph" );
-#		$p->appendChild( $session->make_text( $_ ) );
+#		$p->appendChild( &SESSION->make_text( $_ ) );
 #		$frag->appendChild( $p );
 #	}
 #	return $frag;
 
-	return $session->make_text( $value );
+	return &SESSION->make_text( $value );
 }
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
+	my( $self, $value, $suffix, $staff, $obj ) = trim_params(@_);
 
-	my $textarea = $session->make_element(
+	my $textarea = &SESSION->make_element(
 		"textarea",
 		"accept-charset" => "utf-8",
 		name => $self->{name}.$suffix,
 		rows => $self->{input_rows},
 		cols => $self->{input_cols},
 		wrap => "virtual" );
-	$textarea->appendChild( $session->make_text( $value ) );
+	$textarea->appendChild( &SESSION->make_text( $value ) );
 
 	return [ [ { el=>$textarea } ] ];
 }
 
 sub form_value_basic
 {
-	my( $self, $session, $suffix ) = @_;
+	my( $self, $suffix ) = trim_params(@_);
 
 	# this version is just like that for Basic except it
 	# does not remove line breaks.
 	
-	my $value = $session->param( $self->{name}.$suffix );
+	my $value = &SESSION->param( $self->{name}.$suffix );
 
 	return undef if( $value eq "" );
 

@@ -19,22 +19,19 @@ use EPrints::UserForm;
 
 use strict;
 
-my $session = new EPrints::Session;
-exit( 0 ) unless( defined $session );
+EPrints::Session::start;
 
 # Any user can view this page, but most BE a user.
-if( !$session->auth_check )
+if( !&SESSION->auth_check )
 {
-	$session->terminate();
 	exit( 0 );
 }
 my $userform = new EPrints::UserForm( 
-	$session, 
-	$session->get_archive->get_conf( "userhome" ),
+	&ARCHIVE->get_conf( "userhome" ),
 	0,
 	undef,
 	"record" );
 
 $userform->process();
+exit;
 
-$session->terminate();

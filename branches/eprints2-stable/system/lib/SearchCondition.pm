@@ -40,12 +40,14 @@ abstract contains "fish" or date is bigger than 2000.
 package EPrints::SearchCondition;
 
 use EPrints::Database;
+use EPrints::Session;
 
 use strict;
 
 # current conditional operators:
 
 $EPrints::SearchCondition::operators = {
+	'PASS'=>0,		#	should only be used in optimisation
 	'TRUE'=>0,		#	should only be used in optimisation
 	'FALSE'=>0,		#	should only be used in optimisation
 
@@ -79,7 +81,7 @@ sub new
 	{
 		$self->{sub_ops} = \@params;
 	}
-	elsif( $op eq "FALSE" || $op eq "TRUE" )
+	elsif( $op eq "FALSE" || $op eq "TRUE" || $op eq "PASS" )
 	{
 		; # no params
 	}
@@ -213,6 +215,14 @@ sub item_matches
 		return( 0 );
 	}
 
+	if( $self->{op} eq "PASS" )
+	{
+		&ARCHIVE->log( <<END );
+PASS condition used in 'item_matches', should have been optimised!
+END
+		return( 0 );
+	}
+
 #	if( $self->{op} eq "NOT" )
 #	{
 #		my $r = $self->{sub_ops}->[0]->item_matches( $item );
@@ -243,7 +253,6 @@ sub item_matches
 	{
 		my( $codes, $grepcodes, $badwords ) =
 			$self->{field}->get_index_codes(
-				$item->get_session,
 				$item->get_value( $self->{field}->get_name ) );
 
 		foreach my $code ( @{$codes} )
@@ -260,7 +269,6 @@ sub item_matches
 	{
 		my( $codes, $grepcodes, $badwords ) =
 			$self->{field}->get_index_codes(
-				$item->get_session,
 				$item->get_value( $self->{field}->get_name ) );
 
 		my @re = ();
@@ -292,12 +300,10 @@ sub item_matches
 
 		foreach my $sub_id ( @sub_ids )
 		{
-			my $s = EPrints::Subject->new( 
-					$item->get_session,
-					$sub_id );	
+			my $s = EPrints::Subject->new( $sub_id );	
 			if( !defined $s )
 			{
-				$item->get_session->get_archive->log(
+				&ARCHIVE->log(
 "Attempt to call item_matches on a searchfield with non-existant\n".
 "subject id: '$_', item was #".$item->get_id );
 				next;
@@ -405,7 +411,7 @@ sub ordered_ops
 
 sub process
 {
-	my( $self, $session, $i, $filter ) = @_;
+	my( $self, $i, $filter ) = trim_params(@_);
 
 	$i = 0 unless( defined $i );
 
@@ -417,6 +423,13 @@ sub process
 	{
 		return [];
 	}
+	if( $self->{op} eq "PASS" )
+	{
+		&ARCHIVE->log( <<END );
+PASS condition used in 'process', should have been optimised!
+END
+		return( 0 );
+	}
 
 	if( $self->{op} eq "AND" )
 	{
@@ -424,7 +437,7 @@ sub process
 		my $set;
 		foreach my $sub_op ( $self->ordered_ops )
 		{
-			my $r = $sub_op->process( $session, $i + 1, $set );
+			my $r = $sub_op->process( $i + 1, $set );
 			if( scalar @{$r} == 0 )
 			{
 				$set = [];
@@ -447,7 +460,7 @@ sub process
 		my $set;
 		foreach my $sub_op ( $self->ordered_ops )
 		{
-			my $r = $sub_op->process( $session, $i + 1);
+			my $r = $sub_op->process( $i + 1);
 			if( !defined $set )
 			{
 				$set = $r;
@@ -466,7 +479,7 @@ sub process
 	{
 		my $where = "fieldword = '".EPrints::Database::prep_value( 
 			$self->{field}->get_sql_name.":".$self->{params}->[0] )."'";
-		$r = $session->get_db()->get_index_ids( $self->get_table, $where );
+		$r = &DATABASE->get_index_ids( $self->get_table, $where );
 	}
 
        	my $keyfield = $self->{dataset}->get_key_field();
@@ -501,7 +514,7 @@ sub process
 			$max = $total-1 if( $max > $total - 1 );
 			my @fset = @{$filter}[$i..$max];
 			
-			my $set = $session->get_db->search( 
+			my $set = &DATABASE->search( 
 				$keyfield, 
 				{ M=>$gtable },
 				$where.' AND ('.$kfn.'='.join(' OR '.$kfn.'=', @fset ).' )' );
@@ -514,7 +527,7 @@ sub process
 	if( $self->{op} eq "in_subject" )
 	{
 		my $where = "( M.$sql_col = S.subjectid AND  S.ancestors='".EPrints::Database::prep_value( $self->{params}->[0] )."' )";
-		$r = $session->get_db->search( 
+		$r = &DATABASE->search( 
 			$keyfield, 
 			{	
 				S=>"subject_ancestors",
@@ -528,7 +541,7 @@ sub process
 	{
 		my $where = "(M.$sql_col IS NULL OR ";
 		$where .= "M.$sql_col = '')";
-		$r = $session->get_db->search( 
+		$r = &DATABASE->search( 
 			$keyfield, 
 			{ M=>$self->get_table },
 			$where );
@@ -537,7 +550,7 @@ sub process
 	if( $self->{op} eq 'name_match' )
 	{
 		my $where = "(M.".$sql_col."_given = '".EPrints::Database::prep_value( $self->{params}->[0]->{given} )."' AND M.".$sql_col."_family = '".EPrints::Database::prep_value( $self->{params}->[0]->{family} )."')";
-		$r = $session->get_db->search( 
+		$r = &DATABASE->search( 
 			$keyfield, 
 			{ M=>$self->get_table },
 			$where );
@@ -547,13 +560,13 @@ sub process
 	{
 		my $where = "M.$sql_col ".$self->{op}." ".
 			"'".EPrints::Database::prep_value( $self->{params}->[0] )."'";
-		$r = $session->get_db->search( 
+		$r = &DATABASE->search( 
 			$keyfield, 
 			{ M=>$self->get_table },
 			$where );
 	}
-#$session->get_db->set_debug( 1 ); print STDERR "\n";
-#$session->get_db->set_debug( 0 );
+#&DATABASE->set_debug( 1 ); print STDERR "\n";
+#&DATABASE->set_debug( 0 );
 
 #	print STDERR " [".join(",",@{$r})."]";
 #	print STDERR "\n";
@@ -613,9 +626,37 @@ sub optimise
 				$override = "FALSE";
 				$forget = "TRUE";
 			}
+
+			# flatten sub opts with the same type
+			# so OR( A, OR( B, C ) ) becomes OR(A,B,C)
+			my $flat_ops = [];
+			foreach my $sub_op ( @{$self->{sub_ops}} )
+			{
+				if( $sub_op->{op} eq $self->{op} )
+				{
+					push @{$flat_ops}, 
+						@{$sub_op->{sub_ops}};
+					next;
+				}
+				
+				push @{$flat_ops}, $sub_op;
+			}
+
+			my $only_contains_pass = 1;
 			my $keep_ops = [];
 			foreach my $sub_op ( @{$self->{sub_ops}} )
 			{
+				# always ignore passes
+				if( $sub_op->{op} eq "PASS" )
+				{
+					next;
+				}
+
+				$only_contains_pass = 0;
+
+				# if an OR contains TRUE or an
+				# AND contains FALSE then we can
+				# cancel it all out.
 				if( $sub_op->{op} eq $override )
 				{
 					delete $self->{sub_ops};
@@ -627,13 +668,6 @@ sub optimise
 				{
 					next;
 				}
-
-				if( $sub_op->{op} eq $self->{op} )
-				{
-					push @{$self->{sub_ops}}, 
-						@{$sub_op->{sub_ops}};
-					next;
-				}
 				
 				push @{$keep_ops}, $sub_op;
 			}
@@ -641,7 +675,14 @@ sub optimise
 			if( scalar @{$self->{sub_ops}} == 0 )
 			{
 				delete $self->{sub_ops};
-				$self->{op} = "FALSE";	
+				if( $only_contains_pass )
+				{
+					$self->{op} = "PASS";	
+				}
+				else
+				{
+					$self->{op} = "FALSE";	
+				}
 			}
 			elsif( scalar @{$self->{sub_ops}} == 1 )
 			{

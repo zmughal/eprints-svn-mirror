@@ -39,6 +39,7 @@ BEGIN
 }
 
 use EPrints::MetaField::Basic;
+use EPrints::Session;
 
 
 sub get_sql_type

@@ -18,6 +18,8 @@ use EPrints::Session;
 use EPrints::XML;
 #cjg Nice Command Options
 #cjg man page
+die "Deprecated, use new plugin tool";
+exit;
 
 if( scalar @ARGV != 2 )
 {

@@ -39,18 +39,19 @@ BEGIN
 }
 
 use EPrints::MetaField::Basic;
+use EPrints::Session;
 
 sub render_single_value
 {
-	my( $self, $session, $value, $dont_link ) = @_;
+	my( $self, $value, $dont_link ) = trim_params(@_);
 
-	return $self->render_option( $session , $value );
+	return $self->render_option( $value );
 }
 
 ######################################################################
 =pod
 
-=item ( $options , $labels ) = $field->tags_and_labels( $session )
+=item ( $options , $labels ) = $field->tags_and_labels()
 
 Return a reference to an array of options for this
 field, plus an array of UTF-8 encoded labels for these options in the 
@@ -61,12 +62,12 @@ current language.
 
 sub tags_and_labels
 {
-	my( $self , $session ) = @_;
+	my( $self ) = trim_params(@_);
 	my %labels = ();
 	foreach( @{$self->{options}} )
 	{
 		$labels{$_} = EPrints::Utils::tree_to_utf8( 
-			$self->render_option( $session, $_ ) );
+			$self->render_option( $_ ) );
 	}
 	return ($self->{options}, \%labels);
 }
@@ -74,9 +75,9 @@ sub tags_and_labels
 ######################################################################
 =pod
 
-=item $xhtml = $field->render_option( $session, $option )
+=item $xhtml = $field->render_option( $option )
 
-Return the title of option $option in the language of $session as an 
+Return the title of option $option in the language of session as an 
 XHTML DOM object.
 
 =cut
@@ -84,17 +85,17 @@ XHTML DOM object.
 
 sub render_option
 {
-	my( $self, $session, $option ) = @_;
+	my( $self, $option ) = trim_params(@_);
 
 	my $phrasename = $self->{confid}."_fieldopt_".$self->{name}."_".$option;
 
-	return $session->html_phrase( $phrasename );
+	return &SESSION->html_phrase( $phrasename );
 }
 
 
 sub render_input_field_actual
 {
-	my( $self, $session, $value, $dataset, $type, $staff, $hidden_fields, $obj ) = @_;
+	my( $self, $value, $dataset, $type, $staff, $hidden_fields, $obj ) = trim_params(@_);
 
 	my $required = $self->get_property( "required" );
 	if( defined $dataset && defined $type )
@@ -109,15 +110,15 @@ sub render_input_field_actual
 
 	# called as a seperate function because subject does this
 	# bit differently, and overrides render_set_input.
-	return $self->render_set_input( $session, $default, $required, $obj );
+	return $self->render_set_input( $default, $required, $obj );
 }
 
 # basic input renderer for "set" type fields
 sub render_set_input
 {
-	my( $self, $session, $default, $required, $obj ) = @_;
+	my( $self, $default, $required, $obj ) = trim_params(@_);
 
-	my( $tags, $labels ) = $self->tags_and_labels( $session );
+	my( $tags, $labels ) = $self->tags_and_labels();
 
 	if( $self->get_property( "input_style" ) ne "long" )
 	{
@@ -128,12 +129,12 @@ sub render_set_input
 			# If it's not multiple and not required there 
 			# must be a way to unselect it.
 			$tags = [ "", @{$tags} ];
-			my $unspec = $session->phrase( 
+			my $unspec = &SESSION->phrase( 
 				"lib/metafield:unspecified_selection" );
 			$labels = { ""=>$unspec, %{$labels} };
 		}
 
-		return( $session->render_option_list(
+		return( &SESSION->render_option_list(
 				values => $tags,
 				labels => $labels,
 				name => $self->{name},
@@ -145,26 +146,26 @@ sub render_set_input
 
 	if( $self->{multiple} )
 	{
-		$session->get_archive->log( "Using input_style long for a 'multiple' field. It's only intended for\nnon-multiple fields." );
+		&ARCHIVE->log( "Using input_style long for a 'multiple' field. It's only intended for\nnon-multiple fields." );
 	}
 
 	my( $dl, $dt, $dd );
-	$dl = $session->make_element( "dl", class=>"longset" );
+	$dl = &SESSION->make_element( "dl", class=>"longset" );
 	foreach my $opt ( @{$tags} )
 	{
-		$dt = $session->make_element( "dt" );
-		$dt->appendChild( $session->make_element(
+		$dt = &SESSION->make_element( "dt" );
+		$dt->appendChild( &SESSION->make_element(
 			"input",
 			"accept-charset" => "utf-8",
 			type => "radio",
 			name => $self->{name},
 			value => $opt,
 			checked => ( $default->[0] eq $opt ?"checked":undef) ));
-		$dt->appendChild( $session->make_text( " ".$labels->{$opt} ));
+		$dt->appendChild( &SESSION->make_text( " ".$labels->{$opt} ));
 		$dl->appendChild( $dt );
-		$dd = $session->make_element( "dd" );
+		$dd = &SESSION->make_element( "dd" );
 		my $phrasename = $self->{confid}."_optdetails_".$self->{name}."_".$opt;
-		$dd->appendChild( $session->html_phrase( $phrasename ));
+		$dd->appendChild( &SESSION->html_phrase( $phrasename ));
 		$dl->appendChild( $dd );
 	}
 	return $dl;
@@ -172,9 +173,9 @@ sub render_set_input
 
 sub form_value_actual
 {
-	my( $self, $session ) = @_;
+	my( $self ) = trim_params(@_);
 	
-	my @values = $session->param( $self->{name} );
+	my @values = &SESSION->param( $self->{name} );
 	
 	if( scalar( @values ) == 0 )
 	{
@@ -200,49 +201,47 @@ sub form_value_actual
 # fields.
 sub get_values
 {
-	my( $self, $session, $dataset, %opts ) = @_;
+	my( $self, $dataset, %opts ) = trim_params(@_);
 
 	return $self->get_property( "options" );
 }
 
 sub get_value_label
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $value ) = trim_params(@_);
 		
-	return $self->render_option( $session, $value );
+	return $self->render_option( $value );
 }
 
 sub ordervalue_single
 {
-	my( $self , $value , $session , $langid ) = @_;
+	my( $self , $value , $langid ) = trim_params(@_);
 
 	return "" unless( EPrints::Utils::is_set( $value ) );
 
-	my $label = $self->get_value_label( $session, $value );
+	my $label = $self->get_value_label( $value );
 	return EPrints::Utils::tree_to_utf8( $label );
 }
 
 sub render_search_input
 {
-	my( $self, $session, $searchfield ) = @_;
+	my( $self, $searchfield ) = trim_params(@_);
 	
-	my $frag = $session->make_doc_fragment;
+	my $frag = &SESSION->make_doc_fragment;
 	
-	$frag->appendChild( $self->render_search_set_input( 
-				$session,
-				$searchfield ) );
+	$frag->appendChild( $self->render_search_set_input( $searchfield ) );
 
 	if( $self->get_property( "multiple" ) )
 	{
 		my @set_tags = ( "ANY", "ALL" );
 		my %set_labels = ( 
-			"ANY" => $session->phrase( "lib/searchfield:set_any" ),
-			"ALL" => $session->phrase( "lib/searchfield:set_all" ) );
+			"ANY" => &SESSION->phrase( "lib/searchfield:set_any" ),
+			"ALL" => &SESSION->phrase( "lib/searchfield:set_all" ) );
 
 
-		$frag->appendChild( $session->make_text(" ") );
+		$frag->appendChild( &SESSION->make_text(" ") );
 		$frag->appendChild( 
-			$session->render_option_list(
+			&SESSION->render_option_list(
 				name=>$searchfield->get_form_prefix."_merge",
 				values=>\@set_tags,
 				default=>$searchfield->get_merge,
@@ -254,7 +253,7 @@ sub render_search_input
 
 sub render_search_set_input
 {
-	my( $self, $session, $searchfield ) = @_;
+	my( $self, $searchfield ) = trim_params(@_);
 
 	my $prefix = $searchfield->get_form_prefix;
 	my $value = $searchfield->get_value;
@@ -265,14 +264,14 @@ sub render_search_set_input
 	my @allfields = @{$searchfield->get_fields};
 	if( scalar @allfields == 1 )
 	{
-		( $tags, $labels ) = $self->tags_and_labels( $session );
+		( $tags, $labels ) = $self->tags_and_labels();
 	}
 	else
 	{
 		my( $t ) = {};
 		foreach my $field ( @allfields )
 		{
-			my ( $t2, $l2 ) = $field->tags_and_labels( $session );
+			my ( $t2, $l2 ) = $field->tags_and_labels();
 			foreach( @{$t2} ) { $t->{$_}=1; }
 			foreach( keys %{$l2} ) { $labels->{$_}=$l2->{$_}; }
 		}
@@ -292,7 +291,7 @@ sub render_search_set_input
 		@defaults = split /\s/, $value;
 	}
 
-	return $session->render_option_list( 
+	return &SESSION->render_option_list( 
 		name => $prefix,
 		default => \@defaults,
 		multiple => 1,
@@ -303,10 +302,10 @@ sub render_search_set_input
 
 sub from_search_form
 {
-	my( $self, $session, $prefix ) = @_;
+	my( $self, $prefix ) = trim_params(@_);
 
 	my @vals = ();
-	foreach( $session->param( $prefix ) )
+	foreach( &SESSION->param( $prefix ) )
 	{
 		next if m/^\s*$/;
 		push @vals,$_;
@@ -323,7 +322,7 @@ sub from_search_form
 	my $val = join ' ', @vals;
 
 	# ANY or ALL?
-	my $merge = $session->param( $prefix."_merge" );
+	my $merge = &SESSION->param( $prefix."_merge" );
 	$merge = "ANY" unless( defined $merge );
 	
 	return( $val, $merge );
@@ -332,7 +331,7 @@ sub from_search_form
 	
 sub render_search_description
 {
-	my( $self, $session, $sfname, $value, $merge, $match ) = @_;
+	my( $self, $sfname, $value, $merge, $match ) = trim_params(@_);
 
 	my $phraseid;
 	if( $merge eq "ANY" )
@@ -344,21 +343,20 @@ sub render_search_description
 		$phraseid = "lib/searchfield:desc_all_in";
 	}
 
-	my $valuedesc = $session->make_doc_fragment;
+	my $valuedesc = &SESSION->make_doc_fragment;
 	my @list = split( ' ',  $value );
 	for( my $i=0; $i<scalar @list; ++$i )
 	{
 		if( $i>0 )
 		{
-			$valuedesc->appendChild( $session->make_text( ", " ) );
+			$valuedesc->appendChild( &SESSION->make_text( ", " ) );
 		}
-		$valuedesc->appendChild( $session->make_text( '"' ) );
-		$valuedesc->appendChild(
-			$self->get_value_label( $session, $list[$i] ) );
-		$valuedesc->appendChild( $session->make_text( '"' ) );
+		$valuedesc->appendChild( &SESSION->make_text( '"' ) );
+		$valuedesc->appendChild( $self->get_value_label( $list[$i] ) );
+		$valuedesc->appendChild( &SESSION->make_text( '"' ) );
 	}
 
-	return $session->html_phrase(
+	return &SESSION->html_phrase(
 		$phraseid,
 		name => $sfname, 
 		value => $valuedesc ); 
@@ -366,8 +364,8 @@ sub render_search_description
 
 sub get_search_conditions_not_ex
 {
-	my( $self, $session, $dataset, $search_value, $match, $merge,
-		$search_mode ) = @_;
+	my( $self, $dataset, $search_value, $match, $merge,
+		$search_mode ) = trim_params(@_);
 	
 	return EPrints::SearchCondition->new( 
 		'=', 

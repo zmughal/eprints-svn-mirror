@@ -19,22 +19,18 @@ use EPrints::User;
 
 use strict;
 
-my $session = new EPrints::Session;
-
-my $rows;
+EPrints::Session::start;
 
 # Number of users in each group
-my $total_users = $session->get_archive()->get_dataset( "user" )->count( $session );
+my $total_users = &ARCHIVE->get_dataset( "user" )->count;
 
 my( %num_users, $usertypes, $usertype, $userds, $subds );
-$userds = $session->get_archive()->get_dataset( "user" );
-$subds = $session->get_archive()->get_dataset( "subscription" );
+$userds = &ARCHIVE->get_dataset( "user" );
+$subds = &ARCHIVE->get_dataset( "subscription" );
 $usertypes = $userds->get_types();
 foreach $usertype ( @{$usertypes} )
 {
-	my $searchexp = new EPrints::SearchExpression(
-		session => $session,
-		dataset => $userds );
+	my $searchexp = new EPrints::SearchExpression( dataset => $userds );
 
 	$searchexp->add_field(
 		$userds->get_field( "usertype" ),
@@ -51,7 +47,7 @@ my @esets = ( "archive", "buffer", "inbox", "deletion" );
 foreach( @esets )
 {
 	# Number of submissions in dataset
-	$num_eprints{$_} = $session->get_archive()->get_dataset( $_ )->count( $session );
+	$num_eprints{$_} = &ARCHIVE->get_dataset( $_ )->count;
 }
 
 my $db_status = ( $total_users > 0 ? "OK" : "DOWN" );
@@ -60,131 +56,117 @@ my( $html , $table , $p , $span );
 
 # Write the results to a table
 
-$html = $session->make_doc_fragment;
+$html = &SESSION->make_doc_fragment;
 
-$table = $session->make_element( "table", border=>"0" );
+$table = &SESSION->make_element( "table", border=>"0" );
 $html->appendChild( $table );
 
 $table->appendChild( render_row( 
-		$session,
-		$session->html_phrase( "cgi/users/status:release" ),
-		$session->make_text( 
+		&SESSION->html_phrase( "cgi/users/status:release" ),
+		&SESSION->make_text( 
 			EPrints::Config::get( "version" ) ) ) );
 
 $table->appendChild(
 	render_row( 
-		$session,
-		$session->html_phrase( "cgi/users/status:database" ),
-		$session->make_text( $db_status ) ) );
+		&SESSION->html_phrase( "cgi/users/status:database" ),
+		&SESSION->make_text( $db_status ) ) );
 
-$table = $session->make_element( "table", border=>"0" );
-$html->appendChild( $session->html_phrase( "cgi/users/status:usertitle" ) );
+$table = &SESSION->make_element( "table", border=>"0" );
+$html->appendChild( &SESSION->html_phrase( "cgi/users/status:usertitle" ) );
 $html->appendChild( $table );
 
 foreach $usertype ( keys %num_users )
 {
 	$table->appendChild(
 		render_row( 
-			$session,
-			$session->make_text(
-				$userds->get_type_name( $session, $usertype ).
-					":"), 
-			$session->make_text( $num_users{$usertype} ) ) );
+			&SESSION->make_text(
+				$userds->get_type_name( $usertype ).":"), 
+			&SESSION->make_text( $num_users{$usertype} ) ) );
 }
 $table->appendChild(
 	render_row( 
-		$session,
-		$session->html_phrase( "cgi/users/status:users" ),
-		$session->make_text( $total_users ) ) );
+		&SESSION->html_phrase( "cgi/users/status:users" ),
+		&SESSION->make_text( $total_users ) ) );
 
-$table = $session->make_element( "table", border=>"0" );
-$html->appendChild( $session->html_phrase( "cgi/users/status:articles" ) );
+$table = &SESSION->make_element( "table", border=>"0" );
+$html->appendChild( &SESSION->html_phrase( "cgi/users/status:articles" ) );
 $html->appendChild( $table );
 
 foreach( @esets )
 {
 	$table->appendChild(
 		render_row( 
-			$session,
-			$session->html_phrase( "cgi/users/status:set_".$_ ),
-			$session->make_text( $num_eprints{$_} ) ) );
+			&SESSION->html_phrase( "cgi/users/status:set_".$_ ),
+			&SESSION->make_text( $num_eprints{$_} ) ) );
 }
 
 
 unless( $EPrints::SystemSettings::conf->{disable_df} )
 {
-	$table = $session->make_element( "table", border=>"0" );
-	$html->appendChild( $session->html_phrase( "cgi/users/status:diskspace" ) );
+	$table = &SESSION->make_element( "table", border=>"0" );
+	$html->appendChild( &SESSION->html_phrase( "cgi/users/status:diskspace" ) );
 	$html->appendChild( $table );
 
 	my $best_size = 0;
 
-	my @dirs = $session->get_archive()->get_store_dirs();
+	my @dirs = &ARCHIVE->get_store_dirs();
 	my $dir;
 	foreach $dir ( @dirs )
 	{
-		my $size = $session->get_archive()->get_store_dir_size( $dir );
+		my $size = &ARCHIVE->get_store_dir_size( $dir );
 		$table->appendChild(
 			render_row( 
-				$session,
-				$session->html_phrase( 
+				&SESSION->html_phrase( 
 					"cgi/users/status:diskfree",
-					dir=>$session->make_text( $dir ) ),
-				$session->html_phrase( 
+					dir=>&SESSION->make_text( $dir ) ),
+				&SESSION->html_phrase( 
 					"cgi/users/status:mbfree",
-					mb=>$session->make_text( 
+					mb=>&SESSION->make_text( 
 						int($size/1024) ) ) ) );
 	
 		$best_size = $size if( $size > $best_size );
 	}
 	
-	if( $best_size < $session->get_archive()->get_conf( 
-					"diskspace_error_threshold" ) )
+	if( $best_size < &ARCHIVE->get_conf( "diskspace_error_threshold" ) )
 	{
-		$p = $session->make_element( "p" );
+		$p = &SESSION->make_element( "p" );
 		$html->appendChild( $p );
 		$p->appendChild( 
-			$session->html_phrase( 
+			&SESSION->html_phrase( 
 				"cgi/users/status:out_of_space" ) );
 	}
-	elsif( $best_size < $session->get_archive()->get_conf( 
-						"diskspace_warn_threshold" ) )
+	elsif( $best_size < &ARCHIVE->get_conf( "diskspace_warn_threshold" ) )
 	{
-		$p = $session->make_element( "p" );
+		$p = &SESSION->make_element( "p" );
 		$html->appendChild( $p );
 		$p->appendChild( 
-			$session->html_phrase( 
+			&SESSION->html_phrase( 
 				"cgi/users/status:nearly_out_of_space" ) );
 	}
 }
 
 
-$table = $session->make_element( "table", border=>"0" );
-$html->appendChild( $session->html_phrase( "cgi/users/status:subscriptions" ) );
+$table = &SESSION->make_element( "table", border=>"0" );
+$html->appendChild( &SESSION->html_phrase( "cgi/users/status:subscriptions" ) );
 $html->appendChild( $table );
 
 $table->appendChild(
 	render_row( 
-		$session,
-		$session->make_doc_fragment,
-		$session->html_phrase( "cgi/users/status:subcount" ),
-		$session->html_phrase( "cgi/users/status:subsent" ) ) );
+		&SESSION->make_doc_fragment,
+		&SESSION->html_phrase( "cgi/users/status:subcount" ),
+		&SESSION->html_phrase( "cgi/users/status:subsent" ) ) );
 foreach my $freq ( "never", "daily", "weekly", "monthly" )
 {
 	my $sent;
 	if( $freq ne "never" )
 	{
-		$sent = EPrints::Subscription::get_last_timestamp( 
-			$session, 
-			$freq );
+		$sent = EPrints::Subscription::get_last_timestamp( $freq );
 	}
 	if( !defined $sent )
 	{
 		$sent = "?";
 	}
-	my $searchexp = new EPrints::SearchExpression(
-		session => $session,
-		dataset => $subds );
+	my $searchexp = new EPrints::SearchExpression( dataset => $subds );
 
 	$searchexp->add_field(
 		$userds->get_field( "frequency" ),
@@ -196,43 +178,38 @@ foreach my $freq ( "never", "daily", "weekly", "monthly" )
 
 	$table->appendChild(
 		render_row( 
-			$session,
-			$session->html_phrase( 
+			&SESSION->html_phrase( 
 				"subscription_fieldopt_frequency_".$freq ),
-			$session->make_text( $n ),
-			$session->make_text( $sent ) ) );
+			&SESSION->make_text( $n ),
+			&SESSION->make_text( $sent ) ) );
 }
 
-$table = $session->make_element( "table", border=>"0" );
-$html->appendChild( $session->html_phrase( "cgi/users/status:index_updates" ) );
+$table = &SESSION->make_element( "table", border=>"0" );
+$html->appendChild( &SESSION->html_phrase( "cgi/users/status:index_updates" ) );
 $html->appendChild( $table );
 
 $table->appendChild(
 	render_row( 
-		$session,
-		$session->make_doc_fragment,
-		$session->html_phrase( "cgi/users/status:indexupdate" ) ) );
+		&SESSION->make_doc_fragment,
+		&SESSION->html_phrase( "cgi/users/status:indexupdate" ) ) );
 my @ds_ids = &EPrints::DataSet::get_sql_dataset_ids;
 foreach my $ds_id ( sort @ds_ids )
 {
-	my $index = new EPrints::Index( 
-			$session, 
-			$session->get_archive->get_dataset( $ds_id ) );
+	my $index = new EPrints::Index( &ARCHIVE->get_dataset( $ds_id ) );
 	$table->appendChild(
 		render_row( 
-			$session,
-			$session->make_text( $ds_id ),
-			$session->make_text( $index->get_last_timestamp ) ) );
+			&SESSION->make_text( $ds_id ),
+			&SESSION->make_text( $index->get_last_timestamp ) ) );
 }
 
-$session->build_page( 
-	$session->html_phrase( "cgi/users/status:title" ),
+&SESSION->build_page( 
+	&SESSION->html_phrase( "cgi/users/status:title" ),
 	$html,
 	"status" );
 
-$session->send_page(); 
+&SESSION->send_page(); 
 
-$session->terminate();
+exit;
 
 
 
@@ -241,18 +218,18 @@ $session->terminate();
 # this cjg should probably by styled.
 sub render_row
 {
-	my( $session, $key, @vals ) = @_;
+	my( $key, @vals ) = @_;
 	
 	my( $tr, $td );
-	$tr = $session->make_element( "tr" );
+	$tr = &SESSION->make_element( "tr" );
 
-	$td = $session->make_element( "td", class=>"status_row_heading" );
+	$td = &SESSION->make_element( "td", class=>"status_row_heading" );
 	$tr->appendChild( $td );
 	$td->appendChild( $key );
 
 	foreach( @vals )
 	{
-		$td = $session->make_element( "td", align=>"center", class=>"status_cell"  );
+		$td = &SESSION->make_element( "td", align=>"center", class=>"status_cell"  );
 		$tr->appendChild( $td );
 		$td->appendChild( $_ );
 	}

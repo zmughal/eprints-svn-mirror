@@ -39,6 +39,7 @@ BEGIN
 }
 
 use EPrints::MetaField::Text;
+use EPrints::Session;
 
 sub get_sql_index
 {
@@ -50,20 +51,20 @@ sub get_sql_index
 
 sub render_single_value
 {
-	my( $self, $session, $value, $dont_link ) = @_;
+	my( $self, $value, $dont_link ) = trim_params(@_);
 
-	return $session->make_text( "????" );
+	return &SESSION->make_text( "????" );
 }
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
+	my( $self, $value, $suffix, $staff, $obj ) = trim_params(@_);
 
 	my $maxlength = $self->get_max_input_size;
 	my $size = ( $maxlength > $self->{input_cols} ?
 					$self->{input_cols} : 
 					$maxlength );
-	my $input = $session->make_element(
+	my $input = &SESSION->make_element(
 		"input",
 		"accept-charset" => "utf-8",
 		type => "password",
@@ -83,9 +84,9 @@ sub is_browsable
 
 sub from_search_form
 {
-	my( $self, $session, $prefix ) = @_;
+	my( $self, $prefix ) = trim_params(@_);
 
-	$session->get_archive()->log( "Attempt to search a \"secret\" type field." );
+	&ARCHIVE->log( "Attempt to search a \"secret\" type field." );
 
 	return;
 }
@@ -95,7 +96,7 @@ sub get_search_group { return 'secret'; }  #!! can't really search secret
 # REALLY don't index passwords!
 sub get_index_codes
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $value ) = trim_params(@_);
 
 	return( [], [], [] );
 }

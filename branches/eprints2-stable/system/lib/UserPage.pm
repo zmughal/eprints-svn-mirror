@@ -57,7 +57,7 @@ use EPrints::User;
 ######################################################################
 =pod
 
-=item EPrints::UserPage::user_from_param( $session )
+=item EPrints::UserPage::user_from_param()
 
 undocumented
 
@@ -66,35 +66,30 @@ undocumented
 
 sub user_from_param
 {
-	my( $session ) = @_;
 
-	my $username = $session->param( "username" );
-	my $userid = $session->param( "userid" );
+	my $username = &SESSION->param( "username" );
+	my $userid = &SESSION->param( "userid" );
 
 	if( !EPrints::Utils::is_set( $username ) && !EPrints::Utils::is_set( $userid ) )
 	{
-		$session->render_error( $session->html_phrase( 
+		&SESSION->render_error( &SESSION->html_phrase( 
 				"lib/userpage:no_user" ) );
 		return;
 	}
 	my $user;
 	if( EPrints::Utils::is_set( $userid ) )
 	{
-		$user = EPrints::User->new( 
-				$session, 
-				$userid );
+		$user = EPrints::User->new( $userid );
 	}
 	else
 	{
-		$user = EPrints::User::user_with_username( 
-				$session, 
-				$username );
+		$user = EPrints::User::user_with_username( $username );
 	}
 
 
 	if( !defined $user )
 	{
-		$session->render_error( $session->html_phrase( 
+		&SESSION->render_error( &SESSION->html_phrase( 
 				"lib/userpage:unknown_user" ) );
 		return;
 	}
@@ -106,7 +101,7 @@ sub user_from_param
 ######################################################################
 =pod
 
-=item EPrints::UserPage::process( $session, $staff )
+=item EPrints::UserPage::process( $staff )
 
 undocumented
 
@@ -115,16 +110,16 @@ undocumented
 
 sub process
 {
-	my( $session, $staff ) = @_;
+	my( $staff ) = trim_params(@_);
 
-	my $user = EPrints::UserPage::user_from_param( $session );
+	my $user = EPrints::UserPage::user_from_param();
 	return unless( defined $user );
 	
 	$userid = $user->get_value( "userid" );
 
 	my( $page );
 
-	$page = $session->make_doc_fragment();
+	$page = &SESSION->make_doc_fragment();
 
 	my( $userdesc, $title );
 	if( $staff )
@@ -137,12 +132,10 @@ sub process
 	}
 	$page->appendChild( $userdesc );
 
-	$page->appendChild( $session->render_ruler() );
+	$page->appendChild( &SESSION->render_ruler() );
 
-	my $arc_ds = $session->get_archive()->get_dataset( "archive" );
-	my $searchexp = new EPrints::SearchExpression(
-		session => $session,
-		dataset => $arc_ds );
+	my $arc_ds = &ARCHIVE->get_dataset( "archive" );
+	my $searchexp = new EPrints::SearchExpression( dataset => $arc_ds );
 
 	$searchexp->add_field(
 		$arc_ds->get_field( "userid" ),
@@ -155,27 +148,27 @@ sub process
 	my $url;
 	if( $staff )
 	{
-		$url = $session->get_archive()->get_conf( "perl_url" )."/users/search/archive?userid=$userid&_action_search=1";
+		$url = &ARCHIVE->get_conf( "perl_url" )."/users/search/archive?userid=$userid&_action_search=1";
 	}
 	else
 	{
-		$url = $session->get_archive()->get_conf( "perl_url" )."/user_eprints?userid=$userid";
+		$url = &ARCHIVE->get_conf( "perl_url" )."/user_eprints?userid=$userid";
 	}
-	my $link = $session->render_link( $url );	
+	my $link = &SESSION->render_link( $url );	
 
-	$page->appendChild( $session->html_phrase( 
+	$page->appendChild( &SESSION->html_phrase( 
 				"lib/userpage:number_of_records",
-				n=>$session->make_text( $count ),
+				n=>&SESSION->make_text( $count ),
 				link=>$link ) );
 
-	if( $staff && $session->current_user()->has_priv( "edit-user" ) )
+	if( $staff && &SESSION->current_user()->has_priv( "edit-user" ) )
 	{
-		$page->appendChild( $session->render_input_form(
+		$page->appendChild( &SESSION->render_input_form(
 			# no input fields so no need for a default
 			buttons=>{
 				_order => [ "edit", "delete" ],
-				edit=>$session->phrase( "lib/userpage:action_edit" ),
-				delete=>$session->phrase( "lib/userpage:action_delete" )
+				edit=>&SESSION->phrase( "lib/userpage:action_edit" ),
+				delete=>&SESSION->phrase( "lib/userpage:action_delete" )
 			},
 			hidden_fields=>{
 				userid=>$user->get_value( "userid" )
@@ -185,12 +178,12 @@ sub process
 	}	
 	
 
-	$session->build_page(
-		$session->html_phrase( "lib/userpage:title",
+	&SESSION->build_page(
+		&SESSION->html_phrase( "lib/userpage:title",
 				name=>$user->render_description() ), 
 		$page,
 		"userpage" );
-	$session->send_page();
+	&SESSION->send_page();
 }
 
 

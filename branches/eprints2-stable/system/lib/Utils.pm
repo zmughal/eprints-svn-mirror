@@ -58,6 +58,7 @@ use Carp;
 
 use EPrints::SystemSettings;
 use EPrints::XML;
+use EPrints::Session;
 
 use strict;
 
@@ -153,7 +154,7 @@ sub df_dir
 ######################################################################
 =pod
 
-=item EPrints::Utils::render_date( $session, $datevalue )
+=item EPrints::Utils::render_date( $datevalue )
 
 undocumented
 
@@ -162,11 +163,11 @@ undocumented
 
 sub render_date
 {
-	my( $session, $datevalue ) = @_;
+	my( $datevalue ) = trim_params(@_);
 
 	if( !defined $datevalue )
 	{
-		return $session->html_phrase( "lib/utils:date_unspecified" );
+		return &SESSION->html_phrase( "lib/utils:date_unspecified" );
 	}
 
 	# remove 0'd days and months
@@ -176,35 +177,35 @@ sub render_date
 
 	if( !defined $elements[0] || $elements[0] eq "undef" || $elements[0]==0 )
 	{
-		return $session->html_phrase( "lib/utils:date_unspecified" );
+		return &SESSION->html_phrase( "lib/utils:date_unspecified" );
 	}
 
 	# 1999
 	if( scalar @elements == 1 )
 	{
-		return $session->make_text( $elements[0] );
+		return &SESSION->make_text( $elements[0] );
 	}
 
 	# 1999-02
 	if( scalar @elements == 2 )
 	{
-		return $session->make_text( EPrints::Utils::get_month_label( $session, $elements[1] )." ".$elements[0] );
+		return &SESSION->make_text( 
+			EPrints::Utils::get_month_label( 
+				$elements[1] )." ".$elements[0] );
 	}
 
-#	if( $#elements != 2 || $elements[1] < 1 || $elements[1] > 12 )
-#	{
-#		return $session->html_phrase( "lib/utils:date_invalid" );
-#	}
-
 	# 1999-02-02
-	return $session->make_text( $elements[2]." ".EPrints::Utils::get_month_label( $session, $elements[1] )." ".$elements[0] );
+	return &SESSION->make_text( 
+		$elements[2]." ".
+		EPrints::Utils::get_month_label( $elements[1] ).
+		" ".$elements[0] );
 }
 
 
 ######################################################################
 =pod
 
-=item EPrints::Utils::get_month_label( $session, $monthid )
+=item EPrints::Utils::get_month_label( $monthid )
 
 undocumented
 
@@ -213,11 +214,11 @@ undocumented
 
 sub get_month_label
 {
-	my( $session, $monthid ) = @_;
+	my( $monthid ) = trim_params(@_);
 
 	my $code = sprintf( "lib/utils:month_%02d", $monthid );
 
-	return $session->phrase( $code );
+	return &SESSION->phrase( $code );
 }
 
 
@@ -407,31 +408,34 @@ sub cmp_dates
 ######################################################################
 =pod
 
-=item EPrints::Utils::send_mail( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname )
+=item EPrints::Utils::send_mail( $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname )
 
-undocumented
+undocumented. Will use plugins soon...
 
 =cut
 ######################################################################
 
 sub send_mail
 {
-	my( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname ) = @_;
+	my( $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname ) = @_;
 	#   Archive   string   utf8   utf8      utf8      DOM    DOM   string    utf8
 
-	my $mail_func = $archive->get_conf( "send_email" );
+	my $mail_func = &ARCHIVE->get_conf( "send_email" );
 	if( !defined $mail_func )
 	{
 		$mail_func = \&send_mail_via_sendmail;
+		&{$mail_func}( $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname );
+		return
 	}
 
-	&{$mail_func}( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname );
+	# send with archive for legacy reasons
+	&{$mail_func}( &ARCHIVE, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname );
 }	
 
 ######################################################################
 =pod
 
-=item EPrints::Utils::send_mail_via_sendmail( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname )
+=item EPrints::Utils::send_mail_via_sendmail( $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname )
 
 undocumented
 
@@ -440,12 +444,12 @@ undocumented
 
 sub send_mail_via_sendmail
 {
-	my( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname ) = @_;
+	my( $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname ) = trim_params(@_);
 	#   Archive   string   utf8   utf8      utf8      DOM    DOM   string    utf8
-	unless( open( SENDMAIL, "|".$archive->invocation( "sendmail" ) ) )
+	unless( open( SENDMAIL, "|".&ARCHIVE->invocation( "sendmail" ) ) )
 	{
-		$archive->log( "Failed to invoke sendmail: ".
-			$archive->invocation( "sendmail" ) );
+		&ARCHIVE->log( "Failed to invoke sendmail: ".
+			&ARCHIVE->invocation( "sendmail" ) );
 		return( 0 );
 	}
 
@@ -455,13 +459,12 @@ sub send_mail_via_sendmail
 	#cjg should be in the top of the file.
 	my $MAILWIDTH = 80;
 	my $arcname_q = mime_encode_q( EPrints::Session::best_language( 
-		$archive,
 		$langid,
-		%{$archive->get_conf( "archivename" )} ) );
+		%{&ARCHIVE->get_conf( "archivename" )} ) );
 
 	my $name_q = mime_encode_q( $name );
 	my $subject_q = mime_encode_q( $subject );
-	my $adminemail = $archive->get_conf( "adminemail" );
+	my $adminemail = &ARCHIVE->get_conf( "adminemail" );
 
 	my $utf8body 	= EPrints::Utils::tree_to_utf8( $body , $MAILWIDTH );
 	my $utf8sig	= EPrints::Utils::tree_to_utf8( $sig , $MAILWIDTH );
@@ -907,22 +910,20 @@ sub render_citation
 	# This should belong to the base class of EPrint User Subject and
 	# Subscription, if we were better OO people...
 
-	my $session = $obj->get_session;
-
-	my $r= _render_citation_aux( $obj, $session, $cstyle, $url );
+	my $r= _render_citation_aux( $obj, $cstyle, $url );
 
 	return $r;
 }
 
 sub _render_citation_aux
 {
-	my( $obj, $session, $node, $url ) = @_;
+	my( $obj, $node, $url ) = @_;
 	my $rendered;
 
 	if( EPrints::XML::is_dom( $node, "Text" ) ||
 	    EPrints::XML::is_dom( $node, "CDataSection" ) )
 	{
-		my $rendered = $session->make_doc_fragment;
+		my $rendered = &SESSION->make_doc_fragment;
 		my $v = $node->getData;
 		my $inside = 0;
 		foreach( split( '@' , $v ) )
@@ -933,13 +934,13 @@ sub _render_citation_aux
 				unless( EPrints::Utils::is_set( $_ ) )
 				{
 					$rendered->appendChild( 
-						$session->make_text( '@' ) );
+						&SESSION->make_text( '@' ) );
 					next;
 				}
 				if( $_ =~ m/^!(.*)/ )
 				{
-					$rendered->appendChild( $session->make_text( 
-						_citation_special_value( $session, $obj, $1 ) ) );
+					$rendered->appendChild( &SESSION->make_text( 
+						_citation_special_value( $obj, $1 ) ) );
 					next;
 				}
                                 my $field = EPrints::Utils::field_from_config_string( 
@@ -950,7 +951,7 @@ sub _render_citation_aux
 			}
 
 			$rendered->appendChild( 
-				$session->make_text( $_ ) );
+				&SESSION->make_text( $_ ) );
 			$inside = 1;
 		}
 		return $rendered;
@@ -975,12 +976,12 @@ sub _render_citation_aux
 
 		if( $name eq "ifset" )
 		{
-			$rendered = $session->make_doc_fragment;
+			$rendered = &SESSION->make_doc_fragment;
 			$addkids = $obj->is_set( $node->getAttribute( "name" ) );
 		}
 		elsif( $name eq "ifnotset" )
 		{
-			$rendered = $session->make_doc_fragment;
+			$rendered = &SESSION->make_doc_fragment;
 			$addkids = !$obj->is_set( $node->getAttribute( "name" ) );
 		}
 		elsif( $name eq "ifmatch" || $name eq "ifnotmatch" )
@@ -1002,7 +1003,6 @@ sub _render_citation_aux
 			}
 	
 			my $sf = EPrints::SearchField->new( 
-				$session, 
 				$dataset, 
 				\@multiple_fields,
 				$value,	
@@ -1016,37 +1016,37 @@ sub _render_citation_aux
 				$addkids = !$addkids;
 			}
 
-			$rendered = $session->make_doc_fragment;
+			$rendered = &SESSION->make_doc_fragment;
 		}
 		elsif( $name eq "iflink" )
 		{
-			$rendered = $session->make_doc_fragment;
+			$rendered = &SESSION->make_doc_fragment;
 			$addkids = defined $url;
 		}
 		elsif( $name eq "ifnotlink" )
 		{
-			$rendered = $session->make_doc_fragment;
+			$rendered = &SESSION->make_doc_fragment;
 			$addkids = !defined $url;
 		}
 		elsif( $name eq "linkhere" )
 		{
 			if( defined $url )
 			{
-				$rendered = $session->make_element( 
+				$rendered = &SESSION->make_element( 
 					"a",
 					href=>EPrints::Utils::url_escape( 
 						$url ) );
 			}
 			else
 			{
-				$rendered = $session->make_doc_fragment;
+				$rendered = &SESSION->make_doc_fragment;
 			}
 		}
 	}
 
 	if( !defined $rendered )
 	{
-		$rendered = $session->clone_for_me( $node );
+		$rendered = &SESSION->clone_for_me( $node );
 	}
 
 	# icky code to spot @title@ in node attributes and replace it.
@@ -1057,7 +1057,7 @@ sub _render_citation_aux
 		{
 			my $attr = $attrs->item( $i );
 			my $v = $attr->getValue;
-			$v =~ s/@!([^@]+)@/_citation_special_value( $session, $obj, $1 )/egi;
+			$v =~ s/@!([^@]+)@/_citation_special_value( $obj, $1 )/egi;
 			$v =~ s/@([a-z0-9_]+)@/$obj->get_value( $1 )/egi;
 			$v =~ s/@@/@/gi;
 			$attr->setValue( $v );
@@ -1071,7 +1071,6 @@ sub _render_citation_aux
 			$rendered->appendChild(
 				_render_citation_aux( 
 					$obj,
-					$session,
 					$child,
 					$url ) );			
 		}
@@ -1083,12 +1082,10 @@ sub _citation_field_value
 {
 	my( $obj, $field ) = @_;
 
-	my $session = $obj->get_session;
 	my $fname = $field->get_name;
-	my $span = $session->make_element( "span", class=>"field_".$fname );
+	my $span = &SESSION->make_element( "span", class=>"field_".$fname );
 	my $value = $obj->get_value( $fname );
 	$span->appendChild( $field->render_value( 
-				$session,
 				$value,
 				0,
  				1 ) );
@@ -1098,7 +1095,7 @@ sub _citation_field_value
 
 sub _citation_special_value
 {
-	my( $session, $obj, $code ) = @_;
+	my( $obj, $code ) = @_;
 
 	if( $code eq "url" )
 	{
@@ -1280,7 +1277,7 @@ sub clone
 ######################################################################
 =pod
 
-=item EPrints::Utils::crypt_password( $value, $session )
+=item EPrints::Utils::crypt_password( $value )
 
 undocumented
 
@@ -1289,7 +1286,7 @@ undocumented
 
 sub crypt_password
 {
-	my( $value, $session ) = @_;
+	my( $value ) = trim_params(@_);
 
 	return unless EPrints::Utils::is_set( $value );
 
@@ -1436,8 +1433,7 @@ sub destroy
 ######################################################################
 =pod
 
-=item $xhtml = EPrints::Utils::render_xhtml_field( $session, $field,
-$value )
+=item $xhtml = EPrints::Utils::render_xhtml_field( $field, $value )
 
 Return an XHTML DOM object of the contents of $value. In the case of
 an error parsing the XML in $value return an XHTML DOM object 
@@ -1455,29 +1451,34 @@ may allow a limited set of elements only.
 
 sub render_xhtml_field
 {
-	my( $session , $field , $value ) = @_;
+	my( $field , $value ) = trim_params(@_);
 
-	if( !defined $value ) { return $session->make_doc_fragment; }
+	if( !defined $value ) { return &SESSION->make_doc_fragment; }
         my( %c ) = (
                 ParseParamEnt => 0,
                 ErrorContext => 2,
                 NoLWP => 1 );
 
-        my $doc = eval { EPrints::XML::parse_xml_string( "<fragment>".$value."</fragment>" ); };
+        my $doc = eval { 
+		EPrints::XML::parse_xml_string( 
+			"<fragment>".$value."</fragment>" ); 
+	};
         if( $@ )
         {
                 my $err = $@;
                 $err =~ s# at /.*##;
-		my $pre = $session->make_element( "pre" );
-		$pre->appendChild( $session->make_text( "Error parsing XML: ".$err ) );
+		my $pre = &SESSION->make_element( "pre" );
+		$pre->appendChild( &SESSION->make_text( 
+			"Error parsing XML: ".$err ) );
 		return $pre;
         }
-	my $fragment = $session->make_doc_fragment;
+
+	my $fragment = &SESSION->make_doc_fragment;
 	my $top = ($doc->getElementsByTagName( "fragment" ))[0];
 	foreach my $node ( $top->getChildNodes )
 	{
 		$fragment->appendChild(
-			$session->clone_for_me( $node, 1 ) );
+			&SESSION->clone_for_me( $node, 1 ) );
 	}
 	EPrints::XML::dispose( $doc );
 		

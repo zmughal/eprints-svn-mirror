@@ -53,6 +53,7 @@ package EPrints::Subject;
 use EPrints::DataObj;
 
 use EPrints::Database;
+use EPrints::Session;
 use EPrints::SearchExpression;
 
 use strict;
@@ -95,7 +96,7 @@ sub get_system_field_info
 
 ######################################################################
 #
-# $subject = new( $session, $id, $row )
+# $subject = new( $id, $row )
 #
 #  Create a new subject object. Can either pass in fields from the
 #  database (which must be the same fields in the same order as given
@@ -112,7 +113,7 @@ sub get_system_field_info
 ######################################################################
 =pod
 
-=item $thing = EPrints::Subject->new( $session, $subjectid )
+=item $thing = EPrints::Subject->new( $subjectid )
 
 undocumented
 
@@ -121,7 +122,7 @@ undocumented
 
 sub new
 {
-	my( $class, $session, $subjectid ) = @_;
+	my( $class, $subjectid ) = trim_params(@_);
 
 	if( $subjectid eq $EPrints::Subject::root_subject )
 	{
@@ -133,16 +134,17 @@ sub new
 			depositable => "FALSE" 
 		};
 		my $langid;
-		foreach $langid ( @{$session->get_archive()->get_conf( "languages" )} )
+		foreach $langid ( @{&ARCHIVE->get_conf( "languages" )} )
 		{
-			$data->{name}->{$langid} = EPrints::XML::to_string( $session->get_archive()->get_language( $langid )->phrase( "lib/subject:top_level", {}, $session ) );
+			$data->{name}->{$langid} = EPrints::XML::to_string( 
+&ARCHIVE->get_language( $langid )->phrase( "lib/subject:top_level", {} ) );
 		}
 
-		return EPrints::Subject->new_from_data( $session, $data );
+		return EPrints::Subject->new_from_data( $data );
 	}
 
-	return $session->get_db()->get_single( 
-			$session->get_archive()->get_dataset( "subject" ), 
+	return &DATABASE->get_single( 
+			&ARCHIVE->get_dataset( "subject" ), 
 			$subjectid );
 
 }
@@ -152,7 +154,7 @@ sub new
 ######################################################################
 =pod
 
-=item $thing = EPrints::Subject->new_from_data( $session, $known )
+=item $thing = EPrints::Subject->new_from_data( $known )
 
 undocumented
 
@@ -161,13 +163,12 @@ undocumented
 
 sub new_from_data
 {
-	my( $class, $session, $known ) = @_;
+	my( $class, $known ) = trim_params(@_);
 
 	my $self = {};
 	
 	$self->{data} = $known;
-	$self->{dataset} = $session->get_archive()->get_dataset( "subject" ); 
-	$self->{session} = $session;
+	$self->{dataset} = &ARCHIVE->get_dataset( "subject" ); 
 	bless $self, $class;
 
 	return( $self );
@@ -192,9 +193,7 @@ sub commit
 	my @ancestors = $self->_get_ancestors();
 	$self->{data}->{ancestors} = \@ancestors;
 
-	my $rv = $self->{session}->get_db()->update(
-			$self->{dataset},
-			$self->{data} );
+	my $rv = &DATABASE->update( $self->{dataset}, $self->{data} );
 	
 	# Need to update all children in case ancesors have changed.
 	# This is pretty slow esp. For a top level subject, but subject
@@ -230,7 +229,7 @@ sub remove
 	#cjg Should we unlink all eprints linked to this subject from
 	# this subject?
 
-	return $self->{session}->get_db()->remove(
+	return &DATABASE->remove(
 		$self->{dataset},
 		$self->{data}->{subjectid} );
 }
@@ -239,7 +238,7 @@ sub remove
 ######################################################################
 =pod
 
-=item EPrints::Subject::remove_all( $session )
+=item EPrints::Subject::remove_all()
 
 undocumented
 
@@ -248,22 +247,19 @@ undocumented
 
 sub remove_all
 {
-	my( $session ) = @_;
-
-	my $ds = $session->get_archive()->get_dataset( "subject" );
-	my @subjects = $session->get_db()->get_all( $ds );
+	my $ds = &ARCHIVE->get_dataset( "subject" );
+	my @subjects = &DATABASE->get_all( $ds );
 	foreach( @subjects )
 	{
 		my $id = $_->get_value( "subjectid" );
-		$session->get_db()->remove( $ds, $id );
+		&DATABASE->remove( $ds, $id );
 	}
-	return;
 }
 
 	
 ######################################################################
 #
-# $subject = create( $session, $id, $name, $parent, $depositable )
+# $subject = create( $id, $name, $parent, $depositable )
 #
 #  Creates the given subject in the database. $id is the ID of the subject,
 #  $name is a suitably meaningful name in English, and $depositable is
@@ -277,7 +273,7 @@ sub remove_all
 ######################################################################
 =pod
 
-=item EPrints::Subject::create( $session, $id, $name, $parents, $depositable )
+=item EPrints::Subject::create( $id, $name, $parents, $depositable )
 
 undocumented
 
@@ -286,7 +282,7 @@ undocumented
 
 sub create
 {
-	my( $session, $id, $name, $parents, $depositable ) = @_;
+	my( $id, $name, $parents, $depositable ) = trim_params(@_);
 
 	if( $id !~ m/^[^\s]+$/ )
 	{
@@ -307,11 +303,11 @@ END
 		  "ancestors"=>[],
 		  "depositable"=>($depositable ? "TRUE" : "FALSE" ) };
 
-	return( undef ) unless( $session->get_db()->add_record( 
-		$session->get_archive()->get_dataset( "subject" ), 
+	return( undef ) unless( &DATABASE->add_record( 
+		&ARCHIVE->get_dataset( "subject" ), 
 		$newsubdata ) );
 
-	my $newsub = EPrints::Subject->new_from_data( $session, $newsubdata );
+	my $newsub = EPrints::Subject->new_from_data( $newsubdata );
 
 	$newsub->commit(); # will update ancestors
 
@@ -371,8 +367,7 @@ sub create_child
 {
 	my( $self, $id, $name, $depositable ) = @_;
 	
-	return( EPrints::Subject::create( $self->{session},
-	                                  $id,
+	return( EPrints::Subject::create( $id,
 	                                  $name,
 	                                  $self->{subjectid},
 	                                  $depositable ) );
@@ -396,7 +391,6 @@ sub children #cjg should be get_children()
 	my( $self ) = @_;
 
 	my $searchexp = new EPrints::SearchExpression(
-		session=>$self->{session},
 		dataset=>$self->{dataset},
 		custom_order=>"name" );
 
@@ -431,7 +425,7 @@ sub get_parents
 	my @parents = ();
 	foreach( @{$self->{data}->{parents}} )
 	{
-		push @parents, new EPrints::Subject( $self->{session}, $_ );
+		push @parents, new EPrints::Subject( $_ );
 	}
 	return( @parents );
 }
@@ -471,7 +465,7 @@ sub can_post
 ######################################################################
 =pod
 
-=item $foo = $thing->render_with_path( $session, $topsubjid )
+=item $foo = $thing->render_with_path( $topsubjid )
 
 undocumented
 
@@ -480,11 +474,11 @@ undocumented
 
 sub render_with_path
 {
-	my( $self, $session, $topsubjid ) = @_;
+	my( $self, $topsubjid ) = trim_params(@_);
 
-	my @paths = $self->get_paths( $session, $topsubjid );
+	my @paths = $self->get_paths( $topsubjid );
 
-	my $v = $session->make_doc_fragment();
+	my $v = &SESSION->make_doc_fragment();
 
 	my $first = 1;
 	foreach( @paths )
@@ -495,7 +489,7 @@ sub render_with_path
 		}	
 		else
 		{
-			$v->appendChild( $session->html_phrase( 
+			$v->appendChild( &SESSION->html_phrase( 
 				"lib/metafield:join_subject" ) );
 			# nb. using one from metafield!
 		}
@@ -504,7 +498,7 @@ sub render_with_path
 		{
 			if( !$first )
 			{
-				$v->appendChild( $session->html_phrase( 
+				$v->appendChild( &SESSION->html_phrase( 
 					"lib/metafield:join_subject_parts" ) );
 			}
 			$first = 0;
@@ -520,7 +514,7 @@ sub render_with_path
 ######################################################################
 =pod
 
-=item $foo = $thing->get_paths( $session, $topsubjid )
+=item $foo = $thing->get_paths( $topsubjid )
 
 undocumented
 
@@ -529,7 +523,7 @@ undocumented
 
 sub get_paths
 {
-	my( $self, $session, $topsubjid ) = @_;
+	my( $self, $topsubjid ) = trim_params(@_);
 
 	if( $self->get_value( "subjectid" ) eq $topsubjid )
 	{
@@ -543,8 +537,8 @@ sub get_paths
 	my( @paths ) = ();
 	foreach( @{$self->{data}->{parents}} )
 	{
-		my $subj = new EPrints::Subject( $session, $_ );
-		push @paths, $subj->get_paths( $session, $topsubjid );
+		my $subj = new EPrints::Subject( $_ );
+		push @paths, $subj->get_paths( $topsubjid );
 	}
 	foreach( @paths )
 	{
@@ -556,7 +550,7 @@ sub get_paths
 
 ######################################################################
 #
-# ( $tags, $labels ) = get_postable( $session, $user )
+# ( $tags, $labels ) = get_postable( $user )
 #
 #  Returns a list of the subjects that can be posted to by $user. They
 #  are returned in a tuple, the first element being a reference to an
@@ -581,7 +575,7 @@ sub get_subjects
 	my( $self, $postableonly, $showtoplevel, $nestids, $nocascadelabel ) = @_; 
 
 #cjg optimisation to not bother getting labels?
-	my( $subjectmap, $rmap ) = EPrints::Subject::get_all( $self->{session} );
+	my( $subjectmap, $rmap ) = EPrints::Subject::get_all();
 	return $self->_get_subjects2( $postableonly, !$showtoplevel, $nestids, $subjectmap, $rmap, "", !$nocascadelabel );
 	
 }
@@ -635,7 +629,7 @@ sub _get_subjects2
 
 ######################################################################
 #
-# $label = subject_label( $session, $subject_tag )
+# $label = subject_label( $subject_tag )
 #
 #  Return the full label of a subject, including parents. Returns
 #  undef if the subject tag is invalid. [STATIC]
@@ -646,7 +640,7 @@ sub _get_subjects2
 ######################################################################
 =pod
 
-=item EPrints::Subject::subject_label( $session, $subject_tag )
+=item EPrints::Subject::subject_label( $subject_tag )
 
 undocumented
 
@@ -655,15 +649,15 @@ undocumented
 
 sub subject_label
 {
-	my( $session, $subject_tag ) = @_;
+	my( $subject_tag ) = trim_params(@_);
 	
 	my $label = "";
 	my $tag = $subject_tag;
 
 	while( $tag ne $EPrints::Subject::root_subject )
 	{
-		my $ds = $session->get_archive()->get_dataset();
-		my $data = $session->{database}->get_single( $ds, $tag );
+		my $ds = &ARCHIVE->get_dataset();
+		my $data = &DATABASE->get_single( $ds, $tag );
 		
 		# If we can't find it, the tag must be invalid.
 		if( !defined $data )
@@ -688,26 +682,19 @@ sub subject_label
 }
 
 
-# cjg CACHE this per, er, session?
-# commiting a subject should erase the cache
-
 ######################################################################
 =pod
 
-=item EPrints::Subject::get_all( $session )
+=item @subjects = EPrints::Subject::get_all()
 
-undocumented
+Retrieve all of the subjects
 
 =cut
 ######################################################################
 
 sub get_all
 {
-	my( $session ) = @_;
-	
-	# Retrieve all of the subjects
-	my @subjects = $session->get_db()->get_all( 
-		$session->get_archive()->get_dataset( "subject" ) );
+	my @subjects = &DATABASE->get_all( &ARCHIVE->get_dataset( "subject" ) );
 
 	return( undef ) if( scalar @subjects == 0 );
 
@@ -726,14 +713,14 @@ sub get_all
 			push @{$rmap{$_}}, $subject;
 		}
 	}
-	my $namefield = $session->get_archive->get_dataset(
+	my $namefield = &ARCHIVE->get_dataset(
 		"subject" )->get_field( "name" );
 	foreach( keys %rmap )
 	{
 		#cjg note the OO busting speedup hack.
 		@{$rmap{$_}} = sort {   
-my $av = $namefield->most_local( $session, $a->{data}->{name} );
-my $bv = $namefield->most_local( $session, $b->{data}->{name} );
+my $av = $namefield->most_local( $a->{data}->{name} );
+my $bv = $namefield->most_local( $b->{data}->{name} );
 $av = "" unless defined $av;
 $bv = "" unless defined $bv;
 $av cmp $bv;
@@ -764,7 +751,6 @@ sub posted_eprints
 	my( $self, $dataset ) = @_;
 
 	my $searchexp = new EPrints::SearchExpression(
-		session => $self->{session},
 		dataset => $dataset,
 		satisfy_all => 0 );
 
@@ -823,7 +809,6 @@ sub count_eprints
 	# Create a search expression
 	my $searchexp = new EPrints::SearchExpression(
 		satisfy_all => 0, 
-		session => $self->{session},
 		dataset => $dataset );
 
 	my $n = 0;

@@ -40,10 +40,7 @@ use EPrints::DataObj;
 
 use EPrints::Database;
 use EPrints::Utils;
-#cjg use EPrints::MetaField;
-#cjg use EPrints::SearchExpression;
-#cjg use EPrints::Session;
-#cjg use EPrints::User;
+use EPrints::Session;
 
 ### SUBS MUST BE FLAGGED AS BULK cjg
 
@@ -87,7 +84,7 @@ sub get_system_field_info
 ######################################################################
 =pod
 
-=item EPrints::Subscription->new( $session, $id )
+=item EPrints::Subscription->new( $id )
 
 undocumented
 
@@ -96,17 +93,17 @@ undocumented
 
 sub new
 {
-	my( $class, $session, $id ) = @_;
+	my( $class, $id ) = trim_params(@_);
 
-	return $session->get_db()->get_single( 	
-		$session->get_archive()->get_dataset( "subscription" ),
+	return &DATABASE->get_single( 	
+		&ARCHIVE->get_dataset( "subscription" ),
 		$id );
 }
 
 ######################################################################
 =pod
 
-=item $thing = EPrints::Subscription->new_from_data( $session, $data )
+=item $thing = EPrints::Subscription->new_from_data( $data )
 
 undocumented
 
@@ -115,15 +112,13 @@ undocumented
 
 sub new_from_data
 {
-	my( $class, $session, $data ) = @_;
+	my( $class, $data ) = trim_params(@_);
 
 	my $self = {};
 	bless $self, $class;
 
 	$self->{data} = $data;
-	$self->{dataset} = $session->get_archive()->get_dataset( 
-		"subscription" );
-	$self->{session} = $session;
+	$self->{dataset} = &ARCHIVE->get_dataset( "subscription" );
 	
 	return $self;
 }
@@ -131,7 +126,7 @@ sub new_from_data
 ######################################################################
 =pod
 
-=item $thing = EPrints::Subscription->create( $session, $userid )
+=item $thing = EPrints::Subscription->create( $userid )
 
 undocumented
 
@@ -140,10 +135,10 @@ undocumented
 
 sub create
 {
-	my( $class, $session, $userid ) = @_;
+	my( $class, $userid ) = trim_params(@_);
 
-	my $subs_ds = $session->get_archive()->get_dataset( "subscription" );
-	my $id = $session->get_db()->counter_next( "subscriptionid" );
+	my $subs_ds = &ARCHIVE->get_dataset( "subscription" );
+	my $id = &DATABASE->counter_next( "subscriptionid" );
 
 	my $data = {
 		subid => $id,
@@ -153,16 +148,14 @@ sub create
 		spec => ''
 	};
 
-	$session->get_archive()->call(
-		"set_subscription_defaults",
-		$data,
-		$session );
+	&ARCHIVE->call( "set_subscription_defaults", $data, &SESSION );
+	print STDERR "Plugin please\n";
 
 	# Add the subscription to the database
-	$session->get_db()->add_record( $subs_ds, $data );
+	&DATABASE->add_record( $subs_ds, $data );
 
 	# And return it as an object
-	return EPrints::Subscription->new( $session, $id );
+	return EPrints::Subscription->new( $id );
 }
 
 
@@ -182,10 +175,9 @@ sub remove
 {
 	my( $self ) = @_;
 
-	my $subs_ds = $self->{session}->get_archive()->get_dataset( 
-		"subscription" );
+	my $subs_ds = &ARCHIVE->get_dataset( "subscription" );
 	
-	my $success = $self->{session}->get_db()->remove(
+	my $success = &DATABASE->remove(
 		$subs_ds,
 		$self->get_value( "subid" ) );
 
@@ -207,15 +199,10 @@ sub commit
 {
 	my( $self ) = @_;
 	
-	$self->{session}->get_archive()->call( 
-		"set_subscription_automatic_fields", 
-		$self );
+	&ARCHIVE->call( "set_subscription_automatic_fields", $self );
 
-	my $subs_ds = $self->{session}->get_archive()->get_dataset( 
-		"subscription" );
-	my $success = $self->{session}->get_db()->update(
-		$subs_ds,
-		$self->{data} );
+	my $subs_ds = &ARCHIVE->get_dataset( "subscription" );
+	my $success = &DATABASE->update( $subs_ds, $self->{data} );
 
 	return $success;
 }
@@ -235,9 +222,7 @@ sub get_user
 {
 	my( $self ) = @_;
 
-	return EPrints::User->new( 
-		$self->{session},
-		$self->get_value( "userid" ) );
+	return EPrints::User->new( $self->get_value( "userid" ) );
 }
 
 
@@ -255,11 +240,9 @@ sub make_searchexp
 {
 	my( $self ) = @_;
 
-	my $ds = $self->{session}->get_archive()->get_dataset( 
-		"subscription" );
+	my $ds = &ARCHIVE->get_dataset( "subscription" );
 	
 	return $ds->get_field( 'spec' )->make_searchexp( 
-		$self->{session},
 		$self->get_value( 'spec' ) );
 }
 
@@ -283,7 +266,7 @@ sub send_out_subscription
 
 	if( $freq eq "never" )
 	{
-		$self->{session}->get_archive->log( 
+		&ARCHIVE->log( 
 			"Attempt to send out a subscription for a\n".
 			"which has frequency 'never'\n" );
 		return;
@@ -293,22 +276,22 @@ sub send_out_subscription
 
 	if( !defined $user )
 	{
-		$self->{session}->get_archive->log( 
+		&ARCHIVE->log( 
 			"Attempt to send out a subscription for a\n".
 			"non-existant user. Subid#".$self->get_id."\n" );
 		return;
 	}
 
-	my $origlangid = $self->{session}->get_langid;
+	my $origlangid = &SESSION->get_langid;
 	
-	$self->{session}->change_lang( $user->get_value( "lang" ) );
+	&SESSION->change_lang( $user->get_value( "lang" ) );
 
 	my $searchexp = $self->make_searchexp;
 	# get the description before we fiddle with searchexp
  	my $searchdesc = $searchexp->render_description,
 
-	my $datestamp_field = $self->{session}->get_archive()->get_dataset( 
-		"archive" )->get_field( "datestamp" );
+	my $datestamp_field = 
+		&ARCHIVE->get_dataset( "archive" )->get_field( "datestamp" );
 
 	if( $freq eq "daily" )
 	{
@@ -357,19 +340,17 @@ sub send_out_subscription
 			$last_month."-" );
 	}
 
-	my $url = $self->{session}->get_archive->get_conf( "perl_url" ).
-		"/users/subscribe";
-	my $freqphrase = $self->{session}->html_phrase(
-		"lib/subscription:".$freq );
+	my $url = &ARCHIVE->get_conf( "perl_url" ).  "/users/subscribe";
+	my $freqphrase = &SESSION->html_phrase( "lib/subscription:".$freq );
 
 	my $fn = sub {
-		my( $session, $dataset, $item, $info ) = @_;
+		my( $dataset, $item, $info ) = @_;
 
-		my $p = $session->make_element( "p" );
+		my $p = &SESSION->make_element( "p" );
 		$p->appendChild( $item->render_citation );
 		$info->{matches}->appendChild( $p );
-		$info->{matches}->appendChild( $session->make_text( $item->get_url ) );
-		$info->{matches}->appendChild( $session->make_element( "br" ) );
+		$info->{matches}->appendChild( &SESSION->make_text( $item->get_url ) );
+		$info->{matches}->appendChild( &SESSION->make_element( "br" ) );
 	};
 
 
@@ -380,17 +361,17 @@ sub send_out_subscription
 	if( $searchexp->count > 0 || $mempty eq 'TRUE' )
 	{
 		my $info = {};
-		$info->{matches} = $self->{session}->make_doc_fragment;
+		$info->{matches} = &SESSION->make_doc_fragment;
 		$searchexp->map( $fn, $info );
 
-		my $mail = $self->{session}->html_phrase( 
+		my $mail = &SESSION->html_phrase( 
 				"lib/subscription:mail",
 				howoften => $freqphrase,
-				n => $self->{session}->make_text( $searchexp->count ),
+				n => &SESSION->make_text( $searchexp->count ),
 				search => $searchdesc,
 				matches => $info->{matches},
-				url => $self->{session}->make_text( $url ) );
-		if( $self->{session}->get_noise >= 2 )
+				url => &SESSION->make_text( $url ) );
+		if( &SESSION->get_noise >= 2 )
 		{
 			print "Sending out subscription #".$self->get_id." to ".$user->get_value( "email" )."\n";
 		}
@@ -401,14 +382,14 @@ sub send_out_subscription
 	}
 	$searchexp->dispose;
 
-	$self->{session}->change_lang( $origlangid );
+	&SESSION->change_lang( $origlangid );
 }
 
 
 ######################################################################
 =pod
 
-=item EPrints::Subscription::process_set( $session, $frequency );
+=item EPrints::Subscription::process_set( $frequency );
 
 undocumented
 
@@ -417,28 +398,24 @@ undocumented
 
 sub process_set
 {
-	my( $session, $frequency ) = @_;
+	my( $frequency ) = trim_params(@_);
 
 	if( $frequency ne "daily" && 
 		$frequency ne "weekly" && 
 		$frequency ne "monthly" )
 	{
-		$session->get_archive->log( "EPrints::Subscription::process_set called with unknown frequency: ".$frequency );
+		&ARCHIVE->log( "EPrints::Subscription::process_set called with unknown frequency: ".$frequency );
 		return;
 	}
 
-	my $subs_ds = $session->get_archive->get_dataset( "subscription" );
+	my $subs_ds = &ARCHIVE->get_dataset( "subscription" );
 
-	my $searchexp = EPrints::SearchExpression->new(
-		session => $session,
-		dataset => $subs_ds );
+	my $searchexp = EPrints::SearchExpression->new( dataset => $subs_ds );
 
-	$searchexp->add_field(
-		$subs_ds->get_field( "frequency" ),
-		$frequency );
+	$searchexp->add_field( $subs_ds->get_field( "frequency" ), $frequency );
 
 	my $fn = sub {
-		my( $session, $dataset, $item, $info ) = @_;
+		my( $dataset, $item, $info ) = @_;
 
 		$item->send_out_subscription;
 	};
@@ -447,12 +424,12 @@ sub process_set
 	$searchexp->map( $fn, {} );
 	$searchexp->dispose;
 
-	my $statusfile = $session->get_archive->get_conf( "variables_path" ).
+	my $statusfile = &ARCHIVE->get_conf( "variables_path" ).
 		"/subscription-".$frequency.".timestamp";
 
 	unless( open( TIMESTAMP, ">$statusfile" ) )
 	{
-		$session->get_archive->log( "EPrints::Subscription::process_set failed to open\n$statusfile\nfor writing." );
+		&ARCHIVE->log( "EPrints::Subscription::process_set failed to open\n$statusfile\nfor writing." );
 	}
 	else
 	{
@@ -470,7 +447,7 @@ END
 ######################################################################
 =pod
 
-=item $timestamp = EPrints::Subscription::get_last_timestamp( $session, $frequency );
+=item $timestamp = EPrints::Subscription::get_last_timestamp( $frequency );
 
 Return the timestamp of the last time this frequency of subscription was sent.
 
@@ -479,17 +456,17 @@ Return the timestamp of the last time this frequency of subscription was sent.
 
 sub get_last_timestamp
 {
-	my( $session, $frequency ) = @_;
+	my( $frequency ) = trim_params(@_);
 
 	if( $frequency ne "daily" && 
 		$frequency ne "weekly" && 
 		$frequency ne "monthly" )
 	{
-		$session->get_archive->log( "EPrints::Subscription::get_last_timestamp called with unknown\nfrequency: ".$frequency );
+		&ARCHIVE->log( "EPrints::Subscription::get_last_timestamp called with unknown\nfrequency: ".$frequency );
 		return;
 	}
 
-	my $statusfile = $session->get_archive->get_conf( "variables_path" ).
+	my $statusfile = &ARCHIVE->get_conf( "variables_path" ).
 		"/subscription-".$frequency.".timestamp";
 
 	unless( open( TIMESTAMP, $statusfile ) )

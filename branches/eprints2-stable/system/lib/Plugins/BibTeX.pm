@@ -24,9 +24,10 @@ B<EPrints::Plugins::BibTeX> - Plugins for converting eprints to BibTeX
 
 package EPrints::Plugins::BibTeX;
 use strict;
+use EPrints::Session;
+use EPrints::Exporter;
 
 use Unicode::String qw(latin1);
-
 
 
 EPrints::Plugins::register( 
@@ -53,15 +54,13 @@ sub eprints_to_bibtex
 	my $exp = new EPrints::Exporter( %opts, mimetype=>'text/plain' );
 	$exp->data( "\n\@COMMENT{{This file was exported by GNU EPrints}}\n\n" );
 	$opts{objs}->map( sub { 
-		my( $session, $dataset, $obj, $info ) = @_;
-		my $struct = EPrints::Plugins::call(
+		my( $dataset, $obj, $info ) = @_;
+		my $struct = &ARCHIVE->plugin(
 			'convert/obj.eprint/bibtex.struct/'.$opts{mode_obj_to_struct},
-			$obj,	
-			$session );
-		my $str = EPrints::Plugins::call(
+			$obj );
+		my $str = &ARCHIVE->plugin(
 			'convert/bibtex.struct/bibtex.string/'.$opts{mode_struct_to_string},
-			$struct,	
-			$session );
+			$struct );
 		$exp->data( $str );
 	}, {}, $opts{offset}, $opts{count} );
 
@@ -70,7 +69,7 @@ sub eprints_to_bibtex
 
 sub bibtex_struct_to_bibtex_string
 {
-	my( $data, $session ) = @_;
+	my( $data ) = @_;
 
 #	my $data = {
 #	core=> { a=>"aioweyhrn",b=>"oihweroih",c=>"oihwefohiwefoihw" },
@@ -1057,7 +1056,7 @@ $EPrints::Plugins::BibTeX::uni_to_tex = {
 
 sub eprint_to_bibtex
 {
-	my( $eprint , $session ) = @_;
+	my( $eprint ) = @_;
 
 	my $data = {};
 
@@ -1070,7 +1069,7 @@ sub eprint_to_bibtex
 		$data->{type} = "mastersthesis" if( $ttype eq "masters" );
 	}
 
-	$data->{key} = $session->get_archive->get_id.$eprint->get_id;
+	$data->{key} = &ARCHIVE->get_id.$eprint->get_id;
 
 	# Core BibTeX fields (to have Tex escaping).
    	foreach(

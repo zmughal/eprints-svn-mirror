@@ -14,6 +14,8 @@
 
 package EPrints::Extras;
 
+use EPrints::Session;
+
 use warnings;
 use strict;
 
@@ -35,7 +37,7 @@ type field it is used for is by itself on the metadata input page.
 
 sub subject_browser_input
 {
-	my( $field, $session, $value, $dataset, $type, $staff, $hidden_fields ) = @_;
+	my( $field, $value, $dataset, $type, $staff, $hidden_fields ) = trim_params(@_);
 
 	my $values;
 	if( !defined $value )
@@ -51,20 +53,20 @@ sub subject_browser_input
 		$values = $value; 
 	}
 
-	my $topsubj = $field->get_top_subject( $session );
+	my $topsubj = $field->get_top_subject;
  	my $subject = $topsubj;
 
-	my $html = $session->make_doc_fragment;
+	my $html = &SESSION->make_doc_fragment;
 
 	my $search;
-	if( $session->internal_button_pressed )
+	if( &SESSION->internal_button_pressed )
 	{
-		my $button = $session->get_internal_button();
+		my $button = &SESSION->get_internal_button;
 		my $rexp;
 		$rexp = $field->get_name."_view_";
 		if( $button =~ m/^$rexp(.*)$/ )
 		{
-			$subject = EPrints::Subject->new( $session, $1 );
+			$subject = EPrints::Subject->new( $1 );
 			if( !defined $subject ) 
 			{ 
 				$subject = $topsubj; 
@@ -72,7 +74,7 @@ sub subject_browser_input
 		}
 		if( $button eq $field->get_name."_search" )
 		{
-			$search = $session->param( "_internal_".$field->get_name."_search" );
+			$search = &SESSION->param( "_internal_".$field->get_name."_search" );
 		}
 	}
 
@@ -85,19 +87,19 @@ sub subject_browser_input
 
 	my( %bits );
 
-	$bits{selections} = $session->make_doc_fragment;
+	$bits{selections} = &SESSION->make_doc_fragment;
 
 	foreach my $s_id ( sort @{$values} )
 	{
-		my $s = EPrints::Subject->new( $session, $s_id );
+		my $s = EPrints::Subject->new( $s_id );
 		next if( !defined $s );
 
 		$html->appendChild( 
-			$session->render_hidden_field(
+			&SESSION->render_hidden_field(
 				$field->get_name,
 				$s_id ) );
 
-		my $div = $session->make_element( "div" );
+		my $div = &SESSION->make_element( "div" );
 		$div->appendChild( $s->render_description );
 
 		my $url = $baseurl.'&_internal_'.$field->get_name.'_view_'.$subject->get_id.'=1'.$field->get_name.'='.$s->get_id;
@@ -108,25 +110,25 @@ sub subject_browser_input
 		}
 		$url .= '#t';
 
-		$div->appendChild(  $session->html_phrase(
+		$div->appendChild(  &SESSION->html_phrase(
                         "lib/extras:subject_browser_remove",
-			link=>$session->make_element( "a", href=>$url ) ) );
+			link=>&SESSION->make_element( "a", href=>$url ) ) );
 		$bits{selections}->appendChild( $div );
 	}
 
 	if( scalar @{$values} == 0 )
 	{	
-		my $div = $session->make_element( "div" );
-		$div->appendChild( $session->html_phrase(
+		my $div = &SESSION->make_element( "div" );
+		$div->appendChild( &SESSION->html_phrase(
 			"lib/extras:subject_browser_none" ) );
 		$bits{selections}->appendChild( $div );
 	}
 
-	my @paths = $subject->get_paths( $session );
+	my @paths = $subject->get_paths;
 	my %expanded = ();
 	foreach my $path ( @paths )
 	{
-		my $div = $session->make_element( "div" );
+		my $div = &SESSION->make_element( "div" );
 		my $first = 1;
 		foreach my $s ( @{$path} )
 		{
@@ -135,19 +137,18 @@ sub subject_browser_input
 		$bits{selections}->appendChild( $div );
 	}	
 
-	$bits{search} = $session->html_phrase(
+	$bits{search} = &SESSION->html_phrase(
 			"lib/extras:subject_browser_search",
-			input=>$session->make_element( "input", name=>"_internal_".$field->get_name."_search" ),
-			button=>$session->make_element( "input", type=>"submit", name=>"_null", 
-				value=>$session->phrase( "lib/extras:subject_browser_search_button" ) ) );
+			input=>&SESSION->make_element( "input", name=>"_internal_".$field->get_name."_search" ),
+			button=>&SESSION->make_element( "input", type=>"submit", name=>"_null", 
+				value=>&SESSION->phrase( "lib/extras:subject_browser_search_button" ) ) );
 	$bits{topsubj} = $topsubj->render_description;
 
 	if( defined $search ) 
 	{
-		my $subject_ds = $session->get_archive()->get_dataset( "subject" );
+		my $subject_ds = &ARCHIVE->get_dataset( "subject" );
 
 		my $searchexp = new EPrints::SearchExpression(
-			session=>$session,
 			dataset=>$subject_ds );
 	
 		$searchexp->add_field(
@@ -168,13 +169,12 @@ sub subject_browser_input
 		my $results;
 		if( scalar @records )
 		{
-			$results = $session->make_element( "ul" );
+			$results = &SESSION->make_element( "ul" );
 			foreach my $s ( @records )
 			{
 				$results->appendChild( 
 					_subject_browser_input_aux(
 						$field,
-						$session,
 						$s,
 						$subject,
 						\%expanded,
@@ -184,7 +184,7 @@ sub subject_browser_input
 		}	
 		else
 		{
-			$results = $session->html_phrase( 
+			$results = &SESSION->html_phrase( 
                         "lib/extras:subject_browser_no_matches" );
 		}
 
@@ -195,20 +195,19 @@ sub subject_browser_input
 		}
 		$url .= '#t';
 
-		$bits{opts} = $session->html_phrase( 
+		$bits{opts} = &SESSION->html_phrase( 
 			"lib/extras:subject_browser_search_results", 
 			results=>$results,
-			browse=>$session->render_link( $url ) );
+			browse=>&SESSION->render_link( $url ) );
 	}
 	else
 	{	
-		my $ul = $session->make_element( "ul" );
+		my $ul = &SESSION->make_element( "ul" );
 		foreach my $s ( $topsubj->children() )
 		{
 			$ul->appendChild( 
 				_subject_browser_input_aux( 
 					$field,
-					$session,
 					$s,
 					$subject,
 					\%expanded,
@@ -218,7 +217,7 @@ sub subject_browser_input
 		$bits{opts} = $ul;
 	}
 
-	$html->appendChild( $session->html_phrase( 
+	$html->appendChild( &SESSION->html_phrase( 
 			"lib/extras:subject_browser",
 			%bits ) );
 
@@ -228,7 +227,7 @@ sub subject_browser_input
 
 sub _subject_browser_input_aux
 {
-	my( $field, $session, $subject, $current_subj, $expanded, $baseurl, $values ) = @_;
+	my( $field, $subject, $current_subj, $expanded, $baseurl, $values ) = trim_params(@_);
 
 	my $addurl = $baseurl;
 	foreach my $v ( @{$values} )
@@ -236,7 +235,7 @@ sub _subject_browser_input_aux
 		$addurl.= '&'.$field->get_name.'='.$v;
 	}
 
-	my $li = $session->make_element( "li" );
+	my $li = &SESSION->make_element( "li" );
 
 	my $n_kids = scalar $subject->children();
 	my $exp = 0;
@@ -260,15 +259,15 @@ sub _subject_browser_input_aux
 	if( $exp == -1 )
 	{
 		my $url = $addurl.'&_internal_'.$field->get_name.'_view_'.$subject->get_id.'=1#t';
-		my $a = $session->make_element( "a", href=>$url );
+		my $a = &SESSION->make_element( "a", href=>$url );
 		$a->appendChild( $subject->render_description );
 		$li->appendChild( $a );
-		$li->appendChild( $session->html_phrase(
+		$li->appendChild( &SESSION->html_phrase(
                        	"lib/extras:subject_browser_expandable" ) );
 	}
 	else
 	{
-		my $span = $session->make_element( 
+		my $span = &SESSION->make_element( 
 			"span", 
 			class=>"subject_browser_".($selected?"":"un")."selected" );
 		$span->appendChild( $subject->render_description );
@@ -277,27 +276,26 @@ sub _subject_browser_input_aux
 	if( $subject->can_post && $exp != -1 && !$selected )
 	{
 		my $ibutton = '_internal_'.$field->get_name.'_view_'.$current_subj->get_id.'=1';
-		if( $session->internal_button_pressed )
+		if( &SESSION->internal_button_pressed )
 		{
-			my $intact = '_internal_'.$session->get_internal_button();
-			$ibutton = $intact.'='.$session->param( $intact );
+			my $intact = '_internal_'.&SESSION->get_internal_button();
+			$ibutton = $intact.'='.&SESSION->param( $intact );
 		}
 
 		my $url = $addurl.'&'.$ibutton.'&'.$field->get_name.'='.$subject->get_id.'#t';
-		$li->appendChild(  $session->html_phrase(
+		$li->appendChild(  &SESSION->html_phrase(
                        	"lib/extras:subject_browser_add",
-			link=>$session->make_element( "a", href=>$url ) ) );
+			link=>&SESSION->make_element( "a", href=>$url ) ) );
 	}
 	if( $exp == 1 )
 	{
-		$li->appendChild( $session->make_element( "br" ));
+		$li->appendChild( &SESSION->make_element( "br" ));
 
-		my $ul = $session->make_element( "ul" );
+		my $ul = &SESSION->make_element( "ul" );
 		foreach my $s ( $subject->children() )
 		{
 				$ul->appendChild( _subject_browser_input_aux(
 					$field,
-					$session, 
 					$s, 
 					$current_subj,
 					$expanded, 

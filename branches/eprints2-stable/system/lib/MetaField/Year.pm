@@ -39,7 +39,7 @@ BEGIN
 }
 
 use EPrints::MetaField::Int;
-
+use EPrints::Session;
 
 
 sub get_digits
@@ -49,9 +49,9 @@ sub get_digits
 
 sub render_search_input
 {
-	my( $self, $session, $searchfield ) = @_;
+	my( $self, $searchfield ) = trim_params(@_);
 	
-	return $session->make_element( "input",
+	return &SESSION->make_element( "input",
 				"accept-charset" => "utf-8",
 				name=>$searchfield->get_form_prefix,
 				value=>$searchfield->get_value,
@@ -61,9 +61,9 @@ sub render_search_input
 
 sub from_search_form
 {
-	my( $self, $session, $prefix ) = @_;
+	my( $self, $prefix ) = trim_params(@_);
 
-	my $val = $session->param( $prefix );
+	my $val = &SESSION->param( $prefix );
 	return unless defined $val;
 
 	if( $val =~ m/^(\d\d\d\d)?\-?(\d\d\d\d)?/ )
@@ -71,7 +71,7 @@ sub from_search_form
 		return( $val );
 	}
 			
-	return( undef,undef,undef, $session->phrase( "lib/searchfield:year_err" ) );
+	return( undef,undef,undef, &SESSION->phrase( "lib/searchfield:year_err" ) );
 }
 
 sub get_property_defaults

@@ -19,22 +19,20 @@ use EPrints::User;
 
 use strict;
 
-my $session = EPrints::Session->new();
-exit( 0 ) unless( defined $session );
+EPrints::Session::start;
 
 # Check we have privs
-if( !$session->auth_check( "editor" ) )
+if( !&SESSION->auth_check( "editor" ) )
 {
-	$session->terminate();
 	exit( 0 );
 }
 #cjg does not check that item is editable...
 
-my $user = $session->current_user();
+my $user = &SESSION->current_user();
 
 my( $page, $p, $table, $tr, $td, $th, $a );
 
-$page = $session->make_doc_fragment();
+$page = &SESSION->make_doc_fragment();
 
 # Get EPrints in the submission buffer
 my @eprints = $user->get_editable_eprints();
@@ -42,50 +40,50 @@ my @eprints = $user->get_editable_eprints();
 if( scalar @eprints == 0 )
 {
 	# No EPrints
-	$page->appendChild( $session->html_phrase( 
+	$page->appendChild( &SESSION->html_phrase( 
 		"cgi/users/buffer:no_entries",
 		scope=>$user->render_value( "editperms" ) ) );
 }
 else
 {
-	$page->appendChild( $session->html_phrase( 
+	$page->appendChild( &SESSION->html_phrase( 
 		"cgi/users/buffer:buffer_blurb",
 		scope=>$user->render_value( "editperms" ) ) );
 
-	$table = $session->make_element( "table", border=>1, cellpadding=>5 );
+	$table = &SESSION->make_element( "table", border=>1, cellpadding=>5 );
 	$page->appendChild( $table );
-	$tr = $session->make_element( "tr" );
+	$tr = &SESSION->make_element( "tr" );
 	$table->appendChild( $tr );
 	
-	$th = $session->make_element( "th" );
-	$th->appendChild( $session->html_phrase( "cgi/users/buffer:title" ) );
+	$th = &SESSION->make_element( "th" );
+	$th->appendChild( &SESSION->html_phrase( "cgi/users/buffer:title" ) );
 	$tr->appendChild( $th );
 
-	$th = $session->make_element( "th" );
-	$th->appendChild( $session->html_phrase( "cgi/users/buffer:sub_by" ) );
+	$th = &SESSION->make_element( "th" );
+	$th->appendChild( &SESSION->html_phrase( "cgi/users/buffer:sub_by" ) );
 	$tr->appendChild( $th );
 
-	$th = $session->make_element( "th" );
-	$th->appendChild( $session->html_phrase( "cgi/users/buffer:sub_date" ) );
+	$th = &SESSION->make_element( "th" );
+	$th->appendChild( &SESSION->html_phrase( "cgi/users/buffer:sub_date" ) );
 	$tr->appendChild( $th );
 
 	my $e;
 	foreach $e (@eprints)
 	{
-		$tr = $session->make_element( "tr" );
+		$tr = &SESSION->make_element( "tr" );
 		$table->appendChild( $tr );
 
 		# Title
-		$td = $session->make_element( "td" );
+		$td = &SESSION->make_element( "td" );
 		$tr->appendChild( $td );
-		$a = $session->render_link( "edit_eprint?dataset=buffer&eprintid=".$e->get_value("eprintid") );
+		$a = &SESSION->render_link( "edit_eprint?dataset=buffer&eprintid=".$e->get_value("eprintid") );
 		$a->appendChild( $e->render_description() );
 		$td->appendChild( $a );
 		
 		# Link to user
-		my $user = new EPrints::User( $session, $e->get_value( "userid" ) );
+		my $user = new EPrints::User( $e->get_value( "userid" ) );
 		
-		$td = $session->make_element( "td" );
+		$td = &SESSION->make_element( "td" );
 		$tr->appendChild( $td );
 		if( defined $user )
 		{
@@ -94,23 +92,24 @@ else
 		}
 		else
 		{
-			$td->appendChild( $session->html_phrase( "cgi/users/buffer:invalid" ) );
+			$td->appendChild( &SESSION->html_phrase( "cgi/users/buffer:invalid" ) );
 		}
 	
-		my $buffds = $session->get_archive()->get_dataset( "buffer" );	
+		my $buffds = &ARCHIVE->get_dataset( "buffer" );	
 		
-		$td = $session->make_element( "td" );
+		$td = &SESSION->make_element( "td" );
 		$tr->appendChild( $td );
-		$td->appendChild( $buffds->get_field( "datestamp" )->render_value( $session, $e->get_value( "datestamp" ) ) );
+		$td->appendChild( $buffds->get_field( "datestamp" )->render_value( $e->get_value( "datestamp" ) ) );
 	}
 }
 
-$page->appendChild( $session->html_phrase( "general:userhome_link" ) );
+$page->appendChild( &SESSION->html_phrase( "general:userhome_link" ) );
 
-$session->build_page(
-	$session->html_phrase( "cgi/users/buffer:overview_title" ), 
+&SESSION->build_page(
+	&SESSION->html_phrase( "cgi/users/buffer:overview_title" ), 
 	$page,
 	"buffer" );
-$session->send_page();
+&SESSION->send_page();
+exit;
 
-$session->terminate();
+

@@ -15,9 +15,8 @@
 use EPrints::Session;
 use EPrints::UserPage;
 
-my $session = new EPrints::Session;
+EPrints::Session::start;
 
-EPrints::UserPage::process( $session, 0 );
+EPrints::UserPage::process( 0 );
 
-$session->terminate();
-
+exit;

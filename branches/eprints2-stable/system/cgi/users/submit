@@ -20,24 +20,22 @@ use EPrints::Document;
 use EPrints::SubmissionForm;
 
 use strict;
-my $session = new EPrints::Session;
-exit( 0 ) unless( defined $session );
+
+EPrints::Session::start;
 
 # Check we have privs
-if( !$session->auth_check( "deposit" ) )
+if( !&SESSION->auth_check( "deposit" ) )
 {
-	$session->terminate();
 	exit( 0 );
 }
 
-my $user = $session->current_user();
+my $user = &SESSION->current_user();
 
 my $subform = new EPrints::SubmissionForm(
-	$session,
-	$session->get_archive->get_conf( "userhome" ),
+	&ARCHIVE->get_conf( "userhome" ),
 	0,
-       	$session->get_archive->get_dataset( "inbox" ),
+       	&ARCHIVE->get_dataset( "inbox" ),
 	"submit" );
 $subform->process;
+exit;
 
-$session->terminate;

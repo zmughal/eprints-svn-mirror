@@ -31,7 +31,7 @@ undocumented
 #
 # INSTANCE VARIABLES:
 #
-#  $self->{"foo"}
+#  $self->{foo}
 #     undefined
 #
 ######################################################################
@@ -70,7 +70,7 @@ use strict;
 ######################################################################
 =pod
 
-=item $thing = EPrints::SearchField->new( $session, $dataset, $fields, $value, $match, $merge, $prefix )
+=item $thing = EPrints::SearchField->new( $dataset, $fields, $value, $match, $merge, $prefix )
 
 undocumented
 
@@ -82,46 +82,45 @@ be a name hash.
 
 sub new
 {
-	my( $class, $session, $dataset, $fields, $value, $match, $merge, $prefix, $id ) = @_;
+	my( $class, $dataset, $fields, $value, $match, $merge, $prefix, $id ) = trim_params(@_);
 	
 	my $self = {};
 	bless $self, $class;
 	
-	$self->{"session"} = $session;
-	$self->{"dataset"} = $dataset;
+	$self->{dataset} = $dataset;
 
-	$self->{"value"} = $value;
-	$self->{"match"} = ( defined $match ? $match : "EQ" );
-	$self->{"merge"} = ( defined $merge ? $merge : "PHR" );
+	$self->{value} = $value;
+	$self->{match} = ( defined $match ? $match : "EQ" );
+	$self->{merge} = ( defined $merge ? $merge : "PHR" );
 
 	if( ref( $fields ) ne "ARRAY" )
 	{
 		$fields = [ $fields ];
 	}
 
-	$self->{"fieldlist"} = $fields;
+	$self->{fieldlist} = $fields;
 
 	$prefix = "" unless defined $prefix;
 		
-	$self->{"id"} = $id;
+	$self->{id} = $id;
 
-	if( !defined $self->{"id"} )
+	if( !defined $self->{id} )
 	{
 		my( @fieldnames );
-		foreach my $f (@{$self->{"fieldlist"}})
+		foreach my $f (@{$self->{fieldlist}})
 		{
 			push @fieldnames, $f->get_sql_name();
 		}
-		$self->{"id"} = join '/', sort @fieldnames;
+		$self->{id} = join '/', sort @fieldnames;
 	}
 
 
-	$self->{"form_name_prefix"} = $prefix.$self->{"id"};
-	$self->{"field"} = $fields->[0];
+	$self->{"form_name_prefix"} = $prefix.$self->{id};
+	$self->{field} = $fields->[0];
 
-	if( $self->{"field"}->get_property( "hasid" ) )
+	if( $self->{field}->get_property( "hasid" ) )
 	{
-		$self->{"field"} = $self->{"field"}->get_main_field();
+		$self->{field} = $self->{field}->get_main_field();
 	}
 
 	# a search is "simple" if it contains a mix of fields. 
@@ -162,7 +161,7 @@ sub clear
 {
 	my( $self ) = @_;
 	
-	$self->{"match"} = "NO";
+	$self->{match} = "NO";
 }
 
 ######################################################################
@@ -189,27 +188,25 @@ sub from_form
 {
 	my( $self ) = @_;
 
-	my $val = $self->{"session"}->param( $self->{"form_name_prefix"} );
+	my $val = &SESSION->param( $self->{"form_name_prefix"} );
 	$val =~ s/^\s+//;
 	$val =~ s/\s+$//;
 	$val = undef if( $val eq "" );
 
 	my $problem;
 
-	( $self->{"value"}, $self->{"merge"}, $self->{"match"}, $problem ) =
-		$self->{"field"}->from_search_form( 
-			$self->{"session"}, 
-			$self->{"form_name_prefix"} );
+	( $self->{value}, $self->{merge}, $self->{match}, $problem ) =
+		$self->{field}->from_search_form( $self->{form_name_prefix} );
 
-	$self->{"value"} = "" unless( defined $self->{"value"} );
-	$self->{"merge"} = "PHR" unless( defined $self->{"merge"} );
-	$self->{"match"} = "EQ" unless( defined $self->{"match"} );
+	$self->{value} = "" unless( defined $self->{value} );
+	$self->{merge} = "PHR" unless( defined $self->{merge} );
+	$self->{match} = "EQ" unless( defined $self->{match} );
 
 	# match = NO? if value==""
 
 	if( $problem )
 	{
-		$self->{"match"} = "NO";
+		$self->{match} = "NO";
 		return $problem;
 	}
 
@@ -234,17 +231,17 @@ sub get_conditions
 {
 	my( $self ) = @_;
 
-	if( $self->{"match"} eq "NO" )
+	if( $self->{match} eq "NO" )
 	{
 		return EPrints::SearchCondition->new( 'FALSE' );
 	}
 
-	if( $self->{"match"} eq "EX" )
+	if( $self->{match} eq "EX" )
 	{
-		return $self->get_conditions_no_split( $self->{"value"} );
+		return $self->get_conditions_no_split( $self->{value} );
 	}
 
-	if( !EPrints::Utils::is_set( $self->{"value"} ) )
+	if( !EPrints::Utils::is_set( $self->{value} ) )
 	{
 		return EPrints::SearchCondition->new( 'FALSE' );
 	}
@@ -253,16 +250,11 @@ sub get_conditions
 	if( $self->{"search_mode"} eq "simple" )
 	{
 		@parts = EPrints::Index::split_words( 
-			$self->{"session"},  # could be just archive?
-			EPrints::Index::apply_mapping( 
-				$self->{"session"}, 
-				$self->{"value"} ) );
+			EPrints::Index::apply_mapping( $self->{value} ) );
 	}
 	else
 	{
-		@parts = $self->{"field"}->split_search_value( 
-			$self->{"session"},
-			$self->{"value"} );
+		@parts = $self->{field}->split_search_value( $self->{value} );
 	}
 
 	my @r = ();
@@ -272,7 +264,7 @@ sub get_conditions
 	}
 	
 	return EPrints::SearchCondition->new( 
-		($self->{"merge"}eq"ANY"?"OR":"AND"), 
+		($self->{merge}eq"ANY"?"OR":"AND"), 
 		@r );
 }
 
@@ -283,14 +275,13 @@ sub get_conditions_no_split
 	# special case for name?
 
 	my @r = ();
-	foreach my $field ( @{$self->{"fieldlist"}} )
+	foreach my $field ( @{$self->{fieldlist}} )
 	{
 		push @r, $field->get_search_conditions( 
-				$self->{"session"},
-				$self->{"dataset"},
+				$self->{dataset},
 				$search_value,
-				$self->{"match"},
-				$self->{"merge"},
+				$self->{match},
+				$self->{merge},
 				$self->{"search_mode"} );
 	}
 	return EPrints::SearchCondition->new( 'OR', @r );
@@ -312,7 +303,7 @@ sub get_value
 {
 	my( $self ) = @_;
 
-	return $self->{"value"};
+	return $self->{value};
 }
 
 
@@ -330,7 +321,7 @@ sub get_match
 {
 	my( $self ) = @_;
 
-	return $self->{"match"};
+	return $self->{match};
 }
 
 
@@ -348,7 +339,7 @@ sub get_merge
 {
 	my( $self ) = @_;
 
-	return $self->{"merge"};
+	return $self->{merge};
 }
 
 
@@ -368,7 +359,7 @@ undocumented
 sub get_field
 {
 	my( $self ) = @_;
-	return $self->{"field"};
+	return $self->{field};
 }
 
 ######################################################################
@@ -384,7 +375,7 @@ undocumented
 sub get_fields
 {
 	my( $self ) = @_;
-	return $self->{"fieldlist"};
+	return $self->{fieldlist};
 }
 
 
@@ -405,7 +396,7 @@ sub render
 {
 	my( $self ) = @_;
 
-	return $self->{"field"}->render_search_input( $self->{"session"}, $self );
+	return $self->{field}->render_search_input( $self );
 }
 
 ######################################################################
@@ -442,16 +433,15 @@ sub render_description
 {
 	my( $self ) = @_;
 
-	my $frag = $self->{"session"}->make_doc_fragment;
+	my $frag = &SESSION->make_doc_fragment;
 
 	my $sfname = $self->render_name;
 
-	return $self->{"field"}->render_search_description(
-			$self->{"session"},
+	return $self->{field}->render_search_description(
 			$sfname,
-			$self->{"value"},
-			$self->{"merge"},
-			$self->{"match"} );
+			$self->{value},
+			$self->{merge},
+			$self->{match} );
 }
 
 ######################################################################
@@ -468,28 +458,27 @@ sub render_name
 {
 	my( $self ) = @_;
 
-	if( defined $self->{"id"} )
+	if( defined $self->{id} )
 	{
-		my $phraseid = "searchfield_name_".$self->{"id"};
-		if( $self->{"session"}->get_lang->has_phrase( $phraseid ) )
+		my $phraseid = "searchfield_name_".$self->{id};
+		if( &SESSION->get_lang->has_phrase( $phraseid ) )
 		{
-			return $self->{"session"}->html_phrase( $phraseid );
+			return &SESSION->html_phrase( $phraseid );
 		}
 	}
 
 	# No id was set, gotta make a normal name from 
 	# the metadata fields.
-	my( $sfname ) = $self->{"session"}->make_doc_fragment;
+	my( $sfname ) = &SESSION->make_doc_fragment;
 	my( $first ) = 1;
-	foreach my $f (@{$self->{"fieldlist"}})
+	foreach my $f (@{$self->{fieldlist}})
 	{
 		if( !$first ) 
 		{ 
-			$sfname->appendChild( 
-				$self->{"session"}->make_text( "/" ) );
+			$sfname->appendChild( &SESSION->make_text( "/" ) );
 		}
 		$first = 0;
-		$sfname->appendChild( $f->render_name( $self->{"session"} ) );
+		$sfname->appendChild( $f->render_name );
 	}
 	return $sfname;
 }
@@ -509,14 +498,14 @@ sub render_help
 {
         my( $self ) = @_;
 
-	my $custom_help = "searchfield_help_".$self->{"id"};
-	my $phrase_id = "lib/searchfield:help_".$self->{"field"}->get_type();
-	if( $self->{"session"}->get_lang->has_phrase( $custom_help ) )
+	my $custom_help = "searchfield_help_".$self->{id};
+	my $phrase_id = "lib/searchfield:help_".$self->{field}->get_type();
+	if( &SESSION->get_lang->has_phrase( $custom_help ) )
 	{
 		$phrase_id = $custom_help
 	}
 		
-        return $self->{"session"}->html_phrase( $phrase_id );
+        return &SESSION->html_phrase( $phrase_id );
 }
 
 
@@ -533,7 +522,7 @@ undocumented
 sub is_type
 {
 	my( $self, @types ) = @_;
-	return $self->{"field"}->is_type( @types );
+	return $self->{field}->is_type( @types );
 }
 
 
@@ -550,7 +539,7 @@ undocumented
 sub get_id
 {
 	my( $self ) = @_;
-	return $self->{"id"};
+	return $self->{id};
 }
 
 
@@ -568,7 +557,7 @@ sub is_set
 {
 	my( $self ) = @_;
 
-	return EPrints::Utils::is_set( $self->{"value"} ) || $self->{"match"} eq "EX";
+	return EPrints::Utils::is_set( $self->{value} ) || $self->{match} eq "EX";
 }
 
 
@@ -589,10 +578,10 @@ sub serialise
 	return undef unless( $self->is_set() );
 
 	my @escapedparts;
-	foreach($self->{"id"},
-		$self->{"merge"}, 	
-		$self->{"match"}, 
-		$self->{"value"} )
+	foreach($self->{id},
+		$self->{merge}, 	
+		$self->{match}, 
+		$self->{value} )
 	{
 		my $item = $_;
 		$item =~ s/[\\\:]/\\$&/g;
@@ -607,7 +596,7 @@ sub serialise
 #	my( $self ) = @_;
 #
 #	my @fnames;
-#	foreach( @{$self->{"fieldlist"}} )
+#	foreach( @{$self->{fieldlist}} )
 #	{
 #		push @fnames, $_->get_name().($_->get_property( "idpart" )?".id":"");
 #	}
@@ -632,12 +621,12 @@ sub unserialise
 
 	$string=~m/^([^:]*):([^:]*):([^:]*):(.*)$/;
 	my $data = {};
-	$data->{"id"} = $1;
-	$data->{"merge"} = $2;
-	$data->{"match"} = $3;
-	$data->{"value"} = $4;
+	$data->{id} = $1;
+	$data->{merge} = $2;
+	$data->{match} = $3;
+	$data->{value} = $4;
 	# Un-escape (cjg, not very tested)
-	$data->{"value"} =~ s/\\(.)/$1/g;
+	$data->{value} =~ s/\\(.)/$1/g;
 
 	return $data;
 }
@@ -660,7 +649,7 @@ sub set_dataset
 {
 	my( $self, $dataset ) = @_;
 
-	$self->{"dataset"} = $dataset;
+	$self->{dataset} = $dataset;
 }
 
 

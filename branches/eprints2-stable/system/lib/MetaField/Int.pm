@@ -39,8 +39,7 @@ BEGIN
 }
 
 use EPrints::MetaField::Basic;
-
-
+use EPrints::Session;
 
 sub get_sql_type
 {
@@ -79,9 +78,9 @@ sub ordervalue_basic
 
 sub render_search_input
 {
-	my( $self, $session, $searchfield ) = @_;
+	my( $self, $searchfield ) = trim_params(@_);
 	
-	return $session->make_element( "input",
+	return &SESSION->make_element( "input",
 				"accept-charset" => "utf-8",
 				name=>$searchfield->get_form_prefix,
 				value=>$searchfield->get_value,
@@ -91,9 +90,9 @@ sub render_search_input
 
 sub from_search_form
 {
-	my( $self, $session, $prefix ) = @_;
+	my( $self, $prefix ) = trim_params(@_);
 
-	my $val = $session->param( $prefix );
+	my $val = &SESSION->param( $prefix );
 	return unless defined $val;
 
 	if( $val =~ m/^(\d+)?\-?(\d+)?/ )
@@ -101,44 +100,44 @@ sub from_search_form
 		return( $val );
 	}
 			
-	return( undef,undef,undef, $session->phrase( "lib/searchfield:int_err" ) );
+	return( undef,undef,undef, &SESSION->phrase( "lib/searchfield:int_err" ) );
 }
 
 sub render_search_value
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $value ) = trim_params(@_);
 
 	my $type = $self->get_type;
 
 	if( $value =~ m/^([0-9]+)-([0-9]+)$/ )
 	{
-		return $session->html_phrase(
+		return &SESSION->html_phrase(
 			"lib/searchfield:desc_".$type."_between",
-			from => $session->make_text( $1 ),
-			to => $session->make_text( $2 ) );
+			from => &SESSION->make_text( $1 ),
+			to => &SESSION->make_text( $2 ) );
 	}
 
 	if( $value =~ m/^-([0-9]+)$/ )
 	{
-		return $session->html_phrase(
+		return &SESSION->html_phrase(
 			"lib/searchfield:desc_".$type."_orless",
-			to => $session->make_text( $1 ) );
+			to => &SESSION->make_text( $1 ) );
 	}
 
 	if( $value =~ m/^([0-9]+)-$/ )
 	{
-		return $session->html_phrase(
+		return &SESSION->html_phrase(
 			"lib/searchfield:desc_".$type."_ormore",
-			from => $session->make_text( $1 ) );
+			from => &SESSION->make_text( $1 ) );
 	}
 
-	return $session->make_text( $value );
+	return &SESSION->make_text( $value );
 }
 
 sub get_search_conditions_not_ex
 {
-	my( $self, $session, $dataset, $search_value, $match, $merge,
-		$search_mode ) = @_;
+	my( $self, $dataset, $search_value, $match, $merge,
+		$search_mode ) = trim_params(@_);
 	
 	# N
 	# N-

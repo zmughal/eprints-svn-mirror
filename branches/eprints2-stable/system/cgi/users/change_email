@@ -15,47 +15,43 @@
 use EPrints::Session;
 use strict;
 
-my $session = new EPrints::Session;
-exit( 0 ) unless( defined $session );
+EPrints::Session::start;
 
-exit( 0 ) unless( $session->auth_check( "change-email" ) );
+exit( 0 ) unless( &SESSION->auth_check( "change-email" ) );
 
-my( $page, $title ) = make_page( $session );
+my( $page, $title ) = make_page();
 
-$page->appendChild( $session->html_phrase( "general:userhome_link" ) );
+$page->appendChild( &SESSION->html_phrase( "general:userhome_link" ) );
 
-$session->build_page( $title, $page, "change_email" );
-$session->send_page();
-
-$session->terminate();
+&SESSION->build_page( $title, $page, "change_email" );
+&SESSION->send_page;
+exit;
 
 sub make_page
 {
-	my( $session ) = @_;
+	my $user = &SESSION->current_user();
 
-	my $user = $session->current_user();
+	my $page = &SESSION->make_doc_fragment;
+	my $title = &SESSION->html_phrase( "cgi/users/change_email:title" );
 
-	my $page = $session->make_doc_fragment;
-	my $title = $session->html_phrase( "cgi/users/change_email:title" );
-
-	my $user_ds = $session->get_archive()->get_dataset( "user" );
+	my $user_ds = &ARCHIVE->get_dataset( "user" );
 
 	my $f_newemail = $user_ds->get_field( "newemail" );
 
-	if( !$session->have_parameters() )
+	if( !&SESSION->have_parameters() )
 	{
-		$page->appendChild( $session->html_phrase( "cgi/users/change_email:intro",
+		$page->appendChild( &SESSION->html_phrase( "cgi/users/change_email:intro",
 			email=>$user->render_value( "email" ) ) );
 
 		my $fields = [ $f_newemail ];
 
-		$page->appendChild( $session->render_input_form(
+		$page->appendChild( &SESSION->render_input_form(
 			fields=>$fields,
 			values=>{},
 			show_help=>1,
 			default_action=>"submit",
 			buttons=>{
-				submit=>$session->phrase( "cgi/users/change_email:action_submit" )
+				submit=>&SESSION->phrase( "cgi/users/change_email:action_submit" )
 			},
 			dest=>"change_email" ) );
 
@@ -63,11 +59,11 @@ sub make_page
 	}
 
 	# Process the form.
-	my $newemail = $f_newemail->form_value( $session );
+	my $newemail = $f_newemail->form_value;
 
 	if( !EPrints::Utils::is_set( $newemail ) )
 	{
-		$page->appendChild( $session->html_phrase( 
+		$page->appendChild( &SESSION->html_phrase( 
 			"cgi/users/change_email:no_email" ) );
 		return( $page, $title );
 	}
@@ -80,14 +76,14 @@ sub make_page
 	$user->commit();
 	$user->mail( 
 		"cgi/users/change_email:changeemail",
-		$session->html_phrase( "mail_email_pin", 
-			confirmurl => $session->make_text( $session->get_archive()->get_conf( "perl_url" )."/confirm?userid=".$user->get_value( "userid" )."&pin=".$pin ),
-			newemail => $session->make_text( $newemail ) ),
+		&SESSION->html_phrase( "mail_email_pin", 
+			confirmurl => &SESSION->make_text( &ARCHIVE->get_conf( "perl_url" )."/confirm?userid=".$user->get_value( "userid" )."&pin=".$pin ),
+			newemail => &SESSION->make_text( $newemail ) ),
 		undef,
 		$newemail );
-	$page->appendChild( $session->html_phrase( 
+	$page->appendChild( &SESSION->html_phrase( 
 		"cgi/users/change_email:mail_sent",
-		email=>$session->make_text( $newemail ) ) );
+		email=>&SESSION->make_text( $newemail ) ) );
 	return( $page, $title );
 }
 

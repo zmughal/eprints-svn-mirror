@@ -27,6 +27,7 @@ B<EPrints::Exporter> -
 
 package EPrints::Exporter;
 
+
 use strict;
 
 ######################################################################
@@ -59,7 +60,7 @@ sub new
 		{
 			EPrints::Config::abort( 'web exporter does not have mimetype set' );
 		} 
-		$self->{opts}->{session}->send_http_header( content_type=>$self->{opts}->{mimetype} );
+		&SESSION->send_http_header( content_type=>$self->{opts}->{mimetype} );
 	}
 	else
 	{
@@ -106,8 +107,6 @@ Clean up and pass a return value if appropriate.
 sub finish
 {
 	my( $self ) = @_;
-
-	return "HI\n";
 }
 
 

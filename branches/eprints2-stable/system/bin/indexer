@@ -1,4 +1,4 @@
-#!/usr/bin/perl  -I/opt/ep2stable/perl_lib -d:DProf
+#!/usr/bin/perl  -I/opt/ep2stable/perl_lib 
 
 ######################################################################
 #
@@ -359,25 +359,22 @@ while( 1 )
 			my $cmd = "/usr/bin/renice 8 $$";	
 			`$cmd`;
 			my $index;
-			my $session;
 			$SIG{TERM} = sub { 
 				indexlog( "** Worker process terminated: $$" ) if( $p->{loglevel} > 2 );
 				$index->cleanup if( defined $index );
-				$session->terminate if( defined $session );
 				exit;
 			};
-			$session = new EPrints::Session( 1 , $arc_id , $p->{noise} );
+			unless(EPrints::Session::start($arc_id,$p->{noise}))
+			{
+				indexlog( "**** Error starting eprints session on '$arc_id'" ) if( $p->{loglevel} > 0 );
+				exit( 1 );
+			}
 
 			my @ds_ids = &EPrints::DataSet::get_sql_dataset_ids;
 			foreach my $ds_id ( sort @ds_ids )
 			{
 				indexlog( "** Indexing dataset '$ds_id' of '$arc_id'" ) if( $p->{loglevel} > 2 );
 				$0 = "EPrints Indexer for ".$EPrints::SystemSettings::conf->{base_path}.": $arc_id/$ds_id";
-				if( !defined $session ) 
-				{
-					indexlog( "**** Error starting eprints session on '$arc_id'" ) if( $p->{loglevel} > 0 );
-					exit( 1 );
-				}
 				my $ilog;
 				my $elog;
 				if( $p->{loglevel} > 1 )
@@ -395,8 +392,7 @@ while( 1 )
 				}
 				
 				$index = new EPrints::Index( 
-						$session, 
-						$session->get_archive->get_dataset( $ds_id ),
+						&ARCHIVE->get_dataset( $ds_id ),
 						$ilog,
 						$elog );
 				$index->change_pname( 1 );
@@ -414,7 +410,6 @@ while( 1 )
 
 
 			indexlog( "** Sub process exiting: $$" ) if( $p->{loglevel} > 2 );
-			$session->terminate;
 			exit;
 		}
 		wait; 

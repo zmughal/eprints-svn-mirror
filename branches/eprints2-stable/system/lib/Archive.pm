@@ -72,6 +72,7 @@ database and website.
 
 package EPrints::Archive;
 
+use EPrints::Session;
 use EPrints::Config;
 use EPrints::Utils;
 use EPrints::DataSet;
@@ -162,9 +163,15 @@ sub new_archive_by_id
 	}
 	
 	#print STDERR "Loading: $id\n";
+	
 
 	my $self = {};
 	bless $self, $class;
+
+	# Call to full path of &ARCHIVE as EPrints::Session will
+	# not yet be loaded.	
+	my $oldarchive = &EPrints::Session::ARCHIVE;
+	EPrints::Session::set_archive( $self );
 
 	$self->{config} = EPrints::Config::load_archive_config_module( $id );
 
@@ -176,6 +183,8 @@ sub new_archive_by_id
 
 	$self->{id} = $id;
 	$self->{xmldoc} = EPrints::XML::make_document();
+	my %p = %{EPrints::Plugins::get_all()};
+	$self->{plugins} = \%p;
 
 	# If loading any of the XML config files then 
 	# abort loading the config for this archive.
@@ -187,7 +196,7 @@ sub new_archive_by_id
 		$self->_load_languages() || return;
 		$self->_load_templates() || return;
 		$self->_load_citation_specs() || return;
-
+		$self->_load_plugins() || return;
 	}
 
 	$self->{field_defaults} = {};
@@ -209,13 +218,34 @@ sub new_archive_by_id
 		}
 	}
 		
-
-
 	$ARCHIVE_CACHE{$id} = $self;
-	#$self->log("done: new($id)");
+
+	EPrints::Session::set_archive( $oldarchive );
 	return $self;
 }
 
+######################################################################
+=pod
+
+=item $something = $archive->plugin( $plugin_id, @params )
+
+Call the plugin with the given ID. From the archive config if possible,
+otherwise from the system plugins.
+
+=cut
+######################################################################
+
+sub plugin
+{
+	my( $self, $path, @params ) = @_;
+
+	if( !defined $self->{plugins}->{$path} )
+	{
+		EPrints::Config::abort( "Plugin does not exist: $path\n" );
+	}
+
+	return &{$self->{plugins}->{$path}}( @params );
+}
 
 ######################################################################
 =pod
@@ -273,9 +303,7 @@ sub _load_languages
 	my( $self ) = @_;
 	
 	my $defaultid = $self->get_conf( "defaultlanguage" );
-	$self->{langs}->{$defaultid} = EPrints::Language->new( 
-		$defaultid, 
-		$self );
+	$self->{langs}->{$defaultid} = EPrints::Language->new( $defaultid );
 
 	if( !defined $self->{langs}->{$defaultid} )
 	{
@@ -289,7 +317,6 @@ sub _load_languages
 		$self->{langs}->{$langid} =
 			 EPrints::Language->new( 
 				$langid , 
-				$self , 
 				$self->{langs}->{$defaultid} );
 		if( !defined $self->{langs}->{$langid} )
 		{
@@ -431,6 +458,29 @@ sub get_citation_spec
 	my( $self, $langid, $type ) = @_;
 
 	return $self->{cstyles}->{$langid}->{$type};
+}
+
+######################################################################
+# 
+# $success = $archive->_load_plugins
+#
+# Loads all the archive plugins
+#
+######################################################################
+
+sub _load_plugins
+{
+	my( $self ) = @_;
+
+	my $plugins_dir = $self->get_conf( "config_path" ).'/plugins';
+	unless( -d $plugins_dir )
+	{
+		# no plugins dir, skip it then
+		return 1;
+	}
+	EPrints::Plugins::load_dir( $plugins_dir );
+	return 1;
+
 }
 
 ######################################################################
@@ -594,8 +644,7 @@ sub _load_datasets
 	foreach $ds_id ( EPrints::DataSet::get_dataset_ids() )
 	{
 		$self->{datasets}->{$ds_id} = 
-			EPrints::DataSet->new( $self, $ds_id, $dsconf,
-				$cache );
+			EPrints::DataSet->new( $ds_id, $dsconf, $cache );
 	}
 
 	EPrints::XML::dispose( $doc );
@@ -702,10 +751,27 @@ for this archive with the given params and returns the result.
 sub call
 {
 	my( $self, $cmd, @params ) = @_;
-
+	
 	return &{$self->{class}."::".$cmd}( @params );
 }
 
+######################################################################
+=pod
+
+=item $result = $archive->register_plugin( $id, $code )
+
+Registers the given code as a plugin with given $id for this archive
+only.
+
+=cut
+######################################################################
+
+sub register_plugin
+{
+	my( $self, $id, $code ) = @_;
+
+	$self->{plugins}->{$id} = $code;
+}
 
 ######################################################################
 =pod
@@ -980,6 +1046,64 @@ END
 
 	return 1;
 }
+
+
+
+
+
+
+
+
+
+######################################################################
+=pod
+
+=item $type = $archive->getDatasetType( $dataset_id )
+
+Return a EPrints::Type::dataset object describing the requested
+dataset.
+
+=cut
+######################################################################
+
+sub getDatasetType
+{
+        my( $self, $dataset_id ) = @_;
+
+        if( defined $self->{DATASETS}->{$dataset_id} )
+        {
+                return $self->{DATASETS}->{$dataset_id};
+        }
+
+        my $file = '/home/cjg/Projects/ep3/cfg/datasets/'.$dataset_id.'.xml';
+
+        open( XML, $file ) || die "can't read $file";
+        my $XML = join('',<XML>);
+        close XML;
+        my $conf= EPrints::XML::parse_xml_string( $XML );
+        my $dataset_tag = ($conf->getElementsByTagName( "dataset" ))[0];
+        $self->{DATASETS}->{$dataset_id} = EPrints::Misc::xml_to_dataset(
+                                                $dataset_tag );
+        return $self->{DATASETS}->{$dataset_id};
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 1;

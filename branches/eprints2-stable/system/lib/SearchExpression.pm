@@ -57,6 +57,7 @@ use EPrints::Plugins;
 use EPrints::Language;
 
 use URI::Escape;
+
 use strict;
 # order method not presercved.
 
@@ -78,7 +79,7 @@ undocumented
 ######################################################################
 
 @EPrints::SearchExpression::OPTS = (
-	"session", 	"dataset", 	"allow_blank", 	"satisfy_all", 	
+	"dataset", 	"allow_blank", 	"satisfy_all", 	
 	"fieldnames", 	"staff", 	"order", 	"custom_order",
 	"keep_cache", 	"cache_id", 	"prefix", 	"defaults",
 	"citation", 	"page_size", 	"filters", 	"default_order",
@@ -90,7 +91,7 @@ sub new
 	
 	my $self = {};
 	bless $self, $class;
-	# only session & table are required.
+	# only table is required.
 	# setup defaults for the others:
 	$data{allow_blank} = 0 if ( !defined $data{allow_blank} );
 	$data{satisfy_all} = 1 if ( !defined $data{satisfy_all} );
@@ -125,9 +126,9 @@ END
 		$self->{$_} = $data{$_};
 	}
 
-	if( defined $data{"dataset_id"} )
+	if( defined $data{dataset_id} )
 	{
-		$self->{"dataset"} = $self->{"session"}->get_archive->get_dataset( $data{"dataset_id"} );
+		$self->{dataset} = &ARCHIVE->get_dataset( $data{dataset_id} );
 	}
 
 	if( defined $self->{custom_order} ) 
@@ -146,7 +147,7 @@ END
 #	{
 #		# Get {order} from {dataset} if possible.
 #
-#		$self->{order} = $self->{session}->get_archive->get_conf( 
+#		$self->{order} = &ARCHIVE->get_conf( 
 #					"default_order", 
 #					$self->{dataset}->confid );
 #	}
@@ -165,13 +166,13 @@ END
 	# the config.
 	if( $self->{fieldnames} eq "subscriptionfields" )
 	{
-		$self->{fieldnames} = $self->{session}->get_archive->get_conf(
+		$self->{fieldnames} = &ARCHIVE->get_conf(
 			"subscription_fields" );
 	}
 
 	if( $self->{fieldnames} eq "editpermfields" )
 	{
-		$self->{fieldnames} = $self->{session}->get_archive->get_conf(
+		$self->{fieldnames} = &ARCHIVE->get_conf(
 			"editor_limit_fields" );
 #cjg
 	}
@@ -211,16 +212,13 @@ END
 	if( !defined $self->{"default_order"} )
 	{
 		$self->{"default_order"} = 
-			$self->{session}->get_archive->get_conf( 
-				"default_order",
-				"eprint" );
+			&ARCHIVE->get_conf( "default_order", "eprint" );
 	}
 
 	if( !defined $self->{"page_size"} )
 	{
 		$self->{"page_size"} = 
-			$self->{session}->get_archive->get_conf( 
-				"results_page_size" );
+			&ARCHIVE->get_conf( "results_page_size" );
 	}
 
 	foreach my $fielddata (@{$self->{search_fields}})
@@ -297,7 +295,7 @@ sub from_cache
 {
 	my( $self, $id ) = @_;
 
-	my $string = $self->{session}->get_db()->cache_exp( $id );
+	my $string = &DATABASE->cache_exp( $id );
 
 	return( 0 ) if( !defined $string );
 	$self->from_string( $string );
@@ -328,7 +326,6 @@ sub add_field
 
 	# Create a new searchfield
 	my $searchfield = EPrints::SearchField->new( 
-					$self->{session},
 					$self->{dataset},
 					$metafields,
 					$value,
@@ -398,7 +395,7 @@ sub clear
 	
 	foreach my $sf ( $self->get_non_filter_searchfields )
 	{
-		$sf->clear();
+		$sf->clear;
 	}
 	
 	$self->{satisfy_all} = 1;
@@ -424,25 +421,25 @@ sub render_search_fields
 {
 	my( $self, $help ) = @_;
 
-	my $frag = $self->{session}->make_doc_fragment;
+	my $frag = &SESSION->make_doc_fragment;
 
 	foreach my $sf ( $self->get_non_filter_searchfields )
 	{
-		my $div = $self->{session}->make_element( 
+		my $div = &SESSION->make_element( 
 				"div" , 
 				class => "searchfieldname" );
 		$div->appendChild( $sf->render_name );
 		$frag->appendChild( $div );
 		if( $help )
 		{
-			$div = $self->{session}->make_element( 
+			$div = &SESSION->make_element( 
 				"div" , 
 				class => "searchfieldhelp" );
 			$div->appendChild( $sf->render_help );
 			$frag->appendChild( $div );
 		}
 
-		$div = $self->{session}->make_element( 
+		$div = &SESSION->make_element( 
 			"div" , 
 			class => "searchfieldinput" );
 		$frag->appendChild( $sf->render() );
@@ -466,7 +463,7 @@ sub render_search_form
 {
 	my( $self, $help, $show_anyall ) = @_;
 
-	my $form = $self->{session}->render_form( "get" );
+	my $form = &SESSION->render_form( "get" );
 	$form->appendChild( $self->render_search_fields( $help ) );
 
 	my $div;
@@ -474,21 +471,21 @@ sub render_search_form
 
 	if( $show_anyall )
 	{
-		$menu = $self->{session}->render_option_list(
+		$menu = &SESSION->render_option_list(
 			name=>$self->{prefix}."_satisfyall",
 			values=>[ "ALL", "ANY" ],
 			default=>( defined $self->{satisfy_all} && $self->{satisfy_all}==0 ?
 				"ANY" : "ALL" ),
-			labels=>{ "ALL" => $self->{session}->phrase( 
+			labels=>{ "ALL" => &SESSION->phrase( 
 						"lib/searchexpression:all" ),
-				  "ANY" => $self->{session}->phrase( 
+				  "ANY" => &SESSION->phrase( 
 						"lib/searchexpression:any" )} );
 
-		my $div = $self->{session}->make_element( 
+		my $div = &SESSION->make_element( 
 			"div" , 
 			class => "searchanyall" );
 		$div->appendChild( 
-			$self->{session}->html_phrase( 
+			&SESSION->html_phrase( 
 				"lib/searchexpression:must_fulfill",  
 				anyall=>$menu ) );
 		$form->appendChild( $div );	
@@ -496,13 +493,13 @@ sub render_search_form
 
 	$form->appendChild( $self->render_order_menu );
 
-	$div = $self->{session}->make_element( 
+	$div = &SESSION->make_element( 
 		"div" , 
 		class => "searchbuttons" );
-	$div->appendChild( $self->{session}->render_action_buttons( 
+	$div->appendChild( &SESSION->render_action_buttons( 
 		_order => [ "search", "newsearch" ],
-		newsearch => $self->{session}->phrase( "lib/searchexpression:action_reset" ),
-		search => $self->{session}->phrase( "lib/searchexpression:action_search" ) )
+		newsearch => &SESSION->phrase( "lib/searchexpression:action_reset" ),
+		search => &SESSION->phrase( "lib/searchexpression:action_search" ) )
  	);
 	$form->appendChild( $div );	
 
@@ -532,21 +529,18 @@ sub render_order_menu
 	}
 
 
-	my @tags = keys %{$self->{session}->get_archive()->get_conf(
+	my @tags = keys %{&ARCHIVE->get_conf(
 			"order_methods",
 			$self->{dataset}->confid )};
 
-	my $menu = $self->{session}->render_option_list(
+	my $menu = &SESSION->render_option_list(
 		name=>$self->{prefix}."_order",
 		values=>\@tags,
 		default=>$order,
-		labels=>$self->{session}->get_order_names( 
-						$self->{dataset} ) );
-	my $div = $self->{session}->make_element( 
-		"div" , 
-		class => "searchorder" );
+		labels=>&SESSION->get_order_names( $self->{dataset} ) );
+	my $div = &SESSION->make_element( "div" , class => "searchorder" );
 	$div->appendChild( 
-		$self->{session}->html_phrase( 
+		&SESSION->html_phrase( 
 			"lib/searchexpression:order_results", 
 			ordermenu => $menu  ) );
 
@@ -603,14 +597,14 @@ sub from_form
 {
 	my( $self ) = @_;
 
-	my $id = $self->{session}->param( "_cache" );
+	my $id = &SESSION->param( "_cache" );
 	if( defined $id )
 	{
 		return if( $self->from_cache( $id ) );
 		# cache expired...
 	}
 
-	my $exp = $self->{session}->param( "_exp" );
+	my $exp = &SESSION->param( "_exp" );
 	if( defined $exp )
 	{
 		$self->from_string( $exp );
@@ -625,18 +619,18 @@ sub from_form
 		my $prob = $sf->from_form();
 		push @problems, $prob if( defined $prob );
 	}
-	my $anyall = $self->{session}->param( $self->{prefix}."_satisfyall" );
+	my $anyall = &SESSION->param( $self->{prefix}."_satisfyall" );
 
 	if( defined $anyall )
 	{
 		$self->{satisfy_all} = ( $anyall eq "ALL" );
 	}
 	
-	$self->{order} = $self->{session}->param( $self->{prefix}."_order" );
+	$self->{order} = &SESSION->param( $self->{prefix}."_order" );
 
 	if( $self->is_blank && ! $self->{allow_blank} )
 	{
-		push @problems, $self->{session}->phrase( 
+		push @problems, &SESSION->phrase( 
 			"lib/searchexpression:least_one" );
 	}
 	
@@ -755,7 +749,7 @@ sub from_string
 	$self->{order} = $parts[2];
 # not overriding these bits
 #	$self->{allow_blank} = $parts[0];
-#	$self->{dataset} = $self->{session}->get_archive()->get_dataset( $parts[3] ); 
+#	$self->{dataset} = &ARCHIVE->get_dataset( $parts[3] ); 
 
 	my $sf_data = {};
 	foreach( split /\|/ , $fstring )
@@ -859,7 +853,6 @@ sub get_conditions
 		}
 	}
 		
-
 	$cond->optimise;
 
 	return $cond;
@@ -880,9 +873,9 @@ sub process_webpage
 {
 	my( $self ) = @_;
 
-	if( $self->{staff} && !$self->{session}->auth_check( "staff-view" ) )
+	if( $self->{staff} && !&SESSION->auth_check( "staff-view" ) )
 	{
-		$self->{session}->terminate();
+		&SESSION->terminate;
 		exit( 0 );
 	}
 
@@ -891,17 +884,16 @@ sub process_webpage
 	my $preamble;
 	if( defined $self->{"preamble_phrase"} )
 	{
-		$preamble = $self->{"session"}->html_phrase(
-				$self->{"preamble_phrase"} );
+		$preamble = &SESSION->html_phrase( $self->{"preamble_phrase"} );
 	}
 	else
 	{
-		$preamble = $self->{"session"}->make_doc_fragment;
+		$preamble = &SESSION->make_doc_fragment;
 	}
 
-	my $title = $self->{"session"}->html_phrase( $self->{"title_phrase"} );
+	my $title = &SESSION->html_phrase( $self->{"title_phrase"} );
 
-	my $action_button = $self->{session}->get_action_button();
+	my $action_button = &SESSION->get_action_button();
 
 	# Check if we need to do a search. We do if:
 	#  a) if the Search button was pressed.
@@ -910,7 +902,7 @@ sub process_webpage
 
 	if( ( defined $action_button && $action_button eq "search" ) 
             || 
-	    ( !defined $action_button && $self->{session}->have_parameters() ) )
+	    ( !defined $action_button && &SESSION->have_parameters() ) )
 	{
 		# We need to do a search
 		my $problems = $self->from_form;
@@ -947,7 +939,7 @@ sub process_webpage
 
 		my $n_results = $self->count();
 
-		my $offset = $self->{session}->param( "_offset" ) + 0;
+		my $offset = &SESSION->param( "_offset" ) + 0;
 
 		@results = $self->get_records( $offset , $pagesize );
 		$t3 = EPrints::Session::microtime();
@@ -961,37 +953,35 @@ sub process_webpage
 		if( scalar $n_results > 0 )
 		{
 			$bits{matches} = 
-				$self->{session}->html_phrase( 
+				&SESSION->html_phrase( 
 					"lib/searchexpression:results",
-					from => $self->{session}->make_text( $offset+1 ),
-					to => $self->{session}->make_text( $plast ),
-					n => $self->{session}->make_text( $n_results )  
+					from => &SESSION->make_text($offset+1),
+					to => &SESSION->make_text( $plast ),
+					n => &SESSION->make_text( $n_results )  
 				);
 		}
 		else
 		{
 			$bits{matches} = 
-				$self->{session}->html_phrase( 
+				&SESSION->html_phrase( 
 					"lib/searchexpression:noresults" );
 		}
 
-		$bits{time} = $self->{session}->html_phrase( 
+		$bits{time} = &SESSION->html_phrase( 
 			"lib/searchexpression:search_time", 
-			searchtime => $self->{session}->make_text($t3-$t1) );
-		my $index = new EPrints::Index( 
-				$self->{session}, 
-				$self->{dataset} );
+			searchtime => &SESSION->make_text($t3-$t1) );
+		my $index = new EPrints::Index( $self->{dataset} );
 
-		$bits{last_index} = $self->{session}->html_phrase( 
+		$bits{last_index} = &SESSION->html_phrase( 
 			"lib/searchexpression:last_index", 
-			index_datestamp => $self->{session}->make_text( 
+			index_datestamp => &SESSION->make_text( 
 						$index->get_last_timestamp ) );
 
 		$bits{searchdesc} = $self->render_description;
 
-		my $links = $self->{session}->make_doc_fragment();
-		$bits{controls} = $self->{session}->make_element( "p", class=>"searchcontrols" );
-		my $url = $self->{session}->get_uri();
+		my $links = &SESSION->make_doc_fragment();
+		$bits{controls} = &SESSION->make_element( "p", class=>"searchcontrols" );
+		my $url = &SESSION->get_uri();
 		#cjg escape URL'ify urls in this bit... (4 of them?)
 		my $escexp = $self->serialise();	
 		$escexp =~ s/ /+/g; # not great way...
@@ -1000,47 +990,47 @@ sub process_webpage
 		{
 			my $bk = $offset-$pagesize;
 			my $fullurl = "$url?_cache=".$self->{cache_id}."&_exp=$escexp&_offset=".($bk<0?0:$bk);
-			$a = $self->{session}->render_link( $fullurl );
+			$a = &SESSION->render_link( $fullurl );
 			my $pn = $pagesize>$offset?$offset:$pagesize;
 			$a->appendChild( 
-				$self->{session}->html_phrase( 
+				&SESSION->html_phrase( 
 					"lib/searchexpression:prev",
-					n=>$self->{session}->make_text( $pn ) ) );
+					n=>&SESSION->make_text( $pn ) ) );
 			$bits{controls}->appendChild( $a );
-			$bits{controls}->appendChild( $self->{session}->html_phrase( "lib/searchexpression:seperator" ) );
-			$links->appendChild( $self->{session}->make_element( "link",
+			$bits{controls}->appendChild( &SESSION->html_phrase( "lib/searchexpression:seperator" ) );
+			$links->appendChild( &SESSION->make_element( "link",
 							rel=>"Prev",
 							href=>EPrints::Utils::url_escape( $fullurl ) ) );
 		}
 
-		$a = $self->{session}->render_link( "$url?_cache=".$self->{cache_id}."&_exp=$escexp&_action_update=1" );
-		$a->appendChild( $self->{session}->html_phrase( "lib/searchexpression:refine" ) );
+		$a = &SESSION->render_link( "$url?_cache=".$self->{cache_id}."&_exp=$escexp&_action_update=1" );
+		$a->appendChild( &SESSION->html_phrase( "lib/searchexpression:refine" ) );
 		$bits{controls}->appendChild( $a );
-		$bits{controls}->appendChild( $self->{session}->html_phrase( "lib/searchexpression:seperator" ) );
+		$bits{controls}->appendChild( &SESSION->html_phrase( "lib/searchexpression:seperator" ) );
 
-		$a = $self->{session}->render_link( $url );
-		$a->appendChild( $self->{session}->html_phrase( "lib/searchexpression:new" ) );
+		$a = &SESSION->render_link( $url );
+		$a->appendChild( &SESSION->html_phrase( "lib/searchexpression:new" ) );
 		$bits{controls}->appendChild( $a );
 
 		if( $offset + $pagesize < $n_results )
 		{
 			my $fullurl="$url?_cache=".$self->{cache_id}."&_exp=$escexp&_offset=".($offset+$pagesize);
-			$a = $self->{session}->render_link( $fullurl );
+			$a = &SESSION->render_link( $fullurl );
 			my $nn = $n_results - $offset - $pagesize;
 			$nn = $pagesize if( $pagesize < $nn);
-			$a->appendChild( $self->{session}->html_phrase( "lib/searchexpression:next",
-						n=>$self->{session}->make_text( $nn ) ) );
-			$bits{controls}->appendChild( $self->{session}->html_phrase( "lib/searchexpression:seperator" ) );
+			$a->appendChild( &SESSION->html_phrase( "lib/searchexpression:next",
+						n=>&SESSION->make_text( $nn ) ) );
+			$bits{controls}->appendChild( &SESSION->html_phrase( "lib/searchexpression:seperator" ) );
 			$bits{controls}->appendChild( $a );
-			$links->appendChild( $self->{session}->make_element( "link",
+			$links->appendChild( &SESSION->make_element( "link",
 							rel=>"Next",
 							href=>EPrints::Utils::url_escape( $fullurl ) ) );
 		}
 
-		$bits{results} = $self->{session}->make_doc_fragment;
+		$bits{results} = &SESSION->make_doc_fragment;
 		foreach my $result ( @results )
 		{
-			my $p = $self->{session}->make_element( "p" );
+			my $p = &SESSION->make_element( "p" );
 			$p->appendChild( 
 				$result->render_citation_link( 
 					$self->{citation},  #undef unless specified
@@ -1059,31 +1049,31 @@ sub process_webpage
 		else
 		{
 			$bits{controls_if_matches} = 
-				$self->{session}->make_doc_fragment;
+				&SESSION->make_doc_fragment;
 		}
 
-		my $page = $self->{session}->html_phrase(
+		my $page = &SESSION->html_phrase(
 			"lib/searchexpression:results_page",
 			%bits );
 	
-		$self->{session}->build_page( 
-			$self->{session}->html_phrase( 
+		&SESSION->build_page( 
+			&SESSION->html_phrase( 
 					"lib/searchexpression:results_for", 
 					title => $title ),
 			$page,
 			"search_results",
 			$links );
-		$self->{session}->send_page();
+		&SESSION->send_page();
 		return;
 	}
 
 	if( defined $action_button && $action_button eq "newsearch" )
 	{
 		# To reset the form, just reset the URL.
-		my $url = $self->{session}->get_uri();
+		my $url = &SESSION->get_uri();
 		# Remove everything that's part of the query string.
 		$url =~ s/\?.*//;
-		$self->{session}->redirect( $url );
+		&SESSION->redirect( $url );
 		return;
 	}
 	
@@ -1094,12 +1084,12 @@ sub process_webpage
 
 	# Just print the form...
 
-	my $page = $self->{session}->make_doc_fragment();
+	my $page = &SESSION->make_doc_fragment();
 	$page->appendChild( $preamble );
 	$page->appendChild( $self->render_search_form( 1 , 1 ) );
 
-	$self->{session}->build_page( $title, $page, "search_form" );
-	$self->{session}->send_page();
+	&SESSION->build_page( $title, $page, "search_form" );
+	&SESSION->send_page();
 }
 
 ######################################################################
@@ -1115,32 +1105,32 @@ sub _render_problems
 	my( $self , $title, $preamble, @problems ) = @_;	
 	# Problem with search expression. Report an error, and redraw the form
 		
-	my $page = $self->{session}->make_doc_fragment();
+	my $page = &SESSION->make_doc_fragment();
 	$page->appendChild( $preamble );
 
-	my $problem_box = $self->{session}->make_element( 
+	my $problem_box = &SESSION->make_element( 
 				"div",
 				class=>"problems" );
-	$problem_box->appendChild( $self->{session}->html_phrase( "lib/searchexpression:form_problem" ) );
+	$problem_box->appendChild( &SESSION->html_phrase( "lib/searchexpression:form_problem" ) );
 
 	# List the problem(s)
-	my $ul = $self->{session}->make_element( "ul" );
+	my $ul = &SESSION->make_element( "ul" );
 	$page->appendChild( $ul );
 	my $problem;
 	foreach $problem (@problems)
 	{
-		my $li = $self->{session}->make_element( 
+		my $li = &SESSION->make_element( 
 			"li",
 			class=>"problem" );
 		$ul->appendChild( $li );
-		$li->appendChild( $self->{session}->make_text( $problem ) );
+		$li->appendChild( &SESSION->make_text( $problem ) );
 	}
 	$problem_box->appendChild( $ul );
 	$page->appendChild( $problem_box );
 	$page->appendChild( $self->render_search_form( 1 , 1 ) );
 			
-	$self->{session}->build_page( $title, $page, "search_problems" );
-	$self->{session}->send_page();
+	&SESSION->build_page( $title, $page, "search_problems" );
+	&SESSION->send_page();
 }
 
 
@@ -1203,7 +1193,7 @@ sub render_description
 {
 	my( $self ) = @_;
 
-	my $frag = $self->{session}->make_doc_fragment;
+	my $frag = &SESSION->make_doc_fragment;
 
 	my @bits = ();
 	foreach my $sf ( $self->get_searchfields )
@@ -1222,7 +1212,7 @@ sub render_description
 	{
 		if( $i>0 )
 		{
-			$frag->appendChild( $self->{session}->html_phrase( 
+			$frag->appendChild( &SESSION->html_phrase( 
 				$joinphraseid ) );
 		}
 		$frag->appendChild( $bits[$i] );
@@ -1230,22 +1220,22 @@ sub render_description
 
 	if( scalar @bits > 0 )
 	{
-		$frag->appendChild( $self->{session}->make_text( "." ) );
+		$frag->appendChild( &SESSION->make_text( "." ) );
 	}
 	else
 	{
-		$frag->appendChild( $self->{session}->html_phrase(
+		$frag->appendChild( &SESSION->html_phrase(
 			"lib/searchexpression:desc_no_conditions" ) );
 	}
 
 	if( EPrints::Utils::is_set( $self->{order} ) &&
 		$self->{"order"} ne $EPrints::SearchExpression::CustomOrder )
 	{
-		$frag->appendChild( $self->{session}->make_text( " " ) );
-		$frag->appendChild( $self->{session}->html_phrase(
+		$frag->appendChild( &SESSION->make_text( " " ) );
+		$frag->appendChild( &SESSION->html_phrase(
 			"lib/searchexpression:desc_order",
-			order => $self->{session}->make_text(
-				$self->{session}->get_order_name(
+			order => &SESSION->make_text(
+				&SESSION->get_order_name(
 					$self->{dataset},
 					$self->{order} ) ) ) );
 	} 
@@ -1418,11 +1408,9 @@ sub perform_search
 		return;
 	}
 
-	#my $conditions = $self->get_conditions;
-	#print STDERR $conditions->describe."\n\n";
+	#print STDERR $self->get_conditions->describe."\n\n";
 
-	$self->{unsorted_matches} = $self->get_conditions->process( 
-						$self->{session} );
+	$self->{unsorted_matches} = $self->get_conditions->process;
 
 	if( $self->{keep_cache} )
 	{
@@ -1448,7 +1436,7 @@ sub cache_results
 
 	if( !defined $self->{unsorted_matches} )
 	{
-		$self->{session}->get_archive()->log( "\$searchexp->cache_search() : Search has not been performed" );
+		&ARCHIVE->log( "\$searchexp->cache_search() : Search has not been performed" );
 		return;
 	}
 
@@ -1461,12 +1449,12 @@ sub cache_results
 	my $srctable;
 	if( $self->_matches_all )
 	{
-		$srctable = $self->{dataset}->get_sql_table_name();
+		$srctable = $self->{dataset}->get_sql_table_name;
 	}
 	else
 	{
-		$srctable = $self->{session}->get_db()->make_buffer(
-			$self->{dataset}->get_key_field()->get_name(),
+		$srctable = &DATABASE->make_buffer(
+			$self->{dataset}->get_key_field()->get_name,
 			$self->{unsorted_matches} );
 	}
 
@@ -1479,14 +1467,14 @@ sub cache_results
 		}
 		else
 		{
-			$order = $self->{session}->get_archive()->get_conf( 
+			$order = &ARCHIVE->get_conf( 
 						"order_methods" , 
-						$self->{dataset}->confid(),
+						$self->{dataset}->confid,
 						$self->{order} );
 		}
 	}
 
-	$self->{cache_id} = $self->{session}->get_db()->cache( 
+	$self->{cache_id} = &DATABASE->cache( 
 		$self->serialise(), 
 		$self->{dataset},
 		$srctable,
@@ -1494,7 +1482,7 @@ sub cache_results
 
 	unless( $self->_matches_all )
 	{
-		$self->{session}->get_db()->dispose_buffer( $srctable );
+		&DATABASE->dispose_buffer( $srctable );
 	}
 		
 }
@@ -1517,7 +1505,7 @@ sub dispose
 
 	if( defined $self->{cache_id} && !$self->{keep_cache} )
 	{
-		$self->{session}->get_db->drop_cache( $self->{cache_id} );
+		&DATABASE->drop_cache( $self->{cache_id} );
 		delete $self->{cache_id};
 	}
 }
@@ -1558,7 +1546,7 @@ sub count
 	{
 		if( $self->_matches_all )
 		{
-			return $self->{dataset}->count( $self->{session} );
+			return $self->{dataset}->count;
 		}
 		return( scalar @{$self->{unsorted_matches}} );
 	}
@@ -1567,12 +1555,11 @@ sub count
 	{
 		#cjg Should really have a way to get at the
 		# cache. Maybe we should have a table object.
-		return $self->{session}->get_db()->count_table( 
-			"cache".$self->{cache_id} );
+		return &DATABASE->count_table( "cache".$self->{cache_id} );
 	}
 
 	#cjg ERROR to user?
-	$self->{session}->get_archive()->log( "\$searchexp->count() : Search has not been performed" );
+	&ARCHIVE->log( "\$searchexp->count() : Search has not been performed" );
 }
 
 
@@ -1689,15 +1676,14 @@ sub _get_records
 			{
 				if( $self->_matches_all )
 				{
-					return $self->{dataset}->get_item_ids( $self->{session} );
+					return $self->{dataset}->get_item_ids; 
 				}
 				return $self->{unsorted_matches};
 			}
 	
 			if( $self->_matches_all )
 			{
-				return $self->{session}->get_db->get_all(
-					$self->{dataset} );
+				return &DATABASE->get_all( $self->{dataset} );
 			}
 			
 			# we are returning all matches, but there's no
@@ -1710,7 +1696,7 @@ sub _get_records
 		$self->cache_results;
 	}
 
-	my $r = $self->{session}->get_db()->from_cache( 
+	my $r = &DATABASE->from_cache( 
 			$self->{dataset}, 
 			$self->{cache_id},
 			$offset,
@@ -1753,7 +1739,6 @@ sub map
 		foreach my $item ( @records )
 		{
 			&{$function}( 
-				$self->{session}, 
 				$self->{dataset}, 
 				$item, 
 				$info );
@@ -1779,10 +1764,9 @@ sub export
 
 	$opts{'mode'} = 'default' unless defined $opts{'mode'};
 	my $dstype = $self->{dataset}->confid;
-	$opts{'session'} = $self->{'session'};
 	$opts{'objs'} = $self;
 
-	return EPrints::Plugins::call( 
+	return &ARCHIVE->plugin(
 		'export/objs.'.$dstype.'/'.$scheme.'/'.$opts{'mode'},
 		%opts );
 }

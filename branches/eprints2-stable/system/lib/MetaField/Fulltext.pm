@@ -39,6 +39,7 @@ BEGIN
 }
 
 use EPrints::MetaField::Text;
+use EPrints::Session;
 
 sub is_browsable
 {
@@ -59,13 +60,13 @@ sub get_value
 
 sub get_index_codes_basic
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $value ) = trim_params(@_);
 
 	if( $value !~ s/^_FULLTEXT_:// )
 	{
-		return $self->SUPER::get_index_codes_basic( $session, $value );
+		return $self->SUPER::get_index_codes_basic( $value );
 	}
-	my $doc = EPrints::Document->new( $session, $value );
+	my $doc = EPrints::Document->new( $value );
 
 
 	my $eprint =  $doc->get_eprint;
@@ -87,7 +88,7 @@ sub get_index_codes_basic
 		my $codes = [];
 		unless( open( CODELOG, $indexcodes_file ) )
 		{
-			$session->get_archive->log( "Failed to open $indexcodes_file: $!" );
+			&ARCHIVE->log( "Failed to open $indexcodes_file: $!" );
 		}
 		else
 		{
@@ -101,12 +102,12 @@ sub get_index_codes_basic
 	my( $codes, $badwords ) = ( [], [] );
 	if( EPrints::Utils::is_set( $value ) )
 	{
-		( $codes, $badwords ) = EPrints::MetaField::Text::_extract_words( $session, $value );
+		( $codes, $badwords ) = EPrints::MetaField::Text::_extract_words( $value );
 	}
 	
 	unless( open( CODELOG, ">".$indexcodes_file ) )
 	{
-		$session->get_archive->log( "Failed to write to $indexcodes_file: $!" );
+		&ARCHIVE->log( "Failed to write to $indexcodes_file: $!" );
 	}
 	else
 	{

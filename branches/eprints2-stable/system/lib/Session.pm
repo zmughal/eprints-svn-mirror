@@ -56,37 +56,57 @@ undocumented
 
 package EPrints::Session;
 
-use EPrints::Database;
-use EPrints::Language;
-use EPrints::Archive;
-use EPrints::XML;
+BEGIN
+{
+	use Exporter();
+	@ISA = qw( Exporter );
+	@EXPORT = qw( &SESSION &ARCHIVE &DATABASE &trim_params );
+}
 
+use EPrints::Database;
+use EPrints::Archive;
+use EPrints::Language;
+use EPrints::XML;
 use EPrints::DataObj;
 use EPrints::User;
 use EPrints::EPrint;
 use EPrints::Subject;
 use EPrints::Document;
+use EPrints::AnApache;
 
 use Unicode::String qw(utf8 latin1);
-use EPrints::AnApache;
 use Apache::Cookie;
-
 use URI::Escape;
 
 use strict;
 #require 'sys/syscall.ph';
 
 ######################################################################
-#
-# new( $offline )
-#
-#  Start a new EPrints session, opening a database connection.
-#
-#  Command line scripts should pass in true for $offline.
-#  Apache-invoked scripts can omit it or pass in 0.
-#
+=pod
+
+=item $ok = EPrints::Session::start( [$archiveid], [$noise], [$dont_check_db] )
+
+Start a new eprint session. $archiveid is only needed if called in
+a command line script.
+
+Returns true if the session was successfully started.
+
+=cut
 ######################################################################
 
+sub start
+{
+	my( @params ) = @_;
+	my $mode = ($ENV{MOD_PERL}?0:1);
+	my $session = new EPrints::Session( $mode, @params );
+	if( !defined $session ) 
+	{ 
+		print STDERR "Could not start session.\n"; 
+		return 0;
+	}
+	return 1;
+}
+	
 
 ######################################################################
 =pod
@@ -100,36 +120,43 @@ undocumented
 
 sub new
 {
-	my( $class, $mode, $param, $noise, $nocheckdb ) = @_;
+	my( $class, $mode, $archiveid, $noise, $nocheckdb ) = @_;
 	# mode = 0    - We are online (CGI script)
-	# mode = 1    - We are offline (bin script) param is archiveid
-	# mode = 2    - We are online (auth) param is host and path.	
+	# mode = 1    - We are offline (bin script) 
 	my $self = {};
 	bless $self, $class;
+
+	EPrints::Session::set_session( $self );
 
 	$mode = 0 unless defined( $mode );
 	$noise = 0 unless defined( $noise );
 	$self->{noise} = $noise;
+
+	$self->{terminated} = 0;
 
 	if( $mode == 0 || !defined $mode )
 	{
 		$self->{request} = Apache->request();
 		$self->{apr} = Apache::Request->new( $self->{request} );
 		$self->{offline} = 0;
-		$self->{archive} = EPrints::Archive->new_from_request( $self->{request} );
+		EPrints::Session::set_archive(
+			EPrints::Archive->new_from_request( $self->{request} ));
 	}
 	elsif( $mode == 1 )
 	{
 		$self->{offline} = 1;
-		if( !defined $param || $param eq "" )
+		if( !defined $archiveid || $archiveid eq "" )
 		{
 			print STDERR "No archive id specified.\n";
 			return undef;
 		}
-		$self->{archive} = EPrints::Archive->new_archive_by_id( $param );
-		if( !defined $self->{archive} )
+		my $archive = EPrints::Archive->new_archive_by_id( $archiveid );
+		EPrints::Session::set_archive( $archive );
+		unless( defined $archive )
 		{
-			print STDERR "Can't load archive module for: $param\n";
+			print STDERR <<END;
+Can't load archive module for: $archiveid
+END
 			return undef;
 		}
 	}
@@ -148,29 +175,28 @@ sub new
 		# Set a script to use the default language unless it 
 		# overrides it
 		$self->change_lang( 
-			$self->{archive}->get_conf( "defaultlanguage" ) );
+			&ARCHIVE->get_conf( "defaultlanguage" ) );
 	}
 	else
 	{
 		# running as CGI, Lets work out what language the
 		# client wants...
-		$self->change_lang( get_session_language( 
-			$self->{archive}, 
-			$self->{request} ) );
+		$self->change_lang( get_session_language( $self->{request} ) );
 	}
 	
 	$self->{doc} = EPrints::XML::make_document;
 
 	# Create a database connection
 	if( $self->{noise} >= 2 ) { print "Connecting to DB ... "; }
-	$self->{database} = EPrints::Database->new( $self );
-	if( !defined $self->{database} )
+	my $db = EPrints::Database->new();
+	if( !defined $db )
 	{
 		# Database connection failure - noooo!
 		$self->render_error( $self->html_phrase( 
 			"lib/session:fail_db_connect" ) );
 		return undef;
 	}
+	EPrints::Session::set_database( $db );
 
 	#cjg make this a method of EPrints::Database?
 	unless( $nocheckdb )
@@ -178,26 +204,27 @@ sub new
 		# Check there are some tables.
 		# Well, check for the most important table, which 
 		# if it's not there is a show stopper.
-		unless( $self->{database}->is_latest_version )
+		unless( &DATABASE->is_latest_version )
 		{ 
-			if( $self->{database}->has_table( "archive" ) )
+			if( &DATABASE->has_table( "archive" ) )
 			{	
-				$self->get_archive()->log( 
+				&ARCHIVE->log( 
 	"Database tables are in old configuration. Please run bin/upgrade" );
 			}
 			else
 			{
-				$self->get_archive()->log( 
+				&ARCHIVE->log( 
 					"No tables in the MySQL database! ".
 					"Did you run create_tables?" );
 			}
-			$self->{database}->disconnect();
+			&DATABASE->disconnect();
 			return undef;
 		}
 	}
+
 	if( $self->{noise} >= 2 ) { print "done.\n"; }
 	
-	$self->{archive}->call( "session_init", $self, $self->{offline} );
+	&ARCHIVE->call( "session_init", $self->{offline} );
 
 	return( $self );
 }
@@ -208,7 +235,7 @@ sub new
 
 sub get_session_language
 {
-	my( $archive, $request ) = @_; #$r should not really be passed???
+	my( $request ) = @_; #$r should not really be passed???
 
 	my @prefs;
 
@@ -227,7 +254,7 @@ sub get_session_language
 
 	# Second choice is cookie
 	my $cookies = Apache::Cookie->fetch( $request ); #hash ref
-	my $cookie = $cookies->{$archive->get_conf( "lang_cookie_name")};
+	my $cookie = $cookies->{&ARCHIVE->get_conf( "lang_cookie_name")};
 	if( defined $cookie )
 	{
 		push @prefs, $cookie->value;
@@ -256,10 +283,10 @@ sub get_session_language
 	}
 		
 	# last choice is always...	
-	push @prefs, $archive->get_conf( "defaultlanguage" );
+	push @prefs, &ARCHIVE->get_conf( "defaultlanguage" );
 
 	# So, which one to use....
-	my $arc_langs = $archive->get_conf( "languages" );	
+	my $arc_langs = &ARCHIVE->get_conf( "languages" );	
 	foreach my $pref_lang ( @prefs )
 	{
 		foreach my $langid ( @{$arc_langs} )
@@ -306,10 +333,15 @@ Perform any cleaning up necessary
 sub terminate
 {
 	my( $self ) = @_;
-	
-	$self->{database}->garbage_collect();
-	$self->{archive}->call( "session_close", $self );
-	$self->{database}->disconnect();
+
+	my $db = &DATABASE;
+	$db->garbage_collect() if defined $db;
+	my $arc = &ARCHIVE;
+	$arc->call('session_close') if defined $arc;
+	$db = &DATABASE;
+	$db->disconnect() if defined $db;
+
+	$self->{terminated} = 1;
 
 	# If we've not printed the XML page, we need to dispose of
 	# it now.
@@ -341,9 +373,9 @@ sub change_lang
 
 	if( !defined $newlangid )
 	{
-		$newlangid = $self->{archive}->get_conf( "defaultlanguage" );
+		$newlangid = &ARCHIVE->get_conf( "defaultlanguage" );
 	}
-	$self->{lang} = $self->{archive}->get_language( $newlangid );
+	$self->{lang} = &ARCHIVE->get_language( $newlangid );
 
 	if( !defined $self->{lang} )
 	{
@@ -371,7 +403,7 @@ sub html_phrase
 	#
 	# returns [DOM]	
 
-        my $r = $self->{lang}->phrase( $phraseid , \%inserts , $self );
+        my $r = $self->{lang}->phrase( $phraseid , \%inserts );
 
 	#my $s = $self->make_element( "span", title=>$phraseid );
 	#$s->appendChild( $r );
@@ -399,7 +431,7 @@ sub phrase
 	{
 		$inserts{$_} = $self->make_text( $inserts{$_} );
 	}
-        my $r = $self->{lang}->phrase( $phraseid, \%inserts , $self);
+        my $r = $self->{lang}->phrase( $phraseid, \%inserts );
 	my $string =  EPrints::Utils::tree_to_utf8( $r, 40 );
 	EPrints::XML::dispose( $r );
 	return $string;
@@ -447,7 +479,7 @@ sub get_langid
 ######################################################################
 =pod
 
-=item EPrints::Session::best_language( $archive, $lang, %values )
+=item EPrints::Session::best_language( $lang, %values )
 
 undocumented
 
@@ -456,7 +488,7 @@ undocumented
 
 sub best_language
 {
-	my( $archive, $lang, %values ) = @_;
+	my( $lang, %values ) = @_;
 
 	# no options?
 	return undef if( scalar keys %values == 0 );
@@ -465,7 +497,7 @@ sub best_language
 	return $values{$lang} if( defined $lang && defined $values{$lang} );
 
 	# The default language of the archive is second best	
-	my $defaultlangid = $archive->get_conf( "defaultlanguage" );
+	my $defaultlangid = &ARCHIVE->get_conf( "defaultlanguage" );
 	return $values{$defaultlangid} if( defined $values{$defaultlangid} );
 
 	# Bit of personal bias: We'll try English before we just
@@ -493,7 +525,7 @@ sub get_order_names
 	my( $self, $dataset ) = @_;
 		
 	my %names = ();
-	foreach( keys %{$self->{archive}->get_conf(
+	foreach( keys %{&ARCHIVE->get_conf(
 			"order_methods",
 			$dataset->confid() )} )
 	{
@@ -562,7 +594,7 @@ undocumented
 sub get_db
 {
 	my( $self ) = @_;
-	return $self->{database};
+	return &DATABASE;
 }
 
 
@@ -580,7 +612,7 @@ undocumented
 sub get_archive
 {
 	my( $self ) = @_;
-	return $self->{archive};
+	return &ARCHIVE
 }
 
 ######################################################################
@@ -596,6 +628,8 @@ undocumented
 sub get_uri
 {
 	my( $self ) = @_;
+
+	&check_online;
 
 	return( $self->{"request"}->uri );
 }
@@ -613,12 +647,13 @@ get the whole url including arguments
 sub get_url
 {
 	my( $self ) = @_;
+	&check_online;
 
         my $uri = $self->{"request"}->uri;
         my $args = $self->{"request"}->args;
         if( defined $args && $args ne "" ) { $args = '?'.$args; }
 
-	return $self->{archive}->get_conf( 'base_url' ).$uri.$args; 
+	return &ARCHIVE->get_conf( 'base_url' ).$uri.$args; 
 }
 
 
@@ -641,23 +676,6 @@ sub get_noise
 	return( $self->{noise} );
 }
 
-
-######################################################################
-=pod
-
-=item $foo = $thing->get_online
-
-undocumented
-
-=cut
-######################################################################
-
-sub get_online
-{
-	my( $self ) = @_;
-	
-	return( $self->{online} );
-}
 
 
 
@@ -800,7 +818,7 @@ sub render_ruler
 {
 	my( $self ) = @_;
 
-	my $ruler = $self->{archive}->get_ruler();
+	my $ruler = &ARCHIVE->get_ruler();
 	
 	return $self->clone_for_me( $ruler, 1 );
 }
@@ -1227,8 +1245,7 @@ sub _render_buttons_aux
 		@order = @{$buttons{_order}};
 	}
 
-	my $button_id;
-	foreach $button_id ( @order )
+	foreach my $button_id ( @order )
 	{
 		# skip options which start with a "_" they are params
 		# not buttons.
@@ -1307,7 +1324,7 @@ sub render_subjects
 	my %subs = ();
 	foreach( @{$subject_list}, $baseid )
 	{
-		$subs{$_} = EPrints::Subject->new( $self, $_ );
+		$subs{$_} = EPrints::Subject->new( $_ );
 	}
 
 	return $self->_render_subjects_aux( \%subs, $baseid, $currentid, $linkmode, $sizes );
@@ -1407,7 +1424,7 @@ sub render_error
 	
 	if( !defined $back_to )
 	{
-		$back_to = $self->get_archive()->get_conf( "frontpage" );
+		$back_to = &ARCHIVE->get_conf( "frontpage" );
 	}
 	if( !defined $back_to_text )
 	{
@@ -1530,7 +1547,7 @@ sub render_input_form
 			height => 1, 
 			border => 0,
 			style => "display: none",
-			src => $self->{archive}->get_conf( "base_url" )."/images/whitedot.png",
+			src => &ARCHIVE->get_conf( "base_url" )."/images/whitedot.png",
 			name => "_default", 
 			alt => $p{buttons}->{$p{default_action}} ) );
 		$form->appendChild( $self->render_hidden_field(
@@ -1616,7 +1633,7 @@ sub _render_input_form_field
 		# special case for booleans - even if they're required it
 		# dosn't make much sense to highlight them.	
 
-		$div->appendChild( $field->render_name( $self ) );
+		$div->appendChild( $field->render_name );
 
 		if( $req && !$field->is_type( "boolean" ) )
 		{
@@ -1634,7 +1651,7 @@ sub _render_input_form_field
 	{
 		$div = $self->make_element( "div", class => "formfieldhelp" );
 
-		$div->appendChild( $field->render_help( $self, $type ) );
+		$div->appendChild( $field->render_help( $type ) );
 		$div->appendChild( $self->make_text( "" ) );
 
 		$html->appendChild( $div );
@@ -1645,7 +1662,7 @@ sub _render_input_form_field
 		class => "formfieldinput",
 		id => "inputfield_".$field->get_name );
 	$div->appendChild( $field->render_input_field( 
-		$self, $value, $dataset, $type, $staff, $hidden_fields ) );
+		$value, $dataset, $type, $staff, $hidden_fields ) );
 	$html->appendChild( $div );
 				
 	return( $html );
@@ -1710,7 +1727,7 @@ sub build_page
 		}
 	}
 
-	my $pagehooks = $self->get_archive->get_conf( "pagehooks" );
+	my $pagehooks = &ARCHIVE->get_conf( "pagehooks" );
 	$pagehooks = {} if !defined $pagehooks;
 	my $ph = $pagehooks->{$pageid} if defined $pageid;
 	$ph = {} if !defined $ph;
@@ -1734,7 +1751,7 @@ sub build_page
 
 	my $used = {};
 	$self->{page} = $self->_process_page( 
-		$self->{archive}->get_template( $self->get_langid ),
+		&ARCHIVE->get_template( $self->get_langid ),
 		$map,
 		$used,
 		$ph );
@@ -1910,7 +1927,44 @@ sub clone_for_me
 
 
 
+######################################################################
+=pod
 
+=item $session->check_online()
+
+Aborts with a warning if not in CGI mode. 
+
+=cut
+######################################################################
+
+sub check_online
+{
+	my( $self ) = @_;
+
+	return if defined $self->{request}; 
+	
+	EPrints::Config::abort( <<END );
+Tried to call a CGI only mode function in a normal script.
+END
+}
+	
+######################################################################
+=pod
+
+=item $boolean = $session->is_online()
+
+Return true if this function is being run via the web, false if it
+is a script.
+
+=cut
+######################################################################
+
+sub is_online
+{
+	my( $self ) = @_;
+
+	return defined $self->{request}; 
+}
 
 ######################################################################
 =pod
@@ -1925,6 +1979,8 @@ undocumented
 sub param
 {
 	my( $self, $name ) = @_;
+
+	&check_online;
 
 	if( !wantarray )
 	{
@@ -1964,6 +2020,8 @@ sub have_parameters
 {
 	my( $self ) = @_;
 	
+	&check_online;
+
 	my @names = $self->param();
 
 	return( scalar @names > 0 );
@@ -1987,6 +2045,8 @@ undocumented
 sub auth_check
 {
 	my( $self , $resource ) = @_;
+
+	&check_online;
 
 	my $user = $self->current_user;
 
@@ -2027,6 +2087,8 @@ sub current_user
 {
 	my( $self ) = @_;
 
+	&check_online;
+
 	my $user = undef;
 
 	# If we've already done this once, no point
@@ -2038,7 +2100,7 @@ sub current_user
 		if( defined $username && $username ne "" )
 		{
 			$self->{currentuser} = 
-				EPrints::User::user_with_username( $self, $username );
+				EPrints::User::user_with_username( $username );
 		}
 	}
 
@@ -2061,6 +2123,8 @@ sub seen_form
 {
 	my( $self ) = @_;
 	
+	&check_online;
+
 	my $result = 0;
 
 	$result = 1 if( defined $self->param( "_seen" ) &&
@@ -2083,6 +2147,8 @@ undocumented
 sub internal_button_pressed
 {
 	my( $self, $buttonid ) = @_;
+
+	&check_online;
 
 	if( defined $buttonid )
 	{
@@ -2127,6 +2193,8 @@ sub get_action_button
 {
 	my( $self ) = @_;
 
+	&check_online;
+
 	my $p;
 	# $p = string
 	foreach $p ( $self->param() )
@@ -2157,6 +2225,8 @@ undocumented
 sub get_internal_button
 {
 	my( $self ) = @_;
+
+	&check_online;
 
 	if( defined $self->{internalbutton} )
 	{
@@ -2202,7 +2272,7 @@ sub get_citation_spec
 	my $citation_id = $dataset->confid();
 	$citation_id.="_".$ctype if( defined $ctype );
 
-	my $citespec = $self->{archive}->get_citation_spec( 
+	my $citespec = &ARCHIVE->get_citation_spec( 
 					$self->{lang}->get_id(), 
 					$citation_id );
 
@@ -2269,12 +2339,7 @@ sub redirect
 {
 	my( $self, $url ) = @_;
 
-	# Write HTTP headers if appropriate
-	if( $self->{"offline"} )
-	{
-		print STDERR "ODD! redirect called in offline script.\n";
-		return;
-	}
+	&check_online;
 
 	$self->{"request"}->status_line( "302 Moved" );
 	EPrints::AnApache::header_out( 
@@ -2308,19 +2373,18 @@ sub mail_administrator
 	#   Session, string,     string,     string->DOM
 
 	# Mail the admin in the default language
-	my $langid = $self->{archive}->get_conf( "defaultlanguage" );
-	my $lang = $self->{archive}->get_language( $langid );
+	my $langid = &ARCHIVE->get_conf( "defaultlanguage" );
+	my $lang = &ARCHIVE->get_language( $langid );
 
 	return EPrints::Utils::send_mail(
-		$self->{archive},
 		$langid,
 		EPrints::Utils::tree_to_utf8( 
-			$lang->phrase( "lib/session:archive_admin", {}, $self ) ),
-		$self->{archive}->get_conf( "adminemail" ),
+			$lang->phrase( "lib/session:archive_admin", {} ) ),
+		&ARCHIVE->get_conf( "adminemail" ),
 		EPrints::Utils::tree_to_utf8( 
-			$lang->phrase( $subjectid, {}, $self ) ),
-		$lang->phrase( $messageid, \%inserts, $self ), 
-		$lang->phrase( "mail_sig", {}, $self ) ); 
+			$lang->phrase( $subjectid, {} ) ),
+		$lang->phrase( $messageid, \%inserts ), 
+		$lang->phrase( "mail_sig", {} ) ); 
 }
 
 
@@ -2338,12 +2402,7 @@ sub send_http_header
 {
 	my( $self, %opts ) = @_;
 
-	# Write HTTP headers if appropriate
-	if( $self->{offline} )
-	{
-		$self->{archive}->log( "Attempt to send HTTP Header while offline" );
-		return;
-	}
+	&check_online;
 
 	if( !defined $opts{content_type} )
 	{
@@ -2362,11 +2421,11 @@ sub send_http_header
 	if( defined $opts{lang} )
 	{
 		my $cookie = Apache::Cookie->new( $self->{request},
-			-name    => $self->{archive}->get_conf("lang_cookie_name"),
+			-name    => &ARCHIVE->get_conf("lang_cookie_name"),
 			-path    => "/",
 			-value   => $opts{lang},
 			-expires => "+10y", # really long time
-			-domain  => $self->{archive}->get_conf("lang_cookie_domain") );
+			-domain  => &ARCHIVE->get_conf("lang_cookie_domain") );
 		$cookie->bake;
 	}
 
@@ -2387,6 +2446,8 @@ undocumented
 sub client
 {
 	my( $self ) = @_;
+
+	&check_online;
 
 	my $client = $ENV{HTTP_USER_AGENT};
 
@@ -2422,6 +2483,8 @@ sub get_http_status
 {
 	my( $self ) = @_;
 
+	&check_online;
+
 	return $self->{request}->status();
 }
 
@@ -2440,13 +2503,163 @@ sub DESTROY
 {
 	my( $self ) = @_;
 
+	if( !$self->{terminated} )
+	{
+		$self->terminate;
+	}
 	EPrints::Utils::destroy( $self );
+}
+
+
+######################################################################
+#
+# Exported Functions
+#
+######################################################################
+
+$EPrints::Session::SESSION = undef;
+$EPrints::Session::ARCHIVE = undef;
+$EPrints::Session::DATABASE = undef;
+
+######################################################################
+=pod
+
+=item @params = trim_params( @params )
+
+Strips any objects of type EPrints::Session, EPrints::Database or
+EPrints::Archive from the list of params. This allows 2.3 or earlier
+configurations to work cleanly.
+
+=cut
+######################################################################
+
+sub trim_params
+{
+	my @out = ();
+	my $i=0;
+	foreach( @_ )
+	{
+		++$i;
+		my $r = ref( $_ );
+		if( 
+			$r eq 'EPrints::Session' || 
+			$r eq 'EPrints::Archive' ||
+			$r eq 'EPrints::Database' )
+		{
+			my( $package, $filename, $line, $sub ) = caller(1);
+			print STDERR <<END;
+$sub called with $r as param $i
+  from line $line of $filename
+END
+			next;
+		}
+		push @out, $_;
+	}
+	return @out;
 }
 
 ######################################################################
 =pod
 
-=back
+=item $session = &SESSION;
+
+Return the current eprints session.
 
 =cut
+######################################################################
+
+sub SESSION
+{
+	return $EPrints::Session::SESSION;
+}
+
+######################################################################
+=pod
+
+=item $archive = &ARCHIVE;
+
+Return the current eprints archive.
+
+=cut
+######################################################################
+
+sub ARCHIVE
+{
+	return $EPrints::Session::ARCHIVE;
+}
+	
+
+######################################################################
+=pod
+
+=item $database = &DATABASE;
+
+Return the current eprints database.
+
+=cut
+######################################################################
+
+sub DATABASE
+{
+	return $EPrints::Session::DATABASE;
+}
+	
+######################################################################
+=pod
+
+=item EPrints::Session::set_session( $session )
+
+Set the current eprint session.
+
+=cut
+######################################################################
+
+
+sub set_session
+{
+	my( $session ) = @_;
+
+	$EPrints::Session::SESSION = $session;
+}
+	
+######################################################################
+=pod
+
+=item EPrints::Session::set_archive( $archive )
+
+Set the current eprint archive.
+
+=cut
+######################################################################
+
+sub set_archive
+{
+	my( $archive ) = @_;
+
+	$EPrints::Session::ARCHIVE = $archive;
+}
+	
+######################################################################
+=pod
+
+=item EPrints::Session::set_database( $db )
+
+Set the current eprint database.
+
+=cut
+######################################################################
+
+sub set_database
+{
+	my( $database ) = @_;
+
+	$EPrints::Session::DATABASE = $database;
+}
+
+
+=pos
+=back
+=cut
+
+1;
 

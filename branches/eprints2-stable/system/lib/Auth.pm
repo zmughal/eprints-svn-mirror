@@ -79,16 +79,11 @@ sub authen
 
 	return OK unless $r->is_initial_req; # only the first internal request
 
-	my $session = new EPrints::Session;
-	
-	if( !defined $session )
-	{
-		return FORBIDDEN;
-	}
+	EPrints::Session::start or return FORBIDDEN;
 
 	if( !defined $user_sent )
 	{
-		$session->terminate();
+		&SESSION->terminate();
 		return AUTH_REQUIRED;
 	}
 
@@ -105,24 +100,24 @@ sub authen
 		return AUTH_REQUIRED;
 	}
 
-	my $user_ds = $session->get_archive()->get_dataset( "user" );
+	my $user_ds = &ARCHIVE->get_dataset( "user" );
 
-	my $user = EPrints::User::user_with_username( $session, $user_sent );
+	my $user = EPrints::User::user_with_username( $user_sent );
 	if( !defined $user )
 	{
 		$r->note_basic_auth_failure;
-		$session->terminate();
+		&SESSION->terminate();
 		return AUTH_REQUIRED;
 	}
 
-	my $userauthdata = $session->get_archive()->get_conf( 
+	my $userauthdata = &ARCHIVE->get_conf( 
 		"userauth", $user->get_value( "usertype" ) );
 
 	if( !defined $userauthdata )
 	{
-		$session->get_archive()->log(
+		&ARCHIVE->log(
 			"Unknown user type: ".$user->get_value( "usertype" ) );
-		$session->terminate();
+		&SESSION->terminate();
 		return AUTH_REQUIRED;
 	}
 	my $authconfig = $userauthdata->{auth};
@@ -132,7 +127,7 @@ sub authen
 
 	my $rwrapper = $EPrints::AnApache::RequestWrapper->new( $r , $authconfig );
 	my $result = &{$handler}( $rwrapper );
-	$session->terminate();
+	&SESSION->terminate();
 	return $result;
 }
 
@@ -179,12 +174,10 @@ sub authz
 {
 	my( $r ) = @_;
 
+	EPrints::Session::start;
 	# If we are looking at the users section then do nothing, 
 	# but if we are looking at a document in the secure area then
 	# we need to do some work.
-
-	my $session = new EPrints::Session;
-	my $archive = $session->get_archive;
 
 	my $uri = $r->uri;
 
@@ -196,7 +189,7 @@ sub authz
 		# this is a valid user, which we have so let's
 		# return OK.
 
-		$session->terminate();
+		&SESSION->terminate();
 		return OK;
 	}
 
@@ -206,7 +199,7 @@ sub authz
 		# this is a valid user, which we have so let's
 		# return OK.
 
-		$session->terminate();
+		&SESSION->terminate();
 		return OK;
 	}
 
@@ -215,13 +208,13 @@ sub authz
 		# Ok, It's not User or Documents which means
 		# something screwed up. 
 
-		$archive->log( "Request to ".$r->uri." in unknown EPrints HTTP Security area \"$area\"." );
-		$session->terminate();
+		&ARCHIVE->log( "Request to ".$r->uri." in unknown EPrints HTTP Security area \"$area\"." );
+		&SESSION->terminate();
 		return FORBIDDEN;
 	}
 
-	my $secpath = $archive->get_conf( "secure_url_dir" );
-	my $urlpath = $archive->get_conf( "urlpath" );
+	my $secpath = &ARCHIVE->get_conf( "secure_url_dir" );
+	my $urlpath = &ARCHIVE->get_conf( "urlpath" );
 
 	$uri =~ s/^$urlpath$secpath//;
 	my $docid;
@@ -248,22 +241,22 @@ sub authz
 	else
 	{
 
-		$archive->log( 
+		&ARCHIVE->log( 
 "Request to ".$r->uri." in secure documents area failed to match REGEXP." );
-		$session->terminate();
+		&SESSION->terminate();
 		return FORBIDDEN;
 	}
 
 	my $user_sent = $r->user;
-	my $user = EPrints::User::user_with_username( $session, $user_sent );
-	my $document = EPrints::Document->new( $session, $docid );
+	my $user = EPrints::User::user_with_username( $user_sent );
+	my $document = EPrints::Document->new( $docid );
 	unless( $document->can_view( $user ) )
 	{
-		$session->terminate();
+		&SESSION->terminate();
 		return FORBIDDEN;
 	}	
 
-	$session->terminate();
+	&SESSION->terminate();
 	return OK;
 }
 

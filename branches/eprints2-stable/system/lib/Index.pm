@@ -33,21 +33,14 @@ metadata as images.
 package EPrints::Index;
 
 use EPrints::Session;
-
 use Unicode::String qw( latin1 utf8 );
 
 use strict;
 
-#my $index = new EPrints::Index( $session->get_archive->get_dataset( "archive" ) );
-#$index->create;
-#$index->build;
-#$index->install;
-#$index->cleanup;
-
 ######################################################################
 =pod
 
-=item $index = EPrints::Index->new( $session, $dataset )
+=item $index = EPrints::Index->new( $dataset )
 
 undocumented
 
@@ -56,11 +49,10 @@ undocumented
 
 sub new
 {
-	my( $class, $session, $dataset, $logfn, $elogfn ) = @_;
+	my( $class, $dataset, $logfn, $elogfn ) = trim_params(@_);
 
 	my $self = { 
 		dataset=>$dataset, 
-		session=>$session,
 		count=>0,
 		change_pname => 0,
 		index_table_tmp => $dataset->get_sql_index_table_name."_tmp",
@@ -114,7 +106,7 @@ sub logerror
 		return;
 	}
 
-	$self->{session}->get_archive->log( $message );
+	&ARCHIVE->log( $message );
 }
 
 ######################################################################
@@ -135,20 +127,19 @@ sub cleanup
 	# reason.
 
 	my $ds = $self->{dataset};
-	my $db = $self->{session}->get_db;
 
 	my @doomtables = ( $self->{index_table_tmp}, $self->{grep_table_tmp} );
 
-	foreach my $langid ( @{$self->{session}->get_archive()->get_conf( "languages" )} )
+	foreach my $langid ( @{&ARCHIVE->get_conf( "languages" )} )
 	{
 		push @doomtables, $ds->get_ordervalues_table_name( $langid )."_tmp";
 	}
 
 	foreach my $table ( @doomtables )
 	{
-		next unless( $db->has_table( $table ) );
+		next unless( &DATABASE->has_table( $table ) );
 		$self->logerror( "Table $table still exists. Dropping it now." );
-		$self->{session}->get_db->drop_table( $table ); 
+		&DATABASE->drop_table( $table ); 
 	}
 }
 
@@ -171,32 +162,28 @@ sub create
 	my $rv = 1;
 
 	my $keyfield = $ds->get_key_field()->clone;
-	my $db = $self->{session}->get_db;
 
 	my $fieldpos = EPrints::MetaField->new( 
-		archive=> $self->{session}->get_archive(),
 		name => "pos", 
 		type => "int" );
 	my $fieldword = EPrints::MetaField->new( 
-		archive=> $self->{session}->get_archive(),
 		name => "fieldword", 
 		type => "text");
 	my $fieldids = EPrints::MetaField->new( 
-		archive=> $self->{session}->get_archive(),
 		name => "ids", 
 		type => "longtext");
 
-	if( $db->has_table( $self->{index_table_tmp} ) )
+	if( &DATABASE->has_table( $self->{index_table_tmp} ) )
 	{
 		$self->logerror( "$self->{index_table_tmp} already exists. Indexer exited abnormally or still running?" );
 		$self->log( "Dropping table: $self->{index_table_tmp}" );
 		#cjg!
 		my $sql = "DROP TABLE $self->{index_table_tmp}";
-		$self->{session}->get_db->do( $sql );
+		&DATABASE->do( $sql );
 	}
 	
 	$self->log( "Creating table: $self->{index_table_tmp}" );
-	$rv = $rv & $db->create_table(
+	$rv = $rv & &DATABASE->create_table(
 		$self->{index_table_tmp},
 		$ds,
 		0, # no primary key
@@ -206,26 +193,24 @@ sub create
 
 		
 	my $fieldfieldname = EPrints::MetaField->new( 
-		archive=> $self->{session}->get_archive(),
 		name => "fieldname", 
 		type => "text" );
 	my $fieldgrepstring = EPrints::MetaField->new( 
-		archive=> $self->{session}->get_archive(),
 		name => "grepstring", 
 		type => "text");
 
-	if( $db->has_table( $self->{grep_table_tmp} ) )
+	if( &DATABASE->has_table( $self->{grep_table_tmp} ) )
 	{
 		$self->logerror( "$self->{grep_table_tmp} already exists. Indexer exited abnormally or still running?" );
 		$self->log( "Dropping table: $self->{grep_table_tmp}" );
 		#cjg!
 		my $sql = "DROP TABLE $self->{grep_table_tmp}";
-		$self->{session}->get_db->do( $sql );
+		&DATABASE->do( $sql );
 	}
 	
 
 	$self->log( "Creating table: $self->{grep_table_tmp}" );
-	$rv = $rv & $db->create_table(
+	$rv = $rv & &DATABASE->create_table(
 		$self->{grep_table_tmp},
 		$ds,
 		0, # no primary key
@@ -246,24 +231,23 @@ sub create
 	{
 		my $fname = $_->get_sql_name();
 		push @orderfields, EPrints::MetaField->new( 
-					archive=> $self->{session}->get_archive(),
 					name => $fname,
 					type => "longtext" );
 	}
-	foreach $langid ( @{$self->{session}->get_archive()->get_conf( "languages" )} )
+	foreach $langid ( @{&ARCHIVE->get_conf( "languages" )} )
 	{
 		my $order_table_tmp = $ds->get_ordervalues_table_name( $langid )."_tmp";
-		if( $db->has_table( $order_table_tmp ) )
+		if( &DATABASE->has_table( $order_table_tmp ) )
 		{
 			$self->logerror( "$order_table_tmp already exists. Indexer exited abnormally or still running?" );
 			$self->log( "Dropping table: $order_table_tmp" );
 			#cjg!
 			my $sql = "DROP TABLE $order_table_tmp";
-			$self->{session}->get_db->do( $sql );
+			&DATABASE->do( $sql );
 		}
 
 		$self->log( "Creating table: $order_table_tmp" );
-		$rv = $rv && $db->create_table( 
+		$rv = $rv && &DATABASE->create_table( 
 			$order_table_tmp,
 			$ds, 
 			1, 
@@ -291,12 +275,12 @@ sub build
 	my $info = {
 		allcodes => {},
 		indexer => $self,
-		max => $ds->count( $self->{session} ),
+		max => $ds->count,
 		rows => 0 };
 
 	
 	$self->{count} = 0;
-	$ds->map( $self->{session}, \&_index_item, $info );
+	$ds->map( \&_index_item, $info );
 
 	# store all codes which didn't already get stored
 
@@ -308,10 +292,10 @@ sub build
 
 sub _index_item
 {
-        my( $session, $dataset, $item, $info ) = @_;
+        my( $dataset, $item, $info ) = @_;
 
 	my $id = $item->get_id;
-	$info->{indexer}->log( "Indexing: ".$dataset->get_archive->get_id.'.'.$dataset->id.".".$id );
+	$info->{indexer}->log( "Indexing: ".&ARCHIVE->get_id.'.'.$dataset->id.".".$id );
 	if( $info->{indexer}->{change_pname} )
 	{
 		$0 =~ s/ *\[[^\]]*\]//;
@@ -321,7 +305,7 @@ sub _index_item
 
 	my $codes = {};
 	my $grepcodes = [];
-	EPrints::Index::index_object( $session, $item, $codes, $grepcodes );
+	EPrints::Index::index_object( $item, $codes, $grepcodes );
 	foreach my $code ( keys %{$codes} )
 	{
 		push @{$info->{allcodes}->{$code}}, $id;
@@ -335,10 +319,10 @@ sub _index_item
 	{
 		my $sql = "INSERT INTO ".$info->{indexer}->{grep_table_tmp}." VALUES ('".
 EPrints::Database::prep_value($item->get_id)."','".EPrints::Database::prep_value($grepcode->[0])."','".EPrints::Database::prep_value($grepcode->[1])."');";
-		$session->get_db->do( $sql ); #cjg
+		&DATABASE->do( $sql ); #cjg
 	}
 
-	&insert_ordervalues( $session, $dataset, $item->get_data, 1 );
+	&insert_ordervalues( $dataset, $item->get_data, 1 );
 
 	# add to count
 	$info->{indexer}->{count}++;
@@ -347,22 +331,22 @@ EPrints::Database::prep_value($item->get_id)."','".EPrints::Database::prep_value
 
 sub update_ordervalues
 {
-        my( $session, $dataset, $data, $tmp ) = @_;
+        my( $dataset, $data, $tmp ) = trim_params(@_);
 
-	&_do_ordervalues( $session, $dataset, $data, 0, $tmp );	
+	&_do_ordervalues( $dataset, $data, 0, $tmp );	
 }
 
 sub insert_ordervalues
 {
-        my( $session, $dataset, $data, $tmp ) = @_;
+        my( $dataset, $data, $tmp ) = trim_params(@_);
 
-	&_do_ordervalues( $session, $dataset, $data, 1, $tmp );	
+	&_do_ordervalues( $dataset, $data, 1, $tmp );	
 }
 
 
 sub _do_ordervalues
 {
-        my( $session, $dataset, $data, $insert, $tmp ) = @_;
+        my( $dataset, $data, $insert, $tmp ) = @_;
 
 	# insert = 0 => update
 	# insert = 1 => insert
@@ -377,7 +361,7 @@ sub _do_ordervalues
 	my $keyvalue = EPrints::Database::prep_value( $data->{$keyfield->get_sql_name()} );
 	my @orderfields = ( $keyfield );
 
-	foreach my $langid ( @{$session->get_archive()->get_conf( "languages" )} )
+	foreach my $langid ( @{&ARCHIVE->get_conf( "languages" )} )
 	{
 		my @fnames = ( $keyfield->get_sql_name() );
 		my @fvals = ( $keyvalue );
@@ -385,7 +369,6 @@ sub _do_ordervalues
 		{
 			my $ov = $field->ordervalue( 
 					$data->{$field->get_name()},
-					$session,
 					$langid );
 			
 			push @fnames, $field->get_sql_name();
@@ -409,13 +392,13 @@ sub _do_ordervalues
 			}
 			$sql = "UPDATE ".$ovt." SET ".join( ",", @l )." WHERE ".$keyfield->get_sql_name().' = "'.EPrints::Database::prep_value( $keyvalue ).'"';
 		}
-		$session->get_db->do( $sql );
+		&DATABASE->do( $sql );
 	}
 }
 
 sub delete_ordervalues
 {
-        my( $session, $dataset, $id, $tmp ) = @_;
+        my( $dataset, $id, $tmp ) = trim_params(@_);
 
 	my @fields = $dataset->get_fields( 1 );
 
@@ -424,14 +407,14 @@ sub delete_ordervalues
 	my $keyfield = $dataset->get_key_field();
 	my $keyvalue = EPrints::Database::prep_value( $id );
 
-	foreach my $langid ( @{$session->get_archive()->get_conf( "languages" )} )
+	foreach my $langid ( @{&ARCHIVE->get_conf( "languages" )} )
 	{
 		# cjg raw SQL!
 		my $ovt = $dataset->get_ordervalues_table_name( $langid );
 		if( $tmp ) { $ovt .= "_tmp"; }
 		my $sql;
 		$sql = "DELETE FROM ".$ovt." WHERE ".$keyfield->get_sql_name().' = "'.EPrints::Database::prep_value( $keyvalue ).'"';
-		$session->get_db->do( $sql );
+		&DATABASE->do( $sql );
 	}
 }
 
@@ -446,7 +429,7 @@ sub _store
 
 	#cjg SQL should not really be in this file.
 	my $sql = "INSERT INTO $self->{index_table_tmp} VALUES ( '".EPrints::Database::prep_value($code)."', $info->{rows}, '".join( ':',  @{$info->{allcodes}->{$code}} )."' )";
-	$self->{session}->get_db->do( $sql );
+	&DATABASE->do( $sql );
 	
 	$info->{rows}++;
 	delete $info->{allcodes}->{$code};
@@ -466,12 +449,10 @@ sub install
 {
 	my( $self ) = @_;
 
-	my $db = $self->{session}->get_db;
-
-	if( $db->has_table( $self->{index_table_tmp} ) )
+	if( &DATABASE->has_table( $self->{index_table_tmp} ) )
 	{
 		$self->log( "Installing table: ".$self->{index_table_tmp} );
-		$self->{session}->get_db->install_table( 
+		&DATABASE->install_table( 
 			$self->{index_table_tmp}, 
 			$self->{dataset}->get_sql_index_table_name );
 	}
@@ -481,10 +462,10 @@ sub install
 	}
 
 
-	if( $db->has_table( $self->{grep_table_tmp} ) )
+	if( &DATABASE->has_table( $self->{grep_table_tmp} ) )
 	{
 		$self->log( "Installing table: ".$self->{grep_table_tmp} );
-		$self->{session}->get_db->install_table( 
+		&DATABASE->install_table( 
 			$self->{grep_table_tmp}, 
 			$self->{dataset}->get_sql_index_table_name."_grep" );
 	}
@@ -494,19 +475,19 @@ sub install
 	}
 
 
-	foreach my $langid ( @{$self->{session}->get_archive()->get_conf( "languages" )} )
+	foreach my $langid ( @{&ARCHIVE->get_conf( "languages" )} )
 	{
 		my $order_table = $self->{dataset}->get_ordervalues_table_name( $langid );
 		my $order_table_tmp = $order_table.'_tmp';
 
-		if( !$db->has_table( $order_table_tmp ) )
+		if( !&DATABASE->has_table( $order_table_tmp ) )
 		{
 			$self->logerror( "Table does not exist to install: ".$order_table_tmp );
 			next;
 		}
 
 		$self->log( "Installing table: ".$order_table_tmp );
-		$self->{session}->get_db->install_table( 
+		&DATABASE->install_table( 
 			$order_table_tmp,
 			$order_table );
 	}
@@ -535,7 +516,7 @@ sub get_statusfile
 {
 	my( $self ) = @_;
 
-	return $self->{session}->get_archive->get_conf( "variables_path" ).
+	return &ARCHIVE->get_conf( "variables_path" ).
 		"/index-".$self->{dataset}->id.".timestamp";
 }
 
@@ -598,7 +579,7 @@ sub change_pname
 ######################################################################
 =pod
 
-=item index_object( $session, $object, $codes )
+=item index_object( $object, $codes )
 
 undocumented
 
@@ -608,7 +589,7 @@ undocumented
 
 sub index_object
 {
-	my( $session, $object, $codes, $grepcodes ) = @_;
+	my( $object, $codes, $grepcodes ) = trim_params(@_);
 
 	my $ds = $object->get_dataset;
 	my @fields = $ds->get_fields( 1 );
@@ -625,7 +606,7 @@ sub index_object
 	{
 		my $value = $object->get_value( $field->get_name );
 		my( $new_codes, $new_grepcodes, $ignored ) = 
-			$field->get_index_codes( $session, $value );
+			$field->get_index_codes( $value );
 
 		my $name = $field->get_name;
 		foreach my $code ( @{$new_codes} )
@@ -643,8 +624,11 @@ sub index_object
 
 sub split_words
 {
-	my( $session, $utext ) = @_;
+	my( $utext, $foo ) = trim_params(@_);
 
+	# Patch an issue with compatibility
+	if( !defined $utext ) { $utext = $foo; }
+	
 	my $len = $utext->length;
         my @words = ();
         my $cword = utf8( "" );
@@ -671,7 +655,7 @@ sub split_words
 
 sub apply_mapping
 {
-	my( $session, $text ) = @_;
+	my( $text ) = trim_params(@_);
 
 	$text = "" if( !defined $text );
 	my $utext = utf8( "$text" ); # just in case it wasn't already.

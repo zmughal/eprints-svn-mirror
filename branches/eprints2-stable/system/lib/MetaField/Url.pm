@@ -39,17 +39,17 @@ BEGIN
 }
 
 use EPrints::MetaField::Text;
-
+use EPrints::Session;
 
 sub render_single_value
 {
-	my( $self, $session, $value, $dont_link ) = @_;
+	my( $self, $value, $dont_link ) = trim_params(@_);
 	
-	my $text = $session->make_text( $value );
+	my $text = &SESSION->make_text( $value );
 
 	return $text if( $dont_link );
 
-	my $a = $session->render_link( $value );
+	my $a = &SESSION->render_link( $value );
 	$a->appendChild( $text );
 	return $a;
 }

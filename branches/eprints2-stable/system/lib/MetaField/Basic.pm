@@ -36,6 +36,7 @@ use strict;
 use warnings;
 
 use EPrints::MetaField;
+use EPrints::Session;
 
 BEGIN
 {
@@ -90,7 +91,7 @@ sub get_sql_index
 ######################################################################
 =pod
 
-=item $xhtml_dom = $field->render_single_value( $session, $value, $dont_link )
+=item $xhtml_dom = $field->render_single_value( $value, $dont_link )
 
 Returns the XHTML representation of the value. The value will be
 non-multiple and non-multilang and have no "id" part. Just the
@@ -103,9 +104,9 @@ If $dont_link then do not render any hypertext links in the returned XHTML.
 
 sub render_single_value
 {
-	my( $self, $session, $value, $dont_link ) = @_;
+	my( $self, $value, $dont_link ) = trim_params(@_);
 
-	return $session->make_text( $value );
+	return &SESSION->make_text( $value );
 }
 
 
@@ -114,7 +115,7 @@ sub render_single_value
 ######################################################################
 =pod
 
-=item $xhtml = $field->render_input_field_actual( $session, $value, [$dataset, $type], [$staff], [$hidden_fields], [$obj] )
+=item $xhtml = $field->render_input_field_actual( $value, [$dataset, $type], [$staff], [$hidden_fields], [$obj] )
 
 Return the XHTML of the fields for an form which will allow a user
 to input metadata to this field. $value is the default value for
@@ -131,9 +132,9 @@ with, if any.
 
 sub render_input_field_actual
 {
-	my( $self, $session, $value, $dataset, $type, $staff, $hidden_fields, $obj ) = @_;
+	my( $self, $value, $dataset, $type, $staff, $hidden_fields, $obj ) = trim_params(@_);
 
-	my $elements = $self->get_input_elements( $session, $value, $staff, $obj );
+	my $elements = $self->get_input_elements( $value, $staff, $obj );
 
 	# if there's only one element then lets not bother making
 	# a table to put it in
@@ -143,43 +144,41 @@ sub render_input_field_actual
 		return $elements->[0]->[0]->{el};
 	}
 
-	my $table = $session->make_element( "table", border=>0 );
+	my $table = &SESSION->make_element( "table", border=>0 );
 
-	my $col_titles = $self->get_input_col_titles( $session, $staff );
+	my $col_titles = $self->get_input_col_titles( $staff );
 	if( defined $col_titles || $self->get_property( "hasid" ) )
 	{
-		my $tr = $session->make_element( "tr" );
+		my $tr = &SESSION->make_element( "tr" );
 		my $th;
 		if( $self->get_property( "multiple" ) )
 		{
-			$th = $session->make_element( "th" );
+			$th = &SESSION->make_element( "th" );
 			$tr->appendChild( $th );
 		}
 		if( !defined $col_titles )
 		{
-			$th = $session->make_element( "th" );
+			$th = &SESSION->make_element( "th" );
 			$tr->appendChild( $th );
 		}	
 		else
 		{
 			foreach my $col_title ( @{$col_titles} )
 			{
-				$th = $session->make_element( "th" );
+				$th = &SESSION->make_element( "th" );
 				$th->appendChild( $col_title );
 				$tr->appendChild( $th );
 			}
 		}
 		if( $self->get_property( "multilang" ) )
 		{
-			$th = $session->make_element( "th" );
+			$th = &SESSION->make_element( "th" );
 			$tr->appendChild( $th );
 		}
 		if( $self->get_property( "hasid" ) )
 		{
-			$th = $session->make_element( "th" );
-			$th->appendChild( 
-				$self->get_id_field()->render_name( 
-								$session ) );
+			$th = &SESSION->make_element( "th" );
+			$th->appendChild( $self->get_id_field()->render_name );
 			$tr->appendChild( $th );
 		}
 		$table->appendChild( $tr );
@@ -187,7 +186,7 @@ sub render_input_field_actual
 
 	foreach my $row ( @{$elements} )
 	{
-		my $tr = $session->make_element( "tr" );
+		my $tr = &SESSION->make_element( "tr" );
 		foreach my $item ( @{$row} )
 		{
 			my %opts = ( valign=>"top" );
@@ -196,7 +195,7 @@ sub render_input_field_actual
 				next if( $prop eq "el" );
 				$opts{$prop} = $item->{$prop};
 			}	
-			my $td = $session->make_element( "td", %opts );
+			my $td = &SESSION->make_element( "td", %opts );
 			if( defined $item->{el} )
 			{
 				$td->appendChild( $item->{el} );
@@ -211,18 +210,17 @@ sub render_input_field_actual
 
 sub get_input_col_titles
 {
-	my( $self, $session, $staff ) = @_;
+	my( $self, $staff ) = trim_params(@_);
 	return undef;
 }
 
 sub get_input_elements
 {
-	my( $self, $session, $value, $staff, $obj ) = @_;	
+	my( $self, $value, $staff, $obj ) = trim_params(@_);
 
 	unless( $self->get_property( "multiple" ) )
 	{
 		return $self->get_input_elements_single( 
-				$session, 
 				$value,
 				undef,
 				$staff,
@@ -248,10 +246,10 @@ sub get_input_elements
 	}
 	my $spacesid = $self->{name}."_spaces";
 
-	if( $session->internal_button_pressed() )
+	if( &SESSION->internal_button_pressed() )
 	{
-		$boxcount = $session->param( $spacesid );
-		if( $session->internal_button_pressed( 
+		$boxcount = &SESSION->param( $spacesid );
+		if( &SESSION->internal_button_pressed( 
 			$self->{name}."_morespaces" ) )
 		{
 			$boxcount += $self->{input_add_boxes};
@@ -259,12 +257,12 @@ sub get_input_elements
 
 		for( my $i=1 ; $i<=$boxcount ; ++$i )
 		{
-			if( $i>1 && $session->internal_button_pressed( $self->{name}."_up_".$i ) )
+			if( $i>1 && &SESSION->internal_button_pressed( $self->{name}."_up_".$i ) )
 			{
 				my( $a, $b ) = ( $value->[$i-1], $value->[$i-2] );
 				( $value->[$i-1], $value->[$i-2] ) = ( $b, $a );
 			}
-			if( $session->internal_button_pressed( $self->{name}."_down_".$i ) )
+			if( &SESSION->internal_button_pressed( $self->{name}."_down_".$i ) )
 			{
 				my( $a, $b ) = ( $value->[$i-1], $value->[$i+0] );
 				( $value->[$i-1], $value->[$i+0] ) = ( $b, $a );
@@ -281,7 +279,6 @@ sub get_input_elements
 	for( my $i=1 ; $i<=$boxcount ; ++$i )
 	{
 		my $section = $self->get_input_elements_single( 
-				$session, 
 				$value->[$i-1], 
 				$i,
 				$staff,
@@ -293,58 +290,58 @@ sub get_input_elements
 			my $lastcol = {};
 			if( $n == 0 )
 			{
-				$col1 = { el=>$session->make_text( $i.". " ) };
-				my $arrows = $session->make_doc_fragment;
+				$col1 = { el=>&SESSION->make_text( $i.". " ) };
+				my $arrows = &SESSION->make_doc_fragment;
 				if( $i > 1 )
 				{
-					$arrows->appendChild( $session->make_element(
+					$arrows->appendChild( &SESSION->make_element(
 						"input",
 						type=>"image",
 						alt=>"up",
-						src=> $session->get_archive->get_conf( "base_url" )."/images/multi_up.png",
+						src=> &ARCHIVE->get_conf( "base_url" )."/images/multi_up.png",
                 				name=>"_internal_".$self->{name}."_up_$i",
 						value=>"1" ));
 				}
 				else
 				{
-					$arrows->appendChild( $session->make_element(
+					$arrows->appendChild( &SESSION->make_element(
 						"img",
 						alt=>"up",
-						src=> $session->get_archive->get_conf( "base_url" )."/images/multi_up_dim.png" ));
+						src=> &ARCHIVE->get_conf( "base_url" )."/images/multi_up_dim.png" ));
 				}
-				$arrows->appendChild( $session->make_element( "br" ) );
+				$arrows->appendChild( &SESSION->make_element( "br" ) );
 				if( 1 )
 				{
-					$arrows->appendChild( $session->make_element(
+					$arrows->appendChild( &SESSION->make_element(
 						"input",
 						type=>"image",
-						src=> $session->get_archive->get_conf( "base_url" )."/images/multi_down.png",
+						src=> &ARCHIVE->get_conf( "base_url" )."/images/multi_down.png",
 						alt=>"down",
                 				name=>"_internal_".$self->{name}."_down_$i",
 						value=>"1" ));
 				}
 				else
 				{
-					$arrows->appendChild( $session->make_element(
+					$arrows->appendChild( &SESSION->make_element(
 						"img",
 						alt=>"down",
-						src=> $session->get_archive->get_conf( "base_url" )."/images/multi_down_dim.png" ));
+						src=> &ARCHIVE->get_conf( "base_url" )."/images/multi_down_dim.png" ));
 				}
 				$lastcol = { el=>$arrows, valign=>"middle" };
 			}
 			push @{$rows}, [ $col1, @{$section->[$n]}, $lastcol ];
 		}
 	}
-	my $more = $session->make_doc_fragment;
-	$more->appendChild( $session->make_element(
+	my $more = &SESSION->make_doc_fragment;
+	$more->appendChild( &SESSION->make_element(
 		"input",
 		"accept-charset" => "utf-8",
 		type => "hidden",
 		name => $spacesid,
 		value => $boxcount ) );
-	$more->appendChild( $session->render_internal_buttons(
+	$more->appendChild( &SESSION->render_internal_buttons(
 		$self->{name}."_morespaces" => 
-			$session->phrase( 
+			&SESSION->phrase( 
 				"lib/metafield:more_spaces" ) ) );
 
 	push @{$rows}, [ {}, {el=>$more,colspan=>3} ];
@@ -357,7 +354,7 @@ sub get_input_elements
 
 ######################################################################
 # 
-# $xhtml = $field->get_input_elements_single( $session, $value, $n, $staff, $obj )
+# $xhtml = $field->get_input_elements_single( $value, $n, $staff, $obj )
 #
 # undocumented
 #
@@ -365,14 +362,13 @@ sub get_input_elements
 
 sub get_input_elements_single
 {
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
+	my( $self, $value, $suffix, $staff, $obj ) = trim_params(@_);
 
 	$suffix = (defined $suffix ? "_$suffix" : "" );	
 
 	unless( $self->get_property( "hasid" ) )
 	{
 		return $self->get_input_elements_no_id( 
-			$session, 
 			$value, 
 			$suffix, 
 			$staff,
@@ -380,7 +376,6 @@ sub get_input_elements_single
 	}
 
 	my $elements = $self->get_input_elements_no_id( 
-		$session, 
 		$value->{main}, 
 		$suffix, 
 		$staff,
@@ -394,8 +389,8 @@ sub get_input_elements_single
 	# ID fields.
 	if( $self->get_property( "id_editors_only" ) && !$staff  )
 	{
-		my $f = $session->make_doc_fragment;
-		my $hidden = $session->make_element(
+		my $f = &SESSION->make_doc_fragment;
+		my $hidden = &SESSION->make_element(
 				"input",
 				"accept-charset" => "utf-8",
 				type => "hidden",
@@ -413,10 +408,10 @@ sub get_input_elements_single
 		return $elements;
 	}
 
-	my $div = $session->make_element( 
+	my $div = &SESSION->make_element( 
 			"div",
 			class=>"formfieldidinput" );
-	$div->appendChild( $session->make_element(
+	$div->appendChild( &SESSION->make_element(
 		"input",
 		"accept-charset" => "utf-8",
 		name => $self->{name}.$suffix."_id",
@@ -439,12 +434,11 @@ sub get_input_elements_single
 
 sub get_input_elements_no_id
 {
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
+	my( $self, $value, $suffix, $staff, $obj ) = trim_params(@_);
 
 	unless( $self->get_property( "multilang" ) )
 	{
 		return $self->get_basic_input_elements( 
-			$session, 
 			$value, 
 			$suffix, 
 			$staff,
@@ -456,13 +450,13 @@ sub get_input_elements_no_id
 	my $spacesid = $self->{name}.$suffix."_langspaces";
 	my $buttonid = $self->{name}.$suffix."_morelangspaces";
 
-	if( $session->internal_button_pressed() )
+	if( &SESSION->internal_button_pressed() )
 	{
-		if( defined $session->param( $spacesid ) )
+		if( defined &SESSION->param( $spacesid ) )
 		{
-			$boxcount = $session->param( $spacesid );
+			$boxcount = &SESSION->param( $spacesid );
 		}
-		if( $session->internal_button_pressed( $buttonid ) )
+		if( &SESSION->internal_button_pressed( $buttonid ) )
 		{
 			$boxcount += $self->{input_add_boxes};
 		}
@@ -476,7 +470,7 @@ sub get_input_elements_no_id
 	foreach( EPrints::Config::get_languages() ) 
 	{ 
 		$langlabels{$_}= EPrints::Utils::tree_to_utf8(
-			$session->render_language_name( $_ ) );
+			&SESSION->render_language_name( $_ ) );
 	}
 	foreach( @force ) { delete $langlabels{$_}; }
 	my @langopts = ("", keys %langlabels );
@@ -509,21 +503,21 @@ sub get_input_elements_no_id
 		my $langbit;
 		if( $forced )
 		{
-			$langbit = $session->make_element( 
+			$langbit = &SESSION->make_element( 
 				"span", 
 				class => "requiredlang" );
-			$langbit->appendChild( $session->make_element(
+			$langbit->appendChild( &SESSION->make_element(
 				"input",
 				"accept-charset" => "utf-8",
 				type => "hidden",
 				name => $langparamid,
 				value => $langid ) );
 			$langbit->appendChild( 
-				$session->render_language_name( $langid ) );
+				&SESSION->render_language_name( $langid ) );
 		}
 		else
 		{
-			$langbit = $session->render_option_list(
+			$langbit = &SESSION->render_option_list(
 				name => $langparamid,
 				values => \@langopts,
 				default => $langid,
@@ -531,7 +525,6 @@ sub get_input_elements_no_id
 		}
 	
 		my $elements = $self->get_basic_input_elements( 
-			$session, 
 			$value->{$langid}, 
 			$suffix."_".$i, 
 			$staff,
@@ -553,15 +546,15 @@ sub get_input_elements_no_id
 				
 	$boxcount = $i-1;
 
-	my $more = $session->make_doc_fragment;	
-	$more->appendChild( $session->make_element(
+	my $more = &SESSION->make_doc_fragment;	
+	$more->appendChild( &SESSION->make_element(
 		"input",
 		"accept-charset" => "utf-8",
 		type => "hidden",
 		name => $spacesid,
 		value => $boxcount ) );
-	$more->appendChild( $session->render_internal_buttons(
-		$buttonid => $session->phrase( 
+	$more->appendChild( &SESSION->render_internal_buttons(
+		$buttonid => &SESSION->phrase( 
 				"lib/metafield:more_langs" ) ) );
 
 	push @{$rows}, [ { el=>$more} ];
@@ -573,13 +566,13 @@ sub get_input_elements_no_id
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
+	my( $self, $value, $suffix, $staff, $obj ) = trim_params(@_);
 
 	my $maxlength = $self->get_max_input_size;
 	my $size = ( $maxlength > $self->{input_cols} ?
 					$self->{input_cols} : 
 					$maxlength );
-	my $input = $session->make_element(
+	my $input = &SESSION->make_element(
 		"input",
 		"accept-charset" => "utf-8",
 		name => $self->{name}.$suffix,
@@ -601,7 +594,7 @@ sub get_max_input_size
 
 ######################################################################
 # 
-# $foo = $field->form_value_actual( $session )
+# $foo = $field->form_value_actual()
 #
 # undocumented
 #
@@ -609,17 +602,17 @@ sub get_max_input_size
 
 sub form_value_actual
 {
-	my( $self, $session ) = @_;
+	my( $self ) = trim_params(@_);
 
 	if( $self->get_property( "multiple" ) )
 	{
 		my @values = ();
-		my $boxcount = $session->param( $self->{name}."_spaces" );
+		my $boxcount = &SESSION->param( $self->{name}."_spaces" );
 		$boxcount = 1 if( $boxcount < 1 );
 		for( my $i=1; $i<=$boxcount; ++$i )
 		{
-			my $value = $self->form_value_single( $session, $i );
-			if( defined $value || $session->internal_button_pressed )
+			my $value = $self->form_value_single( $i );
+			if( defined $value || &SESSION->internal_button_pressed )
 			{
 				push @values, $value;
 			}
@@ -631,12 +624,12 @@ sub form_value_actual
 		return \@values;
 	}
 
-	return $self->form_value_single( $session );
+	return $self->form_value_single;
 }
 
 ######################################################################
 # 
-# $foo = $field->form_value_single( $session, $n )
+# $foo = $field->form_value_single( $n )
 #
 # undocumented
 #
@@ -644,16 +637,16 @@ sub form_value_actual
 
 sub form_value_single
 {
-	my( $self, $session, $n ) = @_;
+	my( $self, $n ) = trim_params(@_);
 
 	my $suffix = "";
 	$suffix = "_$n" if( defined $n );
 
-	my $value = $self->form_value_no_id( $session, $suffix );
+	my $value = $self->form_value_no_id( $suffix );
 
 	if( $self->get_property( "hasid" ) )
 	{
-		my $id = $session->param( $self->{name}.$suffix."_id" );
+		my $id = &SESSION->param( $self->{name}.$suffix."_id" );
 		if( 
 			!EPrints::Utils::is_set( $value ) &&
 			!EPrints::Utils::is_set( $id ) )
@@ -669,25 +662,24 @@ sub form_value_single
 
 sub form_value_no_id
 {
-	my( $self, $session, $suffix ) = @_;
+	my( $self, $suffix ) = trim_params(@_);
 
 	unless( $self->get_property( "multilang" ) )
 	{
 		# simple case; not multilang
-		my $value = $self->form_value_basic( $session, $suffix );
+		my $value = $self->form_value_basic( $suffix );
 		return undef unless( EPrints::Utils::is_set( $value ) );
 		return $value;
 	}
 
 	my $value = {};
-	my $boxcount = $session->param( $self->{name}.$suffix."_langspaces" );
+	my $boxcount = &SESSION->param( $self->{name}.$suffix."_langspaces" );
 	$boxcount = 1 if( $boxcount < 1 );
 	for( my $i=1; $i<=$boxcount; ++$i )
 	{
 		my $subvalue = $self->form_value_basic( 
-			$session, 
 			$suffix."_".$i );
-		my $langid = $session->param( 
+		my $langid = &SESSION->param( 
 			$self->{name}.$suffix."_".$i."_lang" );
 		if( $langid eq "" ) 
 		{ 
@@ -707,7 +699,7 @@ sub form_value_no_id
 
 ######################################################################
 # 
-# $foo = $field->form_value_basic( $session, $suffix )
+# $foo = $field->form_value_basic( $suffix )
 #
 # undocumented
 #
@@ -715,9 +707,9 @@ sub form_value_no_id
 
 sub form_value_basic
 {
-	my( $self, $session, $suffix ) = @_;
+	my( $self, $suffix ) = trim_params(@_);
 	
-	my $value = $session->param( $self->{name}.$suffix );
+	my $value = &SESSION->param( $self->{name}.$suffix );
 
 	return undef if( !EPrints::Utils::is_set( $value ) );
 
@@ -779,14 +771,14 @@ sub is_browsable
 ######################################################################
 =pod
 
-=item $values = $field->get_values( $session, $dataset, %opts )
+=item $values = $field->get_values( $dataset, %opts )
 
 Return a reference to an array of all the values of this field. 
 For fields like "subject" or "set"
 it returns all the variations. For fields like "text" return all 
 the distinct values from the database.
 
-Results are sorted according to the ordervalues of the $session.
+Results are sorted according to the ordervalues of the session.
 
 =cut
 ######################################################################
@@ -794,13 +786,12 @@ Results are sorted according to the ordervalues of the $session.
 
 sub get_values
 {
-	my( $self, $session, $dataset, %opts ) = @_;
+	my( $self, $dataset, %opts ) = trim_params(@_);
 
 	my $langid = $opts{langid};
-	$langid = $session->get_langid unless( defined $langid );
+	$langid = &SESSION->get_langid unless( defined $langid );
 
 	my $unsorted_values = $self->get_unsorted_values( 
-		$session,
 		$dataset,	
 		%opts );
 
@@ -816,7 +807,6 @@ sub get_values
 		# should never by .id or multilang either.
 		my $orderkey = $self->ordervalue_basic(
 			$value, 
-			$session, 
 			$langid );
 		$orderkeys{$v2} = $orderkey;
 	}
@@ -828,15 +818,15 @@ sub get_values
 
 sub get_unsorted_values
 {
-	my( $self, $session, $dataset, %opts ) = @_;
+	my( $self, $dataset, %opts ) = trim_params(@_);
 
-	return $session->get_db()->get_values( $self, $dataset );
+	return &DATABASE->get_values( $self, $dataset );
 }
 
 ######################################################################
 =pod
 
-=item $xhtml = $field->get_value_label( $session, $value )
+=item $xhtml = $field->get_value_label( $value )
 
 Return an XHTML DOM object describing the given value. Normally this
 is just the value, but in the case of something like a "set" field 
@@ -847,19 +837,18 @@ this returns the name of the option in the current language.
 
 sub get_value_label
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $value ) = trim_params(@_);
 
-	return $session->make_text( $value );
+	return &SESSION->make_text( $value );
 }
 
 
 
 #	if( $self->is_type( "id" ) )
 #	{
-#		return $session->get_archive()->call( 
+#		return &ARCHIVE->call( 
 #			"id_label", 
 #			$self, 
-#			$session, 
 #			$value );
 #	}
 
@@ -867,7 +856,7 @@ sub get_value_label
 ######################################################################
 =pod
 
-=item $ov = $field->ordervalue( $value, $archive, $langid )
+=item $ov = $field->ordervalue( $value, $langid )
 
 Return a string representing this value which can be used to sort
 it into order by comparing it alphabetically.
@@ -877,29 +866,29 @@ it into order by comparing it alphabetically.
 
 sub ordervalue
 {
-	my( $self , $value , $session , $langid ) = @_;
+	my( $self , $value , $langid ) = trim_params(@_);
 
 	return "" if( !defined $value );
 
 	if( defined $self->{make_value_orderkey} )
 	{
 		return &{$self->{make_value_orderkey}}( 
+			&SESSION,
 			$self, 
 			$value, 
-			$session, 
 			$langid );
 	}
 
 
 	if( !$self->get_property( "multiple" ) )
 	{
-		return $self->ordervalue_single( $value , $session , $langid );
+		return $self->ordervalue_single( $value , $langid );
 	}
 
 	my @r = ();	
 	foreach( @$value )
 	{
-		push @r, $self->ordervalue_single( $_ , $session , $langid );
+		push @r, $self->ordervalue_single( $_ , $langid );
 	}
 	return join( ":", @r );
 }
@@ -907,7 +896,7 @@ sub ordervalue
 
 ######################################################################
 # 
-# $ov = $field->ordervalue_single( $value, $session, $langid )
+# $ov = $field->ordervalue_single( $value, $langid )
 # 
 # undocumented
 # 
@@ -915,7 +904,7 @@ sub ordervalue
 
 sub ordervalue_single
 {
-	my( $self , $value , $session , $langid ) = @_;
+	my( $self , $value , $langid ) = trim_params(@_);
 
 	return "" unless( EPrints::Utils::is_set( $value ) );
 
@@ -932,19 +921,18 @@ sub ordervalue_single
 	}
 	# what if it HAS id but is not a sub-part??
 
-	return $self->ordervalue_no_id( $value, $session, $langid );
+	return $self->ordervalue_no_id( $value, $langid );
 }
 
 sub ordervalue_no_id
 {
-	my( $self , $value , $session , $langid ) = @_;
+	my( $self , $value , $langid ) = trim_params(@_);
 
 	return "" unless( EPrints::Utils::is_set( $value ) );
 
 	if( $self->get_property( "multilang" ) )
 	{
 		$value = EPrints::Session::best_language( 
-			$session->get_archive,
 			$langid,
 			%{$value} );
 	}
@@ -952,6 +940,7 @@ sub ordervalue_no_id
 	if( defined $self->{make_single_value_orderkey} )
 	{
 		return &{$self->{make_single_value_orderkey}}( 
+			&SESSION,
 			$self, 
 			$value ); 
 	}
@@ -980,26 +969,26 @@ sub ordervalue_basic
 
 sub render_search_input
 {
-	my( $self, $session, $searchfield ) = @_;
+	my( $self, $searchfield ) = trim_params(@_);
 	
-	my $frag = $session->make_doc_fragment;
+	my $frag = &SESSION->make_doc_fragment;
 
 	# complex text types
 	$frag->appendChild(
-		$session->make_element( "input",
+		&SESSION->make_element( "input",
 			"accept-charset" => "utf-8",
 			type => "text",
 			name => $searchfield->get_form_prefix,
 			value => $searchfield->get_value,
 			size => $self->get_property( "search_cols" ),
 			maxlength => 256 ) );
-	$frag->appendChild( $session->make_text(" ") );
+	$frag->appendChild( &SESSION->make_text(" ") );
 	my @text_tags = ( "ALL", "ANY" );
 	my %text_labels = ( 
-		"ANY" => $session->phrase( "lib/searchfield:text_any" ),
-		"ALL" => $session->phrase( "lib/searchfield:text_all" ) );
+		"ANY" => &SESSION->phrase( "lib/searchfield:text_any" ),
+		"ALL" => &SESSION->phrase( "lib/searchfield:text_all" ) );
 	$frag->appendChild( 
-		$session->render_option_list(
+		&SESSION->render_option_list(
 			name=>$searchfield->get_form_prefix."_merge",
 			values=>\@text_tags,
 			default=>$searchfield->get_merge,
@@ -1009,14 +998,14 @@ sub render_search_input
 
 sub from_search_form
 {
-	my( $self, $session, $prefix ) = @_;
+	my( $self, $prefix ) = trim_params(@_);
 
 	# complex text types
 
-	my $val = $session->param( $prefix );
+	my $val = &SESSION->param( $prefix );
 	return unless defined $val;
 
-	my $search_type = $session->param( $prefix."_merge" );
+	my $search_type = &SESSION->param( $prefix."_merge" );
 		
 	# Default search type if none supplied (to allow searches 
 	# using simple HTTP GETs)
@@ -1030,7 +1019,7 @@ sub from_search_form
 
 sub render_search_description
 {
-	my( $self, $session, $sfname, $value, $merge, $match ) = @_;
+	my( $self, $sfname, $value, $merge, $match ) = trim_params(@_);
 
 	my( $phraseid );
 	if( $match eq "EQ" || $match eq "EX" )
@@ -1047,10 +1036,9 @@ sub render_search_description
 	}
 
 	my $valuedesc = $self->render_search_value(
-		$session,
 		$value );
 	
-	return $session->html_phrase(
+	return &SESSION->html_phrase(
 		$phraseid,
 		name => $sfname, 
 		value => $valuedesc );
@@ -1058,26 +1046,25 @@ sub render_search_description
 
 sub render_search_value
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $value ) = trim_params(@_);
 
-	return $session->make_text( '"'.$value.'"' );
+	return &SESSION->make_text( '"'.$value.'"' );
 }	
 
 sub split_search_value
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $value ) = trim_params(@_);
 
 #	return EPrints::Index::split_words( 
-#			$session,
-#			EPrints::Index::apply_mapping( $session, $value ) );
+#			EPrints::Index::apply_mapping( $value ) );
 
 	return split /\s+/, $value;
 }
 
 sub get_search_conditions
 {
-	my( $self, $session, $dataset, $search_value, $match, $merge,
-		$search_mode ) = @_;
+	my( $self, $dataset, $search_value, $match, $merge,
+		$search_mode ) = trim_params(@_);
 
 	if( $match eq "EX" )
 	{
@@ -1097,7 +1084,6 @@ sub get_search_conditions
 	}
 
 	return $self->get_search_conditions_not_ex(
-			$session, 
 			$dataset, 
 			$search_value, 
 			$match, 
@@ -1146,7 +1132,7 @@ sub get_property_defaults
 # Most types are not indexed		
 sub get_index_codes
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $value ) = trim_params(@_);
 
 	return( [], [], [] );
 }

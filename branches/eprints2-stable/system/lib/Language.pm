@@ -55,19 +55,19 @@ format of phrase files.
 package EPrints::Language;
 
 use EPrints::XML;
+use EPrints::Session;
 
 use strict;
 
 ######################################################################
 =pod
 
-=item $language = EPrints::Language->new( $langid, $archive, [$fallback] )
+=item $language = EPrints::Language->new( $langid, [$fallback] )
 
 Create a new language object representing the phases eprints will
 use in a given language, loading them from the phrase config XML files.
 
-$langid is the ISO language ID of the language, $archive is the 
-archive to which this language object belongs. $fallback is either
+$langid is the ISO language ID of the language, $fallback is either
 undef or a reference to the main language object for the archive.
 
 =cut
@@ -75,7 +75,7 @@ undef or a reference to the main language object for the archive.
 
 sub new
 {
-	my( $class , $langid , $archive , $fallback ) = @_;
+	my( $class , $langid , $fallback ) = trim_params(@_);
 
 	my $self = {};
 	bless $self, $class;
@@ -87,9 +87,8 @@ sub new
 	$self->{fallback} = $fallback;
 
 	$self->{archivedata} = $self->_read_phrases( 
-		$archive->get_conf( "config_path" ).
-			"/phrases-".$self->{id}.".xml", 
-		$archive );
+		&ARCHIVE->get_conf( "config_path" ).
+			"/phrases-".$self->{id}.".xml" );
 	
 	if( !defined  $self->{archivedata} )
 	{
@@ -98,8 +97,7 @@ sub new
 
 	$self->{data} = $self->_read_phrases( 
 		EPrints::Config::get( "phr_path" ).
-			"/system-phrases-".$self->{id}.".xml", 
-		$archive );
+			"/system-phrases-".$self->{id}.".xml" );
 
 	if( !defined  $self->{data} )
 	{
@@ -114,7 +112,7 @@ sub new
 ######################################################################
 =pod
 
-=item $xhtml = $language->phrase( $phraseid, $inserts, $session )
+=item $xhtml = $language->phrase( $phraseid, $inserts )
 
 Return an XHTML DOM structure for the phrase with the given phraseid.
 
@@ -145,18 +143,18 @@ will replace the "pin" when returing this phrase.
 
 sub phrase
 {
-	my( $self, $phraseid, $inserts, $session ) = @_;
+	my( $self, $phraseid, $inserts ) = trim_params(@_);
 
 	my( $phrase , $fb ) = $self->_phrase_aux( $phraseid );
 
 	my $response;
 	if( !defined $phrase )
 	{
-		$response = $session->make_doc_fragment;
+		$response = &SESSION->make_doc_fragment;
 		$response->appendChild( 
-			 $session->make_text(  
+			 &SESSION->make_text(  
 				'["'.$phraseid.'" not defined]' ) );
-		$session->get_archive()->log( 
+		&ARCHIVE->log( 
 			'Undefined phrase: "'.$phraseid.'" ('.$self->{id}.')' );
 	}
 	else
@@ -164,13 +162,13 @@ sub phrase
 		$inserts = {} if( !defined $inserts );
 #print STDERR "---\nN:$phrase\nNO:".$phrase->getOwnerDocument."\n";
 		my $used = {};
-		$response = _insert_pins( $phrase, $session, $inserts, $used, $phraseid );
+		$response = _insert_pins( $phrase, $inserts, $used, $phraseid );
 		foreach( keys %{$inserts} )
 		{
 			if( !$used->{$_} )
 			{
 				# Should log this, but somtimes it's supposed to happen!
-				# $session->get_archive->log( "Unused parameter \"$_\" passed to phrase \"$phraseid\"" );
+				# &ARCHIVE->log( "Unused parameter \"$_\" passed to phrase \"$phraseid\"" );
 				EPrints::XML::dispose( $inserts->{$_} );
 			}
 		}
@@ -180,11 +178,11 @@ sub phrase
 	my $result;
 	if( $fb )
 	{
-		$result = $session->make_element( "fallback" );
+		$result = &SESSION->make_element( "fallback" );
 	}
 	else
 	{
-		$result = $session->make_doc_fragment();
+		$result = &SESSION->make_doc_fragment();
 	}
 
 	$result->appendChild( $response );
@@ -193,7 +191,7 @@ sub phrase
 
 sub _insert_pins
 {
-	my( $node, $session, $inserts, $used, $phraseid ) = @_;
+	my( $node, $inserts, $used, $phraseid ) = @_;
 
 	my $retnode;
 
@@ -220,23 +218,23 @@ sub _insert_pins
 			}
 			else
 			{
-				$retnode = $session->make_text( 
+				$retnode = &SESSION->make_text( 
 						"[ref missing: $ref]" );
-				$session->get_archive->log(
+				&ARCHIVE->log(
 "missing parameter \"$ref\" when making phrase \"$phraseid\"" );
 			}
 		}
 
 		if( $name eq "phrase" )
 		{
-			$retnode = $session->make_doc_fragment;
+			$retnode = &SESSION->make_doc_fragment;
 		}
 	}
 
 	# If the retnode was not "pin" or "phrase" element...
 	if( !defined $retnode )
 	{
-		$retnode = $session->clone_for_me( $node, 0 );
+		$retnode = &SESSION->clone_for_me( $node, 0 );
 	}
 
 	if( EPrints::XML::is_dom( $retnode, "Text" ) )
@@ -252,7 +250,7 @@ sub _insert_pins
 	foreach my $kid ( $node->getChildNodes() )
 	{
 		$retnode->appendChild(
-			_insert_pins( $kid, $session, $inserts, $used, $phraseid ) );
+			_insert_pins( $kid, $inserts, $used, $phraseid ) );
 	}
 
 	return $retnode;
@@ -261,7 +259,7 @@ sub _insert_pins
 
 ######################################################################
 # 
-# $foo = $language->_phrase_aux( $phraseid, $session )
+# $foo = $language->_phrase_aux( $phraseid )
 #
 # Return the phrase for the given id or undef if no phrase is defined.
 #
@@ -295,7 +293,7 @@ sub _phrase_aux
 ######################################################################
 =pod
 
-=item $boolean = $language->has_phrase( $phraseid, $session )
+=item $boolean = $language->has_phrase( $phraseid )
 
 Return 1 if the phraseid is defined for this language. Return 0 if
 it is only available as a fallback or unavailable.
@@ -305,7 +303,7 @@ it is only available as a fallback or unavailable.
 
 sub has_phrase
 {
-	my( $self, $phraseid, $session ) = @_;
+	my( $self, $phraseid ) = trim_params(@_);
 
 	my( $phrase , $fb ) = $self->_phrase_aux( $phraseid );
 
@@ -344,7 +342,7 @@ sub _get_archivedata
 
 ######################################################################
 # 
-#  $phrases = $language->_read_phrases( $file, $archive )
+#  $phrases = $language->_read_phrases( $file )
 # 
 # Return a reference to a hash of DOM objects describing the phrases
 # from the XML phrase file $file.
@@ -353,9 +351,9 @@ sub _get_archivedata
 
 sub _read_phrases
 {
-	my( $self, $file, $archive ) = @_;
+	my( $self, $file ) = trim_params(@_);
 
-	my $doc=$archive->parse_xml( $file );	
+	my $doc = &ARCHIVE->parse_xml( $file );	
 	if( !defined $doc )
 	{
 		print STDERR "Error loading $file\n";

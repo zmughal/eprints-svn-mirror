@@ -19,19 +19,17 @@ use EPrints::Session;
 
 use strict;
 
-my $session = new EPrints::Session;
-exit( 0 ) unless( defined $session );
+EPrints::Session::start;
 
-$session->send_http_header( content_type=>"text/plain" );
+&SESSION->send_http_header( content_type=>"text/plain" );
 
 my @ds_ids = &EPrints::DataSet::get_sql_dataset_ids;
 foreach my $ds_id ( sort @ds_ids )
 {
-	my $ds = $session->get_archive()->get_dataset( $ds_id );
+	my $ds = &ARCHIVE->get_dataset( $ds_id );
 	print $ds_id.": ".$ds->count( $session )."\n";
 }
 print "version: ".$EPrints::SystemSettings::conf->{"version_id"}." (".$EPrints::SystemSettings::conf->{"version"}.")\n";
 
-$session->terminate();
 exit;
 

@@ -184,7 +184,7 @@ sub full_timestamp
 ######################################################################
 =pod
 
-=item EPrints::OpenArchives::make_header( $session, $eprint, $oai2 )
+=item EPrints::OpenArchives::make_header( $eprint, $oai2 )
 
 undocumented
 
@@ -193,25 +193,20 @@ undocumented
 
 sub make_header
 {
-	my ( $session, $eprint, $oai2 ) = @_;
+	my ( $eprint, $oai2 ) = trim_params(@_);
 
-	my $header = $session->make_element( "header" );
+	my $header = &SESSION->make_element( "header" );
 	my $oai_id;
 	if( $oai2 )
 	{
-		$oai_id = $session->get_archive()->get_conf( 
-			"oai", 
-			"v2", 
-			"archive_id" );
+		$oai_id = &ARCHIVE->get_conf( "oai", "v2", "archive_id" );
 	}
 	else
 	{
-		$oai_id = $session->get_archive()->get_conf( 
-			"oai", 
-			"archive_id" );
+		$oai_id = &ARCHIVE->get_conf( "oai", "archive_id" );
 	}
 	
-	$header->appendChild( $session->render_data_element(
+	$header->appendChild( &SESSION->render_data_element(
 		6,
 		"identifier",
 		EPrints::OpenArchives::to_oai_identifier(
@@ -224,7 +219,7 @@ sub make_header
 		# is this a good default?
 		$datestamp = '0001-01-01';
 	}
-	$header->appendChild( $session->render_data_element(
+	$header->appendChild( &SESSION->render_data_element(
 		6,
 		"datestamp",
 		$datestamp ) );
@@ -237,7 +232,7 @@ sub make_header
 			return $header;
 		}
 
-		my $viewconf = $session->get_archive()->get_conf( "oai","sets" );
+		my $viewconf = &ARCHIVE->get_conf( "oai","sets" );
         	foreach my $info ( @{$viewconf} )
         	{
 			my @values = $eprint->get_values( $info->{fields} );
@@ -252,11 +247,10 @@ sub make_header
 				my @l;
 				if( $afield->is_type( "subject" ) )
 				{
-					my $subj = new EPrints::Subject( $session, $v );
+					my $subj = new EPrints::Subject( $v );
 					next unless( defined $subj );
 	
 					my @paths = $subj->get_paths( 
-						$session, 
 						$afield->get_property( "top" ) );
 
 					foreach my $path ( @paths )
@@ -276,7 +270,7 @@ sub make_header
 
 				foreach( @l )
 				{
-					$header->appendChild( $session->render_data_element(
+					$header->appendChild( &SESSION->render_data_element(
 						6,
 						"setSpec",
 						encode_setspec( $info->{id}.'=' ).$_ ) );
@@ -292,7 +286,7 @@ sub make_header
 ######################################################################
 =pod
 
-=item EPrints::OpenArchives::make_record( $session, $eprint, $fn, $oai2 )
+=item EPrints::OpenArchives::make_record( $eprint, $fn, $oai2 )
 
 undocumented
 
@@ -301,12 +295,12 @@ undocumented
 
 sub make_record
 {
-	my( $session, $eprint, $fn, $oai2 ) = @_;
+	my( $eprint, $fn, $oai2 ) = trim_params(@_);
 
-	my $record = $session->make_element( "record" );
+	my $record = &SESSION->make_element( "record" );
 
-	my $header = make_header( $session, $eprint, $oai2 );
-	$record->appendChild( $session->make_indent( 4 ) );
+	my $header = make_header( $eprint, $oai2 );
+	$record->appendChild( &SESSION->make_indent( 4 ) );
 	$record->appendChild( $header );
 
 	if( $eprint->get_dataset()->id() eq "deletion" )
@@ -318,13 +312,13 @@ sub make_record
 		return $record;
 	}
 
-	my $md = &{$fn}( $eprint, $session );
+	my $md = &{$fn}( $eprint, &SESSION );#cjg?
 	if( defined $md )
 	{
-		my $metadata = $session->make_element( "metadata" );
-		$metadata->appendChild( $session->make_indent( 6 ) );
+		my $metadata = &SESSION->make_element( "metadata" );
+		$metadata->appendChild( &SESSION->make_indent( 6 ) );
 		$metadata->appendChild( $md );
-		$record->appendChild( $session->make_indent( 4 ) );
+		$record->appendChild( &SESSION->make_indent( 4 ) );
 		$record->appendChild( $metadata );
 	}
 
@@ -360,7 +354,7 @@ sub to_oai_identifier
 
 ######################################################################
 #
-# $eprint_od = from_oai_identifier( $session , $oai_identifier )
+# $eprint_od = from_oai_identifier( $oai_identifier )
 #
 #  Return the local eprint id of an oai eprint identifier. undef is
 #  returned if the full id is garbled.
@@ -371,7 +365,7 @@ sub to_oai_identifier
 ######################################################################
 =pod
 
-=item EPrints::OpenArchives::from_oai_identifier( $session, $oai_identifier )
+=item EPrints::OpenArchives::from_oai_identifier( $oai_identifier )
 
 undocumented
 
@@ -380,9 +374,9 @@ undocumented
 
 sub from_oai_identifier
 {
-        my( $session , $oai_identifier ) = @_;
-        my $arcid = $session->get_archive()->get_conf( "oai", "archive_id" );
-        my $arcid2 = $session->get_archive()->get_conf( "oai", "v2", "archive_id" );
+        my( $oai_identifier ) = trim_params(@_);
+        my $arcid = &ARCHIVE->get_conf( "oai", "archive_id" );
+        my $arcid2 = &ARCHIVE->get_conf( "oai", "v2", "archive_id" );
         if( $oai_identifier =~ /^oai:($arcid|$arcid2):(\d+)$/ )
         {
                 return( $2 );

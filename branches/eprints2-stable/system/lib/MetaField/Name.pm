@@ -32,6 +32,7 @@ use strict;
 use warnings;
 
 use Unicode::String qw( latin1 utf8 );
+use EPrints::Session;
 
 BEGIN
 {
@@ -71,21 +72,21 @@ sub get_sql_index
 	
 sub render_single_value
 {
-	my( $self, $session, $value, $dont_link ) = @_;
+	my( $self, $value, $dont_link ) = trim_params(@_);
 
 	my $order = $self->get_property( "render_opts" )->{order};
 	
 	# If the render opt "order" is set to "gf" then we order
 	# the name with given name first. 
 
-	return $session->render_name( 
+	return &SESSION->render_name( 
 			$value, 
 			defined $order && $order eq "gf" );
 }
 
 sub get_input_bits
 {
-	my( $self, $session ) = @_;
+	my( $self ) = trim_params(@_);
 
 	my @namebits;
 	unless( $self->get_property( "hide_honourific" ) )
@@ -110,13 +111,13 @@ sub get_input_bits
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
+	my( $self, $value, $suffix, $staff, $obj ) = trim_params(@_);
 
 	my $parts = [];
-	foreach( $self->get_input_bits( $session ) )
+	foreach( $self->get_input_bits )
 	{
 		my $size = $self->{input_name_cols}->{$_};
-		push @{$parts}, {el=>$session->make_element(
+		push @{$parts}, {el=>&SESSION->make_element(
 			"input",
 			"accept-charset" => "utf-8",
 			name => $self->{name}.$suffix."_".$_,
@@ -130,28 +131,27 @@ sub get_basic_input_elements
 
 sub get_input_col_titles
 {
-	my( $self, $session, $staff ) = @_;
+	my( $self, $staff ) = trim_params(@_);
 
 	my @r = ();
-	foreach my $bit ( $self->get_input_bits( $session ) )
+	foreach my $bit ( $self->get_input_bits )
 	{
 		# deal with some legacy in the phrase id's
 		$bit = "given_names" if( $bit eq "given" );
 		$bit = "family_names" if( $bit eq "family" );
-		push @r, $session->html_phrase(	"lib/metafield:".$bit );
+		push @r, &SESSION->html_phrase(	"lib/metafield:".$bit );
 	}
 	return \@r;
 }
 
 sub form_value_basic
 {
-	my( $self, $session, $suffix ) = @_;
+	my( $self, $suffix ) = trim_params(@_);
 	
 	my $data = {};
 	foreach( "honourific", "given", "family", "lineage" )
 	{
-		$data->{$_} = 
-			$session->param( $self->{name}.$suffix."_".$_ );
+		$data->{$_} = &SESSION->param( $self->{name}.$suffix."_".$_ );
 	}
 
 	unless( EPrints::Utils::is_set( $data ) )
@@ -164,9 +164,9 @@ sub form_value_basic
 
 sub get_value_label
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $value ) = trim_params(@_);
 
-	return $session->render_name( $value );
+	return &SESSION->render_name( $value );
 }
 
 sub ordervalue_basic
@@ -195,7 +195,7 @@ use Carp;
 
 sub split_search_value
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $value ) = trim_params(@_);
 
 	# should use archive whitespaces
 	# remove spaces around commas to make them single names
@@ -219,16 +219,15 @@ sub split_search_value
 
 sub render_search_value
 {
-        my( $self, $session, $value ) = @_;
+        my( $self, $value ) = trim_params(@_);
 
-	my @bits = $self->split_search_value( $session, $value );
-        return $session->make_text( '"'.join( '", "', @bits).'"' );
+	my @bits = $self->split_search_value( $value );
+        return &SESSION->make_text( '"'.join( '", "', @bits).'"' );
 }
 
 sub get_search_conditions
 {
-	my( $self, $session, $dataset, $search_value, $match, $merge,
-		$search_mode ) = @_;
+	my( $self, $dataset, $search_value, $match, $merge, $search_mode ) = @_;
 
 	if( $match eq "EX" )
 	{
@@ -240,9 +239,7 @@ sub get_search_conditions
 			$search_value );
 	}
 
-	my $v2 = EPrints::Index::apply_mapping( 
-			$session,
-			$search_value );
+	my $v2 = EPrints::Index::apply_mapping( $search_value );
 
 	# name searches are case sensitive
 	$v2 = "\L$v2";
@@ -260,7 +257,13 @@ sub get_search_conditions
 	$v2 =~ s/([A-Z])/ $1/g;
 
 	# remove not a-z characters (except ,)
-	$v2 =~ s/[^a-z,]/ /ig;
+	# disabled as it breaks unicode names
+	# $v2 =~ s/[^a-z,]/ /ig;
+	
+	# Remove hyphen and dot 
+	$v2 =~ s/[\-\.]/ /ig;
+
+
 
 	my( $family, $given ) = split /\s*,\s*/, $v2;
 	my @freetexts = ();
@@ -345,9 +348,9 @@ sub get_property_defaults
 
 sub get_unsorted_values
 {
-	my( $self, $session, $dataset, %opts ) = @_;
+	my( $self, $dataset, %opts ) = trim_params(@_);
 
-	my $list = $session->get_db()->get_values( $self, $dataset );
+	my $list = &DATABASE->get_values( $self, $dataset );
 
 	return $list;
 
@@ -458,12 +461,12 @@ END
 
 sub get_index_codes_basic
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $value ) = trim_params(@_);
 
 	return( [], [], [] ) unless( EPrints::Utils::is_set( $value ) );
 
-	my $f = &EPrints::Index::apply_mapping( $session, $value->{family} );
-	my $g = &EPrints::Index::apply_mapping( $session, $value->{given} );
+	my $f = &EPrints::Index::apply_mapping( $value->{family} );
+	my $g = &EPrints::Index::apply_mapping( $value->{given} );
 
 	# Add a space before all capitals to break
 	# up initials. Will screw up names with capital
@@ -483,14 +486,14 @@ sub get_index_codes_basic
 
 	my $code = '';
 	my @r = ();
-	foreach( EPrints::Index::split_words( $session, $f ) )
+	foreach( EPrints::Index::split_words( $f ) )
 	{
 		next if( $_ eq "" );
 		push @r, "\L$_";
 		$code.= "[\L$_]";
 	}
 	$code.= "-";
-	foreach( EPrints::Index::split_words( $session, $new_g ) )
+	foreach( EPrints::Index::split_words( $new_g ) )
 	{
 		next if( $_ eq "" );
 #		push @r, "given:\L$_";
@@ -501,13 +504,12 @@ sub get_index_codes_basic
 
 sub get_values
 {
-	my( $self, $session, $dataset, %opts ) = @_;
+	my( $self, $dataset, %opts ) = trim_params(@_);
 
 	my $langid = $opts{langid};
-	$langid = $session->get_langid unless( defined $langid );
+	$langid = &SESSION->get_langid unless( defined $langid );
 
 	my $unsorted_values = $self->get_unsorted_values( 
-		$session,
 		$dataset,	
 		%opts );
 
@@ -521,10 +523,7 @@ sub get_values
 
 		# uses function _basic because value will NEVER be multiple
 		# should never by .id or multilang either.
-		my $orderkey = $self->ordervalue_basic(
-			$value, 
-			$session, 
-			$langid );
+		my $orderkey = $self->ordervalue_basic( $value, $langid );
 		$orderkeys{_f($v2)} = $orderkey;
 	}
 

@@ -1,5 +1,8 @@
 
 package EPrints::Plugins::Pageinfo;
+
+use EPrints::Session;
+
 use strict;
 
 # pageinfo format is a perl array containing 3 dom structurs
@@ -21,34 +24,32 @@ EPrints::Plugins::register( 'convert/obj.user/pageinfo/full', \&user_to_pageinfo
 # should be registered by archive
 sub eprint_to_pageinfo_otherstates
 {
-	my( $eprint, $session ) = @_;
+	my( $eprint ) = @_;
 
-	return $eprint->{session}->get_archive()->call( 
-			"eprint_render", 
-			$eprint, 
-			$eprint->{session} );
+	return &ARCHIVE->call( 
+		"eprint_render", 
+		$eprint,
+		&SESSION );
 }
 
 sub eprint_to_pageinfo_deletion
 {
-	my( $eprint, $session ) = @_;
+	my( $eprint ) = @_;
 
         my( $dom, $title, $links );
-	$title = $eprint->{session}->html_phrase( 
+	$title = &SESSION->html_phrase( 
 		"lib/eprint:eprint_gone_title" );
-	$dom = $eprint->{session}->make_doc_fragment();
-	$dom->appendChild( $eprint->{session}->html_phrase( 
+	$dom = &SESSION->make_doc_fragment();
+	$dom->appendChild( &SESSION->html_phrase( 
 		"lib/eprint:eprint_gone" ) );
 	my $replacement = new EPrints::EPrint(
-		$eprint->{session},
 		$eprint->get_value( "replacedby" ),
-		$eprint->{session}->get_archive()->get_dataset( 
-			"archive" ) );
+		&ARCHIVE->get_dataset( "archive" ) );
 	if( defined $replacement )
 	{
 		my $cite = $replacement->render_citation_link();
 		$dom->appendChild( 
-			$eprint->{session}->html_phrase( 
+			&SESSION->html_phrase( 
 				"lib/eprint:later_version", 
 				citation => $cite ) );
 	}
@@ -58,27 +59,24 @@ sub eprint_to_pageinfo_deletion
 
 sub eprint_to_pageinfo
 {
-	my( $eprint, $session ) = @_;
+	my( $eprint ) = @_;
 
 	my $ds_id = $eprint->{dataset}->id();
 
-	return EPrints::Plugins::call( 
+	return &ARCHIVE->plugin(
 		'convert/obj.eprint/pageinfo/'.$ds_id,
-		$eprint,
-		$session );
+		$eprint );
 }
 
 
 sub eprint_to_pageinfo_full
 {
-	my( $eprint, $session ) = @_;
+	my( $eprint ) = @_;
 
-        my( $dom, $title ) = $eprint->{session}->get_archive()->call( 
+	return &ARCHIVE->call( 
 		"eprint_render_full", 
-		$eprint, 
-		$eprint->{session} );
-
-        return( $dom, $title );
+		$eprint,
+		&SESSION );
 }
 
 
@@ -86,7 +84,10 @@ sub user_to_pageinfo
 {
 	my( $user ) = @_;
 
-	my( $dom, $title ) = $user->{session}->get_archive()->call( "user_render", $user, $user->{session} );
+	my( $dom, $title ) = &ARCHIVE->call( 
+		"user_render", 
+		$user,
+		&SESSION );
 
 	if( !defined $title )
 	{
@@ -101,7 +102,10 @@ sub user_to_pageinfo_full
 {
 	my( $user ) = @_;
 
-	my( $dom, $title ) = $user->{session}->get_archive()->call( "user_render_full", $user, $user->{session} );
+	my( $dom, $title ) = &ARCHIVE->call( 
+		"user_render_full", 
+		$user,
+		&SESSION );
 
 	if( !defined $title )
 	{

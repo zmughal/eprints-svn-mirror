@@ -32,9 +32,7 @@ Not quite all the SQL is in the module. There is some in EPrints::SearchField,
 EPrints::SearchExpression & EPrints::MetaField.
 
 The database object is created automatically when you start a new
-eprints session. To get a handle on it use:
-
-$db = $session->get_archive
+eprints session. To get a handle on it use &DATABASE
 
 =over 4
 
@@ -43,10 +41,6 @@ $db = $session->get_archive
 ######################################################################
 #
 # INSTANCE VARIABLES:
-#
-#  $self->{session}
-#     The EPrints::Session which is associated with this database 
-#     connection.
 #
 #  $self->{debug}
 #     If true then SQL is logged.
@@ -62,7 +56,7 @@ use DBI;
 use Carp;
 
 #use EPrints::EPrint;
-use EPrints::Subscription;
+use EPrints::Session;
 
 my $DEBUG_SQL = 0;
 
@@ -121,7 +115,7 @@ sub build_connection_string
 ######################################################################
 =pod
 
-=item $db = EPrints::Database->new( $session )
+=item $db = EPrints::Database->new
 
 Create a connection to the database.
 
@@ -130,22 +124,20 @@ Create a connection to the database.
 
 sub new
 {
-	my( $class , $session) = @_;
+	my( $class ) = @_;
 
 	my $self = {};
 	bless $self, $class;
-	$self->{session} = $session;
 
 	$self->connect;
 
 	if( !defined $self->{dbh} ) { return( undef ); }
 
 	$self->{debug} = $DEBUG_SQL;
-	if( $session->{noise} == 3 )
-	{
-		$self->{debug} = 1;
-	}
-
+#	if( $session->{noise} == 3 )
+#	{
+#		$self->{debug} = 1;
+#	}
 
 	return( $self );
 }
@@ -167,19 +159,19 @@ sub connect
 	# Connect to the database
 	$self->{dbh} = DBI->connect( 
 		build_connection_string( 
-			dbhost => $self->{session}->get_archive()->get_conf("dbhost"),
-			dbsock => $self->{session}->get_archive()->get_conf("dbsock"),
-			dbport => $self->{session}->get_archive()->get_conf("dbport"),
-			dbname => $self->{session}->get_archive()->get_conf("dbname") ),
-	        $self->{session}->get_archive()->get_conf("dbuser"),
-	        $self->{session}->get_archive()->get_conf("dbpass") );
+			dbhost => &ARCHIVE->get_conf("dbhost"),
+			dbsock => &ARCHIVE->get_conf("dbsock"),
+			dbport => &ARCHIVE->get_conf("dbport"),
+			dbname => &ARCHIVE->get_conf("dbname") ),
+	        &ARCHIVE->get_conf("dbuser"),
+	        &ARCHIVE->get_conf("dbpass") );
 
 	return unless defined $self->{dbh};	
 
-	if( $self->{session}->{noise} >= 4 )
-	{
-		$self->{dbh}->trace( 2 );
-	}
+	#if( $self->{session}->{noise} >= 4 )
+	#{
+		#$self->{dbh}->trace( 2 );
+	#}
 }
 
 
@@ -201,7 +193,7 @@ sub disconnect
 	if( defined $self->{dbh} )
 	{
 		$self->{dbh}->disconnect() ||
-			$self->{session}->get_archive()->log( "Database disconnect error: ".
+			&ARCHIVE->log( "Database disconnect error: ".
 				$self->{dbh}->errstr );
 	}
 }
@@ -245,7 +237,7 @@ sub create_archive_tables
 	foreach( &EPrints::DataSet::get_sql_dataset_ids )
 	{
 		$success = $success && $self->create_dataset_tables( 
-			$self->{session}->get_archive()->get_dataset( $_ ) );
+			&ARCHIVE->get_dataset( $_ ) );
 	}
 
 	$success = $success && $self->_create_cachemap_table();
@@ -280,15 +272,12 @@ sub create_dataset_tables
 	my $keyfield = $dataset->get_key_field()->clone;
 
 	my $fieldpos = EPrints::MetaField->new( 
-		archive=> $self->{session}->get_archive(),
 		name => "pos", 
 		type => "int" );
 	my $fieldword = EPrints::MetaField->new( 
-		archive=> $self->{session}->get_archive(),
 		name => "fieldword", 
 		type => "text");
 	my $fieldids = EPrints::MetaField->new( 
-		archive=> $self->{session}->get_archive(),
 		name => "ids", 
 		type => "longtext");
 
@@ -316,11 +305,10 @@ sub create_dataset_tables
 	{
 		my $fname = $_->get_sql_name();
 		push @orderfields, EPrints::MetaField->new( 
-					archive=> $self->{session}->get_archive(),
 					name => $fname,
 					type => "longtext" );
 	}
-	foreach $langid ( @{$self->{session}->get_archive()->get_conf( "languages" )} )
+	foreach $langid ( @{&ARCHIVE->get_conf( "languages" )} )
 	{
 		$rv = $rv && $self->create_table( 
 			$dataset->get_ordervalues_table_name( $langid ), 
@@ -399,7 +387,6 @@ sub create_table
 			if ( $field->get_property( "multiple" ) )
 			{
 				my $pos = EPrints::MetaField->new( 
-					archive=> $self->{session}->get_archive(),
 					name => "pos", 
 					type => "int" );
 				push @auxfields,$pos;
@@ -407,7 +394,6 @@ sub create_table
 			if ( $field->get_property( "multilang" ) )
 			{
 				my $lang = EPrints::MetaField->new( 
-					archive=> $self->{session}->get_archive(),
 					name => "lang", 
 					type => "langid" );
 				push @auxfields,$lang;
@@ -512,7 +498,7 @@ sub add_record
 	# Send to the database
 	my $rv = $self->do( $sql );
 
-	EPrints::Index::insert_ordervalues( $self->{session}, $dataset, $data );
+	EPrints::Index::insert_ordervalues( $dataset, $data );
 
 	# Now add the ACTUAL data:
 	$self->update( $dataset , $data );
@@ -796,7 +782,7 @@ sub update
 		}
 	}
 
-	EPrints::Index::update_ordervalues( $self->{session}, $dataset, $data );
+	EPrints::Index::update_ordervalues( $dataset, $data );
 
 	# Return with an error if unsuccessful
 	return( defined $rv );
@@ -848,10 +834,10 @@ sub remove
 
 	if( !$rv )
 	{
-		$self->{session}->get_archive()->log( "Error removing item id: $id" );
+		&ARCHIVE->log( "Error removing item id: $id" );
 	}
 
-	EPrints::Index::delete_ordervalues( $self->{session}, $dataset, $id );
+	EPrints::Index::delete_ordervalues( $dataset, $id );
 
 	# Return with an error if unsuccessful
 	return( defined $rv )
@@ -870,7 +856,7 @@ sub _create_counter_table
 {
 	my( $self ) = @_;
 
-	my $counter_ds = $self->{session}->get_archive()->get_dataset( "counter" );
+	my $counter_ds = &ARCHIVE->get_dataset( "counter" );
 	
 	# The table creation SQL
 	my $sql = "CREATE TABLE ".$counter_ds->get_sql_table_name().
@@ -913,7 +899,7 @@ sub _create_cachemap_table
 	my( $self ) = @_;
 	
 	# The table creation SQL
-	my $ds = $self->{session}->get_archive()->get_dataset( "cachemap" );
+	my $ds = &ARCHIVE->get_dataset( "cachemap" );
 	my $table_name = $ds->get_sql_table_name();
 	my $sql = <<END;
 CREATE TABLE $table_name ( 
@@ -951,7 +937,7 @@ sub counter_next
 {
 	my( $self, $counter ) = @_;
 
-	my $ds = $self->{session}->get_archive()->get_dataset( "counter" );
+	my $ds = &ARCHIVE->get_dataset( "counter" );
 
 	# Update the counter	
 	my $sql = "UPDATE ".$ds->get_sql_table_name()." SET counter=".
@@ -986,14 +972,13 @@ sub cache_exp
 {
 	my( $self , $id ) = @_;
 
-	my $a = $self->{session}->get_archive();
-	$ds = $a->get_dataset( "cachemap" );
+	$ds = &ARCHIVE->get_dataset( "cachemap" );
 
 	#cjg NOT escaped!!!
 	my $sql = "SELECT searchexp FROM ".$ds->get_sql_table_name() . " WHERE tableid = '$id' ";
 
 	# Never include items past maxlife
-	$sql.= " AND created > now()-interval ".$a->get_conf("cache_maxlife")." hour"; 
+	$sql.= " AND created > now()-interval ".&ARCHIVE->get_conf("cache_maxlife")." hour"; 
 
 	my $sth = $self->prepare( $sql );
 	$self->execute( $sth , $sql );
@@ -1032,7 +1017,7 @@ sub cache
 
 	# nb. all caches are now oneshot.
 
-	my $ds = $self->{session}->get_archive()->get_dataset( "cachemap" );
+	my $ds = &ARCHIVE->get_dataset( "cachemap" );
 	$sql = "INSERT INTO ".$ds->get_sql_table_name()." VALUES ( NULL , NOW(), NOW() , '".prep_value($code)."' , 'TRUE' )";
 	
 	$self->do( $sql );
@@ -1059,7 +1044,8 @@ sub cache
 	$sql = "INSERT INTO $tmptable SELECT NULL , B.$keyname from ".$srctable." as B";
 	if( defined $order )
 	{
-		$sql .= " LEFT JOIN ".$dataset->get_ordervalues_table_name($self->{session}->get_langid())." AS O";
+		$sql .= " LEFT JOIN ".$dataset->get_ordervalues_table_name( 
+				&SESSION->get_langid )." AS O";
 		$sql .= " ON B.$keyname = O.$keyname ORDER BY ";
 		my $first = 1;
 		foreach( split( "/", $order ) )
@@ -1180,7 +1166,7 @@ sub dispose_buffer
 	
 	unless( defined $TEMPTABLES{$id} )
 	{
-		$self->{session}->get_archive->log( <<END );
+		&ARCHIVE->log( <<END );
 Called dispose_buffer on non-buffer table "$id"
 END
 		return;
@@ -1289,7 +1275,7 @@ sub drop_cache
 	my $tmptable = "cache$id";
 
 	my $sql;
-	my $ds = $self->{session}->get_archive()->get_dataset( "cachemap" );
+	my $ds = &ARCHIVE->get_dataset( "cachemap" );
 	# We drop the table before removing the entry from the cachemap
 
        	$sql = "DROP TABLE $tmptable";
@@ -1393,7 +1379,7 @@ sub from_cache
 		@results = $self->_get( $dataset, 3, "cache".$cacheid, $offset , $count );
 	}
 
-	$ds = $self->{session}->get_archive()->get_dataset( "cachemap" );
+	$ds = &ARCHIVE->get_dataset( "cachemap" );
 	my $sql = "UPDATE ".$ds->get_sql_table_name()." SET lastused = NOW() WHERE tableid = $cacheid";
 	$self->do( $sql );
 
@@ -1417,15 +1403,11 @@ sub drop_old_caches
 {
 	my( $self ) = @_;
 
-	$ds = $self->{session}->get_archive()->get_dataset( "cachemap" );
-	my $a = $self->{session}->get_archive();
-	my $sql = "SELECT tableid FROM ".$ds->get_sql_table_name()." WHERE";
-	$sql.= " (lastused < now()-interval ".($a->get_conf("cache_timeout") + 5)." minute AND oneshot = 'FALSE' )";
-	$sql.= " OR created < now()-interval ".$a->get_conf("cache_maxlife")." hour"; 
+	$ds = &ARCHIVE->get_dataset( "cachemap" );
+	my $sql = "SELECT tableid FROM ".$ds->get_sql_table_name()." WHERE (lastused < now()-interval ".(&ARCHIVE->get_conf("cache_timeout") + 5)." minute AND oneshot = 'FALSE' ) OR created < now()-interval ".&ARCHIVE->get_conf("cache_maxlife")." hour"; 
 	my $sth = $self->prepare( $sql );
 	$self->execute( $sth , $sql );
-	my $id;
-	while( $id  = $sth->fetchrow_array() )
+	while( my $id  = $sth->fetchrow_array() )
 	{
 		$self->drop_cache( $id );
 	}
@@ -1753,7 +1735,7 @@ confess();
 
 	foreach( @data )
 	{
-		$_ = $dataset->make_object( $self->{session} ,  $_);
+		$_ = $dataset->make_object( $_);
 	}
 
 	return @data;
@@ -1832,13 +1814,13 @@ sub do
 
 	if( $self->{debug} )
 	{
-		$self->{session}->get_archive()->log( "Database execute debug: $sql" );
+		&ARCHIVE->log( "Database execute debug: $sql" );
 	}
 	my $result = $self->{dbh}->do( $sql );
 	if( !$result )
 	{
-		$self->{session}->get_archive()->log( "SQL ERROR (do): $sql" );
-		$self->{session}->get_archive()->log( "SQL ERROR (do): ".$self->{dbh}->errstr.' (#'.$self->{dbh}->err.')' );
+		&ARCHIVE->log( "SQL ERROR (do): $sql" );
+		&ARCHIVE->log( "SQL ERROR (do): ".$self->{dbh}->errstr.' (#'.$self->{dbh}->err.')' );
 
 		return undef unless( $self->{dbh}->err == 2006 );
 
@@ -1847,16 +1829,16 @@ sub do
 		{
 			++$ccount;
 			sleep 3;
-			$self->{session}->get_archive()->log( "Attempting DB reconnect: $ccount" );
+			&ARCHIVE->log( "Attempting DB reconnect: $ccount" );
 			$self->connect;
 			if( defined $self->{dbh} )
 			{
 				$result = $self->{dbh}->do( $sql );
 				return $result if( defined $result );
-				$self->{session}->get_archive()->log( "SQL ERROR (do): ".$self->{dbh}->errstr );
+				&ARCHIVE->log( "SQL ERROR (do): ".$self->{dbh}->errstr );
 			}
 		}
-		$self->{session}->get_archive()->log( "Giving up after 10 tries" );
+		&ARCHIVE->log( "Giving up after 10 tries" );
 		return undef;
 	}
 
@@ -1880,15 +1862,15 @@ sub prepare
 
 #	if( $self->{debug} )
 #	{
-#		$self->{session}->get_archive()->log( "Database prepare debug: $sql" );
+#		&ARCHIVE->log( "Database prepare debug: $sql" );
 #	}
 
 	my $result = $self->{dbh}->prepare( $sql );
 	my $ccount = 0;
 	if( !$result )
 	{
-		$self->{session}->get_archive()->log( "SQL ERROR (prepare): $sql" );
-		$self->{session}->get_archive()->log( "SQL ERROR (prepare): ".$self->{dbh}->errstr.' (#'.$self->{dbh}->err.')' );
+		&ARCHIVE->log( "SQL ERROR (prepare): $sql" );
+		&ARCHIVE->log( "SQL ERROR (prepare): ".$self->{dbh}->errstr.' (#'.$self->{dbh}->err.')' );
 
 		return undef unless( $self->{dbh}->err == 2006 );
 
@@ -1897,16 +1879,16 @@ sub prepare
 		{
 			++$ccount;
 			sleep 3;
-			$self->{session}->get_archive()->log( "Attempting DB reconnect: $ccount" );
+			&ARCHIVE->log( "Attempting DB reconnect: $ccount" );
 			$self->connect;
 			if( defined $self->{dbh} )
 			{
 				$result = $self->{dbh}->prepare( $sql );
 				return $result if( defined $result );
-				$self->{session}->get_archive()->log( "SQL ERROR (prepare): ".$self->{dbh}->errstr );
+				&ARCHIVE->log( "SQL ERROR (prepare): ".$self->{dbh}->errstr );
 			}
 		}
-		$self->{session}->get_archive()->log( "Giving up after 10 tries" );
+		&ARCHIVE->log( "Giving up after 10 tries" );
 		return undef;
 	}
 
@@ -1931,14 +1913,14 @@ sub execute
 
 	if( $self->{debug} )
 	{
-		$self->{session}->get_archive()->log( "Database execute debug: $sql" );
+		&ARCHIVE->log( "Database execute debug: $sql" );
 	}
 
 	my $result = $sth->execute;
 	while( !$result )
 	{
-		$self->{session}->get_archive()->log( "SQL ERROR (execute): $sql" );
-		$self->{session}->get_archive()->log( "SQL ERROR (execute): ".$self->{dbh}->errstr );
+		&ARCHIVE->log( "SQL ERROR (execute): $sql" );
+		&ARCHIVE->log( "SQL ERROR (execute): ".$self->{dbh}->errstr );
 		return undef;
 	}
 
@@ -2046,7 +2028,7 @@ sub set_version
 		prep_value( $versionid )."'";
 	$self->do( $sql );
 
-	if( $self->{session}->get_noise >= 1 )
+	if( &SESSION->get_noise >= 1 )
 	{
 		print "Set DB compatibility flag to '$versionid'.\n";
 	}

@@ -57,12 +57,13 @@ use Digest::MD5;
 
 use EPrints::XML;
 use EPrints::Utils;
+use EPrints::Session;
 
 
 ######################################################################
 =pod
 
-=item $xml = EPrints::Probity::process_file( $session, $filename, [$name] );
+=item $xml = EPrints::Probity::process_file( $filename, [$name] );
 
 Process the given file and return an XML chunk in the format. 
 
@@ -82,31 +83,31 @@ If there is a problem return a empty XML document fragment.
 
 sub process_file
 {
-	my( $session, $filename, $name ) = @_;
+	my( $filename, $name ) = trim_params(@_);
 
 	$name = $filename unless defined $name;
 
-	my( $value, $alg ) = _md5( $session, $filename );
+	my( $value, $alg ) = _md5( $filename );
 
 	unless( defined $alg )
 	{
-		$session->get_archive->log( 
+		&ARCHIVE->log( 
 "EPrints::Probity: Failed to create hash for '$filename'" );
-		return $session->make_doc_fragment;
+		return &SESSION->make_doc_fragment;
 	}
 
-	my $hash = $session->make_element( "hash" );
-	$hash->appendChild( $session->render_data_element( 6, "name", $name ) );
-	$hash->appendChild( $session->render_data_element( 6, "algorithm", $alg ) );
-	$hash->appendChild( $session->render_data_element( 6, "value", $value ) );
-	$hash->appendChild( $session->render_data_element( 6, "date", EPrints::Utils::get_timestamp() ) );
+	my $hash = &SESSION->make_element( "hash" );
+	$hash->appendChild( &SESSION->render_data_element( 6, "name", $name ) );
+	$hash->appendChild( &SESSION->render_data_element( 6, "algorithm", $alg ) );
+	$hash->appendChild( &SESSION->render_data_element( 6, "value", $value ) );
+	$hash->appendChild( &SESSION->render_data_element( 6, "date", EPrints::Utils::get_timestamp() ) );
 
 	return $hash;
 }
 
 sub _md5
 {
-	my( $session, $filename ) = @_;
+	my( $filename ) = @_;
 
 	my $md5 = Digest::MD5->new;
 	if( open( FILE, $filename ) )
@@ -117,8 +118,7 @@ sub _md5
 	}
 	else
 	{
-		$session->get_archive->log(
-"Error opening '$filename' to create hash: $!" );
+		&ARCHIVE->log( "Error opening '$filename' to create hash: $!" );
 		return undef;
 	}
 	my $value = $md5->hexdigest;
@@ -130,7 +130,7 @@ sub _md5
 ######################################################################
 =pod
 
-=item $xml = EPrints::Probity::create_log( $session, $filenames, [$outfile] )
+=item $xml = EPrints::Probity::create_log( $filenames, [$outfile] )
 
 Create an XML file $outfile of the format:
 
@@ -155,17 +155,15 @@ If $outfile is not specified then the XML is sent to STDOUT.
 
 sub create_log
 {
-	my( $session, $filenames, $outfile ) = @_;
+	my( $filenames, $outfile ) = trim_params(@_);
 
-	my $hashlist = $session->make_element( 
+	my $hashlist = &SESSION->make_element( 
 		"hashlist", 
 		xmlns=>"http://probity.org/XMLprobity" );
 	foreach my $filename ( @{$filenames} )
 	{
-		$hashlist->appendChild( 
-			$session->make_indent( 3 ) );
-		$hashlist->appendChild( 
-			process_file( $session, $filename ) );
+		$hashlist->appendChild( &SESSION->make_indent( 3 ) );
+		$hashlist->appendChild( process_file( $filename ) );
 	}
 
 	if( defined $outfile )
@@ -178,7 +176,7 @@ sub create_log
 		}
 		else
 		{
-			$session->get_archive->log(
+			&ARCHIVE->log(
 "Error opening '$outfile' to write log: $!" );
 		}
 	}

@@ -28,6 +28,8 @@ not done
 
 package EPrints::MetaField::Email;
 
+use EPrints::Session;
+
 use strict;
 use warnings;
 
@@ -42,13 +44,13 @@ use EPrints::MetaField::Text;
 
 sub render_single_value
 {
-	my( $self, $session, $value, $dont_link ) = @_;
+	my( $self, $value, $dont_link ) = trim_params(@_);
 	
-	my $text = $session->make_text( $value );
+	my $text = &SESSION->make_text( $value );
 
 	return $text if( $dont_link );
 
-	my $a = $session->render_link( "mailto:".$value );
+	my $a = &SESSION->render_link( "mailto:".$value );
 	$a->appendChild( $text );
 	return $a;
 }

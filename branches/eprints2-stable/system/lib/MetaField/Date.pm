@@ -40,6 +40,7 @@ BEGIN
 }
 
 use EPrints::MetaField::Basic;
+use EPrints::Session;
 
 sub get_sql_type
 {
@@ -50,14 +51,14 @@ sub get_sql_type
 
 sub render_single_value
 {
-	my( $self, $session, $value, $dont_link ) = @_;
+	my( $self, $value, $dont_link ) = trim_params(@_);
 
 	my $res = $self->get_property( "render_opts" )->{res};
 	my $l = 10;
 	$l = 7 if( defined $res && $res eq "month" );
 	$l = 4 if( defined $res && $res eq "year" );
 
-	return EPrints::Utils::render_date( $session, substr( $value,0,$l ) );
+	return EPrints::Utils::render_date( substr( $value,0,$l ) );
 }
 	
 my @monthkeys = ( 
@@ -66,7 +67,7 @@ my @monthkeys = (
 
 sub _month_names
 {
-	my( $self , $session ) = @_;
+	my( $self ) = @_;
 	
 	my $months = {};
 
@@ -74,7 +75,6 @@ sub _month_names
 	foreach $month ( @monthkeys )
 	{
 		$months->{$month} = EPrints::Utils::get_month_label( 
-			$session, 
 			$month );
 	}
 
@@ -83,23 +83,23 @@ sub _month_names
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
+	my( $self, $value, $suffix, $staff, $obj ) = trim_params(@_);
 
 	my( $frag, $div, $yearid, $monthid, $dayid );
 
-	$frag = $session->make_doc_fragment;
+	$frag = &SESSION->make_doc_fragment;
 		
 	my $min_res = $self->get_property( "min_resolution" );
 	
 	if( $min_res eq "month" || $min_res eq "year" )
 	{	
-		$div = $session->make_element( "div", class=>"formfieldhelp" );	
-		$div->appendChild( $session->html_phrase( 
+		$div = &SESSION->make_element( "div", class=>"formfieldhelp" );	
+		$div->appendChild( &SESSION->html_phrase( 
 			"lib/metafield:date_res_".$min_res ) );
 		$frag->appendChild( $div );
 	}
 
-	$div = $session->make_element( "div" );
+	$div = &SESSION->make_element( "div" );
 	my( $year, $month, $day ) = ("", "", "");
 	if( defined $value && $value ne "" )
 	{
@@ -113,10 +113,10 @@ sub get_basic_input_elements
  	$yearid = $self->{name}.$suffix."_year";
 
 	$div->appendChild( 
-		$session->html_phrase( "lib/metafield:year" ) );
-	$div->appendChild( $session->make_text(" ") );
+		&SESSION->html_phrase( "lib/metafield:year" ) );
+	$div->appendChild( &SESSION->make_text(" ") );
 
-	$div->appendChild( $session->make_element(
+	$div->appendChild( &SESSION->make_element(
 		"input",
 		"accept-charset" => "utf-8",
 		name => $yearid,
@@ -124,23 +124,23 @@ sub get_basic_input_elements
 		size => 4,
 		maxlength => 4 ) );
 
-	$div->appendChild( $session->make_text(" ") );
+	$div->appendChild( &SESSION->make_text(" ") );
 
 	$div->appendChild( 
-		$session->html_phrase( "lib/metafield:month" ) );
-	$div->appendChild( $session->make_text(" ") );
-	$div->appendChild( $session->render_option_list(
+		&SESSION->html_phrase( "lib/metafield:month" ) );
+	$div->appendChild( &SESSION->make_text(" ") );
+	$div->appendChild( &SESSION->render_option_list(
 		name => $monthid,
 		values => \@monthkeys,
 		default => $month,
-		labels => $self->_month_names( $session ) ) );
+		labels => $self->_month_names ) );
 
-	$div->appendChild( $session->make_text(" ") );
+	$div->appendChild( &SESSION->make_text(" ") );
 
 	$div->appendChild( 
-		$session->html_phrase( "lib/metafield:day" ) );
-	$div->appendChild( $session->make_text(" ") );
-#	$div->appendChild( $session->make_element(
+		&SESSION->html_phrase( "lib/metafield:day" ) );
+	$div->appendChild( &SESSION->make_text(" ") );
+#	$div->appendChild( &SESSION->make_element(
 #		"input",
 #		"accept-charset" => "utf-8",
 #		name => $dayid,
@@ -155,7 +155,7 @@ sub get_basic_input_elements
 		push @daykeys, $key;
 		$daylabels{$key} = ($_==0?"?":$key);
 	}
-	$div->appendChild( $session->render_option_list(
+	$div->appendChild( &SESSION->render_option_list(
 		name => $dayid,
 		values => \@daykeys,
 		default => $day,
@@ -168,12 +168,12 @@ sub get_basic_input_elements
 
 sub form_value_basic
 {
-	my( $self, $session, $suffix ) = @_;
+	my( $self, $suffix ) = trim_params(@_);
 	
-	my $day = $session->param( $self->{name}.$suffix."_day" );
-	my $month = $session->param( 
+	my $day = &SESSION->param( $self->{name}.$suffix."_day" );
+	my $month = &SESSION->param( 
 				$self->{name}.$suffix."_month" );
-	my $year = $session->param( $self->{name}.$suffix."_year" );
+	my $year = &SESSION->param( $self->{name}.$suffix."_year" );
 	$month = undef if( !EPrints::Utils::is_set($month) || $month == 0 );
 	$year = undef if( !EPrints::Utils::is_set($year) || $year == 0 );
 	$day = undef if( !EPrints::Utils::is_set($day) || $day == 0 );
@@ -207,9 +207,9 @@ sub form_value_basic
 
 sub get_unsorted_values
 {
-	my( $self, $session, $dataset, %opts ) = @_;
+	my( $self, $dataset, %opts ) = trim_params(@_);
 
-	my $values = $session->get_db()->get_values( $self, $dataset );
+	my $values = &DATABASE->get_values( $self, $dataset );
 
 	my $res = $self->get_property( "render_opts" )->{res};
 
@@ -238,16 +238,16 @@ sub get_unsorted_values
 
 sub get_value_label
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $value ) = trim_params(@_);
 
-	return EPrints::Utils::render_date( $session, $value );
+	return EPrints::Utils::render_date( $value );
 }
 
 sub render_search_input
 {
-	my( $self, $session, $searchfield ) = @_;
+	my( $self, $searchfield ) = trim_params(@_);
 	
-	return $session->make_element( "input",
+	return &SESSION->make_element( "input",
 				"accept-charset" => "utf-8",
 				type => "text",
 				name => $searchfield->get_form_prefix,
@@ -259,9 +259,9 @@ sub render_search_input
 
 sub from_search_form
 {
-	my( $self, $session, $prefix ) = @_;
+	my( $self, $prefix ) = trim_params(@_);
 
-	my $val = $session->param( $prefix );
+	my $val = &SESSION->param( $prefix );
 	return unless defined $val;
 
 	my $drange = $val;
@@ -273,13 +273,13 @@ sub from_search_form
 		return( $val );
 	}
 			
-	return( undef,undef,undef, $session->phrase( "lib/searchfield:date_err" ) );
+	return( undef,undef,undef, &SESSION->phrase( "lib/searchfield:date_err" ) );
 }
 
 
 sub render_search_value
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $value ) = trim_params(@_);
 
 	# still not very pretty
 	my $drange = $value;
@@ -296,46 +296,41 @@ sub render_search_value
 
 	if( defined $firstdate && defined $lastdate )
 	{
-		return $session->html_phrase(
+		return &SESSION->html_phrase(
 			"lib/searchfield:desc_date_between",
 			from => EPrints::Utils::render_date( 
-					$session, 
 					$firstdate ),
 			to => EPrints::Utils::render_date( 
-					$session, 
 					$lastdate ) );
 	}
 
 	if( defined $lastdate )
 	{
-		return $session->html_phrase(
+		return &SESSION->html_phrase(
 			"lib/searchfield:desc_date_orless",
 			to => EPrints::Utils::render_date( 
-					$session,
 					$lastdate ) );
 	}
 
 	if( defined $firstdate && $drange eq "-" )
 	{
-		return $session->html_phrase(
+		return &SESSION->html_phrase(
 			"lib/searchfield:desc_date_ormore",
 			from => EPrints::Utils::render_date( 
-					$session,
 					$firstdate ) );
 	}
 	
-	return EPrints::Utils::render_date( $session, $value );
+	return EPrints::Utils::render_date( $value );
 }
 
 # overridden, date searches being EX means that 2000 won't match 
 # 2000-02-21
 sub get_search_conditions
 {
-	my( $self, $session, $dataset, $search_value, $match, $merge,
-		$search_mode ) = @_;
+	my( $self, $dataset, $search_value, $match, $merge,
+		$search_mode ) = trim_params(@_);
 
 	return $self->get_search_conditions_not_ex(
-			$session, 
 			$dataset, 
 			$search_value, 
 			$match, 
@@ -345,8 +340,8 @@ sub get_search_conditions
 
 sub get_search_conditions_not_ex
 {
-	my( $self, $session, $dataset, $search_value, $match, $merge,
-		$search_mode ) = @_;
+	my( $self, $dataset, $search_value, $match, $merge,
+		$search_mode ) = trim_params(@_);
 	
 	# YYYY-MM-DD 
 	# YYYY-MM-DD-

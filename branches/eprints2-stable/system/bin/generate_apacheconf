@@ -106,6 +106,7 @@ __GENERICPOD__
 
 use EPrints::Archive;
 use EPrints::Config;
+use EPrints::Session;
 use strict;
 
 use strict;
@@ -260,15 +261,20 @@ my $secureconfigs = {};
 foreach my $archiveid ( EPrints::Config::get_archive_ids() )
 {
 
-
 my $archive = EPrints::Archive->new_archive_by_id( $archiveid, 1 );
-exit( 1 ) unless( defined $archive );
+unless( defined $archive )
+{
+	print STDERR "Unknown archive id: $archiveid\n";
+	exit 1;
+}
+EPrints::Session::set_archive( $archive );
 
-my $sysfile = $archive->get_conf( "config_path" )."/auto-apache.conf";
-my $userfile = $archive->get_conf( "config_path" )."/apache.conf";
-my $vhostfile = $archive->get_conf( "config_path" )."/apachevhost.conf";
 
-my $id = $archive->get_id();
+my $sysfile = &ARCHIVE->get_conf( "config_path" )."/auto-apache.conf";
+my $userfile = &ARCHIVE->get_conf( "config_path" )."/apache.conf";
+my $vhostfile = &ARCHIVE->get_conf( "config_path" )."/apachevhost.conf";
+
+my $id = &ARCHIVE->get_id();
 
 print "Creating apache conf files for archive $archiveid\n" if( $noise >= 1 );
 unless( -e $userfile )
@@ -322,17 +328,17 @@ else
 
 
 my $cgidir = EPrints::Config::get( "cgi_path" );
-my $adminemail = $archive->get_conf( "adminemail" );
-my $htdocs_path = $archive->get_conf( "htdocs_path" );
-my $htdocs_secure_path = $archive->get_conf( "htdocs_secure_path" );
-my $host = $archive->get_conf( "host" );
-my $urlpath = $archive->get_conf( "urlpath" );
-my $userhome = $archive->get_conf( "userhome" );
-my $securehost = $archive->get_conf( "securehost" );
+my $adminemail = &ARCHIVE->get_conf( "adminemail" );
+my $htdocs_path = &ARCHIVE->get_conf( "htdocs_path" );
+my $htdocs_secure_path = &ARCHIVE->get_conf( "htdocs_secure_path" );
+my $host = &ARCHIVE->get_conf( "host" );
+my $urlpath = &ARCHIVE->get_conf( "urlpath" );
+my $userhome = &ARCHIVE->get_conf( "userhome" );
+my $securehost = &ARCHIVE->get_conf( "securehost" );
 my $securepath = '';
 if( EPrints::Utils::is_set( $securehost ) )
 {
-	$securepath = $archive->get_conf( "securepath" );
+	$securepath = &ARCHIVE->get_conf( "securepath" );
 }
 
 
@@ -350,7 +356,7 @@ print CONF <<END;
 END
 my $aliasinfo;
 my $aliases = "";
-foreach $aliasinfo ( @{$archive->get_conf( "aliases" )} )
+foreach $aliasinfo ( @{&ARCHIVE->get_conf( "aliases" )} )
 {
 	if( $aliasinfo->{redirect} )
 	{
@@ -384,7 +390,7 @@ END
 
 # If we want to use the non-perl CGI script mimetex.cgi we need to 
 # insert the script alias here.
-if( $archive->get_conf( "use_mimetex" ) ) 
+if( &ARCHIVE->get_conf( "use_mimetex" ) ) 
 {
 	if( !defined $EPrints::SystemSettings::conf->{executables}->{mimetex} )
 	{
@@ -414,9 +420,9 @@ print CONF <<END;
   PerlTransHandler EPrints::Rewrite
 END
 
-my @langs = @{$archive->get_conf( "languages" )};
+my @langs = @{&ARCHIVE->get_conf( "languages" )};
 
-#my $defaultlang = $archive->get_conf( "defaultlanguage" );
+#my $defaultlang = &ARCHIVE->get_conf( "defaultlanguage" );
 # cjg remove this stuff later.
 #
 #foreach my $langid ( @langs )
@@ -436,7 +442,7 @@ my @langs = @{$archive->get_conf( "languages" )};
 #END
 
 
-if( $archive->get_conf( "vlit" )->{enable} )
+if( &ARCHIVE->get_conf( "vlit" )->{enable} )
 {
 	foreach my $langid ( @langs )
 	{

@@ -62,7 +62,7 @@ if( defined $av && $av eq "2" )
 
 		sub upload_doc_file
 		{
-			my( $session, $document, $paramid ) = @_;
+			my( $document, $paramid ) = @_;
 		
 			require CGI;
 
@@ -75,7 +75,7 @@ if( defined $av && $av eq "2" )
 
 		sub upload_doc_archive
 		{
-			my( $session, $document, $paramid, $archive_format ) = @_;
+			my( $document, $paramid, $archive_format ) = @_;
 
 			require CGI;
 
@@ -131,9 +131,9 @@ else
 
 		sub upload_doc_file
 		{
-			my( $session, $document, $paramid ) = @_;
+			my( $document, $paramid ) = @_;
 		
-			my $upload = $session->get_apr->upload( $paramid );
+			my $upload = &SESSION->get_apr->upload( $paramid );
 		
 			return $document->upload( 
 				$upload->fh, 
@@ -142,9 +142,9 @@ else
 
 		sub upload_doc_archive
 		{
-			my( $session, $document, $paramid, $archive_format ) = @_;
+			my( $document, $paramid, $archive_format ) = @_;
 
-			my $upload = $session->get_apr->upload( $paramid );
+			my $upload = &SESSION->get_apr->upload( $paramid );
 		
 			return $document->upload_archive( 
 				$upload->fh, 

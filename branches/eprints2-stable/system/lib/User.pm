@@ -59,6 +59,7 @@ use EPrints::Database;
 use EPrints::MetaField;
 use EPrints::Utils;
 use EPrints::Subscription;
+use EPrints::Session;
 
 use strict;
 
@@ -124,7 +125,7 @@ sub get_system_field_info
 
 ######################################################################
 #
-# new( $session, $userid, $dbrow )
+# new( $userid, $dbrow )
 #
 #  Construct a user object corresponding to the given userid.
 #  If $dbrow is undefined, user info is read in from the database.
@@ -137,7 +138,7 @@ sub get_system_field_info
 ######################################################################
 =pod
 
-=item $thing = EPrints::User->new( $session, $userid )
+=item $thing = EPrints::User->new( $userid )
 
 undocumented
 
@@ -146,10 +147,10 @@ undocumented
 
 sub new
 {
-	my( $class, $session, $userid ) = @_;
-
-	return $session->get_db()->get_single( 
-		$session->get_archive()->get_dataset( "user" ),
+	my( $class, $userid ) = trim_params( @_ );
+	
+	return &DATABASE->get_single( 
+		&ARCHIVE->get_dataset( "user" ),
 		$userid );
 }
 
@@ -157,7 +158,7 @@ sub new
 ######################################################################
 =pod
 
-=item $thing = EPrints::User->new_from_data( $session, $data )
+=item $thing = EPrints::User->new_from_data( $data )
 
 undocumented
 
@@ -166,13 +167,12 @@ undocumented
 
 sub new_from_data
 {
-	my( $class, $session, $data ) = @_;
+	my( $class, $data ) = trim_params(@_);
 
 	my $self = {};
 	bless $self, $class;
 	$self->{data} = $data;
-	$self->{dataset} = $session->get_archive()->get_dataset( "user" );
-	$self->{session} = $session;
+	$self->{dataset} = &ARCHIVE->get_dataset( "user" );
 
 	return( $self );
 }
@@ -182,7 +182,7 @@ sub new_from_data
 
 ######################################################################
 #
-# $user = create_user( $session, $username_candidate, $email, $access_level )
+# $user = create_user( $username_candidate, $email, $access_level )
 #
 #  Creates a new user with given access priviledges and a randomly
 #  generated password.
@@ -193,7 +193,7 @@ sub new_from_data
 ######################################################################
 =pod
 
-=item EPrints::User::create_user( $session, $access_level )
+=item EPrints::User::create_user( $access_level )
 
 undocumented
 
@@ -202,10 +202,10 @@ undocumented
 
 sub create_user
 {
-	my( $session, $access_level ) = @_;
+	my( $access_level ) = trim_params(@_);
 	
-	my $user_ds = $session->get_archive()->get_dataset( "user" );
-	my $userid = _create_userid( $session );
+	my $user_ds = &ARCHIVE->get_dataset( "user" );
+	my $userid = _create_userid();
 		
 	# And work out the date joined.
 	my $date_joined = EPrints::Utils::get_datestamp( time );
@@ -216,23 +216,21 @@ sub create_user
 		"joined"=>$date_joined 
 	};
 
-	$session->get_archive()->call(
-		"set_user_defaults",
-		$data,
-		$session );
+print STDERR "Plugin please\n";
+	&ARCHIVE->call( "set_user_defaults", $data, &SESSION );
 
 	
 	# Add the user to the database...
-	$session->get_db()->add_record( $user_ds, $data );
+	&DATABASE->add_record( $user_ds, $data );
 	
 	# And return the new user as User object.
-	return( EPrints::User->new( $session, $userid ) );
+	return( EPrints::User->new( $userid ) );
 }
 
 
 ######################################################################
 #
-# $user = user_with_email( $session, $email )
+# $user = user_with_email( $email )
 #
 #  Find the user with address $email. If no user exists, undef is
 #  returned. [STATIC]
@@ -243,7 +241,7 @@ sub create_user
 ######################################################################
 =pod
 
-=item EPrints::User::user_with_email( $session, $email )
+=item EPrints::User::user_with_email( $email )
 
 undocumented
 
@@ -252,13 +250,11 @@ undocumented
 
 sub user_with_email
 {
-	my( $session, $email ) = @_;
+	my( $email ) = trim_params(@_);
 	
-	my $user_ds = $session->get_archive()->get_dataset( "user" );
+	my $user_ds = &ARCHIVE->get_dataset( "user" );
 
-	my $searchexp = new EPrints::SearchExpression(
-		session=>$session,
-		dataset=>$user_ds );
+	my $searchexp = new EPrints::SearchExpression( dataset=>$user_ds );
 
 	$searchexp->add_field(
 		$user_ds->get_field( "email" ),
@@ -275,7 +271,7 @@ sub user_with_email
 ######################################################################
 =pod
 
-=item EPrints::User::user_with_username( $session, $username )
+=item EPrints::User::user_with_username( $username )
 
 undocumented
 
@@ -284,13 +280,11 @@ undocumented
 
 sub user_with_username
 {
-	my( $session, $username ) = @_;
+	my( $username ) = trim_params(@_);
 	
-	my $user_ds = $session->get_archive()->get_dataset( "user" );
+	my $user_ds = &ARCHIVE->get_dataset( "user" );
 
-	my $searchexp = new EPrints::SearchExpression(
-		session=>$session,
-		dataset=>$user_ds );
+	my $searchexp = new EPrints::SearchExpression( dataset=>$user_ds );
 
 	$searchexp->add_field(
 		$user_ds->get_field( "username" ),
@@ -333,7 +327,7 @@ sub validate
 	my( $self ) = @_;
 
 	my @all_problems;
-	my $user_ds = $self->{session}->get_archive()->get_dataset( "user" );
+	my $user_ds = &ARCHIVE->get_dataset( "user" );
 	my @rfields = $user_ds->get_required_type_fields( $self->get_value( "usertype" ) );
 	my @all_fields = $user_ds->get_fields();
 
@@ -344,27 +338,23 @@ sub validate
 		if( !$self->is_set( $field->get_name() ) )
 		{
 			push @all_problems, 
-			  $self->{session}->html_phrase( 
+			  &SESSION->html_phrase( 
 			   "lib/user:missed_field", 
-			   field => $field->render_name( $self->{session} ) );
+			   field => $field->render_name );
 		}
 	}
 
 	# Give the validation module a go
 	foreach $field ( @all_fields )
 	{
-		push @all_problems, $self->{session}->get_archive()->call(
+		push @all_problems, &ARCHIVE->call(
 			"validate_field",
 			$field,
 			$self->get_value( $field->get_name() ),
-			$self->{session},
 			0 );
 	}
 
-	push @all_problems, $self->{session}->get_archive()->call(
-			"validate_user",
-			$self,
-			$self->{session} );
+	push @all_problems, &ARCHIVE->call( "validate_user", $self );
 
 	return( \@all_problems );
 }
@@ -393,14 +383,10 @@ sub commit
 {
 	my( $self ) = @_;
 
-	$self->{session}->get_archive()->call( 
-		"set_user_automatic_fields", 
-		$self );
+	&ARCHIVE->call( "set_user_automatic_fields", $self );
 	
-	my $user_ds = $self->{session}->get_archive()->get_dataset( "user" );
-	my $success = $self->{session}->get_db()->update(
-		$user_ds,
-		$self->{data} );
+	my $user_ds = &ARCHIVE->get_dataset( "user" );
+	my $success = &DATABASE->update( $user_ds, $self->{data} );
 
 	return( $success );
 }
@@ -440,8 +426,8 @@ sub remove
 	}
 
 	# remove user record
-	my $user_ds = $self->{session}->get_archive()->get_dataset( "user" );
-	$success = $success && $self->{session}->get_db()->remove(
+	my $user_ds = &ARCHIVE->get_dataset( "user" );
+	$success = $success && &DATABASE->remove(
 		$user_ds,
 		$self->get_value( "userid" ) );
 	
@@ -463,7 +449,7 @@ sub has_priv
 {
 	my( $self, $resource ) = @_;
 
-	my $userprivs = $self->{session}->get_archive()->
+	my $userprivs = &ARCHIVE->
 		get_conf( "userauth", $self->get_value( "usertype" ), "priv" );
 
 	foreach my $priv ( @{$userprivs} )
@@ -492,7 +478,6 @@ sub get_eprints
 	my( $self , $ds ) = @_;
 
 	my $searchexp = new EPrints::SearchExpression(
-		session=>$self->{session},
 		custom_order=>"eprintid",
 		dataset=>$ds );
 
@@ -530,12 +515,11 @@ sub get_editable_eprints
 
 	unless( $self->is_set( 'editperms' ) )
 	{
-		my $ds = $self->{session}->get_archive->get_dataset( 
+		my $ds = &ARCHIVE->get_dataset( 
 			"buffer" );
 		my $searchexp = EPrints::SearchExpression->new(
 			allow_blank => 1,
-			dataset => $ds,
-			session => $self->{session} );
+			dataset => $ds );
 		$searchexp->perform_search;
 		my @records =  $searchexp->get_records;
 		$searchexp->dispose();
@@ -546,9 +530,7 @@ sub get_editable_eprints
 	my @records = ();
 	foreach my $sv ( @{$self->get_value( 'editperms' )} )
 	{
-		my $searchexp = $editperms->make_searchexp(
-			$self->{session},
-			$sv );
+		my $searchexp = $editperms->make_searchexp( $sv );
 		$searchexp->perform_search;
 		push @records,  $searchexp->get_records;
 		$searchexp->dispose();
@@ -578,14 +560,14 @@ sub get_owned_eprints
 {
 	my( $self, $ds ) = @_;
 
-	my $fn = $self->{session}->get_archive->get_conf( "get_users_owned_eprints" );
+	my $fn = &ARCHIVE->get_conf( "get_users_owned_eprints" );
 
 	if( !defined $fn )
 	{
 		return $self->get_eprints( $ds );
 	}
-
-	return &$fn( $self->{session}, $self, $ds );
+#cjg should be a call instead?
+	return &$fn( $self, $ds );
 }
 
 # Is the given eprint in the set of eprints which would be returned by 
@@ -608,7 +590,7 @@ sub is_owner
 {
 	my( $self, $eprint ) = @_;
 
-	my $fn = $self->{session}->get_archive->get_conf( "does_user_own_eprint" );
+	my $fn = &ARCHIVE->get_conf( "does_user_own_eprint" );
 
 	if( !defined $fn )
 	{
@@ -618,8 +600,8 @@ sub is_owner
 		}
 		return 0;
 	}
-
-	return &$fn( $self->{session}, $self, $eprint );
+# should be a call instead
+	return &$fn( $self, $eprint );
 }
 
 
@@ -642,7 +624,7 @@ sub mail
 
 	# Mail the admin in the default language
 	my $langid = $self->get_value( "lang" );
-	my $lang = $self->{session}->get_archive()->get_language( $langid );
+	my $lang = &ARCHIVE->get_language( $langid );
 
 	my $remail;
 	my $rname;
@@ -657,15 +639,14 @@ sub mail
 	}
 
 	return EPrints::Utils::send_mail(
-		$self->{session}->get_archive(),
 		$langid,
 		EPrints::Utils::make_name_string(
 			$self->get_value( "name" ), 
 			1 ),
 		$email,
-		EPrints::Utils::tree_to_utf8( $lang->phrase( $subjectid, {}, $self->{session} ) ),
+		EPrints::Utils::tree_to_utf8( $lang->phrase( $subjectid, {} ) ),
 		$message,
-		$lang->phrase( "mail_sig", {}, $self->{session} ),
+		$lang->phrase( "mail_sig", {} ),
 		$remail,
 		$rname ); 
 }
@@ -674,7 +655,7 @@ sub mail
 
 ######################################################################
 # 
-# EPrints::User::_create_userid( $session )
+# EPrints::User::_create_userid()
 #
 # undocumented
 #
@@ -682,9 +663,8 @@ sub mail
 
 sub _create_userid
 {
-	my( $session ) = @_;
 	
-	my $new_id = $session->get_db()->counter_next( "userid" );
+	my $new_id = &DATABASE->counter_next( "userid" );
 
 	return( $new_id );
 }
@@ -708,11 +688,11 @@ sub get_url
 
 	if( defined $staff && $staff )
 	{
-		return $self->{session}->get_archive()->get_conf( "perl_url" )."/users/staff/view_user?userid=".$self->get_value( "userid" );
+		return &ARCHIVE->get_conf( "perl_url" )."/users/staff/view_user?userid=".$self->get_value( "userid" );
 
 	}
 
-	return $self->{session}->get_archive()->get_conf( "perl_url" )."/user?userid=".$self->get_value( "userid" );
+	return &ARCHIVE->get_conf( "perl_url" )."/user?userid=".$self->get_value( "userid" );
 }
 
 
@@ -749,11 +729,9 @@ sub get_subscriptions
 {
 	my( $self ) = @_;
 
-	my $subs_ds = $self->{session}->get_archive()->get_dataset( 
-		"subscription" );
+	my $subs_ds = &ARCHIVE->get_dataset( "subscription" );
 
 	my $searchexp = EPrints::SearchExpression->new(
-		session=>$self->{session},
 		dataset=>$subs_ds,
 		custom_order=>"subid" );
 
@@ -788,7 +766,7 @@ sub send_out_editor_alert
 
 	if( $freq eq "never" )
 	{
-		$self->{session}->get_archive->log( 
+		&ARCHIVE->log( 
 			"Attempt to send out an editor alert for a user\n".
 			"which has frequency 'never'\n" );
 		return;
@@ -796,58 +774,57 @@ sub send_out_editor_alert
 
 	unless( $self->has_priv( "editor" ) )
 	{
-		$self->{session}->get_archive->log( 
+		&ARCHIVE->log( 
 			"Attempt to send out an editor alert for a user\n".
 			"which does not have editor priv (".
 			$self->get_value("username").")\n" );
 		return;
 	}
 		
-	my $origlangid = $self->{session}->get_langid;
+	my $origlangid = &SESSION->get_langid;
 	
-	$self->{session}->change_lang( $self->get_value( "lang" ) );
+	&SESSION->change_lang( $self->get_value( "lang" ) );
 
 	my @r = $self->get_editable_eprints;
 
 	if( scalar @r > 0 || $self->get_value( "mailempty" ) eq 'TRUE' )
 	{
-		my $url = $self->{session}->get_archive->get_conf( "perl_url" ).
-			"/users/record";
-		my $freqphrase = $self->{session}->html_phrase(
+		my $url = &ARCHIVE->get_conf( "perl_url" )."/users/record";
+		my $freqphrase = &SESSION->html_phrase(
 			"lib/subscription:".$freq ); # nb. reusing the subscription.pm phrase
 		my $searchdesc = $self->render_value( "editperms" );
 
-		my $matches = $self->{session}->make_doc_fragment;
+		my $matches = &SESSION->make_doc_fragment;
 		foreach my $item ( @r )
 		{
-			my $p = $self->{session}->make_element( "p" );
+			my $p = &SESSION->make_element( "p" );
 			$p->appendChild( $item->render_citation );
 			$matches->appendChild( $p );
-			$matches->appendChild( $self->{session}->make_text( $item->get_url( 1 ) ) );
-			$matches->appendChild( $self->{session}->make_element( "br" ) );
+			$matches->appendChild( &SESSION->make_text( $item->get_url( 1 ) ) );
+			$matches->appendChild( &SESSION->make_element( "br" ) );
 		}
 
-		my $mail = $self->{session}->html_phrase( 
+		my $mail = &SESSION->html_phrase( 
 				"lib/user:editor_update_mail",
 				howoften => $freqphrase,
-				n => $self->{session}->make_text( scalar @r ),
+				n => &SESSION->make_text( scalar @r ),
 				search => $searchdesc,
 				matches => $matches,
-				url => $self->{session}->make_text( $url ) );
+				url => &SESSION->make_text( $url ) );
 		$self->mail( 
 			"lib/user:editor_update_subject",
 			$mail );
 		EPrints::XML::dispose( $mail );
 	}
 
-	$self->{session}->change_lang( $origlangid );
+	&SESSION->change_lang( $origlangid );
 }
 
 
 ######################################################################
 =pod
 
-=item EPrints::User::process_editor_alerts( $session, $frequency );
+=item EPrints::User::process_editor_alerts( $frequency );
 
 undocumented
 
@@ -856,33 +833,31 @@ undocumented
 
 sub process_editor_alerts
 {
-	my( $session, $frequency ) = @_;
+	my( $frequency ) = trim_params(@_);
 
 	if( $frequency ne "daily" && 
 		$frequency ne "weekly" && 
 		$frequency ne "monthly" )
 	{
-		$session->get_archive->log( "EPrints::User::process_editor_alerts called with unknown frequency: ".$frequency );
+		&ARCHIVE->log( "EPrints::User::process_editor_alerts called with unknown frequency: ".$frequency );
 		return;
 	}
 
-	my $subs_ds = $session->get_archive->get_dataset( "user" );
+	my $subs_ds = &ARCHIVE->get_dataset( "user" );
 
-	my $searchexp = EPrints::SearchExpression->new(
-		session => $session,
-		dataset => $subs_ds );
+	my $searchexp = EPrints::SearchExpression->new( dataset => $subs_ds );
 
 	$searchexp->add_field(
 		$subs_ds->get_field( "frequency" ),
 		$frequency );
 
 	my $fn = sub {
-		my( $session, $dataset, $item, $info ) = @_;
+		my( $dataset, $item, $info ) = @_;
 
 		return unless( $item->has_priv( "editor" ) );
 
 		$item->send_out_editor_alert;
-		if( $session->get_noise >= 2 )
+		if( &SESSION->get_noise >= 2 )
 		{
 			print "Sending out editor alert for ".$item->get_value( "username" )."\n";
 		}

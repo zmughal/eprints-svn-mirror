@@ -87,6 +87,7 @@ use EPrints::DataObj;
 
 use EPrints::Database;
 use EPrints::Document;
+use EPrints::Session;
 
 use File::Path;
 use strict;
@@ -136,7 +137,7 @@ sub get_system_field_info
 ######################################################################
 =pod
 
-=item $eprint = EPrints::EPrint->new( $session, $id, [$dataset] )
+=item $eprint = EPrints::EPrint->new( $id, [$dataset] )
 
 Return the eprint with the given id, or undef if it does not exist.
 
@@ -148,19 +149,19 @@ search "deletion").
 
 sub new
 {
-	my( $class, $session, $id, $dataset ) = @_;
+	my( $class, $id, $dataset ) = trim_params(@_);
 
 	if( defined $dataset )
 	{
-		return $session->get_db()->get_single( $dataset , $id );
+		return &DATABASE->get_single( $dataset , $id );
 	}
 
 	## Work out in which table the EPrint resides.
 	## and return the eprint.
-	foreach( "archive" , "inbox" , "buffer" )
+	foreach my $dsid ( "archive" , "inbox" , "buffer" )
 	{
-		my $ds = $session->get_archive()->get_dataset( $_ );
-		my $self = $session->get_db()->get_single( $ds, $id );
+		my $ds = &ARCHIVE->get_dataset( $dsid );
+		my $self = &DATABASE->get_single( $ds, $id );
 		if ( defined $self ) 
 		{
 			$self->{dataset} = $ds;
@@ -174,7 +175,7 @@ sub new
 ######################################################################
 =pod
 
-=item $eprint = EPrints::EPrint->new_from_data( $session, $data, $dataset )
+=item $eprint = EPrints::EPrint->new_from_data( $data, $dataset )
 
 Construct a new EPrints::EPrint object based on the $data hash 
 reference of metadata.
@@ -184,7 +185,7 @@ reference of metadata.
 
 sub new_from_data
 {
-	my( $class, $session, $data, $dataset ) = @_;
+	my( $class, $data, $dataset ) = trim_params(@_);
 
 	my $self = {};
 	if( defined $data )
@@ -196,7 +197,6 @@ sub new_from_data
 		$self->{data} = {};
 	}
 	$self->{dataset} = $dataset;
-	$self->{session} = $session;
 
 	bless( $self, $class );
 
@@ -207,7 +207,7 @@ sub new_from_data
 ######################################################################
 =pod
 
-=item $eprint = EPrints::EPrint::create( $session, $dataset, $data )
+=item $eprint = EPrints::EPrint::create( $dataset, $data )
 
 Create a new EPrint entry in the given dataset.
 
@@ -222,7 +222,7 @@ are set.
 
 sub create
 {
-	my( $session, $dataset, $data ) = @_;
+	my( $dataset, $data ) = trim_params(@_);
 
 	# don't want to mangle the origional data.
 	$data = EPrints::Utils::clone( $data );
@@ -234,8 +234,8 @@ sub create
 		$setdefaults = 1;
 	}
 
-	my $new_id = _create_id( $session );
-	my $dir = _create_directory( $session, $new_id );
+	my $new_id = _create_id();
+	my $dir = _create_directory( $new_id );
 
 	if( !defined $dir )
 	{
@@ -247,17 +247,15 @@ sub create
 
 	if( $setdefaults )
 	{	
-		$session->get_archive()->call(
-			"set_eprint_defaults",
-			$data,
-			$session );
+		&ARCHIVE->call( "set_eprint_defaults", $data, &SESSION );
+		print STDERR "Plugin please\n";
 	}
 
-	my $success = $session->get_db()->add_record( $dataset, $data );
+	my $success = &DATABASE->add_record( $dataset, $data );
 
 	if( $success )
 	{
-		return( EPrints::EPrint->new( $session, $new_id, $dataset ) );
+		return( EPrints::EPrint->new( $new_id, $dataset ) );
 	}
 	else
 	{
@@ -268,7 +266,7 @@ sub create
 
 ######################################################################
 # 
-# $eprintid = EPrints::EPrint::_create_id( $session )
+# $eprintid = EPrints::EPrint::_create_id()
 #
 #  Create a new EPrint ID code. (Unique across all eprint datasets)
 #
@@ -276,16 +274,13 @@ sub create
 
 sub _create_id
 {
-	my( $session ) = @_;
-	
-	return $session->get_db()->counter_next( "eprintid" );
-
+	return &DATABASE->counter_next( "eprintid" );
 }
 
 
 ######################################################################
 # 
-# $directory =  EPrints::EPrint::_create_directory( $session, $eprintid )
+# $directory =  EPrints::EPrint::_create_directory( $eprintid )
 #
 #  Create a directory on the local filesystem for the new document
 #  with the given ID. undef is returned if it couldn't be created
@@ -298,10 +293,10 @@ sub _create_id
 
 sub _create_directory
 {
-	my( $session, $eprintid ) = @_;
+	my( $eprintid ) = @_;
 	
 	# Get available directories
-	my @dirs = sort $session->get_archive()->get_store_dirs();
+	my @dirs = sort &ARCHIVE->get_store_dirs();
 	my $storedir;
 
 	if( $EPrints::SystemSettings::conf->{disable_df} )
@@ -316,17 +311,15 @@ sub _create_directory
 		# Check amount of space free on each device. We'll use the 
 		# first one we find (alphabetically) that has enough space on 
 		# it.
-		my $warnsize = $session->get_archive()->get_conf(
-						"diskspace_warn_threshold");
-		my $errorsize = $session->get_archive()->get_conf(
-						"diskspace_error_threshold");
+		my $warnsize = &ARCHIVE->get_conf( "diskspace_warn_threshold");
+		my $errsize = &ARCHIVE->get_conf( "diskspace_error_threshold");
 
 		my $best_free_space = 0;
 		my $dir;	
 		foreach $dir (sort @dirs)
 		{
-			my $free_space = $session->get_archive()->
-						get_store_dir_size( $dir );
+			my $free_space = &ARCHIVE->get_store_dir_size( $dir );
+
 			if( $free_space > $best_free_space )
 			{
 				$best_free_space = $free_space;
@@ -334,7 +327,7 @@ sub _create_directory
 	
 			unless( defined $storedir )
 			{
-				if( $free_space >= $errorsize )
+				if( $free_space >= $errsize )
 				{
 					# Enough space on this drive.
 					$storedir = $dir;
@@ -346,13 +339,13 @@ sub _create_directory
 		if( !defined $storedir )
 		{
 			# Argh! Running low on disk space overall.
-			$session->get_archive()->log(<<END);
+			&ARCHIVE->log(<<END);
 *** URGENT ERROR
 *** Out of disk space.
-*** All available drives have under $errorsize kilobytes remaining.
+*** All available drives have under $errsize kilobytes remaining.
 *** No new eprints may be added until this is rectified.
 END
-			$session->mail_administrator(
+			&SESSION->mail_administrator(
 				"lib/eprint:diskout_sub" ,
 				"lib/eprint:diskout" );
 			return( undef );
@@ -361,11 +354,11 @@ END
 		# Warn the administrator if we're low on space
 		if( $best_free_space < $warnsize )
 		{
-			$session->get_archive()->log(<<END);
+			&ARCHIVE->log(<<END);
 Running low on diskspace.
 All available drives have under $warnsize kilobytes remaining.
 END
-			$session->mail_administrator(
+			&SESSION->mail_administrator(
 				"lib/eprint:disklow_sub" ,
 				"lib/eprint:disklow" );
 		}
@@ -377,7 +370,7 @@ END
 
 	if( !defined $idpath )
 	{
-		$session->get_archive()->log(<<END);
+		&ARCHIVE->log(<<END);
 Failed to turn eprintid: "$eprintid" into a path.
 END
 		return( undef ) ;
@@ -386,12 +379,11 @@ END
 	my $docdir = $storedir."/".$idpath;
 
 	# Full path including doc store root
-	my $full_path = $session->get_archive()->get_conf("documents_path").
-				"/".$docdir;
+	my $full_path = &ARCHIVE->get_conf("documents_path")."/".$docdir;
 	
 	if (!EPrints::Utils::mkdir( $full_path ))
 	{
-		$session->get_archive()->log(<<END);
+		&ARCHIVE->log(<<END);
 Failed to create directory $full_path: $@
 END
                 return( undef );
@@ -430,10 +422,7 @@ sub clone
 	}
 
 	# Create the new EPrint record
-	my $new_eprint = EPrints::EPrint::create(
-		$self->{session},
-		$dest_dataset,
-		$data );
+	my $new_eprint = EPrints::EPrint::create( $dest_dataset, $data );
 	
 	unless( defined $new_eprint )
 	{
@@ -499,7 +488,7 @@ sub _transfer
 
 	# Create an entry in the new table
 
-	my $success = $self->{session}->get_db()->add_record(
+	my $success = &DATABASE->add_record(
 		$dataset,
 		{ "eprintid"=>$self->get_value( "eprintid" ) } );
 
@@ -510,7 +499,7 @@ sub _transfer
 	$success =  $success && $self->commit();
 
 	# If OK, remove the old copy
-	$success = $success && $self->{session}->get_db()->remove(
+	$success = $success && &DATABASE->remove(
 		$old_dataset,
 		$self->get_value( "eprintid" ) );
 
@@ -548,7 +537,7 @@ sub remove
 		$doc->remove();
 	}
 
-	my $success = $self->{session}->get_db()->remove(
+	my $success = &DATABASE->remove(
 		$self->{dataset},
 		$self->get_value( "eprintid" ) );
 
@@ -570,18 +559,14 @@ sub commit
 {
 	my( $self ) = @_;
 
-	$self->{session}->get_archive()->call( 
-		"set_eprint_automatic_fields", 
-		$self );
+	&ARCHIVE->call( "set_eprint_automatic_fields", $self );
 
-	my $success = $self->{session}->get_db()->update(
-		$self->{dataset},
-		$self->{data} );
+	my $success = &DATABASE->update( $self->{dataset}, $self->{data} );
 
 	if( !$success )
 	{
-		my $db_error = $self->{session}->get_db()->error();
-		$self->{session}->get_archive()->log( 
+		my $db_error = &DATABASE->error;
+		&ARCHIVE->log( 
 			"Error committing EPrint ".
 			$self->get_value( "eprintid" ).": ".$db_error );
 	}
@@ -614,22 +599,20 @@ sub validate_type
 	# configured EPrint types
 	if( !defined $self->get_value( "type" ) )
 	{
-		push @problems, 
-			$self->{session}->html_phrase( "lib/eprint:no_type" );
+		push @problems, &SESSION->html_phrase( "lib/eprint:no_type" );
 	} 
 	elsif( ! $self->{dataset}->is_valid_type( $self->get_value( "type" ) ) )
 	{
-		push @problems, $self->{session}->html_phrase( 
+		push @problems, &SESSION->html_phrase( 
 					"lib/eprint:invalid_type" );
 	}
 
 	my $field = $self->{dataset}->get_field( "type" );
 
-	push @problems, $self->{session}->get_archive()->call(
+	push @problems, &ARCHIVE->call(
 				"validate_field",
 				$field,
 				$self->get_value( $field->get_name() ),
-				$self->{session},
 				$for_archive );
 
 	return( \@problems );
@@ -661,29 +644,25 @@ sub validate_linking
 	{
 		my $field = $self->{dataset}->get_field( $field_id );
 	
-		push @problems, $self->{session}->get_archive()->call(
+		push @problems, &ARCHIVE->call(
 					"validate_field",
 					$field,
 					$self->get_value( $field->get_name() ),
-					$self->{session},
 					$for_archive );
 
 		next unless( defined $self->get_value( $field_id ) );
 
-		my $archive_ds = $self->{session}->get_archive()->get_dataset( 
-			"archive" );
+		my $archive_ds = &ARCHIVE->get_dataset( "archive" );
 
 		my $test_eprint = new EPrints::EPrint( 
-			$self->{session}, 
 			$self->get_value( $field_id ),
 			$archive_ds );
 
 		if( !defined( $test_eprint ) )
 		{
-			push @problems, $self->{session}->html_phrase(
+			push @problems, &SESSION->html_phrase(
 				"lib/eprint:invalid_id",	
-				field => $field->render_name( 
-						$self->{session} ) );
+				field => $field->render_name );
 			next;
 		}
 
@@ -697,14 +676,14 @@ sub validate_linking
 		# either the same user owns both eprints, or the 
 		# current user is an editor.
 
-		my $user = $self->{session}->current_user();
+		my $user = &SESSION->current_user();
 		unless( 
 			( defined $user && $user->has_priv( "editor" ) ) ||
 			( $test_eprint->get_value("userid" ) eq 
 				$self->get_value("userid") ) )
 		{
  			# Not the same user. 
-			push @problems, $self->{session}->html_phrase( 
+			push @problems, &SESSION->html_phrase( 
 				"lib/eprint:cant_succ" );
 		}
 	}
@@ -744,9 +723,9 @@ sub validate_meta
 		# Check that the field is filled 
 		next if ( $self->is_set( $field->get_name() ) );
 
-		my $problem = $self->{session}->html_phrase( 
+		my $problem = &SESSION->html_phrase( 
 			"lib/eprint:not_done_field" ,
-			fieldname=> $field->render_name( $self->{session} ) );
+			fieldname=> $field->render_name );
 
 		push @all_problems,$problem;
 	}
@@ -754,19 +733,17 @@ sub validate_meta
 	# Give the site validation module a go
 	foreach $field (@all_fields)
 	{
-		push @all_problems, $self->{session}->get_archive()->call(
+		push @all_problems, &ARCHIVE->call(
 			"validate_field",
 			$field,
 			$self->get_value( $field->{name} ),
-			$self->{session},
 			$for_archive );
 	}
 
 	# Site validation routine for eprint metadata as a whole:
-	push @all_problems, $self->{session}->get_archive()->call(
+	push @all_problems, &ARCHIVE->call(
 		"validate_eprint_meta",
 		$self, 
-		$self->{session},
 		$for_archive );
 
 	return( \@all_problems );
@@ -808,26 +785,23 @@ sub validate_meta_page
 		{
 			# field	is required but not set!
 
-			my $problem = $self->{session}->html_phrase( 
+			my $problem = &SESSION->html_phrase( 
 				"lib/eprint:not_done_field" ,
-				fieldname=> $field->render_name( 
-						$self->{session} ) );
+				fieldname=> $field->render_name );
 			push @problems,$problem;
 		}
 
-		push @problems, $self->{session}->get_archive->call(
+		push @problems, &ARCHIVE->call(
 			"validate_field",
 			$field,
 			$self->get_value( $field->{name} ),
-			$self->{session},
 			$for_archive );
 	}
 
 	# then call the validate page function for this page
-	push @problems, $self->{session}->get_archive->call(
+	push @problems, &ARCHIVE->call(
 		"validate_eprint_meta_page",
 		$self,
-		$self->{session},
 		$page,
 		$for_archive );
 
@@ -856,8 +830,7 @@ sub validate_documents
 	my( $self, $for_archive ) = @_;
 	my @problems;
 	
-        my @req_formats = @{$self->{session}->get_archive()->get_conf( 
-		"required_formats" )};
+        my @req_formats = @{ &ARCHIVE->get_conf( "required_formats" ) };
 	my @docs = $self->get_all_documents();
 
 	my $ok = 0;
@@ -875,24 +848,21 @@ sub validate_documents
 
 	if( !$ok )
 	{
-		my $doc_ds = $self->{session}->get_archive()->get_dataset( 
-			"document" );
-		my $prob = $self->{session}->make_doc_fragment();
-		$prob->appendChild( $self->{session}->html_phrase( 
-			"lib/eprint:need_a_format" ) );
-		my $ul = $self->{session}->make_element( "ul" );
+		my $doc_ds = &ARCHIVE->get_dataset( "document" );
+		my $prob = &SESSION->make_doc_fragment;
+		$prob->appendChild( &SESSION->html_phrase( 
+					"lib/eprint:need_a_format" ) );
+		my $ul = &SESSION->make_element( "ul" );
 		$prob->appendChild( $ul );
 		
 		foreach( @req_formats )
 		{
-			my $li = $self->{session}->make_element( "li" );
+			my $li = &SESSION->make_element( "li" );
 			$ul->appendChild( $li );
-			$li->appendChild( $doc_ds->render_type_name( 
-				$self->{session}, $_ ) );
+			$li->appendChild( $doc_ds->render_type_name( $_ ) );
 		}
 			
 		push @problems, $prob;
-
 	}
 
 	foreach $doc (@docs)
@@ -900,10 +870,9 @@ sub validate_documents
 		my $probs = $doc->validate( $for_archive );
 		foreach (@$probs)
 		{
-			my $prob = $self->{session}->make_doc_fragment();
+			my $prob = &SESSION->make_doc_fragment;
 			$prob->appendChild( $doc->render_description() );
-			$prob->appendChild( 
-				$self->{session}->make_text( ": " ) );
+			$prob->appendChild( &SESSION->make_text( ": " ) );
 			$prob->appendChild( $_ );
 			push @problems, $prob;
 		}
@@ -948,10 +917,9 @@ sub validate_full
 	push @problems, @$probs;
 
 	# Now give the site specific stuff one last chance to have a gander.
-	push @problems, $self->{session}->get_archive()->call( 
+	push @problems, &ARCHIVE->call( 
 			"validate_eprint", 
 			$self,
-			$self->{session},
 			$for_archive );
 
 	return( \@problems );
@@ -1002,11 +970,9 @@ sub get_all_documents
 {
 	my( $self ) = @_;
 
-	my $doc_ds = $self->{session}->get_archive()->get_dataset( "document" );
+	my $doc_ds = &ARCHIVE->get_dataset( "document" );
 
-	my $searchexp = EPrints::SearchExpression->new(
-		session=>$self->{session},
-		dataset=>$doc_ds );
+	my $searchexp = EPrints::SearchExpression->new( dataset=>$doc_ds );
 
 	$searchexp->add_field(
 		$doc_ds->get_field( "eprintid" ),
@@ -1055,7 +1021,7 @@ sub move_to_deletion
 {
 	my( $self ) = @_;
 
-	my $ds = $self->{session}->get_archive()->get_dataset( "deletion" );
+	my $ds = &ARCHIVE->get_dataset( "deletion" );
 	
 	my $last_in_thread = $self->last_in_thread( $ds->get_field( 
 		"succeeds" ) );
@@ -1108,9 +1074,7 @@ sub move_to_inbox
 
 	# if we is currently in archive... cjg? eh???
 
-	my $ds = $self->{session}->get_archive()->get_dataset( "inbox" );
-	
-	my $success = $self->_transfer( $ds );
+	my $success = $self->_transfer( &ARCHIVE->get_dataset( "inbox" ) );
 	
 	return $success;
 }
@@ -1131,15 +1095,12 @@ sub move_to_buffer
 {
 	my( $self ) = @_;
 	
-	my $ds = $self->{session}->get_archive()->get_dataset( "buffer" );
-
-	my $success = $self->_transfer( $ds );
+	my $success = $self->_transfer( &ARCHIVE->get_dataset( "buffer" ) );
 	
 	if( $success )
 	{
-		$self->{session}->get_archive()->call( 
-			"update_submitted_eprint", $self );
-		$self->commit();
+		&ARCHIVE->call( "update_submitted_eprint", $self );
+		$self->commit;
 	}
 	
 	return( $success );
@@ -1188,24 +1149,22 @@ sub move_to_archive
 {
 	my( $self ) = @_;
 
-	my $ds = $self->{session}->get_archive()->get_dataset( "archive" );
-	my $success = $self->_transfer( $ds );
+	my $success = $self->_transfer( &ARCHIVE->get_dataset( "archive" ) );
 	
 	if( $success )
 	{
-		$self->{session}->get_archive()->call( 
-			"update_archived_eprint", $self );
-		$self->commit();
-		$self->generate_static();
+		&ARCHIVE->call( "update_archived_eprint", $self );
+		$self->commit;
+		$self->generate_static;
 
 		# Generate static pages for everything in threads, if 
 		# appropriate
-		my @to_update = $self->get_all_related();
+		my @to_update = $self->get_all_related;
 		
 		# Do the actual updates
-		foreach (@to_update)
+		foreach my $related_eprint (@to_update)
 		{
-			$_->generate_static();
+			$related_eprint->generate_static;
 		}
 	}
 	
@@ -1228,9 +1187,8 @@ sub local_path
 {
 	my( $self ) = @_;
 	
-	return( 
-		$self->{session}->get_archive()->get_conf( 
-			"documents_path" )."/".$self->get_value( "dir" ) );
+	return( &ARCHIVE->get_conf( "documents_path" )."/".
+			$self->get_value( "dir" ) );
 }
 
 
@@ -1249,13 +1207,11 @@ sub url_stem
 {
 	my( $self ) = @_;
 
-	my $archive = $self->{session}->get_archive;
-
-	my $shorturl = $archive->get_conf( "use_short_urls" );
+	my $shorturl = &ARCHIVE->get_conf( "use_short_urls" );
 	$shorturl = 0 unless( defined $shorturl );
 
 	my $url;
-	$url = $archive->get_conf( "base_url" );
+	$url = &ARCHIVE->get_conf( "base_url" );
 	$url .= '/archive' unless( $shorturl );
 	$url .= '/';
 	if( $shorturl )
@@ -1291,29 +1247,27 @@ sub generate_static
 
 	my $eprintid = $self->get_value( "eprintid" );
 
-	my $ds_id = $self->{dataset}->id();
+	my $ds_id = $self->{dataset}->id;
 
 	$self->remove_static;
 
-	my @docs = $self->get_all_documents();
+	my @docs = $self->get_all_documents;
 
 	# Build static symlinks
 	foreach my $doc ( @docs )
 	{
-		$doc->create_secure_symlink();
+		$doc->create_secure_symlink;
 	}
 
 	return if( $ds_id ne "archive" && $ds_id ne "deletion" );
 
 	# We is going to temporarily change the language of our session to
 	# render the abstracts in each language.
-	my $real_langid = $self->{session}->get_langid();
+	my $real_langid = &SESSION->get_langid;
 
-	my $langid;
-	foreach $langid ( 
-		@{$self->{session}->get_archive()->get_conf( "languages" )} ) 
+	foreach my $langid ( @{&ARCHIVE->get_conf( "languages" )} ) 
 	{
-		$self->{session}->change_lang( $langid );
+		&SESSION->change_lang( $langid );
 		my $full_path = $self->_htmlpath( $langid );
 
 		my @created = eval
@@ -1322,10 +1276,10 @@ sub generate_static
 			return( @created );
 		};
 
-		my( $page, $title, $links ) = $self->render();
+		my( $page, $title, $links ) = $self->render;
 
-		$self->{session}->build_page( $title, $page, "abstract", $links );
-		$self->{session}->page_to_file( $full_path . "/index.html" );
+		&SESSION->build_page( $title, $page, "abstract", $links );
+		&SESSION->page_to_file( $full_path . "/index.html" );
 
 		next if( $ds_id ne "archive" );
 		# Only live archive records have actual documents 
@@ -1333,13 +1287,12 @@ sub generate_static
 
 		foreach my $doc ( @docs )
 		{
-			unless( $doc->is_set( "security" ) )
-			{
-				$doc->create_symlink( $self, $full_path );
-			}
+			next if ( $doc->is_set( "security" ) );
+			$doc->create_symlink( $self, $full_path );
 		}
 	}
-	$self->{session}->change_lang( $real_langid );
+
+	&SESSION->change_lang( $real_langid );
 }
 
 
@@ -1357,9 +1310,7 @@ sub remove_static
 {
 	my( $self ) = @_;
 
-	my $langid;
-	foreach $langid 
-		( @{$self->{session}->get_archive()->get_conf( "languages" )} )
+	foreach my $langid ( @{&ARCHIVE->get_conf( "languages" )} )
 	{
 		rmtree( $self->_htmlpath( $langid ) );
 	}
@@ -1378,8 +1329,7 @@ sub _htmlpath
 {
 	my( $self, $langid ) = @_;
 
-	return $self->{session}->get_archive()->get_conf( "htdocs_path" ).
-		"/".$langid."/archive/".
+	return &ARCHIVE->get_conf( "htdocs_path" )."/".$langid."/archive/".
 		eprintid_to_path( $self->get_value( "eprintid" ) );
 }
 
@@ -1401,7 +1351,7 @@ sub get_url
 
 	if( defined $staff && $staff )
 	{
-		return $self->{session}->get_archive()->get_conf( "perl_url" ).
+		return &ARCHIVE->get_conf( "perl_url" ).
 			"/users/staff/edit_eprint?eprintid=".
 			$self->get_value( "eprintid" )."&".
 			"dataset=".$self->get_dataset()->id();
@@ -1425,9 +1375,7 @@ sub get_user
 {
 	my( $self ) = @_;
 
-	my $user = EPrints::User->new( 
-		$self->{session}, 
-		$self->get_value( "userid" ) );
+	my $user = EPrints::User->new( $self->get_value( "userid" ) );
 
 	return $user;
 }
@@ -1555,12 +1503,11 @@ sub first_in_thread
 	my( $self, $field ) = @_;
 	
 	my $first = $self;
-	my $ds = $self->{session}->get_archive()->get_dataset( "archive" );
+	my $ds = &ARCHIVE->get_dataset( "archive" );
 	
 	while( defined $first->get_value( $field->get_name() ) )
 	{
 		my $prev = EPrints::EPrint->new( 
-				$self->{session},
 				$first->get_value( $field->get_name() ),
 				$ds );
 
@@ -1587,14 +1534,10 @@ sub later_in_thread
 	my( $self, $field ) = @_;
 
 	my $searchexp = EPrints::SearchExpression->new(
-		session => $self->{session},
-		dataset => $self->{session}->get_archive()->get_dataset( 
-			"archive" ) );
+		dataset => &ARCHIVE->get_dataset( "archive" ) );
 #cjg		[ "datestamp DESC" ] ) ); sort by date!
 
-	$searchexp->add_field( 
-		$field, 
-		$self->get_value( "eprintid" ) );
+	$searchexp->add_field( $field, $self->get_value( "eprintid" ) );
 
 	my $searchid = $searchexp->perform_search();
 	my @eprints = $searchexp->get_records();
@@ -1757,9 +1700,10 @@ sub render_version_thread
 
 	my $first_version = $self->first_in_thread( $field );
 
-	my $ul = $self->{session}->make_element( "ul" );
+	my $ul = &SESSION->make_element( "ul" );
 	
-	$ul->appendChild( $first_version->_render_version_thread_aux( $field, $self ) );
+	$ul->appendChild( 
+		$first_version->_render_version_thread_aux( $field, $self ) );
 	
 	return( $ul );
 }
@@ -1776,7 +1720,7 @@ sub _render_version_thread_aux
 {
 	my( $self, $field, $eprint_shown ) = @_;
 	
-	my $li = $self->{session}->make_element( "li" );
+	my $li = &SESSION->make_element( "li" );
 
 	my $cstyle = "thread_".$field->get_name();
 
@@ -1787,8 +1731,8 @@ sub _render_version_thread_aux
 	else
 	{
 		$li->appendChild( $self->render_citation( $cstyle ) );
-		$li->appendChild( $self->{session}->make_text( " " ) );
-		$li->appendChild( $self->{session}->html_phrase( "lib/eprint:curr_disp" ) );
+		$li->appendChild( &SESSION->make_text( " " ) );
+		$li->appendChild( &SESSION->html_phrase( "lib/eprint:curr_disp" ) );
 	}
 
 	my @later = $self->later_in_thread( $field );
@@ -1797,7 +1741,7 @@ sub _render_version_thread_aux
 	if( scalar @later > 0 )
 	{
 		# if there are, start a new list
-		my $ul = $self->{session}->make_element( "ul" );
+		my $ul = &SESSION->make_element( "ul" );
 		my $version;
 		foreach $version (@later)
 		{

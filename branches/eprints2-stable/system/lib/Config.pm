@@ -38,6 +38,7 @@ package EPrints::Config;
 use EPrints::Utils;
 use EPrints::SystemSettings;
 use EPrints::XML;
+use EPrints::Session;
 
 use Unicode::String qw(utf8 latin1);
 use Data::Dumper;
@@ -577,7 +578,7 @@ For example: "en" would return "English".
 
 sub lang_title
 {
-	my( $id, $session ) = @_;
+	my( $id ) = trim_params(@_);
 
 	ensure_init();
 

@@ -35,9 +35,6 @@ EPrints::User, EPrints::Subject and EPrints::Document.
 #     A reference to a hash containing the metadata of this
 #     record.
 #
-#  $self->{session}
-#     The current EPrints::Session
-#
 #  $self->{dataset}
 #     The EPrints::DataSet to which this record belongs.
 #
@@ -47,6 +44,7 @@ package EPrints::DataObj;
 use strict;
 
 use EPrints::Plugins;
+use EPrints::Session;
 
 ######################################################################
 =pod
@@ -173,24 +171,6 @@ sub get_values
 ######################################################################
 =pod
 
-=item $session = $dataobj->get_session
-
-Returns the EPrints::Session object to which this record belongs.
-
-=cut
-######################################################################
-
-sub get_session
-{
-	my( $self ) = @_;
-
-	return $self->{session};
-}
-
-
-######################################################################
-=pod
-
 =item $data = $dataobj->get_data
 
 Returns a reference to the hash table of all the metadata for this record keyed 
@@ -241,8 +221,7 @@ sub is_set
 
 	if( !exists $self->{data}->{$fieldname} )
 	{
-		$self->{session}->get_archive->log(
-			 "is_set( $fieldname ): Unknown field" );
+		&ARCHIVE->log( "is_set( $fieldname ): Unknown field" );
 	}
 
 	return EPrints::Utils::is_set( $self->{data}->{$fieldname} );
@@ -287,7 +266,7 @@ sub render_value
 
 	my $field = $self->{dataset}->get_field( $fieldname );	
 	
-	return $field->render_value( $self->{session}, $self->get_value($fieldname), $showall );
+	return $field->render_value( $self->get_value($fieldname), $showall );
 }
 
 
@@ -313,7 +292,7 @@ sub render_citation
 		$style=$self->get_type();
 	}
 
-	my $stylespec = $self->{session}->get_citation_spec(
+	my $stylespec = &SESSION->get_citation_spec(
 					$self->{dataset},
 					$style );
 
@@ -361,7 +340,7 @@ sub render_description
 {
 	my( $self ) = @_;
 
-	my $stylespec = $self->{session}->get_citation_spec(
+	my $stylespec = &SESSION->get_citation_spec(
 					$self->{dataset} );
 				
 	my $r =  EPrints::Utils::render_citation( $self , $stylespec );
@@ -472,10 +451,9 @@ sub convert
 	$mode = 'default' unless defined $mode;
 	my $dstype = $self->{dataset}->confid;
 
-	return EPrints::Plugins::call( 
+	return &ARCHIVE->plugin(
 		'convert/obj.'.$dstype.'/'.$scheme.'/'.$mode,  
-		$self,
-		$self->{session} );
+		$self );
 }
 
 		

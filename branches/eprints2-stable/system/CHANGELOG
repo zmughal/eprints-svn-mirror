@@ -2024,5 +2024,9 @@ PACKAGE: 2.2.99.2
  - Added plugins for the eprints xml export format, bibtex, 
     pageinfo (pages describing eprints, users etc) and rss1.0
 
+2004-09-06 cjg
 
+ - Changed API to use &SESSION, &ARCHIVE and &DATABASE
+ - Added PASS as an option on search conditions (although it always
+    gets optimised out). 
 

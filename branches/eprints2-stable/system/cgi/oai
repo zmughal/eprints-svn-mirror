@@ -19,6 +19,12 @@
 
 
 
+
+die( 'deprecated' );
+
+
+
+
 use EPrints::Database;
 use EPrints::EPrint;
 use EPrints::OpenArchives;

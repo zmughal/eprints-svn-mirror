@@ -2,6 +2,8 @@
 
 package EPrints::Plugins; 
 
+use EPrints::SystemSettings;
+
 use strict;
 
 BEGIN { 
@@ -15,23 +17,42 @@ BEGIN {
 	}
 }
 
-use EPrints::Exporter;
-my $plugins_dir = "/opt/ep2stable/perl_lib/EPrints/Plugins";
-opendir( my $dir, $plugins_dir ) || EPrints::Config::abort( "could not read from $plugins_dir" );
-while( my $plugin = readdir( $dir ) )
+
+my $plugins_dir = $EPrints::SystemSettings::conf->{base_path}.
+			"/perl_lib/EPrints/Plugins";
+load_dir( $plugins_dir );
+
+sub load_dir
 {
-	next if( $plugin eq "CVS" );
-	next if( $plugin =~ m/^\./ );
-	print STDERR $plugin."\n";
-	my $file =  $plugins_dir.'/'.$plugin;
-	@! = $@ = undef;
-	my $return = do $file;
-	unless( $return )
+	my( $dir ) = @_;
+
+	my $dh;
+	unless( opendir( $dh, $dir ) )
 	{
-		my $errors = "couldn't run $file";
-		$errors = "couldn't do $file:\n$!" unless defined $return;
-		$errors = "couldn't parse $file:\n$@" if $@;
-		print STDERR <<END;
+		EPrints::Config::abort( "could not read from $dir" );
+	}
+	while( my $plugin = readdir( $dh ) )
+	{
+		next if( $plugin eq "CVS" );
+		next if( $plugin =~ m/^\./ );
+		my $file =  $dir.'/'.$plugin;
+		EPrints::Plugins::load( $file );
+	}
+	closedir( $dh );
+}
+
+sub load
+{
+	my( $file ) = @_;
+
+	@! = $@ = undef;
+	my $ok = do $file;
+	return if( $ok );
+
+	my $errors = "couldn't run $file";
+	$errors = "couldn't do $file:\n$!" unless defined $ok;
+	$errors = "couldn't parse $file:\n$@" if $@;
+	print STDERR <<END;
 ------------------------------------------------------------------
 ---------------- EPrints System Warning --------------------------
 ------------------------------------------------------------------
@@ -42,26 +63,11 @@ Errors follow:
 $errors
 ------------------------------------------------------------------
 END
-		return;
-	}
 }
-closedir( $dir );
-
-#EPrints::Plugins::BibTeX::register_plugins();
-#EPrints::Plugins::DC::register_plugins();
-#EPrints::Plugins::XML::register_plugins();
-#EPrints::Plugins::RSS1::register_plugins();
 
 
-sub EPrints::Plugins::call
+sub get_all
 {
-	my( $path, @params ) = @_;
-
-	if( !defined $EPrints::Plugins::REGISTRY->{$path} )
-	{
-		EPrints::Config::abort( "Plugins does not exist: $path\n" );
-	}
-
-	return &{$EPrints::Plugins::REGISTRY->{$path}}( @params );
+	return $EPrints::Plugins::REGISTRY;
 }
 

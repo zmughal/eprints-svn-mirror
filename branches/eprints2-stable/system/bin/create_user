@@ -141,10 +141,9 @@ $noise = 1+$verbose if( $verbose );
 # Set STDOUT to auto flush (without needing a \n)
 $|=1;
 
-my $session = EPrints::Session->new( 1 , $ARGV[0], $noise );
-exit unless( defined $session );
+EPrints::Session::start( $ARGV[0], $noise ) or exit( 1 );
 
-my $user_ds = $session->get_archive()->get_dataset( "user" );
+my $user_ds = &ARCHIVE->get_dataset( "user" );
 
 my $valid_access_level = 0;
 my $type;
@@ -153,19 +152,21 @@ foreach $type (@{ $user_ds->get_types() })
 	$valid_access_level = 1 if( $ARGV[3] eq $type );
 }
 
-if( defined EPrints::User::user_with_username( $session, $ARGV[1] ) )
+if( defined EPrints::User::user_with_username( $ARGV[1] ) )
 {
 	print STDERR "User with username '$ARGV[1]' already exists.\n";
 }
 elsif( $valid_access_level )
 {
-	my $new_user = EPrints::User::create_user( $session, $ARGV[3] );
+	my $new_user = EPrints::User::create_user( $ARGV[3] );
 
 	$new_user->set_value( "username" , $ARGV[1] );
 	$new_user->set_value( "email" , $ARGV[2] );
 	if( $#ARGV == 4 )
 	{
-		$new_user->set_value( "password" , EPrints::Utils::crypt_password( $ARGV[4], $session ) );
+		$new_user->set_value( 
+			"password", 
+			EPrints::Utils::crypt_password( $ARGV[4] ) );
 		$new_user->commit;
 	}
 
@@ -184,7 +185,7 @@ elsif( $valid_access_level )
 	}
 	else
 	{
-		my $db_error = $session->get_db()->error();
+		my $db_error = &DATABASE->error;
 		print STDERR "Error creating user: $db_error\n";
 	}
 }
@@ -197,4 +198,4 @@ else
 	}
 }
 
-$session->terminate();
+exit;

@@ -17,6 +17,9 @@
 
 package EPrints::Config::ep2stable;
 
+use EPrints::Session;
+print "ARCHIVE:". &ARCHIVE."\n";
+
 foreach my $file ( 
 	"cfg/ArchiveOAIConfig.pm",
 	"cfg/ArchiveRenderConfig.pm",

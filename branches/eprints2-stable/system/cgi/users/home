@@ -26,13 +26,11 @@ use strict;
 #
 ######################################################################
 
-my $session = new EPrints::Session;
-exit( 0 ) unless( defined $session );
+EPrints::Session::start;
 
 # Any user can view this page, but most BE a user.
-if( !$session->auth_check )
+if( !&SESSION->auth_check )
 {
-	$session->terminate();
 	exit( 0 );
 }
 
@@ -41,12 +39,11 @@ if( !$session->auth_check )
 # let's clean it up...
 if( $ENV{PATH_INFO} ne "" )
 {
-	$session->redirect( $session->get_archive()->get_conf( "userhome" ) );
-	$session->terminate();
+	&SESSION->redirect( &ARCHIVE->get_conf( "userhome" ) );
 	exit;
 }
 	
-my $user = $session->current_user;
+my $user = &SESSION->current_user;
 
 my $fullname = $user->render_description();
 
@@ -57,8 +54,7 @@ my $valid_user = ( scalar @{$probs} == 0 );
 # This'll give us info like "name".
 unless( $valid_user )
 {	
-	$session->redirect( "record" );
-	$session->terminate();
+	&SESSION->redirect( "record" );
 	exit;
 }
 
@@ -74,8 +70,8 @@ my( $table, $tr, $td );
 
 
 my $changeuserpath = "/change_user/".($user->get_value( "username" ));
-my $securehost = $session->get_archive->get_conf( "securehost" );
-my $securepath = $session->get_archive->get_conf( "securepath" );
+my $securehost = &ARCHIVE->get_conf( "securehost" );
+my $securepath = &ARCHIVE->get_conf( "securepath" );
 if( EPrints::Utils::is_set( $securehost ) )
 {
 	$changeuserpath = $securepath.$changeuserpath;
@@ -185,17 +181,17 @@ foreach	$tool (@{$tools})
 	}
 	if( !defined $dls->{$tool->{location}} )
 	{
-		$dls->{$tool->{location}} = $session->make_element( "dl" );
+		$dls->{$tool->{location}} = &SESSION->make_element( "dl" );
 	}
 	my $dl = $dls->{$tool->{location}};
-	$dt = $session->make_element( "dt" );
-	$a = $session->render_link( $tool->{page} );
-	$a->appendChild( $session->html_phrase( "cgi/users/home:".$tool->{code}."_link" ) );
+	$dt = &SESSION->make_element( "dt" );
+	$a = &SESSION->render_link( $tool->{page} );
+	$a->appendChild( &SESSION->html_phrase( "cgi/users/home:".$tool->{code}."_link" ) );
 	$dt->appendChild( $a );
 	$dl->appendChild( $dt );
 
-	$dd = $session->make_element( "dd" );
-	$dd->appendChild( $session->html_phrase( "cgi/users/home:".$tool->{code}."_info" ) );
+	$dd = &SESSION->make_element( "dd" );
+	$dd->appendChild( &SESSION->html_phrase( "cgi/users/home:".$tool->{code}."_info" ) );
 	$dl->appendChild( $dd );
 }
 
@@ -206,45 +202,42 @@ foreach	$tool (@{$tools})
 
 
 
-$page = $session->make_doc_fragment();
+$page = &SESSION->make_doc_fragment();
 
 ### Welcome author blurb
-$page->appendChild( $session->html_phrase( "cgi/users/home:intro" ) );
+$page->appendChild( &SESSION->html_phrase( "cgi/users/home:intro" ) );
 
-$table = $session->make_element("table");
-$tr = $session->make_element("tr");
+$table = &SESSION->make_element("table");
+$tr = &SESSION->make_element("tr");
 $table->appendChild( $tr );
 $page->appendChild( $table );
 
 if( $user->has_priv( "deposit" ) )
 {
-	$td = $session->make_element("td",valign=>"top");
+	$td = &SESSION->make_element("td",valign=>"top");
 	$tr->appendChild( $td );
 
 	my $div;
 	### Workspace
-	$div = $session->make_element("div",class=>"box");
-	$div->appendChild(
-		&render_workspace( $session, $user, $dls->{create} ) );
+	$div = &SESSION->make_element("div",class=>"box");
+	$div->appendChild( &render_workspace( $user, $dls->{create} ) );
 	$td->appendChild( $div );
 	
 
 	### Pending
-	$div = $session->make_element("div",class=>"box");
-	$div->appendChild(
-		&render_pending( $session, $user ) );
+	$div = &SESSION->make_element("div",class=>"box");
+	$div->appendChild( &render_pending( $user ) );
 	$td->appendChild( $div );
 
 	### Recent Additions
-	$div = $session->make_element("div",class=>"box");
-	$div->appendChild(
-		&render_recent( $session, $user, 10, $dls->{review} ) );
+	$div = &SESSION->make_element("div",class=>"box");
+	$div->appendChild( &render_recent( $user, 10, $dls->{review} ) );
 	$td->appendChild( $div );
 }
 
 if( defined $dls->{user} )
 {
-	$td = $session->make_element("td",valign=>"top", style=>"padding-left: 3em;");
+	$td = &SESSION->make_element("td",valign=>"top", style=>"padding-left: 3em;");
 	$tr->appendChild( $td );
 	$td->appendChild( $dls->{user} );
 }
@@ -252,29 +245,28 @@ if( defined $dls->{user} )
 
 if( defined $dls->{staff} )
 {
-	$page->appendChild( $session->render_ruler );
-	$page->appendChild( $session->html_phrase( "cgi/users/home:staff_options" ) );
+	$page->appendChild( &SESSION->render_ruler );
+	$page->appendChild( &SESSION->html_phrase( "cgi/users/home:staff_options" ) );
 	$page->appendChild( $dls->{staff} );
 }
 
 
 
-$session->build_page( 
-		$session->html_phrase( 
+&SESSION->build_page( 
+		&SESSION->html_phrase( 
 			"cgi/users/home:user_home", 
 			name => $fullname ),
 		$page,
 		"user_home" );
-$session->send_page();
+&SESSION->send_page();
 
-$session->terminate();
 exit;
 
 
 
 ######################################################################
 #
-# render_workspace( $session, $user )
+# render_workspace( $user )
 #
 #  This puts all of the user's items in the inbox table in a form.
 #  The buttons will POST stuff to the submit script, with the possible
@@ -294,16 +286,16 @@ exit;
 
 sub render_workspace
 {
-	my( $session, $user, $add ) = @_;
+	my( $user, $add ) = @_;
 
 	### Get the actual items in the workspace
-	my $ds = $session->get_archive()->get_dataset( "inbox" );
+	my $ds = &ARCHIVE->get_dataset( "inbox" );
 	my @eprints = $user->get_owned_eprints( $ds );
 
 	my( $html, $form, $div );
 
-	$html = $session->make_doc_fragment();
-	$html->appendChild( $session->html_phrase( "cgi/users/home:docs" ));
+	$html = &SESSION->make_doc_fragment();
+	$html->appendChild( &SESSION->html_phrase( "cgi/users/home:docs" ));
 	if( defined $add )
 	{
 		$html->appendChild( $add );
@@ -320,7 +312,7 @@ sub render_workspace
 
 	my( $table, $tr, $td );
 
-	$table = $session->make_element( "table",
+	$table = &SESSION->make_element( "table",
 			cellpadding=>3,
 			cellspacing=>0,
 			border=>0 );
@@ -329,43 +321,43 @@ sub render_workspace
 	my $row = 0;
 	foreach $e (@eprints)
 	{
-		$tr = $session->make_element( "tr", class=>"row_".($row?"b":"a") );
+		$tr = &SESSION->make_element( "tr", class=>"row_".($row?"b":"a") );
 		$table->appendChild( $tr );	
-		$td = $session->make_element( "td" );
+		$td = &SESSION->make_element( "td" );
 		$tr->appendChild( $td );
 		$td->appendChild( $e->render_description() );
-		$td = $session->make_element( "td" );
+		$td = &SESSION->make_element( "td" );
 		$tr->appendChild( $td );
-	#	$td->appendChild( $session->html_phrase( 
+	#	$td->appendChild( &SESSION->html_phrase( 
 	#		"cgi/users/home:accepted_at",
 	#		time=>$e->render_value( "datestamp" ) ) );
 		my $a;
 
-		$a = $session->render_link( "submit?eprintid=".$e->get_id."&_action_edit=1" );
-		$a->appendChild( $session->html_phrase("cgi/users/home:action_edit") );
+		$a = &SESSION->render_link( "submit?eprintid=".$e->get_id."&_action_edit=1" );
+		$a->appendChild( &SESSION->html_phrase("cgi/users/home:action_edit") );
 		$td->appendChild( $a );
 
-		$td->appendChild( $session->make_text( ", " ) );
+		$td->appendChild( &SESSION->make_text( ", " ) );
 
-		$a = $session->render_link( "submit?eprintid=".$e->get_id."&_action_submit=1" );
-		$a->appendChild( $session->html_phrase("cgi/users/home:action_submit") );
+		$a = &SESSION->render_link( "submit?eprintid=".$e->get_id."&_action_submit=1" );
+		$a->appendChild( &SESSION->html_phrase("cgi/users/home:action_submit") );
 		$td->appendChild( $a );
 
-		$td->appendChild( $session->make_text( ", " ) );
+		$td->appendChild( &SESSION->make_text( ", " ) );
 
-		$a = $session->render_link( "submit?eprintid=".$e->get_id."&_action_clone=1" );
-		$a->appendChild( $session->html_phrase("cgi/users/home:action_clone") );
+		$a = &SESSION->render_link( "submit?eprintid=".$e->get_id."&_action_clone=1" );
+		$a->appendChild( &SESSION->html_phrase("cgi/users/home:action_clone") );
 		$td->appendChild( $a );
 
-		$td->appendChild( $session->make_text( ", " ) );
+		$td->appendChild( &SESSION->make_text( ", " ) );
 
-		$a = $session->render_link( "submit?eprintid=".$e->get_id."&_action_delete=1" );
-		$a->appendChild( $session->html_phrase("cgi/users/home:action_delete") );
+		$a = &SESSION->render_link( "submit?eprintid=".$e->get_id."&_action_delete=1" );
+		$a->appendChild( &SESSION->html_phrase("cgi/users/home:action_delete") );
 		$td->appendChild( $a );
 		$row=!$row;
 	}
 
-	$html->appendChild( $session->html_phrase( "cgi/users/home:depositing" ) );
+	$html->appendChild( &SESSION->html_phrase( "cgi/users/home:depositing" ) );
 	$html->appendChild( $table );
 
 	return $html;
@@ -375,7 +367,7 @@ sub render_workspace
 
 ######################################################################
 #
-# render_pending( $session, $user)
+# render_pending( $user)
 #
 #  Render any items that are in the submissions buffer, if any
 #
@@ -383,25 +375,25 @@ sub render_workspace
 
 sub render_pending
 {
-	my( $session, $user ) = @_;
+	my( $user ) = @_;
 
 	### Get the items in the buffer
-	my $ds = $session->get_archive()->get_dataset( "buffer" );
+	my $ds = &ARCHIVE->get_dataset( "buffer" );
 	my @eprints =  $user->get_owned_eprints( $ds );
 
-	my $html = $session->make_doc_fragment();
+	my $html = &SESSION->make_doc_fragment();
 
-	$html->appendChild( $session->html_phrase( "cgi/users/home:pending_title" ) );
+	$html->appendChild( &SESSION->html_phrase( "cgi/users/home:pending_title" ) );
 
 	if( scalar @eprints == 0 )
 	{
-		$html->appendChild( $session->html_phrase( "cgi/users/home:no_pending" ) );
+		$html->appendChild( &SESSION->html_phrase( "cgi/users/home:no_pending" ) );
 	}
 	else
 	{
 		my( $table, $tr, $td );
 
-		$table = $session->make_element( "table",
+		$table = &SESSION->make_element( "table",
 				cellpadding=>3,
 				cellspacing=>0,
 				border=>0 );
@@ -409,14 +401,14 @@ sub render_pending
 		my $row = 0;
 		foreach my $e (@eprints)
 		{
-			$tr = $session->make_element( "tr", class=>"row_".($row?"b":"a") );
+			$tr = &SESSION->make_element( "tr", class=>"row_".($row?"b":"a") );
 			$table->appendChild( $tr );	
-			$td = $session->make_element( "td" );
+			$td = &SESSION->make_element( "td" );
 			$tr->appendChild( $td );
 			$td->appendChild( $e->render_description() );
-			$td = $session->make_element( "td" );
+			$td = &SESSION->make_element( "td" );
 			$tr->appendChild( $td );
-			$td->appendChild( $session->html_phrase( 
+			$td->appendChild( &SESSION->html_phrase( 
 				"cgi/users/home:deposited_at",
 				time=>$e->render_value( "datestamp" ) ) );
 			$row=!$row;
@@ -428,7 +420,7 @@ sub render_pending
 
 ######################################################################
 #
-# render_recent( $session, $user, $max, $review )
+# render_recent( $user, $max, $review )
 #
 #  Render any items that have been recently accepted into the main 
 #  archive.
@@ -437,25 +429,25 @@ sub render_pending
 
 sub render_recent
 {
-	my( $session, $user, $max, $review ) = @_;
+	my( $user, $max, $review ) = @_;
 	
 	### Get the items in the buffer
-	my $ds = $session->get_archive()->get_dataset( "archive" );
+	my $ds = &ARCHIVE->get_dataset( "archive" );
 	my @eprints =  $user->get_owned_eprints( $ds );
 
-	my $html = $session->make_doc_fragment();
+	my $html = &SESSION->make_doc_fragment();
 
-	$html->appendChild( $session->html_phrase( "cgi/users/home:recent_title" ) );
+	$html->appendChild( &SESSION->html_phrase( "cgi/users/home:recent_title" ) );
 
 	if( scalar @eprints == 0 )
 	{
-		$html->appendChild( $session->html_phrase( "cgi/users/home:no_recent" ) );
+		$html->appendChild( &SESSION->html_phrase( "cgi/users/home:no_recent" ) );
 	}
 	else
 	{
 		my( $table, $tr, $td );
 	
-		$table = $session->make_element( "table",
+		$table = &SESSION->make_element( "table",
 				cellpadding=>3,
 				cellspacing=>0,
 				border=>0 );
@@ -468,16 +460,16 @@ sub render_recent
 #cjg should really do it by deposit date
 		{
 			last if( $cnt++ == $max );
-			$tr = $session->make_element( "tr", class=>"row_".($row?"b":"a") );
+			$tr = &SESSION->make_element( "tr", class=>"row_".($row?"b":"a") );
 			$table->appendChild( $tr );	
-			$td = $session->make_element( "td" );
+			$td = &SESSION->make_element( "td" );
 			$tr->appendChild( $td );
-		        my $a = $session->render_link( $e->get_url() );
+		        my $a = &SESSION->render_link( $e->get_url() );
 			$a->appendChild( $e->render_description() );
 			$td->appendChild( $a );
-			$td = $session->make_element( "td" );
+			$td = &SESSION->make_element( "td" );
 			$tr->appendChild( $td );
-			$td->appendChild( $session->html_phrase( 
+			$td->appendChild( &SESSION->html_phrase( 
 				"cgi/users/home:accepted_at",
 				time=>$e->render_value( "datestamp" ) ) );
 			$row=!$row;

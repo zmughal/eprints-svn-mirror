@@ -112,19 +112,17 @@ $noise = 1+$verbose if( $verbose );
 # Set STDOUT to auto flush (without needing a \n)
 $|=1;
 
-my $session = new EPrints::Session( 1, $ARGV[0], $noise, 1 );
-exit( 1 ) unless defined $session;
+EPrints::Session::start( $ARGV[0], $noise, 1 ) or exit( 1 );
 
 if( $noise>=1 ) { print "What is the current compatability of the DB?\n"; }
-my $db = $session->get_db();
-my $dbversion = $db->get_version();
+my $dbversion = &DATABASE->get_version();
 if( !defined $dbversion )
 {
 	if( $noise>=1 ) { print "...No version flag. Must be pre 2.1\n"; }
 	$dbversion = "2.0";
 	if( $noise>=1 ) { print "Setting version to be 2.0\n"; }
-	$db->create_version_table;
-	$db->set_version( $dbversion );
+	&DATABASE->create_version_table;
+	&DATABASE->set_version( $dbversion );
 }
 else
 {
@@ -166,42 +164,41 @@ END
 	if( $input ne "yes" )
 	{
 		print "Aborting then.\n";
-		$session->terminate();
 		exit( 1 );
 	}
 
-	$rootdbh = &getrootdbh( $session ) unless( defined $rootdbh );
+	$rootdbh = &getrootdbh unless( defined $rootdbh );
 
 	my $ok = 1;
 	$ok = $ok && defined $rootdbh;
 
 	print "Dropping old subscription tables.\n";
 	# drop all the old subscription tables
-	my @tables = $db->get_tables;
+	my @tables = &DATABASE->get_tables;
 	foreach my $table ( @tables )
 	{
 		if( $table =~ m/^subscription/ )
 		{
 			$sql = "DROP TABLE ".$table;
-			$ok = $ok && $db->do( $sql );
+			$ok = $ok && &DATABASE->do( $sql );
 		}
 	}
 	print "Making new subscription tables.\n";
-	my $subs_ds = $session->get_archive->get_dataset( "subscription" );
-	$ok = $ok && $db->create_dataset_tables( $subs_ds );
+	my $subs_ds = &ARCHIVE->get_dataset( "subscription" );
+	$ok = $ok && &DATABASE->create_dataset_tables( $subs_ds );
 	print "Creating subscriptionid counter.\n";
 	$sql = "DELETE FROM counters WHERE countername = 'subscriptionid'"; 
-	$ok = $ok && $db->do( $sql );
+	$ok = $ok && &DATABASE->do( $sql );
 	$sql = "INSERT INTO counters (countername,counter) VALUES ".
 		"( 'subscriptionid' , 0 )";
-	$ok = $ok && $db->do( $sql );
+	$ok = $ok && &DATABASE->do( $sql );
 	foreach my $table_id ( "archive","inbox","buffer","deletion" )
 	{
 		$sql = "SELECT eprintid,succeeds,replacedby,commentary FROM ".
 			$table_id;
-		my $sth = $db->prepare( $sql );
-		$ok = $ok && $db->execute( $sth, $sql );
-		my $file = "/tmp/valuedump-".$session->get_archive->get_id."-".
+		my $sth = &DATABASE->prepare( $sql );
+		$ok = $ok && &DATABASE->execute( $sth, $sql );
+		my $file = "/tmp/valuedump-".&ARCHIVE->get_id."-".
 			$table_id;
 		open( VDUMP, ">$file" );
 		print VDUMP "eprintid,succeeds,replacedby,commentary\n";
@@ -234,7 +231,7 @@ END
 	{
 		print "\n2.0 -> 2.1 done!\n";
 		$dbversion = "2.1";
-		$db->set_version( $dbversion );
+		&DATABASE->set_version( $dbversion );
 	}
 }
 
@@ -265,16 +262,15 @@ END
 	if( $input ne "yes" )
 	{
 		print "Aborting then.\n";
-		$session->terminate();
 		exit( 1 );
 	}
 
-	$rootdbh = &getrootdbh( $session ) unless( defined $rootdbh );
+	$rootdbh = &getrootdbh unless( defined $rootdbh );
 
 	my $ok = 1;
 	$ok = $ok && defined $rootdbh;
 
-	my @tables = $db->get_tables;
+	my @tables = &DATABASE->get_tables;
 
 	# add "mailempty" to subscription
 
@@ -350,7 +346,7 @@ END
 	{
 		print "\n2.1 -> 2.2 done!\n";
 		$dbversion = "2.2";
-		$db->set_version( $dbversion );
+		&DATABASE->set_version( $dbversion );
 	}
 }
 
@@ -375,16 +371,15 @@ END
 	if( $input ne "yes" )
 	{
 		print "Aborting then.\n";
-		$session->terminate();
 		exit( 1 );
 	}
 
-	$rootdbh = &getrootdbh( $session ) unless( defined $rootdbh );
+	$rootdbh = &getrootdbh unless( defined $rootdbh );
 
 	my $ok = 1;
 	$ok = $ok && defined $rootdbh;
 
-	my @tables = $db->get_tables;
+	my @tables = &DATABASE->get_tables;
 
 	# remove rindex tables
 
@@ -399,8 +394,8 @@ END
 
 	# Grant ALTER
 
-	my $dbname = $session->get_archive->get_conf( "dbname" );
-	my $dbuser = $session->get_archive->get_conf( "dbuser" );
+	my $dbname = &ARCHIVE->get_conf( "dbname" );
+	my $dbuser = &ARCHIVE->get_conf( "dbuser" );
 	my $SQL = 'GRANT ALTER ON '.$dbname.'.* TO '.$dbuser.'@localhost';
 	$rootdbh->do( $SQL );
 
@@ -413,7 +408,7 @@ END
 	{
 		print "\n2.2 -> 2.3 done!\n";
 		$dbversion = "2.3";
-		$db->set_version( $dbversion );
+		&DATABASE->set_version( $dbversion );
 	}
 }
 if( $TARGET eq $dbversion)
@@ -438,13 +433,11 @@ if( defined $rootdbh )
 	$rootdbh->disconnect;
 }
 
-$session->terminate();
 exit;
 
 
 sub getrootdbh
 {
-	my( $session ) = @_;
 	print <<END;
 
 We will need to do some stuff to the database as root. Please enter
@@ -457,12 +450,13 @@ END
 	print "Connecting to the database [as root]\n";
         my $dbh = DBI->connect(
                 EPrints::Database::build_connection_string(
-                        dbname=>$session->get_archive->get_conf("dbname"),
-                        dbsock=>$session->get_archive->get_conf("dbsock"),
-                        dbport=>$session->get_archive->get_conf("dbport"),
-                        dbhost=>$session->get_archive->get_conf("dbhost") ),
+                        dbname=>&ARCHIVE->get_conf("dbname"),
+                        dbsock=>&ARCHIVE->get_conf("dbsock"),
+                        dbport=>&ARCHIVE->get_conf("dbport"),
+                        dbhost=>&ARCHIVE->get_conf("dbhost") ),
                 "root",
                 $mysqlrootpass );
 
 	return $dbh;
 }
+
