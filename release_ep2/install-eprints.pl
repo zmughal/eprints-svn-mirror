@@ -111,7 +111,10 @@ while (!$dirokay)
 				print <<DOWNGRADE;
 You already have a version of EPrints installed in this directory and it
 appears to be newer than the one that you are trying to install.
+
+Please obtain the latest version of EPrints and try again.
 DOWNGRADE
+				exit 1;
 			}
 			elsif ($origv eq $newv)
 			{
@@ -279,7 +282,7 @@ GROUP
 
 	my(undef,undef,$uid,$gid) = getpwnam($user);
 	my @executable_dirs = ("bin", "cgi");
-	my @normal_dirs = ("defaultcfg", "cfg", "perl_lib", "phrases");
+	my @normal_dirs = ("sys", "defaultcfg", "cfg", "perl_lib", "phrases");
 
 	foreach(@executable_dirs)
 	{
@@ -294,6 +297,33 @@ GROUP
 	}
 	
 	print "]\n\n";
+
+	print <<HOORAY;
+
+==================================================
+Hooray! Your EPrints2 installation was successful!
+==================================================
+=
+= What Now?
+=
+= - Move into $dir and run:
+=     bin/generate_apacheconf
+= - Open your apache.conf file, and make the
+=   following alterations:
+=   o Add the line
+=       Include $dir/cfg/apache.conf
+=   o Replace the 'User <username>' line with
+=       User $user
+=   o Replace the 'Group <groupname>' line with
+=       Group $group
+= - Move into $dir and run:
+=     bin/create_newarchive
+=
+=   
+= Good Luck!
+=
+==================================================
+HOORAY
 }
 
 sub install
@@ -335,13 +365,13 @@ sub install
 		close(INFILE);
 		if ($_ ne ".htaccess")
 		{
-			chmod($perms, "$dest/$dir/$_");
+			chmod($perms, "$dest/$dir/$_") or die "Unable to chmod $dest/$dir/$_";
 		}
 		else
 		{
-			chmod(0644, "$dest/$dir/$_");
+			chmod(0644, "$dest/$dir/$_") or die "Unable to chmod $dest/$dir/$_";
 		}
-		chown($user, $group, "$dest/$dir/$_");
+		chown($user, $group, "$dest/$dir/$_") or die "Unable to chown $dest/$dir/$_";
 	}
 	foreach(@dirs)
 	{
