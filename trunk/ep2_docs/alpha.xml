@@ -12,19 +12,25 @@
 </bookinfo>
 
 <chapter><title>What is &ep2; Alpha, Should I install it?</title>
-<para>The first bit</para>
-<para>The first bit</para>
+
+<sect1><title>What is &ep2;?</title>
+<para>EPrints is generic archive software under development by the University of Southampton. It is intended to create a highly configurable web-based archive.</para>
+<para>EPrints is primarily aimed at research papers, and the default configuration reflects this, but it could be easily used for other things such as images, research data, audio archives - anything that can be stored digitally.</para>
+</sect1>
+
+<sect1><title>Should I be installing &ep2;?</title>
+<para>Short answer: If in doubt, then no. Only install this if you really want to.</para>
+<para>The alpha version of the software is intended only as a demonstration. Do not use it as a live system. In fact do not bother, at this stage, even trying hard to configure it beyond "playing" as later versions
+may well be incompatable and require a total re-install.</para>
+<para>If you need an archive right now then the &eprints; 1.0 software is available from <ulink url="http://www.eprints.org/" >http://www.eprints.org/</ulink>.</para>
+</sect1>
+
+<sect1><title>What will it run on?</title>
+<para>The system is being developed under RedHat Linux 7.1, it has been designed to work with any UNIX system, although at this stage of development we have no tested it on other systems yet. Feel free to report problems.</para>
+</sect1>
 </chapter>
 
 &reqsoftware;
-
-<chapter><title>How do I install &ep2;?</title>
-<para>The third bit</para>
-</chapter>
-
-<chapter><title>How do I create my first archive?</title>
-<para>The third bit</para>
-</chapter>
 
 <chapter><title>Problems, Questions and Feedback</title>
 <sect1><title>Bug Report Policy</title>
@@ -32,18 +38,7 @@
 <para>However, you may have suggestions, comments, or outright abuse towards the general design or the installation. These may be addressed to the appropriate address.</para>
 </sect1>
 
-<sect1><title>Where to go with Questions and Suggestions</title>
-<para>There are some mailing lists for &eprints; which may be the right place to ask general questions and start discussions on broad design issues.</para>
-<sect2><title>eprints-tech</title>
-<para>eprints-tech is the technical mailing list for people who want to argue over XML processing and which libraries to use. UNIXy people.</para>
-<para>To subscribe send an email to <email>majordomo@ecs.soton.ac.uk</email> containing the text <screen>subscribe eprints-tech</screen></para>
-</sect2>
-
-<sect2><title>eprints-underground</title>
-<para>eprints-underground is the non-technical mailing list for people who actually care what the system does, not how. This is for discussion of metadata, politics (how to get people to fill the damn data in) and what people actually plan to use the eprints for.</para>
-<para>To subscribe send an email to <email>majordomo@ecs.soton.ac.uk</email> containing the text <screen>subscribe eprints-underground</screen></para>
-</sect2>
-</sect1>
+&listinfo;
 
 </chapter>
 
