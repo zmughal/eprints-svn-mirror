@@ -29,6 +29,16 @@ $c{"dvips"}="@DVIPS_PATH@";
 $c{"convert"}="@CONVERT_PATH@";
 
 $c{"enable_gdome"}="@ENABLE_GDOME@";
+$c{"apache"}="@APACHE@";
+
+######################################################################
+
+if( $c{"apache"} ne "" && $c{"apache"} ne "1" && $c{"apache"} ne "2" )
+{
+	print "Apache version must be '1' or '2'.\n";
+	print "re-run configure with new options.\n";
+	exit 1;
+}
 
 ######################################################################
 
@@ -179,10 +189,18 @@ if( defined $c{"enable_gdome"} && $c{"enable_gdome"} )
 {
 	$systemsettings->{"enable_gdome"} = 1;
 }
-
 if( !defined $systemsettings->{"enable_gdome"} )
 {
 	$systemsettings->{"enable_gdome"} = 0;
+}
+
+if( defined $c{"apache"} )
+{
+	$systemsettings->{"apache"} = $c{"apache"};
+}
+if( !defined $systemsettings->{"apache"} )
+{
+	$systemsettings->{"apache"} = "1";
 }
 
 unless( getpwnam($systemsettings->{"user"}) )

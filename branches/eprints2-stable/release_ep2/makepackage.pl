@@ -138,7 +138,6 @@ my @installerfiles = (
 	'autogen.sh',
 	'configure.in',
 	'df-check.pl',
-	'install.pl',
 	'install.pl.in' );
 foreach( @installerfiles )
 {

@@ -58,7 +58,7 @@ AC_ARG_WITH(group,
 AC_ARG_WITH(virtualhost,
     [ --with-virtualhost=[VIRTUALHOST]    
                           use VIRTUALHOST rather than "*" for
-                          apache VirtualHost directives. ],
+                          Apache VirtualHost directives. ],
     [
         VIRTUALHOST=$withval
     ])
@@ -79,6 +79,13 @@ AC_ARG_ENABLE(gdome,
         if test $enableval = no ; then
             DISABLE_GDOME="1"
         fi
+    ])
+
+APACHE=""
+AC_ARG_WITH(apache,
+    [ --with-apache=[VERSION]  version of apache to work with: 1 or 2],
+    [
+        APACHE=$withval
     ])
 
 if test $DISABLE_DF = "0" ; then
@@ -230,7 +237,6 @@ fi
 CHECK_PERL_MOD(Apache::Constants)
 CHECK_PERL_MOD(Apache::Registry)
 CHECK_PERL_MOD(Apache)
-CHECK_PERL_MOD(CGI)
 CHECK_PERL_MOD(Carp)
 CHECK_PERL_MOD(Config)
 CHECK_PERL_MOD(Cwd)
@@ -274,6 +280,7 @@ AC_SUBST(DIST_PATH)
 AC_SUBST(PREFIX)
 AC_SUBST(DISABLE_DF)
 AC_SUBST(ENABLE_GDOME)
+AC_SUBST(APACHE)
 AC_SUBST(INSTALL_USER)
 AC_SUBST(INSTALL_GROUP)
 AC_SUBST(VIRTUALHOST)
@@ -283,3 +290,4 @@ AC_OUTPUT([
 ])
 
 chmod +x install.pl
+echo "Now run ./install.pl to install to $PREFIX"
