@@ -3,6 +3,15 @@
 use Cwd;
 use strict;
 
+# nb.
+#
+# cvs tag eprints2-2-99-0 system docs_ep2
+#
+# ./makepackage.pl  eprints2-2-99-0
+#
+# scp eprints-2.2.99.0-alpha.tar.gz webmaster@www:/home/www.eprints/software/files/eprints2/
+
+
 my %codenames = (
 	"eprints2-alpha-1" => "anchovy",
 	"eprints2-alpha-2" => "pepperoni",
@@ -23,7 +32,19 @@ my %codenames = (
 	"eprints2-1-pre-5"   => "chickendonner",
 	"eprints2-1"   => "pineapple",
 	"eprints2-1-1-pre-1" => "chillioil",
-	"eprints2-1-1" => "sweetcorn"
+	"eprints2-1-1" => "sweetcorn",
+	"eprints2-2-0-pre-1" => "candycorn",
+	"eprints2-2-0-pre-2" => "bobbing-apple",
+	"eprints-2-2" => "pumpkin",
+	"eprints-2-2-1" => "pepper",
+	"eprints2-3-0-tardis-1" => "devildoll",
+	"eprints2-3-0-tardis-2" => "spacemutiny",
+	"eprints2-3-0-pre-1" => "princeofspace",
+	"eprints2-3-0-pre-2" => "agentforharm",
+	"eprints2-2-99-0" => "extracrust",
+	"eprints2-2-99-1" => "webfoot",
+	"eprints2-2-99-2" => "makeroomforthetuna"
+
 );
 
 my %ids = (
@@ -38,7 +59,18 @@ my %ids = (
 	"eprints2-1-pre-5"     => "2.1.pre-5",
 	"eprints2-1"     => "2.1",
 	"eprints2-1-1-pre-1" => "2.1.1.pre-1",
-	"eprints2-1-1" => "2.1.1"
+	"eprints2-1-1" => "2.1.1",
+	"eprints2-2-0-pre-1" => "2.2-pre-1",
+	"eprints2-2-0-pre-2" => "2.2-pre-2",
+	"eprints-2-2" => "2.2",
+	"eprints-2-2-1" => "2.2.1",
+	"eprints2-3-0-tardis-1" => "2.3.0-tardis-1",
+	"eprints2-3-0-tardis-2" => "2.3.0-tardis-2",
+	"eprints2-3-0-pre-1" => "2.3.0-pre-1",
+	"eprints2-3-0-pre-2" => "2.3.0-pre-2",
+	"eprints2-2-99-0" => "2.2.99.0-alpha",
+	"eprints2-2-99-1" => "2.2.99.1-alpha",
+	"eprints2-2-99-2" => "2.2.99.2-alpha"
 );
 
 my( $type ) = @ARGV;
@@ -59,7 +91,7 @@ chomp $date;
 
 if( $type eq "nightly" ) 
 { 
-	$version_tag = "HEAD";
+	$version_tag = "eprints2-stable";
 	$package_version = "eprints-2-cvs-".$date;
 	$package_desc = "EPrints Nightly Build - $package_version";
 	$package_file = "eprints-2-cvs-$date";
