@@ -1,0 +1,167 @@
+
+=head1 A Brief History of EPrints
+
+The EPrints project was created by Professor Stephen Harnad.
+
+=over 8
+
+=item B<April 2000>
+
+Rob Tansley begins work on EPrints
+
+=item B<June 2000>
+
+EPrints beta-1 released
+
+Cogprints archive created. http://cogprints.soton.ac.uk/
+
+=item B<September 2000>
+
+EPrints beta-2 released
+
+=item B<November 2000>
+
+EPrints 1.0 released, contains OAI 0.2 support
+
+Rob Tansley leaves the EPrints Project
+
+Christopher Gutteridge joins the EPrints Project
+
+=item B<January 2001>
+
+EPrints 1.1 released, contains OAI 1.0 support
+
+Work begins on EPrints 2
+
+=item B<June 2001>
+
+Mike Jewell joins EPrints, working primarily on installer software
+
+=item B<August 2001>
+
+EPrints 2 Alpha-1 (Anchovy) released.
+
+=item B<Jan 2002>
+
+EPrints 2 Alpha-2 (Pepperoni) released.
+
+=item B<Feb 14 2002>
+
+EPrints 2.0 (Olive) released.
+
+=item B<Apr 17 2002>
+
+EPrints 2.0.1 (Tuna) released. Mostly bugfixes.
+
+=item B<July 1 2002>
+
+EPrints offically joins GNU Project.
+
+=item B<July 4 2002>
+
+GNU EPrints 2.1 (Pineapple) released. Added subscriptions and OAI 2.0 support.
+
+=item B<October 31 2002>
+
+GNU EPrints 2.2 (Pumpkin) released. Added subject editors and GDOME support.
+
+=back
+
+=head1 What next?
+
+Nothing is perfect. I wish it was but wishing don't make it so.
+
+Which features are added next will depend on expedience and what feedback I get. If you really care, let me know at support@eprints.org
+
+=head2 Features I'd like to see, in no real order. Some are more realistic than others:
+
+=over 8
+
+=item BibTeX Interoperability
+
+Methods for improting bibtex data into the system, and possibly exporting the metadata as bibtex. Possibly other metadata schemes such as RIS.
+
+=item Translations
+
+Translations of the phrase file into other languages. Possibly also the citatinos, templates & default static pages. Mail them to me (support@eprints.org) and I'll add them to the eprints website.
+
+=item MathML Handling
+
+Possibly like the latex handling in 2.0. I don't know enough about MathML to decide how to go about this.
+
+=item Export/Import system
+
+There are already import & export functions but they are a bit rough and ready - I'd like them to be cleaner.
+
+=item Other Default Configurations
+
+The current default is geared at an archive of research papers or pre-prints. It would be nice to have some different initial configurations for example for experimental data.
+
+=item Fully Documenting the API
+
+That's just really time consuming, but useful. 
+
+Update: It's about 50% done now, and yes - it's really time consuming. Use C<perldoc Foo.pm> on an eprints module to see the API documentation.
+
+=item Mirroring
+
+Being able to run the system from two machines eg. USA with a European mirror. One system would be the "root" and all editing and user based functions would be done there, but searching, browsing and downloading can be done from a mirror.
+
+=item "Peer Review" 
+
+A more complex approach to the "buffer" which allows items to be assigned to reviewers who can add comments, or scores, or what-have-you, before the item is accepted or rejected.
+
+=item Citation Scanning/Linking
+
+Software to scan the full texts of documents looking for citations and attempt to link them to (a) other items in the archive and (b) use a third party system to link to external items. We do now have the paracite plugin but it's not enough yet.
+
+=item People who read this eprint also read...
+
+Something to chart patterns in what abstracts people view and what full texts they view and trying to guess other similar items. I know nothing about this kind of system, so advice is welcome.
+
+=item How-To's
+
+These may appear on eprints.org rather than part of the package. These will be trails through the (admittedly large) configuration for performing  specific tasks like adding a new field.
+
+=item Super Configurer
+
+A configuration tool which can do really complex stuff like add and remove fields. 
+
+=item User Defined Data Sets
+
+For complex data structures. For example if you want a list of "incidents" which have a date, time and description as an item. These will be indefinitely nest-able.
+
+=item Chat Forums
+
+A slashdot style chat at the bottom of each abstract page. Possibly using a seperate system such as a PHP bulletin board. Possibly using the d3e system developed at open.ac.uk.
+
+=item Web Log Munger
+
+Something which takes the logs from the website and produces nicely styled inforamtion on how many hits various documents get. Could possibly be a "contributed" feature rather than part of the core system.
+
+=item Multilple Sites, one archive
+
+Kind of like the multilanguage support. This would allow more than one site to
+have a single back-end database. For example you may want to present a subset of your archive on a seperate URL (in addition to the normal one) with different branding. The multi-lingual site options currently available would be replaced (neatly) with this more comprehensive approach.
+
+=item Fully Customisable Workflow
+
+So that every stage of submission can be configured. This would allow complex approval mechanisms and peer review etc. Creating a configuration would be very hard but changing an existing one would be quite easy. We could supply multiple configurations for basic variations; subject archive, online journal, institutional archive etc. 
+
+=item Interoperability with Similar Projects
+
+There are other open source and free projects with things in common with GNU EPrints. These include D-Space (from MIT and HP) and Greenstone (University of Waikato, NZ). We have spoken with members of both projects and hope to make ways to share data between these systems. I'm also hoping to make it possible for GNU EPrints to use Greenstone's plugin system for document converters. 
+
+=item Collection of contributed tools on software.eprints.org
+
+This is where I ask for help! If you have some interesting code, useful scripts, unusual or innovative configuration, translation, subject configuration for a specific subject area... etc. Please send it to us at support@eprints.org with an explanation of what it is, who wrote it, where, and who has copyright on it.
+
+=back
+
+=head2 Why do the milestones all have silly names?
+
+We wanted to give each stage a name, it makes it easier to talk about. We didn't want a logical order as we are likely to invent sub-milestones between them. We just picked a set of words we liked, and we like pizza. 
+
+UPDATE. Pumpkins don't usually go on pizza but it seemed appropriate for the date.
+
+
