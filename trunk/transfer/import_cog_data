@@ -1,5 +1,17 @@
 #!/usr/bin/perl -w
 
+######################################################################
+#
+#  Import CogPrints data into EPrints.
+#
+######################################################################
+#
+#  $Id$
+#
+######################################################################
+
+
+
 use EPrints::Session;
 use EPrints::MetaInfo;
 use EPrints::MetaField;
@@ -63,7 +75,7 @@ my %idmap;
 my %translations =
 (
 	"eprintid"    => "*",
-	"user"        => "*",
+	"username"    => "*",
 	"dir"         => "*",
 	"datestamp"   => "+",
 	"additional"  => "*",
@@ -233,6 +245,12 @@ sub import_eprint
 	                                      $EPrints::Database::table_archive,
 	                                      $userid );
 
+	if( !defined $eprint )
+	{
+		my $error = $session->{database}->error();
+		die "Couldn't create EPrint $entry{idcode}: DB<$error> OTHER<$!>\n";
+	}
+
 	$eprint->{type} = $type;
 	$eprint->{ispublished} = $ispublished;
 	$eprint->{refereed} = $refereed;
@@ -295,6 +313,9 @@ sub import_eprint
 #	push @errors, @$probs;
 
 	EPrintSite::Validate->validate_eprint( $eprint, \@errors );
+
+	# Generate static HTML page
+	$eprint->generate_static();
 
 	#print STDERR "Import complete\n";
 
@@ -595,33 +616,39 @@ sub translate_month
 	{
 		return( undef ) if( $val < 1 || $val > 12 );
 		
-		while( length $val < 2 )
-		{
-			$val = "0".$val;
-		}
-		
-		return( $val );
+		my @months =
+		( "unspec", "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep",
+		"oct", "nov", "dec" );
+
+		return( $months[$val] );
 	}
 	else
 	{
 		# Perhaps it's in text. Try to guess from the first three letters.
 		my %months = (
-			"jan" => "01",
-			"feb" => "02",
-			"mar" => "03",
-			"apr" => "04",
-			"may" => "05",
-			"jun" => "06",
-			"jul" => "07",
-			"aug" => "08",
-			"sep" => "09",
-			"oct" => "10",
-			"nov" => "11",
-			"dec" => "12" );
+			"jan" => 1,
+			"feb" => 1,
+			"mar" => 1,
+			"apr" => 1,
+			"may" => 1,
+			"jun" => 1,
+			"jul" => 1,
+			"aug" => 1,
+			"sep" => 1,
+			"oct" => 1,
+			"nov" => 1,
+			"dec" => 1 );
 			
 		my $firstthree = lc (substr ($val, 0, 3));
-		
-		return( $months{$firstthree} );
+
+		if( defined $months{$firstthree} )
+		{
+			return( $firstthree );
+		}
+		else
+		{
+			return( "unspec" );
+		}		
 	}
 }
 
