@@ -25,24 +25,29 @@ if (defined($ARGV[0]))
 
 print <<INTRO;
 
+======================================================================
 EPrints 2 Installer
--------------------
 
 This installer creates the necessary directories and files for 
 you to begin configuring EPrints 2.
+======================================================================
 
 INTRO
 
-if ($forced)
-{
-	print <<WARNING;
-*** WARNING ***
+my $non_root_warning = <<WARNING;
+**********************************************************************
+* WARNING 
 
-Running as non-root will skip the following:
+Running as non-root will cause some stages to be skipped:
 - No user/group creation will be attempted
-- No chowning will be attempted
+- The file owner flags will not be specificly set
 
 WARNING
+
+
+if ($forced)
+{
+	print $non_root_warning;
 }
 print "Checking user ... ";
 if ($<!=0 && !$forced)
@@ -52,11 +57,8 @@ Failed!  This installer must be run as root.
 
 You may use the --force to run as a user other than root.
 
-Running as non-root will skip the following:
-- No user/group creation will be attempted
-- No chowning will be attempted
-
 END
+	print $non_root_warning;
 	exit 1;
 }
 else { print "OK.\n\n"; }
@@ -79,7 +81,7 @@ my %systemsettings = ();
 # Set up some default settings.
 my %invocsettings = (
 	zip     => '$(zip) 1>/dev/null 2>&1 -qq -o -d $(DIR) $(ARC)',
-	targz   => '$(wget) -c < $(ARC) 2>/dev/null | $(tar) xf - -C $(DIR) >/dev/null 2>&1',
+	targz   => '$(gunzip) -c < $(ARC) 2>/dev/null | $(tar) xf - -C $(DIR) >/dev/null 2>&1',
 	wget    => '$(wget)  -r -L -q -m -nH -np --execute="robots=off" --cut-dirs=$(CUTDIRS) $(URL)',
 	sendmail => '$(sendmail) -oi -t -odb --'
 );
@@ -108,7 +110,7 @@ $systemsettings{"version"} = $version;
 $systemsettings{"version_desc"} = $version_desc;
 print <<DIR;
 
-EPrints installs by default to the /opt/eprints directory. If you
+EPrints 2 installs by default to the /opt/eprints2 directory. If you
 would like to install to a different directory, please specify it
 here.
 
@@ -121,7 +123,7 @@ my $orig_version = "";
 my $orig_version_desc = "";
 while (!$dirokay)
 {
-	$dir = get_string('[\/a-zA-Z0-9_]+', "Directory", "/opt/eprints");
+	$dir = get_string('[\/a-zA-Z0-9_]+', "Directory", "/opt/eprints2");
 	
 	if (-e $dir)
 	{
@@ -308,7 +310,7 @@ GROUP
 	print "Installing files : [";
 
 	my @executable_dirs = ("bin", "cgi");
-	my @normal_dirs = ("archives", "sys", "defaultcfg", "cfg", "docs", "perl_lib", "phrases");
+	my @normal_dirs = ("archives", "defaultcfg", "cfg", "docs", "perl_lib");
 
 	foreach(@executable_dirs)
 	{
