@@ -1,0 +1,495 @@
+
+EPrints 2 changelog.
+
+======================================================================
+09/01/2002 - EPRINTS-2-ALPHA-2
+======================================================================
+
+10/01/2002
+ - Added CHANGELOG!
+ - Added BUGLIST 
+ - Added BUGGLIST & CHANGELOG to the distribution.
+ - Session::send_http_header can now send content-types other
+    than text/html. Still does text/html by default.
+ - added Session::make_indent( $n ) which makes DOM of a CR +
+    $n spaces (for laying out OAI XML returns)
+
+21/01/2002
+ - fixed bug in get_index_ids - which failed to get the last item from a list
+of free words.
+ - Added DataObj as a base class for EPrint,Document,User & Subject. Moved
+get_value, set_value, get_session,  get_data, get_dataset, is_set, get_id & 
+render_value.
+ - Removed old OAI code from ArchiveConfig.pm  and some deadwood functions
+from OpenArchives.pm
+ - OAI now works. cgi/oai and OpenArchives.pm - uses DOM to generate the
+replies. Only one function in ArchiveConfig.pm (make_metadata_oai_dc) 
+but more metadata formats mean more functions (which is a bit cleaner).
+ - Added experimental vlit support so documents can be retrieved as char-
+ranges. This is for Ted Nelson research stuff. See www.xanadu.com for more
+info. Currently in Xanadu.pm but'll probably get renamed.
+ - removed Deletion.pm once and for all.
+ - added use_private_cache and cache_id to SearchExpression cache_id can
+set the current cache to save searching. use_private_cache: caches and
+does not dispose of the cache after but flags it as unusable by other
+searches.
+ - added a method to session: render data element which returns an indented
+XML element containing some text eg. (4,"key","value") ...
+    <key>value</key>
+ - fixed bug in search expression ( it didn't do the cache checking in the
+right place).
+ - fixed bug in the ordervalues table which only showed when the archive had
+more than one supported language.
+[C] - added make_metadata_oai_dc
+[C] - XML config files for citation, ruler and phrases now use namespaces 
+so that EPrints tags can be prefixed with "ep:" but XHTML tags remain the 
+same. Which should make them clearer.
+[C] - Added oai_metadata_functions to ArchiveConfig.pm 
+[C] - renamed oai_metadata_formats to oai_metadata_namespaces
+[C] - added "enable_vlit_support" config option, so you can disable it!
+[C] - Added new options to browse views: noindex, nohtml, include, plain, 
+citation
+[C] - changed citations to contain SPAN class="citation" rather than do 
+it in code. and to contain <ep:a> </ep:a> to show where to put the link.
+[C] - added oai_sets config option, same format as browse views. 
+
+23/01/2002
+ - generate_apacheconf now (optionally) includes directives to pass .txt and
+.uni files through the VLit (Xanadu) handler.
+ - added VLit and Latex to startup.pl to force mod_perl to load them at the
+start.
+ - added support for render_value and render_single_value to MetaField.pm
+ - removed some broken and useless old browse views linking code from 
+MetaField.pm
+ - added 3 new executable paths to the CVS SystemSettings: latex, dvips and
+convert, convert is invoked as convert_crop_white as we may wish to invoke it
+with other options. The autoinstaller does NOT add these new values.
+ - put ' quotes around values in default system settings invocations - should
+added to installer too.
+ - Utils::tree_to_utf8 now understands to turn an <img> into the contents of
+the alt attribute.
+ - renamed Xanadu.pm to VLit.pm
+ - added Latex.pm which calls latex, dvips & convert to turn a latex string
+into a PNG and also a method which renders a string as DOM but replaces
+bits which look like latex with <img>s which point to cgi/latex2png 
+ - added cgi/latex2png which uses Latex.pm to create an image from a latex 
+string and serve it. (uses a cache dir so each one only has to be done once)
+
+25/01/2002
+
+ - corrected the namespace in the XML files for XHTML1.
+ - removed DOM.pm - going back to using normal one, not our hacked
+one.
+ - added a get_archive() method to DataSet.pm
+ - MetaField: TYPE_SQL and TYPE_INDEX constants are removed and the
+results generated directly from the subs which used them. This allows
+different values for each archive (eg. for VARCHAR sizes)
+ - MetaField: PROPERTIES is now just a list of properties. A value of
+-1 means there is no default.
+ - get_property_default returns what PROPERTIES used to contain. Allows
+archive specific field property defaults.
+ - the input field renderer routines now use the properties:
+input_rows input_cols input_name_cols input_id_cols input_add_boxes
+input_boxes input_style (and digits) to decide size and height and stuff
+ - removed HTMLRenderer
+ - booleans now can render as menus, radio buttons OR a checkbox 
+ - plain text fields can have textareas as their input field.
+ - phrase files now have namespaces for ep:foo like other XML files with
+XHTML in.
+[C] - [this has been undone again! 30/01/2002] added varchar_size option 
+to set how big the SQL fields are.
+[C] - added FIELD PROPERTY DEFAULTS SECTION WITH the fields:
+input_rows input_cols input_name_cols input_id_cols input_add_boxes
+input_boxes digits
+[C] - fixed BUG in default field validator - now handles multiple
+URL fields.
+[C] - displaylines renamed to input_rows
+
+
+26/01/2002
+
+ - added default_action to the render_input_form method and code to
+support it.
+ - added button order and default_action to all render_input_form calls
+where appropriate.
+ - fixed braino in new metafield properites handling. All metafields need
+a handle on the archive object, so those without a dataset must now have
+an archive set. Added archive values to all calls to MetaField->new
+ - added a client() method to Session which returns a code for the client,
+currently: GECKO, LYNX, MSIE4, MSIE5, MSIE6 and "?". Used this to test
+for lynx in the default action handler and not print the image button if 
+it is lynx (as lynx ALWAYS displays it, we want it hidden).
+
+28/01/2002
+
+ - new metafield property: browse_link - which is the id of the browse view
+it should link to when rendering.
+ - added "generic" citations handling, via DataObj render_description which
+replaces User::full_name and EPrints::short_title and Document::render_desc
+ - added new param to template title field: textonly="yes" to squash down
+the XHTML in the <title> into text only.
+ - moved render_citation and render_citation_link from Document, EPrint and
+User into DataObj. 
+ - added get_url to Document, EPrint and User - (renamed the functions
+static_url and url)
+ - buildpage now takes a title as DOM not UTF8 (so markup is preserved) -
+all calls have been changed.
+ - fixed a bug in the user mailer. Sent the DOM ref, not the text
+ - fixed a typo in edit_eprint which caused a 500 error
+ - added a get_type() method to  Document, EPrint and User, returns the
+type (as in which citation to use).
+ - removed start_html end_html and end_form from Session.
+[C] - split user_render and eprint_render into user_render, eprint_render,
+user_render_full, and eprint_render_full. eprint_render_full now looks alot
+better and puts the abstract page in a slightly darker box. - best to lose 
+old render section and require the new one.
+[C] - removed ArchiveConfig.pm : eprint_render_short_title and the sub which
+returned a user name or "User 44489" - now down with citations.
+[C] - added "generic" citations to citations file: these have no type and
+are used to render a short (one-line) description.
+user_display_name. Now these are done as generic citations for those objects.
+[C] - added  textonly="yes" to the titlehere element in the <title> in the
+template.
+[C] - changed the ID of the public security setting from "public" to "" 
+this WILL cause some problems upgrading but
+UPDATE document SET security='' WHERE security='public';
+will fix it. It means in the document citations we can do ifset on "security".
+[C] - added document citations to the citations file - with advice on how
+to view PDF and PS.
+
+ - removed Subject::get_name and render and replaced with render_description
+(well the one inherrited from DataObj)
+ - fixed a bug in edit_subject : was rendering list of eprints in buffer, not
+archive.
+[C] - added a subject default citation to citations list.
+
+ - upped OAI pagesize to 100 records (from 10)
+ - OAI now correctly flags deleted records.
+ - OAI now includes values from the deleted eprints when generating sets.
+ - cgi/status now uses the phrase file. 
+ - added code to Utils::send_mail and User::mail to allow a reply-to
+header, other than the eprints admin.
+ - fixed bug in search results page which said next 10 records, even if there
+were only 7 left.
+ - bounce & delete records from buffer now sets the reply-to field of the
+email as the editor who did it.
+ - fixed a couple of typos from where I added  _order to button lists.
+ - added "quotes" around the names in the Utils::send_mail routine to stop
+problems with names containing commas.
+
+29/01/2002
+[C] - !!!! split parts of ArchiveConfig.pm into
+ArchiveOAIConfig.pm
+ArchiveRenderConfig.pm
+ArchiveValidateConfig.pm
+ArchiveTextIndexingConfig.pm
+ArchiveMetadataFieldConfig.pm
+ and "require" them all from ArchiveConfig.pm. The resulting effect is exactly
+the same. EXCEPT. {oai_foo} conf items are all renamed to {oai}->{foo}
+[C] - TO upgrade alpha-2 to use OAI! just remove all oai conf items and 
+methods from ArchiveConfig.pm, copy ArchiveOAIConfig.pm into the archives 
+/cfg/ dir, and then add to ArchiveConfig.pm:
+require "cfg/ArchiveOAIConfig.pm";
+$c->{oai} = get_oai_conf();
+- Latex.pm now uses MD5 to generate cache filename (so it does not go over
+256 char limit)
+
+30/01/2002
+[C] - !removed varchar_size again!
+[C] - changed the default title from a "text" to a "longtext"
+ - removed varchar size setting support - the max size is 255. You want more
+use a longtext metafield.
+ - improved export_xml so it now does ID and NAME parts correctly. And now does
+any dataset.
+ - Fixed a bug in generate_static which didn't remove the <title> from around
+the title name of an xpage.
+ 
+ - the 404 error page now works (although does not spot urls which may have 
+expired, yet).
+ - can no longer view dir. index in the CGI directories
+ - added a <mail> element which is only used to make tree_to_utf8 word wrap 
+emails with no <p> elements: it works like a <p> except that \n\r etc are
+not turned into generic whitespace.
+ - cache settings on cgi pages are now just:
+Cache-Control: must-revalidate
+  which seems to be what they should have been all along.
+ - added a get_status method to session which returns the HTTP status (usually
+200!)
+ - Subject->children now sorts by Subject name (not id!)
+ - cleaned up the error401 page
+ - split the document upload page into 2 parts: files and metadata. Cleaned
+ up the phrases in that section.
+ - the upload a file page now has a seperate form for the cancel button , so 
+ that it does not upload the file if you hit "cancel"
+[C] - added validate_document_meta to ArchiveValidateConfig.pm - this checks
+just the meta data of a document. 
+
+31/01/2002 
+ - fixed bug when you have more than 3 items in a list. The form renderer was
+chopping off the rest!
+ - added a new doc-type: coverimage, which renders as an image on the abstract
+page. It's not a required format, though.
+ - renamed <ep:a> to <ep:linkhere> because it was clashing with XHTML's <a> 
+and DOM lv 1 does not support namespaces.
+ - added reindex method to dataset which re-commits EVERY item. Which will 
+recreate index and ordervalue tables.
+ - added bin/reindex  which is just a handle on that function.
+ - added get_noise to session.pm to give the current noise level in command
+line tools.
+ - made dataset::map actually do a map rather than do it the stupid way. 
+Changed the syntax to be the same as searchexp::map and changed things which 
+call it.
+ - fixed some bits in Document.pm which still thought public docs were 
+"public" not "".
+ - fixed something in searchexp::perform which assumed we had an order set
+when we might not.
+ - order values now correctly sort year and int (int not tested yet!)
+
+01/02/2002
+ [C] - ArchiveRenderConfig::id_value now returns XHTML-DOM not UTF-8
+ - Fixed "clone" bug.
+ - Fixed bug which escaped % when it didn't have to.
+ - Fixed bug in ArchiveOAIConfig.pm - didn't know what the perl dir was
+for making the Identify response.
+ - rewrote the DC renderer to be neater.
+ - made --verbose in scripts repeatable. 2 gives the SQL, 3 gives the whole
+DBI trace.
+ - fixed get_value_label to always return DOM. Fixed things that call it.
+ - added Database::prep_like_value which escapes SQL value including "%"
+ - if for some reason an attempt is made to cache "NONE" from a search it
+ now just returns an empty cache.
+ - SQL errors now go to the log not the webpage.
+ - fixed 'wget' invocation
+ - Added Utils::clone which clones a (non recursive) data structure. There
+may be a perlmod which already does this, but what the hell.
+ - turned MetaField::display_option into render_option
+ - GET forms now do not set multi-part which reduces the annoyance of 
+hitting the back button.
+[C] - moved system variable phrases into system file from archive file.
+
+02/02/2002
+ - now removes un-needed ordervalue rows.
+[C] - added username and userid to user search fields.
+[C] - added document types: other and cover image to citations file.
+ - fixed typo "=" instead of "=>" in edit user. And a utf8 which should
+have been DOM.
+ - remove_user feature now works, and so does the cgi script which calls
+it.
+ - added in some missing fieldnames in the phrase file for system fields.
+ - fixed the title of the user search page.
+ - changed staff user edit to have a different blurb.
+ - added oneshot_cache to staff searches (user & eprint) so that
+ordering works.
+ - undefined phrases now get mentioned in the log.
+ - fixed typo in MetaField EPrint:: should have been EPrints::
+
+04/02/2002
+ - passwords are now encrypted as they come from the form not as they go
+into the DB! subtle but important change. They are also crypted when they
+come from bin/create_user. Web based signup always crypts now.
+ - icky SQL in cgi/confirm to swap around values from newpassword/newemail to
+password/email. 
+ - added an "unspecified" option to sets and subjects which are not multiple
+or required so you can unselect them again if needed.
+ - web based searches now use the cache again.
+[C] - moved the eprints to unqualified DC code in OAIConfig to its own
+function so that it can also be used to make metadata on abstract pages.
+[C] - render_eprint can now optionally return a 3rd values, a list of 
+links and metadata which it uses the DC maker in OAIConfig to make DC.foo
+meta fields in the page header.
+[C] - the suggestions field now renders in its own box to make it clear what
+it is.
+[C] - input_rows on the month field set to 1 so it becomes a pull-down.
+[C] - ruler.xml now uses the entities.dtd file, not that it'll ever matter!
+- added "-" to escaped values in LIKE params.
+- moved "next" on search page to the right end of the list so it does
+not get as confusing when you goto page 2.
+
+05/02/2002
+[C] - trimed out "dc" from OAIConfig.pm again, probably not going to
+have time to add it before v2.0
+[C] - OAI: Added "format" items to unqualified DC which give format &
+URL of that doc.
+[C] - cleaned up static pages to be "nice" for version 2.0 - added in
+"powered by" images for things like apache & XHTML.
+- import_eprints now needs to know which dataset - so you can export from
+one and import into another.
+- fixed bugs in export_xml multilang bit.
+- top level tag of exported xml is now <eprintsdata> and does NOT have 
+a dataset id.
+- new Session method: render_link which creates an anchor: <a href="foo">
+it also uri_escapes the href. All places which did do make_element("a",...
+now use this instead.
+- ImportXML now also needs to know which dataset to import to.
+- everywhere theres a 'chdir' it now chdir's back to the origional dir
+again.
+- cleanded up subjects "depositable" field - now uses nice radio buttons.
+- removed uses of the word "paper(s)" to keep the text more generic.
+- cleaned up 2 errors in the CSS
+- renamed setlang to set_lang and internationalised it.
+
+[c] - removed "nowrapper" opt from views conf: now does no <p> wrapper round
+citations if using custom citation.
+- VLit stuff now uses charrange rather than byterange and requires "xuversion"
+to be set.
+
+06/02/2002
+[c] - tweaked the OAI renderer to handle bad months!
+[c] - commended out the "lang" field in metadata-types: {users} as it's
+only needed for multilingual archives.
+- VLit now runs over all of the "document" area but not secure docs or the 
+front page.
+- VLit now returns 401 or 501 where appropriate.
+[c] - table on the default frontpage is no longer 100%: looked bad in IE.
+- SearchField definitions now use 3 values rather than the icky
+PHR:EQ:fred format. Still serialise OK. Also ANY/ALL/PHR is not needed if 
+match mode is not "IN" and if match mode is not specified it defaults to
+"EQ" - which is usually used internally.
+
+[c]- fixed typo in citations file.
+- fixed bug in "area" code of VLit
+- removed sub render_struct - use Data::Dumper, dammit.
+
+07/02/2002
+[c] - removed defaults for "os" and "security" as these are no longer
+meaningful. Defaults are now ""
+[c] - changed template to use <pin> rather than <pagehere>, <titlehere> etc.
+- Language now logs which lang a missing phrase was in (not in!)
+- added change_email feature to user area.
+- $user->mail() can now send email to a different address to the one given
+(for email change).
+- VLit now has an xml-entity mode
+- added "latest" cgi script which lists the last weeks additions.
+
+- CGI param mainonly now supresses the template and just serves the body.
+
+11/02/2002
+[c] - Rewrote warn and error thresholds to be 1024*foo to make a easier to work
+out in megs. makes no functional difference.
+[c] - cleaned up the refereed field and removed the Latex stuff from the default
+configuration.
+[c] - validation routines now check names have a family & a given part.
+[c] - removed some unused citations.
+[c] - commented out editorsubjects - not needed until we start using them.
+- stopped mentioning editorsubjects on the "buffer" page, until they are used.
+- now uses 'df' properly to decide which dir to use. Also cleaned up error log
+message and emails caused by low disk space.
+- DataSet totally ignored system fields required setting now a field is 
+required if it is required in the system field conf function OR the metadata-
+types.xml file.
+- mainonly param was causing a warning, now checks it's defined first.
+- buffer page items are now sorted by datestamp (newest first)
+- made a note in the h2ph warning that you should be root when running it.
+
+12/02/2002
+[c] - Changed vlit config options. Now you can configure where the URL goes.
+- added "context" mode to vlit which highlights around the quote. 
+- vlit human mode now uses CSS.
+
+[c] - Changed 'require' to 'do' in ArchiveConfig.pm because otherwise PERL
+remembers it's seen that filename before and does not load it!
+- Fixed the "MultiLang fields getting corrupted" bug.
+- Added two new field properties - search_cols and search_rows for controling
+look of search fields.
+[c] - added defaults for search_cols and search_rows in ArchiveConfig.pm
+[c] - Changed validation code for fields: now checks emails too.
+[c] - Commented out uncommon languages from langauges.xml
+- DataObj::get_value now returns at [] for empty multiple fields to save
+on pointless undef checking.
+- Fixed bug that booleans shown as menu/radio always came back TRUE.
+- added Vlit copyright page.
+- added user help page.
+- configure_archive now lets archive hostnames have "-" in!
+
+13/02/2002
+- VLit No longer checks for text mimetype.
+- Removed "generate_dtd" - it now regenerates the DTD each time it 
+ loads the archive configuration. One less annoyance!
+
+14/02/2002
+- Added my own url_escape routine which makes a URL then tostrings it.
+Due to change in functionality of uri_escape in URI 1.18
+- All URL's now escape using EPrints::Utils::url_escape 
+- cleaned up the default front page to look nicer under Netscape 4
+- made the vlit icon on the about page point to the vlit permission page.
+- tidied up vlit permission page.
+- removed <p> tag around URL's in emails - don't want them word wrapped!
+
+======================================================================
+14/02/2002 - EPRINTS-2.0
+======================================================================
+
+
+03/03/2002
+[c]- Fixed typo in citations "years" instead of "year"
+- 404 page now spots /view/ and suggests you need to run generate_views
+- "latest" cgi script no longer uses cached results.
+- get_value on a non existant field now gives a clear error rather than
+  a perl !defined error. (calls abort)
+- importXML - treated whitespace inbetween <lang> tags as a lang'less 
+  version of the value. Now ignores it. Still does that with non-white
+  space.
+- added get_top_subject to metafield - which returns the top subject for
+  that field, or a helpful error if there isn't one. Used it where 
+  possible in code: generate_views, SearchField.
+- Fixed bugs in mailer with latin-1 text in MIME and body of mail.
+- Fixed mistake in /help/ which refers to lemur1 rather than the current
+  archive.
+
+03/04/2002
+[c] - All occurancies of
+(defined $foo->get_value( "bar" )) have become ($foo->is_set( "bar" ))
+in default configuration. Easier to understand and avoids a few bugs.
+- abort() now gives an HTML page as well as logging, if we are running
+in a CGI script (under mod_perl).
+- configure_archive now defaults the MySQL user to $archiveid rather
+than "eprints" which stops the problem of changing the MySQL User:
+"eprints"'s password on ALL archives.
+[c] - default template: now <title> contains the name of the archive
+"sitename - pagetitle"
+[c] - some rewrites to ArchiveFreeTextIndexingConfig - most importantly
+now treats chars< #32 (eg RETURN and NEWLINE) as breaking characters.
+*** Users should replace old ArchiveFreeTextIndexingConfig with new one
+unless they have good reason not to.
+- Changed the email change to tell you what your email just got changed
+to.
+- lack of "deposit" priv was not hiding the deposit option on the user
+page (now it does).
+- ImportXML now has an error context of 5 lines to aid debugging.
+- Main phrases file now rephrased to be "go to homepage" rather than
+"return to homepage" to make context more simple. Also "author page" or
+"admin page", "staff area" and "your deposit items page"  renamed to
+"user homepage".
+
+16/04/2002
+[c] - Abstract h2 was not added to render_eprint page. Now is.
+- added $session->terminate() to generate_abstracts
+- generate_apacheconf configuration now refers to apache configuration
+rather than apache.conf (which was wrong)
+- OAI: got rid of OAI_VERSION constant - now just hardwired.
+- edit_eprint now does function of view_submission & edit_submission too and
+can edit eprints in ANY dataset. Also now has a clone function.
+- edit buffer page now links to edit_eprint
+- staff eprint search now searches all datasets 
+- SearchExpression can now have extra fields which don't get passed into
+the actual search. Just rendered as part of the form. These are indicated
+by ! before the name.
+- SubmissionForm now maintains dataset as well as eprintid.
+- added some debugging code to trace objects. This won't normally be
+used. Mostly DESTORY subs, and hooks on bless.
+- Changed Session, Archive & Auth to no longer use "port" when calculating
+which archive config to use.
+- editors can now succeed other peoples eprints.
+- deletion records now auto fill in the suceeds fill when cloned (like
+archive records always did)
+- EPrint->remove_static now works properly. Actually removes the abstract.
+- added DataObj->get_values to return a list of all the values of a given
+metadata field - needed by OAI2 to list SetSpec's of an article.
+- added oai2 protocol talkin' script /cgi/oai2 and modified some bits of
+OpenArchives.pm to handle oai2 (in addition to oai1 which still works fine)
+- replaced subject file with lib of Congress.
+
+======================================================================
+16/04/2002 - EPRINTS-2.0.1
+======================================================================
+
