@@ -9,6 +9,8 @@ my @ids = (
 	"structure", 
 	"configeprints",
 	"configarchive",
+	"howto" ,
+	"vlit" ,
 	"contact", 
 	"updating",
 	"history" ,
@@ -29,15 +31,18 @@ my %titles = (
 	intro => "Introduction",
 	reqsoftware => "Required Software",
 	installation => "How to Install EPrints (and get started)",
-	structure => "EPrints Structures and Terms",
+	structure => "EPrints Structure and Terms",
 	configeprints => "Configuring the System",
 	configarchive => "Configuring an Archive",
+	howto => "How-To Guides",
 	contact => "Problems, Questions and Feedback",
+	vlit => "VLit Transclusion Support",
 	updating => "Updating from Previous Versions",
 	history => "EPrints History (and Future Plans)",
 	logo => "The EPrints Logo"
 );
 
+`rm tmp/*`;
 `rm -rf binpod`;
 `mkdir binpod`;
 my %filemap = ();
@@ -134,6 +139,8 @@ open( OUT, ">tmp/$BASENAME.tex" );
 print OUT <<END;
 \\documentclass{book}
 \\usepackage{graphicx}
+\\usepackage{epsf}
+\\usepackage{epsfig}
 
 \\title{$DOCTITLE}
 \\author{Christopher Gutteridge}

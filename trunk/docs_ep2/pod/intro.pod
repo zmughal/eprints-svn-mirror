@@ -7,7 +7,7 @@ EPrints primary goal is to be set up as an open archive for research papers, and
 
 =head1 Should I be installing EPrints 2, how much effort will it take? 
 
-This is version 2.0, it is considered ready for use. There may still be some issues and even bugs, but not too many or too major. 
+This is version 2.0, it is considered ready for use. There may still be some issues and even bugs, but hopefully not too many or too major. 
 
 Setting up an archive is not a trivial task. The biggest probelm is actually deciding what you need. I would suggest setting up a demonstration version very close to the default configuration and having the manager/committe who decide on what is needed have a quick play with it and comment what should be added or removed. 
 
