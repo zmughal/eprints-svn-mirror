@@ -203,7 +203,7 @@ sub do_package
 
 }
 
-$ENV{"CVSROOT"} = ":pserver:moj199\@cvs.iam.ecs.soton.ac.uk:/home/iamcvs/CVS";
+$ENV{"CVSROOT"} = ":pserver:cjg\@cvs.iam.ecs.soton.ac.uk:/home/iamcvs/CVS";
 
 # Get all the vars we need.
 ($type) = @ARGV;
