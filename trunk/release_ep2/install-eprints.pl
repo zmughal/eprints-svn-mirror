@@ -369,14 +369,7 @@ sub install
 		}		
 		close(OUTFILE);
 		close(INFILE);
-		if ($_ ne ".htaccess")
-		{
-			chmod($perms, "$dest/$dir/$_") or die "Unable to chmod $dest/$dir/$_ : $!";
-		}
-		else
-		{
-			chmod(0644, "$dest/$dir/$_") or die "Unable to chmod $dest/$dir/$_ : $!";
-		}
+		chmod($perms, "$dest/$dir/$_") or die "Unable to chmod $dest/$dir/$_ : $!";
 		chown($user, $group, "$dest/$dir/$_") or die "Unable to chown $dest/$dir/$_ : $!";
 	}
 	foreach(@dirs)

@@ -85,7 +85,7 @@ sub do_package
 	system("cp $originaldir/install-eprints.pl eprints/system/install-eprints.pl");
 	print "Inserting license information...\n";
 	chdir "eprints/system";
-	@files = `grep -l -d skip "__LICENSE__" install-eprints.pl bin/* cgi/* cgi/users/* lib/*.pm`;
+	@files = `grep -l -d skip "__LICENSE__" install-eprints.pl archivecfg/* bin/* cgi/* cgi/users/* lib/*.pm`;
 	foreach $file (@files)
 	{
 		chomp $file;
@@ -113,6 +113,8 @@ sub do_package
 	while(<FILECONF>)
 	{
 		chomp;
+		s/\s*#.*$//;
+		next if /^\s*$/;
 		/(.*)\t(.*)/;
 		print "Copying $originaldir/export/$1 to $cd/eprints/$2\n";
 		system("cp $originaldir/export/$1 eprints/$2");
@@ -177,11 +179,11 @@ sub do_package
 
 		if ($currarch>0)
 		{
-			system("cp $originaldir/export/eprints/system/phrases/archive-$l-$currarch eprints/defaultcfg/archive-phrases-$l.xml");
+			system("cp $originaldir/export/eprints/system/phrases/archive-$l-$currarch eprints/defaultcfg/phrases-$l.xml");
 		}
 		else
 		{
-			system("cp $originaldir/export/eprints/system/phrases/archive-en-$enarch eprints/defaultcfg/archive-phrases-$l.xml");
+			system("cp $originaldir/export/eprints/system/phrases/archive-en-$enarch eprints/defaultcfg/phrases-$l.xml");
 		}
 	}
 	system("cp $originaldir/export/eprints/system/cgi/users/.htaccess eprints/cgi/users/.htaccess");
