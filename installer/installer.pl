@@ -66,29 +66,6 @@ sub module_installed
 	return eval("require $_[0]"); 
 }
 
-#sub compare_version
-#{
-#	my( $a, $b ) = @_;
-#	my $ahead;
-#	my $bhead;
-#	$a = "0" if( !defined $a || $a eq "" );
-#	$b = "0" if( !defined $b || $b eq "" );
-#		
-#	my( @a ) = split '\.', $a;
-#	my( @b ) = split '\.', $b;
-#
-#	for(;;)
-#	{
-#		return 0 if( scalar @a == 0 && scalar @b == 0 );
-#		$ahead = splice( @a, 0, 1);
-#		$ahead = 0 if( !defined $ahead );
-#		$bhead = splice( @b, 0, 1);
-#		$bhead = 0 if( !defined $bhead );
-#		return 1 if ($ahead > $bhead);
-#		return -1 if ($ahead < $bhead);
-#	}
-#}		
-
 sub get_library_paths
 {
 	my($searchstring) = @_;
@@ -234,7 +211,6 @@ sub get_packs
 {
 	# Set up any installed packages.
 
-	print "Detecting installed packages	...";		
 	my $arg;
 	my $func;
 	my @path = ();
@@ -309,7 +285,7 @@ sub get_packs
 			}
 		}
 	}
-	print "	Done.\n\n";
+	print "\n";
 	my $package;
 	foreach $package (@PACKAGES)
 	{
@@ -462,7 +438,7 @@ Arguments:
   --automate_install	Assume all defaults are okay.
   --help		Display this file.
   --libraries		Colon-delimited string of extra library directories.
-  --no_root		Assume that no root access if required.
+  --no_root		Assume that no root access is required.
   --resume_file		Set where to read/write the resume file.
   --resuming		Whether to resume or not.
   --silent		Show no text (except prompts if not silent).
@@ -478,7 +454,7 @@ sub untgz
 	my($archive) = @_;
 	my $out;
         print "Untarring	...";
-        $out = `tar xfvz $archive 2>&1 1>/dev/null`;
+        $out = `$ENVIRONMENT{tar} xfvz $archive 2>&1 1>/dev/null`;
         if ($out ne "") { exit_nicely(" Failed!\nError: $out\n"); }
         print "	Done.\n";
 }
@@ -488,7 +464,7 @@ sub untar
         my($archive) = @_;
 	my $out;
         print "Untarring	...";
-        $out = `tar xfv $archive 2>&1 1>/dev/null`;
+        $out = `$ENVIRONMENT{tar} xfv $archive 2>&1 1>/dev/null`;
         if ($out ne "") { exit_nicely(" Failed!\nError: $out\n"); }
         print "	Done.\n";
 }
@@ -596,10 +572,10 @@ sub perlinstall
 	`perl Makefile.PL 2>&1 1>/dev/null`;
 	print "	Done.\n";
 	print "Making		...";
-	`make 2>&1 1>/dev/null`;
+	`$ENVIRONMENT{make} 2>&1 1>/dev/null`;
 	print "	Done.\n";
 	print "Installing	...";
-	`make install`;
+	`$ENVIRONMENT{make} install`;
 	print "	Done.\n";
 	chdir $currdir;
 
@@ -619,10 +595,10 @@ sub standardinstall
 	`./configure`;
 	print "	Done.\n";
 	print "Making		...";
-	`make`;
+	`$ENVIRONMENT{make}`;
 	print "	Done.\n";
 	print "Installing	...";
-	`make install`;
+	`$ENVIRONMENT{make} install`;
 	print "	Done.\n";
 	chdir $currdir;
 	return 1;
@@ -650,13 +626,38 @@ sub standardcheck
         return 0;	
 }
 
-#my $config = "installer-".($resuming?"resume":"config").".pl";
-#require $config;
+sub installer_main
+{
+	if (!$ENVIRONMENT{no_root})
+	{
+        	# We need to be root!
+		die("Sorry - you need to be root to run the installer.\n")
+		unless ( $< == 0 );
+	}
+	if (!defined $ENVIRONMENT{arch})
+	{
+		$ENVIRONMENT{arch} = $^O;
+	}
+	# Show a bit of version gubbins.
+	my $title = $ENVIRONMENT{"installer_title"}." v".
+			$ENVIRONMENT{"installer_version"};
+	print "\n$title\n";
+	exit 0 if ($ENVIRONMENT{show_version});
+	print "=" x length($title)."\n";
+
+	# Set up package details.
+	print "\nPackage configuration.\n\nNote that nothing will be installed during this section, so feel free to exit at any time.\n\n";
+	get_packs();
+	# Install packages.
+	print "\nPackage installation.\n\nWe strongly recommend that you do not exit during this section, as files are being installed.\n\n";
+	do_install();
+}
+
 # Grab command-line options.
 
 my $show_help 		= 0;
-my $show_version	= 0;
 my $resuming 		= 0;
+my $no_root		= 0;
 GetOptions(
 'verbose' 		=> \$ENVIRONMENT{verbose},
 'silent' 		=> \$ENVIRONMENT{silent},
@@ -664,23 +665,17 @@ GetOptions(
 'resume_file=s' 	=> \$ENVIRONMENT{resume_file},
 'automate_install' 	=> \$ENVIRONMENT{automate_install},
 'arch=s'		=> \$ENVIRONMENT{system_arch},
-'no_root' 		=> \$ENVIRONMENT{no_root},
+'no_root' 		=> \$no_root,
 'libraries=s' 		=> \$ENVIRONMENT{library_paths}, 
 'help'			=> \$show_help,
-'version'		=> \$show_version,
+'version'		=> \$ENVIRONMENT{show_version},
 ) || exit_help();
 
 if ($show_help) { exit_help() };
+if ($no_root && !$ENVIRONMENT{no_root} && $<!=0)
+{
+	print "\nWARNING: This script is designed to be run as root.\nForcing it to run as a non-root user may have adverse side effects!\n";
+}
+$ENVIRONMENT{no_root} = $no_root;
+installer_main();
 
-# Show a bit of version gubbins.
-my $title = $ENVIRONMENT{"installer_title"}." v".$ENVIRONMENT{"installer_version"};
-print "\n$title\n";
-exit 0 if ($show_version);
-print "=" x length($title)."\n";
-
-# Set up package details.
-print "\nPackage configuration.\n\nNote that nothing will be installed during this section, so feel free to exit at any time.\n\n"; 
-get_packs();
-# Install packages.
-print "\nPackage installation.\n\nWe strongly recommend that you do not exit during this section, as files are being installed.\n\n";
-do_install();
