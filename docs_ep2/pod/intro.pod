@@ -1,0 +1,25 @@
+<chapter><title>What is EPrints 2.0 (Alpha), Should I install it?
+
+
+=head1 What is EPrints 2?
+
+EPrints is generic archive software under development by the University of Southampton. It is intended to create a highly configurable web-based archive.
+
+EPrints is primarily aimed at research papers, and the default configuration reflects this, but it could be easily used for other things such as images, research data, audio archives - anything that can be stored digitally.
+
+=head1 Should I be installing EPrints 2?
+
+Short answer: If in doubt, then no. Only install this if you really want to.
+
+The alpha version of the software is intended only as a demonstration. Do not use it as a live system. In fact do not bother, at this stage, even trying hard to configure it beyond "playing" as later versions may well be incompatable and require a total re-install.
+
+If you need an archive right now then the EPrints 1 software is available from http://www.eprints.org
+
+
+
+=head1 What will it run on?
+
+The system is being developed under RedHat Linux 7.1, it has been designed to work with any UNIX system, although at this stage of development we have no tested it on other systems yet. Feel free to report problems.
+
+
+
