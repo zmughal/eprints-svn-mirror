@@ -1,7 +1,4 @@
 
-<chapter><title>History, Plans and Related Information
-
-
 =head1 A Brief History of EPrints
 
 The EPrints project was created by Professor Stephen Harnad.
@@ -44,6 +41,10 @@ Mike Jewell joins EPrints, working primarily on installer software
 
 EPrints 2 Alpha-1 (Anchovy) released.
 
+=item B<Jan 2002>
+
+EPrints 2 Alpha-2 (Pepperoni) released.
+
 =back
 
 =head1 The Road Ahead
@@ -51,6 +52,10 @@ EPrints 2 Alpha-1 (Anchovy) released.
 At the time of writing the current plan of attack is as follows.
 
 =over 8
+
+=item B<Minor Versions>
+
+We anticipate a few minor releases to fix any major problems in the milestone releases. These will be versioned as eprints-2-alpha-2.1 etc.
 
 =item B<EPrints 2 Beta-1 (Olive)>
 
@@ -69,13 +74,4 @@ Whole system works. All documentation written. Phrases files have been translate
 =head2 Why do the milestones all have silly names?
 
 We wanted to give each stage a name, it makes it easier to talk about. We didn't want a logical order as we are likely to invent sub-milestones between them. We just picked a set of words we liked, and we like pizza.
-
-
-=head1 The EPrints logo
-
-The Folder Jigsaw logo was created by Christopher Gutteridge. It was supposed to encompass "archives","documents", OAI, "skywriting", "modularity/extensibility" and the IAM research groups visual identity. 
-
-The base version is a 684x668 XCF file (For the B<GIMP Editor>. You are welcome to modify it for your own archive, maybe have your own logo in the jigsaw.
-
-
 
