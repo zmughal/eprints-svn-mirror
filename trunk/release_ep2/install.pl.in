@@ -60,6 +60,13 @@ unless( defined($version) )
 chomp($version);
 close(VERSIONIN);
 
+### Trim perfix if needed 
+
+if( $c{"prefix"} =~ s#/$## )
+{
+	print "Removing trailing slash from prefix.\n";
+}
+
 ### Print out some key information, which is bound to
 ### cause problems if incorrect.
 
@@ -126,7 +133,7 @@ END
 		exit 1;
 	}
 
-	print "Previous version of eprints is:\n";
+	print "Previous version of eprints is: ";
 	print $EPrints::SystemSettings::conf->{"version_id"}."\n";
 
 	# create a minimal version history if there was not one already
