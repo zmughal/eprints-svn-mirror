@@ -450,7 +450,7 @@ sub to_string
 		# lowercasing all tags screws up OAI.
 		#$tagname = "\L$tagname";
 
-		push @n, '<', $tagname, ' ';
+		push @n, '<', $tagname;
 
 		my $nnm = $node->getAttributes;
 		my $done = {};
@@ -733,6 +733,29 @@ sub _find_elements2
 	}
 }
 
+######################################################################
+=pod
+
+=item $namespace = EPrints::XML::namespace( $thing, $version )
+
+Return the namespace for the given version of the eprints xml.
+
+=cut
+######################################################################
+
+sub namespace
+{
+	my( $thing, $version ) = @_;
+
+	if( $thing eq "data" )
+	{
+               	return "http://eprints.org/ep2/data/1.1" if( $version eq "1.1" );
+                return "http://eprints.org/ep2/data" if( $version eq "1" );
+		return undef;
+	}
+
+	return undef;
+}
 
 ######################################################################
 # Debug code, don't use!

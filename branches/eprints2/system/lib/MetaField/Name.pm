@@ -539,5 +539,21 @@ sub _f
 	return $name->{family}.':'.$name->{given}.':'.$name->{lineage}.':'.$name->{honourific};
 }
 
+sub to_xml_basic
+{
+	my( $self, $session, $v ) = @_;
+
+	my $r = $session->make_doc_fragment;
+	foreach( "honourific", "given", "family", "lineage" )
+	{
+		next unless( defined $v->{$_} && $v->{$_} ne "" );
+		my $e = $session->make_element( "part", name=>$_ );
+		$e->appendChild( $session->make_text( $v->{$_} ) );
+		$r->appendChild( $e );
+	}
+	return $r;
+}
+
+
 ######################################################################
 1;

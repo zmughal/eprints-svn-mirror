@@ -4,6 +4,11 @@ see the blow by blow account of every single change see the file called
 CHANGELOG.
 ======================================================================
 
+EPRINTS 2.3.9                                                  2005-02-17
+-------------------------------------------------------------------------
+
+ - Minor change to generate_apacheconf to work in RedHat Enterprise 4.
+
 EPRINTS 2.3.8                                                  2005-02-16
 -------------------------------------------------------------------------
 

@@ -1139,6 +1139,12 @@ sub commit
 		$self->{session}->get_archive()->log( "Error committing Document ".$self->get_value( "docid" ).": $db_error" );
 	}
 
+	# disabled for now 
+	if( 0 && defined $self->{changed} && scalar( %{$self->{changed}} ) > 0 )
+	{
+		print STDERR "LOG HERE: document change\n";
+	}
+
 	return( $success );
 }
 	

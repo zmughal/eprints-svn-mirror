@@ -1017,7 +1017,164 @@ sub ordervalue_basic
 	return $value;
 }
 
+#v1.1
+sub to_xml
+{
+	my( $self, $session, $v, $no_xmlns ) = @_;
 
+	my $r = $session->make_doc_fragment;
+	my %attrs;
+	$attrs{'xmlns'}="http://eprints.org/ep2/data/1.1" unless( $no_xmlns );
+
+	unless( $self->get_property( "multiple" ) )
+	{
+		if( $self->get_property( "hasid" ) )
+		{
+			$attrs{'idcode'} = $v->{id};
+			$v = $v->{main};
+		}
+
+		my $el_field = $session->make_element( 
+					"value", 
+					name=>$self->get_name,
+					%attrs );
+		$r->appendChild( $session->make_text( "    " ) );
+		$r->appendChild( $el_field );
+		$r->appendChild( $session->make_text( "\n" ) );
+		$el_field->appendChild( $self->to_xml_single( $session, $v ) );
+		return $r;
+	}
+
+	my $el_field = $session->make_element( 
+				"list",
+				%attrs,
+				name=>$self->get_name );
+	$r->appendChild( $session->make_text( "    " ) );
+	$r->appendChild( $el_field );
+	$r->appendChild( $session->make_text( "\n" ) );
+
+	my @list = @{$v};
+	# trim empty elements at end
+	while( scalar @list > 0 && !EPrints::Utils::is_set($list[(scalar @list)-1]) )
+	{
+		pop @list;
+	}
+	my %itemattrs = ();
+	foreach my $item ( @list )
+	{
+		if( $self->get_property( "hasid" ) )
+		{
+			$attrs{'idcode'} = $item->{id};
+			$item = $item->{main};
+		}
+		my $el_item = $session->make_element( 
+					"item", 
+					name=>$self->get_name,
+					%attrs );
+		$el_field->appendChild( $session->make_text( "\n      " ) );
+		$el_field->appendChild( $el_item );
+		$el_item->appendChild( $self->to_xml_single( $session, $item ) );
+	}
+	$el_field->appendChild( $session->make_text( "\n    " ) );
+
+	return $r;
+}
+
+#v1.1
+sub to_xml_single
+{
+	my( $self, $session, $v ) = @_;
+
+	my $r = $session->make_doc_fragment;
+
+	if( $self->get_property( "multilang" ) )
+	{
+		foreach( keys %{$v} )
+		{
+			my $l = $session->make_element( "lang", langid=>$_ );
+			$l->appendChild( $self->to_xml_basic( $session, $v->{$_} ) );
+			$r->appendChild( $l );
+		}
+	}
+	else
+	{
+		$r->appendChild( $self->to_xml_basic( $session, $v ) );
+	}
+
+	return $r;
+}
+
+
+#v1
+sub to_xml_old
+{
+	my( $self, $session, $v, $no_xmlns ) = @_;
+
+	my $r = $session->make_doc_fragment;
+	if( $self->get_property( "multiple" ) )
+	{
+		my @list = @{$v};
+		# trim empty elements at end
+		while( scalar @list > 0 && !EPrints::Utils::is_set($list[(scalar @list)-1]) )
+		{
+			pop @list;
+		}
+		foreach my $item ( @list )
+		{
+			$r->appendChild( $session->make_text( "    " ) );
+			$r->appendChild( $self->to_xml_old_single( $session, $item, $no_xmlns ) );
+			$r->appendChild( $session->make_text( "\n" ) );
+		}
+	}
+	else
+	{
+		$r->appendChild( $session->make_text( "    " ) );
+		$r->appendChild( $self->to_xml_old_single( $session, $v, $no_xmlns ) );
+		$r->appendChild( $session->make_text( "\n" ) );
+	}
+	return $r;
+}
+
+#v1
+sub to_xml_old_single
+{
+	my( $self, $session, $v, $no_xmlns ) = @_;
+
+	my %attrs = ( name=>$self->get_name() );
+	$attrs{'xmlns'}="http://eprints.org/ep2/data" unless( $no_xmlns );
+
+	if( $self->get_property( "hasid" ) )
+	{
+		$attrs{id} = $v->{id};
+		$v = $v->{main};
+	}
+	my $r = $session->make_element( "field", %attrs );
+
+	if( $self->get_property( "multilang" ) )
+	{
+		foreach( keys %{$v} )
+		{
+			my $l = $session->make_element( "lang", id=>$_ );
+			$l->appendChild( $self->to_xml_basic( $session, $v->{$_} ) );
+			$r->appendChild( $l );
+		}
+	}
+	else
+	{
+		$r->appendChild( $self->to_xml_basic( $session, $v ) );
+	}
+
+	return $r;
+}
+
+sub to_xml_basic
+{
+	my( $self, $session, $v ) = @_;
+
+	my $r = $session->make_doc_fragment;
+	$r->appendChild( $session->make_text( $v ) ) if defined( $v );
+	return $r;
+}
 
 
 sub render_search_input

@@ -196,7 +196,8 @@ print CONF <<END;
 # and re-run: bin/generate_apacheconf
 #
 
-NameVirtualHost $virtualhost
+# disabled since 2.3.9
+# NameVirtualHost $virtualhost
 
 # Load the perl modules & archive configurations
 PerlRequire $startupfile
@@ -326,6 +327,7 @@ my $adminemail = $archive->get_conf( "adminemail" );
 my $htdocs_path = $archive->get_conf( "htdocs_path" );
 my $htdocs_secure_path = $archive->get_conf( "htdocs_secure_path" );
 my $host = $archive->get_conf( "host" );
+my $port = $archive->get_conf( "port" );
 my $urlpath = $archive->get_conf( "urlpath" );
 my $userhome = $archive->get_conf( "userhome" );
 my $securehost = $archive->get_conf( "securehost" );
@@ -358,7 +360,7 @@ foreach $aliasinfo ( @{$archive->get_conf( "aliases" )} )
 		print CONF <<END;
 
 # Redirect to the correct hostname
-<VirtualHost $virtualhost>
+<VirtualHost $virtualhost:$port>
   ServerName $vname
   Redirect / http://$host/
 </VirtualHost>
@@ -372,7 +374,7 @@ END
 print CONF <<END;
 
 # The main virtual host for this archive
-<VirtualHost $virtualhost>
+<VirtualHost $virtualhost:$port>
   ServerName $host
 $aliases
   ServerAdmin $adminemail

@@ -2177,3 +2177,28 @@ PACKAGE: 2.2.99.2
  - "checkout" was hard-wired on in "review".
  - Added initial code to test for changes for logging.
 
+
+2005-02-16 cjg
+
+ - "checkout" was hard-wired on in "review".
+ - Added initial code to test for changes for logging.
+
+======================================================================
+16/02/2005 - EPRINTS-2.3.8
+======================================================================
+
+2005-02-17 cjg
+
+ - Changed NameVirtualHost to work correctly in apache 2 on RHE4
+ - Added to_xml function to dataobj
+ - Added to_xml function to Metafield/Basic
+ - These are now used by export_xml
+ - Added EPrints::XML::namespace function which returns the xml ns
+    of a given version of an eprints xml schema.
+ - Start of code to log changes to eprints records
+ - Change to XML output to not have an unneeded space after tag name.
+
+======================================================================
+17/02/2005 - EPRINTS-2.3.9
+======================================================================
+

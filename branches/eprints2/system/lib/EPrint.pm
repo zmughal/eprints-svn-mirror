@@ -592,9 +592,95 @@ sub commit
 			$self->get_value( "eprintid" ).": ".$db_error );
 	}
 
+	# disabled for now
+	if( 0 && defined $self->{changed} && scalar( %{$self->{changed}} ) > 0 )
+	{
+		my $change = $self->{session}->make_element( "change" );
+		my $from = $self->{session}->make_element( "from" );
+		$change->appendChild( $self->{session}->make_text( "\n  " ) );
+		$from->appendChild( $self->{session}->make_text( "\n" ) );
+		$change->appendChild( $from );
+		$change->appendChild( $self->{session}->make_text( "\n  " ) );
+		my $to = $self->{session}->make_element( "to" );
+		$to->appendChild( $self->{session}->make_text( "\n" ) );
+		$change->appendChild( $to );
+		$change->appendChild( $self->{session}->make_text( "\n  " ) );
+		foreach my $fieldname ( keys %{$self->{changed}} )
+		{
+			my $field = $self->{dataset}->get_field( $fieldname );
+	
+			$from->appendChild( 
+				$field->to_xml( 
+					$self->{session}, 
+					$self->{changed}->{$fieldname} ) );
+			$to->appendChild( $
+				field->to_xml( 
+					$self->{session}, 
+					$self->{data}->{$fieldname} ) );
+		}
+		$to->appendChild( $self->{session}->make_text( "  " ) );
+		$from->appendChild( $self->{session}->make_text( "  " ) );
+		$self->log_history( $change );
+	}
+
 	return( $success );
 }
 
+######################################################################
+=pod
+
+=item $eprint->log_history( $details )
+
+Record some change or event to this eprints history log.
+$details is an XML block describing the event.
+
+=cut
+######################################################################
+
+sub log_history
+{
+	my( $self , $details ) = @_;
+
+	my $el_event = $self->{session}->make_element( "event", eprintid=>$self->get_value("eprintid" ));
+	$el_event->appendChild( $self->{session}->make_text( "\n" ) );
+
+	my $el_script = $self->{session}->make_element( "script" );
+	$el_script->appendChild( $self->{session}->make_text( $0 ) );
+	$el_event->appendChild( $self->{session}->make_text( "  " ) );
+	$el_event->appendChild( $el_script );
+	$el_event->appendChild( $self->{session}->make_text( "\n" ) );
+	
+	my $el_time = $self->{session}->make_element( "time" );
+	$el_time->appendChild( $self->{session}->make_text( EPrints::Utils::get_timestamp ) );
+	$el_event->appendChild( $self->{session}->make_text( "  " ) );
+	$el_event->appendChild( $el_time );
+	$el_event->appendChild( $self->{session}->make_text( "\n" ) );
+	
+	my $user = $self->{session}->current_user;
+	if( defined $user )
+	{
+		my $el_user = $self->{session}->make_element( 
+			"user", 
+			userid=>$user->get_value("userid"), 
+			username=>$user->get_value("username") );
+		$el_user->appendChild( 
+			$self->{session}->make_text( 
+				EPrints::Utils::tree_to_utf8( 
+					$user->render_description ) ) );
+		$el_event->appendChild( $self->{session}->make_text( "  " ) );
+		$el_event->appendChild( $el_user );
+		$el_event->appendChild( $self->{session}->make_text( "\n" ) );
+	}
+	my $el_details = $self->{session}->make_element( "details" );
+	$el_details->appendChild( $self->{session}->make_text( "\n" ) );
+	$el_details->appendChild( $details );
+	$el_event->appendChild( $self->{session}->make_text( "  " ) );
+	$el_event->appendChild( $el_details );
+	$el_event->appendChild( $self->{session}->make_text( "\n" ) );
+	
+#	print STDERR $el_event->toString."\n\n";
+	EPrints::XML::dispose( $el_event );
+}
 
 ######################################################################
 =pod
@@ -744,8 +830,7 @@ sub validate_meta
 	my @all_fields = $self->{dataset}->get_fields();
 
 	# For all required fields...
-	my $field;
-	foreach $field (@req_fields)
+	foreach my $field (@req_fields)
 	{
 		# Check that the field is filled 
 		next if ( $self->is_set( $field->get_name() ) );
@@ -758,7 +843,7 @@ sub validate_meta
 	}
 
 	# Give the site validation module a go
-	foreach $field (@all_fields)
+	foreach my $field (@all_fields)
 	{
 		push @all_problems, $self->{session}->get_archive()->call(
 			"validate_field",
