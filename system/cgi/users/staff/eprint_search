@@ -1,6 +1,6 @@
 ######################################################################
 #
-#  EPrints Advanced Search Form
+#  EPrints Simple Search Form
 #
 ######################################################################
 #
@@ -13,69 +13,58 @@
 ######################################################################
 
 use EPrints::Session;
+use EPrints::EPrint;
 use EPrints::SearchExpression;
 
 use strict;
-
 my $session = new EPrints::Session;
+Apache::exit( 0 ) unless( defined $session );
 
-# Check we have privs
-if( !$session->auth_check( "staff-view" ) )
+my $path_info = $session->get_request->path_info;
+# lose a leading slash
+$path_info =~ s#^/##;
+
+my $searchid = $path_info;
+my $sconf = $session->get_archive()->get_conf( "search", $searchid );
+if( !defined $sconf )
 {
-	$session->terminate();
-	Apache::exit( 0 );
-}
-
-my $user = $session->current_user();
-my @search_fields = ( "!dataset", "eprintid", "userid", "dir" );
-push @search_fields, @{$session->get_archive()->get_conf( "advanced_search_fields" )};
-
-my $extrafields = {
-	dataset=>EPrints::MetaField->new(
-		confid=>'dataset',
-		archive=>$session->get_archive(),
-		name=>'dataset',
-                required=>1,
-                type=>'set',
-                options => [ "archive", "deletion", "buffer", "inbox" ] ) };
-
-my $datasetid = $session->param( "dataset" );
-
-# When in doubt, use the main archive.
-
-$datasetid = "archive" if( !defined $datasetid );
-if( $datasetid ne "archive" && 
-    $datasetid ne "inbox" && 
-    $datasetid ne "deletion" && 
-    $datasetid ne "buffer" )
-{
-	$datasetid = "archive";
-}
-
-my $defaults = { dataset=>$datasetid };
-my $d = $session->get_archive()->get_conf( "advanced_search_defaults" );
-if( defined $d )
-{
-	foreach( keys %{$d} )
+	my $page = $session->make_doc_fragment;
+	my $ul = $session->make_element( "ul" );
+	$page->appendChild( $ul );
+	my $searches = $session->get_archive()->get_conf( "search" );
+	foreach my $s_id ( keys %{$searches} )
 	{
-		$defaults->{$_} = $d->{$_};
+		next unless( $searches->{$s_id}->{"staff"} );
+		my $li = $session->make_element( "li" );
+		$ul->appendChild( $li );
+		my $url = $session->get_archive->get_conf( "perl_url" ).
+				"/users/staff/eprint_search/".$s_id;
+		my $a = $session->render_link( $url );
+		$li->appendChild( $a );
+		$a->appendChild( 
+			$session->html_phrase( 
+				$searches->{$s_id}->{"title_phrase"} ) );
 	}
+	my $title = $session->html_phrase( "cgi/users/eprint_search:title" );
+		
+#	if( defined $session->get_request->args )
+#	{
+#		$url .="?".$session->get_request->args;
+#	}
+#	$session->redirect( $url );
+#	$session->terminate;
+	$session->build_page( $title, $page );
+	$session->send_page;
 }
-my $dataset = $session->get_archive()->get_dataset( $datasetid );
+else
+{
+	my $searchexp = new EPrints::SearchExpression(
+		keep_cache => 1,
+		session => $session,
+		dataset => $session->get_archive()->get_dataset( "archive" ),
+		%{$sconf} );
+	
+	$searchexp->process_webpage();
+}
 
-my $searchexp = new EPrints::SearchExpression(
-	session => $session,
-	staff => 1,
-	use_oneshot_cache => 1,
-	dataset => $dataset,
-	fieldnames => \@search_fields,
-	defaults => $defaults,
-	extrafields => $extrafields );
-
-my $preamble = $session->html_phrase( "cgi/users/eprint_search:preamble" );
-
-my $title = $session->html_phrase( "cgi/users/eprint_search:title" );
-
-$searchexp->process_webpage( $title, $preamble );
-
-$session->terminate();
+$session->terminate;

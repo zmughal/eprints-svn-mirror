@@ -67,7 +67,6 @@ sub process
 
 	my $searchexp = new EPrints::SearchExpression(
 		session => $session,
-		use_cache => 0,
 		dataset => $ds );
 
 	if( EPrints::Utils::is_set( $author ) )
