@@ -1,9 +1,6 @@
 Bugs:
   * Daily subscriptions still in buffer bug
   * #64 doubled up prefixs
- 
-
-
 
 code:
 * db:
@@ -11,7 +8,9 @@ code:
 	* make add_record and update understand multi's
 	* make everything else understand them...
 	* make index length configurable
+	* hunt down all instances of format_name and Name::extract
 
+* Lose SubjectList module all together.
 * userid field sepearate to username
    + only if conf option is set.
    + conv functions both ways.
@@ -45,6 +44,8 @@ code:
 * Internationalisation!
 	+ finish lang file!
 	+ SiteInfo issues
+	* check all s/r's values don't contain $()!!! no loops!
+	* use $(name) rather than $(1)
 	+ SiteRoutine issues
 	+ User lang? for mail!
 	+ cfg files
@@ -84,12 +85,12 @@ docs:
 Internationalise:
 
 ./bin/rebuild_sets
-./bin/create_databases
+./bin/create_databases +++
 ./bin/create_user
-./bin/erase_archive
+./bin/erase_archive +++
 	./bin/generate_abstracts
 ./bin/generate_static
-./bin/generate_views
+./bin/generate_views +++
 ./bin/list_user_emails
 ./bin/process_mail
 ./bin/subs_daily
@@ -152,11 +153,11 @@ Internationalise:
 	./lib/SearchField.pm
 	./lib/SearchForm.pm
 	./lib/Session.pm
-*	./lib/Subject.pm
+*	./lib/Subject.pm +++
 	./lib/SubjectList.pm
 	./lib/SubmissionForm.pm
 *	./lib/Subscription.pm 
 *	./lib/User.pm  
 	./lib/UserForm.pm
-
+ +++ = DB upgrade done.
 *** = constants still need doing
