@@ -42,6 +42,35 @@ $config{IN_HTML} = "in-html";
 $config{OUT} = "out";
 $config{TEMPLATE} = "template.html";
 
+# special cjg
+# generate the news 
+open(NEWS,"news.conf");
+$config{NEWS} =<<END;
+<TABLE border="0" cellpadding="3" cellspacing="0">
+END
+while(<NEWS>) {
+	chomp;
+	next if (m/^\s*#/);
+	next if (m/^\s*$/);
+	my($title,$date,$blurb) = split("\t", $_);
+	$config{NEWS}.=<<END;
+<TR>
+  <TD class="newstitle">$title</TD>
+  <TD class="newsdate">$date</TD>
+</TR>
+<TR>
+  <TD class="news" colspan="2">$blurb</TD>
+</TR>
+<TR><TD><BR></TD></TR>
+END
+}
+$config{NEWS}.=<<END;
+</TABLE>
+END
+
+print "___\n";
+print $config{NEWS}."\n";
+print "___\n";
 
 # Read in site config
 open( SITECFG, $config_file ) or die "Can't open site config\n";
@@ -83,6 +112,8 @@ while( <SITECFG> )
 
 close( SITECFG );
 
+
+
 # HTMLROOT = SITEROOT unless we're given an alternative
 $config{HTMLROOT} = $config{SITEROOT} unless( defined $config{HTMLROOT} );
 
@@ -104,68 +135,11 @@ foreach $stem (@html_files)
 	&write_html( $stem, $in_filename, $out_filename, 0 );
 }
 
-
-
-# Make image directory for gif's
-mkdir "$config{OUT}/image", 0755;
-
-# Work out colours in terms of values for GIMP script
-$config{NAV_FG_HI} =~ /(..)(..)(..)/;
-my @nav_fg_hi_cols = ( hex($1), hex($2), hex($3) );
-$config{NAV_FG_LO} =~ /(..)(..)(..)/;
-my @nav_fg_lo_cols = ( hex($1), hex($2), hex($3) );
-$config{NAV_BG} =~ /(..)(..)(..)/;
-my @nav_bg_cols = ( hex($1), hex($2), hex($3) );
-$config{NAV_OUTLINE_HI} =~ /(..)(..)(..)/;
-my @nav_outline_hi_cols = ( hex($1), hex($2), hex($3) );
-$config{NAV_OUTLINE_LO} =~ /(..)(..)(..)/;
-my @nav_outline_lo_cols = ( hex($1), hex($2), hex($3) );
-
-# Generate the .gif's
-open( GIMPOUT, ">gimp.script" );
-
-my $icon;
-print GIMPOUT "(\n";
-foreach $icon (@icons)
-{
-	print GIMPOUT "(\"$config{OUT}/image/init_$icon.hi.gif\" \"$nav_icon_text{$icon}\" ".
-		"($nav_fg_hi_cols[0] $nav_fg_hi_cols[1] $nav_fg_hi_cols[2]) ".
-		"($nav_bg_cols[0] $nav_bg_cols[1] $nav_bg_cols[2]) ".
-		"($nav_outline_hi_cols[0] $nav_outline_hi_cols[1] $nav_outline_hi_cols[2]))\n";
-	print GIMPOUT "(\"$config{OUT}/image/init_$icon.gif\" \"$nav_icon_text{$icon}\" ".
-		"($nav_fg_lo_cols[0] $nav_fg_lo_cols[1] $nav_fg_lo_cols[2]) ".
-		"($nav_bg_cols[0] $nav_bg_cols[1] $nav_bg_cols[2])".
-		"($nav_outline_lo_cols[0] $nav_outline_lo_cols[1] $nav_outline_lo_cols[2]))\n";
-}
-print GIMPOUT ")\n";
-close( GIMPOUT );
-
-# Run the GIMP
-my $current_dir = `pwd`;
-chomp( $current_dir );
-my $command_line = "gimp --verbose --no-data --no-interface --batch '(dolots-sideicons \"gimp.script\")' '(gimp-quit 0)'";
-print "$command_line\n";
-#system( "sh", "-c", $command_line );
-
-# Make transparent
-foreach $icon (keys %nav_icon_text)
-{
-	$command_line = "giftrans -t 0 \"$config{OUT}/image/init_$icon.hi.gif\" >\"$config{OUT}/image/$icon.hi.gif\"";
-	#print "!$command_line\n";
-	#system( "sh", "-c", $command_line );
-	$command_line = "giftrans -t 0 \"$config{OUT}/image/init_$icon.gif\" >\"$config{OUT}/image/$icon.gif\"";
-	#print "?$command_line\n";
-	#system( "sh", "-c", $command_line );
-}
-
-# Remove non-transparent
-system( "sh", "-c", "rm -f $config{OUT}/image/init_*" );
-
-# Copy raw files over
+print "RAW\n";
 system( "sh", "-c", "cp -a $config{IN_RAW}/* $config{OUT}" );
 
-print "Finished.\n";
-
+print "\n\n";
+exit;
 
 
 ######################################################################
@@ -227,6 +201,7 @@ sub write_html
 				s%</ITEMS>%</TABLE>%ig;
 				s%<ITEM>%'<TR><TD valign="top"><IMG src="'.$config{SITEROOT}.'image/jig'.(1+int rand 4).'.gif" width="32" height="32" alt="*"></TD><TD valign="top"><IMG src="'.$config{SITEROOT}.'image/white.gif" width="6" height="6"><BR>'%ieg;
 				s%</ITEM>%</TD></TR>%ig;
+				s%<NEWS/>%$config{NEWS}%ig;
 				print HTMLOUT;
 			}
 		}
