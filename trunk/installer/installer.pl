@@ -3,6 +3,8 @@
 use Getopt::Long;
 use Cwd;
 
+require "installer-config.pl";
+
 sub get_yesno
 {
 	my($question, $default) = @_;
@@ -48,46 +50,51 @@ sub get_string
 
 sub get_module_version
 {
-      my($mod) = @_;
-      if (module_installed($mod))
-      {
-              $var = $mod."::VERSION";
-              return $$var;
-      }
-      return 0;
+	my($mod) = @_;
+	my $var;
+	if (module_installed($mod))
+	{
+		$var = $mod."::VERSION";
+		return $$var;
+	}
+	return 0;
 }
 
 sub module_installed
 {
+	 
 	return eval("require $_[0]"); 
 }
 
-sub compare_version
-{
-	my( $a, $b ) = @_;
-	$a = "0" if( !defined $a || $a eq "" );
-	$b = "0" if( !defined $b || $b eq "" );
-		
-	my( @a ) = split '\.', $a;
-	my( @b ) = split '\.', $b;
-
-	for(;;)
-	{
-		return 0 if( scalar @a == 0 && scalar @b == 0 );
-		$ahead = splice( @a, 0, 1);
-		$ahead = 0 if( !defined $ahead );
-		$bhead = splice( @b, 0, 1);
-		$bhead = 0 if( !defined $bhead );
-		return 1 if ($ahead > $bhead);
-		return -1 if ($ahead < $bhead);
-	}
-}		
+#sub compare_version
+#{
+#	my( $a, $b ) = @_;
+#	my $ahead;
+#	my $bhead;
+#	$a = "0" if( !defined $a || $a eq "" );
+#	$b = "0" if( !defined $b || $b eq "" );
+#		
+#	my( @a ) = split '\.', $a;
+#	my( @b ) = split '\.', $b;
+#
+#	for(;;)
+#	{
+#		return 0 if( scalar @a == 0 && scalar @b == 0 );
+#		$ahead = splice( @a, 0, 1);
+#		$ahead = 0 if( !defined $ahead );
+#		$bhead = splice( @b, 0, 1);
+#		$bhead = 0 if( !defined $bhead );
+#		return 1 if ($ahead > $bhead);
+#		return -1 if ($ahead < $bhead);
+#	}
+#}		
 
 sub get_library_paths
 {
 	my($searchstring) = @_;
 	my %is_checked = ();
 	my @out = ();
+	my $line;
 	# Linux-specific: Grab the /etc/ld.so.conf file, and put the paths in the hash.
 	if (open(LDSOIN, "/etc/ld.so.conf"))
 	{
@@ -101,7 +108,7 @@ sub get_library_paths
 	}
 	
 	# Get the list of user-defined libraries and add them to our list.
-	@userfields = split(/:+/, $ENVIRONMENT{library_paths});
+	my (@userfields) = split(/:+/, $ENVIRONMENT{library_paths});
 	foreach (@userfields)
 	{
 		s/\/$//;
@@ -120,6 +127,7 @@ sub get_library_paths
 	}
 	
 	# Done, now search through these directories for the library.
+	my $libname = "";
 	foreach(keys %is_checked)
 	{
 		while (defined($libname = <$_/*$searchstring*.so>))
@@ -137,11 +145,12 @@ sub get_library_paths
 sub get_package_name
 {
 	my($info) = @_;
-	
+	my $okay = 0;
+		
 	do
 	{
 		print "Please specify the path of a valid ".$info->{long_name}." package, or leave blank to exit install.\n";
-		$path = get_string("Path?" , "");
+		my $path = get_string("Path?" , "");
 		if ($path eq "") 
 		{
 			exit_nicely();
@@ -150,8 +159,8 @@ sub get_package_name
 		{
 			if (-e $path && $path =~ $_->{search_string})
 			{
-				$this_version = make_version($1, $2, $3);
-				if (compare_version($this_version, $_->{min_version})<0)
+				my $this_version = make_version($1, $2, $3);
+				if ($this_version lt $_->{min_version})
 				{
 					print "That version is too old. Please try again.\n";
 					$okay = 0;
@@ -176,7 +185,8 @@ sub get_package_name
 
 sub do_install
 {
-
+my $pname;
+my $pdesc;
 format DESC =
 -------------------------------------------
 Package: @>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -191,12 +201,12 @@ format DESC_BOTTOM =
 -------------------------------------------
 
 .
-
 	foreach (@PACKAGES)
 	{
-		if ($ENVIRONMENT{$_->{name}."_installed"} ne "0") { next; } 
-		$old = $~;
+		if (defined $ENVIRONMENT{$_->{name}."_installed"}) { next; } 
+		my $old = $~;
 		$~ = 'DESC';
+		my $funcname = "";
 		if (defined $_->{install_method})
 		{
 			$funcname = $_->{install_method};
@@ -208,7 +218,7 @@ format DESC_BOTTOM =
 		$pname = $_->{long_name};
 		$pdesc = $_->{description};
 		write;
-		$installed = &{$funcname}($_);
+		my $installed = &{$funcname}($_);
 		if (!$installed)
 		{
 			print STDERR "Install failed.\n";
@@ -225,16 +235,23 @@ sub get_packs
 	# Set up any installed packages.
 
 	print "Detecting installed packages	...";		
+	my $arg;
+	my $func;
+	my @path = ();
 	foreach (@PACKAGES)
 	{
 		if ( defined $ENVIRONMENT{$_->{name}."_installed"} && $ENVIRONMENT{$_->{name}."_installed"} > 0 ) { $ENVIRONMENT{$_->{name}."_skip"} = 1; next; }
 		if ( defined $_->{check_method} )
 		{
-			$check_string = $_->{check_method};
-			if ($check_string =~ /^standardcheck\s+(\S+)$/)
+			my $check_string = $_->{check_method};
+			if ($check_string =~ /^standardcheck\s+(\S+)\s*(\S+)?$/)
 			{
 				$func 	= "standardcheck";
 				$arg 	= $1;
+				if (defined $2)
+				{
+					@path = split(/:+/, $2);		
+				}
 			}
 			elsif ($check_string =~ /^perlcheck\s+(\S+)$/)
 			{
@@ -252,14 +269,21 @@ sub get_packs
 			$func 	= $_->{name}."_check";
 			$arg	 = "";
 		}
-		$version = &{$func}($arg);
-		$ENVIRONMENT{$_->{name}."_installed"} = $version;
+		$versionout = &{$func}($arg,@path);
+		if (defined $versionout && ($_->{min_version} le $versionout))
+		{
+			$ENVIRONMENT{$_->{name}."_installed"} = $versionout;
+		}
 	}
 
-	@targz = <*>;
+	my @targz = <*>;
 	# Search in current directory
+	my $file;
+	my $thisversion;
+	my $curr_version;
 	foreach $file (@targz)
 	{
+		my $package;
 		foreach $package (@PACKAGES)
 		{
 			if (defined $ENVIRONMENT{$package->{name}."_skip"}) { next; }
@@ -270,7 +294,7 @@ sub get_packs
 				$thisversion .= ".$3" if (defined $3);
 				if (!defined $package->{version}) { $package->{version} = ""; }
 				$curr_version = $package->{version};
-				if (compare_version($thisversion, $curr_version)>0 && compare_version($curr_version, 0)>0)
+				if ($thisversion gt $curr_version && $curr_version gt 0)
 				{
 					# Got a newer version
 					$package->{version} = $thisversion;
@@ -286,18 +310,19 @@ sub get_packs
 		}
 	}
 	print "	Done.\n\n";
+	my $package;
 	foreach $package (@PACKAGES)
 	{
 		if (defined $ENVIRONMENT{$package->{name}."_skip"}) { next; }
-		$curr_installed = $ENVIRONMENT{$package->{name}."_installed"};
+		my $curr_installed = $ENVIRONMENT{$package->{name}."_installed"};
 		$curr_installed = "0" if (!defined $curr_installed);	
-		$ok = 0;
-		$installed_ok = 0;
+		my $ok = 0;
+		my $installed_ok = 0;
 		# First see if the currently installed version is okay...
-		if (compare_version( $curr_installed, $package->{min_version} )>=0)
+		if ($curr_installed ge $package->{min_version})
 		{
 			print "You already have ".$package->{long_name}." installed, ";
-			if ( compare_version($curr_installed, $package->{min_version} )>=0)
+			if ( $curr_installed ge $package->{min_version})
 			{
 				print "and it is sufficiently new.\n";
 				$ok = 1;
@@ -314,7 +339,7 @@ sub get_packs
 		elsif (defined $package->{archive} && $package->{archive} ne "")
 		{
 			print "Found a package for ".$package->{long_name}." ";
-			if (compare_version($package->{version}, $package->{min_version})>=0)
+			if ($package->{version} ge $package->{min_version})
 			{
 				print "that is sufficiently new.\n";
 				$ok = 1;
@@ -358,7 +383,7 @@ sub get_packs
 			}
 			
 			print " for ".$package->{long_name}."?\n";
-			$usepkg = get_yesno("Use this package:", "y");
+			my $usepkg = get_yesno("Use this package:", "y");
 			
 			if ($usepkg eq "n")
 			{
@@ -376,15 +401,18 @@ sub dump_environment
 {
 	open(RESFILE, ">".$ENVIRONMENT{resume_file}) || die "Unable to open resume file.\n";
 	print RESFILE "%ENVIRONMENT = \n(\n";
+	my $k;
 	foreach $k (keys %ENVIRONMENT)
 	{
 		print RESFILE "$k	=> \"".$ENVIRONMENT{$k}."\",\n";
 	}
 	print RESFILE ");\n\n";
 	print RESFILE "\@PACKAGES = \n(";
+	my $package;
 	foreach $package (@PACKAGES)
 	{
 		print RESFILE "{\n";
+		my $pcginfo;
 		foreach $pcginfo ($package)
 		{
 			foreach(keys %{$pcginfo})
@@ -410,9 +438,18 @@ WAH
 	exit 1;
 }
 
+sub fail_nicely
+{
+	my ($msg) = @_;
+	print "	Failed.\n";
+	print $msg."\n";
+	exit 1;
+}
+
+
 sub exit_help
 {
-$underline = "=" x length($ENVIRONMENT{"installer_title"});
+	my $underline = "=" x length($ENVIRONMENT{"installer_title"});
 	print <<EOH;
 
 $ENVIRONMENT{"installer_title"}
@@ -439,6 +476,7 @@ EOH
 sub untgz
 {
 	my($archive) = @_;
+	my $out;
         print "Untarring	...";
         $out = `tar xfvz $archive 2>&1 1>/dev/null`;
         if ($out ne "") { exit_nicely(" Failed!\nError: $out\n"); }
@@ -448,6 +486,7 @@ sub untgz
 sub untar
 {
         my($archive) = @_;
+	my $out;
         print "Untarring	...";
         $out = `tar xfv $archive 2>&1 1>/dev/null`;
         if ($out ne "") { exit_nicely(" Failed!\nError: $out\n"); }
@@ -455,6 +494,77 @@ sub untar
 }
 
 # Helper functions
+
+# Skip the installation and checking of a component.
+
+sub skip_component
+{
+	my($mod) = @_;
+	# Locate package
+	foreach $package (@PACKAGES)
+	{
+		if ($package->{name} eq $mod)
+		{
+			$ENVIRONMENT{$mod."_installed"} = $package->{min_version};
+			$ENVIRONMENT{$mod."_skip"} = 1;
+			last;
+		}
+	}
+}
+
+# Similar to which.
+
+sub find_file
+{
+	my($findme, @paths) = @_;
+	my @searchpaths = split(/:+/, $ENV{"PATH"});
+	push @searchpaths, @paths;
+	my @found = ();
+	my $curritem;
+	foreach my $path (@searchpaths)
+	{
+		$path =~ s/(.+)\/$//;
+		opendir(DIR, $path) or next;
+		while ($curritem = readdir(DIR))
+		{
+			next if ($curritem =~ /^\.[\.]?$/);
+			if ($curritem eq $findme)
+			{
+				push @found, "$path/$curritem";
+			}
+		}
+		closedir(DIR);
+	}
+	return @found;
+}
+
+sub get_dir_contents
+{
+	my($dir) = @_;
+	opendir(DIR, $dir) or return 0;
+	my @subdirs = ();
+	my @files = ();
+	my $curritem;
+	while ($curritem = readdir(DIR))
+	{
+		# Skip . and ..
+		next if ($curritem =~ /^\.[\.]?$/);
+		if (-d "$dir/$curritem")
+		{
+			push @subdirs, "$dir/$curritem";
+		}
+		else
+		{
+			push @files, "$dir/$curritem";
+		}
+	}
+	closedir(DIR);
+	foreach(@subdirs)
+	{
+		push @files, get_dir_contents($_);
+	}
+	return @files;
+}
 
 sub decompress
 {
@@ -480,7 +590,7 @@ sub perlinstall
 {
 	my($package) = @_;
 
-	$currdir = getcwd();
+	my $currdir = getcwd();
 	chdir decompress($package->{archive});
 	print "Configuring	...";
 	`perl Makefile.PL 2>&1 1>/dev/null`;
@@ -503,7 +613,7 @@ sub standardinstall
 	# make install
 
 	my($package) = @_;
-	$currdir = getcwd();
+	my $currdir = getcwd();
 	chdir decompress($package->{archive});
 	print "Configuring	...";
 	`./configure`;
@@ -526,25 +636,27 @@ sub perlcheck
 
 sub standardcheck
 {
-	my($cmdi) = @_;
+	my($cmdi, @path) = @_;
         my($version) = "";
-        $cmd = `which $cmdi 2>/dev/null` || return 0;
-        $version = `${cmdi} -V 2>/dev/null`;
-        if ($version =~ /(\d+)\.(\d+)\.?(\d*)/)
-        {
-                return "$1.$2.$3";
-        }
+	@paths = find_file($cmdi,@path) or return 0;
+	foreach(@paths)
+	{
+        	$version = `$_ -V 2>/dev/null`;
+        	if ($version =~ /(\d+)\.(\d+)\.?(\d*)/)
+        	{
+        	        return "$1.$2.$3";
+        	}
+	}
         return 0;	
 }
 
-my $config = "installer-".($resuming?"resume":"config").".pl";
-require $config;
-
+#my $config = "installer-".($resuming?"resume":"config").".pl";
+#require $config;
 # Grab command-line options.
 
-$show_help 	= 0;
-$show_version	= 0;
-$resuming 	= 0;
+my $show_help 		= 0;
+my $show_version	= 0;
+my $resuming 		= 0;
 GetOptions(
 'verbose' 		=> \$ENVIRONMENT{verbose},
 'silent' 		=> \$ENVIRONMENT{silent},
@@ -561,7 +673,7 @@ GetOptions(
 if ($show_help) { exit_help() };
 
 # Show a bit of version gubbins.
-$title = $ENVIRONMENT{"installer_title"}." v".$ENVIRONMENT{"installer_version"};
+my $title = $ENVIRONMENT{"installer_title"}." v".$ENVIRONMENT{"installer_version"};
 print "\n$title\n";
 exit 0 if ($show_version);
 print "=" x length($title)."\n";
