@@ -71,7 +71,14 @@ sub render_single_value
 {
 	my( $self, $session, $value, $dont_link ) = @_;
 
-	return $session->render_name( $value );
+	my $order = $self->get_property( "render_opts" )->{order};
+	
+	# If the render opt "order" is set to "gf" then we order
+	# the name with given name first. 
+
+	return $session->render_name( 
+			$value, 
+			defined $order && $order eq "gf" );
 }
 
 sub get_input_bits
@@ -79,11 +86,11 @@ sub get_input_bits
 	my( $self, $session ) = @_;
 
 	my @namebits;
-	unless( $session->get_archive()->get_conf( "hide_honourific" ) )
+	unless( $self->get_property( "hide_honourific" ) )
 	{
 		push @namebits, "honourific";
 	}
-	if( $session->get_archive()->get_conf( "invert_name_input" ) )
+	if( $self->get_property( "family_first" ) )
 	{
 		push @namebits, "family", "given";
 	}
@@ -91,7 +98,7 @@ sub get_input_bits
 	{
 		push @namebits, "given", "family";
 	}
-	unless( $session->get_archive()->get_conf( "hide_lineage" ) )
+	unless( $self->get_property( "hide_lineage" ) )
 	{
 		push @namebits, "lineage";
 	}
@@ -278,6 +285,9 @@ sub get_property_defaults
 	my( $self ) = @_;
 	my %defaults = $self->SUPER::get_property_defaults;
 	$defaults{input_name_cols} = $EPrints::MetaField::FROM_CONFIG;
+	$defaults{hide_honourific} = $EPrints::MetaField::FROM_CONFIG;
+	$defaults{hide_lineage} = $EPrints::MetaField::FROM_CONFIG;
+	$defaults{family_first} = $EPrints::MetaField::FROM_CONFIG;
 	return %defaults;
 }
 

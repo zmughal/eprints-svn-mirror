@@ -210,9 +210,27 @@ sub get_property_defaults
 	$defaults{input_style} = 0;
 	$defaults{showall} = 0;
 	$defaults{showtop} = 0;
+	$defaults{nestids} = 1;
 	$defaults{top} = "subjects";
 	delete $defaults{options}; # inherrited but unwanted
 	return %defaults;
+}
+
+sub get_values
+{
+	my( $self, $session, $dataset, %opts ) = @_;
+
+	my $topsubj = $self->get_top_subject( $session );
+	my ( $pairs ) = $topsubj->get_subjects(
+		0,
+		1,
+		0 );
+	my @outvalues;
+	foreach my $pair ( @{$pairs} )
+	{
+		push @outvalues, $pair->[0];
+	}
+	return \@outvalues;
 }
 
 ######################################################################

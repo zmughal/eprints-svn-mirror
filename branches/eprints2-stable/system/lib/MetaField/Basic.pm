@@ -303,7 +303,7 @@ sub get_input_elements
 			$session->phrase( 
 				"lib/metafield:more_spaces" ) ) );
 
-	push @{$rows}, [ {}, {el=>$more} ];
+	push @{$rows}, [ {}, {el=>$more,colspan=>3} ];
 
 	return $rows;
 }
@@ -761,20 +761,16 @@ sub get_values
 	my @values;
 	foreach my $value ( @{$unsorted_values} )
 	{
-		if( !defined $value )
-		{
-			push @values, "";
-		}
-		else
-		{
-			push @values, $value;
-		}
-		# uses function aux1 because value will NEVER be multiple
+		my $v2 = $value;
+		$v2 = "" unless( defined $value );
+		push @values, $v2;
+
+		# uses function _single because value will NEVER be multiple
 		my $orderkey = $self->ordervalue_single(
 			$value, 
 			$session, 
 			$langid );
-		$orderkeys{$value} = $orderkey;
+		$orderkeys{$v2} = $orderkey;
 	}
 
 	my @outvalues = sort {$orderkeys{$a} cmp $orderkeys{$b}} @values;
@@ -1071,7 +1067,7 @@ sub get_property_defaults
 		export_as_xml 	=> 1,
 		fromform 	=> $EPrints::MetaField::UNDEF,
 		hasid 		=> 0,
-		id_editors_only => 0,
+		id_editors_only	=> 0,
 		idpart 		=> 0, # internal
 		input_add_boxes => $EPrints::MetaField::FROM_CONFIG,
 		input_boxes 	=> $EPrints::MetaField::FROM_CONFIG,

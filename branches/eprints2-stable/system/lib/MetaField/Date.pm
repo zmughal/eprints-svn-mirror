@@ -54,8 +54,8 @@ sub render_single_value
 
 	my $res = $self->get_property( "render_opts" )->{res};
 	my $l = 10;
-	$l = 7 if( defined $res && $res eq "M" );
-	$l = 4 if( defined $res && $res eq "Y" );
+	$l = 7 if( defined $res && $res eq "month" );
+	$l = 4 if( defined $res && $res eq "year" );
 
 	return EPrints::Utils::render_date( $session, substr( $value,0,$l ) );
 }
@@ -91,12 +91,11 @@ sub get_basic_input_elements
 		
 	my $min_res = $self->get_property( "min_resolution" );
 	
-	if( $min_res eq "M" || $min_res eq "Y" )
+	if( $min_res eq "month" || $min_res eq "year" )
 	{	
-		my( %r ) = ( D=>"d", M=>"m", Y=>"y" );
 		$div = $session->make_element( "div", class=>"formfieldhelp" );	
 		$div->appendChild( $session->html_phrase( 
-			"lib/metafield:date_res_".$r{$min_res} ) );
+			"lib/metafield:date_res_".$min_res ) );
 		$frag->appendChild( $div );
 	}
 
@@ -182,7 +181,7 @@ sub form_value_basic
 
 	if( defined $year && !defined $month && !defined $day )
 	{
-		if( $res eq "Y" )
+		if( $res eq "year" )
 		{
 			return sprintf( "%04d", $year );
 		}
@@ -191,7 +190,7 @@ sub form_value_basic
 
 	if( defined $year && defined $month && !defined $day )
 	{
-		if( $res eq "Y" || $res eq "M" )
+		if( $res eq "year" || $res eq "month" )
 		{
 			return sprintf( "%04d-%02d", $year, $month );
 		}
@@ -213,15 +212,15 @@ sub get_unsorted_values
 	my $values = $session->get_db()->get_values( $self, $dataset );
 
 	my $res = $self->get_property( "render_opts" )->{res};
-	
-	if( $res eq "D" )
+
+	if( $res eq "day" )
 	{
 		return $values;
 	}
 
 	my $l = 10;
-	if( $res eq "M" ) { $l = 7; }
-	if( $res eq "Y" ) { $l = 4; }
+	if( $res eq "month" ) { $l = 7; }
+	if( $res eq "year" ) { $l = 4; }
 		
 	my %ov = ();
 	foreach my $value ( @{$values} )
@@ -406,7 +405,8 @@ sub get_property_defaults
 {
 	my( $self ) = @_;
 	my %defaults = $self->SUPER::get_property_defaults;
-	$defaults{min_resolution} = "D";
+	$defaults{min_resolution} = "day";
+	$defaults{render_opts}->{res} = "day";
 	return %defaults;
 }
 

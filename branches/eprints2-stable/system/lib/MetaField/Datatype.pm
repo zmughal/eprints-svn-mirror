@@ -91,7 +91,16 @@ sub get_property_defaults
 	return %defaults;
 }
 
-	
+sub get_values
+{
+	my( $self, $session, $dataset, %opts ) = @_;
+
+	my $ds = $session->get_archive()->get_dataset(
+		$self->{datasetid} );
+	my @outvalues = @{$ds->get_types()};
+
+	return \@outvalues;
+}
 
 
 ######################################################################
