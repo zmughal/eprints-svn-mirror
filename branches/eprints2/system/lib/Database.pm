@@ -2260,7 +2260,7 @@ sub trim_date
 		return undef;
 	}
 
-	$date =~ s/-00?-00$//;
+	$date =~ s/(-00)?-00$//;
 
         return $date;
 }
