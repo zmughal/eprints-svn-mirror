@@ -154,7 +154,8 @@ sub start_html
 		-AUTHOR=>"$EPrintSite::SiteInfo::admin",
 		-BGCOLOR=>"$EPrintSite::SiteInfo::html_bgcolor",
 		-FGCOLOR=>"$EPrintSite::SiteInfo::html_fgcolor",
-		-TITLE=>"$EPrintSite::SiteInfo::sitename\: $title" );
+		-TITLE=>"$EPrintSite::SiteInfo::sitename\: $title",
+		-HEAD=>\@EPrintSite::SiteInfo::html_head_elements );
 
 	# Logo
 	my $banner = $EPrintSite::SiteInfo::html_banner;
@@ -940,6 +941,24 @@ sub seen_form
 	                $self->{query}->param( 'seen' ) eq 'true' );
 
 	return( $result );
+}
+
+
+######################################################################
+#
+# $bool = have_parameters()
+#
+#  Return true if the current script had any parameters (POST or GET)
+#
+######################################################################
+
+sub have_parameters
+{
+	my( $self ) = @_;
+	
+	my @names = $self->{query}->param();
+
+	return( scalar @names > 0 );
 }
 
 

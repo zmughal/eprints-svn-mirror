@@ -31,7 +31,7 @@ use strict;
 # Name for the site
 $EPrintSite::SiteInfo::sitename = "Generic EPrint Archive";
 
-# E-mail address for automatically processed mail
+# E-mail address for automatic administration account
 $EPrintSite::SiteInfo::automail = "MUST CHANGE";
 
 # E-mail address for human-read administration mail
@@ -49,18 +49,18 @@ $EPrintSite::SiteInfo::eprint_id_stem = "MUST CHANGE";
 # If 1, users can request the removal of their submissions from the archive
 $EPrintSite::SiteInfo::allow_user_removal_request = 1;
 
+# Server of static HTML + images, including port
+$EPrintSite::SiteInfo::server_static = "http://$EPrintSite::SiteInfo::host";
+
+# Mod_perl script server, including port
+$EPrintSite::SiteInfo::server_perl = "http://$EPrintSite::SiteInfo::host/perl";
+
 
 ######################################################################
 #
 #  Site information that shouldn't need changing
 #
 ######################################################################
-
-# Server of static HTML + images
-$EPrintSite::SiteInfo::server_static = "http://$EPrintSite::SiteInfo::host";
-
-# Mod_perl script server
-$EPrintSite::SiteInfo::server_perl = "http://$EPrintSite::SiteInfo::host/perl";
 
 # Site "home page" address
 $EPrintSite::SiteInfo::frontpage = "$EPrintSite::SiteInfo::server_static/";
@@ -206,6 +206,9 @@ $EPrintSite::SiteInfo::default_user_order = "by surname";
 # Foreground and background colours for every page
 $EPrintSite::SiteInfo::html_fgcolor = "black";
 $EPrintSite::SiteInfo::html_bgcolor = "white";
+
+# Elements to put in the <HEAD> 
+@EPrintSite::SiteInfo::html_head_elements = ();
 
 # This is the HTML put at the top of every page. It will be put in the <BODY>,
 #  so shouldn't include a <BODY> tag.

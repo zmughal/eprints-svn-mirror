@@ -3,8 +3,6 @@
 # library                                                                   #
 # File: Repository_protocol.pl                                              #
 #
-# Version: $Id$
-#                                                                           #
 # Description:                                                              #
 #      Stub handlers for Open Archives Repository Protocol                  #
 #                                                                           #
@@ -63,6 +61,10 @@ use strict;
 use XML::Writer;
 use POSIX;
 use IO::File;
+use Unicode::String qw(utf8 latin1);
+
+my $oamsns = "http://www.openarchives.org/sfc/sfc_oams.htm";
+my $oamsns_prefix = "oams";
 
 # NOTE - This file consists of a set handlers for the prototol requests
 # in the Open Archives Protocol.  As shipped the handlers have demo code
@@ -96,15 +98,16 @@ sub mr_disseminate {
 		# Have the record OK, return appropriate response
 		my $XMLOutputTempFile = POSIX::tmpnam();
 		my $output = new IO::File(">$XMLOutputTempFile");
-		my $writer = 
-		  new XML::Writer (OUTPUT => $output, NEWLINES => 1);   
+		my $writer =  new XML::Writer(
+			OUTPUT => $output,
+			NEWLINES => 1,
+			NAMESPACES => 1,
+			PREFIX_MAP => { $oamsns => $oamsns_prefix } );
+		
 		$writer->xmlDecl();
 		$writer->startTag ("$Context->{'verb'}", 
 				   "version" => $Context->{'version'});
-		$writer->startTag("record", 
-				  "format" => "oams", "identifier" => $fullID);
 		&write_OAMS(\%oamsTags, $writer, $Context);
-		$writer->endTag("record");
 		$writer->endTag ($Context->{'verb'});
 		$writer->end ();
 		$output->close();
@@ -133,8 +136,11 @@ sub mr_dump_contents {
     # start the XML output
     my $XMLOutputTempFile = POSIX::tmpnam();
     my $output = new IO::File(">$XMLOutputTempFile");
-    my $writer = 
-	new XML::Writer (OUTPUT => $output, NEWLINES => 1, NAMESPACES => 1);   
+    my $writer = new XML::Writer(
+			OUTPUT => $output,
+			NEWLINES => 1,
+			NAMESPACES => 1,
+			PREFIX_MAP => { $oamsns => $oamsns_prefix } );
     $writer->xmlDecl();
     $writer->startTag ("$Context->{'verb'}", 
 		       "version" => $Context->{'version'});
@@ -148,13 +154,10 @@ sub mr_dump_contents {
 
 	# Only know how to list OAMS
 	if ($metaFormat eq 'oams') {
-	    $writer->startTag('oams');
-
 	    # dummy OAMS metadata for demo.
 	    my %oamsTags = EPrints::OpenArchives::get_oams_tags( $ep );
 
 	    &write_OAMS(\%oamsTags, $writer, $Context);
-	    $writer->endTag('oams');
 	}
 	$writer->endTag("record");
     }
@@ -182,8 +185,8 @@ sub mr_list_meta_formats {
 
 
     # Only OAMS supported
-    my @mFormats = ({name => 'oams', 
-		     namespace => 'http://www.OpenArchives.org'});
+    my @mFormats = ({name => $oamsns_prefix, 
+		     namespace => $oamsns});
 
     # output the metaformats
     my $f;
@@ -300,57 +303,74 @@ sub mr_structure {
 sub write_OAMS {
     my ($oamsTags, $writer, $Context) = @_;
     my $k;
-    my $oamsns = "http://www.openarchives.org";
+
+	$writer->startTag( [ $oamsns, "oams" ] );
+
     foreach $k (keys(%$oamsTags)) {
 	my $e = $oamsTags->{$k};
 
 	# scalar value, non repeatable tag
 	if (ref($e) eq '') {
-	    $writer->startTag($k);
-	    $writer->characters($e);
-	    $writer->endTag($k);
+	    $writer->startTag( [ $oamsns, $k ] );
+
+	    $writer->characters( to_utf8($e) );
+	    $writer->endTag([ $oamsns, $k ]);
 	}	    
 	
 	# hash reference value, internal structure within the element.
 	if (ref($e) eq 'HASH') {
 	    my $kk;
 	    my %h = $$e;
-	    $writer->startTag($k);
+	    $writer->startTag([ $oamsns, $k ]);
 	    foreach $kk (keys(%$e)) {
-		$writer->startTag($kk);
-		$writer->characters($$e->{$kk});
-		$writer->endTag($kk);
+		$writer->startTag([ $oamsns, $kk ]);
+		$writer->characters( to_utf8($$e->{$kk}) );
+		$writer->endTag([ $oamsns, $kk ]);
 	    }
-	    $writer->endTag($k);
+	    $writer->endTag([ $oamsns, $k ]);
 	}
 
 	# array reference value, repeatable element.
 	if (ref($e) eq 'ARRAY') {
 	    my $a;
 	    foreach $a (@$e) {
-		$writer->startTag($k);
+		$writer->startTag([ $oamsns, $k ]);
 
 		# simple scalar values within repeatable element.
 		if (ref($a) eq '') {
-		    $writer->characters($a);
+		    $writer->characters(to_utf8($a));
 		}
 
 		# hash reference, structured values within repeatable element.
 		elsif (ref($a) eq 'HASH') {
 		    my $kk;
 		    foreach $kk (keys(%$a)) {
-			$writer->startTag($kk);
-			$writer->characters($a->{$kk});
-			$writer->endTag($kk);
+			$writer->startTag([ $oamsns, $kk ]);
+			$writer->characters(to_utf8($a->{$kk}));
+			$writer->endTag([ $oamsns, $kk ]);
 		    }
 		}
-		$writer->endTag($k);
+		$writer->endTag([ $oamsns, $k ]);
 		
 	    }
 	}
 
+
     }
+
+	$writer->endTag( [ $oamsns, "oams" ] );
+
 }
     
+
+# Convert latin1 to UTF-8
+sub to_utf8
+{
+	my( $in ) = @_;
+	my $u = latin1( $in );
+	
+	return( $u->utf8() );
+}
+
 
 1;
