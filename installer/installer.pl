@@ -122,6 +122,7 @@ sub get_library_paths
 sub get_package_name
 {
 	my($info) = @_;
+	my %info = %$info;
 	my $okay = 0;
 		
 	do
@@ -134,19 +135,21 @@ sub get_package_name
 		}
 		else
 		{
-			if (-e $path && $path =~ $_->{search_string})
+			if (-e $path && $path =~ $info->{search_string})
 			{
-				my $this_version = make_version($1, $2, $3);
-				if ($this_version lt $_->{min_version})
+				my $this_version = $1 if (defined $1);
+				$this_version .= ".$2" if (defined $2);
+				$this_version .= ".$3" if (defined $3);
+				if ($this_version lt $info->{min_version})
 				{
 					print "That version is too old. Please try again.\n";
 					$okay = 0;
 				}		
 				else
 				{	
-					$ENVIRONMENT{$_->{name}."_installed"} = 0;
-					$_->{version} = $this_version;
-					$_->{archive} = $path;
+					$ENVIRONMENT{$info->{name}."_installed"} = 0;
+					$info->{version} = $this_version;
+					$info->{archive} = $path;
 					$okay = 1;
 				}
 			}
@@ -655,6 +658,7 @@ sub standardcheck
         	$version = `$_ -V 2>/dev/null`;
         	if ($version =~ /(\d+)\.(\d+)\.?(\d*)/)
         	{
+			print "$1.$2.$3\n";
         	        return "$1.$2.$3";
         	}
 	}

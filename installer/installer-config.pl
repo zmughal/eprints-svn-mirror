@@ -83,6 +83,13 @@
 		description	=> "Freely available network utility to retrieve files from the World Wide Web using HTTP and FTP",
 		install_method	=> "standardinstall",
 	},
+	{
+		name		=> "unzip",
+		min_version	=> "5.42",
+		search_string	=> "unzip-([0-9]+)\.([0-9]+)\.tar\.gz",
+		long_name	=> "UnZip",
+		description	=> "Utility capable of unpacking zip archives.",
+	},
 	# Bigger packages
 	{
 		name		=> "apachemodperl",
@@ -198,9 +205,18 @@
 		install_method	=> "standardinstall",
 	},
 	{
+		name		=> "perlpp",
+		min_version	=> "0.03",
+		search_string	=> "ExtUtils-PerlPP-([0-9]+)\.([0-9]+)\.tar\.gz",
+		long_name	=> "ExtUtils::PerlPP",
+		description	=> "Provides Perl preprocessor functionality.",
+		install_method	=> "perlinstall",
+		check_method	=> "perlcheck ExtUtils::PerlPP",
+	},
+	{
 		name		=> "xmlparser",
 		min_version	=> "2.30",
-		search_string	=> "XML-Parser\.([0-9]+)\.([0-9]+)\.tar\.gz",
+		search_string	=> "XML-Parser-([0-9]+)\.([0-9]+)\.tar\.gz",
 		long_name	=> "XML::Parser",
 		description	=> "A Perl extension interface to the expat XML parser.",
 		install_method	=> "perlinstall",
@@ -300,6 +316,27 @@ sub gcc_check
 	return 0;
 }
 
+sub unzip_check
+{
+        my $unzip = "";
+        my @unzips = ();
+
+        @unzips = find_file("unzip");
+
+        foreach(@unzips)
+        {
+                $unzip = `$_ --version 2>&1` or return 0;
+                if ($unzip =~ /(\d+)\.(\d+)\.?(\d*)/)
+                {
+                        skip_component("unzip");
+                        $ENVIRONMENT{unzip} = $_;
+                        print "Using $_ as unzip\n";
+                        return "$1.$2.$3";
+                }
+        }
+        return 0;
+}
+
 sub mysql_check
 {
 	my $sql = "";
@@ -371,6 +408,22 @@ sub eprints_check
 
 # Custom package install methods
 
+sub unzip_install
+{
+	my($package) = @_;
+	$currdir = getcwd();
+	$pkgroot = decompress($package->{archive});
+	chdir "$pkgroot";
+	link("unix/Makefile", "Makefile");
+	print "Making			...";
+	protect("$ENVIRONMENT{make} linux");
+	print "	Done.\n";
+	print "Installing		...";
+	protect("$ENVIRONMENT{make} install");
+	print "	Done.\n";
+	chdir $currdir;
+}
+
 sub apachemodperl_install
 {
 	my($package) = @_;
@@ -384,7 +437,7 @@ sub apachemodperl_install
 	protect("$ENVIRONMENT{make}");
 	print "	Done.\n";
 	print "Installing mod_perl	...";
-	protect("$ENVIRONMENT{make}");
+	protect("$ENVIRONMENT{make} install");
 	print "	Done.\n";
 	chdir $currdir;
 	chdir "$pkgroot/apache";
@@ -404,7 +457,7 @@ sub mysql_install
 	protect("$ENVIRONMENT{add_user} -g mysql mysql");
 	print "	Done.\n";
 	print "Configuring		...";
-	protect("./configure --prefix=/usr/local/mysql");
+	protect("./configure --prefix=/usr/local/mysql --with-named-curses-libs=/usr/lib/libncurses.so.5.2");
 	print "	Done.\n";
 	print "Making			...";
 	protect("$ENVIRONMENT{make}");
