@@ -389,7 +389,7 @@ $c->{vlit}->{copyright_url} = $c->{base_url}."/vlit.html";
 # Multiple fields may be specified for one view, but avoid
 # subject or allowing null in this case.
 $c->{browse_views} = [
-        { id=>"year", allow_null=>1, fields=>"date_effective;res=year", subheadings=>"type", order=>"-date_effective/title", heading_level=>2 },
+        { id=>"year", allow_null=>1, fields=>"-date_effective;res=year", subheadings=>"type", order=>"-date_effective/title", heading_level=>2 },
         { id=>"subjects", fields=>"subjects", order=>"-date_effective/title", hideempty=>1 }
 ];
 # examples of some other useful views you might want to add
