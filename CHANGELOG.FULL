@@ -43,4 +43,9 @@ cache if possible.
 * added logphrase method to translate phrases into the language of the log
 rather than the current session.
 
-
+Thu Feb  8 10:50:23 GMT 2001
+* Added # comments to config files Language.pm MetaField.pm MetaInfo.pm 
+Subject.pm
+* Added prefix letters to language file to denote usage. Ignored by cfg reader.
+* More internationalisation - modified way buttons work in SubmissionForm.pm
+to allow them to vary with language.
