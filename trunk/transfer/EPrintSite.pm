@@ -18,6 +18,9 @@ $EPrintSite::log_language = "english";
 	"english"=>	"$EPrintSite::base_path/intl/english"
 );
 
+%EPrintSite::sites = (
+	"destiny.totl.net" => "lemurprints"
+);
 
 
 

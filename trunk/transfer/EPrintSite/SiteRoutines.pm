@@ -596,8 +596,7 @@ sub oai_get_eprint_metadata
 		}
 
 		$tags{date} = "$year-$month-01";
-		$tags{type} = $eprint->{session}->{metainfo}->get_eprint_type_name(
-			$eprint->{type} );
+		$tags{type} = $eprint->{session}->{metainfo}->get_table_type_name( "archive" , $eprint->{type} );
 		$tags{identifier} = $eprint->static_page_url();
 
 		return( %tags );

@@ -1,9 +1,10 @@
 
 # Lemur Prints!
 
-use EPrintSite;
-
 package EPrintSite::lemurprints;
+
+use EPrintSite;
+use CGI qw/:standard/;
 
 sub new
 {
@@ -14,9 +15,27 @@ sub new
 
 #  Main
 
-$self->{site_root} = $EPrintSite::base_path."/sites/lemurprints";
+$self->{sitename} = "Lemur Prints Archive";
 
-$self->{local_document_root} = "$self->{site_root}/html/docs";
+# paths
+
+$self->{site_root} = "$EPrintSite::base_path/sites/lemurprints";
+
+$self->{static_html_root} = "$self->{site_root}/static";
+$self->{local_html_root} = "$self->{site_root}/html";
+$self->{local_document_root} = "$self->{local_html_root}/documents";
+
+# Server of static HTML + images, including port
+$self->{server_static} = "http://$EPrintSite::SiteInfo::host";
+
+# Site "home page" address
+$self->{frontpage} = "$self->{server_static}/";
+
+# Corresponding URL of document file hierarchy
+$self->{server_document_root} = "$self->{server_static}/documents"; 
+
+# Corresponding URL stem for "browse by subject" HTML files
+$self->{server_subject_view_stem} = "$self->{server_static}/view-";
 
 #  Files
 
@@ -543,6 +562,160 @@ $self->{sitetypes}->{user} = {
 	Staff => [],
 	User => []
 };
+
+######################################################################
+#
+#  Site Look and Feel
+#
+######################################################################
+
+# Location of the root of the subject tree
+#$EPrintSite::SiteInfo::server_subject_view_root = 
+#	$EPrintSite::SiteInfo::server_subject_view_stem."ROOT.html";
+
+# parameters to generate the HTML header with.
+# TITLE will be set by the system as appropriate.
+# See the CGI.pm manpage for more info ( man CGI ).
+
+$self->{start_html_params}  = {
+	-BGCOLOR=>"#ffffff",
+	-FGCOLOR=>"#000000",
+	-HEAD=>[ Link( {-rel=>'stylesheet',
+			-type=>'text/css',
+			-href=>'/eprints.css',
+			-title=>'screen stylesheet',
+			-media=>'screen'} ) ],
+	-AUTHOR=>$EPrintSite::SiteInfo::admin,
+	-TOPMARGIN=>"0",
+	-LEFTMARGIN=>"0",
+	-MARGINWIDTH=>"0",
+	-MARGINHEIGHT=>"0" };
+
+# This is the HTML put at the top of every page. It will be put in the <BODY>,
+#  so shouldn't include a <BODY> tag.
+$self->{html_banner} = <<END;
+<table border="0" cellpadding="0" cellspacing="0">
+  <tr>
+    <td align="center" valign="top" bgcolor="#dddddd" fgcolor="white">
+      <br>
+      <a href="$self->{frontpage}"><img border="0" width="100" height="100" src="$self->{server_static}/images/logo_sidebar.gif" ALT="$self->{sitename}"></a>
+    </td>
+    <td background="http://lemur.ecs.soton.ac.uk/~cjg/eborderr.gif"></td>
+    <td>
+      &nbsp;&nbsp;&nbsp;&nbsp;
+    </td>
+    <td>
+      <BR>
+      <H1>TITLE_PLACEHOLDER</H1>
+    </td>
+  </tr>
+  <tr>
+    <td bgcolor="#dddddd" align="center" valign="top">
+      <table border="0" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align=center valign=top>
+            <A HREF="$self->{frontpage}">Home</A>\&nbsp;<BR><BR>
+            <A HREF="$self->{server_static}/information.html">About</A>\&nbsp;<BR><BR>
+            <A HREF="$self->{server_subject_view_stem}"."ROOT.html">Browse</A>\&nbsp;<BR><BR>
+            <A HREF="$EPrintSite::SiteInfo::server_perl/search">Search</A>\&nbsp;<BR><BR>
+            <A HREF="$self->{server_static}/register.html">Register</A>\&nbsp;<BR><BR>
+            <A HREF="$EPrintSite::SiteInfo::server_perl/users/subscribe">Subscriptions</A>\&nbsp;<BR><BR>
+            <A HREF="$EPrintSite::SiteInfo::server_perl/users/home">Deposit\&nbsp;Items</A>\&nbsp;<BR><BR>
+            <A HREF="$self->{server_static}/help">Help</A>
+          </td>
+        </tr>
+      </table>
+      <br>
+    </td>
+    <td background="http://lemur.ecs.soton.ac.uk/~cjg/eborderr.gif"></td>
+    <td>
+      &nbsp;&nbsp;&nbsp;&nbsp;
+    </td>
+    <td valign="top" width="95%">
+<BR>
+END
+
+# This is the HTML put at the bottom of every page. Obviously, it should close
+#  up any tags left open in html_banner.
+$self->{html_tail} = <<END;
+<BR>
+<HR noshade size="2">
+<address>
+Contact site administrator at: <a href=\"mailto:$EPrintSite::SiteInfo::admin\">$EPrintSite::SiteInfo::admin</a>
+</address>
+<BR><BR>
+    </td>
+  </tr>
+  <tr>
+    <td background="http://lemur.ecs.soton.ac.uk/~cjg/eborderb.gif"></td>
+    <td background="http://lemur.ecs.soton.ac.uk/~cjg/eborderc.gif"></td>
+  </tr>
+</table>
+END
+
+#  E-mail signature, appended to every email sent by the software
+$self->{signature} = <<END;
+--
+ $self->{sitename}
+ $self->{frontpage}
+ $EPrintSite::SiteInfo::admin
+
+END
+
+#  Default text to send a user when "bouncing" a submission back to their
+#  workspace. It should leave some space for staff to give a reason.
+$self->{default_bounce_reason} = <<END;
+Unfortunately your eprint:
+
+  _SUBMISSION_TITLE_
+
+could not be accepted into $self->{sitename} as-is.
+
+
+The eprint has been returned to your workspace. If you
+visit your item depositing page you will be able to
+edit your eprint, fix the problem and redeposit.
+
+END
+
+#  Default text to send a user when rejecting a submission outright.
+$self->{default_delete_reason} = <<END;
+Unfortunately your eprint:
+
+  _SUBMISSION_TITLE_
+
+could not be accepted into $self->{sitename}.
+
+
+
+The eprint has been deleted.
+
+END
+
+#  Agreement text, for when user completes the depositing process.
+#  Set to "undef" if you don't want it to appear.
+$self->{deposit_agreement_text} = <<END;
+
+<P><EM><STRONG>For work being deposited by its own author:</STRONG> 
+In self-archiving this collection of files and associated bibliographic 
+metadata, I grant $self->{sitename} the right to store 
+them and to make them permanently available publicly for free on-line. 
+I declare that this material is my own intellectual property and I 
+understand that $self->{sitename} does not assume any 
+responsibility if there is any breach of copyright in distributing these 
+files or metadata. (All authors are urged to prominently assert their 
+copyright on the title page of their work.)</EM></P>
+
+<P><EM><STRONG>For work being deposited by someone other than its 
+author:</STRONG> I hereby declare that the collection of files and 
+associated bibliographic metadata that I am archiving at 
+$self->{sitename}) is in the public domain. If this is 
+not the case, I accept full responsibility for any breach of copyright 
+that distributing these files or metadata may entail.</EM></P>
+
+<P>Clicking on the deposit button indicates your agreement to these 
+terms.</P>
+END
 
 	
 ######################################################################
