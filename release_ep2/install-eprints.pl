@@ -134,7 +134,7 @@ while (!$dirokay)
 			$systemsettings{"orig_version"} = $EPrints::SystemSettings::conf->{"orig_version"};
 			my $origv = $systemsettings{"orig_version_id"};
 			my $newv = $systemsettings{"version_id"};	
-			if (defined $origv && $origv gt $newv)
+			if (defined $origv && $origv gt $newv && $origv!~/nightly/)
 			{
 				print <<DOWNGRADE;
 You already have a version of EPrints installed in this directory and it
@@ -344,7 +344,7 @@ Hooray! Your EPrints2 installation was successful!
 = - su to $user
 = - Move into $dir and run:
 =     bin/generate_apacheconf
-=     bin/create_new_archive
+=     bin/configure_archive
 =
 = Please note:
 = You will also require a working sendmail configuration.

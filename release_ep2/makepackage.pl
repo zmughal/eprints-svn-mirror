@@ -11,7 +11,8 @@ $MILESTONE_DESC_A = "EPrints $EPRINTS_VERSION (";
 $MILESTONE_DESC_B = ") [Born on $DATE]";
 $MILESTONE_VERSION = $EPRINTS_VERSION;
 %codenames = (
-	"eprints2-alpha-1" => "anchovy"
+	"eprints2-alpha-1" => "anchovy",
+	"eprints2-alpha-2" => "pepperoni"
 );
 
 sub insert_data
@@ -78,8 +79,7 @@ sub do_package
 	$originaldir = getcwd();
 	chdir "export";
 	system("cvs export -r $version_tag eprints/system >/dev/null")==0 or die "Could not export system.\n";
-	system("cvs export -r $version_tag eprints/ep2_docs >/dev/null")==0 or die "Could not export docs.\n";
-
+	system("cvs export -r HEAD eprints/docs_ep2 >/dev/null")==0 or die "Could not export docs.\n";
 	print "Removing .cvsignore files...\n";
 	system("/bin/rm `find . -name '.cvsignore'`")==0 or die "Couldn't remove.";
 	print "Copying installer...\n";
@@ -118,8 +118,9 @@ sub do_package
 
 
 	# Build docs - cjg Mike this needs to be smarter about what to copy (alpha/beta etc)
-	chdir $originaldir."/export/eprints/ep2_docs";
-	#`make`;
+	print "Build Docs...\n"	;
+	chdir $originaldir."/export/eprints/docs_ep2";
+	`./mkdocs.pl`;
 	
 	print "Making tarfile...\n";
 	chdir $originaldir."/package";
