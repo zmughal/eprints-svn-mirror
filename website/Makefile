@@ -3,7 +3,7 @@
 # Change this to where you can look at your mockup
 LOCALROOT=http://lemur.ecs.soton.ac.uk/~cjg/eprints.org/
 
-local: cleanlocal
+local: cleanlocal updates
 	mkdir out
 	./build-site.pl --siteroot=${LOCALROOT} --dest=out
 	mkdir out/fr
@@ -13,7 +13,7 @@ cleanlocal:
 	rm -rf out
 	rm -f gimp.script
 
-target: cleantarget
+target: cleantarget updates
 	mkdir out-target
 	./build-site.pl
 	mkdir out-target/fr
@@ -22,6 +22,9 @@ target: cleantarget
 cleantarget:
 	rm -rf out-target
 	rm -f gimp.script
+
+updates:
+	cp ../release/install-scripts/ChangeLog in-raw/changelog.txt
 
 clean: cleanlocal cleantarget
 

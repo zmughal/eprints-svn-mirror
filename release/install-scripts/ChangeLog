@@ -136,15 +136,15 @@ to SiteInfo.pm.
 disclaimer) when users deposit records.
 
 
-###########################
-   PRE-RELEASE CHANGES
-###########################
+2001-01-23 Version 1.1 released
+
+Changes in core code:
 - Added the findfiles.pl script as part of removing GNU-specific commands from
 the makefile. Used it to replace "find -maxdepth 1 -type f".
 - Replaced occurances of "cp -a" in Makefile with "tar" to increase portability.
 - configure: GROUP and USER no longer conditional on FULL_INSTALL
 - top level dir of EPrints package renamed from "eprints" to "eprints-version-whatever"
-- renamed oai-0.2 to oai (now supports oai 1.0b)
+- renamed oai-0.2 to oai (now supports oai v1.0)
 - minor changes to OpenArchives.pm
 - added debug=yes option to oai. This makes it output text/plain rather than text/xml
 - added support for remote mysql databases, added configure options 
@@ -157,10 +157,13 @@ if db_host or db_port are set. ie. You'll have to create & destroy the database
 by hand if it's not local.
 - added --with-module-prefix option to configure, this gives all the perl modules
 a prefix, so multiple copies of eprints can be run on one mod_perl instance.
+- added a new datafield type "username" which represents one, or a list, of 
 
-*** CHANGE VERSION NUMBER
 
-doc OAI
-remote db
-module-prefix
+Site default configuration changes
+
+- removed OAMS support
+- almost total replacement of OAI section
+- added mysql host and port options
+
 

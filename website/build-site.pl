@@ -145,17 +145,17 @@ my $current_dir = `pwd`;
 chomp( $current_dir );
 my $command_line = "gimp --verbose --no-data --no-interface --batch '(dolots-sideicons \"gimp.script\")' '(gimp-quit 0)'";
 print "$command_line\n";
-system( "sh", "-c", $command_line );
+#system( "sh", "-c", $command_line );
 
 # Make transparent
 foreach $icon (keys %nav_icon_text)
 {
 	$command_line = "giftrans -t 0 \"$config{OUT}/image/init_$icon.hi.gif\" >\"$config{OUT}/image/$icon.hi.gif\"";
 	#print "!$command_line\n";
-	system( "sh", "-c", $command_line );
+	#system( "sh", "-c", $command_line );
 	$command_line = "giftrans -t 0 \"$config{OUT}/image/init_$icon.gif\" >\"$config{OUT}/image/$icon.gif\"";
 	#print "?$command_line\n";
-	system( "sh", "-c", $command_line );
+	#system( "sh", "-c", $command_line );
 }
 
 # Remove non-transparent
@@ -223,6 +223,10 @@ sub write_html
 			# Pump in the body
 			while( <HTMLIN> )
 			{
+				s%<ITEMS>%<TABLE>%ig;
+				s%</ITEMS>%</TABLE>%ig;
+				s%<ITEM>%'<TR><TD valign="top"><IMG src="'.$config{SITEROOT}.'image/jig'.(1+int rand 4).'.gif" width="32" height="32" alt="*"></TD><TD valign="top"><IMG src="'.$config{SITEROOT}.'image/white.gif" width="6" height="6"><BR>'%ieg;
+				s%</ITEM>%</TD></TR>%ig;
 				print HTMLOUT;
 			}
 		}
@@ -259,10 +263,13 @@ sub gen_nav_bar
 	{
 		my $icon_text = $nav_icon_text{$stem};
 		my $icon_filename = "image/$stem";
+		my $class = "sidebar";
 
 		# Use the highlighted version if it's for the current page
 		$icon_filename .= ".hi" if( $stem eq $current );
 		$icon_filename .= ".gif";
+
+		$class = "sidebarcurrent" if( $stem eq $current );
 
 		# Print a separate if appropriate
 		if( $first )
@@ -273,37 +280,42 @@ sub gen_nav_bar
 		{
 			print $htmlout $config{NAV_SEPARATOR};
 		}
-
+	
 		if( defined $urls{$stem} )
 		{
 			# This is an external URL
 			$stem =~ s/SITE_ROOT/$config{SITEROOT}/gi;
 			$stem =~ s/HTML_ROOT/$config{HTMLROOT}/gi;
-			print $htmlout "<A HREF=\"$urls{$stem}\">";
+			print $htmlout "<A class=\"$class\" HREF=\"$urls{$stem}\">";
 		}
 		elsif( $full_paths )
 		{
 			# For a normal page. We're using full paths.
-			print $htmlout "<A HREF=\"$config{HTMLROOT}$stem.html\">" unless( $stem eq "index" );
-			print $htmlout "<A HREF=\"$config{HTMLROOT}/\">" if( $stem eq "index" );
+			print $htmlout "<A class=\"$class\" HREF=\"$config{HTMLROOT}$stem.html\">" unless( $stem eq "index" );
+			print $htmlout "<A class=\"$class\" HREF=\"$config{HTMLROOT}/\">" if( $stem eq "index" );
 		}
 		else
 		{
 			# Normal page. Can output a relative filename.
-			print $htmlout "<A HREF=\"$stem.html\">" unless( $stem eq "index" );
-			print $htmlout "<A HREF=\"$config{HTMLROOT}\">" if( $stem eq "index" );
+			if( $stem eq "index" ) {
+				print $htmlout '<A class="'.$class.'" HREF="'.$config{HTMLROOT}.'">' ;
+			} else {
+				print $htmlout '<A class="'.$class.'" HREF="'.$stem.'.html">' ;
+			}
 		}
 
 		# Now include the image itself, using full URL if appropriate.
 		if( $full_paths )
 		{
-			print $htmlout "<IMG SRC=\"$config{HTMLROOT}$icon_filename\" BORDER=0 ALT=\"$icon_text\"></A>\n";
+			#print $htmlout "<IMG SRC=\"$config{HTMLROOT}$icon_filename\" BORDER=0 ALT=\"$icon_text\">\n";
+			print $htmlout $icon_text;
 		}
 		else
 		{
-			print $htmlout "<IMG SRC=\"$icon_filename\" BORDER=0 ALT=\"$icon_text\"></A>\n";
+			print $htmlout $icon_text;
 
 		}
+		print $htmlout "</A>\n";
 	}
 }
 
