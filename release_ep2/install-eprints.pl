@@ -265,8 +265,8 @@ RECOVER
 			{
 
 				print <<UPGRADE;
-You already have a version of EPrints installed in this directory which is
-older than the one you are trying to install. Do you wish to upgrade?
+You already have a version of EPrints installed in this directory. 
+Do you wish to upgrade?
 
 UPGRADE
 				if (get_yesno("Sure?", "n") eq "y") 
