@@ -678,7 +678,7 @@ sub log_history
 	$el_event->appendChild( $el_details );
 	$el_event->appendChild( $self->{session}->make_text( "\n" ) );
 	
-#	print STDERR $el_event->toString."\n\n";
+	#print STDERR EPrints::XML::to_string($el_event)."\n\n";
 	EPrints::XML::dispose( $el_event );
 }
 
