@@ -100,7 +100,7 @@ foreach $rec (@records)
 	$count++;
 
 	# Create the record
-	my $user = EPrints::User->create_user( $session,
+	my $user = EPrints::User::create_user( $session,
 	                                       $rec->{username},
 	                                       lc $rec->{email},
 	                                       "Author" );
@@ -141,7 +141,7 @@ foreach $rec (@records)
 
 	if( defined $rec->{fname} )
 	{
-		$user->{name} = EPrints::Name->import_names( $rec->{fname}, "\\+" );
+		$user->{name} = EPrints::Name::import_names( $rec->{fname}, "\\+" );
 	}
 	
 	
