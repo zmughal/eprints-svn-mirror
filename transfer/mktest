@@ -1,0 +1,9 @@
+#!/usr/bin/perl
+
+for(1..100000) {
+	print "INSERT INTO archive VALUES ('$_','cjg',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL ,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'Paper alpha',NULL,1998);\n";
+	print "INSERT INTO archiveauxauthors VALUES ('$_',1,'Harris,Steve');\n";
+	print "INSERT INTO archiveauxauthors VALUES ('$_',2,'Gutteridge,Chris');\n";
+	print STDERR "$_\n";
+}
+
