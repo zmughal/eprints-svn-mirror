@@ -34,17 +34,16 @@ dnl **************************************************************
 AC_DEFUN(TEST_PERL_MOD,
 [
 AC_MSG_CHECKING(for $2)
-RESULT=`$PERL_PATH -m"$2"  -e 'print "1\n";'`
+RESULT=`$PERL_PATH -m"$2"  -e 'print "1\n";' 2>/dev/null`
 
 if test "x$RESULT" = "x1" ; then
-	$1=0
+	$1=1
 	AC_SUBST( $1, "1" )
 	AC_MSG_RESULT(yes)
 else
-	$1=1
+	$1=0
 	AC_SUBST( $1, "0" )
 	AC_MSG_RESULT(no)
-	AC_MSG_WARN(Perl module $1 not installed)
 fi
 ])
 

@@ -72,6 +72,15 @@ AC_ARG_ENABLE(diskfree,
         fi
     ])
 
+DISABLE_GDOME="0"
+AC_ARG_ENABLE(gdome,
+    [ --disable-gdome          Don't try to use the XML::GDOME module],
+    [
+        if test $enableval = no ; then
+            DISABLE_GDOME="1"
+        fi
+    ])
+
 if test $DISABLE_DF = "0" ; then
     AC_MSG_CHECKING([what perl function to use for disk free check])
     DF_FUNC=`$PERL_PATH df-check.pl`
@@ -238,26 +247,19 @@ CHECK_PERL_MOD(Sys::Hostname)
 CHECK_PERL_MOD(Unicode::String)
 CHECK_PERL_MOD(XML::Parser)
 
-TEST_PERL_MOD(GDOME_AVAILABLE, XML::GDOME)
-ENABLE_GDOME="0"
-AC_ARG_ENABLE(gdome,
-    [ --enable-gdome           use the XML::GDOME module],
-    [
-        if test $enableval = yes ; then
-            ENABLE_GDOME="1"
-        fi
-    ])
 
-if test $GDOME_AVAILABLE = "1"; then
-    echo "Found XML::GDOME module. Lovely. We'll use that then!"
-    ENABLE_GDOME="1"
-else
-    if test $ENABLE_GDOME = "1"; then 
-        AC_MSG_ERROR(Can't find GDOME, but you asked to enable it)
-    else
-        echo "Didn't find XML::GDOME module. We'll make do with XML::DOM then."
-    fi
-    ENABLE_GDOME="0"
+
+
+ENABLE_GDOME="0"
+if test $DISABLE_GDOME = "0"; then
+   TEST_PERL_MOD(GDOME_AVAILABLE, XML::GDOME)
+   if test $GDOME_AVAILABLE = "1"; then
+       echo "Found XML::GDOME module. Lovely. We'll use that then!"
+       ENABLE_GDOME="1"
+   else
+       echo "Didn't find XML::GDOME module. We'll make do with XML::DOM then."
+       ENABLE_GDOME="0"
+   fi
 fi
 
 AC_PREFIX_DEFAULT(/opt/eprints2)
