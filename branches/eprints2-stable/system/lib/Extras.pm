@@ -158,8 +158,9 @@ sub subject_browser_input
 			$topsubj->get_id,
 			"EQ" );
 
-
+$session->get_db->set_debug( 1 );
 		my $searchid = $searchexp->perform_search;
+$session->get_db->set_debug( 0 );
 
 		my @records = $searchexp->get_records;
 		$searchexp->dispose();

@@ -5,27 +5,24 @@ Tidied up todo list.
 Big New Features
  * Modular Controls [2.4]
  * Improved Indexing [2.4/2.3]
- * Multilingual Browser Negotiation [2.3]
-    - fix apache conf to add this (and disable vlit) on MLing servers.
-    - add code to Session.pm
-    - mutlihosts for different languages?
  * HTTPS Support [2.4]
  * perl 5.8??
+ * RH9 etc.
  * APACHE2.0
 
 Pre-release issues
-	* rename latestn?
 
+ * rename _index_names to something like _index_filter so it's generic
+ * make indexer use metafield classes not type=""
  * Highlight "problems" blocks
  * Are cookies broken (setting/getting)?
  * property to supress "UNSPECIFIED"
- * Can we just retire CGI.pm?
+ * Can we just retire CGI.pm?: Session & VLit (and docs)
  * Status looks crap.. tidy it up
  * make status page show indexer on/off
  * indexer status option (cmd line) is crappy
  * Confusing Cancel button in submission form (files section)
  * GRANT ALTER ON ep2stable.* TO ep2stable@localhost; in update!
- * remove STDERR prints/make them ->log() instead
  * improve search to have a neater config. 
  * Change config for searches
  . mimetex ... better than the built in one??
@@ -33,15 +30,15 @@ Pre-release issues
  * clean up browse views and write better comments around the
    config
  * Reminder in STDERR if ordervalue table is missing.
- * seperate vlit stylesheet... Make CSS in vlit use path!
  * Make views use filters. 
  * SECURE files are not properly secured!
  * REMOVE REMAINING CGI.pm CODE, inc {query}
- * ECS: BIBTEX
  * ECS: edit
- * BUTTONS UP AND DOWN. stopped working. Also don't grey any but top.
  * main+tardis: USer info includes Password YES/NO & Pending...
- 
+
+More Vague 
+ * remove STDERR prints/make them ->log() instead
+ * bibtex/exporters
 
 Documentation
  * Apache::libapreq needed! nb. Iffy test script, force install!
@@ -54,22 +51,18 @@ Documentation
 Bugs
  * 404 page is for entire domain not /foo/bar/
  * fileinfo does not handle paths correctly
- * export_xml broken for GDOME
  * can't change username?
  * bug in refine search on defaulted booleans?
  * author with name " " is not treated as null in input
  * frequency of mailings: default to NEVER?
  * Investigate: (subjects_self->{merge})(ANY)
- * does not work except in root of filesystem.
 
 Wishlist
  * Ted N. wants persistent _named_ urls for articles.
  * Linkbatton renderer?
- * Latest page (limit of n results?)- steal from ECS.
  * Various "form letters" from the editor.
  * Make a permission for users to be able to edit their OWN records.
  * News Items
- * OAI/Search/View Filters
 
 Metadata Fields
  ? New field type "time" for datetime SQL fields.
@@ -95,7 +88,6 @@ OAI
     or "username_id:cjg" or "stuffjackwants" which is a search of 
     it's own. Searches can of course be modified with from and to 
     dates from OAI.
- * Add a filter - eg. to limit ever showing records to post 2000.
 
 
 Database
@@ -105,11 +97,8 @@ Database
     SearchExpression.pm and SearchField.pm 
 
 
-
-
 Search
 
- * Clean up description of date search
  * Make nice ordering for titles so "the" does not affect order
       + similar in other fields? names?
  * Add congiguration via cookie for n results, citation style &
@@ -142,11 +131,9 @@ Command Line Tools
  
 Submission Page
 
- - Names+Extra help per page 
  - Extra pages which are user defined.
  - Make a simple version of file upload for archives which only want one
           (PDF) document with no security etc.
- 
 
 Clean up
  - remove die statements
@@ -184,9 +171,6 @@ CGI Tools
  - Remove all #cjg comments which denote issues.
  
  + cmp methods : is they still needed?
- 
- + Make all needed get()'s map it instead so ready for that 
-  1,000,000 papers.
  
  +  List of editors?
  
@@ -384,3 +368,5 @@ CGI Tools
 Browse Views
 
  * Second level views - eg. /group/year/ - /view/iam/2001.html
+ * BUTTONS UP AND DOWN. stopped working. Also don't grey any but top.
+ * seperate vlit stylesheet... Make CSS in vlit use path!

@@ -48,7 +48,13 @@ sub get_sql_type
 	return $self->get_sql_name()." SET('TRUE','FALSE')".($notnull?" NOT NULL":"");
 }
 
-# INHERIT: is_text_indexable 
+sub get_index_codes
+{
+	my( $self, $session, $value ) = @_;
+
+	return( [], [], [] );
+}
+
 
 sub render_single_value
 {

@@ -55,6 +55,7 @@ use EPrints::OpenArchives;
 use EPrints::Rewrite;
 use EPrints::SearchExpression;
 use EPrints::SearchField;
+use EPrints::SearchCondition;
 use EPrints::Session;
 use EPrints::Subject;
 use EPrints::SubmissionForm;

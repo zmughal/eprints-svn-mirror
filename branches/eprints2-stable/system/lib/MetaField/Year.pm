@@ -42,12 +42,6 @@ use EPrints::MetaField::Int;
 
 
 
-# INHERIT: get_sql_type
-
-# INHERIT: is_text_indexable
-
-# INHERIT: render_single_value
-
 sub get_digits
 {
 	return( 4 );

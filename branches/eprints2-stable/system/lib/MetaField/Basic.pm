@@ -86,22 +86,6 @@ sub get_sql_index
 
 
 
-######################################################################
-=pod
-
-=item $boolean = $field->is_text_indexable
-
-Return true if this field can be searched by "free text" searching - 
-indexing all the individual words in it.
-
-=cut
-######################################################################
-
-sub is_text_indexable
-{
-	return 0;
-}
-
 
 ######################################################################
 =pod
@@ -306,7 +290,7 @@ sub get_input_elements
 			{
 				$col1 = { el=>$session->make_text( $i.". " ) };
 				my $arrows = $session->make_doc_fragment;
-				if( $i > 1 && EPrints::Utils::is_set( $value->[$i-1] ) )
+				if( $i > 1 )
 				{
 					$arrows->appendChild( $session->make_element(
 						"input",
@@ -322,7 +306,7 @@ sub get_input_elements
 						src=> $session->get_archive->get_conf( "base_url" )."/images/up_dim.png" ));
 				}
 				$arrows->appendChild( $session->make_element( "br" ) );
-				if( EPrints::Utils::is_set( $value->[$i-1] ) )
+				if( 1 )
 				{
 					$arrows->appendChild( $session->make_element(
 						"input",
@@ -1142,6 +1126,13 @@ sub get_property_defaults
 		type 		=> $EPrints::MetaField::REQUIRED );
 }
 		
+# Most types are not indexed		
+sub get_index_codes
+{
+	my( $self, $session, $value ) = @_;
+
+	return( [], [], [] );
+}
 
 ######################################################################
 

@@ -31,14 +31,16 @@ package EPrints::MetaField::Name;
 use strict;
 use warnings;
 
+use Unicode::String qw( latin1 utf8 );
+
 BEGIN
 {
 	our( @ISA );
 
-	@ISA = qw( EPrints::MetaField::Basic );
+	@ISA = qw( EPrints::MetaField::Text );
 }
 
-use EPrints::MetaField::Basic;
+use EPrints::MetaField::Text;
 
 my $VARCHAR_SIZE = 255;
 
@@ -268,15 +270,62 @@ sub get_search_conditions
 						$self, 
 						$fpart );
 	}
-	return EPrints::SearchCondition->new( 
-		'AND',
-		@freetexts,
-		EPrints::SearchCondition->new( 
-			'name_crop', 
-			$dataset,
-			$self, 
-			$v2 ) );
+
+	
+	# 2 family parts or one given part make it worth
+	# doing the name crop. A single family part will 
+	# obviously match.
+	my $noskip = 0; 
+
+	# grep only accepts "%" and "?" as special chars
+	my $list = [ '%' ];
+	foreach my $fpart ( split /\s+/, $family )
+	{
+		next unless EPrints::Utils::is_set( $fpart );
+		$list->[0] .= '['.$fpart.']%';
+		++$noskip; # need at least 2 family parts to be worth cropping
+	}
+
+	$list->[0] .= '-%';
+
+	foreach my $gpart ( split /\s+/, $given )
+	{
+		next unless EPrints::Utils::is_set( $gpart );
+		$noskip = 2;
+		if( length $gpart == 1 )
+		{
+			# inital
+			foreach my $l ( @{$list} )
+			{
+				$l .= '['.$gpart.'%';
+			}
+			next;
+		}
+		# a full given name
+		my $nlist = [];
+		foreach my $l ( @{$list} )
+		{
+			push @{$nlist}, $l.'['.$gpart.']%';
+			$gpart =~ m/^(.)/;
+			push @{$nlist}, $l.'['.$1.']%';
+		}
+		$list = $nlist;
+	}
+
+	if( $noskip >= 2 )
+	{
+		# it IS worth cropping 
+		push @freetexts, EPrints::SearchCondition->new( 
+						'grep', 
+						$dataset,
+						$self, 
+						@{$list} );
+	}
+
+	return EPrints::SearchCondition->new( 'AND', @freetexts );
 }
+
+# INHERRITS get_search_conditions_not_ex, but it's not called.
 
 sub get_search_group { return 'name'; } 
 
@@ -291,6 +340,145 @@ sub get_property_defaults
 	return %defaults;
 }
 
+my $x=<<END;
+			Glaser	Hugh/Glaser	H/Glaser	Hugh B/Glaser	Hugh Bob/Glaser	Smith Glaser
+H/Glaser		X	X		X						
+H/Glaser-Smith		X	X		X						.
+H/Smith-Glaser		X	X		X						X
+Hugh/Glaser		X	X		X						
+Hugh K/Glaser		X	X		X						
+Hugh-Bob/Glaser		X	X		X		X		X		
+Hugh Bob/Glaser		X	X		X		X		X		
+Hugh B/Glaser		X	X		X		X		X	
+Hugh Bill/Glaser	X	X		X		X		 	
+H B/Glaser		X	X		X		X		X 	
+HB/Glaser		X	X		X		X		X 	
+H P/Glaser		X	X		X						
+H/Smith											
+Herbert/Glaser		X			X						
+Herbert/Smith					X						
+Q Hugh/Glaser		X	X								
+Q H/Glaser		X									
+
+			Glaser	Hugh/Glaser	H/Glaser	Hugh B/Glaser	Hugh Bob/Glaser	Smith Glaser
+H/Glaser		X	X		X						
+H/Glaser-Smith		X	X		X						X
+H/Smith-Glaser		X	X		X						X
+Hugh/Glaser		X	X		X						
+Hugh K/Glaser		X	X		X						
+Hugh-Bob/Glaser		X	X		X		X		X		
+Hugh Bob/Glaser		X	X		X		X		X		
+Hugh B/Glaser		X	X		X		X		X	
+Hugh Bill/Glaser	X	X		X		X		 	
+H B/Glaser		X	X		X		X		X 	
+HB/Glaser		X	X		X		X		X 	
+H P/Glaser		X	X		X						
+H/Smith											
+Herbert/Glaser		X			X						
+Herbert/Smith					X						
+Q Hugh/Glaser		X	X								
+Q H/Glaser		X									
+
+		
+Smith Glaser		Whole word in family IS glaser AND Whole word in family IS smith 	
+
+Glaser			Whole word in family IS glaser	
+
+Hugh/Glaser		Glaser + (Whole word in given is Hugh OR first initial in given is "H")
+
+H/Glaser		Glaser + (first initial in given is "H" OR first word in given starts with "H")
+
+Hugh B/Glaser		Glaser + (first initial in given is "H" OR first word in given is "Hugh" ) +
+				(second initial in given is "B" OR second word in given starts with "B")
+
+Hugh Bob/Glaser		Glaser + (first initial in given is "H" OR first word in given is "Hugh" ) +
+				(second iniital in given is "B" or second word in given is "Bob")
+
+Names:
+
+
+BQF
+*B-*Q-*F-*
+
+Ben Quantum Fierdash				[B][Q][Fierdash]
+*(Ben|B)*(Quantum|Q)*(Fierdash|F)*
+%[B]%[Q]%[F]%
+%[B]%[Q]%[Fierdash]%
+%[B]%[Quantum]%[F]%
+%[B]%[Quantum]%[Fierdash]%
+%[Ben]%[Q]%[F]%
+%[Ben]%[Q]%[Fierdash]%
+%[Ben]%[Quantum]%[F]%
+%[Ben]%[Quantum]%[Fierdash]%
+
+[Geddes][Harris]|[B][Q][Fierdash]
+
+Ben F
+*(Ben|B)*(F-)*
+
+Ben
+*(Ben|B)*
+
+Quantum
+*(Quantum|Q)*
+
+Q
+*(Q-)*
+
+
+
+[John][Mike][H]-[Smith][Jones]
+
+*[J*[M*-*[Jones]*
+
+*[J]*-*[Smith]* AND *[John]*-*[Smith]*
+
+
+END
+
+
+sub get_index_codes_basic
+{
+	my( $self, $session, $value ) = @_;
+
+	return( [], [], [] ) unless( EPrints::Utils::is_set( $value ) );
+
+	my $f = &EPrints::Index::apply_mapping( $session, $value->{family} );
+	my $g = &EPrints::Index::apply_mapping( $session, $value->{given} );
+
+	# Add a space before all capitals to break
+	# up initials. Will screw up names with capital
+	# letters in the middle of words. But that's
+	# pretty rare.
+	my $len_g = $g->length;
+        my $new_g = utf8( "" );
+        for(my $i = 0; $i<$len_g; ++$i )
+        {
+                my $s = $g->substr( $i, 1 );
+                if( $s eq "\U$s" )
+                {
+			$new_g .= ' ';
+                }
+		$new_g .= $s;
+	}
+
+	my $code = '';
+	my @r = ();
+	foreach( EPrints::Index::split_words( $session, $f ) )
+	{
+		next if( $_ eq "" );
+		push @r, "\L$_";
+		$code.= "[\L$_]";
+	}
+	$code.= "-";
+	foreach( EPrints::Index::split_words( $session, $new_g ) )
+	{
+		next if( $_ eq "" );
+#		push @r, "given:\L$_";
+		$code.= "[\L$_]";
+	}
+	return( \@r, [$code], [] );
+}	
 
 ######################################################################
 1;

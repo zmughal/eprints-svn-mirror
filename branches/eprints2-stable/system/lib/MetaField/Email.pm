@@ -40,10 +40,6 @@ BEGIN
 
 use EPrints::MetaField::Text;
 
-# INHERIT: get_sql_type
-
-# INHERIT: is_text_indexable
-
 sub render_single_value
 {
 	my( $self, $session, $value, $dont_link ) = @_;

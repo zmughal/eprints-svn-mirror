@@ -39,10 +39,6 @@ BEGIN
 	@ISA = qw( EPrints::MetaField::Basic );
 }
 
-sub is_text_indexable
-{
-        return 1;
-}
 
 
 sub render_search_value
@@ -118,6 +114,70 @@ sub get_search_conditions_not_ex
 }
 
 sub get_search_group { return 'text'; }
+
+sub get_index_codes
+{
+	my( $self, $session, $value ) = @_;
+
+	return( [], [], [] ) unless( EPrints::Utils::is_set( $value ) );
+
+	if( !$self->get_property( "multiple" ) )
+	{
+		return $self->get_index_codes_single( $session, $value );
+	}
+	my( $codes, $grepcodes, $ignored ) = ( [], [], [] );
+	foreach my $v (@{$value} )
+	{		
+		my( $c,$g,$i ) = $self->get_index_codes_single( $session, $v );
+		push @{$codes},@{$c};
+		push @{$grepcodes},@{$g};
+		push @{$ignored},@{$i};
+	}
+
+	return( $codes, $grepcodes, $ignored );
+}
+
+sub get_index_codes_single
+{
+	my( $self, $session, $value ) = @_;
+
+	return( [], [], [] ) unless( EPrints::Utils::is_set( $value ) );
+
+	$value = $self->which_bit( $value );
+
+	return( [], [], [] ) unless( EPrints::Utils::is_set( $value ) );
+
+	if( !$self->get_property( "multilang" ) )
+	{
+		return $self->get_index_codes_basic( $session, $value );
+	}
+
+	my( $codes, $grepcodes, $ignored ) = ( [], [], [] );
+
+	foreach my $k (keys %{$value} )
+	{		
+		my( $c,$g,$i ) = $self->get_index_codes_basic( $session, $value->{$k} );
+		push @{$codes},@{$c};
+		push @{$grepcodes},@{$g};
+		push @{$ignored},@{$i};
+	}
+
+	return( $codes, $grepcodes, $ignored );
+}	
+
+sub get_index_codes_basic
+{
+	my( $self, $session, $value ) = @_;
+
+	return( [], [], [] ) unless( EPrints::Utils::is_set( $value ) );
+
+	my( $codes, $badwords ) = 
+		$session->get_archive()->call( 
+			"extract_words" , 
+			$value );
+
+	return( $codes, [], $badwords );
+}
 
 
 ######################################################################

@@ -57,8 +57,6 @@ sub get_sql_index
 
 
 
-# INHERIT: is_text_indexable
-
 sub render_single_value
 {
 	my( $self, $session, $value, $dont_link ) = @_;

@@ -1511,7 +1511,7 @@ before next release. (metadata types & fields)
     conf instead. Much nicer. Making a session from a CGI script
     is now much more straight forward.
 
-2003-10-29 cjg
+2003-10-30 cjg
 
  - going to the URL of a metadata page without the trailing "/" now
     neatly redirects rather than giving a 404 eg.
@@ -1599,5 +1599,19 @@ before next release. (metadata types & fields)
     set.
  - [c] Added submission form page titles to phrases.
  - changed submission form "back" to be "previous" instead.
+
+2003-10-31 cjg
+
+ - Input Form up/down buttons now on empty fields too. Because they might NOT
+    be empty by the time the button is clicked.
+ - Metafield::Name now extends Metafield::Text (so it can pick up the
+    indexing code)
+*- Full text searching code disabled for now.
+ - Renamed "name" index to "grep" index as it's far more generic a concept.
+    All related variables renamed too.
+ - get_index_codes is now a method of MetaField.pm; moved from Index.pm
+    name grepping appears to be working OK.
+ - Fixed loads of bugs in SearchCondition due to earlier omission of "use 
+    strict". 
 
 ======================================================================

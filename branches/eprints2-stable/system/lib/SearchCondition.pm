@@ -41,6 +41,8 @@ package EPrints::SearchCondition;
 
 use EPrints::Database;
 
+use strict;
+
 # current conditional operators:
 
 $EPrints::SearchCondition::operators = {
@@ -62,7 +64,7 @@ $EPrints::SearchCondition::operators = {
 	'<='=>4,		#	dataset, field, value		
 	'in_subject'=>4,	#	dataset, field, value		
 
-	'name_crop'=>4	};	#	dataset, field, value		
+	'grep'=>4	};	#	dataset, field, value		
 
 
 sub new
@@ -83,9 +85,9 @@ sub new
 	}
 	else
 	{
-		$self->{dataset} = $params[0];
-		$self->{field} = $params[1];
-		$self->{value} = $params[2];
+		$self->{dataset} = shift @params;
+		$self->{field} = shift @params;
+		$self->{params} = \@params;
 	}
 
 	return $self;
@@ -129,9 +131,12 @@ sub describe
 	{
 		push @o, '$'.$self->{dataset}->id.".".$self->{field}->get_name;
 	}	
-	if( defined $self->{value} )
+	if( defined $self->{params} )
 	{
-		push @o, '"'.$self->{value}.'"';
+		foreach( @{$self->{params}} )
+		{
+			push @o, '"'.$_.'"';
+		}
 	}	
 	my $op_desc = $ind.$self->{op}."(".join( ",", @o ).")";
 	$op_desc.= " ... ".$self->get_table;
@@ -229,16 +234,14 @@ sub item_matches
 
 	if( $self->{op} eq "freetext" )
 	{
-		my( $codes, $new_namecodes, $badwords ) =
-			get_codes(
+		my( $codes, $grepcodes, $badwords ) =
+			$self->{field}->get_index_codes(
 				$item->get_session,
-				$object->get_dataset,
-				$field,
-				$object );
+				$item->get_value( $self->{field}->get_name ) );
 
 		foreach my $code ( @{$codes} )
 		{
-			return( 1 ) if( $code eq $self->{value} );
+			return( 1 ) if( $code eq $self->{params}->[0] );
 		}
 		return( 0 );
 	}
@@ -246,18 +249,34 @@ sub item_matches
        	my $keyfield = $self->{dataset}->get_key_field();
 	my $sql_col = $self->{field}->get_sql_name;
 
-	if( $self->{op} eq "name_crop" )
+	if( $self->{op} eq "grep" )
 	{
-		my $regexp = '['.$self->{value}.'].*-';
-		my( $codes, $new_namecodes, $badwords ) =
+		my( $codes, $new_grepcodes, $badwords ) =
 			get_codes(
 				$item->get_session,
-				$object->get_dataset,
-				$field,
-				$object );
-		foreach my $namecode ( @{$namecodes} )
+				$item->get_dataset,
+				$self->{field},
+				$item );
+		my( $codes, $grepcodes, $badwords ) =
+			$self->{field}->get_index_codes(
+				$item->get_session,
+				$item->get_value( $self->{field}->get_name ) );
+
+		my @re = ();
+		foreach( @{$self->{params}} )
 		{
-			return( 1 ) if( $namecode =~ m/$regexp/ );
+			my $r = $_;
+			$r =~ s/([^a-z0-9%?])/\\$1/gi;
+			$r =~ s/\%/.*/g;
+			$r =~ s/\?/./g;
+			push @re, $r;
+		}
+			
+		my $regexp = '^('.join( '|', @re ).')$';
+print STDERR "REGEXP:$regexp\n";
+		foreach my $grepcode ( @{$grepcodes} )
+		{
+			return( 1 ) if( $grepcode =~ m/$regexp/ );
 		}
 		return( 0 );
 	}
@@ -267,7 +286,7 @@ sub item_matches
 	{
 		my @sub_ids = $self->{field}->list_values( 
 			$item->get_value( $self->{field}->get_name ) );
-		# true if {value} is the ancestor of any of the subjects
+		# true if {params}->[0] is the ancestor of any of the subjects
 		# of the item.
 
 		foreach my $sub_id ( @sub_ids )
@@ -285,7 +304,7 @@ sub item_matches
 
 			foreach my $an_sub ( @{$s->get_value( "ancestors" )} )
 			{
-				return( 1 ) if( $an_sub eq $self->{value} );
+				return( 1 ) if( $an_sub eq $self->{params}->[0] );
 			}
 		}
 		return( 0 );
@@ -293,7 +312,7 @@ sub item_matches
 
 	if( $self->{op} eq "is_null" )
 	{
-		return $item->is_set( $field->get_name );
+		return $item->is_set( $self->{field}->get_name );
 	}
 
 
@@ -320,7 +339,7 @@ sub item_matches
 				$mode,
 				$value, 
 				$self->{op}, 
-				$self->{value} ) )
+				$self->{params}->[0] ) )
 			{
 				return( 1 );
 			}
@@ -440,82 +459,33 @@ sub process
 	if( $self->{op} eq "freetext" )
 	{
 		my $where = "fieldword = '".EPrints::Database::prep_value( 
-			$self->{field}->get_sql_name.":".$self->{value} )."'";
+			$self->{field}->get_sql_name.":".$self->{params}->[0] )."'";
 		$r = $session->get_db()->get_index_ids( $self->get_table, $where );
 	}
 
        	my $keyfield = $self->{dataset}->get_key_field();
 	my $sql_col = $self->{field}->get_sql_name;
 
-	if( $self->{op} eq "name_crop" )
+	if( $self->{op} eq "grep" )
 	{
 		if( !defined $filter )
 		{
-			print STDERR "ERROR: Namecrop without filter! This is very inefficient.\n";	
+			print STDERR "WARNING: grep without filter! This is very inefficient.\n";	
 			# cjg better logging?
 		}
 
-		# should already be lower case and had mapping applied
-
-		my $noskip = 0; 
-		# 2 family parts or one given part make it worth
-		# doing the name crop. A single family part will 
-		# obviously match.
-
-		my( $family, $given ) = split /\s*,\s*/, $self->{value};
-
-		my $list = [ '%' ];
-		foreach my $fpart ( split /\s+/, $family )
-		{
-			next unless EPrints::Utils::is_set( $fpart );
-			$list->[0] .= '['.$fpart.']%';
-			++$noskip; # need at least 2 family parts to be worth cropping
-		}
-
-		$list->[0] .= '-%';
-
-		foreach my $gpart ( split /\s+/, $given )
-		{
-			next unless EPrints::Utils::is_set( $gpart );
-			$noskip = 2;
-			if( length $gpart == 1 )
-			{
-				# inital
-				foreach my $l ( @{$list} )
-				{
-					$l .= '['.$gpart.'%';
-				}
-				next;
-			}
-			# a full given name
-			my $nlist = [];
-			foreach my $l ( @{$list} )
-			{
-				push @{$nlist}, $l.'['.$gpart.']%';
-				$gpart =~ m/^(.)/;
-				push @{$nlist}, $l.'['.$1.']%';
-			}
-			$list = $nlist;
-		}
-
-		if( $noskip < 2 )
-		{
-			# not worth doing the crop, just return the current filter
-			return $filter;
-		}
-
- 		my $ntable = $self->{dataset}->get_sql_index_table_name."_names"; 
 		my $where = "( M.fieldname = '$sql_col' AND (";
 		my $first = 1;
-		foreach $cond (@{$list})
+		foreach my $cond (@{$self->{params}})
 		{
 			$where.=" OR " unless( $first );
 			$first = 0;
 			# not prepping like values...
-			$where .= "M.namestring LIKE '$cond'";
+			$where .= "M.grepstring LIKE '$cond'";
 		}
 		$where.="))";
 
+ 		my $gtable = $self->{dataset}->get_sql_index_table_name."_grep"; 
 		my $SSIZE = 50;
 		my $total = scalar @{$filter};
 		my $kfn = $keyfield->get_sql_name; # key field name
@@ -527,7 +497,7 @@ sub process
 			
 			my $set = $session->get_db->search( 
 				$keyfield, 
-				{ M=>$ntable },
+				{ M=>$gtable },
 				$where.' AND ('.$kfn.'='.join(' OR '.$kfn.'=', @fset ).' )' );
                         $r = _merge( $r , $set, 0 );
 		}
@@ -537,7 +507,7 @@ sub process
 
 	if( $self->{op} eq "in_subject" )
 	{
-		my $where = "( M.$sql_col = S.subjectid AND  S.ancestors='".EPrints::Database::prep_value( $self->{value} )."' )";
+		my $where = "( M.$sql_col = S.subjectid AND  S.ancestors='".EPrints::Database::prep_value( $self->{params}->[0] )."' )";
 		$r = $session->get_db->search( 
 			$keyfield, 
 			{	
@@ -561,7 +531,7 @@ sub process
 	if( $self->is_comparison )
 	{
 		my $where = "M.$sql_col ".$self->{op}." ".
-			"'".EPrints::Database::prep_value( $self->{value} )."'";
+			"'".EPrints::Database::prep_value( $self->{params}->[0] )."'";
 		$r = $session->get_db->search( 
 			$keyfield, 
 			{ M=>$self->get_table },

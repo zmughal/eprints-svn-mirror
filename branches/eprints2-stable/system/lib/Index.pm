@@ -65,7 +65,7 @@ sub new
 		session=>$session,
 		count=>0,
 		index_table_tmp => $dataset->get_sql_index_table_name."_tmp",
-		names_index_table_tmp => $dataset->get_sql_index_table_name."_names_tmp" 
+		grep_table_tmp => $dataset->get_sql_index_table_name."_grep_tmp" 
 	};
 
 	bless $self, $class;
@@ -93,7 +93,7 @@ sub dispose
 	my $ds = $self->{dataset};
 	my $db = $self->{session}->get_db;
 
-	my @doomtables = ( $self->{index_table_tmp}, $self->{names_index_table_tmp} );
+	my @doomtables = ( $self->{index_table_tmp}, $self->{grep_table_tmp} );
 
 	foreach my $langid ( @{$self->{session}->get_archive()->get_conf( "languages" )} )
 	{
@@ -143,7 +143,7 @@ sub create
 
 	if( $db->has_table( $self->{index_table_tmp} ) )
 	{
-		print STDERR "$self->{index_table_tmp} already exists. Indexer exited abnormally or still running?\nZAPPING IT!";
+		print STDERR "$self->{index_table_tmp} already exists. Indexer exited abnormally or still running?\nDropping table: $self->{index_table_tmp}\n";
 		#cjg!
 		my $sql = "DROP TABLE $self->{index_table_tmp}";
 		$self->{session}->get_db->do( $sql );
@@ -162,25 +162,25 @@ sub create
 		archive=> $self->{session}->get_archive(),
 		name => "fieldname", 
 		type => "text" );
-	my $fieldnamestring = EPrints::MetaField->new( 
+	my $fieldgrepstring = EPrints::MetaField->new( 
 		archive=> $self->{session}->get_archive(),
-		name => "namestring", 
+		name => "grepstring", 
 		type => "text");
 
-	if( $db->has_table( $self->{names_index_table_tmp} ) )
+	if( $db->has_table( $self->{grep_table_tmp} ) )
 	{
-		print STDERR "$self->{names_index_table_tmp} already exists. Indexer exited abnormally or still running?\nZAPPING IT!";
+		print STDERR "$self->{grep_table_tmp} already exists. Indexer exited abnormally or still running?\nDropping table: $self->{grep_table_tmp}\n";
 		#cjg!
-		my $sql = "DROP TABLE $self->{names_index_table_tmp}";
+		my $sql = "DROP TABLE $self->{grep_table_tmp}";
 		$self->{session}->get_db->do( $sql );
 	}
 	
 
 	$rv = $rv & $db->create_table(
-		$self->{names_index_table_tmp},
+		$self->{grep_table_tmp},
 		$ds,
 		0, # no primary key
-		( $keyfield, $fieldfieldname, $fieldnamestring ) );
+		( $keyfield, $fieldfieldname, $fieldgrepstring ) );
 
 
 	###########################
@@ -206,7 +206,7 @@ sub create
 		my $order_table_tmp = $ds->get_ordervalues_table_name( $langid )."_tmp";
 		if( $db->has_table( $order_table_tmp ) )
 		{
-			print STDERR "$order_table_tmp already exists. Indexer exited abnormally or still running?\nZAPPING IT!\n";
+			print STDERR "$order_table_tmp already exists. Indexer exited abnormally or still running?\nDropping table: $order_table_tmp\n";
 			#cjg!
 			my $sql = "DROP TABLE $order_table_tmp";
 			$self->{session}->get_db->do( $sql );
@@ -238,19 +238,18 @@ sub build
 	my $ds = $self->{dataset};
 
 	my $info = {
-		allkeys => {},
+		allcodes => {},
 		indexer => $self,
 		rows => 0 };
 
 	$self->{count} = 0;
 	$ds->map( $self->{session}, \&_index_item, $info );
 
+	# store all codes which didn't already get stored
 
-	# store all keys which didn't already get stored
-
-	foreach my $key ( keys %{$info->{allkeys}} )
+	foreach my $code ( keys %{$info->{allcodes}} )
 	{
-		$self->_store( $info, $key );
+		$self->_store( $info, $code );
 	}
 }
 
@@ -260,20 +259,21 @@ sub _index_item
 
 	my $id = $item->get_id;
 
-	my $keys = {};
-	my $namecodes = [];
-	EPrints::Index::index_object( $session, $item, $keys, $namecodes );
-	foreach my $key ( keys %{$keys} )
+	my $codes = {};
+	my $grepcodes = [];
+	EPrints::Index::index_object( $session, $item, $codes, $grepcodes );
+	foreach my $code ( keys %{$codes} )
 	{
-		push @{$info->{allkeys}->{$key}}, $id;
-		if( scalar @{$info->{allkeys}->{$key}} > 100 )
+		push @{$info->{allcodes}->{$code}}, $id;
+		if( scalar @{$info->{allcodes}->{$code}} > 100 )
 		{
-			$info->{indexer}->_store( $info, $key );
+			$info->{indexer}->_store( $info, $code );
 		} 
 	}
-	foreach my $code ( @{$namecodes} )
+
+	foreach my $grepcode ( @{$grepcodes} )
 	{
-		my $sql = "INSERT INTO ".$info->{indexer}->{names_index_table_tmp}." VALUES ('".$item->get_id."','".$code->[0]."','".$code->[1]."');";
+		my $sql = "INSERT INTO ".$info->{indexer}->{grep_table_tmp}." VALUES ('".$item->get_id."','".$grepcode->[0]."','".$grepcode->[1]."');";
 		$session->get_db->do( $sql ); #cjg
 	}
 
@@ -321,13 +321,14 @@ sub _index_item
 
 sub _store
 {
-	my( $self, $info, $key ) = @_;
+	my( $self, $info, $code ) = @_;
 
-	my $sql = "INSERT INTO $self->{index_table_tmp} VALUES ( '$key', $info->{rows}, '".join( ':',  @{$info->{allkeys}->{$key}} )."' )";
+	#cjg SQL should not really be in this file.
+	my $sql = "INSERT INTO $self->{index_table_tmp} VALUES ( '$code', $info->{rows}, '".join( ':',  @{$info->{allcodes}->{$code}} )."' )";
 	$self->{session}->get_db->do( $sql );
 	
 	$info->{rows}++;
-	delete $info->{allkeys}->{$key};
+	delete $info->{allcodes}->{$code};
 }
 
 ######################################################################
@@ -358,15 +359,15 @@ sub install
 	}
 
 
-	if( $db->has_table( $self->{names_index_table_tmp} ) )
+	if( $db->has_table( $self->{grep_table_tmp} ) )
 	{
 		$self->{session}->get_db->install_table( 
-			$self->{names_index_table_tmp}, 
-			$self->{dataset}->get_sql_index_table_name."_names" );
+			$self->{grep_table_tmp}, 
+			$self->{dataset}->get_sql_index_table_name."_grep" );
 	}
 	else
 	{
-		$self->{session}->get_archive->log( "Table does not exist to install: ".$self->{names_index_table_tmp} );
+		$self->{session}->get_archive->log( "Table does not exist to install: ".$self->{grep_table_tmp} );
 	}
 
 
@@ -455,7 +456,7 @@ sub get_last_timestamp
 ######################################################################
 =pod
 
-=item index_object( $session, $object, $keys )
+=item index_object( $session, $object, $codes )
 
 undocumented
 
@@ -465,240 +466,52 @@ undocumented
 
 sub index_object
 {
-	my( $session, $object, $keys, $namecodes ) = @_;
+	my( $session, $object, $codes, $grepcodes ) = @_;
 
 	my $ds = $object->get_dataset;
 	my @fields = $ds->get_fields( 1 );
-	if( $object->get_dataset->confid eq "eprint" )
-	{
-		push @fields, $ds->get_field( "_fulltext" );
-	}
+
+#	if( $object->get_dataset->confid eq "eprint" )
+#	{
+#		push @fields, $ds->get_field( "_fulltext" );
+#	}
 
 	foreach my $field ( @fields )
 	{
-		my( $codes, $new_namecodes, $badwords ) = 
-			get_codes( $session, $ds, $field, $object );
+		my $value = $object->get_value( $field->get_name );
+		my( $new_codes, $new_grepcodes, $ignored ) = 
+			$field->get_index_codes( $session, $value );
 
 		my $name = $field->get_name;
-		foreach my $key ( @{$codes} )
+		foreach my $code ( @{$new_codes} )
 		{
-
-			$keys->{$name.":".$key} = 1;
+			$codes->{$name.":".$code} = 1;
 		}
-		foreach my $namecode ( @{$new_namecodes} )
+		foreach my $grepcode ( @{$new_grepcodes} )
 		{
-			push @{$namecodes}, [ $name, $namecode ];
+			push @{$grepcodes}, [ $name, $grepcode ];
 		}
 	}
 }
 
-sub get_codes
-{
-	my( $session, $dataset, $field, $object ) = @_;
+#	if( $field->get_name eq "_fulltext" )
+#	{
+#		my @docs = $object->get_all_documents;
+#		my $codes = [];
+#		my $badwords = [];
+#		foreach my $doc ( @docs )
+#		{
+#			my( $doccodes, $docbadwords );
+#			( $doccodes, $docbadwords ) = 
+#					$session->get_archive()->call( 
+#						"extract_words",
+#						$doc->get_text );
+#			push @{$codes},@{$doccodes};
+#			push @{$badwords},@{$docbadwords};
+#		}
+#		return( $codes, [], $badwords );
+#	}
 
-	if( !$field->is_text_indexable && !$field->is_type( "name" ) )
-	{
-		return( [], [], [] );
-	}
-
-	if( $field->get_name eq "_fulltext" )
-	{
-		my @docs = $object->get_all_documents;
-		my $codes = [];
-		my $badwords = [];
-		foreach my $doc ( @docs )
-		{
-			my( $doccodes, $docbadwords );
-			( $doccodes, $docbadwords ) = 
-					$session->get_archive()->call( 
-						"extract_words",
-						$doc->get_text );
-			push @{$codes},@{$doccodes};
-			push @{$badwords},@{$docbadwords};
-		}
-		return( $codes, [], $badwords );
-	}
-
-	my $value = $object->get_value( $field->get_name, 1 );
-
-	return( [], [], [] )unless( EPrints::Utils::is_set( $value ));
-
-	if( $field->is_type( "name" ) )
-	{
-		my( $codes, $namecodes ) = 
-			_extract_from_name( $value, $session );
-		return( $codes, $namecodes, [] );
-	}
-
-	my( $codes, $badwords ) = 
-		$session->get_archive()->call( 
-			"extract_words" , 
-			$value );
-	return( $codes, [], $badwords );
-}
-
-my $x=<<END;
-			Glaser	Hugh/Glaser	H/Glaser	Hugh B/Glaser	Hugh Bob/Glaser	Smith Glaser
-H/Glaser		X	X		X						
-H/Glaser-Smith		X	X		X						.
-H/Smith-Glaser		X	X		X						X
-Hugh/Glaser		X	X		X						
-Hugh K/Glaser		X	X		X						
-Hugh-Bob/Glaser		X	X		X		X		X		
-Hugh Bob/Glaser		X	X		X		X		X		
-Hugh B/Glaser		X	X		X		X		X	
-Hugh Bill/Glaser	X	X		X		X		 	
-H B/Glaser		X	X		X		X		X 	
-HB/Glaser		X	X		X		X		X 	
-H P/Glaser		X	X		X						
-H/Smith											
-Herbert/Glaser		X			X						
-Herbert/Smith					X						
-Q Hugh/Glaser		X	X								
-Q H/Glaser		X									
-
-			Glaser	Hugh/Glaser	H/Glaser	Hugh B/Glaser	Hugh Bob/Glaser	Smith Glaser
-H/Glaser		X	X		X						
-H/Glaser-Smith		X	X		X						X
-H/Smith-Glaser		X	X		X						X
-Hugh/Glaser		X	X		X						
-Hugh K/Glaser		X	X		X						
-Hugh-Bob/Glaser		X	X		X		X		X		
-Hugh Bob/Glaser		X	X		X		X		X		
-Hugh B/Glaser		X	X		X		X		X	
-Hugh Bill/Glaser	X	X		X		X		 	
-H B/Glaser		X	X		X		X		X 	
-HB/Glaser		X	X		X		X		X 	
-H P/Glaser		X	X		X						
-H/Smith											
-Herbert/Glaser		X			X						
-Herbert/Smith					X						
-Q Hugh/Glaser		X	X								
-Q H/Glaser		X									
-
-		
-Smith Glaser		Whole word in family IS glaser AND Whole word in family IS smith 	
-
-Glaser			Whole word in family IS glaser	
-
-Hugh/Glaser		Glaser + (Whole word in given is Hugh OR first initial in given is "H")
-
-H/Glaser		Glaser + (first initial in given is "H" OR first word in given starts with "H")
-
-Hugh B/Glaser		Glaser + (first initial in given is "H" OR first word in given is "Hugh" ) +
-				(second initial in given is "B" OR second word in given starts with "B")
-
-Hugh Bob/Glaser		Glaser + (first initial in given is "H" OR first word in given is "Hugh" ) +
-				(second iniital in given is "B" or second word in given is "Bob")
-
-Names:
-
-
-BQF
-*B-*Q-*F-*
-
-Ben Quantum Fierdash				[B][Q][Fierdash]
-*(Ben|B)*(Quantum|Q)*(Fierdash|F)*
-%[B]%[Q]%[F]%
-%[B]%[Q]%[Fierdash]%
-%[B]%[Quantum]%[F]%
-%[B]%[Quantum]%[Fierdash]%
-%[Ben]%[Q]%[F]%
-%[Ben]%[Q]%[Fierdash]%
-%[Ben]%[Quantum]%[F]%
-%[Ben]%[Quantum]%[Fierdash]%
-
-[Geddes][Harris]|[B][Q][Fierdash]
-
-Ben F
-*(Ben|B)*(F-)*
-
-Ben
-*(Ben|B)*
-
-Quantum
-*(Quantum|Q)*
-
-Q
-*(Q-)*
-
-
-
-[John][Mike][H]-[Smith][Jones]
-
-*[J*[M*-*[Jones]*
-
-*[J]*-*[Smith]* AND *[John]*-*[Smith]*
-
-
-END
-
-
-
-
-
-
-sub _extract_from_name
-{
-	my( $value, $session ) = @_;
-
-	if( ref($value) eq "ARRAY" )
-	{
-		my @r = ();
-		my @codes = ();
-		foreach( @{$value} ) 
-		{ 
-			my( $nameparts, $namecodes ) = _extract_from_name2( $_, $session );
-			push @r, @{$nameparts};
-			push @codes, @{$namecodes};
-		}
-		return( \@r, \@codes );
-	}
-
-	return _extract_from_name2( $value, $session ); 
-}
-
-sub _extract_from_name2
-{
-	my( $name, $session ) = @_;
-
-	my $f = &apply_mapping( $session, $name->{family} );
-	my $g = &apply_mapping( $session, $name->{given} );
-
-	# Add a space before all capitals to break
-	# up initials. Will screw up names with capital
-	# letters in the middle of words. But that's
-	# pretty rare.
-	my $len_g = $g->length;
-        my $new_g = utf8( "" );
-        for(my $i = 0; $i<$len_g; ++$i )
-        {
-                my $s = $g->substr( $i, 1 );
-                if( $s eq "\U$s" )
-                {
-			$new_g .= ' ';
-                }
-		$new_g .= $s;
-	}
-
-	my $code = '';
-	my @r = ();
-	foreach( split_words( $session, $f ) )
-	{
-		next if( $_ eq "" );
-		push @r, "\L$_";
-		$code.= "[\L$_]";
-	}
-	$code.= "-";
-	foreach( split_words( $session, $new_g ) )
-	{
-		next if( $_ eq "" );
-#		push @r, "given:\L$_";
-		$code.= "[\L$_]";
-	}
-
-	return( \@r, [$code] );
-}	
 
 sub split_words
 {
@@ -740,6 +553,7 @@ sub apply_mapping
 {
 	my( $session, $text ) = @_;
 
+	$text = "" if( !defined $text );
 	my $utext = utf8( "$text" ); # just in case it wasn't already.
 	my $len = $utext->length;
 	my $buffer = utf8( "" );

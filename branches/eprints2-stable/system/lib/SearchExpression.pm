@@ -1403,7 +1403,7 @@ sub perform_search
 
 	my $conditions = $self->get_conditions;
 
-	#print STDERR $conditions->describe."\n\n";
+#print STDERR $conditions->describe."\n\n";
 
 	$self->{unsorted_matches} = $self->get_conditions->process( 
 						$self->{session} );

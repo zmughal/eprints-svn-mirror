@@ -92,5 +92,15 @@ sub from_search_form
 
 sub get_search_group { return 'secret'; }  #!! can't really search secret
 
+# REALLY don't index passwords!
+sub get_index_codes
+{
+	my( $self, $session, $value ) = @_;
+
+	return( [], [], [] );
+}
+
+######################################################################
+
 ######################################################################
 1;
