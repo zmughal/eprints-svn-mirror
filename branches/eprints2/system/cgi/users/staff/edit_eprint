@@ -177,6 +177,7 @@ sub process
 		return;
 	}
 
+
 	if( $action eq "_todeletion" )
 	{
 		unless( $eprint->move_to_deletion() )
@@ -304,12 +305,20 @@ sub view_page
 	# actions for this form begin with _ (except edit and
 	# those passed to submission form)
 
+	my $sb = $session->get_archive()->get_conf( "skip_buffer" );	
 	my $buttons = {};
 	my $r1 = [];
 	my $r2 = [];
 	if( $eprint->get_dataset()->id() eq "inbox" )
 	{
-		$r1 = [ "_tobuffer" ];
+		if( defined $sb && $sb == 1 )
+		{
+			$r1 = [ "_toarchive" ];
+		}
+		else
+		{
+			$r1 = [ "_tobuffer" ];
+		}
 		$r2 = [ "edit", "_remove", "_clone" ];
 	}
 	if( $eprint->get_dataset()->id() eq "buffer" )
@@ -326,7 +335,14 @@ sub view_page
 	}
 	if( $eprint->get_dataset()->id() eq "archive" )
 	{
-		$r1 = [ "_tobuffer", "_todeletion" ];
+		if( defined $sb && $sb == 1 )
+		{
+			$r1 = [ "_toinbox", "_todeletion" ];
+		}
+		else
+		{
+			$r1 = [ "_tobuffer", "_todeletion" ];
+		}
 		$r2 = [ "edit", "_clone" ];
 	}
 	if( $eprint->get_dataset()->id() eq "deletion" )

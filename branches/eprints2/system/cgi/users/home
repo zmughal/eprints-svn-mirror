@@ -171,10 +171,18 @@ my $tools = [
 
 
 
+my $sb = $session->get_archive()->get_conf( "skip_buffer" );	
 my $dls = {};
 my $tool;
 foreach	$tool (@{$tools})
 {
+	# disable buffer option if skip_buffer is in effect:
+	if( $tool->{code} eq 'staff_buffer' && defined $sb && $sb == 1 )
+	{
+		next;
+	}
+
+
 	if( defined $tool->{priv} )
 	{
 		next unless $user->has_priv( $tool->{priv} );
