@@ -111,9 +111,9 @@ If you are not using the OAI system then just copy the new ArchiveOAIRender.pm c
 
 If you have already configured the OAI system then you need to add the required configuration for OAI 2.0. These can be copied from /opt/eprints2/defaultcfg/ArchiveOAIRender.pm. The two relevant sections are the block titled "OAI-PMH 2.0" and the subroutine C<make_metadata_oai_dc_oai2>. Copy these into your archives ArchiveOAIRender.pm and modify them if needed.
 
-= item *
+=item *
 
-Look at the section on setting up subscriptions in the "install" chapter.
+Look at the section on setting up subscriptions in the "Installation" chapter.
 
 You need to add some more items to the cron tab to mail out the subscriptions. One set of new cron entries per archive.
 
