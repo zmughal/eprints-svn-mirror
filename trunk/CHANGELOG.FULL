@@ -24,6 +24,9 @@ Tue Feb  6 14:30:49 GMT 2001
 * Fixed HTMLRender.pm code to display "subjects" now prints whole label
 with <BR>'s seperating them.
 
+Wed Feb  7 00:06:24 GMT 2001
+* Moved CHANGELOG.FULL into the base CVS directory
+* Added bin/examples and bin/examples/update_users_example
 
 --------------------------------------------------------------------------------
 
@@ -51,8 +54,10 @@ add some <BR> to end of left menu
 * configuration for "filter" and "userid" fields?
 * trawler, processor to convert eg latex to ps?
 * cgi/user page is a little iffy. Make it look nicer?
+* add bin/site for user created bins?
 
 docs:
 * password change script.
 * add subject to installation notes?
 add "multiple" option to table 2 in system notes?
+
