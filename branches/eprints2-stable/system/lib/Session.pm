@@ -118,12 +118,13 @@ sub new
 		my $args = $self->{request}->args;
 		$self->{query} = new CGI( $args );
 		$self->{offline} = 0;
-		my $hp=$self->{request}->hostname.$self->{request}->uri;
-		$self->{archive} = EPrints::Archive->new_archive_by_host_and_path( $hp );
+
+		my $archiveid = $self->{request}->dir_config( "EPrints_ArchiveID" );
+		$self->{archive} = EPrints::Archive->new_archive_by_id( $archiveid );
 		if( !defined $self->{archive} )
 		{
 			EPrints::Config::abort( "Can't load archive module for URL: ".
-				$self->{query}->url()."\n"." ( hpcode=$hp, mode=0 )" );
+				$self->{query}->url()."\n"." ( EPrints_ArchiveID=$archiveid, mode=0 )" );
 		}
 	}
 	elsif( $mode == 1 )
@@ -140,17 +141,6 @@ sub new
 		{
 			print STDERR "Can't load archive module for: $param\n";
 			return undef;
-		}
-	}
-	elsif( $mode == 2 )
-	{
-		$self->{query} = new CGI( {} );
-		$self->{offline} = 1;
-		$self->{archive} = EPrints::Archive->new_archive_by_host_and_path( $param );
-		if( !defined $self->{archive} )
-		{
-			EPrints::Config::abort( "Can't load archive module for URL: ".
-				$self->{query}->url()."\n"." ( hpcode=$param, mode=2 )" );
 		}
 	}
 	else

@@ -87,9 +87,7 @@ sub authen
 
 	return OK unless $r->is_initial_req; # only the first internal request
 
-
-	my $hp=$r->hostname.$r->uri;
-	my $session = new EPrints::Session( 2 , $hp );
+	my $session = new EPrints::Session;
 	
 	if( !defined $session )
 	{
@@ -193,9 +191,8 @@ sub authz
 	# but if we are looking at a document in the secure area then
 	# we need to do some work.
 
-	my $hp=$r->hostname.$r->uri;
-	my $session = new EPrints::Session( 2 , $hp );
-	my $archive = $session->get_archive();
+	my $session = new EPrints::Session;
+	my $archive = $session->get_archive;
 
 	my $uri = $r->uri;
 

@@ -1502,6 +1502,13 @@ before next release. (metadata types & fields)
  - Several improvements to vlit. Now has 2 levels of context, and
     more sensible links at the top of "human" mode, and a nicer
     stylesheet entry.
- 
+
+2003-10-22 cjg
+
+ - Changed generate_abstracts to set a PerlVar to identify the
+    archive rather than all that mucking around with host and path.
+ - Removed all host & path code to use the PerlVar from the apache
+    conf instead. Much nicer. Making a session from a CGI script
+    is now much more straight forward.
 
 ======================================================================

@@ -394,44 +394,37 @@ $aliases
   ErrorDocument 401 /error401.html
   ErrorDocument 404 /perl/handle_404
 
-  RewriteEngine on
-
   # Include this here, so that it's rewrite ruls come first.
   Include $vhostfile
 
-
-  # Rewrite Rules. [L] means "last". So the rewrite engine goes
-  # no further if it matches.
-
-  # Protect /perl/ from other rewrite rules
-  RewriteRule ^/perl/      -   [L]
-  RewriteRule ^/secure/    -   [L]
-  RewriteRule ^/archive/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])(.*)\$ /archive/\$1/\$2/\$3/\$4\$5
+  PerlSetVar EPrints_ArchiveID $archiveid
+  PerlTransHandler EPrints::Rewrite
 
 END
 
 my @langs = @{$archive->get_conf( "languages" )};
-my $defaultlang = $archive->get_conf( "defaultlanguage" );
-my $langid;
-foreach $langid ( @langs )
-{
-	next if( $langid eq $defaultlang );
-		print CONF <<END;
-  RewriteCond %{HTTP_COOKIE}   lang=$langid
-  RewriteRule ^/(.*)\$         /$langid/\$1   [L]
-
-END
-}
-
-print CONF <<END;
-  # Default Language
-  RewriteRule ^/(.*)\$         /$defaultlang/\$1   [L]
-
-END
+#my $defaultlang = $archive->get_conf( "defaultlanguage" );
+# cjg remove this stuff later.
+#
+#foreach my $langid ( @langs )
+#{
+	#next if( $langid eq $defaultlang );
+		#print CONF <<END;
+  #RewriteCond %{HTTP_COOKIE}   lang=$langid
+  #RewriteRule ^/(.*)\$         /$langid/\$1   [L]
+#
+#END
+#}
+#
+#print CONF <<END;
+  ## Default Language
+  #RewriteRule ^/(.*)\$         /$defaultlang/\$1   [L]
+#
+#END
 
 if( $archive->get_conf( "vlit" )->{enable} )
 {
-	foreach $langid ( @langs )
+	foreach my $langid ( @langs )
 	{
 		print CONF <<END;
   <Directory "$htdocs_path/$langid/archive">
@@ -479,9 +472,10 @@ my $secureconfig = <<END;
     PerlAuthzHandler EPrints::Auth::authz
     PerlSetVar EPrints_Security_Area Documents
     require valid-user
-    RewriteEngine on
-    RewriteBase $securepath/secure
-    RewriteRule ^([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])(.*)\$ \$1/\$2/\$3/\$4\$5 [L]
+  # cjg remove me before release
+  #  RewriteEngine on
+  #  RewriteBase $securepath/secure
+  #  RewriteRule ^([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])(.*)\$ \$1/\$2/\$3/\$4\$5 [L]
   </Directory>
 
   # This sets up the change_user URL, which does
