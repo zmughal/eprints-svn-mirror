@@ -46,11 +46,11 @@ all:
 	mkdir to-install
 	mkdir to-install/bin
 	mkdir to-install/perl_lib
-	cp -a cfg cgi html openarchives static to-install
+	tar cf - cfg cgi html openarchives static | tar xf - -C to-install
 	for i in bin/*; do \
 		sed <$$i 's%^#!.*$$%#!${PERL} -I${PREFIX}/perl_lib%' >to-install/$$i ; \
 	done
-	cp -a perl_lib/EPrints to-install/perl_lib
+	tar cf - perl_lib/Eprints | tar xf - -C to-install
 	files=`find to-install/cgi -type f | grep -v '.htaccess'` ; \
 	for i in $$files ; do \
 		echo "use lib '${PREFIX}/perl_lib';" >$$i.new ; \
@@ -60,7 +60,7 @@ all:
 ifeq ($(FULL_INSTALL),1)
 	@./readpw "Enter password to use for eprints database: " >_db_passwd ; \
 	chmod 600 _db_passwd
-	cp -a perl_lib/EPrintSite to-install/perl_lib
+	tar cf - perl_lib/Eprints | tar xf - -C to-install
 	${PERL} setsitevar to-install "sitename" "${SITENAME}"
 	${PERL} setsitevar to-install "description" "${DESCRIPTION}"
 	${PERL} setsitevar to-install "automail" "${AUTOADMIN}"
@@ -93,23 +93,23 @@ ifeq ($(CREATE_USER),1)
 endif
 	for i in ${core_dirs_exe} ; do \
 		${INSTALL} -d -m 755 -o ${USERNAME} -g ${GROUP} ${PREFIX}/$$i ; \
-		files=`find to-install/$$i -maxdepth 1 -type f` ; \
+		files=`perl findfiles.pl to-install/$$i` ; \
 		[ -n "$$files" ] && ${INSTALL} -m 755 -o ${USERNAME} -g ${GROUP} $$files ${PREFIX}/$$i ; \
 	done
 	for i in ${core_dirs_plain} ; do \
 		${INSTALL} -d -m 755 -o ${USERNAME} -g ${GROUP} ${PREFIX}/$$i ; \
-		files=`find to-install/$$i -maxdepth 1 -type f` ; \
+		files=`perl findfiles.pl to-install/$$i` ; \
 		[ -n "$$files" ] && ${INSTALL} -m 644 -o ${USERNAME} -g ${GROUP} $$files ${PREFIX}/$$i ; \
 	done
 ifeq ($(FULL_INSTALL),1)
 	for i in ${site_dirs_exe} ; do \
 		${INSTALL} -d -m 755 -o ${USERNAME} -g ${GROUP} ${PREFIX}/$$i ; \
-		files=`find to-install/$$i -maxdepth 1 -type f` ; \
+		files=`perl findfiles.pl to-install/$$i` ; \
 		[ -n "$$files" ] && ${INSTALL} -m 755 -o ${USERNAME} -g ${GROUP} $$files ${PREFIX}/$$i ; \
 	done
 	for i in ${site_dirs_plain} ; do \
 		${INSTALL} -d -m 755 -o ${USERNAME} -g ${GROUP} ${PREFIX}/$$i ; \
-		files=`find to-install/$$i -maxdepth 1 -type f` ; \
+		files=`perl findfiles.pl to-install/$$i` ; \
 		[ -n "$$files" ] && ${INSTALL} -m 644 -o ${USERNAME} -g ${GROUP} $$files ${PREFIX}/$$i ; \
 	done
 	chmod 600 ${PREFIX}/perl_lib/EPrintSite/SiteInfo.pm
