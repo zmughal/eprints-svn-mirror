@@ -44,29 +44,23 @@ use strict;
 #
 ######################################################################
 
-# Name for the site
-$EPrintSite::SiteInfo::sitename = "Eprint Archive";
-
 # Short text description
 $EPrintSite::SiteInfo::description = "";
 
 # E-mail address for human-read administration mail
 $EPrintSite::SiteInfo::admin = "admin\@lemur.ecs.soton.ac.uk";
 
-# Root of EPrint installation on the machine
-$EPrintSite::SiteInfo::local_root = "/opt/eprints/sites/lemurprints";
-
 # Host the machine is running on
-$EPrintSite::SiteInfo::host = "lemur.ecs.soton.ac.uk";
+
+my $host = `hostname`;
+chomp $host;
+$EPrintSite::SiteInfo::host = $host; # hack cus of CVS.
 
 # Stem for local ID codes
 $EPrintSite::SiteInfo::eprint_id_stem = "zook";
 
 # If 1, users can request the removal of their submissions from the archive
 $EPrintSite::SiteInfo::allow_user_removal_request = 1;
-
-# Server of static HTML + images, including port
-$EPrintSite::SiteInfo::server_static = "http://$EPrintSite::SiteInfo::host";
 
 # Mod_perl script server, including port
 $EPrintSite::SiteInfo::server_perl = "http://$EPrintSite::SiteInfo::host/perl";
@@ -78,29 +72,9 @@ $EPrintSite::SiteInfo::server_perl = "http://$EPrintSite::SiteInfo::host/perl";
 #
 ######################################################################
 
-# Site "home page" address
-$EPrintSite::SiteInfo::frontpage = "$EPrintSite::SiteInfo::server_static/";
 
-# Local directory holding HTML files read by the web server
-$EPrintSite::SiteInfo::local_html_root = "$EPrintSite::SiteInfo::local_root/html";
-
-# Local directory with the content of static web pages (to be given site border)
-$EPrintSite::SiteInfo::static_html_root = "$EPrintSite::SiteInfo::local_root/static";
-
-# Local directory containing the uploaded document file hierarchy
-$EPrintSite::SiteInfo::local_document_root = "$EPrintSite::SiteInfo::local_html_root/documents";
-
-# Corresponding URL of document file hierarchy
-$EPrintSite::SiteInfo::server_document_root = "$EPrintSite::SiteInfo::server_static/documents";
-
-# Local stem for HTML files generated for "browse by subject"
-$EPrintSite::SiteInfo::local_subject_view_stem = "$EPrintSite::SiteInfo::local_html_root/view-";
-
-# Corresponding URL stem for "browse by subject" HTML files
-$EPrintSite::SiteInfo::server_subject_view_stem = "$EPrintSite::SiteInfo::server_static/view-";
-
-# Local path of perl scripts
-$EPrintSite::SiteInfo::local_perl_root = "$EPrintSite::SiteInfo::local_root/cgi";
+# Local path of perl scriptsA
+$EPrintSite::SiteInfo::local_perl_root = "$EPrintSite::base_path/cgi";
 
 
 ######################################################################
@@ -114,141 +88,6 @@ $EPrintSite::SiteInfo::local_perl_root = "$EPrintSite::SiteInfo::local_root/cgi"
 # The named field should be of type "text".
 
 $EPrintSite::SiteInfo::useridfield = "ecsid";
-
-######################################################################
-#
-#  Site Look and Feel
-#
-######################################################################
-
-# Location of the root of the subject tree
-$EPrintSite::SiteInfo::server_subject_view_root = 
-	$EPrintSite::SiteInfo::server_subject_view_stem."ROOT.html";
-
-# parameters to generate the HTML header with.
-# TITLE will be set by the system as appropriate.
-# See the CGI.pm manpage for more info ( man CGI ).
-
-%EPrintSite::SiteInfo::start_html_params  = (
-	-BGCOLOR=>"#ffffff",
-	-FGCOLOR=>"#000000",
-	-HEAD=>[ Link( {-rel=>'stylesheet',
-			-type=>'text/css',
-			-href=>'/eprints.css',
-			-title=>'screen stylesheet',
-			-media=>'screen'} ) ],
-	-AUTHOR=>$EPrintSite::SiteInfo::admin,
-	-TOPMARGIN=>"0",
-	-LEFTMARGIN=>"0",
-	-MARGINWIDTH=>"0",
-	-MARGINHEIGHT=>"0" );
-
-# This is the HTML put at the top of every page. It will be put in the <BODY>,
-#  so shouldn't include a <BODY> tag.
-$EPrintSite::SiteInfo::html_banner = <<ENDHTML;
-<table border="0" cellpadding="0" cellspacing="0">
-  <tr>
-    <td align="center" valign="top" bgcolor="#dddddd" fgcolor="white">
-      <br>
-      <a href="$EPrintSite::SiteInfo::frontpage"><img border="0" width="100" height="100" src="$EPrintSite::SiteInfo::server_static/images/logo_sidebar.gif" ALT="$EPrintSite::SiteInfo::sitename"></a>
-    </td>
-    <td background="http://lemur.ecs.soton.ac.uk/~cjg/eborderr.gif"><IMG src="http://lemur.ecs.soton.ac.uk/~cjg/probity/4x4.gif" alt="" width="10" height="2"></td>
-    <td>
-      &nbsp;&nbsp;&nbsp;&nbsp;
-    </td>
-    <td>
-      <BR>
-      <H1>TITLE_PLACEHOLDER</H1>
-    </td>
-  </tr>
-  <tr>
-    <td bgcolor="#dddddd" align="center" valign="top">
-      <table border="0" cellpadding="0" cellspacing="0">
-        <tr>
-          <td align=center valign=top>
-            <A HREF="$EPrintSite::SiteInfo::frontpage">Home</A>\&nbsp;<BR><BR>
-            <A HREF="$EPrintSite::SiteInfo::server_static/information.html">About</A>\&nbsp;<BR><BR>
-            <A HREF="$EPrintSite::SiteInfo::server_subject_view_stem"."ROOT.html">Browse</A>\&nbsp;<BR><BR>
-            <A HREF="$EPrintSite::SiteInfo::server_perl/search">Search</A>\&nbsp;<BR><BR>
-            <A HREF="$EPrintSite::SiteInfo::server_static/register.html">Register</A>\&nbsp;<BR><BR>
-            <A HREF="$EPrintSite::SiteInfo::server_perl/users/subscribe">Subscriptions</A>\&nbsp;<BR><BR>
-            <A HREF="$EPrintSite::SiteInfo::server_perl/users/home">Deposit\&nbsp;Items</A>\&nbsp;<BR><BR>
-            <A HREF="$EPrintSite::SiteInfo::server_static/help">Help</A>
-          </td>
-        </tr>
-      </table>
-      <br>
-    </td>
-    <td background="http://lemur.ecs.soton.ac.uk/~cjg/eborderr.gif"><IMG src="http://lemur.ecs.soton.ac.uk/~cjg/probity/4x4.gif" alt="" width="10" height="2"></td>
-    <td>
-      &nbsp;&nbsp;&nbsp;&nbsp;
-    </td>
-    <td valign="top" width="95%">
-<BR>
-ENDHTML
-
-# This is the HTML put at the bottom of every page. Obviously, it should close
-#  up any tags left open in html_banner.
-$EPrintSite::SiteInfo::html_tail = <<ENDHTML;
-<BR>
-<HR noshade size="2">
-<address>
-Contact site administrator at: <a href=\"mailto:$EPrintSite::SiteInfo::admin\">$EPrintSite::SiteInfo::admin</a>
-</address>
-<BR><BR>
-    </td>
-  </tr>
-  <tr>
-    <td background="http://lemur.ecs.soton.ac.uk/~cjg/eborderb.gif"><IMG src="http://lemur.ecs.soton.ac.uk/~cjg/probity/4x4.gif" alt="" width="10" height="10"></td>
-    <td background="http://lemur.ecs.soton.ac.uk/~cjg/eborderc.gif"><IMG src="http://lemur.ecs.soton.ac.uk/~cjg/probity/4x4.gif" alt="" width="10" height="15"></td>
-  </tr>
-</table>
-ENDHTML
-
-#  E-mail signature, appended to every email sent by the software
-$EPrintSite::SiteInfo::signature =
-"--
- $EPrintSite::SiteInfo::sitename
- $EPrintSite::SiteInfo::frontpage
- $EPrintSite::SiteInfo::admin\n";
-
-#  Default text to send a user when "bouncing" a submission back to their
-#  workspace. It should leave some space for staff to give a reason.
-$EPrintSite::SiteInfo::default_bounce_reason =
-"Unfortunately your eprint:\n\n".
-"  _SUBMISSION_TITLE_\n\n".
-"could not be accepted into $EPrintSite::SiteInfo::sitename as-is.\n\n\n\n".
-"The eprint has been returned to your workspace. If you\n".
-"visit your item depositing page you will be able to\n".
-"edit your eprint, fix the problem and redeposit.\n";
-
-#  Default text to send a user when rejecting a submission outright.
-$EPrintSite::SiteInfo::default_delete_reason =
-"Unfortunately your eprint:\n\n".
-"  _SUBMISSION_TITLE_\n\n".
-"could not be accepted into $EPrintSite::SiteInfo::sitename.\n\n\n\n".
-"The eprint has been deleted.\n";
-
-#  Agreement text, for when user completes the depositing process.
-#  Set to "undef" if you don't want it to appear.
-$EPrintSite::SiteInfo::deposit_agreement_text =
-	"<P><EM><STRONG>For work being deposited by its own author:</STRONG> ".
-	"In self-archiving this collection of files and associated bibliographic ".
-	"metadata, I grant $EPrintSite::SiteInfo::sitename the right to store ".
-	"them and to make them permanently available publicly for free on-line. ".
-	"I declare that this material is my own intellectual property and I ".
-	"understand that $EPrintSite::SiteInfo::sitename does not assume any ".
-	"responsibility if there is any breach of copyright in distributing these ".
-	"files or metadata. (All authors are urged to prominently assert their ".
-	"copyright on the title page of their work.)</EM></P>\n".
-	"<P><EM><STRONG>For work being deposited by someone other than its ".
-	"author:</STRONG> I hereby declare that the collection of files and ".
-	"associated bibliographic metadata that I am archiving at ".
-	"$EPrintSite::SiteInfo::sitename) is in the public domain. If this is ".
-	"not the case, I accept full responsibility for any breach of copyright ".
-	"that distributing these files or metadata may entail.</EM></P>\n".
-	"<P>Clicking on the deposit button indicates your agreement to these ".
-	"terms.</P>\n";
 
 
 ######################################################################
