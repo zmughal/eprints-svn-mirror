@@ -105,6 +105,8 @@ produces in the foo organisation, or not.
  <ep:phrase ref="eprint_fieldopt_local_partial">only partially produced 
 locally</ep:phrase>
 
+=head2 Other things you may wish to change after adding a new field
+
 =item Add it to the citations file
 
 This is optional, only do this if you want it to appear in the citated forms. 
@@ -116,9 +118,9 @@ In our example case we only want this to appear when citing technical reports, s
  </ep:ifset>&title;. Technical Report<ep:ifset name="reportno"> 
  &reportno;</ep:ifset><ep:ifset name="department">, &department;
  </ep:ifset><ep:ifset name="institution">, &institution;</ep:ifset>. 
- &local;.</span></ep:linkhere></ep:citation> >>
+ &local;.</span></ep:linkhere></ep:citation> 
 
- All we've done is add C<&local;.> to the end. It's not inside C<< <ep:ifset name="local"> >> as it is a required field and will (should) always be set.
+All we've done is add C<&local;.> to the end. It's not inside C<< <ep:ifset name="local"> >> as it is a required field and will (should) always be set.
 
 =item Add it to the the Abstract (or View-User) page.
 
