@@ -84,6 +84,8 @@ sub do_package
 	system("/bin/rm `find . -name '.cvsignore'`")==0 or die "Couldn't remove.";
 	print "Copying installer...\n";
 	system("cp $originaldir/install-eprints.pl eprints/system/install-eprints.pl");
+	print "Copying bundled perl modules...\n";
+	system("cp -rv $originaldir/perl_mods/* eprints/system/lib/");
 	print "Inserting license information...\n";
 	chdir "eprints/system";
 
@@ -144,9 +146,12 @@ sub do_package
 		chomp;
 		s/\s*#.*$//;
 		next if /^\s*$/;
-		/(.*)\t(.*)/;
-		print "Copying $originaldir/export/$1 to $cd/eprints/$2\n";
-		system("cp $originaldir/export/$1 eprints/$2");
+
+		($from, $to, $recurse) = split /\t/;
+		$recstr = "";
+		print "Copying $originaldir/export/$from to $cd/eprints/$to\n";
+		$recstr = "-rv" if (defined $recurse);
+		system("cp $recstr $originaldir/export/$from eprints/$to");
 	}
 	close(FILECONF);
 
