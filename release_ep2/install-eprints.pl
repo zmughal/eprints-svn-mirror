@@ -7,13 +7,11 @@
 # mySQL install, etc. - you'll need the SuperInstaller for that.
 #
 ######################################################################
-#
 #  __COPYRIGHT__
 #
 # Copyright 2000-2008 University of Southampton. All Rights Reserved.
 # 
-#  __LICENSE__
-#
+# __LICENSE__
 ######################################################################
 
 use strict;
@@ -136,7 +134,7 @@ while (!$dirokay)
 			$systemsettings{"orig_version_desc"} = $EPrints::SystemSettings::conf->{"orig_version_desc"};
 			my $origv = $systemsettings{"orig_version"};
 			my $newv = $systemsettings{"version"};	
-			if ($origv gt $newv)
+			if (defined $origv && $origv gt $newv)
 			{
 				print <<DOWNGRADE;
 You already have a version of EPrints installed in this directory and it
@@ -146,7 +144,7 @@ Please obtain the latest version of EPrints and try again.
 DOWNGRADE
 				exit 1;
 			}
-			elsif ($origv eq $newv)
+			elsif (defined $origv && $origv eq $newv)
 			{
 				print "You already have this version installed.\n";
 				exit 1;
@@ -229,11 +227,6 @@ print FILEOUT "\n1;";
 
 
 close(FILEOUT);
-
-sub upgrade
-{
-	
-}
 
 sub full_install
 {
@@ -416,6 +409,48 @@ sub install
 	}
 }
 
+sub upgrade
+{
+	my $user = $EPrints::SystemSettings::conf->{"user"};
+	my $dir  = $EPrints::SystemSettings::conf->{"base_path"};
+
+	my(undef,undef,$uid,$gid) = getpwnam($user);
+	
+	print <<WARN;
+Warning: This will overwrite phrase files, program files, and documentation.
+If you've tweaked any of these, you may want to back them up before proceeding.
+WARN
+
+	exit if (get_yesno("Really upgrade?", "n") eq "n"); 
+
+	print "Upgrading files : [";
+
+        my @executable_dirs = ("bin", "cgi");
+        my @normal_dirs = ("sys", "docs", "perl_lib", "phrases");
+
+        foreach(@executable_dirs)
+        {
+                install($_, 0755, $uid, $gid, $dir);
+                print "|";
+        }
+
+        foreach(@normal_dirs)
+        {
+                install($_, 0644, $uid, $gid, $dir);
+                print "|";
+        }
+
+        print "]\n\n";
+	print <<HOORAY;
+=====
+=
+= Update successful. You should now restart your webserver and hope for the best.
+=
+=====
+
+HOORAY
+}
+
 sub get_yesno
 {
 	my($question, $default) = @_;
@@ -429,7 +464,7 @@ sub get_yesno
 	chomp($response);
 	if ($response !~ /[yn]/i) { $response = $default; }
 
-	return $response;
+	return lc($response);
 }
 
 sub get_string
