@@ -2,7 +2,53 @@ This file describes the major changes between versions. In addition you
 can assume every new version fixes minor bugs and typos. If you want to
 see the blow by blow account of every single change see the file called
 CHANGELOG.
+======================================================================
 
+EPRINTS 2.3.7                                                  2004-11-25
+-------------------------------------------------------------------------
+
+ - No longer depends on libapreq
+ - Required formats may now be varied depending on eprint. For example
+    an eprint of type "book" may not require any formats, whereas a 
+    "article" may require PDF or HTML. 
+ - Added search support for special case where a search is being done
+    over names and text fields and a two letter surname is searched for.
+ - Three new config options for fields: input_assist, input_advice_right
+    and input_advice_below.
+ - General revamp of default style, added print style sheet, an XSLT 
+    file for OAI responses, nicer use of CSS, file sizes in metadata
+    page.
+ - Made RSS output standards compliant.
+ - Added an RSS output mode compatible with buggy postnuke RSS handler.
+ - Added warnings over unrecognised config options, rather than silent
+    ignore. This should help catch typos.
+ - Submission buffer now sorted by submission date.
+ - Added option to allow buttons to appear at top of search pages.
+ - Reduced startup message to a single line.
+ - New script; erase_fulltext_cache to force re-indexing of fulltext.
+
+EPRINTS 2.3.6                                                  2004-08-09
+-------------------------------------------------------------------------
+
+ - Fix of bug introduced in 2.3.5
+
+EPRINTS 2.3.5                                                  2004-08-06
+-------------------------------------------------------------------------
+
+ - New options and logging for indexer.
+ - XHTML produced by EPrints no longer contains xmlns attributes, this
+    should make it possible to properly validate the XHTML.
+ - Short URL's: The the URL of an eprint is now /123/ instead of
+    /archive/00000123/. This must be enabled in existing archives. Old
+    URL's will continue to work.
+ - Caching function for full text to reduce CPU load of indexer.
+ - Support for hungarian characters in indexer.
+ - Bugfixes.
+
+EPRINTS 2.3.4                                                  2004-07-06
+-------------------------------------------------------------------------
+
+ - Bugfixes.
 
 EPRINTS 2.3.3                                                  2004-03-04
 -------------------------------------------------------------------------

@@ -2005,7 +2005,7 @@ PACKAGE: 2.2.99.2
     is created. This includes secure area links for docs not yet in
     the live archive. 
 
-2004-10-15 cjg
+2004-11-15 cjg
 
  - Added three new field parameters, input_assist, input_advice_right
     and input_advice_below. Names subject to change.
@@ -2037,7 +2037,7 @@ PACKAGE: 2.2.99.2
     page which was not loaded right then.
  - buffer page now sorted by reverse datestamp
 
-2004-10-22 cjg
+2004-11-22 cjg
 
  - added underscore "_" to the list of characters not to escape in 
     views. This could cause some broken links, I'll make it a config
@@ -2051,12 +2051,12 @@ PACKAGE: 2.2.99.2
     but may be of interest to others.
  - Added a link from the subscriptions page back to the user home.
 
-2004-10-23 cjg
+2004-11-23 cjg
 
  - required_formats can now be a function pointer which returns the
     formats required for that eprint. 
 
-2004-10-24 cjg
+2004-11-24 cjg
 
  - Improved CSS stylesheet to look much nicer, only affects new 
     archives.
@@ -2077,14 +2077,23 @@ PACKAGE: 2.2.99.2
  - Added new script: erase_fulltext_cache to force recreation of
     words and indexcodes files.
 
-2004-10-24 cjg
+2004-11-24 cjg
 
  - Added config to apache config to allow awstats to be symlinked
     in without getting messed around by mod_perl.
 
-2004-10-25 cjg
+2004-11-25 cjg
 
  - Search field titles now have the same styling as input field
     titles.
  - Search by ID part now works via the web interface.
+
+2004-11-25 cjg
+
+ - removed cgi/oai and reindex as these are obselete.
+ - Fixed repeated "comment" element in XSL
+
+======================================================================
+25/11/2004 - EPRINTS-2.3.7
+======================================================================
 
