@@ -373,43 +373,13 @@ sub get_packs
 	}
 }
 
-sub dump_environment
-{
-	open(RESFILE, ">".$ENVIRONMENT{resume_file}) || die "Unable to open resume file.\n";
-	print RESFILE "%ENVIRONMENT = \n(\n";
-	my $k;
-	foreach $k (keys %ENVIRONMENT)
-	{
-		print RESFILE "$k	=> \"".$ENVIRONMENT{$k}."\",\n";
-	}
-	print RESFILE ");\n\n";
-	print RESFILE "\@PACKAGES = \n(";
-	my $package;
-	foreach $package (@PACKAGES)
-	{
-		print RESFILE "{\n";
-		my $pcginfo;
-		foreach $pcginfo ($package)
-		{
-			foreach(keys %{$pcginfo})
-			{
-				print RESFILE $_." => \"".%{$pcginfo}->{$_}."\",\n";
-			}
-		}
-		print RESFILE "},\n";
-	}
-	print RESFILE ");\n";
-	close(RESFILE);
-}
 sub exit_nicely
 {
 	my($msg) = @_;
 	if (defined $msg) { print $msg; }
-	dump_environment();
 	print STDERR <<WAH;
 ====== Bailing ======\n
-Unable to complete installation. Current state is written to $ENVIRONMENT{"resume_file"}.
-To resume install, use './installer.pl --resuming'.
+Unable to complete installation. 
 WAH
 	exit 1;
 }
@@ -434,19 +404,33 @@ $underline
 usage: ./installer.pl [arguments]
 
 Arguments:
-  --arch		Set the system architecture value.
   --automate_install	Assume all defaults are okay.
   --help		Display this file.
   --libraries		Colon-delimited string of extra library directories.
-  --no_root		Assume that no root access is required.
-  --resume_file		Set where to read/write the resume file.
-  --resuming		Whether to resume or not.
-  --silent		Show no text (except prompts if not silent).
+  --force		Assume that no root access is required.
+  --silent		Show no text.
   --verbose		Show lots of text.
   --version		Display version and exit.
+  --temp_dir		Where your temporary directory is (default is /tmp).
 EOH
 
 	exit(0);
+}
+
+sub download_package
+{
+	my($flname, $url) = @_;
+	print "Retrieving $flname	...";
+	if (`$ENVIRONMENT{wget} $url/$flname`)
+	{
+		print "	Done.\n";
+		return $flname;
+	}
+	else
+	{
+		print "	Failed.\n";
+		return "";
+	}
 }
 
 sub untgz
@@ -476,6 +460,7 @@ sub untar
 sub protect
 {
 	my($cmd) = @_;
+	return if ($ENVIRONMENT{dry_run});
 	$temp_filename = $ENVIRONMENT{temp_dir}."/eprints.tmp";
 	$log_filename  = $ENVIRONMENT{installer_dir}."/error.log";
 	# Delete the temp file if it exists.
@@ -678,7 +663,7 @@ sub standardcheck
 
 sub installer_main
 {
-	if (!$ENVIRONMENT{no_root})
+	if (!$ENVIRONMENT{force})
 	{
         	# We need to be root!
 		die("Sorry - you need to be root to run the installer.\n")
@@ -707,7 +692,7 @@ sub installer_main
 
 my $show_help 		= 0;
 my $resuming 		= 0;
-my $no_root		= 0;
+my $force		= 0;
 GetOptions(
 'verbose' 		=> \$ENVIRONMENT{verbose},
 'silent' 		=> \$ENVIRONMENT{silent},
@@ -715,18 +700,20 @@ GetOptions(
 'resume_file=s' 	=> \$ENVIRONMENT{resume_file},
 'automate_install' 	=> \$ENVIRONMENT{automate_install},
 'arch=s'		=> \$ENVIRONMENT{system_arch},
-'no_root' 		=> \$no_root,
+'force' 		=> \$force,
 'libraries=s' 		=> \$ENVIRONMENT{library_paths}, 
 'help'			=> \$show_help,
 'version'		=> \$ENVIRONMENT{show_version},
+'temp_dir'		=> \$ENVIRONMENT{temp_dir},
+'dry_run'		=> \$ENVIRONMENT{dry_run},
 ) || exit_help();
 
 if ($show_help) { exit_help() };
-if ($no_root && !$ENVIRONMENT{no_root} && $<!=0)
+if ($force && !$ENVIRONMENT{force} && $<!=0)
 {
 	print "\nWARNING: This script is designed to be run as root.\nForcing it to run as a non-root user may have adverse side effects!\n";
 }
-$ENVIRONMENT{no_root} = $no_root;
+$ENVIRONMENT{force} = $force;
 $ENVIRONMENT{installer_dir} = getcwd();
 installer_main();
 
