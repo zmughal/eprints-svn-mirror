@@ -31,7 +31,7 @@ print "Checking user ... ";
 if (0) #($<!=0) -- removed while testing.
 {
 	print "Failed!\n";
-	print "Sorry, his installer must be run as root.\n";
+	print "Sorry, this installer must be run as root.\n";
 	exit 1;
 }
 else { print "OK.\n\n"; }
@@ -221,11 +221,13 @@ USER
 	my $exists = 1;
 	my $group = "";
 	my(undef, undef, $ruid, $rgid) = getpwnam($user) or $exists = 0;
+
 	if ($exists)
 	{
 		($group, undef) = getgrnam($user);
 	}
-	else
+
+	if (!$exists || !defined($group))
 	{
 		print <<GROUP;
 User $user does not currently exist, so a group will be required
@@ -344,7 +346,7 @@ sub install
 	foreach(@files)
 	{
 		open(INFILE, "$currdir/$dir/$_");
-		open(OUTFILE, ">$dest/$dir/$_") or die "Can't write to $dest/$dir/$_";
+		open(OUTFILE, ">$dest/$dir/$_") or die "Can't write to $dest/$dir/$_ : $!";
 		if ($dir eq "bin")
 		{
 			if ($_ eq "startup.pl")
@@ -365,13 +367,13 @@ sub install
 		close(INFILE);
 		if ($_ ne ".htaccess")
 		{
-			chmod($perms, "$dest/$dir/$_") or die "Unable to chmod $dest/$dir/$_";
+			chmod($perms, "$dest/$dir/$_") or die "Unable to chmod $dest/$dir/$_ : $!";
 		}
 		else
 		{
-			chmod(0644, "$dest/$dir/$_") or die "Unable to chmod $dest/$dir/$_";
+			chmod(0644, "$dest/$dir/$_") or die "Unable to chmod $dest/$dir/$_ : $!";
 		}
-		chown($user, $group, "$dest/$dir/$_") or die "Unable to chown $dest/$dir/$_";
+		chown($user, $group, "$dest/$dir/$_") or die "Unable to chown $dest/$dir/$_ : $!";
 	}
 	foreach(@dirs)
 	{
