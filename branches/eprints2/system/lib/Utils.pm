@@ -424,9 +424,108 @@ sub send_mail
 	{
 		$mail_func = \&send_mail_via_sendmail;
 	}
+$mail_func = \&send_mail_via_smtp;
 
 	&{$mail_func}( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname );
 }	
+
+######################################################################
+#
+# $encoding = get_encoding($mystring)
+# 
+# Returns:
+# "7-bit" if 7-bit clean
+# "utf-8" if utf-8 encoded
+# "iso-8859-1" if 8859-1 encoded
+# "unknown" if of unknown origin (shouldn't really happen)
+#
+######################################################################
+
+
+######################################################################
+=pod
+
+=item EPrints::Utils::send_mail_via_smtp( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname )
+
+undocumented
+
+=cut
+######################################################################
+
+sub send_mail_via_smtp
+{
+	my( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname ) = @_;
+	#   Archive   string   utf8   utf8      utf8      DOM    DOM   string    utf8
+
+	my $smtphost = $archive->get_conf( 'smtp_server' );
+
+	use Net::SMTP;
+	my $smtp=Net::SMTP->new( $smtphost );
+	if( !defined $smtp )
+	{
+		$archive->log( "Failed to create smtp connection to $smtphost" );
+		return( 0 );
+	}
+	# test ?
+#	unless( open( SENDMAIL, "|".$archive->invocation( "sendmail" ) ) )
+#	{
+#		$archive->log( "Failed to invoke sendmail: ".
+#			$archive->invocation( "sendmail" ) );
+#		return( 0 );
+#	}
+
+	# Addresses should be 7bit clean, but I'm not checking yet.
+	# god only knows what 8bit data does in an email address.
+
+	#cjg should be in the top of the file.
+	my $MAILWIDTH = 80;
+	my $arcname_q = mime_encode_q( EPrints::Session::best_language( 
+		$archive,
+		$langid,
+		%{$archive->get_conf( "archivename" )} ) );
+
+	my $name_q = mime_encode_q( $name );
+	my $subject_q = mime_encode_q( $subject );
+	my $adminemail = $archive->get_conf( "adminemail" );
+
+	my $utf8body 	= EPrints::Utils::tree_to_utf8( $body , $MAILWIDTH );
+	my $utf8sig	= EPrints::Utils::tree_to_utf8( $sig , $MAILWIDTH );
+	my $utf8all	= $utf8body.$utf8sig;
+	my $type	= get_encoding($utf8all);
+	my $content_type_q = 'text/plain; charset="'.$type.'"';
+	my $msg = $utf8all;
+	if ($type eq "iso-8859-1")
+	{
+		$msg = $utf8all->latin1; 
+	}
+
+	$smtp->mail( $adminemail );
+	$smtp->to( $address );
+	$smtp->data();
+
+	my $mailheader = <<END;
+From: "$arcname_q" <$adminemail>
+To: "$name_q" <$address>
+Subject: $arcname_q: $subject_q
+Precedence: bulk
+Content-Type: $content_type_q
+Content-Transfer-Encoding: 8bit
+END
+	if( defined $replyto )
+	{
+		my $replytoname_q = mime_encode_q( $replytoname );
+		$mailheader.= "Reply-To: \"$replytoname_q\" <$replyto>\n";
+	}
+
+	# de Unicode::String the strings!
+	$smtp->datasend( "$mailheader" );  
+	$smtp->datasend( "\n" );
+	$smtp->datasend( "$msg" );  
+	$smtp->dataend();
+	$smtp->quit;
+
+	return( 1 );
+}
 
 ######################################################################
 =pod
@@ -497,18 +596,6 @@ END
 	close(SENDMAIL) or return( 0 );
 	return( 1 );
 }
-
-######################################################################
-#
-# $encoding = get_encoding($mystring)
-# 
-# Returns:
-# "7-bit" if 7-bit clean
-# "utf-8" if utf-8 encoded
-# "iso-8859-1" if 8859-1 encoded
-# "unknown" if of unknown origin (shouldn't really happen)
-#
-######################################################################
 
 
 ######################################################################

@@ -24,6 +24,7 @@ $c{"tar"}="@TAR_PATH@";
 $c{"gunzip"}="@GUNZIP_PATH@";
 $c{"wget"}="@WGET_PATH@";
 $c{"sendmail"}="@SENDMAIL_PATH@";
+$c{"smtp_server"}="@SMTP_SERVER@";
 $c{"latex"}="@LATEX_PATH@";
 $c{"dvips"}="@DVIPS_PATH@";
 $c{"convert"}="@CONVERT_PATH@";
@@ -192,6 +193,10 @@ else
 $systemsettings->{"version_id"} = $version_id;
 $systemsettings->{"version"} = $version;
 
+if( defined $c{"smtp_server"} && $c{"smtp_server"} ne "" )
+{
+	$systemsettings->{"smtp_server"} = $c{"smtp_server"};
+}
 if( defined $c{"enable_gdome"} && $c{"enable_gdome"} )
 {
 	$systemsettings->{"enable_gdome"} = 1;
@@ -205,9 +210,9 @@ if( defined $c{"apache"} )
 {
 	$systemsettings->{"apache"} = $c{"apache"};
 }
-if( !defined $systemsettings->{"apache"} || $systemsettings->{"apache"} ne "2" )
+if( !defined $systemsettings->{"apache"} || $systemsettings->{"apache"} ne "1" )
 {
-	$systemsettings->{"apache"} = "1";
+	$systemsettings->{"apache"} = "2";
 }
 
 unless( getpwnam($systemsettings->{"user"}) )
@@ -678,15 +683,6 @@ Hooray! Your EPrints2 installation was successful!
  - Move into $base_path and run:
      bin/configure_archive
 
- Please note:
- You will also require a working sendmail configuration.
- This should just involve inserting the line
-
- DH<yourmailserver>
-
- in your sendmail.cf, where <yourmailserver> is your SMTP
- mail server address.
-   
  Good Luck!
 
 ======================================================================

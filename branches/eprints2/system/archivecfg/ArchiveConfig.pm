@@ -693,7 +693,12 @@ $c->{use_mimetex} = 0;
 # $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname
 # Archive   string   utf8   utf8      utf8      DOM    DOM   string    utf8
 #
-# $c->{send_email} = &some_function;
+
+# $c->{send_email} = \&EPrints::Utils::send_mail_via_sendmail;
+# $c->{send_email} = \&some_function;
+
+# Uses the smtp_server specified in SystemSettings
+$c->{send_email} = \&EPrints::Utils::send_mail_via_smtp;
 
 
 # Log timings on submissions. 

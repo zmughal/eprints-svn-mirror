@@ -9,7 +9,7 @@ VIRTUALHOST=
 
 PERL_SEARCH_PATH="$PATH:/usr/local/bin:/opt/perl/bin:/opt/PERL/bin"
 AC_ARG_WITH(perl,
-    [ --with-perl=[PATH]       path of perl interpreter ],
+    [  --with-perl=[PATH]        path of perl interpreter ],
     [
         AC_MSG_CHECKING([perl interpreter])
         PERL_PATH=$withval
@@ -44,19 +44,19 @@ else
 fi
 
 AC_ARG_WITH(user,
-    [ --with-user=[USER]       install eprints to run as USER ],
+    [  --with-user=[USER]        install eprints to run as USER ],
     [
         INSTALL_USER=$withval
     ])
 
 AC_ARG_WITH(group,
-    [ --with-group=[GROUP]     install eprints to run as GROUP ],
+    [  --with-group=[GROUP]      install eprints to run as GROUP ],
     [
         INSTALL_GROUP=$withval
     ])
 
 AC_ARG_WITH(virtualhost,
-    [ --with-virtualhost=[VIRTUALHOST]    
+    [  --with-virtualhost=[VIRTUALHOST]    
                           use VIRTUALHOST rather than "*" for
                           Apache VirtualHost directives. ],
     [
@@ -65,7 +65,7 @@ AC_ARG_WITH(virtualhost,
 
 DISABLE_DF="0"
 AC_ARG_ENABLE(diskfree,
-    [ --disable-diskfree       disable disk free space calls],
+    [  --disable-diskfree      disable disk free space calls],
     [
         if test $enableval = no ; then
             DISABLE_DF="1"
@@ -74,7 +74,7 @@ AC_ARG_ENABLE(diskfree,
 
 DISABLE_GDOME="0"
 AC_ARG_ENABLE(gdome,
-    [ --disable-gdome          Don't try to use the XML::GDOME module],
+    [  --disable-gdome         don't try to use the XML::GDOME module],
     [
         if test $enableval = no ; then
             DISABLE_GDOME="1"
@@ -83,9 +83,17 @@ AC_ARG_ENABLE(gdome,
 
 APACHE=""
 AC_ARG_WITH(apache,
-    [ --with-apache=[VERSION]  version of apache to work with: 1 or 2],
+    [  --with-apache=[VERSION]   version of apache to work with: 1 or 2],
     [
         APACHE=$withval
+    ])
+
+SMTP=""
+AC_ARG_WITH(smtp-server,
+    [  --with-smtp-server=[HOSTNAME]  
+                          SMTP server to use for outgoing email],
+    [
+        SMTP_SERVER=$withval
     ])
 
 if test $DISABLE_DF = "0" ; then
@@ -115,7 +123,7 @@ dnl This is the path that we search for tools
 
 TOOL_PATH="$PATH:/usr/local/bin:/sbin:/usr/sbin:/usr/X11R6/bin:/usr/lib"
 AC_ARG_WITH(toolpath,
-    [ --with-toolpath=[PATH]   search path for tool programs ],
+    [  --with-toolpath=[PATH]    search path for tool programs ],
     [
         TOOL_PATH=$withval
     ])
@@ -178,15 +186,15 @@ fi
 
 AC_PATH_PROG(SENDMAIL_PATH, sendmail, "NOTFOUND", $TOOL_PATH)
 if test $SENDMAIL_PATH = "NOTFOUND"; then
-    echo "**************************************************************"
-    echo "*** Unable to find the location of one of the tools required"
-    echo "*** by eprints. Try running this script again giving the"
-    echo "*** --with-toolpath options to give a colon separated path"
-    echo "*** where the tools can be found"
-    echo "***"
-    echo "*** eprints configure will now continue, but some features may"
-    echo "*** not work unless this is resolved"
-    echo "**************************************************************"
+#    echo "**************************************************************"
+#    echo "*** Unable to find the location of one of the tools required"
+#    echo "*** by eprints. Try running this script again giving the"
+#    echo "*** --with-toolpath options to give a colon separated path"
+#    echo "*** where the tools can be found"
+#    echo "***"
+#    echo "*** eprints configure will now continue, but some features may"
+#    echo "*** not work unless this is resolved"
+#    echo "**************************************************************"
     AC_MSG_WARN([Unable to find sendmail])
 fi
 
@@ -234,14 +242,14 @@ if test $CONVERT_PATH = "NOTFOUND"; then
     AC_MSG_WARN([Unable to find convert, the ImageMagick tool])
 fi
 
-if test $APACHE = "2" ; then
-	CHECK_PERL_MOD(Apache::Const)
-	CHECK_PERL_MOD(Apache2)
-	CHECK_PERL_MOD(ModPerl::Registry)
-else
+if test "x$APACHE" = "x1" ; then
 	CHECK_PERL_MOD(Apache::Constants)
 	CHECK_PERL_MOD(Apache)
 	CHECK_PERL_MOD(Apache::Registry)
+else
+	CHECK_PERL_MOD(Apache::Const)
+	CHECK_PERL_MOD(Apache2)
+	CHECK_PERL_MOD(ModPerl::Registry)
 fi
 
 CHECK_PERL_MOD(Carp)
@@ -292,6 +300,7 @@ AC_SUBST(APACHE)
 AC_SUBST(INSTALL_USER)
 AC_SUBST(INSTALL_GROUP)
 AC_SUBST(VIRTUALHOST)
+AC_SUBST(SMTP_SERVER)
 
 AC_OUTPUT([
         install.pl
