@@ -1,18 +1,42 @@
 #!/usr/bin/perl
-@subs = 
-qw/phys-astr phys-astrp phys-chms phys-erth phys-mtrl phys-mthm phys-phys phys-stts scls-accn scls-anth scls-arch scls-bhvr scls-bsns scls-cgnt scls-cmmn scls-crmn scls-ecnm scls-edct scls-ggrp scls-glgy scls-gphy scls-gvrn scls-intr scls-lw scls-mngm scls-pltc scls-psyc scls-sclw scls-sclg scls-urbn /;
 
+`(echo yes; echo "") | /opt/eprints/bin/erase_archive`;
+`/opt/eprints/bin/create_databases`;
+
+@subs = ();
+print "SUBJECTS:\n";
+my $basedir = "/opt/eprints/html/documents/demo";
+`mkdir $basedir`;
+open(SUB,"/opt/eprints/cfg/subjects");
+while(<SUB>) {
+	chomp;
+	@data = split(":");
+	next unless $data[3];
+	push @subs,$data[0] ;
+	print "* $data[0]\n";
+}
+close SUB;
+print "----\n";
+
+open(MYSQL,"|mysql -B -u root eprints");
 for $id (1..1000) {
+	`mkdir $basedir/$id`;
 	$year = int rand(100)+1910;
-	print "INSERT INTO archive (eprintid,username,type,title,year,ispublished,refereed,pubdom,abstract,conference,dir) VALUES ('$id','cjg','confpaper','title goes here',$year,0,0,0,'barble this be da abstract','conference name','/somedir');\n";
-	for(0..rand(5)) {
+	print MYSQL "INSERT INTO archive (eprintid,username,type,title,year,ispublished,refereed,pubdom,abstract,conference,dir) VALUES ('$id','cjg','confpaper','title goes here',$year,0,0,0,'barble this be da abstract','conference name','demo/$id');\n";
+	for(0..rand(5)+1) {
 		$sur = ("Harris","Porrige","Jones","Smith","Buffet","Summers")[int rand 6];
 		$fir = ("Bill","Ben","Tim","Al","Will","Jules","Jon","Fred","Tony","Chris","Naomi","Jim")[int rand 12];
-		print "INSERT INTO archiveauxauthors VALUES ('$id',$_,'$fir','$sur');\n";
+		print MYSQL "INSERT INTO archiveauxauthors VALUES ('$id',$_,'$fir','$sur');\n";
 	}
-	for(0..rand(3)) {
+	for(0..rand(1)+1) {
+		$sur = ("Harris","Porrige","Jones","Smith","Buffet","Summers")[int rand 6];
+		$fir = ("Bill","Ben","Tim","Al","Will","Jules","Jon","Fred","Tony","Chris","Naomi","Jim")[int rand 12];
+		print MYSQL "INSERT INTO archiveauxeditors VALUES ('$id',$_,'$fir','$sur');\n";
+	}
+	for(0..rand(3)+1) {
 		$sub = $subs[int rand scalar @subs];
-		print "INSERT INTO archiveauxsubjects VALUES ('$id',$_,'$sub');\n";
+		print MYSQL "INSERT INTO archiveauxsubjects VALUES ('$id',$_,'$sub');\n";
 	}
 	print STDERR "$id\n";
 }
+close MYSQL;
