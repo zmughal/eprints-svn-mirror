@@ -103,7 +103,7 @@ foreach $rec (@records)
 	my $user = EPrints::User::create_user( $session,
 	                                       $rec->{username},
 	                                       lc $rec->{email},
-	                                       "Author" );
+	                                       $EPrints::User::access_levels[0] );
 
 
 	my @copy_fields = qw( passwd status dept org country url );
