@@ -7,7 +7,8 @@
 	"configeprints",
 	"configarchive",
 	"contact", 
-	"history" 
+	"history" ,
+	"logo"
 );
 %titles = (
 	intro => "Introduction",
@@ -16,8 +17,11 @@
 	configeprints => "Configuring the System",
 	configarchive => "Configuring an Archive",
 	contact => "Problems, Questions and Feedback",
-	history => "EPrints History (and Future Plans)"
+	history => "EPrints History (and Future Plans)",
+	logo => "The EPrints Logo"
 );
+
+my $DOCTITLE = "EPrints 2 Alpha Documentation";
 
 my $BASENAME = "eprints2-alpha2-docs";
 
@@ -39,7 +43,7 @@ foreach $file ( @files )
 open( OUT, ">docs/$BASENAME.txt" );
 print OUT <<END;
 ==============================================================================
-EPrints 2 - Alpha - Documentation
+$DOCTITLE
 ==============================================================================
 
 Contents:
@@ -100,3 +104,59 @@ chdir( "tmp" );
 `latex $BASENAME.tex`;
 `dvipdfm $BASENAME.dvi`;
 `mv $BASENAME.pdf ../docs/`;
+
+###############################################################################
+# HTML
+
+use Pod::Html;
+mkdir( '../docs/html' );
+`cp ../images/* ../docs/html`;
+foreach $file ( @files )
+{
+        print "($file)\n";
+	pod2html( 
+		"--title=".$DOCTITLE." - ".$titles{$file},
+		"--infile=../pod/$file.pod", 
+		"--outfile=../docs/html/$file.html",
+		"--header",
+		"--css=epdocs.css",
+		"--noindex"
+	);
+}
+
+open( INDEX, ">../docs/html/index.html" );
+print INDEX <<END;
+<html>
+<head>
+<title>$DOCTITLE</title>
+<link REL="stylesheet" HREF="epdocs.css" TYPE="text/css">
+<link REV="made" HREF="mailto:root@lemur.ecs.soton.ac.uk">
+</head>
+
+<body>
+<table BORDER=0 CELLPADDING=0 CELLSPACING=0 WIDTH=100%>
+<tr><td CLASS=block VALIGN=MIDDLE WIDTH=100% BGCOLOR="#cccccc">
+<font SIZE=+1><strong><p CLASS=block>&nbsp;$DOCTITLE</p></strong></font>
+</td></tr>
+</table>
+<h1>$DOCTITLE: Index</h1>
+<ul>
+END
+foreach $file ( @files )
+{
+	print INDEX "<li><a href=\"$file.html\">".$titles{$file}."</a></li>\n";
+}
+print INDEX <<END;
+</ul>
+<table BORDER=0 CELLPADDING=0 CELLSPACING=0 WIDTH=100%>
+<tr><td CLASS=block VALIGN=MIDDLE WIDTH=100% BGCOLOR="#cccccc">
+<font SIZE=+1><strong><p CLASS=block>&nbsp;$DOCTITLE</p></strong></font>
+</td></tr>
+</table>
+
+</body>
+
+</html>
+END
+close INDEX;
+
