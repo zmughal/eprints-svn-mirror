@@ -168,20 +168,20 @@ sub do_package
 		print "Newest sys: system-$l-$currsys\n";
 		if ($currsys>0)
 		{	
-			system("cp $originaldir/export/eprints/system/phrases/system-$l-$currsys eprints/phrases/system-phrases-$l.xml");
+			system("cp $originaldir/export/eprints/system/phrases/system-$l-$currsys eprints/sys/system-phrases-$l.xml");
 		}	
 		else
 		{
-			system("cp $originaldir/export/eprints/system/phrases/system-en-$ensys eprints/phrases/system-phrases-$l.xml");
+			system("cp $originaldir/export/eprints/system/phrases/system-en-$ensys eprints/sys/system-phrases-$l.xml");
 		}
 
 		if ($currarch>0)
 		{
-			system("cp $originaldir/export/eprints/system/phrases/archive-$l-$currarch eprints/phrases/archive-phrases-$l.xml");
+			system("cp $originaldir/export/eprints/system/phrases/archive-$l-$currarch eprints/defaultcfg/archive-phrases-$l.xml");
 		}
 		else
 		{
-			system("cp $originaldir/export/eprints/system/phrases/archive-en-$enarch eprints/phrases/archive-phrases-$l.xml");
+			system("cp $originaldir/export/eprints/system/phrases/archive-en-$enarch eprints/defaultcfg/archive-phrases-$l.xml");
 		}
 	}
 	system("cp $originaldir/export/eprints/system/cgi/users/.htaccess eprints/cgi/users/.htaccess");
