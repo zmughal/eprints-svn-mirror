@@ -14,18 +14,9 @@ $MILESTONE_VERSION = $EPRINTS_VERSION;
 	"eprints2-alpha-1" => "anchovy"
 );
 
-sub do_license
+sub insert_data
 {
-	my( $license_file, $version_info, $source) = @_;
-	my @license_text;
-	open LICENSE, $license_file or die "Unable to open license file: $!";
-	while( <LICENSE> )
-	{
-		chomp;
-		s/__VERSION__/$version_info/g;
-		push @license_text, "# $_";
-	}
-	close LICENSE;
+	my( $key, $value, $source, $multiline) = @_;
 
 	open IN, $source or die "Unable to open source file.\n";
 	my $perms = (stat IN)[2];
@@ -34,18 +25,27 @@ sub do_license
 
 	while ( <IN> )
 	{
-		chomp();
-		if( /__LICENSE__/ )
+		if( $multiline )
 		{
-			# Replace with license text
-			foreach (@license_text)
+			if( /$key/ )
 			{
-				print OUT "$_\n";
+				my $line;
+				foreach $line ( split( "\n", $value ) )
+				{
+					my $l2 = $_;
+					$l2=~s/$key/$line/;
+					print OUT $l2;
+				}
+			}
+			else
+			{
+				print OUT $_;
 			}
 		}
 		else
 		{
-			print OUT "$_\n";
+			s/$key/$value/g;
+			print OUT $_;
 		}
 	}
 
@@ -86,18 +86,40 @@ sub do_package
 	system("cp $originaldir/install-eprints.pl eprints/system/install-eprints.pl");
 	print "Inserting license information...\n";
 	chdir "eprints/system";
-	@files = `grep -l -d skip "__LICENSE__" install-eprints.pl archivecfg/* bin/* cgi/* cgi/users/* lib/*.pm`;
+
+	@files = 'install-eprints.pl';
+	my $dir;
+	foreach $dir ( "archivecfg", "bin", "cgi", "cgi/users", "lib" )
+	{
+		opendir( DIR, $dir );
+		my $file;
+		while( $file = readdir( DIR ) )
+		{
+			next if $file=~m/^\./; # not if it starts with .
+			next unless( -f "$dir/$file" );
+			push @files, "$dir/$file";
+		}
+		closedir( DIR );
+	}
+	my $license = "";
+	open( FILE, "$originaldir/$license_file" );
+	while( <FILE> ) { $license .= $_; }
+	close FILE;
+	my $genericpod = "";
+	open( FILE, "pod/generic.pod" );
+	while( <FILE> ) { $genericpod .= $_; }
+	close FILE;
 	foreach $file (@files)
 	{
-		chomp $file;
-		print STDERR "WARNING: Could not insert license file into $file.\n" 
-		unless do_license("$originaldir/$license_file", $package_version, $file)==0;
+		insert_data( "__GENERICPOD__", $genericpod, $file, 1 );
+		insert_data( "__LICENSE__", $license, $file, 1 );
+		insert_data( "__VERSION__", $package_version, $file );
 	}
 
 
 	# Build docs - cjg Mike this needs to be smarter about what to copy (alpha/beta etc)
 	chdir $originaldir."/export/eprints/ep2_docs";
-	`make`;
+	#`make`;
 	
 	print "Making tarfile...\n";
 	chdir $originaldir."/package";
