@@ -17,7 +17,7 @@ code:
     + userid/name combo field 
 	- make it editable, searchable etc.
     + OAI: People as a set!?
-    + TEXT/ID field for everything else.ZZ
+    + TEXT/ID field for everything else.
 * views
     + make views output which dosn't use wrapper.
     + make people views too, configurable.
@@ -45,6 +45,8 @@ code:
 	+ field HELP
 	+ static pages?
 	+ subject files
+	+ months!
+	+ What about .htaccess?
 * do CFG files get seperated accross instances?
 * CGI Scripts - some should be NO CACHE.
 * Mirroring System
@@ -106,9 +108,8 @@ Internationalise:
 ./cgi/user_eprints
 ./cgi/view_eprint
 
-./cgi/staff/.htaccess
-./cgi/staff/add_user
-./cgi/staff/buffer
+*	./cgi/staff/add_user [ shortform ]
+	./cgi/staff/buffer
 ./cgi/staff/create_subject
 ./cgi/staff/edit_eprint
 ./cgi/staff/edit_submission
@@ -119,23 +120,23 @@ Internationalise:
 ./cgi/staff/view_submission
 ./cgi/staff/view_user
 
-./cgi/users/.htaccess
-./cgi/users/home
-./cgi/users/record
-./cgi/users/review
-./cgi/users/submit
-./cgi/users/subscribe
+	./cgi/users/home [ bug in "New" button in trans version?? ]
+	./cgi/users/record
+*	./cgi/users/review [ metafields and help not intl'd ]
+	./cgi/users/submit
+	./cgi/users/subscribe
+
 	./lib/OpenArchives.pm
 	./lib/Citation.pm
 	./lib/Database.pm
 *	./lib/Deletion.pm
 *	./lib/Document.pm
 *	./lib/EPrint.pm
-./lib/HTMLRender.pm
+*	./lib/HTMLRender.pm
 	./lib/Log.pm
 	./lib/Mailer.pm
-./lib/MetaField.pm
-./lib/MetaInfo.pm
+	./lib/MetaField.pm
+	./lib/MetaInfo.pm
 	./lib/Name.pm
 	./lib/Language.pm
 	./lib/SearchExpression.pm
