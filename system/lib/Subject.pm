@@ -287,6 +287,15 @@ undocumented
 sub create
 {
 	my( $session, $id, $name, $parents, $depositable ) = @_;
+
+	if( $id !~ m/^[^\s]+$/ )
+	{
+		EPrints::Config::abort( <<END );
+Error. Can't create new subject. 
+The value '$id' is not a valid subject identifier.
+Subject id's may not contain whitespace.
+END
+	}
 	
 	my $actual_parents = $parents;
 	$actual_parents = [ $EPrints::Subject::root_subject ] if( !defined $parents );
@@ -442,7 +451,7 @@ sub get_parents
 ######################################################################
 =pod
 
-=item $foo = $thing->can_post( $user )
+=item $foo = $thing->can_post( [$user] )
 
 undocumented
 
@@ -495,8 +504,8 @@ sub render_with_path
 		{
 			if( !$first )
 			{
-				# lang ": "cjg
-				$v->appendChild( $session->make_text( ": ") );
+				$v->appendChild( $session->html_phrase( 
+					"lib/metafield:join_subject_parts" ) );
 			}
 			$first = 0;
 			$v->appendChild( $_->render_description() );
@@ -529,7 +538,7 @@ sub get_paths
 	}
 	if( $self->get_value( "subjectid" ) eq $EPrints::Subject::root_subject )
 	{
-		return ();
+		return ([]);
 	}
 	my( @paths ) = ();
 	foreach( @{$self->{data}->{parents}} )
@@ -560,7 +569,7 @@ sub get_paths
 ######################################################################
 =pod
 
-=item $foo = $thing->get_subjects ( $postableonly, $showtoplevel, $nestids )
+=item $foo = $thing->get_subjects ( $postableonly, $showtoplevel, $nestids, $nocascadelabel )
 
 undocumented
 
@@ -569,11 +578,11 @@ undocumented
 
 sub get_subjects 
 {
-	my( $self, $postableonly, $showtoplevel, $nestids ) = @_; 
+	my( $self, $postableonly, $showtoplevel, $nestids, $nocascadelabel ) = @_; 
 
 #cjg optimisation to not bother getting labels?
 	my( $subjectmap, $rmap ) = EPrints::Subject::get_all( $self->{session} );
-	return $self->_get_subjects2( $postableonly, !$showtoplevel, $nestids, $subjectmap, $rmap, "" );
+	return $self->_get_subjects2( $postableonly, !$showtoplevel, $nestids, $subjectmap, $rmap, "", !$nocascadelabel );
 	
 }
 
@@ -587,7 +596,7 @@ sub get_subjects
 
 sub _get_subjects2
 {
-	my( $self, $postableonly, $hidenode, $nestids, $subjectmap, $rmap, $prefix ) = @_; 
+	my( $self, $postableonly, $hidenode, $nestids, $subjectmap, $rmap, $prefix, $cascadelabel ) = @_; 
 	
 
 	my $postable = ($self->get_value( "depositable" ) eq "TRUE" ? 1 : 0 );
@@ -605,19 +614,19 @@ sub _get_subjects2
 		push @{$subpairs},[ ($nestids?$prefix:$id), $label ];
 	}
 	$prefix = "" if( $hidenode );
-	my $kid;
-	foreach $kid ( @{$rmap->{$id}} )# cjg sort on labels?
+	foreach my $kid ( @{$rmap->{$id}} )# cjg sort on labels?
 	{
 		my $kidmap = $kid->_get_subjects2( 
-				$postableonly, 0, $nestids, $subjectmap, $rmap, $prefix );
-		my $pair;
-		foreach $pair ( @{$kidmap} )
+				$postableonly, 0, $nestids, $subjectmap, $rmap, $prefix, $cascadelabel );
+		if( !$cascadelabel )
 		{
-
-			my $pair2 = [ 
-				$pair->[0], 
-				($hidenode?"":$label.": ").$pair->[1] ];
-			push @{$subpairs}, $pair2;
+			push @{$subpairs}, @{$kidmap};
+			next;
+		}
+		foreach my $pair ( @{$kidmap} )
+		{
+			my $label = ($hidenode?"":$label.": ").$pair->[1];
+			push @{$subpairs}, [ $pair->[0], $label ];
 		}
 	}
 
