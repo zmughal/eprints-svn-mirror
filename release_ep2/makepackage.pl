@@ -12,7 +12,9 @@ $MILESTONE_DESC_B = ") [Born on $DATE]";
 $MILESTONE_VERSION = $EPRINTS_VERSION;
 %codenames = (
 	"eprints2-alpha-1" => "anchovy",
-	"eprints2-alpha-2" => "pepperoni"
+	"eprints2-alpha-2" => "pepperoni",
+	"eprints2-pre-1"   => "fishfinger",
+	"eprints2-pre-2"   => "ovenchip"
 );
 
 sub insert_data
@@ -79,13 +81,13 @@ sub do_package
 	$originaldir = getcwd();
 	chdir "export";
 	system("cvs export -r $version_tag eprints/system >/dev/null")==0 or die "Could not export system.\n";
-	system("cvs export -r HEAD eprints/docs_ep2 >/dev/null")==0 or die "Could not export docs.\n";
+	system("cvs export -r $version_tag eprints/docs_ep2 >/dev/null")==0 or die "Could not export docs.\n";
 	print "Removing .cvsignore files...\n";
 	system("/bin/rm `find . -name '.cvsignore'`")==0 or die "Couldn't remove.";
 	print "Copying installer...\n";
 	system("cp $originaldir/install-eprints.pl eprints/system/install-eprints.pl");
 	print "Copying bundled perl modules...\n";
-	system("cp -rv $originaldir/perl_mods/* eprints/system/lib/");
+	system("cp -r $originaldir/perl_mods/* eprints/system/lib/");
 	print "Inserting license information...\n";
 	chdir "eprints/system";
 
@@ -139,18 +141,16 @@ sub do_package
 	close(DIRCONF);
 
 	print "Copying files...\n";
-	$cd = getcwd();
 	open(FILECONF, "$originaldir/conf/files.conf");
 	while(<FILECONF>)
 	{
 		chomp;
+		next if /^#/;
 		s/\s*#.*$//;
 		next if /^\s*$/;
-
 		($from, $to, $recurse) = split /\t/;
 		$recstr = "";
-		print "Copying $originaldir/export/$from to $cd/eprints/$to\n";
-		$recstr = "-rv" if (defined $recurse);
+		$recstr = "-r" if (defined $recurse);
 		system("cp $recstr $originaldir/export/$from eprints/$to");
 	}
 	close(FILECONF);
@@ -180,89 +180,101 @@ sub do_package
 	closedir(PHRSDIR);
 
 	# Nasty...
+#	foreach $l (@langs)
+#	{
+#		$currarch = 0;
+#		$currsys = 0;
+#		foreach(@files)
+#		{
+#			if (/archive-$l-([0-9]+)/)
+#			{
+#				if ($1>$currarch) { $currarch = $1; }
+#			}
+#			elsif (/system-$l-([0-9]+)/)
+#			{
+#				if ($1>$currsys) { $currsys = $1; }
+#			}
+#		}
+#		if ($l eq "en")
+#		{
+#			$enarch = $currarch;
+#			$ensys	= $currsys;
+#		}
+#		next if ($l eq "en");
+#
+#		print "For language $l:\n";
+#		print "Newest arch: archive-$l-$currarch\n";
+#		print "Newest sys: system-$l-$currsys\n";
+#		if ($currsys>0)
+#		{
+#			print "Copying $l language file.\n";	
+#			system("cp $originaldir/export/eprints/system/phrases/system-$l-$currsys eprints/cfg/system-phrases-$l.xml");
+#		}	
+#		else
+#		{
+#			print "Copying English language file as placeholder\n";
+#			system("cp $originaldir/export/eprints/system/phrases/system-en-$ensys eprints/cfg/system-phrases-$l.xml");
+#		}
+#
+#		if ($currarch>0)
+#		{
+#			print "Copying $l language file.\n";
+#			system("cp $originaldir/export/eprints/system/phrases/archive-$l-$currarch eprints/defaultcfg/phrases-$l.xml");
+#		}
+#		else
+#		{
+#			print "Copying English language file as placeholder\n";
+#			system("cp $originaldir/export/eprints/system/phrases/archive-en-$enarch eprints/defaultcfg/phrases-$l.xml");
+#		}
+#	}
+#	# ...Nasty
+#
+#	if ($type_num == 0)
+#	{
+#		# Here we copy over the nightly language files
+#		foreach $l (@langs)
+ #               {
+#			if (-e "$originaldir/export/eprints/system/phrases/archive-$l-current")
+#			{
+#				print "Transferring $l phrases...\n";
+#				system("cp $originaldir/export/eprints/system/phrases/archive-$l-current eprints/defaultcfg/phrases-$l.xml");
+#			}
+#			if (-e "$originaldir/export/eprints/system/phrases/system-$l-current")
+#			{
+#				print "Transferring $l system phrases...\n";
+#				system("cp $originaldir/export/eprints/system/phrases/system-$l-current eprints/cfg/system-phrases-$l.xml");
+#			}
+#		}
+#	}
+#	elsif($type_num == 1)
+#	{
+#		# Here we copy over the Alpha language files
+#		foreach $l (@langs)
+ #               {
+#			if (-e "$originaldir/export/eprints/system/phrases/archive-$l-1")
+#			{
+#				print "Transferring $l phrases...\n";
+#				system("cp $originaldir/export/eprints/system/phrases/archive-$l-1 eprints/defaultcfg/phrases-$l.xml");
+#			}
+#			if (-e "$originaldir/export/eprints/system/phrases/system-$l-1")
+#			{
+#				print "Transferring $l system phrases...\n";
+#				system("cp $originaldir/export/eprints/system/phrases/system-$l-1 eprints/cfg/system-phrases-$l.xml");
+#			}
+#		}
+#	}
 	foreach $l (@langs)
 	{
-		$currarch = 0;
-		$currsys = 0;
-		foreach(@files)
+		if (-e "$originaldir/export/eprints/system/phrases/system-$l-current")
 		{
-			if (/archive-$l-([0-9]+)/)
-			{
-				if ($1>$currarch) { $currarch = $1; }
-			}
-			elsif (/system-$l-([0-9]+)/)
-			{
-				if ($1>$currsys) { $currsys = $1; }
-			}
+			system("cp $originaldir/export/eprints/system/phrases/system-$l-current eprints/cfg/system-phrases-$l.xml");
 		}
-		if ($l eq "en")
+		if (-e "$originaldir/export/eprints/system/phrases/archive-$l-current")
 		{
-			$enarch = $currarch;
-			$ensys	= $currsys;
-		}
-		next if ($l eq "en");
-
-		print "For language $l:\n";
-		print "Newest arch: archive-$l-$currarch\n";
-		print "Newest sys: system-$l-$currsys\n";
-		if ($currsys>0)
-		{
-			print "Copying $l language file.\n";	
-			system("cp $originaldir/export/eprints/system/phrases/system-$l-$currsys eprints/cfg/system-phrases-$l.xml");
-		}	
-		else
-		{
-			print "Copying English language file as placeholder\n";
-			system("cp $originaldir/export/eprints/system/phrases/system-en-$ensys eprints/cfg/system-phrases-$l.xml");
-		}
-
-		if ($currarch>0)
-		{
-			print "Copying $l language file.\n";
-			system("cp $originaldir/export/eprints/system/phrases/archive-$l-$currarch eprints/defaultcfg/phrases-$l.xml");
-		}
-		else
-		{
-			print "Copying English language file as placeholder\n";
-			system("cp $originaldir/export/eprints/system/phrases/archive-en-$enarch eprints/defaultcfg/phrases-$l.xml");
+			system("cp $originaldir/export/eprints/system/phrases/archive-$l-current eprints/defaultcfg/phrases-$l.xml");
 		}
 	}
-	# ...Nasty
 
-	if ($type_num == 0)
-	{
-		# Here we copy over the nightly language files
-		foreach $l (@langs)
-                {
-			if (-e "$originaldir/export/eprints/system/phrases/archive-$l-current")
-			{
-				print "Transferring $l phrases...\n";
-				system("cp $originaldir/export/eprints/system/phrases/archive-$l-current eprints/defaultcfg/phrases-$l.xml");
-			}
-			if (-e "$originaldir/export/eprints/system/phrases/system-$l-current")
-			{
-				print "Transferring $l system phrases...\n";
-				system("cp $originaldir/export/eprints/system/phrases/system-$l-current eprints/cfg/system-phrases-$l.xml");
-			}
-		}
-	}
-	elsif($type_num == 1)
-	{
-		# Here we copy over the Alpha language files
-		foreach $l (@langs)
-                {
-			if (-e "$originaldir/export/eprints/system/phrases/archive-$l-1")
-			{
-				print "Transferring $l phrases...\n";
-				system("cp $originaldir/export/eprints/system/phrases/archive-$l-1 eprints/defaultcfg/phrases-$l.xml");
-			}
-			if (-e "$originaldir/export/eprints/system/phrases/system-$l-1")
-			{
-				print "Transferring $l system phrases...\n";
-				system("cp $originaldir/export/eprints/system/phrases/system-$l-1 eprints/cfg/system-phrases-$l.xml");
-			}
-		}
-	}
 	# system("cp $originaldir/export/eprints/system/cgi/users/.htaccess eprints/cgi/users/.htaccess");
 	system("cp $originaldir/licenses/gpl.txt eprints/COPYING");
 	system("chmod -R g-w eprints")==0 or die("Couldn't change permissions on eprints dir.\n");
