@@ -287,6 +287,15 @@ undocumented
 sub create
 {
 	my( $session, $id, $name, $parents, $depositable ) = @_;
+
+	if( $id !~ m/^[^\s]+$/ )
+	{
+		EPrints::Config::abort( <<END );
+Error. Can't create new subject. 
+The value '$id' is not a valid subject identifier.
+Subject id's may not contain whitespace.
+END
+	}
 	
 	my $actual_parents = $parents;
 	$actual_parents = [ $EPrints::Subject::root_subject ] if( !defined $parents );

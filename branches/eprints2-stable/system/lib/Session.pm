@@ -232,7 +232,7 @@ sub get_session_language
 		push @prefs, $cookie->value;
 	}
 
-	my $accept_language = $request->header_in( "Accept-Language" );
+	my $accept_language = $request->headers_in->{"Accept-Language"};
 
 	if( defined $accept_language )
 	{
@@ -1056,7 +1056,7 @@ sub render_single_option
 	my( $self, $key, $desc, $selected ) = @_;
 
 	my $opt = $self->make_element( "option", value => $key );
-	$opt->appendChild( $self->{doc}->createTextNode( $desc ) );
+	$opt->appendChild( $self->make_text( $desc ) );
 
 	if( $selected )
 	{

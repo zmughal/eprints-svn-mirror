@@ -1850,4 +1850,18 @@ PACKAGE: 2.2.99.2
  - Fixed VLit code to handle an archive on a sub path.
  
 ======================================================================
+05/02/2004 - EPRINTS-2.3.1
+======================================================================
 
+2004-02-24 cjg
+
+ - Added 'hideempty' option to default browse subject view.
+ - Changed configure_archive to just do GRANT ALL.
+ - Made generate_views correctly show two combined subject trees.
+ - Fixed bug in generate_views. hideempty works correctly again.
+ - Changed header_in to headers_in to work with libapreq v2 AND v1
+ - Fixed a bug which meant <options> tags could sometimes have
+    illegal characters in.
+ - import_subjects now dies with an error if a naughty subjectid
+    is used.
+ 
