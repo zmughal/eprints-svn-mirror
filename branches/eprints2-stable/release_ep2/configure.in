@@ -234,9 +234,16 @@ if test $CONVERT_PATH = "NOTFOUND"; then
     AC_MSG_WARN([Unable to find convert, the ImageMagick tool])
 fi
 
-CHECK_PERL_MOD(Apache::Constants)
-CHECK_PERL_MOD(Apache::Registry)
-CHECK_PERL_MOD(Apache)
+if test $APACHE = "2" ; then
+	CHECK_PERL_MOD(Apache::Const)
+	CHECK_PERL_MOD(Apache2)
+	CHECK_PERL_MOD(ModPerl::Registry)
+else
+	CHECK_PERL_MOD(Apache::Constants)
+	CHECK_PERL_MOD(Apache)
+	CHECK_PERL_MOD(Apache::Registry)
+fi
+
 CHECK_PERL_MOD(Carp)
 CHECK_PERL_MOD(Config)
 CHECK_PERL_MOD(Cwd)

@@ -667,7 +667,6 @@ Hooray! Your EPrints2 installation was successful!
        Group $group
  - su to $user
  - Move into $base_path and run:
-     bin/generate_apacheconf
      bin/configure_archive
 
  Please note:
