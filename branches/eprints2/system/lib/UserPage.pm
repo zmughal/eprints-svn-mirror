@@ -52,6 +52,7 @@ use EPrints::Session;
 use EPrints::SearchExpression;
 use EPrints::Utils;
 use EPrints::User;
+use strict;
 
 
 ######################################################################

@@ -15,7 +15,7 @@
 use EPrints::Session;
 use EPrints::UserPage;
 use EPrints::AnApache;
-
+use strict;
 my $session = new EPrints::Session;
 
 if( $session->get_archive->get_conf( "disable_userinfo" ) )

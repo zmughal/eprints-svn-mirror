@@ -43,6 +43,7 @@ use Unicode::String qw(utf8 latin1);
 use Data::Dumper;
 use Cwd;
 
+use strict;
 
 BEGIN {
 	use Carp qw(cluck);
@@ -202,8 +203,7 @@ sub init
 	{
 		EPrints::Config::abort( "Missing <languages> tag in $file" );
 	}
-	my $land_tag;
-	foreach $lang_tag ( $top_tag->getElementsByTagName( "lang" ) )
+	foreach my $lang_tag ( $top_tag->getElementsByTagName( "lang" ) )
 	{
 		my $id = $lang_tag->getAttribute( "id" );
 		my $supported = ($lang_tag->getAttribute( "supported" ) eq "yes" );
@@ -298,7 +298,7 @@ sub load_archive_config
 #		$ARCHIVEMAP{$ainfo->{securehost}.$ainfo->{securepath}} = $id;
 #	}
 	$ainfo->{aliases} = [];
-	foreach $tag ( $conf_tag->getElementsByTagName( "alias" ) )
+	foreach my $tag ( $conf_tag->getElementsByTagName( "alias" ) )
 	{
 		my $alias = {};
 		my $val = "";
@@ -309,13 +309,13 @@ sub load_archive_config
 #		$ARCHIVEMAP{$alias->{name}.$ainfo->{urlpath}} = $id;
 	}
 	$ainfo->{languages} = [];
-	foreach $tag ( $conf_tag->getElementsByTagName( "language" ) )
+	foreach my $tag ( $conf_tag->getElementsByTagName( "language" ) )
 	{
 		my $val = "";
 		foreach( $tag->getChildNodes ) { $val.=EPrints::XML::to_string( $_ ); }
 		push @{$ainfo->{languages}},$val;
 	}
-	foreach $tag ( $conf_tag->getElementsByTagName( "archivename" ) )
+	foreach my $tag ( $conf_tag->getElementsByTagName( "archivename" ) )
 	{
 		my $val = "";
 		foreach( $tag->getChildNodes ) { $val.=EPrints::XML::to_string( $_ ); }
@@ -434,7 +434,7 @@ sub load_archive_config_module
 
 	ensure_init();
 
-	$info = $ARCHIVES{$id};
+	my $info = $ARCHIVES{$id};
 	return unless( defined $info );
 
 	my @oldinc = @INC;
@@ -469,8 +469,8 @@ END
 	}
 	
 
-	my $function = "EPrints::Config::".$id."::get_conf";
-	my $config = &{$function}( $info );
+	my $function = \&{"EPrints::Config::".$id."::get_conf"};
+	my $config = &$function( $info );
 
 	##########################################################
 	#

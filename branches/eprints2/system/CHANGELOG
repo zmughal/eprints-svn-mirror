@@ -2323,3 +2323,13 @@ PACKAGE: 2.2.99.2
  - Fixed warning in Archive.pm (duplicated "my" line)
  - Fixed bug in installer: confusion between userid and username.
 
+2005-04-04 cjg
+ - Fixed bug in build_page which occured when generating non-secure
+    pages from a script when the site has secure mode on.
+ - Convert.pm messed about with STDIN and STDOUT for text/plain and 
+    text/html. Now it uses more sensible file handles.
+ - Several modules did not have "use strict" set. All modules and
+    scripts now use "use strict" and a number of warnings were 
+    corrected. Mostly adding "my" statements. This probably fixes
+    a bug which occasionally meant odd errors happend at startup.
+

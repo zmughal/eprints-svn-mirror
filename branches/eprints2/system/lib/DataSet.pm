@@ -158,6 +158,7 @@ package EPrints::DataSet;
 use EPrints::Document;
 
 use Carp;
+use strict;
 
 my $INFO = {
 	cachemap => {
@@ -355,7 +356,7 @@ sub new
 	my $archivefields = $archive->get_conf( "archivefields", $self->{confid} );
 	if( $archivefields )
 	{
-		foreach $fielddata ( @{$archivefields} )
+		foreach my $fielddata ( @{$archivefields} )
 		{
 			my $field = EPrints::MetaField->new( dataset=>$self , %{$fielddata} );	
 			push @{$self->{fields}}	, $field;
@@ -375,7 +376,7 @@ sub new
 			$self->{type_field_order}->{$typeid} = $typedata->{field_order};
 			if( !defined $self->{type_field_order}->{$typeid} )
 			{
-				$self->{type_field_order}->{$typeid} = keys %{$typedata->{fields}};
+				$self->{type_field_order}->{$typeid} = [keys %{$typedata->{fields}}];
 			}
 
 			$self->{types}->{$typeid} = [];

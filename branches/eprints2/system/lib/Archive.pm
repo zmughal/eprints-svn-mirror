@@ -79,6 +79,8 @@ use EPrints::Language;
 
 use File::Copy;
 
+use strict;
+
 my %ARCHIVE_CACHE = ();
 
 
@@ -727,7 +729,8 @@ sub call
 {
 	my( $self, $cmd, @params ) = @_;
 
-	return &{$self->{class}."::".$cmd}( @params );
+	my $fn = \&{$self->{class}."::".$cmd};
+	return &$fn( @params );
 }
 
 

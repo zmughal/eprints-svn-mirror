@@ -64,6 +64,7 @@ use Carp;
 #use EPrints::EPrint;
 use EPrints::Subscription;
 
+use strict;
 my $DEBUG_SQL = 0;
 
 # this may not be the current version of eprints, it's the version
@@ -760,7 +761,7 @@ sub update
 		my $v;
 		foreach $v ( @values )
 		{
-			$fname = $multifield->get_sql_name();	
+			my $fname = $multifield->get_sql_name();
 			$sql = "INSERT INTO $auxtable (".$keyfield->get_sql_name().", ";
 			$sql.= "pos, " if( $multifield->get_property( "multiple" ) );
 			$sql.= "lang, " if( $multifield->get_property( "multilang" ) );
@@ -791,8 +792,6 @@ sub update
 			}
 			$sql.=")";
 	                $rv = $rv && $self->do( $sql );
-
-			++$position;
 		}
 	}
 
@@ -838,12 +837,12 @@ sub remove
 	{
 		next unless( $field->get_property( "multiple" ) || $field->get_property( "multilang" ) );
 		my $auxtable = $dataset->get_sql_sub_table_name( $field );
-		$sql = "DELETE FROM $auxtable WHERE $where";
+		my $sql = "DELETE FROM $auxtable WHERE $where";
 		$rv = $rv && $self->do( $sql );
 	}
 
 	# Delete main table
-	$sql = "DELETE FROM ".$dataset->get_sql_table_name()." WHERE ".$where;
+	my $sql = "DELETE FROM ".$dataset->get_sql_table_name()." WHERE ".$where;
 	$rv = $rv && $self->do( $sql );
 
 	if( !$rv )
@@ -987,7 +986,7 @@ sub cache_exp
 	my( $self , $id ) = @_;
 
 	my $a = $self->{session}->get_archive();
-	$ds = $a->get_dataset( "cachemap" );
+	my $ds = $a->get_dataset( "cachemap" );
 
 	#cjg NOT escaped!!!
 	my $sql = "SELECT searchexp FROM ".$ds->get_sql_table_name() . " WHERE tableid = '$id' ";
@@ -1132,7 +1131,7 @@ sub make_buffer
 
 	my $id = $self->create_buffer( $keyname );
 
-	$sth = $self->prepare( "INSERT INTO $id VALUES (?)" );
+	my $sth = $self->prepare( "INSERT INTO $id VALUES (?)" );
 	foreach( @{$data} )
 	{
 		$sth->execute( $_ );
@@ -1214,7 +1213,7 @@ sub get_index_ids
 	my $results = [];
 	my $sth = $self->prepare( $sql );
 	$self->execute( $sth, $sql );
-	while( @info = $sth->fetchrow_array ) {
+	while( my @info = $sth->fetchrow_array ) {
 		my @list = split(":",$info[0]);
 #		# Remove first & last.
 # cjg no longer needed with new indexer
@@ -1259,7 +1258,7 @@ sub search
 	my $results = [];
 	my $sth = $self->prepare( $sql );
 	$self->execute( $sth, $sql );
-	while( @info = $sth->fetchrow_array ) {
+	while( my @info = $sth->fetchrow_array ) {
 		push @{$results}, $info[0];
 	}
 	$sth->finish;
@@ -1380,9 +1379,9 @@ sub from_cache
 			$sql.="AND C.pos<=".($offset+$count)." ";
 		}
 		$sql .= "ORDER BY C.pos";
-		$sth = $self->prepare( $sql );
+		my $sth = $self->prepare( $sql );
 		$self->execute( $sth, $sql );
-		while( @values = $sth->fetchrow_array ) 
+		while( my @values = $sth->fetchrow_array ) 
 		{
 			push @results, $values[0];
 		}
@@ -1393,7 +1392,7 @@ sub from_cache
 		@results = $self->_get( $dataset, 3, "cache".$cacheid, $offset , $count );
 	}
 
-	$ds = $self->{session}->get_archive()->get_dataset( "cachemap" );
+	my $ds = $self->{session}->get_archive()->get_dataset( "cachemap" );
 	my $sql = "UPDATE ".$ds->get_sql_table_name()." SET lastused = NOW() WHERE tableid = $cacheid";
 	$self->do( $sql );
 
@@ -1417,7 +1416,7 @@ sub drop_old_caches
 {
 	my( $self ) = @_;
 
-	$ds = $self->{session}->get_archive()->get_dataset( "cachemap" );
+	my $ds = $self->{session}->get_archive()->get_dataset( "cachemap" );
 	my $a = $self->{session}->get_archive();
 	my $sql = "SELECT tableid FROM ".$ds->get_sql_table_name()." WHERE";
 	$sql.= " (lastused < now()-interval ".($a->get_conf("cache_timeout") + 5)." minute AND oneshot = 'FALSE' )";
@@ -1673,7 +1672,7 @@ confess();
 		}
 		$sth = $self->prepare( $sql );
 		$self->execute( $sth, $sql );
-		while( @values = $sth->fetchrow_array ) 
+		while( my @values = $sth->fetchrow_array ) 
 		{
 			my $id = shift( @values );
 			my( $pos, $lang );
@@ -1790,7 +1789,7 @@ sub get_values
 		$fn = "$fn\_honourific,$fn\_given,$fn\_family,$fn\_lineage";
 	}
 	my $sql = "SELECT DISTINCT $fn FROM $table";
-	$sth = $self->prepare( $sql );
+	my $sth = $self->prepare( $sql );
 	$self->execute( $sth, $sql );
 	my @values = ();
 	my @row = ();
@@ -2066,7 +2065,7 @@ sub has_table
 {
 	my( $self, $tablename ) = @_;
 
-	$sql = "SHOW TABLES";
+	my $sql = "SHOW TABLES";
 	my $sth = $self->prepare( $sql );
 	$self->execute( $sth , $sql );
 	my @row;
@@ -2181,7 +2180,7 @@ sub get_tables
 {
 	my( $self ) = @_;
 
-	$sql = "SHOW TABLES";
+	my $sql = "SHOW TABLES";
 	my $sth = $self->prepare( $sql );
 	$self->execute( $sth , $sql );
 	my @row;
@@ -2213,8 +2212,8 @@ sub get_version
 
 	return undef unless $self->has_table( "version" );
 
-	$sql = "SELECT version FROM version;";
-	@row = $self->{dbh}->selectrow_array( $sql );
+	my $sql = "SELECT version FROM version;";
+	my @row = $self->{dbh}->selectrow_array( $sql );
 
 	return( $row[0] );
 }
@@ -2339,7 +2338,7 @@ sub mysql_version
 sub mysql_version_from_dbh
 {
 	my( $dbh ) = @_;
-	$sql = "SELECT VERSION();";
+	my $sql = "SELECT VERSION();";
 	my( $version ) = $dbh->selectrow_array( $sql );
 	$version =~ m/^(\d+).(\d+).(\d+)/;
 	return $1*10000+$2*100+$3;

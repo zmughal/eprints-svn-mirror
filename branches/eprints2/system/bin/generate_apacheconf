@@ -110,7 +110,6 @@ __GENERICPOD__
 
 use EPrints::Archive;
 use EPrints::Config;
-use strict;
 
 use strict;
 use Getopt::Long;
