@@ -1,0 +1,72 @@
+######################################################################
+#
+#  View User Record (Public)
+#
+######################################################################
+#
+#  09/03/2000 - Created by Robert Tansley
+#  $Id$
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints::Session;
+use EPrints::HTMLRender;
+
+my $session = new EPrints::Session;
+
+my $userid = $session->{render}->param( "username" );
+
+if( defined $userid )
+{
+	my $user = new EPrints::User( $session, $userid );
+
+	if( defined $user )
+	{
+		print $session->{render}->start_html( "User record for ".$user->full_name() );
+
+		print $session->{render}->render_user( $user, 1 );
+
+		print "<HR>\n";
+
+		my $rows = $session->{database}->retrieve(
+			$EPrints::Database::table_archive,
+			[ "eprintid" ],
+			[ "username LIKE \"$userid\"" ] );
+
+		print "<CENTER><P>User has ".scalar @$rows;
+		print ( scalar @$rows==1 ? " EPrint" : " EPrints" );
+		print " in the archive.</P></CENTER>\n";
+		
+		if( scalar @$rows > 0 )
+		{
+			print "<CENTER><P><A HREF=\"user_eprints?username=$userid\">Click here ".
+				"to view this author's EPrints.</A></P></CENTER>\n"; 
+		}
+		
+		print $session->{render}->end_html();
+	}
+	else
+	{
+		print $session->{render}->render_error(
+			"Unknown user",
+			"$EPrintSite::SiteInfo::frontpage",
+			"Return to front page" );
+	}
+}
+else
+{
+	print $session->{render}->render_error(
+		"No user specified!",
+		"$EPrintSite::SiteInfo::frontpage",
+		"Return to front page" );
+}
+
+$session->terminate();
