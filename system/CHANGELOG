@@ -1155,4 +1155,78 @@ before next release. (metadata types & fields)
  - (in tools/update_phrase_file) improved the layout of the 
     translation flagging and the flags now include the reference code.
 
+2003-05-20 cjg
 
+ - [c] Made default to hide lineage and honourific
+ - [c] Made default to skip linking stage
+ - New option; invert name input - so family name comes first
+*- [c] Made invert name input default to 1. Probably want to change
+    before release.
+*- New option: submission_hide_howmanyfiles, which will cause the 
+    "how many files?" part of the file upload to be supressed. May
+    be removed due to rewrite of that whole section.
+ - [c] TOTAL reworking of all metadata fields, eprint types and
+     some changes to citations (needs more there!). EPrint types
+     now divided into several pages.
+*- [c] Added some defaults & automatics which will need to be 
+    removed before release. Could use them as examples.
+ - [c] view & search default config changed to reflect new fields.
+*- [c] Added input_names to MetadataFieldsConfig.pm as an alternate
+    input method for names. Currently being used by creators and
+    editors. Should be moved to core code?
+ - [c] Changed OAI config to reflect new fields.
+ - [c] put a table around default site template to limit pages
+    to 720 wide for readability.
+ - [api] Added new option to SearchExpression. "citation" which 
+    specifies a citation to use instead of the defaults for each
+    type when rendering results.
+ - [c] Added new options: advanced_search_citation, 
+    simple_search_citation, latest_citation to allow the citation
+    to be used on those pages to be explicitly specified.
+ - [web] Deprecated set_password page, split it into "register"
+    and "reset_password" which should make things a little 
+    less confusing.
+*- [web] Extensively redesign of /perl/users/home - not finished
+    yet.
+ - Fixed small bug in edit_user
+ - Loosened up the regexp for archive id's. is now ^[a-zA-Z0-9_]+$
+ - [api] New method for document; get_baseurl which returns the
+    URL of the document directory, not the first item. get_url
+    now uses this to calculate it's value.
+ - [api] New method for Language: has_phrase(). This tests to see
+    if a phrase is available in the language (without useing
+    the fallback languaage)
+ - [c] New config option for fields: render_input. This overrides
+    the code which renders the input form for that field.
+ - [api] display_help and render_help now take an optional $type
+    parameter, to allow them to provide type specific help if
+    available (tested using $language->has_phrase()
+*- Added date search functionality, although still seems a bit
+    buggy.
+ - [api] Added get_lang method to Session, to get the current
+    language (as oppose to the current language id)
+ - [api] New method to Session: render_nbsp which renders an XHTML
+    DOM non breaking space.
+ - Fixed bug in menus which meant they where always the same 
+    default height as textareas.
+ - New option to $session->render_input_form: above_buttons which
+    is some XHTML data to insert above the buttons but below
+    the input fields.
+*- Significant changes to SubmissionForm. Changed the way in which
+    files are uploaded. Still in progress.
+ - Improved the rendering of emails in EPrints::Utils::tree_to_utf8
+    now does not over-do whitespace between paragraphs.
+ - [api] New function: EPrints::Utils::human_filesize($size_in_bytes)
+    which returns a sensible description of the given filesize 
+    e.g. 5Mb (rather than 5484023bytes)
+*- [c] Help & Fieldnames in the phrase file for all new fields. Not
+    quite done yet. Also improved the registration/password reset 
+    email.
+*- [c] Some changes to the style sheet, including making most of 
+    the system sans-serif.
+
+ 
+
+
+    
+======================================================================

@@ -95,7 +95,7 @@ sub new
 	$data{prefix} = "" if ( !defined $data{prefix} );
 
 	# 
-	foreach( qw/ session dataset allow_blank satisfy_all fieldnames staff order use_cache custom_order use_oneshot_cache use_private_cache cache_id prefix defaults / )
+	foreach( qw/ session dataset allow_blank satisfy_all fieldnames staff order use_cache custom_order use_oneshot_cache use_private_cache cache_id prefix defaults citation / )
 	{
 		$self->{$_} = $data{$_};
 	}
@@ -1225,7 +1225,7 @@ sub process_webpage
 			my $p = $self->{session}->make_element( "p" );
 			$p->appendChild( 
 				$result->render_citation_link( 
-					undef, 
+					$self->{citation},  #undef unless specified
 					$self->{staff} ) );
 			$bits{results}->appendChild( $p );
 		}

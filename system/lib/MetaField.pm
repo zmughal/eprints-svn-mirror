@@ -122,6 +122,7 @@ my $PROPERTIES =
 	max_resolution => 1,
 	render_single_value => 1,
 	render_value => 1,
+	render_input => 1,
 	top => 1,
 	type => -1
 };
@@ -266,22 +267,30 @@ sub display_name
 ######################################################################
 =pod
 
-=item $helpstring = $field->display_help( $session )
+=item $helpstring = $field->display_help( $session, [$type] )
 
 Use of this method is not recommended. Use render_help instead.
 
 Return the help information for a user inputing some data for this
 field as a UTF-8 encoded string in the language of the $session.
 
+If an optional type is specified then specific help for that
+type will be used if available. Otherwise the normal help will be
+used.
+
 =cut
 ######################################################################
 
 sub display_help
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $type ) = @_;
 
 	my $phrasename = $self->{confid}."_fieldhelp_".$self->{name};
 	$phrasename.= "_id" if( $self->get_property( "idpart" ) );
+	if( defined $type && $session->get_lang->has_phrase( $phrasename.".".$type ) )
+	{	
+		return $session->phrase( $phrasename.".".$type );
+	}
 
 	return $session->phrase( $phrasename );
 }
@@ -289,20 +298,29 @@ sub display_help
 ######################################################################
 =pod
 
-=item $xhtml = $field->render_help( $session )
+=item $xhtml = $field->render_help( $session, [$type] )
 
 Return the help information for a user inputing some data for this
 field as an XHTML chunk.
+
+If an optional type is specified then specific help for that
+type will be used if available. Otherwise the normal help will be
+used. Eg. help for the title of a book may have different examples to
+the default help for the title field.
 
 =cut
 ######################################################################
 
 sub render_help
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $type ) = @_;
 
 	my $phrasename = $self->{confid}."_fieldhelp_".$self->{name};
 	$phrasename.= "_id" if( $self->get_property( "idpart" ) );
+	if( defined $type && $session->get_lang->has_phrase( $phrasename.".".$type ) )
+	{	
+		return $session->html_phrase( $phrasename.".".$type );
+	}
 
 	return $session->html_phrase( $phrasename );
 }
@@ -655,7 +673,8 @@ sub _render_value1
 {
 	my( $self, $session, $value, $alllangs, $nolink ) = @_;
 
-	my $rendered = $self->_render_value2( $session, $value, $alllangs, $nolink );
+	# just main/id if that's what we're rendering
+	$value = $self->which_bit( $value );
 
 	if( $self->get_property( "hasid" ) )
 	{
@@ -663,7 +682,9 @@ sub _render_value1
 		# based on the value of it's ID. 
 		# It will either just pass it through, redo it from scratch
 		# or wrap it in a link.
-		
+	
+		my $rendered = $self->_render_value2( $session, $value->{main}, $alllangs, $nolink );
+
 		return $session->get_archive()->call( 
 			"render_value_with_id",  
 			$self, 
@@ -673,25 +694,22 @@ sub _render_value1
 			$rendered, 
 			$nolink );
 	}
-	else
+
+	my $rendered = $self->_render_value2( $session, $value, $alllangs, $nolink );
+
+	if( defined $self->{browse_link} && !$nolink)
 	{
-		if( defined $self->{browse_link} && !$nolink)
-		{
-			my $url = $session->get_archive()->get_conf( 
-					"base_url" );
-			$url .= "/view/".$self->{browse_link}."/".
-				EPrints::Utils::escape_filename( $value ).
-				".html";
-			my $a = $session->render_link( $url );
-			$a->appendChild( $rendered );
-			return $a;
-		}
-		else
-		{
-			return $rendered;
-		}
+		my $url = $session->get_archive()->get_conf( 
+				"base_url" );
+		$url .= "/view/".$self->{browse_link}."/".
+			EPrints::Utils::escape_filename( $value ).
+			".html";
+		my $a = $session->render_link( $url );
+		$a->appendChild( $rendered );
+		return $a;
 	}
 
+	return $rendered;
 }
 
 ######################################################################
@@ -894,6 +912,11 @@ sub render_input_field
 	if( defined $self->{toform} )
 	{
 		$value = &{$self->{toform}}( $value, $session );
+	}
+
+	if( defined $self->{render_input} )
+	{
+		return &{$self->{render_input}}( $self, $session, $value, $dataset, $type, $staff );
 	}
 
 	my( $html, $frag );
@@ -1277,16 +1300,32 @@ sub _render_input_field_aux
 						"lib/metafield:honourific" ) );
 			$tr->appendChild( $th );
 		}
+		if( $session->get_archive()->get_conf( "invert_name_input" ) )
+		{
+			$th = $session->make_element( "th" );
+			$th->appendChild( $session->html_phrase( 
+						"lib/metafield:family_names" ) );
+			$tr->appendChild( $th );
 
-		$th = $session->make_element( "th" );
-		$th->appendChild( $session->html_phrase( 
-					"lib/metafield:given_names" ) );
-		$tr->appendChild( $th );
+			$th = $session->make_element( "th" );
+			$th->appendChild( $session->html_phrase( 
+						"lib/metafield:given_names" ) );
+			$tr->appendChild( $th );
+	
+		}
+		else
+		{
+			$th = $session->make_element( "th" );
+			$th->appendChild( $session->html_phrase( 
+						"lib/metafield:given_names" ) );
+			$tr->appendChild( $th );
+	
+			$th = $session->make_element( "th" );
+			$th->appendChild( $session->html_phrase( 
+						"lib/metafield:family_names" ) );
+			$tr->appendChild( $th );
 
-		$th = $session->make_element( "th" );
-		$th->appendChild( $session->html_phrase( 
-					"lib/metafield:family_names" ) );
-		$tr->appendChild( $th );
+		}
 
 		unless( $session->get_archive()->get_conf( "hide_lineage" ) )
 		{
@@ -1490,7 +1529,14 @@ FALSE=> $session->phrase( $self->{confid}."_fieldopt_".$self->{name}."_FALSE")
 		{
 			push @namebits, "honourific";
 		}
-		push @namebits, "given", "family";
+		if( $session->get_archive()->get_conf( "invert_name_input" ) )
+		{
+			push @namebits, "family", "given";
+		}
+		else
+		{
+			push @namebits, "given", "family";
+		}
 		unless( $session->get_archive()->get_conf( "hide_lineage" ) )
 		{
 			push @namebits, "lineage";
@@ -2550,6 +2596,7 @@ sub get_property_default
 	return undef if( $property eq "make_single_value_orderkey" );
 	return undef if( $property eq "render_single_value" );
 	return undef if( $property eq "render_value" );
+	return undef if( $property eq "render_input" );
 
 	EPrints::Config::abort( 
 		"Unknown property in get_property_default: $property" );

@@ -65,71 +65,98 @@ $fields->{user} = [
 
 $fields->{eprint} = [
 
-	{ name => "abstract", input_rows => 10, type => "longtext",
-		input_cols => 90 },
-
-	{ name => "altloc", type => "url", multiple => 1 },
-
-	{ name => "authors", type => "name", multiple => 1, input_boxes => 6,
-		hasid => 1 },
-
-	{ name => "chapter", type => "text", maxlength => 5 },
-
-	{ name => "commref", type => "text" },
-
-	{ name => "confdates", type => "text" },
-
-	{ name => "conference", type => "text" },
-
-	{ name => "confloc", type => "text" },
-
-	{ name => "department", type => "text" },
-
-	{ name => "editors", type => "name", multiple => 1, hasid=>1 },
-
-	{ name => "institution", type => "text" },
-
-	{ name => "ispublished", type => "set", 
-			options => [ "unpub","inpress","pub" ] },
-
-	{ name => "keywords", type => "longtext", input_rows => 2 },
-
-	{ name => "month", type => "set", input_rows => 1,
-		options => [ "jan","feb","mar","apr","may","jun",
-			"jul","aug","sep","oct","nov","dec" ] },
-
-	{ name => "note", type => "longtext", input_rows => 3 },
-
-	{ name => "number", type => "text", maxlength => 6 },
-
-	{ name => "pages", type => "pagerange" },
-
-	{ name => "pubdom", type => "boolean", input_style=>"radio" },
-
-	{ name => "publication", type => "text" },
-
-	{ name => "publisher", type => "text" },
-
-	{ name => "refereed", type => "boolean", input_style=>"radio" },
-
-# nb. Can't call this field "references" because that's a MySQL keyword.
-	{ name => "referencetext", type => "longtext", input_rows => 3 },
-
-	{ name => "reportno", type => "text" },
-
-	{ name => "series", type => "text" },
-
-	{ name => "subjects", type=>"subject", top=>"subjects", multiple => 1, browse_link => "subjects" },
-
-	{ name => "thesistype", type => "text" },
+	{ name => "creators", type => "name", multiple => 1, input_boxes => 4,
+		hasid => 1, render_input=>\&input_names, input_id_cols=>20 }, 
 
 	{ name => "title", type => "longtext" },
 
+	{ name => "ispublished", type => "set", 
+			options => [ "pub","inpress","submitted" , "unpub" ] },
+
+	{ name => "subjects", type=>"subject", top=>"subjects", multiple => 1, browse_link => "subjects" },
+
+# local subjects
+
+	{ name => "full_text_status", type=>"set",
+			options => [ "public", "restricted", "none" ] },
+
+# local groups
+
+	{ name => "monograph_type", type=>"set",
+			options => [ "technical_report", "other" ] },
+
+	{ name => "pres_type", type=>"set",
+			options => [ "paper", "speech", "poster", "other" ] },
+
+	{ name => "keywords", type => "longtext", input_rows => 2 },
+
+	{ name => "note", type => "longtext", input_rows => 3 },
+
+	{ name => "suggestions", type => "longtext" },
+
+	{ name => "abstract", input_rows => 10, type => "longtext",
+		input_cols => 90 },
+
+	{ name => "date_sub", type=>"date", min_resolution=>"Y" },
+
+	{ name => "date_issue", type=>"date", min_resolution=>"Y" },
+
+	{ name => "date_effective", type=>"date", min_resolution=>"Y" },
+
+	{ name => "series", type => "text" },
+
+	{ name => "publication", type => "text" },
+
 	{ name => "volume", type => "text", maxlength => 6 },
 
-	{ name => "year", type => "year" },
+	{ name => "number", type => "text", maxlength => 6 },
 
-	{ name => "suggestions", type => "longtext" }
+	{ name => "publisher", type => "text" },
+
+	{ name => "place_of_pub", type => "text", sql_index => 0 },
+
+	{ name => "pagerange", type => "pagerange", sql_index => 0 },
+
+	{ name => "pages", type => "int", maxlength => 6, sql_index => 0 },
+
+	{ name => "event_title", type => "text", sql_index => 0 },
+
+	{ name => "event_location", type => "text", sql_index => 0 },
+	
+	{ name => "event_dates", type => "text", sql_index => 0 },
+
+	{ name => "event_type", type => "set", options=>[ "conference","workshop","other" ] },
+
+	{ name => "id_number", type => "text" },
+
+	{ name => "patent_applicant", type => "text", sql_index => 0 },
+
+	{ name => "institution", type => "text" },
+
+	{ name => "department", type => "text", sql_index => 0 },
+
+	{ name => "thesis_type", type => "set", options=>[ "msc","phd","other"] },
+
+	{ name => "refereed", type => "boolean", input_style=>"radio" },
+
+	{ name => "isbn", type => "text" },
+
+	{ name => "issn", type => "text" },
+
+# DELETE ME....cjg
+	{ name => "chapter", type => "text", maxlength => 5, sql_index => 0 },
+
+	{ name => "book_title", type => "text", sql_index => 0 },
+	
+	{ name => "editors", type => "name", multiple => 1, hasid=>1,
+		 input_boxes => 4 },
+
+	{ name => "official_url", type => "url", sql_index => 0 },
+
+# nb. Can't call this field "references" because that's a MySQL keyword.
+	{ name => "referencetext", type => "longtext", input_rows => 3 }
+#######################
+
 ];
 
 # Don't worry about this bit, remove it if you want.
@@ -176,6 +203,8 @@ return $fields;
 sub set_eprint_defaults
 {
 	my( $data, $session ) = @_;
+
+	$data->{type} = "article";
 }
 
 sub set_user_defaults
@@ -188,6 +217,7 @@ sub set_document_defaults
 	my( $data, $session, $eprint ) = @_;
 
 	$data->{language} = $session->get_langid();
+	$data->{security} = "";
 }
 
 sub set_subscription_defaults
@@ -224,6 +254,28 @@ sub set_subscription_defaults
 sub set_eprint_automatic_fields
 {
 	my( $eprint ) = @_;
+
+	my $type = $eprint->get_value( "type" );
+	if( $type eq "monograph" || $type eq "thesis" )
+	{
+		unless( $eprint->is_set( "institution" ) )
+		{
+			$eprint->set_value( "institution", "University of Southampton" );
+		}
+		# department too
+	}
+
+	if( $type eq "patent" )
+	{
+		$eprint->set_value( "ispublished", "pub" );
+		# department too
+	}
+
+	if( $type eq "thesis" )
+	{
+		$eprint->set_value( "ispublished", "unpub" );
+		# department too
+	}
 }
 
 sub set_user_automatic_fields
@@ -288,5 +340,206 @@ sub update_archived_eprint
 	my( $eprint ) = @_;
 }
 
+
+use strict;
+sub input_names
+{
+	my( $field, $session, $value, $dataset, $type, $staff ) = @_;
+
+    	my $boxcount = $field->{input_boxes};
+
+	$value = [] if( !defined $value );
+
+	my $cnt = scalar @{$value};
+
+	if( $boxcount<=$cnt )
+	{
+		if( $field->{name} eq "editperms" )
+		{
+			$boxcount = $cnt;
+		}
+		else
+		{
+			$boxcount = $cnt+$field->{input_add_boxes};
+		}
+	}
+	my $spacesid = $field->{name}."_spaces";
+
+	if( $session->internal_button_pressed() )
+	{
+		$boxcount = $session->param( $spacesid );
+		if( $session->internal_button_pressed(
+			$field->{name}."_morespaces" ) )
+		{
+			$boxcount += $field->{input_add_boxes};
+		}
+	}
+
+	my $html = $session->make_doc_fragment();
+
+	my( $table, $tr, $td, $th );
+	$table = $session->make_element( "table", border=>0 );
+	$html->appendChild( $table );
+
+
+	$tr = $session->make_element( "tr" );
+	$table->appendChild( $tr );
+	$th = $session->make_element( "th" );
+	$tr->appendChild( $th );
+	$th->appendChild( $session->render_nbsp );
+
+	my @namebits = ();
+
+ 	unless( $session->get_archive()->get_conf( "hide_honourific" ) )
+	{
+		$th = $session->make_element( "th" );
+		$th->appendChild( $session->html_phrase(
+					"lib/metafield:honourific" ) );
+		$tr->appendChild( $th );
+		push @namebits, "honourific";
+	}
+
+ 	if( $session->get_archive()->get_conf( "invert_name_input" ) )
+	{
+		$th = $session->make_element( "th" );
+		$th->appendChild( $session->html_phrase(
+					"lib/metafield:family_names" ) );
+		$tr->appendChild( $th );
+
+		$th = $session->make_element( "th" );
+		$th->appendChild( $session->html_phrase(
+					"lib/metafield:given_names" ) );
+		$tr->appendChild( $th );
+
+		push @namebits, "family", "given";
+	}
+	else
+	{
+		$th = $session->make_element( "th" );
+		$th->appendChild( $session->html_phrase(
+					"lib/metafield:given_names" ) );
+		$tr->appendChild( $th );
+
+		$th = $session->make_element( "th" );
+		$th->appendChild( $session->html_phrase(
+					"lib/metafield:family_names" ) );
+		$tr->appendChild( $th );
+
+		push @namebits, "given", "family";
+	}
+ 	unless( $session->get_archive()->get_conf( "hide_lineage" ) )
+	{
+		$th = $session->make_element( "th" );
+		$th->appendChild( $session->html_phrase(
+						"lib/metafield:lineage" ) );
+		$tr->appendChild( $th );
+		push @namebits, "lineage";
+	}
+
+	if( $field->get_property( "hasid" ) )
+	{
+		if( !$field->get_property( "id_editors_only" ) || $staff  )
+		{
+			$th = $session->make_element( "th" );
+			$th->appendChild( $session->make_text(
+				$field->get_id_field()->display_name( $session ) ) );
+			$tr->appendChild( $th );
+		}
+
+	}
+
+
+
+	my $i;
+	for( $i=1 ; $i<=$boxcount ; ++$i )
+	{
+		my $subvalue = $value->[$i-1];
+		my $suffix = "_".$i;
+
+ 		my $idvalue;
+		if( $field->get_property( "hasid" ) && defined $subvalue )
+		{
+			$idvalue = $subvalue->{id};
+			$subvalue = $subvalue->{main};
+		}
+		$subvalue = {} if( !defined $subvalue );
+
+		$tr = $session->make_element( "tr" );
+		$table->appendChild( $tr );
+		$td = $session->make_element( "td" );
+		$tr->appendChild( $td );
+		$td->appendChild( $session->make_text( $i.". " ) );
+
+	 	foreach( @namebits )
+		{
+			my $size = $field->{input_name_cols}->{$_};
+			$td = $session->make_element( "td" );
+			$tr->appendChild( $td );
+			$td->appendChild( $session->make_element(
+				"input",
+				"accept-charset" => "utf-8",
+				name => $field->{name}.$suffix."_".$_,
+				value => $subvalue->{$_},
+				size => $size,
+				maxlength => $field->{maxlength} ) );
+		}
+
+			
+	   	if( !$field->get_property( "id_editors_only" ) || $staff  )
+		{
+			$td = $session->make_element( "td" );
+			$tr->appendChild( $td );
+			$td->appendChild( $session->make_element(
+				"input",
+				"accept-charset" => "utf-8",
+				name => $field->{name}.$suffix."_id",
+				value => $idvalue,
+				size => $field->{input_id_cols} ) );
+		}
+		else
+		{
+			# append to last td. Doesn't really matter which
+			$td->appendChild( $session->make_element(
+				"input",
+				"accept-charset" => "utf-8",
+				type => "hidden",
+				name => $field->{name}.$suffix."_id",
+				value => $idvalue ) );
+		}
+
+#<div >2. </div><div   style="margin-left: 20px"  id="inputfield_creators_2"><table ><tr ><th >Family Name(s)</th><th >Given Name(s)/Initials</th></tr><tr ><td ><input   maxlength="255"  accept-charset="utf-8"  size="20"  name="creators_2_family" /></td><td ><input   maxlength="255"  accept-charset="utf-8"  size="20"  name="creators_2_given" /></td></tr></table><div   class="formfieldidname">Creators email (if known):</div><div   class="formfieldidinput"><input   accept-charset="utf-8"  size="40"  name="creators_2_id" /></div></div>
+
+
+	}
+	$html->appendChild( $session->make_element(
+		"input",
+		"accept-charset" => "utf-8",
+		type => "hidden",
+		name => $spacesid,
+		value => $boxcount ) );
+
+	$html->appendChild( $session->render_internal_buttons(
+		$field->{name}."_morespaces" =>
+			$session->phrase(
+			       "lib/metafield:more_spaces" ) ) );
+
+	return $html;
+}
+
+
+
 # Return true to indicate the module loaded OK.
 1;
+
+
+
+
+
+
+
+
+
+
+
+
+
