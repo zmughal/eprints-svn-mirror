@@ -769,49 +769,4 @@ sub extract_words
 	return( \@g , \@b );
 }
 
-######################################################################
-#
-# Sort Routines
-#
-#  The following routines are used to sort lists of eprints according
-#  to different schemes. They are linked to text descriptions of ways
-#  of ordering eprints lists in SiteInfo.
-#
-#  Each method has two automatic parameters $_[0] and $_[1], both of which 
-#  are eprint objects. The routine should return 
-#   -1 if $_[0] is earlier in the ordering scheme than $_[1]
-#    1 if $_[0] is later in the ordering scheme than $_[1]
-#    0 if $_[0] is at the same point in the ordering scheme than $_[1]
-#
-######################################################################
-
-sub eprint_cmp_by_year
-{
-	return ( $_[1]->{year} <=> $_[0]->{year} ) ||
-		EPrints::Name::cmp_names( $_[0]->{authors} , $_[1]->{authors} ) ||
-		( $_[0]->{title} cmp $_[1]->{title} ) ;
-}
-
-sub eprint_cmp_by_year_oldest_first
-{
-	return ( $_[0]->{year} <=> $_[1]->{year} ) ||
-		EPrints::Name::cmp_names( $_[0]->{authors} , $_[1]->{authors} ) ||
-		( $_[0]->{title} cmp $_[1]->{title} ) ;
-}
-
-sub eprint_cmp_by_author
-{
-	
-	return EPrints::Name::cmp_names( $_[0]->{authors} , $_[1]->{authors} ) ||
-		( $_[1]->{year} <=> $_[0]->{year} ) || # largest year first
-		( $_[0]->{title} cmp $_[1]->{title} ) ;
-}
-
-sub eprint_cmp_by_title
-{
-	return ( $_[0]->{title} cmp $_[1]->{title} ) ||
-		EPrints::Name::cmp_names( $_[0]->{authors} , $_[1]->{authors} ) ||
-		( $_[1]->{year} <=> $_[0]->{year} ) ; # largest year first
-}
-
 1;

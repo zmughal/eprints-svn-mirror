@@ -47,9 +47,6 @@ use strict;
 # Name for the site
 $EPrintSite::SiteInfo::sitename = "Eprint Archive";
 
-# E-mail address for automatic administration account
-$EPrintSite::SiteInfo::automail = "eprints\@lemur.ecs.soton.ac.uk";
-
 # Short text description
 $EPrintSite::SiteInfo::description = "";
 
@@ -105,12 +102,6 @@ $EPrintSite::SiteInfo::server_subject_view_stem = "$EPrintSite::SiteInfo::server
 # Local path of perl scripts
 $EPrintSite::SiteInfo::local_perl_root = "$EPrintSite::SiteInfo::local_root/cgi";
 
-# Paths of configuration files
-$EPrintSite::SiteInfo::template_user_intro = "$EPrintSite::SiteInfo::local_root/cfg/template.user-intro";
-$EPrintSite::SiteInfo::template_fail_reply = "$EPrintSite::SiteInfo::local_root/cfg/template.fail-reply";
-$EPrintSite::SiteInfo::template_fail_user = "$EPrintSite::SiteInfo::local_root/cfg/template.fail-user";
-$EPrintSite::SiteInfo::template_change_email = "$EPrintSite::SiteInfo::local_root/cfg/template.change-email";
-$EPrintSite::SiteInfo::subject_config = "$EPrintSite::SiteInfo::local_root/cfg/subjects";
 
 ######################################################################
 #
@@ -123,109 +114,6 @@ $EPrintSite::SiteInfo::subject_config = "$EPrintSite::SiteInfo::local_root/cfg/s
 # The named field should be of type "text".
 
 $EPrintSite::SiteInfo::useridfield = "ecsid";
-
-######################################################################
-#
-#  Search and subscription information
-#
-#   Before the site goes live, ensure that these are correct and work OK.
-#
-#   To specify a search field that will search >1 metadata field, enter
-#   all of the fields to be searched separated by slashes "/" as a single
-#   entry. e.g.  "title/abstract/keywords".
-#
-#   When specifying ordering, separate the fields with a comma, and specify
-#   ASC for ascending order, or DESC for descending. Ascending order is
-#   the default.  e.g. "year DESC, authors ASC, title"
-#
-######################################################################
-
-# Fields for a simple user search
-@EPrintSite::SiteInfo::simple_search_fields =
-(
-	"title/abstract/keywords",
-	"authors/editors",
-	"publication/organization",
-	"year"
-);
-
-# Fields for an advanced user search
-@EPrintSite::SiteInfo::advanced_search_fields =
-(
-	"title",
-	"authors",
-	"abstract",
-	"keywords",
-	"subjects",
-	"type",
-	"conference",
-	"department",
-	"editors",
-	"institution",
-	"ispublished",
-	"refereed",
-	"publication",
-	"year"
-);
-
-# Fields used for specifying a subscription
-@EPrintSite::SiteInfo::subscription_fields =
-(
-	"subjects",
-	"refereed",
-	"ispublished"
-);
-
-# Ways of ordering search results
-%EPrintSite::SiteInfo::eprint_order_methods =
-(
-	"by year (most recent first)" 
-		=> \&EPrintSite::SiteRoutines::eprint_cmp_by_year,
-	"by year (oldest first)"      
-		=> \&EPrintSite::SiteRoutines::eprint_cmp_by_year_oldest_first,
-	"by author's name"            
-		=> \&EPrintSite::SiteRoutines::eprint_cmp_by_author,
-	"by title"                    
-		=> \&EPrintSite::SiteRoutines::eprint_cmp_by_title );
-
-# The default way of ordering a search result
-#   (must be key to %eprint_order_methods)
-$EPrintSite::SiteInfo::eprint_default_order = "by author's name";
-
-# How to order the articles in a "browse by subject" view.
-$EPrintSite::SiteInfo::subject_view_order = 
-	\&EPrintSite::SiteRoutines::eprint_cmp_by_author;
-
-# Fields for a staff user search.
-@EPrintSite::SiteInfo::user_search_fields =
-(
-	"name",
-	"dept/org",
-	"address/country",
-	"groups",
-	"email"
-);
-
-# Ways to order the results of a staff user search.
-%EPrintSite::SiteInfo::user_order_methods =
-(
-	"by surname"                          => "name",
-	"by joining date (most recent first)" => "joined DESC, name",
-	"by joining date (oldest first)"      => "joined ASC, name",
-	"by group"                            => "group, name "
-);
-
-# Default order for a staff user search (must be key to user_order_methods)
-$EPrintSite::SiteInfo::default_user_order = "by surname";	
-
-# How to display articles in "version of" and "commentary" threads.
-#  See lib/Citation.pm for information on how to specify this.
-%EPrintSite::SiteInfo::thread_citation_specs =
-(
-	"succeeds"   => "{title} (deposited {datestamp})",
-	"commentary" => "{authors}. {title}. (deposited {datestamp})"
-);
-
 
 ######################################################################
 #
@@ -264,7 +152,7 @@ $EPrintSite::SiteInfo::html_banner = <<ENDHTML;
       <br>
       <a href="$EPrintSite::SiteInfo::frontpage"><img border="0" width="100" height="100" src="$EPrintSite::SiteInfo::server_static/images/logo_sidebar.gif" ALT="$EPrintSite::SiteInfo::sitename"></a>
     </td>
-    <td background="http://lemur.ecs.soton.ac.uk/~cjg/eborderr.gif"><IMG src="http://lemur.ecs.soton.ac.uk/~cjg/probity/4x4.gif" width="10" height="2"></td>
+    <td background="http://lemur.ecs.soton.ac.uk/~cjg/eborderr.gif"><IMG src="http://lemur.ecs.soton.ac.uk/~cjg/probity/4x4.gif" alt="" width="10" height="2"></td>
     <td>
       &nbsp;&nbsp;&nbsp;&nbsp;
     </td>
@@ -291,7 +179,7 @@ $EPrintSite::SiteInfo::html_banner = <<ENDHTML;
       </table>
       <br>
     </td>
-    <td background="http://lemur.ecs.soton.ac.uk/~cjg/eborderr.gif"><IMG src="http://lemur.ecs.soton.ac.uk/~cjg/probity/4x4.gif" width="10" height="2"></td>
+    <td background="http://lemur.ecs.soton.ac.uk/~cjg/eborderr.gif"><IMG src="http://lemur.ecs.soton.ac.uk/~cjg/probity/4x4.gif" alt="" width="10" height="2"></td>
     <td>
       &nbsp;&nbsp;&nbsp;&nbsp;
     </td>
@@ -311,8 +199,8 @@ Contact site administrator at: <a href=\"mailto:$EPrintSite::SiteInfo::admin\">$
     </td>
   </tr>
   <tr>
-    <td background="http://lemur.ecs.soton.ac.uk/~cjg/eborderb.gif"><IMG src="http://lemur.ecs.soton.ac.uk/~cjg/probity/4x4.gif" width="10" height="10"></td>
-    <td background="http://lemur.ecs.soton.ac.uk/~cjg/eborderc.gif"><IMG src="http://lemur.ecs.soton.ac.uk/~cjg/probity/4x4.gif" width="10" height="15"></td>
+    <td background="http://lemur.ecs.soton.ac.uk/~cjg/eborderb.gif"><IMG src="http://lemur.ecs.soton.ac.uk/~cjg/probity/4x4.gif" alt="" width="10" height="10"></td>
+    <td background="http://lemur.ecs.soton.ac.uk/~cjg/eborderc.gif"><IMG src="http://lemur.ecs.soton.ac.uk/~cjg/probity/4x4.gif" alt="" width="10" height="15"></td>
   </tr>
 </table>
 ENDHTML
