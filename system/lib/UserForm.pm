@@ -76,7 +76,7 @@ undocumented
 
 sub new
 {
-	my( $class, $session, $redirect, $staff, $user ) = @_;
+	my( $class, $session, $redirect, $staff, $user, $dest ) = @_;
 	
 	my $self = {};
 	bless $self, $class;
@@ -85,6 +85,8 @@ sub new
 	$self->{redirect} = $redirect;
 	$self->{staff} = $staff;
 	$self->{user} = $user;
+	$self->{dest} = $dest;
+
 	if( !defined $self->{user} ) 
 	{
 		$self->{user} = $self->{session}->current_user();
@@ -123,6 +125,11 @@ sub process
 	    $self->{session}->internal_button_pressed() ||
 	    $self->{session}->get_action_button() eq "edit" )
 	{
+		if( $self->{session}->internal_button_pressed() )
+		{
+			$self->_update_from_form();
+		}
+
 		my( $page, $p, $a );
 
 		$page = $self->{session}->make_doc_fragment();
@@ -169,7 +176,11 @@ sub process
 
 		$page = $self->{session}->make_doc_fragment();
 
-		$page->appendChild( $self->{session}->html_phrase( 
+		my $problem_box = $self->{session}->make_element( 
+					"div",
+					class=>"problems" );
+		$page->appendChild( $problem_box );
+		$problem_box->appendChild( $self->{session}->html_phrase( 
 			"lib/userform:form_incorrect" ) );
 
 		$ul = $self->{session}->make_element( "ul" );
@@ -180,11 +191,10 @@ sub process
 			$li->appendChild( $problem );
 			$ul->appendChild( $li );
 		}
-		$page->appendChild( $ul );
+		$problem_box->appendChild( $ul );
 
-		$page->appendChild( $self->{session}->html_phrase( 
+		$problem_box->appendChild( $self->{session}->html_phrase( 
 			"lib/userform:complete_form" ) );
-		$page->appendChild( $self->{session}->render_ruler() );
 	
 		$page->appendChild( $self->_render_user_form() );
 
@@ -231,8 +241,8 @@ sub _render_user_form
 	my $user_ds = $self->{session}->get_archive()->get_dataset( "user" );
 
 	my @fields = $user_ds->get_type_fields( $self->{user}->get_value( "usertype" ), $self->{staff} );
-	my %hidden = ( "userid"=>$self->{user}->get_value( "userid" ) );
 
+	my %hidden = ( "userid"=>$self->{user}->get_value( "userid" ) );
 	my $buttons = { update => $self->{session}->phrase( "lib/userform:update_record" ) };
 	my $form = $self->{session}->render_input_form( 
 					staff=>$self->{staff},
@@ -244,6 +254,7 @@ sub _render_user_form
 					show_help=>1,
 					buttons=>$buttons,
 					default_action => "update",
+					dest => $self->{dest}.'#t',
 					hidden_fields=>\%hidden );
 	return $form;
 }
@@ -284,8 +295,17 @@ sub _update_from_form
 	
 	my $user_ds = $self->{session}->get_archive()->get_dataset( "user" );
 
-	my @fields = $user_ds->get_type_fields( $self->{user}->get_value( "usertype" ), $self->{staff} );
-	
+	my $usertype;
+	if( $self->{staff} )
+	{
+		# In a search type the usertype can change!
+ 		$usertype = $self->{session}->param( "usertype" );   
+	}
+	if( !defined $usertype )
+	{
+		$usertype = $self->{user}->get_value( "usertype" )       
+	}   
+	my @fields = $user_ds->get_type_fields( $usertype, $self->{staff} );
 
 	my $field;
 	foreach $field ( @fields )

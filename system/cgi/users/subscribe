@@ -17,13 +17,13 @@ use EPrints::Subscription;
 use EPrints::Session;
 
 my $session = new EPrints::Session;
-Apache::exit( 0 ) unless( defined $session );
+exit( 0 ) unless( defined $session );
 
 # Check we have privs
 if( !$session->auth_check( "subscription" ) )
 {
 	$session->terminate();
-	Apache::exit( 0 );
+	exit( 0 );
 }
 
 my $user = $session->current_user;
@@ -188,7 +188,7 @@ sub show_subscriptions
 			{
 				my $strong;
 				$strong = $session->make_element( "strong" );
-				$strong->appendChild( $session->make_text( $subs_ds->get_field( $_ )->display_name( $session ) ) );
+				$strong->appendChild( $subs_ds->get_field( $_ )->render_name( $session ) );
 				$strong->appendChild( 
 					$session->make_text( ": " ) );
 				$td->appendChild( $strong );
@@ -204,6 +204,7 @@ sub show_subscriptions
 		$session->render_action_buttons( 	
 			new => $session->phrase( 
 				"cgi/users/subscribe:action_new" ) ) );
+	$page->appendChild( $session->html_phrase( "general:userhome_link" ) );
 	
 	$session->build_page( $title, $page, "subscribe_list"  );
 	$session->send_page();
