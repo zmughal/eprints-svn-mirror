@@ -150,9 +150,9 @@ Used to parse XML files. Requres the B<expat library>. A .tar.gz and an RPM are 
 
 The perl Apache.pm module is acutally part of mod_perl - installing mod_perl as part of Apache should also have installed the perl Apache module.
 
-=item B<Apache::Request> a.k.a. libapreq
+=back 
 
-This perl module is used to interface with the apache server. The code is currently in development but version 1.3 works fine. Except for the fact it's test suite is broken, so you have to install it by hand rather than via CPAN. Darn annoying.
+Since version 2.3.7 The modules "Apache::Request" and "Apache::Test" (aka. "libapreq") are no longer required. They were a pain to install and the software has been redesigned to not use them at all.
 
 =back
 
