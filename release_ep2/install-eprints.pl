@@ -110,10 +110,11 @@ my $h2ph = detect("h2ph", 0, @paths);
 
 $systemsettings{"invocation"} = \%invocsettings;
 $systemsettings{"archive_extensions"} = \%archiveexts;
+$systemsettings{"executables"} = \%exesettings;
 $systemsettings{"archive_formats"} = ["zip", "targz"];
+
 $systemsettings{"version_id"} = $version_id;
 $systemsettings{"version"} = $version;
-$systemsettings{"executables"} = \%exesettings;
 print <<DIR;
 
 EPrints 2 installs by default to the /opt/eprints2 directory. If you
@@ -137,10 +138,74 @@ while (!$dirokay)
 		{
 			require "$dir/perl_lib/EPrints/SystemSettings.pm" or die("Unable to detect SystemSettings module: Corrupt prevous install?");
 			#my $old_version_id = $EPrints::SystemSettings::conf{"version_id"};
+			# Current values take precedence.
+			foreach(keys %$EPrints::SystemSettings::conf)
+			{
+				if (defined $systemsettings{$_})
+				{
+					$systemsettings{$_} = merge_fields($systemsettings{$_}, $EPrints::SystemSettings::conf->{$_});
+				}
+				else
+				{
+					$systemsettings{$_} = $EPrints::SystemSettings::conf->{$_};
+				}
+			}
 			$systemsettings{"user"} = $EPrints::SystemSettings::conf->{"user"};
 			$systemsettings{"group"} = $EPrints::SystemSettings::conf->{"group"};
+			# Check to see if user exists.
+			my $exists = 1;
+			my $group = "";
+			my(undef, undef, $ruid, $rgid) = getpwnam($systemsettings{"user"}) or $exists = 0;
+
+			if ($exists)
+			{
+				($group, undef) = getgrnam($systemsettings{"user"});
+			}
+
+			if (!$forced && (!$exists || !defined($group)))
+			{
+				print <<GROUP;
+User $systemsettings{"user"} does not currently exist, so a group will be required
+before it can be created. Please specify the group you would like
+to use.
+
+GROUP
+				$group = get_string('[a-zA-Z0-9_]+', "Group", "eprints");
+				my $gexists = 1;
+				getgrnam($group) or $gexists = 0;
+	
+				if (!$gexists)
+				{
+					print "Creating group ... ";
+					if (system("$groupadd $group")==0)
+					{
+						print "OK.\n\n";
+					}
+					else
+					{
+						print "Failed!\n";
+						print "Unable to create EPrints group: $!\n";
+						exit 1;
+					}
+					$systemsettings{"group"} = $group;
+				}
+	
+				print "Creating user ... ";
+				if (system("$useradd -s /bin/bash -d $dir -g $group ".$systemsettings{"user"})==0)
+				{
+					print "OK.\n\n";
+				} 
+				else
+				{
+					print "Failed!\n";
+					print "Unable to create EPrints user: $!\n";
+					exit 1;
+				}
+			}
+			
 			$oldv = $EPrints::SystemSettings::conf->{"version_id"};
 			$newv = $systemsettings{"version_id"};
+			# 
 			# Mild cheat to make sure 2.0.a is before 2.0, etc.
 			$oldv =~ s/^2\.0\.a/0\.0\.0/;
 			$newv =~ s/^2\.0\.a/0\.0\.0/;
@@ -182,7 +247,7 @@ may cause weird things to happen!
 WARNING_S2N
 			}
 
-			if (defined $oldv && $oldv gt $newv) # buggy so not doing it! cjg
+			if (defined $oldv && $oldv gt $newv) 
 			{
 				print <<DOWNGRADE;
 You already have a version of EPrints installed in this directory and it
@@ -290,6 +355,49 @@ print FILEOUT "\n1;";
 
 
 close(FILEOUT);
+
+sub merge_fields
+{
+	my($hash1, $hash2) = @_;
+	my %outhash;
+	my $type = ref $hash1;
+	if($type eq "HASH")
+	{
+		# $hash1 takes precedence
+		foreach(keys %$hash1)
+		{
+			$outhash{$_} = $hash1->{$_};
+		}
+		foreach(keys %$hash2)
+		{
+			$outhash{$_} = $hash2->{$_} unless defined $outhash{$_};
+		}
+		return \%outhash;
+	}
+	elsif($type eq "ARRAY")
+	{
+		if (defined $hash1)
+		{
+			foreach(@$hash1)
+			{
+				$outhash{$_} = 1 if defined $_;
+			}
+		}
+		if (defined $hash2)
+		{
+			foreach(@$hash2)
+			{
+				$outhash{$_} = 1 if defined $_;
+			}
+		}
+		return [keys %outhash];
+	}
+	else
+	{
+		return $hash1;
+	}
+	
+}
 
 sub full_install
 {
@@ -472,7 +580,18 @@ sub post_install
 df is currently unavailable on your server. To enable it, the installer
 can run 'h2ph * */*' in your /usr/include directory.
 END
-#	my $doh2ph = get_yesno("Run h2ph", "n");
+		my $doh2ph = get_yesno("Run h2ph", "n");
+		if ($doh2ph eq "y")
+		{
+			my $currdir = getcwd();
+			chdir("/usr/include/");
+			system("$h2ph * */*");			
+			chdir($currdir);
+		}
+		else
+		{
+			print "Please run this manually before running EPrints.\n";
+		}
 	}
 	else
 	{
@@ -626,7 +745,7 @@ WARN
 
         my @executable_dirs = ("bin", "cgi");
 	my @normal_dirs = ("defaultcfg", "cfg", "docs", "perl_lib");
-	my @base_files = ("VERSION", "CHANGELOG", "BUGLIST", "COPYING", "ROADMAP"); 
+	my @base_files = ("VERSION", "CHANGELOG", "BUGLIST", "COPYING"); 
         foreach(@executable_dirs)
         {
                 install($_, 0755, $uid, $gid, $dir, %MD5Hash);
