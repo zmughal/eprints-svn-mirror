@@ -1636,9 +1636,41 @@ sub escape_filename
 
 	return "NULL" if( $fileid eq "" );
 
-	$fileid =~ s/[\s\/]/_/g; 
+	$fileid = utf8( $fileid );
 
-        return $fileid;
+	my $stringobj = Unicode::String->new();
+	$stringobj->utf8( $fileid );
+
+	my $hc = [ 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70 ];
+	
+	my @in = $stringobj->unpack;
+	my @out = ();
+	foreach( @in )
+	{
+		if( $_ < 33 ) { push @out, 95; next; }
+		if( $_ >=48 && $_ <= 57 ) { push @out, $_; next; }
+		if( $_ >=65 && $_ <= 90 ) { push @out, $_; next; }
+		if( $_ >=97 && $_ <= 122 ) { push @out, $_; next; }
+		if( $_ == 44 || $_ == 45 || $_ == 46 || $_ == 58 ) { push @out, $_; next; }
+		if( $_ < 256 )
+		{
+			push @out, 61;
+			push @out, $hc->[($_ / 16 )%16];
+			push @out, $hc->[$_%16];
+			next;
+		}
+		push @out, 61;
+		push @out, 61;
+		push @out, $hc->[($_ / 0x1000 )%16];
+		push @out, $hc->[($_ / 0x100 )%16];
+		push @out, $hc->[($_ / 0x10 )%16];
+		push @out, $hc->[$_%16];
+		
+	}
+	
+	$stringobj->pack( @out );
+
+        return $stringobj;
 }
 
 ######################################################################

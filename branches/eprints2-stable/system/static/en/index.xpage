@@ -1,4 +1,4 @@
-<?xml version="1.0" standalone="no" ?>
+<?xml version="1.0" encoding="iso-8859-1"  standalone="no"  ?>
 <!DOCTYPE page SYSTEM "entities-en.dtd" >
 <ep:page
         xmlns="http://www.w3.org/1999/xhtml"
@@ -10,8 +10,7 @@
 
 <p><a href="information.html">More information</a> is available about the archive.</p>
 
-&ruler;
-
+&ruler; 
 <div align="center">
 <form method="get" accept-charset="utf-8" action="&perl_url;/search">
 <table cellspacing="0" cellpadding="4">

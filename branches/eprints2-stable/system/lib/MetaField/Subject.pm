@@ -98,7 +98,7 @@ sub get_top_subject
 
 sub render_set_input
 {
-	my( $self, $session, $default, $required ) = @_;
+	my( $self, $session, $default, $required, $obj ) = @_;
 
 
 	my $topsubj = $self->get_top_subject( $session );

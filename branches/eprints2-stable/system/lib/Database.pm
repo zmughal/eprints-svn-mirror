@@ -1018,7 +1018,7 @@ sub cache
 	# nb. all caches are now oneshot.
 
 	my $ds = $self->{session}->get_archive()->get_dataset( "cachemap" );
-	$sql = "INSERT INTO ".$ds->get_sql_table_name()." VALUES ( NULL , NOW(), NOW() , '$code' , 'TRUE' )";
+	$sql = "INSERT INTO ".$ds->get_sql_table_name()." VALUES ( NULL , NOW(), NOW() , '".prep_value($code)."' , 'TRUE' )";
 	
 	$self->do( $sql );
 
@@ -1044,8 +1044,8 @@ sub cache
 	$sql = "INSERT INTO $tmptable SELECT NULL , B.$keyname from ".$srctable." as B";
 	if( defined $order )
 	{
-		$sql .= ", ".$dataset->get_ordervalues_table_name($self->{session}->get_langid())." AS O";
-		$sql .= " WHERE B.$keyname = O.$keyname ORDER BY ";
+		$sql .= " LEFT JOIN ".$dataset->get_ordervalues_table_name($self->{session}->get_langid())." AS O";
+		$sql .= " ON B.$keyname = O.$keyname ORDER BY ";
 		my $first = 1;
 		foreach( split( "/", $order ) )
 		{

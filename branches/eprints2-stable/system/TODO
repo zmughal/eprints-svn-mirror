@@ -1,5 +1,6 @@
 
-
+BUG: if key in subject has non alphanums then there eg.
+  key is "foo_x" but SELECT id='foo' not 'foo_x'. hmmm.
 
 Big New Features
  * Modular Controls [2.4]
@@ -11,6 +12,8 @@ Big New Features
 * HOWTO: Add harrys icons
 
 * SeearchExpression given conditions.
+
+"full text not availabale"
 
  * make namematch condition work.A
  * optimise indexer.

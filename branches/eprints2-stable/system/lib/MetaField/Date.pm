@@ -83,7 +83,7 @@ sub _month_names
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff ) = @_;
+	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
 
 	my( $frag, $div, $yearid, $monthid, $dayid );
 

@@ -67,7 +67,7 @@ sub render_single_value
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff ) = @_;
+	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
 
 	my( $div , $id);
  	$id = $self->{name}.$suffix;

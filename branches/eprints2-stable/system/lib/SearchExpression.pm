@@ -982,6 +982,14 @@ sub process_webpage
 		$bits{time} = $self->{session}->html_phrase( 
 			"lib/searchexpression:search_time", 
 			searchtime => $self->{session}->make_text($t3-$t1) );
+		my $index = new EPrints::Index( 
+				$self->{session}, 
+				$self->{dataset} );
+
+		$bits{last_index} = $self->{session}->html_phrase( 
+			"lib/searchexpression:last_index", 
+			index_datestamp => $self->{session}->make_text( 
+						$index->get_last_timestamp ) );
 
 		$bits{searchdesc} = $self->render_description;
 
@@ -1415,6 +1423,7 @@ sub perform_search
 	}
 
 	my $conditions = $self->get_conditions;
+	#print STDERR $conditions->describe."\n\n";
 
 	$self->{unsorted_matches} = $self->get_conditions->process( 
 						$self->{session} );

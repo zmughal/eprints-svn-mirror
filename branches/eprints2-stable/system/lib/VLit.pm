@@ -86,7 +86,8 @@ sub handler
 	# undo eprints rewrite!
 	my $uri = $r->uri;	
 	$uri =~ s#/([0-9]+)/([0-9][0-9])/([0-9][0-9])/([0-9][0-9])/#/$1$2$3$4/#;
-	my $baseurl = $uri;
+	my $archive = EPrints::Archive->new_from_request( $r );
+	my $baseurl = $archive->get_conf( "base_url" ).$uri;
 	
 	my $LSMAP = {
 "area" => \&ls_area,

@@ -110,7 +110,7 @@ sub get_input_bits
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff ) = @_;
+	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
 
 	my $parts = [];
 	foreach( $self->get_input_bits( $session ) )
@@ -172,6 +172,9 @@ sub get_value_label
 sub ordervalue_basic
 {
 	my( $self , $value ) = @_;
+
+if( ref($value) !~ m/^HASH/ ) { confess(); }
+use Carp;
 
 	my @a;
 	foreach( "family", "lineage", "given", "honourific" )
@@ -340,6 +343,22 @@ sub get_property_defaults
 	return %defaults;
 }
 
+sub get_unsorted_values
+{
+	my( $self, $session, $dataset, %opts ) = @_;
+
+	my $list = $session->get_db()->get_values( $self, $dataset );
+
+	return $list;
+
+	#my $out = [];
+	#foreach my $name ( @{$list} )
+	#{
+		#push @{$out}, $name->{family}.', '.$name->{given};
+	#}
+	#return $out;
+}
+
 my $x=<<END;
 			Glaser	Hugh/Glaser	H/Glaser	Hugh B/Glaser	Hugh Bob/Glaser	Smith Glaser
 H/Glaser		X	X		X						
@@ -479,6 +498,46 @@ sub get_index_codes_basic
 	}
 	return( \@r, [$code], [] );
 }	
+
+sub get_values
+{
+	my( $self, $session, $dataset, %opts ) = @_;
+
+	my $langid = $opts{langid};
+	$langid = $session->get_langid unless( defined $langid );
+
+	my $unsorted_values = $self->get_unsorted_values( 
+		$session,
+		$dataset,	
+		%opts );
+
+	my %orderkeys = ();
+	my @values;
+	foreach my $value ( @{$unsorted_values} )
+	{
+		my $v2 = $value;
+		$v2 = {} unless( defined $value );
+		push @values, $v2;
+
+		# uses function _basic because value will NEVER be multiple
+		# should never by .id or multilang either.
+		my $orderkey = $self->ordervalue_basic(
+			$value, 
+			$session, 
+			$langid );
+		$orderkeys{_f($v2)} = $orderkey;
+	}
+
+	my @outvalues = sort {$orderkeys{_f($a)} cmp $orderkeys{_f($b)}} @values;
+	return \@outvalues;
+}
+
+sub _f
+{
+	my( $name ) = @_;
+
+	return $name->{family}.':'.$name->{given}.':'.$name->{lineage}.':'.$name->{honourific};
+}
 
 ######################################################################
 1;

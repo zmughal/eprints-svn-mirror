@@ -18,7 +18,7 @@
 <!-- locally defined fields -->
 
     <ep:phrase ref="eprint_fieldname_title">Title</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_title">The title of the item. The title should not end with a full stop, but may end with a question mark. There is no way to make italic text, please enter it normally. If you have a subtitle, it should be proceded with a colon [:]. Use capitals only for the first word and for proper nouns.
+    <ep:phrase ref="eprint_fieldhelp_title">The title of the item. The title should not end with a full stop, but may end with a question mark. There is no way to make italic text, please enter it normally. If you have a subtitle, it should be preceded with a colon [:]. Use capitals only for the first word and for proper nouns.
 <br />Example: <span class="example">A brief history of time</span>
 <br />Example: <span class="example">Life: an unauthorised biography</span>
 <br />Example: <span class="example">Mathematics for engineers and scientists. 5th edition</span>

@@ -117,13 +117,15 @@ EPrints Modules
     <ep:phrase ref="lib/searchexpression:results_for">Results for <ep:pin ref="title" /></ep:phrase>
     <ep:phrase ref="lib/searchexpression:results">Displaying results <span class="numeral"><ep:pin ref="from" /></span> to <span class="numeral"><ep:pin ref="to" /></span> of <span class="numeral"><ep:pin ref="n" /></span>.</ep:phrase>
     <ep:phrase ref="lib/searchexpression:search_time">Search time: <ep:pin ref="searchtime" />s.</ep:phrase>
+    <ep:phrase ref="lib/searchexpression:last_index">[Index last built at: <ep:pin ref="index_datestamp" />]</ep:phrase>
     <ep:phrase ref="lib/searchexpression:noresults">No matches.</ep:phrase>
     <ep:phrase ref="lib/searchexpression:results_page">
 
 <ep:pin ref="controls" />
 <p class="resultsinfo">
    <ep:pin ref="searchdesc" /><br />
-   <ep:pin ref="matches" /> <ep:pin ref="time" />
+   <ep:pin ref="matches" /> <ep:pin ref="time" /><br />
+   <span style="color: #ccc"><ep:pin ref="last_index" /></span>
 </p>
 <ep:pin ref="results" />
 <ep:pin ref="controls_if_matches" />

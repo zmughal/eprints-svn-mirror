@@ -226,6 +226,7 @@ sub parse_xml
 			return;
 		}
 	}
+#print STDERR "-----------------------------\n$file:\n--\n".$doc->toString;
 	return $doc;
 }
 

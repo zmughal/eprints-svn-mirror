@@ -259,11 +259,28 @@ sub get_filtered_values
 		my $vref = $fields->[0]->get_values( $session, $ds );
 		@values = @{$vref};
 	}
+	elsif( $fields->[0]->is_type( "name" ) )
+	{
+		my %v=();
+		foreach my $field ( @{$fields} )
+		{
+			my $vref = $field->get_values( $session, $ds );
+			foreach( @{$vref} )
+			{
+				if( !defined $_ ) { $_=""; }
+				$_->{given} = '' unless defined( $_->{given} );
+				$_->{family} = '' unless defined( $_->{family} );
+				$v{$_->{given}.':'.$_->{family}}=$_; 
+				
+			}
+		}
+		@values = values %v;
+
+	}
 	else
 	{
-		my $field;
 		my %v=();
-		foreach $field ( @{$fields} )
+		foreach my $field ( @{$fields} )
 		{
 			my $vref = $field->get_values( $session, $ds );
 			foreach( @{$vref} )
@@ -272,9 +289,9 @@ sub get_filtered_values
 				$v{$_}=1; 
 			}
 		}
-		@values = keys %v;	
-	}
+		@values = keys %v;
 
+	}
 	
 	my $ov = {};
 
@@ -629,7 +646,6 @@ sub render_list
 
 		my $cite = $item->render_citation_link( 
 			$view->{citation} );
-
 		if( $view->{layout} eq "paragraph" )
 		{
 			my $p = $session->make_element( "p" );

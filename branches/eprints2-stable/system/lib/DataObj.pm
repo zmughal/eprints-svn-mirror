@@ -238,6 +238,12 @@ sub is_set
 {
 	my( $self, $fieldname ) = @_;
 
+	if( !exists $self->{data}->{$fieldname} )
+	{
+		$self->{session}->get_archive->log(
+			 "is_set( $fieldname ): Unknown field" );
+	}
+
 	return EPrints::Utils::is_set( $self->{data}->{$fieldname} );
 }
 

@@ -114,7 +114,7 @@ sub render_single_value
 ######################################################################
 =pod
 
-=item $xhtml = $field->render_input_field_actual( $session, $value, [$dataset, $type], [$staff], [$hidden_fields] )
+=item $xhtml = $field->render_input_field_actual( $session, $value, [$dataset, $type], [$staff], [$hidden_fields], [$obj] )
 
 Return the XHTML of the fields for an form which will allow a user
 to input metadata to this field. $value is the default value for
@@ -123,14 +123,17 @@ this field.
 Unlike render_input_field, this function does not use the render_input
 property, even if it's set.
 
+The $obj is the current state of the object this field is associated 
+with, if any.
+
 =cut
 ######################################################################
 
 sub render_input_field_actual
 {
-	my( $self, $session, $value, $dataset, $type, $staff, $hidden_fields ) = @_;
+	my( $self, $session, $value, $dataset, $type, $staff, $hidden_fields, $obj ) = @_;
 
-	my $elements = $self->get_input_elements( $session, $value, $staff );
+	my $elements = $self->get_input_elements( $session, $value, $staff, $obj );
 
 	# if there's only one element then lets not bother making
 	# a table to put it in
@@ -214,7 +217,7 @@ sub get_input_col_titles
 
 sub get_input_elements
 {
-	my( $self, $session, $value, $staff ) = @_;	
+	my( $self, $session, $value, $staff, $obj ) = @_;	
 
 	unless( $self->get_property( "multiple" ) )
 	{
@@ -222,7 +225,8 @@ sub get_input_elements
 				$session, 
 				$value,
 				undef,
-				$staff );
+				$staff,
+				$obj );
 	}
 
 	# multiple field...
@@ -280,7 +284,8 @@ sub get_input_elements
 				$session, 
 				$value->[$i-1], 
 				$i,
-				$staff );
+				$staff,
+				$obj );
 		my $first = 1;
 		for my $n (0..(scalar @{$section})-1)
 		{
@@ -352,7 +357,7 @@ sub get_input_elements
 
 ######################################################################
 # 
-# $xhtml = $field->get_input_elements_single( $session, $value, $n, $staff )
+# $xhtml = $field->get_input_elements_single( $session, $value, $n, $staff, $obj )
 #
 # undocumented
 #
@@ -360,7 +365,7 @@ sub get_input_elements
 
 sub get_input_elements_single
 {
-	my( $self, $session, $value, $suffix, $staff ) = @_;
+	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
 
 	$suffix = (defined $suffix ? "_$suffix" : "" );	
 
@@ -370,14 +375,16 @@ sub get_input_elements_single
 			$session, 
 			$value, 
 			$suffix, 
-			$staff );
+			$staff,
+			$obj );
 	}
 
 	my $elements = $self->get_input_elements_no_id( 
 		$session, 
 		$value->{main}, 
 		$suffix, 
-		$staff );
+		$staff,
+		$obj );
 
 	my $idvalue = $value->{id};
 
@@ -432,7 +439,7 @@ sub get_input_elements_single
 
 sub get_input_elements_no_id
 {
-	my( $self, $session, $value, $suffix, $staff ) = @_;
+	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
 
 	unless( $self->get_property( "multilang" ) )
 	{
@@ -440,7 +447,8 @@ sub get_input_elements_no_id
 			$session, 
 			$value, 
 			$suffix, 
-			$staff );
+			$staff,
+			$obj );
 	}
 
 
@@ -527,7 +535,8 @@ sub get_input_elements_no_id
 			$session, 
 			$value->{$langid}, 
 			$suffix."_".$i, 
-			$staff );
+			$staff,
+			$obj );
 
 		my $first = 1;
 		for my $n (0..(scalar @{$elements})-1)
@@ -565,7 +574,7 @@ sub get_input_elements_no_id
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff ) = @_;
+	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
 
 	my $maxlength = $self->get_max_input_size;
 	my $size = ( $maxlength > $self->{input_cols} ?
@@ -688,7 +697,7 @@ sub form_value_no_id
 		if( defined $subvalue )
 		{
 			$value->{$langid} = $subvalue;
-			print STDERR "($langid)($subvalue)\n";
+			# print STDERR "($langid)($subvalue)\n";
 			#cjg -- does not check that this is a valid langid...
 		}
 	}
@@ -804,8 +813,9 @@ sub get_values
 		$v2 = "" unless( defined $value );
 		push @values, $v2;
 
-		# uses function _single because value will NEVER be multiple
-		my $orderkey = $self->ordervalue_single(
+		# uses function _basic because value will NEVER be multiple
+		# should never by .id or multilang either.
+		my $orderkey = $self->ordervalue_basic(
 			$value, 
 			$session, 
 			$langid );

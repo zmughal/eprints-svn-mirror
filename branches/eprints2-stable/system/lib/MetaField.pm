@@ -68,29 +68,7 @@ use EPrints::Subject;
 use EPrints::Database;
 use EPrints::SearchExpression;
 
-use EPrints::MetaField::Basic;
-use EPrints::MetaField::Boolean;
-use EPrints::MetaField::Datatype;
-use EPrints::MetaField::Date;
-use EPrints::MetaField::Email;
-use EPrints::MetaField::Id;
-use EPrints::MetaField::Int;
-use EPrints::MetaField::Langid;
-use EPrints::MetaField::Longtext;
-use EPrints::MetaField::Name;
-use EPrints::MetaField::Pagerange;
-use EPrints::MetaField::Search;
-use EPrints::MetaField::Secret;
-use EPrints::MetaField::Set;
-use EPrints::MetaField::Subject;
-use EPrints::MetaField::Text;
-use EPrints::MetaField::Url;
-use EPrints::MetaField::Year;
-use EPrints::MetaField::Fulltext;
-
 use strict;
-
-
 
 $EPrints::MetaField::VARCHAR_SIZE 	= 255;
 # get the default value from field defaults in the config
@@ -123,6 +101,9 @@ sub new
 	my( $class, %properties ) = @_;
 
 	my $realclass = "EPrints::MetaField::\u$properties{type}";
+	eval 'use '.$realclass.';';
+	warn "couldn't parse $realclass: $@" if $@;
+
 	my $self = {};
 	bless $self, $realclass;
 
@@ -388,7 +369,7 @@ The actual function called may be overridden from the config.
 
 sub render_input_field
 {
-	my( $self, $session, $value, $dataset, $type, $staff, $hidden_fields ) = @_;
+	my( $self, $session, $value, $dataset, $type, $staff, $hidden_fields, $obj ) = @_;
 
 	if( defined $self->{toform} )
 	{
@@ -404,7 +385,8 @@ sub render_input_field
 			$dataset, 
 			$type, 
 			$staff,
-			$hidden_fields );
+			$hidden_fields,
+			$obj );
 	}
 
 	return $self->render_input_field_actual( 
@@ -413,7 +395,8 @@ sub render_input_field
 			$dataset, 
 			$type, 
 			$staff,
-			$hidden_fields );
+			$hidden_fields,
+			$obj );
 }
 
 
@@ -814,13 +797,14 @@ sub sort_values
 	my $langid = $session->get_langid;
 	foreach my $value ( @{$in_list} )
 	{
-		$o_keys->{$value} = $self->ordervalue_single( 
+		$o_keys->{$value} = $self->ordervalue_basic( 
 						$value,
 						$session,
 						$langid );
 	}
 
 	my @out_list = sort { $o_keys->{$a} cmp $o_keys->{$b} } @{$in_list};
+
 	return \@out_list;
 }
 

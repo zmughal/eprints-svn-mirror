@@ -99,7 +99,7 @@ sub make_searchexp
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff ) = @_;
+	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
 
 	#cjg NOT CSS'd properly.
 

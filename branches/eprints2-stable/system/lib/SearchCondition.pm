@@ -52,7 +52,7 @@ $EPrints::SearchCondition::operators = {
 	'index'=>1,		#	dataset, field, value	
 
 	'='=>2,			#	dataset, field, value
-#	'name_match'=>2,	#	dataset, field, value		
+	'name_match'=>2,	#	dataset, field, value		
 
 	'AND'=>3,		#	cond, cond...	
 	'OR'=>3,		#	cond, cond...
@@ -131,6 +131,13 @@ sub describe
 	{
 		push @o, '$'.$self->{dataset}->id.".".$self->{field}->get_name;
 	}	
+
+	if( $self->{op} eq 'name_match' )
+	{
+		push @o, '"'.$self->{params}->[0]->{family}.'"';
+		push @o, '"'.$self->{params}->[0]->{given}.'"';
+	}
+
 	if( defined $self->{params} )
 	{
 		foreach( @{$self->{params}} )
@@ -309,6 +316,11 @@ sub item_matches
 		return $item->is_set( $self->{field}->get_name );
 	}
 
+	if( $self->{op} eq "name_match" )
+	{
+print STDERR "\n---name_match comparisson not done yet...\n";
+		return 1;
+	}
 
 
 	#####################
@@ -516,6 +528,15 @@ sub process
 	{
 		my $where = "(M.$sql_col IS NULL OR ";
 		$where .= "M.$sql_col = '')";
+		$r = $session->get_db->search( 
+			$keyfield, 
+			{ M=>$self->get_table },
+			$where );
+	}
+
+	if( $self->{op} eq 'name_match' )
+	{
+		my $where = "(M.".$sql_col."_given = '".EPrints::Database::prep_value( $self->{params}->[0]->{given} )."' AND M.".$sql_col."_family = '".EPrints::Database::prep_value( $self->{params}->[0]->{family} )."')";
 		$r = $session->get_db->search( 
 			$keyfield, 
 			{ M=>$self->get_table },

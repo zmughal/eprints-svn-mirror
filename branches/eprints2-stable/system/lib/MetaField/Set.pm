@@ -94,7 +94,7 @@ sub render_option
 
 sub render_input_field_actual
 {
-	my( $self, $session, $value, $dataset, $type, $staff, $hidden_fields ) = @_;
+	my( $self, $session, $value, $dataset, $type, $staff, $hidden_fields, $obj ) = @_;
 
 	my $required = $self->get_property( "required" );
 	if( defined $dataset && defined $type )
@@ -109,13 +109,13 @@ sub render_input_field_actual
 
 	# called as a seperate function because subject does this
 	# bit differently, and overrides render_set_input.
-	return $self->render_set_input( $session, $default, $required );
+	return $self->render_set_input( $session, $default, $required, $obj );
 }
 
 # basic input renderer for "set" type fields
 sub render_set_input
 {
-	my( $self, $session, $default, $required ) = @_;
+	my( $self, $session, $default, $required, $obj ) = @_;
 
 	my( $tags, $labels ) = $self->tags_and_labels( $session );
 

@@ -1813,12 +1813,41 @@ PACKAGE: 2.2.99.2
  - removed debug line from SearchExpression
  - split words (Basic) now splits on whitespace again not any split char.
  - Fixed subject-browse so there's a mini-tree at the top again.
+ - Fixed bug in up/down arrows in multiple fields.
 
 ======================================================================
 19/12/2003 - EPRINTS-2.3.0
 ======================================================================
 
+2004-01-14 cjg 
 
+ - Patched DOM.pm to work in perl 5.8
 
+2004-02-05 cjg
+
+ - Fixed some typos in phrase files
+ - Added 'last indexed' info on search results page
+ - Browse by 'name' type fields now works
+ - Hooks for input field renderers so that it can be made dependent on
+    properties of the associated object. If any.
+ - Patched the XML/DOM which ships with EPrints to fix some problems 
+    with running under Perl 5.8
+ - Fixed a bug in 'lang' when $multilingual options are set to true
+ - Added escaping for cachecodes in database. a ' could cause an SQL
+    error before.
+ - Made the ordering stage use a left join rather than an inner join
+    so that items not in the order table for some reason don't show. 
+    not that that should ever happen.
+ - Metafields are now dynamically loaded modules, don't need to 'use'
+    them.
+ - Changed paracite code so that the SEEK button now generates a 
+    POST rather than a GET request. This stops search engines form
+    following these links and hammering the server.
+ - The name_match search condition now works for searches but not on
+    does-it-match? calls yet.
+ - Total rewrite of the generate_views code which escapes the 
+    filename to escape any uncode character.
+ - Fixed VLit code to handle an archive on a sub path.
+ 
 ======================================================================
 

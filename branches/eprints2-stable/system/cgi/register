@@ -59,7 +59,7 @@ sub make_page
 	}
 
 	my @sysfields = ( "email", "username", "newpassword" );
-	if( $mlangopt ) { push @sysfields,$f->{lang}; }
+	if( $mlangopt ) { push @sysfields,'lang'; }
 
 	foreach my $fieldid ( @sysfields )
 	{
