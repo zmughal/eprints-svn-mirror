@@ -2102,3 +2102,10 @@ PACKAGE: 2.2.99.2
  - a couple of calls to header_out did not use apache abstraction but
     just did the 1.3 way. Fixed to use abstraction.
 
+2004-12-03 cjg
+
+ - minor changes to default config to give a message when there is
+    no document. Also moved "official URL" to be right under the 
+    documents, not in the main block.
+
+

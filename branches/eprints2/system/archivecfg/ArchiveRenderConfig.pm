@@ -90,6 +90,8 @@ sub eprint_render
 	# Available documents
 	my @documents = $eprint->get_all_documents();
 
+	my $docs_to_show = scalar @documents;
+
 	# look for any coverimage document
 	foreach( @documents )
 	{
@@ -101,44 +103,62 @@ sub eprint_render
 			style=>"padding-right: 0.5em; padding-bottom: 0.5em;",
 			src=>$_->get_url(),
 			alt=>$_->get_value( "formatdesc" ) ) );
+		--$docs_to_show;	
 	}
 
 	$p = $session->make_element( "p" );
-	$p->appendChild( $session->html_phrase( "page:fulltext" ) );
 	$page->appendChild( $p );
 
-	my( $doctable, $doctr, $doctd );
-	$doctable = $session->make_element( "table" );
-
-	foreach my $doc ( @documents )
+	if( $docs_to_show == 0 )
 	{
-		next if( $doc->get_value( "format" ) eq "coverimage" );
-
-		$doctr = $session->make_element( "tr" );
-
-		$doctd = $session->make_element( "td" );
-		$doctr->appendChild( $doctd );
-		$doctd->appendChild( 
-			_render_fileicon( 
-				$session, 
-				$doc->get_type, 
-				$doc->get_url ) );
-
-		$doctd = $session->make_element( "td" );
-		$doctr->appendChild( $doctd );
-		$doctd->appendChild( $doc->render_citation_link() );
-		my %files = $doc->files;
-		if( defined $files{$doc->get_main} )
-		{
-			my $k = int($files{$doc->get_main}/1024)+1;
-			$doctd->appendChild( $session->make_element( 'br' ) );
-			$doctd->appendChild( $session->make_text( $k." Kb" ));
-		}
-		$doctable->appendChild( $doctr );
+		$p->appendChild( $session->html_phrase( "page:nofulltext" ) );
 	}
-	$page->appendChild( $doctable );
+	else
+	{
+		$p->appendChild( $session->html_phrase( "page:fulltext" ) );
 
+		my( $doctable, $doctr, $doctd );
+		$doctable = $session->make_element( "table" );
 
+		foreach my $doc ( @documents )
+		{
+			next if( $doc->get_value( "format" ) eq "coverimage" );
+	
+			$doctr = $session->make_element( "tr" );
+	
+			$doctd = $session->make_element( "td" );
+			$doctr->appendChild( $doctd );
+			$doctd->appendChild( 
+				_render_fileicon( 
+					$session, 
+					$doc->get_type, 
+					$doc->get_url ) );
+	
+			$doctd = $session->make_element( "td" );
+				$doctr->appendChild( $doctd );
+			$doctd->appendChild( $doc->render_citation_link() );
+			my %files = $doc->files;
+			if( defined $files{$doc->get_main} )
+			{
+				my $k = int($files{$doc->get_main}/1024)+1;
+				$doctd->appendChild( $session->make_element( 'br' ) );
+				$doctd->appendChild( $session->make_text( $k." Kb" ));
+			}
+			$doctable->appendChild( $doctr );
+		}
+		$page->appendChild( $doctable );
+	}	
+
+	# Alternative locations
+	if( $eprint->is_set( "official_url" ) )
+	{
+		$p = $session->make_element( "p" );
+		$page->appendChild( $p );
+		$p->appendChild( $session->html_phrase( "eprint_fieldname_official_url" ) );
+		$p->appendChild( $session->make_text( ": " ) );
+		$p->appendChild( $eprint->render_value( "official_url" ) );
+	}
+	
 	# Then the abstract
 	if( $eprint->is_set( "abstract" ) )
 	{
@@ -266,14 +286,6 @@ sub eprint_render
 			$eprint->render_value( "datestamp" ) ) );
 	}
 
-	# Alternative locations
-	if( $eprint->is_set( "official_url" ) )
-	{
-		$table->appendChild( _render_row(
-			$session,
-			$session->html_phrase( "eprint_fieldname_official_url" ),
-			$eprint->render_value( "official_url" ) ) );
-	}
 
 	# Now show the version and commentary response threads
 	if( $has_multiple_versions )
