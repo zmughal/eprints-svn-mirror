@@ -95,7 +95,7 @@ sub get_basic_input_elements
 		name => $fromid,
 		value => $pages[0],
 		size => 6,
-		maxlength => 10 ) );
+		maxlength => 120 ) );
 
 	$frag->appendChild( $session->make_text(" ") );
 	$frag->appendChild( $session->html_phrase( 
@@ -108,7 +108,7 @@ sub get_basic_input_elements
 		name => $toid,
 		value => $pages[1],
 		size => 6,
-		maxlength => 10 ) );
+		maxlength => 120 ) );
 
 	return [ [ { el=>$frag } ] ];
 }

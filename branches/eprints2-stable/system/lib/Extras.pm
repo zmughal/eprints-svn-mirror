@@ -277,8 +277,12 @@ sub _subject_browser_input_aux
 	if( $subject->can_post && $exp != -1 && !$selected )
 	{
 		my $ibutton = '_internal_'.$field->get_name.'_view_'.$current_subj->get_id.'=1';
-		my $intact = '_internal_'.$session->get_internal_button();
-		$ibutton = $intact.'='.$session->param( $intact );
+		if( $session->internal_button_pressed )
+		{
+			my $intact = '_internal_'.$session->get_internal_button();
+			$ibutton = $intact.'='.$session->param( $intact );
+		}
+
 		my $url = $addurl.'&'.$ibutton.'&'.$field->get_name.'='.$subject->get_id.'#t';
 		$li->appendChild(  $session->html_phrase(
                        	"lib/extras:subject_browser_add",

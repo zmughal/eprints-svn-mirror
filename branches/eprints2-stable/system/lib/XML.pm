@@ -448,20 +448,20 @@ sub to_string
 		#$tagname = "\L$tagname";
 
 		push @n, '<', $tagname, ' ';
-		#foreach my $attr ( $node->getChildNodes )
 
 		my $nnm = $node->getAttributes;
 		my $done = {};
 		foreach my $i ( 0..$nnm->getLength-1 )
 		{
 			my $attr = $nnm->item($i);
-			next if $done->{$attr->getName};
+			my $name = $attr->getName;
+			next if( $name =~ m/^xmlns/ );
+			next if( $done->{$attr->getName} );
 			$done->{$attr->getName} = 1;
 			# cjg Should probably escape these values.
 			my $value = $attr->getValue;
 			$value =~ s/&/&amp;/g;
 			$value =~ s/"/&quot;/g;
-			my $name = $attr->getName;
 			push @n, " ", $name."=\"".$value."\"";
 		}
 
@@ -516,14 +516,13 @@ sub to_string
 			$node, 
 			"Text", 
 			"CDATASection", 
-			"EntityReference", 
-			"Comment" ) )
+			"EntityReference" ) )
 	{
 		push @n, $node->toString;
 	}
 	elsif( EPrints::XML::is_dom( $node, "Comment" ) )
 	{
-	push @n, "<!--", $gdome?$node->getData:$node->toString, "-->"
+		push @n, "<!--", $gdome?$node->getData:$node->toString, "-->"
 	}
 	else
 	{

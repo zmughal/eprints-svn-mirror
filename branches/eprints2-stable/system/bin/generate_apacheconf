@@ -147,7 +147,7 @@ my $site_userfile = EPrints::Config::get( "cfg_path" )."/apache.conf";
 print "Creating system wide apache conf files.\n" if( $noise >= 1 );
 unless( -e $site_userfile )
 {
-	print "Creating $site_userfile.\n" if( $noise >= 2 );
+	print "Creating $site_userfile\n" if( $noise >= 2 );
 	open( CONF, ">$site_userfile" ) || die "Can't write to $site_userfile";
 	print CONF <<END;
 #
@@ -184,7 +184,7 @@ if( !EPrints::Utils::is_set( $virtualhost ) )
 	$virtualhost = '*';
 }
 
-print "Creating $site_sysfile.\n" if( $noise >= 2 );
+print "Creating $site_sysfile\n" if( $noise >= 2 );
 my $startupfile = EPrints::Config::get( "bin_path" )."/startup.pl";
 open( CONF, ">$site_sysfile" ) || die "Can't write to $site_sysfile";
 print CONF <<END;
@@ -218,7 +218,7 @@ close CONF;
 
 ########################################
 
-print "Creating $site_incfile.\n" if( $noise >= 2 );
+print "Creating $site_incfile\n" if( $noise >= 2 );
 open( CONF, ">$site_incfile" ) || die "Can't write to $site_incfile";
 print CONF <<END;
 #
@@ -270,10 +270,10 @@ my $vhostfile = $archive->get_conf( "config_path" )."/apachevhost.conf";
 
 my $id = $archive->get_id();
 
-print "Creating apache conf files for archive $archiveid.\n" if( $noise >= 1 );
+print "Creating apache conf files for archive $archiveid\n" if( $noise >= 1 );
 unless( -e $userfile )
 {
-	print "Creating $userfile.\n" if( $noise >= 2 );
+	print "Creating $userfile\n" if( $noise >= 2 );
 	open( CONF, ">$userfile" ) || die "Can't write to $userfile";
 	print CONF <<END;
 #
@@ -299,7 +299,7 @@ else
 
 unless( -e $vhostfile )
 {
-	print "Creating $vhostfile.\n" if( $noise >= 2 );
+	print "Creating $vhostfile\n" if( $noise >= 2 );
 	open( CONF, ">$vhostfile" ) || die "Can't write to $vhostfile";
 	print CONF <<END;
 #
@@ -336,7 +336,7 @@ if( EPrints::Utils::is_set( $securehost ) )
 }
 
 
-print "Creating $sysfile.\n" if( $noise >= 2 );
+print "Creating $sysfile\n" if( $noise >= 2 );
 open( CONF, ">$sysfile" ) || die "Can't write to $sysfile";
 print CONF <<END;
 #

@@ -65,8 +65,8 @@ EPrints Modules
     <ep:phrase ref="lib/metafield:false">No</ep:phrase>
 
     <ep:phrase ref="lib/metafield:date_res_day"></ep:phrase>
-    <ep:phrase ref="lib/metafield:date_res_month">"Day" may be ommited if appropriate.<br /></ep:phrase>
-    <ep:phrase ref="lib/metafield:date_res_year">"Day" or both "Month" and "Day" may be ommited if appropriate.<br /></ep:phrase>
+    <ep:phrase ref="lib/metafield:date_res_month">"Day" may be omitted if appropriate.<br /></ep:phrase>
+    <ep:phrase ref="lib/metafield:date_res_year">"Day" or both "Month" and "Day" may be omitted if appropriate.<br /></ep:phrase>
 
     <!-- phrases used to seperate multiple values in a field -->
     <!-- you can use .first and .last to make the first or 

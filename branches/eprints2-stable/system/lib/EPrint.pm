@@ -905,6 +905,7 @@ sub validate_documents
 			$prob->appendChild( 
 				$self->{session}->make_text( ": " ) );
 			$prob->appendChild( $_ );
+			push @problems, $prob;
 		}
 	}
 

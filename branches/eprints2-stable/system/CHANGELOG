@@ -1917,3 +1917,27 @@ PACKAGE: 2.2.99.2
  - XML to_string function now correctly handles <!-- comments -->
  - ordervalue for an undefined int is now "" (was causing warning)
 
+======================================================================
+04/03/2004 - EPRINTS-2.3.3
+======================================================================
+
+2004-07-05 cjg
+
+ - Cleaned up some error messages
+ - Fixed bug in oai2 interface that sometimes printed empty 
+    resumption tokens.
+ - Changed options to /bin/cp in Document.pm to some which should
+    work on more platforms.
+ - Some validation things in EPrint never got added to @problems
+    list. Fixed.
+ - Fixed bug in new subjects input field, didn't add subjects which
+    were top level. 
+ - Fixed bug with changing username.
+ - XML exported now strips xmlns attributes so that output is legal
+    XHTML.
+ - XML comments should now be exported correctly.
+ - Upped maximum pagerange field width to 120 from 10.
+ - Fixed typo in system phrases.
+
+
+
