@@ -89,7 +89,7 @@ $systemsettings->{"version_history"} = [ $version_id ];
 # Set up some default settings.
 #
 $systemsettings->{"invocation"} = {
-	zip     => '$(zip) 1>/dev/null 2>&1 -qq -o -d $(DIR) $(ARC)',
+	zip     => '$(unzip) 1>/dev/null 2>&1 -qq -o -d $(DIR) $(ARC)',
 	targz   => '$(gunzip) -c < $(ARC) 2>/dev/null | $(tar) xf - -C $(DIR) >/dev/null 2>&1',
 	wget    => '$(wget)  -r -L -q -m -nH -np --execute="robots=off" --cut-dirs=$(CUTDIRS) $(URL)',
 	sendmail => '$(sendmail) -oi -t -odb --',
@@ -192,12 +192,16 @@ if( !defined $systemsettings->{"enable_gdome"} )
 unless( getpwnam($systemsettings->{"user"}) )
 {
 	print "User ".$c{"user"}." does not exist. Aborting.\n";
+	print "Consult your operating system documentation for how to create a new user.\n";
+	print "Under Linux /usr/sbin/useradd is possibly what you need.\n";
 	exit 1;
 }
 
 unless( getgrnam($systemsettings->{"group"}) )
 {
 	print "Group ".$c{"group"}." does not exist. Aborting.\n";
+	print "Consult your operating system documentation for how to create a new group.\n";
+	print "Under Linux /usr/sbin/groupadd is possibly what you need.\n";
 	exit 1;
 }
 
