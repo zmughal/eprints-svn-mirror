@@ -6,6 +6,7 @@
 @subs = ();
 print "SUBJECTS:\n";
 my $basedir = "/opt/eprints/html/documents/demo";
+`rm -rf $basedir`;
 `mkdir $basedir`;
 open(SUB,"/opt/eprints/cfg/subjects");
 while(<SUB>) {
@@ -19,7 +20,7 @@ close SUB;
 print "----\n";
 
 open(MYSQL,"|mysql -B -u root eprints");
-for $id (1..1000) {
+for $id (1..10000) {
 	`mkdir $basedir/$id`;
 	$year = int rand(100)+1910;
 	print MYSQL "INSERT INTO archive (eprintid,username,type,title,year,ispublished,refereed,pubdom,abstract,conference,dir) VALUES ('$id','cjg','confpaper','title goes here',$year,0,0,0,'barble this be da abstract','conference name','demo/$id');\n";
