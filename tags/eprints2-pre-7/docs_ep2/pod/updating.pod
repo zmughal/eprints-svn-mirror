@@ -1,0 +1,48 @@
+=pod
+
+=head1 Updating from EPrints 1
+
+This path is not currently supported, as the software structure
+underwent fundamental changes. We recommend that you do a clean install of EPrints 2.0.
+
+We hope to provide an v1 to v2 "upgrade assister" at some point.
+
+=head1 Updating from EPrints2 alpha-2 to EPrints 2.0
+
+Too much of the configuration of the archive has changed to document individually. See
+the C<CHANGELOG> file if you're really interested. If you have more than one
+archive, then do each step for each one. Our example is the archive with the ID I<foobar>.
+
+To upgrade we suggest you use the UNIX C<diff> command to make a records of changes 
+you made to the archive config directory.
+
+ diff /opt/eprints2/defaultcfg/ /opt/eprints2/archives/foobar/cfg/
+
+Store the output from diff somewhere safe.
+
+Remove C</opt/eprints2/archives/foobar/cfg/>
+
+Now install eprints 2.0 and agree to upgrade when it asks.
+
+Copy the new default configuration into your archive dir:
+
+ cp -R /opt/eprints2/defaultcfg/ /opt/eprints2/archives/foobar/cfg/
+
+Work through the "diff"  you produced, and re-apply the changes 
+to the contents of C</opt/eprints2/archives/foobar/cfg/>.
+
+You also need to execute the following SQL command.
+
+ UPDATE document SET security='' WHERE security='public';
+
+To connect to mysql via the command line run:
+
+ mysql -u eprints foobar -p
+
+And enter the database password for that archive.
+
+Now re-run C<generate_apacheconf> and restart apache.
+
+Upgrading from 2.0 should be less painful than this, the config
+files should change less dramatically from now on.
+
