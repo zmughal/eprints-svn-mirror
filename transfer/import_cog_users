@@ -95,7 +95,7 @@ foreach $rec (@records)
 
 	if( defined $rec->{fname} )
 	{
-		$user->{name} = &produce_name( $rec->{fname} );
+		$user->{name} = EPrints::Name->import_names( $rec->{fname}, "\\+" );
 	}
 	
 	
@@ -124,56 +124,3 @@ foreach $rec (@records)
 print STDERR "Done\n";
 
 $session->terminate();
-
-
-
-sub produce_name
-{
-	my( $oldname ) = @_;
-	
-	return( undef ) if( !defined $oldname || $oldname eq "" );
-
-	my @names = split /\s+/, $oldname;
-	
-	my $is_middle_bit = 0;
-
-	# If there's more than one part to the name
-	if( $#names >= 1 )
-	{
-		my @middle_bits = ( "van", "de", "von", "der" );
-		
-		my $possible_middle_bit = $names[$#names-1];
-		
-		foreach (@middle_bits)
-		{
-			$is_middle_bit = 1 if( (lc $_) eq (lc $possible_middle_bit) );
-		}
-	}
-		
-	my $firstnames = "";
-	my $surname = "";
-	my $i;
-
-	if( $is_middle_bit )
-	{
-		$surname = $names[$#names-1]." ".$names[$#names];
-
-		for( $i=0; $i<$#names-1; $i++ )
-		{
-			$firstnames .= " " if ($i>0);
-			$firstnames .= $names[$i];
-		}
-	}
-	else
-	{
-		$surname = $names[$#names];
-
-		for( $i=0; $i<$#names; $i++ )
-		{
-			$firstnames .= " " if ($i>0);
-			$firstnames .= $names[$i];
-		}
-	}
-
-	return( ":$surname,$firstnames:" );
-}
