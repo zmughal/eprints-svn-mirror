@@ -1,4 +1,4 @@
-use lib '/opt/eprints2/perl_lib';
+use lib '/opt/ep2stable/perl_lib';
 
 ######################################################################
 #

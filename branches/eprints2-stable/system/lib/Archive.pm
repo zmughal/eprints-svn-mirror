@@ -124,7 +124,7 @@ sub new_archive_by_id
 		print STDERR "No Archive ID specified.\n\n";
 		return;
 	}
-	if( $id !~ m/[a-z_]+/ )
+	if( $id !~ m/^[a-zA-Z0-9_]+$/ )
 	{
 		print STDERR "Archive ID illegal: $id\n\n";
 		return;

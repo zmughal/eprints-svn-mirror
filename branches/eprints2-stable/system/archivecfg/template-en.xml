@@ -34,8 +34,10 @@
       </table>
     </div>
     <div class="main">
-      <h1 class="pagetitle"><ep:pin ref="title" /></h1>
-      <ep:pin ref="page" />
+      <div align="center"><table width="720"><tr><td align="left">
+        <h1 class="pagetitle"><ep:pin ref="title" /></h1>
+        <ep:pin ref="page" />
+      </td></tr></table></div>
     </div>
     <div class="footer">
       <br />

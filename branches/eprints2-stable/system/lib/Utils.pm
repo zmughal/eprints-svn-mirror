@@ -646,7 +646,7 @@ sub is_set
 ######################################################################
 =pod
 
-=item EPrints::Utils::tree_to_utf8( $node, $width, $pre )
+=item EPrints::Utils::tree_to_utf8( $node, $width, $pre, $whitespace_before )
 
 undocumented
 
@@ -655,7 +655,9 @@ undocumented
 
 sub tree_to_utf8
 {
-        my( $node, $width, $pre ) = @_;
+        my( $node, $width, $pre, $whitespace_before ) = @_;
+
+	$whitespace_before = 0 unless defined $whitespace_before;
 
 	unless( EPrints::XML::is_dom( $node ) )
 	{
@@ -665,12 +667,15 @@ sub tree_to_utf8
 	{
 		# Hmm, a node list, not a node.
         	my $string = utf8("");
+		my $ws = $whitespace_before;
         	for( my $i=0 ; $i<$node->getLength ; ++$i )
         	{
                 	$string .= tree_to_utf8( 
 				$node->index( $i ), 
 				$width,
- 				$pre );
+ 				$pre,
+				$ws );
+			$ws = _blank_lines( $ws, $string );
 		}
 		return $string;
 	}
@@ -694,10 +699,15 @@ sub tree_to_utf8
         my $name = $node->getNodeName();
 
         my $string = utf8("");
+	my $ws = $whitespace_before;
         foreach( $node->getChildNodes )
         {
-                $string .= tree_to_utf8( $_, $width, ( $pre || $name eq "pre" || $name eq "mail" )
-);
+                $string .= tree_to_utf8( 
+			$_,
+			$width, 
+			( $pre || $name eq "pre" || $name eq "mail" ),
+			$ws );
+		$ws = _blank_lines( $ws, $string );
         }
 
         if( $name eq "fallback" )
@@ -784,13 +794,19 @@ sub tree_to_utf8
                 }
                 $string->pack( @donechars );
         }
+	$ws = $whitespace_before;
         if( $name eq "p" )
         {
-                $string = "\n".$string."\n";
+		while( $ws < 2 ) { $string="\n".$string; ++$ws; }
+        }
+	$ws = _blank_lines( $whitespace_before, $string );
+        if( $name eq "p" )
+        {
+		while( $ws < 1 ) { $string.="\n"; ++$ws; }
         }
         if( $name eq "br" )
         {
-                $string = "\n";
+		while( $ws < 1 ) { $string.="\n"; ++$ws; }
         }
         if( $name eq "img" )
         {
@@ -798,6 +814,19 @@ sub tree_to_utf8
 		$string = $alt if( defined $alt );
         }
         return $string;
+}
+
+sub _blank_lines
+{
+	my( $n, $str ) = @_;
+
+	$str = "\n"x$n . $str;
+	$str =~ s/\[[^\]]*\]//sg;
+	$str =~ s/[ 	\r]+//sg;
+	my $ws;
+	for( $ws = 0; substr( $str, (length $str) - 1 - $ws, 1 ) eq "\n"; ++$ws ) {;}
+
+	return $ws;
 }
 
 
@@ -1474,7 +1503,7 @@ sub get_UTC_timestamp
 		use POSIX qw(strftime);
 		$stamp = strftime( "%Y-%m-%dT%H:%M:%SZ", gmtime);
 	};
-print STDERR $@;
+
 	return $stamp;
 }
 
@@ -1537,6 +1566,43 @@ sub escape_filename
 	$fileid =~ s/[\s\/]/_/g; 
 
         return $fileid;
+}
+
+######################################################################
+=pod
+
+=item $filesize_text = EPrints::Utils::human_filesize( $size_in_bytes )
+
+Return a human readable version of a filesize. If 0-4095b then show 
+as bytes, if 4-4095Kb show as Kb otherwise show as Mb.
+
+eg. Input of 5234 gives "5Kb", input of 3234 gives "3234b".
+
+This is not internationalised, I don't think it needs to be. Let me
+know if this is a problem. support@eprints.org
+
+=cut
+######################################################################
+
+sub human_filesize
+{
+	my( $size_in_bytes ) = @_;
+
+	if( $size_in_bytes < 4096 )
+	{
+		return $size_in_bytes.'b';
+	}
+
+	my $size_in_k = int( $size_in_bytes / 1024 );
+
+	if( $size_in_k < 4096 )
+	{
+		return $size_in_k.'Kb';
+	}
+
+	my $size_in_meg = int( $size_in_k / 1024 );
+
+	return $size_in_meg.'Mb';
 }
 
 1;

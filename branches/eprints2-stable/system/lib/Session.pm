@@ -325,6 +325,23 @@ sub phrase
 	return $string;
 }
 
+######################################################################
+=pod
+
+=item $foo = $thing->get_lang
+
+undocumented
+
+=cut
+######################################################################
+
+sub get_lang
+{
+	my( $self ) = @_;
+
+	return $self->{lang};
+}
+
 
 ######################################################################
 =pod
@@ -342,6 +359,8 @@ sub get_langid
 
 	return $self->{lang}->get_id();
 }
+
+
 
 #cjg: should be a util? or even a property of archive?
 
@@ -703,10 +722,27 @@ sub render_ruler
 	my $ruler = $self->{archive}->get_ruler();
 	
 	return $self->clone_for_me( $ruler, 1 );
-
-	return $ruler;
 }
 
+######################################################################
+=pod
+
+=item $foo = $thing->render_nbsp
+
+Return an XHTML &nbsp; character.
+
+=cut
+######################################################################
+
+sub render_nbsp
+{
+	my( $self ) = @_;
+
+	my $string = latin1("");
+	$string->pack(160);
+	
+	return $self->make_text( $string );
+}
 
 ######################################################################
 =pod
@@ -845,7 +881,10 @@ sub render_option_list
 	{
 		if( $params{height} ne "ALL" )
 		{
-			$size = $params{height};
+			if( $params{height} < $size )
+			{
+				$size = $params{height};
+			}
 		}
 		$element->setAttribute( "size" , $size );
 	}
@@ -919,12 +958,18 @@ sub render_upload_field
 {
 	my( $self, $name ) = @_;
 
-	my $div = $self->make_element( "div" ); #no class cjg	
-	$div->appendChild( $self->make_element(
-		"input", 
+#	my $div = $self->make_element( "div" ); #no class cjg	
+#	$div->appendChild( $self->make_element(
+#		"input", 
+#		name => $name,
+#		type => "file" ) );
+#	return $div;
+
+	return $self->make_element(
+		"input",
 		name => $name,
-		type => "file" ) );
-	return $div;
+		type => "file" );
+
 }
 
 
@@ -1303,6 +1348,10 @@ sub render_input_form
 					$_, 
 					$p{hidden_fields}->{$_} ) );
 	}
+	if( defined $p{comments}->{above_buttons} )
+	{
+		$form->appendChild( $p{comments}->{above_buttons} );
+	}
 
 	$form->appendChild( $self->render_action_buttons( %{$p{buttons}} ) );
 
@@ -1360,7 +1409,7 @@ sub _render_input_form_field
 	{
 		$div = $self->make_element( "div", class => "formfieldhelp" );
 
-		$div->appendChild( $field->render_help( $self ) );
+		$div->appendChild( $field->render_help( $self, $type ) );
 		$html->appendChild( $div );
 	}
 
