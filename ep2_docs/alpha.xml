@@ -16,9 +16,7 @@
 <para>The first bit</para>
 </chapter>
 
-<chapter><title>What software does &ep2; need? Where do I get it?</title>
-<para>The second bit</para>
-</chapter>
+&reqsoftware;
 
 <chapter><title>How do I install &ep2;?</title>
 <para>The third bit</para>

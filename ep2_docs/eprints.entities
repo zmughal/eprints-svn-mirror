@@ -1,3 +1,4 @@
 <!ENTITY ep2 "<emphasis>EPrints 2.0</emphasis>" > 
 <!ENTITY eprints "<emphasis>EPrints</emphasis>" > 
 <!ENTITY history SYSTEM "history.xml" >
+<!ENTITY reqsoftware SYSTEM "reqsoftware.xml" >

@@ -18,7 +18,6 @@ all: alpha
 	xt $< $(LATEX) > $*.latex
 
 .latex.dvi:
-	cp *.eps $(WORK_DIR)
 	cp $< $(WORK_DIR)
 	cd $(WORK_DIR); latex $<
 	cp $(WORK_DIR)/$*.dvi .
