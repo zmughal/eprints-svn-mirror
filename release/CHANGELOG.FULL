@@ -1,0 +1,58 @@
+starts 1.1.1
+
+Fri Jan 26 17:25:39 GMT 2001
+* modified Makefile.in to use "(cd foo; tar bar)" rather than "tar bar -C foo"
+* adding code to spot "use advanced writer" return from oai_get_eprint_metadata
+* added oai_write_eprint_metadata stub to SiteRoutines
+* modified Makefile.in to only ever run ${INSTALL} on a single file at a time.
+For some reason it only worked when the nested for is all on one line.
+
+Wed Jan 31 18:05:08 GMT 2001
+* added bin/rebuild_sets which will recreate the subjects table from
+cfg/subjects. Warns user that this is dangerous and requires them to
+type 'yes' at a prompt.
+* removed an un-needed second "my" from HTMLRenderer.pm ("new" function).
+
+Thu Feb  1 15:14:09 GMT 2001
+* Added HTML version of eprints-system docs to site
+* Added 'backup policy' section to eprints-install
+* Added 'customisation examples' and subsection 'Listing All Files for a Format' 
+Tue Feb  6 14:30:49 GMT 2001
+* Added better mention of Rob into information.html and the licence file.
+* Removed cgi/reader and cgi/author dirs - didn't seem to do owt.
+* Added subject_name to Subject: returns a subjects name with out the tree.
+* Fixed HTMLRender.pm code to display "subjects" now prints whole label
+with <BR>'s seperating them.
+
+
+--------------------------------------------------------------------------------
+
+
+
+
+------------------------------------------------
+
+todo:
+
+# userid/username split.
+username becomes userid
+	- make it validate on user info too
+	- add a 'strict' option
+userid/name combo field 
+	- make it editable, searchable etc.
+make refs output which dosn't use wrapper.
+make people refs too, configurable.
+add some <BR> to end of left menu
+# document rebuild_sets
+# make rebuild sets work nicer?
+* new user type "Local"?
+* "filter" concept for staff.
+* "private" formats
+* configuration for "filter" and "userid" fields?
+* trawler, processor to convert eg latex to ps?
+* cgi/user page is a little iffy. Make it look nicer?
+
+docs:
+* password change script.
+* add subject to installation notes?
+add "multiple" option to table 2 in system notes?
