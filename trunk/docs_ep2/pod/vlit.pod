@@ -1,10 +1,18 @@
+=head1 What is VLit?
+
 ** This feature is still experimental **
 
 VLit is a method for quoting a part of a document directly. It is available on any file in the public documents area of a text mime-type (C<text/plain>, C<text/html> etc). It allows a range of characters to be extracted rather than the entire document. This allows external systems, rather than quote by cut-and-paste, to quote in context of the original.
 
+If you use it, please edit the vlit page in C</opt/eprints2/archives/I<foo>/cfg/static/en/vlit.xpage> to indicate under what terms the feature may be used. When using "human" mode, described below, this page is what the (c) copyright symbol links to, by default.
+
+Don't forget to re-run B<generate_static>.
+
 =head1 But I don't want this Feature...
 
 If for some reason you want to disable VLit, you may do so in ArchiveConfig.pm - you will then need to re-run C<generate_apacheconf> and restart the web server.
+
+Edit the vlit page (as described above) to indicate that the feature is not available on your archive.
 
 =head1 Invoking VLit
 
