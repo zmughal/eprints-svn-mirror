@@ -12,12 +12,14 @@ use Cwd;
 	"eprints2-pre-5"   => "bovex",
 	"eprints2-pre-6"   => "baconbits",
 	"eprints2-pre-7"   => "limepickle",
-	"eprints2-2-0"   => "olive"
+	"eprints2-2-0"   => "olive",
+	"eprints-2-0-1pre1"   => "mangogoo"
 );
 %ids = (
-	"latest"           => "2.0.pre",
+	"latest"           => "2.0.1",
 	"eprints2-pre-6"   => "2.0.pre-6",
-	"eprints2-2-0"     => "2.0"
+	"eprints2-2-0"     => "2.0",
+	"eprints-2-0-1"     => "2.0.1"
 );
 
 ($type) = @ARGV;

@@ -135,8 +135,8 @@ ifeq ($(FULL_INSTALL),1)
 		[ -n "$$files" ] && ( for f in $$files ; do ${INSTALL} -m 644 -o ${USERNAME} -g ${GROUP} $$f ${PREFIX}/$$i ;  done ); \
 	done
 	chmod 600 ${PREFIX}/perl_lib/${LIB_PREFIX}EPrintSite/SiteInfo.pm
-	${PREFIX}/bin/update_htaccess
 endif
+	${PREFIX}/bin/update_htaccess
 ifeq ($(CREATE_DATABASE),1)
 	@echo "Enter MySQL database root password"
 	${MYSQL} -u root -p -e 'create database ${DATABASE} ; GRANT SELECT, INSERT, UPDATE, DELETE, CREATE ON ${DATABASE}.* TO ${DB_USERNAME}@localhost IDENTIFIED BY "'`cat _db_passwd`'"'
