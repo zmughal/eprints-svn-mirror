@@ -493,7 +493,7 @@ RewriteRule ^/Dienst(.*) /opt/eprints/openarchives/Main/dienst.pl
 </Directory>
 \end{verbatim}
 
-Redirect 401 ``authorisation required'' and 404 ``document not found'' errors to be handled by \eprints (note that these need to be URLs rather than local filesystem paths):
+Redirect 401 ``authorisation required'' and 404 ``document not found'' errors to be handled by \eprints\ (note that these need to be URLs rather than local filesystem paths) by adding the following paths. However, if you're running more than one \eprints\ archive on a single Apache server, only one 404 document handler, which may end up directing users to incorrect pages, so you may wish to leave that out; likewise, you may wish to change the wording in {\tt error401.html}.
 
 \begin{verbatim}
 ErrorDocument 401 /error401.html
@@ -878,7 +878,7 @@ In the default configuration, two metadata formats are exported:
 
 The Open Archives Metadata Set is part of the Santa Fe convention, and you need to support this to support the current public version of the protocol. This will be superceded in later versions, so exporting Dublin Core metadata means that your archive will be compliant with the new version of the protocol as soon as you upgrade.
 
-These are metadata formats are specified in {\tt SiteInfo.pm} as:
+These metadata formats are specified in {\tt SiteInfo.pm} as:
 
 \begin{verbatim}
 %EPrintSite::SiteInfo::oai_metadata_formats
