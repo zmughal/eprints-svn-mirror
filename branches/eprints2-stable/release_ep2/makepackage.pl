@@ -46,6 +46,8 @@ my %codenames = (
 	"eprints2-2-99-2" => "makeroomforthetuna",
 	"eprints2-2-99-3" => "whydoesithurt",
 	"eprints2-2-99-4" => "Hope Springs Eternal",
+	"eprints2-2-99-5" => "Make Mine a Ninety-Nine",
+	"eprints2-2-99-6" => "It will be over by Christmas...",
 
 
 	"eprints2-3" => "Hoi Sin Duck"
@@ -78,6 +80,8 @@ my %ids = (
 	"eprints2-2-99-2" => "2.2.99.2-alpha",
 	"eprints2-2-99-3" => "2.2.99.3-alpha",
 	"eprints2-2-99-4" => "2.2.99.4-beta",
+	"eprints2-2-99-5" => "2.2.99.5-beta",
+	"eprints2-2-99-6" => "2.2.99.6-beta",
 
 
 	"eprints2-3" => "2.3.0"
@@ -144,6 +148,7 @@ system("/bin/rm `find . -name '.cvsignore'`")==0 or die "Couldn't remove.";
 chdir "eprints/system";
 
 my @installerfiles = ( 
+	'perlmodules.pl',
 	'aclocal.m4',
 	'autogen.sh',
 	'configure.in',

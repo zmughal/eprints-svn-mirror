@@ -687,7 +687,7 @@ sub move_out_of_harms_way
 {
 	my( $file ) = @_;
 
-	my @date = localtime( $time );
+	my @date = localtime;
 	my $safename = sprintf( 
 		"%s.backup.%04d-%02d-%02d", 
 		$file, 
