@@ -1,4 +1,4 @@
-use lib '/opt/eprints2/perl_lib';
+use lib '/opt/ep2stable/perl_lib';
 
 ######################################################################
 #
@@ -18,30 +18,44 @@ print STDERR "EPRINTS: Loading Core Modules\n";
 
 use Carp qw(verbose);
 
+BEGIN
+{
+	use EPrints::SystemSettings;
+	my $av =  $EPrints::SystemSettings::conf->{apache_version};
+	if( defined $av && $av eq "2" )
+	{
+        	eval 'use Apache2; use Apache::compat;'; die $@ if $@;
+	}
+}
+
 use Apache::DBI;
 #$Apache::DBI::DEBUG = 3;
-use Apache::Registry;          
+use Apache::Registry;
 
+
+
+$ENV{MOD_PERL} or EPrints::Utils::abort( "not running under mod_perl!" );
 
 use EPrints::XML;
 use EPrints::Utils;
 use EPrints::Config;
 
-$ENV{MOD_PERL} or EPrints::Utils::abort( "not running under mod_perl!" );
-
 # This code is interpreted *once* when the server starts
+use EPrints::Archive;
 use EPrints::Auth;
 use EPrints::Database;
 use EPrints::Document;
 use EPrints::EPrint;
+use EPrints::Extras;
 use EPrints::ImportXML;
 use EPrints::Language;
 use EPrints::Latex;
 use EPrints::MetaField;
 use EPrints::OpenArchives;
-use EPrints::Archive;
+use EPrints::Rewrite;
 use EPrints::SearchExpression;
 use EPrints::SearchField;
+use EPrints::SearchCondition;
 use EPrints::Session;
 use EPrints::Subject;
 use EPrints::SubmissionForm;
@@ -53,6 +67,10 @@ use EPrints::VLit;
 use EPrints::Paracite;
 
 use strict;
+
+print STDERR "********LOADED USE STUFF BONG\n";
+
+EPrints::Config::ensure_init();
 
 print STDERR "EPRINTS: Core Modules Loaded\n";
 

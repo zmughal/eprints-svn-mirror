@@ -169,7 +169,11 @@ sub process
 
 		$page = $self->{session}->make_doc_fragment();
 
-		$page->appendChild( $self->{session}->html_phrase( 
+		my $problem_box = $self->{session}->make_element( 
+					"div",
+					class=>"problems" );
+		$page->appendChild( $problem_box );
+		$problem_box->appendChild( $self->{session}->html_phrase( 
 			"lib/userform:form_incorrect" ) );
 
 		$ul = $self->{session}->make_element( "ul" );
@@ -180,11 +184,10 @@ sub process
 			$li->appendChild( $problem );
 			$ul->appendChild( $li );
 		}
-		$page->appendChild( $ul );
+		$problem_box->appendChild( $ul );
 
-		$page->appendChild( $self->{session}->html_phrase( 
+		$problem_box->appendChild( $self->{session}->html_phrase( 
 			"lib/userform:complete_form" ) );
-		$page->appendChild( $self->{session}->render_ruler() );
 	
 		$page->appendChild( $self->_render_user_form() );
 
@@ -232,7 +235,6 @@ sub _render_user_form
 
 	my @fields = $user_ds->get_type_fields( $self->{user}->get_value( "usertype" ), $self->{staff} );
 	my %hidden = ( "userid"=>$self->{user}->get_value( "userid" ) );
-
 	my $buttons = { update => $self->{session}->phrase( "lib/userform:update_record" ) };
 	my $form = $self->{session}->render_input_form( 
 					staff=>$self->{staff},

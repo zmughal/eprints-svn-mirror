@@ -245,7 +245,7 @@ sub texstring_to_png
 		return $ofile;
 	}
 
-	my $prev_dir = cwd;
+	my $prev_dir = getcwd;
 	chdir( $cachedir );
 	my $fbase = $cachedir."/".$$;
 

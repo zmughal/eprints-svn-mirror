@@ -86,15 +86,20 @@ package EPrints::Document;
 @ISA = ( 'EPrints::DataObj' );
 use EPrints::DataObj;
 
-use EPrints::Database;
-use EPrints::EPrint;
 
 use File::Basename;
 use File::Path;
 use File::Copy;
 use Cwd;
+
 use URI::Heuristic;
+use Convert::PlainText;
+
+use EPrints::Database;
+use EPrints::EPrint;
 use EPrints::Probity;
+
+
 
 use strict;
 
@@ -560,17 +565,17 @@ sub get_eprint
 ######################################################################
 =pod
 
-=item $url = $doc->get_url( [$staff] )
+=item $url = $doc->get_baseurl( [$staff] )
 
-Return the full URL of the document. Overrides the stub in DataObj.
+Return the base URL of the document. Overrides the stub in DataObj.
 $staff is currently ignored.
 
 =cut
 ######################################################################
 
-sub get_url
+sub get_baseurl
 {
-	my( $self, $staff ) = @_;
+	my( $self ) = @_;
 
 	# The $staff param is ignored.
 
@@ -594,8 +599,25 @@ sub get_url
 	}
 	return $basepath . "/" . 
 		sprintf( "%08d", $eprint->get_value( "eprintid" )) . "/" .
-		docid_to_path( $archive, $self->get_value( "docid" ) ) . "/" . 
-		$self->get_main();
+		docid_to_path( $archive, $self->get_value( "docid" ) ) . "/";
+}
+
+######################################################################
+=pod
+
+=item $url = $doc->get_url( [$staff] )
+
+Return the full URL of the document. Overrides the stub in DataObj.
+$staff is currently ignored.
+
+=cut
+######################################################################
+
+sub get_url
+{
+	my( $self ) = @_;
+	
+	return $self->get_baseurl.$self->get_main();
 }
 
 
@@ -959,7 +981,7 @@ sub upload_url
 	my $url = URI::Heuristic::uf_uristr( $url_in );
 
 	# save previous dir
-	my $prev_dir = cwd();
+	my $prev_dir = getcwd();
 
 	# Change directory to destination dir., return with failure if this 
 	# fails.
@@ -1221,6 +1243,45 @@ sub rehash
 		$hashfile );
 }
 
+######################################################################
+=pod
+
+=item $text = $doc->get_text
+
+Get the text of the document as a UTF-8 encoded string, if possible.
+
+This is used for full-text indexing. The text will probably not
+be well formated.
+
+=cut
+######################################################################
+
+sub get_text
+{
+	my( $self ) = @_;
+
+	my $converter = new Convert::PlainText;
+	my $eprint =  $self->get_eprint;
+	if( !defined $eprint )
+	{
+		return "";
+	}
+	my $words_file = $eprint->local_path."/".
+		$self->get_value( "docid" ).".words";
+	my %files = $self->files;
+	my @fullpath_files = ();
+	foreach( keys %files )
+	{
+		push @fullpath_files, $self->local_path."/".$_;
+	}
+	$converter->build($words_file, @fullpath_files);
+
+	return '' unless open( WORDS, $words_file );
+	my $words = join( '', <WORDS> );
+	close WORDS;
+
+	return $words;
+}
 
 1;
 

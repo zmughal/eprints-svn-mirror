@@ -23,13 +23,14 @@ Apache::exit( 0 ) unless( defined $session );
 my $ds = $session->get_archive()->get_dataset( "archive" );
 my $page=$session->make_doc_fragment();
 
+my $citation = $session->get_archive->get_conf( "latest_citation" );
+
 my $seensome = 0;
 for( my $d=0; $d<7; ++$d )
 {
 	my $t = time-60*60*24*$d;
 	my $searchexp = new EPrints::SearchExpression(
 		session => $session,
-		use_cache => 0,
 		dataset => $ds );
 	
 
@@ -65,7 +66,7 @@ for( my $d=0; $d<7; ++$d )
 			my( $session, $dataset, $item, $info ) = @_;
 		
 			my $p = $session->make_element( "p" );
-			$p->appendChild( $item->render_citation_link() );
+			$p->appendChild( $item->render_citation_link( $citation ) );
 			$page->appendChild( $p );
 		} );
 	
