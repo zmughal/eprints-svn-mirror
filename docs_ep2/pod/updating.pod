@@ -107,9 +107,9 @@ If you want an extra level of protection, you may want to run mysqldump to backu
 
 =item *
 
-If you are not using the OAI system then just copy the new ArchiveOAIRender.pm configuration file over your old one. The new one can be found in /opt/eprints2/defaultcfg/ArchiveOAIRender.pm.
+If you are not using the OAI system then just copy the new ArchiveOAIConfig.pm configuration file over your old one. The new one can be found in /opt/eprints2/defaultcfg/ArchiveOAIConfig.pm.
 
-If you have already configured the OAI system then you need to add the required configuration for OAI 2.0. These can be copied from /opt/eprints2/defaultcfg/ArchiveOAIRender.pm. The two relevant sections are the block titled "OAI-PMH 2.0" and the subroutine C<make_metadata_oai_dc_oai2>. Copy these into your archives ArchiveOAIRender.pm and modify them if needed.
+If you have already configured the OAI system then you need to add the required configuration for OAI 2.0. These can be copied from /opt/eprints2/defaultcfg/ArchiveOAIConfig.pm. The two relevant sections are the block titled "OAI-PMH 2.0" and the subroutine C<make_metadata_oai_dc_oai2>. Copy these into your archives ArchiveOAIConfig.pm and modify them if needed.
 
 =item *
 
@@ -138,3 +138,102 @@ to be:
 
 =back
 
+=head1 Updating from EPrints 2.1 (or 2.1.1) to EPrints 2.2
+
+Upgrade eprints software to the new version then (for each archive)
+
+=over 4
+
+=item *
+
+Upgrade the SQL tables - EPrints 2.2 needs to make some small changes to the database. Run:
+
+ % bin/upgrade ARCHIVEID
+
+
+=item cfg/ArchiveOAIConfig.pm
+
+In the sub eprint_to_unqualified_dc change this line:
+
+  push @dcdata, [ "creator", EPrints::Utils::tree_to_utf8( 
+      EPrints::Utils::render_name( $session, $author, 0 ) ) ];
+
+to this:
+
+  push @dcdata, [ "creator", EPrints::Utils::make_name_string( $author ) ];
+
+=item cfg/ArchiveRenderConfig.pm (optional)
+
+You may wish to add the following to "eprint_render", after the commentary section. It will add 'type' to the abstracts page (although not unless you run generate_abstracts
+  
+ 	$table->appendChild( _render_row(
+ 		$session,
+ 		$session->html_phrase( "eprint_fieldname_type" ),
+ 		$eprint->render_value( "type"  ) ) );
+
+=item cfg/ArchiveRenderConfig.pm (optional)
+
+You may wish to add subscriptions to the user_render_full method so staff can see what subscriptions a user has. Just before 
+
+  	$info->appendChild( $table );
+
+Add:
+ 
+ 	my @subs = $user->get_subscriptions;
+ 	my $subs_ds = $session->get_archive->get_dataset( "subscription" );
+ 	foreach my $subscr ( @subs )
+ 	{
+ 		my $rowright = $session->make_doc_fragment;
+ 		foreach( "frequency","spec","mailempty" )
+ 		{
+ 			my $strong;
+ 			$strong = $session->make_element( "strong" );
+ 			$strong->appendChild( $session->make_text( 
+				$subs_ds->get_field( $_ )->display_name( $session ) ) );
+ 			$strong->appendChild( $session->make_text( ": " ) );
+ 			$rowright->appendChild( $strong );
+ 			$rowright->appendChild( $subscr->render_value( $_ ) );
+ 			$rowright->appendChild( $session->make_element( "br" ) );
+ 		}
+ 		$table->appendChild( _render_row(
+ 			$session,
+ 			$session->html_phrase(
+ 				"page:subscription" ),
+ 			$rowright ) );
+ 				
+ 	}
+
+=item Subject Editors (optional)
+
+If you want to add the feature which allows the editor to set a search which limits the scope of what an editor may edit (eg. only books, or only things under oceanography in the subject table) you must add in metadata-types.xml ...
+
+To the end of E<lt>type name="editor"E<gt>
+
+    <field name="editperms" staffonly="yes" />
+    <field name="frequency" required="yes" />
+    <field name="mailempty" required="yes" />
+
+And to the end of E<lt>type name="admin"E<gt>
+
+    <field name="editperms" />
+    <field name="frequency" required="yes" />
+    <field name="mailempty" required="yes" />
+
+And then to ArchiveConfig.pm add (near "subscription fields" )
+
+ # Fields used for limiting the scope of editors
+ $c->{editor_limit_fields} =
+ [
+         "subjects",
+         "type"
+ ];
+
+=item Translated Phrase Files (non-english archives only)
+
+There is a tool in http://software.eprints.org/files/contrib/update_phrases/ which will assist with identifying changes made in the English version which should be applied to your translated version(s).
+
+=item Rehash Documents
+
+If you want to use the "probity" feature (see elsewhere in documentation for more information) you should run the rehash_documents command to generate a hash of each document file in the system.
+
+=back

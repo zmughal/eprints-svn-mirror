@@ -1,4 +1,4 @@
-=head1 What Additional Software does EPrints 2.0 Require? 
+=head1 What Additional Software does EPrints Require? 
 
 In brief, EPrints requires Apache (with mod_perl), MySQL and Perl with some extra modules. Ideally you also want wget, tar and unzip. 
 
@@ -147,6 +147,30 @@ The perl Apache.pm module is acutally part of mod_perl - installing mod_perl as 
 Most PERL 5.6 or later systems should already include the following modules, but you may have to install some by hand on certain platforms.
 
 C<CGI>, C<Carp>, C<Cwd>, C<Data::Dumper>, C<Digest::MD5>, C<File::Basename>, C<File::Copy>, C<File::Find>, C<File::Path>, C<Getopt::Long>, C<Pod::Usage>, C<Sys::Hostname>.
+
+=head1 Optional GDOME support
+
+Since EPrints 2.2 you may use either XML::DOM or XML::GDOME. XML::GDOME is recommended as it's faster and uses much less RAM, but it does require you to install a whole lot of extra libraries and perl modules. If you are running a pilot or demonstration service then XML::DOM is fine, and you can always switch over later by installing the required tools and setting the GDOME flag in perl_lib/EPrints/SystemSettings.pm
+
+=head2 Additional Perl Modules Required for GDOME support
+
+ XML-LibXML-Common
+ XML-NamespaceSupport
+ XML-SAX
+
+All of which are in http://www.cpan.org/modules/by-module/XML/
+
+=head2 Addional Libraries Required for GDOME support
+
+ libxml2
+ libxml2-devel
+
+either get the tarball from: ftp://ftp.gnome.org/pub/GNOME/sources/libxml2/2.3
+
+or the RPMs:
+
+ http://rpmfind.net/linux/rpm2html/search.php?query=libxml2
+ http://rpmfind.net/linux/rpm2html/search.php?query=libxml2-devel
 
 =head1 Other Tools
 
