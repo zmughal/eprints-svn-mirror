@@ -1,0 +1,172 @@
+#!/usr/bin/perl -w
+
+######################################################################
+#
+#  Import CogPrints users into EPrints.
+#
+######################################################################
+#
+#  $Id$
+#
+######################################################################
+
+use strict;
+
+use EPrints::Session;
+use EPrints::User;
+
+my %remove_accounts =
+(
+	"BurkittA" => 1,
+	"BaronJ" => 1,
+	"Calvin" => 1,
+	"cd011" => 1,
+	"costanzg1" => 1,
+	"dahliaz1" => 1,
+	"dr.p.mueller1" => 1,
+	"Dieter.Krell1" => 1,
+	"elfreda1" => 1,
+	"fibjonie" => 1,
+	"Francesco.Lauria1" => 1,
+	"h.e.ross1" => 1,
+	"h.e.ross2" => 1,
+	"Hugo.Zaragoza" => 1,
+	"iacoboni" => 1,
+	"istvan" => 1,
+	"J.A.Dupre" => 1,
+	"kmacd1" => 1,
+	"m.gotthalmseder" => 1,
+	"m.redington1" => 1,
+	"P.C.Knox" => 1,
+	"pvermers1" => 1,
+	"quznets" => 1,
+	"rht96r" => 1,
+	"rht96r1" => 1,
+	"rht96r2" => 1,
+	"snichols" => 1,
+	"StewartT" => 1,
+	"waba1" => 1,
+	"ChalmersD" => 1,
+	"kashkin" => 1,
+	"lgabora1" => 1
+);
+
+
+
+my $session = new EPrints::Session( 1 );
+
+print STDERR "Reading users...\n";
+
+my @records;
+
+while( <> )
+{
+	chop();
+	my ($username, $record) = split /=/;
+
+	unless( defined $remove_accounts{$username} )
+	{
+		my @fieldvals = split /\|/, $record;
+
+		my %user;
+
+		$user{username} = $username;
+
+		while( $#fieldvals >= 0 )
+		{
+			my $field = shift @fieldvals;
+			my $value = shift @fieldvals;
+
+			$user{$field} = $value;
+		}
+
+
+		push @records, \%user;
+	}
+	else
+	{
+		print STDERR "Removing account $username\n";
+	}
+}
+
+print STDERR "Importing users...\n";
+
+my $count = 1;
+
+my $rec;
+foreach $rec (@records)
+{
+	print STDERR "User $rec->{username} ($count)\n";
+	$count++;
+
+	# Create the record
+	my $user = EPrints::User::create_user( $session,
+	                                       $rec->{username},
+	                                       lc $rec->{email},
+	                                       $EPrints::User::access_levels[0] );
+
+
+	my @copy_fields = qw( passwd status dept org country url );
+
+	# Port over the straight-copy fields
+	foreach (@copy_fields)
+	{
+		$user->{$_} = $rec->{$_};
+	}
+	
+	# Date joined field
+
+	# Convert dd/mm/yyyy to yyyy-mm-dd
+	my ( $day, $month, $year ) = split /\//, $rec->{date};
+
+	if( defined $day && defined $month && defined $year )
+	{
+		while( length $day < 2 )
+		{
+			$day = "0".$day;
+		}
+
+		while( length $month < 2 )
+		{
+			$month = "0".$month;
+		}
+		$user->{joined} = "$year-$month-$day";
+	}
+	else
+	{
+		$user->{joined} = "2000-01-01";
+	}
+
+	# Name field
+
+	if( defined $rec->{fname} )
+	{
+		$user->{name} = EPrints::Name::import_names( $rec->{fname}, "\\+" );
+	}
+	
+	
+	# o/s field
+	if( defined $rec->{os} )
+	{
+		$user->{os} = $rec->{os};
+		$user->{os} = "UNIX" if( $user->{os} eq "Unix" );
+		$user->{os} = "UNIX" if( $user->{os} eq "PDP-8" );
+	}
+	
+	# Address field
+	my $address = "";
+	
+	$address .= $rec->{add1}."\n" if( defined $rec->{add1} );
+	$address .= $rec->{add2}."\n" if( defined $rec->{add2} );
+	$address .= $rec->{city}."\n" if( defined $rec->{city} );
+	$address .= $rec->{state}."\n" if( defined $rec->{state} );
+	$address .= $rec->{zip}."\n" if( defined $rec->{zip} );
+
+	$user->{address} = $address;
+
+	$user->commit();	
+}
+
+print STDERR "Done\n";
+
+$session->terminate();

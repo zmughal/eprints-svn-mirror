@@ -1,0 +1,605 @@
+#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+=pod
+
+=head1 NAME
+
+B<configure_archive> - create a new EPrint Archive, or edit the basic options of an existing archive
+
+=head1 SYNOPSIS
+
+B<configure_archive> [I<archiveid>] [B<options>]
+
+=head1 DESCRIPTION
+
+Create a new EPrint Archive, or edit the basic options of an existing archive.
+
+This script will prompt the user for various basic information about the archive and then will:
+
+  - create a basic XML config file
+  - make the archive directory
+  - copy default files into the archive directory
+  - create the MySQL database (but not the tables)
+
+After running this script you should edit the files created in the archives B<cfg> directory, especially B<ArchiveConfig.pm> then you will need to run a number of setup scripts, starting with B<create_tables>.
+
+=head1 ARGUMENTS
+
+=over 8
+
+=item I<archiveid> 
+
+The ID of the EPrint archive to modify (or create).
+
+=back
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--help>
+
+Print a brief help message and exit.
+
+=item B<--man>
+
+Print the full manual page and then exit.
+
+=item B<--quiet>
+
+Be vewwy vewwy quiet. This option will supress all output unless an error occurs.
+
+=item B<--verbose>
+
+Explain in detail what is going on.
+
+=back   
+
+__GENERICPOD__
+
+=cut
+
+#cjg Does not use noise levels
+
+
+use EPrints::Config;
+use EPrints::Database;
+use EPrints::Utils;
+
+use Sys::Hostname;
+use Cwd;
+use DBI;
+use Unicode::String qw(utf8 latin1);
+
+use strict;
+use Getopt::Long;
+use Pod::Usage;
+
+my $verbose = 0;
+my $quiet = 0;
+my $help = 0;
+my $man = 0;
+
+GetOptions( 
+	'help|?' => => \$help,
+	'man' => => \$man,
+	'verbose+' => \$verbose,
+	'quiet' => \$quiet
+) || pod2usage( 2 );
+pod2usage( 1 ) if $help;
+pod2usage( -exitstatus => 0, -verbose => 2 ) if $man;
+pod2usage( 2 ) if( scalar @ARGV > 1 ); 
+
+# Set STDOUT to auto flush (without needing a \n)
+$|=1;
+
+my $noise = 1;
+$noise = 0 if( $quiet );
+$noise = 1+$verbose if( $verbose );
+
+my $archiveid = $ARGV[0];
+
+my $REGEXP_HOSTNAME_MIDDLE = '[a-z0-9-]+(\.[a-z0-9-]+)*';
+my $REGEXP_HOSTNAME = '^'.$REGEXP_HOSTNAME_MIDDLE.'$';
+my $REGEXP_EMAIL = '^[^@]+@'.$REGEXP_HOSTNAME_MIDDLE.'$';
+my $REGEXP_HOSTNAME_FULL = '^[a-z0-9-]+(\.[a-z0-9-]+)+$';
+my $REGEXP_VARNAME = '^[a-z][a-z0-9]*$';
+my $REGEXP_NUMBER = '^[0-9]+$';
+my $REGEXP_YESNO = '^(yes|no)$';
+my $REGEXP_ANY = '^.*$';
+
+my %config = ();
+
+if( !defined $archiveid )
+{
+	print <<END;
+
+Create or Edit an EPrint Archive
+
+Please select an ID for the archive, which will be used to create a directory
+and identify the archive. Lower case letters and numbers, may not start with
+a number) eg. "lemurprints" or "test3"
+
+Enter an already existing archive ID to edit the settings.
+
+END
+	if( scalar EPrints::Config::get_archive_ids() )
+	{
+		print "Existing archives:\n";
+		print join( ", ", EPrints::Config::get_archive_ids() )."\n\n";
+	}
+
+	$archiveid = EPrints::Utils::get_input( $REGEXP_VARNAME, 'Archive ID' );
+}
+
+my( $configfile ) = EPrints::Config::get( "base_path" )."/archives/".$archiveid.".xml";
+my( $archivedir ) = EPrints::Config::get( "base_path" )."/archives/".$archiveid;
+
+my $loaded_config = EPrints::Config::get_archive_config( $archiveid );		
+my $exists = ( defined $loaded_config );
+
+if( $exists )
+{
+	print "Config file detected:\n";
+	print "Loading from: $configfile\n";
+	if( !defined $loaded_config )
+	{
+		print "Can't read config file.\n\n";
+		exit;
+	}	
+	foreach( keys %{$loaded_config} ) { $config{$_} = $loaded_config->{$_}; }
+}
+else
+{
+	$config{port} = 80;
+	$config{host} = undef;
+	$config{urlpath} = '/';
+	$config{archiveroot} = "archives/".$archiveid;
+	$config{configmodule} = "cfg/ArchiveConfig.pm";
+	$config{aliases} = [];
+	$config{dbname} = $archiveid;
+	$config{dbhost} = "localhost";
+	$config{dbport} = undef;
+	$config{dbsock} = undef;
+	$config{dbuser} = "eprints";
+	$config{dbpass} = undef;
+	$config{adminemail} = undef;
+	$config{archivename} = {};
+}
+
+
+#cjg Default to english for now!
+if( !defined $config{languages} ) 
+{
+	$config{languages} = [ "en" ];
+	$config{defaultlanguage} = "en";
+}
+
+unless( -e $archivedir )
+{
+	print "We need to create $archivedir, doing it now...\n";
+	unless( mkdir($archivedir) )
+	{
+		print "Problem creating directory\n\n";
+		exit;
+	}
+}
+unless( -d $archivedir )
+{	
+	print "$archivedir MUST be a directory.\n\n";
+}
+	
+print <<END;
+
+Please enter the fully qualified hostname of the archive. 
+
+For a production system we recommend against using the real hostname of the 
+machine. 
+
+Example: $archiveid.footle.ac.uk
+
+END
+
+$config{host} = EPrints::Utils::get_input( $REGEXP_HOSTNAME_FULL, 'Hostname', $config{host} );
+
+print <<END;
+
+Please enter the port of the webserver. This is probably 80, but you may wish 
+to run apache on a different port if you are experimenting.
+
+END
+
+$config{port} = EPrints::Utils::get_input( $REGEXP_NUMBER, 'Webserver Port', $config{port} );
+
+
+# calculate example aliases
+my $realhostname = hostname();
+if( $realhostname !~ m/\./ )
+{
+	# No dots in the actual hostname! Lets try and got the
+	# domain from resolv.conf
+	my $domain = "";
+	if( open( RESOLV, "/etc/resolv.conf" ) && 0)
+	{
+		while( <RESOLV> )
+		{
+			chomp;
+			if( m/^search\s+([^\s]+)/ )
+			{
+				$domain = $1;	
+				last;
+			}
+		}
+		close RESOLV;
+	}
+	$domain = "mydomain.com" if( $domain eq "" );
+	$realhostname.=".".$domain;
+}
+my @example_aliases = ();
+push @example_aliases,$realhostname;
+
+$realhostname=~m/^(([^\.]*)\.[^\.]*)(\.|$)?/;
+push @example_aliases,$1 if( $3 eq ".");
+push @example_aliases,$2;
+
+$config{host}=~m/^(([^\.]*)\.[^\.]*)(\.|$)?/;
+push @example_aliases,$1 if( $3 eq "." );
+push @example_aliases,$2;
+print <<END;
+
+Please enter all the aliases which could reach the archive, and indicate if 
+you would like EPrints to write a Redirect Rule to redirect requests to this
+alias to the correct URL.
+END
+if( scalar @{$config{aliases}}==0 )
+{
+	print "Some suggestions:\n";
+	foreach( @example_aliases )
+	{
+		print $_."\n";
+	}
+}
+print <<END;
+
+Enter a single hash (#) when you're done.
+
+END
+
+my @aliases = @{$config{aliases}};
+$config{aliases} = [];
+
+for(;;)
+{
+	my $default = shift @aliases;
+	my $alias = EPrints::Utils::get_input( '^('.$REGEXP_HOSTNAME_MIDDLE.'|#)$', 'Alias (enter # when done)',
+		(defined $default ? $default->{name} : '#' ) );
+	last if( $alias eq "#" );
+	my $aliasrecord = {};
+	$aliasrecord->{name} = $alias;
+	$aliasrecord->{redirect} = 
+		EPrints::Utils::get_input( 
+			$REGEXP_YESNO,
+			"Redirect $alias to $config{host}",
+			(defined $default && !$default->{redirect} ? 'no' : 'yes' ) );
+	push @{$config{aliases}},$aliasrecord;
+	print "\n";
+}
+
+#print <<END;
+#
+#Language Configuration
+#
+#Please enter the primary language and other supported languages for the 
+#archive. Supporting other languages represents a serious commitment to 
+#translate all the phrases and templates etc. into each of these other 
+#languages.
+#
+#Available languages: (please use the ID to refer to them)
+#END
+#my @langs = EPrints::Config::get_supported_languages();
+#foreach( @langs )
+#{
+#	my $title = utf8("");
+#	$title->utf8( "".EPrints::Config::lang_title( $_ ) );
+#	print $_." - ".($title->latin1)."\n";
+#}
+#print <<END;
+#
+#If you plan to add support for another language, you will need to edit the 
+#languages.xml file to indicate that this language is supported, and create 
+#the relevant phrase and template files. 
+#
+#END
+
+print "\n";
+
+$config{adminemail} = EPrints::Utils::get_input( $REGEXP_EMAIL, 'Administrator Email',  $config{adminemail} );
+print <<END;
+
+Enter the name of the archive in the default language. If you wish to enter 
+other titles for other languages or enter non ascii characters then you may
+enter something as a placeholder and edit the XML config file which this
+script generates.
+
+END
+$config{archivename}->{$config{defaultlanguage}} = EPrints::Utils::get_input( '^.+$', 'Archive Name',  $config{archivename}->{$config{defaultlanguage}} );
+
+print <<END;
+
+MySQL Configuration 
+
+END
+$config{dbname} = EPrints::Utils::get_input( $REGEXP_VARNAME, 'Database Name',  $config{dbname} );
+$config{dbhost} = EPrints::Utils::get_input( $REGEXP_HOSTNAME, 'MySQL Host',  $config{dbhost} );
+
+print "\nYou probably don't need to set socket and port (unless you do!?).\n";
+$config{dbport} = "#" if( !defined $config{dbport} );
+$config{dbport} = EPrints::Utils::get_input( '^[0-9]+|#$', 'MySQL Port (# for no setting)',  $config{dbport} );
+$config{dbport} = undef if( $config{dbport} eq "#" );
+
+$config{dbsock} = "#" if( !defined $config{dbsock} );
+# can't remember what is a legal mysql socket... cjg
+$config{dbsock} = EPrints::Utils::get_input( '^.*$', 'MySQL Socket (# for no setting)',  $config{dbsock} );
+$config{dbsock} = undef if( $config{dbsock} eq "#" );
+
+$config{dbuser} = EPrints::Utils::get_input( $REGEXP_VARNAME, 'Database User',  $config{dbuser} );
+$config{dbpass} = EPrints::Utils::get_input( $REGEXP_VARNAME, 'Database Password',  $config{dbpass} );
+
+print <<END;
+
+EPrints can create the database, and grant the correct permissions.
+
+END
+
+my $makedb = EPrints::Utils::get_input( $REGEXP_YESNO, "Create database \"$config{dbname}\"", $exists?"no":"yes" );
+if( $makedb eq "yes" )
+{
+	print <<END;
+
+Ok, I'll need to connect to the mysql database as root. What is the root 
+password? #cjg hide password from display?
+	
+END
+	my $mysqlrootpass = EPrints::Utils::get_input( '^.*$', "MySQL Root Password" );
+
+	print "Connecting to the database...\n";
+	my $dbh = DBI->connect(
+		EPrints::Database::build_connection_string(
+			dbname=>"mysql",
+			dbsock=>$config{dbsock},
+			dbport=>$config{dbport},
+			dbhost=>$config{dbhost} ),
+		"root",
+		$mysqlrootpass );
+
+
+	if( !defined $dbh )
+	{
+		print <<END;
+
+Hmmm. Problem connecting to database as root. We'll skip skip this but
+you should create it by hand.
+
+END
+	}
+	else
+	{
+		my $sth = $dbh->prepare( "show databases" );
+		$sth->execute;
+		my $dbexists = 0;
+		my @row;
+		while( @row = $sth->fetchrow_array )
+		{
+			$dbexists = 1 if $row[0] eq $config{dbname};
+		}
+		if( $dbexists )
+		{
+			print "Hmm. A database called $config{dbname} already exists, oh well.\n\n";
+		}
+		else
+		{
+			my $SQL = "CREATE DATABASE ".$config{dbname};
+			print "DOING: $SQL\n";
+			$dbh->do( $SQL );
+		}
+		print "Setting MySQL privs\n";
+		#cjg @localhost ??? what about remote mysql's?
+
+		my $SQL = 'GRANT SELECT, INSERT, UPDATE, DELETE, DROP, CREATE ON '.$config{dbname}.'.* TO '.$config{dbuser}.'@localhost IDENTIFIED BY "'.$config{dbpass}.'"';
+		print "DOING: $SQL\n";
+		$dbh->do( $SQL );
+
+		print "Disconnecting from database.\n";
+		$dbh->disconnect;
+	}
+}
+ 
+
+######
+#
+# Write XML Config FIle
+#
+
+my $doc = new XML::DOM::Document();
+my $doctype = $doc->createDocumentType( "archive" );
+$doc->setDoctype( $doctype );
+
+my $xmldecl = $doc->createXMLDecl( "1.0", "utf-8", "yes" );
+$doc->setXMLDecl( $xmldecl );
+
+my $t_archive = $doc->createElement( "archive" );
+$t_archive->setAttribute( "id", $archiveid );
+$doc->appendChild( $t_archive );
+
+$t_archive->appendChild( info_tag( $doc, "host", $config{host} ) );
+foreach( @{$config{aliases}} )
+{
+	$t_archive->appendChild( info_tag( $doc, "alias", $_->{name}, "redirect", $_->{redirect} ) );
+}
+foreach( @{$config{languages}} )
+{
+	$t_archive->appendChild( info_tag( $doc, "language", $_) );
+}
+foreach( "port", "urlpath", "archiveroot", "configmodule",
+	 "dbname","dbhost","dbport","dbsock","dbuser","dbpass", 
+	"defaultlanguage", "adminemail" )
+{
+	$config{$_}='' if( !defined $config{$_} );
+	$t_archive->appendChild( info_tag( $doc, $_, $config{$_} ) );
+}
+foreach( keys %{$config{archivename}} )
+{
+	$t_archive->appendChild( info_tag( $doc, "archivename", $config{archivename}->{$_}, language=>$_ ) );
+}
+$t_archive->appendChild( $doc->createTextNode( "\n" ) );
+
+print "\nWriting Config File to:\n$configfile...\n";
+$doc->printToFile( $configfile );
+# It's got a password in so 600 to be safe!
+chmod( 0600, $configfile );
+print <<END;
+
+Copy across initial config files? You have to do this for a new archive but
+probably don't want to if you're editing an archive configuration.
+
+END
+my $mkfiles = EPrints::Utils::get_input( $REGEXP_YESNO, "Create config files", $exists?"no":"yes" );
+if( $mkfiles eq "yes" )
+{
+	my(undef,undef,$uid,$gid) = getpwnam( EPrints::Config::get( "user" ) );
+	print "\nCreating initial files:\n";
+	&install( 
+		EPrints::Config::get( "base_path" )."/defaultcfg",
+		0644,
+		$uid,
+		$gid,
+		$archivedir."/cfg",
+		$archiveid );
+
+	foreach( "html", "documents", "documents/disk0" )
+	{
+		my $dir = $archivedir."/".$_;
+		mkdir( $dir, 0755 );
+		chown( $uid, $gid, $dir );
+	}
+	print <<END;
+
+Ok. I've created the initial config files and directory structure. 
+I've also created a "disk0" directory under documents/ if you want
+your full texts to be stored on a different partition then remove 
+the disk0, and create a symbolic link to the directory you wish to
+store the full texts in. Additional links may be placed here to be
+used when the first is full.
+
+END
+	EPrints::Utils::get_input( $REGEXP_ANY, "Hit return to continue", "" );
+}
+	
+	
+
+# replace package line in PATH/cfg/ArchiveConfig.pm
+
+# Link in initial disk0  (?)
+
+# Register with website!
+
+print <<END;
+
+--------------------------------------------------------------------------
+That seemed to more or less work...
+--------------------------------------------------------------------------
+Now run:
+bin/generate_apacheconf $archiveid
+
+Make any changes to the cfg files. As this is just an alpha install
+you might as well except the defaults for now...
+
+Then run:
+
+bin/generate_dtd $archiveid
+bin/create_tables $archiveid
+bin/generate_static $archiveid
+bin/generate_apacheconf $archiveid
+
+bin/create_user $archiveid <username> <email> admin <password>
+
+Then restart your webserver: 
+/etc/rc.d/init.d/httpd stop
+/etc/rc.d/init.d/httpd start
+
+Now connect to the archive, see everything work perfectly first time...(!)
+--------------------------------------------------------------------------
+END
+
+exit;
+
+#######################################################################
+
+sub info_tag
+{
+	my( $doc, $tagname, $value, %attrs ) = @_;
+
+	my $frag = $doc->createDocumentFragment();
+	$frag->appendChild( $doc->createTextNode( "\n    " ) );
+	my $tag = $doc->createElement( $tagname );
+	$tag->appendChild( $doc->createTextNode( $value ) );
+	foreach( keys %attrs )
+	{
+		$tag->setAttribute( $_, $attrs{$_} );
+	}
+	$frag->appendChild( $tag );
+	return $frag;
+}
+
+# don't be fooled. This isn't the same as the install() in
+# eprints-install
+sub install
+{
+	my($dir, $perms, $user, $group, $dest, $archiveid) = @_;
+
+	print "Installing: $dest\n";
+	opendir(INDIR, $dir) or die("Unable to install directory: $dir");
+	my @dirs = ();
+	my @files = ();
+	mkdir( $dest, 0755 );
+	chown($user, $group, $dest);
+	while(my $item = readdir(INDIR))
+	{
+		next if $item=~m/^\./;
+		if (-d "$dir/$item") { push(@dirs, $item); }
+		else { push(@files, $item); }
+	}
+	closedir(INDIR);
+	foreach(@files)
+	{
+		open(INFILE, "$dir/$_");
+		open(OUTFILE, ">$dest/$_") or die "Can't write to $dest/$_";
+		while(my $line=<INFILE>)
+		{
+			if( $_ eq "ArchiveConfig.pm" && $line=~m/^package/ )
+			{
+				#hack about with the config module
+				$line = "package EPrints::Config::$archiveid;\n";
+			}	
+			print OUTFILE $line;
+		}		
+		close(OUTFILE);
+		close(INFILE);
+		chmod($perms, "$dest/$_");
+		chown($user, $group, "$dest/$_");
+	}
+	foreach(@dirs)
+	{
+		install("$dir/".$_, $perms, $user, $group, "$dest/$_", $archiveid );
+	}
+}

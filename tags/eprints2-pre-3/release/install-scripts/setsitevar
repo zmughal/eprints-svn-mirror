@@ -1,0 +1,45 @@
+#!/usr/bin/perl
+
+my $filename=$ARGV[0];
+my $variable="\$EPrintSite::SiteInfo::$ARGV[1]";
+my $value=$ARGV[2];
+
+$value =~ s/@/\\@/g;
+
+my @buffer;
+
+open IN, $filename or die "Couldn't open $filename for input: $!\n";
+
+while( <IN> )
+{
+	chomp();
+	if( substr( $_, 0, length $variable ) eq $variable )
+	{
+		if ( $value eq "undef" ) 
+		{
+			push @buffer, "$variable = undef;";
+		}
+		else 
+		{
+			push @buffer, "$variable = \"$value\";";
+		}
+	}
+	else
+	{
+		push @buffer, $_;
+	}
+}
+
+close IN;
+
+unlink $filename;
+
+open OUT, ">$filename" or die "Couldn't open $filename for output: $!\n";
+
+foreach (@buffer)
+{
+	print OUT $_."\n";
+}
+
+close OUT;
+
