@@ -199,9 +199,6 @@ sub get_oams_tags
 	# FullID
 	$tags{fullId} = &fullID( $eprint );
 
-	# Other tags are site-specific. Delegate to site routine.
-	EPrintSite::SiteRoutines::eprint_get_oams( $eprint, \%tags );
-
 	return( %tags );
 }
 
