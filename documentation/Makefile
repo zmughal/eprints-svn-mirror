@@ -14,7 +14,7 @@ eprints-install.html: installation/latex/eprints-install.tex installation/latex/
 	rm -rf installation/latex/eprints-install
 
 eprints-install-headless.html: eprints-install.html
-	remove_html_head.pl <eprints-install.html >eprints-install-headless.html
+	./remove_html_head.pl <eprints-install.html >eprints-install-headless.html
 
 online-help.pdf:  $(ONLINEHELPFILES)
 	cd online-help/latex ; pdflatex online-help ; pdflatex online-help
@@ -32,6 +32,13 @@ install-online-help: online-help.pdf online-help-final
 	cp online-help.pdf ../system/static/help/
 	cp online-help-final/*.jpg ../system/static/help
 	cp online-help-final/*.html ../system/static/help
+
+install: install-online-help install-web
+
+install-web:
+	./preparebody.pl 'TITLE: eprints.org Archive Software Installation Document' '<BR><BR>' < eprints-install-headless.html > ../website/in-html/eprints-install.html
+	cp eprints-system.pdf ../website/in-raw
+	cp eprints-install.pdf ../website/in-raw
 	
 eprints-system.pdf: $(SYSTEMDOCFILES)
 	cd system/latex ; pdflatex system ; pdflatex system

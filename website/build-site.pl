@@ -151,10 +151,10 @@ system( "sh", "-c", $command_line );
 foreach $icon (keys %nav_icon_text)
 {
 	$command_line = "giftrans -t 0 \"$config{OUT}/image/init_$icon.hi.gif\" >\"$config{OUT}/image/$icon.hi.gif\"";
-	print "!$command_line\n";
+	#print "!$command_line\n";
 	system( "sh", "-c", $command_line );
 	$command_line = "giftrans -t 0 \"$config{OUT}/image/init_$icon.gif\" >\"$config{OUT}/image/$icon.gif\"";
-	print "?$command_line\n";
+	#print "?$command_line\n";
 	system( "sh", "-c", $command_line );
 }
 

@@ -17,7 +17,7 @@ while( $f=readdir(D) )
 { 
 	if ( -f "$dir/$f" ) 
 	{
-		print "$f\n"; 
+		print "$dir/$f\n"; 
 	}
 } 
 closedir(D);

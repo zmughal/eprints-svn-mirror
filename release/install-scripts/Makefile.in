@@ -50,7 +50,7 @@ all:
 	for i in bin/*; do \
 		sed <$$i 's%^#!.*$$%#!${PERL} -I${PREFIX}/perl_lib%' >to-install/$$i ; \
 	done
-	tar cf - perl_lib/Eprints | tar xf - -C to-install
+	tar cf - perl_lib/EPrints | tar xf - -C to-install
 	files=`find to-install/cgi -type f | grep -v '.htaccess'` ; \
 	for i in $$files ; do \
 		echo "use lib '${PREFIX}/perl_lib';" >$$i.new ; \
@@ -60,7 +60,7 @@ all:
 ifeq ($(FULL_INSTALL),1)
 	@./readpw "Enter password to use for eprints database: " >_db_passwd ; \
 	chmod 600 _db_passwd
-	tar cf - perl_lib/Eprints | tar xf - -C to-install
+	tar cf - perl_lib/EPrintSite | tar xf - -C to-install
 	${PERL} setsitevar to-install "sitename" "${SITENAME}"
 	${PERL} setsitevar to-install "description" "${DESCRIPTION}"
 	${PERL} setsitevar to-install "automail" "${AUTOADMIN}"

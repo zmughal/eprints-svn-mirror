@@ -134,3 +134,16 @@ to SiteInfo.pm.
 - Also added Dublin Core mapping for default metadata set.
 - Added hook to site information for agreement text (e.g. copyright breach
 disclaimer) when users deposit records.
+
+
+###########################
+   PRE-RELEASE CHANGES
+###########################
+- Added the findfiles.pl script as part of removing GNU-specific commands from
+the makefile. Used it to replace "find -maxdepth 1 -type f".
+- Replaced occurances of "cp -a" in Makefile with "tar" to increase portability.
+- configure: GROUP and USER no longer conditional on FULL_INSTALL
+- top level dir of EPrints package renamed from "eprints" to "eprints-version-whatever"
+- renamed oai-0.2 to oai (now supports oai 1.0)
+- minor changes to OpenArchives.pm
+
