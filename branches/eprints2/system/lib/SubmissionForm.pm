@@ -1917,7 +1917,7 @@ sub _do_stage_fileview
 			$td = $self->{session}->make_element( "td", valign=>"top" );
 			$tr->appendChild( $td );
 			# Iffy. Non 8bit filenames could cause a render bug. cjg
-			my $a = $self->{session}->render_link( $self->{document}->get_baseurl().$filename, "_blank" );
+			my $a = $self->{session}->render_link( $self->{document}->get_url($filename), "_blank" );
 			$a->appendChild( $self->{session}->make_text( $filename ) );
 			$td->appendChild( $a );
 

@@ -608,19 +608,24 @@ sub get_baseurl
 ######################################################################
 =pod
 
-=item $url = $doc->get_url( [$staff] )
+=item $url = $doc->get_url( [$file] )
 
 Return the full URL of the document. Overrides the stub in DataObj.
-$staff is currently ignored.
+
+If file is not specified then the "main" file is used.
 
 =cut
 ######################################################################
 
 sub get_url
 {
-	my( $self ) = @_;
+	my( $self, $file ) = @_;
+
+	$file = $self->get_main unless( defined $file );
+
+	$file =~ s/([^-A-Za-z0-9\.])/sprintf('%%%02X',ord($1))/ge;
 	
-	return $self->get_baseurl.$self->get_main();
+	return $self->get_baseurl.$file;
 }
 
 
@@ -946,7 +951,6 @@ characters to underscore.
 sub sanitise 
 {
 	my( $filename ) = @_;
-
 	$filename =~ s/.*\\//;     # Remove everything before a "\" (MSDOS or Win)
 	$filename =~ s/.*\///;     # Remove everything before a "/" (UNIX)
 
