@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl5.8.0 -w -I/opt/ep2stable/perl_lib 
+#!/usr/bin/perl -w -I/opt/ep2stable/perl_lib 
 
 ######################################################################
 #
@@ -136,8 +136,8 @@ foreach $langid ( @{$session->get_archive()->get_conf( "languages" )} )
 {
 	$session->change_lang( $langid );
 	my $dir =  $session->get_archive()->get_conf( "htdocs_path" )."/".$langid."/".$PATH;
-	my $tmpdir = $dir."_tmp";
-	my $doomdir = $dir."_toerase";
+	my $tmpdir = $dir."_tmp.$$";
+	my $doomdir = $dir."_toerase.$$";
 
 	if( -e $tmpdir ) { rmtree( $tmpdir ); }
 	EPrints::Utils::mkdir( $tmpdir );

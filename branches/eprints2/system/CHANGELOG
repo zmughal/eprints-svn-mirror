@@ -2130,7 +2130,12 @@ PACKAGE: 2.2.99.2
  - Fixed bug which meant file checksums were not written at
     install, only in upgrades.
 
-2005-01-19
+2005-01-19 cjg
 
  - Fixed typo in SET_PASSWORD line
  - Removed duplicate "my" in configure_archive
+
+2005-01-24 cjg
+
+ - Changed tmp files for generate_views to use _tmp.$$ instead so 
+    to simultaneous copies won't screw each other up.
