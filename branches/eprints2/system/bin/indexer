@@ -1,6 +1,4 @@
 #!/usr/local/bin/perl5.8.0 -w -I/opt/ep2stable/perl_lib 
-# chkconfig: - 85 15
-# description: Background process to index the eprints databases
 
 ######################################################################
 #
