@@ -297,5 +297,13 @@ Please note that this code is not internationalised.
         # End of D3Eprints links
         #####################################
 
+=head1 HOW TO: Make the latest additions to your archive appear on your main website
 
+The contents of the "latest" page - /perl/latest - can be included via a cron tab using wget and a server side include or using something like PHP's command to do:
+
+ readfile( "http://eprints.foo.org/perl/latest?mainonly=yes" );
+
+The "mainonly=yes" flag is a hack which supresses the template of any eprints page in the /perl/ area so that it can be included, but it is most useful for "latest".
+
+WARNING: If you have a script which imports 1000 records in one night then latest isn't currently bright enough to truncate the list so your homepage could get kinda messy.
 
