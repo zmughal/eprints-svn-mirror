@@ -16,17 +16,17 @@ all: alpha
 	./wellformed.pl $<
 	xt $< $(LATEX) > $*.latex
 
-.latex.dvi:
+.latex.dvi: 
 	test -d work || mkdir work
 	cp $< $(WORK_DIR)
 	cd $(WORK_DIR); latex $<
 	cp $(WORK_DIR)/$*.dvi .
 
-.dvi.pdf:
+.dvi.pdf: 
 	echo hi
 	dvipdfm $<
 
-.dvi.ps:
+.dvi.ps: 
 	dvips $< -o $@
 
 clean:
@@ -38,5 +38,6 @@ clean:
 
 eprints.entities: history.ok reqsoftware.ok listinfo.ok
 	touch eprints.entities
+	rm -f *.html *.pdf *.ps *.dvi *.latex
 
-alpha: eprints.entities alpha.pdf alpha.html alpha.ps
+alpha: eprints.entities alpha.pdf alpha.ps alpha.html

@@ -1,9 +1,10 @@
+
 <chapter><title>What software does &ep2; need? Where do I get it?</title>
 <para>This is a very rough and ready guide. This is alpha software, if you want spell checking wait for the beta...</para>
 <para>Suggestions to improve these instructions are welcome.</para>
 <sect1><title>Where to get the Required Software From</title>
 <para>It's up to you, we have found that installing from source is more effective than RPM's, feel free to dispute this. The best place to get a software tool is the official site, but we've put a mirror of versions known to work at:
-<alink href="http://www.eprints.org/files/tools/">http://www.eprints.org/files/tools/</alink></para> 
+<ulink href="http://www.eprints.org/files/tools/">http://www.eprints.org/files/tools/</ulink></para> 
 </sect1>
 <sect1><title>Apache/mod_perl</title>
 <para>
@@ -31,13 +32,13 @@ Make and install apache. From the apache src dir, I use:
 make
 make install
 </screen>
-( mod perl should have already done the ./configure for us.
+( mod perl should have already done the ./configure for us. )
 </para></step>
 </procedure>
 </sect1>
 
 <sect1><title>MySQL</title>
-
+<para>Install a recent version of MySQL. You will need the .h and library files later to install the MySQL perl module. (more help in later version of docs).</para>
 
 </sect1>
 
@@ -94,18 +95,16 @@ The answer to the first question is that you only need MySQL support.
 <formalpara>
 <title>Filesys::DiskSpace</title>
 This is an annoying little module as it requires some system headers to be created. If it gives you trouble try the following:
-<procedure><title>Fixing Filesys::DiskSpace (Linux)</title>
-<step><screen>
+<para>Fixing Filesys::DiskSpace (Linux)
+<screen>
 cd /usr/include
 h2ph * sys/*
-</screen></step>
-</procedure>
-<procedure><title>Fixing Filesys::DiskSpace (Solaris)</title>
-<step><screen>
+</screen></para>
+<para>Fixing Filesys::DiskSpace (Solaris)
+<screen>
 cd /usr/include
 h2ph asm/* bits/*
-</screen></step>
-</procedure>
+</screen></para>
 </formalpara>
 
 <!-- Not used? maybe need it later for mail?
@@ -153,5 +152,8 @@ Used to parse XML files. Requres the <application>expat library</application>. A
 -->
 
 </sect2>
+</sect1>
+<sect1><title>wget, unzip  and others</title>
+<para>Later versions may require (or require for full functionality) other software, but this version does not do anything which requires them yet...</para>
 </sect1>
 </chapter>
