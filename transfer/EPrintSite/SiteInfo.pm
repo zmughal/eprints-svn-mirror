@@ -54,7 +54,7 @@ $EPrintSite::SiteInfo::description = "";
 $EPrintSite::SiteInfo::admin = "admin\@lemur.ecs.soton.ac.uk";
 
 # Root of EPrint installation on the machine
-$EPrintSite::SiteInfo::local_root = "/opt/eprints";
+$EPrintSite::SiteInfo::local_root = "/opt/eprints/sites/lemurprints";
 
 # Host the machine is running on
 $EPrintSite::SiteInfo::host = "lemur.ecs.soton.ac.uk";
