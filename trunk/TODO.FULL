@@ -10,7 +10,6 @@ code:
 	* make most , including url, allow multiples
 	* make add_record and update understand multi's
 	* make everything else understand them...
-	* UPDATE siteroutines with get_fields() and DOC IT!
 
 * userid field sepearate to username
    + only if conf option is set.
@@ -57,11 +56,14 @@ code:
 * do CFG files get seperated accross instances?
 * CGI Scripts - some should be NO CACHE.
 * Mirroring System
+* Subject Maintainance - Edit/Delete/Rename. - auto mod eprints too?
 
 * Name "middle bits" configurable?
 
-siteinfo:
+siteinfo & config:
 * Incorporate local users customisation bits
+* UPDATE siteroutines with get_fields() and DOC IT!
+* change "multiurl" to url, multiple=YES in cfg.
 
 release:
 * Incorporate CHANGELOG.TXT and TODO.TXT into release?

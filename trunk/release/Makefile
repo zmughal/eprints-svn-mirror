@@ -1,6 +1,9 @@
 eprints-current.tar.gz:
 	./makepackage.sh HEAD "Build: `date`" licenses/license-1.2pre.txt eprints-current
 
+eprints-1.1.2.tar.gz:
+	./makepackage.sh eprints-1_1_2 "Version 1.1.2 (20/02/2001)" licenses/license-1.1.txt eprints-1.1.2
+
 eprints-1.1.1.tar.gz:
 	./makepackage.sh eprints-1_1_1 "Version 1.1.1 (23/01/2001)" licenses/license-1.1.txt eprints-1.1.1
 
