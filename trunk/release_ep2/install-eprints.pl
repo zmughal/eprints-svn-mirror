@@ -18,7 +18,15 @@
 
 use strict;
 use Cwd;
+
+my $forced = 0;
+if (defined($ARGV[0]))
+{
+	$forced = ($ARGV[0] eq "--force");
+}
+
 print <<INTRO;
+
 EPrints 2 Installer
 -------------------
 
@@ -27,8 +35,19 @@ you to begin configuring EPrints 2.
 
 INTRO
 
+if ($forced)
+{
+	print <<WARNING;
+*** WARNING ***
+
+Running as non-root can cause Bad Things(tm) to happen:
+- chowning will probably not work
+- directories may not be creatable
+
+WARNING
+}
 print "Checking user ... ";
-if ($<!=0)
+if ($<!=0 && !$forced)
 {
 	print "Failed!\n";
 	print "Sorry, this installer must be run as root.\n";
@@ -460,5 +479,5 @@ sub detect
 			else { $found = $path; }
 		}
 	}
-	return $found
+	return $found;
 }
