@@ -1,5 +1,7 @@
 ONLINEHELPFILES = online-help/latex/online-help.tex online-help/latex/access.tex online-help/latex/deposit.tex online-help/latex/register.tex online-help/latex/subscribe.tex online-help/latex/userarea.tex
-all: eprints-install.pdf eprints-install.html eprints-install-headless.html online-help.pdf online-help-final
+SYSTEMDOCFILES = system/latex/system.tex system/latex/system-body.tex system/latex/images/components.eps system/latex/images/components.jpg system/latex/images/components.fig
+
+all: eprints-install.pdf eprints-install.html eprints-install-headless.html online-help.pdf online-help-final eprints=system.pdf
 
 eprints-install.pdf: installation/latex/eprints-install.tex installation/latex/eprints-install-body.tex
 	cd installation/latex ; pdflatex eprints-install ; pdflatex eprints-install
@@ -31,7 +33,15 @@ install-online-help: online-help.pdf online-help-final
 	cp online-help-final/*.jpg ../system/static/help
 	cp online-help-final/*.html ../system/static/help
 	
+eprints-system.pdf: $(SYSTEMDOCFILES)
+	cd system/latex ; pdflatex system ; pdflatex system
+	mv system/latex/system.pdf .
+
+eprints-system.dvi: $(SYSTEMDOCFILES)
+	cd system/latex ; latex system ; latex system
+
 
 clean:
 	rm -rf eprints-install.pdf eprints-install.html eprints-install.css eprints-install-headless.html *.log installation/latex/*.aux installation/latex/*.dvi installation/latex/*.log installation/latex/*.ps
 	rm -rf online-help.pdf *.log online-help/latex/*.aux online-help/latex/*.dvi online-help/latex/*.log online-help/latex/*.ps online-help-final online-help-html
+	rm -rf eprints-system.pdf system/latex/*.aux system/latex/*.dvi system/latex/*.log system/latex/*.ps
