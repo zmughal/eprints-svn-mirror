@@ -29,6 +29,16 @@ $c{"dvips"}="@DVIPS_PATH@";
 $c{"convert"}="@CONVERT_PATH@";
 
 $c{"enable_gdome"}="@ENABLE_GDOME@";
+$c{"apache"}="@APACHE@";
+
+######################################################################
+
+if( $c{"apache"} ne "" && $c{"apache"} ne "1" && $c{"apache"} ne "2" )
+{
+	print "Apache version must be '1' or '2'.\n";
+	print "re-run configure with new options.\n";
+	exit 1;
+}
 
 ######################################################################
 
@@ -36,6 +46,12 @@ use strict;
 use Cwd;
 use Digest::MD5;
 use Data::Dumper;
+
+#
+# Set the umask so nothing goes odd on systems which
+# change it.
+#
+umask( 0022 );
 
 #
 # Grab version id number from VERSION file.
@@ -46,6 +62,7 @@ unless( open(VERSIONIN, $c{"dist_path"}."/VERSION") )
 	print "No VERSION file in distribution - invalid distribution?";
 	exit 1;
 }
+binmode(VERSIONIN);
 my $version_id = <VERSIONIN>;
 unless( defined($version_id) ) 
 {
@@ -85,7 +102,7 @@ $systemsettings->{"version_history"} = [ $version_id ];
 # Set up some default settings.
 #
 $systemsettings->{"invocation"} = {
-	zip     => '$(zip) 1>/dev/null 2>&1 -qq -o -d $(DIR) $(ARC)',
+	zip     => '$(unzip) 1>/dev/null 2>&1 -qq -o -d $(DIR) $(ARC)',
 	targz   => '$(gunzip) -c < $(ARC) 2>/dev/null | $(tar) xf - -C $(DIR) >/dev/null 2>&1',
 	wget    => '$(wget)  -r -L -q -m -nH -np --execute="robots=off" --cut-dirs=$(CUTDIRS) $(URL)',
 	sendmail => '$(sendmail) -oi -t -odb --',
@@ -179,29 +196,31 @@ if( defined $c{"enable_gdome"} && $c{"enable_gdome"} )
 {
 	$systemsettings->{"enable_gdome"} = 1;
 }
-
 if( !defined $systemsettings->{"enable_gdome"} )
 {
 	$systemsettings->{"enable_gdome"} = 0;
 }
 
+if( defined $c{"apache"} )
+{
+	$systemsettings->{"apache"} = $c{"apache"};
+}
+if( !defined $systemsettings->{"apache"} || $systemsettings->{"apache"} ne "2" )
+{
+	$systemsettings->{"apache"} = "1";
+}
 
 unless( getpwnam($systemsettings->{"user"}) )
 {
 	print "User ".$c{"user"}." does not exist. Aborting.\n";
-	print "Consult your operating system documentation for how to create a new user.\n";
-	print "Under Linux /usr/sbin/useradd is possibly what you need.\n";
 	exit 1;
 }
 
 unless( getgrnam($systemsettings->{"group"}) )
 {
 	print "Group ".$c{"group"}." does not exist. Aborting.\n";
-	print "Consult your operating system documentation for how to create a new group.\n";
-	print "Under Linux /usr/sbin/groupadd is possibly what you need.\n";
 	exit 1;
 }
-
 
 if( $upgrade )
 {
@@ -243,6 +262,7 @@ sub save_settings
 		print "Failed to write $sysfile\n";
 		exit 1;
 	}
+	binmode(FILEOUT);
 	print FILEOUT <<SPIEL;
 ######################################################################
 #
@@ -278,6 +298,8 @@ SPIEL
 	print FILEOUT $dumper->Dump();
 	print FILEOUT "\n1;";
 	close(FILEOUT);
+
+	chmod( 0644, $sysfile );
 }
 
 sub merge_fields
@@ -371,12 +393,14 @@ sub write_sigs
 		print "Unable to write SIGNATURES: $!\n";
 		exit 1;
 	}
+	binmode(SIGOUT);
 		
 	foreach(@{$sigs})
 	{
 		print SIGOUT $_;
 	}
 	close(SIGOUT);
+	chmod( 0644, $dir."/SIGNATURES" );
 }
 
 # Calculate the MD5 digest of a file.
@@ -389,6 +413,7 @@ sub get_digest
 		print "Can't open '$file': $!\n";
 		exit 1;
 	}
+	binmode(FILE);
 	my $outdigest = new Digest::MD5;
 	foreach(<FILE>)
 	{
@@ -412,6 +437,7 @@ sub install_file
 	my @linesout = ();	
 	my $currline = "";
 	open(INFILE, $distdir."/$dir/$file");
+	binmode(INFILE);
 	if ($dir eq "bin")
 	{
 		if ($file eq "startup.pl")
@@ -443,8 +469,7 @@ sub install_file
 		my $repl_digest = get_digest("$dest/$dir/$file");
 		if ($repl_digest ne $sighash->{"$dir/$file"})
 		{
-			rename "$dest/$dir/$file", "$dest/$dir/$file.old";
-			print "\n$dir/$file has been modified.\nSaving old version as $dir/$file.old\n";
+			move_out_of_harms_way( "$dest/$dir/$file" );
 		}
 	}
 
@@ -453,6 +478,7 @@ sub install_file
 		print "\nCan't write to $dest/$dir/$file : $!\n";
 		exit 1;
 	}
+	binmode(OUTFILE);
 	foreach(@linesout)
 	{
 		print OUTFILE $_;
@@ -476,7 +502,7 @@ sub install_dir
 	my( $distdir, $dir, $perms, $user, $group, $dest, $sighash, $newsigs ) = @_;
 	unless( opendir(INDIR, $dir) )
 	{
-		print "Unable to install directory: $dir. $!\n";
+		print "Unable to open package directory: $dir. $!\n";
 		exit 1;
 	}
 	my @dirs = ();
@@ -529,6 +555,7 @@ sub upgrade
 	{
 		print "Loading SIGNATURES...\n";
 		open(MD5IN, "$base_path/SIGNATURES");
+		binmode(MD5IN);
 		foreach(<MD5IN>)
 		{
 			chomp;
@@ -579,6 +606,7 @@ sub upgrade
  - re-run bin/generate_apacheconf (the just-installed version, 
    not the version that came in the tar.gz.
  - restart your web server
+ - restart the eprints indexer
 
 ======================================================================
 
@@ -648,7 +676,6 @@ Hooray! Your EPrints2 installation was successful!
        Group $group
  - su to $user
  - Move into $base_path and run:
-     bin/generate_apacheconf
      bin/configure_archive
 
  Please note:
@@ -666,3 +693,32 @@ Hooray! Your EPrints2 installation was successful!
 HOORAY
 }
 
+sub move_out_of_harms_way
+{
+	my( $file ) = @_;
+
+	my @date = localtime;
+	my $safename = sprintf( 
+		"%s.backup.%04d-%02d-%02d", 
+		$file, 
+		$date[5]+1900, 
+		$date[4]+1, 
+		$date[3] );
+
+	my $n = 0;
+	while( -e $safename )
+	{
+		++$n;
+		$safename = sprintf( 
+			"%s.backup.%04d-%02d-%02d.%d", 
+			$file, 
+			$date[5]+1900, 
+			$date[4]+1, 
+			$date[3],
+			$n );
+	}
+
+	rename $file, $safename;
+
+	print "\n$file has been modified.\nSaving old version as $safename\n";
+}
