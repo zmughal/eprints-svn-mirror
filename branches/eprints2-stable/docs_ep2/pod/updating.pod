@@ -350,13 +350,6 @@ Removed.
 
 This version adds some more functionality and uses apache in a slightly different way. The full text indexing tool adds some more requirements.
 
-=head2 Perl Modules
-
-There are two new perl modules required:  Proc::Reliable and Unicode::Normalize. Make sure they're installed. These appear to install without issue and are both available from CPAN, so you could just run:
-
- perl -MCPAN -e 'install Proc::Reliable'
- perl -MCPAN -e 'install Unicode::Normalize'
-
 =head2 Recompile Apache
 
 EPrints 2.3 requires an additional mod_perl hook, TRANS. I suggest you compile apache with "EVERYTHING=1" instead of "AUTHEN=1 AUTHZ=1" (see the required software section of the 2.3 manual). mod_rewrite is not used any more.

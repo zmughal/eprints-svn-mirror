@@ -61,6 +61,14 @@ Some perl modules are bundled with the EPrints2 package, others must be installe
 
 This describes the way to simple perl module, some require a bit more effort. We will use the non-existant FOO module as an example.
 
+Some archives can be installed direct from CPAN. That's great when it works. It doesn't always work, but it's the quickest and easiest, so give it a go first. To install a perl module from CPAN run:
+
+ % perl -MCPAN -e 'install Foo::Bar'
+
+Where C<Foo::Bar> is the module you're installing. 
+
+I would like to make a list of which modules do/don't install OK from CPAN. If you're reading this before the end of Jan 2003, send me (Christopher Gutteridge) any comments on which ones worked, and on what operating system.
+
 =over 8
 
 =item Download the archive. 
@@ -89,7 +97,7 @@ Either from cpan.org, or from the tools directory on eprints.org described at th
 
 You don't have to install these. They are included as part of the EPrints distribution. 
 
-C<XML::DOM>, C<XML::RegExp>, C<Filesys::DiskSpace>, C<URI>, C<Apache::AuthDBI>.
+C<XML::DOM>, C<XML::RegExp>, C<Filesys::DiskSpace>, C<URI>, C<Apache::AuthDBI>, C<Unicode::Normalize>, C<Proc::Reliable>.
 
 Please note that these modules are not part of the EPrints system and are only
 included to make things easier. Please note that XML::DOM has has a few lines
@@ -126,14 +134,6 @@ Under Red Hat's GNU/Linux distribution, the B<zlib-devel> RPM should be installe
 Tested with: v2.11
 
 Unicode::String requires this.
-
-=item B<Proc::Reliable>
-
-Tested with: v1.16
-
-=item B<Unicode::Normalize>
-
-Tested with: v0.28
 
 =item B<Unicode::String>
 
