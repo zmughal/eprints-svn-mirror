@@ -129,7 +129,7 @@
 </ep:phrase>
 
     <ep:phrase ref="eprint_fieldname_official_url">Official URL</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_official_url">The cannonical URL for this item. Some journals require you to provide a link to their version.
+    <ep:phrase ref="eprint_fieldhelp_official_url">The canonical URL for this item. Some journals require you to provide a link to their version.
 <!-- fnord -->
 <br />Example: <span class="example">http://www.stuffjournal.com/2003/3/</span>
 </ep:phrase>

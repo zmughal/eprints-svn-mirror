@@ -407,6 +407,15 @@ END
 	}
 	else
 	{
+		my $mversion = EPrints::Database::mysql_version_from_dbh( $dbh );
+		my $oldpassword = 0;
+		if( $mversion >= 40100 ) 
+		{
+			print "MySQL version id $mversion >= 40100\n";
+			print "MYSQL OLD PASSWORDS will be used for compatibility with DBI::mysql\n";
+			$oldpasswords = 1;
+		} 
+	
 		my $sth = $dbh->prepare( "show databases" );
 		$sth->execute;
 		my $dbexists = 0;
@@ -429,7 +438,7 @@ END
 		#cjg @localhost ??? what about remote mysql's?
 
 		#my $SQL = 'GRANT SELECT, INSERT, UPDATE, DELETE, DROP, CREATE, ALTER ON '.$config{dbname}.'.* TO '.$config{dbuser}.'@localhost IDENTIFIED BY "'.$config{dbpass}.'"';
-		my $SQL = 'GRANT ALL ON '.$config{dbname}.'.* TO '.$config{dbuser}.'@localhost IDENTIFIED BY "'.$config{dbpass}.'"';
+		my $SQL = 'GRANT ALL ON '.$config{dbname}.'.* TO '.$config{dbuser}.'@localhost IDENTIFIED BY OLD_PASSWORD("'.$config{dbpass}.'")';
 		print "DOING: $SQL\n";
 		$dbh->do( $SQL );
 

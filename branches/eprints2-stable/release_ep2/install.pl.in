@@ -48,6 +48,12 @@ use Digest::MD5;
 use Data::Dumper;
 
 #
+# Set the umask so nothing goes odd on systems which
+# change it.
+#
+umask( 0022 );
+
+#
 # Grab version id number from VERSION file.
 #
 
@@ -292,6 +298,8 @@ SPIEL
 	print FILEOUT $dumper->Dump();
 	print FILEOUT "\n1;";
 	close(FILEOUT);
+
+	chmod( 0644, $sysfile );
 }
 
 sub merge_fields
@@ -392,6 +400,7 @@ sub write_sigs
 		print SIGOUT $_;
 	}
 	close(SIGOUT);
+	chmod( 0644, $dir."/SIGNATURES" );
 }
 
 # Calculate the MD5 digest of a file.

@@ -733,10 +733,10 @@ Public CGI Scripts
 
 
     <ep:phrase ref="register_fieldname_email">Your email address</ep:phrase>
-    <ep:phrase ref="register_fieldhelp_email">This must be a valid email address. For preference, please use a Southampton address.</ep:phrase>
+    <ep:phrase ref="register_fieldhelp_email">This must be a valid email address.</ep:phrase>
 
     <ep:phrase ref="register_fieldname_username">Select a username</ep:phrase>
-    <ep:phrase ref="register_fieldhelp_username">A username must begin with a letter and only contain letters and numerals. We recommend using your University of Southampton username.</ep:phrase>
+    <ep:phrase ref="register_fieldhelp_username">A username must begin with a letter and only contain letters and numerals.</ep:phrase>
 
     <ep:phrase ref="register_fieldname_newpassword">Select a password</ep:phrase>
     <ep:phrase ref="register_fieldhelp_newpassword">A combination of uppercase and lowercase letters and numerals.</ep:phrase>

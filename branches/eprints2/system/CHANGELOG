@@ -2108,4 +2108,17 @@ PACKAGE: 2.2.99.2
     no document. Also moved "official URL" to be right under the 
     documents, not in the main block.
 
+2005-01-17 cjg
 
+ - Made configure_archive use the OLD_PASSWORD feature if 
+    mysql>=4.01.00 as the new authentication method does not appear
+    to work with the latest DBD::mysql
+ - Added method to EPrints::Database to get the current mysql version.
+ - Fixed a messy bit in book section which had a link on book title
+ - Fixed a bug which meant the staff edit eprint didn't work properly
+    when the file stage was being skipped.
+ - Fixed spelling in phrases
+ - Removed a couple of references to Southampton University which 
+    should not be in the default config.
+ - Added umask(0022) to the installer scripts as it goes very wrong
+    if it isn't.

@@ -2323,14 +2323,28 @@ sub pad_date
 
 =item $version = $db->mysql_version;
 
-Return the mysql version.
+Return the mysql version in the format 
+major * 10000 + minor * 100 + sub_version
 
 =cut
 ######################################################################
 
-#sub mysql_version
-#{
-	#my( @_ 
+sub mysql_version
+{
+	my( $self ) = @_;
+
+	return mysql_version_from_dbh( $self->{dbh} );
+}
+
+sub mysql_version_from_dbh
+{
+	my( $dbh ) = @_;
+	$sql = "SELECT VERSION();";
+	my( $version ) = $dbh->selectrow_array( $sql );
+	$version =~ m/^(\d+).(\d+).(\d+)/;
+	return $1*10000+$2*100+$3;
+}
+
 
 1; # For use/require success
 

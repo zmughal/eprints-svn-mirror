@@ -219,7 +219,7 @@ sub process
 	# If we are skipping the files stage then we have to work out what the
 	# actual last stage is...
 	my $laststage = "files";
-	my @stages = ( "meta","linking","type" );
+	my @stages = ( "type","linking","meta" );
 	while( $session->get_archive()->get_conf( "submission_stage_skip", $laststage ) )
 	{
 		$laststage = pop @stages;

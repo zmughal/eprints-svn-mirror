@@ -41,7 +41,7 @@
 <ep:linkhere><em>@title;magicstop@</em></ep:linkhere>
 In:
 <ep:ifnotset  name="creators">@editors@, (eds).</ep:ifnotset>
-<ep:linkhere>@book_title;magicstop@</ep:linkhere>
+@book_title;magicstop@
 <ep:ifset name="series">@series@<ep:ifset name="volume">, @volume</ep:ifset><ep:ifset name="number"> (@number@)</ep:ifset>.</ep:ifset>
 @publisher@<ep:ifset name="place_of_pub">, @place_of_pub</ep:ifset><ep:ifset name="pagerange">, @pagerange@</ep:ifset>.
 <ep:ifset name="isbn"> ISBN @isbn@</ep:ifset>
