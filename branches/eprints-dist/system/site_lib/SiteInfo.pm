@@ -444,7 +444,7 @@ $EPrintSite::SiteInfo::archive_identifier = "MUST CHANGE";
 
 # Base URL of OAI
 $EPrintSite::SiteInfo::oai_base_url =
-	$EPrintSite::SiteInfo::server_perl."/oai-0.2";
+	$EPrintSite::SiteInfo::server_perl."/not-yet-implemented";
 
 
 
