@@ -1,6 +1,8 @@
 
 # Lemur Prints!
 
+use EPrintSite;
+
 package EPrintSite::lemurprints;
 
 sub new
@@ -12,7 +14,7 @@ sub new
 
 #  Main
 
-$self->{site_root} = "/opt/eprints/sites/lemurprints";
+$self->{site_root} = $EPrintSite::base_path."/sites/lemurprints";
 
 #  Files
 
@@ -27,6 +29,53 @@ $self->{subject_config} 	= "$self->{site_root}/cfg/subjects";
 # List of supported languages is in EPrintSite.pm
 # Default Language for this archive
 $self->{default_language} = "english";
+
+#  Database
+
+$self->{db_name} = "eprints";
+$self->{db_host} = undef;
+$self->{db_port} = undef;
+$self->{db_sock} = undef;
+$self->{db_user} = "eprints";
+$self->{db_pass} = "fnord";
+
+#  User Types
+#
+
+# We need to calculate the connection string, so we can pass it
+# into the AuthDBI config. 
+my $connect_string = EPrints::Database::build_connection_string(
+	{ db_name => $self->{db_name}, db_port => $self->{db_port},
+ 	  db_sock => $self->{db_sock}, db_host => $self->{db_host} } );
+ 
+$self->{usertypes} = {
+	User=>{ 
+		auth_routine => \&Apache::AuthDBI::authen,
+		auth_conf => {
+			Auth_DBI_data_source => $connect_string,
+			Auth_DBI_username => $self->{db_user},
+			Auth_DBI_password => $self->{db_pass},
+			Auth_DBI_pwd_table => "users",
+			Auth_DBI_uid_field => "username",
+			Auth_DBI_pwd_field => "passwd",
+			Auth_DBI_grp_field => "groups",
+			Auth_DBI_encrypted => "off" },
+		auth_priv => [ "user" ] },
+	Staff=>{ 
+		auth_routine => \&Apache::AuthDBI::authen,
+		auth_conf => {
+			Auth_DBI_data_source => $connect_string,
+			Auth_DBI_username => $self->{db_user},
+			Auth_DBI_password => $self->{db_pass},
+			Auth_DBI_pwd_table => "users",
+			Auth_DBI_uid_field => "username",
+			Auth_DBI_pwd_field => "passwd",
+			Auth_DBI_grp_field => "groups",
+			Auth_DBI_encrypted => "off" }, 
+		auth_priv => [ "user" ] }
+};
+
+
 
 ######################################################################
 #
@@ -148,6 +197,10 @@ $self->{thread_citation_specs} =
 #   -1 if $_[0] is earlier in the ordering scheme than $_[1]
 #    1 if $_[0] is later in the ordering scheme than $_[1]
 #    0 if $_[0] is at the same point in the ordering scheme than $_[1]
+#
+#  These routines are not called by name, but by reference (see above)
+#  so you can create your own methods as long as you add them to the
+#  hash of sort methods.
 #
 ######################################################################
 
