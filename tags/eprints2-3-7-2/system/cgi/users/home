@@ -1,0 +1,493 @@
+######################################################################
+#
+#  EPrints Author Home
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints::User;
+use EPrints::Database;
+use EPrints::Session;
+use EPrints::EPrint;
+
+use strict;
+
+
+######################################################################
+#
+# Session initialisation
+#
+######################################################################
+
+my $session = new EPrints::Session;
+exit( 0 ) unless( defined $session );
+
+# Any user can view this page, but most BE a user.
+if( !$session->auth_check )
+{
+	$session->terminate();
+	exit( 0 );
+}
+
+# If we were sent here by change_user then we have an icky url
+# eg .../home/username rather than .../home 
+# let's clean it up...
+if( $ENV{PATH_INFO} ne "" )
+{
+	$session->redirect( $session->get_archive()->get_conf( "userhome" ) );
+	$session->terminate();
+	exit;
+}
+	
+my $user = $session->current_user;
+
+my $fullname = $user->render_description();
+
+my $probs = $user->validate();
+my $valid_user = ( scalar @{$probs} == 0 );
+
+# If not a valid user then redirect them to the user-info page.
+# This'll give us info like "name".
+unless( $valid_user )
+{	
+	$session->redirect( "record" );
+	$session->terminate();
+	exit;
+}
+
+######################################################################
+#
+# Render page
+#
+######################################################################
+
+my( $page, $dt, $dd, $a );
+my( $table, $tr, $td );
+
+
+
+my $changeuserpath = "/change_user/".($user->get_value( "username" ));
+my $securehost = $session->get_archive->get_conf( "securehost" );
+my $securepath = $session->get_archive->get_conf( "securepath" );
+if( EPrints::Utils::is_set( $securehost ) )
+{
+	$changeuserpath = $securepath.$changeuserpath;
+}
+
+my $tools = [
+	### Create New Item
+	{ 
+		location=>"create",
+		code=>"new_item",
+		page=>"submit?_action_new=1",
+		priv=>"deposit"
+	},
+	### Change User Info
+	{ 
+		location=>"user",
+		code=>"change",
+		page=>"record",
+		invpriv=>"no_edit_own_record"
+	},
+	### Change subscription options
+	{ 
+		location=>"user",
+		code=>"subscribe",
+		page=>"subscribe",
+		priv=>"subscription"
+	},
+	### View the archive status page
+	{ 
+		location=>"staff",
+		code=>"status",
+		page=>"status",
+		priv=>"view-status"
+	},
+	### Review items we've got in archive
+	{
+		location=>"review",
+		code=>"review",
+		page=>"review",
+		priv=>"deposit"
+	},
+	### View the Editor submission buffer
+	{
+		location=>"staff",
+		code=>"staff_buffer",
+		page=>"staff/buffer",
+		priv=>"editor"
+	},
+	### Staff EPrints Search
+	{
+		location=>"staff",
+		code=>"staff_eprint_search",
+		page=>"search",
+		priv=>"staff-view"
+	},
+	### Staff User Search
+	{
+		location=>"staff",
+		code=>"staff_user_search",
+		page=>"search/users",
+		priv=>"staff-view"
+	},
+	### Add New User
+	{
+		location=>"staff",
+		code=>"staff_add_user",
+		page=>"staff/add_user",
+		priv=>"edit-user"
+	},
+	### Change Email
+	{
+		location=>"user",
+		code=>"change_email",
+		page=>"change_email",
+		priv=>"change-email"
+	},
+	### Use the Subject Edit Tool
+	{
+		location=>"staff",
+		code=>"staff_edit_subject",
+		page=>"staff/edit_subject",
+		priv=>"edit-subject"
+	},
+	### Change the current login user
+	{
+		location=>"user",
+		code=>"change_user",
+		page=>$changeuserpath,
+		priv=>"change-user"
+	}
+];
+
+
+
+
+my $dls = {};
+my $tool;
+foreach	$tool (@{$tools})
+{
+	if( defined $tool->{priv} )
+	{
+		next unless $user->has_priv( $tool->{priv} );
+	}
+	if( defined $tool->{invpriv} )
+	{
+		next if $user->has_priv( $tool->{invpriv} );
+	}
+	if( !defined $dls->{$tool->{location}} )
+	{
+		$dls->{$tool->{location}} = $session->make_element( "dl" );
+	}
+	my $dl = $dls->{$tool->{location}};
+	$dt = $session->make_element( "dt" );
+	$a = $session->render_link( $tool->{page} );
+	$a->appendChild( $session->html_phrase( "cgi/users/home:".$tool->{code}."_link" ) );
+	$dt->appendChild( $a );
+	$dl->appendChild( $dt );
+
+	$dd = $session->make_element( "dd" );
+	$dd->appendChild( $session->html_phrase( "cgi/users/home:".$tool->{code}."_info" ) );
+	$dl->appendChild( $dd );
+}
+
+
+
+
+
+
+
+
+$page = $session->make_doc_fragment();
+
+### Welcome author blurb
+$page->appendChild( $session->html_phrase( "cgi/users/home:intro" ) );
+
+$table = $session->make_element("table");
+$tr = $session->make_element("tr");
+$table->appendChild( $tr );
+$page->appendChild( $table );
+
+if( $user->has_priv( "deposit" ) )
+{
+	$td = $session->make_element("td",valign=>"top");
+	$tr->appendChild( $td );
+
+	my $div;
+	### Workspace
+	$div = $session->make_element("div",class=>"box");
+	$div->appendChild(
+		&render_workspace( $session, $user, $dls->{create} ) );
+	$td->appendChild( $div );
+	
+
+	### Pending
+	$div = $session->make_element("div",class=>"box");
+	$div->appendChild(
+		&render_pending( $session, $user ) );
+	$td->appendChild( $div );
+
+	### Recent Additions
+	$div = $session->make_element("div",class=>"box");
+	$div->appendChild(
+		&render_recent( $session, $user, 10, $dls->{review} ) );
+	$td->appendChild( $div );
+}
+
+if( defined $dls->{user} )
+{
+	$td = $session->make_element("td",valign=>"top", style=>"padding-left: 3em;");
+	$tr->appendChild( $td );
+	$td->appendChild( $dls->{user} );
+}
+
+
+if( defined $dls->{staff} )
+{
+	$page->appendChild( $session->render_ruler );
+	$page->appendChild( $session->html_phrase( "cgi/users/home:staff_options" ) );
+	$page->appendChild( $dls->{staff} );
+}
+
+
+
+$session->build_page( 
+		$session->html_phrase( 
+			"cgi/users/home:user_home", 
+			name => $fullname ),
+		$page,
+		"user_home" );
+$session->send_page();
+
+$session->terminate();
+exit;
+
+
+
+######################################################################
+#
+# render_workspace( $session, $user )
+#
+#  This puts all of the user's items in the inbox table in a form.
+#  The buttons will POST stuff to the submit script, with the possible
+#  actions:
+#
+#   New     (Create a new EPrint)
+#   Edit    (Edit a selected EPrint)
+#   Clone   (Clone the selected EPrint)
+#   Delete  (Delete the selected EPrint)
+#   Deposit (Submit the selected EPrint to the archive)
+#
+#
+#  If the user has no items in the inbox, a single button is drawn,
+#  Allowing them to start the upload process.
+#
+######################################################################
+
+sub render_workspace
+{
+	my( $session, $user, $add ) = @_;
+
+	### Get the actual items in the workspace
+	my $ds = $session->get_archive()->get_dataset( "inbox" );
+	my @eprints = $user->get_owned_eprints( $ds );
+
+	my( $html, $form, $div );
+
+	$html = $session->make_doc_fragment();
+	$html->appendChild( $session->html_phrase( "cgi/users/home:docs" ));
+	if( defined $add )
+	{
+		$html->appendChild( $add );
+	}
+
+	if( scalar @eprints == 0)
+	{
+		# No items, oh well.
+		return $html;
+	}
+
+	# One or more items in workspace.
+	# Render a form to let the user fiddle with them.
+
+	my( $table, $tr, $td );
+
+	$table = $session->make_element( "table",
+			cellpadding=>3,
+			cellspacing=>0,
+			border=>0 );
+	my $e;
+	my $cnt = 0;
+	my $row = 0;
+	foreach $e (@eprints)
+	{
+		$tr = $session->make_element( "tr", class=>"row_".($row?"b":"a") );
+		$table->appendChild( $tr );	
+		$td = $session->make_element( "td", class=>'first_col userpage_table_emph' );
+		$tr->appendChild( $td );
+		$td->appendChild( $e->render_description() );
+		$td = $session->make_element( "td", class=>'last_col' );
+		$tr->appendChild( $td );
+	#	$td->appendChild( $session->html_phrase( 
+	#		"cgi/users/home:accepted_at",
+	#		time=>$e->render_value( "datestamp" ) ) );
+		my $a;
+
+		$a = $session->render_link( "submit?eprintid=".$e->get_id."&_action_edit=1" );
+		$a->appendChild( $session->html_phrase("cgi/users/home:action_edit") );
+		$td->appendChild( $a );
+
+		$td->appendChild( $session->make_text( ", " ) );
+
+		$a = $session->render_link( "submit?eprintid=".$e->get_id."&_action_submit=1" );
+		$a->appendChild( $session->html_phrase("cgi/users/home:action_submit") );
+		$td->appendChild( $a );
+
+		$td->appendChild( $session->make_text( ", " ) );
+
+		$a = $session->render_link( "submit?eprintid=".$e->get_id."&_action_clone=1" );
+		$a->appendChild( $session->html_phrase("cgi/users/home:action_clone") );
+		$td->appendChild( $a );
+
+		$td->appendChild( $session->make_text( ", " ) );
+
+		$a = $session->render_link( "submit?eprintid=".$e->get_id."&_action_delete=1" );
+		$a->appendChild( $session->html_phrase("cgi/users/home:action_delete") );
+		$td->appendChild( $a );
+		$row=!$row;
+	}
+
+	$html->appendChild( $session->html_phrase( "cgi/users/home:depositing" ) );
+	$html->appendChild( $table );
+
+	return $html;
+}
+
+
+
+######################################################################
+#
+# render_pending( $session, $user)
+#
+#  Render any items that are in the submissions buffer, if any
+#
+######################################################################
+
+sub render_pending
+{
+	my( $session, $user ) = @_;
+
+	### Get the items in the buffer
+	my $ds = $session->get_archive()->get_dataset( "buffer" );
+	my @eprints =  $user->get_owned_eprints( $ds );
+
+	my $html = $session->make_doc_fragment();
+
+	$html->appendChild( $session->html_phrase( "cgi/users/home:pending_title" ) );
+
+	if( scalar @eprints == 0 )
+	{
+		$html->appendChild( $session->html_phrase( "cgi/users/home:no_pending" ) );
+	}
+	else
+	{
+		my( $table, $tr, $td );
+
+		$table = $session->make_element( "table",
+				cellpadding=>3,
+				cellspacing=>0,
+				border=>0 );
+		$html->appendChild( $table );
+		my $row = 0;
+		foreach my $e (@eprints)
+		{
+			$tr = $session->make_element( "tr", class=>"row_".($row?"b":"a") );
+			$table->appendChild( $tr );	
+			$td = $session->make_element( "td", class=>"first_col userpage_table_emph" );
+			$tr->appendChild( $td );
+			$td->appendChild( $e->render_description() );
+			$td = $session->make_element( "td", class=>"last_col" );
+			$tr->appendChild( $td );
+			$td->appendChild( $session->html_phrase( 
+				"cgi/users/home:deposited_at",
+				time=>$e->render_value( "datestamp" ) ) );
+			$row=!$row;
+		}
+	}
+	return $html;
+}
+	
+
+######################################################################
+#
+# render_recent( $session, $user, $max, $review )
+#
+#  Render any items that have been recently accepted into the main 
+#  archive.
+#
+######################################################################
+
+sub render_recent
+{
+	my( $session, $user, $max, $review ) = @_;
+	
+	### Get the items in the buffer
+	my $ds = $session->get_archive()->get_dataset( "archive" );
+	my @eprints =  $user->get_owned_eprints( $ds );
+
+	my $html = $session->make_doc_fragment();
+
+	$html->appendChild( $session->html_phrase( "cgi/users/home:recent_title" ) );
+
+	if( scalar @eprints == 0 )
+	{
+		$html->appendChild( $session->html_phrase( "cgi/users/home:no_recent" ) );
+	}
+	else
+	{
+		my( $table, $tr, $td );
+	
+		$table = $session->make_element( "table",
+				cellpadding=>3,
+				cellspacing=>0,
+				border=>0 );
+		$html->appendChild( $table );
+		my $e;
+		my $cnt = 0;
+		my $row = 0;
+		foreach $e (reverse @eprints) 
+#cjg not exactly the right way!
+#cjg should really do it by deposit date
+		{
+			last if( $cnt++ == $max );
+			$tr = $session->make_element( "tr", class=>"row_".($row?"b":"a") );
+			$table->appendChild( $tr );	
+			$td = $session->make_element( "td", class=>"first_col userpage_table_emph" );
+			$tr->appendChild( $td );
+		        my $a = $session->render_link( $e->get_url() );
+			$a->appendChild( $e->render_description() );
+			$td->appendChild( $a );
+			$td = $session->make_element( "td", class=>"last_col" );
+			$tr->appendChild( $td );
+			$td->appendChild( $session->html_phrase( 
+				"cgi/users/home:accepted_at",
+				time=>$e->render_value( "datestamp" ) ) );
+			$row=!$row;
+		}
+	}
+
+	if( defined $review )
+	{
+		$html->appendChild( $review );
+	}
+	return $html;
+}
+
