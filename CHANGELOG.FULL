@@ -76,3 +76,10 @@ Tue Feb 20 10:16:25 GMT 2001
 Thu Feb 22 02:30:33 GMT 2001
 * Started rewrite of SQL code in SearchExpression - basic caching
 nearly works.
+
+
+...
+
+* Added index to commentary and replaces fields - otherwise 
+generate_abstracts is damn slow.
+

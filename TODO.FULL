@@ -13,7 +13,9 @@ code:
 	* make index length configurable
 	* hunt down all instances of format_name and Name::extract
 
-* Lose SubjectList module all together.
+
+* Change views to a sub dir...
+  + Multi page for really long ones?
 * userid field sepearate to username
    + only if conf option is set.
    + conv functions both ways.
@@ -91,7 +93,7 @@ Internationalise:
 ./bin/create_databases +++
 ./bin/create_user
 ./bin/erase_archive +++
-	./bin/generate_abstracts
+	./bin/generate_abstracts +++
 ./bin/generate_static
 ./bin/generate_views +++
 ./bin/list_user_emails
@@ -100,7 +102,7 @@ Internationalise:
 ./bin/subs_monthly
 ./bin/subs_weekly
 ./bin/update_htaccess
-	./bin/update_laf
+	./bin/update_laf +++
 ./bin/examples/update_users_example
 
 ./cfg/metadata.eprint-fields
@@ -140,8 +142,8 @@ Internationalise:
 	./cgi/users/subscribe
 
 	./lib/OpenArchives.pm
-	./lib/Citation.pm
-	./lib/Database.pm
+	./lib/Citation.pm +++
+	./lib/Database.pm [lose retrieve methods]
 *	./lib/Deletion.pm
 *	./lib/Document.pm
 *	./lib/EPrint.pm
@@ -157,7 +159,7 @@ Internationalise:
 	./lib/SearchForm.pm
 	./lib/Session.pm
 *	./lib/Subject.pm +++
-	./lib/SubjectList.pm
+	./lib/SubjectList.pm +++
 	./lib/SubmissionForm.pm
 *	./lib/Subscription.pm 
 *	./lib/User.pm  
