@@ -1,0 +1,157 @@
+=head1 What Other Software does EPrints 2.0 need? 
+
+In brief, EPrints requires Apache (with mod_perl), MySQL, Perl with some extra modules, wget, tar and unzip. 
+
+EPrints bundles some perl modules which it uses, to save you installing them. 
+
+=head2 Where to get the Required Software
+
+It's up to you. We have had best results with installing MySQL from RPM and apache from source.
+
+
+The best place to get a software tool is the official site, but we've put a mirror of versions known to work at: http://www.eprints.org/files/tools/ - you don't need to install I<everything> in the tools directory - just those described below. 
+
+
+=head1 MySQL
+
+Tested on: 3.23.29a-gamma
+
+Install a recent version of MySQL 3. You will need the .h and library files later to install the MySQL perl module. (more help in later version of docs). MySQL 4 is due soon, but we are not making plans to support it yet.
+
+If installing from RPM you require: B<mysql-server>, B<mysql-devel> and B<mysql>. 
+
+=head1 Apache/mod_perl
+
+Tested on: apache 1.3.14 with mod_perl 1.25
+
+Apache is the most commonly used webserver in the world, and it's free! EPrints requires Apache to be configured with mod_perl, as this allows Apache modules that are entirely written in perl, hence providing much improved efficiency.
+
+Get apache from http://httpd.apache.org/dist/httpd/
+
+EPrints required that the apache modules B<mod_perl> and B<mod_rewrite> be enabled.
+
+=head2 Apache with mod_perl Installation
+
+=over 4
+
+=item Download Modperl and apache sources
+
+=item Make mod_perl, I use this command (in the modperl src dir):
+
+ perl Makefile.PL APACHE_PREFIX=/usr/local/apache \
+ APACHE_SRC=../apache-1.3.14/src DO_HTTPD=1 USE_APACI=1 \
+ PERL_AUTHEN=1 PERL_AUTHZ=1 ADD_MODULE=rewrite
+
+=item Make and install apache. From the apache src dir, I use:
+
+ make
+ make install
+
+=back
+
+( mod perl should have already done the ./configure for us. )
+
+
+
+
+=head1 Perl 5.6 and Perl Modules
+
+EPrints is currently begin developed with perl 5.6.1, there are currently no plans for to make EPrints run under perl 6 on the theory of if-it-ain't-broke-don't-fix-it.
+
+Some perl modules are shipped with the EPrints2 package, others must be installed by you.
+
+=head2 Installing a Perl Module
+
+This describes the way to simple perl module, some require a bit more effort. We will use the non-existant FOO as an example.
+
+=over 8
+
+=item Unpack the archive:
+
+ tar xzvf FOO-5.23.tar.gz
+
+=item Enter the directory this creates:
+
+ cd FOO-5.23
+
+=item Run the following commands:
+
+ perl Makefile.PL
+ make
+ make test
+ make install
+
+=back
+
+
+=head2 Perl Modules Bundled with EPrints
+
+You don't have to install these.
+
+C<XML::DOM>, C<XML::RegExp>, C<Filesys::DiskSpace>, C<URI>, C<Apache::AuthDBI>.
+
+=head2 Required Perl Modules 
+
+This modules are not built into EPrints - you must install them yourself. We recommend installing them in the order they are listed.
+
+=over 8
+
+=item B<Data::ShowTable>
+
+MySQL Interface Module requires this.
+
+=item B<DBI>
+
+Tested with: v1.14
+
+MySQL Interface Module requires this.
+
+=item B<Msql-Mysql Module>
+
+Tested with: v1.2215
+
+This one can be tricky. It requires access to .h and library files from MySQL. I install MySQL from source first, but some installs of MySQL don't put the lib and include dirs where this module expects. 
+The answer to the first question is that you only need MySQL support.
+
+Under RedHat Linux, the B<zlib-devel> RPM should be installed before you install this module.
+
+=item B<MIME::Base64>
+
+Tested with: v2.11
+
+Unicode::String requires this.
+
+=item B<Unicode::String>
+
+Used for Unicode support. No known problems.  Tested with v2.06
+
+=item B<XML::Parser>
+
+Tested with v2.30
+
+Used to parse XML files. Requres the B<expat library>. A .tar.gz and a RedHat Linux RPM are available in the tools dir on eprints.org.
+
+=back
+
+=head1 Other Tools
+
+=head2 File uploads
+
+B<wget>, B<tar>, B<gunzip> and B<unzip> are required to allow users to upload files as .tar.gz or .zip or to captures them from a URL.
+
+These all come installed with most modern versions of linux. If you can get them working, you can remove the option by edditing "archive_formats" in SystemSettings.pm
+
+Tested with wget 1.6.
+
+If there are problems you may need to tweak how these are invoked in SystemSettings.pm
+
+
+=head2 Latex Tools
+
+There is an optional feature which allows you to set eprints to look in certain fields (eg. title and abstract) for stuff which looks like latex equations and display it as an image of that equation instead. These tools are only required if you want to use this feature.
+
+B<latex>, B<dvips> and B<convert> (convert is part of "imagemagick"). These all ship with RedHat Linux. 
+
+This is a "cosmetic" feature, it only affects the rendering of information, so you can always add it later if you want to save time initially.
+
+
