@@ -35,10 +35,10 @@ package EPrints::Auth;
 use strict;
 
 use Apache::AuthDBI;
-use Apache::Constants qw( OK AUTH_REQUIRED FORBIDDEN DECLINED SERVER_ERROR );
+use EPrints::AnApache;
 
 use EPrints::Session;
-use EPrints::RequestWrapper;
+use EPrints::SystemSettings;
 
 
 ######################################################################
@@ -75,13 +75,11 @@ sub authen
 
 	my($res, $passwd_sent) = $r->get_basic_auth_pw;
 
-	my ($user_sent) = $r->connection->user;
+	my ($user_sent) = $r->user;
 
 	return OK unless $r->is_initial_req; # only the first internal request
 
-
-	my $hp=$r->hostname.$r->uri;
-	my $session = new EPrints::Session( 2 , $hp );
+	my $session = new EPrints::Session;
 	
 	if( !defined $session )
 	{
@@ -97,7 +95,7 @@ sub authen
 	my $area = $r->dir_config( "EPrints_Security_Area" );
 	if( $area eq "ChangeUser" )
 	{
-		my $user_sent = $r->connection->user;
+		my $user_sent = $r->user;
 		if( $r->uri !~ m#/$user_sent$# )
 		{
 			return OK;
@@ -132,7 +130,7 @@ sub authen
 	# {handler} should really be removed before passing authconfig
 	# to the requestwrapper. cjg
 
-	my $rwrapper = EPrints::RequestWrapper->new( $r , $authconfig );
+	my $rwrapper = $EPrints::AnApache::RequestWrapper->new( $r , $authconfig );
 	my $result = &{$handler}( $rwrapper );
 	$session->terminate();
 	return $result;
@@ -185,9 +183,8 @@ sub authz
 	# but if we are looking at a document in the secure area then
 	# we need to do some work.
 
-	my $hp=$r->hostname.$r->uri;
-	my $session = new EPrints::Session( 2 , $hp );
-	my $archive = $session->get_archive();
+	my $session = new EPrints::Session;
+	my $archive = $session->get_archive;
 
 	my $uri = $r->uri;
 
@@ -224,27 +221,30 @@ sub authz
 	}
 
 	my $secpath = $archive->get_conf( "secure_url_dir" );
-	my $sechostpath = $archive->get_conf( "securepath" );
+	my $urlpath = $archive->get_conf( "urlpath" );
 
+	$uri =~ s/^$urlpath$secpath//;
 	my $docid;
 	my $eprintid;
-	if( $uri =~ m#^($sechostpath)?$secpath/(\d\d\d\d\d\d\d\d)/(\d+)/# )
+#	unless( $uri =~ s#^$urlpath## )
+
+	if( $uri =~ m#^/(\d\d\d\d\d\d\d\d)/(\d+)/# )
 	{
 		# /archive/00000001/01/.....
 		# or
 		# /$archiveid/archive/00000001/01/.....
 
 		# force it to be integer. (Lose leading zeros)
-		$eprintid = $2+0; 
-		$docid = "$eprintid-$3";
+		$eprintid = $1+0; 
+		$docid = "$eprintid-$2";
 	}
-	elsif( $uri =~ 
-		m#^$sechostpath$secpath/(\d\d)/(\d\d)/(\d\d)/(\d\d)/(\d+)/# )
-	{
-		# /$archiveid/archive/00/00/00/01/01/.....
-		$eprintid = "$1$2$3$4"+0;
-		$docid = "$eprintid-$5";
-	}
+#	elsif( $uri =~ 
+#		m#^$sechostpath$secpath/(\d\d)/(\d\d)/(\d\d)/(\d\d)/(\d+)/# )
+#	{
+#		# /$archiveid/archive/00/00/00/01/01/.....
+#		$eprintid = "$1$2$3$4"+0;
+#		$docid = "$eprintid-$5";
+#	}
 	else
 	{
 
@@ -253,7 +253,8 @@ sub authz
 		$session->terminate();
 		return FORBIDDEN;
 	}
-	my $user_sent = $r->connection->user;
+
+	my $user_sent = $r->user;
 	my $user = EPrints::User::user_with_username( $session, $user_sent );
 	my $document = EPrints::Document->new( $session, $docid );
 	unless( $document->can_view( $user ) )

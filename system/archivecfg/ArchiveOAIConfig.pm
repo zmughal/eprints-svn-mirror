@@ -63,7 +63,7 @@ $oai->{sample_identifier} = EPrints::OpenArchives::to_oai_identifier(
 # This may be different for OAI v2.0
 # It can have dots (.) in which v1.1 can't. This means you can use your
 # sites domain as (part of) the base ID - which is pretty darn unique.
-$oai->{v2}->{archive_id} = "GenericEPrints.OAI2";
+$oai->{v2}->{archive_id} = "GenericEPrints";
 
 # Exported metadata formats. The hash should map format ids to namespaces.
 $oai->{v2}->{metadata_namespaces} =
@@ -106,10 +106,20 @@ $oai->{v2}->{sample_identifier} = EPrints::OpenArchives::to_oai_identifier(
 # defined in the same manner as "browse_views". Only id, allow_null, fields
 # are used.
 $oai->{sets} = [
-#	{ id=>"year", allow_null=>1, fields=>"year" },
-#	{ id=>"person", allow_null=>0, fields=>"authors.id/editors.id" },
+#	{ id=>"year", allow_null=>1, fields=>"date_effective" },
+#	{ id=>"person", allow_null=>0, fields=>"creators.id/editors.id" },
 	{ id=>"status", allow_null=>0, fields=>"ispublished" },
 	{ id=>"subjects", allow_null=>0, fields=>"subjects" }
+];
+
+# Filter OAI export. If you want to stop certain records being exported
+# you can add filters here. These work the same as for a search filter.
+
+$oai->{filters} = [
+
+#	{ meta_fields => [ "creators" ], value=>"harnad" }
+# Example: don't export any OAI records from before 2003.
+#	{ meta_fields => [ "date-effective" ], value=>"2003-" }
 ];
 
 # Number of results to display on a single search results page
@@ -177,6 +187,14 @@ $oai->{comments} = [
 		"University of Southampton. For more information see ".
 		"http://www.eprints.org/" ) 
 ];
+
+$oai->{mime_types} = {
+	pdf => "application/pdf",
+	ps => "application/postscript",
+	html => "text/html",
+	other => "application/octet-stream",
+	ascii => "text/plain"
+};
 
 return $oai; }
 
@@ -317,17 +335,16 @@ sub eprint_to_unqualified_dc
 	my @dcdata = ();
 	push @dcdata, [ "title", $eprint->get_value( "title" ) ]; 
 	
-	# grab the authors without the ID parts so if the site admin
-	# sets or unsets authors to having and ID part it will make
+	# grab the creators without the ID parts so if the site admin
+	# sets or unsets creators to having and ID part it will make
 	# no difference to this bit.
 
-	my $authors = $eprint->get_value( "authors", 1 );
-	if( defined $authors )
+	my $creators = $eprint->get_value( "creators", 1 );
+	if( defined $creators )
 	{
-		my $author;
-		foreach $author ( @{$authors} )
+		foreach my $creator ( @{$creators} )
 		{
-			push @dcdata, [ "creator", EPrints::Utils::make_name_string( $author ) ];
+			push @dcdata, [ "creator", EPrints::Utils::make_name_string( $creator ) ];
 		}
 	}
 
@@ -342,49 +359,59 @@ sub eprint_to_unqualified_dc
 
 	push @dcdata, [ "description", $eprint->get_value( "abstract" ) ]; 
 
-	## Date for discovery. For a month/day we don't have, assume 01.
-	my $year = $eprint->get_value( "year" );
+	push @dcdata, [ "publisher", $eprint->get_value( "publisher" ) ]; 
 
-	if( defined $year )
+	my $editors = $eprint->get_value( "editors", 1 );
+	if( defined $editors )
 	{
-		# no point mentioning the date without a year.
-
-		my $month;
-
-		if( $eprint->is_set( "month" ) )
+		foreach my $editor ( @{$editors} )
 		{
-			my %month_numbers = (
-				jan  =>  "01", feb  =>  "02", mar  =>  "03",
-				apr  =>  "04", may  =>  "05", jun  =>  "06",
-				jul  =>  "07", aug  =>  "08", sep  =>  "09",
-				oct  =>  "10", nov  =>  "11", dec  =>  "12" );
-	
-			$month = $month_numbers{$eprint->get_value( "month" )};
+			push @dcdata, [ "contributor", EPrints::Utils::make_name_string( $editor ) ];
 		}
-
-		$month = "01" if( !defined $month );
-		
-		push @dcdata, [ "date", "$year-$month-01" ];
 	}
+
+	## Date for discovery. For a month/day we don't have, assume 01.
+	my $date = $eprint->get_value( "date_effective" );
+        $date =~ s/(-0+)+$//;
+	push @dcdata, [ "date", $date ];
+
 
 	my $ds = $eprint->get_dataset();
 	push @dcdata, [ "type", $ds->get_type_name( $session, $eprint->get_value( "type" ) ) ];
+	
+	my $ref = "NonPeerReviewed";
+	if( $eprint->is_set( "refereed" ) && $eprint->get_value( "refereed" ) eq "TRUE" )
+	{
+		$ref = "PeerReviewed";
+	}
+	push @dcdata, [ "type", $ref ];
+
 
 	# The identifier is the URL of the abstract page.
 	# possibly this should be the OAI ID, or both.
 	push @dcdata, [ "identifier", $eprint->get_url() ];
 
-	# Export the type and URL of each actual document, this
-	# is far from ideal, but DC offers no easy solution to
-	# this. This information is potentially very useful to
-	# citation linking systems, so better to have it than not.
 
 	my @documents = $eprint->get_all_documents();
+	my $mimetypes = $session->get_archive->get_conf( "oai", "mime_types" );
 	foreach( @documents )
 	{
-		push @dcdata, [ "format", $_->get_value( "format" )." ".$_->get_url() ];
+		my $format = $mimetypes->{$_->get_value("format")};
+		$format = "application/octet-stream" unless defined $format;
+		push @dcdata, [ "format", $format ];
+		push @dcdata, [ "relation", $_->get_url() ];
 	}
-		
+
+	if( $eprint->is_set( "official_url" ) )
+	{
+		push @dcdata, [ "relation", $eprint->get_value( "official_url" ) ];
+	}
+	
+	# dc.language not handled yet.
+	# dc.source not handled yet.
+	# dc.coverage not handled yet.
+	# dc.rights not handled yet.
+
 	return @dcdata;
 }
 
