@@ -37,7 +37,9 @@ Many of them may be already installed on your system. Also shown is which RedHat
 
 \subsection{Special Notes on Apache and mod\_perl}
 
-Apache and mod\_perl need special attention, since setting up either requires choosing a myriad of options. Fortunately, Apache RPM supplied with RedHat Linux 6.2 has a suitable configuration. The mod\_perl distributed with RedHat 6.2 is broken, and should be replaced with {\tt mod\_perl-1.23-1.i386.rpm}, available from the {\tt http://www.eprints.org} Web site.
+Apache and mod\_perl need special attention, since you can configure a myriad of parameters when you compile and install them. \eprints\ requires that a few of these are configured in a certain way.
+
+Fortunately, Apache RPM supplied with RedHat Linux 6.2 has a suitable compilation configuration. The mod\_perl distributed with RedHat 6.2 is broken, and should be replaced with {\tt mod\_perl-1.23-1.i386.rpm}, available from the {\tt http://www.eprints.org} Web site.
 
 Apache should be installed with the following modules compiled in (or made available as a .so) and enabled:
 
@@ -123,7 +125,7 @@ Configuration information is largely held in two directories: {\tt eprints/cfg} 
 {\tt SiteInfo.pm} is fairly well commented, so you should just be able to go down that file and alter any values you need to. In the minimal instance, you'll need to change the following values:
 
 \begin{itemize}
-\item {\tt \$EPrintSite::SiteInfo::automail}
+\item {\tt \$EPrintSite::SiteInfo::automail} - Don't forget to backslash the {\tt @} if you use double quotes!
 \item {\tt \$EPrintSite::SiteInfo::admin}
 \item {\tt \$EPrintSite::SiteInfo::local\_root} - the bin, cfg, cgi etc. directories must be subdirectories of this
 \item {\tt \$EPrintSite::SiteInfo::host} - Fully qualified hostname, for example {\tt archive.foo.org}
@@ -177,7 +179,7 @@ TO eprints@localhost IDENTIFIED BY "password";
 
 Apache needs to be pointed at \eprints\ and the password system set up.
 
-Edit your Apache configuration, {\tt httpd.conf} (found in {\tt /etc/httpd/conf} on RedHat systems.) On some earlier versions of Apache, the configuration is split into {\tt access.conf}, {\tt 
+Edit your Apache configuration, {\tt httpd.conf} (found in {\tt /etc/httpd/conf} on RedHat systems.) On some earlier versions of Apache, the configuration is split into {\tt httpd.conf}, {\tt access.conf} and {\tt srm.conf}.  In these cases, the {\tt <Directory>} entries should go in {\tt access.conf}, the {\tt Alias} entries in {\tt srm.conf}, and everything else in {\tt httpd.conf}.
 
 Firstly, turn on the authentication using MySQL and Perl DBI by adding these lines (after {\tt mod\_perl} is included:)
 
@@ -262,10 +264,10 @@ The thresholds can all be set in {\tt /opt/eprints/site\_lib/SiteInfo.pm}. The d
 To add a new disk partition is simple. Just add a symbolic link to some (empty) directory on the new partition, using a command like:
 
 \begin{verbatim}
-> ln -s /export/1/data /opt/eprints/documents/disk0
+> ln -s /export/1/data /opt/eprints/html/documents/disk0
 \end{verbatim}
 
-You will need to do this when you install \eprints, to give the system at least one lot of disk space it can store documents on. Of course, you could just make a directory in {\tt /opt/eprints/html/documents} instead of a symbolic link. The eprints user must be able to write to all of these directories (or, at least, the Apache Web server; see section \ref{install_alternative}.
+You will need to do this when you install \eprints, to give the system at least one lot of disk space it can store documents on. Of course, you could just make a directory in {\tt /opt/eprints/html/documents} instead of a symbolic link. The eprints user must be able to write to all of these directories (or, at least, the Apache Web server; see section \ref{install_alternative}).
 
 
 \subsection{Finishing up}
@@ -279,7 +281,7 @@ Next, we get \eprints\ to create its tables in the database:
 The last thing we do before we can test the installation is set up the Web pages. As the eprints user, run:
 
 \begin{verbatim}
-> /opt/eprints/system/bin/generate_static
+> /opt/eprints/bin/generate_static
 \end{verbatim}
 
 This generates the static Web pages with the site look and feel. Now, you should be able to see the front page of your site with a browser, e.g. by looking at:
@@ -322,7 +324,7 @@ The {\tt process\_mail} script needs to be run, as the eprints user, whenever a 
 "|/opt/eprints/bin/process_mail"
 \end{verbatim}
 
-would do the job.
+would do the job. Note that {\tt process\_mail} cannot usually be run ``sticky'' (with mode 4755) since this causes {\tt sendmail} to produce a security error. This shouldn't be a problem on most systems.
 
 Now you should have a working installation that you can play around with. You should try joining the archive (look at the registrations page), submitting a test paper, a checking that it arrives in the submissions buffer in the staff area. (The staff area is not linked to the front page by default; you can access it by viewing {\tt http://eprintarchive.foo.org/staff}).
 
@@ -542,9 +544,9 @@ http://www.openarchives.org/
 
 \subsection{Site Look and Feel}
 
-You can change the whole look and feel of the site by altering the HTML header and tail in {\tt SiteInfo.pm}. These are applied to every Web page presented by the system, with the exception of those static pages you decide not to apply them to.
+You can change the whole look and feel of the site by altering the HTML header and tail in {\tt SiteInfo.pm}. These are applied to every Web page presented by the system, with the exception of those static (information) pages you decide not to apply them to.
 
-You can put any static HTML you want on the archive site. Just put your HTML files in the {\tt eprints/static} directory. The {\tt generate\_static} script will pick the HTML files up and install them in the {\tt eprints/html} directory, adding the header and footer if appropriate.
+You can put any static HTML you want on the archive site. The default pages include a staff menu page, a front page with the \eprints\ logo, a general information page, and a registration instructions page\footnote{The final release will include several help files for the submission process.}. Just put your HTML files in the {\tt eprints/static} directory. The {\tt generate\_static} script will pick the HTML files up and install them in the {\tt eprints/html} directory, adding the header and footer if appropriate.
 
 If an HTML file in the {\tt static} directory doesn't have an HTML header, but starts with a line of the form:
 
@@ -552,7 +554,7 @@ If an HTML file in the {\tt static} directory doesn't have an HTML header, but s
 TITLE: Document Title
 \end{verbatim}
 
-The site HTML header and footer is given to the document and the document given the title ``Document Title''. In this case, don't put any {\tt <DOCTYPE>}, {\tt <HTML>}, {\tt <HEAD>} or {\tt <BODY>} elements in the document.
+then the site HTML header and footer is given to the document and the document given the title ``Document Title''. In this case, don't put any {\tt <DOCTYPE>}, {\tt <HTML>}, {\tt <HEAD>} or {\tt <BODY>} elements in the document.
 
 If a file has an HTML header, then the header is left alone.
 
@@ -583,4 +585,4 @@ Additionally, you can put in the HTML files a variety of placeholders that will 
 
 In {\tt /opt/eprints/site\_lib/SiteRoutines.pm} you can modify or replace the default code for displaying each eprint's abstract page, title and full reference. Also there is code for displaying a user's full name, and their full record. The comments in the code should make the task of programming any necessary changes straightforward.
 
-The \eprints\ core code provides a method for easing the creation of references. See the examples at the top of the default {\tt SiteRoutines.pm}, and the comments in {\tt lib/Citation.pm} for examples and instructions on how to use it.
+The \eprints\ core code provides a method for easing the creation of references. See the examples at the top of the default {\tt SiteRoutines.pm}, and the comments in {\tt lib/Citation.pm} instructions on how to use it.
