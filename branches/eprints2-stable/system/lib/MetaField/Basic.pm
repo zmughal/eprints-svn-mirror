@@ -1058,9 +1058,11 @@ sub split_search_value
 {
 	my( $self, $session, $value ) = @_;
 
-	return EPrints::Index::split_words( 
-			$session,
-			EPrints::Index::apply_mapping( $session, $value ) );
+#	return EPrints::Index::split_words( 
+#			$session,
+#			EPrints::Index::apply_mapping( $session, $value ) );
+
+	return split /\s+/, $value;
 }
 
 sub get_search_conditions

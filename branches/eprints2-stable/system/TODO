@@ -1,4 +1,6 @@
-remove "BONG"
+
+
+
 Big New Features
  * Modular Controls [2.4]
  * Improved Indexing [2.4/2.3]
@@ -8,7 +10,6 @@ Big New Features
 * HOWTO: Add fulltext searching later
 * HOWTO: Add harrys icons
 
-* Sendmail option
 * SeearchExpression given conditions.
 
  * make namematch condition work.A
@@ -18,14 +19,13 @@ Big New Features
  * log for indexer
  * rc.d for indexer.
 
-
+ * DETECT when apache's tmp file system is full.
 
  * "nice" & "cp" are both called badly.
  * update CSS (last 5 items)
  * make quicksearch from frontpage as part of release.
  * make FILTERS have non exact option.
 General
- * make ".old" files not overwrite OTHER .old files.
  * "Disable" option for core XML file
  * deleted eprints in search results: put placeholder to say
    they've gone? or filter against archive?

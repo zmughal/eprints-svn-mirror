@@ -419,6 +419,29 @@ sub send_mail
 	my( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname ) = @_;
 	#   Archive   string   utf8   utf8      utf8      DOM    DOM   string    utf8
 
+	my $mail_func = $archive->get_conf( "send_email" );
+	if( !defined $mail_func )
+	{
+		$mail_func = \&send_mail_via_sendmail;
+	}
+
+	&{$mail_func}( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname );
+}	
+
+######################################################################
+=pod
+
+=item EPrints::Utils::send_mail_via_sendmail( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname )
+
+undocumented
+
+=cut
+######################################################################
+
+sub send_mail_via_sendmail
+{
+	my( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname ) = @_;
+	#   Archive   string   utf8   utf8      utf8      DOM    DOM   string    utf8
 	unless( open( SENDMAIL, "|".$archive->invocation( "sendmail" ) ) )
 	{
 		$archive->log( "Failed to invoke sendmail: ".

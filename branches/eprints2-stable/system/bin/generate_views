@@ -344,87 +344,99 @@ sub make_menu
 				[@sublevelids], 
 				$filters,
 				$noise );
+
+			next;
 		
 		#make_view_pages( $_, $tmpdir, $ds, $noise );
 			# submenu
 		}
-		else
-		{
+		
 
-			my $page = $session->make_doc_fragment;
+		my $page = $session->make_doc_fragment;
 			
-			my @sh_ids = ();
-			if( defined $view->{subheadings} )
-			{
-				 @sh_ids = split( ',', $view->{subheadings} );
-			}
-			my( $list, $n ) = render_list(
-				$session, 
-				$view, 
-				$filters,
-				\@sh_ids,
-				$view->{heading_level} );
-
-			$size{$value} = $n;
-
-			unless( $view->{nocount} )
-			{
-				$page->appendChild( $session->html_phrase( 
-					"bin/generate_views:blurb",
-					n=>$session->make_text( $size{$value} ) ) );
-			}
-			$page->appendChild( $list );
-
-			unless( $view->{notimestamp} )
-			{
-				$page->appendChild( $session->html_phrase(
-					"bin/generate_views:timestamp",
-					time=>$session->make_text(
-					EPrints::Utils::get_timestamp() ) ) );
-                	}
-
-
-			# render page
-			if( $view->{include} )
-			{
-				my $file = $dir."/".$fileid.".include";
-				print "Writing: $file\n" if( $noise > 1 );
-				open( FILE, ">$file" );
-				print FILE EPrints::XML::to_string( $page );
-				close FILE;
-			}
-	
-			unless( $view->{nohtml} )
-			{
-				my $pagedesc = $session->make_doc_fragment;
-				foreach my $pfilter ( @{$pfilters} )
-				{
-					$pagedesc->appendChild( $pfilter->[0]->[0]->get_value_label( $session, $pfilter->[1] ) );
-					$pagedesc->appendChild( $session->make_text( " / " ) );
-				}
-				$pagedesc->appendChild( $fields[0]->get_value_label( 
-						$session, 
-						$value ) );
-				my $title = $session->html_phrase( 
-					"bin/generate_views:title", 
-					viewname=>$session->make_text( 
-						$session->get_view_name( 
-							$ds, 
-							$view->{id} ) ),
-					value=>$pagedesc );
-	
-				my $file = $dir."/".$fileid.".html";
-				$session->build_page( $title, $page, "browseview" );
-				print "Writing: $file\n" if( $noise > 1 );
-				$session->page_to_file( $file );
-			}
-			else
-			{
-				EPrints::XML::dispose( $page );
-			}
-
-
+		my @sh_ids = ();
+		if( defined $view->{subheadings} )
+		{
+			 @sh_ids = split( ',', $view->{subheadings} );
 		}
+		my( $list, $n ) = render_list(
+			$session, 
+			$view, 
+			$filters,
+			\@sh_ids,
+			$view->{heading_level} );
+
+		$size{$value} = $n;
+
+		unless( $view->{nocount} )
+		{
+			$page->appendChild( $session->html_phrase( 
+				"bin/generate_views:blurb",
+				n=>$session->make_text( $size{$value} ) ) );
+		}
+		$page->appendChild( $list );
+
+		unless( $view->{notimestamp} )
+		{
+			$page->appendChild( $session->html_phrase(
+				"bin/generate_views:timestamp",
+				time=>$session->make_text(
+				EPrints::Utils::get_timestamp() ) ) );
+               	}
+
+
+		# render page
+		if( $view->{include} )
+		{
+			my $file = $dir."/".$fileid.".include";
+			print "Writing: $file\n" if( $noise > 1 );
+			open( FILE, ">$file" );
+			print FILE EPrints::XML::to_string( $page );
+			close FILE;
+		}
+
+		if( $view->{nohtml} )
+		{
+			EPrints::XML::dispose( $page );
+			next;
+		}
+
+		my $pagedesc = $session->make_doc_fragment;
+		foreach my $pfilter ( @{$pfilters} )
+		{
+			$pagedesc->appendChild( $pfilter->[0]->[0]->get_value_label( $session, $pfilter->[1] ) );
+			$pagedesc->appendChild( $session->make_text( " / " ) );
+		}
+		$pagedesc->appendChild( $fields[0]->get_value_label( 
+				$session, 
+				$value ) );
+		my $title = $session->html_phrase( 
+			"bin/generate_views:title", 
+			viewname=>$session->make_text( 
+				$session->get_view_name( 
+					$ds, 
+					$view->{id} ) ),
+			value=>$pagedesc );
+		my $htmlpage = $session->make_doc_fragment;
+
+		if( $fields[0]->is_type( "subject" ) )
+		{
+			my $subject = EPrints::Subject->new( $session, $value );
+			my @ids= @{$subject->get_value( "ancestors" )};
+			foreach( $subject->children() )
+			{
+				push @ids,$_->get_value( "subjectid" );
+			}
+			$htmlpage->appendChild( $session->render_subjects( \@ids, $fields[0]->get_property( "top" ), $value, 2 ) );
+			$htmlpage->appendChild( $session->render_ruler() );
+		}
+
+		$htmlpage->appendChild( $page );
+
+		my $file = $dir."/".$fileid.".html";
+		$session->build_page( $title, $htmlpage, "browseview" );
+		print "Writing: $file\n" if( $noise > 1 );
+		$session->page_to_file( $file );
 	}
 
 	#################################

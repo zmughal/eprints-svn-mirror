@@ -134,7 +134,7 @@ sub render_string
 				$param =~ s/^\$(.*)\$$/$1/;
 
 				# Mimetex can't handle whitespace. Change it to ~'s.
-				$param =~ s/\s/~/g;     
+				$param =~ s/\\?\s/~/g;     
 
 				$url = $session->get_archive->get_conf( 
         				"base_url" )."/cgi/mimetex.cgi?".$param;

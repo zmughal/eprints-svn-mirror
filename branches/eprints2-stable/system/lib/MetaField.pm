@@ -190,7 +190,7 @@ sub set_property
 
 	if( !defined $self->{field_defaults}->{$property} )
 	{
-                EPrints::Config::abort( <<END );
+		EPrints::Config::abort( <<END );
 BAD METAFIELD get_property property name: "$property"
 Field: $self->{name}, type: $self->{type}
 END
@@ -498,7 +498,7 @@ sub get_property
 
 	if( !defined $self->{field_defaults}->{$property} )
 	{
-                EPrints::Config::abort( <<END );
+		EPrints::Config::abort( <<END );
 BAD METAFIELD get_property property name: "$property"
 Field: $self->{name}, type: $self->{type}
 END
@@ -653,19 +653,46 @@ sub render_value_no_multiple
 
 	my $rendered = $self->render_value_no_id( $session, $value, $alllangs, $nolink );
 
-	if( defined $self->{browse_link} && !$nolink)
+	if( !defined $self->{browse_link} || $nolink)
 	{
-		my $url = $session->get_archive()->get_conf( 
-				"base_url" );
+		return $rendered;
+	}
+
+	my $url = $session->get_archive()->get_conf(
+			"base_url" );
+	my $views = $session->get_archive()->get_conf( "browse_views" );
+	my $linkview;
+	foreach my $view ( @{$views} )
+	{
+		if( $view->{id} eq $self->{browse_link} )
+		{
+			$linkview = $view;
+		}
+	}
+
+	if( !defined $linkview )
+	{
+		$session->get_archive()->log( "browse_link to view '".$self->{browse_link}."' not found for field '".$self->{name}."'\n" );
+		return $rendered;
+	}
+
+	if( $linkview->{fields} =~ m/,/ )
+	{
+		# has sub pages
+		$url .= "/view/".$self->{browse_link}."/".
+			EPrints::Utils::escape_filename( $value )."/";
+	}
+	else
+	{
+		# no sub pages
 		$url .= "/view/".$self->{browse_link}."/".
 			EPrints::Utils::escape_filename( $value ).
 			".html";
-		my $a = $session->render_link( $url );
-		$a->appendChild( $rendered );
-		return $a;
 	}
 
-	return $rendered;
+	my $a = $session->render_link( $url );
+	$a->appendChild( $rendered );
+	return $a;
 }
 
 ######################################################################

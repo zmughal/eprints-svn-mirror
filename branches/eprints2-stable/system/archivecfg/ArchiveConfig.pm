@@ -662,6 +662,17 @@ $c->{cache_maxlife} = 12;
 # SystemSettings.pm
 $c->{use_mimetex} = 0;
 
+# If you want to override the way eprints sends email, you can
+# set the send_email config option to be a function to use 
+# instead.
+#
+# The function will have to take the following paramaters.
+# $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname
+# Archive   string   utf8   utf8      utf8      DOM    DOM   string    utf8
+#
+# $c->{send_email} = &some_function;
+
+
 ######################################################################
 
 # Stuff from other config files which are require'd above:
