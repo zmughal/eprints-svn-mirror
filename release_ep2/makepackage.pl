@@ -2,22 +2,63 @@
 
 use Cwd;
 
-$EPRINTS_VERSION = "2.0.a";
-$DATE = `date +%Y-%m-%d`;
-chomp $DATE;
-$NIGHTLY_DESC = "EPrints $EPRINTS_VERSION Alpha (Nightly Build $DATE)";
-$NIGHTLY_VERSION = "$EPRINTS_VERSION-$DATE";
-$MILESTONE_DESC_A = "EPrints $EPRINTS_VERSION (";
-$MILESTONE_DESC_B = ") [Born on $DATE]";
-$MILESTONE_VERSION = $EPRINTS_VERSION;
 %codenames = (
 	"eprints2-alpha-1" => "anchovy",
 	"eprints2-alpha-2" => "pepperoni",
 	"eprints2-pre-1"   => "fishfinger",
 	"eprints2-pre-2"   => "ovenchip",
 	"eprints2-pre-3"   => "toast",
-	"eprints2-pre-4"   => "noodle"
+	"eprints2-pre-4"   => "noodle",
+	"eprints2-pre-5"   => "bovex",
+	"eprints2-pre-6"   => "baconbits"
 );
+%ids = (
+	"latest"           => "2.0.pre",
+	"eprints2-2.0"     => "2.0",
+	"eprints2-pre-6"   => "2.0.pre-6"
+);
+
+($type) = @ARGV;
+
+$EPRINTS_VERSION = "2.0.a";
+if( defined $type && $ids{$type} )
+{
+	$EPRINTS_VERSION = $ids{$type};
+}
+$DATE = `date +%Y-%m-%d`;
+chomp $DATE;
+
+$whoami = `whoami`;
+chomp $whoami;
+$ENV{"CVSROOT"} = ":pserver:$whoami\@cvs.iam.ecs.soton.ac.uk:/home/iamcvs/CVS";
+# Get all the vars we need.
+$ntype = -1;
+if (!defined($type) || $type eq "nightly")
+{
+	$version_tag = "HEAD";
+	$package_version = $ids{latest}."-".$DATE;
+	$package_desc = "EPrints Nightly Build - $package_version";
+	$package_file = "eprints2-nightly-$DATE";
+	$ntype = 0;
+}
+else
+{
+	if( !defined $codenames{$type} )
+	{
+		print "Unknown codename\n";
+		print "Available:\n".join("\n",sort keys %codenames)."\n\n";
+		exit;
+	}
+	$version_tag = $type;
+	$package_version = $EPRINTS_VERSION;
+	$package_desc = "EPrints $EPRINTS_VERSION (".$codenames{$type}.") [Born on $DATE]";
+	$package_file = $type;
+	$ntype = 1;
+}
+
+do_package($version_tag, $package_version, $package_desc, "licenses/gplin.txt", $package_file, $ntype);
+
+########################################
 
 sub insert_data
 {
@@ -293,33 +334,9 @@ sub do_package
 	print "Done.\n";
 
 }
-$whoami = `whoami`;
-chomp $whoami;
-$ENV{"CVSROOT"} = ":pserver:$whoami\@cvs.iam.ecs.soton.ac.uk:/home/iamcvs/CVS";
-# Get all the vars we need.
-($type) = @ARGV;
-$ntype = -1;
-if (!defined($type) || $type eq "nightly")
-{
-	$version_tag = "HEAD";
-	$package_version = $NIGHTLY_VERSION;
-	$package_desc = $NIGHTLY_DESC;	
-	$package_file = "eprints2-nightly-$DATE";
-	$ntype = 0;
-}
-else
-{
-	if( !defined $codenames{$type} )
-	{
-		print "Unknown codename\n";
-		print "Available:\n".join("\n",sort keys %codenames)."\n\n";
-		exit;
-	}
-	$version_tag = $type;
-	$package_version = $MILESTONE_VERSION;
-	$package_desc = $MILESTONE_DESC_A.$codenames{$type}.$MILESTONE_DESC_B;
-	$package_file = $type;
-	$ntype = 1;
-}
 
-do_package($version_tag, $package_version, $package_desc, "licenses/gplin.txt", $package_file, $ntype);
+
+
+
+
+
