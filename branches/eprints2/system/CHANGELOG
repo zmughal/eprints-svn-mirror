@@ -2077,3 +2077,8 @@ PACKAGE: 2.2.99.2
  - Added new script: erase_fulltext_cache to force recreation of
     words and indexcodes files.
 
+2004-10-24 cjg
+
+ - Added config to apache config to allow awstats to be symlinked
+    in without getting messed around by mod_perl.
+

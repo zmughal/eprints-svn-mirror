@@ -469,7 +469,7 @@ print CONF <<END;
     SetHandler perl-script
     PerlHandler $registry_module
     PerlSendHeader Off
-    Options ExecCGI
+    Options ExecCGI FollowSymLinks
   </Directory>
 
 END
@@ -486,7 +486,10 @@ my $secureconfig = <<END;
     SetHandler perl-script
     PerlHandler $registry_module
     PerlSendHeader Off
-    Options ExecCGI
+    Options ExecCGI FollowSymLinks
+  </Directory>
+  <Directory "$cgidir/users/awstats">
+    PerlSendHeader On
   </Directory>
 
   <Directory "$htdocs_secure_path">
