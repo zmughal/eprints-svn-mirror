@@ -250,6 +250,10 @@ Note that you will be prompted for a password for this MySQL user when you type 
 
 Specify a non-default port to connect to the MySQL server. This option will automatically disable create database.
 
+\item[{\tt --with-db-socket}]
+
+Specify a non-default socket to use to connect to the MySQL server. 
+
 \item[{\tt --with-db-host}]
 
 Connect to a MySQL server on this host, rather than "localhost", although \eprints\ still expects a local installation of
@@ -915,7 +919,11 @@ The Open Archives Initiative is developing standards to allow this interoperabil
 
 These standards are developing quickly, so \eprints\ has been designed to allow you to keep up with them as easily as possible. All you have to do is upgrade the core \eprints\ software. The upgraded software will use the same site configuration to allow interoperability using new versions of the Open Archives protocol.
 
-Version 1.1 of the software implements version 1.0 of the Open Archives protocol.
+Version 1.1 of the software implements version 1.0 of the Open Archives protocol. Information on this protocol is available at:
+
+\begin{verbatim}
+http://www.openarchives.org/OAI/openarchivesprotocol.htm
+\end{verbatim}
 
 Version 1.1 still includes the \emph{Dienst} software used to implement the forerunner of OAI1.0, the \emph{Santa Fe convention}.  This is provided for back-compatability and will almost certainly be removed in the next release.
 
@@ -930,7 +938,6 @@ http://your.eprints.server.edu/perl/oai
 
 \subsubsection{Exporting Metadata}
 
-This information may change when the protocol OAI1.0 is released.
 Firstly, you need to decide on and register an unique archive identifier. Information about existing identifiers can be found at:
 
 \urlpar{http://www.openarchives.org/}

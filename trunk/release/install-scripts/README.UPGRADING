@@ -7,31 +7,31 @@ UPGRADING TO EPRINTS 1.1
 * Upgrading from 1.0
 * Credits
 
-====================================================================== 
+======================================================================
  INTRODUCTION (GENERAL INSTRUCTIONS)
 ======================================================================
 
 * The following are changes to make by hand when upgrading from
-an older EPrints version. The rest of the upgrade should be 
-done automatically by 
+an older EPrints version. The rest of the upgrade should be
+done automatically by
 
-./configure --prefix=/location/of/old/eprints  
-make 
+./configure --prefix=/location/of/old/eprints
+make
 make install
 
 * Make sure that configure has noticed that it's supposed to be
-doing an upgrade. 
+doing an upgrade.
 
-* You may need to specify some other options to configure, such 
-as --with-username, as that are not automatically copied from 
+* You may need to specify some other options to configure, such
+as --with-username, as that are not automatically copied from
 the previous version.
 
-* Note that the contents of 
+* Note that the contents of
  PREFIX/bin
  PREFIX/perl_libs/Eprints
- PREFIX/cgi 
- PREFIX/openarchives 
-will be overwritten, if you have made changes by hand you should 
+ PREFIX/cgi
+ PREFIX/openarchives
+will be overwritten, if you have made changes by hand you should
 re-apply those changes after you have upgraded.
 
 * You should restart the webserver
@@ -82,8 +82,25 @@ $EPrintSite::SiteInfo::oai_base_url =
 	$EPrintSite::SiteInfo::server_perl."/oai";
 ----------------------------------------------------------------------
 
+change %EPrintSite::SiteInfo::oai_metadata_formats to:
+----------------------------------------------------------------------
+# Exported metadata formats. The hash should map format ids to namespaces.
+%EPrintSite::SiteInfo::oai_metadata_formats =
+(
+        "oai_dc"   => "http://purl.org/dc/elements/1.1/"
+);
+----------------------------------------------------------------------
+
+
 and then add:
 ----------------------------------------------------------------------
+# Exported metadata formats. The hash should map format ids to schemas.
+%EPrintSite::SiteInfo::oai_metadata_schemas =
+(
+        "oai_dc"   => "http://www.openarchives.org/OAI/dc.xsd"
+);
+
+
 $EPrintSite::SiteInfo::oai_sample_identifier = EPrints::OpenArchives::to_oai_identifier(
 	$EPrintSite::SiteInfo::eprint_id_stem."00000023" );
 
@@ -93,17 +110,17 @@ $EPrintSite::SiteInfo::oai_sample_identifier = EPrints::OpenArchives::to_oai_ide
 # of the repository.  It would be appropriate to indicate the language(s)
 # of the metadata/data in the repository.
 
-$EPrintSite::SiteInfo::oai_content{"text"} = 
+$EPrintSite::SiteInfo::oai_content{"text"} =
 	$EPrintSite::SiteInfo::description;
 $EPrintSite::SiteInfo::oai_content{"url"} = undef;
 
 # "metadataPolicy" : Text and/or a URL linking to text describing policies
 # relating to the use of metadata harvested through the OAI interface.
 
-# oai_metadataPolicy{"text"} and/or oai_metadataPolicy{"url"} 
+# oai_metadataPolicy{"text"} and/or oai_metadataPolicy{"url"}
 # MUST be defined to comply to OAI.
 
-$EPrintSite::SiteInfo::oai_metadataPolicy{"text"} = 
+$EPrintSite::SiteInfo::oai_metadataPolicy{"text"} =
 	"No metadata policy defined. ".
 	"This server has not yet been fully configured.";
 $EPrintSite::SiteInfo::oai_metadataPolicy{"url"} = undef;
@@ -112,10 +129,10 @@ $EPrintSite::SiteInfo::oai_metadataPolicy{"url"} = undef;
 # relating to the data held in the repository.  This may also describe
 # policies regarding downloading data (full-content).
 
-# oai_dataPolicy{"text"} and/or oai_dataPolicy{"url"} 
+# oai_dataPolicy{"text"} and/or oai_dataPolicy{"url"}
 # MUST be defined to comply to OAI.
 
-$EPrintSite::SiteInfo::oai_dataPolicy{"text"} = 
+$EPrintSite::SiteInfo::oai_dataPolicy{"text"} =
 	"No data policy defined. ".
 	"This server has not yet been fully configured.";
 $EPrintSite::SiteInfo::oai_dataPolicy{"url"} = undef;
@@ -124,7 +141,7 @@ $EPrintSite::SiteInfo::oai_dataPolicy{"url"} = undef;
 # policies relating to the submission of content to the repository (or
 # other accession mechanisms).
 
-$EPrintSite::SiteInfo::oai_submissionPolicy{"text"} = 
+$EPrintSite::SiteInfo::oai_submissionPolicy{"text"} =
 	"No submission-data policy defined. ".
 	"This server has not yet been fully configured.";
 $EPrintSite::SiteInfo::oai_submissionPolicy{"url"} = undef;
@@ -148,14 +165,22 @@ $EprintSite::SiteInfo::db_host = "mysql.mysite.ac.uk";
 $EprintSite::SiteInfo::db_port = 3306;
 ----------------------------------------------------------------------
 
+If you want to use a different socket to connect to mysql
+add:
+----------------------------------------------------------------------
+$EprintSite::SiteInfo::db_socket = "/var/lib/mysql/mysql.sock";
+----------------------------------------------------------------------
+
+And of course, modify any of the values in these changes as
+you wish.
 
 ======================================================================
  CREDITS
 ======================================================================
 
-Thu Jan 18 17:54:18 GMT 2001
-Christopher Gutteridge
-support@eprints.org
+Credits for this README file:  Christopher Gutteridge, with some
+information from Robert Tansley
 
-Some information from Rob Tansley
+Version 1.0 software design and implementation: Robert Tansley
+Version 1.1 enhancements and fixes:  Chris Gutteridge
 
