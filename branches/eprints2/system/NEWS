@@ -4,6 +4,16 @@ see the blow by blow account of every single change see the file called
 CHANGELOG.
 ======================================================================
 
+EPRINTS 2.3.11                                                 2005-03-08
+-------------------------------------------------------------------------
+
+ - Fixed bug which prevented errors from displaying correctly when 
+    loading modules in mod_perl startup.
+ - Fixed bug in outgoing mail introduced in 2.3.10
+ - Added new metadata field type "itemref" which contains a reference
+    to an eprint or user object. Certain internal fields now use this
+    instead of "int".
+
 EPRINTS 2.3.10                                                 2005-03-02
 -------------------------------------------------------------------------
 

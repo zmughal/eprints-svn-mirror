@@ -2285,3 +2285,9 @@ PACKAGE: 2.2.99.2
     now. Hopefully we won't need it.
  - Combined itemrefutils into Itemref
  - Renamed itemrefint to itemref throughout
+ - Removed 'datasetid' parameters from Subject system fields.
+
+======================================================================
+08/03/2005 - EPRINTS-2.3.11
+======================================================================
+
