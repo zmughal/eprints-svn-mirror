@@ -273,8 +273,9 @@ GROUP
 	$systemsettings{"group"} = $group;	
 	$systemsettings{"orig_version"} = $systemsettings{"version"}; # First time install
 	$systemsettings{"orig_version_desc"} = $systemsettings{"version_desc"};
+	my(undef,undef,$uid,$gid) = getpwnam($user);
 	print "\nMaking directory ... ";
-	if (!-d $dir && !mkdir($dir))
+	if (!-d $dir && !mkdir($dir, 0755))
 	{
 		print "Failed!\n";
 		print "Unable to make installation directory.\n";
@@ -282,12 +283,12 @@ GROUP
 	}
 	else
 	{ print "OK.\n\n"; }
+	chown($uid, $gid, "$dir") or die "Unable to chown $dir/$_ : $!";
 
 	print "Installing files : [";
 
-	my(undef,undef,$uid,$gid) = getpwnam($user);
 	my @executable_dirs = ("bin", "cgi");
-	my @normal_dirs = ("sys", "defaultcfg", "cfg", "perl_lib", "phrases");
+	my @normal_dirs = ("archives", "sys", "defaultcfg", "cfg", "perl_lib", "phrases");
 
 	foreach(@executable_dirs)
 	{
@@ -311,8 +312,10 @@ Hooray! Your EPrints2 installation was successful!
 =
 = What Now?
 =
+= - su to $user
 = - Move into $dir and run:
 =     bin/generate_apacheconf
+= - su to root
 = - Open your apache.conf file, and make the
 =   following alterations:
 =   o Add the line
@@ -321,8 +324,9 @@ Hooray! Your EPrints2 installation was successful!
 =       User $user
 =   o Replace the 'Group <groupname>' line with
 =       Group $group
+= - su to $user
 = - Move into $dir and run:
-=     bin/create_newarchive
+=     bin/create_new_archive
 =
 =   
 = Good Luck!
