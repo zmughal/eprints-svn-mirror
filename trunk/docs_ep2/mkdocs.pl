@@ -44,6 +44,15 @@ my %titles = (
 	logo => "The EPrints Logo"
 );
 
+my $website = ( $ARGV[0] eq "www" );
+if( $website ){
+	print "BUILDING DOCS FOR WEBSITE!!\n" 
+}
+else
+{
+	print "BUILDING DOCS FOR PACKAGE!!\n" 
+}
+
 `rm tmp/*`;
 `rm -rf binpod`;
 `mkdir binpod`;
@@ -201,7 +210,6 @@ mkdir( '../docs/html' );
 `cp ../images/* ../docs/html`;
 foreach $id ( @ids )
 {
-        print "($id)\n";
 	pod2html( 
 		"--title=".$DOCTITLE." - ".$titles{$id},
 		"--infile=../$filemap{$id}",
@@ -226,7 +234,7 @@ print INDEX <<END;
 <font SIZE=+1><strong><p CLASS=block>&nbsp;$DOCTITLE</p></strong></font>
 </td></tr>
 </table>
-<h1>$DOCTITLE: Index</h1>
+<h1>$DOCTITLE</h1>
 <ul>
 END
 foreach $id ( @ids )
@@ -240,12 +248,65 @@ print INDEX <<END;
 <font SIZE=+1><strong><p CLASS=block>&nbsp;$DOCTITLE</p></strong></font>
 </td></tr>
 </table>
-
 </body>
 
 </html>
 END
 close INDEX;
+
+if( $website )
+{
+	mkdir( '../docs/php' );
+	`cp ../images/* ../docs/php`;
+	open( INC, ">../docs/php/index.inc" );
+	print INC "<h2>$DOCTITLE</h2><ul>\n";
+	foreach $id ( @ids )
+	{
+		print INC "<li><a href=\"/docs/php/$id.php\">".$titles{$id}."</a></li>\n";
+	}
+	print INC "</ul>\n";
+	close( INC );
+	foreach $id ( @ids )
+	{
+		my $html = "../docs/html/$id.html";
+		my $target = "../docs/php/$id.php";
+		
+		open( FILE, $html );
+		open( TARGET, ">$target" );
+	 	while( <FILE> ) { last if m/INDEX BEGIN/; }
+		print TARGET <<END;
+<?
+
+include "../../../conf/site_conf.phps";
+include "../../../include/elements.phps";
+
+\$pagetitle = "$DOCTITLE - $titles{$id}";
+
+function do_page()
+{
+?>
+<h1>$DOCTITLE - $titles{$id}</h1>
+END
+
+		print TARGET $_;
+		while( <FILE> )
+		{
+			last if( m#CELLPADDING# );
+			print TARGET $_;
+		}
+		s/<table.*//i;
+		print TARGET $_;
+		print TARGET <<END;
+<?
+} 
+ep_generate_page( "??" );
+?>
+END
+		close TARGET;
+		close FILE;
+		
+	}
+}
 
 ###############################################################################
 # POD

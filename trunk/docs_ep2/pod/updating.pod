@@ -1,17 +1,13 @@
 =pod
 
-=head1
-Updating from EPrints 1
+=head1 Updating from EPrints 1
 
 This path is not currently supported, as the software structure
 underwent fundamental changes. We recommend that you do a clean install of EPrints 2.0.
 
 We hope to provide an v1 to v2 "upgrade assister" at some point.
 
-=head1
-Updating from EPrints2 alpha-2 to EPrints 2.0
-
-=head2
+=head1 Updating from EPrints2 alpha-2 to EPrints 2.0
 
 Too much of the configuration of the archive has changed to document individually. See
 the C<CHANGELOG> file if you're really interested. If you have more than one
