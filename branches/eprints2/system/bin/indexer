@@ -1,4 +1,6 @@
 #!/usr/local/bin/perl5.8.0 -w -I/opt/ep2stable/perl_lib 
+# chkconfig: - 85 15
+# description: Background process to index the eprints databases
 
 ######################################################################
 #
@@ -117,6 +119,16 @@ Only index each archive once rather than loop for ever.
 Output version information and exit.
 
 =back   
+
+=head1 Making into a service 
+
+This has only been tested under redhat linux. It make work on other OS's, but not promise.
+
+To make the indexer into a service which starts and stops on reboots etc. like httpd and mysqld do the following (as root):
+
+ ln -s /opt/eprints2/bin/indexer /etc/init.d/epindexer 
+ chkconfig --add epindexer
+ chkconfig epindexer on
 
 __GENERICPOD__
 
