@@ -247,17 +247,7 @@ may cause weird things to happen!
 WARNING_S2N
 			}
 
-			if (defined $oldv && $oldv gt $newv) 
-			{
-				print <<DOWNGRADE;
-You already have a version of EPrints installed in this directory and it
-appears to be newer than the one that you are trying to install.
-
-Please obtain the latest version of EPrints and try again.
-DOWNGRADE
-				exit 1;
-			}
-			elsif (defined $oldv && $oldv eq $newv)
+			if (defined $oldv && $oldv eq $newv)
 			{
 				print <<RECOVER;
 You already have this version installed here. Would you like to recover the
