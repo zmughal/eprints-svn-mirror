@@ -519,7 +519,7 @@ sub upgrade
 
         my @executable_dirs = ("bin", "cgi");
 	my @normal_dirs = ("defaultcfg", "cfg", "docs", "perl_lib");
-	my @base_files = ("VERSION", "CHANGELOG", "BUGLIST", "COPYING", "CHANGELOG.summary" ); 
+	my @base_files = ("VERSION", "CHANGELOG", "BUGLIST", "COPYING", "NEWS", "AUTHORS", "TODO", "README" ); 
         foreach(@executable_dirs)
         {
                 install_dir($dist_path, $_, 0755, $uid, $gid, $base_path, \%MD5Hash, $newsigs);
