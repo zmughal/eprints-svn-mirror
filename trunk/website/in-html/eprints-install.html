@@ -1,0 +1,1176 @@
+TITLE: eprints.org Archive Software Installation Document
+<BR />
+<BR />
+
+<H1 ALIGN="CENTER">eprints.org Archive Software Installation Document</H1>
+<P ALIGN="CENTER"><STRONG>Robert Tansley</STRONG></P>
+
+<P>
+
+<H1><A NAME="SECTION00010000000000000000">
+1 Introduction</A>
+</H1>
+
+<P>
+This document explains how to set up and install an <I>eprints.org</I> archive on a UNIX system. The instructions should allow users to install the archive on any UNIX implementation, such as Solaris, SGI IRIX or Linux. In addition to generic instructions, specific instructions are also given on how to install the system on a Redhat 6.<I>x</I> Linux system, the recommended platform on which to run the <I>eprints.org</I> software.
+
+<P>
+Although this document is rather large, much of it is to do with configuring various aspects of the system. If you are happy with the default metadata sets and site look and feel, you won't have to work through all of it.
+
+<P>
+
+<H2><A NAME="SECTION00011000000000000000">
+1.1 Beta Release Note</A>
+</H2>
+
+<P>
+Many of the procedures in this installation document might change for the main release. If and when you install a production server, you should obtain the relevant installation document for that version.
+
+<P>
+It is hoped that in later versions, much of the installation process will be automated, reducing the effort involved in this process greatly.
+
+<P>
+The Open Archives Initiative protocol is about to change. At the moment, the core code only supports the old Santa Fe convention protocol (the Dienst subset) and OAMS, the Open Archives Metadata Set. However, the site-specific API in <TT>SiteRoutines.pm</TT> is hopefully stable which means you just have to upgrade the core code to support new versions of the protocol.
+
+<P>
+
+<H2><A NAME="SECTION00012000000000000000">
+1.2 Upgrading from Beta-1</A>
+</H2>
+
+<P>
+If you are upgrading from version beta-1, and you want to port across code and/or configuration options, it might be easiest to make a backup of the old version, install the new version afresh and copy the changes across. Here are some points you should be aware of:
+
+<P>
+
+<UL>
+<LI>The prerequisite software is largely the same, but you'll need to install Unicode-String-2.<I>xx</I> from CPAN.
+</LI>
+<LI>The directory structure and method of linking into Perl have changed slightly. You should remove the <TT>EPrints</TT> and <TT>EPrintSite</TT> symlinks from the <TT>/usr/lib/perl5/site_perl</TT> directory (or equivalent). Note also that you have to define the <TT>PERL5LIB</TT> variable in various places (the crontab and the <TT>.procmailrc</TT>) so that the libraries are picked up.
+</LI>
+<LI>The <TT>referencetext</TT> metadata field has been added. If you want to keep the data you have and add this field, you can add the field manually to the <TT>inbox</TT>, <TT>buffer</TT> and <TT>archive</TT> tables in MySQL, and add the referencetext field to <TT>cfg/metadata.eprint-types</TT> and <TT>cfg/metadata.eprint-fields</TT>. This also applies to the <TT>expertise</TT> field in <TT>metadata.user</TT> and the <TT>users</TT> table.
+</LI>
+<LI>In anticipation of impending changes to the Open Archives protocol, the core code/site code interface has changed slightly. In <TT>SiteRoutines.pm</TT>, instead of <TT>eprint_get_oams</TT>, there are now two open archives functions, <TT>oai_list_metadata_formats</TT> and <TT>oai_get_eprint_metadata</TT>. At the moment, however, the core software only supports OAMS, so you'll need to export that.
+</LI>
+<LI>Feel free to send any questions you have to <TT>support@eprints.org</TT>.
+</LI>
+</UL>
+
+<P>
+
+<P>
+
+<H1><A NAME="SECTION00020000000000000000">
+2 Prerequisites</A>
+</H1>
+
+<P>
+The <I>eprints.org</I> software makes use of a number of other pieces of software, which must all be installed on the server machine in order for it to function properly. Table <A HREF="#install_packages">1</A> describes the software packages you need, together with the minimum version you should try and get. The <I>eprints.org</I> software may work with versions earlier than those indicated but we can't guarantee it.
+
+<P>
+<BR><P></P>
+<DIV ALIGN="CENTER"><A NAME="451"></A>
+<TABLE>
+<CAPTION><STRONG>Table 1:</STRONG>
+ Prerequisite Software Packages</CAPTION>
+<TR><TD>
+<DIV ALIGN="CENTER">
+<TABLE CELLPADDING=3 BORDER="1" ALIGN="CENTER">
+<TR><TD ALIGN="LEFT"><I>Package</I></TD>
+<TD ALIGN="LEFT"><I>Version</I></TD>
+<TD ALIGN="LEFT"><I>Where from</I></TD>
+</TR>
+<TR><TD ALIGN="LEFT">tar &amp; gunzip</TD>
+<TD ALIGN="LEFT">&nbsp;</TD>
+<TD ALIGN="LEFT">come with most UNIXes</TD>
+</TR>
+<TR><TD ALIGN="LEFT">&nbsp;</TD>
+<TD ALIGN="LEFT">&nbsp;</TD>
+<TD ALIGN="LEFT">RedHat packages: <TT>tar</TT> &amp; <TT>gzip</TT></TD>
+</TR>
+<TR><TD ALIGN="LEFT">unzip</TD>
+<TD ALIGN="LEFT">5.<I>x</I></TD>
+<TD ALIGN="LEFT"><TT>ftp://ftp.freesoftware.com/pub/infozip/</TT></TD>
+</TR>
+<TR><TD ALIGN="LEFT">&nbsp;</TD>
+<TD ALIGN="LEFT">&nbsp;</TD>
+<TD ALIGN="LEFT">RedHat packages: <TT>unzip</TT></TD>
+</TR>
+<TR><TD ALIGN="LEFT">wget</TD>
+<TD ALIGN="LEFT">1.5</TD>
+<TD ALIGN="LEFT"><TT>http://www.gnu.org/software/wget/wget.html</TT></TD>
+</TR>
+<TR><TD ALIGN="LEFT">&nbsp;</TD>
+<TD ALIGN="LEFT">&nbsp;</TD>
+<TD ALIGN="LEFT">RedHat packages: <TT>wget</TT></TD>
+</TR>
+<TR><TD ALIGN="LEFT">perl</TD>
+<TD ALIGN="LEFT">5.005</TD>
+<TD ALIGN="LEFT"><TT>http://www.cpan.org/</TT></TD>
+</TR>
+<TR><TD ALIGN="LEFT">&nbsp;</TD>
+<TD ALIGN="LEFT">&nbsp;</TD>
+<TD ALIGN="LEFT">RedHat packages: <TT>perl</TT></TD>
+</TR>
+<TR><TD ALIGN="LEFT">apache</TD>
+<TD ALIGN="LEFT">1.3.9</TD>
+<TD ALIGN="LEFT"><TT>http://www.apache.org/</TT></TD>
+</TR>
+<TR><TD ALIGN="LEFT">&nbsp;</TD>
+<TD ALIGN="LEFT">&nbsp;</TD>
+<TD ALIGN="LEFT">RedHat packages: <TT>apache</TT> &amp; <TT>apache-devel</TT></TD>
+</TR>
+<TR><TD ALIGN="LEFT">mod_perl</TD>
+<TD ALIGN="LEFT">1.21</TD>
+<TD ALIGN="LEFT"><TT>http://perl.apache.org/</TT></TD>
+</TR>
+<TR><TD ALIGN="LEFT">&nbsp;</TD>
+<TD ALIGN="LEFT">&nbsp;</TD>
+<TD ALIGN="LEFT">RedHat packages: <TT>mod_perl</TT></TD>
+</TR>
+<TR><TD ALIGN="LEFT">MySQL</TD>
+<TD ALIGN="LEFT">3.22.<I>x</I></TD>
+<TD ALIGN="LEFT"><TT>http://www.mysql.org/</TT></TD>
+</TR>
+<TR><TD ALIGN="LEFT">&nbsp;</TD>
+<TD ALIGN="LEFT">&nbsp;</TD>
+<TD ALIGN="LEFT">Not on RedHat CD</TD>
+</TR>
+<TR><TD ALIGN="LEFT">sendmail<A NAME="footfnm1"
+ HREF="#fnm1"><SUP>1</SUP></A></TD>
+<TD ALIGN="LEFT">8.9</TD>
+<TD ALIGN="LEFT">comes with most UNIXes</TD>
+</TR>
+<TR><TD ALIGN="LEFT">&nbsp;</TD>
+<TD ALIGN="LEFT">&nbsp;</TD>
+<TD ALIGN="LEFT">RedHat packages: <TT>sendmail</TT></TD>
+</TR>
+</TABLE>
+
+</DIV></TD></TR>
+</TABLE>
+</DIV><P></P>
+<BR>
+
+<P>
+Many of them may be already installed on your system. Also shown is which RedHat package you should install (from the RedHat installer) to install that package on the machine. Note that while MySQL doesn't appear on the RedHat 6.2 CD, suitable RPMs are available from the MySQL Web site.
+
+<P>
+
+<H2><A NAME="SECTION00021000000000000000">
+2.1 Special Notes on Apache and mod_perl</A>
+</H2>
+
+<P>
+Apache and mod_perl need special attention, since you can configure a myriad of parameters when you compile and install them. The software requires that a few of these are configured in a certain way.
+
+<P>
+Fortunately, Apache RPM supplied with RedHat Linux 6.2 has a suitable compilation configuration. The mod_perl distributed with RedHat 6.2 is broken, and should be replaced with <TT>mod_perl-1.23-1.i386.rpm</TT>, available from the <TT>http://www.eprints.org</TT> Web site.
+
+<P>
+Apache should be installed with the following modules compiled in (or made available as a .so) and enabled:
+
+<P>
+
+<UL>
+<LI>rewrite_module
+</LI>
+<LI>auth_module
+</LI>
+</UL>
+
+<P>
+mod_perl should be compiled with at least the following hooks enabled:
+
+<P>
+
+<UL>
+<LI>PERL_AUTHEN
+</LI>
+<LI>PERL_AUTHZ
+</LI>
+</UL>
+
+<P>
+You can just compile it with ALL_HOOKS if you like.
+
+<P>
+
+<H2><A NAME="SECTION00022000000000000000">
+2.2 Perl Modules</A>
+</H2>
+
+<P>
+The following Perl modules are used by the <I>eprints.org</I>archive. They are all available from the CPAN Web site (<TT>http://www.cpan.org/</TT>). The version numbers are the minimum versions you should try and get. You may find that some are already installed with your Perl distribution.
+
+<P>
+
+<UL>
+<LI>CGI 2.6<I>x</I>
+</LI>
+<LI>POSIX
+</LI>
+<LI>Data-Dumper 2.<I>xxx</I>
+</LI>
+<LI>DBI 1.1<I>x</I>
+</LI>
+<LI>Msql-MySQL-modules 1.2<I>xxx</I> <I>(don't need mysql-perl emulation)</I>
+</LI>
+<LI>Filesys-Diskspace 0.05
+</LI>
+<LI>MIME-Base-64 2.11
+</LI>
+<LI>URI-1.06
+</LI>
+<LI>XML-Writer-0.4
+</LI>
+<LI>ApacheDBI-0.87
+</LI>
+<LI>Unicode-String-2.<I>xx</I>
+</LI>
+</UL>
+
+<P>
+
+<H2><A NAME="SECTION00023000000000000000">
+2.3 E-Mail</A>
+</H2>
+
+<P>
+Some operations are performed by e-mail. An <I>eprints.org</I> archive needs to be able to send e-mails (typically using the <TT>sendmail</TT> package), and also to receive e-mails and process them using a script.
+
+<P>
+In other words, the <I>eprints.org</I> software needs an e-mail account, for example <TT>eprints@archive.foo.org</TT>, and every time an e-mail arrives at that account, an <I>eprints.org</I> script needs to be run and given the contents of the e-mail. This e-mail account is referred to as the <I>automatic administration account</I>.
+How this account is set up will probably vary between institutions. You may want a mail server on the local machine, or NFS mount a mail spool directory, or have another mail server machine <TT>rsh</TT> the relevant script. What needs to happen with this is explained later on; for now, just be aware that the software needs a mail account it can send from and automatically process incoming mails.
+
+<P>
+You'll also need a regular adminstration e-mail account for users needing to contact a person.
+
+<P>
+Once all of this software is installed, we're ready to proceed with the installation of the <I>eprints.org</I> archive software.
+
+<P>
+
+<H1><A NAME="SECTION00030000000000000000"></A>
+<A NAME="install_software"></A>
+<BR>
+3 Installing the <I>eprints.org</I> Software
+</H1>
+
+<P>
+It's probably a good idea to set up an ``eprints'' account on the server machine. It can be a user's account, but it's strongly recommended that the server is not run as root.
+
+<P>
+
+<H2><A NAME="SECTION00031000000000000000">
+3.1 Unpacking the Distribution</A>
+</H2>
+
+<P>
+Choose whereabouts on your system the <I>eprints.org</I> software should reside. For the remainder of this document it is assumed that the software distribution is unpacked as <TT>/opt/eprints</TT>, and so the cgi directory is <TT>/opt/eprints/cgi</TT> etc. The eprints user should own all of the files in this directory.
+
+<P>
+The distribution is a tarred and gzipped file, and the usual way to unpack these is with:
+
+<P>
+<PRE>
+&gt; gunzip -c eprints-version.tar.gz | tar xvf -
+</PRE>
+
+<P>
+If your perl executable isn't installed at <TT>/usr/bin/perl</TT>, you'll need to change the first line of each of the scripts in <TT>eprints/bin</TT><A NAME="tex2html2"
+  HREF="#foot173"><SUP>2</SUP></A>.
+
+<P>
+
+<H2><A NAME="SECTION00032000000000000000">
+3.2 Configuring <I>eprints.org</I></A>
+</H2>
+
+<P>
+Configuration information is largely held in two directories: <TT>eprints/cfg</TT> and <TT>eprints/perl_lib/EPrintSite</TT>. Most of it is set up with reasonable defaults, but you will need to edit <TT>eprints/perl_lib/EPrintSite/SiteInfo.pm</TT> before anything will work.
+
+<P>
+<I>eprints.org</I> is a highly configurable piece of software; the various ways in which it can be configured are described in more detail in section <A HREF="eprints-install.html#install_configure">4</A>. This section describes the technical aspects of the configuration required to get the installation to work.
+
+<P>
+<TT>SiteInfo.pm</TT> is fairly well commented, so you should just be able to go down that file and alter any values you need to. In the minimal instance, you'll need to change the following values:
+
+<P>
+
+<UL>
+<LI><TT>$EPrintSite::SiteInfo::automail</TT> - Don't forget to backslash the <TT>@</TT> if you use double quotes!
+</LI>
+<LI><TT>$EPrintSite::SiteInfo::admin</TT>
+</LI>
+<LI><TT>$EPrintSite::SiteInfo::local_root</TT> - the bin, cfg, cgi etc. directories must be subdirectories of this
+</LI>
+<LI><TT>$EPrintSite::SiteInfo::host</TT> - Fully qualified hostname, for example <TT>archive.foo.org</TT>
+</LI>
+<LI><TT>$EPrintSite::SiteInfo::eprint_id_stem</TT> - Prepended to all document record ID's in the system
+</LI>
+<LI><TT>$EPrintSite::SiteInfo::password</TT> - The password for your MySQL database (remember it for later)
+</LI>
+<LI><TT>$EPrintSite::SiteInfo::archive_identifier</TT> - Your archive's Open Archives identifier
+</LI>
+</UL>
+
+<P>
+If your server is running on a non-standard port (i.e. other than port 80), you will need to add the relevant port numbers to the following variables:
+
+<P>
+
+<UL>
+<LI><TT>$EPrintSite::SiteInfo::server_static</TT>
+</LI>
+<LI><TT>$EPrintSite::SiteInfo::server_perl</TT>
+</LI>
+</UL>
+
+<P>
+For example, if you are running the archive on port 8080, you should change <TT>$EPrintSite::SiteInfo::server_static</TT> to:
+
+<P>
+<TT>http://$EPrintSite::SiteInfo::host:8080</TT>
+
+<P>
+and apply a similar change to <TT>$EPrintSite::SiteInfo::server_perl</TT>.
+
+<P>
+You should also verify that the paths to various executables are correct in the command line values, i.e.
+
+<P>
+
+<UL>
+<LI><TT>%EPrintSite::SiteInfo::archive_extraction_commands</TT>
+</LI>
+<LI><TT>$EPrintSite::SiteInfo::wget_command</TT>
+</LI>
+<LI><TT>$EPrintSite::SiteInfo::sendmail</TT>
+</LI>
+</UL>
+
+<P>
+For security, you should make sure that <TT>SiteInfo.pm</TT> is readable only by the eprints user.
+
+<P>
+At this point you should decide on the types of eprints you want to store in the archive, the metadata you want to store with each eprints and your initial subject hierarchy. These are described in section <A HREF="eprints-install.html#install_metadata">4.2</A>.
+
+<P>
+
+<H2><A NAME="SECTION00033000000000000000">
+3.3 Setting up the MySQL database</A>
+</H2>
+
+<P>
+While the <I>eprints.org</I> software handles most database operations transparently, some initial setting up is required.
+
+<P>
+Usually, after installing MySQL, you'll need to set a root password, using something like:
+
+<P>
+<PRE>
+&gt; mysqladmin -u root password "password"
+</PRE>
+
+<P>
+Note that <TT>password</TT> here should <I>not</I> be the password you have put in <TT>Siteinfo.pm</TT>. From a security viewpoint, it's probably best to remove all non-root users and all non-localhost access from the privilege system.
+
+<P>
+Now create the archive database, from the <TT>mysql</TT> monitor tool:
+
+<P>
+<PRE>
+mysql&gt; create database eprints;
+</PRE>
+
+<P>
+Then set up the access privileges:
+
+<P>
+<PRE>
+mysql&gt; GRANT SELECT, INSERT, UPDATE, DELETE, CREATE ON eprints.*
+TO eprints@localhost IDENTIFIED BY "password";
+</PRE>
+
+<P>
+<TT>password</TT> in this case should be the password you put in <TT>SiteInfo.pm</TT>. The MySQL database is now ready.
+
+<P>
+
+<H2><A NAME="SECTION00034000000000000000">
+3.4 Configuring Apache</A>
+</H2>
+
+<P>
+Apache needs to be pointed at the <I>eprints.org</I> software and the password system set up.
+
+<P>
+Edit your Apache configuration, <TT>httpd.conf</TT> (found in <TT>/etc/httpd/conf</TT> on RedHat systems.) On some earlier versions of Apache, the configuration is split into <TT>httpd.conf</TT>, <TT>access.conf</TT> and <TT>srm.conf</TT>.  In these cases, the <TT>&lt;Directory&gt;</TT> entries should go in <TT>access.conf</TT>, the <TT>Alias</TT> entries in <TT>srm.conf</TT>, and everything else in <TT>httpd.conf</TT>.
+
+<P>
+Firstly, turn on the authentication using MySQL and Perl DBI by adding these lines (after <TT>mod_perl</TT> is included:)
+
+<P>
+<PRE>
+PerlModule Apache::DBI
+PerlModule Apache::AuthDBI
+</PRE>
+
+<P>
+The Web server should ideally run as the eprints user, so change the relevant lines (though you may wish to use group nobody). It's possible to run the server as another user (for example, the default nobody), but this does cause problems; see section <A HREF="eprints-install.html#install_alternative">4.1</A> if you want to do this.
+
+<P>
+<PRE>
+User eprints
+Group eprints
+</PRE>
+
+<P>
+The library files need to be accessible within Perl:
+
+<P>
+<PRE>
+PerlSetEnv PERL5LIB /opt/eprints/perl_lib
+</PRE>
+
+<P>
+Set the DocumentRoot to point at the HTML root:
+
+<P>
+<PRE>
+DocumentRoot "/opt/eprints/html"
+</PRE>
+
+<P>
+We need to be allowed to override the authorisation for this directory, e.g:
+
+<P>
+<PRE>
+&lt;Directory "/opt/eprints/html"&gt;
+   Options Includes FollowSymLinks
+   AllowOverride AuthConfig
+   Order allow,deny
+   Allow from all
+&lt;/Directory&gt;
+</PRE>
+
+<P>
+Set up the location for mod_perl scripts:
+
+<P>
+<PRE>
+Alias /perl/ /opt/eprints/cgi/
+&lt;Directory /opt/eprints/cgi&gt;
+    SetHandler perl-script
+    PerlHandler Apache::Registry
+    PerlSendHeader Off
+    Options +ExecCGI
+    AllowOverride AuthConfig
+&lt;/Directory&gt;
+</PRE>
+
+<P>
+Add engine to run the open archives interoperability software:
+
+<P>
+<PRE>
+RewriteEngine on
+RewriteRule ^/Dienst(.*) /opt/eprints/openarchives/Main/dienst.pl
+&lt;Directory /opt/eprints/openarchives/Main&gt;
+    SetHandler perl-script
+    PerlHandler Apache::Registry
+    Options +ExecCGI
+    allow from all
+    PerlSendHeader Off
+&lt;/Directory&gt;
+</PRE>
+
+<P>
+Now restart the server, and ensure that it's started up again with no errors.
+
+<P>
+
+<H2><A NAME="SECTION00035000000000000000">
+3.5 The Document Store</A>
+</H2>
+
+<P>
+The system needs a directory in which to store the full text document files (and any other data files you may wish to have stored in the archive). Of course, your storage requirements will probably increase over time, so the <I>eprints.org</I> software has been designed to let you add disk space as simply as possible.
+
+<P>
+When it needs to store documents for a new eprint, the system looks at the directory <TT>/opt/eprints/html/documents</TT>. It will alphabetically scan each subdirectory, and the first subdirectory it finds with enough space will be used to store the new document files. Of course, the subdirectories can be symbolic links to any physical disk you like.
+
+<P>
+For example, your <TT>/opt/eprints/html/documents</TT> might contain:
+
+<P>
+<PRE>
+lrwxrwxrwx    eprints   eprints       disk0 -&gt; /export/1/data
+lrwxrwxrwx    eprints   eprints       disk1 -&gt; /net/datadisk
+</PRE>
+
+<P>
+In this case, the system will try and use <TT>disk0</TT> (and thereby <TT>/export/1/data</TT>) first, and if there isn't enough room on that, <TT>disk1</TT> (<TT>/net/datadisk</TT>).
+
+<P>
+If the amount of free space on the partition with the most space available falls below a threshold value, the system will send a mail to the site administrator advising them that disk space is running low. If there is no space available, then no new documents can be added, and the administrator will be sent an error message.
+
+<P>
+<TT>/opt/eprints/perl_lib/EPrintSite/SiteInfo.pm</TT> is where the thresholds may be edited. The defaults are 500&nbsp;Mb free when a warning is sent out, and 20&nbsp;Mb free when an error occurs.
+
+<P>
+To add a new disk partition is simple. Just add a symbolic link to some (empty) directory on the new partition, using a command like:
+
+<P>
+<PRE>
+&gt; ln -s /export/1/data /opt/eprints/html/documents/disk0
+</PRE>
+
+<P>
+You will need to do this when you install an <I>eprints.org</I>archive, to give the system at least one lot of disk space it can store documents on. Of course, you could just make a directory in <TT>/opt/eprints/html/documents</TT> instead of a symbolic link. The eprints user must be able to write to all of these directories (or, at least, the Apache Web server; see section <A HREF="eprints-install.html#install_alternative">4.1</A>).
+
+<P>
+
+<H2><A NAME="SECTION00036000000000000000">
+3.6 Finishing up</A>
+</H2>
+
+<P>
+Before running any of the following scripts, you'll need to set up your shell so that Perl picks up the <I>eprints.org</I> archive library files, with something like:
+
+<P>
+<PRE>
+export PERL5LIB=/opt/eprints/perl\_lib
+</PRE>
+
+<P>
+if you're using <TT>sh</TT> or <TT>bash</TT>, and
+
+<P>
+<PRE>
+setenv PERL5LIB /opt/eprints/perl\_lib
+</PRE>
+
+<P>
+if you're using <TT>csh</TT> or <TT>tcsh</TT>. Next, we get the <I>eprints.org</I> archive to create its tables in the database:
+
+<P>
+<PRE>
+&gt; /opt/eprints/bin/create_databases
+</PRE>
+
+<P>
+The last thing we do before we can test the installation is set up the Web pages. As the eprints user, run:
+
+<P>
+<PRE>
+&gt; /opt/eprints/bin/generate_static
+</PRE>
+
+<P>
+This generates the static Web pages with the site look and feel. Now, you should be able to see the front page of your site with a browser, e.g. by looking at:
+
+<P>
+<PRE>
+http://archive.foo.org/
+</PRE>
+
+<P>
+You should create an initial staff member account:
+
+<P>
+<PRE>
+&gt; /opt/eprints/bin/create_user staff john@smith.com Staff
+</PRE>
+
+<P>
+And set up the .htaccess files with the right passwords:
+
+<P>
+<PRE>
+&gt; /opt/eprints/bin/update_htaccess
+</PRE>
+
+<P>
+Finally, you need to set up some scripts to be run when certain things happen.
+
+<P>
+For the subscriptions (alerting service), the <TT>subs_daily</TT>, <TT>subs_weekly</TT> and <TT>subs_monthly</TT> scripts need to be run every day, week and month, respectively, from the eprints account. The <I>browse by subject</I> views are static HTML files generated by a script, <TT>generate_views</TT>. This should be run at least once a day, or maybe more depending on how many incoming eprints you expect and how quickly you'd like them to be browsable<A NAME="tex2html3"
+  HREF="#foot283"><SUP>3</SUP></A>.
+
+<P>
+So, the eprints crontab should look something like this (note the <TT>PERL5LIB</TT> line, very important):
+
+<P>
+<PRE>
+SHELL=/bin/sh
+PERL5LIB=/opt/eprints/perl_lib
+0 0  * * * /opt/eprints/bin/subs_daily
+15 0 * * 0 /opt/eprints/bin/subs_weekly
+30 0 1 * * /opt/eprints/bin/subs_monthly
+0 1  * * * /opt/eprints/bin/generate_views
+</PRE>
+
+<P>
+In some operating systems (e.g. Solaris) the environment variable lines at the top aren't valid in crontab files, so you'll need to put them ``in line,'' e.g. (all as one line):
+
+<P>
+<PRE>
+0 0  * * * PERL5LIB=/opt/eprints/perl_lib ; export PERL5LIB ;
+     /opt/eprints/bin/subs_daily
+</PRE>
+
+<P>
+Note that the subscription jobs are start at 12.00am, 12.15am and 12.30am respectively, and <TT>generate_views</TT> is run at 1am. They are spread out like this so that no two such scripts are running at once, which could cause server performance problems for any users online at the time. (You may also wish to <TT>nice</TT> these jobs for the same reason.)
+
+<P>
+The <TT>process_mail</TT> script needs to be run, as the eprints user, whenever mail arrives at the automatic administration account, and the contents of that mail should be fed to the script's standard input. You could just use a <TT>.forward</TT> file, but it's probably best to use <TT>procmail</TT>.
+
+<P>
+In the <TT>eprints</TT> user <TT>.forward</TT> file:
+
+<P>
+<PRE>
+"|IFS=' ' &amp;&amp; exec /usr/bin/procmail -f- || exit 75"
+</PRE>
+
+<P>
+In the <TT>.procmailrc</TT> file (note again the PERL5LIB line):
+
+<P>
+<PRE>
+PERL5LIB=/opt/eprints/perl_lib
+
+:0:
+* !^FROM_DAEMON
+* !^X-Loop: eprints@archive.foo.org
+|/opt/eprints/bin/process_mail
+</PRE>
+
+<P>
+Replace <TT>eprints@archive.foo.org</TT> with the automatic administration account address. The reason for using <TT>procmail</TT> is that the recipe above prevents <TT>process_mail</TT> replying to bounced error mails and mails from mailing lists.
+
+<P>
+Of course, there are many other ways in which you can achieve the same functionality. The use of <TT>sendmail</TT> and <TT>procmail</TT> is just a suggestion.
+
+<P>
+Now you should have a working installation that you can play around with. You should try joining the archive (look at the registrations page), submitting a test paper, a checking that it arrives in the submissions buffer in the staff area. The staff area is not linked to the front page by default; you can access it by viewing <TT>http://eprintarchive.foo.org/staff</TT>.
+
+<P>
+
+<H1><A NAME="SECTION00040000000000000000"></A>
+<A NAME="install_configure"></A>
+<BR>
+4 <I>eprints.org</I> Archive Configuration
+</H1>
+
+<P>
+The <I>eprints.org</I> archive is a highly configurable piece of software. The configuration options are divided into three areas in this document, described in the following sections: Metadata configuration, site look and feel, and alternative system setups.
+
+<P>
+<B>Important note:</B> Although you are of course free to alter the code to suit your needs in any way you wish, it is <I>strongly</I> recommended that you do NOT change any code in the <TT>perl_lib/EPrints</TT> directory, or any of the scripts in the <TT>bin</TT> or <TT>cgi</TT> directories. This will allow you to upgrade your <I>eprints.org</I> software without having to merge differences into code that you have altered. You should be able to configure the site in any way necessary just by editing code in <TT>perl_lib/EPrintSite</TT>, and maybe adding scripts to the <TT>cgi</TT> directory; it should NOT be necessary to alter any of the <TT>cgi</TT> scripts that are already there.
+
+<P>
+
+<H2><A NAME="SECTION00041000000000000000"></A>
+<A NAME="install_alternative"></A>
+<BR>
+4.1 Alternative System Setups
+</H2>
+
+<P>
+Section <A HREF="eprints-install.html#install_software">3</A> of this guide gave instructions for installing the <I>eprints.org</I> software on a dedicated machine. While this is the recommended course of action, it may be the case that you are forced to install it on a machine running other Web services.
+
+<P>
+The <TT>SiteInfo.pm</TT> will allow you to configure just about any local file system path, server URL or e-mail address you might need to. Hopefully, network administrators will be knowledgeable enough to know how to set everything up.
+
+<P>
+One scenario that may cause problems for you is if you can't have your Apache server run as the eprints user. In this case, you will need to set the owner of <TT>/opt/eprints/html/documents</TT> (and all subdirectories) to the user Apache runs as. The drawback of this is that you then will not be able to use the <TT>generate_abstracts</TT> script to update the abstract pages should you change the look and feel of the site in any way.
+
+<P>
+
+<H2><A NAME="SECTION00042000000000000000"></A>
+<A NAME="install_metadata"></A>
+<BR>
+4.2 Metadata Configuration
+</H2>
+
+<P>
+You should decide what metadata you want to hold about each eprints in your archive. Each eprint has an <I>eprint type</I>, for example <I>journal paper</I>, <I>tech report</I> or <I>thesis</I>. You can decide on these in <TT>cfg/metadata.eprint-types</TT>. The format of the file is rather similar to the Apache Web server configuration file format.
+
+<P>
+<PRE>
+&lt;class class-id "Displayable Name"&gt;
+REQUIRE mandatory-field
+REQUIRE mandatory-field-2
+optional-field
+optional-field-2
+</PRE>
+
+<P>
+Each of the fields must then be defined in <TT>cfg/metadata.eprint-fields</TT>:
+
+<P>
+<PRE>
+&lt;field fieldname&gt;
+argument = "value"
+argument = "value"
+&lt;/field&gt;
+</PRE>
+
+<P>
+Possible arguments are shown in table <A HREF="#install_meta_args">2</A>.
+
+<P>
+<BR><P></P>
+<DIV ALIGN="CENTER"><A NAME="452"></A>
+<TABLE>
+<CAPTION><STRONG>Table 2:</STRONG>
+ Arguments to metadata field specifications</CAPTION>
+<TR><TD>
+<DIV ALIGN="CENTER">
+<TABLE CELLPADDING=3 BORDER="1" ALIGN="CENTER">
+<TR><TD ALIGN="LEFT"><I>Argument</I></TD>
+<TD ALIGN="LEFT"><I>Description</I></TD>
+</TR>
+<TR><TD ALIGN="LEFT">displaydigits</TD>
+<TD ALIGN="LEFT">Size of numerical input box</TD>
+</TR>
+<TR><TD ALIGN="LEFT">displaylines</TD>
+<TD ALIGN="LEFT">No. of rows in text area input box</TD>
+</TR>
+<TR><TD ALIGN="LEFT">displayname</TD>
+<TD ALIGN="LEFT">Displayable name</TD>
+</TR>
+<TR><TD ALIGN="LEFT">editable</TD>
+<TD ALIGN="LEFT">Is the field user-editable</TD>
+</TR>
+<TR><TD ALIGN="LEFT">help</TD>
+<TD ALIGN="LEFT">Help information for the input form. Repeatable.</TD>
+</TR>
+<TR><TD ALIGN="LEFT">maxlength</TD>
+<TD ALIGN="LEFT">Maximum no. of characters or digits</TD>
+</TR>
+<TR><TD ALIGN="LEFT">multiple</TD>
+<TD ALIGN="LEFT">Whether a single value or a list (name and set)</TD>
+</TR>
+<TR><TD ALIGN="LEFT">required</TD>
+<TD ALIGN="LEFT">Is the field required (only used in <TT>metadata.user</TT>)</TD>
+</TR>
+<TR><TD ALIGN="LEFT">type</TD>
+<TD ALIGN="LEFT">Type of the field</TD>
+</TR>
+<TR><TD ALIGN="LEFT">value</TD>
+<TD ALIGN="LEFT">Repeatable. Possible values in a set/enum.</TD>
+</TR>
+<TR><TD ALIGN="LEFT">&nbsp;</TD>
+<TD ALIGN="LEFT">e.g. <TT>value jan = "January"</TT></TD>
+</TR>
+<TR><TD ALIGN="LEFT">visible</TD>
+<TD ALIGN="LEFT">Is the field publically visible?</TD>
+</TR>
+</TABLE>
+
+</DIV></TD></TR>
+</TABLE>
+</DIV><P></P>
+<BR>
+
+<P>
+The possible types of metadata field, and the arguments they need, are shown in table <A HREF="#install_meta_types">3</A>. Note that you always need to specify a type and a displayname, and you can specify editable, help, required and visible for all of them.
+
+<P>
+<BR><P></P>
+<DIV ALIGN="CENTER"><A NAME="453"></A>
+<TABLE>
+<CAPTION><STRONG>Table 3:</STRONG>
+ Available metadata types</CAPTION>
+<TR><TD>
+<DIV ALIGN="CENTER">
+<TABLE CELLPADDING=3 BORDER="1" ALIGN="CENTER">
+<TR><TD ALIGN="LEFT"><I>Type</I></TD>
+<TD ALIGN="LEFT"><I>Description</I></TD>
+<TD ALIGN="LEFT"><I>Arguments</I></TD>
+</TR>
+<TR><TD ALIGN="LEFT">int</TD>
+<TD ALIGN="LEFT">Integer number</TD>
+<TD ALIGN="LEFT">displaydigits</TD>
+</TR>
+<TR><TD ALIGN="LEFT">date</TD>
+<TD ALIGN="LEFT">Date</TD>
+<TD ALIGN="LEFT">&nbsp;</TD>
+</TR>
+<TR><TD ALIGN="LEFT">enum</TD>
+<TD ALIGN="LEFT">One of a set of values</TD>
+<TD ALIGN="LEFT">value</TD>
+</TR>
+<TR><TD ALIGN="LEFT">boolean</TD>
+<TD ALIGN="LEFT">Yes or no</TD>
+<TD ALIGN="LEFT">&nbsp;</TD>
+</TR>
+<TR><TD ALIGN="LEFT">set</TD>
+<TD ALIGN="LEFT">One or many of a set of values</TD>
+<TD ALIGN="LEFT">value, multiple</TD>
+</TR>
+<TR><TD ALIGN="LEFT">text</TD>
+<TD ALIGN="LEFT">Single line text field</TD>
+<TD ALIGN="LEFT">maxlength</TD>
+</TR>
+<TR><TD ALIGN="LEFT">multitext</TD>
+<TD ALIGN="LEFT">Multi-line text area</TD>
+<TD ALIGN="LEFT">displaylines</TD>
+</TR>
+<TR><TD ALIGN="LEFT">url</TD>
+<TD ALIGN="LEFT">URL</TD>
+<TD ALIGN="LEFT">&nbsp;</TD>
+</TR>
+<TR><TD ALIGN="LEFT">email</TD>
+<TD ALIGN="LEFT">E-mail address</TD>
+<TD ALIGN="LEFT">&nbsp;</TD>
+</TR>
+<TR><TD ALIGN="LEFT">pagerange</TD>
+<TD ALIGN="LEFT">Range of pages (or single page)</TD>
+<TD ALIGN="LEFT">&nbsp;</TD>
+</TR>
+<TR><TD ALIGN="LEFT">year</TD>
+<TD ALIGN="LEFT">Year</TD>
+<TD ALIGN="LEFT">&nbsp;</TD>
+</TR>
+<TR><TD ALIGN="LEFT">multiurl</TD>
+<TD ALIGN="LEFT">List of URLs</TD>
+<TD ALIGN="LEFT">displaylines</TD>
+</TR>
+<TR><TD ALIGN="LEFT">name</TD>
+<TD ALIGN="LEFT">A name (or list of names)</TD>
+<TD ALIGN="LEFT">multiple</TD>
+</TR>
+</TABLE>
+
+</DIV></TD></TR>
+</TABLE>
+</DIV><P></P>
+<BR>
+
+<P>
+The system holds some information internally about each eprint, so this need not and should not be duplicated in the site metadata:
+
+<P>
+
+<UL>
+<LI>Its ID
+</LI>
+<LI>Its type (from the local archive's options, e.g. journal paper)
+</LI>
+<LI>The <I>username</I> of the user who submitted the paper (the system does <I>not</I> assume this is equivalent to authorship)
+</LI>
+<LI>When it was submitted
+</LI>
+<LI>What full texts are stored, and where
+</LI>
+<LI>The subject categories in the subject hierarchy (though the hierarchy itself is of course archive-specific)
+</LI>
+<LI>The ID of any earlier version of the paper, and of any paper the eprint is a commentary on.
+</LI>
+</UL>
+
+<P>
+You can also decide what metadata should be held with user records. This can be set in the file <TT>cfg/metadata.user</TT>, with the same file format as used in<TT>cfg/metadata.eprints-fields</TT>. Note that the system always holds the username, password, e-mail address and registration date of each user, so you don't need to include these in <TT>metadata.user</TT>.
+
+<P>
+
+<H3><A NAME="SECTION00042100000000000000">
+4.2.1 Full Text Formats</A>
+</H3>
+
+<P>
+You can decide what document file formats you want to accept in the archive. Look at <TT>SiteInfo.pm</TT>.
+
+<P>
+<DL>
+<DT><STRONG>@EPrintSite::SiteInfo::supported_formats</STRONG></DT>
+<DD>is the list of supported formats (as IDs),
+</DD>
+<DT><STRONG>%EPrintSite::SiteInfo::supported_format_names</STRONG></DT>
+<DD>gives display names for each format,
+</DD>
+<DT><STRONG>@EPrintSite::SiteInfo::required_formats</STRONG></DT>
+<DD>Authors will have to upload at least one of the document types in this list, and
+</DD>
+<DT><STRONG>$EPrintSite::SiteInfo::allow_arbitrary_formats</STRONG></DT>
+<DD>If set, authors will be allowed to upload an arbitrary format that they'll have to name (for example a Word file.)
+</DD>
+</DL>
+
+<P>
+
+<H3><A NAME="SECTION00042200000000000000">
+4.2.2 Validation</A>
+</H3>
+
+<P>
+<TT>/opt/eprints/perl_lib/EPrintSite/Validate.pm</TT> contains routines which are called by the core code to ensure that uploaded information is valid. You should use these to put in any validation or integrity checks for submissions to your site. If any <TT>validate_xxx</TT> method returns a problem description string, it is shown to the user at the relevant point, and they will not be able to proceed further with the submission until the problem is fixed.
+
+<P>
+The comments in the file should make it clear where your checks need to go.
+
+<P>
+
+<H3><A NAME="SECTION00042300000000000000">
+4.2.3 Searching and Subscriptions</A>
+</H3>
+
+<P>
+In <TT>SiteInfo.pm</TT> you can also specify what metadata fields can be used to search for eprint records or users. There are four types of search on eprint records: Simple public search, advanced public search, staff search, and public subscription (alerting service). Only staff may search user records.
+
+<P>
+An array in <TT>SiteInfo.pm</TT> corresponds to each of those types of search. Just put the field names in (not the displayable name) the relevant array to allow them to be searched. A single search field can be used to search multiple metadata fields. To specify such a field, place the names of each field to be searched in one array element, separated by a forward slash. For example:
+
+<P>
+<PRE>
+@EPrintSite::SiteInfo::simple_search_fields =
+(
+   "title/abstract/keywords",
+   "authors",
+   "publication",
+   "year"
+);
+</PRE>
+
+<P>
+This means that in a simple public search, users are presented with four search fields. One searches the <TT>title</TT>, <TT>abstract</TT> and <TT>keywords</TT> fields, one searches the <TT>authors</TT> field, one the <TT>publication</TT> field and one the <TT>year</TT> field.
+
+<P>
+You can also specify the way that search results (and subscriptions) are ordered. A hash value maps descriptions of ordering algorithms onto specifications of those algorithms, for example:
+
+<P>
+<PRE>
+%EPrintSite::SiteInfo::eprint_order_methods =
+(
+   "by year (most recent first)" =&gt; "year DESC, authors, title",
+   "by year (oldest first)"      =&gt; "year ASC, authors, title",
+   "by author's name"            =&gt; "authors, year DESC, title",
+   "by title"                    =&gt; "title, authors, year DESC"
+);
+</PRE>
+
+<P>
+The first of these orders sorts results by descending year, then author's name<A NAME="tex2html6"
+  HREF="#foot454"><SUP>4</SUP></A>, then title. The default order if <TT>ASC</TT>ending or <TT>DESC</TT>ending are not specified is ascending.
+
+<P>
+A default order is given as a key to that hash, for example:
+
+<P>
+<PRE>
+$EPrintSite::SiteInfo::eprint_default_order = "by author's name";
+</PRE>
+
+<P>
+You can also specify in a similar manner the order to use for the <I>browse by subject</I> views.
+
+<P>
+
+<H3><A NAME="SECTION00042400000000000000">
+4.2.4 Open Archives Interoperability</A>
+</H3>
+
+<P>
+The <I>eprints.org</I> software has been written in such a way that enabling open archives functionality is as simple as possible<A NAME="tex2html7"
+  HREF="#foot394"><SUP>5</SUP></A>. The software includes the open archives subset of the <I>Dienst</I> software developed at Cornell University, and a core module <TT>OpenArchives.pm</TT> that mediates between an <I>eprints.org</I> archive and Dienst.
+
+<P>
+You only need to do two things. Firstly, you need to decide on and register an unique archive identifier, as explained at:
+
+<P>
+<PRE>
+http://www.openarchives.org/sfc/sfc_archives.htm
+</PRE>
+
+<P>
+Secondly, you need to map your metadata set with the Open Archives Metadata Set (OAMS). Even this is partially done for you, and if you decide to go with the default eprint metadata configuration supplied, you don't have to do this at all!
+
+<P>
+If you have changed the <I>eprints.org</I> metadata set, then you need to alter the <TT>oai_get_eprint_metadata</TT> method in <TT>SiteRoutines.pm</TT>. Just fill out a hash value with the values described in table <A HREF="#install_oams_hash">4</A>.
+
+<P>
+<BR><P></P>
+<DIV ALIGN="CENTER"><A NAME="455"></A>
+<TABLE>
+<CAPTION><STRONG>Table 4:</STRONG>
+ Configurable Open Archives Metadata Set Elements</CAPTION>
+<TR><TD>
+<DIV ALIGN="CENTER">
+<TABLE CELLPADDING=3 BORDER="1" ALIGN="CENTER">
+<TR><TD ALIGN="LEFT"><I>OAMS key</I></TD>
+<TD ALIGN="LEFT"><I>Value</I></TD>
+</TR>
+<TR><TD ALIGN="LEFT">title (required)</TD>
+<TD ALIGN="LEFT">Document title</TD>
+</TR>
+<TR><TD ALIGN="LEFT">author (required, repeatable)</TD>
+<TD ALIGN="LEFT">Document authors and organisations</TD>
+</TR>
+<TR><TD ALIGN="LEFT">abstract</TD>
+<TD ALIGN="LEFT">Document abstract</TD>
+</TR>
+<TR><TD ALIGN="LEFT">subject (repeatable)</TD>
+<TD ALIGN="LEFT">Subject of document</TD>
+</TR>
+<TR><TD ALIGN="LEFT">comment (repeatable)</TD>
+<TD ALIGN="LEFT">Any extra information</TD>
+</TR>
+<TR><TD ALIGN="LEFT">discovery</TD>
+<TD ALIGN="LEFT">Date for discovery (e.g. journal issue date)</TD>
+</TR>
+</TABLE>
+
+</DIV></TD></TR>
+</TABLE>
+</DIV><P></P>
+<BR>
+
+<P>
+Further information about the OAMS can be found at:
+
+<P>
+<PRE>
+http://www.openarchives.org/sfc/sfc_oams.htm
+</PRE>
+
+<P>
+Further information about open archiving in general can be found at:
+
+<P>
+<PRE>
+http://www.openarchives.org/
+</PRE>
+
+<P>
+
+<H2><A NAME="SECTION00043000000000000000">
+4.3 Site Look and Feel</A>
+</H2>
+
+<P>
+You can change the whole look and feel of the site by altering the HTML header and tail in <TT>SiteInfo.pm</TT>. These are applied to every Web page presented by the system, with the exception of those static (information) pages you decide not to apply them to.
+
+<P>
+You can put any static HTML you want on the archive site. The default pages include a staff menu page, a front page with the <I>eprints.org</I> logo, a general information page, and a registration instructions page<A NAME="tex2html9"
+  HREF="#foot418"><SUP>6</SUP></A>. Just put your HTML files in the <TT>eprints/static</TT> directory. The <TT>generate_static</TT> script will pick the HTML files up and install them in the <TT>eprints/html</TT> directory, adding the header and footer if appropriate.
+
+<P>
+If an HTML file in the <TT>static</TT> directory doesn't have an HTML header, but starts with a line of the form:
+
+<P>
+<PRE>
+TITLE: Document Title
+</PRE>
+
+<P>
+then the site HTML header and footer is given to the document and the document given the title ``Document Title''. In this case, don't put any <TT>&lt;DOCTYPE&gt;</TT>, <TT>&lt;HTML&gt;</TT>, <TT>&lt;HEAD&gt;</TT> or <TT>&lt;BODY&gt;</TT> elements in the document.
+
+<P>
+If a file has an HTML header, then the header is left alone.
+
+<P>
+Additionally, you can put in the HTML files a variety of placeholders that will be replaced by relevant values by the <TT>generate_static</TT> script. These are shown in table <A HREF="#install_placeholders">5</A>. These substitutions will be made in files with or without HTML headers. It is recommended that you use these placeholders whenever possible.
+
+<P>
+<BR><P></P>
+<DIV ALIGN="CENTER"><A NAME="456"></A>
+<TABLE>
+<CAPTION><STRONG>Table 5:</STRONG>
+ Placeholders in Static HTML Pages</CAPTION>
+<TR><TD>
+<DIV ALIGN="CENTER">
+<TABLE CELLPADDING=3 BORDER="1" ALIGN="CENTER">
+<TR><TD ALIGN="LEFT"><I>Placeholder</I></TD>
+<TD ALIGN="LEFT"><I>Replaced With</I></TD>
+</TR>
+<TR><TD ALIGN="LEFT">__sitename__</TD>
+<TD ALIGN="LEFT">name of the site</TD>
+</TR>
+<TR><TD ALIGN="LEFT">__admin__</TD>
+<TD ALIGN="LEFT">admin email address</TD>
+</TR>
+<TR><TD ALIGN="LEFT">__automail__</TD>
+<TD ALIGN="LEFT">email address of automatic mail processing account</TD>
+</TR>
+<TR><TD ALIGN="LEFT">__perlroot__</TD>
+<TD ALIGN="LEFT">URL of perl server</TD>
+</TR>
+<TR><TD ALIGN="LEFT">__staticroot__</TD>
+<TD ALIGN="LEFT">URL of static HTTP server</TD>
+</TR>
+<TR><TD ALIGN="LEFT">__frontpage__</TD>
+<TD ALIGN="LEFT">URL of site front page</TD>
+</TR>
+<TR><TD ALIGN="LEFT">__subjectroot__</TD>
+<TD ALIGN="LEFT">where on the server the browse by subject views are</TD>
+</TR>
+<TR><TD ALIGN="LEFT">__version__</TD>
+<TD ALIGN="LEFT">EPrints software version</TD>
+</TR>
+</TABLE>
+
+</DIV></TD></TR>
+</TABLE>
+</DIV><P></P>
+<BR>
+
+<P>
+You can also place arbitrary elements in the <TT>&lt;HEAD&gt;</TT> elements of all pages (for example, to add a style sheet) by adding them to the <TT>@html_head_elements</TT> variable in <TT>SiteInfo.pm</TT>. You need to add them verbatim, for example:
+
+<P>
+<PRE>
+@EPrintSite::SiteInfo::html_head_elements = (
+	'&lt;META NAME="description" CONTENT="EPrint Archive Page"&gt;',
+	'&lt;META NAME="keywords" CONTENT="Open Preprint Archive"&gt;' );
+</PRE>
+
+<P>
+
+<H3><A NAME="SECTION00043100000000000000">
+4.3.1 References and Abstract Pages</A>
+</H3>
+
+<P>
+In <TT>/opt/eprints/perl_lib/EPrintSite/SiteRoutines.pm</TT> you can modify or replace the default code for displaying each eprint's abstract page, title and full reference. Also there is code for displaying a user's full name, and their full record. The comments in the code should make the task of programming any necessary changes straightforward.
+
+<P>
+The <I>eprints.org</I> core code provides a method for easing the creation of references. See the examples at the top of the default <TT>SiteRoutines.pm</TT>, and the comments in <TT>perl_lib/EPrints/Citation.pm</TT> instructions on how to use it.
+
+<P>
+<BR><HR><H4>Footnotes</H4>
+<DL>
+<DT><A NAME="footfnm1">...
+sendmail<SUP>1</SUP></A>
+<DD>
+
+<DT><A NAME="foot173">...<TT>eprints/bin</TT></A><A NAME="foot173"
+ HREF="eprints-install.html#tex2html2"><SUP>2</SUP></A>
+<DD>This, and other file system path-related issues, should be handled more automatically by an installation script in later versions.
+
+<DT><A NAME="foot283">... browsable</A><A NAME="foot283"
+ HREF="eprints-install.html#tex2html3"><SUP>3</SUP></A>
+<DD>A search will always pick up any eprint in the system as soon as it's accepted into the archive.
+
+<DT><A NAME="foot454">... name</A><A NAME="foot454"
+ HREF="eprints-install.html#tex2html6"><SUP>4</SUP></A>
+<DD>The system knows to sort names by surname, provided that the relevant metadata field is of the type <I>name</I>.
+
+<DT><A NAME="foot394">... possible</A><A NAME="foot394"
+ HREF="eprints-install.html#tex2html7"><SUP>5</SUP></A>
+<DD>The Open Archives protocol is set to change, so this section will change. However, due to the design of the API the changes should be minimal.
+
+<DT><A NAME="foot418">... page</A><A NAME="foot418"
+ HREF="eprints-install.html#tex2html9"><SUP>6</SUP></A>
+<DD>The final release will include several help files for the submission process.
+
+</DL>
+<BR><HR>
+<ADDRESS>
+Robert Tansley
+2000-11-08
+</ADDRESS>
