@@ -10,6 +10,7 @@ code:
 	* make most , including url, allow multiples
 	* make add_record and update understand multi's
 	* make everything else understand them...
+	* make index length configurable
 
 * userid field sepearate to username
    + only if conf option is set.
