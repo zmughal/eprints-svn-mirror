@@ -45,12 +45,35 @@ foreach $file (@files)
 }
 
 print "Making tarfile...\n";
-chdir $originaldir."/export";
-system("mv eprints/system $originaldir/package/eprints")==0 or die("Couldn't move system dir.\n");
+chdir $originaldir."/package";
+
+print "Making dirs...\n";
+
+open(DIRCONF, "$originaldir/conf/dirs.conf");
+while(<DIRCONF>)
+{
+	chomp;
+	mkdir($_);
+}
+close(DIRCONF);
+
+print "Copying files...\n";
+
+open(FILECONF, "$original/conf/files.conf");
+while(<FILECONF>)
+{
+	chomp;
+	/(.*)\t(.*)/
+	print "Copying $1 to $2\n";
+	system("cp $originaldir/export/$1 $2");
+}
+close(FILECONF);
+
+#system("mv eprints/system $originaldir/package/eprints")==0 or die("Couldn't move system dir.\n");
 chdir $originaldir."/package";
 
 # Add documents dir
-mkdir("eprints/html/documents");
+# mkdir("eprints/html/documents");
 
 # Move library directories.
 mkdir("eprints/perl_lib");
