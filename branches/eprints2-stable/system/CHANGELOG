@@ -1960,3 +1960,10 @@ PACKAGE: 2.2.99.2
  - added config option 'shorturl' to make the short version the
     canonnical one. 
 
+2004-08-06 cjg
+
+ - Added code to SQL prepare and do so that it tries to reconnect
+    if the mysql connection goes away (not yet for 'execute' however)
+ - Modified Fulltext field type to cache extracted index codes to
+    reduce CPU load.
+

@@ -48,17 +48,75 @@ sub is_browsable
 sub get_value
 {
 	my( $self, $object ) = @_;
-
 	my @docs = $object->get_all_documents;
 	my $r = [];
 	foreach my $doc ( @docs )
 	{
-		my $text = $doc->get_text;
-		push @{$r}, $text;
+		push @{$r}, "_FULLTEXT_:".$doc->get_id;
 	}
 	return $r;
 }
 
+sub get_index_codes_basic
+{
+	my( $self, $session, $value ) = @_;
+
+	if( $value !~ s/^_FULLTEXT_:// )
+	{
+		return $self->SUPER::get_index_codes_basic( $session, $value );
+	}
+	my $doc = EPrints::Document->new( $session, $value );
+
+
+	my $eprint =  $doc->get_eprint;
+	return( [], [], [] ) unless( defined $eprint );
+
+	my $words_file = $eprint->local_path."/". $doc->get_value( "docid" ).".words";
+	my $indexcodes_file = $eprint->local_path."/". $doc->get_value( "docid" ).".indexcodes";
+	my @s1 = stat( $words_file );
+	my @s2 = stat( $indexcodes_file );
+
+	if( !defiend $s1[9] ) 
+	{ 
+		# no words file!
+		return( [], [], [] );
+	}
+
+    if( defined $s2[9] && $s2[9] > $s1[9] )
+	{
+		my $codes = [];
+		unless( open( CODELOG, $indexcodes_file ) )
+		{
+			$session->get_archive->log( "Failed to open $indexcodes_file: $!" );
+		}
+		else
+		{
+			foreach( <CODELOG> ) { chomp; push @$codes, $_; }
+			close CODELOG;
+		}
+		return( $codes, [], [] );
+	}
+
+	$value = $doc->get_text;
+	my( $codes, $badwords ) = ( [], [] );
+	if( EPrints::Utils::is_set( $value ) )
+	{
+		( $codes, $badwords ) = EPrints::MetaField::Text::_extract_words( $session, $value );
+	}
+	
+	unless( open( CODELOG, ">".$indexcodes_file ) )
+	{
+		$session->get_archive->log( "Failed to write to $indexcodes_file: $!" );
+	}
+	else
+	{
+		print CODELOG join( "\n", @$codes );
+		close CODELOG;
+	}
+		
+	# does not return badwords
+	return( $codes, [], [] );
+}
 
 
 ######################################################################

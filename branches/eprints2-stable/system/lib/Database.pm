@@ -136,35 +136,50 @@ sub new
 	bless $self, $class;
 	$self->{session} = $session;
 
-	# Connect to the database
-	$self->{dbh} = DBI->connect( 
-		build_connection_string( 
-			dbhost => $session->get_archive()->get_conf("dbhost"),
-			dbsock => $session->get_archive()->get_conf("dbsock"),
-			dbport => $session->get_archive()->get_conf("dbport"),
-			dbname => $session->get_archive()->get_conf("dbname") ),
-	        $session->get_archive()->get_conf("dbuser"),
-	        $session->get_archive()->get_conf("dbpass") );
+	$self->connect;
 
-#	        { PrintError => 0, AutoCommit => 1 } );
-
-	if( !defined $self->{dbh} )
-	{
-		return( undef );
-	}
+	if( !defined $self->{dbh} ) { return( undef ); }
 
 	$self->{debug} = $DEBUG_SQL;
 	if( $session->{noise} == 3 )
 	{
 		$self->{debug} = 1;
 	}
-	if( $session->{noise} >= 4 )
-	{
-		$self->{dbh}->trace( 2 );
-	}
 
 
 	return( $self );
+}
+
+######################################################################
+=pod
+
+=item $foo = $db->connect
+
+Connects to the database. 
+
+=cut
+######################################################################
+
+sub connect
+{
+	my( $self ) = @_;
+
+	# Connect to the database
+	$self->{dbh} = DBI->connect( 
+		build_connection_string( 
+			dbhost => $self->{session}->get_archive()->get_conf("dbhost"),
+			dbsock => $self->{session}->get_archive()->get_conf("dbsock"),
+			dbport => $self->{session}->get_archive()->get_conf("dbport"),
+			dbname => $self->{session}->get_archive()->get_conf("dbname") ),
+	        $self->{session}->get_archive()->get_conf("dbuser"),
+	        $self->{session}->get_archive()->get_conf("dbpass") );
+
+	return unless defined $self->{dbh};	
+
+	if( $self->{session}->{noise} >= 4 )
+	{
+		$self->{dbh}->trace( 2 );
+	}
 }
 
 
@@ -1820,10 +1835,29 @@ sub do
 		$self->{session}->get_archive()->log( "Database execute debug: $sql" );
 	}
 	my $result = $self->{dbh}->do( $sql );
-
-	if ( !$result ) 
+	if( !$result )
 	{
 		$self->{session}->get_archive()->log( "SQL ERROR (do): $sql" );
+		$self->{session}->get_archive()->log( "SQL ERROR (do): ".$self->{dbh}->errstr.' (#'.$self->{dbh}->err.')' );
+
+		return undef unless( $self->{dbh}->err == 2006 );
+
+		my $ccount = 0;
+		while( $ccount < 10 )
+		{
+			++$ccount;
+			sleep 3;
+			$self->{session}->get_archive()->log( "Attempting DB reconnect: $ccount" );
+			$self->connect;
+			if( defined $self->{dbh} )
+			{
+				$result = $self->{dbh}->do( $sql );
+				return $result if( defined $result );
+				$self->{session}->get_archive()->log( "SQL ERROR (do): ".$self->{dbh}->errstr );
+			}
+		}
+		$self->{session}->get_archive()->log( "Giving up after 10 tries" );
+		return undef;
 	}
 
 	return $result;
@@ -1850,10 +1884,30 @@ sub prepare
 #	}
 
 	my $result = $self->{dbh}->prepare( $sql );
-
-	if ( !$result ) 
+	my $ccount = 0;
+	if( !$result )
 	{
 		$self->{session}->get_archive()->log( "SQL ERROR (prepare): $sql" );
+		$self->{session}->get_archive()->log( "SQL ERROR (prepare): ".$self->{dbh}->errstr.' (#'.$self->{dbh}->err.')' );
+
+		return undef unless( $self->{dbh}->err == 2006 );
+
+		my $ccount = 0;
+		while( $ccount < 10 )
+		{
+			++$ccount;
+			sleep 3;
+			$self->{session}->get_archive()->log( "Attempting DB reconnect: $ccount" );
+			$self->connect;
+			if( defined $self->{dbh} )
+			{
+				$result = $self->{dbh}->prepare( $sql );
+				return $result if( defined $result );
+				$self->{session}->get_archive()->log( "SQL ERROR (prepare): ".$self->{dbh}->errstr );
+			}
+		}
+		$self->{session}->get_archive()->log( "Giving up after 10 tries" );
+		return undef;
 	}
 
 	return $result;
@@ -1881,10 +1935,11 @@ sub execute
 	}
 
 	my $result = $sth->execute;
-
-	if ( !$result ) 
+	while( !$result )
 	{
 		$self->{session}->get_archive()->log( "SQL ERROR (execute): $sql" );
+		$self->{session}->get_archive()->log( "SQL ERROR (execute): ".$self->{dbh}->errstr );
+		return undef;
 	}
 
 	return $result;
