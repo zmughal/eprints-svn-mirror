@@ -1,6 +1,8 @@
 #!/usr/bin/perl
 
-@files = ( 
+use strict;
+
+my @ids = ( 
 	"intro", 
 	"reqsoftware", 
 	"installation", 
@@ -22,7 +24,7 @@
 	"!import_subjects",
 	"!reindex"
 );
-%titles = (
+my %titles = (
 	intro => "Introduction",
 	reqsoftware => "Required Software",
 	installation => "How to Install EPrints (and get started)",
@@ -34,12 +36,15 @@
 	logo => "The EPrints Logo"
 );
 
-%filemap = ();
-foreach( @files )
+`rm -rf binpod`;
+`mkdir binpod`;
+my %filemap = ();
+foreach( @ids )
 {
 	if( s/^!// )
 	{
-		$filemap{$_} = "../system/bin/$_";
+		$filemap{$_} = "binpod/$_";
+		`grep -v __GENERICPOD__ ../system/bin/$_ > binpod/$_`;
 		$titles{$_} = "$_ command";
 	}
 	else
@@ -61,8 +66,9 @@ my $BASENAME = "eprints-2.0-docs";
 
 use Pod::Text;
 
-$parser = Pod::Text->new( sentance=>0, width=>78 );
-foreach $id ( @files )
+my $parser = Pod::Text->new( sentance=>0, width=>78 );
+my $id;
+foreach $id ( @ids )
 {
 	$parser->parse_from_file( $filemap{$id}, "tmp/$id.txt" );
 }
@@ -76,11 +82,11 @@ $DOCTITLE
 
 Contents:
 END
-foreach $id ( @files )
+foreach $id ( @ids )
 {
 	print OUT " - ".$titles{$id}."\n";
 }
-foreach $file ( @id )
+foreach $id ( @ids )
 {
 	print OUT <<END;
 
@@ -95,9 +101,8 @@ END
 }
 close OUT;
 
-exit;
 ##########################################################################
-# PDF
+# PDF & Postscript
 
 use Pod::LaTeX;
 
@@ -105,10 +110,23 @@ $parser = Pod::LaTeX->new(
 	AddPreamble=>0,
 	AddPostamble=>0
 );
-foreach $file ( @files )
+my $parser2 = Pod::LaTeX->new(
+	Head1Level=>3,
+	AddPreamble=>0,
+	AddPostamble=>0
+);
+foreach $id ( @ids )
 {
-	print "($file)\n";
-	$parser->parse_from_file( "pod/$file.pod", "tmp/$file.tex" );
+	print "($id)\n";
+	if( $filemap{$id} =~ m/binpod/ )
+	{
+		$parser2->parse_from_file( $filemap{$id}, "tmp/$id.tex.old" );
+		`sed 's/\\section{/\\section\*{/' tmp/$id.tex.old > tmp/$id.tex`;
+	}
+	else
+	{
+		$parser->parse_from_file( $filemap{$id}, "tmp/$id.tex" );
+	}
 }
 open( OUT, ">tmp/$BASENAME.tex" );
 print OUT <<END;
@@ -122,13 +140,27 @@ print OUT <<END;
 \\maketitle
 \\tableofcontents
 END
-foreach $file ( @files )
+my $inbin = 0;
+foreach $id ( @ids )
 {
-	print OUT "\\chapter{$titles{$file}}\n";
-	open( IN, "tmp/".$file.".tex" );
+	if( $filemap{$id} =~ m/binpod/ )
+	{
+		unless( $inbin )
+		{
+			print OUT "\\chapter{Command Line Tools}\n";
+		}
+		$inbin = 1;
+	}
+
+	my $title = $titles{$id};
+	$title =~ s/_/\\_/g;
+	my $l = $inbin ? "section" : "chapter";
+	print OUT "\\".$l."{$title}\n";
+	open( IN, "tmp/".$id.".tex" );
 	while( <IN> ) { print OUT $_; }
 	close IN;
 }
+
 print OUT <<END;
 \\end{document}
 END
@@ -156,13 +188,13 @@ foreach( @commands )
 use Pod::Html;
 mkdir( '../docs/html' );
 `cp ../images/* ../docs/html`;
-foreach $file ( @files )
+foreach $id ( @ids )
 {
-        print "($file)\n";
+        print "($id)\n";
 	pod2html( 
-		"--title=".$DOCTITLE." - ".$titles{$file},
-		"--infile=../pod/$file.pod", 
-		"--outfile=../docs/html/$file.html",
+		"--title=".$DOCTITLE." - ".$titles{$id},
+		"--infile=../$filemap{$id}",
+		"--outfile=../docs/html/$id.html",
 		"--header",
 		"--css=epdocs.css"
 	);
@@ -174,7 +206,7 @@ print INDEX <<END;
 <head>
 <title>$DOCTITLE</title>
 <link REL="stylesheet" HREF="epdocs.css" TYPE="text/css">
-<link REV="made" HREF="mailto:root@lemur.ecs.soton.ac.uk">
+<link REV="made" HREF="mailto:root\@lemur.ecs.soton.ac.uk">
 </head>
 
 <body>
@@ -186,9 +218,9 @@ print INDEX <<END;
 <h1>$DOCTITLE: Index</h1>
 <ul>
 END
-foreach $file ( @files )
+foreach $id ( @ids )
 {
-	print INDEX "<li><a href=\"$file.html\">".$titles{$file}."</a></li>\n";
+	print INDEX "<li><a href=\"$id.html\">".$titles{$id}."</a></li>\n";
 }
 print INDEX <<END;
 </ul>
@@ -210,7 +242,8 @@ close INDEX;
 # This just copies in the POD docs!
 
 mkdir( '../docs/pod' );
-foreach $file ( @files )
+foreach $id ( @ids )
 {
-	`cp ../pod/$file.pod ../docs/pod`;
+	next if( $filemap{$id} =~ m/binpod/ );
+	`cp ../$filemap{$id} ../docs/pod`;
 }
