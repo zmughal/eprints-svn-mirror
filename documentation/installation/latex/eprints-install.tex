@@ -2,10 +2,10 @@
 
 % $Id$
 
-\title{eprints.org Archive Software Installation Document}
+\title{Eprints Archive Software Installation Document}
 \author{Robert Tansley}
 
-\newcommand{\eprints}{\emph{eprints.org}}
+\newcommand{\eprints}{\emph{Eprints}}
 
 \begin{document}
 
@@ -13,34 +13,46 @@
 
 \section{Introduction}
 
-This document explains how to set up and install an \eprints\ archive on a UNIX system. The instructions should allow users to install the archive on any UNIX implementation, such as Solaris, SGI IRIX or Linux. In addition to generic instructions, specific instructions are also given on how to install the system on a Redhat 6.\emph{x} Linux system, the recommended platform on which to run the \eprints\ software.
+This document explains how to set up and install an \eprints\ archive on a UNIX system. The instructions should allow users to install the archive on any UNIX implementation, such as Solaris, SGI IRIX or Linux. In addition to generic instructions, specific instructions are also given on how to install the system on a Redhat Linux system.
 
 Although this document is rather large, much of it is to do with configuring various aspects of the system. If you are happy with the default metadata sets and site look and feel, you won't have to work through all of it.
 
 
-\subsection{Beta Release Note}
+\subsection{Making Suggestions, Bug Reports and Support}
 
-Many of the procedures in this installation document might change for the main release. If and when you install a production server, you should obtain the relevant installation document for that version.
+Hopefully this document will provide enough information for you to install and configure an \eprints\ archive for your department or institution. Extensive system documentation will be released before the end of November 2000.
 
-It is hoped that in later versions, much of the installation process will be automated, reducing the effort involved in this process greatly.
+If you have any problems, or encounter any bugs in the system, please use the bug tracking system:
 
-The Open Archives Initiative protocol is about to change. At the moment, the core code only supports the old Santa Fe convention protocol (the Dienst subset) and OAMS, the Open Archives Metadata Set. However, the site-specific API in {\tt SiteRoutines.pm} is hopefully stable which means you just have to upgrade the core code to support new versions of the protocol.
+\begin{verbatim}
+http://bugs.eprints.org/
+\end{verbatim}
+
+Please ensure that the bug has not already been reported before submitting a report. Also, please ensure that you submit each individual problem in a separate report.
+
+The tracker also features a ``wishlist'' where you can submit suggestions for improvements and modifications to the software.
+
+If you have any further queries, please contact:
+
+\begin{description}
+\item[{\tt support@eprints.org}] for technical queries
+\item[{\tt info@eprints.org}] for more general information about the project
+\end{description}
 
 
-\subsection{Upgrading from Beta-1}
+\subsection{Upgrading from a beta version}
 
-If you are upgrading from version beta-1, and you want to port across code and/or configuration options, it might be easiest to make a backup of the old version, install the new version afresh and copy the changes across. Here are some points you should be aware of:
+If you're upgrading from version Beta-2, using the automatic installer should work, thouh as is always sensible, it may be wise to make a backup of the old version. You will need to create the deletions database table, in MySQL:
 
-\begin{itemize}
-\item The prerequisite software is largely the same, but you'll need to install Unicode-String-2.\emph{xx} from CPAN.
-\item The directory structure and method of linking into Perl have changed slightly. You should remove the {\tt EPrints} and {\tt EPrintSite} symlinks from the {\tt /usr/lib/perl5/site\_perl} directory (or equivalent). Note also that you have to define the {\tt PERL5LIB} variable in various places (the crontab and the {\tt .procmailrc}) so that the libraries are picked up.
-\item The {\tt referencetext} metadata field has been added. If you want to keep the data you have and add this field, you can add the field manually to the {\tt inbox}, {\tt buffer} and {\tt archive} tables in MySQL, and add the referencetext field to {\tt cfg/metadata.eprint-types} and {\tt cfg/metadata.eprint-fields}. This also applies to the {\tt expertise} field in {\tt metadata.user} and the {\tt users} table.
-\item In anticipation of impending changes to the Open Archives protocol, the core code/site code interface has changed slightly. In {\tt SiteRoutines.pm}, instead of {\tt eprint\_get\_oams}, there are now two open archives functions, {\tt oai\_list\_metadata\_formats} and {\tt oai\_get\_eprint\_metadata}. At the moment, however, the core software only supports OAMS, so you'll need to export that.
-\item Feel free to send any questions you have to {\tt support@eprints.org}.
-\end{itemize}
-
-
+\begin{verbatim}
+CREATE TABLE deletions (eprintid VARCHAR(255) NOT NULL,
+  replacement VARCHAR(255), subjects TEXT, deletiondate
+  DATE, PRIMARY KEY (eprintid));
+\end{verbatim}
 
 \input{eprints-install-body}
+
+
+
 
 \end{document}
