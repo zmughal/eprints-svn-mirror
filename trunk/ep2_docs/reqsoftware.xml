@@ -1,0 +1,156 @@
+<chapter><title>What software does &ep2; need? Where do I get it?</title>
+<sect1><title>Major Packages</title>
+
+<sect2><title>Apache/mod_perl</title>
+<para>
+The Apache HTTP server was designed as a plug-in replacement for the NCSA server (version 1.4). It fixes numerous bugs in the NCSA server, and includes many new features - including an API to make user extension easier. EPrints requires Apache to be configured with mod_perl, as this allows Apache modules that are entirely written in perl, hence providing much improved efficiency.
+</para>
+<para>
+Downloads
+<itemizedlist mark="opencircle">
+<listitem><ulink>http://httpd.apache.org/dist/httpd/</ulink></listitem>
+</itemizedlist>
+</para>
+</sect2>
+
+<formalpara>
+<title>PERL v5.6.0</title>
+<section>
+<title>Description</title>
+
+</section>
+<section>
+<procedure>
+<title>Installation</title>
+<step><para>Do foo</para></step>
+<step><para>Then foo</para></step>
+</procedure>
+</section>
+</formalpara>
+
+<formalpara>
+<title>MySQL 3.23.39</title>
+<para>
+</para>
+</formalpara>
+
+<formalpara>
+<title>MySQL 3.23.39</title>
+<para>
+</para>
+</formalpara>
+
+</sect1>
+<sect1><title>Minor Packages</title>
+<formalpara>
+<title>GCC 2.96</title>
+<para>
+</para>
+</formalpara>
+
+<formalpara>
+<title>Make 3.79.1</title>
+<para>
+</para>
+</formalpara>
+
+<formalpara>
+<title>Tar 1.13.19</title>
+<para>
+</para>
+</formalpara>
+
+<formalpara>
+<title>GZip 1.2.4</title>
+<para>
+</para>
+</formalpara>
+
+<formalpara>
+<title>WGet 1.7</title>
+<para>
+</para>
+</formalpara>
+</sect1>
+
+<sect1><title>Perl Modules</title>
+<formalpara>
+<title>CGI</title>
+<para>
+</para>
+</formalpara>
+
+<formalpara>
+<title>Data::Dumper</title>
+<para>
+</para>
+</formalpara>
+
+<formalpara>
+<title>DBI</title>
+<para>
+</para>
+</formalpara>
+
+<formalpara>
+<title>Msql-Mysql modules</title>
+<para>
+</para>
+</formalpara>
+
+<formalpara>
+<title>Filesys::DiskSpace</title>
+<para>
+</para>
+</formalpara>
+
+<formalpara>
+<title>MIME-Base64</title>
+<para>
+</para>
+</formalpara>
+
+<formalpara>
+<title>Unicode::String</title>
+<para>
+</para>
+</formalpara>
+
+<formalpara>
+<title>URI</title>
+<para>
+</para>
+</formalpara>
+
+<formalpara>
+<title>Apache::AuthDBI</title>
+<para>
+</para>
+</formalpara>
+
+<formalpara>
+<title>HTML::Parser</title>
+<para>
+</para>
+</formalpara>
+
+<formalpara>
+<title>LWP</title>
+<para>
+</para>
+</formalpara>
+
+<formalpara>
+<title>XML::Parser</title>
+<para>
+</para>
+</formalpara>
+
+<formalpara>
+<title>libxml-enno</title>
+<para>
+</para>
+</formalpara>
+
+</sect1>
+</chapter>
