@@ -277,10 +277,19 @@ sub encodeText
 {
     my ($str, $default) = @_;
     return undef unless defined $str;
-    
-    $str =~ s/([\xC0-\xDF].|[\xE0-\xEF]..|[\xF0-\xFF]...)|([$default])|(]]>)/
-	defined($1) ? XmlUtf8Decode ($1) : 
-	defined ($2) ? $DecodeDefaultEntity{$2} : "]]&gt;" /egs;
+
+############
+    if ($] >= 5.006) {
+      no bytes; # Fixes error while trying to process "\"ü"
+      $str =~ s/([$default])|(]]>)/
+        defined ($1) ? $DecodeDefaultEntity{$1} : "]]&gt;" /egs;
+    }
+############
+    else {
+       $str =~ s/([\xC0-\xDF].|[\xE0-\xEF]..|[\xF0-\xFF]...)|([$default])|(]]>)/
+	   defined($1) ? XmlUtf8Decode ($1) : 
+	   defined ($2) ? $DecodeDefaultEntity{$2} : "]]&gt;" /egs;
+    }
 
 #?? could there be references that should not be expanded?
 # e.g. should not replace &#nn; &#xAF; and &abc;

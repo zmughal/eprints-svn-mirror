@@ -1,4 +1,4 @@
-<?xml version="1.0" standalone="no" ?>
+<?xml version="1.0" encoding="iso-8859-1"  standalone="no"  ?>
 <!DOCTYPE page SYSTEM "entities-en.dtd" >
 <ep:page
         xmlns="http://www.w3.org/1999/xhtml"
@@ -10,16 +10,18 @@
 
 <p><a href="information.html">More information</a> is available about the archive.</p>
 
-&ruler;
-
+&ruler; 
 <div align="center">
-<form method="get" accept-charset="utf-8" action="/perl/search">
-<b>Search the Titles, Abstracts and Keywords</b><br />
-<input accept-charset="utf-8" size="40" type="text" name="abstract/keywords/title" /> 
+<form method="get" accept-charset="utf-8" action="&perl_url;/search">
+<table cellspacing="0" cellpadding="4">
+<tr><td align="right">Search records:</td><td><input accept-charset="utf-8" size="40" type="text" name="meta" /></td></tr>
+<tr><td align="right">Search full text:</td><td><input accept-charset="utf-8" size="40" type="text" name="full" /></td>
+<td><input class="actionbutton" value="Search" type="submit" name="_action_search" /> </td>
+</tr>
+</table>
 <input type="hidden" name="_order" value="bytitle" />
-<input type="hidden" name="abstract/keywords/title_srchtype" value="ALL" />
+<input type="hidden" name="basic_srchtype" value="ALL" />
 <input type="hidden" name="_satisfyall" value="ALL" />
-<input class="actionbutton" value="Search" type="submit" name="_action_search" /> 
 </form>
 </div>
 
