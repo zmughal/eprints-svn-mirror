@@ -49,3 +49,19 @@ Subject.pm
 * Added prefix letters to language file to denote usage. Ignored by cfg reader.
 * More internationalisation - modified way buttons work in SubmissionForm.pm
 to allow them to vary with language.
+
+Mon Feb 19 22:03:36 GMT 2001
+* Removed multiurl type - will become url: multiple=yes
+* Changed Username from TEXT to VARCHAR(255)
+* Changed create table code to make Aux tables for multiple fields!
+* update() and add_record() now take an array ref for data rather than an array of arrays. Still don't handle aux tables yet. Updated all code using these methods.
+* removed: 
+  get_user_fields 
+  get_document_fields 
+  get_subject_fields 
+  get_subscription_fields 
+  get_deletion_fields 
+  get_all_eprint_fields 
+ and replaced them with get_fields( $table ) which allows for some neater
+coding and to identify fields by table in update() and add_record(). Updated
+all code using these methods.
