@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+#!/usr/bin/perl -w -I/opt/ep2stable/perl_lib
 
 ######################################################################
 #
@@ -30,9 +30,9 @@ Or elsewhere if you installed EPrints somewhere other than /opt/eprints2. This f
 
 By default the virtualhost directives are
 
- <VirtualHost *>
+ VirtualHost *
 
-But the * can be changed to something different by editing the <virtualhost> option in SystemSettings.pm
+But the * can be changed to something different by editing the C<virtualhost> option in SystemSettings.pm
 
 =head1 ARGUMENTS
 
@@ -147,7 +147,7 @@ my $site_userfile = EPrints::Config::get( "cfg_path" )."/apache.conf";
 print "Creating system wide apache conf files.\n" if( $noise >= 1 );
 unless( -e $site_userfile )
 {
-	print "Creating $site_userfile.\n" if( $noise >= 2 );
+	print "Creating $site_userfile\n" if( $noise >= 2 );
 	open( CONF, ">$site_userfile" ) || die "Can't write to $site_userfile";
 	print CONF <<END;
 #
@@ -184,7 +184,7 @@ if( !EPrints::Utils::is_set( $virtualhost ) )
 	$virtualhost = '*';
 }
 
-print "Creating $site_sysfile.\n" if( $noise >= 2 );
+print "Creating $site_sysfile\n" if( $noise >= 2 );
 my $startupfile = EPrints::Config::get( "bin_path" )."/startup.pl";
 open( CONF, ">$site_sysfile" ) || die "Can't write to $site_sysfile";
 print CONF <<END;
@@ -196,21 +196,39 @@ print CONF <<END;
 # and re-run: bin/generate_apacheconf
 #
 
-NameVirtualHost $virtualhost
-
-# If the apache configuration is reloaded the the
-# perl modules (and therefore archive configurations)
-# must be reloaded too.
-PerlFreshRestart  On
-
 # Load the perl modules & archive configurations
 PerlRequire $startupfile
 
 END
+my %portlist = ();
+foreach my $archiveid ( EPrints::Config::get_archive_ids() )
+{
+	my $archive = EPrints::Archive->new_archive_by_id( $archiveid, 1 );
+	exit( 1 ) unless( defined $archive );
+	$portlist{$archive->get_conf( 'port' )} = 1;
+}
+foreach my $port ( keys %portlist )
+{
+	print CONF "NameVirtualHost $virtualhost:$port\n";
+}
+print CONF "\n";
+
+my $av =  $EPrints::SystemSettings::conf->{apache};
+if( defined $av && $av eq "2" )
+{
+	# apache 2
+	print CONF <<END;
+# Makes the request object accessable for other objects
+# (apache 2.0 only)
+PerlOptions +GlobalRequest
+
+END
+}
 close CONF;
 
+########################################
 
-print "Creating $site_incfile.\n" if( $noise >= 2 );
+print "Creating $site_incfile\n" if( $noise >= 2 );
 open( CONF, ">$site_incfile" ) || die "Can't write to $site_incfile";
 print CONF <<END;
 #
@@ -251,8 +269,6 @@ close CONF;
 my $secureconfigs = {};
 foreach my $archiveid ( EPrints::Config::get_archive_ids() )
 {
-
-
 my $archive = EPrints::Archive->new_archive_by_id( $archiveid, 1 );
 exit( 1 ) unless( defined $archive );
 
@@ -262,10 +278,10 @@ my $vhostfile = $archive->get_conf( "config_path" )."/apachevhost.conf";
 
 my $id = $archive->get_id();
 
-print "Creating apache conf files for archive $archiveid.\n" if( $noise >= 1 );
+print "Creating apache conf files for archive $archiveid\n" if( $noise >= 1 );
 unless( -e $userfile )
 {
-	print "Creating $userfile.\n" if( $noise >= 2 );
+	print "Creating $userfile\n" if( $noise >= 2 );
 	open( CONF, ">$userfile" ) || die "Can't write to $userfile";
 	print CONF <<END;
 #
@@ -291,7 +307,7 @@ else
 
 unless( -e $vhostfile )
 {
-	print "Creating $vhostfile.\n" if( $noise >= 2 );
+	print "Creating $vhostfile\n" if( $noise >= 2 );
 	open( CONF, ">$vhostfile" ) || die "Can't write to $vhostfile";
 	print CONF <<END;
 #
@@ -318,6 +334,8 @@ my $adminemail = $archive->get_conf( "adminemail" );
 my $htdocs_path = $archive->get_conf( "htdocs_path" );
 my $htdocs_secure_path = $archive->get_conf( "htdocs_secure_path" );
 my $host = $archive->get_conf( "host" );
+my $port = $archive->get_conf( "port" );
+my $urlpath = $archive->get_conf( "urlpath" );
 my $userhome = $archive->get_conf( "userhome" );
 my $securehost = $archive->get_conf( "securehost" );
 my $securepath = '';
@@ -327,7 +345,7 @@ if( EPrints::Utils::is_set( $securehost ) )
 }
 
 
-print "Creating $sysfile.\n" if( $noise >= 2 );
+print "Creating $sysfile\n" if( $noise >= 2 );
 open( CONF, ">$sysfile" ) || die "Can't write to $sysfile";
 print CONF <<END;
 #
@@ -349,7 +367,7 @@ foreach $aliasinfo ( @{$archive->get_conf( "aliases" )} )
 		print CONF <<END;
 
 # Redirect to the correct hostname
-<VirtualHost $virtualhost>
+<VirtualHost $virtualhost:$port>
   ServerName $vname
   Redirect / http://$host/
 </VirtualHost>
@@ -363,55 +381,73 @@ END
 print CONF <<END;
 
 # The main virtual host for this archive
-<VirtualHost $virtualhost>
+<VirtualHost $virtualhost:$port>
   ServerName $host
 $aliases
-  DocumentRoot $htdocs_path
   ServerAdmin $adminemail
 
-  Alias /perl $cgidir
-
-  ErrorDocument 401 /error401.html
-  ErrorDocument 404 /perl/handle_404
-
-  RewriteEngine on
-
-  # Include this here, so that it's rewrite ruls come first.
+  # Include this here, so that it's rules come first.
   Include $vhostfile
 
-
-  # Rewrite Rules. [L] means "last". So the rewrite engine goes
-  # no further if it matches.
-
-  # Protect /perl/ from other rewrite rules
-  RewriteRule ^/perl/      -   [L]
-  RewriteRule ^/secure/    -   [L]
-  RewriteRule ^/archive/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])(.*)\$ /archive/\$1/\$2/\$3/\$4\$5
-
 END
 
-my @langs = @{$archive->get_conf( "languages" )};
-my $defaultlang = $archive->get_conf( "defaultlanguage" );
-my $langid;
-foreach $langid ( @langs )
+# If we want to use the non-perl CGI script mimetex.cgi we need to 
+# insert the script alias here.
+if( $archive->get_conf( "use_mimetex" ) ) 
 {
-	next if( $langid eq $defaultlang );
-		print CONF <<END;
-  RewriteCond %{HTTP_COOKIE}   lang=$langid
-  RewriteRule ^/(.*)\$         /$langid/\$1   [L]
-
-END
+	if( !defined $EPrints::SystemSettings::conf->{executables}->{mimetex} )
+	{
+		EPrints::Config::abort( "use_mimetex is set to true but\n\$EPrints::SystemSettings::conf->{executables}->{mimetex}\nis not set." );
+	}
+	if( !-e $EPrints::SystemSettings::conf->{executables}->{mimetex} )
+	{
+		EPrints::Config::abort( "use_mimetex is set to true but\n\$EPrints::SystemSettings::conf->{executables}->{mimetex}\nis set to a non existant file." );
+	}
+	     
+	print CONF '  ScriptAlias '.$urlpath.'/cgi/mimetex.cgi '.$EPrints::SystemSettings::conf->{executables}->{mimetex}."\n\n";
 }
 
 print CONF <<END;
-  # Default Language
-  RewriteRule ^/(.*)\$         /$defaultlang/\$1   [L]
+  Alias $urlpath/perl $cgidir
+  Alias $urlpath/ $htdocs_path/
 
+  <Location "$urlpath">
+    ErrorDocument 401 $urlpath/error401.html
+    ErrorDocument 404 $urlpath/perl/handle_404
+    PerlSetVar EPrints_ArchiveID $archiveid
+  </Location>
+
+  # Note that PerlTransHandler can't go inside
+  # a "Location" block as it occurs before the
+  # Location is known.
+  PerlTransHandler EPrints::Rewrite
 END
+
+my @langs = @{$archive->get_conf( "languages" )};
+
+#my $defaultlang = $archive->get_conf( "defaultlanguage" );
+# cjg remove this stuff later.
+#
+#foreach my $langid ( @langs )
+#{
+	#next if( $langid eq $defaultlang );
+		#print CONF <<END;
+  #RewriteCond %{HTTP_COOKIE}   lang=$langid
+  #RewriteRule ^/(.*)\$         /$langid/\$1   [L]
+#
+#END
+#}
+#
+#print CONF <<END;
+  ## Default Language
+  #RewriteRule ^/(.*)\$         /$defaultlang/\$1   [L]
+#
+#END
+
 
 if( $archive->get_conf( "vlit" )->{enable} )
 {
-	foreach $langid ( @langs )
+	foreach my $langid ( @langs )
 	{
 		print CONF <<END;
   <Directory "$htdocs_path/$langid/archive">
@@ -423,6 +459,16 @@ END
 	}
 }
 
+my $registry_module;
+if( $av eq "1" ) 
+{
+	$registry_module = "Apache::Registry";
+}
+else # apache 2
+{
+	$registry_module = "ModPerl::Registry";
+}
+
 print CONF <<END;
   <Directory "$htdocs_path">
     AddType 'text/html; charset=UTF-8' .html
@@ -430,14 +476,17 @@ print CONF <<END;
 
   <Directory "$cgidir">
     SetHandler perl-script
-    PerlHandler Apache::Registry
+    PerlHandler $registry_module
     PerlSendHeader Off
-    Options ExecCGI
+    Options ExecCGI FollowSymLinks
   </Directory>
 
 END
 
 my $secureconfig = <<END;
+  <Location "$securepath">
+    PerlSetVar EPrints_ArchiveID $archiveid
+  </Location>
   <Directory "$cgidir/users">
     AuthName "User Area"
     AuthType "Basic"
@@ -447,9 +496,12 @@ my $secureconfig = <<END;
     require valid-user
 
     SetHandler perl-script
-    PerlHandler Apache::Registry
+    PerlHandler $registry_module
     PerlSendHeader Off
-    Options ExecCGI
+    Options ExecCGI FollowSymLinks
+  </Directory>
+  <Directory "$cgidir/users/awstats">
+    PerlSendHeader On
   </Directory>
 
   <Directory "$htdocs_secure_path">
@@ -459,9 +511,6 @@ my $secureconfig = <<END;
     PerlAuthzHandler EPrints::Auth::authz
     PerlSetVar EPrints_Security_Area Documents
     require valid-user
-    RewriteEngine on
-    RewriteBase $securepath/secure
-    RewriteRule ^([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])(.*)\$ \$1/\$2/\$3/\$4\$5 [L]
   </Directory>
 
   # This sets up the change_user URL, which does
@@ -475,6 +524,7 @@ my $secureconfig = <<END;
     PerlAuthenHandler EPrints::Auth::authen
     PerlAuthzHandler EPrints::Auth::authz
     PerlSetVar EPrints_Security_Area ChangeUser
+    PerlSetVar EPrints_ArchiveID $archiveid
     require valid-user
     Redirect $securepath/change_user $userhome
   </Location>
@@ -483,8 +533,7 @@ END
 
 if( EPrints::Utils::is_set( $securehost ) )
 {
-#cjg MUST BE HTTPS!
-	my $securebase = "http://".$securehost.$securepath;
+	my $securebase = "https://".$securehost.$securepath;
 	print CONF <<END;
   Redirect /secure/ $securebase/secure/
   Redirect /perl/users/ $securebase/perl/users/
@@ -500,7 +549,7 @@ $secureconfig
   Alias $securepath/secure/ $htdocs_secure_path/
   Alias $securepath/perl/users/ $cgidir/users/
 
-  RewriteRule ^$securepath/secure/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])/(.*)\$ $securepath/secure/\$1/\$2/\$3/\$4/\$5 [L]
+  #RewriteRule ^$securepath/secure/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])/(.*)\$ $securepath/secure/\$1/\$2/\$3/\$4/\$5 [L]
 
 ##### END OF CONFIG FOR $archiveid
 

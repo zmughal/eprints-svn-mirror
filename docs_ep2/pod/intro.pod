@@ -9,7 +9,7 @@ The system has been designed to encourage better quality data - that is to say a
 
 =head1 Should I be installing EPrints 2, how much effort will it take? 
 
-This is version 2.1, it is considered ready for use. There are still some issues and bugs, but hopefully not too many or too major. A list of known issues is in the file BUGLIST in the distribution.
+This is version 2.3, it is considered ready for use. There are still some issues and bugs, but hopefully not too many or too major. 
 
 Setting up an archive may not (and should not) be a trivial task. The biggest single issue is actually deciding what you need and what policies the archive should have. As a first step we would suggest setting up a demonstration version using the default configuration and having your manager, or the committe who decide on what is needed, have a quick "play" with it and comment what features, data, colours should be changed, added or removed. 
 
@@ -19,10 +19,10 @@ We currently expect to release a few more versions of EPrints 2. We plan to make
 
 =head1 What will it run on?
 
-The has been developed under GNU/Linux. It is intended to work on any GNU system. It may well work on other UNIX systems too. Other systems people have got EPrints up and running on include Solaris and MacOSX. There are no plans for a version to run under Microsoft Windows.
+The EPrints software has been developed under GNU/Linux. It is intended to work on any GNU system. It may well work on other UNIX systems too. Other systems people have got EPrints up and running on include Solaris and MacOSX. There are no plans for a version to run under Microsoft Windows.
 
 =head1 This Documentation
 
 This documentation is written in perl POD format and converted into Postscript (which is 2 pages to a sheet for printing), ASCII, PDF, HTML and TexInfo. 
 
-The the latest version of this documentation can be obtained from http://www.eprints.org/
+The the latest version of this documentation can be obtained from http://software.eprints.org/
