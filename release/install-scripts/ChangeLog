@@ -58,13 +58,14 @@ journal papers.
 fixes.
 
 
-2000-11-23 Version 1.0 released
+2000-11-29 Version 1.0 released
 
 - Added autoconf, makefile-based automatic installation procedure, which checks
 for prerequisite software, and optionally creates the MySQL database, creates a
 crontab, and (experimentally) updates the Apache configuration. It also sets up
-Perl path information in the parameters to the scripts in bin/, so you don't
-have to mess around setting PERL5LIB before running the offline scripts.
+Perl path information in the parameters to the scripts in bin/, and adds "use
+lib" code to the scripts in cgi/, so you don't have to mess around setting
+PERL5LIB before running the offline scripts.
 - Better handling of URLs with special characters in (brackets, spaces etc.).
 Saved to the local server unescaped, and the URLs are rendered escaped.
 - generate_static now copies everything across from the static/ directory to
