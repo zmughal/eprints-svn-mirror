@@ -329,6 +329,8 @@ sub view_page
 	{
 		$buttons->{$_} = $session->phrase( "cgi/users/edit_eprint:action_".$_ );
 	}
+	print STDERR "**". $eprint->get_dataset()->id()."**\n";
+	print STDERR "**". join( '/', (@{$r1}, @{$r2}))."**\n";
 	
 	$form->appendChild( $session->render_ruler() );
 	$buttons->{_order} = $r1;

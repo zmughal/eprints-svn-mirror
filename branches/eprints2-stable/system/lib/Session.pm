@@ -1216,7 +1216,8 @@ sub _render_buttons_aux
 	{
 		# skip options which start with a "_" they are params
 		# not buttons.
-		next if( $button_id =~ m/^_/ );
+		next if( $button_id eq '_class' );
+		next if( $button_id eq '_order' );
 		$div->appendChild(
 			$self->make_element( "input",
 				class => $btype."button",
