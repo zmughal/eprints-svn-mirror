@@ -80,21 +80,21 @@ my %systemsettings = ();
 
 # Set up some default settings.
 my %invocsettings = (
-	ZIP     => "\$(EXE_ZIP) 1>/dev/null 2>\&1 -qq -o -d \$(DIR) \$(ARC)",
-	TARGZ   => "\$(EXE_GUNZIP) -c < \$(ARC) 2>/dev/null | \$(EXE_TAR) xf - -C \$(DIR) >/dev/null 2>\&1",
-	WGET    => "\$(EXE_WGET)  -r -L -q -m -nH -np --execute=\"robots=off\" --cut-dirs=\$(CUTDIRS) \$(URL)",
-	SENDMAIL => "\$(EXE_SENDMAIL) -oi -t -odb --"
+	zip     => "\$(EXE_ZIP) 1>/dev/null 2>\&1 -qq -o -d \$(DIR) \$(ARC)",
+	targz   => "\$(EXE_GUNZIP) -c < \$(ARC) 2>/dev/null | \$(EXE_TAR) xf - -C \$(DIR) >/dev/null 2>\&1",
+	wget    => "\$(EXE_WGET)  -r -L -q -m -nH -np --execute=\"robots=off\" --cut-dirs=\$(CUTDIRS) \$(URL)",
+	sendmail => "\$(EXE_SENDMAIL) -oi -t -odb --"
 );
 
 my %archiveexts = (
-	"ZIP"    =>  ".zip",
-	"TARGZ"  =>  ".tar.gz"
+	"zip"    =>  ".zip",
+	"targz"  =>  ".tar.gz"
 );
 
 
 $systemsettings{"invocation"} = \%invocsettings;
 $systemsettings{"archive_extensions"} = \%archiveexts;
-$systemsettings{"archives"} = ["ZIP", "TARGZ"];
+$systemsettings{"archive_formats"} = ["zip", "targz"];
 $systemsettings{"version"} = "2.0.a.2001-09-04";
 $systemsettings{"version_desc"} = "EPrints 2.0 Alpha (Nightly Build 2001-09-04)";
 $exesettings{"unzip"} 	= detect("unzip", @paths);
