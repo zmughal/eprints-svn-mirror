@@ -106,7 +106,7 @@ fi
 
 dnl This is the path that we search for tools
 
-TOOL_PATH="$PATH:/usr/local/bin:/sbin:/usr/sbin:/usr/X11R6/bin"
+TOOL_PATH="$PATH:/usr/local/bin:/sbin:/usr/sbin:/usr/X11R6/bin:/usr/lib"
 AC_ARG_WITH(toolpath,
     [ --with-toolpath=[PATH]   search path for tool programs ],
     [

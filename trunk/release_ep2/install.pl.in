@@ -185,17 +185,23 @@ if( !defined $systemsettings->{"enable_gdome"} )
 	$systemsettings->{"enable_gdome"} = 0;
 }
 
+
 unless( getpwnam($systemsettings->{"user"}) )
 {
 	print "User ".$c{"user"}." does not exist. Aborting.\n";
+	print "Consult your operating system documentation for how to create a new user.\n";
+	print "Under Linux /usr/sbin/useradd is possibly what you need.\n";
 	exit 1;
 }
 
 unless( getgrnam($systemsettings->{"group"}) )
 {
 	print "Group ".$c{"group"}." does not exist. Aborting.\n";
+	print "Consult your operating system documentation for how to create a new group.\n";
+	print "Under Linux /usr/sbin/groupadd is possibly what you need.\n";
 	exit 1;
 }
+
 
 if( $upgrade )
 {
