@@ -306,6 +306,11 @@ sub import_eprint
 	# Copy across the files
 	&import_document( $session, \%entry, $eprint, \@errors );
 
+	# Fix for Ingber's altloc's
+	if( $eprint->{username} eq "IngberL" )
+	{
+		$eprint->{altloc} =~ s/\.Z/.gz/g;
+	}
 
 	# Put in the d/b
 	$eprint->commit();
