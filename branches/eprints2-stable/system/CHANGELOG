@@ -1338,4 +1338,12 @@ before next release. (metadata types & fields)
  - swapped the order of the confirm delete buttons to make "confirm"
     come first.
 
+2003-06-17 cjg/moj
+
+*- [doc] New parameter to SystemSettings: apache_version. 
+ - Support for Apache2 added, changes to VLit, startup.pl and Auth.pm, 
+    added new module RequestWrapper2 which Auth will use if directed.
+    now does some 1.3/2.0 specific stuff in generate_apacheconf
+
+
 ======================================================================

@@ -16,6 +16,7 @@ package EPrints::SystemSettings;
 
 $EPrints::SystemSettings::conf = 
 {
+	apache_version => "1",
 	base_path => "/opt/ep2stable",
 	executables => {
 		unzip 	=> "/usr/bin/unzip",

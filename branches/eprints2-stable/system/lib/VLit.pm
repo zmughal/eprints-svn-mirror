@@ -35,7 +35,7 @@ package EPrints::VLit;
 
 use CGI;
 use Apache;
-use Apache::Constants;
+use Apache::Constants ':common';
 use Digest::MD5;
 use FileHandle;
 
