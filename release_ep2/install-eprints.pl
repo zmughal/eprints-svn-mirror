@@ -41,16 +41,24 @@ if ($forced)
 *** WARNING ***
 
 Running as non-root will skip the following:
-- No chowning will be attempted
 - No user/group creation will be attempted
+- No chowning will be attempted
 
 WARNING
 }
 print "Checking user ... ";
 if ($<!=0 && !$forced)
 {
-	print "Failed!\n";
-	print "Sorry, this installer must be run as root.\n";
+	print <<END;
+Failed!  This installer must be run as root.
+
+You may use the --force to run as a user other than root.
+
+Running as non-root will skip the following:
+- No user/group creation will be attempted
+- No chowning will be attempted
+
+END
 	exit 1;
 }
 else { print "OK.\n\n"; }
@@ -307,7 +315,7 @@ GROUP
 	print "Installing files : [";
 
 	my @executable_dirs = ("bin", "cgi");
-	my @normal_dirs = ("archives", "sys", "defaultcfg", "cfg", "perl_lib", "phrases");
+	my @normal_dirs = ("archives", "sys", "defaultcfg", "cfg", "docs", "perl_lib", "phrases");
 
 	foreach(@executable_dirs)
 	{

@@ -77,7 +77,8 @@ sub do_package
 	print "Exporting from CVS...\n";
 	$originaldir = getcwd();
 	chdir "export";
-	system("cvs export -r $version_tag eprints/system >/dev/null")==0 or die "Could not export.\n";
+	system("cvs export -r $version_tag eprints/system >/dev/null")==0 or die "Could not export system.\n";
+	system("cvs export -r $version_tag eprints/ep2_docs >/dev/null")==0 or die "Could not export docs.\n";
 
 	print "Removing .cvsignore files...\n";
 	system("/bin/rm `find . -name '.cvsignore'`")==0 or die "Couldn't remove.";
@@ -93,6 +94,11 @@ sub do_package
 		unless do_license("$originaldir/$license_file", $package_version, $file)==0;
 	}
 
+
+	# Build docs - cjg Mike this needs to be smarter about what to copy (alpha/beta etc)
+	chdir $originaldir."/export/eprints/ep2_docs";
+	`make`;
+	
 	print "Making tarfile...\n";
 	chdir $originaldir."/package";
 
@@ -129,7 +135,7 @@ sub do_package
 	# Do version
 	open(FILEOUT, ">eprints/VERSION");
 	print FILEOUT $package_version."\n";
-	print FILEOUT $package_desc;
+	print FILEOUT $package_desc."\n";
 	close(FILEOUT);
 
 	# Do phrases
@@ -212,10 +218,16 @@ if (!defined($type) || $type eq "nightly")
 	$version_tag = "HEAD";
 	$package_version = $NIGHTLY_VERSION;
 	$package_desc = $NIGHTLY_DESC;	
-	$package_file = "eprints-nightly-$DATE";
+	$package_file = "eprints2-nightly-$DATE";
 }
 else
 {
+	if( !defined $codenames{$type} )
+	{
+		print "Unknown codename\n";
+		print "Available:\n".join("\n",sort keys %codenames)."\n\n";
+		exit;
+	}
 	$version_tag = $type;
 	$package_version = $MILESTONE_VERSION;
 	$package_desc = $MILESTONE_DESC_A.$codenames{$type}.$MILESTONE_DESC_B;
