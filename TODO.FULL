@@ -4,7 +4,14 @@ Bugs:
  
 
 
+
 code:
+* db:
+	* make most , including url, allow multiples
+	* make add_record and update understand multi's
+	* make everything else understand them...
+	* UPDATE siteroutines with get_fields() and DOC IT!
+
 * userid field sepearate to username
    + only if conf option is set.
    + conv functions both ways.
