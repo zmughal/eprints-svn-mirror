@@ -9,15 +9,18 @@ LATEX = $(DOCBOOK_ROOT)/latex/docbook.xsl
 
 all: alpha
 
-.xml.html:
+.xml.html: 
+	./wellformed.pl $<
 	xt $< $(XHTML) > $@
 
-.xml.latex:
+.xml.latex: 
+	./wellformed.pl $<
 	xt $< $(LATEX) > $*.latex
 
 .latex.dvi:
+	cp *.eps $(WORK_DIR)
 	cp $< $(WORK_DIR)
-	cd $(WORK_DIR); latex $<; latex $<
+	cd $(WORK_DIR); latex $<
 	cp $(WORK_DIR)/$*.dvi .
 
 .dvi.pdf:
@@ -30,4 +33,7 @@ all: alpha
 clean:
 	rm -f *.html *.pdf *.ps *.dvi *.latex
 
-alpha: alpha.pdf alpha.html alpha.ps
+eprints.entities: history.xml clean
+	./wellformed.pl history.xml NODTD
+
+alpha: eprints.entities alpha.pdf alpha.html alpha.ps

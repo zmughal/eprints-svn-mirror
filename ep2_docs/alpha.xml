@@ -1,8 +1,9 @@
-<?xml version="1.0" ?>
-<!DOCTYPE book > 
+<?xml version="1.0" standalone="no" ?>
+<!DOCTYPE book SYSTEM "eprints.entities" >
 <book>
 <bookinfo>
-  <title>EPrints 2.0 Alpha Release (Anchovy) Installation Notes</title>
+  <title>EPrints 2.0 Alpha Release (Anchovy)</title>
+  <subtitle>Installation Notes</subtitle>
   <authorgroup>
   <author><firstname>Christopher</firstname><surname>Gutteridge</surname></author>
   <author><firstname>Mike</firstname><surname>Jewell</surname></author>
@@ -10,16 +11,16 @@
   <copyright><year>2001</year><holder>University of Southampton</holder></copyright>
 </bookinfo>
 
-<chapter><title>What is EPrints 2.0 Alpha, Should I install it?</title>
+<chapter><title>What is &ep2; Alpha, Should I install it?</title>
 <para>The first bit</para>
 <para>The first bit</para>
 </chapter>
 
-<chapter><title>What software does ep2 need? Where do I get it?</title>
+<chapter><title>What software does &ep2; need? Where do I get it?</title>
 <para>The second bit</para>
 </chapter>
 
-<chapter><title>How do I install ep2?</title>
+<chapter><title>How do I install &ep2;?</title>
 <para>The third bit</para>
 </chapter>
 
@@ -27,10 +28,29 @@
 <para>The third bit</para>
 </chapter>
 
-<chapter><title>What about Bugs?</title>
-<para>The third bit</para>
+<chapter><title>Problems, Questions and Feedback</title>
+<sect1><title>Bug Report Policy</title>
+<para>This is ALPHA software, and therefore we know it dosn't work properly yet. Until we get to the point where the main system is BETA there's not much point reporting bugs.</para>
+<para>However, you may have suggestions, comments, or outright abuse towards the general design or the installation. These may be addressed to the appropriate address.</para>
+</sect1>
+
+<sect1><title>Where to go with Questions and Suggestions</title>
+<para>There are some mailing lists for &eprints; which may be the right place to ask general questions and start discussions on broad design issues.</para>
+<sect2><title>eprints-tech</title>
+<para>eprints-tech is the technical mailing list for people who want to argue over XML processing and which libraries to use. UNIXy people.</para>
+<para>To subscribe send an email to <email>majordomo@ecs.soton.ac.uk</email> containing the text <screen>subscribe eprints-tech</screen></para>
+</sect2>
+
+<sect2><title>eprints-underground</title>
+<para>eprints-underground is the non-technical mailing list for people who actually care what the system does, not how. This is for discussion of metadata, politics (how to get people to fill the damn data in) and what people actually plan to use the eprints for.</para>
+<para>To subscribe send an email to <email>majordomo@ecs.soton.ac.uk</email> containing the text <screen>subscribe eprints-underground</screen></para>
+</sect2>
+</sect1>
+
 </chapter>
 
+
+&history;
 
 
 </book>
