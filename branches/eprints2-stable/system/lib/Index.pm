@@ -277,11 +277,37 @@ sub _index_item
 		$session->get_db->do( $sql ); #cjg
 	}
 
+	&insert_ordervalues( $session, $dataset, $item->get_data, 1 );
 
-	# create order values
+	# add to count
+	$info->{indexer}->{count}++;
+	sleep 1 if( $info->{indexer}->{count} % 10 == 0);
+}
+
+sub update_ordervalues
+{
+        my( $session, $dataset, $data, $tmp ) = @_;
+
+	&_do_ordervalues( $session, $dataset, $data, 0, $tmp );	
+}
+
+sub insert_ordervalues
+{
+        my( $session, $dataset, $data, $tmp ) = @_;
+
+	&_do_ordervalues( $session, $dataset, $data, 1, $tmp );	
+}
+
+sub _do_ordervalues
+{
+        my( $session, $dataset, $data, $insert, $tmp ) = @_;
+
+	# insert = 0 => update
+	# insert = 1 => insert
+	# tmp = 1 = use_tmp_table
+	# tmp = 0 = use normal table
 
 	my @fields = $dataset->get_fields( 1 );
-	my $data = $item->get_data;
 
 	# remove the key field
 	splice( @fields, 0, 1 ); 
@@ -294,29 +320,38 @@ sub _index_item
 	{
 		my @fnames = ( $keyfield->get_sql_name() );
 		my @fvals = ( $keyvalue );
-		foreach( @fields )
+		foreach my $field ( @fields )
 		{
-			my $ov = $_->ordervalue( 
-					$data->{$_->get_name()},
+			my $ov = $field->ordervalue( 
+					$data->{$field->get_name()},
 					$session,
 					$langid );
 			
-			push @fnames, $_->get_sql_name();
+			push @fnames, $field->get_sql_name();
 			push @fvals, EPrints::Database::prep_value( $ov );
 		}
 
 		# cjg raw SQL!
 		my $ovt = $dataset->get_ordervalues_table_name( $langid );
-		my $sql = "INSERT INTO ".$ovt."_tmp (".join( ",", @fnames ).") VALUES (\"".join( "\",\"", @fvals )."\")";
+		if( $tmp ) { $ovt .= "_tmp"; }
+		my $sql;
+		if( $insert )
+		{
+			$sql = "INSERT INTO ".$ovt." (".join( ",", @fnames ).") VALUES (\"".join( "\",\"", @fvals )."\")";
+		}
+		else
+		{
+			my @l = ();
+			for( my $i=0; $i<scalar @fnames; ++$i )
+			{
+				push @l, $fnames[$i].'="'.$fvals[$i].'"';
+			}
+			$sql = "UPDATE ".$ovt." SET ".join( ",", @l )." WHERE ".$keyfield->get_sql_name().' = '.$keyvalue;
+		}
 		$session->get_db->do( $sql );
 	}
-
-	# add to count
-
-	sleep 1 if( $info->{indexer}->{count} % 10 == 0);
-
-	$info->{indexer}->{count}++;
 }
+
 
 
 sub _store

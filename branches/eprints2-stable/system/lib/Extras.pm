@@ -109,7 +109,7 @@ sub subject_browser_input
 		$url .= '#t';
 
 		$div->appendChild(  $session->html_phrase(
-                        "lib/metafield:subject_browser_remove",
+                        "lib/extras:subject_browser_remove",
 			link=>$session->make_element( "a", href=>$url ) ) );
 		$bits{selections}->appendChild( $div );
 	}
@@ -118,7 +118,7 @@ sub subject_browser_input
 	{	
 		my $div = $session->make_element( "div" );
 		$div->appendChild( $session->html_phrase(
-			"lib/metafield:subject_browser_none" ) );
+			"lib/extras:subject_browser_none" ) );
 		$bits{selections}->appendChild( $div );
 	}
 
@@ -136,8 +136,10 @@ sub subject_browser_input
 	}	
 
 	$bits{search} = $session->html_phrase(
-			"lib/metafield:subject_browser_search",
-			input=>$session->make_element( "input", name=>"_internal_".$field->get_name."_search" ) );
+			"lib/extras:subject_browser_search",
+			input=>$session->make_element( "input", name=>"_internal_".$field->get_name."_search" ),
+			button=>$session->make_element( "input", type=>"submit", name=>"_null", 
+				value=>$session->phrase( "lib/extras:subject_browser_search_button" ) ) );
 	$bits{topsubj} = $topsubj->render_description;
 
 	if( defined $search ) 
@@ -183,7 +185,7 @@ sub subject_browser_input
 		else
 		{
 			$results = $session->html_phrase( 
-                        "lib/metafield:subject_browser_no_matches" );
+                        "lib/extras:subject_browser_no_matches" );
 		}
 
 		my $url = $baseurl.'&_internal_'.$field->get_name.'_view_'.$subject->get_id.'=1'.$field->get_name.'='.$subject->get_id;
@@ -194,7 +196,7 @@ sub subject_browser_input
 		$url .= '#t';
 
 		$bits{opts} = $session->html_phrase( 
-			"lib/metafield:subject_browser_search_results", 
+			"lib/extras:subject_browser_search_results", 
 			results=>$results,
 			browse=>$session->render_link( $url ) );
 	}
@@ -217,7 +219,7 @@ sub subject_browser_input
 	}
 
 	$html->appendChild( $session->html_phrase( 
-			"lib/metafield:subject_browser",
+			"lib/extras:subject_browser",
 			%bits ) );
 
 	return $html;
@@ -262,7 +264,7 @@ sub _subject_browser_input_aux
 		$a->appendChild( $subject->render_description );
 		$li->appendChild( $a );
 		$li->appendChild( $session->html_phrase(
-                       	"lib/metafield:subject_browser_expandable" ) );
+                       	"lib/extras:subject_browser_expandable" ) );
 	}
 	else
 	{
@@ -279,7 +281,7 @@ sub _subject_browser_input_aux
 		$ibutton = $intact.'='.$session->param( $intact );
 		my $url = $addurl.'&'.$ibutton.'&'.$field->get_name.'='.$subject->get_id.'#t';
 		$li->appendChild(  $session->html_phrase(
-                       	"lib/metafield:subject_browser_add",
+                       	"lib/extras:subject_browser_add",
 			link=>$session->make_element( "a", href=>$url ) ) );
 	}
 	if( $exp == 1 )

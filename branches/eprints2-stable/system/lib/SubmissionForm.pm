@@ -2146,8 +2146,9 @@ sub _render_problems
 {
 	my( $self, $before, $after ) = @_;
 
-	my( $p, $ul, $li, $frag );
-	$frag = $self->{session}->make_doc_fragment();
+	my( $p, $ul, $li, $problem_box );
+
+	my $frag = $self->{session}->make_doc_fragment();
 
 	if( !defined $self->{problems} || scalar @{$self->{problems}} == 0 )
 	{
@@ -2155,11 +2156,16 @@ sub _render_problems
 		return $frag;
 	}
 
+	my $a = $self->{session}->make_element( "a", name=>"t" );
+	$frag->appendChild( $a );
+	$problem_box = $self->{session}->make_element( 
+				"div",
+				class=>"problems" );
+	$frag->appendChild( $problem_box );
+
 	# List the problem(s)
 
 	$p = $self->{session}->make_element( "p" );
-	my $a = $self->{session}->make_element( "a", name=>"t" );
-	$p->appendChild( $a );
 	if( defined $before )
 	{
 		$p->appendChild( $before );
@@ -2170,7 +2176,7 @@ sub _render_problems
 			$self->{session}->html_phrase(
 				"lib/submissionform:filled_wrong" ) );
 	}
-	$frag->appendChild( $p );
+	$problem_box->appendChild( $p );
 
 	$ul = $self->{session}->make_element( "ul" );	
 	foreach (@{$self->{problems}})
@@ -2179,7 +2185,7 @@ sub _render_problems
 		$li->appendChild( $_ );
 		$ul->appendChild( $li );
 	}
-	$frag->appendChild( $ul );
+	$problem_box->appendChild( $ul );
 	
 	$p = $self->{session}->make_element( "p" );
 	if( defined $after )
@@ -2192,7 +2198,7 @@ sub _render_problems
 			$self->{session}->html_phrase(
 				"lib/submissionform:please_complete" ) );
 	}
-	$frag->appendChild( $p );
+	$problem_box->appendChild( $p );
 	
 	return $frag;
 }

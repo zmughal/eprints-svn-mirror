@@ -480,7 +480,7 @@ END
 	{
 		next if( defined $config->{"search"}->{$stype} );
 
-		$config->{search}->{$stype} = {
+		$config->{"search"}->{$stype} = {
 			fieldnames => $config->{$stype."_search_fields"},
 			# don't make search_fields yet!
 			citation => $config->{$stype."_search_citation"} };
@@ -497,6 +497,36 @@ END
 						 "cgi/advsearch:preamble";
 			$config->{"search"}->{$stype}->{title_phrase} =
 						 "cgi/advsearch:adv_search";
+		}
+	}
+
+	foreach my $ds_id ( "inbox", "buffer", "archive", "deletion" )
+	{
+		my $stype = $ds_id;
+		next if( defined $config->{"search"}->{$stype} );
+		$config->{search}->{$stype} = {
+			title_phrase => "cgi/users/eprint_search:title_".$stype,
+			staff => 1,
+			dataset_id => $ds_id,
+			citation => $config->{"search"}->{"advanced"}->{"citation"}
+		};
+		if( defined $config->{"search"}->{"advanced"}->{"fieldnames"} )
+		{
+			my @fnames = ( 
+					"eprintid", 
+					"userid", 
+					"dir", 
+					@{$config->{"search"}->{"advanced"}->{"fieldnames"}} );
+			$config->{search}->{$stype}->{"fieldnames"} = \@fnames;
+		}
+		else
+		{
+			my @sfields = ( 
+					{ meta_fields => ["eprintid"] }, 
+					{ meta_fields => ["userid"] }, 
+					{ meta_fields => ["dir"] },
+					@{$config->{"search"}->{"advanced"}->{"search_fields"}} );
+			$config->{search}->{$stype}->{"search_fields"} = \@sfields;
 		}
 	}
 

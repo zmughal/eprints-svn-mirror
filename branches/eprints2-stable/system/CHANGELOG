@@ -1629,4 +1629,27 @@ before next release. (metadata types & fields)
  - Cleaned up VLit to use $archive instead of $session
  - Made Name.pm indexing handle undefined "given" parts without warning
 
+2003-11-04 cjg
+ 
+ - Made "hideemail" field true by default (in Users)
+ - Allowed "refereed" to be NULL without warning in OAI/DC code
+ - Cleaned up output of "indexer" when it already appears to be running.
+    now it gives sensible advice about running "ps" to check etc.
+ - Changed eprints staff search to work in the same (new) way as other
+    searches. Allowed "dataset_id" to be a parameter so that it can be
+    config'd by admin. 
+ - Config.pm now generates 4 staff searches if they are not already configured;
+    "inbox","buffer",etc.
+ - ordervalues are now created and updated each time a record is creaded or 
+    changed (don't need to be deleted, really, indexer does that)
+ - renamed phraseid's in Extra.pm to logical names.
+ - Added a "Go!" button to subject search.
+ - Searches, User Forms and Submission Forms now render problems in a CSS'd
+    DIV so that they are clearly highlighted.
+ - [c] Added problem_box entry to .css file.
+ - Problem with UTF-8 *objects* as attributes in some of the DOM code. Forced
+    them to strings.
+ - Subscriptions now say who they are mailing to (in debug mode), not just
+    that they are trying to send subscription #11
+
 ======================================================================

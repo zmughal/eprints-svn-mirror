@@ -224,3 +224,15 @@ th
 	text-decoration: none;
 }
 	
+.problems
+{
+	margin-top: 8pt;
+	margin-bottom: 8pt;
+        border: 4px;
+        padding: 16pt;
+        border-style: solid;
+        border-color: #ff0000 ;
+        background-color: #f8f8f8;
+	text-decoration: none;
+}
+	

@@ -282,6 +282,13 @@ sub eprint_render
 			$eprint->render_version_thread( $commentary_field ) );
 	}
 
+	# Add a link to the edit-page for this record. Handy for staff.
+	my $edit_para = $session->make_element( "p", align=>"right" );
+	$edit_para->appendChild( $session->html_phrase( 
+		"page:edit_link",
+		link => $session->render_link( $eprint->get_url( 1 ) ) ) );
+	$page->appendChild( $edit_para );
+
 	my $title = $eprint->render_description();
 
 	my $links = $session->make_doc_fragment();

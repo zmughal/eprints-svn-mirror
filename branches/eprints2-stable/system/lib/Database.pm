@@ -497,6 +497,8 @@ sub add_record
 	# Send to the database
 	my $rv = $self->do( $sql );
 
+	EPrints::Index::insert_ordervalues( $self->{session}, $dataset, $data );
+
 	# Now add the ACTUAL data:
 	$self->update( $dataset , $data );
 	
@@ -778,6 +780,8 @@ sub update
 			++$position;
 		}
 	}
+
+	EPrints::Index::update_ordervalues( $self->{session}, $dataset, $data );
 
 	# Return with an error if unsuccessful
 	return( defined $rv );

@@ -86,14 +86,19 @@ EPrints Modules
     <ep:phrase ref="lib/metafield:join_datatype">, </ep:phrase>
     <ep:phrase ref="lib/metafield:join_search"> <strong>OR</strong> </ep:phrase>
 
-    <ep:phrase ref="lib/metafield:subject_browser"><div class="subject_browser_selections"><table><tr><td valign="top">Selections:</td><td><ep:pin ref="selections" /></td></tr></table></div><div class="subject_browser_search"><ep:pin ref="search" /></div><div class="subject_browser_opts"><ep:pin ref="opts" /></div></ep:phrase>
-    <ep:phrase ref="lib/metafield:subject_browser_none">none</ep:phrase>
-    <ep:phrase ref="lib/metafield:subject_browser_remove"> [<ep:pin ref="link">remove</ep:pin>]</ep:phrase>
-    <ep:phrase ref="lib/metafield:subject_browser_add"> [<ep:pin ref="link">add</ep:pin>]</ep:phrase>
-    <ep:phrase ref="lib/metafield:subject_browser_expandable">...</ep:phrase>
-    <ep:phrase ref="lib/metafield:subject_browser_search">Quick Search: <ep:pin ref="input" /></ep:phrase>
-    <ep:phrase ref="lib/metafield:subject_browser_search_results"><p>Search Results:</p><ep:pin ref="results" /><p><ep:pin ref="browse">browse tree</ep:pin></p></ep:phrase>
-    <ep:phrase ref="lib/metafield:subject_browser_no_matches"><p>No matches</p></ep:phrase>
+
+
+<!-- Extras -->
+
+    <ep:phrase ref="lib/extras:subject_browser"><div class="subject_browser_selections"><table><tr><td valign="top">Selections:</td><td><ep:pin ref="selections" /></td></tr></table></div><div class="subject_browser_search"><ep:pin ref="search" /></div><div class="subject_browser_opts"><ep:pin ref="opts" /></div></ep:phrase>
+    <ep:phrase ref="lib/extras:subject_browser_none">none</ep:phrase>
+    <ep:phrase ref="lib/extras:subject_browser_remove"> [<ep:pin ref="link">remove</ep:pin>]</ep:phrase>
+    <ep:phrase ref="lib/extras:subject_browser_add"> [<ep:pin ref="link">add</ep:pin>]</ep:phrase>
+    <ep:phrase ref="lib/extras:subject_browser_expandable">...</ep:phrase>
+    <ep:phrase ref="lib/extras:subject_browser_search">Quick Search: <ep:pin ref="input" /> <ep:pin ref="button" /></ep:phrase>
+    <ep:phrase ref="lib/extras:subject_browser_search_button">Go!</ep:phrase>
+    <ep:phrase ref="lib/extras:subject_browser_search_results"><p>Search Results:</p><ep:pin ref="results" /><p><ep:pin ref="browse">browse tree</ep:pin></p></ep:phrase>
+    <ep:phrase ref="lib/extras:subject_browser_no_matches"><p>No matches</p></ep:phrase>
 
 
 
@@ -567,7 +572,11 @@ Staff CGI Scripts
 
 <!-- eprint_search -->
 
-    <ep:phrase ref="cgi/users/eprint_search:title">Staff EPrint Search</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint_search:title_inbox">Staff Search of EPrints in User Workareas</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint_search:title_buffer">Staff Search of EPrints in the Submission Buffer</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint_search:title_archive">Staff Search of EPrints in the Live Archive</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint_search:title_deletion">Staff Search of Deleted EPrints</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint_search:title">Searches Available to Staff</ep:phrase>
     <ep:phrase ref="cgi/users/eprint_search:preamble"><p>Don't panic! Just leave the fields you don't want to search blank.</p></ep:phrase>
     <ep:phrase ref="dataset_fieldname_dataset">EPrint Category</ep:phrase>
     <ep:phrase ref="dataset_fieldopt_dataset_archive">Main Archive</ep:phrase>
@@ -817,7 +826,7 @@ Titles and Help for the System Fields
     <ep:phrase ref="user_fieldhelp_newemail">Enter your new email address</ep:phrase>
     <ep:phrase ref="user_fieldhelp_username"></ep:phrase>
     <ep:phrase ref="user_fieldname_password">Password</ep:phrase>
-    <ep:phrase ref="user_fieldhelp_password">Leaving this field blank will not affect the password.</ep:phrase>
+    <ep:phrase ref="user_fieldhelp_password">Leaving this field blank will not affect the password. If you change your password you will be logged out.</ep:phrase>
     <ep:phrase ref="user_fieldname_usertype">User Type</ep:phrase>
     <ep:phrase ref="user_fieldhelp_usertype"></ep:phrase>
     <ep:phrase ref="user_fieldhelp_newpassword">Set a password. This will not be activated until you enter a security code which will be mailed to you.</ep:phrase>

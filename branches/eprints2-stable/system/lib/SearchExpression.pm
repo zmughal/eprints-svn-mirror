@@ -124,10 +124,14 @@ if a range of results is requested.
 END
 	}
 
-	# 
 	foreach( @EPrints::SearchExpression::OPTS )
 	{
 		$self->{$_} = $data{$_};
+	}
+
+	if( defined $data{"dataset_id"} )
+	{
+		$self->{"dataset"} = $self->{"session"}->get_archive->get_dataset( $data{"dataset_id"} );
 	}
 
 	if( defined $self->{custom_order} ) 
@@ -1103,7 +1107,12 @@ sub _render_problems
 	my $page = $self->{session}->make_doc_fragment();
 	$page->appendChild( $preamble );
 
-	$page->appendChild( $self->{session}->html_phrase( "lib/searchexpression:form_problem" ) );
+	my $problem_box = $self->{session}->make_element( 
+				"div",
+				class=>"problems" );
+	$problem_box->appendChild( $self->{session}->html_phrase( "lib/searchexpression:form_problem" ) );
+
+	# List the problem(s)
 	my $ul = $self->{session}->make_element( "ul" );
 	$page->appendChild( $ul );
 	my $problem;
@@ -1115,11 +1124,8 @@ sub _render_problems
 		$ul->appendChild( $li );
 		$li->appendChild( $self->{session}->make_text( $problem ) );
 	}
-	my $hr = $self->{session}->make_element( 
-			"hr", 
-			noshade=>"noshade",  
-			size=>2 );
-	$page->appendChild( $hr );
+	$problem_box->appendChild( $ul );
+	$page->appendChild( $problem_box );
 	$page->appendChild( $self->render_search_form( 1 , 1 ) );
 			
 	$self->{session}->build_page( $title, $page, "search_problems" );

@@ -558,6 +558,22 @@ sub render_value
 			$nolink );
 	}
 
+
+	unless( EPrints::Utils::is_set( $value ) )
+	{
+		if( $self->{render_opts}->{quiet} )
+		{
+			return $session->make_doc_fragment;
+		}
+		else
+		{
+			# maybe should just return nothing
+			return $session->html_phrase( 
+				"lib/metafield:unspecified",
+				fieldname => $self->render_name( $session ) );
+		}
+	}
+
 	unless( $self->get_property( "multiple" ) )
 	{
 		return $self->render_value_no_multiple( 
@@ -565,14 +581,6 @@ sub render_value
 			$value, 
 			$alllangs, 
 			$nolink );
-	}
-
-	unless( EPrints::Utils::is_set( $value ) )
-	{
-		# maybe should just return nothing
-		return $session->html_phrase( 
-			"lib/metafield:unspecified",
-			fieldname => $self->render_name( $session ) );
 	}
 
 	my @rendered_values = ();

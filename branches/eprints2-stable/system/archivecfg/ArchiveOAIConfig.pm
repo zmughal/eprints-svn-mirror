@@ -380,7 +380,7 @@ sub eprint_to_unqualified_dc
 	push @dcdata, [ "type", $ds->get_type_name( $session, $eprint->get_value( "type" ) ) ];
 	
 	my $ref = "NonPeerReviewed";
-	if( $eprint->get_value( "refereed" ) eq "TRUE" )
+	if( $eprint->is_set( "refereed" ) && $eprint->get_value( "refereed" ) eq "TRUE" )
 	{
 		$ref = "PeerReviewed";
 	}

@@ -1,7 +1,5 @@
 
 
-Tidied up todo list.
-
 Big New Features
  * Modular Controls [2.4]
  * Improved Indexing [2.4/2.3]
@@ -10,17 +8,25 @@ Big New Features
  * RH9 etc.
  * APACHE2.0
 
+Bugs
+ * hideemail into non-checkbox
+ * Users can use staff search
+ * FULL TEXT
+ * SECURE files are not properly secured!
+ * 404 page is for entire domain not /foo/bar/
+ * fileinfo does not handle paths correctly
+ * can't change username?
+ * bug in refine search on defaulted booleans?
+ * author with name " " is not treated as null in input
+ * Investigate: (subjects_self->{merge})(ANY)
 Pre-release issues
  * GRANT ALTER ON ep2stable.* TO ep2stable@localhost; in update!
  * nestids in subjects -> just plain stupid?
  * Reminder in STDERR if ordervalue table is missing.
+ * lose email in template: make contact page.
 Render
- * render property to supress "UNSPECIFIED"
 CmdLine
- * indexer status option (cmd line) is crappy
 Submission
- * Go Button on subject search.
- * Highlight "problems" blocks
  * Confusing Cancel button in submission form (files section)
 Views
  * Make views use filters. 
@@ -32,17 +38,6 @@ UserArea
  * Clean up Staff eprint searches
  * make better edit/control page?
  * move staff utils to new page?
-Bugs
- * FULL TEXT
- * SECURE files are not properly secured!
- * 404 page is for entire domain not /foo/bar/
- * fileinfo does not handle paths correctly
- * can't change username?
- * bug in refine search on defaulted booleans?
- * author with name " " is not treated as null in input
- * frequency of mailings: default to NEVER?
- * Investigate: (subjects_self->{merge})(ANY)
-
 Local
 
  * ECS: edit
@@ -257,4 +252,13 @@ CGI Tools
  
  -  update views changes (citation no longer forces layout->none)
  
- 
+
+
+===DONE=== 
+ * INSTANT ORDERVALUES
+ * Subscriptions BROKEN
+ * frequency of mailings: default to NEVER?
+ * indexer status option (cmd line) is crappy
+ * render property to supress "UNSPECIFIED": quiet
+ * Go Button on subject search.
+ * Highlight "problems" blocks

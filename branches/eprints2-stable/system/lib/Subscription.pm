@@ -149,6 +149,7 @@ sub create
 		subid => $id,
 		userid => $userid,
 		frequency => 'never',
+		mailempty => "TRUE",
 		spec => ''
 	};
 
@@ -375,6 +376,7 @@ sub send_out_subscription
 	$searchexp->perform_search;
 	my $mempty = $self->get_value( "mailempty" );
 	$mempty = 0 unless defined $mempty;
+
 	if( $searchexp->count > 0 || $mempty eq 'TRUE' )
 	{
 		my $info = {};
@@ -388,6 +390,10 @@ sub send_out_subscription
 				search => $searchdesc,
 				matches => $info->{matches},
 				url => $self->{session}->make_text( $url ) );
+		if( $self->{session}->get_noise >= 2 )
+		{
+			print "Sending out subscription #".$self->get_id." to ".$user->get_value( "email" )."\n";
+		}
 		$user->mail( 
 			"lib/subscription:sub_subj",
 			$mail );
@@ -435,10 +441,6 @@ sub process_set
 		my( $session, $dataset, $item, $info ) = @_;
 
 		$item->send_out_subscription;
-		if( $session->get_noise >= 2 )
-		{
-			print "Sending out subscription #".$item->get_id."\n";
-		}
 	};
 
 	$searchexp->perform_search;

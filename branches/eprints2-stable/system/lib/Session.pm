@@ -658,7 +658,8 @@ sub make_element
 	foreach( keys %params )
 	{
 		next unless( defined $params{$_} );
-		$element->setAttribute( $_ , $params{$_} );
+		my $value = "$params{$_}"; # ensure it's just a string
+		$element->setAttribute( $_ , $value );
 	}
 
 	return $element;
@@ -1633,10 +1634,14 @@ sub build_page
 {
 	my( $self, $title, $mainbit, $pageid, $links ) = @_;
 
-	if( defined $self->param( "mainonly" ) && $self->param( "mainonly" ) eq "yes" )
+	unless( $self->{offline} )
 	{
-		$self->{page} = $mainbit;
-		return;
+		my $mo = $self->param( "mainonly" );
+		if( defined $mo && $mo eq "yes" )
+		{
+			$self->{page} = $mainbit;
+			return;
+		}
 	}
 	my $topofpage;
 

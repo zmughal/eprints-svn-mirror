@@ -140,7 +140,6 @@ END
 
 	my $pid = get_pid( $pidfile, $noise );
 
-
 	if( !defined $pid )
 	{	
 		die "Could not find PID in $pidfile.  Weird. Better kill it by hand.";
@@ -189,20 +188,25 @@ END
 $0 = "EPrints Indexer for ".$EPrints::SystemSettings::conf->{base_path}.": Parent Process";
 if( !$force && -e $pidfile )
 {
-	print "PID file: $pidfile exists\n";
-	if( open( PID, $pidfile ) )
-	{
-		print join('', <PID> )."\n\n";
-		close PID;
-	}
-	else
-	{
-		print "Can't read $pidfile";
-	}
+	my $pid = get_pid( $pidfile, $noise );
 	print <<END;
-Either indexer is already running, or it crashed. If indexer is not 
-already running you may either delete the PID file or run indexer
-with the --force option.
+
+EPrints indexer appears to be running with process ID $pid. 
+It may have crashed. 
+
+To check if the process is still running (on a linux system)
+use:
+
+ps auwwx | grep EPrints
+
+Options to "ps" vary on other systems. You may also try:
+
+ps -ef | grep EPrints
+
+If indexer is not already running you may either:
+ * delete the PID file: $pidfile 
+ * run indexer with the --force option
+
 END
 	exit 1;
 }

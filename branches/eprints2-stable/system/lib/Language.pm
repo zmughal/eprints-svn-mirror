@@ -239,6 +239,16 @@ sub _insert_pins
 		$retnode = $session->clone_for_me( $node, 0 );
 	}
 
+	if( EPrints::XML::is_dom( $retnode, "Text" ) )
+	{
+		# can't insert kids on a text node!
+		# 
+		# This can happen if we have a <pin> which spans
+		# a range but is not set. Then the whole range
+		# becomes a "not found" text node.
+		return $retnode;
+	}
+
 	foreach my $kid ( $node->getChildNodes() )
 	{
 		$retnode->appendChild(
