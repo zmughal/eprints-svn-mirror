@@ -13,18 +13,20 @@ use Cwd;
 	"eprints2-pre-6"   => "baconbits",
 	"eprints2-pre-7"   => "limepickle",
 	"eprints2-2-0"   => "olive",
-	"eprints-2-0-1pre1"   => "mangogoo"
+	"eprints-2-0-1pre1"   => "mangogoo",
+	"eprints2-0-1"   => "tuna"
 );
 %ids = (
 	"latest"           => "2.0.1",
 	"eprints2-pre-6"   => "2.0.pre-6",
 	"eprints2-2-0"     => "2.0",
-	"eprints-2-0-1"     => "2.0.1"
+	"eprints-2-0-1pre1"     => "2.0.1.pre-1",
+	"eprints2-0-1"     => "2.0.1"
 );
 
 ($type) = @ARGV;
 
-$EPRINTS_VERSION = "2.0.a";
+$EPRINTS_VERSION = "2.0.1";
 if( defined $type && $ids{$type} )
 {
 	$EPRINTS_VERSION = $ids{$type};
@@ -56,7 +58,7 @@ else
 	$version_tag = $type;
 	$package_version = $EPRINTS_VERSION;
 	$package_desc = "EPrints $EPRINTS_VERSION (".$codenames{$type}.") [Born on $DATE]";
-	$package_file = $type;
+	$package_file = "eprints-".$ids{$type};
 	$ntype = 1;
 }
 

@@ -54,7 +54,9 @@ After upgrading EPrints, repeat these steps for the cfg
 directory of archive you have:
 
 * In C<citations-en.xml> in the citation for poster, the year field
-is incorrecly named &years; rename it to &year;
+is incorrecly named &years; rename it to &year; 
+
+* (This is not essential) Also on the citations file for the "eprint" and "user" citation types: add a E<lt>ep:linkhereE<gt> .... E<lt>/ep:linkhereE<gt> just inside the E<lt>ep:citationE<gt> tag.
 
 * There was a bug in C<ArchiveFreeTextIndexingConfig.pm> which meant
 that "return" was treated as part of a word, rather than a word break. Unless you have modifed that file, just
@@ -63,5 +65,4 @@ replace it with the new one from C</opt/eprints2/defaultcfg/>
 * (This is not essential) The title for the abstract block never gets added to the page. Edit C<ArchiveRenderConfig.pm> - search for eprint_fieldname_abstract and add the following line as the next line:
 
   $page->appendChild( $h2 );
-
 

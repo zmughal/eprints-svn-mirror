@@ -49,6 +49,10 @@ EPrints 2 Alpha-2 (Pepperoni) released.
 
 EPrints 2.0 (Olive) released.
 
+=item B<Apr 17 2002>
+
+EPrints 2.0.1 (Tuna) released.
+
 =back
 
 =head1 What next?
