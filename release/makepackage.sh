@@ -26,7 +26,7 @@ mkdir package
 echo "Exporting from CVS..."
 
 cd export
-cvs export -r $VERSION_TAG eprints >/dev/null
+cvs export -r $VERSION_TAG eprints/system >/dev/null
 
 # Remove the .cvsignore files
 /bin/rm `find . -name '.cvsignore'`

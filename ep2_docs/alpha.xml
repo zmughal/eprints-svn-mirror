@@ -1,0 +1,36 @@
+<?xml version="1.0" ?>
+<!DOCTYPE book >
+<book>
+<bookinfo>
+  <title>EPrints 2.0 Alpha Release (Anchovy) Installation Notes</title>
+  <authorgroup>
+  <author><firstname>Christopher</firstname><surname>Gutteridge</surname></author>
+  <author><firstname>Mike</firstname><surname>Jewell</surname></author>
+  </authorgroup>
+  <copyright><year>2001</year><holder>University of Southampton</holder></copyright>
+</bookinfo>
+
+<chapter><title>What is EPrints 2.0 Alpha, Should I install it?</title>
+<para>The first bit</para>
+<para>The first bit</para>
+</chapter>
+
+<chapter><title>What software does ep2 need? Where do I get it?</title>
+<para>The second bit</para>
+</chapter>
+
+<chapter><title>How do I install ep2?</title>
+<para>The third bit</para>
+</chapter>
+
+<chapter><title>How do I create my first archive?</title>
+<para>The third bit</para>
+</chapter>
+
+<chapter><title>What about Bugs?</title>
+<para>The third bit</para>
+</chapter>
+
+
+
+</book>
