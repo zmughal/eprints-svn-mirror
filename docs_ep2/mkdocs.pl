@@ -10,6 +10,9 @@
 );
 
 my $BASENAME = "eprints2-alpha2-docs";
+
+`rm -rf docs`;
+`mkdir docs`;
 	
 ##########################################################################
 # text
@@ -23,7 +26,7 @@ foreach $file ( @files )
 }
 
 ## Text
-open( OUT, ">$BASENAME.txt" );
+open( OUT, ">docs/$BASENAME.txt" );
 print OUT <<END;
 ==============================================================================
 EPrints 2 - Alpha - Documentation
@@ -86,4 +89,4 @@ close OUT;
 chdir( "tmp" );
 `latex $BASENAME.tex`;
 `dvipdfm $BASENAME.dvi`;
-`mv $BASENAME.pdf ..`;
+`mv $BASENAME.pdf ../docs/`;
