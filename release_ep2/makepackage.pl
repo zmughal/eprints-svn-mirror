@@ -10,12 +10,14 @@ use Cwd;
 	"eprints2-pre-3"   => "toast",
 	"eprints2-pre-4"   => "noodle",
 	"eprints2-pre-5"   => "bovex",
-	"eprints2-pre-6"   => "baconbits"
+	"eprints2-pre-6"   => "baconbits",
+	"eprints2-pre-7"   => "limepickle",
+	"eprints2-2-0"   => "olive"
 );
 %ids = (
 	"latest"           => "2.0.pre",
-	"eprints2-2.0"     => "2.0",
-	"eprints2-pre-6"   => "2.0.pre-6"
+	"eprints2-pre-6"   => "2.0.pre-6",
+	"eprints2-2-0"     => "2.0"
 );
 
 ($type) = @ARGV;
@@ -210,7 +212,7 @@ sub do_package
 	close(FILEOUT);
 
 	# Do phrases
-	@langs = ("en", "fr");
+	@langs = ("en" );
 	@files = ();
 
 	# Build up list from export.
@@ -328,8 +330,8 @@ sub do_package
 	
 
 	print "Removing temporary directories...\n";
-	system("/bin/rm -rf package")==0 or die("Couldn't remove package dir.\n");
-	system("/bin/rm -rf export")==0 or die("Couldn't remove export dir.\n");
+	#system("/bin/rm -rf package")==0 or die("Couldn't remove package dir.\n");
+	#system("/bin/rm -rf export")==0 or die("Couldn't remove export dir.\n");
 
 	print "Done.\n";
 
