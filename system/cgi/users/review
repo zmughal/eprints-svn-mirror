@@ -21,13 +21,13 @@ use EPrints::User;
 use strict;
 
 my $session = new EPrints::Session;
-Apache::exit( 0 ) unless( defined $session );
+exit( 0 ) unless( defined $session );
 
 # Check we have privs
 if( !$session->auth_check( "deposit" ) )
 {
 	$session->terminate();
-	Apache::exit( 0 );
+	exit( 0 );
 }
 
 my $page;
@@ -173,7 +173,7 @@ sub process_form
 			if( defined $copy )
 			{
 				# Copied OK, redirect to workspace
-				$session->redirect( "home" );
+				$session->redirect( $session->get_archive->get_conf( "userhome" ) );
 #cjg is the next bit meaningless? (upto return)
 				my $page = $session->make_doc_fragment();
 				my $title = $session->html_phrase( "cgi/users/review:title" );
