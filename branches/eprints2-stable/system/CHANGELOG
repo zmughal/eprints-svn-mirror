@@ -1728,4 +1728,10 @@ PACKAGE: 2.2.99.2
  - Deprecated links to user_search & eprints_search. Scripts now just
     forward to /users/search 
 
+2003-11-25
+
+ - Fixed some problems in exporting apache constants in apache 1.3 
+ - ..and some with AuthDBI requiring only Apache.pm not AnApache
+ - Fixed a bug with attr->toString not working in newer gdome's
+
 ======================================================================

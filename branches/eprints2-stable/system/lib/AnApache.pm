@@ -32,18 +32,17 @@ Plus functions to paper over the cracks between the two interfaces.
 
 package EPrints::AnApache;
 
-use strict;
-
 BEGIN
 {
 	use Exporter;
 	our (@ISA, @EXPORT );
 	@ISA	 = qw(Exporter);
-	@EXPORT  = qw( OK FORBIDDEN AUTH_REQUIRED DONE DECLINED NOT_FOUND );
+	@EXPORT  = qw(OK AUTH_REQUIRED FORBIDDEN DECLINED SERVER_ERROR NOT_FOUND DONE);
 }
 
-
 use EPrints::SystemSettings;
+use strict;
+
 
 my $av =  $EPrints::SystemSettings::conf->{apache};
 if( defined $av && $av eq "2" )
@@ -52,7 +51,7 @@ if( defined $av && $av eq "2" )
 	eval "require EPrints::RequestWrapper2"; if( $@ ) { die $@; }
 	eval "require Apache::AuthDBI"; if( $@ ) { die $@; }
 	eval "require ModPerl::Registry"; if( $@ ) { die $@; }
-	eval "require Apache::Const;"; if( $@ ) { die $@; }
+	eval "require Apache::Const; import Apache::Const;"; if( $@ ) { die $@; }
 	$EPrints::AnApache::RequestWrapper = "EPrints::RequestWrapper2"; 
 }
 else
@@ -61,8 +60,16 @@ else
 	eval "require EPrints::RequestWrapper"; if( $@ ) { die $@; }
 	eval "require Apache::AuthDBI"; if( $@ ) { die $@; }
 	eval "require Apache::Registry"; if( $@ ) { die $@; }
-	eval "require Apache::Constants; import Apache::Constants qw( OK AUTH_REQUIRED FORBIDDEN DECLINED SERVER_ERROR DONE )"; if( $@ ) { die $@; }
+	eval "require Apache::Constants; "; if( $@ ) { die $@; }
 	$EPrints::AnApache::RequestWrapper = "EPrints::RequestWrapper"; 
+
+	sub OK { &Apache::Constants::OK; }
+	sub AUTH_REQUIRED { &Apache::Constants::AUTH_REQUIRED; }
+	sub FORBIDDEN { &Apache::Constants::FORBIDDEN; }
+	sub DECLINED { &Apache::Constants::DECLINED; }
+	sub SERVER_ERROR { &Apache::Constants::SERVER_ERROR; }
+	sub NOT_FOUND { &Apache::Constants::NOT_FOUND; }
+	sub DONE { &Apache::Constants::DONE; }
 }
 
 

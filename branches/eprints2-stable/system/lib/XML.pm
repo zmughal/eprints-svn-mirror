@@ -458,7 +458,8 @@ sub to_string
 			my $attr = $nnm->item($i);
 			next if $done->{$attr->getName};
 			$done->{$attr->getName} = 1;
-			push @n, " ",$attr->toString;
+			# cjg Should probably escape these values.
+			push @n, " ", $attr->getName."=\"".$attr->getValue."\"";
 		}
 
 		#cjg This is bad. It makes nodes like <div /> if 
