@@ -63,14 +63,14 @@ END
 }
 else { print "OK.\n\n"; }
 
-# Grab version number from VERSION file.
+# Grab version id number from VERSION file.
 open(VERSIONIN, "VERSION") or die "No VERSION file - invalid distribution?";
+my $version_id = <VERSIONIN>;
+if (!defined($version_id)) { die "Undefined version number."; }
+chomp($version_id);
 my $version = <VERSIONIN>;
-if (!defined($version)) { die "Undefined version number."; }
+if (!defined($version)) { die "Undefined version description."; }
 chomp($version);
-my $version_desc = <VERSIONIN>;
-if (!defined($version_desc)) { die "Undefined version descriptor."; }
-chomp($version_desc);
 close(VERSIONIN);
 
 
@@ -92,11 +92,6 @@ my %archiveexts = (
 );
 
 
-$systemsettings{"invocation"} = \%invocsettings;
-$systemsettings{"archive_extensions"} = \%archiveexts;
-$systemsettings{"archive_formats"} = ["zip", "targz"];
-$systemsettings{"version"} = "2.0.a.2001-09-04";
-$systemsettings{"version_desc"} = "EPrints 2.0 Alpha (Nightly Build 2001-09-04)";
 $exesettings{"unzip"} 	= detect("unzip", @paths);
 $exesettings{"wget"} 	= detect("wget", @paths);
 $exesettings{"sendmail"} = detect("sendmail", @paths);
@@ -105,9 +100,12 @@ $exesettings{"tar"} 	= detect("tar", @paths);
 my $useradd = detect("useradd", @paths);
 my $groupadd = detect("groupadd", @paths);
 
-$systemsettings{"executables"} = \%exesettings;
+$systemsettings{"invocation"} = \%invocsettings;
+$systemsettings{"archive_extensions"} = \%archiveexts;
+$systemsettings{"archive_formats"} = ["zip", "targz"];
+$systemsettings{"version_id"} = $version_id;
 $systemsettings{"version"} = $version;
-$systemsettings{"version_desc"} = $version_desc;
+$systemsettings{"executables"} = \%exesettings;
 print <<DIR;
 
 EPrints 2 installs by default to the /opt/eprints2 directory. If you
@@ -119,8 +117,8 @@ DIR
 my $dirokay = 0;
 my $dir = "";
 my $upgrade = 0;
+my $orig_version_id = "";
 my $orig_version = "";
-my $orig_version_desc = "";
 while (!$dirokay)
 {
 	$dir = get_string('[\/a-zA-Z0-9_]+', "Directory", "/opt/eprints2");
@@ -130,12 +128,12 @@ while (!$dirokay)
 		if (-e "$dir/perl_lib/EPrints/SystemSettings.pm")
 		{
 			require "$dir/perl_lib/EPrints/SystemSettings.pm" or die("Unable to detect SystemSettings module: Corrupt prevous install?");
-			my $old_version = $EPrints::SystemSettings::conf{"version"};
+			my $old_version_id = $EPrints::SystemSettings::conf{"version_id"};
 
+			$systemsettings{"orig_version_id"} = $EPrints::SystemSettings::conf->{"orig_version_id"};
 			$systemsettings{"orig_version"} = $EPrints::SystemSettings::conf->{"orig_version"};
-			$systemsettings{"orig_version_desc"} = $EPrints::SystemSettings::conf->{"orig_version_desc"};
-			my $origv = $systemsettings{"orig_version"};
-			my $newv = $systemsettings{"version"};	
+			my $origv = $systemsettings{"orig_version_id"};
+			my $newv = $systemsettings{"version_id"};	
 			if (defined $origv && $origv gt $newv)
 			{
 				print <<DOWNGRADE;
@@ -293,8 +291,8 @@ GROUP
 	}
 	$systemsettings{"user"} = $user;
 	$systemsettings{"group"} = $group;	
-	$systemsettings{"orig_version"} = $systemsettings{"version"}; # First time install
-	$systemsettings{"orig_version_desc"} = $systemsettings{"version_desc"};
+	$systemsettings{"orig_version_id"} = $systemsettings{"version_id"}; # First time install
+	$systemsettings{"orig_version"} = $systemsettings{"version"};
 	my(undef,undef,$uid,$gid) = getpwnam($user);
 	print "\nMaking directory ... ";
 	if (!-d $dir && !mkdir($dir, 0755))
