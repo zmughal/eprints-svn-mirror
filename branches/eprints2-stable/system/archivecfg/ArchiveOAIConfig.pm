@@ -63,7 +63,7 @@ $oai->{sample_identifier} = EPrints::OpenArchives::to_oai_identifier(
 # This may be different for OAI v2.0
 # It can have dots (.) in which v1.1 can't. This means you can use your
 # sites domain as (part of) the base ID - which is pretty darn unique.
-$oai->{v2}->{archive_id} = "GenericEPrints.OAI2";
+$oai->{v2}->{archive_id} = "GenericEPrints";
 
 # Exported metadata formats. The hash should map format ids to namespaces.
 $oai->{v2}->{metadata_namespaces} =
@@ -117,7 +117,7 @@ $oai->{sets} = [
 
 $oai->{filters} = [
 
-	{ meta_fields => [ "creators" ], value=>"harnad" }
+#	{ meta_fields => [ "creators" ], value=>"harnad" }
 # Example: don't export any OAI records from before 2003.
 #	{ meta_fields => [ "date-effective" ], value=>"2003-" }
 ];

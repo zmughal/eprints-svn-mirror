@@ -1878,3 +1878,12 @@ PACKAGE: 2.2.99.2
  - Swaped the header_in and header_out functions 1.3 and 2.0 ones
     were the wrong way around. d'oh.
 
+2004-02-25 cjg
+
+ - Commented out a filter in ArchiveOAIConfig.pm that should not
+    have been active by default.
+
+======================================================================
+25/02/2004 - EPRINTS-2.3.2
+======================================================================
+
