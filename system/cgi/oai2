@@ -34,7 +34,7 @@ use strict;
 
 # New session
 my $session = new EPrints::Session();
-Apache::exit( 0 ) unless( defined $session );
+exit( 0 ) unless( defined $session );
 # What are we begin asked?
 my $verb = $session->param( "verb" );
 
@@ -99,7 +99,9 @@ foreach(
 	# unsets it.
 	$request_desc->setAttribute( $_, $value );
 }
-$request_desc->appendChild( $session->make_text( $session->get_url() ) );
+my $url = $session->get_archive->get_conf( "base_url" );
+$url .= $session->get_uri;
+$request_desc->appendChild( $session->make_text( $url ) );
 
 $response->appendChild( $session->make_indent( 2 ) );
 $response->appendChild( $request_desc );
@@ -115,7 +117,6 @@ if( $session->param( "debug" ) eq "yes" )
 
 $session->send_http_header( content_type=>$content );
 
-#cjg Need proper XML <?xml line
 print <<END;
 <?xml version="1.0" encoding="UTF-8" ?>
 
@@ -480,7 +481,8 @@ sub _list
 
 		return join_errors( $session, $errors ) if( scalar @{$errors} > 0 );
 
-		unless( $args->{resumptionToken} =~ m#^(\d+)/(\d+)(/(.*))?$# )
+		unless( $args->{"resumptionToken"} =~ 
+				m#^(archive|deletion)/(\d+)/(\d+)(/(.*))?$# )
 		{
 			return render_oai_error(
 				$session,
@@ -488,10 +490,14 @@ sub _list
 				"Token is invalid (does not match regexp)" );
 		}
 		my $cache_id;
-		( $offset, $cache_id, $metadata_format ) = ( $1, $2, $4 );
+		( $offset, $cache_id, $metadata_format ) = ( $2, $3, $5 );
 		$searchexp = EPrints::SearchExpression->new( 
+			dataset => $session->get_archive->get_dataset( "$1" ),
 			session => $session,
-			use_private_cache => 1,
+			keep_cache => 1,
+			filters => $session->get_archive()->get_conf( 
+								"oai",
+								"filters" ),
 			cache_id => $cache_id );
 
 		unless( defined $searchexp )
@@ -552,11 +558,13 @@ sub _list
 		}
 
 		my $ds = $session->get_archive()->get_dataset( "archive" );
-
 		$searchexp = new EPrints::SearchExpression(
 			session => $session,
-			use_private_cache => 1,
+			keep_cache => 1,
 			allow_blank => 1,
+			filters => $session->get_archive()->get_conf( 
+								"oai",
+								"filters" ),
 			dataset => $ds );
 
 		if( defined $args->{set} )
@@ -621,16 +629,11 @@ END
 	
 	$searchexp->perform_search();
 	my $count = $searchexp->count();
-	my $serial = $searchexp->serialise();
 
 	if( $count == 0 )
 	{	
 		## End of archive items, time to do deleted ones.
-		my $delsearchexp = EPrints::SearchExpression->unserialise(
-			$session,
-			$serial,
-			use_private_cache => 1,
-			allow_blank => 1 );
+		my $delsearchexp = $searchexp->clone;
 		$delsearchexp->set_dataset(
 			$session->get_archive()->get_dataset( "deletion" ) );
 		$delsearchexp->perform_search();
@@ -638,7 +641,6 @@ END
 		$searchexp = $delsearchexp;
 		
 		$count = $searchexp->count();
-		$serial = $searchexp->serialise();
 	}
 
 	if( $count == 0 )
@@ -707,34 +709,35 @@ END
 	my $tokenvalue = "";
 	if( $count > $offset+$PAGESIZE )
 	{
-		$tokenvalue = ($offset+$PAGESIZE)."/".$cache.$mdtoken;
+		$tokenvalue =  $searchdsid."/".
+				($offset+$PAGESIZE)."/".
+				$cache.$mdtoken;
 	}
 	elsif( $searchdsid eq "archive" )
 	{
 		## End of archive items, time to do deleted ones.
-		my $delsearchexp = EPrints::SearchExpression->unserialise(
-			$session,
-			$serial,
-			use_private_cache => 1,
-			allow_blank => 1 );
+		my $delsearchexp = $searchexp->clone;
 		$delsearchexp->set_dataset(
 			$session->get_archive()->get_dataset( "deletion" ) );
 		$delsearchexp->perform_search();
 		my $cache = $delsearchexp->get_cache_id();
 		my $count = $delsearchexp->count();
 		$delsearchexp->dispose();
-		
 		# no point giving a token if we have no
 		# deleted items.
 		if( $count > 0 )
 		{
-			$tokenvalue = "0/$cache".$mdtoken;
+			$tokenvalue = "deletion/0/$cache".$mdtoken;
 		}
 	}
-	$response->appendChild( $session->render_data_element(
-		2,
-		"resumptionToken",
-		$tokenvalue ) );
+
+	if( EPrints::Utils::is_set( $tokenvalue ) )
+	{
+		$response->appendChild( $session->render_data_element(
+			2,
+			"resumptionToken",
+			$tokenvalue ) );
+	}
 	
 	my $f = $session->make_doc_fragment();
 	$f->appendChild( $session->make_indent( 2 ) );
@@ -780,7 +783,7 @@ sub ListMetadataFormats
 		foreach( @all_formats )
 		{
 			my $fn = $session->get_archive()->get_conf(
-				"oai","metadata_functions" )->{$_};
+				"oai","v2","metadata_functions" )->{$_};
 			my $md = &{$fn}( $eprint, $session );
 			if( defined $md )
 			{
@@ -885,12 +888,12 @@ sub ListSets
 			}
 			else
 			{
-				my @v = $field->get_values( $session, $ds );
+				my $v1 = $field->get_values( $session, $ds );
 				my $delfield = $field->clone();
 #cjg why clone with new style datasets?
 				#$delfield->set_dataset( $ds_del );
-				push @v, $delfield->get_values( $session, $ds_del );
-				foreach( @v )
+				my $v2 = $delfield->get_values( $session, $ds_del );
+				foreach( @{$v1}, @{$v2} )
 				{
 					my $key = EPrints::OpenArchives::encode_setspec( $_ );
 					if( !defined $key ) { $key=""; }

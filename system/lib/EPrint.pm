@@ -682,9 +682,8 @@ sub validate_linking
 		{
 			push @problems, $self->{session}->html_phrase(
 				"lib/eprint:invalid_id",	
-				field => $self->{session}->make_text(
-					$field->display_name( $self->{session}) 
-				) );
+				field => $field->render_name( 
+						$self->{session} ) );
 			next;
 		}
 
@@ -747,8 +746,7 @@ sub validate_meta
 
 		my $problem = $self->{session}->html_phrase( 
 			"lib/eprint:not_done_field" ,
-			fieldname=> $self->{session}->make_text( 
-			   $field->display_name( $self->{session} ) ) );
+			fieldname=> $field->render_name( $self->{session} ) );
 
 		push @all_problems,$problem;
 	}
@@ -812,9 +810,8 @@ sub validate_meta_page
 
 			my $problem = $self->{session}->html_phrase( 
 				"lib/eprint:not_done_field" ,
-				fieldname=> $self->{session}->make_text( 
-			   		$field->display_name( 
-						$self->{session} ) ) );
+				fieldname=> $field->render_name( 
+						$self->{session} ) );
 			push @problems,$problem;
 		}
 
@@ -825,6 +822,14 @@ sub validate_meta_page
 			$self->{session},
 			$for_archive );
 	}
+
+	# then call the validate page function for this page
+	push @problems, $self->{session}->get_archive->call(
+		"validate_eprint_meta_page",
+		$self,
+		$self->{session},
+		$page,
+		$for_archive );
 
 	return( \@problems );
 }
@@ -900,6 +905,7 @@ sub validate_documents
 			$prob->appendChild( 
 				$self->{session}->make_text( ": " ) );
 			$prob->appendChild( $_ );
+			push @problems, $prob;
 		}
 	}
 
@@ -1066,6 +1072,21 @@ sub move_to_deletion
 
 	my $success = $self->_transfer( $ds );
 
+	if( $success )
+	{
+		$self->generate_static();
+
+		# Generate static pages for everything in threads, if 
+		# appropriate
+		my @to_update = $self->get_all_related();
+		
+		# Do the actual updates
+		foreach (@to_update)
+		{
+			$_->generate_static();
+		}
+	}
+	
 	return $success;
 }
 
@@ -1265,6 +1286,8 @@ sub generate_static
 			$eprintid." in dataset $ds_id (may only generate ".
 			"static for deletion and archive" );
 	}
+
+	$self->remove_static;
 
 	# We is going to temporarily change the language of our session to
 	# render the abstracts in each language.
