@@ -11,6 +11,14 @@
 #  $Id$
 #
 ######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
 
 package EPrintSite::SiteInfo;
 
@@ -26,22 +34,22 @@ use strict;
 ######################################################################
 
 # Name for the site
-$EPrintSite::SiteInfo::sitename = "CogPrints";
+$EPrintSite::SiteInfo::sitename = "Generic EPrint Archive";
 
 # E-mail address for automatically processed mail
-$EPrintSite::SiteInfo::automail = "auto\@eprints.org";
+$EPrintSite::SiteInfo::automail = "MUST CHANGE";
 
 # E-mail address for human-read administration mail
-$EPrintSite::SiteInfo::admin = "rob\@soton.ac.uk";
+$EPrintSite::SiteInfo::admin = "MUST CHANGE";
 
 # Root of EPrint installation on the machine
 $EPrintSite::SiteInfo::local_root = "/opt/eprints";
 
 # Host the machine is running on
-$EPrintSite::SiteInfo::host = "dibble.ecs.soton.ac.uk";
+$EPrintSite::SiteInfo::host = "localhost";
 
 # Stem for local ID codes
-$EPrintSite::SiteInfo::eprint_id_stem = "cog";
+$EPrintSite::SiteInfo::eprint_id_stem = "MUST CHANGE";
 
 # If 1, users can request the removal of their submissions from the archive
 $EPrintSite::SiteInfo::allow_user_removal_request = 1;
@@ -210,7 +218,7 @@ $EPrintSite::SiteInfo::html_banner = "
 <table border=0 cellpadding=0 cellspacing=0>
   <tr>
     <td align=\"center\" valign=\"top\" bgcolor=\"#dddddd\" fgcolor=\"white\">
-      <a href=\"$EPrintSite::SiteInfo::frontpage\"><img border=0 src=$EPrintSite::SiteInfo::server_static/images/logo_small.gif ALT=\"$EPrintSite::SiteInfo::sitename\"></a>
+      <a href=\"$EPrintSite::SiteInfo::frontpage\"><img border=0 src=\"$EPrintSite::SiteInfo::server_static/images/logo_small.gif\" ALT=\"$EPrintSite::SiteInfo::sitename\"></a>
     </td>
     <td width=\"100\%\" colspan=2 align=center valign=\"middle\" bgcolor=\"white\" fgcolor=\"black\">
       <H1>TITLE_PLACEHOLDER</H1>
@@ -230,7 +238,6 @@ $EPrintSite::SiteInfo::html_banner = "
             <A HREF=\"$EPrintSite::SiteInfo::server_static/register.html\">Register</A>\&nbsp;<BR><BR>
             <A HREF=\"$EPrintSite::SiteInfo::server_perl/users/subscribe\">Subscriptions</A>\&nbsp;<BR><BR>
             <A HREF=\"$EPrintSite::SiteInfo::server_perl/users/home\">Submit\&nbsp;Papers</A>\&nbsp;<BR><BR>
-            <A HREF=\"$EPrintSite::SiteInfo::server_static/help\">Help</A>
           </td>
         </tr>
       </table>
@@ -246,11 +253,6 @@ $EPrintSite::SiteInfo::html_banner = "
 # This is the HTML put at the bottom of every page. Obviously, it should close
 #  up any tags left open in html_banner.
 $EPrintSite::SiteInfo::html_tail = "<BR>
-<HR>
-
-<a href=\"http://www.ukoln.ac.uk/services/elib/\"><img src=\"$EPrintSite::SiteInfo::server_static/images/logo_elib.gif\" alt=\"Elib logo\" border=0 hspace=5 vspace=5 align=\"left\"></a>
-<p>The <strong>CogPrints</strong> project is funded by the <a href=\"http://www.jisc.ac.uk/\">Joint Information Systems Committee (JISC)</a> of the Higher Education Funding Councils, as part of its <a href=\"http://www.ukoln.ac.uk/services/elib/\">Electronic Libraries (eLib) Programme</a>.<br clear=\"left\"></p>
-
 <HR>
 <address>
 Contact site administrator at: <a href=\"mailto:$EPrintSite::SiteInfo::admin\">$EPrintSite::SiteInfo::admin</a>
@@ -402,7 +404,7 @@ $EPrintSite::SiteInfo::password = "eprints";
 
 # Site specific **UNIQUE** archive identifier.
 # See http://www.openarchives.org/sfc/sfc_archives.htm for existing identifiers.
-$EPrintSite::SiteInfo::archive_identifier = "cogprints";
+$EPrintSite::SiteInfo::archive_identifier = "MUST CHANGE";
 # Domain the software is running in
 $EPrintSite::SiteInfo::domain = $EPrintSite::SiteInfo::host;
 # Port the perl server is running on

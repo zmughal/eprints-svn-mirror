@@ -10,6 +10,14 @@
 #  $Id$
 #
 ######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
 
 package EPrints::SearchField;
 
@@ -629,6 +637,11 @@ sub from_form
 		my $search_terms = $self->{session}->{render}->param( $self->{formname} );
 		my $search_type = $self->{session}->{render}->param( 
 			$self->{formname}."_srchtype" );
+		
+		# Default search type if none supplied (to allow searches using simple
+		# HTTP GETs)
+		$search_type = "all" unless defined( $search_type );		
+		
 		$self->{value} = "$search_type:$search_terms"
 			if( defined $search_terms && $search_terms ne "" );
 	}		

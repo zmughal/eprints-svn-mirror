@@ -29,22 +29,6 @@ VALUE mac = "Macintosh"
 VALUE other = "Other"
 </field>
 
-<field status>
-required = NO
-type = "enum"
-displayname = "Status"
-editable = YES
-visible = NO
-VALUE unspec = "Unspecified"
-VALUE prof = "Professor"
-VALUE doctor = "Doctor"
-VALUE researcher = "Researcher"
-VALUE graduate = "Graduate"
-VALUE undergrad = "Undergraduate"
-VALUE staff = "Staff"
-VALUE other = "Other"
-</field>
-
 <field dept>
 required = NO
 editable = YES
@@ -84,12 +68,4 @@ editable = YES
 type = "url"
 visible = YES
 displayname = "Homepage URL"
-</field>
-
-<field official>
-required = NO
-editable = NO
-type = "boolean"
-visible = NO
-displayname = "Official"
 </field>

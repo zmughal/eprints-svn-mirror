@@ -11,6 +11,14 @@
 #  $Id$
 #
 ######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
 
 package EPrints::User;
 
@@ -461,7 +469,7 @@ sub send_reminder
 
 sub retrieve_users
 {
-	my( $class, $session, $conditions, $order ) = @_;
+	my( $session, $conditions, $order ) = @_;
 	
 	my @fields = EPrints::MetaInfo::get_user_fields();
 
