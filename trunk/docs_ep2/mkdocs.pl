@@ -10,6 +10,7 @@ my @ids = (
 	"configeprints",
 	"configarchive",
 	"contact", 
+	"updating",
 	"history" ,
 	"logo",
 	"!configure_archive",
@@ -32,6 +33,7 @@ my %titles = (
 	configeprints => "Configuring the System",
 	configarchive => "Configuring an Archive",
 	contact => "Problems, Questions and Feedback",
+	updating => "Updating from Previous Versions",
 	history => "EPrints History (and Future Plans)",
 	logo => "The EPrints Logo"
 );
