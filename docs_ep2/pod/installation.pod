@@ -95,7 +95,7 @@ If you want to totally erase the database, documents and website then run:
 
 The following commands will generate the initial database tables, the initial website and the apache configuration files to run this archive: 
 
- % bin/generate_apacheconf ARCHIVEID
+ % bin/generate_apacheconf
  % bin/create_tables ARCHIVEID
  % bin/import_subjects ARCHIVEID
  % bin/generate_static ARCHIVEID

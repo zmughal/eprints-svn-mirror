@@ -16,9 +16,9 @@ use EPrints::Session;
 use strict;
 
 my $session = new EPrints::Session;
-Apache::exit( 0 ) unless( defined $session );
+exit( 0 ) unless( defined $session );
 
-Apache::exit( 0 ) unless( $session->auth_check( "change-email" ) );
+exit( 0 ) unless( $session->auth_check( "change-email" ) );
 
 my( $page, $title ) = make_page( $session );
 
