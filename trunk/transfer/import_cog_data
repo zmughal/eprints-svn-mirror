@@ -74,48 +74,50 @@ my %idmap;
 
 my %translations =
 (
-	"eprintid"    => "*",
-	"username"    => "*",
-	"dir"         => "*",
-	"datestamp"   => "+",
-	"additional"  => "*",
-	"reasons"     => "*",
-	"subjects"    => "+",
-	"type"        => "*",
-	"succeeds"    => "*",
-	"commentary"  => "+",
-	"abstract"    => "abstract",
-	"altloc"      => "altloc",
-	"authors"     => "+",
-	"chapter"     => "chapter",
-	"comments"    => "comments",
-	"commref"     => "commref",
-	"confdates"   => "cdate",
-	"conference"  => "conf",
-	"confloc"     => "+",
-	"department"  => "dept",
-	"editors"     => "+",
-	"institution" => "univ",
-	"ispublished" => "+",
-	"keywords"    => "keywords",
-	"month"       => "+",
-	"number"      => "+",
-	"pages"       => "+",
-	"pubdom"      => "+",
-	"publication" => "pubn",
-	"publisher"   => "pubr",
-	"refereed"    => "+",
-	"reportno"    => "repnum",
-	"title"       => "title",
-	"volume"      => "volume",
-	"year"        => "year"
+	"eprintid"      => "*",
+	"username"      => "*",
+	"dir"           => "*",
+	"datestamp"     => "+",
+	"additional"    => "*",
+	"reasons"       => "*",
+	"subjects"      => "+",
+	"type"          => "*",
+	"succeeds"      => "*",
+	"commentary"    => "+",
+	"abstract"      => "abstract",
+	"altloc"        => "altloc",
+	"authors"       => "+",
+	"chapter"       => "chapter",
+	"comments"      => "comments",
+	"commref"       => "commref",
+	"confdates"     => "cdate",
+	"conference"    => "conf",
+	"confloc"       => "+",
+	"department"    => "dept",
+	"editors"       => "+",
+	"institution"   => "univ",
+	"ispublished"   => "+",
+	"keywords"      => "keywords",
+	"month"         => "+",
+	"number"        => "+",
+	"pages"         => "+",
+	"pubdom"        => "+",
+	"publication"   => "pubn",
+	"publisher"     => "pubr",
+	"refereed"      => "+",
+	"referencetext" => "*",
+	"reportno"      => "repnum",
+	"title"         => "title",
+	"volume"        => "volume",
+	"year"          => "year"
 );
 
 
 my %ignore_records =
 (
 	"comp/199802021" => 1,
-	"comp/199802022" => 1
+	"comp/199802022" => 1,
+	"neuro/200005001" => 1,
 );
 
 
@@ -220,6 +222,12 @@ sub import_eprint
 
 	print STDERR "Importing entry: ".(defined $entry{idcode} ? $entry{idcode} : "(no ID code!!!)" )."\n";
 
+	# Hooks in here for special cases
+	delete $entry{editors} if( $entry{idcode} eq "neuro/199811004" );
+	$entry{format} = "html" if( $entry{idcode} eq "bio/199710002" );
+	$entry{date} = "Sat Jun  6 15:41:38 1998"
+		if( $entry{idcode} eq "psyc/199806005" );
+
 	my @errors;
 	
 	# Get the context (pjour, ujour etc.)
@@ -317,20 +325,45 @@ sub import_eprint
 
 	#print STDERR "Validating\n";
 
+	my @validation_problems;
+
 	# Check for any problems
 	my $probs = $eprint->validate_type();
-	push @errors, @$probs;
+	push @validation_problems, @$probs;
 
 	$probs = $eprint->validate_meta();
-	push @errors, @$probs;
+	push @validation_problems, @$probs;
 
 	$probs = $eprint->validate_subject();
-	push @errors, @$probs;
+	push @validation_problems, @$probs;
 
-#	$probs = $eprint->validate_documents();
-#	push @errors, @$probs;
+	EPrintSite::Validate->validate_eprint( $eprint, \@validation_problems );
 
-	EPrintSite::Validate->validate_eprint( $eprint, \@errors );
+	if( scalar @validation_problems > 0 )
+	{
+		# Try downgrading to a preprint.
+		$eprint->{type} = "preprint";
+		$eprint->prune();
+		$eprint->commit();
+		
+		@validation_problems = ();
+		$probs = $eprint->validate_type();
+		push @validation_problems, @$probs;
+
+		$probs = $eprint->validate_meta();
+		push @validation_problems, @$probs;
+
+		$probs = $eprint->validate_subject();
+		push @validation_problems, @$probs;
+
+		EPrintSite::Validate->validate_eprint( $eprint, \@validation_problems );
+	}
+	
+	$probs = $eprint->validate_documents();
+	push @validation_problems, @$probs;
+
+	push @errors, @validation_problems;
+	
 
 	# Generate static HTML page
 	$eprint->generate_static();
@@ -447,8 +480,11 @@ sub translate_commentary
 	my( $eprint, $old_values, $problems ) = @_;
 
 	# Tricky one - might not have the paper being commented on in the map yet.
-	if( defined $old_values->{commid} )
+	if( defined $old_values->{commid} && $old_values->{commid} ne "" &&
+		$old_values->{commid} ne "-" )
 	{
+#		return( "COMMID:".$old_values->{commid} );
+
 		my $commid = $old_values->{commid};
 
 		if( defined $idmap{$commid} )
@@ -703,14 +739,23 @@ sub import_document
 		{
 			$have_new_form = 1;
 			my $format_info = $newform{$_};
+			my $new_format = $format_info->[1];
+			my $compressed = $format_info->[2];
+
+			# Hooks for duff entries
+			if( $old_record->{idcode} eq "phil/200004001" )
+			{
+				$new_format = "HTML";
+				$compressed = 0;
+			}
 			
 			&copy_files( $session,
 			             $eprint,
-			             $format_info->[1],
+			             $new_format,
 			             $path.$yearmonth.$number."/".$format_info->[0]."/",
 			             $old_record->{$_},
 							 1,
-			             $format_info->[2],
+			             $compressed,
 			             $errors );
 		}
 	}
@@ -832,7 +877,7 @@ sub copy_files
 	elsif( $copy_whole_dir )
 	{
 		my $dest_dir = $doc->local_path();
-		print STDERR "cp -a $from_dir* $dest_dir\n";
+		#print STDERR "cp -a $from_dir* $dest_dir\n";
 		my $rc = 0xffff & system( "cp -a $from_dir* $dest_dir" );
 		if( $rc )
 		{
