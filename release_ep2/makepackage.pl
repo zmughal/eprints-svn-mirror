@@ -150,6 +150,57 @@ sub do_package
 		push(@files, $item);
 	}
 	closedir(PHRSDIR);
+
+	# Nasty...
+	foreach $l (@langs)
+	{
+		$currarch = 0;
+		$currsys = 0;
+		foreach(@files)
+		{
+			if (/archive-$l-([0-9]+)/)
+			{
+				if ($1>$currarch) { $currarch = $1; }
+			}
+			elsif (/system-$l-([0-9]+)/)
+			{
+				if ($1>$currsys) { $currsys = $1; }
+			}
+		}
+		if ($l eq "en")
+		{
+			$enarch = $currarch;
+			$ensys	= $currsys;
+		}
+		next if ($l eq "en");
+
+		print "For language $l:\n";
+		print "Newest arch: archive-$l-$currarch\n";
+		print "Newest sys: system-$l-$currsys\n";
+		if ($currsys>0)
+		{
+			print "Copying $l language file.\n";	
+			system("cp $originaldir/export/eprints/system/phrases/system-$l-$currsys eprints/sys/system-phrases-$l.xml");
+		}	
+		else
+		{
+			print "Copying English language file as placeholder\n";
+			system("cp $originaldir/export/eprints/system/phrases/system-en-$ensys eprints/sys/system-phrases-$l.xml");
+		}
+
+		if ($currarch>0)
+		{
+			print "Copying $l language file.\n";
+			system("cp $originaldir/export/eprints/system/phrases/archive-$l-$currarch eprints/defaultcfg/phrases-$l.xml");
+		}
+		else
+		{
+			print "Copying English language file as placeholder\n";
+			system("cp $originaldir/export/eprints/system/phrases/archive-en-$enarch eprints/defaultcfg/phrases-$l.xml");
+		}
+	}
+	# ...Nasty
+
 	if ($type_num == 0)
 	{
 		# Here we copy over the nightly language files
@@ -166,47 +217,6 @@ sub do_package
 				system("cp $originaldir/export/eprints/system/phrases/system-$l-current eprints/sys/system-phrases-$l.xml");
 			}
 		}
-#		foreach $l (@langs)
-#		{
-#			$currarch = 0;
-#			$currsys = 0;
-#			foreach(@files)
-#			{
-#				if (/archive-$l-([0-9]+)/)
-#				{
-#					if ($1>$currarch) { $currarch = $1; }
-#				}
-#				elsif (/system-$l-([0-9]+)/)
-#				{
-#					if ($1>$currsys) { $currsys = $1; }
-#				}
-#			}
-#			if ($l eq "en")
-#			{
-#				$enarch = $currarch;
-#				$ensys	= $currsys;
-#			}
-#			print "For language $l:\n";
-#			print "Newest arch: archive-$l-$currarch\n";
-#			print "Newest sys: system-$l-$currsys\n";
-#			if ($currsys>0)
-#			{	
-#				system("cp $originaldir/export/eprints/system/phrases/system-$l-$currsys eprints/sys/system-phrases-$l.xml");
-#			}	
-#			else
-#			{
-#				system("cp $originaldir/export/eprints/system/phrases/system-en-$ensys eprints/sys/system-phrases-$l.xml");
-#			}
-#	
-#			if ($currarch>0)
-#			{
-#				system("cp $originaldir/export/eprints/system/phrases/archive-$l-$currarch eprints/defaultcfg/phrases-$l.xml");
-#			}
-#			else
-#			{
-#				system("cp $originaldir/export/eprints/system/phrases/archive-en-$enarch eprints/defaultcfg/phrases-$l.xml");
-#			}
-#		}
 	}
 	elsif($type_num == 1)
 	{
