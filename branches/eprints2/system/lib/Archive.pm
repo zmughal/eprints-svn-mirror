@@ -710,7 +710,8 @@ wants them to go. Printed to STDERR by default.
 sub log
 {
 	my( $self , @params) = @_;
-	&{$self->{class}."::log"}( $self, @params );
+
+	$self->call( 'log', @params );
 }
 
 
