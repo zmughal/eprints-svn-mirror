@@ -2043,10 +2043,11 @@ sub internal_button_pressed
 
 	if( defined $buttonid )
 	{
-		return( defined $self->param( "_internal_".$buttonid ) );
+		return 1 if( defined $self->param( "_internal_".$buttonid ) );
+		return 1 if( defined $self->param( "_internal_".$buttonid.".x" ) );
+		return 0;
 	}
-
-	# Have not yet worked this out?
+	
 	if( !defined $self->{internalbuttonpressed} )
 	{
 		my $p;
@@ -2087,9 +2088,10 @@ sub get_action_button
 	# $p = string
 	foreach $p ( $self->param() )
 	{
-		if( $p =~ m/^_action_/ )
+		if( $p =~ s/^_action_// )
 		{
-			return substr($p,8);
+			$p =~ s/\.[xy]$//;
+			return $p;
 		}
 	}
 
