@@ -202,9 +202,9 @@ sub do_package
 	print "Done.\n";
 
 }
-
-$ENV{"CVSROOT"} = ":pserver:cjg\@cvs.iam.ecs.soton.ac.uk:/home/iamcvs/CVS";
-
+$whoami = `whoami`;
+chomp $whoami;
+$ENV{"CVSROOT"} = ":pserver:$whoami\@cvs.iam.ecs.soton.ac.uk:/home/iamcvs/CVS";
 # Get all the vars we need.
 ($type) = @ARGV;
 if (!defined($type) || $type eq "nightly")
