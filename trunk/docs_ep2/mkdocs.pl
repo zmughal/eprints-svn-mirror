@@ -21,14 +21,26 @@ my @ids = (
 	"!create_tables",
 	"!create_user",
 	"!erase_archive",
+	"!export_hashes",
+	"!export_xml",
+	"!force_config_reload",
 	"!generate_abstracts",
 	"!generate_apacheconf",
 	"!generate_static",
 	"!generate_views",
+	"!import_eprints",
 	"!import_subjects",
+	"!list_user_emails",
+	"!rehash_documents",
 	"!reindex",
 	"!send_subscriptions",
 	"!upgrade"
+
+
+
+
+
+
 );
 my %titles = (
 	intro => "Introduction",
@@ -80,9 +92,9 @@ foreach( @ids )
 }
 		
 
-my $DOCTITLE = "EPrints 2.1 Documentation";
+my $DOCTITLE = "EPrints 2.2 Documentation";
 
-my $BASENAME = "eprints-2.1-docs";
+my $BASENAME = "eprints-2.2-docs";
 
 `rm -rf docs`;
 `mkdir docs`;
@@ -417,37 +429,45 @@ if( $website )
 		print TARGET <<END;
 <?
 
-include "../../../conf/site_conf.phps";
-include "../../../include/elements.phps";
+include "../../software.phps";
 
-\$pagetitle = "$DOCTITLE - $titles{$id}";
 \$pagelinks = '
-<link rel="Up" href="http://www.eprints.org/documentation.php" />
-<link rel="ToC" href="http://www.eprints.org/documentation.php" />
+<link rel="Up" href="http://software.eprints.org/documentation.php" />
+<link rel="ToC" href="http://software.eprints.org/documentation.php" />
 $toc
 $p
 $n
 ';
 
+epsw_header( "/documentation.php", "$DOCTITLE - $titles{$id}", \$pagelinks );
 
-function do_page()
-{
 ?>
 <h1>$DOCTITLE - $titles{$id}</h1>
+
+<p><a href="/documentation.php">Documentation Contents</a></p>
+<hr />
 END
 
 		print TARGET $_;
 		while( <FILE> )
 		{
 			last if( m#CELLPADDING# );
+			s#<h3>#<h4>#ig;
+			s#</h3>#</h4>#ig;
+			s#<h2>#<h3>#ig;
+			s#</h2>#</h3>#ig;
+			s#<h1>#<h2>#ig;
+			s#</h1>#</h2>#ig;
 			print TARGET $_;
 		}
 		s/<table.*//i;
+
 		print TARGET $_;
-		print TARGET <<END;
-<?
-} 
-ep_generate_page( "??" );
+print TARGET <<END;
+<hr />
+<p><a href="/documentation.php">Documentation Contents</a></p>
+<? 
+epsw_footer( "/documentation.php", "$DOCTITLE - $titles{$id}", \$pagelinks );
 ?>
 END
 		close TARGET;
@@ -477,8 +497,8 @@ chdir( ".." );
 if( $website )
 {
 	my $user = 'webmaster';
-	my $host = 'sage.ecs.soton.ac.uk';
-	my $path = '/home/www.eprints/htdocs/docs/';
+	my $host = 'seer.ecs.soton.ac.uk';
+	my $path = '/home/www.eprints/software/docs/';
 
 	my @commands = (
 		"rsh -l $user $host rm -rf '$path*'",

@@ -190,7 +190,7 @@ For example:
     # 00:30 every sunday morning
     30 0 * * 0 /opt/eprints2/bin/send_subscriptions dookuprints weekly
     # 00:45 every first of the month
-    45 0 * * 0 /opt/eprints2/bin/send_subscriptions dookuprints monthly
+    45 0 1 * * /opt/eprints2/bin/send_subscriptions dookuprints monthly
 
 Note the spacing out so that all 3 don't start at once and hammer the database. You may wish to change the times, but we recommend early morning as the best time to send them (midnight-6am).
 

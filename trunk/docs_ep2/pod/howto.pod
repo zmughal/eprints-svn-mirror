@@ -307,3 +307,36 @@ The "mainonly=yes" flag is a hack which supresses the template of any eprints pa
 
 WARNING: If you have a script which imports 1000 records in one night then latest isn't currently bright enough to truncate the list so your homepage could get kinda messy.
 
+=head1 HOW TO: Add full text searching
+
+EPrints does not support this natively but there are several options.
+
+=head2 htdig, or similar software
+
+There is plenty of software which will provide a full text search of a website. To add non-eprints cgi scripts to your site create a directory in the cgi dir:
+
+ mkdir /opt/eprints2/cgi/local
+
+and place your scripts in there, they will have URLs under C<http://yoursite.com/perl/>
+
+=head2 Using an external search engine
+
+This is very easy, but will only index public documents. Any search engine will work, but Google is a good choice. Google provide a site-search service which
+allows you to register with them and then have a form which searches your site
+using google and adds your logo and colourscheme to the results. 
+
+A really easy solution is to just make a form which links to our "google_site"
+script which just adds "site:yoursite.com" to the google request to limit the
+search results. The HTML for this would be something like:
+
+ <form action="/perl/google_site">
+ <p>Use Google to search this site:
+ <input name="q" value="" />
+ <input type="submit" name="go" value="Search" />
+ </form>
+
+For other search engines; see their documentation for how to make a form to  
+search only your site.
+
+
+
