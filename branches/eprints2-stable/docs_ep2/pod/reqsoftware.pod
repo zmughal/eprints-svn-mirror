@@ -194,6 +194,7 @@ You may either use the RPMs (gdome2 and gdome2-devel) or the tarball.
  XML-GDOME
 
 All of which are in http://www.cpan.org/modules/by-module/XML/
+
 =head1 Other Tools
 
 =head2 File uploads

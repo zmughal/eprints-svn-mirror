@@ -493,7 +493,7 @@ sub install_dir
 	my( $distdir, $dir, $perms, $user, $group, $dest, $sighash, $newsigs ) = @_;
 	unless( opendir(INDIR, $dir) )
 	{
-		print "Unable to install directory: $dir. $!\n";
+		print "Unable to open package directory: $dir. $!\n";
 		exit 1;
 	}
 	my @dirs = ();
