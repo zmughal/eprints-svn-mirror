@@ -227,7 +227,10 @@ sub import_eprint
 	$entry{format} = "html" if( $entry{idcode} eq "bio/199710002" );
 	$entry{date} = "Sat Jun  6 15:41:38 1998"
 		if( $entry{idcode} eq "psyc/199806005" );
-
+	$entry{userid} = "chalmers" if( $entry{userid} eq "ChalmersD" );
+	$entry{userid} = "kashkin1" if( $entry{userid} eq "kashkin" );
+	$entry{userid} = "lgabora" if( $entry{userid} eq "lgabora1" );
+	
 	my @errors;
 	
 	# Get the context (pjour, ujour etc.)

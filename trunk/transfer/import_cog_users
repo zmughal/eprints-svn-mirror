@@ -15,6 +15,44 @@ use strict;
 use EPrints::Session;
 use EPrints::User;
 
+my %remove_accounts =
+(
+	"BurkittA" => 1,
+	"BaronJ" => 1,
+	"Calvin" => 1,
+	"cd011" => 1,
+	"costanzg1" => 1,
+	"dahliaz1" => 1,
+	"dr.p.mueller1" => 1,
+	"Dieter.Krell1" => 1,
+	"elfreda1" => 1,
+	"fibjonie" => 1,
+	"Francesco.Lauria1" => 1,
+	"h.e.ross1" => 1,
+	"h.e.ross2" => 1,
+	"Hugo.Zaragoza" => 1,
+	"iacoboni" => 1,
+	"istvan" => 1,
+	"J.A.Dupre" => 1,
+	"kmacd1" => 1,
+	"m.gotthalmseder" => 1,
+	"m.redington1" => 1,
+	"P.C.Knox" => 1,
+	"pvermers1" => 1,
+	"quznets" => 1,
+	"rht96r" => 1,
+	"rht96r1" => 1,
+	"rht96r2" => 1,
+	"snichols" => 1,
+	"StewartT" => 1,
+	"waba1" => 1,
+	"ChalmersD" => 1,
+	"kashkin" => 1,
+	"lgabora1" => 1
+);
+
+
+
 my $session = new EPrints::Session( 1 );
 
 print STDERR "Reading users...\n";
@@ -25,22 +63,30 @@ while( <> )
 {
 	chop();
 	my ($username, $record) = split /=/;
-	
-	my @fieldvals = split /\|/, $record;
-	
-	my %user;
 
-	$user{username} = $username;
-	
-	while( $#fieldvals >= 0 )
+	unless( defined $remove_accounts{$username} )
 	{
-		my $field = shift @fieldvals;
-		my $value = shift @fieldvals;
-		
-		$user{$field} = $value;
-	}
+		my @fieldvals = split /\|/, $record;
 
-	push @records, \%user;
+		my %user;
+
+		$user{username} = $username;
+
+		while( $#fieldvals >= 0 )
+		{
+			my $field = shift @fieldvals;
+			my $value = shift @fieldvals;
+
+			$user{$field} = $value;
+		}
+
+
+		push @records, \%user;
+	}
+	else
+	{
+		print STDERR "Removing account $username\n";
+	}
 }
 
 print STDERR "Importing users...\n";
