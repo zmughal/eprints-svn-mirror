@@ -15,7 +15,8 @@ $MILESTONE_VERSION = $EPRINTS_VERSION;
 	"eprints2-alpha-2" => "pepperoni",
 	"eprints2-pre-1"   => "fishfinger",
 	"eprints2-pre-2"   => "ovenchip",
-	"eprints2-pre-3"   => "toast"
+	"eprints2-pre-3"   => "toast",
+	"eprints2-pre-4"   => "noodle"
 );
 
 sub insert_data
