@@ -1,0 +1,42 @@
+\documentclass[a4paper]{article}
+
+% $Id$
+
+\title{Eprints Archive Software Installation Document\\Eprints 1.1}
+\author{Robert Tansley \and Christopher Gutteridge}
+
+\usepackage{html}
+
+\newcommand{\activeurl}[1]{\htmladdnormallink{{\tt{#1}}}{#1}}
+\newcommand{\activeemail}[1]{\htmladdnormallink{{\tt{#1}}}{mailto:#1}}
+\newcommand{\eprints}{\emph{Eprints}}
+\newcommand{\urlpar}[1]{\latex{\vspace{2ex}}\par\noindent{\activeurl{#1}}\latex{\vspace{2ex}}}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\section{Introduction}
+
+
+This document explains how to set up and install an \eprints\ archive on a UNIX system. The instructions should allow users to install the archive on any UNIX implementation, such as Solaris, SGI IRIX or Linux. In addition to generic instructions, specific instructions are also given on how to install the system on a Redhat Linux system.
+
+Although this document is rather large, much of it is to do with configuring various aspects of the system. If you are happy with the default metadata sets and site look and feel, you won't have to work through all of it.
+
+
+
+\subsection{Upgrading from an earler version}
+
+If you're upgrading from version Beta-2 or later, using the automatic installer should work, thouh as is always sensible, it may be wise to make a backup of the old version. 
+
+\par See the file {\tt README.UPGRADING} in the distribution for what changes have to be made by hand, and more advice on upgrading.
+
+\input{eprints-install-body}
+
+
+
+
+
+\end{document}

@@ -1,0 +1,10 @@
+#!/bin/sh
+
+one @
+two @@ a
+three @@@ x
+
+
+blah@ecs.om
+
+

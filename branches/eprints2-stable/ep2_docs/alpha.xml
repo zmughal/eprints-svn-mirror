@@ -1,0 +1,78 @@
+<?xml version="1.0" ?>
+<!DOCTYPE book SYSTEM "eprints.entities" >
+<book>
+<bookinfo>
+  <title>EPrints 2.0 Alpha Release (Anchovy)</title>
+  <subtitle>Installation Notes</subtitle>
+  <authorgroup>
+  <author><firstname>Christopher</firstname><surname>Gutteridge</surname></author>
+  <author><firstname>Mike</firstname><surname>Jewell</surname></author>
+  </authorgroup>
+  <copyright><year>2001</year><holder>University of Southampton</holder></copyright>
+</bookinfo>
+
+<chapter><title>What is &ep2; Alpha, Should I install it?</title>
+
+<sect1><title>What is &ep2;?</title>
+<para>EPrints is generic archive software under development by the University of Southampton. It is intended to create a highly configurable web-based archive.</para>
+<para>EPrints is primarily aimed at research papers, and the default configuration reflects this, but it could be easily used for other things such as images, research data, audio archives - anything that can be stored digitally.</para>
+</sect1>
+
+<sect1><title>Should I be installing &ep2;?</title>
+<para>Short answer: If in doubt, then no. Only install this if you really want to.</para>
+<para>The alpha version of the software is intended only as a demonstration. Do not use it as a live system. In fact do not bother, at this stage, even trying hard to configure it beyond "playing" as later versions
+may well be incompatable and require a total re-install.</para>
+<para>If you need an archive right now then the &eprints; 1.0 software is available from <ulink url="http://www.eprints.org/" >http://www.eprints.org/</ulink>.</para>
+</sect1>
+
+<sect1><title>What will it run on?</title>
+<para>The system is being developed under RedHat Linux 7.1, it has been designed to work with any UNIX system, although at this stage of development we have no tested it on other systems yet. Feel free to report problems.</para>
+</sect1>
+</chapter>
+
+&reqsoftware;
+
+<chapter><title>How to install and try &eprints;</title>
+<sect1><title>Installation</title>
+<para>unpack the eprints tar.gz file, and run the install-eprints.pl script, answer the questions it asks.</para>
+<para>edit your apache.conf in the way described by install-eprints.pl.</para>
+</sect1>
+<sect1><title>Creating an archive</title>
+<para>Make sure MySQL is actually running.</para>
+<para>Change to  your eprints user (probably "eprints").</para>
+<para>cd to the eprints directory (/opt/eprints by default) and run bin/create_new_archive, answer the questions it asks.</para>
+<para>Run<screen>
+bin/generate_dtd <replaceable>archiveid</replaceable>
+bin/create_databases <replaceable>archiveid</replaceable>
+bin/generate_static <replaceable>archiveid</replaceable>
+bin/create_user <replaceable>archiveid</replaceable> <replaceable>userid</replaceable> <replaceable>email</replaceable> staff <replaceable>password</replaceable>
+</screen> Where userid, email and password are your choice. you can create multiple users if you like. 'user' instead of 'staff' will give a user less privs.</para>
+<para> Then restart your webserver: <screen>
+/etc/rc.d/init.d/httpd stop
+/etc/rc.d/init.d/httpd start
+</screen>
+Don't just use 'reload' or 'restart' as these do not force mod_perl to reload it's modules.
+</para>
+<para>Now connect via the web and see if it works...</para>
+<para>The submission form does not actually work fully yet, if you want some initial data to play with, get the harris.xml file from the <ulink href="http://www.eprints.org/files/tools/">Eprints "tools" directory</ulink> and run<screen>
+importxml <replaceable>archiveid</replaceable> harris.xml
+</screen>Which will spew tons of debug info, but should actually put some (fairly ropey) data into the archive.</para>
+</sect1>
+</chapter>
+
+
+<chapter><title>Problems, Questions and Feedback</title>
+<sect1><title>Bug Report Policy</title>
+<para>This is ALPHA software, and therefore we know it dosn't work properly yet. Until we get to the point where the main system is BETA there's not much point reporting bugs.</para>
+<para>However, you may have suggestions, comments, or outright abuse towards the general design or the installation. These may be addressed to the appropriate address.</para>
+</sect1>
+
+&listinfo;
+
+</chapter>
+
+
+&history;
+
+
+</book>
