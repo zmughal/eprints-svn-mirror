@@ -5,7 +5,6 @@ sub do_license
 {
 	my( $license_file, $version_info, $source) = @_;
 	my @license_text;
-	print $license_file."\n";
 	open LICENSE, $license_file or die "Unable to open license file: $!";
 	while( <LICENSE> )
 	{
@@ -57,6 +56,8 @@ sub do_package
 	{
 		system("/bin/rm -r export")==0 or die "Couldn't remove export dir.\n";
 	}
+	
+	print $package_version;
 
 	print "Making directories...\n";
 	mkdir("package") or die "Couldn't create package directory\n";
@@ -111,10 +112,72 @@ sub do_package
 	# Add documents dir
 	mkdir("eprints/html/documents");
 
+	# Do version
+	open(FILEOUT, ">eprints/VERSION");
+	print FILEOUT $package_version;
+	close(FILEOUT);
+
+	# Do phrases
+	@langs = ("en", "fr");
+	@files = ();
+
+	# Build up list from export.
+	opendir(PHRSDIR, "$originaldir/export/eprints/system/phrases");
+	while($item = readdir(PHRSDIR))
+	{
+		if (-d $item || $item =~ /^\./) { next; }	
+		push(@files, $item);
+	}
+	closedir(PHRSDIR);
+
+	foreach $l (@langs)
+	{
+		$currarch = 0;
+		$currsys = 0;
+		foreach(@files)
+		{
+			if (/archive-$l-([0-9]+)/)
+			{
+				if ($1>$currarch) { $currarch = $1; }
+			}
+			elsif (/system-$l-([0-9]+)/)
+			{
+				if ($1>$currsys) { $currsys = $1; }
+			}
+		}
+		if ($l eq "en")
+		{
+			$enarch = $currarch;
+			$ensys	= $currsys;
+		}
+		print "For language $l:\n";
+		print "Newest arch: archive-$l-$currarch\n";
+		print "Newest sys: system-$l-$currsys\n";
+		if ($currsys>0)
+		{	
+			system("cp $originaldir/export/eprints/system/phrases/system-$l-$currsys eprints/phrases/system-phrases-$l.xml");
+		}	
+		else
+		{
+			system("cp $originaldir/export/eprints/system/phrases/system-en-$ensys eprints/phrases/system-phrases-$l.xml");
+		}
+
+		if ($currarch>0)
+		{
+			system("cp $originaldir/export/eprints/system/phrases/archive-$l-$currarch eprints/phrases/archive-phrases-$l.xml");
+		}
+		else
+		{
+			system("cp $originaldir/export/eprints/system/phrases/archive-en-$enarch eprints/phrases/archive-phrases-$l.xml");
+		}
+	}
+
 	system("chmod -R g-w eprints")==0 or die("Couldn't change permissions on eprints dir.\n");
 	system("mv eprints $package_file")==0 or die("Couldn't move eprints dir to $package_file.\n");
 	system("tar czf ../$package_file.tar.gz $package_file")==0 or die("Couldn't tar up $package_file");
 	chdir $originaldir;
+
+	
 
 	print "Removing temporary directories...\n";
 	system("/bin/rm -r package")==0 or die("Couldn't remove package dir.\n");
