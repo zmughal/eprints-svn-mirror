@@ -2145,7 +2145,7 @@ PACKAGE: 2.2.99.2
  - Fixed bug in edit_eprint staff script when the archive has 
     skipping the file stage set.
 
-2005-02-25 cjg
+2005-02-16 cjg
 
  - Added disable_userinfo option to allow the public user info
     page to be disabled. 
@@ -2161,3 +2161,10 @@ PACKAGE: 2.2.99.2
  - Added current item description to submission process.
  - Added work-around to VLit code to handle param's with '='
     signs in the values. Fixed bug with tiff transcluding.
+
+2005-02-16 cjg
+
+ - Added a new bin script: recommit_dataset which runs commit
+    on every item in the dataset. Thus updating the automatic
+    values.
+

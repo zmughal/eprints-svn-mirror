@@ -994,8 +994,10 @@ sub get_archive
 
 =item $ds->reindex( $session )
 
-Reindex all the items in this dataset. This could take a real long 
+Recommits all the items in this dataset. This could take a real long 
 time on a large set of records.
+
+Really should not be called reindex anymore as it doesn't.
 
 =cut
 ######################################################################
