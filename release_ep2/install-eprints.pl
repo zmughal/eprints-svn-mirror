@@ -474,10 +474,10 @@ can run 'h2ph * */*' in your /usr/include directory.
 END
 #	my $doh2ph = get_yesno("Run h2ph", "n");
 	}
-#	else
-#	{
-#		print " Detected.\n";  	
-#	}
+	else
+	{
+		print " Detected.\n";  	
+	}
 
 	# Dump out signature file
 	open (SIGOUT, ">$dir/SIGNATURES") or die "Unable to open SIGNATURES: $!";
@@ -543,18 +543,12 @@ sub install_file
 	close(INFILE);
 	push @signatures, "$dir/$file ".$outdigest->hexdigest."\n";
 
-	# Note that this can't handle the bin dir yet - as that gets updated
-	# prior to writing. Could be fixed by putting output files to a temp
-	# dir, then comparing, then moving to the correct location - but
-	# that's a bit like overkill.
-	
 	if ($hash{"$dir/$file"} && -e "$dest/$dir/$file")
 	{
 		my $repl_digest = get_digest("$dest/$dir/$file");
 		if ($repl_digest ne $hash{"$dir/$file"})
 		{
-			print "[$repl_digest][".$hash{"$dir/$file"}."]$dir/$file\n";
-			# mikej Backup altered file code goes here
+			rename "$dest/$dir/$file", "$dest/$dir/$file.old";		
 		}
 	}
 
