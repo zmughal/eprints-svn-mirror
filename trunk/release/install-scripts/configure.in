@@ -1,0 +1,552 @@
+dnl
+dnl Configure script for eprints.org software
+dnl
+
+AC_INIT(perl_lib/EPrints/Session.pm)
+
+AC_PREFIX_DEFAULT(/opt/eprints)
+
+AC_PROG_INSTALL
+
+dnl **************************************************************
+dnl Find Perl interpreter to use
+dnl **************************************************************
+
+AC_ARG_WITH(perl, [  --with-perl=PATH        Location of perl interpreter to use [default=auto]])
+
+if test "x$with_perl" = x ; then
+	AC_PATH_PROG(PERL, perl)
+else
+	AC_PATH_PROG(PERL, perl, , $with_perl)
+fi
+
+if test x$PERL = x ; then
+	AC_MSG_ERROR(Perl doesn't seem to be installed)
+fi
+
+AC_SUBST(PERL)
+
+
+
+dnl **************************************************************
+dnl Let's see if there's already an eprints server installed
+dnl **************************************************************
+
+if test "x$prefix" = "xNONE" ; then
+	prefix="/opt/eprints"
+fi
+
+
+AC_ARG_ENABLE(upgrade, [  --enable-upgrade        Upgrade existing installation [default=auto]], enable_upgrade="$enableval", enable_upgrade=auto)
+AC_CHECK_PROG(PROCESS_MAIL, process_mail, yes, no, $prefix/bin)
+
+case $enable_upgrade in
+	yes)
+		FULL_INSTALL=0
+		if test "x$PROCESS_MAIL" = "xno" ; then
+			AC_MSG_ERROR(Can't find installation to upgrade)
+		fi
+		;;
+
+	no)
+		FULL_INSTALL=1
+		if test "x$PROCESS_MAIL" = "xyes" ; then
+			AC_MSG_WARN([
+*** WARNING: Upgrade disabled:
+*** Overwriting eprints installation at $prefix
+*** Database/httpd configuration clashes may occur; you should remove
+*** the existing installation completely to avoid this.])
+		fi
+		;;
+	auto)
+		if test "x$PROCESS_MAIL" = "xyes" ; then
+			FULL_INSTALL=0
+		else
+			FULL_INSTALL=1
+	 		echo "*** No previous installation found, installing fresh system."
+		fi
+		;;
+esac
+
+if test $FULL_INSTALL = 0 ; then
+ 		echo "*** Found an eprints installation at $prefix."
+ 		echo "*** Will only upgrade core component, and add new stub routines"
+ 		echo "*** and parameters to SiteInfo.pm and SiteRoutines.pm."
+fi	
+
+
+AC_SUBST(FULL_INSTALL)
+
+
+
+dnl **************************************************************
+dnl If we're in full install mode, we'll need to do a whole load
+dnl more stuff
+dnl **************************************************************
+
+if test $FULL_INSTALL = 1 ; then
+
+	dnl **************************************************************
+	dnl Find Apache configuration to use
+	dnl **************************************************************
+
+	AC_ARG_WITH(apache-conf, [  --with-apache-conf=CFG  Location of Apache config (httpd.conf) to update
+                          [default=none] (EXPERIMENTAL FEATURE)])
+
+	if test "x$with_apache_conf" = x ; then
+		CONFIGURE_APACHE=0
+		APACHE_CONFIG=""
+	else
+		CONFIGURE_APACHE=1
+		AC_CHECK_FILE($with_apache_conf, APACHE_CONFIG=$with_apache_conf )
+		echo "*** EXPERIMENTAL Apache server auto-configuration enabled"
+		echo "*** Will configure Apache server using $APACHE_CONFIG"
+	fi
+
+	AC_SUBST(CONFIGURE_APACHE)
+	AC_SUBST(APACHE_CONFIG)
+
+
+
+	dnl **************************************************************
+	dnl Check for mod_perl (if we have an Apache config to check)
+	dnl **************************************************************
+
+	if test $CONFIGURE_APACHE = 1 ; then
+
+		AC_MSG_CHECKING("for mod_perl")
+
+		if test `grep -l libperl.so $APACHE_CONFIG | wc -l` = 0 ; then
+			if test `grep -l mod_perl.c $APACHE_CONFIG | wc -l` = 0 ; then
+				AC_MSG_RESULT(no)
+				AC_MSG_ERROR(mod_perl is not installed)
+			fi
+		fi
+
+		AC_MSG_RESULT(yes)
+
+	fi
+
+
+
+	dnl **************************************************************
+	dnl Install crontab?
+	dnl **************************************************************
+	
+	AC_ARG_ENABLE(crontab, [  --enable-crontab        Install crontab jobs? [default=yes]], enable_crontab="$crontabval", enable_crontab=yes)
+	if test "x$enable_crontab" = "xyes" ; then
+		INSTALL_CRONTAB=1
+	else
+		INSTALL_CRONTAB=0
+	fi
+
+	AC_SUBST(INSTALL_CRONTAB)
+
+
+
+	dnl **************************************************************
+	dnl Create database?
+	dnl **************************************************************
+	
+	AC_ARG_ENABLE(create_database, [  --enable-create-database
+                          Create Eprints database? [default=yes]], enable_create_database="$create_databaseval", create_database=yes)
+	if test "x$create_database" = "xyes" ; then
+		CREATE_DATABASE=1
+	else
+		CREATE_DATABASE=0
+	fi
+
+	AC_SUBST(CREATE_DATABASE)
+
+
+
+	dnl **************************************************************
+	dnl Check that MySQL is installed
+	dnl **************************************************************
+
+	AC_ARG_WITH(mysql, [  --with-mysql=PATH       Location of mysql [default=auto]])
+
+	if test "x$with_mysql" = x ; then
+		AC_PATH_PROG(MYSQL, mysql)
+	else
+		AC_PATH_PROG(MYSQL, mysql, , $with_mysql)
+	fi
+
+	if test x$MYSQL = x ; then
+		AC_MSG_ERROR(MySQL doesn't seem to be installed)
+	fi
+
+	AC_SUBST(MYSQL)
+
+
+
+	dnl **************************************************************
+	dnl Check unzip
+	dnl **************************************************************
+
+	AC_ARG_WITH(unzip, [  --with-unzip=PATH       Location of unzip [default=auto]])
+
+	if test "x$with_unzip" = x ; then
+		AC_PATH_PROG(UNZIP, unzip)
+	else
+		AC_PATH_PROG(UNZIP, unzip, , $with_unzip)
+	fi
+
+	if test x$UNZIP = x ; then
+		AC_MSG_ERROR(unzip doesn't seem to be installed)
+	fi
+
+	AC_SUBST(UNZIP)
+
+
+
+	dnl **************************************************************
+	dnl Find wget
+	dnl **************************************************************
+
+	AC_ARG_WITH(wget, [  --with-wget=PATH        Location of wget [default=auto]])
+
+	if test "x$with_wget" = x ; then
+		AC_PATH_PROG(WGET, wget)
+	else
+		AC_PATH_PROG(WGET, wget, , $with_wget)
+	fi
+
+	if test x$WGET = x ; then
+		AC_MSG_ERROR(wget doesn't seem to be installed)
+	fi
+
+	AC_SUBST(WGET)
+
+
+
+	dnl **************************************************************
+	dnl Find sendmail
+	dnl **************************************************************
+
+	AC_ARG_WITH(sendmail, [  --with-sendmail=PATH    Location of sendmail (for outgoing mails)
+                          [default=auto]])
+
+	if test "x$with_sendmail" = x ; then
+		AC_PATH_PROG(SENDMAIL, sendmail)
+	else
+		AC_PATH_PROG(SENDMAIL, sendmail, , $with_sendmail)
+	fi
+
+	if test x$SENDMAIL = x ; then
+		AC_MSG_ERROR(sendmail doesn't seem to be installed)
+	fi
+
+	AC_SUBST(SENDMAIL)
+
+
+
+	dnl **************************************************************
+	dnl Check that prerequisite Perl modules are installed
+	dnl **************************************************************
+
+	CHECK_PERL_MOD(CGI)
+	CHECK_PERL_MOD(Data::Dumper)
+	CHECK_PERL_MOD(DBD::mysql)
+	CHECK_PERL_MOD(DBI)
+	CHECK_PERL_MOD(Filesys::DiskSpace)
+	CHECK_PERL_MOD(MIME::Base64)
+	CHECK_PERL_MOD(POSIX)
+	CHECK_PERL_MOD(Unicode::String)
+	CHECK_PERL_MOD(URI)
+	CHECK_PERL_MOD(XML::Writer)
+	CHECK_PERL_MOD_EXISTS(Apache::DBI)
+	CHECK_PERL_MOD_EXISTS(Apache::AuthDBI)
+
+
+
+
+	dnl **************************************************************
+	dnl Get the port to use
+	dnl **************************************************************
+
+	AC_ARG_WITH(port, [  --with-port=PORT        Port to use for server [default=80]] )
+
+	if test "x$with_port" = "x" ; then
+		PORT=80
+	else
+		PORT=$with_port
+	fi
+
+	AC_SUBST(PORT)
+
+
+
+	dnl **************************************************************
+	dnl Get the hostname to use
+	dnl **************************************************************
+
+	AC_ARG_WITH(hostname, [  --with-hostname=HOSTNAME
+                       	  Canonical host name of server[default=auto]] )
+
+	if test "x$with_hostname" = "x" ; then
+		EPRINTS_HOSTNAME=`hostname`
+
+		dnl See if the hostname is qualified
+		MACHINENAME=`echo $EPRINTS_HOSTNAME | sed s/\..*//`
+		if test "x$HOSTNAME" = "x$MACHINENAME" ; then
+			AC_MSG_WARN([
+*** Cannot determine fully qualified hostname.
+*** You will probably need to specify a hostname with --with-hostname.])
+		fi
+
+	else
+		EPRINTS_HOSTNAME=$with_hostname
+	fi
+
+
+	AC_SUBST(EPRINTS_HOSTNAME)
+
+
+
+	dnl **************************************************************
+	dnl Determine user account to use
+	dnl **************************************************************
+
+	AC_ARG_WITH(username, [  --with-username=USER    User server runs as [default=eprints]
+                          (will create if necessary])
+
+	if test "x$with_username" = "x" ; then
+		USERNAME="eprints"
+	else
+		USERNAME=$with_username
+	fi
+
+	AC_SUBST(USERNAME)
+
+
+
+	dnl **************************************************************
+	dnl Does the user exist?
+	dnl **************************************************************
+
+	AC_MSG_CHECKING(for user $USERNAME)
+
+	USER_ID=`id -u $USERNAME 2>/dev/null`
+
+	if test "x$USER_ID" = "x" ; then
+		AC_MSG_RESULT(no)
+		CREATE_USER=1
+	else
+		AC_MSG_RESULT(yes)
+		CREATE_USER=0
+	fi
+
+	AC_SUBST(CREATE_USER)
+
+
+
+	dnl **************************************************************
+	dnl Make sure we know how to add a user if we need to
+	dnl **************************************************************
+
+	if test $CREATE_USER = 1 ; then
+		AC_PATH_PROGS(CREATE_USER_APP, "useradd adduser", "NOT_FOUND")
+
+		if test "x$CREATE_USER_APP" = "xNOT_FOUND" ; then
+			AC_MSG_ERROR([
+*** User $USERNAME doesn't exist, and I can't work out how to create it.
+*** You need to create this user and re-run configure.])
+		fi
+	fi
+
+	
+	
+	dnl **************************************************************
+	dnl Determine group to use
+	dnl **************************************************************
+
+	AC_ARG_WITH(group, [  --with-group=USER       Group server runs as [default=eprints]
+                          (will create if necessary])
+
+	if test "x$with_group" = "x" ; then
+		GROUP="eprints"
+	else
+		GROUP=$with_group
+	fi
+
+	AC_SUBST(GROUP)
+
+
+
+	dnl **************************************************************
+	dnl Does the group exist?
+	dnl **************************************************************
+
+	AC_MSG_CHECKING(for group $GROUP)
+	GROUP_EXISTS=`$PERL -e 'if( '$GROUP' =~ /^\d+$/ && defined getgrid '$GROUP' ) { print "yes" ; exit } print "yes" if( defined getgrnam '$GROUP' );'`
+
+	if test "x$GROUP_EXISTS" = "xyes" ; then
+		AC_MSG_RESULT("yes")
+		CREATE_GROUP=0
+	else
+		AC_MSG_RESULT("no")
+		CREATE_GROUP=1
+	fi
+
+	AC_SUBST(CREATE_GROUP)
+
+	
+
+	dnl **************************************************************
+	dnl Can we make the group if we need to?
+	dnl **************************************************************
+	
+	if test $CREATE_GROUP = 1 ; then
+
+		AC_PATH_PROGS(CREATE_GROUP_APP, "groupadd addgroup", "NOT_FOUND")
+
+		if test "x$CREATE_GROUP_APP" = "xNOT_FOUND" ; then
+			AC_MSG_ERROR([
+*** Group $GROUP doesn't exist, and I can't work out how to create it.
+*** You need to create this group and re-run configure.])
+		fi
+	fi
+
+
+
+	dnl **************************************************************
+	dnl Determine MySQL database to use
+	dnl **************************************************************
+
+	AC_ARG_WITH(database, [  --with-database=NAME    MySQL database to use [default=eprints]])
+
+	if test "x$with_database" = "x" ; then
+		DATABASE="eprints"
+	else
+		DATABASE=$with_database
+	fi
+
+	AC_SUBST(DATABASE)
+
+
+
+	dnl **************************************************************
+	dnl Determine database user account to use
+	dnl **************************************************************
+
+	AC_ARG_WITH(db_username, [  --with-db-username=USER User to access database as [default=eprints]])
+
+	if test "x$with_db_username" = "x" ; then
+		DB_USERNAME="eprints"
+	else
+		DB_USERNAME=$with_db_username
+	fi
+
+	AC_SUBST(DB_USERNAME)
+
+
+
+	dnl **************************************************************
+	dnl Determine automatic administration mailing address
+	dnl **************************************************************
+
+	AC_ARG_WITH(autoadmin, [  --with-autoadmin=EMAIL  E-mail address for autoadmin mail
+                       	  [default=USERNAME@HOSTNAME]])
+
+	if test "x$with_autoadmin" = "x" ; then
+		AUTOADMIN="$USERNAME@$HOSTNAME"
+	else
+		AUTOADMIN=$with_autoadmin
+	fi
+
+	AC_SUBST(AUTOADMIN)
+
+
+
+	dnl **************************************************************
+	dnl Determine human administration mailing address
+	dnl **************************************************************
+
+	AC_ARG_WITH(admin, [  --with-admin=EMAIL      E-mail address for human-read mail
+                       	  [default=admin@HOSTNAME]])
+
+	if test "x$with_admin" = "x" ; then
+		ADMIN="admin@$HOSTNAME"
+	else
+		ADMIN=$with_admin
+	fi
+
+	AC_SUBST(ADMIN)
+
+
+
+	dnl **************************************************************
+	dnl Get unique OAI data provider identifier
+	dnl **************************************************************
+
+	AC_ARG_WITH(oai_identifier, [  --with-oai-identifier=ID
+                       	  Unique Open Archives Initiative identifier])
+
+	if test "x$with_oai_identifier" = "x" ; then
+		OAI_IDENTIFIER=""
+		AC_MSG_WARN([
+*** No Open Archives identifier specified. You will need to obtain an unique
+*** identifier for your archive before you can register it as OAI compliant.])
+	else
+		OAI_IDENTIFIER=$with_oai_identifier
+	fi
+
+	AC_SUBST(OAI_IDENTIFIER)
+
+
+
+	dnl **************************************************************
+	dnl Get internal record idcode stem
+	dnl **************************************************************
+
+	AC_ARG_WITH(id-stem, [  --with-id-stem=STEM     Internal record idcode stem [default=none]])
+
+	if test "x$with_id_stem" = "x" ; then
+		ID_STEM=""
+	else
+		ID_STEM=$with_id_stem
+	fi
+
+	AC_SUBST(ID_STEM)
+
+
+
+	dnl **************************************************************
+	dnl Get short site name
+	dnl **************************************************************
+
+	AC_ARG_WITH(site_name, [  --with-site-name=NAME   Short name for archive [default=Eprint Archive]])
+
+	if test "x$with_site_name" = "x" ; then
+		SITE_NAME="Eprint Archive"
+	else
+		SITE_NAME=$with_site_name
+	fi
+
+	AC_SUBST(SITE_NAME)
+
+
+
+	dnl **************************************************************
+	dnl Get short site description
+	dnl **************************************************************
+
+	AC_ARG_WITH(description, [  --with-description=NAME Short description for archive [default=none]])
+
+	if test "x$with_description" = "x" ; then
+		DESCRIPTION=""
+	else
+		DESCRIPTION=$with_description
+	fi
+
+	AC_SUBST(DESCRIPTION)
+
+fi
+
+
+dnl **************************************************************
+dnl Write the Makefile
+dnl **************************************************************
+
+AC_OUTPUT(Makefile)
