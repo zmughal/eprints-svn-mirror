@@ -1,4 +1,4 @@
-#!%%PERL%%
+#!@PERL_PATH@
 
 ######################################################################
 #
@@ -7,30 +7,26 @@
 # mySQL install, etc. - you'll need the SuperInstaller for that.
 #
 ######################################################################
-#  __COPYRIGHT__
-#
-# Copyright 2000-2008 University of Southampton. All Rights Reserved.
-# 
 # __LICENSE__
 ######################################################################
 
 my %c;
-$c{"dist_path"}="/home/cjg/Projects/eprints_foo/eprints-2-cvs-2002-06-26";
-$c{"perl"}="/usr/bin/perl";
-$c{"prefix"}="/tmp/eprintsdemo";
-$c{"user"}="cjg";
-$c{"group"}="wheel";
-$c{"disable_df"}=0;
-$c{"virtualhost"}="";
+$c{"dist_path"}="@DIST_PATH@";
+$c{"perl"}="@PERL_PATH@";
+$c{"prefix"}="@PREFIX@";
+$c{"user"}="@INSTALL_USER@";
+$c{"group"}="@INSTALL_GROUP@";
+$c{"disable_df"}=@DISABLE_DF@;
+$c{"virtualhost"}="@VIRTUALHOST@";
 
-$c{"unzip"}="/usr/bin/unzip";
-$c{"tar"}="/usr/bin/tar";
-$c{"gunzip"}="/usr/bin/gunzip";
-$c{"wget"}="/usr/bin/wget";
-$c{"sendmail"}="/usr/sbin/sendmail";
-$c{"latex"}="/usr/bin/latex";
-$c{"dvips"}="/usr/bin/dvips";
-$c{"convert"}="/usr/X11R6/bin/convert";
+$c{"unzip"}="@UNZIP_PATH@";
+$c{"tar"}="@TAR_PATH@";
+$c{"gunzip"}="@GUNZIP_PATH@";
+$c{"wget"}="@WGET_PATH@";
+$c{"sendmail"}="@SENDMAIL_PATH@";
+$c{"latex"}="@LATEX_PATH@";
+$c{"dvips"}="@DVIPS_PATH@";
+$c{"convert"}="@CONVERT_PATH@";
 
 ######################################################################
 
@@ -64,6 +60,13 @@ unless( defined($version) )
 chomp($version);
 close(VERSIONIN);
 
+### Print out some key information, which is bound to
+### cause problems if incorrect.
+
+print "Installing from: ".$c{"dist_path"}."\n";
+print "Installing/Upgrading to: ".$c{"prefix"}."\n";
+print "as user: ".$c{"user"}."\n";
+print "as group: ".$c{"group"}."\n";
 
 my $systemsettings = {};
 
@@ -567,7 +570,7 @@ sub full_install
 	}
 	unless( chown($uid, $gid, $base_path) )
 	{
-		print "Unable to chown ".$base_path." : $!"; 
+		print "Unable to chown ".$base_path." : $!\n"; 
 		print "Aborting!\n";
 		exit 1;
 	}
