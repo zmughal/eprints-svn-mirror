@@ -414,6 +414,42 @@ Display as radio buttons (ones which deselect when you select another one). You 
 
 =back
 
+=item input_assist
+
+Status: cosmetic
+
+Optional to: all
+
+Default: undef
+
+Add an internal button which reloads the page, with a "#" jump to make the page load at the current input field. The assist button does not do anything except cause the page to be reloaded. This is intended to work with the input_advice fields.
+
+=item input_advice_right
+
+Status: cosmetic
+
+Optional to: all
+
+Default: undef
+
+If defined this should be a function pointer which takes params ( $session, $field, $value )
+
+value is the current value of the field.
+
+The return value of this should be an XHTML chunk based on the value. This XHTML will appear to the right of the input fields for the value.
+
+This is intended to give useful advice, which as if the field is an int which is the eprintid of another eprint, this feature could render then name and a link to that eprint to appear next to the integer input box. 
+
+=item input_advice_below
+
+Status: cosmetic
+
+Optional to: all
+
+Default: undef
+
+As with input_advice_right, only the results appear below, not to the right. Both _right and _below may be used.
+
 =item fromform
 
 Status: cosmetic

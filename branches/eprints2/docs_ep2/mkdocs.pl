@@ -23,6 +23,8 @@ my @ids = (
 	"!create_tables",
 	"!create_user",
 	"!erase_archive",
+	"!erase_fulltext_cache",
+	"!explain_sql_tables",
 	"!export_hashes",
 	"!export_xml",
 	"!force_config_reload",
@@ -35,7 +37,6 @@ my @ids = (
 	"!indexer",
 	"!list_user_emails",
 	"!rehash_documents",
-	"!reindex",
 	"!send_subscriptions",
 	"!upgrade"
 

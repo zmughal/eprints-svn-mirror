@@ -488,9 +488,7 @@ For more inforamtion on the how and why of OAI see http://www.openarchives.org/
 
 OAI allows a harvestor to request the metadata from your archive and other archives to provide a federated search. The next time the harvestor harvests your archive it only has to ask for items which have changed or been added since last time it asked.
 
-The current version of EPrints supports both OAI 1.1 and OAI 2.0.
-
-The base URL for your OAI v1.1 interface will be http://archivepath/perl/oai
+The current version of EPrints supports OAI v2.0. OAI version one is no longer supported.
 
 The base URL for your OAI v2.0 interface will be http://archivepath/perl/oai2
 

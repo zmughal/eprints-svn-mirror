@@ -166,7 +166,6 @@ C<CGI>, C<Carp>, C<Cwd>, C<Data::Dumper>, C<Digest::MD5>, C<File::Basename>, C<F
 
 Since EPrints 2.2 you may use either XML::DOM or XML::GDOME. XML::GDOME is recommended as it's faster and uses much less RAM, but it does require you to install a whole lot of extra libraries and perl modules. If you are running a pilot or demonstration service then XML::DOM is fine, and you can always switch over later by installing the required tools and setting the GDOME flag in perl_lib/EPrints/SystemSettings.pm
 
-
 =head2 Addional Libraries Required for GDOME support
 
  libxml2

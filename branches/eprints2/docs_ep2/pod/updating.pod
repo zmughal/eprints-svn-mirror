@@ -354,10 +354,9 @@ This version adds some more functionality and uses apache in a slightly differen
 
 EPrints 2.3 requires an additional mod_perl hook, TRANS. I suggest you compile apache with "EVERYTHING=1" instead of "AUTHEN=1 AUTHZ=1" (see the required software section of the 2.3 manual). mod_rewrite is not used any more.
 
-=head2 Install "libapreq" aka Apache::Request
+=head2 libapreq
 
-This is a PERL module which is used with mod_perl. It does not appear to install from
-CPAN as it always fails 'make test', although it works fine once installed. Follow the instructions in the required software section for installing a perl module by hand. Hopefully this will be fixed in a later version of "libapreq".
+Version 2.3.7+ of EPrints do not require this module. It was a pain to install. 2.3.0 to 2.3.6 do require it, but we recommend you run 2.3.7 or later.
 
 =head2 Install tools used by full-text indexer
 
@@ -419,4 +418,21 @@ Only one copy of the indexer runs, no matter how many archives you have. To star
 
 You should make the indexer automatically start and stop if the machine is rebooted. See the main documentation about the indexing system.
 
+=head1 Updating from any of EPrints 2.3.0 through EPrints.2.3.6 to EPrints 2.3.7
+
+Both the below changes are optional, although recommended.
+
+=head2 Short URLs
+
+You may wish to enable the short urls feature; just add 
+ $c->{use_short_urls} = 1;
+to ArchiveConfig.pm
+
+=head2 XSLT for OAI
+
+2.3.7 introduced an XSLT stylesheet for OAI requests. If you install it and
+view your OAI requests in Mozilla or IE it should be rendered in a human
+readable form.
+
+ % cp defaultcfg/static/general/oai2.xslt archives/ARCHIVEID/cfg/static/general
 
