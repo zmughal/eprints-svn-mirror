@@ -72,15 +72,31 @@ DIR
 
 my $dirokay = 0;
 my $dir = "";
+my $upgrade = 0;
 while (!$dirokay)
 {
 	$dir = get_string('[\/a-zA-Z0-9_]+', "Directory", "/opt/eprints");
 	
 	if (-e $dir)
 	{
-		if (-e "$dir/VERSION")
+		if (-e "$dir/perl_lib/EPrints/SystemSettings.pm")
 		{
-			# Handle versions 
+			require "$dir/perl_lib/EPrints/SystemSettings.pm" or die("WAAAAAAH!");
+			print "Required\n";
+			print $EPrints::SystemSettings::conf;	
+			# Handle versions
+			print <<UPGRADE;
+You already have a version of EPrints installed in this directory which is
+[older/newer] than the one you are trying to install. Do you wish to [upgrade/downgrade]?
+
+UPGRADE
+			print $SystemSettings::conf{"version"};			
+			if (get_yesno("Sure?", "n") eq "y") 
+			{ 
+				$dirokay = 1; 
+				$upgrade = 1;
+			}
+			else { $dirokay = 0; }
 		}
 		else
 		{
@@ -100,93 +116,109 @@ DIRWARN
 }
 $systemsettings{"base_path"} = $dir;
 
-print <<USER;
+if (!$upgrade) { full_install(); }
+else { upgrade(); }
+
+use Data::Dumper;
+$Data::Dumper::Indent = 3;
+print Dumper(\%systemsettings);
+
+sub upgrade
+{
+	
+}
+
+sub full_install
+{
+
+	print <<USER;
 EPrints must be run as a non-root user (typically 'eprints').
 Please specify the user that you wish to use, or press enter to use
 the default.
-
+	
 USER
-
-my $user = get_string('[a-zA-Z0-9_]+', "User", "eprints");
-
-# Check to see if user exists.
-my $exists = 1;
-my(undef, undef, $ruid, $rgid) = getpwnam($user) or $exists = 0;
-my($name, $ugid) = getgrnam($user);
-my $group = "";
-if (!$exists)
-{
-	print <<GROUP;
+	
+	my $user = get_string('[a-zA-Z0-9_]+', "User", "eprints");
+	
+	# Check to see if user exists.
+	my $exists = 1;
+	my $group = "";
+	my(undef, undef, $ruid, $rgid) = getpwnam($user) or $exists = 0;
+	if ($exists)
+	{
+		($group, undef) = getgrnam($user);
+	}
+	else
+	{
+		print <<GROUP;
 User $user does not currently exist, so a group will be required
 before it can be created. Please specify the group you would like
 to use.
 
 GROUP
-	$group = get_string('[a-zA-Z0-9_]+', "Group", "eprints");
-	my $gexists = 1;
-	getgrnam($group) or $gexists = 0;
-
-	if (!$gexists)
-	{
-		print "Creating group ... ";
-		if (system("/usr/sbin/groupadd $group")==0)
+		$group = get_string('[a-zA-Z0-9_]+', "Group", "eprints");
+		my $gexists = 1;
+		getgrnam($group) or $gexists = 0;
+	
+		if (!$gexists)
+		{
+			print "Creating group ... ";
+			if (system("/usr/sbin/groupadd $group")==0)
+			{
+				print "OK.\n\n";
+			}
+			else
+			{
+				print "Failed!\n";
+				print "Unable to create EPrints group: $!\n";
+				exit 1;
+			}
+		}
+	
+		print "Creating user ... ";
+		if (system("/usr/sbin/useradd -s /bin/false -d $dir -g $group $user")==0)
 		{
 			print "OK.\n\n";
-		}
+		} 
 		else
 		{
 			print "Failed!\n";
-			print "Unable to create EPrints group: $!\n";
+			print "Unable to create EPrints user: $!\n";
 			exit 1;
 		}
 	}
-
-	print "Creating user ... ";
-	if (system("/usr/sbin/useradd -s /bin/false -d $dir -g $group $user")==0)
-	{
-		print "OK.\n\n";
-	} 
-	else
+	$systemsettings{"user"} = $user;
+	$systemsettings{"group"} = $group;	
+	print "\nMaking directory ... ";
+	if (!-d $dir && !mkdir($dir))
 	{
 		print "Failed!\n";
-		print "Unable to create EPrints user: $!\n";
+		print "Unable to make installation directory.\n";
 		exit 1;
 	}
+	else
+	{ print "OK.\n\n"; }
+
+	print "Installing files : [";
+
+	my(undef,undef,$uid,$gid) = getpwnam($user);
+	my @executable_dirs = ("bin", "cgi");
+	my @normal_dirs = ("defaultcfg", "cfg", "perl_lib", "phrases");
+
+	foreach(@executable_dirs)
+	{
+		install($_, 0755, $uid, $gid, $dir);	
+		print "|";
+	}
+	
+	foreach(@normal_dirs)
+	{
+		install($_, 0644, $uid, $gid, $dir);
+		print "|";
+	}
+	
+	print "]\n\n";
 }
-
-print "\nMaking directory ... ";
-if (!-d $dir && !mkdir($dir))
-{
-	print "Failed!\n";
-	print "Unable to make installation directory.\n";
-	exit 1;
-}
-else
-{ print "OK.\n\n"; }
-
-print "Installing files : [";
-
-my(undef,undef,$uid,$gid) = getpwnam($user);
-my @executable_dirs = ("bin", "cgi");
-my @normal_dirs = ("defaultcfg", "cfg", "perl_lib", "phrases");
-
-foreach(@executable_dirs)
-{
-	install($_, 0755, $uid, $gid, $dir);	
-	print "|";
-}
-
-foreach(@normal_dirs)
-{
-	install($_, 0644, $uid, $gid, $dir);
-	print "|";
-}
-
-print "]\n\n";
-
-use Data::Dumper;
-$Data::Dumper::Indent = 3;
-print Dumper(\%systemsettings);
 
 sub install
 {
