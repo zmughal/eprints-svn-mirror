@@ -11,34 +11,47 @@ Big New Features
  * APACHE2.0
 
 Pre-release issues
-
- * rename _index_names to something like _index_filter so it's generic
- * make indexer use metafield classes not type=""
- * Highlight "problems" blocks
- * Are cookies broken (setting/getting)?
- * property to supress "UNSPECIFIED"
- * Can we just retire CGI.pm?: Session & VLit (and docs)
- * Status looks crap.. tidy it up
- * make status page show indexer on/off
- * indexer status option (cmd line) is crappy
- * Confusing Cancel button in submission form (files section)
  * GRANT ALTER ON ep2stable.* TO ep2stable@localhost; in update!
- * improve search to have a neater config. 
- * Change config for searches
- . mimetex ... better than the built in one??
  * nestids in subjects -> just plain stupid?
+ * Reminder in STDERR if ordervalue table is missing.
+Render
+ * render property to supress "UNSPECIFIED"
+CmdLine
+ * indexer status option (cmd line) is crappy
+Submission
+ * Go Button on subject search.
+ * Highlight "problems" blocks
+ * Confusing Cancel button in submission form (files section)
+Views
+ * Make views use filters. 
  * clean up browse views and write better comments around the
    config
- * Reminder in STDERR if ordervalue table is missing.
- * Make views use filters. 
+UserArea
+ * Status looks crap.. tidy it up
+ * make status page show indexer on/off
+ * Clean up Staff eprint searches
+ * make better edit/control page?
+ * move staff utils to new page?
+Bugs
+ * FULL TEXT
  * SECURE files are not properly secured!
- * REMOVE REMAINING CGI.pm CODE, inc {query}
+ * 404 page is for entire domain not /foo/bar/
+ * fileinfo does not handle paths correctly
+ * can't change username?
+ * bug in refine search on defaulted booleans?
+ * author with name " " is not treated as null in input
+ * frequency of mailings: default to NEVER?
+ * Investigate: (subjects_self->{merge})(ANY)
+
+Local
+
  * ECS: edit
  * main+tardis: USer info includes Password YES/NO & Pending...
 
 More Vague 
  * remove STDERR prints/make them ->log() instead
  * bibtex/exporters
+ . mimetex ... better than the built in one??
 
 Documentation
  * Apache::libapreq needed! nb. Iffy test script, force install!
@@ -48,14 +61,6 @@ Documentation
     - Register for OAI
  * how to do OL and UL views
 
-Bugs
- * 404 page is for entire domain not /foo/bar/
- * fileinfo does not handle paths correctly
- * can't change username?
- * bug in refine search on defaulted booleans?
- * author with name " " is not treated as null in input
- * frequency of mailings: default to NEVER?
- * Investigate: (subjects_self->{merge})(ANY)
 
 Wishlist
  * Ted N. wants persistent _named_ urls for articles.
@@ -63,6 +68,18 @@ Wishlist
  * Various "form letters" from the editor.
  * Make a permission for users to be able to edit their OWN records.
  * News Items
+ - Alternate config files for simple english only archives.
+ - Multiple Initial Configurations (eg Pre-print Archive, Institutional 
+     Archive etc, data archive)
+ - MathML support
+ - Peer Review
+ - Mirroring
+ - Citation Scanning
+ - "People who read this eprint also read..."
+ - OpenURL support (?)
+ - Probity (see www.probity.org for more info)
+ - CD-ROM publisher - create ISO of an archive.
+ - CD-ROM distribution of software.
 
 Metadata Fields
  ? New field type "time" for datetime SQL fields.
@@ -151,7 +168,6 @@ CGI Tools
 
  Other Stuff
  
- * Override auth option.
  
  +       Make a way of .css working in both https and http - possibly
          a new entity which does something different on the https server.
@@ -168,8 +184,6 @@ CGI Tools
  + Stop refering directly to System::Settings - allow archive specific
   tweaks.
  
- - Remove all #cjg comments which denote issues.
- 
  + cmp methods : is they still needed?
  
  +  List of editors?
@@ -184,8 +198,6 @@ CGI Tools
  +  robots.txt file
  
  +  Check Referer on LatexCache.?
- 
- ?  setlang - show all langs, flag supported.
  
  -  Debugging helpers - make session and searchexp notice if they are 
   DESTROY'd without being terminate/disposed.
@@ -246,127 +258,3 @@ CGI Tools
  -  update views changes (citation no longer forces layout->none)
  
  
- WISHLIST =================================================================
- 
- - Paged Metadata in submission form.
- - Content Negotiation with Browser
- - Alternate config files for simple english only archives.
- - Multiple Initial Configurations (eg Pre-print Archive, Institutional 
-  Archive etc, data archive)
- - MathML support
- - Peer Review
- - Mirroring
- - Citation Scanning
- - "People who read this eprint also read..."
- - OpenURL support (?)
- - Probity (see www.probity.org for more info)
- - CD-ROM publisher - create ISO of an archive.
- - CD-ROM distribution of software.
- 
- DONE ====================================================================
- # remove => => from all bins (man line)
- # add --version to all bins. 
- -  Option to make views ordered/unordered lists?
- - Stop asking for "userid" as part of EPrint->create (and set it
-  seperately)
- - Make EPrint new have $dataset as the last value so it cat act
-  like other Dataobj new methods.
- - no_export property to indicate the field should not be exported
-  as XML. (eg. for subject ancestors) [ actually called export_as_xml ]
- - Sort out message at top of search results to be a phrase.
- - Subscriptions - editing
- - Subscriptions - sending
- - Subscriptions - not correctly ordered!
- -       OAI2.0 support
- - Make subscriptions have "order".
- - SearchExpression "describer" to print search expression
-  in a human readable manner. Use this on search results page.
-  Possibly with "ignored words"
- - Add optional param prefix to searchexp, searchfield - from and render
-  form.
- * add "pageid"'s to all pages.
- * Make EPrint commit regen abstract page if in main archive/deletion?
-  - done but only when edit by the cgi/staff/editeprint page.
- + Ordervalues for sets & subjects being on their NAME not value? 
- * Turn succeeds, replacedby & commentary into "int" rather than "text"
-  [done in pm but needs to be done by "upgrade"]
- * Make "stages" in sub form over-ridable.
- **  Do not put SystemSettings in the distribution!
- +  Join GNU.
- - Add "does record match search" function.
- + Remove gif's
- + Sort subject input fields
- - Make generate_apacheconf do the whole thing each time, rather than
-          on a per archive basis.
- - Add a no_clone property to flag fields which should not be copied
-  when a record is cloned. [ called can_clone, now ]
- - Subscriptions - importing from eprints v1.
- + Add boolean:mailempty to subscriptions
- + Add search:editperms, boolean:mailempty, set:frequency to user
-  dataset.
- - New 404 config option.
- + Option: Mail empty subscriptions - yes/no. (and make it actually work)
- - Set default values for searches
- + field property to stop SQL indexing. - will disable EX searching [does
-          not disable it, but darn it might be slow]
- + Remove editorsubjects from user dataset.
- + Log last sent time for week/month/daily for info page.
- * For generate_abstracts - an option to only update one abstract.
- * Show all items in a subject view count, not just those in the
-  current subject.
- -  Way to reload config without offlining server.
- *  Browse on "name" fields
- * testing to see if "dom" is set in generate_views seems kinda pointless.
- * Make entire search page a phrase so that it can be configured. eg.
-  &buttons; &results; etc.
- * Subject-editors (editors can only edit within certain subjects/search)
- * Alerts for editors about things they can edit (flag in User fields?)
- * GDOME nice tostring
- *  Add option to supress empty subjects in browse views.
- * Need a "Last Changed" datestamp. Always set in commit. (On ALL
-         dataobj types?)
- * Hide ID for non-staff option for has-id fields
- *  Time stamp views [optionally] - done but not an option
- * Make EPrint->new_from_data work the same as document, eprint etc.
-   [well, it does need the dataset]
- * Deposit now/Deposit Later page as last part of normal 
-  sumbission.
- * Staff User info to show user subscriptions (maybe edit?)
- * Make "Submit Later" option on submit form final page.
- * No Submission Buffer option.
- * <ep:ifequal> and <ep:ifnotequal> tools for citations.
- * MD5 digest all documents.
- * 404 hooks
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- * sort out name filtering and exact name matches
- * Make losing lineage & bits & swaping name order a fielddefault property
- * validate at each metadata page (for either or types)
- * Field Property: 'id required' - If main bit is set then ID *must* 
-    be set. Otherwise lax.*** Nah, do it with field validation instead ***
- * Make Hide Lineage/Honourific a field property. per field.
-
- 
- * Deprecate temporary tables and just make oneshot_cache the 
-    default?
- - Improve name search syntax (?)
- + Munge umlauts etc when searching names. [ part of new indexer? ]
- * Merge int/name/text searches, general merge?
-Browse Views
-
- * Second level views - eg. /group/year/ - /view/iam/2001.html
- * BUTTONS UP AND DOWN. stopped working. Also don't grey any but top.
- * seperate vlit stylesheet... Make CSS in vlit use path!

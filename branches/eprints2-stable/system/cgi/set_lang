@@ -76,10 +76,7 @@ elsif( $newlang eq "" )
 		$page->appendChild( $session->html_phrase( "cgi/set_lang:back_to_lastpage",
 			link => $session->render_link( $referer ) ) );
 	}
-	else
-	{
-		$page->appendChild( $session->html_phrase( "general:frontpage_link" ) );
-	}
+	$page->appendChild( $session->html_phrase( "general:frontpage_link" ) );
 
 	$session->build_page( $session->html_phrase( "cgi/set_lang:lang_changed" ), $page, "setlang_done" );
         $session->send_page( lang=>$newlang );
@@ -102,10 +99,7 @@ elsif( grep(/^$newlang$/,@langids) )
 		$page->appendChild( $session->html_phrase( "cgi/set_lang:back_to_lastpage",
 			link => $session->render_link( $referer ) ) );
 	}
-	else
-	{
-		$page->appendChild( $session->html_phrase( "general:frontpage_link" ) );
-	}
+	$page->appendChild( $session->html_phrase( "general:frontpage_link" ) );
 
 	$session->build_page( $session->html_phrase( "cgi/set_lang:lang_changed" ), $page, "setlang_done" );
         $session->send_page( lang=>$newlang );

@@ -82,28 +82,35 @@ use File::Copy;
 my %ARCHIVE_CACHE = ();
 
 
+
 ######################################################################
 =pod
 
-=item $archive = EPrints::Archive->new_archive_by_host_and_path( $hostpath )
+=item $archive = EPrints::Archive->get_request_archive( $request )
 
-This creates a new archive object. What archive is created depends
-on the $hostpath - it works out which virtual host is in use and
-which archive, if any is attached to that virtual host (and path).
+This creates a new archive object. It looks at the given Apache
+request object and decides which archive to load based on the 
+value of the PerlVar "EPrints_ArchiveID".
+
+Aborts with an error if this is not possible.
 
 =cut
 ######################################################################
 
-sub new_archive_by_host_and_path
+sub new_from_request
 {
-	my( $class, $hostpath ) = @_;
-	my $archive;
+	my( $class, $request ) = @_;
+		
+	my $archiveid = $request->dir_config( "EPrints_ArchiveID" );
 
-	my $id = EPrints::Config::get_id_from_host_and_path( $hostpath );
+	my $archive = EPrints::Archive->new_archive_by_id( $archiveid );
 
-	return if( !defined $id );
+	if( !defined $archive )
+	{
+		EPrints::Config::abort( "Can't load EPrints archive: $archiveid" );
+	}
 
-	return new_archive_by_id( $class, $id );
+	return $archive;
 }
 
 

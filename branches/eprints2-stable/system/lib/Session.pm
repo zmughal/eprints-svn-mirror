@@ -69,9 +69,8 @@ use EPrints::Document;
 
 use Unicode::String qw(utf8 latin1);
 use Apache;
+use Apache::Cookie;
 
-use CGI;
-CGI->compile();
 use URI::Escape;
 
 use strict;
@@ -81,9 +80,7 @@ use strict;
 #
 # new( $offline )
 #
-#  Start a new EPrints session, opening a database connection,
-#  creating a CGI query object and any other necessary session state
-#  things.
+#  Start a new EPrints session, opening a database connection.
 #
 #  Command line scripts should pass in true for $offline.
 #  Apache-invoked scripts can omit it or pass in 0.
@@ -117,16 +114,8 @@ sub new
 	{
 		$self->{request} = Apache->request();
 		$self->{apr} = Apache::Request->new( $self->{request} );
-		my $args = $self->{request}->args;
 		$self->{offline} = 0;
-
-		my $archiveid = $self->{request}->dir_config( "EPrints_ArchiveID" );
-		$self->{archive} = EPrints::Archive->new_archive_by_id( $archiveid );
-		if( !defined $self->{archive} )
-		{
-			EPrints::Config::abort( "Can't load archive module for URL: ".
-				$self->{query}->url()."\n"." ( EPrints_ArchiveID=$archiveid, mode=0 )" );
-		}
+		$self->{archive} = EPrints::Archive->new_from_request( $self->{request} );
 	}
 	elsif( $mode == 1 )
 	{
@@ -1465,8 +1454,6 @@ sub render_input_form
 		$p{$_} = $INPUT_FORM_DEFAULTS{$_};
 	}
 
-	my $query = $self->{query};
-
 	my( $form );
 
 	$form =	$self->render_form( "post", $p{dest} );
@@ -1869,12 +1856,6 @@ sub clone_for_me
 
 
 
-#
-# $param = param( $name )
-#
-#  Return a query parameter.
-#
-
 
 ######################################################################
 =pod
@@ -2242,11 +2223,6 @@ sub redirect
 		return;
 	}
 
-#		# For some reason, redirection doesn't work with CGI::Apache.
-#		# We have to use CGI.
-#		print $self->{query}->redirect( -uri=>$url );
-	
-
 	$self->{"request"}->status_line( "302 Moved" );
 	$self->{"request"}->header_out( "Location", $url );
 	$self->{"request"}->send_http_header;
@@ -2326,13 +2302,13 @@ sub send_http_header
 
 	if( defined $opts{lang} )
 	{
-		my $cookie = $self->{query}->cookie(
+		my $cookie = Apache::Cookie->new( $self->{request},
 			-name    => $self->{archive}->get_conf("lang_cookie_name"),
 			-path    => "/",
 			-value   => $opts{lang},
 			-expires => "+10y", # really long time
 			-domain  => $self->{archive}->get_conf("lang_cookie_domain") );
-		$self->{request}->header_out( "Set-Cookie"=>$cookie ); 
+		$cookie->bake;
 	}
 	$self->{request}->send_http_header;
 }

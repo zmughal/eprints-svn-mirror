@@ -398,37 +398,6 @@ sub get_supported_languages
 ######################################################################
 =pod
 
-=item $archiveid = EPrints::Config::get_id_from_host_and_path( $hostpath )
-
-Return the archiveid (if any) of the archive which belongs on the 
-virutal host specified by $hostpath. eg. "www.fishprints.com/perl/search"
-
-=cut
-######################################################################
-
-# cjg DEPRECATE THIS FUNCTION!!
-#
-#sub get_id_from_host_and_path
-#{
-	#my( $hostpath ) = @_;
-#
-	#ensure_init();
-#
-	#foreach( keys %ARCHIVEMAP )
-	#{
-		#if( substr($hostpath,0,length($_)) eq $_ )
-		#{
-			#return $ARCHIVEMAP{$_};
-		#}
-	#}
-#
-	#return undef;
-#}
-
-
-######################################################################
-=pod
-
 =item @ids = EPrints::Config::get_archive_ids( get_archive_ids )
 
 Return a list of ids of all archives belonging to this instance of

@@ -287,7 +287,7 @@ sub get_search_conditions
 	}
 
 	$list->[0] .= '-%';
-
+	$given = "" unless( defined $given );
 	foreach my $gpart ( split /\s+/, $given )
 	{
 		next unless EPrints::Utils::is_set( $gpart );

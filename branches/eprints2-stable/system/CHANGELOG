@@ -1614,4 +1614,19 @@ before next release. (metadata types & fields)
  - Fixed loads of bugs in SearchCondition due to earlier omission of "use 
     strict". 
 
+
+2003-11-03 cjg
+
+ - Fixed Cookies to work with Apache, rather than CGI
+ - Got rid of all occurances of CGI
+ - Got rid of all occurances of host_and_path (ugh)
+ - Added Archive->new_from_request which takes an apache request object
+    looks at the PerlVar and returns an archive or aborts. Used by 
+    Session.pm and VLit.
+ - Made "frontpage link" always appear on set_lang even if referer is
+    set.
+ - Removed some seemingly junk code from SearchCondition->item_matches: grep
+ - Cleaned up VLit to use $archive instead of $session
+ - Made Name.pm indexing handle undefined "given" parts without warning
+
 ======================================================================

@@ -4,7 +4,6 @@ package EPrints::Rewrite;
   
 use Apache::Constants qw(DECLINED OK);
 use Apache::Request;
-use Apache::Cookie;
 
 use EPrints::Session;
 

@@ -251,12 +251,6 @@ sub item_matches
 
 	if( $self->{op} eq "grep" )
 	{
-		my( $codes, $new_grepcodes, $badwords ) =
-			get_codes(
-				$item->get_session,
-				$item->get_dataset,
-				$self->{field},
-				$item );
 		my( $codes, $grepcodes, $badwords ) =
 			$self->{field}->get_index_codes(
 				$item->get_session,
@@ -273,7 +267,7 @@ sub item_matches
 		}
 			
 		my $regexp = '^('.join( '|', @re ).')$';
-print STDERR "REGEXP:$regexp\n";
+
 		foreach my $grepcode ( @{$grepcodes} )
 		{
 			return( 1 ) if( $grepcode =~ m/$regexp/ );

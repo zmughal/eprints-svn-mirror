@@ -62,23 +62,22 @@ sub handler
 
 	my $filename = $r->filename;
 
-	if ( ! -r $filename ) {
+	if ( ! -r $filename ) 
+	{
 		return NOT_FOUND;
 	}
-	my $args =  $r->args;
-	my $q =  new CGI( $args );
 
-	my $version = $q->param( "xuversion" );
-	my $locspec = $q->param( "locspec" );
+	my $apr = Apache::Request->new( $r );
 
-	if( !defined $version && !defined $q->param( "mode" ) )
+	my $version = $apr->param( "xuversion" );
+	my $locspec = $apr->param( "locspec" );
+
+	if( !defined $version && !defined $apr->param( "mode" ) )
 	{
 		# We don't need to handle it, just do this 
 		# the normal way.
 		return DECLINED;
 	}
-
-	my $session = EPrints::Session->new();
 
 	if( !defined $locspec )
 	{
@@ -111,7 +110,7 @@ sub handler
 		return;
 	}
 
-	&$fn( $filename, $lsparam, $locspec, $session, $baseurl );
+	&$fn( $filename, $lsparam, $locspec, $r, $apr, $baseurl );
 
 	return OK;
 }
@@ -178,7 +177,7 @@ sub send_http_header
 ######################################################################
 =pod
 
-=item EPrints::VLit::ls_charrange( $filename, $param, $locspec, $session )
+=item EPrints::VLit::ls_charrange( $filename, $param, $locspec, $r, $apr, $baseurl )
 
 undocumented
 
@@ -187,9 +186,9 @@ undocumented
 
 sub ls_charrange
 {
-	my( $filename, $param, $locspec, $session, $baseurl ) = @_;
+	my( $filename, $param, $locspec, $r, $apr, $baseurl ) = @_;
 
-	my $r = Apache->request;
+	my $archive = EPrints::Archive->new_from_request( $r );
 	
 #	if( $r->content_type !~ m#^text/# )
 #	{
@@ -213,8 +212,7 @@ sub ls_charrange
 		( $offset, $length ) = ( $1, $2 );
 	}
 
-	my $q = $session->{query};
-	my $mode = $q->param( "mode" );
+	my $mode = $apr->param( "mode" );
 
 	my $readoffset = $offset;
 	my $readlength = $length;
@@ -308,7 +306,7 @@ sub ls_charrange
 			}
 		}
 		$html.='</span>';
-		my $copyurl = $session->get_archive()->get_conf( "vlit" )->{copyright_url};
+		my $copyurl = $archive->get_conf( "vlit" )->{copyright_url};
 		my $front = '<a href="'.$copyurl.'">trans &copy;</a>';
 		if( $param eq "" )
 		{
@@ -383,7 +381,7 @@ END
 </div>
 END
 		}
-		my $cssurl = $session->get_archive()->get_conf( "base_url" )."/vlit.css";
+		my $cssurl = $archive->get_conf( "base_url" )."/vlit.css";
 		$r->print( <<END );
 <html>
 <head>
@@ -425,7 +423,7 @@ END
 ######################################################################
 =pod
 
-=item EPrints::VLit::ls_area( $file, $param, $resspec, $session )
+=item EPrints::VLit::ls_area( $file, $param, $resspec, $r, $apr, $baseurl )
 
 undocumented
 
@@ -434,7 +432,7 @@ undocumented
 
 sub ls_area
 {
-	my( $file, $param, $resspec, $session, $baseurl ) = @_;
+	my( $file, $param, $resspec, $r, $apr, $baseurl ) = @_;
 
 	my $page = 1;
 	my $opts = {
@@ -444,9 +442,9 @@ sub ls_area
 	};
 
 	my $s;
-	if( $session->param( "scale" ) )
+	if( $apr->param( "scale" ) )
 	{
-		$s = $session->param( "scale" );
+		$s = $apr->param( "scale" );
 		$s = undef if( $s <= 0 || $s>1000 || $s==100 );
 	}
 
