@@ -19,7 +19,7 @@ use EPrints::EPrint;
 
 use strict;
 my $session = new EPrints::Session;
-Apache::exit( 0 ) unless( defined $session );
+exit( 0 ) unless( defined $session );
 
 my $eprintid_in = $session->param( "eprintid" );
 $eprintid_in =~ m/\d+/;
