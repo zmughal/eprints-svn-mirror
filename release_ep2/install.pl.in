@@ -28,6 +28,8 @@ $c{"latex"}="@LATEX_PATH@";
 $c{"dvips"}="@DVIPS_PATH@";
 $c{"convert"}="@CONVERT_PATH@";
 
+$c{"enable_gdome"}="@ENABLE_GDOME@";
+
 ######################################################################
 
 use strict;
@@ -172,6 +174,16 @@ else
 
 $systemsettings->{"version_id"} = $version_id;
 $systemsettings->{"version"} = $version;
+
+if( defined $c{"enable_gdome"} && $c{"enable_gdome"} )
+{
+	$systemsettings->{"enable_gdome"} = 1;
+}
+
+if( !defined $systemsettings->{"enable_gdome"} )
+{
+	$systemsettings->{"enable_gdome"} = 0;
+}
 
 unless( getpwnam($systemsettings->{"user"}) )
 {
@@ -551,12 +563,18 @@ sub upgrade
 	write_sigs( $base_path, $newsigs );
 
 	print <<HOORAY;
-=====
-=
-= Update successful. You should now re-run bin/generate_apacheconf, and restart
-= your web server.
-=
-=====
+======================================================================
+
+ Upgrade successful. You should now:
+
+ - su to $user
+ - make any changes described by the "updating" chapter of
+   the documentation.
+ - re-run bin/generate_apacheconf (the just-installed version, 
+   not the version that came in the tar.gz.
+ - restart your web server
+
+======================================================================
 
 HOORAY
 }
@@ -607,38 +625,38 @@ sub full_install
 
 	print <<HOORAY;
 
-==================================================
+======================================================================
 Hooray! Your EPrints2 installation was successful!
-==================================================
-=
-= What Now?
-=
-= - su to root
-= - Open your apache.conf file, and make the
-=   following alterations:
-=   o Add the line
-=       Include $base_path/cfg/apache.conf
-=   o Replace the 'User <username>' line with
-=       User $user
-=   o Replace the 'Group <groupname>' line with
-=       Group $group
-= - su to $user
-= - Move into $base_path and run:
-=     bin/generate_apacheconf
-=     bin/configure_archive
-=
-= Please note:
-= You will also require a working sendmail configuration.
-= This should just involve inserting the line
-=
-= DH<yourmailserver>
-=
-= in your sendmail.cf, where <yourmailserver> is your SMTP
-= mail server address.
-=   
-= Good Luck!
-=
-==================================================
+======================================================================
+
+ What Now?
+
+ - su to root
+ - Open your apache.conf file, and make the
+   following alterations:
+   o Add the line
+       Include $base_path/cfg/apache.conf
+   o Replace the 'User <username>' line with
+       User $user
+   o Replace the 'Group <groupname>' line with
+       Group $group
+ - su to $user
+ - Move into $base_path and run:
+     bin/generate_apacheconf
+     bin/configure_archive
+
+ Please note:
+ You will also require a working sendmail configuration.
+ This should just involve inserting the line
+
+ DH<yourmailserver>
+
+ in your sendmail.cf, where <yourmailserver> is your SMTP
+ mail server address.
+   
+ Good Luck!
+
+======================================================================
 HOORAY
 }
 
