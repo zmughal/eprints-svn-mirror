@@ -445,39 +445,53 @@ sub _load_templates
 {
 	my( $self ) = @_;
 
-	my $langid;
-	foreach $langid ( @{$self->get_conf( "languages" )} )
+	foreach my $langid ( @{$self->get_conf( "languages" )} )
 	{
-		my $file = $self->get_conf( "config_path" ).
-				"/template-$langid.xml";
-		my $doc = $self->parse_xml( $file );
-		if( !defined $doc )
-		{
-			return 0;
-		}
-
-		my $html = ($doc->getElementsByTagName( "html" ))[0];
-		if( !defined $html )
-		{
-			EPrints::XML::dispose( $doc );
-			print STDERR "Missing <html> tag in $file\n";
-			return 0;
-		}
-		$self->{html_templates}->{$langid} = 
-			EPrints::XML::clone_and_own( 
-				$html, 
-				$self->{xmldoc},
-				1 );
-		EPrints::XML::dispose( $doc );
+		my( $file, $template );
+		$file = $self->get_conf( "config_path" ).
+			"/template-$langid.xml";
+		$template = $self->_load_template( $file );
+		if( !defined $template ) { return 0; }
+		$self->{html_templates}->{default}->{$langid} = $template;
+		
+		# load the secure site template if there is one.
+		$file = $self->get_conf( "config_path" ).
+			"/template-secure-$langid.xml";
+		if( !-e $file ) { next; }
+		$template = $self->_load_template( $file );
+		if( !defined $template ) { return 0; }
+		$self->{html_templates}->{secure}->{$langid} = $template;
 	}
 	return 1;
+}
+
+sub _load_template
+{
+	my( $self, $file ) = @_;
+	my $doc = $self->parse_xml( $file );
+	if( !defined $doc ) { return undef; }
+	my $html = ($doc->getElementsByTagName( "html" ))[0];
+	my $rvalue;
+	if( !defined $html )
+	{
+		print STDERR "Missing <html> tag in $file\n";
+	}
+	else
+	{
+		$rvalue = EPrints::XML::clone_and_own( 
+			$html,
+			$self->{xmldoc},
+			1 );
+	}
+	EPrints::XML::dispose( $doc );
+	return $rvalue;
 }
 
 
 ######################################################################
 =pod
 
-=item $template = $archive->get_template( $langid )
+=item $template = $archive->get_template( $langid, [$template_id] )
 
 Returns the DOM document which is the webpage template for the given
 language. Do not modify the template without cloning it first.
@@ -487,9 +501,20 @@ language. Do not modify the template without cloning it first.
 
 sub get_template
 {
-	my( $self, $langid ) = @_;
+	my( $self, $langid, $tempid ) = @_;
+  
+	if( !defined $tempid ) { $tempid = 'default'; }
+	my $t = $self->{html_templates}->{$tempid}->{$langid};
+	if( !defined $t ) 
+	{
+		EPrints::Config::abort( <<END );
+Error. Template not loaded.
+Language: $langid
+Template ID: $tempid
+END
+	}
 
-	my $t = $self->{html_templates}->{$langid};
+	my $t = $self->{html_templates}->{$tempid}->{$langid};
 	return $t;
 }
 

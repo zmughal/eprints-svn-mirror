@@ -82,6 +82,17 @@ sub handler
 	if( defined $econf ) { @exceptions = @{$econf}; }
 	push @exceptions, '/perl/';
 
+	my $securehost = $archive->get_conf( "securehost" );
+	if( EPrints::Utils::is_set( $securehost ) && !$secure )
+	{
+		# If this archive has secure mode but we're not
+		# on the https site then skip /secure/ to let
+		# it just get rediected to the secure site.
+		push @exceptions, '/secure/';
+	}
+	
+
+
 	foreach my $exppath ( @exceptions )
 	{
 		return DECLINED if( $uri =~ m/^$exppath/ );
