@@ -97,7 +97,6 @@ use EPrints::Session;
 use EPrints::Subject;
 use EPrints::ImportXML;
 
-my $xml = 0;
 my $version = 0;
 my $verbose = 0;
 my $quiet = 0;

@@ -17,6 +17,7 @@ install( 'Unicode::String' );
 install( 'DBD::mysql' );
 install( 'MIME::Base64' );
 install( 'XML::Parser' );
+install( 'Net::SMTP' );
 
 # not required since 2.3.7
 #foreach $mod_name ( "Apache::Test", "Apache::Request" )

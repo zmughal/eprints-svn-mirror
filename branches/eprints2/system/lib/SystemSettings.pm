@@ -17,6 +17,7 @@ package EPrints::SystemSettings;
 $EPrints::SystemSettings::conf = 
 {
 	apache => "2",
+	smtp_server=>'smtp.ecs.soton.ac.uk',
 	base_path => "/opt/ep2stable",
 	executables => {
 		unzip 	=> "/usr/bin/unzip",

@@ -2151,7 +2151,7 @@ PACKAGE: 2.2.99.2
     page to be disabled. 
  - Fix to secure apacheconf generation. Needs testing.
  - Deprecated "clone" and replaced it with "new version" and
-    "use as template" to be more clear as to function. #5
+    "use as template" to be more clear as to function. [#5]
  - Redesigned review-my-deposits page to look more like the
     redesigned homepage. 
  - Added "nolink" option to eprint->clone to supress the later
@@ -2166,11 +2166,11 @@ PACKAGE: 2.2.99.2
 
  - Added a new bin script: recommit_dataset which runs commit
     on every item in the dataset. Thus updating the automatic
-    values. #41
+    values. [#41]
 
 2005-02-16 cjg
 
- - users/home now uses "copy" not "clone" so files are not copied. #5
+ - users/home now uses "copy" not "clone" so files are not copied. [#5]
 
 2005-02-16 cjg
 
@@ -2201,4 +2201,39 @@ PACKAGE: 2.2.99.2
 ======================================================================
 17/02/2005 - EPRINTS-2.3.9
 ======================================================================
+
+2005-02-22 cjg
+
+ - Fixed issues with secure include for generate_apacheconf
+ - Fixed bug in secure server change user [#85]
+ - Fixed error in database that failed to strip "00" for month and
+    day at the end of year-only (and month-only) dates.
+ - Added two missing phrases. [#81] [#87] 
+ - Added chkconfig comments to the top of bin/indexer to make it
+    easier to use as a linux service. [#83]
+ - Fixed problem with "%20" in uploaded filenames. [#62]
+
+2005-02-23 cjg
+
+ - Added epindexer as a linux service to go in /etc/init.d, removed
+    chkconfig comments from indexer [#83]
+
+2005-02-25 cjg 
+
+ - Added Net::SMTP mail method. [#82]
+ - [c] Made it the default.
+ - Added a ./configure option to set the SMTP server to use.
+ - sendmail is no longer required by ./configure
+ - Cleaned up the configure --help page
+ - Apache version 2 is now the default 
+
+2005-03-01 cjg
+
+ - When skip_buffer is set, it is now no longer possible to move
+    items into the buffer, they go back to the inbox instead, and
+    also the "buffer" link from the user home page is hidden. [#76]
+ - Changed PDF and Postscript document citation styles to link to 
+    free views in addition to acrobat.
+
+
 
