@@ -1,0 +1,35 @@
+######################################################################
+#
+#  EPrints Staff User Search Form
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints::Session;
+use EPrints::SearchExpression;
+
+use strict;
+my $session = new EPrints::Session;
+Apache::exit( 0 ) unless( defined $session );
+
+my $searchexp = new EPrints::SearchExpression(
+	session => $session,
+	dataset => $session->get_archive()->get_dataset( "user" ),
+	staff => 1,
+	fieldnames => $session->get_archive()->get_conf( "user_search_fields" ) );
+
+my $preamble = $session->html_phrase( "cgi/search:preamble" );
+
+my $title = $session->phrase( "cgi/search:simple_search" );
+
+$searchexp->process_webpage( $title, $preamble );
+
+$session->terminate;
+

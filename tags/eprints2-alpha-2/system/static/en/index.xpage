@@ -1,0 +1,36 @@
+<?xml version="1.0" standalone="no" ?>
+<!DOCTYPE page SYSTEM "entities-en.dtd" >
+<page>
+<title>Welcome to &archivename;</title>
+<body>
+
+<p>Welcome to this generic eprint server, running the default configuration for <a href="http://www.eprints.org/">eprints.org archive software</a>. <a href="information.html">More information</a> is available about the archive.</p>
+
+&ruler;
+
+<p>This version ( &version; ) is still alpha code.</p>
+
+<ul>
+ <li><a href="&perl_url;/set_password">User Registration</a> - allows you to:</li>
+ <ul>
+  <li>submit records into the review buffer</li>
+  <li>edit your user record</li>
+ </ul>
+ <li><a href="&perl_url;/search">Search</a> - assuming there is any data in the archive.</li>
+ <li><a href="&base_url;/view/">Browse</a> - Browse the database.</li>
+ <li><a href="&userhome;">User Area</a> - should work once you've registered.</li>
+</ul>
+
+<p>Suggestions may be made to the mailing lists, see <a href="http://www.eprints.org">eprints.org</a> for more info.</p>
+
+<address>
+support@eprints.org<br />
+The <strong>eprints.org</strong> team.<br />
+University of Southampton.<br />
++44 23 8059 4833</address>
+
+
+
+
+</body>
+</page>

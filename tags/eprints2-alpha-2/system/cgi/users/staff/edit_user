@@ -1,0 +1,111 @@
+######################################################################
+#
+#  EPrints Author Record Editing for Staff
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints::User;
+use EPrints::Database;
+use EPrints::Session;
+use EPrints::UserForm;
+
+use strict;
+
+my $session = EPrints::Session->new();
+Apache::exit( 0 ) unless( defined $session );
+
+# Check we have privs
+if( !$session->auth_check( "edit-user" ) )
+{
+	$session->terminate();
+	Apache::exit( 0 );
+}
+
+&process( $session );
+
+$session->terminate();
+
+sub process
+{
+	my( $session ) = @_;
+
+	my $user = EPrints::UserPage::user_from_param( $session );
+
+	return if( !defined $user );
+
+	my $action = $session->get_action_button();
+
+	my( $page, $title );
+	$page = $session->make_doc_fragment();
+
+	if( $action eq "delete" )
+	{
+		$page->appendChild( $user->render_full() );
+		$page->appendChild( $session->render_ruler() );
+		$page->appendChild( $session->html_phrase( "cgi/users/edit_user:really_remove" ) );
+		$page->appendChild( $session->render_input_form(
+			buttons=>{
+				confirm=>$session->phrase( "cgi/users/edit_user:action_confirm" ),
+				cancel=>$session->phrase( "cgi/users/edit_user:action_cancel" ) 
+			},
+			hidden_fields=>{
+				userid=>$user->get_value( "userid" )
+			}
+		) );			
+
+		$session->build_page(
+			$session->phrase( "cgi/users/edit_user:delete_title" ),
+			$page );
+		$session->send_page();
+
+		return;
+	}
+
+	if( $action eq "confirm" )
+	{
+		#cjg NOT DONE
+		my $success = $user->remove();
+
+		if( !$success )
+		{
+			$session->render_error(
+				"Couldn't remove user! Check logs for details.",
+				$session->get_archive()->get_conf( "base_url" )."/staff",
+				"Return to staff area" );
+			return;
+		}
+		
+		print $session->{render}->start_html( "Delete User" );
+
+		print "<CENTER><P>User has been deleted.</P></CENTER>\n";
+		print "<CENTER><P><A HREF=\"".
+		$session->get_archive()->get_conf( "base_url ")."/staff\">".
+			"Click here to return to staff area</A></P></CENTER>\n";
+
+		print $session->{render}->end_html();
+		return;
+	}
+
+	if( $action eq "cancel" )
+	{
+		$session->redirect( $session->get_archive()->get_conf( "userhome" ) );
+		return;
+	}
+	
+
+	my $userform = new EPrints::UserForm(
+		$session,
+		$session->get_archive()->get_conf( "userhome" ),
+		1,
+		$user );
+	$userform->process();
+}
+

@@ -1,0 +1,14 @@
+<?xml version="1.0" standalone="no" ?>
+<!DOCTYPE page SYSTEM "entities-en.dtd" >
+<page>
+<title>Authorisation Required</title>
+<body>
+
+<p>In order to access some areas of the archive you require a username and password.</p>
+
+<p><strong>If you don't have a username and password</strong> you need to register with us.</p>
+
+<p><a href="&perl_url;/set_password">Click here if you would like to register or have forgotten your password and want to set it again.</a></p>
+
+</body>
+</page>
