@@ -1714,9 +1714,12 @@ sub build_page
 			$map->{$_} = $pt;
 		}
 	}
-
-	my $esec = $self->{request}->dir_config( "EPrints_Secure" );
-	my $secure = (defined $esec && $esec eq "yes" );
+	my $secure = 0;
+	unless( $self->{offline} )
+	{
+		my $esec = $self->{request}->dir_config( "EPrints_Secure" );
+		$secure = (defined $esec && $esec eq "yes" );
+	}
 	my $template_id;
 	if( $secure ) { $template_id = 'secure'; }
 
