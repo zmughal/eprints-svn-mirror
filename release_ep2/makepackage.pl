@@ -180,12 +180,12 @@ sub do_package
 		if ($currsys>0)
 		{
 			print "Copying $l language file.\n";	
-			system("cp $originaldir/export/eprints/system/phrases/system-$l-$currsys eprints/sys/system-phrases-$l.xml");
+			system("cp $originaldir/export/eprints/system/phrases/system-$l-$currsys eprints/cfg/system-phrases-$l.xml");
 		}	
 		else
 		{
 			print "Copying English language file as placeholder\n";
-			system("cp $originaldir/export/eprints/system/phrases/system-en-$ensys eprints/sys/system-phrases-$l.xml");
+			system("cp $originaldir/export/eprints/system/phrases/system-en-$ensys eprints/cfg/system-phrases-$l.xml");
 		}
 
 		if ($currarch>0)
@@ -214,7 +214,7 @@ sub do_package
 			if (-e "$originaldir/export/eprints/system/phrases/system-$l-current")
 			{
 				print "Transferring $l system phrases...\n";
-				system("cp $originaldir/export/eprints/system/phrases/system-$l-current eprints/sys/system-phrases-$l.xml");
+				system("cp $originaldir/export/eprints/system/phrases/system-$l-current eprints/cfg/system-phrases-$l.xml");
 			}
 		}
 	}
@@ -231,7 +231,7 @@ sub do_package
 			if (-e "$originaldir/export/eprints/system/phrases/system-$l-1")
 			{
 				print "Transferring $l system phrases...\n";
-				system("cp $originaldir/export/eprints/system/phrases/system-$l-1 eprints/sys/system-phrases-$l.xml");
+				system("cp $originaldir/export/eprints/system/phrases/system-$l-1 eprints/cfg/system-phrases-$l.xml");
 			}
 		}
 	}
