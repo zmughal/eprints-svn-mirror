@@ -15,13 +15,15 @@
 use EPrints::Session;
 use EPrints::UserPage;
 
+use strict;
+
 my $session = new EPrints::Session;
 
 # Check we have privs
 if( !$session->auth_check( "staff-view" ) )
 {
 	$session->terminate();
-	Apache::exit( 0 );
+	exit( 0 );
 }
 
 EPrints::UserPage::process( $session, 1 );

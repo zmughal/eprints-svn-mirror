@@ -30,7 +30,7 @@ my $session = EPrints::Session->new();
 if( !$session->auth_check( "editor" ) )
 {
 	$session->terminate();
-	Apache::exit( 0 );
+	exit( 0 );
 }
 
 my( $title, $page ) = &process( $session );
@@ -86,7 +86,7 @@ sub process
 		next if( $can_edit ); # skip the rest if one matches
 
 		my $search = $ef_field->make_searchexp( $session, $s );
-		if( $search->item_matches( $eprint ) )
+		if( $search->get_conditions->item_matches( $eprint ) )
 		{
 			$can_edit = 1;
 		}
@@ -177,6 +177,7 @@ sub process
 		return;
 	}
 
+
 	if( $action eq "_todeletion" )
 	{
 		unless( $eprint->move_to_deletion() )
@@ -219,21 +220,33 @@ sub process
 	# If we are skipping the files stage then we have to work out what the
 	# actual last stage is...
 	my $laststage = "files";
-	my @stages = ( "meta","linking","type" );
+	my @stages = ( "type","linking","meta" );
 	while( $session->get_archive()->get_conf( "submission_stage_skip", $laststage ) )
 	{
 		$laststage = pop @stages;
 		last if( $laststage eq "type" );
 	}
+
 	my $ls = $session->get_archive()->get_conf( "submission_stage_last_for_staff_edit" );
 	$laststage = $ls if( defined $ls );
 
 	if( defined $stage && $laststage eq $stage && defined $action && ($action eq "finished" || $action eq "next") )
-        {
-                # Intercept the verify page, that's what we were doing!
-                $session->redirect( "edit_eprint?dataset=$datasetid&eprintid=$eprintid" );
-                return;
-        }
+	{
+		my $redir = 1;
+		if( $stage eq "meta" )
+		{
+			my @pages = $dataset->get_type_pages( $eprint->get_value( "type" ) );
+			my $pageid = $session->param( "pageid" );
+			$redir = 0;
+			$redir = 1 if( $pageid eq pop @pages );
+		}
+		if( $redir )
+		{
+			# Intercept the verify page, that's what we were doing!
+			$session->redirect( "edit_eprint?dataset=$datasetid&eprintid=$eprintid" );
+			return;
+		}
+	}
 
 	# Give other cases to the edit form
 	my $subform = new EPrints::SubmissionForm(
@@ -292,12 +305,20 @@ sub view_page
 	# actions for this form begin with _ (except edit and
 	# those passed to submission form)
 
+	my $sb = $session->get_archive()->get_conf( "skip_buffer" );	
 	my $buttons = {};
 	my $r1 = [];
 	my $r2 = [];
 	if( $eprint->get_dataset()->id() eq "inbox" )
 	{
-		$r1 = [ "_tobuffer" ];
+		if( defined $sb && $sb == 1 )
+		{
+			$r1 = [ "_toarchive" ];
+		}
+		else
+		{
+			$r1 = [ "_tobuffer" ];
+		}
 		$r2 = [ "edit", "_remove", "_clone" ];
 	}
 	if( $eprint->get_dataset()->id() eq "buffer" )
@@ -314,7 +335,14 @@ sub view_page
 	}
 	if( $eprint->get_dataset()->id() eq "archive" )
 	{
-		$r1 = [ "_tobuffer", "_todeletion" ];
+		if( defined $sb && $sb == 1 )
+		{
+			$r1 = [ "_toinbox", "_todeletion" ];
+		}
+		else
+		{
+			$r1 = [ "_tobuffer", "_todeletion" ];
+		}
 		$r2 = [ "edit", "_clone" ];
 	}
 	if( $eprint->get_dataset()->id() eq "deletion" )
@@ -329,6 +357,8 @@ sub view_page
 	{
 		$buttons->{$_} = $session->phrase( "cgi/users/edit_eprint:action_".$_ );
 	}
+	print STDERR "**". $eprint->get_dataset()->id()."**\n";
+	print STDERR "**". join( '/', (@{$r1}, @{$r2}))."**\n";
 	
 	$form->appendChild( $session->render_ruler() );
 	$buttons->{_order} = $r1;
