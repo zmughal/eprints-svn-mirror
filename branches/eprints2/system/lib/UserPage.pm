@@ -121,7 +121,7 @@ sub process
 	my $user = EPrints::UserPage::user_from_param( $session );
 	return unless( defined $user );
 	
-	$userid = $user->get_value( "userid" );
+	my $userid = $user->get_value( "userid" );
 
 	my( $page );
 

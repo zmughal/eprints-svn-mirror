@@ -2332,4 +2332,4 @@ PACKAGE: 2.2.99.2
     scripts now use "use strict" and a number of warnings were 
     corrected. Mostly adding "my" statements. This probably fixes
     a bug which occasionally meant odd errors happend at startup.
-
+ - Added missing "my" to UserPage.pm 
