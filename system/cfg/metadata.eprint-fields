@@ -211,19 +211,6 @@ displayname = "Refereed"
 help = "Please indicate whether this version of the work been refereed below."
 </field>
 
-<field referencetext>
-editable = YES
-visible = YES
-type = "multitext"
-displayname = "References"
-displaylines = 3
-help = "In the future, the software should support hypertext citation linking "
-help = "between papers and archives. It would really assist this effort, and "
-help = "give your submission a much higher chance of being usefully linked, "
-help = "if you would paste the references of papers your submission cites as "
-help = "ASCII text in the box below. This is of course entirely optional."
-</field>
-
 <field reportno>
 editable = YES
 type = "text"
