@@ -82,6 +82,30 @@ sub convert_version
 	return 0;
 }
 
+sub compare_version
+{
+	my( $a, $b ) = @_;
+
+	$a = "0" if( !defined $a || $a eq "" );
+	$b = "0" if( !defined $b || $b eq "" );
+		
+	my( @a ) = split '\.' $a;
+	my( @b ) = split '\.' $b;
+
+	for(;;)
+	{
+		return 0 if( scalar @a == 0 && scalar @b == 0 );
+		$ahead = splice( @a, 0, 1);
+		$ahead = 0 if( !defined $ahead );
+		$bhead = splice( @b, 0, 1);
+		$bhead = 0 if( !defined $bhead );
+		return 1 if ($ahead > $bhead);
+		return -1 if ($ahead < $bhead);
+	}
+}		
+
+	
+
 sub get_library_paths
 {
 	my($searchstring) = @_;
