@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/eprints/perl_lib 
+#!/usr/local/bin/perl5.8.0 -w -I/opt/ep2stable/perl_lib 
 
 ######################################################################
 #
@@ -72,6 +72,7 @@ __GENERICPOD__
 
 
 use EPrints::Database;
+use EPrints::Session;
 
 use strict;
 use Getopt::Long;
@@ -122,7 +123,7 @@ if( defined $ARGV[1] )
 }
 else
 {
-	foreach( "archive", "deletion" )
+	foreach( "archive", "deletion", "inbox", "buffer" )
 	{
 		print "Writing $_ abstracts\n" if( $noise > 0);
 		my $dataset = $session->get_archive()->get_dataset( "$_" );
