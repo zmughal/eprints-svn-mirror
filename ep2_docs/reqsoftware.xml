@@ -73,12 +73,12 @@ make install
 
 <formalpara>
 <title>CGI</title>
-Should be installed by default.
+Should be installed by default. Note that CGI 3.02 should not be used, as it contains a bug in its handling of multipart forms. Version 2.75 appears to be stable, and is the version that we are using for testing.
 </formalpara>
 
 <formalpara>
 <title>Data::Dumper</title>
-This module is used by the installer, and for debugging. It should be easy to install.
+Should be installed by default. This module is used by the installer, and for debugging. It should be easy to install if not already present.
 </formalpara>
 
 <formalpara>
@@ -142,7 +142,7 @@ Allows apache to authenticate users from a database table, via modperl and DBI.
 
 <formalpara>
 <title>XML::Parser</title>
-Used to parse XML files. Requres the <application>expat library</application>. A .tar.gz and a RedHat Linux RPM are available in the tools dir on eprints.org.
+Used to parse XML files. Requires the <application>expat library</application> and the ExtUtils:PerlPP Perl module. A .tar.gz and a RedHat Linux RPM are available in the tools dir on eprints.org for the expat library, and the ExtUtils:PerlPP module is easy to install if not already present.
 </formalpara>
 
 <!-- What is this for??
