@@ -690,55 +690,6 @@ sub _create_userid
 }
 
 
-######################################################################
-=pod
-
-=item $foo = $thing->render
-
-undocumented
-
-=cut
-######################################################################
-
-sub render
-{
-	my( $self ) = @_;
-
-	my( $dom, $title ) = $self->{session}->get_archive()->call( "user_render", $self, $self->{session} );
-
-	if( !defined $title )
-	{
-		$title = $self->render_description;
-	}
-
-	return( $dom, $title );
-}
-
-# This should include all the info, not just that presented to the public.
-
-######################################################################
-=pod
-
-=item $foo = $thing->render_full
-
-undocumented
-
-=cut
-######################################################################
-
-sub render_full
-{
-	my( $self ) = @_;
-
-	my( $dom, $title ) = $self->{session}->get_archive()->call( "user_render_full", $self, $self->{session} );
-
-	if( !defined $title )
-	{
-		$title = $self->render_description;
-	}
-
-	return( $dom, $title );
-}
 
 
 ######################################################################

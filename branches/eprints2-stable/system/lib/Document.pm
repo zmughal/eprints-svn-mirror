@@ -232,15 +232,30 @@ sub create
 	if( $success )
 	{
 		my $doc = EPrints::Document->new( $session, $doc_id );
-		# Make secure area symlink
-		my $linkdir = _secure_symlink_path( $eprint );
-		$doc->create_symlink( $eprint, $linkdir );
+		$doc->create_secure_symlink();
 		return $doc;
 	}
 	else
 	{
 		return( undef );
 	}
+}
+
+######################################################################
+# 
+# $doc->create_secure_symlink()
+#
+#  Create the symlink into /html/secure if needed.
+#
+######################################################################
+
+sub create_secure_symlink
+{
+	my( $self ) = @_;
+
+	my $eprint = $self->get_eprint();
+	my $linkdir = _secure_symlink_path( $eprint );
+	$self->create_symlink( $eprint, $linkdir );
 }
 
 

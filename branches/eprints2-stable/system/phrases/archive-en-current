@@ -374,6 +374,7 @@ terms.</p>
     </ep:phrase>
 
     <ep:phrase ref="page:fulltext">Full text available as:</ep:phrase>
+    <ep:phrase ref="page:nofulltext">Full text not available.</ep:phrase>
     <ep:phrase ref="page:abstract">Abstract</ep:phrase>
     <ep:phrase ref="page:deposited_by">Deposited By</ep:phrase>
     <ep:phrase ref="page:deposited_on">Deposited On</ep:phrase>

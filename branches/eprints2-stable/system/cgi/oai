@@ -17,7 +17,6 @@
 #
 ######################################################################
 
-#cjg need to recomment all subs
 
 
 use EPrints::Database;

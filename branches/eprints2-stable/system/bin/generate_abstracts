@@ -123,15 +123,18 @@ if( defined $ARGV[1] )
 }
 else
 {
-	foreach( "archive", "deletion" )
+	foreach( "archive", "deletion", "inbox", "buffer" )
 	{
-		print "Writing $_ abstracts\n" if( $noise > 0);
+		if( $noise > 0 )
+		{
+			print "Updating $_ static files\n" if( $noise > 0);
+		}
 		my $dataset = $session->get_archive()->get_dataset( "$_" );
 		my $info = { count=>0 };
 		$dataset->map( $session , \&make_static, $info );
-		if( $noise > 0)
+		if( $noise > 0 )
 		{
-			print "Done writing ".$info->{count}." $_ abstracts\n";
+			print "Done updating static files for ".$info->{count}." $_ records\n";
 		}
 	}
 }
@@ -144,7 +147,7 @@ sub make_static
 	$eprint->generate_static();
 	if( $noise > 1 )
 	{
-		print "Generated ".$eprint->get_value( "eprintid" )."\n";
+		print "Updated ".$eprint->get_value( "eprintid" )."\n";
 	}
 	$info->{count}++;
 }

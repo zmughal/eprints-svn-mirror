@@ -936,6 +936,12 @@ sub _render_citation_aux
 						$session->make_text( '@' ) );
 					next;
 				}
+				if( $_ =~ m/^!(.*)/ )
+				{
+					$rendered->appendChild( $session->make_text( 
+						_citation_special_value( $session, $obj, $1 ) ) );
+					next;
+				}
                                 my $field = EPrints::Utils::field_from_config_string( 
 					$obj->get_dataset(), 
 					$_ );
@@ -1051,6 +1057,7 @@ sub _render_citation_aux
 		{
 			my $attr = $attrs->item( $i );
 			my $v = $attr->getValue;
+			$v =~ s/@!([^@]+)@/_citation_special_value( $session, $obj, $1 )/egi;
 			$v =~ s/@([a-z0-9_]+)@/$obj->get_value( $1 )/egi;
 			$v =~ s/@@/@/gi;
 			$attr->setValue( $v );
@@ -1089,6 +1096,17 @@ sub _citation_field_value
 	return $span;
 }
 
+sub _citation_special_value
+{
+	my( $session, $obj, $code ) = @_;
+
+	if( $code eq "url" )
+	{
+		return $obj->get_url;
+	}
+
+	return "[unknown special: $code";
+}
 
 
 

@@ -1987,3 +1987,42 @@ PACKAGE: 2.2.99.2
 09/08/2004 - EPRINTS-2.3.6
 ======================================================================
 
+2004-08-26 cjg
+
+ - [c] Removed OAI 1 configuration
+ - [c] Moved most of the OAI code into new plugins code
+ - [c] Added official_url to the page render code
+ - [c] Removed altloc from page render - it's not in the default 
+    metadata set anymore.
+ - [c] Added url's to the default citations
+ - [c] Made a css entry 'faint' for things in search results which 
+    should be understated.
+ - generate_abstracts now runs over all eprints, not just those in
+    archive and deletion.
+ - [c] Added .xsl for oai2 requests.
+ - Added line to /perl/oai2 to make it use the .xsl
+ - Modified eprint, user and dataobj to use the plugin system for
+    render and render_full
+ - Added 'convert' method to dataobj's to apply appropriate 
+    convert plugins.
+ - Added create_secure_symlink function to document, it's used
+    when the doc is created.
+ - Made eprints call create_secure_symlink on all their docs when
+    their abstract page is created.
+ - Fixed rewrite to redirect without losing cgi params. Fixes bug
+    with vlit.
+ - SearchExpression map can now take a count and offset.
+ - Added export option to the SearchExpression to call appropriate
+    plugins.
+ - New function to Session - get_url - which returns the full url
+    of the request including domain and cgi args.
+ - New special field type for citations; @!url@ which inserts the
+    url of the object. 
+ - Added Plugin system!
+ - Added Exporter to handle objs exporters, to string, web or file
+    handle.
+ - Added plugins for the eprints xml export format, bibtex, 
+    pageinfo (pages describing eprints, users etc) and rss1.0
+
+
+

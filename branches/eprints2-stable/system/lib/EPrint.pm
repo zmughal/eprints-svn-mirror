@@ -1280,8 +1280,7 @@ sub url_stem
 Generate the static version of the abstract web page. In a multi-language
 archive this will generate one version per language.
 
-It only makes sense to call this on eprints in the "archive" and
-"deletion" datasets.
+This will also create the secure symlinks to documents (if needed).
 
 =cut
 ######################################################################
@@ -1293,15 +1292,18 @@ sub generate_static
 	my $eprintid = $self->get_value( "eprintid" );
 
 	my $ds_id = $self->{dataset}->id();
-	if( $ds_id ne "archive" && $ds_id ne "deletion" )
-	{
-		$self->{session}->get_archive()->log( 
-			"Attempt to generate static files for record ".
-			$eprintid." in dataset $ds_id (may only generate ".
-			"static for deletion and archive" );
-	}
 
 	$self->remove_static;
+
+	my @docs = $self->get_all_documents();
+
+	# Build static symlinks
+	foreach my $doc ( @docs )
+	{
+		$doc->create_secure_symlink();
+	}
+
+	return if( $ds_id ne "archive" && $ds_id ne "deletion" );
 
 	# We is going to temporarily change the language of our session to
 	# render the abstracts in each language.
@@ -1329,9 +1331,7 @@ sub generate_static
 		# Only live archive records have actual documents 
 		# available.
 
-		my @docs = $self->get_all_documents();
-		my $doc;
-		foreach $doc ( @docs )
+		foreach my $doc ( @docs )
 		{
 			unless( $doc->is_set( "security" ) )
 			{
@@ -1381,88 +1381,6 @@ sub _htmlpath
 	return $self->{session}->get_archive()->get_conf( "htdocs_path" ).
 		"/".$langid."/archive/".
 		eprintid_to_path( $self->get_value( "eprintid" ) );
-}
-
-
-######################################################################
-=pod
-
-=item ( $description, $title, $links ) = $eprint->render
-
-Render the eprint. The 3 returned values are references to XHTML DOM
-objects. $description is the public viewable description of this eprint
-that appears as the body of the abstract page. $title is the title of
-the abstract page for this eprint. $links is any elements which should
-go in the <head> of this page.
-
-=cut
-######################################################################
-
-sub render
-{
-        my( $self ) = @_;
-
-        my( $dom, $title, $links );
-	my $ds_id = $self->{dataset}->id();
-	if( $ds_id eq "deletion" )
-	{
-		$title = $self->{session}->html_phrase( 
-			"lib/eprint:eprint_gone_title" );
-		$dom = $self->{session}->make_doc_fragment();
-		$dom->appendChild( $self->{session}->html_phrase( 
-			"lib/eprint:eprint_gone" ) );
-		my $replacement = new EPrints::EPrint(
-			$self->{session},
-			$self->get_value( "replacedby" ),
-			$self->{session}->get_archive()->get_dataset( 
-				"archive" ) );
-		if( defined $replacement )
-		{
-			my $cite = $replacement->render_citation_link();
-			$dom->appendChild( 
-				$self->{session}->html_phrase( 
-					"lib/eprint:later_version", 
-					citation => $cite ) );
-		}
-	}
-	else
-	{
-		( $dom, $title, $links ) = 
-			$self->{session}->get_archive()->call( 
-				"eprint_render", 
-				$self, $self->{session} );
-	}
-
-	if( !defined $links )
-	{
-		$links = $self->{session}->make_doc_fragment();
-	}
-	
-        return( $dom, $title, $links );
-}
-
-
-######################################################################
-=pod
-
-=item $dom = $eprint->render_full
-
-Render as XHTML DOM a full description of this eprint - the one
-intended for editors.
-
-=cut
-######################################################################
-
-sub render_full
-{
-        my( $self ) = @_;
-
-        my( $dom, $title ) = $self->{session}->get_archive()->call( 
-		"eprint_render_full", 
-		$self, 
-		$self->{session} );
-
-        return( $dom );
 }
 
 

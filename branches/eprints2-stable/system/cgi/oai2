@@ -100,14 +100,14 @@ foreach(
 	$request_desc->setAttribute( $_, $value );
 }
 my $url = $session->get_archive->get_conf( "base_url" );
-$url .= $session->get_uri;
+$url .= $session->get_url;
 $request_desc->appendChild( $session->make_text( $url ) );
 
 $response->appendChild( $session->make_indent( 2 ) );
 $response->appendChild( $request_desc );
 
 $response->appendChild(
-	render_verb( $session, $session->param( "verb" ) ) );
+render_verb( $session, $session->param( "verb" ) ) );
 
 my $content = "text/xml";
 if( $session->param( "debug" ) eq "yes" )
@@ -119,7 +119,7 @@ $session->send_http_header( content_type=>$content );
 
 print <<END;
 <?xml version="1.0" encoding="UTF-8" ?>
-
+<?xml-stylesheet type='text/xsl' href='/oai2.xsl' ?>
 END
 print EPrints::XML::to_string( $response );
 EPrints::XML::dispose( $response );

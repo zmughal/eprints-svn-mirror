@@ -103,13 +103,23 @@ sub eprint_render
 			alt=>$_->get_value( "formatdesc" ) ) );
 	}
 
-	$p = $session->make_element( "p" );
-	$p->appendChild( $session->html_phrase( "page:fulltext" ) );
-	$page->appendChild( $p );
+	# Official URL
+	if( $eprint->is_set( "official_url" ) )
+	{
+		
+		$p = $session->make_element( "p" );
+		my $strong = $session->make_element( "strong" );
+		$strong->appendChild( $session->html_phrase( "eprint_fieldname_official_url" ) );
+		$strong->appendChild( $session->make_text( ': ' ));
+		$p->appendChild( $strong );
+		$p->appendChild( $eprint->render_value( "official_url" ) );
+		$page->appendChild( $p );
+	}
+
 
 	my( $doctable, $doctr, $doctd );
 	$doctable = $session->make_element( "table" );
-
+	my $hastext = 0;
 	foreach my $doc ( @documents )
 	{
 		next if( $doc->get_value( "format" ) eq "coverimage" );
@@ -129,8 +139,24 @@ sub eprint_render
 		$doctd->appendChild( $doc->render_citation_link() );
 
 		$doctable->appendChild( $doctr );
+		$hastext = 1;
 	}
-	$page->appendChild( $doctable );
+
+	if( $hastext )
+	{
+		$p = $session->make_element( "p" );
+		$p->appendChild( $session->html_phrase( "page:fulltext" ) );
+		$page->appendChild( $p );
+		$page->appendChild( $doctable );
+	}
+	else
+	{
+		# avoid memory leak
+		EPrints::XML::dispose( $doctable );
+		$p = $session->make_element( "p" );
+		$p->appendChild( $session->html_phrase( "page:nofulltext" ) );
+		$page->appendChild( $p );
+	}
 
 
 	# Then the abstract
@@ -256,14 +282,6 @@ sub eprint_render
 			$eprint->render_value( "datestamp" ) ) );
 	}
 
-	# Alternative locations
-	if( $eprint->is_set( "altloc" ) )
-	{
-		$table->appendChild( _render_row(
-			$session,
-			$session->html_phrase( "eprint_fieldname_altloc" ),
-			$eprint->render_value( "altloc" ) ) );
-	}
 
 	# Now show the version and commentary response threads
 	if( $has_multiple_versions )

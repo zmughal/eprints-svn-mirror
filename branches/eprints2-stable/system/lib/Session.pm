@@ -583,13 +583,6 @@ sub get_archive
 	return $self->{archive};
 }
 
-#
-# $url = url()
-#
-#  Returns the URL of the current script
-#
-
-
 ######################################################################
 =pod
 
@@ -606,6 +599,29 @@ sub get_uri
 
 	return( $self->{"request"}->uri );
 }
+
+######################################################################
+=pod
+
+=item $foo = $thing->get_url
+
+get the whole url including arguments
+
+=cut
+######################################################################
+
+sub get_url
+{
+	my( $self ) = @_;
+
+        my $uri = $self->{"request"}->uri;
+        my $args = $self->{"request"}->args;
+        if( defined $args && $args ne "" ) { $args = '?'.$args; }
+
+	return $self->{archive}->get_conf( 'base_url' ).$uri.$args; 
+}
+
+
 
 
 ######################################################################

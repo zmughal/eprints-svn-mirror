@@ -46,6 +46,7 @@ EPrints::User, EPrints::Subject and EPrints::Document.
 package EPrints::DataObj;
 use strict;
 
+use EPrints::Plugins;
 
 ######################################################################
 =pod
@@ -406,6 +407,79 @@ sub get_type
 
 	return "EPrints::DataObj::get_type should have been over-ridden.";
 }
+
+######################################################################
+=pod
+
+=item ( $description, $title, $links ) = $eprint->render
+
+Render the eprint. The 3 returned values are references to XHTML DOM
+objects. $description is the public viewable description of this eprint
+that appears as the body of the abstract page. $title is the title of
+the abstract page for this eprint. $links is any elements which should
+go in the <head> of this page.
+
+Since 2.4 just uses the plugin system to convert to pageinfo
+
+=cut
+######################################################################
+
+sub render
+{
+        my( $self ) = @_;
+
+	return $self->convert( 'pageinfo' );
+}
+
+
+######################################################################
+=pod
+
+=item $dom = $eprint->render_full
+
+Render as XHTML DOM a full description of this eprint - the one
+intended for editors.
+
+Since 2.4 just uses the plugin system to convert to pageinfo, mode
+"full"
+
+=cut
+######################################################################
+
+sub render_full
+{
+        my( $self ) = @_;
+
+	return $self->convert( 'pageinfo', 'full' );
+}
+
+
+######################################################################
+=pod
+
+=item $type = $dataobj->convert( $scheme, [$mode] )
+
+Use a conversion pluging to convert this object to the required
+metadata scheme.
+
+=cut
+######################################################################
+
+sub convert
+{
+	my( $self, $scheme, $mode ) = @_;
+
+	$mode = 'default' unless defined $mode;
+	my $dstype = $self->{dataset}->confid;
+
+	return EPrints::Plugins::call( 
+		'convert/obj.'.$dstype.'/'.$scheme.'/'.$mode,  
+		$self,
+		$self->{session} );
+}
+
+		
+	
 
 ######################################################################
 =pod

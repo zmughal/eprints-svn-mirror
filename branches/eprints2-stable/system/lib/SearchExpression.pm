@@ -12,10 +12,6 @@
 #
 ######################################################################
 
-
-# SHOULD HAVE SOME KIND OF cache setting if order is specified or we
-# plan to map!
-
 =pod
 
 =head1 NAME
@@ -56,8 +52,8 @@ package EPrints::SearchExpression;
 use EPrints::SearchField;
 use EPrints::SearchCondition;
 use EPrints::Session;
-use EPrints::EPrint;
 use EPrints::Database;
+use EPrints::Plugins;
 use EPrints::Language;
 
 use URI::Escape;
@@ -1508,9 +1504,9 @@ sub cache_results
 ######################################################################
 =pod
 
-=item $foo = $thing->dispose
+=item $searchexp->dispose
 
-undocumented
+Clean up cache files is appropriate.
 
 =cut
 ######################################################################
@@ -1525,6 +1521,23 @@ sub dispose
 		delete $self->{cache_id};
 	}
 }
+
+
+
+
+
+######################################################################
+#
+# Object List Functions
+#
+######################################################################
+
+
+
+
+
+
+
 
 
 ######################################################################
@@ -1713,7 +1726,7 @@ sub _get_records
 ######################################################################
 =pod
 
-=item $foo = $thing->map( $function, $info )
+=item $foo = $thing->map( $function, $info, [$offset], [$count] )
 
 undocumented
 
@@ -1722,15 +1735,21 @@ undocumented
 
 sub map
 {
-	my( $self, $function, $info ) = @_;	
+	my( $self, $function, $info, $offset, $count ) = @_;	
 
-	my $count = $self->count();
+	$count = $self->count() unless defined $count;
+	$offset = 0 unless defined $offset;
 
 	my $CHUNKSIZE = 100;
 
-	for( my $offset = 0; $offset < $count; $offset+=$CHUNKSIZE )
+	for( my $chunk_offset = $offset; $chunk_offset < $count+$offset; $chunk_offset+=$CHUNKSIZE )
 	{
-		my @records = $self->get_records( $offset, $CHUNKSIZE );
+		my $this_chunk = $CHUNKSIZE;
+		if( $chunk_offset + $CHUNKSIZE > $count+$offset )
+		{
+			$this_chunk = $offset+$count - $chunk_offset;
+		}
+		my @records = $self->get_records( $chunk_offset, $this_chunk );
 		foreach my $item ( @records )
 		{
 			&{$function}( 
@@ -1742,6 +1761,33 @@ sub map
 	}
 }
 
+
+######################################################################
+=pod
+
+=item $searchexp->export( $scheme, %opts );
+
+Use a conversion pluging to convert this list to the required
+metadata scheme.
+
+=cut
+######################################################################
+
+sub export
+{
+	my( $self, $scheme, %opts ) = @_;
+
+	$opts{'mode'} = 'default' unless defined $opts{'mode'};
+	my $dstype = $self->{dataset}->confid;
+	$opts{'session'} = $self->{'session'};
+	$opts{'objs'} = $self;
+
+	return EPrints::Plugins::call( 
+		'export/objs.'.$dstype.'/'.$scheme.'/'.$opts{'mode'},
+		%opts );
+}
+
+	
 
 
 

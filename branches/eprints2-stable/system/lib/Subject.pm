@@ -853,34 +853,6 @@ sub count_eprints
 
 
 
-# Subjects don't have a URL.
-#
-# sub get_url
-# {
-# }
-
-# Subjects don't have a type.
-#
-# sub get_type
-# {
-# }
-
-#deprecated
-
-######################################################################
-=pod
-
-=item EPrints::Subject::render( "oooops" )
-
-undocumented
-
-=cut
-######################################################################
-
-sub render
-{
-	confess( "oooops" ); # use render citation
-}
 
 1;
 

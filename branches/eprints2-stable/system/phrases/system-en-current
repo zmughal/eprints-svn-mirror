@@ -131,7 +131,7 @@ EPrints Modules
 <p class="resultsinfo">
    <ep:pin ref="searchdesc" /><br />
    <ep:pin ref="matches" /> <ep:pin ref="time" /><br />
-   <span style="color: #ccc"><ep:pin ref="last_index" /></span>
+   <span class="faint"><ep:pin ref="last_index" /></span>
 </p>
 <ep:pin ref="results" />
 <ep:pin ref="controls_if_matches" />

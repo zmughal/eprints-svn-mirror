@@ -37,7 +37,10 @@ input, select, textarea {
 	margin-bottom: 1pt
 }
 
-
+.faint
+{
+	color: #aaa;
+}
 
 .footer TABLE
 {
