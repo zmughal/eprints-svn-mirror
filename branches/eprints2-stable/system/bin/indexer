@@ -214,6 +214,9 @@ END
 
 
 print "Becoming a daemon. Go me.\n" if( $noise > 1 );
+close STDIN;
+close STDOUT;
+close STDERR;
 exit if fork;
 exit if fork;
 

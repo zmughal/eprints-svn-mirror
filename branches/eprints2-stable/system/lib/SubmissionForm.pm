@@ -1948,11 +1948,11 @@ sub _do_stage_fileview
 #
 ######################################################################
 
-sub _do_stage_quickverify { return $_[0]->_do_stage_verify; }
+sub _do_stage_quickverify { return $_[0]->_do_stage_verify( 1 ); }
 
 sub _do_stage_verify
 {
-	my( $self ) = @_;
+	my( $self, $quick ) = @_;
 
 	$self->{eprint}->commit();
 	# Validate again, in case we came from home
@@ -1967,26 +1967,30 @@ sub _do_stage_verify
 		dataset => $self->{eprint}->get_dataset()->id(),
 		eprintid => $self->{eprint}->get_value( "eprintid" )
 	};
-	my $submit_buttons = {
-		prev => $self->{session}->phrase(
-				"lib/submissionform:action_prev" ),
-		later => $self->{session}->phrase(
-				"lib/submissionform:action_later" ),
-		_class => "submission_buttons",
-		_order => [ "prev", "later" ]
-	};
-	my $default_action = "prev";
 
-	$page->appendChild( 
-		$self->{session}->render_input_form( 
-			staff=>$self->{staff},
-			buttons=>$submit_buttons,
-			hidden_fields=>$hidden_fields,
-			default_action=>$default_action,
-			dest=>$self->{formtarget}."#t" ) );
+	my $submit_buttons = { 
+		_class => "submission_buttons",
+		_order => []
+	};
+	unless( $quick ) 
+	{
+		$submit_buttons->{prev} = $self->{session}->phrase(
+				"lib/submissionform:action_prev" ),
+		push @{$submit_buttons->{_order}}, "prev";
+	}
+	$submit_buttons->{later} = $self->{session}->phrase(
+			"lib/submissionform:action_later" ),
+	push @{$submit_buttons->{_order}}, "later";
 
 	if( scalar @{$self->{problems}} > 0 )
 	{
+		$page->appendChild( 
+			$self->{session}->render_input_form( 
+				staff=>$self->{staff},
+				buttons=>$submit_buttons,
+				hidden_fields=>$hidden_fields,
+				dest=>$self->{formtarget}."#t" ) );
+
 		# Null doc fragment past because 'undef' would cause the
 		# default to appear.
 		$page->appendChild( $self->_render_problems(
@@ -1995,6 +1999,16 @@ sub _do_stage_verify
 	}
 	else
 	{
+		# If eprint is valid then the control buttons only
+		# appear at the end of the page. At the top is a message
+		# to tell you that.
+		my $controls_at_bottom = $self->{session}->make_element( 
+			"div", 
+			class=>"submission_buttons" );
+		$controls_at_bottom->appendChild(
+			$self->{session}->html_phrase( "lib/submissionform:controls_at_bottom" ) );
+		$page->appendChild( $controls_at_bottom );
+
 		$page->appendChild( $self->{session}->html_phrase(
 			"lib/submissionform:please_verify") );
 
@@ -2004,11 +2018,10 @@ sub _do_stage_verify
 
 		$page->appendChild( $self->{session}->html_phrase( "deposit_agreement_text" ) );
 
-		$submit_buttons->{submit} = $self->{session}->phrase( 
-			"lib/submissionform:action_submit" );
-		$default_action = "submit";
-		$submit_buttons->{_order} = [ "prev", "later", "submit" ];
-		$submit_buttons->{_class} = "submission_buttons";
+		$submit_buttons->{submit} = $self->{session}->phrase(
+			"lib/submissionform:action_submit" ),
+		push @{$submit_buttons->{_order}}, "submit";
+
 	}
 
 	$page->appendChild( 
@@ -2016,7 +2029,6 @@ sub _do_stage_verify
 			staff=>$self->{staff},
 			buttons=>$submit_buttons,
 			hidden_fields=>$hidden_fields,
-			default_action=>$default_action,
 			dest=>$self->{formtarget}."#t" ) );
 
 	return( $page );

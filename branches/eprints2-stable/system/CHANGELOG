@@ -1770,6 +1770,16 @@ PACKAGE: 2.2.99.2
  - Userpage list-of-eprints now links to correct new search URL
  - Renamed arrow images to all start with "multi" so that the upgrading 
     admins can use "multi*" 
+
+2003-11-28 cjg
+
+ - Cleaned up browse_view config.
+ - Cleaned up search config.
+ - Fixed bug in indexer (didn't give up STDOUT etc).
+ - Removed debug code from generate_views
+ - Submission form validate page now only has submit buttons at the
+    bottom of the page if the eprint is valid.
+ - Fixed search form on default index page.
  
 
 ======================================================================

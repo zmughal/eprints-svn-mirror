@@ -364,8 +364,8 @@ $c->{vlit}->{copyright_url} = $c->{base_url}."/vlit.html";
 # Multiple fields may be specified for one view, but avoid
 # subject or allowing null in this case.
 $c->{browse_views} = [
-        { id=>"year", allow_null=>1, fields=>"date_effective;res=year", subheadings=>"type,number", order=>"-date_effective/title", heading_level=>2 }#,
-        #{ id=>"subjects", allow_null=>1, fields=>"subjects", order=>"-date_effective/title" }
+        { id=>"year", allow_null=>1, fields=>"date_effective;res=year", subheadings=>"type", order=>"-date_effective/title", heading_level=>2 },
+        { id=>"subjects", fields=>"subjects", order=>"-date_effective/title" }
 ];
 # examples of some other useful views you might want to add
 #
@@ -389,7 +389,16 @@ $c->{search}->{simple} =
 {
 	search_fields => [
 		{
-			id => "basic",
+			id => "meta",
+			meta_fields => [
+				"title",
+				"abstract",
+				"creators",
+				"date_effective" 
+			]
+		},
+		{
+			id => "full",
 			meta_fields => [
 				$EPrints::Utils::FULLTEXT,
 				"title",
@@ -444,16 +453,6 @@ $c->{search}->{advanced} =
 	page_size => 33
 };
 
-$c->{search}->{mike} = 
-{
-	search_fields => [
-		{ meta_fields => [ "name" ] },
-		{ meta_fields => [ "depositable" ] }
-	],
-	preamble_phrase => "cgi/advsearch:preamble",
-	title_phrase => "cgi/advsearch:adv_search",
-	dataset_id => "subject"
-};
 $c->{order_methods}->{subject} =
 {
 	"byname" 	 =>  "name",
@@ -512,22 +511,23 @@ $c->{order_methods}->{user} =
 $c->{default_order}->{user} = "byname";
 
 # customise the citation used to give results on the latest page
+# nb. This is the "last 7 days" page not the "latest_tool" page.
 $c->{latest_citation} = "neat";
 
-# This sets the default for the "latest tool" script, can be
-# overridden in individual modes.
-#$c->{latest_tool_citation} = "neat";
-
 $c->{latest_tool_modes} = {
-	# This mode lists the latest articles and conference items only
-	art_and_conf => {
-		citation => undef,
-		filters => [
-			{ meta_fields => [ "type" ], value => "article conference_item" }
-		],
-		max => 20
-	}
 };
+
+# Example of a latest_tool mode. This makes a mode=articles option
+# which only lists eprints who's type equals "article".
+#	
+#	articles => {
+#		citation => undef,
+#		filters => [
+#			{ meta_fields => [ "type" ], value => "article" }
+#		],
+#		max => 20
+#	}
+
 
 
 ######################################################################

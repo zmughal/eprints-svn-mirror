@@ -8,10 +8,24 @@ Big New Features
  * APACHE2.0
  * SOAP
 
+* HOWTO: Add fulltext searching later
+ * make namematch condition work.A
+ * optimise indexer.
+ * clean up ArchiveConfig.pm
+ * test VLIT
 
+ * "default" mode for latest tool
+ * log for indexer
+ * rc.d for indexer.
+
+
+
+
+ * update CSS (last 5 items)
  * make quicksearch from frontpage as part of release.
  * make FILTERS have non exact option.
 General
+ * make ".old" files not overwrite OTHER .old files.
  * "Disable" option for core XML file
  * deleted eprints in search results: put placeholder to say
    they've gone? or filter against archive?

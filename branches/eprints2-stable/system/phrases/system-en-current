@@ -302,6 +302,7 @@ Enter a URL to capture a file from: <ep:pin ref="url" /><br />
     <ep:phrase ref="format_fieldopt_arc_format_graburl">Capture from URL</ep:phrase>
     <ep:phrase ref="format_fieldopt_arc_format_zip">.ZIP Archive</ep:phrase>
     <ep:phrase ref="format_fieldopt_arc_format_targz">.tar.gz Archive</ep:phrase>
+    <ep:phrase ref="lib/submissionform:controls_at_bottom">The control buttons are at the bottom of the page, you must read the deposit agreement.</ep:phrase>
 
 
 <!-- Subscription -->
