@@ -86,7 +86,7 @@ sub process
 		next if( $can_edit ); # skip the rest if one matches
 
 		my $search = $ef_field->make_searchexp( $session, $s );
-		if( $search->item_matches( $eprint ) )
+		if( $search->get_conditions->item_matches( $eprint ) )
 		{
 			$can_edit = 1;
 		}

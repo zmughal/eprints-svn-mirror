@@ -312,15 +312,16 @@ sub get_searchexp_from_params
 
 	if( defined $token )
 	{
-		unless( $token =~ m#^(\d+)/(\d+)(/(.*))?$# )
+		unless( $token =~ m#^(archive|deletion)/(\d+)/(\d+)(/(.*))?$# )
 		{
 			send_http_error( $session, 400, "ResumptionToken invalid" );
 			return;
 		}
-		my( $offset, $cache_id, $metadata_format ) = ( $1, $2, $4 );
+		my( $offset, $cache_id, $metadata_format ) = ( $2, $3, $5 );
 		my $searchexp = EPrints::SearchExpression->new( 
+			dataset => $session->get_archive->get_dataset( $1 ),
 			session => $session,
-			use_private_cache => 1,
+			keep_cache => 1,
 			cache_id => $cache_id );
 
 		unless( defined $searchexp )
@@ -344,8 +345,9 @@ sub get_searchexp_from_params
 
 	my $searchexp = new EPrints::SearchExpression(
 		session => $session,
-		use_private_cache => 1,
+		keep_cache => 1,
 		allow_blank => 1,
+		filters => $session->get_archive()->get_conf( "oai","filters" ),
 		dataset => $ds );
 
 	if( defined $codedset )
@@ -478,7 +480,6 @@ sub _list
 
 	$searchexp->perform_search();
 	my $count = $searchexp->count();
-	my $serial = $searchexp->serialise();
 	my $cache = $searchexp->get_cache_id();
 	my $searchdsid = $searchexp->get_dataset()->id();
 	my %opts = ();
@@ -491,8 +492,8 @@ sub _list
 	{
 		$response = make_basic_oai_response( $session, "ListIdentifiers" );
 
-		my @ids = $searchexp->get_ids( $offset, $PAGESIZE );
-		foreach( @ids )
+		my $ids = $searchexp->get_ids( $offset, $PAGESIZE );
+		foreach( @{$ids} )
 		{
 			$response->appendChild( $session->render_data_element(
 				2,
@@ -535,16 +536,12 @@ sub _list
 		$response->appendChild( $session->render_data_element(
 			2,
 			"resumptionToken",
-			($offset+$PAGESIZE)."/".$cache.$mdtoken ) );
+			$searchdsid."/".($offset+$PAGESIZE)."/".$cache.$mdtoken ) );
 	}
 	elsif( $searchdsid eq "archive" )
 	{
 		## End of archive items, time to do deleted ones.
-		my $delsearchexp = EPrints::SearchExpression->unserialise(
-			$session,
-			$serial,
-			use_private_cache => 1,
-			allow_blank => 1 );
+		my $delsearchexp = $searchexp->clone;
 		$delsearchexp->set_dataset(
 			$session->get_archive()->get_dataset( "deletion" ) );
 		$delsearchexp->perform_search();
@@ -554,7 +551,7 @@ sub _list
 		$response->appendChild( $session->render_data_element(
 			2,
 			"resumptionToken",
-			"0/$cache".$mdtoken ) );
+			"deletion/0/$cache".$mdtoken ) );
 	}
 		
 	send_response( $session, $response );
@@ -680,11 +677,11 @@ sub list_sets
 			}
 			else
 			{
-				my @v = $field->get_values( $session, $ds );
+				my $v1 = $field->get_values( $session, $ds );
 				my $delfield = $field->clone();
 				#$delfield->set_dataset( $ds_del );
-				push @v, $delfield->get_values( $session, $ds_del );
-				foreach( @v )
+				my $v2 = $delfield->get_values( $session, $ds_del );
+				foreach( @{$v1}, @{$v2} )
 				{
 					my $key = EPrints::OpenArchives::encode_setspec( $_ );
 					if( !defined $key ) { $key=""; }
@@ -785,7 +782,11 @@ sub make_basic_oai_response
 	{
 		push @bits , "$_=".EPrints::Utils::url_escape( $session->param($_) );
 	}
-	$requestURL->appendChild( $session->make_text( $session->get_url().  "?" . join( '&', @bits ) ) );
+	my $url = $session->get_archive->get_conf( "base_url" );
+	$url .= $session->get_uri;
+	$url .= "?" . join( '&', @bits );
+
+	$requestURL->appendChild( $session->make_text( $url ) );
 	$response->appendChild( $session->make_indent( 2 ) );
 	$response->appendChild( $requestURL );
 	

@@ -48,7 +48,8 @@ sub process
 
 	if( $action eq "delete" )
 	{
-		$page->appendChild( $user->render_full() );
+		my( $userinfo, $usertitle ) = $user->render_full();
+		$page->appendChild( $userinfo );
 		$page->appendChild( $session->render_ruler() );
 		$page->appendChild( $session->html_phrase( "cgi/users/edit_user:really_remove" ) );
 		$page->appendChild( $session->render_input_form(
@@ -113,7 +114,8 @@ sub process
 		$session,
 		$session->get_archive()->get_conf( "userhome" ),
 		1,
-		$user );
+		$user,
+		"edit_user" );
 	$userform->process();
 }
 
