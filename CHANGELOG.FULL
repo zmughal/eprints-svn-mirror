@@ -57,9 +57,11 @@ todo:
 * add bin/site for user created bins?
 * lost dienst code?
 * Incorporate CHANGELOG.TXT and todo.txt into release?
+* add user.types (extra info for local or staff!)
 
 website:
 * french pages dammit.
+* tart up website generator
 
 docs:
 * password change script.
