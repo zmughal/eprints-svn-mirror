@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-@files = ( "intro", "reqsoftware", "installation", "contact", "history" );
+@files = ( "intro", "reqsoftware", "installation", "contact", "history", "logo" );
 %titles = (
 	intro => "Introduction",
 	reqsoftware => "Required Software",
@@ -8,6 +8,8 @@
 	contact => "Problems, Questions and Feedback",
 	history => "EPrints History (and Future Plans)"
 );
+
+my $BASENAME = "eprints2-alpha2-docs";
 	
 ##########################################################################
 # text
@@ -21,7 +23,7 @@ foreach $file ( @files )
 }
 
 ## Text
-open( OUT, ">manual.txt" );
+open( OUT, ">$BASENAME.txt" );
 print OUT <<END;
 ==============================================================================
 EPrints 2 - Alpha - Documentation
@@ -63,9 +65,10 @@ foreach $file ( @files )
 	print "($file)\n";
 	$parser->parse_from_file( "pod/$file.pod", "tmp/$file.tex" );
 }
-open( OUT, ">tmp/manual.tex" );
+open( OUT, ">tmp/$BASENAME.tex" );
 print OUT <<END;
 \\documentclass{book}
+\\usepackage{graphicx}
 \\begin{document}
 END
 foreach $file ( @files )
@@ -81,5 +84,6 @@ END
 close OUT;
 
 chdir( "tmp" );
-#`latex manual.tex`;
-#`dvipdfm manual.dvi`;
+`latex $BASENAME.tex`;
+`dvipdfm $BASENAME.dvi`;
+`mv $BASENAME.pdf ..`;

@@ -11,7 +11,7 @@ Make sure MySQL is actually running.
 
 Change to  your eprints user (probably "eprints").
 
-cd to the eprints directory (/opt/eprints by default) and run bin/create_new_archive, answer the questions it asks.
+cd to the eprints directory (/opt/eprints2 by default) and run bin/configure_archive, answer the questions it asks.
 
 Run
 
@@ -33,7 +33,7 @@ Now connect via the web and see if it works...
 
 The submission form does not actually work fully yet, if you want some initial data to play with, get the harris.xml file from the Eprints "tools" directory ( http://www.eprints.org/files/tools/ ) and run:
 
- importxml archiveid harris.xml
+ import_eprints archiveid harris.xml
 
 Which will spew tons of debug info, but should actually put some (fairly ropey) data into the archive.
 
