@@ -50,6 +50,10 @@ Subject.pm
 * More internationalisation - modified way buttons work in SubmissionForm.pm
 to allow them to vary with language.
 
+Mon Feb 19 16:28:51 GMT 2001
+* simplified Database::retrieve - used join() instead of foreach loop
+to produce "," seperated lists.
+
 Mon Feb 19 22:03:36 GMT 2001
 * Removed multiurl type - will become url: multiple=yes
 * Changed Username from TEXT to VARCHAR(255)
@@ -65,3 +69,6 @@ Mon Feb 19 22:03:36 GMT 2001
  and replaced them with get_fields( $table ) which allows for some neater
 coding and to identify fields by table in update() and add_record(). Updated
 all code using these methods.
+
+Tue Feb 20 10:16:25 GMT 2001
+* Made bin/erase_archives more brutal - now just drops and creates the DB.
