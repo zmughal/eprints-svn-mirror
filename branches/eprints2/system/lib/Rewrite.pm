@@ -20,6 +20,8 @@ sub handler
 	my $urlpath = $archive->get_conf( "urlpath" );
 	my $uri = $r->uri;
 	my $lang = EPrints::Session::get_session_language( $archive, $r );
+	my $args = $r->args;
+	if( $args ne "" ) { $args = '?'.$args; }
 
 	# REMOVE the urlpath if any!
 	unless( $uri =~ s#^$urlpath## )
@@ -63,7 +65,7 @@ sub handler
 		if( $shorturl )
 		{
 			# redirect to short form
-			return redir( $r, sprintf( "%s/%d%s",$urlpath, $n, $tail ) );
+			return redir( $r, sprintf( "%s/%d%s",$urlpath, $n, $tail ).$args );
 		}
 
 		my $s8 = sprintf('%08d',$n);
@@ -71,7 +73,7 @@ sub handler
 		if( length $n < 8 || $redir)
 		{
 			# not enough zeros, redirect to correct version
-			return redir( $r, sprintf( "%s/archive/%08d%s",$urlpath, $n, $tail ) );
+			return redir( $r, sprintf( "%s/archive/%08d%s",$urlpath, $n, $tail ).$args );
 		}
 		$uri = "/archive/$1/$2/$3/$4$tail";
 	}
@@ -87,13 +89,13 @@ sub handler
 		if( !$shorturl )
 		{
 			# redir to long form
-			return redir( $r, sprintf( "%s/archive/%08d%s",$urlpath, $n, $tail ));
+			return redir( $r, sprintf( "%s/archive/%08d%s",$urlpath, $n, $tail ).$args);
 		} 
 
 		if( ($n + 0) ne $n || $redir)
 		{
 			# leading zeros
-			return redir( $r, sprintf( "%s/%d%s",$urlpath, $n, $tail ) );
+			return redir( $r, sprintf( "%s/%d%s",$urlpath, $n, $tail ).$args );
 		}
 		my $s8 = sprintf('%08d',$n);
 		$s8 =~ m/(..)(..)(..)(..)/;	

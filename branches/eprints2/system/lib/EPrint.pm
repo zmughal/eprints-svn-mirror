@@ -1280,8 +1280,9 @@ sub url_stem
 Generate the static version of the abstract web page. In a multi-language
 archive this will generate one version per language.
 
-It only makes sense to call this on eprints in the "archive" and
-"deletion" datasets.
+If called on inbox or buffer, remove the abstract page.
+
+Always create the symlinks for documents in the secure area.
 
 =cut
 ######################################################################
@@ -1293,13 +1294,14 @@ sub generate_static
 	my $eprintid = $self->get_value( "eprintid" );
 
 	my $ds_id = $self->{dataset}->id();
-	if( $ds_id ne "archive" && $ds_id ne "deletion" )
-	{
-		$self->{session}->get_archive()->log( 
-			"Attempt to generate static files for record ".
-			$eprintid." in dataset $ds_id (may only generate ".
-			"static for deletion and archive" );
-	}
+
+#	if( $ds_id ne "archive" && $ds_id ne "deletion" )
+#	{
+#		$self->{session}->get_archive()->log( 
+#			"Attempt to generate static files for record ".
+#			$eprintid." in dataset $ds_id (may only generate ".
+#			"static for deletion and archive" );
+#	}
 
 	$self->remove_static;
 
@@ -1340,6 +1342,12 @@ sub generate_static
 		}
 	}
 	$self->{session}->change_lang( $real_langid );
+	my @docs = $self->get_all_documents();
+	foreach my $doc ( @docs )
+	{
+		my $linkdir = EPrints::Document::_secure_symlink_path( $self );
+		$doc->create_symlink( $self, $linkdir );
+	}
 }
 
 

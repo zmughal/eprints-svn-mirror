@@ -123,7 +123,7 @@ if( defined $ARGV[1] )
 }
 else
 {
-	foreach( "archive", "deletion" )
+	foreach( "archive", "deletion", "inbox", "buffer" )
 	{
 		print "Writing $_ abstracts\n" if( $noise > 0);
 		my $dataset = $session->get_archive()->get_dataset( "$_" );

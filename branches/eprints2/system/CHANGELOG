@@ -1995,3 +1995,13 @@ PACKAGE: 2.2.99.2
  - Removed dependance on libapreq. Now uses CGI.pm (again). 
  - Reduced loading message in web startup to a single line. 
 
+2004-09-29 cjg 
+
+ - Rewrite modules now preserves CGI arguments. So /foo?x=1 now
+    changes to /bar?x=1 not just /bar
+ - Renamed $a variable in "buffer" so that it does not interfere
+    with $a in sort function.
+ - All document symlinks are updated when an eprints abstract page
+    is created. This includes secure area links for docs not yet in
+    the live archive. 
+
