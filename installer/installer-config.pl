@@ -1,27 +1,12 @@
 %ENVIRONMENT =
 (
 	installer_title		=> "ePrints Installer",
-	installer_version	=> "0.2",
+	installer_version	=> "0.21",
 	# 1 to display lots of info, 0 for a more concise mode. Set with --verbose on command-line.
 	# silent takes precedence, and automagically forces verbose to 0.
 	verbose			=> 1,
 	# Display nothing.
 	silent			=> 0,
-	# 0 if the package is not installed, version number otherwise. You can use this to force the installation
-	# of required packages. Can be forced at command-line with '--packagename_installed'
-	gzip_installed		=> 0,
-	xercesc_installed	=> 0,
-	xercesp_installed	=> 0,
-	eprints_installed	=> 0,
-	apache_installed	=> 0,
-	modperl_installed	=> 0,
-	mysql_installed		=> 0,
-	cgi_installed		=> 0,
-	data_dumper_installed	=> 0,
-	dbi_installed		=> 0,
-	msql_installed		=> 0,	
-	diskspace_installed	=> 0,
-	mimebase_installed	=> 0,
 
 	# 0 if we don't want resuming. Unset with --noresuming.
 	resuming		=> 0,
@@ -39,10 +24,18 @@
 	# a colon-separated list. At runtime, $LD_LIBRARY_PATH is appended to this list, as is
 	# the contents of /etc/ld.so.conf if running under Linux.
 	library_paths		=> "/lib:/usr/lib/:/usr/local/lib/",
+
+	# System-specific
+	add_group		=> "/usr/sbin/groupadd",
+	add_user		=> "/usr/sbin/useradd",
 );
 
 @PACKAGES =
 (
+	{
+		name		=> "perl",
+		min_version	=> "5.6.0",
+	},
 	{
 		name		=> "gzip",
 		min_version	=> "1.2.4",
@@ -61,28 +54,14 @@
 		install_method	=> "standardinstall",
 		check_method	=> "standardcheck wget"
 	},
-#	{
-#                name            => "xercesc",
-#                min_version     => "1.5",
-#		search_string	=> "xerces-c-src([0-9]+)_([0-9]+)_([0-9]+)\.tar\.gz",
-#               # search_string   => "xerces-c([0-9]+)_([0-9]+)_([0-9]+)-linux\.tar\.gz",
-#                long_name       => "Xerces-C",
-#                description     => "Xerces-C is a validating XML parser written in a portable subset if C++. Xerces-C makes it easy to give your application the ability to read and write XML data. A shared library is provided for parsing, generating, manipulating, and validating XML documents. Xerces-C is faithful to the XML 1.0 recommendation and associated standards. Xerces-C 1.5 also provides the implementation of a subset of the Schema. Provides high performance, modularity, and scalability.",
-#        },
-#	{
-#		name		=> "xercesp",
-#		min_version	=> "1.5.0",
-#		search_string	=> "XML-Xerces-([0-9]+)\.([0-9]+)\.([0-9]+)\.tar\.gz",
-#		long_name	=> "Xerces-C Perl bindings",
-#		description	=> "Xerces-P implements the Perl API to the Apache project's Xerces XML parser. It is implemented using the Xerces C++ API, and it provides access to most of the C++ API from Perl.",
-#		check_method	=> "perlcheck XML::Xerces",
-#	},
+
 	{
 		name		=> "apache",
 		min_version	=> "1.3.14",
 		search_string	=> "apache_([0-9]+)\.([0-9]+)\.([0-9]+)\.tar\.gz",
 		long_name	=> "Apache web server",
-		description	=> "HTTP server designed as a plug-in replacement for the NCSA server version 1.4 (or 1.4). It fixes numerous bugs in the NCSA server and includes many frequently requested new features, and has an API which allows it to be extended to meet users' needs more easily.",
+		description	=> "HTTP server designed as a plug-in replacement for the NCSA server version 1.4. It fixes numerous bugs in the NCSA server and includes many frequently requested new features, and has an API which allows it to be extended to meet users' needs more easily.",
+		check_method	=> "standardcheck httpd /usr/local/apache/bin",
 	},
 	{
 		name		=> "modperl",
@@ -98,7 +77,6 @@
 		search_string	=> "mysql-([0-9]+)\.([0-9]+)\.([0-9]+)\.tar\.gz",
 		long_name	=> "MySQL",
 		description	=> "The most popular Open Source SQL-based relational database management system. It is fast, reliable, and easy to use, and has a large amount of contributed software.",
-		check_method	=> "standardcheck /usr/local/mysql/bin/mysql",
 	},
 	# Perl modules
 	{
@@ -114,7 +92,7 @@
 		name		=> "data_dumper",
 		min_version	=> "2.101",
 		search_string	=> "Data-Dumper-([0-9]+)\.([0-9]+)\.tar\.gz",
-		long_name	=> "the DataDumper module",
+		long_name	=> "DataDumper",
 		description	=> "The Perl data-structure printing/stringification module.",
 		install_method	=> "perlinstall",
 		check_method	=> "perlcheck Data::Dumper",
@@ -150,7 +128,7 @@
 		name		=> "mimebase",
 		min_version	=> "2.11",
 		search_string	=> "MIME-Base64-([0-9]+)\.([0-9]+)\.tar\.gz",
-		long_name	=> "the MIME-Base64 module",
+		long_name	=> "MIME-Base64",
 		description	=> "Provides functions to encode and decode strings into the RFC 2045 Base64 encoding. Designed to represent arbitrary sequences of octets in a form that need not be humanly readable.",
 		install_method	=> "perlinstall",
 		check_method	=> "perlcheck MIME::Base64",
@@ -160,7 +138,7 @@
 		min_version	=> "2.06",
 		search_string	=> "Unicode-String-([0-9]+)\.([0-9]+)\.tar\.gz",
 		long_name	=> "Unicode::String",
-		description	=> "Er?",
+		description	=> "Provides an object representation of a sequence of Unicode characters. The Unicode standard is a fixed-width uniform encoding scheme for written characters and text.",
 		install_method	=> "perlinstall",
 		check_method	=> "perlcheck Unicode::String",
 	},
@@ -169,7 +147,7 @@
 		min_version	=> "1.10",
 		search_string	=> "URI-([0-9]+)\.([0-9]+)\.tar\.gz",
 		long_name	=> "URI",
-		description	=> "Er?",
+		description	=> "Provides an object representation of Uniform Resource Identifiers (compact strings of characters for identifying abstract or physical resources).",
 		install_method	=> "perlinstall",
 		check_method	=> "perlcheck URI",
 	},
@@ -178,7 +156,7 @@
 		min_version	=> "0.4",
 		search_string	=> "XML-Writer-([0-9]+)\.([0-9]+)\.tar\.gz",
 		long_name	=> "XML Writer",
-		description	=> "Writes XML :o)",
+		description	=> "XML::Writer is a helper module for Perl programs that write an XML document. The module handles all escaping for attribute values and character data and constructs different types of markup, such as tags, comments, and processing instructions.",
 		install_method	=> "perlinstall",
 		check_method	=> "perlcheck XML::Writer",
 	},
@@ -187,9 +165,45 @@
 		min_version	=> "0.87",
 		search_string	=> "ApacheDBI-([0-9]+)\.([0-9]+)\.tar\.gz",
 		long_name	=> "Apache DBI",
-		description	=> "Fill in!",
+		description	=> "Initiates a persistent database connection using Perl's DBI (Database Independent) interface.",
 		install_method	=> "perlinstall",
-		check_method	=> "perlcheck Apache::DBI",
+		check_method	=> "perlcheck Apache::AuthDBI",
+	},
+	{
+		name		=> "htmlparser",
+		min_version	=> "3.25",
+		search_string	=> "HTML-Parser-([0-9]+)\.([0-9]+)\.tar\.gz",
+		long_name	=> "HTML Parser",
+		description	=> "A collection of modules that parse and extract information from HTML documents.",
+		install_method	=> "perlinstall",
+		check_method	=> "perlcheck HTML::Parser",
+	},
+	{
+		name		=> "libwww",
+		min_version	=> "5.53",
+		search_string	=> "libwww-perl-([0-9]+)\.([0-9]+)\.tar\.gz",
+		long_name	=> "LWP",
+		description	=> "A collection of Perl modules providing a simple API to the World Wide Web. Required by XML::DOM.",
+		install_method	=> "perlinstall",
+		check_method	=> "perlcheck LWP",
+	},
+	{
+		name		=> "xmlparser",
+		min_version	=> "2.30",
+		search_string	=> "XML-Parser\.([0-9]+)\.([0-9]+)\.tar\.gz",
+		long_name	=> "XML::Parser",
+		description	=> "A Perl extension interface to the expat XML parser.",
+		install_method	=> "perlinstall",
+		check_method	=> "perlcheck XML::Parser",
+	},
+	{
+		name		=> "libenno",
+		min_version	=> "1.02",
+		search_string	=> "libxml-enno-\([0-9]+)\.([0-9]+)\.tar\.gz",
+		long_name	=> "XML::* Packages",
+		description	=> "Contains XML::DOM, XML::XQL, XML::Checker, and several other packages. Also provides XML::RegExp, which is used by ePrints.",
+		install_method	=> "perlinstall",
+		check_method	=> "perlcheck XML::DOM",
 	},
 	{
 		name		=> "eprints",
@@ -202,21 +216,35 @@
 
 # Custom package check methods
 
-sub xercesc_check
+sub perl_check
 {
-        $curr_highversion = 0;
-        @libs = get_library_paths("xerces-c");
+	# CLEANME
+	# I didn't want to put this in the installer.pl section, as not
+	# all programs require a specific version of Perl. As such, this
+	# is a bit of an icky work-around.
 
-        foreach(@libs)
-        {
-                s/.*\///;               # Get short name
-                if (/libxerces-c([0-9]+)_([0-9]+).so/)
-                {
-                        $version = "$1.$2";
-                        if (compare_version($version, $curr_highversion)>0) { $curr_highversion = $version; }
-                }
-        }
-        return $curr_highversion;
+	if ($^V lt v5.6.0)
+	{
+		exit_nicely("\n\nYou do not have a suitable version of Perl (>=5.6.1) installed. This is required to run the installer and ePrints.\nPlease install a newer version, and try again.\n");
+	}
+	elsif (!module_installed("File::Copy"))
+	{
+		exit_nicely("\n\nYou have a suitable version of Perl, but it does not appear to have some of the File::* modules. Please make sure these are present, and try again.\n");
+	}
+	skip_component("perl");
+
+	return "5.6.0";
+}
+
+sub mysql_check
+{
+	my($sql) = "";
+	$sql = `/usr/local/mysql/bin/mysql -V 2>&1` || return 0;
+	if ($sql =~ /Distrib (\d+)\.(\d+)\.?(\d*)/)
+	{
+		return "$1.$2.$3";
+	}
+	return 0;
 }
 
 sub eprints_check
@@ -224,57 +252,7 @@ sub eprints_check
         return 0;
 }
 
-sub apache_check
-{
-        my($httpd) = "";
-
-        $httpd = `/usr/local/apache/bin/httpd -v 2>&1` || return 0;
-        if ($httpd =~ /(\d+)\.(\d+)\.?(\d*)/)
-        {
-                return "$1.$2.$3";
-        }
-        return 0;
-}
-
-
 # Custom package install methods
-
-sub xercesc_install
-{
-	my($package) = @_;
-	$currdir = getcwd();
-	chdir decompress($package->{archive});
-	$longname = getcwd();
-	$ENV{XERCESCROOT} = $longname;
-	chdir "src";
-	print "Configuring	...";
-	`autoconf`;
-	`./configure`;
-	print "	Done.\n";
-#       print "Making	...";
-#       `make 2>&1 1>/dev/null`;
-	print "	Done.\n";
-	chdir $currdir;
-	return 1;
-}
-
-sub xercesp_install
-{
-	my($package) = @_;
-	$currdir = getcwd();
-	chdir decompress($package->{archive});
-	print "Configuring	...";
-	`perl Makefile.PL`;
- 	print "	Done.\n";
-#       print "Making		...";
-#       `make 2>&1 1>/dev/null`;
-#       print " Done.\n";
-#       print "Testing		...";
-#       `make test`;
-#	print "	Done.\n";
-	chdir $currdir;
-	return 1;
-}
 
 sub apache_install
 {
@@ -294,6 +272,7 @@ sub apache_install
 
 sub modperl_install
 {
+	# FIXME
 	my($package) = @_;
  	$currdir = getcwd();
         chdir decompress($package->{archive});
@@ -315,8 +294,8 @@ sub mysql_install
 	$currdir = getcwd();
 	chdir decompress($package->{archive});
 	print "Adding users	...";
-	`/usr/sbin/groupadd mysql`;
-	`/usr/sbin/useradd -g mysql mysql`;
+	`$ENVIRONMENT{add_group} mysql`;
+	`$ENVIRONMENT{add_user} -g mysql mysql`;
 	print "	Done.\n";
 	print "Configuring	...";
 	`./configure --prefix=/usr/local/mysql`;
@@ -330,11 +309,31 @@ sub mysql_install
 	print "Installing DB	...";
 	`scripts/mysql_install_db`;
 	print "	Done.\n";
-	print "Settings groups	...";
-	`chown -R root /usr/local/mysql`;
-	`chown -R mysql /usr/local/mysql/var`;
-	`chgrp -R mysql /usr/local/mysql`;
+
+	print "Setting groups	...";
+	# Get uid/gids
+	(undef, undef, $ruid, $rgid) = getpwnam("root") or 
+		fail_nicely("Root user not found.");
+	(undef, undef, $muid, $mgid) = getpwnam("mysql") or 
+		fail_nicely("Mysql user not found.");
+	chown $ruid, $rgid, "/usr/local/mysql";
+	@mysqlconts 	= get_dir_contents("/usr/local/mysql") or 
+		fail_nicely("Unable to examine /usr/local/mysql");
+	@mysqlvarconts	= get_dir_contents("/usr/local/mysql/var") or 
+		fail_nicely("Unable to examine /usr/local/mysql/var");
+
+	# Do the chown/chgrping.
+	fail_nicely("Couldn't chown all files in /usr/local/mysql") 
+		if (chown $ruid, -1, @mysqlconts != $#mysqlconts+1);
+
+	fail_nicely("Couldn't chown all files in /usr/local/mysql/var") 
+		if (chown( $muid, -1, @mysqlvarconts ) != $#mysqlvarconts+1);
+
+	fail_nicely("Couldn't chown all files in /usr/local/mysql") 
+		if (chown ( -1, $muid, @mysqlconts ) != $#mysqlconts+1);	
+
 	print "	Done.\n";
+
 	print "Starting up	...";
 	`cp support-files/my-medium.cnf /etc/my.cnf`;
 	system("/usr/local/mysql/bin/safe_mysqld --user=mysql &");
