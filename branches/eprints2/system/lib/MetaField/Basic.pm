@@ -1216,14 +1216,16 @@ sub from_search_form
 	return unless defined $val;
 
 	my $search_type = $session->param( $prefix."_merge" );
+	my $search_match = $session->param( $prefix."_match" );
 		
 	# Default search type if none supplied (to allow searches 
 	# using simple HTTP GETs)
-	$search_type = "ALL" unless defined( $search_type );		
+	$search_type = "ALL" unless defined( $search_type );
+	$search_match = "IN" unless defined( $search_match );
 		
 	return unless( defined $val );
 
-	return( $val, $search_type, "IN" );	
+	return( $val, $search_type, $search_match );	
 }		
 
 
