@@ -43,7 +43,12 @@ my %codenames = (
 	"eprints2-3-0-pre-2" => "agentforharm",
 	"eprints2-2-99-0" => "extracrust",
 	"eprints2-2-99-1" => "webfoot",
-	"eprints2-2-99-2" => "makeroomforthetuna"
+	"eprints2-2-99-2" => "makeroomforthetuna",
+	"eprints2-2-99-3" => "whydoesithurt",
+	"eprints2-2-99-4" => "Hope Springs Eternal",
+
+
+	"eprints2-3" => "Hoi Sin Duck"
 
 );
 
@@ -70,7 +75,12 @@ my %ids = (
 	"eprints2-3-0-pre-2" => "2.3.0-pre-2",
 	"eprints2-2-99-0" => "2.2.99.0-alpha",
 	"eprints2-2-99-1" => "2.2.99.1-alpha",
-	"eprints2-2-99-2" => "2.2.99.2-alpha"
+	"eprints2-2-99-2" => "2.2.99.2-alpha",
+	"eprints2-2-99-3" => "2.2.99.3-alpha",
+	"eprints2-2-99-4" => "2.2.99.4-beta",
+
+
+	"eprints2-3" => "2.3.0"
 );
 
 my( $type ) = @ARGV;

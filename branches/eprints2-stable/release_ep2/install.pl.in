@@ -96,7 +96,7 @@ $systemsettings->{"version_history"} = [ $version_id ];
 # Set up some default settings.
 #
 $systemsettings->{"invocation"} = {
-	zip     => '$(zip) 1>/dev/null 2>&1 -qq -o -d $(DIR) $(ARC)',
+	zip     => '$(unzip) 1>/dev/null 2>&1 -qq -o -d $(DIR) $(ARC)',
 	targz   => '$(gunzip) -c < $(ARC) 2>/dev/null | $(tar) xf - -C $(DIR) >/dev/null 2>&1',
 	wget    => '$(wget)  -r -L -q -m -nH -np --execute="robots=off" --cut-dirs=$(CUTDIRS) $(URL)',
 	sendmail => '$(sendmail) -oi -t -odb --',
@@ -199,7 +199,7 @@ if( defined $c{"apache"} )
 {
 	$systemsettings->{"apache"} = $c{"apache"};
 }
-if( !defined $systemsettings->{"apache"} )
+if( !defined $systemsettings->{"apache"} || $systemsettings->{"apache"} ne "2" )
 {
 	$systemsettings->{"apache"} = "1";
 }
@@ -460,8 +460,7 @@ sub install_file
 		my $repl_digest = get_digest("$dest/$dir/$file");
 		if ($repl_digest ne $sighash->{"$dir/$file"})
 		{
-			rename "$dest/$dir/$file", "$dest/$dir/$file.old";
-			print "\n$dir/$file has been modified.\nSaving old version as $dir/$file.old\n";
+			move_out_of_harms_way( "$dest/$dir/$file" );
 		}
 	}
 
@@ -684,3 +683,32 @@ Hooray! Your EPrints2 installation was successful!
 HOORAY
 }
 
+sub move_out_of_harms_way
+{
+	my( $file ) = @_;
+
+	my @date = localtime( $time );
+	my $safename = sprintf( 
+		"%s.backup.%04d-%02d-%02d", 
+		$file, 
+		$date[5]+1900, 
+		$date[4]+1, 
+		$date[3] );
+
+	my $n = 0;
+	while( -e $safename )
+	{
+		++$n;
+		$safename = sprintf( 
+			"%s.backup.%04d-%02d-%02d.%d", 
+			$file, 
+			$date[5]+1900, 
+			$date[4]+1, 
+			$date[3],
+			$n );
+	}
+
+	rename $file, $safename;
+
+	print "\n$file has been modified.\nSaving old version as $safename\n";
+}
