@@ -46,40 +46,20 @@ sub get_string
 	return $response;
 }
 
+sub get_module_version
+{
+      my($mod) = @_;
+      if (module_installed($mod))
+      {
+              $var = $mod."::VERSION";
+              return $$var;
+      }
+      return 0;
+}
+
 sub module_installed
 {
 	return eval("require $_[0]"); 
-}
-
-sub get_module_version
-{
-	my($mod) = @_;
-	if (module_installed($mod))
-	{
-		$var = $mod."::VERSION";
-		return convert_version($$var);
-	}
-	return 0;
-}
-
-sub make_version
-{
-	my($a, $b, $c) = @_;
-	if (!defined $a || $a eq "") { $a = 0; }
-	if (!defined $b || $b eq "") { $b = 0; }
-	if (!defined $c || $c eq "") { $c = 0; }
-	return (1000000000000*$a)+(1000000*$b)+$c;
-}
-
-sub convert_version
-{
-	# 1.2.3 to 100000020000003000000
-	my($verstring) = @_;
-	if ($verstring =~ /([0-9]+)\.([0-9]+)\.?([0-9]*)/)
-	{
-		return make_version($1, $2, $3);
-	}
-	return 0;
 }
 
 sub compare_version
@@ -89,8 +69,8 @@ sub compare_version
 	$a = "0" if( !defined $a || $a eq "" );
 	$b = "0" if( !defined $b || $b eq "" );
 		
-	my( @a ) = split '\.' $a;
-	my( @b ) = split '\.' $b;
+	my( @a ) = split '\.', $a;
+	my( @b ) = split '\.', $b;
 
 	for(;;)
 	{
@@ -103,8 +83,6 @@ sub compare_version
 		return -1 if ($ahead < $bhead);
 	}
 }		
-
-	
 
 sub get_library_paths
 {
@@ -174,7 +152,7 @@ sub get_package_name
 			if (-e $path && $path =~ $_->{search_string})
 			{
 				$this_version = make_version($1, $2, $3);
-				if ($this_version < convert_version($_->{min_version}))
+				if (compare_version($this_version, $_->{min_version})<0)
 				{
 					print "That version is too old. Please try again.\n";
 					$okay = 0;
@@ -263,10 +241,12 @@ sub get_packs
 			if (defined $ENVIRONMENT{$package->{name}."_skip"}) { next; }
 			if ($file =~ /$package->{search_string}/)
 			{
-				$thisversion = make_version($1, $2, $3);
-				if (!defined $package->{version}) { $package->{version} = 0; }
+				if (defined $1) { $thisversion = $1; } else { $thisversion = 0; }
+				$thisversion .= ".$2" if (defined $2);
+				$thisversion .= ".$3" if (defined $3);
+				if (!defined $package->{version}) { $package->{version} = ""; }
 				$curr_version = $package->{version};
-				if ($thisversion>$curr_version && $curr_version>0)
+				if (compare_version($thisversion, $curr_version)>0 && compare_version($curr_version, 0)>0)
 				{
 					# Got a newer version
 					$package->{version} = $thisversion;
@@ -291,10 +271,10 @@ sub get_packs
 		$installed_ok = 0;
 		
 		# First see if the currently installed version is okay...
-		if ($curr_installed >= convert_version($package->{min_version}))
+		if (compare_version( $curr_installed, $package->{min_version} )>=0)
 		{
 			print "You already have ".$package->{long_name}." installed, ";
-			if ($curr_installed >= convert_version($package->{min_version}))
+			if ( compare_version($curr_installed, $package->{min_version} )>=0)
 			{
 				print "and it is sufficiently new.\n";
 				$ok = 1;
@@ -311,7 +291,7 @@ sub get_packs
 		elsif ($package->{archive} ne "")
 		{
 			print "Found a package for ".$package->{long_name}." ";
-			if ($package->{version} >= convert_version($package->{min_version}))
+			if (compare_version($package->{version}, $package->{min_version})>=0)
 			{
 				print "that is sufficiently new.\n";
 				$ok = 1;
@@ -461,7 +441,7 @@ sub gzip_check
 	
 	if (qx[$gzip -V 2>&1] =~ /(\d+)\.(\d+)\.?(\d*)/)
 	{
-		return make_version($1, $2, $3);
+		return "$1.$2.$3";
 	}
 	return 0;
 }
@@ -472,7 +452,7 @@ sub wget_check
 	$wget = 'wget' || return 0;
 	if (qx[$wget -V 2>&1] =~ /(\d+)\.(\d+)\.?(\d*)/)
 	{
-		return make_version($1, $2, $3);
+		return "$1.$2.$3";
 	}
 	return 0;
 }
@@ -487,8 +467,8 @@ sub xercesc_check
 		s/.*\///;		# Get short name
 		if (/libxerces-c([0-9]+)_([0-9]+).so/)
 		{
-			$version = make_version($1, $2, $3);
-			if ($version>$curr_highversion) { $curr_highversion = $version; }
+			$version = "$1.$2";
+			if (compare_version($version, $curr_highversion)>0) { $curr_highversion = $version; }
 		}		
 	}
 	return $curr_highversion;
@@ -511,7 +491,7 @@ sub apache_check
 	$httpd = `/usr/local/apache/bin/httpd -v 2>&1`;
 	if ($httpd =~ /(\d+)\.(\d+)\.?(\d*)/)
 	{
-		return make_version($1, $2, $3);
+		return "$1.$2.$3";
 	}
 	return 0;
 }
@@ -529,7 +509,7 @@ sub mysql_check
 	$version = `$mysql -V 2>&1`;
 	if ($version =~ /(\d+)\.(\d+)\.?(\d*)/)
 	{
-		return make_version($1, $2, $3);
+		return "$1.$2.$3";
 	}
 	return 0;
 }
