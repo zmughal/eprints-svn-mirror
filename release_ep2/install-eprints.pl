@@ -745,7 +745,7 @@ WARN
 
         my @executable_dirs = ("bin", "cgi");
 	my @normal_dirs = ("defaultcfg", "cfg", "docs", "perl_lib");
-	my @base_files = ("VERSION", "CHANGELOG", "BUGLIST", "COPYING"); 
+	my @base_files = ("VERSION", "CHANGELOG", "BUGLIST", "COPYING", "CHANGELOG.summary" ); 
         foreach(@executable_dirs)
         {
                 install($_, 0755, $uid, $gid, $dir, %MD5Hash);

@@ -73,7 +73,7 @@ foreach( @ids )
 }
 		
 
-my $DOCTITLE = "EPrints 2.0 Documentation";
+my $DOCTITLE = "EPrints 2.0.1 Documentation";
 
 my $BASENAME = "eprints-2.0-docs";
 
