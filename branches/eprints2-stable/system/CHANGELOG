@@ -1780,6 +1780,6 @@ PACKAGE: 2.2.99.2
  - Submission form validate page now only has submit buttons at the
     bottom of the page if the eprint is valid.
  - Fixed search form on default index page.
- 
+ - Added Proc/Reliable and Unicode/Normalise to bundled stuff.
 
 ======================================================================
