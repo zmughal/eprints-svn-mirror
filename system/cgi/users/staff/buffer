@@ -20,13 +20,13 @@ use EPrints::User;
 use strict;
 
 my $session = EPrints::Session->new();
-Apache::exit( 0 ) unless( defined $session );
+exit( 0 ) unless( defined $session );
 
 # Check we have privs
 if( !$session->auth_check( "editor" ) )
 {
 	$session->terminate();
-	Apache::exit( 0 );
+	exit( 0 );
 }
 #cjg does not check that item is editable...
 

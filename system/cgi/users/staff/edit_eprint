@@ -30,7 +30,7 @@ my $session = EPrints::Session->new();
 if( !$session->auth_check( "editor" ) )
 {
 	$session->terminate();
-	Apache::exit( 0 );
+	exit( 0 );
 }
 
 my( $title, $page ) = &process( $session );
@@ -86,7 +86,7 @@ sub process
 		next if( $can_edit ); # skip the rest if one matches
 
 		my $search = $ef_field->make_searchexp( $session, $s );
-		if( $search->item_matches( $eprint ) )
+		if( $search->get_conditions->item_matches( $eprint ) )
 		{
 			$can_edit = 1;
 		}

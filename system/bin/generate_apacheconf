@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+#!/usr/bin/perl -w -I/opt/ep2stable/perl_lib
 
 ######################################################################
 #
@@ -30,9 +30,9 @@ Or elsewhere if you installed EPrints somewhere other than /opt/eprints2. This f
 
 By default the virtualhost directives are
 
- <VirtualHost *>
+ VirtualHost *
 
-But the * can be changed to something different by editing the <virtualhost> option in SystemSettings.pm
+But the * can be changed to something different by editing the C<virtualhost> option in SystemSettings.pm
 
 =head1 ARGUMENTS
 
@@ -198,17 +198,25 @@ print CONF <<END;
 
 NameVirtualHost $virtualhost
 
-# If the apache configuration is reloaded the the
-# perl modules (and therefore archive configurations)
-# must be reloaded too.
-PerlFreshRestart  On
-
 # Load the perl modules & archive configurations
 PerlRequire $startupfile
 
 END
+
+my $av =  $EPrints::SystemSettings::conf->{apache};
+if( defined $av && $av eq "2" )
+{
+	# apache 2
+	print CONF <<END;
+# Makes the request object accessable for other objects
+# (apache 2.0 only)
+PerlOptions +GlobalRequest
+
+END
+}
 close CONF;
 
+########################################
 
 print "Creating $site_incfile.\n" if( $noise >= 2 );
 open( CONF, ">$site_incfile" ) || die "Can't write to $site_incfile";
@@ -318,6 +326,7 @@ my $adminemail = $archive->get_conf( "adminemail" );
 my $htdocs_path = $archive->get_conf( "htdocs_path" );
 my $htdocs_secure_path = $archive->get_conf( "htdocs_secure_path" );
 my $host = $archive->get_conf( "host" );
+my $urlpath = $archive->get_conf( "urlpath" );
 my $userhome = $archive->get_conf( "userhome" );
 my $securehost = $archive->get_conf( "securehost" );
 my $securepath = '';
@@ -366,52 +375,70 @@ print CONF <<END;
 <VirtualHost $virtualhost>
   ServerName $host
 $aliases
-  DocumentRoot $htdocs_path
   ServerAdmin $adminemail
 
-  Alias /perl $cgidir
-
-  ErrorDocument 401 /error401.html
-  ErrorDocument 404 /perl/handle_404
-
-  RewriteEngine on
-
-  # Include this here, so that it's rewrite ruls come first.
+  # Include this here, so that it's rules come first.
   Include $vhostfile
 
-
-  # Rewrite Rules. [L] means "last". So the rewrite engine goes
-  # no further if it matches.
-
-  # Protect /perl/ from other rewrite rules
-  RewriteRule ^/perl/      -   [L]
-  RewriteRule ^/secure/    -   [L]
-  RewriteRule ^/archive/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])(.*)\$ /archive/\$1/\$2/\$3/\$4\$5
-
 END
 
-my @langs = @{$archive->get_conf( "languages" )};
-my $defaultlang = $archive->get_conf( "defaultlanguage" );
-my $langid;
-foreach $langid ( @langs )
+# If we want to use the non-perl CGI script mimetex.cgi we need to 
+# insert the script alias here.
+if( $archive->get_conf( "use_mimetex" ) ) 
 {
-	next if( $langid eq $defaultlang );
-		print CONF <<END;
-  RewriteCond %{HTTP_COOKIE}   lang=$langid
-  RewriteRule ^/(.*)\$         /$langid/\$1   [L]
-
-END
+	if( !defined $EPrints::SystemSettings::conf->{executables}->{mimetex} )
+	{
+		EPrints::Config::abort( "use_mimetex is set to true but\n\$EPrints::SystemSettings::conf->{executables}->{mimetex}\nis not set." );
+	}
+	if( !-e $EPrints::SystemSettings::conf->{executables}->{mimetex} )
+	{
+		EPrints::Config::abort( "use_mimetex is set to true but\n\$EPrints::SystemSettings::conf->{executables}->{mimetex}\nis set to a non existant file." );
+	}
+	     
+	print CONF '  ScriptAlias '.$urlpath.'/cgi/mimetex.cgi '.$EPrints::SystemSettings::conf->{executables}->{mimetex}."\n\n";
 }
 
 print CONF <<END;
-  # Default Language
-  RewriteRule ^/(.*)\$         /$defaultlang/\$1   [L]
+  Alias $urlpath/perl $cgidir
+  Alias $urlpath/ $htdocs_path/
 
+  <Location "$urlpath">
+    ErrorDocument 401 $urlpath/error401.html
+    ErrorDocument 404 $urlpath/perl/handle_404
+    PerlSetVar EPrints_ArchiveID $archiveid
+  </Location>
+
+  # Note that PerlTransHandler can't go inside
+  # a "Location" block as it occurs before the
+  # Location is known.
+  PerlTransHandler EPrints::Rewrite
 END
+
+my @langs = @{$archive->get_conf( "languages" )};
+
+#my $defaultlang = $archive->get_conf( "defaultlanguage" );
+# cjg remove this stuff later.
+#
+#foreach my $langid ( @langs )
+#{
+	#next if( $langid eq $defaultlang );
+		#print CONF <<END;
+  #RewriteCond %{HTTP_COOKIE}   lang=$langid
+  #RewriteRule ^/(.*)\$         /$langid/\$1   [L]
+#
+#END
+#}
+#
+#print CONF <<END;
+  ## Default Language
+  #RewriteRule ^/(.*)\$         /$defaultlang/\$1   [L]
+#
+#END
+
 
 if( $archive->get_conf( "vlit" )->{enable} )
 {
-	foreach $langid ( @langs )
+	foreach my $langid ( @langs )
 	{
 		print CONF <<END;
   <Directory "$htdocs_path/$langid/archive">
@@ -423,6 +450,16 @@ END
 	}
 }
 
+my $registry_module;
+if( $av eq "1" ) 
+{
+	$registry_module = "Apache::Registry";
+}
+else # apache 2
+{
+	$registry_module = "ModPerl::Registry";
+}
+
 print CONF <<END;
   <Directory "$htdocs_path">
     AddType 'text/html; charset=UTF-8' .html
@@ -430,7 +467,7 @@ print CONF <<END;
 
   <Directory "$cgidir">
     SetHandler perl-script
-    PerlHandler Apache::Registry
+    PerlHandler $registry_module
     PerlSendHeader Off
     Options ExecCGI
   </Directory>
@@ -447,7 +484,7 @@ my $secureconfig = <<END;
     require valid-user
 
     SetHandler perl-script
-    PerlHandler Apache::Registry
+    PerlHandler $registry_module
     PerlSendHeader Off
     Options ExecCGI
   </Directory>
@@ -459,9 +496,6 @@ my $secureconfig = <<END;
     PerlAuthzHandler EPrints::Auth::authz
     PerlSetVar EPrints_Security_Area Documents
     require valid-user
-    RewriteEngine on
-    RewriteBase $securepath/secure
-    RewriteRule ^([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])(.*)\$ \$1/\$2/\$3/\$4\$5 [L]
   </Directory>
 
   # This sets up the change_user URL, which does
@@ -500,7 +534,7 @@ $secureconfig
   Alias $securepath/secure/ $htdocs_secure_path/
   Alias $securepath/perl/users/ $cgidir/users/
 
-  RewriteRule ^$securepath/secure/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])/(.*)\$ $securepath/secure/\$1/\$2/\$3/\$4/\$5 [L]
+  #RewriteRule ^$securepath/secure/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])/(.*)\$ $securepath/secure/\$1/\$2/\$3/\$4/\$5 [L]
 
 ##### END OF CONFIG FOR $archiveid
 
