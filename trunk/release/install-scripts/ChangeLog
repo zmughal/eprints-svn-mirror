@@ -144,7 +144,23 @@ the makefile. Used it to replace "find -maxdepth 1 -type f".
 - Replaced occurances of "cp -a" in Makefile with "tar" to increase portability.
 - configure: GROUP and USER no longer conditional on FULL_INSTALL
 - top level dir of EPrints package renamed from "eprints" to "eprints-version-whatever"
-- renamed oai-0.2 to oai (now supports oai 1.0)
+- renamed oai-0.2 to oai (now supports oai 1.0b)
 - minor changes to OpenArchives.pm
 - added debug=yes option to oai. This makes it output text/plain rather than text/xml
+- added support for remote mysql databases, added configure options 
+--with-db-port and --with-db-host. Uses default behaviour if these are not 
+set.
+- Changed all (most) occurances of the word "paper" to "item" to make it 
+clearer that EPrints is generic software.
+- erase_archive and congfigure will now refuse to attempt to admin a database
+if db_host or db_port are set. ie. You'll have to create & destroy the database 
+by hand if it's not local.
+- added --with-module-prefix option to configure, this gives all the perl modules
+a prefix, so multiple copies of eprints can be run on one mod_perl instance.
+
+*** CHANGE VERSION NUMBER
+
+doc OAI
+remote db
+module-prefix
 

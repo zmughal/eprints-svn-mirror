@@ -82,7 +82,7 @@ dnl Determine group to use
 dnl **************************************************************
 
 AC_ARG_WITH(group, [  --with-group=USER       Group server runs as [default=eprints]
-                         (will create if necessary])
+                          (will create if necessary)])
 
 if test "x$with_group" = "x" ; then
 	GROUP="eprints"
@@ -98,7 +98,7 @@ dnl Determine user account to use
 dnl **************************************************************
 
 AC_ARG_WITH(username, [  --with-username=USER    User server runs as [default=eprints]
-                         (will create if necessary])
+                          (will create if necessary)])
 
 if test "x$with_username" = "x" ; then
 	USERNAME="eprints"
@@ -109,6 +109,26 @@ fi
 AC_SUBST(USERNAME)
 
 
+
+dnl **************************************************************
+dnl Determine perl module prefix 
+dnl **************************************************************
+
+AC_ARG_WITH(module_prefix, [  --with-module-prefix=PREFIX 
+                          Optional prefix to use on perl modules to
+                          enable multiple versions of EPrints to 
+                          work within mod_perl [default=none]])
+
+if test "x$with_module_prefix" = "x" ; then
+	MOD_PREFIX=""
+	LIB_PREFIX=""
+else
+	MOD_PREFIX="$with_module_prefix::"
+	LIB_PREFIX="$with_module_prefix/"
+fi
+
+AC_SUBST(MOD_PREFIX)
+AC_SUBST(LIB_PREFIX)
 
 
 dnl **************************************************************
@@ -439,6 +459,7 @@ if test $FULL_INSTALL = 1 ; then
 		DB_HOST="undef"
 	else
 		DB_HOST=$with_db_host
+		CREATE_DATABASE=0
 	fi
 
 	AC_SUBST(DB_HOST)
@@ -454,6 +475,7 @@ if test $FULL_INSTALL = 1 ; then
 		DB_PORT="undef"
 	else
 		DB_PORT=$with_db_port
+		CREATE_DATABASE=0
 	fi
 
 	AC_SUBST(DB_PORT)

@@ -1,0 +1,114 @@
+The following are changes to make by hand when upgrading from
+an older EPrints install. 
+
+* Upgrading from a Beta Version
+* Upgrading from 1.0
+
+======================================================================
+ UPGRADING FROM A BETA VERSION
+======================================================================
+
+You will need to create the deletions database table, in MySQL:
+
+\begin{verbatim}
+CREATE TABLE deletions (eprintid VARCHAR(255) NOT NULL,
+  replacement VARCHAR(255), subjects TEXT, deletiondate
+  DATE, PRIMARY KEY (eprintid));
+\end{verbatim}
+
+then follow the instructions for upgrading from 1.0
+
+
+======================================================================
+ UPGRADING FROM 1.0
+======================================================================
+
+The following changes should be made by hand to SiteInfo.pm
+
+Near the top add:
+----------------------------------------------------------------------
+use EPrints::OpenArchives;
+----------------------------------------------------------------------
+
+in the OPEN ARCHIVES section:
+
+change:
+----------------------------------------------------------------------
+# Base URL of OAI
+$EPrintSite::SiteInfo::oai_base_url =
+	$EPrintSite::SiteInfo::server_perl."/not-yet-implemented";
+----------------------------------------------------------------------
+to:
+----------------------------------------------------------------------
+# Base URL of OAI
+$EPrintSite::SiteInfo::oai_base_url =
+	$EPrintSite::SiteInfo::server_perl."/oai";
+----------------------------------------------------------------------
+
+and then add:
+----------------------------------------------------------------------
+$EPrintSite::SiteInfo::oai_sample_identifier = EPrints::OpenArchives::to_oai_identifier(
+	$EPrintSite::SiteInfo::eprint_id_stem."00000023" );
+
+# Information for "Identify" responses.
+
+# "content" : Text and/or a URL linking to text describing the content
+# of the repository.  It would be appropriate to indicate the language(s)
+# of the metadata/data in the repository.
+
+$EPrintSite::SiteInfo::oai_content{"text"} = 
+	$EPrintSite::SiteInfo::description;
+$EPrintSite::SiteInfo::oai_content{"url"} = undef;
+
+# "metadataPolicy" : Text and/or a URL linking to text describing policies
+# relating to the use of metadata harvested through the OAI interface.
+
+# oai_metadataPolicy{"text"} and/or oai_metadataPolicy{"url"} 
+# MUST be defined to comply to OAI.
+
+$EPrintSite::SiteInfo::oai_metadataPolicy{"text"} = 
+	"No metadata policy defined. ".
+	"This server has not yet been fully configured.";
+$EPrintSite::SiteInfo::oai_metadataPolicy{"url"} = undef;
+
+# "dataPolicy" : Text and/or a URL linking to text describing policies
+# relating to the data held in the repository.  This may also describe
+# policies regarding downloading data (full-content).
+
+# oai_dataPolicy{"text"} and/or oai_dataPolicy{"url"} 
+# MUST be defined to comply to OAI.
+
+$EPrintSite::SiteInfo::oai_dataPolicy{"text"} = 
+	"No data policy defined. ".
+	"This server has not yet been fully configured.";
+$EPrintSite::SiteInfo::oai_dataPolicy{"url"} = undef;
+
+# "submissionPolicy" : Text and/or a URL linking to text describing
+# policies relating to the submission of content to the repository (or
+# other accession mechanisms).
+
+$EPrintSite::SiteInfo::oai_submissionPolicy{"text"} = 
+	"No submission-data policy defined. ".
+	"This server has not yet been fully configured.";
+$EPrintSite::SiteInfo::oai_submissionPolicy{"url"} = undef;
+
+# "comment" : Text and/or a URL linking to text describing anything else
+# that is not covered by the fields above. It would be appropriate to
+# include additional contact details (additional to the adminEmail that
+# is part of the response to the Identify request).
+
+# An array of comments to be returned. May be empty.
+
+@EPrintSite::SiteInfo::oai_comments = ( "System is EPrints ".
+	$EPrints::Session::eprints_software_version.
+	" (http://www.eprints.org)" );
+----------------------------------------------------------------------
+
+optionally add:
+(Don't add these unless you want to use a remote mysql)
+----------------------------------------------------------------------
+$EprintSite::SiteInfo::db_host = "mysql.mysite.ac.uk";
+$EprintSite::SiteInfo::db_port = 3306;
+----------------------------------------------------------------------
+
+
