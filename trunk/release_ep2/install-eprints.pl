@@ -302,7 +302,7 @@ GROUP
 	}
 	else
 	{ print "OK.\n\n"; }
-	chown($uid, $gid, "$dir") or die "Unable to chown $dir/$_ : $!";
+	chown($uid, $gid, "$dir") or die "Unable to chown $dir : $!";
 
 	print "Installing files : [";
 
