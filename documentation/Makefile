@@ -27,8 +27,8 @@ online-help-final: $(ONLINEHELPFILES)
 	rm -rf online-help-html
 
 install-online-help: online-help.pdf online-help-final
-	cp online-help.pdf ../system/html/help/
-	cp online-help-final/*.jpg ../system/html/help
+	cp online-help.pdf ../system/static/help/
+	cp online-help-final/*.jpg ../system/static/help
 	cp online-help-final/*.html ../system/static/help
 	
 
