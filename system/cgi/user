@@ -14,10 +14,21 @@
 
 use EPrints::Session;
 use EPrints::UserPage;
+use EPrints::AnApache;
 
 my $session = new EPrints::Session;
 
-EPrints::UserPage::process( $session, 0 );
+if( $session->get_archive->get_conf( "disable_userinfo" ) )
+{
+	$session->build_page( 
+	     $session->html_phrase( "general:disabled_feature_title" ),
+	     $session->html_phrase( "general:disabled_feature_body" ) );
+	$session->send_page;
+}
+else
+{
+	EPrints::UserPage::process( $session, 0 );
+}
 
 $session->terminate();
 

@@ -67,9 +67,8 @@ sub validate_field
 
 	# CHECKS IN HERE
 
-	# Loop over actual individual to check URLs, names and emails
+	# Loop over actual individual values to check URLs, names and emails
 
-	# Ensure that a URL is valid (i.e. has the initial scheme like http:)
 	if( $field->is_type( "url", "name", "email" ) && EPrints::Utils::is_set( $value ) )
 	{
 		$value = [$value] unless( $field->get_property( "multiple" ) );
@@ -85,7 +84,7 @@ sub validate_field
 			{
 				push @problems,
 					$session->html_phrase( "validate:missing_http",
-					fieldname=>$session->make_text( $field->display_name( $session ) ) );
+					fieldname=>$field->render_name( $session ) );
 			}
 
 			# Check a name has a family part
@@ -93,7 +92,7 @@ sub validate_field
 			{
 				push @problems,
 					$session->html_phrase( "validate:missing_family",
-					fieldname=>$session->make_text( $field->display_name( $session ) ) );
+					fieldname=>$field->render_name( $session ) );
 			}
 
 			# Check a name has a given part
@@ -101,7 +100,7 @@ sub validate_field
 			{
 				push @problems,
 					$session->html_phrase( "validate:missing_given",
-					fieldname=>$session->make_text( $field->display_name( $session ) ) );
+					fieldname=>$field->render_name( $session ) );
 			}
 
 			# Check an email looks "ok". Just checks it has only one "@" and no
@@ -110,7 +109,7 @@ sub validate_field
 			{
 				push @problems,
 					$session->html_phrase( "validate:bad_email",
-					fieldname=>$session->make_text( $field->display_name( $session ) ) );
+					fieldname=>$field->render_name( $session ) );
 			}
 		}
 	}
@@ -121,10 +120,77 @@ sub validate_field
 
 ######################################################################
 #
-# validate_eprint_meta( $eprint, $session, $for_archive ) 
+# validate_eprint_meta_page( $eprint, $session, $page, $for_archive ) 
 #
 ######################################################################
 # $field 
+# - EPrint object
+# $session 
+# - Session object (the current session)
+# $page
+# - The id of the input-page being validated (from the metadata-types
+#   config file.
+# $for_archive
+# - boolean (see comments at the start of the validation section)
+#
+# returns: @problems
+# - ARRAY of DOM objects (may be null)
+#
+######################################################################
+# Validate just the metadata of a page of input of an eprint. 
+# The validate_field method will have been called on each field 
+# first so only complex problems such as interdependancies need 
+# to be checked here.
+#
+# This allows problems to be shown as they happen, rather than waiting
+# for the end of the input process. eg. Use this to set dependancies
+# between fields.
+#
+######################################################################
+
+sub validate_eprint_meta_page
+{
+	my( $eprint, $session, $page, $for_archive ) = @_;
+
+	my @problems = ();
+
+	# CHECKS IN HERE
+
+	if( $page eq "core" )
+	{
+		# If we don't have creators (eg. for a book) then we 
+		# must have editor(s). To disable that rule, remove the 
+		# following block.	
+		if( !$eprint->is_set( "creators" ) && 
+			!$eprint->is_set( "editors" ) )
+		{
+			push @problems, $session->html_phrase( 
+					"validate:need_creators_or_editors" );
+		}
+	}
+
+
+	if( $page eq "pubinfo" )
+	{
+		# by default we insist that each item has a sub date OR 
+		# and issue date. To disable that rule, remove the 
+		# following block.	
+		if( !$eprint->is_set( "date_sub" ) 
+			&& !$eprint->is_set( "date_issue" ) )
+		{
+			push @problems, $session->html_phrase( 
+						"validate:need_sub_or_issue" );
+		}
+	}
+
+	return @problems;
+}
+######################################################################
+#
+# validate_eprint_meta( $eprint, $session, $for_archive ) 
+#
+######################################################################
+# $eprint 
 # - EPrint object
 # $session 
 # - Session object (the current session)
@@ -139,6 +205,9 @@ sub validate_field
 # will have been called on each field first so only complex problems
 # such as interdependancies need to be checked here.
 #
+# This function by default calls all the "page" validations, although
+# you may want to conditionally disable that.
+#
 ######################################################################
 
 sub validate_eprint_meta
@@ -147,8 +216,20 @@ sub validate_eprint_meta
 
 	my @problems = ();
 
+	# Check all per-page validations are OK.
+	my @pages = $eprint->get_dataset->get_type_pages( 
+			$eprint->get_value( "type" ) );
+	foreach my $page ( @pages )
+	{
+		push @problems, validate_eprint_meta_page( 
+					$eprint, 
+					$session,
+					$page,
+					$for_archive );
+	}
+
 	# CHECKS IN HERE
-	
+
 	return @problems;
 }
 

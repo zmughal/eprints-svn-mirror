@@ -1,85 +1,113 @@
 body {
-	margin: 0pt;
+	margin: 1em;
+        font-family: Arial,Sans-serif;
+	font-size: 80%;
 }
 
-.header TABLE
-{
-	border: 0px; 
-	border-bottom: 1px; 
-	border-style: solid; 
-	border-color: #000000 ;
-}
-.footer 
-{
-	padding-top: 8px;
+.footer, .header {
+	border: #8080f0 1px solid;
+	background: #efefff; 
+	padding: 4px;
+	margin: 3px 1em 3px 1em;
 }
 
-.footer TABLE
-{
-	border: 0px; 
-	border-bottom: 1px; 
-	border-top: 1px; 
-	border-style: solid; 
-	border-color: #b0b0b0 #000 #000 #000;
+.userpage_table_emph {
+	font-weight: bold;
 }
+
+ul.menu {
+	list-style: none;
+	margin: 0px;
+	padding: 0px;
+	text-align: right;
+}
+ul.menu li {
+	list-style: none;
+	display: inline;
+}
+ul.menu li:hover {
+	background: #ffcf80;
+}
+
+ul.menu li a, .searchcontrol a {
+	text-decoration: none;
+	color: #0000c0;
+}
+ul.menu li a:visited {
+	color: #0000c0;
+}
+
+input, select, textarea {
+	color: blue;
+	font-weight: bold;
+	font-size: 100%;
+}
+
+.actionbutton, ul.menu li, .searchcontrol {
+	color: #0000c0;
+	border: #8080f0 1px solid;
+	background: #d0d0e0; 
+	padding: 3px;
+	margin: 2px;
+	font-weight: bold;
+}
+
+.example
+{
+	font-weight: bold;
+	color: blue;
+}
+.box
+{
+	font-family: sans-serif; 
+	padding: 8pt; 
+	margin-bottom: 1pt
+}
+
+
+
 
 h1 {
-        font: bold x-large Helvetica,Arial,Sans-serif;
+        font: bold 130% Arial,Sans-serif;
         color: #606060;
-	margin-left: -4pt;
 }
 
 h2 {
-        font: bold large Helvetica,Arial,Sans-serif;
+        font: bold 120% Arial,Sans-serif;
         color: #606060;
-	margin-left: -4pt;
 }
 
 h3 {
-        font: large Helvetica,Arial,Sans-serif;
+        font: 120% Arial,Sans-serif;
         color: #606060;
 }
 
 h4 {
-        font: medium Helvetica,Arial,Sans-serif;
+        font: 100% Arial,Sans-serif;
         color: #606060;
 }
 
-a.menulink {
-}
 
-p {
-	font: medium serif;
-}
-
-.menu {
-        font: bold small sans-serif;
-        text-align: right;
-        margin-right: 12pt;
-}
 
 .archivetitle {
-        font: large Helvetica,Arial,Sans-serif;
+        font: 120% Arial,Sans-serif;
 	color: #000000;
 }
 
 .searchfieldhelp,.formfieldhelp {
-        font: small serif;
+        font-size: small ;
 }
 
-.searchfieldname {
-        padding-top: 12pt;
-        padding-bottom: 3pt;
-        font: bold medium serif;
-}
 
-.formfieldname {
-        padding-top: 3pt;
-        font: bold medium serif;
+.formfieldname, .searchfieldname {
+        padding-top: 1em;
+	font-weight: bold;
+	font-size: 120%;
 }
 
 .formfieldidname {
-        font: bold medium serif;
+	font-weight: bold;
+	font-size: 120%;
 }
 
 
@@ -102,19 +130,15 @@ p {
 
 .alert {
 	color: #ff0000;
-        font: bold medium serif;
+        font: bold 100% ;
 }
 
 .namefieldheading {
 	text-align: left;
-	font: small serif;
+	font: small ;
 }
 
 .searchorder {
-        padding-top: 12pt;
-}
-
-.searchbuttons {
         padding-top: 12pt;
 }
 
@@ -123,8 +147,7 @@ p {
 }
 
 .main {
-        margin-left: 16pt;
-        margin-right: 12pt;
+        margin: 1em;
 }
 
 dt {
@@ -139,24 +162,106 @@ dt {
 	font-style: italic;
 }
 
-.searchcontrols {
-        border: 1px;
+
+.subject_browser_opts, .subject_browser_selections, .subject_browser_search
+{
+	margin-left: 1em;
+	margin-right: 1em;
+	padding: 0.5em;
+	border-style: solid;
+	border-color: #ccc;
+	border-width: 1px;
+}
+.subject_browser_selections
+{
+	margin-top: 0.5em;
+	background: #ffffaa;
+}
+
+.subject_browser_selections span.subject
+{
+	font-weight: bold;
+}
+.subject_browser_opts
+{
+	margin-bottom: 0.5em;
+}
+.subject_browser_selected
+{
+	font-style: italic;
+}
+
+.row_a
+{
+	background: #efefff; 
+}
+.row_b
+{
+	background: #f8f8ff; 
+}
+
+.row_a td, .row_b td
+{
+	border-top: #8080f0 1px solid;
+	border-bottom: #8080f0 1px solid;
+}
+td.first_col 
+{
+	border-left: #8080f0 1px solid;
+}
+td.last_col 
+{
+	border-right: #8080f0 1px solid;
+}
+td.middle_col 
+{
+	border-right: #8080f0 1px solid;
+	border-left: #8080f0 1px solid;
+}
+
+
+.status_row_heading, th, .submission_buttons, .searchbuttons, .searchcontrols
+{
+        font-family: Arial,Sans-serif;
+	font-weight: bold;
+	padding: 2px;
+	border: #8080f0 1px solid;
+	background: #efefff; 
+}
+th.empty_heading, tr.header_plain th {
+	background: none;
+	border-style: none;
+}
+
+.submission_buttons, .searchbuttons, .searchcontrols
+{
+	margin-top: 8pt;
+	text-align: center;
         padding: 4px;
+	text-decoration: none;
+}
+.searchcontrols 
+{
+	padding: 8px;
+}
+	
+.problems
+{
+	margin-top: 8pt;
+	margin-bottom: 8pt;
+        border: 4px;
+        padding: 16pt;
         border-style: solid;
-        border-color: #000000 ;
-        background-color: #f0f0f0;
+        border-color: #ff0000 ;
+        background-color: #f8f8f8;
 	text-decoration: none;
 }
 
-body.vlit {
-	margin: 8pt;
+.preview
+{
+	margin: 1em 0 1em 0;
+	background: #f8f8ff;
+	padding: 1em;
+	border: 2px #c0c0ff dashed;
 }
-
-.vlit-charrange {
-	color: #0000c0;
-}
-
-.vlit-highlight {
-	color: #c00000;
-}
-
+	
