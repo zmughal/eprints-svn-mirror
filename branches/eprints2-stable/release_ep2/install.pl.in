@@ -56,6 +56,7 @@ unless( open(VERSIONIN, $c{"dist_path"}."/VERSION") )
 	print "No VERSION file in distribution - invalid distribution?";
 	exit 1;
 }
+binmode(VERSIONIN);
 my $version_id = <VERSIONIN>;
 unless( defined($version_id) ) 
 {
@@ -255,6 +256,7 @@ sub save_settings
 		print "Failed to write $sysfile\n";
 		exit 1;
 	}
+	binmode(FILEOUT);
 	print FILEOUT <<SPIEL;
 ######################################################################
 #
@@ -383,6 +385,7 @@ sub write_sigs
 		print "Unable to write SIGNATURES: $!\n";
 		exit 1;
 	}
+	binmode(SIGOUT);
 		
 	foreach(@{$sigs})
 	{
@@ -401,6 +404,7 @@ sub get_digest
 		print "Can't open '$file': $!\n";
 		exit 1;
 	}
+	binmode(FILE);
 	my $outdigest = new Digest::MD5;
 	foreach(<FILE>)
 	{
@@ -424,6 +428,7 @@ sub install_file
 	my @linesout = ();	
 	my $currline = "";
 	open(INFILE, $distdir."/$dir/$file");
+	binmode(INFILE);
 	if ($dir eq "bin")
 	{
 		if ($file eq "startup.pl")
@@ -465,6 +470,7 @@ sub install_file
 		print "\nCan't write to $dest/$dir/$file : $!\n";
 		exit 1;
 	}
+	binmode(OUTFILE);
 	foreach(@linesout)
 	{
 		print OUTFILE $_;
@@ -541,6 +547,7 @@ sub upgrade
 	{
 		print "Loading SIGNATURES...\n";
 		open(MD5IN, "$base_path/SIGNATURES");
+		binmode(MD5IN);
 		foreach(<MD5IN>)
 		{
 			chomp;
