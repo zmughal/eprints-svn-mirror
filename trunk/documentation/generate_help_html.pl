@@ -60,9 +60,11 @@ print NODE_OUT "<P>The on-line help is also available as a <A HREF=\"online-help
 
 # Modification date.
 
-open PDF_IN, "online-help.pdf" or die "Couldn't open PDF file: $!\n";
+open DVI_IN, "online-help/latex/online-help.dvi" or die "Couldn't open DVI file: $!\n";
 
-my $mtime = (stat PDF_IN)[9];
+my $mtime = (stat DVI_IN)[9];
+
+close DVI_IN;
 
 print NODE_OUT "<P>This version of the on-line help is dated ".
 	&format_date( $mtime ).".</P>\n";
