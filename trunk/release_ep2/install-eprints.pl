@@ -40,9 +40,9 @@ if ($forced)
 	print <<WARNING;
 *** WARNING ***
 
-Running as non-root can cause Bad Things(tm) to happen:
-- chowning will probably not work
-- directories may not be creatable
+Running as non-root will skip the following:
+- No chowning will be attempted
+- No user/group creation will be attempted
 
 WARNING
 }
@@ -249,7 +249,7 @@ USER
 		($group, undef) = getgrnam($user);
 	}
 
-	if (!$exists || !defined($group))
+	if (!$forced && (!$exists || !defined($group)))
 	{
 		print <<GROUP;
 User $user does not currently exist, so a group will be required
@@ -302,7 +302,7 @@ GROUP
 	}
 	else
 	{ print "OK.\n\n"; }
-	chown($uid, $gid, "$dir") or die "Unable to chown $dir : $!";
+	if (!$forced) { chown($uid, $gid, "$dir") or die "Unable to chown $dir : $!"; }
 
 	print "Installing files : [";
 
@@ -356,12 +356,12 @@ HOORAY
 sub install
 {
 	my($dir, $perms, $user, $group, $dest) = @_;
-	opendir(INDIR, $dir) or die("Unable to install directory: $dir");
+	opendir(INDIR, $dir) or die("Unable to install directory: $dir. $!");
 	my @dirs = ();
 	my @files = ();
 	my $currdir = getcwd();
 	mkdir("$dest/$dir", 0755);
-	chown($user, $group, "$dest/$dir") or die "Unable to chown $dest/$dir/$_ : $!";
+	if (!$forced) {chown($user, $group, "$dest/$dir") or die "Unable to chown $dest/$dir/$_ : $!"; }
 	while(my $item = readdir(INDIR))
 	{
 		if ($item =~ /^\./ && $item ne ".htaccess" ) { next; }
@@ -392,7 +392,7 @@ sub install
 		close(OUTFILE);
 		close(INFILE);
 		chmod($perms, "$dest/$dir/$_") or die "Unable to chmod $dest/$dir/$_ : $!";
-		chown($user, $group, "$dest/$dir/$_") or die "Unable to chown $dest/$dir/$_ : $!";
+		if (!$forced) { chown($user, $group, "$dest/$dir/$_") or die "Unable to chown $dest/$dir/$_ : $!"; }
 	}
 	foreach(@dirs)
 	{
