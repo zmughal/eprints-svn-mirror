@@ -56,10 +56,10 @@
       <page name="core" />
       <field name="title" required="yes" />
       <field name="creators" required="yes" />
+      <field name="editors" />
 
       <page name="pubinfo" />
       <field name="pagerange" />
-      <field name="editors" />
       <field name="book_title" required="yes" />
       <field name="volume" />
       <field name="place_of_pub" />
@@ -96,6 +96,7 @@
       <field name="title" required="yes" />
       <field name="monograph_type" required="yes" />
       <field name="creators" required="yes" />
+<!--  <field name="editors" /> -->
 
       <page name="pubinfo" />
       <field name="institution" />
@@ -107,7 +108,6 @@
       <field name="date_issue" />
       <field name="date_sub" />
       <field name="official_url" />
-<!--  <field name="editors" /> -->
 
       <page name="status" />
       <field name="ispublished" required="yes" />

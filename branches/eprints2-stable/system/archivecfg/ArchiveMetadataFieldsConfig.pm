@@ -44,7 +44,7 @@ my $fields = {};
 
 $fields->{user} = [
 
-	{ name => "name", type => "name" },
+	{ name => "name", type => "name", render_opts=>{order=>"gf"} },
 
 	{ name => "dept", type => "text" },
 
@@ -66,7 +66,8 @@ $fields->{user} = [
 $fields->{eprint} = [
 
 	{ name => "creators", type => "name", multiple => 1, input_boxes => 4,
-		hasid => 1, input_id_cols=>20 }, 
+		hasid => 1, input_id_cols=>20, 
+		family_first=>1, hide_honourific=>1, hide_lineage=>1 }, 
 
 	{ name => "title", type => "longtext", multilang=>0 },
 
@@ -108,11 +109,11 @@ $fields->{eprint} = [
 
 	{ name => "abstract", input_rows => 10, type => "longtext" },
 
-	{ name => "date_sub", type=>"date", min_resolution=>"Y" },
+	{ name => "date_sub", type=>"date", min_resolution=>"year" },
 
-	{ name => "date_issue", type=>"date", min_resolution=>"Y" },
+	{ name => "date_issue", type=>"date", min_resolution=>"year" },
 
-	{ name => "date_effective", type=>"date", min_resolution=>"Y" },
+	{ name => "date_effective", type=>"date", min_resolution=>"year" },
 
 	{ name => "series", type => "text" },
 
@@ -160,7 +161,8 @@ $fields->{eprint} = [
 	{ name => "book_title", type => "text", sql_index => 0 },
 	
 	{ name => "editors", type => "name", multiple => 1, hasid=>1,
-		 input_boxes => 4, input_id_cols=>20 }, 
+		input_boxes => 4, input_id_cols=>20, 
+		family_first=>1, hide_honourific=>1, hide_lineage=>1 }, 
 
 	{ name => "official_url", type => "url", sql_index => 0 },
 

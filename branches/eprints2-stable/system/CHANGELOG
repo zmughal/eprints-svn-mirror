@@ -1430,6 +1430,51 @@ before next release. (metadata types & fields)
  - [c] fixed a bug in systemsettings.pm that zip invoked "zip" not
      "unzip".
 
-   
+2003-10-06 cjg
+
+ - made indexer call "/usr/bin/renice" to reduce how much it loads.
+    This needs to be done with a proper system call before code
+    release.
+ - field properties are now handled by the new OO metafield modules.
+    some fields can have additional properties. Magical default values
+    are UNDEF, REQUIRED, FROM_CONFIG and NO_CHANGE meaning in order
+    "default is undef", "this field must be explicitly set", "get
+    the default from the archive config" and "don't change this
+    property if if set to undef"   
+ - name filtering now works! Searching for "Harris Smithe, Bob"
+    will now do an index search for harris AND smithe and then
+    filter it to things which match either 
+      %[harris]%[smithe]%-%[bob]%   or
+      %[harris]%[smithe]%-%[b%
+ - [c] made TH's smaller in the CSS - looks nicer
+
+2003-10-16 cjg
+
+ - new render option for name fields order="gf" or order="fg" to 
+    control order given & family are rendered.
+ - new options for name fields: family_first, hide_honourific and
+    hide_lineage. All set as field details then over-rideable.
+ - changed Y,M,D to year,month,day in date resolutions - why be
+    obscure about it?
+ - added per-page validation for metadata input
+*- some scripts are currently perl 5.8 for testing puposes
+ - generate_views now does sub-pages eg type then year.
+ - cleaned up some "cache" options in various searches.
+ - added to status page info on when each dataset was last indexed.
+ - moved rename_table, drop_table, swap_tables & install_table into
+    the database module (was in index.pm)
+ - added a get_last_timestamp option to index.pm to be used by the
+    status page.
+ - Improved error messages for metafields with illegal properties.
+ - fixed an oversight in metafield (still using _ordervalue_aux1 not
+    ordervalue_single)
+ - eliminated a warning in the render date code in Utils.pm
+ - improved VLit code: now does 2 stages to span selection so that
+    it doesn't cane the web browser & bandwidth. Also added a "quote"
+    link from the "human" page.
+ - added cgi/counter" which returns a text/plain report on the size
+    of each dataset. Handy for stats building.
+ - added cgi/latestn for showing the last "n" eprints. Handy for 
+    embedding in other sites.
 
 ======================================================================

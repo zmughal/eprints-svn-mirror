@@ -45,6 +45,8 @@ use Cwd;
 
 
 BEGIN {
+	use Carp qw(cluck);
+
 	# Paranoia: This may annoy people, or help them... cjg
 
 	# mod_perl will probably be running as root for the main httpd.
@@ -137,7 +139,9 @@ $errmsg
 ------------------------------------------------------------------
 END
 		$@="";
+		cluck( "EP SYS Error inducing stack dump" );
 		exit;
+		#exit;
 	}
 }
 

@@ -158,8 +158,6 @@ sub new
 			$self->{field_defaults}->{$p_id} = $props{$p_id};
 		}
 		$self->{archive}->set_field_defaults( $properties{type}, $self->{field_defaults} );
-#use Data::Dumper;
-#print STDERR Dumper($self->{field_defaults});
 	}
 
 	foreach my $p_id ( keys %{$self->{field_defaults}} )
@@ -186,7 +184,10 @@ sub set_property
 
 	if( !defined $self->{field_defaults}->{$property} )
 	{
-		die "BAD METAFIELD set_property PROPERTY NAME=[$property], FIELD TYPE=[$self->{type}]";
+                EPrints::Config::abort( <<END );
+BAD METAFIELD get_property property name: "$property"
+Field: $self->{name}, type: $self->{type}
+END
 	}
 
 	if( defined $value )
@@ -467,7 +468,10 @@ sub get_property
 
 	if( !defined $self->{field_defaults}->{$property} )
 	{
-		die "BAD METAFIELD set_property NAME: \"$property\"";
+                EPrints::Config::abort( <<END );
+BAD METAFIELD get_property property name: "$property"
+Field: $self->{name}, type: $self->{type}
+END
 	}
 
 	return( $self->{$property} ); 
@@ -741,7 +745,7 @@ sub sort_values
 	my $langid = $session->get_langid;
 	foreach my $value ( @{$in_list} )
 	{
-		$o_keys->{$value} = $self->_ordervalue_aux1( 
+		$o_keys->{$value} = $self->ordervalue_single( 
 						$value,
 						$session,
 						$langid );

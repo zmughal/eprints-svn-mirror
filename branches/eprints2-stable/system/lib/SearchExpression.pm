@@ -1437,7 +1437,7 @@ sub cache_results
 		$srctable,
 		$order );
 
-	if( $self->_matches_all )
+	unless( $self->_matches_all )
 	{
 		$self->{session}->get_db()->dispose_buffer( $srctable );
 	}

@@ -826,6 +826,14 @@ sub validate_meta_page
 			$for_archive );
 	}
 
+	# then call the validate page function for this page
+	push @problems, $self->{session}->get_archive->call(
+		"validate_eprint_meta_page",
+		$self,
+		$self->{session},
+		$page,
+		$for_archive );
+
 	return( \@problems );
 }
 

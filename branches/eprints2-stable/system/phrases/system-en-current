@@ -63,9 +63,9 @@ EPrints Modules
     <ep:phrase ref="lib/metafield:true">Yes</ep:phrase>
     <ep:phrase ref="lib/metafield:false">No</ep:phrase>
 
-    <ep:phrase ref="lib/metafield:date_res_d"></ep:phrase>
-    <ep:phrase ref="lib/metafield:date_res_m">"Day" may be ommited if appropriate.<br /></ep:phrase>
-    <ep:phrase ref="lib/metafield:date_res_y">"Day" or both "Month" and "Day" may be ommited if appropriate.<br /></ep:phrase>
+    <ep:phrase ref="lib/metafield:date_res_day"></ep:phrase>
+    <ep:phrase ref="lib/metafield:date_res_month">"Day" may be ommited if appropriate.<br /></ep:phrase>
+    <ep:phrase ref="lib/metafield:date_res_year">"Day" or both "Month" and "Day" may be ommited if appropriate.<br /></ep:phrase>
 
     <!-- phrases used to seperate multiple values in a field -->
     <ep:phrase ref="lib/metafield:join_int">, </ep:phrase>
@@ -475,9 +475,11 @@ User Area CGI Scripts
     <ep:phrase ref="cgi/users/status:articles"><h2>Articles</h2></ep:phrase>
     <ep:phrase ref="cgi/users/status:diskspace"><h2>Disk Space</h2></ep:phrase>
     <ep:phrase ref="cgi/users/status:subscriptions"><h2>Subscriptions</h2></ep:phrase>
+    <ep:phrase ref="cgi/users/status:index_updates"><h2>Subscriptions</h2></ep:phrase>
     <ep:phrase ref="cgi/users/status:subsent">Last completed mailing</ep:phrase>
     <ep:phrase ref="cgi/users/status:subcount">Total Number</ep:phrase>
     <ep:phrase ref="cgi/users/status:set_archive">Articles in Archive:</ep:phrase>
+    <ep:phrase ref="cgi/users/status:indexupdate">Last completed indexing</ep:phrase>
     <ep:phrase ref="cgi/users/status:set_buffer">Articles in Buffer:</ep:phrase>
     <ep:phrase ref="cgi/users/status:set_inbox">Articles in Workspace:</ep:phrase>
     <ep:phrase ref="cgi/users/status:set_deletion">Deleted Articles:</ep:phrase>
@@ -733,7 +735,6 @@ Public CGI Scripts
     <ep:phrase ref="setpass_fieldhelp_email">Enter your email address</ep:phrase>
     <ep:phrase ref="setpass_fieldhelp_newpassword">Enter a new password</ep:phrase>
 
-
 <!-- latest -->
 
     <ep:phrase ref="cgi/latest:title">Latest Additions to &archivename;</ep:phrase>
@@ -747,6 +748,10 @@ Public CGI Scripts
     <ep:phrase ref="cgi/latest:day_4">Thursday</ep:phrase>
     <ep:phrase ref="cgi/latest:day_5">Friday</ep:phrase>
     <ep:phrase ref="cgi/latest:day_6">Saturday</ep:phrase>
+
+<!-- latestn -->
+
+    <ep:phrase ref="cgi/latestn:title">Latest <ep:pin ref="n" /> Additions to &archivename;</ep:phrase>
 
 <!-- confirm -->
 

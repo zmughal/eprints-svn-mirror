@@ -17,7 +17,7 @@
 
     <ep:citation type="eprint_article"><span class="citation">
 @creators@ 
-<ep:ifset name="date_effective">(@date_effective;res=Y@)</ep:ifset>
+<ep:ifset name="date_effective">(@date_effective;res=year@)</ep:ifset>
 <ep:linkhere><em>@title;magicstop@</em></ep:linkhere>
 <ep:ifset name="publication">@publication@<ep:ifset name="volume">, @volume</ep:ifset><ep:ifset name="number"> (@number@)</ep:ifset>.</ep:ifset>
 <ep:ifset name="pagerange"> @pagerange@.</ep:ifset>
@@ -27,7 +27,7 @@
 
     <ep:citation type="eprint_book"><span class="citation">
 <ep:ifset name="creators">@creators@</ep:ifset><ep:ifnotset  name="creators">@editors@, ed.</ep:ifnotset>
-<ep:ifset name="date_effective">(@date_effective;res=Y@)</ep:ifset>
+<ep:ifset name="date_effective">(@date_effective;res=year@)</ep:ifset>
 <ep:linkhere><em>@title;magicstop@</em></ep:linkhere>
 <ep:ifset name="series">@series@<ep:ifset name="volume">, @volume</ep:ifset><ep:ifset name="number"> (@number@)</ep:ifset>.</ep:ifset>
 @publisher@<ep:ifset name="place_of_pub">, @place_of_pub</ep:ifset><ep:ifset name="pagerange">, @pagerange@</ep:ifset>.
@@ -37,7 +37,7 @@
 
     <ep:citation type="eprint_book_section"><span class="citation">
 @creators@
-<ep:ifset name="date_effective">(@date_effective;res=Y@)</ep:ifset>
+<ep:ifset name="date_effective">(@date_effective;res=year@)</ep:ifset>
 <ep:linkhere><em>@title;magicstop@</em></ep:linkhere>
 In:
 <ep:ifnotset  name="creators">@editors@, (eds).</ep:ifnotset>
@@ -50,7 +50,7 @@ In:
 
     <ep:citation type="eprint_monograph"><span class="citation">
 @creators@
-<ep:ifset name="date_effective">(@date_effective;res=Y@)</ep:ifset>
+<ep:ifset name="date_effective">(@date_effective;res=year@)</ep:ifset>
 <ep:linkhere><em>@title;magicstop@</em></ep:linkhere>
 @monograph_type@.
 @publisher@<ep:ifset name="place_of_pub">, @place_of_pub</ep:ifset>.
@@ -59,7 +59,7 @@ In:
 
     <ep:citation type="eprint_conference_item"><span class="citation">
 @creators@
-<ep:ifset name="date_effective">(@date_effective;res=Y@)</ep:ifset>
+<ep:ifset name="date_effective">(@date_effective;res=year@)</ep:ifset>
 <ep:linkhere><em>@title;magicstop@</em></ep:linkhere>
 In: @event_title@<ep:ifset name="event_dates">, @event_dates</ep:ifset><ep:ifset name="event_location">, @event_location</ep:ifset>.
 <ep:ifnotmatch name="ispublished" value="pub"> (@ispublished@)</ep:ifnotmatch>
@@ -67,20 +67,20 @@ In: @event_title@<ep:ifset name="event_dates">, @event_dates</ep:ifset><ep:ifset
 
     <ep:citation type="eprint_thesis"><span class="citation">
 @creators@
-<ep:ifset name="date_effective">(@date_effective;res=Y@)</ep:ifset>
+<ep:ifset name="date_effective">(@date_effective;res=year@)</ep:ifset>
 <ep:linkhere><em>@title;magicstop@</em></ep:linkhere>
 @thesis_type@ thesis, @institution@.
 </span></ep:citation>
 
     <ep:citation type="eprint_patent"><span class="citation">
 @patent_applicant@
-<ep:ifset name="date_effective">(@date_effective;res=Y@)</ep:ifset>
+<ep:ifset name="date_effective">(@date_effective;res=year@)</ep:ifset>
 <ep:linkhere><em>@title;magicstop@</em></ep:linkhere> @id_number@.
 </span></ep:citation>
 
     <ep:citation type="eprint_other"><span class="citation">
 @creators@ 
-<ep:ifset name="date_effective">(@date_effective;res=Y@)</ep:ifset>
+<ep:ifset name="date_effective">(@date_effective;res=year@)</ep:ifset>
 <ep:linkhere><em>@title;magicstop@</em></ep:linkhere>
 @publisher@<ep:ifset name="place_of_pub">, @place_of_pub</ep:ifset>.
 <ep:ifnotmatch name="ispublished" value="pub"> (@ispublished@)</ep:ifnotmatch>

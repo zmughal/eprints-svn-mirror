@@ -159,19 +159,6 @@ $c->{diskspace_warn_threshold} = 512*1024;
 #
 ######################################################################
 
-# You may hide the "lineage" and "honourific"
-# fields in the "name" type field input, if you
-# feel that they will confuse your users. This
-# makes no difference to the actual database,
-# the fields will just be unused.
-$c->{hide_honourific} = 1;
-$c->{hide_lineage} = 1;
-
-# By default names are asked for as given,family
-# if you want to swap this to family,given then
-# set this flag to 1
-$c->{invert_name_input} = 1;
-
 # If you are setting up a very simple system or 
 # are starting with lots of data entry you can
 # make user submissions bypass the editor buffer
@@ -247,6 +234,19 @@ $c->{field_defaults}->{search_cols} = 40;
 
 # Maximum rows to display in a subject or set search
 $c->{field_defaults}->{search_rows} = 12;
+
+# You may hide the "lineage" and "honourific"
+# fields in the "name" type field input, if you
+# feel that they will confuse your users. This
+# makes no difference to the actual database,
+# the fields will just be unused.
+$c->{field_defaults}->{hide_honourific} = 0;
+$c->{field_defaults}->{hide_lineage} = 0;
+
+# By default names are asked for as given,family
+# if you want to swap this to family,given then
+# set this flag to 1
+$c->{field_defaults}->{family_first} = 0;
 
 ######################################################################
 #
@@ -365,8 +365,16 @@ $c->{vlit}->{context_size} = 1024;
 # Multiple fields may be specified for one view, but avoid
 # subject or allowing null in this case.
 $c->{browse_views} = [
-	{ id=>"subjects", fields=>"subjects", order=>"title/creators" },
-	{ id=>"date_effective",  allow_null=>1, fields=>"date_effective", order=>"title/creators" }
+     #   { id=>"projects", allow_null=>0, fields=>"projects", order=>"-year/title", include=>1 },
+     #   { id=>"year", allow_null=>1, fields=>"year", order=>"-year/title" },
+	#{ id=>"year", allow_null=>1, fields=>"year", order=>"title/creators" },
+	#{ id=>"person", allow_null=>0, fields=>"creators.id/editors.id", order=>"title/creators", noindex=>1, nolink=>1, nohtml=>1, include=>1, citation=>"title_only", nocount=>1 }
+#	{ 	id=>"groups", fields=>[ "groups", "year" ],	allow_null=>0, order=>"-year/title", include=>1 }
+	{ id=>"projects", allow_null=>0, fields=>"type,date_effective", order=>"title", hideempty=>1 }
+
+        #{ id=>"person", allow_null=>0, fields=>"authors.id/editors.id", order=>"-year/title", include=>1 }
+	#{ id=>"datestamp", fields=>"datestamp;res=month" }
+#	{ id=>"groups", allow_null=>0, fields=>"groups,-year", order=>"title", hideempty=>1, include=>1 }
 ];
 # examples of some other useful views you might want to add
 #
@@ -485,6 +493,9 @@ $c->{default_order}->{user} = "byname";
 
 # customise the citation used to give results on the latest page
 $c->{latest_citation} = "neat";
+
+# undef to use default citation for each type.
+$c->{latestn_citation} = "neat";
 
 ######################################################################
 #

@@ -1,0 +1,73 @@
+######################################################################
+#
+#  Show Last "n" EPrints added.
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints::Session;
+use EPrints::EPrint;
+use EPrints::SearchExpression;
+
+use strict;
+my $session = new EPrints::Session;
+Apache::exit( 0 ) unless( defined $session );
+
+my $ds = $session->get_archive()->get_dataset( "archive" );
+my $page=$session->make_doc_fragment();
+
+my $citation = $session->get_archive->get_conf( "latest_citation" );
+
+my $DEFAULT = 20;
+
+my $n = $session->param( "n" );
+$n = $DEFAULT unless( defined $n );
+$n = $DEFAULT if( $n <= 0 );
+$n = $DEFAULT if( $n > 200 ); # possible DoS?
+
+
+my $searchexp = new EPrints::SearchExpression(
+	allow_blank => 1,
+	session => $session,
+	custom_order => "-datestamp",
+	dataset => $ds );
+
+# You could put extra conditions here if you wanted!
+#
+#if( $full )
+#{
+#	$searchexp->add_field( $ds->get_field( "publicfulltext" ), 'TRUE' );
+#}
+#if( $group )
+#{
+#	$searchexp->add_field( $ds->get_field( "groups" ), $group );
+#}
+	
+$searchexp->perform_search();
+my @records = $searchexp->get_records( 0, $n );
+my $citation = $session->get_archive->get_conf( "latestn_citation" );
+foreach my $item ( @records )
+{
+	$page->appendChild( $item->render_citation_link( $citation ) );
+
+}
+$searchexp->dispose();
+
+$session->build_page(
+	$session->html_phrase( 
+		"cgi/latestn:title",
+		n => $session->make_text( $n ) ),
+	$page, 
+	"latestn" );
+$session->send_page();
+
+$session->terminate;
+
+

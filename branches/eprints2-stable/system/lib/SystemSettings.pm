@@ -46,7 +46,7 @@ $EPrints::SystemSettings::conf =
 	version => "EPrints 2 CVS Version [ep2 stable branch]",
 	user => "eprints",
 	group => "eprints",
-	disable_df => 0,
+	disable_df => 1,
 	enable_gdome => 1
 
 };

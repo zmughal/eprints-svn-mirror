@@ -240,32 +240,52 @@ sub ls_charrange
 
 	my $baseurl = $session->get_archive->get_conf("base_url").$r->uri;
 
-	if( $mode eq "human" || $mode eq "context" || $mode eq 'spanSelect' || $mode eq 'endSelect' || $mode eq 'link' )
+	if( $mode eq "human" || $mode eq "context" || $mode eq 'spanSelect' || $mode eq 'endSelect' || $mode eq 'link' || $mode eq 'spanSelect2' || $mode eq 'endSelect2' )
 	{
 		my $html = "";
-		my $o;
-		$html.='<span class="vlit-charrange">';
-		for $o (0..$readlength-1)
+		my $BIGINC = 100;
+		my $inc = $BIGINC;
+		if( $mode eq  'spanSelect2'  ||  $mode eq 'endSelect2' )
 		{
+			$inc = 1;
+		}
+		$html.='<span class="vlit-charrange">';
+		my $toggle = 0;
+		for( my $o=0; $o<$readlength; $o+=$inc )
+		{
+			my $class = "vlit-spanlink".($toggle+1);
+			$toggle = !$toggle; 
 			if( $o == $constart)
 			{
 				$html.='<span class="vlit-highlight">';
 			}
-			my $c=substr($data,$o,1);
-			$c = '&amp;' if( $c eq "&" );
-			$c = '&gt;' if( $c eq ">" );
-			$c = '&lt;' if( $c eq "<" );
-			$c = '<br />' if( $c eq "\n" );
+			my $c=substr($data,$o,$inc);
+			# $c is either a string or a single char
+			$c =~ s/&/&amp;/g;
+			$c =~ s/</&lt;/g;
+			$c =~ s/>/&gt;/g;
+			$c =~ s/\n/<br \/>/g;
 			if( $mode eq 'spanSelect' )
 			{ 
+				my $url = $baseurl.'?locspec=charrange:'.($offset+$o)."/".($length-$o).'&mode=spanSelect2';
+				$c ='<a class="'.$class.'" href="'.$url.'">'.$c.'</a>';
+			}
+			if( $mode eq 'spanSelect2' && $o < $BIGINC )
+			{ 
 				my $url = $baseurl.'?locspec=charrange:'.($offset+$o)."/".($length-$o).'&mode=endSelect';
-				$c ='<a href="'.$url.'">'.$c.'</a>';
+				$c ='<a class="'.$class.'" href="'.$url.'">'.$c.'</a>';
 			}
 			if( $mode eq 'endSelect' )
 			{ 
-				my $url = $baseurl.'?locspec=charrange:'.($offset)."/".($o+1).'&mode=link';
-				$c ='<a href="'.$url.'">'.$c.'</a>';
+				my $url = $baseurl.'?locspec=charrange:'.($offset)."/".($o+$inc).'&mode=endSelect2#end';
+				$c ='<a class="'.$class.'" href="'.$url.'">'.$c.'</a>';
 			}
+			if( $mode eq 'endSelect2' && $o > $readlength-$BIGINC-1)
+			{ 
+				my $url = $baseurl.'?locspec=charrange:'.($offset)."/".($o+1).'&mode=link';
+				$c ='<a class="'.$class.'" href="'.$url.'">'.$c.'</a>';
+			}
+			#if( $o > 0 && $mode eq "spanSelect" ) { $html.="|"; }
 			$html.=$c;
 			if( $o == $conend-1 )
 			{
@@ -274,7 +294,11 @@ sub ls_charrange
 		}
 		$html.='</span>';
 		my $front = '';
-		unless( $param eq "" )
+		if( $param eq "" )
+		{
+			$front.= '<big><sup>trans</sup></big> ';
+		}
+		else
 		{
 			my $url = $baseurl;
 			if( $mode eq "human" )
@@ -285,23 +309,44 @@ sub ls_charrange
 			{
 				$url .= "?mode=human&locspec=charrange:";
 			}
-			$front = '<big><sup><a href="'.$url.'">trans</a></sup></big> ';
+			$front.= '<big><sup><a href="'.$url.'">trans</a></sup></big> ';
 		}
 		my $copyurl = $session->get_archive()->get_conf( "vlit" )->{copyright_url};
 		$front .= '<big><sup><a href="'.$copyurl.'">&copy;</a></sup></big>';
+		if( $param eq "" )
+		{
+			if( $mode eq "human" )
+			{
+				my $url = $baseurl;
+				$url .= "?mode=spanSelect";
+				$front.= ' <big><sup>[<a href="'.$url.'">quote</a>]</sup></big>';
+			}
+		}
 		my $msg='';
+		my $msg2='';
+		if( $mode eq "endSelect2" )
+		{ 
+			$msg='<h1>select exact end point</h1>';
+		}
+		if( $mode eq "spanSelect2" )
+		{ 
+			$msg='<h1>select exact start point</h1>';
+		}
 		if( $mode eq "endSelect" )
 		{ 
-			$msg='<h1>select end point:</h1>';
+			$msg='<h1>select approximate end point</h1>';
 		}
 		if( $mode eq "spanSelect" )
 		{ 
-			$msg='<h1>select start point:</h1>';
+			$msg='<h1>select approximate start point</h1>';
 		}
+		$msg2=$msg; # only for span msgs
+		
+			
 		
 			
 		send_http_header( "text/html" );
-		my $title = "Character Range from $offset, length $length";
+		my $title = "Transquotation from char $offset, length $length";
 		if( $mode eq 'link' )
 		{
 			my $url = $baseurl.'?xuversion=1.0&locspec=charrange:'.($offset)."/".($length);
@@ -310,6 +355,16 @@ sub ls_charrange
 <p><b>$title</b></p>
 <p>Raw char quote: <a href="$url">$url</a></p>
 <p>Human readable (HTML): <a href="$urlh">$urlh</a></p>
+END
+			my $urlh2 = $urlh;
+			$urlh2=~s/'/&squot;/g;
+			$msg.=<<END;
+<p>Cut and paste HTML for pop-up window:</p>
+<div style="margin-left: 10px"><tt>
+&lt;a href="#" onclick="javascript:window.open( '$urlh2', 'transclude_window', 'width=666, height=444, scrollbars');"&gt;$title&lt;/a&gt;
+</tt></div>
+END
+	$msg.=<<END;
 <hr noshade="noshade">
 END
 		}
@@ -321,7 +376,8 @@ END
 </head>
 <body class="vlit">
 $msg
- <p>$front $html</p>
+ <p>$front $html<a name="end" /></p>
+$msg2
 </body>
 </html>
 END

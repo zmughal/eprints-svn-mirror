@@ -103,7 +103,7 @@ sub dispose
 	foreach my $table ( @doomtables )
 	{
 		next unless( $db->has_table( $table ) );
-		drop_table( $self->{session}->get_db, $table ); 
+		$self->{session}->get_db->drop_table( $table ); 
 	}
 }
 
@@ -348,8 +348,7 @@ sub install
 
 	if( $db->has_table( $self->{index_table_tmp} ) )
 	{
-		install_table( 
-			$self->{session}->get_db,
+		$self->{session}->get_db->install_table( 
 			$self->{index_table_tmp}, 
 			$self->{dataset}->get_sql_index_table_name );
 	}
@@ -361,8 +360,7 @@ sub install
 
 	if( $db->has_table( $self->{names_index_table_tmp} ) )
 	{
-		install_table( 
-			$self->{session}->get_db,
+		$self->{session}->get_db->install_table( 
 			$self->{names_index_table_tmp}, 
 			$self->{dataset}->get_sql_index_table_name."_names" );
 	}
@@ -383,14 +381,12 @@ sub install
 			next;
 		}
 
-		install_table( 
-			$self->{session}->get_db,
+		$self->{session}->get_db->install_table( 
 			$order_table_tmp,
 			$order_table );
 	}
 
-	my $statusfile = $self->{session}->get_archive->get_conf( "variables_path" ).
-		"/index-".$self->{dataset}->id.".timestamp";
+	my $statusfile = $self->get_statusfile;
 
 	unless( open( TIMESTAMP, ">$statusfile" ) )
 	{
@@ -410,53 +406,51 @@ END
 	}
 }
 
-sub install_table
+sub get_statusfile
 {
-	my( $db, $current_pos, $target_pos ) = @_;
+	my( $self ) = @_;
 
-	if( $db->has_table( $target_pos ) )
+	return $self->{session}->get_archive->get_conf( "variables_path" ).
+		"/index-".$self->{dataset}->id.".timestamp";
+}
+
+######################################################################
+=pod
+
+=item $timestamp = $index->get_last_timestamp()
+
+Return the timestamp of the last time this index was installed.
+
+=cut
+######################################################################
+
+sub get_last_timestamp
+{
+	my( $self ) = @_;
+
+	my $statusfile = $self->get_statusfile;
+
+	unless( open( TIMESTAMP, $statusfile ) )
 	{
-		swap_tables( 
-			$db,
-			$current_pos,
-			$target_pos );
-		drop_table( 
-			$db,
-			$current_pos );
+		# can't open file. Either an error or file does not exist
+		# either way, return undef.
 		return;
 	}
 
-	rename_table( 
-		$db,
-		$current_pos,
-		$target_pos );
-}
-		
-	
-sub drop_table
-{
-	my( $db, $tablename ) = @_;
+	my $timestamp = undef;
+	while(<TIMESTAMP>)
+	{
+		next if m/^\s*#/;	
+		next if m/^\s*$/;	
+		chomp;
+		$timestamp = $_;
+		last;
+	}
+	close TIMESTAMP;
 
-	my $sql = "DROP TABLE ".$tablename;
-	$db->do( $sql );
-}
-
-sub rename_table
-{
-	my( $db, $table_from, $table_to ) = @_;
-
-	my $sql = "RENAME TABLE $table_from TO $table_to";
-	$db->do( $sql );
+	return $timestamp;
 }
 
-sub swap_tables
-{
-	my( $db, $table_a, $table_b ) = @_;
-
-	my $tmp = $table_a.'_swap';
-	my $sql = "RENAME TABLE $table_a TO $tmp, $table_b TO $table_a, $tmp TO $table_b";
-	$db->do( $sql );
-}
 
 ######################################################################
 =pod

@@ -1139,7 +1139,6 @@ sub garbage_collect
 	{
 		$self->dispose_buffer( $_ );
 	}
-
 }
 
 
@@ -1158,7 +1157,13 @@ sub dispose_buffer
 {
 	my( $self, $id ) = @_;
 	
-	return unless( defined $TEMPTABLES{$id} );
+	unless( defined $TEMPTABLES{$id} )
+	{
+		$self->{session}->get_archive->log( <<END );
+Called dispose_buffer on non-buffer table "$id"
+END
+		return;
+	}
 	my $sql = "DROP TABLE $id";
 	$self->do( $sql );
 	delete $TEMPTABLES{$id};
@@ -2015,6 +2020,90 @@ sub has_table
 	}
 	$sth->finish;
 	return $result;
+}
+
+######################################################################
+=pod
+
+=item $db->install_table( $tablename, $newtablename )
+
+Move table $tablename to $newtablename. Erase $newtablename if it
+exists.
+
+=cut
+######################################################################
+
+sub install_table
+{
+	my( $self, $current_pos, $target_pos ) = @_;
+
+	if( $self->has_table( $target_pos ) )
+	{
+		$self->swap_tables( 
+			$current_pos,
+			$target_pos );
+		$self->drop_table( $current_pos );
+		return;
+	}
+
+	$self->rename_table( 
+		$current_pos,
+		$target_pos );
+}
+		
+######################################################################
+=pod
+
+=item $db->drop_table( $tablename )
+
+Delete the named table. Use with caution!
+
+=cut
+######################################################################
+	
+sub drop_table
+{
+	my( $self, $tablename ) = @_;
+
+	my $sql = "DROP TABLE ".$tablename;
+	$self->do( $sql );
+}
+
+######################################################################
+=pod
+
+=item $db->rename_table( $tablename, $newtablename )
+
+Renames the table from the old name to the new one.
+
+=cut
+######################################################################
+
+sub rename_table
+{
+	my( $self, $table_from, $table_to ) = @_;
+
+	my $sql = "RENAME TABLE $table_from TO $table_to";
+	$self->do( $sql );
+}
+
+######################################################################
+=pod
+
+=item $db->has_table( $table_a, $table_b )
+
+Swap table a and table b. 
+
+=cut
+######################################################################
+
+sub swap_tables
+{
+	my( $self, $table_a, $table_b ) = @_;
+
+	my $tmp = $table_a.'_swap';
+	my $sql = "RENAME TABLE $table_a TO $tmp, $table_b TO $table_a, $tmp TO $table_b";
+	$self->do( $sql );
 }
 
 ######################################################################
