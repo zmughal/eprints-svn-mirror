@@ -226,8 +226,6 @@ sub update_subscription
 
 	my $success = $subscription->commit();
 
-#EPrints::Log::debug( "subscribe", "update_subscription" );
-
 	if( $success )
 	{
 		print $session->{render}->start_html( "Subscribe" );
