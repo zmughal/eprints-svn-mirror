@@ -17,27 +17,31 @@ use EPrints::HTMLRender;
 use EPrints::EPrint;
 use EPrints::SearchField;
 use EPrints::SearchExpression;
+use EPrints::SearchForm;
+use EPrints::MetaInfo;
 
 use strict;
 
 my $session = new EPrints::Session;
-Apache::exit( 0 ) unless( defined $session );
 
+my @metafields = EPrints::SearchExpression::make_meta_fields(
+	"eprints",
+	\@EPrintSite::SiteInfo::advanced_search_fields );
 
-my $searchexp = new EPrints::SearchExpression(
-	session => $session,
-	dataset => $session->get_archive()->get_dataset( "archive" ),
-	fieldnames=>$session->get_archive()->get_conf( "advanced_search_fields" ) );
+my $searchform = new EPrints::SearchForm(
+	$session,
+	"eprints",
+	0,
+	$EPrints::Database::table_archive,
+	\@metafields,
+	"Advanced Search",
+	"<CENTER><P>Don't panic! Just leave the fields you don't want to search ".
+		" blank.	<A HREF=\"search\">Click here for a simple search.</A>".
+		"</P></CENTER>",
+	\%EPrintSite::SiteInfo::eprint_order_methods,
+	$EPrintSite::SiteInfo::eprint_default_order,
+	0 );
 
-my $preamble = $session->make_element( "p" );
-$preamble->appendChild( 
-	$session->html_phrase( 
-		"cgi/advsearch:dont_panic",
-		simplesearch => $session->make_element( "a", href=>"search" ) ) );
+$searchform->process();
 
-$searchexp->process_webpage(
-	$session->phrase( "cgi/advsearch:adv_search" ),
-	$preamble );
-
-$session->terminate; 
-
+$session->terminate();

@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+#!/usr/bin/perl -w
 
 ######################################################################
 #
@@ -28,11 +28,10 @@ use strict;
 
 # Create offline session
 my $session = new EPrints::Session( 1 );
-exit( 1 ) unless( defined $session );
 
 my @subs = EPrints::Subscription::get_daily( $session );
 
-foreach $sub (@subs)
+foreach (@subs)
 {
-	$sub->process();
+	$_->process();
 }

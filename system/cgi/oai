@@ -25,6 +25,7 @@ use EPrints::HTMLRender;
 use EPrints::OpenArchives;
 use EPrints::Session;
 use EPrints::Subject;
+use EPrintSite::SiteInfo;
 
 use FileHandle;
 use IO::File;
@@ -36,11 +37,9 @@ use strict;
 
 # New session
 my $session = new EPrints::Session();
-Apache::exit( 0 ) unless( defined $session );
-
 
 # What are we begin asked?
-my $verb = $session->param( "verb" );
+my $verb = $session->{render}->param( "verb" );
 
 if( !defined $verb ) 
 {
@@ -96,8 +95,8 @@ sub get_record
 {
 	my( $session ) = @_;
 
-	my $identifier = $session->param( "identifier" );
-	my $metadataFormat = $session->param( "metadataPrefix" );
+	my $identifier = $session->{render}->param( "identifier" );
+	my $metadataFormat = $session->{render}->param( "metadataPrefix" );
 	
 	if( !defined $identifier )
 	{
@@ -119,10 +118,9 @@ sub get_record
 
 	my $eprint = new EPrints::EPrint(
 		$session,
-		EPrints::Database::table_name( "archive" ),
+		$EPrints::Database::table_archive,
 		EPrints::OpenArchives::from_oai_identifier(
-			$session,
-			$session->param( "identifier" ) ) );
+			$session->{render}->param( "identifier" ) ) );
 
 	if( defined $eprint )
 	{
@@ -158,17 +156,17 @@ sub identify
 	
 	$writer->dataElement( 
 		"repositoryName",
-		EPrints::OpenArchives::to_utf8( $session->get_archive()->get_conf( "archivename" ) ) );
+		EPrints::OpenArchives::to_utf8( $EPrintSite::SiteInfo::sitename ) );
 	
 	$writer->dataElement( "baseURL",
-	                      $session->get_archive()->get_conf( "oai_base_url" ) );
+	                      $EPrintSite::SiteInfo::oai_base_url );
 
 	$writer->dataElement( "protocolVersion",
-	                      $EPrints::OpenArchives::OAI_VERSION );
+	                      $EPrints::OpenArchives::oai_version );
 
 	$writer->dataElement(
 		"adminEmail",
-		EPrints::OpenArchives::to_utf8( "mailto:".$session->get_archive()->get_conf( "adminemail" ) ) );
+		EPrints::OpenArchives::to_utf8( "mailto:$EPrintSite::SiteInfo::admin" ) );
 
 	$writer->startTag( "description");
 	$writer->startTag( "oai-identifier", 
@@ -179,10 +177,10 @@ sub identify
 
 	$writer->dataElement( "scheme", "oai" );
 	$writer->dataElement( "repositoryIdentifier",
-	                      $session->get_archive()->get_conf( "oai_archive_id" ) );
+	                      $EPrintSite::SiteInfo::archive_identifier );
 	$writer->dataElement( "delimiter", ":" );
 	$writer->dataElement( "sampleIdentifier",
-	                      $session->get_archive()->get_conf( "oai_sample_identifier" ) );
+	                      $EPrintSite::SiteInfo::oai_sample_identifier );
 	$writer->endTag();
 	$writer->endTag( "description");
 
@@ -193,24 +191,27 @@ sub identify
 	                   "xsi:schemaLocation"=>"http://www.openarchives.org/OAI/1.1/eprints ".
 	                                      "http://www.openarchives.org/OAI/1.1/eprints.xsd");
 
-	write_text_url( $writer, 
+	write_TextURL( $writer, 
                           "content", 
-                          $session->get_archive()->get_conf( "oai_content" ) );
-	write_text_urlL( $writer, 
+                          %EPrintSite::SiteInfo::oai_content );
+	write_TextURL( $writer, 
                           "metadataPolicy", 
-                          $session->get_archive()->get_conf( "oai_metadataPolicy" ) );
-	write_text_url( $writer, 
+                          %EPrintSite::SiteInfo::oai_metadataPolicy );
+	write_TextURL( $writer, 
                           "dataPolicy", 
-                          $session->get_archive()->get_conf( "oai_dataPolicy" ) );
-	write_text_url( $writer, 
+                          %EPrintSite::SiteInfo::oai_dataPolicy );
+	write_TextURL( $writer, 
                           "submissionPolicy", 
-                          $session->get_archive()->get_conf( "oai_submissionPolicy" ) );
+                          %EPrintSite::SiteInfo::oai_submissionPolicy );
 
 	# Output all comments, if any.
 
-	foreach( @{$session->get_archive()->get_conf( "oai_comments" )} ) 
+	if ( scalar @EPrintSite::SiteInfo::oai_comments > 0 ) 
 	{
-		$writer->dataElement( "comment", EPrints::OpenArchives::to_utf8( $_ ) );
+		foreach( @EPrintSite::SiteInfo::oai_comments ) 
+		{
+			$writer->dataElement( "comment", EPrints::OpenArchives::to_utf8( $_ ) );
+		}
 	}
 		
 	$writer->endTag();
@@ -222,40 +223,40 @@ sub identify
 
 ######################################################################
 #
-# write_text_url( $writer, $name, $texturl )
-#                                 hashref
+# write_TextURL( $writer, $name, %texturl )
+#
 #  Write a TextURL type block to writer, of name $name. Block will 
 #  contain a text and/or url element, defined in %texturl.
 #  If texturl contains neither then this method returns without action.
 #
 ######################################################################
 
-sub write_text_url
+sub write_TextURL
 {
-	my( $writer, $name, $texturl ) = @_;
+	my( $writer, $name, %texturl ) = @_;
 
 	# If neither text or url is defined, don't bother opening
 	# and closing the tag in the first place.
 	
-	if ( !defined $texturl->{"text"} && !defined $texturl->{"url"} ) 
+	if ( !defined $texturl{"text"} && !defined $texturl{"url"} ) 
 	{
 		return;
 	}
 
 	$writer->startTag( $name );
 
-	if ( defined $texturl->{"text"} ) 
+	if ( defined $texturl{"text"} ) 
 	{
 		$writer->dataElement(
 		"text",
-		EPrints::OpenArchives::to_utf8( $texturl->{"text"} ) );
+		EPrints::OpenArchives::to_utf8( $texturl{"text"} ) );
 	}
 
-	if ( defined $texturl->{"url"} ) 
+	if ( defined $texturl{"url"} ) 
 	{
 		$writer->dataElement(
 		"URL",
-		EPrints::OpenArchives::to_utf8( $texturl->{"url"} ) );
+		EPrints::OpenArchives::to_utf8( $texturl{"url"} ) );
 	}
 
 	$writer->endTag( $name );
@@ -275,16 +276,15 @@ sub list_identifiers
 	my( $session ) = @_;
 	
 	# Get arguments
-	my $start_date = $session->param( "from" );
-	my $end_date = $session->param( "until" );
-	# No support for resumptionToken
-	my $codedset = $session->param( "set" );
+	my $start_date = $session->{render}->param( "from" );
+	my $end_date = $session->{render}->param( "until" );
+	my $codedset = $session->{render}->param( "set" );
 	my $set;
 	if( defined $codedset )
 	{
-		$set = EPrints::Utils::decode_setspec( $codedset );
+		$set = EPrints::OpenArchives::decode_setspec( $codedset );
 	}
-
+	# No support for resumptionToken
 
 	# Do some validation of the arguments
 	if( defined $start_date && $start_date !~ /^\d\d\d\d-\d\d-\d\d$/ )
@@ -327,9 +327,7 @@ sub list_identifiers
 	{
 		$writer->dataElement(
 			"identifier",
-			EPrints::OpenArchives::to_oai_identifier( 
-				$session->get_archive()->get_conf( "oai_archive_id" ),
-				$_->{eprintid} ) );
+			EPrints::OpenArchives::to_oai_identifier( $_->{eprintid} ) );
 	}
 	
 	# Write the deleted eprints
@@ -352,7 +350,7 @@ sub list_metadata_formats
 {
 	my( $session ) = @_;
 	
-	my $identifier = $session->param( "identifier" );
+	my $identifier = $session->{render}->param( "identifier" );
 
 	my @metadata_formats;
 
@@ -360,17 +358,16 @@ sub list_metadata_formats
 	{
 		my $eprint = new EPrints::EPrint(
 			$session,
-			EPrints::Database::table_name( "archive" ),
+			$EPrints::Database::table_archive,
 			EPrints::OpenArchives::from_oai_identifier(
-				$session,
-				$session->param( "identifier" ) ) );
+				$session->{render}->param( "identifier" ) ) );
 
 		if( defined $eprint )
 		{
 		
 			# We have the eprint in question.  Find out how many metadata
 			# formats we can get for it.
-			foreach (keys %{$session->get_archive()->get_conf( "oai_metadata_formats" )})
+			foreach (keys %EPrintSite::SiteInfo::oai_metadata_formats)
 			{
 				my $metadata = EPrints::OpenArchives::get_eprint_metadata(
 					$eprint,
@@ -382,7 +379,7 @@ sub list_metadata_formats
 	}
 	else
 	{
-		@metadata_formats = keys %{$session->get_archive()->get_conf( "oai_metadata_formats" )};
+		@metadata_formats = keys %EPrintSite::SiteInfo::oai_metadata_formats;
 	}
 	
 	my $writer = start_response( $session, "ListMetadataFormats" );
@@ -393,9 +390,9 @@ sub list_metadata_formats
 		$writer->dataElement( "metadataPrefix",
 		                      $_ );
 		$writer->dataElement( "schema",
-		                      $session->get_archive()->get_conf( "oai_metadata_schemas" )->{$_} );
+		                      $EPrintSite::SiteInfo::oai_metadata_schemas{$_} );
 		$writer->dataElement( "metadataNamespace",
-		                      $session->get_archive()->get_conf( "oai_metadata_formats" )->{$_} );
+		                      $EPrintSite::SiteInfo::oai_metadata_formats{$_} );
 		$writer->endTag( "metadataFormat" );
 	}
 	
@@ -416,15 +413,17 @@ sub list_records
 	my( $session ) = @_;
 	
 	# Get arguments
-	my $start_date = $session->param( "from" );
-	my $end_date = $session->param( "until" );
-	my $metadata_format = $session->param( "metadataPrefix" );
-	my $codedset = $session->param( "set" );
+	my $start_date = $session->{render}->param( "from" );
+	my $end_date = $session->{render}->param( "until" );
+	my $metadata_format = $session->{render}->param( "metadataPrefix" );
+	my $codedset = $session->{render}->param( "set" );
 	my $set;
 	if( defined $codedset )
 	{
-		$set = EPrints::Utils::decode_setspec( $codedset );
+		$set = EPrints::OpenArchives::decode_setspec( $codedset );
 	}
+
+
 	# No support for resumptionToken
 
 	if( !defined $metadata_format )
@@ -484,11 +483,9 @@ sub list_records
 		my $deletion = new EPrints::Deletion( $session, $_ );
 
 		$writer->startTag( "record", "status"=>"deleted" );
-		EPrints::OpenArchives::write_record_header(
-					$session,
-					$writer,
-		                        $deletion->{eprintid},
-		                        $deletion->{deletiondate} );
+		EPrints::OpenArchives::write_record_header( $writer,
+		                                            $deletion->{eprintid},
+		                                            $deletion->{deletiondate} );
 		$writer->endTag( "record" );		
 	}
 
@@ -541,7 +538,7 @@ sub _write_sets
 
 		$writer->startTag( "set" );
 		$writer->dataElement( "setSpec",
-		                      EPrints::Utils::encode_setspec( $child_setspec ) );
+		                      EPrints::OpenArchives::encode_setspec( $child_setspec ) );
 		$writer->dataElement( "setName",
 		                      $_->{name} );
 		$writer->endTag( "set" );
@@ -589,7 +586,7 @@ sub start_response
 	# Send HTTP header
 	my $r = Apache->request;
 
-	if ( $session->param( "debug" ) eq "yes" ) {
+	if ( $session->{render}->param( "debug" ) eq "yes" ) {
 		$r->content_type( 'text/plain' );
 	} else {
 		$r->content_type( 'text/xml' );
@@ -639,16 +636,16 @@ sub start_response
 	
 	$writer->dataElement( "responseDate",
 	                      EPrints::OpenArchives::full_timestamp() );
-
 	my @bits = ();
-	foreach( $session->param ) 
+	my $q =  $session->{render}->{query};
+	foreach( $q->param ) 
 	{
-		push @bits , "$_=".$session->param($_);
+		push @bits , "$_=".$q->param($_);
 	}
-	
+
 	$writer->dataElement(
 		"requestURL",
-		EPrints::OpenArchives::to_utf8( $session->get_url().
+		EPrints::OpenArchives::to_utf8( $session->{render}->url().
 		  "?" . join( '&', @bits ) ) );
 
 	return( $writer );

@@ -19,58 +19,85 @@
 package EPrints::Database;
 
 use DBI;
+use EPrintSite::SiteInfo;
 use EPrints::Deletion;
 use EPrints::EPrint;
+use EPrints::Log;
+use EPrints::MetaInfo;
 use EPrints::Subscription;
 
-my $DEBUG_SQL = 1;
+use strict;
 
-# cjg not using transactions so there is a (very small) chance of
-# dupping on a counter. 
+$EPrints::Database::driver = "DBI:mysql:";
+
+#
+# Table names
+#
+$EPrints::Database::table_counter = "counters";
+$EPrints::Database::table_user = "users";
+$EPrints::Database::table_inbox = "inbox";
+$EPrints::Database::table_buffer = "buffer";
+$EPrints::Database::table_archive = "archive";
+$EPrints::Database::table_document = "documents";
+$EPrints::Database::table_subject = "subjects";
+$EPrints::Database::table_subscription = "subscriptions";
+$EPrints::Database::table_deletion = "deletions";
 
 #
 # Counters
 #
-@EPrints::Database::counters = ( "eprintid","userid" );
+@EPrints::Database::counters = ( "eprintid" );
 
+#
+# Map of EPrints data types to MySQL types. keys %datatypes will give
+#  a list of the types supported by the system.
+#
+%EPrints::Database::datatypes =
+(
+	"int"        => "INT UNSIGNED",
+	"date"       => "DATE",
+	"enum"       => "VARCHAR(255)",
+	"boolean"    => "SET('TRUE','FALSE')",
+	"set"        => "VARCHAR(255)",
+	"text"       => "VARCHAR(255)",
+	"multitext"  => "TEXT",
+	"url"        => "VARCHAR(255)",
+	"email"      => "VARCHAR(255)",
+	"subjects"   => "TEXT",
+	"username"   => "TEXT",
+	"pagerange"  => "VARCHAR(255)",
+	"year"       => "INT UNSIGNED",
+	"multiurl"   => "TEXT",
+	"eprinttype" => "VARCHAR(255)",
+	"name"       => "VARCHAR(255)"
+);
 
-#
-#
-# ID of next buffer table. This can safely reset to zero each time
-# The module restarts as it is only used for temporary tables.
-#
-my $NEXTBUFFER = 0;
-my %TEMPTABLES = ();
 ######################################################################
 #
-# connection_handle build_connection_string( %params )
-#                                            
+# build_connection_string()
+#
 #  Build the string to use to connect via DBI
-#  params are:
-#     dbhost, dbport, dbname and dbsock.
-#  Only dbname is required.
 #
 ######################################################################
 
-## WP1: BAD
 sub build_connection_string
 {
-	my( %params ) = @_;
-
         # build the connection string
-        my $dsn = "DBI:mysql:database=$params{dbname}";
-        if( defined $params{dbhost} )
+        my $dsn = $EPrints::Database::driver.
+                "database=".$EPrintSite::SiteInfo::database;
+        if (defined $EPrintSite::SiteInfo::db_host)
         {
-                $dsn.= ";host=".$params{dbhost};
+                $dsn.= ";host=".$EPrintSite::SiteInfo::db_host;
         }
-        if( defined $params{dbport} )
+        if (defined $EPrintSite::SiteInfo::db_port)
         {
-                $dsn.= ";port=".$params{dbport};
+                $dsn.= ";port=".$EPrintSite::SiteInfo::db_port;
         }
-        if( defined $params{dbsock} )
+        if (defined $EPrintSite::SiteInfo::db_socket)
         {
-                $dsn.= ";socket=".$params{dbsock};
+                $dsn.= ";mysql_socket=".$EPrintSite::SiteInfo::db_socket;
         }
+
         return $dsn;
 }
 
@@ -78,33 +105,26 @@ sub build_connection_string
 
 ######################################################################
 #
-# EPrints::Database new( $session )
-#                        EPrints::Session
-#                          
+# new()
+#
 #  Connect to the database.
 #
 ######################################################################
 
-## WP1: BAD
 sub new
 {
-	my( $class , $session) = @_;
+	my( $class ) = @_;
 
 	my $self = {};
 	bless $self, $class;
-	$self->{session} = $session;
 
 	# Connect to the database
-	$self->{dbh} = DBI->connect( 
-		build_connection_string( 
-			dbhost => $session->get_archive()->get_conf("dbhost"),
-			dbsock => $session->get_archive()->get_conf("dbsock"),
-			dbport => $session->get_archive()->get_conf("dbport"),
-			dbname => $session->get_archive()->get_conf("dbname") ),
-	        $session->get_archive()->get_conf("dbuser"),
-	        $session->get_archive()->get_conf("dbpass") );
+	$self->{dbh} = DBI->connect( &EPrints::Database::build_connection_string,
+	                             $EPrintSite::SiteInfo::username,
+	                             $EPrintSite::SiteInfo::password,
+	                             { PrintError => 1, AutoCommit => 1 } );
 
-#	        { PrintError => 0, AutoCommit => 1 } );
+#	                             { PrintError => 0, AutoCommit => 1 } );
 
 	if( !defined $self->{dbh} )
 	{
@@ -127,16 +147,15 @@ sub new
 #
 ######################################################################
 
-## WP1: BAD
 sub disconnect
 {
 	my( $self ) = @_;
+	
 	# Make sure that we don't disconnect twice, or inappropriately
 	if( defined $self->{dbh} )
 	{
 		$self->{dbh}->disconnect() ||
-			$self->{session}->get_archive()->log( "Database disconnect error: ".
-				$self->{dbh}->errstr );
+			EPrints::Log::log_entry( "Database", $self->{dbh}->errstr );
 	}
 }
 
@@ -144,13 +163,11 @@ sub disconnect
 ######################################################################
 #
 # $error = error()
-# string 
-# 
+#
 #  Gives details of any errors that have occurred
 #
 ######################################################################
 
-## WP1: BAD
 sub error
 {
 	my( $self ) = @_;
@@ -162,31 +179,63 @@ sub error
 ######################################################################
 #
 # $success = create_archive_tables()
-# boolean 
 #
 #  Creates the archive tables (user, archive and buffer) from the
 #  metadata tables.
 #
 ######################################################################
 
-## WP1: BAD
 sub create_archive_tables
 {
 	my( $self ) = @_;
 	
-	my $success = 1;
+	# Create the ID counter table
+	my $success = $self->_create_counter_table();
 
-	foreach( "user" , "inbox" , "buffer" , "archive" ,
-		 "document" , "subject" , "subscription" , "deletion" )
-	{
-		$success = $success && $self->_create_table( 
-			$self->{session}->get_archive()->get_dataset( $_ ) );
-	}
-
-	#$success = $success && $self->_create_tempmap_table();
-
-	$success = $success && $self->_create_counter_table();
+	# Create the user table
+	$success = $success && $self->_create_table(
+		$EPrints::Database::table_user,
+		EPrints::MetaInfo::get_user_fields() );
 	
+
+	# Document table
+	$success = $success && $self->_create_table(
+		$EPrints::Database::table_document,
+		EPrints::MetaInfo::get_document_fields() );
+
+
+	# EPrint tables
+	my @eprint_metadata = EPrints::MetaInfo::get_all_eprint_fields();
+
+	$success = $success && $self->_create_table(
+		$EPrints::Database::table_inbox,
+		@eprint_metadata );
+
+	$success = $success && $self->_create_table(
+		$EPrints::Database::table_buffer,
+		@eprint_metadata );
+
+	$success = $success && $self->_create_table(
+		$EPrints::Database::table_archive,
+		@eprint_metadata );
+
+
+	# Subscription table
+	$success = $success && $self->_create_table(
+		$EPrints::Database::table_subscription,
+		EPrints::MetaInfo::get_subscription_fields() );
+
+
+	# Subject category table
+	$success = $success && $self->_create_table(
+		$EPrints::Database::table_subject,
+		EPrints::MetaInfo::get_subject_fields() );
+
+	# Deletion table
+	$success = $success && $self->_create_table(
+		$EPrints::Database::table_deletion,
+		EPrints::MetaInfo::get_deletion_fields() );
+
 	return( $success );
 }
 		
@@ -194,155 +243,56 @@ sub create_archive_tables
 
 ######################################################################
 #
-# $success = _create_table( $dataset )
-# boolean                   EPrints::DataSet
+# $success = _create_table( $name, @fields )
 #
-#  Create a database table to contain the given dataset.
-#
-#  The aux. function has an extra parameter which means the table
-#  has no primary key, this is for purposes of recursive table 
-#  creation (aux. tables have no primary key)
+#  Create a database table with the given name, and columns specified
+#  in @fields, which is an array of MetaField types.
 #
 ######################################################################
 
-## WP1: BAD
 sub _create_table
 {
-	my( $self, $dataset ) = @_;
-	
-	my $rv = 1;
-
-	my $keyfield = $dataset->get_key_field()->clone;
-
-	my $fieldword = EPrints::MetaField->new( 
-		name => "fieldword", 
-		type => "text");
-
-	$rv = $rv & $self->_create_table_aux(
-			$dataset->get_sql_index_table_name,
-			$dataset,
-			0, # no primary key
-			( $keyfield , $fieldword ) );
-
-	$rv = $rv && $self->_create_table_aux( 
-				$dataset->get_sql_table_name, 
-				$dataset, 
-				1, 
-				$dataset->get_fields() );
-
-	return $rv;
-}
-
-# $rv = _create_table_aux( $tablename, $dataset, $setkey, @fields )
-# boolean                  string      |         boolean  array of
-#                                      EPrints::DataSet   EPrint::MetaField
-
-## WP1: BAD
-sub _create_table_aux
-{
-	my( $self, $tablename, $dataset, $setkey, @fields ) = @_;
+	my( $self, $name, @fields ) = @_;
 	
 	my $field;
-	my $rv = 1;
 
 	# Construct the SQL statement
-	my $sql = "CREATE TABLE $tablename (";
+	my $sql = "CREATE TABLE $name (";
 	my $key = undef;
 	my @indices;
-	my $first = 1;
+
 	# Iterate through the columns
 	foreach $field (@fields)
 	{
-		if ( $field->get_property( "multiple" ) ||
-		     $field->get_property( "multilang" ) )
-		{ 	
-			# make an aux. table for a multiple field
-			# which will contain the same type as the
-			# key of this table paired with the non-
-			# multiple version of this field.
-			# auxfield and keyfield must be indexed or 
-			# there's not much point. 
+		$sql .= " $field->{name} $EPrints::Database::datatypes{$field->{type}}";
 
-			my $auxfield = $field->clone;
-			$auxfield->set_property( "multiple", 0 );
-			$auxfield->set_property( "multilang", 0 );
-			my $keyfield = $dataset->get_key_field()->clone;
+		if( !defined $key )
+		{
+			$key = $field->{name};
+			$sql .= " NOT NULL";
+		}
+		elsif( $field->{indexed} )
+		{
+			$sql .= " NOT NULL";
+			push @indices, $field->{name};
+		}
 
-			# cjg Hmmmm
-			#  Multiple ->
-			# [key] [cnt] [field]
-			#  Lang ->
-			# [key] [lang] [field]
-			#  Multiple + Lang ->
-			# [key] [pos] [lang] [field]
-
-			my @auxfields = ( $keyfield );
-			if ( $field->get_property( "multiple" ) )
-			{
-				my $pos = EPrints::MetaField->new( 
-					name => "pos", 
-					type => "int" );
-				push @auxfields,$pos;
-			}
-			if ( $field->get_property( "multilang" ) )
-			{
-				my $lang = EPrints::MetaField->new( 
-					name => "lang", 
-					type => "langid" );
-				push @auxfields,$lang;
-			}
-			push @auxfields,$auxfield;
-			my $rv = $rv && $self->_create_table_aux(	
-				$dataset->get_sql_sub_table_name( $field ),
-				$dataset,
-				0, # no primary key
-				@auxfields );
-			next;
-		}
-		if ( $first )
-		{
-			$first = 0;
-		} 
-		else 
-		{
-			$sql .= ", ";
-		}
-		my $notnull = 0;
-			
-		# First field is primary key.
-		if( !defined $key && $setkey)
-		{
-			$key = $field;
-			$notnull = 1;
-		}
-		else
-		{
-			my( $index ) = $field->get_sql_index();
-			if( defined $index )
-			{
-				$notnull = 1;
-				push @indices, $index;
-			}
-		}
-		$sql .= $field->get_sql_type( $notnull );
-
+		$sql .= ",";
 	}
-	if ( $setkey )	
-	{
-		$sql .= ", PRIMARY KEY (".$key->get_name().")";
-	}
-
+	
+	$sql .= " PRIMARY KEY ($key)";
 	
 	foreach (@indices)
 	{
-		$sql .= ", $_";
+		$sql .= ", INDEX($_)";
 	}
 	
 	$sql .= ");";
 	
+#EPrints::Log::debug( "Database", "SQL: $sql" );
 
 	# Send to the database
-	$rv = $rv && $self->do( $sql );
+	my $rv = $self->{dbh}->do( $sql );
 	
 	# Return with an error if unsuccessful
 	return( defined $rv );
@@ -351,37 +301,65 @@ sub _create_table_aux
 
 ######################################################################
 #
-# $success = add_record( $dataset, $data )
-# boolean                |         Structured Data
-#                        EPrints::DataSet     
+# $success = add_record( $table, $data[][] )
 #
-#  Add data to the given table. 
+#  Add data to the given table.
 #
 ######################################################################
 
-## WP1: BAD
 sub add_record
 {
-	my( $self, $dataset, $data ) = @_;
-
-	my $table = $dataset->get_sql_table_name();
+	my( $self, $table, $data ) = @_;
 	
-	my $keyfield = $dataset->get_key_field();
+	my $sql = "INSERT INTO $table (";
+	my $first = 1;
+	my $i;
+	
+	foreach $i (@$data)
+	{
+		if( $first == 0 )
+		{
+			$sql .= ",";
+		}
+		else
+		{
+			$first=0;
+		}
 
-	# To save duplication of code, all this function does is insert
-	# a stub entry, then call the update method which does the hard
-	# work.
+		$sql .= $i->[0];
+	}
 
-	my $sql = "INSERT INTO ".$dataset->get_sql_table_name()." ";
-	$sql   .= " (".$dataset->get_key_field()->get_name().") ";
-	$sql   .= "VALUES (\"".
-	          prep_value( $data->{$dataset->get_key_field()->get_name()} )."\")";
+	$sql .= ") VALUES(";
+	
+	$first = 1;
+
+	foreach $i (@$data)
+	{
+		if( $first == 0 )
+		{
+			$sql .= ",";
+		}
+		else
+		{
+			$first=0;
+		}
+
+		if( defined $i->[1] && $i->[1] ne "" )
+		{
+			$sql .= "\"$i->[1]\"" ;
+		}
+		else
+		{
+			$sql .= "NULL";
+		}
+	}
+
+	$sql .= ");";	
+
+#EPrints::Log::debug( "Database", "SQL: $sql" );
 
 	# Send to the database
-	my $rv = $self->do( $sql );
-
-	# Now add the ACTUAL data:
-	$self->update( $dataset , $data );
+	my $rv = $self->{dbh}->do( $sql );
 	
 	# Return with an error if unsuccessful
 	return( defined $rv );
@@ -390,251 +368,175 @@ sub add_record
 
 ######################################################################
 #
-# $munged = prep_value( $value )
+# $success = update( $table, $key_field, $key_value, $data[][] )
 #
-# [STATIC]
-#  Modify value such that " becomes \" and \ becomes \\ 
-#  Returns "" if $value is undefined.
-#
-######################################################################
-
-## WP1: BAD
-sub prep_value
-{
-	my( $value ) = @_; 
-	
-	if( !defined $value )
-	{
-		return "";
-	}
-	
-	$value =~ s/["\\.'%]/\\$&/g;
-	return $value;
-}
-
-######################################################################
-#
-# $success = update( $dataset, $data )
-# boolean            |         structured data
-#                    EPrints::DataSet
-#
-#  Updates the record described by the $data.  
+#  Update the row where $key_field is $key_value, in $table, with
+#  the given values.
 #
 ######################################################################
 
-## WP1: BAD
 sub update
 {
-	my( $self, $dataset, $data ) = @_;
-	#my( $database_self, $dataset_ds, $struct_md_data ) = @_;
-
-	my $rv = 1;
-	my $sql;
-
-	my @fields = $dataset->get_fields();
-
-	my $keyfield = $dataset->get_key_field();
-
-	my $keyvalue = prep_value( $data->{$keyfield->get_name()} );
-
-	# The same WHERE clause will be used a few times, so lets define
-	# it now:
-	my $where = $keyfield->get_name()." = \"$keyvalue\"";
-
-	$sql = "DELETE FROM ".$dataset->get_sql_index_table_name()." WHERE ".$where;
-	$rv = $rv && $self->do( $sql );
-
-	my @aux;
-	my %values = ();
-	my $field;
-	foreach $field ( @fields ) 
-	{
-		if( $field->get_property( "multiple" ) || $field->get_property( "multilang" ) ) 
-		{ 
-			push @aux,$field;
-		}
-		else 
-		{
-			# clearout the freetext search index table for this field.
-
-			if( $field->is_type( "name" ) )
-			{
-				$values{$field->get_name()."_honourific"} = 
-					$data->{$field->get_name()}->{honourific};
-				$values{$field->get_name()."_given"} = 
-					$data->{$field->get_name()}->{given};
-				$values{$field->get_name()."_family"} = 
-					$data->{$field->get_name()}->{family};
-				$values{$field->get_name()."_lineage"} = 
-					$data->{$field->get_name()}->{lineage};
-			}
-			else
-			{
-				$values{$field->get_name()} =
-					$data->{$field->get_name()};
-			}
-			if( $field->is_text_indexable )
-			{ 
-				$self->_freetext_index( 
-					$dataset, 
-					$keyvalue, 
-					$field, 
-					$data->{$field->get_name()} );
-			}
-		}
-	}
+	my( $self, $table, $key_field, $key_value, $data ) = @_;
 	
-	$sql = "UPDATE ".$dataset->get_sql_table_name()." SET ";
-	my $first=1;
-	foreach( keys %values ) {
-		if( $first )
+	my $sql = "UPDATE $table SET ";
+	my $column;
+	my $first = 1;
+	
+	# Put the column data into the SQL statement
+	foreach $column (@$data)
+	{
+		my @column_array = @$column;
+		
+		$sql .= "," unless $first;
+
+		my $value;
+		
+		if( defined $column_array[1] )
 		{
-			$first = 0;
+			$value = $column_array[1];
+			# Convert \ to \\
+			$value =~ s/\\/\\\\/g;
+			# Convert " to \"
+			$value =~ s/"/\\"/g;
+			$value = "\"".$value."\"";
 		}
 		else
 		{
-			$sql.= ", ";
+			$value = "NULL";
 		}
-		$sql.= "$_ = \"".prep_value( $values{$_} )."\"";
+
+		$sql .= "$column_array[0]=$value";
+		
+		$first = 0;
 	}
-	$sql.=" WHERE $where";
+
+	$sql .= " WHERE $key_field LIKE \"$key_value\";";
 	
-	$rv = $rv && $self->do( $sql );
+#EPrints::Log::debug( "Database", "SQL: $sql" );
 
-	# Erase old, and insert new, values into aux-tables.
-	my $multifield;
-	foreach $multifield ( @aux )
-	{
-		my $auxtable = $dataset->get_sql_sub_table_name( $multifield );
-		$sql = "DELETE FROM $auxtable WHERE $where";
-		$rv = $rv && $self->do( $sql );
-
-		# skip to next table if there are no values at all for this
-		# one.
-		if( !defined $data->{$multifield->get_name()} )
-		{
-			next;
-		}
-		my @values;
-		my $fieldvalue = $data->{$multifield->get_name()};
-
-		if( $multifield->get_property( "multiple" ) )
-		{
-			my $position=0;
-			my $pos;
-			foreach $pos (0..(scalar @{$fieldvalue}-1) )
-			{
-				my $incp = 0;
-				if( $multifield->get_property( "multilang" ) )
-				{
-					my $langid;
-					foreach $langid ( keys %{$fieldvalue->[$pos]} )
-					{
-						my $val = $fieldvalue->[$pos]->{$langid};
-						if( defined $val )
-						{
-							push @values, {
-								v => $val,
-								p => $position,
-								l => $langid
-							};
-							push @values,$v;
-							$incp=1;
-						}
-					}
-				}
-				else
-				{
-					my $val = $fieldvalue->[$pos];
-					if( defined $val )
-					{
-						push @values, {
-							v => $val,
-							p => $position
-						};
-						$incp=1;
-					}
-				}
-				$position++ if $incp;
-				print STDERR "xxxx($incp)\n";
-			}
-		}
-		else
-		{
-			if( $multifield->get_property( "multilang" ) )
-			{
-				my $langid;
-				foreach $langid ( keys %{$fieldvalue} )
-				{
-					my $val = $fieldvalue->{$langid};
-					if( defined $val )
-					{
-						push @values, { 
-							v => $val,
-							l => $langid
-						};
-					}
-				}
-			}
-			else
-			{
-				die "This can't happen in update!"; #cjg!
-			}
-		}
-##print STDERR "---(".$multifield->get_name().")---\n";
-#use Data::Dumper;
-#print STDERR Dumper(@values);
-					
-		my $v;
-		foreach $v ( @values )
-		{
-			$sql = "INSERT INTO $auxtable (".$keyfield->get_name().", ";
-			$sql.= "pos, " if( $multifield->get_property( "multiple" ) );
-			$sql.= "lang, " if( $multifield->get_property( "multilang" ) );
-			if( $multifield->is_type( "name" ) )
-			{
-				$sql .= $multifield->get_name()."_honourific, ";
-				$sql .= $multifield->get_name()."_given, ";
-				$sql .= $multifield->get_name()."_family, ";
-				$sql .= $multifield->get_name()."_lineage ";
-			}
-			else
-			{
-				$sql .= $multifield->get_name();
-			}
-			$sql .= ") VALUES (\"$keyvalue\", ";
-			$sql .=	"\"".$v->{p}."\", " if( $multifield->get_property( "multiple" ) );
-			$sql .=	"\"".prep_value( $v->{l} )."\", " if( $multifield->get_property( "multilang" ) );
-			if( $multifield->is_type( "name" ) )
-			{
-				$sql .= "\"".prep_value( $v->{v}->{honourific} )."\", ";
-				$sql .= "\"".prep_value( $v->{v}->{given} )."\", ";
-				$sql .= "\"".prep_value( $v->{v}->{family} )."\", ";
-				$sql .= "\"".prep_value( $v->{v}->{lineage} )."\"";
-			}
-			else
-			{
-				$sql .= "\"".prep_value( $v->{v} )."\"";
-			}
-			$sql.=")";
-	                $rv = $rv && $self->do( $sql );
-
-
-			if( $multifield->is_text_indexable )
-			{
-				$self->_freetext_index( 
-					$dataset, 
-					$keyvalue, 
-					$multifield, 
-					$v->{v} );
-			}
-
-			++$position;
-		}
-	}
+	# Send to the database
+	my $rv = $self->{dbh}->do( $sql );
 	
 	# Return with an error if unsuccessful
 	return( defined $rv );
+}
+
+
+######################################################################
+#
+# retrieve_single( $table, $key_field, $value )
+#
+#  Retrieves a single object from the database, where field 
+#  $key_field matches $value. An empty list is returned if the field
+#  can't be found.
+#
+######################################################################
+
+sub retrieve_single
+{
+	my( $self, $table, $key_field, $value ) = @_;
+	
+	my $sql = "SELECT * FROM $table WHERE $key_field LIKE \"$value\";";
+
+	my @row = $self->{dbh}->selectrow_array( $sql );
+
+	return( @row );
+}
+
+
+######################################################################
+#
+# $rows = retrieve( $table, $cols[], $conditions[], $order )
+#
+#   Retrieve the specified rows from the $table, with the given
+#   conditions. If conditions is undefined, retrieves all rows.
+#   Returns a reference to an array of references to row arrays.
+#   Erk! i.e.:
+#
+#   $rows = [  \@row1, \@row2, \@row3, ... ];
+#
+#   $order is a reference to an array specifying the order in which
+#   rows should be returned. If undef, no order is imposed.
+#
+######################################################################
+
+sub retrieve
+{
+	my( $self, $table, $cols, $conditions, $order ) = @_;
+
+	my $sql = "SELECT ";
+	my $first = 1;
+	my $col;
+	
+	foreach $col (@$cols)
+	{
+		$sql .= "," if ($first == 0);
+		$sql .= $col;
+		$first=0 if( $first==1);
+	}
+
+	$sql .= " FROM $table";
+
+	if( defined $conditions )
+	{
+		$first = 1;
+		$sql .= " WHERE ";
+		
+		foreach $col (@$conditions)
+		{
+			$sql .= " \&\& " if ($first == 0);
+			$sql .= $col;
+			$first=0 if( $first==1);
+		}
+	}
+
+	if( defined $order )
+	{
+		$first = 1;
+		$sql .= " ORDER BY ";
+		
+		foreach $col (@$order)
+		{
+			$sql .= "," if ($first == 0);
+			$sql .= $col;
+			$first=0 if( $first==1);
+		}
+	}		
+
+	$sql .= ";";
+
+#EPrints::Log::debug( "Database", "SQL:$sql" );
+	my $ret_rows = $self->{dbh}->selectall_arrayref( $sql );
+
+	return( $ret_rows );
+}
+
+
+######################################################################
+#
+# $rows = retrieve_fields( $table, $fields, $conditions, $order )
+#
+#  Convenience function. Similar to retrieve() above, except that
+#  $fields should be an array of MetaField objects.
+#
+######################################################################
+
+sub retrieve_fields
+{
+	my( $self, $table, $fields, $conditions, $order ) = @_;
+	
+	my @field_names;
+	my $f;
+	
+	foreach $f (@$fields)
+	{
+		push @field_names, $f->{name};
+	}
+
+	my $rows = $self->retrieve( $table, \@field_names, $conditions, $order );
+
+	return( $rows );
 }
 
 
@@ -647,43 +549,13 @@ sub update
 #
 ######################################################################
 
-## WP1: BAD
 sub remove
 {
-	my( $self, $dataset, $id ) = @_;
+	my( $self, $table, $field, $value ) = @_;
+	
+	my $sql = "DELETE FROM $table WHERE $field LIKE \"$value\";";
 
-	my $rv=1;
-
-	my $keyfield = $dataset->get_key_field();
-
-	my $keyvalue = prep_value( $id );
-
-	my $where = $keyfield->get_name()." = \"$keyvalue\"";
-
-
-	# Delete Index
-	$sql = "DELETE FROM ".$dataset->get_sql_index_table_name()." WHERE ".$where;
-	$rv = $rv && $self->do( $sql );
-
-	# Delete Subtables
-	my @fields = $dataset->get_fields();
-	my $field;
-	foreach $field ( @fields ) 
-	{
-		next unless( $field->get_property( "multiple" ) || $field->get_property( "multilang" ) );
-		my $auxtable = $dataset->get_sql_sub_table_name( $field );
-		$sql = "DELETE FROM $auxtable WHERE $where";
-		$rv = $rv && $self->do( $sql );
-	}
-
-	# Delete main table
-	$sql = "DELETE FROM ".$dataset->get_sql_table_name()." WHERE ".$where;
-	$rv = $rv && $self->do( $sql );
-
-	if( !$rv )
-	{
-		$self->{session}->get_archive()->log( "Error removing item id: $id" );
-	}
+	my $rv = $self->{dbh}->do( $sql );
 
 	# Return with an error if unsuccessful
 	return( defined $rv )
@@ -698,65 +570,32 @@ sub remove
 #
 ######################################################################
 
-## WP1: BAD
 sub _create_counter_table
 {
 	my( $self ) = @_;
-
-	my $counter_ds = $self->{session}->get_archive()->get_dataset( "counter" );
 	
 	# The table creation SQL
-	my $sql = "CREATE TABLE ".$counter_ds->get_sql_table_name().
+	my $sql = "CREATE TABLE $EPrints::Database::table_counter ".
 		"(countername VARCHAR(255) PRIMARY KEY, counter INT NOT NULL);";
 	
 	# Send to the database
-	my $sth = $self->do( $sql );
+	my $sth = $self->{dbh}->do( $sql );
 	
 	# Return with an error if unsuccessful
 	return( 0 ) unless defined( $sth );
 
-	my $counter;
-	# Create the counters 
-	foreach $counter (@EPrints::Database::counters)
+	# Create the counters
+	foreach (@EPrints::Database::counters)
 	{
-		$sql = "INSERT INTO ".$counter_ds->get_sql_table_name()." VALUES ".
-			"(\"$counter\", 0);";
+		$sql = "INSERT INTO $EPrints::Database::table_counter VALUES ".
+			"(\"$_\", 0);";
 
-		$sth = $self->do( $sql );
+		$sth = $self->{dbh}->do( $sql );
 		
 		# Return with an error if unsuccessful
 		return( 0 ) unless defined( $sth );
 	}
 	
-	# Everything OK
-	return( 1 );
-}
-
-######################################################################
-#
-# $success = _create_tempmap_table()
-#
-#  Creates the temporary table map table.
-#
-######################################################################
-
-## WP1: BAD
-sub _create_tempmap_table
-{
-	my( $self ) = @_;
-	
-	# The table creation SQL
-	my $ds = $self->{session}->get_archive()->get_dataset( "tempmap" );
-	my $sql = "CREATE TABLE ".$ds->get_sql_table_name()." ".
-		"(tableid INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT, ".
-		"created DATETIME NOT NULL)";
-	
-	# Send to the database
-	my $sth = $self->do( $sql );
-	
-	# Return with an error if unsuccessful
-	return( 0 ) unless defined( $sth );
-
 	# Everything OK
 	return( 1 );
 }
@@ -771,20 +610,16 @@ sub _create_tempmap_table
 #
 ######################################################################
 
-## WP1: BAD
 sub counter_next
 {
-	# still not appy with this #cjg (prep values too?)
 	my( $self, $counter ) = @_;
 
-	my $ds = $self->{session}->get_archive()->get_dataset( "counter" );
-
 	# Update the counter	
-	my $sql = "UPDATE ".$ds->get_sql_table_name()." SET counter=".
+	my $sql = "UPDATE $EPrints::Database::table_counter SET counter=".
 		"LAST_INSERT_ID(counter+1) WHERE countername LIKE \"$counter\";";
 	
 	# Send to the database
-	my $rows_affected = $self->do( $sql );
+	my $rows_affected = $self->{dbh}->do( $sql );
 
 	# Return with an error if unsuccessful
 	return( undef ) unless( $rows_affected==1 );
@@ -794,583 +629,6 @@ sub counter_next
 	my @row = $self->{dbh}->selectrow_array( $sql );
 
 	return( $row[0] );
-}
-
-######################################################################
-#
-# $cacheid = create_cache( $keyname )
-#
-######################################################################
-
-## WP1: BAD
-sub create_cache
-{
-	my ( $self , $keyname ) = @_;
-
-	my $sql;
-
-	my $ds = $self->{session}->get_archive()->get_dataset( "tempmap" );
-	$sql = "INSERT INTO ".$ds->get_sql_table_name()." VALUES ( NULL , NOW() )";
-	
-	$self->do( $sql );
-
-	$sql = "SELECT LAST_INSERT_ID()";
-
-
-	my $sth = $self->prepare( $sql );
-	$self->execute( $sth, $sql );
-	my ( $id ) = $sth->fetchrow_array;
-
-	my $tmptable  = "cache".$id;
-
-        $sql = "CREATE TABLE $tmptable ".
-	       "( $keyname VARCHAR(255) NOT NULL)";
-
-	$self->do( $sql );
-	
-	return $tmptable;
-}
-
-
-
-## WP1: BAD
-sub create_buffer
-{
-	my ( $self , $keyname ) = @_;
-
-
-	my $tmptable = "searchbuffer".($NEXTBUFFER++);
-	$TEMPTABLES{$tmptable} = 1;
-	print STDERR "Pushed $tmptable onto temporary table list\n";
-        my $sql = "CREATE TEMPORARY TABLE $tmptable ".
-	          "( $keyname VARCHAR(255) NOT NULL, INDEX($keyname))";
-
-	$self->do( $sql );
-		
-	return $tmptable;
-}
-
-# Loop through known temporary tables, and remove them.
-sub garbage_collect
-{
-	my( $self ) = @_;
-	print STDERR "Garbage collect called.\n";
-	my $dropped = 0;
-	foreach( keys %TEMPTABLES )
-	{
-print STDERR "Dropping $_\n";
-		my $sql = "DROP TABLE $_";
-		$self->do( $sql );
-		delete $TEMPTABLES{$_};
-		$dropped++;
-	}
-print STDERR "Done. Dropped $dropped tables.\n";
-}
-
-######################################################################
-#
-# $buffer = buffer( $table, $auxtables{}, $conditions)
-#
-#  perform a search and store the keys of the results in
-#  a buffer tmp table.
-#
-######################################################################
-
-## WP1: BAD
-sub _make_select
-{
-	my( $self, $keyfield, $tables, $conditions ) = @_;
-	
-	my $sql = "SELECT ".((keys %{$tables})[0]).".".
-	          $keyfield->get_name()." FROM ";
-	my $first = 1;
-	foreach( keys %{$tables} )
-	{
-		$sql .= " INNER JOIN" unless( $first );
-		$sql .= " ${$tables}{$_} AS $_";
-		$sql .= " USING (".$keyfield->get_name().")" unless( $first );
-		$first = 0;
-	}
-	if( defined $conditions )
-	{
-		$sql .= " WHERE $conditions";
-	}
-
-	return $sql;
-}
-
-## WP1: BAD
-sub buffer
-{
-	my( $self, $keyfield, $tables, $conditions , $orbuffer , $keep ) = @_;
-
-	# can we be REALLY lazy here?
-	if( !defined $orbuffer && !$keep && !defined $conditions && scalar(keys %{$tables})==1 ) {
-		# We're just going to copy from one table into a brand new one.
-		# Might as well just return the ID of the previous table.
-		
-		return (values %{$tables})[0];
-		
-	}
-
-	my $sql = $self->_make_select( $keyfield, $tables, $conditions );
-
-	my $targetbuffer;
-
-	if( defined $orbuffer )
-	{
-		$targetbuffer = $orbuffer;
-	} 
-	elsif( $keep )
-	{
-		$targetbuffer = $self->create_cache( $keyfield->get_name() );
-	}
-	else
-	{
-		$targetbuffer = $self->create_buffer( $keyfield->get_name() );
-	}
-
-	$self->do( "INSERT INTO $targetbuffer $sql" );
-
-	return( $targetbuffer );
-}
-
-## WP1: BAD
-sub distinct_and_limit
-{
-	my( $self, $buffer, $keyfield, $max ) = @_;
-
-	my $tmptable = $self->create_buffer( $keyfield->get_name() );
-
-	my $sql = "INSERT INTO $tmptable SELECT DISTINCT ".$keyfield->get_name().
-	          " FROM $buffer";
-
-	if( defined $max )
-	{
-		$sql.= " LIMIT $max";
-	}
-	$self->do( $sql );
-
-	if( defined $max )
-	{
-		my $count = $self->count_buffer( $tmptable );
-		return( $tmptable , ($count >= $max) );
-	}
-	else
-	{
-		return( $tmptable , 0 );
-	}
-}
-
-## WP1: BAD
-sub drop_cache
-{
-	my ( $self , $tmptable ) = @_;
-	# sanity check! Dropping the wrong table could be
-	# VERY bad.	
-	if ( $tmptable =~ m/^cache(\d+)$/ )
-	{
-		my $sql;
-		my $ds = $self->{session}->get_archive()->get_dataset( "tempmap" );
-
-		$sql = "DELETE FROM ".$ds->get_sql_table_name().
-		       " WHERE tableid = $1";
-
-		$self->do( $sql );
-
-        	$sql = "DROP TABLE $tmptable";
-
-		$self->do( $sql );
-		
-	}
-	else
-	{
-		$self->{session}->get_archive()->log( "Bad Cache ID: $tmptable" );
-	}
-
-}
-
-## WP1: BAD
-sub count_buffer
-{
-	my ( $self , $buffer ) = @_;
-
-	my $sql = "SELECT COUNT(*) FROM $buffer";
-
-
-	my $sth = $self->prepare( $sql );
-	$self->execute( $sth, $sql );
-	my ( $count ) = $sth->fetchrow_array;
-
-	return $count;
-}
-
-## WP1: BAD
-sub from_buffer 
-{
-	my ( $self , $tableid , $buffer ) = @_;
-	return $self->_get( $tableid, 1 , $buffer );
-}
-
-## WP1: BAD
-sub get_single
-{
-	my ( $self , $tableid , $value ) = @_;
-	return ($self->_get( $tableid, 0 , $value ))[0];
-}
-
-## WP1: BAD
-sub get_all
-{
-	my ( $self , $tableid ) = @_;
-	return $self->_get( $tableid, 2 );
-}
-
-## WP1: BAD
-sub _get 
-{
-	my ( $self , $dataset , $mode , $param ) = @_;
-
-# print STDERR "========================================BEGIN _get($mode,$param)\n";
-	# mode 0 = one or none entries from a given primary key
-	# mode 1 = many entries from a buffer table
-	# mode 2 = return the whole table (careful now)
-
-	my $table = $dataset->get_sql_table_name();
-
-	my @fields = $dataset->get_fields();
-
-	my $field = undef;
-	my $keyfield = $fields[0];
-	my $kn = $keyfield->get_name();
-
-	my $cols = "";
-	my @aux = ();
-	my $first = 1;
-	foreach $field (@fields) {
-		if ( $field->get_property( "multiple" ) || $field->get_property( "multilang" ) )
-		{ 
-			push @aux,$field;
-		}
-		else 
-		{
-			if ($first)
-			{
-				$first = 0;
-			}
-			else
-			{
-				$cols .= ", ";
-			}
-			if ( $field->is_type( "name" ) )
-			{
-				$cols .= "M.".$field->get_name()."_honourific, ".
-				         "M.".$field->get_name()."_given, ".
-				         "M.".$field->get_name()."_family, ".
-				         "M.".$field->get_name()."_lineage";
-			}
-			else 
-			{
-				$cols .= "M.".$field->get_name();
-			}
-		}
-	}
-	my $sql;
-	if ( $mode == 0 )
-	{
-		$sql = "SELECT $cols FROM $table AS M ".
-		       "WHERE M.$kn = \"".prep_value( $param )."\"";
-	}
-	elsif ( $mode == 1 )	
-	{
-		$sql = "SELECT $cols FROM $param AS C, $table AS M ".
-		       "WHERE M.$kn = C.$kn";
-	}
-	elsif ( $mode == 2 )	
-	{
-		$sql = "SELECT $cols FROM $table AS M";
-	}
-	my $sth = $self->prepare( $sql );
-	$self->execute( $sth, $sql );
-	my @data = ();
-	my @row;
-	my %lookup = ();
-	my $count = 0;
-	while( @row = $sth->fetchrow_array ) 
-	{
-		my $record = {};
-		$lookup{$row[0]} = $count;
-		foreach $field ( @fields ) { 
-			if( $field->get_property( "multiple" ) )
-			{
-				$record->{$field->get_name()} = [];
-			}
-			elsif( $field->get_property( "multilang" ) )
-			{
-				$record->{$field->get_name()} = {};
-			}
-			else 
-			{
-				my $value;
-				if( $field->is_type( "name" ) )
-				{
-					$value = {};
-					$value->{honourific} = shift @row;
-					$value->{given} = shift @row;
-					$value->{family} = shift @row;
-					$value->{lineage} = shift @row;
-				} 
-				else
-				{
-					$value = shift @row;
-				}
-				$record->{$field->get_name()} = $value;
-# print STDERR "Set: ".$field->get_name()." to '".$value."'\n";
-			}
-		}
-		$data[$count] = $record;
-		$count++;
-	}
-
-	foreach( @data )
-	{
-# use Data::Dumper;
-# print STDERR "--------xxxx-----FROM DB------------------\n";
-# print STDERR Dumper($_);
-# print STDERR "--------xxxx-----////FROM DB------------------\n";
-	}
-
-	my $multifield;
-	foreach $multifield ( @aux )
-	{
-		my $mn = $multifield->get_name();
-print STDERR "MULTIFIELD: ".$mn."\n";
-		my $col = "M.$mn";
-		if( $multifield->is_type( "name" ) )
-		{
-			$col = "M.$mn\_honourific,M.$mn\_given,M.$mn\_family,M.$mn\_lineage";
-		}
-		my $fields_sql = "M.$kn, ";
-		$fields_sql .= "M.pos, " if( $multifield->get_property( "multiple" ) );
-		$fields_sql .= "M.lang, " if( $multifield->get_property( "multilang" ) );
-		$fields_sql .= $col;		
-		if( $mode == 0 )	
-		{
-			$sql = "SELECT $fields_sql FROM ";
-			$sql.= $dataset->get_sql_sub_table_name( $multifield )." AS M ";
-			$sql.= "WHERE M.$kn=\"".prep_value( $param )."\"";
-		}
-		elsif( $mode == 1)
-		{
-			$sql = "SELECT $fields_sql FROM ";
-			$sql.= "$param AS C, ";
-			$sql.= $dataset->get_sql_sub_table_name( $multifield )." AS M ";
-			$sql.= "WHERE M.$kn=C.$kn";
-		}	
-		elsif( $mode == 2)
-		{
-			$sql = "SELECT $fields_sql FROM ";
-			$sql.= $dataset->get_sql_sub_table_name( $multifield )." AS M ";
-		}
-		$sth = $self->prepare( $sql );
-		$self->execute( $sth, $sql );
-		while( @values = $sth->fetchrow_array ) 
-		{
-#print STDERR "V:".join(",",@values)."\n";
-			my $id = shift( @values );
-			my( $pos, $lang );
-			$pos = shift( @values ) if( $multifield->get_property( "multiple" ) );
-			$lang = shift( @values ) if( $multifield->get_property( "multilang" ) );
-			my $n = $lookup{ $id };
-			my $value;
-			if( $multifield->is_type( "name" ) )
-			{
-				$value = {};
-				$value->{honourific} = shift @values;
-				$value->{given} = shift @values;
-				$value->{family} = shift @values;
-				$value->{lineage} = shift @values;
-			} 
-			else
-			{
-				$value = shift @values;
-			}
-			if( $multifield->get_property( "multiple" ) )
-			{
-				if( $multifield->get_property( "multilang" ) )
-				{
-					$data[$n]->{$mn}->[$pos]->{$lang} = $value;
-				}
-				else
-				{
-#print STDERR 	"data[".$n."]->{".$mn."}->[".$pos."] = ".$value."\n";
-					$data[$n]->{$mn}->[$pos] = $value;
-				}
-			}
-			else
-			{
-				if( $multifield->get_property( "multilang" ) )
-				{
-					$data[$n]->{$mn}->{$lang} = $value;
-				}
-				else
-				{
-					print STDERR "This cannot happen!\n";#cjg!
-				}
-			}
-		}
-	}	
-
-	foreach( @data )
-	{
-# use Data::Dumper;
-# print STDERR "-----------------FROM DB------------------\n";
-# print STDERR Dumper($_);
-# print STDERR "-----------------////FROM DB------------------\n";
-		$_ = $dataset->make_object( $self->{session} ,  $_);
-	}
-
-# print STDERR "========================================END _get\n";
-	return @data;
-}
-
-## WP1: BAD
-sub do 
-{
-	my ( $self , $sql ) = @_;
-
-	my $result = $self->{dbh}->do( $sql );
-
-	if ( !$result ) {
-		print "<pre>--------\n";
-		print "dpDBErr:\n";
-		print "$sql\n";
-		print "----------</pre>\n";
-	}
-	if( $DEBUG_SQL )
-	{
-		$self->{session}->get_archive()->log( "Database execute debug: $sql" );
-	}
-
-	return $result;
-}
-
-## WP1: BAD
-sub prepare 
-{
-	my ( $self , $sql ) = @_;
-
-	my $result = $self->{dbh}->prepare( $sql );
-
-	if ( !$result ) {
-		print "<pre>--------\n";
-		print "prepDBErr:\n";
-		print "$sql\n";
-		print "----------</pre>\n";
-	}
-
-	return $result;
-}
-
-## WP1: BAD
-sub execute 
-{
-	my ( $self , $sth , $sql ) = @_;
-
-	my $result = $sth->execute;
-
-	if ( !$result ) {
-		print "<pre>--------\n";
-		print "execDBErr:\n";
-		print "$sql\n";
-		print "----------</pre>\n";
-	}
-	if( $DEBUG_SQL )
-	{
-		$self->{session}->get_archive()->log( "Database execute debug: $sql" );
-	}
-
-	return $result;
-}
-
-## WP1: BAD
-sub benchmark
-{
-	my ( $self , $keyfield , $tables , $where ) = @_;
-
-	my $sql = $self->_make_select( $keyfield, $tables, $where );
-
-	$sql= "EXPLAIN $sql";
-
-	my $sth = $self->prepare( $sql );
-	$self->execute( $sth , $sql );
-	my @info = $sth->fetchrow_array;
-
-	return $info[6];
-
-}	
-
-## WP1: BAD
-sub exists
-{
-	my( $self, $dataset, $id ) = @_;
-
-	if( !defined $id )
-	{
-		return undef;
-	}
-	
-	my $keyfield = $dataset->get_key_field();
-
-	my $sql = "SELECT ".$keyfield->get_name().
-		" FROM ".$dataset->get_sql_table_name()." WHERE ".
-		$keyfield->get_name()." = \"".prep_value( $id )."\";";
-
-	my $sth = $self->prepare( $sql );
-	$self->execute( $sth , $sql );
-
-	if( $sth->fetchrow_array )
-	{ 
-		return 1;
-	}
-	return 0;
-}
-
-## WP1: BAD
-sub _freetext_index
-{
-	my( $self , $dataset , $id , $field , $value ) = @_;
-				# nb. id is already escaped
-
-	my $rv = 1;
-	if( !defined $value || $value eq "" )
-	{
-		return $rv;
-	}
-
-	my $keyfield = $dataset->get_key_field();
-
-	my $indextable = $dataset->get_sql_index_table_name();
-	
-	my( $good , $bad ) = $self->{session}->get_archive()->call( "extract_words" , $value );
-
-	my $sql;
-	foreach( @{$good} )
-	{
-		$sql = "INSERT INTO $indextable ( ".$keyfield->get_name()." , fieldword ) VALUES ";
-		$sql.= "( \"$id\" , \"".prep_value($field->get_name().":$_")."\")";
-		$rv = $rv && $self->do( $sql );
-	} 
-	return $rv;
-}
-
-
-## WP1: BAD
-sub table_name
-{
-	my( $tableid ) = @_;
-#cjg
-EPrints::Session::bomb();
 }
 
 

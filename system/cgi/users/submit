@@ -20,17 +20,16 @@ use EPrints::EPrint;
 use EPrints::Document;
 use EPrints::SubmissionForm;
 
+use EPrintSite::SiteInfo;
+
 use strict;
 
 my $session = new EPrints::Session;
-Apache::exit( 0 ) unless( defined $session );
 
-my $subform = new EPrints::SubmissionForm(
-	$session,
-	"home",
-	0,
-       	$session->get_archive->get_dataset( "inbox" ),
-	"submit" );
-$subform->process;
+my $subform = new EPrints::SubmissionForm( $session,
+                                           "home",
+                                           0,
+                                           $EPrints::Database::table_inbox );
+$subform->process();
 
-$session->terminate;
+$session->terminate();

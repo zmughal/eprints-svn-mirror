@@ -24,16 +24,14 @@ use strict;
 
 my $session = new EPrints::Session;
 
-my $user = $session->current_user;
-Apache::exit( 0 ) unless( defined $session );
+my $user = EPrints::User::current_user( $session );
 
 # Check user
 if( !defined $user )
 {
 	# Can't find the user
-	$session->render_error( 
-		$session->html_phrase( "cgi/users/review:dont_know_you" ),
-	      	$session->get_archive()->get_conf( "frontpage" ),
+	$session->{render}->render_error( "I don't know who you are",
+	                                  $EPrintSite::SiteInfo::frontpage );
 	$session->terminate();
 	Apache::exit( 0 );
 }
@@ -41,7 +39,7 @@ if( !defined $user )
 # Retrieve the user's eprints in the main archive
 my @eprints = EPrints::EPrint::retrieve_eprints(
 	$session,
-	EPrints::Database::table_name( "archive" ),
+	$EPrints::Database::table_archive,
 	[ "username LIKE \"$user->{username}\"" ] );
 
 
@@ -67,7 +65,7 @@ if( $session->{render}->seen_form() )
 			if( defined $session->{render}->param( "clone_$ep->{eprintid}" ) &&
 		   	 $ep->{username} eq $user->{username} )
 			{
-				my $copy = $ep->clone( EPrints::Database::table_name( "inbox" ),
+				my $copy = $ep->clone( $EPrints::Database::table_inbox,
 			                        	 1 );
 				if( defined $copy )
 				{
@@ -76,10 +74,10 @@ if( $session->{render}->seen_form() )
 				}
 				else
 				{
-					$session->render_error(
-						$session->html_phrase( "cgi/users/review:cant_clone" ),
+					$session->{render}->render_error(
+						"Unable to clone that record. Please try again later.",
 						"home",
-						$session->html_phrase( "cgi/users/review:deposit_page" ) );
+						"Deposit Items Page" );
 				}
 
 				$page_written = 1;				
@@ -87,7 +85,7 @@ if( $session->{render}->seen_form() )
 
 			# See if they clicked a request removal button
 			# Sanity check: Make sure it's this user's item
-			if( $session->get_archive()->get_conf( "allow_user_removal_request" ) &&
+			if( $EPrintSite::SiteInfo::allow_user_removal_request &&
 		   	 defined $session->{render}->param( "remove_$ep->{eprintid}" ) &&
 		   	 $ep->{username} eq $user->{username} )
 			{
@@ -100,40 +98,35 @@ if( $session->{render}->seen_form() )
 
 unless( $page_written )
 {
-	print $session->{render}->start_html( 
-		$session->{lang}->phrase( "cgi/users/review:review_title" ) );
+	print $session->{render}->start_html( "Review Documents" );
 	
 	if( $#eprints == -1 )
 	{
-		print "<CENTER><P><STRONG>";
-		print $session->{lang}->phrase( "cgi/users/review:no_docs" );
-		print "</STRONG></P></CENTER>\n";
+		print "<CENTER><P><STRONG>You have no documents in the main archive.".
+			"</STRONG></P></CENTER>\n";
 		
-		print "<CENTER><P><A HREF=\"home\">";
-		print $session->{lang}->phrase( "cgi/users/review:ret_deposit" );
-		print "</A></P></CENTER>\n";
+		print "<CENTER><P><A HREF=\"home\">Click here to return to your ".
+			"deposit items page</A></P></CENTER>\n";
 	}
 	else
 	{
-		print "<CENTER><P>";
-		print $session->{lang}->phrase( "cgi/users/review:blurb_below" );
-		print "</P></CENTER>\n";		
+		print "<CENTER><P>Below are listed your documents in the main archive. ".
+			"Click on the title of a document to view it. You can also click on ".
+			"the clone button to make a copy of the document record in your ".
+			"workspace. You might want to do this if you are going to submit an ".
+			"updated version of the document.</P></CENTER>\n";
 
-		print "<CENTER><P>";
-		print $session->{lang}->phrase( "cgi/users/review:remove_info" );
-		print "</P></CENTER>\n";		
+		print "<CENTER><P>You can also request the removal of a document, but ".
+			"this is <strong>strongly</strong> discouraged, since different ".
+			"versions of a document can all be linked in the archive.</P>".
+			"</CENTER>\n";
 		
 		print $session->{render}->start_form();
-		print $session->{render}->hidden_field( "_seen", "true" );
+		print $session->{render}->hidden_field( "seen", "true" );
 
 		print "<CENTER><TABLE BORDER=1 CELLPADDING=3>\n";
-		print "<TR><TH><STRONG>";
-		print $session->{lang}->phrase( "cgi/users/review:document" );
-		print "</STRONG><TH></TH>";
-		if( $session->get_archive()->get_conf( "allow_user_removal_request" ) ) 
-		{
-			print "<TH></TH>" 
-		}
+		print "<TR><TH><STRONG>Document</STRONG><TH></TH>";
+		print "<TH></TH>" if( $EPrintSite::SiteInfo::allow_user_removal_request );
 		print "</TR>\n";
 		
 		foreach (@eprints)
@@ -142,16 +135,11 @@ unless( $page_written )
 				$session->{render}->render_eprint_citation( $_, 1, 1 ).
 				"</TD><TD>";
 			print $session->{render}->named_submit_button(
-				"clone_$_->{eprintid}",
-				$session->{lang}->phrase( "cgi/users/review:clone" ) );
+				"clone_$_->{eprintid}", "Clone" );
 
-			if( $session->get_archive()->get_conf( "allow_user_removal_request" ) )
-			{
-				print "</TD><TD>";
-				print $session->{render}->named_submit_button(
-					"remove_$_->{eprintid}", 
-					$session->{lang}->phrase( "cgi/users/review:req_remove" ) );
-			}
+			print "</TD><TD>".$session->{render}->named_submit_button(
+				"remove_$_->{eprintid}", "Request Removal" )
+				if( $EPrintSite::SiteInfo::allow_user_removal_request );
 
 			print "</TD></TR>\n";
 		}
@@ -179,34 +167,30 @@ sub removal_request_form
 {
 	my( $session, $eprint ) = @_;
 	
-	print $session->{render}->start_html( 
-		$session->{lang}->phrase( "cgi/users/review:remove_title" ) );
+	print $session->{render}->start_html( "Request EPrint Removal" );
 	
-	print "<P><EM>";
-	print $session->{lang}->phrase( "cgi/users/review:remove_blurb" ) );
-	print "</EM></P>\n";
+	print "<P><EM>Please note that we <STRONG>strongly</STRONG> discourage ".
+		"removal of EPrints from the archive. If you upload a new version of ".
+		"an EPrint, a link to the later version will appear on the older ".
+		"version. Thus, anyone finding the old version will be able to see that ".
+		"a newer version has been deposited.</EM></P>\n";
 	
-	print "<P>";
-	print $session->{lang}->phrase( "cgi/users/review:removing" ) );
-	print "</P>\n<P>";
+	print "<P>You are requesting the removal of:</P>\n<P>";
 	print $session->{render}->render_eprint_citation( $eprint, 1, 1 );
 	print "</P>\n";
 
 	my $reason_field = new EPrints::MetaField(
-		"removal_reason:longtext:15:Reason for Requesting Removal:1:1:1" );
+		"removal_reason:multitext:15:Reason for Requesting Removal:1:1:1" );
 	$reason_field->{help} = "Please enter the reason for your removal ".
 		"request in the box below. The request will be sent to the site ".
 		"administrator.";
 	
-	$session->{render}->render_input_form(
+	$session->{render}->render_form(
 		[ $reason_field ],
 		{},
 		0,
 		1,
-		[ 
-			$session->{lang}->phrase( "cgi/users/review:send_req" ),
-			$session->{lang}->phrase( "cgi/users/review:cancel" )
-		],
+		[ "Send Request", "Cancel" ],
 		{ "eprint_id" => $eprint->{eprintid} } );
 	
 	print $session->{render}->end_html();
@@ -229,27 +213,25 @@ sub handle_removal_request
 	my $eprintid = $session->{render}->param( "eprint_id" );
 
 	my $eprint = new EPrints::EPrint( $session,
-	                                  EPrints::Database::table_name( "archive" ),
+	                                  $EPrints::Database::table_archive,
 	                                  $eprintid ) if( defined $eprintid );
 
 	# Make sure it's valid, and the user's own EPrint
 	unless( defined $eprintid && defined $eprint &&
 	        $eprint->{username} eq $user->{username} )
 	{
-		$session->render_error(
-			$session->html_phrase( "cgi/users/review:cant_find_it" ),
+		$session->{render}->render_error(
+			"Couldn't find the EPrint! There's probably a problem with the ".
+				"database. Try again later.",
 			"home",
-			$session->html_phrase( "cgi/users/review:deposit_page" ) );
+			"Deposit items page" );
 		return( 1 );
 	}
 	
-	if( $session->{render}->param( "submit") eq 
-		$session->{lang}->phrase( "cgi/users/review:send_req" ) 
+	if( $session->{render}->param( "submit") eq "Send Request" )
 	{
-		my $msg = $session->{lang}->phrase( 
-			"cgi/users/review:remove_mail",
-			{ user=>$user->full_name(),
-			email=>$user->{email} } )."\n\n";
+		my $msg = "User ".$user->full_name()." (E-Mail: ".$user->{email}.")\n";
+		$msg .= "requests the removal of the following EPrint:\n\n";
 		$msg .= $session->{render}->render_eprint_citation( $eprint, 0, 0 );
 		$msg .= "\n\n";
 		
@@ -257,21 +239,21 @@ sub handle_removal_request
 
 		if( defined $reason && $reason ne "" )
 		{
-			$msg .= $session->{lang}->phrase( "cgi/users/review:reason" );
-			$msg .= "\n\n$reason\n\n";
+			$msg .= "The following reason was given:\n\n$reason\n\n";
 		}
 		else
 		{
-			$msg .= $session->{lang}->phrase( "cgi/users/review:no_reason" );
+			$msg .= "No reason was given.\n\n";
 		}
 		
-		$msg .= $session->{lang}->phrase( "cgi/users/review:visit_url" )."\n\n";
+		$msg .= "Visit the following URL to view the EPrint and have the ".
+			"option to remove it:\n\n";
 			
-		$msg .= $session->get_archive()->get_conf( "server_perl" )."/staff/edit_eprint?".
+		$msg .= $EPrintSite::SiteInfo::server_perl."/staff/edit_eprint?".
 			"eprint_id=$eprint->{eprintid}";
 
-		$session->mail_administrator( #cjg MAIL IN ADMIN LANG
-			$session->{lang}->phrase( "cgi/users/review:remove_sub" ),
+		$session->mail_administrator(
+			"EPrint Removal Request from ".$user->full_name(),
 			$msg );
 	}
 	return( 0 );

@@ -18,34 +18,25 @@ package EPrints::Subscription;
 
 use EPrints::Database;
 use EPrints::HTMLRender;
-use EPrints::Utils;
+use EPrints::Mailer;
 use EPrints::MetaField;
+use EPrints::MetaInfo;
 use EPrints::SearchExpression;
 use EPrints::Session;
 use EPrints::User;
 
-### SUBS MUST BE FLAGGED AS BULK cjg
+use EPrintSite::SiteInfo;
 
 use strict;
-#"frequency:set:never,Never (Off);daily,Daily;weekly,Weekly;monthly,Monthly:Frequency:1:1:1"
 
-## WP1: BAD
-sub get_system_field_info
-{
-	my( $class ) = @_;
+@EPrints::Subscription::system_meta_fields =
+(
+	"subid:text::Subscription ID:1:0:0",
+	"username:text::User:1:0:0:1",
+	"spec:multitext:3:Specification:1:0:0",
+	"frequency:enum:never,Never (Off);daily,Daily;weekly,Weekly;monthly,Monthly:Frequency:1:1:1"
+);
 
-	return 
-	( 
-		{ name=>"subid", type=>"text", required=>1 },
-
-		{ name=>"username", type=>"text", required=>1 },
-
-		{ name=>"spec", type=>"longtext", displaylines=>3, required=>1 },
-
-		{ name=>"frequency", type=>"set", required=>1,
-			options=>["never","daily","weekly","monthly"] } 
-	);
-}
 
 
 ######################################################################
@@ -57,7 +48,6 @@ sub get_system_field_info
 #
 ######################################################################
 
-## WP1: BAD
 sub new
 {
 	my( $class, $session, $subid, $dbrow ) = @_;
@@ -71,7 +61,7 @@ sub new
 	{
 		# Get the relevant row...
 		my @row = $self->{session}->{database}->retrieve_single(
-			EPrints::Database::table_name( "subscription" ),
+			$EPrints::Database::table_subscription,
 			"subid",
 			$subid );
 
@@ -85,28 +75,29 @@ sub new
 	}
 
 	# Lob the row data into the relevant fields
-	my @fields = $self->{session}->{metainfo}->get_fields( "subscription" );
+	my @fields = EPrints::MetaInfo::get_subscription_fields();
 
 	my $i=0;
-	my $field;
-	foreach $field (@fields)
+	
+	foreach (@fields)
 	{
-		$self->{$field->{name}} = $dbrow->[$i];
+		$self->{$_->{name}} = $dbrow->[$i];
 		$i++;
 	}
 
 	my @metafields = EPrints::SearchExpression::make_meta_fields(
-		$self->{session},
-		"eprint",
-		$self->{session}->get_archive()->get_conf( "subscription_fields" ) );
+		"eprints",
+		\@EPrintSite::SiteInfo::subscription_fields );
 
 	# Get out the search expression
 	$self->{searchexpression} = new EPrints::SearchExpression(
 		$self->{session},
-		"archive",
+		$EPrints::Database::table_archive,
 		1,
 		1,
-		\@metafields );
+		\@metafields,
+		\%EPrintSite::SiteInfo::eprint_order_methods,
+		$EPrintSite::SiteInfo::default_eprint_order );
 
 	$self->{searchexpression}->state_from_string( $self->{spec} )
 		if( defined $self->{spec} && $self->{spec} ne "" );
@@ -123,7 +114,6 @@ sub new
 #
 ######################################################################
 
-## WP1: BAD
 sub create
 {
 	my( $class, $session, $username ) = @_;
@@ -138,8 +128,7 @@ sub create
 	$self->{subid} = $id;
 	$self->{username} = $username;
 	
-# cjg add_record call
-	$session->{database}->add_record( EPrints::Database::table_name( "subscription" ),
+	$session->{database}->add_record( $EPrints::Database::table_subscription,
 	                                  [ [ "subid", $self->{subid} ],
 	                                    [ "username", $username ] ] );
 	
@@ -155,7 +144,6 @@ sub create
 #
 ######################################################################
 
-## WP1: BAD
 sub _generate_subid
 {
 	my( $session, $username ) = @_;
@@ -172,7 +160,7 @@ sub _generate_subid
 		
 		# First find out if the candidate is taken
 		my $rows = $session->{database}->retrieve(
-			EPrints::Database::table_name( "subscription" ),
+			$EPrints::Database::table_subscription,
 			[ "subid" ],
 			[ "subid LIKE \"$id\"" ] );
 		
@@ -198,13 +186,12 @@ sub _generate_subid
 #
 ######################################################################
 
-## WP1: BAD
 sub remove
 {
 	my( $self ) = @_;
 	
 	return( $self->{session}->{database}->remove(
-		EPrints::Database::table_name( "subscription" ),
+		$EPrints::Database::table_subscription,
 		"subid",
 		$self->{subid} ) );
 }
@@ -218,21 +205,18 @@ sub remove
 #
 ######################################################################
 
-## WP1: BAD
 sub render_subscription_form
 {
 	my( $self ) = @_;
 	
 	my $html = $self->{searchexpression}->render_search_form( 1, 0 );
-	my @all_fields = $self->{session}->{metainfo}->get_fields( "subscription" );
+	my @all_fields = EPrints::MetaInfo::get_subscription_fields();
 	
-	$html .= "<P>";
-#cjg
-	#$html .= $self->{session}}->phrase( "lib/subscription:send_updates",
-	           #{ howoften=>$self->{session}->{render}->input_field( 
-		        #EPrints::MetaInfo::find_field( \@all_fields, "frequency" ),
-		        #$self->{frequency} ) } );
-	$html .= "</P>\n";
+	$html .= "<CENTER><P>Send updates: ";
+	$html .= $self->{session}->{render}->input_field( 
+		EPrints::MetaInfo::find_field( \@all_fields, "frequency" ),
+		$self->{frequency} );
+	$html .= "</P></CENTER>\n";
 	
 	return( $html );
 }
@@ -247,15 +231,13 @@ sub render_subscription_form
 #
 ######################################################################
 
-## WP1: BAD
 sub from_form
 {
 	my( $self ) = @_;
 	
-	my @all_fields = $self->{session}->{metainfo}->get_fields( "subscription" );
-#cjg
-	#$self->{frequency} = $self->{session}->{render}->form_value(
-		 #EPrints::MetaInfo::find_field( \@all_fields, "frequency" ) );
+	my @all_fields = EPrints::MetaInfo::get_subscription_fields();
+	$self->{frequency} = $self->{session}->{render}->form_value(
+		 EPrints::MetaInfo::find_field( \@all_fields, "frequency" ) );
 
 	return( $self->{searchexpression}->from_form() );
 }
@@ -269,7 +251,6 @@ sub from_form
 #
 ######################################################################
 
-## WP1: BAD
 sub commit
 {
 	my( $self ) = @_;
@@ -277,9 +258,21 @@ sub commit
 	# Get the text rep of the search expression
 	$self->{spec} = $self->{searchexpression}->to_string();
 
+	my @all_fields = EPrints::MetaInfo::get_subscription_fields();
+	
+	my $key_field = shift @all_fields;
+	my @data;
+	
+	foreach (@all_fields)
+	{
+		push @data, [ $_->{name}, $self->{$_->{name}} ];
+	}
+	
 	return( $self->{session}->{database}->update(
-		EPrints::Database::table_name( "subscription" ),
-		$self ) );
+		$EPrints::Database::table_subscription,
+		$key_field->{name},
+		$self->{$key_field->{name}},
+		\@data ) );
 }
 	
 
@@ -291,17 +284,16 @@ sub commit
 #
 ######################################################################
 
-## WP1: BAD
 sub subscriptions_for
 {
 	my( $session, $user ) = @_;
 	
 	my @subscriptions;
 	
-	my @sub_fields = $session->{metainfo}->get_fields( "subscription" );
+	my @sub_fields = EPrints::MetaInfo::get_subscription_fields();
 
 	my $rows = $session->{database}->retrieve_fields(
-		EPrints::Database::table_name( "subscription" ),
+		$EPrints::Database::table_subscription,
 		\@sub_fields,
 		[ "username LIKE \"$user->{username}\"" ] );
 	
@@ -323,17 +315,16 @@ sub subscriptions_for
 #
 ######################################################################
 
-## WP1: BAD
 sub subscriptions_for_frequency
 {
 	my( $session, $frequency ) = @_;
 	
 	my @subscriptions;
 	
-	my @sub_fields = $session->{metainfo}->get_fields( "subscription" );
+	my @sub_fields = EPrints::MetaInfo::get_subscription_fields();
 
 	my $rows = $session->{database}->retrieve_fields(
-		EPrints::Database::table_name( "subscription" ),
+		$EPrints::Database::table_subscription,
 		\@sub_fields,
 		[ "frequency LIKE \"$frequency\"" ] );
 	
@@ -354,7 +345,6 @@ sub subscriptions_for_frequency
 #
 ######################################################################
 
-## WP1: BAD
 sub get_daily
 {
 	my( $session ) = @_;
@@ -372,7 +362,6 @@ sub get_daily
 #
 ######################################################################
 
-## WP1: BAD
 sub get_weekly
 {
 	my( $session ) = @_;
@@ -390,7 +379,6 @@ sub get_weekly
 #
 ######################################################################
 
-## WP1: BAD
 sub get_monthly
 {
 	my( $session ) = @_;
@@ -417,7 +405,6 @@ sub get_monthly
 #
 ######################################################################
 
-## WP1: BAD
 sub process
 {
 	my( $self ) = @_;
@@ -427,7 +414,10 @@ sub process
 	
 	unless( defined $user )
 	{
-		$self->{session}->get_archive()->log( "Couldn't open user record for user ".$self->{username}." (sub ID ".$self->{subid}.")" );
+		EPrints::Log::log_entry(
+			"Subscription",
+			"Couldn't open user record for user $self->{username} (sub ID ".
+				"$self->{subid})" );
 		return( 0 );
 	}
 
@@ -437,7 +427,7 @@ sub process
 	$freq = "never" if( !defined $freq );
 
 	# Get the datestamp field
-	my $ds_field = $self->{session}->{metainfo}->find_table_field( "eprint", "datestamp" );
+	my $ds_field = EPrints::MetaInfo::find_eprint_field( "datestamp" );
 
 	# Get the date for yesterday
 	my $yesterday = EPrints::MetaField::get_datestamp( time - (24*60*60) );
@@ -446,7 +436,6 @@ sub process
 	if( $freq eq "daily" )
 	{
 		# Get from the last day
-#cjg?
 		$se->add_field( $ds_field, $yesterday );
 	}
 	elsif( $freq eq "weekly" )
@@ -456,7 +445,6 @@ sub process
 
 		# Get from the last week
 		$se->add_field( $ds_field, "$last_week-$yesterday" );
-#cjg?
 	}
 	elsif( $freq eq "monthly" )
 	{
@@ -480,7 +468,6 @@ sub process
 		
 		# Add the field searching for stuff from a month ago to yesterday.
 		$se->add_field( $ds_field, "$year-$month-$day-$yesterday" );
-#cjg?
 	}
 
 	my $success = 0;
@@ -493,60 +480,41 @@ sub process
 		# Don't send a mail if we've retrieved nothing
 		return( 1 ) if( scalar @eprints == 0 );
 
-		my $freqphrase = $self->{session}->phrase("lib/subscription:$freq");
-
 		# Put together the body of the message. First some blurb:
-		my $body = $self->{session}->phrase( 
-			   "lib/subscription:blurb",
-			   howoften=>$freqphrase,
-			     url=>$self->{session}->get_archive()->get_conf( "server_perl" )."/users/subscribe" );
+		my $body = "This mail contains your $freq subscription to ".
+			"$EPrintSite::SiteInfo::sitename.\n\nTo cancel, temporarily disable ".
+			"or alter your subscription, visit the following Web page:\n\n".
+			"$EPrintSite::SiteInfo::server_perl/users/subscribe\n\n";
 		
 		# Then how many we got
 		$body .= "                              ==========\n\n";
-		$body .= "   ";
-		if ( scalar @eprints==1 )
-		{
-			$body .= $self->{session}->phrase( "lib/subscription:newsub" ); 
-		}
-		else
-		{
-			$body .= $self->{session}->phrase( "lib/subscription:new_subs", 
-			                                   n=>scalar @eprints ); 
-		}
-		$body .= "\n\n\n";
-		my $eprint;
+		$body .= "   ".scalar @eprints." new submission";
+		$body .= ( scalar @eprints==1 ? " was" : "s were" );
+		$body .= " received.\n\n\n";
+		
 		# Then citations, with links to appropriate pages.
-		foreach $eprint (@eprints)
+		foreach (@eprints)
 		{
 			$body .= $self->{session}->{render}->render_eprint_citation(
-				$eprint, 0, 0 );
-			$body .= "\n\n".$eprint->static_page_url()."\n\n\n";
+				$_, 0, 0 );
+			$body .= "\n\n".$_->static_page_url()."\n\n\n";
 		}
 		
 		# Send the mail.
-		$success = EPrints::Utils::send_mail( 
-			$self->{session},
-		             $user->full_name(),
-		             $user->{email},
-			     $self->{session}->phrase( "lib/subscription:subsubj" ),
-		             $body );
-
+		$success = EPrints::Mailer::send_mail( $user->full_name(),
+		                                       $user->{email},
+		                                       "Subscription",
+		                                       $body );
 		unless( $success )
 		{
-			$self->{session}->log( "Failed to send subscription to user ".$user->{username}.": $!" );
+			EPrints::Log::log_entry(
+				"Subscription",
+				"Failed to send subscription to user $user->{username}: $!" );
 		}
 	}
 		
 	return( $success );
 }
 
-sub render_value
-{
-	my( $self, $fieldname, $showall ) = @_;
-
-	my $field = $self->{dataset}->get_field( $fieldname );	
-	
-	return $field->render_value( $self->{session}, $self->get_value($fieldname), $showall );
-}
 
 1;

@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+#!/usr/bin/perl -w
 
 ######################################################################
 #
@@ -25,43 +25,24 @@ use EPrints::EPrint;
 use EPrints::Session;
 use EPrints::HTMLRender;
 use EPrints::Subject;
+use EPrints::Log;
 
-my $session = new EPrints::Session( 1 , $ARGV[0] );
-exit( 1 ) unless( defined $session );
+use EPrintSite::SiteInfo;
 
-# cjg redo with new subject system!
+my $session = new EPrints::Session( 1 );
+
 
 # Get all of the available subjects
-my( $subjects, $subjectmap ) = EPrints::Subject::get_all( $session );#cjg change
+my( $subjects, $subjectmap ) = EPrints::Subject::get_all( $session );
 
-my $langid;
-foreach $langid ( @{$session->get_archive()->get_conf( "languages" )} )
+# Start with the root
+&write_subject_view( $session, new EPrints::Subject( $session ) );
+
+# Now do each of the subjects
+foreach (@$subjects)
 {
-	my $dir =  $session->get_archive()->get_conf( "local_html_root" ).
-		"/".$langid."/view";
-	unless( -d $dir )
-	{
-		print "mkdir $dir\n";
-		mkdir( $dir, 0775 ) or die "Can't make directory $dir: $!\n";
-	}
-	# Start with the root
-	&write_subject_view( 
-		$session, 
-		$langid, 
-		$dir."/index.html",
-		new EPrints::Subject( $session ) );
-
-
-	# Now do each of the subjects
-
-	foreach $subject (@$subjects)
-	{
-		&write_subject_view( 
-			$session, 
-			$langid, 
-			$dir."/".$subject->{subjectid}.".html",
-			$subject );
-	}
+	#EPrints::Log::debug( "generate_views", "Generating view for $_->{name}" );
+	&write_subject_view( $session, $_ );
 }
 
 $session->terminate();
@@ -70,37 +51,43 @@ $session->terminate();
 
 sub write_subject_view
 {
-	my( $session, $langid, $file, $subject ) = @_;
+	my( $session, $subject ) = @_;
 	
-	$session->new_page( $langid );
-	my $page = $session->make_doc_fragment();
+	my $output = $EPrintSite::SiteInfo::local_subject_view_stem.
+		$subject->{subjectid}.".html";
+
+	# Open the subject view file
+	my $ok = open( OUT, ">$output" );
 	
-	# Title (cjg NOT INTL)
-	my $title = "Browse by Subject: ".$subject->{name};
+	unless( $ok )
+	{
+		EPrints::Log::log_entry(
+			"generate_views",
+			"Error writing subject view for $subject->{subjectid} to $output:".
+				" $!" );
+		return;
+	}
+	
+	# Title
+	print OUT $session->{render}->start_html(
+		"Browse by Subject: $subject->{name}" );
 	
 	# Tree at the top
-	$page->appendChild( $session->render_subject_tree( $subject ) );
-	$page->appendChild( $session->render_ruler() );
-	# The entries themselves
-	my @eprints = $subject->posted_eprints( 
-		$session->get_archive()->get_dataset( "archive" ) );
+	print OUT $session->{render}->subject_tree( $subject );
+	print OUT "<HR>\n";	
 
-	# not INTL!cjg
-	my $p = $session->make_element( "p" );
-	my $n = $session->make_element( "span", class=>"number" );
-	$p->appendChild( $session->make_text("This subject category contains "));
-	$n->appendChild( $session->make_text(scalar @eprints) );
-	$p->appendChild( $n );
-	$p->appendChild( $session->make_text(" entries"));
-	$page->appendChild( $p );		
+	# The entries themselves
+	my @eprints = $subject->posted_eprints( $EPrints::Database::table_archive );
+
+	print OUT "<P><CENTER>This subject category contains <STRONG>".($#eprints+1).
+		"</STRONG> entries</CENTER></P>\n";
 	
-	my $eprint;
-	foreach $eprint (@eprints)
+	foreach (@eprints)
 	{
-		$p = $session->make_element( "p" );
-		$p->appendChild( $eprint->render_citation_link() );
-		$page->appendChild( $p );
+		print OUT "<P>";
+		print OUT $session->{render}->render_eprint_citation( $_, 1, 1 );
+		print OUT "</P>\n";
 	}
-	$session->build_page( $title, $page );
-	$session->page_to_file( $file );
+	
+	print OUT $session->{render}->end_html();
 }

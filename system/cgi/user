@@ -16,8 +16,6 @@ use EPrints::Session;
 use EPrints::HTMLRender;
 
 my $session = new EPrints::Session;
-Apache::exit( 0 ) unless( defined $session );
-
 
 my $userid = $session->{render}->param( "username" );
 
@@ -27,56 +25,43 @@ if( defined $userid )
 
 	if( defined $user )
 	{
-		print $session->{render}->start_html( 
-			$session->{lang}->phrase( 
-				"cgi/user:user_title", 
-				{name=>$user->full_name()} ) );
+		print $session->{render}->start_html( "User record for ".$user->full_name() );
 
 		print $session->{render}->render_user( $user, 1 );
 
 		print "<HR>\n";
 
 		my $rows = $session->{database}->retrieve(
-			EPrints::Database::table_name( "archive" ),
+			$EPrints::Database::table_archive,
 			[ "eprintid" ],
 			[ "username LIKE \"$userid\"" ] );
 
-		print "<P>";
-		if ( scalar @$rows==1 )
-		{
-			print $session->{lang}->phrase( "cgi/user:one_record" );
-		} 
-		else 
-		{
-			print $session->{lang}->phrase( 
-				"cgi/user:n_records", 
-				{n=>scalar @$rows} );
-		} 
-		print "</P>\n";
+		print "<CENTER><P>User has ".scalar @$rows;
+		print ( scalar @$rows==1 ? " EPrint" : " EPrints" );
+		print " in the archive.</P></CENTER>\n";
 		
 		if( scalar @$rows > 0 )
 		{
-			print "<P><A HREF=\"user_eprints?username=$userid\">";
-			print $session->{lang}->phrase( "cgi/user:view_link" );
-			print "</A></P>\n"; 
+			print "<CENTER><P><A HREF=\"user_eprints?username=$userid\">Click here ".
+				"to view this author's EPrints.</A></P></CENTER>\n"; 
 		}
 		
 		print $session->{render}->end_html();
 	}
 	else
 	{
-		print $session->render_error(
-			$session->html_phrase( "cgi/user:unknown_user" ),
-			$session->get_archive()->get_conf( "frontpage" ),
-			$session->html_phrase( "cgi/user:return_front" ) );
+		print $session->{render}->render_error(
+			"Unknown user",
+			"$EPrintSite::SiteInfo::frontpage",
+			"Return to front page" );
 	}
 }
 else
 {
-	print $session->render_error(
-		$session->html_phrase( "cgi/user:no_user" ),
-		$session->get_archive()->get_conf( "frontpage" ),
-		$session->html_phrase( "cgi/user:return_front" ) );
+	print $session->{render}->render_error(
+		"No user specified!",
+		"$EPrintSite::SiteInfo::frontpage",
+		"Return to front page" );
 }
 
 $session->terminate();

@@ -18,7 +18,9 @@
 package EPrints::Document;
 
 use EPrints::Database;
+use EPrints::Log;
 use EPrints::EPrint;
+use EPrintSite::SiteInfo;
 
 use File::Basename;
 use File::Path;
@@ -30,35 +32,38 @@ use URI::Heuristic;
 use strict;
 
 # Field to use for unsupported formats (if archive allows their deposit)
-$EPrints::Document::OTHER = "OTHER";
+$EPrints::Document::other = "OTHER";
+
+# Fields
+my $formats = ( $EPrintSite::SiteInfo::allow_arbitrary_formats ?
+                join ',', @EPrintSite::SiteInfo::supported_formats,
+                    $EPrints::Document::other :
+                join ',', @EPrintSite::SiteInfo::supported_formats );
 
 # Digits in generated ID codes (added to EPrints IDs)
-my $DIGITS = 2;
+my $digits = 2;
 
 
-## WP1: BAD
-sub get_system_field_info
-{
-	my( $class ) = @_;
+@EPrints::Document::meta_fields =
+(
+	"docid:text::Document ID:1:0:1",                # Unique identifier
+	"eprintid:text::EPrint ID:1:0:0:1",             # Corresponding EPrint ID
+	"format:enum::Document Format:1:1:1",           # Format (e.g. HTML)
+	"formatdesc:text::Additional Format Description:1:1:1",
+	                                                # Format description for
+	                                                #  other formats
+	"main:text::Main File:1:1:1"                    # Main file (e.g. index.html)
+);
 
-	return 
-	( 
-		{ name=>"docid", type=>"text", required=>1 },
 
-		{ name=>"eprintid", type=>"text", required=>1 },
+%EPrints::Document::help =
+(
+	"format"     => "Please select the storage format you wish to upload.",
+	"formatdesc" => "If you are uploading a non-listed format, please enter ".
+	                "details about the format below. Please be sure to include ".
+	                "version information."
+);
 
-		{ name=>"format", type=>"datatype", required=>1, datasetid=>"document" },
-
-		{ name=>"formatdesc", type=>"text", required=>1 },
-
-		{ name=>"language", type=>"datatype", required=>1, datasetid=>"language" },
-
-		{ name=>"security", type=>"datatype", required=>1, datasetid=>"security" },
-
-		{ name=>"main", type=>"text", required=>1 }
-	);
-
-}
 
 ######################################################################
 #
@@ -74,61 +79,95 @@ sub get_system_field_info
 #
 ######################################################################
 
-## WP1: BAD
 sub new
 {
-	my( $class, $session, $docid, $known ) = @_;
+	my( $class, $session, $doc_id, $known, $eprint ) = @_;
+	
+	my $self={};
+	bless $self, $class;
 
-print STDERR "(newdoc)\n";
+	$self->{session} = $session;
+	$self->{eprint} = $eprint;
+	
+	my @row;
 
 	if( !defined $known )
 	{
-		return $session->get_db()->get_single( 
-			$session->get_archive()->get_dataset( "document" ),
-			$docid );
-	} 
+		# Need to read data from the database
+		@row = $self->{session}->{database}->retrieve_single(
+			$EPrints::Database::table_document,
+			"docid",
+			$doc_id );
+	}
+	else
+	{
+		@row = @$known;
+	}
+	
+	if( $#row == -1 )
+	{
+		# No such document
+		return( undef );
+	}
 
-	my $self = {};
-	bless $self, $class;
-	$self->{data} = $known;
-	$self->{session} = $session;
+	# Lob the row data into the relevant fields
+	my @fields = EPrints::MetaInfo::get_document_fields();
+
+	my $i=0;
+	my $field;
+	
+	foreach $field (@fields)
+	{
+		my $field_name = $field->get("name");
+
+		$self->{$field_name} = $row[$i];
+		$i++;
+	}
 
 	return( $self );
 }
 
 
+######################################################################
+#
+# $doc = create( $session, $eprint, $format )
+#
+#  Create a new document entry and associated directory, for the given
+#  EPrint, in the given format. $format is optional, you can set it
+#  later with $doc->set_format( $format ).
+#
+######################################################################
+
 sub create
 {
-	my( $session, $eprint ) = @_;
+	my( $session, $eprint, $format ) = @_;
 	
 	# Generate new doc id
 	my $doc_id = _generate_doc_id( $session, $eprint );
 	
 	# Make directory on filesystem
-	return undef unless _create_directory( $doc_id, $eprint ); 
+	my $dir = _create_directory( $doc_id, $eprint );
 
-	# Make secure area symlink
-	return undef unless( _create_secure_symlink( $doc_id, $eprint ) );
-
-	my $data = {};
-	$session->get_archive()->call( 
-			"set_document_defaults", 
-			$data,
- 			$session,
- 			$eprint );
-	$data->{docid} = $doc_id;
-	$data->{eprintid} = $eprint->get_value( "eprintid" );
+	unless( defined $dir )
+	{
+		# Some error while making it
+		EPrints::Log::log_entry(
+			"Document",
+			"Error creating directory for EPrint $eprint->{eprintid} format ".
+				"$format: $!" );
+		return( undef );
+	}
 
 	# Make database entry
-	my $dataset = $session->get_archive()->get_dataset( "document" );
-
-	my $success = $session->get_db()->add_record(
-		$dataset,
-		$data );  
-
+	my $success = $session->{database}->add_record(
+		$EPrints::Database::table_document,
+		[ [ "docid", $doc_id ],
+		  [ "eprintid", $eprint->{eprintid} ],
+		  [ "format", $format ] ] );
+		  
 	if( $success )
 	{
-		return( EPrints::Document->new( $session, $doc_id, undef ) );
+		return( EPrints::Document->new( $session, $doc_id, undef, $eprint ) );
 	}
 	else
 	{
@@ -146,96 +185,22 @@ sub create
 #
 ######################################################################
 
-## WP1: BAD
 sub _create_directory
 {
 	my( $id, $eprint ) = @_;
 	
-	my $dir = $eprint->local_path()."/".docid_to_path( $eprint->get_session()->get_archive(), $id );
+	# Get the EPrint's directory
+	my $dir = $eprint->local_path() . "/" . $id;
+
+	# Ensure the path is there. Dir. is made group writable.
+	my @created = mkpath( $dir, 0, 0775 );
 
 	# Return undef if dir creation failed. Should always have created 1 dir.
-	if(!EPrints::Utils::mkdir($dir))
-	{
-		$eprint->get_session()->get_archive()->log( "Error creating directory for EPrint ".$eprint->get_value( "eprintid" ).", docid=".$id." ($dir): ".$! );
-		return 0;
-	}
-	else
-	{
-		return 1;
-	}
+	return( undef ) unless( $#created >= 0 );
+
+	return( $dir );
 }
 
-sub _create_secure_symlink
-{
-	my( $id, $eprint ) = @_;
-
-	my $archive = $eprint->get_session()->get_archive();
-
-	my $dir = $eprint->local_path()."/".docid_to_path( $archive, $id );
-
-	my $linkdir = _secure_symlink_path( $eprint );
-	print STDERR "\nLINKDIR=($linkdir)\n\n";
-	my @created = mkpath( $linkdir, 0, 0775 );
-
-	if( scalar @created == 0 )
-	{
-		$archive->log( "Error creating symlink dir for EPrint ".$eprint->get_value( "eprintid" ).", docid=".$id." ($linkdir): ".$! );
-		return( 0 );
-	}
-
-	my $symlink = $linkdir."/".docid_to_path( $archive, $id );
-
-	unless( symlink( $dir, $symlink ) )
-	{
-		$archive->log( "Error creating symlink for EPrint ".$eprint->get_value( "eprintid" ).", docid=".$id." symlink($dir to $symlink): ".$! );
-		return( 0 );
-	}	
-
-	return( 1 );
-}
-
-sub _remove_secure_symlink
-{
-	my( $id, $eprint ) = @_;
-
-	my $archive = $eprint->get_session()->get_archive();
-
-	my $linkdir = _secure_symlink_path( $eprint );
-	my $symlink = $linkdir."/".docid_to_path( $archive, $id );
-
-	unless( unlink( $symlink ) )
-	{
-		$archive->log( "Failed to unlink secure symlink for ".$eprint->get_value( "eprintid" ).", docid=".$id." ($symlink): ".$! );
-		return( 0 );
-	}
-	return( 1 );	
-}
-
-#cjg: should this belong to eprint?
-sub _secure_symlink_path
-{
-	my( $eprint ) = @_;
-
-	my $archive = $eprint->get_session()->get_archive();
-		
-	return( $archive->get_conf( "local_secure_root" )."/".EPrints::EPrint::eprintid_to_path( $archive, $eprint->get_value( "eprintid" ) ) );
-}
-
-sub docid_to_path
-{
-	my( $archive, $docid ) = @_;
-
-	$docid =~ m/-(\d+)$/;
-	my $id = $1;
-	if( !defined $1 )
-	{
-		$archive->log( "Doc ID did not take expected format: \"".$docid."\"" );
-		# Setting id to "badid" is messy, but recoverable. And should
-		# be noticed easily enough.
-		$id = "badid";
-	}
-	return $id;
-}
 
 ######################################################################
 #
@@ -245,35 +210,45 @@ sub docid_to_path
 #
 ######################################################################
 
-## WP1: BAD
 sub _generate_doc_id
 {
 	my( $session, $eprint ) = @_;
+	
+	# Get document IDs associated with this EPrint
+	my $rows = $session->{database}->retrieve(
+		$EPrints::Database::table_document,
+		[ "docid" ],
+		[ "eprintid LIKE \"$eprint->{eprintid}\"" ],
+		[ "docid" ] );
+	
+	my $id;
 
-	my $dataset = $session->get_archive()->get_dataset( "document" );
-
-	my $searchexp = EPrints::SearchExpression->new(
-				session=>$session,
-				dataset=>$dataset );
-
-	$searchexp->add_field(
-		$dataset->get_field( "eprintid" ),
-		"PHR:EQ:".$eprint->get_value( "eprintid" ) );
-	$searchexp->perform_search();
-
-	my( @docs ) = $searchexp->get_records();
-
-	my $n = 0;
-	foreach( @docs )
+	# Is there already a document for given EPrint?
+	if( $#{$rows} >= 0 )
 	{
-		my $id = $_->get_value( "docid" );
-		$id=~m/-(\d+)$/;
-		if( $1 > $n ) { $n = $1; }
-	}
-	$n = $n + 1;
+		# Since they're ordered by docid, last in the list will be one we want
+		$id = $rows->[$#{$rows}]->[0];
 
-	return sprintf( "%s-%02d", $eprint->get_value( "eprintid" ), $n );
+		# Extract all except last two digits
+		$id =~ s/.*-//;
+		$id++;
+
+		# Add any preceding 0's
+		while( length $id < $digits )
+		{
+			$id = "0".$id;
+		}
+	}
+	else
+	{
+		# No documents for this EPrint
+		$id = "00";
+	}
+
+	return( $eprint->{eprintid} . "-" . $id );
 }
+
+
 
 
 ######################################################################
@@ -285,7 +260,6 @@ sub _generate_doc_id
 #
 ######################################################################
 
-## WP1: BAD #cjg NOT DONE
 sub clone
 {
 	my( $self, $eprint ) = @_;
@@ -293,13 +267,12 @@ sub clone
 	# First create a new doc object
 	my $new_doc = EPrints::Document::create( $self->{session},
 	                                         $eprint,
-	                                         $self->{data}->{format} );
+	                                         $self->{format} );
 	return( 0 ) if( !defined $new_doc );
 	
 	# Copy fields across
-	$new_doc->set_value( "format" ) = $self->get_value( "format" );
-	$new_doc->set_value( "formatdesc" ) = $self->get_value( "formatdesc" );
-	$new_doc->set_value( "main" ) = $self->get_main();
+	$new_doc->{formatdesc} = $self->{formatdesc};
+	$new_doc->{main} = $self->{main};
 	
 	# Copy files
 	my $rc = 0xffff & system
@@ -308,7 +281,10 @@ sub clone
 	# If something's gone wrong...
 	if ( $rc!=0 )
 	{
-		$self->{session}->get_archive()->log( "Error copying from ".$self->local_path()." to ".$new_doc->local_path().": $!" );
+		EPrints::Log::log_entry(
+			"Document",
+			"Error copying from $self->local_path() to ".
+				"$new_doc->local_path(): $!" );
 		return( 0 );
 	}
 
@@ -336,23 +312,18 @@ sub remove
 {
 	my( $self ) = @_;
 
-	# If removing the symlink fails then it's not the end of the 
-	# world. We will delete all the files it points to. 
-	_remove_secure_symlink( 
-		$self->get_value( "docid" ), 
-		$self->get_eprint() );
-
 	# Remove database entry
-	my $success = $self->{session}->get_db()->remove(
-		$self->{session}->get_archive()->get_dataset( "document" ),
-		$self->get_value( "docid" ) );
+	my $success = $self->{session}->{database}->remove(
+		$EPrints::Database::table_document,
+		"docid",
+		$self->{docid} );
 	
-
 	if( !$success )
 	{
-		my $db_error = $self->{session}->get_db()->error();
-		$self->{session}->get_archive()->log( "Error removing document ".$self->get_value( "docid" )." from database: $db_error" );
-		return( 0 );
+		my $db_error = $self->{session}->{database}->error();
+		EPrints::Log::log_entry(
+			"Document",
+			"Error removing document $self->{docid} from database: $db_error" );
 	}
 
 	# Remove directory and contents
@@ -361,7 +332,9 @@ sub remove
 
 	if( $num_deleted <= 0 )
 	{
-		$self->{session}->get_archive()->log( "Error removing document files for ".$self->get_value("docid").", path ".$full_path.": $!" );
+		EPrints::Log::log_entry(
+			"Document",
+			"Error removing document files for $self->{docid}, path $full_path: $!" );
 		$success = 0;
 	}
 
@@ -377,7 +350,6 @@ sub remove
 #
 ######################################################################
 
-## WP1: BAD
 sub get_eprint
 {
 	my( $self ) = @_;
@@ -388,7 +360,7 @@ sub get_eprint
 	# Otherwise, create object and return
 	$self->{eprint} = new EPrints::EPrint( $self->{session},
 	                                       undef,
-	                                       $self->get_value( "eprintid" ) );
+	                                       $self->{eprintid} );
 	
 	return( $self->{eprint} );
 }
@@ -402,28 +374,16 @@ sub get_eprint
 #
 ######################################################################
 
-## WP1: BAD
 sub url
 {
 	my( $self ) = @_;
 
 	my $eprint = $self->get_eprint();
 
-print STDERR "sEPID: ".$self->get_value( "eprintid" )."\n";
-print STDERR "eEPID: ".$eprint->get_value( "eprintid" )."\n";
-use Data::Dumper;
-print STDERR Dumper( $eprint->{data} );
 	return( undef ) if( !defined $eprint );
-
-	my $archive = $self->{session}->get_archive();
-
-	# Unless this is a public doc in "archive" then the url should
-	# point into the secure area. 
-
-	return $archive->get_conf( "server_secure_root" ) . "/" .
-		$eprint->get_value( "eprintid" ) . "/" .
-		docid_to_path( $archive, $self->get_value( "docid" ) ) . "/" . 
-		$self->get_main();
+	
+	return( URI::Escape::uri_escape(
+		$eprint->url_stem() . $self->{docid} . "/" . $self->{main} ) );
 }
 
 
@@ -435,7 +395,6 @@ print STDERR Dumper( $eprint->{data} );
 #
 ######################################################################
 
-## WP1: BAD
 sub local_path
 {
 	my( $self ) = @_;
@@ -444,7 +403,7 @@ sub local_path
 	
 	return( undef ) if( !defined $eprint );
 	
-	return( $eprint->local_path()."/".docid_to_path( $self->{session}->get_archive(), $self->get_value( "docid" ) ) );
+	return( $eprint->local_path() . "/" . $self->{docid} );
 }
 
 
@@ -456,7 +415,6 @@ sub local_path
 #
 ######################################################################
 
-## WP1: BAD NEEEEEEEEEEEEEEEEED
 sub files
 {
 	my( $self ) = @_;
@@ -480,8 +438,6 @@ sub files
 #
 ######################################################################
 
-# cjg should this function be in some kind of utils module and
-# used by generate_static too?
 sub _get_files
 {
 	my( $files, $root, $dir ) = @_;
@@ -494,25 +450,25 @@ sub _get_files
 	closedir CDIR;
 
 	# Iterate through files
-	my $name;
-	foreach $name (@filesread)
+	foreach (@filesread)
 	{
-		if( $name ne "." && $name ne ".." )
+		if( $_ ne "." && $_ ne ".." )
 		{
 			# If it's a directory, recurse
-			if( -d $root . "/" . $fixed_dir . $name )
+			if( -d $root . "/" . $fixed_dir . $_ )
 			{
-				_get_files( $files, $root, $fixed_dir . $name );
+				_get_files( $files, $root, $fixed_dir . $_ );
 			}
 			else
 			{
-				#my @stats = stat( $root . "/" . $fixed_dir . $name );
-				$files->{$fixed_dir.$name} = -s $root . "/" . $fixed_dir . $name;
-				#push @files, $fixed_dir . $name;
+				#my @stats = stat( $root . "/" . $fixed_dir . $_ );
+				$files->{$fixed_dir.$_} = -s $root . "/" . $fixed_dir . $_;
+				#push @files, $fixed_dir . $_;
 			}
 		}
 	}
 
+	#return( @files );
 }
 
 
@@ -525,20 +481,22 @@ sub _get_files
 #
 ######################################################################
 
-## WP1: BAD
 sub remove_file
 {
 	my( $self, $filename ) = @_;
 	
 	# If it's the main file, unset it
-	$self->set_value( "main" , undef ) if( $filename eq $self->get_main() );
+	undef $self->{main} if( $filename eq $self->{main} );
 
 	my $count = unlink $self->local_path()."/".$filename;
 	
 	if( $count != 1 )
 	{
-		$self->{session}->get_archive()->log( "Error removing file $filename for doc ".$self->get_value( "docid" ).": $!" );
+		EPrints::Log::log_entry(
+			"Document",
+			"Error removing file $filename for doc $self->{docid}: $!" );
 	}
+
 	return( $count==1 );
 }
 
@@ -551,7 +509,6 @@ sub remove_file
 #
 ######################################################################
 
-## WP1: BAD
 sub remove_all_files
 {
 	my( $self ) = @_;
@@ -566,7 +523,9 @@ sub remove_all_files
 
 	if( $num_deleted < scalar @to_delete )
 	{
-		$self->{session}->get_archive()->log( "Error removing document files for ".$self->get_value( "docid" ).", path ".$full_path.": $!" );
+		EPrints::Log::log_entry(
+			"Document",
+			"Error removing doc. files for $self->{docid}, path $full_path: $!" );
 		return( 0 );
 	}
 
@@ -582,7 +541,6 @@ sub remove_all_files
 #
 ######################################################################
 
-## WP1: BAD
 sub set_main
 {
 	my( $self, $main_file ) = @_;
@@ -593,12 +551,12 @@ sub set_main
 		my %all_files = $self->files();
 
 		# Set the main file if it does
-		$self->set_value( "main", $main_file ) if( defined $all_files{$main_file} );
+		$self->{main} = $main_file if( defined $all_files{$main_file} );
 	}
 	else
 	{
 		# The caller passed in undef, so we unset the main file
-		$self->set_value( "main", undef );
+		undef $self->{main};
 	}
 }
 
@@ -611,12 +569,11 @@ sub set_main
 #
 ######################################################################
 
-## WP1: BAD
 sub get_main
 {
 	my( $self ) = @_;
 	
-	return( $self->{data}->{main} );
+	return( $self->{main} );
 }
 
 
@@ -628,12 +585,11 @@ sub get_main
 #
 ######################################################################
 
-## WP1: BAD
 sub set_format
 {
 	my( $self, $format ) = @_;
 	
-	$self->set_value( "format" , $format );
+	$self->{format} = $format;
 }
 
 
@@ -645,12 +601,11 @@ sub set_format
 #
 ######################################################################
 
-## WP1: BAD
 sub set_format_desc
 {
 	my( $self, $format_desc ) = @_;
 	
-	$self->set_value( "format_desc" , $format_desc );
+	$self->{format_desc} = $format_desc;
 }
 
 
@@ -662,7 +617,6 @@ sub set_format_desc
 #
 ######################################################################
 
-## WP1: BAD
 sub upload
 {
 	my( $self, $filehandle, $filename ) = @_;
@@ -702,7 +656,6 @@ sub upload
 #
 ######################################################################
 
-## WP1: BAD
 sub upload_archive
 {
 	my( $self, $filehandle, $filename, $archive_format ) = @_;
@@ -716,11 +669,17 @@ sub upload_archive
 	my $dest = $self->local_path();
 	my $arc_tmp =  $dest . "/" . $file;
 
+	# Make the extraction command line
+	my $extract_command =
+		$EPrintSite::SiteInfo::archive_extraction_commands{ $archive_format };
+
+	$extract_command =~ s/_DIR_/$dest/g;
+	$extract_command =~ s/_ARC_/$arc_tmp/g;
+	
+#EPrints::Log::debug( "Document", "EXEC:$extract_command" );
+
 	# Do the extraction
-	my $rc = $self->{session}->get_archive()->exec( 
-			$archive_format, 
-			DIR => $dest,
-			ARC => $arc_tmp );
+	my $rc = 0xffff & system $extract_command;
 	
 	# Remove the temp archive
 	unlink $arc_tmp;
@@ -742,7 +701,6 @@ sub upload_archive
 #
 ######################################################################
 
-## WP1: BAD
 sub upload_url
 {
 	my( $self, $url_in ) = @_;
@@ -782,25 +740,30 @@ sub upload_url
 	# If the result is less than zero, assume no cut dirs (probably have URL
 	# with no trailing slash, an INCORRECT result from URI::Heuristic
 	$cut_dirs = 0 if( $cut_dirs < 0 );
-
-	my $rc = $self->{session}->get_archive()->exec( 
-			"wget",
-			CUTDIRS => $cut_dirs,
-			URL => '"'.$url.'"' );
 	
+	# Construct wget command line.
+	my $command = $EPrintSite::SiteInfo::wget_command;
+	#my $escaped_url = uri_escape( $url );
+	
+	$command =~ s/_CUTDIRS_/$cut_dirs/g;
+	$command =~ s/_URL_/"$url"/g;
+	
+	# Run the command
+	my $rc = 0xffff & system $command;
+
 	# If something's gone wrong...
 	return( 0 ) if ( $rc!=0 );
 
 	# Otherwise set the main file if appropriate
-	if( !defined $self->get_main() || $self->get_main() eq "" )
+	if( !defined $self->{main} || $self->{main} eq "" )
 	{
 		my $endfile = $url;
 		$endfile =~ s/.*\///;
 		$self->set_main( $endfile );
 
 		# If it's still undefined, try setting it to index.html or index.htm
-		$self->set_main( "index.html" ) unless( defined $self->get_main() );
-		$self->set_main( "index.htm" ) unless( defined $self->get_main() );
+		$self->set_main( "index.html" ) unless( defined $self->{main} );
+		$self->set_main( "index.htm" ) unless( defined $self->{main} );
 
 		# Those are our best guesses, best leave it to the user if still don't
 		# have a main file.
@@ -820,61 +783,99 @@ sub upload_url
 #
 ######################################################################
 
-## WP1: BAD
 sub commit
 {
 	my( $self ) = @_;
-
-	my $dataset = $self->{session}->get_archive()->get_dataset( "document" );
-
-	my $success = $self->{session}->get_db()->update(
-		$dataset,
-		$self->{data} );
 	
+	my @fields = EPrints::MetaInfo::get_document_fields();
+	my @data;
+
+	my $key_field = shift @fields;
+	my $key_value = $self->{$key_field->{name}};
+
+	foreach (@fields)
+	{
+		push @data, [ $_->{name}, $self->{$_->{name}} ];
+	}
+	
+	my $success = $self->{session}->{database}->update(
+		$EPrints::Database::table_document,
+		$key_field->{name},
+		$key_value,
+		\@data );
+
 	if( !$success )
 	{
-		my $db_error = $self->{session}->get_db()->error();
-		$self->{session}->get_archive()->log( "Error committing Document ".$self->get_value( "docid" ).": $db_error" );
+		my $db_error = $self->{session}->{database}->error();
+		EPrints::Log::log_entry(
+			"EPrint",
+			"Error committing Document $self->{docid}: $db_error" );
 	}
 
 	return( $success );
 }
 	
-sub render_link
+
+
+
+######################################################################
+#
+# @formats = get_supported_formats()
+#
+#  [STATIC] - return list of tags of supported document storage
+#  formats (e.g. HTML, PDF etc.)
+#
+######################################################################
+
+sub get_supported_formats
 {
-	my( $self ) = @_;
+	#my( $class ) = @_;
+	
+	my @formats = @EPrintSite::SiteInfo::supported_formats;
 
-	my $a = $self->{session}->make_element( "a", href=>$self->url() );
-
-	$a->appendChild( $self->render_desc() );
-
-	return $a;
+	push @formats, $EPrints::Document::other
+		if $EPrintSite::SiteInfo::allow_arbitrary_formats;
+	
+	return( @formats );
 }
 
-sub render_desc
+
+######################################################################
+#
+# $required = required_format( $format )
+#  [STATIC]
+#
+#  Return 1 if the given format is one of the list of required formats,
+#  0 if not. Always returns 1 if no formats are required.
+#
+######################################################################
+
+sub required_format
 {
-	my( $self ) = @_;
+	my( $format ) = @_;
+	
+	return( 1 ) if $#EPrintSite::SiteInfo::required_formats == -1;
 
-	my $dataset = $self->{session}->get_archive()->get_dataset( "document" );
+	my $req = 0;
 
-	my $desc = $self->{session}->make_doc_fragment();
+	foreach (@EPrintSite::SiteInfo::required_formats)
+	{
+		$req = 1 if( $format eq $_ );
+	}
 
-	my $format = $self->get_value( "format" );
-	if( !defined $format )
-	{
-		$desc->appendChild( $self->{session}->make_text( "??" ) );
-	}
-	else
-	{
-		$desc->appendChild( $dataset->render_type_name( $self->{session}, $format ) ); 
-	}
-	my $formatdesc = $self->get_value( "formatdesc" );
-	if( defined $formatdesc )
-	{
-		$desc->appendChild( $self->{session}->make_text( " (".$formatdesc.")" ) );
-	}
-	return $desc;
+	return( $req );
 }
+
+
+######################################################################
+#
+# $problems = validate()
+# array_ref
+#
+#  Make sure everything is OK with this document, i.e. that files
+#  have been uploaded, 
+#
+######################################################################
 
 sub validate
 {
@@ -888,55 +889,25 @@ sub validate
 
 	if( scalar keys %files ==0 )
 	{
-		push @problems, $self->{session}->html_phrase( "lib/document:no_files" );
+		push @problems, "You haven't uploaded any files!";
 	}
-	elsif( !defined $self->get_main() || $self->get_main() eq "" )
+	elsif( !defined $self->{main} || $self->{main} eq "" )
 	{
 		# No file selected as main!
-		push @problems, $self->{session}->html_phrase( "lib/document:no_first" );
+		push @problems, "You need to select a file to be shown first.";
+	}
+	elsif( $self->{format} eq $EPrints::Document::other &&
+		( !defined $self->{formatdesc} || $self->{formatdesc} eq "" ) )
+	{
+		# No description for an alternative format
+		push @problems, "You need to supply a description of the document ".
+			"format you've updated, e.g. <em>Microsoft Word version 6.0</em>";
 	}
 		
-	#push @problems, $self->{session}->html_phrase( "lib/document:no_desc" );
-	# cjg Deprecated no_desc OR make some formats require a description.
-		
 	# Site-specific checks
-	$self->{session}->get_archive()->call( "validate_document", $self, \@problems );
+	EPrintSite::Validate::validate_document( $self, \@problems );
 
 	return( \@problems );
 }
 
-sub get_value
-{
-	my( $self , $fieldname ) = @_;
-
-	if( $self->{data}->{$fieldname} eq "")
-	{
-		return undef;
-	}
-
-	return $self->{data}->{$fieldname};
-}
-
-sub set_value
-{
-	my( $self , $fieldname, $value ) = @_;
-
-	$self->{data}->{$fieldname} = $value;
-}
-
-sub get_data
-{
-	my( $self ) = @_;
-	
-	return $self->{data};
-}
-
-sub render_value
-{
-	my( $self, $fieldname, $showall ) = @_;
-
-	my $field = $self->{dataset}->get_field( $fieldname );	
-	
-	return $field->render_value( $self->{session}, $self->get_value($fieldname), $showall );
-}
 1;

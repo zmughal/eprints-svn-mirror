@@ -19,8 +19,6 @@ use EPrints::EPrint;
 use strict;
 
 my $session = new EPrints::Session;
-Apache::exit( 0 ) unless( defined $session );
-
 
 my $userid = $session->{render}->param( "username" );
 
@@ -31,38 +29,23 @@ if( defined $userid )
 	if( defined $user )
 	{
 		print $session->{render}->start_html(
-			$session->{lang}->phrase( 
-				"cgi/user_eprints:eprints_title",
-				{ name=>$user->full_name() } ) );
+			"EPrints submitted by ".$user->full_name() );
 
 		my @eprints = EPrints::EPrint::retrieve_eprints(
 			$session,
-			EPrints::Database::table_name( "archive" ),
+			$EPrints::Database::table_archive,
 			[ "username LIKE \"$userid\"" ],
 			[ "datestamp DESC" ] );
 
-		print "<CENTER><P><A HREF=\"user?username=$userid\">";
-		print $session->{lang}->phrase( "cgi/user_eprints:record_link" );
-		print "</A></P></CENTER>\n";
+		print "<CENTER><P><A HREF=\"user?username=$userid\">".
+			"Click here to see user's record.</A></P></CENTER>\n";
 
-		print "<P>";
-		if ( scalar @eprints == 0 )
-		{
-			print $session->{lang}->phrase( "cgi/user_eprints:no_eprints" );
-		}
-		else if ( scalar @eprints == 1 )
-		{
-			print $session->{lang}->phrase( 
-				"cgi/user_eprints:one_eprint",
-				{n=>"<STRONG>1</STRONG>"} );
-		}
-		else
-		{
-			print $session->{lang}->phrase( 
-				"cgi/user_eprints:n_eprints",
-				{n=>"<STRONG>".scalar @eprints."</STRONG>"} );
-		}
-		print "</P>\n";
+		print "<CENTER><P>User has submitted ";
+		print "no EPrints." if( scalar @eprints==0 );
+		print "<STRONG>1</STRONG> EPrint." if( scalar @eprints==1 );
+		print "<STRONG>".scalar @eprints."</STRONG> EPrints"
+			if( scalar @eprints>1 );
+		print "</P></CENTER>\n";
 
 		foreach (@eprints)
 		{
@@ -76,18 +59,18 @@ if( defined $userid )
 	}
 	else
 	{
-		print $session->render_error(
-			$session->html_phrase( "cgi/user_eprints:unknown_user" ),
-			$session->get_archive()->get_conf( "frontpage" ),
-			$session->html_phrase( "cgi/user_eprints:return_front" ) );
+		print $session->{render}->render_error(
+			"Unknown user",
+			"$EPrintSite::SiteInfo::frontpage",
+			"Return to front page" );
 	}
 }
 else
 {
-	print $session->render_error(
-		$session->html_phrase( "cgi/user_eprints:no_user" ),
-		$session->get_archive()->get_conf( "frontpage" ),
-		$session->html_phrase( "cgi/user_eprints:return_front" ) );
+	print $session->{render}->render_error(
+		"No user specified!",
+		"$EPrintSite::SiteInfo::frontpage",
+		"Return to front page" );
 }
 
 $session->terminate();

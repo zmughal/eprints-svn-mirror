@@ -1,7 +1,7 @@
 <field abstract>
 displaylines = "10"
 editable = YES
-type = "longtext"
+type = "multitext"
 visible = YES
 displayname = "Abstract"
 help = "Please enter the abstract of your deposit. You can easily copy "
@@ -13,8 +13,7 @@ help = "<em>&lt;EM&gt;</em> or <strong>&lt;strong&gt;</strong>."
 <field altloc>
 displaylines = "3"
 editable = YES
-type = "url"
-multiple = YES
+type = "multiurl"
 visible = YES
 displayname = "Alternative Locations"
 help = "If your deposit is available from other sites, please enter the "
@@ -45,7 +44,7 @@ help = "Please enter the full name of the conference."
 
 <field comments>
 editable = YES
-type = "longtext"
+type = "multitext"
 displaylines = "3"
 visible = YES
 displayname = "Additional Information"
@@ -114,7 +113,7 @@ help = "Please enter the institution from which the deposit originated."
 
 <field ispublished>
 editable = YES
-type = "set"
+type = "enum"
 visible = YES
 displayname = "Status"
 value unpub = "Unpublished"
@@ -127,7 +126,7 @@ help = "press</strong>), or has not been previously published."
 
 <field keywords>
 editable = YES
-type = "longtext"
+type = "multitext"
 displaylines = 2
 visible = YES
 displayname = "Keywords"
@@ -138,7 +137,7 @@ help = "your deposit, and don't be too general."
 
 <field month>
 editable = YES
-type = "set"
+type = "enum"
 visible = YES
 displayname = "Month"
 value unspec = "Unspecified"
@@ -215,7 +214,7 @@ help = "Please indicate whether this version of the work been refereed below."
 <field referencetext>
 editable = YES
 visible = YES
-type = "longtext"
+type = "multitext"
 displayname = "References"
 displaylines = 3
 help = "You are strongly encouraged to paste in the reference list of your "

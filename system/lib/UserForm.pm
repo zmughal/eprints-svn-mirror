@@ -30,7 +30,6 @@ use strict;
 #
 ######################################################################
 
-## WP1: BAD
 sub new
 {
 	my( $class, $session, $redirect, $staff, $user ) = @_;
@@ -55,105 +54,84 @@ sub new
 #
 ######################################################################
 
-## WP1: BAD
 sub process
 {
 	my( $self ) = @_;
 	
-	if( !defined $self->{user} ) 
+	$self->{user} = EPrints::User::current_user( $self->{session} )
+		unless( defined $self->{user} );
+
+	if( !defined $self->{user} )
 	{
-		$self->{user} = $self->{session}->current_user();
+		# Can't find the user
+		$self->{session}->{render}->render_error( "I don't know who you are",
+		                                  $self->{redirect} );
+		return;
 	}
+
 	my $full_name = $self->{user}->full_name();
 
-	if( $self->{session}->seen_form() == 0 ||
-	    $self->{session}->internal_button_pressed() )
+	if( $self->{session}->{render}->seen_form() == 0 ||
+	    $self->{session}->{render}->internal_button_pressed() )
 	{
-		my( $page, $p, $a );
+		print $self->{session}->{render}->start_html( "Record for $full_name" );
 
-		$page = $self->{session}->make_doc_fragment();
+		# Blurb
+		print "<P>Please enter correct information about yourself for our ".
+			"records. This	information will be useful to us and readers of your ".
+			"papers. You don't have to	supply all this information if you don\'t ".
+			"want to; you need only fill out those	fields marked with a * to ".
+			"start using the archive.</P>\n";
 
-		$p = $self->{session}->make_element( "p" );		
-		$p->appendChild( $self->{session}->html_phrase( 
-			"lib/userform:blurb", 
-			star => $self->{session}->make_element(
-					"span",
-					class => "requiredstar" ) ) );	
-		$page->appendChild( $p );
+		print "<P>For instructions on how to change your e-mail address, ".
+			"<a href=\"$EPrintSite::SiteInfo::server_static/register.html\">".
+			"click here</A>.</P>\n";
 
-		$a = $self->{session}->make_element( 
-			"a", 
-			href => $self->{session}->get_archive()->
-				  get_conf( "server_static" ).
-				"/register.html"  );
-		$p = $self->{session}->make_element( "p" );		
-		$p->appendChild( $self->{session}->html_phrase( 
-				"lib/userform:change_email",
-				registerlink => $a ) );	
-		$page->appendChild( $p );
+		$self->render_form();
 
-		$page->appendChild( $self->_render_user_form() );
-
-		$self->{session}->build_page(
-			$self->{session}->
-				phrase( "lib/userform:record_for", name => $full_name ),
-			$page );
-		$self->{session}->send_page();
-
+		print $self->{session}->{render}->end_html();
 	}
-	elsif( $self->_update_from_form() )
+	else
 	{
 		# Update the user values
-
-		# Validate the changes
-		my $problems = $self->{user}->validate();
-
-		if( scalar @{$problems} == 0 )
+		if( $self->update_from_form() )
 		{
-			# User has entered everything OK
-			$self->{user}->commit();
-			$self->{session}->redirect( $self->{redirect} );
-			return;
+			# Validate the changes
+			my $problems = $self->{user}->validate();
+
+			if( $#{$problems} == -1 )
+			{
+				# User has entered everything OK
+				$self->{user}->commit();
+				$self->{session}->{render}->redirect( $self->{redirect} );
+			}
+			else
+			{
+				print $self->{session}->{render}->start_html(
+					"Record for $full_name" );
+
+				print "<P>The form doesn\'t seem to be filled out correctly:</P>\n".
+					"<UL>\n";
+
+				foreach (@$problems)
+				{
+					print "<LI>$_</LI>\n";
+				}
+
+				print "</UL>\n<P>Please complete the form before continuing.</P>\n";
+
+				$self->render_form();
+
+				print $self->{session}->{render}->end_html();
+			}
 		}
-
-		my( $page, $p, $ul, $li );
-
-		$page = $self->{session}->make_doc_fragment();
-
-		$p = $self->{session}->make_element( "p" );
-		$p->appendChild( 
-			$self->{session}->html_phrase( "lib/userform:form_incorrect" ) );
-		$page->appendChild( $p );
-
-		$ul = $self->{session}->make_element( "ul" );
-		my( $problem );
-		foreach $problem (@$problems)
+		else
 		{
-			$li = $self->{session}->make_element( "li" );
-			$li->appendChild( 
-				$self->{session}->make_text( $problem ) );
-			$ul->appendChild( $li );
+			$self->{session}->{render}->render_error(
+				"There was a problem reading the posted data and updating the ".
+					"database. Please try again later",
+				$self->{redirect} );
 		}
-		$page->appendChild( $ul );
-
-		$p = $self->{session}->make_element( "p" );
-		$p->appendChild( 
-			$self->{session}->html_phrase( "lib/userform:complete_form" ) );
-		$page->appendChild( $p );
-	
-		$page->appendChild( $self->_render_user_form() );
-
-		$self->{session}->build_page(
-			$self->{session}->
-				phrase( "lib/userform:record_for", name => $full_name ),
-			$page );
-		$self->{session}->send_page();
-	}
-	else 
-	{
-		$self->{session}->render_error(
-			$self->{session}->html_phrase( "lib/userform:problem_updating" ),
-			$self->{redirect} );
 	}
 }
 
@@ -168,34 +146,28 @@ sub process
 #
 ######################################################################
 
-## WP1: BAD
-sub _render_user_form
+sub render_form
 {
 	my( $self ) = @_;
 	
-	my $user_ds = $self->{session}->get_archive()->get_dataset( "user" );
-
-	my @fields;
-	if( $self->{staff} )
+	my @edit_fields;
+	my $field;
+	my @all_fields = EPrints::MetaInfo::get_user_fields();
+	
+	# Get the appropriate fields
+	foreach $field (@all_fields)
 	{
- 		@fields = $user_ds->get_fields();
-	}
-	else
-	{
-		@fields = $user_ds->get_type_fields( $self->{user}->get_value( "usertype" ) );
+		push @edit_fields, $field if( $self->{staff} || $field->{editable} );
 	}
 	
-	my %hidden = ( "username"=>$self->{user}->get_value( "username" ) );
-
-	my $buttons = { update => $self->{session}->phrase( "lib/userform:update_record" ) };
-
-	return $self->{session}->render_input_form( 
-					\@fields,
-					$self->{user}->get_values(),
-					1,
-					1,
-					$buttons,
-					\%hidden );
+	my %hidden = ( "username"=>$self->{user}->{username} );
+	
+	$self->{session}->{render}->render_form( \@edit_fields,
+	                                         $self->{user},
+	                                         1,
+	                                         1,
+	                                         [ "Update Record" ],
+	                                         \%hidden );
 }
 
 ######################################################################
@@ -207,43 +179,40 @@ sub _render_user_form
 #
 ######################################################################
 
-
-sub _update_from_form
+sub update_from_form
 {
 	my( $self ) = @_;
+	
+	my @all_fields = EPrints::MetaInfo::get_user_fields();
+	my $field;
 
 	# Ensure correct user
-	if( $self->{session}->param( "username" ) ne
-		$self->{user}->get_value( "username" ) )
+	if( $self->{session}->{render}->param( "username" ) eq
+		$self->{user}->{username} )
 	{
-		my $form_id = $self->{session}->param( "username" );
-		$self->{session}->get_archive()->log( 
-			"Username in $form_id doesn't match object username ".
-			 $self->{username} );
-	
-		return( 0 );
-	}
-	
-	my $user_ds = $self->{session}->get_archive()->get_dataset( "user" );
-	my @fields;
-	if( $self->{staff} )
-	{
- 		@fields = $user_ds->get_fields();
+		foreach $field (@all_fields)
+		{
+			my $param = $self->{session}->{render}->form_value( $field );
+			$param = undef if( defined $param && $param eq "" );
+
+			# Only update if a value for the field was entered in the form.
+			if( $self->{staff} || $field->{editable} )
+			{
+				$self->{user}->{$field->{name}} = $param;
+			}
+		}
+		return( 1 );
 	}
 	else
 	{
-		@fields = $user_ds->get_type_fields( $self->{user}->get_value( "usertype" ) );
-	}
-	
+		my $form_id = $self->{session}->{render}->param( "username" );
+		EPrints::Log::log_entry(
+			"User",
+			"Username in form $form_id doesn't match object username ".
+				"$self->{username}" );
 
-	my $field;
-	foreach $field ( @fields )
-	{
-		my $param = $field->form_value( $self->{session} );
-
-		$self->{user}->set_value( $field->{name} , $param );
+		return( 0 );
 	}
-	return( 1 );
 }
 
 

@@ -17,46 +17,71 @@
 package EPrints::EPrint;
 
 use EPrints::Database;
-use EPrints::DOM;
-use EPrints::Document;
+use EPrints::MetaInfo;
+use EPrintSite::SiteRoutines;
+use EPrintSite::SiteInfo;
 
 use File::Path;
 use Filesys::DiskSpace;
 use strict;
 
-#cjg doc validation lets through docs with no type (??)
-
 # Number of digits in generated ID codes
 $EPrints::EPrint::id_code_digits = 8;
 
+#
+# System fields, common to all EPrint types
+#
+@EPrints::EPrint::system_meta_fields =
+(
+	"eprintid:text::EPrint ID:1:0:1",        # The EPrint ID
+	"username:text::Submitted by:1:0:1:1",   # User ID of submitter
+	"dir:text::Local Directory:0:0:0",       # Directory it's in
+	"datestamp:date::Submission Date:0:0:1", # The submission date stamp
+	"subjects:subjects:1:Subject Categories:0:0:0",
+	                                         # Subject categories. Tagged as
+	                                         # "not visible" since it's a special
+	                                         # case.
+	"additional:text::Suggested Additional Subject Heading:0:0:0",
+	                                         # Suggested extra subject...
+	"reasons:multitext:6:Reason for Additional Heading:0:0:0",
+	                                         # Chance for user to explain why
+	"type:eprinttype::EPrint Type:1:0:0",    # EPrint types, special case again
+	"succeeds:text::Later Version Of:0:0:0", # Later version of....
+	"commentary:text::Commentary On:0:0:0"   # Commentary on/response to...
+);
 
+
+# Additional fields in this class:
+#
+#   table   - the table the EPrint appears in
+
+#
+# System field help
+#
+%EPrints::EPrint::help =
+(
+	"additional" => "If you'd like to suggest another subject or subjects for ".
+		"your submission (and the archive) that are not in the above list, ".
+		"then enter them here. Please specify them fully, in a manner similar ".
+		"to those displayed in the above list.",
+	"reasons" => "Here you can offer justification for your suggested new ".
+		"subject(s).",
+	"commentary" => "If your paper is a commentary on another document (or ".
+		"author's response to a commentary) in the archive, please enter its ".
+		"ID in this box.",
+	"succeeds" => "If this document is a revised version of another document ".
+		"in the archive, please enter its ID code in this box.",
+	"subjects" => "Please select at least one main subject category, and ".
+		"optionally up to two other subject categories you think are ".
+		"appropriate for your submisson, in the list below. In some browsers ".
+		"you may have to hold CTRL or SHIFT to select more than one subject.",
+);
+
+	
 
 $EPrints::EPrint::static_page = "index.html";
 
-## WP1: BAD
-sub get_system_field_info
-{
-	my( $class ) = @_;
 
-	return ( 
-	{ name=>"eprintid", type=>"text", required=>1 },
-
-	{ name=>"userid", type=>"text", required=>1 },
-
-	{ name=>"dir", type=>"text", required=>0 },
-
-	{ name=>"datestamp", type=>"date", required=>0 },
-
-	{ name=>"additional", type=>"text", required=>0 },#cjg DOOM
-	{ name=>"reasons", type=>"longtext", required=>0, displaylines=>6 },#cjg DOOM
-
-	{ name=>"type", type=>"datatype", datasetid=>"eprint", required=>1, 
-		displaylines=>"ALL" },
-
-	{ name=>"succeeds", type=>"text", required=>0 },
-
-	{ name=>"commentary", type=>"text", required=>0 } );
-}
 
 ######################################################################
 #
@@ -74,44 +99,91 @@ sub get_system_field_info
 #
 ######################################################################
 
-## WP1: BAD
 sub new
 {
-	my( $class, $session, $dataset, $id, $known ) = @_;
+	my( $class, $session, $table, $id, $known ) = @_;
 
-	my $self;
+	my $self = {};
+	bless $self, $class;
+	
+	$self->{session} = $session;
+	
+	my @row;
 
-	if ( !defined $known )	
-	{
-		if( defined $dataset )
-		{
-			return $session->get_db()->get_single( $dataset , $id );
-		}
-
-		## Work out in which table the EPrint resides.
-		## and return the eprint.
-		foreach( "archive" , "inbox" , "buffer" )
-		{
-			my $ds = $session->get_archive()->get_dataset( $_ );
-			$self = $session->get_db()->get_single( $ds, $id );
-			if ( defined $self ) 
-			{
-				$self->{dataset} = $ds;
-				return $self;
-			}
-		}
-		return undef;
-	}
-
-	$self = {};
 	if( defined $known )
 	{
-		$self->{data} = $known;
+		# Rows are already known
+		@row = @$known;
+		$self->{table} = $table;
 	}
-	$self->{dataset} = $dataset;
-	$self->{session} = $session;
+	else
+	{
+		if( !defined $table )
+		{
+			# Work out in which table the EPrint resides.
 
-	bless $self, $class;
+			# Try the archive table first
+			# Get the relevant row...
+			@row = $self->{session}->{database}->retrieve_single(
+				$EPrints::Database::table_archive,
+				"eprintid",
+				$id );
+
+			# Next try buffer
+			if( $#row >= 0 )
+			{
+				$self->{table} = $EPrints::Database::table_archive;
+			}
+			else
+			{
+				@row = $self->{session}->{database}->retrieve_single(
+					$EPrints::Database::table_buffer,
+					"eprintid",
+					$id );
+			}
+
+			# Finally, inbox
+			if( $#row >= 0 )
+			{
+				$self->{table} = $EPrints::Database::table_buffer;
+			}
+			else
+			{
+				@row = $self->{session}->{database}->retrieve_single(
+					$EPrints::Database::table_inbox,
+					"eprintid",
+					$id );
+			}
+
+			$table = $EPrints::Database::table_inbox if( $#row >= 0 );
+		}
+		else
+		{
+			$self->{table} = $table;
+
+			@row = $self->{session}->{database}->retrieve_single(
+				$table,
+				"eprintid",
+				$id );
+		}		
+
+
+		if( $#row == -1 )
+		{
+			# We still don't have any data, so the EPrint obviously doesn't exist.
+			return( undef );
+		}		
+	}
+
+	# Read in the EPrint data from the rows.
+	my @fields = EPrints::MetaInfo::get_all_eprint_fieldnames();
+	my $i=0;
+
+	foreach $_ (@fields)
+	{
+		$self->{$_} = $row[$i];
+		$i++;
+	}
 
 	return( $self );
 }
@@ -119,46 +191,31 @@ sub new
 
 ######################################################################
 #
-# $eprint = create( $session, $dataset, $userid, $data )
+# $eprint = create( $session, $table, $username )
 #
 #  Create a new EPrint entry in the given table, from the given user.
 #
-#  If data is defined, then this is used as the base for the
-#  new record.
-#
 ######################################################################
 
-## WP1: BAD
 sub create
 {
-	my( $session, $dataset, $userid, $data ) = @_;
-
-	if( !defined $data )
-	{
-		$data = {};
-	}
+	my( $session, $table, $username ) = @_;
 
 	my $new_id = _create_id( $session );
+
 	my $dir = _create_directory( $session, $new_id );
-print STDERR "($new_id)($dir)\n";
 
-	if( !defined $dir )
-	{
-		return( undef );
-	}
-
-	$data->{eprintid} = $new_id;
-	$data->{userid} = $userid;
-	$data->{dir} = $dir;
+	return( undef ) if( !defined $dir );
 	
-# cjg add_record call
-	my $success = $session->get_db()->add_record(
-		$dataset,
-		$data );
+	my $success = $session->{database}->add_record(
+		$table,
+		[ [ "eprintid", $new_id ],
+		  [ "username", $username ],
+		  [ "dir", $dir ] ] );
 
 	if( $success )
 	{
-		return( EPrints::EPrint->new( $session, $dataset, $new_id ) );
+		return( EPrints::EPrint->new( $session, $table, $new_id ) );
 	}
 	else
 	{
@@ -175,18 +232,22 @@ print STDERR "($new_id)($dir)\n";
 #
 ######################################################################
 
-## WP1: BAD
 sub _create_id
 {
 	my( $session ) = @_;
 	
-	my $new_id = sprintf( "%08d", $session->get_db()->counter_next( "eprintid" ) );
+	my $new_id = $session->{database}->counter_next( "eprintid" );
 
-	return( $session->get_archive()->get_conf( "eprint_id_stem" ) . $new_id );
+	while( length $new_id < $EPrints::EPrint::id_code_digits )
+	{
+		$new_id = "0".$new_id;
+	}
+
+	return( $EPrintSite::SiteInfo::eprint_id_stem . $new_id );
 }
 
 
-#####################################################################
+######################################################################
 #
 # $directory = _create_directory( $eprint_id )
 #
@@ -196,42 +257,34 @@ sub _create_id
 #
 ######################################################################
 
-## WP1: BAD
 sub _create_directory
 {
 	my( $session, $eprint_id ) = @_;
 	
 	# Get available directories
-	my $docpath = $session->get_archive()->get_conf( "local_document_root" );
-print STDERR "DOCPATH: $docpath\n";
-	unless( opendir DOCSTORE, $docpath )
-	{
-		$session->get_archive()->log( "Failed to open docpath: ".$docpath );
-		return undef;
-	}
+	opendir DOCSTORE, $EPrintSite::SiteInfo::local_document_root
+		or return( undef );
 	# The grep here just removes the "." and ".." directories
 	my @avail = grep !/^\.\.?$/, readdir DOCSTORE;
 	closedir DOCSTORE;
-
+	
 	# Check amount of space free on each device. We'll use the first one we find
 	# (alphabetically) that has enough space on it.
 	my $storedir;
 	my $best_free_space = 0;
-	my $device;	
-	foreach $device (sort @avail)
+	
+	foreach (sort @avail)
 	{
-#cjg use the lib!
-		my $free_space = 1000000000;
-#cjg OH GOD			(df $session->get_archive()->get_conf( "local_document_root" )."/$device" )[3];
-print STDERR "(".$session->get_archive()->get_conf( "local_document_root" )."/$device)($free_space)\n";
+		my $free_space = 
+			(df $EPrintSite::SiteInfo::local_document_root . "/" . $_ )[3];
 		$best_free_space = $free_space if( $free_space > $best_free_space );
 
 		unless( defined $storedir )
 		{
-			if( $free_space >= $session->get_archive()->get_conf("diskspace_error_threshold") )
+			if( $free_space >= $EPrintSite::SiteInfo::diskspace_error_threshold )
 			{
 				# Enough space on this drive.
-				$storedir = $device;
+				$storedir = $_;
 			}
 		}
 	}
@@ -239,75 +292,127 @@ print STDERR "(".$session->get_archive()->get_conf( "local_document_root" )."/$d
 	# Check that we do have a place for the new directory
 	if( !defined $storedir )
 	{
-
-# cjg Need to sort out these warnings - logphrase don't work
-# no more.
-
 		# Argh! Running low on disk space overall.
 		$session->mail_administrator(
-			"lib/eprint:diskout_sub" ,
-			"lib/eprint:diskout" );
-print STDERR "oraok\n";
-#cjg LOG WHY!
+			"ERROR: Out of Disk Space",
+			"There are no available partitions with enough disk space to create ".
+				"new EPrints. This needs sorting out urgently." );
 		return( undef );
 	}
 
 	# Warn the administrator if we're low on space
-	if( $best_free_space < $session->get_archive()->get_conf("diskspace_warn_threshold") )
+	if( $best_free_space < $EPrintSite::SiteInfo::diskspace_warn_threshold )
 	{
-# cjg - not done this bit yet...
-#
-#		$session->mail_administrator(
-#			EPrints::Language::logphrase( "lib/eprint:disklow_sub" ),
-#			EPrints::Language::logphrase( "lib/eprint:disklow" ) );
+		$session->mail_administrator(
+			"Warning: Low on disk space",
+			"The amount of disk space available for new EPrints has dropped ".
+				"below the site threshold. New disk space will be needed soon." );
 	}
 
-	# Work out the directory path. It's worked out using the ID of the 
-	# EPrint.
-	my $idpath = eprintid_to_path( $session->get_archive(), $eprint_id );
-
-	if( !defined $idpath )
-	{
-		$session->get_archive()->log( "Failed to turn eprintid: \"$eprint_id\" until a path." );
-		return( undef ) ;
-	}
-
-	my $dir = $storedir."/".$idpath;
-
-	# Full path including doc store root
-	my $full_path = $session->get_archive()->get_conf("local_document_root")."/".$dir;
+	# For now, just choose first
+	return( undef ) if( !defined $avail[0] );
 	
-	if (!EPrints::Utils::mkdir( $full_path ))
-	{
-		$session->get_archive()->log( "Failed to create directory ".$full_path.": $@");
-                return( undef );
-	}
-	else
-	{
-		# Return the path relative to the document store root
-		return( $dir );
-	}
-}
-
-
-# should be in Utils.pm cjg
-sub eprintid_to_path
-{
-	my( $archive, $eprint_id ) = @_;
-
+	# Work out the directory path. It's worked out using the ID of the EPrint.
 	# It takes the numerical suffix of the ID, and divides it into four
 	# components, which become the directory path for the EPrint.
 	# e.g. "stem001020304" is given the path "001/02/03/04"
 
-	my $archivestem = $archive->get_conf( "eprint_id_stem" );
-
 	return( undef ) unless( $eprint_id =~
-		/$archivestem(\d+)(\d\d)(\d\d)(\d\d)/ );
+		/$EPrintSite::SiteInfo::eprint_id_stem(\d+)(\d\d)(\d\d)(\d\d)/ );
 
-	return( $1 . "/" . $2 . "/" . $3 . "/" . $4 );
+	my $dir = $storedir . "/" . $1 . "/" . $2 . "/" . $3 . "/" . $4;
+	
+	# Full path including doc store root
+	my $full_path = $EPrintSite::SiteInfo::local_document_root . "/" . $dir;
+
+	# Ensure the path is there. Dir. is made group writable.
+	my @created = eval
+	{
+		my @created = mkpath( $full_path, 0, 0775 );
+		return( @created );
+	};
+
+#	foreach (@created)
+#	{
+#		EPrints::Log::debug( "EPrint", "Created directory $_" );
+#	}
+
+	# Error if we couldn't even create one
+	if( $#created == -1 )
+	{
+		EPrints::Log::log_entry( "EPrint",
+		                         "Failed to create directory $full_path: $@" );
+		return( undef );
+	}
+
+	# Return the path relative to the document store root
+	return( $dir );
 }
+
+
+
+######################################################################
+#
+# @eprints = retrieve_eprints( $session, $table, $conditions, $order )
+#                                               array_ref   array_ref
+#
+#  Retrieves EPrints from the given database table, returning full
+#  EPrint objects. [STATIC method.]
+#
+######################################################################
+
+sub retrieve_eprints
+{
+	my( $session, $table, $conditions, $order ) = @_;
 	
+	my @fields = EPrints::MetaInfo::get_all_eprint_fields();
+
+	my $rows = $session->{database}->retrieve_fields( $table,
+                                                     \@fields,
+                                                     $conditions,
+                                                     $order );
+
+#EPrints::Log::debug( "EPrint", "Making ".scalar @$rows." EPrint objects" );
+
+	my $r;
+	my @eprints;
+
+	foreach $r (@$rows)
+	{
+		push @eprints, EPrints::EPrint->new( $session,
+		                                     $table,
+		                                     $r->[0],
+		                                     $r );
+	}
 	
+	return( @eprints );		                                        
+}
+
+
+######################################################################
+#
+# my $num = count_eprints( $session, $table, $conditions )
+#                                            array_ref
+#
+#  Simpler version of retrieve_eprints() that just counts the number
+#  of EPrints satisfying the conditions.[STATIC method.]
+#
+######################################################################
+
+sub count_eprints
+{
+	my( $session, $table, $conditions ) = @_;
+	
+	my $field = EPrints::MetaInfo::find_eprint_field( "eprintid");
+
+	my $rows = $session->{database}->retrieve_fields( $table,
+                                                     [ $field ],
+                                                     $conditions );
+
+	return( $#{$rows} + 1 );		                                        
+}
+
+
 ######################################################################
 #
 # $success = remove()
@@ -316,7 +421,6 @@ sub eprintid_to_path
 #
 ######################################################################
 
-## WP1: BAD
 sub remove
 {
 	my( $self ) = @_;
@@ -325,31 +429,30 @@ sub remove
 	
 	# Create a deletion record if we're removing the record from the main
 	# archive
-	if( $self->{dataset}->id() eq "archive" )
+	if( $self->{table} eq $EPrints::Database::table_archive )
 	{
-		#cjg Test this!
 		$success = $success && EPrints::Deletion::add_deletion_record( $self );
-		#cjg REMOVE ABSTRACTS!
-	
 	}
 
 	# Remove the associated documents
 	my @docs = $self->get_all_documents();
-	my $doc;
-	foreach $doc (@docs)
+	
+	foreach (@docs)
 	{
-		$success = $success && $doc->remove();
-		if( !$success )
-		{
-			$self->{session}->get_archive()->log( "Error removing doc ".$doc->get_value( "docid" ).": $!" );
-		}
+		$success = $success && $_->remove();
+		EPrints::Log::log_entry( "EPrint", "Error removing doc $_->{docid}: $!" )
+			if( !$success );
 	}
 
 	# Now remove the directory
 	my $num_deleted = rmtree( $self->local_path() );
+	
 	if( $num_deleted <= 0 )
 	{
-		$self->{session}->get_archive()->log( "Error removing files for ".$self->get_value( "eprintid" ).", path ".$self->local_path().": $!" );
+		EPrints::Log::log_entry(
+			"EPrint",
+			"Error removing files for $self->{eprint}, path ".$self->local_path().
+				": $!" );
 		$success = 0;
 	}
 
@@ -357,9 +460,10 @@ sub remove
 	$self->remove_from_threads();
 
 	# Remove our entry from the DB
-	$success = $success && $self->{session}->get_db()->remove(
-		$self->{dataset},
-		$self->get_value( "eprintid" ) );
+	$success = $success && $self->{session}->{database}->remove(
+		$self->{table},
+		"eprintid",
+		$self->{eprintid} );
 	
 	return( $success );
 }
@@ -375,15 +479,11 @@ sub remove
 #
 ######################################################################
 
-## WP1: BAD
 sub remove_from_threads
 {
 	my( $self ) = @_;
-
-	#cjg This really should do something!
-	return;
 	
-	if( $self->{dataset} eq  "archive" )
+	if( $self->{table} eq $EPrints::Database::table_archive )
 	{
 		# Remove thread info in this eprint
 		$self->{succeeds} = undef;
@@ -391,22 +491,22 @@ sub remove_from_threads
 		$self->commit();
 
 		my @related = $self->get_all_related();
-		my $eprint;
+
 		# Remove all references to this eprint
-		foreach $eprint (@related)
+		foreach (@related)
 		{
 			# Update the objects if they refer to us (the objects were retrieved
 			# before we unlinked ourself)
-			$eprint->{succeeds} = undef if( $eprint->{succeeds} eq $self->{eprintid} );
-			$eprint->{commentary} = undef if( $eprint->{commentary} eq $self->{eprintid} );
+			$_->{succeeds} = undef if( $_->{succeeds} eq $self->{eprintid} );
+			$_->{commentary} = undef if( $_->{commentary} eq $self->{eprintid} );
 
-			$eprint->commit();
+			$_->commit();
 		}
 
 		# Update static pages for each eprint
-		foreach $eprint (@related)
+		foreach (@related)
 		{
-			$eprint->generate_static() unless( $eprint->{eprintid} eq $self->{eprintid} );
+			$_->generate_static() unless( $_->{eprintid} eq $self->{eprintid} );
 		}
 	}
 }
@@ -423,23 +523,22 @@ sub remove_from_threads
 #
 ######################################################################
 
-## WP1: BAD
 sub clone
 {
-	my( $self, $dest_dataset, $copy_documents ) = @_;
-die "clone NOT DONE"; #cjg	
+	my( $self, $dest_table, $copy_documents ) = @_;
+	
 	# Create the new EPrint record
 	my $new_eprint = EPrints::EPrint::create(
 		$self->{session},
-		$dest_dataset,
-		$self->{userid} );
+		$dest_table,
+		$self->{username} );
 	
 	if( defined $new_eprint )
 	{
 		my $field;
 
 		# Copy all the data across, except the ID and the datestamp
-		foreach $field ($self->{session}->{metainfo}->get_fields( "eprint", $self->{type} ))
+		foreach $field (EPrints::MetaInfo::get_eprint_fields( $self->{type} ))
 		{
 			my $field_name = $field->{name};
 
@@ -455,7 +554,7 @@ die "clone NOT DONE"; #cjg
 		# so we'll fill in the succeeds field, provided this one is
 		# already in the main archive.
 		$new_eprint->{succeeds} = $self->{eprintid}
-			if( $self->{dataset} eq  "archive"  );
+			if( $self->{table} eq $EPrints::Database::table_archive );
 
 		# Attempt to copy the documents, if appropriate
 		my $ok = 1;
@@ -491,36 +590,35 @@ die "clone NOT DONE"; #cjg
 
 ######################################################################
 #
-# $success = transfer( $dataset )
+# $success = transfer( $table )
 #
 #  Move the EPrint to the given table
 #
 ######################################################################
 
-## WP1: BAD
 sub transfer
 {
-	my( $self, $dataset ) = @_;
+	my( $self, $table ) = @_;
 
 	# Keep the old table
-	my $old_dataset = $self->{dataset};
+	my $old_table = $self->{table};
 
 	# Copy to the new table
-	$self->{dataset} = $dataset;
+	$self->{table} = $table;
 
 	# Create an entry in the new table
-
-	my $success = $self->{session}->get_db()->add_record(
-		$dataset,
-		{ "eprintid"=>$self->get_value( "eprintid" ) } );
+	my $success = $self->{session}->{database}->add_record(
+		$table,
+		[ [ "eprintid", $self->{eprintid} ] ] );
 
 	# Write self to new table
 	$success =  $success && $self->commit();
 
 	# If OK, remove the old copy
-	$success = $success && $self->{session}->get_db()->remove(
-		$old_dataset,
-		$self->get_value( "eprintid" ) );
+	$success = $success && $self->{session}->{database}->remove(
+		$old_table,
+		"eprintid",
+		$self->{eprintid} );
 	
 	return( $success );
 }
@@ -535,14 +633,11 @@ sub transfer
 #
 ######################################################################
 
-## WP1: BAD
-sub render_short_title
+sub short_title
 {
 	my( $self ) = @_;
 
-	return( $self->{session}->get_archive()->call(
-			"eprint_render_short_title",
-			$self ) );
+	return( EPrintSite::SiteRoutines::eprint_short_title( $self ) );
 }
 
 
@@ -555,19 +650,33 @@ sub render_short_title
 #
 ######################################################################
 
-## WP1: BAD
 sub commit
 {
 	my( $self ) = @_;
 
-	my $success = $self->{session}->get_db()->update(
-		$self->{dataset},
-		$self->{data} );
+	# Put data into columns
+	my @all_fields = EPrints::MetaInfo::get_all_eprint_fields();
+	my @data;
+	my $key_field = shift @all_fields;
+	my $key_value = $self->{$key_field->{name}};
+
+	foreach (@all_fields)
+	{
+		push @data, [ $_->{name}, $self->{$_->{name}} ];
+	}
+
+	my $success = $self->{session}->{database}->update(
+		$self->{table},
+		$key_field->{name},
+		$key_value,
+		\@data );
 
 	if( !$success )
 	{
-		my $db_error = $self->{session}->get_db()->error();
-		$self->{session}->get_archive()->log( "Error committing EPrint ".$self->get_value( "eprintid" ).": $db_error" );
+		my $db_error = $self->{session}->{database}->error();
+		EPrints::Log::log_entry(
+			"EPrint",
+			"Error committing EPrint $self->{eprintid}: $db_error" );
 	}
 
 	return( $success );
@@ -584,7 +693,6 @@ sub commit
 #
 ######################################################################
 
-## WP1: BAD
 sub validate_type
 {
 	my( $self ) = @_;
@@ -593,15 +701,13 @@ sub validate_type
 
 	# Make sure we have a value for the type, and that it's one of the
 	# configured EPrint types
-	if( !defined $self->get_value( "type" ) )
+	if( !defined $self->{type} || $self->{type} eq "" )
 	{
-		push @problems, 
-			$self->{session}->html_phrase( "lib/eprint:no_type" );
-	} 
-	elsif( ! $self->{dataset}->is_valid_type( $self->get_value( "type" ) ) )
+		push @problems, "You haven't selected a type for this EPrint.";
+	}
+	elsif( !defined EPrints::MetaInfo::get_eprint_type_name( $self->{type} ) )
 	{
-		push @problems, $self->{session}->html_phrase( 
-					"lib/eprint:invalid_type" );
+		push @problems, "This EPrint doesn't seem to have a valid type.";
 	}
 	
 	return( \@problems );
@@ -619,48 +725,64 @@ sub validate_type
 #
 ######################################################################
 
-## WP1: BAD
 sub validate_meta
 {
 	my( $self ) = @_;
 	
 	my @all_problems;
-	my @r_fields = $self->{dataset}->get_required_type_fields( $self->get_value("type") );
-	my @all_fields = $self->{dataset}->get_fields();
-
+	my @all_fields = EPrints::MetaInfo::get_eprint_fields( $self->{type} );
 	my $field;
-	foreach $field (@r_fields)
-	{
-print STDERR "REQ?: $field->{name}\n";
-print STDERR "====: ".$self->get_value( $field->{name} )."\n";
-		# Check that the field is filled in if it is required
-		next if ( defined $self->get_value( $field->{name} ) );
-
-		my $problem = $self->{session}->html_phrase( 
-			"lib/eprint:not_done_field" ,
-			fieldname=> $self->{session}->make_text( 
-			   $field->display_name( $self->{session} ) ) );
-		push @all_problems,$problem;
-	}
-
-	# Give the site validation module a go
+	
 	foreach $field (@all_fields)
 	{
-		my $problem = $self->{session}->get_archive()->call(
-			"validate_eprint_field",
-			$field,
-			$self->get_value( $field->{name} ) );
-		if( defined $problem )
+		my $problem;
+		
+		# Check that the field is filled in if it is required
+		if( $field->{required} && ( !defined $self->{$field->{name}} ||
+		                        	 $self->{$field->{name}} eq "" ) )
 		{
-			push @all_problems,$problem;
+			$problem = 
+				"You haven't filled out the required $field->{displayname} field.";
+		}
+		else
+		{
+			# Give the site validation module a go
+			$problem = EPrintSite::Validate::validate_eprint_field(
+				$field,
+				$self->{$field->{name}} );
+		}
+
+		if( $field->{type} eq "username")
+		{
+			my @usernames;
+			@usernames = split( ":", $self->{$field->{name}} );
+			my @invalid;
+			foreach ( @usernames )
+			{
+				next if( $_ eq "" );
+				my $user = new EPrints::User( $self->{session} , $_ );
+				if ( !defined $user ) 
+				{
+					push @invalid, $_;
+				}
+			}
+			if ( scalar @invalid > 0 )
+			{
+				$problem = "The following usernames are not valid: ".
+				            join(", ",@invalid).".";
+			}
+		}
+
+
+		
+		if( defined $problem && $problem ne "" )
+		{
+			push @all_problems, $problem;
 		}
 	}
 
 	# Site validation routine for eprint metadata as a whole:
-	$self->{session}->get_archive()->call(
-		"validate_eprint_meta",
-		$self, 
-		\@all_problems );
+	EPrintSite::Validate::validate_eprint_meta( $self, \@all_problems );
 
 	return( \@all_problems );
 }
@@ -675,26 +797,39 @@ print STDERR "====: ".$self->get_value( $field->{name} )."\n";
 #
 ######################################################################
 
-## WP1: BAD
 sub validate_subject
 {
 	my( $self ) = @_;
-
+	
 	my @all_problems;
-	my $subjects = $self->get_value( "subjects" );
-	if( !defined $subjects )
+	my @all_fields = EPrints::MetaInfo::get_eprint_fields( $self->{type} );
+	my $field;
+
+	foreach $field (@all_fields)
 	{
-		push @all_problems, 
-			$self->{session}->html_phrase( "lib/eprint:least_one_sub" );
-	} 
-	else
-	{
-		my $field = $self->{dataset}->get_field( "subjects" );
-		my $problem = $self->{session}->get_archive()->call( 
-			"validate_eprint_field",
-			$field,
-			$subjects );
-		push @all_problems, $problem if( defined $problem );
+		my $problem;
+	
+		if( $field->{type} eq "subjects")
+		{
+			# Make sure at least one subject is selected
+			if( !defined $self->{$field->{name}} ||
+			    $self->{$field->{name}} eq ":" )
+			{
+				$problem = "You need to select at least one subject from the list!";
+			}
+		}
+		else
+		{
+			# Give the validation module a go
+			$problem = EPrintSite::Validate::validate_subject_field(
+				$field,
+				$self->{$field->{name}} );
+		}
+
+		if( defined $problem && $problem ne "" )
+		{
+			push @all_problems, $problem;
+		}
 	}
 
 	return( \@all_problems );
@@ -710,56 +845,88 @@ sub validate_subject
 #
 ######################################################################
 
-## WP1: BAD
 sub validate_linking
 {
 	my( $self ) = @_;
 
 	my @problems;
 	
-	my $field_id;
-	foreach $field_id ( "succeeds", "commentary" )
+	my $succeeds_field = EPrints::MetaInfo::find_eprint_field( "succeeds" );
+	my $commentary_field = EPrints::MetaInfo::find_eprint_field( "commentary" );
+
+	if( defined $self->{succeeds} && $self->{succeeds} ne "" )
 	{
-		my $field = $self->{dataset}->get_field( $field_id );
-
-		next unless( defined $self->get_value( $field_id ) );
-
-		my $archive_ds = $self->{session}->get_archive()->get_dataset( "archive" );
-
 		my $test_eprint = new EPrints::EPrint( $self->{session}, 
-		                                       $archive_ds,
-		                                       $self->get_value( $field_id ) );
+		                                       $EPrints::Database::table_archive,
+		                                       $self->{succeeds} );
+		push @problems,
+			"EPrint ID in $succeeds_field->{displayname} field is invalid"
+				unless( defined( $test_eprint ) );
 
-		if( !defined( $test_eprint ) )
-		{
-			push @problems, $self->{session}->html_phrase(
-				"lib/eprint:invalid_id",	
-				field => $self->{session}->make_text(
-					$field->display_name( $self->{session} ) ) );
-			next;
-		}
-
-		if( $field_id eq "succeeds" )
+		if( defined $test_eprint )
 		{
 			# Ensure that the user is authorised to post to this
-			if( $test_eprint->get_value("userid") ne $self->get_value("userid") )
+			if( $test_eprint->{username} ne $self->{username} )
 			{
- 				# Not the same user. 
-
-#Must be certified to do this. cjg: Should this be staff only or something???
+				# Not the same user. Must be certified to do this.
 #				my $user = new EPrints::User( $self->{session},
-#				                              $self->{userid} );
+#				                              $self->{username} );
 #				if( !defined $user && $user->{
-
-				push @problems, $self->{session}->html_phrase( "lib/eprint:cant_succ" );
+				push @problems,
+					"You cannot succeed an EPrint that someone else has posted";
 			}
 		}
+	}
+	
+	if( defined $self->{commentary} && $self->{commentary} ne "" )
+	{
+		my $test_eprint = new EPrints::EPrint( $self->{session}, 
+		                                       $EPrints::Database::table_archive,
+		                                       $self->{commentary} );
+		push @problems,
+			"EPrint ID in $commentary_field->{displayname} field is invalid"
+				unless( defined( $test_eprint ) );
+
 	}
 	
 	return( \@problems );
 }
 
 
+######################################################################
+#
+# $document = get_document( $format )
+#
+#  Gets an associated document with the given format.
+#
+######################################################################
+
+sub get_document
+{
+	my( $self, $format ) = @_;
+	
+	my @fields = EPrints::MetaInfo::get_document_fields();
+
+	# Grab relevant rows from the database.
+	my $rows = $self->{session}->{database}->retrieve_fields(
+		$EPrints::Database::table_document,
+		\@fields,
+		[ "eprintid LIKE \"$self->{eprintid}\"", "format LIKE \"$format\"" ] );
+
+	if( $#{$rows} == -1 )
+	{
+		# Haven't got one
+		return( undef );
+	}
+	else
+	{
+		# Return the first
+		my $document = EPrints::Document->new( $self->{session},
+		                                       undef,
+		                                       $rows->[0] );
+		return( $document );
+	}
+}
 
 
 ######################################################################
@@ -770,25 +937,57 @@ sub validate_linking
 #
 ######################################################################
 
-## WP1: BAD
 sub get_all_documents
 {
 	my( $self ) = @_;
 
-	my $doc_ds = $self->{session}->get_archive()->get_dataset( "document" );
+	my @documents;	
+	my @fields = EPrints::MetaInfo::get_document_fields();
 
-	my $searchexp = EPrints::SearchExpression->new(
-		session=>$self->{session},
-		dataset=>$doc_ds );
+	# Grab relevant rows from the database.
+	my $rows = $self->{session}->{database}->retrieve_fields(
+		$EPrints::Database::table_document,
+		\@fields,
+		[ "eprintid LIKE \"$self->{eprintid}\"" ] );
 
-	$searchexp->add_field(
-		$doc_ds->get_field( "eprintid" ),
-		"PHR:EQ:".$self->get_value( "eprintid" ) );
-
-	my $searchid = $searchexp->perform_search();
-	my @documents = $searchexp->get_records();
+	foreach( @$rows )
+	{
+		my $document = EPrints::Document->new( $self->{session},
+		                                       undef,
+		                                       $_ );
+		push @documents, $document if( defined $document );
+	}
 
 	return( @documents );
+}
+
+
+######################################################################
+#
+# @formats = get_formats()
+#
+#  Get the document file formats that are available for this EPrint
+#
+######################################################################
+
+sub get_formats
+{
+	my( $self ) = @_;
+	
+	# Grab relevant rows from the database.
+	my $rows = $self->{session}->{database}->retrieve(
+		$EPrints::Database::table_document,
+		[ "format" ],
+		[ "eprintid LIKE \"$self->{eprintid}\"" ] );
+	
+	my @formats;
+
+	foreach (@$rows)
+	{
+		push @formats, $_->[0];
+	}
+
+	return( @formats );
 }
 
 
@@ -801,57 +1000,37 @@ sub get_all_documents
 #
 ######################################################################
 
-## WP1: BAD
 sub validate_documents
 {
 	my( $self ) = @_;
 	my @problems;
 	
-        my @req_formats = @{$self->{session}->get_archive()->get_conf( "required_formats" )};
-	my @docs = $self->get_all_documents();
-
+	# Ensure we have at least one required format
+	my @formats = $self->get_formats();
+	my $f;
 	my $ok = 0;
-	$ok = 1 if( scalar @req_formats == 0 );
 
-	my $doc;
-	foreach $doc ( @docs )
-        {
-		my $docformat = $doc->get_value( "format" );
-		foreach( @req_formats )
+	foreach $f (@formats)
+	{
+		foreach (@EPrintSite::SiteInfo::required_formats)
 		{
-                	$ok = 1 if( $docformat eq $_ );
+			$ok = 1 if( $f eq $_ );
 		}
-        }
+	}
 
 	if( !$ok )
 	{
-		my $doc_ds = $self->{session}->get_archive()->get_dataset( "document" );
-		my $prob = $self->{session}->make_doc_fragment();
-		$prob->appendChild( $self->{session}->html_phrase( "lib/eprint:need_a_format" ) );
-		my $ul = $self->{session}->make_element( "ul" );
-		$prob->appendChild( $ul );
-		
-		foreach( @req_formats )
+		my $prob = 
+			"You need to upload at least one of the following formats:\n<UL>\n";
+		foreach (@EPrintSite::SiteInfo::required_formats)
 		{
-			my $li = $self->{session}->make_element( "li" );
-			$ul->appendChild( $li );
-			$li->appendChild( $doc_ds->render_type_name( $self->{session}, $_ ) );
+			$prob .=
+				"<LI>$EPrintSite::SiteInfo::supported_format_names{$_}</LI>\n";
 		}
-			
+		$prob .= "</UL>\n";
+
 		push @problems, $prob;
 
-	}
-
-	foreach $doc (@docs)
-	{
-		my $probs = $doc->validate();
-		foreach (@$probs)
-		{
-			my $prob = $self->{session}->make_doc_fragment();
-			$prob->appendChild( $doc->render_desc() );
-			$prob->appendChild( $self->{session}->make_text( ": " ) );
-			$prob->appendChild( $_ );
-		}
 	}
 
 	return( \@problems );
@@ -867,7 +1046,6 @@ sub validate_documents
 #
 ######################################################################
 
-## WP1: BAD
 sub validate_full
 {
 	my( $self ) = @_;
@@ -892,8 +1070,21 @@ sub validate_full
 	$probs = $self->validate_documents();
 	push @problems, @$probs;
 
+	my @docs = $self->get_all_documents();
+	my $doc;
+	foreach $doc (@docs)
+	{
+		$probs = $doc->validate();
+		foreach (@$probs)
+		{
+			push @problems,
+				$EPrintSite::SiteInfo::supported_format_names{$doc->{format}}.
+				": ".$_;
+		}
+	}
+
 	# Now give the site specific stuff one last chance to have a gander.
-	$self->{session}->get_archive()->call( "validate_eprint", $self, \@problems );
+	EPrintSite::Validate::validate_eprint( $self, \@problems );
 
 	return( \@problems );
 }
@@ -910,11 +1101,19 @@ sub validate_full
 sub prune_documents
 {
 	my( $self ) = @_;
+	
+	# Get the documents from the database
+	my @fields = EPrints::MetaInfo::get_document_fields();
+
+	my $rows = $self->{session}->{database}->retrieve_fields(
+		$EPrints::Database::table_document,
+		\@fields,
+		[ "eprintid LIKE \"$self->{eprintid}\"" ] );
 
 	# Check each one
-	my $doc;
-	foreach $doc ( $self->get_all_documents() )
+	foreach (@$rows)
 	{
+		my $doc = EPrints::Document->new( $self->{session}, $_->[0], $_ );
 		my %files = $doc->files();
 		if( scalar keys %files == 0 )
 		{
@@ -929,39 +1128,31 @@ sub prune_documents
 #
 # prune()
 #
-#  Remove fields not allowed for this records type and prune document 
-#  entries.
+#  Remove pointless fields and document entries
 #
 ######################################################################
 
 sub prune
 {
 	my( $self ) = @_;
+	
+#EPrints::Log::debug( "EPrint", "prune: EPrint ID: $self->{eprintid}" );
 
 	$self->prune_documents();
+	
+	my @fields = EPrints::MetaInfo::get_eprint_fields( $self->{type} );
+	my @all_fields = EPrints::MetaInfo::get_all_eprint_fields();
+	my $f;
 
-	# This part chops out fields which don't belong to 
-	# this type. But that's not really what we want.
-	# as some may have been hidden on purpose (eg. subjects)
-	# or a composite field. 
+	foreach $f (@all_fields)
+	{
+		if( !defined EPrints::MetaInfo::find_field( \@fields, $f->{name} ) )
+		{
+			$self->{$f->{name}} = undef;
+		}
+	}
 
-	# Commenting out this code means that if you edit an
-	# eprint, then change it's type to a type which can't
-	# have field "foo" then field "foo" may remain set.
-	# This probably won't matter much.
-
-	#  my @fields = $self->{dataset}->get_type_fields();
-	#  my @all_fields = $self->{dataset}->get_fields();
-	#
-	#  my $f;
-	#  foreach $f (@all_fields)
-	#  {
-	#	unless( grep( /^$f$/, @fields ) )
-	#	{
-	#		$self->set_value( $f->{name}, undef );
-	#	}
-	#  }
-
+#EPrints::Log::debug( "EPrint", "prune: end EPrint ID: $self->{eprintid}" );
 }
 
 
@@ -977,11 +1168,11 @@ sub submit
 {
 	my( $self ) = @_;
 	
-	my $success = $self->transfer( $self->{session}->get_archive()->get_dataset( "buffer" ) );
+	my $success = $self->transfer( $EPrints::Database::table_buffer );
 	
 	if( $success )
 	{
-		$self->{session}->get_archive()->call( "update_submitted_eprint", $self );
+		EPrintSite::SiteRoutines::update_submitted_eprint( $self );
 		$self->datestamp();
 		$self->commit();
 	}
@@ -998,12 +1189,11 @@ sub submit
 #
 ######################################################################
 
-## WP1: BAD
 sub datestamp
 {
 	my( $self ) = @_;
 
-	$self->set_value( "datestamp" , EPrints::MetaField::get_datestamp( time ) );
+	$self->{datestamp} = EPrints::MetaField::get_datestamp( time );
 }
 
 
@@ -1016,23 +1206,27 @@ sub datestamp
 #
 ######################################################################
 
-## WP1: BAD
 sub archive
 {
 	my( $self ) = @_;
 
-	my $arcds = $self->{session}->get_archive()->get_dataset( "archive" );
-	my $success = $self->transfer( $arcds );
+	# Remove pointless fields
+	undef $self->{additional};
+	undef $self->{reasons};
+	
+	my $success = $self->transfer( $EPrints::Database::table_archive );
 	
 	if( $success )
 	{
-		$self->{session}->get_archive()->call( "update_archived_eprint", $self );
-		$self->datestamp(); # Reset the datestamp.
+		EPrintSite::SiteRoutines::update_archived_eprint( $self );
 		$self->commit();
 		$self->generate_static();
 
-		# Generate static pages for everything in threads, if 
-		# appropriate
+		# Generate static pages for everything in threads, if appropriate
+		my $succeeds_field = EPrints::MetaInfo::find_eprint_field( "succeeds" );
+		my $commentary_field =
+			EPrints::MetaInfo::find_eprint_field( "commentary" );
+
 		my @to_update = $self->get_all_related();
 		
 		# Do the actual updates
@@ -1056,12 +1250,11 @@ sub archive
 #
 ######################################################################
 
-## WP1: BAD
 sub local_path
 {
 	my( $self ) = @_;
 	
-	return( $self->{session}->get_archive()->get_conf( "local_document_root" )."/".$self->get_value( "dir" ) );
+	return( $EPrintSite::SiteInfo::local_document_root."/".$self->{dir} );
 }
 
 
@@ -1074,13 +1267,28 @@ sub local_path
 #
 ######################################################################
 
-## WP1: BAD
 sub url_stem
 {
 	my( $self ) = @_;
 	
-	return( $self->{session}->get_archive()->get_conf( "server_document_root" ).
-		"/".$self->{data}->{eprintid}."/" );
+	return( $EPrintSite::SiteInfo::server_document_root."/".$self->{dir}."/" );
+}
+
+
+######################################################################
+#
+# my $path = static_page_local()
+#
+#  Give the path on the local file system of the static HTML abstract
+#  page.
+#
+######################################################################
+
+sub static_page_local
+{
+	my( $self ) = @_;
+	
+	return( $self->local_path . "/" . $EPrints::EPrint::static_page );
 }
 
 
@@ -1092,12 +1300,11 @@ sub url_stem
 #
 ######################################################################
 
-## WP1: BAD
 sub static_page_url
 {
 	my( $self ) = @_;
 	
-	return( $self->url_stem );
+	return( $self->url_stem . $EPrints::EPrint::static_page );
 }
 
 
@@ -1109,72 +1316,31 @@ sub static_page_url
 #
 ######################################################################
 
-## WP1: BAD
 sub generate_static
 {
 	my( $self ) = @_;
-
-	print "ID: ".$self->get_value( "eprintid" )."\n";
-
-	my $eprint_id = $self->get_value( "eprintid" );
-
-	# Work out the directory path. It's worked out using the 
-	# ID of the EPrint.
-	# It takes the numerical suffix of the ID, and divides it into four
-	# components, which become the directory path for the EPrint.
-	# e.g. "stem001020304" is given the path "001/02/03/04"
-
-	my $archivestem = $self->{session}->get_archive()->get_conf( "eprint_id_stem" );
-
-	return( undef ) unless( $eprint_id =~
-		/$archivestem(\d+)(\d\d)(\d\d)(\d\d)/ );
 	
-	my $langid;
-	foreach $langid ( @{$self->{session}->get_archive()->get_conf( "languages" )} )
+	my $offline_renderer = new EPrints::HTMLRender( $self->{session}, 1 );
+	
+	my $ok = open OUT, ">".$self->static_page_local();
+
+	unless( $ok )
 	{
-		print "LANG: $langid\n";	
-
-
-		my $full_path = 
-			$self->{session}->get_archive()->get_conf( "local_html_root" ).
-			"/$langid/archive/$1/$2/$3/$4";
-
-		my @created = eval
-		{
-			my @created = mkpath( $full_path, 0, 0775 );
-			return( @created );
-		};
-		print "yo:".join(",",@created)."\n";
-
-		$self->{session}->new_page( $langid );
-		my( $page, $title ) = $self->render_abstract_page();
-
-		$self->{session}->build_page( $title, $page ); #cjg title?
-		$self->{session}->page_to_file( $full_path .
-			  "/" . $EPrints::EPrint::static_page );
-		# SYMLINK's to DOCS...
+		EPrints::Log::log_entry(
+			"EPrint",
+			"Error generating static page for $self->{eprintid}: $!" );
+		return( 0 );
 	}
+
+	print OUT $offline_renderer->start_html( $self->short_title() );
 	
-	return;	
-}
-
-
-sub render_abstract_page
-{
-        my( $self ) = @_;
-
-        my( $dom, $title ) = $self->{session}->get_archive()->call( "eprint_render_full", $self, 0 );
+	print OUT $offline_renderer->render_eprint_full( $self );
 	
-        return( $dom, $title );
-}
-
-sub render_full_details
-{
-        my( $self ) = @_;
-
-        my( $dom, $title ) = $self->{session}->get_archive()->call( "eprint_render_full", $self, 1 );
-
-        return( $dom );
+	print OUT $offline_renderer->end_html();
+	
+	close( OUT );
+	
+	return( 1 );
 }
 
 
@@ -1187,17 +1353,12 @@ sub render_full_details
 #
 ######################################################################
 
-## WP1: BAD
 sub get_all_related
 {
 	my( $self ) = @_;
-
-	#cjg
-	# bad bad bad
-	return ();
 	
-	my $succeeds_field = $self->{session}->{metainfo}->find_table_field( "eprint", "succeeds" );
-	my $commentary_field = $self->{session}->{metainfo}->find_table_field( "eprint", "commentary" );
+	my $succeeds_field = EPrints::MetaInfo::find_eprint_field( "succeeds" );
+	my $commentary_field = EPrints::MetaInfo::find_eprint_field( "commentary" );
 
 	my @related = $self->all_in_thread( $succeeds_field )
 		if( $self->in_thread( $succeeds_field ) );
@@ -1206,12 +1367,12 @@ sub get_all_related
 		
 	# Remove duplicates, just in case
 	my %related_uniq;
-	my $eprint;	
-	foreach $eprint (@related)
+		
+	foreach (@related)
 	{
 		# We also don't want to re-update ourself
-		$related_uniq{$eprint->{eprintid}} = $eprint
-			unless( $eprint->{eprintid} eq $self->{eprintid} );
+		$related_uniq{$_->{eprintid}} = $_
+			unless( $_->{eprintid} eq $self->{eprintid} );
 	}
 
 	return( values %related_uniq );
@@ -1226,7 +1387,6 @@ sub get_all_related
 #
 ######################################################################
 
-## WP1: BAD
 sub in_thread
 {
 	my( $self, $field ) = @_;
@@ -1251,18 +1411,18 @@ sub in_thread
 #
 ######################################################################
 
-## WP1: BAD
 sub first_in_thread
 {
 	my( $self, $field ) = @_;
 	
+#EPrints::Log::debug( "EPrint", "first_in_thread( $self->{eprintid}, $field->{name} )" );
 
 	my $first = $self;
 	
 	while( defined $first->{$field->{name}} && $first->{$field->{name}} ne "" )
 	{
 		my $prev = new EPrints::EPrint( $self->{session},
-		                                "archive",
+		                                $EPrint::Database::table_archive,
 		                                $first->{$field->{name}} );
 
 		return( $first ) unless( defined $prev );
@@ -1281,24 +1441,15 @@ sub first_in_thread
 #
 ######################################################################
 
-## WP1: BAD
 sub later_in_thread
 {
 	my( $self, $field ) = @_;
-#cjg	
-	my $searchexp = new EPrints::SearchExpression(
+	
+	return( EPrints::EPrint::retrieve_eprints(
 		$self->{session},
-		"archive" );
-
-	$searchexp->add_field( $field, "PHR:EQ:$self->{eprintid}" );
-
-#cjg		[ "datestamp DESC" ] ) );
-
-	my $searchid = $searchexp->perform_search();
-	my @eprints = $searchexp->get_records();
-
-	return @eprints;
-
+		$EPrints::Database::table_archive,
+		[ "$field->{name} LIKE \"$self->{eprintid}\"" ],
+		[ "datestamp DESC" ] ) );
 }
 
 
@@ -1310,7 +1461,6 @@ sub later_in_thread
 #
 ######################################################################
 
-## WP1: BAD
 sub all_in_thread
 {
 	my( $self, $field ) = @_;
@@ -1325,7 +1475,6 @@ sub all_in_thread
 }
 
 
-## WP1: BAD
 sub _collect_thread
 {
 	my( $self, $field, $current, $eprints ) = @_;
@@ -1349,7 +1498,6 @@ sub _collect_thread
 #
 ######################################################################
 
-## WP1: BAD
 sub last_in_thread
 {
 	my( $self, $field ) = @_;
@@ -1364,131 +1512,6 @@ sub last_in_thread
 	}
 
 	return( $latest );
-}
-
-## WP1: BAD
-sub render_citation_link
-{
-	my( $self , $cstyle ) = @_;
-	my $a = $self->{session}->make_element( "a",
-			href => $self->static_page_url() );
-	$a->appendChild( $self->render_citation( $cstyle ) );
-
-	return $a;
-}
-
-## WP1: BAD
-sub render_citation
-{
-	my( $self , $cstyle) = @_;
-	
-	if( !defined $cstyle )
-	{
-		$cstyle = $self->{session}->get_citation_spec(
-					$self->get_value("type") );
-	}
-
-	my $ifnode;
-	foreach $ifnode ( $cstyle->getElementsByTagName( "if" , 1 ) )
-	{
-		my $fieldname = $ifnode->getAttribute( "name" );
-		my $val = $self->get_value( "$fieldname" );
-		if( defined $val )
-		{       
-			my $sn; 
-			foreach $sn ( $ifnode->getChildNodes )
-			{       
-				$ifnode->getParentNode->insertBefore( 
-								$sn, 
-								$ifnode );
-			}       
-		}
-		$ifnode->getParentNode->removeChild( $ifnode );
-		$ifnode->dispose();
-	}
-
-	$self->_expand_references( $cstyle );
-
-	my $span = $self->{session}->make_element( "span", class=>"citation" );
-	$span->appendChild( $cstyle );
-	
-	return $span;
-}      
-
-sub _expand_references
-{
-	my( $self, $node ) = @_;
-
-	foreach( $node->getChildNodes )
-	{                
-		if( $_->getNodeType == ENTITY_REFERENCE_NODE )
-		{
-			my $fname = $_->getNodeName;
-			my $field = $self->{dataset}->get_field( $fname );
-			my $fieldvalue = $field->render_value( 
-						$self->{session}, 
-						$self->get_value( $fname ) );
-			$node->replaceChild( $fieldvalue, $_ );
-			$_->dispose();
-		}
-		else
-		{
-			$self->_expand_references( $_ );
-		}
-	}
-}
-
-sub render_value
-{
-	my( $self, $fieldname, $showall ) = @_;
-
-	my $field = $self->{dataset}->get_field( $fieldname );	
-	
-	return $field->render_value( $self->{session}, $self->get_value($fieldname), $showall );
-}
-
-## WP1: BAD
-sub get_value
-{
-	my( $self , $fieldname ) = @_;
-	
-	my $r = $self->{data}->{$fieldname};
-
-	$r = undef unless( EPrints::Utils::is_set( $r ) );
-
-	return $r;
-}
-
-## WP1: BAD
-sub set_value
-{
-	my( $self , $fieldname, $value ) = @_;
-
-	$self->{data}->{$fieldname} = $value;
-}
-
-## WP1: BAD
-sub get_session
-{
-	my( $self ) = @_;
-
-	return $self->{session};
-}
-
-sub get_data
-{
-	my( $self ) = @_;
-	
-	return $self->{data};
-}
-
-sub get_user
-{
-	my( $self ) = @_;
-
-	my $user = EPrints::User->new( $self->{session}, $self->get_value( "userid" ) );
-
-	return $user;
 }
 
 1;

@@ -22,7 +22,6 @@ use strict;
 use vars qw($action_subscribe $action_create $action_remove);
 
 my $session = new EPrints::Session;
-Apache::exit( 0 ) unless( defined $session );
 
 my $user = EPrints::User::current_user( $session );
 
@@ -30,26 +29,28 @@ my $user = EPrints::User::current_user( $session );
 if( !defined $user )
 {
 	# Can't find the user
-	$session->render_error( 
-		$session->html_phrase( "cgi/users/subscribe:dont_know_you" ) );
+	$session->{render}->render_error( "I don't know who you are",
+	                                  $EPrintSite::SiteInfo::frontpage );
 	$session->terminate();
-	exit;
+	Apache::exit( 0 );
 }
 
 my @all_subs = EPrints::Subscription::subscriptions_for( $session, $user );
 
+#EPrints::Log::debug( "subscribe", "Got ".scalar @all_subs." subscriptions for user $user->{username}" );
 
 my $subscription = undef;
 
 $subscription = $all_subs[0] if( scalar @all_subs > 0 );
 
-$action_subscribe = $session->{lang}->phrase( "cgi/users/subscribe:subscribe" );
-$action_create    = $session->{lang}->phrase( "cgi/users/subscribe:create" );
-$action_remove    = $session->{lang}->phrase( "cgi/users/subscribe:remove" );
+$action_subscribe = "Subscribe";
+$action_create    = "Create a Subscription";
+$action_remove    = "Remove the Subscription";
 
 # Do we have an action?
 my $action = $session->{render}->param( "submit" );
 
+#EPrints::Log::debug( "subscribe", "Action: $action" );
 
 if( defined $action && $action eq $action_subscribe )
 {
@@ -79,10 +80,13 @@ elsif( defined $action && $action eq $action_create )
 
 	if( !defined $subscription )
 	{		
-		$session->render_error(
-			$session->html_phrase( "cgi/users/subscribe:mk_sub_error" ),
-			$session->get_archive()->get_conf( "server_perl" )."/users/home",
-			$session->html_phrase( "cgi/users/subscribe:return_dep" ) );
+		$session->{render}->render_error(
+			"Unable to create your subscription. The database may be busy. ".
+			"Please try again later, and if the problem persists, contact ".
+			"the <a href=\"mailto:$EPrintSite::SiteInfo::admin\">site ".
+			"administrator</a>.",
+			"$EPrintSite::SiteInfo::server_perl/users/home",
+			"Return to your deposit items page" );
 	}
 	else
 	{
@@ -102,10 +106,13 @@ elsif( defined $action && $action eq $action_remove )
 		}
 		else
 		{
-			$session->render_error(
-				$session->html_phrase( "cgi/users/subscribe:rm_sub_error" ),
-				$session->get_archive()->get_conf( "server_perl" )."/users/home",
-				$session->html_phrase( "cgi/users/subscribe:return_dep" ) );
+			$session->{render}->render_error(
+				"Unable to remove your subscription. The database may be busy. ".
+				"Please try again later, and if the problem persists, contact ".
+				"the <a href=\"mailto:$EPrintSite::SiteInfo::admin\">site ".
+				"administrator</a>.",
+				"$EPrintSite::SiteInfo::server_perl/users/home",
+				"Return to your deposit items page" );
 		}
 	}
 }
@@ -143,13 +150,12 @@ sub no_subscription
 {
 	my( $session ) = @_;
 
+#EPrints::Log::debug( "subscribe", "no_subscription" );
 
-	print $session->{render}->start_html( 
-		$session->{lang}->phrase( "cgi/users/subscribe:subscribe" ) );
+	print $session->{render}->start_html( "Subscribe" );
 	
-	print "<CENTER><P>";
-	print $session->{lang}->phrase( "cgi/users/subscribe:no_sub" );
-	print "</P></CENTER>\n";
+	print "<CENTER><P>You do not currently have a subscription. Click on the ".
+		"button below to create subscription.</P></CENTER>\n";
 	
 	print $session->{render}->start_form();
 
@@ -175,15 +181,13 @@ sub edit_subscription
 {
 	my( $session, $subscription, $problems ) = @_;
 
+#EPrints::Log::debug( "subscribe", "edit_subscription" );
 
-	print $session->{render}->start_html( 
-		$session->{lang}->phrase( "cgi/users/subscribe:subscribe" ) );
+	print $session->{render}->start_html( "Subscribe" );
 	
 	if( defined $problems )
 	{
-		print "<P>";
-		print $session->{lang}->phrase( "cgi/users/subscribe:cant_accept" );
-		print "</P>\n<UL>\n";
+		print "<P>The subscription could not be accepted because:</P>\n<UL>\n";
 		foreach (@$problems)
 		{
 			print "<LI>$_</LI>\n";
@@ -191,9 +195,8 @@ sub edit_subscription
 		print "</UL>\n";
 	}
 
-	print "<CENTER><P>";
-	print $session->{lang}->phrase( "cgi/users/subscribe:please_enter" );
-	print "</P></CENTER>\n";
+	print "<CENTER><P>Enter the criteria for your subscription below.</P>".
+		"</CENTER>\n";
 	
 	print $session->{render}->start_form();
 	print $subscription->render_subscription_form();
@@ -223,24 +226,26 @@ sub update_subscription
 
 	my $success = $subscription->commit();
 
+#EPrints::Log::debug( "subscribe", "update_subscription" );
 
 	if( $success )
 	{
-		print $session->{render}->start_html( 
-			$session->{lang}->phrase( "cgi/users/subscribe:subscribe" ) );
-		print "<CENTER><P><STRONG>";
-		print $session->{lang}->phrase( "cgi/users/subscribe:sub_accept" );
-		print "</STRONG></P></CENTER>";
-		print "<CENTER><P><A HREF=\"".$session->get_archive()->get_conf( "server_perl" )."/users/home\">";
-		print $session->{lang}->phrase( "cgi/users/subscribe:ret_deposit" );
-		print "</A></P></CENTER>\n";
+		print $session->{render}->start_html( "Subscribe" );
+		print "<CENTER><P><STRONG>Your subscription has been accepted.</STRONG>".
+			"</P></CENTER>";
+		print "<CENTER><P><A HREF=\"$EPrintSite::SiteInfo::server_perl/users/".
+			"home\">Click here to return to your deposit items page.</A></P>".
+			"</CENTER>\n";
 		print $session->{render}->end_html();
 	}
 	else
 	{
-		$session->render_error(
-			$session->html_phrase( "cgi/users/subscribe:ud_sub_error" ),
-			$session->get_archive()->get_conf( "server_perl ")."/users/home",
-			$session->html_phrase( "cgi/users/subscribe:ret_deposit" ) );
+		$session->{render}->render_error(
+			"Unable to update your subscription. The database may be busy. ".
+			"Please try again later, and if the problem persists, contact ".
+			"the <a href=\"mailto:$EPrintSite::SiteInfo::admin\">site ".
+			"administrator</a>.",
+			"$EPrintSite::SiteInfo::server_perl/users/home",
+			"Return to your deposit items page" );
 	}
 }

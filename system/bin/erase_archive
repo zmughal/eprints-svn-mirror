@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+#!/usr/bin/perl -w
 
 ######################################################################
 #
@@ -22,94 +22,93 @@
 ######################################################################
 
 
-## NEEDS A SESSION, eh?
-
 use EPrints::Database;
+use EPrintSite::SiteInfo;
 
 use strict;
-
-my $archive = EPrints::Archive->new_archive_by_id( $ARGV[0], 1 );
-exit( 1 ) unless( defined $archive );
-
-my $local_document_root = $archive->get_conf( "local_document_root" );
-my $database = $archive->get_conf( "dbname" );
-
-my $force = ( $ARGV[1] eq "FORCE" );
 
 # This script dosn't currently work on remote machines, which may well
 # not allow remote admin log in anyway.
 
-
-# make this work dammit cjg
-#if ( defined $dbhost ||
-     #defined $EPrintSite::SiteInfo::dbsock ||
-     #defined $EPrintSite::SiteInfo::dbport ) 
-#{
-	#print "\n";
-	#print "This script currently does not work with databases\n";
-	#print "not running on the default port of localhost.\n";
-	#print "\n";
-	#exit;
-#}
-
-my $input;
-unless( $force )
+if ( defined $EPrintSite::SiteInfo::db_host ||
+     defined $EPrintSite::SiteInfo::db_port ) 
 {
-	# Write the confirmation prompt
-	print "This script completely erases the archive, including all metadata,\n";
-	print "database tables and eprint files.\n\n";
-	print "Are you sure you want this to happen? (yes/no)\n";
-	
-	$input = <STDIN>;
-	chomp( $input );
+	print "\n";
+	print "This script currently does not work with databases\n";
+	print "not running on the default port of localhost.\n";
+	print "\n";
+	exit;
 }
 
+
+# Write the confirmation prompt
+print "This script completely erases the archive, including all metadata,\n";
+print "database tables and eprint files.\n\n";
+print "Are you sure you want this to happen? (yes/no)\n";
+
+my $input = <STDIN>;
+chomp( $input );
+
 # We'll only work if they type "yes" exactly, otherwise we just abort.
-if( $force || $input eq "yes" )
+if( $input eq "yes" )
 {
-	# First erase the database tables. We now do this the dramatic way
-	# of dropping and recreating the database.
-	# This makes it possible to erase a really broken setup.
-
-	my $mysqladmin_path = "mysqladmin";
-
-	unless( $force )
-	{
-		# Get the path of the mysql monitor tool
-		print "Path of mysqladmin tool (the default is fine if it's in your standard shell path)\n";
-		print "[$mysqladmin_path]: ";
+	# First erase the database tables.  We'll need to use the mysql monitor
+	# tool and have the root password.
+	print "Erasing database tables (you will need to enter the database\n";
+	print "root password)\n";
 	
-		$input = <STDIN>;
-		chomp( $input );
-		$mysqladmin_path = $input if( $input ne "" );
+	# Make the SQL necessary for dropping all of the tables
+	my @tables = (
+		$EPrints::Database::table_counter,
+		$EPrints::Database::table_user,
+		$EPrints::Database::table_inbox,
+		$EPrints::Database::table_buffer,
+		$EPrints::Database::table_archive,
+		$EPrints::Database::table_document,
+		$EPrints::Database::table_subject,
+		$EPrints::Database::table_subscription,
+		$EPrints::Database::table_deletion );
+
+	my $drop_table_sql = "";
+
+	foreach (@tables)
+	{
+		$drop_table_sql .= "drop table $_ ; ";
 	}
 
-	print "Dropping and recreating database (requires database root password)\n";
+	# Get the path of the mysql monitor tool
+	print "Path of mysql tool (the default is fine if it's in your standard shell path)\n";
+	print "[mysql]: ";
+
+	my $mysql_path = <STDIN>;
+	chomp( $mysql_path );
+	$mysql_path = "mysql" if( $mysql_path eq "" );
+
+
+	# Execute it
 	print "You will need to enter the MySQL root user password.\n";
+	my $rc = 0xffff & system( "$mysql_path -u root -p $EPrintSite::SiteInfo::database -e '$drop_table_sql'" );
 
-	my $cmds = "drop $database";
-	$cmds.= " create $database";
+	# Abort unless it all went OK.
+	die "Error removing database tables; aborting\n" unless( $rc==0 );
 
-	# We use the force -f option as we've already checked user meant to do this.
-	my $rc = 0xffff & system( "$mysqladmin_path -u root -f $cmds" );
 
 	print "Erasing eprint files...\n";
 	
 	# Get available directories
-	opendir DOCSTORE, $local_document_root
-		or print STDERR "Can't open DOCSTORE";
+	opendir DOCSTORE, $EPrintSite::SiteInfo::local_document_root
+		or return( undef );
 
 	# The grep here just removes the "." and ".." directories
 	my @avail = grep !/^\.\.?$/, readdir DOCSTORE;
 	closedir DOCSTORE;
 
 	# Remove the contents of each of the directories.
-	my $dir;
-	foreach $dir (@avail)
+	foreach (@avail)
 	{
 		$rc = 0xffff & system(
-			"rm -rf $local_document_root/$dir/*" );
-		print STDERR "Warning: Cleaning $local_document_root/$dir didn't go smoothly\n"
+			"rm -rf $EPrintSite::SiteInfo::local_document_root/$_/*" );
+		print STDERR "Warning: Cleaning $EPrintSite::SiteInfo::local_document_root/$_ didn't go smoothly\n"
 			unless( $rc==0 );
 	}
 

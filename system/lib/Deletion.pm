@@ -19,26 +19,20 @@ package EPrints::Deletion;
 
 use EPrints::Database;
 use EPrints::EPrint;
+use EPrints::MetaInfo;
 use EPrints::SearchField;
 use EPrints::Session;
 
 use strict;
 
-## WP1: BAD
-sub get_system_field_info
-{
-	my( $class ) = @_;
 
-	return ( 
-		{ name=>"eprintid", type=>"text", required=>1 },
-
-		{ name=>"replacement", type=>"text", required=>1 },
-
-		{ name=>"subjects", type=>"subject", multiple=>1, required=>0 },
-
-		{ name=>"deletiondate", type=>"date", required=>1 },
-	);
-}
+@EPrints::Deletion::system_meta_fields =
+(
+	"eprintid:text::EPrint ID:1:0:0",
+	"replacement:text::ID of Replacement:1:0:0",
+	"subjects:subjects:1:Subject Categories:0:0:0",
+	"deletiondate:date::Date Removed:1:0:0"
+);
 
 
 ######################################################################
@@ -51,7 +45,6 @@ sub get_system_field_info
 #
 ######################################################################
 
-## WP1: BAD
 sub new
 {
 	my( $class, $session, $eprintid, $known ) = @_;
@@ -68,7 +61,7 @@ sub new
 	{
 		# Need to read data from the database
 		@row = $self->{session}->{database}->retrieve_single(
-			EPrints::Database::table_name( "deletion" ),
+			$EPrints::Database::table_deletion,
 			"eprintid",
 			$self->{eprintid} );
 	}
@@ -81,12 +74,11 @@ sub new
 	return( undef ) if( scalar @row == 0 );
 
 	# Lob row data into relevant field
-	my @fields = $self->{session}->{metainfo}->get_fields( "deletions" );
+	my @fields = EPrints::MetaInfo::get_deletion_fields();
 	my $i=0;
-	my $field;
-	foreach $field (@fields)
+	foreach (@fields)
 	{
-		my $field_name = $field->get("name");
+		my $field_name = $_->get("name");
 
 		$self->{$field_name} = $row[$i];
 		$i++;
@@ -107,11 +99,10 @@ sub new
 #
 ######################################################################
 
-## WP1: BAD
 sub add_deletion_record
 {
 	my( $eprint ) = @_;
-
+	
 	# Inherit the eprint's session
 	my $session = $eprint->{session};
 
@@ -120,7 +111,7 @@ sub add_deletion_record
 
 	# Replacement is last in thread
 	my $last_in_thread = $eprint->last_in_thread(
-		$session->{metainfo}->find_table_field( "eprint", "succeeds" ) );
+		EPrints::MetaInfo::find_eprint_field( "succeeds" ) );
 	
 	my $replacement = $last_in_thread->{eprintid};
 	
@@ -136,13 +127,12 @@ sub add_deletion_record
 	#$replacement = "NULL" unless( defined $replacement && $replacement ne "" );
 	
 	# Now add the deletion record to the database
-#cjg add_record call
 	return( undef ) unless ( $session->{database}->add_record(
-		EPrints::Database::table_name( "deletion" ),
-		{ "eprintid"=>$eprint->{eprintid},
-		  "replacement"=>$replacement,
-		  "subjects"=>$eprint->{subjects},
-		  "deletiondate"=>$deletion_date } ) );
+		$EPrints::Database::table_deletion,
+		[ [ "eprintid", $eprint->{eprintid} ],
+		  [ "replacement", $replacement ],
+		  [ "subjects", $eprint->{subjects} ],
+		  [ "deletiondate", $deletion_date ] ] ) );
 
 	return( new EPrints::Deletion(
 		$session,

@@ -20,18 +20,19 @@ use EPrints::SearchField;
 use EPrints::Session;
 use EPrints::EPrint;
 use EPrints::Database;
-use EPrints::Language;
 
 use strict;
-# order method not presercved.
+
 
 ######################################################################
 #
 # $exp = new( $session,
-#             $dataset,
+#             $table,
 #             $allow_blank,
 #             $satisfy_all,
-#             $fields )
+#             $fields,
+#             $orderby,
+#             $defaultorder )
 #
 #  Create a new search expression, to search $table for the MetaField's
 #  in $fields (an array ref.) Blank SearchExpressions are made for each
@@ -59,64 +60,57 @@ use strict;
 #
 ######################################################################
 
-## WP1: BAD
 sub new
 {
-	my( $class, %data ) = @_;
+	my( $class,
+	    $session,
+	    $table,
+		 $allow_blank,
+	    $satisfy_all,
+	    $fields,
+	    $orderby,
+	    $defaultorder ) = @_;
 	
 	my $self = {};
 	bless $self, $class;
-print STDERR "k:[".join(",",keys %data)."]\n";
-print STDERR "SE1:[".$data{dataset}."]\n";
-print STDERR "SE2:[".$data{dataset}->confid()."]\n";
-	# only session & table are required.
-	# setup defaults for the others:
-	$data{allow_blank} = 0 if ( !defined $data{allow_blank} );
-	$data{satisfy_all} = 1 if ( !defined $data{satisfy_all} );
-	$data{fieldnames} = [] if ( !defined $data{fieldnames} );
+	
+	$self->{session} = $session;
+	$self->{table} = $table;
+	$self->{allow_blank} = $allow_blank;
+	$self->{satisfy_all} = $satisfy_all;
 
-	foreach( qw/ session dataset allow_blank satisfy_all fieldnames / )
+	# We're going to change the orderby stuff, so that we get
+	#   $self->{order_ids}  array of ids
+	#   $self->{order_desc} maps ids -> descriptions
+	#   $self->{order_sql}  maps ids -> sql
+	#   $self->{order}      id of default
+	my $idcount = 0;
+	$self->{order_ids} = [];
+	$self->{order_desc} = {};
+	$self->{order_sql} = {};
+	
+	foreach (sort keys %{$orderby})
 	{
-		$self->{$_} = $data{$_};
+		# IDs will be order0, order1, ...
+		my $id = "order$idcount";
+		$idcount++;
+		$self->{order_desc}->{$id} = $_;
+#EPrints::Log::debug( "SearchExpression", "Desc: $id -> $_" );
+		$self->{order_sql}->{$id} = $orderby->{$_};
+		push @{$self->{order_ids}}, $id;
+	
+		$self->{order} = $id if( defined $defaultorder && $defaultorder eq $_ );
 	}
-	$self->{order} = $self->{dataset}->default_order(); 
 
 	# Array for the SearchField objects
 	$self->{searchfields} = [];
 	# Map for MetaField names -> corresponding SearchField objects
 	$self->{searchfieldmap} = {};
-
-	# tmptable represents cached results table.	
-	$self->{tmptable} = undef;
-print STDERR "FN: ".join(",",@{$self->{fieldnames}})."\n";
-	my $fieldname;
-	foreach $fieldname (@{$self->{fieldnames}})
-	{
-		# If the fieldname contains a /, it's a 
-		# "search >1 at once" entry
-		if( $fieldname =~ /\// )
-		{
-			# Split up the fieldnames
-			my @multiple_names = split /\//, $fieldname;
-			my @multiple_fields;
-			
-			# Put the MetaFields in a list
-			foreach (@multiple_names)
-			{
-				push @multiple_fields, 
-					$self->{dataset}->get_field( $_ );
-			}
-			
-			# Add a reference to the list
-			$self->add_field( \@multiple_fields );
-		}
-		else
-		{
-			# Single field
-			$self->add_field( $self->{dataset}->get_field( $fieldname ) );
-		}
-	}
 	
+	foreach (@$fields)
+	{
+		$self->add_field( $_, undef );
+	}
 	
 	return( $self );
 }
@@ -132,29 +126,26 @@ print STDERR "FN: ".join(",",@{$self->{fieldnames}})."\n";
 #
 ######################################################################
 
-## WP1: BAD
 sub add_field
 {
 	my( $self, $field, $value ) = @_;
-
+	
 	# Create a new searchfield
 	my $searchfield = new EPrints::SearchField( $self->{session},
-	                                            $self->{dataset},
 	                                            $field,
 	                                            $value );
 
-	my $formname = $searchfield->get_form_name();
-	if( defined $self->{searchfieldmap}->{$formname} )
+	if( defined $self->{searchfieldmap}->{$searchfield->{formname}} )
 	{
 		# Already got a seachfield, just update the value
-		$self->{searchfieldmap}->{$formname}->set_value( $value );
+		$self->{searchfieldmap}->{$searchfield->{formname}}->{value} = $value;
 	}
 	else
 	{
 		# Add it to our list
 		push @{$self->{searchfields}}, $searchfield;
 		# Put it in the name -> searchfield map
-		$self->{searchfieldmap}->{$formname} = $searchfield;
+		$self->{searchfieldmap}->{$searchfield->{formname}} = $searchfield;
 	}
 }
 
@@ -167,14 +158,13 @@ sub add_field
 #
 ######################################################################
 
-## WP1: BAD
 sub clear
 {
 	my( $self ) = @_;
 	
 	foreach (@{$self->{searchfields}})
 	{
-		$_->set_value( "" );
+		delete $_->{value};
 	}
 	
 	$self->{satisfy_all} = 1;
@@ -191,93 +181,61 @@ sub clear
 #
 ######################################################################
 
-## WP1: BAD
 sub render_search_form
 {
 	my( $self, $help, $show_anyall ) = @_;
-
-	my $form = $self->{session}->render_form( "get" );
-	my $div;
-
+	
 	my %shown_help;
+
+	my $html;
+
+	$html = "<CENTER><P><TABLE BORDER=0>\n";
+	
 	my $sf;
-	foreach $sf ( @{$self->{searchfields}} )
+
+	foreach $sf (@{$self->{searchfields}})
 	{
-		$div = $self->{session}->make_element( 
-				"div" , 
-				class => "searchfieldname" );
-		$div->appendChild( $self->{session}->make_text( 
-					$sf->get_display_name ) );
-		$form->appendChild( $div );
-		my $shelp = $sf->get_help();
-		if( $help && !defined $shown_help{$shelp} )
+		if( $help && !defined 
+			$shown_help{$EPrints::SearchField::search_help{$sf->{type}}} )
 		{
-			$div = $self->{session}->make_element( 
-				"div" , 
-				class => "searchfieldhelp" );
-			$div->appendChild( $self->{session}->make_text( $shelp ) );
-			$form->appendChild( $div );
-			#$shown_help{$shelp}=1;
+			$html .= "<TR><TD COLSPAN=2 ALIGN=CENTER><EM>";
+			$html .= $EPrints::SearchField::search_help{$sf->{type}};
+			$html .= "</EM></TD></TR>\n";
+			$shown_help{$EPrints::SearchField::search_help{$sf->{type}}} = 1;
 		}
+		
+		$html .= "<TR><TD><STRONG>$sf->{displayname}</STRONG></TD><TD>";
+		$html .= $sf->render_html();
+		$html .= "</TD></TR>\n";
 
-		$div = $self->{session}->make_element( 
-			"div" , 
-			class => "searchfieldinput" );
-		$form->appendChild( $sf->to_html() );
+		$html .= "<TR><TD COLSPAN=2>&nbsp;</TD></TR>\n";
 	}
-
-	my $menu;
+	
+	$html .= "</TABLE></P></CENTER>\n";
 
 	if( $show_anyall )
 	{
-		$menu = $self->{session}->render_option_list(
-			name=>"_satisfyall",
-			values=>[ "ALL", "ANY" ],
-			default=>( defined $self->{satisfy_all} && $self->{satisfy_all}==0 ?
+		$html .= "<CENTER><P>Retrieved records must fulfill ";
+		$html .= $self->{session}->{render}->{query}->popup_menu(
+			-name=>"_satisfyall",
+			-values=>[ "ALL", "ANY" ],
+			-default=>( defined $self->{satisfy_all} && $self->{satisfy_all}==0 ?
 				"ANY" : "ALL" ),
-			labels=>{ "ALL" => $self->{session}->phrase( "lib/searchexpression:all" ),
-				  "ANY" => $self->{session}->phrase( "lib/searchexpression:any" )} );
-
-		$div = $self->{session}->make_element( 
-			"div" , 
-			class => "searchanyall" );
-		$div->appendChild( 
-			$self->{session}->html_phrase( 
-				"lib/searchexpression:must_fulfill",  
-				anyall=>$menu ) );
-		$form->appendChild( $div );	
+			-labels=>{ "ALL" => "all", "ANY" => "any" } );
+		$html .= " of these conditions.</P></CENTER>\n";
 	}
+	
+	$html .= "<CENTER><P>Order the results: ";
 
-	my @tags = keys %{$self->{session}->get_archive()->get_conf(
-			"order_methods",
-			$self->{dataset}->confid )};
-	$menu = $self->{session}->render_option_list(
-		name=>"_order",
-		values=>\@tags,
-		default=>$self->{order},
-		labels=>$self->{session}->get_order_names( 
-						$self->{dataset} ) );
+	$html .= $self->{session}->{render}->{query}->popup_menu(
+		-name=>"_order",
+		-values=>$self->{order_ids},
+		-default=>$self->{order},
+		-labels=>$self->{order_desc} );
+		
+	$html .= "</P></CENTER>\n";
 
-	$div = $self->{session}->make_element( 
-		"div" , 
-		class => "searchorder" );
-
-	$div->appendChild( 
-		$self->{session}->html_phrase( 
-			"lib/searchexpression:order_results", 
-			ordermenu => $menu  ) );
-
-	$form->appendChild( $div );	
-
-	$div = $self->{session}->make_element( 
-		"div" , 
-		class => "searchbuttons" );
-	$div->appendChild( $self->{session}->render_action_buttons( 
-		search => $self->{session}->phrase( "lib/searchexpression:action_search" ), 
-		newsearch => $self->{session}->phrase( "lib/searchexpression:action_reset" ) ) );
-	$form->appendChild( $div );	
-
-	return( $form );
+	return( $html );
 }
 
 
@@ -290,37 +248,145 @@ sub render_search_form
 #
 ######################################################################
 
-## WP1: BAD
 sub from_form
 {
 	my( $self ) = @_;
 
 	my @problems;
 	my $onedefined = 0;
-	my $search_field;
-	foreach $search_field ( @{$self->{searchfields}} )
+	
+	foreach( @{$self->{searchfields}} )
 	{
-		my $prob = $search_field->from_form();
-		$onedefined = 1 if( defined $search_field->{value} );
+		my $prob = $_->from_form();
+		$onedefined = 1 if( defined $_->{value} );
 		
 		push @problems, $prob if( defined $prob );
 	}
 
-	push @problems, $self->{session}->phrase( "lib/searchexpression:least_one" )
+	push @problems, "You need to specify something for at least one field!"
 		unless( $self->{allow_blank} || $onedefined );
 
-	my $anyall = $self->{session}->param( "_satisfyall" );
+	my $anyall = $self->{session}->{render}->param( "_satisfyall" );
 
 	if( defined $anyall )
 	{
 		$self->{satisfy_all} = ( $anyall eq "ALL" );
 	}
 	
-	$self->{order} = $self->{session}->param( "_order" );
+	$self->{order} = $self->{session}->{render}->param( "_order" );
 	
 	return( scalar @problems > 0 ? \@problems : undef );
 }
 
+
+######################################################################
+#
+# @eprints = do_eprint_search()
+#
+#  Performs the actual search, and returns the results as EPrint objects.
+#  If undef is returned, it means that something went wrong during the
+#  search. An empty list indicates there were no matches.
+#
+######################################################################
+
+sub do_eprint_search
+{
+	my( $self ) = @_;
+	
+	my( $sql, $order ) = $self->get_sql_order();
+	
+	return( EPrints::EPrint::retrieve_eprints(
+		$self->{session},
+		$self->{table},
+		( defined $sql ? [ $sql ] : undef ),
+		$order ) );
+}
+
+
+######################################################################
+#
+# @users = do_user_search()
+#
+#  Performs an actual search, returing EPrints::User objects.
+#  If undef is returned, it means that something went wrong during the
+#  search. An empty list indicates there were no matches.
+#
+######################################################################
+
+sub do_user_search
+{
+	my( $self ) = @_;
+	
+	my( $sql, $order ) = $self->get_sql_order();
+	
+	return( EPrints::User::retrieve_users(
+		$self->{session},
+		( defined $sql ? [ $sql ] : undef ),
+		$order ) );
+}
+
+
+######################################################################
+#
+# $rows = do_raw_search( $columns )
+#
+#  Performs the search, just returning the raw row data from the database.
+#
+######################################################################
+
+sub do_raw_search
+{
+	my( $self, $columns ) = @_;
+	
+	my( $sql, $order ) = $self->get_sql_order();
+	
+	return( $self->{session}->{database}->retrieve(
+		$self->{table},
+		$columns,
+		( defined $sql ? [ $sql ] : undef ),
+		$order ) );
+}
+
+
+######################################################################
+#
+# ( $sql, $order ) = get_sql_order()
+#
+#  Returns the SQL for the search ($sql) and the ordering ($order).
+#
+######################################################################
+
+sub get_sql_order
+{
+	my( $self ) = @_;
+
+	my $first = 1;
+	my $sql = "";
+
+#EPrints::Log::debug( "SearchExpression", "Number of search fields: ".scalar( @{$self->{searchfields}} ) );
+
+	# Make the SQL condition
+	foreach (@{$self->{searchfields}})
+	{
+		my $sql_term = $_->get_sql();
+
+		if( defined $sql_term )
+		{
+			$sql .= ( $self->{satisfy_all} ? " AND " : " OR " ) unless( $first );
+			$first = 0 if( $first );
+			
+			$sql .= "($sql_term)";
+		}
+	}
+
+	my $order = (defined $self->{order} ?
+		[ $self->{order_sql}->{$self->{order}} ] :
+		undef );
+
+	undef $sql if( $sql eq "" );
+
+	return( $sql, $order );
+}
 
 
 ######################################################################
@@ -333,7 +399,6 @@ sub from_form
 #
 ######################################################################
 
-## WP1: BAD
 sub to_string
 {
 	my( $self ) = @_;
@@ -344,34 +409,20 @@ sub to_string
 
 	# default order
 	$text_rep .= "\[";
-	$text_rep .= _escape_search_string( $self->{order} ) if( defined $self->{order} );
+	$text_rep .= $self->{order} if( defined $self->{order} );
 	$text_rep .= "\]";
-	my $search_field;	
-	foreach $search_field (@{$self->{searchfields}})
+	
+	foreach (@{$self->{searchfields}})
 	{
-		$text_rep .= "\["._escape_search_string( $search_field->get_form_name() )."\]\[".
-			( defined $search_field->get_value() ? _escape_search_string( $search_field->get_value() ) : "" )."\]";
+		$text_rep .= "\[$_->{formname}\]\[".
+			( defined $_->{value} ? $_->{value} : "" )."\]";
 	}
 	
+#EPrints::Log::debug( "SearchExpression", "Text rep is >>>$text_rep<<<" );
 
 	return( $text_rep );
 }
 
-## WP1: BAD
-sub _escape_search_string
-{
-	my( $string ) = @_;
-	$string =~ s/[\\\[]/\\$&/g; 
-	return $string;
-}
-
-## WP1: BAD
-sub _unescape_search_string
-{
-	my( $string ) = @_;
-	$string =~ s/\\(.)/$1/g; 
-	return $string;
-}
 
 ######################################################################
 #
@@ -383,21 +434,15 @@ sub _unescape_search_string
 #
 ######################################################################
 
-## WP1: BAD
 sub state_from_string
 {
 	my( $self, $text_rep ) = @_;
-	$self->{session}->get_archive()->log( "SearchExpression state_from_string debug: $text_rep" );	
+	
+#EPrints::Log::debug( "SearchExpression", "state_from_string ($text_rep)" );
 
 	# Split everything up
+	my @elements = ( $text_rep =~ m/\[([^\]]*)\]/g );
 
-	my @elements = ();
-	while( $text_rep =~ s/\[((\\\[|[^\]])*)\]//i )
-	{
-		push @elements, _unescape_search_string( $1 );
-		print STDERR "el ($1)\n";
-	}
-	
 	my $satisfyall = shift @elements;
 
 	# Satisfy all?
@@ -415,337 +460,79 @@ sub state_from_string
 		my $value = shift @elements;
 	
 		my $sf = $self->{searchfieldmap}->{$formname};
+#EPrints::Log::debug( "SearchExpression", "Eep! $formname not in searchmap!" )
 #	if( !defined $sf );
-		$sf->set_value( $value ) if( defined $sf && defined $value && $value ne "" );
+		$sf->{value} = $value if( defined $sf && defined $value && $value ne "" );
 	}
 
+#EPrints::Log::debug( "SearchExpression", "new text rep: (".$self->to_string().")" );
 }
 
-
-
-
-## WP1: BAD
-sub perform_search 
-{
-	my ( $self ) = @_;
-
-	my @searchon = ();
-	my $search_field;
-	foreach $search_field ( @{$self->{searchfields}} )
-	{
-		if ( defined $search_field->get_value() )
-		{
-			push @searchon , $search_field;
-		}
-	}
-	@searchon = sort { return $a->approx_rows <=> $b->approx_rows } 
-		         @searchon;
-
-	if( scalar @searchon == 0 )
-	{
-		$self->{error} = undef;
-		$self->{tmptable} = $self->{dataset}->get_sql_table_name();
-	}
-	else 
-	{
-		my $buffer = undef;
-		$self->{ignoredwords} = [];
-		my $badwords;
-		foreach $search_field( @searchon )
-		{
-			$self->{session}->get_archive()->log( "SearchExpression perform_search debug: ".$search_field->{field}->{name}."--(".$search_field->{value}.")");
-			$self->{session}->get_archive()->log( "SearchExpression perform_search debug: ".(defined $buffer?$buffer:"[no buffer]")."!\n" );
-			my $error;
-			( $buffer , $badwords , $error) = 
-				$search_field->do( $buffer , $self->{satisfy_all} );
-	
-			if( defined $error )
-			{
-				$self->{tmptable} = undef;
-				$self->{error} = $error;
-				return;
-			}
-			if( defined $badwords )
-			{
-				push @{$self->{ignoredwords}},@{$badwords};
-			}
-		}
-		
-		$self->{error} = undef;
-		$self->{tmptable} = $buffer;
-	print STDERR "SHIOOOK: ".$buffer."\n";
-	}
-
-
-}
-	
-## WP1: BAD
-sub count 
-{
-	my( $self ) = @_;
-
-	if( $self->{tmptable} )
-	{
-		return $self->{session}->get_db()->count_buffer( 
-			$self->{tmptable} );
-	}	
-	#cjg ERROR to user?
-	$self->{session}->get_archive()->log( "Search has not been performed" );
-		
-}
-
-
-## WP1: BAD
-sub get_records 
-{
-	my ( $self , $max ) = @_;
-	
-	if ( $self->{tmptable} )
-	{
-        	my( $keyfield ) = $self->{dataset}->get_key_field();
-		my( $buffer, $overlimit ) = 
-			$self->{session}->get_db()->distinct_and_limit( 
-							$self->{tmptable}, 
-							$keyfield, 
-							$max );
-
-		my @records = $self->{session}->get_db()->from_buffer( 
-							$self->{dataset}, 
-							$buffer );
-
-		# We don't bother sorting if we got too many results.	
-		# or no order method was specified.
-		if( !$overlimit && defined $self->{order})
-		{
- print STDERR "order_methods " , $self->{dataset}->confid(). " ". $self->{order} ;
-print STDERR "ORDER BY: $self->{order}\n";
-
-			my $cmpmethod = $self->{session}->get_archive()->get_conf( 
-						"order_methods" , 
-						$self->{dataset}->confid, 
-						$self->{order} );
-
-			@records = sort { &{$cmpmethod}($a,$b); } @records;
-		}
-		return @records;
-	}	
-
-#ERROR TO USER cjg
-	$self->{session}->get_archive()->log( "Search not yet performed" );
-		
-}
 
 
 ######################################################################
 #
-# process_webpage( $title, $preamble )
-#                  string  DOM
+# @metafields = make_meta_fields( $what, $fieldnames )
 #
-#  Process the search form, writing out the form and/or results.
+#  A static method, that finds MetaField objects for the given named
+#  metafields. You can pass @metafields to the SearchForm and 
+#  SearchExpression constructors.
+#
+#  $what must be "eprints" or "users", depending on what metafields
+#  you want.
+#
+#  If a field name is given as e.g. "title/keywords/abstract", they'll
+#  be put in an array ref in the returned array. When @metafields is
+#  passed into the SearchForm constructor, a SearchField that will search
+#  the title, keywords and abstracts fields together will be created.
 #
 ######################################################################
 
-## WP1: BAD
-sub process_webpage
+sub make_meta_fields
 {
-	my( $self, $title, $preamble ) = @_;
-	
-	my $action_button = $self->{session}->get_action_button();
-	# Check if we need to do a search. We do if:
-	#  a) if the Search button was pressed.
-	#  b) if there are search parameters but we have no value for "submit"
-	#     (i.e. the search is a direct GET from somewhere else)
+	my( $what, $fieldnames ) = @_;
 
-	if( ( defined $action_button && $action_button eq "search" ) 
-            || 
-	    ( !defined $action_button && $self->{session}->have_parameters() ) )
+	my @metafields;
+
+	# We want to search the relevant MetaFields
+	my @all_fields;
+
+	@all_fields = EPrints::MetaInfo::get_all_eprint_fields()
+		if( $what eq "eprints" );
+
+	@all_fields = EPrints::MetaInfo::get_user_fields()
+		if( $what eq "users" );
+
+	foreach (@$fieldnames)
 	{
-		# We need to do a search
-		my $problems = $self->from_form;
-		
-		if( defined $problems && scalar( @$problems ) > 0 )
+		# If the fieldname contains a /, it's a "search >1 at once" entry
+		if( /\// )
 		{
-			$self->_render_problems( 
-					$title, 
-					$preamble, 
-					@$problems );
-			return;
-		}
-
-		# Everything OK with form.
+			# Split up the fieldnames
+			my @multiple_names = split /\//, $_;
+			my @multiple_fields;
 			
-
-		my( $t1 , $t2 , $t3 , @results );
-
-		$t1 = EPrints::Session::microtime();
-
-		$self->perform_search();
-
-		$t2 = EPrints::Session::microtime();
-
-		if( defined $self->{error} ) 
-		{	
-			# Error with search.
-			$self->_render_problems( 
-					$title, 
-					$preamble, 
-					$self->{error} );
-			return;
-		}
-
-		my $n_results = $self->count();
-
-		# cjg this should be in site config.
-		my $MAX=1000;
-
-		@results = $self->get_records( $MAX );
-		$t3 = EPrints::Session::microtime();
-
-		my $page = $self->{session}->make_doc_fragment();
-
-		if( $n_results > $MAX) 
-		{
-			my $p = $self->{session}->make_element( "p" );
-			$page->appendChild( $p );
-			$p->appendChild( 
-				$self->{session}->html_phrase( 
-							"lib/searchexpression:too_many", 
-							n=>$MAX ) );
-		}
-	
-		my $code;
-		if( $n_results == 0 )
-		{
-			$code = "no_hits";
-		}
-		elsif( $n_results == 1 )
-		{
-			$code = "one_hit";
+			# Put the MetaFields in a list
+			foreach (@multiple_names)
+			{
+				push @multiple_fields, EPrints::MetaInfo::find_field( \@all_fields,
+				                                                      $_ );
+			}
+			
+			# Add a reference to the list
+			push @metafields, \@multiple_fields;
 		}
 		else
 		{
-			$code = "n_hits";
+			# Single field
+			push @metafields, EPrints::MetaInfo::find_field( \@all_fields,
+			                                                  $_ );
 		}
-		my $p = $self->{session}->make_element( "p" );
-		$page->appendChild( $p );
-       		$p->appendChild(  
-			$self->{session}->html_phrase( 
-				"lib/searchexpression:".$code,  
-				n => $self->{session}->make_text( 
-							$n_results ) ) );
-
-		if( @{ $self->{ignoredwords} } )
-		{
-			my %words = ();
-			$p->appendChild( $self->{session}->make_text( " " ) );
-			foreach( @{$self->{ignoredwords}} ) { $words{$_}++; }
-			my $words = $self->{session}->make_text( 
-					join( ", ", sort keys %words ) );
-			$p->appendChild(
-       				$self->{session}->html_phrase( 
-					"lib/searchexpression:ignored",
-					words => $words ) );
-		
-		}
-
-		$p->appendChild( $self->{session}->make_text( " " ) );
-		$p->appendChild(
-       			$self->{session}->html_phrase( 
-				"lib/searchexpression:search_time", 
-				searchtime=>$self->{session}->make_text($t2-$t1),
-				gettime=>$self->{session}->make_text($t3-$t2) ) );
-
-		my $form = $self->{session}->render_form( "get" );
-		foreach( $self->{session}->param() )
-		{
-			next if( $_ =~ m/^_/ );
-			$form->appendChild(
-				$self->{session}->render_hidden_field( $_ ) );
-		}
-		$form->appendChild( $self->{session}->render_action_buttons( 
-			update => $self->{session}->phrase("lib/searchexpression:action_update"), 
-			newsearch => $self->{session}->phrase("lib/searchexpression:action_newsearch") ) );
-		$page->appendChild( $form );
-
-		my $result;
-		foreach $result (@results)
-		{
-			$p = $self->{session}->make_element( "p" );
-			$p->appendChild( $result->render_citation_link() );
-			$page->appendChild( $p );
-		}
-
-		$page->appendChild( $form->cloneNode( 1 ) );
-			
-		# Print out state stuff for a further invocation
-		$self->{session}->build_page( 
-			$self->{session}->phrase( 
-					"lib/searchexpression:results_for", 
-					title => $title ),
-			$page );
-		$self->{session}->send_page();
-		return;
-	}
-
-	if( defined $action_button && $action_button eq "newsearch" )
-	{
-		# To reset the form, just reset the URL.
-		my $url = $self->{session}->get_url();
-		# Remove everything that's part of the query string.
-print STDERR "URLURL URL URL: $url\n";
-		$url =~ s/\?.*//;
-		$self->{session}->redirect( $url );
-		return;
 	}
 	
-	if( defined $action_button && $action_button eq "update" )
-	{
-		$self->from_form();
-	}
-
-	# Just print the form...
-
-	my $page = $self->{session}->make_doc_fragment();
-	$page->appendChild( $preamble );
-	$page->appendChild( $self->render_search_form( 1 , 1 ) );
-
-	$self->{session}->build_page( $title, $page );
-	$self->{session}->send_page();
+	return( @metafields );
 }
 
-## WP1: BAD
-sub _render_problems
-{
-	my( $self , $title, $preamble, @problems ) = @_;	
-	# Problem with search expression. Report an error, and redraw the form
-		
-	my $page = $self->{session}->make_doc_fragment();
-	$page->appendChild( $preamble );
-
-	my $p = $self->{session}->make_element( "p" );
-	$p->appendChild( $self->{session}->html_phrase( "lib/searchexpression:form_problem" ) );
-	$page->appendChild( $p );
-	my $ul = $self->{session}->make_element( "ul" );
-	$page->appendChild( $ul );
-	my $problem;
-	foreach $problem (@problems)
-	{
-		my $li = $self->{session}->make_element( 
-			"li",
-			class=>"problem" );
-		$ul->appendChild( $li );
-		$li->appendChild( $self->{session}->make_text( $problem ) );
-	}
-	my $hr = $self->{session}->make_element( 
-			"hr", 
-			noshade=>"noshade",  
-			size=>2 );
-	$page->appendChild( $hr );
-	$page->appendChild( $self->render_search_form );
-			
-	$self->{session}->build_page( $title, $page );
-	$self->{session}->send_page();
-}
-
+	
 
 1;

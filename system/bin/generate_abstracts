@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+#!/usr/bin/perl -w
 
 ######################################################################
 #
@@ -21,25 +21,21 @@ use EPrints::EPrint;
 use EPrints::Session;
 use EPrints::HTMLRender;
 use EPrints::Subject;
+use EPrints::Log;
+
+use EPrintSite::SiteInfo;
 
 use strict;
 
+my $session = new EPrints::Session( 1 );
 
-my $session = new EPrints::Session( 1 , $ARGV[0] );
-exit( 1 ) unless( defined $session );
+my @eprints = EPrints::EPrint::retrieve_eprints(
+	$session,
+	$EPrints::Database::table_archive );
 
-my $dataset = $session->get_archive()->get_dataset( "archive" ),
-
-print "start\n";
-my @eprints = $session->{database}->get_all( $dataset );
-print "gotall\n";
-
-my $eprint;
-my $i=0;
-foreach $eprint (@eprints)
+foreach (@eprints)
 {
-	++$i;
-	$eprint->generate_static();
-	last if( $i==20 );
+#	EPrints::Log::debug( "generate_abstracts",
+#	                     "Generating abstract for $_->{eprintid}" );
+	$_->generate_static();
 }
-print "done\n";

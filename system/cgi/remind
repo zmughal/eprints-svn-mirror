@@ -18,13 +18,12 @@ use EPrints::Session;
 use EPrints::MetaField;
 use EPrints::Database;
 
+use EPrintSite::SiteInfo;
+
 use strict;
 
 
-
 my $session = new EPrints::Session;
-Apache::exit( 0 ) unless( defined $session );
-
 
 if( $session->{render}->seen_form() )
 {
@@ -41,38 +40,32 @@ if( $session->{render}->seen_form() )
 	# If the user doesn't exist, we don't tell the page visitor for security
 	# reasons.
 
-	print $session->{render}->start_html(
-		$session->{lang}->phrase( "cgi/remind:rem_sent_title" ) );
-	print "<CENTER><P>";
-	print $session->{lang}->phrase( 
-		"cgi/remind:sent_blurb",
-		"<A HREF=\"".$session->get_archive()->get_conf( "adminemail" )."\">".
-		 $session->{lang}->phrase( "cgi/remind:site_admin" )."</A>" );
-
-	print "</P></CENTER>\n";
+	print $session->{render}->start_html( "Reminder Sent" );
+	print "<CENTER><P>A reminder of your username and password has been sent ".
+		"to you in an E-mail. If you still have problems, please mail the ".
+		"<A HREF=\"$EPrintSite::SiteInfo::admin\">site administrator</A>.</P>".
+		"</CENTER>\n";
 		
-	print "<P><A HREF=\"".$session->get_archive()->get_conf( "frontpage" )."\">";
-	print $session->{lang}->phrase( "cgi/remind:return_home" );
-	print "</A></P>\n";
+	print "<P><CENTER><A HREF=\"$EPrintSite::SiteInfo::frontpage\">Return to ".
+		"$EPrintSite::SiteInfo::sitename Home</A></CENTER></P>\n";
 
 	print $session->{render}->end_html();
 }
 else
 {
-	print $session->{render}->start_html( 
-		$session->{lang}->phrase( "cgi/remind:form_title ) );
+	print $session->{render}->start_html( "Username and Password Reminder Form" );
 	
-	print "<CENTER><P>";
-	print $session->{lang}->phrase( "cgi/remind:form_blurb );
-	print "</CENTER></P>\n";
+	print "<CENTER><P>If you've forgotten your username and/or password, just ".
+		"type your E-mail address into the box below, and your username and ".
+		"password will be mailed to you.</P>\n";
 	
 	my $field = new EPrints::MetaField( "email:email::E-Mail Address:0:1:1" );
 	
-	$session->{render}->render_input_form( [ $field ],
+	$session->{render}->render_form( [ $field ],
 	                                 {},
 	                                 1,
 	                                 0,
-	                                 [ $session->{lang}->phrase( "cgi/remind:send" ) ] );
+	                                 [ "Send" ] );
 
 	print $session->{render}->end_html();
 }

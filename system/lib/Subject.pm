@@ -17,37 +17,26 @@
 package EPrints::Subject;
 
 use EPrints::Database;
-use EPrints::SearchExpression;
+use EPrintSite::SiteInfo;
 
 use strict;
 
+#
+# Fields in subject database table
+#
+@EPrints::Subject::system_meta_fields =
+(
+	"subjectid:text::Subject ID:1:0:0",
+	"name:text::Subject Name:1:0:0",
+	"parent:text::Parent Subject:0:0:0:1",
+	"depositable:boolean::Depositable:1:0:0"
+);
 
 # Root subject specifier
 $EPrints::Subject::root_subject = "ROOT";
 
 # Root subject name
 $EPrints::Subject::root_subject_name = "(Top Level)";
-
-## WP1: BAD
-sub get_system_field_info
-{
-	my( $class ) = @_;
-
-	return 
-	( 
-		{ name=>"subjectid", type=>"text", required=>1 },
-
-		{ name=>"name", type=>"text", required=>1 },
-
-		{ name=>"parents", type=>"text", required=>1, multiple=>1 },
-
-		{ name=>"ancestors", type=>"text", required=>0, multiple=>1 },
-
-		{ name=>"depositable", type=>"boolean", required=>1 },
-	);
-}
-
-#cjg NEED TO {data} OO it.
 
 ######################################################################
 #
@@ -64,65 +53,52 @@ sub get_system_field_info
 #
 ######################################################################
 
-## WP1: BAD
 sub new
 {
-	my( $class, $session, $subjectid, $known ) = @_;
+	my( $class, $session, $id, $row ) = @_;
 
 	my $self = {};
+	bless $self, $class;
 	
-	if( defined $known )
+	$self->{session} = $session;
+	
+	if( defined $row )
 	{
-		$self->{data} = $known;
+		# Got stuff in from database already
+		$self->{subjectid} = $row->[0];
+		$self->{name} = $row->[1];
+		$self->{parent} = ( defined $row->[2] ? $row->[2]
+		                                      : $EPrints::Subject::root_subject );
+		$self->{depositable} = $row->[3];
+	}
+	elsif( !defined $id || $id eq $EPrints::Subject::root_subject )
+	{
+		# Create a root subject object
+	
+		$self->{subjectid} = $EPrints::Subject::root_subject;
+		$self->{depositable} = "FALSE";
+		$self->{name} = $EPrints::Subject::root_subject_name;
 	}
 	else
 	{
-		if( defined $subjectid && 
-			$subjectid ne $EPrints::Subject::root_subject )
-		{
-			# Got ID, need to read stuff in from database
-			return $session->get_db()->get_single( 
-				$session->get_archive()->get_dataset( "subject" ), 
-				$subjectid );
-		}
-		# Create a root subject object
-		$self->{data} = {};
-		$self->{data}->{subjectid} = $EPrints::Subject::root_subject;
-		$self->{data}->{name} = $EPrints::Subject::root_subject_name; #cjg!
-		$self->{data}->{parents} = [];
-		$self->{data}->{ancestors} = [ $EPrints::Subject::root_subject ];
-		$self->{data}->{depositable} = "FALSE";
-	}
+		# Got ID, need to read stuff in from database
 
-	$self->{dataset} = $session->get_archive()->get_dataset( "subject" ); 
-	$self->{session} = $session;
-	bless $self, $class;
+		my @retr_row = $self->{session}->{database}->retrieve_single(
+			$EPrints::Database::table_subject,
+			"subjectid",
+			$id );
+
+		return( undef ) if( $#retr_row==-1 );    # If a db error
+
+		$self->{subjectid} = $retr_row[0];
+		$self->{name} = $retr_row[1];
+		$self->{parent} = $retr_row[2];
+		$self->{depositable} = $retr_row[3];
+	}
 
 	return( $self );
 }
-
-sub commit 
-{
-	my( $self ) = @_;
-
-	my @ancestors = $self->_get_ancestors();
-	$self->{data}->{ancestors} = \@ancestors;
-
-	my $rv = $self->{session}->get_db()->update(
-			$self->{dataset},
-			$self->{data} );
-
 	
-	# Need to update all children in case ancesors have changed.
-	# This is pretty slow esp. For a top level subject, but subject
-	# changes will be rare and only done by admin, so mnya.
-	my $child;
-	foreach $child ( $self->children() )
-	{
-		$rv = $rv && $child->commit();
-	}
-	return $rv;
-}	
 
 
 ######################################################################
@@ -139,50 +115,29 @@ sub commit
 
 sub create_subject
 {
-	my( $class, $session, $id, $name, $parents, $depositable ) = @_;
+	my( $class, $session, $id, $name, $parent, $depositable ) = @_;
 	
-	my $actual_parents = $parents;
-	$actual_parents = [ $EPrints::Subject::root_subject ] if( !defined $parents );
+	my $self = {};
+	bless $self, $class;
+	
+	$self->{session} = $session;
 
-	my $newsubdata = 
-		{ "subjectid"=>$id,
-		  "name"=>$name,
-		  "parents"=>$actual_parents,
-		  "ancestors"=>[],
-		  "depositable"=>($depositable ? "TRUE" : "FALSE" ) };
+	my $actual_parent = $parent;
+	$actual_parent = $EPrints::Subject::root_subject
+		if( !defined $parent || $parent eq "" );
 
-	return( undef ) unless( $session->get_db()->add_record( 
-		$session->get_archive()->get_dataset( "subject" ), 
-		$newsubdata ) );
+	return( undef ) unless( $session->{database}->add_record(
+		$EPrints::Database::table_subject,
+		[ [ "subjectid", $id ],
+		  [ "name", $name ],
+		  [ "parent", $actual_parent ],
+		  [ "depositable", ($depositable ? "TRUE" : "FALSE" ) ] ] ) );
 
-	my $newsub = new EPrints::Subject( $session, undef, $newsubdata );
-
-	$newsub->commit(); # will update ancestors
-
-	return $newsub;
+	return( new EPrints::Subject( $session,
+	                              undef,
+	                              [$id, $name, $parent, $depositable ] ) );
 }
 
-sub _get_ancestors
-{
-	my( $self ) = @_;
-use Data::Dumper;
-print "$self->{data}->{subjectid}->GETANCESTORS\n";
-print Dumper( $self->{data} );
-	my %ancestors;
-	$ancestors{$self->{data}->{subjectid}} = 1;
-
-	my $parent;
-	foreach $parent ( $self->get_parents() )
-	{
-
-print ".\n";
-		foreach( $parent->_get_ancestors() )
-		{
-			$ancestors{$_} = 1;
-		}
-	}
-	return keys %ancestors;
-}
 
 ######################################################################
 #
@@ -192,7 +147,6 @@ print ".\n";
 #
 ######################################################################
 
-## WP1: BAD
 sub create_child
 {
 	my( $self, $id, $name, $depositable ) = @_;
@@ -216,24 +170,41 @@ sub create_child
 #
 ######################################################################
 
-## WP1: BAD
-sub children #cjg should be get_children()
+sub children
 {
 	my( $self ) = @_;
+	
+	my @fields = EPrints::MetaInfo::get_subject_fields();
 
-	my $searchexp = new EPrints::SearchExpression(
-		session=>$self->{session},
-		dataset=>$self->{dataset} );
+	my $rows = $self->{session}->{database}->retrieve_fields(
+		$EPrints::Database::table_subject,
+		\@fields,
+		[ "parent LIKE \"$self->{subjectid}\"" ],
+		[ "name" ] );
 
-	$searchexp->add_field(
-		$self->{dataset}->get_field( "parents" ),
-		"PHR:EQ:".$self->get_value( "subjectid" ) );
+	#EPrints::Log::debug( "Subject", "Children: $#{$rows}" );
 
-#cjg set order (it's in the site config)
+	my @children;
+	my $r;
 
-	my $searchid = $searchexp->perform_search();
-	my @children = $searchexp->get_records();
+	foreach $r (@$rows)
+	{
+		my $child = new EPrints::Subject( $self->{session}, undef, $r );
 
+		# Sort out the full label for displaying in listboxes etc.
+		if( defined $self->{label} )
+		{
+			$child->{label} = $self->{label} . ": " . $child->{name};
+		}
+		else
+		{
+			$child->{label} = $child->{name};
+		}
+
+		#EPrints::Log::debug( "Subject", "Child: $child->{subjectid}" );
+		push @children, $child;
+	}
+	
 	return( @children );
 }
 
@@ -249,16 +220,13 @@ sub children #cjg should be get_children()
 #
 ######################################################################
 
-sub get_parents
+sub parent
 {
 	my( $self ) = @_;
-
-	my @parents = ();
-	foreach( @{$self->{data}->{parents}} )
-	{
-		push @parents, new EPrints::Subject( $self->{session}, $_ );
-	}
-	return( @parents );
+	
+	return( undef ) if( $self->{subjectid} eq $EPrints::Subject::root_subject );
+	
+	return( new EPrints::Subject( $self->{session}, $self->{parent} ) );
 }
 
 
@@ -277,21 +245,9 @@ sub can_post
 	my( $self, $user ) = @_;
 
 	# Depends on the subject	
-	return( $self->{data}->{depositable} eq "TRUE" ? 1 : 0 );
+	return( $self->{depositable} eq "TRUE" ? 1 : 0 );
 }
 
-#cjg LINK(optional) to "view"
-sub render
-{
-	my( $self ) = @_;
-
-	my $ds = $self->{session}->get_archive()->get_dataset( "subject" );
-	my $namefield = $ds->get_field( "name" );
-	my $html = $namefield->render_value( 
-			$self->{session}, 
-			$self->{data}->{name} );
-	return $html;
-}
 
 ######################################################################
 #
@@ -302,15 +258,12 @@ sub render
 #
 ######################################################################
 
-## WP1: BAD
-#cjg Ultimatly should use ImportXML.
 sub create_subject_table
 {
-	my( $session, $filename ) = @_;
+	my( $session ) = @_;
 	
 	# Read stuff in from the subject config file
-print STDERR "subjectfile=($filename)\n";
-	open( SUBJECTS, $filename ) or return( 0 );
+	open SUBJECTS, $EPrintSite::SiteInfo::subject_config or return( 0 );
 
 	my $success = 1;
 	
@@ -318,23 +271,19 @@ print STDERR "subjectfile=($filename)\n";
 	{
 #		print "Line: $_\n";
 		chomp();
-		next if /^\s*(#|$)/;
 		my @vals = split /:/;
-
-		my @parents = split( ",", $vals[2] );
 		
+		#EPrints::Log::debug( "Subject", "ID: $vals[0]  Name: $vals[1]  Parent: $vals[2]  Depositable: $vals[3]" );
 		$success = $success &&
-			( defined EPrints::Subject->create_subject( 
-				$session,
-			        $vals[0],
-			        $vals[1],
-				\@parents,					
-			        $vals[3] ) );
+			( defined EPrints::Subject->create_subject( $session,
+			                                            $vals[0],
+			                                            $vals[1],
+			                                            $vals[2],
+			                                            $vals[3] ) );
 	}
 	
 	return( $success );
 }
-
 
 
 ######################################################################
@@ -348,252 +297,47 @@ print STDERR "subjectfile=($filename)\n";
 #
 ######################################################################
 
-sub get_subjects 
-{
-	my( $self, $postableonly, $showtoplevel ) = @_; 
-#cjg some kind of whacky debugging code:
-if( $self eq "0" )
-{
-	use Carp;
-confess;
-}
-	my( $subjectmap, $rmap ) = EPrints::Subject::get_all( $self->{session} );
-	return $self->_get_subjects2( $postableonly, !$showtoplevel, $subjectmap, $rmap );
-	
-}
-
-sub _get_subjects2
-{
-	my( $self, $postableonly, $hidenode, $subjectmap, $rmap ) = @_; 
-	
-	my $namefield = $self->{dataset}->get_field( "name" );
-
-	my $postable = ($self->get_value( "depositable" ) eq "TRUE" ? 1 : 0 );
-	my $id = $self->get_value( "subjectid" );
-	my $label = $namefield->most_local( $self->{session}, $self->get_value( "name" ) );
-	my $subpairs = [];
-	if( (!$postableonly || $postable) && (!$hidenode) )
-	{
-		push @{$subpairs},[ $id, $label ];
-	}
-	my $kid;
-	foreach $kid ( @{$rmap->{$id}} )# cjg sort on labels?
-	{
-		my $kidmap = $kid->_get_subjects2( 
-				$postableonly, 0, $subjectmap, $rmap );
-		my $pair;
-		foreach $pair ( @{$kidmap} )
-		{
-			my $pair2 = [ 
-				$pair->[0], 
-				($hidenode?"":$label.": ").$pair->[1] ];
-			push @{$subpairs}, $pair2;
-		}
-	}
-
-	return $subpairs;
-}
-
-######################################################################
-#
-# $label = subject_label( $session, $subject_tag )
-#
-#  Return the full label of a subject, including parents. Returns
-#  undef if the subject tag is invalid. [STATIC]
-#
-######################################################################
-
-## WP1: BAD
-sub subject_label
-{
-	my( $session, $subject_tag ) = @_;
-	
-	my $label = "";
-	my $tag = $subject_tag;
-
-	while( $tag ne $EPrints::Subject::root_subject )
-	{
-		my $ds = $session->get_archive()->get_dataset();
-		my $data = $session->{database}->get_single( $ds, $tag );
-		
-		# If we can't find it, the tag must be invalid.
-		if( !defined $data )
-		{
-			return( undef );
-		}
-
-		$tag = $data->{parent};
-
-		if( $label eq "" )
-		{
-			$label = $data->{name};
-		}
-		else
-		{
-			$label = $data->{name} . ": " . $label;
-		}
-	}
-	
-	return( $label );
-}
-
-
-# cjg CACHE this per, er, session?
-# commiting a subject should erase the cache
-sub get_all
-{
-	my( $session ) = @_;
-	
-	# Retrieve all of the subjects
-	my @subjects = $session->get_db()->get_all( 
-		$session->get_archive()->get_dataset( "subject" ) );
-
-	return( undef ) if( scalar @subjects == 0 );
-
-	my( %subjectmap );
-	my( %rmap );
-	my $subject;
-	foreach $subject (@subjects)
-	{
-		$subjectmap{$subject->get_value("subjectid")} = $subject;
-		foreach( @{$subject->{data}->{parents}} )
-		{
-			$rmap{$_} = [] if( !defined $rmap{$_} );
-			push @{$rmap{$_}}, $subject;
-		}
-	}
-	
-	return( \%subjectmap, \%rmap );
-}
-
-
-sub posted_eprints
-{
-	my( $self, $dataset ) = @_;
-
-	my $searchexp = new EPrints::SearchExpression(
-		session => $self->{session},
-		dataset => $dataset,
-		satisfy_all => 0 );
-
-	my $n = 0;
-	my $field;
-	foreach $field ( $dataset->get_fields() )
-	{
-		next unless( $field->is_type( "subject" ) );
-		$n += 1;
-		$searchexp->add_field(
-			$field,
-			"PHR:EQ:".$self->get_value( "subjectid" ) );
-	}
-
-	if( $n == 0 )
-	{
-		# no actual subject fields
-		return();
-	}
-
-	my $searchid = $searchexp->perform_search;
-	my @data = $searchexp->get_records;
-
-	return @data;
-}
-
-
-######################################################################
-#
-# $num = count_eprints( $table )
-#
-#  Simpler version of above function. Counts the EPrints in this
-#  subject fields from $table. If $table is unspecified, the main
-#  archive table is assumed.
-#
-######################################################################
-
-## WP1: BAD
-sub count_eprints
-{
-	my( $self, $dataset ) = @_;
-
-	# Create a search expression
-	my $searchexp = new EPrints::SearchExpression(
-		session => $self->{session},
-		dataset => $dataset );
-
-	$searchexp->add_field(
-		$dataset->get_field( "subjects" ),
-		"PHR:EQ:".$self->get_value( "subjectid" ) );
-
-	my $searchid = $searchexp->perform_search;
-	my $count = $searchexp->count;
-
-	return $count;
-
-}
-
-## WP1: BAD
-sub get_value 
-{
-	my( $self, $fieldname ) = @_;
-	if( $self->{data}->{$fieldname} eq "")
-	{
-		return undef;
-	}
-
-	return $self->{data}->{$fieldname};
-}
-
-#
-#
-#
-#
-#
-#
-#
-###############################################
-# JUNK
-###############################################
-
-## WP1: BAD
 sub get_postable
 {
 	my( $session, $user ) = @_;
 
 	# Get all of the subjects
-	my( $subjectmap, $rmap ) = EPrints::Subject::get_all( $session );
-
+	my( $subjects, $subjectmap ) = EPrints::Subject::get_all( $session );
 
 	# For the results
-	#my @tags;
-	#my %labels;
+	my @tags;
+	my %labels;
 
+	# Maps full label (with "path", e.g. "Psychology: Behavioural") for
 	# easy sorting
-	#my %labelmap;
-	#my $subject;
-	## Go through all of the subjects
-	#foreach $subject (keys
-	#{
-		## If the user can post to it...
-		#if( !defined $user || $subject->can_post( $user ) )
-		#{
-			## Lob it in the list!
-			#my $lab = EPrints::Subject::subject_label_cache(
-				#$session,
-				#$subject->{subjectid},
-				#$subjectmap );
-			#$labels{$subject->get_value("subjectid")} = $lab;
-			#$labelmap{$lab} = $subject;
-		#}
-	#}
-	#
-	## Put subjects in alphabetical order to labelmap
-	#foreach (sort keys %labelmap)
-	#{
-		#push @tags, $labelmap{$_}->get_value("subjectid");
-	#}
-#
-	#return( \@tags, \%labels );
+	my %labelmap;
+	
+	# Go through all of the subjects
+	foreach (@$subjects)
+	{
+		# If the user can post to it...
+		if( !defined $user || $_->can_post( $user ) )
+		{
+			# Lob it in the list!
+			my $lab = EPrints::Subject::subject_label_cache(
+				$session,
+				$_->{subjectid},
+				$subjectmap );
+
+			$labels{$_->{subjectid}} = $lab;
+			$labelmap{$lab} = $_;
+		}
+	}
+	
+	# Put subjects in alphabetical order to labelmap
+	foreach (sort keys %labelmap)
+	{
+		push @tags, $labelmap{$_}->{subjectid};
+	}
+
+	return( ( \@tags, \%labels ) );
 }
+
 
 ######################################################################
 #
@@ -604,7 +348,6 @@ sub get_postable
 #
 ######################################################################
 
-## WP1: BAD
 sub all_subject_labels
 {
 	my( $session ) = @_;
@@ -615,29 +358,48 @@ sub all_subject_labels
 
 ######################################################################
 #
-# $name = subject_name( $session, $subject_tag )
+# $label = subject_label( $session, $subject_tag )
 #
-#  Return just the subjects name. Returns
+#  Return the full label of a subject, including parents. Returns
 #  undef if the subject tag is invalid. [STATIC]
 #
 ######################################################################
 
-## WP1: BAD
-sub subject_name
+sub subject_label
 {
 	my( $session, $subject_tag ) = @_;
+	
+	my $label = "";
+	my $tag = $subject_tag;
 
-	my $data = $session->{database}->get_single( "subject" , $subject_tag );
-
-	# If we can't find it, the tag must be invalid.
-	if( !defined $data )
+	while( $tag ne $EPrints::Subject::root_subject )
 	{
-		return( undef );
-	}
+		my @row = $session->{database}->retrieve_single(
+			$EPrints::Database::table_subject,
+			"subjectid",
+			$tag );
+		
+		# If we can't find it, the tag must be invalid.
+		if( $#row == -1 )
+		{
+			return( undef );
+		}
 
-	# return the name
-	return $data->{name};
+		$tag = $row[2];
+
+		if( $label eq "" )
+		{
+			$label = $row[1];
+		}
+		else
+		{
+			$label = $row[1] . ": " . $label;
+		}
+	}
+	
+	return( $label );
 }
+
 
 ######################################################################
 #
@@ -650,7 +412,6 @@ sub subject_name
 #
 ######################################################################
 
-## WP1: BAD
 sub subject_label_cache
 {
 	my( $session, $subject_tag, $subject_cache ) = @_;
@@ -681,6 +442,92 @@ sub subject_label_cache
 	}
 	
 	return( $label );
+}
+
+
+######################################################################
+#
+# ($subjects, $subjectmap) = get_all( $session )
+#
+#  Return all of the subjects in the system. $subject is a reference
+#  to an array with all the Subject objects in, and $subjectmap is a
+#  hash ref that maps subject IDs to subject objects.
+#
+######################################################################
+
+sub get_all
+{
+	my( $session ) = @_;
+	
+	my @fields = EPrints::MetaInfo::get_subject_fields();
+	
+	# Retrieve all of the subjects
+	my $rows = $session->{database}->retrieve_fields(
+		$EPrints::Database::table_subject,
+		\@fields );
+	
+	return( undef ) if( !defined $rows );
+
+	my( @subjects, %subjectmap );
+	
+	foreach (@$rows)
+	{
+		my $s = new EPrints::Subject( $session, undef, $_ );
+		push @subjects, $s;
+
+		$subjectmap{$s->{subjectid}} = $s;
+
+#		my $p = "get_all:";
+#		foreach (@$r)
+#		{
+#			$p .= " $_";
+#		}
+#		EPrints::Log::debug( "Subject", $p );
+	}
+	
+	return( \@subjects, \%subjectmap );
+}	
+
+
+######################################################################
+#
+# @eprints = posted_eprints( $table )
+#
+#  Retrieve the EPrints in this subject fields from $table. If $table
+#  is unspecified, the main archive table is assumed.
+#
+######################################################################
+
+sub posted_eprints
+{
+	my( $self, $table ) = @_;
+	
+	return( EPrints::EPrint::retrieve_eprints(
+		$self->{session},
+		(defined $table ? $table : $EPrints::Database::table_archive ),
+		[ "subjects LIKE \"\%:$self->{subjectid}:\%\"" ],
+		[ $EPrintSite::SiteInfo::subject_view_order ] ) );
+}
+
+
+######################################################################
+#
+# $num = count_posted_eprints( $table )
+#
+#  Simpler version of above function. Counts the EPrints in this
+#  subject fields from $table. If $table is unspecified, the main
+#  archive table is assumed.
+#
+######################################################################
+
+sub count_eprints
+{
+	my( $self, $table ) = @_;
+	
+	return( EPrints::EPrint::count_eprints(
+		$self->{session},
+		(defined $table ? $table : $EPrints::Database::table_archive ),
+		[ "subjects LIKE \"\%:$self->{subjectid}:\%\"" ] ) );
 }
 
 

@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+#!/usr/bin/perl -w
 
 ######################################################################
 #
@@ -19,117 +19,82 @@
 ######################################################################
 
 use EPrints::Session;
+use EPrintSite::SiteInfo;
 
 use File::Copy;
 use File::Find;
 use strict;
 
-my $session = new EPrints::Session( 1 , $ARGV[0] );
-exit( 1 ) unless( defined $session );
 
-# change to base of site so expat can find the dtd directory. cjg (still needed???)
-chdir( $session->get_archive()->get_conf( "archiveroot" ) );
+my $session = new EPrints::Session( 1 );
 
-print "____________________________\n";
-my $langid;
-my $generalpath = $session->get_archive()->get_conf( "static_html_root" )."/general";
-foreach $langid ( @{$session->get_archive()->get_conf( "languages" )} )
-{
-	print $langid."\n";
-	my $basepath = $session->get_archive()->get_conf( "static_html_root" ).
-	               "/$langid";
-	my $func;
-	$func = sub { generate_static( $langid, $basepath, $session ) };
-	find( { wanted=>$func, follow=>1 }, $basepath );
-	$func = sub { generate_static( $langid, $generalpath, $session ) };
-	find( { wanted=>$func, follow=>1 }, $generalpath );
-}
-exit;
-
+find( \&generate_static, $EPrintSite::SiteInfo::static_html_root );
 
 $session->terminate();
-	
+
 
 sub generate_static
 {
-	my( $langid , $basepath , $session ) = @_;
 	# Ignore CVS directories
 	return if( $File::Find::name =~ /\/CVS/ );
 
 	my $destination_filename = $File::Find::name;
-
-	my $newpath = $session->get_archive()->get_conf( "local_html_root" ).
-	              "/$langid";
-	$destination_filename =~ s/$basepath/$newpath/;
-
-print STDERR "$File::Find::name -> $destination_filename\n";
+	$destination_filename =~ s/$EPrintSite::SiteInfo::static_html_root/$EPrintSite::SiteInfo::local_html_root/;
 	
 	if( -d $File::Find::name )
 	{
 		# If it's a directory, just make sure it exists in the destination.
 		unless( -e $destination_filename )
 		{
-			print "mkdir $destination_filename\n";
-			mkdir( $destination_filename, 0775 )
+			mkdir $destination_filename, 0775
 				or die "Can't make directory $destination_filename: $!\n";
 		}
 	}
 	else
 	{
-		# Is this is an HTML template file?
-		if( $destination_filename =~ m/\.x(html|page)$/ )
+		# Is this is an HTML file?
+		if( /.+\.html/i )
 		{
-			my $mode = $1;
-			$destination_filename =~ s/\.x(html|page)$/.html/;
+			# It's an HTML file.  Add the "skin" if necessary
+			my $must_add_skin = 0;
 
-			my $doc = $session->get_archive()->parse_xml(
-						$File::Find::name );
+			# Open up the files
+			open IN, $File::Find::name
+				or die "Error opening $File::Find::name: $!\n";
 
-			my $page = ($doc->getElementsByTagName( $mode ))[0];
-			if( !defined $page )
+			open OUT, ">$destination_filename"
+				or die "Error opening $destination_filename for writing: $!\n";
+
+			my $first_line = <IN>;
+			chomp();
+
+			if( $first_line =~ s/^title:\s+//i )
 			{
-				die( "Error: no $mode element in ".
-					$File::Find::name );
+				# We need to add the site frame
+				$must_add_skin = 1;
+
+				print OUT $session->{render}->start_html( $first_line );
+			}
+			else
+			{
+				# We're just copying verbatim
+				print OUT "$first_line\n";
 			}
 
-			$doc->removeChild( $page );
-			$session->new_page( $langid );
-			$session->take_ownership( $page );
-			$doc->dispose();
-
-			if( $mode eq "page" )
+			# Copy the file across
+			while( <IN> )
 			{
-				my $title = 
-				   ($page->getElementsByTagName( "title" ))[0];
-				if( !$title )
-				{
-					die( "Error: no title element in ".
-						$File::Find::name );
-				}
-				my $titletext = "";
-				my $kid;
-				foreach $kid ( $title->getChildNodes )
-				{
-					$titletext .= $kid->toString();	
-				}
-				
-				my $main = 
-				   ($page->getElementsByTagName( "body" ))[0];
-				if( !defined $main )
-				{
-					die( "Error: no main element in ".
-						$File::Find::name );
-				}
-				$page->removeChild( $main );
-				$session->build_page( $titletext, $main );
-				$page->dispose();
+				chomp();
+				print OUT EPrints::Mailer::update_template_line( $_, undef );
+				print OUT "\n";
 			}
-			else 	# $mode is "html"
-			{
-				$session->set_page( $page );	
-			}	
-			$session->page_to_file( $destination_filename );
 
+			# Write the site frame terminator if appropriate
+			print OUT $session->{render}->end_html() if( $must_add_skin );
+
+			# Close the files
+			close( IN );
+			close( OUT );
 		}
 		else
 		{

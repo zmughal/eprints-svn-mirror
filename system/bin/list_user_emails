@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+#!/usr/bin/perl -w
 
 ######################################################################
 #
@@ -22,13 +22,12 @@ use EPrints::User;
 use strict;
  
 my $session = new EPrints::Session( 1 );
-exit( 1 ) unless( defined $session );
 
 my @users = EPrints::User::retrieve_users( $session );
 
-foreach $user (@users)
+foreach (@users)
 {
-	print $user->{email} . "\n";
+	print $_->{email} . "\n";
 }
 
 $session->terminate();

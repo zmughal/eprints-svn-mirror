@@ -17,7 +17,7 @@ displayname = "User's Name"
 
 <field os>
 required = NO
-type = "set"
+type = "enum"
 displayname = "Operating System"
 editable = YES
 visible = NO
@@ -49,7 +49,7 @@ displayname = "Organisation"
 displaylines = "5"
 required = NO
 editable = YES
-type = "longtext"
+type = "multitext"
 visible = YES
 displayname = "Address"
 </field>
@@ -73,7 +73,7 @@ displayname = "Homepage URL"
 <field expertise>
 required = NO
 editable = YES
-type = "longtext"
+type = "multitext"
 visible = YES
 displayname = "Expertise"
 displaylines = 3
