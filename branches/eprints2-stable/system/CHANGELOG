@@ -1702,5 +1702,9 @@ PACKAGE: 2.2.99.2
     staff mode. 
  - Added some code to cleanly handle undefined date fields.
  
+2003-11-24 cjg
+
+ - Added code to upgrade database to v2.3
+ - Added "contact" page to statics, rather than email on all pages.
 
 ======================================================================

@@ -1,6 +1,4 @@
 UPGRADE
- * ALTER
- * remove rindex?
  * Proc/Reliable?? (Harrys code)
  * libapreq
  * apache/mod_perl compile.
@@ -21,6 +19,7 @@ General
    they've gone? or filter against archive?
 Bugs
  * Handling of undef in subpages in views
+ * remove CGI.pm from vlit
  * More fields in Userform should generate a sort-of-problem.
  * Error in phrase at top of user seatrch
  * FULLTEXT Phrase
@@ -36,9 +35,7 @@ Bugs
  * not stripping " " of start & end in input?
  * Investigate: (subjects_self->{merge})(ANY)
 Pre-release issues
- * GRANT ALTER ON ep2stable.* TO ep2stable@localhost; in update!
  * nestids in subjects -> just plain stupid?
- * lose email in template: make contact page.
 Render
 CmdLine
 Submission
@@ -283,3 +280,5 @@ CGI Tools
  * Clean up Staff eprint searches
  * File Upload Broke
  * Metafield undef from config bug.
+ * GRANT ALTER ON ep2stable.* TO ep2stable@localhost; in update!
+ * lose email in template: make contact page.
