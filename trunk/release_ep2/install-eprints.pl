@@ -80,10 +80,10 @@ my %systemsettings = ();
 
 # Set up some default settings.
 my %invocsettings = (
-	zip     => "\$(EXE_ZIP) 1>/dev/null 2>\&1 -qq -o -d \$(DIR) \$(ARC)",
-	targz   => "\$(EXE_GUNZIP) -c < \$(ARC) 2>/dev/null | \$(EXE_TAR) xf - -C \$(DIR) >/dev/null 2>\&1",
-	wget    => "\$(EXE_WGET)  -r -L -q -m -nH -np --execute=\"robots=off\" --cut-dirs=\$(CUTDIRS) \$(URL)",
-	sendmail => "\$(EXE_SENDMAIL) -oi -t -odb --"
+	zip     => '$(zip) 1>/dev/null 2>&1 -qq -o -d $(DIR) $(ARC)',
+	targz   => '$(wget) -c < $(ARC) 2>/dev/null | $(tar) xf - -C $(DIR) >/dev/null 2>&1',
+	wget    => '$(wget)  -r -L -q -m -nH -np --execute="robots=off" --cut-dirs=$(CUTDIRS) $(URL)',
+	sendmail => '$(sendmail) -oi -t -odb --'
 );
 
 my %archiveexts = (
@@ -105,7 +105,7 @@ $exesettings{"tar"} 	= detect("tar", @paths);
 my $useradd = detect("useradd", @paths);
 my $groupadd = detect("groupadd", @paths);
 
-$systemsettings{"executable"} = \%exesettings;
+$systemsettings{"executables"} = \%exesettings;
 $systemsettings{"version"} = $version;
 $systemsettings{"version_desc"} = $version_desc;
 print <<DIR;
