@@ -1,6 +1,47 @@
-See CHANGELOG for the gory details.
+This file describes the major changes between versions. In addition you
+can assume every new version fixes minor bugs and typos. If you want to
+see the blow by blow account of every single change see the file called
+CHANGELOG.
 
-EPRINTS 2.3.0                                                  2003-??-??
+
+EPRINTS 2.3.3                                                  2004-03-04
+-------------------------------------------------------------------------
+
+ - Added explain_sql_tables script which explains what all 
+    the SQL tables are used for. Handy for hacking and debugging.
+ - Fixes to generate_views handling of subjects fields.
+ - Fixes for Apache 2 compatibility
+ - The name of a language can now be specified in an language specific 
+    phrase file. Added a new method to session: render_language_name
+    which renders the given name in the right language. 
+ - The string used to join names (and other field types) can now be
+    varied for the first or last item. So you can join names with ", "
+    but for the last pair use " and ".
+
+EPRINTS 2.3.2                                                  2004-02-25
+-------------------------------------------------------------------------
+
+  - Fixes for MySQL 4 compatibility.
+  - Fixes some problems with generate_views handling of subjects.
+  - Fixes for Apache 2 compatibility.
+
+EPRINTS 2.3.1                                                  2004-02-05
+-------------------------------------------------------------------------
+
+ - "last indexed" information to search results page so that users won't
+    be (as) confused if a search does not contain an item they just 
+    added.
+ - Browse by 'name' fields now works. So you can have a static "browse"
+    page for each unique author name eg. Fenderson,_Marvin.html - this
+    is not perfect as he may also by Fenderson,_M.html etc. Or you 
+    might have to Marvin Fendersons. Browse by author ID is still a
+    safer bet in the long term.
+ - Hooks so thta input fields can vary based on other factors. This 
+    should allow input fields which can (for example) limit the options
+    in one field based on values in another.
+ - Fixes for Perl 5.8 compatibility.
+
+EPRINTS 2.3.0                                                  2004-01-12
 -------------------------------------------------------------------------
 
  - Date fields may now be configured so that only the year part is
