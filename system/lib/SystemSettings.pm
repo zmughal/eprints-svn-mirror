@@ -16,7 +16,8 @@ package EPrints::SystemSettings;
 
 $EPrints::SystemSettings::conf = 
 {
-	base_path => "/opt/eprint_dev",
+	apache_version => "1",
+	base_path => "/opt/ep2stable",
 	executables => {
 		unzip 	=> "/usr/bin/unzip",
 		wget 	=> "/usr/bin/wget",
@@ -42,11 +43,11 @@ $EPrints::SystemSettings::conf =
 	},
 	archive_formats => [ "zip", "targz" ],
 	version_id => "CVS",
-	version => "EPrints 2.? CVS Version",
+	version => "EPrints 2 CVS Version [ep2 stable branch]",
 	user => "eprints",
 	group => "eprints",
 	disable_df => 0,
-	enable_gdome => 0
+	enable_gdome => 1
 
 };
 

@@ -492,6 +492,7 @@ sub get_eprints
 
 	my $searchexp = new EPrints::SearchExpression(
 		session=>$self->{session},
+		custom_order=>"eprintid",
 		dataset=>$ds );
 
 	$searchexp->add_field(

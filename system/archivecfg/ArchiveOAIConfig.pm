@@ -106,8 +106,8 @@ $oai->{v2}->{sample_identifier} = EPrints::OpenArchives::to_oai_identifier(
 # defined in the same manner as "browse_views". Only id, allow_null, fields
 # are used.
 $oai->{sets} = [
-#	{ id=>"year", allow_null=>1, fields=>"year" },
-#	{ id=>"person", allow_null=>0, fields=>"authors.id/editors.id" },
+#	{ id=>"year", allow_null=>1, fields=>"date_effective" },
+#	{ id=>"person", allow_null=>0, fields=>"creators.id/editors.id" },
 	{ id=>"status", allow_null=>0, fields=>"ispublished" },
 	{ id=>"subjects", allow_null=>0, fields=>"subjects" }
 ];
@@ -317,17 +317,17 @@ sub eprint_to_unqualified_dc
 	my @dcdata = ();
 	push @dcdata, [ "title", $eprint->get_value( "title" ) ]; 
 	
-	# grab the authors without the ID parts so if the site admin
-	# sets or unsets authors to having and ID part it will make
+	# grab the creators without the ID parts so if the site admin
+	# sets or unsets creators to having and ID part it will make
 	# no difference to this bit.
 
-	my $authors = $eprint->get_value( "authors", 1 );
-	if( defined $authors )
+	my $creators = $eprint->get_value( "creators", 1 );
+	if( defined $creators )
 	{
-		my $author;
-		foreach $author ( @{$authors} )
+		my $creator;
+		foreach $creator ( @{$creators} )
 		{
-			push @dcdata, [ "creator", EPrints::Utils::make_name_string( $author ) ];
+			push @dcdata, [ "creator", EPrints::Utils::make_name_string( $creator ) ];
 		}
 	}
 
@@ -343,7 +343,7 @@ sub eprint_to_unqualified_dc
 	push @dcdata, [ "description", $eprint->get_value( "abstract" ) ]; 
 
 	## Date for discovery. For a month/day we don't have, assume 01.
-	my $year = $eprint->get_value( "year" );
+	my $year = $eprint->get_value( "date_effective" );
 
 	if( defined $year )
 	{

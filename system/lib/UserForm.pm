@@ -232,7 +232,6 @@ sub _render_user_form
 
 	my @fields = $user_ds->get_type_fields( $self->{user}->get_value( "usertype" ), $self->{staff} );
 	my %hidden = ( "userid"=>$self->{user}->get_value( "userid" ) );
-
 	my $buttons = { update => $self->{session}->phrase( "lib/userform:update_record" ) };
 	my $form = $self->{session}->render_input_form( 
 					staff=>$self->{staff},
