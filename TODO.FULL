@@ -1,6 +1,10 @@
 TODOSOON:
 	rewrite SearchField code.
 
+*** CLEAN UP temporary tables... too many filedescriptors 
+can cock up mysql.
+
+
 Bugs:
   * Daily subscriptions still in buffer bug
   * jbug#64 doubled up prefixs
