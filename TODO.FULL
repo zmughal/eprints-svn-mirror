@@ -4,12 +4,14 @@ code:
    + only if conf option is set.
    + conv functions both ways.
    + only required in modifying and searching DB
+   + Change USERNAME of person subbing paper to type username(single)
 * userid/username split.
     + username becomes userid
 	- make it validate on user info too
 	- add a 'strict' option
     + userid/name combo field 
 	- make it editable, searchable etc.
+    + OAI: People as a set!?
 * views
     + make views output which dosn't use wrapper.
     + make people views too, configurable.
@@ -26,8 +28,19 @@ code:
 * scaling - better indexes and temp tables?
 * search on INT (greater & lower?)
 * session->{request} is it used?
-* Internationalisation
+* Internationalisation!
+	+ finish lang file!
+	+ SiteInfo issues
+	+ SiteRoutine issues
+	+ User lang? for mail!
+	+ cfg files
+	+ static pages?
+	+ subject files
 * do CFG files get seperated accross instances?
+* CGI Scripts - some should be NO CACHE.
+* Mirroring System
+
+
 
 siteinfo:
 * Incorporate local users customisation bits
