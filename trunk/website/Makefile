@@ -1,7 +1,7 @@
 # Make site for local previewing
 
 # Change this to where you can look at your mockup
-LOCALROOT=http://noggin.ecs.soton.ac.uk/~rht96r/eprints.org/
+LOCALROOT=http://lemur.ecs.soton.ac.uk/~cjg/eprints.org/
 
 local: cleanlocal
 	mkdir out
