@@ -66,12 +66,11 @@ sub handler
 		return NOT_FOUND;
 	}
 
-	my $apr = Apache::Request->new( $r );
+	my %args = $r->args;
+	my $version = $args{xuversion};
+	my $locspec = $args{locspec};
 
-	my $version = $apr->param( "xuversion" );
-	my $locspec = $apr->param( "locspec" );
-
-	if( !defined $version && !defined $apr->param( "mode" ) )
+	if( !defined $version && !defined $args{mode} )
 	{
 		# We don't need to handle it, just do this 
 		# the normal way.
@@ -110,7 +109,7 @@ sub handler
 		return;
 	}
 
-	&$fn( $filename, $lsparam, $locspec, $r, $apr, $baseurl );
+	&$fn( $filename, $lsparam, $locspec, $r, $baseurl );
 
 	return OK;
 }
@@ -177,7 +176,7 @@ sub send_http_header
 ######################################################################
 =pod
 
-=item EPrints::VLit::ls_charrange( $filename, $param, $locspec, $r, $apr, $baseurl )
+=item EPrints::VLit::ls_charrange( $filename, $param, $locspec, $r, $baseurl )
 
 undocumented
 
@@ -186,7 +185,7 @@ undocumented
 
 sub ls_charrange
 {
-	my( $filename, $param, $locspec, $r, $apr, $baseurl ) = @_;
+	my( $filename, $param, $locspec, $r, $baseurl ) = @_;
 
 	my $archive = EPrints::Archive->new_from_request( $r );
 	
@@ -212,7 +211,8 @@ sub ls_charrange
 		( $offset, $length ) = ( $1, $2 );
 	}
 
-	my $mode = $apr->param( "mode" );
+	my %args = $r->args;
+	my $mode = $args{mode};
 
 	my $readoffset = $offset;
 	my $readlength = $length;
@@ -423,7 +423,7 @@ END
 ######################################################################
 =pod
 
-=item EPrints::VLit::ls_area( $file, $param, $resspec, $r, $apr, $baseurl )
+=item EPrints::VLit::ls_area( $file, $param, $resspec, $r, $baseurl )
 
 undocumented
 
@@ -432,7 +432,7 @@ undocumented
 
 sub ls_area
 {
-	my( $file, $param, $resspec, $r, $apr, $baseurl ) = @_;
+	my( $file, $param, $resspec, $r, $baseurl ) = @_;
 
 	my $page = 1;
 	my $opts = {
@@ -441,10 +441,11 @@ sub ls_area
 		vrange => { start=>0 }
 	};
 
+	my %args = $r->args;
 	my $s;
-	if( $apr->param( "scale" ) )
+	if( $args{scale} )
 	{
-		$s = $apr->param( "scale" );
+		$s = $args{scale};
 		$s = undef if( $s <= 0 || $s>1000 || $s==100 );
 	}
 

@@ -863,7 +863,6 @@ sub get_conditions
 		}
 	}
 		
-
 	$cond->optimise;
 
 	return $cond;

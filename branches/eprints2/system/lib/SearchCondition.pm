@@ -46,6 +46,8 @@ use strict;
 # current conditional operators:
 
 $EPrints::SearchCondition::operators = {
+	'CANPASS'=>0,		#	should only be used in optimisation
+	'PASS'=>0,		#	should only be used in optimisation
 	'TRUE'=>0,		#	should only be used in optimisation
 	'FALSE'=>0,		#	should only be used in optimisation
 
@@ -75,11 +77,11 @@ sub new
 	bless $self, $class;
 
 	$self->{op} = $op;
-	if( $op eq "AND" || $op eq "OR" )
+	if( $op eq "AND" || $op eq "OR" || $op eq "CANPASS" )
 	{
 		$self->{sub_ops} = \@params;
 	}
-	elsif( $op eq "FALSE" || $op eq "TRUE" )
+	elsif( $op eq "FALSE" || $op eq "TRUE" || $op eq "PASS" )
 	{
 		; # no params
 	}
@@ -218,6 +220,14 @@ sub item_matches
 #		my $r = $self->{sub_ops}->[0]->item_matches( $item );
 #		return( !$r );
 #	}
+
+	if( $self->{op} eq "PASS" )
+	{
+		$item->get_session->get_archive->log( <<END );
+PASS condition used in 'item_matches', should have been optimised!
+END
+		return( 0 );
+	}
 
 	if( $self->{op} eq "AND" )
 	{
@@ -418,6 +428,14 @@ sub process
 		return [];
 	}
 
+	if( $self->{op} eq "PASS" )
+	{
+		$session->get_archive->log( <<END );
+PASS condition used in 'process', should have been optimised!
+END
+		return( 0 );
+	}
+
 	if( $self->{op} eq "AND" )
 	{
 #print STDERR "PROCESS: ".("  "x$i)."AND\n";
@@ -569,18 +587,16 @@ sub get_op_val
 }
 
 
-
-# cjg
-# I'm not sure if this helps, but it doesn't hurt either.
+# internal means don't strip canpass off the front.
 sub optimise
 {
-	my( $self ) = @_;
+	my( $self, $internal ) = @_;
 
 	if( $self->is_control )
 	{
 		foreach my $sub_op ( @{$self->{sub_ops}} )
 		{
-			$sub_op->optimise;
+			$sub_op->optimise( 1 );
 		}
 
 #		if( $self->{op} eq "NOT" )
@@ -613,9 +629,59 @@ sub optimise
 				$override = "FALSE";
 				$forget = "TRUE";
 			}
+
+			# strip passes or become a canpass if all pass
+			my $canpass = 1;
+			my $mustpass = 0;
+			my @passops = ();
+			my @sureops = ();
+			foreach my $sub_op ( @{$self->{sub_ops}} )
+			{
+				if( $sub_op->{op} eq "PASS" )
+				{
+					$mustpass = 1;
+					next;
+				}
+				if( $sub_op->{op} eq "CANPASS" )
+				{
+					push @passops, $sub_op->{sub_ops}->[0];
+					next;
+				}
+				push @sureops, $sub_op;
+				$canpass = 0;
+			}
+			if( $canpass )
+			{
+				$self->{sub_ops} = \@passops;
+			}
+			else
+			{
+				$self->{sub_ops} = \@sureops;
+			}
+			
+
+			# flatten sub opts with the same type
+			# so OR( A, OR( B, C ) ) becomes OR(A,B,C)
+			my $flat_ops = [];
+			foreach my $sub_op ( @{$self->{sub_ops}} )
+			{
+				if( $sub_op->{op} eq $self->{op} )
+				{
+					push @{$flat_ops}, 
+						@{$sub_op->{sub_ops}};
+					next;
+				}
+				
+				push @{$flat_ops}, $sub_op;
+			}
+			$self->{sub_ops} = $flat_ops;
+
 			my $keep_ops = [];
 			foreach my $sub_op ( @{$self->{sub_ops}} )
 			{
+				# if an OR contains TRUE or an
+				# AND contains FALSE then we can
+				# cancel it all out.
 				if( $sub_op->{op} eq $override )
 				{
 					delete $self->{sub_ops};
@@ -625,13 +691,6 @@ sub optimise
 
 				if( $sub_op->{op} eq $forget )
 				{
-					next;
-				}
-
-				if( $sub_op->{op} eq $self->{op} )
-				{
-					push @{$self->{sub_ops}}, 
-						@{$sub_op->{sub_ops}};
 					next;
 				}
 				
@@ -647,8 +706,28 @@ sub optimise
 			{
 				$self->copy_from( $self->{sub_ops}->[0] );
 			}
+
+			if( $canpass || $mustpass )
+			{
+				my $newop = new EPrints::SearchCondition();
+				$newop->copy_from( $self );
+				$self->{op} = "CANPASS";
+				$self->{sub_ops} = [ $newop ];
+			}
 		}
 	}
+
+	# do final clean up stuff, if any
+	if( !$internal )
+	{
+		if( $self->{op} eq "CANPASS" )
+		{
+			my $sop = $self->{sub_ops}->[0];
+			$self->copy_from( $sop );
+		}
+	}
+
+
 }
 
 # special handling if first item in the list is

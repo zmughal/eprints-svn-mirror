@@ -3,8 +3,6 @@
 package EPrints::Rewrite;
 
 use EPrints::AnApache;  
-use Apache::Request;
-
 use EPrints::Session;
 
 use strict;

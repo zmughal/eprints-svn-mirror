@@ -69,9 +69,9 @@ use EPrints::Document;
 
 use Unicode::String qw(utf8 latin1);
 use EPrints::AnApache;
-use Apache::Cookie;
 
 use URI::Escape;
+use CGI;
 
 use strict;
 #require 'sys/syscall.ph';
@@ -114,7 +114,7 @@ sub new
 	if( $mode == 0 || !defined $mode )
 	{
 		$self->{request} = Apache->request();
-		$self->{apr} = Apache::Request->new( $self->{request} );
+		$self->{query} = new CGI;
 		$self->{offline} = 0;
 		$self->{archive} = EPrints::Archive->new_from_request( $self->{request} );
 	}
@@ -215,24 +215,19 @@ sub get_session_language
 	# IMPORTANT! This function must not consume
 	# The post request, if any.
 
-	# First choice is from param...
-
-#	my $apr = Apache::Request->new( $request );
-#	my $asked_lang = $apr->param("lang");
-#	if( EPrints::Utils::is_set( $asked_lang ) )
-#	{
-#		push @prefs, $asked_lang;
-#	}
-#print STDERR "DEBUG: ".$apr->param("stage")."\n";
-
-	# Second choice is cookie
-	my $cookies = Apache::Cookie->fetch( $request ); #hash ref
-	my $cookie = $cookies->{$archive->get_conf( "lang_cookie_name")};
-	if( defined $cookie )
+	my $cookies = EPrints::AnApache::header_in( 
+				$request,
+				'Cookie' );
+	foreach my $cookie ( split( /;\s*/, $cookies ) )
 	{
-		push @prefs, $cookie->value;
+		my( $k, $v ) = split( '=', $cookie );
+		if( $k eq $archive->get_conf( "lang_cookie_name") )
+		{
+			push @prefs, $v;
+		}
 	}
 
+	# then look at the accept language header
 	my $accept_language = EPrints::AnApache::header_in( 
 				$request,
 				"Accept-Language" );
@@ -286,11 +281,11 @@ sub get_request
 	return $self->{request};
 }
 
-sub get_apr
+sub get_query
 {
 	my( $self ) = @_;
 
-	return $self->{apr};
+	return $self->{query};
 }
 
 ######################################################################
@@ -1912,7 +1907,7 @@ sub param
 
 	if( !wantarray )
 	{
-		my $value = ( $self->{apr}->param( $name ) );
+		my $value = ( $self->{query}->param( $name ) );
 		return $value;
 	}
 	
@@ -1921,11 +1916,11 @@ sub param
 
 	if( defined $name )
 	{
-		@result = $self->{apr}->param( $name );
+		@result = $self->{query}->param( $name );
 	}
 	else
 	{
-		@result = $self->{apr}->param;
+		@result = $self->{query}->param;
 	}
 
 	return( @result );
@@ -2345,13 +2340,13 @@ sub send_http_header
 
 	if( defined $opts{lang} )
 	{
-		my $cookie = Apache::Cookie->new( $self->{request},
+		my $cookie = $self->{query}->cookie(
 			-name    => $self->{archive}->get_conf("lang_cookie_name"),
 			-path    => "/",
 			-value   => $opts{lang},
 			-expires => "+10y", # really long time
 			-domain  => $self->{archive}->get_conf("lang_cookie_domain") );
-		$cookie->bake;
+		$self->{request}->header_out( "Set-Cookie"=>$cookie );
 	}
 
 	EPrints::AnApache::send_http_header( $self->{request} );

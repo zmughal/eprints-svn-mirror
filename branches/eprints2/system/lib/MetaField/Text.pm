@@ -107,7 +107,7 @@ sub get_search_conditions_not_ex
 	# Just go "yeah" if stemming removed the word
 	if( !EPrints::Utils::is_set( $codes->[0] ) )
 	{
-		return EPrints::SearchCondition->new( "TRUE" );
+		return EPrints::SearchCondition->new( "PASS" );
 	}
 
 	return EPrints::SearchCondition->new( 

@@ -1987,3 +1987,11 @@ PACKAGE: 2.2.99.2
 09/08/2004 - EPRINTS-2.3.6
 ======================================================================
 
+2004-09-20 cjg
+
+ - Text searches for stop words now return PASS. 
+ - OR and AND searches containing a PASS get optimised out if they
+    are AND'd or OR'd with a AND or OR which does not contain a PASS.
+ - Removed dependance on libapreq. Now uses CGI.pm (again). 
+ - Reduced loading message in web startup to a single line. 
+

@@ -53,20 +53,13 @@ if( defined $av && $av eq "2" )
 	eval "require Apache::Const; import Apache::Const;"; if( $@ ) { die $@; }
 	$EPrints::AnApache::RequestWrapper = "EPrints::RequestWrapper2"; 
 
-# hjm Thu Nov 27 16:08:35 GMT 2003
-# This is a workaround for what is apparently a bug in libapreq2-2.02-dev which
-# truncates uploads at around 700K. This should use the bb interface when this
-# bug is fixed.
-
 	eval '
 
 		sub upload_doc_file
 		{
 			my( $session, $document, $paramid ) = @_;
 		
-			require CGI;
-
-			my $cgi = CGI->new;
+			my $cgi = $session->get_query;
 		
 			return $document->upload( 
 				$cgi->upload( $paramid ), 
@@ -77,9 +70,7 @@ if( defined $av && $av eq "2" )
 		{
 			my( $session, $document, $paramid, $archive_format ) = @_;
 
-			require CGI;
-
-			my $cgi = CGI->new;
+			my $cgi = $session->get_query;
 		
 			return $document->upload_archive( 
 				$cgi->upload( $paramid ), 
@@ -133,22 +124,22 @@ else
 		{
 			my( $session, $document, $paramid ) = @_;
 		
-			my $upload = $session->get_apr->upload( $paramid );
+			my $cgi = $session->get_query;
 		
 			return $document->upload( 
-				$upload->fh, 
-				$upload->filename );	
+				$cgi->upload( $paramid ), 
+				$cgi->param( $paramid ) );	
 		}
 
 		sub upload_doc_archive
 		{
 			my( $session, $document, $paramid, $archive_format ) = @_;
 
-			my $upload = $session->get_apr->upload( $paramid );
+			my $cgi = $session->get_query;
 		
 			return $document->upload_archive( 
-				$upload->fh, 
-				$upload->filename, 
+				$cgi->upload( $paramid ), 
+				$cgi->param( $paramid ), 
 				$archive_format );	
 		}
 

@@ -1,4 +1,4 @@
-#!/usr/bin/perl  -I/opt/ep2stable/perl_lib -d:DProf
+#!/usr/local/bin/perl5.8.0 -w -I/opt/ep2stable/perl_lib 
 
 ######################################################################
 #
