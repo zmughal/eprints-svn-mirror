@@ -514,7 +514,6 @@ Template ID: $tempid
 END
 	}
 
-	my $t = $self->{html_templates}->{$tempid}->{$langid};
 	return $t;
 }
 

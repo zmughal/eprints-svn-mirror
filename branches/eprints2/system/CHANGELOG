@@ -2319,4 +2319,7 @@ PACKAGE: 2.2.99.2
     web interface for it yet.
  - [#50] Https mode should now work properly.
 
+2005-03-21 cjg
+ - Fixed warning in Archive.pm (duplicated "my" line)
+ - Fixed bug in installer: confusion between userid and username.
 

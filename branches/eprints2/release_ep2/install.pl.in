@@ -255,7 +255,9 @@ exit;
 
 sub save_settings
 {
-	my( $sysfile, $syshash, $uid, $gid ) = @_;
+	my( $sysfile, $syshash, $user, $group ) = @_;
+
+	my(undef,undef,$uid,$gid) = getpwnam($user);
 
 	my $dumper = Data::Dumper->new( 
 		[ $syshash ] , 
