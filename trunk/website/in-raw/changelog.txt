@@ -56,3 +56,81 @@ link didn't work.
 journal papers.
 - Changes to wording in default Web pages, including a couple of HTML syntax
 fixes.
+
+
+2000-11-29 Version 1.0 released
+
+- Added autoconf, makefile-based automatic installation procedure, which checks
+for prerequisite software, and optionally creates the MySQL database, creates a
+crontab, and (experimentally) updates the Apache configuration. It also sets up
+Perl path information in the parameters to the scripts in bin/, and adds "use
+lib" code to the scripts in cgi/, so you don't have to mess around setting
+PERL5LIB before running the offline scripts.
+- Better handling of URLs with special characters in (brackets, spaces etc.).
+Saved to the local server unescaped, and the URLs are rendered escaped.
+- generate_static now copies everything across from the static/ directory to
+html/, not just the .html files. This means that image files etc. should be
+placed in the static/ directory rather than the html/ directory; the html/
+directory can now be considered to be entirely automatically generated.
+- Clicking on a result from a staff eprint search now links to a page with
+options to remove the eprint, or move the eprint back into the submissions
+buffer.
+- In the depositing interface, checkboxes that are required fields are no
+longer rendered with an asterisk, as this was misleading; users sometimes
+thought that it meant they had to check the box.
+- Added update_laf script to make changing the site look and feel easy. It just
+runs generate_static, generate_abstracts and generate_views.
+- Added an extra database table to store information about eprints removed from
+the archive. This is necessary in order to able to support the forthcoming new
+Open Archives protocol. It also has other holds information about a replacement
+eprint in the archive if it exists. Removing an eprint automatically creates a
+deletion record in this table.
+- Staff status page now shows number of deleted eprints.
+- If user enters the ID of a deleted record in the box on the front page (or
+wherever else the site decides to put one), they're told the eprint has been
+deleted and where a replacement is if one exists.
+- Added a "404 Document Not Found" HTTP error handler that:
+  + can detect attempted accesses to deleted eprints, and display an
+    appropriate message, with a link to a newer version of the eprint in the
+    archive if it exists
+  + can make guesses about slightly mistyped accesses to eprint files,
+    providing a link to the abstract page
+  + renders other 404 errors with the nice site skin and a friendly message.
+- Software now uses local time instead of GMT for all datestamping etc. (This
+required changing one "gmtime" to "localtime"!)
+- Supports new-style open archives identifiers (as well as older, Santa
+Fe-style)
+- Fixed bug in subscriptions: If user selected "must fulfill ANY of these
+conditions" in their subscription parameters, and selected some search terms or
+subjects, those terms would be OR'd with the date specification that limits the
+search to the last day, week or month. Thus, they'd be mailed a fair chunk of
+the archive on a regular basis. Fixed this by removing the "must fulfill
+ANY/ALL" option from subscriptions; adapting the SearchExpression code to cope
+with a special case would have introduced too much complexity.
+- Added a "401 Authorisation Required" HTML page. Now when an incorrect
+username/password is entered, the user is shown some useful information about
+how to register or be reminded of their username/password if they've forgotten.
+- Added "erase_archive" script to wipe database and eprints files in one fell
+swoop. Useful for people setting an archive up and playing around with metadata
+sets. Asks for confirmation, just in case an inadvertent double click (etc.)
+would result in the wiping of a large amount of live data....
+- Removed defined(@array) occurrences, they trigger warnings in perl 5.6.0,
+deprecated behaviour.
+- Updated the on-line help.
+
+Site default configuration changes
+
+- Moved code for displaying versioning and commentary trees on the abstract
+page to the site default configuration code.
+- Added $for_staff parameter to EPrintSite::SiteRoutines::eprint_render_full().
+- Added warnings at the top of each abstract page if the currently viewed
+eprint is not the latest version of that eprint in the archive.
+- Likewise, an eprint which is the most recent of multiple versions in the
+archive is clearly labelled as such.
+- Minor fix to rendering of conference proceedings references.
+- Added "description" field to site information
+- In preparation for new Open Archives protocol, added oai_base_url parameter
+to SiteInfo.pm.
+- Also added Dublin Core mapping for default metadata set.
+- Added hook to site information for agreement text (e.g. copyright breach
+disclaimer) when users deposit records.
