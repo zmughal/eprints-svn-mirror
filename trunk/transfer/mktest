@@ -1,18 +1,19 @@
 #!/usr/bin/perl
 
+my $sep = "_";
 my $basedir = "/opt/eprints/html/documents/demo";
 `rm -rf $basedir`;
 `(echo yes; echo "") | /opt/eprints/bin/erase_archive`;
 `/opt/eprints/bin/create_databases`;
 my @firnames;
 my $surnames;
-open(ECSINFO,"ypcat ecsinfo|");
+open(ECSINFO,"/root/ecsinfo");
 while(<ECSINFO>) {
 	my @row = split /:/;
 	foreach(@row){ s/[\\']/\\$&/g; }
-	push @firnames,$row[2];
-	push @firnames,$row[1];
-	push @surnames,$row[0];
+	push @firnames,$row[2] if ($row[2]);	
+	push @firnames,$row[1] if ($row[1]);	
+	push @surnames,$row[0] if ($row[0]);	
 }
 close ECSINFO;
 
@@ -31,33 +32,33 @@ close SUB;
 print "----\n";
 
 open(MYSQL,"|mysql -B -u root eprints");
-for $id (1..5000) {
+for $id (1..50000) {
 	my $eprintid = "demo$id";
-	`mkdir $basedir/$id`;
+	#`mkdir $basedir/$id`;
 	$year = int rand(100)+1910;
 	my ($c,$s) = ("","");
 	if ($id % 8 == 0) 
 	{
-		$s = $id / 8;
+		$s = "demo".($id / 8);
 	}
-	if ($id % 1000 == 0)
+	if ($id % 100 == 0)
 	{
-		$c = $id / 1000;
+		$c = "demo".($id / 100);
 	}
 	print MYSQL "INSERT INTO archive (eprintid,username,type,title,year,ispublished,refereed,pubdom,abstract,conference,dir,succeeds,commentary) VALUES ('$eprintid','cjg','confpaper','title goes here (#$id)',$year,0,0,0,'barble this be da abstract','conference name','demo/$id','$s','$c');\n";
 	for(0..rand(5)+1) {
 		$sur = $surnames[int rand scalar @surnames];
 		$fir = $surnames[int rand scalar @firnames];
-		print MYSQL "INSERT INTO archiveauxauthors VALUES ('$eprintid',$_,'$fir','$sur');\n";
+		print MYSQL "INSERT INTO archive".$sep."authors VALUES ('$eprintid',$_,'$fir','$sur');\n";
 	}
 	for(0..rand(2)) {
 		$sur = $surnames[int rand scalar @surnames];
 		$fir = $surnames[int rand scalar @firnames];
-		print MYSQL "INSERT INTO archiveauxeditors VALUES ('$eprintid',$_,'$fir','$sur');\n";
+		print MYSQL "INSERT INTO archive".$sep."editors VALUES ('$eprintid',$_,'$fir','$sur');\n";
 	}
 	for(0..rand(3)+1) {
 		$sub = $subs[int rand scalar @subs];
-		print MYSQL "INSERT INTO archiveauxsubjects VALUES ('$eprintid',$_,'$sub');\n";
+		print MYSQL "INSERT INTO archive".$sep."subjects VALUES ('$eprintid',$_,'$sub');\n";
 	}
 	print STDERR "$eprintid\n";
 }
