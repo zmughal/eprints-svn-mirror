@@ -1,3 +1,6 @@
+TODOSOON:
+	rewrite SearchField code.
+
 Bugs:
   * Daily subscriptions still in buffer bug
   * #64 doubled up prefixs
