@@ -5,7 +5,7 @@
 \eprints\ works by interacting with several other components, as shown in figure \ref{fig_components}. Most interaction occurs through a Web browser interface, though during installation and in rare circumstances some \eprints\ scripts are run from a command line.
 
 \begin{figure}
-\centerline{\includegraphics[width=3.5in]{images/components}}
+\centerline{\includegraphics[width=3.5in]{images/components}} 
 \caption{\label{fig_components} Overview of the Components of an \eprints\ archive}
 \end{figure}
 
@@ -690,4 +690,52 @@ $document->commit();
 # Terminate the session
 $session->terminate();
 \end{verbatim}
+
+\section{Customisation Examples}
+
+In this section we will give a few examples of simple but useful
+modifications to the files in {\tt /opt/eprints/perl\_lib/EPrintSite/ }.
+
+\subsection{Listing All Files in a Format}
+
+In this example we have a data format which has no "start file". Our example
+format is "Multiple Images". It is for an archive which expects you to submit multiple versions of the same image in different formats - ie. a 10meg TIF, a 2meg TIF and a small JPEG. On the abstract page for this record we want to list and link to all the files in this format, not just the "start" file.
+
+\par The code which creates the link to each format from the abstract page is
+in {\tt SiteRoutines.pm} in the subroutine called {\tt eprint\_render\_full}.
+
+\begin{verbatim}
+$html .= "<A HREF=\"".$_->url()."\">$description</A><BR>";    
+\end{verbatim}
+
+If we replace this line with the following code we should get a list of all
+files when displaying this format:
+
+\begin{verbatim}
+if ( $_->{format} eq "MULTIPIC" )
+{                                                                             
+	# MULITPIC: Multiple Images Format
+	# Special display for this format.
+	$html .="<P><B>Multiple Images</B></P><UL>";                         
+	my %files = $_->files();                                                
+	my $file;                                                               
+	foreach $file ( sort keys %files )                                      
+	{                                                                       
+		$html .= "<LI><A href=\"".$eprint->url_stem() . $_->{docid} .   
+                         "/" . $file."\">".$file."</A>\n";
+	}                                                                       
+	$html.="</UL>";                                                         
+}                                                                             
+else                                                                          
+{                                         
+	# Display a normal format
+	$html .= "<A HREF=\"".$_->url()."\">$description</A><BR>";              
+}         
+\end{verbatim}
+
+You will need to run {\tt /opt/eprints/bin/update\_laf} to have this take
+effect on static pages. To make this take affect on pages generated on 
+the fly (eg. Viewing item in submission buffer) you will need to restart
+the webserver.
+
 

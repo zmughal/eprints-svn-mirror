@@ -1,11 +1,19 @@
 ONLINEHELPFILES = online-help/latex/online-help.tex online-help/latex/access.tex online-help/latex/deposit.tex online-help/latex/register.tex online-help/latex/subscribe.tex online-help/latex/userarea.tex
 SYSTEMDOCFILES = system/latex/system.tex system/latex/system-body.tex system/latex/images/components.eps system/latex/images/components.jpg system/latex/images/components.fig
 
-all: eprints-install.pdf eprints-install.html eprints-install-headless.html online-help.pdf online-help-final eprints-system.pdf
+all: eprints-install.pdf eprints-install.html eprints-install-headless.html online-help.pdf online-help-final eprints-system.pdf system-headless.html
 
 eprints-install.pdf: installation/latex/eprints-install.tex installation/latex/eprints-install-body.tex
 	cd installation/latex ; pdflatex eprints-install ; pdflatex eprints-install
 	mv installation/latex/eprints-install.pdf .
+
+system.html: system/latex/system.tex system/latex/system-body.tex
+	cd system/latex ; latex system ; latex system ; latex2html -split 0 -no_navigation -info 0 -white -no_reuse -show_section_numbers -prefix system- system
+	mv system/latex/system/system.html system.html
+	mv system/latex/system/system.css system.css
+	mv system/latex/system/system-*.gif .
+	cp system/latex/images/components.jpg .
+	rm -rf system/latex/system
 
 eprints-install.html: installation/latex/eprints-install.tex installation/latex/eprints-install-body.tex
 	cd installation/latex ; latex eprints-install ; latex eprints-install ; latex2html -split 0 -no_navigation -info 0 -white -no_reuse -show_section_numbers eprints-install
@@ -15,6 +23,9 @@ eprints-install.html: installation/latex/eprints-install.tex installation/latex/
 
 eprints-install-headless.html: eprints-install.html
 	./remove_html_head.pl <eprints-install.html >eprints-install-headless.html
+
+system-headless.html: system.html
+	./remove_html_head.pl <system.html >system-headless.html
 
 online-help.pdf:  $(ONLINEHELPFILES)
 	cd online-help/latex ; pdflatex online-help ; pdflatex online-help
@@ -37,8 +48,10 @@ install: install-online-help install-web
 
 install-web:
 	./preparebody.pl 'TITLE: eprints.org Archive Software Installation Document' '<BR><BR>' < eprints-install-headless.html > ../website/in-html/eprints-install.html
+	./preparebody.pl 'TITLE: eprints.org Software System Documentation' '<BR><BR>' < system-headless.html > ../website/in-html/system.html
 	cp eprints-system.pdf ../website/in-raw
 	cp eprints-install.pdf ../website/in-raw
+	cp *.gif *.jpg ../website/in-raw/image
 	
 eprints-system.pdf: $(SYSTEMDOCFILES)
 	cd system/latex ; pdflatex system ; pdflatex system

@@ -1027,3 +1027,37 @@ You can also place arbitrary elements in the {\tt <HEAD>} elements of all pages 
 In {\tt /opt/eprints/perl\_lib/EPrintSite/SiteRoutines.pm} you can modify or replace the default code for displaying each eprint's abstract page, title and full reference. Also there is code for displaying a user's full name, and their full record. The comments in the code should make the task of programming any necessary changes straightforward.
 
 The \eprints\ core code provides a method for easing the creation of references. See the examples at the top of the default {\tt SiteRoutines.pm}, and the comments in {\tt perl\_lib/EPrints/Citation.pm} instructions on how to use it.
+
+\section{Backup Policy}
+
+Although the \eprints\ software has been designed to be robust, it does not
+provide a backup mechanism. You should add your \eprints\ server to your organisation's backup policy. 
+
+\subsection{Why Backup?}
+
+It is very likely that you will be storing 
+valuable information in your \eprints\ server.
+Drives and fans break. Computers get
+stolen. Without proper backups this could be a disaster.
+
+\subsection{What to Backup}
+
+You need to backup two things. 
+\begin{itemize}
+\item The {/tt /opt/eprints/} directory (or whatever you called it). Not all the subdirectories have to be backed up, but it is much easier to backup the whole thing.
+\item The MySQL database which you are using. See the MySQL manual for more information on backing up MySQL databases.
+\end{itemize}
+
+
+\subsection{Best Practice}
+
+\par We strongly recommend that you:
+\begin{itemize}
+\item Regularly backup your \eprints\ archive and database.
+\item Keep mulitple sets of backups (at least 4). 
+\item Keep a recent backup physically sepearate from the archive - either in another room or ideally another site. 
+\item Regularly check that you can actually restore from your backup. It's not uncommon for people to produce a daily backup for years without checking it. When they come to need it, they discover that something has gone wrong and the backup is useless. 
+\item Assume that you will be restoring to different hardware - the tape drive may be stolen too! Check that your backups work on hardware other than that used to create them.
+\item Decide who is responsible for backups. Their responsibilities should include making sure that the above policies are implemented even if they are ill or unavailable and making sure that someone else knows how to take over making and restoring the backups if they leave or are hit by a bus.
+\end{itemize}
+
