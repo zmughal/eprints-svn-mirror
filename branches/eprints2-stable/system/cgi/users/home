@@ -53,6 +53,15 @@ my $fullname = $user->render_description();
 my $probs = $user->validate();
 my $valid_user = ( scalar @{$probs} == 0 );
 
+# If not a valid user then redirect them to the user-info page.
+# This'll give us info like "name".
+unless( $valid_user )
+{	
+	$session->redirect( "record" );
+	$session->terminate();
+	exit;
+}
+
 ######################################################################
 #
 # Render page
@@ -163,34 +172,31 @@ my $tools = [
 
 
 my $dls = {};
-if( $valid_user )
+my $tool;
+foreach	$tool (@{$tools})
 {
-	my $tool;
-	foreach	$tool (@{$tools})
+	if( defined $tool->{priv} )
 	{
-		if( defined $tool->{priv} )
-		{
-			next unless $user->has_priv( $tool->{priv} );
-		}
-		if( defined $tool->{invpriv} )
-		{
-			next if $user->has_priv( $tool->{invpriv} );
-		}
-		if( !defined $dls->{$tool->{location}} )
-		{
-			$dls->{$tool->{location}} = $session->make_element( "dl" );
-		}
-		my $dl = $dls->{$tool->{location}};
-		$dt = $session->make_element( "dt" );
-		$a = $session->render_link( $tool->{page} );
-		$a->appendChild( $session->html_phrase( "cgi/users/home:".$tool->{code}."_link" ) );
-		$dt->appendChild( $a );
-		$dl->appendChild( $dt );
-	
-		$dd = $session->make_element( "dd" );
-		$dd->appendChild( $session->html_phrase( "cgi/users/home:".$tool->{code}."_info" ) );
-		$dl->appendChild( $dd );
+		next unless $user->has_priv( $tool->{priv} );
 	}
+	if( defined $tool->{invpriv} )
+	{
+		next if $user->has_priv( $tool->{invpriv} );
+	}
+	if( !defined $dls->{$tool->{location}} )
+	{
+		$dls->{$tool->{location}} = $session->make_element( "dl" );
+	}
+	my $dl = $dls->{$tool->{location}};
+	$dt = $session->make_element( "dt" );
+	$a = $session->render_link( $tool->{page} );
+	$a->appendChild( $session->html_phrase( "cgi/users/home:".$tool->{code}."_link" ) );
+	$dt->appendChild( $a );
+	$dl->appendChild( $dt );
+
+	$dd = $session->make_element( "dd" );
+	$dd->appendChild( $session->html_phrase( "cgi/users/home:".$tool->{code}."_info" ) );
+	$dl->appendChild( $dd );
 }
 
 
@@ -215,34 +221,25 @@ if( $user->has_priv( "deposit" ) )
 	$td = $session->make_element("td",valign=>"top");
 	$tr->appendChild( $td );
 
-	if( $valid_user )
-	{
-		my $div;
-		### Workspace
-		$div = $session->make_element("div",class=>"box");
-		$div->appendChild(
-			&render_workspace( $session, $user, $dls->{create} ) );
-		$td->appendChild( $div );
-		
+	my $div;
+	### Workspace
+	$div = $session->make_element("div",class=>"box");
+	$div->appendChild(
+		&render_workspace( $session, $user, $dls->{create} ) );
+	$td->appendChild( $div );
 	
-		### Pending
-		$div = $session->make_element("div",class=>"box");
-		$div->appendChild(
-			&render_pending( $session, $user ) );
-		$td->appendChild( $div );
 
-		### Recent Additions
-		$div = $session->make_element("div",class=>"box");
-		$div->appendChild(
-			&render_recent( $session, $user, 10, $dls->{review} ) );
-		$td->appendChild( $div );
+	### Pending
+	$div = $session->make_element("div",class=>"box");
+	$div->appendChild(
+		&render_pending( $session, $user ) );
+	$td->appendChild( $div );
 
-	}
-	else
-	{
-		$td->appendChild( $session->html_phrase( "cgi/users/home:before" ) );
-	}
-
+	### Recent Additions
+	$div = $session->make_element("div",class=>"box");
+	$div->appendChild(
+		&render_recent( $session, $user, 10, $dls->{review} ) );
+	$td->appendChild( $div );
 }
 
 if( defined $dls->{user} )
@@ -271,6 +268,7 @@ $session->build_page(
 $session->send_page();
 
 $session->terminate();
+exit;
 
 
 

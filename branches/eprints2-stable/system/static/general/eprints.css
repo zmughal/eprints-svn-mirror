@@ -170,18 +170,6 @@ dt {
 	text-decoration: none;
 }
 
-body.vlit {
-	margin: 8pt;
-}
-
-.vlit-charrange {
-	color: #0000c0;
-}
-
-.vlit-highlight {
-	color: #c00000;
-}
-
 .subject_browser_opts, .subject_browser_selections, .subject_browser_search
 {
 	margin-left: 1em;
@@ -230,4 +218,30 @@ th
 {
 	text-align: right;
 	font-weight: bold;
+}
+
+body.vlit 
+{
+	margin: 4x;
+}
+
+.vlit-charrange 
+{
+	color: #0000c0;
+}
+.vlit-human
+{
+	margin: 10px;
+}
+
+.vlit-highlight 
+{
+	color: #c00000;
+}
+
+.vlit-controls
+{
+	background: #cccccc;
+	border: 1px black solid;
+	padding: 2px;
 }

@@ -34,12 +34,11 @@ use warnings;
 BEGIN
 {
 	our( @ISA );
-	
+
 	@ISA = qw( EPrints::MetaField::Basic );
 }
 
 use EPrints::MetaField::Basic;
-
 
 sub render_single_value
 {

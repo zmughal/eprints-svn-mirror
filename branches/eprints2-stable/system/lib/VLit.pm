@@ -66,7 +66,8 @@ sub handler
 		return NOT_FOUND;
 	}
 
-	my $q = new CGI;
+	my $args =  $r->args;
+	my $q =  new CGI( $args );
 
 	my $version = $q->param( "xuversion" );
 	my $locspec = $q->param( "locspec" );
@@ -85,6 +86,11 @@ sub handler
 		$locspec = "charrange:";
 	}
 
+	# undo eprints rewrite!
+	my $uri = $r->uri;	
+	$uri =~ s#/([0-9]+)/([0-9][0-9])/([0-9][0-9])/([0-9][0-9])/#/$1$2$3$4/#;
+	my $baseurl = $session->get_archive->get_conf("base_url").$uri;
+	
 	my $LSMAP = {
 "area" => \&ls_area,
 "charrange" => \&ls_charrange
@@ -106,7 +112,7 @@ sub handler
 		return;
 	}
 
-	&$fn( $filename, $lsparam, $locspec, $session );
+	&$fn( $filename, $lsparam, $locspec, $session, $baseurl );
 
 	return OK;
 }
@@ -182,7 +188,7 @@ undocumented
 
 sub ls_charrange
 {
-	my( $filename, $param, $locspec, $session ) = @_;
+	my( $filename, $param, $locspec, $session, $baseurl ) = @_;
 
 	my $r = Apache->request;
 	
@@ -208,9 +214,8 @@ sub ls_charrange
 		( $offset, $length ) = ( $1, $2 );
 	}
 
-	my $q = new CGI;
+	my $q = $session->{query};
 	my $mode = $q->param( "mode" );
-
 
 	my $readoffset = $offset;
 	my $readlength = $length;
@@ -218,7 +223,7 @@ sub ls_charrange
 	my $conend = -1;
 	if( $mode eq "context" )
 	{
-		my $contextsize = $session->get_archive()->get_conf( "vlit" )->{context_size};
+		my $contextsize = 512;
 		$readoffset-=$contextsize;
 		$readlength+=$contextsize+$contextsize;
 		$constart = $contextsize;
@@ -230,6 +235,15 @@ sub ls_charrange
 		}
 		$conend = $readlength-$contextsize;
 	}
+
+	if( $mode eq "context2" )
+	{
+		# has a char range but loads whole document
+		$readoffset = 0;
+		$readlength = -s $filename;
+		$constart = $offset;
+		$conend = $offset+$length;
+	}
 	
 	my $fh = new FileHandle( $filename, "r" );
 	binmode( $fh );
@@ -238,14 +252,21 @@ sub ls_charrange
 	$fh->read( $data, $readlength );
 	$fh->close();
 
-	my $baseurl = $session->get_archive->get_conf("base_url").$r->uri;
+	
+#print STDERR "VLIT SAYZ URI BE: ".$r->uri." ... ".$mode." ..(".$r->is_main.")..(".$r->the_request.")\n";
+#print STDERR "$]\n";
+#use Data::Dumper;
+#my $query = $r->args;
+#my %in    = $r->args;
+#print STDERR $session->{query}."\n";
+#print STDERR Dumper( $query, \%in );
 
-	if( $mode eq "human" || $mode eq "context" || $mode eq 'spanSelect' || $mode eq 'endSelect' || $mode eq 'link' || $mode eq 'spanSelect2' || $mode eq 'endSelect2' )
+	if( $mode eq "human" || $mode eq "context" || $mode eq "context2" || $mode eq 'spanSelect' || $mode eq 'endSelect' || $mode eq 'link' || $mode eq 'spanSelect2' || $mode eq 'endSelect2' )
 	{
 		my $html = "";
 		my $BIGINC = 100;
 		my $inc = $BIGINC;
-		if( $mode eq  'spanSelect2'  ||  $mode eq 'endSelect2' )
+		if( $mode eq  'spanSelect2'  ||  $mode eq 'endSelect2' || $mode eq 'context' || $mode eq "context2" )
 		{
 			$inc = 1;
 		}
@@ -258,6 +279,10 @@ sub ls_charrange
 			if( $o == $constart)
 			{
 				$html.='<span class="vlit-highlight">';
+			}
+			if( $o == $constart-512)
+			{
+				$html.='<a name="c" />';
 			}
 			my $c=substr($data,$o,$inc);
 			# $c is either a string or a single char
@@ -293,35 +318,34 @@ sub ls_charrange
 			}
 		}
 		$html.='</span>';
-		my $front = '';
+		my $copyurl = $session->get_archive()->get_conf( "vlit" )->{copyright_url};
+		my $front = '<a href="'.$copyurl.'">trans &copy;</a>';
 		if( $param eq "" )
 		{
-			$front.= '<big><sup>trans</sup></big> ';
+			if( $mode eq "human" )
+			{
+				$front.= ' [<a href="'.$baseurl.'?mode=spanSelect">quote document</a>]';
+			}
 		}
 		else
 		{
 			my $url = $baseurl;
 			if( $mode eq "human" )
 			{
-				$url .= "?locspec=charrange:$param&mode=context";
+				$front.= ' [<a href="'.$baseurl.'?xuversion=1.0&locspec=charrange:'.$param.'&mode=context">view context</a>]';
 			}
 			if( $mode eq "context" )
 			{
-				$url .= "?mode=human&locspec=charrange:";
+				$front.= ' [<a href="'.$baseurl.'?xuversion=1.0&locspec=charrange:'.$param.'&mode=context2#c">context in full document</a>]';
 			}
-			$front.= '<big><sup><a href="'.$url.'">trans</a></sup></big> ';
-		}
-		my $copyurl = $session->get_archive()->get_conf( "vlit" )->{copyright_url};
-		$front .= '<big><sup><a href="'.$copyurl.'">&copy;</a></sup></big>';
-		if( $param eq "" )
-		{
-			if( $mode eq "human" )
+			if( $mode eq "context2" )
 			{
-				my $url = $baseurl;
-				$url .= "?mode=spanSelect";
-				$front.= ' <big><sup>[<a href="'.$url.'">quote</a>]</sup></big>';
+				$front.= ' [<a href="'.$baseurl.'?xuversion=1.0&locspec=charrange:&mode=human">full document</a>]';
+				$front.= ' [<a href="'.$baseurl.'?mode=spanSelect">quote document</a>]';
 			}
 		}
+		$front.= ' [<a href="'.$baseurl.'?xuversion=1.0&locspec=charrange:'.$param.'">raw data</a>]';
+
 		my $msg='';
 		my $msg2='';
 		if( $mode eq "endSelect2" )
@@ -351,10 +375,13 @@ sub ls_charrange
 		{
 			my $url = $baseurl.'?xuversion=1.0&locspec=charrange:'.($offset)."/".($length);
 			my $urlh = $url.'&mode=human';
+			my $urlx = $url.'&mode=xml-entity';
 			$msg=<<END;
+<div style="margin: 8px;">
 <p><b>$title</b></p>
 <p>Raw char quote: <a href="$url">$url</a></p>
 <p>Human readable (HTML): <a href="$urlh">$urlh</a></p>
+<p>XML: <a href="$urlx">$urlx</a></p>
 END
 			my $urlh2 = $urlh;
 			$urlh2=~s/'/&squot;/g;
@@ -363,9 +390,7 @@ END
 <div style="margin-left: 10px"><tt>
 &lt;a href="#" onclick="javascript:window.open( '$urlh2', 'transclude_window', 'width=666, height=444, scrollbars');"&gt;$title&lt;/a&gt;
 </tt></div>
-END
-	$msg.=<<END;
-<hr noshade="noshade">
+</div>
 END
 		}
 		$r->print( <<END );
@@ -376,7 +401,7 @@ END
 </head>
 <body class="vlit">
 $msg
- <p>$front $html<a name="end" /></p>
+<div class="vlit-controls">$front</div><div class="vlit-human">$html</div><a name="end" />
 $msg2
 </body>
 </html>
@@ -418,7 +443,7 @@ undocumented
 
 sub ls_area
 {
-	my( $file, $param, $resspec, $session ) = @_;
+	my( $file, $param, $resspec, $session, $baseurl ) = @_;
 
 	my $page = 1;
 	my $opts = {
@@ -468,13 +493,10 @@ sub ls_area
 		my( $p, $x, $y, $w, $h ) = ( $1, $2, $3, $4, $5 );
 
 		# pagearea/ exists cus of cache_file called above.
-print STDERR "dir=$dir\n";	
 		if( !-d $dir )
 		{
-print STDERR "mkdir=$dir\n";	
 			mkdir( $dir );
 			my $cmd = "/usr/bin/X11/convert '$file' 'tif:$dir/%d'";
-print STDERR "c1=$cmd\n";
 			`$cmd`;
 		}
 	}
@@ -511,7 +533,6 @@ print STDERR "c1=$cmd\n";
 
 	my $cmd;
 	$cmd = "tiffinfo $dir/$pageindex";
-	print STDERR $cmd."\n";
 	my $scale = '';
 	my @d = `$cmd`;
 	foreach( @d )
@@ -525,13 +546,11 @@ print STDERR "c1=$cmd\n";
 	}
 
 	$cmd = "/usr/bin/X11/convert $scale $crop $scale2 '$dir/$pageindex' 'png:$cache'";
-	print STDERR $cmd."\n";
 	`$cmd`;
 	
 
 	send_http_header( "image/png" );
 	$cmd = "cat $cache";
-	print STDERR $cmd."\n";
 	print `$cmd`;
 }
 

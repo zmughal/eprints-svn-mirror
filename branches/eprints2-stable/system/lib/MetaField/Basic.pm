@@ -269,11 +269,29 @@ sub get_input_elements
 		{
 			$boxcount += $self->{input_add_boxes};
 		}
+
+		for( my $i=1 ; $i<=$boxcount ; ++$i )
+		{
+			if( $i>1 && $session->internal_button_pressed( $self->{name}."_up_".$i ) )
+			{
+				my( $a, $b ) = ( $value->[$i-1], $value->[$i-2] );
+				( $value->[$i-1], $value->[$i-2] ) = ( $b, $a );
+			}
+			if( $session->internal_button_pressed( $self->{name}."_down_".$i ) )
+			{
+				my( $a, $b ) = ( $value->[$i-1], $value->[$i+0] );
+				( $value->[$i-1], $value->[$i+0] ) = ( $b, $a );
+				# If the last item was moved down then extend boxcount by 1
+				$boxcount++ if( $i == $boxcount ); 
+			}
+				
+		}
+
 	}
 
+
 	my $rows = [];
-	my $i;
-	for( $i=1 ; $i<=$boxcount ; ++$i )
+	for( my $i=1 ; $i<=$boxcount ; ++$i )
 	{
 		my $section = $self->get_input_elements_single( 
 				$session, 
@@ -284,11 +302,45 @@ sub get_input_elements
 		for my $n (0..(scalar @{$section})-1)
 		{
 			my $col1 = {};
+			my $lastcol = {};
 			if( $n == 0 )
 			{
 				$col1 = { el=>$session->make_text( $i.". " ) };
+				my $arrows = $session->make_doc_fragment;
+				if( $i > 1 && EPrints::Utils::is_set( $value->[$i-1] ) )
+				{
+					$arrows->appendChild( $session->make_element(
+						"input",
+						type=>"image",
+						src=> $session->get_archive->get_conf( "base_url" )."/images/up.png",
+                				name=>"_internal_".$self->{name}."_up_$i",
+						value=>"1" ));
+				}
+				else
+				{
+					$arrows->appendChild( $session->make_element(
+						"img",
+						src=> $session->get_archive->get_conf( "base_url" )."/images/up_dim.png" ));
+				}
+				$arrows->appendChild( $session->make_element( "br" ) );
+				if( EPrints::Utils::is_set( $value->[$i-1] ) )
+				{
+					$arrows->appendChild( $session->make_element(
+						"input",
+						type=>"image",
+						src=> $session->get_archive->get_conf( "base_url" )."/images/down.png",
+                				name=>"_internal_".$self->{name}."_down_$i",
+						value=>"1" ));
+				}
+				else
+				{
+					$arrows->appendChild( $session->make_element(
+						"img",
+						src=> $session->get_archive->get_conf( "base_url" )."/images/down_dim.png" ));
+				}
+				$lastcol = { el=>$arrows, valign=>"middle" };
 			}
-			push @{$rows}, [ $col1, @{$section->[$n]} ];
+			push @{$rows}, [ $col1, @{$section->[$n]}, $lastcol ];
 		}
 	}
 	my $more = $session->make_doc_fragment;
@@ -569,11 +621,10 @@ sub form_value_actual
 		my @values = ();
 		my $boxcount = $session->param( $self->{name}."_spaces" );
 		$boxcount = 1 if( $boxcount < 1 );
-		my $i;
-		for( $i=1; $i<=$boxcount; ++$i )
+		for( my $i=1; $i<=$boxcount; ++$i )
 		{
 			my $value = $self->form_value_single( $session, $i );
-			if( defined $value )
+			if( defined $value || $session->internal_button_pressed )
 			{
 				push @values, $value;
 			}

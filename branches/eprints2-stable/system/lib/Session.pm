@@ -70,6 +70,7 @@ use EPrints::Document;
 use Unicode::String qw(utf8 latin1);
 use Apache;
 use CGI;
+CGI->compile();
 use URI::Escape;
 
 use strict;
@@ -114,7 +115,8 @@ sub new
 	if( $mode == 0 || !defined $mode )
 	{
 		$self->{request} = Apache->request();
-		$self->{query} = new CGI;
+		my $args = $self->{request}->args;
+		$self->{query} = new CGI( $args );
 		$self->{offline} = 0;
 		my $hp=$self->{request}->hostname.$self->{request}->uri;
 		$self->{archive} = EPrints::Archive->new_archive_by_host_and_path( $hp );

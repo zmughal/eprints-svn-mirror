@@ -13,6 +13,8 @@ Big New Features
  * perl 5.8??
 
 Pre-release issues
+ * Get rid of "host and path" and just use a PerlVar from apache.conf!
+ * Confusing Cancel button in submission form.
  * Bug in cmd line created user code: can't see /perl/users/home!
  * Bug in authez vs multilang from browser
  * GRANT ALTER ON ep2stable.* TO ep2stable@localhost; in update!

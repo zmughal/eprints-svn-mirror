@@ -341,10 +341,6 @@ $c->{vlit}->{enable} = 1;
 # The URL which the (C) points to.
 $c->{vlit}->{copyright_url} = $c->{base_url}."/vlit.html";
 
-# The number of characters above & below to
-# show when displaying context.
-$c->{vlit}->{context_size} = 1024;
-
 ######################################################################
 #
 #  Search and subscription information

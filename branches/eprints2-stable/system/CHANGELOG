@@ -1484,4 +1484,24 @@ before next release. (metadata types & fields)
  - date fields can now never be "EX" so that searches for "2000"
     will not look for "2000", but for anything in the year 2000.
 
+2003-10-22 cjg
+
+ - Added up and down arrows to multiple input fields to make it
+    easier to rearrange things like lists of authors names.
+ - Added icons for the up and down arrows.
+ - Some work getting Everything to work with Perl 5.8
+ - Removed requirement for mod_rewrite. Now requires mod_perl
+    compiled with "EVERYTHING" so mod_perl can do the translations.
+*- Changes still required to generate_apacheconf to reflect new design
+    including adding some vars and removing all rewrite rules.
+ - [c] Removed VLit Context size option. Hardwired it.
+ - /perl/users/home now redirects invalid users to the user-metadata
+    entry page. Not ideal but better than it was.
+ - Made some changes to the way CGI.pm is initialised to try and
+    avoid some strange errors with P5.8
+ - Several improvements to vlit. Now has 2 levels of context, and
+    more sensible links at the top of "human" mode, and a nicer
+    stylesheet entry.
+ 
+
 ======================================================================
