@@ -467,11 +467,10 @@ sub send_mail_via_sendmail
 	my $utf8sig	= EPrints::Utils::tree_to_utf8( $sig , $MAILWIDTH );
 	my $utf8all	= $utf8body.$utf8sig;
 	my $type	= get_encoding($utf8all);
-	my $content_type_q = "text/plain";
+	my $content_type_q = 'text/plain; charset="'.$type.'"';
 	my $msg = $utf8all;
-	if ($type eq "iso-latin-1")
+	if ($type eq "iso-8859-1")
 	{
-		$content_type_q = 'text/plain; charset="iso-8859-1"'; 
 		$msg = $utf8all->latin1; 
 	}
 	#precedence bulk to avoid automail replies?  cjg
@@ -506,7 +505,7 @@ END
 # Returns:
 # "7-bit" if 7-bit clean
 # "utf-8" if utf-8 encoded
-# "iso-latin-1" if latin-1 encoded
+# "iso-8859-1" if 8859-1 encoded
 # "unknown" if of unknown origin (shouldn't really happen)
 #
 ######################################################################
@@ -544,7 +543,7 @@ sub get_encoding
 	}
 	return "7-bit" if $svnbit;
 	return "utf-8" if $utf8;
-	return "iso-latin-1" if $latin1;
+	return "iso-8859-1" if $latin1;
 	return "unknown";
 }
 
@@ -573,7 +572,7 @@ sub mime_encode_q
 		if( $encoding eq "7-bit" );
 
 	return $stringobj
-		if( $encoding ne "utf-8" && $encoding ne "iso-latin-1" );
+		if( $encoding ne "utf-8" && $encoding ne "iso-8859-1" );
 
 	my @words = split( " ", $stringobj->utf8 );
 
@@ -584,7 +583,7 @@ sub mime_encode_q
 		# don't do words which are 7bit clean
 		next if( get_encoding($wordobj) eq "7-bit" );
 
-		my $estr = ( $encoding eq "iso-latin-1" ?
+		my $estr = ( $encoding eq "iso-8859-1" ?
 		             $wordobj->latin1 :
 			     $wordobj );
 		
@@ -873,6 +872,12 @@ undocumented
 sub mkdir
 {
 	my( $full_path ) = @_;
+
+	# Make sure $dir is a plain old string (not unicode) as
+	# Unicode::String borks mkdir
+	$full_path = "$full_path";
+
+
 	my @created = eval
         {
                 return mkpath( $full_path, 0, 0775 );
@@ -1321,7 +1326,7 @@ sub cmd_version
 $progname (GNU EPrints $version_id)
 $version
 
-Copyright (C) 2001-2002 University of Southampton
+Copyright (C) 2001-2004 University of Southampton
 
 __LICENSE__
 END

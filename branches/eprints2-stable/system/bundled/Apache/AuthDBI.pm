@@ -243,7 +243,7 @@ sub authen {
             last if ($dbh = DBI->connect($data_sources[$j], $usernames[$j], $passwords[$j]));
         }
         unless ($dbh) {
-            $r->log_reason("$prefix db connect error with data_source >$Attr->{data_source}<", $r->uri);
+            $r->log_error("$prefix db connect error with data_source >$Attr->{data_source}<", $r->uri);
             return SERVER_ERROR;
         }
 
@@ -260,7 +260,7 @@ sub authen {
         # prepare statement
         my $sth;
         unless ($sth = $dbh->prepare($statement)) {
-            $r->log_reason("$prefix can not prepare statement: $DBI::errstr", $r->uri);
+            $r->log_error("$prefix can not prepare statement: $DBI::errstr", $r->uri);
             $dbh->disconnect;
             return SERVER_ERROR;
         }
@@ -268,7 +268,7 @@ sub authen {
         # execute statement
         my $rv;
         unless ($rv = ($Attr->{placeholder} eq "on") ? $sth->execute($user_sent) : $sth->execute) {
-            $r->log_reason("$prefix can not execute statement: $DBI::errstr", $r->uri);
+            $r->log_error("$prefix can not execute statement: $DBI::errstr", $r->uri);
             $dbh->disconnect;
             return SERVER_ERROR;
         }
@@ -301,7 +301,7 @@ sub authen {
     if (!defined($passwd)) { # not found in database
         # if authoritative insist that user is in database
         if ($Attr->{authoritative} eq 'on') {
-            $r->log_reason("$prefix password for user $user_sent not found", $r->uri);
+            $r->log_error("$prefix password for user $user_sent not found", $r->uri);
             $r->note_basic_auth_failure;
             return AUTH_REQUIRED;
         } else {
@@ -317,7 +317,7 @@ sub authen {
 
     # if nopasswd is off, reject user
     unless ($passwd_sent && $passwd) {
-        $r->log_reason("$prefix user $user_sent: empty password(s) rejected", $r->uri);
+        $r->log_error("$prefix user $user_sent: empty password(s) rejected", $r->uri);
         $r->note_basic_auth_failure;
         return AUTH_REQUIRED;
     }
@@ -355,7 +355,7 @@ sub authen {
         }
     }
     unless ($found) {
-        $r->log_reason("$prefix user $user_sent: password mismatch", $r->uri);
+        $r->log_error("$prefix user $user_sent: password mismatch", $r->uri);
         $r->note_basic_auth_failure;
         return AUTH_REQUIRED;
     }
@@ -371,7 +371,7 @@ sub authen {
                 }
             }
             unless ($connect) {
-                $r->log_reason("$prefix db connect error with $Attr->{data_source}", $r->uri);
+                $r->log_error("$prefix db connect error with $Attr->{data_source}", $r->uri);
                 return SERVER_ERROR;
             }
         }
@@ -379,7 +379,7 @@ sub authen {
         my $statement = "UPDATE $Attr->{pwd_table} SET $Attr->{log_field} = $Attr->{log_string} WHERE $Attr->{uid_field}=$user_sent_quoted";
         print STDERR "$prefix statement: $statement\n" if $Apache::AuthDBI::DEBUG > 1;
         unless ($dbh->do($statement)) {
-            $r->log_reason("$prefix can not do statement: $DBI::errstr", $r->uri);
+            $r->log_error("$prefix can not do statement: $DBI::errstr", $r->uri);
             $dbh->disconnect;
             return SERVER_ERROR;
         }
@@ -452,7 +452,7 @@ sub authz {
     my ($ary_ref) = $r->requires;
     unless ($ary_ref) {
         if ($Attr->{authoritative} eq 'on') {
-            $r->log_reason("user $user_sent denied, no access rules specified (DBI-Authoritative)", $r->uri);
+            $r->log_error("user $user_sent denied, no access rules specified (DBI-Authoritative)", $r->uri);
             $r->note_basic_auth_failure if $authz_denied == AUTH_REQUIRED;
             return $authz_denied;
         }
@@ -540,7 +540,7 @@ sub authz {
                 }
             }
             unless ($connect) {
-                $r->log_reason("$prefix db connect error with $Attr->{data_source}", $r->uri);
+                $r->log_error("$prefix db connect error with $Attr->{data_source}", $r->uri);
                 return SERVER_ERROR;
             }
 
@@ -557,7 +557,7 @@ sub authz {
             # prepare statement
             my $sth;
             unless ($sth = $dbh->prepare($statement)) {
-                $r->log_reason("can not prepare statement: $DBI::errstr", $r->uri);
+                $r->log_error("can not prepare statement: $DBI::errstr", $r->uri);
                 $dbh->disconnect;
                 return SERVER_ERROR;
             }
@@ -565,7 +565,7 @@ sub authz {
             # execute statement
             my $rv;
             unless ($rv = ($Attr->{placeholder} eq "on") ? $sth->execute($user_sent) : $sth->execute) {
-                $r->log_reason("can not execute statement: $DBI::errstr", $r->uri);
+                $r->log_error("can not execute statement: $DBI::errstr", $r->uri);
                 $dbh->disconnect;
                 return SERVER_ERROR;
             }
@@ -621,7 +621,7 @@ sub authz {
         my $reason;
         $reason .= " USER"  if $user_result  == AUTH_REQUIRED;
         $reason .= " GROUP" if $group_result == AUTH_REQUIRED;
-        $r->log_reason("DBI-Authoritative: Access denied on $reason rule(s)", $r->uri);
+        $r->log_error("DBI-Authoritative: Access denied on $reason rule(s)", $r->uri);
         $r->note_basic_auth_failure if $authz_denied == AUTH_REQUIRED;
         return $authz_denied;
     }

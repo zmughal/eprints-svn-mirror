@@ -221,7 +221,9 @@ sub get_fields_from_config
 
 sub get_pfilter_count
 {
-	my( $session, $ds, $pfilters ) = @_;
+	my( $session, $ds, $pfilters, $mode ) = @_;
+
+	$mode = 'EX' unless( defined $mode );
 
 	my $count = -1;
 
@@ -233,7 +235,7 @@ sub get_pfilter_count
 					dataset=>$ds );
 		foreach my $filter ( @{$pfilters} )
 		{
-     			$searchexp->add_field( $filter->[0], $filter->[1], "EX" );
+     			$searchexp->add_field( $filter->[0], $filter->[1], $mode );
 		}
       		$searchexp->perform_search();
 		$count = $searchexp->count();
@@ -290,8 +292,18 @@ sub get_filtered_values
 			}
 		}
 		@values = keys %v;
-
 	}
+
+	if( !$view->{allow_null} )
+	{
+		my @ov = @values;
+		@values = ();
+		foreach( @ov )
+		{
+			push @values,$_ unless $_ eq "";
+		}
+	}
+
 	
 	my $ov = {};
 
@@ -344,6 +356,18 @@ sub make_menu
 	#
 	#################################
 
+	my $show_sizes = undef;
+	if( $fields[0]->is_type( "subject" ) )
+	{
+		$show_sizes = {};
+		foreach my $value ( @values )
+		{
+			my( $filters ) = [ @{$pfilters}, [ \@fields, $value ] ];
+			$show_sizes->{$value} = get_pfilter_count( $session, $ds, $filters,'EQ' );
+		}
+	}
+
+
 	my %size = ();
 	foreach my $value ( @values )
 	{
@@ -363,9 +387,6 @@ sub make_menu
 				$noise );
 
 			next;
-		
-		#make_view_pages( $_, $tmpdir, $ds, $noise );
-			# submenu
 		}
 		
 
@@ -399,7 +420,7 @@ sub make_menu
 				"bin/generate_views:timestamp",
 				time=>$session->make_text(
 				EPrints::Utils::get_timestamp() ) ) );
-               	}
+	       	}
 
 
 		# render page
@@ -444,11 +465,10 @@ sub make_menu
 			{
 				push @ids,$_->get_value( "subjectid" );
 			}
-
-                        foreach my $field ( @fields )
-                        {
-                                $htmlpage->appendChild( $session->render_subjects( \@ids, $field->get_property( "top" ), $value, 2 ) );
-                        }
+			foreach my $field ( @fields )
+			{
+				$htmlpage->appendChild( $session->render_subjects( \@ids, $field->get_property( "top" ), $value, 2, $show_sizes ) );
+			}
 
 			$htmlpage->appendChild( $session->render_ruler() );
 		}
@@ -472,107 +492,30 @@ sub make_menu
 	my $page = $session->make_doc_fragment();
 	$page->appendChild( 
 		$session->html_phrase( "bin/generate_views:intro" ) );
-	
+
+	$show_sizes = \%size unless defined( $show_sizes );	
 	if( $fields[0]->is_type( "subject" ) )
 	{
-		my $subjects_to_show = \@values;
-
-		if( $view->{hideempty} )
-                {
-                        my %show = ();
-                        foreach my $value ( @values )
-                        {
-                                next unless( $size{$value} > 0 );
-                                my $subject = EPrints::Subject->new(
-                                                        $session, $
-                                                        value );
-                                my @ids= @{$subject->get_value( "ancestors" )};
-                                foreach my $id ( @ids ) { $show{$id} = 1; }
-                        }
-                        $subjects_to_show = [];
-                        foreach my $value ( @values )
-                        {
-                                next unless( $show{$value} );
-                                push @{$subjects_to_show}, $value;
-                        }
-                }
-
-                foreach my $field ( @fields )
-                {
-                        $page->appendChild(
-                                $session->render_subjects(
-                                        $subjects_to_show,
-                                        $field->get_property( "top" ),
-                                        undef,
-                                        ($has_submenu?3:2),
-                                        \%size ) );
-                }
-
-	}
-	else
-	{
-		my $ul = $session->make_element( "ul" );
-		foreach my $value ( @values )
-		{
-			next if( $view->{hideempty} && $size{$value} == 0 );
-
-			my $fileid = &mk_file_id( $value, $fields[0]->get_type );
-
-			my $li = $session->make_element( "li" );
-
-			my $link = $fileid;
-			if( $has_submenu )
-			{
-				$link .= '/';
-			}
-			else
-			{
-				$link .= '.html';
-			}
-			my $a = $session->render_link( $link );
-			$a->appendChild( 
-				$fields[0]->get_value_label( 
+		$page->appendChild( render_subj_menu( 
 					$session, 
-					$value ) );
-			$a->appendChild( 
-				$session->make_text( " (".$size{$value}.")" ) );
-			$li->appendChild( $a );
-			$ul->appendChild( $li );
-		}
-		$page->appendChild( $ul );
-	}
-
-	my $title;
-	if( scalar @{$pfilters} )
-	{
-		# sub level index
-		my $pagedesc = $session->make_doc_fragment;
-		my $first = 1;
-		foreach my $pfilter ( @{$pfilters} )
-		{
-			if( !$first )
-			{
-				$pagedesc->appendChild( $session->make_text( " / " ) );
-			}
-			$pagedesc->appendChild( $pfilter->[0]->[0]->get_value_label( $session, $pfilter->[1] ) );
-			$first = 0;
-		}
-		$title = $session->html_phrase( 
-			"bin/generate_views:title", 
-			viewname=>$session->make_text( 
-					$session->get_view_name( 
-						$ds, 
-						$view->{id} ) ),
-			value=>$pagedesc );
-	}
+					$view,
+					$show_sizes,
+					\@values,
+					\@fields,
+					$has_submenu ) );
+	}	
 	else
 	{
-		# top level index
-		$title = $session->html_phrase( 
-			"bin/generate_views:indextitle", 
-			viewname=>$session->make_text( 
-				$session->get_view_name( $ds, $view->{id} ) ) );
-	}
+		$page->appendChild( render_menu( 
+					$session,
+					$view,
+					$show_sizes,
+					\@values,
+					\@fields,
+					$has_submenu ) );
+	}	
+	
+	my $title = get_index_title( $session, $pfilters, $ds, $view );
 
 	if( $view->{include} )
 	{
@@ -590,6 +533,121 @@ sub make_menu
 
 	return( $count );
 }
+
+
+sub render_subj_menu
+{
+	my( $session, $view, $sizes, $values, $fields, $has_submenu ) = @_;
+
+	my $subjects_to_show = $values;
+
+	if( $view->{hideempty} )
+	{
+		my %show = ();
+		foreach my $value ( @{$values} )
+		{
+			next unless( $sizes->{$value} > 0 );
+			my $subject = EPrints::Subject->new(
+						$session, $value );
+			my @ids= @{$subject->get_value( "ancestors" )};
+			foreach my $id ( @ids ) { $show{$id} = 1; }
+		}
+		$subjects_to_show = [];
+		foreach my $value ( @{$values} )
+		{
+			next unless( $show{$value} );
+			push @{$subjects_to_show}, $value;
+		}
+	}
+
+	my $f = $session->make_doc_fragment;
+	foreach my $field ( @{$fields} )
+	{
+		$f->appendChild(
+			$session->render_subjects(
+				$subjects_to_show,
+				$field->get_property( "top" ),
+				undef,
+				($has_submenu?3:2),
+				$sizes ) );
+	}
+	return $f;
+}
+
+
+sub render_menu
+{
+	my( $session, $view, $sizes, $values, $fields, $has_submenu ) = @_;
+
+	my $ul = $session->make_element( "ul" );
+
+	foreach my $value ( @{$values} )
+	{
+		next if( $view->{hideempty} && $sizes->{$value} == 0 );
+
+		my $fileid = &mk_file_id( $value, $fields->[0]->get_type );
+
+		my $li = $session->make_element( "li" );
+
+		my $link = $fileid;
+		if( $has_submenu )
+		{
+			$link .= '/';
+		}
+		else
+		{
+			$link .= '.html';
+		}
+		my $a = $session->render_link( $link );
+		$a->appendChild( 
+			$fields->[0]->get_value_label( 
+				$session, 
+				$value ) );
+		$a->appendChild( 
+			$session->make_text( " (".$sizes->{$value}.")" ) );
+		$li->appendChild( $a );
+		$ul->appendChild( $li );
+	}
+
+	return $ul;
+}
+
+
+sub get_index_title
+{
+	my( $session, $pfilters, $ds, $view ) = @_;
+
+	unless( scalar @{$pfilters} )
+	{
+		# top level index
+		return $session->html_phrase( 
+			"bin/generate_views:indextitle", 
+			viewname=>$session->make_text( 
+				$session->get_view_name( $ds, $view->{id} ) ) );
+	}
+		
+	# sub level index
+	my $pagedesc = $session->make_doc_fragment;
+	my $first = 1;
+	foreach my $pfilter ( @{$pfilters} )
+	{
+		if( !$first )
+		{
+			$pagedesc->appendChild( $session->make_text( " / " ) );
+		}
+		$pagedesc->appendChild( $pfilter->[0]->[0]->get_value_label( $session, $pfilter->[1] ) );
+		$first = 0;
+	}
+	
+	return $session->html_phrase( 
+			"bin/generate_views:title", 
+			viewname=>$session->make_text( 
+					$session->get_view_name( 
+						$ds, 
+						$view->{id} ) ),
+			value=>$pagedesc );
+}
+
 
 sub render_list
 {

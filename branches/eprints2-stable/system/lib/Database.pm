@@ -1228,7 +1228,7 @@ sub search
 {
 	my( $self, $keyfield, $tables, $conditions) = @_;
 	
-	my $sql = "SELECT M.".$keyfield->get_sql_name()." FROM ";
+	my $sql = "SELECT DISTINCT M.".$keyfield->get_sql_name()." FROM ";
 	my $first = 1;
 	foreach( keys %{$tables} )
 	{

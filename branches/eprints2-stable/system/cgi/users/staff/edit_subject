@@ -18,13 +18,13 @@ use EPrints::Session;
 use EPrints::Subject;
 
 my $session = EPrints::Session->new();
-Apache::exit( 0 ) unless( defined $session );
+exit( 0 ) unless( defined $session );
 
 # Check we have privs
 if( !$session->auth_check( "edit-subject" ) )
 {
 	$session->terminate();
-	Apache::exit( 0 );
+	exit( 0 );
 }
 my( $title, $page );
 

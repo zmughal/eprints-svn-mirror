@@ -18,12 +18,12 @@ use EPrints::SearchExpression;
 
 use strict;
 my $session = new EPrints::Session;
-Apache::exit( 0 ) unless( defined $session );
+exit( 0 ) unless( defined $session );
 
 unless( $session->auth_check( "staff-view" ) )
 {
 	$session->terminate();
-	Apache::exit( 0 );
+	exit( 0 );
 }
 
 my $path_info = $session->get_request->path_info;

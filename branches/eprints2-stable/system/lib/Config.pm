@@ -577,7 +577,7 @@ For example: "en" would return "English".
 
 sub lang_title
 {
-	my( $id ) = @_;
+	my( $id, $session ) = @_;
 
 	ensure_init();
 

@@ -115,7 +115,7 @@ GetOptions(
 	'silent' => \$quiet,
 	'quiet' => \$quiet
 ) || pod2usage( 2 );
-EPrints::Utils::cmd_version( "reindex" ) if $version;
+EPrints::Utils::cmd_version( "export_hashes" ) if $version;
 pod2usage( 1 ) if $help;
 pod2usage( -exitstatus => 0, -verbose => 2 ) if $man;
 pod2usage( 2 ) if( scalar @ARGV != 2 && @ARGV != 1 );

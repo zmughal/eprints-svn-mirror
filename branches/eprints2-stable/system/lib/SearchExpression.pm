@@ -887,7 +887,7 @@ sub process_webpage
 	if( $self->{staff} && !$self->{session}->auth_check( "staff-view" ) )
 	{
 		$self->{session}->terminate();
-		Apache::exit( 0 );
+		exit( 0 );
 	}
 
 	my $pagesize = $self->{page_size};

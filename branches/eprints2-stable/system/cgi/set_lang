@@ -20,7 +20,7 @@ use EPrints::Config;
 use strict;
 
 my $session = new EPrints::Session;
-Apache::exit( 0 ) unless( defined $session );
+exit( 0 ) unless( defined $session );
 
 
 my $referer = $session->param( "fromurl" );
@@ -44,8 +44,7 @@ if( !defined $newlang )
 	{	
 		my $p = $session->make_element( "p" );
 		my $a = $session->render_link( "set_lang?langid=$langid&fromurl=$referer" );
-		$a->appendChild( $session->make_text( 
-			EPrints::Config::lang_title($langid) ) );
+		$a->appendChild( $session->render_language_name( $langid ) );
 		$p->appendChild( $a );
 		$page->appendChild( $p );
 	}
@@ -66,12 +65,12 @@ elsif( $newlang eq "" )
 	$session->change_lang( $langid );
 	$page->appendChild( $session->html_phrase( 
 			"cgi/set_lang:cleared",
-			lang=>$session->make_text( EPrints::Config::lang_title($langid) ) ) );
+			lang=>$session->render_language_name( $langid )));
 
 	$page->appendChild( $session->html_phrase( 
 			"cgi/set_lang:default_lang",
-			lang=>$session->make_text( EPrints::Config::lang_title( 
-				$session->get_archive()->get_conf( "defaultlanguage" ) ) ) ) );
+			lang=>$session->render_language_name( 
+				$session->get_archive()->get_conf( "defaultlanguage" ) ) ) );
 	$page->appendChild( $session->html_phrase( "cgi/set_lang:cache_warning" ) );
 	if( 0 && EPrints::Utils::is_set( $referer ) )
 	{
@@ -89,12 +88,12 @@ elsif( grep(/^$newlang$/,@langids) )
 	$session->change_lang( $newlang );
 	$page->appendChild( $session->html_phrase( 
 			"cgi/set_lang:changed_to",
-			lang=>$session->make_text( EPrints::Config::lang_title($newlang) ) ) );
+			lang=>$session->render_language_name( $newlang )));
 
 	$page->appendChild( $session->html_phrase( 
 			"cgi/set_lang:default_lang",
-			lang=>$session->make_text( EPrints::Config::lang_title( 
-				$session->get_archive()->get_conf( "defaultlanguage" ) ) ) ) );
+			lang=>$session->render_language_name( 
+				$session->get_archive()->get_conf( "defaultlanguage" ) ) ) );
 	$page->appendChild( $session->html_phrase( "cgi/set_lang:cache_warning" ) );
 	if( 0 && EPrints::Utils::is_set( $referer ) )
 	{

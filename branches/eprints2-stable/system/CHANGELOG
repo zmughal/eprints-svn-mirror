@@ -1887,3 +1887,33 @@ PACKAGE: 2.2.99.2
 25/02/2004 - EPRINTS-2.3.2
 ======================================================================
 
+2004-03-03 cjg
+
+ - Added a new script - explain_sql_tables, which explains what all 
+    the SQL tables are used for.
+ - Another try to fix the hideempty bugs in generate_views while making
+    the subjects list show totals for super-catagories.
+ - Chopped up generate_views into subroutines a little - may be a bit
+    clearer to understand now (maybe not).
+ - Hacked the bundled Apache::DBI module to use log_error rather than
+    log_reason (v1 and v2 mod_perl compliant)
+ - The name of a language can now be specified in an language specific 
+    phrase file. Added a new method to session: render_language_name
+    which renders the given name in the right language. Everywhere 
+    which mentions language names now uses this. Maybe set_lang should
+    not.
+ - Added a feature which looks for optional extra 'join' phrases to 
+    use in the first and/or last join of a sequence of values. ie. you
+    can use name_join = ', ' and name_join.last = ' and '
+ - Changed all Apache::exit's to just be exit's for apache 2 
+    compatability.
+ - Fixed bug in searches so that a single search on a multiple 
+    table can no longer return two instances of the same item (added
+    a DISTINCT!)
+ - Changed all remaining occurances of "iso-latin-1" to "iso-8859-1"
+ - Added a fix to mkdir to make sure that the dir string is not 
+    a Unicode::String (as this causes an error).
+ - Updated copyright statement to 2004!
+ - XML to_string function now correctly handles <!-- comments -->
+ - ordervalue for an undefined int is now "" (was causing warning)
+

@@ -577,21 +577,30 @@ sub render_value
 	my $first = 1;
 	my $html = $session->make_doc_fragment();
 	
-	foreach( @$value )
+	for(my $i=0; $i<scalar(@$value); ++$i )
 	{
-		if( $first )
+		my $sv = $value->[$i];
+		unless( $i == 0 )
 		{
-			$first = 0;	
-		}	
-		else
-		{
-			$html->appendChild( $session->html_phrase( 
-				"lib/metafield:join_".$self->get_type ) );
+			my $phrase = "lib/metafield:join_".$self->get_type;
+			my $basephrase = $phrase;
+			if( $i == 1 && $session->get_lang->has_phrase( 
+						$basephrase.".first" ) ) 
+			{ 
+				$phrase = $basephrase.".first";
+			}
+			if( $i == scalar(@$value)-1 && 
+					$session->get_lang->has_phrase( 
+						$basephrase.".last" ) ) 
+			{ 
+				$phrase = $basephrase.".last";
+			}
+			$html->appendChild( $session->html_phrase( $phrase ) );
 		}
 		$html->appendChild( 
 			$self->render_value_no_multiple( 
 				$session, 
-				$_, 
+				$sv, 
 				$alllangs, 
 				$nolink ) );
 	}
@@ -721,8 +730,9 @@ sub render_value_no_id
 			$self->render_value_no_multilang( $session, $value->{$_} ) );
 		$th = $session->make_element( "th" );
 		$tr->appendChild( $th );
-		$th->appendChild( $session->make_text(
-			"(".EPrints::Config::lang_title( $_ ).")" ) );
+		$th->appendChild( $session->make_text( '(' ) );
+		$th->appendChild( $session->render_language_name( $_ ) );
+		$th->appendChild( $session->make_text( ')' ) );
 	}
 	return $table;
 }

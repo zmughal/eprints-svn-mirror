@@ -475,7 +475,8 @@ sub get_input_elements_no_id
 	my %langlabels = ();
 	foreach( EPrints::Config::get_languages() ) 
 	{ 
-		$langlabels{$_}=EPrints::Config::lang_title($_); 
+		$langlabels{$_}= EPrints::Utils::tree_to_utf8(
+			$session->render_language_name( $_ ) );
 	}
 	foreach( @force ) { delete $langlabels{$_}; }
 	my @langopts = ("", keys %langlabels );
@@ -518,9 +519,7 @@ sub get_input_elements_no_id
 				name => $langparamid,
 				value => $langid ) );
 			$langbit->appendChild( 
-				$session->make_text( 
-					EPrints::Config::lang_title( 
-						$langid ) ) );
+				$session->render_language_name( $langid ) );
 		}
 		else
 		{

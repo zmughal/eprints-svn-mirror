@@ -67,6 +67,11 @@ sub ordervalue_basic
 {
 	my( $self , $value ) = @_;
 
+	unless( EPrints::Utils::is_set( $value ) )
+	{
+		return "";
+	}
+
 	# just in case we still use eprints in year 200k 
 	my $pad = $self->get_digits;
 	return sprintf( "%0".$pad."d",$value );

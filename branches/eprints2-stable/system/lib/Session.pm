@@ -854,6 +854,29 @@ sub render_link
 ######################################################################
 =pod
 
+=item $xhtml = $session->render_language_name( $langid ) 
+Return a DOM object containing the description of the specified language
+in the current default language, or failing that from languages.xml
+
+=cut
+######################################################################
+
+sub render_language_name
+{
+	my( $self, $langid ) = @_;
+
+	my $phrasename = 'language:'.$langid;
+	if( $self->get_lang->has_phrase( $phrasename ) )
+	{	
+		return $self->html_phrase( $phrasename );
+	}
+
+	return $self->make_text( EPrints::Config::lang_title( $langid ) );
+}
+
+######################################################################
+=pod
+
 =item $thing->render_name( $name, [$familylast] )
 
 undocumented

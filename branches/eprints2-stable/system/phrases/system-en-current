@@ -69,6 +69,12 @@ EPrints Modules
     <ep:phrase ref="lib/metafield:date_res_year">"Day" or both "Month" and "Day" may be ommited if appropriate.<br /></ep:phrase>
 
     <!-- phrases used to seperate multiple values in a field -->
+    <!-- you can use .first and .last to make the first or 
+         last joins in a list different. eg. set
+		join_name to ',' 
+		join_name.last  'and'
+	to get a more traditional citation style for names. -->
+		
     <ep:phrase ref="lib/metafield:join_int">, </ep:phrase>
     <ep:phrase ref="lib/metafield:join_year">, </ep:phrase>
     <ep:phrase ref="lib/metafield:join_longtext">, </ep:phrase>
@@ -879,7 +885,6 @@ Titles and Help for the System Fields
     <ep:phrase ref="subject_radio_depositable"><ep:pin ref="true" />Yes, users can add records to this subject.<br /><ep:pin ref="false" />No. (In which case it should probably have some children.</ep:phrase>
     <ep:phrase ref="subject_fieldname_newsubjectid">Subject ID String</ep:phrase>
     <ep:phrase ref="subject_fieldhelp_newsubjectid">This is the internal key for this subject. It is used in the database and to generate the "views" filenames. It shoud contain only a-z, 0-9 and dash "/"and underscore "_". If you enter the ID of an existing subject then that subject will be linked as a child of the current subject.</ep:phrase>
-
 
 </ep:phrases>
 

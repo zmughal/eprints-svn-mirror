@@ -521,6 +521,10 @@ sub to_string
 	{
 		push @n, $node->toString;
 	}
+	elsif( EPrints::XML::is_dom( $node, "Comment" ) )
+	{
+	push @n, "<!--", $gdome?$node->getData:$node->toString, "-->"
+	}
 	else
 	{
 		print STDERR "EPrints::XML: Not sure how to turn node type ".$node->getNodeType."\ninto a string.\n";

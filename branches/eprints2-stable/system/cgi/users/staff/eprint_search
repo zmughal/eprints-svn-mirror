@@ -21,7 +21,7 @@ use EPrints::SearchExpression;
 use strict;
 
 my $session = new EPrints::Session;
-Apache::exit( 0 ) unless( defined $session );
+exit( 0 ) unless( defined $session );
 
 my $url = $session->get_archive->get_conf( "perl_url" )."/users/search";
 if( $session->get_request->args )

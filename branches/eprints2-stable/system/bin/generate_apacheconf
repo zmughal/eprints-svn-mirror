@@ -30,9 +30,9 @@ Or elsewhere if you installed EPrints somewhere other than /opt/eprints2. This f
 
 By default the virtualhost directives are
 
- <VirtualHost *>
+ VirtualHost *
 
-But the * can be changed to something different by editing the <virtualhost> option in SystemSettings.pm
+But the * can be changed to something different by editing the C<virtualhost> option in SystemSettings.pm
 
 =head1 ARGUMENTS
 

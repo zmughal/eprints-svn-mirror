@@ -858,7 +858,8 @@ sub get_type_name
 		{
 			return $session->phrase( "lib/dataset:no_language" );
 		}
-		return EPrints::Config::lang_title( $type );
+		return EPrints::Utils::tree_to_utf8(
+			$session->render_language_name( $type ) );
 	}
 
         return $session->phrase( $self->confid()."_typename_".$type );
