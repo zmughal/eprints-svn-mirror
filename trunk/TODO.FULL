@@ -1,0 +1,124 @@
+
+code:
+* userid field sepearate to username
+   + only if conf option is set.
+   + conv functions both ways.
+   + only required in modifying and searching DB
+* userid/username split.
+    + username becomes userid
+	- make it validate on user info too
+	- add a 'strict' option
+    + userid/name combo field 
+	- make it editable, searchable etc.
+* views
+    + make views output which dosn't use wrapper.
+    + make people views too, configurable.
+* add some <BR> to end of left menu
+# make rebuild sets work nicer?
+* new user type "Local"?
+* "filter" concept for staff.
+* "private" formats
+* configuration for "filter" and "userid" fields?
+* trawler, processor to convert eg latex to ps?
+* cgi/user page is a little iffy. Make it look nicer?
+* add bin/site for user created bins?
+* add user.types (extra info for local or staff!)
+* scaling - better indexes and temp tables?
+* search on INT (greater & lower?)
+* session->{request} is it used?
+* Internationalisation
+* do CFG files get seperated accross instances?
+
+siteinfo:
+* Incorporate local users customisation bits
+
+release:
+* Incorporate CHANGELOG.TXT and TODO.TXT into release?
+* lose dienst code?
+
+website:
+* french pages dammit.
+* tart up website generator
+* tidy up jitterbug instance
+
+docs:
+* username not used for INTERNAL codes.
+* password change script.
+* add subject to installation notes?
+# add "multiple" option to table 2 in system notes?
+# document rebuild_sets
+
+Internationalise:
+./bin/rebuild_sets
+./bin/create_databases
+./bin/create_user
+./bin/erase_archive
+./bin/generate_abstracts
+./bin/generate_static
+./bin/generate_views
+./bin/list_user_emails
+./bin/process_mail
+./bin/subs_daily
+./bin/subs_monthly
+./bin/subs_weekly
+./bin/update_htaccess
+./bin/update_laf
+./bin/examples
+./bin/examples/update_users_example
+./cfg/metadata.eprint-fields
+./cfg/metadata.eprint-types
+./cfg/metadata.user
+./cfg/subjects
+./cfg/template.change-email
+./cfg/template.fail-reply
+./cfg/template.fail-user
+./cfg/template.user-intro
+./cgi/advsearch
+./cgi/handle_404
+./cgi/oai
+./cgi/remind
+./cgi/search
+./cgi/user
+./cgi/user_eprints
+./cgi/view_eprint
+./cgi/staff/.htaccess
+./cgi/staff/add_user
+./cgi/staff/buffer
+./cgi/staff/create_subject
+./cgi/staff/edit_eprint
+./cgi/staff/edit_submission
+./cgi/staff/edit_user
+./cgi/staff/eprint_search
+./cgi/staff/status
+./cgi/staff/user_search
+./cgi/staff/view_submission
+./cgi/staff/view_user
+./cgi/users/.htaccess
+./cgi/users/home
+./cgi/users/record
+./cgi/users/review
+./cgi/users/submit
+./cgi/users/subscribe
+./lib/OpenArchives.pm
+	./lib/Citation.pm
+	./lib/Database.pm
+./lib/Deletion.pm
+./lib/Document.pm
+./lib/EPrint.pm
+./lib/HTMLRender.pm
+./lib/Log.pm
+./lib/Mailer.pm
+./lib/MetaField.pm
+./lib/MetaInfo.pm
+./lib/Name.pm
+	./lib/Language.pm
+./lib/SearchExpression.pm
+	./lib/SearchField.pm
+./lib/SearchForm.pm
+./lib/Session.pm
+./lib/Subject.pm
+./lib/SubjectList.pm
+./lib/SubmissionForm.pm
+./lib/Subscription.pm
+./lib/User.pm
+./lib/UserForm.pm
