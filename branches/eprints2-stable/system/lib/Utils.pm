@@ -1116,6 +1116,7 @@ sub field_from_config_string
 	{
 		EPrints::Config::abort( "Can't make field from config_string: $fieldname" );
 	}
+
 	if( $field->get_property( "hasid" ) )
 	{
 		if( $q{id} )

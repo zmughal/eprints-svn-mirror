@@ -382,11 +382,28 @@ Update the apache config:
 
 Start the webserver
 
-=head2 Add the new icons
+=head2 Add the new icons & update the style sheets
 
 The new input interface has up and down buttons to let you rearrange the values in lists, such as authors. If you don't copy them into your live archives you'll probably see ugly text of "UP" and "DOWN". You need to put them in your archives "images" dir then use generate_static to copy them to the live website.
 
  % cp defaultcfg/static/general/images/multi_*.png archives/ARCHIVEID/cfg/static/general/images
+
+Copy in the new VLit stylesheet. 
+
+ % cp defaultcfg/static/general/vlit.css archives/ARCHIVEID/cfg/static/general
+
+Copy any new styles you want from 
+
+ defaultcfg/static/general/eprints.css 
+
+to
+
+ archives/ARCHIVEID/cfg/static/eprints.css 
+
+I suggest everything after the line which starts ".subject_browser_opts, .subject_browser_selections, .subject_browser_search". This isn't essential, but will make your site look nicer.
+
+Now run:
+
  % bin/generate_static ARCHIVEID
 
 =head2 Start the indexer

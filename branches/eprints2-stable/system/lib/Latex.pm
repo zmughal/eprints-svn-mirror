@@ -124,19 +124,40 @@ sub render_string
 	
 		if( !$inlatex && $oldinlatex )
 		{
-			my $param = $buffer;
-			$param =~ s/[^a-z0-9]/sprintf('%%%02X',ord($&))/ieg;
+			my $url;
 
-			# strip $ from begining and end.
-			$param =~ s/^\$(.*)\$$/$1/; 
+			if( $session->get_archive->get_conf( "use_mimetex" ) ) 
+			{
+				my $param = $buffer;
 
-			my $perlurl = $session->get_archive()->get_conf( 
-				"perl_url" );
+				# strip $ from begining and end.
+				$param =~ s/^\$(.*)\$$/$1/;
+
+				# Mimetex can't handle whitespace. Change it to ~'s.
+				$param =~ s/\s/~/g;     
+
+				$url = $session->get_archive->get_conf( 
+        				"base_url" )."/cgi/mimetex.cgi?".$param;
+			}
+			else
+			{
+				my $param = $buffer;
+	
+				# URL Encode non a-z 0-9 chars.
+				$param =~ s/[^a-z0-9]/sprintf('%%%02X',ord($&))/ieg;
+	
+				# strip $ from begining and end.
+				$param =~ s/^\$(.*)\$$/$1/; 
+	
+				$url = $session->get_archive->get_conf( 
+					"perl_url" )."/latex2png?latex=".$param;
+			}
+
 			my $img = $session->make_element( 
 				"img",
 				align=>"absbottom",
 				alt=>$buffer,
-				src=>$perlurl."/latex2png?latex=".$param,
+				src=>$url,
 				border=>0 );
 			$html->appendChild( $img );
 			$buffer = '';	

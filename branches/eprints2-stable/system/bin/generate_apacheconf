@@ -380,6 +380,25 @@ $aliases
   # Include this here, so that it's rules come first.
   Include $vhostfile
 
+END
+
+# If we want to use the non-perl CGI script mimetex.cgi we need to 
+# insert the script alias here.
+if( $archive->get_conf( "use_mimetex" ) ) 
+{
+	if( !defined $EPrints::SystemSettings::conf->{executables}->{mimetex} )
+	{
+		EPrints::Config::abort( "use_mimetex is set to true but\n\$EPrints::SystemSettings::conf->{executables}->{mimetex}\nis not set." );
+	}
+	if( !-e $EPrints::SystemSettings::conf->{executables}->{mimetex} )
+	{
+		EPrints::Config::abort( "use_mimetex is set to true but\n\$EPrints::SystemSettings::conf->{executables}->{mimetex}\nis set to a non existant file." );
+	}
+	     
+	print CONF '  ScriptAlias '.$urlpath.'/cgi/mimetex.cgi '.$EPrints::SystemSettings::conf->{executables}->{mimetex}."\n\n";
+}
+
+print CONF <<END;
   Alias $urlpath/perl $cgidir
   Alias $urlpath/ $htdocs_path/
 
@@ -415,6 +434,7 @@ my @langs = @{$archive->get_conf( "languages" )};
   #RewriteRule ^/(.*)\$         /$defaultlang/\$1   [L]
 #
 #END
+
 
 if( $archive->get_conf( "vlit" )->{enable} )
 {

@@ -16,7 +16,7 @@ package EPrints::SystemSettings;
 
 $EPrints::SystemSettings::conf = 
 {
-	apache_version => "1",
+	apache => "1",
 	base_path => "/opt/ep2stable",
 	executables => {
 		unzip 	=> "/usr/bin/unzip",
@@ -26,7 +26,8 @@ $EPrints::SystemSettings::conf =
 		tar 	=> "/bin/tar",
 		latex 	=> "/usr/bin/latex",
 		dvips 	=> "/usr/bin/dvips",
-		convert	=> "/usr/X11R6/bin/convert"
+		convert	=> "/usr/X11R6/bin/convert",
+		mimetex	=> "/export/0/home/cjg/Projects/eprints2_stable/eprints/system/mimetex.cgi"
 	},
 	invocation => {
 		zip 	=> '$(unzip) 1>/dev/null 2>&1 -qq -o -d \'$(DIR)\' \'$(ARC)\'',

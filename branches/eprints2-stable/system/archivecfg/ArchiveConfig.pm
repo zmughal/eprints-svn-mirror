@@ -514,7 +514,18 @@ $c->{default_order}->{user} = "byname";
 # nb. This is the "last 7 days" page not the "latest_tool" page.
 $c->{latest_citation} = "neat";
 
+
+######################################################################
+#
+# Latest_tool Configuration
+#
+#  the latest_tool script is used to output the last "n" items 
+#  accepted into the archive
+#
+######################################################################
+
 $c->{latest_tool_modes} = {
+	default => { citation => "neat" }
 };
 
 # Example of a latest_tool mode. This makes a mode=articles option
@@ -645,6 +656,11 @@ $c->{cache_maxlife} = 12;
 #	return undef;
 # };
 
+# If you use the Latex render function and want to use the mimetex
+# package rather than the latex->dvi->ps->png route then enable this
+# option and put the location of the executable "mimetex.cgi" into 
+# SystemSettings.pm
+$c->{use_mimetex} = 1;
 
 ######################################################################
 

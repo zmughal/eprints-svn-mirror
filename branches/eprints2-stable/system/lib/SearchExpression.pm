@@ -1669,7 +1669,7 @@ sub _get_records
 			{
 				if( $self->_matches_all )
 				{
-					return $self->{dataset}->get_item_ids;
+					return $self->{dataset}->get_item_ids( $self->{session} );
 				}
 				return $self->{unsorted_matches};
 			}

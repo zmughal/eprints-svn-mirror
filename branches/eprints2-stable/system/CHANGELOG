@@ -1238,7 +1238,7 @@ before next release. (metadata types & fields)
  - [doc] New custom input renderer for subjects:
     &EPrints::MetaField::subject_browser_input which does a navigable subject
     tree rather than the pull-down menu.
- - [c] Subect field now uses that custom input renderer.
+ - [c] Subject field now uses that custom input renderer.
  - [c] Added more items to the monograph_type field.
  - [c] Added "lecture" to the presentation_type field.
  - [c] Made abstract the same width as all other fields again (looked 
@@ -1340,7 +1340,8 @@ before next release. (metadata types & fields)
 
 2003-06-17 cjg/moj
 
-*- [doc] New parameter to SystemSettings: apache_version. 
+*- [doc] New parameter to SystemSettings: apache_version. (renamed 
+   later to "apache" )
  - Support for Apache2 added, changes to VLit, startup.pl and Auth.pm, 
     added new module RequestWrapper2 which Auth will use if directed.
     now does some 1.3/2.0 specific stuff in generate_apacheconf
@@ -1414,7 +1415,7 @@ before next release. (metadata types & fields)
  - added a magick field generator. This will allow dataset to
     create fields prefixed with "_" even if they do not exist
     in the full text. I'm not sure about this. It's a horrid
-    hack.
+    hack. (removed it again)
  - added get_item_ids to dataset to return the id's of all
     items in that dataset.
  - removed indexing code from Database and put it in Index instead.
@@ -1782,4 +1783,59 @@ PACKAGE: 2.2.99.2
  - Fixed search form on default index page.
  - Added Proc/Reliable and Unicode/Normalise to bundled stuff.
 
+2003-12-02 cjg
+
+ - Option to use CGI script "mimetex" for Latex rendering. Rewrite
+    now ignores any requests to /cgi/ and if enable_mimetex is set
+    then an extra ScriptAlias is added to the apache conf and the
+    Latex render_single_value points at that URL instead.
+ - Tidied some config files.
+ - Improved install.pl to rename old files to format ".YYYY-MM-DD.N" 
+    rather than ".old"
+
 ======================================================================
+
+
+
+Stuff to document. Ignore it.
+ 
+* render_opts!!!
+* magick_stops!!!
+per-page-validation!!!
+per-page-titles!!!
+$c->{field_defaults}->{hide_honourific} = 0;!!
+$c->{field_defaults}->{hide_lineage} = 0;!!
+$c->{field_defaults}->{family_first} = 0;!!
+
+view: subpages, subheadings, start_headign, render_opts
+citations: render_opts
+* min_resolution, res=year!!!
+
+
+Todoc: field render attrs (metadataconfig, view, citation),gf,fg
+* render_input
+* latest_tool
+* input_style="long"
+* get_users_owned_eprints
+* field_defaults
+* help_per_type in eprints 
+* spans in citations
+* field_defaults
+"SIMPLE" searches
+
+-
+MimeTex support
+*Filters*
+Filters in OAI
+Filters in search
+Filters in latest_tool
+New search config.
+New subject input mode.
+register_agreement for register page.
+apache 2.
+var directory
+
+NEW SystemSettings
+NEW Archive.XML config
+
+search for all XX.

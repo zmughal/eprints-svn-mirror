@@ -26,6 +26,7 @@ my $page=$session->make_doc_fragment();
 my $citation = $session->get_archive->get_conf( "latest_tool_citation" );
 my $max = 20;
 my $mode = $session->param( "mode" );
+$mode = "default" if( !defined $mode );
 my $filters = [];
 my $conf = $session->get_archive->get_conf( "latest_tool_modes", $mode );
 my $class= "latest_tool";
@@ -52,7 +53,7 @@ my $searchexp = new EPrints::SearchExpression(
 	custom_order => "-datestamp",
 	dataset => $ds );
 my $title;
-if( defined $conf )
+if( EPrints::Utils::is_set( $filters ) )
 {
 	$title = $session->html_phrase( 
 		"cgi/latest_tool:title_matching",

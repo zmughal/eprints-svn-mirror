@@ -139,7 +139,7 @@ $errmsg
 ------------------------------------------------------------------
 END
 		$@="";
-		cluck( "EP SYS Error inducing stack dump" );
+		cluck( "EPrints System Error inducing stack dump\n" );
 		exit;
 		#exit;
 	}

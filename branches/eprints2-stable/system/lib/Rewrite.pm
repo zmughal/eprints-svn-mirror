@@ -34,6 +34,13 @@ sub handler
 		return DECLINED;
 	} 
 
+	if( $uri =~ m#^/cgi/# )
+	{
+		# In case people want a real CGI Directory on the same
+		# server. For example for mimetex.
+		return DECLINED;
+	} 
+
 	if( $uri =~ m#^/archive/([0-9]{1,7})($|/[^0-9].*)# )
 	{
 		my $n = $1;

@@ -9,6 +9,8 @@ my @ids = (
 	"structure", 
 	"configeprints",
 	"configarchive",
+	"metadata",
+	"functions",
 	"troubleshooting",
 	"howto" ,
 	"vlit" ,
@@ -49,7 +51,9 @@ my %titles = (
 	installation => "How to Install EPrints (and get started)",
 	structure => "EPrints Structure and Terms",
 	configeprints => "Configuring the System",
-	configarchive => "Configuring an Archive",
+	configarchive => "The Archive Configuration Files",
+	metadata => "Configuring the Archive Metadata",
+	functions => "Configuring the functions of an Archive",
 	howto => "How-To Guides",
 	troubleshooting => "Troubleshooting",
 	backup => "Backing-Up your System",
@@ -95,7 +99,7 @@ foreach( @ids )
 
 my $DOCTITLE = "EPrints 2.3 Documentation";
 
-my $BASENAME = "eprints-2.3-docs";
+my $BASENAME = "eprints-docs";
 
 `rm -rf docs`;
 `mkdir docs`;
@@ -460,6 +464,8 @@ END
 			s#</h1>#</h2>#ig;
 			s#<!-- INDEX END -->#</div><div class="docs_body">#ig;
 			if( !$gothr && s/<hr>//i ) { $gothr = 1; }
+			s/''/"/ig;
+			s/``/"/ig;
 			print TARGET $_;
 		}
 		s/<table.*//i;
