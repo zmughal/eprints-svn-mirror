@@ -86,14 +86,15 @@ package EPrints::Document;
 @ISA = ( 'EPrints::DataObj' );
 use EPrints::DataObj;
 
-use EPrints::Database;
-use EPrints::EPrint;
 
 use File::Basename;
 use File::Path;
 use File::Copy;
 use Cwd;
 use URI::Heuristic;
+
+use EPrints::Database;
+use EPrints::EPrint;
 use EPrints::Probity;
 
 use strict;
@@ -1238,6 +1239,27 @@ sub rehash
 		$hashfile );
 }
 
+######################################################################
+=pod
+
+=item $text = $doc->get_text
+
+Get the text of the document as a UTF-8 encoded string, if possible.
+
+This is used for full-text indexing. The text will probably not
+be well formated.
+
+=cut
+######################################################################
+
+sub get_text
+{
+	my( $self ) = @_;
+
+	# cjg CALLS TO HARRYS CODE HERE
+
+	return( 'the rain in spain falls mainly on the plain' );
+}
 
 1;
 

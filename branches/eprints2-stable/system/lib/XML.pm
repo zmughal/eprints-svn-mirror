@@ -38,6 +38,7 @@ use Unicode::String qw(utf8 latin1);
 use strict;
 use Carp;
 
+@EPrints::XML::COMPRESS_TAGS = qw/br hr img link input meta/;
 
 my $gdome = ( 
 	 defined $EPrints::SystemSettings::conf->{enable_gdome} &&
@@ -73,7 +74,10 @@ sub _xmldom_tag_compression
 	my ($tag, $elem) = @_;
 	
 	# Print empty br, hr and img tags like this: <br />
-	return 2 if $tag =~ /^(br|hr|img|link|input|meta)$/;
+	foreach my $ctag ( @EPrints::XML::COMPRESS_TAGS )
+	{
+		return 2 if( $ctag eq $tag );
+	}
 
 	# Print other empty tags like this: <empty></empty>
 	return 1;
@@ -433,7 +437,10 @@ sub to_string
 	my @n = ();
 	if( EPrints::XML::is_dom( $node, "Element" ) )
 	{
-		push @n, '<', $node->getTagName, ' ';
+		my $tagname = $node->getTagName;
+		$tagname = "\L$tagname";
+
+		push @n, '<', $tagname, ' ';
 		#foreach my $attr ( $node->getChildNodes )
 
 		my $nnm = $node->getAttributes;
@@ -446,18 +453,30 @@ sub to_string
 			push @n, " ",$attr->toString;
 		}
 
+		#cjg This is bad. It makes nodes like <div /> if 
+		# they are empty. Should make <div></div> like XML::DOM
+		my $compress = 0;
+		foreach my $ctag ( @EPrints::XML::COMPRESS_TAGS )
+		{
+			$compress = 1 if( $ctag eq $tagname );
+		}
 		if( $node->hasChildNodes )
+		{
+			$compress = 0;
+		}
+
+		if( $compress )
+		{
+			push @n," />";
+		}
+		else
 		{
 			push @n,">";
 			foreach my $kid ( $node->getChildNodes )
 			{
 				push @n, to_string( $kid );
 			}
-			push @n,"</",$node->getTagName,">";
-		}
-		else
-		{
-			push @n," />";
+			push @n,"</",$tagname,">";
 		}
 	}
 	elsif( is_dom( $node, "DocumentFragment" ) )

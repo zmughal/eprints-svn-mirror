@@ -221,6 +221,11 @@
 <br />Example: <span class="example">John K. Ducklingson</span>
 </ep:phrase>
 
+    <ep:phrase ref="eprint_fieldname_full_text_status">Full Text Status</ep:phrase>
+    <ep:phrase ref="eprint_fieldhelp_full_text_status"></ep:phrase>
+    <ep:phrase ref="eprint_fieldopt_full_text_status_public">Public</ep:phrase>
+    <ep:phrase ref="eprint_fieldopt_full_text_status_none">None</ep:phrase>
+
 
 <!---#######################-->
 

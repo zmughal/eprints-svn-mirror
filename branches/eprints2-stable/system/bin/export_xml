@@ -38,7 +38,6 @@ if( !defined $ds )
 }
 
 my $sexp = EPrints::SearchExpression->new( 
-		use_oneshot_cache => 1,
 		allow_blank => 1 , 
 		dataset => $ds , 
 		session => $session );

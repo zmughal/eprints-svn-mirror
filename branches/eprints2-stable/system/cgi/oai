@@ -320,7 +320,7 @@ sub get_searchexp_from_params
 		my( $offset, $cache_id, $metadata_format ) = ( $1, $2, $4 );
 		my $searchexp = EPrints::SearchExpression->new( 
 			session => $session,
-			use_private_cache => 1,
+			keep_cache => 1,
 			cache_id => $cache_id );
 
 		unless( defined $searchexp )
@@ -344,7 +344,7 @@ sub get_searchexp_from_params
 
 	my $searchexp = new EPrints::SearchExpression(
 		session => $session,
-		use_private_cache => 1,
+		keep_cache => 1,
 		allow_blank => 1,
 		dataset => $ds );
 
@@ -491,8 +491,8 @@ sub _list
 	{
 		$response = make_basic_oai_response( $session, "ListIdentifiers" );
 
-		my @ids = $searchexp->get_ids( $offset, $PAGESIZE );
-		foreach( @ids )
+		my $ids = $searchexp->get_ids( $offset, $PAGESIZE );
+		foreach( @{$ids} )
 		{
 			$response->appendChild( $session->render_data_element(
 				2,
@@ -543,7 +543,7 @@ sub _list
 		my $delsearchexp = EPrints::SearchExpression->unserialise(
 			$session,
 			$serial,
-			use_private_cache => 1,
+			keep_cache => 1,
 			allow_blank => 1 );
 		$delsearchexp->set_dataset(
 			$session->get_archive()->get_dataset( "deletion" ) );
@@ -680,11 +680,11 @@ sub list_sets
 			}
 			else
 			{
-				my @v = $field->get_values( $session, $ds );
+				my $v1 = $field->get_values( $session, $ds );
 				my $delfield = $field->clone();
 				#$delfield->set_dataset( $ds_del );
-				push @v, $delfield->get_values( $session, $ds_del );
-				foreach( @v )
+				my $v2 = $delfield->get_values( $session, $ds_del );
+				foreach( @{$v1}, @{$v2} )
 				{
 					my $key = EPrints::OpenArchives::encode_setspec( $_ );
 					if( !defined $key ) { $key=""; }

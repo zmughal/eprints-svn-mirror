@@ -61,6 +61,12 @@ use EPrints::Language;
 use EPrints::Archive;
 use EPrints::XML;
 
+use EPrints::DataObj;
+use EPrints::User;
+use EPrints::EPrint;
+use EPrints::Subject;
+use EPrints::Document;
+
 use Unicode::String qw(utf8 latin1);
 use Apache;
 use CGI;
@@ -157,13 +163,9 @@ sub new
 
 	# What language is this session in?
 
-	my $langcookie = $self->{query}->cookie( $self->{archive}->get_conf( "lang_cookie_name") );
-	if( defined $langcookie && !grep( /^$langcookie$/, @{$self->{archive}->get_conf( "languages" )} ) )
-	{
-		$langcookie = undef;
-	}
+	my $lang_cookie = $self->get_lang_cookie();
 
-	$self->change_lang( $langcookie );
+	$self->change_lang( $lang_cookie );
 	#really only (cjg) ONLINE mode should have
 	#a language set automatically.
 	
@@ -210,19 +212,64 @@ sub new
 	return( $self );
 }
 
-#
-# terminate()
-#
-#  Perform any cleaning up necessary
-#
+
+######################################################################
+=pod
+
+=item $langid = $session->get_lang_cookie
+
+Return the value of the user-specified language preference cookie.
+or undef.
+
+=cut
+######################################################################
+
+sub get_lang_cookie
+{
+	my( $self ) = @_;
+
+	my $langcookie = $self->get_cookie( 
+		$self->{archive}->get_conf( "lang_cookie_name") );
+
+	if( !defined $langcookie )
+	{
+		return undef;
+	}
+
+	my @langs = @{$self->{archive}->get_conf( "languages" )};
+	if( grep( /^$langcookie$/, @langs ) )
+	{
+		return $langcookie;
+	}
+	
+	return undef;
+}
 
 
 ######################################################################
 =pod
 
-=item $foo = $thing->terminate
+=item $cookie_value = $session->get_cookie( $cookie )
 
-undocumented
+Return the value of a given http cookie, or undef if it is not
+set.
+
+=cut
+######################################################################
+
+sub get_cookie
+{
+	my( $self, $cookie ) = @_;
+
+	return $self->{query}->cookie( $cookie );
+}
+
+######################################################################
+=pod
+
+=item $session->terminate
+
+Perform any cleaning up necessary
 
 =cut
 ######################################################################
@@ -296,6 +343,10 @@ sub html_phrase
 	# returns [DOM]	
 
         my $r = $self->{lang}->phrase( $phraseid , \%inserts , $self );
+
+	#my $s = $self->make_element( "span", title=>$phraseid );
+	#$s->appendChild( $r );
+	#return $s;
 
 	return $r;
 }
@@ -850,9 +901,9 @@ sub render_option_list
 	}
 
 	my $element = $self->make_element( "select" , name => $params{name} );
-	if( defined $params{multiple} )
+	if( $params{multiple} )
 	{
-		$element->setAttribute( "multiple" , $params{multiple} );
+		$element->setAttribute( "multiple" , "multiple" );
 	}
 
 	my $dtop = defined $params{defaults_at_top} && $params{defaults_at_top};
@@ -1230,6 +1281,19 @@ sub _render_subjects_aux
 				EPrints::Utils::escape_filename( $id ).
 					".html" ); 
 		}
+		elsif( $linkmode == 3 )
+		{
+			if( defined $sizes && defined $sizes->{$id} && $sizes->{$id} > 0 )
+			{
+				$elementx = $self->render_link( 
+					EPrints::Utils::escape_filename( $id ).
+						"/" ); 
+			}
+			else
+			{
+				$elementx = $self->make_element( "span" );
+			}
+		}
 		else
 		{
 			$elementx = $self->make_element( "span" );
@@ -1499,6 +1563,8 @@ sub _render_input_form_field
 		$div = $self->make_element( "div", class => "formfieldhelp" );
 
 		$div->appendChild( $field->render_help( $self, $type ) );
+		$div->appendChild( $self->make_text( "" ) );
+
 		$html->appendChild( $div );
 	}
 

@@ -142,55 +142,98 @@ END
 }
 
 my %SYSTEMCONF;
-foreach( keys %{$EPrints::SystemSettings::conf} )
-{
-	$SYSTEMCONF{$_} = $EPrints::SystemSettings::conf->{$_};
-}
-# cjg Should these be hardwired? Probably they should.
-$SYSTEMCONF{cgi_path} = $SYSTEMCONF{base_path}."/cgi";
-$SYSTEMCONF{cfg_path} = $SYSTEMCONF{base_path}."/cfg";
-$SYSTEMCONF{arc_path} = $SYSTEMCONF{base_path}."/archives";
-$SYSTEMCONF{phr_path} = $SYSTEMCONF{base_path}."/cfg";
-$SYSTEMCONF{sys_path} = $SYSTEMCONF{base_path}."/cfg";
-$SYSTEMCONF{bin_path} = $SYSTEMCONF{base_path}."/bin";
-
-###############################################
-
 my @LANGLIST;
 my @SUPPORTEDLANGLIST;
 my %LANGNAMES;
-my $file = $SYSTEMCONF{cfg_path}."/languages.xml";
-my $lang_doc = EPrints::XML::parse_xml( $file );
-my $top_tag = ($lang_doc->getElementsByTagName( "languages" ))[0];
-if( !defined $top_tag )
-{
-	EPrints::Config::abort( "Missing <languages> tag in $file" );
-}
-my $land_tag;
-foreach $lang_tag ( $top_tag->getElementsByTagName( "lang" ) )
-{
-	my $id = $lang_tag->getAttribute( "id" );
-	my $supported = ($lang_tag->getAttribute( "supported" ) eq "yes" );
-	my $val = EPrints::Utils::tree_to_utf8( $lang_tag );
-	push @LANGLIST,$id;
-	if( $supported )
-	{
-		push @SUPPORTEDLANGLIST,$id;
-	}
-	$LANGNAMES{$id} = $val;
-}
-EPrints::XML::dispose( $lang_doc );
-
-###############################################
-
 my %ARCHIVES;
 my %ARCHIVEMAP;
-opendir( CFG, $SYSTEMCONF{arc_path} );
-while( $file = readdir( CFG ) )
+my $INIT = 0; 
+
+
+sub ensure_init
 {
-	next unless( $file=~m/^(.*)\.xml$/ );
-	my $fpath = $SYSTEMCONF{arc_path}."/".$file;
-	my $id = $1;
+	return if( $INIT );
+	init();
+}
+
+
+sub init
+{
+	if( $INIT )
+	{
+		print STDERR "init() called after config already loaded\n";
+		return;
+	}
+
+	$INIT = 1;
+
+	foreach( keys %{$EPrints::SystemSettings::conf} )
+	{
+		$SYSTEMCONF{$_} = $EPrints::SystemSettings::conf->{$_};
+	}
+	# cjg Should these be hardwired? Probably they should.
+	$SYSTEMCONF{cgi_path} = $SYSTEMCONF{base_path}."/cgi";
+	$SYSTEMCONF{cfg_path} = $SYSTEMCONF{base_path}."/cfg";
+	$SYSTEMCONF{arc_path} = $SYSTEMCONF{base_path}."/archives";
+	$SYSTEMCONF{phr_path} = $SYSTEMCONF{base_path}."/cfg";
+	$SYSTEMCONF{sys_path} = $SYSTEMCONF{base_path}."/cfg";
+	$SYSTEMCONF{bin_path} = $SYSTEMCONF{base_path}."/bin";
+	$SYSTEMCONF{var_path} = $SYSTEMCONF{base_path}."/var";
+	
+
+	foreach my $dir ( $SYSTEMCONF{base_path}."/var" )
+	{
+		next if( -d $dir );
+			mkdir( $dir, 0755 );
+	}
+	#chown( $uid, $gid, $dir );
+
+
+	###############################################
+
+	my $file = $SYSTEMCONF{cfg_path}."/languages.xml";
+	my $lang_doc = EPrints::XML::parse_xml( $file );
+	my $top_tag = ($lang_doc->getElementsByTagName( "languages" ))[0];
+	if( !defined $top_tag )
+	{
+		EPrints::Config::abort( "Missing <languages> tag in $file" );
+	}
+	my $land_tag;
+	foreach $lang_tag ( $top_tag->getElementsByTagName( "lang" ) )
+	{
+		my $id = $lang_tag->getAttribute( "id" );
+		my $supported = ($lang_tag->getAttribute( "supported" ) eq "yes" );
+		my $val = EPrints::Utils::tree_to_utf8( $lang_tag );
+		push @LANGLIST,$id;
+		if( $supported )
+		{
+			push @SUPPORTEDLANGLIST,$id;
+		}
+		$LANGNAMES{$id} = $val;
+	}
+	EPrints::XML::dispose( $lang_doc );
+	
+	###############################################
+	
+	opendir( CFG, $SYSTEMCONF{arc_path} );
+	while( $file = readdir( CFG ) )
+	{
+		next unless( $file=~m/^(.*)\.xml$/ );
+		
+		my $id = $1;
+	
+		$ARCHIVES{$id} = load_archive_config( $id );
+	}
+	closedir( CFG );
+}
+
+	
+sub load_archive_config
+{
+	my( $id ) = @_;
+
+	my $fpath = $SYSTEMCONF{arc_path}."/".$id.".xml";
+
 	my $conf_doc = EPrints::XML::parse_xml( $fpath );
 	if( !defined $conf_doc )
 	{
@@ -217,15 +260,14 @@ while( $file = readdir( CFG ) )
 			"host", "urlpath", "configmodule", "port", 
 			"archiveroot", "dbname", "dbhost", "dbport",
 			"dbsock", "dbuser", "dbpass", "defaultlanguage",
-			"adminemail", "securehost", "securepath" )
+			"adminemail", "securehost", "securepath", "index" )
 	{
 		my $tag = ($conf_tag->getElementsByTagName( $tagname ))[0];
 		if( !defined $tag )
 		{
-			if(  $tagname eq "securehost" || $tagname eq "securepath" )
-			{
-				next;
-			}
+			next if(  $tagname eq "securehost" );
+			next if(  $tagname eq "securepath" );
+			next if(  $tagname eq "index" );
 
 			EPrints::Config::abort( "In file: $fpath the $tagname tag is missing." );
 		}
@@ -271,10 +313,15 @@ while( $file = readdir( CFG ) )
 		my $langid = $tag->getAttribute( "language" );
 		$ainfo->{archivename}->{$langid} = $val;
 	}
-	$ARCHIVES{$id} = $ainfo;
+
+	# clean up boolean "index" option
+	$ainfo->{index} = !( defined $ainfo->{index} && "\L$ainfo->{index}" eq "no" );
+
 	EPrints::XML::dispose( $conf_doc );
+
+	return $ainfo;
 }
-closedir( CFG );
+	
 
 
 
@@ -293,6 +340,8 @@ sub get_archive_config
 {
 	my( $id ) = @_;
 
+	ensure_init();
+
 	return $ARCHIVES{$id};
 }
 
@@ -309,6 +358,8 @@ Return a list of all known languages ids (from languages.xml).
 
 sub get_languages
 {
+	ensure_init();
+
 	return @LANGLIST;
 }
 
@@ -329,6 +380,8 @@ version.
 
 sub get_supported_languages
 {
+	ensure_init();
+
 	return @SUPPORTEDLANGLIST;
 }
 
@@ -347,6 +400,8 @@ virutal host specified by $hostpath. eg. "www.fishprints.com/perl/search"
 sub get_id_from_host_and_path
 {
 	my( $hostpath ) = @_;
+
+	ensure_init();
 
 	foreach( keys %ARCHIVEMAP )
 	{
@@ -373,6 +428,8 @@ the eprints software.
 
 sub get_archive_ids
 {
+	ensure_init();
+
 	return keys %ARCHIVES;
 }
 
@@ -394,6 +451,8 @@ Return a reference to a hash containing the full archive configuration.
 sub load_archive_config_module
 {
 	my( $id ) = @_;
+
+	ensure_init();
 
 	$info = $ARCHIVES{$id};
 	return unless( defined $info );
@@ -454,6 +513,8 @@ sub lang_title
 {
 	my( $id ) = @_;
 
+	ensure_init();
+
 	return $LANGNAMES{$id};
 }
 
@@ -473,6 +534,8 @@ paths.
 sub get
 {
 	my( $confitem ) = @_;
+
+	ensure_init();
 
 	return $SYSTEMCONF{$confitem};
 }

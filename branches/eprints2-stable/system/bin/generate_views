@@ -199,7 +199,8 @@ sub make_view_pages
 	my @values = ();
 	if( scalar @fields == 1 )
 	{
-		@values = $fields[0]->get_values( $session, $ds );
+		my $vref = $fields[0]->get_values( $session, $ds );
+		@values = @{$vref};
 	}
 	else
 	{
@@ -207,7 +208,8 @@ sub make_view_pages
 		my %v=();
 		foreach $field ( @fields )
 		{
-			foreach( $field->get_values( $session, $ds ) ) 
+			my $vref = $field->get_values( $session, $ds );
+			foreach( @{$vref} )
 			{ 
 				if( !defined $_ ) { $_=""; }
 				$v{$_}=1; 
@@ -238,7 +240,6 @@ sub make_view_pages
 		foreach $value ( @values )
 		{
 			my $searchexp = new EPrints::SearchExpression(
-					use_oneshot_cache=>1,
 					satisfy_all=>0,
 					session=>$session,
 					dataset=>$ds );
@@ -347,7 +348,6 @@ sub make_view_pages
 		{
 			my $searchexp = new EPrints::SearchExpression(
 					custom_order=>$order,
-					use_oneshot_cache=>1,
 					satisfy_all=>0,
 					session=>$session,
 					dataset=>$ds );

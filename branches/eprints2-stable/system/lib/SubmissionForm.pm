@@ -734,6 +734,9 @@ sub _from_stage_files
 {
 	my( $self ) = @_;
 
+	# update an automatics which may relate to documents
+	$self->{eprint}->commit();
+
 	if( $self->{action} eq "prev" )
 	{
 		$self->_set_stage_prev;
@@ -1043,107 +1046,6 @@ sub _from_stage_fileview
 }
 
 
-######################################################################
-#
-#  Come from upload stage
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_from_stage_upload
-#
-# undocumented
-#
-######################################################################
-
-sub _from_stage_upload
-{
-	my( $self ) = @_;
-
-	# Check the document is OK, and that it is associated with the current
-	# eprint
-	$self->{document} = EPrints::Document->new(
-		$self->{session},
-		$self->{session}->param( "docid" ) );
-
-	if( !defined $self->{document} ||
-	    $self->{document}->get_value( "eprintid" ) ne $self->{eprint}->get_value( "eprintid" ) )
-	{
-		$self->_corrupt_err;
-		return( 0 );
-	}
-	
-	# We need to address a common "feature" of browsers here. If a form has
-	# only one text field in it, and the user types things into it and 
-	# presses "return" it submits the form without setting the submit
-	# button, so we can't tell whether the "Back" or "Upload" button is
-	# appropriate. We have to assume that if the user's pressed return they
-	# want to go ahead with the upload, so we default to the upload button:
-
-	$self->{action} = "upload" unless( defined $self->{action} );
-
-	if( $self->{action} eq "cancel" )
-	{
-		$self->{new_stage} = "fileview";
-		return( 1 );
-	}
-
-	if( $self->{action} eq "upload" )
-	{
-		my $arc_format = $self->{session}->param( "arc_format" );
-		my $num_files = $self->{session}->param( "num_files" );
-		# Establish a sensible max and minimum number of files.
-		# (The same ones as we used to render the upload form)
-		$num_files = 1 if( $num_files < 1 );
-		$num_files = 1 if( $num_files > 99 ); 
-		my( $success, $file );
-
-		if( $arc_format eq "plain" )
-		{
-			my $i;
-			for( $i=0; $i<$num_files; $i++ )
-			{
-				$file = $self->{session}->param( "file_$i" );
-				
-				$success = $self->{document}->upload( $file, $file );
-			}
-		}
-		elsif( $arc_format eq "graburl" )
-		{
-			my $url = $self->{session}->param( "url" );
-			$success = $self->{document}->upload_url( $url );
-		}
-		else
-		{
-			$file = $self->{session}->param( "file_0" );
-			$success = $self->{document}->upload_archive( $file, $file, $arc_format );
-		}
-		
-		if( !$success )
-		{
-			$self->{problems} = [
-				$self->{session}->html_phrase( "lib/submissionform:upload_prob" ) ];
-		}
-		elsif( !defined $self->{document}->get_main() )
-		{
-			my %files = $self->{document}->files();
-			if( scalar keys %files == 1 )
-			{
-				# There's a single uploaded file, make it the main one.
-				my @filenames = keys %files;
-				$self->{document}->set_main( $filenames[0] );
-			}
-		}
-
-		$self->{document}->commit();
-		$self->{new_stage} = "fileview";
-		return( 1 );
-	}
-	
-	$self->_corrupt_err;
-	return( 0 );
-}	
 
 ######################################################################
 #
@@ -1960,96 +1862,6 @@ sub _do_stage_fileview
 	return( $page );
 }
 	
-
-
-######################################################################
-#
-#  Actual file upload form
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_do_stage_upload
-#
-# undocumented
-#
-######################################################################
-
-sub _do_stage_upload
-{
-	my( $self ) = @_;
-
-	my( $page, $form, $form2 );
-
-	$page = $self->{session}->make_doc_fragment();
-	$form = $self->{session}->render_form( "post", $self->{formtarget}."#t" );
-	$form2 = $self->{session}->render_form( "post", $self->{formtarget}."#t" );
-	$page->appendChild( $form );
-	$page->appendChild( $form2 );
-
-	if( $self->{arc_format} eq "graburl" )
-	{
-		$form->appendChild( $self->{session}->html_phrase( "lib/submissionform:enter_url" ) );
-		my $field = EPrints::MetaField->new( 
-			archive=> $self->{session}->get_archive(),
-			name => "url",
-			type => "text" );
-		$form->appendChild( $field->render_input_field( $self->{session} ) );
-	}
-	else
-	{
-		if( $self->{arc_format} eq "plain" )
-		{
-			if( $self->{num_files} > 1 )
-			{
-				$form->appendChild( $self->{session}->html_phrase("lib/submissionform:enter_files") );
-			}
-			else
-			{
-				$form->appendChild( $self->{session}->html_phrase("lib/submissionform:enter_file") );
-			}
-		}
-		else
-		{
-			$self->{num_files} = 1;
-			$form->appendChild( $self->{session}->html_phrase("lib/submissionform:enter_compfile") );
-		}
-		my $i;
-		# Establish a sensible max and minimum number of files.
-		$self->{num_files} = 1 if( $self->{num_files} < 1 );
-		$self->{num_files} = 1 if( $self->{num_files} > 99 ); 
-		for( $i=0; $i < $self->{num_files}; $i++ )
-		{
-			$form->appendChild( $self->{session}->render_upload_field( "file_$i" ) );
-		}
-	}
-	
-	my %hidden_fields = (
-		stage => "upload",
-		eprintid => $self->{eprint}->get_value( "eprintid" ),
-		dataset => $self->{eprint}->get_dataset()->id(),
-		docid => $self->{document}->get_value( "docid" ),
-		num_files => $self->{num_files},
-		arc_format => $self->{arc_format} 
-	);
-	foreach( keys %hidden_fields )
-	{
-		$form->appendChild( $self->{session}->render_hidden_field( $_, $hidden_fields{$_} ) );
-		$form2->appendChild( $self->{session}->render_hidden_field( $_, $hidden_fields{$_} ) );
-	}	
-
-	$form->appendChild( $self->{session}->render_action_buttons(
-		upload => $self->{session}->phrase( 
-				"lib/submissionform:action_upload" ) ) );
-
-	$form2->appendChild( $self->{session}->render_action_buttons(
-		cancel => $self->{session}->phrase(
-				"lib/submissionform:action_cancel" ) ) );
-
-
-	return( $page );
-}
 
 
 ######################################################################

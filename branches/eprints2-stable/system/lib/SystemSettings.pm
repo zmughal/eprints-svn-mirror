@@ -29,7 +29,7 @@ $EPrints::SystemSettings::conf =
 		convert	=> "/usr/X11R6/bin/convert"
 	},
 	invocation => {
-		zip 	=> '$(zip) 1>/dev/null 2>&1 -qq -o -d \'$(DIR)\' \'$(ARC)\'',
+		zip 	=> '$(unzip) 1>/dev/null 2>&1 -qq -o -d \'$(DIR)\' \'$(ARC)\'',
 	        targz  	=> '$(gunzip) -c < \'$(ARC)\' 2>/dev/null | $(tar) xf - -C \'$(DIR)\' >/dev/null 2>&1',
 		wget 	=> '$(wget)  -r -L -q -m -nH -np --execute="robots=off" --cut-dirs=$(CUTDIRS) \'$(URL)\'',
 		sendmail => '$(sendmail) -oi -t -odb --',

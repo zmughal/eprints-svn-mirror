@@ -33,26 +33,11 @@ input, select, textarea {
 .box
 {
 	font-family: sans-serif; 
-	border: outset; 
-	border-width: 2px; 
-	border-color: #bbf #99e #99e #bbf; 
 	padding: 8pt; 
-	background: #eef; 
 	margin-bottom: 1pt
 }
 
-.box h1, .box h2, .box h3
-{
-	margin: 0px;
-	border: outset; 
-	border-width: 2px; 
-	background: #ddf; 
-	color: blue;
-	font-weight: bold;
-	border-color: #bbf #99e #99e #bbf; 
-	padding: 4pt; 
-}
-	
+
 
 .footer TABLE
 {
@@ -217,4 +202,13 @@ body.vlit {
 .subject_browser_selected
 {
 	font-style: italic;
+}
+
+.row_a
+{
+	background: #efefff; 
+}
+.row_b
+{
+	background: #f8f8ff; 
 }

@@ -40,10 +40,10 @@ use EPrints::DataObj;
 
 use EPrints::Database;
 use EPrints::Utils;
-use EPrints::MetaField;
-use EPrints::SearchExpression;
-use EPrints::Session;
-use EPrints::User;
+#cjg use EPrints::MetaField;
+#cjg use EPrints::SearchExpression;
+#cjg use EPrints::Session;
+#cjg use EPrints::User;
 
 ### SUBS MUST BE FLAGGED AS BULK cjg
 
@@ -355,7 +355,6 @@ sub send_out_subscription
 			$datestamp_field,
 			$last_month."-" );
 	}
-	$searchexp->set_property( "use_oneshot_cache", 1 );
 
 	my $url = $self->{session}->get_archive->get_conf( "perl_url" ).
 		"/users/subscribe";
@@ -426,7 +425,6 @@ sub process_set
 
 	my $searchexp = EPrints::SearchExpression->new(
 		session => $session,
-		use_oneshot_cache => 1,
 		dataset => $subs_ds );
 
 	$searchexp->add_field(
@@ -447,7 +445,7 @@ sub process_set
 	$searchexp->map( $fn, {} );
 	$searchexp->dispose;
 
-	my $statusfile = $session->get_archive->get_conf( "config_path" ).
+	my $statusfile = $session->get_archive->get_conf( "variables_path" ).
 		"/subscription-".$frequency.".timestamp";
 
 	unless( open( TIMESTAMP, ">$statusfile" ) )
@@ -489,7 +487,7 @@ sub get_last_timestamp
 		return;
 	}
 
-	my $statusfile = $session->get_archive->get_conf( "config_path" ).
+	my $statusfile = $session->get_archive->get_conf( "variables_path" ).
 		"/subscription-".$frequency.".timestamp";
 
 	unless( open( TIMESTAMP, $statusfile ) )

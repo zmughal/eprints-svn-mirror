@@ -21,8 +21,10 @@
 
     <type name="article">
       <page name="core" />
-      <field name="creators" required="yes" />
       <field name="title" required="yes" />
+      <field name="creators" required="yes" />
+
+      <page name="pubinfo" />
       <field name="publication" required="yes" />
       <field name="volume" />
       <field name="number" />
@@ -52,8 +54,10 @@
 
     <type name="book_section">
       <page name="core" />
-      <field name="creators" required="yes" />
       <field name="title" required="yes" />
+      <field name="creators" required="yes" />
+
+      <page name="pubinfo" />
       <field name="pagerange" />
       <field name="editors" />
       <field name="book_title" required="yes" />
@@ -89,8 +93,11 @@
 
     <type name="monograph">
       <page name="core" />
-      <field name="creators" required="yes" />
       <field name="title" required="yes" />
+      <field name="monograph_type" required="yes" />
+      <field name="creators" required="yes" />
+
+      <page name="pubinfo" />
       <field name="institution" />
       <field name="department" />
       <field name="place_of_pub" />
@@ -101,7 +108,6 @@
       <field name="date_sub" />
       <field name="official_url" />
 <!--  <field name="editors" /> -->
-      <field name="monograph_type" required="yes" />
 
       <page name="status" />
       <field name="ispublished" required="yes" />
@@ -121,12 +127,14 @@
 
     <type name="conference_item">
       <page name="core" />
-      <field name="creators" required="yes" />
       <field name="title" required="yes" />
+      <field name="pres_type" required="yes" />
+      <field name="creators" required="yes" />
+
+      <page name="pubinfo" />
       <field name="date_issue" />
       <field name="date_sub" />
       <field name="pages" />
-      <field name="pres_type" required="yes" />
       <field name="official_url" />
 
       <page name="event" />
@@ -154,9 +162,11 @@
 
     <type name="book">
       <page name="core" />
+      <field name="title" required="yes" />
       <field name="creators" />
       <field name="editors" />
-      <field name="title" required="yes" />
+
+      <page name="pubinfo" />
       <field name="date_issue" />
       <field name="date_sub" />
       <field name="place_of_pub" />
@@ -187,13 +197,15 @@
 
     <type name="thesis">
       <page name="core" />
-      <field name="creators" required="yes" />
       <field name="title" required="yes" />
+      <field name="thesis_type" required="yes" />
+      <field name="creators" required="yes" />
+
+      <page name="pubinfo" />
       <field name="date_issue" required="yes" />
       <field name="official_url" />
       <field name="institution" required="yes" />
       <field name="department" required="yes" />
-      <field name="thesis_type" required="yes" />
       <field name="pages" />
 
       <page name="status" />
@@ -214,8 +226,10 @@
 
     <type name="patent">
       <page name="core" />
-      <field name="creators" required="yes" />
       <field name="title" required="yes" />
+      <field name="creators" required="yes" />
+
+      <page name="pubinfo" />
       <field name="date_issue" required="yes" />
       <field name="official_url" />
       <field name="patent_applicant" required="yes" />
@@ -237,8 +251,10 @@
 
     <type name="other">
       <page name="core" />
-      <field name="creators" required="yes" />
       <field name="title" required="yes" />
+      <field name="creators" required="yes" />
+
+      <page name="pubinfo" />
       <field name="date_issue" />
       <field name="date_sub" />
       <field name="official_url" />

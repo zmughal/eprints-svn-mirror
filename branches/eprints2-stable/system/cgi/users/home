@@ -324,12 +324,14 @@ sub render_workspace
 
 	$table = $session->make_element( "table",
 			cellpadding=>3,
+			cellspacing=>0,
 			border=>0 );
 	my $e;
 	my $cnt = 0;
+	my $row = 0;
 	foreach $e (@eprints)
 	{
-		$tr = $session->make_element( "tr" );
+		$tr = $session->make_element( "tr", class=>"row_".($row?"b":"a") );
 		$table->appendChild( $tr );	
 		$td = $session->make_element( "td" );
 		$tr->appendChild( $td );
@@ -362,6 +364,7 @@ sub render_workspace
 		$a = $session->render_link( "submit?eprintid=".$e->get_id."&_action_delete=1" );
 		$a->appendChild( $session->html_phrase("cgi/users/home:action_delete") );
 		$td->appendChild( $a );
+		$row=!$row;
 	}
 
 	$html->appendChild( $session->html_phrase( "cgi/users/home:depositing" ) );
@@ -402,12 +405,13 @@ sub render_pending
 
 		$table = $session->make_element( "table",
 				cellpadding=>3,
+				cellspacing=>0,
 				border=>0 );
 		$html->appendChild( $table );
-		my $e;
-		foreach $e (@eprints)
+		my $row = 0;
+		foreach my $e (@eprints)
 		{
-			$tr = $session->make_element( "tr" );
+			$tr = $session->make_element( "tr", class=>"row_".($row?"b":"a") );
 			$table->appendChild( $tr );	
 			$td = $session->make_element( "td" );
 			$tr->appendChild( $td );
@@ -417,6 +421,7 @@ sub render_pending
 			$td->appendChild( $session->html_phrase( 
 				"cgi/users/home:deposited_at",
 				time=>$e->render_value( "datestamp" ) ) );
+			$row=!$row;
 		}
 	}
 	return $html;
@@ -454,14 +459,18 @@ sub render_recent
 	
 		$table = $session->make_element( "table",
 				cellpadding=>3,
+				cellspacing=>0,
 				border=>0 );
 		$html->appendChild( $table );
 		my $e;
 		my $cnt = 0;
-		foreach $e (@eprints)
+		my $row = 0;
+		foreach $e (reverse @eprints) 
+#cjg not exactly the right way!
+#cjg should really do it by deposit date
 		{
 			last if( $cnt++ == $max );
-			$tr = $session->make_element( "tr" );
+			$tr = $session->make_element( "tr", class=>"row_".($row?"b":"a") );
 			$table->appendChild( $tr );	
 			$td = $session->make_element( "td" );
 			$tr->appendChild( $td );
@@ -473,6 +482,7 @@ sub render_recent
 			$td->appendChild( $session->html_phrase( 
 				"cgi/users/home:accepted_at",
 				time=>$e->render_value( "datestamp" ) ) );
+			$row=!$row;
 		}
 	}
 

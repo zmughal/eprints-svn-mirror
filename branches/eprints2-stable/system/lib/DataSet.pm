@@ -477,6 +477,18 @@ sub get_field
 {
 	my( $self, $fieldname ) = @_;
 
+
+	# magic fields which can be searched but do
+	# not really exist.
+	if( $fieldname =~ m/^_/ )
+	{
+		my $field = EPrints::MetaField->new( 
+			dataset=>$self , 
+			name=>$fieldname,
+			type=>"longtext" );
+		return $field;
+	}
+
 	my $value = $self->{field_index}->{$fieldname};
 	if (!defined $value) {
 		$self->{archive}->log( 
@@ -617,7 +629,7 @@ removing a record).
 
 =cut
 ######################################################################
-
+# cjg deprecated?
 sub get_sql_rindex_table_name
 {
 	my( $self ) = @_;
@@ -927,10 +939,9 @@ SearchExpression for a full explanation.
 sub map
 {
 	my( $self, $session, $fn, $info ) = @_;
-	
+
 	my $searchexp = EPrints::SearchExpression->new(
 		allow_blank => 1,
-		use_oneshot_cache => 1,
 		dataset => $self,
 		session => $session );
 	$searchexp->perform_search();
@@ -1030,6 +1041,9 @@ Return the number of indexes required for the main SQL table of this
 dataset. Used to check it's not over 32 (the current maximum allowed
 by MySQL)
 
+Assumes things either have 1 or 0 indexes which might not always
+be true.
+
 =cut
 ######################################################################
 
@@ -1048,6 +1062,23 @@ sub count_indexes
 	return $n;
 }
 		
+######################################################################
+=pod
+
+=item @ids = $dataset->get_item_ids( $session )
+
+Return a list of the id's of all items in this set.
+
+=cut
+######################################################################
+
+sub get_item_ids
+{
+	my( $self, $session ) = @_;
+
+	return $session->get_db->get_values( $self->get_key_field, $self );
+}
+
 
 ######################################################################
 =pod

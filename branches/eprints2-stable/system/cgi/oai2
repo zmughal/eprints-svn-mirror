@@ -491,7 +491,7 @@ sub _list
 		( $offset, $cache_id, $metadata_format ) = ( $1, $2, $4 );
 		$searchexp = EPrints::SearchExpression->new( 
 			session => $session,
-			use_private_cache => 1,
+			keep_cache => 1,
 			cache_id => $cache_id );
 
 		unless( defined $searchexp )
@@ -555,7 +555,7 @@ sub _list
 
 		$searchexp = new EPrints::SearchExpression(
 			session => $session,
-			use_private_cache => 1,
+			keep_cache => 1,
 			allow_blank => 1,
 			dataset => $ds );
 
@@ -629,7 +629,7 @@ END
 		my $delsearchexp = EPrints::SearchExpression->unserialise(
 			$session,
 			$serial,
-			use_private_cache => 1,
+			keep_cache => 1,
 			allow_blank => 1 );
 		$delsearchexp->set_dataset(
 			$session->get_archive()->get_dataset( "deletion" ) );
@@ -715,7 +715,7 @@ END
 		my $delsearchexp = EPrints::SearchExpression->unserialise(
 			$session,
 			$serial,
-			use_private_cache => 1,
+			keep_cache => 1,
 			allow_blank => 1 );
 		$delsearchexp->set_dataset(
 			$session->get_archive()->get_dataset( "deletion" ) );
@@ -885,12 +885,12 @@ sub ListSets
 			}
 			else
 			{
-				my @v = $field->get_values( $session, $ds );
+				my $v1 = $field->get_values( $session, $ds );
 				my $delfield = $field->clone();
 #cjg why clone with new style datasets?
 				#$delfield->set_dataset( $ds_del );
-				push @v, $delfield->get_values( $session, $ds_del );
-				foreach( @v )
+				my $v2 = $delfield->get_values( $session, $ds_del );
+				foreach( @{$v1}, @{$v2} )
 				{
 					my $key = EPrints::OpenArchives::encode_setspec( $_ );
 					if( !defined $key ) { $key=""; }

@@ -19,15 +19,23 @@ use EPrints::SearchExpression;
 use strict;
 my $session = new EPrints::Session;
 Apache::exit( 0 ) unless( defined $session );
+#$session->get_db->set_debug( 1 );
+
+my %opts = (
+	citation => 
+		$session->get_archive()->get_conf( "simple_search_citation" ),
+	defaults => 
+		$session->get_archive()->get_conf( "simple_search_defaults" ),
+	fieldnames => 
+		$session->get_archive()->get_conf( "simple_search_fields" ) );
 
 my $searchexp = new EPrints::SearchExpression(
+	keep_cache => 1,
 	session => $session,
-	use_cache => 1,
-	citation => $session->get_archive()->get_conf( "simple_search_citation" ),
-	defaults => $session->get_archive()->get_conf( "simple_search_defaults" ),
 	dataset => $session->get_archive()->get_dataset( "archive" ),
-	fieldnames => $session->get_archive()->get_conf( "simple_search_fields" ) );
+	%opts );
 
+#cjg make these part of the new search config?
 my $preamble = $session->html_phrase( "cgi/search:preamble" );
 
 my $title = $session->html_phrase( "cgi/search:simple_search" );

@@ -1364,5 +1364,72 @@ before next release. (metadata types & fields)
  - If a problem occurs in submission form then the problem gets name="t"
     which should override whichever field currently wants focus
  
+2003-10-01 cjg
+
+ NOTE: VERY LARGE CHANGES TO METAFIELD & SEARCHES. 
+
+ - Split MetaField.pm into subclasses to describe each field type, 
+    also these new modules contain all type specific code from 
+    searchfield.
+ - code for full text search has been prepared for, a function
+    in document returns a junk string for now until that other
+    code is in place.
+ - new module; "SearchCondition" which represents a simple 
+    atomic part of a search (eg YEAR > 2000). One field, one
+    operator & one parameter. SearchCondition can also 
+    represent an AND or OR and have a number of sub-conditions
+    SearchExpression now returns a search condition and 
+    $sc->item_matches is now used to test items.
+ - totally redesigned the code for rendering input fields, 
+    everything is now based on a grid so that complex things
+    like names lists should render in a more compact & clear way.
+ - [c] added code to ArchiveRenderConfig to add icons for documents
+    to the abstract page.
+ - [c] added a fileinfo field and a custom renderer function to
+    show what files the eprint has.
+ - Moved much of the indexing code to Index.pm
+ - created indexer which does background reindexing of the 
+    archive.
+ - [c] added "fileinfo" to the "neat" citiation type.
+ - [c] added "pubinfo" to most metafield types.
+ - [c],[db] the inital GRANT in the SQL now allows the eprints
+    SQL user to do "ALTER", so it can rename tables (needed for
+    the indexer daemon)
+ - [api] use_oneshot_cache, use_cache & use_private_cache are
+    now deprecated. Caches are created if needed to order or 
+    to retrieve values. They are not erased if keep_cache=>1
+    but they are no longer shared.
+ - bin/reindex is now deprecated
+ - added Extras.pm which contains alternate methods for 
+    rendering input and output of fields.
+ - user home page now stripes lists of eprints to make them
+    more readable.
+ - we now have a var directory for each archive to store things
+    like timestamps.
+ - stopped "use Config" loading the config files there and then.
+    The first time any function which needs them is called then
+    they are loaded (also there is an ensure_init() function). 
+    This is to stop it needing libraries which need Config and
+    getting stuck.
+ - added a magick field generator. This will allow dataset to
+    create fields prefixed with "_" even if they do not exist
+    in the full text. I'm not sure about this. It's a horrid
+    hack.
+ - added get_item_ids to dataset to return the id's of all
+    items in that dataset.
+ - removed indexing code from Database and put it in Index instead.
+    items are no longer automatically reindexed each time they are
+    udated.
+ - simplified the caches so they no longer are used except by
+    things which know the cache id. cache_id() count_cache() and
+    is_cached() are removed.
+ - added concept of a "simple" mode for search field. Used when
+    searching accross incompatible fields like name, text and int.
+ - added a cookie for prefered language.
+ - removed some unused code from SearchExpression
+ - [c] fixed a bug in systemsettings.pm that zip invoked "zip" not
+     "unzip".
+
+   
 
 ======================================================================

@@ -49,7 +49,7 @@ undocumented
 ######################################################################
 
 package EPrints::Utils;
-use strict;
+
 use Filesys::DiskSpace;
 use Unicode::String qw(utf8 latin1 utf16);
 use File::Path;
@@ -58,6 +58,8 @@ use Carp;
 
 use EPrints::SystemSettings;
 use EPrints::XML;
+
+use strict;
 
 my $DF_AVAILABLE;
 
@@ -971,7 +973,8 @@ sub _render_citation_aux
 				$match,
 				$merge );
 
-			$addkids = $sf->item_matches( $obj );
+			$addkids = $sf->get_conditions->item_matches( $obj );
+
 			if( $name eq "ifnotmatch" )
 			{
 				$addkids = !$addkids;
@@ -1074,12 +1077,15 @@ sub field_from_config_string
 	my $modifiers = 0;
 
 	my %q = ();
-	if( $fieldname =~ s/^([^;\.]*)(\.id)?;(.*)$/$1/ )
+	if( $fieldname =~ s/^([^;\.]*)(\.id)?(;(.*))?$/$1/ )
 	{
-		foreach( split( /;/, $3 ) )
+		if( defined $4 )
 		{
-			$q{$_}=1;
-			$modifiers = 1;
+			foreach( split( /;/, $4 ) )
+			{
+				$q{$_}=1;
+				$modifiers = 1;
+			}
 		}
 		if( defined $2 ) 
 		{ 

@@ -428,7 +428,7 @@ END
 		print "Setting MySQL privs\n";
 		#cjg @localhost ??? what about remote mysql's?
 
-		my $SQL = 'GRANT SELECT, INSERT, UPDATE, DELETE, DROP, CREATE ON '.$config{dbname}.'.* TO '.$config{dbuser}.'@localhost IDENTIFIED BY "'.$config{dbpass}.'"';
+		my $SQL = 'GRANT SELECT, INSERT, UPDATE, DELETE, DROP, CREATE, ALTER ON '.$config{dbname}.'.* TO '.$config{dbuser}.'@localhost IDENTIFIED BY "'.$config{dbpass}.'"';
 		print "DOING: $SQL\n";
 		$dbh->do( $SQL );
 
@@ -502,7 +502,7 @@ if( $mkfiles eq "yes" )
 		$archivedir."/cfg",
 		$archiveid );
 
-	foreach( "html", "documents", "documents/disk0" )
+	foreach( "var", "html", "documents", "documents/disk0" )
 	{
 		my $dir = $archivedir."/".$_;
 		mkdir( $dir, 0755 );

@@ -17,7 +17,6 @@
 
 package EPrints::Config::ep2stable;
 
-my $file = "cfg/ArchiveOAIConfig.pm";
 foreach my $file ( 
 	"cfg/ArchiveOAIConfig.pm",
 	"cfg/ArchiveRenderConfig.pm",
@@ -386,7 +385,7 @@ $c->{results_page_size} = 100;
 # Fields for a simple user search
 $c->{simple_search_fields} =
 [
-	"title/abstract/keywords",
+	"_fulltext/title/abstract/keywords/creators/date_effective",
 	"creators/editors",
 	"date_effective"
 ];
