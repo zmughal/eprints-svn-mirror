@@ -429,6 +429,37 @@ if test $FULL_INSTALL = 1 ; then
 
 
 	dnl **************************************************************
+	dnl Determine MySQL database host to use
+	dnl **************************************************************
+
+	AC_ARG_WITH(db_host, [  --with-db-host=HOSTNAME
+                       	  MySQL host to use [default=auto]] )
+
+	if test "x$with_db_host" = "x" ; then
+		DB_HOST="undef"
+	else
+		DB_HOST=$with_db_host
+	fi
+
+	AC_SUBST(DB_HOST)
+
+
+	dnl **************************************************************
+	dnl Determine MySQL database port to use
+	dnl **************************************************************
+
+	AC_ARG_WITH(db_port, [  --with-db-port=PORT     MySQL database port to use [default=auto]])
+
+	if test "x$with_db_port" = "x" ; then
+		DB_PORT="undef"
+	else
+		DB_PORT=$with_db_port
+	fi
+
+	AC_SUBST(DB_PORT)
+
+
+	dnl **************************************************************
 	dnl Determine database user account to use
 	dnl **************************************************************
 
