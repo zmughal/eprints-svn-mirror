@@ -266,7 +266,7 @@ Contact site administrator at: <a href=\"mailto:$EPrintSite::SiteInfo::admin\">$
 #  E-mail signature, appended to every email sent by the software
 $EPrintSite::SiteInfo::signature =
 "--
- $EPrintSite::SiteInfo::sitename EPrint Archive
+ $EPrintSite::SiteInfo::sitename
  $EPrintSite::SiteInfo::frontpage
  $EPrintSite::SiteInfo::admin\n";
 
@@ -333,7 +333,7 @@ $EPrintSite::SiteInfo::diskspace_error_threshold = 20480;
 
 # If ever the amount of free space drops below this threshold, the
 # archive administrator is sent a warning email. In kilobytes.
-$EPrintSite::SiteInfo::diskspace_warn_threshold = 102400;
+$EPrintSite::SiteInfo::diskspace_warn_threshold = 512000;
 
 # A list of compressed/archive formats that are accepted
 @EPrintSite::SiteInfo::supported_archive_formats =
