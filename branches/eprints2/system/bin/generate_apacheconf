@@ -196,13 +196,22 @@ print CONF <<END;
 # and re-run: bin/generate_apacheconf
 #
 
-# disabled since 2.3.9
-# NameVirtualHost $virtualhost
-
 # Load the perl modules & archive configurations
 PerlRequire $startupfile
 
 END
+my %portlist = ();
+foreach my $archiveid ( EPrints::Config::get_archive_ids() )
+{
+	my $archive = EPrints::Archive->new_archive_by_id( $archiveid, 1 );
+	exit( 1 ) unless( defined $archive );
+	$portlist{$archive->get_conf( 'port' )} = 1;
+}
+foreach my $port ( keys %portlist )
+{
+	print CONF "NameVirtualHost $virtualhost:$port\n";
+}
+print CONF "\n";
 
 my $av =  $EPrints::SystemSettings::conf->{apache};
 if( defined $av && $av eq "2" )
@@ -260,8 +269,6 @@ close CONF;
 my $secureconfigs = {};
 foreach my $archiveid ( EPrints::Config::get_archive_ids() )
 {
-
-
 my $archive = EPrints::Archive->new_archive_by_id( $archiveid, 1 );
 exit( 1 ) unless( defined $archive );
 
