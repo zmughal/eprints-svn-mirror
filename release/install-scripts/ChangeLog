@@ -168,4 +168,6 @@ Site default configuration changes
 - added mysql host and port options
 - changed the logo, added width & height to the images
 
+2001-01-23 Version 1.1.1 released
 
+- Added --with-db-socket for people to use non-standard mysql sockets.

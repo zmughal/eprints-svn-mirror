@@ -5,7 +5,7 @@ TITLE: eprints.org: Software Download
 
 <h1>Software Download</h1>
 
-<P>Latest eprints.org software version: <code>1.0 (29/11/2000)</code></P>
+<P>Latest eprints.org software version: <code>1.1.1 (23/01/2001)</code></P>
 
 <P>Copyright (C) 2000, University of Southampton</P>
 
@@ -24,6 +24,21 @@ risk.</P>
 
 <P>All other queries should be directed to: <A HREF="mailto:info@eprints.org">info@eprints.org</A></P>
 
+<H2>Major Changes since 1.0</H2>
+<H3>1.1 (23/01/2001)</H3>
+<ITEMS>
+<ITEM>OAI 1.0 compliance</ITEM>
+<ITEM>Support for MySQL not running on localhost.</ITEM>
+<ITEM>Support for multiple instances of eprints running on one mod_perl/apache server (1.0 claimed to do this but had a problem with conflicting namespace)</ITEM>
+<ITEM>New datafield "username" representing users to associate the item with.</ITEM>
+<ITEM>Removed GNU-only command options from installation scripts.</ITEM>
+</ITEMS>
+
+<H3>1.1.1 (23/01/2001)</H3>
+<ITEMS>
+<ITEM>Added support for non standard MySQL sockets (overlooked in 1.1 release)</ITEM>
+</ITEMS>
+
 <H2>Downloads</H2>
 
 <TABLE BORDER=0 CELLPADDING=8>
@@ -40,8 +55,14 @@ risk.</P>
     <TD>[<A HREF="changelog.txt">ASCII</A>]</TD>
   </TR>
   <TR>
-    <TD>Eprints Archive Software v1.0</TD>
-    <TD>[<A HREF="eprints-1.0.tar.gz">TAR.GZ</A>]</TD>
+    <TD>Eprints Archive Software v 1.1.1</TD>
+    <TD>[<A HREF="eprints-1.1.1.tar.gz">TAR.GZ</A>]</TD>
   </TR>
 </TABLE>
+
+<H2>Credits</H2>
+<P>
+Eprints 1.0 software design and implemention: Robert Tansley<BR>
+Further enhancements and fixes:  Christopher Gutteridge
+</P>
 

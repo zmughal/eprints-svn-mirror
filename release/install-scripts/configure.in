@@ -447,6 +447,21 @@ if test $FULL_INSTALL = 1 ; then
 	AC_SUBST(DATABASE)
 
 
+	dnl **************************************************************
+	dnl Determine nonstandard MySQL socket to use
+	dnl **************************************************************
+
+	AC_ARG_WITH(db_socket, [  --with-db-socket=SOCKET
+                       	  MySQL socket to use [default=auto]] )
+
+	if test "x$with_db_socket" = "x" ; then
+		DB_SOCKET="undef"
+	else
+		DB_SOCKET=$with_db_socket
+	fi
+
+	AC_SUBST(DB_SOCKET)
+
 
 	dnl **************************************************************
 	dnl Determine MySQL database host to use

@@ -31,6 +31,7 @@ CREATE_GROUP_APP=@CREATE_GROUP_APP@
 DATABASE=@DATABASE@
 DB_HOST=@DB_HOST@
 DB_PORT=@DB_PORT@
+DB_SOCKET=@DB_SOCKET@
 DB_USERNAME=@DB_USERNAME@
 AUTOADMIN=@AUTOADMIN@
 ADMIN=@ADMIN@
@@ -79,6 +80,7 @@ endif
 	${PERL} setsitevar "to-install/perl_lib/${LIB_PREFIX}EPrintSite/SiteInfo.pm" "database" "${DATABASE}"
 	${PERL} setsitevar "to-install/perl_lib/${LIB_PREFIX}EPrintSite/SiteInfo.pm" "db_host" "${DB_HOST}"
 	${PERL} setsitevar "to-install/perl_lib/${LIB_PREFIX}EPrintSite/SiteInfo.pm" "db_port" "${DB_PORT}"
+	${PERL} setsitevar "to-install/perl_lib/${LIB_PREFIX}EPrintSite/SiteInfo.pm" "db_socket" "${DB_SOCKET}"
 	${PERL} setsitevar "to-install/perl_lib/${LIB_PREFIX}EPrintSite/SiteInfo.pm" "username" "${DB_USERNAME}"
 	${PERL} setsitevar "to-install/perl_lib/${LIB_PREFIX}EPrintSite/SiteInfo.pm" "archive_identifier" "${OAI_IDENTIFIER}"
 	${PERL} setsitevar "to-install/perl_lib/${LIB_PREFIX}EPrintSite/SiteInfo.pm" "eprint_id_stem" "${ID_STEM}"
