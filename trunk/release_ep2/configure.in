@@ -9,9 +9,9 @@ VIRTUALHOST=
 
 PERL_SEARCH_PATH="$PATH:/usr/local/bin:/opt/perl/bin:/opt/PERL/bin"
 AC_ARG_WITH(perl,
-    [ --with-perl=[PATH]       path of perl interpretter ],
+    [ --with-perl=[PATH]       path of perl interpreter ],
     [
-        AC_MSG_CHECKING([perl interpretter])
+        AC_MSG_CHECKING([perl interpreter])
         PERL_PATH=$withval
         if test -x $PERL_PATH ; then
             AC_MSG_RESULT($PERL_PATH)
@@ -32,7 +32,7 @@ if $PERL_PATH -e "" > /dev/null 2>&1 ; then
     AC_MSG_RESULT(yes)
 else
     AC_MSG_RESULT(no)
-    AC_MSG_ERROR(Perl interpretter does not appear to run)
+    AC_MSG_ERROR(Perl interpreter does not appear to run)
 fi
 
 AC_MSG_CHECKING([whether the perl interpreter ($PERL_PATH ) works])
@@ -40,7 +40,7 @@ if $PERL_PATH -e " print(\"INSERT PERL TEST HERE\")" > /dev/null 2>&1 ; then
     AC_MSG_RESULT(yes)
 else
     AC_MSG_RESULT(no)
-    AC_MSG_ERROR(Perl interpretter does not appear to work)
+    AC_MSG_ERROR(Perl interpreter does not appear to work)
 fi
 
 AC_ARG_WITH(user,
@@ -240,3 +240,5 @@ AC_SUBST(VIRTUALHOST)
 AC_OUTPUT([
         install.pl
 ])
+
+chmod +x install.pl
