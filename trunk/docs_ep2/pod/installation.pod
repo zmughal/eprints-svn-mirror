@@ -1,48 +1,111 @@
 =head1 Installation
 
-Unpack the eprints tar.gz file, and run the install-eprints.pl script, answer the questions it asks.
+(If you are upgrading an existing installation of eprints please see the section on upgrading elsewhere in this manual.)
 
-This will create a user and group called "eprints".
+EPrints needs to be installed as the same user as the apache webserver runs as. We suggest you install it as user "eprints" and group "eprints". Under some UNIX platforms, creating a user and group can be done using the "adduser" command. Otherwise refer to your operating system documentation.
 
-Edit your apache.conf in the way described by install-eprints.pl.
+Unpack the eprints tar.gz file:
 
-Unless you are not installing in /opt/eprints2/ the changes are in "httpd.conf":
+ % gunzip eprints-2.something.tar.gz
+ % tar xf eprints-2.something.tar
 
-Edit "User" and "Group" to be:
+Now run the "configure" script. This is a /bin/sh script which will attempt to locate various parts of your system such as the perl binary. It will also check your system for required components.
+
+ % cd eprints-2.something
+ % ./configure
+
+The configure script accepts a number of options, the most important are:
+
+***** If you can read this, I forgot to add the option list. Doh. Try configure --help ****
+
+Once you are happy with your configuration you may install eprints by
+running install.pl:
+
+ % ./install.pl
+
+Now you should edit the configuration file for your copy of apache. This
+is often /usr/local/apache/conf/http.conf or /etc/httpd/conf/httpd.conf
+
+Add this line: (If you didn't install eprints in /opt/eprints2/ replace that with the location on your system).
+
+ Include /opt/eprints2/cfg/apache.conf
+
+You may also wish to change the user and group apache runs as. The user 
+I<must> be the same as the user you installed eprints as. We recommend:
 
  User eprints
  Group eprints
 
-And add the line:
+=head1 Creating an Archive
 
- Include /opt/eprints2/cfg/apache.conf
+EPrints 2 can run run multiple archives under one install. Multiple archives will require giving additional DNS aliases to the machine running EPrints, EPrints can then create all the parts of the apache configuration file needed to run the virtual hosts.
 
-=head1 Creating an archive
+=head2 Creating the Archive
 
 Make sure MySQL is actually running.
 
-Change to  your eprints user (probably "eprints").
+Change to your eprints user (probably "eprints").
 
-cd to the eprints directory (/opt/eprints2 by default) and run bin/configure_archive, answer the questions it asks.
+Change directory to the eprints directory (C</opt/eprints2> by default) and run bin/configure_archive and answer the questions it asks. This will create a MySQL database, create a copy of the default archive configuration into C</opt/eprints2/archives/ARCHIVEID/>. Where archive name is the short text string identifier of this archive.  It also creates a file called C</opt/eprints2/archives/ARCHIVEID.xml> which contains the configuration you just entered. If you want you can edit this file directly or re-run configure_archive.
 
-Run
+=head2 Creating the Database Tables and Website.
 
- bin/generate_apacheconf archiveid
- bin/create_tables archiveid
- bin/import_subjects archiveid
- bin/generate_static archiveid
- bin/create_user archiveid userid email admin password
+You may want to repeat this several times as you will almost cetainly try
+several configurations before sticking with one. 
 
-Where userid, email and password are your choice. you can create multiple users if you like. 'user' instead of 'staff' will give a user less privs.
+If you want to totally erase the database, documents and website then run:
+ 
+ % bin/erase_archive ARCHIVEID
 
-Then restart your webserver: 
+The following commands will generate the initial database tables, the initial website and the apache configuration files to run this archive: 
 
- /etc/rc.d/init.d/httpd stop
- /etc/rc.d/init.d/httpd start
+ % bin/generate_apacheconf ARCHIVEID
+ % bin/create_tables ARCHIVEID
+ % bin/import_subjects ARCHIVEID
+ % bin/generate_static ARCHIVEID
+ % bin/create_user ARCHIVEID USERID EMAIL admin PASSWORD
+ % bin/generate_views ARCHIVEID
 
-Don't just use 'reload' or 'restart' as these do not force mod_perl to reload it's modules.
+Where USERID, EMAIL and PASSWORD are your choice for the initial administration account. Once you have made this account you can create new accounts via the web interface.
 
-Now connect via the web and check it works...
+For more information on what these commands do, see the last section of this documentation or use the --man option.
+
+After running generate_apacheconf or modifying the configuration you must restart your webserver for the changes to take effect. The example below to stop and start Apache might not work on your system - if you have a problem consult the apache documentation.
+
+ % /etc/rc.d/init.d/httpd stop
+ % /etc/rc.d/init.d/httpd start
+
+Do not just use 'reload' or 'restart' as these do not force mod_perl to reload the perl modules, and EPrints currently only reads the configuration when the PERL modules are loaded.
+
+=head1 Running a Live Archive
+
+=head2 Creating a crontab
+
+When you create an archive it will start out as a development system while you learn how to set it up (and your manager keeps changing his mind) but at some point (hopefully) you will declare your archive open for business.
+
+At this point you should schedule certain scripts to run periodically. The best way to do this is to use "cron" which is an integral part of most UNIX systems.
+
+To set up cron, run (as the eprints user):
+
+ % crontab -e
+
+Exactly what to add to the cron table is described in the following sections - "Browse Views" and "Subscriptions".
+
+There should be one set of crontab entries per archive.
+
+=head2 Backups
+
+You should also have made sure that the system is being properly backed up. This is gone into in more detail elsewhere in the documentation.
+
+=head2 OAI
+
+We would also encourage you to configure the OAI support for your archive and register it. It's quite easy - pretty much fill in the blanks in the ArchiveOAIConfig.pm file in the archive configuration directory.
+
+EPrints 2.1 support OAI versions 1 and 2 at URL paths /perl/oai and /perl/oai2. 
+
+Once you register your archive (at http://www.openarchives.org) various search systems will be able to collect the metadata (titles, authors, abstract etc.) and allow more people to find records in your archive. 
+
+See http://www.openarchives.org/ for more information on the OAI protocol. For more information setting up the OAI interface archive see the section in this documentation about Configuring an Archive.
 
 =head1 Browse Views
 
@@ -57,7 +120,7 @@ See the How-To section for some suggestions on how to set up views.
 
 =head2 But I don't want this feature...
 
-If you don't want to use this feature: don't, it's your archive. Remove the link from the template and front page.
+If you don't want to use this feature: don't, it's your archive. Remove the link from the template and front page. Don't run the generate_views script.
 
 =head2 Setting it up
 
@@ -69,10 +132,6 @@ Once an hour would seem a good starting point. If your archive gets real big, sa
 
 Run generate_views on the command line to find out how long it takes. 
 
-To set up cron, run (as eprints):
-
- crontab -e
-
 and add the line 
 
  23 * * * * /opt/eprints2/bin/generate_views I<archiveid>
@@ -81,6 +140,27 @@ This runs at 23 minutes past each hour. If you have more than one archive, don't
 
 See the crontab man page C<man 5 crontab> for more information on using cron.
 
+=head1 Subscriptions
+
+Subscriptions provide a way in which users of your system can receive regular updates, via email, when new items are added which match a search they specified.
+
+To automate sending out these subscriptions you must add some entries in the
+crontab (as for views). You need one set of these per archive. 
+
+For example:
+
+    # 00:15 every morning
+    15 0 * * * /opt/eprints2/bin/send_subscriptions dookuprints daily
+    # 00:30 every sunday morning
+    30 0 * * 0 /opt/eprints2/bin/send_subscriptions dookuprints weekly
+    # 00:45 every first of the month
+    45 0 * * 0 /opt/eprints2/bin/send_subscriptions dookuprints monthly
+
+Note the spacing out so that all 3 don't start at once and hammer the database. You may wish to change the times, but we recommend early morning as the best time to send them (midnight-6am).
+
+=head2 But I don't want users to be able to do this!
+
+Then remove the "subscription" power from each type of user in the archives ArchiveConfig.pm file.
 
 =head1 Default Configuration
 
@@ -88,7 +168,7 @@ EPrints configures a  new archive with a set of metadata fields aimed at an arch
 
 The initial "types" of eprint (book, poster, conference paper) are configured in metadata-types.xml
 
-The initial subjects are just some we made up, they are not a recommendation. You will certainly want to change them.
+The initial subjects are a subset of the library of congress subjects. Feel free to totally replace them with your own subjects, but the more standard your subject tree the more useful your metadata will be to other people.
 
 The authors and editors have the "hasid" option set which allows people to optionally use a unique id for a person in addition to their name (names are NOT unique!) - this can be useful for generating "CV" pages (see the views how-to) and possibly for generating statistics. Without it you will never be sure which "John Smith" wrote that paper. If you don't like this feature remove the "hasid" from the authors and editors - this will require you to recreate the tables, erasing the archive, so decide before you start. If you want to be more clear about what information goes in that field, edit the phrases C<eprint_fieldname_authors_id> and C<eprint_fieldname_editors_id> in the archive phrase file(s).
 

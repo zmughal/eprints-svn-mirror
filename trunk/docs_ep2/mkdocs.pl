@@ -26,7 +26,9 @@ my @ids = (
 	"!generate_static",
 	"!generate_views",
 	"!import_subjects",
-	"!reindex"
+	"!reindex",
+	"!send_subscriptions",
+	"!upgrade"
 );
 my %titles = (
 	intro => "Introduction",
@@ -42,7 +44,9 @@ my %titles = (
 	vlit => "VLit Transclusion Support",
 	updating => "Updating from Previous Versions",
 	history => "EPrints History (and Future Plans)",
-	logo => "The EPrints Logo"
+	logo => "The EPrints Logo",
+
+	cmdline=> "Command Line Tools"
 );
 
 my $website = ( $ARGV[0] eq "www" );
@@ -54,6 +58,7 @@ else
 	print "BUILDING DOCS FOR PACKAGE!!\n" 
 }
 
+my( @non_cmd_ids, @cmd_ids );
 `rm tmp/*`;
 `rm -rf binpod`;
 `mkdir binpod`;
@@ -65,23 +70,132 @@ foreach( @ids )
 		$filemap{$_} = "binpod/$_";
 		`grep -v __GENERICPOD__ ../system/bin/$_ > binpod/$_`;
 		$titles{$_} = "$_ command";
+		push @cmd_ids, $_;
 	}
 	else
 	{
+		push @non_cmd_ids, $_;
 		$filemap{$_} = "pod/$_.pod";
 	}
 }
 		
 
-my $DOCTITLE = "EPrints 2.0.1 Documentation";
+my $DOCTITLE = "EPrints 2.1 Documentation";
 
-my $BASENAME = "eprints-2.0-docs";
+my $BASENAME = "eprints-2.1-docs";
 
 `rm -rf docs`;
 `mkdir docs`;
 	
 ##########################################################################
+#
+# texinfo
+#
+###############################################################################
+print "Making TexInfo\n";
+
+## Text
+open( OUT, ">docs/$BASENAME.texinfo" );
+my $firstnode = $ids[0];
+print OUT <<END;
+
+\@c %**start of header
+\@setfilename eprints2.info
+\@settitle $DOCTITLE
+\@c Disable the monstrous rectangles beside overfull hbox-es.
+\@finalout
+\@c Use `odd' to print double-sided.
+\@setchapternewpage on
+\@c %**end of header
+
+\@iftex
+\@c Remove this if you don't use A4 paper.
+\@afourpaper
+\@end iftex
+
+\@dircategory World Wide Web
+\@direntry
+* EPrints: (eprints).         EPrints Archive Software.
+\@end direntry
+
+\@node top, $firstnode, (dir) ,(dir)
+\@top $DOCTITLE
+
+GNU GNU EPrints 2 Archive software from the University of Southampton.
+
+The texinfo version is generated automatically from the POD version.
+
+END
+
+print OUT '@menu'."\n";
+my @menu = @non_cmd_ids;
+push @menu , "cmdline";
+foreach my $id ( @menu )
+{
+	printf OUT '* '.$id.'::'.(" "x(20-(length $id))).$titles{$id}."\n";
+}
+print OUT '@end menu'."\n";
+
+for( my $i=0; $i<scalar @menu; ++$i )
+{
+	my $id = $menu[$i];
+	my $next = $menu[$i+1];
+	my $prev = $menu[$i-1];
+	$next = "" if( $i+1 == scalar @menu );
+	$prev = "top" if( $i == 0 );
+
+	print OUT "\@node $id, $next, $prev, top\n";
+
+	if( $id eq "cmdline" )
+	{
+		print OUT <<END;
+
+\@subheading EPrints Command Line Tools
+
+These commands can usually be found in /opt/eprints2/bin/.
+
+\@menu
+END
+		foreach my $id ( @cmd_ids )
+		{
+			printf OUT '* '.$id.'::'.(" "x(20-(length $id))).$titles{$id}."\n";
+		}
+		print OUT '@end menu'."\n";
+		
+	}
+	else
+	{
+#		print "Processing: $filemap{$id}\n";
+		print OUT `./pod2texinfo $filemap{$id}`;
+	}
+}
+
+for( my $i=0; $i<scalar @cmd_ids; ++$i )
+{
+	my $id = $cmd_ids[$i];
+	my $next = $cmd_ids[$i+1];
+	my $prev = $cmd_ids[$i-1];
+	$next = "" if( $i+1 == scalar @cmd_ids );
+	$prev = "" if( $i == 0 );
+
+	print OUT "\@node $id, $next, $prev, cmdline\n";
+	# print "Processing: $filemap{$id}\n";
+	print OUT `./pod2texinfo $filemap{$id}`;
+}
+
+print OUT "\n\n\@bye\n\n";
+
+close OUT;
+
+`makeinfo --force docs/$BASENAME.texinfo`;
+`mv eprints2.info* docs`;
+
+#########################################################################
+#
 # text
+#
+###############################################################################
+print "Making ASCII Text\n";
 
 use Pod::Text;
 
@@ -121,7 +235,11 @@ END
 close OUT;
 
 ##########################################################################
+#
 # PDF & Postscript
+#
+###############################################################################
+print "Making PDF & Postscript\n";
 
 use Pod::LaTeX;
 
@@ -136,7 +254,6 @@ my $parser2 = Pod::LaTeX->new(
 );
 foreach $id ( @ids )
 {
-	print "($id)\n";
 	if( $filemap{$id} =~ m/binpod/ )
 	{
 		$parser2->parse_from_file( $filemap{$id}, "tmp/$id.tex.old" );
@@ -199,12 +316,15 @@ my @commands = (
 
 foreach( @commands )
 {
-	print $_."\n";
 	`$_`;
 }
 
 ###############################################################################
+#
 # HTML
+#
+###############################################################################
+print "Making HTML\n";
 
 use Pod::Html;
 mkdir( '../docs/html' );
@@ -338,7 +458,11 @@ END
 }
 
 ###############################################################################
+#
 # POD
+#
+###############################################################################
+print "Making POD\n";
 
 # This just copies in the POD docs!
 

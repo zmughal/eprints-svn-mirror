@@ -1,11 +1,17 @@
 =pod
 
+Generally speaking when upgrading EPrints v2 you should unpack and install eprints to the same path as your current version. The installer will detect the existing version and upgrade it. Existing files which have been altered by you should be automatically backed up so they don't get lost. But if your hacks are important then you should probably back them up by hand before upgrading.
+
+Then you should follow the specific instructions for each stage from your old version to your new version...
+
 =head1 Updating from EPrints 1
 
 This path is not currently supported, as the software structure
 underwent fundamental changes. We recommend that you do a clean install of EPrints 2.0.
 
 We hope to provide an v1 to v2 "upgrade assister" at some point.
+
+
 
 =head1 Updating from EPrints2-alpha-2 to EPrints 2.0
 
@@ -16,7 +22,7 @@ archive, then do each step for each one. Our example is the archive with the ID 
 To upgrade we suggest you use the UNIX C<diff> command to make a records of changes 
 you made to the archive config directory.
 
- diff /opt/eprints2/defaultcfg/ /opt/eprints2/archives/foobar/cfg/
+ % diff /opt/eprints2/defaultcfg/ /opt/eprints2/archives/foobar/cfg/
 
 Store the output from diff somewhere safe.
 
@@ -26,7 +32,7 @@ Now install eprints 2.0 and agree to upgrade when it asks.
 
 Copy the new default configuration into your archive dir:
 
- cp -R /opt/eprints2/defaultcfg/ /opt/eprints2/archives/foobar/cfg/
+ % cp -R /opt/eprints2/defaultcfg/ /opt/eprints2/archives/foobar/cfg/
 
 Work through the "diff"  you produced, and re-apply the changes 
 to the contents of C</opt/eprints2/archives/foobar/cfg/>.
@@ -37,7 +43,7 @@ You also need to execute the following SQL command.
 
 To connect to mysql via the command line run:
 
- mysql -u eprints foobar -p
+ % mysql -u eprints foobar -p
 
 And enter the database password for that archive.
 
@@ -46,23 +52,64 @@ Now re-run C<generate_apacheconf> and restart apache.
 Upgrading from 2.0 should be less painful than this, the config
 files should change less dramatically from now on.
 
+
+
 =head1 Updating from EPrints 2.0 to EPrints 2.0.1
 
-These release is mostly a bug fix release. There are a few 
+This release is mostly a bug fix release. There are a few 
 bugs in the config files which you should fix by hand. 
+
 After upgrading EPrints, repeat these steps for the cfg
-directory of archive you have:
+directory of each archive you have created:
 
-* In C<citations-en.xml> in the citation for poster, the year field
-is incorrecly named &years; rename it to &year; 
+=over 4
 
-* (This is not essential) Also on the citations file for the "eprint" and "user" citation types: add a E<lt>ep:linkhereE<gt> .... E<lt>/ep:linkhereE<gt> just inside the E<lt>ep:citationE<gt> tag.
+=item *
 
-* There was a bug in C<ArchiveFreeTextIndexingConfig.pm> which meant
+In C<citations-en.xml> in the citation for poster, the year field is incorrecly named &years; rename it to &year; 
+
+=item *
+
+(This is not essential) Also on the citations file for the "eprint" and "user" citation types: add a E<lt>ep:linkhereE<gt> .... E<lt>/ep:linkhereE<gt> just inside the E<lt>ep:citationE<gt> tag.
+
+=item *
+
+There was a bug in C<ArchiveFreeTextIndexingConfig.pm> which meant
 that "return" was treated as part of a word, rather than a word break. Unless you have modifed that file, just
 replace it with the new one from C</opt/eprints2/defaultcfg/>
 
-* (This is not essential) The title for the abstract block never gets added to the page. Edit C<ArchiveRenderConfig.pm> - search for eprint_fieldname_abstract and add the following line as the next line:
+=item *
+
+(This is not essential) The title for the abstract block never gets added to the page. Edit C<ArchiveRenderConfig.pm> - search for eprint_fieldname_abstract and add the following line as the next line:
 
   $page->appendChild( $h2 );
+
+=back
+
+
+=head1 Updating from EPrints 2.0.1 to EPrints 2.1
+
+These release fixes a few bugs but the main point is adding the subscriptions feature and support for OAI 2.0. See the NEWS file in the distribution for more information.
+
+After upgrading EPrints, repeat these steps for each archive you have created:
+
+=over 4
+
+=item *
+
+Upgrade the SQL tables - EPrints 2.1 needs to make some small changes to the database. Run:
+
+ % bin/upgrade ARCHIVEID
+
+This script will explain the changes it is making. It will require the MySQL root password.
+
+If you want an extra level of protection, you may want to run mysqldump to backup the database.
+
+=item *
+
+If you are not using the OAI system then just copy the new ArchiveOAIRender.pm configuration file over your old one. The new one can be found in /opt/eprints2/defaultcfg/ArchiveOAIRender.pm.
+
+If you have already configured the OAI system then you need to add the required configuration for OAI 2.0. These can be copied from /opt/eprints2/defaultcfg/ArchiveOAIRender.pm. The two relevant sections are the block titled "OAI-PMH 2.0" and the subroutine C<make_metadata_oai_dc_oai2>. Copy these into your archives ArchiveOAIRender.pm and modify them if needed.
+
+=back
 

@@ -59,4 +59,4 @@ eg:
 
 =head1 Area locspec
 
-There is an 'area' locspec which requires the 'convert' unix command. It returns an area of an image specified as C<locspec=area:topx,topy/width,height> - It is not yet supported and it's use is not recommended.
+There is an 'area' locspec which requires the 'convert' unix command. It returns an area of an image specified as C<locspec=area:page=n/hrange=startx,endx/vrange=starty,endy> where startx,endx,starty,endy and n are all positive integers. Any parts may be omitted: To specify the first 50 rows of page 3 C<locspec=area:page=3/vrange=,50>.

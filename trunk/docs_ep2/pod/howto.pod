@@ -124,7 +124,7 @@ In our example case we only want this to appear when citing technical reports, s
  </ep:ifset><ep:ifset name="institution">, &institution;</ep:ifset>. 
  &local;.</span></ep:linkhere></ep:citation> 
 
-All we've done is add C<&local;.> to the end. It's not inside C<< <ep:ifset name="local"> >> as it is a required field and will (should) always be set.
+All we've done is add C<&local;.> to the end. It's not inside C< E<lt>ep:ifset name="local"E<gt> > as it is a required field and will (should) always be set.
 
 =item Add it to the the Abstract (or View-User) page.
 
