@@ -16,11 +16,10 @@ sub new
 
 $self->{site_root} = $EPrintSite::base_path."/sites/lemurprints";
 
+$self->{local_document_root} = "$self->{site_root}/html/docs";
+
 #  Files
 
-$self->{user_meta_file} 	= "$self->{site_root}/cfg/metadata.user";
-$self->{eprint_fields_file}	= "$self->{site_root}/cfg/metadata.eprint-fields";
-$self->{eprint_types_file} 	= "$self->{site_root}/cfg/metadata.eprint-types";
 $self->{template_user_intro} 	= "$self->{site_root}/cfg/template.user-intro";
 $self->{subject_config} 	= "$self->{site_root}/cfg/subjects";
 
@@ -48,35 +47,504 @@ my $connect_string = EPrints::Database::build_connection_string(
 	{ db_name => $self->{db_name}, db_port => $self->{db_port},
  	  db_sock => $self->{db_sock}, db_host => $self->{db_host} } );
  
-$self->{usertypes} = {
+$self->{userauth} = {
 	User=>{ 
-		auth_routine => \&Apache::AuthDBI::authen,
-		auth_conf => {
+		routine => \&Apache::AuthDBI::authen,
+		conf => {
 			Auth_DBI_data_source => $connect_string,
 			Auth_DBI_username => $self->{db_user},
 			Auth_DBI_password => $self->{db_pass},
-			Auth_DBI_pwd_table => "users",
+			Auth_DBI_pwd_table => EPrints::Database::table_name( "user" ),
 			Auth_DBI_uid_field => "username",
 			Auth_DBI_pwd_field => "passwd",
 			Auth_DBI_grp_field => "groups",
 			Auth_DBI_encrypted => "off" },
-		auth_priv => [ "user" ] },
+		priv => [ "user" ] },
 	Staff=>{ 
-		auth_routine => \&Apache::AuthDBI::authen,
-		auth_conf => {
+		routine => \&Apache::AuthDBI::authen,
+		conf => {
 			Auth_DBI_data_source => $connect_string,
 			Auth_DBI_username => $self->{db_user},
 			Auth_DBI_password => $self->{db_pass},
-			Auth_DBI_pwd_table => "users",
+			Auth_DBI_pwd_table => EPrints::Database::table_name( "user" ),
 			Auth_DBI_uid_field => "username",
 			Auth_DBI_pwd_field => "passwd",
 			Auth_DBI_grp_field => "groups",
 			Auth_DBI_encrypted => "off" }, 
-		auth_priv => [ "user" ] }
+		priv => [ "user" ] }
 };
 
+######################################################################
+# USER FIELDS
+######################################################################
 
+$self->{sitefields}->{user} = [
+	{
+		name=>"name",
+		type=>"name",
+		required=>1,
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"dept",
+		type=>"text",
+		required=>0,
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"org",
+		type=>"text",
+		required=>0,
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"address",
+		type=>"longtext",
+		displaylines=>"5",
+		required=>0,
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"country",
+		type=>"text",
+		required=>0,
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"url",
+		type=>"url",
+		required=>0,
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"filter",
+		type=>"subject",
+		required=>0,
+		editable=>1,
+		visible=>1,
+		multiple=>1
+	}
+];
 
+$self->{sitefields}->{eprint} = [
+	{
+		name=>"abstract",
+		type=>"longtext",
+		displaylines=>"10",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"altloc",
+		type=>"url",
+		displaylines=>"3",
+		editable=>1,
+		multiple=>1,
+		visible=>1
+	},
+	{
+		name=>"authors",
+		type=>"name",
+		editable=>1,
+		visible=>1,
+		multiple=>1
+	},
+	{
+		name=>"chapter",
+		type=>"text",
+		editable=>1,
+		visible=>1,
+		maxlength=>5
+	},
+	{
+		name=>"comments",
+		type=>"longtext",
+		editable=>1,
+		displaylines=>"3",
+		visible=>1
+	},
+	{
+		name=>"commref",
+		type=>"text",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"confdates",
+		type=>"text",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"conference",
+		type=>"text",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"confloc",
+		type=>"text",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"department",
+		type=>"text",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"editors",
+		type=>"name",
+		editable=>1,
+		visible=>1,
+		multiple=>1
+	},
+	{
+		name=>"institution",
+		type=>"text",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"ispublished",
+		type=>"set",
+		editable=>1,
+		visible=>1,
+		options=>[ "unpub","inpress","pub" ]
+	},
+	{
+		name=>"keywords",
+		type=>"longtext",
+		editable=>1,
+		displaylines=>2,
+		visible=>1
+	},
+	{
+		name=>"month",
+		type=>"set",
+		editable=>1,
+		visible=>1,
+		options=>[ "unspec","jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec" ]
+	},
+	{
+		name=>"number",
+		type=>"text",
+		maxlength=>"6",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"pages",
+		type=>"pagerange",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"pubdom",
+		type=>"boolean",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"publication",
+		type=>"text",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"publisher",
+		type=>"text",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"refereed",
+		type=>"boolean",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"referencetext",
+		type=>"longtext",
+		editable=>1,
+		visible=>1,
+		displaylines=>3
+	},
+	{
+		name=>"reportno",
+		type=>"text",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"thesistype",
+		type=>"text",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"title",
+		type=>"text",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"organization",
+		type=>"text",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"pind",
+		type=>"text",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"address",
+		type=>"text",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"journal",
+		type=>"text",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"school",
+		type=>"text",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"note",
+		type=>"longtext",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"volume",
+		type=>"text",
+		maxlength=>"6",
+		editable=>1,
+		visible=>1
+	},
+	{
+		name=>"year",
+		type=>"year",
+		editable=>1,
+		visible=>1
+	}
+];
+	
+$self->{sitetypes}->{eprint} = {
+	"bookchapter"=>[
+		"REQUIRED:ispublished",
+		"REQUIRED:refereed",
+		"REQUIRED:pubdom",
+		"REQUIRED:authors",
+		"REQUIRED:title",
+		"REQUIRED:year",
+		"REQUIRED:abstract",
+		"REQUIRED:publication",
+		"chapter",
+		"pages",
+		"editors",
+		"publisher",
+		"commref",
+		"altloc",
+		"keywords",
+		"comments",
+		"referencetext"
+	],
+	"confpaper"=>[
+		"REQUIRED:ispublished",
+		"REQUIRED:refereed",
+		"REQUIRED:pubdom",
+		"REQUIRED:authors",
+		"REQUIRED:title",
+		"REQUIRED:year",
+		"REQUIRED:abstract",
+		"REQUIRED:conference",
+		"pages",
+		"confdates",
+		"confloc",
+		"volume",
+		"number",
+		"editors",
+		"publisher",
+		"commref",
+		"altloc",
+		"keywords",
+		"comments",
+		"referencetext"
+	],
+	"confposter"=>[
+		"REQUIRED:ispublished",
+		"REQUIRED:refereed",
+		"REQUIRED:pubdom",
+		"REQUIRED:authors",
+		"REQUIRED:title",
+		"REQUIRED:year",
+		"REQUIRED:abstract",
+		"REQUIRED:conference",
+		"pages",
+		"confdates",
+		"confloc",
+		"volume",
+		"number",
+		"editors",
+		"publisher",
+		"commref",
+		"altloc",
+		"keywords",
+		"comments",
+		"referencetext"
+	],
+	"techreport"=>[
+		"REQUIRED:ispublished",
+		"REQUIRED:refereed",
+		"REQUIRED:pubdom",
+		"REQUIRED:authors",
+		"REQUIRED:title",
+		"REQUIRED:year",
+		"month",
+		"REQUIRED:abstract",
+		"REQUIRED:department",
+		"REQUIRED:institution",
+		"reportno",
+		"commref",
+		"altloc",
+		"keywords",
+		"comments",
+		"referencetext"
+	],
+	"journale"=>[
+		"REQUIRED:ispublished",
+		"REQUIRED:refereed",
+		"REQUIRED:pubdom",
+		"REQUIRED:authors",
+		"REQUIRED:title",
+		"REQUIRED:year",
+		"month",
+		"REQUIRED:abstract",
+		"REQUIRED:publication",
+		"volume",
+		"number",
+		"editors",
+		"publisher",
+		"commref",
+		"altloc",
+		"keywords",
+		"comments",
+		"referencetext"
+	],
+	"journalp"=>[
+		"REQUIRED:ispublished",
+		"REQUIRED:refereed",
+		"REQUIRED:pubdom",
+		"REQUIRED:authors",
+		"REQUIRED:title",
+		"REQUIRED:year",
+		"month",
+		"REQUIRED:abstract",
+		"REQUIRED:publication",
+		"volume",
+		"number",
+		"pages",
+		"editors",
+		"publisher",
+		"commref",
+		"altloc",
+		"keywords",
+		"comments",
+		"referencetext"
+	],
+	"newsarticle"=>[
+		"REQUIRED:ispublished",
+		"REQUIRED:refereed",
+		"REQUIRED:pubdom",
+		"REQUIRED:authors",
+		"REQUIRED:title",
+		"REQUIRED:year",
+		"month",
+		"REQUIRED:abstract",
+		"REQUIRED:publication",
+		"volume",
+		"number",
+		"pages",
+		"editors",
+		"publisher",
+		"commref",
+		"altloc",
+		"keywords",
+		"comments",
+		"referencetext"
+	],
+	"other"=>[
+		"REQUIRED:ispublished",
+		"REQUIRED:refereed",
+		"REQUIRED:pubdom",
+		"REQUIRED:authors",
+		"REQUIRED:title",
+		"REQUIRED:year",
+		"month",
+		"REQUIRED:abstract",
+		"commref",
+		"altloc",
+		"keywords",
+		"comments",
+		"referencetext"
+	],
+	"preprint"=>[
+		"REQUIRED:refereed",
+		"REQUIRED:pubdom",
+		"REQUIRED:authors",
+		"REQUIRED:title",
+		"REQUIRED:year",
+		"month",
+		"REQUIRED:abstract",
+		"commref",
+		"altloc",
+		"keywords",
+		"comments",
+		"referencetext"
+	],
+	"thesis"=>[
+		"REQUIRED:ispublished",
+		"REQUIRED:refereed",
+		"REQUIRED:pubdom",
+		"REQUIRED:authors",
+		"REQUIRED:title",
+		"REQUIRED:year",
+		"month",
+		"REQUIRED:abstract",
+		"REQUIRED:thesistype",
+		"REQUIRED:department",
+		"REQUIRED:institution",
+		"commref",
+		"altloc",
+		"keywords",
+		"comments",
+		"referencetext"
+	]
+};
+
+$self->{sitetypes}->{user} = { 
+	Staff => [],
+	User => []
+};
+
+	
 ######################################################################
 #
 #  Search and subscription information
