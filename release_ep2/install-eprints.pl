@@ -331,9 +331,6 @@ Hooray! Your EPrints2 installation was successful!
 =
 = What Now?
 =
-= - su to $user
-= - Move into $dir and run:
-=     bin/generate_apacheconf
 = - su to root
 = - Open your apache.conf file, and make the
 =   following alterations:
@@ -344,6 +341,8 @@ Hooray! Your EPrints2 installation was successful!
 =   o Replace the 'Group <groupname>' line with
 =       Group $group
 = - su to $user
+= - Move into $dir and run:
+=     bin/generate_apacheconf
 = - Move into $dir and run:
 =     bin/create_new_archive
 =
