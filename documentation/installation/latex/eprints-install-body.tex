@@ -73,6 +73,7 @@ The following Perl modules are used by \eprints. They are all available from the
 \item URI-1.06
 \item XML-Writer-0.4
 \item ApacheDBI-0.87
+\item Unicode-String-2.\emph{xx}
 \end{itemize}
 
 
@@ -80,9 +81,10 @@ The following Perl modules are used by \eprints. They are all available from the
 
 Some operations are performed by e-mail. \eprints\ needs to be able to send e-mails (typically using the {\tt sendmail} package), and also to receive e-mails and process them using a script.
 
-In other words, the \eprints\ software needs an e-mail account, for example {\tt eprints@archive.foo.org}, and every time an e-mail arrives at that account, an \eprints\ script needs to be run and given the contents of the e-mail. How this is achieved will probably vary between institutions. You may want a mail server on the local machine, or NFS mount a mail spool directory, or have another mail server machine {\tt rsh} the relevant script. What needs to happen with this is explained later on; for now, just be aware that the software needs a mail account it can send from and automatically process incoming mails.
+In other words, the \eprints\ software needs an e-mail account, for example {\tt eprints@archive.foo.org}, and every time an e-mail arrives at that account, an \eprints\ script needs to be run and given the contents of the e-mail. This e-mail account is referred to as the \emph{automatic administration account}.
+How this account is set up will probably vary between institutions. You may want a mail server on the local machine, or NFS mount a mail spool directory, or have another mail server machine {\tt rsh} the relevant script. What needs to happen with this is explained later on; for now, just be aware that the software needs a mail account it can send from and automatically process incoming mails.
 
-You'll also need an adminstration e-mail account for users needing to contact a person.
+You'll also need a regular adminstration e-mail account for users needing to contact a person.
 
 Once all of this software is installed, we're ready to proceed with the installation of the \eprints\ archive software.
 
@@ -133,6 +135,19 @@ Configuration information is largely held in two directories: {\tt eprints/cfg} 
 \item {\tt \$EPrintSite::SiteInfo::password} - The password for your MySQL database (remember it for later)
 \item {\tt \$EPrintSite::SiteInfo::archive\_identifier} - Your archive's Open Archives identifier
 \end{itemize}
+
+If your server is running on a non-standard port (i.e. other than port 80), you will need to add the relevant port numbers to the following variables:
+
+\begin{itemize}
+\item {\tt \$EPrintSite::SiteInfo::server\_static}
+\item {\tt \$EPrintSite::SiteInfo::server\_perl}
+\end{itemize}
+
+For example, if you are running \eprints\ on port 8080, you should change {\tt \$EPrintSite::SiteInfo::server\_static} to:
+
+{\tt http://\$EPrintSite::SiteInfo::host:8080}
+
+and apply a similar change to {\tt \$EPrintSite::SiteInfo::server\_perl}.
 
 You should also verify that the paths to various executables are correct in the command line values, i.e.
 
@@ -318,15 +333,26 @@ SHELL=/bin/sh
 
 Note that the subscription jobs are start at 12.00am, 12.15am and 12.30am respectively, and {\tt generate\_views} is run at 1am. They are spread out like this so that no two such scripts are running at once, which could cause server performance problems for any users online at the time. (You may also wish to {\tt nice} these jobs for the same reason.)
 
-The {\tt process\_mail} script needs to be run, as the eprints user, whenever a mail arrives at the \eprints\ archive mail account (not the administator's account), and the contents of that mail should be fed to the script's standard input. In the simplist case, a {\tt .forward} file containing:
+The {\tt process\_mail} script needs to be run, as the eprints user, whenever mail arrives at the automatic administration account, and the contents of that mail should be fed to the script's standard input. You could just use a {\tt .forward} file, but it's probably best to use {\tt procmail}.
+
+In the \eprints\ {\tt .forward} file:
 
 \begin{verbatim}
-"|/opt/eprints/bin/process_mail"
+"|IFS=' ' && exec /usr/bin/procmail -f- || exit 75"
 \end{verbatim}
 
-would do the job. Note that {\tt process\_mail} cannot usually be run ``sticky'' (with mode 4755) since this causes {\tt sendmail} to produce a security error. This shouldn't be a problem on most systems.
+In the \eprints\ {\tt .procmailrc} file:
 
-Now you should have a working installation that you can play around with. You should try joining the archive (look at the registrations page), submitting a test paper, a checking that it arrives in the submissions buffer in the staff area. (The staff area is not linked to the front page by default; you can access it by viewing {\tt http://eprintarchive.foo.org/staff}).
+\begin{verbatim}
+:0:
+* !^FROM_DAEMON
+* !^X-Loop: eprints@archive.foo.org
+|/opt/eprints/bin/process_mail
+\end{verbatim}
+
+Replace {\tt eprints@archive.foo.org} with the automatic administration account address. The reason for using {\tt procmail} is that the recipe above prevents {\tt process\_mail} replying to bounced error mails and mails from mailing lists.
+
+Now you should have a working installation that you can play around with. You should try joining the archive (look at the registrations page), submitting a test paper, a checking that it arrives in the submissions buffer in the staff area. The staff area is not linked to the front page by default; you can access it by viewing {\tt http://eprintarchive.foo.org/staff}.
 
 
 \section{\eprints\ Configuration}
@@ -579,6 +605,14 @@ Additionally, you can put in the HTML files a variety of placeholders that will 
 \caption{\label{install_placeholders} Placeholders in Static HTML Pages}
 \end{center}
 \end{table}
+
+You can also place arbitrary elements in the {\tt <HEAD>} elements of all pages (for example, to add a style sheet) by adding them to the {\tt @html\_head\_elements} variable in {\tt SiteInfo.pm}. You need to add them verbatim, for example:
+
+\begin{verbatim}
+@EPrintSite::SiteInfo::html_head_elements = (
+	'<META NAME="description" CONTENT="EPrint Archive Page">',
+	'<META NAME="keywords" CONTENT="Open Preprint Archive">' );
+\end{verbatim}
 
 
 \subsubsection{References and Abstract Pages}
