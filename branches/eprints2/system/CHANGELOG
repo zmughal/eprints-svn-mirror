@@ -2122,3 +2122,10 @@ PACKAGE: 2.2.99.2
     should not be in the default config.
  - Added umask(0022) to the installer scripts as it goes very wrong
     if it isn't.
+
+2005-01-18 cjg
+
+ - Split the configure archive GRANT statement into a two, now
+    has a SET_PASSWORD that is a seperate call.
+ - Fixed bug which meant file checksums were not written at
+    install, only in upgrades.

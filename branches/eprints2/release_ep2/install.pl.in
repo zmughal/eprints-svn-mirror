@@ -639,7 +639,7 @@ sub full_install
 	my @executable_dirs = ("bin", "cgi");
 	my @normal_dirs = ("archives", "defaultcfg", "cfg", "docs", "perl_lib");
 
-	my $sigs = ();
+	my $sigs = [];
 
 	foreach(@executable_dirs)
 	{
