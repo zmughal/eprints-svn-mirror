@@ -21,7 +21,6 @@ close ECSINFO;
 
 @subs = ();
 print "SUBJECTS:\n";
-`mkdir $basedir`;
 open(SUB,"/opt/eprints/cfg/subjects");
 while(<SUB>) {
 	chomp;
