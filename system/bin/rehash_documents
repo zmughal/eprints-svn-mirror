@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+#!/usr/bin/perl -w -I/opt/ep2stable/perl_lib
 
 ######################################################################
 #
@@ -141,6 +141,8 @@ else
 $session->terminate();
 exit;
 
+######################################################################
+
 sub rehash
 {
 	my( $session, $dataset, $doc, $info ) = @_;
@@ -154,6 +156,3 @@ sub rehash
 
 
 
-$session->terminate();
-	
-exit;

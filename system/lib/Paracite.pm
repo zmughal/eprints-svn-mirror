@@ -66,22 +66,17 @@ sub render_reference
 
 	foreach my $reference (@references)
 	{
-		next if ( $reference =~ /^\s*$/ );
+		next if( $reference =~ /^\s*$/ );
+
+		my $form = $session->render_form( 'post', $perlurl.'/paracite' );
 		my $p = $session->make_element(
 			"p", 
 			class=>"citation_reference" );
-		
-		# Build link
-		my $ref = $reference;
-		$ref =~ s/&/%26/g;
-		my $link = $session->make_element(
-			"a",
-			href=>"$perlurl/paracite?ref=".EPrints::Utils::url_escape($ref) );
-		$link->appendChild( $session->make_element( "img", border=>0, src=>$baseurl."/images/reflink.png" ) );
-
+		$form->appendChild( $p );
 		$p->appendChild( $session->make_text( $reference." " ) );
-		$p->appendChild( $link );
-		$html->appendChild( $p );		
+		$p->appendChild( $session->make_element( 'input', name=>'action', value=>'1', type=>'image', src=>$baseurl."/images/reflink.png" ) );
+		$p->appendChild( $session->make_element( 'input', name=>'ref', value=>$reference, type=>'hidden' ) );
+		$html->appendChild( $form );		
 	}
 
 	return $html;
