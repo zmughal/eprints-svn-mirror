@@ -1,3 +1,7 @@
+eprints-rc-1.tar.gz:
+	./makepackage.sh eprints-dist "Release Candidate 1 (21/11/2000)" licenses/license-beta-2.txt eprints-rc-1.tar.gz
+
+
 eprints-beta-2.tar.gz:
 	./makepackage.sh eprints-beta-2 "Beta-2 (19/9/2000)" licenses/license-beta-2.txt eprints-beta-2.tar.gz
 

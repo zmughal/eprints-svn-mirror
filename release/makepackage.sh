@@ -56,6 +56,12 @@ mkdir eprints/perl_lib
 mv eprints/lib eprints/perl_lib/EPrints
 mv eprints/site_lib eprints/perl_lib/EPrintSite
 
+# Add the installation script
+cp -a ../install-scripts/* eprints
+cd eprints
+autoconf
+cd ..
+
 # Remove group write permission
 chmod -R g-w eprints
 
