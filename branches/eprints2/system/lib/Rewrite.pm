@@ -64,18 +64,17 @@ sub handler
 		return DECLINED;
 	}
 
-	if( $uri =~ m#^/perl/# )
-	{
-		return DECLINED;
-	} 
+	# Skip rewriting the /perl/ path and any other specified in
+	# the config file.
+	my $econf = $archive->get_conf('rewrite_exceptions');
+	my @exceptions = ( '/cgi/' );
+	if( defined $econf ) { @exceptions = @{$econf}; }
+	push @exceptions, '/perl/';
 
-	if( $uri =~ m#^/cgi/# )
+	foreach my $exppath ( @exceptions )
 	{
-		# In case people want a real CGI Directory on the same
-		# server. For example for mimetex.
-		return DECLINED;
-	} 
-
+		return DECLINED if( $uri =~ m/^$exppath/ );
+	}
 	
 	# shorturl does not (yet) effect secure docs.
 	if( $uri =~ s#^/secure/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])#/secure/$1/$2/$3/$4# )
