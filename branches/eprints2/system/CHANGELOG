@@ -2151,7 +2151,7 @@ PACKAGE: 2.2.99.2
     page to be disabled. 
  - Fix to secure apacheconf generation. Needs testing.
  - Deprecated "clone" and replaced it with "new version" and
-    "use as template" to be more clear as to function.
+    "use as template" to be more clear as to function. #5
  - Redesigned review-my-deposits page to look more like the
     redesigned homepage. 
  - Added "nolink" option to eprint->clone to supress the later
@@ -2166,5 +2166,9 @@ PACKAGE: 2.2.99.2
 
  - Added a new bin script: recommit_dataset which runs commit
     on every item in the dataset. Thus updating the automatic
-    values.
+    values. #41
+
+2005-02-16 cjg
+
+ - users/home now uses "copy" not "clone" so files are not copied. #5
 

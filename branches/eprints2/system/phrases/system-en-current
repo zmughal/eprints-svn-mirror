@@ -299,7 +299,7 @@ Enter a URL to capture a file from: <ep:pin ref="url" /><br />
     <ep:phrase ref="lib/submissionform:title_confirmdel">Confirm Deletion</ep:phrase>
     <ep:phrase ref="lib/submissionform:corrupt_err">An inconsistency in the posted data was detected. Usually this is caused by arriving directly to this page from a bookmark and not from your user page, or through using the browser's back/forwards or reload buttons. Always access the depositing mechanism via your author area and use the buttons on the form. (Code <ep:pin ref="line_no" />)</ep:phrase>
     <ep:phrase ref="lib/submissionform:database_err">There's been a problem accessing the archive database. Please try again later. (Code <ep:pin ref="line_no" />)</ep:phrase>
-    <ep:phrase ref="lib/submissionform:nosel_err">You hadn't selected an item to edit, clone, delete or deposit!</ep:phrase>
+    <ep:phrase ref="lib/submissionform:nosel_err">You hadn't selected an item act upon!</ep:phrase>
     <ep:phrase ref="lib/submissionform:delete">Delete</ep:phrase>
     <ep:phrase ref="lib/submissionform:delete_all">Delete All Files</ep:phrase>
     <ep:phrase ref="lib/submissionform:format">Format</ep:phrase>
@@ -433,7 +433,8 @@ User Area CGI Scripts
     <ep:phrase ref="cgi/users/home:action_new">New</ep:phrase>
     <ep:phrase ref="cgi/users/home:action_delete">Delete</ep:phrase>
     <ep:phrase ref="cgi/users/home:action_edit">Edit</ep:phrase>
-    <ep:phrase ref="cgi/users/home:action_clone">Use as template</ep:phrase>
+    <ep:phrase ref="cgi/users/home:action_copy">Use&nbsp;as&nbsp;template</ep:phrase>
+    <ep:phrase ref="cgi/users/home:action_clone">New&nbsp;version</ep:phrase>
     <ep:phrase ref="cgi/users/home:action_submit">Deposit</ep:phrase>
     <ep:phrase ref="cgi/users/home:recent_title"><h3>Most Recently Accepted Items</h3></ep:phrase>
     <ep:phrase ref="cgi/users/home:no_recent"><p>You have no accepted items</p></ep:phrase>
@@ -454,8 +455,8 @@ User Area CGI Scripts
     <ep:phrase ref="cgi/users/review:checkout_info">
 <p><strong>Checkout Item:</strong> Return this item to your work area. This will mean it temporarily disappears from the site.</p></ep:phrase>
     <ep:phrase ref="cgi/users/review:document">Document</ep:phrase>
-    <ep:phrase ref="cgi/users/review:clone">New Version</ep:phrase>
-    <ep:phrase ref="cgi/users/review:copy">Use as template</ep:phrase>
+    <ep:phrase ref="cgi/users/review:clone">New&nbsp;version</ep:phrase>
+    <ep:phrase ref="cgi/users/review:copy">Use&nbsp;as&nbsp;template</ep:phrase>
     <ep:phrase ref="cgi/users/review:checkout">Checkout</ep:phrase>
     <ep:phrase ref="cgi/users/review:req_remove">Request Removal</ep:phrase>
     <ep:phrase ref="cgi/users/review:remove_title">Request EPrint Removal</ep:phrase>
@@ -630,7 +631,7 @@ Staff CGI Scripts
     <ep:phrase ref="cgi/users/edit_eprint:moved"><p>EPrint Successfully moved back into the buffer.</p><p>You may now <ep:pin ref="link">edit it</ep:pin> if you wish.</p></ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action_edit">Edit EPrint</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action__remove">Remove EPrint</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action__clone">Clone EPrint</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:action__clone">New Version</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action__toinbox">Bounce EPrint back to Submitter</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action__tobuffer">Move EPrint to Submission Buffer</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action__toarchive">Move EPrint to Main Archive</ep:phrase>

@@ -24,11 +24,11 @@ if( $session->get_archive->get_conf( "disable_userinfo" ) )
 	     $session->html_phrase( "general:disabled_feature_title" ),
 	     $session->html_phrase( "general:disabled_feature_body" ) );
 	$session->send_page;
+	$session->terminate();
+	exit;
 }
-else
-{
-	EPrints::UserPage::process( $session, 0 );
-}
+
+EPrints::UserPage::process( $session, 0 );
 
 $session->terminate();
 

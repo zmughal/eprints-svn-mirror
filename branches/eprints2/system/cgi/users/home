@@ -353,8 +353,8 @@ sub render_workspace
 
 		$td->appendChild( $session->make_text( ", " ) );
 
-		$a = $session->render_link( "submit?eprintid=".$e->get_id."&_action_clone=1" );
-		$a->appendChild( $session->html_phrase("cgi/users/home:action_clone") );
+		$a = $session->render_link( "submit?eprintid=".$e->get_id."&_action_copy=1" );
+		$a->appendChild( $session->html_phrase("cgi/users/home:action_copy") );
 		$td->appendChild( $a );
 
 		$td->appendChild( $session->make_text( ", " ) );

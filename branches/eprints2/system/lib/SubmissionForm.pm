@@ -448,6 +448,34 @@ sub _from_stage_home
 	}
 
 
+	if( $self->{action} eq "copy" )
+	{
+		if( !defined $self->{eprint} )
+		{
+			$self->{session}->render_error( 
+				$self->{session}->html_phrase( 
+					"lib/submissionform:nosel_err" ),
+				$self->{session}->get_archive->get_conf( 
+					"userhome" ) );
+			return( 0 );
+		}
+		
+		my $new_eprint = $self->{eprint}->clone( $self->{dataset}, 0, 1 );
+
+		if( defined $new_eprint )
+		{
+			$self->{new_stage} = "return";
+			return( 1 );
+		}
+		else
+		{
+			my $error = $self->{session}->get_db()->error();
+			$self->{session}->get_archive()->log( "SubmissionForm error: Error copying EPrint ".$self->{eprint}->get_value( "eprintid" ).": ".$error );
+			$self->_database_err;
+			return( 0 );
+		}
+	}
+
 	if( $self->{action} eq "clone" )
 	{
 		if( !defined $self->{eprint} )
