@@ -28,6 +28,7 @@ use EPrints::MetaField;
 use EPrints::MetaInfo;
 use EPrints::Name;
 use EPrints::OpenArchives;
+use EPrints::RequestWrapper;
 use EPrints::SearchExpression;
 use EPrints::SearchField;
 use EPrints::SearchForm;
