@@ -2,16 +2,16 @@
 UPGRADING TO EPRINTS 1.1
 ======================================================================
 
-* Introduction
+* Introduction (General Instructions)
 * Upgrading from a Beta Version
 * Upgrading from 1.0
 * Credits
 
 ====================================================================== 
- INTRODUCTION
+ INTRODUCTION (GENERAL INSTRUCTIONS)
 ======================================================================
 
-The following are changes to make by hand when upgrading from
+* The following are changes to make by hand when upgrading from
 an older EPrints version. The rest of the upgrade should be 
 done automatically by 
 
@@ -19,20 +19,24 @@ done automatically by
 make 
 make install
 
-Make sure that configure has noticed that it's supposed to be
+* Make sure that configure has noticed that it's supposed to be
 doing an upgrade. 
 
-You may need to specify some other options to configure, such as
---with-username, as that are not automatically copied from the 
-previous version.
+* You may need to specify some other options to configure, such 
+as --with-username, as that are not automatically copied from 
+the previous version.
 
-Note that the contents of 
+* Note that the contents of 
  PREFIX/bin
  PREFIX/perl_libs/Eprints
  PREFIX/cgi 
  PREFIX/openarchives 
 will be overwritten, if you have made changes by hand you should 
 re-apply those changes after you have upgraded.
+
+* You should restart the webserver
+
+* You may need to rerun update_htaccess & update_laf
 
 
 

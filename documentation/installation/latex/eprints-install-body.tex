@@ -572,6 +572,7 @@ Ensure that all, or all but one, of the versions of EPrints you intend to use ar
 
 Finally run update\_htaccess as described in the previous section. 
 
+
 \subsubsection{Installing the Crontab}
 \label{manual_crontab}
 
@@ -597,6 +598,20 @@ If the \eprints\ user does not have a valid login shell, some operating systems 
 0 1  * * * su -s /bin/sh -c /opt/eprints/bin/generate_views eprints
 \end{verbatim}
 
+If you are running more than one instance of \eprints\ as the same user you will need to 
+have four lines in your crontab for each instance. The automatic configuration will
+{\em overwrite} the previous crontab so you will have to do this by hand. for example:
+
+\begin{verbatim}
+0 0  * * * /opt/eprints/bin/subs_daily
+15 0 * * 0 /opt/eprints/bin/subs_weekly
+30 0 1 * * /opt/eprints/bin/subs_monthly
+0 1  * * * /opt/eprints/bin/generate_views
+0 0  * * * /opt/eprintsdevel/bin/subs_daily
+15 0 * * 0 /opt/eprintsdevel/bin/subs_weekly
+30 0 1 * * /opt/eprintsdevel/bin/subs_monthly
+0 1  * * * /opt/eprintsdevel/bin/generate_views
+\end{verbatim}
 
 \subsection{Finishing up}
 \label{finishing_up}
@@ -749,7 +764,7 @@ displayname     & Displayable name                                         \\
 editable        & Is the field user-editable                               \\
 help            & Help information for the input form. Repeatable.         \\
 maxlength       & Maximum no. of characters or digits                      \\
-multiple        & Whether a single value or a list (name and set)          \\
+multiple        & Whether a single value or a list (name, username and set) \\
 required        & Is the field required (only used in {\tt metadata.user}) \\
 type            & Type of the field                                        \\
 value           & Repeatable. Possible values in a set/enum.               \\
@@ -782,6 +797,7 @@ pagerange   & Range of pages (or single page) &                  \\
 year        & Year                            &                  \\
 multiurl    & List of URLs                    & displaylines     \\
 name        & A name (or list of names)       & multiple         \\
+username    & A \eprints\ username (or list of usernames)       & multiple         \\
 \hline
 \end{tabular}
 \caption{\label{install_meta_types} Available metadata types}
@@ -899,41 +915,29 @@ The Open Archives Initiative is developing standards to allow this interoperabil
 
 These standards are developing quickly, so \eprints\ has been designed to allow you to keep up with them as easily as possible. All you have to do is upgrade the core \eprints\ software. The upgraded software will use the same site configuration to allow interoperability using new versions of the Open Archives protocol.
 
-For version 1.0 of the software, the publically available version of the Open Archives protocol is a subset of \emph{Dienst} protocol. It is also known as the \emph{Santa Fe convention}. The \eprints\ software includes the open archives subset of the Dienst software developed at Cornell University, and a core module {\tt OpenArchives.pm} that mediates between an \eprints\ archive and Dienst.
+Version 1.1 of the software implements version 1.0 of the Open Archives protocol.
+
+Version 1.1 still includes the \emph{Dienst} software used to implement the forerunner of OAI1.0, the \emph{Santa Fe convention}.  This is provided for back-compatability and will almost certainly be removed in the next release.
 
 Here at Southampton, we've been involved in the development of the Open Archives protocol, and are registered alpha-testers; thus, we've been able to design the software with future versions in mind. When the Open Archives protocol changes, the changes will almost certainly be transparent to you when you upgrade \eprints; in the unlikely event of you having to change your site configuration, the changes will be extremely minor. You will definitely not have to change your live data.
 
-For version 1.0, the base URL of the Open Archives protocol will be:
+For version 1.1, the base URL of the Open Archives protocol will be:
 
 \begin{verbatim}
-http://your.eprints.server.edu/Dienst
-\end{verbatim}
-
-You can test you installation by editing and viewing:
-
-\begin{verbatim}
-eprints/openarchives/Tests/InstallTest.htm
+http://your.eprints.server.edu/perl/oai
 \end{verbatim}
 
 
 \subsubsection{Exporting Metadata}
 
-Firstly, you need to decide on and register an unique archive identifier. For the Dienst-based version of the protocol, information about existing identifiers can be found at:
+This information may change when the protocol OAI1.0 is released.
+Firstly, you need to decide on and register an unique archive identifier. Information about existing identifiers can be found at:
 
-\urlpar{http://www.openarchives.org/sfc/sfc\_archives.htm}
-
-The mechanism for registering an identifier is likely to change, but if you register an archive identifier for the Santa Fe convention, you should be able to keep that for the next version of the protocol, due to be released in January 2001.
+\urlpar{http://www.openarchives.org/}
 
 The Open Archives component of the \eprints\ software uses two methods in {\tt SiteRoutines.pm} to export metadata. One is used to let an Open Archives service know what metadata formats the archive can export; the other is used to retrieve the metadata itself.
 
-In the default configuration, two metadata formats are exported:
-
-\begin{itemize}
-\item Dublin Core metadata.
-\item The Open Archives Metadata Set (OAMS).
-\end{itemize}
-
-The Open Archives Metadata Set is part of the Santa Fe convention, and you need to support this to support the current public version of the protocol. This will be superceded in later versions, so exporting Dublin Core metadata means that your archive will be compliant with the new version of the protocol as soon as you upgrade.
+In the default configuration, only Dublin Core metadata is exported, but it isn't too hard to expand this. 
 
 These metadata formats are specified in {\tt SiteInfo.pm} as:
 
@@ -944,10 +948,6 @@ These metadata formats are specified in {\tt SiteInfo.pm} as:
 The {\tt oai\_list\_metadata\_formats} method in {\tt SiteRoutines.pm} merely returns this.
 
 Code in the {\tt oai\_get\_eprint\_metadata} in {\tt SiteRoutines.pm} is used to map your metadata set to these formats. If you decide to go with the default eprint metadata configuration supplied, you don't have to do anything! If you're using a different metadata set, you need to alter {\tt oai\_get\_eprint\_metadata} to export the relevant metadata. Specific details of how to achieve this are given in the comments in {\tt SiteRoutines.pm}.
-
-Further information about the OAMS can be found at:
-
-\urlpar{http://www.openarchives.org/sfc/sfc\_oams.htm}
 
 Further information about Dublin Core can be found at:
 
