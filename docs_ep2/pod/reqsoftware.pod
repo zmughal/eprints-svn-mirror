@@ -1,12 +1,14 @@
 =head1 What software does EPrints 2.0 need? Where do I get it?
 
-This is a very rough and ready guide. This is alpha software, if you want spell checking wait for the beta...
+EPrints now bundles some perl modules which it uses, to save you installing them. 
 
-Suggestions to improve these instructions are welcome.
+The key requirements are: Perl, Apache with mod_perl, MySQL and the perl module XML::Parser (which in turn needs expat) and the perl module for MySQL DBI support (which requires mysql headers and libraries).
+
+Suggestions to improve these instructions are welcome. 
 
 =head1 Where to get the Required Software From
 
-It's up to you, we have found that installing from source is more effective than RPM's, feel free to dispute this. The best place to get a software tool is the official site, but we've put a mirror of versions known to work at: http://www.eprints.org/files/tools/
+It's up to you, we have found that installing from source is more effective than RPM's, feel free to use RPMs if you prefer but we've had more problems that way. The best place to get a software tool is the official site, but we've put a mirror of versions known to work at: http://www.eprints.org/files/tools/
 
 =head1 Apache/mod_perl
 

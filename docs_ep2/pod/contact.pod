@@ -1,8 +1,9 @@
 =head1 Bug Report Policy
 
-This is ALPHA software, and therefore we know it dosn't work properly yet. Until we get to the point where the main system is BETA there's not much point reporting bugs.
+There is currently no online bug tracking system. Known bugs are listed in the BUGLIST file in the distribution and
+a list will be kept on the http://eprints.org/ site.
 
-However, you may have suggestions, comments, or outright abuse towards the general design or the installation. These may be addressed to the appropriate address.
+If you identify a bug or "issue" (issues are not bugs, but are things which could be clearer or better), and it's not already listed on the site, please let us know at support@eprints.org - include all the information you can: what version of eprints (see SystemSettings.pm if you're not sure), what operating system etc.
 
 =head1 Where to go with Questions and Suggestions
 
@@ -26,3 +27,6 @@ To subscribe send an email to majordomo@ecs.soton.ac.uk containing the text
 
  subscribe eprints-underground
 
+=head2 OAI Lists
+
+The Open Archives Protocol has some mailing lists of its own, see the http://www.openarchives.org/ site for information on these.

@@ -83,3 +83,27 @@ A single field in a dataset. Each dataset has a few "system" fields which eprint
 
 =back
 
+=begin latex
+
+\clearpage
+\begin{figure}
+\centering
+\includegraphics[width=6in]{../lateximages/eprintsuml.eps}
+\caption{EPrints 2 Relational Diagram}
+\end{figure}
+\clearpage
+
+=end latex
+
+=begin html 
+
+=head1 EPrints 2 Relational Diagram
+
+=end html
+
+=for html <p align="center"><img src="eprintsuml.png" width="1092" height="641" /></p>
+
+
+=for text The UML Relational Diagram appears here in the HTML, PDF & Postscript versions.
+
+

@@ -94,7 +94,7 @@ This files use HTML elements (and other elements too). XHTML is a fairly new ver
 
 =item Tags must be closed
 
-All elements must be closed, even ones such as E<lt>liE<gt>. Tags which do not have a close tag in HTML, like E<lt>brE<gt> or E<lt>img src="foo"E<gt> still must be closed eg. E<lt>img src="foo"E<gt>E<lt>/imgE<gt> - this can be abbreviated to the more neat looking:  E<lt>img src="foo" /E<gt>
+All elements must be closed, even ones such as C<< <li> >>. Tags which do not have a close tag in HTML, like C<< <br> >> or C<< <img src="foo"> >> still must be closed eg. C<< <img src="foo"></img> >> - this can be abbreviated to the neater looking:  C<< <img src="foo" /> >>
 
 =item All tags and attributes must be lower case
 
@@ -110,7 +110,7 @@ In HTML the values of attributes do not have to be wrapped in quotes, but in XML
 
 =item All attributes must have a value 
 
-In HTML some attribues did not require a value, for example in E<lt>hr noshadeE<gt> elements. In XHTML it is represented as  E<lt>hr noshade="noshade"E<gt>.
+In HTML some attribues did not require a value, for example in C<< <hr noshade> >> elements. In XHTML it is represented as  C<< <hr noshade="noshade" /> >>
 
 =back
 
@@ -126,7 +126,7 @@ should become in XHTML:
  <hr noshade="noshade" width="2" />
  <p>Foo bar</p>
 
-And that's more or less it. See w3c.org for a complete description.
+And that's more or less it. See http://www.w3c.org/ for a complete description.
 
 =head2 Language specific files.
 
@@ -138,35 +138,35 @@ The XML files all use a DTD which defines a few extra entities. Entities are ite
 
 =over 8
 
-=item I<&archivename;>
+=item C<&archivename;>
 
 The name of the archive in the current language.
 
-=item I<&adminemail;>
+=item C<&adminemail;>
 
 The administrators email address.
 
-=item I<&base_url;>
+=item C<&base_url;>
 
 The base URL of the system (without a trailing slash)
 
-=item I<&perl_url;>
+=item C<&perl_url;>
 
 The base URL of the CGI directory (without a trailing slash)
 
-=item I<&frontpage;>
+=item C<&frontpage;>
 
 The URL of the system homepage.
 
-=item I<&userhome;>
+=item C<&userhome;>
 
 The URL of the user homepage.
 
-=item I<&version;>
+=item C<&version;>
 
 The current EPrints version.
 
-=item I<&ruler;>
+=item C<&ruler;>
 
 The XHTML of the standard divider.
 
@@ -188,9 +188,9 @@ example of mixed tags (and entities):
  xhtml elements: p, a
  eprints entities: archiveemail, archivename
 
-=head1 Primary archive configuration file
+=head1 The Primary Archive Configuration File
 
-This XML file appears in the archives/ directory, usually /opt/eprints2/archives/, it describes the most very basic details about the archive. It is generated (and modified) by configure_archive and will not normally need to be edited.
+This XML file appears in the C<archives/> directory, usually C</opt/eprints2/archives/>, it describes the most very basic details about the archive. It is generated (and modified) by configure_archive and will not normally need to be edited.
 
 EPrints looks in this directory for XML files and attempts to load them all
 when starting the webserver.
@@ -199,7 +199,7 @@ This file should be chmod'd so that it can not be read by random users as it con
 
 The top level element is "archive" which has the attribute "id" which is the id of the archive. It should be the same as the filename. If this file is foo.xml then the id should be foo.
 
-E<lt>archiveE<gt> contains a list of XML tags enclosing some text. eg.
+C<< <archive> >> contains a list of XML tags enclosing some text. eg.
   
   <host>stoatprints.org</host>
 
@@ -207,72 +207,72 @@ The following tags are expected in no special order:
 
 =over 8
 
-=item host
+=item C<< <host> >>
 
 The hostname of this archive.
 
-=item alias
+=item C<< <alias redirect="I<yes-or-no>"> >>
 
-This is optional and may be repeated. It has the attribute "redirect" which may be set to yes or no. This controls what virtual hosts are supported and if they  should redirect to the main (E<lt>hostE<gt>) one.
+This is optional and may be repeated. It has the attribute "redirect" which may be set to yes or no. This controls what virtual hosts are supported and if they  should redirect to the main C<< <host> >>.
 
-=item language 
+=item C<< <language> >>
 
 The ISO id of a language supported by this archive. Repeatable. One of these should also be the defaultlanguage. See below.
 
-=item port
+=item C<< <port> >>
 
 The port number that the server is running on. Usually 80.
 
-=item urlpath
+=item C<< <urlpath> >>
 
-The directory from the root of the server name. Usually /
+The directory from the root of the server name. Usually C</>
 
-=item archiveroot
+=item C<< <archiveroot> >>
 
 The filesystem path of the rest of the archive configuration.
 
-=item configmodule
+=item C<< <configmodule> >>
 
 The path to the perl module which does the main configuration (ArchiveConfig.pm)
 
-=item dbname
+=item C<< <dbname> >>
 
 The name of the MySQL database. Usually the same as the archive ID.
 
-=item dbhost
+=item C<< <dbhost> >>
 
 The host on which MySQL is running. Usually localhost.
 
-=item dbport 
+=item C<< <dbport> >>
 
 An optional MySQL port, if it's not the standard one. Should be empty if we are to use the default.
 
-=item dbsock
+=item C<< <dbsock> >>
 
 An optional MySQL socket. Should be empty if we are to use the default.
 
-=item dbuser
+=item C<< <dbuser> >>
 
 The username to use when connecting to MySQL, usually "eprints".
 
-=item dbpass
+=item C<< <dbpass> >>
 
 The password to use to connect to MySQL.
 
-=item defaultlanguage
+=item C<< <defaultlanguage> >>
 
 One of the supported language. This is the default for this archive.
 
-=item adminemail
+=item C<< <adminemail> >>
 
 The email address of the archive administrator. I strongly suggest that this is an alias rather than a personal email address. If all your webpages contain "bob@footle.edu" and bill takes over from bob you would have to regenerate every page with "bill@footle.edu". Much better to set up an email alias or forward from "archive-support@footle.edu" and point it at bob (for now). Heed these words spoken from grim experience!
 
-=item archivename
+=item C<< <archivename language="I<langcode>"> >>
 
 The name of the archive. This has an attribute "language" the value of which is an iso language id. There should be one of these archivename elements per supported language. eg.
 
     <archivename language="en">White Lemur</archivename>
-    <archivename language="fr">la archive d'Lemur Blanc</archivename>
+    <archivename language="fr">La Archive d'Lemur Blanc</archivename>
 
 (apologies to the french, human languages aren't my strong suit)
 
@@ -300,15 +300,15 @@ The hash has 3 required properties and a number of optional ones.
 
 =over 8
 
-=item id [required]
+=item id (required)
 
-The ID of this view - the view will be placed in a subdirectory of /views/ of this name. The ID is also used to identify the full name of this view in the phrase file. id=>"foo" would find it's title in the phrase "viewname_eprint_foo"
+The ID of this view - the view will be placed in a subdirectory of /views/ of this name. The ID is also used to identify the full name of this view in the phrase file. C<< id=>"foo" >> would find it's title in the phrase "viewname_eprint_foo"
 
-=item fields [required]
+=item fields (required)
 
 The list of the names of the fields to browse, seperated by a slash "/". This should normally be a single field unless you want to merge the values of two fields. The id part of a field may be specified by appending ".id" to the fieldname.
 
-=item order [required]
+=item order (required)
 
 A list of fields to sort by in order of priority, sepearted by slashes "/". A minus sign prefixing the fieldname "-" indicates reverse sorting on that field.
 
@@ -338,11 +338,11 @@ Do not include the count of how many items at the top of the page.
 
 =item nolink
 
-The system generates an index.html in /view/ with a list of all the browse views available. Setting nolink to 1 will hide this item.
+The system generates an C<index.html> in C</view/> with a list of all the browse views available. Setting nolink to 1 will hide this item.
 
 =item noindex
 
-Do not generate an index.html file in /view/I<foo>/ listing all the values of the view and linking to their respective pages.
+Do not generate an C<index.html> file in C</view/I<foo>/> listing all the values of the view and linking to their respective pages.
 
 =back
 
@@ -388,7 +388,7 @@ View the archive status page.
 
 =item editor
 
-User can edit then approve submitted items into the main archive, or delete them, or return them to sender. Also can remove items from the archive back into the edit buffer for corrections, and move records into the deleted table [delete them].
+User can edit then approve submitted items into the main archive, or delete them, or return them to sender. Also can remove items from the archive back into the edit buffer for corrections, and move records into the deleted table (delete them).
 
 =item staff-view
 
@@ -445,17 +445,18 @@ digits long. Stored as an INT in the database.
 
 Optional properties: input_rows, input_cols
 
-This type describes an unlimited length text field. Used for things like titles and abstracts. It can't be effiently searched as a single value, the system indexes the words. See "free text indexing" section.
+This type describes an unlimited length text field. Used for things like titles and abstracts. It can't be effiently searched as a single value, the system indexes the words. See "free text indexing" section. Stored in MySQL as a C<TEXT> field.
+
 
 =item date
 
-This type describes a date, always expressed as yyyy-mm-dd, eg. 1969-05-23. It is stored as a DATE in the database.
+This type describes a date, always expressed as yyyy-mm-dd, eg. 1969-05-23. It is stored as a C<DATE> in the database.
 
 =item boolean
 
 Optional properties: input_style
 
-This is a simple yes/no field which is stored in the database as SET( 'TRUE','FALSE' ). It can be rendered as a menu, a check box or radio buttons. (See input_style)
+This is a simple yes/no field which is stored in the database as C<SET( 'TRUE','FALSE' )>. It can be rendered as a menu, a check box or radio buttons. (See input_style)
 
 =item name
 
@@ -465,7 +466,7 @@ This type is used to store names of people (eg. authors). It is split into 4 par
 
 We use "family name" rather than "last name" in the hope of avoiding international confusion (some countries list family name first, so their last name is what I would call their "christian", or "first", name.
 
-Names are stored using 4 SQL fields. The name field "supervisor" would be stored as supervisor_honourific, supervisor_given, supervisor_family, supervisor_lineage. Each is a VARCHAR(255).
+Names are stored using 4 SQL fields. The name field "supervisor" would be stored as supervisor_honourific, supervisor_given, supervisor_family, supervisor_lineage. Each is a C<VARCHAR(255)>.
 
 =item set
 
@@ -475,7 +476,7 @@ Optional properties: input_rows
 
 This type is a limited set of options. The list of options must be specified. Each option must also be added to the phrase file. Option "foo" of field "bar" in the "user" dataset will have the phrase id "user_fieldopt_bar_foo".
 
-Stored in the database as a VARCHAR(255).
+Stored in the database as a C<VARCHAR(255)>, containing the id of the option.
 
 =item text
 
@@ -483,7 +484,7 @@ Optional properties: input_cols, maxlength
 
 This is a simple text field. It normally has a maximum length of 255 ASCII characters, less if non-ASCII characters are used as these are UTF-8 encoded.
 
-Stored in the database as a VARCHAR(255).
+Stored in the database as a C<VARCHAR(255)>.
 
 =item secret
 
@@ -519,7 +520,7 @@ A later version of eprints2 will have a feature which allows an admin user to li
 
 A range of pages, eg 1-44. Currently not searchable.
 
-Stored in the database as a VARCHAR(255).
+Stored in the database as a C<VARCHAR(255)>.
 
 =item datatype
 
@@ -561,7 +562,7 @@ The languages supported by this archive. Configured in ArchiveConfig.pm
 
 =back
 
-Stored in the database as a VARCHAR(255).
+Stored in the database as a C<VARCHAR(255)>.
 
 =item langid
 
@@ -569,7 +570,7 @@ This is used internally, it contains an ISO language ID. You probably don't want
 
 =item id
 
-This is also used internally, it contains the ID part of a field with the hasid property. Don't use it! Stored in the database as a VARCHAR(255).
+This is also used internally, it contains the ID part of a field with the hasid property. Don't use it! Stored in the database as a C<VARCHAR(255)>.
 
 =back
 
@@ -984,27 +985,27 @@ $page now contains:
 
 =over 8
 
-=item $session->make_text( $text )
+=item C<< $session->make_text( $text ) >>
 
 Returns a DOM object representing that text.
 
-=item $session->make_doc_fragment()
+=item C<< $session->make_doc_fragment() >>
 
 Returns a document fragment. This renders to nothing but is a container to which you can add stuff.
 
-=item $session->make_element( $name, %opts )
+=item C<< $session->make_element( $name, %opts ) >>
 
 Makes a simple XHTML element. %opts is an optional series of attributes.
 
-To make <h1 class="foo"></h1> you would call:
+To make C<< <h1 class="foo">...</h1> >> you would call:
 
-$session->make_element( "h1", class=>"foo" );
+ $session->make_element( "h1", class=>"foo" );
 
-=item $session->render_ruler();
+=item C<< $session->render_ruler(); >>
 
 Returns the default ruler for the archive (from ruler.xml).
 
-=item $session->render_link( $uri, $target )
+=item C<< $session->render_link( $uri, $target ) >>
 
 Returns the XHTML element (with URI properly escaped):
 
@@ -1012,41 +1013,37 @@ Returns the XHTML element (with URI properly escaped):
 
 Which you can appendChild stuff into. If $target is specified then a target attribute is included - to make it pop up a new window.
 
-=item $item->render_value( $fieldname, $showall )
+=item C<< $item->render_value( $fieldname, $showall ) >>
 
 $item is either an EPrint, a User or a Document.
 
 $fieldname is the name of the field you want to render. If $showall is 1 then ALL values are rendered in a multilang field.
 
-=item $item->render_citation( $style )
+=item C<< $item->render_citation( $style ) >>
 
 Renders the citation of the item using the citation for the item's type from the citation file.
 
 If $style is set then it uses the citation with that id instead.
 
-=item $item->render_citation_link( $style )
+=item C<< $item->render_citation_link( $style ) >>
 
 This renders a citation as above, but links it to the url of the item.
 
-=item $item->render_description()
+=item C<< $item->render_description() >>
 
 This renders a simple description of the item using the default citation for this dataset eg. for eprint it uses citation type "eprint".
 
-=item $session->html_phrase( $phraseid, %opts )
+=item C<< $session->html_phrase( $phraseid, %opts ) >>
 
 Returns the item from the phrase file. If you don't care about supporting multiple languages then just use make_text instead, it's easier.
 
-=over 4 
+It looks first in the archive field from the current language. 
 
-=item It looks first in the archive field from the current language. 
+Then in the archive phrase file for english.
 
-=item Then in the archive phrase file for english.
+Then is the system phrase file for the current language.
 
-=item Then is the system phrase file for the current language.
-
-=item Then is the system phrase file for the english.
-
-=back
+Then is the system phrase file for the english.
 
 The %opts are a series of DOM elements to place in the "pin" items in the phrase file.
 
@@ -1056,15 +1053,15 @@ The %opts are a series of DOM elements to place in the "pin" items in the phrase
 
 =over 8
 
-=item $item->get_value( $fieldname, $no_id )
+=item C<< $item->get_value( $fieldname, $no_id ) >>
 
 Returns the value of field $fieldname from the item. An optional second parameter may be set to 1 to return the value without the "id" part, to keep things simple.
 
-=item $item->is_set( $fieldname )
+=item C<< $item->is_set( $fieldname ) >>
 
 Returns true if the field is set on this object, false otherwise.
 
-=item $eprint->get_all_documents()
+=item C<< $eprint->get_all_documents() >>
 
 Return an array of the document objects belonging to this eprint.
 
@@ -1166,23 +1163,23 @@ In addition you may use XHTML elements and the following elements in the eprints
 
 =over 8 
 
-=item ep:linkhere
+=item C<< <ep:linkhere> >>
 
 This element is replaced with an XHTML anchor linking to the item. If this citation is being rendered without a link then it is just removed (but not the contents).
 
-=item ep:iflink
+=item C<< <ep:iflink> >>
 
 The contents of this element are only preserved if we are rendering this citation as a link. Maybe an icon which you don't want if it's not a link.
 
-=item ep:ifnotlink
+=item C<< <ep:ifnotlink> >>
 
 The opposite of iflink. 
 
-=item ep:ifset ref="fieldname"
+=item C<< <ep:ifset ref="fieldname"> >>
 
 The contents of this element are only preserved if the field "fieldname" has a value.
 
-=item ep:ifnotset ref="fieldname"
+=item C<< <ep:ifnotset ref="fieldname"> >>
 
 The contents of this element are only preserved if the field "fieldname" does not have a value.
 
@@ -1282,19 +1279,19 @@ This file is the shell of every page in the system. It is more or less a normal 
 
 =over 8
 
-=item I<title>
+=item C<< <ep:pin ref="title" /> >>
 
 This is where to put the title of the page. It can be used more than once  - in the title in the page header and somewhere in the body. If placing it in the title in the head of the page you must use the additional attribute textonly="yes" which only works here. It removes images from the title (which can happen if using the "Latex" mode).
 
-=item I<head>
+=item C<< <ep:pin ref="head" /> >>
 
 This goes somewhere in the head of the page. It shows eprints where to insert the "meta" and "link" elements.
 
-=item I<pagetop>
+=item C<< <ep:pin ref="pagetop" /> >>
 
 This goes at the top of the body. It is sometimes used as a "target".
 
-=item I<page>
+=item C<< <ep:pin ref="page" /> >>
 
 Where to place the bulk of the content of the page.
 
