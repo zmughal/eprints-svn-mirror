@@ -4,6 +4,17 @@ my $basedir = "/opt/eprints/html/documents/demo";
 `rm -rf $basedir`;
 `(echo yes; echo "") | /opt/eprints/bin/erase_archive`;
 `/opt/eprints/bin/create_databases`;
+my @firnames;
+my $surnames;
+open(ECSINFO,"ypcat ecsinfo|");
+while(<ECSINFO>) {
+	my @row = split /:/;
+	foreach(@row){ s/[\\']/\\$&/g; }
+	push @firnames,$row[2];
+	push @firnames,$row[1];
+	push @surnames,$row[0];
+}
+close ECSINFO;
 
 @subs = ();
 print "SUBJECTS:\n";
@@ -35,13 +46,13 @@ for $id (1..5000) {
 	}
 	print MYSQL "INSERT INTO archive (eprintid,username,type,title,year,ispublished,refereed,pubdom,abstract,conference,dir,succeeds,commentary) VALUES ('$eprintid','cjg','confpaper','title goes here (#$id)',$year,0,0,0,'barble this be da abstract','conference name','demo/$id','$s','$c');\n";
 	for(0..rand(5)+1) {
-		$sur = ("Harris","Porrige","Jones","Smith","Buffet","Summers")[int rand 6];
-		$fir = ("Bill","Ben","Tim","Al","Will","Jules","Jon","Fred","Tony","Chris","Naomi","Jim")[int rand 12];
+		$sur = $surnames[int rand scalar @surnames];
+		$fir = $surnames[int rand scalar @firnames];
 		print MYSQL "INSERT INTO archiveauxauthors VALUES ('$eprintid',$_,'$fir','$sur');\n";
 	}
-	for(0..rand(1)+1) {
-		$sur = ("Harris","Porrige","Jones","Smith","Buffet","Summers")[int rand 6];
-		$fir = ("Bill","Ben","Tim","Al","Will","Jules","Jon","Fred","Tony","Chris","Naomi","Jim")[int rand 12];
+	for(0..rand(2)) {
+		$sur = $surnames[int rand scalar @surnames];
+		$fir = $surnames[int rand scalar @firnames];
 		print MYSQL "INSERT INTO archiveauxeditors VALUES ('$eprintid',$_,'$fir','$sur');\n";
 	}
 	for(0..rand(3)+1) {
