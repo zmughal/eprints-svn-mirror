@@ -1601,7 +1601,7 @@ sub _do_stage_files
 		"dataset",
 		$self->{eprint}->get_dataset()->id() ) );
 
-	my @reqformats = @{$self->{session}->get_archive()->get_conf( "required_formats" )};	
+	my @reqformats = $self->{eprint}->required_formats;
 	if( scalar @reqformats == 0 )
 	{
 		$form->appendChild(

@@ -856,8 +856,7 @@ sub validate_documents
 	my( $self, $for_archive ) = @_;
 	my @problems;
 	
-        my @req_formats = @{$self->{session}->get_archive()->get_conf( 
-		"required_formats" )};
+        my @req_formats = $self->required_formats;
 	my @docs = $self->get_all_documents();
 
 	my $ok = 0;
@@ -1039,6 +1038,33 @@ sub datestamp
 		EPrints::Utils::get_datestamp( time ) );
 }
 
+######################################################################
+=pod
+
+=item @formats =  $eprint->required_formats
+
+Return a list of the required formats for this 
+eprint. Only one of the required formats is required, not all.
+
+An empty list means no format is required.
+
+=cut
+######################################################################
+
+sub required_formats
+{
+	my( $self ) = @_;
+
+	my $fmts = $self->{session}->get_archive()->get_conf( 
+				"required_formats" );
+	if( ref( $fmts ) ne "ARRAY" )
+	{
+		# function pointer then...
+		$fmts = &{$fmts}($self->{session},$self);
+	}
+
+	return @{$fmts};
+}
 
 ######################################################################
 =pod

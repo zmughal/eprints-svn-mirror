@@ -144,6 +144,23 @@ $c->{required_formats} =
 	"ascii"
 ];
 
+# if you want to make this depend on the values in the eprint then
+# you can make it a function pointer instead. The function should
+# return a list as above.
+
+# This example requires all normal formats for all eprints except
+# for those of type book where a document is optional.
+#
+# $c->{required_formats} = sub {
+# 	my( $session, $eprint ) = @_;
+# 
+# 	if( $eprint->get_value( 'type' ) eq "book" )
+# 	{
+# 		return [];
+# 	}
+# 	return ['html','pdf','ps','ascii'];
+# };
+
 # This sets the minimum amount of free space allowed on a disk before EPrints
 # starts using the next available disk to store EPrints. Specified in kilobytes.
 $c->{diskspace_error_threshold} = 64*1024;
