@@ -76,7 +76,7 @@ sub get_index_codes_basic
 	my @s1 = stat( $words_file );
 	my @s2 = stat( $indexcodes_file );
 
-	if( !defiend $s1[9] ) 
+	if( !defined $s1[9] ) 
 	{ 
 		# no words file!
 		return( [], [], [] );

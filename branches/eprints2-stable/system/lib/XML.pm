@@ -458,7 +458,7 @@ sub to_string
 		{
 			my $attr = $nnm->item($i);
 			my $name = $attr->getName;
-			next if( $name =~ m/^xmlns/ );
+			next if( $noxmlns && $name =~ m/^xmlns/ );
 			next if( $done->{$attr->getName} );
 			$done->{$attr->getName} = 1;
 			# cjg Should probably escape these values.

@@ -1967,3 +1967,10 @@ PACKAGE: 2.2.99.2
  - Modified Fulltext field type to cache extracted index codes to
     reduce CPU load.
 
+2004-08-06 cjg
+
+ - Fixed spelling mistake in Fulltext.pm
+ - Made noxmlns actually cause/not cause xmlns to be stripped in
+    XML to_string (bug fix)
+
+
