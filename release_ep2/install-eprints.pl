@@ -141,7 +141,6 @@ while (!$dirokay)
 			$systemsettings{"group"} = $EPrints::SystemSettings::conf->{"group"};
 			$oldv = $EPrints::SystemSettings::conf->{"version_id"};
 			$newv = $systemsettings{"version_id"};
-			print "oldv: $oldv newv: $newv\n";
 			# Mild cheat to make sure 2.0.a is before 2.0, etc.
 			$oldv =~ s/^2\.0\.a/0\.0\.0/;
 			$newv =~ s/^2\.0\.a/0\.0\.0/;
@@ -287,7 +286,6 @@ package EPrints::SystemSettings;
 SPIEL
 
 print FILEOUT $dumper->Dump();
-print $dumper->Dump();
 print FILEOUT "\n1;";
 
 
