@@ -11,11 +11,6 @@
 #
 ######################################################################
 #
-#  26/11/99 - Created by Robert Tansley
-#  $Id$
-#
-######################################################################
-#
 #  __COPYRIGHT__
 #
 # Copyright 2000-2008 University of Southampton. All Rights Reserved.
@@ -32,12 +27,13 @@ use EPrints::Database;
 use EPrints::HTMLRender;
 
 use EPrintSite::SiteRoutines;
+use EPrintSite::SiteInfo;
 
 use strict;
 
 
 # GLOBAL SITE REVISION NUMBER
-$EPrints::Session::eprints_software_version = "Beta-1 (4/7/2000)";
+$EPrints::Session::eprints_software_version = "Beta-devel";
 
 
 ######################################################################
@@ -110,8 +106,8 @@ sub failure
 	my $error_text = "<STRONG>$problem</STRONG>";
 
 	$self->{render}->render_error( $error_text,
-	                                 $EPrints::SiteInfo::frontpage,
-	                                 $EPrints::SiteInfo::sitename );
+	                               $EPrintSite::SiteInfo::frontpage,
+	                               $EPrintSite::SiteInfo::sitename );
 }
 
 

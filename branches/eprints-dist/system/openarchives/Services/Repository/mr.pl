@@ -4,8 +4,6 @@
 #
 # File: mr.pl
 #
-# Versions: $Id$
-#
 # Description:
 #       Repository
 #
@@ -60,7 +58,7 @@ package Repository;
 
 use strict;
 
-use CGI;
+use CGI qw(-oldstyle_urls);
 use POSIX;
 use XML::Writer;
 use IO;

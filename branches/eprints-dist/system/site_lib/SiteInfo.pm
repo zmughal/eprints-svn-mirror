@@ -7,11 +7,6 @@
 #
 ######################################################################
 #
-#  01/10/99 - Created by Robert Tansley
-#  $Id$
-#
-######################################################################
-#
 #  __COPYRIGHT__
 #
 # Copyright 2000-2008 University of Southampton. All Rights Reserved.
@@ -238,6 +233,7 @@ $EPrintSite::SiteInfo::html_banner = "
             <A HREF=\"$EPrintSite::SiteInfo::server_static/register.html\">Register</A>\&nbsp;<BR><BR>
             <A HREF=\"$EPrintSite::SiteInfo::server_perl/users/subscribe\">Subscriptions</A>\&nbsp;<BR><BR>
             <A HREF=\"$EPrintSite::SiteInfo::server_perl/users/home\">Deposit\&nbsp;Papers</A>\&nbsp;<BR><BR>
+            <A HREF=\"$EPrintSite::SiteInfo::server_static/help\">Help</A>
           </td>
         </tr>
       </table>
@@ -273,19 +269,19 @@ $EPrintSite::SiteInfo::signature =
 #  Default text to send a user when "bouncing" a submission back to their
 #  workspace. It should leave some space for staff to give a reason.
 $EPrintSite::SiteInfo::default_bounce_reason =
-"Unfortunately your document:\n\n".
+"Unfortunately your eprint:\n\n".
 "  _SUBMISSION_TITLE_\n\n".
 "could not be accepted into $EPrintSite::SiteInfo::sitename as-is.\n\n\n\n".
-"The document has been returned to your workspace. If you\n".
-"visit your author area you will be able to edit your\n".
-"document, fix the problem and redeposit.\n";
+"The eprint has been returned to your workspace. If you\n".
+"visit your paper depositing page you will be able to\n".
+"edit your eprint, fix the problem and redeposit.\n";
 
 #  Default text to send a user when rejecting a submission outright.
 $EPrintSite::SiteInfo::default_delete_reason =
-"Unfortunately your document:\n\n".
+"Unfortunately your eprint:\n\n".
 "  _SUBMISSION_TITLE_\n\n".
 "could not be accepted into $EPrintSite::SiteInfo::sitename.\n\n\n\n".
-"The document has been deleted.\n";
+"The eprint has been deleted.\n";
 
 
 ######################################################################

@@ -6,11 +6,6 @@
 #
 ######################################################################
 #
-# 01/10/99 - Created by Robert Tansley
-# $Id$
-#
-######################################################################
-#
 #  __COPYRIGHT__
 #
 # Copyright 2000-2008 University of Southampton. All Rights Reserved.
@@ -748,7 +743,7 @@ sub input_field_tr
 	my $colspan = ($show_names ? " COLSPAN=2" : "" );
 	my $align = ($show_names ? "" : " ALIGN=CENTER" );
 	
-	if( $show_help )
+	if( $show_help && defined $field->{help} )
 	{
 		$html .= "<TR><TD$colspan>&nbsp;</TD></TR>\n";
 		$html .= "<TR><TD$colspan><CENTER><EM>$field->{help}</EM></CENTER>".
@@ -1181,7 +1176,7 @@ sub render_eprint_full
 	# Threads
 	if( $eprint->in_thread( $succeeds_field ) )
 	{
-		$html .= "<h3>Version Information</h3>\n";
+		$html .= "<h3>Available Versions of This Paper</h3>\n";
 		$html .= $self->write_version_thread( $eprint, $succeeds_field );
 	}
 	
@@ -1443,15 +1438,24 @@ sub _write_version_thread_aux
 		if( $eprint->{eprintid} ne $eprint_shown->{eprintid} );
 	
 	# Write the citation
-	$html .= EPrintSite::SiteRoutines::eprint_render_citation(
-		$eprint,
-		1 );
+	my $citation_spec =
+		$EPrintSite::SiteInfo::thread_citation_specs{$field->{name}};
+
+	$html .= EPrints::Citation::render_citation( $eprint->{session},
+	                                             $citation_spec,
+	                                             $eprint,
+	                                             1 );
+
+
+#	EPrintSite::SiteRoutines::eprint_render_citation(
+#		$eprint,
+#		1 );
 	
 	# End of the link if appropriate
 	$html .= "</A>" if( $eprint->{eprintid} ne $eprint_shown->{eprintid} );
 
 	# Show the current
-	$html .= " <strong>[This]</strong>"
+	$html .= " <strong>[Currently displayed]</strong>"
 		if( $eprint->{eprintid} eq $eprint_shown->{eprintid} );
 	
 	# Are there any later versions in the thread?

@@ -4,11 +4,6 @@
 #
 ######################################################################
 #
-#  19/10/99 - Created by Robert Tansley
-#  $Id$
-#
-######################################################################
-#
 #  __COPYRIGHT__
 #
 # Copyright 2000-2008 University of Southampton. All Rights Reserved.
@@ -56,11 +51,11 @@ my $valid_user = ( $#{$probs} == -1 );
 #
 ######################################################################
 
-print $session->{render}->start_html( "User Area for $fullname" );
+print $session->{render}->start_html( "Deposit Papers ($fullname)" );
 
 
 ### Welcome author blurb
-print "<P><CENTER>Welcome to your user area at ".
+print "<P><CENTER>Welcome to the paper depositing area at ".
 	"$EPrintSite::SiteInfo::sitename. Please select one of the options ".
 	"below.</CENTER></P>\n";
 

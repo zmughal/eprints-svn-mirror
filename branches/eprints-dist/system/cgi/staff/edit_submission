@@ -4,11 +4,6 @@
 #
 ######################################################################
 #
-#  16/02/2000 - Created by Robert Tansley
-#  $Id$
-#
-######################################################################
-#
 #  __COPYRIGHT__
 #
 # Copyright 2000-2008 University of Southampton. All Rights Reserved.
@@ -96,7 +91,7 @@ else
 	my $subform = new EPrints::SubmissionForm(
 		$session,
 		"view_submission?eprintid=$eprint_id",
-		0,
+		1,
 		$EPrints::Database::table_buffer );
 
 	$subform->process();

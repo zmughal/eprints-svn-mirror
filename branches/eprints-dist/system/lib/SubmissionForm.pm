@@ -4,11 +4,6 @@
 #
 ######################################################################
 #
-#  14/02/2000 - Created by Robert Tansley
-#  $Id$
-#
-######################################################################
-#
 #  __COPYRIGHT__
 #
 # Copyright 2000-2008 University of Southampton. All Rights Reserved.
@@ -78,10 +73,10 @@ $EPrints::SubmissionForm::stage_confirmdel = "stage_confirmdel"; # Confirm delet
 $EPrints::SubmissionForm::corruption_error =
 	"An inconsistency in the posted data was detected. Usually this is caused ".
 	"by arriving directly to this page from a bookmark and not from your ".
-	"author area, or through using the browser's back/forwards or reload ".
-	"buttons. Always access the depositing mechanism via your author area ".
-	"and use the buttons on the form.</P><P>If this has happened in the normal ".
-	"course of operation please tell the " .
+	"paper depositing page, or through using the browser's back/forwards or ".
+	"reload buttons. Always access the depositing mechanism via your author ".
+	"area and use the buttons on the form.</P><P>If this has happened in the ".
+	"normal course of operation please tell the ".
 	"<A HREF=\"mailto:$EPrintSite::SiteInfo::admin\">site administrator</A>";
 
 $EPrints::SubmissionForm::database_error =
@@ -1320,6 +1315,9 @@ sub do_stage_fileview
 
 		print "</CENTER></P>\n";
 		print $self->render_file_view( $doc );
+
+		print "<P ALIGN=CENTER><A HREF=\"".$doc->url()."\" TARGET=_blank>".
+			"Click here to view and verify the uploaded files</A></P>\n";
 	}
 
 	# Render upload file options
@@ -1381,7 +1379,7 @@ sub do_stage_upload
 		print "<P><CENTER><EM>Occasionally, uploading this way may ".
 			"not produce a totally accurate copy. This is because some ".
 			"assumptions about the structure of the HTML must be made, to stop ".
-			"the software trying to upload the whole World-Wide Web!</EM>".
+			"the software from trying to upload the whole World-Wide Web!</EM>".
 			"</CENTER></P>\n";
 		my $url_field = EPrints::MetaField->new( "url:text:::::" );
 		print "<P><CENTER>";
@@ -1495,7 +1493,7 @@ sub do_stage_verify
 	{
 		print "<P><CENTER>Please verify that all of the details about your ".
 			"deposit are correct, and that all necessary document files ".
-			"have been correctly upload including any figures.</CENTER></P>\n";
+			"have been correctly uploaded including any figures.</CENTER></P>\n";
 		print "<HR>\n";
 		
 		print $self->{session}->{render}->render_eprint_full( $self->{eprint} );
@@ -1532,8 +1530,8 @@ sub do_stage_done
 		"Provided there are no problems it should appear in the main archive ".
 		"within the next few days.</CENTER></P>\n";
 	
-	print "<P><CENTER><A HREF=\"home\">Click here to return to your author ".
-		"area</A></CENTER></P>\n";
+	print "<P><CENTER><A HREF=\"home\">Click here to return to your deposit ".
+		"papers page</A></CENTER></P>\n";
 
 	print $self->{session}->{render}->end_html();
 }

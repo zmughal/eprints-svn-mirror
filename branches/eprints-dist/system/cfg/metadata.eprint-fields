@@ -211,6 +211,17 @@ displayname = "Refereed"
 help = "Please indicate whether this version of the work been refereed below."
 </field>
 
+<field referencetext>
+editable = YES
+visible = YES
+type = "multitext"
+displayname = "References"
+displaylines = 3
+help = "You are strongly encouraged to paste in the reference list of your "
+help = "paper into the box below. It will be used to link your paper to those "
+help = "it cites and to those that cite it."
+</field>
+
 <field reportno>
 editable = YES
 type = "text"

@@ -7,11 +7,6 @@
 #
 ######################################################################
 #
-# 10/11/99 - Created by Robert Tansley
-# $Id$
-#
-######################################################################
-#
 #  __COPYRIGHT__
 #
 # Copyright 2000-2008 University of Southampton. All Rights Reserved.
@@ -27,6 +22,7 @@ use EPrints::Log;
 use EPrints::EPrint;
 use EPrintSite::SiteInfo;
 
+use File::Basename;
 use File::Path;
 use File::Copy;
 use Cwd;

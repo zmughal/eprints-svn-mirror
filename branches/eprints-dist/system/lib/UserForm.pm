@@ -4,11 +4,6 @@
 #
 ######################################################################
 #
-#  16/02/2000 - Created by Robert Tansley
-#  $Id$
-#
-######################################################################
-#
 #  __COPYRIGHT__
 #
 # Copyright 2000-2008 University of Southampton. All Rights Reserved.
@@ -170,7 +165,7 @@ sub render_form
 	$self->{session}->{render}->render_form( \@edit_fields,
 	                                         $self->{user},
 	                                         1,
-	                                         0,
+	                                         1,
 	                                         [ "Update Record" ],
 	                                         \%hidden );
 }
