@@ -1,6 +1,18 @@
 #!/usr/bin/perl -w
 use Cwd;
 
+$EPRINTS_VERSION = "2.0.a";
+$DATE = `date +%Y-%m-%d`;
+chomp $DATE;
+$NIGHTLY_DESC = "EPrints $EPRINTS_VERSION Alpha (Nightly Build $DATE)";
+$NIGHTLY_VERSION = "$EPRINTS_VERSION-$DATE";
+$MILESTONE_DESC_A = "EPrints $EPRINTS_VERSION (";
+$MILESTONE_DESC_B = ") [Born on $DATE]";
+$MILESTONE_VERSION = $EPRINTS_VERSION;
+%codenames = (
+	"eprints2-alpha-1" => "anchovy"
+);
+
 sub do_license
 {
 	my( $license_file, $version_info, $source) = @_;
@@ -173,6 +185,7 @@ sub do_package
 	}
 	system("cp $originaldir/export/eprints/system/cgi/users/.htaccess eprints/cgi/users/.htaccess");
 	system("cp $originaldir/install-eprints.pl eprints/install-eprints.pl");
+	system("cp $originaldir/licenses/gpl.txt eprints/COPYING");
 	system("chmod -R g-w eprints")==0 or die("Couldn't change permissions on eprints dir.\n");
 	system("mv eprints $package_file")==0 or die("Couldn't move eprints dir to $package_file.\n");
 	system("tar czf ../$package_file.tar.gz $package_file")==0 or die("Couldn't tar up $package_file");
@@ -188,14 +201,23 @@ sub do_package
 
 }
 
-
-if (scalar @ARGV != 4)
-{
-	print "Usage: makepackage.pl <cvs-version-tag> <package-version> <license-file> <package-filename>\n";
-	exit 1;
-}
+$ENV{"CVSROOT"} = ":pserver:moj199\@cvs.iam.ecs.soton.ac.uk:/home/iamcvs/CVS";
 
 # Get all the vars we need.
-($version_tag, $package_version, $license_file, $package_file) = @ARGV;
+($type) = @ARGV;
+if (!defined($type) || $type eq "nightly")
+{
+	$version_tag = "HEAD";
+	$package_version = $NIGHTLY_VERSION;
+	$package_desc = $NIGHTLY_DESC;	
+	$package_file = "eprints-nightly-$DATE";
+}
+else
+{
+	$version_tag = $type;
+	$package_version = $MILESTONE_VERSION;
+	$package_desc = $MILESTONE_DESC_A.$codenames{$type}.$MILESTONE_DESC_B;
+	$package_file = $type;
+}
 
-do_package($version_tag, $package_version, $license_file, $package_file);
+do_package($version_tag, $package_version, "licenses/gplin.txt", $package_file);
