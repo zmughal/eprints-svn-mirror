@@ -377,21 +377,26 @@ print CONF <<END;
 $aliases
   ServerAdmin $adminemail
 
+  # Include this here, so that it's rules come first.
+  Include $vhostfile
+
   Alias $urlpath/perl $cgidir
   Alias $urlpath/ $htdocs_path/
 
-  ErrorDocument 401 $urlpath/error401.html
-  ErrorDocument 404 $urlpath/perl/handle_404
+  <Location "$urlpath">
+    ErrorDocument 401 $urlpath/error401.html
+    ErrorDocument 404 $urlpath/perl/handle_404
+    PerlSetVar EPrints_ArchiveID $archiveid
+  </Location>
 
-  # Include this here, so that it's rewrite ruls come first.
-  Include $vhostfile
-
-  PerlSetVar EPrints_ArchiveID $archiveid
+  # Note that PerlTransHandler can't go inside
+  # a "Location" block as it occurs before the
+  # Location is known.
   PerlTransHandler EPrints::Rewrite
-
 END
 
 my @langs = @{$archive->get_conf( "languages" )};
+
 #my $defaultlang = $archive->get_conf( "defaultlanguage" );
 # cjg remove this stuff later.
 #
@@ -461,10 +466,6 @@ my $secureconfig = <<END;
     PerlAuthzHandler EPrints::Auth::authz
     PerlSetVar EPrints_Security_Area Documents
     require valid-user
-  # cjg remove me before release
-  #  RewriteEngine on
-  #  RewriteBase $securepath/secure
-  #  RewriteRule ^([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])(.*)\$ \$1/\$2/\$3/\$4\$5 [L]
   </Directory>
 
   # This sets up the change_user URL, which does

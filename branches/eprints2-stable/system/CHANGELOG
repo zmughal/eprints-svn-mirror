@@ -1652,4 +1652,19 @@ before next release. (metadata types & fields)
  - Subscriptions now say who they are mailing to (in debug mode), not just
     that they are trying to send subscription #11
 
+2003-11-05 cjg
+
+ - Made FULLTEXT search use a constant for clarity.
+ - 404, 401 pages and the PerlVar now only happen in the correct sub-dir
+ - latsest tool now does RSS output, kinda
+ - get_value is now a property of MetaField which always just calls 
+    get_value_raw on the object, except for the fulltext object.
+ - Added a fulltext field type which just gets the full texts from a 
+    file. Feels like a multiple-longtext.
+ - Added "delete_ordervalues". Stray ordervalues were lying around after
+    items were moved out of the current buffer. Caused error (INSERT) when
+    they came back later.
+ - Renamed "freetext" search to "index" and commented out name_match for
+    now.
+
 ======================================================================

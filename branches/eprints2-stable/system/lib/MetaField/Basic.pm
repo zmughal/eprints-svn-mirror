@@ -1134,6 +1134,13 @@ sub get_index_codes
 	return( [], [], [] );
 }
 
+sub get_value
+{
+	my( $self, $object ) = @_;
+
+	return $object->get_value_raw( $self->{name} );
+}
+
 ######################################################################
 
 1;

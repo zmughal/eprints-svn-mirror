@@ -61,6 +61,8 @@ use EPrints::XML;
 
 use strict;
 
+$EPrints::Utils::FULLTEXT = "_fulltext_";
+
 my $DF_AVAILABLE;
 
 BEGIN {
@@ -1096,7 +1098,20 @@ sub field_from_config_string
 		}
 	}
 
-	my $field = $dataset->get_field( $fieldname );
+	my $field;
+	if( $fieldname eq $EPrints::Utils::FULLTEXT )
+	{
+		$field = new EPrints::MetaField(
+				dataset=>$dataset,
+				multiple=>1,
+				name=>$EPrints::Utils::FULLTEXT,
+				type=>"fulltext" );
+	}
+	else
+	{
+		$field = $dataset->get_field( $fieldname );
+	}
+
 	if( !defined $field )
 	{
 		EPrints::Config::abort( "Can't make field from config_string: $fieldname" );

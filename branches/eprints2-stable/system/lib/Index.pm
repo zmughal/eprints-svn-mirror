@@ -44,8 +44,6 @@ use strict;
 #$index->install;
 #$index->dispose;
 
-
-
 ######################################################################
 =pod
 
@@ -298,6 +296,7 @@ sub insert_ordervalues
 	&_do_ordervalues( $session, $dataset, $data, 1, $tmp );	
 }
 
+
 sub _do_ordervalues
 {
         my( $session, $dataset, $data, $insert, $tmp ) = @_;
@@ -315,8 +314,7 @@ sub _do_ordervalues
 	my $keyvalue = EPrints::Database::prep_value( $data->{$keyfield->get_sql_name()} );
 	my @orderfields = ( $keyfield );
 
-	my $langid;
-	foreach $langid ( @{$session->get_archive()->get_conf( "languages" )} )
+	foreach my $langid ( @{$session->get_archive()->get_conf( "languages" )} )
 	{
 		my @fnames = ( $keyfield->get_sql_name() );
 		my @fvals = ( $keyvalue );
@@ -351,6 +349,31 @@ sub _do_ordervalues
 		$session->get_db->do( $sql );
 	}
 }
+
+sub delete_ordervalues
+{
+        my( $session, $dataset, $id, $tmp ) = @_;
+
+	my @fields = $dataset->get_fields( 1 );
+
+	# remove the key field
+	splice( @fields, 0, 1 ); 
+	my $keyfield = $dataset->get_key_field();
+	my $keyvalue = EPrints::Database::prep_value( $id );
+
+	foreach my $langid ( @{$session->get_archive()->get_conf( "languages" )} )
+	{
+		# cjg raw SQL!
+		my $ovt = $dataset->get_ordervalues_table_name( $langid );
+		if( $tmp ) { $ovt .= "_tmp"; }
+		my $sql;
+		$sql = "DELETE FROM ".$ovt." WHERE ".$keyfield->get_sql_name().' = '.$keyvalue;
+		$session->get_db->do( $sql );
+	}
+}
+
+
+
 
 
 
@@ -506,10 +529,13 @@ sub index_object
 	my $ds = $object->get_dataset;
 	my @fields = $ds->get_fields( 1 );
 
-#	if( $object->get_dataset->confid eq "eprint" )
-#	{
-#		push @fields, $ds->get_field( "_fulltext" );
-#	}
+	if( $object->get_dataset->confid eq "eprint" )
+	{
+		push @fields, 
+			EPrints::Utils::field_from_config_string( 
+				$ds,
+				$EPrints::Utils::FULLTEXT );
+	}
 
 	foreach my $field ( @fields )
 	{
@@ -527,26 +553,9 @@ sub index_object
 			push @{$grepcodes}, [ $name, $grepcode ];
 		}
 	}
+
+
 }
-
-#	if( $field->get_name eq "_fulltext" )
-#	{
-#		my @docs = $object->get_all_documents;
-#		my $codes = [];
-#		my $badwords = [];
-#		foreach my $doc ( @docs )
-#		{
-#			my( $doccodes, $docbadwords );
-#			( $doccodes, $docbadwords ) = 
-#					$session->get_archive()->call( 
-#						"extract_words",
-#						$doc->get_text );
-#			push @{$codes},@{$doccodes};
-#			push @{$badwords},@{$docbadwords};
-#		}
-#		return( $codes, [], $badwords );
-#	}
-
 
 sub split_words
 {

@@ -85,6 +85,7 @@ use EPrints::MetaField::Subject;
 use EPrints::MetaField::Text;
 use EPrints::MetaField::Url;
 use EPrints::MetaField::Year;
+use EPrints::MetaField::Fulltext;
 
 use strict;
 

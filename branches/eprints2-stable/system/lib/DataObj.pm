@@ -66,14 +66,14 @@ sub get_value
 {
 	my( $self, $fieldname, $no_id ) = @_;
 	
-	my $r = $self->{data}->{$fieldname};
-
 	my $field = EPrints::Utils::field_from_config_string( $self->{dataset}, $fieldname );
 
 	if( !defined $field )
 	{
 		EPrints::Config::abort( "Attempt to get value from not existant field: ".$self->{dataset}->id()."/$fieldname" );
 	}
+
+	my $r = $field->get_value( $self );
 
 	unless( EPrints::Utils::is_set( $r ) )
 	{
@@ -101,6 +101,12 @@ sub get_value
 	return $r2;
 }
 
+sub get_value_raw
+{
+	my( $self, $fieldname ) = @_;
+
+	return $self->{data}->{$fieldname};
+}
 
 ######################################################################
 =pod

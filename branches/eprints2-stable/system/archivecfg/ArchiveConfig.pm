@@ -31,13 +31,12 @@ foreach my $file (
 	}
 }
 
-
-use EPrints::Utils;
-
-use EPrints::XML;
 use Unicode::String qw(utf8 latin1 utf16);
+
 use strict;
 
+use EPrints::Utils;
+use EPrints::XML;
 use EPrints::Latex;
 
 sub get_conf
@@ -403,7 +402,7 @@ $c->{search}->{simple} =
 		{
 			id => "basic",
 			meta_fields => [
-				"_fulltext",
+				$EPrints::Utils::FULLTEXT,
 				"title",
 				"creators",
 				"date_effective" 
@@ -434,7 +433,7 @@ $c->{search}->{simple} =
 $c->{search}->{advanced} = 
 {
 	search_fields => [
-		{ meta_fields => [ "_fulltext" ] },
+		{ meta_fields => [ $EPrints::Utils::FULLTEXT ] },
 		{ meta_fields => [ "title" ] },
 		{ meta_fields => [ "creators" ] },
 		{ meta_fields => [ "abstract" ] },

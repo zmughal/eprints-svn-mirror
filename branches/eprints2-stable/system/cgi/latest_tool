@@ -68,17 +68,131 @@ else
 
 $searchexp->perform_search();
 my @records = $searchexp->get_records( 0, $number_to_get );
-foreach my $item ( @records )
-{
-	my $p = $session->make_element( "p", class=>$class );
-	$p->appendChild( $item->render_citation_link( $citation ) );
-	$page->appendChild( $p )
-
-}
 $searchexp->dispose();
-$session->build_page( $title, $page, "latest_tool" );
-$session->send_page();
+
+my $output = $session->param( "output" );
+if( $output eq "rss" )
+{
+	my $content = "text/xml";
+	#if( $session->param( "debug" ) eq "yes" )
+	#{
+		$content = "text/plain";
+	#}
+
+	$session->send_http_header( content_type=>$content );
+
+	my $response = $session->make_element( "rdf:RDF",
+		"xmlns:rdf"=>"http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+		"xmlns"=>"http://purl.org/rss/1.0/" );
+
+	my $channel = $session->make_element( "channel",
+		"rdf:about"=>"http://www.iamcal.com/rss.php" );
+	$response->appendChild( $channel );
+
+	$channel->appendChild( $session->render_data_element(
+		4,
+		"title",
+		EPrints::Session::best_language( 
+			$session->get_archive(),
+			$session->get_langid(),
+			%{$session->get_archive()->get_conf( "archivename" )} ) ) );
+
+	$channel->appendChild( $session->render_data_element(
+		4,
+		"link",
+		$session->get_archive()->get_conf( "frontpage" ) ) );
+
+	$channel->appendChild( $session->render_data_element(
+		4,
+		"description", 
+		$session->get_archive()->get_conf( "oai","content","text" ) ) );
+
+	$channel->appendChild( $session->render_data_element(
+		4,
+		"pubDate", 
+		EPrints::Utils::get_timestamp() ) );
+
+	$channel->appendChild( $session->render_data_element(
+		4,
+		"lastBuildDate", 
+		EPrints::Utils::get_timestamp() ) );
+
+	$channel->appendChild( $session->render_data_element(
+		4,
+		"language", 
+		$session->get_langid ) );
+
+	$channel->appendChild( $session->render_data_element(
+		4,
+		"copyright", 
+		"" ) );
+
+	$channel->appendChild( $session->render_data_element(
+		4,
+		"docs", 
+		"" ) );
+
+#	<title>Footle</title>
+#	<link>http://www.foo.com/</link>
+#	<description>The Foo.</description>
+#	<lastBuildDate>Tuesday, November 4, 2003 4:31:05 PM</lastBuildDate>
+#	<pubDate>Tuesday, November 4, 2003 4:31:05 PM</pubDate>
+#	<language>en</language>
+#	<copyright>(C)2003 Footle</copyright>
+#	<docs>http://www.foo.com/rss.html</docs>
+
+	my $items = $session->make_element( "items" );
+	$channel->appendChild( $items );
+	my $seq = $session->make_element( "rdf:Seq" );
+	$items->appendChild( $seq );
+
+	foreach my $eprint ( @records )
+	{
+		my $li = $session->make_element( "rdf:li",
+			"rdf:resource"=>$eprint->get_url );
+		$seq->appendChild( $li );
+
+		my $item = $session->make_element( "item",
+			"rdf:about"=>$eprint->get_url );
+
+		$item->appendChild( $session->render_data_element(
+			2,
+			"title",
+			EPrints::Utils::tree_to_utf8( $eprint->render_description ) ) );
+		$item->appendChild( $session->render_data_element(
+			2,
+			"link",
+			$eprint->get_url ) );
+		$item->appendChild( $session->render_data_element(
+			2,
+			"description",
+			EPrints::Utils::tree_to_utf8( $eprint->render_citation ) ) );
+		$response->appendChild( $item );		
+	}	
+
+	print <<END;
+<?xml version="1.0" encoding="UTF-8" ?>
+
+END
+	print EPrints::XML::to_string( $response );
+	EPrints::XML::dispose( $response );
+	print "\n\n";
+	
+}
+else
+{
+
+	foreach my $item ( @records )
+	{
+		my $p = $session->make_element( "p", class=>$class );
+		$p->appendChild( $item->render_citation_link( $citation ) );
+		$page->appendChild( $p )
+	}
+	$session->build_page( $title, $page, "latest_tool" );
+	$session->send_page();
+}
 
 $session->terminate;
+exit;
 
 

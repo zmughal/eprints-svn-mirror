@@ -49,10 +49,10 @@ $EPrints::SearchCondition::operators = {
 	'TRUE'=>0,		#	should only be used in optimisation
 	'FALSE'=>0,		#	should only be used in optimisation
 
-	'freetext'=>1,		#	dataset, field, value	
+	'index'=>1,		#	dataset, field, value	
 
 	'='=>2,			#	dataset, field, value
-	'name_match'=>2,	#	dataset, field, value		
+#	'name_match'=>2,	#	dataset, field, value		
 
 	'AND'=>3,		#	cond, cond...	
 	'OR'=>3,		#	cond, cond...
@@ -155,7 +155,7 @@ sub get_table
 		return undef;
 	}
 
-	if( $self->{op} eq "freetext" )
+	if( $self->{op} eq "index" )
 	{
 		return $dataset->get_sql_index_table_name;
 	}	
@@ -232,7 +232,7 @@ sub item_matches
 		return( 0 );
 	}
 
-	if( $self->{op} eq "freetext" )
+	if( $self->{op} eq "index" )
 	{
 		my( $codes, $grepcodes, $badwords ) =
 			$self->{field}->get_index_codes(
@@ -450,7 +450,7 @@ sub process
 	my $r = [];
 #print STDERR "PROCESS: ".("  "x$i).$self->describe;
 
-	if( $self->{op} eq "freetext" )
+	if( $self->{op} eq "index" )
 	{
 		my $where = "fieldword = '".EPrints::Database::prep_value( 
 			$self->{field}->get_sql_name.":".$self->{params}->[0] )."'";

@@ -836,6 +836,8 @@ sub remove
 		$self->{session}->get_archive()->log( "Error removing item id: $id" );
 	}
 
+	EPrints::Index::delete_ordervalues( $self->{session}, $dataset, $id );
+
 	# Return with an error if unsuccessful
 	return( defined $rv )
 }

@@ -99,8 +99,6 @@ sub new
 		$fields = [ $fields ];
 	}
 
-
-
 	$self->{"fieldlist"} = $fields;
 
 	$prefix = "" unless defined $prefix;

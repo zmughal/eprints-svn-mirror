@@ -10,10 +10,10 @@ Big New Features
 
 Bugs
  * hideemail into non-checkbox
+ * Warn on 0byte uploads
+ * File Upload Broke
  * Users can use staff search
  * FULL TEXT
- * SECURE files are not properly secured!
- * 404 page is for entire domain not /foo/bar/
  * fileinfo does not handle paths correctly
  * can't change username?
  * bug in refine search on defaulted booleans?
@@ -35,7 +35,6 @@ Views
 UserArea
  * Status looks crap.. tidy it up
  * make status page show indexer on/off
- * Clean up Staff eprint searches
  * make better edit/control page?
  * move staff utils to new page?
 Local
@@ -73,6 +72,7 @@ Wishlist
  - "People who read this eprint also read..."
  - OpenURL support (?)
  - Probity (see www.probity.org for more info)
+ - Templates
  - CD-ROM publisher - create ISO of an archive.
  - CD-ROM distribution of software.
 
@@ -262,3 +262,5 @@ CGI Tools
  * render property to supress "UNSPECIFIED": quiet
  * Go Button on subject search.
  * Highlight "problems" blocks
+ * 404 page is for entire domain not /foo/bar/
+ * Clean up Staff eprint searches

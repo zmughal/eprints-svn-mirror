@@ -247,7 +247,7 @@ sub get_search_conditions
 	if( $search_mode eq "simple" )
 	{
 		return EPrints::SearchCondition->new( 
-			'freetext', 
+			'index', 
 			$dataset,
 			$self, 
 			$v2 );
@@ -265,7 +265,7 @@ sub get_search_conditions
 	{
 		next unless EPrints::Utils::is_set( $fpart );
 		push @freetexts, EPrints::SearchCondition->new( 
-						'freetext', 
+						'index', 
 						$dataset,
 						$self, 
 						$fpart );

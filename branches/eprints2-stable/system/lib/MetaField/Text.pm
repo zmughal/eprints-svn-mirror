@@ -107,7 +107,7 @@ sub get_search_conditions_not_ex
 			$session,
 			$search_value );
 	return EPrints::SearchCondition->new( 
-			'freetext',
+			'index',
  			$dataset,
 			$self, 
 			$word );
