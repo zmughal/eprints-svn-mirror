@@ -1,5 +1,0 @@
-#!/bin/sh
-
-rcp -r docs/ moj199@brand.ecs.soton.ac.uk:/home/www.eprints/htdocs/docs/
-rsh -l moj199 brand.ecs.soton.ac.uk chmod a+rX -R /home/www.eprints/htdocs/docs/
-

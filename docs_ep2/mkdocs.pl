@@ -9,6 +9,7 @@ my @ids = (
 	"structure", 
 	"configeprints",
 	"configarchive",
+	"troubleshooting",
 	"howto" ,
 	"vlit" ,
 	"backup" ,
@@ -36,6 +37,7 @@ my %titles = (
 	configeprints => "Configuring the System",
 	configarchive => "Configuring an Archive",
 	howto => "How-To Guides",
+	troubleshooting => "Troubleshooting",
 	backup => "Backing-Up your System",
 	contact => "Problems, Questions and Feedback",
 	vlit => "VLit Transclusion Support",
@@ -319,3 +321,15 @@ foreach $id ( @ids )
 	next if( $filemap{$id} =~ m/binpod/ );
 	`cp ../$filemap{$id} ../docs/pod`;
 }
+chdir( ".." );
+if( $website )
+{
+	print "UPLOADING:\n";
+	print "rm\n";
+	`rsh -l moj199 brand.ecs.soton.ac.uk rm -rf '/home/www.eprints/htdocs/docs/*'`;
+	print "rcp\n";
+	`rcp -r docs/ moj199\@brand.ecs.soton.ac.uk:/home/www.eprints/htdocs/docs/`;
+	print "chmod\n";
+	`rsh -l moj199 brand.ecs.soton.ac.uk chmod a+rX -R /home/www.eprints/htdocs/docs/`;
+}
+

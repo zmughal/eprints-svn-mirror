@@ -221,3 +221,29 @@ If it's being used. Fields used to generate the default dublincore are: title, a
 If it's used there.
 
 =back
+
+=head1 HOW TO: Add a new eprint type
+
+Add the eprint type to B<metadata-types.xml>. Some fields should probably be "required".
+
+Add the name of the type to the phrase file.
+
+Add a citation for this type to the citations file.
+
+=head1 HOW TO: Remove an eprint type
+
+Remove it from metadata-types.xml
+
+You can remove it from the phrase file & citations but it won't hurt to leave it there.
+
+=head1 HOW TO: Add a new document type
+
+Add it to B<metadata-types.xml>. This does not need any fields.
+
+Add the name of the document type to the phrase file.
+
+Add a citation for this document to the citations file.
+
+If you want this to be one of the must-have-one-of document types then add it's id to the list in ArchiveConfig.pm
+
+If you want to do something "clever" on the abstract page then edit the ArchiveRenderConfig.pm file. If you don't then it will use the citiation you created to render it in the list, as with PDF, HTML etc.
