@@ -393,6 +393,7 @@ $c->{search}->{simple} =
 			meta_fields => [
 				$EPrints::Utils::FULLTEXT,
 				"title",
+				"abstract",
 				"creators",
 				"date_effective" 
 			]

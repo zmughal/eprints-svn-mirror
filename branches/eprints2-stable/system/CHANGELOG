@@ -1734,4 +1734,24 @@ PACKAGE: 2.2.99.2
  - ..and some with AuthDBI requiring only Apache.pm not AnApache
  - Fixed a bug with attr->toString not working in newer gdome's
 
+2003-11-27
+
+ - Added some code to wrapper differences between file uploads in
+    apache 1.3 & 2.
+ - Removed some debugging code from generate_views
+ - Fixed a warning in generate_views
+ - indexer now shows current object id it's working on as it's $0
+ - indexer now nice's to 8 not 20
+ - removed more useless "untaint" code
+ - hide_lineage/honourific renamed to {field_defaults}->{hide_lineage}.
+    added some code to Config to deal with old 2.2 config files.
+ - added add_archive and add_file to Document (like upload, but take
+    filenames not handles). 
+ - added sanitise to document. Handles cleaning up the uploaded file
+    names (no longer clears :.* as that's not desirable.
+ - Escaped values in indexer so that we can index "don't"
+ - Improved file uploads interface a little (new style)
+ - Escaped values in toString'd XML attributes.
+
+
 ======================================================================

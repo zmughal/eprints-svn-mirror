@@ -62,6 +62,7 @@ sub new
 		dataset=>$dataset, 
 		session=>$session,
 		count=>0,
+		change_pname => 0,
 		index_table_tmp => $dataset->get_sql_index_table_name."_tmp",
 		grep_table_tmp => $dataset->get_sql_index_table_name."_grep_tmp" 
 	};
@@ -238,8 +239,10 @@ sub build
 	my $info = {
 		allcodes => {},
 		indexer => $self,
+		max => $ds->count( $self->{session} ),
 		rows => 0 };
 
+	
 	$self->{count} = 0;
 	$ds->map( $self->{session}, \&_index_item, $info );
 
@@ -256,6 +259,12 @@ sub _index_item
         my( $session, $dataset, $item, $info ) = @_;
 
 	my $id = $item->get_id;
+	if( $info->{indexer}->{change_pname} )
+	{
+		$0 =~ s/ *\[[^\]]*\]//;
+		my $per = int( 100 * $info->{indexer}->{count} / $info->{max} );
+		$0.= ' ['.$id.' '.$per.'%]';
+	} 
 
 	my $codes = {};
 	my $grepcodes = [];
@@ -271,7 +280,8 @@ sub _index_item
 
 	foreach my $grepcode ( @{$grepcodes} )
 	{
-		my $sql = "INSERT INTO ".$info->{indexer}->{grep_table_tmp}." VALUES ('".$item->get_id."','".$grepcode->[0]."','".$grepcode->[1]."');";
+		my $sql = "INSERT INTO ".$info->{indexer}->{grep_table_tmp}." VALUES ('".
+EPrints::Database::prep_value($item->get_id)."','".EPrints::Database::prep_value($grepcode->[0])."','".EPrints::Database::prep_value($grepcode->[1])."');";
 		$session->get_db->do( $sql ); #cjg
 	}
 
@@ -382,7 +392,7 @@ sub _store
 	my( $self, $info, $code ) = @_;
 
 	#cjg SQL should not really be in this file.
-	my $sql = "INSERT INTO $self->{index_table_tmp} VALUES ( '$code', $info->{rows}, '".join( ':',  @{$info->{allcodes}->{$code}} )."' )";
+	my $sql = "INSERT INTO $self->{index_table_tmp} VALUES ( '".EPrints::Database::prep_value($code)."', $info->{rows}, '".join( ':',  @{$info->{allcodes}->{$code}} )."' )";
 	$self->{session}->get_db->do( $sql );
 	
 	$info->{rows}++;
@@ -508,6 +518,24 @@ sub get_last_timestamp
 	close TIMESTAMP;
 
 	return $timestamp;
+}
+
+######################################################################
+=pod
+
+=item $thing->change_pname( $bool )
+
+If passed "true" then this indexer should modify the process name
+($0) as it does "build".
+
+=cut
+######################################################################
+
+sub change_pname
+{
+	my( $self, $bool ) = @_;
+
+	$self->{change_pname} = $bool;
 }
 
 

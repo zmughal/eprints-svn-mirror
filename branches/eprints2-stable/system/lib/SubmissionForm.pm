@@ -987,10 +987,10 @@ sub _from_stage_fileview
 
 		if( $arc_format eq "plain" )
 		{
-			my $upload = $self->{session}->upload( 'file' );
-			$success = $self->{document}->upload( 
-				$upload->fh, 
-				$upload->filename );
+			$success = EPrints::AnApache::upload_doc_file( 
+				$self->{session},
+				$self->{document},
+				'file' );
 		}
 		elsif( $arc_format eq "graburl" )
 		{
@@ -999,10 +999,10 @@ sub _from_stage_fileview
 		}
 		else
 		{
-			my $upload = $self->{session}->upload( 'file' );
-			$success = $self->{document}->upload_archive( 
-				$upload->fh, 
-				$upload->filename, 
+			$success = EPrints::AnApache::upload_doc_archive( 
+				$self->{session},
+				$self->{document},
+				'file',
 				$arc_format );
 		}
 		
@@ -1048,14 +1048,20 @@ sub _from_stage_fileview
 		return( 1 );
 	}
 
-	if( $self->{action} eq "upload" )
+	if( $self->{action} eq "cancel" )
 	{
-		# Set up info for next stage
-		$self->{arc_format} = $self->{session}->param( "arc_format" );
-		$self->{num_files} = $self->{session}->param( "num_files" );
-		$self->{new_stage} = "upload";
+		$self->{new_stage} = "files";
 		return( 1 );
 	}
+
+#	if( $self->{action} eq "upload" )
+#	{
+#		# Set up info for next stage
+#		$self->{arc_format} = $self->{session}->param( "arc_format" );
+#		$self->{num_files} = $self->{session}->param( "num_files" );
+#		$self->{new_stage} = "upload";
+#		return( 1 );
+#	}
 
 	if( $self->{action} eq "finished" )
 	{
@@ -1634,7 +1640,7 @@ sub _do_stage_docmeta
 	my $submit_buttons = 
 	{	
 		next => $self->{session}->phrase( "lib/submissionform:action_next" ),
-		cancel => $self->{session}->phrase( "lib/submissionform:action_cancel" ),
+		cancel => $self->{session}->phrase( "lib/submissionform:action_doc_cancel" ),
 		_class => "submission_buttons",
 		_order => [ "cancel", "next" ] 
 	};
@@ -1884,6 +1890,10 @@ sub _do_stage_fileview
 	}
 
 	$submit_buttons = {
+		_class => "submission_buttons",
+		_order => [ "prev", "cancel" ],
+		cancel => $self->{session}->phrase(
+				"lib/submissionform:action_doc_cancel" ),
 		prev => $self->{session}->phrase(
 				"lib/submissionform:action_prev" ) };
 
@@ -1891,23 +1901,30 @@ sub _do_stage_fileview
 
 		$submit_buttons->{finished} = $self->{session}->phrase( 
 			"lib/submissionform:action_finished" );
-		$submit_buttons->{_order} = [ "prev" , "finished" ];
+		$submit_buttons->{_order} = [ "prev" , "cancel", "finished" ];
 	}
-
-	$page->appendChild( $self->{session}->html_phrase(
-		"lib/submissionform:fileview_page_layout",
-		document => $self->{document}->render_description,
-		eprint => $self->{eprint}->render_description,
-		upload_form => $upform,
-		url_form => $urlupform,
-		show_files => $viewfiles ) );
-
 
 	$page->appendChild( 
 		$self->{session}->render_input_form( 
 			staff=>$self->{staff},
 			buttons=>$submit_buttons,
-	        	top_buttons=>$submit_buttons,
+			hidden_fields=>$hidden_fields,
+			default_action=>"prev",
+			dest=>$self->{formtarget}."#t" ) );
+
+	$page->appendChild( 
+		$self->{session}->html_phrase(
+			"lib/submissionform:fileview_page_layout",
+			document => $self->{document}->render_description,
+			eprint => $self->{eprint}->render_description,
+			upload_form => $upform,
+			url_form => $urlupform,
+			show_files => $viewfiles ) );
+
+	$page->appendChild( 
+		$self->{session}->render_input_form( 
+			staff=>$self->{staff},
+			buttons=>$submit_buttons,
 			hidden_fields=>$hidden_fields,
 			default_action=>"prev",
 			dest=>$self->{formtarget}."#t" ) );
@@ -1960,6 +1977,14 @@ sub _do_stage_verify
 	};
 	my $default_action = "prev";
 
+	$page->appendChild( 
+		$self->{session}->render_input_form( 
+			staff=>$self->{staff},
+			buttons=>$submit_buttons,
+			hidden_fields=>$hidden_fields,
+			default_action=>$default_action,
+			dest=>$self->{formtarget}."#t" ) );
+
 	if( scalar @{$self->{problems}} > 0 )
 	{
 		# Null doc fragment past because 'undef' would cause the
@@ -1989,9 +2014,7 @@ sub _do_stage_verify
 	$page->appendChild( 
 		$self->{session}->render_input_form( 
 			staff=>$self->{staff},
-			show_help=>1,
 			buttons=>$submit_buttons,
-	        	#top_buttons=>$submit_buttons,
 			hidden_fields=>$hidden_fields,
 			default_action=>$default_action,
 			dest=>$self->{formtarget}."#t" ) );

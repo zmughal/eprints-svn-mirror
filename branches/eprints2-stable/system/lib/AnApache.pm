@@ -70,6 +70,30 @@ else
 	sub SERVER_ERROR { &Apache::Constants::SERVER_ERROR; }
 	sub NOT_FOUND { &Apache::Constants::NOT_FOUND; }
 	sub DONE { &Apache::Constants::DONE; }
+
+	sub upload_doc_file
+	{
+		my( $session, $document, $paramid ) = @_;
+	
+		my $upload = $session->get_apr->upload( $paramid );
+	
+		return $document->upload( 
+			$upload->fh, 
+			$upload->filename );	
+	}
+
+	sub upload_doc_archive
+	{
+		my( $session, $document, $paramid, $archive_format ) = @_;
+
+		my $upload = $session->get_apr->upload( $paramid );
+	
+		return $document->upload_archive( 
+			$upload->fh, 
+			$upload->filename, 
+			$archive_format );	
+	}
+
 }
 
 

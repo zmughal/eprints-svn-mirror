@@ -210,7 +210,7 @@ sub get_fields_from_config
 			print STDERR "- Type \"".$field->get_type()."\" cannot be browsed.\n";
 			next;
 		}
-		print STDERR "cjg-($fieldid)\n";
+		#print STDERR "cjg-($fieldid)\n";
 		push @fields, $field;
 	}
 	if( scalar @fields == 0 ) { return; }
@@ -309,7 +309,7 @@ sub make_menu
 	{
 		unless( EPrints::Utils::is_set( $view->{nocut} ) && $view->{nocut} )
 		{
-print STDERR  "cjg: Nothing here. Cut.\n";
+#print STDERR  "cjg: Nothing here. Cut.\n";
 				return 0;
 		}
 	}
@@ -354,8 +354,12 @@ print STDERR  "cjg: Nothing here. Cut.\n";
 		{
 
 			my $page = $session->make_doc_fragment;
-
-			my @sh_ids = split( ',', $view->{subheadings} );
+			
+			my @sh_ids = ();
+			if( defined $view->{subheadings} )
+			{
+				 @sh_ids = split( ',', $view->{subheadings} );
+			}
 			my( $list, $n ) = render_list(
 				$session, 
 				$view, 

@@ -182,9 +182,7 @@ sub parse_xml
 		{	
 			$tmpfile =~ s#/#_#g;
 			$tmpfile = $basepath."/.".$tmpfile;
-			symlink( 
-				EPrints::Utils::untaint_file($file),
-				EPrints::Utils::untaint_file($tmpfile) );
+			symlink( $file, $tmpfile );
 		}
 
 		# For some reason the GDOME constants give an error,
@@ -459,7 +457,11 @@ sub to_string
 			next if $done->{$attr->getName};
 			$done->{$attr->getName} = 1;
 			# cjg Should probably escape these values.
-			push @n, " ", $attr->getName."=\"".$attr->getValue."\"";
+			my $value = $attr->getValue;
+			$value =~ s/&/&amp;/g;
+			$value =~ s/"/&quot;/g;
+			my $name = $attr->getName;
+			push @n, " ", $name."=\"".$value."\"";
 		}
 
 		#cjg This is bad. It makes nodes like <div /> if 

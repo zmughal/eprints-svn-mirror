@@ -852,7 +852,7 @@ sub mkdir
 	my( $full_path ) = @_;
 	my @created = eval
         {
-                return mkpath( EPrints::Utils::untaint_dir( $full_path ), 0, 0775 );
+                return mkpath( $full_path, 0, 0775 );
         };
 	if( defined $@ && $@ ne "" ) { warn $@; }
         return ( scalar @created > 0 )
@@ -1652,52 +1652,6 @@ sub human_filesize
 	my $size_in_meg = int( $size_in_k / 1024 );
 
 	return $size_in_meg.'Mb';
-}
-
-######################################################################
-=pod
-
-=item $ok_dir = EPrints::Utils::untaint_dir( $dodgey_dir )
-
-Check this is a legal dir, if so return an untainted version or other-
-wise die.
-
-=cut
-######################################################################
-
-sub untaint_dir
-{
-	my( $dir ) = @_;
-
-	if( $dir =~ m/^[^;\s]+$/ )
-	{
-		return $&;
-	}
-
-	die "Can't safely untaint dir: $dir";
-}
-
-######################################################################
-=pod
-
-=item $ok_file = EPrints::Utils::untaint_file( $dodgey_file )
-
-Check this is a legal file, if so return an untainted version or other-
-wise die.
-
-=cut
-######################################################################
-
-sub untaint_file
-{
-	my( $file ) = @_;
-
-	if( $file =~ m/^[^;\s]+$/ )
-	{
-		return $&;
-	}
-
-	die "Can't safely untaint file: $file";
 }
 
 1;

@@ -1,3 +1,10 @@
+perl -MCPAN -e 'install Proc::Reliable'
+perl -MCPAN -e 'install Unicode::Normalize'
+ICONS!
+cp /opt/eprints2/defaultcfg/static/general/images/*.png /opt/eprints2/archives/akt/cfg/static/general/images
+indexer warning
+generate_views warning (subheadings not defined)
+
 UPGRADE
  * Proc/Reliable?? (Harrys code)
  * libapreq
@@ -17,11 +24,10 @@ General
  * deleted eprints in search results: put placeholder to say
    they've gone? or filter against archive?
 Bugs
- * set_lang (return to previous page bug)
- * lose Citaiton. Move over to "ParaTools"
  * Handling of undef in subpages in views
  * remove CGI.pm from vlit
  * More fields in Userform should generate a sort-of-problem.
+    so that moving to editor from user will ask for edit perms.
  * import_xml NOTEXISTS apparent error (really a warning)
  * Warn on 0byte uploads
  * FULL TEXT (disable option)
@@ -31,6 +37,7 @@ Bugs
  * author with name " " is not treated as null in input
  * not stripping " " of start & end in input?
  * Investigate: (subjects_self->{merge})(ANY)
+ * set_lang (return to previous page bug)
 
 Pre-release issues
  * nestids in subjects -> just plain stupid?
@@ -40,7 +47,6 @@ Submission
 Views
  * clean up browse views and write better comments around the
    config
-UserArea
 
 2.3.1
  * Status looks crap.. tidy it up
@@ -48,7 +54,7 @@ UserArea
  * Make views use filters. 
  * make better edit/control page?
  * move staff utils to new page?
-
+ * docmeta extra fields.
 Local
  * ECS: edit
  * main+tardis: USer info includes Password YES/NO & Pending...
@@ -285,3 +291,4 @@ CGI Tools
  * FULLTEXT Phrase
  * hideemail into non-checkbox
  * Users can use staff search
+ * lose Citaiton. Move over to "ParaTools"

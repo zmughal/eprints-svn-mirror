@@ -889,17 +889,10 @@ sub upload
 
 	# Get the filename. File::Basename isn't flexible enough (setting 
 	# internal globals in reentrant code very dodgy.)
-	my $file = $filename;
-	
-	$file =~ s/.*\\//;     # Remove everything before a "\" (MSDOS or Win)
-	$file =~ s/.*\://;     # Remove everything before a ":" (MSDOS or Win)
-	$file =~ s/.*\///;     # Remove everything before a "/" (UNIX)
-
-	$file =~ s/ /_/g;      # Change spaces into underscores
 
 	my( $bytes, $buffer );
 
-	my $out_path = $self->local_path() . "/" . $file;
+	my $out_path = $self->local_path() . "/" . sanitise( $filename );
 		
 	open OUT, ">$out_path" or return( 0 );
 	while( $bytes = read( $filehandle, $buffer, 1024 ) )
@@ -913,6 +906,51 @@ sub upload
 	return( 1 );
 }
 
+######################################################################
+=pod
+
+=item $success = $doc->add_file( $file, $filename )
+
+$file is the full path to a file to be added to the document, with
+name $filename.
+
+=cut
+######################################################################
+
+sub add_archive
+{
+	my( $self, $file, $filename ) = @_;
+
+	my $fh;
+	open( $fh, $file ) or return( 0 );
+	my $rc = $self->upload( $fh, $filename );
+	close $fh;
+
+	return $rc;
+}
+
+######################################################################
+=pod
+
+=item $cleanfilename = sanitise( $filename )
+
+Return just the filename (no leading path) and convert any naughty
+characters to underscore.
+
+=cut
+######################################################################
+
+sub sanitise 
+{
+	my( $filename ) = @_;
+
+	$filename =~ s/.*\\//;     # Remove everything before a "\" (MSDOS or Win)
+	$filename =~ s/.*\///;     # Remove everything before a "/" (UNIX)
+
+	$filename =~ s/ /_/g;      # Change spaces into underscores
+
+	return $filename;
+}
 
 ######################################################################
 =pod
@@ -932,23 +970,44 @@ sub upload_archive
 {
 	my( $self, $filehandle, $filename, $archive_format ) = @_;
 
-	my( $file, $path ) = fileparse( $filename );
+	my $file = $self->local_path.'/'.$filename;
 
 	# Grab the archive into a temp file
-	$self->upload( $filehandle, $file ) || return( 0 );
+	$self->upload( 
+		$filehandle, 
+		$filename ) || return( 0 );
 
-	# Get full paths of destination and archive
-	my $dest = $self->local_path();
-	my $arc_tmp =  $dest . "/" . $file;
+	my $rc = $self->add_archive( 
+		$file,
+		$archive_format );
+
+	# Remove the temp archive
+	unlink $file;
+
+	return $rc;
+}
+
+######################################################################
+=pod
+
+=item $success = $doc->add_archive( $file, $archive_format )
+
+$file is the full path to an archive file, eg. zip or .tar.gz 
+
+This function will add the contents of that archive to the document.
+
+=cut
+######################################################################
+
+sub add_archive
+{
+	my( $self, $file, $archive_format ) = @_;
 
 	# Do the extraction
 	my $rc = $self->{session}->get_archive()->exec( 
 			$archive_format, 
-			DIR => $dest,
-			ARC => $arc_tmp );
-	
-	# Remove the temp archive
-	unlink $arc_tmp;
+			DIR => $self->local_path,
+			ARC => $file );
 	
 	$self->rehash;
 

@@ -439,14 +439,14 @@ sub load_archive_config_module
 
 	my @oldinc = @INC;
 	local @INC;
-	@INC = (@oldinc, EPrints::Utils::untaint_dir( $info->{archiveroot} ) );
+	@INC = (@oldinc, $info->{archiveroot} );
 
 	#my $prev_dir =  EPrints::Utils::untaint_dir( getcwd );
 	#chdir EPrints::Utils::untaint_dir( $info->{archiveroot} );
 	#my $return = do $file;
 	#chdir $prev_dir;
 
-	my $file = EPrints::Utils::untaint_file( $info->{configmodule} );
+	my $file = $info->{configmodule};
 	@! = $@ = undef;
 	my $return = do $file;
 	unless( $return )
@@ -474,7 +474,7 @@ END
 
 	##########################################################
 	#
-	# Change old search configs into 2.2 format...
+	# Change old configs into 2.3 format...
 	#
 
 	foreach my $stype ( "simple", "advanced" )
@@ -542,8 +542,19 @@ END
 		};
 	}
 
+
+	if( !defined $config->{field_defaults}->{hide_honourific} )
+	{
+		$config->{field_defaults}->{hide_honourific} = $config->{hide_honourific};
+	}
+	if( !defined $config->{field_defaults}->{hide_lineage} )
+	{
+		$config->{field_defaults}->{hide_lineage} = $config->{hide_lineage};
+	}
+
+
 	#
-	# End of search format hacks 
+	# End of config updater
 	#
 	##########################################################
 

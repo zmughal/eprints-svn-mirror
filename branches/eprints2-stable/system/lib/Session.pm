@@ -280,6 +280,12 @@ sub get_request
 	return $self->{request};
 }
 
+sub get_apr
+{
+	my( $self ) = @_;
+
+	return $self->{apr};
+}
 
 ######################################################################
 =pod
@@ -792,8 +798,7 @@ sub render_nbsp
 	my( $self ) = @_;
 
 	my $string = latin1(chr(160));
-	#$string->pack(160);
-	#my $nbsp = $string->utf8;
+
 	return $self->make_text( $string );
 }
 
@@ -1545,6 +1550,12 @@ sub _render_input_form_field
 
 	$html = $self->make_doc_fragment();
 
+	if( substr( $self->get_internal_button(), 0, length($field->get_name())+1 ) eq $field->get_name()."_" ) 
+	{
+		my $a = $self->make_element( "a", name=>"t" );
+		$html->appendChild( $a );
+	}
+
 	my $req = $field->get_property( "required" );
 	if( defined $dataset && defined $type )
 	{
@@ -1590,13 +1601,6 @@ sub _render_input_form_field
 	$div->appendChild( $field->render_input_field( 
 		$self, $value, $dataset, $type, $staff, $hidden_fields ) );
 	$html->appendChild( $div );
-
-	if( substr( $self->get_internal_button(), 0, length($field->get_name())+1 ) eq $field->get_name()."_" ) 
-	{
-		my $a = $self->make_element( "a", name=>"t" );
-		$a->appendChild( $html );
-		$html = $a;
-	}
 				
 	return( $html );
 }	
@@ -1898,23 +1902,6 @@ sub param
 
 }
 
-######################################################################
-=pod
-
-=item $upload_obj = $session->upload( $name )
-
-Return an Apache::Upload object for the uploaded file with the id
-$name.
-
-=cut
-######################################################################
-
-sub upload
-{
-	my( $self, $name ) = @_;
-
-	return $self->{apr}->upload( 'file' );
-}
 
 
 ######################################################################

@@ -200,12 +200,13 @@ END
 			}
 			else
 			{
-				$f->{id} = $fieldname;
 				$f->{default}=$self->{defaults}->{$fieldname};
 
 				# Split up the fieldnames
 				my @f = split( /\//, $fieldname );
 				$f->{meta_fields} = \@f;
+				$f->{id} = join( '/', sort @f );
+
 			}
 			push @{$self->{search_fields}}, $f;
 		}

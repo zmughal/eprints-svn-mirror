@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/ep2stable/perl_lib
+#!/usr/bin/perl  -I/opt/ep2stable/perl_lib
 
 ######################################################################
 #
@@ -268,7 +268,7 @@ while( 1 )
 
 		print "\n.$$.. - START.outer\n" if( $noise > 1);
 		$kid = fork();
-		my $cmd = "/usr/bin/renice 20 $$";	
+		my $cmd = "/usr/bin/renice 8 $$";	
 		`$cmd`;
 		if( $kid == 0 )
 		{
@@ -296,7 +296,7 @@ while( 1 )
 				$index = new EPrints::Index( 
 						$session, 
 						$session->get_archive->get_dataset( $ds_id ) );
-
+				$index->change_pname( 1 );
 				$index->create;
 				$index->build;
 				$index->install;
