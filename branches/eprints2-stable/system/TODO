@@ -14,6 +14,9 @@ case it might be helpful.
 
 !! author with name " " is not treated as null in input
 
+!! frequency of mailings: default to NEVER?
+!! selections in subject browser should be bold or something?
+
 !! ted wants persistent named urls.
 
 * add order_value to make @the@ at the end!

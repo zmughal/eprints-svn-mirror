@@ -2196,7 +2196,7 @@ sub _do_stage_confirmdel
 				"lib/submissionform:action_cancel" ),
 		confirm => $self->{session}->phrase(
 				"lib/submissionform:action_confirm" ),
-		_order => [ "cancel" , "confirm" ]
+		_order => [ "confirm", "cancel" ]
 	};
 
 	$page->appendChild( 

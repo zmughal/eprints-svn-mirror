@@ -161,7 +161,7 @@ sub eprint_render
 	my $frag = $session->make_doc_fragment;
 	$frag->appendChild( $eprint->render_value( "type"  ) );
 	my $type = $eprint->get_value( "type" );
-	if( $type eq "conf_or_pres" )
+	if( $type eq "conference_item" )
 	{
 		$frag->appendChild( $session->make_text( " (" ));
 		$frag->appendChild( $eprint->render_value( "pres_type"  ) );
@@ -407,12 +407,12 @@ sub _render_row
 
 	$tr = $session->make_element( "tr" );
 
-	$th = $session->make_element( "th" ); 
+	$th = $session->make_element( "th", valign=>"top" ); 
 	$th->appendChild( $key );
 	$th->appendChild( $session->make_text( ":" ) );
 	$tr->appendChild( $th );
 
-	$td = $session->make_element( "td" ); 
+	$td = $session->make_element( "td", valign=>"top" ); 
 	$td->appendChild( $value );
 	$tr->appendChild( $td );
 

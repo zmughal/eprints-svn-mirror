@@ -168,8 +168,6 @@ foreach $langid ( @{$session->get_archive()->get_conf( "languages" )} )
 	move( $tmpdir, $dir );
 	rmtree( $doomdir );
 	print "done\n" if( $noise > 1 );
-print "hi8\n";
-
 }
 
 $session->terminate();

@@ -119,7 +119,7 @@
       <field name="suggestions" />
     </type>
 
-    <type name="conf_or_pres">
+    <type name="conference_item">
       <page name="core" />
       <field name="creators" required="yes" />
       <field name="title" required="yes" />

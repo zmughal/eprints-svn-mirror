@@ -149,8 +149,7 @@ $fields->{eprint} = [
 
 	{ name => "issn", type => "text" },
 
-# DELETE ME....cjg
-	{ name => "chapter", type => "text", maxlength => 5, sql_index => 0 },
+	{ name => "fileinfo", type => "longtext", sql_index => 0 },
 
 	{ name => "book_title", type => "text", sql_index => 0 },
 	
@@ -321,6 +320,10 @@ sub set_user_automatic_fields
 {
 	my( $user ) = @_;
 
+	if( !$user->is_set( "frequency" ) )
+	{
+		$user->set_value( "frequency", "never" );
+	}
 }
 
 sub set_document_automatic_fields

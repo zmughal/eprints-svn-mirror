@@ -495,8 +495,8 @@ sub render_with_path
 		{
 			if( !$first )
 			{
-				# lang ": "cjg
-				$v->appendChild( $session->make_text( ": ") );
+				$v->appendChild( $session->html_phrase( 
+					"lib/metafield:join_subject_parts" ) );
 			}
 			$first = 0;
 			$v->appendChild( $_->render_description() );

@@ -119,7 +119,6 @@ my $PROPERTIES =
 	make_value_orderkey => 1,
 	make_single_value_orderkey => 1,
 	min_resolution => 1,
-	max_resolution => 1,
 	render_single_value => 1,
 	render_value => 1,
 	render_input => 1,
@@ -836,9 +835,10 @@ sub _render_value3
 
 	if( $self->is_type( "date" ) )
 	{
+		my $res = $self->get_property( "render_opts" )->{res};
 		my $l = 10;
-		$l = 7 if( $self->get_property( "max_resolution" ) eq "M" );
-		$l = 4 if( $self->get_property( "max_resolution" ) eq "Y" );
+		$l = 7 if( $res eq "M" );
+		$l = 4 if( $res eq "Y" );
 		return EPrints::Utils::render_date( $session, substr( $value,0,$l ) );
 	}
 
@@ -2294,11 +2294,12 @@ sub get_values
 		$_ = "" if( !defined $_ );
 	}
 
-	if( $self->is_type( "date" ) && $self->get_property( "max_resolution" ) ne "D" )
+	my $res = $self->get_property( "render_opts" )->{res};
+	if( $self->is_type( "date" ) && $res ne "D" )
 	{
 		my $l = 10;
-		if( $self->get_property( "max_resolution" ) eq "M" ) { $l = 7; }
-		if( $self->get_property( "max_resolution" ) eq "Y" ) { $l = 4; }
+		if( $res eq "M" ) { $l = 7; }
+		if( $res eq "Y" ) { $l = 4; }
 		
 		my %ov = ();
 		foreach( @outvalues )
@@ -2607,7 +2608,6 @@ sub get_property_default
 	return [] if( $property eq "requiredlangs" );
 
 	return "D" if( $property eq "min_resolution" );
-	return "D" if( $property eq "max_resolution" );
 
 	return 0 if( $property eq "input_style" );
 	return 0 if( $property eq "hasid" );
@@ -2836,11 +2836,9 @@ sub subject_browser_input
 		}
 		$url .= '#t';
 
-		$div->appendChild( $session->make_text( " [" ) );
-		my $a = $session->make_element( "a", href=>$url );
-		$a->appendChild( $session->make_text( "remove" ) );
-		$div->appendChild( $a );
-		$div->appendChild( $session->make_text( "]" ) );
+		$div->appendChild(  $session->html_phrase(
+                        "lib/metafield:subject_browser_remove",
+			link=>$session->make_element( "a", href=>$url ) ) );
 		$bits{selections}->appendChild( $div );
 	}
 
@@ -2923,7 +2921,8 @@ sub _subject_browser_input_aux
 			my $a = $session->make_element( "a", href=>$url );
 			$a->appendChild( $s->render_description );
 			$li->appendChild( $a );
-			$li->appendChild( $session->make_text( "..." ) );
+			$li->appendChild( $session->html_phrase(
+                        	"lib/metafield:subject_browser_expandable" ) );
 		}
 		else
 		{
@@ -2936,11 +2935,9 @@ sub _subject_browser_input_aux
 		if( $s->can_post && $exp != -1 && !$selected )
 		{	
 			my $url = $addurl.'&_internal_view_'.$current_subj->get_id.'=1&'.$field->get_name.'='.$s->get_id.'#t';
-			$li->appendChild( $session->make_text( " [" ) );
-			my $a = $session->make_element( "a", href=>$url );
-			$a->appendChild( $session->make_text( "add" ) );
-			$li->appendChild( $a );
-			$li->appendChild( $session->make_text( "]" ) );
+			$li->appendChild(  $session->html_phrase(
+                        	"lib/metafield:subject_browser_add",
+				link=>$session->make_element( "a", href=>$url ) ) );
 		}
 		if( $exp == 1 )
 		{

@@ -1172,29 +1172,40 @@ sub render_description
 			$firstdate = $1;
 		}
 
+
 		if( defined $firstdate && defined $lastdate )
 		{
 			$valuedesc->appendChild( $self->{session}->html_phrase(
 				"lib/searchfield:desc_date_between",
-				from => $self->{session}->make_text( $1 ),
-				to => $self->{session}->make_text( $2 ) ) );
+				from => EPrints::Utils::render_date( 
+						$self->{session}, 
+						$firstdate ),
+				to => EPrints::Utils::render_date( 
+						$self->{session}, 
+						$lastdate ) ) );
 		}
 		elsif( defined $lastdate )
 		{
 			$valuedesc->appendChild( $self->{session}->html_phrase(
 				"lib/searchfield:desc_date_orless",
-				to => $self->{session}->make_text( $1 ) ) );
+				to => EPrints::Utils::render_date( 
+						$self->{session}, 
+						$lastdate ) ) );
 		}
 		elsif( defined $firstdate && $drange eq "-")
 		{
 			$valuedesc->appendChild( $self->{session}->html_phrase(
 				"lib/searchfield:desc_date_ormore",
-				from => $self->{session}->make_text( $1 ) ) );
+				from => EPrints::Utils::render_date( 
+						$self->{session}, 
+						$firstdate ) ) );
 		}
 		else
 		{
 			$valuedesc->appendChild( $self->{session}->make_text(
-				$self->{value} ) );
+				EPrints::Utils::render_date( 
+						$self->{session}, 
+						$self->{value} ) ) );
 		}
 	}
 	elsif( $self->is_type( "email", "url", "text" , "longtext" ) )

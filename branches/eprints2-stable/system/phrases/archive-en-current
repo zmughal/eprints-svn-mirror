@@ -84,7 +84,7 @@
 <br />Example: <span class="example">Greece</span>
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_event_dates">Event Location</ep:phrase>
+    <ep:phrase ref="eprint_fieldname_event_dates">Event Dates</ep:phrase>
     <ep:phrase ref="eprint_fieldhelp_event_dates">Start and end dates for the event
 <br />Example: <span class="example">13-15 Dec 2003</span>
 <br />Example: <span class="example">31 Oct - 02 Nov 1999</span>
@@ -234,8 +234,8 @@
     <ep:phrase ref="eprint_optdetails_type_book_section">A chapter or section in a book.</ep:phrase>
     <ep:phrase ref="eprint_typename_article">Article</ep:phrase>
     <ep:phrase ref="eprint_optdetails_type_article">An article in a journal, magazine, newspaper. Not necessarily peer-reviewed. May be an electronic-only medium, such as an online journal or news website.</ep:phrase>
-    <ep:phrase ref="eprint_typename_conf_or_pres">Conference or Workshop Item</ep:phrase>
-    <ep:phrase ref="eprint_optdetails_type_conf_or_pres">A paper, poster, speech, lecture or presentation given at a conference, workshop or other event. If the conference item has been published in a journal or book then please use "Book Section" or "Article" instead.</ep:phrase>
+    <ep:phrase ref="eprint_typename_conference_item">Conference or Workshop Item</ep:phrase>
+    <ep:phrase ref="eprint_optdetails_type_conference_item">A paper, poster, speech, lecture or presentation given at a conference, workshop or other event. If the conference item has been published in a journal or book then please use "Book Section" or "Article" instead.</ep:phrase>
     <ep:phrase ref="eprint_typename_monograph">Monograph</ep:phrase>
     <ep:phrase ref="eprint_optdetails_type_monograph">A monograph. This may be a technical report, project report, documentation, manual, working paper or discussion paper.</ep:phrase>
     <ep:phrase ref="eprint_typename_thesis">Thesis</ep:phrase>

@@ -1110,14 +1110,6 @@ sub field_from_config_string
 
 	$field = $field->clone;
 
-	foreach( "D", "M", "Y" )
-	{
-		if( $q{"res=".$_} )
-		{
-			$field->set_property( "max_resolution", $_ );
-		}
-	}
-
 	my $opts = {};
 	foreach( keys %q )
 	{

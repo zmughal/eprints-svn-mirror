@@ -780,7 +780,7 @@ sub ListMetadataFormats
 		foreach( @all_formats )
 		{
 			my $fn = $session->get_archive()->get_conf(
-				"oai","metadata_functions" )->{$_};
+				"oai","v2","metadata_functions" )->{$_};
 			my $md = &{$fn}( $eprint, $session );
 			if( defined $md )
 			{

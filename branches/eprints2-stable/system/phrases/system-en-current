@@ -80,12 +80,16 @@ EPrints Modules
     <ep:phrase ref="lib/metafield:join_url">, </ep:phrase>
     <ep:phrase ref="lib/metafield:join_email">, </ep:phrase>
     <ep:phrase ref="lib/metafield:join_subject"><br /></ep:phrase>
+    <ep:phrase ref="lib/metafield:join_subject_parts"> &gt; </ep:phrase>
     <ep:phrase ref="lib/metafield:join_pagerange">, </ep:phrase>
     <ep:phrase ref="lib/metafield:join_datatype">, </ep:phrase>
     <ep:phrase ref="lib/metafield:join_search"> <strong>OR</strong> </ep:phrase>
 
     <ep:phrase ref="lib/metafield:subject_browser"><div class="subject_browser_selections"><table><tr><td valign="top">Selections:</td><td><ep:pin ref="selections" /></td></tr></table></div><div class="subject_browser_opts"><ep:pin ref="opts" /></div></ep:phrase>
     <ep:phrase ref="lib/metafield:subject_browser_none">none</ep:phrase>
+    <ep:phrase ref="lib/metafield:subject_browser_remove"> [<ep:pin ref="link">remove</ep:pin>]</ep:phrase>
+    <ep:phrase ref="lib/metafield:subject_browser_add"> [<ep:pin ref="link">add</ep:pin>]</ep:phrase>
+    <ep:phrase ref="lib/metafield:subject_browser_expandable">...</ep:phrase>
 
 
 
