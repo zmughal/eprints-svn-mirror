@@ -110,12 +110,13 @@ foreach( @esets )
 			$session->make_text( $num_eprints{$_} ) ) );
 }
 
-$table = $session->make_element( "table", border=>"0" );
-$html->appendChild( $session->html_phrase( "cgi/users/status:diskspace" ) );
-$html->appendChild( $table );
 
 unless( $EPrints::SystemSettings::conf->{disable_df} )
 {
+	$table = $session->make_element( "table", border=>"0" );
+	$html->appendChild( $session->html_phrase( "cgi/users/status:diskspace" ) );
+	$html->appendChild( $table );
+
 	my $best_size = 0;
 
 	my @dirs = $session->get_archive()->get_store_dirs();
@@ -202,6 +203,29 @@ foreach my $freq ( "never", "daily", "weekly", "monthly" )
 			$session->make_text( $sent ) ) );
 }
 
+$table = $session->make_element( "table", border=>"0" );
+$html->appendChild( $session->html_phrase( "cgi/users/status:index_updates" ) );
+$html->appendChild( $table );
+
+$table->appendChild(
+	render_row( 
+		$session,
+		$session->make_doc_fragment,
+		$session->html_phrase( "cgi/users/status:indexupdate" ) ) );
+my @ds_ids = &EPrints::DataSet::get_sql_dataset_ids;
+foreach my $ds_id ( sort @ds_ids )
+{
+	my $index = new EPrints::Index( 
+			$session, 
+			$session->get_archive->get_dataset( $ds_id ) );
+	$table->appendChild(
+		render_row( 
+			$session,
+			$session->make_text( $ds_id ),
+			$session->make_text( $index->get_last_timestamp ) ) );
+	$index->dispose;
+}
+
 $session->build_page( 
 	$session->html_phrase( "cgi/users/status:title" ),
 	$html,
@@ -223,13 +247,13 @@ sub render_row
 	my( $tr, $td );
 	$tr = $session->make_element( "tr" );
 
-	$td = $session->make_element( "td", align=>"right" );
+	$td = $session->make_element( "td", class=>"status_row_heading" );
 	$tr->appendChild( $td );
 	$td->appendChild( $key );
 
 	foreach( @vals )
 	{
-		$td = $session->make_element( "td", align=>"center" );
+		$td = $session->make_element( "td", align=>"center", class=>"status_cell"  );
 		$tr->appendChild( $td );
 		$td->appendChild( $_ );
 	}
