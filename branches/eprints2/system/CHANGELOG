@@ -2241,5 +2241,19 @@ PACKAGE: 2.2.99.2
  - [#98] Sort order of menus in view section now treats accented
     latin characters correctly.
 
+2005-03-02 cjg
 
+ - [#89] Fixed bug that caused abstract-pages to be generated for 
+    inbox and buffer.
+ - [#75] Fixed bug that clone eprint did not cause the files of
+    the clone to be hashed.
+ - [#112] Added new config option "rewrite_exceptions" which 
+    allows certain URL paths to not be subject to the eprints
+    rewrite module.
+ - Sorted out apacheconf to work with multiple archives with different
+    port numbers under both apache 1.3 and 2
+
+======================================================================
+02/03/2005 - EPRINTS-2.3.10
+======================================================================
 

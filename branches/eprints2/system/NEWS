@@ -4,6 +4,19 @@ see the blow by blow account of every single change see the file called
 CHANGELOG.
 ======================================================================
 
+EPRINTS 2.3.10                                                 2005-03-02
+-------------------------------------------------------------------------
+
+ - Lots of little bugfixes - see CHANGELOG for details
+ - New script "epindexer" which can be used as a service to start and
+    stop the indexer when the machine reboots. To set this up, see the
+    instructions in the indexer man page.
+ - EPrints can now send email using Net::SMTP and this is now the
+    prefered (and default) method for new archives. Established 
+    archives can use this method, or stay with "sendmail"
+ - Apache 2 is now the default. You may need to change your options
+    to "configure".
+
 EPRINTS 2.3.9                                                  2005-02-17
 -------------------------------------------------------------------------
 
