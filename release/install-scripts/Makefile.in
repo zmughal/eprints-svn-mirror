@@ -51,6 +51,12 @@ all:
 		sed <$$i 's%^#!.*$$%#!${PERL} -I${PREFIX}/perl_lib%' >to-install/$$i ; \
 	done
 	cp -a perl_lib/EPrints to-install/perl_lib
+	files=`find to-install/cgi -type f | grep -v '.htaccess'` ; \
+	for i in $$files ; do \
+		echo "use lib '${PREFIX}/perl_lib';" >$$i.new ; \
+		cat $$i >> $$i.new ; \
+		mv -f $$i.new $$i ; \
+	done
 ifeq ($(FULL_INSTALL),1)
 	@./readpw "Enter password to use for eprints database: " >_db_passwd ; \
 	chmod 600 _db_passwd
