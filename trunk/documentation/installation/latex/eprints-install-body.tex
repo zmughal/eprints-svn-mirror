@@ -115,7 +115,7 @@ Here is an overview of the steps that you can perform automatically or manually:
 \begin{enumerate}
 \item Install the code, setting relevant path information
 \item Configure the code to work with the rest of the system
-\item Create the MySQL database for \eprints\
+\item Create the MySQL database for \eprints\ 
 \item Configure Apache to execute \eprints\ scripts and serve \eprints\ documents
 \item Install a crontab, to periodically execute various \eprints\ scripts
 \end{enumerate}
@@ -242,9 +242,22 @@ Name of the MySQL database to use. It will be automatically created if {\tt --di
 
 \item[{\tt --with-db-username}]
 
-The MySQL username \eprints\ (and Apache) should use to access the MySQL database, defaulting to {\tt eprints}. Note that this is independent of the UNIX username specified with {\tt --with-username}, and can be a different name. If the {\tt --disable-create-database} parameter is not specified, this MySQL user will be granted priviledges on the \eprints\ database.
+The MySQL username eprints (and Apache) should use to access the MySQL database, defaulting to {\tt eprints}. Note that this is independent of the UNIX username specified with {\tt --with-username}, and can be a different name. If the {\tt --disable-create-database} parameter is not specified, this MySQL user will be granted priviledges on the \eprints\ database.
 
 Note that you will be prompted for a password for this MySQL user when you type {\tt make} later on.
+
+\item[{\tt --with-db-port}]
+
+Specify a non-default port to connect to the MySQL server. This option will automatically disable create database.
+
+\item[{\tt --with-db-host}]
+
+Connect to a MySQL server on this host, rather than "localhost", although \eprints\ still expects a local installation of
+MySQL to exist.  This option will automatically disable create database.
+
+\item[{\tt --with-module-prefix}]
+
+Use this option if you need to run more than one install of \eprints\ on the same webserver. The prefix should consist of letters only. Without it mod\_perl will get confused as to which version of a module to use for which script as they would all have the same names. Of course, one copy of \eprints\ can get away with not having a prefix as long as all the others do.
 
 \item[{\tt --with-autoadmin}]
 
@@ -426,6 +439,8 @@ TO eprints@localhost IDENTIFIED BY "password";
 \subsubsection{Configuring Apache}
 \label{manual_apache}
 
+For multiple installations of eprints on one server see the next section.
+
 Apache needs to be pointed at the \eprints\ software and the password system set up.
 
 Edit your Apache configuration, {\tt httpd.conf} (found in {\tt /etc/httpd/conf} on RedHat systems.) On some earlier versions of Apache, the configuration is split into {\tt httpd.conf}, {\tt access.conf} and {\tt srm.conf}.  In these cases, the {\tt <Directory>} entries should go in {\tt access.conf}, the {\tt Alias} entries in {\tt srm.conf}, and everything else in {\tt httpd.conf}.
@@ -480,7 +495,7 @@ Alias /perl/ /opt/eprints/cgi/
 </Directory>
 \end{verbatim}
 
-Add the engine to run the open archives interoperability software:
+The Dienst interface is no longer required, but is still included. If you want to use it add the following:
 
 \begin{verbatim}
 RewriteEngine on
@@ -494,7 +509,7 @@ RewriteRule ^/Dienst(.*) /opt/eprints/openarchives/Main/dienst.pl
 </Directory>
 \end{verbatim}
 
-Redirect 401 ``authorisation required'' and 404 ``document not found'' errors to be handled by \eprints\ (note that these need to be URLs rather than local filesystem paths) by adding the following paths. However, if you're running more than one \eprints\ archive on a single Apache server, only one 404 document handler, which may end up directing users to incorrect pages, so you may wish to leave that out; likewise, you may wish to change the wording in {\tt error401.html}.
+Redirect 401 ``authorisation required'' and 404 ``document not found'' errors to be handled by \eprints\ (note that these need to be URLs rather than local filesystem paths) by adding the following paths. 
 
 \begin{verbatim}
 ErrorDocument 401 /error401.html
@@ -513,6 +528,49 @@ If your \eprints\ user doesn't have a valid shell, run as root:
 su -s /bin/sh -c /opt/eprints/bin/update_htaccess eprints
 \end{verbatim}
 
+\subsubsection{Using Multiple Copies of \eprints\ on the Same Machine}
+\label{manual_multiple}
+
+Ensure that all, or all but one, of the versions of EPrints you intend to use are configured with {\tt --with-module-prefix} otherwise they will occupy the same namespace in mod\_perl and things will go very wrong. Although multiple instances of \eprints\ can use the same installation of MySQL, they must use different databases within it.
+
+\par Note that if you use use {\tt --with-module-prefix} it will rename all your modules. For example, if you use the prefix {\tt Fnord} then where the documentation refers to {\tt \$EPrintSite::SiteInfo::database} you will need to use {\tt \$Fnord::EPrintSite::SiteInfo::database}.
+
+\par First change the main Apache configuration file with the {\tt PerlModule}, {\tt User} and {\tt Group} values described in the previous section.
+
+\par Now configure each instance of \eprints\ as a virtual host. See the Apache documentation at \activeurl{http://httpd.apache.org/} for more information. An example VirtualHost configuration is given below. Note that {\tt eprints-test} is the location of the install and is not connected with the module prefix. The module prefix does not appear anywhere in the Apache config file. In the case of this example, we would suggest a module prefix of {\tt ETest}.
+ 
+\begin{verbatim}
+<VirtualHost 152.78.69.138>
+        ServerAdmin cjg@ecs.soton.ac.uk
+        ServerName eprints-test.ecs.soton.ac.uk
+
+        DocumentRoot "/opt/eprints-test/html"
+
+        <Directory "/opt/eprints-test/html">
+                Options Includes FollowSymLinks
+                AllowOverride AuthConfig
+                Order allow,deny
+                Allow from all
+        </Directory>
+
+        Alias /perl/ /opt/eprints-test/cgi/
+
+        <Directory /opt/eprints-test/cgi>
+                PerlSetEnv PERL5LIB /opt/eprints-test/perl_lib
+                SetHandler perl-script
+                PerlHandler Apache::Registry
+                PerlSendHeader Off
+                Options +ExecCGI
+                AllowOverride AuthConfig
+        </Directory>
+
+        ErrorDocument 401 /error401.html
+        ErrorDocument 404 /perl/handle_404
+
+</VirtualHost>
+\end{verbatim}
+
+Finally run update\_htaccess as described in the previous section. 
 
 \subsubsection{Installing the Crontab}
 \label{manual_crontab}
@@ -591,7 +649,7 @@ The {\tt process\_mail} script needs to be run, as the \eprints\ user, whenever 
 In the \eprints\ user {\tt .forward} file:
 
 \begin{verbatim}
-"|IFS=' ' && exec /usr/bin/procmail -f- || exit 75"
+|IFS=' ' && exec /usr/bin/procmail -f- || exit 75
 \end{verbatim}
 
 In the {\tt .procmailrc} file:

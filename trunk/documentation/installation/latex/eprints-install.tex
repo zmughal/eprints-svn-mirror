@@ -2,8 +2,8 @@
 
 % $Id$
 
-\title{Eprints Archive Software Installation Document}
-\author{Robert Tansley}
+\title{Eprints Archive Software Installation Document\\Eprints 1.1}
+\author{Robert Tansley \and Christopher Gutteridge}
 
 \usepackage{html}
 
@@ -17,6 +17,7 @@
 \maketitle
 
 \section{Introduction}
+
 
 This document explains how to set up and install an \eprints\ archive on a UNIX system. The instructions should allow users to install the archive on any UNIX implementation, such as Solaris, SGI IRIX or Linux. In addition to generic instructions, specific instructions are also given on how to install the system on a Redhat Linux system.
 
@@ -43,17 +44,14 @@ If you have any further queries, please contact:
 \end{description}
 
 
-\subsection{Upgrading from a beta version}
+\subsection{Upgrading from an earler version}
 
-If you're upgrading from version Beta-2, using the automatic installer should work, thouh as is always sensible, it may be wise to make a backup of the old version. You will need to create the deletions database table, in MySQL:
+If you're upgrading from version Beta-2 or later, using the automatic installer should work, thouh as is always sensible, it may be wise to make a backup of the old version. 
 
-\begin{verbatim}
-CREATE TABLE deletions (eprintid VARCHAR(255) NOT NULL,
-  replacement VARCHAR(255), subjects TEXT, deletiondate
-  DATE, PRIMARY KEY (eprintid));
-\end{verbatim}
+\par See the file {\tt README.UPGRADING} in the distribution for what changes have to be made by hand, and more advice on upgrading.
 
 \input{eprints-install-body}
+
 
 
 

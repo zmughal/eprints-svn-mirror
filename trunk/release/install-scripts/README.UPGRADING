@@ -1,8 +1,40 @@
-The following are changes to make by hand when upgrading from
-an older EPrints install. 
+======================================================================
+UPGRADING TO EPRINTS 1.1
+======================================================================
 
+* Introduction
 * Upgrading from a Beta Version
 * Upgrading from 1.0
+* Credits
+
+====================================================================== 
+ INTRODUCTION
+======================================================================
+
+The following are changes to make by hand when upgrading from
+an older EPrints version. The rest of the upgrade should be 
+done automatically by 
+
+./configure --prefix=/location/of/old/eprints  
+make 
+make install
+
+Make sure that configure has noticed that it's supposed to be
+doing an upgrade. 
+
+You may need to specify some other options to configure, such as
+--with-username, as that are not automatically copied from the 
+previous version.
+
+Note that the contents of 
+ PREFIX/bin
+ PREFIX/perl_libs/Eprints
+ PREFIX/cgi 
+ PREFIX/openarchives 
+will be overwritten, if you have made changes by hand you should 
+re-apply those changes after you have upgraded.
+
+
 
 ======================================================================
  UPGRADING FROM A BETA VERSION
@@ -16,7 +48,8 @@ CREATE TABLE deletions (eprintid VARCHAR(255) NOT NULL,
   DATE, PRIMARY KEY (eprintid));
 \end{verbatim}
 
-then follow the instructions for upgrading from 1.0
+Now follow the instructions for upgrading from 1.0
+
 
 
 ======================================================================
@@ -111,4 +144,14 @@ $EprintSite::SiteInfo::db_host = "mysql.mysite.ac.uk";
 $EprintSite::SiteInfo::db_port = 3306;
 ----------------------------------------------------------------------
 
+
+======================================================================
+ CREDITS
+======================================================================
+
+Thu Jan 18 17:54:18 GMT 2001
+Christopher Gutteridge
+support@eprints.org
+
+Some information from Rob Tansley
 
