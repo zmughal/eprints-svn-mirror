@@ -1,25 +1,31 @@
-eprints-nightly.tar.gz:
-	./makepackage.pl HEAD "2-`date +%d%M%Y`" licenses/license-1.2pre.txt eprints-nightly
+.SUFFIXES : .tgz
 
-eprints-1.1.2.tar.gz:
-	./makepackage.pl eprints-1_1_2 "Version 1.1.2 (20/02/2001)" licenses/license-1.1.txt eprints-1.1.2
+EPRINTS_VERSION = 2.0.a
+DATE = date +%Y-%m-%d
 
-eprints-1.1.1.tar.gz:
-	./makepackage.pl eprints-1_1_1 "Version 1.1.1 (23/01/2001)" licenses/license-1.1.txt eprints-1.1.1
-
-eprints-1.1.tar.gz:
-	./makepackage.pl eprints-1_1 "Version 1.1 (23/01/2001)" licenses/license-1.1.txt eprints-1.1
-
-
-
-eprints-1.0.tar.gz:
-	./makepackage.pl eprints-1_0 "Version 1.0 (29/11/2000)" licenses/license-1.0.txt eprints-1.0
+NIGHTLY_DESC = "EPrints $(EPRINTS_VERSION) Alpha (Nightly Build "`$(DATE)`")"
+NIGHTLY_VERSION = "$(EPRINTS_VERSION)-"`$(DATE)`
+MILESTONE_DESC_A = "EPrints $(EPRINTS_VERSION) (
+MILESTONE_DESC_B = ) [Born on "`$(DATE)`"]"
+MILESTONE_VERSION = "$(EPRINTS_VERSION)"
+CODENAME_foo.tar.gz = "hello mum"
 
 
-eprints-beta-2.tar.gz:
-	./makepackage.pl eprints-beta-2 "Beta-2 (19/9/2000)" licenses/license-beta-2.txt eprints-beta-2
+eprints2-nightly.tar.gz:
+	echo HEAD $(NIGHTLY_VERSION) $(NIGHTLY_DESC) licenses/gpl.txt eprints-nightly 
+	./makepackage.pl HEAD $(NIGHTLY_VERSION) $(NIGHTLY_DESC) licenses/gpl.txt eprints-nightly 
 
+eprints2-alpha-1.tar.gz:
+	./makepackage.pl eprints2-alpha-1 $(MILESTONE_VERSION) $(MILESTONE_DESC_A)Anchovy$(MILESTONE_DESC_B) licenses/gpl.txt 
 
-eprints-beta-1.tar.gz:
-	./makepackage.pl eprints-beta-1 "Beta-1 (4/7/2000)" license-beta-1.txt eprints-beta-1
-	
+ddx:
+
+foo.tar.gz: 
+A=1
+	echo $(A)
+bar.tar.gz: 
+	echo $@
+	echo $<
+	echo $*
+	echo $(CODENAME_$@)
+	#./makepackage.pl eprints2-alpha-1 $(MILESTONE_VERSION) $(MILESTONE_DESC_A)$(CODENAME_$@)$(MILESTONE_DESC_B) licenses/gpl.txt 
