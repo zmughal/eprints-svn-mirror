@@ -21,3 +21,19 @@ P {
 	margin-left: 3em;
 	margin-right: 1em;
 }
+
+TD.newstitle , TD.newsdate {
+        font-weight: bold;
+        font-family: arial,helvetica,sans-serif;
+        background-color: #e0e0e0;
+}
+	
+TD.newsdate {
+        text-align: right;
+}
+
+TD.news , TD.newstitle , TD.newsdate {
+        vertical-align: top;
+        color: #000000;
+}
+
