@@ -31,5 +31,5 @@ We strongly recommend that you:
 
 If you can't do all of these, which is admittedly a lot of extra work, then do as many as you can.
 
-Fortune favours the backed-up. It always seems to be the un-backed-up systems that disk crashes. Life's like that...
+Fortune favours the backed-up. It always seems to be the un-backed-up systems that have disk crashes. Life's like that...
 

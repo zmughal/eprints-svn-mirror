@@ -74,5 +74,13 @@ The UNIX user eprints will run as. Usually "eprints".
 
 The UNIX user eprints will run as. Usually "eprints".
 
+=item B<virtualhost> (Since EPrints v2.1)
+
+If this is set, it is used for the VirtualHostName in the Apache configuration files. (By default EPrints uses "*").
+
+=item B<disable_df> (Since EPrints v2.1)
+
+If this is set to 1 then this disables the parts of EPrints which use the df call (disk free). If the "configure" script tested the "df" command and found that it failed the this function will initially be set to 1, otherwise 0.
+
 =back
 

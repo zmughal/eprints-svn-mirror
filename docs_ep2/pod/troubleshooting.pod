@@ -42,23 +42,15 @@ Possible cause: Several.
 
 Solution: Rebuild everything by re-running (for the archive in question) B<generate_static>, B<generate_views>, B<generate_apacheconf> then stop and start apache. B<generate_abstracts> can take a long time, so don't run it unless you want to update the abstracts themselves.
 
-=head2 Latest Page does not update
-
-Possible Cause: EPrints is caching the results. If people look at it alot it will not be erased from the cache for 12 hours!
-
-Solution: In the file cgi/latest find this bit:
- 
-  my $searchexp = new EPrints::SearchExpression(
-                session => $session,
-                use_cache => 1,
-                dataset => $ds );
-
-and set it *not* to use the cache: 
-
-                use_cache => 0,
-
 =head2 Browse View page gives a "404 not found" error or fails to update.
 
 Possible Cause: You didn't run the script which makes them!
 
 Solution: Run generate_views, and ideally set it up to run automatically: see "Browse Views" in the installation section.
+
+=head2 Apache takes a really long time to start (over a minute) and so do the command line scripts.
+
+Possible Cause: EPrints loads several XML files at start up, and for some reason this requires a DNS
+lookup if DNS lookup is unavailable then it has to timeout.
+
+Solution: Make sure that the machine can perform DNS look-ups.

@@ -51,17 +51,17 @@ EPrints 2.0 (Olive) released.
 
 =item B<Apr 17 2002>
 
-EPrints 2.0.1 (Tuna) released.
+EPrints 2.0.1 (Tuna) released. Mostly bugfixes.
+
+=item B<July 2002>
+
+EPrints 2.1 (Pineapple) released. Added subscriptions and OAI 2.0 support.
 
 =back
 
 =head1 What next?
 
 Nothing is perfect. I wish it was but wishing don't make it so.
-
-I anticipate releasing 2.0.1 to clean up any minor issues. It's not been tested under Solaris, so there may be a few minor tweaks required there.
-
-Sometime later when I've actually caught up with my sleep and stuff I'll start work on version 2.1 which will add some features.
 
 Which features are added next will depend on expedience and what feedback I get. If you really care, let me know at support@eprints.org
 
@@ -76,10 +76,6 @@ Methods for improting bibtex data into the system, and possibly exporting the me
 =item Subject Editors
 
 Editors which only see (and can edit) items in a given subject or child thereof. Which should make admin on a larger system easier.
-
-=item Alerts/Subscriptions
-
-Email messaging once a day/week/month if there have been any additions to a predefined search. eg. User bob sets his search to items in the subject area "Theoretical Physics" and frequency = "once a week". Once a week bob is mailed list of citation and urls for any records which have been added to the archive in the past 7 days which match that search.
 
 =item Editor Alerts
 
@@ -108,6 +104,8 @@ The current default is geared at an archive of research papers or pre-prints. It
 =item Fully Documenting the API
 
 That's just really time consuming, but useful. 
+
+Update: It's about 50% done now, and yes - it's really time consuming. Use C<perldoc Foo.pm> on an eprints module to see the API documentation.
 
 =item EPrints v1 Snarfer
 
@@ -141,13 +139,9 @@ A configuration tool which can do really complex stuff like add and remove field
 
 For complex data structures. For example if you want a list of "incidents" which have a date, time and description as an item. These will be indefinitely nest-able.
 
-=item EPrints on a CD
-
-A CD-ROM which can be run on a fresh (RedHat?) Linux install which turns it into an eprints box with apache and mysql correctly configured, etc.
-
 =item Chat Forums
 
-A slashdot style chat at the bottom of each abstract page. Possibly using a seperate system such as a PHP bulletin board.
+A slashdot style chat at the bottom of each abstract page. Possibly using a seperate system such as a PHP bulletin board. Possibly using the d3e system developed at open.ac.uk.
 
 =back
 
