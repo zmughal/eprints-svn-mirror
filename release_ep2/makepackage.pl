@@ -1,4 +1,5 @@
 #!/usr/bin/perl -w
+
 use Cwd;
 
 $EPRINTS_VERSION = "2.0.a";
@@ -58,7 +59,7 @@ sub do_license
 
 sub do_package
 {
-	my($version_tag, $package_version, $license_file, $package_file) = @_;
+	my($version_tag, $package_version, $package_desc, $license_file, $package_file) = @_;
 	if (-d "package")
 	{
 		system("/bin/rm -r package")==0 or die "Couldn't remove package dir.\n";
@@ -69,8 +70,6 @@ sub do_package
 		system("/bin/rm -r export")==0 or die "Couldn't remove export dir.\n";
 	}
 	
-	print $package_version;
-
 	print "Making directories...\n";
 	mkdir("package") or die "Couldn't create package directory\n";
 	mkdir("export") or die "Couldn't create export directory\n";
@@ -82,10 +81,11 @@ sub do_package
 
 	print "Removing .cvsignore files...\n";
 	system("/bin/rm `find . -name '.cvsignore'`")==0 or die "Couldn't remove.";
-
+	print "Copying installer...\n";
+	system("cp $originaldir/install-eprints.pl eprints/system/install-eprints.pl");
 	print "Inserting license information...\n";
 	chdir "eprints/system";
-	@files = `grep -l -d skip "__LICENSE__" bin/* cgi/* cgi/users/* lib/*.pm`;
+	@files = `grep -l -d skip "__LICENSE__" install-eprints.pl bin/* cgi/* cgi/users/* lib/*.pm`;
 	foreach $file (@files)
 	{
 		chomp $file;
@@ -126,7 +126,8 @@ sub do_package
 
 	# Do version
 	open(FILEOUT, ">eprints/VERSION");
-	print FILEOUT $package_version;
+	print FILEOUT $package_version."\n";
+	print FILEOUT $package_desc;
 	close(FILEOUT);
 
 	# Do phrases
@@ -184,7 +185,6 @@ sub do_package
 		}
 	}
 	system("cp $originaldir/export/eprints/system/cgi/users/.htaccess eprints/cgi/users/.htaccess");
-	system("cp $originaldir/install-eprints.pl eprints/install-eprints.pl");
 	system("cp $originaldir/licenses/gpl.txt eprints/COPYING");
 	system("chmod -R g-w eprints")==0 or die("Couldn't change permissions on eprints dir.\n");
 	system("mv eprints $package_file")==0 or die("Couldn't move eprints dir to $package_file.\n");
@@ -220,4 +220,4 @@ else
 	$package_file = $type;
 }
 
-do_package($version_tag, $package_version, "licenses/gplin.txt", $package_file);
+do_package($version_tag, $package_version, $package_desc, "licenses/gplin.txt", $package_file);

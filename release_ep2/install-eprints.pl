@@ -1,5 +1,21 @@
 #!/usr/bin/perl -w
 
+######################################################################
+#
+# EPrints 2 installer : Handles upgrading, simple command detection,
+# and the creation of the SystemSettings.pm file. This doesn't do the
+# mySQL install, etc. - you'll need the SuperInstaller for that.
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
 use strict;
 use Cwd;
 print <<INTRO;
@@ -94,7 +110,7 @@ You already have a version of EPrints installed in this directory which is
 [older/newer] than the one you are trying to install. Do you wish to [upgrade/downgrade]?
 
 UPGRADE
-			print $SystemSettings::conf{"version"};			
+			print $EPrints::SystemSettings::conf{"version"};			
 			if (get_yesno("Sure?", "n") eq "y") 
 			{ 
 				$dirokay = 1; 
