@@ -63,7 +63,9 @@ This describes the way to simple perl module, some require a bit more effort. We
 
 =over 8
 
-=item Download the archive. Either from cpan.org, or from the tools directory on eprints.org described at the top of this chapter. Our example archive is C<FOO-5.23.tar.gz>.
+=item Download the archive. 
+
+Either from cpan.org, or from the tools directory on eprints.org described at the top of this chapter. Our example archive is C<FOO-5.23.tar.gz>.
 
 =item Unpack the archive:
 

@@ -247,3 +247,55 @@ Add a citation for this document to the citations file.
 If you want this to be one of the must-have-one-of document types then add it's id to the list in ArchiveConfig.pm
 
 If you want to do something "clever" on the abstract page then edit the ArchiveRenderConfig.pm file. If you don't then it will use the citiation you created to render it in the list, as with PDF, HTML etc.
+
+=head1 HOW TO: Add a Discussion Forum for Each EPrint
+
+The UK Open University (open.ac.uk) have set up a service which allows you to
+create a discussion for every EPrint in your archive.
+
+The really easy way to do this is to use their discussion server. If you
+want to run your own d3e server the software is available from 
+http://d3e.sourceforge.net/
+
+=head2 Using d3eprints.open.ac.uk
+
+Just add the following code to the ArchiveRenderConfig.pm file just before the
+C<if( $has_multiple_versions )> bit.
+
+Please note that this code is not internationalised.
+
+        #####################################
+        # Begin D3Eprints links
+
+        my $ol = $session->make_element( "ol" );
+        my $li = $session->make_element( "li" );
+        $a = $session->render_link(
+                EPrints::Utils::url_escape(
+                        "http://d3eprints.open.ac.uk/disc.php?url=".$eprint->get_url ),
+                "_top" );
+        $a->appendChild( $session->make_text(
+                "View public discussion of this document" ) );
+        $li->appendChild( $a );
+        $ol->appendChild( $li );
+
+        $li = $session->make_element( "li" );
+        $a = $session->render_link(
+                EPrints::Utils::url_escape(
+                        "http://d3eprints.open.ac.uk/private/disc.php?url=".
+                                $eprint->get_url ),
+                "_top" );
+        $a->appendChild( $session->make_text(
+                "Create private discussion of this document" ) );
+        $li->appendChild( $a );
+        $ol->appendChild( $li );
+
+        $table->appendChild( _render_row(
+                $session,
+                $session->make_text( "D3Eprints discussion" ),
+                $ol ) );
+
+        # End of D3Eprints links
+        #####################################
+
+
+
