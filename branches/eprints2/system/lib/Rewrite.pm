@@ -52,7 +52,18 @@ sub handler
 		return DECLINED;
 	}
 	my $archive = EPrints::Archive->new_archive_by_id( $archiveid );
-	my $urlpath = $archive->get_conf( "urlpath" );
+	my $esec = $r->dir_config( "EPrints_Secure" );
+	my $secure = (defined $esec && $esec eq "yes" );
+	my $urlpath;
+	if( $secure ) 
+	{ 
+		$urlpath = $archive->get_conf( "securepath" );
+	}
+	else
+	{ 
+		$urlpath = $archive->get_conf( "urlpath" );
+	}
+
 	my $uri = $r->uri;
 	my $lang = EPrints::Session::get_session_language( $archive, $r );
 	my $args = $r->args;

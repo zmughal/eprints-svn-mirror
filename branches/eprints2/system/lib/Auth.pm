@@ -221,12 +221,21 @@ sub authz
 	}
 
 	my $secpath = $archive->get_conf( "secure_url_dir" );
-	my $urlpath = $archive->get_conf( "urlpath" );
+	my $esec = $r->dir_config( "EPrints_Secure" );
+	my $secure = (defined $esec && $esec eq "yes" );
+	my $urlpath;
+	if( $secure ) 
+	{ 
+		$urlpath = $archive->get_conf( "securepath" );
+	}
+	else
+	{ 
+		$urlpath = $archive->get_conf( "urlpath" );
+	}
 
 	$uri =~ s/^$urlpath$secpath//;
 	my $docid;
 	my $eprintid;
-#	unless( $uri =~ s#^$urlpath## )
 
 	if( $uri =~ m#^/(\d\d\d\d\d\d\d\d)/(\d+)/# )
 	{

@@ -93,6 +93,10 @@ apache configuration directives here. By default it just includes the automatica
 
 This file contains all the configuration directives needed for an archive. This is where the bulk of the configuration appears, the clever stuff, if you will. This file should not be edited by hand.
 
+=item B<EPRINTS/archives/ARCHIVEDIR/cfg/auto-secure.conf>
+
+Only created if the archive has a securehost configured. This file contains all the configuration options that need to be included into the secure server virtualhost.
+
 =item B<EPRINTS/archives/ARCHIVEDIR/cfg/apachevhost.conf>
 
 This file is not updated if it already exists, it is included into the virutalhost in auto-apache.conf so that you can a couple of additional directives if you need to. For example, redirects or additional log directives.
@@ -145,6 +149,18 @@ my $site_incfile = EPrints::Config::get( "sys_path" )."/auto-apache-includes.con
 my $site_userfile = EPrints::Config::get( "cfg_path" )."/apache.conf";
 
 print "Creating system wide apache conf files.\n" if( $noise >= 1 );
+
+# Clean up old auto files. Especially old secure ones
+opendir( my $dir, EPrints::Config::get( "sys_path" ) );
+while( my $file = readdir( $dir ) )
+{
+	if( $file =~ m/^auto-.*\.conf$/ )
+	{
+		my $fn = EPrints::Config::get( "sys_path" ).'/'.$file;
+		unlink( $fn );
+	}
+}
+
 unless( -e $site_userfile )
 {
 	print "Creating $site_userfile\n" if( $noise >= 2 );
@@ -275,6 +291,7 @@ exit( 1 ) unless( defined $archive );
 my $sysfile = $archive->get_conf( "config_path" )."/auto-apache.conf";
 my $userfile = $archive->get_conf( "config_path" )."/apache.conf";
 my $vhostfile = $archive->get_conf( "config_path" )."/apachevhost.conf";
+my $securefile = $archive->get_conf( "config_path" )."/auto-secure.conf";
 
 my $id = $archive->get_id();
 
@@ -421,6 +438,7 @@ print CONF <<END;
   # a "Location" block as it occurs before the
   # Location is known.
   PerlTransHandler EPrints::Rewrite
+
 END
 
 my @langs = @{$archive->get_conf( "languages" )};
@@ -484,9 +502,6 @@ print CONF <<END;
 END
 
 my $secureconfig = <<END;
-  <Location "$securepath">
-    PerlSetVar EPrints_ArchiveID $archiveid
-  </Location>
   <Directory "$cgidir/users">
     AuthName "User Area"
     AuthType "Basic"
@@ -531,56 +546,93 @@ my $secureconfig = <<END;
 
 END
 
-if( EPrints::Utils::is_set( $securehost ) )
+unless( EPrints::Utils::is_set( $securehost ) )
 {
-	my $securebase = "https://".$securehost.$securepath;
 	print CONF <<END;
-  Redirect /secure/ $securebase/secure/
-  Redirect /perl/users/ $securebase/perl/users/
-  Redirect /change_user $securebase/change_user
-
-END
-	# cjg =- 404 & 401 handlers?
-	$secureconfigs->{$securehost} .= <<END;
-##### CONFIG FOR $archiveid
-
 $secureconfig
-
-  Alias $securepath/secure/ $htdocs_secure_path/
-  Alias $securepath/perl/users/ $cgidir/users/
-
-  #RewriteRule ^$securepath/secure/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])/(.*)\$ $securepath/secure/\$1/\$2/\$3/\$4/\$5 [L]
-
-##### END OF CONFIG FOR $archiveid
-
-END
-}
-else
-{
-	print CONF $secureconfig;
-}
-
-print CONF <<END;
 
 </VirtualHost>
 
 END
-
-close CONF;
-}
-
-foreach( keys %{$secureconfigs} )
-{
-	my $secfile = EPrints::Config::get( "sys_path" )."/auto-".$_.".conf";
-	print "Making include block for $_\n" if( $noise >= 1 );
-
-	open( CONF, ">$secfile" ) || die "Can't write $secfile";
-	print CONF $secureconfigs->{$_};
 	close CONF;
+	next;
 }
+
+# This site has an HTTPS component. Redirect sceure stuff there...
+
+my $securebase = "https://".$securehost.$securepath;
+
+print CONF <<END;
+
+  Redirect /secure/ $securebase/secure/
+  Redirect /perl/users/ $securebase/perl/users/
+  Redirect /change_user $securebase/change_user
+  Redirect /perl/confirm $securebase/perl/accounts/confirm
+  Redirect /perl/register $securebase/perl/accounts/register
+  Redirect /perl/reset_password $securebase/perl/accounts/reset_password
+  Redirect /perl/set_password $securebase/perl/accounts/set_password
+
+</VirtualHost>
+
+END
+close CONF;
+
+# Create secure include file
+
+
+# error documents can't change server
+# need to make secure 401 and 404 pages, I guess.
+    #ErrorDocument 401 $baseurl/error401.html
+    #ErrorDocument 404 $baseurl/perl/handle_404
+open( CONF, ">$securefile" ) || die "Can't write to $securefile";
+print CONF <<END;
+#
+# auto-secure.conf include file for $id
+#
+# DO NOT EDIT, this file is created by bin/generate_apacheconf
+# and may be overwritten. To modify, change the archive configuration
+# and re-run: bin/generate_apacheconf $id
+
+# This file is intended to be included inside your HTTPS virtualhost
+# You have to do that yourself.
+
+$secureconfig
+
+  <Location "$securepath">
+    PerlSetVar EPrints_ArchiveID $archiveid
+    PerlSetVar EPrints_Secure yes
+  </Location>
+  <Directory "$cgidir">
+    SetHandler perl-script
+    PerlHandler $registry_module
+    PerlSendHeader Off
+    Options ExecCGI FollowSymLinks
+  </Directory>
+
+  PerlTransHandler EPrints::Rewrite
+
+  Alias $securepath/perl/accounts/confirm $cgidir/confirm
+  Alias $securepath/perl/accounts/register $cgidir/register
+  Alias $securepath/perl/accounts/reset_password $cgidir/reset_password
+  Alias $securepath/perl/accounts/set_password $cgidir/set_password
+  Alias $securepath/perl/users/ $cgidir/users/
+  Alias $securepath/secure/ $htdocs_secure_path/
+  Alias $securepath/ $htdocs_path/
+
+##### END OF CONFIG FOR $id
+END
+close CONF;
+
+}
+
+
+
+
 
 print "\nDo not forget to stop and restart apache to cause changes to take effect!\n" if( $noise >= 1 );
 
 print "Exiting normally.\n" if( $noise >= 2 );
 exit;
+
+
 
