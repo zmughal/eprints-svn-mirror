@@ -117,5 +117,24 @@ Look at the section on setting up subscriptions in the "Installation" chapter.
 
 You need to add some more items to the cron tab to mail out the subscriptions. One set of new cron entries per archive.
 
+=item *
+
+The call for EPrints::EPrint->new() has changed the order of the parameters
+(to standardise it with Subject, User, etc.).
+
+In ArchiveRenderConfig.pm edit:
+
+        my $target = EPrints::EPrint->new( $session,
+                $session->get_archive()->get_dataset( "archive" ),
+                $eprint->get_value( "commentary" ) );
+
+to be:
+
+        my $target = EPrints::EPrint->new( $session,
+                $eprint->get_value( "commentary" ),
+                $session->get_archive()->get_dataset( "archive" ) ) ;
+
+(swapping the order of the last 2 parameters)
+
 =back
 
