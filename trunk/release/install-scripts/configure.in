@@ -229,6 +229,8 @@ if test $FULL_INSTALL = 1 ; then
 
 	if test "x$with_sendmail" = x ; then
 		AC_PATH_PROG(SENDMAIL, sendmail)
+	elif test "x$with_sendmail" = "xno" ; then
+		SENDMAIL="sendmail"
 	else
 		AC_PATH_PROG(SENDMAIL, sendmail, , $with_sendmail)
 	fi
