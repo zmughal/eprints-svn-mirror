@@ -49,8 +49,15 @@ my %codenames = (
 	"eprints2-2-99-5" => "Make Mine a Ninety-Nine",
 	"eprints2-2-99-6" => "It will be over by Christmas...",
 
+	"eprints2-3" => "Hoi Sin Duck",
+	"eprints2-3-1" => "Words have power",
 
-	"eprints2-3" => "Hoi Sin Duck"
+	"eprints2-3-1-99-1" => "Never on a School Night",
+	"eprints2-3-1-99-2" => "I'm a Covert Ops",
+	"eprints2-3-1-99-3" => "Firing for Effect",
+
+	"eprints2-3-2" => "Mercury Rising"
+
 
 );
 
@@ -82,9 +89,12 @@ my %ids = (
 	"eprints2-2-99-4" => "2.2.99.4-beta",
 	"eprints2-2-99-5" => "2.2.99.5-beta",
 	"eprints2-2-99-6" => "2.2.99.6-beta",
-
-
-	"eprints2-3" => "2.3.0"
+	"eprints2-3" => "2.3.0",
+	"eprints2-3-1" => "2.3.1",
+	"eprints2-3-1-99-1" => "2.3.1.99.1-beta",
+	"eprints2-3-1-99-2" => "2.3.1.99.2-beta",
+	"eprints2-3-1-99-3" => "2.3.1.99.3-beta",
+	"eprints2-3-2" => "2.3.2"
 );
 
 my( $type ) = @ARGV;
@@ -364,6 +374,7 @@ erase_dir( "package" );
 erase_dir( "export" );
 
 print "Done.\n";
+print "scp $package_file.tar.gz webmaster\@www:/home/www.eprints/software/files/eprints2/\n";
 
 exit;
 

@@ -597,6 +597,7 @@ sub upgrade
  - re-run bin/generate_apacheconf (the just-installed version, 
    not the version that came in the tar.gz.
  - restart your web server
+ - restart the eprints indexer
 
 ======================================================================
 
