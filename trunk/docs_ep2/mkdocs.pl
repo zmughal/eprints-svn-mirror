@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-@files = ( "intro", "reqsoftware", "installation", "contact", "history", "logo" );
+@files = ( "intro", "reqsoftware", "installation", "contact", "history" );
 %titles = (
 	intro => "Introduction",
 	reqsoftware => "Required Software",
