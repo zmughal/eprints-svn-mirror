@@ -98,15 +98,16 @@ if( defined $av && $av eq "2" )
 		{
 			my( $request, $header, $value ) = @_;
 
-			$request->header_out( $header => $value );
+			$request->headers_out->{$header} = $value;
 		}
 
 		sub header_in
 		{
 			my( $request, $header ) = @_;	
 	
-			return $request->header_in( $header );
+			return $request->headers_in->{$header};
 		}
+
 	';
 	
 }
@@ -158,18 +159,19 @@ else
 			$request->send_http_header;
 		}
 
+
 		sub header_out
 		{
 			my( $request, $header, $value ) = @_;
 
-			$request->headers_out->{$header} = $value;
+			$request->header_out( $header => $value );
 		}
 
 		sub header_in
 		{
 			my( $request, $header ) = @_;	
 	
-			return $request->headers_in->{$header};
+			return $request->header_in( $header );
 		}
 	';
 }
