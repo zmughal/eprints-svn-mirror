@@ -527,7 +527,7 @@ Note the use of hidden fields to specify defaults. The search scripts will also 
 
 The \eprints\ software features the ability for people to deposit new versions of eprints in the archive. They do this by entering the ID code of the previous version into the relevant box in the depositing interface. This (automatically validated) ID code is then stored in the {\tt succeeds} field in the eprint's metadata record. ({\tt succeeds} is a core metadata field that is always present; there is no need to configure this in your site configuration.) No information is stored with the eprint being succeeded.
 
-This usually results in a chain of versions, but may result in a `tree' of different versions. A set of linked versions of a paper are refered to as a ``version thread.'' By default, only the user who deposited the eprint may deposit a later version and link it to the previous version.
+This usually results in a chain of versions, but may result in a `tree' of different versions. A set of linked versions of an item are refered to as a ``version thread.'' By default, only the user who deposited the eprint may deposit a later version and link it to the previous version.
 
 This linking information is then used by the default configuration to display links to all versions of the eprint being viewed. The core code will automatically work out which abstract pages need to be updated; any eprint in the thread will have its abstract page re-rendered.
 
@@ -538,7 +538,7 @@ This version information is stored in the deletions table if an eprint is remove
 
 Exactly the same techniques are used to link commentaries and responses. If a user is submitting an eprint that is a commentary on another eprint, or another eprint responding to such a commentary, they enter the ID code in the relevant box on the depositing interface. This is then stored in the {\tt commentary} field; again the {\tt commentary} field is always present and doesn't have to be added to your site configuration.
 
-Trees of commentaries and responses are also displayed on the abstract pages of all relevant papers in the default site configuration; you can of course remove this. Unlike the versioning trees, any user can submit a commentary on (or response to) another eprint, regardless of who deposited the original eprint. Information about commentaries and responses are lost (the tree is broken) if an eprint in the tree is removed.
+Trees of commentaries and responses are also displayed on the abstract pages of all relevant items in the default site configuration; you can of course remove this. Unlike the versioning trees, any user can submit a commentary on (or response to) another eprint, regardless of who deposited the original eprint. Information about commentaries and responses are lost (the tree is broken) if an eprint in the tree is removed.
 
 
 \section{Open Archives Interoperability}

@@ -146,4 +146,5 @@ the makefile. Used it to replace "find -maxdepth 1 -type f".
 - top level dir of EPrints package renamed from "eprints" to "eprints-version-whatever"
 - renamed oai-0.2 to oai (now supports oai 1.0)
 - minor changes to OpenArchives.pm
+- added debug=yes option to oai. This makes it output text/plain rather than text/xml
 

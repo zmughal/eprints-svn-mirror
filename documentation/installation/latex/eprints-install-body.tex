@@ -639,7 +639,7 @@ su -s /bin/sh -c "/opt/eprints/bin/create_user staff
 \end{verbatim}
 
 
-Now you should have a working installation that you can play around with. You should try joining the archive (look at the registrations page), submitting a test paper, and checking that it arrives in the submissions buffer in the staff area. The staff area is not linked to the front page by default; you can access it by viewing {\tt http://eprintarchive.foo.org/staff}.
+Now you should have a working installation that you can play around with. You should try joining the archive (look at the registrations page), submitting a test item, and checking that it arrives in the submissions buffer in the staff area. The staff area is not linked to the front page by default; you can access it by viewing {\tt http://eprintarchive.foo.org/staff}.
 
 
 \section{\eprints\ Archive Configuration}
@@ -739,7 +739,7 @@ The system holds some information internally about each eprint, so this need not
 \item When it was submitted
 \item What full texts are stored, and where
 \item The subject categories in the subject hierarchy associated with the eprint (though the hierarchy itself is of course archive-specific)
-\item The ID of any earlier version of the eprint, and of any paper the eprint is a commentary on, if within the archive.
+\item The ID of any earlier version of the eprint, and of any item the eprint is a commentary on, if within the archive.
 \end{itemize}
 
 You can also decide what metadata should be held with user records. This can be set in the file {\tt cfg/metadata.user}, with the same file format as used in{\tt cfg/metadata.eprints-fields}. Note that the system always holds the username, password, e-mail address and registration date of each user, so you don't need to include these in {\tt metadata.user}.
