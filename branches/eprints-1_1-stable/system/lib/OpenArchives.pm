@@ -786,5 +786,44 @@ sub list_contents
 	return( $searchexp->do_eprint_search() );
 }
 
+sub encode_setspec
+{
+	my( $setspec ) = @_;
+	my @bits = split( ":", $setspec );
+	foreach( @bits ) { $_ = text2bytestring( $_ ); }
+	return join(":",@bits);
+}
+
+sub decode_setspec
+{
+	my( $encoded ) = @_;
+	my @bits = split( ":", $encoded );
+	foreach( @bits ) { $_ = bytestring2text( $_ ); }
+	return join(":",@bits);
+}
+
+sub text2bytestring
+{
+	my( $string ) = @_;
+	my $encstring = "";
+	for(my $i=0; $i<length($string); $i++)
+	{
+		$encstring.=sprintf("%02X", ord(substr($string, $i, 1)));
+	}
+	return $encstring;
+}
+
+sub bytestring2text
+{
+	my( $encstring ) = @_;
+
+	my $string = "";
+	for(my $i=0; $i<length($encstring); $i+=2)
+	{
+		$string.=pack("H*",substr($encstring,$i,2));
+	}
+	return $string;
+}
+
 
 1;
