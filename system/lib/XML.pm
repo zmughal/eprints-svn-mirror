@@ -38,6 +38,7 @@ use Unicode::String qw(utf8 latin1);
 use strict;
 use Carp;
 
+@EPrints::XML::COMPRESS_TAGS = qw/br hr img link input meta/;
 
 my $gdome = ( 
 	 defined $EPrints::SystemSettings::conf->{enable_gdome} &&
@@ -73,7 +74,10 @@ sub _xmldom_tag_compression
 	my ($tag, $elem) = @_;
 	
 	# Print empty br, hr and img tags like this: <br />
-	return 2 if $tag =~ /^(br|hr|img|link|input|meta)$/;
+	foreach my $ctag ( @EPrints::XML::COMPRESS_TAGS )
+	{
+		return 2 if( $ctag eq $tag );
+	}
 
 	# Print other empty tags like this: <empty></empty>
 	return 1;
@@ -131,6 +135,7 @@ sub parse_xml_string
 		{
 			my $err = $@;
 			$err =~ s# at /.*##;
+			$err =~ s#\sXML::Parser::Expat.*$##s;
 			print STDERR "Error parsing XML $string";
 			return;
 		}
@@ -163,6 +168,11 @@ sub parse_xml
 	my( $file, $basepath, $no_expand ) = @_;
 
 #	print "Loading XML: $file\n";
+
+	unless( -r $file )
+	{
+		EPrints::Config::abort( "Can't read XML file: '$file'" );
+	}
 
 	my $doc;
 	if( $gdome )
@@ -216,6 +226,7 @@ sub parse_xml
 			return;
 		}
 	}
+#print STDERR "-----------------------------\n$file:\n--\n".$doc->toString;
 	return $doc;
 }
 
@@ -408,11 +419,14 @@ sub clone_and_own
 ######################################################################
 =pod
 
-=item $string = EPrints::XML::to_string( $node, [$enc] )
+=item $string = EPrints::XML::to_string( $node, [$enc], [$noxmlns] )
 
 Return the given node (and its children) as a UTF8 encoded string.
 
 $enc is only used when $node is a document.
+
+If $stripxmlns is true then all xmlns attributes are removed. Handy
+for making legal XHTML.
 
 Papers over some cracks, specifically that XML::GDOME does not 
 support toString on a DocumentFragment, and that XML::GDOME does
@@ -424,52 +438,74 @@ confuses some browsers. Eg. <br/> vs <br />
 
 sub to_string
 {
-	my( $node, $enc ) = @_;
+	my( $node, $enc, $noxmlns ) = @_;
 
 	$enc = 'utf-8' unless defined $enc;
 	
 	my @n = ();
 	if( EPrints::XML::is_dom( $node, "Element" ) )
 	{
-		push @n, '<', $node->getTagName, ' ';
-		#foreach my $attr ( $node->getChildNodes )
+		my $tagname = $node->getTagName;
+
+		# lowercasing all tags screws up OAI.
+		#$tagname = "\L$tagname";
+
+		push @n, '<', $tagname, ' ';
 
 		my $nnm = $node->getAttributes;
 		my $done = {};
 		foreach my $i ( 0..$nnm->getLength-1 )
 		{
 			my $attr = $nnm->item($i);
-			next if $done->{$attr->getName};
+			my $name = $attr->getName;
+			next if( $noxmlns && $name =~ m/^xmlns/ );
+			next if( $done->{$attr->getName} );
 			$done->{$attr->getName} = 1;
-			push @n, " ",$attr->toString;
+			# cjg Should probably escape these values.
+			my $value = $attr->getValue;
+			$value =~ s/&/&amp;/g;
+			$value =~ s/"/&quot;/g;
+			push @n, " ", $name."=\"".$value."\"";
 		}
 
+		#cjg This is bad. It makes nodes like <div /> if 
+		# they are empty. Should make <div></div> like XML::DOM
+		my $compress = 0;
+		foreach my $ctag ( @EPrints::XML::COMPRESS_TAGS )
+		{
+			$compress = 1 if( $ctag eq $tagname );
+		}
 		if( $node->hasChildNodes )
+		{
+			$compress = 0;
+		}
+
+		if( $compress )
+		{
+			push @n," />";
+		}
+		else
 		{
 			push @n,">";
 			foreach my $kid ( $node->getChildNodes )
 			{
-				push @n, to_string( $kid );
+				push @n, to_string( $kid, $enc, $noxmlns );
 			}
-			push @n,"</",$node->getTagName,">";
-		}
-		else
-		{
-			push @n," />";
+			push @n,"</",$tagname,">";
 		}
 	}
 	elsif( is_dom( $node, "DocumentFragment" ) )
 	{
 		foreach my $kid ( $node->getChildNodes )
 		{
-			push @n, to_string( $kid );
+			push @n, to_string( $kid, $enc, $noxmlns );
 		}
 	}
 	elsif( EPrints::XML::is_dom( $node, "Document" ) )
 	{
    		#my $docType  = $node->getDoctype();
 	 	#my $elem     = $node->getDocumentElement();
-		#push @n, $docType->toString, "\n";, to_string( $elem );
+		#push @n, $docType->toString, "\n";, to_string( $elem , $enc, $noxmlns);
 		if( $gdome )
 		{
 			push @n, $node->toStringEnc( $enc );
@@ -483,10 +519,13 @@ sub to_string
 			$node, 
 			"Text", 
 			"CDATASection", 
-			"EntityReference", 
-			"Comment" ) )
+			"EntityReference" ) )
 	{
 		push @n, $node->toString;
+	}
+	elsif( EPrints::XML::is_dom( $node, "Comment" ) )
+	{
+		push @n, "<!--", $gdome?$node->getData:$node->toString, "-->"
 	}
 	else
 	{
@@ -631,7 +670,7 @@ END
 	if( $gdome )
 	{
 #		print XMLFILE $node->toStringEnc("utf8",0);
-		print XMLFILE EPrints::XML::to_string( $node, "utf-8" );
+		print XMLFILE EPrints::XML::to_string( $node, "utf-8", 1 );
 	}
 	else
 	{
