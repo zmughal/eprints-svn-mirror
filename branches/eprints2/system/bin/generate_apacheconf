@@ -517,6 +517,7 @@ my $secureconfig = <<END;
     PerlAuthenHandler EPrints::Auth::authen
     PerlAuthzHandler EPrints::Auth::authz
     PerlSetVar EPrints_Security_Area ChangeUser
+    PerlSetVar EPrints_ArchiveID $archiveid
     require valid-user
     Redirect $securepath/change_user $userhome
   </Location>
@@ -525,8 +526,7 @@ END
 
 if( EPrints::Utils::is_set( $securehost ) )
 {
-#cjg MUST BE HTTPS!
-	my $securebase = "http://".$securehost.$securepath;
+	my $securebase = "https://".$securehost.$securepath;
 	print CONF <<END;
   Redirect /secure/ $securebase/secure/
   Redirect /perl/users/ $securebase/perl/users/
