@@ -371,6 +371,9 @@ sub translate_datestamp
 		$month = "0".$month;
 	}
 
+	# year is 1900+<as given by strptime()
+	$year += 1900;
+
 	return( $year."-".$month."-".$day );
 }
 
@@ -470,100 +473,7 @@ sub translate_authors
 {
 	my( $eprint, $old_values, $problems ) = @_;
 	
-	return( &get_names( $old_values->{authors} ) );
-}
-
-
-sub get_names
-{
-	my( $oldlist ) = @_;
-
-#print STDERR "Got in: $oldlist\n";
-	
-	my @oldnames = split /\s*\+\s*/, $oldlist;
-	my $n;	
-
-	my $namelist = undef;
-
-#print STDERR "Number of names is ".(scalar @oldnames)."\n";
-
-	foreach $n (@oldnames)
-	{
-		if( $n =~ /,/ )
-		{
-#print STDERR "surname, firstname\n";
-			# It's in the form surname, first names (we hope)
-			my( $surname, $firstnames ) = split /\,\s*/, $n;
-			$namelist = EPrints::Name->add_name( $namelist,
-			                                     $surname,
-			                                     $firstnames );
-		}
-		else
-		{
-#print STDERR "firstname surname\n";
-			# Form firstname surname
-			my( $surname, $firstnames ) = &put_surname_first( $n );
-			$namelist = EPrints::Name->add_name( $namelist, $surname, $firstnames )
-				if( defined $surname );
-		}
-	}
-
-#print STDERR "Returning: >>$namelist<<\n";
-
-	return( $namelist );
-}
-
-sub put_surname_first
-{
-	my( $oldname ) = @_;
-	
-	return( undef ) if( !defined $oldname || $oldname eq "" );
-
-	my @names = split /\s+/, $oldname;
-	
-	my $is_middle_bit = 0;
-
-	# If there's more than one part to the name
-	if( $#names >= 1 )
-	{
-		my @middle_bits = ( "van", "de", "von", "der" );
-		
-		my $possible_middle_bit = $names[$#names-1];
-		
-		foreach (@middle_bits)
-		{
-			$is_middle_bit = 1 if( (lc $_) eq (lc $possible_middle_bit) );
-		}
-	}
-		
-	my $firstnames = "";
-	my $surname = "";
-	my $i;
-
-	if( $is_middle_bit )
-	{
-		$surname = $names[$#names-1]." ".$names[$#names];
-
-		for( $i=0; $i<$#names-1; $i++ )
-		{
-			$firstnames .= " " if ($i>0);
-			$firstnames .= $names[$i];
-		}
-	}
-	else
-	{
-		$surname = $names[$#names];
-
-		for( $i=0; $i<$#names; $i++ )
-		{
-			$firstnames .= " " if ($i>0);
-			$firstnames .= $names[$i];
-		}
-	}
-
-	my @result = ( $surname, $firstnames );
-	
-	return( @result );
+	return( EPrints::Name->import_names( $old_values->{authors}, "\\+" ) );
 }
 
 
@@ -584,11 +494,11 @@ sub translate_editors
 	
 	if( defined( $old_values->{editor} ) )
 	{
-		$nameslist = &get_names( $old_values->{editor} );
+		$nameslist = EPrints::Name->import_names( $old_values->{editor}, "\\+" );
 	}
 	elsif( defined( $old_values->{editors} ) )
 	{
-		$nameslist = &get_names( $old_values->{editors} );
+		$nameslist = EPrints::Name->import_names( $old_values->{editors}, "\\+" );
 	}
 	
 	return( $nameslist );
