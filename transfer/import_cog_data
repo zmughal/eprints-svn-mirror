@@ -112,6 +112,11 @@ my %translations =
 );
 
 
+my %ignore_records =
+(
+	"comp/199802021" => 1,
+	"comp/199802022" => 1
+);
 
 
 my $session = new EPrints::Session( 1 );
@@ -139,16 +144,20 @@ while( <> )
 		# Marker
 		if( scalar keys %entry > 0 )
 		{
-			# Do the import, if we've read anything in
-			my @errors = &import_eprint( %entry );
-
-			if( $#errors >= 0 )
+			# Make sure it's not an entry we're supposed to ignore
+			unless( $ignore_records{$entry{idcode}} )
 			{
-				# Lob the errors into the error file
-				print ERROR "PROBLEM WITH $entry{idcode} ($idmap{$entry{idcode}})\n";
-				foreach (@errors)
+				# Do the import, if we've read anything in
+				my @errors = &import_eprint( %entry );
+
+				if( $#errors >= 0 )
 				{
-					print ERROR "$_\n";
+					# Lob the errors into the error file
+					print ERROR "PROBLEM WITH $entry{idcode} ($idmap{$entry{idcode}})\n";
+					foreach (@errors)
+					{
+						print ERROR "$_\n";
+					}
 				}
 			}
 		}
@@ -293,6 +302,10 @@ sub import_eprint
 	}
 	
 	#print STDERR "Committing\n";
+
+	# Copy across the files
+	&import_document( $session, \%entry, $eprint, \@errors );
+
 
 	# Put in the d/b
 	$eprint->commit();
@@ -729,3 +742,199 @@ sub translate_refereed
 	return( $eprint->{refereed} );
 }
 
+
+
+######################################################################
+#
+# import_document( $session, $old_record, $eprint, $errors )
+#
+#  Copies the documents across from $old_record to $eprint. Errors in
+#  $errors (array ref.)
+#
+######################################################################
+
+sub import_document
+{
+	my( $session, $old_record, $eprint, $errors ) = @_;
+	
+	my $path = $old_record->{idcode};
+	my( $archive, $yearmonth, $number ) = ($path =~ m/(.+)\/(\d\d\d\d\d\d)(\d\d\d)/);
+
+	$path = "data/archives/$archive/papers/$yearmonth/";
+
+	# This maps fields in the old record to a tuple:
+	#   [ directory in old record, new format descriptor, need unzip ]
+	my %newform = (
+		"file-html-main"   => [ "doc.html", "HTML", 0 ],
+		"file-ps-main"     => [ "doc.ps", "PS", 0 ],
+		"file-psgz-main"   => [ "doc.psgz", "PS", 1 ],
+		"file-pdf-main"    => [ "doc.pdf", "PDF", 0 ],
+		"file-pdfgz-main"  => [ "doc.pdfgz", "PDF", 1 ],
+		"file-txt-main"    => [ "doc.txt", "ASCII", 0 ]
+	);
+	
+	# Similar form, but maps format: values to dir, new format, need unzip tuple
+	my %oldform = (
+		"html"  => [ "doc.html", "HTML", 0 ],
+		"ps"    => [ "doc.ps", "PS", 0 ],
+		"ps.gz" => [ "doc.psgz", "PS", 1 ],
+		"txt"   => [ "doc.txt", "ASCII", 0 ] );
+
+	my $have_new_form = 0;
+
+	foreach (keys %newform)
+	{
+		if( defined $old_record->{$_} && $old_record->{$_} ne "" )
+		{
+			$have_new_form = 1;
+			my $format_info = $newform{$_};
+			
+			&copy_files( $session,
+			             $eprint,
+			             $format_info->[1],
+			             $path.$yearmonth.$number."/".$format_info->[0]."/",
+			             $old_record->{$_},
+							 1,
+			             $format_info->[2],
+			             $errors );
+		}
+	}
+	
+	if( defined $old_record->{format} && $have_new_form==0 )
+	{
+		foreach (keys %oldform)
+		{
+			if( $old_record->{format} eq $_ )
+			{
+				my $format_info = $oldform{$old_record->{format}};
+				my( $file, $dir, $copy_all );
+
+				# See if there's an id.format file...
+				if( -e $path.$yearmonth.$number.".".$_ )
+				{
+					# OK, this is the file
+					$file = $yearmonth.$number.".".$_;
+					$dir = $path;
+					$copy_all = 0;
+				}
+				elsif( -e $path.$yearmonth.$number.".".$_.".gz" )
+				{
+					# There's a gzipped, id.format file
+					$file = $yearmonth.$number.".".$_.".gz";
+					$dir = $path;
+					$format_info->[2] = 1;
+					$copy_all = 0;
+				}
+				else					
+				{
+					# The files must be in a directory.
+					$dir = $path.$yearmonth.$number."/";
+					$copy_all = 1;
+					
+					# Work out the main file
+					if( defined $old_record->{file0} )
+					{
+						if( -e $dir.$old_record->{file0} )
+						{
+							# The file is still called what file0 is called
+							$file = $old_record->{file0};
+						}
+						else
+						{
+							# Probably called number.format
+							$file = $yearmonth.$number.".".$_;
+						}
+					}
+					else
+					{
+						push @$errors, "Can't find main file for format $_, old record id $old_record->{idcode}";
+						return;
+					}
+				}
+
+				# Copy 'em across.
+				&copy_files( $session,
+				             $eprint,
+				             $format_info->[1],
+				             $dir,
+				             $file,
+								 $copy_all,
+				             $format_info->[2],
+								 $errors );
+			}
+		}
+	}
+	
+	return;
+}
+
+
+######################################################################
+#
+# copy_files( $session,
+#             $eprint,
+#             $format,
+#             $from_dir,
+#             $main_file,
+#             $copy_whole_dir,
+#             $compressed,
+#             $errors )
+#
+#  Creates a suitable document object for the given eprint, and transfers
+#  files from the directory $from_dir to it.
+#
+######################################################################
+
+sub copy_files
+{
+	my( $session, $eprint, $format, $from_dir, $main_file, 
+		$copy_whole_dir, $compressed, $errors ) = @_;
+		
+	my $doc = EPrints::Document->create( $session, $eprint, $format );
+	
+	unless( defined $doc )
+	{
+		push @$errors,
+			"Couldn't make document entry for eprint $eprint->{eprintid} format $format";
+		
+		return;
+	}
+	
+	if( $compressed )
+	{
+		# Have to uncompress. Assume just one file.
+
+		# Remove the .gz
+		my $dest_file = $main_file;
+		$dest_file =~ s/.[Gg][Zz]$//;
+
+		open IN, "gunzip -c <$from_dir$main_file|";
+		$doc->upload( \*IN, $dest_file );
+		close( IN );
+		$doc->set_main( $dest_file );
+		$doc->commit();
+	}
+	elsif( $copy_whole_dir )
+	{
+		my $dest_dir = $doc->local_path();
+		print STDERR "cp -a $from_dir* $dest_dir\n";
+		my $rc = 0xffff & system( "cp -a $from_dir* $dest_dir" );
+		if( $rc )
+		{
+			push @$errors, "Couldn't copy files for $eprint->{eprintid} format $format: $!";
+			$doc->remove();
+			return;
+		}
+		$doc->set_main( $main_file );
+		$doc->commit();
+	}
+	else
+	{
+		# Just copy the one file
+		open IN, $from_dir.$main_file;
+		$doc->upload( \*IN, $main_file );
+		close( IN );
+		$doc->set_main( $main_file );
+		$doc->commit();
+	}
+}
