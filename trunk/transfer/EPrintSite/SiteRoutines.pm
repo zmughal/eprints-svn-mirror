@@ -96,8 +96,8 @@ sub eprint_render_full
 
 	my $html = "";
 
-	my $succeeds_field = $eprint->{session}->{metainfo}->find_eprint_field( "succeeds" );
-	my $commentary_field = $eprint->{session}->{metainfo}->find_eprint_field( "commentary" );
+	my $succeeds_field = $eprint->{session}->{metainfo}->find_table_field( "eprint", "succeeds" );
+	my $commentary_field = $eprint->{session}->{metainfo}->find_table_field( "eprint", "commentary" );
 	my $has_multiple_versions = $eprint->in_thread( $succeeds_field );
 
 	# Citation
@@ -203,7 +203,7 @@ sub eprint_render_full
 
 	if( $eprint->{table} eq $EPrints::Database::table_archive )
 	{
-		my $date_field = $eprint->{session}->{metainfo}->find_eprint_field( "datestamp" );
+		my $date_field = $eprint->{session}->{metainfo}->find_table_field( "eprint","datestamp" );
 		$html .= " on ".$eprint->{session}->{render}->format_field(
 			$date_field,
 			$eprint->{datestamp} );
@@ -215,7 +215,7 @@ sub eprint_render_full
 	{
 		$html .= "<TR><TD VALIGN=TOP><STRONG>Alternative Locations:".
 			"</STRONG></TD><TD>";
-		my $altloc_field = $eprint->{session}->{metainfo}->find_eprint_field( "altloc" );
+		my $altloc_field = $eprint->{session}->{metainfo}->find_table_field( "eprint", "altloc" );
 		$html .= $eprint->{session}->{render}->format_field(
 			$altloc_field,
 			$eprint->{altloc} );
@@ -229,8 +229,8 @@ sub eprint_render_full
 	if( $for_staff )
 	{
 		my $additional_field = 
-			$eprint->{session}->{metainfo}->find_eprint_field( "additional" );
-		my $reason_field = $eprint->{session}->{metainfo}->find_eprint_field( "reasons" );
+			$eprint->{session}->{metainfo}->find_table_field( "eprint", "additional" );
+		my $reason_field = $eprint->{session}->{metainfo}->find_table_field( "eprint", "reasons" );
 
 		# Write suggested extra subject category
 		if( defined $eprint->{additional} )
