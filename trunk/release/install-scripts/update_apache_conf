@@ -77,8 +77,6 @@ print OUT <<__EOF__;
 ErrorDocument 401 /error401.html
 ErrorDocument 404 /perl/handle_404
 
-PerlSetEnv PERL5LIB $prefix/perl_lib
-
 <Directory "$prefix/html">
     Options Includes FollowSymLinks
     AllowOverride AuthConfig
