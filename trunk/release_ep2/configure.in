@@ -111,6 +111,7 @@ if test $UNZIP_PATH = "NOTFOUND"; then
     echo "*** by eprints. Try running this script again giving the"
     echo "*** --with-toolpath options to give a colon separated path"
     echo "*** where the tools can be found"
+    echo "***"
     echo "*** eprints configure will now continue, but some features may"
     echo "*** not work unless this is resolved"
     echo "**************************************************************"
@@ -124,6 +125,7 @@ if test $TAR_PATH = "NOTFOUND"; then
     echo "*** by eprints. Try running this script again giving the"
     echo "*** --with-toolpath options to give a colon separated path"
     echo "*** where the tools can be found"
+    echo "***"
     echo "*** eprints configure will now continue, but some features may"
     echo "*** not work unless this is resolved"
     echo "**************************************************************"
@@ -137,6 +139,7 @@ if test $GUNZIP_PATH = "NOTFOUND"; then
     echo "*** by eprints. Try running this script again giving the"
     echo "*** --with-toolpath options to give a colon separated path"
     echo "*** where the tools can be found"
+    echo "***"
     echo "*** eprints configure will now continue, but some features may"
     echo "*** not work unless this is resolved"
     echo "**************************************************************"
@@ -150,6 +153,7 @@ if test $WGET_PATH = "NOTFOUND"; then
     echo "*** by eprints. Try running this script again giving the"
     echo "*** --with-toolpath options to give a colon separated path"
     echo "*** where the tools can be found"
+    echo "***"
     echo "*** eprints configure will now continue, but some features may"
     echo "*** not work unless this is resolved"
     echo "**************************************************************"
@@ -163,11 +167,14 @@ if test $SENDMAIL_PATH = "NOTFOUND"; then
     echo "*** by eprints. Try running this script again giving the"
     echo "*** --with-toolpath options to give a colon separated path"
     echo "*** where the tools can be found"
+    echo "***"
     echo "*** eprints configure will now continue, but some features may"
     echo "*** not work unless this is resolved"
     echo "**************************************************************"
     AC_MSG_WARN([Unable to find sendmail])
 fi
+
+
 
 AC_PATH_PROG(LATEX_PATH, latex, "NOTFOUND", $TOOL_PATH)
 if test $LATEX_PATH = "NOTFOUND"; then
@@ -175,8 +182,11 @@ if test $LATEX_PATH = "NOTFOUND"; then
     echo "*** by eprints. Try running this script again giving the"
     echo "*** --with-toolpath options to give a colon separated path"
     echo "*** where the tools can be found"
+    echo "***"
     echo "*** eprints configure will now continue, but some features may"
     echo "*** not work unless this is resolved"
+    echo "***"
+    echo "*** DON'T PANIC. This tool is not used by a core feature."
     AC_MSG_WARN([Unable to find latex])
 fi
 
@@ -186,8 +196,11 @@ if test $DVIPS_PATH = "NOTFOUND"; then
     echo "*** by eprints. Try running this script again giving the"
     echo "*** --with-toolpath options to give a colon separated path"
     echo "*** where the tools can be found"
+    echo "***"
     echo "*** eprints configure will now continue, but some features may"
     echo "*** not work unless this is resolved"
+    echo "***"
+    echo "*** DON'T PANIC. This tool is not used by a core feature."
     AC_MSG_WARN([Unable to find dvips, for latex])
 fi
 
@@ -197,8 +210,11 @@ if test $CONVERT_PATH = "NOTFOUND"; then
     echo "*** by eprints. Try running this script again giving the"
     echo "*** --with-toolpath options to give a colon separated path"
     echo "*** where the tools can be found"
+    echo "***"
     echo "*** eprints configure will now continue, but some features may"
     echo "*** not work unless this is resolved"
+    echo "***"
+    echo "*** DON'T PANIC. This tool is not used by a core feature."
     AC_MSG_WARN([Unable to find convert, the ImageMagick tool])
 fi
 
@@ -222,6 +238,28 @@ CHECK_PERL_MOD(Sys::Hostname)
 CHECK_PERL_MOD(Unicode::String)
 CHECK_PERL_MOD(XML::Parser)
 
+TEST_PERL_MOD(GDOME_AVAILABLE, XML::GDOME)
+ENABLE_GDOME="0"
+AC_ARG_ENABLE(gdome,
+    [ --enable-gdome           use the XML::GDOME module],
+    [
+        if test $enableval = yes ; then
+            ENABLE_GDOME="1"
+        fi
+    ])
+
+if test $GDOME_AVAILABLE = "1"; then
+    echo "Found XML::GDOME module. Lovely. We'll use that then!"
+    ENABLE_GDOME="1"
+else
+    if( test $ENABLE_GDOME = "1" )
+        AC_MSG_ERROR(Can't find GDOME, but you asked to enable it)
+    else
+        echo "Didn't find XML::GDOME module. We'll make do with XML::DOM then."
+    fi
+    ENABLE_GDOME="0"
+fi
+
 AC_PREFIX_DEFAULT(/opt/eprints2)
 
 PREFIX=$prefix
@@ -233,6 +271,7 @@ AC_SUBST(PERL_PATH)
 AC_SUBST(DIST_PATH)
 AC_SUBST(PREFIX)
 AC_SUBST(DISABLE_DF)
+AC_SUBST(ENABLE_GDOME)
 AC_SUBST(INSTALL_USER)
 AC_SUBST(INSTALL_GROUP)
 AC_SUBST(VIRTUALHOST)
