@@ -1,0 +1,43 @@
+
+
+System level:
+(you (or RedHat) install)
+RPM: binutils
+RPM: kernel-headers
+RPM: glibc-devel
+RPM: gcc
+RPM: libstdc++
+RPM: c++
+RPM: libgz
+RPM: zlib-devel
+RPM: libtermcap
+CMD: sendmail
+CMD: gunzip
+CMD: tar
+CMD: useradd
+CMD: groupadd
+
+EPrints level:
+(we install)
+TGZ: unzip
+TGZ: wget
+TGZ: apachemodperl
+TGZ: Expat
+PM: XML::Parser
+PM: MIME::Base64
+PM: Unicode::String
+PM: DBI
+PM: FileSys::DiskSpace
+PM: URI::Escape
+PM: Data::ShowTable
+PM: Msql-Mysql
+PM: Apache::DBI
+PM: Data::Dumper
+PM: CGI
+PM: XML::Writer
+PM: ExtUtils::PerlPP
+PM: DBD
+
+TODO:
+User shell?
+Start MySQL

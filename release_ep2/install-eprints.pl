@@ -285,7 +285,7 @@ GROUP
 		}
 	
 		print "Creating user ... ";
-		if (system("$useradd -s /bin/false -d $dir -g $group $user")==0)
+		if (system("$useradd -s /bin/bash -d $dir -g $group $user")==0)
 		{
 			print "OK.\n\n";
 		} 
