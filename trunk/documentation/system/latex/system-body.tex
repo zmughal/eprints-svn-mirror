@@ -116,6 +116,7 @@ Metadata fields in the \eprints\ system will be of one of the types listed in ta
 {\tt multitext}  & (potentially) several lines of text \\
 {\tt multiurl}   & several WWW site addresses \\
 {\tt name}       & a person's name, or list of people's names \\
+{\tt username}   & a person's eprints username, or list thereof \\
 {\tt pagerange}  & a range of pages (or a single page) \\
 {\tt set}        & none or more of a specified set of values \\
 {\tt subjects}   & none or more subjects in the subject hierarchy \\
@@ -310,6 +311,7 @@ eprinttype & VARCHAR(255)        & tag of the eprint type \\
 int        & INT UNSIGNED        & the number \\
 multitext  & TEXT                & as-is \\
 multiurl   & TEXT                & as-is \\
+username   & TEXT                & {\tt :username1:username2: }  \\
 name       & VARCHAR(255)        & {\tt :surname,firstname middlename:surname Jr., firstname,middlename:} \\
 pagerange  & VARCHAR(255)        & {\tt xxx-yyy}, {\tt xxx-}, {\tt -yyy}, or {\tt xxx} \\
 set        & VARCHAR(255)        & {\tt :tag1:tag2:tag3:} \emph{tags in alphabetical order} \\
@@ -435,7 +437,7 @@ If no search terms have been entered the internal representation is {\tt NULL} i
 \end{description}
 
 
-\subsubsection{{\tt set} and {\tt subject} fields}
+\subsubsection{{\tt set}, {\tt username} and {\tt subject} fields}
 
 \begin{description}
 \item[HTML Form:] Rendered as a list of possible values, with a popup menu on the right hand side from which the user can select ``Any of these'' or ``All of these.'' If the user selects ``Any of these,'' the search will retrieve any record which has any value the user has selected in the relevant field. If the user selects ``All of these'', a retrieved record must have all of the values the user has selecetd in the list.  The name of this extra input field is {\tt fieldname\_anyall}.
@@ -543,11 +545,10 @@ Trees of commentaries and responses are also displayed on the abstract pages of 
 
 \section{Open Archives Interoperability}
 
-A vital component of the software is the interoperability component. In version 1.0 of the software, the only publically available Open Archives protocol is a subset of the Dienst protocol developed at Cornell University. In order to support this protocol, software developed at Cornell University supporting Dienst has been included with the \eprints\ software.
+A vital component of the software is the interoperability component. Version 1.1 of the software is compliant with
+the Open Archives Protocol 1.0.
 
-Since the Open Archives protocol is about to change, the support of Dienst is only temporary; however, the API between the \eprints\ core code and a site's code will remain the same, so sites running the \eprints\ software are protected against changes in the protocol.
-
-Using the protocol, an \eprints\ archive can export several metadata sets. By default, Dublin Core metadata and OAMS (Open Archives Metadata Set) metadata are exported.
+Using the protocol, an \eprints\ archive can export several metadata sets. By default only Dublin Core metadata is exported.
 
 Two methods in the {\tt SiteRoutines.pm} module are used to configure the metadata your instance of \eprints\ will export. The {\tt oai\_list\_metadata\_formats} method returns a hash, mapping short metadata format names to their XML namespaces. By default, this just returns a hash defined in {\tt SiteInfo.pm}:
 
@@ -557,10 +558,15 @@ Two methods in the {\tt SiteRoutines.pm} module are used to configure the metada
 
 Code in the {\tt oai\_get\_eprint\_metadata} in {\tt SiteRoutines.pm} is used to map the site's internal metadata set to these formats.
 
-For version 1.0, the base URL of the Open Archives protocol will be:
+For version 1.1, the base URL of the Open Archives protocol will be:
 
 \begin{verbatim}
-http://your.eprints.server.edu/Dienst
+http://your.eprints.server.edu/perl/oai
+\end{verbatim}
+
+More information on Open Archives is available from:
+\begin{verbatim}
+http://www.openarchives.org/
 \end{verbatim}
 
 
@@ -588,6 +594,28 @@ If a user wishes e-mail to be directed to an address they cannot send from, they
 
 If the email isn't recognised, a return is sent with instructions on how to use the \eprints\ automatic mail processing correctly. You can change the wording of this text, including the ``introduction to the archive'' and the ``email successfully changed'' by changing the {\tt template.*} files in the {\tt cfg} directory.
 
+\section{Running \eprints\ for a Department}
+
+It is not unlikely that you will want to run the \eprints\ software as an archive for papers, or other media,
+produced by a department or group with a specific set of members.
+
+Key modifications you may wish to make might be:
+
+\begin{itemize}
+\item Remove email based user registration.
+\item Update the users table from your members database with a crontab entry.
+\item Add one or more {\tt username (multiple)} fields to metadata of the items to associate them directly with members. A ``Local Authors Usernames'' field, for example.
+\item Add that field to the advanced search.
+\item Edit the .htaccess files to use Encrypted passwords
+\end{itemize}
+
+You should try and avoid editing the core files (those in bin, EPrints and cgi) as
+these will be overwritten when you next upgrade.
+
+We are planning more support for this in the next release, including example scripts
+to import users and a method for building static ``view'' pages for each member.
+This would mean that your members could link from their homepage to a page listing
+all their papers (or whatever your archive archives).
 
 \section{Scripted Importing of Data}
 

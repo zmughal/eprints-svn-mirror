@@ -158,12 +158,14 @@ by hand if it's not local.
 - added --with-module-prefix option to configure, this gives all the perl modules
 a prefix, so multiple copies of eprints can be run on one mod_perl instance.
 - added a new datafield type "username" which represents one, or a list, of 
-
+usernames of local eprints users. This is intended to make the system more useful
+to departments which want to strongly link items to individuals.
 
 Site default configuration changes
 
 - removed OAMS support
 - almost total replacement of OAI section
 - added mysql host and port options
+- changed the logo, added width & height to the images
 
 

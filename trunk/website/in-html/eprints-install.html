@@ -3,12 +3,72 @@ TITLE: eprints.org Archive Software Installation Document
 
 <P>
  
-<H1 ALIGN="CENTER">Eprints Archive Software Installation Document</H1>
-<P ALIGN="CENTER"><STRONG>Robert Tansley</STRONG></P>
+<H1 ALIGN="CENTER">Eprints Archive Software Installation Document
+<BR >
+Eprints 1.1</H1>
+<P ALIGN="CENTER"><STRONG>Robert Tansley  - Christopher Gutteridge</STRONG></P>
+
+<P>
+ 
+<BR >
+
+<H2><A NAME="SECTION00010000000000000000">
+Contents</A>
+</H2>
+<!--Table of Contents-->
+
+<UL>
+<LI><A NAME="tex2html52"
+ HREF="eprints-install.html">Contents</A>
+<LI><A NAME="tex2html53"
+ HREF="eprints-install.html#SECTION00020000000000000000">1. Introduction</A>
+<UL>
+<LI><A NAME="tex2html54"
+ HREF="eprints-install.html#SECTION00021000000000000000">1.1 Making Suggestions, Bug Reports and Support</A>
+<LI><A NAME="tex2html55"
+ HREF="eprints-install.html#SECTION00022000000000000000">1.2 Upgrading from an earler version</A>
+</UL>
+<LI><A NAME="tex2html56"
+ HREF="eprints-install.html#SECTION00030000000000000000">2. Prerequisites</A>
+<UL>
+<LI><A NAME="tex2html57"
+ HREF="eprints-install.html#SECTION00031000000000000000">2.1 Special Notes on Apache and mod_perl</A>
+<LI><A NAME="tex2html58"
+ HREF="eprints-install.html#SECTION00032000000000000000">2.2 Perl Modules</A>
+<LI><A NAME="tex2html59"
+ HREF="eprints-install.html#SECTION00033000000000000000">2.3 E-Mail</A>
+</UL>
+<LI><A NAME="tex2html60"
+ HREF="eprints-install.html#SECTION00040000000000000000">3. Installing the Eprints Software</A>
+<UL>
+<LI><A NAME="tex2html61"
+ HREF="eprints-install.html#SECTION00041000000000000000">3.1 Automatic Installation</A>
+<LI><A NAME="tex2html62"
+ HREF="eprints-install.html#SECTION00042000000000000000">3.2 Manual Installation</A>
+<LI><A NAME="tex2html63"
+ HREF="eprints-install.html#SECTION00043000000000000000">3.3 Finishing up</A>
+</UL>
+<LI><A NAME="tex2html64"
+ HREF="eprints-install.html#SECTION00050000000000000000">4. Eprints Archive Configuration</A>
+<UL>
+<LI><A NAME="tex2html65"
+ HREF="eprints-install.html#SECTION00051000000000000000">4.1 Metadata Configuration</A>
+<LI><A NAME="tex2html66"
+ HREF="eprints-install.html#SECTION00052000000000000000">4.2 Full Text Formats</A>
+<LI><A NAME="tex2html67"
+ HREF="eprints-install.html#SECTION00053000000000000000">4.3 Validation</A>
+<LI><A NAME="tex2html68"
+ HREF="eprints-install.html#SECTION00054000000000000000">4.4 Searching and Subscriptions</A>
+<LI><A NAME="tex2html69"
+ HREF="eprints-install.html#SECTION00055000000000000000">4.5 Open Archives Interoperability</A>
+<LI><A NAME="tex2html70"
+ HREF="eprints-install.html#SECTION00056000000000000000">4.6 Site Look and Feel</A>
+</UL></UL>
+<!--End of Table of Contents--> 
 
 <P>
 
-<H1><A NAME="SECTION00010000000000000000">
+<H1><A NAME="SECTION00020000000000000000">
 1. Introduction</A>
 </H1>
 
@@ -20,7 +80,7 @@ Although this document is rather large, much of it is to do with configuring var
 
 <P>
 
-<H2><A NAME="SECTION00011000000000000000">
+<H2><A NAME="SECTION00021000000000000000">
 1.1 Making Suggestions, Bug Reports and Support</A>
 </H2>
 
@@ -58,24 +118,19 @@ HREF="mailto:support@eprints.org"><TT> support@eprints.org</TT></A></STRONG></DT
 
 <P>
 
-<H2><A NAME="SECTION00012000000000000000">
-1.2 Upgrading from a beta version</A>
+<H2><A NAME="SECTION00022000000000000000">
+1.2 Upgrading from an earler version</A>
 </H2>
 
 <P>
-If you're upgrading from version Beta-2, using the automatic installer should work, thouh as is always sensible, it may be wise to make a backup of the old version. You will need to create the deletions database table, in MySQL:
+If you're upgrading from version Beta-2 or later, using the automatic installer should work, thouh as is always sensible, it may be wise to make a backup of the old version. 
 
 <P>
-<PRE>
-
-CREATE TABLE deletions (eprintid VARCHAR(255) NOT NULL,
-  replacement VARCHAR(255), subjects TEXT, deletiondate
-  DATE, PRIMARY KEY (eprintid));
-</PRE>
+See the file <TT> README.UPGRADING</TT> in the distribution for what changes have to be made by hand, and more advice on upgrading.
 
 <P>
 
-<H1><A NAME="SECTION00020000000000000000">
+<H1><A NAME="SECTION00030000000000000000">
 2. Prerequisites</A>
 </H1>
 
@@ -85,7 +140,7 @@ The <I>Eprints</I> software makes use of a number of other pieces of software, w
 <P>
  
 <BR ><P></P>
-<DIV ALIGN="CENTER"><A NAME="642"></A>
+<DIV ALIGN="CENTER"><A NAME="661"></A>
 <TABLE>
 <CAPTION><STRONG>Table 1:</STRONG>
  Prerequisite Software Packages</CAPTION>
@@ -179,7 +234,7 @@ Many of them may be already installed on your system. Also shown is which RedHat
 
 <P>
 
-<H2><A NAME="SECTION00021000000000000000">
+<H2><A NAME="SECTION00031000000000000000">
 2.1 Special Notes on Apache and mod_perl</A>
 </H2>
 
@@ -216,7 +271,7 @@ You can just compile it with ALL_HOOKS if you like.
 
 <P>
 
-<H2><A NAME="SECTION00022000000000000000">
+<H2><A NAME="SECTION00032000000000000000">
 2.2 Perl Modules</A>
 </H2>
 
@@ -265,7 +320,7 @@ on a Linux machine. If you still can't get it to work, grep for <TT> statvfs</TT
 
 <P>
 
-<H2><A NAME="SECTION00023000000000000000">
+<H2><A NAME="SECTION00033000000000000000">
 2.3 E-Mail</A>
 </H2>
 
@@ -284,7 +339,7 @@ Once all of this software is installed, we're ready to proceed with the installa
 
 <P>
 
-<H1><A NAME="SECTION00030000000000000000"></A>
+<H1><A NAME="SECTION00040000000000000000"></A>
 <A NAME="install_software"></A>
 <BR >
 3. Installing the <I>Eprints</I> Software
@@ -301,7 +356,7 @@ Here is an overview of the steps that you can perform automatically or manually:
 <OL>
 <LI>Install the code, setting relevant path information</LI>
 <LI>Configure the code to work with the rest of the system</LI>
-<LI>Create the MySQL database for <I>Eprints</I>/LI>
+<LI>Create the MySQL database for <I>Eprints</I> </LI>
 <LI>Configure Apache to execute <I>Eprints</I> scripts and serve <I>Eprints</I> documents</LI>
 <LI>Install a crontab, to periodically execute various <I>Eprints</I> scripts</LI>
 </OL>
@@ -311,7 +366,7 @@ The automatic installation process is described first.  Where an aspect of this 
 
 <P>
 
-<H2><A NAME="SECTION00031000000000000000">
+<H2><A NAME="SECTION00041000000000000000">
 3.1 Automatic Installation</A>
 </H2>
 
@@ -422,7 +477,7 @@ The defaults are:
 </UL>
 
 <P>
-If you do disable this feature, you'll have to set up a crontab yourself as described in section <A HREF="eprints-install.html#manual_crontab">3.2.4</A>.
+If you do disable this feature, you'll have to set up a crontab yourself as described in section <A HREF="eprints-install.html#manual_crontab">3.2.5</A>.
 
 <P>
  </DD>
@@ -491,10 +546,29 @@ Name of the MySQL database to use. It will be automatically created if <TT> -dis
  </DD>
 <DT><STRONG><TT> -with-db-username</TT></STRONG></DT>
 <DD><P>
-The MySQL username <I>Eprints</I> (and Apache) should use to access the MySQL database, defaulting to <TT> eprints</TT>. Note that this is independent of the UNIX username specified with <TT> -with-username</TT>, and can be a different name. If the <TT> -disable-create-database</TT> parameter is not specified, this MySQL user will be granted priviledges on the <I>Eprints</I> database.
+The MySQL username eprints (and Apache) should use to access the MySQL database, defaulting to <TT> eprints</TT>. Note that this is independent of the UNIX username specified with <TT> -with-username</TT>, and can be a different name. If the <TT> -disable-create-database</TT> parameter is not specified, this MySQL user will be granted priviledges on the <I>Eprints</I> database.
 
 <P>
 Note that you will be prompted for a password for this MySQL user when you type <TT> make</TT> later on.
+
+<P>
+ </DD>
+<DT><STRONG><TT> -with-db-port</TT></STRONG></DT>
+<DD><P>
+Specify a non-default port to connect to the MySQL server. This option will automatically disable create database.
+
+<P>
+ </DD>
+<DT><STRONG><TT> -with-db-host</TT></STRONG></DT>
+<DD><P>
+Connect to a MySQL server on this host, rather than "localhost", although <I>Eprints</I> still expects a local installation of
+MySQL to exist.  This option will automatically disable create database.
+
+<P>
+ </DD>
+<DT><STRONG><TT> -with-module-prefix</TT></STRONG></DT>
+<DD><P>
+Use this option if you need to run more than one install of <I>Eprints</I> on the same webserver. The prefix should consist of letters only. Without it mod_perl will get confused as to which version of a module to use for which script as they would all have the same names. Of course, one copy of <I>Eprints</I> can get away with not having a prefix as long as all the others do.
 
 <P>
  </DD>
@@ -563,7 +637,7 @@ Depending on the parameters you specified, you may have to perform some extra ta
 
 <P>
 
-<H3><A NAME="SECTION00031100000000000000"></A>
+<H3><A NAME="SECTION00041100000000000000"></A>
 <A NAME="example_conf_params"></A>
 <BR >
 3.1.1 Some Example Parameters
@@ -614,7 +688,7 @@ This makes the install script do as little as possible, assuming that the foopri
 
 <P>
 
-<H2><A NAME="SECTION00032000000000000000"></A>
+<H2><A NAME="SECTION00042000000000000000"></A>
 <A NAME="install_manual"></A>
 <BR >
 3.2 Manual Installation
@@ -660,7 +734,7 @@ Do this if you wish to run more than one <I>Eprints</I> archive from a single Ap
 
 <P>
 
-<H3><A NAME="SECTION00032100000000000000">
+<H3><A NAME="SECTION00042100000000000000">
 3.2.1 Initial Configuration of <I>Eprints</I></A>
 </H3>
 
@@ -726,7 +800,7 @@ At this point you should decide on the types of eprints you want to store in the
 
 <P>
 
-<H3><A NAME="SECTION00032200000000000000"></A>
+<H3><A NAME="SECTION00042200000000000000"></A>
 <A NAME="manual_create_db"></A>
 <BR >
 3.2.2 Setting up the MySQL database
@@ -772,11 +846,14 @@ TO eprints@localhost IDENTIFIED BY "password";
 
 <P>
 
-<H3><A NAME="SECTION00032300000000000000"></A>
+<H3><A NAME="SECTION00042300000000000000"></A>
 <A NAME="manual_apache"></A>
 <BR >
 3.2.3 Configuring Apache
 </H3>
+
+<P>
+For multiple installations of eprints on one server see the next section.
 
 <P>
 Apache needs to be pointed at the <I>Eprints</I> software and the password system set up.
@@ -859,7 +936,7 @@ Alias /perl/ /opt/eprints/cgi/
 </PRE>
 
 <P>
-Add the engine to run the open archives interoperability software:
+The Dienst interface is no longer required, but is still included. If you want to use it add the following:
 
 <P>
  
@@ -877,7 +954,7 @@ RewriteRule ^/Dienst(.*) /opt/eprints/openarchives/Main/dienst.pl
 </PRE>
 
 <P>
-Redirect 401 ``authorisation required'' and 404 ``document not found'' errors to be handled by <I>Eprints</I> (note that these need to be URLs rather than local filesystem paths) by adding the following paths. However, if you're running more than one <I>Eprints</I> archive on a single Apache server, only one 404 document handler, which may end up directing users to incorrect pages, so you may wish to leave that out; likewise, you may wish to change the wording in <TT> error401.html</TT>.
+Redirect 401 ``authorisation required'' and 404 ``document not found'' errors to be handled by <I>Eprints</I> (note that these need to be URLs rather than local filesystem paths) by adding the following paths. 
 
 <P>
  
@@ -909,15 +986,74 @@ su -s /bin/sh -c /opt/eprints/bin/update_htaccess eprints
 
 <P>
 
-<H3><A NAME="SECTION00032400000000000000"></A>
-<A NAME="manual_crontab"></A>
+<H3><A NAME="SECTION00042400000000000000"></A>
+<A NAME="manual_multiple"></A>
 <BR >
-3.2.4 Installing the Crontab
+3.2.4 Using Multiple Copies of <I>Eprints</I> on the Same Machine
 </H3>
 
 <P>
-To operate the subscriptions (alerting service), the <TT> subs_daily</TT>, <TT> subs_weekly</TT> and <TT> subs_monthly</TT> scripts need to be run every day, week and month, respectively, from the <I>Eprints</I> account. The <I>browse by subject</I> views are static HTML files generated by a script, <TT> generate_views</TT>. This should be run at least once a day, or maybe more depending on how many incoming eprints you expect and how quickly you'd like them to be browsable<A NAME="tex2html13"
- HREF="#foot413"><SUP>2</SUP></A>.
+Ensure that all, or all but one, of the versions of EPrints you intend to use are configured with <TT> -with-module-prefix</TT> otherwise they will occupy the same namespace in mod_perl and things will go very wrong. Although multiple instances of <I>Eprints</I> can use the same installation of MySQL, they must use different databases within it.
+
+<P>
+Note that if you use use <TT> -with-module-prefix</TT> it will rename all your modules. For example, if you use the prefix <TT> Fnord</TT> then where the documentation refers to <TT> $EPrintSite::SiteInfo::database</TT> you will need to use <TT> $Fnord::EPrintSite::SiteInfo::database</TT>.
+
+<P>
+First change the main Apache configuration file with the <TT> PerlModule</TT>, <TT> User</TT> and <TT> Group</TT> values described in the previous section.
+
+<P>
+Now configure each instance of <I>Eprints</I> as a virtual host. See the Apache documentation at <A NAME="tex2html13"
+ HREF="http://httpd.apache.org/"><TT> http://httpd.apache.org/</TT></A>
+for more information. An example VirtualHost configuration is given below. Note that <TT> eprints-test</TT> is the location of the install and is not connected with the module prefix. The module prefix does not appear anywhere in the Apache config file. In the case of this example, we would suggest a module prefix of <TT> ETest</TT>.
+
+<P>
+ 
+<PRE>
+
+&lt;VirtualHost 152.78.69.138&gt;
+        ServerAdmin cjg@ecs.soton.ac.uk
+        ServerName eprints-test.ecs.soton.ac.uk
+
+        DocumentRoot "/opt/eprints-test/html"
+
+        &lt;Directory "/opt/eprints-test/html"&gt;
+                Options Includes FollowSymLinks
+                AllowOverride AuthConfig
+                Order allow,deny
+                Allow from all
+        &lt;/Directory&gt;
+
+        Alias /perl/ /opt/eprints-test/cgi/
+
+        &lt;Directory /opt/eprints-test/cgi&gt;
+                PerlSetEnv PERL5LIB /opt/eprints-test/perl_lib
+                SetHandler perl-script
+                PerlHandler Apache::Registry
+                PerlSendHeader Off
+                Options +ExecCGI
+                AllowOverride AuthConfig
+        &lt;/Directory&gt;
+
+        ErrorDocument 401 /error401.html
+        ErrorDocument 404 /perl/handle_404
+
+&lt;/VirtualHost&gt;
+</PRE>
+
+<P>
+Finally run update_htaccess as described in the previous section. 
+
+<P>
+
+<H3><A NAME="SECTION00042500000000000000"></A>
+<A NAME="manual_crontab"></A>
+<BR >
+3.2.5 Installing the Crontab
+</H3>
+
+<P>
+To operate the subscriptions (alerting service), the <TT> subs_daily</TT>, <TT> subs_weekly</TT> and <TT> subs_monthly</TT> scripts need to be run every day, week and month, respectively, from the <I>Eprints</I> account. The <I>browse by subject</I> views are static HTML files generated by a script, <TT> generate_views</TT>. This should be run at least once a day, or maybe more depending on how many incoming eprints you expect and how quickly you'd like them to be browsable<A NAME="tex2html14"
+ HREF="#foot435"><SUP>2</SUP></A>.
 
 <P>
 So, the <I>Eprints</I> user crontab should look something like this:
@@ -949,8 +1085,27 @@ If the <I>Eprints</I> user does not have a valid login shell, some operating sys
 </PRE>
 
 <P>
+If you are running more than one instance of <I>Eprints</I> as the same user you will need to 
+have four lines in your crontab for each instance. The automatic configuration will
+<EM> overwrite</EM> the previous crontab so you will have to do this by hand. for example:
 
-<H2><A NAME="SECTION00033000000000000000"></A>
+<P>
+ 
+<PRE>
+
+0 0  * * * /opt/eprints/bin/subs_daily
+15 0 * * 0 /opt/eprints/bin/subs_weekly
+30 0 1 * * /opt/eprints/bin/subs_monthly
+0 1  * * * /opt/eprints/bin/generate_views
+0 0  * * * /opt/eprintsdevel/bin/subs_daily
+15 0 * * 0 /opt/eprintsdevel/bin/subs_weekly
+30 0 1 * * /opt/eprintsdevel/bin/subs_monthly
+0 1  * * * /opt/eprintsdevel/bin/generate_views
+</PRE>
+
+<P>
+
+<H2><A NAME="SECTION00043000000000000000"></A>
 <A NAME="finishing_up"></A>
 <BR >
 3.3 Finishing up
@@ -974,7 +1129,7 @@ Most of these steps are very simple, and are described below.
 
 <P>
 
-<H3><A NAME="SECTION00033100000000000000">
+<H3><A NAME="SECTION00043100000000000000">
 3.3.1 The Document Store</A>
 </H3>
 
@@ -1020,7 +1175,7 @@ You will need to do this when you install an <I>Eprints</I>archive, to give the 
 
 <P>
 
-<H3><A NAME="SECTION00033200000000000000">
+<H3><A NAME="SECTION00043200000000000000">
 3.3.2 Automatic E-mail Processing</A>
 </H3>
 
@@ -1034,7 +1189,7 @@ In the <I>Eprints</I> user <TT> .forward</TT> file:
  
 <PRE>
 
-"|IFS=' ' &amp;&amp; exec /usr/bin/procmail -f- || exit 75"
+|IFS=' ' &amp;&amp; exec /usr/bin/procmail -f- || exit 75
 </PRE>
 
 <P>
@@ -1058,7 +1213,7 @@ Of course, there are many other ways in which you can achieve the same functiona
 
 <P>
 
-<H3><A NAME="SECTION00033300000000000000"></A>
+<H3><A NAME="SECTION00043300000000000000"></A>
 <A NAME="install_last_steps"></A>
 <BR >
 3.3.3 Last Steps
@@ -1113,7 +1268,7 @@ Now you should have a working installation that you can play around with. You sh
 
 <P>
 
-<H1><A NAME="SECTION00040000000000000000"></A>
+<H1><A NAME="SECTION00050000000000000000"></A>
 <A NAME="install_configure"></A>
 <BR >
 4. <I>Eprints</I> Archive Configuration
@@ -1128,7 +1283,7 @@ The <I>Eprints</I> archive is a highly configurable piece of software. The confi
 
 <P>
 
-<H2><A NAME="SECTION00041000000000000000"></A>
+<H2><A NAME="SECTION00051000000000000000"></A>
 <A NAME="install_metadata"></A>
 <BR >
 4.1 Metadata Configuration
@@ -1175,7 +1330,7 @@ Possible arguments are shown in table <A HREF="#install_meta_args">2</A>.
 <P>
  
 <BR ><P></P>
-<DIV ALIGN="CENTER"><A NAME="643"></A>
+<DIV ALIGN="CENTER"><A NAME="662"></A>
 <TABLE>
 <CAPTION><STRONG>Table 2:</STRONG>
  Arguments to metadata field specifications</CAPTION>
@@ -1204,7 +1359,7 @@ Possible arguments are shown in table <A HREF="#install_meta_args">2</A>.
 <TD ALIGN="LEFT">Maximum no. of characters or digits</TD>
 </TR>
 <TR><TD ALIGN="LEFT">multiple</TD>
-<TD ALIGN="LEFT">Whether a single value or a list (name and set)</TD>
+<TD ALIGN="LEFT">Whether a single value or a list (name, username and set)</TD>
 </TR>
 <TR><TD ALIGN="LEFT">required</TD>
 <TD ALIGN="LEFT">Is the field required (only used in <TT> metadata.user</TT>)</TD>
@@ -1234,7 +1389,7 @@ The possible types of metadata field, and the arguments they need, are shown in 
 <P>
  
 <BR ><P></P>
-<DIV ALIGN="CENTER"><A NAME="644"></A>
+<DIV ALIGN="CENTER"><A NAME="663"></A>
 <TABLE>
 <CAPTION><STRONG>Table 3:</STRONG>
  Available metadata types</CAPTION>
@@ -1295,6 +1450,10 @@ The possible types of metadata field, and the arguments they need, are shown in 
 </TR>
 <TR><TD ALIGN="LEFT">name</TD>
 <TD ALIGN="LEFT">A name (or list of names)</TD>
+<TD ALIGN="LEFT">multiple</TD>
+</TR>
+<TR><TD ALIGN="LEFT">username</TD>
+<TD ALIGN="LEFT">A <I>Eprints</I> username (or list of usernames)</TD>
 <TD ALIGN="LEFT">multiple</TD>
 </TR>
 </TABLE>
@@ -1372,7 +1531,7 @@ When you run <TT> create_databases</TT>, the subjects are copied from the <TT> s
 
 <P>
 
-<H2><A NAME="SECTION00042000000000000000">
+<H2><A NAME="SECTION00052000000000000000">
 4.2 Full Text Formats</A>
 </H2>
 
@@ -1394,7 +1553,7 @@ You can decide what document file formats you want to accept in the archive. Loo
 
 <P>
 
-<H2><A NAME="SECTION00043000000000000000">
+<H2><A NAME="SECTION00053000000000000000">
 4.3 Validation</A>
 </H2>
 
@@ -1406,7 +1565,7 @@ The comments in the file should make it clear where your checks need to go.
 
 <P>
 
-<H2><A NAME="SECTION00044000000000000000">
+<H2><A NAME="SECTION00054000000000000000">
 4.4 Searching and Subscriptions</A>
 </H2>
 
@@ -1449,8 +1608,8 @@ You can also specify the way that search results (and subscriptions) are ordered
 </PRE>
 
 <P>
-The first of these orders sorts results by descending year, then author's name<A NAME="tex2html16"
- HREF="#foot645"><SUP>3</SUP></A>, then title. The default order if <TT> ASC</TT>ending or <TT> DESC</TT>ending are not specified is ascending.
+The first of these orders sorts results by descending year, then author's name<A NAME="tex2html17"
+ HREF="#foot664"><SUP>3</SUP></A>, then title. The default order if <TT> ASC</TT>ending or <TT> DESC</TT>ending are not specified is ascending.
 
 <P>
 A default order is given as a key to that hash, for example:
@@ -1467,7 +1626,7 @@ You can also specify in a similar manner the order to use for the <I>browse by s
 
 <P>
 
-<H2><A NAME="SECTION00045000000000000000">
+<H2><A NAME="SECTION00055000000000000000">
 4.5 Open Archives Interoperability</A>
 </H2>
 
@@ -1481,64 +1640,45 @@ The Open Archives Initiative is developing standards to allow this interoperabil
 These standards are developing quickly, so <I>Eprints</I> has been designed to allow you to keep up with them as easily as possible. All you have to do is upgrade the core <I>Eprints</I> software. The upgraded software will use the same site configuration to allow interoperability using new versions of the Open Archives protocol.
 
 <P>
-For version 1.0 of the software, the publically available version of the Open Archives protocol is a subset of <I>Dienst</I> protocol. It is also known as the <I>Santa Fe convention</I>. The <I>Eprints</I> software includes the open archives subset of the Dienst software developed at Cornell University, and a core module <TT> OpenArchives.pm</TT> that mediates between an <I>Eprints</I> archive and Dienst.
+Version 1.1 of the software implements version 1.0 of the Open Archives protocol.
+
+<P>
+Version 1.1 still includes the <I>Dienst</I> software used to implement the forerunner of OAI1.0, the <I>Santa Fe convention</I>.  This is provided for back-compatability and will almost certainly be removed in the next release.
 
 <P>
 Here at Southampton, we've been involved in the development of the Open Archives protocol, and are registered alpha-testers; thus, we've been able to design the software with future versions in mind. When the Open Archives protocol changes, the changes will almost certainly be transparent to you when you upgrade <I>Eprints</I>; in the unlikely event of you having to change your site configuration, the changes will be extremely minor. You will definitely not have to change your live data.
 
 <P>
-For version 1.0, the base URL of the Open Archives protocol will be:
+For version 1.1, the base URL of the Open Archives protocol will be:
 
 <P>
  
 <PRE>
 
-http://your.eprints.server.edu/Dienst
-</PRE>
-
-<P>
-You can test you installation by editing and viewing:
-
-<P>
- 
-<PRE>
-
-eprints/openarchives/Tests/InstallTest.htm
+http://your.eprints.server.edu/perl/oai
 </PRE>
 
 <P>
 
-<H3><A NAME="SECTION00045100000000000000">
+<H3><A NAME="SECTION00055100000000000000">
 4.5.1 Exporting Metadata</A>
 </H3>
 
 <P>
-Firstly, you need to decide on and register an unique archive identifier. For the Dienst-based version of the protocol, information about existing identifiers can be found at:
+This information may change when the protocol OAI1.0 is released.
+Firstly, you need to decide on and register an unique archive identifier. Information about existing identifiers can be found at:
 
 <P>
 
 <P>
- <A NAME="tex2html17"
- HREF="http://www.openarchives.org/sfc/sfc_archives.htm"><TT> http://www.openarchives.org/sfc/sfc_archives.htm</TT></A>
-
-<P>
-The mechanism for registering an identifier is likely to change, but if you register an archive identifier for the Santa Fe convention, you should be able to keep that for the next version of the protocol, due to be released in January 2001.
+ <A NAME="tex2html18"
+ HREF="http://www.openarchives.org/"><TT> http://www.openarchives.org/</TT></A>
 
 <P>
 The Open Archives component of the <I>Eprints</I> software uses two methods in <TT> SiteRoutines.pm</TT> to export metadata. One is used to let an Open Archives service know what metadata formats the archive can export; the other is used to retrieve the metadata itself.
 
 <P>
-In the default configuration, two metadata formats are exported:
-
-<P>
-
-<UL>
-<LI>Dublin Core metadata.</LI>
-<LI>The Open Archives Metadata Set (OAMS).</LI>
-</UL>
-
-<P>
-The Open Archives Metadata Set is part of the Santa Fe convention, and you need to support this to support the current public version of the protocol. This will be superceded in later versions, so exporting Dublin Core metadata means that your archive will be compliant with the new version of the protocol as soon as you upgrade.
+In the default configuration, only Dublin Core metadata is exported, but it isn't too hard to expand this. 
 
 <P>
 These metadata formats are specified in <TT> SiteInfo.pm</TT> as:
@@ -1555,15 +1695,6 @@ The <TT> oai_list_metadata_formats</TT> method in <TT> SiteRoutines.pm</TT> mere
 
 <P>
 Code in the <TT> oai_get_eprint_metadata</TT> in <TT> SiteRoutines.pm</TT> is used to map your metadata set to these formats. If you decide to go with the default eprint metadata configuration supplied, you don't have to do anything! If you're using a different metadata set, you need to alter <TT> oai_get_eprint_metadata</TT> to export the relevant metadata. Specific details of how to achieve this are given in the comments in <TT> SiteRoutines.pm</TT>.
-
-<P>
-Further information about the OAMS can be found at:
-
-<P>
-
-<P>
- <A NAME="tex2html18"
- HREF="http://www.openarchives.org/sfc/sfc_oams.htm"><TT> http://www.openarchives.org/sfc/sfc_oams.htm</TT></A>
 
 <P>
 Further information about Dublin Core can be found at:
@@ -1585,7 +1716,7 @@ Further information about the Open Archives Initiative can be found at:
 
 <P>
 
-<H2><A NAME="SECTION00046000000000000000"></A>
+<H2><A NAME="SECTION00056000000000000000"></A>
 <A NAME="install_laf"></A>
 <BR >
 4.6 Site Look and Feel
@@ -1632,7 +1763,7 @@ Additionally, you can put in the HTML files a variety of placeholders that will 
 <P>
  
 <BR ><P></P>
-<DIV ALIGN="CENTER"><A NAME="646"></A>
+<DIV ALIGN="CENTER"><A NAME="665"></A>
 <TABLE>
 <CAPTION><STRONG>Table 4:</STRONG>
  Placeholders in Static HTML Pages</CAPTION>
@@ -1690,7 +1821,7 @@ You can also place arbitrary elements in the <TT> &lt;HEAD&gt;</TT> elements of 
 
 <P>
 
-<H3><A NAME="SECTION00046100000000000000">
+<H3><A NAME="SECTION00056100000000000000">
 4.6.1 References and Abstract Pages</A>
 </H3>
 
@@ -1707,17 +1838,17 @@ The <I>Eprints</I> core code provides a method for easing the creation of refere
 sendmail<SUP>1</SUP></A>
 <DD>
 
-<DT><A NAME="foot413">... browsable</A><A NAME="foot413"
- HREF="eprints-install.html#tex2html13"><SUP>2</SUP></A>
+<DT><A NAME="foot435">... browsable</A><A NAME="foot435"
+ HREF="eprints-install.html#tex2html14"><SUP>2</SUP></A>
 <DD>A search will always pick up any eprint in the system as soon as it's accepted into the archive.
 
-<DT><A NAME="foot645">... name</A><A NAME="foot645"
- HREF="eprints-install.html#tex2html16"><SUP>3</SUP></A>
+<DT><A NAME="foot664">... name</A><A NAME="foot664"
+ HREF="eprints-install.html#tex2html17"><SUP>3</SUP></A>
 <DD>The system knows to sort names by surname, provided that the relevant metadata field is of the type <I>name</I>.
 
 </DL>
 <BR ><HR >
 <ADDRESS>
 <I>Christopher Gutteridge</I>
-<BR ><I>2001-01-15</I>
+<BR ><I>2001-01-22</I>
 </ADDRESS>
