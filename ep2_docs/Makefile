@@ -1,8 +1,7 @@
 .SUFFIXES: 
-.SUFFIXES: .html .xml .pdf .dvi .latex .ps
+.SUFFIXES: .html .xml .pdf .dvi .latex .ps .ok
 
 WORK_DIR = work
-
 DOCBOOK_ROOT = /usr/local/share/docbook
 XHTML = $(DOCBOOK_ROOT)/xhtml/docbook.xsl
 LATEX = $(DOCBOOK_ROOT)/latex/docbook.xsl
@@ -18,6 +17,7 @@ all: alpha
 	xt $< $(LATEX) > $*.latex
 
 .latex.dvi:
+	test -d work || mkdir work
 	cp $< $(WORK_DIR)
 	cd $(WORK_DIR); latex $<
 	cp $(WORK_DIR)/$*.dvi .
@@ -32,7 +32,11 @@ all: alpha
 clean:
 	rm -f *.html *.pdf *.ps *.dvi *.latex
 
-eprints.entities: history.xml clean
-	./wellformed.pl history.xml NODTD
+.xml.ok:
+	./wellformed.pl $< NODTD
+	touch $@
+
+eprints.entities: history.ok reqsoftware.ok listinfo.ok
+	touch eprints.entities
 
 alpha: eprints.entities alpha.pdf alpha.html alpha.ps

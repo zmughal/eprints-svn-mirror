@@ -2,3 +2,4 @@
 <!ENTITY eprints "<emphasis>EPrints</emphasis>" > 
 <!ENTITY history SYSTEM "history.xml" >
 <!ENTITY reqsoftware SYSTEM "reqsoftware.xml" >
+<!ENTITY listinfo SYSTEM "listinfo.xml" >
