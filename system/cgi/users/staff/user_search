@@ -22,8 +22,8 @@ Apache::exit( 0 ) unless( defined $session );
 my $searchexp = new EPrints::SearchExpression(
 	session => $session,
 	dataset => $session->get_archive()->get_dataset( "user" ),
-	use_oneshot_cache => 1,
 	staff => 1,
+	keep_cache => 1,
 	defaults => $session->get_archive()->get_conf( "user_search_defaults" ),
 	fieldnames => $session->get_archive()->get_conf( "user_search_fields" ) );
 
