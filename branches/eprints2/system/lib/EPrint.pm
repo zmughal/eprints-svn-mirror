@@ -407,7 +407,7 @@ END
 ######################################################################
 =pod
 
-=item $eprint = $eprint->clone( $dest_dataset, $copy_documents )
+=item $eprint = $eprint->clone( $dest_dataset, $copy_documents, $link )
 
 Create a copy of this EPrint with a new ID in the given dataset.
 Return the new eprint, or undef in the case of an error.
@@ -415,12 +415,15 @@ Return the new eprint, or undef in the case of an error.
 If $copy_documents is set and true then the documents (and files)
 will be copied in addition to the metadata.
 
+If $nolink is true then the new eprint is not connected to the
+old one.
+
 =cut
 ######################################################################
 
 sub clone
 {
-	my( $self, $dest_dataset, $copy_documents ) = @_;
+	my( $self, $dest_dataset, $copy_documents, $nolink ) = @_;
 
 	my $data = EPrints::Utils::clone( $self->{data} );
 	foreach my $field ( $self->{dataset}->get_fields )
@@ -442,14 +445,17 @@ sub clone
 
 	$new_eprint->datestamp();
 
-	# We assume the new eprint will be a later version of this one,
-	# so we'll fill in the succeeds field, provided this one is
-	# already in the main archive.
-	if( $self->{dataset}->id() eq  "archive" || 
-	    $self->{dataset}->id() eq  "deletion" )
+	unless( $nolink )
 	{
-		$new_eprint->set_value( "succeeds" , 
-			$self->get_value( "eprintid" ) );
+		# We assume the new eprint will be a later version of this one,
+		# so we'll fill in the succeeds field, provided this one is
+		# already in the main archive.
+		if( $self->{dataset}->id() eq  "archive" || 
+	    	$self->{dataset}->id() eq  "deletion" )
+		{
+			$new_eprint->set_value( "succeeds" , 
+				$self->get_value( "eprintid" ) );
+		}
 	}
 
 	# Attempt to copy the documents, if appropriate

@@ -622,6 +622,8 @@ $c->{userauth} = {
 				"edit-subject", "edit-user" ] }
 };
 
+$c->{disable_userinfo} = 0;
+
 ######################################################################
 #
 # Timeouts

@@ -1696,6 +1696,7 @@ sub build_page
 	$pagehooks = {} if !defined $pagehooks;
 	my $ph = $pagehooks->{$pageid} if defined $pageid;
 	$ph = {} if !defined $ph;
+	$ph->{bodyattr}->{id} = "page_$pageid";
 
 	# only really useful for head & pagetop, but it might as
 	# well support the others

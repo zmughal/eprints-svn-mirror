@@ -219,8 +219,7 @@ EPrints Modules
 <!-- SubmissionForm -->
 
     <ep:phrase ref="lib/submissionform:use_auth_area">Use the  user area to deposit new documents</ep:phrase>
-    <ep:phrase ref="lib/submissionform:upload_prob">There was a problem uploading your file(s). Please try again.</ep:phrase>
-    <ep:phrase ref="lib/submissionform:bib_info"><p>Please enter the bibliographic data about your deposit. Fields marked with a <span class="requiredstar">*</span> are fields that must be filled out before your deposit will be accepted.</p></ep:phrase>
+    <ep:phrase ref="lib/submissionform:bib_info"><p>Current item: <strong><ep:pin ref="desc" /></strong></p><p>Please enter the information about this item. Fields marked with a <span class="requiredstar">*</span> are fields that must be filled out before your deposit will be accepted.</p></ep:phrase>
     <ep:phrase ref="lib/submissionform:verify">Verify: <ep:pin ref="citation" /></ep:phrase>
     <ep:phrase ref="lib/submissionform:invalid_eprint">ID <ep:pin ref="eprintid" /> is not a valid EPrint ID!</ep:phrase>
     <ep:phrase ref="lib/submissionform:current_docs"><p>Here are the documents currently attached to this EPrint, and how many files you have uploaded for each.</p></ep:phrase>
@@ -248,7 +247,7 @@ Enter a URL to capture a file from: <ep:pin ref="url" /><br />
 <ep:pin ref="button" />
     </ep:phrase>
     <ep:phrase ref="lib/submissionform:fileview_page_layout">
-<p>Adding files to document "<ep:pin ref="document" />" of item "<ep:pin ref="eprint" />".</p>
+<p>Adding files for format: <strong><ep:pin ref="document" /></strong></p>
 &ruler;
 <ep:pin ref="show_files" />
 &ruler;
@@ -284,16 +283,16 @@ Enter a URL to capture a file from: <ep:pin ref="url" /><br />
     <ep:phrase ref="lib/submissionform:action_remove">Remove</ep:phrase>
     <ep:phrase ref="lib/submissionform:action_submit">Deposit EPrint Now</ep:phrase>
     <ep:phrase ref="lib/submissionform:action_later">Deposit EPrint Later</ep:phrase>
-    <ep:phrase ref="lib/submissionform:title_type">Deposit Type</ep:phrase>
-    <ep:phrase ref="lib/submissionform:title_meta">Bibliographic Information</ep:phrase>
-    <ep:phrase ref="lib/submissionform:title_linking">Succession/Commentary</ep:phrase>
-    <ep:phrase ref="lib/submissionform:title_format">Document Storage Formats</ep:phrase>
-    <ep:phrase ref="lib/submissionform:title_files">Documents Attached to Item</ep:phrase>
-    <ep:phrase ref="lib/submissionform:title_docmeta">Document Information</ep:phrase>
-    <ep:phrase ref="lib/submissionform:title_fileview">Document File Upload</ep:phrase>
-    <ep:phrase ref="lib/submissionform:title_upload">Document File Upload</ep:phrase>
-    <ep:phrase ref="lib/submissionform:title_verify">Deposit Verification</ep:phrase>
-    <ep:phrase ref="lib/submissionform:title_quickverify">Deposit Verification</ep:phrase>
+    <ep:phrase ref="lib/submissionform:title_type">Edit item: Item Type</ep:phrase>
+    <ep:phrase ref="lib/submissionform:title_meta">Edit item: Bibliographic Information</ep:phrase>
+    <ep:phrase ref="lib/submissionform:title_linking">Edit item: Succession/Commentary</ep:phrase>
+    <ep:phrase ref="lib/submissionform:title_format">Edit item: Document Storage Formats</ep:phrase>
+    <ep:phrase ref="lib/submissionform:title_files">Edit item: Documents Attached to Item</ep:phrase>
+    <ep:phrase ref="lib/submissionform:title_docmeta">Edit item: Document Information</ep:phrase>
+    <ep:phrase ref="lib/submissionform:title_fileview">Edit item: Document File Upload</ep:phrase>
+    <ep:phrase ref="lib/submissionform:title_upload">Edit item: Document File Upload</ep:phrase>
+    <ep:phrase ref="lib/submissionform:title_verify">Edit item: Verification</ep:phrase>
+    <ep:phrase ref="lib/submissionform:title_quickverify">Edit item: Verification</ep:phrase>
     <ep:phrase ref="lib/submissionform:title_done">Completed Deposit</ep:phrase>
     <ep:phrase ref="lib/submissionform:title_error">Error</ep:phrase>
     <ep:phrase ref="lib/submissionform:title_return">Go to Author's Home</ep:phrase>
@@ -434,7 +433,7 @@ User Area CGI Scripts
     <ep:phrase ref="cgi/users/home:action_new">New</ep:phrase>
     <ep:phrase ref="cgi/users/home:action_delete">Delete</ep:phrase>
     <ep:phrase ref="cgi/users/home:action_edit">Edit</ep:phrase>
-    <ep:phrase ref="cgi/users/home:action_clone">Clone</ep:phrase>
+    <ep:phrase ref="cgi/users/home:action_clone">Use as template</ep:phrase>
     <ep:phrase ref="cgi/users/home:action_submit">Deposit</ep:phrase>
     <ep:phrase ref="cgi/users/home:recent_title"><h3>Most Recently Accepted Items</h3></ep:phrase>
     <ep:phrase ref="cgi/users/home:no_recent"><p>You have no accepted items</p></ep:phrase>
@@ -444,14 +443,21 @@ User Area CGI Scripts
 
 <!-- review -->
 
-    <ep:phrase ref="cgi/users/review:title">Review Documents</ep:phrase>
+    <ep:phrase ref="cgi/users/review:title">Review Documents: <ep:pin ref="name" /></ep:phrase>
     <ep:phrase ref="cgi/users/review:no_docs"><p><strong>You have no documents in the main archive.</strong></p></ep:phrase>
-    <ep:phrase ref="cgi/users/review:blurb"><p>Below are listed your documents in the main archive. Click on the title of a document to view it. You can also click on the clone button to make a copy of the document record in your workspace. You might want to do this if you are going to submit an updated version of the document.</p></ep:phrase>
-    <ep:phrase ref="cgi/users/review:remove_info"><p>You can also request the removal of a document, but this is strongly discouraged, since different versions of a document can all be linked in the archive.</p></ep:phrase>
+    <ep:phrase ref="cgi/users/review:blurb">
+<p>Below are listed your documents in the main archive. Click on the title of a document to view it.</p>
+<p><strong>New Version:</strong> This button makes a copy of the item in your workspace. Do this if you are going to submit an updated version of the document. Any attached documents will also be copied.</p>
+<p><strong>Use as template:</strong> If you want to submit a <i>similar</i> item this button will create a new item in your workspacke using the current item as a template. This option will <i>not</i> link the new item to the old one. Any attached documents will not be copied.</p></ep:phrase>
+    <ep:phrase ref="cgi/users/review:remove_info">
+<p><strong>Request Removal:</strong> Request that the administrator removes this item.</p></ep:phrase>
+    <ep:phrase ref="cgi/users/review:checkout_info">
+<p><strong>Checkout Item:</strong> Return this item to your work area. This will mean it temporarily disappears from the site.</p></ep:phrase>
     <ep:phrase ref="cgi/users/review:document">Document</ep:phrase>
-    <ep:phrase ref="cgi/users/review:clone">Clone</ep:phrase>
+    <ep:phrase ref="cgi/users/review:clone">New Version</ep:phrase>
+    <ep:phrase ref="cgi/users/review:copy">Use as template</ep:phrase>
+    <ep:phrase ref="cgi/users/review:checkout">Checkout</ep:phrase>
     <ep:phrase ref="cgi/users/review:req_remove">Request Removal</ep:phrase>
-    <ep:phrase ref="cgi/users/review:cant_clone">Unable to clone that record. Please try again later.</ep:phrase>
     <ep:phrase ref="cgi/users/review:remove_title">Request EPrint Removal</ep:phrase>
     <ep:phrase ref="cgi/users/review:remove_blurb">
 <p><em>Please note that we strongly discourage removal of EPrints from the archive. If you upload a new version of an EPrint, a link to the later version will appear on the older version. Thus, anyone finding the old version will be able to see that a newer version has been deposited.</em></p>
@@ -821,6 +827,8 @@ General phrases, used alot
     <ep:phrase ref="general:userhome_link"><p><a href="&userhome;">Go to the &archivename; User Area Homepage</a></p></ep:phrase>
     <ep:phrase ref="general:frontpage_link"><p><a href="&frontpage;">Go to the &archivename; Homepage</a></p></ep:phrase>
     <ep:phrase ref="general:bad_param"><p>Bad parameters. Do not try and access this script directly.</p></ep:phrase> 
+    <ep:phrase ref="general:disabled_feature_title">Disabled Feature</ep:phrase> 
+    <ep:phrase ref="general:disabled_feature_body"><p>This feature has been disabled for this archive.</p></ep:phrase> 
 
 <!--********************************************************************** 
 Titles and Help for the System Fields

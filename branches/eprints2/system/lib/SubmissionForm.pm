@@ -1271,6 +1271,9 @@ sub _do_stage_type
 
 	$page->appendChild( $self->_render_problems() );
 
+	$page->appendChild( $self->{session}->html_phrase( 
+		"lib/submissionform:bib_info",
+		desc=>$self->{eprint}->render_citation ) );
 	# should this be done with "help?" cjg
 
 	my $submit_buttons = {
@@ -1325,6 +1328,9 @@ sub _do_stage_linking
 	$page = $self->{session}->make_doc_fragment();
 
 	$page->appendChild( $self->_render_problems() );
+	$page->appendChild( $self->{session}->html_phrase( 
+		"lib/submissionform:bib_info",
+		desc=>$self->{eprint}->render_citation ) );
 
 	my $archive_ds =
 		$self->{session}->get_archive()->get_dataset( "archive" );
@@ -1447,7 +1453,8 @@ sub _do_stage_meta
 	}
 
 	$page->appendChild( $self->{session}->html_phrase( 
-		"lib/submissionform:bib_info" ) );
+		"lib/submissionform:bib_info",
+		desc=>$self->{eprint}->render_citation ) );
 	
 	my @edit_fields = $self->{dataset}->get_page_fields( 
 		$self->{eprint}->get_value( "type" ), 
@@ -1522,6 +1529,9 @@ sub _do_stage_files
 	$self->{eprint}->prune_documents(); 
 	my $probs = $self->{eprint}->validate_documents( $self->{for_archive} );
 
+	$page->appendChild( $self->{session}->html_phrase( 
+		"lib/submissionform:bib_info",
+		desc=>$self->{eprint}->render_citation ) );
 	$form = $self->{session}->render_form( "post", $self->{formtarget}."#t" );
 	$page->appendChild( $form );
 
@@ -1668,6 +1678,9 @@ sub _do_stage_docmeta
 	$page->appendChild( $self->_render_problems(
 		$self->{session}->html_phrase("lib/submissionform:fix_upload"),
 		$self->{session}->html_phrase("lib/submissionform:please_fix") ) );
+	$page->appendChild( $self->{session}->html_phrase( 
+		"lib/submissionform:bib_info",
+		desc=>$self->{eprint}->render_citation ) );
 
 	# The hidden fields, used by all forms.
 	my $hidden_fields = {	
@@ -1735,6 +1748,9 @@ sub _do_stage_fileview
 	$page->appendChild( $self->_render_problems(
 		$self->{session}->html_phrase("lib/submissionform:fix_upload"),
 		$self->{session}->html_phrase("lib/submissionform:please_fix") ) );
+	$page->appendChild( $self->{session}->html_phrase( 
+		"lib/submissionform:bib_info",
+		desc=>$self->{eprint}->render_citation ) );
 
 	# The hidden fields, used by all forms.
 	my $hidden_fields = {	

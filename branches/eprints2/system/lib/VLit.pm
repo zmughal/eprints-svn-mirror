@@ -66,7 +66,14 @@ sub handler
 		return NOT_FOUND;
 	}
 
-	my %args = $r->args;
+	my %args = ();
+	my @a = split( "&", $r->args );
+	foreach my $arg ( @a )
+	{
+		my( $k, $v ) = split( '=', $arg, 2 );
+		$args{$k}=$v;
+	}
+
 	my $version = $args{xuversion};
 	my $locspec = $args{locspec};
 
