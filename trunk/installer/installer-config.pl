@@ -16,7 +16,7 @@
 	# lots of installs :-) Set with --automate_install.
 	automate_install	=> 0,
 	# System architecture. Set with --arch="foo". 
-	system_arch		=> "linux",
+	system_arch		=> undef,
 	# Set to 1 if root is unecessary. It probably will be needed, so --no_root is the 
 	# command-line option.
 	no_root			=> 0,
@@ -28,6 +28,8 @@
 	# System-specific
 	add_group		=> "/usr/sbin/groupadd",
 	add_user		=> "/usr/sbin/useradd",
+	make			=> "/usr/bin/make",
+	tar			=> "/bin/tar",
 );
 
 @PACKAGES =
@@ -36,6 +38,28 @@
 		name		=> "perl",
 		min_version	=> "5.6.0",
 	},
+	# Base packages
+	{
+		name		=> "make",
+		min_version	=> "3.79.1",
+		search_string	=> "fillmein",
+		long_name	=> "GNU Make",
+		description	=> "Automatically determines which parts of a large program need to be recompiled, and issues the commands to recompile them.",
+	},
+	{
+		name		=> "gcc",
+		min_version	=> "2.96",
+		search_string	=> "fillmeintooplease",
+		long_name	=> "GNU C Compiler",
+		description	=> "Integrated C and C++ compilers used by the majority of installation procedures.",
+	},
+	{
+		name		=> "tar",
+		min_version	=> "1.13.19",
+		search_string	=> "fillmeintoo",
+		long_name	=> "GNU Tar",
+		description	=> "Archiving program designed to store and extract files from an archive file known as a tarfile.",
+	},
 	{
 		name		=> "gzip",
 		min_version	=> "1.2.4",
@@ -43,7 +67,6 @@
 		long_name	=> "GNU Zip",
 		description	=> "`gzip' reduces the size of files using Lempel-Ziv coding (LZ77).",
 		install_method	=> "standardinstall",
-		check_method	=> "standardcheck gzip",
 	},
 	{
 		name		=> "wget",
@@ -52,16 +75,15 @@
 		long_name	=> "GNU Wget",
 		description	=> "Freely available network utility to retrieve files from the World Wide Web using HTTP and FTP",
 		install_method	=> "standardinstall",
-		check_method	=> "standardcheck wget"
 	},
-
+	# Bigger packages
 	{
 		name		=> "apache",
 		min_version	=> "1.3.14",
 		search_string	=> "apache_([0-9]+)\.([0-9]+)\.([0-9]+)\.tar\.gz",
 		long_name	=> "Apache web server",
 		description	=> "HTTP server designed as a plug-in replacement for the NCSA server version 1.4. It fixes numerous bugs in the NCSA server and includes many frequently requested new features, and has an API which allows it to be extended to meet users' needs more easily.",
-		check_method	=> "standardcheck httpd /usr/local/apache/bin",
+		check_method	=> "standardcheck httpd /home/httpd/bin:/usr/local/apache/bin:/utc/httpd/bin",
 	},
 	{
 		name		=> "modperl",
@@ -236,13 +258,118 @@ sub perl_check
 	return "5.6.0";
 }
 
+sub tar_check
+{
+	my $tar	= "";
+	my @tars = ();
+	@tars = find_file("tar");
+	foreach (@tars)
+	{
+		$tar = `$_ --version 2>&1` or next;
+		if ($tar =~ /(\d+)\.(\d+)\.?(\d*)/)
+		{
+			skip_component("tar");
+			$ENVIRONMENT{tar} = $_;
+			print "Using $_ as tar\n";
+			return "$1.$2.$3";
+		}
+	}
+	return 0;
+}
+
+sub make_check
+{
+	my $make = "";
+	my @makes = ();
+	
+	@makes = find_file("make");
+	push @makes, find_file("gmake");
+
+	foreach (@makes)
+	{
+		$make = `$_ -v 2>&1` or next;
+		if ($make =~ /(\d+)\.(\d+)\.?(\d*)/)
+		{
+			skip_component("make");
+			$ENVIRONMENT{make} = $_;
+			print "Using $_ as make\n";
+			return "$1.$2.$3";
+		}
+	}
+	return 0;
+}
+
+sub gcc_check
+{
+	my $gcc = "";
+	my @gccs = ();
+	@gccs = find_file("gcc");
+	push @gccs, find_file("cc");
+	foreach(@gccs)
+	{
+		$gcc = `$_ --version 2>&1` or return 0;
+		if ($gcc =~ /(\d+)\.(\d+)\.?(\d*)/)
+		{
+			skip_component("gcc");
+			$ENVIRONMENT{gcc} = $_;
+			print "Using $_ as (g)cc\n";
+			return "$1.$2.$3";
+		}
+	}
+	return 0;
+}
+
 sub mysql_check
 {
-	my($sql) = "";
-	$sql = `/usr/local/mysql/bin/mysql -V 2>&1` || return 0;
-	if ($sql =~ /Distrib (\d+)\.(\d+)\.?(\d*)/)
+	my $sql = "";
+	my @sqls = ();
+
+	@sqls = find_file("mysql", ("/usr/local/mysql/bin")) or return 0;
+	foreach (@sqls)
 	{
-		return "$1.$2.$3";
+		$sql = `$_ -V 2>&1` or return 0;
+		if ($sql =~ /Distrib (\d+)\.(\d+)\.?(\d*)/)
+		{
+			return "$1.$2.$3";
+		}
+	}
+	return 0;
+}
+
+sub gzip_check
+{
+	my $gzip = "";
+	my @gzips = ();
+	@gzips = find_file("gzip");
+	foreach (@gzips)
+	{
+		$gzip = `$_ -V 2>&1` or next;
+		if ($gzip =~ /(\d+)\.(\d+)\.?(\d*)/)
+		{
+			skip_component("gzip");
+			$ENVIRONMENT{gzip} = $_;
+			print "Using $_ as gzip\n";
+			return "$1.$2.$3";
+		}
+	}
+	return 0;
+}
+
+sub wget_check
+{
+	my $wget = "";
+	my @wgets = ();
+	@wgets = find_file("wget");
+	foreach (@wgets)
+	{
+		$wget = `$_ -V 2>&1` or next;
+		if ($wget =~ /(\d+)\.(\d+)\.?(\d*)/)
+		{
+			skip_component("wget");
+			$ENVIRONMENT{wget} = $_;
+			print "Using $_ as wget\n";
+			return "$1.$2.$3";
+		}
 	}
 	return 0;
 }
@@ -263,9 +390,9 @@ sub apache_install
 	`./configure --enable-module=rewrite --enable-module=auth`;
 	print "	Done.\n";
 	print "Making		...";
-	`make 2>&1 1>/dev/null`;
+	`$ENVIRONMENT{make} 2>&1 1>/dev/null`;
 	print "	Done.\n";
-	`make install`;
+	`$ENVIRONMENT{make} install`;
 	chdir $currdir;
 	return 1;
 }
@@ -281,9 +408,9 @@ sub modperl_install
 	`perl Makefile.PL`;
 	print "	Done.\n";
 	print "Making		...";
-	`make 2>&1 1>/dev/null`;
+	`$ENVIRONMENT{make} 2>&1 1>/dev/null`;
 	print "	Done.\n";
-	`make install`;
+	`$ENVIRONMENT{make} install`;
 	chdir $currdir;
 	return 1;
 }
@@ -301,10 +428,10 @@ sub mysql_install
 	`./configure --prefix=/usr/local/mysql`;
 	print "	Done.\n";
 	print "Making		...";
-	`make`;
+	`$ENVIRONMENT{make}`;
 	print "	Done.\n";
 	print "Installing	...";
-	`make install`;
+	`$ENVIRONMENT{make} install`;
 	print "	Done.\n";
 	print "Installing DB	...";
 	`scripts/mysql_install_db`;
@@ -348,8 +475,8 @@ sub eprints_install
 	$currdir = getcwd();
 	chdir "eprints";
 	`./configure`;
-	`make`;
-	`make install`;
+	`$ENVIRONMENT{make}`;
+	`$ENVIRONMENT{make} install`;
 	chdir $currdir;
 	return 1;
 }
