@@ -28,44 +28,19 @@ Wed Feb  7 00:06:24 GMT 2001
 * Moved CHANGELOG.FULL into the base CVS directory
 * Added bin/examples and bin/examples/update_users_example
 
---------------------------------------------------------------------------------
+Wed Feb  7 00:58:06 GMT 2001
+* removed unused variable from MetaInfo.pm
 
+Wed Feb  7 11:58:07 GMT 2001
+* Added username help to SearchField.pm
+* Added Language.pm to handle internationalisation
+* Added new() to Language.pm
+* Added {lang} to session to represent current language
+* Language.pm now has fetch() [static] to get a new langauge, from the
+cache if possible.
+* added phrase to Language to actually get a phrase back.
+* started on internationalising files
+* added logphrase method to translate phrases into the language of the log
+rather than the current session.
 
-
-
-------------------------------------------------
-
-todo:
-
-* userid/username split.
-    + username becomes userid
-	- make it validate on user info too
-	- add a 'strict' option
-    + userid/name combo field 
-	- make it editable, searchable etc.
-* views
-    + make views output which dosn't use wrapper.
-    + make people views too, configurable.
-* add some <BR> to end of left menu
-# make rebuild sets work nicer?
-* new user type "Local"?
-* "filter" concept for staff.
-* "private" formats
-* configuration for "filter" and "userid" fields?
-* trawler, processor to convert eg latex to ps?
-* cgi/user page is a little iffy. Make it look nicer?
-* add bin/site for user created bins?
-* lost dienst code?
-* Incorporate CHANGELOG.TXT and todo.txt into release?
-* add user.types (extra info for local or staff!)
-
-website:
-* french pages dammit.
-* tart up website generator
-
-docs:
-* password change script.
-* add subject to installation notes?
-# add "multiple" option to table 2 in system notes?
-# document rebuild_sets
 
