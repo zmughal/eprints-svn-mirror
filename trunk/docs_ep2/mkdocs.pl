@@ -4,22 +4,50 @@
 	"intro", 
 	"reqsoftware", 
 	"installation", 
+	"structure", 
 	"configeprints",
 	"configarchive",
 	"contact", 
 	"history" ,
-	"logo"
+	"logo",
+	"!configure_archive",
+	"!create_tables",
+	"!create_user",
+	"!erase_archive",
+	"!generate_abstracts",
+	"!generate_apacheconf",
+	"!generate_dtd",
+	"!generate_static",
+	"!generate_views",
+	"!import_subjects",
+	"!reindex"
 );
 %titles = (
 	intro => "Introduction",
 	reqsoftware => "Required Software",
 	installation => "How to Install EPrints (and get started)",
+	structure => "EPrints Structures and Terms",
 	configeprints => "Configuring the System",
 	configarchive => "Configuring an Archive",
 	contact => "Problems, Questions and Feedback",
 	history => "EPrints History (and Future Plans)",
 	logo => "The EPrints Logo"
 );
+
+%filemap = ();
+foreach( @files )
+{
+	if( s/^!// )
+	{
+		$filemap{$_} = "../system/bin/$_";
+		$titles{$_} = "$_ command";
+	}
+	else
+	{
+		$filemap{$_} = "pod/$_.pod";
+	}
+}
+		
 
 my $DOCTITLE = "EPrints 2.0 Documentation";
 
@@ -34,9 +62,9 @@ my $BASENAME = "eprints-2.0-docs";
 use Pod::Text;
 
 $parser = Pod::Text->new( sentance=>0, width=>78 );
-foreach $file ( @files )
+foreach $id ( @files )
 {
-	$parser->parse_from_file( "pod/$file.pod", "tmp/$file.txt" );
+	$parser->parse_from_file( $filemap{$id}, "tmp/$id.txt" );
 }
 
 ## Text
@@ -48,26 +76,26 @@ $DOCTITLE
 
 Contents:
 END
-foreach $file ( @files )
+foreach $id ( @files )
 {
-	print OUT " - ".$titles{$file}."\n";
+	print OUT " - ".$titles{$id}."\n";
 }
-foreach $file ( @files )
+foreach $file ( @id )
 {
 	print OUT <<END;
 
 ==============================================================================
-$titles{$file}
+$titles{$id}
 ==============================================================================
 
 END
-	open( IN, "tmp/".$file.".txt" );
+	open( IN, "tmp/".$id.".txt" );
 	while( <IN> ) { print OUT $_; }
 	close IN;
 }
 close OUT;
 
-
+exit;
 ##########################################################################
 # PDF
 
@@ -86,7 +114,13 @@ open( OUT, ">tmp/$BASENAME.tex" );
 print OUT <<END;
 \\documentclass{book}
 \\usepackage{graphicx}
+
+\\title{$DOCTITLE}
+\\author{Christopher Gutteridge}
+
 \\begin{document}
+\\maketitle
+\\tableofcontents
 END
 foreach $file ( @files )
 {
@@ -101,9 +135,20 @@ END
 close OUT;
 
 chdir( "tmp" );
-`latex $BASENAME.tex`;
-`dvipdfm $BASENAME.dvi`;
-`mv $BASENAME.pdf ../docs/`;
+my @commands = (
+	"latex $BASENAME.tex",
+	"latex $BASENAME.tex",
+	"dvipdfm $BASENAME.dvi",
+	"mv $BASENAME.pdf ../docs/",
+	"dvips $BASENAME.dvi -o $BASENAME.ps",
+	"psnup -2 $BASENAME.ps > $BASENAME-2up.ps",
+	"mv $BASENAME-2up.ps ../docs/" );
+
+foreach( @commands )
+{
+	print $_."\n";
+	`$_`;
+}
 
 ###############################################################################
 # HTML
@@ -119,8 +164,7 @@ foreach $file ( @files )
 		"--infile=../pod/$file.pod", 
 		"--outfile=../docs/html/$file.html",
 		"--header",
-		"--css=epdocs.css",
-		"--noindex"
+		"--css=epdocs.css"
 	);
 }
 

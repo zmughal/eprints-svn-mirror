@@ -575,9 +575,13 @@ This is also used internally, it contains the ID part of a field with the hasid 
 
 Field Properties:
 
+"status" indicates either "system" or "cosmetic" or "other". "system" properties cannot be changed without erasing and recreating your archive. "cosmetic" fields only effect the display of data and can be safely changed. "other" is explained in the description.
+
 =over 8
 
 =item name
+
+Status: system
 
 Required by: all
 
@@ -587,6 +591,8 @@ The name of the field. Strongly recommended to only be lowercase a-z only.
 
 =item type
 
+Status: system
+
 Required by: all
 
 Default: NO DEFAULT
@@ -594,6 +600,8 @@ Default: NO DEFAULT
 The type of field. One of the list described above.
 
 =item browse_link
+
+Status: cosmetic
 
 Optional on: all
 
@@ -603,17 +611,25 @@ This is the id of a "browse" view. This will hyperlink this value to the browse 
 
 =item confid 
 
+Status: cosmetic
+
 Internal use only. Sets the confid if a field is being created without a dataset. The confid is used as a fake dataset for generating phrase ids.
 
 =item datasetid
+
+Status: other
 
 Required by: datatype
 
 Default: NO DEFAULT
 
-Used to set which dataset's types are this fields options.
+Used to set which dataset's types are this fields options. 
+
+Changing this on a live system could cause some confusion, as values in the old dataset may exist.
 
 =item digits
+
+Status: cosmetic
 
 Optional on: int
 
@@ -623,6 +639,8 @@ Maximum number of digits for this number.
 
 =item input_rows
 
+Status: cosmetic
+
 Optional on: longtext, set, subject, datatype
 
 Default: set in ArchiveConfig.pm
@@ -630,6 +648,8 @@ Default: set in ArchiveConfig.pm
 The number of input rows in a text area, or options to display at once in a menu. Setting to 1 will make a pull down menu (unless this is a "multiple" field).
 
 =item input_cols
+
+Status: cosmetic
 
 Optional on: text, longtext, url, email 
 
@@ -639,6 +659,8 @@ The width of the input field.
 
 =item input_name_cols
 
+Status: cosmetic
+
 Optional on: name
 
 Default: set in ArchiveConfig.pm
@@ -646,6 +668,8 @@ Default: set in ArchiveConfig.pm
 The width of the input fields of a "name" field. 
 
 =item input_id_cols
+
+Status: cosmetic
 
 Optional on: fields with "hasid" set.
 
@@ -655,6 +679,8 @@ Default: set in ArchiveConfig.pm
 
 =item input_add_boxes
 
+Status: cosmetic
+
 Optional on: fields with "multiple" or "multilang" set.
 
 Default: set in ArchiveConfig.pm
@@ -663,6 +689,8 @@ How many boxes to add when the user hits the "more spaces" button.
 
 =item input_boxes
 
+Status: cosmetic
+
 Optional on: fields with "multiple" set.
 
 Default: set in ArchiveConfig.pm
@@ -670,6 +698,8 @@ Default: set in ArchiveConfig.pm
 How many boxes to initially show on a multiple field.
 
 =item input_style
+
+Status: cosmetic
 
 Optional on: boolean
 
@@ -693,6 +723,8 @@ Display as radio buttons (ones which deselect when you select another one). You 
 
 =item fromform
 
+Status: cosmetic
+
 Optional to: all
 
 Default: undef
@@ -702,6 +734,8 @@ A reference to a perl function which will process the value from the form before
 This could be used, for example, to turn a username "cjg" into a userid "312" for internal user. 
 
 =item toform
+
+Status: cosmetic
 
 Optional to: all
 
@@ -715,6 +749,8 @@ If you use toform then you should probably set fromform to change your values ba
 
 =item maxlength
 
+Status: cosmetic
+
 Optional to: text, email, url, secret
 
 Default: 255
@@ -722,6 +758,8 @@ Default: 255
 The maximum length of the value.
 
 =item hasid
+
+Status: system
 
 Optional to: all
 
@@ -732,6 +770,8 @@ This adds an additional "ID" property to the field. This is most useful on a "na
 You might also wish to make a "publication" text field have an ID which is an optional ISSN, but it makes more sense in "multiple" fields.
 
 =item multilang
+
+Status: system
 
 Optional to: all (but silly for date, year, int, boolean)
 
@@ -745,6 +785,8 @@ This is more useful than having title_en and title_fr as eprints I<understands> 
 
 =item multiple
 
+Status: system
+
 Optional to: all (but silly for date, year, int, boolean)
 
 Default: 0
@@ -753,7 +795,9 @@ If set this property makes the field a LIST rather than one value and handles re
 
 This causes the field to be stored in a seperate SQL table.
 
-=item options => -1,
+=item options 
+
+Status: other
 
 Required by: set
 
@@ -763,7 +807,11 @@ This should be a array of options. eg.
 
  [ "blue", "green", "red" ]
 
+Removing options on a live system could leave invalid values floating around. Adding options is fine. Don't forget to add them to the phrase file too.
+
 =item required
+
+Status: system
 
 Optional to: all
 
@@ -775,6 +823,8 @@ Either way you set it, required fields will cause the item they are in to fail t
 
 =item requiredlangs
 
+Status: other
+
 Optional to: fields with "multilang" property
 
 Default: []
@@ -785,7 +835,11 @@ eg. [ "en", "fr" ]
 
 A list of codes can be found in languages.xml
 
+Adding more requiredlangs does not magically give you values for these languages in existing data.
+
 =item showall
+
+Status: cosmetic
 
 optional to: subjects
 
@@ -795,6 +849,8 @@ By default subjects are only shown if they are "depositable". This option makes 
 
 =item showtop
 
+Status: cosmetic
+
 optional to: subjects
 
 Default: 0
@@ -802,6 +858,8 @@ Default: 0
 If set then the topmost item in the subject is shown. Usually this is a container, eg. "subjects", and should remain hidden.
 
 =item top
+
+Status: cosmetic
 
 optional to: subjects
 
@@ -819,6 +877,8 @@ Used internally.
 
 =item render_single_value
 
+Status: cosmetic
+
 Optional to: all
 
 Default: undef
@@ -831,6 +891,8 @@ returns a XHTML DOM fragment.
 Set this to \&EPrints::Latex::render_string to make eprints try and spot latex in this fields values and render it as images instead!
 
 =item render_value
+
+Status: cosmetic
 
 Optional to: all
 
@@ -848,23 +910,231 @@ If $nolink is set then no HTML anchor links should be used, eg. to link a URL.
 
 =head2 Defaults
 
+This section of the file contains subroutines which are called to set default values for Users, Documents and EPrints.
+
 =head2 Automatics
+
+These functions let you set automatic fields. This allows you to make fields which are updated automatically each time the item (User/EPrints/Document) is commited to the database.
+
+This allows you to create "compound" fields. Such fields are created by processing the values of other fields rather than being edited directly.
+
+For example, if you wanted to make an automatic int field which contains the I<number> of authors, you could add the following to set_eprint_automatic_fields:
+
+ # no authors at all will be undef, not [] so check first
+ if( $eprint->is_set( "authors" ) )
+ {
+	my $auths = $eprint->get_value( "authors" );
+        $eprint->set_value( "authcount" , scalar @{$auths} );
+ }
+ else
+ {
+        $eprint->set_value( "authcount" , 0 );
+ }
 
 =head1 ArchiveOAIConfig.pm
 
-cjg
+This module configures how the archive exports its data via the OAI protocol.
+
+For more inforamtion on the how and why of OAI see http://www.openarchives.org/
+
+OAI allows a harvestor to snarf the metadata from your archive and other archives to provide a federated search.
+
+The base URL for your OAI interface will be http://archivepath/perl/oai
+
+If you want to use the OAI system then you need to fill in the blanks, such as policy and the OAI-id of the archive.
+
+You may create OAI sets in a similar manner to "browse views" in ArchiveConfig.pm.
+
+If you want to change the way that an EPrint is mapped into Dublin Core then edit the make_metadata_oai_dc - which returns a DOM XML object.
+
+To add a new metadata type you need to add a new mapping function and add entries to the namespaces, schemas and functions items near the top of  the file.
 
 =head1 ArchiveRenderConfig.pm
 
-cjg
+This module contains fuctions which turn data into XHTML for displaying on the web. 
+
+If you want to change the way a user info page, or an eprint "abstract" page is rendered then here's the place to do it.
+
+There are also "full" versions of these functions which display all the internal variables and things. These are the views which the editors and admin see.
+
+The XHTML is generated using DOM (Document Object Model), but eprints provides
+some functions for easily generating XHTML DOM. The only method of DOM you 
+should need to use is appendChild - which adds an element to this element.
+
+=head2 EPrints API functions which return XHTML objects.
+
+Note, all text strings should be in UTF-8.
+
+Example:
+
+ my $page = $session->make_doc_fragment(); 
+ my $h1 = $session->make_element( "h1" );
+ $h1->appendChild( $session->make_text( "Title" ) );
+ $page->appendChild( $h1 );
+ $page->appendChild( 
+    $session->make_element( 
+       "img",
+        src=>"/images/cheese.gif",
+	width=>128,
+	height=>53 ) );
+
+$page now contains:
+
+ <h1>Title</h1><img src="/images/cheese.gif" width="128" height="53" />
+
+=over 8
+
+=item $session->make_text( $text )
+
+Returns a DOM object representing that text.
+
+=item $session->make_doc_fragment()
+
+Returns a document fragment. This renders to nothing but is a container to which you can add stuff.
+
+=item $session->make_element( $name, %opts )
+
+Makes a simple XHTML element. %opts is an optional series of attributes.
+
+To make <h1 class="foo"></h1> you would call:
+
+$session->make_element( "h1", class=>"foo" );
+
+=item $session->render_ruler();
+
+Returns the default ruler for the archive (from ruler.xml).
+
+=item $session->render_link( $uri, $target )
+
+Returns the XHTML element (with URI properly escaped):
+
+  <a href="uri"></a>
+
+Which you can appendChild stuff into. If $target is specified then a target attribute is included - to make it pop up a new window.
+
+=item $item->render_value( $fieldname, $showall )
+
+$item is either an EPrint, a User or a Document.
+
+$fieldname is the name of the field you want to render. If $showall is 1 then ALL values are rendered in a multilang field.
+
+=item $item->render_citation( $style )
+
+Renders the citation of the item using the citation for the item's type from the citation file.
+
+If $style is set then it uses the citation with that id instead.
+
+=item $item->render_citation_link( $style )
+
+This renders a citation as above, but links it to the url of the item.
+
+=item $item->render_description()
+
+This renders a simple description of the item using the default citation for this dataset eg. for eprint it uses citation type "eprint".
+
+=item $session->html_phrase( $phraseid, %opts )
+
+Returns the item from the phrase file. If you don't care about supporting multiple languages then just use make_text instead, it's easier.
+
+=over 4 
+
+=item It looks first in the archive field from the current language. 
+
+=item Then in the archive phrase file for english.
+
+=item Then is the system phrase file for the current language.
+
+=item Then is the system phrase file for the english.
+
+=back
+
+The %opts are a series of DOM elements to place in the "pin" items in the phrase file.
+
+=back
+
+=head2 Some other useful functions you may need
+
+=over 8
+
+=item $item->get_value( $fieldname, $no_id )
+
+Returns the value of field $fieldname from the item. An optional second parameter may be set to 1 to return the value without the "id" part, to keep things simple.
+
+=item $item->is_set( $fieldname )
+
+Returns true if the field is set on this object, false otherwise.
+
+=item $eprint->get_all_documents()
+
+Return an array of the document objects belonging to this eprint.
+
+=back 
 
 =head1 ArchiveTextIndexingConfig.pm
 
-cjg
+This module you probably won't need to change unless you want to modify how eprints does searches for words in strings.
+
+When a record is added to the system eprints uses this module to turn a string into a list of values which are indexed. By default these are words with 3 letters or more except some predefined stop words. It also turns latin characters with acutes into the their plain ascii (no acute/grave) versions. 
+
+It then does the same with the search string and looks for these keys. 
+
+Example:
+
+ The rain in spain falls mainly on the plains.
+
+Is turned (by default) into the keys:
+
+ rain spain fall mainly plain
+
+Thus searching for "rain" or "plain" or "plains" or "MaiNlY" will all match this string.
+
+You may wish to add your own "stop words". eg. If you are running an archive about badgers, a search for the word "badger" will return almost all the records.
+
+At a more complex level you may wish to add handling for non-european character sets (I have no idea how well the default setting will work on these), or do "stemming" - removing "ed", "ing", "ies", "s" etc. from the end of words so that "land" will match "land", "landed", "landing" and "lands". (It current removes 's').
+
+Another suggestion is using I<soundex> or similar techniques to match words which sound similar.
+
+Changing the indexing on a live system will require you to regenerate the indexes using the reindex script. (If you don't then some of the search results will be wrong).
 
 =head1 ArchiveValidateConfig.pm
 
-cjg
+This module handles validating data entered by users. Each subroutine is described in more detail in the module itself. 
+
+Each subroutine returns a list of DOM elements, each of which describing a single problem. Any problems will prevent the user from continuing with editing until they correct the problems. 
+
+As with the rendering functions, if you don't care about making this work in more than one language then you can just make the DOM items by calling $session->make_text( "problem explanation" )
+
+The eprint & document validation routines have a flag B<$for_archive> which, if true, indicates that the item is being checked before going into the actual archive. You can use this to force an editor to enter fields which the user may leave blank.
+
+=head2 Validation Functions
+
+=over 8
+
+=item B<validate_field>
+
+Called for all fields. Use it to check individual field values. By default checks that url's look OK.
+
+=item B<validate_eprint_meta>
+
+Check the metadata of an eprint. Use this to test dependencies between fields. eg. if you have a requirement that field "A" OR field "B" must be set. 
+
+=item B<validate_eprint>
+
+Validate the whole eprint. The last part of the validation of an eprint.
+
+=item B<validate_document_meta>
+
+Validate the metadata of the document (as with eprint_meta)
+
+=item B<validate_document>
+
+Validate the whole document, files and metadata.
+
+=item B<validate_user>
+
+Validate a user record.
+
+=back
 
 =head1 citations-I<languageid>.xml
 
@@ -890,7 +1160,9 @@ cjg
 
 =head1 subjects
 
-cjg
+This file is not used by the core eprints system. It is used by import_subjects to set up the initial subjects. For more information see the instructions for import_subjects.
+
+ bin/import_subjects --man
 
 =head1 template-I<languageid>.xml
 

@@ -1,9 +1,21 @@
 =head1 Installation
 
-unpack the eprints tar.gz file, and run the install-eprints.pl script, answer the questions it asks.
+Unpack the eprints tar.gz file, and run the install-eprints.pl script, answer the questions it asks.
 
-edit your apache.conf in the way described by install-eprints.pl.
+This will create a user and group called "eprints".
 
+Edit your apache.conf in the way described by install-eprints.pl.
+
+Unless you are not installing in /opt/eprints2/ the changes are in "httpd.conf":
+
+Edit "User" and "Group" to be:
+
+ User eprints
+ Group eprints
+
+And add the line:
+
+ Include /opt/eprints2/cfg/apache.conf
 
 =head1 Creating an archive
 
@@ -15,8 +27,10 @@ cd to the eprints directory (/opt/eprints2 by default) and run bin/configure_arc
 
 Run
 
+ bin/generate_apacheconf archiveid
  bin/generate_dtd archiveid
  bin/create_tables archiveid
+ bin/import_subjects archiveid
  bin/generate_static archiveid
  bin/create_user archiveid userid email admin password
 
@@ -29,11 +43,26 @@ Then restart your webserver:
 
 Don't just use 'reload' or 'restart' as these do not force mod_perl to reload it's modules.
 
-Now connect via the web and see if it works...
+Now connect via the web and check it works...
 
-The submission form does not actually work fully yet, if you want some initial data to play with, get the harris.xml file from the Eprints "tools" directory ( http://www.eprints.org/files/tools/ ) and run:
+=head1 Default Configuration
 
- import_eprints archiveid harris.xml
+EPrints configures a  new archive with a set of metadata fields aimed at an archive of research papers. 
 
-Which will spew tons of debug info, but should actually put some (fairly ropey) data into the archive.
+The initial "types" of eprint (book, poster, conference paper) are configured in metadata-types.xml
+
+The initial subjects are just some we made up, they are not a recommendation. You will certainly want to change them.
+
+Change it! It's not a recommended system setup, just a good starting point.
+
+=head1 New Configurations
+
+If you are setting up more than one archive which are related to each other, a "community", you may wish to establish common subjects and metadata.
+
+Removing and adding types is easy. Removing and adding fields is a bit more work. All "screen" names of values are stored in the archives own "phrase file" which comes with phrases for the default config.
+
+If you create a good default configuration for a different purpose or language(s) (and would like to share it), please contact the eprints admin who may want to put it online as an example or even include it as an alternate default in a later version.
+
+A 
+
 

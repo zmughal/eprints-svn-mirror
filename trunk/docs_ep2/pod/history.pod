@@ -45,29 +45,105 @@ EPrints 2 Alpha-1 (Anchovy) released.
 
 EPrints 2 Alpha-2 (Pepperoni) released.
 
+=item B<Feb 14 2002>
+
+EPrints 2.0 (Olive) released.
+
 =back
 
-=head1 The Road Ahead
+=head1 What next?
 
-At the time of writing the current plan of attack is as follows.
+Nothing is perfect. I wish it was but wishing don't make it so.
+
+I anticipate releasing 2.0.1 to clean up any minor issues. It's not been tested under Solaris, so there may be a few minor tweaks required there.
+
+Sometime later when I've actually caught up with my sleep and stuff I'll start work on version 2.1 which will add some features.
+
+Which features are added next will depend on expedience and what feedback I get. If you really care, let me know at support@eprints.org
+
+=head2 Features I'd like to see, in no real order. Some are more realistic than others:
 
 =over 8
 
-=item B<Minor Versions>
+=item BibTeX Interoperability
 
-We anticipate a few minor releases to fix any major problems in the milestone releases. These will be versioned as eprints-2-alpha-2.1 etc.
+Methods for improting bibtex data into the system, and possibly exporting the metadata as bibtex. Possibly other metadata schemes such as RIS.
 
-=item B<EPrints 2 Beta-1 (Olive)>
+=item Subject Editors
 
-Core system in beta - ie. metadata and filesystem. Still missing many scripts and auxilery features. A brave admin should be able to deploy this version and keep updating it.
+Editors which only see (and can edit) items in a given subject or child thereof. Which should make admin on a larger system easier.
 
-=item B<EPrints 2 Beta-2 (Tomato)>
+=item Alerts/Subscriptions
 
-Whole system in beta - ie. It should all work now, but still has some unfixed bugs. No (very few) new features will be added after this point. Should be safe to use, but the code still will change a little between here and the actual official release.
+Email messaging once a day/week/month if there have been any additions to a predefined search. eg. User bob sets his search to items in the subject area "Theoretical Physics" and frequency = "once a week". Once a week bob is mailed list of citation and urls for any records which have been added to the archive in the past 7 days which match that search.
 
-=item B<EPrints 2.0 (Double Cheese)>
+=item Editor Alerts
 
-Whole system works. All documentation written. Phrases files have been translated into several languages. Several default setups available.
+A combination of the previous two features mentioned. Emailing editors when there are items for them to approve.
+
+=item Translations
+
+Translations of the phrase file into other languages. Possibly also the citatinos, templates & default static pages.
+
+=item MathML Handling
+
+Possibly like the latex handling in 2.0. I don't know enough about MathML to decide how to go about this.
+
+=item Export/Import system
+
+There are already import & export functions but they are a bit rough and ready - I'd like them to be cleaner.
+
+=item Probity
+
+A mechanism for being able to prove (legally!) that a given record has been in the archive since the date it was added. See http://www.probity.org/ for more info.
+
+=item Other Default Configurations
+
+The current default is geared at an archive of research papers or pre-prints. It would be nice to have some different initial configurations for example for experimental data.
+
+=item Fully Documenting the API
+
+That's just really time consuming, but useful. 
+
+=item EPrints v1 Snarfer
+
+This would be a script which would examine an eprints v1 system running on the same machine and build an eprints 2 archive - both configuration and import the data. It won't handle changes to the validation and rendering configuration, that's just too darn hard!
+
+=item Mirroring
+
+Being able to run the system from two machines eg. USA with a European mirror. One system would be the "root" and all editing and user based functions would be done there, but searching, browsing and downloading can be done from a mirror.
+
+=item "Peer Review" 
+
+A more complex approach to the "buffer" which allows items to be assigned to reviewers who can add comments, or scores, or what-have-you, before the item is accepted or rejected.
+
+=item Citation Scanning/Linking
+
+Software to scan the full texts of documents looking for citations and attempt to link them to (a) other items in the archive and (b) use a third party system to link to external items.
+
+=item People who read this eprint also read...
+
+Something to chart patterns in what abstracts people view and what full texts they view and trying to guess other similar items. I know nothing about this kind of system, so advice is welcome.
+
+=item How-To's
+
+These may appear on eprints.org rather than part of the package. These will be trails through the (admittedly large) configuration for performing  specific tasks like adding a new field.
+
+=item Super Configurer
+
+A configuration tool which can do really complex stuff like add and remove fields. 
+
+=item User Defined Data Sets
+
+For complex data structures. For example if you want a list of "incidents" which have a date, time and description as an item. These will be indefinitely nest-able.
+
+=item EPrints on a CD
+
+A CD-ROM which can be run on a fresh (RedHat?) Linux install which turns it into an eprints box with apache and mysql correctly configured, etc.
+
+=item Chat Forums
+
+A slashdot style chat at the bottom of each abstract page. Possibly using a seperate system such as a PHP bulletin board.
 
 =back
 
