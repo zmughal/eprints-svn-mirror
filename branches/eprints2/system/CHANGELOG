@@ -2129,3 +2129,8 @@ PACKAGE: 2.2.99.2
     has a SET_PASSWORD that is a seperate call.
  - Fixed bug which meant file checksums were not written at
     install, only in upgrades.
+
+2005-01-19
+
+ - Fixed typo in SET_PASSWORD line
+ - Removed duplicate "my" in configure_archive

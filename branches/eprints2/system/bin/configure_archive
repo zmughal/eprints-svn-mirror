@@ -438,12 +438,13 @@ END
 		#cjg @localhost ??? what about remote mysql's?
 
 		#my $SQL = 'GRANT SELECT, INSERT, UPDATE, DELETE, DROP, CREATE, ALTER ON '.$config{dbname}.'.* TO '.$config{dbuser}.'@localhost IDENTIFIED BY "'.$config{dbpass}.'"';
-		my $SQL = 'GRANT ALL ON '.$config{dbname}.'.* TO '.$config{dbuser}.'@localhost';
+		my $SQL;
+		$SQL = 'GRANT ALL ON '.$config{dbname}.'.* TO '.$config{dbuser}.'@localhost';
 		print "DOING: $SQL\n";
 		$dbh->do( $SQL );
 		my $pass = '"'.$config{dbpass}.'"';
-		if( $oldpasswords ) { $pass = "OLD_PASSWORD($pass); }
-		my $SQL = 'SET PASSWORD FOR '.$config{dbuser}.'@localhost = '.$pass;
+		if( $oldpasswords ) { $pass = "OLD_PASSWORD($pass)"; }
+		$SQL = 'SET PASSWORD FOR '.$config{dbuser}.'@localhost = '.$pass;
 		print "DOING: $SQL\n";
 		$dbh->do( $SQL );
 
