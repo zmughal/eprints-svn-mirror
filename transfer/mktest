@@ -1,9 +1,18 @@
 #!/usr/bin/perl
 
-for(1..100000) {
-	print "INSERT INTO archive VALUES ('$_','cjg',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL ,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'Paper alpha',NULL,1998);\n";
-	print "INSERT INTO archiveauxauthors VALUES ('$_',1,'Harris,Steve');\n";
-	print "INSERT INTO archiveauxauthors VALUES ('$_',2,'Gutteridge,Chris');\n";
-	print STDERR "$_\n";
+for $id (1..1000) {
+	$year = int rand(100)+1910;
+	print "INSERT INTO archive VALUES ('$id','cjg',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL ,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'title goes here',NULL,$year);\n";
+	for(1..rand(10)) {
+		$sur = ("Harris","Porrige","Jones","Smith","Buffet","Summers")[int rand 6];
+		$fir = ("Bill","Ben","Tim","Al","Will","Jules","Jon","Fred","Tony","Chris","Naomi","Jim")[int rand 12];
+		$name = "$sur,$fir";
+		print "INSERT INTO archiveauxauthors VALUES ('$id',$_,'$name');\n";
+	}
+	for(1..rand(4)) {
+		$sub = (qw/ arts-art arts-axx arts-dsgn arts-drm arts-flms arts-fnar arts-msc /)[int rand 7];
+		print "INSERT INTO archiveauxsubjects VALUES ('$id',$_,'$sub');\n";
+	}
+	print STDERR "$id\n";
 }
 
