@@ -49,9 +49,7 @@ sub render_search_value
 	$valuedesc->appendChild( $session->make_text( '"' ) );
 	$valuedesc->appendChild( $session->make_text( $value ) );
 	$valuedesc->appendChild( $session->make_text( '"' ) );
-	my( $good , $bad ) = $session->get_archive()->call(
-			"extract_words",
-			$value );
+	my( $good, $bad ) = _extract_words( $session, $value );
 
 	if( scalar(@{$bad}) )
 	{
@@ -171,13 +169,31 @@ sub get_index_codes_basic
 
 	return( [], [], [] ) unless( EPrints::Utils::is_set( $value ) );
 
+
+	my( $codes, $badwords ) = _extract_words( $session, $value );
+
+	return( $codes, [], $badwords );
+}
+
+# internal function to paper over some cracks in 2.2 
+# text indexing config.
+sub _extract_words
+{
+	my( $session, $value ) = @_;
+
 	my( $codes, $badwords ) = 
 		$session->get_archive()->call( 
 			"extract_words" , 
 			$value );
-
-	return( $codes, [], $badwords );
+	my $newbadwords = [];
+	foreach( @{$badwords} ) 
+	{ 
+		next if( $_ eq "" );
+		push @{$newbadwords}, $_;
+	}
+	return( $codes, $newbadwords );
 }
+
 
 
 ######################################################################

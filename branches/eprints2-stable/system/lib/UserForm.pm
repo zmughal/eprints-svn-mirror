@@ -234,6 +234,7 @@ sub _render_user_form
 	my $user_ds = $self->{session}->get_archive()->get_dataset( "user" );
 
 	my @fields = $user_ds->get_type_fields( $self->{user}->get_value( "usertype" ), $self->{staff} );
+
 	my %hidden = ( "userid"=>$self->{user}->get_value( "userid" ) );
 	my $buttons = { update => $self->{session}->phrase( "lib/userform:update_record" ) };
 	my $form = $self->{session}->render_input_form( 
@@ -286,8 +287,17 @@ sub _update_from_form
 	
 	my $user_ds = $self->{session}->get_archive()->get_dataset( "user" );
 
-	my @fields = $user_ds->get_type_fields( $self->{user}->get_value( "usertype" ), $self->{staff} );
-	
+	my $usertype;
+	if( $self->{staff} )
+	{
+		# In a search type the usertype can change!
+ 		$usertype = $self->{session}->param( "usertype" );   
+	}
+	if( !defined $usertype )
+	{
+		$usertype = $self->{user}->get_value( "usertype" )       
+	}   
+	my @fields = $user_ds->get_type_fields( $usertype, $self->{staff} );
 
 	my $field;
 	foreach $field ( @fields )

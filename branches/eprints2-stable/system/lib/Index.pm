@@ -344,7 +344,7 @@ sub _do_ordervalues
 			{
 				push @l, $fnames[$i].'="'.$fvals[$i].'"';
 			}
-			$sql = "UPDATE ".$ovt." SET ".join( ",", @l )." WHERE ".$keyfield->get_sql_name().' = '.$keyvalue;
+			$sql = "UPDATE ".$ovt." SET ".join( ",", @l )." WHERE ".$keyfield->get_sql_name().' = "'.EPrints::Database::prep_value( $keyvalue ).'"';
 		}
 		$session->get_db->do( $sql );
 	}
@@ -367,7 +367,7 @@ sub delete_ordervalues
 		my $ovt = $dataset->get_ordervalues_table_name( $langid );
 		if( $tmp ) { $ovt .= "_tmp"; }
 		my $sql;
-		$sql = "DELETE FROM ".$ovt." WHERE ".$keyfield->get_sql_name().' = '.$keyvalue;
+		$sql = "DELETE FROM ".$ovt." WHERE ".$keyfield->get_sql_name().' = "'.EPrints::Database::prep_value( $keyvalue ).'"';
 		$session->get_db->do( $sql );
 	}
 }
@@ -570,7 +570,7 @@ sub split_words
                 # $s is now char number $i
                 if( defined $EPrints::Index::FREETEXT_SEPERATOR_CHARS->{$s} || ord($s)<32 )
                 {
-                        push @words, $cword; # even if it's empty       
+                        push @words, $cword unless( $cword eq "" ); 
                         $cword = utf8( "" );
                 }
                 else
@@ -578,7 +578,7 @@ sub split_words
                         $cword .= $s;
                 }
         }
-        push @words,$cword;
+	push @words, $cword unless( $cword eq "" ); 
 
 	return @words;
 }

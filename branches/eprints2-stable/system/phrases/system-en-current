@@ -667,8 +667,8 @@ Public CGI Scripts
 <!-- setlang -->
 
     <ep:phrase ref="cgi/set_lang:title">Change Language</ep:phrase>
-    <ep:phrase ref="cgi/set_lang:blurb"><p>Choose your prefered language:</p></ep:phrase>
-    <ep:phrase ref="cgi/set_lang:changed_to"><p>Prefered language set to <ep:pin ref="lang" /></p></ep:phrase>
+    <ep:phrase ref="cgi/set_lang:blurb"><p>Choose your preferred language:</p></ep:phrase>
+    <ep:phrase ref="cgi/set_lang:changed_to"><p>Preferred language set to <ep:pin ref="lang" /></p></ep:phrase>
     <ep:phrase ref="cgi/set_lang:cleared"><p>Your language preference has been cleared. From now on EPrints will use the closest language to your browser setting. This is currently <ep:pin ref="lang" />.</p></ep:phrase>
     <ep:phrase ref="cgi/set_lang:default_lang"><p>The default language of this archive is <ep:pin ref="lang" />.</p></ep:phrase>
     <ep:phrase ref="cgi/set_lang:cache_warning"><p>Some pages may be cached in your browser. Use your browser "reload" button to get the page in your requested language.</p></ep:phrase>
@@ -711,7 +711,7 @@ Public CGI Scripts
     <ep:phrase ref="cgi/register:account">Registration</ep:phrase>
     <ep:phrase ref="cgi/register:error">Error</ep:phrase>
 
-    <ep:phrase ref="register_fieldname_lang">Your prefered language</ep:phrase>
+    <ep:phrase ref="register_fieldname_lang">Your preferred language</ep:phrase>
     <ep:phrase ref="register_fieldhelp_lang">This will set which language is used for automated emails</ep:phrase>
 
 
@@ -837,7 +837,7 @@ Titles and Help for the System Fields
     <ep:phrase ref="user_fieldname_email">Email address</ep:phrase>
     <ep:phrase ref="user_fieldhelp_email">The email address for this user</ep:phrase>
     <ep:phrase ref="user_fieldname_lang">Preferred Language</ep:phrase>
-    <ep:phrase ref="user_fieldhelp_lang">Your prefered language. Where possible information will be mailed in this language.</ep:phrase>
+    <ep:phrase ref="user_fieldhelp_lang">Your preferred language. Where possible information will be mailed in this language.</ep:phrase>
 
     <!-- These fields are only used by users with "editor" privs -->
     <ep:phrase ref="user_fieldname_editperms">Editorial Rights Restriction</ep:phrase>

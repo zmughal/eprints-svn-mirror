@@ -135,6 +135,7 @@ sub parse_xml_string
 		{
 			my $err = $@;
 			$err =~ s# at /.*##;
+			$err =~ s#\sXML::Parser::Expat.*$##s;
 			print STDERR "Error parsing XML $string";
 			return;
 		}

@@ -1,9 +1,9 @@
 UPGRADE
  * ALTER
  * remove rindex?
- * Proc/Reliable
+ * Proc/Reliable?? (Harrys code)
  * libapreq
- * apache
+ * apache/mod_perl compile.
 
 Big New Features
  * Modular Controls [2.4]
@@ -16,7 +16,14 @@ Big New Features
 
 General
  * "Disable" option for core XML file
+ * FIlters in browseviews
+ * deleted eprints in search results: put placeholder to say
+   they've gone? or filter against archive?
 Bugs
+ * Handling of undef in subpages in views
+ * More fields in Userform should generate a sort-of-problem.
+ * Error in phrase at top of user seatrch
+ * FULLTEXT Phrase
  * import_xml NOTEXISTS apparent error (really a warning)
  * hideemail into non-checkbox
  * Warn on 0byte uploads

@@ -111,25 +111,8 @@ sub extract_words
 		$buffer.=$s;
 	}
 
-	$len = $buffer->length;
-	my @words = ();
-	my $cword = utf8( "" );
-	for($i = 0; $i<$len; ++$i )
-	{
-		my $s = $buffer->substr( $i, 1 );
-		# $s is now char number $i
-		if( defined $FREETEXT_SEPERATOR_CHARS->{$s} || ord($s)<32 )
-		{
-			push @words, $cword; # even if it's empty	
-			$cword = utf8( "" );
-		}
-		else
-		{
-			$cword .= $s;
-		}
-	}
-	push @words,$cword;
-	
+	my @words =EPrints::Index::split_words( $session, $buffer );
+
 	# Iterate over every word (bits divided by seperator chars)
 	# We use hashes rather than arrays at this point to make
 	# sure we only get each word once, not once for each occurance.

@@ -364,17 +364,8 @@ $c->{vlit}->{copyright_url} = $c->{base_url}."/vlit.html";
 # Multiple fields may be specified for one view, but avoid
 # subject or allowing null in this case.
 $c->{browse_views} = [
-     #   { id=>"projects", allow_null=>0, fields=>"projects", order=>"-year/title", include=>1 },
-     #   { id=>"year", allow_null=>1, fields=>"year", order=>"-year/title" },
-	#{ id=>"year", allow_null=>1, fields=>"year", order=>"title/creators" },
-	#{ id=>"person", allow_null=>0, fields=>"creators.id/editors.id", order=>"title/creators", noindex=>1, nolink=>1, nohtml=>1, include=>1, citation=>"title_only", nocount=>1 }
-	#{ id=>"person", allow_null=>0, fields=>"creators.id/editors.id", order=>"title/creators" },
-#	{ 	id=>"groups", fields=>[ "groups", "year" ],	allow_null=>0, order=>"-year/title", include=>1 }
-	{ id=>"projects", allow_null=>0, fields=>"type,date_effective;res=year", order=>"title", hideempty=>1 }
-
-        #{ id=>"person", allow_null=>0, fields=>"authors.id/editors.id", order=>"-year/title", include=>1 }
-	#{ id=>"datestamp", fields=>"datestamp;res=month" }
-#	{ id=>"groups", allow_null=>0, fields=>"groups,-year", order=>"title", hideempty=>1, include=>1 }
+        { id=>"year", allow_null=>1, fields=>"date_effective;res=year", subheadings=>"type,number", order=>"-date_effective/title", heading_level=>2 }#,
+        #{ id=>"subjects", allow_null=>1, fields=>"subjects", order=>"-date_effective/title" }
 ];
 # examples of some other useful views you might want to add
 #
@@ -386,8 +377,6 @@ $c->{browse_views} = [
 #
 # Browse by the type of eprint (poster, report etc).
 #{ id=>"type",  fields=>"type", order=>"-date_effective" }
-
-
 
 
 

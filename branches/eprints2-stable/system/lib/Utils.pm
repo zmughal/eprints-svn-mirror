@@ -174,7 +174,7 @@ sub render_date
 
 	my @elements = split /\-/, $datevalue;
 
-	if( !defined $elements[0] || $elements[0]==0 )
+	if( !defined $elements[0] || $elements[0] eq "undef" || $elements[0]==0 )
 	{
 		return $session->html_phrase( "lib/utils:date_unspecified" );
 	}

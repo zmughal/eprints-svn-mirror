@@ -1688,5 +1688,19 @@ PACKAGE: 2.2.99.2
  - Fixed bug in Metadata defaults
  - Fixed bug in render_nbsp. Didn't always give the right unicode value.
 
+2003-11-23 cjg
+
+ - Browse views can now have subheadings within one page. New options to
+    views: subheadings and heading_level
+ - Fixed bug which given "aa bb " searched for "aa" & "bb" & ""
+ - Fixed bug which meant when a live document is made secure after being
+    public the public symlink was not removed. Now when an eprint makes
+    it's static files, it unlinks them first.
+ - Fixed merge function so that it can deal with the first value in either
+    array being undef.
+ - Fixed a bug in the validation of users when editing a user record in
+    staff mode. 
+ - Added some code to cleanly handle undefined date fields.
+ 
 
 ======================================================================

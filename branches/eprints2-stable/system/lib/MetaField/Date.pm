@@ -225,6 +225,11 @@ sub get_unsorted_values
 	my %ov = ();
 	foreach my $value ( @{$values} )
 	{
+		if( !defined $value )
+		{
+			$ov{undef} = 1;
+			next;
+		}
 		$ov{substr($value,0,$l)}=1;
 	}
 	my @outvalues = keys %ov;

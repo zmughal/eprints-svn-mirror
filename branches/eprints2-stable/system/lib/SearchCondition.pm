@@ -622,7 +622,7 @@ sub optimise
 				delete $self->{sub_ops};
 				$self->{op} = "FALSE";	
 			}
-			if( scalar @{$self->{sub_ops}} == 1 )
+			elsif( scalar @{$self->{sub_ops}} == 1 )
 			{
 				$self->copy_from( $self->{sub_ops}->[0] );
 			}
@@ -638,12 +638,14 @@ sub _merge
 
 	$a = [] unless( defined $a );
 	$b = [] unless( defined $b );
+	my $a_all = ( defined $a->[0] && $a->[0] eq "ALL" );
+	my $b_all = ( defined $b->[0] && $b->[0] eq "ALL" );
 	if( $and )
 	{
-		return $b if( $a->[0] eq "ALL" );
-		return $a if( $b->[0] eq "ALL" );
+		return $b if( $a_all );
+		return $a if( $b_all );
 	}
-	elsif( $a->[0] eq "ALL" || $b->[0] eq "ALL" )
+	elsif( $a_all || $b_all )
 	{
 		# anything OR'd with "ALL" is "ALL"
 		return [ "ALL" ];

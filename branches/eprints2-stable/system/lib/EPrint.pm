@@ -1286,6 +1286,8 @@ sub generate_static
 			"static for deletion and archive" );
 	}
 
+	$self->remove_static;
+
 	# We is going to temporarily change the language of our session to
 	# render the abstracts in each language.
 	my $real_langid = $self->{session}->get_langid();
