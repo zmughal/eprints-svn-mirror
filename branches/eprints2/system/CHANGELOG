@@ -2291,3 +2291,32 @@ PACKAGE: 2.2.99.2
 08/03/2005 - EPRINTS-2.3.11
 ======================================================================
 
+2005-03-14 cjg
+
+ - Added more exceptions to filename escaping in Documents. Now should
+    comply with RFC 2396.
+ - Moved secure apache config include file from /cfg/ to 
+    /archives/xxx/cfg/auto-secure.conf
+ - generate_apacheconf will now clean up old auto-...conf files in 
+    /cfg/
+ - If secure mode is in operation confirm,register, set_password and
+    reset_password are redirected to the secure server.
+ - [#96] If https mode is in effect, the web registration is now
+    done via the https server.
+ - The static website is now available from the secure website URL, 
+    the webpages should never be linked, but the images & css must
+    be available in a secure way.
+ - Auth.pm and Rewrite.pm now handle the secure server by looking
+    for a config option: PerlSetVar EPrints_Secure yes
+
+2005-03-18 cjg
+ - [c] https pages now use a secure template called 
+    template-secure-en.xml
+ - If we are using a secure server and /secure/ is accessed on
+    the http server, it's redirected to https.
+ - Searchfield's from_form function now looks to see if *_match is
+    set so we can have web based "EQ" searches, although there's no
+    web interface for it yet.
+ - [#50] Https mode should now work properly.
+
+
