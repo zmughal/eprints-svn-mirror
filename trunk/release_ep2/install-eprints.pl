@@ -339,6 +339,7 @@ sub install
 	my @files = ();
 	my $currdir = getcwd();
 	mkdir("$dest/$dir", 0755);
+	chown($user, $group, "$dest/$dir") or die "Unable to chown $dest/$dir/$_ : $!";
 	while(my $item = readdir(INDIR))
 	{
 		if ($item =~ /^\./ && $item ne ".htaccess" ) { next; }
