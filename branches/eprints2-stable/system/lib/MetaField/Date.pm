@@ -322,6 +322,22 @@ sub render_search_value
 	return EPrints::Utils::render_date( $session, $value );
 }
 
+# overridden, date searches being EX means that 2000 won't match 
+# 2000-02-21
+sub get_search_conditions
+{
+	my( $self, $session, $dataset, $search_value, $match, $merge,
+		$search_mode ) = @_;
+
+	return $self->get_search_conditions_not_ex(
+			$session, 
+			$dataset, 
+			$search_value, 
+			$match, 
+			$merge, 
+			$search_mode );
+}
+
 sub get_search_conditions_not_ex
 {
 	my( $self, $session, $dataset, $search_value, $match, $merge,

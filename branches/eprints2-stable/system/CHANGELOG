@@ -1477,4 +1477,11 @@ before next release. (metadata types & fields)
  - added cgi/latestn for showing the last "n" eprints. Handy for 
     embedding in other sites.
 
+2003-10-20 cjg
+
+ - Added some better comments to the "disable web based signup" 
+    option to warn people to change the HTML pages.
+ - date fields can now never be "EX" so that searches for "2000"
+    will not look for "2000", but for anything in the year 2000.
+
 ======================================================================

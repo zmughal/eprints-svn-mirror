@@ -475,7 +475,7 @@ User Area CGI Scripts
     <ep:phrase ref="cgi/users/status:articles"><h2>Articles</h2></ep:phrase>
     <ep:phrase ref="cgi/users/status:diskspace"><h2>Disk Space</h2></ep:phrase>
     <ep:phrase ref="cgi/users/status:subscriptions"><h2>Subscriptions</h2></ep:phrase>
-    <ep:phrase ref="cgi/users/status:index_updates"><h2>Subscriptions</h2></ep:phrase>
+    <ep:phrase ref="cgi/users/status:index_updates"><h2>Indexes</h2></ep:phrase>
     <ep:phrase ref="cgi/users/status:subsent">Last completed mailing</ep:phrase>
     <ep:phrase ref="cgi/users/status:subcount">Total Number</ep:phrase>
     <ep:phrase ref="cgi/users/status:set_archive">Articles in Archive:</ep:phrase>

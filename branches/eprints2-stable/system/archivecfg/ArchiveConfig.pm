@@ -172,9 +172,12 @@ $c->{skip_buffer} = 0;
 ######################################################################
 
 # Allow users to sign up for an account on
-# the web. If you disable this you should
-# edit the template file and the error page
-# to not offer this option.
+# the web. 
+# NOTE: If you disable this you should edit the template file 
+#   cfg/template-en.xml
+# and the error page 
+#   cfg/static/en/error401.xpage 
+# to remove the links to web registration.
 $c->{allow_web_signup} = 1;
 
 # The type of user that gets created when someone signs up
@@ -369,8 +372,9 @@ $c->{browse_views} = [
      #   { id=>"year", allow_null=>1, fields=>"year", order=>"-year/title" },
 	#{ id=>"year", allow_null=>1, fields=>"year", order=>"title/creators" },
 	#{ id=>"person", allow_null=>0, fields=>"creators.id/editors.id", order=>"title/creators", noindex=>1, nolink=>1, nohtml=>1, include=>1, citation=>"title_only", nocount=>1 }
+	#{ id=>"person", allow_null=>0, fields=>"creators.id/editors.id", order=>"title/creators" },
 #	{ 	id=>"groups", fields=>[ "groups", "year" ],	allow_null=>0, order=>"-year/title", include=>1 }
-	{ id=>"projects", allow_null=>0, fields=>"type,date_effective", order=>"title", hideempty=>1 }
+	{ id=>"projects", allow_null=>0, fields=>"type,date_effective;res=year", order=>"title", hideempty=>1 }
 
         #{ id=>"person", allow_null=>0, fields=>"authors.id/editors.id", order=>"-year/title", include=>1 }
 	#{ id=>"datestamp", fields=>"datestamp;res=month" }

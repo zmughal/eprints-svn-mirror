@@ -309,7 +309,6 @@ sub make_menu
 	foreach my $value ( @values )
 	{
 		my $fileid = mk_file_id( $value, $field->get_type );
-		print "($fileid)\n";
 
 		my( $filters ) = [ @{$pfilters}, [ \@fields, $value ] ];
 
