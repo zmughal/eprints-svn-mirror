@@ -1,7 +1,7 @@
 #!/bin/sh
 
 if [ $# != "4" ]; then
-	echo "Usage: makepackage.sh <cvs-version-tag> <package-version> <license-file> <package-filename.tar.gz>"
+	echo "Usage: makepackage.sh <cvs-version-tag> <package-version> <license-file> <package-filename>"
 	exit 1
 fi
 
@@ -64,8 +64,9 @@ cd ..
 
 # Remove group write permission
 chmod -R g-w eprints
-
-tar czf ../$PACKAGE_FILE eprints
+mv eprints $PACKAGE_FILE
+# aryan
+tar czf ../$PACKAGE_FILE.tar.gz $PACKAGE_FILE
 
 cd ..
 

@@ -77,6 +77,38 @@ fi
 
 AC_SUBST(FULL_INSTALL)
 
+dnl **************************************************************
+dnl Determine group to use
+dnl **************************************************************
+
+AC_ARG_WITH(group, [  --with-group=USER       Group server runs as [default=eprints]
+                         (will create if necessary])
+
+if test "x$with_group" = "x" ; then
+	GROUP="eprints"
+else
+	GROUP=$with_group
+fi
+
+AC_SUBST(GROUP)
+
+
+dnl **************************************************************
+dnl Determine user account to use
+dnl **************************************************************
+
+AC_ARG_WITH(username, [  --with-username=USER    User server runs as [default=eprints]
+                         (will create if necessary])
+
+if test "x$with_username" = "x" ; then
+	USERNAME="eprints"
+else
+	USERNAME=$with_username
+fi
+
+AC_SUBST(USERNAME)
+
+
 
 
 dnl **************************************************************
@@ -306,22 +338,6 @@ if test $FULL_INSTALL = 1 ; then
 
 
 
-	dnl **************************************************************
-	dnl Determine user account to use
-	dnl **************************************************************
-
-	AC_ARG_WITH(username, [  --with-username=USER    User server runs as [default=eprints]
-                          (will create if necessary])
-
-	if test "x$with_username" = "x" ; then
-		USERNAME="eprints"
-	else
-		USERNAME=$with_username
-	fi
-
-	AC_SUBST(USERNAME)
-
-
 
 	dnl **************************************************************
 	dnl Does the user exist?
@@ -359,22 +375,6 @@ if test $FULL_INSTALL = 1 ; then
 
 	
 	
-	dnl **************************************************************
-	dnl Determine group to use
-	dnl **************************************************************
-
-	AC_ARG_WITH(group, [  --with-group=USER       Group server runs as [default=eprints]
-                          (will create if necessary])
-
-	if test "x$with_group" = "x" ; then
-		GROUP="eprints"
-	else
-		GROUP=$with_group
-	fi
-
-	AC_SUBST(GROUP)
-
-
 
 	dnl **************************************************************
 	dnl Does the group exist?

@@ -5,7 +5,12 @@
 \title{Eprints Archive Software Installation Document}
 \author{Robert Tansley}
 
+\usepackage{html}
+
+\newcommand{\activeurl}[1]{\htmladdnormallink{{\tt{#1}}}{#1}}
+\newcommand{\activeemail}[1]{\htmladdnormallink{{\tt{#1}}}{mailto:#1}}
 \newcommand{\eprints}{\emph{Eprints}}
+\newcommand{\urlpar}[1]{\latex{\vspace{2ex}}\par\noindent{\activeurl{#1}}\latex{\vspace{2ex}}}
 
 \begin{document}
 
@@ -24,9 +29,7 @@ Hopefully this document will provide enough information for you to install and c
 
 If you have any problems, or encounter any bugs in the system, please use the bug tracking system:
 
-\begin{verbatim}
-http://bugs.eprints.org/
-\end{verbatim}
+\urlpar{http://bugs.eprints.org/}
 
 Please ensure that the bug has not already been reported before submitting a report. Also, please ensure that you submit each individual problem in a separate report.
 
@@ -35,8 +38,8 @@ The tracker also features a ``wishlist'' where you can submit suggestions for im
 If you have any further queries, please contact:
 
 \begin{description}
-\item[{\tt support@eprints.org}] for technical queries
-\item[{\tt info@eprints.org}] for more general information about the project
+\item[{\activeemail{support@eprints.org}}] for technical queries
+\item[{\activeemail{info@eprints.org}}] for more general information about the project
 \end{description}
 
 
