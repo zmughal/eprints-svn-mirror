@@ -453,7 +453,7 @@ sub untgz
 {
 	my($archive) = @_;
 	my $out;
-        print "Untarring	...";
+        print "Untarring		...";
         $out = `$ENVIRONMENT{tar} xfvz $archive 2>&1 1>/dev/null`;
         if ($out ne "") { exit_nicely(" Failed!\nError: $out\n"); }
         print "	Done.\n";
@@ -463,13 +463,63 @@ sub untar
 {
         my($archive) = @_;
 	my $out;
-        print "Untarring	...";
+        print "Untarring		...";
         $out = `$ENVIRONMENT{tar} xfv $archive 2>&1 1>/dev/null`;
         if ($out ne "") { exit_nicely(" Failed!\nError: $out\n"); }
         print "	Done.\n";
 }
 
 # Helper functions
+
+# Executes a command, dumping both stdout and stderr to a temp file.
+# If a non-zero return value is produced, this temp file is displayed.
+sub protect
+{
+	my($cmd) = @_;
+	$temp_filename = $ENVIRONMENT{temp_dir}."/eprints.tmp";
+	$log_filename  = $ENVIRONMENT{installer_dir}."/error.log";
+	# Delete the temp file if it exists.
+	if (-e $temp_filename)
+	{
+		if (!unlink $temp_filename)
+		{
+			print "** Warning: Could not delete old temp file [$temp_filename].\n";
+		}
+	}
+	$ret = system($cmd." 1>$temp_filename 2>&1");
+	if ($ret!=0)
+	{
+		# Something bad happened
+		print "	Failed.\n";
+
+		open(TMPIN, $temp_filename) or 
+			die "Couldn't open temp file.\n";
+		
+		my $errorlog = open(TMPOUT, ">$log_filename");
+		print "--- Log of command execution:\n";
+		while(<TMPIN>)
+		{
+			print $_;
+			if ($errorlog) { print TMPOUT $_; }
+		}
+		print "--- End of log.\n";
+		close(TMPIN);
+		if ($errorlog) 
+		{ 
+			close(TMPOUT); 
+			print "Log file written to $log_filename\n";
+		}
+		else
+		{
+			print "Unable to write error log to $log_filename\n";
+		}
+	}
+	if (!unlink $temp_filename)
+	{
+		print "** Warning: Could not delete temp file [$temp_filename].\n";
+	}
+	if ($ret!=0) { exit 1; }
+}
 
 # Skip the installation and checking of a component.
 
@@ -568,14 +618,14 @@ sub perlinstall
 
 	my $currdir = getcwd();
 	chdir decompress($package->{archive});
-	print "Configuring	...";
-	`perl Makefile.PL 2>&1 1>/dev/null`;
+	print "Configuring		...";
+	protect("perl Makefile.PL");
 	print "	Done.\n";
-	print "Making		...";
-	`$ENVIRONMENT{make} 2>&1 1>/dev/null`;
+	print "Making			...";
+	protect($ENVIRONMENT{make});
 	print "	Done.\n";
-	print "Installing	...";
-	`$ENVIRONMENT{make} install`;
+	print "Installing		...";
+	protect("$ENVIRONMENT{make} install");
 	print "	Done.\n";
 	chdir $currdir;
 
@@ -591,14 +641,14 @@ sub standardinstall
 	my($package) = @_;
 	my $currdir = getcwd();
 	chdir decompress($package->{archive});
-	print "Configuring	...";
-	`./configure`;
+	print "Configuring		...";
+	protect("./configure");
 	print "	Done.\n";
-	print "Making		...";
-	`$ENVIRONMENT{make}`;
+	print "Making			...";
+	protect("$ENVIRONMENT{make}");
 	print "	Done.\n";
-	print "Installing	...";
-	`$ENVIRONMENT{make} install`;
+	print "Installing		...";
+	protect("$ENVIRONMENT{make} install");
 	print "	Done.\n";
 	chdir $currdir;
 	return 1;
@@ -677,5 +727,6 @@ if ($no_root && !$ENVIRONMENT{no_root} && $<!=0)
 	print "\nWARNING: This script is designed to be run as root.\nForcing it to run as a non-root user may have adverse side effects!\n";
 }
 $ENVIRONMENT{no_root} = $no_root;
+$ENVIRONMENT{installer_dir} = getcwd();
 installer_main();
 
