@@ -188,7 +188,29 @@ sub split_search_value
 	# should use archive whitespaces
 	# remove spaces around commas to make them single names
 	$value =~ s/\s*,\s*/,/g; 
-	return split /\s+/ , $value;
+
+	# things in double quotes are treated as a single name
+	# eg. "Harris Smith" or "Smith, J K"
+	my @bits = ();
+	while( $value =~ s/"([^"]+)"// )
+	{
+		push @bits, $1;
+	}
+
+	# if there is anything left, split it on whitespace
+	if( $value !~ m/^\s+$/ )
+	{
+		push @bits, split /\s+/ , $value;
+	}
+	return @bits;
+}
+
+sub render_search_value
+{
+        my( $self, $session, $value ) = @_;
+
+	my @bits = $self->split_search_value( $session, $value );
+        return $session->make_text( '"'.join( '", "', @bits).'"' );
 }
 
 sub get_search_conditions
@@ -198,6 +220,7 @@ sub get_search_conditions
 
 	if( $match eq "EX" )
 	{
+		# not correct yet. Only used for browse-by-name
 		return EPrints::SearchCondition->new( 
 			'name_match', 
 			$dataset,
@@ -209,6 +232,9 @@ sub get_search_conditions
 			$session,
 			$search_value );
 
+	# name searches are case sensitive
+	$v2 = "\L$v2";
+
 	if( $search_mode eq "simple" )
 	{
 		return EPrints::SearchCondition->new( 
@@ -218,13 +244,26 @@ sub get_search_conditions
 			$v2 );
 	}
 
+	# split up initials
+	$v2 =~ s/([A-Z])/ $1/g;
+
+	# remove not a-z characters (except ,)
+	$v2 =~ s/[^a-z,]/ /ig;
+
+	my( $family, $given ) = split /\s*,\s*/, $v2;
+	my @freetexts = ();
+	foreach my $fpart ( split /\s+/, $family )
+	{
+		next unless EPrints::Utils::is_set( $fpart );
+		push @freetexts, EPrints::SearchCondition->new( 
+						'freetext', 
+						$dataset,
+						$self, 
+						$fpart );
+	}
 	return EPrints::SearchCondition->new( 
 		'AND',
-		EPrints::SearchCondition->new( 
-			'freetext', 
-			$dataset,
-			$self, 
-			$v2 ),
+		@freetexts,
 		EPrints::SearchCondition->new( 
 			'name_crop', 
 			$dataset,

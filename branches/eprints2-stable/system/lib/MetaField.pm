@@ -73,6 +73,7 @@ use EPrints::MetaField::Boolean;
 use EPrints::MetaField::Datatype;
 use EPrints::MetaField::Date;
 use EPrints::MetaField::Email;
+use EPrints::MetaField::Id;
 use EPrints::MetaField::Int;
 use EPrints::MetaField::Longtext;
 use EPrints::MetaField::Name;
@@ -89,10 +90,16 @@ use strict;
 
 
 
-$EPrints::MetaField::VARCHAR_SIZE = 255;
-$EPrints::MetaField::FROM_CONFIG = "272b7aa107d30cfa9c67c4bdfca7005d_FROM_CONFIG";
-$EPrints::MetaField::REQUIRED = "272b7aa107d30cfa9c67c4bdfca7005d_REQUIRED";
-$EPrints::MetaField::UNDEF = "272b7aa107d30cfa9c67c4bdfca7005d_UNDEF";
+$EPrints::MetaField::VARCHAR_SIZE 	= 255;
+# get the default value from field defaults in the config
+$EPrints::MetaField::FROM_CONFIG 	= "272b7aa107d30cfa9c67c4bdfca7005d_FROM_CONFIG";
+# don't use a default, the code may have already set this value. setting it to undef
+# has no effect rather than setting it to default value.
+$EPrints::MetaField::NO_CHANGE	 	= "272b7aa107d30cfa9c67c4bdfca7005d_NO_CHANGE";
+# this field must be explicitly set
+$EPrints::MetaField::REQUIRED 		= "272b7aa107d30cfa9c67c4bdfca7005d_REQUIRED";
+# this field defaults to undef
+$EPrints::MetaField::UNDEF 		= "272b7aa107d30cfa9c67c4bdfca7005d_UNDEF";
 
 ######################################################################
 =pod
@@ -185,6 +192,12 @@ sub set_property
 	if( defined $value )
 	{
 		$self->{$property} = $value;
+		return;
+	}
+
+	if( $self->{field_defaults}->{$property} eq $EPrints::MetaField::NO_CHANGE )
+	{
+		# don't set a default, just leave it alone
 		return;
 	}
 	
@@ -836,7 +849,11 @@ sub get_id_field
 	#cjg SHould log an issue if otherwise?
 	#returns undef for non-id fields.
 	return unless( $self->get_property( "hasid" ) );
+	# hack to make the cloned field a different type
+	my $tmp_type = $self->{type}; 
+	$self->{type} = 'id'; 
 	my $idfield = $self->clone();
+	$self->{type} = $tmp_type;
 	$idfield->set_property( "multilang", 0 );
 	$idfield->set_property( "hasid", 0 );
 	$idfield->set_property( "type", "id" );

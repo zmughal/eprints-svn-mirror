@@ -19,7 +19,7 @@ use EPrints::SearchExpression;
 use strict;
 my $session = new EPrints::Session;
 Apache::exit( 0 ) unless( defined $session );
-#$session->get_db->set_debug( 1 );
+$session->get_db->set_debug( 1 );
 
 my %opts = (
 	citation => 

@@ -809,8 +809,8 @@ sub remove
 	my $where = $keyfield->get_sql_name()." = \"$keyvalue\"";
 
 
-	# Delete from index
-	$self->_deindex( $dataset, $id );
+	# Delete from index (no longer used)
+	#$self->_deindex( $dataset, $id );
 
 	# Delete Subtables
 	my @fields = $dataset->get_fields( 1 );

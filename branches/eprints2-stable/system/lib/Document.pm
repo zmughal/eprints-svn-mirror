@@ -91,11 +91,15 @@ use File::Basename;
 use File::Path;
 use File::Copy;
 use Cwd;
+
 use URI::Heuristic;
+use Convert::PlainText;
 
 use EPrints::Database;
 use EPrints::EPrint;
 use EPrints::Probity;
+
+
 
 use strict;
 
@@ -1256,9 +1260,27 @@ sub get_text
 {
 	my( $self ) = @_;
 
-	# cjg CALLS TO HARRYS CODE HERE
+	my $converter = new Convert::PlainText;
+	my $eprint =  $self->get_eprint;
+	if( !defined $eprint )
+	{
+		return "";
+	}
+	my $words_file = $eprint->local_path."/".
+		$self->get_value( "docid" ).".words";
+	my %files = $self->files;
+	my @fullpath_files = ();
+	foreach( keys %files )
+	{
+		push @fullpath_files, $self->local_path."/".$_;
+	}
+	$converter->build($words_file, @fullpath_files);
 
-	return( 'the rain in spain falls mainly on the plain' );
+	return '' unless open( WORDS, $words_file );
+	my $words = join( '', <WORDS> );
+	close WORDS;
+
+	return $words;
 }
 
 1;

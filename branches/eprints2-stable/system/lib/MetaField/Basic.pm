@@ -156,7 +156,7 @@ sub render_input_field_actual
 		return $elements->[0]->[0]->{el};
 	}
 
-	my $table = $session->make_element( "table", border=>1 );
+	my $table = $session->make_element( "table", border=>0 );
 
 	my $col_titles = $self->get_input_col_titles( $session, $staff );
 	if( defined $col_titles || $self->get_property( "hasid" ) )
@@ -1067,7 +1067,7 @@ sub get_property_defaults
 	return (
 		browse_link 	=> $EPrints::MetaField::UNDEF,
 		can_clone 	=> 1,
-#		confid 		=> $EPrints::MetaField::REQUIRED, # internal
+		confid 		=> $EPrints::MetaField::NO_CHANGE,
 		export_as_xml 	=> 1,
 		fromform 	=> $EPrints::MetaField::UNDEF,
 		hasid 		=> 0,

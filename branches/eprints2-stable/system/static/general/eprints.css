@@ -212,3 +212,8 @@ body.vlit {
 {
 	background: #f8f8ff; 
 }
+
+th
+{
+        font: bold small Helvetica,Arial,Sans-serif;
+}

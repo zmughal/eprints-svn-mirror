@@ -266,7 +266,7 @@ sub _index_item
 	foreach my $key ( keys %{$keys} )
 	{
 		push @{$info->{allkeys}->{$key}}, $id;
-		if( scalar @{$info->{allkeys}->{$key}} > 20 )
+		if( scalar @{$info->{allkeys}->{$key}} > 100 )
 		{
 			$info->{indexer}->_store( $info, $key );
 		} 

@@ -450,23 +450,89 @@ sub process
 
 	if( $self->{op} eq "name_crop" )
 	{
-$session->get_db->set_debug( 1 ); print STDERR "\n";
-#cjg NOT DONE YET.
 		if( !defined $filter )
 		{
 			print STDERR "ERROR: Namecrop without filter! This is very inefficient.\n";	
 			# cjg better logging?
 		}
-		#cjg sloppy
+
+		# should already be lower case and had mapping applied
+
+		my $noskip = 0; 
+		# 2 family parts or one given part make it worth
+		# doing the name crop. A single family part will 
+		# obviously match.
+
+		my( $family, $given ) = split /\s*,\s*/, $self->{value};
+
+		my $list = [ '%' ];
+		foreach my $fpart ( split /\s+/, $family )
+		{
+			next unless EPrints::Utils::is_set( $fpart );
+			$list->[0] .= '['.$fpart.']%';
+			++$noskip; # need at least 2 family parts to be worth cropping
+		}
+
+		$list->[0] .= '-%';
+
+		foreach my $gpart ( split /\s+/, $given )
+		{
+			next unless EPrints::Utils::is_set( $gpart );
+			$noskip = 2;
+			if( length $gpart == 1 )
+			{
+				# inital
+				foreach my $l ( @{$list} )
+				{
+					$l .= '['.$gpart.'%';
+				}
+				next;
+			}
+			# a full given name
+			my $nlist = [];
+			foreach my $l ( @{$list} )
+			{
+				push @{$nlist}, $l.'['.$gpart.']%';
+				$gpart =~ m/^(.)/;
+				push @{$nlist}, $l.'['.$1.']%';
+			}
+			$list = $nlist;
+		}
+
+		if( $noskip < 2 )
+		{
+			# not worth doing the crop, just return the current filter
+			return $filter;
+		}
+
  		my $ntable = $self->{dataset}->get_sql_index_table_name."_names"; 
-		my $like = EPrints::Database::prep_like_value("%[".$self->{value}."]%");
-		my $where = "( fieldname = '$sql_col' AND namestring LIKE '$like')";
-		$r = $session->get_db->search( 
-			$keyfield, 
-			{ M=>$ntable },
-			$where );
-		
-$session->get_db->set_debug( 0 );
+		my $where = "( M.fieldname = '$sql_col' AND (";
+		my $first = 1;
+		foreach $cond (@{$list})
+		{
+			$where.=" OR " unless( $first );
+			$first = 0;
+			# not prepping like values...
+			$where .= "M.namestring LIKE '$cond'";
+		}
+		$where.="))";
+
+		my $SSIZE = 50;
+		my $total = scalar @{$filter};
+		my $kfn = $keyfield->get_sql_name; # key field name
+		for( my $i = 0; $i<$total; $i+=$SSIZE )
+		{
+			my $max = $i+$SSIZE;
+			$max = $total-1 if( $max > $total - 1 );
+			my @fset = @{$filter}[$i..$max];
+			
+			my $set = $session->get_db->search( 
+				$keyfield, 
+				{ M=>$ntable },
+				$where.' AND ('.$kfn.'='.join(' OR '.$kfn.'=', @fset ).' )' );
+                        $r = _merge( $r , $set, 0 );
+		}
+	
 	}
 
 
