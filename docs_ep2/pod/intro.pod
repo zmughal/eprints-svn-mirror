@@ -19,4 +19,8 @@ We currently expect to release a few later versions. There are some features we 
 
 The has been developed under RedHat Linux 7.1, it has been designed to work with any UNIX system, although we have not fomally tested it on other systems yet. Feel free to report problems and successes too! The priority for getting it working is: RedHat Linux, Other Linux, Solaris, Other UNIX. It will never run under Windows, the design is too closely entwined with the UNIX filesystem.
 
+=head1 This Documentation
 
+This documentation is written in perl POD format and converted into postscript, ASCII, PDF and HTML. 
+
+Get the latest version from http://www.eprints.org/
