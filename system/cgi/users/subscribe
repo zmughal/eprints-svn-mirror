@@ -188,7 +188,7 @@ sub show_subscriptions
 			{
 				my $strong;
 				$strong = $session->make_element( "strong" );
-				$strong->appendChild( $session->make_text( $subs_ds->get_field( $_ )->display_name( $session ) ) );
+				$strong->appendChild( $subs_ds->get_field( $_ )->render_name( $session ) );
 				$strong->appendChild( 
 					$session->make_text( ": " ) );
 				$td->appendChild( $strong );

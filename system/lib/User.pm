@@ -345,7 +345,7 @@ sub validate
 			push @all_problems, 
 			  $self->{session}->html_phrase( 
 			   "lib/user:missed_field", 
-			   field => $self->{session}->make_text( $field->display_name( $self->{session} ) ) );
+			   field => $field->render_name( $self->{session} ) );
 		}
 	}
 
@@ -492,6 +492,7 @@ sub get_eprints
 
 	my $searchexp = new EPrints::SearchExpression(
 		session=>$self->{session},
+		custom_order=>"eprintid",
 		dataset=>$ds );
 
 	$searchexp->add_field(
@@ -532,7 +533,6 @@ sub get_editable_eprints
 			"buffer" );
 		my $searchexp = EPrints::SearchExpression->new(
 			allow_blank => 1,
-			use_oneshot_cache => 1,
 			dataset => $ds,
 			session => $self->{session} );
 		$searchexp->perform_search;
@@ -918,7 +918,6 @@ sub process_editor_alerts
 
 	my $searchexp = EPrints::SearchExpression->new(
 		session => $session,
-		use_oneshot_cache => 1,
 		dataset => $subs_ds );
 
 	$searchexp->add_field(
