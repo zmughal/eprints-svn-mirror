@@ -86,7 +86,8 @@ undocumented
 	"fieldnames", 	"staff", 	"order", 	"custom_order",
 	"keep_cache", 	"cache_id", 	"prefix", 	"defaults",
 	"citation", 	"page_size", 	"filters", 	"default_order",
-	"preamble_phrase", 		"title_phrase", "search_fields" );
+	"preamble_phrase", 		"title_phrase", "search_fields",
+	"controls" );
 
 sub new
 {
@@ -274,6 +275,10 @@ END
 			$filterdata->{id},
 			1 );
 	}
+
+	$self->{controls} = {} unless( defined $self->{controls} );
+	$self->{controls}->{top} = 0 unless( defined $self->{controls}->{top} );
+	$self->{controls}->{bottom} = 1 unless( defined $self->{controls}->{bottom} );
 
 	if( defined $self->{cache_id} )
 	{
@@ -471,14 +476,15 @@ sub render_search_form
 	my( $self, $help, $show_anyall ) = @_;
 
 	my $form = $self->{session}->render_form( "get" );
+	if( $self->{controls}->{top} )
+	{
+		$form->appendChild( $self->render_controls );
+	}
 	$form->appendChild( $self->render_search_fields( $help ) );
-
-	my $div;
-	my $menu;
 
 	if( $show_anyall )
 	{
-		$menu = $self->{session}->render_option_list(
+		my $menu = $self->{session}->render_option_list(
 			name=>$self->{prefix}."_satisfyall",
 			values=>[ "ALL", "ANY" ],
 			default=>( defined $self->{satisfy_all} && $self->{satisfy_all}==0 ?
@@ -500,7 +506,19 @@ sub render_search_form
 
 	$form->appendChild( $self->render_order_menu );
 
-	$div = $self->{session}->make_element( 
+	if( $self->{controls}->{bottom} )
+	{
+		$form->appendChild( $self->render_controls );
+	}
+
+	return( $form );
+}
+
+sub render_controls
+{
+	my( $self ) = @_;
+
+	my $div = $self->{session}->make_element( 
 		"div" , 
 		class => "searchbuttons" );
 	$div->appendChild( $self->{session}->render_action_buttons( 
@@ -508,9 +526,7 @@ sub render_search_form
 		newsearch => $self->{session}->phrase( "lib/searchexpression:action_reset" ),
 		search => $self->{session}->phrase( "lib/searchexpression:action_search" ) )
  	);
-	$form->appendChild( $div );	
-
-	return( $form );
+	return $div;
 }
 
 

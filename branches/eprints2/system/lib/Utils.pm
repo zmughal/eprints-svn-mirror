@@ -1656,7 +1656,7 @@ sub escape_filename
 		if( $_ >=48 && $_ <= 57 ) { push @out, $_; next; }
 		if( $_ >=65 && $_ <= 90 ) { push @out, $_; next; }
 		if( $_ >=97 && $_ <= 122 ) { push @out, $_; next; }
-		if( $_ == 44 || $_ == 45 || $_ == 46 || $_ == 58 ) { push @out, $_; next; }
+		if( $_ == 44 || $_ == 45 || $_ == 46 || $_ == 58 || $_ == 95 ) { push @out, $_; next; }
 		if( $_ < 256 )
 		{
 			push @out, 61;

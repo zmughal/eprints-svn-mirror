@@ -204,6 +204,7 @@ sub show_subscriptions
 		$session->render_action_buttons( 	
 			new => $session->phrase( 
 				"cgi/users/subscribe:action_new" ) ) );
+	$page->appendChild( $session->html_phrase( "general:userhome_link" ) );
 	
 	$session->build_page( $title, $page, "subscribe_list"  );
 	$session->send_page();

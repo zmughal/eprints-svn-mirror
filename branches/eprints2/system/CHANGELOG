@@ -2005,3 +2005,50 @@ PACKAGE: 2.2.99.2
     is created. This includes secure area links for docs not yet in
     the live archive. 
 
+2004-10-15 cjg
+
+ - Added three new field parameters, input_assist, input_advice_right
+    and input_advice_below. Names subject to change.
+ - input_assist makes an assist button appear. Which is just a null
+    internal button.
+ - input_advice makes values appear below or to the right of the input
+    fields, commenting on the current value (ie. if it's an enter
+    userid field, it might show the full name of person with that
+    id)
+ - Cleaned up minor issue in OAI conf for the situation when 
+    date_effective is not defined.
+ - Changed render eprint code to use official_url. Renderer still
+    refered to altloc
+ - Removed some double entries from citations file
+ - Added oai2.xsl to make OAI output look nice in browsers
+ - Added print.css - a slightly different css file for printing
+ - Made RSS output completely standards compliant (dates were not)
+ - Fixed bug in members area home page regarding negative style
+    permissinos.
+ - Added warning to metafield new. Warns if a parameter not relevant
+    to that field type is passed. 
+ - Added a tweak to search results for case when no ordering is needed
+    and no offset or count.
+ - Fixed a bug in the sans-libapreq workarounds. It only handles cookies
+    when there are cookies to handle.
+ - Added some extra cache conditions. not just must-revalidate but
+    no-cache, so if working offline (or the extreme never reload if there's
+    a local copy option in IE) it will fail rather than display a CGI
+    page which was not loaded right then.
+ - buffer page now sorted by reverse datestamp
+
+2004-10-22 cjg
+
+ - added underscore "_" to the list of characters not to escape in 
+    views. This could cause some broken links, I'll make it a config
+    option if anyone complains.
+ - Added new config option to searches controls=>{ top=>1, bottom=1}
+    this allows the search control buttons (reset/perform) to appear
+    at the top and/or the bottom of a search page.
+ - New config option: log_submission_timing which if true writes a 
+    log in /opt/eprints2/var of all the stages visited in the 
+    submission process. This is for usage analysis by the developers
+    but may be of interest to others.
+ - Added a link from the subscriptions page back to the user home.
+
+

@@ -427,7 +427,8 @@ $c->{search}->{simple} =
 	title_phrase => "cgi/search:simple_search",
 	citation => "neat",
 	default_order => "byyear",
-	page_size => 100
+	page_size => 100,
+	controls => { top=>0, bottom=>1 }
 };
 		
 
@@ -452,7 +453,8 @@ $c->{search}->{advanced} =
 	title_phrase => "cgi/advsearch:adv_search",
 	citation => "neat",
 	default_order => "byyear",
-	page_size => 100
+	page_size => 100,
+	controls => { top=>1, bottom=>1 }
 };
 
 $c->{order_methods}->{subject} =
@@ -674,6 +676,13 @@ $c->{use_mimetex} = 0;
 #
 # $c->{send_email} = &some_function;
 
+
+# Log timings on submissions. 
+# This feature creates a log file in the eprints var directory
+# which logs timestamps of users doing the submission process. It's
+# useful for us to monitor time taken on various pages in the submission
+# process and maybe you want to to...
+# $c->{log_submission_timing} = 1; 
 
 ######################################################################
 

@@ -242,6 +242,15 @@ sub process
 
 		my $stage = $self->{new_stage};
 
+		if( $self->{session}->get_archive->get_conf( 'log_submission_timing' ) )
+		{
+			if( $stage ne "meta" )
+			{
+				$self->log_submission_stage($stage);
+			}
+			# meta gets logged after pageid is worked out
+		}
+
 		my $page;
 		my $function_name = "_do_stage_".$stage;
 		{
@@ -290,6 +299,30 @@ sub get_stage
 	my( $self ) = @_;
 
 	return $self->{new_stage};
+}
+
+######################################################################
+=pod
+
+=item $submissionform->log_submission_stage
+
+undocumented
+
+=cut
+######################################################################
+
+sub log_submission_stage
+{
+	my( $self, $stage ) = @_;
+
+	my $fn = EPrints::Config::get("var_path")."/submission_timings.".$self->{session}->get_archive->get_id.".log";
+	unless( open( SLOG, ">>$fn" ) )
+	{
+		$self->{session}->get_archive->log( "Could not append to $fn" );
+	}
+	my @data = ( time, $self->{eprintid}, $self->{user}->get_id, $stage, $self->{action} );
+	print SLOG join( "\t", @data )."\n";
+	close SLOG;
 }
 
 ######################################################################
@@ -384,6 +417,7 @@ sub _from_stage_home
 			"userid", 
 			$self->{user}->get_value( "userid" ) );
 		$self->{eprint}->commit();
+		$self->{eprintid} = $self->{eprint}->get_id;
 
 		if( !defined $self->{eprint} )
 		{
@@ -1405,6 +1439,11 @@ sub _do_stage_meta
 		{
 			$self->{pageid} = $pages[0];
 		}
+	}
+
+	if( $self->{session}->get_archive->get_conf( 'log_submission_timing' ) )
+	{
+		$self->log_submission_stage( "meta.".$self->{pageid} );
 	}
 
 	$page->appendChild( $self->{session}->html_phrase( 
