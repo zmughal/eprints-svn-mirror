@@ -429,7 +429,7 @@ sub make_menu
 			my $file = $dir."/".$fileid.".include";
 			print "Writing: $file\n" if( $noise > 1 );
 			open( FILE, ">$file" );
-			print FILE EPrints::XML::to_string( $page );
+			print FILE EPrints::XML::to_string( $page, undef, 1 );
 			close FILE;
 		}
 
@@ -522,7 +522,7 @@ sub make_menu
 		my $file = $dir."/index.include";
 		print "Writing: $file\n" if( $noise > 1 );
 		open( FILE, ">$file" );
-		print FILE EPrints::XML::to_string( $page );
+		print FILE EPrints::XML::to_string( $page, undef, 1 );
 		close FILE;
 	}
 	

@@ -588,18 +588,21 @@ sub get_baseurl
 	# Unless this is a public doc in "archive" then the url should
 	# point into the secure area. 
 
-	my $basepath;
+	my $shorturl = $archive->get_conf( "use_short_urls" );
+	$shorturl = 0 unless( defined $shorturl );
+
+	my $docpath = docid_to_path( $archive, $self->get_value( "docid" ) );
+
 	if( !$self->is_set( "security" ) && $eprint->get_dataset()->id() eq "archive" )
 	{
-		$basepath = $archive->get_conf( "documents_url" );
+		return $eprint->url_stem.$docpath.'/';
 	}
-	else
-	{
-		$basepath = $archive->get_conf( "secure_url" );
-	}
-	return $basepath . "/" . 
-		sprintf( "%08d", $eprint->get_value( "eprintid" )) . "/" .
-		docid_to_path( $archive, $self->get_value( "docid" ) ) . "/";
+
+	my $url = $archive->get_conf( "secure_url" ).'/';
+	$url .= sprintf( "%08d", $eprint->get_value( "eprintid" ) );
+	$url .= '/'.$docpath.'/';
+
+	return $url;
 }
 
 ######################################################################

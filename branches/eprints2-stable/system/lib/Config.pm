@@ -115,7 +115,7 @@ used to report errors when initialising modules.
 			# user in addition to logging to STDERR.
 
 			$r->content_type( 'text/html' );
-			$r->send_http_header;
+			EPrints::AnApache::send_http_header( $r );
 			print <<END;
 <html>
   <head>

@@ -107,6 +107,7 @@ sub new
 	my $self = {};
 	bless $self, $class;
 
+	$mode = 0 unless defined( $mode );
 	$noise = 0 unless defined( $noise );
 	$self->{noise} = $noise;
 
@@ -1215,7 +1216,7 @@ sub _render_buttons_aux
 	{
 		# skip options which start with a "_" they are params
 		# not buttons.
-		next if( $_ =~ m/^_/ );
+		next if( $button_id =~ m/^_/ );
 		$div->appendChild(
 			$self->make_element( "input",
 				class => $btype."button",
@@ -1482,7 +1483,7 @@ sub render_input_form
 {
 	my( $self, %p ) = @_;
 
-	foreach( %INPUT_FORM_DEFAULTS )
+	foreach( keys %INPUT_FORM_DEFAULTS )
 	{
 		next if( defined $p{$_} );
 		$p{$_} = $INPUT_FORM_DEFAULTS{$_};
@@ -1815,7 +1816,7 @@ sub send_page
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 END
-	print EPrints::XML::to_string( $self->{page} );
+	print EPrints::XML::to_string( $self->{page}, undef, 1 );
 	EPrints::XML::dispose( $self->{page} );
 	delete $self->{page};
 }

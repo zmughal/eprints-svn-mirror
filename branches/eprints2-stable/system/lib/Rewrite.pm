@@ -41,28 +41,66 @@ sub handler
 		return DECLINED;
 	} 
 
-	if( $uri =~ m#^/archive/([0-9]{1,7})($|/[^0-9].*)# )
-	{
-		my $n = $1;
-		my $tail = $2;
-		if( $tail eq "" )
-		{
-			$tail = "/";
-		}
-		my $url = sprintf( "%s/archive/%08d%s",$urlpath, $n, $tail );
-		$r->status_line( "302 Close but no Cigar" );
-		EPrints::AnApache::header_out( $r, "Location", $url );
-		$r->send_http_header;
-		return DONE;
-	}
-
+	
+	# shorturl does not (yet) effect secure docs.
 	if( $uri =~ s#^/secure/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])#/secure/$1/$2/$3/$4# )
 	{
 		$r->filename( $archive->get_conf( "htdocs_path" )."/".$uri );
 		return OK;
 	}
 
-	$uri =~ s#^/archive/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])#/archive/$1/$2/$3/$4#;
+
+	my $shorturl = $archive->get_conf( "use_short_urls" );
+	$shorturl = 0 unless( defined $shorturl );
+
+	#$uri =~ s#^/archive/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])#/archive/$1/$2/$3/$4#;
+	if( $uri =~ m#^/archive/([0-9]+)(.*)$# )
+	{
+		# is a long record url
+		my $n = $1;
+		my $tail = $2;
+		my $redir =0;
+		if( $tail eq "" ) { $tail = "/"; $redir=1 }
+		
+		if( $shorturl )
+		{
+			# redirect to short form
+			return redir( $r, sprintf( "%s/%d%s",$urlpath, $n, $tail ) );
+		}
+
+		my $s8 = sprintf('%08d',$n);
+		$s8 =~ m/(..)(..)(..)(..)/;	
+		if( length $n < 8 || $redir)
+		{
+			# not enough zeros, redirect to correct version
+			return redir( $r, sprintf( "%s/archive/%08d%s",$urlpath, $n, $tail ) );
+		}
+		$uri = "/archive/$1/$2/$3/$4$tail";
+	}
+
+	
+	if( $uri =~ m#^/([0-9]+)(.*)$# )
+	{
+		# is a shorturl record url
+		my $n = $1;
+		my $tail = $2;
+		my $redir = 0;
+		if( $tail eq "" ) { $tail = "/"; $redir = 1; }
+		if( !$shorturl )
+		{
+			# redir to long form
+			return redir( $r, sprintf( "%s/archive/%08d%s",$urlpath, $n, $tail ));
+		} 
+
+		if( ($n + 0) ne $n || $redir)
+		{
+			# leading zeros
+			return redir( $r, sprintf( "%s/%d%s",$urlpath, $n, $tail ) );
+		}
+		my $s8 = sprintf('%08d',$n);
+		$s8 =~ m/(..)(..)(..)(..)/;	
+		$uri = "/archive/$1/$2/$3/$4$tail";
+	}
 
 	# apache 2 does not automatically look for index.html so we have to do it ourselves
 	if( $uri =~ m#/$# )
@@ -78,6 +116,15 @@ sub handler
 }
 
 
+sub redir
+{
+	my( $r, $url ) = @_;
+
+	$r->status_line( "302 Close but no Cigar" );
+	EPrints::AnApache::header_out( $r, "Location", $url );
+	$r->send_http_header;
+	return DONE;
+} 
 
 
 

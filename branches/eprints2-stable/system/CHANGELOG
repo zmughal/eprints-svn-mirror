@@ -1939,5 +1939,24 @@ PACKAGE: 2.2.99.2
  - Upped maximum pagerange field width to 120 from 10.
  - Fixed typo in system phrases.
 
+======================================================================
+06/07/2004 - EPRINTS-2.3.4
+======================================================================
 
+2004-08-06 cjg
+
+ - Added Hungarian chars to freetext index map
+ - New options to indexer --once, --notdaemon, --loglevel, --rollcount
+ - Indexer now creates log files
+ - Commented-out un-needed command in SearchExpression
+ - Fixed xmlns filtering so it only occurs on XHTML output, not XML
+ - Fixed a call in Config to use AnApache, so it'll work with v1.3 & 2
+ - Fixed a bug in MetaField/Set; it didn't show the currently 
+    selected value in any/all menus.
+ - documents_url option removed. It's hardwired to /archive/ in lots
+    of places.
+ - Added support for short URLs for records, so you can use
+    /33/ instead of /archive/00000033/
+ - added config option 'shorturl' to make the short version the
+    canonnical one. 
 

@@ -1249,12 +1249,26 @@ sub url_stem
 {
 	my( $self ) = @_;
 
-	return( 
-		sprintf( 
-			"%s/%08d/", 
-			$self->{session}->get_archive()->get_conf( 
-							"documents_url" ), 
-			$self->{data}->{eprintid} ) );
+	my $archive = $self->{session}->get_archive;
+
+	my $shorturl = $archive->get_conf( "use_short_urls" );
+	$shorturl = 0 unless( defined $shorturl );
+
+	my $url;
+	$url = $archive->get_conf( "base_url" );
+	$url .= '/archive' unless( $shorturl );
+	$url .= '/';
+	if( $shorturl )
+	{
+		$url .= $self->get_value( "eprintid" )+0;
+	}
+	else
+	{
+		$url .= sprintf( "%08d", $self->get_value( "eprintid" ) );
+	}
+	$url .= '/';
+
+	return $url;
 }
 
 

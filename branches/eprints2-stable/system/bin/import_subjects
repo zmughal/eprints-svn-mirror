@@ -28,6 +28,8 @@ Use the staff admin subject editor for little tweaks. Use this command for the i
 
 This script should also be run after B<create_tables>.
 
+Without the B<--force> option, this script asks for confirmation before actually erasing anything.
+
 =head1 ARGUMENTS
 
 =over 8
@@ -74,6 +76,10 @@ Instead of using colon sepearted subject file, the input file is in the XML form
 =item B<--nopurge>
 
 Do not purge the existing records from the subject table before importing this file. Rather than do this, it's probably easier to export the current subjects as XML, then combine in your new file and reimport it.
+
+=item B<--force>
+
+Don't ask before making the changes.
 
 =back   
 

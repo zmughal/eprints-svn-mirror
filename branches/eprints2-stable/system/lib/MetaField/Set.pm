@@ -245,7 +245,7 @@ sub render_search_input
 			$session->render_option_list(
 				name=>$searchfield->get_form_prefix."_merge",
 				values=>\@set_tags,
-				value=>$searchfield->get_merge,
+				default=>$searchfield->get_merge,
 				labels=>\%set_labels ) );
 	}
 

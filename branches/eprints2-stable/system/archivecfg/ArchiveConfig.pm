@@ -106,9 +106,6 @@ $c->{base_url} .= $c->{urlpath};
 # Site "home page" address
 $c->{frontpage} = "$c->{base_url}/";
 
-# URL of document file hierarchy
-$c->{documents_url} = $c->{base_url}."/archive";
-
 # URL of secure document file hierarchy. EPrints needs to know the
 # path from the baseurl as this is used by the authentication module
 # to extract the document number from the url, eg.
@@ -121,6 +118,11 @@ $c->{perl_url} = $c->{base_url}."/perl";
 
 # The user area home page URL
 $c->{userhome} = "$c->{perl_url}/users/home";
+
+# Use shorter URLs for records. 
+# Ie. use /23/ instead of /archive/00000023/
+$c->{use_short_urls} = 1;
+
 
 ######################################################################
 #

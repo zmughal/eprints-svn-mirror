@@ -56,7 +56,7 @@ undocumented
 
 sub new
 {
-	my( $class, $session, $dataset ) = @_;
+	my( $class, $session, $dataset, $logfn, $elogfn ) = @_;
 
 	my $self = { 
 		dataset=>$dataset, 
@@ -64,12 +64,57 @@ sub new
 		count=>0,
 		change_pname => 0,
 		index_table_tmp => $dataset->get_sql_index_table_name."_tmp",
-		grep_table_tmp => $dataset->get_sql_index_table_name."_grep_tmp" 
+		grep_table_tmp => $dataset->get_sql_index_table_name."_grep_tmp",
+		logfn => $logfn,
+		elogfn => $elogfn
 	};
 
 	bless $self, $class;
 
 	return $self;
+}
+
+######################################################################
+=pod
+
+=item $success = $index->log( $message );
+
+undocumented
+
+=cut
+######################################################################
+
+sub log
+{
+	my( $self, $message ) = @_;
+
+	if( defined $self->{logfn} )
+	{
+		&{$self->{logfn}}( $message );
+	}
+}
+
+######################################################################
+=pod
+
+=item $success = $index->logerror( $message );
+
+undocumented
+
+=cut
+######################################################################
+
+sub logerror
+{
+	my( $self, $message ) = @_;
+
+	if( defined $self->{elogfn} )
+	{
+		&{$self->{elogfn}}( $message );
+		return;
+	}
+
+	$self->{session}->get_archive->log( $message );
 }
 
 ######################################################################
@@ -102,6 +147,7 @@ sub cleanup
 	foreach my $table ( @doomtables )
 	{
 		next unless( $db->has_table( $table ) );
+		$self->logerror( "Table $table still exists. Dropping it now." );
 		$self->{session}->get_db->drop_table( $table ); 
 	}
 }
@@ -142,12 +188,14 @@ sub create
 
 	if( $db->has_table( $self->{index_table_tmp} ) )
 	{
-		print STDERR "$self->{index_table_tmp} already exists. Indexer exited abnormally or still running?\nDropping table: $self->{index_table_tmp}\n";
+		$self->logerror( "$self->{index_table_tmp} already exists. Indexer exited abnormally or still running?" );
+		$self->log( "Dropping table: $self->{index_table_tmp}" );
 		#cjg!
 		my $sql = "DROP TABLE $self->{index_table_tmp}";
 		$self->{session}->get_db->do( $sql );
 	}
 	
+	$self->log( "Creating table: $self->{index_table_tmp}" );
 	$rv = $rv & $db->create_table(
 		$self->{index_table_tmp},
 		$ds,
@@ -168,13 +216,15 @@ sub create
 
 	if( $db->has_table( $self->{grep_table_tmp} ) )
 	{
-		print STDERR "$self->{grep_table_tmp} already exists. Indexer exited abnormally or still running?\nDropping table: $self->{grep_table_tmp}\n";
+		$self->logerror( "$self->{grep_table_tmp} already exists. Indexer exited abnormally or still running?" );
+		$self->log( "Dropping table: $self->{grep_table_tmp}" );
 		#cjg!
 		my $sql = "DROP TABLE $self->{grep_table_tmp}";
 		$self->{session}->get_db->do( $sql );
 	}
 	
 
+	$self->log( "Creating table: $self->{grep_table_tmp}" );
 	$rv = $rv & $db->create_table(
 		$self->{grep_table_tmp},
 		$ds,
@@ -205,12 +255,14 @@ sub create
 		my $order_table_tmp = $ds->get_ordervalues_table_name( $langid )."_tmp";
 		if( $db->has_table( $order_table_tmp ) )
 		{
-			print STDERR "$order_table_tmp already exists. Indexer exited abnormally or still running?\nDropping table: $order_table_tmp\n";
+			$self->logerror( "$order_table_tmp already exists. Indexer exited abnormally or still running?" );
+			$self->log( "Dropping table: $order_table_tmp" );
 			#cjg!
 			my $sql = "DROP TABLE $order_table_tmp";
 			$self->{session}->get_db->do( $sql );
 		}
 
+		$self->log( "Creating table: $order_table_tmp" );
 		$rv = $rv && $db->create_table( 
 			$order_table_tmp,
 			$ds, 
@@ -259,6 +311,7 @@ sub _index_item
         my( $session, $dataset, $item, $info ) = @_;
 
 	my $id = $item->get_id;
+	$info->{indexer}->log( "Indexing: ".$dataset->get_archive->get_id.'.'.$dataset->id.".".$id );
 	if( $info->{indexer}->{change_pname} )
 	{
 		$0 =~ s/ *\[[^\]]*\]//;
@@ -417,25 +470,27 @@ sub install
 
 	if( $db->has_table( $self->{index_table_tmp} ) )
 	{
+		$self->log( "Installing table: ".$self->{index_table_tmp} );
 		$self->{session}->get_db->install_table( 
 			$self->{index_table_tmp}, 
 			$self->{dataset}->get_sql_index_table_name );
 	}
 	else
 	{
-		$self->{session}->get_archive->log( "Table does not exist to install: ".$self->{index_table_tmp} );
+		$self->logerror( "Table does not exist to install: ".$self->{index_table_tmp} );
 	}
 
 
 	if( $db->has_table( $self->{grep_table_tmp} ) )
 	{
+		$self->log( "Installing table: ".$self->{grep_table_tmp} );
 		$self->{session}->get_db->install_table( 
 			$self->{grep_table_tmp}, 
 			$self->{dataset}->get_sql_index_table_name."_grep" );
 	}
 	else
 	{
-		$self->{session}->get_archive->log( "Table does not exist to install: ".$self->{grep_table_tmp} );
+		$self->logerror( "Table does not exist to install: ".$self->{grep_table_tmp} );
 	}
 
 
@@ -446,10 +501,11 @@ sub install
 
 		if( !$db->has_table( $order_table_tmp ) )
 		{
-			$self->{session}->get_archive->log( "Table does not exist to install: ".$order_table_tmp );
+			$self->logerror( "Table does not exist to install: ".$order_table_tmp );
 			next;
 		}
 
+		$self->log( "Installing table: ".$order_table_tmp );
 		$self->{session}->get_db->install_table( 
 			$order_table_tmp,
 			$order_table );
@@ -459,7 +515,7 @@ sub install
 
 	unless( open( TIMESTAMP, ">$statusfile" ) )
 	{
-		$self->{session}->get_archive->log( "EPrints::Index::install failed to open\n$statusfile\nfor writing." );
+		$self->errorlog( "EPrints::Index::install failed to open $statusfile for writing." );
 	}
 	else
 	{
@@ -636,13 +692,15 @@ sub apply_mapping
 }
 
 
-# This map is used to convert ASCII characters over
-# 127 to characters below 127, in the word index.
+# This map is used to convert Unicode characters
+# to ASCII characters below 127, in the word index.
 # This means that the word Fête is indexed as 'fete' and
 # "fete" or "fête" will match it.
 # There's no reason mappings have to be a single character.
 
 $EPrints::Index::FREETEXT_CHAR_MAPPING = {
+
+	# Basic latin1 mappings
 	latin1("¡") => "!",	latin1("¢") => "c",	
 	latin1("£") => "L",	latin1("¤") => "o",	
 	latin1("¥") => "Y",	latin1("¦") => "|",	
@@ -690,7 +748,14 @@ $EPrints::Index::FREETEXT_CHAR_MAPPING = {
 	latin1("ù") => "u",	latin1("ú") => "u",	
 	latin1("û") => "u",	latin1("ü") => "u",	
 	latin1("ý") => "y",	latin1("þ") => "th",	
-	latin1("ÿ") => "y",	latin1("'") => "" };
+	latin1("ÿ") => "y",	latin1("'") => "",
+
+	# Hungarian characters. 
+	'Å' => "o",	
+	'Å' => "o",  
+	'Å±' => "u",  
+	'Å°' => "u",
+ };
 
 # Minimum size word to normally index.
 $EPrints::Index::FREETEXT_MIN_WORD_SIZE = 3;

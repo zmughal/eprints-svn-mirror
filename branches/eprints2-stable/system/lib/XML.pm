@@ -419,11 +419,14 @@ sub clone_and_own
 ######################################################################
 =pod
 
-=item $string = EPrints::XML::to_string( $node, [$enc] )
+=item $string = EPrints::XML::to_string( $node, [$enc], [$noxmlns] )
 
 Return the given node (and its children) as a UTF8 encoded string.
 
 $enc is only used when $node is a document.
+
+If $stripxmlns is true then all xmlns attributes are removed. Handy
+for making legal XHTML.
 
 Papers over some cracks, specifically that XML::GDOME does not 
 support toString on a DocumentFragment, and that XML::GDOME does
@@ -435,7 +438,7 @@ confuses some browsers. Eg. <br/> vs <br />
 
 sub to_string
 {
-	my( $node, $enc ) = @_;
+	my( $node, $enc, $noxmlns ) = @_;
 
 	$enc = 'utf-8' unless defined $enc;
 	
@@ -486,7 +489,7 @@ sub to_string
 			push @n,">";
 			foreach my $kid ( $node->getChildNodes )
 			{
-				push @n, to_string( $kid );
+				push @n, to_string( $kid, $enc, $noxmlns );
 			}
 			push @n,"</",$tagname,">";
 		}
@@ -495,14 +498,14 @@ sub to_string
 	{
 		foreach my $kid ( $node->getChildNodes )
 		{
-			push @n, to_string( $kid );
+			push @n, to_string( $kid, $enc, $noxmlns );
 		}
 	}
 	elsif( EPrints::XML::is_dom( $node, "Document" ) )
 	{
    		#my $docType  = $node->getDoctype();
 	 	#my $elem     = $node->getDocumentElement();
-		#push @n, $docType->toString, "\n";, to_string( $elem );
+		#push @n, $docType->toString, "\n";, to_string( $elem , $enc, $noxmlns);
 		if( $gdome )
 		{
 			push @n, $node->toStringEnc( $enc );
@@ -667,7 +670,7 @@ END
 	if( $gdome )
 	{
 #		print XMLFILE $node->toStringEnc("utf8",0);
-		print XMLFILE EPrints::XML::to_string( $node, "utf-8" );
+		print XMLFILE EPrints::XML::to_string( $node, "utf-8", 1 );
 	}
 	else
 	{
