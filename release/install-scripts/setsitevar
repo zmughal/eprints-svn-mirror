@@ -15,7 +15,14 @@ while( <IN> )
 	chomp();
 	if( substr( $_, 0, length $variable ) eq $variable )
 	{
-		push @buffer, "$variable = \"$value\";";
+		if ( $value eq "undef" ) 
+		{
+			push @buffer, "$variable = undef;";
+		}
+		else 
+		{
+			push @buffer, "$variable = \"$value\";";
+		}
 	}
 	else
 	{

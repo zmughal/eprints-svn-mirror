@@ -29,6 +29,8 @@ GROUP=@GROUP@
 CREATE_GROUP=@CREATE_GROUP@
 CREATE_GROUP_APP=@CREATE_GROUP_APP@
 DATABASE=@DATABASE@
+DB_HOST=@DB_HOST@
+DB_PORT=@DB_PORT@
 DB_USERNAME=@DB_USERNAME@
 AUTOADMIN=@AUTOADMIN@
 ADMIN=@ADMIN@
@@ -67,6 +69,8 @@ ifeq ($(FULL_INSTALL),1)
 	${PERL} setsitevar to-install "admin" "${ADMIN}"
 	${PERL} setsitevar to-install "host" "${EPRINTS_HOSTNAME}"
 	${PERL} setsitevar to-install "database" "${DATABASE}"
+	${PERL} setsitevar to-install "database_host" "${DB_HOST}"
+	${PERL} setsitevar to-install "database_port" "${DB_PORT}"
 	${PERL} setsitevar to-install "username" "${DB_USERNAME}"
 	${PERL} setsitevar to-install "archive_identifier" "${OAI_IDENTIFIER}"
 	${PERL} setsitevar to-install "eprint_id_stem" "${ID_STEM}"
