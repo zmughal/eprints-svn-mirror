@@ -7,7 +7,7 @@ underwent fundamental changes. We recommend that you do a clean install of EPrin
 
 We hope to provide an v1 to v2 "upgrade assister" at some point.
 
-=head1 Updating from EPrints2 alpha-2 to EPrints 2.0
+=head1 Updating from EPrints2-alpha-2 to EPrints 2.0
 
 Too much of the configuration of the archive has changed to document individually. See
 the C<CHANGELOG> file if you're really interested. If you have more than one
@@ -45,4 +45,23 @@ Now re-run C<generate_apacheconf> and restart apache.
 
 Upgrading from 2.0 should be less painful than this, the config
 files should change less dramatically from now on.
+
+=head1 Updating from EPrints 2.0 to EPrints 2.0.1
+
+These release is mostly a bug fix release. There are a few 
+bugs in the config files which you should fix by hand. 
+After upgrading EPrints, repeat these steps for the cfg
+directory of archive you have:
+
+* In C<citations-en.xml> in the citation for poster, the year field
+is incorrecly named &years; rename it to &year;
+
+* There was a bug in C<ArchiveFreeTextIndexingConfig.pm> which meant
+that "return" was treated as part of a word, rather than a word break. Unless you have modifed that file, just
+replace it with the new one from C</opt/eprints2/defaultcfg/>
+
+* (This is not essential) The title for the abstract block never gets added to the page. Edit C<ArchiveRenderConfig.pm> - search for eprint_fieldname_abstract and add the following line as the next line:
+
+  $page->appendChild( $h2 );
+
 
