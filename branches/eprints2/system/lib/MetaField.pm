@@ -827,11 +827,42 @@ sub sort_values
 						$session,
 						$langid );
 	}
-
-	my @out_list = sort { $o_keys->{$a} cmp $o_keys->{$b} } @{$in_list};
+	my @out_list = sort { _normalcmp($o_keys->{$a}, $o_keys->{$b}) } @{$in_list};
 
 	return \@out_list;
 }
+
+
+######################################################################
+#
+# $text = _normalize( $text )
+#
+# Internal function to assist sorts
+# _normalize code taken from:
+# http://interglacial.com/~sburke/tpj/as_html/tpj14.html
+# by Sean M. Burke
+######################################################################
+
+sub _normalize 
+{
+	my( $in ) = @_;
+  	
+	$in = lc($in);
+	# lc probably didn't catch this
+	$in =~ tr/Ñ/ñ/; 
+	# lc probably failed to turn É to é, etc 
+	$in =~ tr<áéíóúüÁÉÍÓÚÜ>  <aeiouuaeiouu>;
+	$in =~ tr<abcdefghijklmnñopqrstuvwxyz> <\x01-\x1B>; # 1B = 27
+	return $in;
+}
+
+sub _normalcmp
+{
+	my( $a, $b ) = @_;
+
+	return( (_normalize($a) cmp _normalize($b)) or ($a cmp $b ) );
+}
+
 
 
 ######################################################################

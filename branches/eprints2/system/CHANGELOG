@@ -2205,22 +2205,22 @@ PACKAGE: 2.2.99.2
 2005-02-22 cjg
 
  - Fixed issues with secure include for generate_apacheconf
- - Fixed bug in secure server change user [#85]
+ - [#85] Fixed bug in secure server change user 
  - Fixed error in database that failed to strip "00" for month and
     day at the end of year-only (and month-only) dates.
- - Added two missing phrases. [#81] [#87] 
- - Added chkconfig comments to the top of bin/indexer to make it
-    easier to use as a linux service. [#83]
- - Fixed problem with "%20" in uploaded filenames. [#62]
+ - [#81,#87] Added two missing phrases.
+ - [#83] Added chkconfig comments to the top of bin/indexer to make it
+    easier to use as a linux service.
+ - [#62] Fixed problem with "%20" in uploaded filenames. 
 
 2005-02-23 cjg
 
- - Added epindexer as a linux service to go in /etc/init.d, removed
-    chkconfig comments from indexer [#83]
+ - [#83] Added epindexer as a linux service to go in /etc/init.d, 
+    removed chkconfig comments from indexer.
 
 2005-02-25 cjg 
 
- - Added Net::SMTP mail method. [#82]
+ - [#82] Added Net::SMTP mail method.
  - [c] Made it the default.
  - Added a ./configure option to set the SMTP server to use.
  - sendmail is no longer required by ./configure
@@ -2229,11 +2229,17 @@ PACKAGE: 2.2.99.2
 
 2005-03-01 cjg
 
- - When skip_buffer is set, it is now no longer possible to move
-    items into the buffer, they go back to the inbox instead, and
-    also the "buffer" link from the user home page is hidden. [#76]
+ - [#76] When skip_buffer is set, it is now no longer possible to 
+    move items into the buffer, they go back to the inbox instead, 
+    and also the "buffer" link from the user home page is hidden.
  - Changed PDF and Postscript document citation styles to link to 
     free views in addition to acrobat.
+ - Added experimental new XML export format to export_xml
+ - PerlModule installer now attempts to install Net::SMTP
+ - removed unused variable from export_hashes
+ - Added POD for export_xml
+ - [#98] Sort order of menus in view section now treats accented
+    latin characters correctly.
 
 
 

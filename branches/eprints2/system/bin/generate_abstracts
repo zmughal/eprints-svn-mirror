@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl5.8.0 -w -I/opt/ep2stable/perl_lib 
+#!/usr/bin/perl -w -I/opt/ep2stable/perl_lib 
 
 ######################################################################
 #
