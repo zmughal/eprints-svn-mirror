@@ -121,7 +121,7 @@ print OUT <<END;
 \@node top, $firstnode, (dir) ,(dir)
 \@top $DOCTITLE
 
-GNU GNU EPrints 2 Archive software from the University of Southampton.
+GNU EPrints 2 Archive software from the University of Southampton.
 
 The texinfo version is generated automatically from the POD version.
 
