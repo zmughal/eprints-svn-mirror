@@ -175,9 +175,8 @@ You may either use the RPMs (gdome2 and gdome2-devel) or the tarball.
 
 =head2 Additional Perl Modules Required for GDOME support
 
- //XML-LibXML-Common
- //XML-NamespaceSupport
- //XML-SAX
+ XML-LibXML-Common
+ XML-NamespaceSupport
  XML-GDOME
 
 All of which are in http://www.cpan.org/modules/by-module/XML/
