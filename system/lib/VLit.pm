@@ -1,9 +1,5 @@
 ######################################################################
 #
-# EPrints::VLit
-#
-######################################################################
-#
 #  __COPYRIGHT__
 #
 # Copyright 2000-2008 University of Southampton. All Rights Reserved.
@@ -11,50 +7,18 @@
 #  __LICENSE__
 #
 ######################################################################
-
-
-=pod
-
-=head1 NAME
-
-B<EPrints::VLit> - VLit Transclusion Module
-
-=head1 DESCRIPTION
-
-This module is consulted when any document file is served. It allows
-subsets of the whole to be served.
-
-This is an experimental feature. It may be turned off in the configuration
-if you object to it for some reason.
-
-=over 4
-
-=cut
+#
+# This package is still experiemental!
+#
+######################################################################
 
 package EPrints::VLit;
 
 use CGI;
 use Apache;
 use Apache::Constants;
-use Digest::MD5;
-use FileHandle;
 
 use strict;
-use EPrints::XML;
-
-my $TMPDIR = "/tmp/partial";
-
-
-
-######################################################################
-=pod
-
-=item EPrints::VLit::handler( $r )
-
-undocumented
-
-=cut
-######################################################################
 
 sub handler
 {
@@ -113,17 +77,6 @@ sub handler
 
 
 
-
-######################################################################
-=pod
-
-=item EPrints::VLit::send_http_error( $code, $message )
-
-undocumented
-
-=cut
-######################################################################
-
 sub send_http_error
 {
 	my( $code, $message ) = @_;
@@ -143,17 +96,6 @@ sub send_http_error
 END
 }
 
-
-######################################################################
-=pod
-
-=item EPrints::VLit::send_http_header( $type )
-
-undocumented
-
-=cut
-######################################################################
-
 sub send_http_header
 {
 	my( $type ) = @_;
@@ -168,17 +110,6 @@ sub send_http_header
 }
 
 ####################
-
-
-######################################################################
-=pod
-
-=item EPrints::VLit::ls_charrange( $filename, $param, $locspec, $session )
-
-undocumented
-
-=cut
-######################################################################
 
 sub ls_charrange
 {
@@ -238,7 +169,7 @@ sub ls_charrange
 	$fh->read( $data, $readlength );
 	$fh->close();
 
-	my $baseurl = $session->get_archive->get_conf("base_url").$r->uri;
+	my $baseurl = "http://".$r->hostname.$r->uri;
 
 	if( $mode eq "human" || $mode eq "context" || $mode eq 'spanSelect' || $mode eq 'endSelect' || $mode eq 'link' )
 	{
@@ -281,10 +212,6 @@ sub ls_charrange
 			{
 				$url .= "?locspec=charrange:$param&mode=context";
 			}
-			if( $mode eq "context" )
-			{
-				$url .= "?mode=human&locspec=charrange:";
-			}
 			$front = '<big><sup><a href="'.$url.'">trans</a></sup></big> ';
 		}
 		my $copyurl = $session->get_archive()->get_conf( "vlit" )->{copyright_url};
@@ -304,7 +231,7 @@ sub ls_charrange
 		my $title = "Character Range from $offset, length $length";
 		if( $mode eq 'link' )
 		{
-			my $url = $baseurl.'?xuversion=1.0&locspec=charrange:'.($offset)."/".($length);
+			my $url = $baseurl.'?locspec=charrange:'.($offset)."/".($length);
 			my $urlh = $url.'&mode=human';
 			$msg=<<END;
 <p><b>$title</b></p>
@@ -328,7 +255,9 @@ END
 	}
 	elsif( $mode eq "xml-entity" )
 	{
-		my $page = EPrints::XML::make_document();
+		my $page = new XML::DOM::Document();
+		$page->setXMLDecl(
+			$page->createXMLDecl( "1.0", "UTF-8", "yes" ) );
 		my $transclusion = $page->createElement( "transclusion" );
 		$transclusion->setAttribute(
 			"xlmns", 
@@ -340,7 +269,7 @@ END
 		$page->appendChild( $transclusion );	
 
 		send_http_header( "text/xml" );
-		$r->print( EPrints::XML::to_string( $page ) );
+		$r->print( $page->toString );
 	}
 	else
 	{
@@ -349,159 +278,45 @@ END
 	}
 }
 
-
-######################################################################
-=pod
-
-=item EPrints::VLit::ls_area( $file, $param, $resspec, $session )
-
-undocumented
-
-=cut
-######################################################################
-
 sub ls_area
 {
 	my( $file, $param, $resspec, $session ) = @_;
-
-	my $page = 1;
-	my $opts = {
-		page => 1,
-		hrange => { start=>0 },
-		vrange => { start=>0 }
-	};
-
-	my $s;
-	if( $session->param( "scale" ) )
+	
+	unless( $param=~m/^(\d+),(\d+)\/(\d+),(\d+)$/ )
 	{
-		$s = $session->param( "scale" );
-		$s = undef if( $s <= 0 || $s>1000 || $s==100 );
-	}
-
-	foreach( split( "/", $param ) )
-	{
-		my( $key, $value ) = split( "=", $_ );
-		if( $key eq "page" )
-		{
-			unless( $value =~ m/^\d+$/ )
-			{
-				send_http_error( 400, "Bad page id in area locspec" );
-				return;
-			}
-			$opts->{page} = $value;
-		}
-		if( $key eq "hrange" || $key eq "vrange" )
-		{
-			unless( $value =~ m/^(\d+)?,(\d+)?$/ )
-			{
-				send_http_error( 400, "Bad $key in area locspec" );
-				return;
-			}
-			$opts->{$key}->{start} = $1 if( defined $1 );
-			$opts->{$key}->{end} = $2 if( defined $2 );
-		}
+		send_http_error( 400, "Malformed area param: $param" );
+		return;
 	}
 	
-	my $cache = cache_file( "area", $param."/".$s );
-
-	my $dir = $TMPDIR."/area/".Digest::MD5::md5_hex( $file );
-
-
+	my $cache = cache_file( $resspec, $param );
+	
 	unless( -e $cache )
 	{
-		my( $p, $x, $y, $w, $h ) = ( $1, $2, $3, $4, $5 );
+		my( $x, $y, $w, $h ) = ( $1, $2, $3, $4 );
 
-		# pagearea/ exists cus of cache_file called above.
-print STDERR "dir=$dir\n";	
-		if( !-d $dir )
+		my $cmd = "convert -crop ".$w."x".$h."+$x+$y '$file' 'gif:$cache'";
+		`$cmd`;
+
+		if( !-e $cache )
 		{
-print STDERR "mkdir=$dir\n";	
-			mkdir( $dir );
-			my $cmd = "/usr/bin/X11/convert '$file' 'tif:$dir/%d'";
-print STDERR "c1=$cmd\n";
-			`$cmd`;
+			send_http_error( 500, "Error making image" );
+			return;
 		}
 	}
 
-	my $pageindex = $opts->{page} - 1;
-
-	my $crop = "";
-
-	# Don't crop if we is wanting the full page
-	unless( $opts->{hrange}->{start} == 0 && !defined $opts->{hrange}->{end}
-	 && $opts->{vrange}->{start} == 0 && !defined $opts->{vrange}->{end} )
-	{
-		$crop = "-crop ";
-		if( defined $opts->{hrange}->{end} )
-		{
-			$crop .= ($opts->{hrange}->{end} - $opts->{hrange}->{start} + 1);
-		}
-		else
-		{
-			$crop .= '999999';
-		}
-		$crop .= "x";
-		if( defined $opts->{vrange}->{end} )
-		{
-			$crop .= ($opts->{vrange}->{end} - $opts->{vrange}->{start} + 1);
-		}
-		else
-		{
-			$crop .= '999999';
-		}
-		$crop .= "+".$opts->{hrange}->{start};
-		$crop .= "+".$opts->{vrange}->{start};
-	}
-
-	my $cmd;
-	$cmd = "tiffinfo $dir/$pageindex";
-	print STDERR $cmd."\n";
-	my $scale = '';
-	my @d = `$cmd`;
-	foreach( @d )
-	{
-		$scale = '-scale 100%x200%' if m/Resolution: 204, 98 pixels\/inch/;
-	}
-	my $scale2 = "";
-	if( defined $s )
-	{
-		$scale2 = '-scale '.$s.'%x'.$s.'%';
-	}
-
-	$cmd = "/usr/bin/X11/convert $scale $crop $scale2 '$dir/$pageindex' 'png:$cache'";
-	print STDERR $cmd."\n";
-	`$cmd`;
-	
-
-	send_http_header( "image/png" );
-	$cmd = "cat $cache";
-	print STDERR $cmd."\n";
-	print `$cmd`;
+	send_http_header( "image/gif" );
+	print `cat $cache`;
 }
 
-
-
-
-######################################################################
-=pod
-
-=item EPrints::VLit::cache_file( $resspec, $param )
-
-undocumented
-
-=cut
-######################################################################
 
 sub cache_file
 {
 	my( $resspec, $param ) = @_;
 
-	$param = "null" if( $param eq "" );
+	my $TMPDIR = "/tmp/partial";
 
 	$resspec =~ s/[^a-z0-9]/sprintf('_%02X',ord($&))/ieg;
 	$param =~ s/[^a-z0-9]/sprintf('_%02X',ord($&))/ieg;
-
-	mkdir( $TMPDIR ) if( !-d $TMPDIR );
 
 	my $dir = $TMPDIR."/".$resspec;
 	
@@ -512,11 +327,3 @@ sub cache_file
 
 
 1;
-
-######################################################################
-=pod
-
-=back
-
-=cut
-

@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/eprints/perl_lib 
+#!/usr/bin/perl -w -I/opt/eprints/perl_lib
 
 ######################################################################
 #
@@ -94,11 +94,6 @@ Be vewwy vewwy quiet. This option will supress all output unless an error occurs
 =item B<--verbose>
 
 Explain in detail what is going on.
-May be repeated for greater effect.
-
-=item B<--version>
-
-Output version information and exit.
 
 =back   
 
@@ -114,21 +109,17 @@ use strict;
 use Getopt::Long;
 use Pod::Usage;
 
-my $version = 0;
 my $verbose = 0;
 my $quiet = 0;
 my $help = 0;
 my $man = 0;
 
 GetOptions( 
-	'help|?' => \$help,
-	'man' => \$man,
-	'version' => \$version,
+	'help|?' => => \$help,
+	'man' => => \$man,
 	'verbose+' => \$verbose,
-	'silent' => \$quiet,
 	'quiet' => \$quiet
 ) || pod2usage( 2 );
-EPrints::Utils::cmd_version( "generate_static" ) if $version;
 pod2usage( 1 ) if $help;
 pod2usage( -exitstatus => 0, -verbose => 2 ) if $man;
 pod2usage( 2 ) if( scalar @ARGV != 1 ); 
@@ -212,51 +203,63 @@ sub generate_static
 				$$errcnt++;
 				return;
 			}
-
-			if( $mode eq "html" )
+			my $page = ($doc->getElementsByTagName( $mode ))[0];
+			if( !defined $page )
 			{
-				my( $elements ) = EPrints::XML::find_elements( $doc, "html" );
-				if( !defined $elements->{html} )
-				{
-					print STDERR "Error: no html element in ".$File::Find::name."\n";
-					EPrints::XML::dispose( $doc );
-					$$errcnt++;
-					return;
-				}
-				$session->set_page( $session->clone_for_me( $elements->{html}, 1 ) );
+				print STDERR "Error: no $mode element in ".$File::Find::name."\n";
+				$$errcnt++;
+				return;
 			}
+
+			$doc->removeChild( $page );
+			$session->new_page();
+			$session->take_ownership( $page );
+			$doc->dispose();
 
 			if( $mode eq "page" )
 			{
 				my $kid;
-				my( $elements ) = EPrints::XML::find_elements( $doc, "title", "body" );
 
-				my $parts;
-				foreach( "title", "body" )
+				my $title = 
+				   ($page->getElementsByTagName( "title" ))[0];
+				if( !$title )
 				{
-					if( !defined $elements->{$_} )
-					{
-						print STDERR "Error: no $_ element in ".$File::Find::name."\n";
-						EPrints::XML::dispose( $doc );
-						$$errcnt++;
-						return;
-					}
-					$parts->{$_} = $session->make_doc_fragment;
-					
-					foreach $kid ( $elements->{$_}->getChildNodes )
-					{
-						$parts->{$_}->appendChild( 
-							$session->clone_for_me( $kid, 1 ) );
-					}
+					print STDERR "Error: no title element in ".$File::Find::name."\n";
+					$page->dispose();
+					$$errcnt++;
+					return;
+				}
+				my $titlefrag = $doc->createDocumentFragment;
+				foreach $kid ( $title->getChildNodes )
+				{
+					$title->removeChild( $kid );
+					$titlefrag->appendChild( $kid );
 				}
 
-				$session->build_page( 
-					$parts->{title}, 
-					$parts->{body},
-					"static" );
+				
+				my $main = 
+				   ($page->getElementsByTagName( "body" ))[0];
+				if( !defined $main )
+				{
+					print STDERR "Error: no main element in ".$File::Find::name."\n";
+					$page->dispose();
+					$$errcnt++;
+					return;
+				}
+				my $mainfrag = $doc->createDocumentFragment;
+				foreach $kid ( $main->getChildNodes )
+				{
+					$main->removeChild( $kid );
+					$mainfrag->appendChild( $kid );
+				}
+
+				$session->build_page( $titlefrag, $mainfrag );
+				$page->dispose();
 			}
-			EPrints::XML::dispose( $doc );
-print "$destination_filename\n";
+			else 	# $mode is "html"
+			{
+				$session->set_page( $page );	
+			}	
 			$session->page_to_file( $destination_filename );
 
 		}

@@ -1,6 +1,6 @@
 =head1 AUTHOR
 
-This is part of this EPrints 2 system. EPrints 2 is developed by Christopher Gutteridge.
+This is part of this EPrints-2 system. EPrints-2 is written by Christopher Gutteridge. EPrints-1 was written by Robert Tansley.
 
 =head1 VERSION
 
@@ -20,7 +20,7 @@ Should you need a real world address for some reason, EPrints can be contacted i
  SO17 1BJ
  United Kingdom
 
-=head1 COPYRIGHT
+=head1 LICENSE
 
 __LICENSE__
 

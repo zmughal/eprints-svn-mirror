@@ -36,21 +36,20 @@ my( $page, $p, $table, $tr, $td, $th, $a );
 
 $page = $session->make_doc_fragment();
 
+# What can they edit?
+# $page->appendChild( $user->render_value( "editorsubjects" ) );
+
 # Get EPrints in the submission buffer
 my @eprints = $user->get_editable_eprints();
 
 if( scalar @eprints == 0 )
 {
 	# No EPrints
-	$page->appendChild( $session->html_phrase( 
-		"cgi/users/buffer:no_entries",
-		scope=>$user->render_value( "editperms" ) ) );
+	$page->appendChild( $session->html_phrase( "cgi/users/buffer:no_entries" ) );
 }
 else
 {
-	$page->appendChild( $session->html_phrase( 
-		"cgi/users/buffer:buffer_blurb",
-		scope=>$user->render_value( "editperms" ) ) );
+	$page->appendChild( $session->html_phrase( "cgi/users/buffer:buffer_blurb" ) );
 
 	$table = $session->make_element( "table", border=>1, cellpadding=>5 );
 	$page->appendChild( $table );
@@ -78,7 +77,7 @@ else
 		# Title
 		$td = $session->make_element( "td" );
 		$tr->appendChild( $td );
-		$a = $session->render_link( "edit_eprint?dataset=buffer&eprintid=".$e->get_value("eprintid") );
+		$a = $session->render_link( "view_submission?eprintid=".$e->get_value("eprintid") );
 		$a->appendChild( $e->render_description() );
 		$td->appendChild( $a );
 		
@@ -109,8 +108,7 @@ $page->appendChild( $session->html_phrase( "general:userhome_link" ) );
 
 $session->build_page(
 	$session->html_phrase( "cgi/users/buffer:overview_title" ), 
-	$page,
-	"buffer" );
+	$page );
 $session->send_page();
 
 $session->terminate();

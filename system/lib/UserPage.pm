@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::UserPage
+#  View User Record
 #
 ######################################################################
 #
@@ -12,57 +12,12 @@
 #
 ######################################################################
 
-
-=pod
-
-=head1 NAME
-
-B<EPrints::UserPage> - undocumented
-
-=head1 DESCRIPTION
-
-undocumented
-
-=over 4
-
-=cut
-
-######################################################################
-#
-# INSTANCE VARIABLES:
-#
-#  $self->{foo}
-#     undefined
-#
-######################################################################
-
-######################################################################
-#
-#  View User Record
-#
-######################################################################
-#
-#  __LICENSE__
-#
-######################################################################
-
 package EPrints::UserPage;
 
 use EPrints::Session;
 use EPrints::SearchExpression;
 use EPrints::Utils;
 use EPrints::User;
-
-
-######################################################################
-=pod
-
-=item EPrints::UserPage::user_from_param( $session )
-
-undocumented
-
-=cut
-######################################################################
 
 sub user_from_param
 {
@@ -98,17 +53,6 @@ sub user_from_param
 	return $user;
 }
 
-
-######################################################################
-=pod
-
-=item EPrints::UserPage::process( $session, $staff )
-
-undocumented
-
-=cut
-######################################################################
-
 sub process
 {
 	my( $session, $staff ) = @_;
@@ -122,16 +66,14 @@ sub process
 
 	$page = $session->make_doc_fragment();
 
-	my( $userdesc, $title );
 	if( $staff )
-	{
-		( $userdesc, $title ) = $user->render_full();	
+	{	
+		$page->appendChild( $user->render_full() );
 	}
 	else
 	{
-		( $userdesc, $title ) = $user->render();	
+		$page->appendChild( $user->render() );
 	}
-	$page->appendChild( $userdesc );
 
 	$page->appendChild( $session->render_ruler() );
 
@@ -184,18 +126,9 @@ sub process
 	$session->build_page(
 		$session->html_phrase( "lib/userpage:title",
 				name=>$user->render_description() ), 
-		$page,
-		"userpage" );
+		$page );
 	$session->send_page();
 }
 
 
 1;
-
-######################################################################
-=pod
-
-=back
-
-=cut
-

@@ -12,6 +12,8 @@
 #
 ######################################################################
 
+#cjg NOT LANG
+
 use EPrints::Session;
 use EPrints::Database;
 use EPrints::EPrint;
@@ -26,9 +28,8 @@ my $rows;
 # Number of users in each group
 my $total_users = $session->get_archive()->get_dataset( "user" )->count( $session );
 
-my( %num_users, $usertypes, $usertype, $userds, $subds );
+my( %num_users, $usertypes, $usertype, $userds );
 $userds = $session->get_archive()->get_dataset( "user" );
-$subds = $session->get_archive()->get_dataset( "subscription" );
 $usertypes = $userds->get_types();
 foreach $usertype ( @{$usertypes} )
 {
@@ -54,7 +55,11 @@ foreach( @esets )
 	$num_eprints{$_} = $session->get_archive()->get_dataset( $_ )->count( $session );
 }
 
+# Number of subscriptions
+# my $num_subs = $session->get_archive()->get_dataset( "subscription" )->count( $session );
+
 my $db_status = ( $total_users > 0 ? "OK" : "DOWN" );
+
 
 my( $html , $table , $p , $span );
 
@@ -77,9 +82,7 @@ $table->appendChild(
 		$session->html_phrase( "cgi/users/status:database" ),
 		$session->make_text( $db_status ) ) );
 
-$table = $session->make_element( "table", border=>"0" );
-$html->appendChild( $session->html_phrase( "cgi/users/status:usertitle" ) );
-$html->appendChild( $table );
+$table->appendChild( render_empty_row( $session ) );
 
 foreach $usertype ( keys %num_users )
 {
@@ -87,8 +90,7 @@ foreach $usertype ( keys %num_users )
 		render_row( 
 			$session,
 			$session->make_text(
-				$userds->get_type_name( $session, $usertype ).
-					":"), 
+				$userds->get_type_name( $session, $usertype )), 
 			$session->make_text( $num_users{$usertype} ) ) );
 }
 $table->appendChild(
@@ -97,9 +99,7 @@ $table->appendChild(
 		$session->html_phrase( "cgi/users/status:users" ),
 		$session->make_text( $total_users ) ) );
 
-$table = $session->make_element( "table", border=>"0" );
-$html->appendChild( $session->html_phrase( "cgi/users/status:articles" ) );
-$html->appendChild( $table );
+$table->appendChild( render_empty_row( $session ) );
 
 foreach( @esets )
 {
@@ -110,102 +110,44 @@ foreach( @esets )
 			$session->make_text( $num_eprints{$_} ) ) );
 }
 
-$table = $session->make_element( "table", border=>"0" );
-$html->appendChild( $session->html_phrase( "cgi/users/status:diskspace" ) );
-$html->appendChild( $table );
+$table->appendChild( render_empty_row( $session ) );
 
-unless( $EPrints::SystemSettings::conf->{disable_df} )
+my $best_size = 0;
+
+my @dirs = $session->get_archive()->get_store_dirs();
+my $dir;
+foreach $dir ( @dirs )
 {
-	my $best_size = 0;
-
-	my @dirs = $session->get_archive()->get_store_dirs();
-	my $dir;
-	foreach $dir ( @dirs )
-	{
-		my $size = $session->get_archive()->get_store_dir_size( $dir );
-		$table->appendChild(
-			render_row( 
-				$session,
-				$session->html_phrase( 
-					"cgi/users/status:diskfree",
-					dir=>$session->make_text( $dir ) ),
-				$session->html_phrase( 
-					"cgi/users/status:mbfree",
-					mb=>$session->make_text( 
-						int($size/1024) ) ) ) );
-	
-		$best_size = $size if( $size > $best_size );
-	}
-	
-	if( $best_size < $session->get_archive()->get_conf( 
-					"diskspace_error_threshold" ) )
-	{
-		$p = $session->make_element( "p" );
-		$html->appendChild( $p );
-		$p->appendChild( 
-			$session->html_phrase( 
-				"cgi/users/status:out_of_space" ) );
-	}
-	elsif( $best_size < $session->get_archive()->get_conf( 
-						"diskspace_warn_threshold" ) )
-	{
-		$p = $session->make_element( "p" );
-		$html->appendChild( $p );
-		$p->appendChild( 
-			$session->html_phrase( 
-				"cgi/users/status:nearly_out_of_space" ) );
-	}
-}
-
-
-$table = $session->make_element( "table", border=>"0" );
-$html->appendChild( $session->html_phrase( "cgi/users/status:subscriptions" ) );
-$html->appendChild( $table );
-
-$table->appendChild(
-	render_row( 
-		$session,
-		$session->make_doc_fragment,
-		$session->html_phrase( "cgi/users/status:subcount" ),
-		$session->html_phrase( "cgi/users/status:subsent" ) ) );
-foreach my $freq ( "never", "daily", "weekly", "monthly" )
-{
-	my $sent;
-	if( $freq ne "never" )
-	{
-		$sent = EPrints::Subscription::get_last_timestamp( 
-			$session, 
-			$freq );
-	}
-	if( !defined $sent )
-	{
-		$sent = "?";
-	}
-	my $searchexp = new EPrints::SearchExpression(
-		session => $session,
-		dataset => $subds );
-
-	$searchexp->add_field(
-		$userds->get_field( "frequency" ),
-		$freq );
-
-	$searchexp->perform_search();
-	my $n = $searchexp->count;
-	$searchexp->dispose;
-
+	my $size = $session->get_archive()->get_store_dir_size( $dir );
 	$table->appendChild(
 		render_row( 
 			$session,
-			$session->html_phrase( 
-				"subscription_fieldopt_frequency_".$freq ),
-			$session->make_text( $n ),
-			$session->make_text( $sent ) ) );
+			$session->html_phrase( "cgi/users/status:diskfree",
+				dir=>$session->make_text( $dir ) ),
+			$session->html_phrase( "cgi/users/status:mbfree",
+				mb=>$session->make_text( int($size/1024) ) ) ) );
+
+	$best_size = $size if( $size > $best_size );
+}
+
+if( $best_size < $session->get_archive()->get_conf( "diskspace_error_threshold" ) )
+{
+	$p = $session->make_element( "p" );
+	$html->appendChild( $p );
+	$p->appendChild( 
+		$session->html_phrase( "cgi/users/status:out_of_space" ) );
+}
+elsif( $best_size < $session->get_archive()->get_conf( "diskspace_warn_threshold" ) )
+{
+	$p = $session->make_element( "p" );
+	$html->appendChild( $p );
+	$p->appendChild( 
+		$session->html_phrase( "cgi/users/status:nearly_out_of_space" ) );
 }
 
 $session->build_page( 
 	$session->html_phrase( "cgi/users/status:title" ),
-	$html,
-	"status" );
+	$html );
 
 $session->send_page(); 
 
@@ -214,24 +156,30 @@ $session->terminate();
 
 
 
+sub render_empty_row
+{
+	my( $session ) = @_;
+
+	return render_row( 
+		$session,
+		$session->make_text( "" ), 
+		$session->make_text( "" ) );
+}
+	
 	
 # this cjg should probably by styled.
 sub render_row
 {
-	my( $session, $key, @vals ) = @_;
+	my( $session, $key, $val ) = @_;
 	
 	my( $tr, $td );
 	$tr = $session->make_element( "tr" );
-
-	$td = $session->make_element( "td", align=>"right" );
+	$td = $session->make_element( "td" );
 	$tr->appendChild( $td );
 	$td->appendChild( $key );
+	$td = $session->make_element( "td" );
+	$tr->appendChild( $td );
+	$td->appendChild( $val );
 
-	foreach( @vals )
-	{
-		$td = $session->make_element( "td", align=>"center" );
-		$tr->appendChild( $td );
-		$td->appendChild( $_ );
-	}
 	return $tr;
 }

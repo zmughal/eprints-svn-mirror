@@ -57,8 +57,7 @@ sub process
 		$session->html_phrase( 
 			"cgi/user_eprints:title",
 			name=>$user->render_description() ),
-		$page,
-		"user_eprints" );
+		$page );
 	$session->send_page();
 
 }

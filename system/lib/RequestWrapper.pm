@@ -1,9 +1,5 @@
 ######################################################################
 #
-# EPrints::RequestWrapper
-#
-######################################################################
-#
 #  __COPYRIGHT__
 #
 # Copyright 2000-2008 University of Southampton. All Rights Reserved.
@@ -12,34 +8,12 @@
 #
 ######################################################################
 
-
-=pod
-
-=head1 NAME
-
-B<EPrints::RequestWrapper> - Pretends to be an apache request.
-
-=head1 DESCRIPTION
-
-A EPrints::RequestWrapper is created from a real apache request and
-a hash of "dir_config" options. It will pass all methods straight
-through to the origional apache request except for dir_config()
-which it will return its own config instead.
-
-It's a hack used by EPrints::Auth - you really do not want to go
-near it!
-
-=over 4
-
-=cut
-
-
-
 package EPrints::RequestWrapper;
+
+#cjg Apache::FakeRequest...
 
 use strict;
 use Apache;
-
 
 sub new
 {
@@ -51,9 +25,8 @@ sub new
 	return $self;
 }
 
-
 sub dir_config 
-{
+{ 
 	my( $self, $key ) = @_; 
 	if( defined $self->{conf}->{$key} )
 	{
@@ -77,12 +50,5 @@ foreach $thing ( keys %Apache:: )
 	eval $sub;
 }
 
-
 1;
-######################################################################
-=pod
-
-=back
-
-=cut
 

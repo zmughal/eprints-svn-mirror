@@ -1,6 +1,6 @@
-######################################################################
+####################################################################
 #
-# EPrints::UserForm
+#  EPrints User Record Forms
 #
 ######################################################################
 #
@@ -8,40 +8,6 @@
 #
 # Copyright 2000-2008 University of Southampton. All Rights Reserved.
 # 
-#  __LICENSE__
-#
-######################################################################
-
-
-=pod
-
-=head1 NAME
-
-B<EPrints::UserForm> - undocumented
-
-=head1 DESCRIPTION
-
-undocumented
-
-=over 4
-
-=cut
-
-######################################################################
-#
-# INSTANCE VARIABLES:
-#
-#  $self->{foo}
-#     undefined
-#
-######################################################################
-
-####################################################################
-#
-#  EPrints User Record Forms
-#
-######################################################################
-#
 #  __LICENSE__
 #
 ######################################################################
@@ -61,17 +27,6 @@ use strict;
 #  Create a new user form session. If $user is unspecified, the current
 #  user (from Apache cookies) is used.
 #
-######################################################################
-
-
-######################################################################
-=pod
-
-=item $thing = EPrints::UserForm->new( $session, $redirect, $staff, $user )
-
-undocumented
-
-=cut
 ######################################################################
 
 sub new
@@ -102,17 +57,6 @@ sub new
 #
 ######################################################################
 
-
-######################################################################
-=pod
-
-=item $foo = $thing->process
-
-undocumented
-
-=cut
-######################################################################
-
 sub process
 {
 	my( $self ) = @_;
@@ -126,24 +70,22 @@ sub process
 		my( $page, $p, $a );
 
 		$page = $self->{session}->make_doc_fragment();
+
 		if( $self->{staff} )
 		{
-			$page->appendChild( $self->{session}->html_phrase( 
-				"lib/userform:staff_blurb" ) );
+			$page->appendChild( $self->{session}->html_phrase( "lib/userform:staff_blurb" ) );
 		}
 		else
 		{
-			$page->appendChild( $self->{session}->html_phrase( 
-				"lib/userform:blurb" ) );
+			$page->appendChild( $self->{session}->html_phrase( "lib/userform:blurb" ) );
 		}
 
 		$page->appendChild( $self->_render_user_form() );
+
 		$self->{session}->build_page(
-			$self->{session}->html_phrase( 
-				"lib/userform:record_for", 
-				name => $full_name ),
-			$page,
-			"user_form" );
+			$self->{session}->
+				html_phrase( "lib/userform:record_for", name => $full_name ),
+			$page );
 		$self->{session}->send_page();
 
 	}
@@ -169,8 +111,8 @@ sub process
 
 		$page = $self->{session}->make_doc_fragment();
 
-		$page->appendChild( $self->{session}->html_phrase( 
-			"lib/userform:form_incorrect" ) );
+		$page->appendChild( 
+			$self->{session}->html_phrase( "lib/userform:form_incorrect" ) );
 
 		$ul = $self->{session}->make_element( "ul" );
 		my( $problem );
@@ -182,25 +124,20 @@ sub process
 		}
 		$page->appendChild( $ul );
 
-		$page->appendChild( $self->{session}->html_phrase( 
-			"lib/userform:complete_form" ) );
+		$page->appendChild( 
+			$self->{session}->html_phrase( "lib/userform:complete_form" ) );
 		$page->appendChild( $self->{session}->render_ruler() );
 	
 		$page->appendChild( $self->_render_user_form() );
 
 		$self->{session}->build_page(
-			$self->{session}->html_phrase( 
-				"lib/userform:record_for", 
-				name => $full_name ), 
-			$page,
-			"user_form" );
+			$self->{session}->html_phrase( "lib/userform:record_for", name => $full_name ), $page );
 		$self->{session}->send_page();
 	}
 	else 
 	{
-		$self->{session}->render_error( 
-			$self->{session}->html_phrase( 
-				"lib/userform:problem_updating" ),
+		$self->{session}->render_error(
+			$self->{session}->html_phrase( "lib/userform:problem_updating" ),
 			$self->{redirect} );
 	}
 }
@@ -216,14 +153,6 @@ sub process
 #
 ######################################################################
 
-######################################################################
-# 
-# $foo = $thing->_render_user_form
-#
-# undocumented
-#
-######################################################################
-
 sub _render_user_form
 {
 	my( $self ) = @_;
@@ -234,10 +163,8 @@ sub _render_user_form
 	my %hidden = ( "userid"=>$self->{user}->get_value( "userid" ) );
 
 	my $buttons = { update => $self->{session}->phrase( "lib/userform:update_record" ) };
-	my $form = $self->{session}->render_input_form( 
-					staff=>$self->{staff},
-					dataset=>$user_ds,
-					type=>$self->{user}->get_value( "usertype" ),
+
+	return $self->{session}->render_input_form( 
 					fields=>\@fields,
 					values=>$self->{user}->get_data(),
 					show_names=>1,
@@ -245,7 +172,6 @@ sub _render_user_form
 					buttons=>$buttons,
 					default_action => "update",
 					hidden_fields=>\%hidden );
-	return $form;
 }
 
 ######################################################################
@@ -257,14 +183,6 @@ sub _render_user_form
 #
 ######################################################################
 
-
-######################################################################
-# 
-# $foo = $thing->_update_from_form
-#
-# undocumented
-#
-######################################################################
 
 sub _update_from_form
 {
@@ -298,29 +216,4 @@ sub _update_from_form
 }
 
 
-######################################################################
-=pod
-
-=item $foo = $thing->DESTROY
-
-undocumented
-
-=cut
-######################################################################
-
-sub DESTROY
-{
-	my( $self ) = @_;
-
-	EPrints::Utils::destroy( $self );
-}
-
 1;
-
-######################################################################
-=pod
-
-=back
-
-=cut
-

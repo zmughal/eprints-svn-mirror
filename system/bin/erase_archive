@@ -37,6 +37,10 @@ After this script you will need to run B<create_tables> before you can use the a
 
 The ID of the eprint archive to use.
 
+=item B<--rootpass> I<password>
+
+This option allows you to specify the MySQL root password, which will skip the bit where you get asked for it. It's not very secure to put a root password on the command line. Consider yourself warned...
+
 =back
 
 =head1 OPTIONS
@@ -58,11 +62,6 @@ Be vewwy vewwy quiet. This option will supress all output unless an error occurs
 =item B<--verbose>
 
 Explain in detail what is going on.
-May be repeated for greater effect.
-
-=item B<--version>
-
-Output version information and exit.
 
 =item B<--force>
 
@@ -75,10 +74,6 @@ Don't delete the database tables.
 =item B<--noerasefiles>
 
 Don't erase the document and website files. 
-
-=item B<--rootpass> I<password>
-
-This option allows you to specify the MySQL root password, which will skip the bit where you get asked for it. It's not very secure to put a root password on the command line. Consider yourself warned...
 
 =back   
 
@@ -104,7 +99,6 @@ use strict;
 use Getopt::Long;
 use Pod::Usage;
 
-my $version = 0;
 my $verbose = 0;
 my $quiet = 0;
 my $force = 0;
@@ -115,18 +109,15 @@ my $erasedb = 1;
 my $erasefiles = 1;
 
 GetOptions( 
-	'help|?' => \$help,
-	'man' => \$man,
+	'help|?' => => \$help,
+	'man' => => \$man,
 	'force' => \$force , 
 	'erasedb!' => \$erasedb , 
 	'erasefiles!' => \$erasefiles , 
 	'rootpass=s', \$rootpass,
-	'version' => \$version,
 	'verbose+' => \$verbose,
-	'silent' => \$quiet,
 	'quiet' => \$quiet
 ) || pod2usage( 2 );
-EPrints::Utils::cmd_version( "erase_archive" ) if $version;
 pod2usage( 1 ) if $help;
 pod2usage( -exitstatus => 0, -verbose => 2 ) if $man;
 pod2usage( 2 ) if( scalar @ARGV != 1 ); 
@@ -139,12 +130,7 @@ $noise = 1+$verbose if( $verbose );
 $|=1;
 
 my $archive = EPrints::Archive->new_archive_by_id( $ARGV[0], 1 );
-unless( defined $archive )
-{
-	print STDERR "Unknown archive id: $ARGV[0]\n";
-	exit 1;
-}
-
+exit( 1 ) unless( defined $archive );
 
 my $documents_path = $archive->get_conf( "documents_path" );
 my $htdocs_path = $archive->get_conf( "htdocs_path" );
@@ -157,7 +143,6 @@ unless( $force )
 	print "You are about to erase:\n";
 	if( $erasedb ) { print "- all database tables\n"; }
 	if( $erasefiles ) { print "- all eprint files\n"; }
-	print "From archive: ".$archive->get_id."\n";
 	print "Are you sure you want this to happen? (yes/no)\n";
 	
 	$input = <STDIN>;

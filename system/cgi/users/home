@@ -66,7 +66,7 @@ $page = $session->make_doc_fragment();
 ### Welcome author blurb
 $page->appendChild( $session->html_phrase( "cgi/users/home:intro" ) );
 
-if( $valid_user && $user->has_priv( "deposit" ) )
+if( $valid_user )
 {
 	### Workspace
 	$page->appendChild(
@@ -79,43 +79,47 @@ if( $valid_user && $user->has_priv( "deposit" ) )
 	$page->appendChild( $session->render_ruler() );
 }
 
+$dl = $session->make_element( "dl" );
+
+if( $valid_user )
+{ #cjg THIS IS NOT DONE
+	### View items in archive
+	#print "<DL><DT><STRONG><A HREF=\"review\">";
+	#$session->phrase( "cgi/users/home:review" );
+	#print "</A></STRONG></DT>\n";
+	#print "<DD><P>";
+	#$session->phrase( "cgi/users/home:review_info" );
+	#if( $session->get_archive()->get_conf( "allow_user_removal" ) ) {
+		#$session->phrase( "cgi/users/home:remove_info" );
+	#}
+	#print "</P></DD>\n";
+}
+
 if( !$valid_user )
 {
 	### User needs to update their record
 	$page->appendChild( $session->html_phrase( "cgi/users/home:before" ) );
 }
 
-$dl = $session->make_element( "dl" );
-
 ### Change author record
 
-unless( $user->has_priv( "no_edit_own_record" ) )
-{
-	$dt = $session->make_element( "dt" );
-	$a = $session->render_link( "record" );
-	$a->appendChild( $session->html_phrase( "cgi/users/home:change_link" ) );
-	$dt->appendChild( $a );
-	$dl->appendChild( $dt );
-	$dd = $session->make_element( "dd" );
-	$dd->appendChild( $session->html_phrase( "cgi/users/home:change_info" ) );
-	$dl->appendChild( $dd );
-}
+$dt = $session->make_element( "dt" );
+$a = $session->render_link( "record" );
+$a->appendChild( $session->html_phrase( "cgi/users/home:change_link" ) );
+$dt->appendChild( $a );
+$dl->appendChild( $dt );
+$dd = $session->make_element( "dd" );
+$dd->appendChild( $session->html_phrase( "cgi/users/home:change_info" ) );
 
-my $changeuserpath = "/change_user/".($user->get_value( "username" ));
-my $securehost = $session->get_archive->get_conf( "securehost" );
-my $securepath = $session->get_archive->get_conf( "securepath" );
-if( EPrints::Utils::is_set( $securehost ) )
-{
-	$changeuserpath = $securepath.$changeuserpath;
-}
+$dl->appendChild( $dd );
 
 my $tools = [
 	### Change subscription options
-	{ 
-		code=>"subscribe",
-		page=>"subscribe",
-		priv=>"subscription"
-	},
+#	{ 
+#		code=>"subscribe",
+#		page=>"subscribe",
+#		priv=>"subscription"
+#	},
 	### View the archive status page
 	{ 
 		code=>"status",
@@ -164,10 +168,10 @@ my $tools = [
 		page=>"staff/edit_subject",
 		priv=>"edit-subject"
 	},
-	### Change the current login user
+	### Use the Subject Edit Tool
 	{
 		code=>"change_user",
-		page=>$changeuserpath,
+		page=>"/change_user/".($user->get_value( "username" )),
 		priv=>"change-user"
 	}
 ];
@@ -194,11 +198,8 @@ if( $valid_user )
 $page->appendChild( $dl );
 
 $session->build_page( 
-		$session->html_phrase( 
-			"cgi/users/home:user_home", 
-			name => $fullname ),
-		$page,
-		"user_home" );
+		$session->html_phrase( "cgi/users/home:user_home", name => $fullname ),
+		$page );
 $session->send_page();
 
 $session->terminate();

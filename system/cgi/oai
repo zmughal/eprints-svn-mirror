@@ -19,7 +19,6 @@
 
 #cjg need to recomment all subs
 
-
 use EPrints::Database;
 use EPrints::EPrint;
 use EPrints::OpenArchives;
@@ -40,6 +39,7 @@ my $session = new EPrints::Session();
 Apache::exit( 0 ) unless( defined $session );
 # What are we begin asked?
 my $verb = $session->param( "verb" );
+
 
 if( !defined $verb ) 
 {
@@ -125,10 +125,10 @@ sub get_record
 
 	my $eprint = new EPrints::EPrint(
 		$session,
+		$session->get_archive()->get_dataset( "archive" ),
 		EPrints::OpenArchives::from_oai_identifier(
 			$session,
-			$identifier ),
-		$session->get_archive()->get_dataset( "archive" ) );
+			$identifier ) );
 
 	if( defined $eprint )
 	{
@@ -184,7 +184,7 @@ sub identify
 	$response->appendChild( $session->render_data_element(
 		2,
 		"protocolVersion",
-		"1.1" ) );
+		$EPrints::OpenArchives::OAI_VERSION ) );
 
 	$response->appendChild( $session->render_data_element(
 		2,
@@ -375,7 +375,7 @@ sub get_searchexp_from_params
 			{
 				my $type = $field->get_type();
 				EPrints::Config::abort( <<END );
-Cannot generate oai set for field "$_"
+Cannot generate browse pages for field "$_"
 - Type "$type" cannot be browsed.
 END
 				return;
@@ -406,7 +406,7 @@ END
 			send_http_error( $session, 400, "Invalid until parameter" );
 			return;
 		}
-		$date_range = "-" if( !defined $date_range );
+		$date_range.= "-" if( !defined $date_range );
 		$date_range.= $end_date;
 	}
 	
@@ -414,7 +414,8 @@ END
 	{
 		$searchexp->add_field( 
 				$ds->get_field( "datestamp" ), 
-				$date_range );
+				$value,
+				"EX" );
 	}
 
 	return( $searchexp, 0, $metadata_format );
@@ -580,10 +581,10 @@ sub list_metadata_formats
 	{
 		my $eprint = new EPrints::EPrint(
 			$session,
+			$session->get_archive()->get_dataset( "archive" ),
 			EPrints::OpenArchives::from_oai_identifier(
 				$session,
-				$identifier ),
-			$session->get_archive()->get_dataset( "archive" ) );
+				$identifier ) );
 
 		if( defined $eprint )
 		{
@@ -680,10 +681,10 @@ sub list_sets
 			}
 			else
 			{
-				my @v = $field->get_values( $session, $ds );
+				my @v = $field->get_values( $session );
 				my $delfield = $field->clone();
 				$delfield->set_dataset( $ds_del );
-				push @v, $delfield->get_values( $session, $ds_del );
+				push @v, $delfield->get_values( $session );
 				foreach( @v )
 				{
 					my $key = EPrints::OpenArchives::encode_setspec( $_ );
@@ -811,9 +812,9 @@ sub send_response
 <?xml version="1.0" encoding="UTF-8" ?>
 
 END
-	print EPrints::XML::to_string( $response );
+	print $response->toString();
 
-	EPrints::XML::dispose( $response );
+	$response->dispose();
 }
 	
 

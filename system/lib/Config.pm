@@ -1,9 +1,5 @@
 ######################################################################
 #
-# EPrints::Config
-#
-######################################################################
-#
 #  __COPYRIGHT__
 #
 # Copyright 2000-2008 University of Southampton. All Rights Reserved.
@@ -12,121 +8,39 @@
 #
 ######################################################################
 
-
-=pod
-
-=head1 NAME
-
-B<EPrints::Config> - software configuration handler
-
-=head1 DESCRIPTION
-
-This module handles loading the main configuration for an instance
-of the eprints software - such as the list of language id's and 
-the top level configurations for archives - the XML files in /archives/
-
-=over 4
-
-=cut
-
-######################################################################
-
 #cjg SHOULD BE a way to configure an archive NOT to load the
 # module except on demand (for buggy / testing ones )
+
+
+# This module loads and sets information for eprints not
+# specific to any archive.
 
 package EPrints::Config;
 use EPrints::Utils;
 use EPrints::SystemSettings;
-use EPrints::XML;
-
 use Unicode::String qw(utf8 latin1);
+
 use Data::Dumper;
+use XML::DOM;
 use Cwd;
 
 
 BEGIN {
 	# Paranoia: This may annoy people, or help them... cjg
 
-	# mod_perl will probably be running as root for the main httpd.
-	# The sub processes should run as the same user as the one specified
-	# in $EPrints::SystemSettings
-	# An exception to this is running as root (uid==0) in which case
-	# we can become the required user.
-	unless( $ENV{MOD_PERL} ) 
+	unless( $ENV{MOD_PERL} ) # mod_perl will probably be running as root for the main httpd.
 	{
-		#my $req($login,$pass,$uid,$gid) = getpwnam($user)
-		my $req_username = $EPrints::SystemSettings::conf->{user};
-		my $req_group = $EPrints::SystemSettings::conf->{group};
-		my $req_uid = (getpwnam($req_username))[2];
-		my $req_gid = (getgrnam($req_group))[2];
-
-		my $username = (getpwuid($>))[0];
-		if( $> == 0 )
+		if( (getpwuid($>))[0] ne $EPrints::SystemSettings::conf->{user})
 		{
-			# Special case: Running as root, we change the 
-			# effective UID to be the one required in
-			# EPrints::SystemSettings
-
-			# remember kids, change the GID first 'cus you
-			# can't after you change from root UID.
-			$) = $( = $req_gid;
-			$> = $< = $req_uid;
+			abort( "We appear to be running as user: ".(getpwuid($>))[0]."\n"."We expect to be running as user: ".$EPrints::SystemSettings::conf->{user} );
 		}
-		elsif( $username ne $req_username )
-		{
-			abort( 
-"We appear to be running as user: ".$username."\n".
-"We expect to be running as user: ".$req_username );
-		}
-		# otherwise ok.
 	}
 
 	# abort($err) Defined here so modules can abort even at startup
-######################################################################
-=pod
-
-=item EPrints::Config::abort( $msg )
-
-Print an error message and exit. If running under mod_perl then
-print the error as a webpage and exit.
-
-This subroutine is loaded before other modules so that it may be
-used to report errors when initialising modules.
-
-=cut
-######################################################################
 
 	sub abort
 	{
 		my( $errmsg ) = @_;
-
-		my $r;
-		if( $ENV{MOD_PERL} )
-		{
- 			$r = Apache->request();
-		}
-		if( defined $r )
-		{
-			# If we are running under MOD_PERL
-			# AND this is actually a request, not startup,
-			# then we should print an explanation to the
-			# user in addition to logging to STDERR.
-
-			$r->content_type( 'text/html' );
-			$r->send_http_header;
-			print <<END;
-<html>
-  <head>
-    <title>EPrints System Error</title>
-  </head>
-  <body>
-    <h1>EPrints System Error</h1>
-    <p><tt>$errmsg</tt></p>
-  </body>
-</html>
-END
-		}
-
 		
 		print STDERR <<END;
 	
@@ -160,7 +74,7 @@ my @LANGLIST;
 my @SUPPORTEDLANGLIST;
 my %LANGNAMES;
 my $file = $SYSTEMCONF{cfg_path}."/languages.xml";
-my $lang_doc = EPrints::XML::parse_xml( $file );
+my $lang_doc = parse_xml( $file );
 my $top_tag = ($lang_doc->getElementsByTagName( "languages" ))[0];
 if( !defined $top_tag )
 {
@@ -179,7 +93,7 @@ foreach $lang_tag ( $top_tag->getElementsByTagName( "lang" ) )
 	}
 	$LANGNAMES{$id} = $val;
 }
-EPrints::XML::dispose( $lang_doc );
+$lang_doc->dispose();
 
 ###############################################
 
@@ -191,7 +105,7 @@ while( $file = readdir( CFG ) )
 	next unless( $file=~m/^(.*)\.xml$/ );
 	my $fpath = $SYSTEMCONF{arc_path}."/".$file;
 	my $id = $1;
-	my $conf_doc = EPrints::XML::parse_xml( $fpath );
+	my $conf_doc = parse_xml( $fpath );
 	if( !defined $conf_doc )
 	{
 		print STDERR "Error parsing file: $fpath\n";
@@ -201,13 +115,13 @@ while( $file = readdir( CFG ) )
 	if( !defined $conf_tag )
 	{
 		print STDERR "In file: $fpath there is no <archive> tag.\n";
-		EPrints::XML::dispose( $conf_doc );
+		$conf_doc->dispose();
 		next;
 	}
 	if( $id ne $conf_tag->getAttribute( "id" ) )
 	{
 		print STDERR "In file: $fpath id is not $id\n";
-		EPrints::XML::dispose( $conf_doc );
+		$conf_doc->dispose();
 		next;
 	}
 	my $ainfo = {};
@@ -217,20 +131,15 @@ while( $file = readdir( CFG ) )
 			"host", "urlpath", "configmodule", "port", 
 			"archiveroot", "dbname", "dbhost", "dbport",
 			"dbsock", "dbuser", "dbpass", "defaultlanguage",
-			"adminemail", "securehost", "securepath" )
+			"adminemail" )
 	{
 		my $tag = ($conf_tag->getElementsByTagName( $tagname ))[0];
 		if( !defined $tag )
 		{
-			if(  $tagname eq "securehost" || $tagname eq "securepath" )
-			{
-				next;
-			}
-
 			EPrints::Config::abort( "In file: $fpath the $tagname tag is missing." );
 		}
 		my $val = "";
-		foreach( $tag->getChildNodes ) { $val.=EPrints::XML::to_string( $_ ); }
+		foreach( $tag->getChildNodes ) { $val.=$_->toString; }
 		$ainfo->{$tagname} = $val;
 	}
 	unless( $ainfo->{archiveroot}=~m#^/# )
@@ -241,53 +150,38 @@ while( $file = readdir( CFG ) )
 	{
 		$ainfo->{configmodule}= $ainfo->{archiveroot}."/".$ainfo->{configmodule};
 	}
-	$ARCHIVEMAP{$ainfo->{host}.$ainfo->{urlpath}} = $id;
-	if( EPrints::Utils::is_set( $ainfo->{securehost} ) )
-	{
-		$ARCHIVEMAP{$ainfo->{securehost}.$ainfo->{securepath}} = $id;
-	}
+	$ARCHIVEMAP{$ainfo->{host}.":".$ainfo->{port}.$ainfo->{urlpath}} = $id;
 	$ainfo->{aliases} = [];
 	foreach $tag ( $conf_tag->getElementsByTagName( "alias" ) )
 	{
 		my $alias = {};
 		my $val = "";
-		foreach( $tag->getChildNodes ) { $val.=EPrints::XML::to_string( $_ ); }
+		foreach( $tag->getChildNodes ) { $val.=$_->toString; }
 		$alias->{name} = $val; 
 		$alias->{redirect} = ( $tag->getAttribute( "redirect" ) eq "yes" );
 		push @{$ainfo->{aliases}},$alias;
-		$ARCHIVEMAP{$alias->{name}.$ainfo->{urlpath}} = $id;
+		$ARCHIVEMAP{$alias->{name}.":".$ainfo->{port}.$ainfo->{urlpath}} = $id;
 	}
 	$ainfo->{languages} = [];
 	foreach $tag ( $conf_tag->getElementsByTagName( "language" ) )
 	{
 		my $val = "";
-		foreach( $tag->getChildNodes ) { $val.=EPrints::XML::to_string( $_ ); }
+		foreach( $tag->getChildNodes ) { $val.=$_->toString; }
 		push @{$ainfo->{languages}},$val;
 	}
 	foreach $tag ( $conf_tag->getElementsByTagName( "archivename" ) )
 	{
 		my $val = "";
-		foreach( $tag->getChildNodes ) { $val.=EPrints::XML::to_string( $_ ); }
+		foreach( $tag->getChildNodes ) { $val.=$_->toString; }
 		my $langid = $tag->getAttribute( "language" );
 		$ainfo->{archivename}->{$langid} = $val;
 	}
 	$ARCHIVES{$id} = $ainfo;
-	EPrints::XML::dispose( $conf_doc );
+	$conf_doc->dispose();
 }
 closedir( CFG );
 
-
-
-######################################################################
-=pod
-
-=item $archive = EPrints::Config::get_archive_config( $id )
-
-Returns a hash of the basic configuration for the archive with the
-given id. This hash will include the properties from SystemSettings. 
-
-=cut
-######################################################################
+###############################################
 
 sub get_archive_config
 {
@@ -296,55 +190,17 @@ sub get_archive_config
 	return $ARCHIVES{$id};
 }
 
-
-######################################################################
-=pod
-
-=item @languages = EPrints::Config::get_languages
-
-Return a list of all known languages ids (from languages.xml).
-
-=cut
-######################################################################
-
 sub get_languages
 {
 	return @LANGLIST;
 }
-
-
-######################################################################
-=pod
-
-=item @languages = EPrints::Config::get_supported_languages
-
-Return a list of ids of all supported languages. 
-
-EPrints does not yet formally support languages other then "en". You
-have to configure others yourself. This will be fixed in a later 
-version.
-
-=cut
-######################################################################
 
 sub get_supported_languages
 {
 	return @SUPPORTEDLANGLIST;
 }
 
-
-######################################################################
-=pod
-
-=item $archiveid = EPrints::Config::get_id_from_host_and_path( $hostpath )
-
-Return the archiveid (if any) of the archive which belongs on the 
-virutal host specified by $hostpath. eg. "www.fishprints.com/perl/search"
-
-=cut
-######################################################################
-
-sub get_id_from_host_and_path
+sub get_id_from_host_port_path
 {
 	my( $hostpath ) = @_;
 
@@ -359,37 +215,41 @@ sub get_id_from_host_and_path
 	return undef;
 }
 
-
-######################################################################
-=pod
-
-=item @ids = EPrints::Config::get_archive_ids( get_archive_ids )
-
-Return a list of ids of all archives belonging to this instance of
-the eprints software.
-
-=cut
-######################################################################
-
 sub get_archive_ids
 {
 	return keys %ARCHIVES;
 }
 
+sub parse_xml
+{
+	my( $file, %config ) = @_;
 
+	my( %c ) = (
+		ParseParamEnt => 1,
+		ErrorContext => 2,
+		NoLWP => 1 );
 
-######################################################################
-=pod
+	foreach( keys %config ) { $c{$_}=$config{$_}; }
 
-=item $arc_conf = EPrints::Config::load_archive_config_module( $id )
+	my $parser = XML::DOM::Parser->new( %c );
 
-Load the full configuration for the specified archive unless the 
-it has already been loaded.
+	unless( open( XML, $file ) )
+	{
+		print STDERR "Error opening XML file: $file\n";
+		return;
+	}
+	my $doc = eval { $parser->parse( *XML ); };
+	close XML;
+	if( $@ )
+	{
+		my $err = $@;
+		$err =~ s# at /.*##;
+		print STDERR "Error parsing XML $file ($err)";
+		return;
+	}
 
-Return a reference to a hash containing the full archive configuration. 
-
-=cut
-######################################################################
+	return $doc;
+}
 
 sub load_archive_config_module
 {
@@ -400,49 +260,25 @@ sub load_archive_config_module
 
 	my $prev_dir = cwd;
 	
-	chdir $info->{archiveroot};
-	my $file = $info->{configmodule};
-	my $return = do $file;
+	eval { 
+		chdir $info->{archiveroot};
+		require $info->{configmodule};
+	};
+
 	chdir $prev_dir;
 
-	unless( $return )
+	if( $@ )
 	{
-		my $errors = "couldn't run $file";
-		$errors = "couldn't do $file:\n$!" unless defined $return;
-		$errors = "couldn't parse $file:\n$@" if $@;
-		print STDERR <<END;
-------------------------------------------------------------------
----------------- EPrints System Warning --------------------------
-------------------------------------------------------------------
-Failed to load config module for $id
-Main Config File: $info->{configmodule}
-Errors follow:
-------------------------------------------------------------------
-$errors
-------------------------------------------------------------------
-END
+		$@=~s#\nCompilation failed in require.*##;
+		print STDERR "Failed to load config module for $id\nFile: $info->{configmodule}\nError: $@";
 		return;
 	}
-	
 
 	my $function = "EPrints::Config::".$id."::get_conf";
 	my $config = &{$function}( $info );
 
 	return $config;
 }
-
-
-######################################################################
-=pod
-
-=item $title = EPrints::Config::lang_title( $id )
-
-Return the title of a given language as a UTF-8 encoded string. 
-
-For example: "en" would return "English".
-
-=cut
-######################################################################
 
 sub lang_title
 {
@@ -451,32 +287,11 @@ sub lang_title
 	return $LANGNAMES{$id};
 }
 
-
-######################################################################
-=pod
-
-=item $value = EPrints::Config::get( $confitem )
-
-Return the value of a given eprints configuration item. These
-values are obtained from SystemSettings plus a few extras for
-paths.
-
-=cut
-######################################################################
-
 sub get
 {
-	my( $confitem ) = @_;
+	my( $id ) = @_;
 
-	return $SYSTEMCONF{$confitem};
+	return $SYSTEMCONF{$id};
 }
 
 1;
-
-######################################################################
-=pod
-
-=back
-
-=cut
-

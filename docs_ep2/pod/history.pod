@@ -49,27 +49,15 @@ EPrints 2 Alpha-2 (Pepperoni) released.
 
 EPrints 2.0 (Olive) released.
 
-=item B<Apr 17 2002>
-
-EPrints 2.0.1 (Tuna) released. Mostly bugfixes.
-
-=item B<July 1 2002>
-
-EPrints offically joins GNU Project.
-
-=item B<July 4 2002>
-
-GNU EPrints 2.1 (Pineapple) released. Added subscriptions and OAI 2.0 support.
-
-=item B<October 31 2002>
-
-GNU EPrints 2.2 (Pumpkin) released. Added subject editors and GDOME support.
-
 =back
 
 =head1 What next?
 
 Nothing is perfect. I wish it was but wishing don't make it so.
+
+I anticipate releasing 2.0.1 to clean up any minor issues. It's not been tested under Solaris, so there may be a few minor tweaks required there.
+
+Sometime later when I've actually caught up with my sleep and stuff I'll start work on version 2.1 which will add some features.
 
 Which features are added next will depend on expedience and what feedback I get. If you really care, let me know at support@eprints.org
 
@@ -81,9 +69,21 @@ Which features are added next will depend on expedience and what feedback I get.
 
 Methods for improting bibtex data into the system, and possibly exporting the metadata as bibtex. Possibly other metadata schemes such as RIS.
 
+=item Subject Editors
+
+Editors which only see (and can edit) items in a given subject or child thereof. Which should make admin on a larger system easier.
+
+=item Alerts/Subscriptions
+
+Email messaging once a day/week/month if there have been any additions to a predefined search. eg. User bob sets his search to items in the subject area "Theoretical Physics" and frequency = "once a week". Once a week bob is mailed list of citation and urls for any records which have been added to the archive in the past 7 days which match that search.
+
+=item Editor Alerts
+
+A combination of the previous two features mentioned. Emailing editors when there are items for them to approve.
+
 =item Translations
 
-Translations of the phrase file into other languages. Possibly also the citatinos, templates & default static pages. Mail them to me (support@eprints.org) and I'll add them to the eprints website.
+Translations of the phrase file into other languages. Possibly also the citatinos, templates & default static pages.
 
 =item MathML Handling
 
@@ -93,6 +93,10 @@ Possibly like the latex handling in 2.0. I don't know enough about MathML to dec
 
 There are already import & export functions but they are a bit rough and ready - I'd like them to be cleaner.
 
+=item Probity
+
+A mechanism for being able to prove (legally!) that a given record has been in the archive since the date it was added. See http://www.probity.org/ for more info.
+
 =item Other Default Configurations
 
 The current default is geared at an archive of research papers or pre-prints. It would be nice to have some different initial configurations for example for experimental data.
@@ -101,7 +105,9 @@ The current default is geared at an archive of research papers or pre-prints. It
 
 That's just really time consuming, but useful. 
 
-Update: It's about 50% done now, and yes - it's really time consuming. Use C<perldoc Foo.pm> on an eprints module to see the API documentation.
+=item EPrints v1 Snarfer
+
+This would be a script which would examine an eprints v1 system running on the same machine and build an eprints 2 archive - both configuration and import the data. It won't handle changes to the validation and rendering configuration, that's just too darn hard!
 
 =item Mirroring
 
@@ -113,7 +119,7 @@ A more complex approach to the "buffer" which allows items to be assigned to rev
 
 =item Citation Scanning/Linking
 
-Software to scan the full texts of documents looking for citations and attempt to link them to (a) other items in the archive and (b) use a third party system to link to external items. We do now have the paracite plugin but it's not enough yet.
+Software to scan the full texts of documents looking for citations and attempt to link them to (a) other items in the archive and (b) use a third party system to link to external items.
 
 =item People who read this eprint also read...
 
@@ -131,37 +137,17 @@ A configuration tool which can do really complex stuff like add and remove field
 
 For complex data structures. For example if you want a list of "incidents" which have a date, time and description as an item. These will be indefinitely nest-able.
 
+=item EPrints on a CD
+
+A CD-ROM which can be run on a fresh (RedHat?) Linux install which turns it into an eprints box with apache and mysql correctly configured, etc.
+
 =item Chat Forums
 
-A slashdot style chat at the bottom of each abstract page. Possibly using a seperate system such as a PHP bulletin board. Possibly using the d3e system developed at open.ac.uk.
-
-=item Web Log Munger
-
-Something which takes the logs from the website and produces nicely styled inforamtion on how many hits various documents get. Could possibly be a "contributed" feature rather than part of the core system.
-
-=item Multilple Sites, one archive
-
-Kind of like the multilanguage support. This would allow more than one site to
-have a single back-end database. For example you may want to present a subset of your archive on a seperate URL (in addition to the normal one) with different branding. The multi-lingual site options currently available would be replaced (neatly) with this more comprehensive approach.
-
-=item Fully Customisable Workflow
-
-So that every stage of submission can be configured. This would allow complex approval mechanisms and peer review etc. Creating a configuration would be very hard but changing an existing one would be quite easy. We could supply multiple configurations for basic variations; subject archive, online journal, institutional archive etc. 
-
-=item Interoperability with Similar Projects
-
-There are other open source and free projects with things in common with GNU EPrints. These include D-Space (from MIT and HP) and Greenstone (University of Waikato, NZ). We have spoken with members of both projects and hope to make ways to share data between these systems. I'm also hoping to make it possible for GNU EPrints to use Greenstone's plugin system for document converters. 
-
-=item Collection of contributed tools on software.eprints.org
-
-This is where I ask for help! If you have some interesting code, useful scripts, unusual or innovative configuration, translation, subject configuration for a specific subject area... etc. Please send it to us at support@eprints.org with an explanation of what it is, who wrote it, where, and who has copyright on it.
+A slashdot style chat at the bottom of each abstract page. Possibly using a seperate system such as a PHP bulletin board.
 
 =back
 
 =head2 Why do the milestones all have silly names?
 
-We wanted to give each stage a name, it makes it easier to talk about. We didn't want a logical order as we are likely to invent sub-milestones between them. We just picked a set of words we liked, and we like pizza. 
-
-UPDATE. Pumpkins don't usually go on pizza but it seemed appropriate for the date.
-
+We wanted to give each stage a name, it makes it easier to talk about. We didn't want a logical order as we are likely to invent sub-milestones between them. We just picked a set of words we liked, and we like pizza.
 

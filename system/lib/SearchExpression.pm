@@ -1,6 +1,8 @@
 ######################################################################
 #
-# EPrints::SearchExpression
+#  Search Expression
+#
+#   Represents a whole set of search fields.
 #
 ######################################################################
 #
@@ -8,45 +10,6 @@
 #
 # Copyright 2000-2008 University of Southampton. All Rights Reserved.
 # 
-#  __LICENSE__
-#
-######################################################################
-
-
-# SHOULD HAVE SOME KIND OF cache setting if order is specified or we
-# plan to map!
-
-=pod
-
-=head1 NAME
-
-B<EPrints::SearchExpression> - undocumented
-
-=head1 DESCRIPTION
-
-undocumented
-
-=over 4
-
-=cut
-
-######################################################################
-#
-# INSTANCE VARIABLES:
-#
-#  $self->{foo}
-#     undefined
-#
-######################################################################
-
-######################################################################
-#
-#  Search Expression
-#
-#   Represents a whole set of search fields.
-#
-######################################################################
-#
 #  __LICENSE__
 #
 ######################################################################
@@ -65,20 +28,42 @@ use strict;
 
 $EPrints::SearchExpression::CustomOrder = "_CUSTOM_";
 
+######################################################################
+#
+# $exp = new( $session,
+#             $dataset,
+#             $allow_blank,
+#             $satisfy_all,
+#             $fields )
+#
+#  Create a new search expression, to search $table for the MetaField's
+#  in $fields (an array ref.) Blank SearchExpressions are made for each
+#  of these fields.
+#
+#  If $allowblank is non-zero, the searcher can leave all fields blank
+#  in order to retrieve everything. In some cases this might be a bad
+#  idea, for instance letting someone retrieve every eprint in the
+#  archive might be a bit silly and lead to performance problems...
+#
+#  If $satisfyall is non-zero, then a retrieved eprint must satisy
+#  all of the conditions set out in the search fields. Otherwise it
+#  can satisfy any single specified condition.
+#
+#  $orderby specifies the possibilities for ordering the expressions,
+#  in the form of a hash ref. This maps a text description of the ordering
+#  to the SQL clause that will have the appropriate result.
+#   e.g.  "by year (newest first)" => "year ASC, author, title"
+#
+#  Use from_form() to update with terms from a search form (or URL).
+#
+#  Use add_field() to add new SearchFields. You can't have more than
+#  one SearchField for any single MetaField, though - add_field() will
+#  wipe over the old SearchField in that case.
+#
+######################################################################
 
 #cjg non user defined sort methods => pass comparator method my reference
 # eg. for later_in_thread
-
-
-######################################################################
-=pod
-
-=item $thing = EPrints::SearchExpression->new( %data )
-
-undocumented
-
-=cut
-######################################################################
 
 sub new
 {
@@ -92,10 +77,9 @@ sub new
 	$data{use_cache} = 0 if ( !defined $data{use_cache} );
 	$data{satisfy_all} = 1 if ( !defined $data{satisfy_all} );
 	$data{fieldnames} = [] if ( !defined $data{fieldnames} );
-	$data{prefix} = "" if ( !defined $data{prefix} );
 
 	# 
-	foreach( qw/ session dataset allow_blank satisfy_all fieldnames staff order use_cache custom_order use_oneshot_cache use_private_cache cache_id prefix defaults / )
+	foreach( qw/ session dataset allow_blank satisfy_all fieldnames staff order use_cache custom_order use_oneshot_cache use_private_cache cache_id / )
 	{
 		$self->{$_} = $data{$_};
 	}
@@ -107,36 +91,14 @@ sub new
 		$self->{use_cache} = 0;
 		$self->{use_oneshot_cache} = 1;
 	}
-	if( !defined $self->{defaults} ) 
-	{ 
-		$self->{defaults} = {};
-	}
-
 
 	# Array for the SearchField objects
 	$self->{searchfields} = [];
 	# Map for MetaField names -> corresponding SearchField objects
 	$self->{searchfieldmap} = {};
 
-	$self->{allfields} = [];
-
 	# tmptable represents cached results table.	
 	$self->{tmptable} = undef;
-
-	# Little hack to solve the problem of not knowing what
-	# the fields in the subscription spec are until we load
-	# the config.
-	if( $self->{fieldnames} eq "subscriptionfields" )
-	{
-		$self->{fieldnames} = $self->{session}->get_archive->get_conf(
-			"subscription_fields" );
-	}
-	if( $self->{fieldnames} eq "editpermfields" )
-	{
-		$self->{fieldnames} = $self->{session}->get_archive->get_conf(
-			"editor_limit_fields" );
-#cjg
-	}
 
 	my $fieldname;
 	foreach $fieldname (@{$self->{fieldnames}})
@@ -156,18 +118,12 @@ sub new
 			}
 			
 			# Add a reference to the list
-			$self->add_field( \@multiple_fields, $self->{defaults}->{$fieldname} );
-		}
-		elsif( $fieldname =~ m/^!(.*)$/ )
-		{
-			# "extra" field - one not in the current dataset.
-			$self->add_extrafield( $data{extrafields}->{$1}, $self->{defaults}->{$1} );
+			$self->add_field( \@multiple_fields );
 		}
 		else
 		{
 			# Single field
-			
-			$self->add_field( EPrints::Utils::field_from_config_string( $self->{dataset}, $fieldname ), $self->{defaults}->{$fieldname} );
+			$self->add_field( EPrints::Utils::field_from_config_string( $self->{dataset}, $fieldname ) );
 		}
 	}
 
@@ -192,84 +148,36 @@ sub new
 #
 ######################################################################
 
-
-######################################################################
-=pod
-
-=item $foo = $thing->add_field( $field, $value, $match, $merge, $extra )
-
-undocumented
-
-=cut
-######################################################################
-
 sub add_field
 {
-	my( $self, $field, $value, $match, $merge, $extra ) = @_;
+	my( $self, $field, $value, $match, $merge ) = @_;
 
 	#field may be a field OR a ref to an array of fields
 
 	# Create a new searchfield
-	my $searchfield = EPrints::SearchField->new( $self->{session},
-	                                             $self->{dataset},
-	                                             $field,
-	                                             $value,
-	                                             $match,
-	                                             $merge,
-                                                     $self->{prefix} );
+	my $searchfield = new EPrints::SearchField( $self->{session},
+	                                            $self->{dataset},
+	                                            $field,
+	                                            $value,
+	                                            $match,
+	                                            $merge );
 
-	my $sf_id = $searchfield->get_id();
-	unless( defined $self->{searchfieldmap}->{$sf_id} )
+	my $formname = $searchfield->get_form_name();
+	unless( defined $self->{searchfieldmap}->{$formname} )
 	{
 		# Add it to our list
-		# if it's "extra" then it's not a searchfield
-		# but will still appear on the form.
-
-		unless( $extra )
-		{
-			push @{$self->{searchfields}}, $sf_id;
-		}
-		push @{$self->{allfields}}, $sf_id;
+		push @{$self->{searchfields}}, $formname;
 	}
 	# Put it in the name -> searchfield map
 	# (possibly replacing an old one)
-	$self->{searchfieldmap}->{$sf_id} = $searchfield;
+	$self->{searchfieldmap}->{$formname} = $searchfield;
 }
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->add_extrafield( $field, $value, $match, $merge )
-
-undocumented
-
-=cut
-######################################################################
-
-sub add_extrafield
-{
-	my( $self, $field, $value, $match, $merge ) = @_;
-
-	$self->add_field( $field, $value, $match, $merge, 1 );
-}
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->get_searchfield( $sf_id )
-
-undocumented
-
-=cut
-######################################################################
 
 sub get_searchfield
 {
-	my( $self, $sf_id ) = @_;
+	my( $self, $formname ) = @_;
 	
-	return $self->{searchfieldmap}->{$sf_id};
+	return $self->{searchfieldmap}->{$formname};
 }
 
 ######################################################################
@@ -278,17 +186,6 @@ sub get_searchfield
 #
 #  Clear the search values of all search fields in the expression.
 #
-######################################################################
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->clear
-
-undocumented
-
-=cut
 ######################################################################
 
 sub clear
@@ -304,64 +201,14 @@ sub clear
 }
 
 
-
 ######################################################################
-=pod
-
-=item $xhtml = $thing->render_search_fields( [$help] )
-
-Renders the search fields for this search expression for inclusion
-in a form. If $help is true then this also renders the help for
-each search field.
-
-=cut
-######################################################################
-
-sub render_search_fields
-{
-	my( $self, $help ) = @_;
-
-	my $frag = $self->{session}->make_doc_fragment;
-
-	my %shown_help;
-	foreach ( @{$self->{allfields}} )
-	{
-		my $sf = $self->get_searchfield( $_ );
-		my $div = $self->{session}->make_element( 
-				"div" , 
-				class => "searchfieldname" );
-		$div->appendChild( $self->{session}->make_text( 
-					$sf->get_display_name ) );
-		$frag->appendChild( $div );
-		my $shelp = $sf->get_help();
-		if( $help && !defined $shown_help{$shelp} )
-		{
-			$div = $self->{session}->make_element( 
-				"div" , 
-				class => "searchfieldhelp" );
-			$div->appendChild( $self->{session}->make_text( $shelp ) );
-			$frag->appendChild( $div );
-			#$shown_help{$shelp}=1;
-		}
-
-		$div = $self->{session}->make_element( 
-			"div" , 
-			class => "searchfieldinput" );
-		$frag->appendChild( $sf->render() );
-	}
-
-	return $frag;
-}
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->render_search_form( $help, $show_anyall )
-
-undocumented
-
-=cut
+#
+# $html = render_search_form( $help, $show_anyall )
+#
+#  Render the search form. If $help is 1, then help is written with
+#  the search fields. If $show_anyall is 1, then the "must satisfy any/
+#  all" field is shown at the bottom of the form.
+#
 ######################################################################
 
 sub render_search_form
@@ -369,22 +216,50 @@ sub render_search_form
 	my( $self, $help, $show_anyall ) = @_;
 
 	my $form = $self->{session}->render_form( "get" );
-	$form->appendChild( $self->render_search_fields( $help ) );
 
 	my $div;
+
+	my %shown_help;
+	my $sf;
+	foreach ( @{$self->{searchfields}} )
+	{
+		my $sf = $self->get_searchfield( $_ );
+		$div = $self->{session}->make_element( 
+				"div" , 
+				class => "searchfieldname" );
+		$div->appendChild( $self->{session}->make_text( 
+					$sf->get_display_name ) );
+		$form->appendChild( $div );
+		my $shelp = $sf->get_help();
+		if( $help && !defined $shown_help{$shelp} )
+		{
+			$div = $self->{session}->make_element( 
+				"div" , 
+				class => "searchfieldhelp" );
+			$div->appendChild( $self->{session}->make_text( $shelp ) );
+			$form->appendChild( $div );
+			#$shown_help{$shelp}=1;
+		}
+
+		$div = $self->{session}->make_element( 
+			"div" , 
+			class => "searchfieldinput" );
+		$form->appendChild( $sf->render() );
+	}
+
 	my $menu;
 
 	if( $show_anyall )
 	{
 		$menu = $self->{session}->render_option_list(
-			name=>$self->{prefix}."_satisfyall",
+			name=>"_satisfyall",
 			values=>[ "ALL", "ANY" ],
 			default=>( defined $self->{satisfy_all} && $self->{satisfy_all}==0 ?
 				"ANY" : "ALL" ),
 			labels=>{ "ALL" => $self->{session}->phrase( "lib/searchexpression:all" ),
 				  "ANY" => $self->{session}->phrase( "lib/searchexpression:any" )} );
 
-		my $div = $self->{session}->make_element( 
+		$div = $self->{session}->make_element( 
 			"div" , 
 			class => "searchanyall" );
 		$div->appendChild( 
@@ -394,7 +269,26 @@ sub render_search_form
 		$form->appendChild( $div );	
 	}
 
-	$form->appendChild( $self->render_order_menu );
+	my @tags = keys %{$self->{session}->get_archive()->get_conf(
+			"order_methods",
+			$self->{dataset}->confid )};
+	$menu = $self->{session}->render_option_list(
+		name=>"_order",
+		values=>\@tags,
+		default=>$self->{order},
+		labels=>$self->{session}->get_order_names( 
+						$self->{dataset} ) );
+
+	$div = $self->{session}->make_element( 
+		"div" , 
+		class => "searchorder" );
+
+	$div->appendChild( 
+		$self->{session}->html_phrase( 
+			"lib/searchexpression:order_results", 
+			ordermenu => $menu  ) );
+
+	$form->appendChild( $div );	
 
 	$div = $self->{session}->make_element( 
 		"div" , 
@@ -411,49 +305,12 @@ sub render_search_form
 
 
 ######################################################################
-=pod
-
-=item $foo = $thing->render_order_menu
-
-undocumented
-
-=cut
-######################################################################
-
-sub render_order_menu
-{
-	my( $self ) = @_;
-
-	my @tags = keys %{$self->{session}->get_archive()->get_conf(
-			"order_methods",
-			$self->{dataset}->confid )};
-	my $menu = $self->{session}->render_option_list(
-		name=>$self->{prefix}."_order",
-		values=>\@tags,
-		default=>$self->{order},
-		labels=>$self->{session}->get_order_names( 
-						$self->{dataset} ) );
-	my $div = $self->{session}->make_element( 
-		"div" , 
-		class => "searchorder" );
-	$div->appendChild( 
-		$self->{session}->html_phrase( 
-			"lib/searchexpression:order_results", 
-			ordermenu => $menu  ) );
-
-	return $div;
-}
-
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->get_order
-
-undocumented
-
-=cut
+#
+# $problems = from_form()
+#
+#  Update the search fields in this expression from the current HTML
+#  form. Any problems are returned in @problems.
+#
 ######################################################################
 
 sub get_order
@@ -462,33 +319,11 @@ sub get_order
 	return $self->{order};
 }
 
-
-######################################################################
-=pod
-
-=item $foo = $thing->get_satisfy_all
-
-undocumented
-
-=cut
-######################################################################
-
 sub get_satisfy_all
 {
 	my( $self ) = @_;
 	return $self->{satisfy_all};
 }
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->from_form
-
-undocumented
-
-=cut
-######################################################################
 
 sub from_form
 {
@@ -497,58 +332,54 @@ sub from_form
 	my $exp = $self->{session}->param( "_exp" );
 	if( defined $exp )
 	{
-		$self->from_string( $exp );
+		my $fromexp = EPrints::SearchExpression->unserialise( $self->{session}, $exp );
+		$self->{order} = $fromexp->get_order();
+		$self->{satisfy_all} = $fromexp->get_satisfy_all();
+		my $search_field;
+		foreach ( @{$self->{searchfields}} )
+		{
+			my $search_field = $self->get_searchfield( $_ );
+			my $formname = $search_field->get_form_name();
+			my $sf = $fromexp->get_searchfield( $formname );
+			if( defined $sf )
+			{
+				$self->add_field( 
+					$sf->get_fields(), 
+					$sf->get_value(),
+					$sf->get_match(),  
+					$sf->get_merge() );
+			}
+		}
 		return;
 	}
 
 	my @problems;
-	foreach( @{$self->{searchfields}} )
+	my $onedefined = 0;
+	my $search_field;
+	foreach ( @{$self->{searchfields}} )
 	{
 		my $search_field = $self->get_searchfield( $_ );
 		my $prob = $search_field->from_form();
+		$onedefined = 1 if( defined $search_field->{value} );
+		
 		push @problems, $prob if( defined $prob );
 	}
-	my $anyall = $self->{session}->param( $self->{prefix}."_satisfyall" );
+	my $anyall = $self->{session}->param( "_satisfyall" );
 
 	if( defined $anyall )
 	{
 		$self->{satisfy_all} = ( $anyall eq "ALL" );
 	}
 	
-	$self->{order} = $self->{session}->param( $self->{prefix}."_order" );
+	$self->{order} = $self->{session}->param( "_order" );
 
-	if( $self->is_blank && ! $self->{allow_blank} )
-	{
-		push @problems, $self->{session}->phrase( 
-			"lib/searchexpression:least_one" );
-	}
+	push @problems, $self->{session}->phrase( "lib/searchexpression:least_one" )
+		unless( $self->{allow_blank} || $onedefined );
+
 	
 	return( scalar @problems > 0 ? \@problems : undef );
 }
 
-
-######################################################################
-=pod
-
-=item $boolean = $searchexp->is_blank
-
-Return true is this searchexpression has no conditions set, otherwise
-true.
-
-=cut
-######################################################################
-
-sub is_blank
-{
-	my( $self ) = @_;
-
-	foreach( @{$self->{searchfields}} )
-	{
-		my $search_field = $self->get_searchfield( $_ );
-		return 0 if( defined $search_field->get_value() );
-	}
-	return 1;
-}
 
 
 ######################################################################
@@ -559,17 +390,6 @@ sub is_blank
 #  storage. Doesn't store table or the order by fields, just the field
 #  names, values, default order and satisfy_all.
 #
-######################################################################
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->serialise
-
-undocumented
-
-=cut
 ######################################################################
 
 sub serialise
@@ -609,54 +429,6 @@ sub serialise
 	return join( "|" , @escapedparts );
 }	
 
-######################################################################
-=pod
-
-=item $searchexp->from_string( $string )
-
-Unserialises the contents of $string but only into the fields alrdeady
-existing in $searchexp. Set the order and satisfy_all mode but do not 
-affect the dataset or allow blank.
-
-=cut
-######################################################################
-
-sub from_string
-{
-	my( $self, $string ) = @_;
-
-	my $fromexp = EPrints::SearchExpression->unserialise( 
-			$self->{session}, $string );
-	$self->{order} = $fromexp->get_order();
-	$self->{satisfy_all} = $fromexp->get_satisfy_all();
-	my $search_field;
-	foreach ( @{$self->{searchfields}} )
-	{
-		my $search_field = $self->get_searchfield( $_ );
-
-		my $sf_id = $search_field->get_id();
-		my $sf = $fromexp->get_searchfield( $sf_id );
-		if( defined $sf )
-		{
-			$self->add_field( 
-				$sf->get_fields(), 
-				$sf->get_value(),
-				$sf->get_match(),  
-				$sf->get_merge() );
-		}
-	}
-}
-
-######################################################################
-=pod
-
-=item $thing = EPrints::SearchExpression->unserialise( $session, $string, %opts )
-
-undocumented
-
-=cut
-######################################################################
-
 sub unserialise
 {
 	my( $class, $session, $string, %opts ) = @_;
@@ -666,22 +438,11 @@ sub unserialise
 	return $searchexp;
 }
 
-######################################################################
-# 
-# $foo = $thing->_unserialise_aux( $string )
-#
-# undocumented
-#
-######################################################################
-
 sub _unserialise_aux
 {
 	my( $self, $string ) = @_;
 
-	return unless( EPrints::Utils::is_set( $string ) );
-
 	my( $pstring , $fstring ) = split /\|-\|/ , $string ;
-	$fstring = "" unless( defined $fstring ); # avoid a warning
 
 	my @parts = split( /\|/ , $pstring );
 	$self->{allow_blank} = $parts[0];
@@ -696,25 +457,14 @@ sub _unserialise_aux
 		my $searchfield = EPrints::SearchField->unserialise(
 			$self->{session}, $self->{dataset}, $_ );
 
-		my $sf_id = $searchfield->get_id();
+		my $formname = $searchfield->get_form_name();
 		# Add it to our list
-		push @{$self->{searchfields}}, $sf_id;
+		push @{$self->{searchfields}}, $formname;
 		# Put it in the name -> searchfield map
-		$self->{searchfieldmap}->{$sf_id} = $searchfield;
+		$self->{searchfieldmap}->{$formname} = $searchfield;
 		
 	}
 }
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->get_cache_id
-
-undocumented
-
-=cut
-######################################################################
 
 sub get_cache_id
 {
@@ -723,20 +473,10 @@ sub get_cache_id
 	return $self->{cache_id};
 }
 
-
-######################################################################
-=pod
-
-=item $foo = $thing->perform_search
-
-undocumented
-
-=cut
-######################################################################
-
 sub perform_search
 {
 	my( $self ) = @_;
+	$self->{ignoredwords} = [];
 	$self->{error} = undef;
 
 	if( $self->{use_cache} && !defined $self->{cache_id} )
@@ -764,7 +504,7 @@ sub perform_search
 	}
 	foreach $search_field ( @searchon )
 	{
-		my ( $results, $error) = $search_field->do();
+		my ( $results , $badwords , $error) = $search_field->do();
 
 		if( defined $error )
 		{
@@ -773,6 +513,10 @@ sub perform_search
 			return;
 		}
 
+		if( defined $badwords )
+		{
+			push @{$self->{ignoredwords}},@{$badwords};
+		}
 		if( $firstpass )
 		{
 			$matches = $results;
@@ -830,14 +574,6 @@ sub perform_search
 	}
 }
 
-######################################################################
-# 
-# EPrints::SearchExpression::_merge( $a, $b, $and )
-#
-# undocumented
-#
-######################################################################
-
 sub _merge
 {
 	my( $a, $b, $and ) = @_;
@@ -857,27 +593,13 @@ sub _merge
 	return \@c;
 }
 
-
-######################################################################
-=pod
-
-=item $foo = $thing->dispose
-
-undocumented
-
-=cut
-######################################################################
-
 sub dispose
 {
 	my( $self ) = @_;
 
 	#my $sstring = $self->serialise();
 
-	if( 
-		defined $self->{tmptable} && 
-		$self->{tmptable} ne "ALL" && 
-		$self->{tmptable} ne "NONE" )
+	if( $self->{tmptable} ne "ALL" && $self->{tmptable} ne "NONE" )
 	{
 		$self->{session}->get_db()->dispose_buffer( $self->{tmptable} );
 	}
@@ -889,17 +611,6 @@ sub dispose
 }
 
 # Note, is number returned, not number of matches.(!! what does that mean?)
-
-######################################################################
-=pod
-
-=item $foo = $thing->count 
-
-undocumented
-
-=cut
-######################################################################
-
 sub count 
 {
 	my( $self ) = @_;
@@ -936,17 +647,6 @@ sub count
 		
 }
 
-
-######################################################################
-=pod
-
-=item $foo = $thing->get_records( $offset, $count )
-
-undocumented
-
-=cut
-######################################################################
-
 sub get_records
 {
 	my( $self , $offset , $count ) = @_;
@@ -954,31 +654,12 @@ sub get_records
 	return $self->_get_records( $offset , $count, 0 );
 }
 
-
-######################################################################
-=pod
-
-=item $foo = $thing->get_ids( $offset, $count )
-
-undocumented
-
-=cut
-######################################################################
-
 sub get_ids
 {
 	my( $self , $offset , $count ) = @_;
 	
 	return $self->_get_records( $offset , $count, 1 );
 }
-
-######################################################################
-# 
-# $foo = $thing->_get_records ( $offset, $count, $justids )
-#
-# undocumented
-#
-######################################################################
 
 sub _get_records 
 {
@@ -1019,22 +700,8 @@ sub _get_records
 
 	return $self->{session}->get_db()->from_buffer( 
 					$self->{dataset}, 
-					$srctable,
-					$offset,
-					$count,
-					$justids );
+					$srctable );
 }
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->map( $function, $info )
-
-undocumented
-
-=cut
-######################################################################
 
 sub map
 {
@@ -1042,7 +709,7 @@ sub map
 
 	my $count = $self->count();
 
-	my $CHUNKSIZE = 100;
+	my $CHUNKSIZE = 512;
 
 	my $offset;
 	for( $offset = 0; $offset < $count; $offset+=$CHUNKSIZE )
@@ -1065,20 +732,11 @@ sub map
 #
 ######################################################################
 
-
-######################################################################
-=pod
-
-=item $foo = $thing->process_webpage( $title, $preamble )
-
-undocumented
-
-=cut
-######################################################################
-
 sub process_webpage
 {
 	my( $self, $title, $preamble ) = @_;
+
+	#cjg ONLY SHOW time and badwords on first page.
 
 	my $pagesize = $self->{session}->get_archive()->get_conf( "results_page_size" );
 
@@ -1134,36 +792,64 @@ sub process_webpage
 		$t3 = EPrints::Session::microtime();
 		$self->dispose();
 
+		my $page = $self->{session}->make_doc_fragment();
+
 		my $plast = $offset + $pagesize;
 		$plast = $n_results if $n_results< $plast;
-
-		my %bits = ();
-		
+		my $p = $self->{session}->make_element( "p", class=>"resultsinfo" );
+		$page->appendChild( $p );
 		if( scalar $n_results > 0 )
 		{
-			$bits{matches} = 
+       			$p->appendChild(  
 				$self->{session}->html_phrase( 
 					"lib/searchexpression:results",
 					from => $self->{session}->make_text( $offset+1 ),
 					to => $self->{session}->make_text( $plast ),
 					n => $self->{session}->make_text( $n_results )  
-				);
+				) );
 		}
 		else
 		{
-			$bits{matches} = 
+       			$p->appendChild(  
 				$self->{session}->html_phrase( 
-					"lib/searchexpression:noresults" );
+					"lib/searchexpression:noresults" ) );
 		}
 
-		$bits{time} = $self->{session}->html_phrase( 
-			"lib/searchexpression:search_time", 
-			searchtime => $self->{session}->make_text($t3-$t1) );
+		if( @{ $self->{ignoredwords} } )
+		{
+			my %words = ();
+			$p->appendChild( $self->{session}->make_text( " " ) );
+			foreach( @{$self->{ignoredwords}} ) { $words{$_}++; }
+			my $words = $self->{session}->make_doc_fragment();
+			my $first = 1;
+			foreach( sort keys %words )
+			{
+				unless( $first )
+				{
+					$words->appendChild( 
+						$self->{session}->make_text( ", " ) );
+				}
+				my $span = $self->{session}->make_element( "span", class=>"ignoredword" );
+				$words->appendChild( $span );
+				$span->appendChild( 
+					$self->{session}->make_text( $_ ) );
+				$first = 0;
+			}
+			$p->appendChild(
+       				$self->{session}->html_phrase( 
+					"lib/searchexpression:ignored",
+					words => $words ) );
+		
+		}
 
-		$bits{searchdesc} = $self->render_description;
+		$p->appendChild( $self->{session}->make_text( " " ) );
+		$p->appendChild(
+       			$self->{session}->html_phrase( 
+				"lib/searchexpression:search_time", 
+				searchtime=>$self->{session}->make_text($t3-$t1) ) );
 
 		my $links = $self->{session}->make_doc_fragment();
-		$bits{controls} = $self->{session}->make_element( "p", class=>"searchcontrols" );
+		my $controls = $self->{session}->make_element( "p", class=>"searchcontrols" );
 		my $url = $self->{session}->get_url();
 		#cjg escape URL'ify urls in this bit... (4 of them?)
 		my $escexp = $self->serialise();	
@@ -1175,12 +861,10 @@ sub process_webpage
 			my $fullurl = "$url?_exp=$escexp&_offset=".($bk<0?0:$bk);
 			$a = $self->{session}->render_link( $fullurl );
 			my $pn = $pagesize>$offset?$offset:$pagesize;
-			$a->appendChild( 
-				$self->{session}->html_phrase( 
-					"lib/searchexpression:prev",
-					n=>$self->{session}->make_text( $pn ) ) );
-			$bits{controls}->appendChild( $a );
-			$bits{controls}->appendChild( $self->{session}->html_phrase( "lib/searchexpression:seperator" ) );
+			$a->appendChild( $self->{session}->html_phrase( "lib/searchexpression:prev",
+						n=>$self->{session}->make_text( $pn ) ) );
+			$controls->appendChild( $a );
+			$controls->appendChild( $self->{session}->html_phrase( "lib/searchexpression:seperator" ) );
 			$links->appendChild( $self->{session}->make_element( "link",
 							rel=>"Prev",
 							href=>EPrints::Utils::url_escape( $fullurl ) ) );
@@ -1188,12 +872,12 @@ sub process_webpage
 
 		$a = $self->{session}->render_link( "$url?_exp=$escexp&_action_update=1" );
 		$a->appendChild( $self->{session}->html_phrase( "lib/searchexpression:refine" ) );
-		$bits{controls}->appendChild( $a );
-		$bits{controls}->appendChild( $self->{session}->html_phrase( "lib/searchexpression:seperator" ) );
+		$controls->appendChild( $a );
+		$controls->appendChild( $self->{session}->html_phrase( "lib/searchexpression:seperator" ) );
 
 		$a = $self->{session}->render_link( $url );
 		$a->appendChild( $self->{session}->html_phrase( "lib/searchexpression:new" ) );
-		$bits{controls}->appendChild( $a );
+		$controls->appendChild( $a );
 
 		if( $offset + $pagesize < $n_results )
 		{
@@ -1203,48 +887,37 @@ sub process_webpage
 			$nn = $pagesize if( $pagesize < $nn);
 			$a->appendChild( $self->{session}->html_phrase( "lib/searchexpression:next",
 						n=>$self->{session}->make_text( $nn ) ) );
-			$bits{controls}->appendChild( $self->{session}->html_phrase( "lib/searchexpression:seperator" ) );
-			$bits{controls}->appendChild( $a );
+			$controls->appendChild( $self->{session}->html_phrase( "lib/searchexpression:seperator" ) );
+			$controls->appendChild( $a );
 			$links->appendChild( $self->{session}->make_element( "link",
 							rel=>"Next",
 							href=>EPrints::Utils::url_escape( $fullurl ) ) );
 		}
 
-		$bits{results} = $self->{session}->make_doc_fragment;
-		foreach my $result ( @results )
+		$page->appendChild( $controls );
+
+		my $result;
+		foreach $result (@results)
 		{
-			my $p = $self->{session}->make_element( "p" );
-			$p->appendChild( 
-				$result->render_citation_link( 
-					undef, 
-					$self->{staff} ) );
-			$bits{results}->appendChild( $p );
+			$p = $self->{session}->make_element( "p" );
+			$p->appendChild( $result->render_citation_link( undef, $self->{staff} ) );
+			$page->appendChild( $p );
 		}
 		
 
 		if( scalar $n_results > 0 )
 		{
-			# Only print a second set of controls if 
-			# there are matches.
-			$bits{controls_if_matches} = 
-				EPrints::XML::clone_node( $bits{controls}, 1 );
-		}
-		else
-		{
-			$bits{controls_if_matches} = 
-				$self->{session}->make_doc_fragment;
+			# Only print a second set of controls if there are matches.
+			$page->appendChild( $controls->cloneNode( 1 ) );
 		}
 
-		my $page = $self->{session}->html_phrase(
-			"lib/searchexpression:results_page",
-			%bits );
-	
+
+			
 		$self->{session}->build_page( 
 			$self->{session}->html_phrase( 
 					"lib/searchexpression:results_for", 
 					title => $title ),
 			$page,
-			"search_results",
 			$links );
 		$self->{session}->send_page();
 		return;
@@ -1271,17 +944,9 @@ sub process_webpage
 	$page->appendChild( $preamble );
 	$page->appendChild( $self->render_search_form( 1 , 1 ) );
 
-	$self->{session}->build_page( $title, $page, "search_form" );
+	$self->{session}->build_page( $title, $page );
 	$self->{session}->send_page();
 }
-
-######################################################################
-# 
-# $foo = $thing->_render_problems( $title, $preamble, @problems )
-#
-# undocumented
-#
-######################################################################
 
 sub _render_problems
 {
@@ -1310,20 +975,9 @@ sub _render_problems
 	$page->appendChild( $hr );
 	$page->appendChild( $self->render_search_form( 1 , 1 ) );
 			
-	$self->{session}->build_page( $title, $page, "search_problems" );
+	$self->{session}->build_page( $title, $page );
 	$self->{session}->send_page();
 }
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->get_dataset
-
-undocumented
-
-=cut
-######################################################################
 
 sub get_dataset
 {
@@ -1331,17 +985,6 @@ sub get_dataset
 
 	return $self->{dataset};
 }
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->set_dataset( $dataset )
-
-undocumented
-
-=cut
-######################################################################
 
 sub set_dataset
 {
@@ -1354,147 +997,4 @@ sub set_dataset
 	}
 }
 
-
-######################################################################
-=pod
-
-=item $xhtml = $thing->render_description
-
-Return an XHTML DOM description of this search expressions current
-parameters.
-
-=cut
-######################################################################
-
-sub render_description
-{
-	my( $self ) = @_;
-
-	my $frag = $self->{session}->make_doc_fragment;
-
-	my @bits = ();
-	foreach( keys %{$self->{searchfieldmap}} )
-	{
-		my $sf = $self->{searchfieldmap}->{$_};
-		next unless( EPrints::Utils::is_set( $sf->get_value ) );
-		push @bits, $sf->render_description;
-	}
-
-	my $joinphraseid = "lib/searchexpression:desc_or";
-	if( $self->{satisfy_all} )
-	{
-		$joinphraseid = "lib/searchexpression:desc_and";
-	}
-
-	for( my $i=0; $i<scalar @bits; ++$i )
-	{
-		if( $i>0 )
-		{
-			$frag->appendChild( $self->{session}->html_phrase( 
-				$joinphraseid ) );
-		}
-		$frag->appendChild( $bits[$i] );
-	}
-
-	if( scalar @bits > 0 )
-	{
-		$frag->appendChild( $self->{session}->make_text( "." ) );
-	}
-	else
-	{
-		$frag->appendChild( $self->{session}->html_phrase(
-			"lib/searchexpression:desc_no_conditions" ) );
-	}
-
-	if( EPrints::Utils::is_set( $self->{order} ) )
-	{
-		$frag->appendChild( $self->{session}->make_text( " " ) );
-		$frag->appendChild( $self->{session}->html_phrase(
-			"lib/searchexpression:desc_order",
-			order => $self->{session}->make_text(
-				$self->{session}->get_order_name(
-					$self->{dataset},
-					$self->{order} ) ) ) );
-	} 
-
-	return $frag;
-}
-	
-
-######################################################################
-=pod
-
-=item $thing->set_property( $property, $value );
-
-undocumented
-
-=cut
-######################################################################
-
-sub set_property
-{
-	my( $self, $property, $value ) = @_;
-
-	$self->{$property} = $value;
-}
-
-
-######################################################################
-=pod
-
-=item $boolean = $thing->item_matches( $item );
-
-undocumented
-
-=cut
-######################################################################
-
-sub item_matches
-{
-	my( $self, $item ) = @_;
-
-	my @searchon = ();
-	foreach my $searchfieldname ( @{$self->{searchfields}} )
-	{
-		my $search_field = $self->get_searchfield( $searchfieldname );
-		if( $search_field->is_set() )
-		{
-			push @searchon , $search_field;
-		}
-	}
-
-	if( $self->{satisfy_all} )
-	{
-		foreach my $searchfield ( @searchon )
-		{
-			unless( $searchfield->item_matches( $item ) )
-			{
-				return 0;
-			}
-		}
-		return 1;
-	}
-
-	# satisfy any
-	foreach my $searchfield ( @searchon )
-	{
-		if( $searchfield->item_matches( $item ) )
-		{
-			return 1;
-		}
-	}
-	return 0;
-}
-
-
-
-
 1;
-
-######################################################################
-=pod
-
-=back
-
-=cut
-

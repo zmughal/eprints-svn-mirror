@@ -47,7 +47,7 @@
       <field name="subjects" required="yes" />
       <field name="year" required="yes" />
       <field name="abstract" required="yes" />
-      <field name="publication" />
+      <field name="publication" required="yes" />
       <field name="chapter" />
       <field name="pages" />
       <field name="editors" />
@@ -183,7 +183,7 @@
       <field name="year" required="yes" />
       <field name="month" />
       <field name="abstract" required="yes" />
-      <field name="publication" />
+      <field name="publication" required="yes" />
       <field name="volume" />
       <field name="number" />
       <field name="editors" />
@@ -205,7 +205,7 @@
       <field name="year" required="yes" />
       <field name="month" />
       <field name="abstract" required="yes" />
-      <field name="publication" />
+      <field name="publication" required="yes" />
       <field name="volume" />
       <field name="number" />
       <field name="pages" />
@@ -228,7 +228,7 @@
       <field name="year" required="yes" />
       <field name="month" />
       <field name="abstract" required="yes" />
-      <field name="publication" />
+      <field name="publication" required="yes" />
       <field name="volume" />
       <field name="number" />
       <field name="pages" />
@@ -329,9 +329,7 @@
       <field name="country" />
       <field name="os" />
       <field name="url" />
-      <field name="editperms" staffonly="yes" />
-      <field name="frequency" required="yes" />
-      <field name="mailempty" required="yes" />
+ <!--     <field name="editorsubjects" staffonly="yes" /> -->
     </type>
     <type name="admin" >
       <field name="password" />
@@ -347,9 +345,7 @@
       <field name="country" />
       <field name="os" />
       <field name="url" />
-      <field name="editperms" />
-      <field name="frequency" required="yes" />
-      <field name="mailempty" required="yes" />
+ <!--     <field name="editorsubjects" /> -->
     </type>
   </dataset>
 

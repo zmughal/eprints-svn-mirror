@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::SubmissionForm
+#  EPrints Submission uploading/editing forms
 #
 ######################################################################
 #
@@ -8,40 +8,6 @@
 #
 # Copyright 2000-2008 University of Southampton. All Rights Reserved.
 # 
-#  __LICENSE__
-#
-######################################################################
-
-
-=pod
-
-=head1 NAME
-
-B<EPrints::SubmissionForm> - undocumented
-
-=head1 DESCRIPTION
-
-undocumented
-
-=over 4
-
-=cut
-
-######################################################################
-#
-# INSTANCE VARIABLES:
-#
-#  $self->{foo}
-#     undefined
-#
-######################################################################
-
-######################################################################
-#
-#  EPrints Submission uploading/editing forms
-#
-######################################################################
-#
 #  __LICENSE__
 #
 ######################################################################
@@ -60,31 +26,44 @@ use strict;
 #cjg bug pruning very new doc?
 
 my $STAGES = {
-	home => { next => "type" },
-	type => { prev => "return", next => "linking" },
-	linking => { prev => "type", next => "meta" },
-	meta => { prev => "linking", next => "files" },
-	files => { prev => "meta", next => "verify" },
+	home => {
+		next => "type"
+	},
+	type => {
+		prev => "return",
+		next => "linking"
+	},
+	linking => {
+		prev => "type",
+		next => "meta"
+	},
+	meta => {
+		prev => "linking",
+		next => "files"
+	},
+	files => {
+		prev => "meta",
+		next => "verify"
+	},
 	docmeta => {},
 	fileview => {},
 	upload => {},
-	verify => { prev => "files", next => "done" },
-	quickverify => { prev => "return", next => "done" },
+	verify => {
+		prev => "files",
+		next => "done"
+	},
+	quickverify => {
+		prev => "return",
+		next => "done"
+	},
 	done => {},
 	return => {},
-	confirmdel => { prev => "return", next => "return" }
+	confirmdel => {
+		prev => "return",
+		next => "return"
+	}
 };
 
-
-######################################################################
-=pod
-
-=item $thing = EPrints::SubmissionForm->new( $session, $redirect, $staff, $dataset, $formtarget )
-
-undocumented
-
-=cut
-######################################################################
 
 sub new
 {
@@ -100,11 +79,9 @@ sub new
 	$self->{formtarget} = $formtarget;
 	$self->{for_archive} = $staff;
 
-	# Use user configured order for stages or...
-	$self->{stages} = $session->get_archive->get_conf( 
-		"submission_stages" );
-
-	$self->{stages} = $STAGES if( !defined $self->{stages} );
+	# Will be overrideable in conf. cjg
+	$self->{stages} = $STAGES;
+	
 
 	return( $self );
 }
@@ -116,17 +93,6 @@ sub new
 #
 #  Process everything from the previous form, and render the next.
 #
-######################################################################
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->process
-
-undocumented
-
-=cut
 ######################################################################
 
 sub process
@@ -141,18 +107,9 @@ sub process
 	# If we have an EPrint ID, retrieve its entry from the database
 	if( defined $self->{eprintid} )
 	{
-		if( $self->{staff} )
-		{
-			if( defined $self->{session}->param( "dataset" ) )
-			{
-				$self->{dataset} = $self->{session}->get_archive()->
-					get_dataset( $self->{session}->param( "dataset" ) );
-			}
-		}
-		$self->{eprint} = EPrints::EPrint->new( 
-			$self->{session},
-			$self->{eprintid},
-			$self->{dataset} );
+		$self->{eprint} = EPrints::EPrint->new( $self->{session},
+		                                        $self->{dataset},
+		                                        $self->{eprintid} );
 
 		# Check it was retrieved OK
 		if( !defined $self->{eprint} )
@@ -249,14 +206,6 @@ sub process
 }
 
 
-######################################################################
-# 
-# $foo = $thing->_corrupt_err
-#
-# undocumented
-#
-######################################################################
-
 sub _corrupt_err
 {
 	my( $self ) = @_;
@@ -264,19 +213,9 @@ sub _corrupt_err
 	$self->{session}->render_error( 
 		$self->{session}->html_phrase( 
 			"lib/submissionform:corrupt_err",
-			line_no => 
-				$self->{session}->make_text( (caller())[2] ) ),
-		$self->{session}->get_archive->get_conf( "userhome" ) );
+			line_no => $self->{session}->make_text( (caller())[2] ) ) );
 
 }
-
-######################################################################
-# 
-# $foo = $thing->_database_err
-#
-# undocumented
-#
-######################################################################
 
 sub _database_err
 {
@@ -285,9 +224,8 @@ sub _database_err
 	$self->{session}->render_error( 
 		$self->{session}->html_phrase( 
 			"lib/submissionform:database_err",
-			line_no => 
-				$self->{session}->make_text( (caller())[2] ) ),
-		$self->{session}->get_archive->get_conf( "userhome" ) );
+			line_no => $self->{session}->make_text( (caller())[2] ) ) );
+
 }
 
 ######################################################################
@@ -310,14 +248,6 @@ sub _database_err
 #
 ######################################################################
 
-######################################################################
-# 
-# $foo = $thing->_from_stage_home
-#
-# undocumented
-#
-######################################################################
-
 sub _from_stage_home
 {
 	my( $self ) = @_;
@@ -329,18 +259,13 @@ sub _from_stage_home
 		{
 			$self->{session}->render_error( 
 				$self->{session}->html_phrase(
-		        		"lib/submissionform:use_auth_area" ),
-				$self->{session}->get_archive->get_conf( 
-					"userhome" ) );
+		        		"lib/submissionform:use_auth_area" ) );
 			return( 0 );
 		}
 		$self->{eprint} = EPrints::EPrint::create(
 			$self->{session},
-			$self->{dataset} );
-		$self->{eprint}->set_value( 
-			"userid", 
+			$self->{dataset},
 			$self->{user}->get_value( "userid" ) );
-		$self->{eprint}->commit();
 
 		if( !defined $self->{eprint} )
 		{
@@ -360,9 +285,7 @@ sub _from_stage_home
 		{
 			$self->{session}->render_error( 
 				$self->{session}->html_phrase( 
-					"lib/submissionform:nosel_err" ),
-				$self->{session}->get_archive->get_conf( 
-					"userhome" ) );
+					"lib/submissionform:nosel_err" ) );
 			return( 0 );
 		}
 
@@ -377,9 +300,7 @@ sub _from_stage_home
 		{
 			$self->{session}->render_error( 
 				$self->{session}->html_phrase( 
-					"lib/submissionform:nosel_err" ),
-				$self->{session}->get_archive->get_conf( 
-					"userhome" ) );
+					"lib/submissionform:nosel_err" ) );
 			return( 0 );
 		}
 		
@@ -403,11 +324,7 @@ sub _from_stage_home
 	{
 		if( !defined $self->{eprint} )
 		{
-			$self->{session}->render_error( 
-				$self->{session}->html_phrase( 
-					"lib/submissionform:nosel_err" ),
-				$self->{session}->get_archive->get_conf( 
-					"userhome" ) );
+			$self->{session}->render_error( $self->{session}->html_phrase( "lib/submissionform:nosel_err" ) );
 			return( 0 );
 		}
 		$self->{new_stage} = "confirmdel";
@@ -418,11 +335,7 @@ sub _from_stage_home
 	{
 		if( !defined $self->{eprint} )
 		{
-			$self->{session}->render_error( 
-				$self->{session}->html_phrase( 
-					"lib/submissionform:nosel_err" ),
-				$self->{session}->get_archive->get_conf( 
-					"userhome" ) );
+			$self->{session}->render_error( $self->{session}->html_phrase( "lib/submissionform:nosel_err" ) );
 			return( 0 );
 		}
 		$self->{new_stage} = "quickverify";
@@ -447,26 +360,12 @@ sub _from_stage_home
 #
 ######################################################################
 
-######################################################################
-# 
-# $foo = $thing->_from_stage_type
-#
-# undocumented
-#
-######################################################################
-
 sub _from_stage_type
 {
 	my( $self ) = @_;
 
-	if( $self->{action} eq "cancel" )
-	{
-		# Cancelled, go back to author area.
-		$self->_set_stage_prev();
-		return( 1 );
-	}
-
 	## Process uploaded data
+
 	$self->_update_from_form( "type" );
 	$self->{eprint}->commit();
 
@@ -488,6 +387,13 @@ sub _from_stage_type
 		return( 1 );
 	}
 
+	if( $self->{action} eq "cancel" )
+	{
+		# Cancelled, go back to author area.
+		$self->_set_stage_prev();
+		return( 1 );
+	}
+
 	# Don't have a valid action!
 	$self->_corrupt_err;
 	return( 0 );
@@ -496,14 +402,6 @@ sub _from_stage_type
 ######################################################################
 #
 #  From sucession/commentary stage
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_from_stage_linking
-#
-# undocumented
 #
 ######################################################################
 
@@ -558,14 +456,6 @@ sub _from_stage_linking
 ######################################################################
 #
 # Come from metadata entry form
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_from_stage_meta
-#
-# undocumented
 #
 ######################################################################
 
@@ -625,14 +515,6 @@ sub _from_stage_meta
 ######################################################################
 #
 #  From "select files" page
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_from_stage_files
-#
-# undocumented
 #
 ######################################################################
 
@@ -724,14 +606,6 @@ sub _from_stage_files
 #
 ######################################################################
 
-######################################################################
-# 
-# $foo = $thing->_from_stage_docmeta
-#
-# undocumented
-#
-######################################################################
-
 sub _from_stage_docmeta
 {
 	my( $self ) = @_;
@@ -787,14 +661,6 @@ sub _from_stage_docmeta
 ######################################################################
 #
 #  From fileview page
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_from_stage_fileview
-#
-# undocumented
 #
 ######################################################################
 
@@ -911,14 +777,6 @@ sub _from_stage_fileview
 #
 ######################################################################
 
-######################################################################
-# 
-# $foo = $thing->_from_stage_upload
-#
-# undocumented
-#
-######################################################################
-
 sub _from_stage_upload
 {
 	my( $self ) = @_;
@@ -1013,14 +871,6 @@ sub _from_stage_upload
 #
 ######################################################################
 
-######################################################################
-# 
-# EPrints::SubmissionForm::_from_stage_quickverify { return $_[0]->_from_stage_verify; }( _from_stage_quickverify { return $_[0]->_from_stage_verify; } )
-#
-# undocumented
-#
-######################################################################
-
 sub _from_stage_quickverify { return $_[0]->_from_stage_verify; }
 
 sub _from_stage_verify
@@ -1033,12 +883,6 @@ sub _from_stage_verify
 		return( 1 );
 	}
 
-	if( $self->{action} eq "later" )
-	{
-		$self->{new_stage} = "return";
-		return( 1 );
-	}
-
 	if( $self->{action} eq "submit" )
 	{
 		# Do the commit to the archive thang. One last check...
@@ -1047,23 +891,10 @@ sub _from_stage_verify
 		if( scalar @{$problems} == 0 )
 		{
 			# OK, no problems, submit it to the archive
-
-			my $sb = $self->{session}->get_archive()->get_conf( "skip_buffer" );	
-			if( defined $sb && $sb == 1 )
+			if( $self->{eprint}->move_to_buffer() )
 			{
-				if( $self->{eprint}->move_to_archive() )
-				{
-					$self->_set_stage_next;
-					return( 1 );
-				}
-			}	
-			else
-			{
-				if( $self->{eprint}->move_to_buffer() )
-				{
-					$self->_set_stage_next;
-					return( 1 );
-				}
+				$self->_set_stage_next;
+				return( 1 );
 			}
 	
 			$self->_database_err;
@@ -1084,14 +915,6 @@ sub _from_stage_verify
 ######################################################################
 #
 #  Come from confirm deletion page
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_from_stage_confirmdel
-#
-# undocumented
 #
 ######################################################################
 
@@ -1141,14 +964,6 @@ sub _from_stage_confirmdel
 #
 ######################################################################
 
-######################################################################
-# 
-# $foo = $thing->_do_stage_type
-#
-# undocumented
-#
-######################################################################
-
 sub _do_stage_type
 {
 	my( $self ) = @_;
@@ -1169,41 +984,26 @@ sub _do_stage_type
 				"lib/submissionform:action_next" ) };
 
 	$page->appendChild( $self->{session}->render_input_form( 
-		staff=>$self->{staff},
 		fields=>[ $self->{dataset}->get_field( "type" ) ],
 	        values=>$self->{eprint}->get_data(),
 	        show_names=>1,
 	        show_help=>1,
 		default_action=>"next",
 	        buttons=>$submit_buttons,
-	        hidden_fields=>
-		{ 
-			stage => "type", 
-			dataset => $self->{dataset}->id(),
-			eprintid => $self->{eprint}->get_value( "eprintid" ) 
-		},
+	        hidden_fields=>{ stage => "type", 
+		  eprintid => $self->{eprint}->get_value( "eprintid" ) },
 		dest=>$self->{formtarget}."#t"
 	) );
 
 	$self->{session}->build_page(
-		$self->{session}->html_phrase( 
-			"lib/submissionform:title_type" ),
-		$page,
-		"submission_type" );
+		$self->{session}->html_phrase( "lib/submissionform:title_type" ),
+		$page );
 	$self->{session}->send_page();
 }
 
 ######################################################################
 #
 #  Succession/Commentary form
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_do_stage_linking
-#
-# undocumented
 #
 ######################################################################
 
@@ -1227,8 +1027,8 @@ sub _do_stage_linking
 
 		my $older_eprint = new EPrints::EPrint( 
 			$self->{session}, 
-		        $self->{eprint}->get_value( $field_id ),
-		        $archive_ds );
+		        $archive_ds,
+		        $self->{eprint}->get_value( $field_id ) );
 	
 		$comment->{$field_id} = $self->{session}->make_doc_fragment();	
 
@@ -1263,7 +1063,6 @@ sub _do_stage_linking
 				"lib/submissionform:action_next" ) };
 
 	$page->appendChild( $self->{session}->render_input_form( 
-		staff=>$self->{staff},
 		fields=>[ 
 			$self->{dataset}->get_field( "succeeds" ),
 			$self->{dataset}->get_field( "commentary" ) 
@@ -1273,21 +1072,15 @@ sub _do_stage_linking
 	        show_help=>1,
 	        buttons=>$submit_buttons,
 		default_action=>"next",
-	        hidden_fields=>
-		{ 
-			stage => "linking", 
-			dataset => $self->{dataset}->id(),
-			eprintid => $self->{eprint}->get_value( "eprintid" ) 
-		},
+	        hidden_fields=>{ stage => "linking",
+		  eprintid => $self->{eprint}->get_value( "eprintid" ) },
 		comments=>$comment,
 		dest=>$self->{formtarget}."#t"
 	) );
 
 	$self->{session}->build_page(
-		$self->{session}->html_phrase( 
-			"lib/submissionform:title_linking" ),
-		$page,
-		"submission_linking" );
+		$self->{session}->html_phrase( "lib/submissionform:title_linking" ),
+		$page );
 	$self->{session}->send_page();
 
 }
@@ -1298,14 +1091,6 @@ sub _do_stage_linking
 ######################################################################
 #
 #  Enter metadata fields form
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_do_stage_meta
-#
-# undocumented
 #
 ######################################################################
 
@@ -1324,10 +1109,8 @@ sub _do_stage_meta
 	my @edit_fields = $self->{dataset}->get_type_fields( $self->{eprint}->get_value( "type" ), $self->{staff} );
 
 	my $hidden_fields = {	
-			stage => "meta", 
-			dataset => $self->{dataset}->id(),
-			eprintid => $self->{eprint}->get_value( "eprintid" ) 
-		};
+		eprintid => $self->{eprint}->get_value( "eprintid" ),
+		stage => "meta" };
 
 	my $submit_buttons = {
 		_order => [ "prev", "next" ],
@@ -1338,9 +1121,6 @@ sub _do_stage_meta
 
 	$page->appendChild( 
 		$self->{session}->render_input_form( 
-			staff=>$self->{staff},
-			dataset=>$self->{dataset},
-			type=>$self->{eprint}->get_value( "type" ),
 			fields=>\@edit_fields,
 			values=>$self->{eprint}->get_data(),
 			show_names=>1,
@@ -1351,10 +1131,8 @@ sub _do_stage_meta
 			dest=>$self->{formtarget}."#t" ) );
 
 	$self->{session}->build_page(
-		$self->{session}->html_phrase( 
-			"lib/submissionform:title_meta" ),
-		$page,
-		"submission_meta" );
+		$self->{session}->html_phrase( "lib/submissionform:title_meta" ),
+		$page );
 	$self->{session}->send_page();
 }
 
@@ -1363,14 +1141,6 @@ sub _do_stage_meta
 ######################################################################
 #
 #  Select an upload format
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_do_stage_files
-#
-# undocumented
 #
 ######################################################################
 
@@ -1429,29 +1199,28 @@ sub _do_stage_files
 			$td->appendChild( $self->{session}->make_text( $nfiles ) );
 			$td = $self->{session}->make_element( "td" );
 			$tr->appendChild( $td );
-			my $edit_id = "edit_".$doc->get_value( "docid" );
-			my $remove_id = "remove_".$doc->get_value( "docid" );
-			$td->appendChild( 
-				$self->{session}->render_action_buttons(
-				_order => [ $edit_id, $remove_id ],
-				$edit_id => $self->{session}->phrase( 
-					"lib/submissionform:action_edit" ) ,
-				$remove_id => $self->{session}->phrase( 
-					"lib/submissionform:action_remove" ) 
+			$td->appendChild( $self->{session}->render_action_buttons(
+				"edit_".$doc->get_value( "docid" ) => 
+					$self->{session}->phrase( 
+						"lib/submissionform:action_edit" ) ,
+				"remove_".$doc->get_value( "docid" ) => 
+					$self->{session}->phrase( 
+						"lib/submissionform:action_remove" ) 
 			) );
 		}
-		$form->appendChild( $self->{session}->make_element( "br" ) );
+		$form->appendChild( $self->{session}->make_element( "br " ) );
 	}
 
+	$form->appendChild( $self->{session}->render_action_buttons(
+		newdoc => $self->{session}->phrase( 
+				"lib/submissionform:action_newdoc" ) ) );
+		
 	$form->appendChild( $self->{session}->render_hidden_field(
 		"stage",
 		"files" ) );
 	$form->appendChild( $self->{session}->render_hidden_field(
 		"eprintid",
 		$self->{eprint}->get_value( "eprintid" ) ) );
-	$form->appendChild( $self->{session}->render_hidden_field(
-		"dataset",
-		$self->{eprint}->get_dataset()->id() ) );
 
 	my %buttons;
 	$buttons{prev} = $self->{session}->phrase( "lib/submissionform:action_prev" );
@@ -1463,28 +1232,19 @@ sub _do_stage_files
 	}
 
 	my @reqformats = @{$self->{session}->get_archive()->get_conf( "required_formats" )};	
-	if( scalar @reqformats == 0 )
+	if( scalar @reqformats >= 0 )
 	{
-		$form->appendChild(
-			$self->{session}->html_phrase(
-				"lib/submissionform:none_required" ) );
-	}
-	else
-	{
- 		my $doc_ds = $self->{session}->get_archive()->get_dataset( 
-			"document" );
+ 		my $doc_ds = $self->{session}->get_archive()->get_dataset( "document" );
+
 		my $list = $self->{session}->make_doc_fragment();
 		my $c = scalar @reqformats;
 		foreach( @reqformats )
 		{
 			--$c;
-                	$list->appendChild( 
-				$doc_ds->render_type_name( 
-					$self->{session}, $_ ) );
+                	$list->appendChild( $doc_ds->render_type_name( $self->{session}, $_ ) );
 			if( $c > 0 )
 			{
-                		$list->appendChild( 
-					$self->{session}->make_text( ", " ) );
+                		$list->appendChild( $self->{session}->make_text( ", " ) );
 			}
 		}
 		$form->appendChild(
@@ -1493,17 +1253,11 @@ sub _do_stage_files
 				list=>$list ) );
 	}
 
-	$form->appendChild( $self->{session}->render_action_buttons(
-		newdoc => $self->{session}->phrase( 
-				"lib/submissionform:action_newdoc" ) ) );
-	$form->appendChild( $self->{session}->make_element( "br" ) );
 	$form->appendChild( $self->{session}->render_action_buttons( %buttons ) );
 
 	$self->{session}->build_page(
-		$self->{session}->html_phrase( 
-			"lib/submissionform:title_format" ),
-		$page,
-		"submission_format" );
+		$self->{session}->html_phrase( "lib/submissionform:title_format" ),
+		$page );
 	$self->{session}->send_page();
 
 }
@@ -1511,14 +1265,6 @@ sub _do_stage_files
 ######################################################################
 #
 #  Document metadata
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_do_stage_docmeta
-#
-# undocumented
 #
 ######################################################################
 
@@ -1535,7 +1281,6 @@ sub _do_stage_docmeta
 	# The hidden fields, used by all forms.
 	my $hidden_fields = {	
 		docid => $self->{document}->get_value( "docid" ),
-		dataset => $self->{eprint}->get_dataset()->id(),
 		eprintid => $self->{eprint}->get_value( "eprintid" ),
 		stage => "docmeta" };
 
@@ -1561,7 +1306,6 @@ sub _do_stage_docmeta
 
 	$page->appendChild( 
 		$self->{session}->render_input_form( 
-			staff=>$self->{staff},
 			fields=>$fields,
 			values=>$self->{document}->get_data(),
 			show_help=>1,
@@ -1571,24 +1315,14 @@ sub _do_stage_docmeta
 			dest=>$self->{formtarget}."#t" ) );
 
 	$self->{session}->build_page(
-		$self->{session}->html_phrase( 
-			"lib/submissionform:title_docmeta" ),
-		$page,
-		"submission_docmeta" );
+		$self->{session}->html_phrase( "lib/submissionform:title_docmeta" ),
+		$page );
 	$self->{session}->send_page();
 }
 
 ######################################################################
 #
 #  View / Delete files
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_do_stage_fileview
-#
-# undocumented
 #
 ######################################################################
 
@@ -1606,29 +1340,12 @@ sub _do_stage_fileview
 	# The hidden fields, used by all forms.
 	my $hidden_fields = {	
 		docid => $self->{document}->get_value( "docid" ),
-		dataset => $self->{eprint}->get_dataset()->id(),
 		eprintid => $self->{eprint}->get_value( "eprintid" ),
 		stage => "fileview" };
 
 	############################
 
-	my $options = [];
-	my $hideopts = {};
-	foreach( "archive", "graburl", "plain" )
-	{
-		$hideopts->{$_} = 0;
-		my $copt = $self->{session}->get_archive->get_conf( 
-			"submission_hide_upload_".$_ );
-		$hideopts->{$_} = 1 if( defined $copt && $copt );
-	}
-
-	push @{$options},"plain" unless( $hideopts->{plain} );
-	push @{$options},"graburl" unless( $hideopts->{graburl} );
-	unless( $hideopts->{archive} )
-	{
-		push @{$options}, @{$self->{session}->get_archive()->get_conf( 
-					"archive_formats" )}
-	}
+#cjg Need to make "graburl" dependent on the setted-ness of "wget"
 
 	my $arc_format_field = EPrints::MetaField->new(
 		confid=>'format',
@@ -1636,29 +1353,19 @@ sub _do_stage_fileview
 		name=>'arc_format',
 		required=>1,
 		type=>'set',
-		options => $options );
+		options => [ 
+				"plain", 
+				"graburl", 
+				@{$self->{session}->get_archive()->get_conf( 
+					"archive_formats" )}
+			] );		
 
-	my $fields = [ $arc_format_field ];
-
-	my $hidehowmany = $self->{session}->get_archive->get_conf(
-		"submission_hide_howmanyfiles" );
-	if( defined $hidehowmany && $hidehowmany )
-	{	
-		# This hidden field will appear in the other
-		# forms on this page too, but that will not hurt.
-		$hidden_fields->{num_files} = 1;
-	}
-	else
-	{	
-		my $num_files_field = EPrints::MetaField->new(
-			confid=>'format',
-			archive=> $self->{session}->get_archive(),
-			name=>'num_files',
-			type=>'int',
-			digits=>2 );
-	
-		push @{$fields}, $num_files_field;
-	}
+	my $num_files_field = EPrints::MetaField->new(
+		confid=>'format',
+		archive=> $self->{session}->get_archive(),
+		name=>'num_files',
+		type=>'int',
+		digits=>2 );
 
 	my $submit_buttons;
 	$submit_buttons = {
@@ -1667,8 +1374,10 @@ sub _do_stage_fileview
 
 	$page->appendChild( 
 		$self->{session}->render_input_form( 
-			staff=>$self->{staff},
-			fields=>$fields,
+			fields=>[ 
+				$arc_format_field, 
+				$num_files_field 
+			],
 			values=>{
 				num_files => 1,	
 				arc_format => "plain"
@@ -1826,17 +1535,14 @@ sub _do_stage_fileview
 
 	$page->appendChild( 
 		$self->{session}->render_input_form( 
-			staff=>$self->{staff},
 			buttons=>$submit_buttons,
 			hidden_fields=>$hidden_fields,
 			default_action=>"prev",
 			dest=>$self->{formtarget}."#t" ) );
 
 	$self->{session}->build_page(
-		$self->{session}->html_phrase( 
-			"lib/submissionform:title_fileview" ),
-		$page,
-		"submission_fileview" );
+		$self->{session}->html_phrase( "lib/submissionform:title_fileview" ),
+		$page );
 	$self->{session}->send_page();
 }
 	
@@ -1845,14 +1551,6 @@ sub _do_stage_fileview
 ######################################################################
 #
 #  Actual file upload form
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_do_stage_upload
-#
-# undocumented
 #
 ######################################################################
 
@@ -1908,7 +1606,6 @@ sub _do_stage_upload
 	my %hidden_fields = (
 		stage => "upload",
 		eprintid => $self->{eprint}->get_value( "eprintid" ),
-		dataset => $self->{eprint}->get_dataset()->id(),
 		docid => $self->{document}->get_value( "docid" ),
 		num_files => $self->{num_files},
 		arc_format => $self->{arc_format} 
@@ -1929,10 +1626,8 @@ sub _do_stage_upload
 
 
 	$self->{session}->build_page(
-		$self->{session}->html_phrase( 
-			"lib/submissionform:title_upload" ),
-		$page,
-		"submission_upload" );
+		$self->{session}->html_phrase( "lib/submissionform:title_upload" ),
+		$page );
 	$self->{session}->send_page();
 }
 
@@ -1943,20 +1638,13 @@ sub _do_stage_upload
 #
 ######################################################################
 
-######################################################################
-# 
-# EPrints::SubmissionForm::_do_stage_quickverify { return $_[0]->_do_stage_verify; }( _do_stage_quickverify { return $_[0]->_do_stage_verify; } )
-#
-# undocumented
-#
-######################################################################
-
 sub _do_stage_quickverify { return $_[0]->_do_stage_verify; }
 
 sub _do_stage_verify
 {
 	my( $self ) = @_;
 
+	$self->{eprint}->prune();
 	$self->{eprint}->commit();
 	# Validate again, in case we came from home
 	$self->{problems} = $self->{eprint}->validate_full( $self->{for_archive} );
@@ -1967,15 +1655,11 @@ sub _do_stage_verify
 	# stage could be either verify or quickverify
 	my $hidden_fields = {
 		stage => $self->{new_stage},
-		dataset => $self->{eprint}->get_dataset()->id(),
 		eprintid => $self->{eprint}->get_value( "eprintid" )
 	};
 	my $submit_buttons = {
 		prev => $self->{session}->phrase(
-				"lib/submissionform:action_prev" ),
-		later => $self->{session}->phrase(
-				"lib/submissionform:action_later" ),
-		_order => [ "prev", "later" ]
+				"lib/submissionform:action_prev" )
 	};
 	my $default_action = "prev";
 
@@ -1989,26 +1673,22 @@ sub _do_stage_verify
 	}
 	else
 	{
-		$page->appendChild( $self->{session}->html_phrase(
-			"lib/submissionform:please_verify") );
+		$page->appendChild( $self->{session}->html_phrase("lib/submissionform:please_verify") );
 
 		$page->appendChild( $self->{session}->render_ruler() );	
 		$page->appendChild( $self->{eprint}->render_full() );
 		$page->appendChild( $self->{session}->render_ruler() );	
 
+		# cjg Should be from an XML-lang file NOT the main config.
 		$page->appendChild( $self->{session}->html_phrase( "deposit_agreement_text" ) );
-		$page->appendChild( $self->{session}->render_ruler );
 
-
-		$submit_buttons->{submit} = $self->{session}->phrase( 
-			"lib/submissionform:action_submit" );
+		$submit_buttons->{submit} = $self->{session}->phrase( "lib/submissionform:action_submit" );
 		$default_action = "submit";
-		$submit_buttons->{_order} = [ "prev", "later", "submit" ];
+		$submit_buttons->{_order} = [ "prev","submit" ];
 	}
 
 	$page->appendChild( 
 		$self->{session}->render_input_form( 
-			staff=>$self->{staff},
 			show_help=>1,
 			buttons=>$submit_buttons,
 			hidden_fields=>$hidden_fields,
@@ -2016,10 +1696,8 @@ sub _do_stage_verify
 			dest=>$self->{formtarget}."#t" ) );
 
 	$self->{session}->build_page(
-		$self->{session}->html_phrase( 
-			"lib/submissionform:title_verify" ),
-		$page,
-		"submission_verify" );
+		$self->{session}->html_phrase( "lib/submissionform:title_verify" ),
+		$page );
 	$self->{session}->send_page();
 }		
 		
@@ -2027,14 +1705,6 @@ sub _do_stage_verify
 ######################################################################
 #
 #  All done.
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_do_stage_done
-#
-# undocumented
 #
 ######################################################################
 
@@ -2048,10 +1718,8 @@ sub _do_stage_done
 	$page->appendChild( $self->{session}->html_phrase("lib/submissionform:thanks") );
 
 	$self->{session}->build_page(
-		$self->{session}->html_phrase( 
-			"lib/submissionform:title_done" ),
-		$page,
-		"submission_done" );
+		$self->{session}->html_phrase( "lib/submissionform:title_done" ),
+		$page );
 	$self->{session}->send_page();
 }
 
@@ -2059,14 +1727,6 @@ sub _do_stage_done
 ######################################################################
 #
 #  Confirm deletion
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_do_stage_confirmdel
-#
-# undocumented
 #
 ######################################################################
 
@@ -2082,7 +1742,6 @@ sub _do_stage_confirmdel
 
 	my $hidden_fields = {
 		stage => "confirmdel",
-		dataset => $self->{eprint}->get_dataset()->id(),
 		eprintid => $self->{eprint}->get_value( "eprintid" )
 	};
 
@@ -2096,17 +1755,14 @@ sub _do_stage_confirmdel
 
 	$page->appendChild( 
 		$self->{session}->render_input_form( 
-			staff=>$self->{staff},
 			show_help=>1,
 			buttons=>$submit_buttons,
 			hidden_fields=>$hidden_fields,
 			dest=>$self->{formtarget}."#t" ) );
 
 	$self->{session}->build_page(
-		$self->{session}->html_phrase( 
-			"lib/submissionform:title_confirmdel" ),
-		$page,
-		"submission_confirmdel" );
+		$self->{session}->html_phrase( "lib/submissionform:title_confirmdel" ),
+		$page );
 	$self->{session}->send_page();
 }	
 
@@ -2114,14 +1770,6 @@ sub _do_stage_confirmdel
 ######################################################################
 #
 #  Automatically return to author's home.
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_do_stage_return
-#
-# undocumented
 #
 ######################################################################
 
@@ -2137,14 +1785,6 @@ sub _do_stage_return
 ######################################################################
 #
 #  Miscellaneous Functions
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_update_from_form( $field_id )
-#
-# undocumented
 #
 ######################################################################
 
@@ -2169,14 +1809,6 @@ sub _update_from_form
 #
 ######################################################################
 
-
-######################################################################
-# 
-# $foo = $thing->_render_problems( $before, $after )
-#
-# undocumented
-#
-######################################################################
 
 sub _render_problems
 {
@@ -2235,14 +1867,6 @@ sub _render_problems
 
 
 
-######################################################################
-# 
-# $foo = $thing->_set_stage_next
-#
-# undocumented
-#
-######################################################################
-
 sub _set_stage_next
 {
 	my( $self ) = @_;
@@ -2255,14 +1879,6 @@ sub _set_stage_next
 		$self->{new_stage} = $self->{stages}->{$self->{new_stage}}->{next};
 	}
 }
-
-######################################################################
-# 
-# $foo = $thing->_set_stage_prev
-#
-# undocumented
-#
-######################################################################
 
 sub _set_stage_prev
 {
@@ -2277,14 +1893,6 @@ sub _set_stage_prev
 	}
 }
 
-######################################################################
-# 
-# $foo = $thing->_set_stage_this
-#
-# undocumented
-#
-######################################################################
-
 sub _set_stage_this
 {
 	my( $self ) = @_;
@@ -2292,28 +1900,4 @@ sub _set_stage_this
 	$self->{new_stage} = $self->{stage};
 }
 
-######################################################################
-=pod
-
-=item $foo = $thing->DESTROY
-
-undocumented
-
-=cut
-######################################################################
-
-sub DESTROY
-{
-	my( $self ) = @_;
-
-	EPrints::Utils::destroy( $self );
-}
-
 1;
-
-######################################################################
-=pod
-
-=back
-
-=cut

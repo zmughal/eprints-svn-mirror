@@ -29,11 +29,11 @@ for( my $d=0; $d<7; ++$d )
 	my $t = time-60*60*24*$d;
 	my $searchexp = new EPrints::SearchExpression(
 		session => $session,
-		use_cache => 0,
+		use_cache => 1,
 		dataset => $ds );
 	
 
-	my $date = EPrints::Utils::get_datestamp( $t );
+	my $date = EPrints::MetaField::get_datestamp( $t );
 	$searchexp->add_field( $ds->get_field( "datestamp" ), $date );
 		
 	$searchexp->perform_search();
@@ -82,7 +82,7 @@ $page->appendChild( $session->html_phrase( "general:frontpage_link" ) );
 	
 my $title = $session->html_phrase( "cgi/latest:title" );
 
-$session->build_page( $title, $page, "latest" );
+$session->build_page( $title, $page );
 $session->send_page();
 
 $session->terminate;

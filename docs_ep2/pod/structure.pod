@@ -56,23 +56,18 @@ The "super class" of I<subjects>, I<users>, I<eprints> and I<documents>. In the 
 
 A dataset is a collection of I<items> of the same type. It can be searched.
 
-Some datasets all have the same "config id". The "config id" is used to get
-information about the dataset from the archive config - inbox, buffer, archive
-and deletion all have the same metadata fields and types.
-
 Core datasets are:
-   
-   DATASET ID | CONFIG ID    | COMMENT
-              |              |
-   inbox      | eprint       | Eprints which users are still working on.
-   buffer     | eprint       | Eprints submitted for editorial approval.
-   archive    | eprint       | Eprints live in the archive.
-   deletion   | eprint       | Eprints which have been deleted from the archive.
-   user       | user         | Users registered.
-   subject    | subject      | The subject tree or lattice.
-   document   | document     | The documents belonging to ALL 
-              |              | eprints in the system.
- subscription | subscription | The subscriptions which users have requested.
+ 
+ DATASET ID | TYPE     | COMMENT
+            |          |
+ inbox      | eprint   | Eprints which users are still working on.
+ buffer     | eprint   | Eprints submitted for editorial approval.
+ archive    | eprint   | Eprints live in the archive.
+ deletion   | eprint   | Eprints which have been deleted from the archive.
+ user       | user     | Users registered.
+ subject    | subject  | The subject tree or lattice.
+ document   | document | The documents belonging to ALL 
+            |          | eprints in the system.
 
 =item B<database>
 
@@ -85,12 +80,6 @@ The connection to the MySQL back end. I<datasets> are stored in the MySQL system
  EPrints::MetaField
 
 A single field in a dataset. Each dataset has a few "system" fields which eprints uses to manage the system and then any number of I<archive> specific fields which you may configure.
-
-=item B<subscriptions> (sometimes called alerts in other archives)
-
- EPrints::Subscription
-
-A stored search which is performed every day/week/month and any new results are the mailed to the user who owns the subscription. 
 
 =back
 
@@ -116,9 +105,5 @@ A stored search which is performed every day/week/month and any new results are 
 
 
 =for text The UML Relational Diagram appears here in the HTML, PDF & Postscript versions.
-
-=for texinfo The UML Relational Diagram appears here in the HTML, PDF & Postscript versions.
-
-This diagram does not show "Subscription". Subscription is a subclass of DataObj (like EPrint, User etc.). A Subscription is associated with one User. A User is associated with 0..n Subscription's.
 
 

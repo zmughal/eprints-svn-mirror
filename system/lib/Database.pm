@@ -1,6 +1,10 @@
 ######################################################################
 #
-# EPrints::Database
+# EPrints Database Access Module
+#
+#  Provides access to the backend database. All database access done
+#  via this module, in the hope that the backend can be replaced
+#  as easily as possible.
 #
 ######################################################################
 #
@@ -12,63 +16,13 @@
 #
 ######################################################################
 
-
-=pod
-
-=head1 NAME
-
-B<EPrints::Database> - a connection to the SQL database for an eprints
-session.
-
-=head1 DESCRIPTION
-
-EPrints Database Access Module
-
-Provides access to the backend database. All database access done
-via this module, in the hope that the backend can be replaced
-as easily as possible.
-
-Not quite all the SQL is in the module. There is some in EPrints::SearchField,
-EPrints::SearchExpression & EPrints::MetaField.
-
-The database object is created automatically when you start a new
-eprints session. To get a handle on it use:
-
-$db = $session->get_archive
-
-=over 4
-
-=cut
-
-######################################################################
-#
-# INSTANCE VARIABLES:
-#
-#  $self->{session}
-#     The EPrints::Session which is associated with this database 
-#     connection.
-#
-#  $self->{debug}
-#     If true then SQL is logged.
-#
-#  $self->{dbh}
-#     The handle on the actual database connection.
-#
-######################################################################
-
 package EPrints::Database;
 
 use DBI;
-use Carp;
-
 use EPrints::EPrint;
 use EPrints::Subscription;
 
 my $DEBUG_SQL = 0;
-
-# this may not be the current version of eprints, it's the version
-# of eprints where the current desired db configuration became standard.
-$EPrints::Database::DBVersion = "2.2";
 
 # cjg not using transactions so there is a (very small) chance of
 # dupping on a counter. 
@@ -76,24 +30,25 @@ $EPrints::Database::DBVersion = "2.2";
 #
 # Counters
 #
-@EPrints::Database::counters = ( "eprintid", "userid", "subscriptionid" );
+@EPrints::Database::counters = ( "eprintid", "userid" );
 
 
+#
+#
 # ID of next buffer table. This can safely reset to zero each time
 # The module restarts as it is only used for temporary tables.
 #
 my $NEXTBUFFER = 0;
 my %TEMPTABLES = ();
-
 ######################################################################
-=pod
-
-=item $dbstr = EPrints::Database::build_connection_string( %params )
-
-Build the string to use to connect to the database via DBI. %params 
-must contain dbname, and may also contain dbport, dbhost and dbsock.
-
-=cut
+#
+# connection_handle build_connection_string( %params )
+#                                            
+#  Build the string to use to connect via DBI
+#  params are:
+#     dbhost, dbport, dbname and dbsock.
+#  Only dbname is required.
+#
 ######################################################################
 
 sub build_connection_string
@@ -118,14 +73,14 @@ sub build_connection_string
 }
 
 
+
 ######################################################################
-=pod
-
-=item $db = EPrints::Database->new( $session )
-
-Create a connection to the database.
-
-=cut
+#
+# EPrints::Database new( $session )
+#                        EPrints::Session
+#                          
+#  Connect to the database.
+#
 ######################################################################
 
 sub new
@@ -168,15 +123,14 @@ sub new
 }
 
 
+
 ######################################################################
-=pod
-
-=item $foo = $db->disconnect
-
-Disconnects from the EPrints database. Should always be done
-before any script exits.
-
-=cut
+#
+# disconnect()
+#
+#  Disconnects from the EPrints database. Should always be done
+#  before any script exits.
+#
 ######################################################################
 
 sub disconnect
@@ -192,15 +146,13 @@ sub disconnect
 }
 
 
-
 ######################################################################
-=pod
-
-=item $errstr = $db->error
-
-Return a string describing the last SQL error.
-
-=cut
+#
+# $error = error()
+# string 
+# 
+#  Gives details of any errors that have occurred
+#
 ######################################################################
 
 sub error
@@ -212,13 +164,13 @@ sub error
 
 
 ######################################################################
-=pod
-
-=item $success = $db->create_archive_tables
-
-Create all the SQL tables for each dataset.
-
-=cut
+#
+# $success = create_archive_tables()
+# boolean 
+#
+#  Creates the archive tables (user, archive and buffer) from the
+#  metadata tables.
+#
 ######################################################################
 
 sub create_archive_tables
@@ -227,36 +179,36 @@ sub create_archive_tables
 	
 	my $success = 1;
 
-	foreach( &EPrints::DataSet::get_sql_dataset_ids )
+	foreach( "user" , "inbox" , "buffer" , "archive" ,
+		 "document" , "subject" , "subscription" , "deletion" )
 	{
-		$success = $success && $self->create_dataset_tables( 
+		$success = $success && $self->_create_table( 
 			$self->{session}->get_archive()->get_dataset( $_ ) );
 	}
 
 	$success = $success && $self->_create_cachemap_table();
 
 	$success = $success && $self->_create_counter_table();
-
-	$self->create_version_table;	
-	
-	$self->set_version( $EPrints::Database::DBVersion );
 	
 	return( $success );
 }
 		
 
+
 ######################################################################
-=pod
-
-=item $success = $db->create_dataset_tables( $dataset )
-
-Create all the SQL tables for a single dataset.
-
-=cut
+#
+# $success = _create_table( $dataset )
+# boolean                   EPrints::DataSet
+#
+#  Create a database table to contain the given dataset.
+#
+#  The aux. function has an extra parameter which means the table
+#  has no primary key, this is for purposes of recursive table 
+#  creation (aux. tables have no primary key)
+#
 ######################################################################
 
-
-sub create_dataset_tables
+sub _create_table
 {
 	my( $self, $dataset ) = @_;
 	
@@ -329,15 +281,6 @@ sub create_dataset_tables
 # $rv = _create_table_aux( $tablename, $dataset, $setkey, @fields )
 # boolean                  string      |         boolean  array of
 #                                      EPrints::DataSet   EPrint::MetaField
-
-######################################################################
-# 
-# $success = $db->_create_table_aux( $tablename, $dataset, $setkey, 
-#                                     @fields )
-#
-# undocumented
-#
-######################################################################
 
 sub _create_table_aux
 {
@@ -465,23 +408,11 @@ sub _create_table_aux
 #
 ######################################################################
 
-
-######################################################################
-=pod
-
-=item $success = $db->add_record( $dataset, $data )
-
-Add the given data as a new record in the given dataset. $data is
-a reference to a hash containing values structured for a record in
-the that dataset.
-
-=cut
-######################################################################
-
 sub add_record
 {
 	my( $self, $dataset, $data ) = @_;
 
+ #print STDERR "-----------------ADD RECORD------------------\n";
 	my $table = $dataset->get_sql_table_name();
 	
 	my $keyfield = $dataset->get_key_field();
@@ -508,22 +439,12 @@ sub add_record
 
 ######################################################################
 #
-# $mungedvalue = prep_value( $value )
+# $munged = prep_value( $value )
 #
 # [STATIC]
+#  Modify value such that " becomes \" and \ becomes \\ 
+#  Returns "" if $value is undefined.
 #
-######################################################################
-
-
-######################################################################
-=pod
-
-=item $mungedvalue = EPrints::Database::prep_value( $value )
-
-Escape a value for SQL. Modify value such that " becomes \" and \ 
-becomes \\ and ' becomes \'
-
-=cut
 ######################################################################
 
 sub prep_value
@@ -531,48 +452,28 @@ sub prep_value
 	my( $value ) = @_; 
 	
 	return "" unless( defined $value );
-	$value =~ s/["\\']/\\$&/g;
+	$value =~ s/["\\.']/\\$&/g;
 	return $value;
 }
-
-
-######################################################################
-=pod
-
-=item $mungedvalue = EPrints::Database::prep_like_value( $value )
-
-Escape an value for an SQL like field. In addition to ' " and \ also 
-escapes % and _
-
-=cut
-######################################################################
 
 sub prep_like_value
 {
 	my( $value ) = @_; 
 	
 	return "" unless( defined $value );
-	$value =~ s/["\\'%_]/\\$&/g;
+	$value =~ s/["\\.'%_]/\\$&/g;
 	return $value;
 }
-
-
-######################################################################
-=pod
-
-=item $success = $db->update( $dataset, $data )
-
-Updates a record in the database with the given $data. Obviously the
-value of the primary key must be set.
-
-This also updates the text indexes and the ordering keys.
-
-=cut
-######################################################################
 
 sub update
 {
 	my( $self, $dataset, $data ) = @_;
+	#my( $database_self, $dataset_ds, $struct_md_data ) = @_;
+
+#use Data::Dumper;
+#print STDERR "-----------------UPDATE RECORD------------------\n";
+#print STDERR Dumper($data);
+#print STDERR "-----------------////UPDATE RECORD ------------------\n";
 
 	my $rv = 1;
 	my $sql;
@@ -720,17 +621,21 @@ sub update
 					}
 				}
 				$position++ if $incp;
+				#print STDERR "xxxx($incp)\n";
 			}
 		}
 		else
 		{
 			my $value = $multifield->which_bit( $fieldvalue );
+#print STDERR "ML".$multifield->get_name()." ".Dumper($value,$value)."\n-----------\n";
 			if( $multifield->get_property( "multilang" ) )
 			{
+#print STDERR "1 ".$multifield->get_name()." ".Dumper($value)."\n";
 				my $langid;
 				foreach $langid ( keys %{$value} )
 				{
 					my $val = $value->{$langid};
+#print STDERR "2 ".$multifield->get_name()." $langid=> ".Dumper($val)."\n";
 					if( defined $val )
 					{
 						push @values, { 
@@ -745,6 +650,9 @@ sub update
 				die "This can't happen in update!"; #cjg!
 			}
 		}
+##print STDERR "---(".$multifield->get_name().")---\n";
+#use Data::Dumper;
+#print STDERR Dumper(@values);
 					
 		my $v;
 		foreach $v ( @values )
@@ -808,7 +716,7 @@ sub update
 		{
 			my $ov = $_->ordervalue( 
 					$data->{$_->get_name()},
-					$self->{session},
+					$self->{session}->get_archive(), 
 					$langid );
 			
 			push @fnames, $_->get_sql_name();
@@ -825,16 +733,13 @@ sub update
 }
 
 
-
 ######################################################################
-=pod
-
-=item $success = $db->remove( $dataset, $id )
-
-Attempts to remove the record with the primary key $id from the 
-specified dataset.
-
-=cut
+#
+# $success = remove( $table, $field, $value )
+#
+#  Attempts to remove a record from $table, where $field=$value.
+#  Typically, $field will be the key field and value the ID.
+#
 ######################################################################
 
 sub remove
@@ -879,10 +784,10 @@ sub remove
 
 
 ######################################################################
-# 
-# $success = $db->_create_counter_table
 #
-# undocumented
+# $success = _create_counter_table()
+#
+#  Creates the counter table.
 #
 ######################################################################
 
@@ -906,8 +811,8 @@ sub _create_counter_table
 	# Create the counters 
 	foreach $counter (@EPrints::Database::counters)
 	{
-		$sql = "INSERT INTO ".$counter_ds->get_sql_table_name()." ".
-			"VALUES (\"$counter\", 0);";
+		$sql = "INSERT INTO ".$counter_ds->get_sql_table_name()." VALUES ".
+			"(\"$counter\", 0);";
 
 		$sth = $self->do( $sql );
 		
@@ -919,12 +824,11 @@ sub _create_counter_table
 	return( 1 );
 }
 
-
 ######################################################################
-# 
-# $success = $db->_create_cachemap_table
 #
-# undocumented
+# $success = _create_cachemap_table()
+#
+#  Creates the temporary table map table.
 #
 ######################################################################
 
@@ -957,18 +861,17 @@ END
 
 
 ######################################################################
-=pod
-
-=item $n = $db->counter_next( $counter )
-
-Return the next unused value for the named counter. Returns undef if 
-the counter doesn't exist.
-
-=cut
+#
+# $count = counter_next( $counter )
+#
+#  Return the next value for the named counter. Returns undef if the
+#  counter doesn't exist.
+#
 ######################################################################
 
 sub counter_next
 {
+	# still not appy with this #cjg (prep values too?)
 	my( $self, $counter ) = @_;
 
 	my $ds = $self->{session}->get_archive()->get_dataset( "counter" );
@@ -990,18 +893,6 @@ sub counter_next
 	return( $row[0] );
 }
 
-
-######################################################################
-=pod
-
-=item $searchexp = $db->cache_exp( $cacheid )
-
-Return the serialised SearchExpression of a the cached search with
-id $cacheid. Return undef if the id is invalid or expired.
-
-=cut
-######################################################################
-
 sub cache_exp
 {
 	my( $self , $id ) = @_;
@@ -1017,26 +908,10 @@ sub cache_exp
 
 	my $sth = $self->prepare( $sql );
 	$self->execute( $sth , $sql );
-	my( $searchexp ) = $sth->fetchrow_array;
-	$sth->finish;
 
-	return $searchexp;
+	return $sth->fetchrow_array;
 }
 
-
-
-######################################################################
-=pod
-
-=item $id = $db->cache_id( $searchexp, [$include_expired] )
-
-Return the id of the cached results table containing tbe results of
-the specified serialised search or under if the table does not exist
-or is expired. If include_expired is true then items over the expire
-time but still in the db also get returned.
-
-=cut
-######################################################################
 
 sub cache_id
 {
@@ -1057,22 +932,9 @@ sub cache_id
 
 	my $sth = $self->prepare( $sql );
 	$self->execute( $sth , $sql );
-	my( $tableid ) = $sth->fetchrow_array;
-	$sth->finish;
 
-	return $tableid;
+	return $sth->fetchrow_array;
 }
-
-
-######################################################################
-=pod
-
-=item $bool = $db->is_cached( $searchexp )
-
-Return true if the serialised search expression is currently cached.
-
-=cut
-######################################################################
 
 sub is_cached
 {
@@ -1080,18 +942,6 @@ sub is_cached
 
 	return defined $self->cache_id( $code );
 }
-
-
-######################################################################
-=pod
-
-=item $n = $db->count_cache( $searchexp )
-
-Return the number of items in the cached search expression of undef
-if it's not cached.
-
-=cut
-######################################################################
 
 sub count_cache
 {
@@ -1102,25 +952,6 @@ sub count_cache
 
 	return $self->count_table( "cache".$id );
 }
-
-
-######################################################################
-=pod
-
-=item $cacheid = $db->cache( $searchexp, $dataset, $srctable, 
-[$order], [$oneshot] )
-
-Create a cache of the specified search expression from the SQL table
-$srctable.
-
-If $order is set then the cache is ordered by the specified fields. For
-example "-year/title" orders by year (descending). Records with the same
-year are ordered by title.
-
-If $oneshot is true then this cache will not be available to other searches.
-
-=cut
-######################################################################
 
 sub cache
 {
@@ -1141,7 +972,6 @@ sub cache
 	$sth = $self->prepare( $sql );
 	$self->execute( $sth, $sql );
 	my( $id ) = $sth->fetchrow_array;
-	$sth->finish;
 
 	my $keyfield = $dataset->get_key_field();
 
@@ -1181,19 +1011,6 @@ sub cache
 
 
 
-
-######################################################################
-=pod
-
-=item $tablename = $db->create_buffer( $keyname )
-
-Create a temporary table with the given keyname. This table will not
-be available to other processes and should be disposed of when you've
-finished with them - MySQL only allows so many temporary tables.
-
-=cut
-######################################################################
-
 sub create_buffer
 {
 	my ( $self , $keyname ) = @_;
@@ -1210,21 +1027,6 @@ sub create_buffer
 	return $tmptable;
 }
 
-
-######################################################################
-=pod
-
-=item $id = $db->make_buffer( $keyname, $data )
-
-Create a temporary table and dump the values from the array reference
-$data into it. 
-
-Even in debugging mode it does not mention this SQL as it's very
-dull.
-
-=cut
-######################################################################
-
 sub make_buffer
 {
 	my( $self, $keyname, $data ) = @_;
@@ -1240,39 +1042,19 @@ sub make_buffer
 	return $id;
 }
 
-
-######################################################################
-=pod
-
-=item $foo = $db->garbage_collect
-
-Loop through known temporary tables, and remove them.
-
-=cut
-######################################################################
-
+# Loop through known temporary tables, and remove them.
 sub garbage_collect
 {
 	my( $self ) = @_;
-
+	#print STDERR "Garbage collect called.\n";
+	my $dropped = 0;
 	foreach( keys %TEMPTABLES )
 	{
 		$self->dispose_buffer( $_ );
+		$dropped++;
 	}
 
 }
-
-
-######################################################################
-=pod
-
-=item $db->dispose_buffer( $id )
-
-Remove temporary table with given id. Won't just remove any
-old table.
-
-=cut
-######################################################################
 
 sub dispose_buffer
 {
@@ -1287,22 +1069,10 @@ sub dispose_buffer
 	
 
 
-
-######################################################################
-=pod
-
-=item $ids = $db->get_index_ids( $table, $condition )
-
-Return a reference to an array of the primary keys from the given SQL 
-table which match the specified condition. 
-
-=cut
-######################################################################
-
 sub get_index_ids
 {
-	my( $self, $table, $condition ) = @_;
 #cjg iffy params
+	my( $self, $table, $condition ) = @_;
 
 	my $sql = "SELECT M.ids FROM $table as M where $condition";	
 	my $results;
@@ -1314,23 +1084,8 @@ sub get_index_ids
 		shift @list;
 		push @{$results}, @list;
 	}
-	$sth->finish;
 	return( $results );
 }
-
-
-######################################################################
-=pod
-
-=item $ids = $db->search( $keyfield, $tables, $conditions )
-
-Return a reference to an array of ids - the results of the search
-specified by $conditions accross the tables specified in the $tables
-hash where keys are tables aliases and values are table names. One
-of the keys MUST be "M".
-
-=cut
-######################################################################
 
 sub search
 {
@@ -1355,22 +1110,10 @@ sub search
 	while( @info = $sth->fetchrow_array ) {
 		push @{$results}, $info[0];
 	}
-	$sth->finish;
 	return( $results );
 }
 
 
-
-
-######################################################################
-=pod
-
-=item $db->drop_cache( $id )
-
-Remove the cached search with the given id.
-
-=cut
-######################################################################
 
 sub drop_cache
 {
@@ -1392,17 +1135,6 @@ sub drop_cache
 	$self->do( $sql );
 }
 
-
-######################################################################
-=pod
-
-=item $n = $db->count_table( $tablename )
-
-Return the number of rows in the specified SQL table.
-
-=cut
-######################################################################
-
 sub count_table
 {
 	my ( $self , $tablename ) = @_;
@@ -1412,47 +1144,15 @@ sub count_table
 	my $sth = $self->prepare( $sql );
 	$self->execute( $sth, $sql );
 	my ( $count ) = $sth->fetchrow_array;
-	$sth->finish;
 
 	return $count;
 }
 
-######################################################################
-=pod
-
-=item $items = $db->from_buffer( $dataset, $buffer, [$offset], [$count], [$justids] )
-
-Return a reference to an array containing all the items from the
-given dataset that have id's in the specified buffer.
-
-=cut
-######################################################################
-
 sub from_buffer 
 {
-	my ( $self , $dataset , $buffer , $offset, $count, $justids ) = @_;
-	return $self->_get( $dataset, 1 , $buffer, $offset, $count );
+	my ( $self , $dataset , $buffer ) = @_;
+	return $self->_get( $dataset, 1 , $buffer );
 }
-
-
-
-######################################################################
-=pod
-
-=item $foo = $db->from_cache( $dataset, [$searchexp], [$id], [$offset], [$count], [$justids] )
-
-Return a reference to an array containing all the items from the
-given dataset that have id's in the specified cache. The cache may be 
-specified either by id or serialised search expression. 
-
-$offset is an offset from the start of the cache and $count is the number
-of records to return.
-
-If $justids is true then it returns just an ref to an array of the record
-ids, not the objects.
-
-=cut
-######################################################################
 
 sub from_cache
 {
@@ -1484,7 +1184,6 @@ sub from_cache
 		{
 			push @results, $values[0];
 		}
-		$sth->finish;
 	}
 	else
 	{
@@ -1499,17 +1198,6 @@ sub from_cache
 
 	return @results;
 }
-
-
-######################################################################
-=pod
-
-=item $db->drop_old_caches
-
-Drop all the expired caches.
-
-=cut
-######################################################################
 
 sub drop_old_caches
 {
@@ -1527,21 +1215,8 @@ sub drop_old_caches
 	{
 		$self->drop_cache( $id );
 	}
-	$sth->finish;
 }
 
-
-
-######################################################################
-=pod
-
-=item $obj = $db->get_single( $dataset, $id )
-
-Return a single item from the given dataset. The one with the specified
-id.
-
-=cut
-######################################################################
 
 sub get_single
 {
@@ -1549,45 +1224,23 @@ sub get_single
 	return ($self->_get( $dataset, 0 , $value ))[0];
 }
 
-
-######################################################################
-=pod
-
-=item $items = $db->get_all( $dataset )
-
-Returns a reference to an array with all the items from the given dataset.
-
-=cut
-######################################################################
-
 sub get_all
 {
 	my ( $self , $dataset ) = @_;
 	return $self->_get( $dataset, 2 );
 }
 
-######################################################################
-# 
-# $foo = $db->_get ( $dataset, $mode, $param, $offset, $ntoreturn )
-#
-# Scary generic function to get records from the database and put
-# them together.
-#
-######################################################################
-
 sub _get 
 {
 	my ( $self , $dataset , $mode , $param, $offset, $ntoreturn ) = @_;
 
-if( !defined $dataset || ref($dataset) eq "") 
-{
-confess();
-
-}
+# print STDERR "========================================BEGIN _get($mode,$param)\n";
 	# mode 0 = one or none entries from a given primary key
 	# mode 1 = many entries from a buffer table
 	# mode 2 = return the whole table (careful now)
 	# mode 3 = some entries from a cache table
+use Carp;
+if( ref($dataset) eq "" ) { confess(); }
 
 	my $table = $dataset->get_sql_table_name();
 
@@ -1701,16 +1354,20 @@ confess();
 				{
 					$value = shift @row;
 				}
+#print STDERR "FIELD: ".$field->get_sql_name()." ($subbit)\n";
 				if( $field->get_property( "mainpart" ) )
 				{
+#print STDERR "N{$value}\n";
 					$record->{$field->get_name()}->{main} = $value;
 				}
 				elsif( $field->get_property( "idpart" ) )
 				{
+#print STDERR "O{$value}\n";
 					$record->{$field->get_name()}->{id} = $value;
 				}
 				else
 				{
+#print STDERR "P{$value}\n";
 					$record->{$field->get_name()} = $value;
 				}
 			}
@@ -1718,7 +1375,14 @@ confess();
 		$data[$count] = $record;
 		$count++;
 	}
-	$sth->finish;
+
+	foreach( @data )
+	{
+# use Data::Dumper;
+# print STDERR "--------xxxx-----FROM DB------------------\n";
+# print STDERR Dumper($_);
+# print STDERR "--------xxxx-----////FROM DB------------------\n";
+	}
 
 	my $multifield;
 	foreach $multifield ( @aux )
@@ -1767,11 +1431,13 @@ confess();
 		$self->execute( $sth, $sql );
 		while( @values = $sth->fetchrow_array ) 
 		{
+#print STDERR "V:".join(",",@values)."\n";
 			my $id = shift( @values );
 			my( $pos, $lang );
 			$pos = shift( @values ) if( $multifield->get_property( "multiple" ) );
 			$lang = shift( @values ) if( $multifield->get_property( "multilang" ) );
 			my $n = $lookup{ $id };
+#print STDERR "[$n][$id]\n";
 			my $value;
 			if( $multifield->is_type( "name" ) )
 			{
@@ -1788,6 +1454,7 @@ confess();
 			my $subbit;
 			$subbit = "id" if( $multifield->get_property( "idpart" ) );
 			$subbit = "main" if( $multifield->get_property( "mainpart" ) );
+#print STDERR "MUFIL: ".$multifield->get_sql_name()." ($subbit)\n";
 
 			if( $multifield->get_property( "multiple" ) )
 			{
@@ -1834,7 +1501,6 @@ confess();
 				}
 			}
 		}
-		$sth->finish;
 	}	
 
 	foreach( @data )
@@ -1845,21 +1511,11 @@ confess();
 	return @data;
 }
 
-
-######################################################################
-=pod
-
-=item $foo = $db->get_values( $field, $dataset )
-
-Return an array of all the distinct values of the EPrints::MetaField
-specified.
-
-=cut
-######################################################################
-
 sub get_values
 {
-	my( $self, $field, $dataset ) = @_;
+	my( $self, $field ) = @_;
+
+	my $dataset = $field->get_dataset();
 
 	my $table;
 	if ( $field->get_property( "multiple" ) || $field->get_property( "multilang" ) )
@@ -1870,50 +1526,25 @@ sub get_values
 	{
 		$table = $dataset->get_sql_table_name();
 	}
-	my $fn = $field->get_sql_name();
-	if( $field->is_type( "name" ) )
-	{
-		$fn = "$fn\_honourific,$fn\_given,$fn\_family,$fn\_lineage";
-	}
-	my $sql = "SELECT DISTINCT $fn FROM $table";
+	my $sqlfn = $field->get_sql_name();
+
+	my $sql = "SELECT DISTINCT $sqlfn FROM $table";
+#print STDERR "($table)($sqlfn)\n";
 	$sth = $self->prepare( $sql );
 	$self->execute( $sth, $sql );
-	my @row = ();
-	while( @row = $sth->fetchrow_array ) 
+	my @values = ();
+	my $value;
+	while( ( $value ) = $sth->fetchrow_array ) 
 	{
-		if( $field->is_type( "name" ) )
-		{
-			my $value = {};
-			$value->{honourific} = shift @row;
-			$value->{given} = shift @row;
-			$value->{family} = shift @row;
-			$value->{lineage} = shift @row;
-			push @values, $value;
-		}
-		else
-		{
-			push @values, $row[0];
-		}
+		push @values, $value;
 	}
-	$sth->finish;
 	return @values;
 }
 
 
-
-######################################################################
-=pod
-
-=item $success = $db->do( $sql )
-
-Execute the given SQL.
-
-=cut
-######################################################################
-
 sub do 
 {
-	my( $self , $sql ) = @_;
+	my ( $self , $sql ) = @_;
 
 	if( $self->{debug} )
 	{
@@ -1928,17 +1559,6 @@ sub do
 
 	return $result;
 }
-
-
-######################################################################
-=pod
-
-=item $sth = $db->prepare( $sql )
-
-Prepare the given $sql and return a handle on it.
-
-=cut
-######################################################################
 
 sub prepare 
 {
@@ -1959,21 +1579,9 @@ sub prepare
 	return $result;
 }
 
-
-######################################################################
-=pod
-
-=item $success = $db->execute( $sth, $sql )
-
-Execute the SQL prepared earlier. $sql is only passed in for debugging
-purposes.
-
-=cut
-######################################################################
-
 sub execute 
 {
-	my( $self , $sth , $sql ) = @_;
+	my ( $self , $sth , $sql ) = @_;
 
 	if( $self->{debug} )
 	{
@@ -1990,18 +1598,6 @@ sub execute
 	return $result;
 }
 
-
-
-######################################################################
-=pod
-
-=item $boolean = $db->exists( $dataset, $id )
-
-Return true if a record with the given primary key exists in the
-dataset, otherwise false.
-
-=cut
-######################################################################
 
 sub exists
 {
@@ -2020,19 +1616,13 @@ sub exists
 
 	my $sth = $self->prepare( $sql );
 	$self->execute( $sth , $sql );
-	my $result = $sth->fetchrow_array;
-	$sth->finish;
-	return 1 if( $result );
+
+	if( $sth->fetchrow_array )
+	{ 
+		return 1;
+	}
 	return 0;
 }
-
-######################################################################
-# 
-# $foo = $db->_freetext_index( $dataset, $id, $field, $value )
-#
-# undocumented
-#
-######################################################################
 
 sub _freetext_index
 {
@@ -2063,7 +1653,6 @@ sub _freetext_index
 		$rv = $rv && $self->execute( $sth, $sql );
 		return 0 unless $rv;
 		my ( $n ) = $sth->fetchrow_array;
-		$sth->finish;
 		my $insert = 0;
 		if( !defined $n )
 		{
@@ -2076,7 +1665,6 @@ sub _freetext_index
 			$sth=$self->prepare( $sql );
 			$rv = $rv && $self->execute( $sth, $sql );
 			my( $ids ) = $sth->fetchrow_array;
-			$sth->finish;
 			my( @list ) = split( ":",$ids );
 			# don't forget the first and last are empty!
 			if( (scalar @list)-2 < 128 )
@@ -2107,14 +1695,6 @@ sub _freetext_index
 
 
 
-######################################################################
-# 
-# $foo = $db->_deindex( $dataset, $keyvalue )
-#
-# undocumented
-#
-######################################################################
-
 sub _deindex
 {
 	my( $self, $dataset, $keyvalue ) = @_;
@@ -2136,7 +1716,6 @@ sub _deindex
 	{
 		push @codes,$code;
 	}
-	$sth->finish;
 	foreach( @codes )
 	{
 		$code = prep_value( $_ );
@@ -2149,7 +1728,6 @@ sub _deindex
 			$sql = "UPDATE $indextable SET ids = '$ids' WHERE fieldword='$code' AND pos='$pos'";
 			$rv = $rv && $self->do( $sql );
 		}
-		$sth->finish;
 	}
 	$sql = "DELETE FROM $rindextable WHERE $where";
 	$rv = $rv && $self->do( $sql );
@@ -2169,17 +1747,6 @@ sub _deindex
 	return $rv;
 }
 
-
-######################################################################
-=pod
-
-=item $db->set_debug( $boolean )
-
-Set the SQL debug mode to true or false.
-
-=cut
-######################################################################
-
 sub set_debug
 {
 	my( $self, $debug ) = @_;
@@ -2187,168 +1754,4 @@ sub set_debug
 	$self->{debug} = $debug;
 }
 
-######################################################################
-=pod
-
-=item $db->create_version_table
-
-Make the version table (and set the only value to be the current
-version of eprints).
-
-=cut
-######################################################################
-
-sub create_version_table
-{
-	my( $self ) = @_;
-
-	my $sql;
-
-	$sql = "CREATE TABLE version ( version VARCHAR(255) )";
-	$self->do( $sql );
-
-	$sql = "INSERT INTO version ( version ) VALUES ( NULL )";
-	$self->do( $sql );
-
-}
-
-######################################################################
-=pod
-
-=item $db->set_version( $versionid );
-
-Set the version id table in the SQL database to the given value
-(used by the upgrade script).
-
-=cut
-######################################################################
-
-sub set_version
-{
-	my( $self, $versionid ) = @_;
-
-	my $sql;
-
-	$sql = "UPDATE version SET version = '".
-		prep_value( $versionid )."'";
-	$self->do( $sql );
-
-	if( $self->{session}->get_noise >= 1 )
-	{
-		print "Set DB compatibility flag to '$versionid'.\n";
-	}
-}
-
-######################################################################
-=pod
-
-=item $boolean = $db->has_table( $tablename )
-
-Return true if the a table of the given name exists in the database.
-
-=cut
-######################################################################
-
-sub has_table
-{
-	my( $self, $tablename ) = @_;
-
-	$sql = "SHOW TABLES";
-	my $sth = $self->prepare( $sql );
-	$self->execute( $sth , $sql );
-	my @row;
-	my $result = 0;
-	while( @row = $sth->fetchrow_array )
-	{
-		if( $row[0] eq $tablename )
-		{
-			$result = 1;
-			last;
-		}
-	}
-	$sth->finish;
-	return $result;
-}
-
-######################################################################
-=pod
-
-=item @tables = $db->get_tables
-
-Return a list of all the tables in the database.
-
-=cut
-######################################################################
-
-sub get_tables
-{
-	my( $self ) = @_;
-
-	$sql = "SHOW TABLES";
-	my $sth = $self->prepare( $sql );
-	$self->execute( $sth , $sql );
-	my @row;
-	my @list = ();
-	while( @row = $sth->fetchrow_array )
-	{
-		push @list, $row[0];
-	}
-	$sth->finish;
-
-	return @list;
-}
-
-
-######################################################################
-=pod
-
-=item $version = $db->get_version
-
-Return the version of eprints which the database is compatable with
-or undef if unknown (before v2.1).
-
-=cut
-######################################################################
-
-sub get_version
-{
-	my( $self ) = @_;
-
-	return undef unless $self->has_table( "version" );
-
-	$sql = "SELECT version FROM version;";
-	@row = $self->{dbh}->selectrow_array( $sql );
-
-	return( $row[0] );
-}
-
-######################################################################
-=pod
-
-=item $boolean = $db->is_latest_version
-
-Return true if the SQL tables are in the correct configuration for
-this edition of eprints. Otherwise false.
-
-=cut
-######################################################################
-
-sub is_latest_version
-{
-	my( $self ) = @_;
-
-	my $version = $self->get_version;
-	return 0 unless( defined $version );
-
-	return $version eq $EPrints::Database::DBVersion;
-}
-
 1; # For use/require success
-
-######################################################################
-=pod
-
-=back
-
-=cut
-

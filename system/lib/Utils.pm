@@ -1,6 +1,8 @@
 ######################################################################
 #
-# EPrints::Utils
+#  EPrints Utility module
+#
+#   Provides various useful functions
 #
 ######################################################################
 #
@@ -12,60 +14,21 @@
 #
 ######################################################################
 
-
-=pod
-
-=head1 NAME
-
-B<EPrints::Utils> - undocumented
-
-=head1 DESCRIPTION
-
-undocumented
-
-=over 4
-
-=cut
-
-######################################################################
-#
-# INSTANCE VARIABLES:
-#
-#  $self->{foo}
-#     undefined
-#
-######################################################################
-
-######################################################################
-#
-#  EPrints Utility module
-#
-#   Provides various useful functions
-#
-######################################################################
-#
-#  __LICENSE__
-#
-######################################################################
-
 package EPrints::Utils;
 use strict;
 use Filesys::DiskSpace;
 use Unicode::String qw(utf8 latin1 utf16);
 use File::Path;
+use XML::DOM;
 use URI;
-use Carp;
-
-use EPrints::SystemSettings;
-use EPrints::XML;
 
 my $DF_AVAILABLE;
 
 BEGIN {
-	$DF_AVAILABLE = 0;
 
 	sub detect_df 
 	{
+	
 		my $dir = "/";
 		my ($fmt, $res);
 	
@@ -92,26 +55,16 @@ BEGIN {
 			$res == 0;
 		}
 	}
-	unless( $EPrints::SystemSettings::conf->{disable_df} )
+	$DF_AVAILABLE = detect_df();
+	if (!$DF_AVAILABLE)
 	{
-		$DF_AVAILABLE = detect_df();
-		if( !$DF_AVAILABLE )
-		{
-			print STDERR <<END;
+		print STDERR <<END;
 ---------------------------------------------------------------------------
-df ("Disk Free" system call) appears to be unavailable on your server. To 
-enable it, you should run 'h2ph * */*' (as root) in your /usr/include 
-directory. See the EPrints manual for more information.
-
-If you can't get df working on your system, you can work around it by
-adding 
-  disable_df => 1
-to .../eprints2/perl_lib/EPrints/SystemSettings.pm
-but you should read the manual about the implications of doing this.
+df appears to be unavailable on your server. To enable it, you should
+run 'h2ph * */*' (as root) in your /usr/include directory. See the EPrints 
+manual for more information.
 ---------------------------------------------------------------------------
 END
-			exit;
-		}
 	}
 }
 
@@ -124,40 +77,18 @@ END
 # 
 ######################################################################
 
-
-######################################################################
-=pod
-
-=item EPrints::Utils::df_dir( $dir )
-
-undocumented
-
-=cut
-######################################################################
-
 sub df_dir
 {
 	my( $dir ) = @_;
 
-	return df $dir if( $DF_AVAILABLE );
-	die( "Attempt to call df when df function is not available." );
+	return df $dir if ($DF_AVAILABLE);
+	warn("df appears to be unavailable on your server. To enable it, you should run 'h2ph * */*' (as root) in your /usr/include directory. See the manual for more information.");	
 }
 
 
 
-
-######################################################################
-=pod
-
-=item EPrints::Utils::render_date( $session, $datevalue )
-
-undocumented
-
-=cut
-######################################################################
-
 sub render_date
-{
+{	
 	my( $session, $datevalue ) = @_;
 
 	if( !defined $datevalue )
@@ -180,17 +111,6 @@ sub render_date
 	return $session->make_text( $elements[2]." ".EPrints::Utils::get_month_label( $session, $elements[1] )." ".$elements[0] );
 }
 
-
-######################################################################
-=pod
-
-=item EPrints::Utils::get_month_label( $session, $monthid )
-
-undocumented
-
-=cut
-######################################################################
-
 sub get_month_label
 {
 	my( $session, $monthid ) = @_;
@@ -201,49 +121,36 @@ sub get_month_label
 }
 
 
-
-######################################################################
-=pod
-
-=item $string = EPrints::Utils::make_name_string( $name, [$familylast] )
-
-undocumented
-
-=cut
-######################################################################
-
-sub make_name_string
+sub render_name
 {
-	my( $name, $familylast ) = @_;
+	my( $session, $name, $familylast ) = @_;
 
-	my $firstbit = "";
+	my $firstbit;
 	if( defined $name->{honourific} && $name->{honourific} ne "" )
 	{
-		$firstbit = $name->{honourific}." ";
+		$firstbit = $name->{honourific}." ".$name->{given};
 	}
-	if( defined $name->{given} )
+	else
 	{
-		$firstbit.= $name->{given};
+		$firstbit = $name->{given};
 	}
 	
-	
-	my $secondbit = "";
-	if( defined $name->{family} )
+	my $secondbit;
+	if( defined $name->{lineage} && $name->{lineage} ne "" )
+	{
+		$secondbit = $name->{family}." ".$name->{lineage};
+	}
+	else
 	{
 		$secondbit = $name->{family};
 	}
-	if( defined $name->{lineage} && $name->{lineage} ne "" )
-	{
-		$secondbit .= " ".$name->{lineage};
-	}
-
 	
-	if( defined $familylast && $familylast )
+	if( $familylast )
 	{
-		return $firstbit." ".$secondbit;
+		return $session->make_text( $firstbit." ".$secondbit );
 	}
 	
-	return $secondbit.", ".$firstbit;
+	return $session->make_text( $secondbit.", ".$firstbit );
 }
 
 ######################################################################
@@ -256,17 +163,6 @@ sub make_name_string
 ######################################################################
 
 
-
-######################################################################
-=pod
-
-=item EPrints::Utils::cmp_namelists( $a, $b, $fieldname )
-
-undocumented
-
-=cut
-######################################################################
-
 sub cmp_namelists
 {
 	my( $a , $b , $fieldname ) = @_;
@@ -276,17 +172,6 @@ sub cmp_namelists
 	return _cmp_names_aux( $val_a, $val_b );
 }
 
-
-######################################################################
-=pod
-
-=item EPrints::Utils::cmp_names( $a, $b, $fieldname )
-
-undocumented
-
-=cut
-######################################################################
-
 sub cmp_names
 {
 	my( $a , $b , $fieldname ) = @_;
@@ -295,14 +180,6 @@ sub cmp_names
 	my $val_b = $b->get_value( $fieldname );
 	return _cmp_names_aux( [$val_a] , [$val_b] );
 }
-
-######################################################################
-# 
-# EPrints::Utils::_cmp_names_aux( $val_a, $val_b )
-#
-# undocumented
-#
-######################################################################
 
 sub _cmp_names_aux
 {
@@ -322,17 +199,6 @@ sub _cmp_names_aux
 }
 
 
-
-######################################################################
-=pod
-
-=item EPrints::Utils::cmp_ints( $a, $b, $fieldname )
-
-undocumented
-
-=cut
-######################################################################
-
 sub cmp_ints
 {
 	my( $a , $b , $fieldname ) = @_;
@@ -342,17 +208,6 @@ sub cmp_ints
 	$val_b= 0 if( !defined $val_b);
 	return $val_a <=> $val_b
 }
-
-
-######################################################################
-=pod
-
-=item EPrints::Utils::cmp_strings( $a, $b, $fieldname )
-
-undocumented
-
-=cut
-######################################################################
 
 sub cmp_strings
 {
@@ -364,17 +219,6 @@ sub cmp_strings
 	return $val_a cmp $val_b
 }
 
-
-######################################################################
-=pod
-
-=item EPrints::Utils::cmp_dates( $a, $b, $fieldname )
-
-undocumented
-
-=cut
-######################################################################
-
 sub cmp_dates
 {
 	my( $a , $b , $fieldname ) = @_;
@@ -383,17 +227,6 @@ sub cmp_dates
 
 # replyto / replytoname are optional (both or neither), they set
 # the reply-to header.
-
-######################################################################
-=pod
-
-=item EPrints::Utils::send_mail( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname )
-
-undocumented
-
-=cut
-######################################################################
-
 sub send_mail
 {
 	my( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname ) = @_;
@@ -425,33 +258,30 @@ sub send_mail
 	my $utf8all	= $utf8body.$utf8sig;
 	my $type	= get_encoding($utf8all);
 	my $content_type_q = "text/plain";
-	my $msg = $utf8all;
 	if ($type eq "iso-latin-1")
 	{
-		$content_type_q = 'text/plain; charset="iso-8859-1"'; 
-		$msg = $utf8all->latin1; 
+		$content_type_q = "text/plain; charset=iso-8859-1"; 
+		$utf8all = $utf8all->latin1; 
 	}
 	#precedence bulk to avoid automail replies?  cjg
-	my $mailheader = "";
+	my $sendmailtext = "";
 	if( defined $replyto )
 	{
 		my $replytoname_q = mime_encode_q( $replytoname );
-		$mailheader.= <<END;
+		$sendmailtext.= <<END;
 Reply-To: "$replytoname_q" <$replyto>
 END
 	}
-	$mailheader.= <<END;
+	$sendmailtext.= <<END;
 From: "$arcname_q" <$adminemail>
 To: "$name_q" <$address>
 Subject: $arcname_q: $subject_q
-Precedence: bulk
 Content-Type: $content_type_q
 Content-Transfer-Encoding: 8bit
-END
 
-	print SENDMAIL $mailheader;
-	print SENDMAIL "\n";
-	print SENDMAIL $msg;
+$utf8all
+END
+	print SENDMAIL $sendmailtext;
 	close(SENDMAIL) or return( 0 );
 	return( 1 );
 }
@@ -466,17 +296,6 @@ END
 # "iso-latin-1" if latin-1 encoded
 # "unknown" if of unknown origin (shouldn't really happen)
 #
-######################################################################
-
-
-######################################################################
-=pod
-
-=item EPrints::Utils::get_encoding( $string )
-
-undocumented
-
-=cut
 ######################################################################
 
 sub get_encoding
@@ -506,17 +325,6 @@ sub get_encoding
 }
 
 # Encode a utf8 string for a MIME header.
-
-######################################################################
-=pod
-
-=item EPrints::Utils::mime_encode_q( $string )
-
-undocumented
-
-=cut
-######################################################################
-
 sub mime_encode_q
 {
 	my( $string ) = @_;
@@ -527,41 +335,14 @@ sub mime_encode_q
 	my $encoding = get_encoding($stringobj);
 
 	return $stringobj
-		if( $encoding eq "7-bit" );
-
-	return $stringobj
-		if( $encoding ne "utf-8" && $encoding ne "iso-latin-1" );
-
-	my @words = split( " ", $stringobj->utf8 );
-
-	foreach( @words )
-	{
-		my $wordobj = Unicode::String->new();
-		$wordobj->utf8( $_ );	
-		# don't do words which are 7bit clean
-		next if( get_encoding($wordobj) eq "7-bit" );
-
-		my $estr = ( $encoding eq "iso-latin-1" ?
-		             $wordobj->latin1 :
-			     $wordobj );
-		
-		$_ = "=?".$encoding."?Q?".encode_str($estr)."?=";
-	}
-
-	return join( " ", @words );
+		if $encoding eq "7-bit";
+	return "=?utf-8?Q?".encode_str($stringobj)."?=" 
+		if $encoding eq "utf-8";
+	return "=?iso-latin-1?Q?".encode_str($stringobj->latin1)."?=" 
+		if $encoding eq "iso-latin-1";
+	return $stringobj;	# Not sure what to do, so just return string.
 }
 
-
-
-######################################################################
-=pod
-
-=item EPrints::Utils::encode_str( $string )
-
-undocumented
-
-=cut
-######################################################################
 
 sub encode_str
 {
@@ -585,17 +366,6 @@ sub encode_str
 }
 
 # ALL cjg get_value should use this.
-
-######################################################################
-=pod
-
-=item EPrints::Utils::is_set( $r )
-
-undocumented
-
-=cut
-######################################################################
-
 sub is_set
 {
 	my( $r ) = @_;
@@ -629,37 +399,13 @@ sub is_set
 
 # widths smaller than about 3 may totally break, but that's
 # a stupid thing to do, anyway.
-
-######################################################################
-=pod
-
-=item EPrints::Utils::tree_to_utf8( $node, $width, $pre )
-
-undocumented
-
-=cut
-######################################################################
-
 sub tree_to_utf8
 {
         my( $node, $width, $pre ) = @_;
 
-	unless( EPrints::XML::is_dom( $node ) )
+	if( substr(ref($node) , 0, 8 ) ne "XML::DOM" )
 	{
 		print STDERR "Oops. tree_to_utf8 got as a node: $node\n";
-	}
-	if( EPrints::XML::is_dom( $node, "NodeList" ) )
-	{
-		# Hmm, a node list, not a node.
-        	my $string = utf8("");
-        	for( my $i=0 ; $i<$node->getLength ; ++$i )
-        	{
-                	$string .= tree_to_utf8( 
-				$node->index( $i ), 
-				$width,
- 				$pre );
-		}
-		return $string;
 	}
 
         if( defined $width )
@@ -669,9 +415,7 @@ sub tree_to_utf8
 		$width = $width - 2;
         }
 
-	
-	if( EPrints::XML::is_dom( $node, "Text" ) ||
-	    EPrints::XML::is_dom( $node, "CDataSection" ) )
+	if( $node->getNodeType == TEXT_NODE || $node->getNodeType == CDATA_SECTION_NODE )
         {
         	my $v = $node->getNodeValue();
                 $v =~ s/[\s\r\n\t]+/ /g unless( $pre );
@@ -787,17 +531,6 @@ sub tree_to_utf8
         return $string;
 }
 
-
-######################################################################
-=pod
-
-=item EPrints::Utils::mkdir( $full_path )
-
-undocumented
-
-=cut
-######################################################################
-
 sub mkdir
 {
 	my( $full_path ) = @_;
@@ -811,17 +544,6 @@ sub mkdir
 # cjg - Potential bug if: <ifset a><ifset b></></> and ifset a is disposed
 # then ifset: b is processed it will crash.
 
-
-######################################################################
-=pod
-
-=item EPrints::Utils::render_citation( $obj, $cstyle, $url )
-
-undocumented
-
-=cut
-######################################################################
-
 sub render_citation
 {
 	my( $obj, $cstyle, $url ) = @_;
@@ -829,185 +551,103 @@ sub render_citation
 	# This should belong to the base class of EPrint User Subject and
 	# Subscription, if we were better OO people...
 
-	my $session = $obj->get_session;
+	# cjg BUG in nested <ifset>'s ?
 
-	my $r= _render_citation_aux( $obj, $session, $cstyle, $url );
+	my $nodes = { keep=>[], lose=>[] };
+	my $node;
 
-	return $r;
-}
+	foreach $node ( $cstyle->getElementsByTagName( "ifset" , 1 ) )
+	{
+		my $fieldname = $node->getAttribute( "name" );
+		my $val = $obj->get_value( $fieldname );
+		push @{$nodes->{EPrints::Utils::is_set( $val )?"keep":"lose"}}, $node;
+	}
+	foreach $node ( $cstyle->getElementsByTagName( "ifnotset" , 1 ) )
+	{
+		my $fieldname = $node->getAttribute( "name" );
+		my $val = $obj->get_value( $fieldname );
+		push @{$nodes->{!EPrints::Utils::is_set( $val )?"keep":"lose"}}, $node;
+	}
+	foreach $node ( $cstyle->getElementsByTagName( "iflink" , 1 ) )
+	{
+		push @{$nodes->{defined $url?"keep":"lose"}}, $node;
+	}
+	foreach $node ( $cstyle->getElementsByTagName( "ifnotlink" , 1 ) )
+	{
+		push @{$nodes->{!defined $url?"keep":"lose"}}, $node;
+	}
+	foreach $node ( $cstyle->getElementsByTagName( "linkhere" , 1 ) )
+	{
+		if( !defined $url )
+		{
+			# keep the contents (but remove the node itself)
+			push @{$nodes->{keep}}, $node;
+			next;
+		}
 
-sub _render_citation_aux
+		# nb. setTagName is not really a proper
+		# DOM command, but it's much quicker than
+		# making a new <a> element and moving it 
+		# all across.
+
+		$node->setTagName( "a" );
+		$node->setAttribute( "href", EPrints::Utils::url_escape( $url ) );
+	}
+	foreach $node ( @{$nodes->{keep}} )
+	{
+		my $sn; 
+		foreach $sn ( $node->getChildNodes )
+		{       
+			$node->getParentNode->insertBefore( $sn, $node );
+		}
+		$node->getParentNode->removeChild( $node );
+		$node->dispose();
+	}
+	foreach $node ( @{$nodes->{lose}} )
+	{
+		$node->getParentNode->removeChild( $node );
+		$node->dispose();
+	}
+
+	_expand_references( $obj, $cstyle );
+
+	return $cstyle;
+}      
+
+sub _expand_references
 {
-	my( $obj, $session, $node, $url ) = @_;
-	my $rendered;
+	my( $obj, $node ) = @_;
 
-	if( EPrints::XML::is_dom( $node, "Text" ) ||
-	    EPrints::XML::is_dom( $node, "CDataSection" ) )
-	{
-		my $rendered = $session->make_doc_fragment;
-		my $v = $node->getData;
-		my $inside = 0;
-		foreach( split( '@' , $v ) )
+	foreach( $node->getChildNodes )
+	{                
+		if( $_->getNodeType == ENTITY_REFERENCE_NODE )
 		{
-			if( $inside )
-			{
-				$inside = 0;
-				unless( EPrints::Utils::is_set( $_ ) )
-				{
-					$rendered->appendChild( 
-						$session->make_text( '@' ) );
-					next;
-				}
-				my $field = $obj->get_dataset()->get_field( 
-						$_ );
-				$rendered->appendChild( 
-					$field->render_value( 
+			my $fname = $_->getNodeName;
+			my $field = $obj->get_dataset()->get_field( $fname );
+			my $fieldvalue = $field->render_value( 
 						$obj->get_session(),
-						$obj->get_value( $_ ),
+						$obj->get_value( $fname ),
 						0,
- 						1 ) );
-				next;
-			}
-
-			$rendered->appendChild( 
-				$session->make_text( $_ ) );
-			$inside = 1;
+ 						1 );
+			$node->replaceChild( $fieldvalue, $_ );
+			$_->dispose();
 		}
-		return $rendered;
-	}
-
-	if( EPrints::XML::is_dom( $node, "EntityReference" ) )
-	{
-		my $fname = $node->getNodeName;
-		my $field = $obj->get_dataset()->get_field( $fname );
-		return $field->render_value( 
-					$obj->get_session(),
-					$obj->get_value( $fname ),
-					0,
- 					1 );
-	}
-
-
-	my $addkids = $node->hasChildNodes;
-
-	if( EPrints::XML::is_dom( $node, "Element" ) )
-	{
-		my $name = $node->getTagName;
-		$name =~ s/^ep://;
-
-		if( $name eq "ifset" )
+		else
 		{
-			$rendered = $session->make_doc_fragment;
-			$addkids = $obj->is_set( $node->getAttribute( "name" ) );
-		}
-		elsif( $name eq "ifnotset" )
-		{
-			$rendered = $session->make_doc_fragment;
-			$addkids = !$obj->is_set( $node->getAttribute( "name" ) );
-		}
-		elsif( $name eq "ifmatch" || $name eq "ifnotmatch" )
-		{
-			my $dataset = $obj->get_dataset;
-
-			my $fieldname = $node->getAttribute( "name" );
-			my $merge = $node->getAttribute( "merge" );
-			my $value = $node->getAttribute( "value" );
-			my $match = $node->getAttribute( "match" );
-
-			my @multiple_names = split /\//, $fieldname;
-			my @multiple_fields;
-			
-			# Put the MetaFields in a list
-			foreach (@multiple_names)
-			{
-				push @multiple_fields, EPrints::Utils::field_from_config_string( $dataset, $_ );
-			}
-	
-			my $sf = EPrints::SearchField->new( 
-				$session, 
-				$dataset, 
-				\@multiple_fields,
-				$value,	
-				$match,
-				$merge );
-
-			$addkids = $sf->item_matches( $obj );
-			if( $name eq "ifnotmatch" )
-			{
-				$addkids = !$addkids;
-			}
-		}
-		elsif( $name eq "iflink" )
-		{
-			$rendered = $session->make_doc_fragment;
-			$addkids = defined $url;
-		}
-		elsif( $name eq "ifnotlink" )
-		{
-			$rendered = $session->make_doc_fragment;
-			$addkids = !defined $url;
-		}
-		elsif( $name eq "linkhere" )
-		{
-			if( defined $url )
-			{
-				$rendered = $session->make_element( 
-					"a",
-					href=>EPrints::Utils::url_escape( 
-						$url ) );
-			}
-			else
-			{
-				$rendered = $session->make_doc_fragment;
-			}
+			_expand_references( $obj, $_ );
 		}
 	}
-
-	if( !defined $rendered )
-	{
-		$rendered = $session->clone_for_me( $node );
-	}
-
-	# icky code to spot @title@ in node attributes and replace it.
-	my $attrs = $rendered->getAttributes;
-	if( $attrs )
-	{
-		for my $i ( 0..$attrs->getLength-1 )
-		{
-			my $attr = $attrs->item( $i );
-			my $v = $attr->getValue;
-			$v =~ s/@([a-z0-9_]+)@/$obj->get_value( $1 )/egi;
-			$v =~ s/@@/@/gi;
-			$attr->setValue( $v );
-		}
-	}
-
-	if( $addkids )
-	{
-		foreach my $child ( $node->getChildNodes )
-		{
-			$rendered->appendChild(
-				_render_citation_aux( 
-					$obj,
-					$session,
-					$child,
-					$url ) );			
-		}
-	}
-	return $rendered;
 }
 
+# cjg Eh? What's this doing here?
+sub render_value
+{
+	my( $self, $fieldname, $showall ) = @_;
 
-
-######################################################################
-=pod
-
-=item EPrints::Utils::field_from_config_string( $dataset, $fieldname )
-
-undocumented
-
-=cut
-######################################################################
+	my $field = $self->{dataset}->get_field( $fieldname );	
+	
+	return $field->render_value( $self->{session}, $self->get_value($fieldname), $showall );
+}
 
 sub field_from_config_string
 {
@@ -1038,17 +678,6 @@ sub field_from_config_string
 }
 
 
-
-######################################################################
-=pod
-
-=item EPrints::Utils::get_input( $regexp, $prompt, $default )
-
-undocumented
-
-=cut
-######################################################################
-
 sub get_input
 {
 	my( $regexp, $prompt, $default ) = @_;
@@ -1078,17 +707,6 @@ sub get_input
 		}
 	}
 }
-
-
-######################################################################
-=pod
-
-=item EPrints::Utils::clone( $data )
-
-undocumented
-
-=cut
-######################################################################
 
 sub clone
 {
@@ -1122,17 +740,6 @@ sub clone
 	return $data;			
 }
 
-
-######################################################################
-=pod
-
-=item EPrints::Utils::crypt_password( $value, $session )
-
-undocumented
-
-=cut
-######################################################################
-
 sub crypt_password
 {
 	my( $value, $session ) = @_;
@@ -1147,17 +754,6 @@ sub crypt_password
 }
 
 # Escape everything AFTER the last /
-
-######################################################################
-=pod
-
-=item EPrints::Utils::url_escape( $url )
-
-undocumented
-
-=cut
-######################################################################
-
 sub url_escape
 {
 	my( $url ) = @_;
@@ -1166,334 +762,5 @@ sub url_escape
 	return $uri->as_string;
 }
 
-# Command Version: Prints the GNU style --version comment for a command
-# line script. Then exits.
-
-######################################################################
-=pod
-
-=item EPrints::Utils::cmd_version( $progname )
-
-undocumented
-
-=cut
-######################################################################
-
-sub cmd_version
-{
-	my( $progname ) = @_;
-
-	my $version_id = $EPrints::SystemSettings::conf->{version_id};
-	my $version = $EPrints::SystemSettings::conf->{version};
-	
-	print <<END;
-$progname (GNU EPrints $version_id)
-$version
-
-Copyright (C) 2001-2002 University of Southampton
-
-__LICENSE__
-END
-	exit;
-}
-
-# This code is for debugging memory leaks in objects.
-# It is not used by EPrints except when developing. 
-#
-# 
-# my %OBJARRAY = ();
-# my %OBJSCORE = ();
-# my %OBJPOS = ();
-# my %OBJPOSR = ();
-# my $c = 0;
-
-
-######################################################################
-=pod
-
-=item EPrints::Utils::destroy( $ref )
-
-undocumented
-
-=cut
-######################################################################
-
-sub destroy
-{
-	my( $ref ) = @_;
-#
-#	my $class = delete $OBJARRAY{"$ref"};
-#	my $n = delete $OBJPOS{"$ref"};
-#	delete $OBJPOSR{$n};
-#	
-#	$OBJSCORE{$class}--;
-#	print "Kill: $ref ($class) [$OBJSCORE{$class}]\n";
-
-}
-
-#my %OBJOLDSCORE = ();
-#use Data::Dumper;
-#sub debug
-#{
-#	my @k = sort {$b<=>$a} keys %OBJPOSR;
-#	for(0..9)
-#	{
-#		print "=========================================\n";
-#		print $OBJPOSR{$k[$_]}."\n";
-#	}
-#	foreach( keys %OBJSCORE ) { 
-#		my $diff = $OBJSCORE{$_}-$OBJOLDSCORE{$_};
-#		if( $diff > 0 ) { $diff ="+$diff"; }
-#		print "$_ $OBJSCORE{$_}   $diff\n"; 
-#		$OBJOLDSCORE{$_} = $OBJSCORE{$_};
-#	}
-#}
-#
-#sub bless
-#{
-#	my( $ref, $class ) = @_;
-#
-#	CORE::bless $ref, $class;
-#
-#	$OBJSCORE{$class}++;
-#	print "Make: $ref ($class) [$OBJSCORE{$class}]\n";
-#	$OBJARRAY{"$ref"}=$class;
-#	$OBJPOS{"$ref"} = $c;
-#	#my $x = $ref;
-#	$OBJPOSR{$c} = "$c - $ref\n";
-#	my $i=1;
-#	my @info;
-#	while( @info = caller($i++) )
-#	{
-#		$OBJPOSR{$c}.="$info[3] $info[2]\n";
-#	}
-#
-#
-#	if( ref( $ref ) =~ /XML::DOM/  )
-#	{// to_string
-#		#$OBJPOSR{$c}.= $ref->toString."\n";
-#	}
-#	++$c;
-#
-#	return $ref;
-#}
-
-
-######################################################################
-=pod
-
-=item $xhtml = EPrints::Utils::render_xhtml_field( $session, $field,
-$value )
-
-Return an XHTML DOM object of the contents of $value. In the case of
-an error parsing the XML in $value return an XHTML DOM object 
-describing the problem.
-
-This is intented to be used by the render_single_value metadata 
-field option, as an alternative to the default text renderer. 
-
-This allows through any XML element, so could cause problems if
-people start using SCRIPT to make pop-up windows. A later version
-may allow a limited set of elements only.
-
-=cut
-######################################################################
-
-sub render_xhtml_field
-{
-	my( $session , $field , $value ) = @_;
-
-	if( !defined $value ) { return $session->make_doc_fragment; }
-        my( %c ) = (
-                ParseParamEnt => 0,
-                ErrorContext => 2,
-                NoLWP => 1 );
-
-        my $doc = eval { EPrints::XML::parse_xml_string( "<fragment>".$value."</fragment>" ); };
-        if( $@ )
-        {
-                my $err = $@;
-                $err =~ s# at /.*##;
-		my $pre = $session->make_element( "pre" );
-		$pre->appendChild( $session->make_text( "Error parsing XML: ".$err ) );
-		return $pre;
-        }
-	my $fragment = $session->make_doc_fragment;
-	my $top = ($doc->getElementsByTagName( "fragment" ))[0];
-	foreach my $node ( $top->getChildNodes )
-	{
-		$fragment->appendChild(
-			$session->clone_for_me( $node, 1 ) );
-	}
-	EPrints::XML::dispose( $doc );
-		
-	return $fragment;
-}
-	
-
-#
-# ( $year, $month, $day ) = get_date( $time )
-#
-#  Static method that returns the given time (in UNIX time, seconds 
-#  since 1.1.79) in the format used by EPrints and MySQL (YYYY-MM-DD).
-#
-
-
-######################################################################
-=pod
-
-=item EPrints::Utils::get_date( $time )
-
-undocumented
-
-=cut
-######################################################################
-
-sub get_date
-{
-	my( $time ) = @_;
-
-	my @date = localtime( $time );
-	my $day = $date[3];
-	my $month = $date[4]+1;
-	my $year = $date[5]+1900;
-	
-	# Ensure number of digits
-	while( length $day < 2 )
-	{
-		$day = "0".$day;
-	}
-
-	while( length $month < 2 )
-	{
-		$month = "0".$month;
-	}
-
-	return( $year, $month, $day );
-}
-
-
-######################################################################
-#
-# $datestamp = get_datestamp( $time )
-#
-#  Static method that returns the given time (in UNIX time, seconds 
-#  since 1.1.79) in the format used by EPrints and MySQL (YYYY-MM-DD).
-#
-######################################################################
-
-
-
-######################################################################
-=pod
-
-=item EPrints::Utils::get_datestamp( $time )
-
-undocumented
-
-=cut
-######################################################################
-
-sub get_datestamp
-{
-	my( $time ) = @_;
-
-	my( $year, $month, $day ) = EPrints::Utils::get_date( $time );
-
-	return( $year."-".$month."-".$day );
-}
-
-######################################################################
-=pod
-
-=item $timestamp = EPrints::Utils::get_timestamp()
-
-Return a string discribing the current local date and time.
-
-=cut
-######################################################################
-
-sub get_timestamp
-{
-	my $stamp = "Error in get_timestamp";
-	eval {
-		use POSIX qw(strftime);
-		$stamp = strftime( "%a %b %e %H:%M:%S %Z %Y", localtime);
-	};	
-	return $stamp;
-}
-
-######################################################################
-=pod
-
-=item $timestamp = EPrints::Utils::get_UTC_timestamp()
-
-Return a string discribing the current local date and time. 
-In UTC Format. eg:
-
- 1957-03-20T20:30:00Z
-
-This the UTC time, not the localtime.
-
-=cut
-######################################################################
-
-sub get_UTC_timestamp
-{
-	my $stamp = "Error in get_UTC_timestamp";
-	eval {
-		use POSIX qw(strftime);
-		$stamp = strftime( "%Y-%m-%dT%H:%M:%SZ", gmtime);
-	};
-print STDERR $@;
-	return $stamp;
-}
-
-
-######################################################################
-=pod
-
-=item $boolean = EPrints::Utils::is_in( $needles, $haystack, $matchall )
-
-undocumented
-
-=cut
-######################################################################
-
-sub is_in
-{
-	my( $needles, $haystack, $matchall ) = @_;
-	
-	if( $matchall )
-	{
-		foreach my $n ( @{$needles} )
-		{
-			my $found = 0;
-			foreach my $h ( @{$haystack} )
-			{
-				$found = 1 if( $n eq $h );
-			}
-			return 0 unless( $found );
-		}
-		return 1;
-	}
-
-	foreach my $n ( @{$needles} )
-	{
-		foreach my $h ( @{$haystack} )
-		{
-			return 1 if( $n eq $h );
-		}
-	}
-	return 0;
-}
-
 
 1;
-
-######################################################################
-=pod
-
-=back
-
-=cut

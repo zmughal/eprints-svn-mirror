@@ -16,14 +16,13 @@ use EPrints::OpenArchives;
 
 sub get_oai_conf { my( $perlurl ) = @_; my $oai={};
 
-
-##########################################################################
-# OAI 1.1 
-##########################################################################
-
 # Site specific **UNIQUE** archive identifier.
 # See http://www.openarchives.org/ for existing identifiers.
+
 $oai->{archive_id} = "GenericEPrints";
+
+# All three of the following configuration elements should have the same
+# keys. To support OAI you must offer basic dublic core as "oai_dc".
 
 # Exported metadata formats. The hash should map format ids to namespaces.
 $oai->{metadata_namespaces} =
@@ -45,60 +44,12 @@ $oai->{metadata_functions} =
 	"oai_dc"    =>  \&make_metadata_oai_dc
 };
 
-# Base URL of OAI 1.1
+# Base URL of OAI
 $oai->{base_url} = $perlurl."/oai";
 
 $oai->{sample_identifier} = EPrints::OpenArchives::to_oai_identifier(
 	$oai->{archive_id},
 	"23" );
-
-##########################################################################
-# OAI-PMH 2.0 
-#
-# 2.0 requires slightly different schemas and XML to v1.1
-##########################################################################
-
-# Site specific **UNIQUE** archive identifier.
-# See http://www.openarchives.org/ for existing identifiers.
-# This may be different for OAI v2.0
-# It can have dots (.) in which v1.1 can't. This means you can use your
-# sites domain as (part of) the base ID - which is pretty darn unique.
-$oai->{v2}->{archive_id} = "GenericEPrints.OAI2";
-
-# Exported metadata formats. The hash should map format ids to namespaces.
-$oai->{v2}->{metadata_namespaces} =
-{
-	"oai_dc"    =>  "http://www.openarchives.org/OAI/2.0/oai_dc/"
-};
-
-# Exported metadata formats. The hash should map format ids to schemas.
-$oai->{v2}->{metadata_schemas} =
-{
-	"oai_dc"    =>  "http://www.openarchives.org/OAI/2.0/oai_dc.xsd"
-};
-
-# Each supported metadata format will need a function to turn
-# the eprint record into XML representing that format. The function(s)
-# are defined later in this file.
-$oai->{v2}->{metadata_functions} = 
-{
-	"oai_dc"    =>  \&make_metadata_oai_dc_oai2
-};
-
-# Base URL of OAI 2.0
-$oai->{v2}->{base_url} = $perlurl."/oai2";
-
-$oai->{v2}->{sample_identifier} = EPrints::OpenArchives::to_oai_identifier(
-	$oai->{v2}->{archive_id},
-	"23" );
-
-##########################################################################
-# GENERAL OAI CONFIGURATION
-# 
-# This applies to all versions of OAI.
-##########################################################################
-
-
 
 # Set Configuration
 # Rather than harvest the entire archive, a harvester may harvest only
@@ -215,8 +166,8 @@ sub make_metadata_oai_dc
 
 	my $archive = $session->get_archive();
 
-	# return undef here, if you don't support this metadata format for 
-	# this record.  ( But this is "oai_dc" so we have to support it! )
+	# return undef, if you don't support this metadata format for this
+	# eprint.  ( But this is "oai_dc" so we have to support it! )
 
 	# Get the namespace & schema.
 	# We could hard code them here, but getting the values from our
@@ -241,51 +192,6 @@ sub make_metadata_oai_dc
 	}
 
 	return $dc;
-}
-
-######################################################################
-#
-# $domfragment = make_metadata_oai_dc_oai2( $eprint, $session )
-#
-######################################################################
-#
-# Identical to make_metadata_oai_dc except with a few changes
-# for the new version of the protocol.
-#
-######################################################################
-
-sub make_metadata_oai_dc_oai2
-{
-	my( $eprint, $session ) = @_;
-
-	my @dcdata = &eprint_to_unqualified_dc( $eprint, $session );
-
-	my $archive = $session->get_archive();
-
-	# Get the namespace & schema.
-	# We could hard code them here, but getting the values from our
-	# own configuration should avoid getting our knickers in a twist.
-	
-	my $oai_conf = $archive->get_conf( "oai", "v2" );
-	my $namespace = $oai_conf->{metadata_namespaces}->{oai_dc};
-	my $schema = $oai_conf->{metadata_schemas}->{oai_dc};
-
-	my $oai_dc = $session->make_element(
-		"oai_dc:dc",
-		"xmlns:oai_dc" => $namespace,
-		"xmlns:dc" => "http://purl.org/dc/elements/1.1/",
-		"xmlns:xsi" => "http://www.w3.org/2001/XMLSchema-instance",
-		"xsi:schemaLocation" => $namespace." ".$schema );
-
-	# turn the list of pairs into XML blocks (indented by 8) and add them
-	# them to the DC element.
-	foreach( @dcdata )
-	{
-		$oai_dc->appendChild(  $session->render_data_element( 8, "dc:".$_->[0], $_->[1] ) );
-		# produces <key>value</key>
-	}
-
-	return $oai_dc;
 }
 
 ######################################################################
@@ -327,7 +233,7 @@ sub eprint_to_unqualified_dc
 		my $author;
 		foreach $author ( @{$authors} )
 		{
-			push @dcdata, [ "creator", EPrints::Utils::make_name_string( $author ) ];
+			push @dcdata, [ "creator", EPrints::Utils::tree_to_utf8( EPrints::Utils::render_name( $session, $author, 0 ) ) ];
 		}
 	}
 
@@ -335,8 +241,6 @@ sub eprint_to_unqualified_dc
 	foreach $subjectid ( @{$eprint->get_value( "subjects" )} )
 	{
 		my $subject = EPrints::Subject->new( $session, $subjectid );
-		# avoid problems with bad subjects
-		next unless( defined $subject ); 
 		push @dcdata, [ "subject", EPrints::Utils::tree_to_utf8( $subject->render_description() ) ];
 	}
 

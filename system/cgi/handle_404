@@ -13,7 +13,7 @@
 ######################################################################
 
 
-#cjg Not fully finnished. Should detect missing items.
+#cjg NOT DONE.
 
 use EPrints::Session;
 
@@ -22,28 +22,7 @@ use strict;
 my $session = new EPrints::Session();
 Apache::exit( 0 ) unless( defined $session );
 
-my $url = $ENV{REDIRECT_URL};
-
-
-my $newurl;
-my $fn = $session->get_archive->get_conf( "catch404" );
-if( defined $fn )
-{
-	$newurl = &{$fn}( $session, $url );
-}
-
-if( defined $newurl )
-{
-	$session->redirect( $newurl );
-}
-elsif( $url =~ m#^/view/# )
-{
-	&noview_404( $session );
-}
-else
-{
-	&plain_404( $session );
-}
+&plain_404( $session );
 
 $session->terminate();
 
@@ -72,8 +51,8 @@ $session->terminate();
 #		# See if the eprint exists.
 #		my $eprint = new EPrints::EPrint(
 #			$session,
-#			$guessed_id,;
-#			EPrints::Database::table_name( "archive" ) );
+#			EPrints::Database::table_name( "archive" ),
+#			$guessed_id );
 #		
 #		if( defined $eprint )
 #		{
@@ -143,26 +122,8 @@ sub plain_404
 	$session->build_page( 
 		$session->html_phrase( "cgi/handle_http_error:404_title" ),
 		$session->html_phrase( "cgi/handle_http_error:404_blurb", 
-			url => $session->make_text( $ENV{REDIRECT_URL} ) ),
-		"plain_404" );
+			url => $session->make_text( $ENV{REDIRECT_URL} ) ) );
 
         $session->send_page();
 }
-
-
-sub noview_404
-{
-	my( $session ) = @_;
-
-	my $error = "The browse views section is missing. The site admin needs to run generate_views. This should be automated with cron. See the documentation for more details.";
-
-	$session->build_page( 
-		$session->html_phrase( "cgi/handle_http_error:404_title" ),
-		$session->make_text( $error ),
-		"noview_404" );
-	$session->get_archive()->log( $error );
-
-        $session->send_page();
-}
-
 

@@ -25,7 +25,7 @@ do "cfg/ArchiveMetadataFieldsConfig.pm";
 
 use EPrints::Utils;
 
-use EPrints::XML;
+use XML::DOM;
 use Unicode::String qw(utf8 latin1 utf16);
 use strict;
 
@@ -51,6 +51,7 @@ foreach( keys %{$archiveinfo} ) {
 
 # If 1, users can request the removal of their submissions from the archive
 $c->{allow_user_removal_request} = 1;
+
 
 ######################################################################
 #
@@ -125,7 +126,7 @@ $c->{userhome} = "$c->{perl_url}/users/home";
 #
 # Available formats are configured elsewhere. See the docs.
 
-$c->{required_formats} = 
+$c->{required_formats} =
 [
 	"html",
 	"pdf",
@@ -157,12 +158,6 @@ $c->{diskspace_warn_threshold} = 512*1024;
 # the fields will just be unused.
 $c->{hide_honourific} = 0;
 $c->{hide_lineage} = 0;
-
-# If you are setting up a very simple system or 
-# are starting with lots of data entry you can
-# make user submissions bypass the editor buffer
-# by setting this option:
-$c->{skip_buffer} = 0;
 
 ######################################################################
 #
@@ -277,22 +272,6 @@ $c->{submission_hide_language} = 1;
 # confidential contents.
 $c->{submission_hide_security} = 0;
 
-# This option removes the "how many files do you want
-# to upload" from the document file upload page and
-# defaults it to "1" instead. This is useful if your
-# policy only allows one file per document.
-$c->{submission_hide_howmanyfiles} = 0;
-
-# These options allow you to suppress various file
-# upload methods. You almost certainly do not want
-# to supress "plain" but you may well wish to supress
-# URL capture. Especially if wget is broken for some 
-# reason. They must not ALL be supressed.
-$c->{submission_hide_upload_archive} = 0;
-$c->{submission_hide_upload_graburl} = 0;
-$c->{submission_hide_upload_plain} = 0;
-
-
 ######################################################################
 #
 # Language
@@ -349,22 +328,13 @@ $c->{vlit}->{context_size} = 1024;
 # Multiple fields may be specified for one view, but avoid
 # subject or allowing null in this case.
 $c->{browse_views} = [
-	{ id=>"subjects", fields=>"subjects", order=>"title/authors" },
-	{ id=>"year",  allow_null=>1, fields=>"year", order=>"title/authors" }
+	{ id=>"year", allow_null=>1, fields=>"year", order=>"title/authors" },
+	#{ id=>"person", allow_null=>0, fields=>"authors.id/editors.id", order=>"title/authors", noindex=>1, nolink=>1, nohtml=>1, include=>1, citation=>"title_only", nocount=>1 },
+	{ id=>"subjects", allow_null=>0, fields=>"subjects", order=>"title/authors" }
 ];
-# examples of some other useful views you might want to add
-#
-# Browse by the ID's of authors & editors (CV Pages)
-# { id=>"person", allow_null=>0, fields=>"authors.id/editors.id", order=>"title/authors", noindex=>1, nolink=>1, nohtml=>1, include=>1, citation=>"title_only", nocount=>1 }
-#
-# Browse by the names of authors (less reliable than Id's)
-#{ id=>"name",  allow_null=>1, fields=>"authors", order=>"-year" }
-#
-# Browse by the type of eprint (poster, report etc).
-#{ id=>"type",  fields=>"type", order=>"-year" }
 
 # Number of results to display on a single search results page
-$c->{results_page_size} = 100;
+$c->{results_page_size} = 10;
 
 # Fields for a simple user search
 $c->{simple_search_fields} =
@@ -373,14 +343,6 @@ $c->{simple_search_fields} =
 	"authors/editors",
 	"year"
 ];
-
-# You may specify defaults for the search page. 
-# $c->{simple_search_defaults} =
-# {
-#	"authors/editors" => "Gutteridge",
-# 	"year" => 2002
-# }
-
 
 # Fields for an advanced user search
 $c->{advanced_search_fields} =
@@ -400,28 +362,12 @@ $c->{advanced_search_fields} =
 	"year"
 ];
 
-# You may specify defaults for the advanced search page. 
-# $c->{advanced_search_defaults} =
-# {
-#	"title" => "stuff",
-#	"refereed" => "TRUE"
-# }
-
-
-
 # Fields used for specifying a subscription
 $c->{subscription_fields} =
 [
 	"subjects",
 	"refereed",
 	"ispublished"
-];
-
-# Fields used for limiting the scope of editors
-$c->{editor_limit_fields} =
-[
-	"subjects",
-	"type"
 ];
 
 # Ways of ordering search results
@@ -545,42 +491,6 @@ $c->{cache_timeout} = 10;
 $c->{cache_maxlife} = 12;
 
 ######################################################################
-#
-# Advanced Options
-#
-# Don't mess with these unless you really know what you are doing.
-#
-######################################################################
-
-# Example page hooks to mess around with the metadata
-# submission page.
-
-# my $doc = EPrints::XML::make_document();
-# my $link = $doc->createElement( "link" );
-# $link->setAttribute( "rel", "copyright" );
-# $link->setAttribute( "href", "http://totl.net/" );
-# $c->{pagehooks}->{submission_meta}->{head} = $link;
-# $c->{pagehooks}->{submission_meta}->{bodyattr}->{bgcolor} = '#ff0000';
-
-
-# 404 override. This is handy if you want to catch some urls from an
-# old system, or want to make some kind of weird dynamic urls work.
-# It should be handled before it becomes a 404, but hey.
-# If the function returns a string then the browser is redirected to
-# that url. If it returns undef then then the normal error page is shown.
-# $c->{catch404} = sub {
-#	my( $session, $url ) = @_;
-#	
-#	if( $url =~ m#/subject-(\d+).html$# )
-#	{
-#		return "/views/subjects/$1.html";
-#	}
-#	
-#	return undef;
-# }
-
-
-######################################################################
 
 # Stuff from other config files which are require'd above:
 $c->{oai} = get_oai_conf( $c->{perl_url} );
@@ -666,7 +576,7 @@ sub get_entities
 	$entities{frontpage} = $archive->get_conf( "frontpage" );
 	$entities{userhome} = $archive->get_conf( "userhome" );
 	$entities{version} = EPrints::Config::get( "version" );
-	$entities{ruler} = EPrints::XML::to_string( $archive->get_ruler() );
+	$entities{ruler} = $archive->get_ruler()->toString;
 
 	return %entities;
 }
@@ -695,23 +605,8 @@ sub can_user_view_document
 	if( $security eq "staffonly" )
 	{
 		# If you want to finer tune this, you could create
-		# new privs and use them.
-
-		# people with priv editor can read this document...
-		if( $user->has_priv( "editor" ) )
-		{
-			return 1;
-		}
-
-		# ...as can the user who deposited it...
-		if( $user->get_value( "userid" ) == $eprint->get_value( "userid" ) )
-		{
-			return 1;
-		}
-
-		# ...but nobody else can
-		return 0;
-		
+		# a new priv. and use that.
+		return $user->has_priv( "editor" );
 	}
 
 	# Unknown security type, be paranoid and deny permission.
@@ -753,7 +648,6 @@ sub session_close
 {
 	my( $session ) = @_;
 }
-
 
 # Return true to indicate the module loaded OK.
 1;

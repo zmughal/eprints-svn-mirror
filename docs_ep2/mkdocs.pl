@@ -21,26 +21,12 @@ my @ids = (
 	"!create_tables",
 	"!create_user",
 	"!erase_archive",
-	"!export_hashes",
-	"!export_xml",
-	"!force_config_reload",
 	"!generate_abstracts",
 	"!generate_apacheconf",
 	"!generate_static",
 	"!generate_views",
-	"!import_eprints",
 	"!import_subjects",
-	"!list_user_emails",
-	"!rehash_documents",
-	"!reindex",
-	"!send_subscriptions",
-	"!upgrade"
-
-
-
-
-
-
+	"!reindex"
 );
 my %titles = (
 	intro => "Introduction",
@@ -56,9 +42,7 @@ my %titles = (
 	vlit => "VLit Transclusion Support",
 	updating => "Updating from Previous Versions",
 	history => "EPrints History (and Future Plans)",
-	logo => "The EPrints Logo",
-
-	cmdline=> "Command Line Tools"
+	logo => "The EPrints Logo"
 );
 
 my $website = ( $ARGV[0] eq "www" );
@@ -70,7 +54,6 @@ else
 	print "BUILDING DOCS FOR PACKAGE!!\n" 
 }
 
-my( @non_cmd_ids, @cmd_ids );
 `rm tmp/*`;
 `rm -rf binpod`;
 `mkdir binpod`;
@@ -82,132 +65,23 @@ foreach( @ids )
 		$filemap{$_} = "binpod/$_";
 		`grep -v __GENERICPOD__ ../system/bin/$_ > binpod/$_`;
 		$titles{$_} = "$_ command";
-		push @cmd_ids, $_;
 	}
 	else
 	{
-		push @non_cmd_ids, $_;
 		$filemap{$_} = "pod/$_.pod";
 	}
 }
 		
 
-my $DOCTITLE = "EPrints 2.2 Documentation";
+my $DOCTITLE = "EPrints 2.0 Documentation";
 
-my $BASENAME = "eprints-2.2-docs";
+my $BASENAME = "eprints-2.0-docs";
 
 `rm -rf docs`;
 `mkdir docs`;
 	
 ##########################################################################
-#
-# texinfo
-#
-###############################################################################
-print "Making TexInfo\n";
-
-## Text
-open( OUT, ">docs/$BASENAME.texinfo" );
-my $firstnode = $ids[0];
-print OUT <<END;
-
-\@c %**start of header
-\@setfilename eprints2.info
-\@settitle $DOCTITLE
-\@c Disable the monstrous rectangles beside overfull hbox-es.
-\@finalout
-\@c Use `odd' to print double-sided.
-\@setchapternewpage on
-\@c %**end of header
-
-\@iftex
-\@c Remove this if you don't use A4 paper.
-\@afourpaper
-\@end iftex
-
-\@dircategory World Wide Web
-\@direntry
-* EPrints: (eprints).         EPrints Archive Software.
-\@end direntry
-
-\@node top, $firstnode, (dir) ,(dir)
-\@top $DOCTITLE
-
-GNU EPrints 2 Archive software from the University of Southampton.
-
-The texinfo version is generated automatically from the POD version.
-
-END
-
-print OUT '@menu'."\n";
-my @menu = @non_cmd_ids;
-push @menu , "cmdline";
-foreach my $id ( @menu )
-{
-	printf OUT '* '.$id.'::'.(" "x(20-(length $id))).$titles{$id}."\n";
-}
-print OUT '@end menu'."\n";
-
-for( my $i=0; $i<scalar @menu; ++$i )
-{
-	my $id = $menu[$i];
-	my $next = $menu[$i+1];
-	my $prev = $menu[$i-1];
-	$next = "" if( $i+1 == scalar @menu );
-	$prev = "top" if( $i == 0 );
-
-	print OUT "\@node $id, $next, $prev, top\n";
-
-	if( $id eq "cmdline" )
-	{
-		print OUT <<END;
-
-\@subheading EPrints Command Line Tools
-
-These commands can usually be found in /opt/eprints2/bin/.
-
-\@menu
-END
-		foreach my $id ( @cmd_ids )
-		{
-			printf OUT '* '.$id.'::'.(" "x(20-(length $id))).$titles{$id}."\n";
-		}
-		print OUT '@end menu'."\n";
-		
-	}
-	else
-	{
-#		print "Processing: $filemap{$id}\n";
-		print OUT `./pod2texinfo $filemap{$id}`;
-	}
-}
-
-for( my $i=0; $i<scalar @cmd_ids; ++$i )
-{
-	my $id = $cmd_ids[$i];
-	my $next = $cmd_ids[$i+1];
-	my $prev = $cmd_ids[$i-1];
-	$next = "" if( $i+1 == scalar @cmd_ids );
-	$prev = "" if( $i == 0 );
-
-	print OUT "\@node $id, $next, $prev, cmdline\n";
-	# print "Processing: $filemap{$id}\n";
-	print OUT `./pod2texinfo $filemap{$id}`;
-}
-
-print OUT "\n\n\@bye\n\n";
-
-close OUT;
-
-`makeinfo --force docs/$BASENAME.texinfo`;
-`mv eprints2.info* docs`;
-
-#########################################################################
-#
 # text
-#
-###############################################################################
-print "Making ASCII Text\n";
 
 use Pod::Text;
 
@@ -247,11 +121,7 @@ END
 close OUT;
 
 ##########################################################################
-#
 # PDF & Postscript
-#
-###############################################################################
-print "Making PDF & Postscript\n";
 
 use Pod::LaTeX;
 
@@ -266,6 +136,7 @@ my $parser2 = Pod::LaTeX->new(
 );
 foreach $id ( @ids )
 {
+	print "($id)\n";
 	if( $filemap{$id} =~ m/binpod/ )
 	{
 		$parser2->parse_from_file( $filemap{$id}, "tmp/$id.tex.old" );
@@ -328,15 +199,12 @@ my @commands = (
 
 foreach( @commands )
 {
+	print $_."\n";
 	`$_`;
 }
 
 ###############################################################################
-#
 # HTML
-#
-###############################################################################
-print "Making HTML\n";
 
 use Pod::Html;
 mkdir( '../docs/html' );
@@ -399,13 +267,6 @@ if( $website )
 	}
 	print INC "</ul>\n";
 	close( INC );
-	my $toc = '';
-	foreach $id ( @ids )
-	{
-		$toc .= '<link rel="chapter" href="?" title="'.$titles{$id}.'" />'."\n";
-	}
-
-	my $c = 0;
 	foreach $id ( @ids )
 	{
 		my $html = "../docs/html/$id.html";
@@ -414,75 +275,42 @@ if( $website )
 		open( FILE, $html );
 		open( TARGET, ">$target" );
 	 	while( <FILE> ) { last if m/INDEX BEGIN/; }
-		my $n = "";
-		my $p = "";
-		if( defined $ids[$c-1] )
-		{
-			$p = 
-'<link rel="Prev" href="http://www.eprints.org/docs/php/'.$ids[$c-1].'.php" />';
-		}
-		if( defined $ids[$c+1] )
-		{
-			$n = 
-'<link rel="Next" href="http://www.eprints.org/docs/php/'.$ids[$c+1].'.php" />';
-		}
 		print TARGET <<END;
 <?
 
-include "../../software.phps";
+include "../../../conf/site_conf.phps";
+include "../../../include/elements.phps";
 
-\$pagelinks = '
-<link rel="Up" href="http://software.eprints.org/documentation.php" />
-<link rel="ToC" href="http://software.eprints.org/documentation.php" />
-$toc
-$p
-$n
-';
+\$pagetitle = "$DOCTITLE - $titles{$id}";
 
-epsw_header( "/documentation.php", "$DOCTITLE - $titles{$id}", \$pagelinks );
-
+function do_page()
+{
 ?>
 <h1>$DOCTITLE - $titles{$id}</h1>
-
-<p><a href="/documentation.php">Documentation Contents</a></p>
-<hr />
 END
 
 		print TARGET $_;
 		while( <FILE> )
 		{
 			last if( m#CELLPADDING# );
-			s#<h3>#<h4>#ig;
-			s#</h3>#</h4>#ig;
-			s#<h2>#<h3>#ig;
-			s#</h2>#</h3>#ig;
-			s#<h1>#<h2>#ig;
-			s#</h1>#</h2>#ig;
 			print TARGET $_;
 		}
 		s/<table.*//i;
-
 		print TARGET $_;
-print TARGET <<END;
-<hr />
-<p><a href="/documentation.php">Documentation Contents</a></p>
-<? 
-epsw_footer( "/documentation.php", "$DOCTITLE - $titles{$id}", \$pagelinks );
+		print TARGET <<END;
+<?
+} 
+ep_generate_page( "??" );
 ?>
 END
 		close TARGET;
 		close FILE;
 		
-		++$c;
 	}
 }
 
 ###############################################################################
-#
 # POD
-#
-###############################################################################
-print "Making POD\n";
 
 # This just copies in the POD docs!
 
@@ -493,23 +321,14 @@ foreach $id ( @ids )
 	`cp ../$filemap{$id} ../docs/pod`;
 }
 chdir( ".." );
-
 if( $website )
 {
-	my $user = 'webmaster';
-	my $host = 'seer.ecs.soton.ac.uk';
-	my $path = '/home/www.eprints/software/docs/';
-
-	my @commands = (
-		"rsh -l $user $host rm -rf '$path*'",
-		"rcp -r docs/ $user\@$host:$path",
-		"rsh -l $user $host chmod a+rX -R $path"
-	);
-
-	foreach( @commands )
-	{
-		print $_."\n";
-		`$_`;
-	}
+	print "UPLOADING:\n";
+	print "rm\n";
+	`rsh -l moj199 brand.ecs.soton.ac.uk rm -rf '/home/www.eprints/htdocs/docs/*'`;
+	print "rcp\n";
+	`rcp -r docs/ moj199\@brand.ecs.soton.ac.uk:/home/www.eprints/htdocs/docs/`;
+	print "chmod\n";
+	`rsh -l moj199 brand.ecs.soton.ac.uk chmod a+rX -R /home/www.eprints/htdocs/docs/`;
 }
 

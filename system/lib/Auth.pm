@@ -1,33 +1,11 @@
 ######################################################################
 #
-# EPrints::Auth
-#
-######################################################################
-#
 #  __COPYRIGHT__
 #
 # Copyright 2000-2008 University of Southampton. All Rights Reserved.
 # 
 #  __LICENSE__
 #
-######################################################################
-
-
-=pod
-
-=head1 NAME
-
-B<EPrints::Auth> - Password authentication & authorisation checking 
-for EPrints.
-
-=head1 DESCRIPTION
-
-This module handles the authentication and authorisation of users
-viewing private sections of an EPrints website.
-
-=over 4
-
-=cut
 ######################################################################
 
 package EPrints::Auth;
@@ -40,35 +18,6 @@ use Apache::Constants qw( OK AUTH_REQUIRED FORBIDDEN DECLINED SERVER_ERROR );
 use EPrints::Session;
 use EPrints::RequestWrapper;
 
-
-######################################################################
-=pod
-
-=item $result = EPrints::Auth::authen( $r )
-
-Authenticate a request. This works in a slightly whacky way.
-
-If the username isn't a valid user in the current archive then it
-fails right away.
-
-Otherwise it looks up the type of the given user. Then it looks up
-in the archive configuration to find how to authenticate that user
-type (a reference to another authen function, probably a normal
-3rd party mod_perl library like AuthDBI.) and then makes a mock
-request and attempts to authenticate it using the authen function for
-that usertype.
-
-This is a bit odd, but allows, for example, you to have local users 
-being authenticated via LDAP and remote users authenticated by the
-normal eprints AuthDBI method.
-
-If the authentication area is "ChangeUser" then it returns true unless
-the current user is the user specified in the URL. This will allow a
-user to log in as someone else.
-
-=cut
-######################################################################
-
 sub authen
 {
 	my( $r ) = @_;
@@ -80,8 +29,8 @@ sub authen
 	return OK unless $r->is_initial_req; # only the first internal request
 
 
-	my $hp=$r->hostname.$r->uri;
-	my $session = new EPrints::Session( 2 , $hp );
+	my $hpp=$r->hostname.":".$r->get_server_port.$r->uri;
+	my $session = new EPrints::Session( 2 , $hpp );
 	
 	if( !defined $session )
 	{
@@ -138,45 +87,6 @@ sub authen
 	return $result;
 }
 
-
-######################################################################
-=pod
-
-=item $results = EPrints::Auth::authz( $r )
-
-Tests to see if the user making the current request is authorised to
-see this URL.
-
-There are three kinds of security area in the system:
-
-=over 4
-
-=item User
-
-The main user area. Noramally /perl/users/. This just returns true -
-any valid user can access it. Individual scripts worry about who is 
-running them.
-
-=item Documents
-
-This is the secure documents area - for documents of records which
-are either not in the public archive, or have a non-public security
-option.
-
-In which case it works out which document is being viewed and calls
-$doc->can_view( $user ) to decide if it should allow them to view it
-or not.
-
-=item ChangeUser
-
-This area is just a way to de-validate the current user, so the user
-can log in as some other user. 
-
-=back
-
-=cut
-######################################################################
-
 sub authz
 {
 	my( $r ) = @_;
@@ -185,8 +95,8 @@ sub authz
 	# but if we are looking at a document in the secure area then
 	# we need to do some work.
 
-	my $hp=$r->hostname.$r->uri;
-	my $session = new EPrints::Session( 2 , $hp );
+	my $hpp=$r->hostname.":".$r->get_server_port.$r->uri;
+	my $session = new EPrints::Session( 2 , $hpp );
 	my $archive = $session->get_archive();
 
 	my $uri = $r->uri;
@@ -224,38 +134,23 @@ sub authz
 	}
 
 	my $secpath = $archive->get_conf( "secure_url_dir" );
-	my $sechostpath = $archive->get_conf( "securepath" );
-
-	my $docid;
-	my $eprintid;
-	if( $uri =~ m#^($sechostpath)?$secpath/(\d\d\d\d\d\d\d\d)/(\d+)/# )
+	
+	if( $uri !~ m#^$secpath/(\d+)/(\d+)/# )
 	{
+		# isn't in format:
 		# /archive/00000001/01/.....
-		# or
-		# /$archiveid/archive/00000001/01/.....
 
-		# force it to be integer. (Lose leading zeros)
-		$eprintid = $2+0; 
-		$docid = "$eprintid-$3";
-	}
-	elsif( $uri =~ 
-		m#^$sechostpath$secpath/(\d\d)/(\d\d)/(\d\d)/(\d\d)/(\d+)/# )
-	{
-		# /$archiveid/archive/00/00/00/01/01/.....
-		$eprintid = "$1$2$3$4"+0;
-		$docid = "$eprintid-$5";
-	}
-	else
-	{
-
-		$archive->log( 
-"Request to ".$r->uri." in secure documents area failed to match REGEXP." );
+		$archive->log( "Request to ".$r->uri." in secure documents area failed to match REGEXP." );
 		$session->terminate();
 		return FORBIDDEN;
 	}
+
 	my $user_sent = $r->connection->user;
+	my $eprintid = $1+0; # force it to be integer. (Lose leading zeros)
+	my $docid = "$eprintid-$2";
 	my $user = EPrints::User::user_with_username( $session, $user_sent );
 	my $document = EPrints::Document->new( $session, $docid );
+
 	unless( $document->can_view( $user ) )
 	{
 		$session->terminate();
@@ -267,11 +162,3 @@ sub authz
 }
 
 1;
-
-######################################################################
-=pod
-
-=back
-
-=cut
-

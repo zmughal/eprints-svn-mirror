@@ -4,8 +4,8 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:ep="http://eprints.org/ep2/template">
   <head>
-    <title>&archivename; - <ep:pin ref="title" textonly="yes" /></title>
-    <link rel="stylesheet" type="text/css" href="&base_url;/eprints.css" title="screen stylesheet" media="screen"/>
+    <title><ep:pin ref="title" textonly="yes" /></title>
+    <link rel="stylesheet" type="text/css" href="/eprints.css" title="screen stylesheet" media="screen"/>
     <link rel="Top" href="&frontpage;" />
     <link rel="Search" href="&perl_url;/search" />
     <link rel="Help" href="&base_url;/help" />
@@ -42,7 +42,7 @@
       <table cellpadding="5" border="0" cellspacing="0" width="100%">
         <tr>
           <td bgcolor="#cccccc">
-            Site Administrator: <a href="mailto:&adminemail;">&adminemail;</a>
+            Contact the site administrator at: <a href="mailto:&adminemail;">&adminemail;</a>
           </td>
         </tr>
       </table>

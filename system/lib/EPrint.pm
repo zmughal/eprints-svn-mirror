@@ -1,6 +1,8 @@
 ######################################################################
 #
-# EPrints::EPrint
+# EPrints EPrint class
+#
+#  Class representing an actual EPrint
 #
 ######################################################################
 #
@@ -12,75 +14,6 @@
 #
 ######################################################################
 
-=pod
-
-=head1 NAME
-
-B<EPrints::EPrint> - Class representing an actual EPrint
-
-=head1 DESCRIPTION
-
-This class represents a single eprint record and the metadata 
-associated with it. This is associated with one of more 
-EPrint::Document objects.
-
-EPrints::EPrint is a subclass of EPrints::DataObj with the following
-metadata fields (plus those defined in ArchiveMetadataFieldsConfig:
-
-=over 4
-
-=item eprintid (int)
-
-The unique numerical ID of this eprint. 
-
-=item userid (int)
-
-The id of the user who deposited this eprint (if any). Scripted importing
-could cause this not to be set.
-
-=item dir (text)
-
-The directory, relative to the documents directory for this archive, which
-this eprints data is stored in. Eg. disk0/00/00/03/34 for record 334.
-
-=item datestamp (date)
-
-The date this record was last modified.
-
-=item type (datatype)
-
-The type of this record, one of the types of the "eprint" dataset.
-
-=item succeeds (text)
-
-The ID of the eprint (if any) which this succeeds.  This field should have
-been an int and may be changed in a later upgrade.
-
-=item commentary (text)
-
-The ID of the eprint (if any) which this eprint is a commentary on.  This 
-field should have been an int and may be changed in a later upgrade.
-
-=item replacedby (text)
-
-The ID of the eprint (if any) which has replaced this eprint. This is only set
-on records in the "deletion" dataset.  This field should have
-been an int and may be changed in a later upgrade.
-
-=back
-
-=over 4
-
-=cut
-
-######################################################################
-#
-# INSTANCE VARIABLES:
-#
-#  From DataObj.
-#
-######################################################################
-
 package EPrints::EPrint;
 @ISA = ( 'EPrints::DataObj' );
 use EPrints::DataObj;
@@ -89,19 +22,15 @@ use EPrints::Database;
 use EPrints::Document;
 
 use File::Path;
+use Filesys::DiskSpace;
 use strict;
 
 #cjg doc validation lets through docs with no type (??)
 
-######################################################################
-=pod
+# Number of digits in generated ID codes
+$EPrints::EPrint::id_code_digits = 8;
 
-=item $metadata = EPrints::EPrint->get_system_field_info
-
-Return an array describing the system metadata of the EPrint dataset.
-
-=cut
-######################################################################
+$EPrints::EPrint::static_page = "index.html";
 
 sub get_system_field_info
 {
@@ -123,32 +52,34 @@ sub get_system_field_info
 	{ name=>"type", type=>"datatype", datasetid=>"eprint", required=>1, 
 		input_rows=>"ALL" },
 
-	{ name=>"succeeds", type=>"int", required=>0 },
+	{ name=>"succeeds", type=>"text", required=>0 },
 
-	{ name=>"commentary", type=>"int", required=>0 },
+	{ name=>"commentary", type=>"text", required=>0 },
 
-	{ name=>"replacedby", type=>"int", required=>0 }
+	{ name=>"replacedby", type=>"text", required=>0 }
 
 	);
 }
 
-
 ######################################################################
-=pod
-
-=item $eprint = EPrints::EPrint->new( $session, $id, [$dataset] )
-
-Return the eprint with the given id, or undef if it does not exist.
-
-Setting dataset saves looking through all the datasets (does not
-search "deletion").
-
-=cut
+#
+# $eprint = new( $session, $table, $id, $known )
+#
+#  Create an EPrint object corresponding to the given EPrint. If
+#  $table is passed in undefined, each table will be searched.
+#  To improve performance, if the fields of the EPrint are already
+#  known, for example as part of a largish search, then they can be
+#  passed in here (as $known, a reference to an array of rows as
+#  returned by DBI->selectrow_array[ref].) This avoids the
+#  need for a database access. In this case, $table MUST also be
+#  passed in, and $known must contain ALL fields, including the system
+#  ones.
+#
 ######################################################################
 
 sub new
 {
-	my( $class, $session, $id, $dataset ) = @_;
+	my( $class, $session, $dataset, $id ) = @_;
 
 	if( defined $dataset )
 	{
@@ -170,59 +101,38 @@ sub new
 	return undef;
 }
 
-
-######################################################################
-=pod
-
-=item $eprint = EPrints::EPrint->new_from_data( $session, $data, $dataset )
-
-Construct a new EPrints::EPrint object based on the $data hash 
-reference of metadata.
-
-=cut
-######################################################################
-
 sub new_from_data
 {
-	my( $class, $session, $data, $dataset ) = @_;
+	my( $class, $session, $dataset, $known ) = @_;
 
 	my $self = {};
-	if( defined $data )
+	if( defined $known )
 	{
-		$self->{data} = EPrints::Utils::clone( $data );
-	}
-	else
-	{
-		$self->{data} = {};
+		$self->{data} = $known;
 	}
 	$self->{dataset} = $dataset;
 	$self->{session} = $session;
 
-	bless( $self, $class );
+	bless $self, $class;
 
 	return( $self );
 }
 	
 
 ######################################################################
-=pod
-
-=item $eprint = EPrints::EPrint::create( $session, $dataset, $data )
-
-Create a new EPrint entry in the given dataset.
-
-If data is defined, then this is used as the base for the new record.
-Otherwise the archive specific defaults (if any) are used.
-
-The fields "eprintid" and "dir" will be overridden even if they
-are set.
-
-=cut
+#
+# $eprint = create( $session, $dataset, $userid, $data )
+#
+#  Create a new EPrint entry in the given table, from the given user.
+#
+#  If data is defined, then this is used as the base for the
+#  new record.
+#
 ######################################################################
 
 sub create
 {
-	my( $session, $dataset, $data ) = @_;
+	my( $session, $dataset, $userid, $data ) = @_;
 
 	# don't want to mangle the origional data.
 	$data = EPrints::Utils::clone( $data );
@@ -236,6 +146,7 @@ sub create
 
 	my $new_id = _create_id( $session );
 	my $dir = _create_directory( $session, $new_id );
+#print STDERR "($new_id)($dir)\n";
 
 	if( !defined $dir )
 	{
@@ -243,6 +154,7 @@ sub create
 	}
 
 	$data->{eprintid} = $new_id;
+	$data->{userid} = $userid;
 	$data->{dir} = $dir;
 
 	if( $setdefaults )
@@ -257,7 +169,7 @@ sub create
 
 	if( $success )
 	{
-		return( EPrints::EPrint->new( $session, $new_id, $dataset ) );
+		return( EPrints::EPrint->new( $session, $dataset, $new_id ) );
 	}
 	else
 	{
@@ -267,10 +179,10 @@ sub create
 
 
 ######################################################################
-# 
-# $eprintid = EPrints::EPrint::_create_id( $session )
 #
-#  Create a new EPrint ID code. (Unique across all eprint datasets)
+# $new_id = _create_id( $session )
+#
+#  Create a new EPrint ID code.
 #
 ######################################################################
 
@@ -283,16 +195,13 @@ sub _create_id
 }
 
 
-######################################################################
-# 
-# $directory =  EPrints::EPrint::_create_directory( $session, $eprintid )
+#####################################################################
+#
+# $directory = _create_directory( $eprintid )
 #
 #  Create a directory on the local filesystem for the new document
 #  with the given ID. undef is returned if it couldn't be created
 #  for some reason.
-#
-#  If "df" is available then check for diskspace and mail a warning 
-#  to the admin if the threshold is passed.
 #
 ######################################################################
 
@@ -301,74 +210,48 @@ sub _create_directory
 	my( $session, $eprintid ) = @_;
 	
 	# Get available directories
-	my @dirs = sort $session->get_archive()->get_store_dirs();
+	my @dirs = $session->get_archive()->get_store_dirs();
+	my $warnsize = $session->get_archive()->get_conf("diskspace_warn_threshold");
+	my $errorsize = $session->get_archive()->get_conf("diskspace_error_threshold");
+
+	# Check amount of space free on each device. We'll use the first one 
+	# we find (alphabetically) that has enough space on it.
 	my $storedir;
-
-	if( $EPrints::SystemSettings::conf->{disable_df} )
+	my $best_free_space = 0;
+	my $dir;	
+	foreach $dir (sort @dirs)
 	{
-		# df not available, use the LAST available directory, 
-		# sorting alphabetically.
+		my $free_space = $session->get_archive()->get_store_dir_size( $dir );
+		$best_free_space = $free_space if( $free_space > $best_free_space );
 
-		$storedir = pop @dirs;
+		unless( defined $storedir )
+		{
+			if( $free_space >= $errorsize )
+			{
+				# Enough space on this drive.
+				$storedir = $dir;
+			}
+		}
 	}
-	else
+
+	# Check that we do have a place for the new directory
+	if( !defined $storedir )
 	{
-		# Check amount of space free on each device. We'll use the 
-		# first one we find (alphabetically) that has enough space on 
-		# it.
-		my $warnsize = $session->get_archive()->get_conf(
-						"diskspace_warn_threshold");
-		my $errorsize = $session->get_archive()->get_conf(
-						"diskspace_error_threshold");
+		# Argh! Running low on disk space overall.
+		$session->get_archive()->log("*** URGENT ERROR\n*** Out of disk space.\n*** All available drives have under ".$errorsize."k remaining.\n*** No new eprints may be added until this is rectified." );
+		$session->mail_administrator(
+			"lib/eprint:diskout_sub" ,
+			"lib/eprint:diskout" );
+		return( undef );
+	}
 
-		my $best_free_space = 0;
-		my $dir;	
-		foreach $dir (sort @dirs)
-		{
-			my $free_space = $session->get_archive()->
-						get_store_dir_size( $dir );
-			if( $free_space > $best_free_space )
-			{
-				$best_free_space = $free_space;
-			}
-	
-			unless( defined $storedir )
-			{
-				if( $free_space >= $errorsize )
-				{
-					# Enough space on this drive.
-					$storedir = $dir;
-				}
-			}
-		}
-
-		# Check that we do have a place for the new directory
-		if( !defined $storedir )
-		{
-			# Argh! Running low on disk space overall.
-			$session->get_archive()->log(<<END);
-*** URGENT ERROR
-*** Out of disk space.
-*** All available drives have under $errorsize kilobytes remaining.
-*** No new eprints may be added until this is rectified.
-END
-			$session->mail_administrator(
-				"lib/eprint:diskout_sub" ,
-				"lib/eprint:diskout" );
-			return( undef );
-		}
-
-		# Warn the administrator if we're low on space
-		if( $best_free_space < $warnsize )
-		{
-			$session->get_archive()->log(<<END);
-Running low on diskspace.
-All available drives have under $warnsize kilobytes remaining.
-END
-			$session->mail_administrator(
-				"lib/eprint:disklow_sub" ,
-				"lib/eprint:disklow" );
-		}
+	# Warn the administrator if we're low on space
+	if( $best_free_space < $warnsize )
+	{
+		$session->get_archive()->log("Running low on diskspace.\nAll available drives have under ".$warnsize."k remaining." );
+		$session->mail_administrator(
+			"lib/eprint:disklow_sub" ,
+			"lib/eprint:disklow" );
 	}
 
 	# Work out the directory path. It's worked out using the ID of the 
@@ -377,23 +260,18 @@ END
 
 	if( !defined $idpath )
 	{
-		$session->get_archive()->log(<<END);
-Failed to turn eprintid: "$eprintid" into a path.
-END
+		$session->get_archive()->log( "Failed to turn eprintid: \"$eprintid\" into a path." );
 		return( undef ) ;
 	}
 
 	my $docdir = $storedir."/".$idpath;
 
 	# Full path including doc store root
-	my $full_path = $session->get_archive()->get_conf("documents_path").
-				"/".$docdir;
+	my $full_path = $session->get_archive()->get_conf("documents_path")."/".$docdir;
 	
 	if (!EPrints::Utils::mkdir( $full_path ))
 	{
-		$session->get_archive()->log(<<END);
-Failed to create directory $full_path: $@
-END
+		$session->get_archive()->log( "Failed to create directory ".$full_path.": $@");
                 return( undef );
 	}
 	else
@@ -404,36 +282,29 @@ END
 }
 
 
+	
+	
 ######################################################################
-=pod
-
-=item $eprint = $eprint->clone( $dest_dataset, $copy_documents )
-
-Create a copy of this EPrint with a new ID in the given dataset.
-Return the new eprint, or undef in the case of an error.
-
-If $copy_documents is set and true then the documents (and files)
-will be copied in addition to the metadata.
-
-=cut
+#
+# $new_eprint = clone( $dest_table, $copy_documents )
+#
+#  Writes a clone of this EPrint to the given table, with a new ID.
+#  The new EPrint is returned, or undef in the case of an error.
+#  If $copy_documents is defined and non-zero, the documents will be
+#  copied as well.
+#
 ######################################################################
 
 sub clone
 {
 	my( $self, $dest_dataset, $copy_documents ) = @_;
 
-	my $data = EPrints::Utils::clone( $self->{data} );
-	foreach my $field ( $self->{dataset}->get_fields )
-	{
-		next if( $field->get_property( "can_clone" ) );
-		delete $data->{$field->get_name};
-	}
-
 	# Create the new EPrint record
 	my $new_eprint = EPrints::EPrint::create(
 		$self->{session},
 		$dest_dataset,
-		$data );
+		$self->get_value( "userid" ),
+		$self->{data} );
 	
 	unless( defined $new_eprint )
 	{
@@ -445,8 +316,7 @@ sub clone
 	# We assume the new eprint will be a later version of this one,
 	# so we'll fill in the succeeds field, provided this one is
 	# already in the main archive.
-	if( $self->{dataset}->id() eq  "archive" || 
-	    $self->{dataset}->id() eq  "deletion" )
+	if( $self->{dataset}->id() eq  "archive"  )
 	{
 		$new_eprint->set_value( "succeeds" , 
 			$self->get_value( "eprintid" ) );
@@ -480,10 +350,10 @@ sub clone
 
 
 ######################################################################
-# 
-# $success = $eprint->_transfer( $dataset )
 #
-#  Move the EPrint to the given dataset.
+# $success = _transfer( $dataset )
+#
+#  Move the EPrint to the given table
 #
 ######################################################################
 
@@ -525,19 +395,8 @@ sub _transfer
 }
 
 
-######################################################################
-=pod
-
-=item $success = $eprint->remove
-
-Erase this eprint and any associated records from the database and
-filesystem.
-
-This should only be called on eprints in "inbox" or "buffer".
-
-=cut
-######################################################################
-
+# remove EPrint - should really only be called on eprints
+# in the buffer or inbox.
 sub remove
 {
 	my( $self ) = @_;
@@ -556,23 +415,20 @@ sub remove
 }
 
 
+
 ######################################################################
-=pod
-
-=item $success = $eprint->commit
-
-Commit any changes that might have been made to the database
-
-=cut
+#
+# $success = commit()
+#
+#  Commit any changes that might have been made to the database
+#
 ######################################################################
 
 sub commit
 {
 	my( $self ) = @_;
 
-	$self->{session}->get_archive()->call( 
-		"set_eprint_automatic_fields", 
-		$self );
+	$self->{session}->get_archive()->call( "set_eprint_automatic_fields", $self );
 
 	my $success = $self->{session}->get_db()->update(
 		$self->{dataset},
@@ -581,27 +437,15 @@ sub commit
 	if( !$success )
 	{
 		my $db_error = $self->{session}->get_db()->error();
-		$self->{session}->get_archive()->log( 
-			"Error committing EPrint ".
-			$self->get_value( "eprintid" ).": ".$db_error );
+		$self->{session}->get_archive()->log( "Error committing EPrint ".$self->get_value( "eprintid" ).": $db_error" );
 	}
 
 	return( $success );
 }
 
 
+
 ######################################################################
-=pod
-
-=item $problems = $eprint->validate_type( [$for_archive] )
-
-Return a reference to an array of XHTML DOM objects describing
-validation problems with the results of the "type" stage of eprint
-submission.
-
-A reference to an empty array indicates no problems.
-
-=cut
 ######################################################################
 
 sub validate_type
@@ -637,17 +481,10 @@ sub validate_type
 
 
 ######################################################################
-=pod
-
-=item $problems = $eprint->validate_linking( [$for_archive] )
-
-Return a reference to an array of XHTML DOM objects describing
-validation problems with the results of the "linking" stage of eprint
-submission.
-
-A reference to an empty array indicates no problems.
-
-=cut
+#
+# $problems = validate_linking()
+#  array_ref
+#
 ######################################################################
 
 sub validate_linking
@@ -670,43 +507,30 @@ sub validate_linking
 
 		next unless( defined $self->get_value( $field_id ) );
 
-		my $archive_ds = $self->{session}->get_archive()->get_dataset( 
-			"archive" );
+		my $archive_ds = $self->{session}->get_archive()->get_dataset( "archive" );
 
-		my $test_eprint = new EPrints::EPrint( 
-			$self->{session}, 
-			$self->get_value( $field_id ),
-			$archive_ds );
+		my $test_eprint = new EPrints::EPrint( $self->{session}, 
+		                                       $archive_ds,
+		                                       $self->get_value( $field_id ) );
 
 		if( !defined( $test_eprint ) )
 		{
 			push @problems, $self->{session}->html_phrase(
 				"lib/eprint:invalid_id",	
 				field => $self->{session}->make_text(
-					$field->display_name( $self->{session}) 
-				) );
+					$field->display_name( $self->{session} ) ) );
 			next;
 		}
 
-		unless( $field_id eq "succeeds" )
+		if( $field_id eq "succeeds" )
 		{
-			next;
-		}
+			# Ensure that the user is authorised to post to this
+			if( $test_eprint->get_value("userid") ne $self->get_value("userid") )
+			{
+ 				# Not the same user. 
 
-		# so it is "succeeds"...
-		# Ensure that the user is authorised to post to this
-		# either the same user owns both eprints, or the 
-		# current user is an editor.
-
-		my $user = $self->{session}->current_user();
-		unless( 
-			( defined $user && $user->has_priv( "editor" ) ) ||
-			( $test_eprint->get_value("userid" ) eq 
-				$self->get_value("userid") ) )
-		{
- 			# Not the same user. 
-			push @problems, $self->{session}->html_phrase( 
-				"lib/eprint:cant_succ" );
+				push @problems, $self->{session}->html_phrase( "lib/eprint:cant_succ" );
+			}
 		}
 	}
 
@@ -715,18 +539,15 @@ sub validate_linking
 }
 
 
+
 ######################################################################
-=pod
-
-=item $problems = $eprint->validate_meta( [$for_archive] )
-
-Return a reference to an array of XHTML DOM objects describing
-validation problems with the results of the "meta" stage of eprint
-submission.
-
-A reference to an empty array indicates no problems.
-
-=cut
+#
+# @problems = validate_meta()
+#  array_ref
+#
+#  Validate the metadata in this EPrint, returning a hash of any
+#  problems found (fieldname->problem).
+#
 ######################################################################
 
 sub validate_meta
@@ -734,8 +555,7 @@ sub validate_meta
 	my( $self, $for_archive ) = @_;
 	
 	my @all_problems;
-	my @req_fields = $self->{dataset}->get_required_type_fields( 
-		$self->get_value("type") );
+	my @req_fields = $self->{dataset}->get_required_type_fields( $self->get_value("type") );
 	my @all_fields = $self->{dataset}->get_fields();
 
 	# For all required fields...
@@ -776,17 +596,12 @@ sub validate_meta
 	
 
 ######################################################################
-=pod
-
-=item $problems = $eprint->validate_documents( [$for_archive] )
-
-Return a reference to an array of XHTML DOM objects describing
-validation problems with the results of the "documents" stage of eprint
-submission. That is to say, validate all the documents.
-
-A reference to an empty array indicates no problems.
-
-=cut
+#
+# $problems = validate_documents()
+#  array_ref
+#
+#  Ensure this EPrint has appropriate uploaded files.
+#
 ######################################################################
 
 sub validate_documents
@@ -794,8 +609,7 @@ sub validate_documents
 	my( $self, $for_archive ) = @_;
 	my @problems;
 	
-        my @req_formats = @{$self->{session}->get_archive()->get_conf( 
-		"required_formats" )};
+        my @req_formats = @{$self->{session}->get_archive()->get_conf( "required_formats" )};
 	my @docs = $self->get_all_documents();
 
 	my $ok = 0;
@@ -813,11 +627,9 @@ sub validate_documents
 
 	if( !$ok )
 	{
-		my $doc_ds = $self->{session}->get_archive()->get_dataset( 
-			"document" );
+		my $doc_ds = $self->{session}->get_archive()->get_dataset( "document" );
 		my $prob = $self->{session}->make_doc_fragment();
-		$prob->appendChild( $self->{session}->html_phrase( 
-			"lib/eprint:need_a_format" ) );
+		$prob->appendChild( $self->{session}->html_phrase( "lib/eprint:need_a_format" ) );
 		my $ul = $self->{session}->make_element( "ul" );
 		$prob->appendChild( $ul );
 		
@@ -825,8 +637,7 @@ sub validate_documents
 		{
 			my $li = $self->{session}->make_element( "li" );
 			$ul->appendChild( $li );
-			$li->appendChild( $doc_ds->render_type_name( 
-				$self->{session}, $_ ) );
+			$li->appendChild( $doc_ds->render_type_name( $self->{session}, $_ ) );
 		}
 			
 		push @problems, $prob;
@@ -840,8 +651,7 @@ sub validate_documents
 		{
 			my $prob = $self->{session}->make_doc_fragment();
 			$prob->appendChild( $doc->render_description() );
-			$prob->appendChild( 
-				$self->{session}->make_text( ": " ) );
+			$prob->appendChild( $self->{session}->make_text( ": " ) );
 			$prob->appendChild( $_ );
 		}
 	}
@@ -851,16 +661,12 @@ sub validate_documents
 
 
 ######################################################################
-=pod
-
-=item $foo = $eprint->validate_full( [$for_archive] )
-
-Return a reference to an array of XHTML DOM objects describing
-validation problems with the entire eprint.
-
-A reference to an empty array indicates no problems.
-
-=cut
+#
+# $problems = validate_full()
+#  array_ref
+#
+#  Validate the whole shebang.
+#
 ######################################################################
 
 sub validate_full
@@ -896,14 +702,11 @@ sub validate_full
 
 
 ######################################################################
-=pod
-
-=item $eprint->prune_documents
-
-Remove any documents associated with this eprint which don't actually
-have any files.
-
-=cut
+#
+# prune_documents()
+#
+#  Remove documents which don't have any attached files.
+#
 ######################################################################
 
 sub prune_documents
@@ -925,14 +728,11 @@ sub prune_documents
 
 
 ######################################################################
-=pod
-
-=item @documents = $eprint->get_all_documents
-
-Return an array of all EPrint::Document objects associated with this
-eprint.
-
-=cut
+#
+# @documents = get_all_documents()
+#
+#  Return all documents associated with the EPrint.
+#
 ######################################################################
 
 sub get_all_documents
@@ -956,36 +756,70 @@ sub get_all_documents
 	return( @documents );
 }
 
+######################################################################
+#
+# prune()
+#
+#  Remove fields not allowed for this records type and prune document 
+#  entries.
+#
+######################################################################
+
+#loseit? cjg
+sub prune
+{
+	my( $self ) = @_;
+
+	$self->prune_documents();
+
+	# This part chops out fields which don't belong to 
+	# this type. But that's not really what we want.
+	# as some may have been hidden on purpose (eg. subjects)
+	# or a composite field. 
+
+	# Commenting out this code means that if you edit an
+	# eprint, then change it's type to a type which can't
+	# have field "foo" then field "foo" may remain set.
+	# This probably won't matter much.
+
+	#  my @fields = $self->{dataset}->get_type_fields();
+	#  my @all_fields = $self->{dataset}->get_fields();
+	#
+	#  my $f;
+	#  foreach $f (@all_fields)
+	#  {
+	#	unless( grep( /^$f$/, @fields ) )
+	#	{
+	#		$self->set_value( $f->{name}, undef );
+	#	}
+	#  }
+
+}
+
 
 ######################################################################
-=pod
-
-=item $eprint->datestamp
-
-Set the datestamp field to today's date (GMT).
-
-=cut
+#
+# datestamp()
+#
+#  Set the datestamp field to today's date (GMT).
+#
 ######################################################################
 
 sub datestamp
 {
 	my( $self ) = @_;
 
-	$self->set_value( 
-		"datestamp" , 
-		EPrints::Utils::get_datestamp( time ) );
+	$self->set_value( "datestamp" , EPrints::MetaField::get_datestamp( time ) );
 }
 
 
 ######################################################################
-=pod
-
-=item $success = $eprint->move_to_deletion
-
-Transfer the EPrint into the "deletion" dataset. Should only be
-called in eprints in the "archive" dataset.
-
-=cut
+#
+# $success = archive()
+#
+#  This transfers the EPrint to the main archive table - i.e. it
+#  actually _archives_ it.
+#
 ######################################################################
 
 sub move_to_deletion
@@ -994,8 +828,7 @@ sub move_to_deletion
 
 	my $ds = $self->{session}->get_archive()->get_dataset( "deletion" );
 	
-	my $last_in_thread = $self->last_in_thread( $ds->get_field( 
-		"succeeds" ) );
+	my $last_in_thread = $self->last_in_thread( $ds->get_field( "succeeds" ) );
 	my $replacement_id = $last_in_thread->get_value( "eprintid" );
 
 	if( $replacement_id == $self->get_value( "eprintid" ) )
@@ -1009,20 +842,13 @@ sub move_to_deletion
 
 	my $success = $self->_transfer( $ds );
 
+	if( $success )
+	{
+		$self->generate_static();
+	}
+	
 	return $success;
 }
-
-
-######################################################################
-=pod
-
-=item $success = $eprint->move_to_inbox
-
-Transfer the EPrint into the "inbox" dataset. Should only be
-called in eprints in the "buffer" dataset.
-
-=cut
-######################################################################
 
 sub move_to_inbox
 {
@@ -1037,18 +863,6 @@ sub move_to_inbox
 	return $success;
 }
 
-
-######################################################################
-=pod
-
-=item $success = $eprint->move_to_buffer
-
-Transfer the EPrint into the "buffer" dataset. Should only be
-called in eprints in the "inbox" or "archive" dataset.
-
-=cut
-######################################################################
-
 sub move_to_buffer
 {
 	my( $self ) = @_;
@@ -1059,23 +873,18 @@ sub move_to_buffer
 	
 	if( $success )
 	{
-		$self->{session}->get_archive()->call( 
-			"update_submitted_eprint", $self );
+		$self->{session}->get_archive()->call( "update_submitted_eprint", $self );
 		$self->commit();
 	}
 	
 	return( $success );
 }
 
-
-######################################################################
-# 
-# $eprint->_move_from_archive
-#
-# Called when an item leaves the main archive. Removes the static 
-# pages.
-#
-######################################################################
+sub remove_static()
+{
+	my( $self ) = @_;
+	#cjg tsk needs to actually clean up symlinks abstracts etc.
+}	
 
 sub _move_from_archive
 {
@@ -1094,18 +903,6 @@ sub _move_from_archive
 	}
 }
 
-
-######################################################################
-=pod
-
-=item $success = $eprint->move_to_archive
-
-Move this eprint into the main "archive" dataset. Normally only called
-on eprints in "deletion" or "buffer" datasets.
-
-=cut
-######################################################################
-
 sub move_to_archive
 {
 	my( $self ) = @_;
@@ -1115,8 +912,7 @@ sub move_to_archive
 	
 	if( $success )
 	{
-		$self->{session}->get_archive()->call( 
-			"update_archived_eprint", $self );
+		$self->{session}->get_archive()->call( "update_archived_eprint", $self );
 		$self->commit();
 		$self->generate_static();
 
@@ -1135,63 +931,51 @@ sub move_to_archive
 }
 
 
+
 ######################################################################
-=pod
-
-=item $path = $eprint->local_path
-
-Return the full path of the EPrint directory on the local filesystem.
-No trailing slash.
-
-=cut
+#
+# $path = local_path
+#
+#  Gives the full path of the EPrint directory on the local filesystem.
+#  No trailing slash.
+#
 ######################################################################
 
 sub local_path
 {
 	my( $self ) = @_;
 	
-	return( 
-		$self->{session}->get_archive()->get_conf( 
-			"documents_path" )."/".$self->get_value( "dir" ) );
+	return( $self->{session}->get_archive()->get_conf( "documents_path" )."/".$self->get_value( "dir" ) );
 }
 
 
 ######################################################################
-=pod
-
-=item $url = $eprint->url_stem
-
-Return the URL to this EPrint's directory. Note, this INCLUDES the
-trailing slash, unlike the local_path() method.
-
-=cut
+#
+# $stem = url_stem()
+#
+#  Returns the URL to this EPrint's directory. Note, this INCLUDES the
+#  trailing slash, unlike the local_path() method.
+#
 ######################################################################
 
 sub url_stem
 {
 	my( $self ) = @_;
 
-	return( 
-		sprintf( 
-			"%s/%08d/", 
-			$self->{session}->get_archive()->get_conf( 
-							"documents_url" ), 
+	return( sprintf( 
+			"%s/%0".$EPrints::EPrint::id_code_digits."d/", 
+			$self->{session}->get_archive()->get_conf( "documents_url" ), 
 			$self->{data}->{eprintid} ) );
 }
 
 
+
 ######################################################################
-=pod
-
-=item $eprint->generate_static
-
-Generate the static version of the abstract web page. In a multi-language
-archive this will generate one version per language.
-
-It only makes sense to call this on eprints in the "archive" and
-"deletion" datasets.
-
-=cut
+#
+# $success = generate_static()
+#
+#  Generate the static version of the abstract page.
+#
 ######################################################################
 
 sub generate_static
@@ -1201,7 +985,7 @@ sub generate_static
 	my $eprintid = $self->get_value( "eprintid" );
 
 	my $ds_id = $self->{dataset}->id();
-	if( $ds_id ne "archive" && $ds_id ne "deletion" )
+	if( $ds_id ne "deletion" && $ds_id ne "archive" )
 	{
 		$self->{session}->get_archive()->log( 
 			"Attempt to generate static files for record ".
@@ -1214,11 +998,10 @@ sub generate_static
 	my $real_langid = $self->{session}->get_langid();
 
 	my $langid;
-	foreach $langid ( 
-		@{$self->{session}->get_archive()->get_conf( "languages" )} ) 
+	foreach $langid ( @{$self->{session}->get_archive()->get_conf( "languages" )} )
 	{
 		$self->{session}->change_lang( $langid );
-		my $full_path = $self->_htmlpath( $langid );
+		my $full_path = $self->{session}->get_archive()->get_conf( "htdocs_path" )."/$langid/archive/".eprintid_to_path( $eprintid );
 
 		my @created = eval
 		{
@@ -1226,10 +1009,12 @@ sub generate_static
 			return( @created );
 		};
 
+		$self->{session}->new_page();
 		my( $page, $title, $links ) = $self->render();
 
-		$self->{session}->build_page( $title, $page, "abstract", $links );
-		$self->{session}->page_to_file( $full_path . "/index.html" );
+		$self->{session}->build_page( $title, $page, $links );
+		$self->{session}->page_to_file( $full_path .
+			  "/" . $EPrints::EPrint::static_page );
 
 		next if( $ds_id ne "archive" );
 		# Only live archive records have actual documents 
@@ -1249,61 +1034,6 @@ sub generate_static
 }
 
 
-######################################################################
-=pod
-
-=item $eprint->remove_static
-
-Remove the static web page or pages.
-
-=cut
-######################################################################
-
-sub remove_static
-{
-	my( $self ) = @_;
-
-	my $langid;
-	foreach $langid 
-		( @{$self->{session}->get_archive()->get_conf( "languages" )} )
-	{
-		rmtree( $self->_htmlpath( $langid ) );
-	}
-}
-
-######################################################################
-# 
-# $path = $eprint->_htmlpath( $langid )
-#
-# return the filesystem path in which the static files for this eprint
-# are stored.
-#
-######################################################################
-
-sub _htmlpath
-{
-	my( $self, $langid ) = @_;
-
-	return $self->{session}->get_archive()->get_conf( "htdocs_path" ).
-		"/".$langid."/archive/".
-		eprintid_to_path( $self->get_value( "eprintid" ) );
-}
-
-
-######################################################################
-=pod
-
-=item ( $description, $title, $links ) = $eprint->render
-
-Render the eprint. The 3 returned values are references to XHTML DOM
-objects. $description is the public viewable description of this eprint
-that appears as the body of the abstract page. $title is the title of
-the abstract page for this eprint. $links is any elements which should
-go in the <head> of this page.
-
-=cut
-######################################################################
-
 sub render
 {
         my( $self ) = @_;
@@ -1312,33 +1042,23 @@ sub render
 	my $ds_id = $self->{dataset}->id();
 	if( $ds_id eq "deletion" )
 	{
-		$title = $self->{session}->html_phrase( 
-			"lib/eprint:eprint_gone_title" );
+		$title = $self->{session}->html_phrase( "lib/eprint:eprint_gone_title" );
 		$dom = $self->{session}->make_doc_fragment();
-		$dom->appendChild( $self->{session}->html_phrase( 
-			"lib/eprint:eprint_gone" ) );
+		$dom->appendChild( $self->{session}->html_phrase( "lib/eprint:eprint_gone" ) );
 		my $replacement = new EPrints::EPrint(
 			$self->{session},
-			$self->get_value( "replacedby" ),
-			$self->{session}->get_archive()->get_dataset( 
-				"archive" ) );
+			$self->{session}->get_archive()->get_dataset( "archive" ),
+			$self->get_value( "replacedby" ) );
 		if( defined $replacement )
 		{
 			my $cite = $replacement->render_citation_link();
-			$dom->appendChild( 
-				$self->{session}->html_phrase( 
-					"lib/eprint:later_version", 
-					citation => $cite ) );
+			$dom->appendChild( $self->{session}->html_phrase( "lib/eprint:later_version", citation=>$cite ) );
 		}
 	}
 	else
 	{
-		( $dom, $title, $links ) = 
-			$self->{session}->get_archive()->call( 
-				"eprint_render", 
-				$self, $self->{session} );
+		($dom, $title, $links ) = $self->{session}->get_archive()->call( "eprint_render", $self, $self->{session} );
 	}
-
 	if( !defined $links )
 	{
 		$links = $self->{session}->make_doc_fragment();
@@ -1347,91 +1067,41 @@ sub render
         return( $dom, $title, $links );
 }
 
-
-######################################################################
-=pod
-
-=item $dom = $eprint->render_full
-
-Render as XHTML DOM a full description of this eprint - the one
-intended for editors.
-
-=cut
-######################################################################
-
+# This should include all the info, not just that presented to the public.
 sub render_full
 {
         my( $self ) = @_;
 
-        my( $dom, $title ) = $self->{session}->get_archive()->call( 
-		"eprint_render_full", 
-		$self, 
-		$self->{session} );
+        my( $dom, $title ) = $self->{session}->get_archive()->call( "eprint_render_full", $self, $self->{session} );
 
         return( $dom );
 }
 
 
-######################################################################
-=pod
 
-=item $url = $eprint->get_url( [$staff] )
+################################################################################
 
-Return the public URL of this eprints abstract page. If $staff is
-true then return the URL of the staff view of this eprint.
-
-=cut
-######################################################################
 
 sub get_url
 {
 	my( $self , $staff ) = @_;
-
 	if( defined $staff && $staff )
 	{
 		return $self->{session}->get_archive()->get_conf( "perl_url" ).
-			"/users/staff/edit_eprint?eprintid=".
-			$self->get_value( "eprintid" )."&".
-			"dataset=".$self->get_dataset()->id();
+			"/users/staff/edit_eprint?eprintid=".$self->get_value( "eprintid" );
 	}
 	
 	return( $self->url_stem() );
 }
 
-
-######################################################################
-=pod
-
-=item $user = $eprint->get_user
-
-Return the EPrints::User to whom this eprint belongs (if any).
-
-=cut
-######################################################################
-
 sub get_user
 {
 	my( $self ) = @_;
 
-	my $user = EPrints::User->new( 
-		$self->{session}, 
-		$self->get_value( "userid" ) );
+	my $user = EPrints::User->new( $self->{session}, $self->get_value( "userid" ) );
 
 	return $user;
 }
-
-
-######################################################################
-=pod
-
-=item $path = EPrints::EPrint::eprintid_to_path( $eprintid )
-
-Return this eprints id converted into directories. Thousands of 
-files in one directory cause problems. For example, the eprint with the 
-id 50344 would have the path 00/05/03/44.
-
-=cut
-######################################################################
 
 sub eprintid_to_path
 {
@@ -1451,17 +1121,20 @@ sub eprintid_to_path
 	return sprintf( "%02d/%02d/%02d/%02d", $a, $b, $c, $d );
 }
 
+######################################################################
+#
+# Thread related code
+#
+######################################################################
+
 
 ######################################################################
-=pod
-
-=item @eprints = $eprint->get_all_related
-
-Return the eprints that are related in some way to this in a succession
-or commentary thread. The returned list does NOT include this EPrint.
-
-=cut
-######################################################################
+#
+# @eprints = get_all_related()
+#
+#  Gets the eprints that are related in some way to this in a succession
+#  or commentary thread. The returned list does NOT include this EPrint.
+#
 
 sub get_all_related
 {
@@ -1498,17 +1171,13 @@ sub get_all_related
 }
 
 
+
 ######################################################################
-=pod
-
-=item $boolean = $eprint->in_thread( $field )
-
-Return true if this eprint is part of a thread of $field. $field
-should be an EPrint::MetaField representing either "commentary" or
-"succeeds".
-
-=cut
-######################################################################
+#
+# $is_first = in_thread( $field )
+#
+#  Returns non-zero if this paper is part of a thread
+#
 
 sub in_thread
 {
@@ -1528,15 +1197,12 @@ sub in_thread
 
 
 ######################################################################
-=pod
-
-=item $eprint = $eprint->first_in_thread( $field )
-
-Return the first (earliest) version or first paper in the thread
-of commentaries of this paper in the archive.
-
-=cut
-######################################################################
+#
+# $eprint = first_in_thread( $field )
+#
+#  Returns the first (earliest) version or first paper in the thread
+#  of commentaries of this paper in the archive.
+#
 
 sub first_in_thread
 {
@@ -1549,8 +1215,8 @@ sub first_in_thread
 	{
 		my $prev = EPrints::EPrint->new( 
 				$self->{session},
-				$first->get_value( $field->get_name() ),
-				$ds );
+				$ds,
+				$first->get_value( $field->get_name() ) );
 
 		return( $first ) unless( defined $prev );
 		$first = $prev;
@@ -1560,15 +1226,11 @@ sub first_in_thread
 }
 
 
-######################################################################
-=pod
-
-=item @eprints = $eprint->later_in_thread( $field )
-
-Return a list of the later items in the thread.
-
-=cut
-######################################################################
+#
+# @eprints = later_in_thread( $field )
+#
+#  Returns a list of the later items in the thread
+#
 
 sub later_in_thread
 {
@@ -1576,8 +1238,7 @@ sub later_in_thread
 
 	my $searchexp = EPrints::SearchExpression->new(
 		session => $self->{session},
-		dataset => $self->{session}->get_archive()->get_dataset( 
-			"archive" ) );
+		dataset => $self->{session}->get_archive()->get_dataset( "archive" ) );
 #cjg		[ "datestamp DESC" ] ) ); sort by date!
 
 	$searchexp->add_field( 
@@ -1589,18 +1250,15 @@ sub later_in_thread
 	$searchexp->dispose();
 
 	return @eprints;
+
 }
 
 
-######################################################################
-=pod
-
-=item @eprints = $eprint->all_in_thread( $field )
-
-Return all of the EPrints in the given thread.
-
-=cut
-######################################################################
+#
+# @eprints = all_in_thread( $field )
+#
+#  Returns all of the EPrints in the given thread
+#
 
 sub all_in_thread
 {
@@ -1615,14 +1273,6 @@ sub all_in_thread
 	return( @eprints );
 }
 
-######################################################################
-# 
-# $foo = $eprint->_collect_thread( $field, $current, $eprints )
-#
-# undocumented
-#
-######################################################################
-
 sub _collect_thread
 {
 	my( $self, $field, $current, $eprints ) = @_;
@@ -1636,16 +1286,6 @@ sub _collect_thread
 	}
 }
 
-
-######################################################################
-=pod
-
-=item $eprint = $eprint->last_in_thread( $field )
-
-Return the last item in the specified thread.
-
-=cut
-######################################################################
 
 sub last_in_thread
 {
@@ -1663,20 +1303,13 @@ sub last_in_thread
 	return( $latest );
 }
 
-
-######################################################################
-=pod
-
-=item $eprint->remove_from_threads
-
-Extract the eprint from any threads it's in. i.e., if any other
-paper is a later version of or commentary on this paper, the link
-from that paper to this will be removed.
-
-Abstract pages are updated if needed.
-
-=cut
-######################################################################
+#
+# remove_from_threads()
+#
+#  Extracts the eprint from any threads it's in. i.e., if any other
+#  paper is a later version of or commentary on this paper, the link
+#  from that paper to this will be removed.
+#
 
 sub remove_from_threads
 {
@@ -1726,17 +1359,6 @@ sub remove_from_threads
 	}
 }
 
-
-######################################################################
-=pod
-
-=item $xhtml = $eprint->render_version_thread( $field )
-
-Render XHTML DOM describing the entire thread as nested unordered lists.
-
-=cut
-######################################################################
-
 sub render_version_thread
 {
 	my( $self, $field ) = @_;
@@ -1751,14 +1373,6 @@ sub render_version_thread
 	
 	return( $ul );
 }
-
-######################################################################
-# 
-# $xhtml = $eprint->_render_version_thread_aux( $field, $eprint_shown )
-#
-# undocumented
-#
-######################################################################
 
 sub _render_version_thread_aux
 {
@@ -1798,17 +1412,6 @@ sub _render_version_thread_aux
 	return( $li );
 }
 
-
-######################################################################
-=pod
-
-=item $type = $eprint->get_type
-
-Return the type of this eprint.
-
-=cut
-######################################################################
-
 sub get_type
 {
 	my( $self ) = @_;
@@ -1817,15 +1420,5 @@ sub get_type
 }
 
 
-
 1; # For use/require success
-
 	
-
-######################################################################
-=pod
-
-=back
-
-=cut
-

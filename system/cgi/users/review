@@ -68,7 +68,7 @@ sub make_form
 		$page->appendChild( $session->html_phrase( 
 			"general:userhome_link" ) );
 
-		$session->build_page( $title, $page, "review_none" );
+		$session->build_page( $title, $page );
 		$session->send_page();
 		return;
 	}
@@ -129,7 +129,7 @@ sub make_form
 
 		}
 	}
-	$session->build_page( $title, $page, "review_list" );
+	$session->build_page( $title, $page );
 	$session->send_page();
 	return;
 
@@ -144,7 +144,7 @@ sub process_form
 
 	if( $action =~ m/^clone_(.+)$/ )
 	{
-		my $eprint = EPrints::EPrint->new( $session, $1, $ds );
+		my $eprint = EPrints::EPrint->new( $session, $ds, $1 );
 		my $inbox_ds = $session->get_archive()->get_dataset( "inbox" );
 		if( defined $eprint )
 		{
@@ -153,7 +153,6 @@ sub process_form
 			{
 				# Copied OK, redirect to workspace
 				$session->redirect( "home" );
-#cjg is the next bit meaningless? (upto return)
 				my $page = $session->make_doc_fragment();
 				my $title = $session->html_phrase( "cgi/users/review:title" );
 				$session->build_page( $title, $page );
@@ -170,7 +169,7 @@ sub process_form
 
 	if( $action=~ m/^remove_(.+)$/ && $r_req )
 	{
-		my $eprint = EPrints::EPrint->new( $session, $1, $ds );
+		my $eprint = EPrints::EPrint->new( $session, $ds, $1 );
 		if( !defined $eprint )
 		{
 			$session->render_error(
@@ -242,7 +241,7 @@ sub removal_request_form
 			},
 			dest=>"review" ) );
 
-	$session->build_page( $title, $page, "review_remove_form" );
+	$session->build_page( $title, $page );
 	$session->send_page();
 	return;
 }
@@ -261,10 +260,7 @@ sub handle_removal_request
 	# Get the EPrint we're dealing with
 	my $ds = $session->get_archive()->get_dataset( "archive" );	
 
-	my $eprint = EPrints::EPrint->new( 
-		$session, 
-		$session->param( "eprintid" ),
-		$ds );
+	my $eprint = EPrints::EPrint->new( $session, $ds, $session->param( "eprintid" ) );
 	if( !defined $eprint )
 	{
 		$session->render_error(
@@ -297,7 +293,7 @@ sub handle_removal_request
 	my $page = $session->make_doc_fragment();
 	$page->appendChild( $session->html_phrase( "cgi/users/review:done" ) );
 	$page->appendChild( $session->html_phrase( "general:userhome_link" ) );
-	$session->build_page( $title, $page, "review_remove_done" );
+	$session->build_page( $title, $page );
 	$session->send_page();
 	
 	return;

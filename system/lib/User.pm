@@ -1,41 +1,3 @@
-######################################################################
-#
-# EPrints::User
-#
-######################################################################
-#
-#  __COPYRIGHT__
-#
-# Copyright 2000-2008 University of Southampton. All Rights Reserved.
-# 
-#  __LICENSE__
-#
-######################################################################
-
-
-=pod
-
-=head1 NAME
-
-B<EPrints::User> - undocumented
-
-=head1 DESCRIPTION
-
-undocumented
-
-=over 4
-
-=cut
-
-######################################################################
-#
-# INSTANCE VARIABLES:
-#
-#  $self->{foo}
-#     undefined
-#
-######################################################################
-
 #####################################################################j
 #
 # EPrints User class module
@@ -45,6 +7,10 @@ undocumented
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
 #  __LICENSE__
 #
 ######################################################################
@@ -62,17 +28,6 @@ use EPrints::Subscription;
 
 use strict;
 
-
-######################################################################
-=pod
-
-=item $thing = EPrints::User->get_system_field_info
-
-undocumented
-
-=cut
-######################################################################
-
 sub get_system_field_info
 {
 	my( $class ) = @_;
@@ -83,41 +38,27 @@ sub get_system_field_info
 
 		{ name=>"username", type=>"text", required=>1 },
 
-		{ name=>"password", type=>"secret", 
-			fromform=>\&EPrints::Utils::crypt_password },
+		{ name=>"password", type=>"secret", fromform=>\&EPrints::Utils::crypt_password },
 
 		{ name=>"usertype", type=>"datatype", required=>1, 
 			datasetid=>"user" },
 	
 		{ name=>"newemail", type=>"email" },
 	
-		{ name=>"newpassword", type=>"secret", 
-			fromform=>\&EPrints::Utils::crypt_password },
+		{ name=>"newpassword", type=>"secret", fromform=>\&EPrints::Utils::crypt_password },
 
 		{ name=>"pin", type=>"text" },
 
 		{ name=>"pinsettime", type=>"int" },
+
+		{ name=>"editorsubjects", type=>"subject", multiple=>1, showall=>1, showtop=>1, top=>"ROOT" },
 
 		{ name=>"joined", type=>"date", required=>1 },
 
 		{ name=>"email", type=>"email", required=>1 },
 
 		{ name=>"lang", type=>"datatype", required=>0, 
-			datasetid=>"arclanguage", input_rows=>1 },
-
-		{ name => "editperms", 
-			multiple => 1,
-			input_add_boxes => 1,
-			input_boxes => 1,
-			type => "search", 
-			datasetid => "buffer",
-			fieldnames => "editpermfields",
-			allow_set_order => 0 },
-
-		{ name=>"frequency", type=>"set", 
-			options=>["never","daily","weekly","monthly"] },
-
-		{ name=>"mailempty", type=>"boolean", input_style=>"radio" }
+			datasetid=>"arclanguage", input_rows=>1 }
 	)
 };
 
@@ -133,17 +74,6 @@ sub get_system_field_info
 #
 ######################################################################
 
-
-######################################################################
-=pod
-
-=item $thing = EPrints::User->new( $session, $userid )
-
-undocumented
-
-=cut
-######################################################################
-
 sub new
 {
 	my( $class, $session, $userid ) = @_;
@@ -153,24 +83,13 @@ sub new
 		$userid );
 }
 
-
-######################################################################
-=pod
-
-=item $thing = EPrints::User->new_from_data( $session, $data )
-
-undocumented
-
-=cut
-######################################################################
-
 sub new_from_data
 {
-	my( $class, $session, $data ) = @_;
+	my( $class, $session, $known ) = @_;
 
 	my $self = {};
 	bless $self, $class;
-	$self->{data} = $data;
+	$self->{data} = $known;
 	$self->{dataset} = $session->get_archive()->get_dataset( "user" );
 	$self->{session} = $session;
 
@@ -189,17 +108,6 @@ sub new_from_data
 #
 ######################################################################
 
-
-######################################################################
-=pod
-
-=item EPrints::User::create_user( $session, $access_level )
-
-undocumented
-
-=cut
-######################################################################
-
 sub create_user
 {
 	my( $session, $access_level ) = @_;
@@ -208,7 +116,7 @@ sub create_user
 	my $userid = _create_userid( $session );
 		
 	# And work out the date joined.
-	my $date_joined = EPrints::Utils::get_datestamp( time );
+	my $date_joined = EPrints::MetaField::get_datestamp( time );
 
 	my $data = { 
 		"userid"=>$userid,
@@ -239,17 +147,6 @@ sub create_user
 #
 ######################################################################
 
-
-######################################################################
-=pod
-
-=item EPrints::User::user_with_email( $session, $email )
-
-undocumented
-
-=cut
-######################################################################
-
 sub user_with_email
 {
 	my( $session, $email ) = @_;
@@ -270,17 +167,6 @@ sub user_with_email
 	
 	return $records[0];
 }
-
-
-######################################################################
-=pod
-
-=item EPrints::User::user_with_username( $session, $username )
-
-undocumented
-
-=cut
-######################################################################
 
 sub user_with_username
 {
@@ -314,17 +200,6 @@ sub user_with_username
 #  out, and that what's been filled in is OK. Returns an array of
 #  problem descriptions.
 #
-######################################################################
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->validate
-
-undocumented
-
-=cut
 ######################################################################
 
 sub validate
@@ -377,24 +252,11 @@ sub validate
 #
 ######################################################################
 
-
-######################################################################
-=pod
-
-=item $foo = $thing->commit
-
-undocumented
-
-=cut
-######################################################################
-
 sub commit
 {
 	my( $self ) = @_;
 
-	$self->{session}->get_archive()->call( 
-		"set_user_automatic_fields", 
-		$self );
+	$self->{session}->get_archive()->call( "set_user_automatic_fields", $self );
 	
 	my $user_ds = $self->{session}->get_archive()->get_dataset( "user" );
 	my $success = $self->{session}->get_db()->update(
@@ -415,28 +277,13 @@ sub commit
 #
 ######################################################################
 
-
-######################################################################
-=pod
-
-=item $foo = $thing->remove
-
-undocumented
-
-=cut
-######################################################################
-
 sub remove
 {
 	my( $self ) = @_;
 	
 	my $success = 1;
 
-	my $subscription;
-	foreach $subscription ( $self->get_subscriptions() )
-	{
-		$subscription->remove();
-	}
+	# later we should remove subscriptions and stuff.
 
 	# remove user record
 	my $user_ds = $self->{session}->get_archive()->get_dataset( "user" );
@@ -446,17 +293,6 @@ sub remove
 	
 	return( $success );
 }
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->has_priv( $resource )
-
-undocumented
-
-=cut
-######################################################################
 
 sub has_priv
 {
@@ -473,17 +309,6 @@ sub has_priv
 	return 0;
 }
 
-
-######################################################################
-=pod
-
-=item $foo = $thing->get_eprints( $ds )
-
-undocumented
-
-=cut
-######################################################################
-
 sub get_eprints
 {
 	my( $self , $ds ) = @_;
@@ -497,7 +322,6 @@ sub get_eprints
 		$self->get_value( "userid" ) );
 
 #cjg set order (it's in the site config)
-# or order by deposit date?
 
 	my $searchid = $searchexp->perform_search;
 
@@ -509,47 +333,28 @@ sub get_eprints
 # return eprints currently in the submission buffer for which this user is a 
 # valid editor.
 #cjg not done yet.
-
-######################################################################
-=pod
-
-=item $foo = $thing->get_editable_eprints
-
-undocumented
-
-=cut
-######################################################################
-
 sub get_editable_eprints
 {
 	my( $self ) = @_;
 
-	unless( $self->is_set( 'editperms' ) )
-	{
-		my $ds = $self->{session}->get_archive->get_dataset( 
-			"buffer" );
-		my $searchexp = EPrints::SearchExpression->new(
-			allow_blank => 1,
-			use_oneshot_cache => 1,
-			dataset => $ds,
-			session => $self->{session} );
-		$searchexp->perform_search;
-		my @records =  $searchexp->get_records;
-		$searchexp->dispose();
-		return @records;
-	}
+	my $ds = $self->{session}->get_archive()->get_dataset( "buffer" );
 
-	my $editperms = $self->{dataset}->get_field( "editperms" );
-	my @records = ();
-	foreach my $sv ( @{$self->get_value( 'editperms' )} )
-	{
-		my $searchexp = $editperms->make_searchexp(
-			$self->{session},
-			$sv );
-		$searchexp->perform_search;
-		push @records,  $searchexp->get_records;
-		$searchexp->dispose();
-	}
+	my $searchexp = new EPrints::SearchExpression(
+		session=>$self->{session},
+		allow_blank=>1,
+		custom_order=>"-datestamp",
+		dataset=>$ds );
+
+#	$searchexp->add_field(
+#		$ds->get_field( "userid" ),
+#		$self->get_value( "userid" ) );
+
+#cjg set order (it's in the site config)
+
+	my $searchid = $searchexp->perform_search;
+
+	my @records =  $searchexp->get_records;
+	$searchexp->dispose();
 	return @records;
 }
 
@@ -560,17 +365,6 @@ sub get_editable_eprints
 # the site admin, not the core code.
 
 # cjg not done- where is it needed?
-
-######################################################################
-=pod
-
-=item $foo = $thing->get_owned_eprints
-
-undocumented
-
-=cut
-######################################################################
-
 sub get_owned_eprints
 {
 	my( $self ) = @_;
@@ -585,17 +379,6 @@ sub get_owned_eprints
 # cjg not done
 #cjg means can this user request removal, and submit later versions of this item?
 # cjg could be ICK and just use get_owned_eprints...
-
-######################################################################
-=pod
-
-=item $foo = $thing->is_owner( $eprint )
-
-undocumented
-
-=cut
-######################################################################
-
 sub is_owner
 {
 	my( $self, $eprint ) = @_;
@@ -609,21 +392,10 @@ sub is_owner
 }
 
 
-
-######################################################################
-=pod
-
-=item $foo = $thing->mail( $subjectid, $message, $replyto, $email )
-
-undocumented
-
-=cut
-######################################################################
-
 sub mail
 {
 	my( $self,   $subjectid, $message, $replyto,  $email ) = @_;
-	#   User   , string,     DOM,      User/undef Other Email
+	#   Session, string,     DOM,      User/undef Other Email
 
 	# Mail the admin in the default language
 	my $langid = $self->get_value( "lang" );
@@ -634,7 +406,7 @@ sub mail
 	if( defined $replyto )
 	{
 		$remail = $replyto->get_value( "email" );
-		$rname = EPrints::Utils::tree_to_utf8( $replyto->render_description() );
+		$rname = $replyto->render_description();
 	}
 	if( !defined $email )
 	{
@@ -644,9 +416,7 @@ sub mail
 	return EPrints::Utils::send_mail(
 		$self->{session}->get_archive(),
 		$langid,
-		EPrints::Utils::make_name_string(
-			$self->get_value( "name" ), 
-			1 ),
+		EPrints::Utils::tree_to_utf8( EPrints::Utils::render_name( $self->{session}, $self->get_value( "name" ), 1 ) ),
 		$email,
 		EPrints::Utils::tree_to_utf8( $lang->phrase( $subjectid, {}, $self->{session} ) ),
 		$message,
@@ -657,14 +427,6 @@ sub mail
 
 
 
-######################################################################
-# 
-# EPrints::User::_create_userid( $session )
-#
-# undocumented
-#
-######################################################################
-
 sub _create_userid
 {
 	my( $session ) = @_;
@@ -674,67 +436,24 @@ sub _create_userid
 	return( $new_id );
 }
 
-
-######################################################################
-=pod
-
-=item $foo = $thing->render
-
-undocumented
-
-=cut
-######################################################################
-
 sub render
 {
-	my( $self ) = @_;
+        my( $self ) = @_;
 
-	my( $dom, $title ) = $self->{session}->get_archive()->call( "user_render", $self, $self->{session} );
-
-	if( !defined $title )
-	{
-		$title = $self->render_description;
-	}
-
-	return( $dom, $title );
+        my( $dom, $title ) = $self->{session}->get_archive()->call( "user_render", $self, $self->{session} );
+	
+        return( $dom, $title );
 }
 
 # This should include all the info, not just that presented to the public.
-
-######################################################################
-=pod
-
-=item $foo = $thing->render_full
-
-undocumented
-
-=cut
-######################################################################
-
 sub render_full
 {
-	my( $self ) = @_;
+        my( $self ) = @_;
 
-	my( $dom, $title ) = $self->{session}->get_archive()->call( "user_render_full", $self, $self->{session} );
+        my( $dom, $title ) = $self->{session}->get_archive()->call( "user_render_full", $self, $self->{session} );
 
-	if( !defined $title )
-	{
-		$title = $self->render_description;
-	}
-
-	return( $dom, $title );
+        return( $dom, $title );
 }
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->get_url( $staff )
-
-undocumented
-
-=cut
-######################################################################
 
 sub get_url
 {
@@ -746,19 +465,8 @@ sub get_url
 
 	}
 
-	return $self->{session}->get_archive()->get_conf( "perl_url" )."/user?userid=".$self->get_value( "userid" );
+	return $self->{session}->get_archive()->get_conf( "perl_url" )."/view_user?userid=".$self->get_value( "userid" );
 }
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->get_type
-
-undocumented
-
-=cut
-######################################################################
 
 sub get_type
 {
@@ -767,176 +475,4 @@ sub get_type
 	return $self->get_value( "usertype" );
 }
 
-
-######################################################################
-=pod
-
-=item @subscriptions = $eprint->get_subscriptions
-
-Return an array of all EPrint::Subscription objects associated with this
-user.
-
-=cut
-######################################################################
-
-sub get_subscriptions
-{
-	my( $self ) = @_;
-
-	my $subs_ds = $self->{session}->get_archive()->get_dataset( 
-		"subscription" );
-
-	my $searchexp = EPrints::SearchExpression->new(
-		session=>$self->{session},
-		dataset=>$subs_ds,
-		custom_order=>"subid" );
-
-	$searchexp->add_field(
-		$subs_ds->get_field( "userid" ),
-		$self->get_value( "userid" ) );
-
-	my $searchid = $searchexp->perform_search();
-	my @subs = $searchexp->get_records();
-	$searchexp->dispose();
-
-	return( @subs );
-}
-
-
-######################################################################
-=pod
-
-=item $thing->send_out_editor_alert
-
-undocumented
-
-=cut
-######################################################################
-
-sub send_out_editor_alert
-{
-	my( $self ) = @_;
-
-	my $freq = $self->get_value( "frequency" );
-
-
-	if( $freq eq "never" )
-	{
-		$self->{session}->get_archive->log( 
-			"Attempt to send out an editor alert for a user\n".
-			"which has frequency 'never'\n" );
-		return;
-	}
-
-	unless( $self->has_priv( "editor" ) )
-	{
-		$self->{session}->get_archive->log( 
-			"Attempt to send out an editor alert for a user\n".
-			"which does not have editor priv (".
-			$self->get_value("username").")\n" );
-		return;
-	}
-		
-	my $origlangid = $self->{session}->get_langid;
-	
-	$self->{session}->change_lang( $self->get_value( "lang" ) );
-
-	my @r = $self->get_editable_eprints;
-
-	if( scalar @r > 0 || $self->get_value( "mailempty" ) eq 'TRUE' )
-	{
-		my $url = $self->{session}->get_archive->get_conf( "perl_url" ).
-			"/users/record";
-		my $freqphrase = $self->{session}->html_phrase(
-			"lib/subscription:".$freq ); # nb. reusing the subscription.pm phrase
-		my $searchdesc = $self->render_value( "editperms" );
-
-		my $matches = $self->{session}->make_doc_fragment;
-		foreach my $item ( @r )
-		{
-			my $p = $self->{session}->make_element( "p" );
-			$p->appendChild( $item->render_citation );
-			$matches->appendChild( $p );
-			$matches->appendChild( $self->{session}->make_text( $item->get_url( 1 ) ) );
-			$matches->appendChild( $self->{session}->make_element( "br" ) );
-		}
-
-		my $mail = $self->{session}->html_phrase( 
-				"lib/user:editor_update_mail",
-				howoften => $freqphrase,
-				n => $self->{session}->make_text( scalar @r ),
-				search => $searchdesc,
-				matches => $matches,
-				url => $self->{session}->make_text( $url ) );
-		$self->mail( 
-			"lib/user:editor_update_subject",
-			$mail );
-		EPrints::XML::dispose( $mail );
-	}
-
-	$self->{session}->change_lang( $origlangid );
-}
-
-
-######################################################################
-=pod
-
-=item EPrints::User::process_editor_alerts( $session, $frequency );
-
-undocumented
-
-=cut
-######################################################################
-
-sub process_editor_alerts
-{
-	my( $session, $frequency ) = @_;
-
-	if( $frequency ne "daily" && 
-		$frequency ne "weekly" && 
-		$frequency ne "monthly" )
-	{
-		$session->get_archive->log( "EPrints::User::process_editor_alerts called with unknown frequency: ".$frequency );
-		return;
-	}
-
-	my $subs_ds = $session->get_archive->get_dataset( "user" );
-
-	my $searchexp = EPrints::SearchExpression->new(
-		session => $session,
-		use_oneshot_cache => 1,
-		dataset => $subs_ds );
-
-	$searchexp->add_field(
-		$subs_ds->get_field( "frequency" ),
-		$frequency );
-
-	my $fn = sub {
-		my( $session, $dataset, $item, $info ) = @_;
-
-		return unless( $item->has_priv( "editor" ) );
-
-		$item->send_out_editor_alert;
-		if( $session->get_noise >= 2 )
-		{
-			print "Sending out editor alert for ".$item->get_value( "username" )."\n";
-		}
-	};
-
-	$searchexp->perform_search;
-	$searchexp->map( $fn, {} );
-	$searchexp->dispose;
-
-	# currently no timestamp for editor alerts 
-}
-
-
 1;
-
-######################################################################
-=pod
-
-=back
-
-=cut
-

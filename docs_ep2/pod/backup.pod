@@ -9,7 +9,7 @@ It is almost certain that you will be storing valuable information in your Eprin
 
 You need to backup two things.
 
-The C</opt/eprints2/> directory (or whatever you called it). Not all the subdirectories I<have> to be backed up, but it is much easier to backup the whole thing. Make sure that you back up any symbolicly linked directories too.
+The C</opt/eprints2/> directory (or whatever you called it). Not all the subdirectories I<have> to be backed up, but it is much easier to backup the whole thing.
 
 Each MySQL database which your archives use. See the MySQL manual for more information on backing up MySQL databases. The C<mysqldump> command will dump the whole of a database as a big list of SQL commands to re-create it.
 
@@ -31,5 +31,5 @@ We strongly recommend that you:
 
 If you can't do all of these, which is admittedly a lot of extra work, then do as many as you can.
 
-Fortune favours the backed-up. It always seems to be the un-backed-up systems that have disk crashes. Life's like that...
+Fortune favours the backed-up. It always seems to be the un-backed-up systems that disk crashes. Life's like that...
 

@@ -1,6 +1,9 @@
 ######################################################################
 #
-# EPrints::Document
+# EPrints Document File class
+#
+#  Represents the electronic version of the actual document data
+#  (not the metadata.)
 #
 ######################################################################
 #
@@ -9,76 +12,6 @@
 # Copyright 2000-2008 University of Southampton. All Rights Reserved.
 # 
 #  __LICENSE__
-#
-######################################################################
-
-
-=pod
-
-=head1 NAME
-
-B<EPrints::Document> - A single format of a record.
-
-=head1 DESCRIPTION
-
-Document represents a single format of an EPrint (eg. PDF) - the 
-actual file(s) rather than the metadata.
-
-This class is a subclass of DataObj, with the following metadata fields: 
-
-=over 4
-
-=item docid (text)
-
-The unique ID of the document. This is a string of the format 123-02
-where the first number is the eprint id and the second is the document
-number within that eprint.
-
-This should probably have been and "int" but isn't. I later version
-of EPrints may change this.
-
-=item eprintid (int)
-
-The id number of the eprint to which this document belongs.
-
-=item format (datatype)
-
-The format of this document. One of the types of the dataset "document".
-
-=item formatdesc (text)
-
-An additional description of this document. For example the specific version
-of a format.
-
-=item language (datatype)
-
-The ISO ID of the language of this document. The default configuration of
-EPrints does not set this.
-
-=item security (datatype)
-
-The security type of this document - who can view it. One of the types
-of the dataset "security".
-
-=item main (text)
-
-The file which we should link to. For something like a PDF file this is
-the only file. For an HTML document with images it would be the name of
-the actual HTML file.
-
-=back
-
-Document has all the methods of dataobj with the addition of the following.
-
-=over 4
-
-=cut
-
-######################################################################
-#
-# INSTANCE VARIABLES:
-#
-#  From DataObj.
 #
 ######################################################################
 
@@ -94,22 +27,15 @@ use File::Path;
 use File::Copy;
 use Cwd;
 use URI::Heuristic;
-use EPrints::Probity;
 
 use strict;
 
 # Field to use for unsupported formats (if archive allows their deposit)
 $EPrints::Document::OTHER = "OTHER";
 
-######################################################################
-=pod
+# Digits in generated ID codes (added to EPrints IDs)
+my $DIGITS = 2;
 
-=item $metadata = EPrints::Document->get_system_field_info
-
-Return an array describing the system metadata of the Document dataset.
-
-=cut
-######################################################################
 
 sub get_system_field_info
 {
@@ -121,33 +47,31 @@ sub get_system_field_info
 
 		{ name=>"eprintid", type=>"int", required=>1 },
 
-		{ name=>"format", type=>"datatype", required=>1, 
-			datasetid=>"document" },
+		{ name=>"format", type=>"datatype", required=>1, datasetid=>"document" },
 
 		{ name=>"formatdesc", type=>"text" },
 
-		{ name=>"language", type=>"datatype", required=>1, 
-			datasetid=>"language" },
+		{ name=>"language", type=>"datatype", required=>1, datasetid=>"language" },
 
-		{ name=>"security", type=>"datatype", required=>1, 
-			datasetid=>"security" },
+		{ name=>"security", type=>"datatype", required=>1, datasetid=>"security" },
 
 		{ name=>"main", type=>"text", required=>1 }
-
 	);
 
 }
 
-
 ######################################################################
-=pod
-
-=item $thing = EPrints::Document->new( $session, $docid )
-
-Return the document with the given $docid, or undef if it does not
-exist.
-
-=cut
+#
+# $doc = new( $session, $doc_id, $known, $eprint )
+#
+#  Construct a document object corresponding to the given doc ID.
+#  If you've already read in the document object's data from the
+#  database, you can pass it in as $known. This should be
+#  a reference to an array of ALL of the relevant column data.
+#
+#  $eprint should be the EPrint this document is associated with.
+#  Expressing it is optional, but does reduce database accesses.
+#
 ######################################################################
 
 sub new
@@ -159,45 +83,19 @@ sub new
 		$docid );
 }
 
-
-######################################################################
-=pod
-
-=item $doc = EPrints::Document->new_from_data( $session, $data )
-
-Construct a new EPrints::Document based on the ref to a hash of metadata.
-
-=cut
-######################################################################
-
 sub new_from_data
 {
-	my( $class, $session, $data ) = @_;
+	my( $class, $session, $known ) = @_;
 
 	my $self = {};
 	bless $self, $class;
-	$self->{data} = $data;
+	$self->{data} = $known;
 	$self->{dataset} = $session->get_archive()->get_dataset( "document" ),
 	$self->{session} = $session;
 
 	return( $self );
 }
 
-
-
-######################################################################
-=pod
-
-=item $doc = EPrints::Document::create( $session, $eprint )
-
-Create and return a new Document belonging to the given $eprint object, 
-get the initial metadata from set_document_defaults in the configuration
-for this archive.
-
-Note that this creates the document in the database, not just in memory.
-
-=cut
-######################################################################
 
 sub create
 {
@@ -240,10 +138,10 @@ sub create
 
 
 ######################################################################
-# 
-# $success = EPrints::Document::_create_directory( $id, $eprint )
 #
-#  Make Document $id a directory. $eprint is the EPrint this document
+# $success = _create_directory( $id, $eprint )
+#
+#  Make this Document a directory. $eprint is the EPrint this document
 #  is associated with.
 #
 ######################################################################
@@ -272,18 +170,6 @@ sub _create_directory
 	}
 }
 
-
-######################################################################
-=pod
-
-=item $success = $doc->create_symlink( $eprint, $linkdir )
-
-Symbolically link the directory containing this document into the
-directory $linkdir. If $linkdir does not exist then create it.
-
-=cut
-######################################################################
-
 sub create_symlink
 {
 	my( $self, $eprint, $linkdir ) = @_;
@@ -294,7 +180,7 @@ sub create_symlink
 
 	my $dir = $eprint->local_path()."/".docid_to_path( $archive, $id );
 
-	unless( -d $linkdir )
+	unless(-d $linkdir )
 	{
 		my @created = mkpath( $linkdir, 0, 0775 );
 
@@ -306,7 +192,7 @@ sub create_symlink
 	}
 
 	my $symlink = $linkdir."/".docid_to_path( $archive, $id );
-	if( -e $symlink )
+	if(-e $symlink )
 	{
 		unlink( $symlink );
 	}
@@ -318,17 +204,6 @@ sub create_symlink
 
 	return( 1 );
 }
-
-
-######################################################################
-=pod
-
-=item $success = $doc->remove_symlink( $eprint, $linkdir )
-
-Remove a symlink in $linkdir created by $doc->create_symlink
-
-=cut
-######################################################################
 
 sub remove_symlink
 {
@@ -349,14 +224,6 @@ sub remove_symlink
 }
 
 #cjg: should this belong to eprint?
-######################################################################
-# 
-# EPrints::Document::_secure_symlink_path( $eprint )
-#
-# undocumented
-#
-######################################################################
-
 sub _secure_symlink_path
 {
 	my( $eprint ) = @_;
@@ -365,18 +232,6 @@ sub _secure_symlink_path
 		
 	return( $archive->get_conf( "htdocs_secure_path" )."/".EPrints::EPrint::eprintid_to_path( $eprint->get_value( "eprintid" ) ) );
 }
-
-
-######################################################################
-=pod
-
-=item $path = EPrints::Document::docid_to_path( $archive, $docid )
-
-Return the name of the directory (in the eprint directory) in which
-to place this document.
-
-=cut
-######################################################################
 
 sub docid_to_path
 {
@@ -394,10 +249,9 @@ sub docid_to_path
 	return $id;
 }
 
-
 ######################################################################
-# 
-# $docid = EPrints::Document::_generate_doc_id( $session, $eprint )
+#
+# $new_id = _generate_doc_id( $session, $eprint )
 #
 #  Generate an ID for a new document associated with $eprint
 #
@@ -412,12 +266,13 @@ sub _generate_doc_id
 	my $searchexp = EPrints::SearchExpression->new(
 				session=>$session,
 				dataset=>$dataset );
+
 	$searchexp->add_field(
 		$dataset->get_field( "eprintid" ),
 		$eprint->get_value( "eprintid" ) );
 	$searchexp->perform_search();
+
 	my( @docs ) = $searchexp->get_records();
-	$searchexp->dispose();
 
 	my $n = 0;
 	foreach( @docs )
@@ -432,16 +287,13 @@ sub _generate_doc_id
 }
 
 
-
 ######################################################################
-=pod
-
-=item $newdoc = $doc->clone( $eprint )
-
-Attempt to clone this document. Both the document metadata and the
-actual files. The clone will be associated with the given EPrint.
-
-=cut
+#
+# $clone = clone( $eprint )
+#
+#  Attempt to clone this document. The clone will be associated with
+#  the given EPrint.
+#
 ######################################################################
 
 sub clone
@@ -482,13 +334,11 @@ sub clone
 
 
 ######################################################################
-=pod
-
-=item $success = $doc->remove
-
-Attempt to completely delete this document
-
-=cut
+#
+# $success = remove()
+#
+#  Attempt to completely delete this document
+#
 ######################################################################
 
 sub remove
@@ -532,13 +382,11 @@ sub remove
 
 
 ######################################################################
-=pod
-
-=item $eprint = $doc->get_eprint
-
-Return the EPrint this document is associated with.
-
-=cut
+#
+# $eprint = get_eprint()
+#
+#  Returns the EPrint this document is associated with.
+#
 ######################################################################
 
 sub get_eprint
@@ -549,23 +397,20 @@ sub get_eprint
 	return( $self->{eprint} ) if( defined $self->{eprint} );
 
 	# Otherwise, create object and return
-	$self->{eprint} = new EPrints::EPrint( 
-		$self->{session},
-		$self->get_value( "eprintid" ) );
+	$self->{eprint} = new EPrints::EPrint( $self->{session},
+	                                       undef,
+	                                       $self->get_value( "eprintid" ) );
 	
 	return( $self->{eprint} );
 }
 
 
 ######################################################################
-=pod
-
-=item $url = $doc->get_url( [$staff] )
-
-Return the full URL of the document. Overrides the stub in DataObj.
-$staff is currently ignored.
-
-=cut
+#
+# $get_url = get_url()
+#
+#  Return the full URL of the document.
+#
 ######################################################################
 
 sub get_url
@@ -600,14 +445,11 @@ sub get_url
 
 
 ######################################################################
-=pod
-
-=item $path = $doc->local_path
-
-Return the full path of the directory where this document is stored
-in the filesystem.
-
-=cut
+#
+# $path = local_path()
+#
+#  Get the full path of the doc on the local filesystem
+#
 ######################################################################
 
 sub local_path
@@ -615,28 +457,19 @@ sub local_path
 	my( $self ) = @_;
 
 	my $eprint = $self->get_eprint();
-
-	if( !defined $eprint )
-	{
-		$self->{session}->get_archive->log(
-			"Document ".$self->get_id." has no eprint!" );
-		return( undef );
-	}	
+	
+	return( undef ) if( !defined $eprint );
 	
 	return( $eprint->local_path()."/".docid_to_path( $self->{session}->get_archive(), $self->get_value( "docid" ) ) );
 }
 
 
 ######################################################################
-=pod
-
-=item %files = $doc->files
-
-Return a hash, the keys of which are all the files belonging to this
-document (relative to $doc->local_path). The values are the sizes of
-the files, in bytes.
-
-=cut
+#
+# %files = files()
+#
+#  Returns a list of the files associated with this document.
+#
 ######################################################################
 
 sub files
@@ -644,28 +477,26 @@ sub files
 	my( $self ) = @_;
 	
 	my %files;
-
-	my $root = $self->local_path();
-	if( defined $root )
-	{
-		_get_files( \%files, $root, "" );
-	}
+	_get_files(
+		\%files,
+		$self->local_path(),
+		"" );
 
 	return( %files );
 }
 
 
-# cjg should this function be in some kind of utils module and
-# used by generate_static too?
 ######################################################################
-# 
-# %files = EPrints::Document::_get_files( $files, $root, $dir )
+#
+# %files = _get_files( $root, $dir )
 #
 #  Recursively get all the files in $dir. Paths are returned relative
 #  to $root (i.e. $root is removed from the start of files.)
 #
 ######################################################################
 
+# cjg should this function be in some kind of utils module and
+# used by generate_static too?
 sub _get_files
 {
 	my( $files, $root, $dir ) = @_;
@@ -698,15 +529,15 @@ sub _get_files
 	}
 
 }
+
+
 ######################################################################
-=pod
-
-=item $success = $doc->remove_file( $filename )
-
-Attempt to remove the given file. Give the filename as it is
-returned by get_files().
-
-=cut
+#
+# $success = remove_file( $filename )
+#
+#  Attempt to remove the given file. Give the filename as it is
+#  returned by get_files().
+#
 ######################################################################
 
 sub remove_file
@@ -722,21 +553,16 @@ sub remove_file
 	{
 		$self->{session}->get_archive()->log( "Error removing file $filename for doc ".$self->get_value( "docid" ).": $!" );
 	}
-
-	$self->rehash;
-
 	return( $count==1 );
 }
 
 
 ######################################################################
-=pod
-
-=item $success = $doc->remove_all_files
-
-Attempt to remove all files associated with this document.
-
-=cut
+#
+# $success = remove_all_files()
+#
+#  Attempt to remove all files associated with this document.
+#
 ######################################################################
 
 sub remove_all_files
@@ -757,20 +583,16 @@ sub remove_all_files
 		return( 0 );
 	}
 
-	$self->rehash;
-
 	return( 1 );
 }
 
 
 ######################################################################
-=pod
-
-=item $doc->set_main( $main_file )
-
-Sets the main file. Won't affect the database until a $doc->commit().
-
-=cut
+#
+# set_main( $main_file )
+#
+#  Sets the main file. Won't affect the database until a commit().
+#
 ######################################################################
 
 sub set_main
@@ -794,13 +616,11 @@ sub set_main
 
 
 ######################################################################
-=pod
-
-=item $filename = $doc->get_main
-
-Return the name of the main file in this document.
-
-=cut
+#
+# get_main()
+#
+#  Gets the main file.
+#
 ######################################################################
 
 sub get_main
@@ -812,14 +632,11 @@ sub get_main
 
 
 ######################################################################
-=pod
-
-=item $doc->set_format( $format )
-
-Set format. Won't affect the database until a commit(). Just an alias 
-for $doc->set_value( "format" , $format );
-
-=cut
+#
+# set_format( $format )
+#
+#  Sets format. Won't affect the database until a commit().
+#
 ######################################################################
 
 sub set_format
@@ -831,15 +648,11 @@ sub set_format
 
 
 ######################################################################
-=pod
-
-=item $doc->set_format_desc( $format_desc )
-
-Set the format description.  Won't affect the database until a commit().
-Just an alias for
-$doc->set_value( "format_desc" , $format_desc );
-
-=cut
+#
+# set_format_desc( $format_desc )
+#
+#  Sets the format description.  Won't affect the database until a commit().
+#
 ######################################################################
 
 sub set_format_desc
@@ -851,22 +664,19 @@ sub set_format_desc
 
 
 ######################################################################
-=pod
-
-=item $success = $doc->upload( $filehandle, $filename )
-
-Upload the contents of the given file handle into this document as
-the given filename.
-
-=cut
+#
+# $success = upload( $filehandle, $filename )
+#
+#  uploads the given file into this document
+#
 ######################################################################
 
 sub upload
 {
 	my( $self, $filehandle, $filename ) = @_;
 
-	# Get the filename. File::Basename isn't flexible enough (setting 
-	# internal globals in reentrant code very dodgy.)
+	# Get the filename. File::Basename isn't flexible enough (setting internal
+	# globals in reentrant code very dodgy.)
 	my $file = $filename;
 	
 	$file =~ s/.*\\//;     # Remove everything before a "\" (MSDOS or Win)
@@ -880,30 +690,24 @@ sub upload
 	my $out_path = $self->local_path() . "/" . $file;
 		
 	open OUT, ">$out_path" or return( 0 );
+	
 	while( $bytes = read( $filehandle, $buffer, 1024 ) )
 	{
 		print OUT $buffer;
 	}
-	close OUT;
 
-	$self->rehash;
+	close OUT;
 	
 	return( 1 );
 }
 
 
 ######################################################################
-=pod
-
-=item $success = $doc->upload_archive( $filehandle, $filename, $archive_format )
-
-Upload the contents of the given archive file. How to deal with the 
-archive format is configured in SystemSettings. 
-
-(In case the over-loading of the word "archive" is getting confusing, 
-in this context we mean ".zip" or ".tar.gz" archive.)
-
-=cut
+#
+# $success = upload_archive( $filehandle, $filename, $archive_format )
+#
+#  Uploads the contents of the given archive file.
+#
 ######################################################################
 
 sub upload_archive
@@ -928,26 +732,21 @@ sub upload_archive
 	# Remove the temp archive
 	unlink $arc_tmp;
 	
-	$self->rehash;
-
 	return( $rc==0 );
 }
 
 
 ######################################################################
-=pod
-
-=item $success = $doc->upload_url( $url )
-
-Attempt to grab stuff from the given URL. Grabbing HTML stuff this
-way is always problematic, so (by default): only relative links will 
-be followed and only links to files in the same directory or 
-subdirectory will be followed.
-
-This (by default) uses wget. The details can be configured in
-SystemSettings.
-
-=cut
+#
+# $success = upload_url( $url_in )
+#
+#  Attempt to grab stuff from the given URL. Grabbing HTML stuff this
+#  way is always problematic, so:
+#
+#  - Only relative links will be followed
+#  - Only links to files in the same directory or subdirectory will
+#    be followed
+#
 ######################################################################
 
 sub upload_url
@@ -961,8 +760,7 @@ sub upload_url
 	# save previous dir
 	my $prev_dir = cwd();
 
-	# Change directory to destination dir., return with failure if this 
-	# fails.
+	# Change directory to destination dir., return with failure if this fails
 	unless( chdir $self->local_path() )
 	{
 		chdir $prev_dir;
@@ -1017,24 +815,18 @@ sub upload_url
 		# have a main file.
 	}
 	
-	$self->rehash;
-
 	return( 1 );
 }
 
 
+
 ######################################################################
-=pod
-
-=item $success = $doc->commit
-
-Commit any changes that have been made to this object to the
-database.
-
-Calls "set_document_automatic_fields" in the ArchiveConfig first to
-set any automatic fields that may be needed.
-
-=cut
+#
+# $success = commit()
+#
+#  Commit any changes that have been made to this object to the
+#  database.
+#
 ######################################################################
 
 sub commit
@@ -1058,20 +850,6 @@ sub commit
 	return( $success );
 }
 	
-
-######################################################################
-=pod
-
-=item $problems = $doc->validate_meta( [$for_archive] )
-
-Return an array of XHTML DOM objects describing validation problems
-with the metadata of this document.
-
-A reference to an empty array indicates no problems.
-
-=cut
-######################################################################
-
 sub validate_meta
 {
 	my( $self, $for_archive ) = @_;
@@ -1081,8 +859,7 @@ sub validate_meta
 	unless( EPrints::Utils::is_set( $self->get_type() ) )
 	{
 		# No type specified
-		push @problems, $self->{session}->html_phrase( 
-					"lib/document:no_type" );
+		push @problems, $self->{session}->html_phrase( "lib/document:no_type" );
 	}
 	
 	push @problems, $self->{session}->get_archive()->call( 
@@ -1093,21 +870,6 @@ sub validate_meta
 
 	return( \@problems );
 }
-
-
-######################################################################
-=pod
-
-=item $problems = $doc->validate( [$for_archive] )
-
-Return an array of XHTML DOM objects describing validation problems
-with the entire document, including the metadata and archive config
-specific requirements.
-
-A reference to an empty array indicates no problems.
-
-=cut
-######################################################################
 
 sub validate
 {
@@ -1141,18 +903,6 @@ sub validate
 	return( \@problems );
 }
 
-
-######################################################################
-=pod
-
-=item $boolean = $doc->can_view( $user )
-
-Return true if this documents security settings allow the given user
-to view it.
-
-=cut
-######################################################################
-
 sub can_view
 {
 	my( $self, $user ) = @_;
@@ -1163,16 +913,14 @@ sub can_view
 		$user );	
 }
 
+sub render_value
+{
+	my( $self, $fieldname, $showall ) = @_;
 
-######################################################################
-=pod
-
-=item $type = $doc->get_type
-
-Return the type of this document.
-
-=cut
-######################################################################
+	my $field = $self->{dataset}->get_field( $fieldname );	
+	
+	return $field->render_value( $self->{session}, $self->get_value($fieldname), $showall );
+}
 
 sub get_type
 {
@@ -1181,53 +929,5 @@ sub get_type
 	return $self->get_value( "format" );
 }
 
-######################################################################
-=pod
-
-=item $doc->rehash
-
-Recalculate the hash value of the document. Uses MD5 of the files (in
-alphabetic order), but can use user specified hashing function instead.
-
-=cut
-######################################################################
-
-sub rehash
-{
-	my( $self ) = @_;
-
-	my %f = $self->files;
-	my @filelist = ();
-	foreach my $file ( keys %f )
-	{
-		push @filelist, $self->local_path."/".$file;
-	}
-
-	my $eprint = $self->get_eprint;
-	unless( defined $eprint )
-	{
-		$self->{session}->get_archive->log(
-"rehash: skipped document with no associated eprint (".$self->get_id.")." );
-		return;
-	}
-
-	my $hashfile = $self->get_eprint->local_path."/".
-		$self->get_value( "docid" ).".".
-		EPrints::Utils::get_UTC_timestamp().".xsh";
-
-	EPrints::Probity::create_log( 
-		$self->{session}, 
-		\@filelist,
-		$hashfile );
-}
-
 
 1;
-
-######################################################################
-=pod
-
-=back
-
-=cut
-

@@ -64,14 +64,11 @@ $fields->{user} = [
 ];
 
 $fields->{eprint} = [
-
-	{ name => "abstract", input_rows => 10, type => "longtext",
-		input_cols => 90 },
+	{ name => "abstract", input_rows => 10, type => "longtext" },
 
 	{ name => "altloc", type => "url", multiple => 1 },
 
-	{ name => "authors", type => "name", multiple => 1, input_boxes => 6,
-		hasid => 1 },
+	{ name => "authors", type => "name", multiple => 1, hasid => 1 },
 
 	{ name => "chapter", type => "text", maxlength => 5 },
 
@@ -112,7 +109,6 @@ $fields->{eprint} = [
 
 	{ name => "refereed", type => "boolean", input_style=>"radio" },
 
-# nb. Can't call this field "references" because that's a MySQL keyword.
 	{ name => "referencetext", type => "longtext", input_rows => 3 },
 
 	{ name => "reportno", type => "text" },

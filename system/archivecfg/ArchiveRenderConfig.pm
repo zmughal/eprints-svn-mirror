@@ -30,8 +30,6 @@
 #---------------------------------------------------------------------
 
 
-
-
 ######################################################################
 #
 # $xhtmlfragment = eprint_render( $eprint, $session )
@@ -115,7 +113,6 @@ sub eprint_render
 				alt=>$_->get_value( "formatdesc" ) ) );
 			next;
 		}
-
 		$p->appendChild( $session->make_element( "br" ) );
 		$p->appendChild( $_->render_citation_link() );
 	}
@@ -123,13 +120,12 @@ sub eprint_render
 
 
 	# Then the abstract
-	if( $eprint->is_set( "abstract" ) )
+	if( defined $eprint->get_value( "abstract" ) )
 	{
 		my $h2 = $session->make_element( "h2" );
 		$h2->appendChild( 
 			$session->html_phrase( "eprint_fieldname_abstract" ) );
-		$page->appendChild( $h2 );
-
+	
 		$p = $session->make_element( "p" );
 		$p->appendChild( $eprint->render_value( "abstract" ) );
 		$page->appendChild( $p );
@@ -142,12 +138,11 @@ sub eprint_render
 	$page->appendChild( $table );
 
 	# Commentary
-	if( $eprint->is_set( "commentary" ) )
+	if( defined $eprint->get_value( "commentary" ) )
 	{
-		my $target = EPrints::EPrint->new( 
-			$session,
-			$eprint->get_value( "commentary" ),
-			$session->get_archive()->get_dataset( "archive" ) );
+		my $target = EPrints::EPrint->new( $session,
+			$session->get_archive()->get_dataset( "archive" ), 
+			$eprint->get_value( "commentary" ) );
 		if( defined $target )
 		{
 			$table->appendChild( _render_row(
@@ -158,21 +153,14 @@ sub eprint_render
 		}
 	}
 
-	$table->appendChild( _render_row(
-		$session,
-		$session->html_phrase( "eprint_fieldname_type" ),
-		$eprint->render_value( "type"  ) ) );
-
 	# Keywords
-	if( $eprint->is_set( "keywords" ) )
+	if( defined $eprint->get_value( "keywords" ) )
 	{
 		$table->appendChild( _render_row(
 			$session,
 			$session->html_phrase( "eprint_fieldname_keywords" ),
 			$eprint->render_value( "keywords" ) ) );
 	}
-
-
 
 	# Subjects...
 	$table->appendChild( _render_row(
@@ -212,7 +200,7 @@ sub eprint_render
 		$eprint->render_value( "datestamp" ) ) );
 
 	# Alternative locations
-	if( $eprint->is_set( "altloc" ) )
+	if( defined $eprint->get_value( "altloc" ) )
 	{
 		$table->appendChild( _render_row(
 			$session,
@@ -408,22 +396,22 @@ sub user_render
 	$p = $session->make_element( "p" );
 	$p->appendChild( $user->render_description() );
 	# Address, Starting with dept. and organisation...
-	if( $user->is_set( "dept" ) )
+	if( defined $user->get_value( "dept" ) )
 	{
 		$p->appendChild( $session->make_element( "br" ) );
 		$p->appendChild( $user->render_value( "dept" ) );
 	}
-	if( $user->is_set( "org" ) )
+	if( defined $user->get_value( "org" ) )
 	{
 		$p->appendChild( $session->make_element( "br" ) );
 		$p->appendChild( $user->render_value( "org" ) );
 	}
-	if( $user->is_set( "address" ) )
+	if( defined $user->get_value( "address" ) )
 	{
 		$p->appendChild( $session->make_element( "br" ) );
 		$p->appendChild( $user->render_value( "address" ) );
 	}
-	if( $user->is_set( "country" ) )
+	if( defined $user->get_value( "country" ) )
 	{
 		$p->appendChild( $session->make_element( "br" ) );
 		$p->appendChild( $user->render_value( "country" ) );
@@ -434,7 +422,7 @@ sub user_render
 	## E-mail and URL last, if available.
 	if( $user->get_value( "hideemail" ) ne "TRUE" )
 	{
-		if( $user->is_set( "email" ) )
+		if( defined $user->get_value( "email" ) )
 		{
 			$p = $session->make_element( "p" );
 			$p->appendChild( $user->render_value( "email" ) );
@@ -442,7 +430,7 @@ sub user_render
 		}
 	}
 
-	if( $user->is_set( "url" ) )
+	if( defined $user->get_value( "url" ) )
 	{
 		$p = $session->make_element( "p" );
 		$p->appendChild( $user->render_value( "url" ) );
@@ -506,33 +494,8 @@ sub user_render_full
 			$user->render_value( $field->get_name(), 1 ) ) );
 
 	}
-
-
-	my @subs = $user->get_subscriptions;
-	my $subs_ds = $session->get_archive->get_dataset( "subscription" );
-	foreach my $subscr ( @subs )
-	{
-		my $rowright = $session->make_doc_fragment;
-		foreach( "frequency","spec","mailempty" )
-		{
-			my $strong;
-			$strong = $session->make_element( "strong" );
-			$strong->appendChild( $session->make_text( $subs_ds->get_field( $_ )->display_name( $session ) ) );
-			$strong->appendChild( $session->make_text( ": " ) );
-			$rowright->appendChild( $strong );
-			$rowright->appendChild( $subscr->render_value( $_ ) );
-			$rowright->appendChild( $session->make_element( "br" ) );
-		}
-		$table->appendChild( _render_row(
-			$session,
-			$session->html_phrase(
-				"page:subscription" ),
-			$rowright ) );
-				
-	}
-
 	$info->appendChild( $table );
-
+	
 	return $info;
 }
 
