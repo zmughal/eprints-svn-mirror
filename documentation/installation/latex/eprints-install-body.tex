@@ -331,6 +331,8 @@ You may find that a combination of automatic and manual installation works best.
 
 Choose whereabouts on your system the \eprints\ software should reside. For the remainder of this section it is assumed that the software distribution is unpacked as {\tt /opt/eprints}, and so the cgi directory is {\tt /opt/eprints/cgi} etc. The eprints user should own all of the files in this directory.
 
+For the remainder of this section, examples assume that the \eprints\ software is installed at {\tt /opt/eprints}. You should of course replace this with the actual location of \eprints\ if you are installing it in a different location.
+
 Firstly, you'll need to decide what user and group the software should run as. Ideally it should be the same as the Apache Web server; if you're not happy with this, it's possible to have them run as separate users but they will both need to have write access to the {\tt /opt/eprints/html/documents} directory.
 
 If you're not even using {\tt configure}, {\tt make} and {\tt make install} to install the files in the first place, it's probably easiest to extract the {\tt .tar.gz} distribution file straight into place as the relevant user. Additionally, you'll need to change the first line of each of the scripts in {\tt eprints/bin} to add the {\tt perl\_lib} directory to the Perl library path, for example:
@@ -338,6 +340,15 @@ If you're not even using {\tt configure}, {\tt make} and {\tt make install} to i
 \begin{verbatim}
 #!/usr/bin/perl -I/opt/eprints/perl_lib
 \end{verbatim}
+
+Depending on how you wish to set up your system, you may wish to add the following line to all of the scripts in {\tt cgi}, {\tt cgi/staff} and {\tt cgi/user}:
+
+\begin{verbatim}
+use lib '/opt/eprints/perl_lib';
+\end{verbatim}
+
+Do this if you wish to run more than one \eprints\ archive from a single Apache server. If you are only running one \eprints\ archive on your Apache server, you can perform this change more easily by adding a {\tt PerlSetEnv} directive into your Apache server configuration, as described in section \ref{manual_apache}.
+
 
 
 \subsubsection{Initial Configuration of \eprints}
@@ -390,7 +401,7 @@ At this point you should decide on the types of eprints you want to store in the
 While the \eprints\ software handles most database operations transparently, some initial setting up is required. Usually, after installing MySQL, you'll need to set a root password, using something like:
 
 \begin{verbatim}
-> mysqladmin -u root password "password"
+mysqladmin -u root password "password"
 \end{verbatim}
 
 Note that {\tt password} here should \emph{not} be the password you have put in {\tt Siteinfo.pm}. From a security viewpoint, it's probably best to remove all non-root users and all non-localhost access from the privilege system (assuming that no other services need to access the database.)
@@ -432,7 +443,7 @@ User eprints
 Group eprints
 \end{verbatim}
 
-The following examples assume that the \eprints\ software is installed at {\tt /opt/eprints}. The library files need to be accessible within Perl:
+The library files need to be accessible within the Perl scripts. The automatic installer configures the scripts such that they will find the library files themselves. An alternative is to add the {\tt use lib} line to the top of the scripts in {\tt eprints/cgi} manually, as described in section \ref{install_manual}. However, if you're installing manually, and you are only running one \eprints\ service on your Apache server, you can just insert the following directive into your {\tt httpd.conf} to achieve the same effect:
 
 \begin{verbatim}
 PerlSetEnv PERL5LIB /opt/eprints/perl_lib
