@@ -450,10 +450,10 @@ sub convert
 
 	$mode = 'default' unless defined $mode;
 	my $dstype = $self->{dataset}->confid;
-
+print STDERR "$mode\n";
 	return &ARCHIVE->plugin(
 		'convert/obj.'.$dstype.'/'.$scheme.'/'.$mode,  
-		$self );
+		data=>$self );
 }
 
 		

@@ -206,7 +206,7 @@ END
 		# if it's not there is a show stopper.
 		unless( &DATABASE->is_latest_version )
 		{ 
-			if( &DATABASE->has_table( "archive" ) )
+			if( &DATABASE->has_table( "records" ) )
 			{	
 				&ARCHIVE->log( 
 	"Database tables are in old configuration. Please run bin/upgrade" );

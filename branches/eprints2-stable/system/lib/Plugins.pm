@@ -7,13 +7,21 @@ use EPrints::SystemSettings;
 use strict;
 
 BEGIN { 
-	$EPrints::Plugins::REGISTRY = {};
+	$EPrints::Plugins::PLUGINS = {};
+	$EPrints::Plugins::CONFIG = {};
 
 	sub EPrints::Plugins::register
 	{
 		my( $path, $func ) = @_;
+#print STDERR "Plugin: $path\n";
+		$EPrints::Plugins::PLUGINS->{$path} = $func;
+	}
 
-		$EPrints::Plugins::REGISTRY->{$path} = $func;;
+	sub EPrints::Plugins::registerConfig
+	{
+		my( $path, $opt ) = @_;
+print STDERR "config: $path:$opt\n";
+		$EPrints::Plugins::CONFIG->{$path} = $opt;
 	}
 }
 
@@ -68,6 +76,10 @@ END
 
 sub get_all
 {
-	return $EPrints::Plugins::REGISTRY;
+	return $EPrints::Plugins::PLUGINS;
+}
+sub getDefaultConfig
+{
+	return $EPrints::Plugins::CONFIG;
 }
 

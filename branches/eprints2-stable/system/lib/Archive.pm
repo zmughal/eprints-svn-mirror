@@ -173,7 +173,12 @@ sub new_archive_by_id
 	my $oldarchive = &EPrints::Session::ARCHIVE;
 	EPrints::Session::set_archive( $self );
 
-	$self->{config} = EPrints::Config::load_archive_config_module( $id );
+	$self->{config} = EPrints::Plugins::getDefaultConfig();
+	my $lconf = EPrints::Config::load_archive_config_module( $id );
+	foreach my $k ( keys %{$lconf} )
+	{
+		$self->{config}->{$k} = $lconf->{$k};
+	}
 
 	$self->{loadtime} = time;
 
@@ -209,7 +214,7 @@ sub new_archive_by_id
 	my $var_dir = $self->get_conf( "variables_path" );
 	if( !-d $var_dir )
 	{
-                mkdir( $var_dir, 0755 );
+		mkdir( $var_dir, 0755 );
 		my $cfg_dir = $self->get_conf( "config_path" );
 		foreach( "daily", "weekly", "monthly", ".changed" )
 		{
@@ -227,7 +232,7 @@ sub new_archive_by_id
 ######################################################################
 =pod
 
-=item $something = $archive->plugin( $plugin_id, @params )
+=item $something = $archive->plugin( $plugin_id, %params )
 
 Call the plugin with the given ID. From the archive config if possible,
 otherwise from the system plugins.
@@ -237,14 +242,31 @@ otherwise from the system plugins.
 
 sub plugin
 {
-	my( $self, $path, @params ) = @_;
+	my( $self, $path, %params ) = @_;
 
 	if( !defined $self->{plugins}->{$path} )
 	{
 		EPrints::Config::abort( "Plugin does not exist: $path\n" );
 	}
 
-	return &{$self->{plugins}->{$path}}( @params );
+	return &{$self->{plugins}->{$path}}( %params );
+}
+
+######################################################################
+=pod
+
+=item $bool = $archive->hasPlugin( $plugin_id )
+
+Return true if the plugin exists.
+
+=cut
+######################################################################
+
+sub hasPlugin
+{
+	my( $self, $path ) = @_;
+
+	return defined $self->{plugins}->{$path};
 }
 
 ######################################################################
@@ -769,9 +791,27 @@ only.
 sub register_plugin
 {
 	my( $self, $id, $code ) = @_;
-
+print STDERR "$id\n";
 	$self->{plugins}->{$id} = $code;
 }
+
+######################################################################
+=pod
+
+=item $result = $archive->register_config( $id, $data )
+
+Registers the given configuration with this archive.
+
+=cut
+######################################################################
+
+sub register_config
+{
+	my( $self, $id, $data ) = @_;
+
+	$self->{config}->{$id} = $data;
+}
+
 
 ######################################################################
 =pod
@@ -1068,41 +1108,58 @@ dataset.
 
 sub getDatasetType
 {
-        my( $self, $dataset_id ) = @_;
+	my( $self, $dataset_id ) = @_;
 
-        if( defined $self->{DATASETS}->{$dataset_id} )
-        {
-                return $self->{DATASETS}->{$dataset_id};
-        }
+	if( defined $self->{DATASETS}->{$dataset_id} )
+	{
+		return $self->{DATASETS}->{$dataset_id};
+	}
 
-        my $file = '/home/cjg/Projects/ep3/cfg/datasets/'.$dataset_id.'.xml';
+	my $file = '/opt/ep2stable/'.$dataset_id.'.xml';
 
-        open( XML, $file ) || die "can't read $file";
-        my $XML = join('',<XML>);
-        close XML;
-        my $conf= EPrints::XML::parse_xml_string( $XML );
-        my $dataset_tag = ($conf->getElementsByTagName( "dataset" ))[0];
-        $self->{DATASETS}->{$dataset_id} = EPrints::Misc::xml_to_dataset(
-                                                $dataset_tag );
-        return $self->{DATASETS}->{$dataset_id};
+	open( XML, $file ) || die "can't read $file";
+	my $XML = join('',<XML>);
+	close XML;
+	my $conf= EPrints::XML::parse_xml_string( $XML );
+	my $dataset_tag = ($conf->getElementsByTagName( "dataset" ))[0];
+	$self->{DATASETS}->{$dataset_id} = EPrints::Misc::xml_to_dataset(
+						$dataset_tag );
+	return $self->{DATASETS}->{$dataset_id};
 }
 
 
+######################################################################
+=pod
+
+=item $archive->createTables()
+
+Create the tables in the database for this archive.
+
+=cut
+######################################################################
+
+sub createTables
+{
+	my( $self ) = @_; 
+
+	&DATABASE->createTable( 
+		'counters',
+		EPrints::Field->new( 
+			'dataset',
+			EPrints::Type::create( class=>'text' ) ),
+		EPrints::Field->new(
+			'value',
+			EPrints::Type::create( class=>'int' ) ) );
 
 
+	foreach my $ds_name ( 'records', 'subjects' )
+	{
+		&ARCHIVE->getDatasetType( $ds_name )->createTables;
+	}
 
-
-
-
-
-
-
-
-
-
-
-
-
+	&DATABASE->create_version_table;
+	&DATABASE->set_version( $EPrints::Database::DBVersion );
+}
 
 
 

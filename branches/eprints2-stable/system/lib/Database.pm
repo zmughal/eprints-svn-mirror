@@ -55,23 +55,13 @@ package EPrints::Database;
 use DBI;
 use Carp;
 
-#use EPrints::EPrint;
 use EPrints::Session;
 
 my $DEBUG_SQL = 0;
 
 # this may not be the current version of eprints, it's the version
 # of eprints where the current desired db configuration became standard.
-$EPrints::Database::DBVersion = "2.3";
-
-# cjg not using transactions so there is a (very small) chance of
-# dupping on a counter. 
-
-#
-# Counters
-#
-@EPrints::Database::counters = ( "eprintid", "userid", "subscriptionid" );
-
+$EPrints::Database::DBVersion = "3.0";
 
 # ID of next buffer table. This can safely reset to zero each time
 # The module restarts as it is only used for temporary tables.
@@ -217,242 +207,6 @@ sub error
 	return $self->{dbh}->errstr;
 }
 
-
-######################################################################
-=pod
-
-=item $success = $db->create_archive_tables
-
-Create all the SQL tables for each dataset.
-
-=cut
-######################################################################
-
-sub create_archive_tables
-{
-	my( $self ) = @_;
-	
-	my $success = 1;
-
-	foreach( &EPrints::DataSet::get_sql_dataset_ids )
-	{
-		$success = $success && $self->create_dataset_tables( 
-			&ARCHIVE->get_dataset( $_ ) );
-	}
-
-	$success = $success && $self->_create_cachemap_table();
-
-	$success = $success && $self->_create_counter_table();
-
-	$self->create_version_table;	
-	
-	$self->set_version( $EPrints::Database::DBVersion );
-	
-	return( $success );
-}
-		
-
-######################################################################
-=pod
-
-=item $success = $db->create_dataset_tables( $dataset )
-
-Create all the SQL tables for a single dataset.
-
-=cut
-######################################################################
-
-
-sub create_dataset_tables
-{
-	my( $self, $dataset ) = @_;
-	
-	my $rv = 1;
-
-	my $keyfield = $dataset->get_key_field()->clone;
-
-	my $fieldpos = EPrints::MetaField->new( 
-		name => "pos", 
-		type => "int" );
-	my $fieldword = EPrints::MetaField->new( 
-		name => "fieldword", 
-		type => "text");
-	my $fieldids = EPrints::MetaField->new( 
-		name => "ids", 
-		type => "longtext");
-
-	# Create the index tables
-	$rv = $rv & $self->create_table(
-			$dataset->get_sql_index_table_name,
-			$dataset,
-			0, # no primary key
-			( $fieldword, $fieldpos, $fieldids ) );
-	$rv = $rv & $self->create_table(
-			$dataset->get_sql_rindex_table_name,
-			$dataset,
-			0, # no primary key
-			( $keyfield, $fieldword ) );
-	return 0 unless $rv;
-
-	# Create sort values table. These will be used when ordering search
-	# results.
-	my @fields = $dataset->get_fields( 1 );
-	# remove the key field
-	splice( @fields, 0, 1 ); 
-	my @orderfields = ( $keyfield );
-	my $langid;
-	foreach( @fields )
-	{
-		my $fname = $_->get_sql_name();
-		push @orderfields, EPrints::MetaField->new( 
-					name => $fname,
-					type => "longtext" );
-	}
-	foreach $langid ( @{&ARCHIVE->get_conf( "languages" )} )
-	{
-		$rv = $rv && $self->create_table( 
-			$dataset->get_ordervalues_table_name( $langid ), 
-			$dataset, 
-			1, 
-			@orderfields );
-		return 0 unless $rv;
-	}
-
-	# Create the other tables
-	$rv = $rv && $self->create_table( 
-				$dataset->get_sql_table_name, 
-				$dataset, 
-				1, 
-				$dataset->get_fields( 1 ) );
-
-	return $rv;
-}
-
-# $rv = create_table( $tablename, $dataset, $setkey, @fields )
-# boolean                  string      |         boolean  array of
-#                                      EPrints::DataSet   EPrint::MetaField
-
-######################################################################
-# 
-# $success = $db->create_table( $tablename, $dataset, $setkey, 
-#                                     @fields )
-#
-# undocumented
-#
-######################################################################
-
-sub create_table
-{
-	my( $self, $tablename, $dataset, $setkey, @fields ) = @_;
-	
-	my $field;
-	my $rv = 1;
-
-	# Construct the SQL statement
-	my $sql = "CREATE TABLE $tablename (";
-	my $key = undef;
-	my @indices;
-	my $first = 1;
-
-	# Iterate through the fields
-	foreach $field (@fields)
-	{
-		if ( $field->get_property( "multiple" ) ||
-		     $field->get_property( "multilang" ) )
-		{ 	
-			# make an aux. table for a multiple field
-			# which will contain the same type as the
-			# key of this table paired with the non-
-			# multiple version of this field.
-			# auxfield and keyfield must be indexed or 
-			# there's not much point. 
-
-			my $auxfield = $field->clone;
-			$auxfield->set_property( "multiple", 0 );
-			$auxfield->set_property( "multilang", 0 );
-			my $keyfield = $dataset->get_key_field()->clone;
-#print $field->get_name()."\n";
-#foreach( keys %{$auxfield} ) { print "* $_ => ".$auxfield->{$_}."\n"; }
-#print "\n\n";
-
-			# cjg Hmmmm
-			#  Multiple ->
-			# [key] [cnt] [field]
-			#  Lang ->
-			# [key] [lang] [field]
-			#  Multiple + Lang ->
-			# [key] [pos] [lang] [field]
-
-			my @auxfields = ( $keyfield );
-			if ( $field->get_property( "multiple" ) )
-			{
-				my $pos = EPrints::MetaField->new( 
-					name => "pos", 
-					type => "int" );
-				push @auxfields,$pos;
-			}
-			if ( $field->get_property( "multilang" ) )
-			{
-				my $lang = EPrints::MetaField->new( 
-					name => "lang", 
-					type => "langid" );
-				push @auxfields,$lang;
-			}
-			push @auxfields,$auxfield;
-			my $rv = $rv && $self->create_table(	
-				$dataset->get_sql_sub_table_name( $field ),
-				$dataset,
-				0, # no primary key
-				@auxfields );
-			next;
-		}
-		if ( $first )
-		{
-			$first = 0;
-		} 
-		else 
-		{
-			$sql .= ", ";
-		}
-		my $notnull = 0;
-			
-		# First field is primary key.
-		if( !defined $key && $setkey)
-		{
-			$key = $field;
-			$notnull = 1;
-		}
-		else
-		{
-			my( $index ) = $field->get_sql_index();
-			if( defined $index )
-			{
-				push @indices, $index;
-			}
-		}
-		$sql .= $field->get_sql_type( $notnull );
-
-	}
-	if ( $setkey )	
-	{
-		$sql .= ", PRIMARY KEY (".$key->get_sql_name().")";
-	}
-
-	
-	foreach (@indices)
-	{
-		$sql .= ", $_";
-	}
-	
-	$sql .= ");";
-	
-
-	# Send to the database
-	$rv = $rv && $self->do( $sql );
-	
-	# Return with an error if unsuccessful
-	return( defined $rv );
-}
 
 
 ######################################################################
@@ -844,46 +598,6 @@ sub remove
 }
 
 
-######################################################################
-# 
-# $success = $db->_create_counter_table
-#
-# undocumented
-#
-######################################################################
-
-sub _create_counter_table
-{
-	my( $self ) = @_;
-
-	my $counter_ds = &ARCHIVE->get_dataset( "counter" );
-	
-	# The table creation SQL
-	my $sql = "CREATE TABLE ".$counter_ds->get_sql_table_name().
-		"(countername VARCHAR(255) PRIMARY KEY, counter INT NOT NULL);";
-	
-	# Send to the database
-	my $sth = $self->do( $sql );
-	
-	# Return with an error if unsuccessful
-	return( 0 ) unless defined( $sth );
-
-	my $counter;
-	# Create the counters 
-	foreach $counter (@EPrints::Database::counters)
-	{
-		$sql = "INSERT INTO ".$counter_ds->get_sql_table_name()." ".
-			"VALUES (\"$counter\", 0);";
-
-		$sth = $self->do( $sql );
-		
-		# Return with an error if unsuccessful
-		return( 0 ) unless defined( $sth );
-	}
-	
-	# Everything OK
-	return( 1 );
-}
 
 
 ######################################################################
@@ -921,40 +635,6 @@ END
 	return( 1 );
 }
 
-
-######################################################################
-=pod
-
-=item $n = $db->counter_next( $counter )
-
-Return the next unused value for the named counter. Returns undef if 
-the counter doesn't exist.
-
-=cut
-######################################################################
-
-sub counter_next
-{
-	my( $self, $counter ) = @_;
-
-	my $ds = &ARCHIVE->get_dataset( "counter" );
-
-	# Update the counter	
-	my $sql = "UPDATE ".$ds->get_sql_table_name()." SET counter=".
-		"LAST_INSERT_ID(counter+1) WHERE countername = \"$counter\";";
-	
-	# Send to the database
-	my $rows_affected = $self->do( $sql );
-
-	# Return with an error if unsuccessful
-	return( undef ) unless( $rows_affected==1 );
-
-	# Get the value of the counter
-	$sql = "SELECT LAST_INSERT_ID();";
-	my @row = $self->{dbh}->selectrow_array( $sql );
-
-	return( $row[0] );
-}
 
 
 ######################################################################
@@ -2300,26 +1980,126 @@ sub pad_date
 	return sprintf("%04d-%02d-%02d",$y,$m,$d);
 }
 
+
+
+
+
+
 ######################################################################
 =pod
 
-=item $version = $db->mysql_version;
+=item $db->createTable( $tablename, @fields )
 
-Return the mysql version.
+Create a table with the given name containing the SQL fields required
+to contain the given (primitive) eprints fields.
 
 =cut
 ######################################################################
 
-#sub mysql_version
-#{
-	#my( @_ 
+sub createTable
+{
+	my( $self, $tablename, @fields ) = @_;
 
-1; # For use/require success
+	my @l = ();
+	foreach my $field ( @fields )
+	{
+		push @l, $field->getSQLType();
+	}
+	my $cmd = 'CREATE TABLE '.$tablename.' ( '.join( ', ', @l ).' )';
+	$self->do( $cmd );
+}
 
 ######################################################################
 =pod
 
-=back
+=item $db->createCounter( $countername );
 
+Create a new counter for the dataset and zero it.
+
+=cut
+######################################################################
+
+sub createCounter
+{
+	my( $self, $countername ) = @_;
+
+	my $cmd = 'INSERT INTO counters VALUES( "'.$countername.'", 0 )';
+	$self->do( $cmd );
+}
+
+
+######################################################################
+=pod
+
+=item $db->nextCounter( $countername );
+
+Get the next value for the named counter.
+
+=cut
+######################################################################
+
+sub nextCounter
+{
+	my( $self, $countername ) = @_;
+
+	$self->do( 'LOCK TABLES counters WRITE' );
+
+	my $sql = 'SELECT value FROM counters WHERE dataset="'.$countername.'"';
+	my $sth = $self->prepare( $sql );
+	$self->execute( $sth , $sql );
+	my( $value ) = $sth->fetchrow_array;
+	$sth->finish;
+
+	$value += 1;
+
+	$self->do( 'UPDATE counters SET value='.$value.' WHERE dataset="'.$countername.'"' );
+	$self->do( 'UNLOCK TABLES' );
+
+	return $value;
+}
+
+######################################################################
+=pod
+
+=item $success = $db->insertRow( $table, $values );
+
+Insert the vales into the database.
+
+=cut
+######################################################################
+
+sub insertRow
+{
+	my( $self, $table, $values ) = @_;
+
+	my @parts = ();
+	foreach my $value ( @{$values} )
+	{
+		if( defined $value )
+		{
+			push @parts, '"'.prep_value( $value ).'"';
+		}
+		else
+		{
+			push @parts, "NULL";
+		}
+	}
+
+	my $sql = 'INSERT INTO '.$table.' VALUES ('.
+			join( ', ', @parts ).')';
+	my $rv = $self->do( $sql );
+
+	return $rc;
+}
+
+
+
+
+######################################################################
+1; # For use/require success
+######################################################################
+
+=pod
+=back
 =cut
 
