@@ -1,7 +1,6 @@
 package Apache::AuthDBI;
 
-use Apache ();
-use Apache::Constants qw( OK AUTH_REQUIRED FORBIDDEN DECLINED SERVER_ERROR );
+use EPrints::AnApache; #cjg eprints hack
 use DBI ();
 use IPC::SysV qw( IPC_CREAT IPC_RMID S_IRUSR S_IWUSR );
 use strict;

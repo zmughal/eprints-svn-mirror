@@ -151,7 +151,7 @@ sub process
 	my $url;
 	if( $staff )
 	{
-		$url = $session->get_archive()->get_conf( "perl_url" )."/users/staff/eprint_search?userid=$userid&_action_search=1";
+		$url = $session->get_archive()->get_conf( "perl_url" )."/search/archive?userid=$userid&_action_search=1";
 	}
 	else
 	{

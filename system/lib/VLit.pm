@@ -34,8 +34,7 @@ if you object to it for some reason.
 package EPrints::VLit;
 
 use CGI;
-use Apache;
-use Apache::Constants;
+use EPrints::AnApache;
 use Digest::MD5;
 use FileHandle;
 
@@ -62,29 +61,33 @@ sub handler
 
 	my $filename = $r->filename;
 
-	if ( ! -r $filename ) {
+	if ( ! -r $filename ) 
+	{
 		return NOT_FOUND;
 	}
 
-	my $q = new CGI;
+	my $apr = Apache::Request->new( $r );
 
-	my $version = $q->param( "xuversion" );
-	my $locspec = $q->param( "locspec" );
+	my $version = $apr->param( "xuversion" );
+	my $locspec = $apr->param( "locspec" );
 
-	if( !defined $version && !defined $q->param( "mode" ) )
+	if( !defined $version && !defined $apr->param( "mode" ) )
 	{
 		# We don't need to handle it, just do this 
 		# the normal way.
 		return DECLINED;
 	}
 
-	my $session = EPrints::Session->new();
-
 	if( !defined $locspec )
 	{
 		$locspec = "charrange:";
 	}
 
+	# undo eprints rewrite!
+	my $uri = $r->uri;	
+	$uri =~ s#/([0-9]+)/([0-9][0-9])/([0-9][0-9])/([0-9][0-9])/#/$1$2$3$4/#;
+	my $baseurl = $uri;
+	
 	my $LSMAP = {
 "area" => \&ls_area,
 "charrange" => \&ls_charrange
@@ -106,7 +109,7 @@ sub handler
 		return;
 	}
 
-	&$fn( $filename, $lsparam, $locspec, $session );
+	&$fn( $filename, $lsparam, $locspec, $r, $apr, $baseurl );
 
 	return OK;
 }
@@ -173,7 +176,7 @@ sub send_http_header
 ######################################################################
 =pod
 
-=item EPrints::VLit::ls_charrange( $filename, $param, $locspec, $session )
+=item EPrints::VLit::ls_charrange( $filename, $param, $locspec, $r, $apr, $baseurl )
 
 undocumented
 
@@ -182,9 +185,9 @@ undocumented
 
 sub ls_charrange
 {
-	my( $filename, $param, $locspec, $session ) = @_;
+	my( $filename, $param, $locspec, $r, $apr, $baseurl ) = @_;
 
-	my $r = Apache->request;
+	my $archive = EPrints::Archive->new_from_request( $r );
 	
 #	if( $r->content_type !~ m#^text/# )
 #	{
@@ -208,9 +211,7 @@ sub ls_charrange
 		( $offset, $length ) = ( $1, $2 );
 	}
 
-	my $q = new CGI;
-	my $mode = $q->param( "mode" );
-
+	my $mode = $apr->param( "mode" );
 
 	my $readoffset = $offset;
 	my $readlength = $length;
@@ -218,7 +219,7 @@ sub ls_charrange
 	my $conend = -1;
 	if( $mode eq "context" )
 	{
-		my $contextsize = $session->get_archive()->get_conf( "vlit" )->{context_size};
+		my $contextsize = 512;
 		$readoffset-=$contextsize;
 		$readlength+=$contextsize+$contextsize;
 		$constart = $contextsize;
@@ -230,6 +231,15 @@ sub ls_charrange
 		}
 		$conend = $readlength-$contextsize;
 	}
+
+	if( $mode eq "context2" )
+	{
+		# has a char range but loads whole document
+		$readoffset = 0;
+		$readlength = -s $filename;
+		$constart = $offset;
+		$conend = $offset+$length;
+	}
 	
 	my $fh = new FileHandle( $filename, "r" );
 	binmode( $fh );
@@ -238,34 +248,56 @@ sub ls_charrange
 	$fh->read( $data, $readlength );
 	$fh->close();
 
-	my $baseurl = $session->get_archive->get_conf("base_url").$r->uri;
-
-	if( $mode eq "human" || $mode eq "context" || $mode eq 'spanSelect' || $mode eq 'endSelect' || $mode eq 'link' )
+	if( $mode eq "human" || $mode eq "context" || $mode eq "context2" || $mode eq 'spanSelect' || $mode eq 'endSelect' || $mode eq 'link' || $mode eq 'spanSelect2' || $mode eq 'endSelect2' )
 	{
 		my $html = "";
-		my $o;
-		$html.='<span class="vlit-charrange">';
-		for $o (0..$readlength-1)
+		my $BIGINC = 100;
+		my $inc = $BIGINC;
+		if( $mode eq  'spanSelect2'  ||  $mode eq 'endSelect2' || $mode eq 'context' || $mode eq "context2" )
 		{
+			$inc = 1;
+		}
+		$html.='<span class="vlit-charrange">';
+		my $toggle = 0;
+		for( my $o=0; $o<$readlength; $o+=$inc )
+		{
+			my $class = "vlit-spanlink".($toggle+1);
+			$toggle = !$toggle; 
 			if( $o == $constart)
 			{
 				$html.='<span class="vlit-highlight">';
 			}
-			my $c=substr($data,$o,1);
-			$c = '&amp;' if( $c eq "&" );
-			$c = '&gt;' if( $c eq ">" );
-			$c = '&lt;' if( $c eq "<" );
-			$c = '<br />' if( $c eq "\n" );
+			if( $o == $constart-512)
+			{
+				$html.='<a name="c" />';
+			}
+			my $c=substr($data,$o,$inc);
+			# $c is either a string or a single char
+			$c =~ s/&/&amp;/g;
+			$c =~ s/</&lt;/g;
+			$c =~ s/>/&gt;/g;
+			$c =~ s/\n/<br \/>/g;
 			if( $mode eq 'spanSelect' )
 			{ 
+				my $url = $baseurl.'?locspec=charrange:'.($offset+$o)."/".($length-$o).'&mode=spanSelect2';
+				$c ='<a class="'.$class.'" href="'.$url.'">'.$c.'</a>';
+			}
+			if( $mode eq 'spanSelect2' && $o < $BIGINC )
+			{ 
 				my $url = $baseurl.'?locspec=charrange:'.($offset+$o)."/".($length-$o).'&mode=endSelect';
-				$c ='<a href="'.$url.'">'.$c.'</a>';
+				$c ='<a class="'.$class.'" href="'.$url.'">'.$c.'</a>';
 			}
 			if( $mode eq 'endSelect' )
 			{ 
-				my $url = $baseurl.'?locspec=charrange:'.($offset)."/".($o+1).'&mode=link';
-				$c ='<a href="'.$url.'">'.$c.'</a>';
+				my $url = $baseurl.'?locspec=charrange:'.($offset)."/".($o+$inc).'&mode=endSelect2#end';
+				$c ='<a class="'.$class.'" href="'.$url.'">'.$c.'</a>';
 			}
+			if( $mode eq 'endSelect2' && $o > $readlength-$BIGINC-1)
+			{ 
+				my $url = $baseurl.'?locspec=charrange:'.($offset)."/".($o+1).'&mode=link';
+				$c ='<a class="'.$class.'" href="'.$url.'">'.$c.'</a>';
+			}
+			#if( $o > 0 && $mode eq "spanSelect" ) { $html.="|"; }
 			$html.=$c;
 			if( $o == $conend-1 )
 			{
@@ -273,55 +305,92 @@ sub ls_charrange
 			}
 		}
 		$html.='</span>';
-		my $front = '';
-		unless( $param eq "" )
+		my $copyurl = $archive->get_conf( "vlit" )->{copyright_url};
+		my $front = '<a href="'.$copyurl.'">trans &copy;</a>';
+		if( $param eq "" )
+		{
+			if( $mode eq "human" )
+			{
+				$front.= ' [<a href="'.$baseurl.'?mode=spanSelect">quote document</a>]';
+			}
+		}
+		else
 		{
 			my $url = $baseurl;
 			if( $mode eq "human" )
 			{
-				$url .= "?locspec=charrange:$param&mode=context";
+				$front.= ' [<a href="'.$baseurl.'?xuversion=1.0&locspec=charrange:'.$param.'&mode=context">view context</a>]';
 			}
 			if( $mode eq "context" )
 			{
-				$url .= "?mode=human&locspec=charrange:";
+				$front.= ' [<a href="'.$baseurl.'?xuversion=1.0&locspec=charrange:'.$param.'&mode=context2#c">context in full document</a>]';
 			}
-			$front = '<big><sup><a href="'.$url.'">trans</a></sup></big> ';
+			if( $mode eq "context2" )
+			{
+				$front.= ' [<a href="'.$baseurl.'?xuversion=1.0&locspec=charrange:&mode=human">full document</a>]';
+				$front.= ' [<a href="'.$baseurl.'?mode=spanSelect">quote document</a>]';
+			}
 		}
-		my $copyurl = $session->get_archive()->get_conf( "vlit" )->{copyright_url};
-		$front .= '<big><sup><a href="'.$copyurl.'">&copy;</a></sup></big>';
+		$front.= ' [<a href="'.$baseurl.'?xuversion=1.0&locspec=charrange:'.$param.'">raw data</a>]';
+
 		my $msg='';
+		my $msg2='';
+		if( $mode eq "endSelect2" )
+		{ 
+			$msg='<h1>select exact end point</h1>';
+		}
+		if( $mode eq "spanSelect2" )
+		{ 
+			$msg='<h1>select exact start point</h1>';
+		}
 		if( $mode eq "endSelect" )
 		{ 
-			$msg='<h1>select end point:</h1>';
+			$msg='<h1>select approximate end point</h1>';
 		}
 		if( $mode eq "spanSelect" )
 		{ 
-			$msg='<h1>select start point:</h1>';
+			$msg='<h1>select approximate start point</h1>';
 		}
+		$msg2=$msg; # only for span msgs
+		
+			
 		
 			
 		send_http_header( "text/html" );
-		my $title = "Character Range from $offset, length $length";
+		my $title = "Transquotation from char $offset, length $length";
 		if( $mode eq 'link' )
 		{
 			my $url = $baseurl.'?xuversion=1.0&locspec=charrange:'.($offset)."/".($length);
 			my $urlh = $url.'&mode=human';
+			my $urlx = $url.'&mode=xml-entity';
 			$msg=<<END;
+<div style="margin: 8px;">
 <p><b>$title</b></p>
 <p>Raw char quote: <a href="$url">$url</a></p>
 <p>Human readable (HTML): <a href="$urlh">$urlh</a></p>
-<hr noshade="noshade">
+<p>XML: <a href="$urlx">$urlx</a></p>
+END
+			my $urlh2 = $urlh;
+			$urlh2=~s/'/&squot;/g;
+			$msg.=<<END;
+<p>Cut and paste HTML for pop-up window:</p>
+<div style="margin-left: 10px"><tt>
+&lt;a href="#" onclick="javascript:window.open( '$urlh2', 'transclude_window', 'width=666, height=444, scrollbars');"&gt;$title&lt;/a&gt;
+</tt></div>
+</div>
 END
 		}
+		my $cssurl = $archive->get_conf( "base_url" )."/vlit.css";
 		$r->print( <<END );
 <html>
 <head>
   <title>$title</title>
-  <link rel="stylesheet" type="text/css" href="/eprints.css" title="screen stylesheet" media="screen" />
+  <link rel="stylesheet" type="text/css" href="$cssurl" title="screen stylesheet" media="screen" />
 </head>
 <body class="vlit">
 $msg
- <p>$front $html</p>
+<div class="vlit-controls">$front</div><div class="vlit-human">$html</div><a name="end" />
+$msg2
 </body>
 </html>
 END
@@ -353,7 +422,7 @@ END
 ######################################################################
 =pod
 
-=item EPrints::VLit::ls_area( $file, $param, $resspec, $session )
+=item EPrints::VLit::ls_area( $file, $param, $resspec, $r, $apr, $baseurl )
 
 undocumented
 
@@ -362,7 +431,7 @@ undocumented
 
 sub ls_area
 {
-	my( $file, $param, $resspec, $session ) = @_;
+	my( $file, $param, $resspec, $r, $apr, $baseurl ) = @_;
 
 	my $page = 1;
 	my $opts = {
@@ -372,9 +441,9 @@ sub ls_area
 	};
 
 	my $s;
-	if( $session->param( "scale" ) )
+	if( $apr->param( "scale" ) )
 	{
-		$s = $session->param( "scale" );
+		$s = $apr->param( "scale" );
 		$s = undef if( $s <= 0 || $s>1000 || $s==100 );
 	}
 
@@ -412,13 +481,10 @@ sub ls_area
 		my( $p, $x, $y, $w, $h ) = ( $1, $2, $3, $4, $5 );
 
 		# pagearea/ exists cus of cache_file called above.
-print STDERR "dir=$dir\n";	
 		if( !-d $dir )
 		{
-print STDERR "mkdir=$dir\n";	
 			mkdir( $dir );
 			my $cmd = "/usr/bin/X11/convert '$file' 'tif:$dir/%d'";
-print STDERR "c1=$cmd\n";
 			`$cmd`;
 		}
 	}
@@ -455,7 +521,6 @@ print STDERR "c1=$cmd\n";
 
 	my $cmd;
 	$cmd = "tiffinfo $dir/$pageindex";
-	print STDERR $cmd."\n";
 	my $scale = '';
 	my @d = `$cmd`;
 	foreach( @d )
@@ -469,13 +534,11 @@ print STDERR "c1=$cmd\n";
 	}
 
 	$cmd = "/usr/bin/X11/convert $scale $crop $scale2 '$dir/$pageindex' 'png:$cache'";
-	print STDERR $cmd."\n";
 	`$cmd`;
 	
 
 	send_http_header( "image/png" );
 	$cmd = "cat $cache";
-	print STDERR $cmd."\n";
 	print `$cmd`;
 }
 
