@@ -105,7 +105,11 @@ produces in the foo organisation, or not.
  <ep:phrase ref="eprint_fieldopt_local_partial">only partially produced 
 locally</ep:phrase>
 
+=back
+
 =head2 Other things you may wish to change after adding a new field
+
+=over 8
 
 =item Add it to the citations file
 
