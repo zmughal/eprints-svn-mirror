@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+#!/usr/bin/perl -w -I/opt/ep2stable/perl_lib
 
 ######################################################################
 #
@@ -81,7 +81,6 @@ use EPrints::Database;
 use EPrints::Utils;
 
 use Sys::Hostname;
-use Cwd;
 use DBI;
 use Unicode::String qw(utf8 latin1);
 
@@ -408,6 +407,15 @@ END
 	}
 	else
 	{
+		my $mversion = EPrints::Database::mysql_version_from_dbh( $dbh );
+		my $oldpasswords = 0;
+		if( $mversion >= 40100 ) 
+		{
+			print "MySQL version id $mversion >= 40100\n";
+			print "MYSQL OLD PASSWORDS will be used for compatibility with DBI::mysql\n";
+			$oldpasswords = 1;
+		} 
+	
 		my $sth = $dbh->prepare( "show databases" );
 		$sth->execute;
 		my $dbexists = 0;
@@ -429,7 +437,14 @@ END
 		print "Setting MySQL privs\n";
 		#cjg @localhost ??? what about remote mysql's?
 
-		my $SQL = 'GRANT SELECT, INSERT, UPDATE, DELETE, DROP, CREATE ON '.$config{dbname}.'.* TO '.$config{dbuser}.'@localhost IDENTIFIED BY "'.$config{dbpass}.'"';
+		#my $SQL = 'GRANT SELECT, INSERT, UPDATE, DELETE, DROP, CREATE, ALTER ON '.$config{dbname}.'.* TO '.$config{dbuser}.'@localhost IDENTIFIED BY "'.$config{dbpass}.'"';
+		my $SQL;
+		$SQL = 'GRANT ALL ON '.$config{dbname}.'.* TO '.$config{dbuser}.'@localhost';
+		print "DOING: $SQL\n";
+		$dbh->do( $SQL );
+		my $pass = '"'.$config{dbpass}.'"';
+		if( $oldpasswords ) { $pass = "OLD_PASSWORD($pass)"; }
+		$SQL = 'SET PASSWORD FOR '.$config{dbuser}.'@localhost = '.$pass;
 		print "DOING: $SQL\n";
 		$dbh->do( $SQL );
 
@@ -503,7 +518,7 @@ if( $mkfiles eq "yes" )
 		$archivedir."/cfg",
 		$archiveid );
 
-	foreach( "html", "documents", "documents/disk0" )
+	foreach( "var", "html", "documents", "documents/disk0" )
 	{
 		my $dir = $archivedir."/".$_;
 		mkdir( $dir, 0755 );

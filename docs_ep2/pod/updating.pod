@@ -346,3 +346,93 @@ Removed.
 
 =back
 
+=head1 Updating from EPrints 2.2 (or 2.2.1) to EPrints 2.3
+
+This version adds some more functionality and uses apache in a slightly different way. The full text indexing tool adds some more requirements.
+
+=head2 Recompile Apache
+
+EPrints 2.3 requires an additional mod_perl hook, TRANS. I suggest you compile apache with "EVERYTHING=1" instead of "AUTHEN=1 AUTHZ=1" (see the required software section of the 2.3 manual). mod_rewrite is not used any more.
+
+=head2 libapreq
+
+Version 2.3.7+ of EPrints do not require this module. It was a pain to install. 2.3.0 to 2.3.6 do require it, but we recommend you run 2.3.7 or later.
+
+=head2 Install tools used by full-text indexer
+
+See the chapter "Required Software", section "Full Text Indexing". Follow the instructions.
+
+=head2 Upgrade eprints software to version 2.3
+
+
+As usual download and extract the latest (stable) version and run ./configure
+
+Stop the webserver
+
+Run ./install.pl as usual
+
+For each archive run 
+
+ % bin/upgrade ARCHIVEID
+
+Update the apache config:
+
+ % bin/generate_apacheconf
+
+Start the webserver
+
+=head2 Add the new icons & update the style sheets
+
+The new input interface has up and down buttons to let you rearrange the values in lists, such as authors. If you don't copy them into your live archives you'll probably see ugly text of "UP" and "DOWN". You need to put them in your archives "images" dir then use generate_static to copy them to the live website.
+
+ % cp defaultcfg/static/general/images/multi_*.png archives/ARCHIVEID/cfg/static/general/images
+
+Copy in the new VLit stylesheet. 
+
+ % cp defaultcfg/static/general/vlit.css archives/ARCHIVEID/cfg/static/general
+
+Copy any new styles you want from 
+
+ defaultcfg/static/general/eprints.css 
+
+to
+
+ archives/ARCHIVEID/cfg/static/eprints.css 
+
+I suggest everything after the line which starts ".subject_browser_opts, .subject_browser_selections, .subject_browser_search". This isn't essential, but will make your site look nicer.
+
+Now run:
+
+ % bin/generate_static ARCHIVEID
+
+=head2 Start the indexer
+
+EPrints 2.3 does not create the search index in the same way as 2.2 did. It has a background daemon which builds new indexes and then copys them over the old indexes when they are ready. This can potentially take quite a long time, but means that editing records will be much faster (no need to keep reindexing).
+
+If you have some buggy or experimental archives which you do not wish the indexer to process add 
+E<lt>indexE<gt>noE<lt>/indexE<gt> to the main XML config file for that archive.
+
+Only one copy of the indexer runs, no matter how many archives you have. To start it run:
+
+ % bin/indexer start
+
+You should make the indexer automatically start and stop if the machine is rebooted. See the main documentation about the indexing system.
+
+=head1 Updating from any of EPrints 2.3.0 through EPrints.2.3.6 to EPrints 2.3.7
+
+Both the below changes are optional, although recommended.
+
+=head2 Short URLs
+
+You may wish to enable the short urls feature; just add 
+ $c->{use_short_urls} = 1;
+to ArchiveConfig.pm
+
+=head2 XSLT for OAI
+
+2.3.7 introduced an XSLT stylesheet for OAI requests. If you install it and
+view your OAI requests in Mozilla or IE it should be rendered in a human
+readable form.
+
+ % cp defaultcfg/static/general/oai2.xslt archives/ARCHIVEID/cfg/static/general
+

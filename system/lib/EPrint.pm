@@ -407,7 +407,7 @@ END
 ######################################################################
 =pod
 
-=item $eprint = $eprint->clone( $dest_dataset, $copy_documents )
+=item $eprint = $eprint->clone( $dest_dataset, $copy_documents, $link )
 
 Create a copy of this EPrint with a new ID in the given dataset.
 Return the new eprint, or undef in the case of an error.
@@ -415,12 +415,15 @@ Return the new eprint, or undef in the case of an error.
 If $copy_documents is set and true then the documents (and files)
 will be copied in addition to the metadata.
 
+If $nolink is true then the new eprint is not connected to the
+old one.
+
 =cut
 ######################################################################
 
 sub clone
 {
-	my( $self, $dest_dataset, $copy_documents ) = @_;
+	my( $self, $dest_dataset, $copy_documents, $nolink ) = @_;
 
 	my $data = EPrints::Utils::clone( $self->{data} );
 	foreach my $field ( $self->{dataset}->get_fields )
@@ -442,14 +445,17 @@ sub clone
 
 	$new_eprint->datestamp();
 
-	# We assume the new eprint will be a later version of this one,
-	# so we'll fill in the succeeds field, provided this one is
-	# already in the main archive.
-	if( $self->{dataset}->id() eq  "archive" || 
-	    $self->{dataset}->id() eq  "deletion" )
+	unless( $nolink )
 	{
-		$new_eprint->set_value( "succeeds" , 
-			$self->get_value( "eprintid" ) );
+		# We assume the new eprint will be a later version of this one,
+		# so we'll fill in the succeeds field, provided this one is
+		# already in the main archive.
+		if( $self->{dataset}->id() eq  "archive" || 
+	    	$self->{dataset}->id() eq  "deletion" )
+		{
+			$new_eprint->set_value( "succeeds" , 
+				$self->get_value( "eprintid" ) );
+		}
 	}
 
 	# Attempt to copy the documents, if appropriate
@@ -586,9 +592,95 @@ sub commit
 			$self->get_value( "eprintid" ).": ".$db_error );
 	}
 
+	# disabled for now
+	if( 0 && defined $self->{changed} && scalar( %{$self->{changed}} ) > 0 )
+	{
+		my $change = $self->{session}->make_element( "change" );
+		my $from = $self->{session}->make_element( "from" );
+		$change->appendChild( $self->{session}->make_text( "\n  " ) );
+		$from->appendChild( $self->{session}->make_text( "\n" ) );
+		$change->appendChild( $from );
+		$change->appendChild( $self->{session}->make_text( "\n  " ) );
+		my $to = $self->{session}->make_element( "to" );
+		$to->appendChild( $self->{session}->make_text( "\n" ) );
+		$change->appendChild( $to );
+		$change->appendChild( $self->{session}->make_text( "\n  " ) );
+		foreach my $fieldname ( keys %{$self->{changed}} )
+		{
+			my $field = $self->{dataset}->get_field( $fieldname );
+	
+			$from->appendChild( 
+				$field->to_xml( 
+					$self->{session}, 
+					$self->{changed}->{$fieldname} ) );
+			$to->appendChild( $
+				field->to_xml( 
+					$self->{session}, 
+					$self->{data}->{$fieldname} ) );
+		}
+		$to->appendChild( $self->{session}->make_text( "  " ) );
+		$from->appendChild( $self->{session}->make_text( "  " ) );
+		$self->log_history( $change );
+	}
+
 	return( $success );
 }
 
+######################################################################
+=pod
+
+=item $eprint->log_history( $details )
+
+Record some change or event to this eprints history log.
+$details is an XML block describing the event.
+
+=cut
+######################################################################
+
+sub log_history
+{
+	my( $self , $details ) = @_;
+
+	my $el_event = $self->{session}->make_element( "event", eprintid=>$self->get_value("eprintid" ));
+	$el_event->appendChild( $self->{session}->make_text( "\n" ) );
+
+	my $el_script = $self->{session}->make_element( "script" );
+	$el_script->appendChild( $self->{session}->make_text( $0 ) );
+	$el_event->appendChild( $self->{session}->make_text( "  " ) );
+	$el_event->appendChild( $el_script );
+	$el_event->appendChild( $self->{session}->make_text( "\n" ) );
+	
+	my $el_time = $self->{session}->make_element( "time" );
+	$el_time->appendChild( $self->{session}->make_text( EPrints::Utils::get_timestamp ) );
+	$el_event->appendChild( $self->{session}->make_text( "  " ) );
+	$el_event->appendChild( $el_time );
+	$el_event->appendChild( $self->{session}->make_text( "\n" ) );
+	
+	my $user = $self->{session}->current_user;
+	if( defined $user )
+	{
+		my $el_user = $self->{session}->make_element( 
+			"user", 
+			userid=>$user->get_value("userid"), 
+			username=>$user->get_value("username") );
+		$el_user->appendChild( 
+			$self->{session}->make_text( 
+				EPrints::Utils::tree_to_utf8( 
+					$user->render_description ) ) );
+		$el_event->appendChild( $self->{session}->make_text( "  " ) );
+		$el_event->appendChild( $el_user );
+		$el_event->appendChild( $self->{session}->make_text( "\n" ) );
+	}
+	my $el_details = $self->{session}->make_element( "details" );
+	$el_details->appendChild( $self->{session}->make_text( "\n" ) );
+	$el_details->appendChild( $details );
+	$el_event->appendChild( $self->{session}->make_text( "  " ) );
+	$el_event->appendChild( $el_details );
+	$el_event->appendChild( $self->{session}->make_text( "\n" ) );
+	
+#	print STDERR $el_event->toString."\n\n";
+	EPrints::XML::dispose( $el_event );
+}
 
 ######################################################################
 =pod
@@ -682,9 +774,8 @@ sub validate_linking
 		{
 			push @problems, $self->{session}->html_phrase(
 				"lib/eprint:invalid_id",	
-				field => $self->{session}->make_text(
-					$field->display_name( $self->{session}) 
-				) );
+				field => $field->render_name( 
+						$self->{session} ) );
 			next;
 		}
 
@@ -739,22 +830,20 @@ sub validate_meta
 	my @all_fields = $self->{dataset}->get_fields();
 
 	# For all required fields...
-	my $field;
-	foreach $field (@req_fields)
+	foreach my $field (@req_fields)
 	{
 		# Check that the field is filled 
 		next if ( $self->is_set( $field->get_name() ) );
 
 		my $problem = $self->{session}->html_phrase( 
 			"lib/eprint:not_done_field" ,
-			fieldname=> $self->{session}->make_text( 
-			   $field->display_name( $self->{session} ) ) );
+			fieldname=> $field->render_name( $self->{session} ) );
 
 		push @all_problems,$problem;
 	}
 
 	# Give the site validation module a go
-	foreach $field (@all_fields)
+	foreach my $field (@all_fields)
 	{
 		push @all_problems, $self->{session}->get_archive()->call(
 			"validate_field",
@@ -812,9 +901,8 @@ sub validate_meta_page
 
 			my $problem = $self->{session}->html_phrase( 
 				"lib/eprint:not_done_field" ,
-				fieldname=> $self->{session}->make_text( 
-			   		$field->display_name( 
-						$self->{session} ) ) );
+				fieldname=> $field->render_name( 
+						$self->{session} ) );
 			push @problems,$problem;
 		}
 
@@ -825,6 +913,14 @@ sub validate_meta_page
 			$self->{session},
 			$for_archive );
 	}
+
+	# then call the validate page function for this page
+	push @problems, $self->{session}->get_archive->call(
+		"validate_eprint_meta_page",
+		$self,
+		$self->{session},
+		$page,
+		$for_archive );
 
 	return( \@problems );
 }
@@ -851,8 +947,7 @@ sub validate_documents
 	my( $self, $for_archive ) = @_;
 	my @problems;
 	
-        my @req_formats = @{$self->{session}->get_archive()->get_conf( 
-		"required_formats" )};
+        my @req_formats = $self->required_formats;
 	my @docs = $self->get_all_documents();
 
 	my $ok = 0;
@@ -900,6 +995,7 @@ sub validate_documents
 			$prob->appendChild( 
 				$self->{session}->make_text( ": " ) );
 			$prob->appendChild( $_ );
+			push @problems, $prob;
 		}
 	}
 
@@ -1033,6 +1129,33 @@ sub datestamp
 		EPrints::Utils::get_datestamp( time ) );
 }
 
+######################################################################
+=pod
+
+=item @formats =  $eprint->required_formats
+
+Return a list of the required formats for this 
+eprint. Only one of the required formats is required, not all.
+
+An empty list means no format is required.
+
+=cut
+######################################################################
+
+sub required_formats
+{
+	my( $self ) = @_;
+
+	my $fmts = $self->{session}->get_archive()->get_conf( 
+				"required_formats" );
+	if( ref( $fmts ) ne "ARRAY" )
+	{
+		# function pointer then...
+		$fmts = &{$fmts}($self->{session},$self);
+	}
+
+	return @{$fmts};
+}
 
 ######################################################################
 =pod
@@ -1066,6 +1189,21 @@ sub move_to_deletion
 
 	my $success = $self->_transfer( $ds );
 
+	if( $success )
+	{
+		$self->generate_static();
+
+		# Generate static pages for everything in threads, if 
+		# appropriate
+		my @to_update = $self->get_all_related();
+		
+		# Do the actual updates
+		foreach (@to_update)
+		{
+			$_->generate_static();
+		}
+	}
+	
 	return $success;
 }
 
@@ -1228,12 +1366,26 @@ sub url_stem
 {
 	my( $self ) = @_;
 
-	return( 
-		sprintf( 
-			"%s/%08d/", 
-			$self->{session}->get_archive()->get_conf( 
-							"documents_url" ), 
-			$self->{data}->{eprintid} ) );
+	my $archive = $self->{session}->get_archive;
+
+	my $shorturl = $archive->get_conf( "use_short_urls" );
+	$shorturl = 0 unless( defined $shorturl );
+
+	my $url;
+	$url = $archive->get_conf( "base_url" );
+	$url .= '/archive' unless( $shorturl );
+	$url .= '/';
+	if( $shorturl )
+	{
+		$url .= $self->get_value( "eprintid" )+0;
+	}
+	else
+	{
+		$url .= sprintf( "%08d", $self->get_value( "eprintid" ) );
+	}
+	$url .= '/';
+
+	return $url;
 }
 
 
@@ -1245,8 +1397,9 @@ sub url_stem
 Generate the static version of the abstract web page. In a multi-language
 archive this will generate one version per language.
 
-It only makes sense to call this on eprints in the "archive" and
-"deletion" datasets.
+If called on inbox or buffer, remove the abstract page.
+
+Always create the symlinks for documents in the secure area.
 
 =cut
 ######################################################################
@@ -1258,13 +1411,16 @@ sub generate_static
 	my $eprintid = $self->get_value( "eprintid" );
 
 	my $ds_id = $self->{dataset}->id();
-	if( $ds_id ne "archive" && $ds_id ne "deletion" )
-	{
-		$self->{session}->get_archive()->log( 
-			"Attempt to generate static files for record ".
-			$eprintid." in dataset $ds_id (may only generate ".
-			"static for deletion and archive" );
-	}
+
+#	if( $ds_id ne "archive" && $ds_id ne "deletion" )
+#	{
+#		$self->{session}->get_archive()->log( 
+#			"Attempt to generate static files for record ".
+#			$eprintid." in dataset $ds_id (may only generate ".
+#			"static for deletion and archive" );
+#	}
+
+	$self->remove_static;
 
 	# We is going to temporarily change the language of our session to
 	# render the abstracts in each language.
@@ -1303,6 +1459,12 @@ sub generate_static
 		}
 	}
 	$self->{session}->change_lang( $real_langid );
+	my @docs = $self->get_all_documents();
+	foreach my $doc ( @docs )
+	{
+		my $linkdir = EPrints::Document::_secure_symlink_path( $self );
+		$doc->create_symlink( $self, $linkdir );
+	}
 }
 
 
