@@ -222,11 +222,11 @@ CHECK_PERL_MOD(Sys::Hostname)
 CHECK_PERL_MOD(Unicode::String)
 CHECK_PERL_MOD(XML::Parser)
 
-AC_PREFIX_DEFAULT(/usr/local/eprints2)
+AC_PREFIX_DEFAULT(/opt/eprints2)
 
 PREFIX=$prefix
 if test $PREFIX = "NONE" ; then
-    PREFIX=/usr/local/eprints2
+    PREFIX=/opt/eprints2
 fi
 
 AC_SUBST(PERL_PATH)

@@ -17,6 +17,8 @@ my %codenames = (
 	"eprints-2-0-1pre1"   => "mangogoo",
 	"eprints2-0-1"   => "tuna",
 	"eprints2-1-pre-1"   => "onionring",
+	"eprints2-1-pre-2"   => "misosoup",
+	"eprints2-1-pre-3"   => "friedeel",
 	"eprints2-1"   => "pineapple"
 );
 
@@ -26,6 +28,8 @@ my %ids = (
 	"eprints-2-0-1pre1"     => "2.0.1.pre-1",
 	"eprints2-0-1"     => "2.0.1",
 	"eprints2-1-pre-1"     => "2.1",
+	"eprints2-1-pre-2"     => "2.1.pre-2",
+	"eprints2-1-pre-3"     => "2.1.pre-3",
 	"eprints2-1"     => "2.1"
 );
 
