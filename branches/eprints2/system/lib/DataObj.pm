@@ -122,9 +122,62 @@ sub set_value
 {
 	my( $self , $fieldname, $value ) = @_;
 
+#	use Data::Dumper;
+#	unless( equal( $self->{data}->{$fieldname}, $value ) )
+#	{
+#		print STDERR "CHANNNNNNNNNNNNGE\n";
+#	}
+#	print STDERR "--------------------\n=$fieldname\n";
+#	print STDERR Dumper( \$self->{data}->{$fieldname}, \$value );
+
 	$self->{data}->{$fieldname} = $value;
 }
 
+sub equal
+{
+	my( $a, $b ) = @_;
+
+	print STDERR Dumper( $a,$b);
+
+	# both undef is equal
+	return 1 if( (!defined $a || $a eq '') && (!defined $b || $b eq '') );
+	# one xor other undef is not equal
+	return 0 if( !defined $a || !defined $b );
+
+	# simple value
+	if( ref($a) eq "" )
+	{
+		return( $a eq $b );
+	}
+
+	if( ref($a) eq "ARRAY" )
+	{
+		# different lengths?
+		return 0 if( scalar @{$a} != scalar @{$b} );
+		for(my $i=0; $i<scalar @{$a}; ++$i )
+		{
+			return 0 unless equal( $a->[$i], $b->[$i] );
+		}
+		return 1;
+	}
+
+	if( ref($a) eq "HASH" )
+	{
+		my @akeys = sort keys %{$a};
+		my @bkeys = sort keys %{$b};
+		# different sizes?
+		return 0 if( scalar @akeys != scalar @bkeys );
+		for(my $i=0; $i<scalar @akeys; ++$i )
+		{
+			return 0 unless ( $akeys[$i] eq $bkeys[$i] );
+			return 0 unless equal( $a->{$akeys[$i]}, $b->{$bkeys[$i]} );
+		}
+		return 1;
+	}
+
+	print STDERR "Warning: can't compare $a and $b\n";
+	return 0;
+}
 
 ######################################################################
 =pod

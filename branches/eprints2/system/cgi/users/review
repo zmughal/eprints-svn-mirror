@@ -78,7 +78,7 @@ sub make_form
 			"allow_user_removal_request" ); 
 	my $checkout = $session->get_archive()->get_conf( 
 			"allow_user_checkout_eprint" ); 
-$checkout = 1;
+
 	$page->appendChild( $session->html_phrase( "cgi/users/review:blurb" ) );
 
 	if( $checkout )

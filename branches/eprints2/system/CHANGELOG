@@ -2172,3 +2172,8 @@ PACKAGE: 2.2.99.2
 
  - users/home now uses "copy" not "clone" so files are not copied. #5
 
+2005-02-16 cjg
+
+ - "checkout" was hard-wired on in "review".
+ - Added initial code to test for changes for logging.
+
