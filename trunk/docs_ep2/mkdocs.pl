@@ -1,10 +1,20 @@
 #!/usr/bin/perl
 
-@files = ( "intro", "reqsoftware", "installation", "contact", "history" );
+@files = ( 
+	"intro", 
+	"reqsoftware", 
+	"installation", 
+	"configeprints",
+	"configarchive",
+	"contact", 
+	"history" 
+);
 %titles = (
 	intro => "Introduction",
 	reqsoftware => "Required Software",
 	installation => "How to Install EPrints (and get started)",
+	configeprints => "Configuring the System",
+	configarchive => "Configuring an Archive",
 	contact => "Problems, Questions and Feedback",
 	history => "EPrints History (and Future Plans)"
 );
