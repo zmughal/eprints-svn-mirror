@@ -351,9 +351,16 @@ Hooray! Your EPrints2 installation was successful!
 = - su to $user
 = - Move into $dir and run:
 =     bin/generate_apacheconf
-= - Move into $dir and run:
 =     bin/create_new_archive
 =
+= Please note:
+= You will also require a working sendmail configuration.
+= This should just involve inserting the line
+=
+= DH<yourmailserver>
+=
+= in your sendmail.cf, where <yourmailserver> is your SMTP
+= mail server address.
 =   
 = Good Luck!
 =
