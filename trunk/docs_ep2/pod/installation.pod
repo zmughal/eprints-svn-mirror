@@ -14,9 +14,45 @@ Now run the "configure" script. This is a /bin/sh script which will attempt to l
  % cd eprints-2.something
  % ./configure
 
-The configure script accepts a number of options, the most important are:
+By default the system installs as user and group "eprints". You will need to change this if you are not installing as either "root" or "eprints".
 
-***** If you can read this, I forgot to add the option list. Doh. Try configure --help ****
+The configure script accepts a number of options. All are optional. The most important are:
+
+=over 8
+
+=item --help                   
+
+List all the options (many are intended for compiled software and are ignored).
+
+=item --prefix=PREFIX         
+
+Where to install EPrints (or look for a version to upgrade). By default /opt/eprints2/
+
+=item --with-perl=[PATH]  
+
+Path of perl interpreter (in case configure can't find it, or you have more than one and want to use a specific one).
+
+=item --with-user=[USER]       
+
+Install eprints to run as USER. By default "eprints".
+
+=item --with-group=[GROUP]     
+
+Install eprints to run as GROUP. By default "eprints".
+
+=item --with-virtualhost=[VIRTUALHOST]    
+
+Use VIRTUALHOST rather than * for apache VirtualHost directives.
+
+=item --disable-diskfree       
+
+Disable disk free space calls. This will be automatically set if configure fails its tests for the df call.
+
+=item --with-toolpath=[PATH]  
+
+An alternate path to search for the required binaries.
+
+=back
 
 Once you are happy with your configuration you may install eprints by
 running install.pl:

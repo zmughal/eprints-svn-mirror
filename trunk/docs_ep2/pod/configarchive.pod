@@ -5,7 +5,7 @@ This section describes all the configuration files in an single archive in the E
 =head2 Primary archive configuration file
 
 Once you have created an EPrints archive the information you entered is placed
-in an XML file in /opt/eprint2/archives/ with the name I<archiveid>.xml - this
+in an XML file in /usr/local/eprint2/archives/ with the name I<archiveid>.xml - this
 file is documented later in this section.
 
 =head2 Archive configuration directory
