@@ -1667,4 +1667,10 @@ before next release. (metadata types & fields)
  - Renamed "freetext" search to "index" and commented out name_match for
     now.
 
+2003-11-06 cjg
+
+ - Fixed file uploads. Now uses the Apache::Request style upload
+ 
+
+
 ======================================================================

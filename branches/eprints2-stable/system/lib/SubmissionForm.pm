@@ -983,13 +983,14 @@ sub _from_stage_fileview
 	if( $self->{action} eq "upload" )
 	{
 		my $arc_format = $self->{session}->param( "arc_format" );
-		my( $success, $file );
+		my $success = 0;
 
 		if( $arc_format eq "plain" )
 		{
-			my $i;
-			$file = $self->{session}->param( "file" );
-			$success = $self->{document}->upload( $file, $file );
+			my $upload = $self->{session}->upload( 'file' );
+			$success = $self->{document}->upload( 
+				$upload->fh, 
+				$upload->filename );
 		}
 		elsif( $arc_format eq "graburl" )
 		{
@@ -998,8 +999,11 @@ sub _from_stage_fileview
 		}
 		else
 		{
-			$file = $self->{session}->param( "file" );
-			$success = $self->{document}->upload_archive( $file, $file, $arc_format );
+			my $upload = $self->{session}->upload( 'file' );
+			$success = $self->{document}->upload_archive( 
+				$upload->fh, 
+				$upload->filename, 
+				$arc_format );
 		}
 		
 		if( !$success )

@@ -1898,18 +1898,31 @@ sub param
 
 }
 
-# $bool = have_parameters()
-#
-#  Return true if the current script had any parameters (POST or GET)
-#
+######################################################################
+=pod
+
+=item $upload_obj = $session->upload( $name )
+
+Return an Apache::Upload object for the uploaded file with the id
+$name.
+
+=cut
+######################################################################
+
+sub upload
+{
+	my( $self, $name ) = @_;
+
+	return $self->{apr}->upload( 'file' );
+}
 
 
 ######################################################################
 =pod
 
-=item $foo = $thing->have_parameters
+=item $bool = $session->have_parameters
 
-undocumented
+Return true if the current script had any parameters (POST or GET)
 
 =cut
 ######################################################################
