@@ -1,10 +1,11 @@
 ======================================================================
-UPGRADING TO EPRINTS 1.1
+UPGRADING TO EPRINTS 1.1.2
 ======================================================================
 
 * Introduction (General Instructions)
 * Upgrading from a Beta Version
 * Upgrading from 1.0
+* Upgrading from 1.1/1.1.1
 * Credits
 
 ======================================================================
@@ -191,6 +192,24 @@ You may also wish to modify oams but please note that as of 1.1 we
 are not supporting this format by default. But there is no reason
 you should not keep it in your site version if you want or need it. 
  
+Now follow the instructions for upgrading from 1.1
+
+
+
+======================================================================
+ UPGRADING FROM 1.1
+======================================================================
+
+IN FILE: /perl_lib/EPrintSite/SiteInfo.pm:
+change:  
+----------------------------------------------------------------------
+"oai_dc"    =>  "http://www.openarchives.org/OAI/dc.xsd"
+----------------------------------------------------------------------
+To:
+----------------------------------------------------------------------
+"oai_dc"    =>  "http://www.openarchives.org/OAI/1.1/dc.xsd"
+----------------------------------------------------------------------
+(This is for OAI1.1 compatability)
 
 ======================================================================
  CREDITS
@@ -201,4 +220,5 @@ information from Robert Tansley
 
 Version 1.0 software design and implementation: Robert Tansley
 Version 1.1 enhancements and fixes:  Chris Gutteridge
+Version 1.1.2 enhancements and fixes:  Chris Gutteridge and Mike Jewel
 

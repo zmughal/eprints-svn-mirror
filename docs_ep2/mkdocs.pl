@@ -267,6 +267,13 @@ if( $website )
 	}
 	print INC "</ul>\n";
 	close( INC );
+	my $toc = '';
+	foreach $id ( @ids )
+	{
+		$toc .= '<link rel="chapter" href="?" title="'.$titles{$id}.'" />'."\n";
+	}
+
+	my $c = 0;
 	foreach $id ( @ids )
 	{
 		my $html = "../docs/html/$id.html";
@@ -275,6 +282,18 @@ if( $website )
 		open( FILE, $html );
 		open( TARGET, ">$target" );
 	 	while( <FILE> ) { last if m/INDEX BEGIN/; }
+		my $n = "";
+		my $p = "";
+		if( defined $ids[$c-1] )
+		{
+			$p = 
+'<link rel="Prev" href="http://www.eprints.org/docs/php/'.$ids[$c-1].'.php" />';
+		}
+		if( defined $ids[$c+1] )
+		{
+			$n = 
+'<link rel="Next" href="http://www.eprints.org/docs/php/'.$ids[$c+1].'.php" />';
+		}
 		print TARGET <<END;
 <?
 
@@ -282,6 +301,14 @@ include "../../../conf/site_conf.phps";
 include "../../../include/elements.phps";
 
 \$pagetitle = "$DOCTITLE - $titles{$id}";
+\$pagelinks = '
+<link rel="Up" href="http://www.eprints.org/documentation.php" />
+<link rel="ToC" href="http://www.eprints.org/documentation.php" />
+$toc
+$p
+$n
+';
+
 
 function do_page()
 {
@@ -306,6 +333,7 @@ END
 		close TARGET;
 		close FILE;
 		
+		++$c;
 	}
 }
 
@@ -321,14 +349,23 @@ foreach $id ( @ids )
 	`cp ../$filemap{$id} ../docs/pod`;
 }
 chdir( ".." );
+
 if( $website )
 {
-	print "UPLOADING:\n";
-	print "rm\n";
-	`rsh -l moj199 brand.ecs.soton.ac.uk rm -rf '/home/www.eprints/htdocs/docs/*'`;
-	print "rcp\n";
-	`rcp -r docs/ moj199\@brand.ecs.soton.ac.uk:/home/www.eprints/htdocs/docs/`;
-	print "chmod\n";
-	`rsh -l moj199 brand.ecs.soton.ac.uk chmod a+rX -R /home/www.eprints/htdocs/docs/`;
+	my $user = 'webmaster';
+	my $host = 'sage.ecs.soton.ac.uk';
+	my $path = '/home/www.eprints/htdocs/docs/';
+
+	my @commands = (
+		"rsh -l $user $host rm -rf '$path*'",
+		"rcp -r docs/ $user\@$host:$path",
+		"rsh -l $user $host chmod a+rX -R $path"
+	);
+
+	foreach( @commands )
+	{
+		print $_."\n";
+		`$_`;
+	}
 }
 
