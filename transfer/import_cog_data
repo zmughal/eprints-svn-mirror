@@ -261,7 +261,7 @@ sub import_eprint
 	}
 
 	# Create the EPrint!
-	my $eprint = EPrints::EPrint->create( $session,
+	my $eprint = EPrints::EPrint::create( $session,
 	                                      $EPrints::Database::table_archive,
 	                                      $userid );
 
@@ -279,7 +279,7 @@ sub import_eprint
 	$idmap{$entry{idcode}} = $eprint->{eprintid};
 
 	# Get the relevant fields
-	my @fields = EPrints::MetaInfo->get_eprint_fields( $type );
+	my @fields = EPrints::MetaInfo::get_eprint_fields( $type );
 	
 	my $f;
 	
@@ -340,7 +340,7 @@ sub import_eprint
 	$probs = $eprint->validate_subject();
 	push @validation_problems, @$probs;
 
-	EPrintSite::Validate->validate_eprint( $eprint, \@validation_problems );
+	EPrintSite::Validate::validate_eprint( $eprint, \@validation_problems );
 
 	if( scalar @validation_problems > 0 )
 	{
@@ -359,7 +359,7 @@ sub import_eprint
 		$probs = $eprint->validate_subject();
 		push @validation_problems, @$probs;
 
-		EPrintSite::Validate->validate_eprint( $eprint, \@validation_problems );
+		EPrintSite::Validate::validate_eprint( $eprint, \@validation_problems );
 	}
 	
 	$probs = $eprint->validate_documents();
@@ -512,7 +512,7 @@ sub translate_authors
 {
 	my( $eprint, $old_values, $problems ) = @_;
 	
-	return( EPrints::Name->import_names( $old_values->{authors}, "\\+" ) );
+	return( EPrints::Name::import_names( $old_values->{authors}, "\\+" ) );
 }
 
 
@@ -533,11 +533,11 @@ sub translate_editors
 	
 	if( defined( $old_values->{editor} ) )
 	{
-		$nameslist = EPrints::Name->import_names( $old_values->{editor}, "\\+" );
+		$nameslist = EPrints::Name::import_names( $old_values->{editor}, "\\+" );
 	}
 	elsif( defined( $old_values->{editors} ) )
 	{
-		$nameslist = EPrints::Name->import_names( $old_values->{editors}, "\\+" );
+		$nameslist = EPrints::Name::import_names( $old_values->{editors}, "\\+" );
 	}
 	
 	return( $nameslist );
@@ -853,7 +853,7 @@ sub copy_files
 	my( $session, $eprint, $format, $from_dir, $main_file, 
 		$copy_whole_dir, $compressed, $errors ) = @_;
 		
-	my $doc = EPrints::Document->create( $session, $eprint, $format );
+	my $doc = EPrints::Document::create( $session, $eprint, $format );
 	
 	unless( defined $doc )
 	{
