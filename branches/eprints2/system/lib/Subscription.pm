@@ -68,7 +68,8 @@ sub get_system_field_info
 	( 
 		{ name=>"subid", type=>"int", required=>1 },
 
-		{ name=>"userid", type=>"int", required=>1 },
+		{ name=>"userid", type=>"itemrefint", 
+			datasetid=>"user", required=>1 },
 
 		{ 
 			name => "spec",

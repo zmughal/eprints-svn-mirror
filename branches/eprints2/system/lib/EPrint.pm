@@ -33,7 +33,7 @@ metadata fields (plus those defined in ArchiveMetadataFieldsConfig:
 
 The unique numerical ID of this eprint. 
 
-=item userid (int)
+=item userid (itemrefint)
 
 The id of the user who deposited this eprint (if any). Scripted importing
 could cause this not to be set.
@@ -51,17 +51,17 @@ The date this record was last modified.
 
 The type of this record, one of the types of the "eprint" dataset.
 
-=item succeeds (text)
+=item succeeds (itemrefint)
 
 The ID of the eprint (if any) which this succeeds.  This field should have
 been an int and may be changed in a later upgrade.
 
-=item commentary (text)
+=item commentary (itemrefint)
 
 The ID of the eprint (if any) which this eprint is a commentary on.  This 
 field should have been an int and may be changed in a later upgrade.
 
-=item replacedby (text)
+=item replacedby (itemrefint)
 
 The ID of the eprint (if any) which has replaced this eprint. This is only set
 on records in the "deletion" dataset.  This field should have
@@ -114,7 +114,8 @@ sub get_system_field_info
 	# may not provide this info. maybe bulk importers should
 	# set a userid of -1 or something.
 
-	{ name=>"userid", type=>"int", required=>0 },
+	{ name=>"userid", type=>"itemrefint", 
+		datasetid=>"user", required=>0 },
 
 	{ name=>"dir", type=>"text", required=>0 },
 
@@ -123,11 +124,14 @@ sub get_system_field_info
 	{ name=>"type", type=>"datatype", datasetid=>"eprint", required=>1, 
 		input_rows=>"ALL" },
 
-	{ name=>"succeeds", type=>"int", required=>0 },
+	{ name=>"succeeds", type=>"itemrefint", required=>0,
+		datasetid=>"eprint" },
 
-	{ name=>"commentary", type=>"int", required=>0 },
+	{ name=>"commentary", type=>"itemrefint", required=>0,
+		datasetid=>"eprint" },
 
-	{ name=>"replacedby", type=>"int", required=>0 }
+	{ name=>"replacedby", type=>"itemrefint", required=>0,
+		datasetid=>"eprint" },
 
 	);
 }
@@ -150,14 +154,14 @@ sub new
 {
 	my( $class, $session, $id, $dataset ) = @_;
 
-	if( defined $dataset )
+	if( defined $dataset && $dataset->id ne "eprint" )
 	{
 		return $session->get_db()->get_single( $dataset , $id );
 	}
 
 	## Work out in which table the EPrint resides.
 	## and return the eprint.
-	foreach( "archive" , "inbox" , "buffer" )
+	foreach( "archive" , "inbox" , "buffer", "deletion" )
 	{
 		my $ds = $session->get_archive()->get_dataset( $_ );
 		my $self = $session->get_db()->get_single( $ds, $id );
