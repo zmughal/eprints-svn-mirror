@@ -7,14 +7,10 @@ Bugs:
 
 code:
 * db:
-	* make most , including url, allow multiples
-	* make add_record and update understand multi's
 	* make everything else understand them...
-	* make index length configurable
 	* hunt down all instances of format_name and Name::extract
 	
-
-* MULTITEXT is a silly name for a field maybe LARGETEXT? 
+* IMPROVE yon COUNTERS
 
 * FINISHED button is confusing on deposit files pages!
 
@@ -47,8 +43,8 @@ code:
 * cgi/user page is a little iffy. Make it look nicer?
 * add bin/site for user created bins?
 * add user.types (extra info for local or staff!)
-* scaling - better indexes and temp tables?
-* search on INT (greater & lower?)
+
+
 * session->{request} is it used?
 * Internationalisation!
 	+ finish lang file!
@@ -172,13 +168,8 @@ Internationalise:
 *** = constants still need doing
 
 
-When  I search for my own entries (22 I think) I get "no hits" when I
-> search for
-> bullock, t.h.  as well as when I do bullock, t
-> Only when  I do bullock without any initials do i get them + others with
-> other initials.  This has been true for a long time.
-> Can you either allow various kinds of punctuation or provide samples right
-> beside the box where we type in the search target?
-
+Use keywords in headers???
 
 *** Subscriptions 
+
+Hide email addresses?
