@@ -231,7 +231,17 @@ sub get_sql
 	}
 	elsif( $type eq "name" )
 	{
-		$sql = $self->terms_to_sql( "__FIELDNAME__", $value, "\%:", ",\%" );
+		# Examples: Fred, S | Smith | Ford, Henry 
+
+		$value=~s/\s*,\s*/,/g;
+		#           Fred,S | Smith | Ford,Henry
+
+		# Add a comma on the end of a single param IF there is no comma in that param
+		my ( $pt1, $pt2 );
+		$value=~s/([^\s]+)(\s|$)/($pt1,$pt2)=($1,$2);($pt1=~m#,# ? "$pt1$pt2" : "$pt1,$pt2")/ge;
+		#           Fred,S | Smith, | Ford,Henry
+
+		$sql = $self->terms_to_sql( "__FIELDNAME__", $value, "\%:", "\%" );
 	}
 	elsif( $type eq "set" || $type eq "subjects" || $type eq "username" )
 	{

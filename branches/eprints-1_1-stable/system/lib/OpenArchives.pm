@@ -30,7 +30,7 @@ use strict;
 
 
 # Supported version of OAI
-$EPrints::OpenArchives::oai_version = "1.0";
+$EPrints::OpenArchives::oai_version = "1.1";
 
 ######################################################################
 #
@@ -144,7 +144,7 @@ sub write_record
 
 		$writer->startTag( $tag, 
 			"xmlns" => $EPrintSite::SiteInfo::oai_metadata_formats{$metadataFormat},
-			"xmlns:xsi" => "http://www.w3.org/2000/10/XMLSchema-instance",
+			"xmlns:xsi" => "http://www.w3.org/2001/XMLSchema-instance",
 			"xsi:schemaLocation" => $EPrintSite::SiteInfo::oai_metadata_formats{$metadataFormat}.
 			                        " ".
 			                        $EPrintSite::SiteInfo::oai_metadata_schemas{$metadataFormat} );

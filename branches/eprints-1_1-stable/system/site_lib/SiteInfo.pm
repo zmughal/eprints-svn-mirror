@@ -451,7 +451,7 @@ $EPrintSite::SiteInfo::archive_identifier = "MUST CHANGE";
 # Exported metadata formats. The hash should map format ids to schemas.
 %EPrintSite::SiteInfo::oai_metadata_schemas =
 (
-	"oai_dc"   => "http://www.openarchives.org/OAI/dc.xsd"
+	"oai_dc"   => "http://www.openarchives.org/OAI/1.1/dc.xsd"
 );
 
 # Base URL of OAI
