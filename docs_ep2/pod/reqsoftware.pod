@@ -1,24 +1,22 @@
-=head1 What software does EPrints 2.0 need? Where do I get it?
+=head1 What Other Software does EPrints 2.0 need? 
 
-EPrints now bundles some perl modules which it uses, to save you installing them. 
+In brief, EPrints requires Apache (with mod_perl), MySQL, Perl with some extra modules, wget, tar and unzip. 
 
-The key requirements are: Perl, Apache with mod_perl, MySQL and the perl module XML::Parser (which in turn needs expat) and the perl module for MySQL DBI support (which requires mysql headers and libraries).
+EPrints bundles some perl modules which it uses, to save you installing them. 
 
-Suggestions to improve these instructions are welcome. 
+=head2 Where to get the Required Software
 
-=head1 Where to get the Required Software From
-
-It's up to you, we have found that installing from source is more effective than RPM's, feel free to use RPMs if you prefer but we've had more problems that way. The best place to get a software tool is the official site, but we've put a mirror of versions known to work at: http://www.eprints.org/files/tools/
+It's up to you, we have found that installing from source is more effective than RPM's, feel free to use RPMs if you prefer but we've had more problems that way. The best place to get a software tool is the official site, but we've put a mirror of versions known to work at: http://www.eprints.org/files/tools/ - you don't need to install I<everything> in the tools directory - just those described below.
 
 =head1 Apache/mod_perl
 
 Tested on: apache 1.3.14 with mod_perl 1.25
 
-The Apache HTTP server was designed as a plug-in replacement for the NCSA server (version 1.4). It fixes numerous bugs in the NCSA server, and includes many new features - including an API to make user extension easier. EPrints requires Apache to be configured with mod_perl, as this allows Apache modules that are entirely written in perl, hence providing much improved efficiency.
+Apache is the most commonly used webserver in the world, and it's free! EPrints requires Apache to be configured with mod_perl, as this allows Apache modules that are entirely written in perl, hence providing much improved efficiency.
 
-http://httpd.apache.org/dist/httpd/
+Get apache from http://httpd.apache.org/dist/httpd/
 
-Required modules: mod_perl and mod_rewrite
+EPrints required that the apache modules B<mod_perl> and B<mod_rewrite> be enabled.
 
 =head2 Apache with mod_perl Installation
 
@@ -49,29 +47,25 @@ Tested on: 3.23.29a-gamma
 
 Install a recent version of MySQL 3. You will need the .h and library files later to install the MySQL perl module. (more help in later version of docs). MySQL 4 is due soon, but we are not making plans to support it yet.
 
-=head1 Perl 5.6
+=head1 Perl 5.6 and Perl Modules
 
-EPrints is currently begin developed with perl 5.6.1, there are currently no plans for a perl 6 version.
+EPrints is currently begin developed with perl 5.6.1, there are currently no plans for to make EPrints run under perl 6 on the theory of if-it-ain't-broke-don't-fix-it.
 
-Some perl modules are shipped with the eprints package, others must be installed by you.
-
-
+Some perl modules are shipped with the EPrints2 package, others must be installed by you.
 
 =head2 Installing a Perl Module
 
-This describes the way to simple perl module, some require a bit more effort. We will use DBI as an example.
-
-=head2 How to install a Perl Module
+This describes the way to simple perl module, some require a bit more effort. We will use the non-existant FOO as an example.
 
 =over 8
 
 =item Unpack the archive:
 
- tar xzvf DBI-1.14.tar.gz
+ tar xzvf FOO-5.23.tar.gz
 
 =item Enter the directory this creates:
 
- cd DBI-1.14
+ cd FOO-5.23
 
 =item Run the following commands:
 
@@ -83,56 +77,28 @@ This describes the way to simple perl module, some require a bit more effort. We
 =back
 
 
-=head2 Required Perl Modules
+=head2 Perl Modules Bundled with EPrints
 
-=over 4
+You don't have to install these.
 
-=item B<CGI>
+C<DBI>, C<XML::DOM>, C<XML::RegExp>, C<Filesys::DiskSpace>, C<URI>, C<Apache::AuthDBI>.
 
-Should be installed by default. Tested with: v2.752
+=head2 Required Perl Modules 
 
-=item B<Data::Dumper>
+This modules are not built into EPrints - you must install them yourself.
 
-This module is used by the installer, and for debugging. It should be easy to install. Tested with: v2.101 and v2.102
-
-=item B<DBI>
-
-The generic database connection module. No known issues with installation. Tested with: v1.14
+=over 8
 
 =item B<Msql-Mysql modules>
 
 Tested with: v1.2215
 
-This one can be difficult. It requires access to .h and library files from MySQL. I install MySQL from source first, but some installs of MySQL don't put the lib and include dirs where this module expects. 
+This one can be tricky. It requires access to .h and library files from MySQL. I install MySQL from source first, but some installs of MySQL don't put the lib and include dirs where this module expects. 
 The answer to the first question is that you only need MySQL support.
-
-=item B<Filesys::DiskSpace>
-
-Tested with: v0.05
-
-This is an annoying little module as it requires some system headers to be created. If it gives you trouble try the following:
-
-Fixing Filesys::DiskSpace (Linux)
-
- cd /usr/include
- h2ph * sys/*
-
-Fixing Filesys::DiskSpace (Solaris)
-
- cd /usr/include
- h2ph asm/* bits/*
 
 =item B<Unicode::String>
 
 Used for Unicode support. No known problems.  Tested with v2.06
-
-=item B<URI>
-
-Used for processing URL strings. No known problems. Tested with v1.10
-
-=item B<Apache::AuthDBI>
-
-Allows apache to authenticate users from a database table, via modperl and DBI. The package is called ApacheDBI. Tested with v0.87
 
 =item B<XML::Parser>
 
