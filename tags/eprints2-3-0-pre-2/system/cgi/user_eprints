@@ -1,0 +1,72 @@
+######################################################################
+#
+#  Show user's EPrints
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints::Session;
+use EPrints::EPrint;
+
+use strict;
+
+my $session = new EPrints::Session;
+Apache::exit( 0 ) unless( defined $session );
+
+&process( $session );
+
+$session->terminate();
+
+sub process
+{
+	my( $session ) = @_;
+
+	my $user = EPrints::UserPage::user_from_param( $session );
+	return unless defined( $user );
+
+	my $arc_ds = $session->get_archive()->get_dataset( "archive" );
+	my @eprints = $user->get_owned_eprints( $arc_ds );
+	my $userid = $user->get_value( "userid" );
+
+	my $page = $session->make_doc_fragment();
+
+	my $a = $session->render_link( "user?userid=$userid" );
+	$page->appendChild( $session->html_phrase( 
+		"cgi/user_eprints:record_link",
+		userlink=>$a ) );
+
+	$page->appendChild( $session->html_phrase(
+		"cgi/user_eprints:n_eprints",
+		n=>$session->make_text( scalar @eprints ) ) );
+
+	foreach( @eprints )
+	{
+		my $p = $session->make_element( "p" );
+		$p->appendChild( $_->render_citation_link() );
+		$page->appendChild( $p ); 
+	}
+
+	$session->build_page(
+		$session->html_phrase( 
+			"cgi/user_eprints:title",
+			name=>$user->render_description() ),
+		$page,
+		"user_eprints" );
+	$session->send_page();
+
+}
+
+
+
+
+
+
+########################################################
+

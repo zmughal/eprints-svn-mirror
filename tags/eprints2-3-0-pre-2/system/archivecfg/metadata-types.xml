@@ -1,0 +1,324 @@
+<?xml version="1.0" ?>
+
+<metadatatypes>
+
+  <dataset name="document">
+    <type name="html" />
+    <type name="pdf" />
+    <type name="ps" />
+    <type name="ascii" />
+    <type name="other" />
+    <type name="coverimage" />
+  </dataset>
+
+  <dataset name="security">
+    <type name="" />
+    <type name="validuser" />
+    <type name="staffonly" />
+  </dataset>
+  
+  <dataset name="eprint">
+
+    <type name="article">
+      <page name="core" />
+      <field name="creators" required="yes" />
+      <field name="title" required="yes" />
+      <field name="publication" required="yes" />
+      <field name="volume" />
+      <field name="number" />
+      <field name="pagerange" />
+      <field name="date_issue" />
+      <field name="date_sub" />
+      <field name="id_number" />
+      <field name="official_url" />
+      <field name="issn" />
+
+      <page name="status" />
+      <field name="ispublished" required="yes" />
+      <field name="refereed" required="yes" />
+
+      <page name="abstract" />
+      <field name="abstract" />
+      <field name="referencetext" />
+      <field name="keywords" />
+
+      <page name="subjects" />
+      <field name="subjects" required="yes" />
+
+      <page name="notes" />
+      <field name="note" />
+      <field name="suggestions" />
+    </type>
+
+    <type name="book_section">
+      <page name="core" />
+      <field name="creators" required="yes" />
+      <field name="title" required="yes" />
+      <field name="pagerange" />
+      <field name="editors" />
+      <field name="book_title" required="yes" />
+      <field name="volume" />
+      <field name="place_of_pub" />
+      <field name="publisher" required="yes" />
+      <field name="pages" />
+      <field name="id_number" />
+      <field name="series" />
+      <field name="number" />
+      <field name="isbn" />
+
+      <field name="date_issue" />
+      <field name="date_sub" />
+      <field name="official_url" />
+
+      <page name="status" />
+      <field name="ispublished" required="yes" />
+      <field name="refereed" required="yes" />
+
+      <page name="abstract" />
+      <field name="abstract" />
+      <field name="referencetext" />
+      <field name="keywords" />
+
+      <page name="subjects" />
+      <field name="subjects" required="yes" />
+
+      <page name="notes" />
+      <field name="note" />
+      <field name="suggestions" />
+    </type>
+
+    <type name="monograph">
+      <page name="core" />
+      <field name="creators" required="yes" />
+      <field name="title" required="yes" />
+      <field name="institution" />
+      <field name="department" />
+      <field name="place_of_pub" />
+      <field name="publisher" required="yes" />
+      <field name="id_number" />
+      <field name="pages" />
+      <field name="date_issue" />
+      <field name="date_sub" />
+      <field name="official_url" />
+<!--  <field name="editors" /> -->
+      <field name="monograph_type" required="yes" />
+
+      <page name="status" />
+      <field name="ispublished" required="yes" />
+
+      <page name="abstract" />
+      <field name="abstract" />
+      <field name="referencetext" />
+      <field name="keywords" />
+
+      <page name="subjects" />
+      <field name="subjects" required="yes" />
+
+      <page name="notes" />
+      <field name="note" />
+      <field name="suggestions" />
+    </type>
+
+    <type name="conference_item">
+      <page name="core" />
+      <field name="creators" required="yes" />
+      <field name="title" required="yes" />
+      <field name="date_issue" />
+      <field name="date_sub" />
+      <field name="pages" />
+      <field name="pres_type" required="yes" />
+      <field name="official_url" />
+
+      <page name="event" />
+      <field name="event_title" required="yes" />
+      <field name="event_type" required="yes" />
+      <field name="event_location" />
+      <field name="event_dates" />
+
+      <page name="status" />
+      <field name="ispublished" required="yes" />
+      <field name="refereed" required="yes" />
+
+      <page name="abstract" />
+      <field name="abstract" />
+      <field name="referencetext" />
+      <field name="keywords" />
+
+      <page name="subjects" />
+      <field name="subjects" required="yes" />
+
+      <page name="notes" />
+      <field name="note" />
+      <field name="suggestions" />
+    </type>
+
+    <type name="book">
+      <page name="core" />
+      <field name="creators" />
+      <field name="editors" />
+      <field name="title" required="yes" />
+      <field name="date_issue" />
+      <field name="date_sub" />
+      <field name="place_of_pub" />
+      <field name="publisher" required="yes" />
+      <field name="pages" />
+      <field name="series" />
+      <field name="volume" />
+      <field name="number" />
+      <field name="isbn" />
+      <field name="official_url" />
+
+      <page name="status" />
+      <field name="ispublished" required="yes" />
+      <field name="refereed" required="yes" />
+
+      <page name="abstract" />
+      <field name="abstract" />
+      <field name="referencetext" />
+      <field name="keywords" />
+
+      <page name="subjects" />
+      <field name="subjects" required="yes" />
+
+      <page name="notes" />
+      <field name="note" />
+      <field name="suggestions" />
+    </type>
+
+    <type name="thesis">
+      <page name="core" />
+      <field name="creators" required="yes" />
+      <field name="title" required="yes" />
+      <field name="date_issue" required="yes" />
+      <field name="official_url" />
+      <field name="institution" required="yes" />
+      <field name="department" required="yes" />
+      <field name="thesis_type" required="yes" />
+      <field name="pages" />
+
+      <page name="status" />
+      <field name="ispublished" required="yes" />
+
+      <page name="abstract" />
+      <field name="abstract" />
+      <field name="referencetext" />
+      <field name="keywords" />
+
+      <page name="subjects" />
+      <field name="subjects" required="yes" />
+
+      <page name="notes" />
+      <field name="note" />
+      <field name="suggestions" />
+    </type>
+
+    <type name="patent">
+      <page name="core" />
+      <field name="creators" required="yes" />
+      <field name="title" required="yes" />
+      <field name="date_issue" required="yes" />
+      <field name="official_url" />
+      <field name="patent_applicant" required="yes" />
+      <field name="id_number" required="yes" />
+      <field name="pages" />
+
+      <page name="abstract" />
+      <field name="abstract" />
+      <field name="referencetext" />
+      <field name="keywords" />
+
+      <page name="subjects" />
+      <field name="subjects" required="yes" />
+
+      <page name="notes" />
+      <field name="note" />
+      <field name="suggestions" />
+    </type>
+
+    <type name="other">
+      <page name="core" />
+      <field name="creators" required="yes" />
+      <field name="title" required="yes" />
+      <field name="date_issue" />
+      <field name="date_sub" />
+      <field name="official_url" />
+      <field name="place_of_pub" />
+      <field name="publisher" required="yes" />
+      <field name="id_number" />
+
+      <page name="status" />
+      <field name="ispublished" required="yes" />
+
+      <page name="abstract" />
+      <field name="abstract" />
+      <field name="referencetext" />
+      <field name="keywords" />
+
+      <page name="subjects" />
+      <field name="subjects" required="yes" />
+
+      <page name="notes" />
+      <field name="note" />
+      <field name="suggestions" />
+    </type>
+  </dataset>
+
+<!-- don't make username editable -->
+<!-- don't make usertype editable -->
+
+  <dataset name="user">
+    <type name="user" >
+      <field name="password" />
+ <!--     <field name="lang" /> -->
+      <field name="usertype" staffonly="yes"/>
+      <field name="username" staffonly="yes"/>
+      <field name="email" staffonly="yes" />
+      <field name="hideemail" />
+      <field name="name" required="yes" />
+      <field name="dept" />
+      <field name="org" />
+      <field name="address" />
+      <field name="country" />
+      <field name="os" />
+      <field name="url" />
+    </type>
+    <type name="editor" >
+      <field name="password" />
+ <!--     <field name="lang" /> -->
+      <field name="usertype" staffonly="yes" />
+      <field name="username" staffonly="yes"/>
+      <field name="email" staffonly="yes" />
+      <field name="hideemail" />
+      <field name="name" required="yes" />
+      <field name="dept" />
+      <field name="org" />
+      <field name="address" />
+      <field name="country" />
+      <field name="os" />
+      <field name="url" />
+      <field name="editperms" staffonly="yes" />
+      <field name="frequency" required="yes" />
+      <field name="mailempty" required="yes" />
+    </type>
+    <type name="admin" >
+      <field name="password" />
+ <!--     <field name="lang" /> -->
+      <field name="usertype" staffonly="yes" />
+      <field name="username" staffonly="yes" />
+      <field name="email" staffonly="yes" />
+      <field name="hideemail" />
+      <field name="name" required="yes" />
+      <field name="dept" />
+      <field name="org" />
+      <field name="address" />
+      <field name="country" />
+      <field name="os" />
+      <field name="url" />
+      <field name="editperms" />
+      <field name="frequency" required="yes" />
+      <field name="mailempty" required="yes" />
+    </type>
+  </dataset>
+
+</metadatatypes>
+
