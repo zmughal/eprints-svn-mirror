@@ -443,7 +443,7 @@ digits long. Stored as an INT in the database.
 
 =item longtext
 
-Optional properties: input_rows, input_cols
+Optional properties: input_rows, input_cols, search_cols
 
 This type describes an unlimited length text field. Used for things like titles and abstracts. It can't be effiently searched as a single value, the system indexes the words. See "free text indexing" section. Stored in MySQL as a C<TEXT> field.
 
@@ -460,7 +460,7 @@ This is a simple yes/no field which is stored in the database as C<SET( 'TRUE','
 
 =item name
 
-Optional properties: input_name_cols
+Optional properties: input_name_cols, search_cols
 
 This type is used to store names of people (eg. authors). It is split into 4 parts: honourific, given names, family name and lineage. This may seem over fussy but it avoids people putting "Reverend" in the given names or "Junior" in the family name. If you dislike this you can hide honourific and lineage (See ArchiveConfig.pm).
 
@@ -472,7 +472,7 @@ Names are stored using 4 SQL fields. The name field "supervisor" would be stored
 
 Required properties: options
 
-Optional properties: input_rows
+Optional properties: input_rows, search_rows
 
 This type is a limited set of options. The list of options must be specified. Each option must also be added to the phrase file. Option "foo" of field "bar" in the "user" dataset will have the phrase id "user_fieldopt_bar_foo".
 
@@ -480,7 +480,7 @@ Stored in the database as a C<VARCHAR(255)>, containing the id of the option.
 
 =item text
 
-Optional properties: input_cols, maxlength
+Optional properties: input_cols, maxlength, search_cols
 
 This is a simple text field. It normally has a maximum length of 255 ASCII characters, less if non-ASCII characters are used as these are UTF-8 encoded.
 
@@ -500,7 +500,7 @@ Identical to "text" except it is rendered and validated differently.
 
 =item subject
 
-Optional properties: top, showtop, showall, input_rows
+Optional properties: top, showtop, showall, input_rows, search_rows
 
 This is a hierarchical subject tree. At first glance it works like sets, but
 it can be searched for all items in or below a given subject. Subjects may be
@@ -526,7 +526,7 @@ Stored in the database as a C<VARCHAR(255)>.
 
 Required properties: datesetid
 
-Optional properties: input_rows
+Optional properties: input_rows, search_rows
 
 This field works like a set, but gets its options from the types of the dataset specified. 
 
@@ -647,6 +647,26 @@ Optional on: longtext, set, subject, datatype
 Default: set in ArchiveConfig.pm
 
 The number of input rows in a text area, or options to display at once in a menu. Setting to 1 will make a pull down menu (unless this is a "multiple" field).
+
+=item search_cols
+
+Status: cosmetic
+
+Optional on: text, longtext, url, email, name, id
+
+Default: set in ArchiveConfig.pm
+
+The width of the search field. If searching multiple fields at once then the value is taken from the first field in the list.
+
+=item search_rows
+
+Status: cosmetic
+
+Optional on: datatype, set, subject
+
+Default: set in ArchiveConfig.pm
+
+The number of items to display in a search field list.  If searching multiple fields at once then the value is taken from the first field in the list.
 
 =item input_cols
 

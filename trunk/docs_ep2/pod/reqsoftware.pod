@@ -6,7 +6,19 @@ EPrints bundles some perl modules which it uses, to save you installing them.
 
 =head2 Where to get the Required Software
 
-It's up to you, we have found that installing from source is more effective than RPM's, feel free to use RPMs if you prefer but we've had more problems that way. The best place to get a software tool is the official site, but we've put a mirror of versions known to work at: http://www.eprints.org/files/tools/ - you don't need to install I<everything> in the tools directory - just those described below.
+It's up to you. We have had best results with installing MySQL from RPM and apache from source.
+
+
+The best place to get a software tool is the official site, but we've put a mirror of versions known to work at: http://www.eprints.org/files/tools/ - you don't need to install I<everything> in the tools directory - just those described below. 
+
+
+=head1 MySQL
+
+Tested on: 3.23.29a-gamma
+
+Install a recent version of MySQL 3. You will need the .h and library files later to install the MySQL perl module. (more help in later version of docs). MySQL 4 is due soon, but we are not making plans to support it yet.
+
+If installing from RPM you require: B<mysql-server>, B<mysql-devel> and B<mysql>. 
 
 =head1 Apache/mod_perl
 
@@ -41,11 +53,6 @@ EPrints required that the apache modules B<mod_perl> and B<mod_rewrite> be enabl
 
 
 
-=head1 MySQL
-
-Tested on: 3.23.29a-gamma
-
-Install a recent version of MySQL 3. You will need the .h and library files later to install the MySQL perl module. (more help in later version of docs). MySQL 4 is due soon, but we are not making plans to support it yet.
 
 =head1 Perl 5.6 and Perl Modules
 
@@ -81,20 +88,38 @@ This describes the way to simple perl module, some require a bit more effort. We
 
 You don't have to install these.
 
-C<DBI>, C<XML::DOM>, C<XML::RegExp>, C<Filesys::DiskSpace>, C<URI>, C<Apache::AuthDBI>.
+C<XML::DOM>, C<XML::RegExp>, C<Filesys::DiskSpace>, C<URI>, C<Apache::AuthDBI>.
 
 =head2 Required Perl Modules 
 
-This modules are not built into EPrints - you must install them yourself.
+This modules are not built into EPrints - you must install them yourself. We recommend installing them in the order they are listed.
 
 =over 8
 
-=item B<Msql-Mysql modules>
+=item B<Data::ShowTable>
+
+MySQL Interface Module requires this.
+
+=item B<DBI>
+
+Tested with: v1.14
+
+MySQL Interface Module requires this.
+
+=item B<Msql-Mysql Module>
 
 Tested with: v1.2215
 
 This one can be tricky. It requires access to .h and library files from MySQL. I install MySQL from source first, but some installs of MySQL don't put the lib and include dirs where this module expects. 
 The answer to the first question is that you only need MySQL support.
+
+Under RedHat Linux, the B<zlib-devel> RPM should be installed before you install this module.
+
+=item B<MIME::Base64>
+
+Tested with: v2.11
+
+Unicode::String requires this.
 
 =item B<Unicode::String>
 
