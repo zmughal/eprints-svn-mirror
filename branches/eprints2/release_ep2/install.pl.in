@@ -244,7 +244,7 @@ else
 		$systemsettings->{group} );
 }
 
-save_settings( $syssettings, $systemsettings );
+save_settings( $syssettings, $systemsettings, $systemsettings->{user}, $systemsettings->{group} );
 
 exit;
 
@@ -255,7 +255,7 @@ exit;
 
 sub save_settings
 {
-	my( $sysfile, $syshash ) = @_;
+	my( $sysfile, $syshash, $uid, $gid ) = @_;
 
 	my $dumper = Data::Dumper->new( 
 		[ $syshash ] , 
@@ -305,6 +305,7 @@ SPIEL
 	close(FILEOUT);
 
 	chmod( 0644, $sysfile );
+	chown($uid, $gid, $sysfile );
 }
 
 sub merge_fields
@@ -390,12 +391,13 @@ sub detect_df
 
 sub write_sigs
 {
-	my( $dir, $sigs ) = @_;
+	my( $dir, $sigs, $uid, $gid ) = @_;
 
+	my $sigfile = $dir.'/SIGNATURES';
 	# Dump out signature file
-	unless( open (SIGOUT, ">".$dir."/SIGNATURES") )
+	unless( open (SIGOUT, ">".$sigfile ) )
 	{
-		print "Unable to write SIGNATURES: $!\n";
+		print "Unable to write $sigfile: $!\n";
 		exit 1;
 	}
 	binmode(SIGOUT);
@@ -405,7 +407,8 @@ sub write_sigs
 		print SIGOUT $_;
 	}
 	close(SIGOUT);
-	chmod( 0644, $dir."/SIGNATURES" );
+	chown($uid, $gid, $sigfile );
+	chmod( 0644, $sigfile );
 }
 
 # Calculate the MD5 digest of a file.
@@ -598,7 +601,7 @@ sub upgrade
 
         print "]\n\n";
 
-	write_sigs( $base_path, $newsigs );
+	write_sigs( $base_path, $newsigs, $uid, $gid );
 
 	print <<HOORAY;
 ======================================================================
@@ -660,7 +663,7 @@ sub full_install
 	
 	print "]\n\n";
 	
-	write_sigs( $base_path, $sigs );
+	write_sigs( $base_path, $sigs, $uid, $gid );
 
 	print <<HOORAY;
 
