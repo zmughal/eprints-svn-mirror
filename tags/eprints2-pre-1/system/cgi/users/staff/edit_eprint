@@ -1,0 +1,159 @@
+######################################################################
+#
+#  EPrint Editor
+#
+#   Allows staff to remove EPrints or transfer them back to the
+#   submission buffer.
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints::EPrint;
+use EPrints::Session;
+
+use strict;
+
+#cjg check item is editable by this user.
+
+#cjg remove does not work
+
+my $session = EPrints::Session->new();
+
+# Check we have privs
+if( !$session->auth_check( "editor" ) )
+{
+	$session->terminate();
+	Apache::exit( 0 );
+}
+
+my( $title, $page ) = &process( $session );
+if( defined $title )
+{
+	$session->build_page( $title, $page );
+	$session->send_page();
+}
+$session->terminate();
+
+
+
+sub process
+{
+	my( $session ) = @_;
+
+	my( $page );
+
+	my $eprintid = $session->param( "eprintid" );
+
+	$page = $session->make_doc_fragment();
+
+	if( !EPrints::Utils::is_set( $eprintid ) )
+	{
+
+		my $id_field = EPrints::MetaField->new(
+			archive=> $session->get_archive(),
+			confid=>"editeprint",
+			name=>"eprintid",
+			type=>"text" );
+		#"eprintid:text::ID of EPrint to View:1:1:1" );
+	
+		$page->appendChild( $session->render_input_form(
+			fields=>[ $id_field ],
+			show_names=>1,
+			buttons=>{
+				check=>$session->phrase( 
+					"cgi/users/edit_eprint:action_check" )
+			}
+		) ),
+
+		return( $session->html_phrase( "cgi/users/edit_eprint:form_title" ),
+			$page );
+	}
+
+	my $arc_ds = $session->get_archive->get_dataset( "archive" );
+
+	my $eprint = new EPrints::EPrint( $session, $arc_ds, $eprintid );
+	my $action = $session->get_action_button();
+
+	if( !defined $eprint )
+	{
+		$session->render_error( $session->html_phrase(
+			"cgi/users/edit_eprint:cant_find_it",
+			id=>$session->make_text( $eprintid ) ) );
+		return;
+	}
+
+	if( defined $action && $action eq "remove" )
+	{
+		if( $eprint->move_to_deletion() )
+		{
+			$page->appendChild( $session->html_phrase( 
+				"cgi/users/edit_eprint:removed" ) );
+			$page->appendChild( $session->html_phrase( 
+				"general:userhome_link" ) );
+			return( $session->html_phrase( 
+					"cgi/users/edit_eprint:remove_title" ),
+	 			$page );
+		}
+		
+		$session->render_error( $session->html_phrase(
+			"cgi/users/edit_eprint:cant_remove",
+			id=>$session->make_text( $eprintid ) ) );
+		return;
+	}
+
+	if( defined $action && $action eq "move" )
+	{
+		
+		if( $eprint->move_to_buffer() )
+		{
+			$page->appendChild( $session->html_phrase( 
+				"cgi/users/edit_eprint:moved" ) );
+			$page->appendChild( $session->html_phrase( 
+				"general:userhome_link" ) );
+			return( $session->html_phrase( 
+					"cgi/users/edit_eprint:move_title" ),
+	 			$page );
+		}
+
+		$session->render_error( $session->html_phrase(
+			"cgi/users/edit_eprint:cant_move",
+			id=>$session->make_text( $eprintid ) ) );
+		return;
+	}
+
+	if( defined $action && $action eq "cancel" )
+	{
+		$session->redirect(
+			$session->get_archive()->get_conf( "userhome" ) );
+		return;
+	}
+
+	$page->appendChild( $eprint->render_full() );
+			
+	$page->appendChild( $session->render_ruler() );
+
+	$page->appendChild( $session->render_input_form(
+		# no input fields; no need for a default action.
+		buttons=>{
+			_order => [ "remove", "move", "cancel" ],
+			remove=>$session->phrase( 
+				"cgi/users/edit_eprint:action_remove" ),
+			move=>$session->phrase( 
+				"cgi/users/edit_eprint:action_move" ),
+			cancel=>$session->phrase( 
+				"cgi/users/edit_eprint:action_cancel" )
+		},
+		hidden_fields=>{ eprintid=>$eprintid }
+	) );
+		
+	return( $session->html_phrase( "cgi/users/edit_eprint:form_title" ), $page );
+}
+
+

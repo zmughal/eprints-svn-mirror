@@ -1,0 +1,39 @@
+=head1 Installation
+
+unpack the eprints tar.gz file, and run the install-eprints.pl script, answer the questions it asks.
+
+edit your apache.conf in the way described by install-eprints.pl.
+
+
+=head1 Creating an archive
+
+Make sure MySQL is actually running.
+
+Change to  your eprints user (probably "eprints").
+
+cd to the eprints directory (/opt/eprints2 by default) and run bin/configure_archive, answer the questions it asks.
+
+Run
+
+ bin/generate_dtd archiveid
+ bin/create_tables archiveid
+ bin/generate_static archiveid
+ bin/create_user archiveid userid email admin password
+
+Where userid, email and password are your choice. you can create multiple users if you like. 'user' instead of 'staff' will give a user less privs.
+
+Then restart your webserver: 
+
+ /etc/rc.d/init.d/httpd stop
+ /etc/rc.d/init.d/httpd start
+
+Don't just use 'reload' or 'restart' as these do not force mod_perl to reload it's modules.
+
+Now connect via the web and see if it works...
+
+The submission form does not actually work fully yet, if you want some initial data to play with, get the harris.xml file from the Eprints "tools" directory ( http://www.eprints.org/files/tools/ ) and run:
+
+ import_eprints archiveid harris.xml
+
+Which will spew tons of debug info, but should actually put some (fairly ropey) data into the archive.
+

@@ -1,0 +1,77 @@
+
+=head1 A Brief History of EPrints
+
+The EPrints project was created by Professor Stephen Harnad.
+
+=over 8
+
+=item B<April 2000>
+
+Rob Tansley begins work on EPrints
+
+=item B<June 2000>
+
+EPrints beta-1 released
+
+Cogprints archive created. http://cogprints.soton.ac.uk/
+
+=item B<September 2000>
+
+EPrints beta-2 released
+
+=item B<November 2000>
+
+EPrints 1.0 released, contains OAI 0.2 support
+
+Rob Tansley leaves the EPrints Project
+
+Christopher Gutteridge joins the EPrints Project
+
+=item B<January 2001>
+
+EPrints 1.1 released, contains OAI 1.0 support
+
+Work begins on EPrints 2
+
+=item B<June 2001>
+
+Mike Jewell joins EPrints, working primarily on installer software
+
+=item B<August 2001>
+
+EPrints 2 Alpha-1 (Anchovy) released.
+
+=item B<Jan 2002>
+
+EPrints 2 Alpha-2 (Pepperoni) released.
+
+=back
+
+=head1 The Road Ahead
+
+At the time of writing the current plan of attack is as follows.
+
+=over 8
+
+=item B<Minor Versions>
+
+We anticipate a few minor releases to fix any major problems in the milestone releases. These will be versioned as eprints-2-alpha-2.1 etc.
+
+=item B<EPrints 2 Beta-1 (Olive)>
+
+Core system in beta - ie. metadata and filesystem. Still missing many scripts and auxilery features. A brave admin should be able to deploy this version and keep updating it.
+
+=item B<EPrints 2 Beta-2 (Tomato)>
+
+Whole system in beta - ie. It should all work now, but still has some unfixed bugs. No (very few) new features will be added after this point. Should be safe to use, but the code still will change a little between here and the actual official release.
+
+=item B<EPrints 2.0 (Double Cheese)>
+
+Whole system works. All documentation written. Phrases files have been translated into several languages. Several default setups available.
+
+=back
+
+=head2 Why do the milestones all have silly names?
+
+We wanted to give each stage a name, it makes it easier to talk about. We didn't want a logical order as we are likely to invent sub-milestones between them. We just picked a set of words we liked, and we like pizza.
+

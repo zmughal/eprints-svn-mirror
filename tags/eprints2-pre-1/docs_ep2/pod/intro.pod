@@ -1,0 +1,22 @@
+
+=head1 What is EPrints 2?
+
+EPrints is generic archive software under development by the University of Southampton. It is intended to create a highly configurable web-based archive.
+
+EPrints primary goal is to be set up as an open archive for research papers, and the default configuration reflects this, but it could be easily used for other things such as images, research data, audio archives - anything that can be stored digitally, but you'll have make more changes to the configuration.
+
+=head1 Should I be installing EPrints 2, how much effort will it take? 
+
+This is version 2.0, it is considered ready for use. There may still be some issues and even bugs, but not too many or too major. 
+
+Setting up an archive is not a trivial task. The biggest probelm is actually deciding what you need. I would suggest setting up a demonstration version very close to the default configuration and having the manager/committe who decide on what is needed have a quick play with it and comment what should be added or removed. 
+
+Previous experience has been that the initial set-up and configuration is quite a bit of work if you have complex requirements. It should be very easy if the only part of the default configuration you want to change is the colour!
+
+We currently expect to release a few later versions. There are some features we still want to add such as subscriptions (sometimes called alerts) which notify people when new things are added to the archive.
+
+=head1 What will it run on?
+
+The has been developed under RedHat Linux 7.1, it has been designed to work with any UNIX system, although we have not fomally tested it on other systems yet. Feel free to report problems and successes too! The priority for getting it working is: RedHat Linux, Other Linux, Solaris, Other UNIX. It will never run under Windows, the design is too closely entwined with the UNIX filesystem.
+
+

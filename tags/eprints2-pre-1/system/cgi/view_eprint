@@ -1,0 +1,127 @@
+######################################################################
+#
+#  View Record
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+# utterly broken.
+
+use EPrints::Database;
+use EPrints::MetaField;
+use EPrints::OpenArchives;
+use EPrints::Session;
+
+use strict;
+
+my $session = new EPrints::Session();
+Apache::exit( 0 ) unless( defined $session );
+
+# First work out what the ID is
+my $eprintid_in = $session->{render}->param( "eprintid" );
+
+my $openarchives_id_stem = $session->get_archive()->get_conf( "oai_archive_id" ) .
+	$EPrints::OpenArchives::id_separator .
+	$session->get_archive()->get_conf( "eprintid_stem" );
+
+
+my $idcode_match = "\\d" x $EPrints::EPrint::id_code_digits; #cjg id_code_digits no longer exists
+my $eprintid = undef;
+
+if( defined $eprintid_in )
+{
+	# Work out what form it's in
+	if( $eprintid_in =~ /^[Oo][Aa][Ii]:$openarchives_id_stem($idcode_match)$/ )
+	{
+		# Old style full open archives ID
+		$eprintid = $session->get_archive()->get_conf( "eprintid_stem" ) . $1;
+	}
+	elsif( $eprintid_in =~ /^$openarchives_id_stem($idcode_match)$/ )
+	{
+		# Old style full open archives ID
+		$eprintid = $session->get_archive()->get_conf( "eprintid_stem" ) . $1;
+	}
+	elsif( $eprintid_in =~
+		/^($session->get_archive()->get_conf( "eprintid_stem" )$idcode_match)$/ )
+	{
+		# Standard EPrint ID code
+		$eprintid = $1;
+	}
+	elsif( $eprintid_in =~ /^\d+$/ )
+	{
+		# Just some digits. Prepend the site stem and any necessary zeroes.
+		$eprintid = $session->get_archive()->get_conf( "eprintid_stem" ) .
+			"0" x ( $EPrints::EPrint::id_code_digits - length $eprintid_in ) . #cjg id_code_digits no longer exists
+			$eprintid_in;
+	}
+}
+
+
+# See if we can make an EPrint object (and hence if the ID is valid)
+
+my $eprint = undef;
+my $deletion_record = undef;
+
+if( defined $eprintid )
+{
+	my $eprint = new EPrints::EPrint( $session,
+	                                  EPrints::Database::table_name( "archive" ),
+	                                  $eprintid );
+	
+	if( defined $eprint )
+	{
+		# ID is OK, so we can redirect to the abstract page
+		$session->{render}->redirect( $eprint->get_url() );
+	}
+	else
+	{
+		# cjg! sort out deletion
+		# See if it's a deleted eprint ID
+		$deletion_record = new EPrints::Deletion( $session, $eprintid );
+		if( defined $deletion_record )
+		{
+			print $session->{render}->render_deleted_eprint( $deletion_record );
+		}
+	}
+}
+
+
+unless( defined $eprint || defined $deletion_record )
+{
+	# We don't have an EPrint object, so the ID code is valid, or we didn't get
+	# one
+	$session->{render}->clear();
+	print $session->{render}->start_html( 
+		$session->{lang}->phrase( "cgi/view_eprint:code_title" ) );
+	
+	if( defined $eprintid_in && $eprintid_in ne "" )
+	{
+		# Write an error message if we got an invalid ID code in
+		print "<P ALIGN=\"CENTER\"><STRONG>";
+		print $session->{lang}->phrase( "cgi/view_eprint:invalid_code" );
+		print "</STRONG></P>\n";
+	}
+	
+	print "<P ALIGN=\"CENTER\">";
+	print $session->{lang}->phrase( "cgi/view_eprint:enter_code" );
+	print "</P>\n";
+	
+	my $id_field = new EPrints::MetaField( "eprintid:text::EPrint ID Code::::" );
+	
+	$session->{render}->render_input_form( 
+		fields=>[ $id_field ],
+		show_names=>1,
+		buttons=> [ $session->{lang}->phrase( "cgi/view_eprint:view_eprint" ) ] );
+#cjg BUTTONS IS WRONG!
+
+	print $session->{render}->end_html();
+}
+
+$session->terminate();
