@@ -77,9 +77,19 @@ Thu Feb 22 02:30:33 GMT 2001
 * Started rewrite of SQL code in SearchExpression - basic caching
 nearly works.
 
-
 ...
 
 * Added index to commentary and replaces fields - otherwise 
 generate_abstracts is damn slow.
 
+*** SOME CHANGES MISSING ***
+
+* Added free text searching
+* temp tables searches now work
+* more i18l code.
+
+Wed Mar 21 22:33:59 GMT 2001
+* Added mapping for diaretics to standard for freetext indexes
+* Made Metainfo and SiteInfo into objects, added ConfigLoader to
+ load in the relevant site info. Not everything uses $session->{site}
+ yet but it's getting there. 

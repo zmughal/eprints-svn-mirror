@@ -106,24 +106,11 @@ $EPrintSite::SiteInfo::server_subject_view_stem = "$EPrintSite::SiteInfo::server
 $EPrintSite::SiteInfo::local_perl_root = "$EPrintSite::SiteInfo::local_root/cgi";
 
 # Paths of configuration files
-$EPrintSite::SiteInfo::user_meta_config = "$EPrintSite::SiteInfo::local_root/cfg/metadata.user";
 $EPrintSite::SiteInfo::template_user_intro = "$EPrintSite::SiteInfo::local_root/cfg/template.user-intro";
 $EPrintSite::SiteInfo::template_fail_reply = "$EPrintSite::SiteInfo::local_root/cfg/template.fail-reply";
 $EPrintSite::SiteInfo::template_fail_user = "$EPrintSite::SiteInfo::local_root/cfg/template.fail-user";
 $EPrintSite::SiteInfo::template_change_email = "$EPrintSite::SiteInfo::local_root/cfg/template.change-email";
-$EPrintSite::SiteInfo::site_eprint_fields = "$EPrintSite::SiteInfo::local_root/cfg/metadata.eprint-fields";
-$EPrintSite::SiteInfo::site_eprint_types = "$EPrintSite::SiteInfo::local_root/cfg/metadata.eprint-types";
 $EPrintSite::SiteInfo::subject_config = "$EPrintSite::SiteInfo::local_root/cfg/subjects";
-
-$EPrintSite::SiteInfo::default_language = "english";
-$EPrintSite::SiteInfo::log_language = "english";
-%EPrintSite::SiteInfo::languages = (
- "dummy"=>"$EPrintSite::SiteInfo::local_root/cfg/intl/dummy",
- "french"=>"$EPrintSite::SiteInfo::local_root/cfg/intl/french",
- "us"=>"$EPrintSite::SiteInfo::local_root/cfg/intl/us",
- "english"=>"$EPrintSite::SiteInfo::local_root/cfg/intl/english" 
-
-);
 
 ######################################################################
 #
@@ -616,6 +603,42 @@ $EPrintSite::SiteInfo::freetext_min_word_size = 3;
 %EPrintSite::SiteInfo::freetext_always_words = (
 		"ok"=>1 );
 
-1; # For use/require success
+# This map is used to convert ASCII characters over
+# 127 to characters below 127, in the word index.
+# This means that the word Fête is indexed as 'fete' and
+# "fete" or "fête" will match it.
+# There's no reason mappings have to be a single character.
+
+%EPrintSite::SiteInfo::freetext_char_mapping = (
+"¡"=>"!",	"¢"=>"c",	"£"=>"L",	"¤"=>"o",	
+"¥"=>"Y",	"¦"=>"|",	"§"=>"S",	"¨"=>"\"",	
+"©"=>"(c)",	"ª"=>"a",	"«"=>"<<",	"¬"=>"-",	
+"­"=>"-",	"®"=>"(R)",	"¯"=>"-",	"°"=>"o",	
+"±"=>"+-",	"²"=>"2",	"³"=>"3",	"´"=>"'",	
+"µ"=>"u",	"¶"=>"q",	"·"=>".",	"¸"=>",",	
+"¹"=>"1",	"º"=>"o",	"»"=>">>",	"¼"=>"1/4",	
+"½"=>"1/2",	"¾"=>"3/4",	"¿"=>"?",	"À"=>"A",	
+"Á"=>"A",	"Â"=>"A",	"Ã"=>"A",	"Ä"=>"A",	
+"Å"=>"A",	"Æ"=>"AE",	"Ç"=>"C",	"È"=>"E",	
+"É"=>"E",	"Ê"=>"E",	"Ë"=>"E",	"Ì"=>"I",	
+"Í"=>"I",	"Î"=>"I",	"Ï"=>"I",	"Ð"=>"D",	
+"Ñ"=>"N",	"Ò"=>"O",	"Ó"=>"O",	"Ô"=>"O",	
+"Õ"=>"O",	"Ö"=>"O",	"×"=>"x",	"Ø"=>"O",	
+"Ù"=>"U",	"Ú"=>"U",	"Û"=>"U",	"Ü"=>"U",	
+"Ý"=>"Y",	"Þ"=>"b",	"ß"=>"B",	"à"=>"a",	
+"á"=>"a",	"â"=>"a",	"ã"=>"a",	"ä"=>"a",	
+"å"=>"a",	"æ"=>"ae",	"ç"=>"c",	"è"=>"e",	
+"é"=>"e",	"ê"=>"e",	"ë"=>"e",	"ì"=>"i",	
+"í"=>"i",	"î"=>"i",	"ï"=>"i",	"ð"=>"d",	
+"ñ"=>"n",	"ò"=>"o",	"ó"=>"o",	"ô"=>"o",	
+"õ"=>"o",	"ö"=>"o",	"÷"=>"/",	"ø"=>"o",	
+"ù"=>"u",	"ú"=>"u",	"û"=>"u",	"ü"=>"u",	
+"ý"=>"y",	"þ"=>"B",	"ÿ"=>"y" );
+
+$EPrintSite::SiteInfo::freetext_mapped_chars = 
+	join( "", keys %EPrintSite::SiteInfo::freetext_char_mapping );
+
+
+1 # For use/require success
 
 
