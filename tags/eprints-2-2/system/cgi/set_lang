@@ -1,0 +1,77 @@
+######################################################################
+#
+#  EPrints Advanced Search Form
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+#cjg Not lang'd
+
+use EPrints::Session;
+use EPrints::Config;
+
+use strict;
+
+my $session = new EPrints::Session;
+Apache::exit( 0 ) unless( defined $session );
+
+
+my $newlang = $session->param( "langid" );
+
+my @langids = @{$session->get_archive()->get_conf( "languages" )};
+
+if( !defined $newlang )
+{
+	my $page = $session->make_doc_fragment;
+	$page->appendChild( $session->html_phrase( "cgi/set_lang:blurb" ) );
+	my $langid;
+	foreach $langid ( @langids )
+	{	
+		my $p = $session->make_element( "p" );
+		my $a = $session->render_link( "set_lang?langid=$langid" );
+		$a->appendChild( $session->make_text( 
+			EPrints::Config::lang_title($langid) ) );
+		$p->appendChild( $a );
+		$page->appendChild( $p );
+	}
+	$session->build_page( $session->html_phrase( "cgi/set_lang:title" ), $page, "set_lang_choice" );
+        $session->send_page();
+}
+elsif( grep(/^$newlang$/,@langids) )
+{
+	my $page = $session->make_doc_fragment;
+	$session->change_lang( $newlang );
+	$page->appendChild( $session->html_phrase( 
+			"cgi/set_lang:changed_to",
+			lang=>$session->make_text( EPrints::Config::lang_title($newlang) ) ) );
+
+	$page->appendChild( $session->html_phrase( 
+			"cgi/set_lang:default_lang",
+			lang=>$session->make_text( EPrints::Config::lang_title( 
+				$session->get_archive()->get_conf( "defaultlanguage" ) ) ) ) );
+	$page->appendChild( $session->html_phrase( "general:frontpage_link" ) );
+
+	$session->build_page( $session->html_phrase( "cgi/set_lang:lang_changed" ), $page, "setlang_done" );
+        $session->send_page( lang=>$newlang );
+}
+else 
+{
+	my $page = $session->make_doc_fragment;
+	$page->appendChild( $session->html_phrase( "cgi/set_lang:unknown_lang",
+		id=>$session->make_text( $newlang ) ) );
+	$page->appendChild( $session->html_phrase( "general:frontpage_link" ) );
+
+	$session->build_page( $session->html_phrase( "cgi/set_lang:failed" ), $page, "setlang_failed" );
+        $session->send_page();
+}
+
+$session->terminate();
+
+
