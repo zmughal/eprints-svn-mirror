@@ -1,0 +1,37 @@
+######################################################################
+#
+#  EPrints Advanced Search Form
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints::Session;
+use EPrints::EPrint;
+use EPrints::SearchExpression;
+
+use strict;
+
+my $session = new EPrints::Session;
+Apache::exit( 0 ) unless( defined $session );
+
+my $searchexp = new EPrints::SearchExpression(
+	session => $session,
+	use_cache => 1,
+	dataset => $session->get_archive()->get_dataset( "archive" ),
+	fieldnames=>$session->get_archive()->get_conf( "advanced_search_fields" ) );
+
+my $preamble = $session->html_phrase( "cgi/advsearch:preamble" );
+
+$searchexp->process_webpage(
+	$session->html_phrase( "cgi/advsearch:adv_search" ),
+	$preamble );
+
+$session->terminate; 
+

@@ -1,0 +1,194 @@
+######################################################################
+#
+#  EPrints Staff Status Page
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints::Session;
+use EPrints::Database;
+use EPrints::EPrint;
+use EPrints::User;
+
+use strict;
+
+my $session = new EPrints::Session;
+
+my $rows;
+
+# Number of users in each group
+my $total_users = $session->get_archive()->get_dataset( "user" )->count( $session );
+
+my( %num_users, $usertypes, $usertype, $userds );
+$userds = $session->get_archive()->get_dataset( "user" );
+$usertypes = $userds->get_types();
+foreach $usertype ( @{$usertypes} )
+{
+	my $searchexp = new EPrints::SearchExpression(
+		session => $session,
+		dataset => $userds );
+
+	$searchexp->add_field(
+		$userds->get_field( "usertype" ),
+		$usertype );
+
+	$searchexp->perform_search();
+	$num_users{ $usertype } = $searchexp->count();
+	$searchexp->dispose();
+}
+
+my %num_eprints = ();
+my @esets = ( "archive", "buffer", "inbox", "deletion" );
+
+foreach( @esets )
+{
+	# Number of submissions in dataset
+	$num_eprints{$_} = $session->get_archive()->get_dataset( $_ )->count( $session );
+}
+
+# Number of subscriptions
+# my $num_subs = $session->get_archive()->get_dataset( "subscription" )->count( $session );
+
+my $db_status = ( $total_users > 0 ? "OK" : "DOWN" );
+
+
+my( $html , $table , $p , $span );
+
+# Write the results to a table
+
+$html = $session->make_doc_fragment;
+
+$table = $session->make_element( "table", border=>"0" );
+$html->appendChild( $table );
+
+$table->appendChild( render_row( 
+		$session,
+		$session->html_phrase( "cgi/users/status:release" ),
+		$session->make_text( 
+			EPrints::Config::get( "version" ) ) ) );
+
+$table->appendChild(
+	render_row( 
+		$session,
+		$session->html_phrase( "cgi/users/status:database" ),
+		$session->make_text( $db_status ) ) );
+
+$table->appendChild( render_empty_row( $session ) );
+
+foreach $usertype ( keys %num_users )
+{
+	$table->appendChild(
+		render_row( 
+			$session,
+			$session->make_text(
+				$userds->get_type_name( $session, $usertype )), 
+			$session->make_text( $num_users{$usertype} ) ) );
+}
+$table->appendChild(
+	render_row( 
+		$session,
+		$session->html_phrase( "cgi/users/status:users" ),
+		$session->make_text( $total_users ) ) );
+
+$table->appendChild( render_empty_row( $session ) );
+
+foreach( @esets )
+{
+	$table->appendChild(
+		render_row( 
+			$session,
+			$session->html_phrase( "cgi/users/status:set_".$_ ),
+			$session->make_text( $num_eprints{$_} ) ) );
+}
+
+$table->appendChild( render_empty_row( $session ) );
+
+unless( $EPrints::SystemSettings::conf->{disable_df} )
+{
+	my $best_size = 0;
+
+	my @dirs = $session->get_archive()->get_store_dirs();
+	my $dir;
+	foreach $dir ( @dirs )
+	{
+		my $size = $session->get_archive()->get_store_dir_size( $dir );
+		$table->appendChild(
+			render_row( 
+				$session,
+				$session->html_phrase( 
+					"cgi/users/status:diskfree",
+					dir=>$session->make_text( $dir ) ),
+				$session->html_phrase( 
+					"cgi/users/status:mbfree",
+					mb=>$session->make_text( 
+						int($size/1024) ) ) ) );
+	
+		$best_size = $size if( $size > $best_size );
+	}
+	
+	if( $best_size < $session->get_archive()->get_conf( 
+					"diskspace_error_threshold" ) )
+	{
+		$p = $session->make_element( "p" );
+		$html->appendChild( $p );
+		$p->appendChild( 
+			$session->html_phrase( 
+				"cgi/users/status:out_of_space" ) );
+	}
+	elsif( $best_size < $session->get_archive()->get_conf( 
+						"diskspace_warn_threshold" ) )
+	{
+		$p = $session->make_element( "p" );
+		$html->appendChild( $p );
+		$p->appendChild( 
+			$session->html_phrase( 
+				"cgi/users/status:nearly_out_of_space" ) );
+	}
+}
+
+$session->build_page( 
+	$session->html_phrase( "cgi/users/status:title" ),
+	$html,
+	"status" );
+
+$session->send_page(); 
+
+$session->terminate();
+
+
+
+
+sub render_empty_row
+{
+	my( $session ) = @_;
+
+	return render_row( 
+		$session,
+		$session->make_text( "" ), 
+		$session->make_text( "" ) );
+}
+	
+	
+# this cjg should probably by styled.
+sub render_row
+{
+	my( $session, $key, $val ) = @_;
+	
+	my( $tr, $td );
+	$tr = $session->make_element( "tr" );
+	$td = $session->make_element( "td" );
+	$tr->appendChild( $td );
+	$td->appendChild( $key );
+	$td = $session->make_element( "td" );
+	$tr->appendChild( $td );
+	$td->appendChild( $val );
+
+	return $tr;
+}

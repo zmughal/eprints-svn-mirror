@@ -1,0 +1,271 @@
+This is the rough and ready list of stuff that needs doing on
+eprints 2. It's really for my benefit, I include it here in
+case it might be helpful.
+
+Subscriptions/subject-editors
+
++	Subject-editors (editors can only edit within certain subjects/search)
+
++	Alerts for editors about things they can edit (flag in User fields?)
+
+-	Subscriptions - importing from eprints v1.
+
++	Option: Mail empty subscriptions - yes/no.
+
+Metadata Fields
+
++	Field property: freetext (or not-freetext) to stop indexing) - will 
+	disable non-ex searching. (?)
+
++	field property to stop SQL indexing. - will disable EX searching
+
++	Field Property: 'id required' - If main bit is set then ID *must* 
+	be set. Otherwise lax.
+
++ 	Make Hide Lineage/Honourific a field property.
+
++	Add XHTML field renderer with list of legal tags.
+
+-	Add a no_clone property to flag fields which should not be copied
+	when a record is cloned.
+
+
+XML, Bibtex and Misc formats in & out
+
+-	Some kind of BibTeX support (fill in metadata form from bibtex) 
+	- library function plus cgi + bin tools? 
+
++	Some kind of RIS format import (similar to bibtex). 
+
+- 	Bibtex import/export
+
++	XML Importer
+
+OAI
+
+-	Extra sets in OAI: By ID field, or by configurable serialised search. 
+	Even "subject" should be configured. so "subject:blgy:biophys" 
+	or "username_id:cjg" or "stuffjackwants" which is a search of 
+	it's own. Searches can of course be modified with from and to 
+	dates from OAI.
+
+Database
+
+-	Turn docid into an int (no minor feat)
+
++ 	check Database.pm for any sql without escaping. and SearchExpression.pm
+ 	and SearchField.pm 
+
+
+Browse Views
+
++ 	Time stamp views
+
+Searches
+
+-	Don't index words in inbox/buffer? [maybe/maybe not]
+
++	Reindex via script rather than on the fly?
+
+-	Add search-by-id
+
+-	Show all items in a subject view count, not just those in the
+	current subject.
+
+- 	max time for caches eg. 30 for latest?
+
+-	Set default values for searches
+
+-	Improve name search syntax (?)
+
++	Munge umlauts etc when searching names.
+
+-	Phrase searching
+
+-	Improved steming.
+
+-	Add "does record match search" function.
+
+-	Add a get_problems method to searchexp which returns a list
+	of problems. This should run by default when verifying "search"
+	type fields?
+
+-	Create buffer uses VARCHAR for a key, not.. er... INT where possible.
+	 eg. for subject and document
+
+Installer / Package Builder
+
+-	Make a simple version of file upload for archives which only want one
+         (PDF) document with no security etc.
+
+
+Submission Page
+
+Other Stuff
+
++	Remove gif's
+
+-	CSS searchfield input.
+
++	Option for "subjects" to not appear with heirarchy when presented
+	in input forms.
+
+*	Make "Submit Later" option on submit form final page.
+
+*	Make EPrint->new_from_data work the same as document, eprint etc.
+
+-	Turn Multiple input fields into <ol>'s. maybe?
+
+-	Commentary summary page (Psycoloquy style)
+
++	Rename "create_foo" on DataObjs onto just "create".
+
++	Stop refering directly to System::Settings - allow archive specific
+	tweaks.
+
+-	Remove all #cjg comments which denote issues.
+
++	cmp methods : is they still needed?
+
++	Make all needed get()'s map it instead so ready for that 
+	1,000,000 papers.
+
+- 	List of editors?
+
+-	langid's -> validate they is correct (in multilang)
+
++	Sort subject input fields
+
++	No new eprints when disk fullish
+
++	Bad Things(tm) will happen if a session has a langid which is not a 
+	supported langid - can this happen?
+
+* 	Add option to supress empty subjects in browse views.
+
+- 	robots.txt file
+
+- 	XML GDOME readyness
+
++ 	Lose all die statements
+
++ 	Check Referer on LatexCache.?
+
+*	testing to see if "dom" is set in generate_views seems kinda pointless.
+
+? 	setlang - show all langs, flag supported.
+
+- 	Way to reload config without offlining server.
+
+- 	Debugging helpers - make session and searchexp notice if they are 
+	DESTROY'd without being terminate/disposed.
+
+-	PDF Mollycoddler ( Serve PDF in a special way which avoids certain 
+	bugs in the plugin )
+
+-	CSS Mollycoddler ( Serve an empty CSS if a 404 is encountered when
+	looking for a .css file - to help out NS4.)
+
+-	Make some eprint types require different/no document types, eg. 
+	books.
+
+DOCUMENTATION ============================================================
+
+
+FORMALLY COMMENT CODE
+-	Archive.pm
+-	Auth.pm
+-	Config.pm
+-	DataObj.pm
+-	DataSet.pm
+-	Database.pm
+-	Document.pm
+-	EPrint.pm
+-	ImportXML.pm
+-	Language.pm
+-	Latex.pm
+*	MetaField.pm
+-	OpenArchives.pm
+*	RequestWrapper.pm
+*	SearchExpression.pm
+*	SearchField.pm
+*	Session.pm
+*	Subject.pm
+*	SubmissionForm.pm
+*	Subscription.pm
+*	SystemSettings.pm
+*	User.pm
+*	UserForm.pm
+*	UserPage.pm
+*	Utils.pm
+*	VLit.pm
+
+HOW-TOS
+-	produce DOM.
+-	add a type
+-	remove a type
+-	add an OAI format
+-	add a usertype
+-	make latexy magic happen
+-	adding a document type
+-	adding a search on another page
+
+- 	update views changes (citation no longer forces layout->none)
+
+
+WISHLIST =================================================================
+
+-	Paged Metadata in submission form.
+-	Content Negotiation with Browser
+-	Alternate config files for simple english only archives.
+-	Multiple Initial Configurations (eg Pre-print Archive, Institutional 
+	Archive etc, data archive)
+-	MathML support
+-	Peer Review
+-	Mirroring
+-	Citation Scanning
+-	"People who read this eprint also read..."
+-	OpenURL support (?)
+-	Probity (see www.probity.org for more info)
+-	CD-ROM publisher - create ISO of an archive.
+-	CD-ROM distribution of software.
+
+DONE ====================================================================
+# remove => => from all bins (man line)
+# add --version to all bins. 
+- 	Option to make views ordered/unordered lists?
+-	Stop asking for "userid" as part of EPrint->create (and set it
+	seperately)
+-	Make EPrint new have $dataset as the last value so it cat act
+	like other Dataobj new methods.
+-	no_export property to indicate the field should not be exported
+	as XML. (eg. for subject ancestors) [ actually called export_as_xml ]
+-	Sort out message at top of search results to be a phrase.
+-	Subscriptions - editing
+-	Subscriptions - sending
+-	Subscriptions - not correctly ordered!
+-       OAI2.0 support
+-	Make subscriptions have "order".
+-	SearchExpression "describer" to print search expression
+	in a human readable manner. Use this on search results page.
+	Possibly with "ignored words"
+-	Add optional param prefix to searchexp, searchfield - from and render
+	form.
+*	add "pageid"'s to all pages.
+*	Make EPrint commit regen abstract page if in main archive/deletion?
+	- done but only when edit by the cgi/staff/editeprint page.
++	Ordervalues for sets & subjects being on their NAME not value? 
+*	Turn succeeds, replacedby & commentary into "int" rather than "text"
+	[done in pm but needs to be done by "upgrade"]
+*	Make "stages" in sub form over-ridable.
+** 	Do not put SystemSettings in the distribution!
++ 	Join GNU.
+
+
+
+
+
+
+
+
+
