@@ -206,7 +206,7 @@ if( !defined $systemsettings->{"enable_gdome"} )
 	$systemsettings->{"enable_gdome"} = 0;
 }
 
-if( defined $c{"apache"} )
+if( defined $c{"apache"} && $c{"apache"} ne "" )
 {
 	$systemsettings->{"apache"} = $c{"apache"};
 }
