@@ -4,6 +4,18 @@ see the blow by blow account of every single change see the file called
 CHANGELOG.
 ======================================================================
 
+EPRINTS 2.3.8                                                  2005-??-??
+-------------------------------------------------------------------------
+
+ - Clone-eprint deprecated and replaced with options "new version" and
+    "use as template".
+ - Fixed bugs in interaction with Apache 2.
+ - Improvements to coping with mysql 4.1
+ - Fixed some issues with installer
+ - Option to disable public information on users (for data protection 
+    concerns)
+ - Improvements to interface
+
 EPRINTS 2.3.7                                                  2004-11-25
 -------------------------------------------------------------------------
 
