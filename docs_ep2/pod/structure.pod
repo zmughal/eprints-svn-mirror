@@ -10,7 +10,7 @@ This is a definition of some terms used in the eprints documentation and comment
 
 An archive is a eprints archive with it's own website configuration and data. One install of the eprints software can run serveral seperate archives. Sharing code but with totally different configurations.
 
-=item B<archive>
+=item B<session>
  
  EPrints::Session
 
