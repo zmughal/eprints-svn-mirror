@@ -45,6 +45,7 @@ This module contains subroutines which check the metadata for problems.
 =item B<auto-apache.conf>
 
 This file is generated and overwritten by B<generate_apacheconf>. Do not edit it directly.  See the documentation of B<generate_apacheconf> for more information.
+
 =item B<citations-I<languageid>.xml>
 
 One of these files for each I<languageid> supported by this archive.
@@ -413,7 +414,201 @@ This allows the sinister feature which lets you log in as someone else. It still
 
 =head1 ArchiveMetadataFieldsConfig.pm
 
-cjg
+=head2 Fields Configuration
+
+Metadata is data about data. The information which we store to describe each record (eprint) in the system. Users also have metadata.
+
+This module is the configuration for the metadata. This is probably the most important part of the system. 
+
+The system automatically assigns some fields to each dataset (users, eprints, etc.) such as "type" to eprints and "username" to users. The majority of the fields are optional, and configured in this module.
+
+Fields have a number of properties. The only required properties are "name" and "type". Name is the name of the field. This is used to identify this throughout the system. The other properties depend on what type the field is.
+
+When you add a field you need to add the "human readable" version in the phrase file, this seperation allows you to change the description without changing the field itself. When you add a field named "foo" to the "eprint" metadata you should add "eprint_typename_foo" to the phrases. You may also wish to add "eprint_typehelp_foo" which is the explanation given to the user on the metadata input page.
+
+The following types of field are supported, along with their special property options.
+
+=over 8
+
+=item int
+
+Optional properties: digits
+
+This type describes a positive integer. Stored as an INT in the database.
+
+=item year
+
+This type describes a year. It works pretty much like "int" but is always 4
+digits long. Stored as an INT in the database.
+
+=item longtext
+
+Optional properties: input_rows, input_cols
+
+This type describes an unlimited length text field. Used for things like titles and abstracts. It can't be effiently searched as a single value, the system indexes the words. See "free text indexing" section.
+
+=item date
+
+This type describes a date, always expressed as yyyy-mm-dd, eg. 1969-05-23. It is stored as a DATE in the database.
+
+=item boolean
+
+Optional properties: input_style
+
+This is a simple yes/no field which is stored in the database as SET( 'TRUE','FALSE' ). It can be rendered as a menu, a check box or radio buttons. (See input_style)
+
+=item name
+
+Optional properties: input_name_cols
+
+This type is used to store names of people (eg. authors). It is split into 4 parts: honourific, given names, family name and lineage. This may seem over fussy but it avoids people putting "Reverend" in the given names or "Junior" in the family name. If you dislike this you can hide honourific and lineage (See ArchiveConfig.pm).
+
+We use "family name" rather than "last name" in the hope of avoiding international confusion (some countries list family name first, so their last name is what I would call their "christian", or "first", name.
+
+Names are stored using 4 SQL fields. The name field "supervisor" would be stored as supervisor_honourific, supervisor_given, supervisor_family, supervisor_lineage. Each is a VARCHAR(255).
+
+=item set
+
+Required properties: options
+
+Optional properties: input_rows
+
+This type is a limited set of options. The list of options must be specified. Each option must also be added to the phrase file. Option "foo" of field "bar" in the "user" dataset will have the phrase id "user_fieldopt_bar_foo".
+
+Stored in the database as a VARCHAR(255).
+
+=item text
+
+Optional properties: input_cols, maxlength
+
+This is a simple text field. It normally has a maximum length of 255 ASCII characters, less if non-ASCII characters are used as these are UTF-8 encoded.
+
+Stored in the database as a VARCHAR(255).
+
+=item secret
+
+Identical to "text" except that the input field is a starred-out password input field, and it is only ever written to the database, it can't be read back. Writing an empty value will NOT change the previous value. 
+
+=item url
+
+Identical to "text" except it is rendered and validated differently.
+
+=item email
+
+Identical to "text" except it is rendered and validated differently.
+
+=item subject
+
+Optional properties: top, showtop, showall, input_rows
+
+This is a hierarchical subject tree. At first glance it works like sets, but
+it can be searched for all items in or below a given subject. Subjects may be
+added to the live system.
+
+The subject tree starts at a subject with the id "ROOT" but a subject I<field> only offers all the items below the subject with the id "subjects". This can be changed using the "top" property, so that you can have two fields which options are different parts of the same tree. 
+
+Subjects may have more than one parent. eg. I<biophysics> can appear under both I<physics> and I<biology>, while still being the same subject.
+
+See the bin/import_subjects manpage for more information on seting up the initial subjects.
+
+You may have more than one "subject" field, eg. Subject and Department, with unrelated parts of the subject tree as their "top".
+
+A later version of eprints2 will have a feature which allows an admin user to limit an editor user to a certain subject (and things below it). So that in the above example you can declare an editor of either a Subject (capital-S) or a Department.
+
+=item pagerange
+
+A range of pages, eg 1-44. Currently not searchable.
+
+Stored in the database as a VARCHAR(255).
+
+=item datatype
+
+Required properties: datesetid
+
+Optional properties: input_rows
+
+This field works like a set, but gets its options from the types of the dataset specified. 
+
+For example, if you specified the datasetid "user" then, unless you've changed the defaults, would give the options "user","editor" and "admin" - which are the types of user specified in B<metadata-types.xml>.
+
+Options are:
+
+=over 4
+
+=item I<user>
+
+The types of user.
+
+=item I<document>
+
+The types of document.
+
+=item I<eprint>
+
+The types of eprint.
+
+=item I<security>
+
+Security levels of a document (probably not very useful).
+
+=item I<language>
+
+All the languages specified in B<languages.xml>
+
+=item I<arclanguage>
+
+The languages supported by this archive. Configured in ArchiveConfig.pm
+
+=back
+
+Stored in the database as a VARCHAR(255).
+
+=item langid
+
+This is used internally, it contains an ISO language ID. You probably don't want to use it. Stored as a CHAR(16).
+
+=item id
+
+This is also used internally, it contains the ID part of a field with the hasid property. Don't use it! Stored in the database as a VARCHAR(255).
+
+=back
+
+Field Properties:
+
+
+	browse_link => 1,
+	confid => -1,
+	datasetid => -1,
+	digits => 1,
+	input_rows => 1,
+	input_cols => 1,
+	input_name_cols => 1,
+	input_id_cols => 1,
+	input_add_boxes => 1,
+	input_boxes => 1,
+	input_style => 1,
+	fromform => 1,
+	toform => 1,
+	maxlength => 1,
+	hasid => 1,
+	multilang => 1,
+	multiple => 1,
+	name => -1,
+	options => -1,
+	required => 1,
+	requiredlangs => 1,
+	showall => 1,
+	showtop => 1,
+	idpart => 1,
+	mainpart => 1,
+	render_single_value => 1,
+	render_value => 1,
+	top => 1,
+	type => -1
+
+=head2 Defaults
+
+=head2 Automatics
 
 =head1 ArchiveOAIConfig.pm
 

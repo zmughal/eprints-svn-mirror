@@ -21,9 +21,9 @@
 	logo => "The EPrints Logo"
 );
 
-my $DOCTITLE = "EPrints 2 Alpha Documentation";
+my $DOCTITLE = "EPrints 2.0 Documentation";
 
-my $BASENAME = "eprints2-alpha2-docs";
+my $BASENAME = "eprints-2.0-docs";
 
 `rm -rf docs`;
 `mkdir docs`;
@@ -160,3 +160,13 @@ print INDEX <<END;
 END
 close INDEX;
 
+###############################################################################
+# POD
+
+# This just copies in the POD docs!
+
+mkdir( '../docs/pod' );
+foreach $file ( @files )
+{
+	`cp $file ../docs/pod`;
+}
