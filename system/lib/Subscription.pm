@@ -40,10 +40,10 @@ use EPrints::DataObj;
 
 use EPrints::Database;
 use EPrints::Utils;
-use EPrints::MetaField;
-use EPrints::SearchExpression;
-use EPrints::Session;
-use EPrints::User;
+#cjg use EPrints::MetaField;
+#cjg use EPrints::SearchExpression;
+#cjg use EPrints::Session;
+#cjg use EPrints::User;
 
 ### SUBS MUST BE FLAGGED AS BULK cjg
 
@@ -149,6 +149,7 @@ sub create
 		subid => $id,
 		userid => $userid,
 		frequency => 'never',
+		mailempty => "TRUE",
 		spec => ''
 	};
 
@@ -355,7 +356,6 @@ sub send_out_subscription
 			$datestamp_field,
 			$last_month."-" );
 	}
-	$searchexp->set_property( "use_oneshot_cache", 1 );
 
 	my $url = $self->{session}->get_archive->get_conf( "perl_url" ).
 		"/users/subscribe";
@@ -376,6 +376,7 @@ sub send_out_subscription
 	$searchexp->perform_search;
 	my $mempty = $self->get_value( "mailempty" );
 	$mempty = 0 unless defined $mempty;
+
 	if( $searchexp->count > 0 || $mempty eq 'TRUE' )
 	{
 		my $info = {};
@@ -389,6 +390,10 @@ sub send_out_subscription
 				search => $searchdesc,
 				matches => $info->{matches},
 				url => $self->{session}->make_text( $url ) );
+		if( $self->{session}->get_noise >= 2 )
+		{
+			print "Sending out subscription #".$self->get_id." to ".$user->get_value( "email" )."\n";
+		}
 		$user->mail( 
 			"lib/subscription:sub_subj",
 			$mail );
@@ -426,7 +431,6 @@ sub process_set
 
 	my $searchexp = EPrints::SearchExpression->new(
 		session => $session,
-		use_oneshot_cache => 1,
 		dataset => $subs_ds );
 
 	$searchexp->add_field(
@@ -437,17 +441,13 @@ sub process_set
 		my( $session, $dataset, $item, $info ) = @_;
 
 		$item->send_out_subscription;
-		if( $session->get_noise >= 2 )
-		{
-			print "Sending out subscription #".$item->get_id."\n";
-		}
 	};
 
 	$searchexp->perform_search;
 	$searchexp->map( $fn, {} );
 	$searchexp->dispose;
 
-	my $statusfile = $session->get_archive->get_conf( "config_path" ).
+	my $statusfile = $session->get_archive->get_conf( "variables_path" ).
 		"/subscription-".$frequency.".timestamp";
 
 	unless( open( TIMESTAMP, ">$statusfile" ) )
@@ -489,7 +489,7 @@ sub get_last_timestamp
 		return;
 	}
 
-	my $statusfile = $session->get_archive->get_conf( "config_path" ).
+	my $statusfile = $session->get_archive->get_conf( "variables_path" ).
 		"/subscription-".$frequency.".timestamp";
 
 	unless( open( TIMESTAMP, $statusfile ) )
