@@ -1,5 +1,3 @@
-<chapter><title>What is EPrints 2.0 (Alpha), Should I install it?
-
 
 =head1 What is EPrints 2?
 
