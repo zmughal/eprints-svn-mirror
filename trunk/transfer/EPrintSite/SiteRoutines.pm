@@ -1,2 +1,0 @@
-
-die "dont use SiteRoutines";
