@@ -476,6 +476,7 @@ sub clone
 
 	if( $new_doc->commit() )
 	{
+		$new_doc->rehash;
 		return( $new_doc );
 	}
 	else
