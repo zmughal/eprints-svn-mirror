@@ -134,7 +134,7 @@ while (!$dirokay)
 			$systemsettings{"orig_version"} = $EPrints::SystemSettings::conf->{"orig_version"};
 			my $origv = $systemsettings{"orig_version_id"};
 			my $newv = $systemsettings{"version_id"};	
-			if (defined $origv && $origv gt $newv && $origv!~/nightly/)
+			if (defined $origv && $origv gt $newv && 0 ) # buggy so not doing it! cjg
 			{
 				print <<DOWNGRADE;
 You already have a version of EPrints installed in this directory and it
