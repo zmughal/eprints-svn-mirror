@@ -59,7 +59,7 @@ sub do_license
 
 sub do_package
 {
-	my($version_tag, $package_version, $package_desc, $license_file, $package_file) = @_;
+	my($version_tag, $package_version, $package_desc, $license_file, $package_file, $type_num) = @_;
 	if (-d "package")
 	{
 		system("/bin/rm -r package")==0 or die "Couldn't remove package dir.\n";
@@ -150,49 +150,82 @@ sub do_package
 		push(@files, $item);
 	}
 	closedir(PHRSDIR);
-
-	foreach $l (@langs)
+	if ($type_num == 0)
 	{
-		$currarch = 0;
-		$currsys = 0;
-		foreach(@files)
-		{
-			if (/archive-$l-([0-9]+)/)
+		# Here we copy over the nightly language files
+		foreach $l (@langs)
+                {
+			if (-e "$originaldir/export/eprints/system/phrases/archive-$l-current")
 			{
-				if ($1>$currarch) { $currarch = $1; }
+				print "Transferring $l phrases...\n";
+				system("cp $originaldir/export/eprints/system/phrases/archive-$l-current eprints/defaultcfg/phrases-$l.xml");
 			}
-			elsif (/system-$l-([0-9]+)/)
+			if (-e "$originaldir/export/eprints/system/phrases/system-$l-current")
 			{
-				if ($1>$currsys) { $currsys = $1; }
+				print "Transferring $l system phrases...\n";
+				system("cp $originaldir/export/eprints/system/phrases/system-$l-current eprints/sys/system-phrases-$l.xml");
 			}
 		}
-		if ($l eq "en")
-		{
-			$enarch = $currarch;
-			$ensys	= $currsys;
-		}
-		print "For language $l:\n";
-		print "Newest arch: archive-$l-$currarch\n";
-		print "Newest sys: system-$l-$currsys\n";
-		if ($currsys>0)
-		{	
-			system("cp $originaldir/export/eprints/system/phrases/system-$l-$currsys eprints/sys/system-phrases-$l.xml");
-		}	
-		else
-		{
-			system("cp $originaldir/export/eprints/system/phrases/system-en-$ensys eprints/sys/system-phrases-$l.xml");
-		}
-
-		if ($currarch>0)
-		{
-			system("cp $originaldir/export/eprints/system/phrases/archive-$l-$currarch eprints/defaultcfg/phrases-$l.xml");
-		}
-		else
-		{
-			system("cp $originaldir/export/eprints/system/phrases/archive-en-$enarch eprints/defaultcfg/phrases-$l.xml");
+#		foreach $l (@langs)
+#		{
+#			$currarch = 0;
+#			$currsys = 0;
+#			foreach(@files)
+#			{
+#				if (/archive-$l-([0-9]+)/)
+#				{
+#					if ($1>$currarch) { $currarch = $1; }
+#				}
+#				elsif (/system-$l-([0-9]+)/)
+#				{
+#					if ($1>$currsys) { $currsys = $1; }
+#				}
+#			}
+#			if ($l eq "en")
+#			{
+#				$enarch = $currarch;
+#				$ensys	= $currsys;
+#			}
+#			print "For language $l:\n";
+#			print "Newest arch: archive-$l-$currarch\n";
+#			print "Newest sys: system-$l-$currsys\n";
+#			if ($currsys>0)
+#			{	
+#				system("cp $originaldir/export/eprints/system/phrases/system-$l-$currsys eprints/sys/system-phrases-$l.xml");
+#			}	
+#			else
+#			{
+#				system("cp $originaldir/export/eprints/system/phrases/system-en-$ensys eprints/sys/system-phrases-$l.xml");
+#			}
+#	
+#			if ($currarch>0)
+#			{
+#				system("cp $originaldir/export/eprints/system/phrases/archive-$l-$currarch eprints/defaultcfg/phrases-$l.xml");
+#			}
+#			else
+#			{
+#				system("cp $originaldir/export/eprints/system/phrases/archive-en-$enarch eprints/defaultcfg/phrases-$l.xml");
+#			}
+#		}
+	}
+	elsif($type_num == 1)
+	{
+		# Here we copy over the Alpha language files
+		foreach $l (@langs)
+                {
+			if (-e "$originaldir/export/eprints/system/phrases/archive-$l-1")
+			{
+				print "Transferring $l phrases...\n";
+				system("cp $originaldir/export/eprints/system/phrases/archive-$l-1 eprints/defaultcfg/phrases-$l.xml");
+			}
+			if (-e "$originaldir/export/eprints/system/phrases/system-$l-1")
+			{
+				print "Transferring $l system phrases...\n";
+				system("cp $originaldir/export/eprints/system/phrases/system-$l-1 eprints/sys/system-phrases-$l.xml");
+			}
 		}
 	}
-	system("cp $originaldir/export/eprints/system/cgi/users/.htaccess eprints/cgi/users/.htaccess");
+	# system("cp $originaldir/export/eprints/system/cgi/users/.htaccess eprints/cgi/users/.htaccess");
 	system("cp $originaldir/licenses/gpl.txt eprints/COPYING");
 	system("chmod -R g-w eprints")==0 or die("Couldn't change permissions on eprints dir.\n");
 	system("mv eprints $package_file")==0 or die("Couldn't move eprints dir to $package_file.\n");
@@ -213,12 +246,14 @@ chomp $whoami;
 $ENV{"CVSROOT"} = ":pserver:$whoami\@cvs.iam.ecs.soton.ac.uk:/home/iamcvs/CVS";
 # Get all the vars we need.
 ($type) = @ARGV;
+$ntype = -1;
 if (!defined($type) || $type eq "nightly")
 {
 	$version_tag = "HEAD";
 	$package_version = $NIGHTLY_VERSION;
 	$package_desc = $NIGHTLY_DESC;	
 	$package_file = "eprints2-nightly-$DATE";
+	$ntype = 0;
 }
 else
 {
@@ -232,6 +267,7 @@ else
 	$package_version = $MILESTONE_VERSION;
 	$package_desc = $MILESTONE_DESC_A.$codenames{$type}.$MILESTONE_DESC_B;
 	$package_file = $type;
+	$ntype = 1;
 }
 
-do_package($version_tag, $package_version, $package_desc, "licenses/gplin.txt", $package_file);
+do_package($version_tag, $package_version, $package_desc, "licenses/gplin.txt", $package_file, $ntype);
