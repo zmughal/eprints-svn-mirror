@@ -2,6 +2,12 @@
 
 Generally speaking when upgrading EPrints v2 you should unpack and install eprints to the same path as your current version. The installer will detect the existing version and upgrade it. Existing files which have been altered by you should be automatically backed up so they don't get lost. But if your hacks are important then you should probably back them up by hand before upgrading.
 
+
+
+Always stop apache before upgrading.
+
+Always make sure your system is fully backed up before upgrading.
+
 Then you should follow the specific instructions for each stage from your old version to your new version...
 
 =head1 Updating from EPrints 1
@@ -171,6 +177,46 @@ You may wish to add the following to "eprint_render", after the commentary secti
  		$session->html_phrase( "eprint_fieldname_type" ),
  		$eprint->render_value( "type"  ) ) );
 
+=item cfg/ArchiveConfig.pm (optional)
+
+In the 2.1 default configuration a user could not view their own secure documents if they were not an editor. This was silly. Fix it in sub can_user_view_document:
+
+Change the block:
+
+	if( $security eq "staffonly" )
+        {
+                # If you want to finer tune this, you could create
+                # a new priv. and use that.
+                return $user->has_priv( "editor" );
+        }
+
+to:
+
+	if( $security eq "staffonly" )
+        {
+                # If you want to finer tune this, you could create
+                # new privs and use them.
+
+                # people with priv editor can read this document...
+                if( $user->has_priv( "editor" ) )
+                {
+                        return 1;
+                }
+
+                # ...as can the user who deposited it...
+                if( $user->get_value( "userid" ) == 
+			$eprint->get_value( "userid" ) )
+                {
+                        return 1;
+                }
+
+                # ...but nobody else can
+                return 0;
+
+        }
+
+
+
 =item cfg/ArchiveRenderConfig.pm (optional)
 
 You may wish to add subscriptions to the user_render_full method so staff can see what subscriptions a user has. Just before 
@@ -232,8 +278,77 @@ And then to ArchiveConfig.pm add (near "subscription fields" )
 
 There is a tool in http://software.eprints.org/files/contrib/update_phrases/ which will assist with identifying changes made in the English version which should be applied to your translated version(s).
 
-=item Rehash Documents
+=item Rehash Documents (optional but recommended)
 
 If you want to use the "probity" feature (see elsewhere in documentation for more information) you should run the rehash_documents command to generate a hash of each document file in the system.
 
+=item Updating the website (optional)
+
+You may also wish to update the website to reflect that eprints 2.2 is OAI 2.0 compliant. Also re-running generate_static will update the version number for eprints where mentioned.
+
+=item 100 matches per page (optional)
+
+10 matches per search page was a little low. You may wish to up it to 100, which seems to work better for people.
+
+=item GDOME support
+
+If you wish to enable GDOME support (faster, better XML library) install the additional required libraries then edit the flag in SystemSettings.
+
+The additional 2 changes are required for GDOME support.
+
+In ArchiveConfig.pm in sub get_entities change
+
+        $entities{ruler} = $archive->get_ruler()->toString;
+to 
+        $entities{ruler} = EPrints::XML::to_string( $archive->get_ruler() );
+
+and in ruler.xml change the XML header to:
+
+ <?xml version="1.0" ?>
+ <!DOCTYPE ruler >
+
+=item Home grown plugins and scripts (API changes)
+
+If you've made your own scripts using the eprints modules then you should be aware of some changes to those modules:
+
+=over 4
+
+=item $metafield->get_dataset() 
+
+MetaFields no longer known what dataset they belong to
+
+=item $metafield->set_dataset()
+
+MetaFields no longer known what dataset they belong to
+
+=item $metafield->get_values( $session )
+
+Now use: $metafield->get_values( $session, $dataset )
+
+=item XML functions
+
+All the XML handling now uses EPrints::XML as an abstraction to the differences between XML::GDOME and XML::DOM. 
+
+Please use EPrints::XML::to_string( $node ) rather than $node->toString as in GDOME toString does not work as expected on DocumentFragments.
+
+=item EPrints::Config::parse_xml()
+
+Removed. Use EPrints::XML methods instead.
+
+=item $db->get_values( $field ) 
+     
+Now use: $db->get_values( $field, $dataset )
+
+=item XHTML Page generation functions changed 
+
+Should not cause any problems, but might.
+
+=item $searchfield->set_value()
+
+Removed.
+
 =back
+
+
+=back
+

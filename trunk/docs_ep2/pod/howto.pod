@@ -339,4 +339,21 @@ For other search engines; see their documentation for how to make a form to
 search only your site.
 
 
+=head1 HOW TO: Make the referencetext field link to the items referenced
+
+This should have been in the 2.2 docs but I didn't have time. Check the
+latest version of the documentation at software.eprints.org, if it's not
+there then bug me at support@eprints.org
+
+=head1 HOW TO: Make the password controled parts of the site use HTTPS
+
+This should have been in the 2.2 docs but I didn't have time. Check the
+latest version of the documentation at software.eprints.org, if it's not
+there then bug me at support@eprints.org
+
+=head1 HOW TO: Customise the way the the search results are formatted
+
+This should have been in the 2.2 docs but I didn't have time. Check the
+latest version of the documentation at software.eprints.org, if it's not
+there then bug me at support@eprints.org
 

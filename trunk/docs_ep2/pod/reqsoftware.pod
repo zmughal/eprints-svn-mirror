@@ -152,26 +152,35 @@ C<CGI>, C<Carp>, C<Cwd>, C<Data::Dumper>, C<Digest::MD5>, C<File::Basename>, C<F
 
 Since EPrints 2.2 you may use either XML::DOM or XML::GDOME. XML::GDOME is recommended as it's faster and uses much less RAM, but it does require you to install a whole lot of extra libraries and perl modules. If you are running a pilot or demonstration service then XML::DOM is fine, and you can always switch over later by installing the required tools and setting the GDOME flag in perl_lib/EPrints/SystemSettings.pm
 
-=head2 Additional Perl Modules Required for GDOME support
-
- XML-LibXML-Common
- XML-NamespaceSupport
- XML-SAX
-
-All of which are in http://www.cpan.org/modules/by-module/XML/
 
 =head2 Addional Libraries Required for GDOME support
 
  libxml2
  libxml2-devel
 
-either get the tarball from: ftp://ftp.gnome.org/pub/GNOME/sources/libxml2/2.3
+either get the tarball from: ftp://ftp.gnome.org/pub/GNOME/sources/libxml2/
 
-or the RPMs:
+or the RPMs (but we have had problems with complex RPM dependencies):
 
  http://rpmfind.net/linux/rpm2html/search.php?query=libxml2
  http://rpmfind.net/linux/rpm2html/search.php?query=libxml2-devel
 
+=head2 The GDOME Library 
+
+Obtain this from
+
+ http://gdome2.cs.unibo.it/#downloads
+
+You may either use the RPMs (gdome2 and gdome2-devel) or the tarball.
+
+=head2 Additional Perl Modules Required for GDOME support
+
+ //XML-LibXML-Common
+ //XML-NamespaceSupport
+ //XML-SAX
+ XML-GDOME
+
+All of which are in http://www.cpan.org/modules/by-module/XML/
 =head1 Other Tools
 
 =head2 File uploads
