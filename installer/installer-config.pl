@@ -1,5 +1,6 @@
 %ENVIRONMENT =
 (
+	installer_title		=> "ePrints Installer",
 	installer_version	=> "0.2",
 	# 1 to display lots of info, 0 for a more concise mode. Set with --verbose on command-line.
 	# silent takes precedence, and automagically forces verbose to 0.
@@ -60,22 +61,22 @@
 		install_method	=> "standardinstall",
 		check_method	=> "standardcheck wget"
 	},
-	{
-                name            => "xercesc",
-                min_version     => "1.5",
-		search_string	=> "xerces-c-src([0-9]+)_([0-9]+)_([0-9]+)\.tar\.gz",
-               # search_string   => "xerces-c([0-9]+)_([0-9]+)_([0-9]+)-linux\.tar\.gz",
-                long_name       => "Xerces-C",
-                description     => "Xerces-C is a validating XML parser written in a portable subset if C++. Xerces-C makes it easy to give your application the ability to read and write XML data. A shared library is provided for parsing, generating, manipulating, and validating XML documents. Xerces-C is faithful to the XML 1.0 recommendation and associated standards. Xerces-C 1.5 also provides the implementation of a subset of the Schema. Provides high performance, modularity, and scalability.",
-        },
-	{
-		name		=> "xercesp",
-		min_version	=> "1.5.0",
-		search_string	=> "XML-Xerces-([0-9]+)\.([0-9]+)\.([0-9]+)\.tar\.gz",
-		long_name	=> "Xerces-C Perl bindings",
-		description	=> "Xerces-P implements the Perl API to the Apache project's Xerces XML parser. It is implemented using the Xerces C++ API, and it provides access to most of the C++ API from Perl.",
-		check_method	=> "perlcheck XML::Xerces",
-	},
+#	{
+#                name            => "xercesc",
+#                min_version     => "1.5",
+#		search_string	=> "xerces-c-src([0-9]+)_([0-9]+)_([0-9]+)\.tar\.gz",
+#               # search_string   => "xerces-c([0-9]+)_([0-9]+)_([0-9]+)-linux\.tar\.gz",
+#                long_name       => "Xerces-C",
+#                description     => "Xerces-C is a validating XML parser written in a portable subset if C++. Xerces-C makes it easy to give your application the ability to read and write XML data. A shared library is provided for parsing, generating, manipulating, and validating XML documents. Xerces-C is faithful to the XML 1.0 recommendation and associated standards. Xerces-C 1.5 also provides the implementation of a subset of the Schema. Provides high performance, modularity, and scalability.",
+#        },
+#	{
+#		name		=> "xercesp",
+#		min_version	=> "1.5.0",
+#		search_string	=> "XML-Xerces-([0-9]+)\.([0-9]+)\.([0-9]+)\.tar\.gz",
+#		long_name	=> "Xerces-C Perl bindings",
+#		description	=> "Xerces-P implements the Perl API to the Apache project's Xerces XML parser. It is implemented using the Xerces C++ API, and it provides access to most of the C++ API from Perl.",
+#		check_method	=> "perlcheck XML::Xerces",
+#	},
 	{
 		name		=> "apache",
 		min_version	=> "1.3.14",
@@ -97,7 +98,7 @@
 		search_string	=> "mysql-([0-9]+)\.([0-9]+)\.([0-9]+)\.tar\.gz",
 		long_name	=> "MySQL",
 		description	=> "The most popular Open Source SQL-based relational database management system. It is fast, reliable, and easy to use, and has a large amount of contributed software.",
-		check_method	=> "standardcheck mysql",
+		check_method	=> "standardcheck /usr/local/mysql/bin/mysql",
 	},
 	# Perl modules
 	{
@@ -155,8 +156,44 @@
 		check_method	=> "perlcheck MIME::Base64",
 	},
 	{
+		name		=> "unicode",
+		min_version	=> "2.06",
+		search_string	=> "Unicode-String-([0-9]+)\.([0-9]+)\.tar\.gz",
+		long_name	=> "Unicode::String",
+		description	=> "Er?",
+		install_method	=> "perlinstall",
+		check_method	=> "perlcheck Unicode::String",
+	},
+	{
+		name		=> "uri",
+		min_version	=> "1.10",
+		search_string	=> "URI-([0-9]+)\.([0-9]+)\.tar\.gz",
+		long_name	=> "URI",
+		description	=> "Er?",
+		install_method	=> "perlinstall",
+		check_method	=> "perlcheck URI",
+	},
+	{
+		name		=> "xmlwriter",
+		min_version	=> "0.4",
+		search_string	=> "XML-Writer-([0-9]+)\.([0-9]+)\.tar\.gz",
+		long_name	=> "XML Writer",
+		description	=> "Writes XML :o)",
+		install_method	=> "perlinstall",
+		check_method	=> "perlcheck XML::Writer",
+	},
+	{
+		name		=> "apachedbi",
+		min_version	=> "0.87",
+		search_string	=> "ApacheDBI-([0-9]+)\.([0-9]+)\.tar\.gz",
+		long_name	=> "Apache DBI",
+		description	=> "Fill in!",
+		install_method	=> "perlinstall",
+		check_method	=> "perlcheck Apache::DBI",
+	},
+	{
 		name		=> "eprints",
-		min_version	=> "1.1.1",
+		min_version	=> "1.0",
 		search_string	=> "eprints-([0-9]+)\.([0-9]+)\.?([0-9]*)\.tar\.gz",
 		long_name	=> "ePrints",
 		description	=> "ePrints is dedicated to the freeing of the refereed research literature online through author/institution self-archiving. It complements centralised, discipline-based archiving with distributed, institution-based archiving.",
@@ -191,7 +228,7 @@ sub apache_check
 {
         my($httpd) = "";
 
-        $httpd = `/usr/local/apache/bin/httpd -v 2>&1`;
+        $httpd = `/usr/local/apache/bin/httpd -v 2>&1` || return 0;
         if ($httpd =~ /(\d+)\.(\d+)\.?(\d*)/)
         {
                 return "$1.$2.$3";
@@ -241,20 +278,79 @@ sub xercesp_install
 
 sub apache_install
 {
+	my($package) = @_;
+        $currdir = getcwd();
+        chdir decompress($package->{archive});
+	print "Configuring	...";
+	`./configure --enable-module=rewrite --enable-module=auth`;
+	print "	Done.\n";
+	print "Making		...";
+	`make 2>&1 1>/dev/null`;
+	print "	Done.\n";
+	`make install`;
+	chdir $currdir;
 	return 1;
 }
 
 sub modperl_install
 {
+	my($package) = @_;
+ 	$currdir = getcwd();
+        chdir decompress($package->{archive});
+        print "Configuring	...";
+	`echo "EVERYTHING=1 DO_HTTPD=1" > makepl_args.mod_perl`;
+	`perl Makefile.PL`;
+	print "	Done.\n";
+	print "Making		...";
+	`make 2>&1 1>/dev/null`;
+	print "	Done.\n";
+	`make install`;
+	chdir $currdir;
 	return 1;
 }
 
 sub mysql_install
 {
+	my($package) = @_;
+	$currdir = getcwd();
+	chdir decompress($package->{archive});
+	print "Adding users	...";
+	`/usr/sbin/groupadd mysql`;
+	`/usr/sbin/useradd -g mysql mysql`;
+	print "	Done.\n";
+	print "Configuring	...";
+	`./configure --prefix=/usr/local/mysql`;
+	print "	Done.\n";
+	print "Making		...";
+	`make`;
+	print "	Done.\n";
+	print "Installing	...";
+	`make install`;
+	print "	Done.\n";
+	print "Installing DB	...";
+	`scripts/mysql_install_db`;
+	print "	Done.\n";
+	print "Settings groups	...";
+	`chown -R root /usr/local/mysql`;
+	`chown -R mysql /usr/local/mysql/var`;
+	`chgrp -R mysql /usr/local/mysql`;
+	print "	Done.\n";
+	print "Starting up	...";
+	`cp support-files/my-medium.cnf /etc/my.cnf`;
+	system("/usr/local/mysql/bin/safe_mysqld --user=mysql &");
+	print "	Done.\n";
+	chdir $currdir;
 	return 1;
 }
 
 sub eprints_install
 {
+	my($package) = @_;
+	$currdir = getcwd();
+	chdir "eprints";
+	`./configure`;
+	`make`;
+	`make install`;
+	chdir $currdir;
 	return 1;
 }

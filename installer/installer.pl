@@ -65,7 +65,6 @@ sub module_installed
 sub compare_version
 {
 	my( $a, $b ) = @_;
-
 	$a = "0" if( !defined $a || $a eq "" );
 	$b = "0" if( !defined $b || $b eq "" );
 		
@@ -195,6 +194,7 @@ format DESC_BOTTOM =
 
 	foreach (@PACKAGES)
 	{
+		if ($ENVIRONMENT{$_->{name}."_installed"} ne "0") { next; } 
 		$old = $~;
 		$~ = 'DESC';
 		if (defined $_->{install_method})
@@ -223,7 +223,8 @@ format DESC_BOTTOM =
 sub get_packs
 {
 	# Set up any installed packages.
-		
+
+	print "Detecting installed packages	...";		
 	foreach (@PACKAGES)
 	{
 		if ( defined $ENVIRONMENT{$_->{name}."_installed"} && $ENVIRONMENT{$_->{name}."_installed"} > 0 ) { $ENVIRONMENT{$_->{name}."_skip"} = 1; next; }
@@ -284,15 +285,14 @@ sub get_packs
 			}
 		}
 	}
-	
+	print "	Done.\n\n";
 	foreach $package (@PACKAGES)
 	{
 		if (defined $ENVIRONMENT{$package->{name}."_skip"}) { next; }
 		$curr_installed = $ENVIRONMENT{$package->{name}."_installed"};
-			
+		$curr_installed = "0" if (!defined $curr_installed);	
 		$ok = 0;
 		$installed_ok = 0;
-		
 		# First see if the currently installed version is okay...
 		if (compare_version( $curr_installed, $package->{min_version} )>=0)
 		{
@@ -311,7 +311,7 @@ sub get_packs
 			}
 		}
 		# Otherwise see if a valid package has been found.
-		elsif ($package->{archive} ne "")
+		elsif (defined $package->{archive} && $package->{archive} ne "")
 		{
 			print "Found a package for ".$package->{long_name}." ";
 			if (compare_version($package->{version}, $package->{min_version})>=0)
@@ -412,11 +412,11 @@ WAH
 
 sub exit_help
 {
-
+$underline = "=" x length($ENVIRONMENT{"installer_title"});
 	print <<EOH;
 
-ePrints Installer
-============
+$ENVIRONMENT{"installer_title"}
+$underline
 
 usage: ./installer.pl [arguments]
 
@@ -488,6 +488,9 @@ sub perlinstall
 	print "Making		...";
 	`make 2>&1 1>/dev/null`;
 	print "	Done.\n";
+	print "Installing	...";
+	`make install`;
+	print "	Done.\n";
 	chdir $currdir;
 
 	return 1;
@@ -501,7 +504,7 @@ sub standardinstall
 
 	my($package) = @_;
 	$currdir = getcwd();
-	chdir decompress($package->{archive});;
+	chdir decompress($package->{archive});
 	print "Configuring	...";
 	`./configure`;
 	print "	Done.\n";
@@ -509,7 +512,7 @@ sub standardinstall
 	`make`;
 	print "	Done.\n";
 	print "Installing	...";
-#	`make install`;
+	`make install`;
 	print "	Done.\n";
 	chdir $currdir;
 	return 1;
@@ -523,10 +526,10 @@ sub perlcheck
 
 sub standardcheck
 {
-	my($cmd) = @_;
+	my($cmdi) = @_;
         my($version) = "";
-        $cmd = '$cmd' || return 0;
-        $version = `$cmd -V 2>&1`;
+        $cmd = `which $cmdi 2>/dev/null` || return 0;
+        $version = `${cmdi} -V 2>/dev/null`;
         if ($version =~ /(\d+)\.(\d+)\.?(\d*)/)
         {
                 return "$1.$2.$3";
@@ -534,11 +537,13 @@ sub standardcheck
         return 0;	
 }
 
-
+my $config = "installer-".($resuming?"resume":"config").".pl";
+require $config;
 
 # Grab command-line options.
 
 $show_help 	= 0;
+$show_version	= 0;
 $resuming 	= 0;
 GetOptions(
 'verbose' 		=> \$ENVIRONMENT{verbose},
@@ -550,16 +555,15 @@ GetOptions(
 'no_root' 		=> \$ENVIRONMENT{no_root},
 'libraries=s' 		=> \$ENVIRONMENT{library_paths}, 
 'help'			=> \$show_help,
+'version'		=> \$show_version,
 ) || exit_help();
 
 if ($show_help) { exit_help() };
 
-my $config = "installer-".($resuming?"resume":"config").".pl";
-require $config;
-
 # Show a bit of version gubbins.
-$title = "ePrints Installer v".$ENVIRONMENT{"installer_version"};
+$title = $ENVIRONMENT{"installer_title"}." v".$ENVIRONMENT{"installer_version"};
 print "\n$title\n";
+exit 0 if ($show_version);
 print "=" x length($title)."\n";
 
 # Set up package details.
