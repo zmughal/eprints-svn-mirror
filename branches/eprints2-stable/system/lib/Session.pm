@@ -232,7 +232,9 @@ sub get_session_language
 		push @prefs, $cookie->value;
 	}
 
-	my $accept_language = $request->headers_in->{"Accept-Language"};
+	my $accept_language = EPrints::AnApache::header_in( 
+				$request,
+				"Accept-Language" );
 
 	if( defined $accept_language )
 	{
@@ -2234,8 +2236,11 @@ sub redirect
 	}
 
 	$self->{"request"}->status_line( "302 Moved" );
-	$self->{"request"}->header_out( "Location", $url );
-	$self->{"request"}->send_http_header;
+	EPrints::AnApache::header_out( 
+		$self->{"request"},
+		"Location",
+		$url );
+	EPrints::AnApache::send_http_header( $self->{"request"} );
 }
 
 #
@@ -2305,7 +2310,10 @@ sub send_http_header
 	}
 	$self->{request}->content_type( $opts{content_type} );
 
-	$self->{request}->header_out( "Cache-Control"=>"must-revalidate" );
+	EPrints::AnApache::header_out( 
+		$self->{"request"},
+		"Cache-Control",
+		"must-revalidate" );
 
 	#$self->{request}->header_out( "Cache-Control"=>"no-cache, must-revalidate" );
 	# $self->{request}->header_out( "Pragma"=>"no-cache" );
@@ -2320,7 +2328,8 @@ sub send_http_header
 			-domain  => $self->{archive}->get_conf("lang_cookie_domain") );
 		$cookie->bake;
 	}
-	$self->{request}->send_http_header;
+
+	EPrints::AnApache::send_http_header( $self->{request} );
 }
 
 

@@ -26,7 +26,9 @@ Apache::exit( 0 ) unless( defined $session );
 my $referer = $session->param( "fromurl" );
 if( !EPrints::Utils::is_set( $referer ) )
 {
-	$referer = $session->get_request->header_in( "Referer" );
+	$referer = EPrints::AnApache::header_in( 
+				$session->get_request,
+				'Referer' );
 }
 
 my $newlang = $session->param( "langid" );

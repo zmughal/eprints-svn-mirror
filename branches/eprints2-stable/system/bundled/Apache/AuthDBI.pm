@@ -173,7 +173,7 @@ sub authen {
     return $res if $res; # e.g. HTTP_UNAUTHORIZED
 
     # get username
-    my ($user_sent) = $r->connection->user;
+    my ($user_sent) = $r->user;
     print STDERR "$prefix user sent = >$user_sent<\n" if $Apache::AuthDBI::DEBUG > 1;
 
     # do we use shared memory for the global cache ?
@@ -425,7 +425,7 @@ sub authz {
     my ($group_result) = DECLINED;
 
     # get username
-    my ($user_sent) = $r->connection->user;
+    my ($user_sent) = $r->user;
     print STDERR "$prefix user sent = >$user_sent<\n" if $Apache::AuthDBI::DEBUG > 1 ;
 
     # here we could read the configuration, but we re-use the configuration from the authentication

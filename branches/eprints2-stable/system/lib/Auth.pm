@@ -75,7 +75,7 @@ sub authen
 
 	my($res, $passwd_sent) = $r->get_basic_auth_pw;
 
-	my ($user_sent) = $r->connection->user;
+	my ($user_sent) = $r->user;
 
 	return OK unless $r->is_initial_req; # only the first internal request
 
@@ -95,7 +95,7 @@ sub authen
 	my $area = $r->dir_config( "EPrints_Security_Area" );
 	if( $area eq "ChangeUser" )
 	{
-		my $user_sent = $r->connection->user;
+		my $user_sent = $r->user;
 		if( $r->uri !~ m#/$user_sent$# )
 		{
 			return OK;
@@ -254,7 +254,7 @@ sub authz
 		return FORBIDDEN;
 	}
 
-	my $user_sent = $r->connection->user;
+	my $user_sent = $r->user;
 	my $user = EPrints::User::user_with_username( $session, $user_sent );
 	my $document = EPrints::Document->new( $session, $docid );
 	unless( $document->can_view( $user ) )

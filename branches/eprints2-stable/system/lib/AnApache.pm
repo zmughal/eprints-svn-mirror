@@ -86,6 +86,27 @@ if( defined $av && $av eq "2" )
 				$cgi->param( $paramid ), 
 				$archive_format );	
 		}
+
+		sub send_http_header
+		{
+			my( $request ) = @_;
+	
+			# do nothing!
+		}
+
+		sub header_out
+		{
+			my( $request, $header, $value ) = @_;
+
+			$request->header_out( $header => $value );
+		}
+
+		sub header_in
+		{
+			my( $request, $header ) = @_;	
+	
+			return $request->header_in( $header );
+		}
 	';
 	
 }
@@ -128,6 +149,27 @@ else
 				$upload->fh, 
 				$upload->filename, 
 				$archive_format );	
+		}
+
+		sub send_http_header
+		{
+			my( $request ) = @_;
+	
+			$request->send_http_header;
+		}
+
+		sub header_out
+		{
+			my( $request, $header, $value ) = @_;
+
+			$request->headers_out->{$header} = $value;
+		}
+
+		sub header_in
+		{
+			my( $request, $header ) = @_;	
+	
+			return $request->headers_in->{$header};
 		}
 	';
 }

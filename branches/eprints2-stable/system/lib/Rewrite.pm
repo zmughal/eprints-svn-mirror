@@ -51,7 +51,7 @@ sub handler
 		}
 		my $url = sprintf( "%s/archive/%08d%s",$urlpath, $n, $tail );
 		$r->status_line( "302 Close but no Cigar" );
-		$r->header_out( "Location", $url );
+		EPrints::AnApache::header_out( $r, "Location", $url );
 		$r->send_http_header;
 		return DONE;
 	}

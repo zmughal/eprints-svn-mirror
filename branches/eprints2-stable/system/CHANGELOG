@@ -1864,4 +1864,12 @@ PACKAGE: 2.2.99.2
     illegal characters in.
  - import_subjects now dies with an error if a naughty subjectid
     is used.
- 
+
+2004-02-24 cjg 
+
+ - Changed all $r->connection->user to $r->user for libapreq2 
+    compatability.
+ - Added header_in header_out and send_http_headers to AnApche
+    to abstract differences between v1 and v2 API.
+ - Used new AnApache functions to replace current calls throughout.
+
