@@ -16,6 +16,7 @@ my %codenames = (
 	"eprints2-2-0"   => "olive",
 	"eprints-2-0-1pre1"   => "mangogoo",
 	"eprints2-0-1"   => "tuna",
+	"eprints2-1-pre-1"   => "onionring",
 	"eprints2-1"   => "pineapple"
 );
 
@@ -24,6 +25,7 @@ my %ids = (
 	"eprints2-2-0"     => "2.0",
 	"eprints-2-0-1pre1"     => "2.0.1.pre-1",
 	"eprints2-0-1"     => "2.0.1",
+	"eprints2-1-pre-1"     => "2.1",
 	"eprints2-1"     => "2.1"
 );
 
@@ -59,8 +61,8 @@ else
 		exit;
 	}
 	$version_tag = $type;
-	$package_version = $ids{type};
-	$package_desc = "EPrints $ids{type} (".$codenames{$type}.") [Born on $date]";
+	$package_version = $ids{$type};
+	$package_desc = "EPrints $ids{$type} (".$codenames{$type}.") [Born on $date]";
 	$package_file = "eprints-".$ids{$type};
 	print "YAY - $ids{$type}\n";
 }
@@ -291,9 +293,6 @@ system("rm eprints/perl_lib/EPrints/SystemSettings.pm");
 system("chmod -R g-w eprints")==0 or die("Couldn't change permissions on eprints dir.\n");
 
 system("mv eprints $package_file")==0 or die("Couldn't move eprints dir to $package_file.\n");
-
-exit;#!!!!!!!!
-
 my $tarfile = "../".$package_file.".tar.gz";
 if( -e $tarfile ) { system( "rm $tarfile" ); }
 system("tar czf $tarfile $package_file")==0 or die("Couldn't tar up $package_file");
