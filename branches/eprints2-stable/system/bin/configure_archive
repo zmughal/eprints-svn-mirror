@@ -81,7 +81,6 @@ use EPrints::Database;
 use EPrints::Utils;
 
 use Sys::Hostname;
-use Cwd;
 use DBI;
 use Unicode::String qw(utf8 latin1);
 

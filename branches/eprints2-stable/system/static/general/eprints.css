@@ -37,18 +37,19 @@ input, select, textarea {
 	border-width: 2px; 
 	border-color: #bbf #99e #99e #bbf; 
 	padding: 8pt; 
-	background: #ccf; 
+	background: #eef; 
 	margin-bottom: 1pt
 }
+
 .box h1, .box h2, .box h3
 {
 	margin: 0px;
-	border: inset; 
+	border: outset; 
 	border-width: 2px; 
 	background: #ddf; 
 	color: blue;
 	font-weight: bold;
-	border-color: #99e #bbf #bbf #99e; 
+	border-color: #bbf #99e #99e #bbf; 
 	padding: 4pt; 
 }
 	
@@ -196,3 +197,24 @@ body.vlit {
 	color: #c00000;
 }
 
+.subject_browser_opts, .subject_browser_selections
+{
+	margin-left: 1em;
+	margin-right: 1em;
+	padding: 0.5em;
+	border-style: solid;
+	border-color: #ccc;
+	border-width: 1px;
+}
+.subject_browser_selections
+{
+	margin-top: 0.5em;
+}
+.subject_browser_opts
+{
+	margin-bottom: 0.5em;
+}
+.subject_browser_selected
+{
+	font-style: italic;
+}

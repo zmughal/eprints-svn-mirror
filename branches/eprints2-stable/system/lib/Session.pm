@@ -803,8 +803,12 @@ sub render_name
 	my( $self, $name, $familylast ) = @_;
 
 	my $namestr = EPrints::Utils::make_name_string( $name, $familylast );
+
+	my $span = $self->make_element( "span", class=>"person_name" );
 		
-	return $self->make_text( $namestr );
+	$span->appendChild( $self->make_text( $namestr ) );
+
+	return $span;
 }
 
 ######################################################################
@@ -829,6 +833,90 @@ sub render_option_list
 	# values   :
 	# labels   :
 	# name     :
+	# defaults_at_top : move items already selected to top
+	# 			of list, so they are visible.
+
+	my %defaults = ();
+	if( ref( $params{default} ) eq "ARRAY" )
+	{
+		foreach( @{$params{default}} )
+		{
+			$defaults{$_} = 1;
+		}
+	}
+	else
+	{
+		$defaults{$params{default}} = 1;
+	}
+
+	my $element = $self->make_element( "select" , name => $params{name} );
+	if( defined $params{multiple} )
+	{
+		$element->setAttribute( "multiple" , $params{multiple} );
+	}
+
+	my $dtop = defined $params{defaults_at_top} && $params{defaults_at_top};
+	
+
+	my @alist = ();
+	my @list = ();
+	my $pairs = $params{pairs};
+	if( !defined $pairs )
+	{
+		foreach( @{$params{values}} )
+		{
+			push @{$pairs}, [ $_, $params{labels}->{$_} ];
+		}
+	}		
+						
+	if( $dtop && scalar keys %defaults )
+	{
+		my @pairsa;
+		my @pairsb;
+		foreach my $pair (@{$pairs})
+		{
+			if( $defaults{$pair->[0]} )
+			{
+				push @pairsa, $pair;
+			}
+			else
+			{
+				push @pairsb, $pair;
+			}
+		}
+		$pairs = [ @pairsa, [ '-', '----------' ], @pairsb ];
+	}
+
+
+	my $size = 0;
+	foreach my $pair ( @{$pairs} )
+	{
+		$element->appendChild( 
+			$self->render_single_option(
+				$pair->[0],
+				$pair->[1],
+				$defaults{$pair->[0]} ) );
+		$size++;
+	}
+
+	if( defined $params{height} )
+	{
+		if( $params{height} ne "ALL" )
+		{
+			if( $params{height} < $size )
+			{
+				$size = $params{height};
+			}
+		}
+		$element->setAttribute( "size" , $size );
+	}
+	return $element;
+}
+
+
+sub old_render_option_list
+{
+	my( $self , %params ) = @_;
 
 	my %defaults = ();
 	if( ref( $params{default} ) eq "ARRAY" )
@@ -1081,7 +1169,7 @@ sub render_form
 ######################################################################
 =pod
 
-=item $foo = $thing->render_subjects( $subject_list, $baseid, $current, $linkmode, $sizes )
+=item $foo = $thing->render_subjects( $subject_list, $baseid, $currentid, $linkmode, $sizes )
 
 undocumented
 
@@ -1090,7 +1178,7 @@ undocumented
 
 sub render_subjects
 {
-	my( $self, $subject_list, $baseid, $current, $linkmode, $sizes ) = @_;
+	my( $self, $subject_list, $baseid, $currentid, $linkmode, $sizes ) = @_;
 
 	# If sizes is defined then it contains a hash subjectid->#of subjects
 	# we don't do this ourselves.
@@ -1107,12 +1195,12 @@ sub render_subjects
 		$subs{$_} = EPrints::Subject->new( $self, $_ );
 	}
 
-	return $self->_render_subjects_aux( \%subs, $baseid, $current, $linkmode, $sizes );
+	return $self->_render_subjects_aux( \%subs, $baseid, $currentid, $linkmode, $sizes );
 }
 
 ######################################################################
 # 
-# $foo = $thing->_render_subjects_aux( $subjects, $id, $current, $linkmode, $sizes )
+# $foo = $thing->_render_subjects_aux( $subjects, $id, $currentid, $linkmode, $sizes )
 #
 # undocumented
 #
@@ -1120,13 +1208,13 @@ sub render_subjects
 
 sub _render_subjects_aux
 {
-	my( $self, $subjects, $id, $current, $linkmode, $sizes ) = @_;
+	my( $self, $subjects, $id, $currentid, $linkmode, $sizes ) = @_;
 
 	my( $ul, $li, $elementx );
 	$ul = $self->make_element( "ul" );
 	$li = $self->make_element( "li" );
 	$ul->appendChild( $li );
-	if( defined $current && $id eq $current )
+	if( defined $currentid && $id eq $currentid )
 	{
 		$elementx = $self->make_element( "strong" );
 	}
@@ -1158,7 +1246,7 @@ sub _render_subjects_aux
 	{
 		my $thisid = $_->get_value( "subjectid" );
 		next unless( defined $subjects->{$thisid} );
-		$li->appendChild( $self->_render_subjects_aux( $subjects, $thisid, $current, $linkmode, $sizes ) );
+		$li->appendChild( $self->_render_subjects_aux( $subjects, $thisid, $currentid, $linkmode, $sizes ) );
 	}
 	
 	return $ul;
@@ -1335,7 +1423,8 @@ sub render_input_form
 			$p{comments}->{$field->get_name()},
 			$p{dataset},
 			$p{type},
-			$p{staff} ) );
+			$p{staff},
+			$p{hidden_fields} ) );
 	}
 
 	# Hidden field, so caller can tell whether or not anything's
@@ -1361,7 +1450,7 @@ sub render_input_form
 
 ######################################################################
 # 
-# $foo = $thing->_render_input_form_field( $field, $value, $show_names, $show_help, $comment, $dataset, $type, $staff )
+# $foo = $thing->_render_input_form_field( $field, $value, $show_names, $show_help, $comment, $dataset, $type, $staff, $hiddenfields )
 #
 # undocumented
 #
@@ -1370,7 +1459,7 @@ sub render_input_form
 sub _render_input_form_field
 {
 	my( $self, $field, $value, $show_names, $show_help, $comment,
-			$dataset, $type, $staff ) = @_;
+			$dataset, $type, $staff, $hidden_fields ) = @_;
 	
 	my( $div, $html, $span );
 
@@ -1418,7 +1507,7 @@ sub _render_input_form_field
 		class => "formfieldinput",
 		id => "inputfield_".$field->get_name );
 	$div->appendChild( $field->render_input_field( 
-		$self, $value, $dataset, $type, $staff ) );
+		$self, $value, $dataset, $type, $staff, $hidden_fields ) );
 	$html->appendChild( $div );
 
 	if( substr( $self->get_internal_button(), 0, length($field->get_name())+1 ) eq $field->get_name()."_" ) 

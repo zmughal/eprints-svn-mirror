@@ -304,8 +304,9 @@ sub _load_citation_specs
 	# going to expand the attributes, it may be needed for loading
 	# the XML file.
 
-	my $file = $self->get_conf( "config_path" )."/fields.dtd";
-	my $tmpfile = $file.".".$$;
+	my $file = EPrints::Utils::untaint_file( 
+		$self->get_conf( "config_path" )."/fields.dtd" );
+	my $tmpfile = EPrints::Utils::untaint_file( $file.".".$$ );
 	open( DTD, ">$tmpfile" ) || die "Failed to open $tmpfile for writing";
 
 	my $siteid = $self->{id};
@@ -532,6 +533,7 @@ sub _load_datasets
 					$typedata->{fields}->{$finfo->{id}} = $finfo;
 					push @{$typedata->{pages}->{$pageid}}, 
 						$finfo->{id};
+					push @{$typedata->{field_order}}, $finfo->{id};
 				}
 				elsif( $el eq "page" )
 				{
@@ -862,9 +864,9 @@ sub generate_dtd
 	foreach $langid ( @{$self->get_conf( "languages" )} )
 	{	
 		my %entities = $self->call( "get_entities", $self, $langid );
-		my $file = $self->get_conf( "config_path" ).
-				"/entities-$langid.dtd";
-		my $tmpfile = $file.".".$$;
+		my $file = EPrints::Utils::untaint_file( $self->get_conf( "config_path" ).
+				"/entities-$langid.dtd" );
+		my $tmpfile = EPrints::Utils::untaint_file($file.".".$$);
 		open( DTD, ">$tmpfile" ) || die "Failed to open $tmpfile for writing";
 
 		my $siteid = $self->{id};

@@ -27,8 +27,8 @@
       <field name="volume" />
       <field name="number" />
       <field name="pagerange" />
-      <field name="date_sub" />
       <field name="date_issue" />
+      <field name="date_sub" />
       <field name="id_number" />
       <field name="official_url" />
       <field name="issn" />
@@ -66,8 +66,8 @@
       <field name="number" />
       <field name="isbn" />
 
-      <field name="date_sub" />
       <field name="date_issue" />
+      <field name="date_sub" />
       <field name="official_url" />
 
       <page name="status" />
@@ -97,8 +97,8 @@
       <field name="publisher" required="yes" />
       <field name="id_number" />
       <field name="pages" />
-      <field name="date_sub" />
       <field name="date_issue" />
+      <field name="date_sub" />
       <field name="official_url" />
 <!--  <field name="editors" /> -->
       <field name="monograph_type" required="yes" />
@@ -123,8 +123,8 @@
       <page name="core" />
       <field name="creators" required="yes" />
       <field name="title" required="yes" />
-      <field name="date_sub" />
       <field name="date_issue" />
+      <field name="date_sub" />
       <field name="place_of_pub" />
       <field name="pages" />
       <field name="pres_type" required="yes" />
@@ -155,11 +155,11 @@
 
     <type name="book">
       <page name="core" />
-      <field name="creators" required="yes" />
+      <field name="creators" />
       <field name="editors" />
       <field name="title" required="yes" />
-      <field name="date_sub" />
       <field name="date_issue" />
+      <field name="date_sub" />
       <field name="place_of_pub" />
       <field name="publisher" required="yes" />
       <field name="pages" />
@@ -190,8 +190,7 @@
       <page name="core" />
       <field name="creators" required="yes" />
       <field name="title" required="yes" />
-      <field name="date_sub" />
-      <field name="date_issue" />
+      <field name="date_issue" required="yes" />
       <field name="official_url" />
       <field name="institution" required="yes" />
       <field name="department" required="yes" />
@@ -206,8 +205,6 @@
       <field name="referencetext" />
       <field name="keywords" />
 
-      <page name="special" />
-
       <page name="subjects" />
       <field name="subjects" required="yes" />
 
@@ -220,7 +217,7 @@
       <page name="core" />
       <field name="creators" required="yes" />
       <field name="title" required="yes" />
-      <field name="date_issue" />
+      <field name="date_issue" required="yes" />
       <field name="official_url" />
       <field name="patent_applicant" required="yes" />
       <field name="id_number" required="yes" />
@@ -243,8 +240,8 @@
       <page name="core" />
       <field name="creators" required="yes" />
       <field name="title" required="yes" />
-      <field name="date_sub" />
       <field name="date_issue" />
+      <field name="date_sub" />
       <field name="official_url" />
       <field name="place_of_pub" />
       <field name="publisher" required="yes" />

@@ -165,6 +165,9 @@ sub render_date
 		return $session->html_phrase( "lib/utils:date_unspecified" );
 	}
 
+	# remove 0'd days and months
+	$datevalue =~ s/(-0+)+$//;
+
 	my @elements = split /\-/, $datevalue;
 
 	if( $elements[0]==0 )
@@ -845,8 +848,9 @@ sub mkdir
 	my( $full_path ) = @_;
 	my @created = eval
         {
-                return mkpath( $full_path, 0, 0775 );
+                return mkpath( EPrints::Utils::untaint_dir( $full_path ), 0, 0775 );
         };
+	if( defined $@ && $@ ne "" ) { warn $@; }
         return ( scalar @created > 0 )
 }
 
@@ -903,12 +907,7 @@ sub _render_citation_aux
                                 my $field = EPrints::Utils::field_from_config_string( 
 					$obj->get_dataset(), 
 					$_ );
-				$rendered->appendChild( 
-					$field->render_value( 
-						$obj->get_session(),
-						$obj->get_value( $field->get_name ),
-						0,
- 						1 ) );
+				$rendered->appendChild( _citation_field_value( $obj, $field ) );
 				next;
 			}
 
@@ -921,15 +920,13 @@ sub _render_citation_aux
 
 	if( EPrints::XML::is_dom( $node, "EntityReference" ) )
 	{
+		# old style. Deprecated.
+
 		my $fname = $node->getNodeName;
 		my $field = $obj->get_dataset()->get_field( $fname );
-		return $field->render_value( 
-					$obj->get_session(),
-					$obj->get_value( $fname ),
-					0,
- 					1 );
-	}
 
+		return _citation_field_value( $obj, $field );
+	}
 
 	my $addkids = $node->hasChildNodes;
 
@@ -1040,6 +1037,24 @@ sub _render_citation_aux
 	return $rendered;
 }
 
+sub _citation_field_value
+{
+	my( $obj, $field ) = @_;
+
+	my $session = $obj->get_session;
+	my $fname = $field->get_name;
+	my $span = $session->make_element( "span", class=>"field_".$fname );
+	my $value = $obj->get_value( $fname );
+	$span->appendChild( $field->render_value( 
+				$session,
+				$value,
+				0,
+ 				1 ) );
+
+	return $span;
+}
+
+
 
 
 ######################################################################
@@ -1056,12 +1071,20 @@ sub field_from_config_string
 {
 	my( $dataset, $fieldname ) = @_;
 
+	my $modifiers = 0;
+
 	my %q = ();
-	if( $fieldname =~ s/^([^\.]*)\.(.*)$/$1/ )
+	if( $fieldname =~ s/^([^;\.]*)(\.id)?;(.*)$/$1/ )
 	{
-		foreach( split( /\./, $2 ) )
+		foreach( split( /;/, $3 ) )
 		{
 			$q{$_}=1;
+			$modifiers = 1;
+		}
+		if( defined $2 ) 
+		{ 
+			$q{id} = 1; 
+			$modifiers = 1;
 		}
 	}
 
@@ -1083,19 +1106,30 @@ sub field_from_config_string
 		}
 	}
 
+	unless( $modifiers ) { return $field; }
+
+	$field = $field->clone;
+
 	foreach( "D", "M", "Y" )
 	{
 		if( $q{"res=".$_} )
 		{
-			$field = $field->clone;
 			$field->set_property( "max_resolution", $_ );
 		}
 	}
+
+	my $opts = {};
+	foreach( keys %q )
+	{
+		my( $k, $v ) = split( /=/, $_ );
+		$v = 1 unless defined $v;
+		$opts->{$k} = $v;
+	}
+
+	$field->set_property( "render_opts", $opts );
 	
 	return $field;
 }
-
-
 
 ######################################################################
 =pod
@@ -1603,6 +1637,52 @@ sub human_filesize
 	my $size_in_meg = int( $size_in_k / 1024 );
 
 	return $size_in_meg.'Mb';
+}
+
+######################################################################
+=pod
+
+=item $ok_dir = EPrints::Utils::untaint_dir( $dodgey_dir )
+
+Check this is a legal dir, if so return an untainted version or other-
+wise die.
+
+=cut
+######################################################################
+
+sub untaint_dir
+{
+	my( $dir ) = @_;
+
+	if( $dir =~ m/^[^;\s]+$/ )
+	{
+		return $&;
+	}
+
+	die "Can't safely untaint dir: $dir";
+}
+
+######################################################################
+=pod
+
+=item $ok_file = EPrints::Utils::untaint_file( $dodgey_file )
+
+Check this is a legal file, if so return an untainted version or other-
+wise die.
+
+=cut
+######################################################################
+
+sub untaint_file
+{
+	my( $file ) = @_;
+
+	if( $file =~ m/^[^;\s]+$/ )
+	{
+		return $&;
+	}
+
+	die "Can't safely untaint file: $file";
 }
 
 1;

@@ -111,7 +111,15 @@ sub new
 	{ 
 		$self->{defaults} = {};
 	}
+	if( !defined $self->{order} && defined $self->{dataset})
+	{
+		# Get {order} from {dataset} if possible.
 
+		$self->{order} = $self->{session}->get_archive->get_conf( 
+					"default_order", 
+					$self->{dataset}->confid );
+	}
+	
 
 	# Array for the SearchField objects
 	$self->{searchfields} = [];

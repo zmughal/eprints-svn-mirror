@@ -1159,9 +1159,43 @@ sub render_description
 	}
 	elsif( $self->is_type( "date" ) )
 	{
-		$valuedesc->appendChild( $self->{session}->make_text( 
-			"[[render date search field not yet done]]" ) );
-		#cjg
+		# still not very pretty
+		my $drange = $self->{value};
+		my $lastdate;
+		my $firstdate;
+		if( $drange =~ s/-(\d\d\d\d(-\d\d(-\d\d)?)?)$/-/ )
+		{	
+			$lastdate = $1;
+		}
+		if( $drange =~ s/^(\d\d\d\d(-\d\d(-\d\d)?)?)(-?)$/$4/ )
+		{
+			$firstdate = $1;
+		}
+
+		if( defined $firstdate && defined $lastdate )
+		{
+			$valuedesc->appendChild( $self->{session}->html_phrase(
+				"lib/searchfield:desc_date_between",
+				from => $self->{session}->make_text( $1 ),
+				to => $self->{session}->make_text( $2 ) ) );
+		}
+		elsif( defined $lastdate )
+		{
+			$valuedesc->appendChild( $self->{session}->html_phrase(
+				"lib/searchfield:desc_date_orless",
+				to => $self->{session}->make_text( $1 ) ) );
+		}
+		elsif( defined $firstdate && $drange eq "-")
+		{
+			$valuedesc->appendChild( $self->{session}->html_phrase(
+				"lib/searchfield:desc_date_ormore",
+				from => $self->{session}->make_text( $1 ) ) );
+		}
+		else
+		{
+			$valuedesc->appendChild( $self->{session}->make_text(
+				$self->{value} ) );
+		}
 	}
 	elsif( $self->is_type( "email", "url", "text" , "longtext" ) )
 	{

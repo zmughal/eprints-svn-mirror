@@ -55,23 +55,22 @@ sub deal
 {
 	my( $session, $dataset, $item, $info ) = @_;
 
-	my $frag = $info->{doc}->createDocumentFragment();
-	$frag->addText( "  " );
-	my $r = $info->{doc}->createElement( "record" );
-	$r->addText( "\n" );
+	my $frag = $session->make_doc_fragment;
+	$frag->appendChild( $session->make_text( "  " ) );
+	my $r = $session->make_element( "record" );
+	$r->appendChild( $session->make_text( "\n" ) );
 	foreach my $field ( $dataset->get_fields() )
 	{
 		next unless( $field->get_property( "export_as_xml" ) );
 
 		$r->appendChild( &mk_xml( 
 			$session, 
-			$info->{doc},
 			$field,
 			$item->get_value( $field->get_name() ) ) );
 	}
-	$r->addText( "  " );
+	$r->appendChild( $session->make_text( "  " ) );
 	$frag->appendChild( $r );
-	$frag->addText( "\n" );
+	$frag->appendChild( $session->make_text( "\n" ) );
 
 	print EPrints::XML::to_string( $frag )."\n";
 	EPrints::XML::dispose( $frag );
@@ -80,54 +79,51 @@ sub deal
 
 sub mk_xml
 {
-	my( $session, $doc, $field, $v ) = @_;
+	my( $session, $field, $v ) = @_;
 
-
-	my $r = $doc->createDocumentFragment();
+	my $r = $session->make_doc_fragment;
 	if( $field->get_property( "multiple" ) )
 	{
 		foreach( @{$v} )
 		{
-			$r->addText( "    " );
-			$r->appendChild( &mk_xml2( $session, $doc, $field, $_ ) );
-			$r->addText( "\n" );
+			$r->appendChild( $session->make_text( "    " ) );
+			$r->appendChild( &mk_xml2( $session, $field, $_ ) );
+			$r->appendChild( $session->make_text( "\n" ) );
 		}
 	}
 	else
 	{
-		$r->addText( "    " );
-		$r->appendChild( &mk_xml2( $session, $doc, $field, $v ) );
-		$r->addText( "\n" );
+		$r->appendChild( $session->make_text( "    " ) );
+		$r->appendChild( &mk_xml2( $session, $field, $v ) );
+		$r->appendChild( $session->make_text( "\n" ) );
 	}
 	return $r;
 }
 
 sub mk_xml2
 {
-	my( $session, $doc, $field, $v ) = @_;
+	my( $session, $field, $v ) = @_;
 
-	my $r = $doc->createElement( "field" );
-	$r->setAttribute( "name", $field->get_name() );
-
+	my %attrs = ( name=>$field->get_name() );
 	if( $field->get_property( "hasid" ) )
 	{
-		$r->setAttribute( "id", $v->{id} );
+		$attrs{id} = $v->{id};
 		$v = $v->{main};
 	}
+	my $r = $session->make_element( "field", %attrs );
 
 	if( $field->get_property( "multilang" ) )
 	{
 		foreach( keys %{$v} )
 		{
-			my $l = $doc->createElement( "lang" );
-			$l->setAttribute( "id", $_ );
-			$l->appendChild( mk_xml3( $session, $doc, $field, $v->{$_} ) );
+			my $l = $session->make_element( "lang", id=>$_ );
+			$l->appendChild( mk_xml3( $session, $field, $v->{$_} ) );
 			$r->appendChild( $l );
 		}
 	}
 	else
 	{
-		$r->appendChild( mk_xml3( $session, $doc, $field, $v ) );
+		$r->appendChild( mk_xml3( $session, $field, $v ) );
 	}
 
 	return $r;
@@ -135,23 +131,22 @@ sub mk_xml2
 
 sub mk_xml3
 {
-	my( $session, $doc, $field, $v ) = @_;
+	my( $session, $field, $v ) = @_;
 
-	my $r = $doc->createDocumentFragment();
+	my $r = $session->make_doc_fragment;
 	if( $field->is_type( "name" ) )
 	{
 		foreach( "honourific", "given", "family", "lineage" )
 		{
 			next unless( defined $v->{$_} && $v->{$_} ne "" );
-			my $e = $doc->createElement( "part" );
-			$e->setAttribute( "name", $_ );
-			$e->addText( $v->{$_} );
+			my $e = $session->make_element( "part", name=>$_ );
+			$e->appendChild( $session->make_text( $v->{$_} ) );
 			$r->appendChild( $e );
 		}
 	}
 	else
 	{
-		$r->addText( $v ) if defined( $v );
+		$r->appendChild( $session->make_text( $v ) ) if defined( $v );
 	}
 	return $r;
 }

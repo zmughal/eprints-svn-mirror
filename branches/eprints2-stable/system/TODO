@@ -5,14 +5,14 @@ case it might be helpful.
 * document how to register OAI
 
 * skip "doc_info" submission page
-* allow XHTML in "help" on forms. (no make_text)
-
 
 !! export_xml broken for GDOME
 
 !! can't change username?
 
 !! bug in refine search on defaulted booleans?
+
+!! author with name " " is not treated as null in input
 
 !! ted wants persistent named urls.
 

@@ -320,48 +320,52 @@ sub render_workspace
 	# One or more items in workspace.
 	# Render a form to let the user fiddle with them.
 
+	my( $table, $tr, $td );
 
-	my @eprintids;
-	my %eprint_titles;
+	$table = $session->make_element( "table",
+			cellpadding=>3,
+			border=>0 );
 	my $e;
-
+	my $cnt = 0;
 	foreach $e (@eprints)
 	{
-		my $id = $e->get_value( "eprintid" );
-		push @eprintids, $id;
-		$eprint_titles{$id} = EPrints::Utils::tree_to_utf8(
-					$e->render_description() );
+		$tr = $session->make_element( "tr" );
+		$table->appendChild( $tr );	
+		$td = $session->make_element( "td" );
+		$tr->appendChild( $td );
+		$td->appendChild( $e->render_description() );
+		$td = $session->make_element( "td" );
+		$tr->appendChild( $td );
+	#	$td->appendChild( $session->html_phrase( 
+	#		"cgi/users/home:accepted_at",
+	#		time=>$e->render_value( "datestamp" ) ) );
+		my $a;
+
+		$a = $session->render_link( "submit?eprintid=".$e->get_id."&_action_edit=1" );
+		$a->appendChild( $session->html_phrase("cgi/users/home:action_edit") );
+		$td->appendChild( $a );
+
+		$td->appendChild( $session->make_text( ", " ) );
+
+		$a = $session->render_link( "submit?eprintid=".$e->get_id."&_action_submit=1" );
+		$a->appendChild( $session->html_phrase("cgi/users/home:action_submit") );
+		$td->appendChild( $a );
+
+		$td->appendChild( $session->make_text( ", " ) );
+
+		$a = $session->render_link( "submit?eprintid=".$e->get_id."&_action_clone=1" );
+		$a->appendChild( $session->html_phrase("cgi/users/home:action_clone") );
+		$td->appendChild( $a );
+
+		$td->appendChild( $session->make_text( ", " ) );
+
+		$a = $session->render_link( "submit?eprintid=".$e->get_id."&_action_delete=1" );
+		$a->appendChild( $session->html_phrase("cgi/users/home:action_delete") );
+		$td->appendChild( $a );
 	}
 
-	### Now put them in a form
-	$form = $session->render_form( "post", "submit#t" );
-
-	$div = $session->make_element( "div", class => "formfieldinput" );
-	$form->appendChild( $div );
-	$div->appendChild( $session->render_option_list(
-		name => "eprintid",
-		height => 6,
-		values => \@eprintids,
-		labels => \%eprint_titles,
-		default => ( scalar @eprints > 0 ? $eprintids[0] : undef ) 
-	) );
-
-	$form->appendChild( $session->render_action_buttons(
-#		new => 
-#		  $session->phrase("cgi/users/home:action_new"),
-		edit => 
-		  $session->phrase("cgi/users/home:action_edit"),
-		clone => 
-		  $session->phrase("cgi/users/home:action_clone"),
-		delete => 
-		  $session->phrase("cgi/users/home:action_delete"),
-		submit => 
-		  $session->phrase("cgi/users/home:action_submit") 
-	) );
-
 	$html->appendChild( $session->html_phrase( "cgi/users/home:depositing" ) );
-
-	$html->appendChild( $form );
+	$html->appendChild( $table );
 
 	return $html;
 }
@@ -461,7 +465,9 @@ sub render_recent
 			$table->appendChild( $tr );	
 			$td = $session->make_element( "td" );
 			$tr->appendChild( $td );
-			$td->appendChild( $e->render_description() );
+		        my $a = $session->render_link( $e->get_url() );
+			$a->appendChild( $e->render_description() );
+			$td->appendChild( $a );
 			$td = $session->make_element( "td" );
 			$tr->appendChild( $td );
 			$td->appendChild( $session->html_phrase( 

@@ -17,11 +17,21 @@
 
 package EPrints::Config::ep2stable;
 
-do "cfg/ArchiveOAIConfig.pm";
-do "cfg/ArchiveRenderConfig.pm";
-do "cfg/ArchiveValidateConfig.pm";
-do "cfg/ArchiveTextIndexingConfig.pm";
-do "cfg/ArchiveMetadataFieldsConfig.pm";
+my $file = "cfg/ArchiveOAIConfig.pm";
+foreach my $file ( 
+	"cfg/ArchiveOAIConfig.pm",
+	"cfg/ArchiveRenderConfig.pm",
+	"cfg/ArchiveValidateConfig.pm",
+	"cfg/ArchiveTextIndexingConfig.pm",
+	"cfg/ArchiveMetadataFieldsConfig.pm" )
+{
+	unless (my $return = do $file) {
+		warn "couldn't parse $file: $@" if $@;
+		warn "couldn't do $file: $!"    unless defined $return;
+		warn "couldn't run $file"       unless $return;
+	}
+}
+
 
 use EPrints::Utils;
 
@@ -185,6 +195,10 @@ $c->{allow_web_signup} = 1;
 # over the web. This can be modified after they sign up by
 # staff with the right priv. set. 
 $c->{default_user_type} = "user";
+
+# This is a list of fields which the user is asked for when registering
+# in addition to the required username, email and password.
+$c->{user_registration_fields} = [ "name" ];
 
 # See also the user type configuration section.
 

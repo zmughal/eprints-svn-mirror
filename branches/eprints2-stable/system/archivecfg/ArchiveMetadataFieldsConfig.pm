@@ -73,20 +73,26 @@ $fields->{eprint} = [
 	{ name => "ispublished", type => "set", 
 			options => [ "pub","inpress","submitted" , "unpub" ] },
 
-	{ name => "subjects", type=>"subject", top=>"subjects", multiple => 1, browse_link => "subjects" },
-
-# local subjects
+	{ name => "subjects", type=>"subject", top=>"subjects", multiple => 1, 
+		browse_link => "subjects", render_input=>\&EPrints::MetaField::subject_browser_input },
 
 	{ name => "full_text_status", type=>"set",
 			options => [ "public", "restricted", "none" ] },
 
-# local groups
-
 	{ name => "monograph_type", type=>"set",
-			options => [ "technical_report", "other" ] },
+			options => [ 
+				"technical_report", 
+				"project_report",
+				"documentation",
+				"manual",
+				"working_paper",
+				"discussion_paper",
+				"other" ] },
+
+
 
 	{ name => "pres_type", type=>"set",
-			options => [ "paper", "speech", "poster", "other" ] },
+			options => [ "paper", "lecture", "speech", "poster", "other" ] },
 
 	{ name => "keywords", type => "longtext", input_rows => 2 },
 
@@ -94,8 +100,7 @@ $fields->{eprint} = [
 
 	{ name => "suggestions", type => "longtext" },
 
-	{ name => "abstract", input_rows => 10, type => "longtext",
-		input_cols => 90 },
+	{ name => "abstract", input_rows => 10, type => "longtext" },
 
 	{ name => "date_sub", type=>"date", min_resolution=>"Y" },
 
@@ -115,7 +120,8 @@ $fields->{eprint} = [
 
 	{ name => "place_of_pub", type => "text", sql_index => 0 },
 
-	{ name => "pagerange", type => "pagerange", sql_index => 0 },
+	{ name => "pagerange", type => "pagerange", sql_index => 0,
+		render_single_value=>\&EPrints::MetaField::render_pagerange_pp },
 
 	{ name => "pages", type => "int", maxlength => 6, sql_index => 0 },
 
@@ -149,13 +155,12 @@ $fields->{eprint} = [
 	{ name => "book_title", type => "text", sql_index => 0 },
 	
 	{ name => "editors", type => "name", multiple => 1, hasid=>1,
-		 input_boxes => 4 },
+		 input_boxes => 4, render_input=>\&input_names, input_id_cols=>20 }, 
 
 	{ name => "official_url", type => "url", sql_index => 0 },
 
 # nb. Can't call this field "references" because that's a MySQL keyword.
 	{ name => "referencetext", type => "longtext", input_rows => 3 }
-#######################
 
 ];
 
@@ -260,22 +265,56 @@ sub set_eprint_automatic_fields
 	{
 		unless( $eprint->is_set( "institution" ) )
 		{
-			$eprint->set_value( "institution", "University of Southampton" );
+ 			# This is a handy place to make monographs and thesis default to
+			# your insitution
+			#
+			# $eprint->set_value( "institution", "University of Southampton" );
 		}
-		# department too
 	}
 
 	if( $type eq "patent" )
 	{
 		$eprint->set_value( "ispublished", "pub" );
-		# department too
+		# patents are always published!
 	}
 
 	if( $type eq "thesis" )
 	{
 		$eprint->set_value( "ispublished", "unpub" );
-		# department too
+		# thesis are always unpublished.
 	}
+
+	my $date;
+	if( $eprint->is_set( "date_issue" ) )
+	{
+		$date = $eprint->get_value( "date_issue" );
+	} 
+	elsif( $eprint->is_set( "date_sub" ) )
+	{
+		$date = $eprint->get_value( "date_sub" );
+	}
+	else
+	{
+	 	$date = $eprint->get_value( "datestamp" ); # worstcase
+	}
+	$eprint->set_value( "date_effective", $date );
+
+	my @docs = $eprint->get_all_documents();
+	my $textstatus = "none";
+	if( scalar @docs > 0 )
+	{
+		$textstatus = "public";
+		foreach( @docs )
+		{
+			if( $_->is_set( "security" ) )
+			{
+				$textstatus = "restricted"
+			}
+		}
+	}
+	$eprint->set_value( "full_text_status", $textstatus );
+
+
 }
 
 sub set_user_automatic_fields

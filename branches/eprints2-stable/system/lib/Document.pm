@@ -976,7 +976,7 @@ sub upload_url
 	my $url = URI::Heuristic::uf_uristr( $url_in );
 
 	# save previous dir
-	my $prev_dir = cwd();
+	my $prev_dir = getcwd();
 
 	# Change directory to destination dir., return with failure if this 
 	# fails.

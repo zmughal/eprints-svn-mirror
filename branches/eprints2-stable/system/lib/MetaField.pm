@@ -123,6 +123,7 @@ my $PROPERTIES =
 	render_single_value => 1,
 	render_value => 1,
 	render_input => 1,
+	render_opts => 1,
 	top => 1,
 	type => -1
 };
@@ -362,7 +363,7 @@ of the name.
 
 sub get_sql_type
 {
-        my( $self , $notnull ) = @_;
+	my( $self , $notnull ) = @_;
 
 	my $sqlname = $self->get_sql_name();
 	my $param = "";
@@ -426,7 +427,7 @@ or an empty string if no index is required.
 
 sub get_sql_index
 {
-        my( $self ) = @_;
+	my( $self ) = @_;
 	
 	if( $self->is_type( "longtext", "secret", "search" ) )
 	{
@@ -682,8 +683,8 @@ sub _render_value1
 		# based on the value of it's ID. 
 		# It will either just pass it through, redo it from scratch
 		# or wrap it in a link.
-	
-		my $rendered = $self->_render_value2( $session, $value->{main}, $alllangs, $nolink );
+
+		my $rendered = $self->get_main_field()->_render_value2( $session, $value->{main}, $alllangs, $nolink );
 
 		return $session->get_archive()->call( 
 			"render_value_with_id",  
@@ -777,6 +778,17 @@ sub _render_value3
 	{
 		return $session->html_phrase( "lib/metafield:unspecified" );
 	}
+
+	if( $self->{render_opts}->{magicstop} )
+	{
+		# add a full stop if the vale does not end with ? ! or .
+		$value =~ s/\s*$//;
+		if( $value !~ m/[\?!\.]$/ )
+		{
+			$value .= '.';
+		}
+	}
+
 
 	if( defined $self->{render_single_value} )
 	{
@@ -896,7 +908,7 @@ sub _render_value3
 ######################################################################
 =pod
 
-=item $xhtml = $field->render_input_field( $session, $value, [$dataset, $type], [$staff] )
+=item $xhtml = $field->render_input_field( $session, $value, [$dataset, $type], [$staff], [$hidden_fields] )
 
 Return the XHTML of the fields for an form which will allow a user
 to input metadata to this field. $value is the default value for
@@ -907,7 +919,7 @@ this field.
 
 sub render_input_field
 {
-	my( $self, $session, $value, $dataset, $type, $staff ) = @_;
+	my( $self, $session, $value, $dataset, $type, $staff, $hidden_fields ) = @_;
 
 	if( defined $self->{toform} )
 	{
@@ -916,7 +928,14 @@ sub render_input_field
 
 	if( defined $self->{render_input} )
 	{
-		return &{$self->{render_input}}( $self, $session, $value, $dataset, $type, $staff );
+		return &{$self->{render_input}}(
+			$self,
+			$session, 
+			$value, 
+			$dataset, 
+			$type, 
+			$staff,
+			$hidden_fields );
 	}
 
 	my( $html, $frag );
@@ -965,7 +984,9 @@ sub render_input_field
 
 			my ( $pairs ) = $topsubj->get_subjects( 
 				!($self->{showall}), 
-				$self->{showtop} );
+				$self->{showtop},
+				0,
+				($self->{input_style} eq "short"?1:0) );
 			if( !$self->get_property( "multiple" ) && 
 				!$req )
 			{
@@ -981,6 +1002,7 @@ sub render_input_field
 			{
 				$settings{pairs} = $pairs;
 			}
+			$settings{defaults_at_top} = 1;
 		} 
 		else 
 		{
@@ -1025,7 +1047,7 @@ sub render_input_field
 		if( $self->get_property( "input_style" ) eq "long" )
 		{
 			my( $dl, $dt, $dd );
-			$dl = $session->make_element( "dl", class="longset" );
+			$dl = $session->make_element( "dl", class=>"longset" );
 			foreach my $opt ( @{$settings{values}} )
 			{
 				$dt = $session->make_element( "dt" );
@@ -1124,6 +1146,10 @@ sub render_input_field
 
 	return $html;
 }
+
+
+
+	
 
 ######################################################################
 # 
@@ -1592,12 +1618,22 @@ FALSE=> $session->phrase( $self->{confid}."_fieldopt_".$self->{name}."_FALSE")
 
 	if( $self->is_type( "date" ) )
 	{
-		my( $div, $yearid, $monthid, $dayid );
-		$div = $session->make_element( "div" );	
-		my( %r ) = ( D=>"d", M=>"m", Y=>"y" );
-		$div->appendChild( $session->html_phrase( 
-			"lib/metafield:date_res_".
-			 $r{$self->get_property( "min_resolution" )} ) );
+		my( $frag, $div, $yearid, $monthid, $dayid );
+
+		$frag = $session->make_doc_fragment;
+		
+		my $min_res = $self->get_property( "min_resolution" );
+	
+		if( $min_res eq "M" || $min_res eq "Y" )
+		{	
+			my( %r ) = ( D=>"d", M=>"m", Y=>"y" );
+			$div = $session->make_element( "div", class=>"formfieldhelp" );	
+			$div->appendChild( $session->html_phrase( 
+				"lib/metafield:date_res_".$r{$min_res} ) );
+			$frag->appendChild( $div );
+		}
+
+		$div = $session->make_element( "div" );
 		my( $year, $month, $day ) = ("", "", "");
 		if( defined $value && $value ne "" )
 		{
@@ -1659,7 +1695,8 @@ FALSE=> $session->phrase( $self->{confid}."_fieldopt_".$self->{name}."_FALSE")
 			default => $day,
 			labels => \%daylabels ) );
 
-		return $div;
+		$frag->appendChild( $div );
+		return $frag;
 	}
 
 	if( $self->is_type( "search" ) )
@@ -1804,6 +1841,7 @@ sub _form_value_aux0
 			# especially in "subject"
 			my %v;
 			foreach( @values ) { $v{$_}=1; }
+			delete $v{"-"}; # for the  ------- in defaults at top
 			@values = keys %v;
 			return \@values;
 		}
@@ -2179,8 +2217,8 @@ sub is_browsable
 	# Can never browse:
 	# pagerange , secret , longtext
 
-        # Can't yet browse:
-        # langid 
+	# Can't yet browse:
+	# langid 
 
 	return $self->is_type( "set", "subject", "datatype", "date", "int", 
 				"year", "id", "email", "url", "text",
@@ -2597,6 +2635,7 @@ sub get_property_default
 	return undef if( $property eq "render_single_value" );
 	return undef if( $property eq "render_value" );
 	return undef if( $property eq "render_input" );
+	return {} if( $property eq "render_opts" );
 
 	EPrints::Config::abort( 
 		"Unknown property in get_property_default: $property" );
@@ -2703,6 +2742,272 @@ sub _list_values2
 
 	return $value;
 }
+
+
+
+
+
+
+
+######################################################################
+=pod
+
+=item subject_browser_input
+
+This is an alternate input renderer for "subject" fields. It is 
+intended to be passed by reference to the render_input parameter
+of such a field.
+
+Due to the way this works, it is recommended that the "subjects"
+type field it is used for is by itself on the metadata input page.
+
+=cut
+######################################################################
+
+sub subject_browser_input
+{
+	my( $field, $session, $value, $dataset, $type, $staff, $hidden_fields ) = @_;
+
+	my $values;
+	if( !defined $value )
+	{
+		$values = [];
+	}
+	elsif( !$field->get_property( "multiple" ) )
+	{
+		$values = [ $value ]; 
+	}
+	else
+	{
+		$values = $value; 
+	}
+
+	my $topsubj = $field->get_top_subject( $session );
+ 	my $subject = $topsubj;
+
+	my $html = $session->make_doc_fragment;
+
+	if( $session->internal_button_pressed )
+	{
+		my $button = $session->get_internal_button();
+		if( $button =~ m/^view_(.*)$/ )
+		{
+			$subject = EPrints::Subject->new( $session, $1 );
+			if( !defined $subject ) 
+			{ 
+				$subject = $topsubj; 
+				$html->appendChild( 
+					$session->make_element( 
+						"a", 
+						name=>"t" ) );
+			}
+		}
+	}
+
+	my @param_pairs = ();
+	foreach( keys %{$hidden_fields} )
+	{
+		push @param_pairs, $_.'='.$hidden_fields->{$_};
+	}
+	my $baseurl = '?'.join( '&', @param_pairs );
+
+	my( %bits );
+
+	$bits{selections} = $session->make_doc_fragment;
+
+	foreach my $s_id ( sort @{$values} )
+	{
+		my $s = EPrints::Subject->new( $session, $s_id );
+		next if( !defined $s );
+
+		$html->appendChild( 
+			$session->render_hidden_field(
+				$field->get_name,
+				$s_id ) );
+
+		my $div = $session->make_element( "div" );
+		$div->appendChild( $s->render_description );
+
+		my $url = $baseurl.'&_internal_view_'.$subject->get_id.'=1'.$field->get_name.'='.$s->get_id;
+		foreach my $v ( @{$values} )
+		{
+			next if( $v eq $s_id );
+			$url.= '&'.$field->get_name.'='.$v;
+		}
+		$url .= '#t';
+
+		$div->appendChild( $session->make_text( " [" ) );
+		my $a = $session->make_element( "a", href=>$url );
+		$a->appendChild( $session->make_text( "remove" ) );
+		$div->appendChild( $a );
+		$div->appendChild( $session->make_text( "]" ) );
+		$bits{selections}->appendChild( $div );
+	}
+
+	if( scalar @{$values} == 0 )
+	{	
+		my $div = $session->make_element( "div" );
+		$div->appendChild( $session->html_phrase(
+			"lib/metafield:subject_browser_none" ) );
+		$bits{selections}->appendChild( $div );
+	}
+
+	my @paths = $subject->get_paths( $session );
+	my %expanded = ();
+	foreach my $path ( @paths )
+	{
+		my $div = $session->make_element( "div" );
+		my $first = 1;
+		foreach my $s ( @{$path} )
+		{
+			$expanded{$s->get_id}=1;
+		}
+		$bits{selections}->appendChild( $div );
+	}	
+
+	$bits{topsubj} = $topsubj->render_description;
+	$bits{opts} = $field->_subject_browser_input_aux( 
+			$session,
+			$topsubj,
+			$subject,
+			\%expanded,
+			$baseurl,
+			$values );
+
+	$html->appendChild( $session->html_phrase( 
+			"lib/metafield:subject_browser",
+			%bits ) );
+
+	return $html;
+}
+
+
+sub _subject_browser_input_aux
+{
+	my( $field, $session, $subj, $current_subj, $expanded, $baseurl, $values ) = @_;
+
+	my $addurl = $baseurl;
+	foreach my $v ( @{$values} )
+	{
+		$addurl.= '&'.$field->get_name.'='.$v;
+	}
+
+	my $ul = $session->make_element( "ul" );
+	my $parent_id = $subj->get_id;
+	foreach my $s ( $subj->children() )
+	{
+		my $li = $session->make_element( "li" );
+		$ul->appendChild( $li );
+		my $n_kids = scalar $s->children();
+		my $exp = 0;
+		if( $n_kids > 0 )
+		{
+			if( $expanded->{$s->get_id} )
+			#if( $expanded->{$s->get_id} || $n_kids < 3)
+			{
+				$exp = 1;
+			}
+			else
+			{
+				$exp = -1;
+			}
+		}
+		my $selected = 0;
+		foreach my $v ( @{$values} )
+		{
+			$selected = 1 if( $v eq $s->get_id );
+		}
+		if( $exp == -1 )
+		{
+			my $url = $addurl.'&_internal_view_'.$s->get_id.'=1#t';
+			my $a = $session->make_element( "a", href=>$url );
+			$a->appendChild( $s->render_description );
+			$li->appendChild( $a );
+			$li->appendChild( $session->make_text( "..." ) );
+		}
+		else
+		{
+			my $span = $session->make_element( 
+				"span", 
+				class=>"subject_browser_".($selected?"":"un")."selected" );
+			$span->appendChild( $s->render_description );
+			$li->appendChild( $span );
+		}
+		if( $s->can_post && $exp != -1 && !$selected )
+		{	
+			my $url = $addurl.'&_internal_view_'.$current_subj->get_id.'=1&'.$field->get_name.'='.$s->get_id.'#t';
+			$li->appendChild( $session->make_text( " [" ) );
+			my $a = $session->make_element( "a", href=>$url );
+			$a->appendChild( $session->make_text( "add" ) );
+			$li->appendChild( $a );
+			$li->appendChild( $session->make_text( "]" ) );
+		}
+		if( $exp == 1 )
+		{
+			$li->appendChild( $session->make_element( "br" ));
+			$li->appendChild( $field->_subject_browser_input_aux(
+				$session, 
+				$s, 
+				$current_subj,
+				$expanded, 
+				$baseurl,
+				$values ) );
+		}
+
+		$ul->appendChild( $li );
+	}
+	
+	return $ul;
+}
+
+
+
+######################################################################
+=pod
+
+=item render_pagerange_pp
+
+This is a renderer for pagerange type fields which renders the range
+as:
+pp.100-102
+
+unless both values are equal, in which case it renders:
+p.23
+
+At a later date it may compess ranges eg.
+103-109 becomes 103-9, but I've not found a reliable guide to the
+correct way to do this yet.
+
+=cut
+######################################################################
+
+sub render_pagerange_pp
+{
+	my( $session, $field, $value ) = @_;
+
+	unless( $value =~ m/^(\d+)-(\d+)$/ )
+	{
+		# value not in expected form. Ah, well. Muddle through.
+		return $session->make_text( $value );
+	}
+
+	my( $a, $b ) = ( $1, $2 );
+	
+	if( $a == $b )
+	{
+		return $session->make_text( 'p.'.$a );
+	}
+
+#	if( length $a == length $b )
+#	{
+#	}
+		
+
+	return $session->make_text( 'pp.'.$a.'-'.$b );
+}
+
+
+
 ######################################################################
 
 1;

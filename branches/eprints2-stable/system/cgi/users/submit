@@ -34,7 +34,7 @@ my $user = $session->current_user();
 
 my $subform = new EPrints::SubmissionForm(
 	$session,
-	"home",
+	$session->get_archive->get_conf( "userhome" ),
 	0,
        	$session->get_archive->get_dataset( "inbox" ),
 	"submit" );
