@@ -237,6 +237,7 @@ EPrints Modules
     <ep:phrase ref="lib/submissionform:enter_compfile"><p>Enter the filename (with full path) of the compressed file in the box below.</p></ep:phrase>
     <ep:phrase ref="lib/submissionform:enter_file"><p>Please enter the filename (with full path) of the document file in the box below.</p></ep:phrase>
     <ep:phrase ref="lib/submissionform:enter_files"><p>Please enter the filenames (with full paths) of the document files in the boxes below.</p></ep:phrase>
+    <ep:phrase ref="lib/submissionform:upload_prob">File upload failed</ep:phrase>
     <ep:phrase ref="lib/submissionform:upload_layout">
 Type of file being uploaded: <ep:pin ref="type" /><br />
 Select a file to upload: <ep:pin ref="file" /><br />
@@ -771,6 +772,7 @@ Public CGI Scripts
     <ep:phrase ref="cgi/set_password:no_priv"><p>The user with the email address <ep:pin ref="email" /> may not change their password via this mechanism. If this is a problem please contact the site administrator.</p></ep:phrase>
     <ep:phrase ref="cgi/set_password:no_password"><p>You did not actually specify a password.</p></ep:phrase>
     <ep:phrase ref="cgi/set_password:mail_sent"><p>An email has been sent to <b><ep:pin ref="email" /></b> containing the code required to confirm this password.</p><p>This code is only valid for a short time</p></ep:phrase>
+    <ep:phrase ref="cgi/set_password:account">Reset Password</ep:phrase>
     <ep:phrase ref="setpass_fieldhelp_email">Enter your email address</ep:phrase>
     <ep:phrase ref="setpass_fieldhelp_newpassword">Enter a new password</ep:phrase>
 
