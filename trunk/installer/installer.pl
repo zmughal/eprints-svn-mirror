@@ -227,8 +227,31 @@ sub get_packs
 	foreach (@PACKAGES)
 	{
 		if ( defined $ENVIRONMENT{$_->{name}."_installed"} && $ENVIRONMENT{$_->{name}."_installed"} > 0 ) { $ENVIRONMENT{$_->{name}."_skip"} = 1; next; }
-		$funcname = $_->{name}."_check";
-		$version = &{$funcname};
+		if ( defined $_->{check_method} )
+		{
+			$check_string = $_->{check_method};
+			if ($check_string =~ /^standardcheck\s+(\S+)$/)
+			{
+				$func 	= "standardcheck";
+				$arg 	= $1;
+			}
+			elsif ($check_string =~ /^perlcheck\s+(\S+)$/)
+			{
+				$func 	= "perlcheck";
+				$arg 	= $1;
+			}
+			else
+			{
+				print "Undefined check method for package $_->{name}.\n";
+				exit_nicely();
+			}
+		}
+		else
+		{
+			$func 	= $_->{name}."_check";
+			$arg	 = "";
+		}
+		$version = &{$func}($arg);
 		$ENVIRONMENT{$_->{name}."_installed"} = $version;
 	}
 
@@ -431,119 +454,6 @@ sub untar
         print "	Done.\n";
 }
 
-
-# ePrints-specific
-
-sub gzip_check
-{
-	my($gzip) = "";	
-	$gzip = 'gzip' || return 0;
-	
-	if (qx[$gzip -V 2>&1] =~ /(\d+)\.(\d+)\.?(\d*)/)
-	{
-		return "$1.$2.$3";
-	}
-	return 0;
-}
-
-sub wget_check
-{
-	my($wget) = "";
-	$wget = 'wget' || return 0;
-	if (qx[$wget -V 2>&1] =~ /(\d+)\.(\d+)\.?(\d*)/)
-	{
-		return "$1.$2.$3";
-	}
-	return 0;
-}
-
-sub xercesc_check
-{
-	$curr_highversion = 0;	
-	@libs = get_library_paths("xerces-c");
-
-	foreach(@libs)
-	{
-		s/.*\///;		# Get short name
-		if (/libxerces-c([0-9]+)_([0-9]+).so/)
-		{
-			$version = "$1.$2";
-			if (compare_version($version, $curr_highversion)>0) { $curr_highversion = $version; }
-		}		
-	}
-	return $curr_highversion;
-}
-
-sub xercesp_check
-{
-	return module_installed("XML::Xerces");	
-}
-
-sub eprints_check
-{
-	return 0;
-}
-
-sub apache_check
-{
-	my($httpd) = "";
-
-	$httpd = `/usr/local/apache/bin/httpd -v 2>&1`;
-	if ($httpd =~ /(\d+)\.(\d+)\.?(\d*)/)
-	{
-		return "$1.$2.$3";
-	}
-	return 0;
-}
-
-sub modperl_check
-{
-	return get_module_version("mod_perl");
-}
-
-sub mysql_check
-{
-	my($mysql) = "";
-	my($version) = "";
-	$mysql = 'mysql' || return 0;
-	$version = `$mysql -V 2>&1`;
-	if ($version =~ /(\d+)\.(\d+)\.?(\d*)/)
-	{
-		return "$1.$2.$3";
-	}
-	return 0;
-}
-
-sub cgi_check
-{
-	return get_module_version("CGI");
-}
-
-sub data_dumper_check
-{
-	return get_module_version("Data::Dumper");
-}
-
-sub dbi_check
-{
-	return get_module_version("DBI");
-}
-
-sub msql_check
-{
-	return get_module_version("Mysql");
-}
-
-sub diskspace_check
-{
-	return get_module_version("Filesys::DiskSpace");
-}
-
-sub mimebase_check
-{
-	return get_module_version("MIME::Base64");
-}
-
 # Helper functions
 
 sub decompress
@@ -566,7 +476,7 @@ sub decompress
 	
 }
 
-sub perl_module_install
+sub perlinstall
 {
 	my($package) = @_;
 
@@ -583,7 +493,7 @@ sub perl_module_install
 	return 1;
 }
 
-sub standard_install
+sub standardinstall
 {
 	# ./configure
 	# make
@@ -605,62 +515,26 @@ sub standard_install
 	return 1;
 }
 
-sub xercesc_install
+sub perlcheck
 {
-	my($package) = @_;
-	$currdir = getcwd();
-	chdir decompress($package->{archive});
-	$longname = getcwd();
-	$ENV{XERCESCROOT} = $longname;
-	chdir "src";
-	print "Configuring	...";
-	`autoconf`;
-	`./configure`;
-	print "	Done.\n";
-#	print "Making		...";
-#	`make 2>&1 1>/dev/null`;
-	print "	Done.\n";
-	chdir $currdir;
-	return 1;
+	my($mod) = @_;
+	return get_module_version($mod);
 }
 
-sub xercesp_install
+sub standardcheck
 {
-	my($package) = @_;
-	$currdir = getcwd();
-	chdir decompress($package->{archive});
-	print "Configuring	...";
-	`perl Makefile.PL`;
-	print "	Done.\n";
-#	print "Making		...";
-#	`make 2>&1 1>/dev/null`;
-#	print "	Done.\n";
-#	print "Testing		...";
-#	`make test`;
-	print "	Done.\n";
-	chdir $currdir;
-	return 1;
+	my($cmd) = @_;
+        my($version) = "";
+        $cmd = '$cmd' || return 0;
+        $version = `$cmd -V 2>&1`;
+        if ($version =~ /(\d+)\.(\d+)\.?(\d*)/)
+        {
+                return "$1.$2.$3";
+        }
+        return 0;	
 }
 
-sub apache_install
-{
-	return 1;
-}
 
-sub modperl_install
-{
-	return 1;
-}
-
-sub mysql_install
-{
-	return 1;
-}
-
-sub eprints_install
-{
-	return 1;
-}
 
 # Grab command-line options.
 
@@ -682,19 +556,6 @@ if ($show_help) { exit_help() };
 
 my $config = "installer-".($resuming?"resume":"config").".pl";
 require $config;
-
-#if ($ENVIRONMENT{resuming})
-#{
-#	open(RESFILE, $ENVIRONMENT{resume_file}) || die "Unable to open resume file";
-#	$res = "";
-#	while(<RESFILE>)
-#	{
-#		/(.*)[ ]+(.*)/;
-#		$ENVIRONMENT{$1} = $2;
-#	}
-#	close(RESFILE);
-#	eval $res;
-#}
 
 # Show a bit of version gubbins.
 $title = "ePrints Installer v".$ENVIRONMENT{"installer_version"};
