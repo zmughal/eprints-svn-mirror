@@ -252,7 +252,7 @@ if test $GDOME_AVAILABLE = "1"; then
     echo "Found XML::GDOME module. Lovely. We'll use that then!"
     ENABLE_GDOME="1"
 else
-    if( test $ENABLE_GDOME = "1" )
+    if test $ENABLE_GDOME = "1"; then 
         AC_MSG_ERROR(Can't find GDOME, but you asked to enable it)
     else
         echo "Didn't find XML::GDOME module. We'll make do with XML::DOM then."
