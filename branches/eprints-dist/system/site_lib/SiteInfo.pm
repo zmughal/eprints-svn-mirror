@@ -387,7 +387,7 @@ $EPrintSite::SiteInfo::wget_command =
 ######################################################################
 
 # Command for sending mail
-$EPrintSite::SiteInfo::sendmail = "/usr/lib/sendmail -oi -t -odb";
+$EPrintSite::SiteInfo::sendmail = "/usr/sbin/sendmail -oi -t -odb";
 
 # Database information: Since we hold the password here unencrypted, this
 # file should have suitable strict read permissions
