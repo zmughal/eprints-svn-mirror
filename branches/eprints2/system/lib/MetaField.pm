@@ -126,6 +126,10 @@ sub new
 		$self->{archive} = $properties{archive};
 	}
 
+	# This gets reset later, but we need it for potential
+	# debug messages.
+	$self->{type} = $properties{type};
+	
 	$self->{field_defaults} = $self->{archive}->get_field_defaults( $properties{type} );
 	if( !defined $self->{field_defaults} )
 	{
@@ -207,7 +211,7 @@ END
 	if( $self->{field_defaults}->{$property} eq $EPrints::MetaField::REQUIRED )
 	{
 		EPrints::Config::abort( 
-			$property." on a metafield can't be undefined" );
+			$property." on a ".$self->{type}." metafield can't be undefined" );
 	}
 
 	if( $self->{field_defaults}->{$property} eq $EPrints::MetaField::UNDEF )
