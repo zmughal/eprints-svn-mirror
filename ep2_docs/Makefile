@@ -1,5 +1,5 @@
 .SUFFIXES: 
-.SUFFIXES: .html .xml .pdf .dvi .latex .ps .ok
+.SUFFIXES: .html .xml .pdf .dvi .latex .ps .ok .docbook
 
 WORK_DIR = work
 DOCBOOK_ROOT = /usr/local/share/docbook
@@ -15,6 +15,9 @@ all: alpha
 .xml.latex: 
 	./wellformed.pl $<
 	xt $< $(LATEX) > $*.latex
+
+.xml.docbook:
+	./mkdocbook.pl $< > $*.docbook
 
 .latex.dvi: 
 	test -d work || mkdir work
@@ -40,4 +43,4 @@ eprints.entities: history.ok reqsoftware.ok listinfo.ok
 	touch eprints.entities
 	rm -f *.html *.pdf *.ps *.dvi *.latex
 
-alpha: eprints.entities alpha.pdf alpha.ps alpha.html
+alpha: eprints.entities alpha.pdf alpha.ps alpha.html alpha.docbook
