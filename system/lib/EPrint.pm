@@ -682,9 +682,8 @@ sub validate_linking
 		{
 			push @problems, $self->{session}->html_phrase(
 				"lib/eprint:invalid_id",	
-				field => $self->{session}->make_text(
-					$field->display_name( $self->{session}) 
-				) );
+				field => $field->render_name( 
+						$self->{session} ) );
 			next;
 		}
 
@@ -747,8 +746,7 @@ sub validate_meta
 
 		my $problem = $self->{session}->html_phrase( 
 			"lib/eprint:not_done_field" ,
-			fieldname=> $self->{session}->make_text( 
-			   $field->display_name( $self->{session} ) ) );
+			fieldname=> $field->render_name( $self->{session} ) );
 
 		push @all_problems,$problem;
 	}
@@ -812,9 +810,8 @@ sub validate_meta_page
 
 			my $problem = $self->{session}->html_phrase( 
 				"lib/eprint:not_done_field" ,
-				fieldname=> $self->{session}->make_text( 
-			   		$field->display_name( 
-						$self->{session} ) ) );
+				fieldname=> $field->render_name( 
+						$self->{session} ) );
 			push @problems,$problem;
 		}
 
@@ -825,6 +822,14 @@ sub validate_meta_page
 			$self->{session},
 			$for_archive );
 	}
+
+	# then call the validate page function for this page
+	push @problems, $self->{session}->get_archive->call(
+		"validate_eprint_meta_page",
+		$self,
+		$self->{session},
+		$page,
+		$for_archive );
 
 	return( \@problems );
 }
@@ -851,8 +856,7 @@ sub validate_documents
 	my( $self, $for_archive ) = @_;
 	my @problems;
 	
-        my @req_formats = @{$self->{session}->get_archive()->get_conf( 
-		"required_formats" )};
+        my @req_formats = $self->required_formats;
 	my @docs = $self->get_all_documents();
 
 	my $ok = 0;
@@ -900,6 +904,7 @@ sub validate_documents
 			$prob->appendChild( 
 				$self->{session}->make_text( ": " ) );
 			$prob->appendChild( $_ );
+			push @problems, $prob;
 		}
 	}
 
@@ -1033,6 +1038,33 @@ sub datestamp
 		EPrints::Utils::get_datestamp( time ) );
 }
 
+######################################################################
+=pod
+
+=item @formats =  $eprint->required_formats
+
+Return a list of the required formats for this 
+eprint. Only one of the required formats is required, not all.
+
+An empty list means no format is required.
+
+=cut
+######################################################################
+
+sub required_formats
+{
+	my( $self ) = @_;
+
+	my $fmts = $self->{session}->get_archive()->get_conf( 
+				"required_formats" );
+	if( ref( $fmts ) ne "ARRAY" )
+	{
+		# function pointer then...
+		$fmts = &{$fmts}($self->{session},$self);
+	}
+
+	return @{$fmts};
+}
 
 ######################################################################
 =pod
@@ -1066,6 +1098,21 @@ sub move_to_deletion
 
 	my $success = $self->_transfer( $ds );
 
+	if( $success )
+	{
+		$self->generate_static();
+
+		# Generate static pages for everything in threads, if 
+		# appropriate
+		my @to_update = $self->get_all_related();
+		
+		# Do the actual updates
+		foreach (@to_update)
+		{
+			$_->generate_static();
+		}
+	}
+	
 	return $success;
 }
 
@@ -1228,12 +1275,26 @@ sub url_stem
 {
 	my( $self ) = @_;
 
-	return( 
-		sprintf( 
-			"%s/%08d/", 
-			$self->{session}->get_archive()->get_conf( 
-							"documents_url" ), 
-			$self->{data}->{eprintid} ) );
+	my $archive = $self->{session}->get_archive;
+
+	my $shorturl = $archive->get_conf( "use_short_urls" );
+	$shorturl = 0 unless( defined $shorturl );
+
+	my $url;
+	$url = $archive->get_conf( "base_url" );
+	$url .= '/archive' unless( $shorturl );
+	$url .= '/';
+	if( $shorturl )
+	{
+		$url .= $self->get_value( "eprintid" )+0;
+	}
+	else
+	{
+		$url .= sprintf( "%08d", $self->get_value( "eprintid" ) );
+	}
+	$url .= '/';
+
+	return $url;
 }
 
 
@@ -1245,8 +1306,9 @@ sub url_stem
 Generate the static version of the abstract web page. In a multi-language
 archive this will generate one version per language.
 
-It only makes sense to call this on eprints in the "archive" and
-"deletion" datasets.
+If called on inbox or buffer, remove the abstract page.
+
+Always create the symlinks for documents in the secure area.
 
 =cut
 ######################################################################
@@ -1258,13 +1320,16 @@ sub generate_static
 	my $eprintid = $self->get_value( "eprintid" );
 
 	my $ds_id = $self->{dataset}->id();
-	if( $ds_id ne "archive" && $ds_id ne "deletion" )
-	{
-		$self->{session}->get_archive()->log( 
-			"Attempt to generate static files for record ".
-			$eprintid." in dataset $ds_id (may only generate ".
-			"static for deletion and archive" );
-	}
+
+#	if( $ds_id ne "archive" && $ds_id ne "deletion" )
+#	{
+#		$self->{session}->get_archive()->log( 
+#			"Attempt to generate static files for record ".
+#			$eprintid." in dataset $ds_id (may only generate ".
+#			"static for deletion and archive" );
+#	}
+
+	$self->remove_static;
 
 	# We is going to temporarily change the language of our session to
 	# render the abstracts in each language.
@@ -1303,6 +1368,12 @@ sub generate_static
 		}
 	}
 	$self->{session}->change_lang( $real_langid );
+	my @docs = $self->get_all_documents();
+	foreach my $doc ( @docs )
+	{
+		my $linkdir = EPrints::Document::_secure_symlink_path( $self );
+		$doc->create_symlink( $self, $linkdir );
+	}
 }
 
 

@@ -61,14 +61,14 @@ package EPrints::Database;
 use DBI;
 use Carp;
 
-use EPrints::EPrint;
+#use EPrints::EPrint;
 use EPrints::Subscription;
 
 my $DEBUG_SQL = 0;
 
 # this may not be the current version of eprints, it's the version
 # of eprints where the current desired db configuration became standard.
-$EPrints::Database::DBVersion = "2.2";
+$EPrints::Database::DBVersion = "2.3";
 
 # cjg not using transactions so there is a (very small) chance of
 # dupping on a counter. 
@@ -136,35 +136,50 @@ sub new
 	bless $self, $class;
 	$self->{session} = $session;
 
-	# Connect to the database
-	$self->{dbh} = DBI->connect( 
-		build_connection_string( 
-			dbhost => $session->get_archive()->get_conf("dbhost"),
-			dbsock => $session->get_archive()->get_conf("dbsock"),
-			dbport => $session->get_archive()->get_conf("dbport"),
-			dbname => $session->get_archive()->get_conf("dbname") ),
-	        $session->get_archive()->get_conf("dbuser"),
-	        $session->get_archive()->get_conf("dbpass") );
+	$self->connect;
 
-#	        { PrintError => 0, AutoCommit => 1 } );
-
-	if( !defined $self->{dbh} )
-	{
-		return( undef );
-	}
+	if( !defined $self->{dbh} ) { return( undef ); }
 
 	$self->{debug} = $DEBUG_SQL;
 	if( $session->{noise} == 3 )
 	{
 		$self->{debug} = 1;
 	}
-	if( $session->{noise} >= 4 )
-	{
-		$self->{dbh}->trace( 2 );
-	}
 
 
 	return( $self );
+}
+
+######################################################################
+=pod
+
+=item $foo = $db->connect
+
+Connects to the database. 
+
+=cut
+######################################################################
+
+sub connect
+{
+	my( $self ) = @_;
+
+	# Connect to the database
+	$self->{dbh} = DBI->connect( 
+		build_connection_string( 
+			dbhost => $self->{session}->get_archive()->get_conf("dbhost"),
+			dbsock => $self->{session}->get_archive()->get_conf("dbsock"),
+			dbport => $self->{session}->get_archive()->get_conf("dbport"),
+			dbname => $self->{session}->get_archive()->get_conf("dbname") ),
+	        $self->{session}->get_archive()->get_conf("dbuser"),
+	        $self->{session}->get_archive()->get_conf("dbpass") );
+
+	return unless defined $self->{dbh};	
+
+	if( $self->{session}->{noise} >= 4 )
+	{
+		$self->{dbh}->trace( 2 );
+	}
 }
 
 
@@ -278,12 +293,12 @@ sub create_dataset_tables
 		type => "longtext");
 
 	# Create the index tables
-	$rv = $rv & $self->_create_table_aux(
+	$rv = $rv & $self->create_table(
 			$dataset->get_sql_index_table_name,
 			$dataset,
 			0, # no primary key
 			( $fieldword, $fieldpos, $fieldids ) );
-	$rv = $rv & $self->_create_table_aux(
+	$rv = $rv & $self->create_table(
 			$dataset->get_sql_rindex_table_name,
 			$dataset,
 			0, # no primary key
@@ -307,7 +322,7 @@ sub create_dataset_tables
 	}
 	foreach $langid ( @{$self->{session}->get_archive()->get_conf( "languages" )} )
 	{
-		$rv = $rv && $self->_create_table_aux( 
+		$rv = $rv && $self->create_table( 
 			$dataset->get_ordervalues_table_name( $langid ), 
 			$dataset, 
 			1, 
@@ -315,9 +330,8 @@ sub create_dataset_tables
 		return 0 unless $rv;
 	}
 
-
 	# Create the other tables
-	$rv = $rv && $self->_create_table_aux( 
+	$rv = $rv && $self->create_table( 
 				$dataset->get_sql_table_name, 
 				$dataset, 
 				1, 
@@ -326,20 +340,20 @@ sub create_dataset_tables
 	return $rv;
 }
 
-# $rv = _create_table_aux( $tablename, $dataset, $setkey, @fields )
+# $rv = create_table( $tablename, $dataset, $setkey, @fields )
 # boolean                  string      |         boolean  array of
 #                                      EPrints::DataSet   EPrint::MetaField
 
 ######################################################################
 # 
-# $success = $db->_create_table_aux( $tablename, $dataset, $setkey, 
+# $success = $db->create_table( $tablename, $dataset, $setkey, 
 #                                     @fields )
 #
 # undocumented
 #
 ######################################################################
 
-sub _create_table_aux
+sub create_table
 {
 	my( $self, $tablename, $dataset, $setkey, @fields ) = @_;
 	
@@ -399,7 +413,7 @@ sub _create_table_aux
 				push @auxfields,$lang;
 			}
 			push @auxfields,$auxfield;
-			my $rv = $rv && $self->_create_table_aux(	
+			my $rv = $rv && $self->create_table(	
 				$dataset->get_sql_sub_table_name( $field ),
 				$dataset,
 				0, # no primary key
@@ -498,6 +512,8 @@ sub add_record
 	# Send to the database
 	my $rv = $self->do( $sql );
 
+	EPrints::Index::insert_ordervalues( $self->{session}, $dataset, $data );
+
 	# Now add the ACTUAL data:
 	$self->update( $dataset , $data );
 	
@@ -587,8 +603,6 @@ sub update
 	# it now:
 	my $where = $keyfield->get_sql_name()." = \"$keyvalue\"";
 
-	$self->_deindex( $dataset, $keyvalue );
-
 	my @aux;
 	my %values = ();
 	my $field;
@@ -634,14 +648,6 @@ sub update
 			else
 			{
 				$values{$colname} = $value;
-			}
-			if( $field->is_text_indexable )
-			{ 
-				$self->_freetext_index( 
-					$dataset, 
-					$keyvalue, 
-					$field, 
-					$value );
 			}
 		}
 	}
@@ -786,44 +792,11 @@ sub update
 			$sql.=")";
 	                $rv = $rv && $self->do( $sql );
 
-
-			if( $multifield->is_text_indexable )
-			{
-				$self->_freetext_index( 
-					$dataset, 
-					$keyvalue, 
-					$multifield, 
-					$v->{v} );
-			}
-
 			++$position;
 		}
 	}
 
-	# remove the key field
-	splice( @fields, 0, 1 ); 
-	my @orderfields = ( $keyfield );
-
-	my $langid;
-	foreach $langid ( @{$self->{session}->get_archive()->get_conf( "languages" )} )
-	{
-		my @fnames = ( $keyfield->get_sql_name() );
-		my @fvals = ( $keyvalue );
-		foreach( @fields )
-		{
-			my $ov = $_->ordervalue( 
-					$data->{$_->get_name()},
-					$self->{session},
-					$langid );
-			
-			push @fnames, $_->get_sql_name();
-			push @fvals, prep_value( $ov );
-		}
-
-		my $ovt = $dataset->get_ordervalues_table_name( $langid );
-		$sql = "INSERT INTO ".$ovt." (".join( ",", @fnames ).") VALUES (\"".join( "\",\"", @fvals )."\")";
-		$self->do( $sql );
-	}
+	EPrints::Index::update_ordervalues( $self->{session}, $dataset, $data );
 
 	# Return with an error if unsuccessful
 	return( defined $rv );
@@ -855,8 +828,8 @@ sub remove
 	my $where = $keyfield->get_sql_name()." = \"$keyvalue\"";
 
 
-	# Delete from index
-	$self->_deindex( $dataset, $id );
+	# Delete from index (no longer used)
+	#$self->_deindex( $dataset, $id );
 
 	# Delete Subtables
 	my @fields = $dataset->get_fields( 1 );
@@ -877,6 +850,8 @@ sub remove
 	{
 		$self->{session}->get_archive()->log( "Error removing item id: $id" );
 	}
+
+	EPrints::Index::delete_ordervalues( $self->{session}, $dataset, $id );
 
 	# Return with an error if unsuccessful
 	return( defined $rv )
@@ -1030,90 +1005,13 @@ sub cache_exp
 
 
 
-######################################################################
-=pod
-
-=item $id = $db->cache_id( $searchexp, [$include_expired] )
-
-Return the id of the cached results table containing tbe results of
-the specified serialised search or under if the table does not exist
-or is expired. If include_expired is true then items over the expire
-time but still in the db also get returned.
-
-=cut
-######################################################################
-
-sub cache_id
-{
-	my( $self , $code , $include_expired ) = @_;
-
-	my $a = $self->{session}->get_archive();
-	$ds = $a->get_dataset( "cachemap" );
-
-	#cjg NOT escaped!!!
-	my $sql = "SELECT tableid FROM ".$ds->get_sql_table_name() . " WHERE searchexp = '$code' AND oneshot!='TRUE'";
-	if( !$include_expired )
-	{
-		# Don't includes expired items
-		$sql.= " AND lastused > now()-interval ".$a->get_conf( "cache_timeout" )." minute"; 
-	}
-	# Never include items past maxlife
-	$sql.= " AND created > now()-interval ".$a->get_conf("cache_maxlife")." hour"; 
-
-	my $sth = $self->prepare( $sql );
-	$self->execute( $sth , $sql );
-	my( $tableid ) = $sth->fetchrow_array;
-	$sth->finish;
-
-	return $tableid;
-}
-
-
-######################################################################
-=pod
-
-=item $bool = $db->is_cached( $searchexp )
-
-Return true if the serialised search expression is currently cached.
-
-=cut
-######################################################################
-
-sub is_cached
-{
-	my( $self , $code ) = @_;
-
-	return defined $self->cache_id( $code );
-}
-
-
-######################################################################
-=pod
-
-=item $n = $db->count_cache( $searchexp )
-
-Return the number of items in the cached search expression of undef
-if it's not cached.
-
-=cut
-######################################################################
-
-sub count_cache
-{
-	my( $self , $code ) = @_;
-
-	my $id = $self->cache_id( $code , 1 );
-	return undef if( !defined $id );
-
-	return $self->count_table( "cache".$id );
-}
 
 
 ######################################################################
 =pod
 
 =item $cacheid = $db->cache( $searchexp, $dataset, $srctable, 
-[$order], [$oneshot] )
+[$order] )
 
 Create a cache of the specified search expression from the SQL table
 $srctable.
@@ -1122,22 +1020,20 @@ If $order is set then the cache is ordered by the specified fields. For
 example "-year/title" orders by year (descending). Records with the same
 year are ordered by title.
 
-If $oneshot is true then this cache will not be available to other searches.
-
 =cut
 ######################################################################
 
 sub cache
 {
-	my( $self , $code , $dataset , $srctable , $order , $oneshot ) = @_;
+	my( $self , $code , $dataset , $srctable , $order ) = @_;
 
 	my $sql;
 	my $sth;
 
-	my $oneshotval = ($oneshot?"TRUE":"FALSE");
+	# nb. all caches are now oneshot.
 
 	my $ds = $self->{session}->get_archive()->get_dataset( "cachemap" );
-	$sql = "INSERT INTO ".$ds->get_sql_table_name()." VALUES ( NULL , NOW(), NOW() , '$code' , '$oneshotval' )";
+	$sql = "INSERT INTO ".$ds->get_sql_table_name()." VALUES ( NULL , NOW(), NOW() , '".prep_value($code)."' , 'TRUE' )";
 	
 	$self->do( $sql );
 
@@ -1163,8 +1059,8 @@ sub cache
 	$sql = "INSERT INTO $tmptable SELECT NULL , B.$keyname from ".$srctable." as B";
 	if( defined $order )
 	{
-		$sql .= ", ".$dataset->get_ordervalues_table_name($self->{session}->get_langid())." AS O";
-		$sql .= " WHERE B.$keyname = O.$keyname ORDER BY ";
+		$sql .= " LEFT JOIN ".$dataset->get_ordervalues_table_name($self->{session}->get_langid())." AS O";
+		$sql .= " ON B.$keyname = O.$keyname ORDER BY ";
 		my $first = 1;
 		foreach( split( "/", $order ) )
 		{
@@ -1264,7 +1160,6 @@ sub garbage_collect
 	{
 		$self->dispose_buffer( $_ );
 	}
-
 }
 
 
@@ -1283,7 +1178,13 @@ sub dispose_buffer
 {
 	my( $self, $id ) = @_;
 	
-	return unless( defined $TEMPTABLES{$id} );
+	unless( defined $TEMPTABLES{$id} )
+	{
+		$self->{session}->get_archive->log( <<END );
+Called dispose_buffer on non-buffer table "$id"
+END
+		return;
+	}
 	my $sql = "DROP TABLE $id";
 	$self->do( $sql );
 	delete $TEMPTABLES{$id};
@@ -1310,13 +1211,14 @@ sub get_index_ids
 #cjg iffy params
 
 	my $sql = "SELECT M.ids FROM $table as M where $condition";	
-	my $results;
+	my $results = [];
 	my $sth = $self->prepare( $sql );
 	$self->execute( $sth, $sql );
 	while( @info = $sth->fetchrow_array ) {
 		my @list = split(":",$info[0]);
-		# Remove first & last.
-		shift @list;
+#		# Remove first & last.
+# cjg no longer needed with new indexer
+#		shift @list;
 		push @{$results}, @list;
 	}
 	$sth->finish;
@@ -1341,7 +1243,7 @@ sub search
 {
 	my( $self, $keyfield, $tables, $conditions) = @_;
 	
-	my $sql = "SELECT M.".$keyfield->get_sql_name()." FROM ";
+	my $sql = "SELECT DISTINCT M.".$keyfield->get_sql_name()." FROM ";
 	my $first = 1;
 	foreach( keys %{$tables} )
 	{
@@ -1354,7 +1256,7 @@ sub search
 		$sql .= " WHERE $conditions";
 	}
 
-	my $results;
+	my $results = [];
 	my $sth = $self->prepare( $sql );
 	$self->execute( $sth, $sql );
 	while( @info = $sth->fetchrow_array ) {
@@ -1444,7 +1346,7 @@ sub from_buffer
 ######################################################################
 =pod
 
-=item $foo = $db->from_cache( $dataset, [$searchexp], [$id], [$offset], [$count], [$justids] )
+=item $foo = $db->from_cache( $dataset, $cacheid, [$offset], [$count], [$justids] )
 
 Return a reference to an array containing all the items from the
 given dataset that have id's in the specified cache. The cache may be 
@@ -1461,22 +1363,17 @@ ids, not the objects.
 
 sub from_cache
 {
-	my( $self , $dataset , $code , $id , $offset , $count , $justids) = @_;
+	my( $self , $dataset , $cacheid , $offset , $count , $justids) = @_;
 
 	# Force offset and count to be ints
 	$offset+=0;
 	$count+=0;
 
-	if( !defined $id )
-	{
-		$id = $self->cache_id( $code , 1 )+0;
-	}
-
 	my @results;
 	if( $justids )
 	{
 		my $keyfield = $dataset->get_key_field();
-		my $sql = "SELECT ".$keyfield->get_sql_name()." FROM cache".$id." AS C ";
+		my $sql = "SELECT ".$keyfield->get_sql_name()." FROM cache".$cacheid." AS C ";
 		$sql.= "WHERE C.pos>$offset ";
 		if( $count > 0 )
 		{
@@ -1493,16 +1390,16 @@ sub from_cache
 	}
 	else
 	{
-		@results = $self->_get( $dataset, 3, "cache".$id, $offset , $count );
+		@results = $self->_get( $dataset, 3, "cache".$cacheid, $offset , $count );
 	}
 
 	$ds = $self->{session}->get_archive()->get_dataset( "cachemap" );
-	my $sql = "UPDATE ".$ds->get_sql_table_name()." SET lastused = NOW() WHERE tableid = $id";
+	my $sql = "UPDATE ".$ds->get_sql_table_name()." SET lastused = NOW() WHERE tableid = $cacheid";
 	$self->do( $sql );
 
 	$self->drop_old_caches();
 
-	return @results;
+	return \@results;
 }
 
 
@@ -1868,8 +1765,8 @@ confess();
 
 =item $foo = $db->get_values( $field, $dataset )
 
-Return an array of all the distinct values of the EPrints::MetaField
-specified.
+Return a reference to an array of all the distinct values of the 
+EPrints::MetaField specified.
 
 =cut
 ######################################################################
@@ -1895,6 +1792,7 @@ sub get_values
 	my $sql = "SELECT DISTINCT $fn FROM $table";
 	$sth = $self->prepare( $sql );
 	$self->execute( $sth, $sql );
+	my @values = ();
 	my @row = ();
 	while( @row = $sth->fetchrow_array ) 
 	{
@@ -1913,7 +1811,7 @@ sub get_values
 		}
 	}
 	$sth->finish;
-	return @values;
+	return \@values;
 }
 
 
@@ -1937,10 +1835,29 @@ sub do
 		$self->{session}->get_archive()->log( "Database execute debug: $sql" );
 	}
 	my $result = $self->{dbh}->do( $sql );
-
-	if ( !$result ) 
+	if( !$result )
 	{
 		$self->{session}->get_archive()->log( "SQL ERROR (do): $sql" );
+		$self->{session}->get_archive()->log( "SQL ERROR (do): ".$self->{dbh}->errstr.' (#'.$self->{dbh}->err.')' );
+
+		return undef unless( $self->{dbh}->err == 2006 );
+
+		my $ccount = 0;
+		while( $ccount < 10 )
+		{
+			++$ccount;
+			sleep 3;
+			$self->{session}->get_archive()->log( "Attempting DB reconnect: $ccount" );
+			$self->connect;
+			if( defined $self->{dbh} )
+			{
+				$result = $self->{dbh}->do( $sql );
+				return $result if( defined $result );
+				$self->{session}->get_archive()->log( "SQL ERROR (do): ".$self->{dbh}->errstr );
+			}
+		}
+		$self->{session}->get_archive()->log( "Giving up after 10 tries" );
+		return undef;
 	}
 
 	return $result;
@@ -1967,10 +1884,30 @@ sub prepare
 #	}
 
 	my $result = $self->{dbh}->prepare( $sql );
-
-	if ( !$result ) 
+	my $ccount = 0;
+	if( !$result )
 	{
 		$self->{session}->get_archive()->log( "SQL ERROR (prepare): $sql" );
+		$self->{session}->get_archive()->log( "SQL ERROR (prepare): ".$self->{dbh}->errstr.' (#'.$self->{dbh}->err.')' );
+
+		return undef unless( $self->{dbh}->err == 2006 );
+
+		my $ccount = 0;
+		while( $ccount < 10 )
+		{
+			++$ccount;
+			sleep 3;
+			$self->{session}->get_archive()->log( "Attempting DB reconnect: $ccount" );
+			$self->connect;
+			if( defined $self->{dbh} )
+			{
+				$result = $self->{dbh}->prepare( $sql );
+				return $result if( defined $result );
+				$self->{session}->get_archive()->log( "SQL ERROR (prepare): ".$self->{dbh}->errstr );
+			}
+		}
+		$self->{session}->get_archive()->log( "Giving up after 10 tries" );
+		return undef;
 	}
 
 	return $result;
@@ -1998,10 +1935,11 @@ sub execute
 	}
 
 	my $result = $sth->execute;
-
-	if ( !$result ) 
+	while( !$result )
 	{
 		$self->{session}->get_archive()->log( "SQL ERROR (execute): $sql" );
+		$self->{session}->get_archive()->log( "SQL ERROR (execute): ".$self->{dbh}->errstr );
+		return undef;
 	}
 
 	return $result;
@@ -2043,148 +1981,6 @@ sub exists
 	return 0;
 }
 
-######################################################################
-# 
-# $foo = $db->_freetext_index( $dataset, $id, $field, $value )
-#
-# undocumented
-#
-######################################################################
-
-sub _freetext_index
-{
-	my( $self , $dataset , $id , $field , $value ) = @_;
-				# nb. id is already escaped
-
-	my $rv = 1;
-	if( !defined $value || $value eq "" )
-	{
-		return $rv;
-	}
-
-	my $keyfield = $dataset->get_key_field();
-
-	my $indextable = $dataset->get_sql_index_table_name();
-	my $rindextable = $dataset->get_sql_rindex_table_name();
-	
-	my( $good , $bad ) = $self->{session}->get_archive()->call( "extract_words" , $value );
-
-	my $sql;
-	foreach( @{$good} )
-	{
-#cjg FOR GODS SAKE make this a transaction...
-		my $code = prep_value($field->get_sql_name().":$_");
-		my $sth;
-		$sql = "SELECT max(pos) FROM $indextable where fieldword='$code'"; 
-		$sth=$self->prepare( $sql );
-		$rv = $rv && $self->execute( $sth, $sql );
-		return 0 unless $rv;
-		my ( $n ) = $sth->fetchrow_array;
-		$sth->finish;
-		my $insert = 0;
-		if( !defined $n )
-		{
-			$n = 0;
-			$insert = 1;
-		}
-		else
-		{
-			$sql = "SELECT ids FROM $indextable WHERE fieldword='$code' AND pos=$n"; 
-			$sth=$self->prepare( $sql );
-			$rv = $rv && $self->execute( $sth, $sql );
-			my( $ids ) = $sth->fetchrow_array;
-			$sth->finish;
-			my( @list ) = split( ":",$ids );
-			# don't forget the first and last are empty!
-			if( (scalar @list)-2 < 128 )
-			{
-				$sql = "UPDATE $indextable SET ids='$ids$id:' WHERE fieldword='$code' AND pos=$n";	
-				$rv = $rv && $self->do( $sql );
-				return 0 unless $rv;
-			}
-			else
-			{
-				++$n;
-				$insert = 1;
-			}
-		}
-		if( $insert )
-		{
-			$sql = "INSERT INTO $indextable (fieldword,pos,ids ) VALUES ('$code',$n,':$id:')";
-			$rv = $rv && $self->do( $sql );
-			return 0 unless $rv;
-		}
-		$sql = "INSERT INTO $rindextable (fieldword,".$keyfield->get_sql_name()." ) VALUES ('$code','$id')";
-		$rv = $rv && $self->do( $sql );
-		return 0 unless $rv;
-
-	} 
-	return $rv;
-}
-
-
-
-######################################################################
-# 
-# $foo = $db->_deindex( $dataset, $keyvalue )
-#
-# undocumented
-#
-######################################################################
-
-sub _deindex
-{
-	my( $self, $dataset, $keyvalue ) = @_;
-
-	$rv = 1;
-
-	my $keyfield = $dataset->get_key_field();
-	my $where = $keyfield->get_sql_name()." = \"$keyvalue\"";
-
-	# Trim out indexes
-	my $indextable = $dataset->get_sql_index_table_name();
-	my $rindextable = $dataset->get_sql_rindex_table_name();
-	$sql = "SELECT fieldword FROM $rindextable WHERE $where";
-	my $sth=$self->prepare( $sql );
-	$rv = $rv && $self->execute( $sth, $sql );
-	my @codes = ();
-	my $code;	
-	while( $code = $sth->fetchrow_array )
-	{
-		push @codes,$code;
-	}
-	$sth->finish;
-	foreach( @codes )
-	{
-		$code = prep_value( $_ );
-		$sql = "SELECT ids,pos FROM $indextable WHERE fieldword='$code' AND ids LIKE '%:$keyvalue:%'";
-		$sth=$self->prepare( $sql );
-		$rv = $rv && $self->execute( $sth, $sql );
-		if( ($ids,$pos) = $sth->fetchrow_array )
-		{
-			$ids =~ s/:$keyvalue:/:/g;
-			$sql = "UPDATE $indextable SET ids = '$ids' WHERE fieldword='$code' AND pos='$pos'";
-			$rv = $rv && $self->do( $sql );
-		}
-		$sth->finish;
-	}
-	$sql = "DELETE FROM $rindextable WHERE $where";
-	$rv = $rv && $self->do( $sql );
-
-	# Remove "order" table entries.
-
-	my $langid;
-	foreach $langid ( @{$self->{session}->get_archive()->get_conf( "languages" )} )
-	{
-		my $ovt = $dataset->get_ordervalues_table_name( $langid );
-		$sql = "DELETE FROM ".$ovt." WHERE ".$where;
-		$rv = $rv && $self->do( $sql );
-	}
-
-	# Return with an error if unsuccessful
-
-	return $rv;
-}
 
 
 ######################################################################
@@ -2285,6 +2081,90 @@ sub has_table
 	}
 	$sth->finish;
 	return $result;
+}
+
+######################################################################
+=pod
+
+=item $db->install_table( $tablename, $newtablename )
+
+Move table $tablename to $newtablename. Erase $newtablename if it
+exists.
+
+=cut
+######################################################################
+
+sub install_table
+{
+	my( $self, $current_pos, $target_pos ) = @_;
+
+	if( $self->has_table( $target_pos ) )
+	{
+		$self->swap_tables( 
+			$current_pos,
+			$target_pos );
+		$self->drop_table( $current_pos );
+		return;
+	}
+
+	$self->rename_table( 
+		$current_pos,
+		$target_pos );
+}
+		
+######################################################################
+=pod
+
+=item $db->drop_table( $tablename )
+
+Delete the named table. Use with caution!
+
+=cut
+######################################################################
+	
+sub drop_table
+{
+	my( $self, $tablename ) = @_;
+
+	my $sql = "DROP TABLE ".$tablename;
+	$self->do( $sql );
+}
+
+######################################################################
+=pod
+
+=item $db->rename_table( $tablename, $newtablename )
+
+Renames the table from the old name to the new one.
+
+=cut
+######################################################################
+
+sub rename_table
+{
+	my( $self, $table_from, $table_to ) = @_;
+
+	my $sql = "RENAME TABLE $table_from TO $table_to";
+	$self->do( $sql );
+}
+
+######################################################################
+=pod
+
+=item $db->has_table( $table_a, $table_b )
+
+Swap table a and table b. 
+
+=cut
+######################################################################
+
+sub swap_tables
+{
+	my( $self, $table_a, $table_b ) = @_;
+
+	my $tmp = $table_a.'_swap';
+	my $sql = "RENAME TABLE $table_a TO $tmp, $table_b TO $table_a, $tmp TO $table_b";
+	$self->do( $sql );
 }
 
 ######################################################################
@@ -2437,6 +2317,20 @@ sub pad_date
 
 	return sprintf("%04d-%02d-%02d",$y,$m,$d);
 }
+
+######################################################################
+=pod
+
+=item $version = $db->mysql_version;
+
+Return the mysql version.
+
+=cut
+######################################################################
+
+#sub mysql_version
+#{
+	#my( @_ 
 
 1; # For use/require success
 
