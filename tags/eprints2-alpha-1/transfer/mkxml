@@ -1,0 +1,86 @@
+#!/usr/bin/perl
+
+use XML::Writer;
+
+my $writer = new XML::Writer(
+                OUTPUT => $session->{oai_output_fh},
+                DATA_MODE => 1,
+                DATA_INDENT => 2 );
+
+
+my @firnames;
+my $surnames;
+open(ECSINFO,"ecsinfo");
+while(<ECSINFO>) {
+	my @row = split /:/;
+	foreach(@row){ s/[\\']/\\$&/g; }
+	push @firnames,$row[2] if ($row[2] !~ m/^\s*$/);	
+	push @surnames,$row[0] if ($row[0] !~ m/^\s*$/);
+}
+close ECSINFO;
+
+@subs = ();
+print "SUBJECTS:\n";
+open(SUB,"/opt/eprints/cfg/subjects");
+while(<SUB>) {
+	chomp;
+	@data = split(":");
+	next unless $data[3];
+	push @subs,$data[0] ;
+	print "* $data[0]\n";
+}
+close SUB;
+
+$writer->xmlDecl("UTF-8");
+$writer->startTag( "EPRINTS", "xmlns"=>$verb_namespaces{$verb},
+                      "xmlns:xsi"=>"http://www.w3.org/2000/10/XMLSchema-instance",
+                      "xsi:schemaLocation"=>$verb_namespaces{$verb}." ".$verb_schemas{$verb} );
+$writer->startTag( "TABLE",
+                      "id"=>"archive" ); 
+
+for $id (1..1000) {
+	$writer->startTag( "RECORD" );
+	$writer->dataElement( "TEXT" , "demo$id" , "field"=>"eprintid" );
+	$year = int rand(100)+1910;
+	my ($c,$s) = ("","");
+	if ($id % 8 == 0) 
+	{
+		$s = "demo".($id / 8);
+	}
+	if ($id % 100 == 0)
+	{
+		$c = "demo".($id / 100);
+	}
+	$writer->dataElement( "TEXT" , "cjg" , "field"=>"username" );
+	$writer->dataElement( "TEXT" , "Title of paper (#$id)" , "field"=>"title" );
+	$writer->dataElement( "EPRINTTYPE" , "confpaper" , "field"=>"type" );
+	$writer->dataElement( "YEAR" , "$year" , "field"=>"year" );
+	$writer->dataElement( "MULTITEXT" , "da abstract" , "field"=>"abstract" );
+	$writer->dataElement( "TEXT" , "conference goes here!" , "field"=>"conference" );
+	$writer->dataElement( "TEXT" , "$s" , "field"=>"succeeds" );
+	$writer->dataElement( "TEXT" , "$c" , "field"=>"commentary" );
+	for(0..rand(5)+1) {
+		$sur = $surnames[int rand scalar @surnames];
+		$fir = $firnames[int rand scalar @firnames];
+		$writer->startTag( "NAME" , "field"=>"authors" );
+		$writer->dataElement( "FAMILY" , "$sur" );
+		$writer->dataElement( "GIVEN" , "$fir" );
+		$writer->endTag( "NAME" );
+	}
+	for(0..rand(2)) {
+		$sur = $surnames[int rand scalar @surnames];
+		$fir = $firnames[int rand scalar @firnames];
+		$writer->startTag( "NAME" , "field"=>"editors" );
+		$writer->dataElement( "FAMILY" , "$sur" );
+		$writer->dataElement( "GIVEN" , "$fir" );
+		$writer->endTag( "NAME" );
+	}
+	for(0..rand(3)+1) {
+		$sub = $subs[int rand scalar @subs];
+		$writer->dataElement( "SUBJECTS" , "$sub" , "field"=>"subjects" );
+	}
+	#print STDERR "$eprintid\n";
+	$writer->endTag( "RECORD" );
+}
+$writer->endTag( "TABLE" );
+$writer->endTag( "EPRINTS" );

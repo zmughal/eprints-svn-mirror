@@ -1,0 +1,117 @@
+#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+
+######################################################################
+#
+#  Erase the archive.
+#
+#   This script completely erases the archive contents, including all
+#   database tables and eprint files.  After running this, the metadata
+#   configuration can be safely updated and the create_databases
+#   script run again.
+#
+#   This script asks for confirmation before actually erasing anything.
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+
+## NEEDS A SESSION, eh?
+
+use EPrints::Database;
+
+use strict;
+
+my $archive = EPrints::Archive->new_archive_by_id( $ARGV[0], 1 );
+exit( 1 ) unless( defined $archive );
+
+my $local_document_root = $archive->get_conf( "local_document_root" );
+my $database = $archive->get_conf( "dbname" );
+
+my $force = ( $ARGV[1] eq "FORCE" );
+
+# This script dosn't currently work on remote machines, which may well
+# not allow remote admin log in anyway.
+
+
+# make this work dammit cjg
+#if ( defined $dbhost ||
+     #defined $EPrintSite::SiteInfo::dbsock ||
+     #defined $EPrintSite::SiteInfo::dbport ) 
+#{
+	#print "\n";
+	#print "This script currently does not work with databases\n";
+	#print "not running on the default port of localhost.\n";
+	#print "\n";
+	#exit;
+#}
+
+my $input;
+unless( $force )
+{
+	# Write the confirmation prompt
+	print "This script completely erases the archive, including all metadata,\n";
+	print "database tables and eprint files.\n\n";
+	print "Are you sure you want this to happen? (yes/no)\n";
+	
+	$input = <STDIN>;
+	chomp( $input );
+}
+
+# We'll only work if they type "yes" exactly, otherwise we just abort.
+if( $force || $input eq "yes" )
+{
+	# First erase the database tables. We now do this the dramatic way
+	# of dropping and recreating the database.
+	# This makes it possible to erase a really broken setup.
+
+	my $mysqladmin_path = "mysqladmin";
+
+	unless( $force )
+	{
+		# Get the path of the mysql monitor tool
+		print "Path of mysqladmin tool (the default is fine if it's in your standard shell path)\n";
+		print "[$mysqladmin_path]: ";
+	
+		$input = <STDIN>;
+		chomp( $input );
+		$mysqladmin_path = $input if( $input ne "" );
+	}
+
+	print "Dropping and recreating database (requires database root password)\n";
+	print "You will need to enter the MySQL root user password.\n";
+
+	my $cmds = "drop $database";
+	$cmds.= " create $database";
+
+	# We use the force -f option as we've already checked user meant to do this.
+	my $rc = 0xffff & system( "$mysqladmin_path -u root -f $cmds" );
+
+	print "Erasing eprint files...\n";
+	
+	# Get available directories
+	opendir DOCSTORE, $local_document_root
+		or print STDERR "Can't open DOCSTORE";
+
+	# The grep here just removes the "." and ".." directories
+	my @avail = grep !/^\.\.?$/, readdir DOCSTORE;
+	closedir DOCSTORE;
+
+	# Remove the contents of each of the directories.
+	my $dir;
+	foreach $dir (@avail)
+	{
+		$rc = 0xffff & system(
+			"rm -rf $local_document_root/$dir/*" );
+		print STDERR "Warning: Cleaning $local_document_root/$dir didn't go smoothly\n"
+			unless( $rc==0 );
+	}
+
+	print "Done.\n";
+}

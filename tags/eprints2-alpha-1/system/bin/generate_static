@@ -1,0 +1,141 @@
+#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+
+######################################################################
+#
+#  Generate static pages using site template.
+#
+#   This trawls through local_root/static. Every HTML file is given
+#   the site frame and written to local_html_root. HTML files that
+#   already have the full <HTML> .. </HTML> gubbins are left as-is.
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints::Session;
+
+use File::Copy;
+use File::Find;
+use strict;
+
+my $session = new EPrints::Session( 1 , $ARGV[0] );
+exit( 1 ) unless( defined $session );
+
+# change to base of site so expat can find the dtd directory. cjg (still needed???)
+chdir( $session->get_archive()->get_conf( "archiveroot" ) );
+
+print "____________________________\n";
+my $langid;
+my $generalpath = $session->get_archive()->get_conf( "static_html_root" )."/general";
+foreach $langid ( @{$session->get_archive()->get_conf( "languages" )} )
+{
+	print $langid."\n";
+	my $basepath = $session->get_archive()->get_conf( "static_html_root" ).
+	               "/$langid";
+	my $func;
+	$func = sub { generate_static( $langid, $basepath, $session ) };
+	find( { wanted=>$func, follow=>1 }, $basepath );
+	$func = sub { generate_static( $langid, $generalpath, $session ) };
+	find( { wanted=>$func, follow=>1 }, $generalpath );
+}
+exit;
+
+
+$session->terminate();
+	
+
+sub generate_static
+{
+	my( $langid , $basepath , $session ) = @_;
+	# Ignore CVS directories
+	return if( $File::Find::name =~ /\/CVS/ );
+
+	my $destination_filename = $File::Find::name;
+
+	my $newpath = $session->get_archive()->get_conf( "local_html_root" ).
+	              "/$langid";
+	$destination_filename =~ s/$basepath/$newpath/;
+
+print STDERR "$File::Find::name -> $destination_filename\n";
+	
+	if( -d $File::Find::name )
+	{
+		# If it's a directory, just make sure it exists in the destination.
+		unless( -e $destination_filename )
+		{
+			print "mkdir $destination_filename\n";
+			mkdir( $destination_filename, 0775 )
+				or die "Can't make directory $destination_filename: $!\n";
+		}
+	}
+	else
+	{
+		# Is this is an HTML template file?
+		if( $destination_filename =~ m/\.x(html|page)$/ )
+		{
+			my $mode = $1;
+			$destination_filename =~ s/\.x(html|page)$/.html/;
+
+			my $doc = $session->get_archive()->parse_xml(
+						$File::Find::name );
+
+			my $page = ($doc->getElementsByTagName( $mode ))[0];
+			if( !defined $page )
+			{
+				die( "Error: no $mode element in ".
+					$File::Find::name );
+			}
+
+			$doc->removeChild( $page );
+			$session->new_page( $langid );
+			$session->take_ownership( $page );
+			$doc->dispose();
+
+			if( $mode eq "page" )
+			{
+				my $title = 
+				   ($page->getElementsByTagName( "title" ))[0];
+				if( !$title )
+				{
+					die( "Error: no title element in ".
+						$File::Find::name );
+				}
+				my $titletext = "";
+				my $kid;
+				foreach $kid ( $title->getChildNodes )
+				{
+					$titletext .= $kid->toString();	
+				}
+				
+				my $main = 
+				   ($page->getElementsByTagName( "body" ))[0];
+				if( !defined $main )
+				{
+					die( "Error: no main element in ".
+						$File::Find::name );
+				}
+				$page->removeChild( $main );
+				$session->build_page( $titletext, $main );
+				$page->dispose();
+			}
+			else 	# $mode is "html"
+			{
+				$session->set_page( $page );	
+			}	
+			$session->page_to_file( $destination_filename );
+
+		}
+		else
+		{
+			# Just need to copy the file verbatim
+			File::Copy::copy( $File::Find::name, $destination_filename ) or
+				die "Couldn't copy $File::Find::name to $destination_filename: $!\n";
+		}
+	}
+}

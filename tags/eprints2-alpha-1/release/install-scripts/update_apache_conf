@@ -1,0 +1,111 @@
+#!/usr/bin/perl
+
+use strict;
+
+my( $apache_config, $prefix, $hostname, $port, $username, $group ) = @ARGV;
+
+open IN, $apache_config or die "Can't open $apache_config for input: $!\n";
+open OUT, ">$apache_config.new" or die "Can't open $apache_config.new for output: $!\n";
+
+my $have_apache_dbi = 0;
+my $have_apache_auth_dbi = 0;
+
+while (<IN>)
+{
+	chomp();
+
+	if( /^\s*User\s+/ )
+	{
+		# We're in the system section, where we should put the core system stuff.
+		print OUT "# Changed by eprints installation script:\n";
+		print OUT "User $username\n";
+		print OUT "Group $group\n";
+		print OUT "ServerName $hostname\n";
+		print OUT "DocumentRoot \"$prefix/html\"\n";
+		print OUT "Port $port\n\n";
+		print OUT "# $_\n";
+	}
+	elsif( /^\s*Group\s+/ )
+	{
+		print OUT "# Changed by eprints installation script:\n";
+		print OUT "#$_\n";
+	}
+	elsif( /^\s*ServerName\s+/ )
+	{
+		print OUT "# Changed by eprints installation script:\n";
+		print OUT "#$_\n";
+	}
+	elsif( /^\s*DocumentRoot\s+/ )
+	{
+		print OUT "# Changed by eprints installation script:\n";
+		print OUT "#$_\n";
+	}
+	elsif( /^\s*Port\s+/ )
+	{
+		print OUT "# Changed by eprints installation script:\n";
+		print OUT "#$_\n";
+	}
+	elsif( /^[^#]*PerlModule.*Apache::DBI/ )
+	{
+		$have_apache_dbi = 1;
+		print OUT "$_\n";
+	}
+	elsif( /^[^#]*PerlModule.*Apache::DBI/ )
+	{
+		$have_apache_auth_dbi = 1;
+		print OUT "$_\n";
+	}
+	elsif( /\s*Alias\s+\/?perl\/?\s+/ )
+	{
+		print OUT "# Changed by eprints installation script\n";
+		print OUT "# $_\n";
+	}
+	else
+	{
+		print OUT "$_\n";
+	}
+}
+
+close IN;
+
+print OUT "# Lines below added by Eprints configuration script\n";
+
+print OUT "PerlModule Apache::DBI\n" unless( $have_apache_dbi );
+print OUT "PerlModule Apache::AuthDBI\n" unless( $have_apache_auth_dbi );
+
+print OUT <<__EOF__;
+ErrorDocument 401 /error401.html
+ErrorDocument 404 /perl/handle_404
+
+<Directory "$prefix/html">
+    Options Includes FollowSymLinks
+    AllowOverride AuthConfig
+    Order allow,deny
+    Allow from all
+</Directory>
+
+Alias /perl/ $prefix/cgi/
+<Directory $prefix/cgi>
+    SetHandler perl-script
+    PerlHandler Apache::Registry
+    PerlSendHeader Off
+    Options +ExecCGI
+    AllowOverride AuthConfig
+</Directory>
+
+RewriteEngine on
+RewriteRule ^/Dienst(.*) $prefix/openarchives/Main/dienst.pl
+<Directory $prefix/openarchives/Main>
+    SetHandler perl-script
+    PerlHandler Apache::Registry
+    Options +ExecCGI
+    allow from all
+    PerlSendHeader Off
+</Directory>
+
+__EOF__
+
+close OUT;
+
+rename "$apache_config", "$apache_config.bak";
+rename "$apache_config.new", "$apache_config";

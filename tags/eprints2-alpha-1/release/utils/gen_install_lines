@@ -1,0 +1,72 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+my @core_dirs_exe=( qw/bin cgi openarchives/ );
+my @core_dirs_plain=( "perl_lib/EPrints" );
+my @site_dirs_exe=();
+my @site_dirs_plain=( qw/cfg html static/ );
+
+
+# Write directory lines
+my @core_files_exe = write_dirs( \@core_dirs_exe, "core_dirs_exe" );
+my @core_files_plain = write_dirs( \@core_dirs_plain, "core_dirs_plain" );
+my @site_files_exe = write_dirs( \@site_dirs_exe, "site_dirs_exe" );
+my @site_files_plain = write_dirs( \@site_dirs_plain, "site_dirs_plain" );
+
+write_files( \@core_files_exe, "core_files_exe" );
+
+write_files( \@core_files_plain, "core_files_plain" );
+
+write_files( \@site_files_exe, "site_files_exe" );
+
+write_files( \@site_files_plain, "site_files_plain" );
+
+
+
+
+
+sub write_dirs
+{
+	my( $dirs, $var ) = @_;
+	
+	my @all_dirs;
+
+	print "$var=";
+	
+	foreach (@$dirs)
+	{
+		open IN, "find $_ -type d|";
+		while (<IN>)
+		{
+			chomp();
+			push @all_dirs, $_;
+			print "$_ ";
+		}
+		close IN;
+	}
+	
+	print "\n";
+
+	return @all_dirs;
+}
+
+
+sub write_files
+{
+	my( $dirs, $var ) = @_;
+	
+	print "$var=";
+	
+	foreach (@$dirs)
+	{
+		open IN, "find $_ -type f|";
+		while (<IN>)
+		{
+			chomp();
+			print "to_install/$_ " unless( /htaccess/ );
+		}
+		close IN;
+	}
+	print "\n";
+}

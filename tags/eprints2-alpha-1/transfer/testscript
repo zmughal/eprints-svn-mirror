@@ -1,0 +1,93 @@
+#!/usr/bin/perl -w
+
+use EPrints::Session;
+use EPrints::HTMLRender;
+
+use strict;
+
+#my $session = new EPrints::Session(1);
+
+while(<>) 
+{
+	chomp;
+	s/^[A-Z]+:\s+//;
+	s/\r/\r\n/g;
+	print "$_\n";
+	my( $good , $bad ) = extract_words( $_ );
+	print "GOOD: ".join(", ",@{$good})."\n";
+	print "BAD: ".join(", ",@{$bad})."\n";
+	print "\n";
+}
+exit;
+
+sub extract_words
+{
+	my( $text ) = @_;
+
+	my $MIN_WORDSIZE = 3;
+	my %NEVER_WORDS = ( 
+		"the"=>1,
+		"you"=>1,
+		"for"=>1,
+		"and"=>1 );
+	my %ALWAYS_WORDS = (
+		"ok"=>1
+	);
+	
+	$text =~ s/'//g;
+	# Normalise acronyms eg.
+	# The F.B.I. is like M.I.5.
+	# becomes
+	# The FBI  is like MI5
+	my $a;
+	$text =~ s#[A-Z]\.([A-Z0-9]\.)+#$a=$&;$a=~s/\.//g;$a#ge;
+	$text=~ s#[A-Z]-[A-Z](-[A-Z])*#$a=$&;$a=~s/-//g;$a#ge;
+
+	$text =~ s/[^a-zA-Z0-9]/ /g;
+	my @words = split  /\s+/ , $text;
+	print "TEXT2: $text\n";
+	print "WORDS: ".join(", ",@words)."\n";
+	my %good = ();
+	my %bad = ();
+	foreach( @words )
+	{	
+		my $wordlen = length $_;
+		my $ok = $wordlen >= $MIN_WORDSIZE;
+	
+		# all caps (unless one letter only)
+		if( m/^[A-Z][A-Z0-9]+$/ )
+		{
+			$ok=1;
+		}
+	
+		if( $NEVER_WORDS{lc $_} )
+		{
+			$ok = 0;
+		}
+		if( $ALWAYS_WORDS{lc $_} )
+		{
+			$ok = 1;
+		}
+		
+		if( $ok )
+		{
+			s/s$//;
+			if( m/[a-z]/ )
+			{
+				$_ = lc $_;
+			}
+	
+			# no plural
+			$good{$_}++;
+		}
+		else 
+		{
+			$bad{$_}++;
+		}
+	}
+	my( @g ) = keys %good;
+	my( @b ) = keys %bad;
+	return( \@g , \@b );
+}
+
+#$session->terminate();

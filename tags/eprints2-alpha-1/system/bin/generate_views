@@ -1,0 +1,105 @@
+#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+
+######################################################################
+#
+#  Subject View Generator
+#
+#   This script generates the per-subject views of documents, and
+#   regenerates the front page accordingly.
+#
+#   This script should be run periodically, AT LEAST every day but
+#   preferably every hour.  If the archive on a busy or large site,
+#   it might be an idea to nice this.
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints::EPrint;
+use EPrints::Session;
+use EPrints::HTMLRender;
+use EPrints::Subject;
+
+my $session = new EPrints::Session( 1 , $ARGV[0] );
+exit( 1 ) unless( defined $session );
+
+
+# Get all of the available subjects
+my( $subjects, $subjectmap ) = EPrints::Subject::get_all( $session );
+
+my $langid;
+foreach $langid ( @{$session->get_archive()->get_conf( "languages" )} )
+{
+	my $dir =  $session->get_archive()->get_conf( "local_html_root" ).
+		"/".$langid."/view";
+	unless( -d $dir )
+	{
+		print "mkdir $dir\n";
+		mkdir( $dir, 0775 ) or die "Can't make directory $dir: $!\n";
+	}
+	# Start with the root
+	&write_subject_view( 
+		$session, 
+		$langid, 
+		$dir."/index.html",
+		new EPrints::Subject( $session ) );
+
+
+	# Now do each of the subjects
+
+	foreach $subject (@$subjects)
+	{
+		&write_subject_view( 
+			$session, 
+			$langid, 
+			$dir."/".$subject->{subjectid}.".html",
+			$subject );
+	}
+}
+
+$session->terminate();
+
+
+
+sub write_subject_view
+{
+	my( $session, $langid, $file, $subject ) = @_;
+	
+	$session->new_page( $langid );
+	my $page = $session->make_doc_fragment();
+	
+	# Title (cjg NOT INTL)
+	my $title = "Browse by Subject: ".$subject->{name};
+	
+	# Tree at the top
+	$page->appendChild( $session->render_subject_tree( $subject ) );
+	$page->appendChild( $session->render_ruler() );
+	# The entries themselves
+	my @eprints = $subject->posted_eprints( 
+		$session->get_archive()->get_dataset( "archive" ) );
+
+	# not INTL!cjg
+	my $p = $session->make_element( "p" );
+	my $n = $session->make_element( "span", class=>"number" );
+	$p->appendChild( $session->make_text("This subject category contains "));
+	$n->appendChild( $session->make_text(scalar @eprints) );
+	$p->appendChild( $n );
+	$p->appendChild( $session->make_text(" entries"));
+	$page->appendChild( $p );		
+	
+	my $eprint;
+	foreach $eprint (@eprints)
+	{
+		$p = $session->make_element( "p" );
+		$p->appendChild( $eprint->render_citation_link() );
+		$page->appendChild( $p );
+	}
+	$session->build_page( $title, $page );
+	$session->page_to_file( $file );
+}

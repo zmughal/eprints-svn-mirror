@@ -1,0 +1,159 @@
+
+<chapter><title>What software does &ep2; need? Where do I get it?</title>
+<para>This is a very rough and ready guide. This is alpha software, if you want spell checking wait for the beta...</para>
+<para>Suggestions to improve these instructions are welcome.</para>
+<sect1><title>Where to get the Required Software From</title>
+<para>It's up to you, we have found that installing from source is more effective than RPM's, feel free to dispute this. The best place to get a software tool is the official site, but we've put a mirror of versions known to work at:
+<ulink href="http://www.eprints.org/files/tools/">http://www.eprints.org/files/tools/</ulink></para> 
+</sect1>
+<sect1><title>Apache/mod_perl</title>
+<para>
+The Apache HTTP server was designed as a plug-in replacement for the NCSA server (version 1.4). It fixes numerous bugs in the NCSA server, and includes many new features - including an API to make user extension easier. EPrints requires Apache to be configured with mod_perl, as this allows Apache modules that are entirely written in perl, hence providing much improved efficiency.
+</para>
+<para>
+Downloads
+<itemizedlist mark="opencircle">
+<listitem><ulink>http://httpd.apache.org/dist/httpd/</ulink></listitem>
+</itemizedlist>
+</para>
+<para>Required modules: mod_perl and mod_rewrite</para>
+<procedure><title>Apache with mod_perl Installation</title>
+<step><para>
+Download Modperl and apache sources
+</para></step>
+<step><para>
+Make mod_perl, I use this command (in the modperl src dir):
+<screen>
+perl Makefile.PL APACHE_PREFIX=/usr/local/apache APACHE_SRC=../apache-1.3.14/src DO_HTTPD=1 USE_APACI=1  PERL_AUTHEN=1 PERL_AUTHZ=1 ADD_MODULE=rewrite</screen>
+</para></step>
+<step><para>
+Make and install apache. From the apache src dir, I use:
+<screen>
+make
+make install
+</screen>
+( mod perl should have already done the ./configure for us. )
+</para></step>
+</procedure>
+</sect1>
+
+<sect1><title>MySQL</title>
+<para>Install a recent version of MySQL. You will need the .h and library files later to install the MySQL perl module. (more help in later version of docs).</para>
+
+</sect1>
+
+<sect1><title>Perl 5.6</title>
+<para>&eprints; is currently begin developed with perl 5.6.1, there are currently no plans for a perl 6 version.</para>
+<sect2><title>Installing a Perl Module</title>
+<para>This describes the way to simple perl module, some require a bit more effort. We will use DBI as an example.</para>
+<procedure><title>How to install a Perl Module</title>
+<step><para>
+Unpack the archive:
+<screen>tar xzvf DBI-1.14.tar.gz</screen>
+</para></step>
+<step><para>
+Enter the directory this creates:
+<screen>
+cd DBI-1.14
+</screen>
+</para></step>
+<step><para>
+Run the following commands:
+<screen>
+perl Makefile.PL
+make
+make test
+make install
+</screen>
+</para></step>
+</procedure>
+</sect2>
+
+<sect2><title>Required Perl Modules</title>
+
+<formalpara>
+<title>CGI</title>
+Should be installed by default.
+</formalpara>
+
+<formalpara>
+<title>Data::Dumper</title>
+This module is used by the installer, and for debugging. It should be easy to install.
+</formalpara>
+
+<formalpara>
+<title>DBI</title>
+The generic database connection module. No known issues with installation.
+</formalpara>
+
+<formalpara>
+<title>Msql-Mysql modules</title>
+This one can be difficult. It requires access to .h and library files from MySQL. I install MySQL from source first, but some installs of MySQL don't put the lib and include dirs where this module expects. 
+The answer to the first question is that you only need MySQL support.
+</formalpara>
+
+<formalpara>
+<title>Filesys::DiskSpace</title>
+This is an annoying little module as it requires some system headers to be created. If it gives you trouble try the following:
+<para>Fixing Filesys::DiskSpace (Linux)
+<screen>
+cd /usr/include
+h2ph * sys/*
+</screen></para>
+<para>Fixing Filesys::DiskSpace (Solaris)
+<screen>
+cd /usr/include
+h2ph asm/* bits/*
+</screen></para>
+</formalpara>
+
+<!-- Not used? maybe need it later for mail?
+<formalpara>
+<title>MIME-Base64</title>
+</formalpara>
+-->
+
+<formalpara>
+<title>Unicode::String</title>
+Used for Unicode support. No known problems.
+</formalpara>
+
+<formalpara>
+<title>URI</title>
+Used for processing URL strings. No known problems.
+</formalpara>
+
+<formalpara>
+<title>Apache::AuthDBI</title>
+Allows apache to authenticate users from a database table, via modperl and DBI.
+</formalpara>
+
+<!-- ???
+<formalpara>
+<title>HTML::Parser</title>
+</formalpara>
+-->
+
+<!--
+<formalpara>
+<title>LWP</title>
+</formalpara>
+-->
+
+<formalpara>
+<title>XML::Parser</title>
+Used to parse XML files. Requres the <application>expat library</application>. A .tar.gz and a RedHat Linux RPM are available in the tools dir on eprints.org.
+</formalpara>
+
+<!-- What is this for??
+<formalpara>
+<title>libxml-enno</title>
+</formalpara>
+-->
+
+</sect2>
+</sect1>
+<sect1><title>wget, unzip  and others</title>
+<para>Later versions may require (or require for full functionality) other software, but this version does not do anything which requires them yet...</para>
+</sect1>
+</chapter>

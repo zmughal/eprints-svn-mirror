@@ -1,0 +1,93 @@
+######################################################################
+#
+#  Show user's EPrints
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints::Session;
+use EPrints::HTMLRender;
+use EPrints::EPrint;
+
+use strict;
+
+my $session = new EPrints::Session;
+Apache::exit( 0 ) unless( defined $session );
+
+
+my $userid = $session->{render}->param( "username" );
+
+if( defined $userid )
+{
+	my $user = new EPrints::User( $session, $userid );
+
+	if( defined $user )
+	{
+		print $session->{render}->start_html(
+			$session->{lang}->phrase( 
+				"cgi/user_eprints:eprints_title",
+				{ name=>$user->full_name() } ) );
+
+		my @eprints = EPrints::EPrint::retrieve_eprints(
+			$session,
+			EPrints::Database::table_name( "archive" ),
+			[ "username LIKE \"$userid\"" ],
+			[ "datestamp DESC" ] );
+
+		print "<CENTER><P><A HREF=\"user?username=$userid\">";
+		print $session->{lang}->phrase( "cgi/user_eprints:record_link" );
+		print "</A></P></CENTER>\n";
+
+		print "<P>";
+		if ( scalar @eprints == 0 )
+		{
+			print $session->{lang}->phrase( "cgi/user_eprints:no_eprints" );
+		}
+		else if ( scalar @eprints == 1 )
+		{
+			print $session->{lang}->phrase( 
+				"cgi/user_eprints:one_eprint",
+				{n=>"<STRONG>1</STRONG>"} );
+		}
+		else
+		{
+			print $session->{lang}->phrase( 
+				"cgi/user_eprints:n_eprints",
+				{n=>"<STRONG>".scalar @eprints."</STRONG>"} );
+		}
+		print "</P>\n";
+
+		foreach (@eprints)
+		{
+			print "<P>".$session->{render}->render_eprint_citation(
+				$_,
+				1,
+				1 )."</P>\n";
+		}
+
+		print $session->{render}->end_html();
+	}
+	else
+	{
+		print $session->{render}->render_error(
+			$session->{lang}->phrase( "cgi/user_eprints:unknown_user" ),
+			$session->get_archive()->get_conf( "frontpage" ),
+			$session->{lang}->phrase( "cgi/user_eprints:return_front" ) );
+	}
+}
+else
+{
+	print $session->{render}->render_error(
+		$session->{lang}->phrase( "cgi/user_eprints:no_user" ),
+		$session->get_archive()->get_conf( "frontpage" ),
+		$session->{lang}->phrase( "cgi/user_eprints:return_front" ) );
+}
+
+$session->terminate();

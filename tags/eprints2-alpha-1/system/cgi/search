@@ -1,0 +1,39 @@
+######################################################################
+#
+#  EPrints Simple Search Form
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints::Session;
+use EPrints::HTMLRender;
+use EPrints::EPrint;
+use EPrints::SearchField;
+use EPrints::SearchExpression;
+
+use strict;
+my $session = new EPrints::Session;
+Apache::exit( 0 ) unless( defined $session );
+
+my $searchexp = new EPrints::SearchExpression(
+	session => $session,
+	dataset => $session->get_archive()->get_dataset( "archive" ),
+	fieldnames => $session->get_archive()->get_conf( "simple_search_fields" ) );
+
+my $preamble = $session->make_element( "p" );
+my $a = $session->make_element( "a", href=>"advsearch" );
+$a->appendChild( $session->html_phrase( "cgi/search:adv_search" ) );
+$preamble->appendChild( $a );
+
+my $title = $session->phrase( "cgi/search:simple_search" );
+
+$searchexp->process_webpage( $title, $preamble );
+
+$session->terminate;

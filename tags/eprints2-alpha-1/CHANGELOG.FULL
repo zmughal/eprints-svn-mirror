@@ -1,0 +1,95 @@
+starts 1.1.1
+
+Fri Jan 26 17:25:39 GMT 2001
+* modified Makefile.in to use "(cd foo; tar bar)" rather than "tar bar -C foo"
+* adding code to spot "use advanced writer" return from oai_get_eprint_metadata
+* added oai_write_eprint_metadata stub to SiteRoutines
+* modified Makefile.in to only ever run ${INSTALL} on a single file at a time.
+For some reason it only worked when the nested for is all on one line.
+
+Wed Jan 31 18:05:08 GMT 2001
+* added bin/rebuild_sets which will recreate the subjects table from
+cfg/subjects. Warns user that this is dangerous and requires them to
+type 'yes' at a prompt.
+* removed an un-needed second "my" from HTMLRenderer.pm ("new" function).
+
+Thu Feb  1 15:14:09 GMT 2001
+* Added HTML version of eprints-system docs to site
+* Added 'backup policy' section to eprints-install
+* Added 'customisation examples' and subsection 'Listing All Files for a Format' 
+Tue Feb  6 14:30:49 GMT 2001
+* Added better mention of Rob into information.html and the licence file.
+* Removed cgi/reader and cgi/author dirs - didn't seem to do owt.
+* Added subject_name to Subject: returns a subjects name with out the tree.
+* Fixed HTMLRender.pm code to display "subjects" now prints whole label
+with <BR>'s seperating them.
+
+Wed Feb  7 00:06:24 GMT 2001
+* Moved CHANGELOG.FULL into the base CVS directory
+* Added bin/examples and bin/examples/update_users_example
+
+Wed Feb  7 00:58:06 GMT 2001
+* removed unused variable from MetaInfo.pm
+
+Wed Feb  7 11:58:07 GMT 2001
+* Added username help to SearchField.pm
+* Added Language.pm to handle internationalisation
+* Added new() to Language.pm
+* Added {lang} to session to represent current language
+* Language.pm now has fetch() [static] to get a new langauge, from the
+cache if possible.
+* added phrase to Language to actually get a phrase back.
+* started on internationalising files
+* added logphrase method to translate phrases into the language of the log
+rather than the current session.
+
+Thu Feb  8 10:50:23 GMT 2001
+* Added # comments to config files Language.pm MetaField.pm MetaInfo.pm 
+Subject.pm
+* Added prefix letters to language file to denote usage. Ignored by cfg reader.
+* More internationalisation - modified way buttons work in SubmissionForm.pm
+to allow them to vary with language.
+
+Mon Feb 19 16:28:51 GMT 2001
+* simplified Database::retrieve - used join() instead of foreach loop
+to produce "," seperated lists.
+
+Mon Feb 19 22:03:36 GMT 2001
+* Removed multiurl type - will become url: multiple=yes
+* Changed Username from TEXT to VARCHAR(255)
+* Changed create table code to make Aux tables for multiple fields!
+* update() and add_record() now take an array ref for data rather than an array of arrays. Still don't handle aux tables yet. Updated all code using these methods.
+* removed: 
+  get_user_fields 
+  get_document_fields 
+  get_subject_fields 
+  get_subscription_fields 
+  get_deletion_fields 
+  get_all_eprint_fields 
+ and replaced them with get_fields( $table ) which allows for some neater
+coding and to identify fields by table in update() and add_record(). Updated
+all code using these methods.
+
+Tue Feb 20 10:16:25 GMT 2001
+* Made bin/erase_archives more brutal - now just drops and creates the DB.
+
+Thu Feb 22 02:30:33 GMT 2001
+* Started rewrite of SQL code in SearchExpression - basic caching
+nearly works.
+
+...
+
+* Added index to commentary and replaces fields - otherwise 
+generate_abstracts is damn slow.
+
+*** SOME CHANGES MISSING ***
+
+* Added free text searching
+* temp tables searches now work
+* more i18l code.
+
+Wed Mar 21 22:33:59 GMT 2001
+* Added mapping for diaretics to standard for freetext indexes
+* Made Metainfo and SiteInfo into objects, added ConfigLoader to
+ load in the relevant site info. Not everything uses $session->{site}
+ yet but it's getting there. 

@@ -1,0 +1,316 @@
+######################################################################
+#
+#  EPrints Author Home
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints::User;
+use EPrints::HTMLRender;
+use EPrints::Database;
+use EPrints::Session;
+use EPrints::EPrint;
+use EPrints::SubmissionForm;
+
+use strict;
+
+
+######################################################################
+#
+# Session initialisation
+#
+######################################################################
+
+my $session = new EPrints::Session;
+Apache::exit( 0 ) unless( defined $session );
+
+# Any user can view this page, but most BE a user.
+if( !$session->auth_check )
+{
+	$session->terminate();
+	Apache::exit( 0 );
+}
+
+my $user = $session->current_user;
+
+my $fullname = $user->full_name();
+
+my $probs = $user->validate();
+my $valid_user = ( $#{$probs} == -1 );
+
+foreach( @{$probs} ) { print STDERR "[prob:$_]\n"; }
+
+######################################################################
+#
+# Render page
+#
+######################################################################
+
+my( $p, $page, $dl, $dt, $dd, $a );
+
+$page = $session->make_doc_fragment();
+
+### Welcome author blurb
+$p = $session->make_element( "p" );
+$p->appendChild( $session->html_phrase( "cgi/users/home:welcome" ) );
+$page->appendChild( $p );
+
+
+if( $valid_user )
+{ #cjg THIS IS NOT DONE
+	### Workspace
+	$page->appendChild(
+		&render_workspace( $session, $user ) );
+
+	### Pending
+	#&show_pending( $session, $user );
+
+	$page->appendChild( $session->render_ruler() );
+}
+
+$dl = $session->make_element( "dl" );
+
+if( $valid_user )
+{ #cjg THIS IS NOT DONE
+	### View items in archive
+	#print "<DL><DT><STRONG><A HREF=\"review\">";
+	#$session->phrase( "cgi/users/home:review" );
+	#print "</A></STRONG></DT>\n";
+	#print "<DD><P>";
+	#$session->phrase( "cgi/users/home:review_info" );
+	#if( $session->get_archive()->get_conf( "allow_user_removal" ) ) {
+		#$session->phrase( "cgi/users/home:remove_info" );
+	#}
+	#print "</P></DD>\n";
+}
+
+### Change author record
+
+$dt = $session->make_element( "dt" );
+$a = $session->make_element( "a", href => "record" );
+$a->appendChild( $session->html_phrase( "cgi/users/home:change" ) );
+$dt->appendChild( $a );
+$dl->appendChild( $dt );
+
+$dd = $session->make_element( "dd" );
+$p = $session->make_element( "p" );
+if( $valid_user )
+{
+	$p->appendChild( $session->html_phrase( "cgi/users/home:change_info" ) );
+}
+else
+{
+	### User needs to update their record
+	$p->appendChild( $session->html_phrase( "cgi/users/home:before" ) );
+}
+$dd->appendChild( $p );
+$dl->appendChild( $dd );
+
+my $tools = [
+	### Change subscription options
+	{ 
+		page=>"subscribe",
+		priv=>"subscription"
+	},
+	{ 
+		page=>"status",
+		priv=>"view-status"
+	}
+];
+
+my $tool;
+foreach	$tool (@{$tools})
+{
+	next unless $user->has_priv( $tool->{priv} );
+
+	$dt = $session->make_element( "dt" );
+	$a = $session->make_element( "a", href => $tool->{page} );
+	$a->appendChild( $session->html_phrase( "cgi/users/home:".$tool->{page}."_link" ) );
+	$dt->appendChild( $a );
+	$dl->appendChild( $dt );
+
+	$dd = $session->make_element( "dd" );
+	$p = $session->make_element( "p" );
+	$p->appendChild( $session->html_phrase( "cgi/users/home:".$tool->{page}."_info" ) );
+	$dd->appendChild( $p );
+	$dl->appendChild( $dd );
+}
+
+
+$page->appendChild( $dl );
+
+$session->build_page( 
+		$session->phrase( "cgi/users/home:user_home", name => $fullname ),
+		$page );
+$session->send_page();
+
+$session->terminate();
+
+
+
+######################################################################
+#
+# render_workspace( $session, $user )
+#
+#  This puts all of the user's items in the inbox table in a form.
+#  The buttons will POST stuff to the submit script, with the possible
+#  actions:
+#
+#   New     (Create a new EPrint)
+#   Edit    (Edit a selected EPrint)
+#   Clone   (Clone the selected EPrint)
+#   Delete  (Delete the selected EPrint)
+#   Deposit (Submit the selected EPrint to the archive)
+#
+#
+#  If the user has no items in the inbox, a single button is drawn,
+#  Allowing them to start the upload process.
+#
+######################################################################
+
+sub render_workspace
+{
+	my( $session, $user ) = @_;
+
+	my $ds = $session->get_archive()->get_dataset( "inbox" );
+
+	my @eprints =  $user->get_eprints( $ds );
+print STDERR "FOO: ###".scalar(@eprints)."\n";
+	my $html = $session->make_doc_fragment();
+
+	### Get the actual items in the workspace
+
+	if( scalar @eprints > 0)
+	{
+		my( $h3, $p, $form );
+	
+		$h3 = $session->make_element( "h3" );
+		$h3->appendChild( 
+			$session->html_phrase( "cgi/users/home:docs" ));
+		$html->appendChild( $h3 );
+
+		my @eprintids;
+		my %eprint_titles;
+		my $e;
+
+		foreach $e (@eprints)
+		{
+			my $id = $e->get_value( "eprintid" );
+			push @eprintids, $id;
+			$eprint_titles{$id} = $e->short_title();
+		}
+
+		my $set_field = EPrints::MetaField->new(
+					dataset => $ds,
+					name=>"eprintid",
+					type=>"set",
+                                       	displaylines=>6,
+					options=>\@eprintids );
+		# If there is only one eprint in the workspace, 
+		# select it by default
+		my %default_values;
+		if( scalar @eprints==1 )
+		{
+			$default_values{"eprintid"} = $eprintids[0] 
+		}
+
+		my $buttons = {
+			new => 
+			  $session->phrase("cgi/users/home:action_new"),
+			edit => 
+			  $session->phrase("cgi/users/home:action_edit"),
+			clone => 
+			  $session->phrase("cgi/users/home:action_clone"),
+			delete => 
+			  $session->phrase("cgi/users/home:action_delete"),
+			submit => 
+			  $session->phrase("cgi/users/home:action_submit") 
+		};
+
+		### Now put them in a form
+		$form = $session->render_form( "post", "submit#t" );	
+		$form->appendChild( $session->render_input_form(
+			[ $set_field ],
+			\%default_values,
+			0,
+			0,
+			$buttons,
+			undef,
+			undef,
+			"submit" ) );
+# cjg MULTILANG LABELS... callback?
+		$html->appendChild( $form );
+
+		$p = $session->make_element( "p" );
+		$p->appendChild( 
+			$session->html_phrase( "cgi/users/home:depositing" ) );
+		$html->appendChild( $p );
+
+	}
+	else
+	{
+#cjg iffy
+		my( $form );
+		$form = $session->render_form( "post", "submit" );	
+
+		$form->appendChild(
+			$session->render_action_buttons( 	
+				new => $session->phrase( "cgi/users/home:start_upload" ) ) );
+
+		$html->appendChild( $form );
+	}
+
+	return $html;
+}
+
+
+
+######################################################################
+#
+# show_pending( $session, $user)
+#
+#  Show any items that are in the submissions buffer, if any
+#
+######################################################################
+
+#cjg NOT DONE
+sub show_pending
+{
+	my( $session, $user ) = @_;
+
+	### Get the items in the buffer
+	my @eprints = EPrints::EPrint::retrieve_eprints(
+		$session,
+		EPrints::Database::table_name( "buffer" ),
+		[ "username LIKE \"$user->{username}\"" ] );
+
+	if( $#eprints >= 0 )
+	{
+		print "<CENTER><H3>";
+		print $session->phrase( "cgi/users/home:pending_title" );
+		print "</H3></CENTER>\n";
+		print "<CENTER><TABLE CELLPADDING=3 BORDER=0>\n";
+		my $e;
+		foreach $e (@eprints)
+		{
+			print "<TR><TD><EM>";
+			print $e->short_title();
+			print "</EM></TD><TD>";
+			print $session->phrase( 
+				"cgi/users/home:deposited_at",
+				{ time=>$session->{render}->format_field(
+					$session->{metainfo}->find_table_field( "eprint", "datestamp" ),
+					$e->{datestamp} ) } );
+			print "</TD></TR>\n";
+		}
+		print "</TABLE></CENTER>\n";
+	}
+}
+

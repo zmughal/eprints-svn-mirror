@@ -1,0 +1,41 @@
+######################################################################
+#
+#  EPrints Author Record Editing
+#
+######################################################################
+#
+#  21/10/99 - Created by Robert Tansley
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints::User;
+use EPrints::HTMLRender;
+use EPrints::Database;
+use EPrints::Session;
+use EPrints::UserForm;
+
+use strict;
+
+my $session = new EPrints::Session;
+Apache::exit( 0 ) unless( defined $session );
+
+# Any user can view this page, but most BE a user.
+if( !$session->auth_check )
+{
+	$session->terminate();
+	Apache::exit( 0 );
+}
+
+my $userform = new EPrints::UserForm( $session, "home", 0);
+
+$userform->process();
+
+$session->terminate();

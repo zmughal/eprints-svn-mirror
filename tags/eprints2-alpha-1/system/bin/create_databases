@@ -1,0 +1,62 @@
+#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+
+######################################################################
+#
+#  Command line program for creating tables from the meta-metadata
+#  files. NOTE! It doesn't actually create the database itself - a
+#  database called "eprints" must already exist (without any tables).
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use DBI;
+use EPrints::Database;
+use EPrints::Session;
+use EPrints::Subject;
+use strict;
+
+######################################################################
+#
+#  Create tables
+#
+######################################################################
+
+my $session = new EPrints::Session( 1 , $ARGV[0] );
+exit( 1 ) unless( defined $session );
+
+if( $session->get_db()->create_archive_tables() )
+{
+	print "Created database tables\n";
+}
+else
+{
+	my $error = $session->get_db()->error();
+	print STDERR "DB Error: $error\n";
+}
+
+######################################################################
+#
+#  Fill in subject database
+#
+######################################################################
+
+my $filename = $session->get_archive()->get_conf( "config_path" )."/subjects";
+
+if( EPrints::Subject::create_subject_table( $session , $filename ) )
+{
+	print "Inserted subject categories\n";
+}
+else
+{
+	my $error = $session->get_db()->error();
+	print STDERR "DB Error: $error\n";
+}
+
+$session->terminate();
