@@ -3,7 +3,7 @@ TODOSOON:
 
 Bugs:
   * Daily subscriptions still in buffer bug
-  * #64 doubled up prefixs
+  * jbug#64 doubled up prefixs
 
 code:
 * db:
@@ -12,7 +12,11 @@ code:
 	* make everything else understand them...
 	* make index length configurable
 	* hunt down all instances of format_name and Name::extract
+	
 
+* MULTITEXT is a silly name for a field maybe LARGETEXT? 
+
+* FINISHED button is confusing on deposit files pages!
 
 * Change views to a sub dir...
   + Multi page for really long ones?

@@ -7,13 +7,13 @@ my $basedir = "/opt/eprints/html/documents/demo";
 `/opt/eprints/bin/create_databases`;
 my @firnames;
 my $surnames;
-open(ECSINFO,"/root/ecsinfo");
+open(ECSINFO,"ecsinfo");
 while(<ECSINFO>) {
 	my @row = split /:/;
 	foreach(@row){ s/[\\']/\\$&/g; }
-	push @firnames,$row[2] if ($row[2]);	
-	push @firnames,$row[1] if ($row[1]);	
-	push @surnames,$row[0] if ($row[0]);	
+	push @firnames,$row[2] if ($row[2] ne "");	
+	push @firnames,$row[1] if ($row[1] ne "");	
+	push @surnames,$row[0] if ($row[0] ne "");	
 }
 close ECSINFO;
 
