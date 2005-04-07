@@ -1448,7 +1448,7 @@ sub generate_static
 
 		my( $page, $title, $links ) = $self->render();
 
-		$self->{session}->build_page( $title, $page, "abstract", $links );
+		$self->{session}->build_page( $title, $page, "abstract", $links, "default" );
 		$self->{session}->page_to_file( $full_path . "/index.html" );
 
 		next if( $ds_id ne "archive" );

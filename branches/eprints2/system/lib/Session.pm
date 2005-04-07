@@ -1655,7 +1655,7 @@ sub _render_input_form_field
 ######################################################################
 =pod
 
-=item $foo = $thing->build_page( $title, $mainbit, [$pageid], [$links] )
+=item $foo = $thing->build_page( $title, $mainbit, [$pageid], [$links], [$template_id] )
 
 undocumented
 
@@ -1664,7 +1664,7 @@ undocumented
 
 sub build_page
 {
-	my( $self, $title, $mainbit, $pageid, $links ) = @_;
+	my( $self, $title, $mainbit, $pageid, $links, $template_id ) = @_;
 
 	unless( $self->{offline} )
 	{
@@ -1714,14 +1714,17 @@ sub build_page
 			$map->{$_} = $pt;
 		}
 	}
-	my $secure = 0;
-	unless( $self->{offline} )
+
+	if( !defined $template_id )
 	{
-		my $esec = $self->{request}->dir_config( "EPrints_Secure" );
-		$secure = (defined $esec && $esec eq "yes" );
+		my $secure = 0;
+		unless( $self->{offline} )
+		{
+			my $esec = $self->{request}->dir_config( "EPrints_Secure" );
+			$secure = (defined $esec && $esec eq "yes" );
+		}
+		if( $secure ) { $template_id = 'secure'; }
 	}
-	my $template_id;
-	if( $secure ) { $template_id = 'secure'; }
 
 	my $used = {};
 	$self->{page} = $self->_process_page( 
