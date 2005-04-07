@@ -61,10 +61,17 @@ use EPrints::Language;
 use EPrints::Archive;
 use EPrints::XML;
 
+use EPrints::DataObj;
+use EPrints::User;
+use EPrints::EPrint;
+use EPrints::Subject;
+use EPrints::Document;
+
 use Unicode::String qw(utf8 latin1);
-use Apache;
-use CGI;
+use EPrints::AnApache;
+
 use URI::Escape;
+use CGI;
 
 use strict;
 #require 'sys/syscall.ph';
@@ -73,9 +80,7 @@ use strict;
 #
 # new( $offline )
 #
-#  Start a new EPrints session, opening a database connection,
-#  creating a CGI query object and any other necessary session state
-#  things.
+#  Start a new EPrints session, opening a database connection.
 #
 #  Command line scripts should pass in true for $offline.
 #  Apache-invoked scripts can omit it or pass in 0.
@@ -102,6 +107,7 @@ sub new
 	my $self = {};
 	bless $self, $class;
 
+	$mode = 0 unless defined( $mode );
 	$noise = 0 unless defined( $noise );
 	$self->{noise} = $noise;
 
@@ -110,17 +116,10 @@ sub new
 		$self->{request} = Apache->request();
 		$self->{query} = new CGI;
 		$self->{offline} = 0;
-		my $hp=$self->{request}->hostname.$self->{request}->uri;
-		$self->{archive} = EPrints::Archive->new_archive_by_host_and_path( $hp );
-		if( !defined $self->{archive} )
-		{
-			EPrints::Config::abort( "Can't load archive module for URL: ".
-				$self->{query}->url()."\n"." ( hpcode=$hp, mode=0 )" );
-		}
+		$self->{archive} = EPrints::Archive->new_from_request( $self->{request} );
 	}
 	elsif( $mode == 1 )
 	{
-		$self->{query} = new CGI( {} );
 		$self->{offline} = 1;
 		if( !defined $param || $param eq "" )
 		{
@@ -134,17 +133,6 @@ sub new
 			return undef;
 		}
 	}
-	elsif( $mode == 2 )
-	{
-		$self->{query} = new CGI( {} );
-		$self->{offline} = 1;
-		$self->{archive} = EPrints::Archive->new_archive_by_host_and_path( $param );
-		if( !defined $self->{archive} )
-		{
-			EPrints::Config::abort( "Can't load archive module for URL: ".
-				$self->{query}->url()."\n"." ( hpcode=$param, mode=2 )" );
-		}
-	}
 	else
 	{
 		print STDERR "Unknown session mode: $mode\n";
@@ -155,17 +143,21 @@ sub new
 
 	if( $self->{noise} >= 2 ) { print "\nStarting EPrints Session.\n"; }
 
-	# What language is this session in?
-
-	my $langcookie = $self->{query}->cookie( $self->{archive}->get_conf( "lang_cookie_name") );
-	if( defined $langcookie && !grep( /^$langcookie$/, @{$self->{archive}->get_conf( "languages" )} ) )
+	if( $self->{offline} )
 	{
-		$langcookie = undef;
+		# Set a script to use the default language unless it 
+		# overrides it
+		$self->change_lang( 
+			$self->{archive}->get_conf( "defaultlanguage" ) );
 	}
-
-	$self->change_lang( $langcookie );
-	#really only (cjg) ONLINE mode should have
-	#a language set automatically.
+	else
+	{
+		# running as CGI, Lets work out what language the
+		# client wants...
+		$self->change_lang( get_session_language( 
+			$self->{archive}, 
+			$self->{request} ) );
+	}
 	
 	$self->{doc} = EPrints::XML::make_document;
 
@@ -210,19 +202,101 @@ sub new
 	return( $self );
 }
 
-#
-# terminate()
-#
-#  Perform any cleaning up necessary
-#
+##
+# doc me.
+# static. does not need session.
 
+sub get_session_language
+{
+	my( $archive, $request ) = @_; #$r should not really be passed???
+
+	my @prefs;
+
+	# IMPORTANT! This function must not consume
+	# The post request, if any.
+
+	my $cookies = EPrints::AnApache::header_in( 
+				$request,
+				'Cookie' );
+	if( defined $cookies )
+	{
+		foreach my $cookie ( split( /;\s*/, $cookies ) )
+		{
+			my( $k, $v ) = split( '=', $cookie );
+			if( $k eq $archive->get_conf( "lang_cookie_name") )
+			{
+				push @prefs, $v;
+			}
+		}
+	}
+
+	# then look at the accept language header
+	my $accept_language = EPrints::AnApache::header_in( 
+				$request,
+				"Accept-Language" );
+
+	if( defined $accept_language )
+	{
+		# Middle choice is exact browser setting
+		foreach my $browser_lang ( split( /, */, $accept_language ) )
+		{
+			$browser_lang =~ s/;.*$//;
+			push @prefs, $browser_lang;
+		}
+	
+		# Next choice is general browser setting (so fr-ca matches
+		#	'fr' rather than default to 'en')
+		foreach my $browser_lang ( split( /, */, $accept_language ) )
+		{
+			$browser_lang =~ s/-.*$//;
+			push @prefs, $browser_lang;
+		}
+	}
+		
+	# last choice is always...	
+	push @prefs, $archive->get_conf( "defaultlanguage" );
+
+	# So, which one to use....
+	my $arc_langs = $archive->get_conf( "languages" );	
+	foreach my $pref_lang ( @prefs )
+	{
+		foreach my $langid ( @{$arc_langs} )
+		{
+			if( $pref_lang eq $langid )
+			{
+				# it's a real language id, go with it!
+				return $pref_lang;
+			}
+		}
+	}
+
+	print STDERR <<END;
+Something odd happend in the language selection code... 
+Did you make a default language which is not in the list of languages?
+END
+	return undef;
+}
+
+sub get_request
+{
+	my( $self ) = @_;
+
+	return $self->{request};
+}
+
+sub get_query
+{
+	my( $self ) = @_;
+
+	return $self->{query};
+}
 
 ######################################################################
 =pod
 
-=item $foo = $thing->terminate
+=item $session->terminate
 
-undocumented
+Perform any cleaning up necessary
 
 =cut
 ######################################################################
@@ -297,6 +371,10 @@ sub html_phrase
 
         my $r = $self->{lang}->phrase( $phraseid , \%inserts , $self );
 
+	#my $s = $self->make_element( "span", title=>$phraseid );
+	#$s->appendChild( $r );
+	#return $s;
+
 	return $r;
 }
 
@@ -325,6 +403,23 @@ sub phrase
 	return $string;
 }
 
+######################################################################
+=pod
+
+=item $foo = $thing->get_lang
+
+undocumented
+
+=cut
+######################################################################
+
+sub get_lang
+{
+	my( $self ) = @_;
+
+	return $self->{lang};
+}
+
 
 ######################################################################
 =pod
@@ -342,6 +437,8 @@ sub get_langid
 
 	return $self->{lang}->get_id();
 }
+
+
 
 #cjg: should be a util? or even a property of archive?
 
@@ -467,22 +564,6 @@ sub get_db
 }
 
 
-######################################################################
-=pod
-
-=item $foo = $thing->get_query
-
-undocumented
-
-=cut
-######################################################################
-
-sub get_query
-{
-	my( $self ) = @_;
-	return $self->{query};
-}
-
 
 ######################################################################
 =pod
@@ -510,18 +591,18 @@ sub get_archive
 ######################################################################
 =pod
 
-=item $foo = $thing->get_url
+=item $foo = $thing->get_uri
 
 undocumented
 
 =cut
 ######################################################################
 
-sub get_url
+sub get_uri
 {
 	my( $self ) = @_;
-	
-	return( $self->{query}->url() );
+
+	return( $self->{"request"}->uri );
 }
 
 
@@ -587,7 +668,8 @@ sub make_element
 	foreach( keys %params )
 	{
 		next unless( defined $params{$_} );
-		$element->setAttribute( $_ , $params{$_} );
+		my $value = "$params{$_}"; # ensure it's just a string
+		$element->setAttribute( $_ , $value );
 	}
 
 	return $element;
@@ -703,10 +785,26 @@ sub render_ruler
 	my $ruler = $self->{archive}->get_ruler();
 	
 	return $self->clone_for_me( $ruler, 1 );
-
-	return $ruler;
 }
 
+######################################################################
+=pod
+
+=item $foo = $thing->render_nbsp
+
+Return an XHTML &nbsp; character.
+
+=cut
+######################################################################
+
+sub render_nbsp
+{
+	my( $self ) = @_;
+
+	my $string = latin1(chr(160));
+
+	return $self->make_text( $string );
+}
 
 ######################################################################
 =pod
@@ -755,6 +853,29 @@ sub render_link
 ######################################################################
 =pod
 
+=item $xhtml = $session->render_language_name( $langid ) 
+Return a DOM object containing the description of the specified language
+in the current default language, or failing that from languages.xml
+
+=cut
+######################################################################
+
+sub render_language_name
+{
+	my( $self, $langid ) = @_;
+
+	my $phrasename = 'language:'.$langid;
+	if( $self->get_lang->has_phrase( $phrasename ) )
+	{	
+		return $self->html_phrase( $phrasename );
+	}
+
+	return $self->make_text( EPrints::Config::lang_title( $langid ) );
+}
+
+######################################################################
+=pod
+
 =item $thing->render_name( $name, [$familylast] )
 
 undocumented
@@ -767,8 +888,12 @@ sub render_name
 	my( $self, $name, $familylast ) = @_;
 
 	my $namestr = EPrints::Utils::make_name_string( $name, $familylast );
+
+	my $span = $self->make_element( "span", class=>"person_name" );
 		
-	return $self->make_text( $namestr );
+	$span->appendChild( $self->make_text( $namestr ) );
+
+	return $span;
 }
 
 ######################################################################
@@ -793,6 +918,90 @@ sub render_option_list
 	# values   :
 	# labels   :
 	# name     :
+	# defaults_at_top : move items already selected to top
+	# 			of list, so they are visible.
+
+	my %defaults = ();
+	if( ref( $params{default} ) eq "ARRAY" )
+	{
+		foreach( @{$params{default}} )
+		{
+			$defaults{$_} = 1;
+		}
+	}
+	else
+	{
+		$defaults{$params{default}} = 1;
+	}
+
+	my $element = $self->make_element( "select" , name => $params{name} );
+	if( $params{multiple} )
+	{
+		$element->setAttribute( "multiple" , "multiple" );
+	}
+
+	my $dtop = defined $params{defaults_at_top} && $params{defaults_at_top};
+	
+
+	my @alist = ();
+	my @list = ();
+	my $pairs = $params{pairs};
+	if( !defined $pairs )
+	{
+		foreach( @{$params{values}} )
+		{
+			push @{$pairs}, [ $_, $params{labels}->{$_} ];
+		}
+	}		
+						
+	if( $dtop && scalar keys %defaults )
+	{
+		my @pairsa;
+		my @pairsb;
+		foreach my $pair (@{$pairs})
+		{
+			if( $defaults{$pair->[0]} )
+			{
+				push @pairsa, $pair;
+			}
+			else
+			{
+				push @pairsb, $pair;
+			}
+		}
+		$pairs = [ @pairsa, [ '-', '----------' ], @pairsb ];
+	}
+
+
+	my $size = 0;
+	foreach my $pair ( @{$pairs} )
+	{
+		$element->appendChild( 
+			$self->render_single_option(
+				$pair->[0],
+				$pair->[1],
+				$defaults{$pair->[0]} ) );
+		$size++;
+	}
+
+	if( defined $params{height} )
+	{
+		if( $params{height} ne "ALL" )
+		{
+			if( $params{height} < $size )
+			{
+				$size = $params{height};
+			}
+		}
+		$element->setAttribute( "size" , $size );
+	}
+	return $element;
+}
+
+
+sub old_render_option_list
+{
+	my( $self , %params ) = @_;
 
 	my %defaults = ();
 	if( ref( $params{default} ) eq "ARRAY" )
@@ -845,7 +1054,10 @@ sub render_option_list
 	{
 		if( $params{height} ne "ALL" )
 		{
-			$size = $params{height};
+			if( $params{height} < $size )
+			{
+				$size = $params{height};
+			}
 		}
 		$element->setAttribute( "size" , $size );
 	}
@@ -868,7 +1080,7 @@ sub render_single_option
 	my( $self, $key, $desc, $selected ) = @_;
 
 	my $opt = $self->make_element( "option", value => $key );
-	$opt->appendChild( $self->{doc}->createTextNode( $desc ) );
+	$opt->appendChild( $self->make_text( $desc ) );
 
 	if( $selected )
 	{
@@ -919,12 +1131,18 @@ sub render_upload_field
 {
 	my( $self, $name ) = @_;
 
-	my $div = $self->make_element( "div" ); #no class cjg	
-	$div->appendChild( $self->make_element(
-		"input", 
+#	my $div = $self->make_element( "div" ); #no class cjg	
+#	$div->appendChild( $self->make_element(
+#		"input", 
+#		name => $name,
+#		type => "file" ) );
+#	return $div;
+
+	return $self->make_element(
+		"input",
 		name => $name,
-		type => "file" ) );
-	return $div;
+		type => "file" );
+
 }
 
 
@@ -978,7 +1196,12 @@ sub _render_buttons_aux
 	my( $self, $btype, %buttons ) = @_;
 
 	#my $frag = $self->make_doc_fragment();
-	my $frag = $self->make_element( "div", class=>"buttons" );
+	my $class = "buttons";
+	if( defined $buttons{_class} )
+	{
+		$class = $buttons{_class};
+	}
+	my $div = $self->make_element( "div", class=>$class );
 
 	my @order = keys %buttons;
 	if( defined $buttons{_order} )
@@ -989,7 +1212,11 @@ sub _render_buttons_aux
 	my $button_id;
 	foreach $button_id ( @order )
 	{
-		$frag->appendChild(
+		# skip options which start with a "_" they are params
+		# not buttons.
+		next if( $button_id eq '_class' );
+		next if( $button_id eq '_order' );
+		$div->appendChild(
 			$self->make_element( "input",
 				class => $btype."button",
 				type => "submit",
@@ -997,10 +1224,10 @@ sub _render_buttons_aux
 				value => $buttons{$button_id} ) );
 
 		# Some space between butons.
-		$frag->appendChild( $self->make_text( " " ) );
+		$div->appendChild( $self->make_text( " " ) );
 	}
 
-	return( $frag );
+	return( $div );
 }
 
 ## (dest is optional)
@@ -1023,7 +1250,10 @@ sub render_form
 	my $form = $self->{doc}->createElement( "form" );
 	$form->setAttribute( "method", $method );
 	$form->setAttribute( "accept-charset", "utf-8" );
-	$dest = $ENV{SCRIPT_NAME} if( !defined $dest );
+	if( !defined $dest )
+	{
+		$dest = $self->get_uri;
+	}
 	$form->setAttribute( "action", $dest );
 	if( "\L$method" eq "post" )
 	{
@@ -1036,7 +1266,7 @@ sub render_form
 ######################################################################
 =pod
 
-=item $foo = $thing->render_subjects( $subject_list, $baseid, $current, $linkmode, $sizes )
+=item $foo = $thing->render_subjects( $subject_list, $baseid, $currentid, $linkmode, $sizes )
 
 undocumented
 
@@ -1045,7 +1275,7 @@ undocumented
 
 sub render_subjects
 {
-	my( $self, $subject_list, $baseid, $current, $linkmode, $sizes ) = @_;
+	my( $self, $subject_list, $baseid, $currentid, $linkmode, $sizes ) = @_;
 
 	# If sizes is defined then it contains a hash subjectid->#of subjects
 	# we don't do this ourselves.
@@ -1062,12 +1292,12 @@ sub render_subjects
 		$subs{$_} = EPrints::Subject->new( $self, $_ );
 	}
 
-	return $self->_render_subjects_aux( \%subs, $baseid, $current, $linkmode, $sizes );
+	return $self->_render_subjects_aux( \%subs, $baseid, $currentid, $linkmode, $sizes );
 }
 
 ######################################################################
 # 
-# $foo = $thing->_render_subjects_aux( $subjects, $id, $current, $linkmode, $sizes )
+# $foo = $thing->_render_subjects_aux( $subjects, $id, $currentid, $linkmode, $sizes )
 #
 # undocumented
 #
@@ -1075,13 +1305,13 @@ sub render_subjects
 
 sub _render_subjects_aux
 {
-	my( $self, $subjects, $id, $current, $linkmode, $sizes ) = @_;
+	my( $self, $subjects, $id, $currentid, $linkmode, $sizes ) = @_;
 
 	my( $ul, $li, $elementx );
 	$ul = $self->make_element( "ul" );
 	$li = $self->make_element( "li" );
 	$ul->appendChild( $li );
-	if( defined $current && $id eq $current )
+	if( defined $currentid && $id eq $currentid )
 	{
 		$elementx = $self->make_element( "strong" );
 	}
@@ -1096,6 +1326,19 @@ sub _render_subjects_aux
 			$elementx = $self->render_link( 
 				EPrints::Utils::escape_filename( $id ).
 					".html" ); 
+		}
+		elsif( $linkmode == 3 )
+		{
+			if( defined $sizes && defined $sizes->{$id} && $sizes->{$id} > 0 )
+			{
+				$elementx = $self->render_link( 
+					EPrints::Utils::escape_filename( $id ).
+						"/" ); 
+			}
+			else
+			{
+				$elementx = $self->make_element( "span" );
+			}
 		}
 		else
 		{
@@ -1113,7 +1356,7 @@ sub _render_subjects_aux
 	{
 		my $thisid = $_->get_value( "subjectid" );
 		next unless( defined $subjects->{$thisid} );
-		$li->appendChild( $self->_render_subjects_aux( $subjects, $thisid, $current, $linkmode, $sizes ) );
+		$li->appendChild( $self->_render_subjects_aux( $subjects, $thisid, $currentid, $linkmode, $sizes ) );
 	}
 	
 	return $ul;
@@ -1239,13 +1482,11 @@ sub render_input_form
 {
 	my( $self, %p ) = @_;
 
-	foreach( %INPUT_FORM_DEFAULTS )
+	foreach( keys %INPUT_FORM_DEFAULTS )
 	{
 		next if( defined $p{$_} );
 		$p{$_} = $INPUT_FORM_DEFAULTS{$_};
 	}
-
-	my $query = $self->{query};
 
 	my( $form );
 
@@ -1279,6 +1520,11 @@ sub render_input_form
 			$p{default_action} ) );
 	}
 
+	if( defined $p{top_buttons} )
+	{
+		$form->appendChild( $self->render_action_buttons( %{$p{top_buttons}} ) );
+	}
+
 	my $field;	
 	foreach $field (@{$p{fields}})
 	{
@@ -1290,7 +1536,8 @@ sub render_input_form
 			$p{comments}->{$field->get_name()},
 			$p{dataset},
 			$p{type},
-			$p{staff} ) );
+			$p{staff},
+			$p{hidden_fields} ) );
 	}
 
 	# Hidden field, so caller can tell whether or not anything's
@@ -1303,6 +1550,10 @@ sub render_input_form
 					$_, 
 					$p{hidden_fields}->{$_} ) );
 	}
+	if( defined $p{comments}->{above_buttons} )
+	{
+		$form->appendChild( $p{comments}->{above_buttons} );
+	}
 
 	$form->appendChild( $self->render_action_buttons( %{$p{buttons}} ) );
 
@@ -1312,7 +1563,7 @@ sub render_input_form
 
 ######################################################################
 # 
-# $foo = $thing->_render_input_form_field( $field, $value, $show_names, $show_help, $comment, $dataset, $type, $staff )
+# $foo = $thing->_render_input_form_field( $field, $value, $show_names, $show_help, $comment, $dataset, $type, $staff, $hiddenfields )
 #
 # undocumented
 #
@@ -1321,11 +1572,17 @@ sub render_input_form
 sub _render_input_form_field
 {
 	my( $self, $field, $value, $show_names, $show_help, $comment,
-			$dataset, $type, $staff ) = @_;
+			$dataset, $type, $staff, $hidden_fields ) = @_;
 	
 	my( $div, $html, $span );
 
 	$html = $self->make_doc_fragment();
+
+	if( substr( $self->get_internal_button(), 0, length($field->get_name())+1 ) eq $field->get_name()."_" ) 
+	{
+		my $a = $self->make_element( "a", name=>"t" );
+		$html->appendChild( $a );
+	}
 
 	my $req = $field->get_property( "required" );
 	if( defined $dataset && defined $type )
@@ -1341,8 +1598,7 @@ sub _render_input_form_field
 		# special case for booleans - even if they're required it
 		# dosn't make much sense to highlight them.	
 
-		$div->appendChild( 
-			$self->make_text( $field->display_name( $self ) ) );
+		$div->appendChild( $field->render_name( $self ) );
 
 		if( $req && !$field->is_type( "boolean" ) )
 		{
@@ -1360,7 +1616,9 @@ sub _render_input_form_field
 	{
 		$div = $self->make_element( "div", class => "formfieldhelp" );
 
-		$div->appendChild( $field->render_help( $self ) );
+		$div->appendChild( $field->render_help( $self, $type ) );
+		$div->appendChild( $self->make_text( "" ) );
+
 		$html->appendChild( $div );
 	}
 
@@ -1369,15 +1627,8 @@ sub _render_input_form_field
 		class => "formfieldinput",
 		id => "inputfield_".$field->get_name );
 	$div->appendChild( $field->render_input_field( 
-		$self, $value, $dataset, $type, $staff ) );
+		$self, $value, $dataset, $type, $staff, $hidden_fields ) );
 	$html->appendChild( $div );
-
-	if( substr( $self->get_internal_button(), 0, length($field->get_name())+1 ) eq $field->get_name()."_" ) 
-	{
-		my $a = $self->make_element( "a", name=>"t" );
-		$a->appendChild( $html );
-		$html = $a;
-	}
 				
 	return( $html );
 }	
@@ -1404,7 +1655,7 @@ sub _render_input_form_field
 ######################################################################
 =pod
 
-=item $foo = $thing->build_page( $title, $mainbit, [$pageid], [$links] )
+=item $foo = $thing->build_page( $title, $mainbit, [$pageid], [$links], [$template_id] )
 
 undocumented
 
@@ -1413,12 +1664,16 @@ undocumented
 
 sub build_page
 {
-	my( $self, $title, $mainbit, $pageid, $links ) = @_;
+	my( $self, $title, $mainbit, $pageid, $links, $template_id ) = @_;
 
-	if( defined $self->param( "mainonly" ) && $self->param( "mainonly" ) eq "yes" )
+	unless( $self->{offline} )
 	{
-		$self->{page} = $mainbit;
-		return;
+		my $mo = $self->param( "mainonly" );
+		if( defined $mo && $mo eq "yes" )
+		{
+			$self->{page} = $mainbit;
+			return;
+		}
 	}
 	my $topofpage;
 
@@ -1441,6 +1696,7 @@ sub build_page
 	$pagehooks = {} if !defined $pagehooks;
 	my $ph = $pagehooks->{$pageid} if defined $pageid;
 	$ph = {} if !defined $ph;
+	$ph->{bodyattr}->{id} = "page_$pageid";
 
 	# only really useful for head & pagetop, but it might as
 	# well support the others
@@ -1459,9 +1715,22 @@ sub build_page
 		}
 	}
 
+	if( !defined $template_id )
+	{
+		my $secure = 0;
+		unless( $self->{offline} )
+		{
+			my $esec = $self->{request}->dir_config( "EPrints_Secure" );
+			$secure = (defined $esec && $esec eq "yes" );
+		}
+		if( $secure ) { $template_id = 'secure'; }
+	}
+
 	my $used = {};
 	$self->{page} = $self->_process_page( 
-		$self->{archive}->get_template( $self->get_langid ),
+		$self->{archive}->get_template( 
+			$self->get_langid, 
+			$template_id ),
 		$map,
 		$used,
 		$ph );
@@ -1560,7 +1829,7 @@ sub send_page
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 END
-	print EPrints::XML::to_string( $self->{page} );
+	print EPrints::XML::to_string( $self->{page}, undef, 1 );
 	EPrints::XML::dispose( $self->{page} );
 	delete $self->{page};
 }
@@ -1638,12 +1907,6 @@ sub clone_for_me
 
 
 
-#
-# $param = param( $name )
-#
-#  Return a query parameter.
-#
-
 
 ######################################################################
 =pod
@@ -1681,18 +1944,14 @@ sub param
 
 }
 
-# $bool = have_parameters()
-#
-#  Return true if the current script had any parameters (POST or GET)
-#
 
 
 ######################################################################
 =pod
 
-=item $foo = $thing->have_parameters
+=item $bool = $session->have_parameters
 
-undocumented
+Return true if the current script had any parameters (POST or GET)
 
 =cut
 ######################################################################
@@ -1701,7 +1960,7 @@ sub have_parameters
 {
 	my( $self ) = @_;
 	
-	my @names = $self->{query}->param();
+	my @names = $self->param();
 
 	return( scalar @names > 0 );
 }
@@ -1800,8 +2059,8 @@ sub seen_form
 	
 	my $result = 0;
 
-	$result = 1 if( defined $self->{query}->param( "_seen" ) &&
-	                $self->{query}->param( "_seen" ) eq "true" );
+	$result = 1 if( defined $self->param( "_seen" ) &&
+	                $self->param( "_seen" ) eq "true" );
 
 	return( $result );
 }
@@ -1823,10 +2082,11 @@ sub internal_button_pressed
 
 	if( defined $buttonid )
 	{
-		return( defined $self->param( "_internal_".$buttonid ) );
+		return 1 if( defined $self->param( "_internal_".$buttonid ) );
+		return 1 if( defined $self->param( "_internal_".$buttonid.".x" ) );
+		return 0;
 	}
-
-	# Have not yet worked this out?
+	
 	if( !defined $self->{internalbuttonpressed} )
 	{
 		my $p;
@@ -1836,7 +2096,7 @@ sub internal_button_pressed
 
 		foreach $p ( $self->param() )
 		{
-			if( $p =~ m/^_internal/ )
+			if( $p =~ m/^_internal/ && EPrints::Utils::is_set( $self->param($p) ) )
 			{
 				$self->{internalbuttonpressed} = 1;
 				last;
@@ -1867,9 +2127,10 @@ sub get_action_button
 	# $p = string
 	foreach $p ( $self->param() )
 	{
-		if( $p =~ m/^_action_/ )
+		if( $p =~ s/^_action_// )
 		{
-			return substr($p,8);
+			$p =~ s/\.[xy]$//;
+			return $p;
 		}
 	}
 
@@ -2005,13 +2266,18 @@ sub redirect
 	my( $self, $url ) = @_;
 
 	# Write HTTP headers if appropriate
-	unless( $self->{offline} )
+	if( $self->{"offline"} )
 	{
-		# For some reason, redirection doesn't work with CGI::Apache.
-		# We have to use CGI.
-		print $self->{query}->redirect( -uri=>$url );
+		print STDERR "ODD! redirect called in offline script.\n";
+		return;
 	}
 
+	$self->{"request"}->status_line( "302 Moved" );
+	EPrints::AnApache::header_out( 
+		$self->{"request"},
+		"Location",
+		$url );
+	EPrints::AnApache::send_http_header( $self->{"request"} );
 }
 
 #
@@ -2081,10 +2347,10 @@ sub send_http_header
 	}
 	$self->{request}->content_type( $opts{content_type} );
 
-	$self->{request}->header_out( "Cache-Control"=>"must-revalidate" );
-
-	#$self->{request}->header_out( "Cache-Control"=>"no-cache, must-revalidate" );
-	# $self->{request}->header_out( "Pragma"=>"no-cache" );
+	EPrints::AnApache::header_out( 
+		$self->{"request"},
+		"Cache-Control",
+		"no-store, no-cache, must-revalidate" );
 
 	if( defined $opts{lang} )
 	{
@@ -2094,9 +2360,13 @@ sub send_http_header
 			-value   => $opts{lang},
 			-expires => "+10y", # really long time
 			-domain  => $self->{archive}->get_conf("lang_cookie_domain") );
-		$self->{request}->header_out( "Set-Cookie"=>$cookie ); 
+		EPrints::AnApache::header_out( 
+				$self->{"request"},
+				"Set-Cookie",
+				$cookie );
 	}
-	$self->{request}->send_http_header;
+
+	EPrints::AnApache::send_http_header( $self->{request} );
 }
 
 
