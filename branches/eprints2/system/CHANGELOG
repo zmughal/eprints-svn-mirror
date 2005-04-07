@@ -2333,3 +2333,15 @@ PACKAGE: 2.2.99.2
     corrected. Mostly adding "my" statements. This probably fixes
     a bug which occasionally meant odd errors happend at startup.
  - Added missing "my" to UserPage.pm 
+
+2005-04-05 cjg
+ - $archive->log now uses $archive->call, fixing a "strict" 
+    restriction.
+
+2005-04-07 cjg
+ - Added new option to build_page, to allow an explicit template
+    to be used. Currently only "secure" and "default" are supported.
+ - The code which generates the metadata summary page always uses
+    the default template, even if the current URL is in the secure
+    site. (so that static pages do not have the secure template)
+

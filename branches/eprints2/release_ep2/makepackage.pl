@@ -84,6 +84,7 @@ my %codenames = (
 	"eprints2-3-11-99-1" => "Egor",
 	"eprints2-3-11-99-2" => "Stag",
 	"eprints2-3-11-99-3" => "Beetle",
+	"eprints2-3-11-99-4" => "Teapot",
 );
 
 my %ids = (
@@ -147,6 +148,7 @@ my %ids = (
 	"eprints2-3-11-99-1" => "2.3.11-99-1-beta",
 	"eprints2-3-11-99-2" => "2.3.11-99-2-beta",
 	"eprints2-3-11-99-3" => "2.3.11.99.3-beta",
+	"eprints2-3-11-99-4" => "2.3.11.99.4-beta",
 );
 
 my( $type ) = @ARGV;
