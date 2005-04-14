@@ -304,6 +304,13 @@ sub get_input_elements
 	}
 
 
+	my $imagesurl = $session->get_archive->get_conf( "base_url" )."/images";
+	my $esec = $session->get_request->dir_config( "EPrints_Secure" );
+	if( defined $esec && $esec eq "yes" )
+	{
+		$imagesurl = $session->get_archive->get_conf( "securepath" )."/images";
+	}
+	
 	my $rows = [];
 	for( my $i=1 ; $i<=$boxcount ; ++$i )
 	{
@@ -328,7 +335,7 @@ sub get_input_elements
 						"input",
 						type=>"image",
 						alt=>"up",
-						src=> $session->get_archive->get_conf( "base_url" )."/images/multi_up.png",
+						src=> "$imagesurl/multi_up.png",
                 				name=>"_internal_".$self->{name}."_up_$i",
 						value=>"1" ));
 				}
@@ -337,7 +344,7 @@ sub get_input_elements
 					$arrows->appendChild( $session->make_element(
 						"img",
 						alt=>"up",
-						src=> $session->get_archive->get_conf( "base_url" )."/images/multi_up_dim.png" ));
+						src=> "$imagesurl/multi_up_dim.png" ));
 				}
 				$arrows->appendChild( $session->make_element( "br" ) );
 				if( 1 )
@@ -345,7 +352,7 @@ sub get_input_elements
 					$arrows->appendChild( $session->make_element(
 						"input",
 						type=>"image",
-						src=> $session->get_archive->get_conf( "base_url" )."/images/multi_down.png",
+						src=> "$imagesurl/multi_down.png",
 						alt=>"down",
                 				name=>"_internal_".$self->{name}."_down_$i",
 						value=>"1" ));
@@ -355,7 +362,7 @@ sub get_input_elements
 					$arrows->appendChild( $session->make_element(
 						"img",
 						alt=>"down",
-						src=> $session->get_archive->get_conf( "base_url" )."/images/multi_down_dim.png" ));
+						src=> "/$imagesurl/multi_down_dim.png" ));
 				}
 				$lastcol = { el=>$arrows, valign=>"middle" };
 			}

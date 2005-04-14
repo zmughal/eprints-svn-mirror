@@ -2345,3 +2345,8 @@ PACKAGE: 2.2.99.2
     the default template, even if the current URL is in the secure
     site. (so that static pages do not have the secure template)
 
+2005-04-14 cjg
+ - Fixed bug in logging
+ - Up and down arrows graphics now use https if appropriate
+
+
