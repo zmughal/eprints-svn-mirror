@@ -711,7 +711,7 @@ sub log
 {
 	my( $self , @params) = @_;
 
-	$self->call( 'log', @params );
+	$self->call( 'log', $self, @params );
 }
 
 
