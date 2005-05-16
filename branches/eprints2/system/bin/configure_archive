@@ -443,7 +443,12 @@ END
 		print "DOING: $SQL\n";
 		$dbh->do( $SQL );
 		my $pass = '"'.$config{dbpass}.'"';
-		if( $oldpasswords ) { $pass = "OLD_PASSWORD($pass)"; }
+		if( $oldpasswords ) 
+		{
+			$pass = "OLD_PASSWORD($pass)";
+		} else {
+			$pass = "PASSWORD($pass)";
+		}
 		$SQL = 'SET PASSWORD FOR '.$config{dbuser}.'@localhost = '.$pass;
 		print "DOING: $SQL\n";
 		$dbh->do( $SQL );
