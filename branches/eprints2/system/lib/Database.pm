@@ -1198,8 +1198,8 @@ END
 
 =item $ids = $db->get_index_ids( $table, $condition )
 
-Return a reference to an array of the primary keys from the given SQL 
-table which match the specified condition. 
+Return a reference to an array of the distinct primary keys from the
+given SQL table which match the specified condition.
 
 =cut
 ######################################################################
@@ -1207,22 +1207,21 @@ table which match the specified condition.
 sub get_index_ids
 {
 	my( $self, $table, $condition ) = @_;
-#cjg iffy params
 
-	my $sql = "SELECT M.ids FROM $table as M where $condition";	
-	my $results = [];
+	my $sql = "SELECT M.ids FROM $table as M where $condition";
+
+	my $r = {};
 	my $sth = $self->prepare( $sql );
 	$self->execute( $sth, $sql );
 	while( my @info = $sth->fetchrow_array ) {
 		my @list = split(":",$info[0]);
-#		# Remove first & last.
-# cjg no longer needed with new indexer
-#		shift @list;
-		push @{$results}, @list;
+		foreach( @list ) { $r->{$_}=1; }
 	}
 	$sth->finish;
+	my $results = [ keys %{$r} ];
 	return( $results );
 }
+
 
 
 ######################################################################
