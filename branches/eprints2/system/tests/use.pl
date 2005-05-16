@@ -39,8 +39,8 @@ testmodule('EPrints::Utils');
 testmodule('EPrints::VLit');
 testmodule('EPrints::XML');
 
-TODO: {
-	      local $TODO = "Don't have mod_perl v1 tests yet";
+SKIP: {
+	skip( "Don't have mod_perl v1 tests yet",1 );
 
 	testmodule('EPrints::RequestWrapper');
       }
