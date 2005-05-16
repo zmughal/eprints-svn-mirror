@@ -150,8 +150,8 @@ sub make_page
 			"mail_password_pin", 
 			confirmurl => $session->make_text( $session->get_archive()->get_conf( "perl_url" )."/confirm?userid=".$user->get_value( "userid" )."&pin=".$pin ),
 			username => $user->render_value( "username" ) ) );
-$rc = 0;
-	unless( $rc )
+
+	if( !$rc )
 	{
 		# couldn't send email, so remove the user object again
 		# and apologise
