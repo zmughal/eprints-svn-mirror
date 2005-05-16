@@ -2349,4 +2349,16 @@ PACKAGE: 2.2.99.2
  - Fixed bug in logging
  - Up and down arrows graphics now use https if appropriate
 
+2005-05-16 cjg
+ - commented out some stray debug code in edit_eprint
+ - fixed incorrect attribute name in <style> elements in default
+    template.
+ - Fixed bug by adding code to ensure that $db->get_index_ids
+    does not return any duplicates. [#1022]
+ - Render error now sends warnings to log when in online mode.
+    [#841] 
+ - Fixed bug introduced in 2.3.7, EPrints would fail to set
+    a mysql users password in mysql versions < 4.1 [#1010]
+ - Added warning to be sent to log if mail does not get sent
+    correctly. [#848]
 

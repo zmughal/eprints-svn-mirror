@@ -407,9 +407,21 @@ sub cmp_dates
 ######################################################################
 =pod
 
-=item EPrints::Utils::send_mail( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname )
+=item EPrints::Utils::send_mail( $archive, $langid, $name, $address, $subject, $body, $sig, [$replyto, $replytoname] )
 
-undocumented
+Sends an email. 
+
+$archive - the archive sending the email.
+$langid - the language id (eg. "en")
+$name - the name of the recipient (UTF-8 encoded string)
+$address - the email address of the recipient
+$subject - the subject of the message (UTF-8 encoded string)
+$body - the body of the message as a DOM tree
+$sig - the signature file as a DOM tree
+$replyto -  the reply-to email address 
+$replytoname - the reply-to name (UTF-8 encoded string)
+
+Returns true if mail sending (appears to have) succeeded. False otherwise.
 
 =cut
 ######################################################################
@@ -425,8 +437,15 @@ sub send_mail
 		$mail_func = \&send_mail_via_sendmail;
 	}
 
-	&{$mail_func}( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname );
-}	
+	my $result = &{$mail_func}( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname );
+
+	if( !$result )
+	{
+		$archive->log( "Failed to send mail.\nTo: $address <$name>\nSubject: $subject\n" );
+	}
+
+	return $result;
+}
 
 ######################################################################
 #
