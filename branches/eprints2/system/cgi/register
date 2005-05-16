@@ -158,7 +158,7 @@ $rc = 0;
 		$user->remove();
 		return mk_err_page(
 			$session,
-			"cgi/register:email_failed",
+			"general:email_failed",
 			$fieldlist,
 			$v,
 			{} );

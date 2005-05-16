@@ -737,7 +737,6 @@ Public CGI Scripts
 </ep:phrase>
     <ep:phrase ref="cgi/register:account">Registration</ep:phrase>
     <ep:phrase ref="cgi/register:error">Error</ep:phrase>
-    <ep:phrase ref="cgi/register:email_failed"><p>The system is currently unabled to send email. Please try again later. If this problem persists, please contact the <a href="mailto:&adminemail;">administrator</a> with details.</p></ep:phrase>
 
     <ep:phrase ref="register_fieldname_lang">Your preferred language</ep:phrase>
     <ep:phrase ref="register_fieldhelp_lang">This will set which language is used for automated emails</ep:phrase>
@@ -835,6 +834,7 @@ General phrases, used alot
     <ep:phrase ref="general:bad_param"><p>Bad parameters. Do not try and access this script directly.</p></ep:phrase> 
     <ep:phrase ref="general:disabled_feature_title">Disabled Feature</ep:phrase> 
     <ep:phrase ref="general:disabled_feature_body"><p>This feature has been disabled for this archive.</p></ep:phrase> 
+    <ep:phrase ref="general:email_failed"><p>The system is currently unabled to send email. Please try again later. If this problem persists, please contact the <a href="mailto:&adminemail;">administrator</a> with details.</p></ep:phrase>
 
     <ep:phrase ref="general:dataset_object_eprint">EPrint</ep:phrase> 
     <ep:phrase ref="general:dataset_object_user">User</ep:phrase> 
