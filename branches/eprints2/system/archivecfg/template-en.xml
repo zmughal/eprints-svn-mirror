@@ -5,10 +5,10 @@
       xmlns:ep="http://eprints.org/ep2/template">
   <head>
     <title>&archivename; - <ep:pin ref="title" textonly="yes" /></title>
-    <style style="text/css" media="screen">
+    <style type="text/css" media="screen">
 @import  url(&base_url;/eprints.css);
     </style>
-    <style style="text/css" media="print">
+    <style type="text/css" media="print">
 @import  url(&base_url;/eprints.css);
 @import  url(&base_url;/print.css);
     </style>
