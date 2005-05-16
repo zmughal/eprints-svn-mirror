@@ -2367,4 +2367,16 @@ PACKAGE: 2.2.99.2
  - Made the "problems" in the register page appear as css
     class problems (big red box). This way they are more 
     obvious, and in the same style as problems in the 
-    submission form.
+    submission form. 
+ - Changed the "email_failed" phrase to be generic as it will
+    be used in several places. [#848]
+ - The "cgi/reset_password" form now warns (via webpage) if
+    the email did not get sent. [#848]
+ - The "cgi/users/change_email" form now warns (via webpage) if
+    the email did not get sent. [#848]
+ - The deletion request on "cgi/users/review" now warns
+     (via webpage) if the email did not get sent. [#848]
+ - removed test code from cgi/register
+ - If no SMTP server is configured, and an attempt to send 
+    mail via STMP is made, the system now logs a warning with
+    advice on how to set the SMTP server. [#973]

@@ -477,6 +477,13 @@ sub send_mail_via_smtp
 
 	my $smtphost = $archive->get_conf( 'smtp_server' );
 
+	if( !defined $smtphost )
+	{
+		$archive->log( "No STMP host has been defined. To fix this, find the full\naddress of your SMTP server (eg. smtp.example.com) and add it\nas the value of smtp_server in\nperl_lib/EPrints/SystemSettings.pm" );
+		return( 0 );
+	}
+
+
 	use Net::SMTP;
 	my $smtp=Net::SMTP->new( $smtphost );
 	if( !defined $smtp )
