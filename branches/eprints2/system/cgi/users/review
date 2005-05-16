@@ -316,7 +316,7 @@ sub handle_removal_request
 	my $url = $session->get_archive()->get_conf( "perl_url" ).
 		"/users/staff/edit_eprint?eprintid=".$eprint->get_value( "eprintid" );
 	
-	$session->mail_administrator( 	
+	my $rc = $session->mail_administrator(
 		"cgi/users/review:remove_mail_subject",
 		"cgi/users/review:remove_mail",
 		citation=>$eprint->render_citation(),
@@ -325,7 +325,12 @@ sub handle_removal_request
 		reason=>( EPrints::Utils::is_set( $reason ) ? $session->make_text( $reason ) 
 			 : $session->html_phrase( "cgi/users/review:no_reason" ) ),
 		url=>$session->make_text( $url ) );
-	#cjg err sending mail check?
+	if( !$rc )
+	{
+		$session->render_error(
+			$session->html_phrase( "general:email_failed" ) );
+		return;
+	}
 
 	my $title = $session->html_phrase( "cgi/users/review:remove_title" );
 	my $page = $session->make_doc_fragment();
