@@ -2382,3 +2382,12 @@ PACKAGE: 2.2.99.2
     advice on how to set the SMTP server. [#973]
  - Fixed bug: It was possible to select the "------" divide
     in set search form fields. [#853]
+ - Value of secret fields now displays as [hidden] unless for
+    some strange reason they are multiple, multilang or
+    hasid. [#859]
+ - When AnApache loads it checks to see if it can require the
+    appropriate Apache or Apache2 module. If not it prints an
+    error then sees if the other is available. If it is then
+    it prints a suggestion that the SystemSettings param may
+    be wrong.  [#884]
+

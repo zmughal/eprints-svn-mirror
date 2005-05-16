@@ -47,6 +47,17 @@ my $av =  $EPrints::SystemSettings::conf->{apache};
 if( defined $av && $av eq "2" )
 {
 	# Apache 2
+	eval "require Apache2"; if( $@ ) {
+		# not logging functions available yet
+		print STDERR "\n------------------------------------------------------------\n";
+		print STDERR "Failed to load mod_perl for Apache 2\n";
+		eval "require Apache"; if( !$@ ) {
+			print STDERR "However mod_perl for Apache 1.3 is available. Is the 'apache'\nparameter in perl_lib/EPrints/SystemSettings.pm correct?\n";
+		}
+		print STDERR "------------------------------------------------------------\n";
+
+		die;
+	};
 	eval "require EPrints::RequestWrapper2"; if( $@ ) { die $@; }
 	eval "require Apache::AuthDBI"; if( $@ ) { die $@; }
 	eval "require ModPerl::Registry"; if( $@ ) { die $@; }
@@ -105,6 +116,17 @@ if( defined $av && $av eq "2" )
 else
 {
 	# Apache 1.3
+	eval "require Apache"; if( $@ ) {
+		# not logging functions available yet
+		print STDERR "\n------------------------------------------------------------\n";
+		print STDERR "Failed to load mod_perl for Apache 1.3\n";
+		eval "require Apache2"; if( !$@ ) {
+			print STDERR "However mod_perl for Apache 2 is available. Is the 'apache'\nparameter in perl_lib/EPrints/SystemSettings.pm correct?\n";
+		}
+		print STDERR "------------------------------------------------------------\n";
+
+		die;
+	};
 	eval "require EPrints::RequestWrapper"; if( $@ ) { die $@; }
 	eval "require Apache::AuthDBI"; if( $@ ) { die $@; }
 	eval "require Apache::Registry"; if( $@ ) { die $@; }
