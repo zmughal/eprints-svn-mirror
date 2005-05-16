@@ -169,6 +169,7 @@ sub new
 		# Database connection failure - noooo!
 		$self->render_error( $self->html_phrase( 
 			"lib/session:fail_db_connect" ) );
+#$self->get_archive->log( "Failed to connect to database." );
 		return undef;
 	}
 
@@ -1397,13 +1398,19 @@ sub render_error
 		$back_to_text = $self->make_text( "Continue" );
 	}
 
+	my $textversion = '';
+	$textversion.= $self->phrase( "lib/session:some_error" );
+	$textversion.= EPrints::Utils::tree_to_utf8( $error_text, 76 );
+	$textversion.= "\n";
+
 	if ( $self->{offline} )
 	{
-		print $self->phrase( "lib/session:some_error" );
-		print EPrints::Utils::tree_to_utf8( $error_text, 76 );
-		print "\n";
+		print $textversion;
 		return;
 	} 
+
+	# send text version to log
+	$self->get_archive->log( $textversion );
 
 	my( $p, $page, $a );
 	$page = $self->make_doc_fragment();
