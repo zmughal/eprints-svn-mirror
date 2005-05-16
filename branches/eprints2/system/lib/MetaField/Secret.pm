@@ -47,12 +47,40 @@ sub get_sql_index
 	return undef;
 }
 
+sub render_value
+{
+	my( $self, $session, $value, $alllangs, $nolink ) = @_;
+
+	if( defined $self->{render_value} )
+	{
+		return &{$self->{render_value}}(
+			$session, 
+			$self, 
+			$value, 
+			$alllangs, 
+			$nolink );
+	}
+
+	# this won't handle anyone doing anything clever like
+	# having multiple,multilang or hasid flags on a secret
+	# field. If they do, we'll use a more default render
+	# method.
+
+	if( $self->get_property( 'multiple' ) ||
+	  $self->get_property( 'multilang' ) ||
+	  $self->get_property( 'hasid' ) )
+	{
+		return $self->SUPER::render_value( $session, $value, $alllangs, $nolink );
+	}
+
+	return $self->render_single_value( $session, $value, $nolink );
+}
 
 sub render_single_value
 {
 	my( $self, $session, $value, $dont_link ) = @_;
 
-	return $session->make_text( "????" );
+	return $session->html_phrase( 'lib/metafield/secret:show_value' );
 }
 
 sub get_basic_input_elements

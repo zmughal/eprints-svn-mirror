@@ -94,6 +94,7 @@ EPrints Modules
 
     <ep:phrase ref="lib/metafield/itemref:lookup">Lookup</ep:phrase>
     <ep:phrase ref="lib/metafield/itemref:not_found"><i><ep:pin ref="objtype" /> <ep:pin ref="id" /> not found.</i></ep:phrase>
+    <ep:phrase ref="lib/metafield/secret:show_value">[hidden]</ep:phrase>
 
 
 <!-- Extras -->
