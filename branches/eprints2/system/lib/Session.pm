@@ -942,7 +942,7 @@ sub render_option_list
 	}
 
 	my $dtop = defined $params{defaults_at_top} && $params{defaults_at_top};
-	
+
 
 	my @alist = ();
 	my @list = ();
