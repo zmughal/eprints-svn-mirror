@@ -737,6 +737,7 @@ Public CGI Scripts
 </ep:phrase>
     <ep:phrase ref="cgi/register:account">Registration</ep:phrase>
     <ep:phrase ref="cgi/register:error">Error</ep:phrase>
+    <ep:phrase ref="cgi/register:email_failed"><p>The system is currently unabled to send email. Please try again later. If this problem persists, please contact the <a href="mailto:&adminemail;">administrator</a> with details.</p></ep:phrase>
 
     <ep:phrase ref="register_fieldname_lang">Your preferred language</ep:phrase>
     <ep:phrase ref="register_fieldhelp_lang">This will set which language is used for automated emails</ep:phrase>

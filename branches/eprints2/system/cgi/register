@@ -142,12 +142,27 @@ sub make_page
 	$user->set_value( "pin", $pin );
 	$user->set_value( "pinsettime", time() );
 	$user->commit();
-	$user->mail( 
+
+	# If email fails then we should abort
+	my $rc = $user->mail( 
 		"cgi/register:account",
 		$session->html_phrase( 
 			"mail_password_pin", 
 			confirmurl => $session->make_text( $session->get_archive()->get_conf( "perl_url" )."/confirm?userid=".$user->get_value( "userid" )."&pin=".$pin ),
 			username => $user->render_value( "username" ) ) );
+$rc = 0;
+	unless( $rc )
+	{
+		# couldn't send email, so remove the user object again
+		# and apologise
+		$user->remove();
+		return mk_err_page(
+			$session,
+			"cgi/register:email_failed",
+			$fieldlist,
+			$v,
+			{} );
+	}
 
 #`	$page->appendChild( $session->html_phrase( "general:frontpage_link" ) );
 

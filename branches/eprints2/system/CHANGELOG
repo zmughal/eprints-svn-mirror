@@ -2361,4 +2361,6 @@ PACKAGE: 2.2.99.2
     a mysql users password in mysql versions < 4.1 [#1010]
  - Added warning to be sent to log if mail does not get sent
     correctly. [#848]
-
+ - If cgi/register fails to send email, it removes the new
+    user it just created and redisplays to registration form
+    with a warning at the top. [#848]
