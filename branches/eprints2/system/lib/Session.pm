@@ -1365,21 +1365,14 @@ sub _render_subjects_aux
 
 
 
-#
-# $xhtml = render_error( $error_text, $back_to, $back_to_text )
-#
-#  Renders an error page with the given error text. A link, with the
-#  text $back_to_text, is offered, the destination of this is $back_to,
-#  which should take the user somewhere sensible.
-#
-
-
 ######################################################################
 =pod
 
-=item $foo = $thing->render_error( $error_text, $back_to, $back_to_text )
+=item $session->render_error( $error_text, $back_to, $back_to_text )
 
-undocumented
+Renders an error page with the given error text. A link, with the
+text $back_to_text, is offered, the destination of this is $back_to,
+which should take the user somewhere sensible.
 
 =cut
 ######################################################################
