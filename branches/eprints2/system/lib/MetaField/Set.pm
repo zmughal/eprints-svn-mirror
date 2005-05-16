@@ -309,6 +309,8 @@ sub from_search_form
 	foreach( $session->param( $prefix ) )
 	{
 		next if m/^\s*$/;
+		# ignore the "--------" divider.
+		next if m/^-$/;
 		push @vals,$_;
 	}
 		

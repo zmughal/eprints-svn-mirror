@@ -2380,3 +2380,5 @@ PACKAGE: 2.2.99.2
  - If no SMTP server is configured, and an attempt to send 
     mail via STMP is made, the system now logs a warning with
     advice on how to set the SMTP server. [#973]
+ - Fixed bug: It was possible to select the "------" divide
+    in set search form fields. [#853]
