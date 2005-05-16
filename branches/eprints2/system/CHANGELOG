@@ -2364,3 +2364,7 @@ PACKAGE: 2.2.99.2
  - If cgi/register fails to send email, it removes the new
     user it just created and redisplays to registration form
     with a warning at the top. [#848]
+ - Made the "problems" in the register page appear as css
+    class problems (big red box). This way they are more 
+    obvious, and in the same style as problems in the 
+    submission form.
