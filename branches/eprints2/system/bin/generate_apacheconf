@@ -143,6 +143,9 @@ $noise = 1+$verbose if( $verbose );
 # Set STDOUT to auto flush (without needing a \n)
 $|=1;
 
+my $av =  $EPrints::SystemSettings::conf->{apache};
+$av = "1" unless defined $av;
+
 my $site_sysfile = EPrints::Config::get( "sys_path" )."/auto-apache.conf";
 my $site_incfile = EPrints::Config::get( "sys_path" )."/auto-apache-includes.conf";
 my $site_userfile = EPrints::Config::get( "cfg_path" )."/apache.conf";
@@ -212,6 +215,7 @@ print CONF <<END;
 #
 
 # Load the perl modules & archive configurations
+PerlSetEnv EPRINTS_APACHE $av
 PerlRequire $startupfile
 
 END
@@ -228,8 +232,7 @@ foreach my $port ( keys %portlist )
 }
 print CONF "\n";
 
-my $av =  $EPrints::SystemSettings::conf->{apache};
-if( defined $av && $av eq "2" )
+if( $av eq "2" )
 {
 	# apache 2
 	print CONF <<END;

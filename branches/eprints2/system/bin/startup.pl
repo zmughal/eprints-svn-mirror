@@ -1,5 +1,38 @@
 use lib '/opt/ep2stable/perl_lib';
 
+BEGIN
+{
+	use EPrints::SystemSettings;
+
+	my $conf_v = $ENV{EPRINTS_APACHE};
+	if( defined $conf_v )
+	{
+		my $av =  $EPrints::SystemSettings::conf->{apache};
+		$av = "1" unless defined $av;
+
+		my $mismatch = 0;
+		$mismatch = 1 if( $av eq "2" && $conf_v ne "2" );
+		$mismatch = 1 if( $av ne "2" && $conf_v ne "1" );
+		if( $mismatch )
+		{
+			print STDERR <<END;
+
+------------------------------------------------------------
+According to a flag in the Apache configuration, the part
+of it relating to EPrints was generated for running with 
+Apache $conf_v but this version of EPrints is configured 
+to use version $av of Apache.
+
+You should probably check the "apache" parameter setting in
+perl_lib/EPrints/SystemSettings.pm then run the script
+generate_apacheconf, then try to start Apache again.
+------------------------------------------------------------
+
+END
+			die "Apache version mismatch";
+		}
+	}
+}
 ######################################################################
 #
 #  __COPYRIGHT__
