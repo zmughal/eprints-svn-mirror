@@ -6,8 +6,10 @@ use TestLib;
 use EPrints::Session;
 use strict;
 
+my $session;
+
 # open a noisy offline session with no database check
-my $session = EPrints::Session->new( 1, $TestLib::ARCID, 2, 1 );
+$session = EPrints::Session->new( 1, $TestLib::ARCID, 2, 1 );
 ok(defined $session, 'opened an EPrints::Session object (noisy, no_check_db)');
 
 # check it's the right type
@@ -38,6 +40,9 @@ $session = EPrints::Session->new( 1, $TestLib::ARCID, 0, 0 );
 ok(defined $session, 'opened an EPrints::Session object' );
 
 $session->terminate;
+
+
+
 
 
 # TODO

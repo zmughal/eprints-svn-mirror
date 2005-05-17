@@ -2390,4 +2390,9 @@ PACKAGE: 2.2.99.2
     error then sees if the other is available. If it is then
     it prints a suggestion that the SystemSettings param may
     be wrong.  [#884]
+ - generate_apacheconf now causes the apache config to set an
+    environment variable indicating the apache version it is
+    intended for use with. If this ENV is set then it compares
+    it to the setting in SystemSettings and if they don't 
+    match it prints a helpful error and quits. [#885]
 
