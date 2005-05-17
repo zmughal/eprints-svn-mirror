@@ -242,15 +242,43 @@ if test $CONVERT_PATH = "NOTFOUND"; then
     AC_MSG_WARN([Unable to find convert, the ImageMagick tool])
 fi
 
+
 if test "x$APACHE" = "x1" ; then
-	CHECK_PERL_MOD(Apache::Constants)
-	CHECK_PERL_MOD(Apache)
-	CHECK_PERL_MOD(Apache::Registry)
+	TEST_PERL_MOD(MOD_PERL_VERSION_OK,Apache)
+	if test $MOD_PERL_VERSION_OK = "1"; then
+		CHECK_PERL_MOD(Apache::Constants)
+		CHECK_PERL_MOD(Apache::Registry)
+	else
+		echo "***********************************************************"
+		echo "*** Failed to find mod_perl 1 (PERL Module 'Apache')"
+		TEST_PERL_MOD(WRONG_MOD_PERL,Apache2)
+		if test $WRONG_MOD_PERL = "1"; then
+			echo "***"
+			echo "*** However the module Apache2 is installed!"
+			echo "*** That sounds like you've got the wrong setting"
+			echo "*** for --with-apache=x"
+		fi
+		echo "***********************************************************"
+	fi
 else
-	CHECK_PERL_MOD(Apache::Const)
-	CHECK_PERL_MOD(Apache2)
-	CHECK_PERL_MOD(ModPerl::Registry)
+	TEST_PERL_MOD(MOD_PERL_VERSION_OK,Apache2)
+	if test $MOD_PERL_VERSION_OK = "1"; then
+		CHECK_PERL_MOD(Apache::Const)
+		CHECK_PERL_MOD(ModPerl::Registry)
+	else
+		echo "***********************************************************"
+		echo "*** Failed to find mod_perl 2 (PERL Module 'Apache2')"
+		TEST_PERL_MOD(WRONG_MOD_PERL,Apache)
+		if test $WRONG_MOD_PERL = "1"; then
+			echo "***"
+			echo "*** However the module Apache is installed!"
+			echo "*** That sounds like you've got the wrong setting"
+			echo "*** for --with-apache=x"
+		fi
+		echo "***********************************************************"
+	fi
 fi
+
 
 CHECK_PERL_MOD(Carp)
 CHECK_PERL_MOD(Config)
