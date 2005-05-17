@@ -552,6 +552,14 @@ END
 		$config->{field_defaults}->{hide_lineage} = $config->{hide_lineage};
 	}
 
+	#
+	# Defaults for >2.3.11
+	#
+
+	if( !defined $config->{allow_reset_password} )
+	{
+		$config->{allow_reset_password} = 1;
+	}
 
 	#
 	# End of config updater

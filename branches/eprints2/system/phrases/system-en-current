@@ -761,6 +761,7 @@ Public CGI Scripts
     <ep:phrase ref="cgi/set_password:password_title">Register / Change Password</ep:phrase>
     <ep:phrase ref="cgi/set_password:register"><p>To register, use the <a href="register">Registration Form</a>.</p></ep:phrase>
     <ep:phrase ref="cgi/set_password:reset"><p>If you have registered but have forgotten the password you may set a new password using the <a href="reset_password">Reset Password Form</a>.</p></ep:phrase>
+    <ep:phrase ref="cgi/set_password:disabled"><p>This feature is not available on this system.</p></ep:phrase>
 
 <!-- used by reset_password now, but keys kept the same, to save
      tanslators redoing it all -->

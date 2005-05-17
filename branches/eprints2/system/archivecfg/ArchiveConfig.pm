@@ -205,6 +205,11 @@ $c->{skip_buffer} = 0;
 # to remove the links to web registration.
 $c->{allow_web_signup} = 1;
 
+# Allow users to change their password via the web?
+# You may wish to disable this if you import passwords from an
+# external system or use LDAP.
+$c->{allow_reset_password} = 1;
+
 # The type of user that gets created when someone signs up
 # over the web. This can be modified after they sign up by
 # staff with the right priv. set. 
