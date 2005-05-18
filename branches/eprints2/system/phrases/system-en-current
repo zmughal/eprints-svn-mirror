@@ -636,6 +636,7 @@ Staff CGI Scripts
     <ep:phrase ref="cgi/users/edit_eprint:action_edit">Edit EPrint</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action__remove">Remove EPrint</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action__clone">New Version</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:action__copy">Use as Template</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action__toinbox">Bounce EPrint back to Submitter</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action__tobuffer">Move EPrint to Submission Buffer</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action__toarchive">Move EPrint to Main Archive</ep:phrase>

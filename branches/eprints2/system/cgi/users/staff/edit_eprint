@@ -47,20 +47,19 @@ sub process
 
 	# When in doubt, use the main archive.
 
-	$datasetid = "archive" if( !defined $datasetid );
-	if( $datasetid ne "archive" && 
-    		$datasetid ne "inbox" && 
-    		$datasetid ne "deletion" && 
-    		$datasetid ne "buffer" )
-	{
-		$datasetid = "archive";
-	}
-	
-	my $dataset = $session->get_archive()->get_dataset( $datasetid );
-
 	my $eprintid = $session->param( "eprintid" );
+	
+	my $dataset;
+	if( defined $datasetid )
+	{
+		$dataset = $session->get_archive()->get_dataset( $datasetid );
+	}
 
 	my $eprint = new EPrints::EPrint( $session, $eprintid, $dataset );
+	if( !defined $dataset )
+	{
+		$dataset = $eprint->get_dataset;
+	}
 	my $action = $session->get_action_button();
 
 	if( !defined $eprint )
@@ -197,20 +196,37 @@ sub process
 		return;
 	}
 
-	if( $action eq "_clone" )
+
+	if( $action eq "_clone" || $action eq "_copy" )
 	{
-                my $new_eprint = $eprint->clone( $session->get_archive()->get_dataset( "buffer" ), 1 );
-		unless( defined $new_eprint )
+		my $buffer_ds = $session->get_archive()->get_dataset( "buffer" );
+		my $copy;
+		if( $action eq "_clone" )
 		{
-			$session->render_error( $session->html_phrase(
-				"cgi/users/edit_eprint:cant_clone",
-				id=>$session->make_text( $eprintid ) ) );
+			# with files, with link
+			$copy = $eprint->clone( $buffer_ds, 1 );
+		}
+		else
+		{
+			# nofiles, no link
+			$copy = $eprint->clone( $buffer_ds, 0, 1 );
+		}
+	
+		if( defined $copy )
+		{
+			# Copied OK, redirect to buffer
+			$session->redirect( 'edit_eprint?eprintid='.$copy->get_id.'&_action_edit=1' );
 			return;
 		}
 		
-                $session->redirect( "edit_eprint?dataset=buffer&eprintid=".$new_eprint->get_id() );
+		$session->render_error( $session->html_phrase(
+			"cgi/users/edit_eprint:cant_clone",
+			id=>$session->make_text( $eprintid ) ) );
 		return;
 	}
+
+
+
 
 	#########################################################
 	
@@ -300,7 +316,8 @@ sub view_page
 	#   *             *              move to buffer  - "
 	#         *               *      move to archive  - "
 	#                 *              move to deletion  - "
-	#   *     *       *       *      clone to buffer
+	#                 *       *      clone(new version) to buffer
+	#   *     *       *       *      copy(as template) to buffer
 
 	# actions for this form begin with _ (except edit and
 	# those passed to submission form)
@@ -319,7 +336,7 @@ sub view_page
 		{
 			$r1 = [ "_tobuffer" ];
 		}
-		$r2 = [ "edit", "_remove", "_clone" ];
+		$r2 = [ "edit", "_remove", "_copy" ];
 	}
 	if( $eprint->get_dataset()->id() eq "buffer" )
 	{
@@ -331,7 +348,7 @@ sub view_page
 			push @{$r1}, "_toinbox";
 		}
 		push @{$r1}, "_toarchive";
-		$r2 = [ "edit", "_remove", "_clone" ];
+		$r2 = [ "edit", "_remove", "_copy" ];
 	}
 	if( $eprint->get_dataset()->id() eq "archive" )
 	{
@@ -343,12 +360,12 @@ sub view_page
 		{
 			$r1 = [ "_tobuffer", "_todeletion" ];
 		}
-		$r2 = [ "edit", "_clone" ];
+		$r2 = [ "edit", "_clone", "_copy" ];
 	}
 	if( $eprint->get_dataset()->id() eq "deletion" )
 	{
 		$r1 = [ "_toarchive" ];
-		$r2 = [ "edit", "_clone" ];
+		$r2 = [ "edit", "_clone", "_copy" ];
 	}
 
 

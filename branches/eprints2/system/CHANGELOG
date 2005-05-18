@@ -2425,4 +2425,17 @@ PACKAGE: 2.2.99.2
     we are in https mode.
  - [#970] The script cgi/users/status now correctly checks
     that the user has the view-status priv.
+ - cgi/users/staff/edit_eprint used to assume the "archive" 
+    dataset if no dataset id was specified. Now it hunts 
+    through all datasets to find the item.
+ - [#962] Added new option to staff/edit_eprint: Use as 
+    Template: called "copy" internally. This clones the
+    eprint into the buffer but does not set the succeeds 
+    field and does not copy the documents. Nb. that the
+    new version will have the same "userid" as the copied
+    version, it does not currently get the userid from
+    the editor who clones it.
+ - [#962] "Use as Template" is available on eprints in
+     all buffers. "New Version" is now only available
+     on eprints in the "archive" or "deletion" buffers.
 
