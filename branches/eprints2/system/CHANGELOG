@@ -2310,6 +2310,7 @@ PACKAGE: 2.2.99.2
     for a config option: PerlSetVar EPrints_Secure yes
 
 2005-03-18 cjg
+
  - [c] https pages now use a secure template called 
     template-secure-en.xml
  - If we are using a secure server and /secure/ is accessed on
@@ -2320,10 +2321,12 @@ PACKAGE: 2.2.99.2
  - [#50] Https mode should now work properly.
 
 2005-03-21 cjg
+
  - Fixed warning in Archive.pm (duplicated "my" line)
  - Fixed bug in installer: confusion between userid and username.
 
 2005-04-04 cjg
+
  - Fixed bug in build_page which occured when generating non-secure
     pages from a script when the site has secure mode on.
  - Convert.pm messed about with STDIN and STDOUT for text/plain and 
@@ -2335,10 +2338,12 @@ PACKAGE: 2.2.99.2
  - Added missing "my" to UserPage.pm 
 
 2005-04-05 cjg
+
  - $archive->log now uses $archive->call, fixing a "strict" 
     restriction.
 
 2005-04-07 cjg
+
  - Added new option to build_page, to allow an explicit template
     to be used. Currently only "secure" and "default" are supported.
  - The code which generates the metadata summary page always uses
@@ -2346,10 +2351,12 @@ PACKAGE: 2.2.99.2
     site. (so that static pages do not have the secure template)
 
 2005-04-14 cjg
+
  - Fixed bug in logging
  - Up and down arrows graphics now use https if appropriate
 
 2005-05-16 cjg
+
  - commented out some stray debug code in edit_eprint
  - fixed incorrect attribute name in <style> elements in default
     template.
@@ -2396,3 +2403,18 @@ PACKAGE: 2.2.99.2
     it to the setting in SystemSettings and if they don't 
     match it prints a helpful error and quits. [#885]
 
+2005-05-17 cjg
+
+ - [#876] New configuration option: allow_reset_password. If 
+    undefined it is assumed to be true. If set to false it
+    causes the reset_password page to display a "this 
+    feature is disabled" message.
+ - If you can't register via the web or reset passwords then
+    set_password shows the same "feature disabled" message.
+
+2005-05-18 cjg
+
+ - [#979] Added a new callback configuration option:
+    sql_adjust. This takes an SQL string and returns a modifed
+    version. It is called just before the SQL is passed to 
+    the database.

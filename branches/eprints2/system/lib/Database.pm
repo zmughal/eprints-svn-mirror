@@ -1828,6 +1828,11 @@ sub do
 {
 	my( $self , $sql ) = @_;
 
+	my $adjust_fn = $self->{session}->get_archive->get_conf( 'sql_adjust' );
+	if( defined $adjust_fn )
+	{
+		$sql = &{$adjust_fn}( $sql );
+	}
 	if( $self->{debug} )
 	{
 		$self->{session}->get_archive()->log( "Database execute debug: $sql" );
@@ -1876,6 +1881,11 @@ sub prepare
 {
 	my ( $self , $sql ) = @_;
 
+	my $adjust_fn = $self->{session}->get_archive->get_conf( 'sql_adjust' );
+	if( defined $adjust_fn )
+	{
+		$sql = &{$adjust_fn}( $sql );
+	}
 #	if( $self->{debug} )
 #	{
 #		$self->{session}->get_archive()->log( "Database prepare debug: $sql" );
