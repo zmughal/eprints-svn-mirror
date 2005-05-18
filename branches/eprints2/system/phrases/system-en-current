@@ -207,6 +207,7 @@ EPrints Modules
     <ep:phrase ref="lib/session:fail_db_connect">Failed to connect to database</ep:phrase>
     <ep:phrase ref="lib/session:msg_at">Archive maintenance message generated at <ep:pin ref="time" /></ep:phrase>
     <ep:phrase ref="lib/session:archive_admin">Archive Administrator</ep:phrase>
+    <ep:phrase ref="lib/session:continue">Continue</ep:phrase>
     <ep:phrase ref="lib/session:some_error"><p>&archivename; has encountered an error:</p></ep:phrase>
     <ep:phrase ref="lib/session:contact"><p>Feel free to contact <a href="mailto:&adminemail;">&archivename; administration</a> with details.</p></ep:phrase>
     <ep:phrase ref="lib/session:cant_do_field">Error: Don't know how to render field of type <ep:pin ref="type" /></ep:phrase>

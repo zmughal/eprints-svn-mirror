@@ -2436,6 +2436,8 @@ PACKAGE: 2.2.99.2
     version, it does not currently get the userid from
     the editor who clones it.
  - [#962] "Use as Template" is available on eprints in
-     all buffers. "New Version" is now only available
-     on eprints in the "archive" or "deletion" buffers.
-
+    all buffers. "New Version" is now only available
+    on eprints in the "archive" or "deletion" buffers.
+ - [#962] When an item is cloned/copied from edit_eprint
+    the user is now redirected to the first page of editing
+    the new record. 

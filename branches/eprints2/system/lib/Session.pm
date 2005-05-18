@@ -1387,8 +1387,7 @@ sub render_error
 	}
 	if( !defined $back_to_text )
 	{
- #XXX INTL cjg not DOM
-		$back_to_text = $self->make_text( "Continue" );
+		$back_to_text = $self->html_phrase( "lib/session:continue");
 	}
 
 	my $textversion = '';
