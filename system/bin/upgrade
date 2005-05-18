@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+#!/usr/bin/perl -w -I/opt/ep2stable/perl_lib
 
 ######################################################################
 #
@@ -354,6 +354,68 @@ END
 	}
 }
 
+if( $dbversion eq "2.2" )
+{
+	my $sql;
+	print <<END;
+======================================================================
+About to upgrade tables from 2.2 to 2.3
+
+This will:
+
+ * Remove the no longer used "rindex" tables. 
+
+ * Grant ALTER permissions to the database user. 
+
+Are you sure you want to do this? (yes/no)
+END
+	
+	my $input = <STDIN>;
+	chomp( $input );
+	if( $input ne "yes" )
+	{
+		print "Aborting then.\n";
+		$session->terminate();
+		exit( 1 );
+	}
+
+	$rootdbh = &getrootdbh( $session ) unless( defined $rootdbh );
+
+	my $ok = 1;
+	$ok = $ok && defined $rootdbh;
+
+	my @tables = $db->get_tables;
+
+	# remove rindex tables
+
+	foreach my $table ( @tables )
+	{
+		if( $table =~ m/__rindex$/ )
+		{
+			$sql = "DROP TABLE $table";
+			$ok = $ok && $rootdbh->do( $sql );
+		}
+	}
+
+	# Grant ALTER
+
+	my $dbname = $session->get_archive->get_conf( "dbname" );
+	my $dbuser = $session->get_archive->get_conf( "dbuser" );
+	my $SQL = 'GRANT ALTER ON '.$dbname.'.* TO '.$dbuser.'@localhost';
+	$rootdbh->do( $SQL );
+
+	if( !$ok )
+	{
+		print "\nFailed.\n";
+		print "Please investigate cause of errors then try again.\n";
+	}
+	else
+	{
+		print "\n2.2 -> 2.3 done!\n";
+		$dbversion = "2.3";
+		$db->set_version( $dbversion );
+	}
+}
 if( $TARGET eq $dbversion)
 {
 	if( $noise>=1 )
