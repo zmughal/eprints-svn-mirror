@@ -21,6 +21,13 @@ use strict;
 
 my $session = new EPrints::Session;
 
+# Check we have privs
+if( !$session->auth_check( "view-status" ) )
+{
+	$session->terminate();
+	exit( 0 );
+}
+
 my $rows;
 
 # Number of users in each group

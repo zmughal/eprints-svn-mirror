@@ -2418,3 +2418,11 @@ PACKAGE: 2.2.99.2
     sql_adjust. This takes an SQL string and returns a modifed
     version. It is called just before the SQL is passed to 
     the database.
+ - Modified $dataset->get_type_fields to log a warning if
+    an unknown type is passed to it, and return [] rather
+    than fail.
+ - [#982] The "whitedot" now loads of the https server if
+    we are in https mode.
+ - [#970] The script cgi/users/status now correctly checks
+    that the user has the view-status priv.
+
