@@ -1493,6 +1493,12 @@ sub render_input_form
 	$form =	$self->render_form( "post", $p{dest} );
 	if( defined $p{default_action} && $self->client() ne "LYNX" )
 	{
+		my $imagesurl = $self->get_archive->get_conf( "base_url" )."/images";
+		my $esec = $self->get_request->dir_config( "EPrints_Secure" );
+		if( defined $esec && $esec eq "yes" )
+		{
+			$imagesurl = $self->get_archive->get_conf( "securepath" )."/images";
+		}
 		# This button will be the first on the page, so
 		# if a user hits return and the browser auto-
 		# submits then it will be this image button, not
@@ -1512,7 +1518,7 @@ sub render_input_form
 			height => 1, 
 			border => 0,
 			style => "display: none",
-			src => $self->{archive}->get_conf( "base_url" )."/images/whitedot.png",
+			src => "$imagesurl/whitedot.png",
 			name => "_default", 
 			alt => $p{buttons}->{$p{default_action}} ) );
 		$form->appendChild( $self->render_hidden_field(
