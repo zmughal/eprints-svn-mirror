@@ -932,8 +932,15 @@ sub get_type_fields
 {
 	my( $self, $type, $staff ) = @_;
 
-	return @{$self->{($staff?"staff_":"")."types"}->{$type}};
+	my $fields = $self->{($staff?"staff_":"")."types"}->{$type};
+	if( !defined $fields )
+	{
+		$self->{archive}->log( "Unknown type in get_type_fields ($type)" );
+		return [];
+	}
+	return @{$fields};
 }
+
 
 
 ######################################################################
