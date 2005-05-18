@@ -174,6 +174,7 @@ EPrints Modules
     <ep:phrase ref="lib/searchfield:help_url">Enter some text to search for.</ep:phrase>
     <ep:phrase ref="lib/searchfield:help_year">Enter a single year (e.g. 1999), or a range of years, e.g. `1990-2000', `1990-' or -2000'.</ep:phrase>
     <ep:phrase ref="lib/searchfield:help_int">Enter a single number (e.g. 93), or a range of numbers, e.g. `17-23', `17-' or -23'.</ep:phrase>
+    <ep:phrase ref="lib/searchfield:help_itemref">Select a single record ID number (e.g. 93), or a range of numbers, e.g. `17-23', `17-' or -23'.</ep:phrase>
     <ep:phrase ref="lib/searchfield:bool_nopref">No Preference</ep:phrase>
     <ep:phrase ref="lib/searchfield:bool_yes">Yes</ep:phrase>
     <ep:phrase ref="lib/searchfield:bool_no">No</ep:phrase>
