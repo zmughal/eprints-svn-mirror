@@ -116,7 +116,7 @@ sub handler
 		return;
 	}
 
-	&$fn( $filename, $lsparam, $locspec, $r, $baseurl );
+	&$fn( $filename, $lsparam, $locspec, $r, $baseurl, \%args );
 
 	return OK;
 }
@@ -183,7 +183,7 @@ sub send_http_header
 ######################################################################
 =pod
 
-=item EPrints::VLit::ls_charrange( $filename, $param, $locspec, $r, $baseurl )
+=item EPrints::VLit::ls_charrange( $filename, $param, $locspec, $r, $baseurl, $args )
 
 undocumented
 
@@ -192,7 +192,7 @@ undocumented
 
 sub ls_charrange
 {
-	my( $filename, $param, $locspec, $r, $baseurl ) = @_;
+	my( $filename, $param, $locspec, $r, $baseurl, $args ) = @_;
 
 	my $archive = EPrints::Archive->new_from_request( $r );
 	
@@ -218,8 +218,7 @@ sub ls_charrange
 		( $offset, $length ) = ( $1, $2 );
 	}
 
-	my %args = $r->args;
-	my $mode = $args{mode};
+	my $mode = $args->{mode};
 
 	my $readoffset = $offset;
 	my $readlength = $length;
@@ -430,7 +429,7 @@ END
 ######################################################################
 =pod
 
-=item EPrints::VLit::ls_area( $file, $param, $resspec, $r, $baseurl )
+=item EPrints::VLit::ls_area( $file, $param, $resspec, $r, $baseurl, $args )
 
 undocumented
 
@@ -439,7 +438,7 @@ undocumented
 
 sub ls_area
 {
-	my( $file, $param, $resspec, $r, $baseurl ) = @_;
+	my( $file, $param, $resspec, $r, $baseurl , $args) = @_;
 
 	my $page = 1;
 	my $opts = {
@@ -447,12 +446,45 @@ sub ls_area
 		hrange => { start=>0 },
 		vrange => { start=>0 }
 	};
+	my $archive = EPrints::Archive->new_from_request( $r );
 
-	my %args = $r->args;
-	my $s;
-	if( $args{scale} )
+	my $mode = $args->{mode};
+
+	if( $mode eq "human" )
 	{
-		$s = $args{scale};
+		send_http_header( "text/html" );
+		my $cssurl = $archive->get_conf( "base_url" )."/vlit.css";
+		my $title = "title";
+		my $html = "html";
+		my $copyurl = $archive->get_conf( "vlit" )->{copyright_url};
+		my $front = '<a href="'.$copyurl.'">trans &copy;</a>';
+		my $fullurl = $baseurl.'?xuversion=1.0&locspec=area:&mode=human';
+		my $imgurl = $baseurl.'?xuversion=1.0&locspec=area:'.$param;
+		my $linkurl = $imgurl;
+		if( $param ne '' )
+		{
+			$linkurl = $fullurl;
+			$front.= ' [<a href="'.$fullurl.'">full document</a>]';
+		}
+		$front.= ' [<a href="'.$imgurl.'">raw data</a>]';
+		$r->print( <<END );
+<html>
+<head>
+  <title>$title</title>
+  <link rel="stylesheet" type="text/css" href="$cssurl" title="screen stylesheet" media="screen" />
+</head>
+<body class="vlit">
+<div class="vlit-controls">$front</div><div class="vlit-human"><a href='$linkurl'><img src='$imgurl' border="0" /></a></div><a name="end" />
+</body>
+</html>
+END
+		return;
+	}
+
+	my $s;
+	if( $args->{scale} )
+	{
+		$s = $args->{scale};
 		$s = undef if( $s <= 0 || $s>1000 || $s==100 );
 	}
 
@@ -493,7 +525,8 @@ sub ls_area
 		if( !-d $dir )
 		{
 			mkdir( $dir );
-			my $cmd = "/usr/bin/X11/convert '$file' 'tif:$dir/%d'";
+			my $convert = $archive->get_conf( 'executables','convert' );
+			my $cmd = "$convert '$file' 'tif:$dir/%d'";
 			`$cmd`;
 		}
 	}
@@ -542,7 +575,8 @@ sub ls_area
 		$scale2 = '-scale '.$s.'%x'.$s.'%';
 	}
 
-	$cmd = "/usr/bin/X11/convert $scale $crop $scale2 '$dir/$pageindex' 'png:$cache'";
+	my $convert = $archive->get_conf( 'executables','convert' );
+	$cmd = "$convert $scale $crop $scale2 '$dir/$pageindex' 'png:$cache'";
 	`$cmd`;
 	
 
