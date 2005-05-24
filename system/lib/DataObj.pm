@@ -66,14 +66,14 @@ sub get_value
 {
 	my( $self, $fieldname, $no_id ) = @_;
 	
-	my $r = $self->{data}->{$fieldname};
-
 	my $field = EPrints::Utils::field_from_config_string( $self->{dataset}, $fieldname );
 
 	if( !defined $field )
 	{
 		EPrints::Config::abort( "Attempt to get value from not existant field: ".$self->{dataset}->id()."/$fieldname" );
 	}
+
+	my $r = $field->get_value( $self );
 
 	unless( EPrints::Utils::is_set( $r ) )
 	{
@@ -89,7 +89,7 @@ sub get_value
 
 	return $r unless( $no_id );
 
-	return $r unless( $field->get_property( "hasid" ) );
+	return $r unless( $field->get_property( "hasid" ) || $field->get_property( "mainpart" ) );
 
 	# Ok, we need to strip out the {id} parts. It's easy if
 	# this isn't multiple
@@ -101,6 +101,12 @@ sub get_value
 	return $r2;
 }
 
+sub get_value_raw
+{
+	my( $self, $fieldname ) = @_;
+
+	return $self->{data}->{$fieldname};
+}
 
 ######################################################################
 =pod
@@ -116,9 +122,63 @@ sub set_value
 {
 	my( $self , $fieldname, $value ) = @_;
 
+	if( !defined $self->{changed}->{$fieldname} )
+	{
+		# if it's already changed once then we don't
+		# want to fiddle with it again
+
+		if( !_equal( $self->{data}->{$fieldname}, $value ) )
+		{
+			$self->{changed}->{$fieldname} = $self->{data}->{$fieldname};
+		}
+	}
+
 	$self->{data}->{$fieldname} = $value;
 }
 
+sub _equal
+{
+	my( $a, $b ) = @_;
+
+	# both undef is equal
+	return 1 if( (!defined $a || $a eq '') && (!defined $b || $b eq '') );
+	# one xor other undef is not equal
+	return 0 if( !defined $a || !defined $b );
+
+	# simple value
+	if( ref($a) eq "" )
+	{
+		return( $a eq $b );
+	}
+
+	if( ref($a) eq "ARRAY" )
+	{
+		# different lengths?
+		return 0 if( scalar @{$a} != scalar @{$b} );
+		for(my $i=0; $i<scalar @{$a}; ++$i )
+		{
+			return 0 unless _equal( $a->[$i], $b->[$i] );
+		}
+		return 1;
+	}
+
+	if( ref($a) eq "HASH" )
+	{
+		my @akeys = sort keys %{$a};
+		my @bkeys = sort keys %{$b};
+		# different sizes?
+		return 0 if( scalar @akeys != scalar @bkeys );
+		for(my $i=0; $i<scalar @akeys; ++$i )
+		{
+			return 0 unless ( $akeys[$i] eq $bkeys[$i] );
+			return 0 unless _equal( $a->{$akeys[$i]}, $b->{$bkeys[$i]} );
+		}
+		return 1;
+	}
+
+	print STDERR "Warning: can't compare $a and $b\n";
+	return 0;
+}
 
 ######################################################################
 =pod
@@ -231,6 +291,12 @@ Returns true if the named field is set in this record, otherwise false.
 sub is_set
 {
 	my( $self, $fieldname ) = @_;
+
+	if( !exists $self->{data}->{$fieldname} )
+	{
+		$self->{session}->get_archive->log(
+			 "is_set( $fieldname ): Unknown field" );
+	}
 
 	return EPrints::Utils::is_set( $self->{data}->{$fieldname} );
 }
@@ -393,6 +459,78 @@ sub get_type
 	my( $self ) = @_;
 
 	return "EPrints::DataObj::get_type should have been over-ridden.";
+}
+
+######################################################################
+=pod
+
+=item $xmlfragment = $dataobj->to_xml( %opts )
+
+Convert this object into an XML fragment. 
+
+%opts are:
+
+$no_xmlns=>1 : do not include a xmlns attribute in the 
+outer element. (This assumes this chunk appears in a larger tree 
+where the xmlns is already set correctly.
+
+$showempty=>1 : fields with no value are shown.
+
+$version=>"code" : pick what version of the EPrints XML format
+to use "1" or "1.1"
+
+=cut
+######################################################################
+
+sub to_xml
+{
+	my( $self, %opts ) = @_;
+
+	$opts{version} = "1" unless defined $opts{version};
+
+	my $frag = $self->{session}->make_doc_fragment;
+	$frag->appendChild( $self->{session}->make_text( "  " ) );
+	my %attrs = ();
+	my $ns = EPrints::XML::namespace( 'data', $opts{version} );
+	if( !defined $ns )
+	{
+		#error
+		return;
+	}
+	$attrs{'xmlns'}=$ns unless( $opts{no_xmlns} );
+	my $r = $self->{session}->make_element( "record", %attrs );
+	
+	$r->appendChild( $self->{session}->make_text( "\n" ) );
+	foreach my $field ( $self->{dataset}->get_fields() )
+	{
+		next unless( $field->get_property( "export_as_xml" ) );
+
+		unless( $opts{show_empty} )
+		{
+			next unless( $self->is_set( $field->get_name() ) );
+		}
+
+		if( $opts{version} eq "1.1" )
+		{
+			$r->appendChild( $field->to_xml( 
+				$self->{session}, 
+				$self->get_value( $field->get_name() ),
+				1 ) ); # no xmlns on inner elements
+		}
+		if( $opts{version} eq "1" )
+		{
+			$r->appendChild( $field->to_xml_old( 
+				$self->{session}, 
+				$self->get_value( $field->get_name() ),
+				1 ) ); # no xmlns on inner elements
+		}
+	}
+
+	$r->appendChild( $self->{session}->make_text( "  " ) );
+	$frag->appendChild( $r );
+	$frag->appendChild( $self->{session}->make_text( "\n" ) );
+
+	return $frag;
 }
 
 ######################################################################
