@@ -29,6 +29,9 @@ which it will return its own config instead.
 It's a hack used by EPrints::Auth - you really do not want to go
 near it!
 
+This is the version for use with Apache 1.3. EPrints::Auth will
+pick which to use based on EPrints::SystemSettings 
+
 =over 4
 
 =cut

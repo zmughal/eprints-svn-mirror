@@ -99,7 +99,7 @@ sub process_file
 	$hash->appendChild( $session->render_data_element( 6, "name", $name ) );
 	$hash->appendChild( $session->render_data_element( 6, "algorithm", $alg ) );
 	$hash->appendChild( $session->render_data_element( 6, "value", $value ) );
-	$hash->appendChild( $session->render_data_element( 6, "date", EPrints::Utils::get_timestamp ) );
+	$hash->appendChild( $session->render_data_element( 6, "date", EPrints::Utils::get_timestamp() ) );
 
 	return $hash;
 }
