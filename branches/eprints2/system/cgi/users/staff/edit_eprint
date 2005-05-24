@@ -199,17 +199,22 @@ sub process
 
 	if( $action eq "_clone" || $action eq "_copy" )
 	{
-		my $buffer_ds = $session->get_archive()->get_dataset( "buffer" );
+		my $target_ds_id = 'buffer';
+		if( $session->get_archive->get_conf( "skip_buffer" ) )
+		{
+			$target_ds_id = 'archive';
+		}
+		my $target_ds = $session->get_archive()->get_dataset( $target_ds_id );
 		my $copy;
 		if( $action eq "_clone" )
 		{
 			# with files, with link
-			$copy = $eprint->clone( $buffer_ds, 1 );
+			$copy = $eprint->clone( $target_ds, 1 );
 		}
 		else
 		{
 			# nofiles, no link
-			$copy = $eprint->clone( $buffer_ds, 0, 1 );
+			$copy = $eprint->clone( $target_ds, 0, 1 );
 		}
 	
 		if( defined $copy )
