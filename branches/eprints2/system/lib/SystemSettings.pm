@@ -27,7 +27,7 @@ $EPrints::SystemSettings::conf =
 		tar 	=> "/bin/tar",
 		latex 	=> "/usr/bin/latex",
 		dvips 	=> "/usr/bin/dvips",
-		convert	=> "/usr/X11R6/bin/convert",
+		convert	=> "/usr/bin/convert",
 		mimetex	=> "/export/0/home/cjg/Projects/eprints2_stable/eprints/system/mimetex.cgi"
 	},
 	invocation => {

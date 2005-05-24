@@ -2445,4 +2445,16 @@ PACKAGE: 2.2.99.2
     the phrase file.
  - [#1025] Added missing phrase "lib/searchfield:help_itemref"
 
+2005-05-24 cjg 
+
+ - [#1047] If "skip_buffer" is in effect, the "new version" 
+    and "use as template" buttons on edit_eprint make the
+    new eprints appear in the live archive, not the submission
+    buffer.
+ - $args is now parsed to handlers in VLit
+ - VLit now uses the system wide path for 'convert' rather
+    than a hard-wired one.
+ - VLit now has a "human" mode for area transclusions.
+
+
 

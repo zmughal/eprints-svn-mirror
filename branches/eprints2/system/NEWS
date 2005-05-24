@@ -4,6 +4,26 @@ see the blow by blow account of every single change see the file called
 CHANGELOG.
 ======================================================================
 
+
+EPRINTS 2.3.12                                                 2005-05-24
+-------------------------------------------------------------------------
+
+ - New HTTPS-mode which allows the registration and logged-in parts
+    of the site to run via https. 
+ - HTTPS-mode uses seperate template for secure pages (so that a secure
+    css file & images may be used)
+ - Added more exceptions to filename escaping in Documents. Now should
+    comply with RFC 2396.
+ - Fixed a bug which occasionally caused EPrints to fail to start.
+ - Fixed bug in full text search which meant occasionally the same
+    result appeared twice in one list.
+ - Better detection and warning messages for common problems, such as
+    wrong apache version, or email failing to send.
+ - Split staff option "clone eprint" into two options: "Use as template" 
+    and "New Version". These create new eprint records in the submission 
+    buffer.
+ - Other bugfixes and minor config options. (see CHANGELOG)
+
 EPRINTS 2.3.11                                                 2005-03-08
 -------------------------------------------------------------------------
 
