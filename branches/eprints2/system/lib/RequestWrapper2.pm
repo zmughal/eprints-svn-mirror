@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::RequestWrapper
+# EPrints::RequestWrapper2
 #
 ######################################################################
 #
@@ -43,7 +43,6 @@ package EPrints::RequestWrapper2;
 use strict;
 
 BEGIN { 
-	print STDERR "MODPERL: ".$EPrints::AnApache::ModPerlAPI."\n";
 	$EPrints::RequestWrapper2::BaseModule = "?";
 	if( $EPrints::AnApache::ModPerlAPI == 1 )
 	{
@@ -53,7 +52,6 @@ BEGIN {
 	{
 		$EPrints::RequestWrapper2::BaseModule = "Apache2::RequestRec";
 	}
-	print STDERR "BaseModule=$EPrints::RequestWrapper2::BaseModule\n";
 
 	eval "use $EPrints::RequestWrapper2::BaseModule;";
 };

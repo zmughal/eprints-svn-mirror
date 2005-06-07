@@ -2472,4 +2472,5 @@ PACKAGE: 2.2.99.2
  - If expecting mod_perl 1 and it's not, then both API's are checked 
     for when testing if mod_perl 2 is installed to give advice
     about it.
-
+ - Removed debug code in generate_static
+ - Removed debug code in RequestWrapper2
