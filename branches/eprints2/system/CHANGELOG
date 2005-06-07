@@ -2474,3 +2474,5 @@ PACKAGE: 2.2.99.2
     about it.
  - Removed debug code in generate_static
  - Removed debug code in RequestWrapper2
+ - [#1140] Modified configure to detect old and new API's for 
+    mod_perl
