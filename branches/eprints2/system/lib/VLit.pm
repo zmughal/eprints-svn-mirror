@@ -138,7 +138,7 @@ sub send_http_error
 {
 	my( $code, $message ) = @_;
 
-	my $r = Apache->request;
+	my $r = EPrints::AnApache::get_request();
 	$r->content_type( 'text/html' );
 	$r->status_line( "$code $message" );
 	$r->send_http_header;

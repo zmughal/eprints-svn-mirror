@@ -41,15 +41,29 @@ pick which to use based on EPrints::SystemSettings
 
 package EPrints::RequestWrapper2;
 use strict;
-use Apache2; 
-use Apache::RequestRec; 
 
-our @ISA = ("Apache::RequestRec");
+BEGIN { 
+	print STDERR "MODPERL: ".$EPrints::AnApache::ModPerlAPI."\n";
+	$EPrints::RequestWrapper2::BaseModule = "?";
+	if( $EPrints::AnApache::ModPerlAPI == 1 )
+	{
+		$EPrints::RequestWrapper2::BaseModule = "Apache::RequestRec";
+	}
+	if( $EPrints::AnApache::ModPerlAPI == 2 )
+	{
+		$EPrints::RequestWrapper2::BaseModule = "Apache2::RequestRec";
+	}
+	print STDERR "BaseModule=$EPrints::RequestWrapper2::BaseModule\n";
+
+	eval "use $EPrints::RequestWrapper2::BaseModule;";
+};
+our @ISA = ($EPrints::RequestWrapper2::BaseModule);
+
 
 sub new
 {
 	my( $class , $real_request , $conf ) = @_;
-	my $self = bless $real_request,"Apache::RequestRec";
+	my $self = bless $real_request,$EPrints::RequestWrapper2::BaseModule;
 	foreach my $confkey (keys %$conf)
 	{
 		$self->SUPER::dir_config( $confkey => $conf->{$confkey} );

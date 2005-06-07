@@ -38,6 +38,7 @@ package EPrints::Config;
 use EPrints::Utils;
 use EPrints::SystemSettings;
 use EPrints::XML;
+use EPrints::AnApache;
 
 use Unicode::String qw(utf8 latin1);
 use Data::Dumper;
@@ -106,7 +107,7 @@ used to report errors when initialising modules.
 		my $r;
 		if( $ENV{MOD_PERL} && $EPrints::SystemSettings::loaded)
 		{
- 			$r = Apache->request();
+			$r = EPrints::AnApache::get_request();
 		}
 		if( defined $r )
 		{

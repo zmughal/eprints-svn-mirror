@@ -113,7 +113,7 @@ sub new
 
 	if( $mode == 0 || !defined $mode )
 	{
-		$self->{request} = Apache->request();
+		$self->{request} = EPrints::AnApache::get_request();
 		$self->{query} = new CGI;
 		$self->{offline} = 0;
 		$self->{archive} = EPrints::Archive->new_from_request( $self->{request} );

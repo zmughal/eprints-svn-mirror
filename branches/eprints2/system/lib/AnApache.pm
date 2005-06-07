@@ -47,8 +47,25 @@ my $av =  $EPrints::SystemSettings::conf->{apache};
 if( defined $av && $av eq "2" )
 {
 	# Apache 2
-	eval "require Apache2"; if( $@ ) {
-		# not logging functions available yet
+
+	# Detect API version, either 1 or 2 
+	$EPrints::AnApache::ModPerlAPI = 0;
+
+	eval "require Apache2::Util"; 
+	unless( $@ ) { $EPrints::AnApache::ModPerlAPI = 2; }
+
+	if( !$EPrints::AnApache::ModPerlAPI ) 
+	{ 
+		eval "require Apache2"; 
+		unless( $@ ) { $EPrints::AnApache::ModPerlAPI = 1; } 
+	}
+
+	# no API version, is mod_perl 2 even installed?
+	if( !$EPrints::AnApache::ModPerlAPI )
+	{
+		# can't find either old OR new mod_perl API
+
+		# not logging functions available to eprints runtime yet
 		print STDERR "\n------------------------------------------------------------\n";
 		print STDERR "Failed to load mod_perl for Apache 2\n";
 		eval "require Apache"; if( !$@ ) {
@@ -58,10 +75,27 @@ if( defined $av && $av eq "2" )
 
 		die;
 	};
-	eval "require EPrints::RequestWrapper2"; if( $@ ) { die $@; }
-	eval "require Apache::AuthDBI"; if( $@ ) { die $@; }
-	eval "require ModPerl::Registry"; if( $@ ) { die $@; }
-	eval "require Apache::Const; import Apache::Const;"; if( $@ ) { die $@; }
+
+	my @modules = ( 
+		'EPrints::RequestWrapper2', 
+		'Apache::AuthDBI', 
+		'ModPerl::Registry' 
+	);
+	if( $EPrints::AnApache::ModPerlAPI == 1 )
+	{
+		push @modules, 'Apache::Const';
+	}
+	if( $EPrints::AnApache::ModPerlAPI == 2 )
+	{
+		push @modules, 'Apache2::Const';
+	}
+	foreach my $module ( @modules )
+	{
+		eval "use $module"; 
+		next unless( $@ );
+		die "Error loading module $module:\n$@";
+	}
+
 	$EPrints::AnApache::RequestWrapper = "EPrints::RequestWrapper2"; 
 
 	eval '
@@ -110,6 +144,18 @@ if( defined $av && $av eq "2" )
 			return $request->headers_in->{$header};
 		}
 
+		sub get_request
+		{
+			if( $EPrints::AnApache::ModPerlAPI == 1 )
+			{
+				return Apache->request;
+			}
+			if( $EPrints::AnApache::ModPerlAPI == 2 )
+			{
+				return Apache2::RequestUtil->request();
+			}
+			die "Unknown ModPerlAPI version: $EPrints::AnApache::ModPerlAPI";
+		}
 	';
 	
 }
@@ -120,7 +166,11 @@ else
 		# not logging functions available yet
 		print STDERR "\n------------------------------------------------------------\n";
 		print STDERR "Failed to load mod_perl for Apache 1.3\n";
-		eval "require Apache2"; if( !$@ ) {
+		my $modperl2 = 0;
+		eval "require Apache2"; unless( $@ ) { $modperl2 = 1; }
+		eval "require Apache2::Utils"; unless( $@ ) { $modperl2 = 1; }
+ 		if( $modperl2 )
+		{
 			print STDERR "However mod_perl for Apache 2 is available. Is the 'apache'\nparameter in perl_lib/EPrints/SystemSettings.pm correct?\n";
 		}
 		print STDERR "------------------------------------------------------------\n";
@@ -185,6 +235,11 @@ else
 			my( $request, $header ) = @_;	
 	
 			return $request->header_in( $header );
+		}
+		
+		sub get_request
+		{
+			return Apache->request;
 		}
 	';
 }

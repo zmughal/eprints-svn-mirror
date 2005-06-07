@@ -2460,4 +2460,16 @@ PACKAGE: 2.2.99.2
 24/05/2005 - EPRINTS-2.3.12
 ======================================================================
 
+2005-06-07 cjg
+ 
+ - [#1140] If using mod_perl 2 then detect if the old or new API is
+    in effect and make AnApache work accordingly.
+ - Added a new method to AnApache : get_request which gets the current
+    Apache request, using the old or new API. All calls to 
+    Apache->request have been replaced with this.
+ - [#1140] Modified ReqestWrapper2 to work correctly with the new
+    API.
+ - If expecting mod_perl 1 and it's not, then both API's are checked 
+    for when testing if mod_perl 2 is installed to give advice
+    about it.
 
