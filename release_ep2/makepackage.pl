@@ -3,60 +3,27 @@
 use Cwd;
 use strict;
 
-my %codenames = (
-	"eprints2-alpha-1" => "anchovy",
-	"eprints2-alpha-2" => "pepperoni",
-	"eprints2-pre-1"   => "fishfinger",
-	"eprints2-pre-2"   => "ovenchip",
-	"eprints2-pre-3"   => "toast",
-	"eprints2-pre-4"   => "noodle",
-	"eprints2-pre-5"   => "bovex",
-	"eprints2-pre-6"   => "baconbits",
-	"eprints2-pre-7"   => "limepickle",
-	"eprints2-2-0"   => "olive",
-	"eprints-2-0-1pre1"   => "mangogoo",
-	"eprints2-0-1"   => "tuna",
-	"eprints2-1-pre-1"   => "onionring",
-	"eprints2-1-pre-2"   => "misosoup",
-	"eprints2-1-pre-3"   => "friedeel",
-	"eprints2-1-pre-4"   => "sossy",
-	"eprints2-1-pre-5"   => "chickendonner",
-	"eprints2-1"   => "pineapple",
-	"eprints2-1-1-pre-1" => "chillioil",
-	"eprints2-1-1" => "sweetcorn",
-	"eprints2-2-0-pre-1" => "candycorn",
-	"eprints2-2-0-pre-2" => "bobbing-apple",
-	"eprints-2-2" => "pumpkin",
-	"eprints-2-2-1" => "pepper",
-	"eprints2-3-0-tardis-1" => "devildoll",
-	"eprints2-3-0-tardis-2" => "spacemutiny",
-	"eprints2-3-0-pre-1" => "princeofspace",
-	"eprints2-3-0-pre-2" => "agentforharm"
+# nb.
+#
+# cvs tag eprints2-2-99-0 system docs_ep2
+#
+# ./makepackage.pl  eprints2-2-99-0
+#
+# scp eprints-2.2.99.0-alpha.tar.gz webmaster@www:/home/www.eprints/software/files/eprints2/
 
-);
-
-my %ids = (
-	"eprints2-pre-6"   => "2.0.pre-6",
-	"eprints2-2-0"     => "2.0",
-	"eprints-2-0-1pre1"     => "2.0.1.pre-1",
-	"eprints2-0-1"     => "2.0.1",
-	"eprints2-1-pre-1"     => "2.1",
-	"eprints2-1-pre-2"     => "2.1.pre-2",
-	"eprints2-1-pre-3"     => "2.1.pre-3",
-	"eprints2-1-pre-4"     => "2.1.pre-4",
-	"eprints2-1-pre-5"     => "2.1.pre-5",
-	"eprints2-1"     => "2.1",
-	"eprints2-1-1-pre-1" => "2.1.1.pre-1",
-	"eprints2-1-1" => "2.1.1",
-	"eprints2-2-0-pre-1" => "2.2-pre-1",
-	"eprints2-2-0-pre-2" => "2.2-pre-2",
-	"eprints-2-2" => "2.2",
-	"eprints-2-2-1" => "2.2.1",
-	"eprints2-3-0-tardis-1" => "2.3.0-tardis-1",
-	"eprints2-3-0-tardis-2" => "2.3.0-tardis-2",
-	"eprints2-3-0-pre-1" => "2.3.0-pre-1",
-	"eprints2-3-0-pre-2" => "2.3.0-pre-2"
-);
+my %codenames= ();
+my %ids = ();
+open( VERSIONS, "versions.txt" ) || die "can't open versions.txt: $!";
+while(<VERSIONS>)
+{
+	chomp;
+	$_ =~ s/\s*#.*$//;
+	next if( $_ eq "" );
+	$_ =~ m/^\s*([^\s]*)\s*([^\s]*)\s*(.*)\s*$/;
+	$ids{$1} = $2;
+	$codenames{$1} = $2;
+}
+close VERSIONS;
 
 my( $type ) = @ARGV;
 
@@ -76,7 +43,7 @@ chomp $date;
 
 if( $type eq "nightly" ) 
 { 
-	$version_tag = "HEAD";
+	$version_tag = "eprints2-stable";
 	$package_version = "eprints-2-cvs-".$date;
 	$package_desc = "EPrints Nightly Build - $package_version";
 	$package_file = "eprints-2-cvs-$date";
@@ -119,11 +86,11 @@ system("/bin/rm `find . -name '.cvsignore'`")==0 or die "Couldn't remove.";
 chdir "eprints/system";
 
 my @installerfiles = ( 
+	'perlmodules.pl',
 	'aclocal.m4',
 	'autogen.sh',
 	'configure.in',
 	'df-check.pl',
-	'install.pl',
 	'install.pl.in' );
 foreach( @installerfiles )
 {
@@ -335,6 +302,7 @@ erase_dir( "package" );
 erase_dir( "export" );
 
 print "Done.\n";
+print "scp $package_file.tar.gz webmaster\@www:/home/www.eprints/software/files/eprints2/\n";
 
 exit;
 

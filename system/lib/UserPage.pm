@@ -52,6 +52,7 @@ use EPrints::Session;
 use EPrints::SearchExpression;
 use EPrints::Utils;
 use EPrints::User;
+use strict;
 
 
 ######################################################################
@@ -78,13 +79,17 @@ sub user_from_param
 		return;
 	}
 	my $user;
-	if( EPrints::Utils::is_set( $username ) )
+	if( EPrints::Utils::is_set( $userid ) )
 	{
-		$user = EPrints::User::user_with_username( $session, $username );
+		$user = EPrints::User->new( 
+				$session, 
+				$userid );
 	}
 	else
 	{
-		$user = EPrints::User->new( $session, $userid );
+		$user = EPrints::User::user_with_username( 
+				$session, 
+				$username );
 	}
 
 
@@ -116,7 +121,7 @@ sub process
 	my $user = EPrints::UserPage::user_from_param( $session );
 	return unless( defined $user );
 	
-	$userid = $user->get_value( "userid" );
+	my $userid = $user->get_value( "userid" );
 
 	my( $page );
 
@@ -151,7 +156,7 @@ sub process
 	my $url;
 	if( $staff )
 	{
-		$url = $session->get_archive()->get_conf( "perl_url" )."/users/staff/eprint_search?userid=$userid&_action_search=1";
+		$url = $session->get_archive()->get_conf( "perl_url" )."/users/search/archive?userid=$userid&_action_search=1";
 	}
 	else
 	{

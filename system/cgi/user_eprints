@@ -18,7 +18,17 @@ use EPrints::EPrint;
 use strict;
 
 my $session = new EPrints::Session;
-Apache::exit( 0 ) unless( defined $session );
+exit( 0 ) unless( defined $session );
+
+if( $session->get_archive->get_conf( "disable_userinfo" ) )
+{
+	$session->build_page( 
+	     $session->html_phrase( "general:disabled_feature_title" ),
+	     $session->html_phrase( "general:disabled_feature_body" ) );
+	$session->send_page;
+	$session->terminate();
+	exit;
+}
 
 &process( $session );
 
