@@ -444,4 +444,31 @@ terms.</p>
          makes the seperator be a pipe "|" for back-compatibility. -->
     <ep:phrase ref="lib/searchexpression:seperator"></ep:phrase>
 
+
+    <!-- registration introduction. -->
+    <ep:phrase ref="cgi/register:intro">
+<p>You need to register in order to be able to deposit eprints in the 
+repository. </p>
+
+<p>As a registered user you will be able to manage your eprints, up to the point
+of submitting them for Editorial Review. If the review is successful your 
+eprint will be deposited in the repository, if it is unsuccessful it will be 
+returned to you with editorial comments.</p>
+
+<p>In addition to managing your eprints a registered user can set up
+subscription options, so that email notifications are sent when new eprints 
+are placed in the repository.</p>
+
+<p>Please complete the details on this page to register with &archivename;.</p>
+
+<p>The registration process uses email to send you details of how to activate
+your account. You must then check your email and activate your password. Once
+activated you can start to use the registered features of the repository.</p>
+
+<p>If you have already registered but have forgotten your username or password,
+<a href="reset_password">click here</a> to set a new password.</p>
+    </ep:phrase>
+
+
+
 </ep:phrases>
