@@ -3,16 +3,16 @@
 <ep:page
         xmlns="http://www.w3.org/1999/xhtml"
 	xmlns:ep="http://eprints.org/ep2/page">
-<ep:title>About the Archive</ep:title>
+<ep:title>About the Repository</ep:title>
 <ep:body>
 
-<p>This archive is running on GNU EPrints open archive software, a freely distributable archive system available from <a href="http://software.eprints.org/">software.eprints.org</a>. </p>
+<p>This repository is running on GNU EPrints open repository software, a freely distributable repository system available from <a href="http://software.eprints.org/">software.eprints.org</a>. </p>
 
-<p>Other institutions are invited (and encouraged) to set up their own open archives for author <a href="http://www.eprints.org/self-faq/">self-archiving</a>, using the freely-distributable <a href="http://software.eprints.org/">GNU EPrints software</a> used at this site.</p>
+<p>Other institutions are invited (and encouraged) to set up their own open repositories for author <a href="http://www.eprints.org/self-faq/">self-archiving</a>, using the freely-distributable <a href="http://software.eprints.org/">GNU EPrints software</a> used at this site.</p>
 
 <h2>Contact Information</h2>
 
-<p>Any correspondence concerning this specific archive should be sent to <a href="mailto:&adminemail;">&adminemail;</a>.</p>
+<p>Any correspondence concerning this specific repository should be sent to <a href="mailto:&adminemail;">&adminemail;</a>.</p>
 
 <h2>About this software</h2>
 <p>This site is running GNU EPrints / revision: &version;</p>

@@ -12,7 +12,7 @@
 
     <ep:phrase ref="security_typename_">Anyone</ep:phrase>
     <ep:phrase ref="security_typename_validuser">Registered users only</ep:phrase>
-    <ep:phrase ref="security_typename_staffonly">Archive staff only</ep:phrase>
+    <ep:phrase ref="security_typename_staffonly">Repository staff only</ep:phrase>
 
 
 <!-- locally defined fields -->
@@ -248,7 +248,7 @@
     <ep:phrase ref="eprint_typename_patent">Patent</ep:phrase>
     <ep:phrase ref="eprint_optdetails_type_patent">A published patent. Do <em>not</em> include as yet unpublished patent applications.</ep:phrase>
     <ep:phrase ref="eprint_typename_other">Other</ep:phrase>
-    <ep:phrase ref="eprint_optdetails_type_other">Something within the scope of the archive, but not covered by the other categories.</ep:phrase>
+    <ep:phrase ref="eprint_optdetails_type_other">Something within the scope of the repository, but not covered by the other categories.</ep:phrase>
 
 <!-- Sort Order names -->
 
@@ -289,7 +289,7 @@
 
     <ep:phrase ref="user_fieldname_hideemail">Hide Email</ep:phrase>
     <ep:phrase ref="user_fieldhelp_hideemail">This option allows or prevents a users email being shown on their public summary page.</ep:phrase>
-    <ep:phrase ref="user_radio_hideemail"><ep:pin ref="false" />Make email visible to all.<br /><ep:pin ref="true" />Hide email to all except archive administrators.</ep:phrase>
+    <ep:phrase ref="user_radio_hideemail"><ep:pin ref="false" />Make email visible to all.<br /><ep:pin ref="true" />Hide email to all except repository administrators.</ep:phrase>
 
 
     <ep:phrase ref="user_fieldname_dept">Department</ep:phrase>
@@ -374,7 +374,7 @@ terms.</p>
     </ep:phrase>
 
     <ep:phrase ref="page:fulltext">Full text available as:</ep:phrase>
-    <ep:phrase ref="page:nofulltext">Full text not available from this archive.</ep:phrase>
+    <ep:phrase ref="page:nofulltext">Full text not available from this repository.</ep:phrase>
     <ep:phrase ref="page:abstract">Abstract</ep:phrase>
     <ep:phrase ref="page:deposited_by">Deposited By</ep:phrase>
     <ep:phrase ref="page:deposited_on">Deposited On</ep:phrase>
@@ -390,7 +390,7 @@ terms.</p>
     <ep:phrase ref="page:suggestions_intro"><h3>The depositing user made the following comments and suggestions:</h3></ep:phrase>
     <ep:phrase ref="page:subscription">Subscription</ep:phrase>
     <ep:phrase ref="page:unspecified"><p><strong>The following fields were left unspecified:</strong> <ep:pin ref="fieldnames" /></p></ep:phrase>
-    <ep:phrase ref="page:edit_link">Archive Staff Only: <ep:pin ref="link">edit this record</ep:pin></ep:phrase>
+    <ep:phrase ref="page:edit_link">Repository Staff Only: <ep:pin ref="link">edit this record</ep:pin></ep:phrase>
 
 
     <ep:phrase ref="validate:missing_http">The URL given for <b><ep:pin ref="fieldname" /></b> is invalid. Did you include the initial <strong>http://</strong>?</ep:phrase>
@@ -417,7 +417,7 @@ terms.</p>
 
 &userhome;
 
-<p>Once you have confirmed your identity you may also subscribe to the email alerts service, to be automatically informed of new deposits in the archive in your chosen subject areas in a daily, weekly or monthly digest.</p>
+<p>Once you have confirmed your identity you may also subscribe to the email alerts service, to be automatically informed of new deposits in the repository in your chosen subject areas in a daily, weekly or monthly digest.</p>
 
 <p>You can create a subscription by visiting the following page:</p>
 

@@ -36,16 +36,16 @@
 <a name="Browsing"></a> 
 <h2>Browsing </h2>
 <p>Browsing is a good way to access documents if you don't have a specific
-idea of what you're looking for. There are two ways to browse the archive,
+idea of what you're looking for. There are two ways to browse the repository,
 by subject and by year.</p>
 
-<p>To browse the archive either select Browse from the front page or
+<p>To browse the repository either select Browse from the front page or
 from the navigation bar at the top of the screen. Then choose which property
 you wish to browse by eg. "subject".</p>
 
 <p>You will be presented with a list of possible values, select
 one of these, and you will be given a list of references to documents in
-the archive (if any) which match this value.
+the repository (if any) which match this value.
  To access a paper, simply click on its reference in the display. </p>
 
 <p>On the abstract page, you should be able to see what subjects are
@@ -54,9 +54,9 @@ take you back to the relevant browse by subject view. </p>
 
 <a name="Searching"></a> 
 <h2>Searching </h2>
-<p>The archive offers two levels of searching, simple and advanced. They
+<p>The repository offers two levels of searching, simple and advanced. They
 are similar, but the advanced form lets you perform a finer-grained search
-using more fields. Access the simple search using the Search the Archive
+using more fields. Access the simple search using the Search the Repository
 link on the front page, or using the navigation bar at the top
 of the screen. To perform an advanced search, use the advanced search link
 at the top of the simple search page. </p>
@@ -163,21 +163,21 @@ on or have submitted but are not yet approved by an editor. The options
 are described below. Note that the options and information that appear may
 vary slightly, depending on whether you are in the process of depositing
 any papers and whether you have any papers pending entry into the main
-archive. </p>
+repository. </p>
 
 <h3>Your User Record </h3>
 
 <p>Your user record is used to hold contact information about you. Some of
 this information will be associated with eprints you upload; some of it is
-purely for internal archive use. General information like your name, URL,
+purely for internal repository use. General information like your name, URL,
 address and e-mail address are public, so it's inadvisable to put down a
 home address. (Usually a postal address isn't required.) Information about
-your operating system is purely to help the archive administrators help
+your operating system is purely to help the repository administrators help
 you if you encouter problems. </p>
 
 <p>Enter the relevant information in the form. Those boxes where the field
 name (on the left of the box) has an asterisk are required fields that you
-must fill out before you can deposit papers in to the archive. </p>
+must fill out before you can deposit papers in to the repository. </p>
 
 <p>Note that you cannot change your e-mail address here. This is
 deliberate; if you inadvertently enter an incorrect e-mail address, the
@@ -227,7 +227,7 @@ be able to carry on depositing that paper. </p></dd>
 <dt><h4>Deposit </h4></dt>
 <dd><p>If you're satisfied that you've completed uploading the paper and
 associated information as you had intended, then you can select the paper
-and click on this button to deposit the paper in the archive. Note that if
+and click on this button to deposit the paper in the repository. Note that if
 there are problems with the paper (for instance, if a document file upload
 hasn't worked, or the associated bibliographic information is invalid),
 you will be told what is wrong, and you won't be able to deposit the paper
@@ -280,22 +280,22 @@ stages. </p>
 
 <h3>Succession/Commentary </h3>
 
-<p>The archive can link together different versions of the same paper, as
+<p>The repository can link together different versions of the same paper, as
 well as commentaries and responses to commentaries. These enable a reader
 to move easily around those versions, commentaries and responses. </p>
 
 <p>If the paper you are depositing is a later version of a paper you
-previously deposited in the archive, enter its ID code into the ``Later
+previously deposited in the repository, enter its ID code into the ``Later
 Version Of'' box. If you used the ``Clone'' option on the ``Review
 Documents'' page, then this box will have already been filled out for you,
 but can be overwritten. </p>
 
-<p>To find the ID of a document, use the archive's Search feature to find
-the archive. You may wish to have a second browser window opened in which
+<p>To find the ID of a document, use the repository's Search feature to find
+the repository. You may wish to have a second browser window opened in which
 to perform this search, so that you can copy and paste the ID code across
 to this form. </p>
 
-<p>If you are depositing a commentary on a paper in the archive, enter its
+<p>If you are depositing a commentary on a paper in the repository, enter its
 ID code in the ``Commentary On'' box. If you are responding to a
 commentary, enter the ID code of the commentary you are responding to in
 this box. </p>
@@ -384,7 +384,7 @@ you are sure of. </p>
 
 <p>If you think there's a serious omission from the subject category list,
 you can suggest a new category in the two boxes below the subject
-list. Note that you shouldn't expect the archive to necessarily agree with
+list. Note that you shouldn't expect the repository to necessarily agree with
 your suggestion; don't be offended if they don't add your suggestion. This
 box is there purely for you to suggest categories you really believe are
 serious omissions. </p>
@@ -395,7 +395,7 @@ button. </p>
 <h3>Document Storage Formats </h3>
 
 <p>This page shows you an overview of the document files you have uploaded
-to the archive. The table shows the list of formats you can upload on the
+to the repository. The table shows the list of formats you can upload on the
 left, and the number of files you have uploaded in that format in the
 middle column. </p>
 
@@ -427,7 +427,7 @@ section. </p>
 
 <p>If there are no files uploaded in a particular format, you will be
 presented with an upload menu from here you can select how you'd like to
-upload files to the archive.</p>
+upload files to the repository.</p>
 
 <h4>Plain files. </h4>
 
@@ -440,7 +440,7 @@ image file,) then type the number of files you wish to upload into the
 </p>
 
 <p>If your paper is up on the Web already, this option will let you
-specify the URL of that paper. The archive software will copy your paper
+specify the URL of that paper. The repository software will copy your paper
 from that Web site. You should be careful with this option, though; and
 read the ``uploading from an existing Web site'' section below. 
 As a ZIP archive/Compressed TAR archive. </p>
@@ -491,9 +491,9 @@ necessary files, click on ``Finished''. This will take you back to the
 
 <h4>Uploading From an Existing Web Site </h4>
 
-<p>When you give the archive a URL to retrieve your document from, the
-archive stores a copy of the file stored at that URL. If the URL is an
-HTML file, the archive will also copy the images associated with that HTML
+<p>When you give the repository a URL to retrieve your document from, the
+repository stores a copy of the file stored at that URL. If the URL is an
+HTML file, the repository will also copy the images associated with that HTML
 file, and other HTML files linked to it. </p>
 
 <p>You must supply the URL of the first page of document itself: NOT the
@@ -508,7 +508,7 @@ And NOT
 
 www.myinstitution.edu/~myhomepage/</p>
 
-<p>In order to prevent the archive from trying to copy the whole World
+<p>In order to prevent the repository from trying to copy the whole World
 Wide Web by following every single link, some rules are applied when the
 system collects your document: </p>
 
@@ -532,7 +532,7 @@ uploading method. </p>
 <h4>Deposit Verification </h4>
 
 <p>This page will display the abstract page for your document as it will
-appear in the archive. You should carefully check that all information has
+appear in the repository. You should carefully check that all information has
 been uploaded correctly. Note that your paper will not appear in the
 ``available versions'' or ``commentary/response'' lists at the bottom of
 the page; this is normal. </p>
@@ -547,7 +547,7 @@ mistakes. </p>
 <p>If you're satisfied that everything is correct and has been uploaded
 correctly, and have read, understood and complied with the agreement at
 the bottom of the page, click on the ``Deposit'' button to deposit your
-paper in the archive. It will then be put in the archive
+paper in the repository. It will then be put in the repository
 buffer. </p>
 
 

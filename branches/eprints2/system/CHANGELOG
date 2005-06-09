@@ -2478,3 +2478,10 @@ PACKAGE: 2.2.99.2
     mod_perl
  - Added new registration intro to archive-phrase-file so as not to
     change the message on existing archvies.
+
+2005-06-09 cjg
+
+ - [#1173] Replaced all occurrances of "archive" in user interface 
+    with "repository" instead. (except for self-archiving and
+    open-archives)
+
