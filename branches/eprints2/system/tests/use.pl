@@ -22,7 +22,8 @@ testmodule('EPrints::MetaField');
 testmodule('EPrints::OpenArchives');
 testmodule('EPrints::Paracite');
 testmodule('EPrints::Probity');
-testmodule('EPrints::RequestWrapper2');
+#testmodule('EPrints::RequestWrapper2');
+# needs to call AnApache first
 testmodule('EPrints::Rewrite');
 testmodule('EPrints::SearchCondition');
 testmodule('EPrints::SearchExpression');

@@ -22,7 +22,8 @@ use_ok('EPrints::MetaField');
 use_ok('EPrints::OpenArchives');
 use_ok('EPrints::Paracite');
 use_ok('EPrints::Probity');
-use_ok('EPrints::RequestWrapper2');
+#use_ok('EPrints::RequestWrapper2');
+# needs to call AnApache first
 use_ok('EPrints::Rewrite');
 use_ok('EPrints::SearchCondition');
 use_ok('EPrints::SearchExpression');
