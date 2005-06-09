@@ -265,7 +265,7 @@ Enter a URL to capture a file from: <ep:pin ref="url" /><br />
     </ep:phrase>
     <ep:phrase ref="lib/submissionform:fix_probs">Before you deposit this entry to the repository, the following problems need to be corrected:</ep:phrase>
     <ep:phrase ref="lib/submissionform:please_verify"><p><strong>You have not finished yet!</strong></p><p>Please verify that all of the details about your deposit are correct, and that all necessary document files have been correctly uploaded including any figures.</p><p>When you are satisfied click the <strong>Deposit EPrint Now</strong> button at the foot of this page.</p></ep:phrase>
-    <ep:phrase ref="lib/submissionform:thanks"><p>Thank you.</p><p>Your document is now held in the deposit buffer awaiting approval by an editor. Provided there are no problems it should appear in the main repository within the next few days.</p><p><a href="&userhome;">Click here to go to the user page</a></p></ep:phrase>
+    <ep:phrase ref="lib/submissionform:thanks"><p>Thank you.</p><p>Your document is now held in the editorial buffer awaiting approval by an editor. Provided there are no problems it should appear in the main repository within the next few days.</p><p><a href="&userhome;">Click here to go to the user page</a></p></ep:phrase>
     <ep:phrase ref="lib/submissionform:sure_delete"><p>Are you absolutely sure you want to delete this entry? <ep:pin ref="title" /></p></ep:phrase>
     <ep:phrase ref="lib/submissionform:filled_wrong">The form doesn't seem to be filled out correctly:</ep:phrase>
     <ep:phrase ref="lib/submissionform:please_complete">Please complete the form before continuing.</ep:phrase>
@@ -337,7 +337,7 @@ Enter a URL to capture a file from: <ep:pin ref="url" /><br />
 <!-- User -->
 
     <ep:phrase ref="lib/user:missed_field">You haven't filled out the required <ep:pin ref="field" /> field.</ep:phrase>
-    <ep:phrase ref="lib/user:editor_update_subject">Edit Buffer Summary</ep:phrase>
+    <ep:phrase ref="lib/user:editor_update_subject">Editorial Buffer Summary</ep:phrase>
     <ep:phrase ref="lib/user:editor_update_mail">
 <p>This mail is your <ep:pin ref="howoften" /> summary of records awaiting approval for addition to &archivename;.</p>
 <p>Number of records: <ep:pin ref="n" />.</p>
@@ -410,7 +410,7 @@ User Area CGI Scripts
     <ep:phrase ref="cgi/users/home:status_link">View the repository status</ep:phrase>
     <ep:phrase ref="cgi/users/home:status_info"><p>This option allows you to view the current status of the system, including the number of items in each dataset.</p></ep:phrase>
     
-    <ep:phrase ref="cgi/users/home:staff_buffer_link">View the Submission Buffer</ep:phrase>
+    <ep:phrase ref="cgi/users/home:staff_buffer_link">View the Editorial Buffer</ep:phrase>
     <ep:phrase ref="cgi/users/home:staff_buffer_info"><p>This option allows you to view, edit and approve records which users have submitted but have not yet been approved for the repository. You may only edit records within your subject area.</p></ep:phrase>
 
     <ep:phrase ref="cgi/users/home:staff_eprint_search_link">Staff EPrint Search</ep:phrase>
@@ -516,7 +516,7 @@ User Area CGI Scripts
     <ep:phrase ref="cgi/users/status:subcount">Total Number</ep:phrase>
     <ep:phrase ref="cgi/users/status:set_archive">Articles in Repository:</ep:phrase>
     <ep:phrase ref="cgi/users/status:indexupdate">Last completed indexing</ep:phrase>
-    <ep:phrase ref="cgi/users/status:set_buffer">Articles in Buffer:</ep:phrase>
+    <ep:phrase ref="cgi/users/status:set_buffer">Articles in Editorial Buffer:</ep:phrase>
     <ep:phrase ref="cgi/users/status:set_inbox">Articles in Workspace:</ep:phrase>
     <ep:phrase ref="cgi/users/status:set_deletion">Deleted Articles:</ep:phrase>
     <ep:phrase ref="cgi/users/status:diskfree">Document Partition <pin ref="dir" />:</ep:phrase>
@@ -566,7 +566,7 @@ Staff CGI Scripts
 
 <!-- buffer -->
 
-    <ep:phrase ref="cgi/users/buffer:overview_title">Submission Buffer Overview</ep:phrase>
+    <ep:phrase ref="cgi/users/buffer:overview_title">Editorial Buffer Overview</ep:phrase>
     <ep:phrase ref="cgi/users/buffer:no_entries"><p>There are currently no entries matching your editorial scope, which is: <ep:pin ref="scope" /></p></ep:phrase>
     <ep:phrase ref="cgi/users/buffer:buffer_blurb"><p>The following records match your editorial scope, which is: <ep:pin ref="scope" /></p><p>Click on the title of an entry to view, edit, accept or reject it.</p></ep:phrase>
     <ep:phrase ref="cgi/users/buffer:title">Title</ep:phrase>
@@ -584,7 +584,7 @@ Staff CGI Scripts
     <ep:phrase ref="cgi/users/edit_subject:subjectid"><p>Subject ID: <ep:pin ref="id" /></p></ep:phrase>
     <ep:phrase ref="cgi/users/edit_subject:subject">Subject</ep:phrase>
     <ep:phrase ref="cgi/users/edit_subject:inarchive">EPrints in Repository</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_subject:inbuffer">EPrints in Submission Buffer</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_subject:inbuffer">EPrints in Editorial Buffer</ep:phrase>
     <ep:phrase ref="cgi/users/edit_subject:nparents">Number of Parents</ep:phrase>
     <ep:phrase ref="cgi/users/edit_subject:nchildren">Number of Children</ep:phrase>
     <ep:phrase ref="cgi/users/edit_subject:action_delete">Delete</ep:phrase>
@@ -603,7 +603,7 @@ Staff CGI Scripts
 <!-- eprint_search -->
 
     <ep:phrase ref="cgi/users/eprint_search:title_inbox">Staff Search of EPrints in User Workareas</ep:phrase>
-    <ep:phrase ref="cgi/users/eprint_search:title_buffer">Staff Search of EPrints in the Submission Buffer</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint_search:title_buffer">Staff Search of EPrints in the Editorial Buffer</ep:phrase>
     <ep:phrase ref="cgi/users/eprint_search:title_archive">Staff Search of EPrints in the Live Repository</ep:phrase>
     <ep:phrase ref="cgi/users/eprint_search:title_deletion">Staff Search of Deleted EPrints</ep:phrase>
     <ep:phrase ref="cgi/users/eprint_search:title">Searches Available to Staff</ep:phrase>
@@ -611,7 +611,7 @@ Staff CGI Scripts
     <ep:phrase ref="dataset_fieldname_dataset">EPrint Category</ep:phrase>
     <ep:phrase ref="dataset_fieldopt_dataset_archive">Main Repository</ep:phrase>
     <ep:phrase ref="dataset_fieldopt_dataset_deletion">Deleted EPrints</ep:phrase>
-    <ep:phrase ref="dataset_fieldopt_dataset_buffer">Submission Buffer (awaiting approval)</ep:phrase>
+    <ep:phrase ref="dataset_fieldopt_dataset_buffer">Editorial Buffer (awaiting approval)</ep:phrase>
     <ep:phrase ref="dataset_fieldopt_dataset_inbox">User Workarea</ep:phrase>
 
 <!-- edit_eprint -->
@@ -634,13 +634,13 @@ Staff CGI Scripts
     <ep:phrase ref="cgi/users/edit_eprint:remove_title">Removal Successful</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:removed"><p>EPrint Successfully Removed</p></ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:move_title">Move Successful</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:moved"><p>EPrint Successfully moved back into the buffer.</p><p>You may now <ep:pin ref="link">edit it</ep:pin> if you wish.</p></ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:moved"><p>EPrint Successfully moved back into the editorial buffer.</p><p>You may now <ep:pin ref="link">edit it</ep:pin> if you wish.</p></ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action_edit">Edit EPrint</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action__remove">Remove EPrint</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action__clone">New Version</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action__copy">Use as Template</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action__toinbox">Bounce EPrint back to Submitter</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action__tobuffer">Move EPrint to Submission Buffer</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:action__tobuffer">Move EPrint to Editorial Buffer</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action__toarchive">Move EPrint to Main Repository</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action__todeletion">Move EPrint to Deleted Buffer</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action_send">Send</ep:phrase>
@@ -893,8 +893,8 @@ Titles and Help for the System Fields
     <ep:phrase ref="user_fieldopt_frequency_weekly">Once per Week</ep:phrase>
     <ep:phrase ref="user_fieldopt_frequency_monthly">Once per Month</ep:phrase>
     <ep:phrase ref="user_fieldname_mailempty">Mail Empty Results</ep:phrase>
-    <ep:phrase ref="user_fieldhelp_mailempty">If there are items in the buffer, within your editorial rights, should eprints still send you an empty email?</ep:phrase>
-    <ep:phrase ref="user_radio_mailempty"><ep:pin ref="true" />Yes, mail me when the buffer is empty.<br /><ep:pin ref="false" />No. Only mail me when there is something I can edit and approve.</ep:phrase>
+    <ep:phrase ref="user_fieldhelp_mailempty">If there are items in the editorial buffer, within your editorial rights, should eprints still send you an empty email?</ep:phrase>
+    <ep:phrase ref="user_radio_mailempty"><ep:pin ref="true" />Yes, mail me when the editorial buffer is empty.<br /><ep:pin ref="false" />No. Only mail me when there is something I can edit and approve.</ep:phrase>
 
 
     <ep:phrase ref="document_fieldname_eprintid">ID of the owning EPrint</ep:phrase>

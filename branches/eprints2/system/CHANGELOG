@@ -2484,4 +2484,9 @@ PACKAGE: 2.2.99.2
  - [#1173] Replaced all occurrances of "archive" in user interface 
     with "repository" instead. (except for self-archiving and
     open-archives)
+ - [#1174] Made sure that "buffer" is titled correctly as
+    "editorial buffer" in the user interface and configuration
+    files.
+
+
 

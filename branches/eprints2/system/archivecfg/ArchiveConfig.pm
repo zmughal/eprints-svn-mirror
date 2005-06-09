@@ -186,7 +186,7 @@ $c->{diskspace_warn_threshold} = 512*1024;
 
 # If you are setting up a very simple system or 
 # are starting with lots of data entry you can
-# make user submissions bypass the editor buffer
+# make user submissions bypass the editorial buffer
 # by setting this option:
 $c->{skip_buffer} = 0;
 
@@ -818,7 +818,7 @@ sub can_user_view_document
 	my $security = $doc->get_value( "security" );
 
 	# If the document belongs to an eprint which is in the
-	# inbox or the submissionbuffer then we treat the security
+	# inbox or the editorial buffer then we treat the security
 	# as staff only, whatever it's actual setting.
 	if( $eprint->get_dataset()->id() ne "archive" )
 	{

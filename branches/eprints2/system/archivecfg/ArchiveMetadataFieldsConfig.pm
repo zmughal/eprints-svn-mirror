@@ -354,7 +354,7 @@ sub set_subscription_automatic_fields
 # update_submitted_eprint( $eprint )
 #
 #  This function is called on an EPrint whenever it is transferred
-#  from the inbox (the author's workspace) to the submission buffer.
+#  from the inbox (the author's workspace) to the editorial buffer.
 #  You can alter the EPrint here if you need to, or maybe send a
 #  notification mail to the administrator or something. 
 #
@@ -362,8 +362,9 @@ sub set_subscription_automatic_fields
 #  database after this function finishes, so you don't need to do a
 #  commit().
 #
-#  This method is also called if the eprint is moved into the buffer
-#  from the archive. (By an editor wanting to make changes, presumably)
+#  This method is also called if the eprint is moved into the editorial 
+#  buffer from the archive. (By an editor wanting to make changes, 
+#  presumably)
 #
 ######################################################################
 
@@ -378,7 +379,7 @@ sub update_submitted_eprint
 # update_archived_eprint( $eprint )
 #
 #  This function is called on an EPrint whenever it is transferred
-#  from the submission buffer to the real archive (i.e. when it is
+#  from the editorial buffer to the real archive (i.e. when it is
 #  actually "archived".)
 #
 #  You can alter the EPrint here if you need to, or maybe send a
