@@ -312,7 +312,7 @@
 
     <ep:phrase ref="user_typename_user">User</ep:phrase>
     <ep:phrase ref="user_typename_editor">Editor</ep:phrase>
-    <ep:phrase ref="user_typename_admin">EPrints Administrator</ep:phrase>
+    <ep:phrase ref="user_typename_admin">Repository Administrator</ep:phrase>
 
 <!-- User Sort Order names -->
 
@@ -390,7 +390,7 @@ terms.</p>
     <ep:phrase ref="page:suggestions_intro"><h3>The depositing user made the following comments and suggestions:</h3></ep:phrase>
     <ep:phrase ref="page:subscription">Subscription</ep:phrase>
     <ep:phrase ref="page:unspecified"><p><strong>The following fields were left unspecified:</strong> <ep:pin ref="fieldnames" /></p></ep:phrase>
-    <ep:phrase ref="page:edit_link">Repository Staff Only: <ep:pin ref="link">edit this record</ep:pin></ep:phrase>
+    <ep:phrase ref="page:edit_link">Repository Staff Only: <ep:pin ref="link">edit this item</ep:pin></ep:phrase>
 
 
     <ep:phrase ref="validate:missing_http">The URL given for <b><ep:pin ref="fieldname" /></b> is invalid. Did you include the initial <strong>http://</strong>?</ep:phrase>

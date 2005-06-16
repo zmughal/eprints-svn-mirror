@@ -168,45 +168,37 @@ my $INFO = {
 		sqlname => "counters"
 	},
 	user => {
-		is_sql_dataset => 1,
 		sqlname => "users",
 		class => "EPrints::User"
 	},
 	archive => {
-		is_sql_dataset => 1,
 		sqlname => "archive",
 		class => "EPrints::EPrint",
 		confid => "eprint"
 	},
 	buffer => {
-		is_sql_dataset => 1,
 		sqlname => "buffer",
 		class => "EPrints::EPrint",
 		confid => "eprint"
 	},
 	inbox => {
-		is_sql_dataset => 1,
 		sqlname => "inbox",
 		class => "EPrints::EPrint",
 		confid => "eprint"
 	},
 	document => {
-		is_sql_dataset => 1,
 		sqlname => "document",
 		class => "EPrints::Document"
 	},
 	subject => {
-		is_sql_dataset => 1,
 		sqlname => "subject",
 		class => "EPrints::Subject"
 	},
 	subscription => {
-		is_sql_dataset => 1,
 		sqlname => "subscription",
 		class => "EPrints::Subscription"
 	},
 	deletion => {
-		is_sql_dataset => 1,
 		sqlname => "deletion",
 		class => "EPrints::EPrint",
 		confid => "eprint"
@@ -915,6 +907,24 @@ sub render_type_name
         return $session->html_phrase( $self->confid()."_typename_".$type );
 }
 
+######################################################################
+=pod
+
+=item $xhtml = $ds->render_name( $session )
+
+Return a piece of XHTML describing this dataset, in the language of
+the current session.
+
+=cut
+######################################################################
+
+sub render_name($$)
+{
+	my( $self, $session ) = @_;
+
+        return $session->html_phrase( "dataset_name_".$self->id() );
+}
+
 
 ######################################################################
 =pod
@@ -1081,12 +1091,7 @@ into SQL (not counters or cache which work a bit differently).
 
 sub get_sql_dataset_ids
 {
-	my @list = ();
-	foreach( keys %{$INFO} )
-	{
-		push @list, $_ if $INFO->{$_}->{is_sql_dataset};
-	}
-	return @list;
+	return( qw/ archive buffer inbox deletion user document subscription subject / );
 }
 
 ######################################################################
