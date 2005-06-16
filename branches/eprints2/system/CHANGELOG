@@ -2488,5 +2488,10 @@ PACKAGE: 2.2.99.2
     "editorial buffer" in the user interface and configuration
     files.
 
+2005-06-13 cjg
 
+ - Changed PERL to Perl in information.xpage.
 
+2005-06-16 cjg
+
+ - [#862] Added an allow from all to the base html directory. 
