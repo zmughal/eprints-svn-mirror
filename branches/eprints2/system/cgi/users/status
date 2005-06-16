@@ -222,15 +222,17 @@ $table->appendChild(
 		undef,
 		$session->html_phrase( "cgi/users/status:indexupdate" ) ) );
 my @ds_ids = &EPrints::DataSet::get_sql_dataset_ids;
-foreach my $ds_id ( sort @ds_ids )
+foreach my $ds_id ( @ds_ids )
 {
-	my $index = new EPrints::Index( 
-			$session, 
-			$session->get_archive->get_dataset( $ds_id ) );
+	my $ds = $session->get_archive->get_dataset( $ds_id );
+	my $index = new EPrints::Index( $session, $ds );
+	my $heading = $session->make_doc_fragment;
+	$heading->appendChild( $ds->render_name( $session ) );
+	$heading->appendChild( $session->make_text( ":" ) );
 	$table->appendChild(
 		render_row( 
 			$session,
-			$session->make_text( $ds_id.":" ),
+			$heading,
 			$session->make_text( $index->get_last_timestamp ) ) );
 }
 

@@ -2495,3 +2495,13 @@ PACKAGE: 2.2.99.2
 2005-06-16 cjg
 
  - [#862] Added an allow from all to the base html directory. 
+ - DataSet::get_sql_dataset_ids now just returns a hard wired array,
+    rather than get it from $INFO. is_sql_dataset is now unneeded and
+    removed. This allows the order of the id's to be hard-wired.
+ - Added new method $dataset->render_name which returns the name of 
+    this dataset (in the current language).
+ - Corrections to terms in phrase file.
+ - Renamed "records" to "items" on default front page.
+ - cgi/users/status now uses $ds->render_name to show the name of
+    the datasets in the last-indexed section.
+
