@@ -2504,4 +2504,5 @@ PACKAGE: 2.2.99.2
  - Renamed "records" to "items" on default front page.
  - cgi/users/status now uses $ds->render_name to show the name of
     the datasets in the last-indexed section.
+ - [#1193] fixed spelling mistake in can't-send-email error.
 
