@@ -14,7 +14,7 @@
 <div align="center">
 <form method="get" accept-charset="utf-8" action="&perl_url;/search">
 <table cellspacing="0" cellpadding="4">
-<tr><td align="right">Search records:</td><td><input accept-charset="utf-8" size="40" type="text" name="meta" /></td></tr>
+<tr><td align="right">Search items:</td><td><input accept-charset="utf-8" size="40" type="text" name="meta" /></td></tr>
 <tr><td align="right">Search full text:</td><td><input accept-charset="utf-8" size="40" type="text" name="full" /></td>
 <td><input class="actionbutton" value="Search" type="submit" name="_action_search" /> </td>
 </tr>
