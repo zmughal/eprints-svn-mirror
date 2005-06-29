@@ -298,7 +298,7 @@ END
 close STDERR;
 if( $p->{loglevel} > 0 )
 {
-	open( STDERR, ">>$p->{logfile}" ) || die "Error opening $p->{logfile}: $!";
+	open( STDERR, ">>$p->{logfile}" ) || die "Error opening $p->{logfile} as STDERR: $!";
 	select( STDERR );
 	$| = 1;
 
@@ -313,7 +313,9 @@ if( $p->{daemon} )
 {
 	indexlog( "**** Becoming Daemon" );
 	close STDIN;
+	open STDIN, "/dev/null" || die "Can't open /dev/null for reading: $!";
 	close STDOUT;
+	open( STDOUT, ">>$p->{logfile}" ) || die "Error opening $p->{logfile} as STDOUT: $!";
 	exit if fork;
 	exit if fork;
 }
