@@ -2512,4 +2512,11 @@ PACKAGE: 2.2.99.2
     and the indexer log file - this prevents a warning about re-opening
     STDOUT as input etc.
 
+2005-06-30 cjg
+
+ - Added new method EPrints::Utils::email_date which gives the current
+    date and time encoded for an email header.
+ - [#1290] Added Date: headers to both send_email_via_smtp and 
+    via_sendmail.
+
 

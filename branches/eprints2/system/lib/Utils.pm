@@ -448,6 +448,39 @@ sub send_mail
 }
 
 ######################################################################
+=pod
+
+=item $datestring = EPrints::Utils::email_date()
+
+Returns the current date and time formatted appropriately for an email
+Date: field.
+
+=cut
+######################################################################
+
+sub email_date()
+{
+	my @D = qw/Sun Mon Tue Wed Thu Fri Sat/;
+	my @M = qw/Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec/;
+
+	my( $sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst ) = localtime(time);
+	my @gmt = gmtime(time);
+
+	my $zone = $hour-$gmt[2];
+	if( $zone > 12 ) { $zone-=24; }
+	if( $zone < -12 ) { $zone+=24; }
+
+	my $date = $D[$wday].', '.$mday.' '.$M[$mon].' '.($year+1900).' ';
+	$date .= sprintf( "%02d:%02d:%02d ", $hour, $min, $sec );
+	if( $zone < 0 ) { $date.='-'; $zone = -$zone; } else { $date.='+'; }
+	$date .= sprintf( "%02d",$zone ).'00';
+
+	return $date;
+}
+
+
+
+######################################################################
 #
 # $encoding = get_encoding($mystring)
 # 
@@ -517,6 +550,7 @@ sub send_mail_via_smtp
 	my $utf8sig	= EPrints::Utils::tree_to_utf8( $sig , $MAILWIDTH );
 	my $utf8all	= $utf8body.$utf8sig;
 	my $type	= get_encoding($utf8all);
+	my $date	= email_date();
 	my $content_type_q = 'text/plain; charset="'.$type.'"';
 	my $msg = $utf8all;
 	if ($type eq "iso-8859-1")
@@ -532,6 +566,7 @@ sub send_mail_via_smtp
 From: "$arcname_q" <$adminemail>
 To: "$name_q" <$address>
 Subject: $arcname_q: $subject_q
+Date: $date
 Precedence: bulk
 Content-Type: $content_type_q
 Content-Transfer-Encoding: 8bit
@@ -591,6 +626,7 @@ sub send_mail_via_sendmail
 	my $utf8sig	= EPrints::Utils::tree_to_utf8( $sig , $MAILWIDTH );
 	my $utf8all	= $utf8body.$utf8sig;
 	my $type	= get_encoding($utf8all);
+	my $date	= email_date();
 	my $content_type_q = 'text/plain; charset="'.$type.'"';
 	my $msg = $utf8all;
 	if ($type eq "iso-8859-1")
@@ -610,6 +646,7 @@ END
 From: "$arcname_q" <$adminemail>
 To: "$name_q" <$address>
 Subject: $arcname_q: $subject_q
+Date: $date
 Precedence: bulk
 Content-Type: $content_type_q
 Content-Transfer-Encoding: 8bit

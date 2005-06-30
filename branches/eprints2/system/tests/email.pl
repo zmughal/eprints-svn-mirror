@@ -32,3 +32,6 @@ ok( index($args[1],'Bob Smith')!=-1, 'Warning mentions name' );
 ok( index($args[1],'cjg@ecs.soton.ac.uk')!=-1, 'Warning mentions email' );
 ok( index($args[1],'test subject')!=-1, 'Warning mentions subject' );
 
+my $date = EPrints::Utils::email_date();
+ok( $date =~ m/(Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d\d? (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d\d\d\d \d\d:\d\d:\d\d [+-]\d\d\d\d/ , 'email_date()' );
+
