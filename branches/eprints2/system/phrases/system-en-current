@@ -229,7 +229,7 @@ EPrints Modules
     <ep:phrase ref="lib/submissionform:invalid_eprint">ID <ep:pin ref="eprintid" /> is not a valid item ID!</ep:phrase>
     <ep:phrase ref="lib/submissionform:current_docs"><p>Here are the documents currently attached to this item, and how many files you have uploaded for each.</p></ep:phrase>
     <ep:phrase ref="lib/submissionform:least_one"><p>You must upload at least one of the following formats: <ep:pin ref="list" />.</p></ep:phrase>
-    <ep:phrase ref="lib/submissionform:none_required"><p>You may upload one or formats of the document at this stage. This is not required, but is strongly encouraged.</p></ep:phrase>
+    <ep:phrase ref="lib/submissionform:none_required"><p>You may upload one or more formats of the document at this stage. This is not required, but is strongly encouraged.</p></ep:phrase>
     <ep:phrase ref="lib/submissionform:plain">Plain Files</ep:phrase>
     <ep:phrase ref="lib/submissionform:grab_url">From an Existing Web Site</ep:phrase>
     <ep:phrase ref="lib/submissionform:fix_upload">The upload can't be completed because:</ep:phrase>

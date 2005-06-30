@@ -2518,5 +2518,5 @@ PACKAGE: 2.2.99.2
     date and time encoded for an email header.
  - [#1290] Added Date: headers to both send_email_via_smtp and 
     via_sendmail.
-
+ - [#1210] Fixed typo.
 
