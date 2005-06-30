@@ -482,7 +482,8 @@ sub render_search_form
 	}
 	$form->appendChild( $self->render_search_fields( $help ) );
 
-	if( $show_anyall )
+	my @sfields = $self->get_non_filter_searchfields;
+	if( $show_anyall && (scalar @sfields) > 1)
 	{
 		my $menu = $self->{session}->render_option_list(
 			name=>$self->{prefix}."_satisfyall",

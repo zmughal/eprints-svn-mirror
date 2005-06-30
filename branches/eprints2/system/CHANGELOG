@@ -2519,4 +2519,6 @@ PACKAGE: 2.2.99.2
  - [#1290] Added Date: headers to both send_email_via_smtp and 
     via_sendmail.
  - [#1210] Fixed typo.
+ - [#1097] The any/all of these fields option is now hidden if there
+    is only a single search field.
 
