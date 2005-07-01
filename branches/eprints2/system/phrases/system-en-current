@@ -785,6 +785,7 @@ Public CGI Scripts
 <!-- latest -->
 
     <ep:phrase ref="cgi/latest:title">Latest Additions to &archivename;</ep:phrase>
+    <ep:phrase ref="cgi/latest:intro"></ep:phrase>
     <ep:phrase ref="cgi/latest:none"><p>Nothing new in the last 7 days.</p></ep:phrase>
     <ep:phrase ref="cgi/latest:today">Today</ep:phrase>
     <ep:phrase ref="cgi/latest:yesterday">Yesterday</ep:phrase>

@@ -2522,3 +2522,8 @@ PACKAGE: 2.2.99.2
  - [#1097] The any/all of these fields option is now hidden if there
     is only a single search field.
 
+2005-07-01 cjg
+
+ - [#1146] Added an empty phrase to the top of /cgi/latest in case
+    people want to add an introduction.
+
