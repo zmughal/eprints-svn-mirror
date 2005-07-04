@@ -2532,3 +2532,7 @@ PACKAGE: 2.2.99.2
  - [#1182] Added default values to user fields "frequency" and 
     "mailempty" this will stop new editors being bugged for values 
     which should have sensible defaults.
+ - [#1159] Fixed a bug which meant that edit_eprint would give a 
+    500 error rather than a clean warning in the situation that
+    no dataset was given AND the eprintid did not exist.
+

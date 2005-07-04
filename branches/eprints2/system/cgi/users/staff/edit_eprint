@@ -56,11 +56,6 @@ sub process
 	}
 
 	my $eprint = new EPrints::EPrint( $session, $eprintid, $dataset );
-	if( !defined $dataset )
-	{
-		$dataset = $eprint->get_dataset;
-	}
-	my $action = $session->get_action_button();
 
 	if( !defined $eprint )
 	{
@@ -68,6 +63,11 @@ sub process
 			"cgi/users/edit_eprint:cant_find_it",
 			id=>$session->make_text( $eprintid ) ) );
 		return;
+	}
+
+	if( !defined $dataset )
+	{
+		$dataset = $eprint->get_dataset;
 	}
 
 	my $user_ds = $session->get_archive()->get_dataset( "user" );
@@ -100,6 +100,7 @@ sub process
 		return;
 	}
 
+	my $action = $session->get_action_button();
 
 	if( !defined $action )
 	{
