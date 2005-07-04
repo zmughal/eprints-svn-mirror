@@ -213,7 +213,9 @@ sub create_user
 	my $data = { 
 		"userid"=>$userid,
 		"usertype"=>$access_level,
-		"joined"=>$date_joined 
+		"joined"=>$date_joined,
+		"frequency"=>'never',
+		"mailempty"=>"FALSE"
 	};
 
 	$session->get_archive()->call(

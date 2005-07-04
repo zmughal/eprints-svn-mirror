@@ -2527,3 +2527,8 @@ PACKAGE: 2.2.99.2
  - [#1146] Added an empty phrase to the top of /cgi/latest in case
     people want to add an introduction.
 
+2005-07-04 cjg
+
+ - [#1182] Added default values to user fields "frequency" and 
+    "mailempty" this will stop new editors being bugged for values 
+    which should have sensible defaults.
