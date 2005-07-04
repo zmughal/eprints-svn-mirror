@@ -99,7 +99,7 @@ foreach( @installerfiles )
 system("./autogen.sh");
 
 my @files = @installerfiles;
-foreach my $dir ( "archivecfg", "bin", "cgi", "cgi/users", "lib" )
+foreach my $dir ( "archivecfg", "bin", "cgi", "cgi/users", "cgi/users/staff", "lib", "lib/MetaField" )
 {
 	opendir( DIR, $dir );
 	my $file;
