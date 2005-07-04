@@ -2535,4 +2535,9 @@ PACKAGE: 2.2.99.2
  - [#1159] Fixed a bug which meant that edit_eprint would give a 
     500 error rather than a clean warning in the situation that
     no dataset was given AND the eprintid did not exist.
-
+ - [#1005] Code in EPrints.pm which handles threads now checks to
+    make sure that loops don't exist. Before it just got into a tight
+    loop and never exited! If a loop is detected then the code is
+    exited and a warning is logged. If rendering a thread HTML list 
+    then a warning message is placed at the point the loop was
+    detected. 

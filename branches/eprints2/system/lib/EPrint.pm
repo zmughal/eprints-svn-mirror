@@ -1770,9 +1770,16 @@ sub first_in_thread
 	
 	my $first = $self;
 	my $ds = $self->{session}->get_archive()->get_dataset( "archive" );
-	
+
+	my $below = {};	
 	while( defined $first->get_value( $field->get_name() ) )
 	{
+		if( $below->{$first->get_id} )
+		{
+			$self->loop_error( $field, keys %{$below} );
+			last;
+		}
+		$below->{$first->get_id} = 1;
 		my $prev = EPrints::EPrint->new( 
 				$self->{session},
 				$first->get_value( $field->get_name() ),
@@ -1791,7 +1798,7 @@ sub first_in_thread
 
 =item @eprints = $eprint->later_in_thread( $field )
 
-Return a list of the later items in the thread.
+Return a list of the immediately later items in the thread. 
 
 =cut
 ######################################################################
@@ -1832,33 +1839,44 @@ sub all_in_thread
 {
 	my( $self, $field ) = @_;
 
-	my @eprints;
+	my $above = {};
+	my $set = {};
 	
 	my $first = $self->first_in_thread( $field );
 	
-	$self->_collect_thread( $field, $first, \@eprints );
+	$self->_collect_thread( $field, $first, $set, $above );
 
-	return( @eprints );
+	return( values %{$set} );
 }
 
 ######################################################################
 # 
-# $foo = $eprint->_collect_thread( $field, $current, $eprints )
+# $eprint->_collect_thread( $field, $current, $eprints, $set, $above )
 #
-# undocumented
+# $above is a hash which contains all the ids eprints above the current
+# one as keys.
+# $set contains all the eprints found.
 #
 ######################################################################
 
 sub _collect_thread
 {
-	my( $self, $field, $current, $eprints ) = @_;
-	
-	push @$eprints, $current;
+	my( $self, $field, $current, $set, $above ) = @_;
+
+	if( defined $above->{$current->get_id} )
+	{
+		$self->loop_error( $field, keys %{$above} );
+		return;
+	}
+	$set->{$current->get_id} = $current;	
+	my %above2 = %{$above};
+	$above2{$current->get_id} = $current; # copy the hash contents
+	$set->{$current->get_id} = $current;	
 	
 	my @later = $current->later_in_thread( $field );
-	foreach (@later)
+	foreach my $later_eprint (@later)
 	{
-		$self->_collect_thread( $field, $_, $eprints );
+		$self->_collect_thread( $field, $later_eprint, $set, \%above2 );
 	}
 }
 
@@ -1879,9 +1897,15 @@ sub last_in_thread
 	
 	my $latest = $self;
 	my @later = ( $self );
-
+	my $above = {};
 	while( scalar @later > 0 )
 	{
+		if( defined $above->{$latest->get_id} )
+		{
+			$self->loop_error( $field, keys %{$above} );
+			last;
+		}
+		$above->{$latest->get_id} = 1;
 		$latest = $later[0];
 		@later = $latest->later_in_thread( $field );
 	}
@@ -1973,22 +1997,33 @@ sub render_version_thread
 
 	my $ul = $self->{session}->make_element( "ul" );
 	
-	$ul->appendChild( $first_version->_render_version_thread_aux( $field, $self ) );
+	$ul->appendChild( $first_version->_render_version_thread_aux( $field, $self, {} ) );
 	
 	return( $ul );
 }
 
 ######################################################################
 # 
-# $xhtml = $eprint->_render_version_thread_aux( $field, $eprint_shown )
+# $xhtml = $eprint->_render_version_thread_aux( $field, $eprint_shown, $above )
 #
-# undocumented
+# $above is a hash ref, the keys of which are ID's of eprints already 
+# seen above this item. One item CAN appear twice, just not as it's
+#  own decentant.
 #
 ######################################################################
 
 sub _render_version_thread_aux
 {
-	my( $self, $field, $eprint_shown ) = @_;
+	my( $self, $field, $eprint_shown, $above ) = @_;
+
+	my $li = $self->{session}->make_element( "li" );
+
+	if( defined $above->{$self->get_id} )
+	{
+		$self->loop_error( $field, keys %{$above} );
+		$li->appendChild( $self->{session}->make_text( "ERROR, THREAD LOOPS: ".join( ", ",keys %{$above} ) ));
+		return $li;
+	}
 	
 	my $li = $self->{session}->make_element( "li" );
 
@@ -2010,13 +2045,14 @@ sub _render_version_thread_aux
 	# Are there any later versions in the thread?
 	if( scalar @later > 0 )
 	{
+		my %above2 = %{$above};
+		$above2{$self->get_id} = 1;
 		# if there are, start a new list
 		my $ul = $self->{session}->make_element( "ul" );
-		my $version;
-		foreach $version (@later)
+		foreach my $version (@later)
 		{
 			$ul->appendChild( $version->_render_version_thread_aux(
-				$field, $eprint_shown ) );
+				$field, $eprint_shown, \%above2 ) );
 		}
 		$li->appendChild( $ul );
 	}
@@ -2024,6 +2060,28 @@ sub _render_version_thread_aux
 	return( $li );
 }
 
+######################################################################
+=pod
+
+=item $eprint->loop_error( $field, @looped_ids )
+
+This eprint is part of a threading loop which is not allowed. Log a
+warning.
+
+=cut
+######################################################################
+
+sub loop_error
+{
+	my( $self, $field, @looped_ids ) = @_;
+
+	$self->{session}->get_archive->log( 
+"EPrint ".$self->get_id." is part of a thread loop.\n".
+"This means that either the commentary or succeeds form a complete\n".
+"circle. Break the circle to disable this warning.\n".
+"Looped field is '".$field->get_name."'\n".
+"Loop is: ".join( ", ",@looped_ids ) );
+}
 
 ######################################################################
 =pod
