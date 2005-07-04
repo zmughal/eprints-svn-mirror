@@ -110,6 +110,11 @@ if test $DISABLE_DF = "0" ; then
         echo "*** Free space checking function disabled. To supress this"
         echo "*** message, re-run configure with the --disable-diskfree"
         echo "*** option."
+        echo "*** "
+        echo "*** EPrints uses diskfree to warn you if you are running"
+        echo "*** low on disk space. If you disable the feature you will"
+        echo "*** need to keep an eye on free disk space yourself."
+        echo "*** "
         echo "*** If you require free space checking, the necessary"
         echo "*** functionality can be enabled by running the perl"
         echo "*** tool \"h2ph\" in /usr/include, as root:"
@@ -131,13 +136,14 @@ AC_ARG_WITH(toolpath,
 AC_PATH_PROG(UNZIP_PATH, unzip, "NOTFOUND", $TOOL_PATH)
 if test $UNZIP_PATH = "NOTFOUND"; then
     echo "**************************************************************"
-    echo "*** Unable to find the location of one of the tools required"
-    echo "*** by eprints. Try running this script again giving the"
-    echo "*** --with-toolpath options to give a colon separated path"
+    echo "*** Unable to find 'unzip'"
+    echo "*** "
+    echo "*** This is not critical. Without unzip, EPrints will not be"
+    echo "*** able to extract documents uploaded as ZIP archives."
+    echo "*** "
+    echo "*** Try running this script again giving the --with-toolpath"
+    echo "*** option to give a colon separated path"
     echo "*** where the tools can be found"
-    echo "***"
-    echo "*** eprints configure will now continue, but some features may"
-    echo "*** not work unless this is resolved"
     echo "**************************************************************"
     AC_MSG_WARN([Unable to find unzip])
 fi
@@ -145,13 +151,14 @@ fi
 AC_PATH_PROG(TAR_PATH, tar, "NOTFOUND", $TOOL_PATH)
 if test $TAR_PATH = "NOTFOUND"; then
     echo "**************************************************************"
-    echo "*** Unable to find the location of one of the tools required"
-    echo "*** by eprints. Try running this script again giving the"
-    echo "*** --with-toolpath options to give a colon separated path"
+    echo "*** Unable to find 'tar'"
+    echo "*** "
+    echo "*** This is not critical. Without tar, EPrints will not be"
+    echo "*** able to extract documents uploaded as tar.gz archives."
+    echo "*** "
+    echo "*** Try running this script again giving the --with-toolpath"
+    echo "*** option to give a colon separated path"
     echo "*** where the tools can be found"
-    echo "***"
-    echo "*** eprints configure will now continue, but some features may"
-    echo "*** not work unless this is resolved"
     echo "**************************************************************"
     AC_MSG_WARN([Unable to find tar])
 fi
@@ -159,13 +166,14 @@ fi
 AC_PATH_PROG(GUNZIP_PATH, gunzip, "NOTFOUND", $TOOL_PATH)
 if test $GUNZIP_PATH = "NOTFOUND"; then
     echo "**************************************************************"
-    echo "*** Unable to find the location of one of the tools required"
-    echo "*** by eprints. Try running this script again giving the"
-    echo "*** --with-toolpath options to give a colon separated path"
+    echo "*** Unable to find 'gunzip'"
+    echo "*** "
+    echo "*** This is not critical. Without gunzip, EPrints will not be"
+    echo "*** able to extract documents uploaded as tar.gz archives."
+    echo "*** "
+    echo "*** Try running this script again giving the --with-toolpath"
+    echo "*** option to give a colon separated path"
     echo "*** where the tools can be found"
-    echo "***"
-    echo "*** eprints configure will now continue, but some features may"
-    echo "*** not work unless this is resolved"
     echo "**************************************************************"
     AC_MSG_WARN([Unable to find gunzip, the GNU unzip tool])
 fi
@@ -173,74 +181,51 @@ fi
 AC_PATH_PROG(WGET_PATH, wget, "NOTFOUND", $TOOL_PATH)
 if test $WGET_PATH = "NOTFOUND"; then
     echo "**************************************************************"
-    echo "*** Unable to find the location of one of the tools required"
-    echo "*** by eprints. Try running this script again giving the"
-    echo "*** --with-toolpath options to give a colon separated path"
+    echo "*** Unable to find 'wget'"
+    echo "*** "
+    echo "*** This is not critical. Without wget, EPrints will not be"
+    echo "*** able to capture documents from URLs."
+    echo "*** "
+    echo "*** Try running this script again giving the --with-toolpath"
+    echo "*** option to give a colon separated path"
     echo "*** where the tools can be found"
-    echo "***"
-    echo "*** eprints configure will now continue, but some features may"
-    echo "*** not work unless this is resolved"
     echo "**************************************************************"
     AC_MSG_WARN([Unable to find wget])
 fi
 
 AC_PATH_PROG(SENDMAIL_PATH, sendmail, "NOTFOUND", $TOOL_PATH)
 if test $SENDMAIL_PATH = "NOTFOUND"; then
-#    echo "**************************************************************"
-#    echo "*** Unable to find the location of one of the tools required"
-#    echo "*** by eprints. Try running this script again giving the"
-#    echo "*** --with-toolpath options to give a colon separated path"
-#    echo "*** where the tools can be found"
-#    echo "***"
-#    echo "*** eprints configure will now continue, but some features may"
-#    echo "*** not work unless this is resolved"
-#    echo "**************************************************************"
-    AC_MSG_WARN([Unable to find sendmail])
+    echo "*** 'sendmail' is only needed if you choose not to use"
+    echo "*** Net::SMTP to send email."
+#    AC_MSG_WARN([Unable to find sendmail])
 fi
 
 
 
+# tools used to create latex equations. not critical.
+
 AC_PATH_PROG(LATEX_PATH, latex, "NOTFOUND", $TOOL_PATH)
 if test $LATEX_PATH = "NOTFOUND"; then
-    echo "*** Unable to find the location of one of the tools required"
-    echo "*** by eprints. Try running this script again giving the"
-    echo "*** --with-toolpath options to give a colon separated path"
-    echo "*** where the tools can be found"
-    echo "***"
-    echo "*** eprints configure will now continue, but some features may"
-    echo "*** not work unless this is resolved"
-    echo "***"
-    echo "*** DON'T PANIC. This tool is not used by a core feature."
-    AC_MSG_WARN([Unable to find latex])
+    echo "*** 'latex' is only needed if you want to use the feature"
+    echo "*** which displays latex equations as inline graphics."
+#    AC_MSG_WARN([Unable to find latex])
 fi
 
 AC_PATH_PROG(DVIPS_PATH, dvips, "NOTFOUND", $TOOL_PATH)
 if test $DVIPS_PATH = "NOTFOUND"; then
-    echo "*** Unable to find the location of one of the tools required"
-    echo "*** by eprints. Try running this script again giving the"
-    echo "*** --with-toolpath options to give a colon separated path"
-    echo "*** where the tools can be found"
-    echo "***"
-    echo "*** eprints configure will now continue, but some features may"
-    echo "*** not work unless this is resolved"
-    echo "***"
-    echo "*** DON'T PANIC. This tool is not used by a core feature."
-    AC_MSG_WARN([Unable to find dvips, for latex])
+    echo "*** 'dvips' is only needed if you want to use the feature"
+    echo "*** which displays latex equations as inline graphics."
+#    AC_MSG_WARN([Unable to find dvips, for latex])
 fi
 
 AC_PATH_PROG(CONVERT_PATH, convert, "NOTFOUND", $TOOL_PATH)
 if test $CONVERT_PATH = "NOTFOUND"; then
-    echo "*** Unable to find the location of one of the tools required"
-    echo "*** by eprints. Try running this script again giving the"
-    echo "*** --with-toolpath options to give a colon separated path"
-    echo "*** where the tools can be found"
-    echo "***"
-    echo "*** eprints configure will now continue, but some features may"
-    echo "*** not work unless this is resolved"
-    echo "***"
-    echo "*** DON'T PANIC. This tool is not used by a core feature."
-    AC_MSG_WARN([Unable to find convert, the ImageMagick tool])
+    echo "*** 'convert' is only needed if you want to use the feature"
+    echo "*** which displays latex equations as inline graphics."
+#    AC_MSG_WARN([Unable to find convert, the ImageMagick tool])
 fi
+
+
 
 TEST_PERL_MOD(HAS_MOD_PERL_1,Apache)
 TEST_PERL_MOD(HAS_MOD_PERL_2A,Apache2)
