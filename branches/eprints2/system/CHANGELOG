@@ -2541,3 +2541,11 @@ PACKAGE: 2.2.99.2
     exited and a warning is logged. If rendering a thread HTML list 
     then a warning message is placed at the point the loop was
     detected. 
+
+2005-07-05 cjg
+
+ - Added option "show_ids_in_log" which causes the id of the archive
+    causing the log message to be prefixed to every line it logs.
+    This can be set at the archive level, but is more useful in
+    SystemSettings to control all archives.
+

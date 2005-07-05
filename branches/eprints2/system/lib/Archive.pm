@@ -698,7 +698,7 @@ sub get_conf
 ######################################################################
 =pod
 
-=item $archive->log( @params )
+=item $archive->log( $msg )
 
 Calls the log method from ArchiveConfig.pm for this archive with the 
 given parameters. Basically logs the comments wherever the site admin
@@ -709,9 +709,19 @@ wants them to go. Printed to STDERR by default.
 
 sub log
 {
-	my( $self , @params) = @_;
+	my( $self , $msg) = @_;
 
-	$self->call( 'log', $self, @params );
+	if( $self->get_conf( 'show_ids_in_log' ) )
+	{
+		my @m2 = ();
+		foreach my $line ( split( '\n', $msg ) )
+		{
+			push @m2,"[".$self->{id}."] ".$line;
+		}
+		$msg = join("\n",@m2);
+	}
+
+	$self->call( 'log', $self, $msg );
 }
 
 
