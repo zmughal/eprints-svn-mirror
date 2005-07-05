@@ -744,6 +744,58 @@ sub call
 	return &$fn( @params );
 }
 
+######################################################################
+=pod
+
+=item $boolean = $archive->can_call( $cmd )
+
+Return true if the given subroutine exists in the archives config
+package.
+
+=cut
+######################################################################
+
+sub can_call($$)
+{
+	my( $self, $cmd ) = @_;
+
+	# We're going to be turning strings into references
+	no strict 'refs';
+
+	my %namespace = %{$self->{class}."::"};
+
+	# Is there anything in the namespace called $cmd?
+	return( 0 ) unless( defined $namespace{$cmd} );
+
+	# is it a code reference?
+	return( 0 ) unless( defined *{$namespace{$cmd}}{CODE} );
+
+	return 1;
+}
+
+######################################################################
+=pod
+
+=item $result = $archive->try_call( $cmd, @params )
+
+Calls the subroutine named $cmd from the configuration perl modules
+for this archive with the given params and returns the result.
+
+If the subroutine does not exist then quietly returns undef.
+
+This is used to call deprecated callback subroutines.
+
+=cut
+######################################################################
+
+sub try_call
+{
+	my( $self, $cmd, @params ) = @_;
+
+	return unless $self->can_call( $cmd );
+
+	return $self->call( $cmd, @params );
+}
 
 ######################################################################
 =pod

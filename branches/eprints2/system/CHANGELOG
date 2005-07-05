@@ -2548,4 +2548,8 @@ PACKAGE: 2.2.99.2
     causing the log message to be prefixed to every line it logs.
     This can be set at the archive level, but is more useful in
     SystemSettings to control all archives.
-
+ - Added method to EPrints::Archive, "can_call" which tests to see
+    if it is possible to call a subroutine in the config. package.
+ - Added method to EPrints::Archive. "try_call" which acts like
+    "call" but first checks that it can can_call, and if not 
+    silently fails, rather than cause a perl error.
