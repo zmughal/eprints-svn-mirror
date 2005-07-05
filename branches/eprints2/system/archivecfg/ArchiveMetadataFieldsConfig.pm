@@ -349,55 +349,6 @@ sub set_subscription_automatic_fields
 	my( $subscription ) = @_;
 }
 
-######################################################################
-#
-# update_submitted_eprint( $eprint )
-#
-#  This function is called on an EPrint whenever it is transferred
-#  from the inbox (the author's workspace) to the editorial buffer.
-#  You can alter the EPrint here if you need to, or maybe send a
-#  notification mail to the administrator or something. 
-#
-#  Any changes you make to the EPrint object will be written to the
-#  database after this function finishes, so you don't need to do a
-#  commit().
-#
-#  This method is also called if the eprint is moved into the editorial 
-#  buffer from the archive. (By an editor wanting to make changes, 
-#  presumably)
-#
-######################################################################
-
-sub update_submitted_eprint
-{
-	my( $eprint ) = @_;
-}
-
-
-######################################################################
-#
-# update_archived_eprint( $eprint )
-#
-#  This function is called on an EPrint whenever it is transferred
-#  from the editorial buffer to the real archive (i.e. when it is
-#  actually "archived".)
-#
-#  You can alter the EPrint here if you need to, or maybe send a
-#  notification mail to the author or administrator or something. 
-#
-#  Any changes you make to the EPrint object will be written to the
-#  database after this function finishes, so you don't need to do a
-#  commit().
-#
-######################################################################
-
-sub update_archived_eprint
-{
-	my( $eprint ) = @_;
-}
-
-
-
 
 
 # Return true to indicate the module loaded OK.

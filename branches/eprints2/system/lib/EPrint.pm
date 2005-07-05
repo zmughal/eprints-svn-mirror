@@ -530,6 +530,14 @@ sub _transfer
 	{
 		$self->_move_from_archive();
 	}
+
+	# Trigger any actions which are configured for eprints status
+	# changes.
+	my $status_change_fn = $self->{session}->get_archive->get_conf( 'eprint_status_change' );
+	if( defined $status_change_fn )
+	{
+		&{$status_change_fn}( $self, $old_dataset->id, $dataset->id );
+	}
 	
 	return( $success );
 }
@@ -1232,7 +1240,7 @@ sub move_to_inbox
 	my $ds = $self->{session}->get_archive()->get_dataset( "inbox" );
 	
 	my $success = $self->_transfer( $ds );
-	
+
 	return $success;
 }
 
@@ -1258,9 +1266,13 @@ sub move_to_buffer
 	
 	if( $success )
 	{
-		$self->{session}->get_archive()->call( 
-			"update_submitted_eprint", $self );
-		$self->commit();
+		# supported but deprecated. use eprint_status_change instead.
+		if( $self->{session}->get_archive()->can_call( "update_submitted_eprint" ) )
+		{
+			$self->{session}->get_archive()->call( 
+				"update_submitted_eprint", $self );
+			$self->commit();
+		}
 	}
 	
 	return( $success );
@@ -1314,9 +1326,14 @@ sub move_to_archive
 	
 	if( $success )
 	{
-		$self->{session}->get_archive()->call( 
-			"update_archived_eprint", $self );
-		$self->commit();
+		# supported but deprecated. use eprint_status_change instead.
+		if( $self->{session}->get_archive()->can_call( "update_archived_eprint" ) )
+		{
+			$self->{session}->get_archive()->try_call( 
+				"update_archived_eprint", $self );
+			$self->commit();
+		}
+
 		$self->generate_static();
 
 		# Generate static pages for everything in threads, if 
@@ -2025,8 +2042,6 @@ sub _render_version_thread_aux
 		return $li;
 	}
 	
-	my $li = $self->{session}->make_element( "li" );
-
 	my $cstyle = "thread_".$field->get_name();
 
 	if( $self->get_value( "eprintid" ) != $eprint_shown->get_value( "eprintid" ) )

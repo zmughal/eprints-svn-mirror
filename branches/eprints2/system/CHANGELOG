@@ -2553,3 +2553,12 @@ PACKAGE: 2.2.99.2
  - Added method to EPrints::Archive. "try_call" which acts like
     "call" but first checks that it can can_call, and if not 
     silently fails, rather than cause a perl error.
+ - The configuration subroutines: "update_archived_eprint" and
+    "update_submitted_eprint" are now only called by EPrints::EPrint
+    if they exist. They are considered deprecated.
+ - Added new configuration option, a function handle called
+    "eprint_status_change" which, if it exists, is called each time
+    an eprint successfully moves between buffers. 
+ - Removed "update_archived_eprint" and "update_submitted_eprint"
+    from the default configuration. 
+
