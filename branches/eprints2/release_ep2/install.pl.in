@@ -10,31 +10,34 @@
 # __LICENSE__
 ######################################################################
 
-my %c;
-$c{"dist_path"}="@DIST_PATH@";
-$c{"perl"}="@PERL_PATH@";
-$c{"prefix"}="@PREFIX@";
-$c{"user"}="@INSTALL_USER@";
-$c{"group"}="@INSTALL_GROUP@";
-$c{"disable_df"}=@DISABLE_DF@;
-$c{"virtualhost"}="@VIRTUALHOST@";
+my %from_configure;
+$from_configure{"dist_path"}="@DIST_PATH@";
+$from_configure{"perl"}="@PERL_PATH@";
+$from_configure{"prefix"}="@PREFIX@";
+$from_configure{"user"}="@INSTALL_USER@";
+$from_configure{"group"}="@INSTALL_GROUP@";
+$from_configure{"disable_df"}=@DISABLE_DF@;
+$from_configure{"virtualhost"}="@VIRTUALHOST@";
 
-$c{"unzip"}="@UNZIP_PATH@";
-$c{"tar"}="@TAR_PATH@";
-$c{"gunzip"}="@GUNZIP_PATH@";
-$c{"wget"}="@WGET_PATH@";
-$c{"sendmail"}="@SENDMAIL_PATH@";
-$c{"smtp_server"}="@SMTP_SERVER@";
-$c{"latex"}="@LATEX_PATH@";
-$c{"dvips"}="@DVIPS_PATH@";
-$c{"convert"}="@CONVERT_PATH@";
+$from_configure{"unzip"}="@UNZIP_PATH@";
+$from_configure{"tar"}="@TAR_PATH@";
+$from_configure{"gunzip"}="@GUNZIP_PATH@";
+$from_configure{"wget"}="@WGET_PATH@";
+$from_configure{"sendmail"}="@SENDMAIL_PATH@";
+$from_configure{"smtp_server"}="@SMTP_SERVER@";
+$from_configure{"latex"}="@LATEX_PATH@";
+$from_configure{"dvips"}="@DVIPS_PATH@";
+$from_configure{"convert"}="@CONVERT_PATH@";
 
-$c{"enable_gdome"}="@ENABLE_GDOME@";
-$c{"apache"}="@APACHE@";
+$from_configure{"enable_gdome"}="@ENABLE_GDOME@";
+$from_configure{"apache"}="@APACHE@";
 
 ######################################################################
 
-if( $c{"apache"} ne "" && $c{"apache"} ne "1" && $c{"apache"} ne "2" )
+if( 
+	$from_configure{"apache"} ne "" && 
+	$from_configure{"apache"} ne "1" && 
+	$from_configure{"apache"} ne "2" )
 {
 	print "Apache version must be '1' or '2'.\n";
 	print "re-run configure with new options.\n";
@@ -58,7 +61,7 @@ umask( 0022 );
 # Grab version id number from VERSION file.
 #
 
-unless( open(VERSIONIN, $c{"dist_path"}."/VERSION") )
+unless( open(VERSIONIN, $from_configure{"dist_path"}."/VERSION") )
 {
 	print "No VERSION file in distribution - invalid distribution?";
 	exit 1;
@@ -82,7 +85,7 @@ close(VERSIONIN);
 
 ### Trim perfix if needed 
 
-if( $c{"prefix"} =~ s#/$## )
+if( $from_configure{"prefix"} =~ s#/$## )
 {
 	print "Removing trailing slash from prefix.\n";
 }
@@ -90,10 +93,10 @@ if( $c{"prefix"} =~ s#/$## )
 ### Print out some key information, which is bound to
 ### cause problems if incorrect.
 
-print "Installing from: ".$c{"dist_path"}."\n";
-print "Installing/Upgrading to: ".$c{"prefix"}."\n";
-print "as user: ".$c{"user"}."\n";
-print "as group: ".$c{"group"}."\n";
+print "Installing from: ".$from_configure{"dist_path"}."\n";
+print "Installing/Upgrading to: ".$from_configure{"prefix"}."\n";
+print "as user: ".$from_configure{"user"}."\n";
+print "as group: ".$from_configure{"group"}."\n";
 
 my $systemsettings = {};
 
@@ -114,12 +117,12 @@ $systemsettings->{"invocation"} = {
 
 $systemsettings->{"archive_extensions"} = {};
 $systemsettings->{"archive_formats"} = [];
-if( $c{"unzip"} ne "" )
+if( $from_configure{"unzip"} ne "" )
 {
 	$systemsettings->{"archive_extensions"}->{"zip"} = ".zip" ;
 	push @{$systemsettings->{"archive_formats"}},"zip";
 }
-if( $c{"tar"} ne "" && $c{"gunzip"} ne "" )
+if( $from_configure{"tar"} ne "" && $from_configure{"gunzip"} ne "" )
 {
 	$systemsettings->{"archive_extensions"}->{"targz"} = ".tar.gz" ;
 	push @{$systemsettings->{"archive_formats"}},"targz";
@@ -130,25 +133,25 @@ foreach(
 	"unzip", "tar", "gunzip", "wget", 
 	"sendmail", "latex", "dvips", "convert" )
 {
-	next unless( defined $c{$_} );
-	$systemsettings->{"executables"}->{$_} = $c{$_};
+	next unless( defined $from_configure{$_} );
+	$systemsettings->{"executables"}->{$_} = $from_configure{$_};
 }
 
-$systemsettings->{"disable_df"} = $c{"disable_df"};
-$systemsettings->{"virtualhost"} = $c{"virtualhost"};
+$systemsettings->{"disable_df"} = $from_configure{"disable_df"};
+$systemsettings->{"virtualhost"} = $from_configure{"virtualhost"};
 
 my $upgrade = 0;
 
-my $syssettings = $c{prefix}."/perl_lib/EPrints/SystemSettings.pm";
+my $system_settings_file = $from_configure{prefix}."/perl_lib/EPrints/SystemSettings.pm";
 
-if( -e $syssettings )
+if( -e $system_settings_file )
 {
 	print "Previous install detected at prefix. Upgrading.\n";
-	unless( require $syssettings )
+	unless( require $system_settings_file )
 	{
 		print <<END;
 Failed to read previous values from system settings file:
-$syssettings - Aborting.
+$system_settings_file - Aborting.
 END
 		exit 1;
 	}
@@ -185,45 +188,29 @@ END
 }
 else
 {	
-	$systemsettings->{"user"} = $c{"user"};
-	$systemsettings->{"group"} = $c{"group"};
-	$systemsettings->{"base_path"} = $c{"prefix"};
+	$systemsettings->{"user"} = $from_configure{"user"};
+	$systemsettings->{"group"} = $from_configure{"group"};
+	$systemsettings->{"base_path"} = $from_configure{"prefix"};
 }
 
 $systemsettings->{"version_id"} = $version_id;
 $systemsettings->{"version"} = $version;
 
-if( defined $c{"smtp_server"} && $c{"smtp_server"} ne "" )
-{
-	$systemsettings->{"smtp_server"} = $c{"smtp_server"};
-}
-if( defined $c{"enable_gdome"} && $c{"enable_gdome"} )
-{
-	$systemsettings->{"enable_gdome"} = 1;
-}
-if( !defined $systemsettings->{"enable_gdome"} )
-{
-	$systemsettings->{"enable_gdome"} = 0;
-}
+set( 'smtp_server', \%from_configure, $systemsettings, '' );
+set( 'enable_gdome', \%from_configure, $systemsettings, 0 );
+set( 'show_ids_in_log', \%from_configure, $systemsettings, 0 );
+set( 'apache', \%from_configure, $systemsettings, "2" );
 
-if( defined $c{"apache"} && $c{"apache"} ne "" )
-{
-	$systemsettings->{"apache"} = $c{"apache"};
-}
-if( !defined $systemsettings->{"apache"} || $systemsettings->{"apache"} ne "1" )
-{
-	$systemsettings->{"apache"} = "2";
-}
 
 unless( getpwnam($systemsettings->{"user"}) )
 {
-	print "User ".$c{"user"}." does not exist. Aborting.\n";
+	print "User ".$from_configure{"user"}." does not exist. Aborting.\n";
 	exit 1;
 }
 
 unless( getgrnam($systemsettings->{"group"}) )
 {
-	print "Group ".$c{"group"}." does not exist. Aborting.\n";
+	print "Group ".$from_configure{"group"}." does not exist. Aborting.\n";
 	exit 1;
 }
 
@@ -231,7 +218,7 @@ if( $upgrade )
 {
 	&upgrade( 
 		$systemsettings->{base_path}, 
-		$c{dist_path},
+		$from_configure{dist_path},
 		$systemsettings->{user}, 
 		$systemsettings->{group} );
 }
@@ -239,16 +226,65 @@ else
 {
 	&full_install( 
 		$systemsettings->{base_path}, 
-		$c{dist_path},
+		$from_configure{dist_path},
 		$systemsettings->{user}, 
 		$systemsettings->{group} );
 }
 
-save_settings( $syssettings, $systemsettings, $systemsettings->{user}, $systemsettings->{group} );
+save_settings( 
+	$system_settings_file, 
+	$systemsettings, 
+	$systemsettings->{user}, 
+	$systemsettings->{group} );
+
+if( $systemsettings->{smtp_server} eq "" && !$upgrade )
+{
+	print <<END;
+
+WARNING: You have not set a value for smtp_server. Edit the
+SystemSettings file and set the smtp_server option to be your local 
+SMTP server. If you don't then outgoing email won't work.
+
+END
+}
+
+print "\n";
 
 exit;
 
 
+######################################################################
+# 
+# set( $param, $hash_from_configure, $systemsettings, $default )
+# 
+# Set the $param param in systemsettings to the $param passed
+# in from configure.
+# If nothing was passed in by configure and a value is not already
+# set, then set it to the $default.
+#
+######################################################################
+
+sub set($$$$)
+{
+	my( $param, $from_configure, $systemsettings, $default ) = @_;
+
+	if( defined $from_configure->{$param} && $from_configure->{$param} != '' )
+	{
+		# a setting has actually been configured by configure
+		$systemsettings->{$param} = $from_configure->{$param};
+		return;
+	}
+
+	if( !defined $systemsettings->{$param} )
+	{
+		# no setting is defined at all, not even ""
+		# so use the default
+		$systemsettings->{$param} = $default;
+		return;
+	}
+
+	return;
+}
 
 
 
@@ -458,7 +494,7 @@ sub install_file
 		}
 		else
 		{
-			$currline = "#!".$c{perl}." -w -I".$dest."/perl_lib\n";
+			$currline = "#!".$from_configure{perl}." -w -I".$dest."/perl_lib\n";
 			$outdigest->add($currline);
 			push @linesout, $currline;
 		}
@@ -619,7 +655,6 @@ sub upgrade
  - restart the eprints indexer
 
 ======================================================================
-
 HOORAY
 }
 

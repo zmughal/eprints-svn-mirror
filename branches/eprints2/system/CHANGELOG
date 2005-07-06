@@ -2569,4 +2569,15 @@ PACKAGE: 2.2.99.2
     which confused people.
  - Changed the message at the end of configure from "...to install"
     to "...to install/upgrade". Should be less worrying for people.
+ - In "install.pl.in" renamed $c to $from_configure to make the code
+    clearer.
+ - Also renamed $syssettings to $system_settings_file for the same
+    reason.
+ - Added a subroutine set($$$$) to update simple system settings 
+    values, with an optional default if no value already exists or 
+    was provided.
+ - [#1191][#1315] set() is now used to set smtp_server, enable-gdome, 
+    show_ids_in_log and apache. 
+ - [#1192] In an install (not upgrade), install.pl will warn if no
+    value for smtp_server has been set.
 
