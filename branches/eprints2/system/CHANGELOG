@@ -2562,3 +2562,9 @@ PACKAGE: 2.2.99.2
  - Removed "update_archived_eprint" and "update_submitted_eprint"
     from the default configuration. 
 
+2005-07-08 cjg
+
+ - [#1167] When configure tests for a perl module is now says that
+    it's a perl module. Before it said "looking for Apache2... no"
+    which confused people.
+ 
