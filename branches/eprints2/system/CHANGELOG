@@ -2580,4 +2580,5 @@ PACKAGE: 2.2.99.2
     show_ids_in_log and apache. 
  - [#1192] In an install (not upgrade), install.pl will warn if no
     value for smtp_server has been set.
+ - [#1176] configure now checks for DBD::mysql
 
