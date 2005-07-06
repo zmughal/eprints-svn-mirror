@@ -331,4 +331,4 @@ AC_OUTPUT([
 ])
 
 chmod +x install.pl
-echo "Now run ./install.pl to install to $PREFIX"
+echo "Now run ./install.pl to install/upgrade to $PREFIX"

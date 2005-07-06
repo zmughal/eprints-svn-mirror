@@ -2567,4 +2567,6 @@ PACKAGE: 2.2.99.2
  - [#1167] When configure tests for a perl module is now says that
     it's a perl module. Before it said "looking for Apache2... no"
     which confused people.
- 
+ - Changed the message at the end of configure from "...to install"
+    to "...to install/upgrade". Should be less worrying for people.
+
