@@ -433,10 +433,25 @@ sub bounce_form
 			wrap => "virtual" );
 		# remove any markup:
 		my $title = $session->make_text( EPrints::Utils::tree_to_utf8( $eprint->render_description() ) );
+
+		my $phraseid = '';
+		if( $delete )
+		{
+			if( $eprint->get_dataset->id eq "inbox" )
+			{
+				$phraseid = "mail_delete_reason.inbox";
+			}
+			else
+			{
+				$phraseid = "mail_delete_reason";
+			}
+		}
+		else
+		{
+			$phraseid = "mail_bounce_reason";
+		}
 	
-		$textarea->appendChild( $session->html_phrase(
-			( $delete ? "mail_delete_reason" : "mail_bounce_reason" ),
-			title => $title ) );
+		$textarea->appendChild( $session->html_phrase( $phraseid, title => $title ) );
 		$div->appendChild( $textarea );
 		$form->appendChild( $div );
 

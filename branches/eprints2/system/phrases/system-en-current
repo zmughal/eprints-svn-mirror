@@ -644,6 +644,11 @@ Staff CGI Scripts
     <ep:phrase ref="cgi/users/edit_eprint:action__todeletion">Move Item to Deleted</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action_send">Send</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action_reallydelete">Really Delete</ep:phrase>
+    <ep:phrase ref="mail_delete_reason.inbox">
+The following eprint has been deleted from your User Area:
+
+<ep:pin ref="title" />
+</ep:phrase>
 
 
 <!-- edit_user -->
