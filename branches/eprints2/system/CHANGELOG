@@ -2591,4 +2591,4 @@ PACKAGE: 2.2.99.2
     "deletion". They can undelete them and then modify them. There
     is a new config option allow_edit_deleted to turn off this
     restriction.
-
+ - Corrected a missing ; in eprints.css
