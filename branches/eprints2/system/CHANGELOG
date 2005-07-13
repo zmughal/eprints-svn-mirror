@@ -2592,3 +2592,7 @@ PACKAGE: 2.2.99.2
     is a new config option allow_edit_deleted to turn off this
     restriction.
  - Corrected a missing ; in eprints.css
+ - [#1158] On user area page, begin new item, and items-in-workarea
+    are now seperate boxes. The box with the items-in-workarea is
+    now called "Undeposited Items".
+

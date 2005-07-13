@@ -430,7 +430,7 @@ User Area CGI Scripts
     <ep:phrase ref="cgi/users/home:change_user_link">Change User Login</ep:phrase>
     <ep:phrase ref="cgi/users/home:change_user_info"><p>Log in to the repository as a different user. There is currently no "logout" feature.</p></ep:phrase>
 
-    <ep:phrase ref="cgi/users/home:docs"><h3>Items in your Workspace</h3></ep:phrase>
+    <ep:phrase ref="cgi/users/home:docs"><h3>Undeposited Items</h3></ep:phrase>
     <ep:phrase ref="cgi/users/home:depositing"><p>These are items you are currently in the process of depositing. These will not be considered for the repository until you <i>deposit</i> them.</p></ep:phrase>
     <ep:phrase ref="cgi/users/home:pending_title"><h3>Pending Items</h3></ep:phrase>
     <ep:phrase ref="cgi/users/home:no_pending"><p>You currently have no pending items</p></ep:phrase>

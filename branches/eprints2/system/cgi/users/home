@@ -230,12 +230,16 @@ if( $user->has_priv( "deposit" ) )
 	$tr->appendChild( $td );
 
 	my $div;
+
+	### Begin new item
+	$div = $session->make_element("div",class=>"box");
+	$div->appendChild( $dls->{create} );
+	$td->appendChild( $div );
+
 	### Workspace
 	$div = $session->make_element("div",class=>"box");
-	$div->appendChild(
-		&render_workspace( $session, $user, $dls->{create} ) );
+	$div->appendChild( &render_workspace( $session, $user ) );
 	$td->appendChild( $div );
-	
 
 	### Pending
 	$div = $session->make_element("div",class=>"box");
@@ -302,7 +306,7 @@ exit;
 
 sub render_workspace
 {
-	my( $session, $user, $add ) = @_;
+	my( $session, $user ) = @_;
 
 	### Get the actual items in the workspace
 	my $ds = $session->get_archive()->get_dataset( "inbox" );
@@ -312,10 +316,6 @@ sub render_workspace
 
 	$html = $session->make_doc_fragment();
 	$html->appendChild( $session->html_phrase( "cgi/users/home:docs" ));
-	if( defined $add )
-	{
-		$html->appendChild( $add );
-	}
 
 	if( scalar @eprints == 0)
 	{
