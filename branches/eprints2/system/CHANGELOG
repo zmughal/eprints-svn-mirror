@@ -2595,4 +2595,7 @@ PACKAGE: 2.2.99.2
  - [#1158] On user area page, begin new item, and items-in-workarea
     are now seperate boxes. The box with the items-in-workarea is
     now called "Undeposited Items".
+ - [#1089] The deprecated cache option warning in SearchExpression
+    ->new now tells the file and line that passed the deprecated 
+    option.
 

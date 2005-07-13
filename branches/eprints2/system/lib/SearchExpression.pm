@@ -107,11 +107,12 @@ sub new
 		defined $data{use_oneshot_cache} || 
 		defined $data{use_private_cache} )
 	{
+		my ($package, $filename, $line) = caller;
 		print STDERR <<END;
--------------------------------------------------------------
+-----------------------------------------------------------------------
 EPRINTS WARNING: The old cache parameters to SearchExpression have been
-deprecated. Everything will probably work as expected, but you should maybe
-check your scripts. (if it's in the core code, please email 
+deprecated. Everything will probably work as expected, but you should 
+maybe check your scripts. (if it's in the core code, please email 
 support\@eprints.org
 
 Deprecated: use_oneshot_cache use_private_cache use_cache
@@ -119,10 +120,14 @@ Deprecated: use_oneshot_cache use_private_cache use_cache
 Please use instead: keep_cache
 
 All cache's are now private. oneshot caches will be created and
-destroyed automatically if "order" or "custom_order" is set or 
-if a range of results is requested.
--------------------------------------------------------------
+destroyed automatically if "order" or "custom_order" is set or if a 
+range of results is requested.
+-----------------------------------------------------------------------
+The deprecated parameter was passed to SearchExpression->new from
+$filename line $line
+-----------------------------------------------------------------------
 END
+
 	}
 
 	foreach( @EPrints::SearchExpression::OPTS )
