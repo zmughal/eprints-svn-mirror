@@ -2582,3 +2582,13 @@ PACKAGE: 2.2.99.2
     value for smtp_server has been set.
  - [#1176] configure now checks for DBD::mysql
 
+2005-07-13 cjg
+
+ - [#1164] When an editor removes an item from a user workarea the
+    default email message is now different to the one sent when an
+    eprint is removed from buffer.
+ - [#1178] Editors may now not modify (edit) items in the buffer
+    "deletion". They can undelete them and then modify them. There
+    is a new config option allow_edit_deleted to turn off this
+    restriction.
+

@@ -649,6 +649,7 @@ The following eprint has been deleted from your User Area:
 
 <ep:pin ref="title" />
 </ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:cant_edit_deleted">Modifying deleted records is not allowed.</ep:phrase>
 
 
 <!-- edit_user -->

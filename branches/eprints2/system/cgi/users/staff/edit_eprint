@@ -231,7 +231,15 @@ sub process
 		return;
 	}
 
-
+	if( $eprint->get_dataset->id eq "deletion" )
+	{
+		unless( $session->get_archive->get_conf( 'allow_edit_deleted' ) )
+		{
+			$session->render_error( $session->html_phrase(
+				"cgi/users/edit_eprint:cant_edit_deleted" ) );
+			return;
+		}
+	}
 
 
 	#########################################################
@@ -371,7 +379,14 @@ sub view_page
 	if( $eprint->get_dataset()->id() eq "deletion" )
 	{
 		$r1 = [ "_toarchive" ];
-		$r2 = [ "edit", "_clone", "_copy" ];
+		if( $session->get_archive->get_conf( 'allow_edit_deleted' ) )
+		{
+			$r2 = [ "edit", "_clone", "_copy" ];
+		}
+		else
+		{
+			$r2 = [ "_clone", "_copy" ];
+		}
 	}
 
 

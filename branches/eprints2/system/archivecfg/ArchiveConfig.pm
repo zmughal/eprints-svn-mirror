@@ -342,6 +342,10 @@ $c->{submission_hide_upload_plain} = 0;
 # pick-list.
 $c->{submission_long_types} = 1;
 
+# By default even editors can't modfiy deleted records. To
+# allow them to, set this flag.
+$c->{allow_edit_deleted} = 0;
+
 ######################################################################
 #
 # Language
