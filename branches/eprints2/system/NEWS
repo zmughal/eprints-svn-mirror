@@ -5,6 +5,39 @@ CHANGELOG.
 ======================================================================
 
 
+
+EPRINTS 2.3.13                                                 2005-?????
+-------------------------------------------------------------------------
+
+ - Support for the new mod_perl2 API.
+ - Terminology standardisation 
+       "archive" becomes "repository"
+       "submission buffer" becomes "editorial review"
+       "record" becomes "item"
+ - Fixed issue with apache setups which default to deny-from-all
+ - Solved issue causing warnings in indexer log
+ - Added "Date:" header to outgoing emails
+ - The Any/All these fields option is now hidden on search forms with 
+    only one field.
+ - Added default values for editor-only fields. This means that the edit
+    record page won't unexpectedly appear when people first become an 
+    editor.
+ - Looped threads no longer cause problems.
+ - New configuration option "show_ids_in_log" which can be set at the
+    archive level, but is best set in SystemSettings.pm - it causes all
+    log messages to be prefixed with which repository generated them.
+ - New hook routine: "eprint_status_change" which, if it exists, is 
+    called every time an eprint moves between buffers. This deprecates
+    "update_archived_eprint" and "update_submitted_eprint", although 
+    they will continue to work.
+ - Improvements to the installation procedure. Better instructions and
+    warnings.
+ - The default email message sent when an editor removes an itme from
+    a workarea is now different from the one sent when removing an item
+    from editorial review (ne. submission buffer).
+ - Items in "deletion" may not be modified, even by editors. This can
+    be disabled with the "allow_edit_deleted" config option.
+
 EPRINTS 2.3.12                                                 2005-05-24
 -------------------------------------------------------------------------
 
