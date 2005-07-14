@@ -37,7 +37,7 @@ number within that eprint.
 This should probably have been and "int" but isn't. I later version
 of EPrints may change this.
 
-=item eprintid (int)
+=item eprintid (itemref)
 
 The id number of the eprint to which this document belongs.
 
@@ -86,15 +86,20 @@ package EPrints::Document;
 @ISA = ( 'EPrints::DataObj' );
 use EPrints::DataObj;
 
-use EPrints::Database;
-use EPrints::EPrint;
 
 use File::Basename;
 use File::Path;
 use File::Copy;
 use Cwd;
+
 use URI::Heuristic;
+use Convert::PlainText;
+
+use EPrints::Database;
+use EPrints::EPrint;
 use EPrints::Probity;
+
+
 
 use strict;
 
@@ -119,7 +124,8 @@ sub get_system_field_info
 	( 
 		{ name=>"docid", type=>"text", required=>1 },
 
-		{ name=>"eprintid", type=>"int", required=>1 },
+		{ name=>"eprintid", type=>"itemref",
+			datasetid=>"eprint", required=>1 },
 
 		{ name=>"format", type=>"datatype", required=>1, 
 			datasetid=>"document" },
@@ -460,7 +466,7 @@ sub clone
 	}
 	
 	# Copy files
-	my $rc = system( "/bin/cp -a ".$self->local_path()."/* ".$new_doc->local_path() ) & 0xffff;
+	my $rc = system( "/bin/cp -pR ".$self->local_path()."/* ".$new_doc->local_path() ) & 0xffff;
 
 	# If something's gone wrong...
 	if ( $rc!=0 )
@@ -471,6 +477,7 @@ sub clone
 
 	if( $new_doc->commit() )
 	{
+		$new_doc->rehash;
 		return( $new_doc );
 	}
 	else
@@ -560,17 +567,17 @@ sub get_eprint
 ######################################################################
 =pod
 
-=item $url = $doc->get_url( [$staff] )
+=item $url = $doc->get_baseurl( [$staff] )
 
-Return the full URL of the document. Overrides the stub in DataObj.
+Return the base URL of the document. Overrides the stub in DataObj.
 $staff is currently ignored.
 
 =cut
 ######################################################################
 
-sub get_url
+sub get_baseurl
 {
-	my( $self, $staff ) = @_;
+	my( $self ) = @_;
 
 	# The $staff param is ignored.
 
@@ -583,19 +590,46 @@ sub get_url
 	# Unless this is a public doc in "archive" then the url should
 	# point into the secure area. 
 
-	my $basepath;
+	my $shorturl = $archive->get_conf( "use_short_urls" );
+	$shorturl = 0 unless( defined $shorturl );
+
+	my $docpath = docid_to_path( $archive, $self->get_value( "docid" ) );
+
 	if( !$self->is_set( "security" ) && $eprint->get_dataset()->id() eq "archive" )
 	{
-		$basepath = $archive->get_conf( "documents_url" );
+		return $eprint->url_stem.$docpath.'/';
 	}
-	else
-	{
-		$basepath = $archive->get_conf( "secure_url" );
-	}
-	return $basepath . "/" . 
-		sprintf( "%08d", $eprint->get_value( "eprintid" )) . "/" .
-		docid_to_path( $archive, $self->get_value( "docid" ) ) . "/" . 
-		$self->get_main();
+
+	my $url = $archive->get_conf( "secure_url" ).'/';
+	$url .= sprintf( "%08d", $eprint->get_value( "eprintid" ) );
+	$url .= '/'.$docpath.'/';
+
+	return $url;
+}
+
+######################################################################
+=pod
+
+=item $url = $doc->get_url( [$file] )
+
+Return the full URL of the document. Overrides the stub in DataObj.
+
+If file is not specified then the "main" file is used.
+
+=cut
+######################################################################
+
+sub get_url
+{
+	my( $self, $file ) = @_;
+
+	$file = $self->get_main unless( defined $file );
+
+	# unreserved characters according to RFC 2396
+
+	$file =~ s/([^-_\.!~\*'\(\)A-Za-z0-9])/sprintf('%%%02X',ord($1))/ge;
+	
+	return $self->get_baseurl.$file;
 }
 
 
@@ -867,17 +901,10 @@ sub upload
 
 	# Get the filename. File::Basename isn't flexible enough (setting 
 	# internal globals in reentrant code very dodgy.)
-	my $file = $filename;
-	
-	$file =~ s/.*\\//;     # Remove everything before a "\" (MSDOS or Win)
-	$file =~ s/.*\://;     # Remove everything before a ":" (MSDOS or Win)
-	$file =~ s/.*\///;     # Remove everything before a "/" (UNIX)
-
-	$file =~ s/ /_/g;      # Change spaces into underscores
 
 	my( $bytes, $buffer );
 
-	my $out_path = $self->local_path() . "/" . $file;
+	my $out_path = $self->local_path() . "/" . sanitise( $filename );
 		
 	open OUT, ">$out_path" or return( 0 );
 	while( $bytes = read( $filehandle, $buffer, 1024 ) )
@@ -891,6 +918,50 @@ sub upload
 	return( 1 );
 }
 
+######################################################################
+=pod
+
+=item $success = $doc->add_file( $file, $filename )
+
+$file is the full path to a file to be added to the document, with
+name $filename.
+
+=cut
+######################################################################
+
+sub add_file
+{
+	my( $self, $file, $filename ) = @_;
+
+	my $fh;
+	open( $fh, $file ) or return( 0 );
+	my $rc = $self->upload( $fh, $filename );
+	close $fh;
+
+	return $rc;
+}
+
+######################################################################
+=pod
+
+=item $cleanfilename = sanitise( $filename )
+
+Return just the filename (no leading path) and convert any naughty
+characters to underscore.
+
+=cut
+######################################################################
+
+sub sanitise 
+{
+	my( $filename ) = @_;
+	$filename =~ s/.*\\//;     # Remove everything before a "\" (MSDOS or Win)
+	$filename =~ s/.*\///;     # Remove everything before a "/" (UNIX)
+
+	$filename =~ s/ /_/g;      # Change spaces into underscores
+
+	return $filename;
+}
 
 ######################################################################
 =pod
@@ -910,23 +981,44 @@ sub upload_archive
 {
 	my( $self, $filehandle, $filename, $archive_format ) = @_;
 
-	my( $file, $path ) = fileparse( $filename );
+	my $file = $self->local_path.'/'.$filename;
 
 	# Grab the archive into a temp file
-	$self->upload( $filehandle, $file ) || return( 0 );
+	$self->upload( 
+		$filehandle, 
+		$filename ) || return( 0 );
 
-	# Get full paths of destination and archive
-	my $dest = $self->local_path();
-	my $arc_tmp =  $dest . "/" . $file;
+	my $rc = $self->add_archive( 
+		$file,
+		$archive_format );
+
+	# Remove the temp archive
+	unlink $file;
+
+	return $rc;
+}
+
+######################################################################
+=pod
+
+=item $success = $doc->add_archive( $file, $archive_format )
+
+$file is the full path to an archive file, eg. zip or .tar.gz 
+
+This function will add the contents of that archive to the document.
+
+=cut
+######################################################################
+
+sub add_archive
+{
+	my( $self, $file, $archive_format ) = @_;
 
 	# Do the extraction
 	my $rc = $self->{session}->get_archive()->exec( 
 			$archive_format, 
-			DIR => $dest,
-			ARC => $arc_tmp );
-	
-	# Remove the temp archive
-	unlink $arc_tmp;
+			DIR => $self->local_path,
+			ARC => $file );
 	
 	$self->rehash;
 
@@ -959,7 +1051,7 @@ sub upload_url
 	my $url = URI::Heuristic::uf_uristr( $url_in );
 
 	# save previous dir
-	my $prev_dir = cwd();
+	my $prev_dir = getcwd();
 
 	# Change directory to destination dir., return with failure if this 
 	# fails.
@@ -1053,6 +1145,12 @@ sub commit
 	{
 		my $db_error = $self->{session}->get_db()->error();
 		$self->{session}->get_archive()->log( "Error committing Document ".$self->get_value( "docid" ).": $db_error" );
+	}
+
+	# disabled for now 
+	if( 0 && defined $self->{changed} && scalar( %{$self->{changed}} ) > 0 )
+	{
+		print STDERR "LOG HERE: document change\n";
 	}
 
 	return( $success );
@@ -1221,6 +1319,65 @@ sub rehash
 		$hashfile );
 }
 
+######################################################################
+=pod
+
+=item $text = $doc->get_text
+
+Get the text of the document as a UTF-8 encoded string, if possible.
+
+This is used for full-text indexing. The text will probably not
+be well formated.
+
+=cut
+######################################################################
+
+sub get_text
+{
+	my( $self ) = @_;
+
+	my $converter = new Convert::PlainText;
+	my $words_file = $self->words_file;
+	return '' unless defined $words_file;
+
+	my %files = $self->files;
+	my @fullpath_files = ();
+	foreach( keys %files )
+	{
+		push @fullpath_files, $self->local_path."/".$_;
+	}
+	$converter->build($words_file, @fullpath_files);
+
+	return '' unless open( WORDS, $words_file );
+	my $words = join( '', <WORDS> );
+	close WORDS;
+
+	return $words;
+}
+
+sub words_file
+{
+	my( $self ) = @_;
+	return $self->cache_file( 'words' );
+}
+
+sub indexcodes_file
+{
+	my( $self ) = @_;
+	return $self->cache_file( 'indexcodes' );
+}
+
+sub cache_file
+{
+	my( $self, $suffix ) = @_;
+
+	my $eprint =  $self->get_eprint;
+	return unless( defined $eprint );
+
+	return $eprint->local_path."/".
+		$self->get_value( "docid" ).".".$suffix;
+}
+	
 
 1;
 

@@ -213,7 +213,9 @@ sub create_user
 	my $data = { 
 		"userid"=>$userid,
 		"usertype"=>$access_level,
-		"joined"=>$date_joined 
+		"joined"=>$date_joined,
+		"frequency"=>'never',
+		"mailempty"=>"FALSE"
 	};
 
 	$session->get_archive()->call(
@@ -294,7 +296,8 @@ sub user_with_username
 
 	$searchexp->add_field(
 		$user_ds->get_field( "username" ),
-		$username );
+		$username,
+		"EX" );
 
 	my $searchid = $searchexp->perform_search;
 
@@ -345,7 +348,7 @@ sub validate
 			push @all_problems, 
 			  $self->{session}->html_phrase( 
 			   "lib/user:missed_field", 
-			   field => $self->{session}->make_text( $field->display_name( $self->{session} ) ) );
+			   field => $field->render_name( $self->{session} ) );
 		}
 	}
 
@@ -492,6 +495,7 @@ sub get_eprints
 
 	my $searchexp = new EPrints::SearchExpression(
 		session=>$self->{session},
+		custom_order=>"eprintid",
 		dataset=>$ds );
 
 	$searchexp->add_field(
@@ -532,7 +536,7 @@ sub get_editable_eprints
 			"buffer" );
 		my $searchexp = EPrints::SearchExpression->new(
 			allow_blank => 1,
-			use_oneshot_cache => 1,
+			custom_order => "-datestamp",
 			dataset => $ds,
 			session => $self->{session} );
 		$searchexp->perform_search;
@@ -548,6 +552,9 @@ sub get_editable_eprints
 		my $searchexp = $editperms->make_searchexp(
 			$self->{session},
 			$sv );
+		$searchexp->{custom_order}="-datestamp";
+	        $searchexp->{order} = $EPrints::SearchExpression::CustomOrder;
+
 		$searchexp->perform_search;
 		push @records,  $searchexp->get_records;
 		$searchexp->dispose();
@@ -918,7 +925,6 @@ sub process_editor_alerts
 
 	my $searchexp = EPrints::SearchExpression->new(
 		session => $session,
-		use_oneshot_cache => 1,
 		dataset => $subs_ds );
 
 	$searchexp->add_field(

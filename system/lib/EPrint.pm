@@ -33,7 +33,7 @@ metadata fields (plus those defined in ArchiveMetadataFieldsConfig:
 
 The unique numerical ID of this eprint. 
 
-=item userid (int)
+=item userid (itemref)
 
 The id of the user who deposited this eprint (if any). Scripted importing
 could cause this not to be set.
@@ -51,17 +51,17 @@ The date this record was last modified.
 
 The type of this record, one of the types of the "eprint" dataset.
 
-=item succeeds (text)
+=item succeeds (itemref)
 
 The ID of the eprint (if any) which this succeeds.  This field should have
 been an int and may be changed in a later upgrade.
 
-=item commentary (text)
+=item commentary (itemref)
 
 The ID of the eprint (if any) which this eprint is a commentary on.  This 
 field should have been an int and may be changed in a later upgrade.
 
-=item replacedby (text)
+=item replacedby (itemref)
 
 The ID of the eprint (if any) which has replaced this eprint. This is only set
 on records in the "deletion" dataset.  This field should have
@@ -114,7 +114,8 @@ sub get_system_field_info
 	# may not provide this info. maybe bulk importers should
 	# set a userid of -1 or something.
 
-	{ name=>"userid", type=>"int", required=>0 },
+	{ name=>"userid", type=>"itemref", 
+		datasetid=>"user", required=>0 },
 
 	{ name=>"dir", type=>"text", required=>0 },
 
@@ -123,11 +124,14 @@ sub get_system_field_info
 	{ name=>"type", type=>"datatype", datasetid=>"eprint", required=>1, 
 		input_rows=>"ALL" },
 
-	{ name=>"succeeds", type=>"int", required=>0 },
+	{ name=>"succeeds", type=>"itemref", required=>0,
+		datasetid=>"eprint" },
 
-	{ name=>"commentary", type=>"int", required=>0 },
+	{ name=>"commentary", type=>"itemref", required=>0,
+		datasetid=>"eprint" },
 
-	{ name=>"replacedby", type=>"int", required=>0 }
+	{ name=>"replacedby", type=>"itemref", required=>0,
+		datasetid=>"eprint" },
 
 	);
 }
@@ -150,14 +154,14 @@ sub new
 {
 	my( $class, $session, $id, $dataset ) = @_;
 
-	if( defined $dataset )
+	if( defined $dataset && $dataset->id ne "eprint" )
 	{
 		return $session->get_db()->get_single( $dataset , $id );
 	}
 
 	## Work out in which table the EPrint resides.
 	## and return the eprint.
-	foreach( "archive" , "inbox" , "buffer" )
+	foreach( "archive" , "inbox" , "buffer", "deletion" )
 	{
 		my $ds = $session->get_archive()->get_dataset( $_ );
 		my $self = $session->get_db()->get_single( $ds, $id );
@@ -407,7 +411,7 @@ END
 ######################################################################
 =pod
 
-=item $eprint = $eprint->clone( $dest_dataset, $copy_documents )
+=item $eprint = $eprint->clone( $dest_dataset, $copy_documents, $link )
 
 Create a copy of this EPrint with a new ID in the given dataset.
 Return the new eprint, or undef in the case of an error.
@@ -415,12 +419,15 @@ Return the new eprint, or undef in the case of an error.
 If $copy_documents is set and true then the documents (and files)
 will be copied in addition to the metadata.
 
+If $nolink is true then the new eprint is not connected to the
+old one.
+
 =cut
 ######################################################################
 
 sub clone
 {
-	my( $self, $dest_dataset, $copy_documents ) = @_;
+	my( $self, $dest_dataset, $copy_documents, $nolink ) = @_;
 
 	my $data = EPrints::Utils::clone( $self->{data} );
 	foreach my $field ( $self->{dataset}->get_fields )
@@ -442,14 +449,17 @@ sub clone
 
 	$new_eprint->datestamp();
 
-	# We assume the new eprint will be a later version of this one,
-	# so we'll fill in the succeeds field, provided this one is
-	# already in the main archive.
-	if( $self->{dataset}->id() eq  "archive" || 
-	    $self->{dataset}->id() eq  "deletion" )
+	unless( $nolink )
 	{
-		$new_eprint->set_value( "succeeds" , 
-			$self->get_value( "eprintid" ) );
+		# We assume the new eprint will be a later version of this one,
+		# so we'll fill in the succeeds field, provided this one is
+		# already in the main archive.
+		if( $self->{dataset}->id() eq  "archive" || 
+	    	$self->{dataset}->id() eq  "deletion" )
+		{
+			$new_eprint->set_value( "succeeds" , 
+				$self->get_value( "eprintid" ) );
+		}
 	}
 
 	# Attempt to copy the documents, if appropriate
@@ -520,6 +530,14 @@ sub _transfer
 	{
 		$self->_move_from_archive();
 	}
+
+	# Trigger any actions which are configured for eprints status
+	# changes.
+	my $status_change_fn = $self->{session}->get_archive->get_conf( 'eprint_status_change' );
+	if( defined $status_change_fn )
+	{
+		&{$status_change_fn}( $self, $old_dataset->id, $dataset->id );
+	}
 	
 	return( $success );
 }
@@ -586,9 +604,95 @@ sub commit
 			$self->get_value( "eprintid" ).": ".$db_error );
 	}
 
+	# disabled for now
+	if( 0 && defined $self->{changed} && scalar( %{$self->{changed}} ) > 0 )
+	{
+		my $change = $self->{session}->make_element( "change" );
+		my $from = $self->{session}->make_element( "from" );
+		$change->appendChild( $self->{session}->make_text( "\n  " ) );
+		$from->appendChild( $self->{session}->make_text( "\n" ) );
+		$change->appendChild( $from );
+		$change->appendChild( $self->{session}->make_text( "\n  " ) );
+		my $to = $self->{session}->make_element( "to" );
+		$to->appendChild( $self->{session}->make_text( "\n" ) );
+		$change->appendChild( $to );
+		$change->appendChild( $self->{session}->make_text( "\n  " ) );
+		foreach my $fieldname ( keys %{$self->{changed}} )
+		{
+			my $field = $self->{dataset}->get_field( $fieldname );
+	
+			$from->appendChild( 
+				$field->to_xml( 
+					$self->{session}, 
+					$self->{changed}->{$fieldname} ) );
+			$to->appendChild( $
+				field->to_xml( 
+					$self->{session}, 
+					$self->{data}->{$fieldname} ) );
+		}
+		$to->appendChild( $self->{session}->make_text( "  " ) );
+		$from->appendChild( $self->{session}->make_text( "  " ) );
+		$self->log_history( $change );
+	}
+
 	return( $success );
 }
 
+######################################################################
+=pod
+
+=item $eprint->log_history( $details )
+
+Record some change or event to this eprints history log.
+$details is an XML block describing the event.
+
+=cut
+######################################################################
+
+sub log_history
+{
+	my( $self , $details ) = @_;
+
+	my $el_event = $self->{session}->make_element( "event", eprintid=>$self->get_value("eprintid" ));
+	$el_event->appendChild( $self->{session}->make_text( "\n" ) );
+
+	my $el_script = $self->{session}->make_element( "script" );
+	$el_script->appendChild( $self->{session}->make_text( $0 ) );
+	$el_event->appendChild( $self->{session}->make_text( "  " ) );
+	$el_event->appendChild( $el_script );
+	$el_event->appendChild( $self->{session}->make_text( "\n" ) );
+	
+	my $el_time = $self->{session}->make_element( "time" );
+	$el_time->appendChild( $self->{session}->make_text( EPrints::Utils::get_timestamp ) );
+	$el_event->appendChild( $self->{session}->make_text( "  " ) );
+	$el_event->appendChild( $el_time );
+	$el_event->appendChild( $self->{session}->make_text( "\n" ) );
+	
+	my $user = $self->{session}->current_user;
+	if( defined $user )
+	{
+		my $el_user = $self->{session}->make_element( 
+			"user", 
+			userid=>$user->get_value("userid"), 
+			username=>$user->get_value("username") );
+		$el_user->appendChild( 
+			$self->{session}->make_text( 
+				EPrints::Utils::tree_to_utf8( 
+					$user->render_description ) ) );
+		$el_event->appendChild( $self->{session}->make_text( "  " ) );
+		$el_event->appendChild( $el_user );
+		$el_event->appendChild( $self->{session}->make_text( "\n" ) );
+	}
+	my $el_details = $self->{session}->make_element( "details" );
+	$el_details->appendChild( $self->{session}->make_text( "\n" ) );
+	$el_details->appendChild( $details );
+	$el_event->appendChild( $self->{session}->make_text( "  " ) );
+	$el_event->appendChild( $el_details );
+	$el_event->appendChild( $self->{session}->make_text( "\n" ) );
+	
+	#print STDERR EPrints::XML::to_string($el_event)."\n\n";
+	EPrints::XML::dispose( $el_event );
+}
 
 ######################################################################
 =pod
@@ -682,9 +786,8 @@ sub validate_linking
 		{
 			push @problems, $self->{session}->html_phrase(
 				"lib/eprint:invalid_id",	
-				field => $self->{session}->make_text(
-					$field->display_name( $self->{session}) 
-				) );
+				field => $field->render_name( 
+						$self->{session} ) );
 			next;
 		}
 
@@ -739,22 +842,20 @@ sub validate_meta
 	my @all_fields = $self->{dataset}->get_fields();
 
 	# For all required fields...
-	my $field;
-	foreach $field (@req_fields)
+	foreach my $field (@req_fields)
 	{
 		# Check that the field is filled 
 		next if ( $self->is_set( $field->get_name() ) );
 
 		my $problem = $self->{session}->html_phrase( 
 			"lib/eprint:not_done_field" ,
-			fieldname=> $self->{session}->make_text( 
-			   $field->display_name( $self->{session} ) ) );
+			fieldname=> $field->render_name( $self->{session} ) );
 
 		push @all_problems,$problem;
 	}
 
 	# Give the site validation module a go
-	foreach $field (@all_fields)
+	foreach my $field (@all_fields)
 	{
 		push @all_problems, $self->{session}->get_archive()->call(
 			"validate_field",
@@ -812,9 +913,8 @@ sub validate_meta_page
 
 			my $problem = $self->{session}->html_phrase( 
 				"lib/eprint:not_done_field" ,
-				fieldname=> $self->{session}->make_text( 
-			   		$field->display_name( 
-						$self->{session} ) ) );
+				fieldname=> $field->render_name( 
+						$self->{session} ) );
 			push @problems,$problem;
 		}
 
@@ -825,6 +925,14 @@ sub validate_meta_page
 			$self->{session},
 			$for_archive );
 	}
+
+	# then call the validate page function for this page
+	push @problems, $self->{session}->get_archive->call(
+		"validate_eprint_meta_page",
+		$self,
+		$self->{session},
+		$page,
+		$for_archive );
 
 	return( \@problems );
 }
@@ -851,8 +959,7 @@ sub validate_documents
 	my( $self, $for_archive ) = @_;
 	my @problems;
 	
-        my @req_formats = @{$self->{session}->get_archive()->get_conf( 
-		"required_formats" )};
+        my @req_formats = $self->required_formats;
 	my @docs = $self->get_all_documents();
 
 	my $ok = 0;
@@ -900,6 +1007,7 @@ sub validate_documents
 			$prob->appendChild( 
 				$self->{session}->make_text( ": " ) );
 			$prob->appendChild( $_ );
+			push @problems, $prob;
 		}
 	}
 
@@ -1033,6 +1141,33 @@ sub datestamp
 		EPrints::Utils::get_datestamp( time ) );
 }
 
+######################################################################
+=pod
+
+=item @formats =  $eprint->required_formats
+
+Return a list of the required formats for this 
+eprint. Only one of the required formats is required, not all.
+
+An empty list means no format is required.
+
+=cut
+######################################################################
+
+sub required_formats
+{
+	my( $self ) = @_;
+
+	my $fmts = $self->{session}->get_archive()->get_conf( 
+				"required_formats" );
+	if( ref( $fmts ) ne "ARRAY" )
+	{
+		# function pointer then...
+		$fmts = &{$fmts}($self->{session},$self);
+	}
+
+	return @{$fmts};
+}
 
 ######################################################################
 =pod
@@ -1066,6 +1201,21 @@ sub move_to_deletion
 
 	my $success = $self->_transfer( $ds );
 
+	if( $success )
+	{
+		$self->generate_static();
+
+		# Generate static pages for everything in threads, if 
+		# appropriate
+		my @to_update = $self->get_all_related();
+		
+		# Do the actual updates
+		foreach (@to_update)
+		{
+			$_->generate_static();
+		}
+	}
+	
 	return $success;
 }
 
@@ -1090,7 +1240,7 @@ sub move_to_inbox
 	my $ds = $self->{session}->get_archive()->get_dataset( "inbox" );
 	
 	my $success = $self->_transfer( $ds );
-	
+
 	return $success;
 }
 
@@ -1116,9 +1266,13 @@ sub move_to_buffer
 	
 	if( $success )
 	{
-		$self->{session}->get_archive()->call( 
-			"update_submitted_eprint", $self );
-		$self->commit();
+		# supported but deprecated. use eprint_status_change instead.
+		if( $self->{session}->get_archive()->can_call( "update_submitted_eprint" ) )
+		{
+			$self->{session}->get_archive()->call( 
+				"update_submitted_eprint", $self );
+			$self->commit();
+		}
 	}
 	
 	return( $success );
@@ -1172,9 +1326,14 @@ sub move_to_archive
 	
 	if( $success )
 	{
-		$self->{session}->get_archive()->call( 
-			"update_archived_eprint", $self );
-		$self->commit();
+		# supported but deprecated. use eprint_status_change instead.
+		if( $self->{session}->get_archive()->can_call( "update_archived_eprint" ) )
+		{
+			$self->{session}->get_archive()->try_call( 
+				"update_archived_eprint", $self );
+			$self->commit();
+		}
+
 		$self->generate_static();
 
 		# Generate static pages for everything in threads, if 
@@ -1228,12 +1387,26 @@ sub url_stem
 {
 	my( $self ) = @_;
 
-	return( 
-		sprintf( 
-			"%s/%08d/", 
-			$self->{session}->get_archive()->get_conf( 
-							"documents_url" ), 
-			$self->{data}->{eprintid} ) );
+	my $archive = $self->{session}->get_archive;
+
+	my $shorturl = $archive->get_conf( "use_short_urls" );
+	$shorturl = 0 unless( defined $shorturl );
+
+	my $url;
+	$url = $archive->get_conf( "base_url" );
+	$url .= '/archive' unless( $shorturl );
+	$url .= '/';
+	if( $shorturl )
+	{
+		$url .= $self->get_value( "eprintid" )+0;
+	}
+	else
+	{
+		$url .= sprintf( "%08d", $self->get_value( "eprintid" ) );
+	}
+	$url .= '/';
+
+	return $url;
 }
 
 
@@ -1245,8 +1418,9 @@ sub url_stem
 Generate the static version of the abstract web page. In a multi-language
 archive this will generate one version per language.
 
-It only makes sense to call this on eprints in the "archive" and
-"deletion" datasets.
+If called on inbox or buffer, remove the abstract page.
+
+Always create the symlinks for documents in the secure area.
 
 =cut
 ######################################################################
@@ -1258,13 +1432,16 @@ sub generate_static
 	my $eprintid = $self->get_value( "eprintid" );
 
 	my $ds_id = $self->{dataset}->id();
-	if( $ds_id ne "archive" && $ds_id ne "deletion" )
-	{
-		$self->{session}->get_archive()->log( 
-			"Attempt to generate static files for record ".
-			$eprintid." in dataset $ds_id (may only generate ".
-			"static for deletion and archive" );
-	}
+
+#	if( $ds_id ne "archive" && $ds_id ne "deletion" )
+#	{
+#		$self->{session}->get_archive()->log( 
+#			"Attempt to generate static files for record ".
+#			$eprintid." in dataset $ds_id (may only generate ".
+#			"static for deletion and archive" );
+#	}
+
+	$self->remove_static;
 
 	# We is going to temporarily change the language of our session to
 	# render the abstracts in each language.
@@ -1283,9 +1460,12 @@ sub generate_static
 			return( @created );
 		};
 
+		# only deleted and live records have a web page.
+		next if( $ds_id ne "archive" && $ds_id ne "deletion" );
+
 		my( $page, $title, $links ) = $self->render();
 
-		$self->{session}->build_page( $title, $page, "abstract", $links );
+		$self->{session}->build_page( $title, $page, "abstract", $links, "default" );
 		$self->{session}->page_to_file( $full_path . "/index.html" );
 
 		next if( $ds_id ne "archive" );
@@ -1303,6 +1483,12 @@ sub generate_static
 		}
 	}
 	$self->{session}->change_lang( $real_langid );
+	my @docs = $self->get_all_documents();
+	foreach my $doc ( @docs )
+	{
+		my $linkdir = EPrints::Document::_secure_symlink_path( $self );
+		$doc->create_symlink( $self, $linkdir );
+	}
 }
 
 
@@ -1601,9 +1787,16 @@ sub first_in_thread
 	
 	my $first = $self;
 	my $ds = $self->{session}->get_archive()->get_dataset( "archive" );
-	
+
+	my $below = {};	
 	while( defined $first->get_value( $field->get_name() ) )
 	{
+		if( $below->{$first->get_id} )
+		{
+			$self->loop_error( $field, keys %{$below} );
+			last;
+		}
+		$below->{$first->get_id} = 1;
 		my $prev = EPrints::EPrint->new( 
 				$self->{session},
 				$first->get_value( $field->get_name() ),
@@ -1622,7 +1815,7 @@ sub first_in_thread
 
 =item @eprints = $eprint->later_in_thread( $field )
 
-Return a list of the later items in the thread.
+Return a list of the immediately later items in the thread. 
 
 =cut
 ######################################################################
@@ -1663,33 +1856,44 @@ sub all_in_thread
 {
 	my( $self, $field ) = @_;
 
-	my @eprints;
+	my $above = {};
+	my $set = {};
 	
 	my $first = $self->first_in_thread( $field );
 	
-	$self->_collect_thread( $field, $first, \@eprints );
+	$self->_collect_thread( $field, $first, $set, $above );
 
-	return( @eprints );
+	return( values %{$set} );
 }
 
 ######################################################################
 # 
-# $foo = $eprint->_collect_thread( $field, $current, $eprints )
+# $eprint->_collect_thread( $field, $current, $eprints, $set, $above )
 #
-# undocumented
+# $above is a hash which contains all the ids eprints above the current
+# one as keys.
+# $set contains all the eprints found.
 #
 ######################################################################
 
 sub _collect_thread
 {
-	my( $self, $field, $current, $eprints ) = @_;
-	
-	push @$eprints, $current;
+	my( $self, $field, $current, $set, $above ) = @_;
+
+	if( defined $above->{$current->get_id} )
+	{
+		$self->loop_error( $field, keys %{$above} );
+		return;
+	}
+	$set->{$current->get_id} = $current;	
+	my %above2 = %{$above};
+	$above2{$current->get_id} = $current; # copy the hash contents
+	$set->{$current->get_id} = $current;	
 	
 	my @later = $current->later_in_thread( $field );
-	foreach (@later)
+	foreach my $later_eprint (@later)
 	{
-		$self->_collect_thread( $field, $_, $eprints );
+		$self->_collect_thread( $field, $later_eprint, $set, \%above2 );
 	}
 }
 
@@ -1710,9 +1914,15 @@ sub last_in_thread
 	
 	my $latest = $self;
 	my @later = ( $self );
-
+	my $above = {};
 	while( scalar @later > 0 )
 	{
+		if( defined $above->{$latest->get_id} )
+		{
+			$self->loop_error( $field, keys %{$above} );
+			last;
+		}
+		$above->{$latest->get_id} = 1;
 		$latest = $later[0];
 		@later = $latest->later_in_thread( $field );
 	}
@@ -1804,25 +2014,34 @@ sub render_version_thread
 
 	my $ul = $self->{session}->make_element( "ul" );
 	
-	$ul->appendChild( $first_version->_render_version_thread_aux( $field, $self ) );
+	$ul->appendChild( $first_version->_render_version_thread_aux( $field, $self, {} ) );
 	
 	return( $ul );
 }
 
 ######################################################################
 # 
-# $xhtml = $eprint->_render_version_thread_aux( $field, $eprint_shown )
+# $xhtml = $eprint->_render_version_thread_aux( $field, $eprint_shown, $above )
 #
-# undocumented
+# $above is a hash ref, the keys of which are ID's of eprints already 
+# seen above this item. One item CAN appear twice, just not as it's
+#  own decentant.
 #
 ######################################################################
 
 sub _render_version_thread_aux
 {
-	my( $self, $field, $eprint_shown ) = @_;
-	
+	my( $self, $field, $eprint_shown, $above ) = @_;
+
 	my $li = $self->{session}->make_element( "li" );
 
+	if( defined $above->{$self->get_id} )
+	{
+		$self->loop_error( $field, keys %{$above} );
+		$li->appendChild( $self->{session}->make_text( "ERROR, THREAD LOOPS: ".join( ", ",keys %{$above} ) ));
+		return $li;
+	}
+	
 	my $cstyle = "thread_".$field->get_name();
 
 	if( $self->get_value( "eprintid" ) != $eprint_shown->get_value( "eprintid" ) )
@@ -1841,13 +2060,14 @@ sub _render_version_thread_aux
 	# Are there any later versions in the thread?
 	if( scalar @later > 0 )
 	{
+		my %above2 = %{$above};
+		$above2{$self->get_id} = 1;
 		# if there are, start a new list
 		my $ul = $self->{session}->make_element( "ul" );
-		my $version;
-		foreach $version (@later)
+		foreach my $version (@later)
 		{
 			$ul->appendChild( $version->_render_version_thread_aux(
-				$field, $eprint_shown ) );
+				$field, $eprint_shown, \%above2 ) );
 		}
 		$li->appendChild( $ul );
 	}
@@ -1855,6 +2075,28 @@ sub _render_version_thread_aux
 	return( $li );
 }
 
+######################################################################
+=pod
+
+=item $eprint->loop_error( $field, @looped_ids )
+
+This eprint is part of a threading loop which is not allowed. Log a
+warning.
+
+=cut
+######################################################################
+
+sub loop_error
+{
+	my( $self, $field, @looped_ids ) = @_;
+
+	$self->{session}->get_archive->log( 
+"EPrint ".$self->get_id." is part of a thread loop.\n".
+"This means that either the commentary or succeeds form a complete\n".
+"circle. Break the circle to disable this warning.\n".
+"Looped field is '".$field->get_name."'\n".
+"Loop is: ".join( ", ",@looped_ids ) );
+}
 
 ######################################################################
 =pod

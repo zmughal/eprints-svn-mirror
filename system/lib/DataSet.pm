@@ -147,6 +147,10 @@ $ds = $archive->get_dataset( "inbox" );
 #  $self->{default_order}
 #     The default option for "order by?" in a search form.
 #
+#  $self->{type_field_order}
+#     A hash keying typeid->[ list of field id's ] where the list is
+#     the order of the fields in that type.
+#
 ######################################################################
 
 package EPrints::DataSet;
@@ -154,6 +158,7 @@ package EPrints::DataSet;
 use EPrints::Document;
 
 use Carp;
+use strict;
 
 my $INFO = {
 	cachemap => {
@@ -163,45 +168,37 @@ my $INFO = {
 		sqlname => "counters"
 	},
 	user => {
-		is_sql_dataset => 1,
 		sqlname => "users",
 		class => "EPrints::User"
 	},
 	archive => {
-		is_sql_dataset => 1,
 		sqlname => "archive",
 		class => "EPrints::EPrint",
 		confid => "eprint"
 	},
 	buffer => {
-		is_sql_dataset => 1,
 		sqlname => "buffer",
 		class => "EPrints::EPrint",
 		confid => "eprint"
 	},
 	inbox => {
-		is_sql_dataset => 1,
 		sqlname => "inbox",
 		class => "EPrints::EPrint",
 		confid => "eprint"
 	},
 	document => {
-		is_sql_dataset => 1,
 		sqlname => "document",
 		class => "EPrints::Document"
 	},
 	subject => {
-		is_sql_dataset => 1,
 		sqlname => "subject",
 		class => "EPrints::Subject"
 	},
 	subscription => {
-		is_sql_dataset => 1,
 		sqlname => "subscription",
 		class => "EPrints::Subscription"
 	},
 	deletion => {
-		is_sql_dataset => 1,
 		sqlname => "deletion",
 		class => "EPrints::EPrint",
 		confid => "eprint"
@@ -285,6 +282,7 @@ sub new
 	# eg. The "Editor" filter.
 	$self->{staff_types} = {};
 	$self->{type_order} = [];
+	$self->{type_field_order} = {};
 
 	if( $id eq "language" )
 	{	
@@ -350,7 +348,7 @@ sub new
 	my $archivefields = $archive->get_conf( "archivefields", $self->{confid} );
 	if( $archivefields )
 	{
-		foreach $fielddata ( @{$archivefields} )
+		foreach my $fielddata ( @{$archivefields} )
 		{
 			my $field = EPrints::MetaField->new( dataset=>$self , %{$fielddata} );	
 			push @{$self->{fields}}	, $field;
@@ -360,11 +358,18 @@ sub new
 
 	if( defined $typesconf->{$self->{confid}} )
 	{
-		my $typeid;
 		$self->{type_order} = $typesconf->{$self->{confid}}->{_order};
-		foreach $typeid ( keys %{$typesconf->{$self->{confid}}} )
+		foreach my $typeid ( keys %{$typesconf->{$self->{confid}}} )
 		{
 			next if( $typeid eq "_order" );
+
+			my $typedata = $typesconf->{$self->{confid}}->{$typeid};
+
+			$self->{type_field_order}->{$typeid} = $typedata->{field_order};
+			if( !defined $self->{type_field_order}->{$typeid} )
+			{
+				$self->{type_field_order}->{$typeid} = [keys %{$typedata->{fields}}];
+			}
 
 			$self->{types}->{$typeid} = [];
 			$self->{typesreq}->{$typeid} = [];
@@ -378,11 +383,15 @@ sub new
 			#	 push @{$self->{types}->{$typeid}}, $_;
 			# }
 		
-			my $typedata = $typesconf->{$self->{confid}}->{$typeid};
+			#cjg junk///?$self->{field_order}->{$typeid} = $typedata->{page_order};
 		
 #cjg the "sort" is to avoid it accidently looking right.
-			foreach my $fname ( sort keys %{$typedata->{fields}} )
+			foreach my $fname ( @{$self->{type_field_order}->{$typeid}} )
 			{
+				#shouldn't get any not in the type, but paranoia's ok...
+				next unless defined $typedata->{fields}->{$fname}; 
+
+
 				my $f = $typedata->{fields}->{$fname};
 				if( !defined $self->{field_index}->{$f->{id}} )
 				{
@@ -461,6 +470,18 @@ sub get_field
 {
 	my( $self, $fieldname ) = @_;
 
+
+	# magic fields which can be searched but do
+	# not really exist.
+	if( $fieldname =~ m/^_/ )
+	{
+		my $field = EPrints::MetaField->new( 
+			dataset=>$self , 
+			name=>$fieldname,
+			type=>"longtext" );
+		return $field;
+	}
+
 	my $value = $self->{field_index}->{$fieldname};
 	if (!defined $value) {
 		$self->{archive}->log( 
@@ -471,6 +492,26 @@ sub get_field
 	return $self->{field_index}->{$fieldname};
 }
 
+######################################################################
+=pod
+
+=item $bool = $ds->has_field( $fieldname )
+
+True if the dataset has a field of that name.
+
+=cut
+######################################################################
+
+sub has_field
+{
+	my( $self, $fieldname ) = @_;
+
+	# magic fields which can be searched but do
+	# not really exist.
+	return 1 if( $fieldname =~ m/^_/ );
+	
+	return defined $self->{field_index}->{$fieldname};
+}
 
 ######################################################################
 =pod
@@ -601,7 +642,7 @@ removing a record).
 
 =cut
 ######################################################################
-
+# cjg deprecated?
 sub get_sql_rindex_table_name
 {
 	my( $self ) = @_;
@@ -744,6 +785,32 @@ sub make_object
 		$self );
 }
 
+######################################################################
+=pod
+
+=item $obj = $ds->get_object( $session, $id );
+
+Return the object from this dataset with the given id, or undefined.
+
+=cut
+######################################################################
+
+sub get_object
+{
+	my( $self, $session, $id ) = @_;
+
+	my $class= $INFO->{$self->{id}}->{class};
+
+	if( !defined $class )
+	{
+		$session->get_archive->log(
+				"Can't get_object for dataset ".
+				$self->{confid} );
+		return undef;
+	}
+
+	return $class->new( $session, $id, $self );
+}
 
 ######################################################################
 =pod
@@ -810,7 +877,8 @@ sub get_type_name
 		{
 			return $session->phrase( "lib/dataset:no_language" );
 		}
-		return EPrints::Config::lang_title( $type );
+		return EPrints::Utils::tree_to_utf8(
+			$session->render_language_name( $type ) );
 	}
 
         return $session->phrase( $self->confid()."_typename_".$type );
@@ -839,6 +907,24 @@ sub render_type_name
         return $session->html_phrase( $self->confid()."_typename_".$type );
 }
 
+######################################################################
+=pod
+
+=item $xhtml = $ds->render_name( $session )
+
+Return a piece of XHTML describing this dataset, in the language of
+the current session.
+
+=cut
+######################################################################
+
+sub render_name($$)
+{
+	my( $self, $session ) = @_;
+
+        return $session->html_phrase( "dataset_name_".$self->id() );
+}
+
 
 ######################################################################
 =pod
@@ -856,8 +942,15 @@ sub get_type_fields
 {
 	my( $self, $type, $staff ) = @_;
 
-	return @{$self->{($staff?"staff_":"")."types"}->{$type}};
+	my $fields = $self->{($staff?"staff_":"")."types"}->{$type};
+	if( !defined $fields )
+	{
+		$self->{archive}->log( "Unknown type in get_type_fields ($type)" );
+		return [];
+	}
+	return @{$fields};
 }
+
 
 
 ######################################################################
@@ -911,10 +1004,9 @@ SearchExpression for a full explanation.
 sub map
 {
 	my( $self, $session, $fn, $info ) = @_;
-	
+
 	my $searchexp = EPrints::SearchExpression->new(
 		allow_blank => 1,
-		use_oneshot_cache => 1,
 		dataset => $self,
 		session => $session );
 	$searchexp->perform_search();
@@ -946,8 +1038,10 @@ sub get_archive
 
 =item $ds->reindex( $session )
 
-Reindex all the items in this dataset. This could take a real long 
+Recommits all the items in this dataset. This could take a real long 
 time on a large set of records.
+
+Really should not be called reindex anymore as it doesn't.
 
 =cut
 ######################################################################
@@ -997,12 +1091,7 @@ into SQL (not counters or cache which work a bit differently).
 
 sub get_sql_dataset_ids
 {
-	my @list = ();
-	foreach( keys %{$INFO} )
-	{
-		push @list, $_ if $INFO->{$_}->{is_sql_dataset};
-	}
-	return @list;
+	return( qw/ archive buffer inbox deletion user document subscription subject / );
 }
 
 ######################################################################
@@ -1013,6 +1102,9 @@ sub get_sql_dataset_ids
 Return the number of indexes required for the main SQL table of this
 dataset. Used to check it's not over 32 (the current maximum allowed
 by MySQL)
+
+Assumes things either have 1 or 0 indexes which might not always
+be true.
 
 =cut
 ######################################################################
@@ -1032,6 +1124,23 @@ sub count_indexes
 	return $n;
 }
 		
+######################################################################
+=pod
+
+=item @ids = $dataset->get_item_ids( $session )
+
+Return a list of the id's of all items in this set.
+
+=cut
+######################################################################
+
+sub get_item_ids
+{
+	my( $self, $session ) = @_;
+
+	return $session->get_db->get_values( $self->get_key_field, $self );
+}
+
 
 ######################################################################
 =pod
