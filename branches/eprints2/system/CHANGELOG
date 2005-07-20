@@ -2599,3 +2599,10 @@ PACKAGE: 2.2.99.2
     ->new now tells the file and line that passed the deprecated 
     option.
 
+** 2.3.13.beta.1
+
+2005-07-20 cjg
+
+ - Fixed bug in package creator which meant the codename didn't get
+    set correctly.
+

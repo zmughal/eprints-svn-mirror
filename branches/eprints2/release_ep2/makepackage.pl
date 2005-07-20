@@ -21,7 +21,7 @@ while(<VERSIONS>)
 	next if( $_ eq "" );
 	$_ =~ m/^\s*([^\s]*)\s*([^\s]*)\s*(.*)\s*$/;
 	$ids{$1} = $2;
-	$codenames{$1} = $2;
+	$codenames{$1} = $3;
 }
 close VERSIONS;
 
