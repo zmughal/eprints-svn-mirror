@@ -76,4 +76,4 @@ eprints2-3-11-99-6	2.3.11.99.6-beta	Cocktail
 eprints2-3-12		2.3.12			Southern Chicken
 eprints2-3-13-a-1	2.3.13.alpha.1		Pepper Chicken
 eprints2-3-13-b-1	2.3.13.beta.1		Kettle
-
+eprints2-3-13		2.3.13			Cup Cake
