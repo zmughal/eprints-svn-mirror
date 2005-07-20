@@ -396,6 +396,7 @@ sub new
 				if( !defined $self->{field_index}->{$f->{id}} )
 				{
 					EPrints::Config::abort( 
+$self->{archive}->get_id.": ".
 'Could not find field "'.$f->{id}.'" in dataset "'.$id.'", '.
 'although it is'."\n".'part of type: "'.$typeid.'"' );
 				}

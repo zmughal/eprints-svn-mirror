@@ -2605,4 +2605,6 @@ PACKAGE: 2.2.99.2
 
  - Fixed bug in package creator which meant the codename didn't get
     set correctly.
+ - Dataset unknown field error now reports the archiveid for better
+    debugging.
 
