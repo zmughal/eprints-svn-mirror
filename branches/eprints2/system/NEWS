@@ -6,7 +6,7 @@ CHANGELOG.
 
 
 
-EPRINTS 2.3.13                                                 2005-?????
+EPRINTS 2.3.13                                                 2005-07-21
 -------------------------------------------------------------------------
 
  - Support for the new mod_perl2 API.
@@ -32,7 +32,7 @@ EPRINTS 2.3.13                                                 2005-?????
     they will continue to work.
  - Improvements to the installation procedure. Better instructions and
     warnings.
- - The default email message sent when an editor removes an itme from
+ - The default email message sent when an editor removes an item from
     a workarea is now different from the one sent when removing an item
     from editorial review (ne. submission buffer).
  - Items in "deletion" may not be modified, even by editors. This can
