@@ -6,7 +6,7 @@
 <ep:title>Authorisation Required</ep:title>
 <ep:body>
 
-<p>In order to access some areas of the archive you require a username and password.</p>
+<p>In order to access some areas of the repository you require a username and password.</p>
 
 <p><a href="&perl_url;/set_password">Register / Reset my password</a></p>
 
