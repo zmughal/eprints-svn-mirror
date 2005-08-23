@@ -2608,3 +2608,12 @@ PACKAGE: 2.2.99.2
  - Dataset unknown field error now reports the archiveid for better
     debugging.
 
+======================================================================
+25/07/2005 - EPRINTS-2.3.13
+======================================================================
+
+2005-08-23 cjg
+
+ - Changed "deny, allow" to "deny,allow" - apache didn't like the
+    space.
+
