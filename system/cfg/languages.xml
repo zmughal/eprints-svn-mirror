@@ -11,6 +11,9 @@
 
   Most of these are commented out. Feel free un-comment any you
   want but you probably don't want the huge list!
+
+  The acutal screen names can be defined for each language viewing
+  in the phrase file. The value in this file is used as a default.
 -->
 
 <languages>

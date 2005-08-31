@@ -30,7 +30,7 @@ my $session = EPrints::Session->new();
 if( !$session->auth_check( "editor" ) )
 {
 	$session->terminate();
-	Apache::exit( 0 );
+	exit( 0 );
 }
 
 my( $title, $page ) = &process( $session );
@@ -47,21 +47,15 @@ sub process
 
 	# When in doubt, use the main archive.
 
-	$datasetid = "archive" if( !defined $datasetid );
-	if( $datasetid ne "archive" && 
-    		$datasetid ne "inbox" && 
-    		$datasetid ne "deletion" && 
-    		$datasetid ne "buffer" )
-	{
-		$datasetid = "archive";
-	}
-	
-	my $dataset = $session->get_archive()->get_dataset( $datasetid );
-
 	my $eprintid = $session->param( "eprintid" );
+	
+	my $dataset;
+	if( defined $datasetid )
+	{
+		$dataset = $session->get_archive()->get_dataset( $datasetid );
+	}
 
 	my $eprint = new EPrints::EPrint( $session, $eprintid, $dataset );
-	my $action = $session->get_action_button();
 
 	if( !defined $eprint )
 	{
@@ -69,6 +63,11 @@ sub process
 			"cgi/users/edit_eprint:cant_find_it",
 			id=>$session->make_text( $eprintid ) ) );
 		return;
+	}
+
+	if( !defined $dataset )
+	{
+		$dataset = $eprint->get_dataset;
 	}
 
 	my $user_ds = $session->get_archive()->get_dataset( "user" );
@@ -86,7 +85,7 @@ sub process
 		next if( $can_edit ); # skip the rest if one matches
 
 		my $search = $ef_field->make_searchexp( $session, $s );
-		if( $search->item_matches( $eprint ) )
+		if( $search->get_conditions->item_matches( $eprint ) )
 		{
 			$can_edit = 1;
 		}
@@ -101,6 +100,7 @@ sub process
 		return;
 	}
 
+	my $action = $session->get_action_button();
 
 	if( !defined $action )
 	{
@@ -177,6 +177,7 @@ sub process
 		return;
 	}
 
+
 	if( $action eq "_todeletion" )
 	{
 		unless( $eprint->move_to_deletion() )
@@ -196,20 +197,50 @@ sub process
 		return;
 	}
 
-	if( $action eq "_clone" )
+
+	if( $action eq "_clone" || $action eq "_copy" )
 	{
-                my $new_eprint = $eprint->clone( $session->get_archive()->get_dataset( "buffer" ), 1 );
-		unless( defined $new_eprint )
+		my $target_ds_id = 'buffer';
+		if( $session->get_archive->get_conf( "skip_buffer" ) )
 		{
-			$session->render_error( $session->html_phrase(
-				"cgi/users/edit_eprint:cant_clone",
-				id=>$session->make_text( $eprintid ) ) );
+			$target_ds_id = 'archive';
+		}
+		my $target_ds = $session->get_archive()->get_dataset( $target_ds_id );
+		my $copy;
+		if( $action eq "_clone" )
+		{
+			# with files, with link
+			$copy = $eprint->clone( $target_ds, 1 );
+		}
+		else
+		{
+			# nofiles, no link
+			$copy = $eprint->clone( $target_ds, 0, 1 );
+		}
+	
+		if( defined $copy )
+		{
+			# Copied OK, redirect to buffer
+			$session->redirect( 'edit_eprint?eprintid='.$copy->get_id.'&_action_edit=1' );
 			return;
 		}
 		
-                $session->redirect( "edit_eprint?dataset=buffer&eprintid=".$new_eprint->get_id() );
+		$session->render_error( $session->html_phrase(
+			"cgi/users/edit_eprint:cant_clone",
+			id=>$session->make_text( $eprintid ) ) );
 		return;
 	}
+
+	if( $eprint->get_dataset->id eq "deletion" )
+	{
+		unless( $session->get_archive->get_conf( 'allow_edit_deleted' ) )
+		{
+			$session->render_error( $session->html_phrase(
+				"cgi/users/edit_eprint:cant_edit_deleted" ) );
+			return;
+		}
+	}
+
 
 	#########################################################
 	
@@ -219,21 +250,33 @@ sub process
 	# If we are skipping the files stage then we have to work out what the
 	# actual last stage is...
 	my $laststage = "files";
-	my @stages = ( "meta","linking","type" );
+	my @stages = ( "type","linking","meta" );
 	while( $session->get_archive()->get_conf( "submission_stage_skip", $laststage ) )
 	{
 		$laststage = pop @stages;
 		last if( $laststage eq "type" );
 	}
+
 	my $ls = $session->get_archive()->get_conf( "submission_stage_last_for_staff_edit" );
 	$laststage = $ls if( defined $ls );
 
 	if( defined $stage && $laststage eq $stage && defined $action && ($action eq "finished" || $action eq "next") )
-        {
-                # Intercept the verify page, that's what we were doing!
-                $session->redirect( "edit_eprint?dataset=$datasetid&eprintid=$eprintid" );
-                return;
-        }
+	{
+		my $redir = 1;
+		if( $stage eq "meta" )
+		{
+			my @pages = $dataset->get_type_pages( $eprint->get_value( "type" ) );
+			my $pageid = $session->param( "pageid" );
+			$redir = 0;
+			$redir = 1 if( $pageid eq pop @pages );
+		}
+		if( $redir )
+		{
+			# Intercept the verify page, that's what we were doing!
+			$session->redirect( "edit_eprint?dataset=$datasetid&eprintid=$eprintid" );
+			return;
+		}
+	}
 
 	# Give other cases to the edit form
 	my $subform = new EPrints::SubmissionForm(
@@ -287,18 +330,27 @@ sub view_page
 	#   *             *              move to buffer  - "
 	#         *               *      move to archive  - "
 	#                 *              move to deletion  - "
-	#   *     *       *       *      clone to buffer
+	#                 *       *      clone(new version) to buffer
+	#   *     *       *       *      copy(as template) to buffer
 
 	# actions for this form begin with _ (except edit and
 	# those passed to submission form)
 
+	my $sb = $session->get_archive()->get_conf( "skip_buffer" );	
 	my $buttons = {};
 	my $r1 = [];
 	my $r2 = [];
 	if( $eprint->get_dataset()->id() eq "inbox" )
 	{
-		$r1 = [ "_tobuffer" ];
-		$r2 = [ "edit", "_remove", "_clone" ];
+		if( defined $sb && $sb == 1 )
+		{
+			$r1 = [ "_toarchive" ];
+		}
+		else
+		{
+			$r1 = [ "_tobuffer" ];
+		}
+		$r2 = [ "edit", "_remove", "_copy" ];
 	}
 	if( $eprint->get_dataset()->id() eq "buffer" )
 	{
@@ -310,17 +362,31 @@ sub view_page
 			push @{$r1}, "_toinbox";
 		}
 		push @{$r1}, "_toarchive";
-		$r2 = [ "edit", "_remove", "_clone" ];
+		$r2 = [ "edit", "_remove", "_copy" ];
 	}
 	if( $eprint->get_dataset()->id() eq "archive" )
 	{
-		$r1 = [ "_tobuffer", "_todeletion" ];
-		$r2 = [ "edit", "_clone" ];
+		if( defined $sb && $sb == 1 )
+		{
+			$r1 = [ "_toinbox", "_todeletion" ];
+		}
+		else
+		{
+			$r1 = [ "_tobuffer", "_todeletion" ];
+		}
+		$r2 = [ "edit", "_clone", "_copy" ];
 	}
 	if( $eprint->get_dataset()->id() eq "deletion" )
 	{
 		$r1 = [ "_toarchive" ];
-		$r2 = [ "edit", "_clone" ];
+		if( $session->get_archive->get_conf( 'allow_edit_deleted' ) )
+		{
+			$r2 = [ "edit", "_clone", "_copy" ];
+		}
+		else
+		{
+			$r2 = [ "_clone", "_copy" ];
+		}
 	}
 
 
@@ -329,6 +395,8 @@ sub view_page
 	{
 		$buttons->{$_} = $session->phrase( "cgi/users/edit_eprint:action_".$_ );
 	}
+	#print STDERR "**". $eprint->get_dataset()->id()."**\n";
+	#print STDERR "**". join( '/', (@{$r1}, @{$r2}))."**\n";
 	
 	$form->appendChild( $session->render_ruler() );
 	$buttons->{_order} = $r1;
@@ -380,10 +448,25 @@ sub bounce_form
 			wrap => "virtual" );
 		# remove any markup:
 		my $title = $session->make_text( EPrints::Utils::tree_to_utf8( $eprint->render_description() ) );
+
+		my $phraseid = '';
+		if( $delete )
+		{
+			if( $eprint->get_dataset->id eq "inbox" )
+			{
+				$phraseid = "mail_delete_reason.inbox";
+			}
+			else
+			{
+				$phraseid = "mail_delete_reason";
+			}
+		}
+		else
+		{
+			$phraseid = "mail_bounce_reason";
+		}
 	
-		$textarea->appendChild( $session->html_phrase(
-			( $delete ? "mail_delete_reason" : "mail_bounce_reason" ),
-			title => $title ) );
+		$textarea->appendChild( $session->html_phrase( $phraseid, title => $title ) );
 		$div->appendChild( $textarea );
 		$form->appendChild( $div );
 
