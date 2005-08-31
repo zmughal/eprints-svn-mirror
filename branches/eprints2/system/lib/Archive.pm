@@ -76,6 +76,7 @@ use EPrints::Config;
 use EPrints::Utils;
 use EPrints::DataSet;
 use EPrints::Language;
+use EPrints::Plugins;
 
 use File::Copy;
 

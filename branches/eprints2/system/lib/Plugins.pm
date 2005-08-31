@@ -45,7 +45,7 @@ use strict;
 
 $EPrints::Plugins::REGISTRY = {};
 
-
+EPrints::Plugins::load();
 
 ######################################################################
 =pod

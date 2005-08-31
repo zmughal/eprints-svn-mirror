@@ -66,6 +66,8 @@ use EPrints::User;
 use EPrints::EPrint;
 use EPrints::Subject;
 use EPrints::Document;
+use EPrints::Plugin;
+use EPrints::Plugins;
 
 use Unicode::String qw(utf8 latin1);
 use EPrints::AnApache;
