@@ -2427,6 +2427,72 @@ sub get_http_status
 }
 
 
+
+
+######################################################################
+=pod
+
+=item $plugin = $session->plugin( $pluginid )
+
+Return the plugin with the given pluginid, in this archive or, failing
+that, from the system level plugins.
+
+=cut
+######################################################################
+
+sub plugin
+{
+	my( $self, $pluginid ) = @_;
+
+	my $pluginconf = $self->{archive}->get_plugin_conf( $pluginid );
+
+	if( !defined $pluginconf )
+	{	
+		$pluginconf = EPrints::Plugins::get_plugin_conf( $pluginid );
+	}
+	
+	if( !defined $pluginconf )
+	{
+		# cjg bad warning code
+		print STDERR "Unknown plugin: $pluginid\n";
+		return undef;
+	}
+	
+	my $plugin = EPrints::Plugin->new( $pluginconf, $self );	
+
+	return $plugin;
+}
+
+
+######################################################################
+=pod
+
+=item $thing = $session->plugin_call( $pluginid, $method, @params );
+
+Calls a $method on a plugin with id $pluginid. Passes @params to
+the method and returns whatever the method returns.
+
+=cut
+######################################################################
+
+sub plugin_call
+{
+	my( $self, $pluginid, $methodid, @params ) = @_;
+
+	my $plugin = $self->plugin( $pluginid );
+	
+	return $plugin->call( $methodid, @params );
+}
+
+
+
+
+
+
+
+
+
+
 ######################################################################
 =pod
 

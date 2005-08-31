@@ -2617,3 +2617,15 @@ PACKAGE: 2.2.99.2
  - Changed "deny, allow" to "deny,allow" - apache didn't like the
     space.
 
+2005-08-31 cjg
+
+ - Added start of export plugin support. This includes:
+    * New module Plugins which loads plugins and knows about system
+       level plugins.
+    * New module Plugin which contains a class which represents a
+       single instance of a plugin.
+    * New top level config /opt/eprints2/plugins/output/
+    * New archive config .../foo/cfg/plugins/output/
+    * Two initial output types: xml & bibtex
+
+  

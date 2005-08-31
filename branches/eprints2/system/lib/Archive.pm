@@ -189,8 +189,10 @@ sub new_archive_by_id
 		$self->_load_languages() || return;
 		$self->_load_templates() || return;
 		$self->_load_citation_specs() || return;
-
 	}
+
+	# Load archive plugins
+	$self->_load_plugins() || return;
 
 	$self->{field_defaults} = {};
 
@@ -651,6 +653,48 @@ sub get_dataset
 
 	return $ds;
 }
+
+######################################################################
+# 
+# $success = $archive->_load_plugins
+#
+# Loads and caches all the plugins for this archive by loading 
+# everything in the plugins directory.
+#
+######################################################################
+
+sub _load_plugins
+{
+	my( $self ) = @_;
+
+	my $dir = $self->get_conf( "config_path" )."/plugins";
+
+	print STDERR "PLUGDIR:$dir\n";
+
+	$self->{plugins} = {};
+	EPrints::Plugins::set_register_target( $self->{plugins} );
+	EPrints::Plugins::load_dir( $dir, $self->{class}."::Plugins" );
+
+	print STDERR "done:$dir\n";
+}
+
+######################################################################
+=pod
+
+=item $plugin_conf = $archive->get_plugin_conf( $pluginid )
+
+Return the archive plugin with the given pluginid.
+
+=cut
+######################################################################
+
+sub get_plugin_conf
+{
+	my( $self, $pluginid ) = @_;
+
+	return $self->{plugins}->{$pluginid};
+}
+
 
 
 ######################################################################
