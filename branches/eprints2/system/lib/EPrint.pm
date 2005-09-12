@@ -1912,18 +1912,18 @@ sub last_in_thread
 {
 	my( $self, $field ) = @_;
 	
-	my $latest = $self;
+	my $latest;
 	my @later = ( $self );
 	my $above = {};
 	while( scalar @later > 0 )
 	{
+		$latest = $later[0];
 		if( defined $above->{$latest->get_id} )
 		{
 			$self->loop_error( $field, keys %{$above} );
 			last;
 		}
 		$above->{$latest->get_id} = 1;
-		$latest = $later[0];
 		@later = $latest->later_in_thread( $field );
 	}
 

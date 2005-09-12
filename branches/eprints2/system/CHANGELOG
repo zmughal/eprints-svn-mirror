@@ -2627,5 +2627,11 @@ PACKAGE: 2.2.99.2
     * New top level config /opt/eprints2/plugins/output/
     * New archive config .../foo/cfg/plugins/output/
     * Two initial output types: xml & bibtex
+ - Fixed the "use" lines for the new plugin modules.
+ - EPrints::Plugins now loads system plugins when it is "use"d.
+ 
+2005-09-12 cjg
 
-  
+ - Fixed bug in $eprint->last_in_thread which reported a loop
+    error, even when there wasn't one.
+ 
