@@ -2634,4 +2634,9 @@ PACKAGE: 2.2.99.2
 
  - Fixed bug in $eprint->last_in_thread which reported a loop
     error, even when there wasn't one.
+
+2005-09-13 cjg
+
+ - XML Plugin now ensures utf8() of strings, so duff data will not
+    produce an invalid file.
  

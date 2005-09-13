@@ -5,11 +5,20 @@
 
 # documents needs magic files field
 
+use Unicode::String qw( utf8 );
+
+# The utf8() method is called to ensure that
+# any broken characters are removed. There should
+# not be any broken characters, but better to be
+# sure.
+
 EPrints::Plugins::register( 
 	id => "output/core_xml",
 	name => "XML",
+	parent => "output/core_output",
 	accept => [ 'list/*', 'dataobj/*' ],
 	mime_type => \&mime_type,
+	suffix => \&suffix,
 	output_list => \&output_list,
 	output_dataobj => \&output_dataobj,
 );
@@ -20,6 +29,14 @@ sub mime_type
 
 	return "text/xml";
 }
+
+sub suffix
+{
+	my( $plugin, $searchexp ) = @_;
+
+	return ".xml";
+}
+
 
 sub output_list
 {
@@ -94,7 +111,7 @@ sub field_to_xml_single
 
 	if( $field->get_property( "hasid" ) )
 	{
-		push @r, "\n  ",$ind,"<id>",$value->{id},"</id>";
+		push @r, "\n  ",$ind,"<id>",utf8($value->{id}),"</id>";
 		push @r, "\n  ",$ind,"<main>",field_to_xml_basic( $field, $value->{main}, $depth+1 ),"</main>";
 		push @r, "\n",$ind;
 	}
@@ -118,7 +135,7 @@ sub field_to_xml_basic
 		{
 			my $nv = $value->{$part};
 			$nv = "" unless defined $nv;
-			push @r, "\n  ".$ind,"<",$part,">",$nv,"</",$part,">";
+			push @r, "\n  ".$ind,"<",$part,">",utf8($nv),"</",$part,">";
 		}
 		push @r, "\n".$ind;
 	}
@@ -126,7 +143,7 @@ sub field_to_xml_basic
 	{
 		if( defined $value )
 		{
-			push @r, $value;
+			push @r, utf8($value);
 		}
 	}
 	return @r;	
