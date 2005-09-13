@@ -2653,4 +2653,22 @@ PACKAGE: 2.2.99.2
  - Commented out debug code in EPrints::Plugins
  - New subroutine: EPrints::Plugins::plugin_list() which returns the 
     ids of all system level plugins.
+ - Significant changes to SearchExpression:
+    * Added documentation for many methods
+    * perform_search now returns a SearchResults object.
+    * cache_results, dispose, count, map, get_records and get_ids 
+       have been moved to SearchResults, but stubs have been left in
+       SearchExpression to keep existing code working.
+    * process_webpage has been split into several more subroutines
+       to improve readability.
+    * the search results now have two additional actions. 
+    * action=export_redir just redirects to the same URL but with
+       a pretend filename suitable for the export format. eg.
+       export_soton_xml.xml 
+    * action=export takes a serialised expression and a cacheid, 
+       and a output plugin id and exports the search results in
+       that format. If the cacheid has expired then the search 
+       will be silently re-done.
+    * SearchResults has an "export" method which calls an output
+       plugin on the ressults.
 
