@@ -2469,9 +2469,9 @@ sub plugin
 ######################################################################
 =pod
 
-=item $thing = $session->plugin_call( $pluginid, $method, @params );
+=item $thing = $session->plugin_call( $plugin_id, $method, %params );
 
-Calls a $method on a plugin with id $pluginid. Passes @params to
+Calls a $method on a plugin with id $plugin_id. Passes %params to
 the method and returns whatever the method returns.
 
 =cut
@@ -2479,13 +2479,57 @@ the method and returns whatever the method returns.
 
 sub plugin_call
 {
-	my( $self, $pluginid, $methodid, @params ) = @_;
+	my( $self, $plugin_id, $method_id, %params ) = @_;
 
-	my $plugin = $self->plugin( $pluginid );
+	my $plugin = $self->plugin( $plugin_id );
 	
-	return $plugin->call( $methodid, @params );
+	return $plugin->call( $method_id, %params );
 }
 
+
+######################################################################
+=pod
+
+=item @plugin_ids  = $session->plugin_list( %restrictions )
+
+Return either a list of all the plugins available to this archive or
+return a list of available plugins which can accept the given 
+restrictions.
+
+Restictions:
+
+ can_accept=>"dataobj/eprint"
+ visible=>"all"
+
+=cut
+######################################################################
+
+sub plugin_list
+{
+	my( $self, %restrictions ) = @_;
+
+	my %pids = ();
+	foreach( EPrints::Plugins::plugin_list() ) { $pids{$_}=1; }
+	foreach( $self->{archive}->plugin_list() ) { $pids{$_}=1; }
+
+	return sort keys %pids if( !scalar %restrictions );
+
+	my @out = ();
+	foreach( sort keys %pids ) {
+		my $plugin = $self->plugin( $_ );
+		if( $restrictions{can_accept} )
+		{
+			next unless( $plugin->call( "can_accept", $restrictions{can_accept} ) );
+		}
+		if( $restrictions{is_visible} )
+		{
+			next unless( $plugin->call( "is_visible", $restrictions{is_visible} ) );
+		}
+		push @out, $_;
+	}
+
+	return @out;
+}
 
 
 

@@ -2644,4 +2644,13 @@ PACKAGE: 2.2.99.2
     provide sane filenames when exporting via plugins.
  - added $dataobj->export method which exports a single dataobject 
     using a single output plugin.
+ - Correction to $session->plugin_call - @array changed to %hash
+ - New method $session->plugin_list. This returns the ids of
+    available plugins, optionally filtered by various paramaters.
+ - Commented out debug code in EPrints::Archive
+ - New method $archive->plugin_list which returns the id's off all
+    plugins available to the archive (not system plugins).
+ - Commented out debug code in EPrints::Plugins
+ - New subroutine: EPrints::Plugins::plugin_list() which returns the 
+    ids of all system level plugins.
 

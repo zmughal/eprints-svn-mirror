@@ -217,7 +217,6 @@ sub new_archive_by_id
 
 
 	$ARCHIVE_CACHE{$id} = $self;
-	#$self->log("done: new($id)");
 	return $self;
 }
 
@@ -670,13 +669,9 @@ sub _load_plugins
 
 	my $dir = $self->get_conf( "config_path" )."/plugins";
 
-	print STDERR "PLUGDIR:$dir\n";
-
 	$self->{plugins} = {};
 	EPrints::Plugins::set_register_target( $self->{plugins} );
 	EPrints::Plugins::load_dir( $dir, $self->{class}."::Plugins" );
-
-	print STDERR "done:$dir\n";
 }
 
 ######################################################################
@@ -695,6 +690,26 @@ sub get_plugin_conf
 
 	return $self->{plugins}->{$pluginid};
 }
+
+######################################################################
+=pod
+
+=item @plugin_ids  = $archive->plugin_list()
+
+Return a list of all the ids of the archive specific plugins.
+
+=cut
+######################################################################
+
+sub plugin_list
+{
+	my( $self ) = @_;
+
+	return keys %{$self->{plugins}};
+}
+
+
+
 
 
 

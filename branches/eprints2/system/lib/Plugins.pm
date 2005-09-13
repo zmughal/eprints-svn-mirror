@@ -99,7 +99,7 @@ sub load_dir
 {
 	my( $path, $baseclass, @prefix ) = @_;
 
-print STDERR "LOADING PLUGIN DIR: $path (".join( ",",@prefix).")\n";
+#print STDERR "LOADING PLUGIN DIR: $path (".join( ",",@prefix).")\n";
 
 	my $dh;
 	opendir( $dh, $path ) || die "Could not open $path";
@@ -199,6 +199,26 @@ sub get_plugin_conf
 
 	return $EPrints::Plugins::REGISTRY->{$pluginid};
 }
+
+
+######################################################################
+=pod
+
+=item @plugin_ids  = EPrints::Plugins::plugin_list()
+
+Return either a list of all the ids of the system plugins.
+
+=cut
+######################################################################
+
+sub plugin_list
+{
+	my( $self ) = @_;
+
+	return keys %{$EPrints::Plugins::REGISTRY};
+}
+
+
 
 
 
