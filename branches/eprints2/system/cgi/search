@@ -24,6 +24,8 @@ exit( 0 ) unless( defined $session );
 my $path_info = $session->get_request->path_info;
 # lose a leading slash
 $path_info =~ s#^/##;
+# we only want stuff up to the 2nd slash
+$path_info =~ s#/.*$##;
 
 my $searchid = $path_info;
 if( $searchid eq "advsearch" )
