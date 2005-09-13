@@ -2,9 +2,10 @@
 EPrints::Plugins::register( 
 	id => "output/core_bibtex",
 	name => "BibTeX",
+	parent => "output/core_output",
 	accept => [ 'list/eprint', 'dataobj/eprint' ],
 	mime_type => \&mime_type,
-	output_list => \&output_list,
+	suffix => \&suffix,
 	output_dataobj => \&output_dataobj,
 );
 
@@ -15,23 +16,14 @@ sub mime_type
 	return "text/plain";
 }
 
-sub output_list
+sub suffix
 {
-	my( $plugin, %opts ) = @_;
+	my( $plugin, $searchexp ) = @_;
 
-	
-	my @r = '';
-
-	my $part;
-
-	foreach my $dataobj ( $opts{list}->get_records )
-	{
-		$part = $plugin->call( "output_dataobj", $dataobj );
-		if( defined $opts{fh} ) { print {$opts{fh}} $part; } else { push @r, $part; }
-	}	
-
-	if( !defined $opts{fh} ) { return join( '', @r ); }
+	return ".txt";
 }
+
+
 
 
 sub output_dataobj
