@@ -536,6 +536,40 @@ sub to_xml
 ######################################################################
 =pod
 
+=item $plugin_output = $detaobj->export( $plugin_id, %params )
+
+Apply an output plugin to this items. Return the results.
+
+=cut
+######################################################################
+
+sub export
+{
+	my( $self, $out_plugin_id, %params ) = @_;
+
+	my $plugin_id = "output/".$out_plugin_id;
+	my $plugin = $self->{session}->plugin( $plugin_id );
+
+	unless( defined $plugin )
+	{
+		EPrints::Config::abort( "Could not find plugin $plugin_id" );
+	}
+
+	my $req_plugin_type = "dataobj/".$self->{dataset}->confid;
+
+	unless( $plugin->call( "can_accept", $req_plugin_type ) )
+	{
+		EPrints::Config::abort( 
+"Plugin $plugin_id can't process $req_plugin_type data." );
+	}
+	
+	
+	return $plugin->call( "output_dataobj", $self, %params );
+}
+
+######################################################################
+=pod
+
 =back
 
 =cut

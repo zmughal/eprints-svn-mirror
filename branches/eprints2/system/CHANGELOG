@@ -2639,4 +2639,9 @@ PACKAGE: 2.2.99.2
 
  - XML Plugin now ensures utf8() of strings, so duff data will not
     produce an invalid file.
- 
+ - Public and staff search now ignore everything after a second slash.
+    this makes /perl/search/simple/foo.txt legal. This is used to
+    provide sane filenames when exporting via plugins.
+ - added $dataobj->export method which exports a single dataobject 
+    using a single output plugin.
+
