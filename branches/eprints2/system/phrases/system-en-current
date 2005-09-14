@@ -129,17 +129,18 @@ EPrints Modules
     <ep:phrase ref="lib/searchexpression:last_index">[Index last built at: <ep:pin ref="index_datestamp" />]</ep:phrase>
     <ep:phrase ref="lib/searchexpression:noresults">No matches.</ep:phrase>
     <ep:phrase ref="lib/searchexpression:results_page">
-
 <ep:pin ref="controls" />
 <p class="resultsinfo">
+   <div style="border: solid 1px #a0a0a0; float: right; width: 35%; padding: 0.5em; margin-left: 0.5em; margin-bottom: 0.5em;"><ep:pin ref="export" /></div>
    <ep:pin ref="searchdesc" /><br />
    <ep:pin ref="matches" /> <ep:pin ref="time" /><br />
-   <span style="color: #ccc"><ep:pin ref="last_index" /></span>
+   <span style="color: #ccc"><ep:pin ref="last_index" /></span><br />
 </p>
 <ep:pin ref="results" />
 <ep:pin ref="controls_if_matches" />
-
 </ep:phrase>
+    <ep:phrase ref="lib/searchexpression:export_section">Export all matching items as:<br /><ep:pin ref="menu" /> <ep:pin ref="button" /></ep:phrase>
+    <ep:phrase ref="lib/searchexpression:export_button">Export</ep:phrase>
     <ep:phrase ref="lib/searchexpression:next">Next <ep:pin ref="n" /></ep:phrase>
     <ep:phrase ref="lib/searchexpression:prev">Previous <ep:pin ref="n" /></ep:phrase>
     <ep:phrase ref="lib/searchexpression:new">New search</ep:phrase>
@@ -149,6 +150,9 @@ EPrints Modules
     <ep:phrase ref="lib/searchexpression:desc_or"> <b>OR</b> </ep:phrase>
     <ep:phrase ref="lib/searchexpression:desc_order">Results ordered <ep:pin ref="order" />.</ep:phrase>
     <ep:phrase ref="lib/searchexpression:desc_no_conditions">No conditions.</ep:phrase>
+    <ep:phrase ref="lib/searchexpression:export_error_title">Error Exporting Results</ep:phrase>
+    <ep:phrase ref="lib/searchexpression:export_error_search"><p>The search failed to execute correctly.</p></ep:phrase>
+    <ep:phrase ref="lib/searchexpression:export_error_format"><p>The requested output format is not available.</p></ep:phrase>
 
 <!-- SearchField -->
 
@@ -548,6 +552,18 @@ User Area CGI Scripts
     <ep:phrase ref="subscription_fieldname_mailempty">Mail Empty Results</ep:phrase>
     <ep:phrase ref="subscription_fieldhelp_mailempty">If there are no new items matching your subscription, since it was last mailed, do you still want to be mailed?</ep:phrase>
     <ep:phrase ref="subscription_radio_mailempty"><ep:pin ref="true" />Yes, mail me empty subscriptions.<br /><ep:pin ref="false" />No. Only mail me subscriptions with content.</ep:phrase>
+
+<!-- export -->
+
+    <ep:phrase ref="cgi/export:no_id"><p>No valid EPrint ID Number was specified.</p></ep:phrase>
+    <ep:phrase ref="cgi/export:eprint_not_fount">EPrint with ID <ep:pin ref="eprintid" /> was not found.</ep:phrase>
+    <ep:phrase ref="cgi/export:title">Export: <ep:pin ref="shortname" /></ep:phrase>
+    <ep:phrase ref="cgi/export:page">
+<p><ep:pin ref="citation" /></p>
+<p>Please select an output format:</p>
+<ep:pin ref="formats" /></ep:phrase>
+    <ep:phrase ref="cgi/export:not_available"><p>Requested output format '<ep:pin ref="format" />'is not available.</p></ep:phrase>
+    <ep:phrase ref="cgi/export:error_title">Error in export</ep:phrase>
 
 
 <!--********************************************************************** 

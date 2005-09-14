@@ -2681,3 +2681,8 @@ PACKAGE: 2.2.99.2
  - Added multilang support to output/core_xml
  - Added method $eprint->render_export_links which returns a <ul>
     of all things an eprint an eprint can be output as.
+ - Moved text for export-search results and cgi/export to phrases
+    file.
+ - export-results now offers only output modes for the current 
+    dataset.
+

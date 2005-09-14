@@ -982,10 +982,11 @@ sub _dopage_export
 
 	if( !defined $results ) {
 		$self->{session}->build_page( 
-			$self->{session}->make_text( "Export Error" ),
-			$self->{session}->make_text("Error exporting search results." ),
+			$self->{session}->html_phrase( "lib/searchexpression:export_error_title" ),
+			$self->{session}->html_phrase( "lib/searchexpression:export_error_search" ),
 			"export_error" );
 		$self->{session}->send_page;
+		return;
 	}
 
 	my @plugins = $self->{session}->plugin_list( can_accept=>"list/eprint", is_visible=>"all" );
@@ -993,10 +994,11 @@ sub _dopage_export
 	foreach( @plugins ) { if( $_ eq "output/$format" ) { $ok = 1; last; } }
 	unless( $ok ) {
 		$self->{session}->build_page( 
-			$self->{session}->make_text( "Export Error" ),
-			$self->{session}->make_text("Error export format '$format' not available." ),
+			$self->{session}->html_phrase( "lib/searchexpression:export_error_title" ),
+			$self->{session}->html_phrase( "lib/searchexpression:export_error_format" ),
 			"export_error" );
 		$self->{session}->send_page;
+		return;
 	}
 
 	my $plugin = $self->{session}->plugin( "output/$format" );
@@ -1078,7 +1080,7 @@ sub _dopage_results
 
 
 	my @plugins = $self->{session}->plugin_list( 
-					can_accept=>"list/eprint", 
+					can_accept=>"list/".$self->{dataset}->confid, 
 					is_visible=>"all" );
 	$bits{export} = $self->{session}->make_doc_fragment;
 	if( scalar @plugins > 0 ) {
@@ -1090,25 +1092,27 @@ sub _dopage_results
 			$option->appendChild( $plugin->call( "render_name" ) );
 			$select->appendChild( $option );
 		}
-		$bits{export}->appendChild( $select );
-		$bits{export}->appendChild( 
+		my $button = $self->{session}->make_doc_fragment;
+		$button->appendChild( $self->{session}->make_element( 
+				"input", 
+				type=>"submit", 
+				name=>"_action_export_redir", 
+				value=>$self->{session}->phrase( "lib/searchexpression:export_button" ) ) );
+		$button->appendChild( 
 			$self->{session}->make_element( 
-							"input", 
-							type=>"submit", 
-							name=>"_action_export_redir", 
-							value=>"CJG Export" ) );
-		$bits{export}->appendChild( 
+				"input", 
+				type=>"hidden", 
+				name=>"_cache", 
+				value=>$self->{cache_id} ) );
+		$button->appendChild( 
 			$self->{session}->make_element( 
-							"input", 
-							type=>"hidden", 
-							name=>"_cache", 
-							value=>$self->{cache_id} ) );
-		$bits{export}->appendChild( 
-				$self->{session}->make_element( 
-						"input", 
-							type=>"hidden", 
-							name=>"_exp", 
-							value=>$self->serialise ) );
+				"input", 
+				type=>"hidden", 
+				name=>"_exp", 
+				value=>$self->serialise ) );
+		$bits{export} = $self->{session}->html_phrase( "lib/searchexpression:export_section",
+					menu => $select,
+					button => $button );
 	}
 	
 
