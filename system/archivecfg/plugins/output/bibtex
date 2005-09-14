@@ -1,0 +1,23 @@
+
+EPrints::Plugins::register( 
+	id => "output/bibtex",
+	parent => "output/core_bibtex",
+	visible => 'all',
+	convert_dataobj => \&convert_dataobj,
+);
+
+sub convert_dataobj
+{
+	my( $plugin, $dataobj ) = @_;
+
+	my $data = { normal=>{}, unescaped=>{} };
+
+	$data->{normal}->{title} = $dataobj->get_value( "title" );
+	$data->{normal}->{abstract} = $dataobj->get_value( "abstract" );
+	$data->{unescaped}->{url} = $dataobj->get_url;
+	$data->{type} = "article";
+	$data->{key} = "footle97";
+
+	return $data;
+}
+

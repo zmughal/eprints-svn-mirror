@@ -44,7 +44,7 @@ my $fields = {};
 
 $fields->{user} = [
 
-	{ name => "name", type => "name" },
+	{ name => "name", type => "name", render_opts=>{order=>"gf"} },
 
 	{ name => "dept", type => "text" },
 
@@ -54,7 +54,7 @@ $fields->{user} = [
 
 	{ name => "country", type => "text" },
 
-	{ name => "hideemail", type => "boolean" },
+	{ name => "hideemail", type => "boolean", input_style=>"radio" },
 
 	{ name => "os", type => "set", input_rows => 1,
 		options => [ "win", "unix", "vms", "mac", "other" ] },
@@ -65,71 +65,110 @@ $fields->{user} = [
 
 $fields->{eprint} = [
 
-	{ name => "abstract", input_rows => 10, type => "longtext",
-		input_cols => 90 },
+	{ name => "creators", type => "name", multiple => 1, input_boxes => 4,
+		hasid => 1, input_id_cols=>20, 
+		family_first=>1, hide_honourific=>1, hide_lineage=>1 }, 
 
-	{ name => "altloc", type => "url", multiple => 1 },
-
-	{ name => "authors", type => "name", multiple => 1, input_boxes => 6,
-		hasid => 1 },
-
-	{ name => "chapter", type => "text", maxlength => 5 },
-
-	{ name => "commref", type => "text" },
-
-	{ name => "confdates", type => "text" },
-
-	{ name => "conference", type => "text" },
-
-	{ name => "confloc", type => "text" },
-
-	{ name => "department", type => "text" },
-
-	{ name => "editors", type => "name", multiple => 1, hasid=>1 },
-
-	{ name => "institution", type => "text" },
+	{ name => "title", type => "longtext", multilang=>0, input_rows => 3 },
 
 	{ name => "ispublished", type => "set", 
-			options => [ "unpub","inpress","pub" ] },
+			options => [ "pub","inpress","submitted" , "unpub" ] },
+
+	{ name => "subjects", type=>"subject", top=>"subjects", multiple => 1, 
+		browse_link => "subjects",
+		render_input=>\&EPrints::Extras::subject_browser_input },
+
+	{ name => "full_text_status", type=>"set",
+			options => [ "public", "restricted", "none" ] },
+
+	{ name => "monograph_type", type=>"set",
+			options => [ 
+				"technical_report", 
+				"project_report",
+				"documentation",
+				"manual",
+				"working_paper",
+				"discussion_paper",
+				"other" ] },
+
+
+
+	{ name => "pres_type", type=>"set",
+			options => [ 
+				"paper", 
+				"lecture", 
+				"speech", 
+				"poster", 
+				"other" ] },
 
 	{ name => "keywords", type => "longtext", input_rows => 2 },
 
-	{ name => "month", type => "set", input_rows => 1,
-		options => [ "jan","feb","mar","apr","may","jun",
-			"jul","aug","sep","oct","nov","dec" ] },
-
 	{ name => "note", type => "longtext", input_rows => 3 },
 
-	{ name => "number", type => "text", maxlength => 6 },
+	{ name => "suggestions", type => "longtext" },
 
-	{ name => "pages", type => "pagerange" },
+	{ name => "abstract", input_rows => 10, type => "longtext" },
 
-	{ name => "pubdom", type => "boolean", input_style=>"radio" },
+	{ name => "date_sub", type=>"date", min_resolution=>"year" },
 
-	{ name => "publication", type => "text" },
+	{ name => "date_issue", type=>"date", min_resolution=>"year" },
 
-	{ name => "publisher", type => "text" },
-
-	{ name => "refereed", type => "boolean", input_style=>"radio" },
-
-# nb. Can't call this field "references" because that's a MySQL keyword.
-	{ name => "referencetext", type => "longtext", input_rows => 3 },
-
-	{ name => "reportno", type => "text" },
+	{ name => "date_effective", type=>"date", min_resolution=>"year" },
 
 	{ name => "series", type => "text" },
 
-	{ name => "subjects", type=>"subject", top=>"subjects", multiple => 1, browse_link => "subjects" },
-
-	{ name => "thesistype", type => "text" },
-
-	{ name => "title", type => "longtext" },
+	{ name => "publication", type => "text" },
 
 	{ name => "volume", type => "text", maxlength => 6 },
 
-	{ name => "year", type => "year" },
+	{ name => "number", type => "text", maxlength => 6 },
 
-	{ name => "suggestions", type => "longtext" }
+	{ name => "publisher", type => "text" },
+
+	{ name => "place_of_pub", type => "text", sql_index => 0 },
+
+	{ name => "pagerange", type => "pagerange", sql_index => 0 },
+
+	{ name => "pages", type => "int", maxlength => 6, sql_index => 0 },
+
+	{ name => "event_title", type => "text", sql_index => 0 },
+
+	{ name => "event_location", type => "text", sql_index => 0 },
+	
+	{ name => "event_dates", type => "text", sql_index => 0 },
+
+	{ name => "event_type", type => "set", options=>[ "conference","workshop","other" ] },
+
+	{ name => "id_number", type => "text" },
+
+	{ name => "patent_applicant", type => "text", sql_index => 0 },
+
+	{ name => "institution", type => "text" },
+
+	{ name => "department", type => "text", sql_index => 0 },
+
+	{ name => "thesis_type", type => "set", options=>[ "masters", "phd", "other"] },
+
+	{ name => "refereed", type => "boolean", input_style=>"radio" },
+
+	{ name => "isbn", type => "text" },
+
+	{ name => "issn", type => "text" },
+
+	{ name => "fileinfo", type => "longtext", sql_index => 0,
+		render_value=>\&render_fileinfo },
+
+	{ name => "book_title", type => "text", sql_index => 0 },
+	
+	{ name => "editors", type => "name", multiple => 1, hasid=>1,
+		input_boxes => 4, input_id_cols=>20, 
+		family_first=>1, hide_honourific=>1, hide_lineage=>1 }, 
+
+	{ name => "official_url", type => "url", sql_index => 0 },
+
+# nb. Can't call this field "references" because that's a MySQL keyword.
+	{ name => "referencetext", type => "longtext", input_rows => 3 }
+
 ];
 
 # Don't worry about this bit, remove it if you want.
@@ -176,11 +215,15 @@ return $fields;
 sub set_eprint_defaults
 {
 	my( $data, $session ) = @_;
+
+	$data->{type} = "article";
 }
 
 sub set_user_defaults
 {
 	my( $data, $session ) = @_;
+
+	$data->{hideemail} = "TRUE";
 }
 
 sub set_document_defaults
@@ -188,6 +231,7 @@ sub set_document_defaults
 	my( $data, $session, $eprint ) = @_;
 
 	$data->{language} = $session->get_langid();
+	$data->{security} = "";
 }
 
 sub set_subscription_defaults
@@ -224,12 +268,75 @@ sub set_subscription_defaults
 sub set_eprint_automatic_fields
 {
 	my( $eprint ) = @_;
+
+	my $type = $eprint->get_value( "type" );
+	if( $type eq "monograph" || $type eq "thesis" )
+	{
+		unless( $eprint->is_set( "institution" ) )
+		{
+ 			# This is a handy place to make monographs and thesis default to
+			# your insitution
+			#
+			# $eprint->set_value( "institution", "University of Southampton" );
+		}
+	}
+
+	if( $type eq "patent" )
+	{
+		$eprint->set_value( "ispublished", "pub" );
+		# patents are always published!
+	}
+
+	if( $type eq "thesis" )
+	{
+		$eprint->set_value( "ispublished", "unpub" );
+		# thesis are always unpublished.
+	}
+
+	my $date;
+	if( $eprint->is_set( "date_issue" ) )
+	{
+		$date = $eprint->get_value( "date_issue" );
+	} 
+	elsif( $eprint->is_set( "date_sub" ) )
+	{
+		$date = $eprint->get_value( "date_sub" );
+	}
+	else
+	{
+	 	$date = $eprint->get_value( "datestamp" ); # worstcase
+	}
+	$eprint->set_value( "date_effective", $date );
+
+	my @docs = $eprint->get_all_documents();
+	my $textstatus = "none";
+	my @finfo = ();
+	if( scalar @docs > 0 )
+	{
+		$textstatus = "public";
+		foreach( @docs )
+		{
+			if( $_->is_set( "security" ) )
+			{
+				$textstatus = "restricted"
+			}
+			push @finfo, $_->get_type.";".$_->get_url;
+		}
+	}
+	$eprint->set_value( "full_text_status", $textstatus );
+	$eprint->set_value( "fileinfo", join( "|", @finfo ) );
+
+
 }
 
 sub set_user_automatic_fields
 {
 	my( $user ) = @_;
 
+	if( !$user->is_set( "frequency" ) )
+	{
+		$user->set_value( "frequency", "never" );
+	}
 }
 
 sub set_document_automatic_fields
@@ -242,51 +349,20 @@ sub set_subscription_automatic_fields
 	my( $subscription ) = @_;
 }
 
-######################################################################
-#
-# update_submitted_eprint( $eprint )
-#
-#  This function is called on an EPrint whenever it is transferred
-#  from the inbox (the author's workspace) to the submission buffer.
-#  You can alter the EPrint here if you need to, or maybe send a
-#  notification mail to the administrator or something. 
-#
-#  Any changes you make to the EPrint object will be written to the
-#  database after this function finishes, so you don't need to do a
-#  commit().
-#
-#  This method is also called if the eprint is moved into the buffer
-#  from the archive. (By an editor wanting to make changes, presumably)
-#
-######################################################################
 
-sub update_submitted_eprint
-{
-	my( $eprint ) = @_;
-}
-
-
-######################################################################
-#
-# update_archived_eprint( $eprint )
-#
-#  This function is called on an EPrint whenever it is transferred
-#  from the submission buffer to the real archive (i.e. when it is
-#  actually "archived".)
-#
-#  You can alter the EPrint here if you need to, or maybe send a
-#  notification mail to the author or administrator or something. 
-#
-#  Any changes you make to the EPrint object will be written to the
-#  database after this function finishes, so you don't need to do a
-#  commit().
-#
-######################################################################
-
-sub update_archived_eprint
-{
-	my( $eprint ) = @_;
-}
 
 # Return true to indicate the module loaded OK.
 1;
+
+
+
+
+
+
+
+
+
+
+
+
+

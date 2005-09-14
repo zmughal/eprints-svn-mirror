@@ -36,6 +36,8 @@ package EPrints::ImportXML;
 
 use XML::Parser;
 
+use strict;
+
 # function will be called once for each object described by the XML
 # file with the session handle, the table and whatever kind of 
 # eprint object.

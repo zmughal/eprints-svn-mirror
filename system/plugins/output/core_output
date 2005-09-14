@@ -1,0 +1,110 @@
+
+EPrints::Plugins::register( 
+	id => "output/core_output",
+	name => "Base Output Plugin",
+	render_name => \&render_name,
+	can_accept => \&can_accept,
+	is_visible => \&is_visible,
+	mime_type => \&mime_type,
+	suffix => \&suffix,
+	output_list => \&output_list, # does not mean it accepts lists
+	dataobj_export_url => \&dataobj_export_url, # does not mean it accepts dataobjs
+);
+
+sub render_name
+{
+	my( $plugin ) = @_;
+
+	return $plugin->{session}->make_text( $plugin->{name} );
+}
+
+sub is_visible
+{
+	my( $plugin, $vis_level ) = @_;
+	return( 1 ) unless( defined $vis_level );
+
+	return( 0 ) unless( defined $plugin->{visible} );
+
+	if( $vis_level eq "all" && $plugin->{visible} ne "all" ) {
+		return 0;
+	}
+
+	return 1;
+}
+
+sub suffix
+{
+	my( $plugin, $searchexp ) = @_;
+
+	return ".txt";
+}
+
+
+
+sub can_accept
+{
+	my( $plugin, $format ) = @_;
+
+	foreach my $a_format ( @{$plugin->{accept}} ) {
+		if( $a_format =~ m/^(.*)\*$/ ) {
+			my $base = $1;
+			return( 1 ) if( substr( $format, 0, length $base ) eq $base );
+		}
+		else {
+			return( 1 ) if( $format eq $a_format );
+		}
+	}
+
+	return 0;
+}
+
+sub mime_type
+{
+	my( $plugin, $searchexp ) = @_;
+
+	return "text/plain";
+}
+
+sub output_list
+{
+	my( $plugin, %opts ) = @_;
+	
+	my @r = '';
+
+	my $part;
+
+	foreach my $dataobj ( $opts{list}->get_records ) {
+		$part = $plugin->call( "output_dataobj", $dataobj );
+		if( defined $opts{fh} ) { print {$opts{fh}} $part; } else { push @r, $part; }
+	}	
+
+	if( !defined $opts{fh} ) { return join( '', @r ); }
+}
+
+# if this an output plugin can output results for a single dataobj then
+# this routine returns a URL which will export it. This routine does not
+# check that it's actually possible.
+sub dataobj_export_url
+{
+	my( $plugin, $dataobj ) = @_;
+
+	my $dataset = $dataobj->get_dataset;
+	if( $dataset->confid ne "eprint" ) {
+		# only know URLs for eprint objects
+		return undef;
+	}
+
+	$plugin->{id} =~ m#^output/(.*)$#;
+	my $format = $1;
+
+	my $url = $plugin->{session}->get_archive->get_conf( "perl_url" );
+	$url .= "/export/".$dataobj->get_id."/".$format;
+	$url .= "/".$plugin->{session}->get_archive->get_id;
+	$url .= "-".$dataobj->get_dataset->confid."-".$dataobj->get_id.$plugin->call( "suffix" );
+
+	return $url;
+}
+
+	
+
+1;
