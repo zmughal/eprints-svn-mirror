@@ -302,7 +302,7 @@ erase_dir( "package" );
 erase_dir( "export" );
 
 print "Done.\n";
-print "scp $package_file.tar.gz webmaster\@www:/home/www.eprints/software/files/eprints2/\n";
+print "scp $package_file.tar.gz webmaster\@www:/home/www.eprints/mainsite/htdocs/files/eprints2/\n";
 
 exit;
 

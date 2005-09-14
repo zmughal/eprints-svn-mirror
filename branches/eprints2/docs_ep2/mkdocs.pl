@@ -401,11 +401,23 @@ if( $website )
 	print INC "<h2>$DOCTITLE</h2><ul>\n";
 	foreach $id ( @ids )
 	{
-		print INC "<li><a href=\"/docs/php/$id.php\">".$titles{$id}."</a></li>\n";
+		print INC "<li><a href=\"/documentation/tech/php/$id.php\">".$titles{$id}."</a></li>\n";
 		if( $id eq "logo" ) { print INC "</ul><ul>"; }
 	}
 	print INC "</ul>\n";
 	close( INC );
+
+	open( INDEX, ">../docs/index.php" );
+	print INDEX <<END;
+<?
+eprints_header( "Documentation - Technichal");
+require "php/index.inc";
+eprints_footer();
+?>
+END
+	close INDEX;
+
+
 	my $toc = '';
 	foreach $id ( @ids )
 	{
@@ -426,29 +438,27 @@ if( $website )
 		if( defined $ids[$c-1] )
 		{
 			$p = 
-'<link rel="Prev" href="http://www.eprints.org/docs/php/'.$ids[$c-1].'.php" />';
+'<link rel="Prev" href="http://eprints.org/documentation/tech/php/'.$ids[$c-1].'.php" />';
 		}
 		if( defined $ids[$c+1] )
 		{
 			$n = 
-'<link rel="Next" href="http://www.eprints.org/docs/php/'.$ids[$c+1].'.php" />';
+'<link rel="Next" href="http://eprints.org/documentation/tech/php/'.$ids[$c+1].'.php" />';
 		}
 		print TARGET <<END;
 <?
 
-include "../../software.phps";
-
 \$pagelinks = '
-<link rel="Up" href="http://software.eprints.org/documentation.php" />
-<link rel="ToC" href="http://software.eprints.org/documentation.php" />
+<link rel="Up" href="http://eprints.org/documentation/" />
+<link rel="ToC" href="http://eprints.org/documentation/tech/" />
 $toc
 $p
 $n
 ';
 
-epsw_docs_header( "/documentation.php", "$titles{$id}", \$pagelinks );
-
+eprints_header( "Tech. Documentation - $titles{$id}" );
 ?>
+<div class="floatmenu"><? require( "index.inc" ); ?></div>
 END
 
 		print TARGET '<div class="docs_index"><h2>Sections</h2>';
@@ -475,7 +485,7 @@ END
 print TARGET <<END;
 </div>
 <? 
-epsw_footer( "/documentation.php", "$DOCTITLE - $titles{$id}", \$pagelinks );
+eprints_footer();
 ?>
 END
 		close TARGET;
@@ -506,12 +516,12 @@ if( $website )
 {
 	my $user = 'webmaster';
 	my $host = 'seer.ecs.soton.ac.uk';
-	my $path = '/home/www.eprints/software/docs/';
+	my $path = '/home/www.eprints/techdocs/';
 
 	my @commands = (
-		"rsh -l $user $host rm -rf '$path*'",
-		"rcp -r docs/ $user\@$host:$path",
-		"rsh -l $user $host chmod a+rX -R $path"
+		"ssh $user\@$host rm -rf '$path'",
+		"scp -r docs/ $user\@$host:$path",
+		"ssh $user\@$host chmod a+rX -R $path"
 	);
 
 	foreach( @commands )

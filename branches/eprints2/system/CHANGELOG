@@ -2693,4 +2693,5 @@ PACKAGE: 2.2.99.2
     routines.
  - Added commented-out skip_validation stub to the default 
     ArchiveConfig.pm
-
+ - Made changes to tech_docs and makepackage to reflect new paths
+    in eprint.org website.
