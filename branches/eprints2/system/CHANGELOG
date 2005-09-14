@@ -2672,3 +2672,10 @@ PACKAGE: 2.2.99.2
     * SearchResults has an "export" method which calls an output
        plugin on the ressults.
 
+2005-09-14 cjg
+
+ - Added method to all output plugins which returns the URL which
+    will export a given dataobj in that format. 
+ - Added "/perl/export" which exports an eprint in a named output
+    format. If no format is specified, it lists legal formats.
+
