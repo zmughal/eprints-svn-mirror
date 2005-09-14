@@ -1,6 +1,4 @@
 
-# nb. does not yet handle multilang data
-
 # eprint needs magic documents field
 
 # documents needs magic files field
@@ -112,12 +110,37 @@ sub field_to_xml_single
 	if( $field->get_property( "hasid" ) )
 	{
 		push @r, "\n  ",$ind,"<id>",utf8($value->{id}),"</id>";
-		push @r, "\n  ",$ind,"<main>",field_to_xml_basic( $field, $value->{main}, $depth+1 ),"</main>";
+		push @r, "\n  ",$ind,"<main>",field_to_xml_noid( $field, $value->{main}, $depth+1 ),"</main>";
 		push @r, "\n",$ind;
 	}
 	else
 	{
-		push @r, field_to_xml_basic( $field, $value, $depth );
+		push @r, field_to_xml_noid( $field, $value, $depth );
+	}
+	return @r;
+}
+
+sub field_to_xml_noid
+{
+	my( $field, $value, $depth ) = @_;
+
+	my $ind = "  "x$depth;
+	my @r = ();
+
+	if( $field->get_property( "multilang" ) )
+	{
+		foreach my $langid ( keys %{$value} )
+		{
+			push @r, "\n  ",$ind,"<langvar>";
+			push @r, "\n    ",$ind,"<lang>",utf8($langid),"</lang>";
+			push @r, "\n    ",$ind,"<value>",field_to_xml_basic( $field, $value->{$langid}, $depth+2 ),"</value>";
+			push @r, "\n  ",$ind,"</langvar>";
+			push @r, "\n",$ind;
+		}
+	}
+	else
+	{
+		push  @r, field_to_xml_basic( $field, $value, $depth );
 	}
 	return @r;
 }
