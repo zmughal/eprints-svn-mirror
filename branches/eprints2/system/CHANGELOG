@@ -2695,3 +2695,7 @@ PACKAGE: 2.2.99.2
     ArchiveConfig.pm
  - Made changes to tech_docs and makepackage to reflect new paths
     in eprint.org website.
+ - Fixed bug in install.pl.in which did a numerical compare when it
+    should have been string compare.
+ - Added plugins directory to the installer.
+

@@ -268,7 +268,7 @@ sub set($$$$)
 {
 	my( $param, $from_configure, $systemsettings, $default ) = @_;
 
-	if( defined $from_configure->{$param} && $from_configure->{$param} != '' )
+	if( defined $from_configure->{$param} && $from_configure->{$param} eq '' )
 	{
 		# a setting has actually been configured by configure
 		$systemsettings->{$param} = $from_configure->{$param};
@@ -616,7 +616,7 @@ sub upgrade
 	my $newsigs = [];
 
         my @executable_dirs = ("bin", "cgi");
-	my @normal_dirs = ("defaultcfg", "cfg", "docs", "perl_lib");
+	my @normal_dirs = ("defaultcfg", "cfg", "docs", "perl_lib", "plugins" );
 	my @base_files = ("VERSION", "CHANGELOG", "BUGLIST", "COPYING", "NEWS", "AUTHORS", "TODO", "README" ); 
         foreach(@executable_dirs)
         {
@@ -682,7 +682,7 @@ sub full_install
 	print "Installing files : [";
 
 	my @executable_dirs = ("bin", "cgi");
-	my @normal_dirs = ("archives", "defaultcfg", "cfg", "docs", "perl_lib");
+	my @normal_dirs = ("archives", "defaultcfg", "cfg", "docs", "perl_lib", "plugins");
 
 	my $sigs = [];
 
