@@ -2685,4 +2685,12 @@ PACKAGE: 2.2.99.2
     file.
  - export-results now offers only output modes for the current 
     dataset.
+ - New method $eprint->skip_validation which returns false unless
+    the config option skip_validation is defined, in which case
+    it is called as a function pointer and returns true if the
+    eprint should _not_ be validated.
+ - Added skip_validation test to all eprint & document validation
+    routines.
+ - Added commented-out skip_validation stub to the default 
+    ArchiveConfig.pm
 

@@ -715,6 +715,14 @@ $c->{use_mimetex} = 0;
 # Uses the smtp_server specified in SystemSettings
 $c->{send_email} = \&EPrints::Utils::send_mail_via_smtp;
 
+# If you want to import legacy data which is excempt from the normal
+# validation methods, then uncomment this function and make it return
+# true for eprints which are not to be validated.
+# $c->{skip_validation} = sub { 
+#	my( $eprint ) = @_;
+#
+#	return 0;
+#};
 
 # Log timings on submissions. 
 # This feature creates a log file in the eprints var directory

@@ -712,6 +712,8 @@ sub validate_type
 {
 	my( $self, $for_archive ) = @_;
 	
+	return [] if $self->skip_validation;
+
 	my @problems;
 
 	# Make sure we have a value for the type, and that it's one of the
@@ -757,6 +759,8 @@ A reference to an empty array indicates no problems.
 sub validate_linking
 {
 	my( $self, $for_archive ) = @_;
+
+	return [] if $self->skip_validation;
 
 	my @problems;
 	
@@ -836,6 +840,8 @@ sub validate_meta
 {
 	my( $self, $for_archive ) = @_;
 	
+	return [] if $self->skip_validation;
+
 	my @all_problems;
 	my @req_fields = $self->{dataset}->get_required_type_fields( 
 		$self->get_value("type") );
@@ -894,6 +900,8 @@ sub validate_meta_page
 {
 	my( $self, $page, $for_archive ) = @_;
 	
+	return [] if $self->skip_validation;
+
 	my @problems;
 
 	my @check_fields = $self->{dataset}->get_page_fields( 
@@ -957,6 +965,9 @@ A reference to an empty array indicates no problems.
 sub validate_documents
 {
 	my( $self, $for_archive ) = @_;
+	
+	return [] if $self->skip_validation;
+
 	my @problems;
 	
         my @req_formats = $self->required_formats;
@@ -1018,7 +1029,7 @@ sub validate_documents
 ######################################################################
 =pod
 
-=item $foo = $eprint->validate_full( [$for_archive] )
+=item $problems = $eprint->validate_full( [$for_archive] )
 
 Return a reference to an array of XHTML DOM objects describing
 validation problems with the entire eprint.
@@ -1031,6 +1042,8 @@ A reference to an empty array indicates no problems.
 sub validate_full
 {
 	my( $self , $for_archive ) = @_;
+
+	return [] if $self->skip_validation;
 	
 	my @problems;
 
@@ -1057,6 +1070,30 @@ sub validate_full
 			$for_archive );
 
 	return( \@problems );
+}
+
+
+######################################################################
+=pod
+
+=item $boolean = $eprint->skip_validation
+
+Returns true if this eprint should pass validation without being
+properly validated. This is to allow the use of dodgey data imported
+from legacy systems.
+
+=cut
+######################################################################
+
+sub skip_validation 
+{
+	my( $self ) = @_;
+
+	my $skip_func = $self->{session}->get_archive->get_conf( "skip_validation" );
+
+	return( 0 ) if( !defined $skip_func );
+
+	return &{$skip_func}( $self );
 }
 
 
