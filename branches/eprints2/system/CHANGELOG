@@ -2678,4 +2678,6 @@ PACKAGE: 2.2.99.2
     will export a given dataobj in that format. 
  - Added "/perl/export" which exports an eprint in a named output
     format. If no format is specified, it lists legal formats.
-
+ - Added multilang support to output/core_xml
+ - Added method $eprint->render_export_links which returns a <ul>
+    of all things an eprint an eprint can be output as.

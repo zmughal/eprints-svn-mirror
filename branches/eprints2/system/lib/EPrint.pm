@@ -2117,9 +2117,38 @@ sub get_type
 
 
 
-1; # For use/require success
+######################################################################
+=pod
 
+=item $xhtml_ul_list = $eprint->render_export_links
+
+Return a <ul> list containing links to all the formats this eprint
+is available in. 
+
+=cut
+######################################################################
 	
+sub render_export_links
+{
+	my( $self ) = @_;
+
+	my $id = $self->get_value( "eprintid" );
+	my $ul = $self->{session}->make_element( "ul" );
+	my @plugins = $self->{session}->plugin_list( 
+					can_accept=>"dataobj/eprint", 
+					is_visible=>"all" );
+	foreach my $plugin_id ( @plugins ) {
+		my $li = $self->{session}->make_element( "li" );
+		my $plugin = $self->{session}->plugin( $plugin_id );
+		my $url = $plugin->call( "dataobj_export_url", $self );
+		my $a = $self->{session}->render_link( $url );
+		$a->appendChild( $plugin->call( "render_name" ) );
+		$li->appendChild( $a );
+		$ul->appendChild( $li );
+	}
+	return $ul;
+}
+
 
 ######################################################################
 =pod
@@ -2127,4 +2156,7 @@ sub get_type
 =back
 
 =cut
+######################################################################
+
+1; # For use/require success
 
