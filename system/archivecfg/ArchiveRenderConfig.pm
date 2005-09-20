@@ -87,41 +87,78 @@ sub eprint_render
 		}
 	}		
 
-	# This is where the cover image, if any, will go
-	# we can append stuff to it in a minute.
-	my $imagetable = $session->make_element( "table", border=>0 );
-	my $imagetr = $session->make_element( "tr" );
-	my $imagetd = $session->make_element( "td" );
-	my $docstd = $session->make_element( "td" );
-	
-	$page->appendChild( $imagetable );
-	$imagetable->appendChild( $imagetr );
-	$imagetr->appendChild( $imagetd );
-	$imagetr->appendChild( $docstd );
-
 	# Available documents
 	my @documents = $eprint->get_all_documents();
 
-	$p = $session->make_element( "p" );
-	$p->appendChild( $session->html_phrase( "page:fulltext" ) );
+	my $docs_to_show = scalar @documents;
+
+	# look for any coverimage document
 	foreach( @documents )
 	{
-		if( $_->get_value( "format" ) eq "coverimage" )
-		{
-			$imagetd->appendChild( $session->make_element(
-				"img",
-				align=>"left",
-				src=>$_->get_url(),
-				alt=>$_->get_value( "formatdesc" ) ) );
-			next;
-		}
+		next unless ( $_->get_value( "format" ) eq "coverimage" );
 
-		$p->appendChild( $session->make_element( "br" ) );
-		$p->appendChild( $_->render_citation_link() );
+		$page->appendChild( $session->make_element(
+			"img",
+			align=>"left",
+			style=>"padding-right: 0.5em; padding-bottom: 0.5em;",
+			src=>$_->get_url(),
+			alt=>$_->get_value( "formatdesc" ) ) );
+		--$docs_to_show;	
 	}
-	$docstd->appendChild( $p );
 
+	$p = $session->make_element( "p" );
+	$page->appendChild( $p );
 
+	if( $docs_to_show == 0 )
+	{
+		$p->appendChild( $session->html_phrase( "page:nofulltext" ) );
+	}
+	else
+	{
+		$p->appendChild( $session->html_phrase( "page:fulltext" ) );
+
+		my( $doctable, $doctr, $doctd );
+		$doctable = $session->make_element( "table" );
+
+		foreach my $doc ( @documents )
+		{
+			next if( $doc->get_value( "format" ) eq "coverimage" );
+	
+			$doctr = $session->make_element( "tr" );
+	
+			$doctd = $session->make_element( "td" );
+			$doctr->appendChild( $doctd );
+			$doctd->appendChild( 
+				_render_fileicon( 
+					$session, 
+					$doc->get_type, 
+					$doc->get_url ) );
+	
+			$doctd = $session->make_element( "td" );
+				$doctr->appendChild( $doctd );
+			$doctd->appendChild( $doc->render_citation_link() );
+			my %files = $doc->files;
+			if( defined $files{$doc->get_main} )
+			{
+				my $k = int($files{$doc->get_main}/1024)+1;
+				$doctd->appendChild( $session->make_element( 'br' ) );
+				$doctd->appendChild( $session->make_text( $k." Kb" ));
+			}
+			$doctable->appendChild( $doctr );
+		}
+		$page->appendChild( $doctable );
+	}	
+
+	# Alternative locations
+	if( $eprint->is_set( "official_url" ) )
+	{
+		$p = $session->make_element( "p" );
+		$page->appendChild( $p );
+		$p->appendChild( $session->html_phrase( "eprint_fieldname_official_url" ) );
+		$p->appendChild( $session->make_text( ": " ) );
+		$p->appendChild( $eprint->render_value( "official_url" ) );
+	}
+	
 	# Then the abstract
 	if( $eprint->is_set( "abstract" ) )
 	{
@@ -133,6 +170,10 @@ sub eprint_render
 		$p = $session->make_element( "p" );
 		$p->appendChild( $eprint->render_value( "abstract" ) );
 		$page->appendChild( $p );
+	}
+	else
+	{
+		$page->appendChild( $session->make_element( 'br' ) );
 	}
 	
 	my( $table, $tr, $td, $th );	# this table needs more class cjg
@@ -158,10 +199,41 @@ sub eprint_render
 		}
 	}
 
+	my $frag = $session->make_doc_fragment;
+	$frag->appendChild( $eprint->render_value( "type"  ) );
+	my $type = $eprint->get_value( "type" );
+	if( $type eq "conference_item" )
+	{
+		$frag->appendChild( $session->make_text( " (" ));
+		$frag->appendChild( $eprint->render_value( "pres_type"  ) );
+		$frag->appendChild( $session->make_text( ")" ));
+	}
+	if( $type eq "monograph" )
+	{
+		$frag->appendChild( $session->make_text( " (" ));
+		$frag->appendChild( $eprint->render_value( "monograph_type"  ) );
+		$frag->appendChild( $session->make_text( ")" ));
+	}
+	if( $type eq "thesis" )
+	{
+		$frag->appendChild( $session->make_text( " (" ));
+		$frag->appendChild( $eprint->render_value( "thesis_type"  ) );
+		$frag->appendChild( $session->make_text( ")" ));
+	}
 	$table->appendChild( _render_row(
 		$session,
 		$session->html_phrase( "eprint_fieldname_type" ),
-		$eprint->render_value( "type"  ) ) );
+		$frag ));
+
+	# Additional Info
+	if( $eprint->is_set( "note" ) )
+	{
+		$table->appendChild( _render_row(
+			$session,
+			$session->html_phrase( "eprint_fieldname_note" ),
+			$eprint->render_value( "note" ) ) );
+	}
+
 
 	# Keywords
 	if( $eprint->is_set( "keywords" ) )
@@ -206,19 +278,14 @@ sub eprint_render
 		$session->html_phrase( "page:deposited_by" ),
 		$usersname ) );
 
-	$table->appendChild( _render_row(
-		$session,
-		$session->html_phrase( "page:deposited_on" ),
-		$eprint->render_value( "datestamp" ) ) );
-
-	# Alternative locations
-	if( $eprint->is_set( "altloc" ) )
+	if( $eprint->is_set( "datestamp" ) )
 	{
 		$table->appendChild( _render_row(
 			$session,
-			$session->html_phrase( "eprint_fieldname_altloc" ),
-			$eprint->render_value( "altloc" ) ) );
+			$session->html_phrase( "page:deposited_on" ),
+			$eprint->render_value( "datestamp" ) ) );
 	}
+
 
 	# Now show the version and commentary response threads
 	if( $has_multiple_versions )
@@ -236,6 +303,13 @@ sub eprint_render
 		$page->appendChild( 
 			$eprint->render_version_thread( $commentary_field ) );
 	}
+
+	# Add a link to the edit-page for this record. Handy for staff.
+	my $edit_para = $session->make_element( "p", align=>"right" );
+	$edit_para->appendChild( $session->html_phrase( 
+		"page:edit_link",
+		link => $session->render_link( $eprint->get_url( 1 ) ) ) );
+	$page->appendChild( $edit_para );
 
 	my $title = $eprint->render_description();
 
@@ -291,16 +365,11 @@ sub eprint_render_full
 		"page:abstract_intro" ) );
 
 	my( $table, $tr, $td );
-	$table = $session->make_element( "table", border=>1, cellpadding=>20 );
-	$page->appendChild( $table );
+	my( $showdiv );
+	$showdiv = $session->make_element( "div", class=>"preview" );
+	$page->appendChild( $showdiv );
 	my( $abstractpage, $title ) = eprint_render( $eprint, $session );
-
-	$tr = $session->make_element( "tr" );
-	$td = $session->make_element( "td", bgcolor=>"#e0e0e0" );
-	$table->appendChild( $tr );
-	$tr->appendChild( $td );
-	$td->appendChild( $abstractpage );
-
+	$showdiv->appendChild( $abstractpage );
 
 	if( $eprint->is_set( "suggestions" ) )
 	{
@@ -315,7 +384,8 @@ sub eprint_render_full
 		$td->appendChild( $eprint->render_value( "suggestions" ) );
 	}
 
-
+	my $unspec_fields = $session->make_doc_fragment;
+	my $unspec_first = 1;
 
 	# Show all the other fields
 	$page->appendChild( $session->html_phrase( 
@@ -328,15 +398,34 @@ sub eprint_render_full
 	foreach $field ( $eprint->get_dataset()->get_type_fields(
 		  $eprint->get_value( "type" ) ) )
 	{
-		$table->appendChild( _render_row(
-			$session,
-			$session->make_text( 
-				$field->display_name( $session ) ),	
-			$eprint->render_value( 
-				$field->get_name(), 
-				1 ) ) );
+		next if( $field->get_name() eq "suggestions" );
 
+		if( $eprint->is_set( $field->get_name() ) )
+		{
+			$table->appendChild( _render_row(
+				$session,
+				$field->render_name( $session ),	
+				$eprint->render_value( 
+					$field->get_name(), 
+					1 ) ) );
+			next;
+		}
+
+		# unspecified value, add it to the list
+		if( $unspec_first )
+		{
+			$unspec_first = 0;
+		}
+		else
+		{
+			$unspec_fields->appendChild( $session->make_text( ", " ) );
+		}
+		$unspec_fields->appendChild( $field->render_name( $session ) );
 	}
+
+	$page->appendChild( $session->html_phrase( "page:unspecified", fieldnames=>$unspec_fields ) );
+		
+
 
 	return( $page, $title );			
 }
@@ -362,12 +451,12 @@ sub _render_row
 
 	$tr = $session->make_element( "tr" );
 
-	$th = $session->make_element( "th" ); 
+	$th = $session->make_element( "th", valign=>"top" ); 
 	$th->appendChild( $key );
 	$th->appendChild( $session->make_text( ":" ) );
 	$tr->appendChild( $th );
 
-	$td = $session->make_element( "td" ); 
+	$td = $session->make_element( "td", valign=>"top" ); 
 	$td->appendChild( $value );
 	$tr->appendChild( $td );
 
@@ -497,12 +586,12 @@ sub user_render_full
 		# and would just confuse the issue to print
 		next if( $name eq "newemail" );
 		next if( $name eq "newpassword" );
+		next if( $name eq "password" );
 		next if( $name eq "pin" );
 		next if( $name eq "pinsettime" );
 		$table->appendChild( _render_row(
 			$session,
-			$session->make_text( 
-				$field->display_name( $session ) ),	
+			$field->render_name( $session ),	
 			$user->render_value( $field->get_name(), 1 ) ) );
 
 	}
@@ -517,7 +606,7 @@ sub user_render_full
 		{
 			my $strong;
 			$strong = $session->make_element( "strong" );
-			$strong->appendChild( $session->make_text( $subs_ds->get_field( $_ )->display_name( $session ) ) );
+			$strong->appendChild( $subs_ds->get_field( $_ )->render_name( $session ) );
 			$strong->appendChild( $session->make_text( ": " ) );
 			$rowright->appendChild( $strong );
 			$rowright->appendChild( $subscr->render_value( $_ ) );
@@ -629,6 +718,55 @@ sub id_label
 
 	return $session->make_text( $id );
 }
+
+######################################################################
+#
+# $xhtml = render_fileinfo( $session, $field, $value )
+#
+######################################################################
+# This is a custom render method for the fileinfo field. It splits
+# up the information in the "fileinfo" field and renders icons which
+# link directly to the documents.
+#
+# It is used to include file icons in a citation.
+#
+# The fileinfo field is updated using the "eprint_automatic_fields"
+# method in ArchiveMetadataConfig.pm
+######################################################################
+
+sub render_fileinfo
+{
+	my( $session, $field, $value ) = @_;
+
+	my $f = $session->make_doc_fragment;
+	foreach my $icon ( split /\|/ , $value )
+	{
+		my( $type, $url ) = split( /;/, $icon );
+		$f->appendChild( _render_fileicon( $session, $type, $url ));
+	}
+
+	return $f;
+}
+
+sub _render_fileicon
+{
+	my( $session, $type, $url ) = @_;
+
+	# If you want to do something clever like
+	# map several types to one icon, then this
+	# is the place to do it! 
+
+	my $a = $session->render_link( $url );
+	$a->appendChild( $session->make_element( 
+		"img", 
+		src=>$session->get_archive->get_conf("base_url")."/images/fileicons/$type.png",
+		width=>48,
+		height=>48,
+		border=>0 ));
+	return $a;
+}
+
+
 
 # Return true to indicate the module loaded OK.
 1;
