@@ -2698,4 +2698,9 @@ PACKAGE: 2.2.99.2
  - Fixed bug in install.pl.in which did a numerical compare when it
     should have been string compare.
  - Added plugins directory to the installer.
+ 
+2005-09-20 cjg
+
+ - Fixed typo in install.pl.in "eq" should have been "ne"
+
 

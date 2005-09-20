@@ -268,7 +268,7 @@ sub set($$$$)
 {
 	my( $param, $from_configure, $systemsettings, $default ) = @_;
 
-	if( defined $from_configure->{$param} && $from_configure->{$param} eq '' )
+	if( defined $from_configure->{$param} && $from_configure->{$param} ne '' )
 	{
 		# a setting has actually been configured by configure
 		$systemsettings->{$param} = $from_configure->{$param};
