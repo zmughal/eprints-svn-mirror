@@ -491,7 +491,7 @@ else # apache 2
 
 print CONF <<END;
   <Directory "$htdocs_path">
-    Order deny, allow
+    Order deny,allow
     Allow from all
     AddType 'text/html; charset=UTF-8' .html
   </Directory>

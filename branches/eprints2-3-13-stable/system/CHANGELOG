@@ -2608,3 +2608,10 @@ PACKAGE: 2.2.99.2
  - Dataset unknown field error now reports the archiveid for better
     debugging.
 
+* 2.3.13
+
+2005-09-20 cjg
+
+ - Fixed bug in generate_apacheconf - space between deny and allow.
+
+* 2.3.13.1
