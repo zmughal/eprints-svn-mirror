@@ -1,0 +1,7 @@
+
+EPrints::Plugins::register( 
+	id => "output/xml",
+	parent => "output/core_xml",
+	visible => 'all',
+);
+

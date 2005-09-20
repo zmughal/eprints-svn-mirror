@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/eprints/perl_lib 
+#!/usr/bin/perl -w -I/opt/ep2stable/perl_lib 
 
 ######################################################################
 #
@@ -165,7 +165,7 @@ if( $errcnt )
 }
 
 $session->terminate();
-	
+
 exit;
 
 
@@ -256,7 +256,7 @@ sub generate_static
 					"static" );
 			}
 			EPrints::XML::dispose( $doc );
-print "$destination_filename\n";
+
 			$session->page_to_file( $destination_filename );
 
 		}
