@@ -17,11 +17,31 @@
 
 =head1 NAME
 
-B<EPrints::Session> - undocumented
+B<EPrints::Session> - Single connection to the EPrints system
 
 =head1 DESCRIPTION
 
-undocumented
+This module is not really a session. The name is out of date, but
+hard to change.
+
+EPrints::Session represents a connection to the EPrints system. It
+connects to a single EPrints repository, and the database used by
+that repository. Thus it has an associated EPrints::Database and
+EPrints::Archive object.
+
+Each "session" has a "current language". If you are running in a 
+multilingual mode, this is used by the HTML rendering functions to
+choose what language to return text in.
+
+The "session" object also knows about the current apache connection,
+if there is one, including the CGI parameters. 
+
+If the connection requires a username and password then it can also 
+give access to the EPrints::User object representing the user who is
+causing this request. 
+
+The session object also provides many methods for creating XHTML 
+results which can be returned via the web interface. 
 
 =over 4
 
@@ -35,24 +55,6 @@ undocumented
 #     undefined
 #
 ######################################################################
-
-######################################################################
-#
-# EPrint Session
-#
-######################################################################
-#
-#  __LICENSE__
-#
-######################################################################
-
-# CGI scripts must be no-cache. Hmmm.
-
-# cjg
-# - Make sure user is ePrints for sessions
-# - Check for df on startup
-
-# cjg: Can INT be indexed but NULL'able???
 
 package EPrints::Session;
 
@@ -78,34 +80,45 @@ use CGI;
 use strict;
 #require 'sys/syscall.ph';
 
-######################################################################
-#
-# new( $offline )
-#
-#  Start a new EPrints session, opening a database connection.
-#
-#  Command line scripts should pass in true for $offline.
-#  Apache-invoked scripts can omit it or pass in 0.
-#
-######################################################################
 
 
 ######################################################################
 =pod
 
-=item $thing = EPrints::Session->new( $mode, $param, $noise, $nocheckdb )
+=item $session = EPrints::Session->new( $mode, [$archiveid], [$noise], [$nocheckdb] )
 
-undocumented
+Create a connection to an EPrints repository which provides access 
+to the database and to the repository configuration.
+
+This method can be called in two modes. Setting $mode to 0 means this
+is a connection via a CGI web page. $archiveid is ignored, instead
+the value is taken from the "PerlSetVar EPrints_ArchiveID" option in
+the apache configuration for the current directory.
+
+If this is being called from a command line script, then $mode should
+be 1, and $archiveid should be the ID of the repository we want to
+connect to.
+
+$noise is the level of debugging output.
+0 - silent
+1 - quietish
+2 - noisy
+3 - debug all SQL statements
+4 - debug database connection
+ 
+Under normal conditions use "0" for online and "1" for offline.
+
+$nocheckdb - if this is set to 1 then a connection is made to the
+database without checking that the tables exist. 
 
 =cut
 ######################################################################
 
 sub new
 {
-	my( $class, $mode, $param, $noise, $nocheckdb ) = @_;
+	my( $class, $mode, $archiveid, $noise, $nocheckdb ) = @_;
 	# mode = 0    - We are online (CGI script)
-	# mode = 1    - We are offline (bin script) param is archiveid
-	# mode = 2    - We are online (auth) param is host and path.	
+	# mode = 1    - We are offline (bin script) $archiveid is archiveid
 	my $self = {};
 	bless $self, $class;
 
@@ -123,15 +136,15 @@ sub new
 	elsif( $mode == 1 )
 	{
 		$self->{offline} = 1;
-		if( !defined $param || $param eq "" )
+		if( !defined $archiveid || $archiveid eq "" )
 		{
 			print STDERR "No archive id specified.\n";
 			return undef;
 		}
-		$self->{archive} = EPrints::Archive->new_archive_by_id( $param );
+		$self->{archive} = EPrints::Archive->new_archive_by_id( $archiveid );
 		if( !defined $self->{archive} )
 		{
-			print STDERR "Can't load archive module for: $param\n";
+			print STDERR "Can't load archive module for: $archiveid\n";
 			return undef;
 		}
 	}
@@ -209,6 +222,63 @@ sub new
 # doc me.
 # static. does not need session.
 
+
+sub get_request
+{
+	my( $self ) = @_;
+
+	return $self->{request};
+}
+
+sub get_query
+{
+	my( $self ) = @_;
+
+	return $self->{query};
+}
+
+######################################################################
+=pod
+
+=item $session->terminate
+
+Perform any cleaning up necessary.
+
+=cut
+######################################################################
+
+sub terminate
+{
+	my( $self ) = @_;
+	
+	$self->{database}->garbage_collect();
+	$self->{archive}->call( "session_close", $self );
+	$self->{database}->disconnect();
+
+	# If we've not printed the XML page, we need to dispose of
+	# it now.
+	EPrints::XML::dispose( $self->{doc} );
+
+	if( $self->{noise} >= 2 ) { print "Ending EPrints Session.\n\n"; }
+}
+
+
+
+#############################################################
+#############################################################
+=pod
+
+=back
+
+=head2 Language Related Methods
+
+=over 4
+
+=cut
+#############################################################
+#############################################################
+
+
 sub get_session_language
 {
 	my( $archive, $request ) = @_; #$r should not really be passed???
@@ -280,58 +350,15 @@ END
 	return undef;
 }
 
-sub get_request
-{
-	my( $self ) = @_;
-
-	return $self->{request};
-}
-
-sub get_query
-{
-	my( $self ) = @_;
-
-	return $self->{query};
-}
-
 ######################################################################
 =pod
 
-=item $session->terminate
+=item $session->change_lang( $newlangid )
 
-Perform any cleaning up necessary
+Change the current language of the session. $newlangid should be a
+valid country code for the current archive.
 
-=cut
-######################################################################
-
-sub terminate
-{
-	my( $self ) = @_;
-	
-	$self->{database}->garbage_collect();
-	$self->{archive}->call( "session_close", $self );
-	$self->{database}->disconnect();
-
-	# If we've not printed the XML page, we need to dispose of
-	# it now.
-	EPrints::XML::dispose( $self->{doc} );
-
-	if( $self->{noise} >= 2 ) { print "Ending EPrints Session.\n\n"; }
-}
-
-#############################################################
-#
-# LANGUAGE FUNCTIONS
-#
-#############################################################
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->change_lang( $newlangid )
-
-undocumented
+An invalid code will cause eprints to terminate with an error.
 
 =cut
 ######################################################################
@@ -357,9 +384,18 @@ sub change_lang
 ######################################################################
 =pod
 
-=item $foo = $thing->html_phrase( $phraseid, %inserts )
+=item $xhtml_phrase = $session->html_phrase( $phraseid, %inserts )
 
-undocumented
+Return an XHTML DOM object describing a phrase from the phrase files.
+
+$phraseid is the id of the phrase to return. If the same ID appears
+in both the archive-specific phrases file and the system phrases file
+then the archive-specific one is used.
+
+If the phrase contains <ep:pin> elements, then each one should have
+an entry in %inserts where the key is the "ref" of the pin and the
+value is an XHTML DOM object describing what the pin should be 
+replaced with.
 
 =cut
 ######################################################################
@@ -385,9 +421,13 @@ sub html_phrase
 ######################################################################
 =pod
 
-=item $foo = $thing->phrase( $phraseid, %inserts )
+=item $utf8_text = $session->phrase( $phraseid, %inserts )
 
-undocumented
+Performs the same function as html_phrase, but returns plain text.
+
+All HTML elements will be removed, <br> and <p> will be converted 
+into breaks in the text. <img> tags will be replaced with their 
+"alt" values.
 
 =cut
 ######################################################################
@@ -409,9 +449,10 @@ sub phrase
 ######################################################################
 =pod
 
-=item $foo = $thing->get_lang
+=item $language = $session->get_lang
 
-undocumented
+Return the EPrints::Language object for this sessions current 
+language.
 
 =cut
 ######################################################################
@@ -427,9 +468,9 @@ sub get_lang
 ######################################################################
 =pod
 
-=item $foo = $thing->get_langid
+=item $langid = $session->get_langid
 
-undocumented
+Return the ID code of the current language of this session.
 
 =cut
 ######################################################################
@@ -448,9 +489,27 @@ sub get_langid
 ######################################################################
 =pod
 
-=item EPrints::Session::best_language( $archive, $lang, %values )
+=item $value = EPrints::Session::best_language( $archive, $lang, %values )
 
-undocumented
+$archive is the current archive. $lang is the prefered language.
+
+%values contains keys which are language ids, and values which is
+text or phrases in those languages, all translations of the same 
+thing.
+
+This function returns one of the values from %values based on the 
+following logic:
+
+If possible, return the value for $lang.
+
+Otherwise, if possible return the value for the default language of
+this archive.
+
+Otherwise, if possible return the value for "en" (English).
+
+Otherwise just return any one value.
+
+This means that the view sees the best possible phrase. 
 
 =cut
 ######################################################################
@@ -482,7 +541,7 @@ sub best_language
 ######################################################################
 =pod
 
-=item $foo = $thing->get_order_names( $dataset )
+=item $foo = $session->get_order_names( $dataset )
 
 undocumented
 
@@ -507,7 +566,7 @@ sub get_order_names
 ######################################################################
 =pod
 
-=item $foo = $thing->get_order_name( $dataset, $orderid )
+=item $foo = $session->get_order_name( $dataset, $orderid )
 
 undocumented
 
@@ -526,7 +585,7 @@ sub get_order_name
 ######################################################################
 =pod
 
-=item $foo = $thing->get_view_name( $dataset, $viewid )
+=item $foo = $session->get_view_name( $dataset, $viewid )
 
 undocumented
 
@@ -543,17 +602,26 @@ sub get_view_name
 
 
 
+
 #############################################################
-#
-# ACCESSOR(sp cjg) FUNCTIONS
-#
+#############################################################
+=pod
+
+=back
+
+=head2 Accessor Methods
+
+=over 4
+
+=cut
+#############################################################
 #############################################################
 
 
 ######################################################################
 =pod
 
-=item $foo = $thing->get_db
+=item $foo = $session->get_db
 
 undocumented
 
@@ -571,9 +639,9 @@ sub get_db
 ######################################################################
 =pod
 
-=item $foo = $thing->get_archive
+=item $archive = $session->get_archive
 
-undocumented
+Return the EPrints::Archive object associated with the Session.
 
 =cut
 ######################################################################
@@ -584,19 +652,13 @@ sub get_archive
 	return $self->{archive};
 }
 
-#
-# $url = url()
-#
-#  Returns the URL of the current script
-#
-
 
 ######################################################################
 =pod
 
-=item $foo = $thing->get_uri
+=item $foo = $session->get_uri
 
-undocumented
+Returns the URL of the current script. Or "undef".
 
 =cut
 ######################################################################
@@ -605,6 +667,8 @@ sub get_uri
 {
 	my( $self ) = @_;
 
+	return undef unless defined $self->{request};
+
 	return( $self->{"request"}->uri );
 }
 
@@ -612,9 +676,10 @@ sub get_uri
 ######################################################################
 =pod
 
-=item $foo = $thing->get_noise
+=item $noise_level = $session->get_noise
 
-undocumented
+Return the noise level for the current session. See the explaination
+under EPrints::Session->new()
 
 =cut
 ######################################################################
@@ -630,9 +695,10 @@ sub get_noise
 ######################################################################
 =pod
 
-=item $foo = $thing->get_online
+=item $boolean = $session->get_online
 
-undocumented
+Return true if this script is running via CGI, return false if we're
+on the command line.
 
 =cut
 ######################################################################
@@ -646,32 +712,51 @@ sub get_online
 
 
 
+
 #############################################################
-#
-# DOM FUNCTIONS
-#
+#############################################################
+=pod
+
+=back
+
+=head2 DOM Related Methods
+
+These methods help build XML. Usually, but not always XHTML.
+
+=over 4
+
+=cut
+#############################################################
 #############################################################
 
 
 ######################################################################
 =pod
 
-=item $foo = $thing->make_element( $ename, %params )
+=item $dom = $session->make_element( $element_name, %attribs )
 
-undocumented
+Return a DOM element with name ename and the specified attributes.
+
+eg. $session->make_element( "img", src => "/foo.gif", alt => "my pic" )
+
+Will return the DOM object describing:
+
+<img src="/foo.gif" alt="my pic" />
+
+Note that in the call we use "=>" not "=".
 
 =cut
 ######################################################################
 
 sub make_element
 {
-	my( $self , $ename , %params ) = @_;
+	my( $self , $ename , %attribs ) = @_;
 
 	my $element = $self->{doc}->createElement( $ename );
-	foreach( keys %params )
+	foreach( keys %attribs )
 	{
-		next unless( defined $params{$_} );
-		my $value = "$params{$_}"; # ensure it's just a string
+		next unless( defined $attribs{$_} );
+		my $value = "$attribs{$_}"; # ensure it's just a string
 		$element->setAttribute( $_ , $value );
 	}
 
@@ -682,9 +767,10 @@ sub make_element
 ######################################################################
 =pod
 
-=item $foo = $thing->make_indent( $width )
+=item $dom = $session->make_indent( $width )
 
-undocumented
+Return a DOM object describing a C.R. and then $width spaces. This
+is used to make nice looking XML for things like the OAI interface.
 
 =cut
 ######################################################################
@@ -699,9 +785,13 @@ sub make_indent
 ######################################################################
 =pod
 
-=item $foo = $thing->make_comment( $text )
+=item $dom = $session->make_comment( $text )
 
-undocumented
+Return a DOM object describing a comment containing $text.
+
+eg.
+
+<!-- this is a comment -->
 
 =cut
 ######################################################################
@@ -719,9 +809,20 @@ sub make_comment
 ######################################################################
 =pod
 
-=item $foo = $thing->make_text( $text )
+=item $DOM = $session->make_text( $text )
 
-undocumented
+Return a DOM object containing the given text. $text should be
+UTF-8 encoded.
+
+Characters will be treated as _text_ including < > etc.
+
+eg.
+
+$session->make_text( "This is <b> an example" );
+
+Would return a DOM object representing the XML:
+
+"This is &lt;b&gt; an example"
 
 =cut
 ######################################################################
@@ -748,7 +849,7 @@ sub make_text
 ######################################################################
 =pod
 
-=item $foo = $thing->make_doc_fragment
+=item $foo = $session->make_doc_fragment
 
 undocumented
 
@@ -764,17 +865,32 @@ sub make_doc_fragment
 
 
 
+
+
+
 #############################################################
-#
-# XHTML FUNCTIONS
-#
 #############################################################
+=pod
+
+=back
+
+=head2 XHTML Related Methods
+
+These methods help build XHTML.
+
+=over 4
+
+=cut
+#############################################################
+#############################################################
+
+
 
 
 ######################################################################
 =pod
 
-=item $foo = $thing->render_ruler
+=item $foo = $session->render_ruler
 
 undocumented
 
@@ -793,7 +909,7 @@ sub render_ruler
 ######################################################################
 =pod
 
-=item $foo = $thing->render_nbsp
+=item $foo = $session->render_nbsp
 
 Return an XHTML &nbsp; character.
 
@@ -812,7 +928,7 @@ sub render_nbsp
 ######################################################################
 =pod
 
-=item $foo = $thing->render_data_element( $indent, $elementname, $value, %opts )
+=item $foo = $session->render_data_element( $indent, $elementname, $value, %opts )
 
 undocumented
 
@@ -836,7 +952,7 @@ sub render_data_element
 ######################################################################
 =pod
 
-=item $foo = $thing->render_link( $uri, $target )
+=item $foo = $session->render_link( $uri, $target )
 
 undocumented
 
@@ -879,7 +995,7 @@ sub render_language_name
 ######################################################################
 =pod
 
-=item $thing->render_name( $name, [$familylast] )
+=item $session->render_name( $name, [$familylast] )
 
 undocumented
 
@@ -902,7 +1018,7 @@ sub render_name
 ######################################################################
 =pod
 
-=item $foo = $thing->render_option_list( %params )
+=item $foo = $session->render_option_list( %params )
 
 undocumented
 
@@ -1071,7 +1187,7 @@ sub old_render_option_list
 ######################################################################
 =pod
 
-=item $foo = $thing->render_single_option( $key, $desc, $selected )
+=item $foo = $session->render_single_option( $key, $desc, $selected )
 
 undocumented
 
@@ -1096,7 +1212,7 @@ sub render_single_option
 ######################################################################
 =pod
 
-=item $foo = $thing->render_hidden_field( $name, $value )
+=item $foo = $session->render_hidden_field( $name, $value )
 
 undocumented
 
@@ -1123,7 +1239,7 @@ sub render_hidden_field
 ######################################################################
 =pod
 
-=item $foo = $thing->render_upload_field( $name )
+=item $foo = $session->render_upload_field( $name )
 
 undocumented
 
@@ -1152,9 +1268,23 @@ sub render_upload_field
 ######################################################################
 =pod
 
-=item $foo = $thing->render_action_buttons( %buttons )
+=item $dom = $session->render_action_buttons( %buttons )
 
-undocumented
+Returns a DOM object describing the set of buttons.
+
+The keys of %buttons are the ids of the action that button will cause,
+the values are UTF-8 text that should appear on the button.
+
+Two optional additional keys may be used:
+
+_order => [ "action1", "action2" ]
+
+will force the buttons to appear in a set order.
+
+_class => "my_css_class" 
+
+will add a class attribute to the <div> containing the buttons to 
+allow additional styling.
 
 =cut
 ######################################################################
@@ -1170,9 +1300,14 @@ sub render_action_buttons
 ######################################################################
 =pod
 
-=item $foo = $thing->render_internal_buttons( %buttons )
+=item $dom = $session->render_internal_buttons( %buttons )
 
-undocumented
+As for render_action_buttons, but creates buttons for actions which
+will modify the state of the current form, not continue with whatever
+process the form is part of.
+
+eg. the "More Spaces" button and the up and down arrows on multiple
+type fields.
 
 =cut
 ######################################################################
@@ -1185,12 +1320,9 @@ sub render_internal_buttons
 }
 
 
-# cjg buttons nead an order... They are done by a hash
 ######################################################################
 # 
-# $foo = $thing->_render_buttons_aux( $btype, %buttons )
-#
-# undocumented
+# $dom = $session->_render_buttons_aux( $btype, %buttons )
 #
 ######################################################################
 
@@ -1233,15 +1365,30 @@ sub _render_buttons_aux
 	return( $div );
 }
 
-## (dest is optional)
-#cjg "POST" forms must be utf8 and multipart
-
 ######################################################################
 =pod
 
-=item $foo = $thing->render_form( $method, $dest )
+=item $dom = $session->render_form( $method, $dest )
 
-undocumented
+Return a DOM object describing an HTML form element. 
+
+$method should be "GET" or "POST"
+
+$dest is the target of the form. By default the current page.
+
+eg.
+
+$session->render_form( "GET", "http://example.com/perl/foo" );
+
+returns a DOM object representing:
+
+<form method="GET" action="http://example.com/perl/foo" accept-charset="utf-8" />
+
+If $method is "POST" then an addition attribute is set:
+enctype="multipart/form-data" 
+
+This just controls how the data is passed from the browser to the
+CGI library. You don't need to worry about it.
 
 =cut
 ######################################################################
@@ -1269,7 +1416,7 @@ sub render_form
 ######################################################################
 =pod
 
-=item $foo = $thing->render_subjects( $subject_list, $baseid, $currentid, $linkmode, $sizes )
+=item $foo = $session->render_subjects( $subject_list, $baseid, $currentid, $linkmode, $sizes )
 
 undocumented
 
@@ -1300,7 +1447,7 @@ sub render_subjects
 
 ######################################################################
 # 
-# $foo = $thing->_render_subjects_aux( $subjects, $id, $currentid, $linkmode, $sizes )
+# $foo = $session->_render_subjects_aux( $subjects, $id, $currentid, $linkmode, $sizes )
 #
 # undocumented
 #
@@ -1431,28 +1578,6 @@ sub render_error
 	$self->send_page();
 }
 
-#
-# render_input_form( $fields,              #array_ref
-#              $values,              #hash_ref
-#              $show_names,
-#              $show_help,
-#              $action_buttons,      #array_ref
-#              $hidden_fields,       #hash_ref
-#              $dest
-#
-#  Renders an HTML form. $fields is a reference to metadata fields
-#  in the usual format. $values should map field names to existing values.
-#  This function also puts in a hidden parameter "seen" and sets it to
-#  true. That way, a calling script can check the value of the parameter
-#  "seen" to see if the users seen and responded to the form.
-#
-#  Submit buttons are specified in a reference to an array of names.
-#  If $action_buttons isn't passed in (or is undefined), a simple
-#  default "Submit" button is slapped on.
-#
-#  $dest should contain the URL of the destination
-#
-
 my %INPUT_FORM_DEFAULTS = (
 	dataset => undef,
 	type	=> undef,
@@ -1472,9 +1597,51 @@ my %INPUT_FORM_DEFAULTS = (
 ######################################################################
 =pod
 
-=item $foo = $thing->render_input_form( %p )
+=item $dom = $session->render_input_form( %params )
 
-undocumented
+Return a DOM object representing an entire input form.
+
+%params contains the following options:
+
+dataset: The EPrints::Dataset to which the form relates, if any.
+
+fields: a reference to an array of EPrint::MetaField objects,
+which describe the fields to be added to the form.
+
+values: a set of default values. A reference to a hash where
+the keys are ID's of fields, and the values are the default
+values for those fields.
+
+show_help: if true, show the fieldhelp phrase for each input 
+field.
+
+show_name: if true, show the fieldname phrase for each input 
+field.
+
+buttons: a description of the buttons to appear at the bottom
+of the form. See render_action_buttons for details.
+
+top_buttons: a description of the buttons to appear at the top
+of the form (optional).
+
+default_action: the id of the action to be performed by default, 
+ie. if the user pushes "return" in a text field.
+
+dest: The URL of the target for this form. If not defined then
+the current URI is used.
+
+type: if this form relates to a user or an eprint, the type of
+eprint/user can effect what fields are flagged as required. This
+param contains the ID of the eprint/user if any, and if relevant.
+
+staff: if true, this form is being presented to archive staff 
+(admin, or editor). This may change which fields are required.
+
+hidden_fields: reference to a hash. The keys of which are CGI keys
+and the values are the values they are set to. This causes hidden
+form elements to be set, so additional information can be passed.
+
+comment: not yet used.
 
 =cut
 ######################################################################
@@ -1570,7 +1737,7 @@ sub render_input_form
 
 ######################################################################
 # 
-# $foo = $thing->_render_input_form_field( $field, $value, $show_names, $show_help, $comment, $dataset, $type, $staff, $hiddenfields )
+# $foo = $session->_render_input_form_field( $field, $value, $show_names, $show_help, $comment, $dataset, $type, $staff, $hiddenfields )
 #
 # undocumented
 #
@@ -1653,16 +1820,24 @@ sub _render_input_form_field
 
 
 #############################################################
-#
-# CURRENT XHTML PAGE FUNCTIONS
-#
+#############################################################
+=pod
+
+=back
+
+=head2 Methods relating to the current XHTML page
+
+=over 4
+
+=cut
+#############################################################
 #############################################################
 
 
 ######################################################################
 =pod
 
-=item $foo = $thing->build_page( $title, $mainbit, [$pageid], [$links], [$template_id] )
+=item $foo = $session->build_page( $title, $mainbit, [$pageid], [$links], [$template_id] )
 
 undocumented
 
@@ -1821,7 +1996,7 @@ sub _process_page
 ######################################################################
 =pod
 
-=item $foo = $thing->send_page( %httpopts )
+=item $foo = $session->send_page( %httpopts )
 
 undocumented
 
@@ -1845,7 +2020,7 @@ END
 ######################################################################
 =pod
 
-=item $foo = $thing->page_to_file( $filename )
+=item $foo = $session->page_to_file( $filename )
 
 undocumented
 
@@ -1865,7 +2040,7 @@ sub page_to_file
 ######################################################################
 =pod
 
-=item $foo = $thing->set_page( $newhtml )
+=item $foo = $session->set_page( $newhtml )
 
 undocumented
 
@@ -1887,7 +2062,7 @@ sub set_page
 ######################################################################
 =pod
 
-=item $foo = $thing->clone_for_me( $node, $deep )
+=item $foo = $session->clone_for_me( $node, $deep )
 
 undocumented
 
@@ -1902,15 +2077,103 @@ sub clone_for_me
 }
 
 
+######################################################################
+=pod
+
+=item $session->redirect( $url )
+
+Redirects the browser to $url.
+
+=cut
+######################################################################
+
+sub redirect
+{
+	my( $self, $url ) = @_;
+
+	# Write HTTP headers if appropriate
+	if( $self->{"offline"} )
+	{
+		print STDERR "ODD! redirect called in offline script.\n";
+		return;
+	}
+
+	$self->{"request"}->status_line( "302 Moved" );
+	EPrints::AnApache::header_out( 
+		$self->{"request"},
+		"Location",
+		$url );
+	EPrints::AnApache::send_http_header( $self->{"request"} );
+}
 
 
-###########################################################
-#
-# FUNCTIONS WHICH HANDLE INPUT FROM THE USER, BROWSER AND
-# APACHE
-#
-###########################################################
+######################################################################
+=pod
 
+=item $foo = $session->send_http_header( %opts )
+
+undocumented
+
+=cut
+######################################################################
+
+sub send_http_header
+{
+	my( $self, %opts ) = @_;
+
+	# Write HTTP headers if appropriate
+	if( $self->{offline} )
+	{
+		$self->{archive}->log( "Attempt to send HTTP Header while offline" );
+		return;
+	}
+
+	if( !defined $opts{content_type} )
+	{
+		$opts{content_type} = 'text/html; charset=UTF-8';
+	}
+	$self->{request}->content_type( $opts{content_type} );
+
+	EPrints::AnApache::header_out( 
+		$self->{"request"},
+		"Cache-Control",
+		"no-store, no-cache, must-revalidate" );
+
+	if( defined $opts{lang} )
+	{
+		my $cookie = $self->{query}->cookie(
+			-name    => $self->{archive}->get_conf("lang_cookie_name"),
+			-path    => "/",
+			-value   => $opts{lang},
+			-expires => "+10y", # really long time
+			-domain  => $self->{archive}->get_conf("lang_cookie_domain") );
+		EPrints::AnApache::header_out( 
+				$self->{"request"},
+				"Set-Cookie",
+				$cookie );
+	}
+
+	EPrints::AnApache::send_http_header( $self->{request} );
+}
+
+
+
+
+#############################################################
+#############################################################
+=pod
+
+=back
+
+=head2 Input Methods
+
+These handle input from the user, browser and apache.
+
+=over 4
+
+=cut
+#############################################################
+#############################################################
 
 
 
@@ -1918,7 +2181,7 @@ sub clone_for_me
 ######################################################################
 =pod
 
-=item $foo = $thing->param( $name )
+=item $foo = $session->param( $name )
 
 undocumented
 
@@ -1980,7 +2243,7 @@ sub have_parameters
 ######################################################################
 =pod
 
-=item $foo = $thing->auth_check( $resource )
+=item $foo = $session->auth_check( $resource )
 
 undocumented
 
@@ -2019,7 +2282,7 @@ sub auth_check
 ######################################################################
 =pod
 
-=item $foo = $thing->current_user
+=item $foo = $session->current_user
 
 undocumented
 
@@ -2053,7 +2316,7 @@ sub current_user
 ######################################################################
 =pod
 
-=item $foo = $thing->seen_form
+=item $foo = $session->seen_form
 
 undocumented
 
@@ -2076,7 +2339,7 @@ sub seen_form
 ######################################################################
 =pod
 
-=item $foo = $thing->internal_button_pressed( $buttonid )
+=item $foo = $session->internal_button_pressed( $buttonid )
 
 undocumented
 
@@ -2119,7 +2382,7 @@ sub internal_button_pressed
 ######################################################################
 =pod
 
-=item $foo = $thing->get_action_button
+=item $foo = $session->get_action_button
 
 undocumented
 
@@ -2150,7 +2413,7 @@ sub get_action_button
 ######################################################################
 =pod
 
-=item $foo = $thing->get_internal_button
+=item $foo = $session->get_internal_button
 
 undocumented
 
@@ -2181,206 +2444,10 @@ sub get_internal_button
 	return $self->{internalbutton};
 }
 
-###########################################################
-#
-# OTHER FUNCTIONS
-#
-###########################################################
-
-
 ######################################################################
 =pod
 
-=item $foo = $thing->get_citation_spec( $dataset, $ctype )
-
-undocumented
-
-=cut
-######################################################################
-
-sub get_citation_spec
-{
-	my( $self, $dataset, $ctype ) = @_;
-
-	my $citation_id = $dataset->confid();
-	$citation_id.="_".$ctype if( defined $ctype );
-
-	my $citespec = $self->{archive}->get_citation_spec( 
-					$self->{lang}->get_id(), 
-					$citation_id );
-
-	if( !defined $citespec )
-	{
-		return $self->make_text( "Error: Unknown Citation Style \"$citation_id\"" );
-	}
-	
-	my $r = $self->clone_for_me( $citespec, 1 );
-
-	return $r;
-}
-
-
-######################################################################
-=pod
-
-=item EPrints::Session::microtime( microtime )
-
-undocumented
-
-=cut
-######################################################################
-
-sub microtime
-{
-        # disabled due to bug.
-        return time();
-
-        my $TIMEVAL_T = "LL";
-	my $t = "";
-	my @t = ();
-
-        $t = pack($TIMEVAL_T, ());
-
-      syscall( &SYS_gettimeofday, $t, 0) != -1
-                or die "gettimeofday: $!";
-
-        @t = unpack($TIMEVAL_T, $t);
-        $t[1] /= 1_000_000;
-
-        return $t[0]+$t[1];
-}
-
-
-#
-# redirect( $url )
-#
-#  Redirects the browser to $url.
-#
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->redirect( $url )
-
-undocumented
-
-=cut
-######################################################################
-
-sub redirect
-{
-	my( $self, $url ) = @_;
-
-	# Write HTTP headers if appropriate
-	if( $self->{"offline"} )
-	{
-		print STDERR "ODD! redirect called in offline script.\n";
-		return;
-	}
-
-	$self->{"request"}->status_line( "302 Moved" );
-	EPrints::AnApache::header_out( 
-		$self->{"request"},
-		"Location",
-		$url );
-	EPrints::AnApache::send_http_header( $self->{"request"} );
-}
-
-#
-# mail_administrator( $subject, $message )
-#
-#  Sends a mail to the archive administrator with the given subject and
-#  message body.
-#
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->mail_administrator( $subjectid, $messageid, %inserts )
-
-undocumented
-
-=cut
-######################################################################
-
-sub mail_administrator
-{
-	my( $self,   $subjectid, $messageid, %inserts ) = @_;
-	#   Session, string,     string,     string->DOM
-
-	# Mail the admin in the default language
-	my $langid = $self->{archive}->get_conf( "defaultlanguage" );
-	my $lang = $self->{archive}->get_language( $langid );
-
-	return EPrints::Utils::send_mail(
-		$self->{archive},
-		$langid,
-		EPrints::Utils::tree_to_utf8( 
-			$lang->phrase( "lib/session:archive_admin", {}, $self ) ),
-		$self->{archive}->get_conf( "adminemail" ),
-		EPrints::Utils::tree_to_utf8( 
-			$lang->phrase( $subjectid, {}, $self ) ),
-		$lang->phrase( $messageid, \%inserts, $self ), 
-		$lang->phrase( "mail_sig", {}, $self ) ); 
-}
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->send_http_header( %opts )
-
-undocumented
-
-=cut
-######################################################################
-
-sub send_http_header
-{
-	my( $self, %opts ) = @_;
-
-	# Write HTTP headers if appropriate
-	if( $self->{offline} )
-	{
-		$self->{archive}->log( "Attempt to send HTTP Header while offline" );
-		return;
-	}
-
-	if( !defined $opts{content_type} )
-	{
-		$opts{content_type} = 'text/html; charset=UTF-8';
-	}
-	$self->{request}->content_type( $opts{content_type} );
-
-	EPrints::AnApache::header_out( 
-		$self->{"request"},
-		"Cache-Control",
-		"no-store, no-cache, must-revalidate" );
-
-	if( defined $opts{lang} )
-	{
-		my $cookie = $self->{query}->cookie(
-			-name    => $self->{archive}->get_conf("lang_cookie_name"),
-			-path    => "/",
-			-value   => $opts{lang},
-			-expires => "+10y", # really long time
-			-domain  => $self->{archive}->get_conf("lang_cookie_domain") );
-		EPrints::AnApache::header_out( 
-				$self->{"request"},
-				"Set-Cookie",
-				$cookie );
-	}
-
-	EPrints::AnApache::send_http_header( $self->{request} );
-}
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->client
+=item $foo = $session->client
 
 undocumented
 
@@ -2414,7 +2481,7 @@ sub client
 ######################################################################
 =pod
 
-=item $foo = $thing->get_http_status
+=item $foo = $session->get_http_status
 
 undocumented
 
@@ -2429,6 +2496,24 @@ sub get_http_status
 }
 
 
+
+
+
+
+
+#############################################################
+#############################################################
+=pod
+
+=back
+
+=head2 Methods related to Plugins
+
+=over 4
+
+=cut
+#############################################################
+#############################################################
 
 
 ######################################################################
@@ -2469,7 +2554,7 @@ sub plugin
 ######################################################################
 =pod
 
-=item $thing = $session->plugin_call( $plugin_id, $method, %params );
+=item $session = $session->plugin_call( $plugin_id, $method, %params );
 
 Calls a $method on a plugin with id $plugin_id. Passes %params to
 the method and returns whatever the method returns.
@@ -2534,6 +2619,125 @@ sub plugin_list
 
 
 
+#############################################################
+#############################################################
+=pod
+
+=back
+
+=head2 Other Methods
+
+=over 4
+
+=cut
+#############################################################
+#############################################################
+
+
+######################################################################
+=pod
+
+=item $foo = $session->get_citation_spec( $dataset, $ctype )
+
+undocumented
+
+=cut
+######################################################################
+
+sub get_citation_spec
+{
+	my( $self, $dataset, $ctype ) = @_;
+
+	my $citation_id = $dataset->confid();
+	$citation_id.="_".$ctype if( defined $ctype );
+
+	my $citespec = $self->{archive}->get_citation_spec( 
+					$self->{lang}->get_id(), 
+					$citation_id );
+
+	if( !defined $citespec )
+	{
+		return $self->make_text( "Error: Unknown Citation Style \"$citation_id\"" );
+	}
+	
+	my $r = $self->clone_for_me( $citespec, 1 );
+
+	return $r;
+}
+
+
+######################################################################
+=pod
+
+=item EPrints::Session::microtime( microtime )
+
+undocumented
+
+=cut
+######################################################################
+
+sub microtime
+{
+        # disabled due to bug.
+        return time();
+
+        my $TIMEVAL_T = "LL";
+	my $t = "";
+	my @t = ();
+
+        $t = pack($TIMEVAL_T, ());
+
+      syscall( &SYS_gettimeofday, $t, 0) != -1
+                or die "gettimeofday: $!";
+
+        @t = unpack($TIMEVAL_T, $t);
+        $t[1] /= 1_000_000;
+
+        return $t[0]+$t[1];
+}
+
+
+# mail_administrator( $subject, $message )
+#
+#  Sends a mail to the archive administrator with the given subject and
+#  message body.
+#
+
+
+######################################################################
+=pod
+
+=item $foo = $session->mail_administrator( $subjectid, $messageid, %inserts )
+
+undocumented
+
+=cut
+######################################################################
+
+sub mail_administrator
+{
+	my( $self,   $subjectid, $messageid, %inserts ) = @_;
+	#   Session, string,     string,     string->DOM
+
+	# Mail the admin in the default language
+	my $langid = $self->{archive}->get_conf( "defaultlanguage" );
+	my $lang = $self->{archive}->get_language( $langid );
+
+	return EPrints::Utils::send_mail(
+		$self->{archive},
+		$langid,
+		EPrints::Utils::tree_to_utf8( 
+			$lang->phrase( "lib/session:archive_admin", {}, $self ) ),
+		$self->{archive}->get_conf( "adminemail" ),
+		EPrints::Utils::tree_to_utf8( 
+			$lang->phrase( $subjectid, {}, $self ) ),
+		$lang->phrase( $messageid, \%inserts, $self ), 
+		$lang->phrase( "mail_sig", {}, $self ) ); 
+}
+
+
+
+
 
 
 
@@ -2542,7 +2746,7 @@ sub plugin_list
 ######################################################################
 =pod
 
-=item $foo = $thing->DESTROY
+=item $foo = $session->DESTROY
 
 undocumented
 

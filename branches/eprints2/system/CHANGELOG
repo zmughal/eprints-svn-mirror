@@ -2711,4 +2711,4 @@ PACKAGE: 2.2.99.2
 
  - Added /testdata/ directory. This contains a script to load test
     data into a repository, and the files containing that data.
-
+ - Documented many methods in EPrints::Session
