@@ -98,8 +98,17 @@ foreach( @installerfiles )
 }
 system("./autogen.sh");
 
+
+
+
+
+
+
+
+
+# find files to which the __FOO__ substitutions should be applied to.  
 my @files = @installerfiles;
-foreach my $dir ( "archivecfg", "bin", "cgi", "cgi/users", "cgi/users/staff", "lib", "lib/MetaField" )
+foreach my $dir ( "archivecfg", "bin", "cgi", "cgi/users", "cgi/users/staff", "lib", "lib/MetaField", "testdata/bin" )
 {
 	opendir( DIR, $dir );
 	my $file;
@@ -125,6 +134,14 @@ foreach my $file ( @files )
 	insert_data( "__LICENSE__", $license, $file, 1 );
 	insert_data( "__VERSION__", $package_version, $file );
 }
+
+
+
+
+
+
+
+
 
 
 # Build docs - cjg Mike this needs to be smarter about what to copy (alpha/beta etc)

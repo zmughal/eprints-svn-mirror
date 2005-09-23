@@ -615,19 +615,18 @@ sub upgrade
 
 	my $newsigs = [];
 
-        my @executable_dirs = ("bin", "cgi");
-	my @normal_dirs = ("defaultcfg", "cfg", "docs", "perl_lib", "plugins" );
-	my @base_files = ("VERSION", "CHANGELOG", "BUGLIST", "COPYING", "NEWS", "AUTHORS", "TODO", "README" ); 
-        foreach(@executable_dirs)
-        {
-                install_dir($dist_path, $_, 0755, $uid, $gid, $base_path, \%MD5Hash, $newsigs);
-                print "|";
-		$|=1;
-        }
-
+	my @normal_dirs = ("defaultcfg", "cfg", "docs", "perl_lib", "plugins", "testdata" );
+	my @executable_dirs = ("bin", "cgi", "testdata/bin" );
+	my @base_files = ("VERSION", "CHANGELOG", "COPYING", "NEWS", "AUTHORS", "README" ); 
         foreach(@normal_dirs)
         {
                 install_dir($dist_path, $_, 0644, $uid, $gid, $base_path, \%MD5Hash, $newsigs);
+                print "|";
+		$|=1;
+        }
+        foreach(@executable_dirs)
+        {
+                install_dir($dist_path, $_, 0755, $uid, $gid, $base_path, \%MD5Hash, $newsigs);
                 print "|";
 		$|=1;
         }
@@ -681,21 +680,24 @@ sub full_install
 
 	print "Installing files : [";
 
-	my @executable_dirs = ("bin", "cgi");
-	my @normal_dirs = ("archives", "defaultcfg", "cfg", "docs", "perl_lib", "plugins");
-
+	my @normal_dirs = ("archives", "defaultcfg", "cfg", "docs", "perl_lib", "plugins", "testdata");
+	my @executable_dirs = ("bin", "cgi", "testdata/bin" );
+	my @base_files = ("VERSION", "CHANGELOG", "COPYING", "NEWS", "AUTHORS", "README" ); 
 	my $sigs = [];
 
+	foreach(@normal_dirs)
+	{
+		install_dir($dist_path, $_, 0644, $uid, $gid, $base_path, {}, $sigs );
+		print "|";
+	}
 	foreach(@executable_dirs)
 	{
 		install_dir($dist_path, $_, 0755, $uid, $gid, $base_path, {}, $sigs );	
 		print "|";
 	}
-	
-	foreach(@normal_dirs)
+	foreach(@base_files)
 	{
-		install_dir($dist_path, $_, 0644, $uid, $gid, $base_path, {}, $sigs );
-		print "|";
+		install_file($dist_path, $_, "", 0644, $uid, $gid, $base_path, {}, $sigs );
 	}
 	
 	print "]\n\n";

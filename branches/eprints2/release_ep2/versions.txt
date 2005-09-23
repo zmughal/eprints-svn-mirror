@@ -80,3 +80,4 @@ eprints2-3-13		2.3.13			Cup Cake
 eprints2-3-14-a-1	2.3.14.alpha.1		Plugin.1
 eprints2-3-14-a-2	2.3.14.alpha.2		Plugin.2
 eprints2-3-14-a-3	2.3.14.alpha.3		Plugin.3
+eprints2-3-14-a-4	2.3.14.alpha.4		Plugin.4
