@@ -8,7 +8,7 @@ dnl **************************************************************
 
 AC_DEFUN(CHECK_PERL_MOD,
 [
-AC_MSG_CHECKING(for $1)
+AC_MSG_CHECKING(for Perl module: $1)
 RESULT=`$PERL_PATH -m"$1"  -e 'print "1\n";'`
 
 if test "x$RESULT" = "x1" ; then
@@ -33,7 +33,7 @@ dnl **************************************************************
 
 AC_DEFUN(TEST_PERL_MOD,
 [
-AC_MSG_CHECKING(for $2)
+AC_MSG_CHECKING(for Perl module: $2)
 RESULT=`$PERL_PATH -m"$2"  -e 'print "1\n";' 2>/dev/null`
 
 if test "x$RESULT" = "x1" ; then
@@ -56,7 +56,7 @@ dnl **************************************************************
 
 AC_DEFUN(CHECK_PERL_MOD_EXISTS,
 [
-AC_MSG_CHECKING(for $1)
+AC_MSG_CHECKING(for Perl module: $1)
 
 dnl Get the file path; e.g. "Apache::DBI" -> "Apache/DBI/pm"
 MOD_DIR_PATH=`echo $1 | sed 's/::/\//g' | sed 's/$/.pm/'`

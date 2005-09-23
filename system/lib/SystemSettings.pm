@@ -16,7 +16,9 @@ package EPrints::SystemSettings;
 
 $EPrints::SystemSettings::conf = 
 {
-	base_path => "/opt/eprint_dev",
+	apache => "2",
+	smtp_server=>'smtp.ecs.soton.ac.uk',
+	base_path => "/opt/ep2stable",
 	executables => {
 		unzip 	=> "/usr/bin/unzip",
 		wget 	=> "/usr/bin/wget",
@@ -25,10 +27,11 @@ $EPrints::SystemSettings::conf =
 		tar 	=> "/bin/tar",
 		latex 	=> "/usr/bin/latex",
 		dvips 	=> "/usr/bin/dvips",
-		convert	=> "/usr/X11R6/bin/convert"
+		convert	=> "/usr/bin/convert",
+		mimetex	=> "/export/0/home/cjg/Projects/eprints2_stable/eprints/system/mimetex.cgi"
 	},
 	invocation => {
-		zip 	=> '$(zip) 1>/dev/null 2>&1 -qq -o -d \'$(DIR)\' \'$(ARC)\'',
+		zip 	=> '$(unzip) 1>/dev/null 2>&1 -qq -o -d \'$(DIR)\' \'$(ARC)\'',
 	        targz  	=> '$(gunzip) -c < \'$(ARC)\' 2>/dev/null | $(tar) xf - -C \'$(DIR)\' >/dev/null 2>&1',
 		wget 	=> '$(wget)  -r -L -q -m -nH -np --execute="robots=off" --cut-dirs=$(CUTDIRS) \'$(URL)\'',
 		sendmail => '$(sendmail) -oi -t -odb --',
@@ -42,11 +45,12 @@ $EPrints::SystemSettings::conf =
 	},
 	archive_formats => [ "zip", "targz" ],
 	version_id => "CVS",
-	version => "EPrints 2.? CVS Version",
+	version => "EPrints 2 CVS Version [ep2 stable branch]",
 	user => "eprints",
 	group => "eprints",
-	disable_df => 0,
-	enable_gdome => 0
+	disable_df => 1,
+	show_ids_in_log => 0,
+	enable_gdome => 1
 
 };
 

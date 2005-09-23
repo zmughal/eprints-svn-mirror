@@ -9,7 +9,7 @@ VIRTUALHOST=
 
 PERL_SEARCH_PATH="$PATH:/usr/local/bin:/opt/perl/bin:/opt/PERL/bin"
 AC_ARG_WITH(perl,
-    [ --with-perl=[PATH]       path of perl interpreter ],
+    [  --with-perl=[PATH]        path of perl interpreter ],
     [
         AC_MSG_CHECKING([perl interpreter])
         PERL_PATH=$withval
@@ -44,28 +44,28 @@ else
 fi
 
 AC_ARG_WITH(user,
-    [ --with-user=[USER]       install eprints to run as USER ],
+    [  --with-user=[USER]        install eprints to run as USER ],
     [
         INSTALL_USER=$withval
     ])
 
 AC_ARG_WITH(group,
-    [ --with-group=[GROUP]     install eprints to run as GROUP ],
+    [  --with-group=[GROUP]      install eprints to run as GROUP ],
     [
         INSTALL_GROUP=$withval
     ])
 
 AC_ARG_WITH(virtualhost,
-    [ --with-virtualhost=[VIRTUALHOST]    
+    [  --with-virtualhost=[VIRTUALHOST]    
                           use VIRTUALHOST rather than "*" for
-                          apache VirtualHost directives. ],
+                          Apache VirtualHost directives. ],
     [
         VIRTUALHOST=$withval
     ])
 
 DISABLE_DF="0"
 AC_ARG_ENABLE(diskfree,
-    [ --disable-diskfree       disable disk free space calls],
+    [  --disable-diskfree      disable disk free space calls],
     [
         if test $enableval = no ; then
             DISABLE_DF="1"
@@ -74,11 +74,26 @@ AC_ARG_ENABLE(diskfree,
 
 DISABLE_GDOME="0"
 AC_ARG_ENABLE(gdome,
-    [ --disable-gdome          Don't try to use the XML::GDOME module],
+    [  --disable-gdome         don't try to use the XML::GDOME module],
     [
         if test $enableval = no ; then
             DISABLE_GDOME="1"
         fi
+    ])
+
+APACHE=""
+AC_ARG_WITH(apache,
+    [  --with-apache=[VERSION]   version of apache to work with: 1 or 2],
+    [
+        APACHE=$withval
+    ])
+
+SMTP=""
+AC_ARG_WITH(smtp-server,
+    [  --with-smtp-server=[HOSTNAME]  
+                          SMTP server to use for outgoing email],
+    [
+        SMTP_SERVER=$withval
     ])
 
 if test $DISABLE_DF = "0" ; then
@@ -95,6 +110,11 @@ if test $DISABLE_DF = "0" ; then
         echo "*** Free space checking function disabled. To supress this"
         echo "*** message, re-run configure with the --disable-diskfree"
         echo "*** option."
+        echo "*** "
+        echo "*** EPrints uses diskfree to warn you if you are running"
+        echo "*** low on disk space. If you disable the feature you will"
+        echo "*** need to keep an eye on free disk space yourself."
+        echo "*** "
         echo "*** If you require free space checking, the necessary"
         echo "*** functionality can be enabled by running the perl"
         echo "*** tool \"h2ph\" in /usr/include, as root:"
@@ -108,7 +128,7 @@ dnl This is the path that we search for tools
 
 TOOL_PATH="$PATH:/usr/local/bin:/sbin:/usr/sbin:/usr/X11R6/bin:/usr/lib"
 AC_ARG_WITH(toolpath,
-    [ --with-toolpath=[PATH]   search path for tool programs ],
+    [  --with-toolpath=[PATH]    search path for tool programs ],
     [
         TOOL_PATH=$withval
     ])
@@ -116,13 +136,14 @@ AC_ARG_WITH(toolpath,
 AC_PATH_PROG(UNZIP_PATH, unzip, "NOTFOUND", $TOOL_PATH)
 if test $UNZIP_PATH = "NOTFOUND"; then
     echo "**************************************************************"
-    echo "*** Unable to find the location of one of the tools required"
-    echo "*** by eprints. Try running this script again giving the"
-    echo "*** --with-toolpath options to give a colon separated path"
+    echo "*** Unable to find 'unzip'"
+    echo "*** "
+    echo "*** This is not critical. Without unzip, EPrints will not be"
+    echo "*** able to extract documents uploaded as ZIP archives."
+    echo "*** "
+    echo "*** Try running this script again giving the --with-toolpath"
+    echo "*** option to give a colon separated path"
     echo "*** where the tools can be found"
-    echo "***"
-    echo "*** eprints configure will now continue, but some features may"
-    echo "*** not work unless this is resolved"
     echo "**************************************************************"
     AC_MSG_WARN([Unable to find unzip])
 fi
@@ -130,13 +151,14 @@ fi
 AC_PATH_PROG(TAR_PATH, tar, "NOTFOUND", $TOOL_PATH)
 if test $TAR_PATH = "NOTFOUND"; then
     echo "**************************************************************"
-    echo "*** Unable to find the location of one of the tools required"
-    echo "*** by eprints. Try running this script again giving the"
-    echo "*** --with-toolpath options to give a colon separated path"
+    echo "*** Unable to find 'tar'"
+    echo "*** "
+    echo "*** This is not critical. Without tar, EPrints will not be"
+    echo "*** able to extract documents uploaded as tar.gz archives."
+    echo "*** "
+    echo "*** Try running this script again giving the --with-toolpath"
+    echo "*** option to give a colon separated path"
     echo "*** where the tools can be found"
-    echo "***"
-    echo "*** eprints configure will now continue, but some features may"
-    echo "*** not work unless this is resolved"
     echo "**************************************************************"
     AC_MSG_WARN([Unable to find tar])
 fi
@@ -144,13 +166,14 @@ fi
 AC_PATH_PROG(GUNZIP_PATH, gunzip, "NOTFOUND", $TOOL_PATH)
 if test $GUNZIP_PATH = "NOTFOUND"; then
     echo "**************************************************************"
-    echo "*** Unable to find the location of one of the tools required"
-    echo "*** by eprints. Try running this script again giving the"
-    echo "*** --with-toolpath options to give a colon separated path"
+    echo "*** Unable to find 'gunzip'"
+    echo "*** "
+    echo "*** This is not critical. Without gunzip, EPrints will not be"
+    echo "*** able to extract documents uploaded as tar.gz archives."
+    echo "*** "
+    echo "*** Try running this script again giving the --with-toolpath"
+    echo "*** option to give a colon separated path"
     echo "*** where the tools can be found"
-    echo "***"
-    echo "*** eprints configure will now continue, but some features may"
-    echo "*** not work unless this is resolved"
     echo "**************************************************************"
     AC_MSG_WARN([Unable to find gunzip, the GNU unzip tool])
 fi
@@ -158,79 +181,101 @@ fi
 AC_PATH_PROG(WGET_PATH, wget, "NOTFOUND", $TOOL_PATH)
 if test $WGET_PATH = "NOTFOUND"; then
     echo "**************************************************************"
-    echo "*** Unable to find the location of one of the tools required"
-    echo "*** by eprints. Try running this script again giving the"
-    echo "*** --with-toolpath options to give a colon separated path"
+    echo "*** Unable to find 'wget'"
+    echo "*** "
+    echo "*** This is not critical. Without wget, EPrints will not be"
+    echo "*** able to capture documents from URLs."
+    echo "*** "
+    echo "*** Try running this script again giving the --with-toolpath"
+    echo "*** option to give a colon separated path"
     echo "*** where the tools can be found"
-    echo "***"
-    echo "*** eprints configure will now continue, but some features may"
-    echo "*** not work unless this is resolved"
     echo "**************************************************************"
     AC_MSG_WARN([Unable to find wget])
 fi
 
 AC_PATH_PROG(SENDMAIL_PATH, sendmail, "NOTFOUND", $TOOL_PATH)
 if test $SENDMAIL_PATH = "NOTFOUND"; then
-    echo "**************************************************************"
-    echo "*** Unable to find the location of one of the tools required"
-    echo "*** by eprints. Try running this script again giving the"
-    echo "*** --with-toolpath options to give a colon separated path"
-    echo "*** where the tools can be found"
-    echo "***"
-    echo "*** eprints configure will now continue, but some features may"
-    echo "*** not work unless this is resolved"
-    echo "**************************************************************"
-    AC_MSG_WARN([Unable to find sendmail])
+    echo "*** 'sendmail' is only needed if you choose not to use"
+    echo "*** Net::SMTP to send email."
+#    AC_MSG_WARN([Unable to find sendmail])
 fi
 
 
 
+# tools used to create latex equations. not critical.
+
 AC_PATH_PROG(LATEX_PATH, latex, "NOTFOUND", $TOOL_PATH)
 if test $LATEX_PATH = "NOTFOUND"; then
-    echo "*** Unable to find the location of one of the tools required"
-    echo "*** by eprints. Try running this script again giving the"
-    echo "*** --with-toolpath options to give a colon separated path"
-    echo "*** where the tools can be found"
-    echo "***"
-    echo "*** eprints configure will now continue, but some features may"
-    echo "*** not work unless this is resolved"
-    echo "***"
-    echo "*** DON'T PANIC. This tool is not used by a core feature."
-    AC_MSG_WARN([Unable to find latex])
+    echo "*** 'latex' is only needed if you want to use the feature"
+    echo "*** which displays latex equations as inline graphics."
+#    AC_MSG_WARN([Unable to find latex])
 fi
 
 AC_PATH_PROG(DVIPS_PATH, dvips, "NOTFOUND", $TOOL_PATH)
 if test $DVIPS_PATH = "NOTFOUND"; then
-    echo "*** Unable to find the location of one of the tools required"
-    echo "*** by eprints. Try running this script again giving the"
-    echo "*** --with-toolpath options to give a colon separated path"
-    echo "*** where the tools can be found"
-    echo "***"
-    echo "*** eprints configure will now continue, but some features may"
-    echo "*** not work unless this is resolved"
-    echo "***"
-    echo "*** DON'T PANIC. This tool is not used by a core feature."
-    AC_MSG_WARN([Unable to find dvips, for latex])
+    echo "*** 'dvips' is only needed if you want to use the feature"
+    echo "*** which displays latex equations as inline graphics."
+#    AC_MSG_WARN([Unable to find dvips, for latex])
 fi
 
 AC_PATH_PROG(CONVERT_PATH, convert, "NOTFOUND", $TOOL_PATH)
 if test $CONVERT_PATH = "NOTFOUND"; then
-    echo "*** Unable to find the location of one of the tools required"
-    echo "*** by eprints. Try running this script again giving the"
-    echo "*** --with-toolpath options to give a colon separated path"
-    echo "*** where the tools can be found"
-    echo "***"
-    echo "*** eprints configure will now continue, but some features may"
-    echo "*** not work unless this is resolved"
-    echo "***"
-    echo "*** DON'T PANIC. This tool is not used by a core feature."
-    AC_MSG_WARN([Unable to find convert, the ImageMagick tool])
+    echo "*** 'convert' is only needed if you want to use the feature"
+    echo "*** which displays latex equations as inline graphics."
+#    AC_MSG_WARN([Unable to find convert, the ImageMagick tool])
 fi
 
-CHECK_PERL_MOD(Apache::Constants)
-CHECK_PERL_MOD(Apache::Registry)
-CHECK_PERL_MOD(Apache)
-CHECK_PERL_MOD(CGI)
+
+
+TEST_PERL_MOD(HAS_MOD_PERL_1,Apache)
+TEST_PERL_MOD(HAS_MOD_PERL_2A,Apache2)
+TEST_PERL_MOD(HAS_MOD_PERL_2B,Apache2::Util)
+HAS_MOD_PERL_2="0"
+if test $HAS_MOD_PERL_2A = "1"; then
+	HAS_MOD_PERL_2="1";
+fi
+if test $HAS_MOD_PERL_2B = "1"; then
+	HAS_MOD_PERL_2="1"
+fi
+	
+
+if test "x$APACHE" = "x1" ; then
+	if test $HAS_MOD_PERL_1 = "1"; then
+		CHECK_PERL_MOD(Apache::Constants)
+		CHECK_PERL_MOD(Apache::Registry)
+	else
+		echo "***********************************************************"
+		echo "*** Failed to find mod_perl 1 (PERL Module 'Apache')"
+		if test $HAS_MOD_PERL_2 = "1"; then
+			echo "***"
+			echo "*** However the module Apache2 is installed!"
+			echo "*** That sounds like you've got the wrong setting"
+			echo "*** for --with-apache=x"
+		fi
+		echo "***********************************************************"
+	fi
+else
+	if test $HAS_MOD_PERL_2 = "1"; then
+		if test $HAS_MOD_PERL_2A = "1"; then
+			CHECK_PERL_MOD(Apache::Const)
+		else
+			CHECK_PERL_MOD(Apache2::Const)
+		fi
+		CHECK_PERL_MOD(ModPerl::Registry)
+	else
+		echo "***********************************************************"
+		echo "*** Failed to find mod_perl 2 (PERL Module 'Apache2')"
+		if test $HAS_MOD_PERL_1 = "1"; then
+			echo "***"
+			echo "*** However the module Apache is installed!"
+			echo "*** That sounds like you've got the wrong setting"
+			echo "*** for --with-apache=x"
+		fi
+		echo "***********************************************************"
+	fi
+fi
+
+
 CHECK_PERL_MOD(Carp)
 CHECK_PERL_MOD(Config)
 CHECK_PERL_MOD(Cwd)
@@ -242,7 +287,9 @@ CHECK_PERL_MOD(File::Find)
 CHECK_PERL_MOD(File::Path)
 CHECK_PERL_MOD(Getopt::Long)
 CHECK_PERL_MOD(MIME::Base64)
+CHECK_PERL_MOD(DBD::mysql)
 CHECK_PERL_MOD(Pod::Usage)
+#CHECK_PERL_MOD(Proc::Reliable)
 CHECK_PERL_MOD(Sys::Hostname)
 CHECK_PERL_MOD(Unicode::String)
 CHECK_PERL_MOD(XML::Parser)
@@ -274,12 +321,15 @@ AC_SUBST(DIST_PATH)
 AC_SUBST(PREFIX)
 AC_SUBST(DISABLE_DF)
 AC_SUBST(ENABLE_GDOME)
+AC_SUBST(APACHE)
 AC_SUBST(INSTALL_USER)
 AC_SUBST(INSTALL_GROUP)
 AC_SUBST(VIRTUALHOST)
+AC_SUBST(SMTP_SERVER)
 
 AC_OUTPUT([
         install.pl
 ])
 
 chmod +x install.pl
+echo "Now run ./install.pl to install/upgrade to $PREFIX"

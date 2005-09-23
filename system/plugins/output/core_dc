@@ -1,0 +1,60 @@
+
+EPrints::Plugins::register( 
+	id => "output/core_dc",
+	name => "Dublin Core",
+	parent => "output/core_output",
+	accept => [ 'list/eprint', 'dataobj/eprint' ],
+	mime_type => \&mime_type,
+	suffix => \&suffix,
+	output_dataobj => \&output_dataobj,
+);
+
+
+sub mime_type
+{
+	my( $plugin, $searchexp ) = @_;
+
+	return "text/plain";
+}
+
+sub suffix
+{
+	my( $plugin, $searchexp ) = @_;
+
+	return ".txt";
+}
+
+
+sub output_dataobj
+{
+	my( $plugin, $dataobj ) = @_;
+
+	my $data = $plugin->call( "convert_dataobj", $dataobj );
+
+	my $out = '';
+	foreach my $tup ( @{$data} )
+	{
+		next unless defined $tup->[1];
+		$out .= $tup->[0].": ".$tup->[1]."\n";
+	}
+	$out .= "\n";
+
+	return $out;
+}
+
+
+
+EPrints::Plugins::register( 
+	id => "output/dc",
+	parent => "output/core_dc",
+	convert_dataobj => \&convert_dataobj,
+);
+
+sub convert_dataobj
+{
+	my( $plugin, $dataobj ) = @_;
+
+        my @dc = $plugin->{session}->get_archive->call( "eprint_to_unqualified_dc", $dataobj, $plugin->{session} );
+
+	return \@dc;
+}
