@@ -1,0 +1,64 @@
+#!/usr/bin/perl -w -I/opt/eprints2/perl_lib
+
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints::Session;
+use EPrints::ImportXML;
+use EPrints::SystemSettings;
+use strict;
+$|=1;
+
+# nb. This syntax is subject to change in future versions.
+my( $archiveid, $datasetid, $userid ) = @ARGV;
+
+my $session = new EPrints::Session( 1 , $archiveid );
+exit( 1 ) unless( defined $session );
+
+$userid = 1 unless defined $userid;
+$datasetid = "archive" unless defined $datasetid;
+
+my $datapath = $EPrints::SystemSettings::conf->{base_path}."/testdata/data";
+
+my $ds = $session->get_archive()->get_dataset( $datasetid );
+
+my $info =  { 
+	ds => $ds,
+	userid => $userid,
+	datapath => $datapath,
+};
+my $infile = $datapath."/set-01.xml";
+
+EPrints::ImportXML::import_file( $session , $infile , \&deal, $ds, $info );
+
+$session->terminate();
+
+exit;
+
+sub deal 
+{
+	my( $session , $table , $eprint, $info ) = @_;
+
+	$eprint->datestamp();
+	$eprint->set_value( "userid", $info->{userid} );
+	$eprint = EPrints::EPrint::create( $session, $info->{ds}, $eprint->get_data() );
+	my $doc = EPrints::Document::create( $session, $eprint );
+	$doc->set_value( 'format','pdf');
+	my $pdf;
+	open( $pdf, $info->{datapath}."/demo.pdf" );
+	$doc->upload( $pdf, 'paper.pdf' );
+	close $pdf;
+	$doc->set_value( 'main','paper.pdf');
+	$doc->commit();
+	$eprint->commit();
+
+	print "added: ".$eprint->get_id."\n";
+}
+

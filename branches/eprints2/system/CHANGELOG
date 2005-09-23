@@ -2707,3 +2707,8 @@ PACKAGE: 2.2.99.2
 
  - Applied patch to core_bibtex to add grave characters.
 
+2005-09-23 cjg
+
+ - Added /testdata/ directory. This contains a script to load test
+    data into a repository, and the files containing that data.
+
