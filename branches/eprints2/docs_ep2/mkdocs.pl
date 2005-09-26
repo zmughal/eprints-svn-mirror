@@ -398,11 +398,13 @@ if( $website )
 	mkdir( '../docs/php' );
 	`cp ../images/* ../docs/php`;
 	open( INC, ">../docs/php/index.inc" );
-	print INC "<h2>$DOCTITLE</h2><ul>\n";
+	print INC "<h2>$DOCTITLE</h2>\n";
+	print INC "<ul><li><a href='../eprints-docs.pdf'>PDF Version</a></li></ul>";
+	print INC "<ul>";
 	foreach $id ( @ids )
 	{
 		print INC "<li><a href=\"/documentation/tech/php/$id.php\">".$titles{$id}."</a></li>\n";
-		if( $id eq "logo" ) { print INC "</ul><ul>"; }
+		if( $id eq "logo" ) { print INC "</ul>\n<ul>"; }
 	}
 	print INC "</ul>\n";
 	close( INC );
