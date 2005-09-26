@@ -9,6 +9,8 @@ my @ids = (
 	"structure", 
 	"configeprints",
 	"configarchive",
+	"metadata",
+	"functions",
 	"troubleshooting",
 	"howto" ,
 	"vlit" ,
@@ -21,6 +23,8 @@ my @ids = (
 	"!create_tables",
 	"!create_user",
 	"!erase_archive",
+	"!erase_fulltext_cache",
+	"!explain_sql_tables",
 	"!export_hashes",
 	"!export_xml",
 	"!force_config_reload",
@@ -30,9 +34,9 @@ my @ids = (
 	"!generate_views",
 	"!import_eprints",
 	"!import_subjects",
+	"!indexer",
 	"!list_user_emails",
 	"!rehash_documents",
-	"!reindex",
 	"!send_subscriptions",
 	"!upgrade"
 
@@ -48,7 +52,9 @@ my %titles = (
 	installation => "How to Install EPrints (and get started)",
 	structure => "EPrints Structure and Terms",
 	configeprints => "Configuring the System",
-	configarchive => "Configuring an Archive",
+	configarchive => "The Archive Configuration Files",
+	metadata => "Configuring the Archive Metadata",
+	functions => "Configuring the functions of an Archive",
 	howto => "How-To Guides",
 	troubleshooting => "Troubleshooting",
 	backup => "Backing-Up your System",
@@ -92,9 +98,9 @@ foreach( @ids )
 }
 		
 
-my $DOCTITLE = "EPrints 2.2 Documentation";
+my $DOCTITLE = "EPrints 2.3 Documentation";
 
-my $BASENAME = "eprints-2.2-docs";
+my $BASENAME = "eprints-docs";
 
 `rm -rf docs`;
 `mkdir docs`;
@@ -392,13 +398,28 @@ if( $website )
 	mkdir( '../docs/php' );
 	`cp ../images/* ../docs/php`;
 	open( INC, ">../docs/php/index.inc" );
-	print INC "<h2>$DOCTITLE</h2><ul>\n";
+	print INC "<h2>$DOCTITLE</h2>\n";
+	print INC "<ul><li><a href='../eprints-docs.pdf'>PDF Version</a></li></ul>";
+	print INC "<ul>";
 	foreach $id ( @ids )
 	{
-		print INC "<li><a href=\"/docs/php/$id.php\">".$titles{$id}."</a></li>\n";
+		print INC "<li><a href=\"/documentation/tech/php/$id.php\">".$titles{$id}."</a></li>\n";
+		if( $id eq "logo" ) { print INC "</ul>\n<ul>"; }
 	}
 	print INC "</ul>\n";
 	close( INC );
+
+	open( INDEX, ">../docs/index.php" );
+	print INDEX <<END;
+<?
+eprints_header( "Documentation - Technichal");
+require "php/index.inc";
+eprints_footer();
+?>
+END
+	close INDEX;
+
+
 	my $toc = '';
 	foreach $id ( @ids )
 	{
@@ -419,36 +440,32 @@ if( $website )
 		if( defined $ids[$c-1] )
 		{
 			$p = 
-'<link rel="Prev" href="http://www.eprints.org/docs/php/'.$ids[$c-1].'.php" />';
+'<link rel="Prev" href="http://eprints.org/documentation/tech/php/'.$ids[$c-1].'.php" />';
 		}
 		if( defined $ids[$c+1] )
 		{
 			$n = 
-'<link rel="Next" href="http://www.eprints.org/docs/php/'.$ids[$c+1].'.php" />';
+'<link rel="Next" href="http://eprints.org/documentation/tech/php/'.$ids[$c+1].'.php" />';
 		}
 		print TARGET <<END;
 <?
 
-include "../../software.phps";
-
 \$pagelinks = '
-<link rel="Up" href="http://software.eprints.org/documentation.php" />
-<link rel="ToC" href="http://software.eprints.org/documentation.php" />
+<link rel="Up" href="http://eprints.org/documentation/" />
+<link rel="ToC" href="http://eprints.org/documentation/tech/" />
 $toc
 $p
 $n
 ';
 
-epsw_header( "/documentation.php", "$DOCTITLE - $titles{$id}", \$pagelinks );
-
+eprints_header( "Tech. Documentation - $titles{$id}" );
 ?>
-<h1>$DOCTITLE - $titles{$id}</h1>
-
-<p><a href="/documentation.php">Documentation Contents</a></p>
-<hr />
+<div class="floatmenu"><? require( "index.inc" ); ?></div>
 END
 
-		print TARGET $_;
+		print TARGET '<div class="docs_index"><h2>Sections</h2>';
+		# kill off FIRST HR only
+		my $gothr = 0;
 		while( <FILE> )
 		{
 			last if( m#CELLPADDING# );
@@ -458,16 +475,19 @@ END
 			s#</h2>#</h3>#ig;
 			s#<h1>#<h2>#ig;
 			s#</h1>#</h2>#ig;
+			s#<!-- INDEX END -->#</div><div class="docs_body">#ig;
+			if( !$gothr && s/<hr>//i ) { $gothr = 1; }
+			s/''/"/ig;
+			s/``/"/ig;
 			print TARGET $_;
 		}
 		s/<table.*//i;
 
 		print TARGET $_;
 print TARGET <<END;
-<hr />
-<p><a href="/documentation.php">Documentation Contents</a></p>
+</div>
 <? 
-epsw_footer( "/documentation.php", "$DOCTITLE - $titles{$id}", \$pagelinks );
+eprints_footer();
 ?>
 END
 		close TARGET;
@@ -498,12 +518,12 @@ if( $website )
 {
 	my $user = 'webmaster';
 	my $host = 'seer.ecs.soton.ac.uk';
-	my $path = '/home/www.eprints/software/docs/';
+	my $path = '/home/www.eprints/techdocs/';
 
 	my @commands = (
-		"rsh -l $user $host rm -rf '$path*'",
-		"rcp -r docs/ $user\@$host:$path",
-		"rsh -l $user $host chmod a+rX -R $path"
+		"ssh $user\@$host rm -rf '$path'",
+		"scp -r docs/ $user\@$host:$path",
+		"ssh $user\@$host chmod a+rX -R $path"
 	);
 
 	foreach( @commands )
