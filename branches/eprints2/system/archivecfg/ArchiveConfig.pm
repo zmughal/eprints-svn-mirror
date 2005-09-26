@@ -542,6 +542,11 @@ $c->{order_methods}->{user} =
 	"bytype" 	 =>  "usertype/name"
 };
 
+# If set to true, this option causes name searches to match the
+# starts of surnames. eg. if true then "smi" will match the name
+# "Smith".
+$c->{match_start_of_name} = 0;
+
 # The default way of ordering a search result
 #   (must be key to %eprint_order_methods)
 $c->{default_order}->{user} = "byname";

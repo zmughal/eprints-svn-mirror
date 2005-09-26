@@ -2712,3 +2712,11 @@ PACKAGE: 2.2.99.2
  - Added /testdata/ directory. This contains a script to load test
     data into a repository, and the files containing that data.
  - Documented many methods in EPrints::Session
+
+2005-09-26 cjg
+
+ - Added new config option "match_start_of_name". This allows name
+    searching to work more like it did in version 2.2
+ - Added new type of search condition: "index_start". This matches
+    search keys which start with the given value.
+

@@ -244,17 +244,25 @@ sub get_search_conditions
 			$session,
 			$search_value );
 
+	my $indexmode = "index";
+
+	if( $session->get_archive->get_conf( "match_start_of_name" ) )
+	{
+		$indexmode = "index_start";
+	}
+
 	# name searches are case sensitive
 	$v2 = "\L$v2";
 
 	if( $search_mode eq "simple" )
 	{
 		return EPrints::SearchCondition->new( 
-			'index', 
+			$indexmode,
 			$dataset,
 			$self, 
 			$v2 );
 	}
+
 
 	# split up initials
 	$v2 =~ s/([A-Z])/ $1/g;
@@ -268,7 +276,7 @@ sub get_search_conditions
 	{
 		next unless EPrints::Utils::is_set( $fpart );
 		push @freetexts, EPrints::SearchCondition->new( 
-						'index', 
+						$indexmode, 
 						$dataset,
 						$self, 
 						$fpart );
@@ -285,7 +293,14 @@ sub get_search_conditions
 	foreach my $fpart ( split /\s+/, $family )
 	{
 		next unless EPrints::Utils::is_set( $fpart );
-		$list->[0] .= '['.$fpart.']%';
+		if( $indexmode eq "index_start" )
+		{
+			$list->[0] .= '['.$fpart.'%';
+		}
+		else
+		{
+			$list->[0] .= '['.$fpart.']%';
+		}
 		++$noskip; # need at least 2 family parts to be worth cropping
 	}
 

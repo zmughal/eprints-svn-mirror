@@ -52,6 +52,7 @@ $EPrints::SearchCondition::operators = {
 	'FALSE'=>0,		#	should only be used in optimisation
 
 	'index'=>1,		#	dataset, field, value	
+	'index_start'=>1,	#	dataset, field, value	
 
 	'='=>2,			#	dataset, field, value
 	'name_match'=>2,	#	dataset, field, value		
@@ -164,7 +165,7 @@ sub get_table
 		return undef;
 	}
 
-	if( $self->{op} eq "index" )
+	if( $self->{op} eq "index" || $self->{op} eq "index_start" )
 	{
 		return $dataset->get_sql_index_table_name;
 	}	
@@ -259,6 +260,21 @@ END
 		foreach my $code ( @{$codes} )
 		{
 			return( 1 ) if( $code eq $self->{params}->[0] );
+		}
+		return( 0 );
+	}
+
+	if( $self->{op} eq "index_start" )
+	{
+		my( $codes, $grepcodes, $badwords ) =
+			$self->{field}->get_index_codes(
+				$item->get_session,
+				$item->get_value( $self->{field}->get_name ) );
+
+		my $p = $self->{params}->[0];
+		foreach my $code ( @{$codes} )
+		{
+			return( 1 ) if( substr( $code, 0, length $p ) eq $p );
 		}
 		return( 0 );
 	}
@@ -486,6 +502,12 @@ END
 			$self->{field}->get_sql_name.":".$self->{params}->[0] )."'";
 		$r = $session->get_db()->get_index_ids( $self->get_table, $where );
 	}
+	if( $self->{op} eq "index_start" )
+	{
+		my $where = "fieldword LIKE '".EPrints::Database::prep_value( 
+			$self->{field}->get_sql_name.":".$self->{params}->[0] )."%'";
+		$r = $session->get_db()->get_index_ids( $self->get_table, $where );
+	}
 
        	my $keyfield = $self->{dataset}->get_key_field();
 	my $sql_col = $self->{field}->get_sql_name;
@@ -560,6 +582,7 @@ END
 			{ M=>$self->get_table },
 			$where );
 	}
+
 
 	if( $self->is_comparison )
 	{
