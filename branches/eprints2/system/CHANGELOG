@@ -2720,3 +2720,8 @@ PACKAGE: 2.2.99.2
  - Added new type of search condition: "index_start". This matches
     search keys which start with the given value.
 
+2005-11-11 cjg
+
+ - Removed OAI1.1 config
+ - Added DIDL OAI config 
+

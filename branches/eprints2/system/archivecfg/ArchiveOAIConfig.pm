@@ -18,41 +18,6 @@ sub get_oai_conf { my( $perlurl ) = @_; my $oai={};
 
 
 ##########################################################################
-# OAI 1.1 
-##########################################################################
-
-# Site specific **UNIQUE** archive identifier.
-# See http://www.openarchives.org/ for existing identifiers.
-$oai->{archive_id} = "GenericEPrints";
-
-# Exported metadata formats. The hash should map format ids to namespaces.
-$oai->{metadata_namespaces} =
-{
-	"oai_dc"    =>  "http://purl.org/dc/elements/1.1/"
-};
-
-# Exported metadata formats. The hash should map format ids to schemas.
-$oai->{metadata_schemas} =
-{
-	"oai_dc"    =>  "http://www.openarchives.org/OAI/1.1/dc.xsd"
-};
-
-# Each supported metadata format will need a function to turn
-# the eprint record into XML representing that format. The function(s)
-# are defined later in this file.
-$oai->{metadata_functions} = 
-{
-	"oai_dc"    =>  \&make_metadata_oai_dc
-};
-
-# Base URL of OAI 1.1
-$oai->{base_url} = $perlurl."/oai";
-
-$oai->{sample_identifier} = EPrints::OpenArchives::to_oai_identifier(
-	$oai->{archive_id},
-	"23" );
-
-##########################################################################
 # OAI-PMH 2.0 
 #
 # 2.0 requires slightly different schemas and XML to v1.1
@@ -61,20 +26,24 @@ $oai->{sample_identifier} = EPrints::OpenArchives::to_oai_identifier(
 # Site specific **UNIQUE** archive identifier.
 # See http://www.openarchives.org/ for existing identifiers.
 # This may be different for OAI v2.0
-# It can have dots (.) in which v1.1 can't. This means you can use your
+# It should contain a dot (.) which v1.1 can't. This means you can use your
 # sites domain as (part of) the base ID - which is pretty darn unique.
-$oai->{v2}->{archive_id} = "GenericEPrints";
+
+# IMPORTANT: Do not register an archive with the default archive_id! 
+$oai->{v2}->{archive_id} = "generic.eprints.org";
 
 # Exported metadata formats. The hash should map format ids to namespaces.
 $oai->{v2}->{metadata_namespaces} =
 {
-	"oai_dc"    =>  "http://www.openarchives.org/OAI/2.0/oai_dc/"
+	"oai_dc"    =>  "http://www.openarchives.org/OAI/2.0/oai_dc/",
+	"didl"      =>  "urn:mpeg:mpeg21:2002:02-DIDL-NS",
 };
 
 # Exported metadata formats. The hash should map format ids to schemas.
 $oai->{v2}->{metadata_schemas} =
 {
-	"oai_dc"    =>  "http://www.openarchives.org/OAI/2.0/oai_dc.xsd"
+	"oai_dc"    =>  "http://www.openarchives.org/OAI/2.0/oai_dc.xsd",
+	"didl"      =>  "http://purl.lanl.gov/STB-RL/schemas/2004-11/DIDL.xsd",
 };
 
 # Each supported metadata format will need a function to turn
@@ -82,7 +51,8 @@ $oai->{v2}->{metadata_schemas} =
 # are defined later in this file.
 $oai->{v2}->{metadata_functions} = 
 {
-	"oai_dc"    =>  \&make_metadata_oai_dc_oai2
+	"oai_dc"    =>  \&make_metadata_oai_dc_oai2,
+	"didl"    =>  \&eprint_to_didl,
 };
 
 # Base URL of OAI 2.0
@@ -246,9 +216,10 @@ sub make_metadata_oai_dc
 
 	my $dc = $session->make_element(
 		"dc",
-		"xmlns" => $namespace,
+		"xmlns" => "http://www.openarchives.org/OAI/2.0/oai_dc/",
 		"xmlns:xsi" => "http://www.w3.org/2001/XMLSchema-instance",
-		"xsi:schemaLocation" => $namespace." ".$schema );
+		"xsi:schemaLocation" =>
+	 "http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd" );
 
 	# turn the list of pairs into XML blocks (indented by 8) and add them
 	# them to the DC element.
@@ -418,6 +389,128 @@ sub eprint_to_unqualified_dc
 	return @dcdata;
 }
 
+sub eprint_to_didl
+{
+	my( $eprint, $session ) = @_;
+
+	my $didl = $session->make_element( "didl:DIDL",
+                  "xmlns:didl"=>"urn:mpeg:mpeg21:2002:02-DIDL-NS",
+                  "xmlns:xsi"=>"http://www.w3.org/2001/XMLSchema-instance",
+                  "xsi:schemaLocation"=>"urn:mpeg:mpeg21:2002:02-DIDL-NS 
+                         http://purl.lanl.gov/STB-RL/schemas/2004-11/DIDL.xsd" );
+	my $item = $session->make_element( "didl:Item" );
+	$didl->appendChild( $item );
+
+
+	my $d1 = $session->make_element( "didl:Descriptior" );
+	my $s1 = $session->make_element( "didl:Statement", mimeType=>"text/xml; charset=UTF-8" );
+	my $ident = $session->make_element( "dii:Identifier",
+                              "xmlns:dii"=>"urn:mpeg:mpeg21:2002:01-DII-NS",
+                              "xmlns:xsi"=>"http://www.w3.org/2001/XMLSchema-instance",
+                              "xsi:schemaLocation"=>"urn:mpeg:mpeg21:2002:01-DII-NS
+                              http://purl.lanl.gov/STB-RL/schemas/2003-09/DII.xsd" );
+	$ident->appendChild( $session->make_text( $eprint->get_url ) );
+	$s1->appendChild( $ident );
+	$d1->appendChild( $s1 );
+	$item->appendChild( $d1 );
+
+
+	my $d2 = $session->make_element( "didl:Descriptior" );
+	my $s2 = $session->make_element( "didl:Statement", mimeType=>"text/xml; charset=UTF-8" );
+	$s2->appendChild( make_metadata_oai_dc_oai2( $eprint, $session ) );
+	$d2->appendChild( $s2 );
+	$item->appendChild( $d2 );
+
+	my $mimetypes = $session->get_archive->get_conf( "oai", "mime_types" );
+	foreach my $doc ( $eprint->get_all_documents )
+	{
+		my $comp = $session->make_element( "didl:Component" );
+		$item->appendChild( $comp );
+		$cdesc = $session->make_element( "didl:Descriptior" );
+		$comp->appendChild( $cdesc );
+		my $dc = $session->make_element(
+			"dc",
+			"xmlns" => "http://www.openarchives.org/OAI/2.0/oai_dc/",
+			"xmlns:xsi" => "http://www.w3.org/2001/XMLSchema-instance",
+			"xsi:schemaLocation" =>
+	 	"http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd" );
+		my $format = $mimetypes->{$doc->get_value("format")};
+		$format = "application/octet-stream" unless defined $format;
+		my $dcformat1 = $session->make_element( "dc:format" );
+		$dcformat1->appendChild( $session->make_text( $format ));
+		my $dcident = $session->make_element( "dc:identifier" );
+		$dcident->appendChild( $session->make_text( $doc->get_baseurl ));
+		$dc->appendChild( $dcformat1 );	
+		$dc->appendChild( $dcident );	
+		$cdesc->appendChild( $dc );
+		my %files = $doc->files;
+		foreach my $file ( keys %files )
+		{
+			my $res = $session->make_element( "didl:Resource", 
+					mimeType=>$format,
+					ref=>$doc->get_url( $file ) );
+			$comp->appendChild( $res );
+		}
+	}
+
+        
+#    <didl:Resource mimeType="application/pdf" ref="http://amsacta.cib.unibo.it/archive/
+ #              00000014/01/GaAs_1_Vorobiev.pdf"/>
+	return $didl;
+}
+
+
+my $x =<<END;
+<didl:DIDL  xmlns:didl="urn:mpeg:mpeg21:2002:02-DIDL-NS"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="urn:mpeg:mpeg21:2002:02-DIDL-NS
+                  http://purl.lanl.gov/STB-RL/schemas/2004-11/DIDL.xsd">
+<didl:Item>
+      <didl:Descriptor>
+            <didl:Statement mimeType="text/xml; charset=UTF-8">
+                  <dii:Identifier
+                              xmlns:dii="urn:mpeg:mpeg21:2002:01-DII-NS"
+                              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                              xsi:schemaLocation="urn:mpeg:mpeg21:2002:01-DII-NS
+                              http://purl.lanl.gov/STB-RL/schemas/2003-09/DII.xsd">
+                      http://amsacta.cib.unibo.it/archive/00000014/
+                  </dii:Identifier>
+            </didl:Statement>
+      </didl:Descriptor>
+      <didl:Descriptor>
+            <didl:Statement mimeType="text/xml; charset=UTF-8">
+                 <oai_dc:dc xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                       xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/
+                       http://www.openarchives.org/OAI/2.0/oai_dc.xsd"
+                       xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/"
+                       xmlns:dc="http://purl.org/dc/elements/1.1/">
+                  <dc:title>A Simple Parallel-Plate Resonator Technique for Microwave.
+                      Characterization of Thin Resistive Films
+                  </dc:title>
+                  <dc:creator>Vorobiev, A.</dc:creator>
+                  <dc:subject>ING-INF/01 Elettronica</dc:subject>
+                  <dc:description>A parallel-plate resonator method is proposed for
+                      non-destructive characterisation of resistive films used in microwave
+                      integrated circuits. A slot made in one ...
+                  </dc:description>
+                  <dc:publisher>Microwave engineering Europe</dc:publisher>
+                  <dc:date>2002</dc:date>
+                  <dc:type>Documento relativo ad una Conferenza o altro Evento</dc:type>
+                  <dc:type>PeerReviewed</dc:type>
+                  <dc:identifier>
+                      http://amsacta.cib.unibo.it/archive/00000014/
+                  </dc:identifier>
+                  <dc:format>application/pdf</dc:format>
+                 </oai_dc:dc>
+            </didl:Statement>
+      </didl:Descriptor>
+      <didl:Component>
+            <didl:Resource mimeType="application/pdf" ref="http://amsacta.cib.unibo.it/archive/
+               00000014/01/GaAs_1_Vorobiev.pdf"/>
+      </didl:Component>
+</didl:Item>
+</didl:DIDL>
+END
 
 
 1;
