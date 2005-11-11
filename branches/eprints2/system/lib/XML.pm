@@ -57,8 +57,7 @@ else
 	XML::DOM::setTagCompression( \&_xmldom_tag_compression );
 }
 
-
-
+use bytes;
 
 
 ######################################################################

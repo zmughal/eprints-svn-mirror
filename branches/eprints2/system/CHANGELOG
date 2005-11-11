@@ -2727,4 +2727,6 @@ PACKAGE: 2.2.99.2
  - Made the authentication username case insensitive so far as the
     change user feature is concerned.
  - Removed some pointless lines of code from SearchField->from_form
+ - added "use bytes" to XML.pm - this solves some of the problems
+    encountered with XML::DOM with unicode chars.
 
