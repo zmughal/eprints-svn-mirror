@@ -189,11 +189,6 @@ sub from_form
 {
 	my( $self ) = @_;
 
-	my $val = $self->{"session"}->param( $self->{"form_name_prefix"} );
-	$val =~ s/^\s+//;
-	$val =~ s/\s+$//;
-	$val = undef if( $val eq "" );
-
 	my $problem;
 
 	( $self->{"value"}, $self->{"merge"}, $self->{"match"}, $problem ) =

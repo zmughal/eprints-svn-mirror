@@ -2726,3 +2726,5 @@ PACKAGE: 2.2.99.2
  - Added DIDL OAI config 
  - Made the authentication username case insensitive so far as the
     change user feature is concerned.
+ - Removed some pointless lines of code from SearchField->from_form
+
