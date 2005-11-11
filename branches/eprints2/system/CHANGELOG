@@ -2724,4 +2724,5 @@ PACKAGE: 2.2.99.2
 
  - Removed OAI1.1 config
  - Added DIDL OAI config 
-
+ - Made the authentication username case insensitive so far as the
+    change user feature is concerned.

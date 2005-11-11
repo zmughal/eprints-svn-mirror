@@ -96,7 +96,7 @@ sub authen
 	if( $area eq "ChangeUser" )
 	{
 		my $user_sent = $r->user;
-		if( $r->uri !~ m#/$user_sent$# )
+		if( $r->uri !~ m#/$user_sent$#i )
 		{
 			return OK;
 		}
