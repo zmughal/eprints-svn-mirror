@@ -1,10 +1,6 @@
+package __PLUGIN__::Output::BibTeX;
 
-EPrints::Plugins::register( 
-	id => "output/bibtex",
-	parent => "output/core_bibtex",
-	visible => 'all',
-	convert_dataobj => \&convert_dataobj,
-);
+use EPrints::Plugin::Output::BibTeX;
 
 sub convert_dataobj
 {
@@ -16,7 +12,7 @@ sub convert_dataobj
 	$data->{normal}->{abstract} = $dataobj->get_value( "abstract" );
 	$data->{unescaped}->{url} = $dataobj->get_url;
 	$data->{type} = "article";
-	$data->{key} = "footle97";
+	$data->{key} = "footle97xxx:working";
 
 	return $data;
 }

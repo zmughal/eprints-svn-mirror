@@ -2730,3 +2730,9 @@ PACKAGE: 2.2.99.2
  - added "use bytes" to XML.pm - this solves some of the problems
     encountered with XML::DOM with unicode chars.
 
+2005-11-16 cjg
+
+ - Removed plugins from archivecfg and replaced it with Plugins
+    which will use the new perl module based plugins.
+
+
