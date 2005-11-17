@@ -562,7 +562,7 @@ User Area CGI Scripts
 <p><ep:pin ref="citation" /></p>
 <p>Please select an output format:</p>
 <ep:pin ref="formats" /></ep:phrase>
-    <ep:phrase ref="cgi/export:not_available"><p>Requested output format '<ep:pin ref="format" />'is not available.</p></ep:phrase>
+    <ep:phrase ref="cgi/export:not_available"><p>Requested output format '<ep:pin ref="format" />' is not available.</p></ep:phrase>
     <ep:phrase ref="cgi/export:error_title">Error in export</ep:phrase>
 
 

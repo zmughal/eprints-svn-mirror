@@ -2735,4 +2735,10 @@ PACKAGE: 2.2.99.2
  - Removed plugins from archivecfg and replaced it with Plugins
     which will use the new perl module based plugins.
 
+2005-11-17 cjg
+
+ - Changed to using perl modules for plugins. 
+ - Made output plugins use this system, including archive-specific
+    plugins.
+
 

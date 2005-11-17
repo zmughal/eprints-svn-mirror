@@ -2177,9 +2177,9 @@ sub render_export_links
 	foreach my $plugin_id ( @plugins ) {
 		my $li = $self->{session}->make_element( "li" );
 		my $plugin = $self->{session}->plugin( $plugin_id );
-		my $url = $plugin->call( "dataobj_export_url", $self );
+		my $url = $plugin->dataobj_export_url( $self );
 		my $a = $self->{session}->render_link( $url );
-		$a->appendChild( $plugin->call( "render_name" ) );
+		$a->appendChild( $plugin->render_name() );
 		$li->appendChild( $a );
 		$ul->appendChild( $li );
 	}

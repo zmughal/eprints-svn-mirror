@@ -557,14 +557,14 @@ sub export
 
 	my $req_plugin_type = "dataobj/".$self->{dataset}->confid;
 
-	unless( $plugin->call( "can_accept", $req_plugin_type ) )
+	unless( $plugin->can_accept( $req_plugin_type ) )
 	{
 		EPrints::Config::abort( 
 "Plugin $plugin_id can't process $req_plugin_type data." );
 	}
 	
 	
-	return $plugin->call( "output_dataobj", $self, %params );
+	return $plugin->output_dataobj( $self, %params );
 }
 
 ######################################################################

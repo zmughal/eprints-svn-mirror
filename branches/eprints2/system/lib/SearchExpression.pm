@@ -958,7 +958,7 @@ sub _dopage_export_redir
 	#cjg escape URL'ify urls in this bit... (4 of them?)
 	my $escexp = $exp;
 	$escexp =~ s/ /+/g; # not great way...
-	my $fullurl = "$url/export_".$self->{session}->get_archive->get_id."_".$format.$plugin->call( "suffix" )."?_exp=$escexp&_output=$format&_action_export=1&_cache=$cacheid";
+	my $fullurl = "$url/export_".$self->{session}->get_archive->get_id."_".$format.$plugin->suffix()."?_exp=$escexp&_output=$format&_action_export=1&_cache=$cacheid";
 
 	$self->{session}->redirect( $fullurl );
 }
@@ -1002,7 +1002,7 @@ sub _dopage_export
 	}
 
 	my $plugin = $self->{session}->plugin( "output/$format" );
-	$self->{session}->send_http_header( "content_type"=>$plugin->call( "mime_type" ) );
+	$self->{session}->send_http_header( "content_type"=>$plugin->mime_type() );
 	print $results->export( $format );	
 }
 	
@@ -1089,7 +1089,7 @@ sub _dopage_results
 			$plugin_id =~ m!/(.*)$!;
 			my $option = $self->{session}->make_element( "option", value=>$1 );
 			my $plugin = $self->{session}->plugin( $plugin_id );
-			$option->appendChild( $plugin->call( "render_name" ) );
+			$option->appendChild( $plugin->render_name );
 			$select->appendChild( $option );
 		}
 		my $button = $self->{session}->make_doc_fragment;
@@ -2121,17 +2121,14 @@ sub export
 
 	my $req_plugin_type = "list/".$self->{dataset}->confid;
 
-	unless( $plugin->call( "can_accept", $req_plugin_type ) )
+	unless( $plugin->can_accept( $req_plugin_type ) )
 	{
 		EPrints::Config::abort( 
 "Plugin $plugin_id can't process $req_plugin_type data." );
 	}
 	
 	
-	return $plugin->call( 
-			"output_list",
-			list=>$self,
-			%params );
+	return $plugin->output_list( list=>$self, %params );
 }
 
 ######################################################################

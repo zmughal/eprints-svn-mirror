@@ -69,7 +69,7 @@ use EPrints::EPrint;
 use EPrints::Subject;
 use EPrints::Document;
 use EPrints::Plugin;
-use EPrints::Plugins;
+#use EPrints::Plugins;
 
 use Unicode::String qw(utf8 latin1);
 use EPrints::AnApache;
@@ -2529,47 +2529,28 @@ that, from the system level plugins.
 
 sub plugin
 {
-	my( $self, $pluginid ) = @_;
+	my( $self, $pluginid, %params ) = @_;
 
-	my $pluginconf = $self->{archive}->get_plugin_conf( $pluginid );
+print STDERR "session->plugin( $pluginid )\n";
+	my $class = $self->{archive}->plugin_class( $pluginid );
+print STDERR "CLASS:$class\n";
 
-	if( !defined $pluginconf )
-	{	
-		$pluginconf = EPrints::Plugins::get_plugin_conf( $pluginid );
-	}
-	
-	if( !defined $pluginconf )
-	{
-		# cjg bad warning code
-		print STDERR "Unknown plugin: $pluginid\n";
-		return undef;
-	}
-	
-	my $plugin = EPrints::Plugin->new( $pluginconf, $self );	
+#	my $return = eval "use $class;";
+#
+#	unless ( $return ) {
+#		# the 6 lines above screw the error message. This puts it to
+#		# the correct value for the _file_ not the eval.
+#		# if( $@ ) { $@ =~ s/line (\d+)/"line ".($1-6)/eg; }
+#
+#		warn "couldn't parse plugin $class: $@" if $@;
+#		warn "couldn't eval plugin $class: $!"    unless defined $return;
+#		warn "couldn't run plugin $class"       unless $return;
+#	}
+	my $plugin = $class->new( session=>$self, %params );	
 
 	return $plugin;
 }
 
-
-######################################################################
-=pod
-
-=item $session = $session->plugin_call( $plugin_id, $method, %params );
-
-Calls a $method on a plugin with id $plugin_id. Passes %params to
-the method and returns whatever the method returns.
-
-=cut
-######################################################################
-
-sub plugin_call
-{
-	my( $self, $plugin_id, $method_id, %params ) = @_;
-
-	my $plugin = $self->plugin( $plugin_id );
-	
-	return $plugin->call( $method_id, %params );
-}
 
 
 ######################################################################
@@ -2594,24 +2575,27 @@ sub plugin_list
 	my( $self, %restrictions ) = @_;
 
 	my %pids = ();
-	foreach( EPrints::Plugins::plugin_list() ) { $pids{$_}=1; }
+#	foreach( EPrints::Plugins::plugin_list() ) { $pids{$_}=1; }
 	foreach( $self->{archive}->plugin_list() ) { $pids{$_}=1; }
 
 	return sort keys %pids if( !scalar %restrictions );
-
 	my @out = ();
-	foreach( sort keys %pids ) {
-		my $plugin = $self->plugin( $_ );
+	foreach my $plugin_id ( sort keys %pids ) 
+	{
+		my $plugin = $self->plugin( $plugin_id );
+
 		if( $restrictions{can_accept} )
 		{
-			next unless( $plugin->call( "can_accept", $restrictions{can_accept} ) );
+			next unless( $plugin->can_accept( $restrictions{can_accept} ) );
 		}
+
 		if( $restrictions{is_visible} )
 		{
-			next unless( $plugin->call( "is_visible", $restrictions{is_visible} ) );
+			next unless( $plugin->is_visible( $restrictions{is_visible} ) );
 		}
-		push @out, $_;
-	}
+
+		push @out, $plugin_id;
+	} print STDERR ">>>>>".join(",",@out)."<\n";
 
 	return @out;
 }

@@ -61,45 +61,27 @@ sub load
 {
 	# no opts
 
-	# cjg bad dir!
-	my $dir = $EPrints::SystemSettings::conf->{base_path}."/plugins";
+	my $dir = $EPrints::SystemSettings::conf->{base_path}."/perl_lib/EPrints/Plugin";
 
-	set_register_target( $EPrints::Plugins::REGISTRY );
-	load_dir( $dir, "EPrints::Archives::Plugins" );
+	load_dir( $EPrints::Plugins::REGISTRY, $dir, "EPrints::Plugin" );
 }
+
 
 ######################################################################
 =pod
 
-=item EPrints::Plugins::set_register_target( $hash )
-
-Set the hash to which new plugins are registered.
-
-=cut
-######################################################################
-
-sub set_register_target
-{
-	my( $newtarget ) = @_;
-
-	$EPrints::Plugins::REGISTER_TARGET = $newtarget;
-}
-
-######################################################################
-=pod
-
-=item EPrints::Plugins::load_dir( $path, $baseclass, @prefix )
+=item EPrints::Plugins::load_dir( $reg, $path, $baseclass, @prefix )
 
 Load plugins in this directory and recurse through subdirectories.
+
+$reg is a pointer to a hash to store the lost of found plugins in.
 
 =cut
 ######################################################################
 
 sub load_dir
 {
-	my( $path, $baseclass, @prefix ) = @_;
-
-#print STDERR "LOADING PLUGIN DIR: $path (".join( ",",@prefix).")\n";
+	my( $reg, $path, $baseclass, @prefix ) = @_;
 
 	my $dh;
 	opendir( $dh, $path ) || die "Could not open $path";
@@ -110,95 +92,29 @@ sub load_dir
 		my $filename = "$path/$fn";
 		if( -d $filename )
 		{
-			load_dir( $filename, $baseclass, @prefix, $fn );
+			load_dir( $reg, $filename, $baseclass, @prefix, $fn );
 			next;
 		}
 
+		next unless( $fn =~ s/\.pm// );
 		my $class = $baseclass."::".join("::",@prefix,$fn );
-		open( PLUGIN, $filename ) || die "Can't open $filename.";
-		my $eval_str = <<END;
-package $class;
+		
+		eval "use $class";
 
-use strict;
+		no strict "refs";
+		my $absvar = $class.'::ABSTRACT';
+		my $abstract = ${$absvar};
+		use strict "refs";
+		next if( $abstract );
+		my $pluginid = $class->id;
 
-use EPrints::Plugins;
-
-END
-		$eval_str.= join( "",<PLUGIN> )."\n1\n";
-		close PLUGIN;
-
-		my $return = eval $eval_str;
-
-		unless ( $return ) {
-			# the 6 lines above screw the error message. This puts it to
-			# the correct value for the _file_ not the eval.
-			if( $@ )
-			{
-				$@ =~ s/line (\d+)/"line ".($1-6)/eg;
-			}
-			warn "couldn't parse plugin $filename: $@" if $@;
-			warn "couldn't eval plugin $filename: $!"    unless defined $return;
-			warn "couldn't run plugin $filename"       unless $return;
-		}
+		$reg->{$pluginid} = $class;
 	}
 	closedir( $dh );
 
 }
 
 
-######################################################################
-=pod
-
-=item EPrints::Plugins::register( %parameters );
-
-Required parameter is "id".
-
-=cut
-######################################################################
-
-sub register
-{
-	my( %params ) = @_;
-
-	$EPrints::Plugins::REGISTER_TARGET->{$params{id}} = \%params;
-}
-
-#######################################################################
-#=pod
-#
-#=item $thing = EPrints::Plugins::call( $pluginid, $method, @params );
-#
-#Calls a $method on a plugin with id $pluginid. Passes @params to
-#the method and returns whatever the method returns.
-#
-#=cut
-#######################################################################
-#
-#sub call
-#{
-#	my( $pluginid, $methodid, @params ) = @_;
-#
-#	my $plugin = plugin( $pluginid );
-#	
-#	return $plugin->call( $methodid, @params );
-#}
-
-######################################################################
-=pod
-
-=item $plugin_conf = EPrints::Plugins::get_plugin_conf( $pluginid )
-
-Return the system plugin with the given pluginid
-
-=cut
-######################################################################
-
-sub get_plugin_conf
-{
-	my( $pluginid ) = @_;
-
-	return $EPrints::Plugins::REGISTRY->{$pluginid};
-}
 
 
 ######################################################################
