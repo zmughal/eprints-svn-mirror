@@ -2745,3 +2745,7 @@ PACKAGE: 2.2.99.2
 
  - Rationalisted plugin directory names.
  - Merged Plugins.pm into being static methods of Plugin.pm
+ - Added inital SOAP related files. These should not go in the
+    release until they are more secure.
+ - Erasing (completely) an eprint now also causes the static
+    pages associated with it to be erased.

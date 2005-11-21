@@ -570,6 +570,9 @@ sub remove
 		$self->{dataset},
 		$self->get_value( "eprintid" ) );
 
+	# remove the webpages assocaited with this record.
+	$self->remove_static;
+
 	return $success;
 }
 
