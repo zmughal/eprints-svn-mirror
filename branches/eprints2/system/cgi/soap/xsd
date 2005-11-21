@@ -1,0 +1,253 @@
+#!/usr/bin/perl -w -I/opt/eprints2/perl_lib 
+
+use EPrints::Session;
+
+use strict;
+
+my $session = new EPrints::Session();
+my $archive = $session->get_archive;
+
+$session->send_http_header( content_type=>'text/xml' );
+
+my $host = $archive->get_conf( "base_url" );
+
+use strict;
+
+print <<END;
+<?xml version="1.0" ?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            targetNamespace="$host/EPrints/WebServices"
+            xmlns="$host/EPrints/WebServices"
+            xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
+            xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+            elementFormDefault="qualified" >
+
+END
+
+if( 0) {
+	foreach my $fieldtype ( qw/
+	boolean child datatype date email fulltext id int itemref langid
+	longtext pagerange search secret set subject text url year 
+	raeeprintid data / ) {
+		print <<END
+<xsd:simpleType name="Data-$fieldtype">
+  <xsd:restriction base="xsd:string">
+  </xsd:restriction>
+</xsd:simpleType>
+END
+	}
+}
+print <<END;
+
+<xsd:complexType name="NameValue">
+  <xsd:all>
+    <xsd:element minOccurs="0" name="family" type="xsd:string" />
+    <xsd:element minOccurs="0" name="given" type="xsd:string" />
+    <xsd:element minOccurs="0" name="honourific" type="xsd:string" />
+    <xsd:element minOccurs="0" name="lineage" type="xsd:string" />
+  </xsd:all>
+</xsd:complexType>
+
+END
+
+my @datasetids = ( "eprint","subject","user","subscription","document" );
+
+#print <<END;
+#  <xsd:element name="records">
+#    <xsd:complexType>
+#      <xsd:choice>
+#END
+
+#foreach my $dsid ( @datasetids )
+#{
+#	my $ds = $session->get_archive()->get_dataset( $dsid );
+#        print "        <xsd:sequence>\n";
+#        print "          <xsd:element ref=\"".$ds->confid."\" maxOccurs=\"unbounded\" minOccurs=\"0\" />\n";
+#        print "        </xsd:sequence>\n";
+#}
+#print <<END;
+#      </xsd:choice>
+#    </xsd:complexType>
+#  </xsd:element>
+#
+#END
+
+foreach my $dsid ( @datasetids )
+{
+	dataset_schema( $dsid );
+}
+
+
+print <<END;
+
+</xsd:schema>
+END
+
+$session->terminate;
+exit;
+
+sub dataset_schema
+{
+	my( $dsid ) = @_;
+
+	my $data = "";
+
+	my $ds = $session->get_archive()->get_dataset( $dsid );
+
+
+	$data.= "<xsd:complexType name=\"\u$dsid\">\n";
+
+	$data.= "  <xsd:all>\n";
+
+	if( $dsid eq "eprint" )
+	{
+		$data.= "    <xsd:element minOccurs=\"0\" maxOccurs=\"1\" name=\"documents\" type=\"EprintDocuments\" />\n";
+
+		print <<END;
+<xsd:complexType name="EprintDocuments">
+  <xsd:complexContent>
+    <xsd:restriction base="soapenc:Array">
+      <xsd:attribute ref="soapenc:arrayType" wsdl:arrayType="Document[]" />
+    </xsd:restriction>
+  </xsd:complexContent>
+</xsd:complexType>
+END
+	}
+
+	if( $dsid eq "document" )
+	{
+		$data.= "    <xsd:element minOccurs=\"0\" maxOccurs=\"1\" name=\"files\" type=\"DocumentFiles\" />\n";
+
+		print <<END;
+<xsd:complexType name="DocumentFiles">
+  <xsd:complexContent>
+    <xsd:restriction base="soapenc:Array">
+      <xsd:attribute ref="soapenc:arrayType" wsdl:arrayType="DocumentFilesItem[]" />
+    </xsd:restriction>
+  </xsd:complexContent>
+</xsd:complexType>
+
+<xsd:complexType name="DocumentFilesItem">
+  <xsd:sequence>
+    <xsd:element minOccurs="1" maxOccurs="1" name="filename" type="xsd:string" />
+    <xsd:element minOccurs="0" maxOccurs="1" name="url" type="xsd:string" />
+    <xsd:element minOccurs="0" maxOccurs="1" name="filesize" type="xsd:int" />
+    <xsd:element minOccurs="0" maxOccurs="1" name="data" type="xsd:base64Binary" />
+  </xsd:sequence>
+</xsd:complexType>
+END
+	}
+
+
+
+	foreach my $field ( $ds->get_fields )
+	{
+		my $fn = $field->get_name;
+		$fn =~ s/_([a-z])/\u$1/g;
+		my $type = &field_schema( $field, "\u$dsid\u$fn" );
+    	$data.= "    <xsd:element minOccurs=\"0\" maxOccurs=\"1\" name=\"".$field->get_name."\" type=\"$type\" />\n";
+	}
+
+	$data.= "  </xsd:all>\n";
+	$data.= "</xsd:complexType>\n";
+
+	print $data;
+}
+
+
+
+sub field_schema
+{
+	my( $field, $name ) = @_;
+
+	unless( $field->get_property( "multiple" ) )
+	{
+		return &field_schema_single( $field, $name );
+	}
+
+	my $type = &field_schema_single( $field, $name."Item" )."[]";
+
+	print <<END;
+<xsd:complexType name="$name">
+  <xsd:complexContent>
+    <xsd:restriction base="soapenc:Array">
+      <xsd:attribute ref="soapenc:arrayType" wsdl:arrayType="$type" />
+    </xsd:restriction>
+  </xsd:complexContent>
+</xsd:complexType>
+END
+
+	return $name;
+}
+
+sub field_schema_single
+{
+	my( $field, $name ) = @_;
+
+	unless( $field->get_property( "hasid" ) )
+	{
+		return &field_schema_noid( $field, $name );
+	}
+
+	my $type = &field_schema_noid( $field, $name."Main" );
+
+	print <<END;
+  <xsd:complexType name="$name">
+    <xsd:all>
+      <xsd:element minOccurs="0" maxOccurs="1" name="id" type="xsd:string" />
+      <xsd:element minOccurs="0" maxOccurs="1" name="main" type="$type" />
+    </xsd:all>
+  </xsd:complexType>
+END
+
+	return $name;
+}
+
+sub field_schema_noid
+{
+	my( $field, $name ) = @_;
+
+	unless( $field->get_property( "multilang" ) )
+	{
+		return &field_schema_basic( $field, $name );
+	}
+
+	my $type = &field_schema_basic( $field, $name."Value" );
+
+	print <<END;
+<xsd:complexType name="$name">
+  <xsd:sequence>
+    <xsd:element minOccurs="0" maxOccurs="unbounded" name="langvar" type="${name}LangVar" />
+  </xsd:sequence>
+</xsd:complexType>
+END
+
+	print <<END;
+<xsd:complexType name="${name}LangVar">
+  <xsd:all>
+    <xsd:element minOccurs="0" maxOccurs="1" name="lang" type="xsd:string" />
+    <xsd:element minOccurs="0" maxOccurs="1" name="value" type="$type" />
+  </xsd:all>
+</xsd:complexType>
+END
+
+	return $name;
+}
+
+
+sub field_schema_basic
+{
+	my( $field, $name ) = @_;
+
+	if( $field->get_search_group eq "int" )
+	{
+		return "xsd:int";
+	}
+	if( $field->get_search_group eq "name" )
+	{
+		return "NameValue";
+	}
+
+	return( 'xsd:string' );
+}
+

@@ -1,0 +1,157 @@
+#!/usr/bin/perl -w -I/opt/eprints2/perl_lib 
+
+use EPrints::Session;
+
+use strict;
+
+my $session = new EPrints::Session();
+my $archive = $session->get_archive;
+
+$session->send_http_header( content_type=>'text/xml' );
+
+my $host = $archive->get_conf( "base_url" );
+my $perl = $archive->get_conf( "perl_url" );
+
+print <<END;
+<?xml version="1.0" encoding="UTF-8" ?>
+<definitions name="PmSoapRpcApi"
+             targetNamespace="$host/EPrints/WebServices"
+             xmlns:pm="$host/EPrints/WebServices"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+             xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+             xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+  <types>
+END
+
+print <<END;
+    <xsd:schema>
+        <xsd:import schemaLocation="$perl/soap/xsd" />
+    </xsd:schema>
+END
+
+#do "fooxsd";
+#rrr($session,$host);
+print <<END;
+  </types>
+
+
+  <message name="echoInput">
+    <part name="inputString"             type="xsd:string"/>
+    <part name="stringDuplicationCount"  type="xsd:int"/>
+  </message>
+
+  <message name="echoOutput">
+    <part name="return"                  type="xsd:string"/>
+  </message>
+
+  <message name="removeEprintInput">
+    <part name="eprintID"                type="xsd:int"/>
+  </message>
+
+  <message name="removeEprintOutput">
+  </message>
+
+  <message name="getEprintInput">
+    <part name="eprintID"                type="xsd:int"/>
+  </message>
+
+  <message name="getEprintOutput">
+    <part name="eprint"                  type="pm:Eprint"/>
+  </message>
+
+  <message name="putEprintInput">
+    <part name="eprint"                  type="pm:Eprint"/>
+  </message>
+
+  <message name="putEprintOutput">
+    <part name="eprintID"                type="xsd:int"/>
+  </message>
+
+  <message name="searchInput">
+    <part name="params"                  type="pm:ListParam"/>
+    <part name="searchFields"            type="pm:ListSearchField"/>
+  </message>
+
+  <message name="searchOutput">
+    <part name="results"                 type="pm:ListEPrint"/>
+  </message>
+
+
+
+
+  <portType name="PmSoapRpcApiPort">
+
+    <operation name="echo" parameterOrder="inputString stringDuplicationCount">
+      <input  name='echoInput'  message="pm:echoInput"/>
+      <output name='echoOutput' message="pm:echoOutput"/>
+    </operation>
+
+    <operation name="getEprint" parameterOrder="eprintID">
+      <input  name='getEprintInput'  message="pm:getEprintInput"/>
+      <output name='getEprintOutput' message="pm:getEprintOutput"/>
+    </operation>
+
+    <operation name="getEprintFiles" parameterOrder="eprintID">
+      <input  name='getEprintInput'  message="pm:getEprintInput"/>
+      <output name='getEprintOutput' message="pm:getEprintOutput"/>
+    </operation>
+
+    <operation name="putEprint" parameterOrder="eprint">
+      <input  name='putEprintInput'  message="pm:putEprintInput"/>
+      <output name='putEprintOutput' message="pm:putEprintOutput"/>
+    </operation>
+
+    <operation name="removeEprint" parameterOrder="eprintID">
+      <input  name='removeEprintInput'  message="pm:removeEprintInput"/>
+      <output name='removeEprintOutput' message="pm:removeEprintOutput"/>
+    </operation>
+
+    <operation name="searchEprint" parameterOrder="params searchFields">
+      <input  name='searchInput'  message="pm:searchInput"/>
+      <output name='searchOutput' message="pm:searchOutput"/>
+    </operation>
+
+  </portType>
+
+
+
+
+
+  <binding name="PmSoapRpcApiBinding" type="pm:PmSoapRpcApiPort">
+    <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+END
+foreach my $method (qw/ echo removeEprint getEprint getEprintFiles putEprint searchEprint /)
+{
+	print <<END;
+    <operation name="$method">
+      <soap:operation soapAction="$host/EPrints/WebServices#$method"/>
+      <input name="${method}Input">
+        <soap:body use="encoded"
+                   namespace="$host/EPrints/WebServices"
+                   encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
+      </input>
+      <output name="${method}Output">
+        <soap:body use="encoded"
+                   namespace="$host/EPrints/WebServices"
+                   encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
+      </output>
+    </operation>
+END
+}
+
+print <<END;
+  </binding>
+
+
+  <service name="PmSoapRpcApi">
+    <port name="PmSoapRpcApiPort" binding="pm:PmSoapRpcApiBinding">
+      <soap:address location="$perl/soap/soap"/>
+    </port>
+  </service>
+
+</definitions>
+END
+
+exit;

@@ -1,0 +1,424 @@
+#!/usr/bin/perl -w -I/opt/eprints2/perl_lib 
+
+use EPrints::Archive;
+use SOAP::Transport::HTTP;
+
+
+SOAP::Transport::HTTP::CGI->dispatch_to("EPrints::WebServices")->handle;
+
+exit;
+
+package EPrints::WebServices;
+
+use Data::Dumper;
+use SOAP::Lite;
+
+use strict;
+
+sub echo($$;$)
+{
+	my( $class, $string, $count ) = @_;
+
+	print STDERR "echo(".join(",",@_).")\n";
+	$count = 1 unless defined( $count );
+
+	return SOAP::Data->name("return" => "$string"x$count );
+}
+
+
+sub removeEprint($)
+{
+	my( $class, $eprintid ) = @_;
+
+	print STDERR "remove_eprint(".join(",",@_).")\n";
+
+	my $session = new EPrints::Session();
+	if( !defined $session )
+	{
+		die "can't open session";
+	}
+	my $archive = $session->get_archive;
+	my $dataset = $archive->get_dataset( 'eprint' ); 
+	my $eprint = $dataset->get_object( $session, $eprintid );
+	if( !defined $eprint )
+	{
+		$session->terminate;
+		die "eprint $eprintid does not exist";
+	}
+	$eprint->remove;
+	$session->terminate;
+
+	return();
+}
+	
+
+sub getEprintFiles($)
+{
+	my( $class, $eprintid ) = @_;
+
+	return $class->getEprint( $eprintid, 1 );
+}
+	
+sub getEprint($;$)
+{
+	my( $class, $eprintid, $whole_files ) = @_;
+
+	if( $whole_files != 1 ) { $whole_files = 0; }
+	#$whole_files = 0;# hack!
+
+	print STDERR "get_eprint(".join(",",@_).")\n";
+	my $session = new EPrints::Session();
+	if( !defined $session )
+	{
+		die "can't open session";
+	}
+	my $archive = $session->get_archive;
+	my $dataset = $archive->get_dataset( 'eprint' ); 
+	my $eprint = $dataset->get_object( $session, $eprintid );
+	if( !defined $eprint )
+	{
+		$session->terminate;
+		die "eprint $eprintid does not exist";
+	}
+	my $result = object_to_soap( $eprint, $whole_files );
+	$session->terminate;
+	
+	return SOAP::Data->name("eprint" => $result );
+}
+
+# takes eprints data, returns an eprintid
+sub putEprint($)
+{
+	my( $class, $data ) = @_;
+
+	print STDERR "put_eprint(".join(",",@_).")\n";
+	print STDERR Dumper( $data );
+	$data = clone( $data );
+	print STDERR Dumper( $data );
+
+	my $session = new EPrints::Session();
+	if( !defined $session )
+	{
+		die "can't open session";
+	}
+	my $archive = $session->get_archive;
+
+	$data->{type} = "article" unless defined $data->{type};
+	$data->{userid} = 4438;
+
+	my $ds = $session->get_archive->get_dataset( "inbox" );
+	my $eprint = EPrints::EPrint::create( $session, $ds, $data );
+	if( !defined $eprint ) 
+	{
+		die "Failed to create eprint";
+	}
+	$eprint->datestamp();
+	$eprint->commit();
+
+	foreach my $docdata ( @{$data->{documents}} )
+	{
+		my $doc = EPrints::Document::create( $session, $eprint );
+		foreach( keys %{$docdata} )
+		{
+			next if( $_ eq "files" );
+			$doc->set_value( $_, $docdata->{$_} );
+		}
+		foreach my $filedata ( @{$docdata->{files}} )
+		{
+			my $fn = $doc->local_path."/".$filedata->{filename};
+			open( FILE, ">$fn" ) || die "can't write file: $!";
+			print FILE $filedata->{data};
+			close FILE;
+		}
+		$doc->commit;
+	}
+
+
+	#my $eprint = $dataset->get_object( $session, $eprintid );
+	#if( !defined $eprint )
+	#{
+		#$session->terminate;
+		#die "eprint $eprintid does not exist";
+	#}
+	#my $result = object_to_soap( $eprint, $whole_files );
+
+	my $id = $eprint->get_id;
+
+	$session->terminate;
+
+	return SOAP::Data->name( 'eprintID', $id )->type( "xsd:int" );
+}
+
+sub searchEprint($$)
+{
+	my( $class, $paramlist, $searchfields ) = @_;
+
+	print STDERR "search(".join(",",@_).")\n";
+
+	print STDERR "get_eprint(".join(",",@_).")\n";
+	my $session = new EPrints::Session();
+	if( !defined $session )
+	{
+		die "can't open session";
+	}
+	my $archive = $session->get_archive;
+	my $dataset = $archive->get_dataset( 'eprint' ); 
+	my %p = ();
+	$paramlist = [] unless defined $paramlist;
+	foreach my $pair ( @{$paramlist} )
+	{
+		$p{$pair->{param}} = $pair->{value};
+	}
+	# page_size?
+	my %params = (
+		session=>$session,
+		dataset=>$dataset
+	);
+	foreach( qw/ allow_blank satisfy_all custom_order / )
+	{
+		next unless defined $p{$_};
+		$params{$_} = $p{$_};	
+	}
+	my $sexp = new EPrints::SearchExpression( %params );
+	foreach my $sf ( @{$searchfields} )
+	{
+		my @fields = ();
+		foreach my $fieldid ( @{$sf->{fields}} )
+		{
+			# needs a test first!
+			my $field = EPrints::Utils::field_from_config_string( $dataset, $fieldid );
+			push @fields, $field;
+		}
+		$sexp->add_field( \@fields, $sf->{value}, $sf->{match}, $sf->{merge} );
+	}
+	$sexp->perform_search;
+
+	my @r = ();
+	$sexp->map( sub {
+		my( $session, $dataset, $item ) = @_;
+		push @r, object_to_soap( $item, 0 );
+	} );
+	$sexp->dispose;	
+	
+	$session->terminate;
+
+	return SOAP::Data->name('results', \@r );
+}
+	
+
+
+
+sub object_to_soap($$);
+
+sub object_to_soap($$)
+{
+	my( $obj, $whole_files ) = @_;
+
+	my $data = EPrints::Utils::clone( $obj->get_data );
+
+	my $datasetid = $obj->get_dataset->confid;
+
+	if( $datasetid eq "eprint" )
+	{
+		my @docs = $obj->get_all_documents;
+		my @d = ();
+		foreach( @docs )
+		{
+			push @d, object_to_soap( $_, $whole_files );
+		}	
+		$data->{documents} = SOAP::Data->attr( {"SOAP-ENC:arrayType"=>"eprints:Document[".(scalar @d)."]" }, \@d );
+	}
+
+	if( $datasetid eq "document" )
+	{
+		my %files = $obj->files;
+		my @f = ();
+		foreach my $filename ( keys %files )
+		{
+			my $fileinfo = {};
+			$fileinfo->{filename} = $filename;
+			$fileinfo->{filesize} = SOAP::Data->type( "xsd:int", $files{$filename} );
+			$fileinfo->{url} = $obj->get_url( $filename );
+			if( $whole_files )
+			{
+				my $file = $obj->local_path."/".$filename;
+				open( FH, $file ) || die "file '$file' read error: $!";
+				$fileinfo->{data} = join( "", <FH> );
+				close FH;
+			}
+			push @f, $fileinfo;
+		}	
+		$data->{files} = SOAP::Data->attr( {"SOAP-ENC:arrayType"=>"eprints:DocumentFilesItem[".(scalar @f)."]" }, \@f );
+    }
+
+	my $host = $obj->get_session->get_archive->get_conf( "base_url" );
+	foreach my $field ( $obj->get_dataset->get_fields )
+	{
+		my $fname = $field->get_name;
+		$data->{$fname} = soapy( $field, $data->{$fname} );
+	}
+
+	return SOAP::Data->name($datasetid, $data )->attr({ "xmlns:eprints"=>"$host/EPrints/WebServices"});
+}
+
+sub soapy
+{
+	my( $field, $value ) = @_;
+
+	my $soaped;
+	if( $field->get_property( "multiple" ) )
+	{
+		my $itemtype = xsd_type_item( $field );
+		my $list = [];
+		foreach( @{$value} )
+		{
+			push @{$list}, SOAP::Data->name( "item"=>soapy_single( $field, $_ ))->type( $itemtype );
+		}
+		my $arraytype=$itemtype."[".(scalar @{$list})."]";
+		#$soaped = {list=> SOAP::Data->name('list'=>$list)->attr( {"SOAP-ENC:arrayType"=>$arraytype} )};
+		$soaped = SOAP::Data->attr( {"SOAP-ENC:arrayType"=>$arraytype}, $list );
+		return $soaped;
+	}
+	else
+	{
+		$soaped = soapy_single( $field, $value );
+	}
+
+	my $type = xsd_type( $field );
+	return SOAP::Data->name(($field->get_name)=>$soaped)->type( $type );
+}
+
+sub soapy_single
+{
+	my( $field, $value ) = @_;
+
+	my $soaped;
+	if( $field->get_property( "hasid" ) )
+	{
+		$soaped = {};
+		$soaped->{id} = SOAP::Data->name("id"=>$value->{id})->type( "xsd:string" );
+		$soaped->{main} = SOAP::Data->name(main=>soapy_noid( $field, $value->{main} ));
+	}
+	else
+	{
+		$soaped = soapy_noid( $field, $value );
+	}
+	return $soaped;
+}
+
+sub soapy_noid
+{
+	my( $field, $value ) = @_;
+
+	#return $value;
+	my $type = xsd_type_basic( $field );
+	return SOAP::Data->type( $type=>$value );
+}
+
+sub xsd_type_item 
+{
+	my( $field ) = @_;
+
+	my $dsid = $field->get_dataset->confid;
+	my $fn = $field->get_name;
+	$fn =~ s/_([a-z])/\u$1/g;
+	my $name ="eprints:\u$dsid\u$fn";
+
+	return &xsd_type_single( $field, $name."Item" );
+}
+
+sub xsd_type
+{
+	my( $field ) = @_;
+
+	my $dsid = $field->get_dataset->confid;
+	my $fn = $field->get_name;
+	$fn =~ s/_([a-z])/\u$1/g;
+	my $name ="eprints:\u$dsid\u$fn";
+
+	unless( $field->get_property( "multiple" ) )
+	{
+		return &xsd_type_single( $field, $name );
+	}
+
+	return $name;
+}
+
+
+sub xsd_type_single
+{
+	my( $field, $name ) = @_;
+
+	unless( $field->get_property( "hasid" ) )
+	{
+		return &xsd_type_noid( $field, $name );
+	}
+
+	return $name;
+}
+
+sub xsd_type_noid
+{
+	my( $field, $name ) = @_;
+
+	unless( $field->get_property( "multilang" ) )
+	{
+		return &xsd_type_basic( $field, $name );
+	}
+
+	return $name;
+}
+
+
+sub xsd_type_basic
+{
+	my( $field, $name ) = @_;
+
+	if( $field->get_search_group eq "int" )
+	{
+		return "xsd:int";
+	}
+	if( $field->get_search_group eq "name" )
+	{
+		return "eprints:NameValue";
+	}
+
+	return( 'xsd:string' );
+}
+
+
+use UNIVERSAL qw(isa);
+sub clone
+{
+	my( $data ) = @_;
+
+	if( ref($data) eq "" )
+	{
+		return $data;
+	}
+	if( isa( $data, "ARRAY" ) )
+	{
+		my $r = [];
+		foreach( @{$data} )
+		{
+			push @{$r}, clone( $_ );
+		}
+		return $r;
+	}
+	if( isa( $data, "HASH" ) )
+	{
+		my $r = {};
+		foreach( keys %{$data} )
+		{
+			$r->{$_} = clone( $data->{$_} );
+		}
+		return $r;
+	}
+
+
+	# dunno
+	return $data;			
+}
+
+
+
