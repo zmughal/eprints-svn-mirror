@@ -76,7 +76,7 @@ use EPrints::Config;
 use EPrints::Utils;
 use EPrints::DataSet;
 use EPrints::Language;
-use EPrints::Plugins;
+use EPrints::Plugin;
 
 use File::Copy;
 
@@ -667,14 +667,23 @@ sub _load_plugins
 {
 	my( $self ) = @_;
 
-	my $src = $self->get_conf( "config_path" )."/Plugins";
+	my $src = $self->get_conf( "config_path" )."/Plugin";
+
+	$self->{plugins} = { %{$EPrints::Plugin::REGISTRY} };
+
+	if( !-e $src )
+	{
+		$self->log( "No plugins loaded. $src does not exist." );
+		return 1; # just a warning
+	}
 
 	my $tgt = $EPrints::SystemSettings::conf->{base_path}."/perl_lib/EPrints/LocalPlugin/".$self->{id};
 
 	$self->_plugin_dir_copy( $src, $tgt );
 
-	$self->{plugins} = { %{$EPrints::Plugins::REGISTRY} };
 	EPrints::Plugins::load_dir( $self->{plugins}, $tgt, "EPrints::LocalPlugin::".$self->{id} );
+
+	return 1;
 }
 
 ######################################################################
