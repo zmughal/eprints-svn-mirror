@@ -1045,9 +1045,9 @@ sub cache
 
 	my $keyfield = $dataset->get_key_field();
 
-	my $tmptable  = "cache".$id;
+	my $cache_table  = $self->cache_table( $id );
 
-        $sql = "CREATE TABLE $tmptable ".
+        $sql = "CREATE TABLE $cache_table ".
 		"( pos INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT, ".
 		$keyfield->get_sql_type( 1 )." )";
 	$self->do( $sql );
@@ -1055,7 +1055,7 @@ sub cache
 	return $id if( $srctable eq "NONE" ); 
 
 	my $keyname = $keyfield->get_name();
-	$sql = "INSERT INTO $tmptable SELECT NULL , B.$keyname from ".$srctable." as B";
+	$sql = "INSERT INTO $cache_table SELECT NULL , B.$keyname from ".$srctable." as B";
 	if( defined $order )
 	{
 		$sql .= " LEFT JOIN ".$dataset->get_ordervalues_table_name($self->{session}->get_langid())." AS O";
@@ -1080,6 +1080,22 @@ sub cache
 }
 
 
+######################################################################
+=pod
+
+=item $tablename = $db->cache_table( $id )
+
+Return the SQL table used to store the cache with id $id.
+
+=cut
+######################################################################
+
+sub cache_table
+{
+	my( $self, $id ) = @_;
+
+	return "cache".$id;
+}
 
 
 ######################################################################
@@ -1284,7 +1300,7 @@ sub drop_cache
 	# $id MUST be an integer.
 	$id += 0;
 
-	my $tmptable = "cache$id";
+	my $tmptable = $self->cache_table( $id );
 
 	my $sql;
 	my $ds = $self->{session}->get_archive()->get_dataset( "cachemap" );
@@ -1479,11 +1495,9 @@ sub _get
 {
 	my ( $self , $dataset , $mode , $param, $offset, $ntoreturn ) = @_;
 
-if( !defined $dataset || ref($dataset) eq "") 
-{
-confess();
+	# debug code.
+	if( !defined $dataset || ref($dataset) eq "") { confess(); }
 
-}
 	# mode 0 = one or none entries from a given primary key
 	# mode 1 = many entries from a buffer table
 	# mode 2 = return the whole table (careful now)

@@ -2749,3 +2749,8 @@ PACKAGE: 2.2.99.2
     release until they are more secure.
  - Erasing (completely) an eprint now also causes the static
     pages associated with it to be erased.
+
+2005-11-22 cjg
+
+ - Made a new method to database which returns the sql table of
+    a cache given it's ID. Used this throughout Database.pm
