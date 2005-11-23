@@ -73,10 +73,6 @@ sub authen
 {
 	my( $r ) = @_;
 
-	my($res, $passwd_sent) = $r->get_basic_auth_pw;
-
-	my ($user_sent) = $r->user;
-
 	return OK unless $r->is_initial_req; # only the first internal request
 
 	my $session = new EPrints::Session;
@@ -86,17 +82,87 @@ sub authen
 		return FORBIDDEN;
 	}
 
+	my $area = $r->dir_config( "EPrints_Security_Area" );
+
+	if( $area eq "Documents" )
+	{
+		my $document = secure_doc_from_url( $r, $session );
+		if( !defined $document ) 
+		{
+			$session->terminate();
+			return FORBIDDEN;
+		}
+
+		my $security = $document->get_value( "security" );
+
+#		if( $security eq "" )
+#		{
+#			$session->terminate();
+#			return OK;
+#		}
+
+		my $rule = "REQ_AND_USER";
+		if( $session->get_archive->can_call( "document_security_rule" ) )
+		{
+			$rule = $session->get_archive->call("document_security_rule", $security );
+		}
+		if( $rule !~ m/^REQ|REQ_AND_USER|REQ_OR_USER$/ )
+		{
+			$session->get_archive->log( "Bad document_security_rule: '$rule'." );
+			$session->terminate();
+			return FORBIDDEN;
+		}
+
+		my $req_view = 1;
+		if( $session->get_archive->can_call( "can_request_view_document" ) )
+		{
+			$req_view = $session->get_archive->call( "can_request_view_document", $document, $r );
+		}
+
+		if( $rule eq "REQ" )
+		{
+			if( $reqview )
+			{
+				$session->terminate();
+				return OK;
+			}
+
+			$session->terminate();
+			return FORBIDDEN;
+		}
+
+		if( $rule eq "REQ_AND_USER" )
+		{
+			if( !$reqview )
+			{
+				$session->terminate();
+				return FORBIDDEN;
+			}
+		}
+
+		if( $rule eq "REQ_OR_USER" )
+		{
+			if( $reqview )
+			{
+				$session->terminate();
+				return OK;
+			}
+		}
+	}
+
+
+	my( $res, $passwd_sent ) = $r->get_basic_auth_pw;
+	my( $user_sent ) = $r->user;
 	if( !defined $user_sent )
 	{
 		$session->terminate();
 		return AUTH_REQUIRED;
 	}
 
-	my $area = $r->dir_config( "EPrints_Security_Area" );
 	if( $area eq "ChangeUser" )
 	{
 		my $user_sent = $r->user;
-		if( $r->uri !~ m#/$user_sent$#i )
+		if( $r->uri !~ m/\/$user_sent$/i )
 		{
 			return OK;
 		}
@@ -186,8 +252,6 @@ sub authz
 	my $session = new EPrints::Session;
 	my $archive = $session->get_archive;
 
-	my $uri = $r->uri;
-
 	my $area = $r->dir_config( "EPrints_Security_Area" );
 
 	if( $area eq "ChangeUser" )
@@ -220,11 +284,91 @@ sub authz
 		return FORBIDDEN;
 	}
 
+	my $document = secure_doc_from_url( $r, $session );
+	if( !defined $document ) {
+		$session->terminate();
+		return FORBIDDEN;
+	}
+
+	my $security = $document->get_value( "security" );
+
+#	if( $security eq "" )
+#	{
+#		$session->terminate();
+#		return OK;
+#	}
+
+	my $rule = "REQ_AND_USER";
+	if( $session->get_archive->can_call( "document_security_rule" ) )
+	{
+		$rule = $session->get_archive->call("document_security_rule", $security );
+	}
+	# no need to check authen is always called first
+
+	my $req_view = 1;
+	if( $session->get_archive->can_call( "can_request_view_document" ) )
+	{
+		$req_view = $session->get_archive->call( "can_request_view_document", $document, $r );
+	}
+
+	if( $rule eq "REQ_AND_USER" )
+	{
+		if( !$reqview )
+		{
+			$session->terminate();
+			return FORBIDDEN;
+		}
+	}
+	if( $rule eq "REQ_OR_USER" )
+	{
+		if( $reqview )
+		{
+			$session->terminate();
+			return OK;
+		}
+	}
+	# REQ should not have made it this far.
+
+	my $user_sent = $r->user;
+	my $user = EPrints::User::user_with_username( $session, $user_sent );
+	unless( $document->can_view( $user ) )
+	{
+		$session->terminate();
+		return FORBIDDEN;
+	}	
+
+
+	$session->terminate();
+	return OK;
+}
+
+######################################################################
+=pod
+
+=item $document = EPrints::Auth::secure_doc_from_url( $r, $session )
+
+Return the document that the current URL, in the secure documents area
+relates to, if any. Or undef.
+
+=cut
+######################################################################
+
+
+sub secure_doc_from_url
+{
+	my( $r, $session ) = @_;
+
+	# hack to reduce load. We cache the document in the request object.
+	#if( defined $r->{eprint_document} ) { return $r->{eprint_document}; }
+
+	my $archive = $session->{archive};
+	my $uri = $r->uri;
+
 	my $secpath = $archive->get_conf( "secure_url_dir" );
 	my $esec = $r->dir_config( "EPrints_Secure" );
-	my $secure = (defined $esec && $esec eq "yes" );
+	my $https = (defined $esec && $esec eq "yes" );
 	my $urlpath;
-	if( $secure ) 
+	if( $https ) 
 	{ 
 		$urlpath = $archive->get_conf( "securepath" );
 	}
@@ -247,34 +391,26 @@ sub authz
 		$eprintid = $1+0; 
 		$docid = "$eprintid-$2";
 	}
-#	elsif( $uri =~ 
-#		m#^$sechostpath$secpath/(\d\d)/(\d\d)/(\d\d)/(\d\d)/(\d+)/# )
-#	{
-#		# /$archiveid/archive/00/00/00/01/01/.....
-#		$eprintid = "$1$2$3$4"+0;
-#		$docid = "$eprintid-$5";
-#	}
 	else
 	{
-
 		$archive->log( 
 "Request to ".$r->uri." in secure documents area failed to match REGEXP." );
-		$session->terminate();
-		return FORBIDDEN;
+		return undef;
+	}
+	my $document = EPrints::Document->new( $session, $docid );
+	if( !defined $document ) {
+		$archive->log( 
+"Request to ".$r->uri.": document $docid not found." );
+		return undef;
 	}
 
-	my $user_sent = $r->user;
-	my $user = EPrints::User::user_with_username( $session, $user_sent );
-	my $document = EPrints::Document->new( $session, $docid );
-	unless( $document->can_view( $user ) )
-	{
-		$session->terminate();
-		return FORBIDDEN;
-	}	
+	# cache $document in the request object
+	#$r->{eprint_document} = $document;
 
-	$session->terminate();
-	return OK;
+
+	return $document;
 }
+
 
 1;
 

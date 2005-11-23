@@ -2754,3 +2754,6 @@ PACKAGE: 2.2.99.2
 
  - Made a new method to database which returns the sql table of
     a cache given it's ID. Used this throughout Database.pm
+ - Auth.pm can now use two additional config-area functions to
+    limit a security setting by domain as well as by username.
+
