@@ -61,7 +61,7 @@ sub new
 ######################################################################
 =pod
 
-=item %defaults = EPrints::Plugin::defaults;
+=item %defaults = EPrints::Plugin->defaults; [static]
 
 Return a hash of the default parameters for this plugin.
 
@@ -73,21 +73,41 @@ sub defaults
 	return ();
 }
 
-1;
-
 ######################################################################
 =pod
 
-=back
+=item $value = EPrints::Plugin->param( $key )
+
+Return the value of a parameter in the current plugin.
 
 =cut
 ######################################################################
+
+sub param
+{
+	my( $self, $key ) = @_;
+
+	return $self->{$key};
+}
+
+
 
 
 
 ######################################################################
 # STATIC METHODS
 ######################################################################
+=pod
+
+=back
+
+=head2 Static Methods
+
+=over 4
+
+=cut
+######################################################################
+
 
 
 use EPrints::Archive;
@@ -158,10 +178,11 @@ sub load_dir
 		no strict "refs";
 		my $absvar = $class.'::ABSTRACT';
 		my $abstract = ${$absvar};
+		my %defaults = $class->defaults();
 		use strict "refs";
 		next if( $abstract );
-		my $pluginid = $class->id;
 
+		my $pluginid = $defaults{"id"};
 		$reg->{$pluginid} = $class;
 	}
 	closedir( $dh );

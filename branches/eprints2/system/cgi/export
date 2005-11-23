@@ -81,7 +81,7 @@ unless( $ok ) {
 }
 
 my $plugin = $session->plugin( "output/$format" );
-$session->send_http_header( "content_type"=>$plugin->mime_type() );
+$session->send_http_header( "content_type"=>$plugin->param("mimetype") );
 print $eprint->export( $format );	
 	
 $session->terminate;

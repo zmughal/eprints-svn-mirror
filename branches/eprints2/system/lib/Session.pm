@@ -1568,7 +1568,6 @@ sub render_error
 	$a->appendChild( $back_to_text );
 	$p->appendChild( $a );
 	$page->appendChild( $p );
-
 	$self->build_page(	
 		$self->html_phrase( "lib/session:error_title" ),
 		$page,
@@ -1921,6 +1920,7 @@ sub build_page
 		next if $used->{$_};
 		EPrints::XML::dispose( $map->{$_} );
 	}
+
 	return;
 }
 
@@ -2561,7 +2561,7 @@ sub plugin_list
 	my( $self, %restrictions ) = @_;
 
 	my %pids = ();
-#	foreach( EPrints::Plugins::plugin_list() ) { $pids{$_}=1; }
+#	foreach( EPrints::Plugin::plugin_list() ) { $pids{$_}=1; }
 	foreach( $self->{archive}->plugin_list() ) { $pids{$_}=1; }
 
 	return sort keys %pids if( !scalar %restrictions );

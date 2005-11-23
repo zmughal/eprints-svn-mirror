@@ -17,38 +17,22 @@ use strict;
 # not be any broken characters, but better to be
 # sure.
 
-sub new
-{
-	my( $class, @params ) = @_;
-	return $class->SUPER::new( @params );
-}
-
-sub id { return "output/xml"; }
-
-sub is_visible { return 1; }
-
 sub defaults
 {
 	my %d = $_[0]->SUPER::defaults();
+
+	$d{id} = "output/xml";
 	$d{name} = "XML";
 	$d{accept} = [ 'list/*', 'dataobj/*' ];
+	$d{visible} = "all";
+	$d{suffix} = ".xml";
+	$d{mimetype} = "text/xml";
+
 	return %d;
 }
 
 
-sub mime_type
-{
-	my( $plugin, $searchexp ) = @_;
 
-	return "text/xml";
-}
-
-sub suffix
-{
-	my( $plugin, $searchexp ) = @_;
-
-	return ".xml";
-}
 
 
 sub output_list
@@ -189,3 +173,4 @@ sub field_to_xml_basic
 	return @r;	
 }
 
+1;

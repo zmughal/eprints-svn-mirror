@@ -13,31 +13,16 @@ use strict;
 sub defaults
 {
 	my %d = $_[0]->SUPER::defaults();
+
+	$d{id} = "output/bibtex";
 	$d{name} = "BibTeX";
 	$d{accept} = [ 'list/eprint', 'dataobj/eprint' ];
+	$d{visible} = "all";
+	$d{suffix} = ".bib";
+	$d{mimetype} = "text/plain";
+
 	return %d;
 }
-
-sub id { return "output/bibtex"; }
-
-sub is_visible { return 1; }
-
-sub mime_type
-{
-	my( $plugin, $searchexp ) = @_;
-
-	return "text/plain";
-}
-
-sub suffix
-{
-	my( $plugin, $searchexp ) = @_;
-
-	return ".txt";
-}
-
-
-
 
 
 sub convert_dataobj

@@ -1002,7 +1002,7 @@ sub _dopage_export
 	}
 
 	my $plugin = $self->{session}->plugin( "output/$format" );
-	$self->{session}->send_http_header( "content_type"=>$plugin->mime_type() );
+	$self->{session}->send_http_header( "content_type"=>$plugin->param("mimetype") );
 	print $results->export( $format );	
 }
 	

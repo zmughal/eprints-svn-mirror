@@ -681,7 +681,7 @@ sub _load_plugins
 
 	$self->_plugin_dir_copy( $src, $tgt );
 
-	EPrints::Plugins::load_dir( $self->{plugins}, $tgt, "EPrints::LocalPlugin::".$self->{id} );
+	EPrints::Plugin::load_dir( $self->{plugins}, $tgt, "EPrints::LocalPlugin::".$self->{id} );
 
 	return 1;
 }

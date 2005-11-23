@@ -13,35 +13,132 @@ use strict;
 sub defaults
 {
 	my %d = $_[0]->SUPER::defaults();
+
+	$d{id} = "output/rss";
 	$d{name} = "RSS";
 	$d{accept} = [ 'list/eprint' ];
+	$d{visible} = "all";
+	$d{suffix} = ".rss";
+	$d{mimetype} = "text/xml";
+
+	$d{number_to_show} = 2;
+
 	return %d;
 }
 
-sub id { return "output/rss"; }
 
-sub is_visible { return 1; }
-
-sub mime_type
+sub output_list
 {
-	my( $plugin, $searchexp ) = @_;
+	my( $plugin, %opts ) = @_;
+	
+	my $list = $opts{list}->reorder( "-datestamp" );
 
-	return "text/plain";
+	my $session = $plugin->{session};
+
+	my $response = $session->make_element( "rdf:RDF",
+		"xmlns:rdf"=>"http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+		"xmlns"=>"http://purl.org/rss/1.0/" );
+
+	my $channel = $session->make_element( "channel",
+		"rdf:about"=>"http://www.iamcal.com/rss.php" );
+	$response->appendChild( $channel );
+
+	my $title = "";
+	$title.= EPrints::Session::best_language( 
+			$session->get_archive(),
+			$session->get_langid(),
+			%{$session->get_archive()->get_conf( "archivename" )} );
+	$title.= ": ".EPrints::Utils::tree_to_utf8( $list->render_description );
+
+	$channel->appendChild( $session->render_data_element(
+		4,
+		"title",
+		$title ) );
+
+	$channel->appendChild( $session->render_data_element(
+		4,
+		"link",
+		$session->get_archive()->get_conf( "frontpage" ) ) );
+
+	$channel->appendChild( $session->render_data_element(
+		4,
+		"description", 
+		$session->get_archive()->get_conf( "oai","content","text" ) ) );
+
+	$channel->appendChild( $session->render_data_element(
+		4,
+		"pubDate", 
+		RFC822_time() ) );
+
+	$channel->appendChild( $session->render_data_element(
+		4,
+		"lastBuildDate", 
+		RFC822_time() ) );
+
+	$channel->appendChild( $session->render_data_element(
+		4,
+		"language", 
+		$session->get_langid ) );
+
+	$channel->appendChild( $session->render_data_element(
+		4,
+		"copyright", 
+		"" ) );
+
+
+	my $items = $session->make_element( "items" );
+	$channel->appendChild( $items );
+	my $seq = $session->make_element( "rdf:Seq" );
+	$items->appendChild( $seq );
+
+	foreach my $eprint ( $list->get_records( 0, $plugin->{number_to_show} ) )
+	{
+		my $li = $session->make_element( "rdf:li",
+			"rdf:resource"=>$eprint->get_url );
+		$seq->appendChild( $li );
+
+		my $item = $session->make_element( "item",
+			"rdf:about"=>$eprint->get_url );
+
+		$item->appendChild( $session->render_data_element(
+			2,
+			"title",
+			EPrints::Utils::tree_to_utf8( $eprint->render_description ) ) );
+		$item->appendChild( $session->render_data_element(
+			2,
+			"link",
+			$eprint->get_url ) );
+		$item->appendChild( $session->render_data_element(
+			2,
+			"description",
+			EPrints::Utils::tree_to_utf8( $eprint->render_citation ) ) );
+		$response->appendChild( $item );		
+	}	
+
+
+
+
+	
+	my $rssfeed = <<END;
+<?xml version="1.0" encoding="utf-8" ?>
+
+END
+	$rssfeed.= EPrints::XML::to_string( $response );
+	EPrints::XML::dispose( $response );
+
+	if( defined $opts{fh} ) { 
+		print {$opts{fh}} $rssfeed;
+		return undef;
+	} 
+
+	return $rssfeed;
 }
 
-sub suffix
+use POSIX qw(strftime);
+sub RFC822_time
 {
-	my( $plugin, $searchexp ) = @_;
-
-	return ".txt";
-}
-
-
-sub output_dataobj
-{
-	my( $plugin, $dataobj ) = @_;
-
-	return "(".$dataobj->get_value("title").")\n";
+	return( strftime( "%a,  %d  %b  %Y  %H:%M:%S  %z",localtime ) );
 }
 
 1;
+
