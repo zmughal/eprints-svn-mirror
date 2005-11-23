@@ -2770,3 +2770,6 @@ PACKAGE: 2.2.99.2
  - Fixed a regexp to use "/" as a seperator - fixed syntax
     highlight issue.
  - Removed debug print's from Session
+ - Auth now has 3 modes REQ REQ_AND_USER, REQ_OR_USER. REQ
+    makes sure that a username/password is not prompted for
+    when it is irrelevant.

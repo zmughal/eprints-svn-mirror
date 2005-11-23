@@ -121,7 +121,7 @@ sub authen
 
 		if( $rule eq "REQ" )
 		{
-			if( $reqview )
+			if( $req_view )
 			{
 				$session->terminate();
 				return OK;
@@ -133,7 +133,7 @@ sub authen
 
 		if( $rule eq "REQ_AND_USER" )
 		{
-			if( !$reqview )
+			if( !$req_view )
 			{
 				$session->terminate();
 				return FORBIDDEN;
@@ -142,7 +142,7 @@ sub authen
 
 		if( $rule eq "REQ_OR_USER" )
 		{
-			if( $reqview )
+			if( $req_view )
 			{
 				$session->terminate();
 				return OK;
@@ -313,7 +313,7 @@ sub authz
 
 	if( $rule eq "REQ_AND_USER" )
 	{
-		if( !$reqview )
+		if( !$req_view )
 		{
 			$session->terminate();
 			return FORBIDDEN;
@@ -321,7 +321,7 @@ sub authz
 	}
 	if( $rule eq "REQ_OR_USER" )
 	{
-		if( $reqview )
+		if( $req_view )
 		{
 			$session->terminate();
 			return OK;

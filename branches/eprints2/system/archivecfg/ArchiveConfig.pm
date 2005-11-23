@@ -844,7 +844,7 @@ sub document_security_rule
 	# return( "REQ_OR_USER" ) if( $security eq "campus_or_validuser" );
 	# return( "REQ" ) if( $security eq "campus" );
 
-	return( "and" );
+	return( "REQ_AND_USER" );
 }
 
 # this method handles checking to see if a basic request is allowed to
