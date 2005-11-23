@@ -1086,7 +1086,7 @@ sub _dopage_results
 	if( scalar @plugins > 0 ) {
 		my $select = $self->{session}->make_element( "select", name=>"_output" );
 		foreach my $plugin_id ( @plugins ) {
-			$plugin_id =~ m!/(.*)$!;
+			$plugin_id =~ m/\/(.*)$/;
 			my $option = $self->{session}->make_element( "option", value=>$1 );
 			my $plugin = $self->{session}->plugin( $plugin_id );
 			$option->appendChild( $plugin->render_name );
@@ -1368,6 +1368,28 @@ sub render_description
 
 	my $frag = $self->{session}->make_doc_fragment;
 
+	$frag->appendChild( $self->render_conditions_description );
+	$frag->appendChild( $self->{session}->make_text( " " ) );
+	$frag->appendChild( $self->render_order_description );
+
+	return $frag;
+}
+
+######################################################################
+=pod
+
+=item $xhtml = $searchexp->render_conditions_description
+
+Return an XHTML DOM description of this search expressions conditions.
+ie title is "foo" 
+
+=cut
+######################################################################
+
+sub render_conditions_description
+{
+	my( $self ) = @_;
+
 	my @bits = ();
 	foreach my $sf ( $self->get_searchfields )
 	{
@@ -1380,6 +1402,8 @@ sub render_description
 	{
 		$joinphraseid = "lib/searchexpression:desc_and";
 	}
+
+	my $frag = $self->{session}->make_doc_fragment;
 
 	for( my $i=0; $i<scalar @bits; ++$i )
 	{
@@ -1401,17 +1425,38 @@ sub render_description
 			"lib/searchexpression:desc_no_conditions" ) );
 	}
 
-	if( EPrints::Utils::is_set( $self->{order} ) &&
-		$self->{"order"} ne $EPrints::SearchExpression::CustomOrder )
-	{
-		$frag->appendChild( $self->{session}->make_text( " " ) );
-		$frag->appendChild( $self->{session}->html_phrase(
-			"lib/searchexpression:desc_order",
-			order => $self->{session}->make_text(
-				$self->{session}->get_order_name(
-					$self->{dataset},
-					$self->{order} ) ) ) );
-	} 
+	return $frag;
+}
+
+
+######################################################################
+=pod
+
+=item $xhtml = $searchexp->render_order_description
+
+Return an XHTML DOM description of how this search is ordered.
+
+=cut
+######################################################################
+
+sub render_order_description
+{
+	my( $self ) = @_;
+
+	my $frag = $self->{session}->make_doc_fragment;
+
+	# empty if there is no order.
+	return $frag unless( EPrints::Utils::is_set( $self->{order} ) );
+
+	# empty if it's a custom ordering
+	return $frag if( $self->{"order"} eq $EPrints::SearchExpression::CustomOrder );
+
+	$frag->appendChild( $self->{session}->html_phrase(
+		"lib/searchexpression:desc_order",
+		order => $self->{session}->make_text(
+			$self->{session}->get_order_name(
+				$self->{dataset},
+				$self->{order} ) ) ) );
 
 	return $frag;
 }
@@ -1581,7 +1626,10 @@ sub perform_search
 		$self->{results} = EPrints::SearchResults->new( 
 			session => $self->{session},
 			dataset => $self->{dataset},
-			cache_id => $self->{cache_id}, );
+			cache_id => $self->{cache_id}, 
+			desc => $self->render_conditions_description,
+			desc_order => $self->render_order_description,
+		);
 		return $self->{results};
 	}
 
@@ -1614,6 +1662,8 @@ sub perform_search
 		encoded => $self->serialise,
 		keep_cache => $self->{keep_cache},
 		ids => $unsorted_matches, 
+		desc => $self->render_conditions_description,
+		desc_order => $self->render_order_description,
 	);
 
 	$self->{cache_id} = $self->{results}->get_cache_id;
@@ -1707,6 +1757,8 @@ package EPrints::SearchResults;
 =item $results = EPrints::SearchResults->new( 
 			session => $session,
 			dataset => $dataset,
+			[desc => $desc],
+			[desc_order => $desc_order],
 			ids => $ids,
 			[encoded => $encoded],
 			[keep_cache => $keep_cache],
@@ -1715,6 +1767,8 @@ package EPrints::SearchResults;
 =item $results = EPrints::SearchResults->new( 
 			session => $session,
 			dataset => $dataset,
+			[desc => $desc],
+			[desc_order => $desc_order],
 			cache_id => $cache_id );
 
 Creates a new search results object in memory only. Results will be
@@ -1743,6 +1797,9 @@ sub new
 	$self->{encoded} = $opts{encoded};
 	$self->{cache_id} = $opts{cache_id};
 	$self->{keep_cache} = $opts{keep_cache};
+	$self->{desc} = $opts{desc};
+	$self->{desc_order} = $opts{desc_order};
+
 	if( !defined $self->{cache_id} && !defined $self->{ids} ) 
 	{
 		EPrints::Config::abort( "cache_id or ids must be defined in a EPrints::SearchResults->new()" );
@@ -1771,6 +1828,44 @@ sub new
 }
 
 
+######################################################################
+=pod
+
+=item $newresults = $results->reorder( $new_order );
+
+Create a new results set from this one, but sorted in a new way.
+
+=cut
+######################################################################
+
+sub reorder
+{
+	my( $self, $new_order ) = @_;
+
+	# must be cached to be reordered
+	$self->cache;
+
+	my $db = $self->{session}->get_db;
+
+	my $srctable = $db->cache_table( $self->{cache_id} );
+
+	my $new_cache_id  = $db->cache( 
+		$self->{encoded}."(reordered:$new_order)", # nb. not very neat. 
+		$self->{dataset},
+		$srctable,
+		$new_order );
+
+	my $new_list = EPrints::SearchResults->new( 
+		session=>$self->{session},
+		dataset=>$self->{dataset},
+		desc=>$self->{desc}, # don't pass desc_order!
+		order=>$new_order,
+		keep_cache=>$self->{keep_cache},
+		cache_id => $new_cache_id );
+		
+	return $new_list;
+}
+		
 
 ######################################################################
 =pod
@@ -2148,7 +2243,43 @@ sub get_dataset
 	return $self->{dataset};
 }
 
+######################################################################
+=pod
 
+=item $xhtml = $results->render_description
+
+Return a DOM XHTML description of this list, if available, or an
+empty fragment.
+
+=cut
+######################################################################
+
+sub render_description
+{
+	my( $self ) = @_;
+
+	my $frag = $self->{session}->make_doc_fragment;
+
+	if( defined $self->{desc} )
+	{
+		$frag->appendChild( $self->{session}->clone_for_me( $self->{desc}, 1 ) );
+		$frag->appendChild( $self->{session}->make_text( " " ) );
+	}
+	if( defined $self->{desc_order} )
+	{
+		$frag->appendChild( $self->{session}->clone_for_me( $self->{desc_order}, 1 ) );
+	}
+
+	return $frag;
+}
+
+sub DESTROY
+{
+	my( $self ) = @_;
+
+	if( defined $self->{desc} ) { EPrints::XML::dispose( $self->{desc} ); }
+	if( defined $self->{desc_order} ) { EPrints::XML::dispose( $self->{desc_order} ); }
+}
 
 1;
 

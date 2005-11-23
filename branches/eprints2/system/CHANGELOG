@@ -2758,4 +2758,11 @@ PACKAGE: 2.2.99.2
     limit a security setting by domain as well as by username.
  - Plugins now check they loaded correctly, and dump error 
     information if they didn't.
-
+ - Split the rendering of search descriptions into what the
+    set contains and how it is ordered. These are then passed
+    to the results object as seperate XHTML objects.
+ - SearchResults can now describe themselves in XHTML
+ - SearchResults can create a new search results object with
+    their set, but differently ordered.
+ - Fixed a regexp to use "/" as a seperator - fixed syntax
+    highlight issue.
