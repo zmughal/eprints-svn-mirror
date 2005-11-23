@@ -1,15 +1,20 @@
+package EPrints::Plugin::Output;
 
-EPrints::Plugins::register( 
-	id => "output/core_output",
-	name => "Base Output Plugin",
-	render_name => \&render_name,
-	can_accept => \&can_accept,
-	is_visible => \&is_visible,
-	mime_type => \&mime_type,
-	suffix => \&suffix,
-	output_list => \&output_list, # does not mean it accepts lists
-	dataobj_export_url => \&dataobj_export_url, # does not mean it accepts dataobjs
-);
+use strict;
+
+our @ISA = qw/ EPrints::Plugin /;
+
+$EPrints::Plugin::Output::ABSTRACT = 1;
+
+sub defaults
+{
+	my %d = $_[0]->SUPER::defaults();
+	$d{name} = "Base output plugin: This should have been subclassed";
+	$d{suffix} = ".txt";
+	$d{visible} = "all";
+	$d{mimetype} = "text/plain";
+	return %d;
+}
 
 sub render_name
 {
@@ -18,6 +23,7 @@ sub render_name
 	return $plugin->{session}->make_text( $plugin->{name} );
 }
 
+# all or ""
 sub is_visible
 {
 	my( $plugin, $vis_level ) = @_;
@@ -31,15 +37,6 @@ sub is_visible
 
 	return 1;
 }
-
-sub suffix
-{
-	my( $plugin, $searchexp ) = @_;
-
-	return ".txt";
-}
-
-
 
 sub can_accept
 {
@@ -58,12 +55,6 @@ sub can_accept
 	return 0;
 }
 
-sub mime_type
-{
-	my( $plugin, $searchexp ) = @_;
-
-	return "text/plain";
-}
 
 sub output_list
 {
@@ -74,7 +65,7 @@ sub output_list
 	my $part;
 
 	foreach my $dataobj ( $opts{list}->get_records ) {
-		$part = $plugin->call( "output_dataobj", $dataobj );
+		$part = $plugin->output_dataobj( $dataobj );
 		if( defined $opts{fh} ) { print {$opts{fh}} $part; } else { push @r, $part; }
 	}	
 
@@ -94,13 +85,19 @@ sub dataobj_export_url
 		return undef;
 	}
 
-	$plugin->{id} =~ m#^output/(.*)$#;
+	my $pluginid = $plugin->{id};
+
+	unless( $pluginid =~ m#^output/(.*)$# )
+	{
+		$plugin->{session}->get_archive->log( "Bad pluginid in dataobj_export_url: ".$pluginid );
+		return undef;
+	}
 	my $format = $1;
 
 	my $url = $plugin->{session}->get_archive->get_conf( "perl_url" );
 	$url .= "/export/".$dataobj->get_id."/".$format;
 	$url .= "/".$plugin->{session}->get_archive->get_id;
-	$url .= "-".$dataobj->get_dataset->confid."-".$dataobj->get_id.$plugin->call( "suffix" );
+	$url .= "-".$dataobj->get_dataset->confid."-".$dataobj->get_id.$plugin->{suffix};
 
 	return $url;
 }
