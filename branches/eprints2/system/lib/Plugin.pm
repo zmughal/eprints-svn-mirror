@@ -148,7 +148,12 @@ sub load_dir
 		next unless( $fn =~ s/\.pm// );
 		my $class = $baseclass."::".join("::",@prefix,$fn );
 		
-		eval "use $class";
+		eval "use $class;";
+		if( $@ ne "" )
+		{
+			print STDERR "Error with plugin $class... $@\n";
+			next;
+		}
 
 		no strict "refs";
 		my $absvar = $class.'::ABSTRACT';

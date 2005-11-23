@@ -2756,4 +2756,6 @@ PACKAGE: 2.2.99.2
     a cache given it's ID. Used this throughout Database.pm
  - Auth.pm can now use two additional config-area functions to
     limit a security setting by domain as well as by username.
+ - Plugins now check they loaded correctly, and dump error 
+    information if they didn't.
 
