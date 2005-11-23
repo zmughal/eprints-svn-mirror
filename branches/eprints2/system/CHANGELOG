@@ -2754,6 +2754,9 @@ PACKAGE: 2.2.99.2
 
  - Made a new method to database which returns the sql table of
     a cache given it's ID. Used this throughout Database.pm
+
+2005-11-23 cjg 
+
  - Auth.pm can now use two additional config-area functions to
     limit a security setting by domain as well as by username.
  - Plugins now check they loaded correctly, and dump error 
@@ -2766,3 +2769,4 @@ PACKAGE: 2.2.99.2
     their set, but differently ordered.
  - Fixed a regexp to use "/" as a seperator - fixed syntax
     highlight issue.
+ - Removed debug print's from Session

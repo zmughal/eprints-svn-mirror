@@ -2530,21 +2530,8 @@ sub plugin
 {
 	my( $self, $pluginid, %params ) = @_;
 
-print STDERR "session->plugin( $pluginid )\n";
 	my $class = $self->{archive}->plugin_class( $pluginid );
-print STDERR "CLASS:$class\n";
 
-#	my $return = eval "use $class;";
-#
-#	unless ( $return ) {
-#		# the 6 lines above screw the error message. This puts it to
-#		# the correct value for the _file_ not the eval.
-#		# if( $@ ) { $@ =~ s/line (\d+)/"line ".($1-6)/eg; }
-#
-#		warn "couldn't parse plugin $class: $@" if $@;
-#		warn "couldn't eval plugin $class: $!"    unless defined $return;
-#		warn "couldn't run plugin $class"       unless $return;
-#	}
 	my $plugin = $class->new( session=>$self, %params );	
 
 	return $plugin;
@@ -2594,7 +2581,7 @@ sub plugin_list
 		}
 
 		push @out, $plugin_id;
-	} print STDERR ">>>>>".join(",",@out)."<\n";
+	}
 
 	return @out;
 }
