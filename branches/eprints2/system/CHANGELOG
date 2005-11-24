@@ -2775,3 +2775,7 @@ PACKAGE: 2.2.99.2
     when it is irrelevant.
  - Plugins now use paramters where possible rather than 
     functions which just return a single value. eg. suffix.
+
+2005-11-24 cjg
+
+ - Corrected a missing $session in soap/xsd

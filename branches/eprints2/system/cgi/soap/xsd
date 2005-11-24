@@ -74,7 +74,7 @@ my @datasetids = ( "eprint","subject","user","subscription","document" );
 
 foreach my $dsid ( @datasetids )
 {
-	dataset_schema( $dsid );
+	dataset_schema( $dsid, $session );
 }
 
 
@@ -88,12 +88,11 @@ exit;
 
 sub dataset_schema
 {
-	my( $dsid ) = @_;
+	my( $dsid, $session ) = @_;
 
 	my $data = "";
 
 	my $ds = $session->get_archive()->get_dataset( $dsid );
-
 
 	$data.= "<xsd:complexType name=\"\u$dsid\">\n";
 
