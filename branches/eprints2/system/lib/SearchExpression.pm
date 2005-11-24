@@ -958,7 +958,7 @@ sub _dopage_export_redir
 	#cjg escape URL'ify urls in this bit... (4 of them?)
 	my $escexp = $exp;
 	$escexp =~ s/ /+/g; # not great way...
-	my $fullurl = "$url/export_".$self->{session}->get_archive->get_id."_".$format.$plugin->suffix()."?_exp=$escexp&_output=$format&_action_export=1&_cache=$cacheid";
+	my $fullurl = "$url/export_".$self->{session}->get_archive->get_id."_".$format.$plugin->param("suffix")."?_exp=$escexp&_output=$format&_action_export=1&_cache=$cacheid";
 
 	$self->{session}->redirect( $fullurl );
 }
