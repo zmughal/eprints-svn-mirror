@@ -556,18 +556,27 @@ sub _f
 
 sub to_xml_basic
 {
-	my( $self, $session, $v ) = @_;
+	my( $self, $session, $value, $depth ) = @_;
 
-	my $r = $session->make_doc_fragment;
-	foreach( "honourific", "given", "family", "lineage" )
+	$depth = 0 unless defined $depth;
+
+	my $ind = "  "x$depth;
+	my $r = $session->make_doc_fragment;	
+
+	foreach my $part ( qw/ family given honourific lineage / )
 	{
-		next unless( defined $v->{$_} && $v->{$_} ne "" );
-		my $e = $session->make_element( "part", name=>$_ );
-		$e->appendChild( $session->make_text( $v->{$_} ) );
-		$r->appendChild( $e );
+		my $nv = $value->{$part};
+		next unless defined $nv;
+		next unless $nv eq "";
+		$r->appendChild( $session->make_text( "\n  $ind" ) );
+		my $tag = $session->make_element( $part );
+		$tag->appendChild( $session->make_text( $nv ) );
+		$r->appendChild( $tag );
 	}
+	
 	return $r;
 }
+
 
 
 ######################################################################

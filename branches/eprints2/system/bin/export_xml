@@ -44,7 +44,7 @@ The name of the dataset to export, such as "archive", "subject" or "user".
 
 =item B<--xmlversion> I<version>
 
-The version of the eprints data XML format to use. Either "1" or "1.1". Default is (currently) "1". 1.1 is still under development and may change. We strongly recommend not using 1.1 until we finalise it in a later version of EPrints.
+The version of the eprints data XML format to use. Either "1" or "2". Default is (currently) "1". 2 is still under development and may change. We strongly recommend not using 2 until we finalise it in a later version of EPrints.
 
 =item B<--help>
 

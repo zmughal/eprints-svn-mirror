@@ -37,6 +37,8 @@ use warnings;
 
 use EPrints::MetaField;
 
+use Unicode::String qw( utf8 );
+
 BEGIN
 {
 	our( @ISA );
@@ -1024,95 +1026,131 @@ sub ordervalue_basic
 	return $value;
 }
 
-#v1.1
+
+
+
+
+
+
+# XML output methods
+
+
 sub to_xml
 {
-	my( $self, $session, $v, $no_xmlns ) = @_;
+	my( $self, $session, $value, $depth ) = @_;
+
+	$depth = 0 unless defined $depth;
 
 	my $r = $session->make_doc_fragment;
-	my %attrs;
-	$attrs{'xmlns'}="http://eprints.org/ep2/data/1.1" unless( $no_xmlns );
+	my $ind = "  "x$depth;
 
-	unless( $self->get_property( "multiple" ) )
+	$r->appendChild( $session->make_text( "\n$ind" ) );
+	my $tag = $session->make_element( $self->get_name );	
+	$r->appendChild( $tag );
+	if( $self->get_property( "multiple" ) )
 	{
-		if( $self->get_property( "hasid" ) )
+		foreach my $single ( @{$value} )
 		{
-			$attrs{'idcode'} = $v->{id};
-			$v = $v->{main};
+			$tag->appendChild( $session->make_text( "\n$ind " ) );
+			my $item = $session->make_element( "item" );
+			$item->appendChild( $self->to_xml_single( $session, $single, $depth+1 ) );
+			$tag->appendChild( $item );
 		}
-
-		my $el_field = $session->make_element( 
-					"value", 
-					name=>$self->get_name,
-					%attrs );
-		$r->appendChild( $session->make_text( "    " ) );
-		$r->appendChild( $el_field );
-		$r->appendChild( $session->make_text( "\n" ) );
-		$el_field->appendChild( $self->to_xml_single( $session, $v ) );
-		return $r;
-	}
-
-	my $el_field = $session->make_element( 
-				"list",
-				%attrs,
-				name=>$self->get_name );
-	$r->appendChild( $session->make_text( "    " ) );
-	$r->appendChild( $el_field );
-	$r->appendChild( $session->make_text( "\n" ) );
-
-	my @list = @{$v};
-	# trim empty elements at end
-	while( scalar @list > 0 && !EPrints::Utils::is_set($list[(scalar @list)-1]) )
-	{
-		pop @list;
-	}
-	my %itemattrs = ();
-	foreach my $item ( @list )
-	{
-		if( $self->get_property( "hasid" ) )
-		{
-			$attrs{'idcode'} = $item->{id};
-			$item = $item->{main};
-		}
-		my $el_item = $session->make_element( 
-					"item", 
-					name=>$self->get_name,
-					%attrs );
-		$el_field->appendChild( $session->make_text( "\n      " ) );
-		$el_field->appendChild( $el_item );
-		$el_item->appendChild( $self->to_xml_single( $session, $item ) );
-	}
-	$el_field->appendChild( $session->make_text( "\n    " ) );
-
-	return $r;
-}
-
-#v1.1
-sub to_xml_single
-{
-	my( $self, $session, $v ) = @_;
-
-	my $r = $session->make_doc_fragment;
-
-	if( $self->get_property( "multilang" ) )
-	{
-		foreach( keys %{$v} )
-		{
-			my $l = $session->make_element( "lang", langid=>$_ );
-			$l->appendChild( $self->to_xml_basic( $session, $v->{$_} ) );
-			$r->appendChild( $l );
-		}
+		$tag->appendChild( $session->make_text( "\n$ind" ) );
 	}
 	else
 	{
-		$r->appendChild( $self->to_xml_basic( $session, $v ) );
+		$tag->appendChild( $self->to_xml_single( $session, $value, $depth ) );
 	}
 
 	return $r;
 }
 
+sub to_xml_single
+{
+	my( $self, $session, $value, $depth ) = @_;
 
-#v1
+	$depth = 0 unless defined $depth;
+
+	unless( $self->get_property( "hasid" ) )
+	{
+		return $self->to_xml_noid( $session, $value, $depth );
+	}
+
+	my $ind = "  "x$depth;
+	my $r = $session->make_doc_fragment;	
+	my $v = $value->{id};
+	$v = "" unless( defined $v );
+	$r->appendChild( $session->make_text( "\n  $ind" ) );
+	my $id = $session->make_element( "id" );
+	$id->appendChild( $session->make_text( $v ) );
+	$r->appendChild( $id );
+	$r->appendChild( $session->make_text( "\n  $ind" ) );
+	my $main = $session->make_element( "main" );
+	$main->appendChild( $self->to_xml_noid( $session, $value->{main}, $depth+1 ) );
+	$r->appendChild( $main );
+	$r->appendChild( $session->make_text( "\n$ind" ) );
+
+	return $r;
+}
+
+sub to_xml_noid
+{
+	my( $self, $session, $value, $depth ) = @_;
+
+	$depth = 0 unless defined $depth;
+
+	unless( $self->get_property( "multilang" ) )
+	{
+		return $self->to_xml_basic( $session, $value, $depth );
+	}
+
+	my $ind = "  "x$depth;
+	my $r = $session->make_doc_fragment;	
+	foreach my $langid ( keys %{$value} )
+	{
+		$r->appendChild( $session->make_text( "\n  $ind" ) );
+		my $langvar = $session->make_element( "langvar" );
+		$r->appendChild( $langvar );
+
+		$langvar->appendChild( $session->make_text( "\n    $ind" ) );
+
+		my $lang = $session->make_element( "lang" );
+		$lang->appendChild( $session->make_text( $langid ) );
+		$langvar->appendChild( $lang );
+				
+		$langvar->appendChild( $session->make_text( "\n    $ind" ) );
+
+		my $value = $session->make_element( "value" );
+		$value->appendChild( $session->make_text( $self->to_xml_basic( $session, $value->{$langid}, $depth+2 ) ) );
+		$langvar->appendChild( $value );
+
+		$langvar->appendChild( $session->make_text( "\n  $ind" ) );
+
+		$r->appendChild( $session->make_text( "\n$ind" ) );
+	}
+	return $r;
+}
+
+sub to_xml_basic
+{
+	my( $self, $session, $value, $depth ) = @_;
+
+	if( !defined $value ) 
+	{
+		return $session->make_text( "" );
+	}
+	return $session->make_text( $value );
+}
+
+
+
+
+
+
+
+#### old xml v1
+
 sub to_xml_old
 {
 	my( $self, $session, $v, $no_xmlns ) = @_;
@@ -1142,7 +1180,6 @@ sub to_xml_old
 	return $r;
 }
 
-#v1
 sub to_xml_old_single
 {
 	my( $self, $session, $v, $no_xmlns ) = @_;
@@ -1174,14 +1211,7 @@ sub to_xml_old_single
 	return $r;
 }
 
-sub to_xml_basic
-{
-	my( $self, $session, $v ) = @_;
-
-	my $r = $session->make_doc_fragment;
-	$r->appendChild( $session->make_text( $v ) ) if defined( $v );
-	return $r;
-}
+########## end of old XML
 
 
 sub render_search_input

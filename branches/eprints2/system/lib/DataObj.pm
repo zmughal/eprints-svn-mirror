@@ -477,7 +477,7 @@ where the xmlns is already set correctly.
 $showempty=>1 : fields with no value are shown.
 
 $version=>"code" : pick what version of the EPrints XML format
-to use "1" or "1.1"
+to use "1" or "2"
 
 =cut
 ######################################################################
@@ -510,7 +510,7 @@ sub to_xml
 			next unless( $self->is_set( $field->get_name() ) );
 		}
 
-		if( $opts{version} eq "1.1" )
+		if( $opts{version} eq "2" )
 		{
 			$r->appendChild( $field->to_xml( 
 				$self->{session}, 

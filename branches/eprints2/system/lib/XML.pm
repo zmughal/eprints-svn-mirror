@@ -748,7 +748,7 @@ sub namespace
 
 	if( $thing eq "data" )
 	{
-               	return "http://eprints.org/ep2/data/1.1" if( $version eq "1.1" );
+               	return "http://eprints.org/ep2/data/2.0" if( $version eq "2" );
                 return "http://eprints.org/ep2/data" if( $version eq "1" );
 		return undef;
 	}
