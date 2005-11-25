@@ -2781,3 +2781,9 @@ PACKAGE: 2.2.99.2
  - Corrected a missing $session in soap/xsd
  - Moved to using params for plugin suffix
 
+2005-11-25 cjg
+
+ - Cleaned up DIDL in accordance with Herbert van de Sompel's
+    suggestions. (different namespaces identifier not DC in
+    components).
+
