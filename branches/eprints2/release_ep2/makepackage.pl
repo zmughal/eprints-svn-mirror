@@ -33,7 +33,7 @@ if( !defined $type || $type eq "" )
 	exit 1; 
 }
 
-my $version_tag;
+my $version_path;
 my $package_version;
 my $package_desc;
 my $package_file;
@@ -43,7 +43,7 @@ chomp $date;
 
 if( $type eq "nightly" ) 
 { 
-	$version_tag = "eprints2-stable";
+	$version_path = "/branches/eprints2";
 	$package_version = "eprints-2-cvs-".$date;
 	$package_desc = "EPrints Nightly Build - $package_version";
 	$package_file = "eprints-2-cvs-$date";
@@ -56,16 +56,16 @@ else
 		print "Available:\n".join("\n",sort keys %codenames)."\n\n";
 		exit;
 	}
-	$version_tag = $type;
 	$package_version = $ids{$type};
-	$package_desc = "EPrints $ids{$type} (".$codenames{$type}.") [Born on $date]";
+	$version_path = "/tags/".$ids{$type};
+	$package_desc = "EPrints ".$ids{$type}." (".$codenames{$type}.") [Born on $date]";
 	$package_file = "eprints-".$ids{$type};
 	print "YAY - $ids{$type}\n";
 }
 
-my $whoami = `whoami`;
-chomp $whoami;
-$ENV{"CVSROOT"} = ":pserver:$whoami\@cvs.iam.ecs.soton.ac.uk:/home/iamcvs/CVS";
+#my $whoami = `whoami`;
+#chomp $whoami;
+#$ENV{"CVSROOT"} = ":pserver:$whoami\@cvs.iam.ecs.soton.ac.uk:/home/iamcvs/CVS";
 
 my $license_file = "licenses/gplin.txt";
 
@@ -74,13 +74,15 @@ erase_dir( "export" );
 
 print "Making directories...\n";
 mkdir("package") or die "Couldn't create package directory\n";
-mkdir("export") or die "Couldn't create export directory\n";
+#mkdir("export") or die "Couldn't create export directory\n";
 
-print "Exporting from CVS...\n";
+print "Exporting from SVN...\n";
 my $originaldir = getcwd();
-chdir "export";
-system("cvs export -r $version_tag eprints/system >/dev/null")==0 or die "Could not export system.\n";
-system("cvs export -r $version_tag eprints/docs_ep2 >/dev/null")==0 or die "Could not export docs.\n";
+
+system("svn export http://mocha/svn/eprints/$version_path export/")==0 or die "Could not export system.\n";
+
+
+exit;
 print "Removing .cvsignore files...\n";
 system("/bin/rm `find . -name '.cvsignore'`")==0 or die "Couldn't remove.";
 chdir "eprints/system";
