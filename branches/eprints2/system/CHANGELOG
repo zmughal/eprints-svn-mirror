@@ -2787,3 +2787,8 @@ PACKAGE: 2.2.99.2
     suggestions. (different namespaces identifier not DC in
     components).
 
+2005-11-29 cjg
+
+ - Changed Session to get the current user from the request 
+    rather than reply on the ENV variable.
+

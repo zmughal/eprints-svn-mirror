@@ -2298,7 +2298,7 @@ sub current_user
 	# in doing it again.
 	unless( defined $self->{currentuser} )
 	{	
-		my $username = $ENV{'REMOTE_USER'};
+		my $username = $self->{request}->user;
 
 		if( defined $username && $username ne "" )
 		{
