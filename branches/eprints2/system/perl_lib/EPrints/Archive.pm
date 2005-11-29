@@ -85,7 +85,6 @@ use strict;
 my %ARCHIVE_CACHE = ();
 
 
-
 ######################################################################
 =pod
 
@@ -707,7 +706,7 @@ sub _plugin_dir_copy
 
 	unless( -e $target )
 	{
-		mkdir( $target, 0711 ) || Prints::Config::abort( "can't make dir $target: $!" );
+		mkdir( $target, 0711 ) || EPrints::Config::abort( "can't make dir $target: $!" );
 	}
 
 	if( -e $target && !-d $target )

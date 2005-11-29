@@ -73,7 +73,7 @@ use EPrints::Plugin;
 use Unicode::String qw(utf8 latin1);
 use EPrints::AnApache;
 
-use URI::Escape;
+#use URI::Escape;
 use CGI;
 
 use strict;

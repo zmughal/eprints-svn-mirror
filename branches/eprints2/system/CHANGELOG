@@ -2791,4 +2791,8 @@ PACKAGE: 2.2.99.2
 
  - Changed Session to get the current user from the request 
     rather than reply on the ENV variable.
-
+ - Moved around the SVN Filesystem to match that in the release.
+ - Modified URI::Escape and URI::Heuristic to supress some 
+    warnings.
+ - Corrected a typo in EPrints::Archive which called 
+    Prints::abort rather than EPrints::abort
