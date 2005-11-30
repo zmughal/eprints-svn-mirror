@@ -101,8 +101,8 @@ my %r = (
 	"__GENERICPOD__"=>readfile( "$from/system/pod/generic.pod" ),
 );
 
-#AUTHORS  bin  bundled  cfg  cgi  CHANGELOG  defaultcfg  NEWS  perl_lib  phrases  pod  README  testdata  tests  tools
 copydir( "$from/system/bin", "$to/eprints/bin", \%r );
+copydir( "$from/system/cfg", "$to/eprints/cfg", \%r );
 copydir( "$from/system/cgi", "$to/eprints/cgi", \%r );
 copydir( "$from/system/defaultcfg", "$to/eprints/defaultcfg", \%r );
 copydir( "$from/system/perl_lib", "$to/eprints/perl_lib", \%r );
