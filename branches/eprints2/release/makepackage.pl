@@ -85,6 +85,16 @@ print "scp $package_file.tar.gz webmaster\@www:/home/www.eprints/mainsite/htdocs
 exit;
 
 
+sub erase_dir
+{
+	my( $dirname ) = @_;
+
+	if (-d $dirname )
+	{
+		system( "/bin/rm -rf ".$dirname ) == 0 or 
+			die "Couldn't remove ".$dirname." dir.\n";
+	}
+}
 
 
 

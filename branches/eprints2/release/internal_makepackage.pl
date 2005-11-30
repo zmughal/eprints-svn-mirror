@@ -111,6 +111,11 @@ copydir( "$from/system/testdata", "$to/eprints/testdata", \%r );
 system("rm $to/eprints/perl_lib/EPrints/SystemSettings.pm");
 system("chmod -R g-w $to/eprints")==0 or die("Couldn't change permissions on eprints dir.\n");
 
+open(FILEOUT, ">$to/eprints/VERSION");
+print FILEOUT $package_version."\n";
+print FILEOUT $package_desc."\n";
+close(FILEOUT);
+
 system("mv $to/eprints $to/$package_file")==0 or die("Couldn't move eprints dir to $to/$package_file.\n");
 my $tarfile = $package_file.".tar.gz";
 if( -e $tarfile ) { system( "rm $tarfile" ); }
@@ -217,71 +222,6 @@ sub erase_dir
 	}
 }
 	
-__DATA__
-
-
-
-
-
-
-
-
-# Build docs - cjg Mike this needs to be smarter about what to copy (alpha/beta etc)
-print "Build Docs...\n"	;
-chdir $originaldir."/export/eprints/docs_ep2";
-`./mkdocs.pl`;
-	
-print "Making tarfile...\n";
-chdir $originaldir."/package";
-
-print "Making dirs...\n";
-open(DIRCONF, "$originaldir/conf/dirs.conf");
-mkdir("eprints");
-while(<DIRCONF>)
-{
-	chomp;
-	mkdir("eprints/$_");
-}
-close(DIRCONF);
-
-print "Copying files...\n";
-open(FILECONF, "$originaldir/conf/files.conf");
-while(<FILECONF>)
-{
-	chomp;
-	next if /^#/;
-	s/\s*#.*$//;
-	next if /^\s*$/;
-	my( $from, $to, $recurse ) = split /\t/;
-	my $recstr = "";
-	$recstr = "-r" if (defined $recurse);
-	my $cmd = "cp $recstr $originaldir/export/$from eprints/$to";
-	print "$cmd\n";
-	system( $cmd );
-}
-close(FILECONF);
-
-chdir $originaldir."/package";
-
-
-# Do version
-open(FILEOUT, ">eprints/VERSION");
-print FILEOUT $package_version."\n";
-print FILEOUT $package_desc."\n";
-close(FILEOUT);
 
 	
-
-print "Removing temporary directories...\n";
-
-erase_dir( "package" );
-erase_dir( "export" );
-
-print "Done.\n";
-print "scp $package_file.tar.gz webmaster\@www:/home/www.eprints/mainsite/htdocs/files/eprints2/\n";
-
-exit;
-
-
-
 
