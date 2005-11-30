@@ -69,20 +69,48 @@ else
 
 my $license_file = "licenses/gplin.txt";
 
-erase_dir( "package" );
 erase_dir( "export" );
-
-print "Making directories...\n";
-mkdir("package") or die "Couldn't create package directory\n";
-#mkdir("export") or die "Couldn't create export directory\n";
 
 print "Exporting from SVN...\n";
 my $originaldir = getcwd();
 
 system("svn export http://mocha/svn/eprints/$version_path export/")==0 or die "Could not export system.\n";
 
+`export/release/internal_makepackage.pl $type export/  $package_file.tgz`;
+
+# stuff
+
+print "Removing temporary directories...\n";
+erase_dir( "export" );
+
+print "Done.\n";
+#print "scp $package_file.tar.gz webmaster\@www:/home/www.eprints/mainsite/htdocs/files/eprints2/\n";
 
 exit;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 print "Removing .cvsignore files...\n";
 system("/bin/rm `find . -name '.cvsignore'`")==0 or die "Couldn't remove.";
 chdir "eprints/system";
@@ -314,16 +342,6 @@ system("tar czf $tarfile $package_file")==0 or die("Couldn't tar up $package_fil
 chdir $originaldir;
 
 	
-
-print "Removing temporary directories...\n";
-
-erase_dir( "package" );
-erase_dir( "export" );
-
-print "Done.\n";
-print "scp $package_file.tar.gz webmaster\@www:/home/www.eprints/mainsite/htdocs/files/eprints2/\n";
-
-exit;
 
 
 

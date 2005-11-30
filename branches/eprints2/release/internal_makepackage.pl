@@ -68,73 +68,156 @@ else
 
 
 
-erase_dir( $to );
+erase_dir( $to ) if -d $to;
 
 print "Making directories...\n";
 mkdir($to) or die "Couldn't create package directory\n";
-#mkdir("export") or die "Couldn't create export directory\n";
+mkdir($to."/eprints") or die "Couldn't eprints directory\n";
 
+print "Building configure files\n";
+system("cd $from/release; ./autogen.sh" );
+
+my $LICENSE_FILE = "$from/release/licenses/gpl.txt";
+my $LICENSE_INLINE_FILE = "$from/release/licenses/gplin.txt";
+
+
+print "Inserting license...\n";
+system("cp $LICENSE_FILE $to/eprints/COPYING");
+
+print "Inserting configure and install scripts...\n";
+system("cp $from/release/configure $to/eprints/configure");
+system("cp $from/release/install.pl.in $to/eprints/install.pl.in");
+system("cp $from/release/perlmodules.pl $to/eprints/perlmodules.pl");
+
+print "Inserting top level text files...\n";
+system("cp $from/system/CHANGELOG $to/eprints/CHANGELOG");
+system("cp $from/system/README $to/eprints/README");
+system("cp $from/system/AUTHORS $to/eprints/AUTHORS");
+system("cp $from/system/NEWS $to/eprints/NEWS");
+
+my %r = (
+	"__VERSION__"=>$package_version,
+	"__LICENSE__"=>readfile( $LICENSE_INLINE_FILE ),
+	"__GENERICPOD__"=>readfile( "$from/system/pod/generic.pod" ),
+);
+
+#AUTHORS  bin  bundled  cfg  cgi  CHANGELOG  defaultcfg  NEWS  perl_lib  phrases  pod  README  testdata  tests  tools
+copydir( "$from/system/bin", "$to/eprints/bin", \%r );
+copydir( "$from/system/cgi", "$to/eprints/cgi", \%r );
+copydir( "$from/system/defaultcfg", "$to/eprints/defaultcfg", \%r );
+copydir( "$from/system/perl_lib", "$to/eprints/perl_lib", \%r );
+copydir( "$from/system/testdata", "$to/eprints/testdata", \%r );
+
+system("rm $to/eprints/perl_lib/EPrints/SystemSettings.pm");
+system("chmod -R g-w $to/eprints")==0 or die("Couldn't change permissions on eprints dir.\n");
+
+system("mv $to/eprints $to/$package_file")==0 or die("Couldn't move eprints dir to $to/$package_file.\n");
+my $tarfile = $package_file.".tar.gz";
+if( -e $tarfile ) { system( "rm $tarfile" ); }
+#system("cd $to; tar czf ../$tarfile $package_file")==0 or die("Couldn't tar up $to/$package_file");
+
+
+print "Removing: $to\n";
+#erase_dir( $to ) if -d $to;
 
 exit;
 
-
-
-my $license_file = "licenses/gplin.txt";
-print "Removing .cvsignore files...\n";
-system("/bin/rm `find . -name '.cvsignore'`")==0 or die "Couldn't remove.";
-chdir "eprints/system";
-
-my @installerfiles = ( 
-	'perlmodules.pl',
-	'aclocal.m4',
-	'autogen.sh',
-	'configure.in',
-	'df-check.pl',
-	'install.pl.in' );
-foreach( @installerfiles )
+sub copydir
 {
-	system("cp $originaldir/$_ $_");
-}
-system("./autogen.sh");
+	my( $fromdir, $todir, $r, $mlr ) = @_;
 
-
-
-
-
-
-
-
-
-# find files to which the __FOO__ substitutions should be applied to.  
-my @files = @installerfiles;
-foreach my $dir ( "archivecfg", "bin", "cgi", "cgi/users", "cgi/users/staff", "lib", "lib/MetaField", "testdata/bin" )
-{
-	opendir( DIR, $dir );
-	my $file;
-	while( $file = readdir( DIR ) )
+	unless( -d $todir ) { mkdir( $todir ); }
+	
+	my $dh;
+	opendir( $dh, $fromdir );
+	while( my $file = readdir( $dh ) )
 	{
-		next if $file=~m/^\./; # not if it starts with .
-		next unless( -f "$dir/$file" );
-		push @files, "$dir/$file";
+		next if( $file =~ m/^\./ );
+
+		if( -d "$fromdir/$file" )
+		{
+			copydir( "$fromdir/$file", "$todir/$file", $r );
+		}	
+		else
+		{
+			copyfile( "$fromdir/$file", "$todir/$file", $r );
+		}
 	}
-	closedir( DIR );
+	closedir( $dh );
 }
-my $license = "";
-open( FILE, "$originaldir/$license_file" );
-while( <FILE> ) { $license .= $_; }
-close FILE;
-my $genericpod = "";
-open( FILE, "pod/generic.pod" );
-while( <FILE> ) { $genericpod .= $_; }
-close FILE;
-foreach my $file ( @files )
+
+sub copyfile
 {
-	insert_data( "__GENERICPOD__", $genericpod, $file, 1 );
-	insert_data( "__LICENSE__", $license, $file, 1 );
-	insert_data( "__VERSION__", $package_version, $file );
+	my( $from, $to, $r ) = @_;
+
+	my $data = readfile( $from );
+
+	insert_data( $data, "__GENERICPOD__", $r->{__GENERICPOD__}, 1 );
+	insert_data( $data, "__LICENSE__", $r->{__LICENSE__}, 1 );
+	insert_data( $data, "__VERSION__", $r->{__VERSION__}, 0 );
+
+	open OUT, ">$to" or die "Unable to open output file.\n";
+	print OUT join( "", @{$data} );
+	close OUT;
 }
 
+sub insert_data
+{
+	my( $data, $key, $value, $multiline ) = @_;
 
+	unless( $multiline )
+	{
+		foreach( @{$data} )
+		{
+			s/$key/$value/g;
+		}
+		return;
+	}
+
+	my @new = ();
+	foreach( @{$data} )
+	{
+		unless( m/$key/ )
+		{
+			push @new, $_;
+			next;
+		}
+
+		foreach my $rline ( @{$value} )
+		{
+			chomp $rline;
+			my $l2 = $_;
+			$l2=~s/$key/$rline/;
+			push @new, $l2;
+		}
+	}
+
+	@{$data} = @new;
+}
+
+sub readfile
+{
+	my( $file ) = @_;
+
+	open( F, $file ) || die "Can't read $file";
+	my @f = <F>;
+	close F;
+
+	return \@f;
+}
+
+sub erase_dir
+{
+	my( $dirname ) = @_;
+
+	if (-d $dirname )
+	{
+		system( "/bin/rm -rf ".$dirname ) == 0 or 
+			die "Couldn't remove ".$dirname." dir.\n";
+	}
+}
+	
+__DATA__
 
 
 
@@ -180,135 +263,12 @@ close(FILECONF);
 
 chdir $originaldir."/package";
 
-# Add documents dir
-mkdir("eprints/html/documents");
 
 # Do version
 open(FILEOUT, ">eprints/VERSION");
 print FILEOUT $package_version."\n";
 print FILEOUT $package_desc."\n";
 close(FILEOUT);
-
-# my @phrasefiles = ();
-# # Build up list from export.
-# opendir(PHRSDIR, "$originaldir/export/eprints/system/phrases");
-# while($item = readdir(PHRSDIR))
-# {
-# if (-d $item || $item =~ /^\./ ) { next; }	
-# push(@phrasefiles, $item);
-# }
-# closedir(PHRSDIR);
-# 
-# Nasty...
-#	foreach $l (@langs)
-#	{
-#		$currarch = 0;
-#		$currsys = 0;
-#		foreach(@files)
-#		{
-#			if (/archive-$l-([0-9]+)/)
-#			{
-#				if ($1>$currarch) { $currarch = $1; }
-#			}
-#			elsif (/system-$l-([0-9]+)/)
-#			{
-#				if ($1>$currsys) { $currsys = $1; }
-#			}
-#		}
-#		if ($l eq "en")
-#		{
-#			$enarch = $currarch;
-#			$ensys	= $currsys;
-#		}
-#		next if ($l eq "en");
-#
-#		print "For language $l:\n";
-#		print "Newest arch: archive-$l-$currarch\n";
-#		print "Newest sys: system-$l-$currsys\n";
-#		if ($currsys>0)
-#		{
-#			print "Copying $l language file.\n";	
-#			system("cp $originaldir/export/eprints/system/phrases/system-$l-$currsys eprints/cfg/system-phrases-$l.xml");
-#		}	
-#		else
-#		{
-#			print "Copying English language file as placeholder\n";
-#			system("cp $originaldir/export/eprints/system/phrases/system-en-$ensys eprints/cfg/system-phrases-$l.xml");
-#		}
-#
-#		if ($currarch>0)
-#		{
-#			print "Copying $l language file.\n";
-#			system("cp $originaldir/export/eprints/system/phrases/archive-$l-$currarch eprints/defaultcfg/phrases-$l.xml");
-#		}
-#		else
-#		{
-#			print "Copying English language file as placeholder\n";
-#			system("cp $originaldir/export/eprints/system/phrases/archive-en-$enarch eprints/defaultcfg/phrases-$l.xml");
-#		}
-#	}
-#	# ...Nasty
-#
-#	if ($is_proper_release == 0)
-#	{
-#		# Here we copy over the nightly language files
-#		foreach $l (@langs)
- #               {
-#			if (-e "$originaldir/export/eprints/system/phrases/archive-$l-current")
-#			{
-#				print "Transferring $l phrases...\n";
-#				system("cp $originaldir/export/eprints/system/phrases/archive-$l-current eprints/defaultcfg/phrases-$l.xml");
-#			}
-#			if (-e "$originaldir/export/eprints/system/phrases/system-$l-current")
-#			{
-#				print "Transferring $l system phrases...\n";
-#				system("cp $originaldir/export/eprints/system/phrases/system-$l-current eprints/cfg/system-phrases-$l.xml");
-#			}
-#		}
-#	}
-#	elsif($is_proper_release == 1)
-#	{
-#		# Here we copy over the Alpha language files
-#		foreach $l (@langs)
- #               {
-#			if (-e "$originaldir/export/eprints/system/phrases/archive-$l-1")
-#			{
-#				print "Transferring $l phrases...\n";
-#				system("cp $originaldir/export/eprints/system/phrases/archive-$l-1 eprints/defaultcfg/phrases-$l.xml");
-#			}
-#			if (-e "$originaldir/export/eprints/system/phrases/system-$l-1")
-#			{
-#				print "Transferring $l system phrases...\n";
-#				system("cp $originaldir/export/eprints/system/phrases/system-$l-1 eprints/cfg/system-phrases-$l.xml");
-#			}
-#		}
-#	}
-
-# Do phrases
-my @langs = ("en" );
-
-foreach my $l ( @langs )
-{
-	if( -e "$originaldir/export/eprints/system/phrases/system-$l-current" )
-	{
-		system("cp $originaldir/export/eprints/system/phrases/system-$l-current eprints/cfg/system-phrases-$l.xml");
-	}
-	if( -e "$originaldir/export/eprints/system/phrases/archive-$l-current" )
-	{
-		system("cp $originaldir/export/eprints/system/phrases/archive-$l-current eprints/defaultcfg/phrases-$l.xml");
-	}
-}
-
-print "Inserting license information...\n";
-system("cp $originaldir/licenses/gpl.txt eprints/COPYING");
-system("rm eprints/perl_lib/EPrints/SystemSettings.pm");
-system("chmod -R g-w eprints")==0 or die("Couldn't change permissions on eprints dir.\n");
-
-system("mv eprints $package_file")==0 or die("Couldn't move eprints dir to $package_file.\n");
-my $tarfile = "../".$package_file.".tar.gz";
-if( -e $tarfile ) { system( "rm $tarfile" ); }
-system("tar czf $tarfile $package_file")==0 or die("Couldn't tar up $package_file");
-chdir $originaldir;
 
 	
 
@@ -325,59 +285,3 @@ exit;
 
 
 
-#####################
-
-sub insert_data
-{
-	my( $key, $value, $source, $multiline) = @_;
-
-	open IN, $source or die "Unable to open source file.\n";
-	my $perms = (stat IN)[2];
-
-	open OUT, ">$source.out" or die "Unable to open output file.\n";
-
-	while ( <IN> )
-	{
-		if( $multiline )
-		{
-			if( /$key/ )
-			{
-				my $line;
-				foreach $line ( split( "\n", $value ) )
-				{
-					my $l2 = $_;
-					$l2=~s/$key/$line/;
-					print OUT $l2;
-				}
-			}
-			else
-			{
-				print OUT $_;
-			}
-		}
-		else
-		{
-			s/$key/$value/g;
-			print OUT $_;
-		}
-	}
-
-	close OUT;
-	close IN;
-	system( "mv", "$source.out", "$source" );
-	chmod $perms, $source or die "Unable to chmod: $!";
-
-	return 0;
-}
-
-sub erase_dir
-{
-	my( $dirname ) = @_;
-
-	if (-d $dirname )
-	{
-		system( "/bin/rm -rf ".$dirname ) == 0 or 
-			die "Couldn't remove ".$dirname." dir.\n";
-	}
-}
-	
