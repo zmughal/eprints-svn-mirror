@@ -1,4 +1,4 @@
-#!@PERL_PATH@
+#!@PERL_PATH@ -w
 
 ######################################################################
 #
@@ -61,27 +61,7 @@ umask( 0022 );
 # Grab version id number from VERSION file.
 #
 
-unless( open(VERSIONIN, $from_configure{"dist_path"}."/VERSION") )
-{
-	print "No VERSION file in distribution - invalid distribution?";
-	exit 1;
-}
-binmode(VERSIONIN);
-my $version_id = <VERSIONIN>;
-unless( defined($version_id) ) 
-{
-	print "Undefined version number.";
-	exit 1;
-}
-chomp($version_id);
-my $version = <VERSIONIN>;
-unless( defined($version) ) 
-{
-	print "Undefined version description."; 
-	exit 1;
-}
-chomp($version);
-close(VERSIONIN);
+my( $version_id, $version ) = read_version( $from_configure{"dist_path"}."/VERSION" );
 
 ### Trim perfix if needed 
 
@@ -93,10 +73,26 @@ if( $from_configure{"prefix"} =~ s#/$## )
 ### Print out some key information, which is bound to
 ### cause problems if incorrect.
 
-print "Installing from: ".$from_configure{"dist_path"}."\n";
-print "Installing/Upgrading to: ".$from_configure{"prefix"}."\n";
-print "as user: ".$from_configure{"user"}."\n";
-print "as group: ".$from_configure{"group"}."\n";
+# shorter variables for clarity later
+my $to_path = $from_configure{prefix};
+my $from_path = $from_configure{dist_path};
+
+print "Installing from: $from_path\n";
+
+my $system_settings_file = "$to_path/perl_lib/EPrints/SystemSettings.pm";
+my $upgrade = 0;
+if( -e $system_settings_file )
+{
+	$upgrade = 1;
+	print "Previous install detected at install location.\n";
+	print "Upgrading to: $to_path\n";
+}
+else
+{
+	print "Installing to: $to_path\n";
+	print "Installing as user: ".$from_configure{"user"}."\n";
+	print "Installing as group: ".$from_configure{"group"}."\n";
+}
 
 my $systemsettings = {};
 
@@ -140,13 +136,10 @@ foreach(
 $systemsettings->{"disable_df"} = $from_configure{"disable_df"};
 $systemsettings->{"virtualhost"} = $from_configure{"virtualhost"};
 
-my $upgrade = 0;
 
-my $system_settings_file = $from_configure{prefix}."/perl_lib/EPrints/SystemSettings.pm";
 
-if( -e $system_settings_file )
+if( $upgrade )
 {
-	print "Previous install detected at prefix. Upgrading.\n";
 	unless( require $system_settings_file )
 	{
 		print <<END;
@@ -184,6 +177,8 @@ END
 	$systemsettings->{"user"} = $EPrints::SystemSettings::conf->{"user"};
 	$systemsettings->{"group"} = $EPrints::SystemSettings::conf->{"group"};
 
+	print "Upgrading as user: ".$systemsettings->{"user"}."\n";
+	print "Upgrading as group: ".$systemsettings->{"group"}."\n";
 	$upgrade = 1;
 }
 else
@@ -202,11 +197,16 @@ set( 'show_ids_in_log', \%from_configure, $systemsettings, 0 );
 set( 'apache', \%from_configure, $systemsettings, "2" );
 
 
+# Check the user exists
+
 unless( getpwnam($systemsettings->{"user"}) )
 {
 	print "User ".$from_configure{"user"}." does not exist. Aborting.\n";
 	exit 1;
 }
+
+
+# Check the group exists
 
 unless( getgrnam($systemsettings->{"group"}) )
 {
@@ -214,22 +214,72 @@ unless( getgrnam($systemsettings->{"group"}) )
 	exit 1;
 }
 
+# this gets the wrong gid!
+my(undef,undef,$uid,$gid) = getpwnam($systemsettings->{"user"});
+
+my %oldhashes = ();
+
+# If we are upgrading and have a digest file, read the digests into a hash
+# to check them against the files in place to see if they've changed.
+
 if( $upgrade )
 {
-	&upgrade( 
-		$systemsettings->{base_path}, 
-		$from_configure{dist_path},
-		$systemsettings->{user}, 
-		$systemsettings->{group} );
+	my $sigfile = "$to_path/SIGNATURES";
+	if (-e $sigfile )
+	{
+		print "Loading SIGNATURES...\n";
+		open(SIGS, $sigfile ) || die "Can't open $sigfile";
+		binmode(SIGS);
+		foreach(<SIGS>)
+		{
+			chomp;
+			my( $file, $digest ) = split( " ", $_);
+			$oldhashes{$file} = $digest;
+		}
+		close(SIGS);
+	}
+	else
+	{
+		print "Upgrading, but could not find an old SIGNATURES file.\n";
+	}
 }
-else
+
+
+
+
+
+
+#
+# Actual install starts here.
+#
+ensure_dir( $to_path, $uid, $gid, 0755 );
+
+my $newhashes = [];
+
+my @normal_dirs = ( "defaultcfg", "cfg", "docs", "perl_lib","testdata" );
+
+my @executable_dirs = ( "bin", "cgi", "testdata/bin" );
+
+my @base_files = ( "VERSION", "CHANGELOG", "COPYING", "NEWS", "AUTHORS", "README" ); 
+
+foreach my $dir (@normal_dirs)
 {
-	&full_install( 
-		$systemsettings->{base_path}, 
-		$from_configure{dist_path},
-		$systemsettings->{user}, 
-		$systemsettings->{group} );
+	install_dir($from_path, $dir, 0644, $uid, $gid, $to_path, \%oldhashes, $newhashes);
 }
+foreach my $dir (@executable_dirs)
+{
+	install_dir($from_path, $dir, 0755, $uid, $gid, $to_path, \%oldhashes, $newhashes);
+}
+foreach my $file (@base_files)
+{
+	install_file($from_path, $file, "", 0644, $uid, $gid, $to_path, \%oldhashes, $newhashes );
+}
+
+ensure_dir( "$to_path/archives" );
+ensure_dir( "$to_path/perl_lib/EPrints/LocalPlugin" );
+
+write_sigs( $to_path, $newhashes, $uid, $gid );
+
 
 save_settings( 
 	$system_settings_file, 
@@ -253,6 +303,15 @@ print "\n";
 exit;
 
 
+
+
+
+
+
+
+
+
+
 ######################################################################
 # 
 # set( $param, $hash_from_configure, $systemsettings, $default )
@@ -264,7 +323,7 @@ exit;
 #
 ######################################################################
 
-sub set($$$$)
+sub set
 {
 	my( $param, $from_configure, $systemsettings, $default ) = @_;
 
@@ -476,7 +535,7 @@ sub get_digest
 
 sub install_file
 {
-	my($distdir, $file, $dir, $perms, $user, $group, $dest, $sighash, $newsigs ) = @_;
+	my($distdir, $file, $dir, $perms, $uid, $gid, $dest, $sighash, $newsigs ) = @_;
 
 	return unless (-e $distdir."/$dir/$file");
 	my $outdigest = Digest::MD5->new;
@@ -536,7 +595,7 @@ sub install_file
 		print "\nUnable to chmod $dest/$dir/$file : $!\n";
 		exit 1;
 	}
-	unless( chown($user, $group, "$dest/$dir/$file") )
+	unless( chown($uid, $gid, "$dest/$dir/$file") )
 	{
 		print "\nUnable to chown $dest/$dir/$file : $!\n";
 		exit 1;
@@ -545,7 +604,8 @@ sub install_file
 
 sub install_dir
 {
-	my( $distdir, $dir, $perms, $user, $group, $dest, $sighash, $newsigs ) = @_;
+	my( $distdir, $dir, $perms, $uid, $gid, $dest, $sighash, $newsigs ) = @_;
+
 	unless( opendir(INDIR, $dir) )
 	{
 		print "Unable to open package directory: $dir. $!\n";
@@ -554,7 +614,7 @@ sub install_dir
 	my @dirs = ();
 	my @files = ();
 	mkdir("$dest/$dir", 0755);
-	unless( chown($user, $group, "$dest/$dir") )
+	unless( chown($uid, $gid, "$dest/$dir") )
 	{
 		print "\nUnable to chown $dest/$dir : $!\n"; 
 		exit 1;
@@ -575,13 +635,11 @@ sub install_dir
 	closedir(INDIR);
 	foreach(@files)
 	{
-		install_file($distdir, $_, $dir, $perms, $user, $group, $dest, $sighash, $newsigs );
+		install_file($distdir, $_, $dir, $perms, $uid, $gid, $dest, $sighash, $newsigs );
 	}
 	foreach(@dirs)
 	{
-		print "|";
-		$|=1;
-		install_dir($distdir, "$dir/".$_, $perms, $user, $group, $dest, $sighash, $newsigs );
+		install_dir($distdir, "$dir/".$_, $perms, $uid, $gid, $dest, $sighash, $newsigs );
 	}
 }
 
@@ -591,54 +649,10 @@ sub upgrade
 {
 	my( $base_path, $dist_path, $user, $group ) = @_;
 
-	my(undef,undef,$uid,$gid) = getpwnam($user);
-	my $checkMD5s = 0;
-	my $digest;
-	my $file;
-	my %MD5Hash = ();
-	# If we have a digest file, read the digests into a hash
-	if (-e "$base_path/SIGNATURES")
-	{
-		print "Loading SIGNATURES...\n";
-		open(MD5IN, "$base_path/SIGNATURES");
-		binmode(MD5IN);
-		foreach(<MD5IN>)
-		{
-			chomp;
-			($file, $digest) = split(" ", $_);
-			$MD5Hash{$file} = $digest;
-		}
-		close(MD5IN);
-	}
 	
+	my(undef,undef,$uid,$gid) = getpwnam($user);
 	print "Upgrading files : [";
 
-	my $newsigs = [];
-
-	my @normal_dirs = ("defaultcfg", "cfg", "docs", "perl_lib", "plugins", "testdata" );
-	my @executable_dirs = ("bin", "cgi", "testdata/bin" );
-	my @base_files = ("VERSION", "CHANGELOG", "COPYING", "NEWS", "AUTHORS", "README" ); 
-        foreach(@normal_dirs)
-        {
-                install_dir($dist_path, $_, 0644, $uid, $gid, $base_path, \%MD5Hash, $newsigs);
-                print "|";
-		$|=1;
-        }
-        foreach(@executable_dirs)
-        {
-                install_dir($dist_path, $_, 0755, $uid, $gid, $base_path, \%MD5Hash, $newsigs);
-                print "|";
-		$|=1;
-        }
-
-	foreach(@base_files)
-	{
-		install_file($dist_path, $_, "", 0644, $uid, $gid, $base_path, \%MD5Hash, $newsigs );
-	}
-
-        print "]\n\n";
-
-	write_sigs( $base_path, $newsigs, $uid, $gid );
 
 	print <<HOORAY;
 ======================================================================
@@ -662,47 +676,9 @@ sub full_install
 {
 	my( $base_path, $dist_path, $user, $group ) = @_;
 
-	my(undef,undef,$uid,$gid) = getpwnam($user);
 
-	print "\nMaking directory ... ";
-	if( !-d $base_path && !mkdir($base_path, 0755) )
-	{
-		print "Unable to make installation directory.\n";
-		print "Aborting!\n";
-		exit 1;
-	}
-	unless( chown($uid, $gid, $base_path) )
-	{
-		print "Unable to chown ".$base_path." : $!\n"; 
-		print "Aborting!\n";
-		exit 1;
-	}
 
-	print "Installing files : [";
-
-	my @normal_dirs = ("archives", "defaultcfg", "cfg", "docs", "perl_lib", "plugins", "testdata");
-	my @executable_dirs = ("bin", "cgi", "testdata/bin" );
-	my @base_files = ("VERSION", "CHANGELOG", "COPYING", "NEWS", "AUTHORS", "README" ); 
-	my $sigs = [];
-
-	foreach(@normal_dirs)
-	{
-		install_dir($dist_path, $_, 0644, $uid, $gid, $base_path, {}, $sigs );
-		print "|";
-	}
-	foreach(@executable_dirs)
-	{
-		install_dir($dist_path, $_, 0755, $uid, $gid, $base_path, {}, $sigs );	
-		print "|";
-	}
-	foreach(@base_files)
-	{
-		install_file($dist_path, $_, "", 0644, $uid, $gid, $base_path, {}, $sigs );
-	}
 	
-	print "]\n\n";
-	
-	write_sigs( $base_path, $sigs, $uid, $gid );
 
 	print <<HOORAY;
 
@@ -760,3 +736,58 @@ sub move_out_of_harms_way
 
 	print "\n$file has been modified.\nSaving old version as $safename\n";
 }
+
+
+sub read_version
+{
+	my( $vfile ) = @_;
+
+	unless( open(VERSIONIN, $from_configure{"dist_path"}."/VERSION") )
+	{
+		print "No VERSION file in distribution - invalid distribution?";
+		exit 1;
+	}
+	binmode(VERSIONIN);
+	my $version_id = <VERSIONIN>;
+	unless( defined($version_id) ) 
+	{
+		print "Undefined version number.";
+		exit 1;
+	}
+	chomp($version_id);
+	my $version = <VERSIONIN>;
+	unless( defined($version) ) 
+	{
+		print "Undefined version description."; 
+		exit 1;
+	}
+	chomp($version);
+	close(VERSIONIN);
+
+	return( $version_id, $version );
+}
+
+sub ensure_dir
+{
+	my( $dir, $uid, $gid, $mode ) = @_;
+
+	if( !-d $dir ) 
+	{
+		if( !mkdir($dir, $mode) )
+		{
+			print "Unable to make dir: $dir.\n";
+			print "Aborting!\n";
+			exit 1;
+		}
+	}		
+	
+	unless( chown($uid, $gid, $dir) )
+	{
+		print "Unable to chown ".$dir." : $!\n"; 
+		print "Aborting!\n";
+		exit 1;
+	}
+
+	return;
+}
+
