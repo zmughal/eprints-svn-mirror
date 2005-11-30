@@ -275,8 +275,8 @@ foreach my $file (@base_files)
 	install_file($from_path, $file, "", 0644, $uid, $gid, $to_path, \%oldhashes, $newhashes );
 }
 
-ensure_dir( "$to_path/archives" );
-ensure_dir( "$to_path/perl_lib/EPrints/LocalPlugin" );
+ensure_dir( "$to_path/archives", $uid, $gid, 0755 );
+ensure_dir( "$to_path/perl_lib/EPrints/LocalPlugin", $uid, $gid, 0755 );
 
 write_sigs( $to_path, $newhashes, $uid, $gid );
 

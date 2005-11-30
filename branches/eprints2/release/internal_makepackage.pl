@@ -75,25 +75,26 @@ mkdir($to) or die "Couldn't create package directory\n";
 mkdir($to."/eprints") or die "Couldn't eprints directory\n";
 
 print "Building configure files\n";
-system("cd $from/release; ./autogen.sh" );
+cmd("cd $from/release; ./autogen.sh" );
 
 my $LICENSE_FILE = "$from/release/licenses/gpl.txt";
 my $LICENSE_INLINE_FILE = "$from/release/licenses/gplin.txt";
 
 
 print "Inserting license...\n";
-system("cp $LICENSE_FILE $to/eprints/COPYING");
+cmd("cp $LICENSE_FILE $to/eprints/COPYING");
 
 print "Inserting configure and install scripts...\n";
-system("cp $from/release/configure $to/eprints/configure");
-system("cp $from/release/install.pl.in $to/eprints/install.pl.in");
-system("cp $from/release/perlmodules.pl $to/eprints/perlmodules.pl");
+cmd("cp $from/release/configure $to/eprints/configure");
+cmd("cp $from/release/install.pl.in $to/eprints/install.pl.in");
+cmd("cp $from/release/df-check.pl $to/eprints/df-check.pl");
+cmd("cp $from/release/perlmodules.pl $to/eprints/perlmodules.pl");
 
 print "Inserting top level text files...\n";
-system("cp $from/system/CHANGELOG $to/eprints/CHANGELOG");
-system("cp $from/system/README $to/eprints/README");
-system("cp $from/system/AUTHORS $to/eprints/AUTHORS");
-system("cp $from/system/NEWS $to/eprints/NEWS");
+cmd("cp $from/system/CHANGELOG $to/eprints/CHANGELOG");
+cmd("cp $from/system/README $to/eprints/README");
+cmd("cp $from/system/AUTHORS $to/eprints/AUTHORS");
+cmd("cp $from/system/NEWS $to/eprints/NEWS");
 
 my %r = (
 	"__VERSION__"=>$package_version,
@@ -108,18 +109,24 @@ copydir( "$from/system/defaultcfg", "$to/eprints/defaultcfg", \%r );
 copydir( "$from/system/perl_lib", "$to/eprints/perl_lib", \%r );
 copydir( "$from/system/testdata", "$to/eprints/testdata", \%r );
 
-system("rm $to/eprints/perl_lib/EPrints/SystemSettings.pm");
-system("chmod -R g-w $to/eprints")==0 or die("Couldn't change permissions on eprints dir.\n");
+cmd("rm $to/eprints/perl_lib/EPrints/SystemSettings.pm");
 
+# documentation
+cmd("cd $from/docs/; ./mkdocs.pl");
+cmd("mv $from/docs/docs $to/eprints/docs");
+
+# VERSION file.
 open(FILEOUT, ">$to/eprints/VERSION");
 print FILEOUT $package_version."\n";
 print FILEOUT $package_desc."\n";
 close(FILEOUT);
 
-system("mv $to/eprints $to/$package_file")==0 or die("Couldn't move eprints dir to $to/$package_file.\n");
+cmd("chmod -R g-w $to/eprints")==0 or die("Couldn't change permissions on eprints dir.\n");
+
+cmd("mv $to/eprints $to/$package_file")==0 or die("Couldn't move eprints dir to $to/$package_file.\n");
 my $tarfile = $package_file.".tar.gz";
-if( -e $tarfile ) { system( "rm $tarfile" ); }
-system("cd $to; tar czf ../$tarfile $package_file")==0 or die("Couldn't tar up $to/$package_file");
+if( -e $tarfile ) { cmd( "rm $tarfile" ); }
+cmd("cd $to; tar czf ../$tarfile $package_file")==0 or die("Couldn't tar up $to/$package_file");
 
 
 print "Removing: $to\n";
@@ -217,11 +224,18 @@ sub erase_dir
 
 	if (-d $dirname )
 	{
-		system( "/bin/rm -rf ".$dirname ) == 0 or 
+		cmd( "/bin/rm -rf ".$dirname ) == 0 or 
 			die "Couldn't remove ".$dirname." dir.\n";
 	}
 }
 	
 
-	
+sub cmd
+{
+	my( $cmd ) = @_;
+
+	print "$cmd\n";
+
+	return system( $cmd );
+}
 

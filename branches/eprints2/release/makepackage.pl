@@ -70,9 +70,9 @@ erase_dir( "export" );
 print "Exporting from SVN...\n";
 my $originaldir = getcwd();
 
-system("svn export http://mocha/svn/eprints/$version_path export/")==0 or die "Could not export system.\n";
+cmd( "svn export http://mocha/svn/eprints/$version_path export/")==0 or die "Could not export system.\n";
 
-`export/release/internal_makepackage.pl $type export/  $package_file`;
+cmd( "export/release/internal_makepackage.pl $type export package" );
 
 # stuff
 
@@ -80,7 +80,7 @@ print "Removing temporary directories...\n";
 erase_dir( "export" );
 
 print "Done.\n";
-print "scp $package_file.tar.gz webmaster\@www:/home/www.eprints/mainsite/htdocs/files/eprints2/\n";
+print "./upload.pl $package_file.tar.gz\n":
 
 exit;
 
@@ -91,10 +91,18 @@ sub erase_dir
 
 	if (-d $dirname )
 	{
-		system( "/bin/rm -rf ".$dirname ) == 0 or 
+		cmd( "/bin/rm -rf ".$dirname ) == 0 or 
 			die "Couldn't remove ".$dirname." dir.\n";
 	}
 }
 
 
+sub cmd
+{
+	my( $cmd ) = @_;
+
+	print "$cmd\n";
+
+	return system( $cmd );
+}
 
