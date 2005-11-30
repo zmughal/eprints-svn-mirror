@@ -114,11 +114,11 @@ system("chmod -R g-w $to/eprints")==0 or die("Couldn't change permissions on epr
 system("mv $to/eprints $to/$package_file")==0 or die("Couldn't move eprints dir to $to/$package_file.\n");
 my $tarfile = $package_file.".tar.gz";
 if( -e $tarfile ) { system( "rm $tarfile" ); }
-#system("cd $to; tar czf ../$tarfile $package_file")==0 or die("Couldn't tar up $to/$package_file");
+system("cd $to; tar czf ../$tarfile $package_file")==0 or die("Couldn't tar up $to/$package_file");
 
 
 print "Removing: $to\n";
-#erase_dir( $to ) if -d $to;
+erase_dir( $to ) if -d $to;
 
 exit;
 
