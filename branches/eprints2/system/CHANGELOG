@@ -2796,3 +2796,39 @@ PACKAGE: 2.2.99.2
     warnings.
  - Corrected a typo in EPrints::Archive which called 
     Prints::abort rather than EPrints::abort
+
+2005-12-02 cjg
+
+ - Added a new metadata field: Time which represents a DATETIME in the 
+    database.
+ - Modified the way dates and times are stored in the database - they
+    now have an additional column called .._resolution which contains
+    an integer indicating what resolution the date/time is (minutes, 
+    months etc.)
+ - Added a "lastmod"ified field to eprints. 
+ - Changed the "datestamp" field to "time" from "date"
+ - Changed the "joined" field (in user) to "time" from "date".
+ - Modified bin/upgrade to change the database to add resolution
+    columns, modify datestamp to be a time and date, and add lastmod,
+    and modift joined to be a date and time.
+ - Deprecated $eprint->datestamp()
+ - commit() now only commits if some metadata has actually changed
+    or a $force option is set.
+ - The $eprint->_transfer method now calls commit(1) to force it to
+    write.
+ - Removed all calls to $eprint->datestamp
+ - $eprint->commit now sets the lastmod field to the current time and
+    sets the datestamp to the current time if the eprint is live and
+    does not already have a datestamp.
+ - Changed the default render_eprint config method so that it does not
+    barf on an eprint with no type set.
+ - Fixed a bug in DataSet which returned a [] instead of a () when
+    get_type_fields was called with an unknown type.
+ - New method: EPrints::Utils::get_datetime which returns the given
+    UNIX time in the format YYYY-MM-DD HH:MM:SS
+ - Changed the layout of $eprint->_transfer
+ - Removed out-of-date comments from generate_views
+
+
+
+----------------------------------------------------------------------- 

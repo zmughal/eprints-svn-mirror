@@ -45,7 +45,7 @@ sub get_sql_type
 {
 	my( $self, $notnull ) = @_;
 
-	return $self->get_sql_name()." DATE".($notnull?" NOT NULL":"");
+	return $self->get_sql_name()." DATE".($notnull?" NOT NULL":"").", ".$self->get_sql_name()."_resolution INTEGER";
 }
 
 sub render_single_value
@@ -60,7 +60,7 @@ sub render_single_value
 	return EPrints::Utils::render_date( $session, substr( $value,0,$l ) );
 }
 	
-my @monthkeys = ( 
+@EPrints::MetaField::Date::MONTHKEYS = ( 
 	"00", "01", "02", "03", "04", "05", "06",
 	"07", "08", "09", "10", "11", "12" );
 
@@ -71,7 +71,7 @@ sub _month_names
 	my $months = {};
 
 	my $month;
-	foreach $month ( @monthkeys )
+	foreach $month ( @EPrints::MetaField::Date::MONTHKEYS )
 	{
 		$months->{$month} = EPrints::Utils::get_month_label( 
 			$session, 
@@ -131,7 +131,7 @@ sub get_basic_input_elements
 	$div->appendChild( $session->make_text(" ") );
 	$div->appendChild( $session->render_option_list(
 		name => $monthid,
-		values => \@monthkeys,
+		values => \@EPrints::MetaField::Date::MONTHKEYS,
 		default => $month,
 		labels => $self->_month_names( $session ) ) );
 
@@ -177,33 +177,16 @@ sub form_value_basic
 	$month = undef if( !EPrints::Utils::is_set($month) || $month == 0 );
 	$year = undef if( !EPrints::Utils::is_set($year) || $year == 0 );
 	$day = undef if( !EPrints::Utils::is_set($day) || $day == 0 );
-	my $res = $self->get_property( "min_resolution" );
-
-	if( defined $year && !defined $month && !defined $day )
-	{
-		if( $res eq "year" )
-		{
-			return sprintf( "%04d", $year );
-		}
-		return undef;
-	}
-
-	if( defined $year && defined $month && !defined $day )
-	{
-		if( $res eq "year" || $res eq "month" )
-		{
-			return sprintf( "%04d-%02d", $year, $month );
-		}
-		return undef;
-	}
-
-	if( defined $year && defined $month && defined $day )
-	{
-		return sprintf( "%04d-%02d-%02d", $year, $month, $day );
-	}
-	
-	return undef;
+	my $r = undef;
+	return $r if( !defined $year );
+	$r .= sprintf( "%04d", $year );
+	return $r if( !defined $month );
+	$r .= sprintf( "-%02d", $month );
+	return $r if( !defined $day );
+	$r .= sprintf( "-%02d", $day );
+	return $r;
 }
+
 
 sub get_unsorted_values
 {
@@ -429,6 +412,39 @@ sub get_property_defaults
 	$defaults{min_resolution} = "day";
 	$defaults{render_opts}->{res} = "day";
 	return %defaults;
+}
+
+sub trim_date
+{
+	my( $self, $date, $resolution ) = @_;
+
+	return undef unless defined $date;
+
+	return substr( $date, 0, 4  ) if $resolution == 1;
+	return substr( $date, 0, 7  ) if $resolution == 2;
+	return substr( $date, 0, 10 ) if $resolution == 3;
+	return substr( $date, 0, 13 ) if $resolution == 4;
+	return substr( $date, 0, 16 ) if $resolution == 5;
+	return substr( $date, 0, 19 ) if $resolution == 6;
+
+	return $date;
+}
+
+sub get_resolution
+{
+	my( $self, $date ) = @_;
+
+	return 0 unless defined $date;
+
+	my $l = length( $date );
+
+	return 0 if $l == 0;
+	return 1 if $l == 4;
+	return 2 if $l == 7;
+	return 3 if $l == 10;
+	return 4 if $l == 13;
+	return 5 if $l == 16;
+	return 6;
 }
 
 ######################################################################

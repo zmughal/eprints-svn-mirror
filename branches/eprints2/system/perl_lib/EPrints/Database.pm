@@ -69,7 +69,7 @@ my $DEBUG_SQL = 0;
 
 # this may not be the current version of eprints, it's the version
 # of eprints where the current desired db configuration became standard.
-$EPrints::Database::DBVersion = "2.3";
+$EPrints::Database::DBVersion = "2.3.99.1";
 
 # cjg not using transactions so there is a (very small) chance of
 # dupping on a counter. 
@@ -646,6 +646,11 @@ sub update
 				$values{$colname."_family"} = $value->{family};
 				$values{$colname."_lineage"} = $value->{lineage};
 			}
+			elsif( $field->is_type( "date", "time" ) )
+			{
+				$values{$colname} = $value;
+				$values{$colname."_resolution"} = $field->get_resolution( $value );
+			}
 			else
 			{
 				$values{$colname} = $value;
@@ -772,6 +777,11 @@ sub update
 				$sql .= $fname."_family, ";
 				$sql .= $fname."_lineage ";
 			}
+			elsif( $multifield->is_type( "date", "time" ) )
+			{
+				$sql .= $fname;
+				$sql .= $fname."_resolution";
+			}
 			else
 			{
 				$sql .= $fname;
@@ -785,6 +795,11 @@ sub update
 				$sql .= "\"".prep_value( $v->{v}->{given} )."\", ";
 				$sql .= "\"".prep_value( $v->{v}->{family} )."\", ";
 				$sql .= "\"".prep_value( $v->{v}->{lineage} )."\"";
+			}
+			elsif( $multifield->is_type( "date", "time" ) )
+			{
+				$sql .= "\"".prep_value( $v->{v} )."\"";
+				$sql .= "\"".prep_value( $multifield->get_resolution( $v->{v} ) )."\"";
 			}
 			else
 			{
@@ -1544,6 +1559,11 @@ sub _get
 				         "M.".$fname."_family, ".
 				         "M.".$fname."_lineage";
 			}
+			elsif( $field->is_type( "date", "time" ) )
+			{
+				$cols .= "M.".$fname.", ".
+				         "M.".$fname."_resolution";
+			}
 			else 
 			{
 				$cols .= "M.".$fname;
@@ -1611,14 +1631,15 @@ sub _get
 					$value->{family} = shift @row;
 					$value->{lineage} = shift @row;
 				} 
+				elsif( $field->is_type( "date", "time" ) )
+				{
+					my $v = shift @row;
+					my $res = shift @row;
+					$value = $field->trim_date( $v, $res );
+				}
 				else
 				{
 					$value = shift @row;
-				}
-
-				if( $field->is_type( "date" ) )
-				{
-					$value = trim_date( $value );
 				}
 
 				if( $field->get_property( "mainpart" ) )
@@ -1649,6 +1670,10 @@ sub _get
 		if( $multifield->is_type( "name" ) )
 		{
 			$col = "M.$mn\_honourific,M.$mn\_given,M.$mn\_family,M.$mn\_lineage";
+		}
+		elsif( $multifield->is_type( "date", "time" ) )
+		{
+			$col = "M.$mn,M.$mn\_resolution";
 		}
 		my $fields_sql = "M.$kn, ";
 		$fields_sql .= "M.pos, " if( $multifield->get_property( "multiple" ) );
@@ -1701,14 +1726,15 @@ sub _get
 				$value->{family} = shift @values;
 				$value->{lineage} = shift @values;
 			} 
+			elsif( $multifield->is_type( "date", "time" ) )
+			{
+				my $v = shift @values;
+				my $res = shift @values;
+				$value = $multifield->trim_date( $v, $res );
+			}
 			else
 			{
 				$value = shift @values;
-			}
-
-			if( $multifield->is_type( "date" ) )
-			{
-				$value = trim_date( $value );
 			}
 
 			my $subbit;
@@ -1801,6 +1827,10 @@ sub get_values
 	{
 		$fn = "$fn\_honourific,$fn\_given,$fn\_family,$fn\_lineage";
 	}
+	elsif( $field->is_type( "date", "time" ) )
+	{
+		$fn = "$fn,$fn\_resolution";
+	}
 	my $sql = "SELECT DISTINCT $fn FROM $table";
 	my $sth = $self->prepare( $sql );
 	$self->execute( $sth, $sql );
@@ -1816,6 +1846,12 @@ sub get_values
 			$value->{family} = shift @row;
 			$value->{lineage} = shift @row;
 			push @values, $value;
+		}
+		elsif( $field->is_type( "date", "time" ) )
+		{
+			my $v = shift @row;
+			my $res = shift @row;
+			push @values, $field->trim_date( $v, $res );
 		}
 		else
 		{
@@ -2262,30 +2298,6 @@ sub is_latest_version
 	return $version eq $EPrints::Database::DBVersion;
 }
 
-######################################################################
-=pod
-
-=item $ep_date = EPrints::Database::trim_date( $mysql_date )
-
-Take a mysql date which may have 00 for day or month and trim it to
-an iso date (2000 or 2000-06)
-
-=cut
-######################################################################
-
-sub trim_date
-{
-	my( $date ) = @_;
-
-	if( !EPrints::Utils::is_set( $date ) )
-	{
-		return undef;
-	}
-
-	$date =~ s/(-00)?-00$//;
-
-        return $date;
-}
 
 ######################################################################
 =pod

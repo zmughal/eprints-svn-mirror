@@ -73,8 +73,6 @@ __GENERICPOD__
 
 =cut
 
-#cjg NOT doing noise right.
-#cjg not aktually working...
 
 use EPrints::EPrint;
 use EPrints::Session;
@@ -115,17 +113,10 @@ my $PATH = "view";
 $|=1;
 
 
-#  # TODO:
-# Clean up sub page/index titles 
-# Clean up for release
-# make id fields work
-# make dir spcified on cmd line optionally.
 
 my $session = new EPrints::Session( 1 , $ARGV[0] , $noise );
 exit( 1 ) unless( defined $session );
 
-# cjg Would be nice to have multiple field browsing eg.
-# "creators.id/editors.id" but that can be done later.
 
 my $views = $session->get_archive()->get_conf( "browse_views" );
 

@@ -67,7 +67,6 @@ sub deal
 {
 	my( $session , $table , $eprint, $info ) = @_;
 
-	$eprint->datestamp();
 	if( $session->get_db()->exists( $info->{ds} , $eprint->get_value( "eprintid" ) ) )
 	{
 		print  "EXISTS!\n";

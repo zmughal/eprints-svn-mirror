@@ -98,7 +98,7 @@ sub get_system_field_info
 
 		{ name=>"pinsettime", type=>"int" },
 
-		{ name=>"joined", type=>"date", required=>1 },
+		{ name=>"joined", type=>"time", required=>1 },
 
 		{ name=>"email", type=>"email", required=>1 },
 
@@ -208,7 +208,7 @@ sub create_user
 	my $userid = _create_userid( $session );
 		
 	# And work out the date joined.
-	my $date_joined = EPrints::Utils::get_datestamp( time );
+	my $date_joined = EPrints::Utils::get_datetimestamp( time );
 
 	my $data = { 
 		"userid"=>$userid,

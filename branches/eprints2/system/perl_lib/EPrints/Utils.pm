@@ -153,9 +153,9 @@ sub df_dir
 ######################################################################
 =pod
 
-=item EPrints::Utils::render_date( $session, $datevalue )
+=item $xhtml = EPrints::Utils::render_date( $session, $datevalue )
 
-undocumented
+Render the given date or date and time as a chunk of XHTML.
 
 =cut
 ######################################################################
@@ -172,32 +172,37 @@ sub render_date
 	# remove 0'd days and months
 	$datevalue =~ s/(-0+)+$//;
 
-	my @elements = split /\-/, $datevalue;
+	my( $year,$mon,$day,$hour,$min,$sec ) = split /[- :]/, $datevalue;
 
-	if( !defined $elements[0] || $elements[0] eq "undef" || $elements[0]==0 )
+	if( !defined $year || $year eq "undef" || $year == 0 ) 
 	{
 		return $session->html_phrase( "lib/utils:date_unspecified" );
 	}
 
 	# 1999
-	if( scalar @elements == 1 )
+	my $r = $year;
+
+	$r = EPrints::Utils::get_month_label( $session, $mon )." $r" if( defined $mon );
+	$r = "$day $r" if( defined $day );
+	if( defined $hour )
 	{
-		return $session->make_text( $elements[0] );
-	}
+		my $time;
+		if( defined $sec ) 
+		{
+			$time = sprintf( "%02d:%02d:%02d",$hour,$min,$sec );
+		}
+		elsif( defined $min )
+		{
+			$time = sprintf( "%02d:%02d",$hour,$min );
+		}
+		else
+		{
+			$time = sprintf( "%02d",$hour );
+		}
+		$r = "$time on $r";
+	}	
 
-	# 1999-02
-	if( scalar @elements == 2 )
-	{
-		return $session->make_text( EPrints::Utils::get_month_label( $session, $elements[1] )." ".$elements[0] );
-	}
-
-#	if( $#elements != 2 || $elements[1] < 1 || $elements[1] > 12 )
-#	{
-#		return $session->html_phrase( "lib/utils:date_invalid" );
-#	}
-
-	# 1999-02-02
-	return $session->make_text( $elements[2]." ".EPrints::Utils::get_month_label( $session, $elements[1] )." ".$elements[0] );
+	return $session->make_text( $r );
 }
 
 
@@ -1616,20 +1621,14 @@ sub render_xhtml_field
 }
 	
 
-#
-# ( $year, $month, $day ) = get_date( $time )
-#
-#  Static method that returns the given time (in UNIX time, seconds 
-#  since 1.1.79) in the format used by EPrints and MySQL (YYYY-MM-DD).
-#
-
 
 ######################################################################
 =pod
 
-=item EPrints::Utils::get_date( $time )
+=item ($year,$month,$day,$hour,$min,$sec) = EPrints::Utils::get_date( $time )
 
-undocumented
+Static method that returns the given time (in UNIX time, seconds 
+since 1.1.79) in an array.
 
 =cut
 ######################################################################
@@ -1642,6 +1641,9 @@ sub get_date
 	my $day = $date[3];
 	my $month = $date[4]+1;
 	my $year = $date[5]+1900;
+	my $sec = $date[0];
+	my $min = $date[1];
+	my $hour = $date[2];
 	
 	# Ensure number of digits
 	while( length $day < 2 )
@@ -1654,27 +1656,18 @@ sub get_date
 		$month = "0".$month;
 	}
 
-	return( $year, $month, $day );
+	return( $year, $month, $day, $hour, $min, $sec );
 }
-
-
-######################################################################
-#
-# $datestamp = get_datestamp( $time )
-#
-#  Static method that returns the given time (in UNIX time, seconds 
-#  since 1.1.79) in the format used by EPrints and MySQL (YYYY-MM-DD).
-#
-######################################################################
 
 
 
 ######################################################################
 =pod
 
-=item EPrints::Utils::get_datestamp( $time )
+=item  $datestamp = EPrints::Utils::get_datestamp( $time )
 
-undocumented
+Method that returns the given time (in UNIX time, seconds 
+since 1.1.79) in the format used by EPrints and MySQL (YYYY-MM-DD).
 
 =cut
 ######################################################################
@@ -1686,6 +1679,29 @@ sub get_datestamp
 	my( $year, $month, $day ) = EPrints::Utils::get_date( $time );
 
 	return( $year."-".$month."-".$day );
+}
+
+######################################################################
+=pod
+
+=item  $datetimestamp = EPrints::Utils::get_datetimestamp( $time )
+
+Method that returns the given time (in UNIX time, seconds 
+since 1.1.79) in the datetime format used by EPrints and MySQL
+YYYY-MM-DD HH:MM:SS
+
+Does not zero pad.
+
+=cut
+######################################################################
+
+sub get_datetimestamp
+{
+	my( $time ) = @_;
+
+	my( $year, $month, $day, $hour, $min, $sec ) = EPrints::Utils::get_date( $time );
+
+	return( "$year-$month-$day $hour:$min:$sec" );
 }
 
 ######################################################################

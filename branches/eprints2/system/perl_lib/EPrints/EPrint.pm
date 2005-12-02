@@ -117,21 +117,25 @@ sub get_system_field_info
 	{ name=>"userid", type=>"itemref", 
 		datasetid=>"user", required=>0 },
 
-	{ name=>"dir", type=>"text", required=>0 },
+	{ name=>"dir", type=>"text", required=>0, can_clone=>0 },
 
-	{ name=>"datestamp", type=>"date", required=>0 },
+	{ name=>"datestamp", type=>"time", required=>0, 
+		render_opts=>{res=>"minute"}, can_clone=>0 },
+
+	{ name=>"lastmod", type=>"time", required=>0, 
+		render_opts=>{res=>"minute"}, can_clone=>0 },
 
 	{ name=>"type", type=>"datatype", datasetid=>"eprint", required=>1, 
 		input_rows=>"ALL" },
 
 	{ name=>"succeeds", type=>"itemref", required=>0,
-		datasetid=>"eprint" },
+		datasetid=>"eprint", can_clone=>0 },
 
 	{ name=>"commentary", type=>"itemref", required=>0,
-		datasetid=>"eprint" },
+		datasetid=>"eprint", can_clone=>0 },
 
 	{ name=>"replacedby", type=>"itemref", required=>0,
-		datasetid=>"eprint" },
+		datasetid=>"eprint", can_clone=>0 },
 
 	);
 }
@@ -447,8 +451,6 @@ sub clone
 		return undef;
 	}
 
-	$new_eprint->datestamp();
-
 	unless( $nolink )
 	{
 		# We assume the new eprint will be a later version of this one,
@@ -513,16 +515,33 @@ sub _transfer
 		$dataset,
 		{ "eprintid"=>$self->get_value( "eprintid" ) } );
 
-	# Datestamp every time we move between tables.
-	$self->datestamp();
+	if( !$success ) { 
+		$self->{session}->get_archive->log( 
+"Could not add record ".$self->get_value( "eprintid" )." to ".$dataset->id );
+		return 0;
+	}
 
 	# Write self to new table
-	$success =  $success && $self->commit();
+	# (force it to write the eprint even if no fields have
+	# changed.)
+	$success =  $self->commit( 1 );
+
+	if( !$success ) { 
+		$self->{session}->get_archive->log( 
+"Could not commit record ".$self->get_value( "eprintid" )." to ".$dataset->id );
+		return 0;
+	}
 
 	# If OK, remove the old copy
-	$success = $success && $self->{session}->get_db()->remove(
+	$success = $self->{session}->get_db()->remove(
 		$old_dataset,
 		$self->get_value( "eprintid" ) );
+
+	if( !$success ) { 
+		$self->{session}->get_archive->log( 
+"Could not fremove record ".$self->get_value( "eprintid" )." from ".$old_dataset->id );
+		return 0;
+	}
 
 	# Need to clean up stuff if we move this record out of the
 	# archive.
@@ -539,7 +558,7 @@ sub _transfer
 		&{$status_change_fn}( $self, $old_dataset->id, $dataset->id );
 	}
 	
-	return( $success );
+	return( 1 );
 }
 
 
@@ -580,20 +599,42 @@ sub remove
 ######################################################################
 =pod
 
-=item $success = $eprint->commit
+=item $success = $eprint->commit( [$force] );
 
-Commit any changes that might have been made to the database
+Commit any changes that might have been made to the database.
+
+If the item has not be changed then this function does nothing unless
+$force is true.
 
 =cut
 ######################################################################
 
 sub commit
 {
-	my( $self ) = @_;
+	my( $self, $force ) = @_;
 
 	$self->{session}->get_archive()->call( 
 		"set_eprint_automatic_fields", 
 		$self );
+
+	if( !$self->is_set( "datestamp" ) && $self->{dataset}->id eq "archive" )
+	{
+		$self->set_value( 
+			"datestamp" , 
+			EPrints::Utils::get_datetimestamp( time ) );
+	}
+
+	if( !$force ) 
+	{
+		if( !defined $self->{changed} || scalar( %{$self->{changed}} ) == 0 )
+		{
+			return 1;
+		}
+	}
+
+	$self->set_value( 
+		"lastmod" , 
+		EPrints::Utils::get_datetimestamp( time ) );
 
 	my $success = $self->{session}->get_db()->update(
 		$self->{dataset},
@@ -1162,24 +1203,6 @@ sub get_all_documents
 }
 
 
-######################################################################
-=pod
-
-=item $eprint->datestamp
-
-Set the datestamp field to today's date (GMT).
-
-=cut
-######################################################################
-
-sub datestamp
-{
-	my( $self ) = @_;
-
-	$self->set_value( 
-		"datestamp" , 
-		EPrints::Utils::get_datestamp( time ) );
-}
 
 ######################################################################
 =pod
@@ -2189,6 +2212,25 @@ sub render_export_links
 	return $ul;
 }
 
+
+######################################################################
+=pod
+
+=item $eprint->datestamp
+
+DEPRECATED.
+
+=cut
+######################################################################
+
+sub datestamp
+{
+	my( $self ) = @_;
+
+	my( $package,$filename,$line,$subroutine ) = caller(2);
+	$self->{session}->get_archive->log( 
+"The \$eprint->datestamp method is deprecated. It was called from $filename line $line." );
+}
 
 ######################################################################
 =pod

@@ -46,7 +46,6 @@ sub deal
 {
 	my( $session , $table , $eprint, $info ) = @_;
 
-	$eprint->datestamp();
 	$eprint->set_value( "userid", $info->{userid} );
 	$eprint = EPrints::EPrint::create( $session, $info->{ds}, $eprint->get_data() );
 	my $doc = EPrints::Document::create( $session, $eprint );

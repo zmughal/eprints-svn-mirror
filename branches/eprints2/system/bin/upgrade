@@ -416,6 +416,131 @@ END
 		$db->set_version( $dbversion );
 	}
 }
+
+
+
+
+
+if( $dbversion eq "2.3" )
+{
+	my $sql;
+	print <<END;
+======================================================================
+About to upgrade tables from 2.3 to 2.3.99.1
+
+This will:
+
+ * Change datestamp to a datetime (was a date)
+ * Add a new datetime called "first live" with
+    the default value taken from datestamp.
+
+Are you sure you want to do this? (yes/no)
+END
+	
+	my $input = <STDIN>;
+	chomp( $input );
+	if( $input ne "yes" )
+	{
+		print "Aborting then.\n";
+		$session->terminate();
+		exit( 1 );
+	}
+
+	my $ok = 1;
+
+	# not checking $ok properly.
+
+
+	$sql = "ALTER TABLE users MODIFY joined DATETIME";
+	$db->do( $sql );
+
+
+	foreach my $table_id ( "inbox","buffer","archive","deletion" )
+	{
+		$sql = "ALTER TABLE $table_id MODIFY datestamp DATETIME";
+		$db->do( $sql );
+		$sql = "ALTER TABLE $table_id ADD lastmod DATETIME AFTER datestamp";
+		$db->do( $sql );
+		$sql = "UPDATE $table_id SET lastmod = datestamp";
+		$db->do( $sql );
+	}
+
+	# remove the datestamp for items which are not yet live
+	foreach my $table_id ( "inbox","buffer" )
+	{
+		$sql = "UPDATE $table_id SET datestamp = NULL";
+		$db->do( $sql );
+	}
+
+
+	# add the ordervalues for lastmod
+	
+	my @tables = $db->get_tables;
+	foreach my $table ( @tables )
+	{
+		if( $table =~ m/^(archive|buffer|inbox|deletion)__ordervalues_.*$/ )
+		{
+			$sql = "ALTER TABLE $table ADD lastmod text AFTER datestamp",
+			$db->do( $sql );
+		}
+	}
+
+	# add a resolution column to every date or datestamp field
+
+	my @datefields = ();
+	foreach my $table ( @tables )
+	{
+		next unless( $table =~ m/^(archive|buffer|inbox|deletion|users|document|subscription|subject)/ );
+		
+		$sql = "DESCRIBE $table";
+		my $sth = $db->prepare( $sql );
+		$ok = $ok && $db->execute( $sth, $sql );
+		while( my @row = $sth->fetchrow_array )
+		{
+			next unless $row[1] eq "date" || $row[1] eq "datetime";
+			push @datefields, [ $table, $row[0] ];
+		}
+        	$sth->finish;
+	}
+	foreach my $pair ( @datefields )
+	{
+		my( $table, $col ) = @{$pair};
+		my $rescol = $col."_resolution";
+		print $pair->[0]." .. ".$pair->[1]."\n";
+		$sql = "ALTER TABLE $table ADD $rescol INTEGER AFTER $col";
+		$db->do( $sql );
+		$sql = "UPDATE $table SET $rescol=3";
+		$db->do( $sql );
+		$sql = "UPDATE $table SET $rescol=2 where day($col)=0";
+		$db->do( $sql );
+		$sql = "UPDATE $table SET $rescol=1 where month($col)=0";
+		$db->do( $sql );
+	}
+
+	if( !$ok )
+	{
+		print "\nFailed.\n";
+		print "Please investigate cause of errors then try again.\n";
+	}
+	else
+	{
+		print "\n2.3 -> 2.3.99.1 done!\n";
+		$dbversion = "2.3.99.1";
+		$db->set_version( $dbversion );
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
 if( $TARGET eq $dbversion)
 {
 	if( $noise>=1 )

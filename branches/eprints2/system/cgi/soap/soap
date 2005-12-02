@@ -112,7 +112,6 @@ sub putEprint($)
 	{
 		die "Failed to create eprint";
 	}
-	$eprint->datestamp();
 	$eprint->commit();
 
 	foreach my $docdata ( @{$data->{documents}} )

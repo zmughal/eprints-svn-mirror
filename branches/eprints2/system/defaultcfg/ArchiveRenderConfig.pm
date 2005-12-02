@@ -286,6 +286,14 @@ sub eprint_render
 			$eprint->render_value( "datestamp" ) ) );
 	}
 
+	if( $eprint->is_set( "lastmod" ) )
+	{
+		$table->appendChild( _render_row(
+			$session,
+			$session->html_phrase( "eprint_fieldname_lastmod" ),
+			$eprint->render_value( "lastmod" ) ) );
+	}
+
 
 	# Now show the version and commentary response threads
 	if( $has_multiple_versions )
@@ -394,9 +402,8 @@ sub eprint_render_full
 				border=>"0",
 				cellpadding=>"3" );
 	$page->appendChild( $table );
-	my $field;
-	foreach $field ( $eprint->get_dataset()->get_type_fields(
-		  $eprint->get_value( "type" ) ) )
+	my @tfields = $eprint->get_dataset()->get_type_fields( $eprint->get_value( "type" ) );
+	foreach my $field ( @tfields )
 	{
 		next if( $field->get_name() eq "suggestions" );
 

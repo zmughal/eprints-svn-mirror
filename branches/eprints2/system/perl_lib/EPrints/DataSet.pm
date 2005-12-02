@@ -947,7 +947,7 @@ sub get_type_fields
 	if( !defined $fields )
 	{
 		$self->{archive}->log( "Unknown type in get_type_fields ($type)" );
-		return [];
+		return ();
 	}
 	return @{$fields};
 }
