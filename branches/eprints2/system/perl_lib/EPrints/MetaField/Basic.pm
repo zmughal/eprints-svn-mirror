@@ -1380,6 +1380,7 @@ sub get_property_defaults
 		requiredlangs 	=> [],
 		search_cols 	=> $EPrints::MetaField::FROM_CONFIG,
 		sql_index 	=> 1,
+		text_index 	=> 0,
 		toform 		=> $EPrints::MetaField::UNDEF,
 		type 		=> $EPrints::MetaField::REQUIRED );
 }
