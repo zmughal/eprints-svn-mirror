@@ -2829,6 +2829,34 @@ PACKAGE: 2.2.99.2
  - Changed the layout of $eprint->_transfer
  - Removed out-of-date comments from generate_views
 
+2005-12-06 cjg
 
+ - Rebuilt the indexer! It now works like it did in 2.2 except that
+    when fields are modified they are put in a queue and the indexer
+    pulls things off of the queue. This means significant changes 
+    through some internal systems but very few that will affect 
+    anybody.
+ - Removed the "index rebuilt" information from search results and
+    the status page. 
+ - Added a new index "rindex" which is the reverse of "index". Used
+    to remove things from the index again.
+ - Added code to the upgrade script to remove old index tables and
+    build new ones.
+ - Added code to all dataobj's to queue indexing when items are created
+    or modified.
+ - Rewrote bin/indexer
+ - Added bin/reindex_dataset which queues an entire dataset for re-
+    indexing. An option of --purge will remove all existing index
+    information first.
+ - New property text_index which if false skips indexinf for that field.
+ - text_index and sql_index now have sensible defaults for each 
+    field type. ie. text fields are text_indexed and not sql_indexed
+    and int fields are the reverse.
+ - Index is no longer an object.
+ - When a document is modified, the related eprint has it's _fulltext_
+    field queued for indexing.
+ - updated explain_sql_tables
+
+   
 
 ----------------------------------------------------------------------- 

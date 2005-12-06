@@ -155,7 +155,7 @@ $fields->{eprint} = [
 
 	{ name => "issn", type => "text" },
 
-	{ name => "fileinfo", type => "longtext" },
+	{ name => "fileinfo", type => "longtext",
 		render_value=>\&render_fileinfo },
 
 	{ name => "book_title", type => "text" },
