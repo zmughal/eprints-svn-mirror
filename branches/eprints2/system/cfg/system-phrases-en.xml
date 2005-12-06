@@ -132,7 +132,6 @@ EPrints Modules
     <ep:phrase ref="lib/searchexpression:results_for">Results for <ep:pin ref="title" /></ep:phrase>
     <ep:phrase ref="lib/searchexpression:results">Displaying results <span class="numeral"><ep:pin ref="from" /></span> to <span class="numeral"><ep:pin ref="to" /></span> of <span class="numeral"><ep:pin ref="n" /></span>.</ep:phrase>
     <ep:phrase ref="lib/searchexpression:search_time">Search time: <ep:pin ref="searchtime" />s.</ep:phrase>
-    <ep:phrase ref="lib/searchexpression:last_index">[Index last built at: <ep:pin ref="index_datestamp" />]</ep:phrase>
     <ep:phrase ref="lib/searchexpression:noresults">No matches.</ep:phrase>
     <ep:phrase ref="lib/searchexpression:results_page">
 <ep:pin ref="controls" />
@@ -140,7 +139,6 @@ EPrints Modules
    <div style="border: solid 1px #a0a0a0; float: right; width: 35%; padding: 0.5em; margin-left: 0.5em; margin-bottom: 0.5em;"><ep:pin ref="export" /></div>
    <ep:pin ref="searchdesc" /><br />
    <ep:pin ref="matches" /> <ep:pin ref="time" /><br />
-   <span style="color: #ccc"><ep:pin ref="last_index" /></span><br />
 </p>
 <ep:pin ref="results" />
 <ep:pin ref="controls_if_matches" />
@@ -520,11 +518,9 @@ User Area CGI Scripts
     <ep:phrase ref="cgi/users/status:articles"><h2>Items</h2></ep:phrase>
     <ep:phrase ref="cgi/users/status:diskspace"><h2>Disk Space</h2></ep:phrase>
     <ep:phrase ref="cgi/users/status:subscriptions"><h2>Subscriptions</h2></ep:phrase>
-    <ep:phrase ref="cgi/users/status:index_updates"><h2>Indexes</h2></ep:phrase>
     <ep:phrase ref="cgi/users/status:subsent">Last completed subscription mailing</ep:phrase>
     <ep:phrase ref="cgi/users/status:subcount">Total Number</ep:phrase>
     <ep:phrase ref="cgi/users/status:set_archive">Items in Repository:</ep:phrase>
-    <ep:phrase ref="cgi/users/status:indexupdate">Last completed indexing</ep:phrase>
     <ep:phrase ref="cgi/users/status:set_buffer">Items in Editorial Review:</ep:phrase>
     <ep:phrase ref="cgi/users/status:set_inbox">Items in User Areas:</ep:phrase>
     <ep:phrase ref="cgi/users/status:set_deletion">Items Deleted:</ep:phrase>

@@ -388,6 +388,7 @@ sub get_property_defaults
 	$defaults{input_rows} = $EPrints::MetaField::FROM_CONFIG;
 	$defaults{search_rows} = $EPrints::MetaField::FROM_CONFIG;
 	$defaults{options} = $EPrints::MetaField::REQUIRED;
+	$defaults{text_index} = 0;
 	return %defaults;
 }
 

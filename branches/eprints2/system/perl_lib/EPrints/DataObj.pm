@@ -570,6 +570,63 @@ sub export
 ######################################################################
 =pod
 
+=item $dataobj->queue_changes
+
+Add all the changed fields into the indexers todo queue.
+
+=cut
+######################################################################
+
+sub queue_changes
+{
+	my( $self ) = @_;
+
+	foreach my $fieldname ( keys %{$self->{changed}} )
+	{
+		my $field = $self->{dataset}->get_field( $fieldname );
+
+		next unless( $field->get_property( "text_index" ) );
+
+		$self->{session}->get_db->index_queue( 
+			$self->{dataset}->id,
+			$self->get_id,
+			$fieldname );
+	}	
+}
+
+######################################################################
+=pod
+
+=item $dataobj->queue_all
+
+Add all the fields into the indexers todo queue.
+
+=cut
+######################################################################
+
+sub queue_all
+{
+	my( $self ) = @_;
+
+	my @fields = $self->{dataset}->get_fields;
+	foreach my $field ( @fields )
+	{
+		next unless( $field->get_property( "text_index" ) );
+
+		$self->{session}->get_db->index_queue( 
+			$self->{dataset}->id,
+			$self->get_id,
+			$field->get_name );
+	}	
+}
+
+
+######################################################################
+=pod
+
+######################################################################
+=pod
+
 =back
 
 =cut

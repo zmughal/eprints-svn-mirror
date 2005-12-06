@@ -212,29 +212,6 @@ foreach my $freq ( "never", "daily", "weekly", "monthly" )
 			$session->make_text( $sent ) ) );
 }
 
-$table = $session->make_element( "table", border=>"0" );
-$html->appendChild( $session->html_phrase( "cgi/users/status:index_updates" ) );
-$html->appendChild( $table );
-
-$table->appendChild(
-	render_row( 
-		$session,
-		undef,
-		$session->html_phrase( "cgi/users/status:indexupdate" ) ) );
-my @ds_ids = &EPrints::DataSet::get_sql_dataset_ids;
-foreach my $ds_id ( @ds_ids )
-{
-	my $ds = $session->get_archive->get_dataset( $ds_id );
-	my $index = new EPrints::Index( $session, $ds );
-	my $heading = $session->make_doc_fragment;
-	$heading->appendChild( $ds->render_name( $session ) );
-	$heading->appendChild( $session->make_text( ":" ) );
-	$table->appendChild(
-		render_row( 
-			$session,
-			$heading,
-			$session->make_text( $index->get_last_timestamp ) ) );
-}
 
 $session->build_page( 
 	$session->html_phrase( "cgi/users/status:title" ),

@@ -72,34 +72,6 @@ Log to I<filename> rather than default indexer log.
 
 Set the level of detail to log. Level may be 0-5.
 
-=over 8
-
-=item 0
-
-Do not log anything.
-
-=item 1
-
-Report start, stop and errors.
-
-=item 2 [default]
-
-All above, plus report names of archives being indexed and warnings.
-
-=item 3
-
-All above, plus report processes starting and stopping and each dataset being indexed.
-
-=item 4
-
-All above, plus report details of index process.
-
-=item 5
-
-All above, plus report id of every item indexed.
-
-=back
-
 =item B<--rollcount> I<number>
 
 Set the number of once-through logs that should be kept. If set to zero then indexer will never roll the logs but rather just keep writing to the main log.
@@ -269,7 +241,6 @@ END
 #	$session->terminate;
 #}
 
-$0 = "EPrints Indexer for ".$EPrints::SystemSettings::conf->{base_path}.": Parent Process";
 if( !$force && -e $p->{pidfile} )
 {
 	my $pid = get_pid( $p );
@@ -281,11 +252,11 @@ It may have crashed.
 To check if the process is still running (on a linux system)
 use:
 
-ps auwwx | grep EPrints
+ps auwwx | grep indexer
 
 Options to "ps" vary on other systems. You may also try:
 
-ps -ef | grep EPrints
+ps -ef | grep indexer
 
 If indexer is not already running you may either:
  * delete the PID file: $p->{pidfile} 
@@ -294,7 +265,6 @@ If indexer is not already running you may either:
 END
 	exit 1;
 }
-
 close STDERR;
 if( $p->{loglevel} > 0 )
 {
@@ -343,102 +313,113 @@ indexlog( "** Indexer control process started with process ID: $$" ) if( $p->{lo
 
 while( 1 ) 
 {
-	indexlog() if( $p->{loglevel} > 0 );
 	indexlog( "*** Starting indexing" ) if( $p->{loglevel} > 1 );
-	my @arc_ids = EPrints::Config::get_archive_ids();
-	foreach my $arc_id ( sort @arc_ids )
+	
+	$p->{kid} = fork();
+	if( $p->{kid} == 0 )
 	{
-
-		# nb. using load_archive_config not get_archive_config. This
-		# reloads the XML file each time round.
-        	my $archive_config = EPrints::Config::load_archive_config( $arc_id );
-
-		# Don't index things which don't want to be index
-		if( !$archive_config->{index} )
+		my @sessions = ();
+		my @arc_ids = EPrints::Config::get_archive_ids();
+		foreach my $arc_id ( sort @arc_ids )
 		{
-			# sleep for a little while so we don't hammer the machine
-			# if there are lots of non-indexing archives, or even
-			# no indexing archives for a while.
-			indexlog( "*** Will not index '$arc_id': indexing disabled by config" ) if( $p->{loglevel} > 1 );
-			sleep 60;
-			next;
+			my $archive = EPrints::Archive->new_archive_by_id( $arc_id );
+			next unless $archive->get_conf( "index" );
+			push @sessions, new EPrints::Session( 1 , $arc_id );
 		}
 
-		indexlog( "*** Staring index of archive '$arc_id'" ) if( $p->{loglevel} > 1 );
+		$SIG{TERM} = sub { 
+			indexlog( "** Worker process terminated: $$" ) if( $p->{loglevel} > 2 );
+			foreach( @sessions ) { $_->terminate; }
+			exit;
+		};
+		$SIG{ALRM} = sub {
+			indexlog( "** Wake up... time to die: $$" ) if( $p->{loglevel} > 2 );
+			indexlog( "** Worker process restarting: $$" ) if( $p->{loglevel} > 2 );
+			foreach( @sessions ) { $_->terminate; }
+			exit;
+		};
+		# restart once a day in case of memory leaks
+		alarm( 60*60*24 ) unless $p->{once};  
+			
+		indexlog( "** Worker process started: $$" ) if( $p->{loglevel} > 2 );
+		my $cmd = "/usr/bin/renice 8 $$";	
+		`$cmd`;
 
-		$p->{kid} = fork();
-		if( $p->{kid} == 0 )
+		while( 1 ) 
 		{
-			indexlog( "** Worker process started: $$" ) if( $p->{loglevel} > 2 );
-			my $cmd = "/usr/bin/renice 8 $$";	
-			`$cmd`;
-			my $index;
-			my $session;
-			$SIG{TERM} = sub { 
-				indexlog( "** Worker process terminated: $$" ) if( $p->{loglevel} > 2 );
-				$index->cleanup if( defined $index );
-				$session->terminate if( defined $session );
-				exit;
-			};
-			$session = new EPrints::Session( 1 , $arc_id , $p->{noise} );
+			my $seen_action = 0;
 
-			my @ds_ids = &EPrints::DataSet::get_sql_dataset_ids;
-			foreach my $ds_id ( sort @ds_ids )
+			foreach my $session ( sort @sessions )
 			{
-				indexlog( "** Indexing dataset '$ds_id' of '$arc_id'" ) if( $p->{loglevel} > 2 );
-				$0 = "EPrints Indexer for ".$EPrints::SystemSettings::conf->{base_path}.": $arc_id/$ds_id";
-				if( !defined $session ) 
-				{
-					indexlog( "**** Error starting eprints session on '$arc_id'" ) if( $p->{loglevel} > 0 );
-					exit( 1 );
+				# $session->get_db->set_debug( 1 );
+				my $sql = "SELECT UNIX_TIMESTAMP(NOW()), field FROM indexqueue ORDER BY added LIMIT 10";
+				my $sth = $session->get_db->prepare( $sql );
+				$session->get_db->execute( $sth, $sql );
+				my( $now, $field ) = @_;
+				my %todo = (); # use a hash so we only do each field in the set once.
+				while( my @info = $sth->fetchrow_array ) {
+					$todo{$info[1]} = 1;
+					$seen_action = 1;
+					$now = $info[0] unless defined $now;
 				}
-				my $ilog;
-				my $elog;
-				if( $p->{loglevel} > 1 )
+				$sth->finish;
+				foreach my $fieldcode ( keys %todo )
 				{
-					$elog = eval 'sub { my( $txt ) = @_; indexlog( "*** ".$txt ); }';
-				}
-				else
-				{
-					$elog = sub {;};
-				}
+					my( $datasetid, $objectid, $fieldid ) = split( /\./, $fieldcode );
+		
+					my $dataset = $session->get_archive->get_dataset( $datasetid );
+					if( !defined $dataset )
+					{
+						indexlog( "Could not make dataset: $datasetid ($fieldcode)" );
+						next;
+					}
+					my $field = $dataset->get_field( $fieldid );
+					if( !defined $field )
+					{
+						indexlog( "No such field: $fieldid (found on index queue).. skipping.\n" );
+						next;
+					}
+		
+					indexlog( "* de-indexing: $fieldcode" ) if( $p->{loglevel} > 4 );
+					EPrints::Index::remove( $session, $dataset, $objectid, $fieldid );
 
-				if( $p->{loglevel} > 4 )
+					next unless( $field->get_property( "text_index" ) );
+
+					my $item = $dataset->get_object( $session, $objectid );
+					next unless ( defined $item );
+
+					my $value = $item->get_value( $fieldid );
+					
+					next unless EPrints::Utils::is_set( $value );	
+
+					indexlog( "* indexing: $fieldcode" ) if( $p->{loglevel} > 4 );
+					EPrints::Index::add( $session, $dataset, $objectid, $fieldid, $value );
+				}
+				# always remove them, even if they didn't index right.
+				foreach my $fieldcode ( keys %todo )
 				{
-					$ilog = \&indexlog;
+					my $sql = "DELETE FROM indexqueue where field=\"$fieldcode\" AND added<FROM_UNIXTIME($now-1)";
+					$session->get_db->do( $sql );
 				}
 				
-				$index = new EPrints::Index( 
-						$session, 
-						$session->get_archive->get_dataset( $ds_id ),
-						$ilog,
-						$elog );
-				$index->change_pname( 1 );
-				indexlog( "* Creating temporary index tables for '$ds_id' of '$arc_id'" ) if( $p->{loglevel} > 3 );
-				$index->create;
-				indexlog( "* Creating index for '$ds_id' of '$arc_id'" ) if( $p->{loglevel} > 3 );
-				$index->build;
-				indexlog( "* Installing index for '$ds_id' of '$arc_id'" ) if( $p->{loglevel} > 3 );
-				$index->install;
-				indexlog( "* Cleaning up after '$ds_id' of '$arc_id'" ) if( $p->{loglevel} > 3 );
-				$index->cleanup;
-				undef $index;
-				indexlog( "* Done indexing dataset '$ds_id' of '$arc_id'" ) if( $p->{loglevel} > 3 );
 			}
 
-
-			indexlog( "** Sub process exiting: $$" ) if( $p->{loglevel} > 2 );
-			$session->terminate;
-			exit;
+			indexlog( "* tick: $$" ) if( $p->{loglevel} > 3 );
+		
+			next if( $seen_action );
+			
+			if( $p->{once} )	
+			{
+				indexlog( "** Queue empty: Sub process exiting: $$" ) if( $p->{loglevel} > 2 );
+				foreach( @sessions ) { $_->terminate; }
+				exit;
+			}
+			sleep 30; 
 		}
-		wait; 
-		undef $p->{kid};
-
-		indexlog( "*** Done indexing archive '$arc_id'" ) if( $p->{loglevel} > 1 );
-		sleep 5;
+		exit;
 	}
-	indexlog( "*** Done indexing all archives" ) if( $p->{loglevel} > 1 );
-	indexlog() if( $p->{loglevel} > 0 );
+	wait; 
+	undef $p->{kid};
 
 	stopindexer($p) if( $p->{once} );
 

@@ -162,8 +162,10 @@ sub create
 	# Add the subscription to the database
 	$session->get_db()->add_record( $subs_ds, $data );
 
+	my $subs = EPrints::Subscription->new( $session, $id );
+	$subs->queue_all;
 	# And return it as an object
-	return EPrints::Subscription->new( $session, $id );
+	return $subs;
 }
 
 
@@ -217,6 +219,8 @@ sub commit
 	my $success = $self->{session}->get_db()->update(
 		$subs_ds,
 		$self->{data} );
+
+	$self->queue_changes;
 
 	return $success;
 }

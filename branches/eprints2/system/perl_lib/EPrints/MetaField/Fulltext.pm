@@ -67,7 +67,6 @@ sub get_index_codes_basic
 	}
 	my $doc = EPrints::Document->new( $session, $value );
 
-
 	my $eprint =  $doc->get_eprint;
 	return( [], [], [] ) unless( defined $eprint );
 
@@ -75,7 +74,6 @@ sub get_index_codes_basic
 	my $indexcodes_file = $doc->indexcodes_file;
 	my @s1 = stat( $words_file );
 	my @s2 = stat( $indexcodes_file );
-
     	if( defined $s1[9] && defined $s2[9] && $s2[9] > $s1[9] )
 	{
 		my $codes = [];

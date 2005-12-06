@@ -45,6 +45,7 @@ sub get_property_defaults
 	my( $self ) = @_;
 	my %defaults = $self->SUPER::get_property_defaults;
 	$defaults{datasetid} = $EPrints::MetaField::REQUIRED;
+	$defaults{text_index} = 0;
 	return %defaults;
 }
 

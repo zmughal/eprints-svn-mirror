@@ -197,6 +197,8 @@ sub commit
 			$self->{dataset},
 			$self->{data} );
 	
+	$self->queue_changes;
+
 	# Need to update all children in case ancesors have changed.
 	# This is pretty slow esp. For a top level subject, but subject
 	# changes will be rare and only done by admin, so mnya.
@@ -314,8 +316,12 @@ END
 
 	my $newsub = EPrints::Subject->new_from_data( $session, $newsubdata );
 
+	$newsub->queue_all;
+
 	$newsub->commit(); # will update ancestors
 
+
+	
 	return $newsub;
 }
 

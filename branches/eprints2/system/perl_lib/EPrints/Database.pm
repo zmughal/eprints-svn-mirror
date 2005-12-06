@@ -253,6 +253,8 @@ sub create_archive_tables
 
 	$success = $success && $self->_create_counter_table();
 
+	$success = $success && $self->_create_indexqueue_table();
+
 	$self->create_version_table;	
 	
 	$self->set_version( $EPrints::Database::DBVersion );
@@ -278,65 +280,141 @@ sub create_dataset_tables
 	
 	my $rv = 1;
 
+	$rv = $rv && $self->create_dataset_index_tables( $dataset );
+
+	$rv = $rv && $self->create_dataset_ordervalues_tables( $dataset );
+
+	# Create the main tables
+	$rv = $rv && $self->create_table( 
+				$dataset->get_sql_table_name, 
+				$dataset, 
+				1, 
+				$dataset->get_fields( 1 ) );
+
+	return $rv;
+}
+
+######################################################################
+=pod
+
+=item $success = $db->create_dataset_index_tables( $dataset )
+
+Create all the index tables for a single dataset.
+
+=cut
+######################################################################
+
+sub create_dataset_index_tables
+{
+	my( $self, $dataset ) = @_;
+	
+	my $rv = 1;
+
 	my $keyfield = $dataset->get_key_field()->clone;
 
-	my $fieldpos = EPrints::MetaField->new( 
-		archive=> $self->{session}->get_archive(),
-		name => "pos", 
-		type => "int" );
-	my $fieldword = EPrints::MetaField->new( 
+	my $field_fieldword = EPrints::MetaField->new( 
 		archive=> $self->{session}->get_archive(),
 		name => "fieldword", 
 		type => "text");
-	my $fieldids = EPrints::MetaField->new( 
+	my $field_pos = EPrints::MetaField->new( 
+		archive=> $self->{session}->get_archive(),
+		name => "pos", 
+		type => "int" );
+	my $field_ids = EPrints::MetaField->new( 
 		archive=> $self->{session}->get_archive(),
 		name => "ids", 
 		type => "longtext");
 
-	# Create the index tables
 	$rv = $rv & $self->create_table(
-			$dataset->get_sql_index_table_name,
-			$dataset,
-			0, # no primary key
-			( $fieldword, $fieldpos, $fieldids ) );
-	$rv = $rv & $self->create_table(
-			$dataset->get_sql_rindex_table_name,
-			$dataset,
-			0, # no primary key
-			( $keyfield, $fieldword ) );
-	return 0 unless $rv;
+		$dataset->get_sql_index_table_name,
+		$dataset,
+		0, # no primary key
+		( $field_fieldword, $field_pos, $field_ids ) );
 
+	#######################
+
+		
+	my $field_fieldname = EPrints::MetaField->new( 
+		archive=> $self->{session}->get_archive(),
+		name => "fieldname", 
+		type => "text" );
+	my $field_grepstring = EPrints::MetaField->new( 
+		archive=> $self->{session}->get_archive(),
+		name => "grepstring", 
+		type => "text");
+
+	$rv = $rv & $self->create_table(
+		$dataset->get_sql_grep_table_name,
+		$dataset,
+		0, # no primary key
+		( $keyfield, $field_fieldname, $field_grepstring ) );
+
+
+	return 0 unless $rv;
+	###########################
+
+	my $field_field = EPrints::MetaField->new( 
+		archive=> $self->{session}->get_archive(),
+		name => "field", 
+		type => "text" );
+	my $field_word = EPrints::MetaField->new( 
+		archive=> $self->{session}->get_archive(),
+		name => "word", 
+		type => "text");
+
+	$rv = $rv & $self->create_table(
+		$dataset->get_sql_rindex_table_name,
+		$dataset,
+		0, # no primary key
+		( $keyfield, $field_field, $field_word ) );
+
+
+
+	return $rv;
+}
+
+######################################################################
+=pod
+
+=item $success = $db->create_dataset_ordervalues_tables( $dataset )
+
+Create all the ordervalues tables for a single dataset.
+
+=cut
+######################################################################
+
+sub create_dataset_ordervalues_tables
+{
+	my( $self, $dataset ) = @_;
+	
+	my $rv = 1;
+
+	my $keyfield = $dataset->get_key_field()->clone;
 	# Create sort values table. These will be used when ordering search
 	# results.
 	my @fields = $dataset->get_fields( 1 );
 	# remove the key field
 	splice( @fields, 0, 1 ); 
 	my @orderfields = ( $keyfield );
-	my $langid;
-	foreach( @fields )
+	foreach my $field ( @fields )
 	{
-		my $fname = $_->get_sql_name();
+		my $fname = $field->get_sql_name();
 		push @orderfields, EPrints::MetaField->new( 
 					archive=> $self->{session}->get_archive(),
 					name => $fname,
 					type => "longtext" );
 	}
-	foreach $langid ( @{$self->{session}->get_archive()->get_conf( "languages" )} )
+	foreach my $langid ( @{$self->{session}->get_archive()->get_conf( "languages" )} )
 	{
+		my $order_table = $dataset->get_ordervalues_table_name( $langid );
+
 		$rv = $rv && $self->create_table( 
-			$dataset->get_ordervalues_table_name( $langid ), 
+			$order_table,
 			$dataset, 
 			1, 
 			@orderfields );
 		return 0 unless $rv;
 	}
-
-	# Create the other tables
-	$rv = $rv && $self->create_table( 
-				$dataset->get_sql_table_name, 
-				$dataset, 
-				1, 
-				$dataset->get_fields( 1 ) );
 
 	return $rv;
 }
@@ -361,66 +439,69 @@ sub create_table
 	my $field;
 	my $rv = 1;
 
+
+	# build the sub-tables first
+	foreach $field (@fields)
+	{
+		next unless ( $field->get_property( "multiple" ) || $field->get_property( "multilang" ) );
+		# make an aux. table for a multiple field
+		# which will contain the same type as the
+		# key of this table paired with the non-
+		# multiple version of this field.
+		# auxfield and keyfield must be indexed or 
+		# there's not much point. 
+
+		my $auxfield = $field->clone;
+		$auxfield->set_property( "multiple", 0 );
+		$auxfield->set_property( "multilang", 0 );
+		my $keyfield = $dataset->get_key_field()->clone;
+#print $field->get_name()."\n";
+#foreach( keys %{$auxfield} ) { print "* $_ => ".$auxfield->{$_}."\n"; }
+#print "\n\n";
+
+		# cjg Hmmmm
+		#  Multiple ->
+		# [key] [cnt] [field]
+		#  Lang ->
+		# [key] [lang] [field]
+		#  Multiple + Lang ->
+		# [key] [pos] [lang] [field]
+
+		my @auxfields = ( $keyfield );
+		if ( $field->get_property( "multiple" ) )
+		{
+			my $pos = EPrints::MetaField->new( 
+				archive=> $self->{session}->get_archive(),
+				name => "pos", 
+				type => "int" );
+			push @auxfields,$pos;
+		}
+		if ( $field->get_property( "multilang" ) )
+		{
+			my $lang = EPrints::MetaField->new( 
+				archive=> $self->{session}->get_archive(),
+				name => "lang", 
+				type => "langid" );
+			push @auxfields,$lang;
+		}
+		push @auxfields,$auxfield;
+		my $rv = $rv && $self->create_table(	
+			$dataset->get_sql_sub_table_name( $field ),
+			$dataset,
+			0, # no primary key
+			@auxfields );
+	}
+
 	# Construct the SQL statement
 	my $sql = "CREATE TABLE $tablename (";
 	my $key = undef;
 	my @indices;
 	my $first = 1;
-
-	# Iterate through the fields
 	foreach $field (@fields)
 	{
-		if ( $field->get_property( "multiple" ) ||
-		     $field->get_property( "multilang" ) )
-		{ 	
-			# make an aux. table for a multiple field
-			# which will contain the same type as the
-			# key of this table paired with the non-
-			# multiple version of this field.
-			# auxfield and keyfield must be indexed or 
-			# there's not much point. 
+		next if( $field->get_property( "multiple" ) );
+		next if( $field->get_property( "multilang" ) );
 
-			my $auxfield = $field->clone;
-			$auxfield->set_property( "multiple", 0 );
-			$auxfield->set_property( "multilang", 0 );
-			my $keyfield = $dataset->get_key_field()->clone;
-#print $field->get_name()."\n";
-#foreach( keys %{$auxfield} ) { print "* $_ => ".$auxfield->{$_}."\n"; }
-#print "\n\n";
-
-			# cjg Hmmmm
-			#  Multiple ->
-			# [key] [cnt] [field]
-			#  Lang ->
-			# [key] [lang] [field]
-			#  Multiple + Lang ->
-			# [key] [pos] [lang] [field]
-
-			my @auxfields = ( $keyfield );
-			if ( $field->get_property( "multiple" ) )
-			{
-				my $pos = EPrints::MetaField->new( 
-					archive=> $self->{session}->get_archive(),
-					name => "pos", 
-					type => "int" );
-				push @auxfields,$pos;
-			}
-			if ( $field->get_property( "multilang" ) )
-			{
-				my $lang = EPrints::MetaField->new( 
-					archive=> $self->{session}->get_archive(),
-					name => "lang", 
-					type => "langid" );
-				push @auxfields,$lang;
-			}
-			push @auxfields,$auxfield;
-			my $rv = $rv && $self->create_table(	
-				$dataset->get_sql_sub_table_name( $field ),
-				$dataset,
-				0, # no primary key
-				@auxfields );
-			next;
-		}
 		if ( $first )
 		{
 			$first = 0;
@@ -913,6 +994,30 @@ sub _create_counter_table
 	return( 1 );
 }
 
+######################################################################
+# 
+# $success = $db->_create_indexqueue_table
+#
+# undocumented
+#
+######################################################################
+
+sub _create_indexqueue_table
+{
+	my( $self ) = @_;
+
+	# The table creation SQL
+	my $sql = "CREATE TABLE indexqueue ( field VARCHAR(128), added DATETIME , index(field), index(added) )";
+
+	# Send to the database
+	my $sth = $self->do( $sql );
+	
+	# Return with an error if unsuccessful
+	return( 0 ) unless defined( $sth );
+	
+	# Everything OK
+	return( 1 );
+}
 
 ######################################################################
 # 
@@ -2379,6 +2484,23 @@ sub mysql_version_from_dbh
 	return $1*10000+$2*100+$3;
 }
 
+######################################################################
+=pod
+
+=item $db->index_queue( $datasetid, $objectid, $fieldname );
+
+Queues the field of the specified object to be reindexed.
+
+=cut
+######################################################################
+
+sub index_queue
+{
+	my( $self, $datasetid, $objectid, $fieldname ) = @_; 
+
+	my $sql = "INSERT INTO indexqueue VALUES ( \"$datasetid.$objectid.$fieldname\", NOW() )";
+	$self->do( $sql );
+}
 
 1; # For use/require success
 

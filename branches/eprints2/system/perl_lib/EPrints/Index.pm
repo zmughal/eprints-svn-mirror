@@ -18,7 +18,6 @@
 =head1 NAME
 
 B<EPrints::Index> - 
-metadata as images.
 
 =head1 DESCRIPTION
 
@@ -38,312 +37,196 @@ use Unicode::String qw( latin1 utf8 );
 
 use strict;
 
-#my $index = new EPrints::Index( $session->get_archive->get_dataset( "archive" ) );
-#$index->create;
-#$index->build;
-#$index->install;
-#$index->cleanup;
+
+
+
+
 
 ######################################################################
 =pod
 
-=item $index = EPrints::Index->new( $session, $dataset )
+=item EPrints::Index::remove( $session, $dataset, $objectid, $fieldid )
 
-undocumented
-
-=cut
-######################################################################
-
-sub new
-{
-	my( $class, $session, $dataset, $logfn, $elogfn ) = @_;
-
-	my $self = { 
-		dataset=>$dataset, 
-		session=>$session,
-		count=>0,
-		change_pname => 0,
-		index_table_tmp => $dataset->get_sql_index_table_name."_tmp",
-		grep_table_tmp => $dataset->get_sql_index_table_name."_grep_tmp",
-		logfn => $logfn,
-		elogfn => $elogfn
-	};
-
-	bless $self, $class;
-
-	return $self;
-}
-
-######################################################################
-=pod
-
-=item $success = $index->log( $message );
-
-undocumented
+Remove all indexes to the field in the specified object.
 
 =cut
 ######################################################################
 
-sub log
+sub remove
 {
-	my( $self, $message ) = @_;
-
-	if( defined $self->{logfn} )
-	{
-		&{$self->{logfn}}( $message );
-	}
-}
-
-######################################################################
-=pod
-
-=item $success = $index->logerror( $message );
-
-undocumented
-
-=cut
-######################################################################
-
-sub logerror
-{
-	my( $self, $message ) = @_;
-
-	if( defined $self->{elogfn} )
-	{
-		&{$self->{elogfn}}( $message );
-		return;
-	}
-
-	$self->{session}->get_archive->log( $message );
-}
-
-######################################################################
-=pod
-
-=item $index->cleanup();
-
-undocumented
-
-=cut
-######################################################################
-
-sub cleanup
-{
-	my( $self ) = @_;
-
-	# destroy any tmp tables that didn't get renamed for some
-	# reason.
-
-	my $ds = $self->{dataset};
-	my $db = $self->{session}->get_db;
-
-	my @doomtables = ( $self->{index_table_tmp}, $self->{grep_table_tmp} );
-
-	foreach my $langid ( @{$self->{session}->get_archive()->get_conf( "languages" )} )
-	{
-		push @doomtables, $ds->get_ordervalues_table_name( $langid )."_tmp";
-	}
-
-	foreach my $table ( @doomtables )
-	{
-		next unless( $db->has_table( $table ) );
-		$self->logerror( "Table $table still exists. Dropping it now." );
-		$self->{session}->get_db->drop_table( $table ); 
-	}
-}
-
-######################################################################
-=pod
-
-=item $success = $index->create();
-
-undocumented
-
-=cut
-######################################################################
-
-sub create
-{
-	my( $self ) = @_;
-
-	my $ds = $self->{dataset};
+	my( $session, $dataset, $objectid, $fieldid ) = @_;
 
 	my $rv = 1;
 
-	my $keyfield = $ds->get_key_field()->clone;
-	my $db = $self->{session}->get_db;
+	my $sql;
 
-	my $fieldpos = EPrints::MetaField->new( 
-		archive=> $self->{session}->get_archive(),
-		name => "pos", 
-		type => "int" );
-	my $fieldword = EPrints::MetaField->new( 
-		archive=> $self->{session}->get_archive(),
-		name => "fieldword", 
-		type => "text");
-	my $fieldids = EPrints::MetaField->new( 
-		archive=> $self->{session}->get_archive(),
-		name => "ids", 
-		type => "longtext");
+	my $keyfield = $dataset->get_key_field();
+	my $where = $keyfield->get_sql_name()." = \"$objectid\" AND field=\"".EPrints::Database::prep_value($fieldid)."\"";
 
-	if( $db->has_table( $self->{index_table_tmp} ) )
+	my $indextable = $dataset->get_sql_index_table_name();
+	my $rindextable = $dataset->get_sql_rindex_table_name();
+
+	$sql = "SELECT word FROM $rindextable WHERE $where";
+	my $sth=$session->get_db->prepare( $sql );
+	$rv = $rv && $session->get_db->execute( $sth, $sql );
+	my @codes = ();
+	while( my( $c ) = $sth->fetchrow_array )
 	{
-		$self->logerror( "$self->{index_table_tmp} already exists. Indexer exited abnormally or still running?" );
-		$self->log( "Dropping table: $self->{index_table_tmp}" );
-		#cjg!
-		my $sql = "DROP TABLE $self->{index_table_tmp}";
-		$self->{session}->get_db->do( $sql );
+		push @codes,$c;
 	}
-	
-	$self->log( "Creating table: $self->{index_table_tmp}" );
-	$rv = $rv & $db->create_table(
-		$self->{index_table_tmp},
-		$ds,
-		0, # no primary key
-		( $fieldword, $fieldpos, $fieldids ) );
+	$sth->finish;
 
-	#######################
-
-		
-	my $fieldfieldname = EPrints::MetaField->new( 
-		archive=> $self->{session}->get_archive(),
-		name => "fieldname", 
-		type => "text" );
-	my $fieldgrepstring = EPrints::MetaField->new( 
-		archive=> $self->{session}->get_archive(),
-		name => "grepstring", 
-		type => "text");
-
-	if( $db->has_table( $self->{grep_table_tmp} ) )
+	foreach my $code ( @codes )
 	{
-		$self->logerror( "$self->{grep_table_tmp} already exists. Indexer exited abnormally or still running?" );
-		$self->log( "Dropping table: $self->{grep_table_tmp}" );
-		#cjg!
-		my $sql = "DROP TABLE $self->{grep_table_tmp}";
-		$self->{session}->get_db->do( $sql );
-	}
-	
-
-	$self->log( "Creating table: $self->{grep_table_tmp}" );
-	$rv = $rv & $db->create_table(
-		$self->{grep_table_tmp},
-		$ds,
-		0, # no primary key
-		( $keyfield, $fieldfieldname, $fieldgrepstring ) );
-
-
-	###########################
-	return 0 unless $rv;
-
-	# Create sort values table. These will be used when ordering search
-	# results.
-	my @fields = $ds->get_fields( 1 );
-	# remove the key field
-	splice( @fields, 0, 1 ); 
-	my @orderfields = ( $keyfield );
-	my $langid;
-	foreach( @fields )
-	{
-		my $fname = $_->get_sql_name();
-		push @orderfields, EPrints::MetaField->new( 
-					archive=> $self->{session}->get_archive(),
-					name => $fname,
-					type => "longtext" );
-	}
-	foreach $langid ( @{$self->{session}->get_archive()->get_conf( "languages" )} )
-	{
-		my $order_table_tmp = $ds->get_ordervalues_table_name( $langid )."_tmp";
-		if( $db->has_table( $order_table_tmp ) )
+		my $fieldword = EPrints::Database::prep_value( "$fieldid:$code" );
+		$sql = "SELECT ids,pos FROM $indextable WHERE fieldword='$fieldword' AND ids LIKE '%:$objectid:%'";
+		$sth=$session->get_db->prepare( $sql );
+		$rv = $rv && $session->get_db->execute( $sth, $sql );
+		if( my($ids,$pos) = $sth->fetchrow_array )
 		{
-			$self->logerror( "$order_table_tmp already exists. Indexer exited abnormally or still running?" );
-			$self->log( "Dropping table: $order_table_tmp" );
-			#cjg!
-			my $sql = "DROP TABLE $order_table_tmp";
-			$self->{session}->get_db->do( $sql );
+			$ids =~ s/:$objectid:/:/g;
+			$sql = "UPDATE $indextable SET ids = '$ids' WHERE fieldword='$fieldword' AND pos='$pos'";
+			$rv = $rv && $session->get_db->do( $sql );
 		}
-
-		$self->log( "Creating table: $order_table_tmp" );
-		$rv = $rv && $db->create_table( 
-			$order_table_tmp,
-			$ds, 
-			1, 
-			@orderfields );
-		return 0 unless $rv;
+		$sth->finish;
 	}
+	$sql = "DELETE FROM $rindextable WHERE $where";
+	$rv = $rv && $session->get_db->do( $sql );
+
+	return $rv;
 }
 
 ######################################################################
 =pod
 
-=item $success = $index->build();
+=item EPrints::Index::purge_index( $session, $dataset )
 
-undocumented
+Remove all the current index information for the given dataset. Only
+really useful if used in conjunction with rebuilding the indexes.
 
 =cut
 ######################################################################
 
-sub build
+sub purge_index
 {
-	my( $self ) = @_;
+	my( $session, $dataset ) = @_;
 
-	my $ds = $self->{dataset};
-
-	my $info = {
-		allcodes => {},
-		indexer => $self,
-		max => $ds->count( $self->{session} ),
-		rows => 0 };
-
-	
-	$self->{count} = 0;
-	$ds->map( $self->{session}, \&_index_item, $info );
-
-	# store all codes which didn't already get stored
-
-	foreach my $code ( keys %{$info->{allcodes}} )
-	{
-		$self->_store( $info, $code );
-	}
+	my $indextable = $dataset->get_sql_index_table_name();
+	my $rindextable = $dataset->get_sql_rindex_table_name();
+	my $sql;
+	$session->get_db->do( "DELETE FROM $indextable" );
+	$session->get_db->do( "DELETE FROM $rindextable" );
+	return;
 }
 
-sub _index_item
-{
-        my( $session, $dataset, $item, $info ) = @_;
 
-	my $id = $item->get_id;
-	$info->{indexer}->log( "Indexing: ".$dataset->get_archive->get_id.'.'.$dataset->id.".".$id );
-	if( $info->{indexer}->{change_pname} )
+######################################################################
+=pod
+
+=item EPrints::Index::add( $session, $dataset, $objectid, $fieldid, $value )
+
+Add indexes to the field in the specified object. The index keys will
+be taken from value.
+
+=cut
+######################################################################
+
+sub add
+{
+	my( $session, $dataset, $objectid, $fieldid, $value ) = @_;
+
+	my $field = $dataset->get_field( $fieldid );
+
+	if( $field->get_property( "hasid" ) )
 	{
-		$0 =~ s/ *\[[^\]]*\]//;
-		my $per = int( 100 * $info->{indexer}->{count} / $info->{max} );
-		$0.= ' ['.$id.' '.$per.'%]';
+		#push @fields,$field->get_id_field();
+		$field = $field->get_main_field();
+	}
+
+	my( $codes, $grepcodes, $ignored ) = $field->get_index_codes( $session, $value );
+
+	my %done = ();
+
+	my $keyfield = $dataset->get_key_field();
+
+	my $indextable = $dataset->get_sql_index_table_name();
+	my $rindextable = $dataset->get_sql_rindex_table_name();
+
+	my $rv = 1;
+	
+	foreach my $code ( @{$codes} )
+	{
+		next if $done{$code};
+		$done{$code} = 1;
+		my $sql;
+		my $fieldword = EPrints::Database::prep_value($field->get_sql_name().":$code");
+		my $sth;
+		$sql = "SELECT max(pos) FROM $indextable where fieldword='$fieldword'"; 
+		$sth=$session->get_db->prepare( $sql );
+		$rv = $rv && $session->get_db->execute( $sth, $sql );
+		return 0 unless $rv;
+		my ( $n ) = $sth->fetchrow_array;
+		$sth->finish;
+		my $insert = 0;
+		if( !defined $n )
+		{
+			$n = 0;
+			$insert = 1;
+		}
+		else
+		{
+			$sql = "SELECT ids FROM $indextable WHERE fieldword='$fieldword' AND pos=$n"; 
+			$sth=$session->get_db->prepare( $sql );
+			$rv = $rv && $session->get_db->execute( $sth, $sql );
+			my( $ids ) = $sth->fetchrow_array;
+			$sth->finish;
+			my( @list ) = split( ":",$ids );
+			# don't forget the first and last are empty!
+			if( (scalar @list)-2 < 128 )
+			{
+				$sql = "UPDATE $indextable SET ids='$ids$objectid:' WHERE fieldword='$fieldword' AND pos=$n";	
+				$rv = $rv && $session->get_db->do( $sql );
+				return 0 unless $rv;
+			}
+			else
+			{
+				++$n;
+				$insert = 1;
+			}
+		}
+		if( $insert )
+		{
+			$sql = "INSERT INTO $indextable (fieldword,pos,ids ) VALUES ('$fieldword',$n,':$objectid:')";
+			$rv = $rv && $session->get_db->do( $sql );
+			return 0 unless $rv;
+		}
+		$sql = "INSERT INTO $rindextable (field,word,".$keyfield->get_sql_name()." ) VALUES ('".$field->get_sql_name."','$code','$objectid')";
+		$rv = $rv && $session->get_db->do( $sql );
+		return 0 unless $rv;
+
 	} 
 
-	my $codes = {};
-	my $grepcodes = [];
-	EPrints::Index::index_object( $session, $item, $codes, $grepcodes );
-	foreach my $code ( keys %{$codes} )
-	{
-		push @{$info->{allcodes}->{$code}}, $id;
-		if( scalar @{$info->{allcodes}->{$code}} > 100 )
-		{
-			$info->{indexer}->_store( $info, $code );
-		} 
-	}
+
+
+
+
+	my $name = $field->get_name;
 
 	foreach my $grepcode ( @{$grepcodes} )
 	{
-		my $sql = "INSERT INTO ".$info->{indexer}->{grep_table_tmp}." VALUES ('".
-EPrints::Database::prep_value($item->get_id)."','".EPrints::Database::prep_value($grepcode->[0])."','".EPrints::Database::prep_value($grepcode->[1])."');";
-		$session->get_db->do( $sql ); #cjg
+		my $sql = "INSERT INTO ".$dataset->get_sql_grep_table_name." VALUES ('".
+EPrints::Database::prep_value($objectid)."','".EPrints::Database::prep_value($name)."','".EPrints::Database::prep_value($grepcode)."');";
+		$session->get_db->do( $sql ); 
 	}
-
-	&insert_ordervalues( $session, $dataset, $item->get_data, 1 );
-
-	# add to count
-	$info->{indexer}->{count}++;
-	sleep 1 if( $info->{indexer}->{count} % 10 == 0);
 }
+
+
+
+
+
+
+
+
 
 sub update_ordervalues
 {
@@ -440,206 +323,10 @@ sub delete_ordervalues
 
 
 
-sub _store
-{
-	my( $self, $info, $code ) = @_;
-
-	#cjg SQL should not really be in this file.
-	my $sql = "INSERT INTO $self->{index_table_tmp} VALUES ( '".EPrints::Database::prep_value($code)."', $info->{rows}, '".join( ':',  @{$info->{allcodes}->{$code}} )."' )";
-	$self->{session}->get_db->do( $sql );
-	
-	$info->{rows}++;
-	delete $info->{allcodes}->{$code};
-}
-
-######################################################################
-=pod
-
-=item $success = $index->install();
-
-undocumented
-
-=cut
-######################################################################
-
-sub install
-{
-	my( $self ) = @_;
-
-	my $db = $self->{session}->get_db;
-
-	if( $db->has_table( $self->{index_table_tmp} ) )
-	{
-		$self->log( "Installing table: ".$self->{index_table_tmp} );
-		$self->{session}->get_db->install_table( 
-			$self->{index_table_tmp}, 
-			$self->{dataset}->get_sql_index_table_name );
-	}
-	else
-	{
-		$self->logerror( "Table does not exist to install: ".$self->{index_table_tmp} );
-	}
 
 
-	if( $db->has_table( $self->{grep_table_tmp} ) )
-	{
-		$self->log( "Installing table: ".$self->{grep_table_tmp} );
-		$self->{session}->get_db->install_table( 
-			$self->{grep_table_tmp}, 
-			$self->{dataset}->get_sql_index_table_name."_grep" );
-	}
-	else
-	{
-		$self->logerror( "Table does not exist to install: ".$self->{grep_table_tmp} );
-	}
 
 
-	foreach my $langid ( @{$self->{session}->get_archive()->get_conf( "languages" )} )
-	{
-		my $order_table = $self->{dataset}->get_ordervalues_table_name( $langid );
-		my $order_table_tmp = $order_table.'_tmp';
-
-		if( !$db->has_table( $order_table_tmp ) )
-		{
-			$self->logerror( "Table does not exist to install: ".$order_table_tmp );
-			next;
-		}
-
-		$self->log( "Installing table: ".$order_table_tmp );
-		$self->{session}->get_db->install_table( 
-			$order_table_tmp,
-			$order_table );
-	}
-
-	my $statusfile = $self->get_statusfile;
-
-	unless( open( TIMESTAMP, ">$statusfile" ) )
-	{
-		$self->errorlog( "EPrints::Index::install failed to open $statusfile for writing." );
-	}
-	else
-	{
-		my $dsid =  $self->{dataset}->id;
-		print TIMESTAMP <<END;
-# This file is automatically generated to indicate the last time
-# this archive successfully completed indexing the $dsid
-# dataset. It should not be edited.
-END
-		print TIMESTAMP EPrints::Utils::get_timestamp()."\n";
-		print TIMESTAMP "RECORDS: ".$self->{count}."\n";
-		close TIMESTAMP;
-	}
-}
-
-sub get_statusfile
-{
-	my( $self ) = @_;
-
-	return $self->{session}->get_archive->get_conf( "variables_path" ).
-		"/index-".$self->{dataset}->id.".timestamp";
-}
-
-######################################################################
-=pod
-
-=item $timestamp = $index->get_last_timestamp()
-
-Return the timestamp of the last time this index was installed.
-
-=cut
-######################################################################
-
-sub get_last_timestamp
-{
-	my( $self ) = @_;
-
-	my $statusfile = $self->get_statusfile;
-
-	unless( open( TIMESTAMP, $statusfile ) )
-	{
-		# can't open file. Either an error or file does not exist
-		# either way, return undef.
-		return;
-	}
-
-	my $timestamp = undef;
-	while(<TIMESTAMP>)
-	{
-		next if m/^\s*#/;	
-		next if m/^\s*$/;	
-		chomp;
-		$timestamp = $_;
-		last;
-	}
-	close TIMESTAMP;
-
-	return $timestamp;
-}
-
-######################################################################
-=pod
-
-=item $thing->change_pname( $bool )
-
-If passed "true" then this indexer should modify the process name
-($0) as it does "build".
-
-=cut
-######################################################################
-
-sub change_pname
-{
-	my( $self, $bool ) = @_;
-
-	$self->{change_pname} = $bool;
-}
-
-
-######################################################################
-=pod
-
-=item index_object( $session, $object, $codes )
-
-undocumented
-
-=cut
-######################################################################
-
-
-sub index_object
-{
-	my( $session, $object, $codes, $grepcodes ) = @_;
-
-	my $ds = $object->get_dataset;
-	my @fields = $ds->get_fields( 1 );
-
-	if( $object->get_dataset->confid eq "eprint" )
-	{
-		push @fields, 
-			EPrints::Utils::field_from_config_string( 
-				$ds,
-				$EPrints::Utils::FULLTEXT );
-	}
-
-	foreach my $field ( @fields )
-	{
-		my $value = $object->get_value( $field->get_name );
-		my( $new_codes, $new_grepcodes, $ignored ) = 
-			$field->get_index_codes( $session, $value );
-
-		my $name = $field->get_name;
-		foreach my $code ( @{$new_codes} )
-		{
-			$codes->{$name.":".$code} = 1;
-		}
-		foreach my $grepcode ( @{$new_grepcodes} )
-		{
-			push @{$grepcodes}, [ $name, $grepcode ];
-		}
-	}
-
-
-}
 
 sub split_words
 {

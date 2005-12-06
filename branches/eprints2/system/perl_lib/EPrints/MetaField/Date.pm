@@ -411,6 +411,7 @@ sub get_property_defaults
 	my %defaults = $self->SUPER::get_property_defaults;
 	$defaults{min_resolution} = "day";
 	$defaults{render_opts}->{res} = "day";
+	$defaults{text_index} = 0;
 	return %defaults;
 }
 

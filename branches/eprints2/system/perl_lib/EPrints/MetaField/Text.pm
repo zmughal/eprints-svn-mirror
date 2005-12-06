@@ -199,6 +199,15 @@ sub _extract_words
 	return( $codes, $newbadwords );
 }
 
+sub get_property_defaults
+{
+	my( $self ) = @_;
+	my %defaults = $self->SUPER::get_property_defaults;
+	$defaults{text_index} = 1;
+	$defaults{sql_index} = 0;
+	return %defaults;
+}
+
 
 
 ######################################################################

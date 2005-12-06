@@ -125,27 +125,27 @@ $fields->{eprint} = [
 
 	{ name => "publisher", type => "text" },
 
-	{ name => "place_of_pub", type => "text", sql_index => 0 },
+	{ name => "place_of_pub", type => "text" },
 
-	{ name => "pagerange", type => "pagerange", sql_index => 0 },
+	{ name => "pagerange", type => "pagerange" },
 
 	{ name => "pages", type => "int", maxlength => 6, sql_index => 0 },
 
-	{ name => "event_title", type => "text", sql_index => 0 },
+	{ name => "event_title", type => "text" },
 
-	{ name => "event_location", type => "text", sql_index => 0 },
+	{ name => "event_location", type => "text" },
 	
-	{ name => "event_dates", type => "text", sql_index => 0 },
+	{ name => "event_dates", type => "text" },
 
 	{ name => "event_type", type => "set", options=>[ "conference","workshop","other" ] },
 
 	{ name => "id_number", type => "text" },
 
-	{ name => "patent_applicant", type => "text", sql_index => 0 },
+	{ name => "patent_applicant", type => "text" },
 
 	{ name => "institution", type => "text" },
 
-	{ name => "department", type => "text", sql_index => 0 },
+	{ name => "department", type => "text" },
 
 	{ name => "thesis_type", type => "set", options=>[ "masters", "phd", "other"] },
 
@@ -155,16 +155,16 @@ $fields->{eprint} = [
 
 	{ name => "issn", type => "text" },
 
-	{ name => "fileinfo", type => "longtext", sql_index => 0,
+	{ name => "fileinfo", type => "longtext" },
 		render_value=>\&render_fileinfo },
 
-	{ name => "book_title", type => "text", sql_index => 0 },
+	{ name => "book_title", type => "text" },
 	
 	{ name => "editors", type => "name", multiple => 1, hasid=>1,
 		input_boxes => 4, input_id_cols=>20, 
 		family_first=>1, hide_honourific=>1, hide_lineage=>1 }, 
 
-	{ name => "official_url", type => "url", sql_index => 0 },
+	{ name => "official_url", type => "url" },
 
 # nb. Can't call this field "references" because that's a MySQL keyword.
 	{ name => "referencetext", type => "longtext", input_rows => 3 }

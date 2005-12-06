@@ -236,6 +236,7 @@ sub create
 		# Make secure area symlink
 		my $linkdir = _secure_symlink_path( $eprint );
 		$doc->create_symlink( $eprint, $linkdir );
+		$doc->queue_all;
 		return $doc;
 	}
 	else
@@ -477,7 +478,7 @@ sub clone
 
 	if( $new_doc->commit() )
 	{
-		$new_doc->rehash;
+		$new_doc->files_modified;
 		return( $new_doc );
 	}
 	else
@@ -757,7 +758,7 @@ sub remove_file
 		$self->{session}->get_archive()->log( "Error removing file $filename for doc ".$self->get_value( "docid" ).": $!" );
 	}
 
-	$self->rehash;
+	$self->files_modified;
 
 	return( $count==1 );
 }
@@ -791,7 +792,7 @@ sub remove_all_files
 		return( 0 );
 	}
 
-	$self->rehash;
+	$self->files_modified;
 
 	return( 1 );
 }
@@ -913,7 +914,7 @@ sub upload
 	}
 	close OUT;
 
-	$self->rehash;
+	$self->files_modified;
 	
 	return( 1 );
 }
@@ -1020,7 +1021,7 @@ sub add_archive
 			DIR => $self->local_path,
 			ARC => $file );
 	
-	$self->rehash;
+	$self->files_modified;
 
 	return( $rc==0 );
 }
@@ -1109,7 +1110,7 @@ sub upload_url
 		# have a main file.
 	}
 	
-	$self->rehash;
+	$self->files_modified;
 
 	return( 1 );
 }
@@ -1146,6 +1147,8 @@ sub commit
 		my $db_error = $self->{session}->get_db()->error();
 		$self->{session}->get_archive()->log( "Error committing Document ".$self->get_value( "docid" ).": $db_error" );
 	}
+
+	$self->queue_changes;
 
 	# disabled for now 
 	if( 0 && defined $self->{changed} && scalar( %{$self->{changed}} ) > 0 )
@@ -1281,6 +1284,32 @@ sub get_type
 	my( $self ) = @_;
 
 	return $self->get_value( "format" );
+}
+
+######################################################################
+=pod
+
+=item $doc->files_modified
+
+This method does all the things that need doing when a file has been
+modified.
+
+=cut
+######################################################################
+
+sub files_modified
+{
+	my( $self ) = @_;
+
+	$self->rehash;
+
+	$self->{session}->get_db->index_queue( 
+		$self->get_eprint->get_dataset->id,
+		$self->get_eprint->get_id,
+		$EPrints::Utils::FULLTEXT );
+
+	# remove the now invalid cache of words from this document
+	unlink $self->words_file if( -e $self->words_file );
 }
 
 ######################################################################

@@ -218,6 +218,7 @@ sub get_property_defaults
 	my( $self ) = @_;
 	my %defaults = $self->SUPER::get_property_defaults;
 	$defaults{input_style} = 0;
+	$defaults{text_index} = 0;
 	return %defaults;
 }
 

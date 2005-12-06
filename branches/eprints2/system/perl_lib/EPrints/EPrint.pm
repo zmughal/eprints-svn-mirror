@@ -117,7 +117,8 @@ sub get_system_field_info
 	{ name=>"userid", type=>"itemref", 
 		datasetid=>"user", required=>0 },
 
-	{ name=>"dir", type=>"text", required=>0, can_clone=>0 },
+	{ name=>"dir", type=>"text", required=>0, can_clone=>0,
+		text_index=>0 },
 
 	{ name=>"datestamp", type=>"time", required=>0, 
 		render_opts=>{res=>"minute"}, can_clone=>0 },
@@ -265,7 +266,9 @@ sub create
 
 	if( $success )
 	{
-		return( EPrints::EPrint->new( $session, $new_id, $dataset ) );
+		my $eprint = EPrints::EPrint->new( $session, $new_id, $dataset );
+		$eprint->queue_all;
+		return $eprint;
 	}
 	else
 	{
@@ -626,7 +629,7 @@ sub commit
 
 	if( !$force ) 
 	{
-		if( !defined $self->{changed} || scalar( %{$self->{changed}} ) == 0 )
+		if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
 		{
 			return 1;
 		}
@@ -648,6 +651,8 @@ sub commit
 			$self->get_value( "eprintid" ).": ".$db_error );
 	}
 
+	$self->queue_changes;
+	
 	# disabled for now
 	if( 0 && defined $self->{changed} && scalar( %{$self->{changed}} ) > 0 )
 	{

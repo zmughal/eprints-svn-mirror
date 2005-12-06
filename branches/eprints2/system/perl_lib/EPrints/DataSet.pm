@@ -474,6 +474,15 @@ sub get_field
 
 	# magic fields which can be searched but do
 	# not really exist.
+	if( $fieldname eq $EPrints::Utils::FULLTEXT )
+	{
+		my $field = EPrints::MetaField->new( 
+			dataset=>$self , 
+			name=>$fieldname,
+			multiple=>1,
+			type=>"fulltext" );
+		return $field;
+	}
 	if( $fieldname =~ m/^_/ )
 	{
 		my $field = EPrints::MetaField->new( 
@@ -635,6 +644,23 @@ sub get_sql_index_table_name
 ######################################################################
 =pod
 
+=item $tablename = $ds->get_sql_grep_table_name
+
+Reutrn the name of the SQL table which contains the strings to
+be used with LIKE in a final pass of a search.
+
+=cut
+######################################################################
+
+sub get_sql_grep_table_name
+{
+	my( $self ) = @_;
+	return $self->get_sql_table_name()."__"."index_grep";
+}
+
+######################################################################
+=pod
+
 =item $tablename = $ds->get_sql_rindex_table_name
 
 Reutrn the name of the SQL table which contains the reverse text
@@ -643,7 +669,7 @@ removing a record).
 
 =cut
 ######################################################################
-# cjg deprecated?
+
 sub get_sql_rindex_table_name
 {
 	my( $self ) = @_;

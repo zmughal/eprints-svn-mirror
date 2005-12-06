@@ -227,8 +227,12 @@ sub create_user
 	# Add the user to the database...
 	$session->get_db()->add_record( $user_ds, $data );
 	
+	my $user = EPrints::User->new( $session, $userid );
+
+	$user->queue_all;
+
 	# And return the new user as User object.
-	return( EPrints::User->new( $session, $userid ) );
+	return $user;
 }
 
 
@@ -403,6 +407,8 @@ sub commit
 	my $success = $self->{session}->get_db()->update(
 		$user_ds,
 		$self->{data} );
+	
+	$self->queue_changes;
 
 	return( $success );
 }

@@ -531,7 +531,7 @@ END
 		}
 		$where.="))";
 
- 		my $gtable = $self->{dataset}->get_sql_index_table_name."_grep"; 
+ 		my $gtable = $self->{dataset}->get_sql_grep_table_name;
 		my $SSIZE = 50;
 		my $total = scalar @{$filter};
 		my $kfn = $keyfield->get_sql_name; # key field name

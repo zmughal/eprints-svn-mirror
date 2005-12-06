@@ -517,6 +517,49 @@ END
 		$db->do( $sql );
 	}
 
+	foreach my $table ( @tables )
+	{
+		next unless $table =~ m/__index(_grep)?(_tmp)?$|__rindex$|__ordervalues_/;
+		$sql = "DROP TABLE $table";
+		$db->do( $sql );
+		
+		print "REMOVING: $table\n";
+	}
+
+	$db->_create_indexqueue_table;
+	foreach my $datasetid ( qw/ archive buffer inbox deletion user document subscription subject / )
+	{
+		print "Making new index tables: $datasetid\n";
+		my $dataset = $session->get_archive->get_dataset( $datasetid );
+		$db->create_dataset_index_tables( $dataset );
+
+		# queue all items for indexing
+		$dataset->map( $session, sub {
+			my( $session, $dataset, $item ) = @_;
+		
+			foreach my $field ( $dataset->get_fields() )
+			{
+				next unless( $field->get_property( "text_index" ) );
+		
+				$session->get_db->index_queue( 
+					$dataset->id,
+					$item->get_id,
+					$field->get_name );
+			}	
+			if( $dataset->conf_id eq "eprint" )
+			{
+				$session->get_db->index_queue( 
+					$dataset->id,
+					$item->get_id,
+					$EPrints::Utils::FULLTEXT );
+			}
+
+		} );
+
+	}
+
+
+
 	if( !$ok )
 	{
 		print "\nFailed.\n";
