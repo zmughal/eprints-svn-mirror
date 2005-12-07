@@ -450,8 +450,15 @@ END
 
 	# not checking $ok properly.
 
+	my @tables = $db->get_tables;
+	foreach my $table ( @tables )
+	{
+		next unless( $table =~ m/^users(.*)/ );
+		$sql = "RENAME TABLE users$1 TO user$1";
+		$db->do( $sql );
+	}
 
-	$sql = "ALTER TABLE users MODIFY joined DATETIME";
+	$sql = "ALTER TABLE user MODIFY joined DATETIME";
 	$db->do( $sql );
 
 
@@ -472,10 +479,10 @@ END
 		$db->do( $sql );
 	}
 
+	# re read the tables.	
+	@tables = $db->get_tables;
 
 	# add the ordervalues for lastmod
-	
-	my @tables = $db->get_tables;
 	foreach my $table ( @tables )
 	{
 		if( $table =~ m/^(archive|buffer|inbox|deletion)__ordervalues_.*$/ )
@@ -490,7 +497,7 @@ END
 	my @datefields = ();
 	foreach my $table ( @tables )
 	{
-		next unless( $table =~ m/^(archive|buffer|inbox|deletion|users|document|subscription|subject)/ );
+		next unless( $table =~ m/^(archive|buffer|inbox|deletion|user|document|subscription|subject)/ );
 		
 		$sql = "DESCRIBE $table";
 		my $sth = $db->prepare( $sql );
@@ -517,9 +524,10 @@ END
 		$db->do( $sql );
 	}
 
+	# remove old index index_grep rindex and temporary index tables
 	foreach my $table ( @tables )
 	{
-		next unless $table =~ m/__index(_grep)?(_tmp)?$|__rindex$|__ordervalues_/;
+		next unless $table =~ m/__index(_grep)?(_tmp)?$|__rindex$/;
 		$sql = "DROP TABLE $table";
 		$db->do( $sql );
 		
@@ -546,7 +554,7 @@ END
 					$item->get_id,
 					$field->get_name );
 			}	
-			if( $dataset->conf_id eq "eprint" )
+			if( $dataset->confid eq "eprint" )
 			{
 				$session->get_db->index_queue( 
 					$dataset->id,

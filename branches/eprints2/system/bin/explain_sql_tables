@@ -104,7 +104,7 @@ my $session = new EPrints::Session( 1, $ARGV[0], $noise );
 exit( 1 ) unless defined $session;
 
 my $info = {
-	users=>"Users table, used to store info on eprints users",
+	user=>"Users table, used to store info on eprints users",
 	subject=>"Subject table, used to store the heirarchical subject tree(s)",
 	document=>"Document table, used to store documents metadata, for ALL of archive,inbox,etc.",
 	subscription=>"Subscription table, used to store what subscriptions users have",

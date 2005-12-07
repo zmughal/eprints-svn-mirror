@@ -168,7 +168,7 @@ my $INFO = {
 		sqlname => "counters"
 	},
 	user => {
-		sqlname => "users",
+		sqlname => "user",
 		class => "EPrints::User"
 	},
 	archive => {
