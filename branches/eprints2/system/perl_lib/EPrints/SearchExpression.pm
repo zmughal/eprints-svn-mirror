@@ -989,7 +989,10 @@ sub _dopage_export
 		return;
 	}
 
-	my @plugins = $self->{session}->plugin_list( can_accept=>"list/eprint", is_visible=>"all" );
+	my @plugins = $self->{session}->plugin_list( 
+		type=>"output",
+		can_accept=>"list/eprint", 
+		is_visible=>"all" );
 	my $ok = 0;
 	foreach( @plugins ) { if( $_ eq "output/$format" ) { $ok = 1; last; } }
 	unless( $ok ) {
@@ -1080,6 +1083,7 @@ sub _dopage_results
 
 
 	my @plugins = $self->{session}->plugin_list( 
+					type=>"output",
 					can_accept=>"list/".$self->{dataset}->confid, 
 					is_visible=>"all" );
 	$bits{export} = $self->{session}->make_doc_fragment;

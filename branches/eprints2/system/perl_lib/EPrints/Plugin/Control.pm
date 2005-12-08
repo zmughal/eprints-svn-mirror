@@ -67,6 +67,8 @@ sub new
 	return( $self );
 }
 
+sub type { return "control"; }
+
 sub render
 {
 	my( $self, $defobj, %params ) = @_;

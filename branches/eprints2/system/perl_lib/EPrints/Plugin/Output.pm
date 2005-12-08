@@ -17,6 +17,10 @@ sub defaults
 	return %d;
 }
 
+sub type
+{
+	return "output";
+}
 
 sub render_name
 {

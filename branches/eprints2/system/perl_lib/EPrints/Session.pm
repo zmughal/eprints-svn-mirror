@@ -2576,6 +2576,10 @@ sub plugin_list
 	{
 		my $plugin = $self->plugin( $plugin_id );
 
+		if( $restrictions{type} )
+		{
+			next unless( $plugin->type eq $restrictions{type} );
+		}
 		if( $restrictions{can_accept} )
 		{
 			next unless( $plugin->can_accept( $restrictions{can_accept} ) );

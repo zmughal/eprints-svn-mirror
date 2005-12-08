@@ -183,6 +183,11 @@ sub load_dir
 		next if( $abstract );
 
 		my $pluginid = $defaults{"id"};
+		if( !defined $pluginid )
+		{
+			print STDERR "Warning: plugin $class has no ID set.\n";
+			next;
+		}
 		$reg->{$pluginid} = $class;
 	}
 	closedir( $dh );
