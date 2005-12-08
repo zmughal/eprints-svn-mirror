@@ -123,7 +123,9 @@ $c->{userhome} = "$c->{perl_url}/users/home";
 # Ie. use /23/ instead of /archive/00000023/
 $c->{use_short_urls} = 1;
 
-# URL paths to protect from rewrites
+# Use the new workflow modules
+$c->{use_workflow} = 0;
+
 # By default all paths are rewritten to the relevant language directory
 # except for /perl/. List other exceptions here.
 # These will be used in a regular expression, so characters like
