@@ -2909,3 +2909,8 @@ PACKAGE: 2.2.99.2
 
  - Made a warning if a non-abstract plugin does not have an ID.
  - Made Plugin/Control.pm abstract.
+
+ 2005-12-08 cjg
+ 
+ - Added a nice favicon.ico
+ 
