@@ -2883,4 +2883,17 @@ PACKAGE: 2.2.99.2
  - Added a warning to the $session->plugin method to warn if a non-
     existant plugin is requested.
  
------------------------------------------------------------------------ 
+2005-12-08 moj
+
+ - Added initial versions of Workflow modules to repository
+ - Added configuration setting in ArchiveConfig.pm (use_workflow)
+ - Archive.pm now loads workflow with _load_workflow function 
+ 	(from workflow.xml)
+ - users/submit respects the use_workflow flag
+ - Shifted SystemSettings.pm to SystemSettings.pm.tmpl
+ - Added Blister, Default, Subjects, and Phrase plugins 
+ 	(all developmental, use at own risk)
+ - Also added base Control plugin
+ - Added Workflow modules to startup.pl
+ - Added workflow.xml file to defaultcfg
+
