@@ -46,6 +46,8 @@ use strict;
 
 our @ISA = qw/ EPrints::Plugin /;
 
+$EPrints::Plugin::Control::ABSTRACT = 1;
+
 sub defaults
 {
 	my %d = $_[0]->SUPER::defaults();

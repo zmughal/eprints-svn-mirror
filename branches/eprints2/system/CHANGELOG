@@ -2905,3 +2905,7 @@ PACKAGE: 2.2.99.2
  - $dataset->to_xml now puts <eprint> not <record> around v2 XML
     items.
 
+ 2005-12-08 cjg
+
+ - Made a warning if a non-abstract plugin does not have an ID.
+ - Made Plugin/Control.pm abstract.
