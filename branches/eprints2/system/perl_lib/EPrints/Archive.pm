@@ -76,6 +76,7 @@ use EPrints::Config;
 use EPrints::Utils;
 use EPrints::DataSet;
 use EPrints::Language;
+use EPrints::Workflow;
 use EPrints::Plugin;
 
 use File::Copy;
@@ -193,7 +194,11 @@ sub new_archive_by_id
 
 	# Load archive plugins
 	$self->_load_plugins() || return;
-
+	if( $self->get_conf( "use_workflow" ) )
+	{
+		$self->_load_workflow() || return;
+	}
+	
 	# Map OAI plugins to functions, namespaces etc.
 	$self->_map_oai_plugins() || return;
 
@@ -264,6 +269,27 @@ sub get_ruler
 
 	return $self->{ruler};
 }	
+ 
+######################################################################
+=pod
+
+=item $success = $archive->_load_workflow
+
+ Attempts to load and cache the workflow for this archive
+
+=cut
+######################################################################
+
+sub _load_workflow
+{
+	my( $self ) = @_;
+	$self->{workflow} = EPrints::Workflow->new( $self );
+	if( !defined $self->{workflow} )
+	{
+		return 0;
+	}
+	return 1;
+}
 	
 
 ######################################################################
