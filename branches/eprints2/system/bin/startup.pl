@@ -85,6 +85,9 @@ use EPrints::User;
 use EPrints::UserPage;
 use EPrints::VLit;
 use EPrints::Paracite;
+use EPrints::Workflow;
+use EPrints::Workflow::Stage;
+use EPrints::Workflow::Processor;
 
 use strict;
 
