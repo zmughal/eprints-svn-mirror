@@ -9,12 +9,14 @@ $EPrints::Plugin::Output::ABSTRACT = 1;
 sub defaults
 {
 	my %d = $_[0]->SUPER::defaults();
+	$d{id} = "output/abstract";
 	$d{name} = "Base output plugin: This should have been subclassed";
 	$d{suffix} = ".txt";
 	$d{visible} = "all";
 	$d{mimetype} = "text/plain";
 	return %d;
 }
+
 
 sub render_name
 {
@@ -27,6 +29,7 @@ sub render_name
 sub is_visible
 {
 	my( $plugin, $vis_level ) = @_;
+
 	return( 1 ) unless( defined $vis_level );
 
 	return( 0 ) unless( defined $plugin->{visible} );
@@ -59,17 +62,50 @@ sub can_accept
 sub output_list
 {
 	my( $plugin, %opts ) = @_;
-	
-	my @r = '';
 
-	my $part;
-
-	foreach my $dataobj ( $opts{list}->get_records ) {
-		$part = $plugin->output_dataobj( $dataobj );
-		if( defined $opts{fh} ) { print {$opts{fh}} $part; } else { push @r, $part; }
+	my $r = [];
+	foreach my $dataobj ( $opts{list}->get_records ) 
+	{
+		my $part = $plugin->output_dataobj( $dataobj, %opts );
+		if( defined $opts{fh} )
+		{
+			print {$opts{fh}} $part;
+		}
+		else
+		{
+			push @{$r}, $part;
+		}
 	}	
 
-	if( !defined $opts{fh} ) { return join( '', @r ); }
+	if( defined $opts{fh} )
+	{
+		return undef;
+	}
+
+	return join( '', @{$r} );
+}
+
+#stub.
+sub output_dataobj
+{
+	my( $plugin, $dataobj ) = @_;
+	
+	my $r = "error. output_dataobj not subclassed";
+
+	$plugin->{session}->get_archive->log( $r );
+
+	return $r;
+}
+
+sub xml_dataobj
+{
+	my( $plugin, $dataobj ) = @_;
+	
+	my $r = "error. xml_dataobj not subclassed";
+
+	$plugin->{session}->get_archive->log( $r );
+
+	return $plugin->{session}->make_text( $r );
 }
 
 # if this an output plugin can output results for a single dataobj then

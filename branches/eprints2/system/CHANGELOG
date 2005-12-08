@@ -2866,6 +2866,21 @@ PACKAGE: 2.2.99.2
  - Also yesterdays update had a type in bin/upgrade conf_id vs confid
     method on dataset. fixed.
 
-   
+2005-12-08 cjg
 
+ - The OAI interface now uses the plugin system!
+ - New method for output plugins: xml_dataobj which returns the 
+    result as a DOM object.
+ - Added plugins for DIDL, DC and OAI_DC
+ - The OAI configuration file is now very slimmed down, and includes
+    oai_dc and DIDL!
+ - The ArchiveRenderConfig eprint_render script now uses the DC plugin
+    to get the list of DC elements.   
+ - $dataobj->to_xml defaults to the new XML format
+ - The output/xml plugin now uses $dataobj->to_xml
+ - Added a warning to the $dataobj->to_xml in case an non-existant
+    XML version is asked for.
+ - Added a warning to the $session->plugin method to warn if a non-
+    existant plugin is requested.
+ 
 ----------------------------------------------------------------------- 

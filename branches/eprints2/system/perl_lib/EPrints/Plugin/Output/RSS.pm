@@ -21,7 +21,7 @@ sub defaults
 	$d{suffix} = ".rss";
 	$d{mimetype} = "text/xml";
 
-	$d{number_to_show} = 2;
+	$d{number_to_show} = 10;
 
 	return %d;
 }
@@ -30,7 +30,7 @@ sub defaults
 sub output_list
 {
 	my( $plugin, %opts ) = @_;
-	
+
 	my $list = $opts{list}->reorder( "-datestamp" );
 
 	my $session = $plugin->{session};
@@ -115,18 +115,14 @@ sub output_list
 		$response->appendChild( $item );		
 	}	
 
-
-
-
-	
 	my $rssfeed = <<END;
 <?xml version="1.0" encoding="utf-8" ?>
-
 END
 	$rssfeed.= EPrints::XML::to_string( $response );
 	EPrints::XML::dispose( $response );
 
-	if( defined $opts{fh} ) { 
+	if( defined $opts{fh} )
+	{
 		print {$opts{fh}} $rssfeed;
 		return undef;
 	} 

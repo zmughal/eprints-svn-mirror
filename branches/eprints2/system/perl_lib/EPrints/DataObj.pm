@@ -486,7 +486,7 @@ sub to_xml
 {
 	my( $self, %opts ) = @_;
 
-	$opts{version} = "1" unless defined $opts{version};
+	$opts{version} = "2" unless defined $opts{version};
 
 	my $frag = $self->{session}->make_doc_fragment;
 	$frag->appendChild( $self->{session}->make_text( "  " ) );
@@ -494,6 +494,8 @@ sub to_xml
 	my $ns = EPrints::XML::namespace( 'data', $opts{version} );
 	if( !defined $ns )
 	{
+		$self->{session}->get_archive->log(
+			 "to_xml: unknown version: ".$opts{version} );
 		#error
 		return;
 	}

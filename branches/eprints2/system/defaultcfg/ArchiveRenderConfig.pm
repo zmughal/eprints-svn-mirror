@@ -322,14 +322,14 @@ sub eprint_render
 	my $title = $eprint->render_description();
 
 	my $links = $session->make_doc_fragment();
-	# This function is in ArchiveOAIConfig.pm, but using it here
-	# saves duplicating code.
+
 	$links->appendChild( $session->make_element( 
 		"link",
 		rel => "schema.DC",
 		href => "http://purl.org/DC/elements/1.0/" ) );
-	my @dc = eprint_to_unqualified_dc( $eprint, $session );
-	foreach( @dc )
+	my $dcplugin = $session->plugin( "output/dc" );
+	my $dc = $dcplugin->convert_dataobj( $eprint );
+	foreach( @{$dc} )
 	{
 		$links->appendChild( $session->make_element( 
 			"meta",

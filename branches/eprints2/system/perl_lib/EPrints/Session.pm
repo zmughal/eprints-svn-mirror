@@ -2532,6 +2532,12 @@ sub plugin
 
 	my $class = $self->{archive}->plugin_class( $pluginid );
 
+	if( !defined $class )
+	{
+		$self->{archive}->log( "Plugin '$pluginid' not found." );
+		return undef;
+	}
+
 	my $plugin = $class->new( session=>$self, %params );	
 
 	return $plugin;

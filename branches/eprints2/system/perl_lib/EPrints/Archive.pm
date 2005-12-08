@@ -194,6 +194,9 @@ sub new_archive_by_id
 	# Load archive plugins
 	$self->_load_plugins() || return;
 
+	# Map OAI plugins to functions, namespaces etc.
+	$self->_map_oai_plugins() || return;
+
 	$self->{field_defaults} = {};
 
 	# The var directory was added in version 2.3, create it
@@ -652,6 +655,43 @@ sub get_dataset
 
 	return $ds;
 }
+
+######################################################################
+# 
+# $success = $archive->_map_oai_plugins
+#
+# The OAI interface now uses plugins. This checks each OAI plugin and
+# stores its namespace, and a function to render with it.
+#
+######################################################################
+
+sub _map_oai_plugins
+{
+	my( $self ) = @_;
+
+	return( 1 ) unless( defined $self->{config}->{oai}->{v2}->{output_plugins} );
+
+	foreach my $plugin_id ( @{$self->{config}->{oai}->{v2}->{output_plugins}} )
+	{
+		my $class = $self->plugin_class( "output/$plugin_id" );
+
+		#no strict "refs";
+		my %defaults = $class->defaults();
+		#use strict "refs";
+		$self->{config}->{oai}->{v2}->{metadata_namespaces}->{$plugin_id} = $defaults{xmlns};
+		$self->{config}->{oai}->{v2}->{metadata_schemas}->{$plugin_id} = $defaults{schemaLocation};
+		$self->{config}->{oai}->{v2}->{metadata_functions}->{$plugin_id} = sub {
+			my( $eprint, $session ) = @_;
+
+			my $plugin = $session->plugin( "output/$plugin_id" );
+			my $xml = $plugin->xml_dataobj( $eprint );
+			return $xml;
+		};
+	}
+
+	return 1;
+}
+
 
 ######################################################################
 # 
