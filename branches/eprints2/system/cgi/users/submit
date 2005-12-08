@@ -32,12 +32,24 @@ if( !$session->auth_check( "deposit" ) )
 
 my $user = $session->current_user();
 
-my $subform = new EPrints::SubmissionForm(
-	$session,
-	$session->get_archive->get_conf( "userhome" ),
-	0,
-       	$session->get_archive->get_dataset( "inbox" ),
-	"submit" );
-$subform->process;
+my $wfopt = $session->get_archive()->get_conf( "use_workflow" );
+
+if( $wfopt )
+{
+	my $wfproc = new EPrints::Workflow::Processor(
+		$session,
+		'submit' );
+	$wfproc->render( 'metadata' );
+}
+else
+{
+	my $subform = new EPrints::SubmissionForm(
+		$session,
+		$session->get_archive->get_conf( "userhome" ),
+		0,
+	       	$session->get_archive->get_dataset( "inbox" ),
+		"submit" );
+	$subform->process;
+}
 
 $session->terminate;
