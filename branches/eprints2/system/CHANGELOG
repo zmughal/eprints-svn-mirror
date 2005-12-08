@@ -2897,3 +2897,11 @@ PACKAGE: 2.2.99.2
  - Added Workflow modules to startup.pl
  - Added workflow.xml file to defaultcfg
 
+2005-12-08 cjg
+
+ - Added perl_lib/EPrints/LocalPlugin to make installing from SVN slightly
+    easier.
+ - Fixed bug in the to_xml function for Name fields.
+ - $dataset->to_xml now puts <eprint> not <record> around v2 XML
+    items.
+

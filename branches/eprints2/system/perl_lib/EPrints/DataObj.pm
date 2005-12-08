@@ -499,9 +499,11 @@ sub to_xml
 		#error
 		return;
 	}
+
 	$attrs{'xmlns'}=$ns unless( $opts{no_xmlns} );
-	my $r = $self->{session}->make_element( "record", %attrs );
-	
+	my $tl = "record";
+	if( $opts{version} == 2 ) { $tl = $self->{dataset}->confid; }	
+	my $r = $self->{session}->make_element( $tl, %attrs );
 	$r->appendChild( $self->{session}->make_text( "\n" ) );
 	foreach my $field ( $self->{dataset}->get_fields() )
 	{

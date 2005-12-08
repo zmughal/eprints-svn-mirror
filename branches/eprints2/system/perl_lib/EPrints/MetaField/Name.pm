@@ -567,7 +567,7 @@ sub to_xml_basic
 	{
 		my $nv = $value->{$part};
 		next unless defined $nv;
-		next unless $nv eq "";
+		next unless $nv ne "";
 		$r->appendChild( $session->make_text( "\n  $ind" ) );
 		my $tag = $session->make_element( $part );
 		$tag->appendChild( $session->make_text( $nv ) );
