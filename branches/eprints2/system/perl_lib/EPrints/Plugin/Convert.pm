@@ -27,6 +27,7 @@ sub defaults
 	my %d = $_[0]->SUPER::defaults();
 	$d{id} = "convert/abstract";
 	$d{name} = "Base convert plugin: This should have been subclassed";
+	$d{visible} = "all";
 	return %d;
 }
 
@@ -40,6 +41,21 @@ sub render_name
 	my( $plugin ) = @_;
 
 	return $plugin->{session}->make_text( $plugin->{name} );
+}
+
+# all or ""
+sub is_visible
+{
+	my( $plugin, $vis_level ) = @_;
+	return( 1 ) unless( defined $vis_level );
+
+	return( 0 ) unless( defined $plugin->{visible} );
+
+	if( $vis_level eq "all" && $plugin->{visible} ne "all" ) {
+		return 0;
+	}
+
+	return 1;
 }
 
 =pod
