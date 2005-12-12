@@ -87,7 +87,7 @@ sub convert
 	# What to call the temporary file
 	my $ext = $FORMATS_PREF{$type};
 	my $fn = $doc->get_main;
-	$fn =~ s/\.\w+$/$ext/;
+	$fn =~ s/\.\w+$/\.$ext/;
 	
 	# Call imagemagick to do the conversion
 	system($CONVERT,
