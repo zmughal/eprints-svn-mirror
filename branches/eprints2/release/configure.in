@@ -97,7 +97,7 @@ AC_ARG_WITH(smtp-server,
     ])
 
 if test $DISABLE_DF = "0" ; then
-    AC_MSG_CHECKING([what perl function to use for disk free check])
+    AC_MSG_CHECKING([what perl function to use for disk free])
     DF_FUNC=`$PERL_PATH df-check.pl`
     AC_MSG_RESULT($DF_FUNC)
     if test $DF_FUNC = "none" ; then
@@ -239,6 +239,7 @@ if test $HAS_MOD_PERL_2B = "1"; then
 fi
 	
 
+NEED_TO_CHECK_CGI="no"
 if test "x$APACHE" = "x1" ; then
 	if test $HAS_MOD_PERL_1 = "1"; then
 		CHECK_PERL_MOD(Apache::Constants)
@@ -258,8 +259,10 @@ else
 	if test $HAS_MOD_PERL_2 = "1"; then
 		if test $HAS_MOD_PERL_2A = "1"; then
 			CHECK_PERL_MOD(Apache::Const)
+			NEED_TO_CHECK_CGI="old"
 		else
 			CHECK_PERL_MOD(Apache2::Const)
+			NEED_TO_CHECK_CGI="new"
 		fi
 		CHECK_PERL_MOD(ModPerl::Registry)
 	else
@@ -275,6 +278,40 @@ else
 	fi
 fi
 
+
+
+if test "$NEED_TO_CHECK_CGI" = "new" ; then
+    AC_MSG_CHECKING([CGI.pm/mod_perl compatiability (need newer CGI.pm)])
+    CGI_FUNC=`$PERL_PATH cgi-check.pl`
+    AC_MSG_RESULT($CGI_FUNC)
+    if test $CGI_FUNC != "new" ; then
+	echo "***********************************************************"
+	echo "*** The version of CGI.pm you are using is not compatible"
+	echo "*** with the version of mod_perl you are using. Either"
+	echo "*** downgrade mod_perl to version <=1.99.21 or upgrade"
+	echo "*** CGI.pm to version >= 3.08. The mod_perl documentation"
+	echo "*** recommends a CGI.pm version >= 3.11"
+	echo "*** See also: http://perl.apache.org/docs/2.0/rename.html"
+	echo "***********************************************************"
+    fi
+fi
+	
+if test "$NEED_TO_CHECK_CGI" = "old" ; then
+    AC_MSG_CHECKING([CGI.pm/mod_perl compatiability (need older CGI.pm)])
+    CGI_FUNC=`$PERL_PATH cgi-check.pl`
+    AC_MSG_RESULT($CGI_FUNC)
+    if test $CGI_FUNC != "old" ; then
+	echo "***********************************************************"
+	echo "*** The version of CGI.pm you are using is not compatible"
+	echo "*** with the version of mod_perl you are using. Either"
+	echo "*** upgrade mod_perl to version >=1.99.22 or downgrade"
+	echo "*** CGI.pm to version <= 3.07"
+	echo "*** See also: http://perl.apache.org/docs/2.0/rename.html"
+	echo "***********************************************************"
+    fi
+fi
+	
+        
 
 CHECK_PERL_MOD(Carp)
 CHECK_PERL_MOD(Config)
