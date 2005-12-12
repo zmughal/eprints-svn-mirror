@@ -20,7 +20,7 @@ use strict;
 
 our @ISA = qw/ EPrints::Plugin /;
 
-$EPrints::Plugin::Output::ABSTRACT = 1;
+our $ABSTRACT = 1;
 
 sub defaults
 {
