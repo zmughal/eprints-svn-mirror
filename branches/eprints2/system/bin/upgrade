@@ -426,13 +426,23 @@ if( $dbversion eq "2.3" )
 	my $sql;
 	print <<END;
 ======================================================================
-About to upgrade tables from 2.3 to 2.3.99.1
+About to upgrade tables from 2.3 to 2.3.99.2
 
 This will:
 
  * Change datestamp to a datetime (was a date)
  * Add a new datetime called "first live" with
     the default value taken from datestamp.
+ * Rename all the users_ tables to user_
+ * Erase the old index tables and create new
+    ones.
+ * Add a new table: indexqueue
+ * Insert a new column next to every date field
+    to store the resolution.
+ * Insert a "rev_number" field into all dataobj's
+    which will be used to store what revision the
+    record is.
+ * Add a field to "document" called "license".
 
 Are you sure you want to do this? (yes/no)
 END
@@ -448,15 +458,59 @@ END
 
 	my $ok = 1;
 
-	# not checking $ok properly.
-
 	my @tables = $db->get_tables;
+	# change the sql tables for the "user" dstaset to be "user..." rather
+	# than users...
 	foreach my $table ( @tables )
 	{
 		next unless( $table =~ m/^users(.*)/ );
 		$sql = "RENAME TABLE users$1 TO user$1";
 		$db->do( $sql );
 	}
+
+
+	# reread the tables as they've changed
+	@tables = $db->get_tables;
+
+	# rev_number to all dataobj's
+	foreach my $datasetid ( qw/ archive buffer inbox deletion user document subscription subject / )
+	{
+		my $dataset = $session->get_archive->get_dataset( $datasetid );
+		my $pkey = $dataset->get_key_field->get_sql_name;
+		my $tablename = $dataset->get_sql_table_name;
+
+		$sql = "ALTER TABLE $tablename ADD rev_number INTEGER DEFAULT 1 AFTER $pkey";
+		$db->do( $sql );
+
+		# add the ordervalues for lastmod
+		foreach my $table ( @tables )
+		{
+			if( $table =~ m/^($tablename)__ordervalues_.*$/ )
+			{
+				$sql = "ALTER TABLE $table ADD rev_number text AFTER $pkey",
+				$db->do( $sql );
+			}
+		}
+
+	}
+
+
+	# add "license" to the document dataobject.
+	$sql = "ALTER TABLE document ADD license INTEGER DEFAULT NULL AFTER security";
+	$db->do( $sql );
+
+	# add the ordervalues for lastmod
+	foreach my $table ( @tables )
+	{
+		if( $table =~ m/^document__ordervalues_.*$/ )
+		{
+			$sql = "ALTER TABLE $table ADD license text AFTER security",
+			$db->do( $sql );
+		}
+	}
+
+
+	# convert most system DATE fields into DATETIME fields.
 
 	$sql = "ALTER TABLE user MODIFY joined DATETIME";
 	$db->do( $sql );
@@ -533,7 +587,7 @@ END
 		
 		print "REMOVING: $table\n";
 	}
-
+#userid, eprintid,docid,subid,subjectid
 	$db->_create_indexqueue_table;
 	foreach my $datasetid ( qw/ archive buffer inbox deletion user document subscription subject / )
 	{
@@ -548,6 +602,9 @@ END
 			foreach my $field ( $dataset->get_fields() )
 			{
 				next unless( $field->get_property( "text_index" ) );
+				# skip fields we've not added yet.
+				next if( $field->get_name eq "license" && $datasetid eq "document" );
+				next if( $field->get_name eq "rev_number" );
 		
 				$session->get_db->index_queue( 
 					$dataset->id,
@@ -575,15 +632,11 @@ END
 	}
 	else
 	{
-		print "\n2.3 -> 2.3.99.1 done!\n";
-		$dbversion = "2.3.99.1";
+		print "\n2.3 -> 2.3.99.2 done!\n";
+		$dbversion = "2.3.99.2";
 		$db->set_version( $dbversion );
 	}
 }
-
-
-
-
 
 
 
