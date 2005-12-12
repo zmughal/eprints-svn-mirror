@@ -68,6 +68,8 @@ sub get_system_field_info
 	( 
 		{ name=>"subid", type=>"int", required=>1 },
 
+		{ name=>"rev_number", type=>"int", required=>1 },
+
 		{ name=>"userid", type=>"itemref", 
 			datasetid=>"user", required=>1 },
 
@@ -208,11 +210,18 @@ undocumented
 
 sub commit
 {
-	my( $self ) = @_;
+	my( $self, $force ) = @_;
 	
 	$self->{session}->get_archive()->call( 
 		"set_subscription_automatic_fields", 
 		$self );
+
+	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
+	{
+		# don't do anything if there isn't anything to do
+		return( 1 ) unless $force;
+	}
+	$self->set_value( "rev_number", $self->get_value( "rev_number" ) + 1 );	
 
 	my $subs_ds = $self->{session}->get_archive()->get_dataset( 
 		"subscription" );

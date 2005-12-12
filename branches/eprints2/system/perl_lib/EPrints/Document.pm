@@ -124,6 +124,8 @@ sub get_system_field_info
 	( 
 		{ name=>"docid", type=>"text", required=>1 },
 
+		{ name=>"rev_number", type=>"int", required=>1 },
+
 		{ name=>"eprintid", type=>"itemref",
 			datasetid=>"eprint", required=>1 },
 
@@ -137,6 +139,9 @@ sub get_system_field_info
 
 		{ name=>"security", type=>"datatype", required=>1, 
 			datasetid=>"security" },
+
+		{ name=>"license", type=>"datatype", required=>1, 
+			datasetid=>"license" },
 
 		{ name=>"main", type=>"text", required=>1 }
 
@@ -1132,11 +1137,18 @@ set any automatic fields that may be needed.
 
 sub commit
 {
-	my( $self ) = @_;
+	my( $self, $force ) = @_;
 
 	my $dataset = $self->{session}->get_archive()->get_dataset( "document" );
 
 	$self->{session}->get_archive()->call( "set_document_automatic_fields", $self );
+
+	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
+	{
+		# don't do anything if there isn't anything to do
+		return( 1 ) unless $force;
+	}
+	$self->set_value( "rev_number", $self->get_value( "rev_number" ) + 1 );	
 
 	my $success = $self->{session}->get_db()->update(
 		$dataset,

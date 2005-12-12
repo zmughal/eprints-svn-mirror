@@ -80,6 +80,8 @@ sub get_system_field_info
 	( 
 		{ name=>"subjectid", type=>"text", required=>1 },
 
+		{ name=>"rev_number", type=>"int", required=>1 },
+
 		{ name=>"name", type=>"text", required=>1, multilang=>1 },
 
 		{ name=>"parents", type=>"text", required=>1, 
@@ -188,10 +190,17 @@ undocumented
 
 sub commit 
 {
-	my( $self ) = @_;
+	my( $self, $force ) = @_;
 
 	my @ancestors = $self->_get_ancestors();
 	$self->{data}->{ancestors} = \@ancestors;
+
+	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
+	{
+		# don't do anything if there isn't anything to do
+		return( 1 ) unless $force;
+	}
+	$self->set_value( "rev_number", $self->get_value( "rev_number" ) + 1 );	
 
 	my $rv = $self->{session}->get_db()->update(
 			$self->{dataset},

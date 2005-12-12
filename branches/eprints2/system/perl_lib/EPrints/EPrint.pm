@@ -110,6 +110,8 @@ sub get_system_field_info
 	return ( 
 	{ name=>"eprintid", type=>"int", required=>1 },
 
+	{ name=>"rev_number", type=>"int", required=>1 },
+
 	# UserID is not required, as some bulk importers
 	# may not provide this info. maybe bulk importers should
 	# set a userid of -1 or something.
@@ -627,13 +629,12 @@ sub commit
 			EPrints::Utils::get_datetimestamp( time ) );
 	}
 
-	if( !$force ) 
+	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
 	{
-		if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
-		{
-			return 1;
-		}
+		# don't do anything if there isn't anything to do
+		return( 1 ) unless $force;
 	}
+	$self->set_value( "rev_number", $self->get_value( "rev_number" ) + 1 );	
 
 	$self->set_value( 
 		"lastmod" , 

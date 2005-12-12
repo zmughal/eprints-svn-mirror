@@ -2905,12 +2905,25 @@ PACKAGE: 2.2.99.2
  - $dataset->to_xml now puts <eprint> not <record> around v2 XML
     items.
 
- 2005-12-08 cjg
+2005-12-08 cjg
 
- - Made a warning if a non-abstract plugin does not have an ID.
  - Made Plugin/Control.pm abstract.
 
  2005-12-08 cjg
  
  - Added a nice favicon.ico
- 
+
+2005-12-08 cjg
+
+ - Plugins now have a type() method to say what type they are
+ - The plugins_list method can now filter plugins by type. ie. only
+    output plugins.
+ - Added an OldXML plugin for the 2.3 XML format. Hidden by default.
+ - Made a warning if a non-abstract plugin does not have an ID.
+
+2005-12-12 cjg
+
+ - Added rev_number revision number field to all dataobjects, and the
+    code to add it to bin/upgrade.
+ - Added favicon to the template
+
