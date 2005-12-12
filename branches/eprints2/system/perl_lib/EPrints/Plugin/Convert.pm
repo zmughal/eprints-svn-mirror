@@ -17,6 +17,9 @@ This plugin and its dependents allow EPrints to convert documents from one forma
 =cut
 
 use strict;
+use warnings;
+
+use EPrints::SystemSettings;
 
 our @ISA = qw/ EPrints::Plugin /;
 
@@ -86,6 +89,14 @@ sub convert
 	my ($plugin, $eprint, $doc, $type) = @_;
 
 	return undef;
+}
+
+# TODO: Make this generic
+sub _getconvertdir
+{
+	my $dir = "/tmp/ep-convert-$$";
+	mkdir($dir);
+	return $dir;
 }
 
 1;
