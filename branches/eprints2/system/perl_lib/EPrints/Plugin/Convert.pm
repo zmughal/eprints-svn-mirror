@@ -60,7 +60,7 @@ sub is_visible
 
 =pod
 
-=item @types = $p->can_convert( $eprint, $doc )
+=item @types = $p->can_convert( $doc )
 
 Returns a list of mime-types that this plugin can convert the document $doc to.
 
@@ -68,7 +68,7 @@ Returns a list of mime-types that this plugin can convert the document $doc to.
 
 sub can_convert
 {
-	my ($plugin, $eprint, $doc) = @_;
+	my ($plugin, $doc) = @_;
 
 	return ();
 }
