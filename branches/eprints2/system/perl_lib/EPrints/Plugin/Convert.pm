@@ -80,7 +80,7 @@ sub can_convert
 
 =item $success = $p->convert( $eprint, $doc, $type )
 
-Convert $doc to format $type and store the result in $eprint. Returns undef on failure.
+Convert $doc to format $type and store the result in $eprint. Returns undef on failure, otherwise the new document.
 
 =cut
 

@@ -106,7 +106,7 @@ sub convert
 	$new_doc->add_file( $fn );
 	$new_doc->commit;
 
-	return 1;
+	return $new_doc;
 }
 
 1;
