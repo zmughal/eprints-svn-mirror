@@ -70,7 +70,10 @@ if( !defined $format || $format eq "" ) {
 	exit;
 }
 
-my @plugins = $session->plugin_list( type=>"output", can_accept=>"dataobj/eprint", is_visible=>"all" );
+my @plugins = $session->plugin_list( 
+				type=>"output", 
+				can_accept=>"dataobj/eprint", 
+				is_visible=>"all" );
 my $ok = 0;
 foreach( @plugins ) { if( $_ eq "output/$format" ) { $ok = 1; last; } }
 unless( $ok ) {

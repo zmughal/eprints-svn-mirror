@@ -2927,3 +2927,6 @@ PACKAGE: 2.2.99.2
     code to add it to bin/upgrade.
  - Added favicon to the template
 
+2005-12-13 cjg
+ - Fixed cgi/export to understand that not all plugins are output plugins.
+
