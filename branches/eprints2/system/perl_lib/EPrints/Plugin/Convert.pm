@@ -78,9 +78,24 @@ sub can_convert
 
 =pod
 
-=item $success = $p->convert( $eprint, $doc, $type )
+=item @filelist = $p->export( $dir, $doc, $type )
 
-Convert $doc to format $type and store the result in $eprint. Returns undef on failure, otherwise the new document.
+Convert $doc to $type and export it to $dir. Returns a list of file names that resulted from the conversion. The main file (if there is one) is the first file name returned. Returns empty list on failure.
+
+=cut
+
+sub export
+{
+	my ($plugin, $dir, $doc, $type) = @_;
+
+	return undef;
+}
+
+=pod
+
+=item $doc = $p->convert( $eprint, $doc, $type )
+
+Convert $doc to format $type. Stores the resulting $doc in $eprint, and returns the new document or undef on failure.
 
 =cut
 
