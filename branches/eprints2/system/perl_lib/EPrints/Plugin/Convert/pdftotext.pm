@@ -17,7 +17,6 @@ use EPrints::Plugin::Convert;
 our @ISA = qw/ EPrints::Plugin::Convert /;
 
 our $pdftotext = $EPrints::SystemSettings::conf->{executables}->{pdftotext};
-carp "Path to pdftotext not set in EPrints::SystemSettings" unless $pdftotext;
 
 our $ABSTRACT = 0;
 
@@ -49,6 +48,8 @@ sub export
 {
 	my ( $plugin, $dir, $doc, $type ) = @_;
 
+	return () unless $pdftotext;
+
 	# What to call the temporary file
 	my $fn = $doc->get_main;
 	$fn =~ s/\.\w+$/\.txt/;
@@ -62,7 +63,7 @@ sub export
 	);
 
 	unless( -e "$dir/$fn" ) {
-		return undef;
+		return ();
 	}
 	
 	return ($fn);

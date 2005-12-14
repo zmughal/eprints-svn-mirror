@@ -17,7 +17,6 @@ use EPrints::Plugin::Convert;
 our @ISA = qw/ EPrints::Plugin::Convert /;
 
 our $CONVERT = $EPrints::SystemSettings::conf->{executables}->{convert};
-carp "Path to convert not set in EPrints::SystemSettings" unless $CONVERT;
 
 our $ABSTRACT = 0;
 
@@ -72,7 +71,7 @@ sub export
 {
 	my ( $plugin, $dir, $doc, $type ) = @_;
 
-	return undef unless $CONVERT;
+	return () unless $CONVERT;
 
 	# What to call the temporary file
 	my $ext = $FORMATS_PREF{$type};
@@ -86,7 +85,7 @@ sub export
 	);
 
 	unless( -e "$dir/$fn" ) {
-		return undef;
+		return ();
 	}
 	
 	return ($fn);
