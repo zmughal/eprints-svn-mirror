@@ -90,7 +90,80 @@ sub param
 	return $self->{$key};
 }
 
+######################################################################
+=pod
 
+=item $id = $plugin->get_id
+
+Return the ID of this plugin.
+
+=cut
+######################################################################
+
+sub get_id
+{
+	my( $self ) = @_;
+
+	return $self->{id};
+}
+
+######################################################################
+=pod
+
+=item $name = $plugin->get_name
+
+Return the ID of this plugin.
+
+=cut
+######################################################################
+
+sub get_name
+{
+	my( $self ) = @_;
+
+	return $self->{name};
+}
+
+######################################################################
+=pod
+
+=item $name = $plugin->get_type
+
+Return the type of this plugin. eg. output
+
+=cut
+######################################################################
+
+sub get_type
+{
+	my( $self ) = @_;
+
+	return $self->{type};
+}
+
+######################################################################
+=pod
+
+=item $name = $plugin->matches( $test, $param )
+
+Return true if this plugin matches the test, false otherwise. If the
+test is not known then return false.
+
+=cut
+######################################################################
+
+sub matches 
+{
+	my( $self, $test, $param ) = @_;
+
+	if( $test eq "type" )
+	{
+		return( $self->get_type eq $param );
+	}
+
+	# didn't understand this match 
+	return 0;
+}
 
 
 

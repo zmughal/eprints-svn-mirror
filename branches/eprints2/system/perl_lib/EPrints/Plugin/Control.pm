@@ -52,22 +52,10 @@ sub defaults
 {
 	my %d = $_[0]->SUPER::defaults();
 	$d{name} = "Base control plugin: This should have been subclassed";
+	$d{type} = "control";
 	$d{visible} = "all";
 	return %d;
 }
-
-sub new
-{
-	my( $class, %params ) = @_;
-	my $self = {};
-	bless $self, $class;
-	#$self->{session} = $params{session};
-	#delete $params{session};
-	$self->{params} = \%params;	
-	return( $self );
-}
-
-sub type { return "control"; }
 
 sub render
 {

@@ -659,7 +659,7 @@ sub local_path
 	if( !defined $eprint )
 	{
 		$self->{session}->get_archive->log(
-			"Document ".$self->get_id." has no eprint!" );
+			"Document ".$self->get_id." has no eprint (eprintid is ".$self->get_value( "eprintid" )."!" );
 		return( undef );
 	}	
 	

@@ -2204,6 +2204,7 @@ sub render_export_links
 	my $id = $self->get_value( "eprintid" );
 	my $ul = $self->{session}->make_element( "ul" );
 	my @plugins = $self->{session}->plugin_list( 
+					type=>"output",
 					can_accept=>"dataobj/eprint", 
 					is_visible=>"all" );
 	foreach my $plugin_id ( @plugins ) {

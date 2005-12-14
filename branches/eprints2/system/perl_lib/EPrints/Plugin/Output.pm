@@ -13,13 +13,9 @@ sub defaults
 	$d{name} = "Base output plugin: This should have been subclassed";
 	$d{suffix} = ".txt";
 	$d{visible} = "all";
+	$d{type} = "output";
 	$d{mimetype} = "text/plain";
 	return %d;
-}
-
-sub type
-{
-	return "output";
 }
 
 sub render_name
@@ -28,6 +24,24 @@ sub render_name
 
 	return $plugin->{session}->make_text( $plugin->{name} );
 }
+
+sub matches 
+{
+	my( $self, $test, $param ) = @_;
+
+	if( $test eq "is_visible" )
+	{
+		return( $self->is_visible( $param ) );
+	}
+	if( $test eq "can_accept" )
+	{
+		return( $self->can_accept( $param ) );
+	}
+
+	# didn't understand this match 
+	return $self->SUPER::matches( $test, $param );
+}
+
 
 # all or ""
 sub is_visible

@@ -2928,5 +2928,21 @@ PACKAGE: 2.2.99.2
  - Added favicon to the template
 
 2005-12-13 cjg
+
  - Fixed cgi/export to understand that not all plugins are output plugins.
 
+2005-12-14 cjg
+
+ - Plugins now have a filter method which takes a type, eg. visible or 
+    can_accept and a parameter. It returns true or false. Several of these
+    restrictions can be passed to $session->plugin_list to get a filtered
+    list. The method is called "matches".
+ - Added some accessor functions to plugins - get_type, get_name, get_id
+ - Improved the error message when a document has no eprint - now says 
+    what eprint ID it can't find.
+ - Plugins now have a default property "type" which is output/control/
+    whatever.
+ - Removed the new() constructor from Control as it confuses how things
+    work. I'll need to sync with MOJ about this, but either the params
+    should be properties of $self or of $self->{params} but it must
+    be consistant. 

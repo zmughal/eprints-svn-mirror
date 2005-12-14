@@ -2555,9 +2555,7 @@ return a list of available plugins which can accept the given
 restrictions.
 
 Restictions:
-
- can_accept=>"dataobj/eprint"
- visible=>"all"
+ vary depending on the type of the plugin.
 
 =cut
 ######################################################################
@@ -2567,7 +2565,7 @@ sub plugin_list
 	my( $self, %restrictions ) = @_;
 
 	my %pids = ();
-#	foreach( EPrints::Plugin::plugin_list() ) { $pids{$_}=1; }
+
 	foreach( $self->{archive}->plugin_list() ) { $pids{$_}=1; }
 
 	return sort keys %pids if( !scalar %restrictions );
@@ -2576,19 +2574,16 @@ sub plugin_list
 	{
 		my $plugin = $self->plugin( $plugin_id );
 
-		if( $restrictions{type} )
+		# should we add this one to the list?
+		my $add = 1;	
+		foreach my $k ( keys %restrictions )
 		{
-			next unless( $plugin->type eq $restrictions{type} );
+			my $v = $restrictions{$k};
+			next if( $plugin->matches( $k, $v ) );
+			$add = 0;
 		}
-		if( $restrictions{can_accept} )
-		{
-			next unless( $plugin->can_accept( $restrictions{can_accept} ) );
-		}
-
-		if( $restrictions{is_visible} )
-		{
-			next unless( $plugin->is_visible( $restrictions{is_visible} ) );
-		}
+		
+		next unless $add;	
 
 		push @out, $plugin_id;
 	}

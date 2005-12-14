@@ -32,12 +32,8 @@ sub defaults
 	$d{id} = "convert/abstract";
 	$d{name} = "Base convert plugin: This should have been subclassed";
 	$d{visible} = "all";
+	$d{type} = "convert";
 	return %d;
-}
-
-sub type
-{
-	return "convert";
 }
 
 sub render_name
