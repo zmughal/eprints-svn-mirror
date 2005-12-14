@@ -106,7 +106,8 @@ sub convert
 
 	my $dir = EPrints::TempDir->new( "ep-convertXXXXX", UNLINK => 1);
 
-	unless( my @files = export( $plugin, $dir, $doc, $type ) ) {
+	my @files;
+	unless( @files = $plugin->export( $dir, $doc, $type ) ) {
 		return undef;
 	}
 
@@ -118,11 +119,6 @@ sub convert
 	$new_doc->set_desc( $plugin->{name} . ' conversion from ' . $doc->get_type . ' to ' . $type );
 	$new_doc->add_file( $_ ) for map { "$dir/$_" } @files;
 	$new_doc->commit;
-
-	# Cleanup
-	for( map { "$dir/$_" } @files ) {
-		unlink($_);
-	}
 
 	return $new_doc;
 }
