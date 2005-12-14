@@ -30,11 +30,6 @@ sub defaults
 	return %d;
 }
 
-sub type
-{
-	return "convert";
-}
-
 sub can_convert
 {
 	my ($plugin, $doc) = @_;
