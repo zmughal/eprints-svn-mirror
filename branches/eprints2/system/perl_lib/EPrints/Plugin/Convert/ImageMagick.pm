@@ -48,7 +48,7 @@ sub defaults
 {
 	my %d = $_[0]->SUPER::defaults();
 	$d{id} = "convert/imagemagick";
-	$d{name} = "ImageMagick-based conversions";
+	$d{name} = "ImageMagick";
 	$d{visible} = "all";
 	return %d;
 }
@@ -73,17 +73,12 @@ sub can_convert
 	}
 }
 
-sub convert
+sub export
 {
-	my ( $plugin, $eprint, $doc, $type ) = @_;
+	my ( $plugin, $dir, $doc, $type ) = @_;
 
 	return undef unless $CONVERT;
 
-	my $session = $plugin->{session};
-
-	# Location to store the temporary file
-	my $dir = SUPER::_getconvertdir();
-	
 	# What to call the temporary file
 	my $ext = $FORMATS_PREF{$type};
 	my $fn = $doc->get_main;
@@ -95,18 +90,11 @@ sub convert
 		$dir . '/' . $fn
 	);
 
-	if( !-e ($dir . '/' . $fn) ) {
+	unless( -e "$dir/$fn" ) {
 		return undef;
 	}
 	
-	my $new_doc = EPrints::Document->create( $session, $eprint );
-	
-	$new_doc->set_format( $type );
-	$new_doc->set_desc( 'ImageMagick conversion from ' . $doc->get_type . ' to ' . $type );
-	$new_doc->add_file( $fn );
-	$new_doc->commit;
-
-	return $new_doc;
+	return ($fn);
 }
 
 1;

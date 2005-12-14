@@ -50,22 +50,15 @@ sub can_convert
 	}
 }
 
-sub convert
+sub export
 {
-	my ( $plugin, $eprint, $doc, $type ) = @_;
+	my ( $plugin, $dir, $doc, $type ) = @_;
 
-	return undef unless $pdftotext;
-
-	my $session = $plugin->{session};
-
-	# Location to store the temporary file
-	my $dir = SUPER::_getconvertdir();
-	
 	# What to call the temporary file
 	my $fn = $doc->get_main;
 	$fn =~ s/\.\w+$/\.txt/;
 	
-	# Call imagemagick to do the conversion
+	# Call pdftotext to do the conversion
 	system($pdftotext,
 		"-enc","UTF-8",
 		"-layout",
@@ -73,18 +66,11 @@ sub convert
 		$dir . '/' . $fn
 	);
 
-	if( !-e ($dir . '/' . $fn) ) {
+	unless( -e "$dir/$fn" ) {
 		return undef;
 	}
 	
-	my $new_doc = EPrints::Document->create( $session, $eprint );
-	
-	$new_doc->set_format( $type );
-	$new_doc->set_desc( 'Foolabs xpdf conversion from ' . $doc->get_type . ' to ' . $type );
-	$new_doc->add_file( $fn );
-	$new_doc->commit;
-
-	return $new_doc;
+	return ($fn);
 }
 
 1;

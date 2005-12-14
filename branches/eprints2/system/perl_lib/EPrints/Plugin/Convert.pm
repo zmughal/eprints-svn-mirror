@@ -19,6 +19,7 @@ This plugin and its dependents allow EPrints to convert documents from one forma
 use strict;
 use warnings;
 
+use EPrints::TempDir;
 use EPrints::SystemSettings;
 
 our @ISA = qw/ EPrints::Plugin /;
@@ -103,15 +104,27 @@ sub convert
 {
 	my ($plugin, $eprint, $doc, $type) = @_;
 
-	return undef;
-}
+	my $dir = EPrints::TempDir->new( "ep-convertXXXXX", UNLINK => 1);
 
-# TODO: Make this generic
-sub _getconvertdir
-{
-	my $dir = "/tmp/ep-convert-$$";
-	mkdir($dir);
-	return $dir;
+	unless( my @files = export( $plugin, $dir, $doc, $type ) ) {
+		return undef;
+	}
+
+	my $session = $plugin->{session};
+
+	my $new_doc = EPrints::Document->create( $session, $eprint );
+	
+	$new_doc->set_format( $type );
+	$new_doc->set_desc( $plugin->{name} . ' conversion from ' . $doc->get_type . ' to ' . $type );
+	$new_doc->add_file( $_ ) for map { "$dir/$_" } @files;
+	$new_doc->commit;
+
+	# Cleanup
+	for( map { "$dir/$_" } @files ) {
+		unlink($_);
+	}
+
+	return $new_doc;
 }
 
 1;
