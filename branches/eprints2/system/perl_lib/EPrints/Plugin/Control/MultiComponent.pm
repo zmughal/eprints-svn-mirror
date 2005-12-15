@@ -1,4 +1,4 @@
-package EPrints::Plugin::Component::Default;
+package EPrints::Plugin::Component::MultiComponent;
 
 use EPrints::Plugin::Component;
 
@@ -13,7 +13,7 @@ sub defaults
 	my %d = $_[0]->SUPER::defaults();
 
 	$d{id} = "component/default";
-	$d{name} = "Default";
+	$d{name} = "MultiComponent";
 	$d{visible} = "all";
 
 	return %d;
@@ -83,6 +83,51 @@ sub render
 	$div->appendChild( $metafield->render_input_field( $session, $value ) );
 	$outer->appendChild( $div );
 	return $outer;
+	
+
+#	my $control = $session->make_element( "div", class => "wf_control" );
+
+#	my $helpdiv = $session->make_doc_fragment();
+#	my $namediv = $session->make_doc_fragment();
+#	my $namebardiv = $session->make_doc_fragment();
+#	my $inputdiv= $session->make_doc_fragment();;
+#	
+#	$namebardiv = $session->make_element( "div", class => "wf_control_name_bar" );
+ #
+ #	# Help section
+#	if( $params->{show_help} )
+#	{
+#		$helpdiv = $session->make_element( "div", style => "display: none", class => "tipbox", id => "wf_control_help_".$metafield->get_name );
+#		my $help = $metafield->render_help( $session, $metafield->get_type() ) ;
+#		
+#		
+#		# Necessary for the Javascript
+#		my $container = $session->make_element( "div", class=>"content" );
+#		$container->appendChild( $help );
+#		
+#		$helpdiv->appendChild( $container );
+#		
+#		my $link = $session->make_element( "a", onClick => "Effect.Appear('wf_control_help_".$metafield->get_name."')");
+#		my $helpimg = $session->make_element( "img", valign => "middle", style => "float: right", src => "/images/help.gif", border => "0" );
+#		$link->appendChild( $helpimg );
+#		$namebardiv->appendChild( $link );
+#	}
+#
+#	# Name section
+#	$namediv = $session->make_element( "div", class => "wf_control_name" ); 
+#	$namediv->appendChild( $metafield->render_name( $session ) );
+#	$namebardiv->appendChild( $namediv );
+#	
+#	# Input control
+#	$inputdiv = $session->make_element( "div", class => "wf_control_input", id => "inputfield_".$metafield->get_name );
+#	$inputdiv->appendChild( $metafield->render_input_field( $session, $value ) );
+#	
+#	$control->appendChild( $namebardiv );
+#	$control->appendChild( $session->make_element( "div", style => "clear: all" ) );
+#	$control->appendChild( $helpdiv );
+#	$control->appendChild( $inputdiv );
+#	
+#	return $control;
 }
 
 1;

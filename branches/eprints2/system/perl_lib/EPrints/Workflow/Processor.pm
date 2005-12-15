@@ -123,11 +123,16 @@ undocumented
 sub render
 {
 	my( $self, $stage ) = @_;
-
-
+	
 	my $arc = $self->{session}->get_archive;
-	$self->{eprintid} = 100;
 	$self->{dataset} = $arc->get_dataset( "archive" );
+
+	if( !defined $stage )
+	{
+		$stage = $arc->{workflow}->get_first_stage();
+	}
+
+	$self->{eprintid} = 100;
 
 	$self->{eprint} = EPrints::EPrint->new(
 	$self->{session},
@@ -141,7 +146,7 @@ sub render
 		type => $self->{eprint}->render_value( "type" ),
 		eprintid => $self->{eprint}->render_value( "eprintid" ),
 		desc => $self->{eprint}->render_description ),
-		$stage->render( $self->{session}, $arc->{workflow} ), 
+		$stage->render( $self->{session}, $arc->{workflow}, $self->{eprint} ), 
 		"submission_metadata" );
 
 	$self->{session}->send_page();

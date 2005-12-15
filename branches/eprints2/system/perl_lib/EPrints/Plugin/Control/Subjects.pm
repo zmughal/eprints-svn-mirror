@@ -1,8 +1,8 @@
-package EPrints::Plugin::Control::Subjects;
+package EPrints::Plugin::Component::Subjects;
 
-use EPrints::Plugin::Control;
+use EPrints::Plugin::Component;
 
-@ISA = ( "EPrints::Plugin::Control" );
+@ISA = ( "EPrints::Plugin::Component" );
 
 use Unicode::String qw(latin1);
 
@@ -12,7 +12,7 @@ sub defaults
 {
 	my %d = $_[0]->SUPER::defaults();
 
-	$d{id} = "control/subjects";
+	$d{id} = "component/subjects";
 	$d{name} = "Subjects";
 	$d{visible} = "all";
 

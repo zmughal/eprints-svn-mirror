@@ -47,14 +47,14 @@ sub _read_controls
 			my $class = $self->{archive}->plugin_class( $type );
 			if( !defined $class )
 			{
-				$self->{archive}->log( "Unable to create plugin of type $type" );
+				$class = $self->{archive}->plugin_class( "control/placeholder" );
+				$params{name} = $type;
 			}
-			else
+			if( defined $class )
 			{
 				my $plugin = $class->new( %params );
-	
 				push @$control_list, $plugin;
-			}		
+			}
 		}
 		elsif( $name eq "wf:title" )
 		{
@@ -89,7 +89,7 @@ sub get_short_title
 
 sub render
 {
-  my( $self, $session, $workflow, $target ) = @_;
+  my( $self, $session, $workflow, $eprint ) = @_;
   my $page = $session->make_doc_fragment();
 
   my $form = $session->render_form( "post", $target );
@@ -110,7 +110,7 @@ sub render
       };
       
 
-  $form->appendChild( $session->render_action_buttons( %$submit_buttons ) );
+#  $form->appendChild( $session->render_action_buttons( %$submit_buttons ) );
 
   foreach my $control (@{$self->{controls}})
   {
@@ -121,9 +121,11 @@ sub render
       class => "formfieldinput",
       id => "inputfield_".$params{field} );
 	%params = ();
+	$params{eprint} = $eprint if( defined $eprint);
 	$params{workflow} = $workflow;
 	$params{stage} = $self->{name};
 	$params{session} = $session;
+	$params{show_help} = 1;
     $div->appendChild( $control->render( undef, \%params ) );
     $form->appendChild( $div );
   }
@@ -136,7 +138,7 @@ sub render
   }
         
 
-  $form->appendChild( $session->render_action_buttons( %$submit_buttons ) ); 
+#  $form->appendChild( $session->render_action_buttons( %$submit_buttons ) ); 
   
   return $form;
 }

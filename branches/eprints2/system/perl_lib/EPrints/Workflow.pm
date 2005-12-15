@@ -138,6 +138,13 @@ sub get_stage
 	return $self->{stages}->[ $self->{nummap}->{$stage} ];
 }
 
+sub get_first_stage
+{
+	my( $self ) = @_;
+	my $stage = $self->{stages}->[0];
+	return $stage->get_name();
+}
+
 sub _read_flow
 {
 	my( $self, $doc ) = @_;

@@ -1,8 +1,8 @@
-package EPrints::Plugin::Control::Blister;
+package EPrints::Plugin::Component::Blister;
 
-use EPrints::Plugin::Control;
+use EPrints::Plugin::Component;
 
-@ISA = ( "EPrints::Plugin::Control" );
+@ISA = ( "EPrints::Plugin::Component" );
 
 use Unicode::String qw(latin1);
 
@@ -12,7 +12,7 @@ sub defaults
 {
 	my %d = $_[0]->SUPER::defaults();
 
-	$d{id} = "control/blister";
+	$d{id} = "component/blister";
 	$d{name} = "Blister";
 	$d{visible} = "all";
 
@@ -22,31 +22,35 @@ sub defaults
 
 sub render
 {
-  my( $self, $defobj, $params ) = @_;
- 
-  my $session = $params->{session};
-  my $workflow = $params->{workflow};
-  
-  my @stages = @{$workflow->{stages}};
-  my $tdwid = POSIX::floor(50/(scalar @stages));
-  
-  my $table = $session->make_element( "table", width => "100%" );
-  my $tr = $session->make_element( "tr", width => "100%" );
-  my $td = $session->make_element( "td", width => "50%" );
-  $td->appendChild( $session->make_text( $workflow->get_stage( $params->{stage} )->get_title ) );
-  $tr->appendChild( $td );
-  my $pos = 1;
-  foreach my $stage ( @stages ) 
-  {
-  
-    my $td = $session->make_element( "td", width => "$tdwid%" );
-    $td->appendChild( $session->make_text( "$pos. " ) );
-    $td->appendChild( $session->make_text( $stage->get_short_title ) );
-    $tr->appendChild( $td );
-    $pos++;
-  }
-  $table->appendChild( $tr );
-  return $table;
+	my( $self, $defobj, $params ) = @_;
+	
+	my $session = $params->{session};
+	my $workflow = $params->{workflow};
+
+	my $base = $session->make_element( "div", class => "wf_blister" );
+	my $stages = $session->make_element( "div", class => "wf_blister_stages" );
+	
+	my @stages = @{$workflow->{stages}};
+	my $current = $session->make_element( "div", class => "wf_blister_stage_curr" );;
+	foreach(@stages)
+	{
+		my $div;
+		if( $params->{stage} eq $_->get_name() )
+		{
+			$div = $session->make_element( "div", class => "wf_blister_stage_curr" );
+			$current->appendChild( $session->make_text( $_->get_title() ) );
+		}
+		else
+		{
+			$div = $session->make_element( "div", class => "wf_blister_stage" );
+		}
+		$div->appendChild( $session->make_text( $_->get_name() ) );
+		$stages->appendChild( $div );
+	}
+	$base->appendChild( $stages );
+	$base->appendChild( $current );
+
+	return $base;
 }
 
 1;
