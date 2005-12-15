@@ -12,7 +12,7 @@ This plugin and its dependents allow EPrints to convert documents from one forma
 
 =head1 LAST MODIFIED BY
 
-$ Id $
+$Id $
 
 =head1 METHODS
 
