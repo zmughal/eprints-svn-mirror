@@ -2953,3 +2953,17 @@ PACKAGE: 2.2.99.2
  - incrementing rev_number no longer gives a warning if it was not set
     already.
 
+2005-12-15 moj
+
+ - NB: Temporary breakage while switching from Control to Component
+ - get_first_stage convenience method added to Workflow
+ - Processor rends first stage if none other specified
+ - render method now takes in the eprint to render with
+ - Stage renders a placeholder control for any nonexistent/broken controls
+ - Blister and Default now use the new stylesheet
+ - Default renders default values + required images
+ - Added initial uploader/multiple modules (under dev)
+ - Added JS, help/req gifs, and workflow.css
+ - Renamed Control to Component
+ - Updated workflow.xml
+
