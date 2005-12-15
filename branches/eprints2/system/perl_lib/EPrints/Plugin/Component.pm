@@ -1,7 +1,7 @@
 
 ######################################################################
 #
-# EPrints::Control
+# EPrints::Component
 #
 ######################################################################
 #
@@ -29,11 +29,11 @@
 
 =head1 NAME
 
-B<EPrints::Control> - A single form control 
+B<EPrints::Component> - A single form component 
 
 =cut
 
-package EPrints::Plugin::Control;
+package EPrints::Plugin::Component;
 
 # are these all needed?
 use EPrints::Utils;
@@ -46,13 +46,13 @@ use strict;
 
 our @ISA = qw/ EPrints::Plugin /;
 
-$EPrints::Plugin::Control::ABSTRACT = 1;
+$EPrints::Plugin::Component::ABSTRACT = 1;
 
 sub defaults
 {
 	my %d = $_[0]->SUPER::defaults();
-	$d{name} = "Base control plugin: This should have been subclassed";
-	$d{type} = "control";
+	$d{name} = "Base component plugin: This should have been subclassed";
+	$d{type} = "component";
 	$d{visible} = "all";
 	return %d;
 }

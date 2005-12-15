@@ -13,47 +13,47 @@ sub new
 	{
 		# Creating a new stage
 		$self->{name} = $stage->getAttribute("name");
-		$self->{controls} = $self->_read_controls( $stage->getChildNodes );
+		$self->{components} = $self->_read_components( $stage->getChildNodes );
 	}
 	return $self;
 }
 
-sub _read_controls
+sub _read_components
 {
 	my( $self, @stage_nodes ) = @_;
-	print STDERR "Reading controls\n"; 
-	my $control_list = [];
+	print STDERR "Reading components\n"; 
+	my $component_list = [];
 	
 	foreach my $stage_node ( @stage_nodes )
 	{
 		my $name = $stage_node->getNodeName;
-		if( $name eq "wf:control" )
+		if( $name eq "wf:component" )
 		{
 			# Pull out the type
 			my $type = $stage_node->getAttribute( "type" );
 			# Grab any values inside
 			my %params = ();
 			$params{type} = $type;
-			foreach my $control_node ( $stage_node->getChildNodes )
+			foreach my $comp_node ( $stage_node->getChildNodes )
 			{
-				my $elname = $control_node->getNodeName;
+				my $elname = $comp_node->getNodeName;
 				if( $elname eq "wf:value" )
 				{
-					my $valname = $control_node->getAttribute( "name" );
-					my $valtext = $control_node->getFirstChild->getNodeValue;  
+					my $valname = $comp_node->getAttribute( "name" );
+					my $valtext = $comp_node->getFirstChild->getNodeValue;  
 					$params{$valname} = $valtext;
 				}
 			}
 			my $class = $self->{archive}->plugin_class( $type );
 			if( !defined $class )
 			{
-				$class = $self->{archive}->plugin_class( "control/placeholder" );
+				$class = $self->{archive}->plugin_class( "component/placeholder" );
 				$params{name} = $type;
 			}
 			if( defined $class )
 			{
 				my $plugin = $class->new( %params );
-				push @$control_list, $plugin;
+				push @$component_list, $plugin;
 			}
 		}
 		elsif( $name eq "wf:title" )
@@ -65,7 +65,7 @@ sub _read_controls
 			$self->{short_title} = $stage_node->getFirstChild->getNodeValue;
 		}
 	}
-	return $control_list;
+	return $component_list;
 }
 
 sub get_name
@@ -112,7 +112,7 @@ sub render
 
 #  $form->appendChild( $session->render_action_buttons( %$submit_buttons ) );
 
-  foreach my $control (@{$self->{controls}})
+  foreach my $component (@{$self->{components}})
   {
     my $div;
 
@@ -126,7 +126,7 @@ sub render
 	$params{stage} = $self->{name};
 	$params{session} = $session;
 	$params{show_help} = 1;
-    $div->appendChild( $control->render( undef, \%params ) );
+    $div->appendChild( $component->render( undef, \%params ) );
     $form->appendChild( $div );
   }
 
