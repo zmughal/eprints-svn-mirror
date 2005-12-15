@@ -13,46 +13,46 @@
     <wf:stage name="upload">
         <wf:title><wf:phrase ref="lib/submissionform:title_upload" /></wf:title>
         <wf:short-title>Upload</wf:short-title>
-        <wf:control name="control/uploader" type="uploader"/>
+        <wf:component name="component/uploader" type="uploader"/>
     </wf:stage>
     
     <wf:stage name="metadata">
         <wf:title>Metadata Entry</wf:title>
         <wf:short-title>Metadata</wf:short-title>
 
-        <wf:control type="control/blister" />
+        <wf:component type="component/blister" />
         
-        <wf:control type="control/phrase"><wf:value name="phraseid">lib/submissionform:title_upload</wf:value></wf:control>
+        <wf:component type="component/phrase"><wf:value name="phraseid">lib/submissionform:title_upload</wf:value></wf:component>
        
-        <wf:control type="control/default"><wf:value name="maxwidth">10</wf:value><wf:value name="field">title</wf:value></wf:control> 
-        <wf:control type="control/default"><wf:value name="field">creators</wf:value></wf:control>
-        <wf:control type="control/default"><wf:value name="field">publication</wf:value></wf:control>
-        <wf:control type="control/default"><wf:value name="field">volume</wf:value></wf:control>
-        <wf:control type="control/default"><wf:value name="field">number</wf:value></wf:control>
-        <wf:control type="control/default"><wf:value name="field">pages</wf:value></wf:control>
-        <wf:control type="control/default"><wf:value name="field">date_issue</wf:value></wf:control>
-        <wf:control type="control/default"><wf:value name="field">date_sub</wf:value></wf:control>
-        <wf:control type="control/default"><wf:value name="field">id_number</wf:value></wf:control>
-        <wf:control type="control/default"><wf:value name="field">official_url</wf:value></wf:control>
-        <wf:control type="control/default"><wf:value name="field">issn</wf:value></wf:control>
-        <!--<wf:control type="control/default"><wf:value name="field">status</wf:value></wf:control>-->
-        <wf:control type="control/default"><wf:value name="field">ispublished</wf:value></wf:control>
-        <wf:control type="control/default"><wf:value name="field">refereed</wf:value></wf:control>
-        <wf:control type="control/default"><wf:value name="field">abstract</wf:value></wf:control>
-        <wf:control type="control/default"><wf:value name="field">referencetext</wf:value></wf:control>
-        <wf:control type="control/default"><wf:value name="field">keywords</wf:value></wf:control>
-        <wf:control type="control/default"><wf:value name="field">subjects</wf:value></wf:control>
-        <wf:control type="control/default"><wf:value name="field">note</wf:value></wf:control>
-        <wf:control type="control/default"><wf:value name="field">suggestions</wf:value></wf:control>
+        <wf:component type="component/default"><wf:value name="maxwidth">10</wf:value><wf:value name="field">title</wf:value></wf:component> 
+        <wf:component type="component/default"><wf:value name="field">creators</wf:value></wf:component>
+        <wf:component type="component/default"><wf:value name="field">publication</wf:value></wf:component>
+        <wf:component type="component/default"><wf:value name="field">volume</wf:value></wf:component>
+        <wf:component type="component/default"><wf:value name="field">number</wf:value></wf:component>
+        <wf:component type="component/default"><wf:value name="field">pages</wf:value></wf:component>
+        <wf:component type="component/default"><wf:value name="field">date_issue</wf:value></wf:component>
+        <wf:component type="component/default"><wf:value name="field">date_sub</wf:value></wf:component>
+        <wf:component type="component/default"><wf:value name="field">id_number</wf:value></wf:component>
+        <wf:component type="component/default"><wf:value name="field">official_url</wf:value></wf:component>
+        <wf:component type="component/default"><wf:value name="field">issn</wf:value></wf:component>
+        <!--<wf:component type="component/default"><wf:value name="field">status</wf:value></wf:component>-->
+        <wf:component type="component/default"><wf:value name="field">ispublished</wf:value></wf:component>
+        <wf:component type="component/default"><wf:value name="field">refereed</wf:value></wf:component>
+        <wf:component type="component/default"><wf:value name="field">abstract</wf:value></wf:component>
+        <wf:component type="component/default"><wf:value name="field">referencetext</wf:value></wf:component>
+        <wf:component type="component/default"><wf:value name="field">keywords</wf:value></wf:component>
+        <wf:component type="component/default"><wf:value name="field">subjects</wf:value></wf:component>
+        <wf:component type="component/default"><wf:value name="field">note</wf:value></wf:component>
+        <wf:component type="component/default"><wf:value name="field">suggestions</wf:value></wf:component>
 
         <!-- Adds in remaining fields -->
-        <!--<wf:control type="remainder" />-->
+        <!--<wf:component type="remainder" />-->
     </wf:stage>
     
     <wf:stage name="verify">
         <wf:title><wf:pin ref="lib/submissionform:title_verify" /></wf:title>
         <wf:short-title>Verify</wf:short-title>
-        <wf:control name="control/preview" type="preview"/>
+        <wf:component name="component/preview" type="preview"/>
     
     </wf:stage>
 </wf:workflow>
