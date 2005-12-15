@@ -2946,3 +2946,10 @@ PACKAGE: 2.2.99.2
     work. I'll need to sync with MOJ about this, but either the params
     should be properties of $self or of $self->{params} but it must
     be consistant. 
+ - Added new script /bin/export for export using plugins.
+
+2005-12-15 cjg
+ 
+ - incrementing rev_number no longer gives a warning if it was not set
+    already.
+

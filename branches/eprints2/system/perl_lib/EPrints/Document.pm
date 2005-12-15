@@ -1148,7 +1148,7 @@ sub commit
 		# don't do anything if there isn't anything to do
 		return( 1 ) unless $force;
 	}
-	$self->set_value( "rev_number", $self->get_value( "rev_number" ) + 1 );	
+	$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 
 	my $success = $self->{session}->get_db()->update(
 		$dataset,
