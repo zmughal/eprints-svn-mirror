@@ -10,6 +10,10 @@ EPrints::Plugin::Convert - Convert EPrints::Document into different formats
 
 This plugin and its dependents allow EPrints to convert documents from one format into another format.
 
+=head1 LAST MODIFIED BY
+
+$ID$
+
 =head1 METHODS
 
 =over 5
