@@ -6,14 +6,14 @@
 	background-color: #e6f6ff;
 }
 
-.wf_control
+.wf_component
 {
 	background-color: #e6f6ff;
 	padding: 0.25em;
 	width: 44em;
 }
 
-.wf_control .wf_title
+.wf_component .wf_title
 {
 	border: 1px solid #888;
 	color: #fff;
@@ -22,22 +22,22 @@
 	margin-bottom: 0.25em;
 }
 
-.wf_control .wf_name
+.wf_component .wf_name
 {
 	font-weight: bold;
 }
 
-.wf_control .wf_req_icon
+.wf_component .wf_req_icon
 {
 	vertical-align: text-top;
 }
 
-.wf_control .wf_help_icon
+.wf_component .wf_help_icon
 {
 	float: right;
 }
 
-.wf_control .wf_help .field
+.wf_component .wf_help .field
 {
 	font-family: "lucida grande", verdana, sans-serif;
 	font-size: 10pt;
@@ -46,13 +46,13 @@
 	font-weight: bold;
 }
 
-.wf_control .wf_help .desc
+.wf_component .wf_help .desc
 {
 	margin: 0px;
 	margin-bottom: 0.3em;
 }
 
-.wf_control .wf_help
+.wf_component .wf_help
 {
 /*      display: none;*/
 	margin-top: 1px;
@@ -65,10 +65,10 @@
 	margin-bottom: 0.25em;
 }
 
-.wf_control .wf_body {
+.wf_component .wf_body {
 }
 
-.wf_control .wf_input {
+.wf_component .wf_input {
 	text-align: center;
 }
 
@@ -119,37 +119,6 @@
 
 
 
-
-/*
-
-
-
-
-.wf_control {
-	border: #8080f0 1px solid;
-	padding: 2px;
-	margin-bottom: 3px;
-}
-
-.wf_control_name_bar {
-}
-
-.wf_control_name {
-	border: #8080f0 1px solid;
-	padding: 2px;
-	background: #efefff;
-}
-
-.wf_control_help {
-	margin: 1px;
-	border: dashed thin #ffcf80;
-	background: #ffcf80;
-	z-index: 3;
-}
-
-.wf_control_input {
-
-}
 
 /* For file selector */
 
