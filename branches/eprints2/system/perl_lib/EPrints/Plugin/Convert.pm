@@ -158,8 +158,11 @@ sub mime_type
 	my $file = $EPrints::SystemSettings::conf->{executables}->{file} || `which file` || 'file';
 	chomp($file);
 	my $file_cmd = $EPrints::SystemSettings::conf->{invocation}->{file} || '$(file) -b -i $(SOURCE)';
-	my %vars = ( 'file' => $file, 'SOURCE' => $fn );
-	my $cmd = prepare_cmd($file_cmd, %vars);
+	my $cmd = prepare_cmd(
+		$file_cmd,
+		file => $file,
+		SOURCE => $fn,
+	);
 	
 	# Call file and return the mime-type found
 	my $mt = `$cmd`;
