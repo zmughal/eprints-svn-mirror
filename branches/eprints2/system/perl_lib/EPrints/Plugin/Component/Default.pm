@@ -56,9 +56,8 @@ sub render_outer
 sub render
 {
 	my( $self, $defobj, $params ) = @_;
-  
 	my $session = $params->{session};
-	my $field = $self->{params}->{field};
+	my $field = $self->{field};
 	my $user_ds = $session->get_archive()->get_dataset( "eprint" );
 	my $metafield = $user_ds->get_field( $field );
 
