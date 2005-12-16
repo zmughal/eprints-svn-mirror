@@ -2967,3 +2967,7 @@ PACKAGE: 2.2.99.2
  - Renamed Control to Component
  - Updated workflow.xml
 
+2005-12-16 moj
+
+ - Fixed Default.pm (was checking wrong var for field info)
+ - Updated workflow.css to match the control/component swap
