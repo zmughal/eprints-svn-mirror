@@ -12,7 +12,7 @@ This plugin and its dependents allow EPrints to convert documents from one forma
 
 =head1 LAST MODIFIED BY
 
-$Id:$
+$Id$
 
 =head1 METHODS
 
@@ -121,6 +121,54 @@ sub convert
 	$new_doc->commit;
 
 	return $new_doc;
+}
+
+=pod
+
+=item $cmd = prepare_cmd($cmd,%VARS)
+
+Prepare command string $cmd by substituting variables (specified by $(varname)) with their values from %VARS. All %VARS are quoted before replacement.
+
+If a variable is specified in $cmd, but not present in %VARS a die is thrown.
+
+=cut
+
+sub prepare_cmd {
+	my ($cmd, %VARS) = @_;
+	for(values %VARS) {
+		$_ = quotemeta($_);
+	}
+	$cmd =~ s/\$\(([\w_]+)\)/defined($VARS{$1}) ? $VARS{$1} : die("Unspecified variable $1 in $cmd")/seg;
+	$cmd;
+}
+
+=pod
+
+=item $mime_type = mime_type($fn)
+
+Returns the mime-type of the file located at $fn, using the Unix file command.
+
+=cut
+
+sub mime_type
+{
+	my $fn = shift;
+	die "File does not exist: $fn" unless -e $fn;
+	die "Can not read file: $fn" unless -r $fn;
+	die "Can not type a directory: $fn" if -d $fn;
+
+	# Prepare the command to call
+	my $file = $EPrints::SystemSettings::conf->{executables}->{file} || `which file` || 'file';
+	chomp($file);
+	my $file_cmd = $EPrints::SystemSettings::conf->{invocation}->{file} || '$(file) -b -i $(SOURCE)';
+	my %vars = ( 'file' => $file, 'SOURCE' => $fn );
+	my $cmd = prepare_cmd($file_cmd, %vars);
+	
+	# Call file and return the mime-type found
+	my $mt = `$cmd`;
+	chomp($mt);
+	($mt) = split /,/, $mt, 2; # file can return a 'sub-type'
+	return length($mt) > 0 ? $mt : undef;
 }
 
 1;
