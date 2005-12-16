@@ -1,0 +1,75 @@
+package EPrints::Plugin::Convert::Unpack;
+
+=pod
+
+=head1 NAME
+
+EPrints::Plugin::Convert::Unpack - Unpack archive files (zip, tarball etc)
+
+=head1 DESCRIPTION
+
+This *only* handles single-files.
+
+=cut
+
+use strict;
+use warnings;
+
+use Carp;
+
+use EPrints::Plugin::Convert;
+our @ISA = qw/ EPrints::Plugin::Convert /;
+
+our %TYPES = qw(
+	application/x-gzip gunzip
+	application/x-tar tar
+	application/x-zip unzip
+	application/x-bzip2 bzip2
+);
+
+our $ABSTRACT = 0;
+
+sub defaults
+{
+	my %d = $_[0]->SUPER::defaults();
+	$d{id} = "convert/unpack";
+	$d{name} = "Archive unpacking";
+	$d{visible} = "api";
+	return %d;
+}
+
+sub can_convert
+{
+	my ($plugin, $doc) = @_;
+
+	# Get the main file name
+	my $mt = mime_type( $doc->local_path . '/' . $doc->get_main() ) or return ();
+	return $TYPES{$mt} ? ($TYPES{$mt}) : ();
+}
+
+sub export
+{
+	my ( $plugin, $dir, $doc, $type ) = @_;
+
+	# What to call the temporary file
+	my $fn = $doc->local_path . '/' . $doc->get_main;
+	
+	my $cmd = $EPrints::SystemSettings::conf->{executables}->{$type} or die "Command location not configured for $type conversion";
+	my $invo = $EPrints::SystemSettings::conf->{invocation}->{$type} or die "Invocation not configured for $type conversion";
+	system(prepare_cmd($invo,
+		$type => $cmd,
+		DIR => $dir,
+		ARC => $fn,
+		FILENAME => $doc->get_main,
+		FILEPATH => $doc->local_path,
+	));
+
+	local *DIR;
+	opendir DIR, $dir or die "Unable to open directory $dir: $!";
+	my @files = grep { $_ !~ /^\./ } readdir(DIR);
+	closedir DIR;
+	
+	return @files;
+}
+
+1;
