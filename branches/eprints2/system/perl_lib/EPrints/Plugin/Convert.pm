@@ -135,10 +135,7 @@ If a variable is specified in $cmd, but not present in %VARS a die is thrown.
 
 sub prepare_cmd {
 	my ($cmd, %VARS) = @_;
-	for(values %VARS) {
-		$_ = quotemeta($_);
-	}
-	$cmd =~ s/\$\(([\w_]+)\)/defined($VARS{$1}) ? $VARS{$1} : die("Unspecified variable $1 in $cmd")/seg;
+	$cmd =~ s/\$\(([\w_]+)\)/defined($VARS{$1}) ? quotemeta($VARS{$1}) : die("Unspecified variable $1 in $cmd")/seg;
 	$cmd;
 }
 
