@@ -13,7 +13,8 @@
     <wf:stage name="upload">
         <wf:title><wf:phrase ref="lib/submissionform:title_upload" /></wf:title>
         <wf:short-title>Upload</wf:short-title>
-        <wf:component name="component/uploader" type="uploader"/>
+        <wf:component type="component/blister" />
+        <wf:component type="component/uploader"/>
     </wf:stage>
     
     <wf:stage name="metadata">
@@ -22,19 +23,13 @@
 
         <wf:component type="component/blister" />
         
-        <wf:component type="component/phrase"><wf:value name="phraseid">lib/submissionform:title_upload</wf:value></wf:component>
-       
-        <wf:component type="component/default"><wf:value name="maxwidth">10</wf:value><wf:value name="field">title</wf:value></wf:component> 
+        <wf:component type="component/default"><wf:value name="maxlength">10</wf:value><wf:value name="field">title</wf:value></wf:component> 
         <wf:component type="component/default"><wf:value name="field">creators</wf:value></wf:component>
-        <wf:component type="component/default"><wf:value name="field">publication</wf:value></wf:component>
-        <wf:component type="component/default"><wf:value name="field">volume</wf:value></wf:component>
-        <wf:component type="component/default"><wf:value name="field">number</wf:value></wf:component>
-        <wf:component type="component/default"><wf:value name="field">pages</wf:value></wf:component>
+        <wf:component type="component/multi"><wf:array name="components"><wf:array><wf:value name="field">publication</wf:value><wf:value name="maxlength">45</wf:value></wf:array><wf:array><wf:value name="field">volume</wf:value><wf:value name="maxlength">3</wf:value></wf:array><wf:array><wf:value name="field">number</wf:value><wf:value name="maxlength">3</wf:value></wf:array><wf:array><wf:value name="field">pages</wf:value><wf:value name="maxlength">10</wf:value></wf:array><wf:array><wf:value name="field">issn</wf:value><wf:value name="maxlength">10</wf:value></wf:array></wf:array></wf:component>
         <wf:component type="component/default"><wf:value name="field">date_issue</wf:value></wf:component>
         <wf:component type="component/default"><wf:value name="field">date_sub</wf:value></wf:component>
         <wf:component type="component/default"><wf:value name="field">id_number</wf:value></wf:component>
         <wf:component type="component/default"><wf:value name="field">official_url</wf:value></wf:component>
-        <wf:component type="component/default"><wf:value name="field">issn</wf:value></wf:component>
         <!--<wf:component type="component/default"><wf:value name="field">status</wf:value></wf:component>-->
         <wf:component type="component/default"><wf:value name="field">ispublished</wf:value></wf:component>
         <wf:component type="component/default"><wf:value name="field">refereed</wf:value></wf:component>
@@ -52,7 +47,8 @@
     <wf:stage name="verify">
         <wf:title><wf:pin ref="lib/submissionform:title_verify" /></wf:title>
         <wf:short-title>Verify</wf:short-title>
-        <wf:component name="component/preview" type="preview"/>
+        <wf:component type="component/blister" />
+        <wf:component type="component/preview"/>
     
     </wf:stage>
 </wf:workflow>
