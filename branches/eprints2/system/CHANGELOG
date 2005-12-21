@@ -2971,3 +2971,20 @@ PACKAGE: 2.2.99.2
 
  - Fixed Default.pm (was checking wrong var for field info)
  - Updated workflow.css to match the control/component swap
+
+2005-12-21 moj
+
+ - Removed redundant methods from Workflow.pm
+ - Stage.pm can now read arrays <wf:array>, which may be nested. 
+ - Created FieldComponent.pm to replace Default. This is extended by
+    MultiComponent, PlaceHolder, etc - any field which has a title,
+    help, and an input.
+ - Shifted render_outer (now render_shell) to FieldComponent, and created
+    render_field, render_help, and render_title methods. These may be
+	overridden when necessary.
+ - Updated FieldConfig to not require a metafield to render the shell -
+    the necessary values are now passed in a parameter hash.
+ - Created MultiComponent. This takes an array of fields, and renders them
+    in a sideways table style (headings on lhs, fields on right). It also
+	concatenates the help (with headings in between).
+
