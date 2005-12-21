@@ -53,6 +53,20 @@ sub render_outer
 
 }
 
+=pod
+
+=item @problems = $plugin->validate()
+
+Returns a set of problems (DOM objects) if the component is unable to validate.
+
+=cut
+
+
+sub validate
+{
+	return 1;
+}
+
 sub render
 {
 	my( $self, $defobj, $params ) = @_;
