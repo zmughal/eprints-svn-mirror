@@ -18,6 +18,36 @@ sub new
 	return $self;
 }
 
+sub _read_params
+{
+	my( $self, $root ) = @_;
+	my $out = ();
+
+	foreach my $comp_node ( $root->getChildNodes )
+	{
+			return $comp_node->toString if EPrints::XML::is_dom( $comp_node, "Text" );
+
+			my $elname = $comp_node->getNodeName;
+			my $field_name = $comp_node->getAttribute( "name" );
+			my $field_value = undef;
+			if( $elname eq "wf:value" )
+			{
+				$field_value = $comp_node->getFirstChild->getNodeValue;
+			}
+			elsif( $elname eq "wf:array" )
+			{
+				$field_value = [];
+				foreach my $val_node ( $comp_node->getChildNodes )
+				{
+					push @$field_value, $self->_read_params( $val_node );
+				}
+			}
+			$out->{$field_name} = $field_value;
+	}
+	return $out;
+}
+	
+
 sub _read_components
 {
 	my( $self, @stage_nodes ) = @_;
@@ -32,21 +62,13 @@ sub _read_components
 			# Pull out the type
 			my $type = $stage_node->getAttribute( "type" );
 			# Grab any values inside
-			my %params = ();
+			my %params = %{$self->_read_params( $stage_node )};
+			use Data::Dumper; print STDERR Dumper(\%params);
 			$params{type} = $type;
-			foreach my $comp_node ( $stage_node->getChildNodes )
-			{
-				my $elname = $comp_node->getNodeName;
-				if( $elname eq "wf:value" )
-				{
-					my $valname = $comp_node->getAttribute( "name" );
-					my $valtext = $comp_node->getFirstChild->getNodeValue;  
-					$params{$valname} = $valtext;
-				}
-			}
 			my $class = $self->{archive}->plugin_class( $type );
 			if( !defined $class )
 			{
+				print STDERR "Using placeholder for $type\n";
 				$class = $self->{archive}->plugin_class( "component/placeholder" );
 				$params{name} = $type;
 			}

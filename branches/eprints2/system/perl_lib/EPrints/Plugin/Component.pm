@@ -35,13 +35,6 @@ B<EPrints::Component> - A single form component
 
 package EPrints::Plugin::Component;
 
-# are these all needed?
-use EPrints::Utils;
-use EPrints::Session;
-use EPrints::Subject;
-use EPrints::Database;
-use EPrints::SearchExpression;
-
 use strict;
 
 our @ISA = qw/ EPrints::Plugin /;
@@ -57,9 +50,36 @@ sub defaults
 	return %d;
 }
 
-sub render
+sub render_shell
 {
-	my( $self, $defobj, %params ) = @_;
+	my( $self, $session, $metafield, $dataset, $type ) = @_;
+	my $shell = $session->make_element( "div", class => "wf_component" );
+	my $name = $metafield->get_name;
+	
+	my $helpimg = $session->make_element( "img", src => "/images/help.gif", class => "wf_help_icon", border => "0" );
+	my $reqimg = $session->make_element( "img", src => "/images/req.gif", class => "wf_req_icon", border => "0" );
+
+	my $title = $session->make_element( "div", class => "wf_title" );
+
+	my $helplink = $session->make_element( "a", onClick => "doToggle('help_$name')" );
+	$helplink->appendChild($helpimg);
+
+	$title->appendChild( $helplink );
+	
+	my $req = $dataset->field_required_in_type( $metafield, $type );
+	if($req)
+	{
+		$title->appendChild( $reqimg );
+	}
+	$title->appendChild( $session->make_text(" ") );
+	$title->appendChild( $metafield->render_name( $session ) );
+
+	my $help = $session->make_element( "div", class => "wf_help", style => "display: none", id => "help_$name" );
+	$help->appendChild( $metafield->render_help( $session, $metafield->get_type() ) );
+
+	$shell->appendChild( $title );
+	$shell->appendChild( $help );
+	return $shell;
 }
 
 sub from_form
@@ -69,6 +89,7 @@ sub from_form
 
 sub validate
 {
+	return 1;
 }
 
 # all or ""

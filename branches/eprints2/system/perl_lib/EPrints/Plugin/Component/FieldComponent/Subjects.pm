@@ -1,8 +1,8 @@
-package EPrints::Plugin::Component::Subjects;
+package EPrints::Plugin::Component::FieldComponent::Subjects;
 
-use EPrints::Plugin::Component;
+use EPrints::Plugin::Component::FieldComponent;
 
-@ISA = ( "EPrints::Plugin::Component" );
+@ISA = ( "EPrints::Plugin::Component::FieldComponent" );
 
 use Unicode::String qw(latin1);
 

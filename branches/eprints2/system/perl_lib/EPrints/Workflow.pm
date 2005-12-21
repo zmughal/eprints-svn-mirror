@@ -171,23 +171,6 @@ sub _read_flow
 	return $flowout;
 }
 
-sub render
-{
-	my( $self, $session ) = @_;
-	my $page = $session->make_doc_fragment();
-
-	return( $page );
-}
-
-sub get_display
-{
-	my( $self, $session, $stage ) = @_;
-	my $stub = $session->make_doc_fragment();
-	$stub->appendChild( $session->html_phrase(
-		"lib/submissionform:no_files") );
-	return $stub;
-}
-
 1;
 
 ######################################################################
