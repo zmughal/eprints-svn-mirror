@@ -16,8 +16,6 @@ use Carp;
 use EPrints::Plugin::Convert;
 our @ISA = qw/ EPrints::Plugin::Convert /;
 
-our $CONVERT = $EPrints::SystemSettings::conf->{executables}->{convert};
-
 our $ABSTRACT = 0;
 
 our (%FORMATS, @ORDERED, %FORMATS_PREF);
@@ -56,7 +54,7 @@ sub can_convert
 {
 	my ($plugin, $doc) = @_;
 
-	return () unless $CONVERT;
+	my $convert = $plugin->archive->get_conf( 'executables', 'convert' ) or return ();
 
 	# Get the main file name
 	my $fn = $doc->get_main();
@@ -71,7 +69,7 @@ sub export
 {
 	my ( $plugin, $dir, $doc, $type ) = @_;
 
-	return () unless $CONVERT;
+	my $convert = $plugin->archive->get_conf( 'executables', 'convert' ) or return ();
 
 	# What to call the temporary file
 	my $ext = $FORMATS_PREF{$type};
@@ -79,7 +77,7 @@ sub export
 	$fn =~ s/\.\w+$/\.$ext/;
 	
 	# Call imagemagick to do the conversion
-	system($CONVERT,
+	system($convert,
 		$doc->local_path . '/' . $doc->get_main,
 		$dir . '/' . $fn
 	);

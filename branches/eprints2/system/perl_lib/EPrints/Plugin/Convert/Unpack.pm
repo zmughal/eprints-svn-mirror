@@ -54,8 +54,8 @@ sub export
 	# What to call the temporary file
 	my $fn = $doc->local_path . '/' . $doc->get_main;
 	
-	my $cmd = $EPrints::SystemSettings::conf->{executables}->{$type} or die "Command location not configured for $type conversion";
-	my $invo = $EPrints::SystemSettings::conf->{invocation}->{$type} or die "Invocation not configured for $type conversion";
+	my $cmd = $plugin->archive->get_conf( 'executables', $type ) or die "Executable location not set for $type conversion";
+	my $invo = $plugin->archive->get_conf->( 'invocation', $type ) or die "Invocation not set for $type conversion";
 	system(prepare_cmd($invo,
 		$type => $cmd,
 		DIR => $dir,

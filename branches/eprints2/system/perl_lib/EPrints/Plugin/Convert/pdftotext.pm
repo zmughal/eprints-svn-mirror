@@ -16,8 +16,6 @@ use Carp;
 use EPrints::Plugin::Convert;
 our @ISA = qw/ EPrints::Plugin::Convert /;
 
-our $pdftotext = $EPrints::SystemSettings::conf->{executables}->{pdftotext};
-
 our $ABSTRACT = 0;
 
 sub defaults
@@ -33,7 +31,7 @@ sub can_convert
 {
 	my ($plugin, $doc) = @_;
 
-	return () unless $pdftotext;
+	my $pdftotext = $plugin->archive->get_conf( 'executable', 'pdftotext' ) or return ();
 
 	# Get the main file name
 	my $fn = $doc->get_main();
@@ -48,7 +46,7 @@ sub export
 {
 	my ( $plugin, $dir, $doc, $type ) = @_;
 
-	return () unless $pdftotext;
+	my $pdftotext = $plugin->archive->get_conf( 'executable', 'pdftotext' ) or return ();
 
 	# What to call the temporary file
 	my $fn = $doc->get_main;

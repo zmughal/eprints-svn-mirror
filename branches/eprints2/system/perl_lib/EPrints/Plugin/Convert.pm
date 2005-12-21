@@ -64,6 +64,16 @@ sub is_visible
 
 =pod
 
+=item $archive = $p->archive()
+
+Returns the current archive
+
+=cut
+
+sub archive { shift->{archive} }
+
+=pod
+
 =item @types = $p->can_convert( $doc )
 
 Returns a list of mime-types that this plugin can convert the document $doc to.
