@@ -2988,3 +2988,13 @@ PACKAGE: 2.2.99.2
     in a sideways table style (headings on lhs, fields on right). It also
 	concatenates the help (with headings in between).
 
+2005-12-22 moj
+
+ - Added get_next_stage/get_prev_stage functions to Workflow
+ - Processor now has _pre_process to handle stage progression and (soon)
+   validation.
+ - Can now go forward/back using the standard Next/Prev button bar. 
+ - Fixed indentation in Stage
+ - _read_params now returns a hashref
+ - Removed property setting code for now (will be in future revision)
+ - Removed 'delete' call - was mucking up the object (oops)
