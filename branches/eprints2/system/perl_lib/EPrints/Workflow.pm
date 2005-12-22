@@ -145,6 +145,38 @@ sub get_first_stage
 	return $stage->get_name();
 }
 
+sub get_next_stage
+{
+	my( $self, $currstage ) = @_;
+	my $num = $self->{nummap}->{$currstage};
+	if( $num == scalar @{$self->{stages}}-1 )
+	{
+		return $currstage;
+	}
+	else
+	{
+		$num++;
+		my $stage = $self->{stages}->[ $num ];
+		return $stage->get_name(); 
+	}
+}
+
+sub get_prev_stage
+{
+	my( $self, $currstage ) = @_;
+	my $num = $self->{nummap}->{$currstage};
+	if( $num == 0 )
+	{
+		return $currstage;
+	}
+	else
+	{
+		$num--;
+		my $stage = $self->{stages}->[ $num ];
+		return $stage->get_name(); 
+	}
+}
+
 sub _read_flow
 {
 	my( $self, $doc ) = @_;

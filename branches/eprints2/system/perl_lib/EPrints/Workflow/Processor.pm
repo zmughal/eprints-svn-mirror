@@ -110,6 +110,31 @@ sub new
 	return( $self );
 }
 
+sub _pre_process
+{
+	my( $self ) = @_;
+
+	$self->{action}    = $self->{session}->get_action_button();
+	$self->{stage}     = $self->{session}->param( "stage" );
+
+	print STDERR $self->{action}."\n";
+
+	if( $self->{action} eq "next" )
+	{
+		$self->{stage} = $self->{workflow}->get_next_stage( $self->{stage} );
+	}
+	elsif( $self->{action} eq "prev" )
+	{
+		$self->{stage} = $self->{workflow}->get_prev_stage( $self->{stage} );
+	}
+
+	$self->{eprintid}  = $self->{session}->param( "eprintid" );
+	$self->{user}      = $self->{session}->current_user();
+	
+	print STDERR $self->{stage}."\n";
+
+}
+
 ######################################################################
 =pod
 
@@ -126,11 +151,19 @@ sub render
 	
 	my $arc = $self->{session}->get_archive;
 	$self->{dataset} = $arc->get_dataset( "archive" );
+	$self->{workflow} = $arc->{workflow};
 
-	if( !defined $stage )
+	$self->_pre_process();
+	
+	if( !defined $self->{stage} )
 	{
-		$stage = $arc->{workflow}->get_first_stage();
+		$self->{stage} = $self->{workflow}->get_first_stage();
 	}
+	elsif( defined $stage )
+	{
+		$self->{stage} = $stage;
+	}
+
 
 	$self->{eprintid} = 100;
 
@@ -139,14 +172,14 @@ sub render
 	$self->{eprintid},
 	$self->{dataset} );
 
-	my $stage = $arc->{workflow}->get_stage($stage);
+	my $curr_stage = $self->{workflow}->get_stage($self->{stage});
 	$self->{session}->build_page(
 		$self->{session}->html_phrase(
 		"lib/submissionform:title_meta",
 		type => $self->{eprint}->render_value( "type" ),
 		eprintid => $self->{eprint}->render_value( "eprintid" ),
 		desc => $self->{eprint}->render_description ),
-		$stage->render( $self->{session}, $arc->{workflow}, $self->{eprint} ), 
+		$curr_stage->render( $self->{session}, $arc->{workflow}, $self->{eprint} ), 
 		"submission_metadata" );
 
 	$self->{session}->send_page();

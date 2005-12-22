@@ -37,11 +37,11 @@ sub render
 		my $field = $comp->{field};
 	    my $metafield = $user_ds->get_field( $field );
 		
-		delete $comp->{field};
-		foreach my $key ( keys %$comp )
-		{
-			$metafield->set_property( $key, $comp->{$key} );	
-		}
+	#	foreach my $key ( keys %$comp )
+	#	{
+	#		print STDERR "Want to set property $key\n";
+	#		$metafield->set_property( $key, $comp->{$key} );	
+	#	}
 		$tr = $session->make_element( "tr" );
 		
 		# Get the field and its value/default
