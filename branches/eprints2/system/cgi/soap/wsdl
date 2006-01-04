@@ -74,8 +74,8 @@ print <<END;
     <part name="searchFields"            type="pm:ListSearchField"/>
   </message>
 
-  <message name="searchOutput">
-    <part name="results"                 type="pm:ListEPrint"/>
+  <message name="searchEprintOutput">
+    <part name="results"                 type="pm:ListEprint"/>
   </message>
 
 
@@ -110,7 +110,7 @@ print <<END;
 
     <operation name="searchEprint" parameterOrder="params searchFields">
       <input  name='searchInput'  message="pm:searchInput"/>
-      <output name='searchOutput' message="pm:searchOutput"/>
+      <output name='searchEprintOutput' message="pm:searchEprintOutput"/>
     </operation>
 
   </portType>
@@ -122,17 +122,20 @@ print <<END;
   <binding name="PmSoapRpcApiBinding" type="pm:PmSoapRpcApiPort">
     <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
 END
-foreach my $method (qw/ echo removeEprint getEprint getEprintFiles putEprint searchEprint /)
+# first the easy ones
+foreach my $operation (qw/ echo removeEprint getEprint putEprint /)
 {
+	my $input = $operation."Input";
+	my $output = $operation."Output";
 	print <<END;
-    <operation name="$method">
-      <soap:operation soapAction="$host/EPrints/WebServices#$method"/>
-      <input name="${method}Input">
+    <operation name="$operation">
+      <soap:operation soapAction="$host/EPrints/WebServices#$operation"/>
+      <input name="$input">
         <soap:body use="encoded"
                    namespace="$host/EPrints/WebServices"
                    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
       </input>
-      <output name="${method}Output">
+      <output name="$output">
         <soap:body use="encoded"
                    namespace="$host/EPrints/WebServices"
                    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
@@ -140,8 +143,40 @@ foreach my $method (qw/ echo removeEprint getEprint getEprintFiles putEprint sea
     </operation>
 END
 }
-
+# now the operations which don't use their own special input/output
 print <<END;
+
+
+    <operation name="searchEprint">
+      <soap:operation soapAction="$host/EPrints/WebServices#searchEprint"/>
+      <input name="searchInput">
+        <soap:body use="encoded"
+                   namespace="$host/EPrints/WebServices"
+                   encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
+      </input>
+      <output name="searchEprintOutput">
+        <soap:body use="encoded"
+                   namespace="$host/EPrints/WebServices"
+                   encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
+      </output>
+    </operation>
+
+    <operation name="getEprintFiles">
+      <soap:operation soapAction="$host/EPrints/WebServices#getEprintFiles"/>
+      <input name="getEprintInput">
+        <soap:body use="encoded"
+                   namespace="$host/EPrints/WebServices"
+                   encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
+      </input>
+      <output name="getEprintOutput">
+        <soap:body use="encoded"
+                   namespace="$host/EPrints/WebServices"
+                   encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
+      </output>
+    </operation>
+
+
+
   </binding>
 
 

@@ -125,7 +125,7 @@ sub putEprint($)
 		foreach my $filedata ( @{$docdata->{files}} )
 		{
 			my $fn = $doc->local_path."/".$filedata->{filename};
-			open( FILE, ">$fn" ) || die "can't write file: $!";
+			open( FILE, ">$fn" ) || die "can't write file $fn: $!";
 			print FILE $filedata->{data};
 			close FILE;
 		}
@@ -154,19 +154,19 @@ sub searchEprint($$)
 
 	print STDERR "search(".join(",",@_).")\n";
 
-	print STDERR "get_eprint(".join(",",@_).")\n";
 	my $session = new EPrints::Session();
 	if( !defined $session )
 	{
 		die "can't open session";
 	}
 	my $archive = $session->get_archive;
-	my $dataset = $archive->get_dataset( 'eprint' ); 
+	my $dataset = $archive->get_dataset( 'archive' ); 
 	my %p = ();
 	$paramlist = [] unless defined $paramlist;
 	foreach my $pair ( @{$paramlist} )
 	{
-		$p{$pair->{param}} = $pair->{value};
+		next unless defined $pair->{name};
+		$p{$pair->{name}} = $pair->{value};
 	}
 	# page_size?
 	my %params = (
@@ -188,6 +188,8 @@ sub searchEprint($$)
 			my $field = EPrints::Utils::field_from_config_string( $dataset, $fieldid );
 			push @fields, $field;
 		}
+		$sf->{match} = "IN" unless EPrints::Utils::is_set( $sf->{match} );
+		$sf->{merge} = "ALL" unless EPrints::Utils::is_set( $sf->{merge} );
 		$sexp->add_field( \@fields, $sf->{value}, $sf->{match}, $sf->{merge} );
 	}
 	$sexp->perform_search;
@@ -201,7 +203,8 @@ sub searchEprint($$)
 	
 	$session->terminate;
 
-	return SOAP::Data->name('results', \@r );
+	my $host = $archive->get_conf( "base_url" );
+	return SOAP::Data->name('results', \@r )->attr( {"SOAP-ENC:arrayType"=>"eprints:Eprint[".(scalar @r)."]", "xmlns:eprints"=>"$host/EPrints/WebServices"});
 }
 	
 
@@ -236,7 +239,7 @@ sub object_to_soap($$)
 		{
 			my $fileinfo = {};
 			$fileinfo->{filename} = $filename;
-			$fileinfo->{filesize} = SOAP::Data->type( "xsd:int", $files{$filename} );
+			$fileinfo->{filesize} = SOAP::Data->type( "xsd:string", $files{$filename} );
 			$fileinfo->{url} = $obj->get_url( $filename );
 			if( $whole_files )
 			{
@@ -373,10 +376,10 @@ sub xsd_type_basic
 {
 	my( $field, $name ) = @_;
 
-	if( $field->get_search_group eq "int" )
-	{
-		return "xsd:int";
-	}
+#	if( $field->get_search_group eq "int" )
+#	{
+#		return "xsd:int";
+#	}
 	if( $field->get_search_group eq "name" )
 	{
 		return "eprints:NameValue";
