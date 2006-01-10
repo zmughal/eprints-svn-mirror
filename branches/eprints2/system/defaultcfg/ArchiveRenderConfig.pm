@@ -149,6 +149,13 @@ sub eprint_render
 		$page->appendChild( $doctable );
 	}	
 
+	# Embargo date
+	if( $eprint->is_set( "date_embargo" ) && $eprint->get_value( "full_text_status") eq "restricted" )
+	{
+		$page->appendChild( $session->html_phrase( "embargo:status", 
+			date => EPrints::Utils::render_date( $session, $eprint->get_value( "date_embargo" ) ) ) );
+	}
+
 	# Alternative locations
 	if( $eprint->is_set( "official_url" ) )
 	{

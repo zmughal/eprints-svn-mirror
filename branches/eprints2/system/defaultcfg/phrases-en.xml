@@ -226,6 +226,8 @@
     <ep:phrase ref="eprint_fieldopt_full_text_status_public">Public</ep:phrase>
     <ep:phrase ref="eprint_fieldopt_full_text_status_none">None</ep:phrase>
 
+    <ep:phrase ref="eprint_fieldname_date_embargo">Embargo expiry date</ep:phrase>
+    <ep:phrase ref="eprint_fieldhelp_date_embargo">The date that a publisher- or funder-imposed embargo expires. After this date, <em>all</em> documents associated with this deposit will be made publically accessible.</ep:phrase>
 
 <!---#######################-->
 
@@ -469,6 +471,8 @@ activated you can start to use the registered features of the repository.</p>
 <a href="reset_password">click here</a> to set a new password.</p>
     </ep:phrase>
 
-
+<!-- Phrases related to publisher- or funder-imposed embargos -->
+<ep:phrase ref="embargo:status"><p>These documents will be made publically accessible from <ep:pin ref="date" />.</p></ep:phrase>
+<ep:phrase ref="embargo:invalid_date"><ep:pin ref="fieldname" /> must be in the future.</ep:phrase>
 
 </ep:phrases>

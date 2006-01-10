@@ -167,9 +167,64 @@ $fields->{eprint} = [
 	{ name => "official_url", type => "url" },
 
 # nb. Can't call this field "references" because that's a MySQL keyword.
-	{ name => "referencetext", type => "longtext", input_rows => 3 }
+	{ name => "referencetext", type => "longtext", input_rows => 3 },
+
+	{ name => "date_embargo", type=>"date", render_input=>\&de_render_input, fromform => \&de_fromform },
 
 ];
+
+# Render custom input controls for date_embargo field
+sub de_render_input
+{
+	my ( $metafield, $session, $value ) = @_;
+	my ( $yearval, $monthval, $dayval ) = split( "-", $value );
+
+	my $frag = $session->make_doc_fragment;
+
+	$frag->appendChild( $session->html_phrase( "lib/metafield:year" ) );
+	$frag->appendChild( $session->make_text(" ") );
+
+	# Year option list
+	my ($year, $month, $day) = EPrints::Utils::get_date( time );
+	my @pairs = ( [ "", $session->phrase( "lib/metafield:unspecified_selection" ) ] );
+	map { push @pairs, [$_, $_] } $year .. ( $year + 10 ); # 10 years in future
+
+	$frag->appendChild( $session->render_option_list(
+		name => 'date_embargo_year',
+		default => $yearval,
+		pairs => \@pairs ) );
+	
+	# Month option list
+	$frag->appendChild( $session->make_text(" ") );
+	$frag->appendChild( $session->html_phrase( "lib/metafield:month" ) );
+	$frag->appendChild( $session->make_text(" ") );
+
+	$frag->appendChild( $session->render_option_list(
+		name => 'date_embargo_month',
+		values => [ "00".."12" ],
+		default => $monthval,
+		labels => $metafield->_month_names( $session ) ) );
+
+	return $frag;
+}
+
+# Get values from custom date_embargo input controls
+sub de_fromform
+{
+	my ( $value, $session ) = @_;
+	my $month = $session->param( 'date_embargo_month' );
+	my $year = $session->param( 'date_embargo_year' );
+
+	$month = undef if( !EPrints::Utils::is_set($month) || $month == 0 );
+	$year = undef if( !EPrints::Utils::is_set($year) || $year == 0 );
+
+	my $r = undef;
+	return $r if( !defined $year );
+	$r .= sprintf( "%04d", $year );
+	return $r if( !defined $month );
+	$r .= sprintf( "-%02d", $month );
+	return $r;
+}
 
 # Don't worry about this bit, remove it if you want.
 # it's to store some information for a citation-linking

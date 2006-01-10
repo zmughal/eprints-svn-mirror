@@ -38,6 +38,7 @@
       <page name="status" />
       <field name="ispublished" required="yes" />
       <field name="refereed" required="yes" />
+      <field name="date_embargo" />
 
       <page name="abstract" />
       <field name="abstract" />

@@ -2998,3 +2998,16 @@ PACKAGE: 2.2.99.2
  - _read_params now returns a hashref
  - Removed property setting code for now (will be in future revision)
  - Removed 'delete' call - was mucking up the object (oops)
+
+2006-01-10 tmb
+
+ - Added support for publisher- or funder-imposed embargos.
+ - date_embargo field and custom render/fromform functions in
+    ArchiveMetadataFieldsConfig.pm
+ - date_embargo field part of article type in metadata-types.xml
+ - ArchiveValidateConfig.pm (make sure embargo expiry date is in
+    future) 
+ - Render embargo expiry date on abstract pages (ArchiveRenderConfig.pm)
+ - Relevant phrases in phrases-en.xml
+ - Created lift_embargos in bin/ - search for and remove expired
+    embargos.
