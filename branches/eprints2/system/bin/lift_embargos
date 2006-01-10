@@ -127,12 +127,12 @@ $searchexp->map( sub {
 	{
 		print "Lifting expired embargo on eprint #" . $eprint->get_id . " (" . $eprint->get_value("date_embargo") . ")\n";
 	}
-	for( $eprint->get_all_documents )
+	foreach my $doc ( $eprint->get_all_documents )
 	{
-		if( $_->is_set( "security" ) && $_->get_value( "security" ) ne "" )
+		if( $doc->is_set( "security" ) && $doc->get_value( "security" ) ne "" )
 		{
-			$_->set_value( "security", "" );
-			$_->commit;
+			$doc->set_value( "security", "" );
+			$doc->commit;
 		}	
 	}
 	$eprint->set_value( "date_embargo", "" );

@@ -443,6 +443,7 @@ This will:
     which will be used to store what revision the
     record is.
  * Add a field to "document" called "license".
+ * Add a field to the dataset "eprint" called "date_embargo".
 
 Are you sure you want to do this? (yes/no)
 END
@@ -509,6 +510,22 @@ END
 		}
 	}
 
+	# add "date_embargo" to the eprint datset
+	foreach my $table_id ( "inbox","buffer","archive","deletion" )
+	{
+		$sql = "ALTER TABLE $table_id ADD date_embargo DATE AFTER replacedby";
+		$db->do( $sql );
+	}
+	
+	# add the ordervalues for date_embargo
+	foreach my $table ( @tables )
+	{
+		if( $table =~ m/^(archive|buffer|inbox|deletion)__ordervalues_.*$/ )
+		{
+			$sql = "ALTER TABLE $table ADD date_embargo text AFTER replacedby",
+			$db->do( $sql );
+		}
+	}
 
 	# convert most system DATE fields into DATETIME fields.
 

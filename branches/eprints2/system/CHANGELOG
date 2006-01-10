@@ -3011,3 +3011,10 @@ PACKAGE: 2.2.99.2
  - Relevant phrases in phrases-en.xml
  - Created lift_embargos in bin/ - search for and remove expired
     embargos.
+
+2006-01-10 tmb
+
+ - Changed date_embargo to be a system field in EPrint.pm
+ - Added date_embargo database upgrades to bin/upgrade
+ - Removed custom render/fromform functions for now
+
