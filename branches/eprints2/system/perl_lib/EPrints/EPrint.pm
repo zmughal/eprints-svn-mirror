@@ -140,6 +140,9 @@ sub get_system_field_info
 	{ name=>"replacedby", type=>"itemref", required=>0,
 		datasetid=>"eprint", can_clone=>0 },
 
+	{ name=>"date_embargo", type=>"date", required=>0,
+		min_resolution=>"year" },	
+
 	);
 }
 
