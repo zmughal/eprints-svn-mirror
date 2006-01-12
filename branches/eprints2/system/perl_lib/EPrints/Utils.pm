@@ -1369,6 +1369,48 @@ sub get_input
 	}
 }
 
+######################################################################
+=pod
+
+=item EPrints::Utils::get_input_hidden( $regexp, $prompt, $default )
+
+Get input from the console without echoing the entered characters (mostly useful for getting passwords). This relies on stty being in the path.
+
+=cut
+######################################################################
+
+sub get_input_hidden
+{
+	my( $regexp, $prompt, $default ) = @_;
+
+	$prompt = "" if( !defined $prompt);
+	for(;;)
+	{
+		print $prompt;
+		if( defined $default )
+		{
+			print " [$default] ";
+		}
+		print "? ";
+		system("stty", "-echo");
+		my $in = <STDIN>;
+		system("stty", "echo");
+		chomp $in;
+		if( $in eq "" && defined $default )
+		{
+			return $default;
+		}
+		if( $in=~m/^$regexp$/ )
+		{
+			return $in;
+		}
+		else
+		{
+			print "Bad Input, try again.\n";
+		}
+	}
+
+}
 
 ######################################################################
 =pod
