@@ -6,8 +6,6 @@ use EPrints::Plugin::Output;
 
 use Unicode::String qw(latin1);
 
-# $EPrints::Plugin::Output::BibTeX::ABSTRACT = 1;
-
 use strict;
 
 sub defaults
@@ -24,185 +22,77 @@ sub defaults
 	return %d;
 }
 
-
 sub convert_dataobj
 {
 	my( $plugin, $dataobj ) = @_;
 
 	my $data = { normal=>{}, unescaped=>{} };
 
-	# BibTeX key
+	# Title and reference type
 	$data->{key} = $plugin->{session}->get_archive->get_id . $dataobj->get_id;
+	$data->{normal}->{title} 	= $dataobj->get_value( "title" ) if $dataobj->is_set( "title" );
 
-	# BibTeX type
 	my $type = $dataobj->get_type;
-	if ($type eq "thesis") {
-		$type = "phdthesis"; # use as default case
-		if ($dataobj->is_set('thesis_type')) {
-			my $thesis_type = $dataobj->get_value("thesis_type");
-			$type = "mastersthesis" if $thesis_type eq "masters";
-		}
-	} elsif ($type eq "patent" || $type eq "other") {
-		$type = "misc";
-	} elsif ($type eq "book_section") {
-		$type = "incollection";
-	} elsif ($type eq "monograph") {
-		$type = "techreport";
-	} elsif ($type eq "conference_item") {
-		$type = "inproceedings";
-	} 
-	$data->{type} = $type;
+	$data->{type} = "misc";
+	$data->{type} = "article" if $type eq "article";
+	$data->{type} = "book" if $type eq "book";
+	$data->{type} = "incollection" if $type eq "book_section";
+	$data->{type} = "inproceedings" if $type eq "conference_item";
+	$data->{type} = "techreport" if $type eq "monograph";
+	$data->{type} = "phdthesis" if $type eq "thesis";
+	$data->{type} = "mastersthesis" if $type eq "thesis" && $dataobj->is_set( "thesis_type" ) && $dataobj->get_value( "thesis_type" ) eq "masters";
+	$data->{type} = "unpublished" if $dataobj->is_set( "ispublished" ) && $dataobj->get_value( "ispublished" ) eq "unpub";
 
-	# Core BibTeX fields - simple cases
-	$data->{normal}->{abstract} 	= $dataobj->get_value('abstract') if $dataobj->is_set('abstract');
-	$data->{normal}->{address} 	= $dataobj->get_value('place_of_pub') if $dataobj->is_set('place_of_pub');
-	$data->{normal}->{booktitle} 	= $dataobj->get_value('book_title') if $dataobj->is_set('book_title');
-	$data->{normal}->{howpublished} = $dataobj->get_url(); 
-	$data->{normal}->{journal} 	= $dataobj->get_value('publication') if $dataobj->is_set('publication');
-	$data->{normal}->{note} 	= $dataobj->get_value('note') if $dataobj->is_set('note');
-	$data->{normal}->{number} 	= $dataobj->get_value('number') if $dataobj->is_set('number');
-	$data->{normal}->{publisher} 	= $dataobj->get_value('publisher') if $dataobj->is_set('publisher');
-	$data->{normal}->{series} 	= $dataobj->get_value('series') if $dataobj->is_set('series');
-	$data->{normal}->{title} 	= $dataobj->get_value('title') if $dataobj->is_set('title');
-	$data->{normal}->{volume} 	= $dataobj->get_value('volume') if $dataobj->is_set('volume');
+	$data->{normal}->{booktitle} = $dataobj->get_value( "event_title" ) if $dataobj->is_set( "event_title" );
+	$data->{normal}->{booktitle} = $dataobj->get_value( "book_title" ) if $dataobj->is_set( "book_title" );
 
-
-	# Core BibTex fields - complex cases
-
-	# author - join multiple values
-	$data->{normal}->{author} = join_names($dataobj, 'creators', 1) if $dataobj->is_set('creators');
-	
-	# booktitle - for inproceedings items, join event_title and event_location
-	if ($dataobj->get_type eq 'conference_item' && $dataobj->is_set('event_title')) {
-		my $event_title = $dataobj->get_value('event_title');
-		if ($dataobj->is_set('event_location')) {
-			$data->{normal}->{booktitle} = $event_title . ', ' . $dataobj->get_value('event_location');
-		} else {
-			$data->{normal}->{booktitle} = $event_title;
-		}
-	} 
-
-	# editor - join multiple values
-	$data->{normal}->{editor} = join_names($dataobj, 'editors', 1) if $dataobj->is_set('editors');
-
-	# institution/school - join institution and department
-	if ($dataobj->is_set('institution')) {
-		my $inst = $dataobj->get_value('institution');
-		if ($dataobj->is_set('department')) {
-			$inst = $dataobj->get_value('department') . ', ' . $inst;
-		} 
-		if ($dataobj->get_type eq 'thesis') {
-			$data->{normal}->{school} = $inst;
-		} else {
-			$data->{normal}->{institution} = $inst;
-		}
+	# Authors
+	if( $dataobj->is_set( "creators" ) )
+	{
+		# given name first
+		$data->{normal}->{author} = join( " and ", map { EPrints::Utils::make_name_string( $_->{main}, 1 ) } @{ $dataobj->get_value( "creators"  ) } );
+	}
+	if( $dataobj->is_set( "editors" ) )
+	{
+		# given name first
+		$data->{normal}->{editor} = join( " and ", map { EPrints::Utils::make_name_string( $_->{main}, 1 ) } @{ $dataobj->get_value( "editors"  ) } );
 	}
 
-	# month/year - extract from date_effective
-	if ($dataobj->is_set('date_effective')) {
-		# will be set for all eprints by default
-		my $date = $dataobj->get_value('date_effective');
-		if ($date =~ /^([0-9]{4})-?([0-9]{2})?/) {
+	# Year and free text
+	if ($dataobj->is_set( "date_effective" )) {
+		my $date = $dataobj->get_value( "date_effective" );
+		if ($date =~ /^([0-9]{4})-([0-9]{2})/) {
 			$data->{normal}->{year} = $1;
-			$data->{normal}->{month} = EPrints::Utils::get_month_label($plugin->{session}, $2) if $2;
+			$data->{normal}->{month} = EPrints::Utils::get_month_label($plugin->{session}, $2) if $2 ne "00";
 		}
 	}
-	
-	# pages - convert single dash ('-') to number range dashes ('--')
-	if ($dataobj->is_set('pagerange')) {
-		my $pages = $dataobj->get_value('pagerange');
-		$pages =~ s/^(\d*)-(\d*)$/$1--$2/;
-		$data->{normal}->{pages} = $pages;
-	}
-	
-	# type - render value
-	if ($dataobj->is_set('monograph_type')) {
-		my $field = $dataobj->get_dataset->get_field('monograph_type');
-		my $val = $dataobj->get_value('monograph_type');
-		$data->{normal}->{type} = EPrints::Utils::tree_to_utf8($field->render_value($plugin->{session}, $val));
-	}
+	$data->{normal}->{note} 	= $dataobj->get_value( "note" ) if $dataobj->is_set( "note" );
+	$data->{unescaped}->{abstract} 	= $dataobj->get_value( "abstract" ) if $dataobj->is_set( "abstract" );
 
-	# Non-core fields - simple cases
-	$data->{unescaped}->{eprintid} = $dataobj->get_value('eprintid');
-	$data->{unescaped}->{event_dates} = $dataobj->get_value('event_dates') if $dataobj->is_set('event_dates');
-	$data->{unescaped}->{location} = $dataobj->get_value('event_location') if $dataobj->is_set('event_location');
-	$data->{unescaped}->{id_number} = $dataobj->get_value('id_number') if $dataobj->is_set('id_number');
-	$data->{unescaped}->{isbn} = $dataobj->get_value('isbn') if $dataobj->is_set('isbn');
-	$data->{unescaped}->{issn} = $dataobj->get_value('issn') if $dataobj->is_set('issn');
-	$data->{unescaped}->{keywords} = $dataobj->get_value('keywords') if $dataobj->is_set('keywords');
-	$data->{unescaped}->{num_pages} = $dataobj->get_value('pages') if $dataobj->is_set('pages');
-	$data->{unescaped}->{official_url} = $dataobj->get_value('official_url') if $dataobj->is_set('official_url');
-	$data->{unescaped}->{patent_applicant} = $dataobj->get_value('patent_applicant') if $dataobj->is_set('patent_applicant');
-
-	# Non-core fields - complex cases
-
-	# event_type - render value
-	if ($dataobj->is_set('event_type')) {
-		my $field = $dataobj->get_dataset->get_field('event_type');
-		my $val = $dataobj->get_value('event_type');
-		$data->{unescaped}->{'event_type'} = EPrints::Utils::tree_to_utf8($field->render_value($plugin->{session}, $val));
+	# Periodical and publisher
+	$data->{normal}->{journal} = $dataobj->get_value( "publication" ) if $dataobj->is_set( "publication" );
+	$data->{normal}->{volume} = $dataobj->get_value( "volume" ) if $dataobj->is_set( "volume" );
+	$data->{normal}->{number} = $dataobj->get_value( "id_number" ) if $dataobj->is_set( "id_number" );
+	$data->{normal}->{number} = $dataobj->get_value( "number" ) if $dataobj->is_set( "number" );
+	$data->{normal}->{series} = $dataobj->get_value( "series" ) if $dataobj->is_set( "series" );
+	if( $dataobj->is_set( "pagerange" ) )
+	{	
+		$data->{normal}->{pages} = $dataobj->get_value( "pagerange" );
+		$data->{normal}->{pages} =~ s/^(\d*)-(\d*)$/$1--$2/;
 	}
 
-	# ispublished, refereed - render values
-	foreach my $epfield ('ispublished', 'refereed') {
-		if ($dataobj->is_set($epfield)) {
-			my $field = $dataobj->get_dataset->get_field($epfield);
-			my $val = $dataobj->get_value($epfield);
-			$data->{unescaped}->{$epfield} = EPrints::Utils::tree_to_utf8($field->render_value($plugin->{session}, $val));
-		}
-	}
+	$data->{normal}->{publisher} = $dataobj->get_value( "publisher" ) if $dataobj->is_set( "publisher" );
+	$data->{normal}->{address} = $dataobj->get_value( "place_of_pub" ) if $dataobj->is_set( "place_of_pub" );
 
-	# pres_type - render value
-	if ($dataobj->is_set('pres_type')) {
-		my $field = $dataobj->get_dataset->get_field('pres_type');
-		my $val = $dataobj->get_value('pres_type');
-		$data->{unescaped}->{'pres_type'} = EPrints::Utils::tree_to_utf8($field->render_value($plugin->{session}, $val));
-	}
+	$data->{normal}->{institution} = $dataobj->get_value( "institution" ) if $dataobj->is_set( "institution" ) && $type eq "monograph";
+	$data->{normal}->{school} = $dataobj->get_value( "institution" ) if $dataobj->is_set( "institution" ) && $type eq "thesis";
 
-	# TODO: subjects?
-
-
-	# alt_locations - join multiple values
-	if ($dataobj->is_set('alt_locations')) {
-		my @altlocs = @{ $dataobj->get_value('alt_locations') };
-		$data->{unescaped}->{alt_locations} = join(", ", @altlocs);
-	}
-
+	# Misc
+	$data->{normal}->{howpublished} = $dataobj->get_url(); 
+	$data->{unescaped}->{keywords} = $dataobj->get_value( "keywords" ) if $dataobj->is_set( "keywords" );
 
 	return $data;
 }
-
-
-sub join_names {
-	my ($dataobj, $epfield, $escaped) = @_;
-	my @names;
-	foreach my $name ( @{$dataobj->get_value($epfield)} ) {
-		my $g = $name->{main}->{given};
-		my $f = $name->{main}->{family};
-	
-		# remove anything that isnt upper case or a hyphen
-		$g =~ s/[^A-Z-]//g;
-	
-		# Add full stops where appropriate
-		$g =~ s/([A-Z])(?=[A-Z])/$1. /g;
-		$g =~ s/([A-Z])$/$1./g;
-
-		$escaped ? push @names, $g.latin1(' ').$f : push @names, $g.' '.$f;
-	}
-	return join( ' and ', @names );
-}
-
-
-
-
-
-
-
-
-
-
-
-
 
 sub output_dataobj
 {
@@ -213,16 +103,16 @@ sub output_dataobj
 	my @list = ();
 	foreach my $k ( keys %{$data->{normal}} )
 	{
-		push @list, sprintf( "  %16s = {%s}", $k, utf8_to_tex( $data->{normal}->{$k} ));
+		push @list, sprintf( "%16s = {%s}", $k, utf8_to_tex( $data->{normal}->{$k} ));
 	}
 	foreach my $k ( keys %{$data->{unescaped}} )
 	{
-		push @list, sprintf( "  %16s = {%s}", $k, remove_utf8( $data->{unescaped}->{$k} ));
+		push @list, sprintf( "%16s = {%s}", $k, remove_utf8( $data->{unescaped}->{$k} ));
 	}
 
-	my $out = '@'.$data->{type}.'{'.$data->{key}.",\n";
-	$out .= join( ",\n", @list )."\n";
-	$out .= '}'."\n\n";
+	my $out = '@' . $data->{type} . "{" . $data->{key} . ",\n";
+	$out .= join( ",\n", @list ) . "\n";
+	$out .= "}\n\n";
 
 	return $out;
 }

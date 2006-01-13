@@ -3018,3 +3018,7 @@ PACKAGE: 2.2.99.2
  - Added date_embargo database upgrades to bin/upgrade
  - Removed custom render/fromform functions for now
 
+2006-01-13
+
+ - Added output plugins for EndNote (based on Refer) and RefManager (RIS)
+ - Tidied up BibTeX plugin
