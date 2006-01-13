@@ -227,7 +227,10 @@
     <ep:phrase ref="eprint_fieldopt_full_text_status_none">None</ep:phrase>
 
     <ep:phrase ref="eprint_fieldname_date_embargo">Embargo expiry date</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_date_embargo">The date that a publisher- or funder-imposed embargo expires. After this date, <em>all</em> documents associated with this deposit will be made publically accessible. For more complex embargo requirements, please contact the repository administrator.</ep:phrase>
+    <ep:phrase ref="eprint_fieldhelp_date_embargo">The date that a publisher- or funder-imposed embargo expires. On and after this date, <em>all</em> documents associated with this deposit will be made publically accessible. For more complex embargo requirements, please contact the repository administrator.
+<br />Example: <span class="example">2006 - all documents made publically accessible on 1st January 2006</span>
+<br />Example: <span class="example">2006 June - all documents made publically accessible on 1st June 2006</span>
+</ep:phrase>
 
 <!---#######################-->
 
