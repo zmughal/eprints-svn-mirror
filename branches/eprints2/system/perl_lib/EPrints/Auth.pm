@@ -457,9 +457,8 @@ sub has_privilege
 
 	push @roles, &{$func}( $user, $dataobj );
 
-	@permitted_roles = $session->get_db->get_roles_by_roles( $priv, @roles );
-
-	return @permitted_roles;
+	# TODO: Replace undef with remote IP address (if available)
+	return $session->get_db->get_roles_by_roles( $priv, undef, @roles );
 }
 
 1;

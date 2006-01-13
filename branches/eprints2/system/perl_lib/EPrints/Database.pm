@@ -2504,15 +2504,15 @@ sub index_queue
 
 =pod
 
-=item @roles = $db->get_roles_by_roles( $remote_addr, $privilege, @roles )
+=item @roles = $db->get_roles_by_roles( $privilege, $remote_ip, @roles )
 
-Get the matching @roles in @roles that have $privilege, optionally restricted to $remote_addr.
+Get the matching roles for @roles that have $privilege, optionally restricted to $remote_ip.
 
 =cut
 
 sub get_roles_by_roles
 {
-	my ( $self, $ip, $priv, @roles ) = @_;
+	my ( $self, $priv, $ip, @roles ) = @_;
 	my ( @permitted_roles, $sth, $sql, @clauses );
 
 	# Standard WHERE clauses
