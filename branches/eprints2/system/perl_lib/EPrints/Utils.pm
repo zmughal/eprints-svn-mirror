@@ -1498,6 +1498,42 @@ sub url_escape
 	return $uri->as_string;
 }
 
+######################################################################
+=pod
+
+=item $long = EPrints::Utils::ip2long( $ip )
+
+Convert quad-dotted notation to long
+
+=item $ip = EPrints::Utils::long2ip( $ip )
+
+Convert long to quad-dotted notation
+
+=cut
+######################################################################
+
+sub ip2long
+{
+	my( $ip ) = @_;
+	my $long = 0;
+	foreach my $octet (split(/\./, $ip)) {
+		$long <<= 8;
+		$long |= $octet;
+	}
+	return $long;
+}
+
+sub long2ip
+{
+	my( $long ) = @_;
+	my @octets;
+	for(my $i = 3; $i >= 0; $i--) {
+		$octets[$i] = ($long & 0xFF);
+		$long >>= 8;
+	}
+	return join('.', @octets);
+}
+
 # Command Version: Prints the GNU style --version comment for a command
 # line script. Then exits.
 
