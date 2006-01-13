@@ -2502,6 +2502,61 @@ sub index_queue
 	$self->do( $sql );
 }
 
+=pod
+
+=item @roles = $db->get_roles_by_roles( $remote_addr, $privilege, @roles )
+
+Get the matching @roles in @roles that have $privilege, optionally restricted to $remote_addr.
+
+=cut
+
+sub get_roles_by_roles
+{
+	my ( $self, $ip, $priv, @roles ) = @_;
+	my ( @permitted_roles, $sth, $sql, @clauses );
+
+	# Standard WHERE clauses
+	if( $priv =~ s/\.*$/\%/ ) {
+		push @clauses, "privilege like '$priv'";
+	} else {
+		push @clauses, "privilege = '$priv'";
+	}
+	if( defined( $ip ) )
+	{
+		my $longip = EPrints::Util::ip2long( $ip );
+		push @clauses, "(net_from is Null OR ($longip >= net_from AND $longip <= net_to))";
+	}
+
+	# Get roles from the permissions table
+	$sql = "SELECT role FROM user_permissions WHERE ";
+	$sql .= join ' AND ',
+		@clauses,
+		"(" . join(' OR ', map { "role = '" . $self->prev_like_value( $_ ) . "'" } @roles) . ")";
+	
+	# Provide a generic privilege query
+	$sth = $self->prepare( $sql );
+	$self->execute( $sth, $sql ) or return;
+	while( my ($role) = $sth->fetchrow_array )
+	{
+		push @permitted_roles, $role;
+	}
+
+	# Get roles inherited from group membership
+	$sql = "SELECT G.role FROM user_groups AS G, user_permissions AS P WHERE G.group=P.role";
+	$sql .= join ' AND ',
+		@clauses,
+		"(" . join(' OR ', map { "G.role = '" . $self->prev_like_value( $_ ) . "'" } @roles) . ")";
+	
+	$sth = $self->prepare( $sql );
+	$self->execute( $sth, $sql ) or return;
+	while( my ($role) = $sth->fetchrow_array )
+	{
+		push @permitted_roles, $role;
+	}
+
+	return @permitted_roles;
+}
+
 1; # For use/require success
 
 ######################################################################

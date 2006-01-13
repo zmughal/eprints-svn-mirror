@@ -411,6 +411,56 @@ sub secure_doc_from_url
 	return $document;
 }
 
+=pod
+
+=item @roles = EPrints::Auth::user_roles( $user, [$dataobj] )
+
+Return the roles $user has, optionally also roles available for $dataobj.
+
+=cut
+
+sub user_roles
+{
+	my( $user, $dataobj ) = @_;
+	my @roles;
+
+	if( defined( $user ) ) {
+		# A user might have administrative permission for another
+		# user
+		push @roles, $user->user_roles( $dataobj );
+		# I don't think dataobj could have a role that isn't dependent
+		# on the $user?
+		if( defined( $dataobj ) ) {
+			push @roles, $dataobj->user_roles( $user );
+		}
+	}
+
+	return @roles;
+}
+
+=pod
+
+=item @roles = EPrints::Auth::has_privilege( $session, $privilege, [$user, [$dataobj]] )
+
+Returns a list of roles available for privilege. If L<$user|EPrints::User> is defined finds additional roles available to them. If L<$dataobj|EPrints::DataObj> is defined adds the roles that $user might have on $dataobj.
+
+=cut
+
+sub has_privilege
+{
+	my ($session, $user, $priv, $dataobj) = @_;
+	my @roles = qw( anonymous ); # User can always be anonymous
+	my @permitted_roles;
+
+	my $func = $session->get_archive->get_conf( "user_roles" );
+	$func ||= \&EPrints::Auth::user_roles;
+
+	push @roles, &{$func}( $user, $dataobj );
+
+	@permitted_roles = $session->get_db->get_roles_by_roles( $priv, @roles );
+
+	return @permitted_roles;
+}
 
 1;
 

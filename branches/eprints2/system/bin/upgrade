@@ -132,7 +132,7 @@ else
 }	
 if( $noise>=1 ) 
 { 
-	print "Target compatablity is ".$TARGET."\n"; 
+	print "Target compatibility is ".$TARGET."\n"; 
 }
 
 my $rootdbh = undef;
@@ -426,7 +426,7 @@ if( $dbversion eq "2.3" )
 	my $sql;
 	print <<END;
 ======================================================================
-About to upgrade tables from 2.3 to 2.3.99.2
+About to upgrade tables from 2.3 to 2.3.99.3
 
 This will:
 
@@ -444,6 +444,7 @@ This will:
     record is.
  * Add a field to "document" called "license".
  * Add a field to the dataset "eprint" called "date_embargo".
+ * Add two permissions tables: user_permisssions and user_groups
 
 Are you sure you want to do this? (yes/no)
 END
@@ -527,6 +528,70 @@ END
 		}
 	}
 
+	# add user_permissions and user_groups
+	$sql = "CREATE TABLE user_permissions (role char(64) not null, privilege char(64) not null, net_from long, net_to long, PRIMARY KEY(role,privilege), UNIQUE(privilege,role))";
+	$db->do( $sql );
+	$sql = "CREATE TABLE user_groups (user char(64) not null, role char(64) not null, PRIMARY KEY(user,role))";
+	$db->do( $sql );
+
+	# add the default privileges
+	$sql = <<EOS;
+INSERT IGNORE INTO user_permissions VALUES
+	('\@subscription','EDIT_USER_SUBSCRIPTIONS',null,null),
+	('\@set_password','EDIT_USER_PASSWORD',null,null),
+	('\@deposit','CREATE_EPRINT_INBOX',null,null),
+	('\@deposit','DERIVE_EPRINT_CLONE',null,null),
+	('\@deposit','DERIVE_EPRINT_VERSION',null,null),
+	('\@deposit','EDIT_EPRINT_INBOX',null,null),
+	('\@deposit','MOVE_EPRINT_INBOX_BUFFER',null,null),
+	('\@deposit','REQUEST_EPRINT_DELETION',null,null),
+	('\@change_email','EDIT_USER_EMAIL',null,null),
+	('\@change_user','LOGIN_USER',null,null),
+	('\@change_user','LOGOUT_USER',null,null),
+	('\@change_user','EDIT_USER',null,null),
+	('\@editor','DELETE_EPRINT_INBOX',null,null),
+	('\@editor','DELETE_EPRINT_BUFFER',null,null),
+	('\@editor','DELETE_EPRINT_ARCHIVE',null,null),
+	('\@editor','DELETE_EPRINT_DELETION',null,null),
+	('\@editor','EDIT_EPRINT_INBOX',null,null),
+	('\@editor','EDIT_EPRINT_BUFFER',null,null),
+	('\@editor','EDIT_EPRINT_ARCHIVE',null,null),
+	('\@editor','EDIT_EPRINT_DELETION',null,null),
+	('\@editor','EDIT_EPRINT_INBOX_ALL',null,null),
+	('\@editor','EDIT_EPRINT_BUFFER_ALL',null,null),
+	('\@editor','EDIT_EPRINT_ARCHIVE_ALL',null,null),
+	('\@editor','EDIT_EPRINT_DELETION_ALL',null,null),
+	('\@editor','MOVE_EPRINT_INBOX_BUFFER',null,null),
+	('\@editor','MOVE_EPRINT_BUFFER_INBOX',null,null),
+	('\@editor','MOVE_EPRINT_BUFFER_ARCHIVE',null,null),
+	('\@editor','MOVE_EPRINT_ARCHIVE_BUFFER',null,null),
+	('\@editor','MOVE_EPRINT_ARCHIVE_DELETION',null,null),
+	('\@editor','MOVE_EPRINT_DELETION_ARCHIVE',null,null),
+	('\@staff_view','VIEW_EPRINT_ALL',null,null),
+	('\@staff_view','VIEW_EPRINT_FILES_ALL',null,null),
+	('\@edit_subject','EDIT_ARCHIVE_SUBJECTS',null,null),
+	('\@edit_user','DELETE_USER',null,null),
+	('\@edit_user','EDIT_USER_FULL',null,null),
+	('eprint.owner','VIEW_EPRINT_INBOX',null,null),
+	('eprint.owner','VIEW_EPRINT_BUFFER',null,null),
+	('eprint.owner','VIEW_EPRINT_ARCHIVE',null,null),
+	('eprint.owner','VIEW_EPRINT_DELETION',null,null),
+	('eprint.owner','EDIT_EPRINT_INBOX',null,null),
+	('eprint.owner','MOVE_EPRINT_INBOX_BUFFER',null,null),
+	('eprint.owner','REQUEST_EPRINT_DELETION',null,null),
+	('user.owner','EDIT_USER_SUBSCRIPTIONS',null,null),
+	('user.owner','VIEW_USER',null,null),
+	('user.owner','VIEW_USER_CONTRIBUTIONS',null,null),
+	('user.owner','LOGOUT_USER',null,null),
+	('anonymous','LOGIN_USER',null,null),
+	('anonymous','REGISTER_USER',null,null),
+	('anonymous','VALIDATE_USER',null,null),
+	('anonymous','VIEW_PAGES_BROWSE',null,null),
+	('anonymous','VIEW_PAGES_STATIC',null,null),
+	('usertype.admin','EDIT_ARCHIVE_PRIVILEGES',null,null);
+EOS
+	$dbh->do( $sql );
+	
 	# convert most system DATE fields into DATETIME fields.
 
 	$sql = "ALTER TABLE user MODIFY joined DATETIME";
@@ -649,8 +714,8 @@ END
 	}
 	else
 	{
-		print "\n2.3 -> 2.3.99.2 done!\n";
-		$dbversion = "2.3.99.2";
+		print "\n2.3 -> 2.3.99.3 done!\n";
+		$dbversion = "2.3.99.3";
 		$db->set_version( $dbversion );
 	}
 }
@@ -666,14 +731,14 @@ if( $TARGET eq $dbversion)
 {
 	if( $noise>=1 )
 	{
-		print "Target compatablity reached.\n";
+		print "Target compatability reached.\n";
 	}
 }
 else
 {
 	print <<END;
 **********************************************************************
-WARNING: Target compatablity NOT reached. That probably means 
+WARNING: Target compatibility NOT reached. That probably means 
 something bad happend.
 **********************************************************************
 END

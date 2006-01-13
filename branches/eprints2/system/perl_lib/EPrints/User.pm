@@ -965,6 +965,32 @@ sub process_editor_alerts
 	# currently no timestamp for editor alerts 
 }
 
+######################################################################
+=pod
+
+=item @roles = $user->user_roles( [$user] )
+
+Return the roles the user has.
+
+=cut
+######################################################################
+
+sub user_roles
+{
+	my ($self, $user) = @_;
+	my @roles;
+	
+	# If $user is defined must always be a usertype.user ?
+	push @roles, qw( usertype.user );
+	if( $user->get_type() eq 'admin' ) {
+		push @roles, qw( usertype.admin );
+	} elsif( $user->get_type() eq 'editor' ) {
+		push @roles, qw( usertype.editor );
+	}
+	push @roles, $user->get_value( "userid" );
+
+	return @roles;
+}
 
 1;
 
