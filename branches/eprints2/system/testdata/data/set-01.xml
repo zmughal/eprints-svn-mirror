@@ -883,7 +883,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">12</field>
 <field name="number">7</field>
-<field name="number">108-134</field>
+<field name="pagerange">108-134</field>
 <field name="publication">Husbandry Times</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -903,7 +903,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">14</field>
 <field name="number">6</field>
-<field name="number">127-161</field>
+<field name="pagerange">127-161</field>
 <field name="publication">Better Farming</field>
 <field name="publisher">Smith and Sons</field>
 </record><record>
@@ -919,7 +919,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">14</field>
 <field name="number">9</field>
-<field name="number">185-207</field>
+<field name="pagerange">185-207</field>
 <field name="publication">Natural World Journal (NWJ)</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -938,7 +938,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">4</field>
 <field name="number">19</field>
-<field name="number">145-191</field>
+<field name="pagerange">145-191</field>
 <field name="publication">Natural World Journal (NWJ)</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -957,7 +957,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">14</field>
 <field name="number">6</field>
-<field name="number">108-157</field>
+<field name="pagerange">108-157</field>
 <field name="publication">Fine Animal Breeding</field>
 <field name="publisher">Fenderson Press</field>
 </record><record>
@@ -979,7 +979,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">1</field>
 <field name="number">4</field>
-<field name="number">91-134</field>
+<field name="pagerange">91-134</field>
 <field name="publication">Better Farming</field>
 <field name="publisher">Smith and Sons</field>
 </record><record>
@@ -998,7 +998,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">20</field>
 <field name="number">15</field>
-<field name="number">166-197</field>
+<field name="pagerange">166-197</field>
 <field name="publication">European Journal of Insect Issues</field>
 <field name="publisher">Fenderson Press</field>
 </record><record>
@@ -1018,7 +1018,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">17</field>
 <field name="number">10</field>
-<field name="number">122-142</field>
+<field name="pagerange">122-142</field>
 <field name="publication">Chinese Gamekeeping Journal</field>
 <field name="publisher">Smith and Sons</field>
 </record><record>
@@ -1037,7 +1037,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">20</field>
 <field name="number">15</field>
-<field name="number">196-198</field>
+<field name="pagerange">196-198</field>
 <field name="publication">Fine Animal Breeding</field>
 <field name="publisher">Fenderson Press</field>
 </record><record>
@@ -1058,7 +1058,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">4</field>
 <field name="number">12</field>
-<field name="number">71-96</field>
+<field name="pagerange">71-96</field>
 <field name="publication">Animal Issues</field>
 <field name="publisher">Smith and Sons</field>
 </record><record>
@@ -1079,7 +1079,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">9</field>
 <field name="number">17</field>
-<field name="number">117-163</field>
+<field name="pagerange">117-163</field>
 <field name="publication">Fine Animal Breeding</field>
 <field name="publisher">Fenderson Press</field>
 </record><record>
@@ -1099,7 +1099,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">8</field>
 <field name="number">4</field>
-<field name="number">16-44</field>
+<field name="pagerange">16-44</field>
 <field name="publication">Husbandry Times</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -1121,7 +1121,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">11</field>
 <field name="number">20</field>
-<field name="number">18-38</field>
+<field name="pagerange">18-38</field>
 <field name="publication">Animal Issues</field>
 <field name="publisher">Smith and Sons</field>
 </record><record>
@@ -1144,7 +1144,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">3</field>
 <field name="number">6</field>
-<field name="number">157-184</field>
+<field name="pagerange">157-184</field>
 <field name="publication">Chinese Gamekeeping Journal</field>
 <field name="publisher">Smith and Sons</field>
 </record><record>
@@ -1165,7 +1165,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">17</field>
 <field name="number">16</field>
-<field name="number">19-53</field>
+<field name="pagerange">19-53</field>
 <field name="publication">Husbandry Times</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -1185,7 +1185,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">7</field>
 <field name="number">14</field>
-<field name="number">127-144</field>
+<field name="pagerange">127-144</field>
 <field name="publication">Dogs, Cats and Bats Monthly</field>
 <field name="publisher">Fenderson Press</field>
 </record><record>
@@ -1202,7 +1202,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">6</field>
 <field name="number">16</field>
-<field name="number">154-190</field>
+<field name="pagerange">154-190</field>
 <field name="publication">Dogs, Cats and Bats Monthly</field>
 <field name="publisher">Fenderson Press</field>
 </record><record>
@@ -1222,7 +1222,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">18</field>
 <field name="number">8</field>
-<field name="number">33-61</field>
+<field name="pagerange">33-61</field>
 <field name="publication">European Journal of Insect Issues</field>
 <field name="publisher">Fenderson Press</field>
 </record><record>
@@ -1237,7 +1237,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">19</field>
 <field name="number">15</field>
-<field name="number">99-114</field>
+<field name="pagerange">99-114</field>
 <field name="publication">Fine Animal Breeding</field>
 <field name="publisher">Fenderson Press</field>
 </record><record>
@@ -1253,7 +1253,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">5</field>
 <field name="number">20</field>
-<field name="number">133-167</field>
+<field name="pagerange">133-167</field>
 <field name="publication">Chinese Gamekeeping Journal</field>
 <field name="publisher">Smith and Sons</field>
 </record><record>
@@ -1273,7 +1273,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">12</field>
 <field name="number">4</field>
-<field name="number">31-77</field>
+<field name="pagerange">31-77</field>
 <field name="publication">Chinese Gamekeeping Journal</field>
 <field name="publisher">Smith and Sons</field>
 </record><record>
@@ -1292,7 +1292,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">3</field>
 <field name="number">20</field>
-<field name="number">199-234</field>
+<field name="pagerange">199-234</field>
 <field name="publication">Chinese Gamekeeping Journal</field>
 <field name="publisher">Smith and Sons</field>
 </record><record>
@@ -1308,7 +1308,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">15</field>
 <field name="number">4</field>
-<field name="number">155-188</field>
+<field name="pagerange">155-188</field>
 <field name="publication">Journal of Nature Things</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -1326,7 +1326,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">3</field>
 <field name="number">10</field>
-<field name="number">183-204</field>
+<field name="pagerange">183-204</field>
 <field name="publication">Dogs, Cats and Bats Monthly</field>
 <field name="publisher">Fenderson Press</field>
 </record><record>
@@ -1347,7 +1347,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">10</field>
 <field name="number">8</field>
-<field name="number">151-165</field>
+<field name="pagerange">151-165</field>
 <field name="publication">Husbandry Times</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -1367,7 +1367,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">12</field>
 <field name="number">4</field>
-<field name="number">181-209</field>
+<field name="pagerange">181-209</field>
 <field name="publication">Husbandry Times</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -1387,7 +1387,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">18</field>
 <field name="number">8</field>
-<field name="number">12-19</field>
+<field name="pagerange">12-19</field>
 <field name="publication">Better Farming</field>
 <field name="publisher">Smith and Sons</field>
 </record><record>
@@ -1402,7 +1402,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">12</field>
 <field name="number">8</field>
-<field name="number">164-191</field>
+<field name="pagerange">164-191</field>
 <field name="publication">Journal of Nature Things</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -1420,7 +1420,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">17</field>
 <field name="number">2</field>
-<field name="number">148-153</field>
+<field name="pagerange">148-153</field>
 <field name="publication">International Journal of Evolutionary Ideas</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -1438,7 +1438,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">12</field>
 <field name="number">19</field>
-<field name="number">170-210</field>
+<field name="pagerange">170-210</field>
 <field name="publication">Husbandry Times</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -1457,7 +1457,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">8</field>
 <field name="number">3</field>
-<field name="number">80-110</field>
+<field name="pagerange">80-110</field>
 <field name="publication">International Journal of Evolutionary Ideas</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -1477,7 +1477,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">5</field>
 <field name="number">9</field>
-<field name="number">51-68</field>
+<field name="pagerange">51-68</field>
 <field name="publication">Husbandry Times</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -1494,7 +1494,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">11</field>
 <field name="number">5</field>
-<field name="number">39-63</field>
+<field name="pagerange">39-63</field>
 <field name="publication">Husbandry Times</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -1517,7 +1517,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">6</field>
 <field name="number">20</field>
-<field name="number">35-66</field>
+<field name="pagerange">35-66</field>
 <field name="publication">Fine Animal Breeding</field>
 <field name="publisher">Fenderson Press</field>
 </record><record>
@@ -1537,7 +1537,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">5</field>
 <field name="number">9</field>
-<field name="number">196-237</field>
+<field name="pagerange">196-237</field>
 <field name="publication">Chinese Gamekeeping Journal</field>
 <field name="publisher">Smith and Sons</field>
 </record><record>
@@ -1556,7 +1556,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">14</field>
 <field name="number">2</field>
-<field name="number">2-39</field>
+<field name="pagerange">2-39</field>
 <field name="publication">Chinese Gamekeeping Journal</field>
 <field name="publisher">Smith and Sons</field>
 </record><record>
@@ -1574,7 +1574,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">18</field>
 <field name="number">19</field>
-<field name="number">146-193</field>
+<field name="pagerange">146-193</field>
 <field name="publication">Animal Issues</field>
 <field name="publisher">Smith and Sons</field>
 </record><record>
@@ -1592,7 +1592,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">5</field>
 <field name="number">8</field>
-<field name="number">155-193</field>
+<field name="pagerange">155-193</field>
 <field name="publication">Better Farming</field>
 <field name="publisher">Smith and Sons</field>
 </record><record>
@@ -1613,7 +1613,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">2</field>
 <field name="number">15</field>
-<field name="number">4-53</field>
+<field name="pagerange">4-53</field>
 <field name="publication">Fine Animal Breeding</field>
 <field name="publisher">Fenderson Press</field>
 </record><record>
@@ -1632,7 +1632,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">11</field>
 <field name="number">15</field>
-<field name="number">24-39</field>
+<field name="pagerange">24-39</field>
 <field name="publication">Natural World Journal (NWJ)</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -1651,7 +1651,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">17</field>
 <field name="number">3</field>
-<field name="number">115-118</field>
+<field name="pagerange">115-118</field>
 <field name="publication">European Journal of Insect Issues</field>
 <field name="publisher">Fenderson Press</field>
 </record><record>
@@ -1673,7 +1673,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">13</field>
 <field name="number">13</field>
-<field name="number">85-104</field>
+<field name="pagerange">85-104</field>
 <field name="publication">Journal of Nature Things</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -1692,7 +1692,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">15</field>
 <field name="number">3</field>
-<field name="number">43-61</field>
+<field name="pagerange">43-61</field>
 <field name="publication">Natural World Journal (NWJ)</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -1712,7 +1712,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">5</field>
 <field name="number">19</field>
-<field name="number">180-205</field>
+<field name="pagerange">180-205</field>
 <field name="publication">Journal of Nature Things</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -1729,7 +1729,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">11</field>
 <field name="number">11</field>
-<field name="number">97-98</field>
+<field name="pagerange">97-98</field>
 <field name="publication">Journal of Nature Things</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -1746,7 +1746,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">2</field>
 <field name="number">7</field>
-<field name="number">56-87</field>
+<field name="pagerange">56-87</field>
 <field name="publication">Journal of Nature Things</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -1765,7 +1765,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">5</field>
 <field name="number">20</field>
-<field name="number">190-214</field>
+<field name="pagerange">190-214</field>
 <field name="publication">Journal of Nature Things</field>
 <field name="publisher">Elseware Publishing</field>
 </record><record>
@@ -1787,7 +1787,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">17</field>
 <field name="number">3</field>
-<field name="number">96-105</field>
+<field name="pagerange">96-105</field>
 <field name="publication">European Journal of Insect Issues</field>
 <field name="publisher">Fenderson Press</field>
 </record><record>
@@ -1805,7 +1805,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">11</field>
 <field name="number">9</field>
-<field name="number">129-151</field>
+<field name="pagerange">129-151</field>
 <field name="publication">Dogs, Cats and Bats Monthly</field>
 <field name="publisher">Fenderson Press</field>
 </record><record>
@@ -1828,7 +1828,7 @@
 <field name="refereed">TRUE</field>
 <field name="volume">19</field>
 <field name="number">12</field>
-<field name="number">62-108</field>
+<field name="pagerange">62-108</field>
 <field name="publication">Natural World Journal (NWJ)</field>
 <field name="publisher">Elseware Publishing</field>
 </record></eprintsdata>
