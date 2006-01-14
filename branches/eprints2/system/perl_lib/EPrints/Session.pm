@@ -2251,7 +2251,7 @@ sub has_privilege
 {
 	my( $self, $priv, $dataobj ) = @_;
 
-	return EPrints::Auth::has_privilege( $self, $priv, $dataobj );
+	return EPrints::Auth::has_privilege( $self, $priv, $self->current_user, $dataobj );
 }
 
 ######################################################################

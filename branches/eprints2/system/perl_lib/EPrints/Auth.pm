@@ -448,7 +448,7 @@ Returns a list of roles available for privilege. If L<$user|EPrints::User> is de
 
 sub has_privilege
 {
-	my ($session, $user, $priv, $dataobj) = @_;
+	my ($session, $priv, $user, $dataobj) = @_;
 	my @roles = qw( anonymous ); # User can always be anonymous
 	my @permitted_roles;
 

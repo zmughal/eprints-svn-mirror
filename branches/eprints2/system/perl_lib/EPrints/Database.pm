@@ -2611,7 +2611,7 @@ sub get_roles
 	my ( @permitted_roles, $sth, $sql, @clauses );
 
 	# Standard WHERE clauses
-	if( $priv =~ s/\.*$// ) {
+	if( $priv =~ s/\.\*$// ) {
 		push @clauses, "privilege like '" . prep_value( $priv ) . "\%'";
 	} else {
 		push @clauses, "privilege = '" . prep_value( $priv ) . "'";
@@ -2624,9 +2624,11 @@ sub get_roles
 
 	# Get roles from the permissions table
 	$sql = "SELECT role FROM user_permissions WHERE ";
-	$sql .= join ' AND ',
+	$sql .= join(
+		" AND ",
 		@clauses,
-		"(" . join(' OR ', map { "role = '" . prep_value( $_ ) . "'" } @roles) . ")";
+		"(" . join(' OR ', map { "role = '" . prep_value( $_ ) . "'" } @roles) . ")"
+	);
 	
 	# Provide a generic privilege query
 	$sth = $self->prepare( $sql );
@@ -2637,12 +2639,13 @@ sub get_roles
 	}
 
 	# Get roles inherited from group membership
-	$sql = "SELECT G.role FROM user_groups AS G, user_permissions AS P WHERE G.group=P.role";
+	$sql = "SELECT G.role FROM user_groups AS G, user_permissions AS P WHERE ";
 	$sql .= join(
-		 ' AND ',
+		 " AND ",
+		 "G.role=P.role",
 		@clauses,
-		"(" . join(' OR ', map { "G.role = '" . $self->prev_like_value( $_ ) . "'" } @roles) . ")"
-		);
+		"(" . join(' OR ', map { "G.role = '" . prep_value( $_ ) . "'" } @roles) . ")"
+	);
 	
 	$sth = $self->prepare( $sql );
 	$self->execute( $sth, $sql ) or return;
