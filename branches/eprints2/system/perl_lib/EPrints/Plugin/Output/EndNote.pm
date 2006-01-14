@@ -1,6 +1,7 @@
 package EPrints::Plugin::Output::EndNote;
 
 use EPrints::Plugin::Output;
+use EPrints::Plugin::Output::Refer;
 
 @ISA = ( "EPrints::Plugin::Output::Refer" );
 
