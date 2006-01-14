@@ -457,8 +457,15 @@ sub has_privilege
 
 	push @roles, &{$func}( $user, $dataobj );
 
+	# Admin 'god-mode'
+	if( grep { $_ eq 'usertype.admin' } @roles ) {
+		push @roles, 'usertype.admin';
+	}
+
 	# TODO: Replace undef with remote IP address (if available)
-	return $session->get_db->get_roles_by_roles( $priv, undef, @roles );
+	push @permitted_roles, $session->get_db->get_roles( $priv, undef, @roles );
+
+	return @permitted_roles;
 }
 
 1;

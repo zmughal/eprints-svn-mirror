@@ -2226,6 +2226,33 @@ sub render_export_links
 ######################################################################
 =pod
 
+=item @roles = $eprint->user_roles( $user )
+
+Return the @roles $user has on $eprint.
+
+=cut
+######################################################################
+
+sub user_roles
+{
+	my( $self, $user ) = @_;
+
+	return () unless defined( $user );
+	
+	# $user owns this eprint if their userid matches ours
+	if( $self->get_value( "userid" ) eq $user->get_value( "userid" ) )
+	{
+		return qw( eprint.owner );
+	}
+	else
+	{
+		return ();
+	}
+}
+
+######################################################################
+=pod
+
 =item $eprint->datestamp
 
 DEPRECATED.

@@ -970,7 +970,7 @@ sub process_editor_alerts
 
 =item @roles = $user->user_roles( [$user] )
 
-Return the roles the user has.
+Return the roles the user has and anything that the user can do to $user.
 
 =cut
 ######################################################################
@@ -980,15 +980,20 @@ sub user_roles
 	my ($self, $user) = @_;
 	my @roles;
 	
-	# If $user is defined must always be a usertype.user ?
-	push @roles, qw( usertype.user );
-	if( $user->get_type() eq 'admin' ) {
-		push @roles, qw( usertype.admin );
-	} elsif( $user->get_type() eq 'editor' ) {
-		push @roles, qw( usertype.editor );
-	}
-	push @roles, $user->get_value( "userid" );
+	# Can always be ourselves
+	push @roles, $self->get_value( "userid" );
+	
+	# Set our usertype
+	push @roles, "usertype." . $self->get_type();
 
+	# Can $self do something to $user ?
+	if( defined( $user ) )
+	{
+		if( $self->get_value( "userid" ) eq $user->get_value( "userid" ) ) {
+			push @roles, qw( user.owner );
+		}
+	}
+	
 	return @roles;
 }
 

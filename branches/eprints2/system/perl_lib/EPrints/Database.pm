@@ -2502,24 +2502,119 @@ sub index_queue
 	$self->do( $sql );
 }
 
+######################################################################
 =pod
 
-=item @roles = $db->get_roles_by_roles( $privilege, $remote_ip, @roles )
+=item $db->add_roles( $privilege, $ip_from, $ip_to, @roles )
+
+Add $privilege to @roles, optionally in net space $ip_from to $ip_to.
+
+If $privilege begins with '@' adds @roles to that group.
+
+=cut
+######################################################################
+
+sub add_roles
+{
+	my( $self, $priv, $ip_f, $ip_t, @roles ) = @_;
+	my $sql;
+
+	# Adding users to groups
+	if( $priv =~ /^\@/ ) {
+		foreach my $role (@roles)
+		{
+			$self->do(
+				"REPLACE user_groups (user,role) VALUES ('" .
+					prep_value( $role ) . "','" .
+					prep_value( $priv ) . "')"
+			);
+		}
+	}
+	# Adding privileges to roles
+	else
+	{
+		# Convert quad-dotted to long to allow easy lookup
+		$ip_f = $ip_f ? EPrints::Utils::ip2long( $ip_f ) : "null";
+		$ip_t = $ip_t ? EPrints::Utils::ip2long( $ip_t ) : "null";
+
+		foreach my $role (@roles)
+		{
+			$self->do(
+				"REPLACE user_permissions (role,privilege,net_from,net_to) VALUES ('" .
+					prep_value( $role ) . "','" .
+					prep_value( $priv ) . "'," .
+					$ip_f . "," .
+					$ip_t . ")"
+			);
+		}
+	}
+
+	return scalar(@roles);
+}
+
+######################################################################
+=pod
+
+=item $db->remove_roles( $privilege, $ip_from, $ip_to, @roles )
+
+Remove $privilege from @roles, $ip_from and $ip_to are currently ignored, but this behaviour may change in future.
+
+If $privilege beings with '@' removes @roles from that group instead.
+
+=cut
+######################################################################
+
+sub remove_roles
+{
+	my( $self, $priv, $ip_f, $ip_t, @roles ) = @_;
+	my $sql;
+
+	if( $priv =~ /^\@/ )
+	{
+		foreach my $role (@roles)
+		{
+			$self->do(
+				"DELETE FROM user_groups WHERE " .
+					"user='" . prep_value( $role ) . "' AND ".
+					"role='" . prep_value( $priv ) . "'"
+			);
+		}
+	}
+	else
+	{
+		foreach my $role (@roles)
+		{
+			$self->do(
+				"DELETE FROM user_permissions WHERE " .
+					"role='" . prep_value( $role ) . "' AND ".
+					"privilege='" . prep_value( $priv ) . "'"
+			);
+		}
+	}
+
+	return scalar( @roles );
+}
+
+######################################################################
+=pod
+
+=item @roles = $db->get_roles( $privilege, $remote_ip, @roles )
 
 Get the matching roles for @roles that have $privilege, optionally restricted to $remote_ip.
 
 =cut
+######################################################################
 
-sub get_roles_by_roles
+sub get_roles
 {
 	my ( $self, $priv, $ip, @roles ) = @_;
 	my ( @permitted_roles, $sth, $sql, @clauses );
 
 	# Standard WHERE clauses
-	if( $priv =~ s/\.*$/\%/ ) {
-		push @clauses, "privilege like '$priv'";
+	if( $priv =~ s/\.*$// ) {
+		push @clauses, "privilege like '" . prep_value( $priv ) . "\%'";
 	} else {
-		push @clauses, "privilege = '$priv'";
+		push @clauses, "privilege = '" . prep_value( $priv ) . "'";
 	}
 	if( defined( $ip ) )
 	{
@@ -2531,7 +2626,7 @@ sub get_roles_by_roles
 	$sql = "SELECT role FROM user_permissions WHERE ";
 	$sql .= join ' AND ',
 		@clauses,
-		"(" . join(' OR ', map { "role = '" . $self->prev_like_value( $_ ) . "'" } @roles) . ")";
+		"(" . join(' OR ', map { "role = '" . prep_value( $_ ) . "'" } @roles) . ")";
 	
 	# Provide a generic privilege query
 	$sth = $self->prepare( $sql );
@@ -2543,9 +2638,11 @@ sub get_roles_by_roles
 
 	# Get roles inherited from group membership
 	$sql = "SELECT G.role FROM user_groups AS G, user_permissions AS P WHERE G.group=P.role";
-	$sql .= join ' AND ',
+	$sql .= join(
+		 ' AND ',
 		@clauses,
-		"(" . join(' OR ', map { "G.role = '" . $self->prev_like_value( $_ ) . "'" } @roles) . ")";
+		"(" . join(' OR ', map { "G.role = '" . $self->prev_like_value( $_ ) . "'" } @roles) . ")"
+		);
 	
 	$sth = $self->prepare( $sql );
 	$self->execute( $sth, $sql ) or return;
