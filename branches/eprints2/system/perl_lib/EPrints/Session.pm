@@ -2237,7 +2237,22 @@ sub have_parameters
 
 
 
+######################################################################
+=pod
 
+=item @roles = $session->has_privilege( $privilege [, $dataobj] )
+
+Check the current user has $privilege (optionally also check on $dataobj).
+
+=cut
+######################################################################
+
+sub has_privilege
+{
+	my( $self, $priv, $dataobj ) = @_;
+
+	return EPrints::Auth::has_privilege( $self, $priv, $dataobj );
+}
 
 ######################################################################
 =pod
