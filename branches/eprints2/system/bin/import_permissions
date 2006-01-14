@@ -135,7 +135,7 @@ my $userauth = $session->get_archive->get_conf( "userauth" );
 my $db = $session->get_db();
 
 # Clear the existing tables
-if( $purge ) {
+if( 0 and $purge ) {
 	my $input;
 	unless( $force ) {
 		print "Purging existing permissions database\n";
@@ -160,6 +160,7 @@ while( my ($group, $privs) = each %MACROS ) {
 		$db->add_roles( $priv, undef, undef, $group );
 	}	
 }
+
 # Add all the default privileges
 while( my ($role, $privs) = each %PRIVS ) {
 	foreach my $priv (@$privs) {

@@ -255,6 +255,8 @@ sub create_archive_tables
 
 	$success = $success && $self->_create_indexqueue_table();
 
+	$success = $success && $self->_create_permission_table();
+
 	$self->create_version_table;	
 	
 	$self->set_version( $EPrints::Database::DBVersion );
@@ -1054,6 +1056,31 @@ END
 	return( 1 );
 }
 
+######################################################################
+# 
+# $success = $db->_create_permission_table
+#
+# undocumented
+#
+######################################################################
+
+sub _create_permission_table
+{
+	my( $self ) = @_;
+	my( $sql, $rc );
+
+	$sql = "CREATE TABLE permission (role char(64) not null, privilege char(64) not null, net_from long, net_to long, PRIMARY KEY(role,privilege), UNIQUE(privilege,role))";
+
+	$self->do( $sql ) or return 0;
+
+	$sql = "CREATE TABLE permission_group (user char(64) not null, role char(64) not null, PRIMARY KEY(user,role))";
+
+	$self->do( $sql ) or return 0;
+
+	return 1;
+}
+
+#
 
 ######################################################################
 =pod
@@ -2524,7 +2551,7 @@ sub add_roles
 		foreach my $role (@roles)
 		{
 			$self->do(
-				"REPLACE user_groups (user,role) VALUES ('" .
+				"REPLACE permission_group (user,role) VALUES ('" .
 					prep_value( $role ) . "','" .
 					prep_value( $priv ) . "')"
 			);
@@ -2540,7 +2567,7 @@ sub add_roles
 		foreach my $role (@roles)
 		{
 			$self->do(
-				"REPLACE user_permissions (role,privilege,net_from,net_to) VALUES ('" .
+				"REPLACE permission (role,privilege,net_from,net_to) VALUES ('" .
 					prep_value( $role ) . "','" .
 					prep_value( $priv ) . "'," .
 					$ip_f . "," .
@@ -2574,7 +2601,7 @@ sub remove_roles
 		foreach my $role (@roles)
 		{
 			$self->do(
-				"DELETE FROM user_groups WHERE " .
+				"DELETE FROM permission_group WHERE " .
 					"user='" . prep_value( $role ) . "' AND ".
 					"role='" . prep_value( $priv ) . "'"
 			);
@@ -2585,7 +2612,7 @@ sub remove_roles
 		foreach my $role (@roles)
 		{
 			$self->do(
-				"DELETE FROM user_permissions WHERE " .
+				"DELETE FROM permission WHERE " .
 					"role='" . prep_value( $role ) . "' AND ".
 					"privilege='" . prep_value( $priv ) . "'"
 			);
@@ -2593,6 +2620,77 @@ sub remove_roles
 	}
 
 	return scalar( @roles );
+}
+
+######################################################################
+=pod
+
+=item %privs = $db->get_privileges( [$role] )
+
+Return the privileges granted for $role. If $role is undefined returns all set privileges.
+
+Returns a hash:
+
+	role => {
+		priv1 => [ ip_from, ip_to ],
+		priv2 => [ ip_from, ip_to ],
+	}
+
+=cut
+######################################################################
+
+sub get_privileges
+{
+	my( $self, $role ) = @_;
+	my( %privs, $sth, $sql );
+
+	$sql = "SELECT role,privilege,net_from,net_to FROM permission";
+	if( defined( $role ) ) {
+		$sql .= " WHERE role='" . prep_value( $role ) . "'";
+	}
+	$sth = $self->prepare( $sql );
+	$self->execute( $sth, $sql ) or return;
+	while( my ($r,$priv,$ip_from,$ip_to) = $sth->fetchrow_array )
+	{
+		$ip_from = EPrints::Utils::long2ip( $ip_from ) if defined($ip_from);
+		$ip_to = EPrints::Utils::long2ip( $ip_to ) if defined($ip_to);
+		$privs{$r}->{$priv} = [$ip_from, $ip_to];
+	}
+
+	return %privs;
+}
+
+######################################################################
+=pod
+
+=item %groups = $db->get_groups( [$role] )
+
+Returns a list of groups that $role belongs to, or all groups if $role is undefined.
+
+Returns a hash:
+
+	role => [ group1, group2, group3 ]
+
+=cut
+######################################################################
+
+sub get_groups
+{
+	my( $self, $role ) = @_;
+	my( %groups, $sth, $sql );
+
+	$sql = "SELECT user,role FROM permission_group";
+	if( defined( $role ) ) {
+		$sql .= " WHERE user='" . prep_value( $role ) . "'";
+	}
+	$sth = $self->prepare( $sql );
+	$self->execute( $sth, $sql ) or return;
+	while( my ($user,$r) = $sth->fetchrow_array )
+	{
+		push @{$groups{$user}}, $r;
+	}
+
+	return %groups;
 }
 
 ######################################################################
@@ -2623,7 +2721,7 @@ sub get_roles
 	}
 
 	# Get roles from the permissions table
-	$sql = "SELECT role FROM user_permissions WHERE ";
+	$sql = "SELECT role FROM permission WHERE ";
 	$sql .= join(
 		" AND ",
 		@clauses,
@@ -2639,7 +2737,7 @@ sub get_roles
 	}
 
 	# Get roles inherited from group membership
-	$sql = "SELECT G.role FROM user_groups AS G, user_permissions AS P WHERE ";
+	$sql = "SELECT G.role FROM permission_group AS G, permission AS P WHERE ";
 	$sql .= join(
 		 " AND ",
 		 "G.role=P.role",
