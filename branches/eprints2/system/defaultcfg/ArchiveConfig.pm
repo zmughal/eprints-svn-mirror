@@ -981,6 +981,29 @@ sub session_close
 	my( $session ) = @_;
 }
 
+######################################################################
+#
+# email_for_doc_request( $session, $eprint )
+#
+#  Invoked to determine the contact email address for an eprint. Used
+#  by the "request documents" feature
+#
+######################################################################
+
+
+sub email_for_doc_request {
+	my ( $session, $eprint ) = @_;
+	# To turn off this feature, uncomment the line below
+	#return undef;
+	if ($eprint->is_set("contact_email")) {
+		return $eprint->get_value("contact_email");
+	}
+	my $user = $eprint->get_user;
+	if ($user->is_set("email")) {
+		return $user->get_value("email");
+	}
+	return $session->get_archive->get_conf("adminemail");
+}
 
 # Return true to indicate the module loaded OK.
 1;

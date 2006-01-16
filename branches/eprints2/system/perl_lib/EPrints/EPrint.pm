@@ -143,6 +143,8 @@ sub get_system_field_info
 	{ name=>"date_embargo", type=>"date", required=>0,
 		min_resolution=>"year" },	
 
+	{ name=>"contact_email", type=>"email", required=>0, can_clone=>0 },
+
 	);
 }
 

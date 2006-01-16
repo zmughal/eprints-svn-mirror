@@ -3022,7 +3022,7 @@ PACKAGE: 2.2.99.2
  - Added date_embargo database upgrades to bin/upgrade
  - Removed custom render/fromform functions for now
 
-2006-01-13
+2006-01-13 tmb
 
  - Added output plugins for EndNote (based on Refer) and RefManager (RIS)
  - Tidied up BibTeX plugin
@@ -3035,3 +3035,18 @@ PACKAGE: 2.2.99.2
  - configure_archive and erase_archive now use get_render_hidden
     to get the MySQL root password.
 
+2006-01-16 tmb
+
+ - Added support for requesting non-uploaded/restricted documents
+ - Added a new system field contact_email in EPrint.pm
+ - Added a function "email_for_doc_request" to ArchiveConfig.pm
+	which determines the contact email for a given eprint
+ - Changed ArchiveRenderConfig.pm so that if an eprint has no documents, 
+	or 1+ restricted documents AND we can determine a contact email via
+	the email_for_doc_request function, a link is rendered on the 
+	abstract page 
+ - Created request_doc script which handles a document request
+ - Created respond_doc script to handle responses to a document request
+	in the cases where the contact email for a document request matches
+	a registered user and the documents requested are held (restricted)
+	by EPrints.

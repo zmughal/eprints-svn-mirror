@@ -23,6 +23,7 @@
       <page name="core" />
       <field name="title" required="yes" />
       <field name="creators" required="yes" />
+      <field name="contact_email" />
 
       <page name="pubinfo" />
       <field name="publication" required="yes" />

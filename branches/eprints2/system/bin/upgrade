@@ -511,7 +511,7 @@ END
 		}
 	}
 
-	# add "date_embargo" to the eprint datset
+	# add "date_embargo" to the eprint dataset
 	foreach my $table_id ( "inbox","buffer","archive","deletion" )
 	{
 		$sql = "ALTER TABLE $table_id ADD date_embargo DATE AFTER replacedby";
@@ -524,6 +524,24 @@ END
 		if( $table =~ m/^(archive|buffer|inbox|deletion)__ordervalues_.*$/ )
 		{
 			$sql = "ALTER TABLE $table ADD date_embargo text AFTER replacedby",
+			$db->do( $sql );
+		}
+	}
+
+	# add "contact_email" to the eprint dataset
+
+	foreach my $table_id ( "inbox","buffer","archive","deletion" )
+	{
+		$sql = "ALTER TABLE $table_id ADD contact_email VARCHAR(255) AFTER date_embargo";
+		$db->do( $sql );
+	}
+	
+	# add the ordervalues for contact_email
+	foreach my $table ( @tables )
+	{
+		if( $table =~ m/^(archive|buffer|inbox|deletion)__ordervalues_.*$/ )
+		{
+			$sql = "ALTER TABLE $table ADD contact_email text AFTER date_embargo",
 			$db->do( $sql );
 		}
 	}

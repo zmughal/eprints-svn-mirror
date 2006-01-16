@@ -232,6 +232,9 @@
 <br />Example: <span class="example">2006 June - all documents made publically accessible on 1st June 2006</span>
 </ep:phrase>
 
+    <ep:phrase ref="eprint_fieldname_contact_email">Contact Email Address</ep:phrase>
+    <ep:phrase ref="eprint_fieldhelp_contact_email">The contact email address for this item.</ep:phrase>
+
 <!---#######################-->
 
 
@@ -477,5 +480,77 @@ activated you can start to use the registered features of the repository.</p>
 <!-- Phrases related to publisher- or funder-imposed embargos -->
 <ep:phrase ref="embargo:status"><p>These documents will be made publically accessible from <ep:pin ref="date" />.</p></ep:phrase>
 <ep:phrase ref="embargo:invalid_date"><ep:pin ref="fieldname" /> must be in the future.</ep:phrase>
+
+<!-- Phrases related to requesting restricted documents -->
+<ep:phrase ref="request_doc:request_none"><ep:pin ref="link">Request Document(s)</ep:pin></ep:phrase>
+<ep:phrase ref="request_doc:request_restricted"><ep:pin ref="link">Request Restricted Document(s)</ep:pin></ep:phrase>
+
+<ep:phrase ref="request_doc/page:title_none">Request Document(s)</ep:phrase>
+<ep:phrase ref="request_doc/page:title_restricted">Request Restricted Document(s)</ep:phrase>
+<ep:phrase ref="request_doc/page:fieldname_email">Enter your email address: </ep:phrase>
+<ep:phrase ref="request_doc/page:button_request">Request</ep:phrase>
+
+<ep:phrase ref="request_doc/error">Item cannot be requested.</ep:phrase>
+<ep:phrase ref="request_doc/error:no_contact">No contact email available for this item.</ep:phrase>
+<ep:phrase ref="request_doc/error:bad_request">Item is publically accessible.</ep:phrase>
+<ep:phrase ref="request_doc/error:email">Error sending email.</ep:phrase>
+
+<ep:phrase ref="request_doc/request:subject">Request for &quot;<ep:pin ref="eprint" />&quot;</ep:phrase>
+<ep:phrase ref="request_doc/request:body">This item has been requested from the &archivename; by <ep:pin ref="requester" />. Please can you respond.
+
+<ep:pin ref="eprint" />
+<ep:pin ref="url" />
+
+Please consider removing restrictions or uploading the full text to the archive so that it will be available immediately to future searchers.
+</ep:phrase>
+
+<ep:phrase ref="request_doc/request:links">
+To send the requested item, use the following link:
+
+<ep:pin ref="accept" />
+
+To reject the request, use:
+
+<ep:pin ref="reject" />
+</ep:phrase>
+
+<ep:phrase ref="request_doc/ack"><p>Your request has been sent.</p><ep:pin ref="link">Return to abstract page</ep:pin></ep:phrase>
+<ep:phrase ref="request_doc/ack:subject">Confirmation of request for &quot;<ep:pin ref="eprint" />&quot;</ep:phrase>
+<ep:phrase ref="request_doc/ack:body">Your request for the following item has been passed on for action: 
+
+<ep:pin ref="eprint" />
+<ep:pin ref="url" />
+
+If you do not receive a reply or need advice at a later time please contact &adminemail;. For items with copyright implications, you may also be able to contact your local interlibrary loan service.
+</ep:phrase>
+
+<ep:phrase ref="respond_doc/page:title">Respond to Item Request</ep:phrase>
+<ep:phrase ref="respond_doc/page:respond">Send</ep:phrase>
+<ep:phrase ref="respond_doc/page:accept"><p>You have chosen to accept the request for the following item:</p><p><ep:pin ref="eprint" /></p><p>You may edit the response below if you wish. This will be emailed to the requester with the restricted document(s) attached.</p></ep:phrase>
+<ep:phrase ref="respond_doc/page:reject"><p>You have chosen to reject the request for the following item:</p><p><ep:pin ref="eprint" /></p><p>You may edit the response below if you wish. This will be emailed to the requester.</p></ep:phrase>
+
+<ep:phrase ref="respond_doc/error">Bad request</ep:phrase>
+<ep:phrase ref="respond_doc/error:auth">Authorisation failed.</ep:phrase>
+<ep:phrase ref="respond_doc/error:email"><p>Error sending email.</p></ep:phrase>
+
+<ep:phrase ref="respond_doc/response:subject">Result of request for &quot;<ep:pin ref="eprint" />&quot;</ep:phrase>
+<ep:phrase ref="respond_doc/response:body_accept">Your request for the following item has been accepted:
+
+<ep:pin ref="eprint" />
+<ep:pin ref="url" />
+
+Please find the requested document(s) attached.
+</ep:phrase>
+
+<ep:phrase ref="respond_doc/response:body_reject">Your request for the following item has been rejected:
+
+<ep:pin ref="eprint" />
+<ep:pin ref="url" />
+
+It may not always be straightforward to provide full text. Your local library may also be able to help you. For more general queries you may also contact &adminemail;
+</ep:phrase>
+
+<ep:phrase ref="respond_doc/ack:accept"><p>The acceptance notice has been sent.</p></ep:phrase>
+<ep:phrase ref="respond_doc/ack:reject"><p>The rejection notice has been sent.</p></ep:phrase>
 
 </ep:phrases>

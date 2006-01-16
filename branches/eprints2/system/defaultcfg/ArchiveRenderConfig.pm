@@ -156,6 +156,27 @@ sub eprint_render
 			date => EPrints::Utils::render_date( $session, $eprint->get_value( "date_embargo" ) ) ) );
 	}
 
+	# Request restricted document(s) link 
+	if( $eprint->is_set( "full_text_status" ) )
+	{
+		my $status = $eprint->get_value( "full_text_status" );
+		if( $status ne "public" )
+		{
+			if( $session->get_archive->can_call( "email_for_doc_request" ) )
+			{
+				if( defined( $session->get_archive->call( "email_for_doc_request", $session, $eprint ) ) )
+				{
+					# only render if there is a contact email address
+					my $p = $session->make_element( "p" );
+					$p->appendChild( $session->html_phrase( "request_doc:request_$status", 
+						link => $session->render_link( $session->get_archive->get_conf( "perl_url" ) . '/request_doc?eprintid=' . $eprint->get_id ),
+					) );
+					$page->appendChild( $p );
+				}
+			}
+		}
+	}
+
 	# Alternative locations
 	if( $eprint->is_set( "official_url" ) )
 	{
