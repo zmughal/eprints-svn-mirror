@@ -53,6 +53,7 @@ package EPrints::Utils;
 use Filesys::DiskSpace;
 use Unicode::String qw(utf8 latin1 utf16);
 use File::Path;
+use Term::ReadKey;
 use URI;
 use Carp;
 
@@ -1392,16 +1393,18 @@ sub get_input_hidden
 			print " [$default] ";
 		}
 		print "? ";
-		system("stty", "-echo");
-		my $in = <STDIN>;
-		system("stty", "echo");
+		ReadMode('noecho');
+		my $in = ReadLine( 0 );
+		ReadMode('normal');
 		chomp $in;
 		if( $in eq "" && defined $default )
 		{
+			print "\n";
 			return $default;
 		}
 		if( $in=~m/^$regexp$/ )
 		{
+			print "\n";
 			return $in;
 		}
 		else

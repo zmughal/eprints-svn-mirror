@@ -383,7 +383,7 @@ Ok, I'll need to connect to the mysql database as root. What is the root
 password? 
 	
 END
-	my $mysqlrootpass = EPrints::Utils::get_input( '^.*$', "MySQL Root Password" );
+	my $mysqlrootpass = EPrints::Utils::get_input_hidden( '^.*$', "MySQL Root Password" );
 
 	print "Connecting to the database...\n";
 	my $dbh = DBI->connect(

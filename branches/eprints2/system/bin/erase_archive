@@ -185,7 +185,7 @@ if( $erasedb )
 			print "You will need to enter the MySQL root user password.\n";
 		}
 	
-		$rootpass = EPrints::Utils::get_input( '^.*$', "MySQL Root Password" );
+		$rootpass = EPrints::Utils::get_input_hidden( '^.*$', "MySQL Root Password" );
 		print "\n";
 	}
 	

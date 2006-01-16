@@ -2950,7 +2950,7 @@ PACKAGE: 2.2.99.2
 
 2005-12-15 cjg
  
- - incrementing rev_number no longer gives a warning if it was not set
+ - Incrementing rev_number no longer gives a warning if it was not set
     already.
 
 2005-12-15 moj
@@ -2999,6 +2999,10 @@ PACKAGE: 2.2.99.2
  - Removed property setting code for now (will be in future revision)
  - Removed 'delete' call - was mucking up the object (oops)
 
+2006-01-04 cjg
+
+ - Added EPrints Search to SOAP tools.
+
 2006-01-10 tmb
 
  - Added support for publisher- or funder-imposed embargos.
@@ -3022,3 +3026,12 @@ PACKAGE: 2.2.99.2
 
  - Added output plugins for EndNote (based on Refer) and RefManager (RIS)
  - Tidied up BibTeX plugin
+
+2006-01-16 cjg
+
+ - Modified Utils::get_input_hidden to use a Perl module to hide
+    keyboard input, rather than an external tool. Should be more
+    portable.
+ - configure_archive and erase_archive now use get_render_hidden
+    to get the MySQL root password.
+
