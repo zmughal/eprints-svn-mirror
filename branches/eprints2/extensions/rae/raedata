@@ -23,27 +23,7 @@ RAELoader::init_rae( $session );
 # Show available roles
 my $roles_part = $session->make_doc_fragment();
 my $perms = $archive->get_conf("rae", "group_perms");
-if (defined( $perms->{$user->get_id} )) {
-	my @roles;
-	my $searchexp = new EPrints::SearchExpression(
-		session => $session,
-		custom_order => "name",
-		dataset => $archive->get_dataset("user"),
-	);
-	$searchexp->add_field( $archive->get_dataset("user")->get_field("dept") , $perms->{$user->get_id} );
-	$searchexp->perform_search;
-	$searchexp->map( sub {
-		my ( $session, $dataset, $item, $info ) = @_;
-		push @roles, [ $item->get_id, EPrints::Utils::tree_to_utf8($item->render_description()) ];
-	});
-	my $form = $session->render_form();
-	$form->appendChild($session->render_option_list(name => 'role', pairs => \@roles));
-	$form->appendChild($session->render_action_buttons(submit => $session->phrase( "rae:change_role" )));
-	$roles_part = $session->html_phrase( "rae:roles", 
-		change_role => $form,
-		current_user => $user->render_description(),
-	);
-}
+
 
 # Check selected role
 my $role;
@@ -61,17 +41,65 @@ if (defined($session->param("role"))) {
 	$role = $user;
 }
 
+if (defined( $perms->{$user->get_id} )) {
+	my @roles;
+	my $searchexp = new EPrints::SearchExpression(
+		session => $session,
+		custom_order => "name",
+		dataset => $archive->get_dataset("user"),
+	);
+	$searchexp->add_field( $archive->get_dataset("user")->get_field("dept") , $perms->{$user->get_id} );
+	$searchexp->perform_search;
+	$searchexp->map( sub {
+		my ( $session, $dataset, $item, $info ) = @_;
+		push @roles, [ $item->get_id, EPrints::Utils::tree_to_utf8($item->render_description()) ];
+	});
+	my $form = $session->render_form();
+	$form->appendChild($session->render_option_list(name => 'role', pairs => \@roles));
+	$form->appendChild($session->render_action_buttons(submit => $session->phrase( "rae:change_role" )));
+	
+	if($role->get_id != $user->get_id)
+	{
+		$roles_part = $session->html_phrase( "rae:roles_behalf", 
+			change_role => $form,
+			current_user => $user->render_description(),
+			current_role => $role->render_description(),		## new!!
+		);
+	}
+	else
+	{
+		$roles_part = $session->html_phrase( "rae:roles", 
+			change_role => $form,
+			current_user => $user->render_description(),
+		);
+	}
+}
+
+
+
+
+
 # Get RAE data from DB
 my %values;
-my $sql = "SELECT field, value FROM rae_data WHERE userid=" . $role->get_id;
+my %behalf_ids;
+
+my $sql = "SELECT field, value, chooserid FROM rae_data WHERE userid=" . $role->get_id;
 my $sth = $session->get_db->prepare( $sql );
 if( $session->get_db->execute( $sth, $sql ) )
 {
 	while( my @row = $sth->fetchrow )
 	{
+		
 		$values{$row[0]} = $row[1];
+		
+		if(defined $row[2])
+		{
+			$behalf_ids{$row[0]} = $row[2];
+		}
 	}
+	
 }
+
 
 # For each RAE field:
 # - create metafield
@@ -79,6 +107,8 @@ if( $session->get_db->execute( $sth, $sql ) )
 # - update DB if appropriate
 # - build shortcuts
 my @metafields;
+
+
 my $shortcuts = $session->make_element( "ul" );
 my $form = $session->render_form( "post" );
 foreach my $field (@{$archive->get_conf("rae", "rae_fields")})
@@ -95,18 +125,31 @@ foreach my $field (@{$archive->get_conf("rae", "rae_fields")})
 	# clears a previous value from a field)
 	# TODO: delete row from DB if field cleared?
 	#my $val = $metafield->form_value( $session );
+	
 	my $val = $session->param( $field );
 
 	if( defined $val )
 	{
 		my $qfield = $session->get_db->{dbh}->quote($field);
 		my $qval = $session->get_db->{dbh}->quote($val);
+		
+		
 		my $sql = undef;
 		if( defined $values{$field} )
 		{
-			$sql = "UPDATE rae_data SET value=$qval WHERE field=$qfield AND userid=" . $role->get_id;
-		} elsif( $val ne "" ) {
-			$sql = "INSERT INTO rae_data VALUES (" . $role->get_id . ", $qfield, $qval)";
+			# quick check so that data gets replaced only if different from the one already stored
+			# (so we don't lose the 'chooserid' parameter)
+			
+			if($session->get_db->{dbh}->quote($values{$field}) ne $qval)
+			{
+				$sql = "UPDATE rae_data SET value=$qval, chooserid=".$user->get_id." WHERE field=$qfield AND userid=" . $role->get_id;
+			}
+			
+			
+		} 
+		elsif( $val ne "" ) 
+		{
+			$sql = "INSERT INTO rae_data VALUES (" . $role->get_id . ", $qfield, $qval,".$user->get_id.");";
 		}
 		if( defined $sql )
 		{
@@ -115,17 +158,38 @@ foreach my $field (@{$archive->get_conf("rae", "rae_fields")})
 				# TODO: better error handling?
 				#$session->render_error("Error: $sql", $archive->get_conf( "perl_url" ) . "/users/rae/raeselect" );
 			}
-			$values{$metafield->get_name} = $val;
+			else
+			{
+				#update hashes to incorporate the new data (the data which was not retrieved during the previous SELECT action):
+				
+				$values{$metafield->get_name} = $val;
+				$behalf_ids{$metafield->get_name} = $user->get_id;
+			}
 		}
 	} 
 	push @metafields, $metafield;
 
+	my $behalf = undef;
+	
+	if(defined $behalf_ids{$metafield->get_name} )
+	{
+		
+		my $slave = EPrints::User->new($session, $behalf_ids{$metafield->get_name});
+
+		$behalf = $session->html_phrase( "rae/data:text_entered" , user => $slave->render_description );
+		
+	}
+	
 	my $li = $session->make_element( "li" );
 	$shortcuts->appendChild( $li );
 	my $link = $session->render_link( "#" . $field );
 	$link->appendChild( $session->make_text( EPrints::Utils::tree_to_utf8( $metafield->render_name( $session ) ) ) );
+
+	
 	$li->appendChild( $link );
+	$li->appendChild( $behalf ) if(defined $behalf);
 }
+
 
 # Render input form
 $form = $session->render_input_form(
@@ -135,13 +199,20 @@ $form = $session->render_input_form(
 	show_help => 1,
 	buttons => { submit => $session->phrase( "rae/data:submit_button" ) },
 );
+$form->appendChild( $session->render_hidden_field( "role", $role->get_id ) );
+
+$form->appendChild( $session->make_element( "br" ) );
+
+
+#seb: forces the ChangeRole action when linking to RAESELECT... reason is that it forces RAESELECT to show the page at init (otherwise RAESELECT performs the search when loading)
+my $link = $session->render_link( $archive->get_conf("perl_url") . "/users/rae/raeselect?role=" . $role->get_id."&_action_submit=Change+Role");
 
 # Build & Send page
 my $page = $session->html_phrase( "rae/data:page", 
 	shortcuts => $shortcuts,
 	form => $form,
 	roles => $roles_part,
-	select_link => $session->render_link( $archive->get_conf("perl_url") . "/users/rae/raeselect?role=" . $role->get_id),
+	select_link => $link,
 );
 my $title = $session->html_phrase( "rae/data:page_title", user => $role->render_description() );
 
@@ -149,4 +220,6 @@ $session->build_page( $title, $page );
 $session->send_page();
 $session->terminate();
 exit;
+
+
 

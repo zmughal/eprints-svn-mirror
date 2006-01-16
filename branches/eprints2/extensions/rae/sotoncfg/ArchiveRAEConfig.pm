@@ -1,4 +1,4 @@
-
+use EPrints::DisambiguateCreators;
 # Configuration for eprints@soton
 
 sub get_rae_conf {
@@ -74,12 +74,31 @@ $c->{check_item} = sub {
 		push @problems, $session->html_phrase( "rae/report:problem_no_doc",
 			type => $session->make_text( $item->get_value( "type" ) ) );
 	}
+	my $perl_url = $session->get_archive->get_conf("perl_url");
+	#seb: added link to raeselect if problem
+	if(scalar(@problems) > 0)
+	{
+		my $link = $session->render_link( $perl_url . "/users/rae/raeselect?role=" . $user->get_id."&_action_submit=Change+Role");
+	
+		push @problems, $session->html_phrase( "rae/report:problem_select_link",
+                        select_link => $link );
+	}
+	
+	##ANW Error note to identify eprints with incomplete disambiguation information
+	if(DisambiguateCreators::verifyCreatorID($item,$session) ne "")
+	{
+			my $link = $session->render_link($perl_url."/users/staff/edit_eprint?dataset=".($item->{dataset})."&eprintid=".($item->get_value("eprintid")));
+			
+			push (@problems, $session->html_phrase( "rae/report:problem_disambig", select_link => $link ));
+		
+	}
+	
 	return \@problems;
 };
 
 # Print CSV header
 $c->{csv_header} = sub {
-	print csv_line('Dept', 'Username', 'Surname', 'First Name', 'Score', 'Publication', 'Paper');
+	print csv_line('Dept', 'Username', 'Surname', 'First Name', 'Score', 'Publication', 'Paper', 'Author Disposition');
 };
 
 
@@ -90,6 +109,9 @@ $c->{csv_row} = sub {
 	my $name = $user->get_value( 'name' );
 	my $book = $item->get_value( 'publication' );
 	$book = $item->get_value( 'event_title' ) if !defined $book;
+	
+	
+	
 	print csv_line(
 		$user->get_value( "dept" ),
 		$user->get_value( "username" ),
@@ -98,6 +120,7 @@ $c->{csv_row} = sub {
 		'',
 		$book,
 		EPrints::Utils::tree_to_utf8( $item->render_citation ),
+		DisambiguateCreators::renderRAECreatorStatusText($session, $item->get_value("eprintid")),
 	);
 };
 
@@ -107,12 +130,12 @@ $c->{csv_footer} = sub {
 	my ( $rows ) = @_;
 	print csv_line( '','','','','','','' );
 	my $range = 'E2:E'.($rows+1); # E1 is header row
-	print csv_line( 'Score','Label','Total Papers','','','','' );
-	print csv_line( '0', "Unclassified", '='.$rows."-INDEX(FREQUENCY($range,A".($rows+4).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+5).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+6).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+7).":A".($rows+8)."),2)", '','','','' );
-	print csv_line( '1', "1*", "=INDEX(FREQUENCY($range,A".($rows+4).":A".($rows+8)."),2)",'','','','' );
-	print csv_line( '2', "2*", "=INDEX(FREQUENCY($range,A".($rows+5).":A".($rows+8)."),2)",'','','','' );
-	print csv_line( '3', "3*", "=INDEX(FREQUENCY($range,A".($rows+6).":A".($rows+8)."),2)",'','','','' );
-	print csv_line( '4', "4*", "=INDEX(FREQUENCY($range,A".($rows+7).":A".($rows+8)."),2)",'','','','' );
+	print csv_line( 'Score','Label','Total Papers','','','','','');
+	print csv_line( '0', "Unclassified", '='.$rows."-INDEX(FREQUENCY($range,A".($rows+4).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+5).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+6).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+7).":A".($rows+8)."),2)", '','','','','' );
+	print csv_line( '1', "1*", "=INDEX(FREQUENCY($range,A".($rows+4).":A".($rows+8)."),2)",'','','','','' );
+	print csv_line( '2', "2*", "=INDEX(FREQUENCY($range,A".($rows+5).":A".($rows+8)."),2)",'','','','','' );
+	print csv_line( '3', "3*", "=INDEX(FREQUENCY($range,A".($rows+6).":A".($rows+8)."),2)",'','','','','' );
+	print csv_line( '4', "4*", "=INDEX(FREQUENCY($range,A".($rows+7).":A".($rows+8)."),2)",'','','','','' );
 };
 
 $c->{testconf} = "Hello World!";

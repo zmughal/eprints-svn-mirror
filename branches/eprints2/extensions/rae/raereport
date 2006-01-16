@@ -3,6 +3,9 @@ use EPrints::EPrint;
 use EPrints::MetaField;
 use EPrints::Session;
 use EPrints::User;
+#ANW import the Disambiguation module
+use EPrints::DisambiguateCreators;
+use RAELoader;
 use strict;
 
 # Enclosing the main part in {..} prevents accidental
@@ -14,7 +17,7 @@ exit( 0 ) unless( defined $session );
 my $archive = $session->get_archive();
 
 # Init RAE config/phrases
-use RAELoader;
+
 RAELoader::init_rae( $session );
 
 my $page = $session->make_doc_fragment;
@@ -168,7 +171,7 @@ sub do_user {
 		$h2->appendChild(  $user->render_description );
 		$div->appendChild( $h2 );
 
-		$table = $session->make_element( 'table', border=>1 );
+		$table = $session->make_element( 'table', style=>"width :100%; ", border=>1);
 		$div->appendChild( $table );
 	}
 
@@ -190,7 +193,16 @@ sub do_user {
 				$td_item->appendChild( $session->html_phrase( "rae:unknown_item", id => $eprintid ) );
 				next;
 			}
+			# ANW insert the creators disposition information (cell $td_adisposition) (RAE requirement)
+			my $td_adisposition = $session->make_element("td");
+			$tr->appendChild($td_adisposition);
+			
 			$td_item->appendChild( $item->render_citation_link());
+			
+			#ANW this makes a call to an external module which contains disambiguation methods (two of which are useful outside the module renderRAECreatorStatusText and renderRAECreatorDOM...
+			$td_adisposition->appendChild($session->make_text(DisambiguateCreators::renderRAECreatorStatusText($session, $item->get_value("eprintid"))));
+			
+			
 
 			my $td_probs = $session->make_element( "td" );
 			$tr->appendChild( $td_probs );
@@ -207,7 +219,11 @@ sub do_user {
 					$td_probs->appendChild( $problem );
 				}
 			}
-		} else {
+			
+			
+		} 
+		else 
+		{
 			# Add a row to the CSV file
 			&{$session->get_archive->get_conf( "rae", "csv_row" )}( $session, $user, $item );
 			$info->{csv_rows}++;
