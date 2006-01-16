@@ -1,0 +1,243 @@
+use EPrints::Database;
+use EPrints::EPrint;
+use EPrints::MetaField;
+use EPrints::Session;
+use EPrints::User;
+use strict;
+
+# Enclosing the main part in {..} prevents accidental
+# (and *dangerous*) use of 'global' vars inside subroutines
+{
+
+my $session = new EPrints::Session;
+exit( 0 ) unless( defined $session );
+my $archive = $session->get_archive();
+
+# Init RAE config/phrases
+use RAELoader;
+RAELoader::init_rae( $session );
+
+my $page = $session->make_doc_fragment;
+my $user_ds = $session->get_archive()->get_dataset( "user" );
+my $group_by = $user_ds->get_field( $archive->get_conf( "rae", "group_by") );
+
+if( !defined $session->param( 'group' ) )
+{
+	# Create list of available groups
+	my $list_frag = $session->make_doc_fragment;
+	my $ul = $session->make_element( 'ul' );
+	$list_frag->appendChild( $ul );
+
+	# Add the group of all users
+	if ($archive->get_conf( "rae", "show_all") ) {
+		my $li = $session->make_element( 'li' );
+		$ul->appendChild( $li );
+		my $a = $session->render_link( '?group=all' );
+		$li->appendChild( $a );
+		$a->appendChild( $session->html_phrase( "rae/report:all_users_group" ) );
+	}
+	my $groups = $group_by->get_values( $session, $user_ds );
+	foreach my $group ( @$groups )
+	{
+		next if $group eq "";
+		next if %{$archive->get_conf( "rae", "exclude_group" )}->{$group};
+		my $li = $session->make_element( 'li' );
+		$ul->appendChild( $li );
+		my $a = $session->render_link( '?group='.$group );
+		$li->appendChild( $a );
+		my $group_name = $group_by->render_value( $session, $group );
+		$a->appendChild( $group_name );
+	}
+	
+	my $title = $session->html_phrase( "rae/report:list_page_title" );
+	my $page = $session->html_phrase( "rae/report:list_page", list => $list_frag );
+	$session->build_page( $title, $page);
+	$session->send_page();
+	$session->terminate();
+	exit;
+}
+
+# Create report for selected group
+my $group = $session->param( "group" );
+my $csv = 0;
+$csv = 1 if defined $session->param( "csv" );
+
+# Build the search expression
+my $searchexp = new EPrints::SearchExpression(
+	session => $session,
+	custom_order => "name",
+	dataset => $user_ds,
+	keep_cache => 1,
+);
+# TODO: handle case where $group is 'all'
+$searchexp->add_field( $group_by , $group ) if $group ne 'all';
+$searchexp->perform_search;
+
+# Get RAE data for the selected group of users
+my %data_for_user;
+my $cacheid = $searchexp->get_cache_id;
+my $sql = "SELECT rae_data.userid, field, value FROM rae_data, cache$cacheid WHERE rae_data.userid=cache$cacheid.userid";
+my $sth = $session->get_db->prepare( $sql );
+if( $session->get_db->execute( $sth, $sql ) )
+{
+	while( my @row = $sth->fetchrow )
+	{
+		$data_for_user{$row[0]}{$row[1]} = $row[2];
+	}
+}
+
+# Get RAE items chosen by the selected group of users,
+# plus any other users who have also chosen those items
+# TODO: not entirely sure this is the best way of doing this
+my %users_for_eprint;
+my %eprints_for_user;
+$sql = "SELECT eprintid, userid FROM rae_selected WHERE eprintid IN (SELECT rae_selected.eprintid FROM rae_selected, cache$cacheid WHERE rae_selected.userid=cache$cacheid.userid)";
+$sth = $session->get_db->prepare( $sql );
+if( $session->get_db->execute( $sth, $sql ) )
+{
+	while( my @row = $sth->fetchrow )
+	{
+		push @{ $users_for_eprint{$row[0]} }, $row[1];
+		push @{ $eprints_for_user{$row[1]} }, $row[0];
+	}
+}
+
+my $group_page = $session->make_doc_fragment;
+
+if( $csv )
+{
+	$session->send_http_header( 'content_type' => 'text/plain' );
+	&{$archive->get_conf( "rae", "csv_header" )};
+}
+
+my $info = {
+	csv => $csv,
+	csv_rows => 0,
+	page => $group_page,
+	eprints_for_user => \%eprints_for_user,
+	data_for_user => \%data_for_user,
+	users_for_eprint => \%users_for_eprint,
+};
+$searchexp->map( \&do_user, $info );
+$searchexp->dispose;
+
+unless ( $csv )
+{
+	my $title;
+	if ( $group eq 'all' ) {
+		$title = $session->html_phrase( "rae/report:all_group_page_title" );
+	} else {
+		$title = $session->html_phrase( "rae/report:group_page_title", group => $group_by->render_value( $session, $group ) );
+	}
+	unless( defined $session->param( "mainonly" ) )
+	{
+		my $csvonly = $session->render_link( $archive->get_conf("perl_url") . '/users/rae/raereport/rae-'.$group.'.csv?group='.$group.'&csv=1' );
+		my $mainonly = $session->render_link( $archive->get_conf("perl_url") . '/users/rae/raereport/rae-'.$group.'.html?group='.$group.'&mainonly=yes' );
+		my $page = $session->html_phrase( "rae/report:group_page", 
+			report => $group_page,
+			csv => $csvonly,
+			mainonly => $mainonly,
+		);
+		$session->build_page( $title, $page );
+	} else {
+		$session->build_page( $title, $group_page );
+	}
+	$session->send_page();
+} else {
+	&{$archive->get_conf( "rae", "csv_footer" )}($info->{csv_rows});
+}
+$session->terminate();
+exit;
+
+}
+
+sub do_user {
+
+	my ( $session, $dataset, $user, $info ) = @_;
+
+	my $page = $info->{page};
+	my ( $div, $table );
+
+	# Name of user
+	unless ($info->{csv}) {
+		$div = $session->make_element( 'div' );
+		$page->appendChild( $div );
+		$page->appendChild( $session->make_element( 'br', clear=>'all', style=>'page-break-before:always' ) );
+
+		my $h2 = $session->make_element( 'h2' );
+		$h2->appendChild(  $user->render_description );
+		$div->appendChild( $h2 );
+
+		$table = $session->make_element( 'table', border=>1 );
+		$div->appendChild( $table );
+	}
+
+	# List RAE items selected by user, with problems
+	my $eprints_for_user = $info->{eprints_for_user};
+	foreach my $eprintid ( @{ $eprints_for_user->{$user->get_id} } )
+	{
+		my $item = EPrints::EPrint->new( $session, $eprintid, $session->get_archive->get_dataset( "archive" ) );
+
+		unless( $info->{csv} )
+		{
+			my $tr = $session->make_element( "tr" );
+			$table->appendChild( $tr );
+			my $td_item = $session->make_element( "td" );
+			$tr->appendChild( $td_item );
+
+			if( !defined $item )
+			{
+				$td_item->appendChild( $session->html_phrase( "rae:unknown_item", id => $eprintid ) );
+				next;
+			}
+			$td_item->appendChild( $item->render_citation_link());
+
+			my $td_probs = $session->make_element( "td" );
+			$tr->appendChild( $td_probs );
+
+			my $users_for_eprint = $info->{users_for_eprint};
+			my $problems = &{$session->get_archive->get_conf( "rae", "check_item" )}
+				( $session, $user, $item, $users_for_eprint->{$eprintid} );
+			if( defined $problems && scalar( @$problems ) > 0 )
+			{
+				# TODO: don't hardcode?
+				$tr->setAttribute( "style", "background-color: #ff9999;" );
+				foreach my $problem ( @$problems )
+				{
+					$td_probs->appendChild( $problem );
+				}
+			}
+		} else {
+			# Add a row to the CSV file
+			&{$session->get_archive->get_conf( "rae", "csv_row" )}( $session, $user, $item );
+			$info->{csv_rows}++;
+		}
+	}
+
+	# Render RAE data for user
+	unless ( $info->{csv} )
+	{
+		my $data_for_user = $info->{data_for_user};
+		my $data = $data_for_user->{$user->get_id};
+		foreach my $field ( @{ $session->get_archive->get_conf( "rae", "rae_fields" ) } ) {
+			my $metafield = EPrints::MetaField->new(
+				type => "longtext",
+				archive => $session->get_archive(),
+				confid => "rae",	
+				name => $field,
+			);
+			if( defined $data->{$field} && $data->{$field} ne "" )
+			{
+				my $h3 = $session->make_element( "h3" );
+				$div->appendChild( $h3 );
+				$h3->appendChild( $metafield->render_name( $session ) );
+				my $p = $session->make_element( 'p' );
+				$div->appendChild( $p );
+				$p->appendChild( $session->make_text( $data->{$field}  ) );
+			}
+		}
+	}
+}
+
+
+

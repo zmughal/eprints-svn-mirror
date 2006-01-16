@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="iso-8859-1" standalone="no" ?>
+<!DOCTYPE phrases SYSTEM "entities-en.dtd">
+
+<ep:phrases xmlns="http://www.w3.org/1999/xhtml"
+            xmlns:ep="http://eprints.org/ep2/phrases">
+
+<!-- RAE fields -->
+<ep:phrase ref="rae_fieldname_rae_conf"><a name="rae_conf" />Involvements in conferences/workshops (Program Committees, Chairing, etc.)</ep:phrase>
+<ep:phrase ref="rae_fieldhelp_rae_conf">Leave blank if there is nothing to report</ep:phrase>
+<ep:phrase ref="rae_fieldname_rae_prof"><a name="rae_prof" />Responsibilities in professional associations (IEE, BCS, etc)</ep:phrase>
+<ep:phrase ref="rae_fieldhelp_rae_prof">Leave blank if there is nothing to report</ep:phrase>
+<ep:phrase ref="rae_fieldname_rae_gbod"><a name="rae_gbod" />Responsibilities in grant awarding bodies (EPSRC, EU, etc)</ep:phrase>
+<ep:phrase ref="rae_fieldhelp_rae_gbod">Leave blank if there is nothing to report</ep:phrase>
+<ep:phrase ref="rae_fieldname_rae_extexam"><a name="rae_extexam" />External examination responsibilities</ep:phrase>
+<ep:phrase ref="rae_fieldhelp_rae_extexam">Leave blank if there is nothing to report</ep:phrase>
+<ep:phrase ref="rae_fieldname_rae_vispos"><a name="rae_vispos" />Visiting positions in other organisations</ep:phrase>
+<ep:phrase ref="rae_fieldhelp_rae_vispos">Leave blank if there is nothing to report</ep:phrase>
+<ep:phrase ref="rae_fieldname_rae_advbod"><a name="rae_advbod" />Membership national/international advisory bodies (Foresight, etc)</ep:phrase>
+<ep:phrase ref="rae_fieldhelp_rae_advbod">Leave blank if there is nothing to report</ep:phrase>
+<ep:phrase ref="rae_fieldname_rae_ed"><a name="rae_ed" />Editorships/Editorial Board Members of Journals, &amp; Book Series</ep:phrase>
+<ep:phrase ref="rae_fieldhelp_rae_ed">Leave blank if there is nothing to report</ep:phrase>
+<ep:phrase ref="rae_fieldname_rae_fell"><a name="rae_fell" />Fellowships (Royal Society, Royal Academy, BCS, IEEE, IEE, etc)</ep:phrase>
+<ep:phrase ref="rae_fieldhelp_rae_fell">Leave blank if there is nothing to report</ep:phrase>
+<ep:phrase ref="rae_fieldname_rae_lect"><a name="rae_lect" />Prestigous invited lectures and keynotes</ep:phrase>
+<ep:phrase ref="rae_fieldhelp_rae_lect">Leave blank if there is nothing to report</ep:phrase>
+<ep:phrase ref="rae_fieldname_rae_awards"><a name="rae_awards" />Awards/Prizes for Research</ep:phrase>
+<ep:phrase ref="rae_fieldhelp_rae_awards">Leave blank if there is nothing to report</ep:phrase>
+<ep:phrase ref="rae_fieldname_rae_hdeg"><a name="rae_hdeg" />Honorary degrees</ep:phrase>
+<ep:phrase ref="rae_fieldhelp_rae_hdeg">Leave blank if there is nothing to report</ep:phrase>
+<ep:phrase ref="rae_fieldname_rae_grants"><a name="rae_grants" />Prestigeous Grants (IRCs, Portfolio awards, etc)</ep:phrase>
+<ep:phrase ref="rae_fieldhelp_rae_grants">Leave blank if there is nothing to report</ep:phrase>
+<ep:phrase ref="rae_fieldname_rae_papawards"><a name="rae_papawards" />Best paper awards</ep:phrase>
+<ep:phrase ref="rae_fieldhelp_rae_papawards">Leave blank if there is nothing to report</ep:phrase>
+<ep:phrase ref="rae_fieldname_rae_rmono"><a name="rae_rmono" />Research monographs</ep:phrase>
+<ep:phrase ref="rae_fieldhelp_rae_rmono">Leave blank if there is nothing to report</ep:phrase>
+<ep:phrase ref="rae_fieldname_rae_patents"><a name="rae_patents" />Patents</ep:phrase>
+<ep:phrase ref="rae_fieldhelp_rae_patents">Leave blank if there is nothing to report</ep:phrase>
+<ep:phrase ref="rae_fieldname_rae_sorgs"><a name="rae_sorgs" />Inputs to standards organisations</ep:phrase>
+<ep:phrase ref="rae_fieldhelp_rae_sorgs">Leave blank if there is nothing to report</ep:phrase>
+<ep:phrase ref="rae_fieldname_rae_rcent"><a name="rae_rcent" />Running of national/international research centres</ep:phrase>
+<ep:phrase ref="rae_fieldhelp_rae_rcent">Leave blank if there is nothing to report</ep:phrase>
+<ep:phrase ref="rae_fieldname_rae_consind"><a name="rae_consind" />Consultant to industry</ep:phrase> 
+<ep:phrase ref="rae_fieldhelp_rae_consind">Leave blank if there is nothing to report</ep:phrase>
+<ep:phrase ref="rae_fieldname_rae_entract"><a name="rae_entract" />Entrepreneurial activities (spin offs, start ups, etc)</ep:phrase>
+<ep:phrase ref="rae_fieldhelp_rae_entract">Leave blank if there is nothing to report</ep:phrase>
+<ep:phrase ref="rae_fieldname_rae_sciboards"><a name="rae_sciboards" />Scientific Advisory Boards</ep:phrase>
+<ep:phrase ref="rae_fieldhelp_rae_sciboards">Leave blank if there is nothing to report</ep:phrase>
+<ep:phrase ref="rae_fieldname_rae_other"><a name="rae_other" />Other (anything else you can think of)</ep:phrase>
+<ep:phrase ref="rae_fieldhelp_rae_other">Leave blank if there is nothing to report</ep:phrase>
+
+<ep:phrase ref="rae:testphrase">This is the test phrase!</ep:phrase>
+
+<!-- general -->
+<ep:phrase ref="rae:unknown_item">Unknown Item <ep:pin ref="id" /></ep:phrase>
+<ep:phrase ref="rae:unknown_user">Unknown User <ep:pin ref="id" /></ep:phrase>
+
+<!-- roles -->
+<ep:phrase ref="rae:roles"><div style="float:right;margin:5px;padding:5px;background:#dddddd">You are logged in as:<br/><b><ep:pin ref="current_user" /></b><br/>Available roles:<br/><ep:pin ref="change_role" /></div></ep:phrase>
+<ep:phrase ref="rae:change_role">Change Role</ep:phrase>
+
+<!-- data entry page -->
+<ep:phrase ref="rae/data:page_title">Update RAE Record for <ep:pin ref="user" /></ep:phrase>
+<ep:phrase ref="rae/data:page">
+	<ep:pin ref="roles" />
+	<p><b>NOTE</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</p>
+	<p>Use the <ep:pin ref="select_link">Select Items Page</ep:pin> to view and edit the list of records in the eprint archive which will be considered for your part of the RAE return.</p>
+	<hr />
+	<p>Use this page to record the following:</p>
+	<ep:pin ref="shortcuts" />
+	<br />
+	<ep:pin ref="form" />
+</ep:phrase>
+<ep:phrase ref="rae/data:submit_button">Submit</ep:phrase>
+
+<!-- select items page -->
+<ep:phrase ref="rae/select:page_title">Select RAE Items for <ep:pin ref="user" /></ep:phrase>
+<ep:phrase ref="rae/select:page">
+	<p><b>NOTE</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</p>
+	<p>Once you have selected your records to be used in the RAE you should finish editing your <a href="&perl_url;/users/rae/raedata">other RAE data</a>.</p>
+	<h2>Selected Items:</h2>
+	<ep:pin ref="selected" />
+	<br />	
+	<hr />
+	<h2>Search for Items:</h2>
+	<ep:pin ref="search" />
+</ep:phrase>
+<ep:phrase ref="rae/select:add_button">Add</ep:phrase>
+<ep:phrase ref="rae/select:remove_button">Remove</ep:phrase>
+<ep:phrase ref="rae/select:already_selected">Already Selected</ep:phrase>
+<ep:phrase ref="rae/select:selected_by">Selected by: <ep:pin ref="names" /></ep:phrase>
+<ep:phrase ref="rae/select:also_selected_by">Also selected by: <ep:pin ref="names" /></ep:phrase>
+
+<!-- report page -->
+<ep:phrase ref="rae/report:list_page_title">RAE Report</ep:phrase>
+<ep:phrase ref="rae/report:list_page">
+	<p><b>NOTE</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</p>
+	<p>Please select a group to list RAE returns of staff.</p>
+	<p><ep:pin ref="list" /></p>
+</ep:phrase>
+<ep:phrase ref="rae/report:group_page_title">RAE Report: <ep:pin ref="group" /></ep:phrase>
+<ep:phrase ref="rae/report:all_group_page_title">RAE Report (All Staff)</ep:phrase>
+<ep:phrase ref="rae/report:group_page">
+	<p><b>NOTE</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</p>
+	<p>If you want to print out this list with each staff member starting on a new page, <ep:pin ref="mainonly">follow this link</ep:pin> and save the HTML page to your computer, then load it into Microsoft Word and print from there.</p>
+	<p>Download a <ep:pin ref="csv">CSV version</ep:pin> of this information which may be then loaded into Excel.</p>
+	<p><ep:pin ref="report" /></p>
+</ep:phrase>
+<ep:phrase ref="rae/report:all_users_group">All Staff</ep:phrase>
+<ep:phrase ref="rae/report:problem_multiple_users">Also selected by: <ep:pin ref="names" /></ep:phrase>
+<ep:phrase ref="rae/report:problem_no_doc">No document (type=<ep:pin ref="type" />)</ep:phrase>
+
+</ep:phrases>

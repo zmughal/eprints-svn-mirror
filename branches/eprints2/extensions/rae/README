@@ -1,0 +1,67 @@
+
+eprints-rae: facilitates the RAE process via an EPrints archive.
+
+FILES
+
+raedata
+
+	based on the rae/rae_fields config, renders an input form for
+users to enter their measures of esteem. Values are stored in a
+rae_data table for the archive.
+
+raeselect
+
+	based on the rae/search_id config, renders an interface for
+users to search for and select RAE items. Selected items are recorded in
+a rae_selected table for the archive.
+
+	the rae/init config allows the search form to be initialised for 
+the given user.
+
+raereport
+
+	based on the rae/group_by config, renders a reporting interface for 
+RAE returns. The rae/exclude_group and rae/show_all configs can be used
+to hide certain groups and provide an 'all staff' group respectively. The 
+rae/check_item config is called for each item in in order to report problems
+(for example, an item is selected by more than one user, an item has no
+documents attached). 
+
+	the rae/csv-[header|row|footer] configs generate CSV
+output specific to the requirements of an institution.
+
+RAELoader.pm	
+
+	loads archives/[archiveid]/cfg/rae-phrases-en.xml and 
+archives/[archiveid]/cfg/ArchiveRAEConfig.pm and 'injects' RAE-specific 
+phrases/config into the current Archive object.
+
+	only reloaded thereafter if phrases or config files change.
+
+ArchiveRAEConfig.pm
+
+	defines an archive-specific RAE configuration.
+
+	needs to be placed under archives/[archiveid]/cfg/.
+
+rae-phrases-en.xml
+
+	defines language- and archive-specific RAE phrases.
+
+	needs to be placed under archives/[archiveid]/cfg/.
+
+CHANGELOG
+
+2005-10-21
+
+ - moved config/phrase 'injecting' code to RAELoader.pm
+ - fixed problems caused by use of 'global' vars under mod_perl
+   (*all* vars now explicitly passed to *all* subs)
+
+2005-10-19
+
+ - first prototype based on ECS RAE scripts
+ - uses separate DB tables rather than add fields to user types
+ - all phrases extracted to rae-phrases-en.xml
+ - config extracted to ArchiveRAEConfig.pm
+ - first cut at test cases for each script (see testcases-rae*)

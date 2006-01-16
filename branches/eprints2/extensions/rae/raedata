@@ -1,0 +1,152 @@
+use EPrints::MetaField;
+use EPrints::Session;
+use EPrints::User;
+use strict;
+
+# Create session
+my $session = new EPrints::Session;
+exit( 0 ) unless( defined $session );
+my $archive = $session->get_archive();
+
+# Check user has appropriate privs
+if( !$session->auth_check( "deposit" ) )
+{
+	$session->terminate();
+	Apache::exit( 0 );
+}
+my $user = $session->current_user;
+
+# Init RAE config/phrases
+use RAELoader;
+RAELoader::init_rae( $session );
+
+# Show available roles
+my $roles_part = $session->make_doc_fragment();
+my $perms = $archive->get_conf("rae", "group_perms");
+if (defined( $perms->{$user->get_id} )) {
+	my @roles;
+	my $searchexp = new EPrints::SearchExpression(
+		session => $session,
+		custom_order => "name",
+		dataset => $archive->get_dataset("user"),
+	);
+	$searchexp->add_field( $archive->get_dataset("user")->get_field("dept") , $perms->{$user->get_id} );
+	$searchexp->perform_search;
+	$searchexp->map( sub {
+		my ( $session, $dataset, $item, $info ) = @_;
+		push @roles, [ $item->get_id, EPrints::Utils::tree_to_utf8($item->render_description()) ];
+	});
+	my $form = $session->render_form();
+	$form->appendChild($session->render_option_list(name => 'role', pairs => \@roles));
+	$form->appendChild($session->render_action_buttons(submit => $session->phrase( "rae:change_role" )));
+	$roles_part = $session->html_phrase( "rae:roles", 
+		change_role => $form,
+		current_user => $user->render_description(),
+	);
+}
+
+# Check selected role
+my $role;
+if (defined($session->param("role"))) {
+	$role = EPrints::User->new($session, $session->param("role"));
+	if (!defined($role)) {
+		$role = $user;
+	}
+	if ($perms->{$user->get_id} ne $role->get_value("dept")) {
+		# User cannot assume this role
+		# TODO: error message
+		$role = $user;
+	}
+} else {
+	$role = $user;
+}
+
+# Get RAE data from DB
+my %values;
+my $sql = "SELECT field, value FROM rae_data WHERE userid=" . $role->get_id;
+my $sth = $session->get_db->prepare( $sql );
+if( $session->get_db->execute( $sth, $sql ) )
+{
+	while( my @row = $sth->fetchrow )
+	{
+		$values{$row[0]} = $row[1];
+	}
+}
+
+# For each RAE field:
+# - create metafield
+# - check for value from input form
+# - update DB if appropriate
+# - build shortcuts
+my @metafields;
+my $shortcuts = $session->make_element( "ul" );
+my $form = $session->render_form( "post" );
+foreach my $field (@{$archive->get_conf("rae", "rae_fields")})
+{
+	my $metafield = EPrints::MetaField->new(
+		# TODO: more flexible field definition in config
+		type => "longtext",
+		archive => $session->get_archive(),
+		confid => "rae",
+		name => $field,
+	);
+	# Use $session->param rather than $metafield->form_value
+	# since we need to identify empty fields (e.g. if the user
+	# clears a previous value from a field)
+	# TODO: delete row from DB if field cleared?
+	#my $val = $metafield->form_value( $session );
+	my $val = $session->param( $field );
+
+	if( defined $val )
+	{
+		my $qfield = $session->get_db->{dbh}->quote($field);
+		my $qval = $session->get_db->{dbh}->quote($val);
+		my $sql = undef;
+		if( defined $values{$field} )
+		{
+			$sql = "UPDATE rae_data SET value=$qval WHERE field=$qfield AND userid=" . $role->get_id;
+		} elsif( $val ne "" ) {
+			$sql = "INSERT INTO rae_data VALUES (" . $role->get_id . ", $qfield, $qval)";
+		}
+		if( defined $sql )
+		{
+			if ( !$session->get_db->do($sql) )
+			{
+				# TODO: better error handling?
+				#$session->render_error("Error: $sql", $archive->get_conf( "perl_url" ) . "/users/rae/raeselect" );
+			}
+			$values{$metafield->get_name} = $val;
+		}
+	} 
+	push @metafields, $metafield;
+
+	my $li = $session->make_element( "li" );
+	$shortcuts->appendChild( $li );
+	my $link = $session->render_link( "#" . $field );
+	$link->appendChild( $session->make_text( EPrints::Utils::tree_to_utf8( $metafield->render_name( $session ) ) ) );
+	$li->appendChild( $link );
+}
+
+# Render input form
+$form = $session->render_input_form(
+	fields => \@metafields,
+	values => \%values,
+	show_names => 1,
+	show_help => 1,
+	buttons => { submit => $session->phrase( "rae/data:submit_button" ) },
+);
+
+# Build & Send page
+my $page = $session->html_phrase( "rae/data:page", 
+	shortcuts => $shortcuts,
+	form => $form,
+	roles => $roles_part,
+	select_link => $session->render_link( $archive->get_conf("perl_url") . "/users/rae/raeselect?role=" . $role->get_id),
+);
+my $title = $session->html_phrase( "rae/data:page_title", user => $role->render_description() );
+
+$session->build_page( $title, $page );
+$session->send_page();
+$session->terminate();
+exit;
+
