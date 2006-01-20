@@ -2238,18 +2238,18 @@ Return the @roles $user has on $eprint.
 sub user_roles
 {
 	my( $self, $user ) = @_;
+	my $session = $self->{session};
+	my @roles;
 
 	return () unless defined( $user );
 	
 	# $user owns this eprint if their userid matches ours
 	if( $self->get_value( "userid" ) eq $user->get_value( "userid" ) )
 	{
-		return qw( eprint.owner );
+		push @roles, qw( eprint.owner );
 	}
-	else
-	{
-		return ();
-	}
+	
+	return @roles;
 }
 
 ######################################################################
