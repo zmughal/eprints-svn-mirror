@@ -434,6 +434,18 @@ print CONF <<END;
     ErrorDocument 401 $urlpath/error401.html
     ErrorDocument 404 $urlpath/perl/handle_404
     PerlSetVar EPrints_ArchiveID $archiveid
+END
+# EPrints log handler (this gets called for all requests, not just
+# mod_perl)
+if( $av == 2 )
+{
+warn "Adding PerlLogHandler";
+	# apache 2
+	print CONF <<END;
+	PerlLogHandler EPrints::LogHandler
+END
+}
+print CONF <<END;
   </Location>
 
   # Note that PerlTransHandler can't go inside
