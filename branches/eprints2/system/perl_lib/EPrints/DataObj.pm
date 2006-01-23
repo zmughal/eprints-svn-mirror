@@ -21,7 +21,8 @@ B<EPrints::DataObj> - Base class for records in EPrints.
 =head1 DESCRIPTION
 
 This module is a base class which is inherited by EPrints::EPrint, 
-EPrints::User, EPrints::Subject and EPrints::Document.
+EPrints::User, EPrints::Subject and EPrints::Document and several
+other classes.
 
 =over 4
 
@@ -44,6 +45,9 @@ EPrints::User, EPrints::Subject and EPrints::Document.
 ######################################################################
 
 package EPrints::DataObj;
+
+use EPrints::Utils;
+
 use strict;
 
 
@@ -136,14 +140,24 @@ sub set_value
 	$self->{data}->{$fieldname} = $value;
 }
 
+# internal function
+# used to see if two data-structures are the same.
+
 sub _equal
 {
 	my( $a, $b ) = @_;
 
 	# both undef is equal
-	return 1 if( (!defined $a || $a eq '') && (!defined $b || $b eq '') );
+	if( !EPrints::Utils::is_set($a) && !EPrints::Utils::is_set($b) )
+	{
+		return 1;
+	}
+
 	# one xor other undef is not equal
-	return 0 if( !defined $a || !defined $b );
+	if( !EPrints::Utils::is_set($a) || !EPrints::Utils::is_set($b) )
+	{
+		return 0;
+	}
 
 	# simple value
 	if( ref($a) eq "" )
@@ -166,12 +180,18 @@ sub _equal
 	{
 		my @akeys = sort keys %{$a};
 		my @bkeys = sort keys %{$b};
+
 		# different sizes?
-		return 0 if( scalar @akeys != scalar @bkeys );
-		for(my $i=0; $i<scalar @akeys; ++$i )
-		{
-			return 0 unless ( $akeys[$i] eq $bkeys[$i] );
-			return 0 unless _equal( $a->{$akeys[$i]}, $b->{$bkeys[$i]} );
+		# return 0 if( scalar @akeys != scalar @bkeys );
+		# not testing as one might skip a value, the other define it as
+		# undef.
+
+		my %testk = ();
+		foreach my $k ( @akeys, @bkeys ) { $testk{$k} = 1; }
+
+		foreach my $k ( keys %testk )
+		{	
+			return 0 unless _equal( $a->{$k}, $b->{$k} );
 		}
 		return 1;
 	}
@@ -504,7 +524,7 @@ sub to_xml
 	my $tl = "record";
 	if( $opts{version} == 2 ) { $tl = $self->{dataset}->confid; }	
 	my $r = $self->{session}->make_element( $tl, %attrs );
-	$r->appendChild( $self->{session}->make_text( "\n" ) );
+#$r->appendChild( $self->{session}->make_text( "x\nx" ) );
 	foreach my $field ( $self->{dataset}->get_fields() )
 	{
 		next unless( $field->get_property( "export_as_xml" ) );
@@ -528,6 +548,59 @@ sub to_xml
 				$self->get_value( $field->get_name() ),
 				1 ) ); # no xmlns on inner elements
 		}
+	}
+
+	if( $opts{version} eq "2" )
+	{
+		if( $self->{dataset}->confid eq "eprint" )
+		{
+			my $docs = $self->{session}->make_element( "documents" );
+			$docs->appendChild( $self->{session}->make_text( "\n" ) );
+			foreach my $doc ( $self->get_all_documents )
+			{
+				$docs->appendChild( $self->{session}->make_text( "  " ) );
+				$docs->appendChild( $doc->to_xml );
+			}	
+			$r->appendChild( $self->{session}->make_text( "\n  " ) );
+			$r->appendChild( $docs );
+			$docs->appendChild( $self->{session}->make_text( "  " ) );
+			$r->appendChild( $self->{session}->make_text( "\n" ) );
+		}
+
+		if( $self->{dataset}->confid eq "document" )
+		{
+			my $files = $self->{session}->make_element( "files" );
+			$files->appendChild( $self->{session}->make_text( "\n" ) );
+			my %files = $self->files;
+			foreach my $filename ( keys %files )
+			{
+				my $file = $self->{session}->make_element( "file" );
+
+				$file->appendChild( 
+					$self->{session}->render_data_element( 
+						6, 
+						'filename',
+						$filename ) );
+				$file->appendChild( 
+					$self->{session}->render_data_element( 
+						6, 
+						'filesize',
+						$files{$filename} ) );
+				$file->appendChild( 
+					$self->{session}->render_data_element( 
+						6, 
+						'url',
+						$self->get_url($filename) ) );
+				$files->appendChild( $self->{session}->make_text( "    " ) );
+				$files->appendChild( $file );
+				$file->appendChild( $self->{session}->make_text( "\n    " ) );
+				$files->appendChild( $self->{session}->make_text( "\n" ) );
+			}
+			$r->appendChild( $self->{session}->make_text( "\n  " ) );
+			$r->appendChild( $files );
+			$files->appendChild( $self->{session}->make_text( "  " ) );
+			$r->appendChild( $self->{session}->make_text( "\n" ) );
+		}	
 	}
 
 	$r->appendChild( $self->{session}->make_text( "  " ) );
@@ -652,19 +725,5 @@ sub user_roles
 
 =cut
 ######################################################################
-
-# Things what could maybe go here maybe...
-
-# commit 
-
-# remove
-
-# new
-
-# new_from_data
-
-# validate
-
-# render
 
 1; # for use success

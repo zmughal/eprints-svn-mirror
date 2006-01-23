@@ -24,6 +24,13 @@ B<EPrints::SearchCondition> - undocumented
 Represents a simple atomic search condition like 
 abstract contains "fish" or date is bigger than 2000.
 
+Can also represent a "AND" or "OR"'d list of sub-conditions, so
+forming a tree-like data-structure.
+
+Search conditions can be used either to create search results (as
+a list of id's), or to test if a single object matches the 
+condition.
+
 =over 4
 
 =cut
@@ -32,8 +39,22 @@ abstract contains "fish" or date is bigger than 2000.
 #
 # INSTANCE VARIABLES:
 #
-#  $self->{foo}
-#     undefined
+#  $self->{op}
+#     The ID of the simple search operation.
+#
+#  $self->{dataset}
+#     The EPrints::Dataset we are searching.
+#
+#  $self->{field}
+#     The EPrints::MetaField which this condition applies to.
+#
+#  $self->{params}
+#     Array reference to Parameters to the op, varies depending on
+#     the op.
+#
+#  $self->{subops}
+#     Array reference containing sub-search conditions used by AND
+#     and or conditions.
 #
 ######################################################################
 
@@ -70,6 +91,17 @@ $EPrints::SearchCondition::operators = {
 	'grep'=>4	};	#	dataset, field, value		
 
 
+######################################################################
+=pod
+
+=item $scond = EPrints::SearchCondition->new( $op, @params );
+
+Create a new search condition object with the given operation and
+parameters.
+
+=cut
+######################################################################
+
 sub new
 {
 	my( $class, $op, @params ) = @_;
@@ -96,6 +128,17 @@ sub new
 	return $self;
 }
 
+######################################################################
+=pod
+
+=item $scond->copy_from( $scond2 );
+
+Make this search condition the same as $scond2. Used by the optimiser
+to shuffle things around.
+
+=cut
+######################################################################
+
 sub copy_from
 {
 	my( $self, $cond ) = @_;
@@ -104,6 +147,17 @@ sub copy_from
 
 	foreach( keys %{$cond} ) { $self->{$_} = $cond->{$_}; }
 }
+
+######################################################################
+=pod
+
+=item $desc = $scond->describe
+
+Return a text description of the structure of this search condition
+tree. Used for debugging.
+
+=cut
+######################################################################
 
 sub describe
 {
@@ -153,6 +207,17 @@ sub describe
 	return $op_desc;
 }
 
+######################################################################
+=pod
+
+=item $sql_table = $scond->get_table
+
+Return the name of the actual SQL table which this condition is
+concerned with.
+
+=cut
+######################################################################
+
 sub get_table
 {
 	my( $self ) = @_;
@@ -179,6 +244,16 @@ sub get_table
 	return $dataset->get_sql_table_name();
 }
 
+######################################################################
+=pod
+
+=item $bool = $scond->is_comparison
+
+Return true if the OP is one of =, >, <, >=, <=
+
+=cut
+######################################################################
+
 sub is_comparison
 {
 	my( $self ) = @_;
@@ -192,6 +267,16 @@ sub is_comparison
 	return( 0 );
 }
 
+######################################################################
+=pod
+
+=item $bool = $scond->is_control
+
+Return true if the OP is one of AND, OR.
+
+=cut
+######################################################################
+
 sub is_control
 {
 	my( $self ) = @_;
@@ -201,6 +286,16 @@ sub is_control
 
 	return( 0 );
 }
+
+######################################################################
+=pod
+
+=item $bool = $scond->item_matches( $dataobj )
+
+Return true if the given data object matches this search condition.
+
+=cut
+######################################################################
 
 sub item_matches
 {
@@ -415,6 +510,20 @@ sub _compare
 	return( 0 );
 }
 
+######################################################################
+=pod
+
+=item @ops = $scond->ordered_ops
+
+AND or OR conditions only. Return the sub conditions ordered by 
+approximate ease. This is used to make sure a TRUE or FALSE is
+prcessed before an index-lookup, and that everthing else is is tried 
+before a grep OP (which uses LIKE). This means that it can often
+give up before the expensive operation is needed.
+
+=cut
+######################################################################
+
 sub ordered_ops
 {
 	my( $self ) = @_;
@@ -422,12 +531,48 @@ sub ordered_ops
 	return sort { $a->get_op_val <=> $b->get_op_val } @{$self->{sub_ops}};
 }
 
+######################################################################
+=pod
 
-# If filter is set then it can be used as a filter on results.
-# especially if there is a "LIKE" type operation.
+=item @ops = $scond->get_op_val
+
+Return a number which roughly relates to how "hard" the OP of this 
+condition is. Used to decide what order to process AND and OR 
+sub-conditions.
+
+=cut
+######################################################################
+
+sub get_op_val
+{
+	my( $self ) = @_;
+
+	return $EPrints::SearchCondition::operators->{$self->{op}};
+}
+
 
 # return a reference to an array of ID's
 # or ["ALL"] to represent the entire set.
+
+######################################################################
+=pod
+
+=item $ids = $scond->process( $session, [$indent], [$filter] );
+
+Return a reference to an array containing the ID's of items in
+the database which match this condition.
+
+If the search condition matches the whole dataset then it returns
+["ALL"] rather than a huge list of ID's.
+
+$indent is only used for debugging code. 
+
+$filter is only used in ops of type "grep". It is a reference to
+an array of ids of items to be greped, so that the grep does not
+need to be applied to all values in the database.
+
+=cut
+######################################################################
 
 sub process
 {
@@ -602,13 +747,19 @@ END
 	return $r;
 }
 
-sub get_op_val
-{
-	my( $self ) = @_;
 
-	return $EPrints::SearchCondition::operators->{$self->{op}};
-}
+######################################################################
+=pod
 
+=item @ops = $scond->optimise
+
+Rearrange this condition tree so that it is more optimised.
+
+For example an "OR" where one sub op is "TRUE" can be optimised to
+just be "TRUE" itself.
+
+=cut
+######################################################################
 
 # internal means don't strip canpass off the front.
 sub optimise

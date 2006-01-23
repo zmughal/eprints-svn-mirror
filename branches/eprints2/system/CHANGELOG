@@ -3051,6 +3051,13 @@ PACKAGE: 2.2.99.2
 	a registered user and the documents requested are held (restricted)
 	by EPrints.
 
+2006-01-23 cjg
+
+ - Added POD documentation to Dataobj.pm
+ - Added POD documentation to SearchCondition.pm
+ - Added POD documentation to AnApache.pm
+ - Added POD documentation to Config.pm
+
 2006-01-23 tdb
 
  - Added eprint citation to Dublin Core output

@@ -42,6 +42,41 @@ BEGIN
 use EPrints::SystemSettings;
 use strict;
 
+######################################################################
+=pod
+
+=item EPrints::AnApache::upload_doc_file( $session, $document, $paramid );
+
+Collect a file named $paramid uploaded via HTTP and add it to the 
+specified $document.
+
+=item EPrints::AnApache::upload_doc_archive( $session, $document, $paramid, $archive_format );
+
+Collect an archive file (.ZIP, .tar.gz, etc.) uploaded via HTTP and 
+unpack it then add it to the specified document.
+
+=item EPrints::AnApache::send_http_header( $request )
+
+Send the HTTP header, if needed.
+
+$request is the current Apache request. 
+
+=item EPrints::AnApache::header_out( $request, $header, $value )
+
+Set a value in the HTTP headers of the response. $request is the
+apache request object, $header is the name of the header and 
+$value is the value to give that header.
+
+=item $value = EPrints::AnApache::header_in( $request, $header )
+
+Return the specified HTTP header from the current request.
+
+=item $request = EPrints::AnApache::get_request
+
+Return the current Apache request object.
+
+=cut
+######################################################################
 
 my $av =  $EPrints::SystemSettings::conf->{apache};
 if( defined $av && $av eq "2" )

@@ -156,12 +156,35 @@ my %ARCHIVES;
 my $INIT = 0; 
 
 
+######################################################################
+=pod
+
+=item EPrints::Config::ensure_init()
+
+If the init() method has not yet been called then call it, otherwise
+do nothing.
+
+=cut
+######################################################################
+
 sub ensure_init
 {
 	return if( $INIT );
 	init();
 }
 
+
+######################################################################
+=pod
+
+=item EPrints::Config::init()
+
+Load all the EPrints configuration files, first the general files
+such as SystemSettings and languages.xml and then the configurations
+for each archive.
+
+=cut
+######################################################################
 
 sub init
 {
@@ -233,6 +256,17 @@ sub init
 }
 
 	
+######################################################################
+=pod
+
+=item $arc_config = EPrints::Config::load_archive_config( $arc_id )
+
+Load the configuration of the specified archive and return it as a 
+data structure.
+
+=cut
+######################################################################
+
 sub load_archive_config
 {
 	my( $id ) = @_;
@@ -341,7 +375,7 @@ sub load_archive_config
 =item $archive = EPrints::Config::get_archive_config( $id )
 
 Returns a hash of the basic configuration for the archive with the
-given id. This hash will include the properties from SystemSettings. 
+given id. This hash will include the properties from SystemSettings.
 
 =cut
 ######################################################################
