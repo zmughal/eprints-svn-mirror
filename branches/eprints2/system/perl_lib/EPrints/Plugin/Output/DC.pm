@@ -114,6 +114,8 @@ sub convert_dataobj
 	# The identifier is the URL of the abstract page.
 	# possibly this should be the OAI ID, or both.
 	push @dcdata, [ "identifier", $eprint->get_url() ];
+	push @dcdata, [ "identifier",
+		EPrints::Utils::tree_to_utf8( $eprint->render_citation() ) ];
 
 
 	my @documents = $eprint->get_all_documents();
