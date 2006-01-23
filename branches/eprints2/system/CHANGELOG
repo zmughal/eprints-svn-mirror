@@ -3074,3 +3074,7 @@ PACKAGE: 2.2.99.2
   * For the new XML format, added documents to eprints, and files to
     documents. So that they appear as sub elements.
 
+2006-01-23 cjg
+
+  * Removed a commit to a document in SubmissionForm which was not required.
+

@@ -1084,8 +1084,6 @@ sub _from_stage_fileview
 			}
 		}
 
-		$self->{document}->commit();
-
 		$consumed = 1;
 	}
 
