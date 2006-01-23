@@ -3089,3 +3089,6 @@ PACKAGE: 2.2.99.2
   * When an EPrint is modified a snapshot of the metadata, including child
      objects (documents, files) is written to the filesystem.
 
+2006-01-23 cjg
+
+  * changes to bin/upgrade to added the History dataset.

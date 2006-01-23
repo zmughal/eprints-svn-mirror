@@ -496,7 +496,7 @@ END
 
 	}
 
-
+Text not integer?
 	# add "license" to the document dataobject.
 	$sql = "ALTER TABLE document ADD license INTEGER DEFAULT NULL AFTER security";
 	$db->do( $sql );
@@ -723,8 +723,6 @@ EOS
 
 	}
 
-
-
 	if( !$ok )
 	{
 		print "\nFailed.\n";
@@ -738,8 +736,27 @@ EOS
 	}
 }
 
+if( $dbversion eq "2.3.99.2" )
+{
+	my $ok = $db->create_dataset_tables( $session->get_archive()->get_dataset( 'history' ) );
 
+	$sql = "INSERT INTO ".$counter_ds->get_sql_table_name()." ".
+		"VALUES (\"$counter\", 0);";
 
+	$ok &= $self->do( $sql );
+		
+	if( !$ok )
+	{
+		print "\nFailed.\n";
+		print "Please investigate cause of errors then try again.\n";
+	}
+	else
+	{
+		print "\n2.3.99.2 -> 2.3.99.3 done!\n";
+		$dbversion = "2.3.99.3";
+		$db->set_version( $dbversion );
+	}
+}
 
 
 
