@@ -27,6 +27,8 @@ EPrint::Document objects.
 EPrints::EPrint is a subclass of EPrints::DataObj with the following
 metadata fields (plus those defined in ArchiveMetadataFieldsConfig:
 
+=head1 SYSTEM METADATA
+
 =over 4
 
 =item eprintid (int)
@@ -68,6 +70,8 @@ on records in the "deletion" dataset.  This field should have
 been an int and may be changed in a later upgrade.
 
 =back
+
+=head1 METHODS
 
 =over 4
 
@@ -639,6 +643,12 @@ sub commit
 		# don't do anything if there isn't anything to do
 		return( 1 ) unless $force;
 	}
+
+#use Data::Dumper;
+#foreach( keys %{$self->{changed}} )
+#{
+#	print STDERR Dumper($self->{data}->{$_},$self->{changed}->{$_});
+#}
 	$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 
 	$self->set_value( 
@@ -655,40 +665,28 @@ sub commit
 		$self->{session}->get_archive()->log( 
 			"Error committing EPrint ".
 			$self->get_value( "eprintid" ).": ".$db_error );
+		return $success;
 	}
+
+	$self->write_revision;
 
 	$self->queue_changes;
 	
-	# disabled for now
-	if( 0 && defined $self->{changed} && scalar( %{$self->{changed}} ) > 0 )
-	{
-		my $change = $self->{session}->make_element( "change" );
-		my $from = $self->{session}->make_element( "from" );
-		$change->appendChild( $self->{session}->make_text( "\n  " ) );
-		$from->appendChild( $self->{session}->make_text( "\n" ) );
-		$change->appendChild( $from );
-		$change->appendChild( $self->{session}->make_text( "\n  " ) );
-		my $to = $self->{session}->make_element( "to" );
-		$to->appendChild( $self->{session}->make_text( "\n" ) );
-		$change->appendChild( $to );
-		$change->appendChild( $self->{session}->make_text( "\n  " ) );
-		foreach my $fieldname ( keys %{$self->{changed}} )
+	my $user = $self->{session}->current_user;
+	my $userid = undef;
+	$userid = $user->get_id if defined $user;
+
+	EPrints::History::create( 
+		$self->{session},
 		{
-			my $field = $self->{dataset}->get_field( $fieldname );
-	
-			$from->appendChild( 
-				$field->to_xml( 
-					$self->{session}, 
-					$self->{changed}->{$fieldname} ) );
-			$to->appendChild( $
-				field->to_xml( 
-					$self->{session}, 
-					$self->{data}->{$fieldname} ) );
+			userid=>$userid,
+			datasetid=>"eprint",
+			objectid=>$self->get_id,
+			revision=>$self->get_value( "rev_number" ),
+			action=>"MODIFY",
+			details=>undef
 		}
-		$to->appendChild( $self->{session}->make_text( "  " ) );
-		$from->appendChild( $self->{session}->make_text( "  " ) );
-		$self->log_history( $change );
-	}
+	);
 
 	return( $success );
 }
@@ -696,58 +694,40 @@ sub commit
 ######################################################################
 =pod
 
-=item $eprint->log_history( $details )
+=item $eprint->write_revision()
 
-Record some change or event to this eprints history log.
-$details is an XML block describing the event.
+Write out a snapshot of the XML describing the current state of the
+eprint.
 
 =cut
 ######################################################################
 
-sub log_history
+sub write_revision
 {
-	my( $self , $details ) = @_;
+	my( $self ) = @_;
 
-	my $el_event = $self->{session}->make_element( "event", eprintid=>$self->get_value("eprintid" ));
-	$el_event->appendChild( $self->{session}->make_text( "\n" ) );
-
-	my $el_script = $self->{session}->make_element( "script" );
-	$el_script->appendChild( $self->{session}->make_text( $0 ) );
-	$el_event->appendChild( $self->{session}->make_text( "  " ) );
-	$el_event->appendChild( $el_script );
-	$el_event->appendChild( $self->{session}->make_text( "\n" ) );
-	
-	my $el_time = $self->{session}->make_element( "time" );
-	$el_time->appendChild( $self->{session}->make_text( EPrints::Utils::get_timestamp ) );
-	$el_event->appendChild( $self->{session}->make_text( "  " ) );
-	$el_event->appendChild( $el_time );
-	$el_event->appendChild( $self->{session}->make_text( "\n" ) );
-	
-	my $user = $self->{session}->current_user;
-	if( defined $user )
+	my $dir = $self->local_path."/revisions";
+	if( !-d $dir )
 	{
-		my $el_user = $self->{session}->make_element( 
-			"user", 
-			userid=>$user->get_value("userid"), 
-			username=>$user->get_value("username") );
-		$el_user->appendChild( 
-			$self->{session}->make_text( 
-				EPrints::Utils::tree_to_utf8( 
-					$user->render_description ) ) );
-		$el_event->appendChild( $self->{session}->make_text( "  " ) );
-		$el_event->appendChild( $el_user );
-		$el_event->appendChild( $self->{session}->make_text( "\n" ) );
+		if(!EPrints::Utils::mkdir($dir))
+		{
+			$self->{session}->get_archive()->log( "Error creating revision directory for EPrint ".$self->get_value( "eprintid" ).", ($dir): ".$! );
+			return;
+		}
 	}
-	my $el_details = $self->{session}->make_element( "details" );
-	$el_details->appendChild( $self->{session}->make_text( "\n" ) );
-	$el_details->appendChild( $details );
-	$el_event->appendChild( $self->{session}->make_text( "  " ) );
-	$el_event->appendChild( $el_details );
-	$el_event->appendChild( $self->{session}->make_text( "\n" ) );
-	
-	#print STDERR EPrints::XML::to_string($el_event)."\n\n";
-	EPrints::XML::dispose( $el_event );
+
+	my $rev_file = $dir."/".$self->get_value("rev_number").".xml";
+	unless( open( REVFILE, ">$rev_file" ) )
+	{
+		$self->{session}->get_archive()->log( "Error writing file: $!" );
+		return;
+	}
+	print REVFILE '<?xml version="1.0" encoding="utf-8" ?>'."\n";
+	print REVFILE $self->export( "xml", fh=>*REVFILE );
+	close REVFILE;
 }
+
+	
 
 ######################################################################
 =pod

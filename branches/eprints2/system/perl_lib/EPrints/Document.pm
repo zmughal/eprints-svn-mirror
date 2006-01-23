@@ -1162,11 +1162,8 @@ sub commit
 
 	$self->queue_changes;
 
-	# disabled for now 
-	if( 0 && defined $self->{changed} && scalar( %{$self->{changed}} ) > 0 )
-	{
-		print STDERR "LOG HERE: document change\n";
-	}
+	# cause a new new revision of the parent eprint.
+	$self->get_eprint->commit( 1 );
 
 	return( $success );
 }
@@ -1319,6 +1316,8 @@ sub files_modified
 		$self->get_eprint->get_dataset->id,
 		$self->get_eprint->get_id,
 		$EPrints::Utils::FULLTEXT );
+
+	$self->commit( 1 );
 
 	# remove the now invalid cache of words from this document
 	unlink $self->words_file if( -e $self->words_file );

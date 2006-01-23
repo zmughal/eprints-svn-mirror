@@ -51,8 +51,38 @@ results which can be returned via the web interface.
 #
 # INSTANCE VARIABLES:
 #
-#  $self->{foo}
-#     undefined
+#  $self->{archive}
+#     The EPrints::Archive object this session relates to.
+#
+#  $self->{database}
+#     A EPrints::Database object representing this session's connection
+#     to the database.
+#
+#  $self->{noise}
+#     The "noise" level which this connection should run at. Zero 
+#     will produce only error messages. Higher numbers will produce
+#     more warnings and commentary.
+#
+#  $self->{request}
+#     A mod_perl object representing the request to apache, if any.
+#
+#  $self->{query}
+#     A CGI.pm object also representing the request, if any.
+#
+#  $self->{offline}
+#     True if this is a command-line script.
+#
+#  $self->{doc}
+#     A XML DOM document object. All XML created by this session will
+#     be part of this document.
+#
+#  $self->{page}
+#     Used to store the output XHTML page between "build_page" and
+#     "send_page"
+#
+#  $self->{lang}
+#     The current language that this session should use. eg. "en" or "fr"
+#     It is used to determine which phrases and template will be used.
 #
 ######################################################################
 
@@ -68,6 +98,7 @@ use EPrints::User;
 use EPrints::EPrint;
 use EPrints::Subject;
 use EPrints::Document;
+use EPrints::History;
 use EPrints::Plugin;
 
 use Unicode::String qw(utf8 latin1);
@@ -217,9 +248,16 @@ sub new
 	return( $self );
 }
 
-##
-# doc me.
-# static. does not need session.
+######################################################################
+=pod
+
+=item $request = $session->get_request;
+
+Return the Apache request object (from mod_perl) or undefined if 
+this isn't a CGI script.
+
+=cut
+######################################################################
 
 
 sub get_request
@@ -228,6 +266,17 @@ sub get_request
 
 	return $self->{request};
 }
+
+######################################################################
+=pod
+
+=item $query = $session->get_query;
+
+Return the CGI.pm object describing the current HTTP query, or 
+undefined if this isn't a CGI script.
+
+=cut
+######################################################################
 
 sub get_query
 {
@@ -277,6 +326,24 @@ sub terminate
 #############################################################
 #############################################################
 
+
+######################################################################
+=pod
+
+=item $langid = EPrints::Session::get_session_language( $archive, $request )
+
+Given an archive object and a Apache (mod_perl) request object, this
+method decides what language the session should be.
+
+First it looks at the HTTP cookie "lang_cookie_name", failing that it
+looks at the prefered language of the request from the HTTP header,
+failing that it looks at the default language for the archive.
+
+The language ID it returns is the highest on the list that the given
+eprint archive actually supports.
+
+=cut
+######################################################################
 
 sub get_session_language
 {
@@ -951,9 +1018,10 @@ sub render_data_element
 ######################################################################
 =pod
 
-=item $foo = $session->render_link( $uri, $target )
+=item $xhtml = $session->render_link( $uri, [$target] )
 
-undocumented
+Returns an HTML link to the given uri, with the optional $target if
+it needs to point to a different frame or window.
 
 =cut
 ######################################################################
@@ -2313,6 +2381,12 @@ sub current_user
 	# in doing it again.
 	unless( defined $self->{currentuser} )
 	{	
+		if( !defined $self->{request} )
+		{
+			# not a cgi script.
+			return undef;
+		}
+
 		my $username = $self->{request}->user;
 
 		if( defined $username && $username ne "" )

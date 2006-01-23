@@ -55,9 +55,9 @@ Don't have a package, types or metadata fields associated.
 All have the same types, package and metadata fields, but different
 SQL tables.
 
-=item subject
+=item subject, history
 
-Does not have types.
+Do not have types.
 
 =item eprint
 
@@ -193,6 +193,10 @@ my $INFO = {
 	subject => {
 		sqlname => "subject",
 		class => "EPrints::Subject"
+	},
+	history => {
+		sqlname => "history",
+		class => "EPrints::History"
 	},
 	subscription => {
 		sqlname => "subscription",
@@ -1118,7 +1122,7 @@ into SQL (not counters or cache which work a bit differently).
 
 sub get_sql_dataset_ids
 {
-	return( qw/ archive buffer inbox deletion user document subscription subject / );
+	return( qw/ archive buffer inbox deletion user document subscription subject history / );
 }
 
 ######################################################################

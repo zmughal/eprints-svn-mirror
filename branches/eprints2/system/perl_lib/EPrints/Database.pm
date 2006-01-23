@@ -69,7 +69,7 @@ my $DEBUG_SQL = 0;
 
 # this may not be the current version of eprints, it's the version
 # of eprints where the current desired db configuration became standard.
-$EPrints::Database::DBVersion = "2.3.99.2";
+$EPrints::Database::DBVersion = "2.3.99.3";
 
 # cjg not using transactions so there is a (very small) chance of
 # dupping on a counter. 
@@ -77,7 +77,7 @@ $EPrints::Database::DBVersion = "2.3.99.2";
 #
 # Counters
 #
-@EPrints::Database::counters = ( "eprintid", "userid", "subscriptionid" );
+@EPrints::Database::counters = ( "eprintid", "userid", "subscriptionid","historyid" );
 
 
 # ID of next buffer table. This can safely reset to zero each time
@@ -421,17 +421,15 @@ sub create_dataset_ordervalues_tables
 	return $rv;
 }
 
-# $rv = create_table( $tablename, $dataset, $setkey, @fields )
-# boolean                  string      |         boolean  array of
-#                                      EPrints::DataSet   EPrint::MetaField
-
 ######################################################################
-# 
-# $success = $db->create_table( $tablename, $dataset, $setkey, 
-#                                     @fields )
-#
-# undocumented
-#
+=pod
+
+=item  $success = $db->create_table( $tablename, $dataset, $setkey, @fields );
+
+Create the tables used to store metadata for this dataset: the main
+table and any required for multiple or mulitlang fields.
+
+=cut
 ######################################################################
 
 sub create_table
@@ -554,17 +552,6 @@ sub create_table
 
 
 ######################################################################
-#
-# $success = add_record( $dataset, $data )
-# boolean                |         Structured Data
-#                        EPrints::DataSet     
-#
-#  Add data to the given table. 
-#
-######################################################################
-
-
-######################################################################
 =pod
 
 =item $success = $db->add_record( $dataset, $data )
@@ -604,15 +591,6 @@ sub add_record
 	# Return with an error if unsuccessful
 	return( defined $rv );
 }
-
-
-######################################################################
-#
-# $mungedvalue = prep_value( $value )
-#
-# [STATIC]
-#
-######################################################################
 
 
 ######################################################################
@@ -676,7 +654,6 @@ sub update
 
 	my $rv = 1;
 	my $sql;
-
 	my @fields = $dataset->get_fields( 1 );
 
 	my $keyfield = $dataset->get_key_field();
@@ -717,10 +694,6 @@ sub update
 			}
 			# clearout the freetext search index table for this field.
 
-			if( $field->is_type( "date" ) )	
-			{
-				$value = pad_date( $value );
-			}
 			
 			if( $field->is_type( "name" ) )
 			{
@@ -729,8 +702,14 @@ sub update
 				$values{$colname."_family"} = $value->{family};
 				$values{$colname."_lineage"} = $value->{lineage};
 			}
-			elsif( $field->is_type( "date", "time" ) )
+			elsif( $field->is_type( "date" ) )
 			{
+				$values{$colname} = pad_date($value);
+				$values{$colname."_resolution"} = $field->get_resolution( $value );
+			}
+			elsif( $field->is_type( "time" ) )
+			{
+				# pad time?
 				$values{$colname} = $value;
 				$values{$colname."_resolution"} = $field->get_resolution( $value );
 			}
@@ -879,8 +858,14 @@ sub update
 				$sql .= "\"".prep_value( $v->{v}->{family} )."\", ";
 				$sql .= "\"".prep_value( $v->{v}->{lineage} )."\"";
 			}
-			elsif( $multifield->is_type( "date", "time" ) )
+			elsif( $multifield->is_type( "date" ) )
 			{
+				$sql .= "\"".prep_value( pad_date($v->{v}) )."\"";
+				$sql .= "\"".prep_value( $multifield->get_resolution( $v->{v} ) )."\"";
+			}
+			elsif( $multifield->is_type( "time" ) )
+			{
+				# maybe need a pad_time method?
 				$sql .= "\"".prep_value( $v->{v} )."\"";
 				$sql .= "\"".prep_value( $multifield->get_resolution( $v->{v} ) )."\"";
 			}
@@ -959,7 +944,8 @@ sub remove
 # 
 # $success = $db->_create_counter_table
 #
-# undocumented
+# create the table used to store the highest current id of eprints,
+# users etc.
 #
 ######################################################################
 
@@ -1000,7 +986,8 @@ sub _create_counter_table
 # 
 # $success = $db->_create_indexqueue_table
 #
-# undocumented
+# create the table used to keep track of what needs to be indexed in
+# this archive.
 #
 ######################################################################
 
@@ -1025,7 +1012,7 @@ sub _create_indexqueue_table
 # 
 # $success = $db->_create_cachemap_table
 #
-# undocumented
+# create the table which remembers what each cache file represents.
 #
 ######################################################################
 
@@ -1060,7 +1047,7 @@ END
 # 
 # $success = $db->_create_permission_table
 #
-# undocumented
+# create the tables needed to store the permissions. 
 #
 ######################################################################
 

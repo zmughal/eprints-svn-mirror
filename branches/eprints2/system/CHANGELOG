@@ -3078,3 +3078,14 @@ PACKAGE: 2.2.99.2
 
   * Removed a commit to a document in SubmissionForm which was not required.
 
+2006-01-23 cjg
+ 
+  * Added some POD documentation to Session.pm
+  * Added the History dataset. A new item appears in the history every time
+     an eprint is modified, or a document is modified.
+  * Added some POD DOCUmentation to Database.pm
+  * Fixed a bug which sometimes caused the resulution of a date to be
+     incorrectly set.
+  * When an EPrint is modified a snapshot of the metadata, including child
+     objects (documents, files) is written to the filesystem.
+
