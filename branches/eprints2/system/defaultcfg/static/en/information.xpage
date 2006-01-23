@@ -61,6 +61,7 @@
 
 <h2>Credits</h2>
 <p><a href="http://www.ecs.soton.ac.uk/info/people/cjg">Christopher Gutteridge</a> - Designer and coder of <em>EPrints version 2</em>.</p>
+<p>Tim Brody - Programmer, code repository administrator.</p>
 <p>Mike Jewell - Pre-release testing. The initial versions of scripts for creating and installing an <em>EPrints v2</em> package. Some coding assistance.</p>
 <p>Harry Mason - Testing. Document to text conversion wrappers. Document icons.</p>
 <p>Robert Tansley - Creator of <em>EPrints 1</em> on which <em>EPrints 2</em> is based.</p>
