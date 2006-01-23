@@ -3063,4 +3063,6 @@ PACKAGE: 2.2.99.2
  - Added eprint citation to Dublin Core output
  - Added LogHandler to generate_apache
 
+2006-01-23 cjg
 
+  * removed the mailto: from the OAI2 identify response.

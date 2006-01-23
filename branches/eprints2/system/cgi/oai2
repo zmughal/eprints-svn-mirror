@@ -219,7 +219,7 @@ sub Identify
 	$response->appendChild( $session->render_data_element(
 		4,
 		"adminEmail",
-		"mailto:".$session->get_archive()->get_conf( "adminemail" ) ) );
+		$session->get_archive()->get_conf( "adminemail" ) ) );
 
 	# Later this may be either calcualted from the
 	# database, or configurable.
