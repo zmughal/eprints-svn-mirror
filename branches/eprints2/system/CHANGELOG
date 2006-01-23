@@ -3050,3 +3050,10 @@ PACKAGE: 2.2.99.2
 	in the cases where the contact email for a document request matches
 	a registered user and the documents requested are held (restricted)
 	by EPrints.
+
+2006-01-23 tdb
+
+ - Added eprint citation to Dublin Core output
+ - Added LogHandler to generate_apache
+
+
