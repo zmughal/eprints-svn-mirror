@@ -3066,3 +3066,11 @@ PACKAGE: 2.2.99.2
 2006-01-23 cjg
 
   * removed the mailto: from the OAI2 identify response.
+
+2006-01-23 cjg
+
+  * Improved the _equals comparison between two data structures to be true
+    if one is [1,undef,undef] and the other is [1].
+  * For the new XML format, added documents to eprints, and files to
+    documents. So that they appear as sub elements.
+
