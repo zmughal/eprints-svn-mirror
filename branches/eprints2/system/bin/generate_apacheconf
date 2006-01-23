@@ -437,9 +437,8 @@ print CONF <<END;
 END
 # EPrints log handler (this gets called for all requests, not just
 # mod_perl)
-if( $av == 2 )
+if( $archive->get_conf( "loghandler" )->{enable} && $av == 2 )
 {
-warn "Adding PerlLogHandler";
 	# apache 2
 	print CONF <<END;
 	PerlLogHandler EPrints::LogHandler
@@ -617,6 +616,17 @@ $secureconfig
   <Location "$securepath">
     PerlSetVar EPrints_ArchiveID $archiveid
     PerlSetVar EPrints_Secure yes
+END
+# EPrints log handler (this gets called for all requests, not just
+# mod_perl)
+if( $archive->get_conf( "loghandler" )->{enable} && $av == 2 )
+{
+	# apache 2
+	print CONF <<END;
+	PerlLogHandler EPrints::LogHandler
+END
+}
+print CONF <<END;
   </Location>
   <Directory "$cgidir">
     SetHandler perl-script
