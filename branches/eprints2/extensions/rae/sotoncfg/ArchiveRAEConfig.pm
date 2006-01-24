@@ -84,14 +84,6 @@ $c->{check_item} = sub {
                         select_link => $link );
 	}
 	
-	##ANW Error note to identify eprints with incomplete disambiguation information
-	if(DisambiguateCreators::verifyCreatorID($item,$session) ne "")
-	{
-			my $link = $session->render_link($perl_url."/users/staff/edit_eprint?dataset=".($item->{dataset})."&eprintid=".($item->get_value("eprintid")));
-			
-			push (@problems, $session->html_phrase( "rae/report:problem_disambig", select_link => $link ));
-		
-	}
 	
 	return \@problems;
 };
