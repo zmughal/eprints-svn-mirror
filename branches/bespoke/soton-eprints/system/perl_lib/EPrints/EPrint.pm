@@ -4,11 +4,23 @@
 #
 ######################################################################
 #
-#  __COPYRIGHT__
-#
-# Copyright 2000-2008 University of Southampton. All Rights Reserved.
-# 
-#  __LICENSE__
+#  This file is part of GNU EPrints 2.
+#  
+#  Copyright (c) 2000-2004 University of Southampton, UK. SO17 1BJ.
+#  
+#  EPrints 2 is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#  
+#  EPrints 2 is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#  
+#  You should have received a copy of the GNU General Public License
+#  along with EPrints 2; if not, write to the Free Software
+#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 ######################################################################
 
@@ -87,6 +99,7 @@ use EPrints::DataObj;
 
 use EPrints::Database;
 use EPrints::Document;
+use EPrints::FlowTracker;
 
 use File::Path;
 use strict;
@@ -152,6 +165,7 @@ search "deletion").
 
 sub new
 {
+	
 	my( $class, $session, $id, $dataset ) = @_;
 
 	if( defined $dataset && $dataset->id ne "eprint" )
@@ -261,7 +275,11 @@ sub create
 
 	if( $success )
 	{
+		#ANW 21/01/06 added to track Eprint movement
+		FlowTracker::logEprintMovement($session, $dataset->id(), $data->{eprintid}, $session->current_user()->get_id(),"creation" );
+
 		return( EPrints::EPrint->new( $session, $new_id, $dataset ) );
+
 	}
 	else
 	{
@@ -539,6 +557,13 @@ sub _transfer
 		&{$status_change_fn}( $self, $old_dataset->id, $dataset->id );
 	}
 	
+	#ANW 21/05/06 add an entry in the movement log (EPrints::FlowTracker)
+	if($success)
+	{
+		my $session = new EPrints::Session;
+		
+		FlowTracker::logEprintMovement($session, $dataset->id(), $self->get_value( "eprintid" ), $session->current_user()->get_id(),"movement" );
+	}
 	return( $success );
 }
 
@@ -565,11 +590,20 @@ sub remove
 	{
 		$doc->remove();
 	}
-
+	my $eid = $self->get_value( "eprintid" );
+	my $dsid = $self->{dataset}->id();
+	
 	my $success = $self->{session}->get_db()->remove(
 		$self->{dataset},
 		$self->get_value( "eprintid" ) );
-
+	
+	if($success)
+	{
+		my $session = new EPrints::Session;
+		#ANW 21/05/06 Added to track the removal of an Eprint
+		FlowTracker::logEprintMovement($session, $dsid, $eid, $session->current_user()->get_id(),"deletion" );
+	}
+	
 	return $success;
 }
 
