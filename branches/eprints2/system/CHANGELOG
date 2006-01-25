@@ -3092,3 +3092,8 @@ PACKAGE: 2.2.99.2
 2006-01-23 cjg
 
   * changes to bin/upgrade to added the History dataset.
+
+2006-01-25 tdb
+
+  * Added bin/import_xml script to import eprints xml data into an arbitrary
+     dataset
