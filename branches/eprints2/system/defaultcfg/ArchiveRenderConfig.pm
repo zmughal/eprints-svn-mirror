@@ -140,9 +140,9 @@ sub eprint_render
 			my %files = $doc->files;
 			if( defined $files{$doc->get_main} )
 			{
-				my $k = int($files{$doc->get_main}/1024)+1;
+				my $size = $files{$doc->get_main};
 				$doctd->appendChild( $session->make_element( 'br' ) );
-				$doctd->appendChild( $session->make_text( $k." Kb" ));
+				$doctd->appendChild( $session->make_text( EPrints::Utils::human_filesize($size) ));
 			}
 			$doctable->appendChild( $doctr );
 		}
