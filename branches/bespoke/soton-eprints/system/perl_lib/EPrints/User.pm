@@ -4,11 +4,23 @@
 #
 ######################################################################
 #
-#  __COPYRIGHT__
-#
-# Copyright 2000-2008 University of Southampton. All Rights Reserved.
-# 
-#  __LICENSE__
+#  This file is part of GNU EPrints 2.
+#  
+#  Copyright (c) 2000-2004 University of Southampton, UK. SO17 1BJ.
+#  
+#  EPrints 2 is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#  
+#  EPrints 2 is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#  
+#  You should have received a copy of the GNU General Public License
+#  along with EPrints 2; if not, write to the Free Software
+#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 ######################################################################
 
@@ -45,7 +57,23 @@ undocumented
 #
 ######################################################################
 #
-#  __LICENSE__
+#  This file is part of GNU EPrints 2.
+#  
+#  Copyright (c) 2000-2004 University of Southampton, UK. SO17 1BJ.
+#  
+#  EPrints 2 is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#  
+#  EPrints 2 is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#  
+#  You should have received a copy of the GNU General Public License
+#  along with EPrints 2; if not, write to the Free Software
+#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 ######################################################################
 
@@ -528,7 +556,18 @@ undocumented
 
 sub get_editable_eprints
 {
-	my( $self ) = @_;
+	## seb changes 23 Nov 2005
+	## use of a user-defined sort as 2nd parameter of this method
+	## old code is commented out using the prefix #seb#
+	
+	#seb# my( $self ) = @_;
+	my ($self, $sorting) = @_;
+	
+	unless(defined $sorting)
+	{
+		# set default sorting if it wasn't done when the method was called:
+		$sorting = "-datestamp";
+	}
 
 	unless( $self->is_set( 'editperms' ) )
 	{
@@ -536,7 +575,8 @@ sub get_editable_eprints
 			"buffer" );
 		my $searchexp = EPrints::SearchExpression->new(
 			allow_blank => 1,
-			custom_order => "-datestamp",
+			#seb# custom_order => "-datestamp",
+			custom_order => $sorting,
 			dataset => $ds,
 			session => $self->{session} );
 		$searchexp->perform_search;
@@ -552,7 +592,9 @@ sub get_editable_eprints
 		my $searchexp = $editperms->make_searchexp(
 			$self->{session},
 			$sv );
-		$searchexp->{custom_order}="-datestamp";
+		#seb# $searchexp->{custom_order}="eprintid";
+	
+		$searchexp->{custom_order} = $sorting;
 	        $searchexp->{order} = $EPrints::SearchExpression::CustomOrder;
 
 		$searchexp->perform_search;
