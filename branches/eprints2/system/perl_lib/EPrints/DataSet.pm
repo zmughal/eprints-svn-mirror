@@ -27,7 +27,8 @@ This module describes an EPrint dataset.
 An archive has one of each type of dataset:
 
 cachemap, counter, user, archive, buffer, inbox, document, subject,
-subscription, deletion, eprint, language, arclanguage, security.
+subscription, deletion, eprint, language, arclanguage, security,
+license.
 
 A normal dataset (eg. "user") has a package associated with it 
 (eg. EPrints::User) which must be a subclass of EPrints::DataObj 
@@ -194,6 +195,10 @@ my $INFO = {
 		sqlname => "subject",
 		class => "EPrints::Subject"
 	},
+	license => {
+		sqlname => "license",
+		class => "EPrints::License"
+	},
 	history => {
 		sqlname => "history",
 		class => "EPrints::History"
@@ -307,7 +312,6 @@ sub new
 		}
 		return $self;
 	}
-
 
 
 	$self->{default_order} = $self->{archive}->
@@ -1122,7 +1126,7 @@ into SQL (not counters or cache which work a bit differently).
 
 sub get_sql_dataset_ids
 {
-	return( qw/ archive buffer inbox deletion user document subscription subject history / );
+	return( qw/ archive buffer inbox deletion user document subscription subject license history / );
 }
 
 ######################################################################

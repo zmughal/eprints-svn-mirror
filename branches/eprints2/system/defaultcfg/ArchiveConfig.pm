@@ -330,6 +330,11 @@ $c->{submission_hide_language} = 1;
 # confidential contents.
 $c->{submission_hide_security} = 0;
 
+# The document license field, you might want this
+# if you want to allow users to specify a
+# per-document license
+$c->{submission_hide_license} = 1;
+
 # These options allow you to suppress various file
 # upload methods. You almost certainly do not want
 # to supress "plain" but you may well wish to supress

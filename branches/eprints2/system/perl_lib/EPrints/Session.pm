@@ -97,6 +97,7 @@ use EPrints::DataObj;
 use EPrints::User;
 use EPrints::EPrint;
 use EPrints::Subject;
+use EPrints::License;
 use EPrints::Document;
 use EPrints::History;
 use EPrints::Plugin;

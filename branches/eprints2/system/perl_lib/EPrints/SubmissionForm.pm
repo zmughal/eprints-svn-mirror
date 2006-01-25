@@ -945,7 +945,7 @@ sub _from_stage_docmeta
 	if( $self->{action} eq "next" )
 	{
 		# Update the description if appropriate
-		foreach( "formatdesc", "format", "language", "security" )
+		foreach( "formatdesc", "format", "language", "security", "license" )
 		{
 			next if( $self->{session}->get_archive()->get_conf(
 				"submission_hide_".$_ ) );
@@ -1728,7 +1728,7 @@ sub _do_stage_docmeta
 	};
 
 	my $fields = [];
-	foreach( "format", "formatdesc", "language", "security" )
+	foreach( "format", "formatdesc", "language", "security", "license" )
 	{
 		unless( $archive->get_conf( "submission_hide_".$_ ) )
 		{

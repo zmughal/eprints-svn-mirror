@@ -140,7 +140,7 @@ sub get_system_field_info
 		{ name=>"security", type=>"datatype", required=>1, 
 			datasetid=>"security" },
 
-		{ name=>"license", type=>"datatype", required=>1, 
+		{ name=>"license", type=>"license", required=>0, 
 			datasetid=>"license" },
 
 		{ name=>"main", type=>"text", required=>1 }
