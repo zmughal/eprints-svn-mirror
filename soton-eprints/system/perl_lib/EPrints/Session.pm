@@ -4,11 +4,23 @@
 #
 ######################################################################
 #
-#  __COPYRIGHT__
-#
-# Copyright 2000-2008 University of Southampton. All Rights Reserved.
-# 
-#  __LICENSE__
+#  This file is part of GNU EPrints 2.
+#  
+#  Copyright (c) 2000-2004 University of Southampton, UK. SO17 1BJ.
+#  
+#  EPrints 2 is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#  
+#  EPrints 2 is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#  
+#  You should have received a copy of the GNU General Public License
+#  along with EPrints 2; if not, write to the Free Software
+#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 ######################################################################
 
@@ -42,7 +54,23 @@ undocumented
 #
 ######################################################################
 #
-#  __LICENSE__
+#  This file is part of GNU EPrints 2.
+#  
+#  Copyright (c) 2000-2004 University of Southampton, UK. SO17 1BJ.
+#  
+#  EPrints 2 is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#  
+#  EPrints 2 is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#  
+#  You should have received a copy of the GNU General Public License
+#  along with EPrints 2; if not, write to the Free Software
+#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 ######################################################################
 
@@ -1533,6 +1561,8 @@ sub render_input_form
 	my $field;	
 	foreach $field (@{$p{fields}})
 	{
+		
+
 		$form->appendChild( $self->_render_input_form_field( 
 			$field,
 			$p{values}->{$field->get_name()},
@@ -1542,7 +1572,9 @@ sub render_input_form
 			$p{dataset},
 			$p{type},
 			$p{staff},
-			$p{hidden_fields} ) );
+			$p{hidden_fields}, 
+			#ANW 19/01/05 for use staff ID field look up
+			$p{obj}));
 	}
 
 	# Hidden field, so caller can tell whether or not anything's
@@ -1577,7 +1609,7 @@ sub render_input_form
 sub _render_input_form_field
 {
 	my( $self, $field, $value, $show_names, $show_help, $comment,
-			$dataset, $type, $staff, $hidden_fields ) = @_;
+			$dataset, $type, $staff, $hidden_fields, $obj ) = @_;
 	
 	my( $div, $html, $span );
 
@@ -1632,7 +1664,7 @@ sub _render_input_form_field
 		class => "formfieldinput",
 		id => "inputfield_".$field->get_name );
 	$div->appendChild( $field->render_input_field( 
-		$self, $value, $dataset, $type, $staff, $hidden_fields ) );
+		$self, $value, $dataset, $type, $staff, $hidden_fields, $obj ) );
 	$html->appendChild( $div );
 				
 	return( $html );

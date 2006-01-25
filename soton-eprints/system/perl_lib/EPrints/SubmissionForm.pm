@@ -4,11 +4,23 @@
 #
 ######################################################################
 #
-#  __COPYRIGHT__
-#
-# Copyright 2000-2008 University of Southampton. All Rights Reserved.
-# 
-#  __LICENSE__
+#  This file is part of GNU EPrints 2.
+#  
+#  Copyright (c) 2000-2004 University of Southampton, UK. SO17 1BJ.
+#  
+#  EPrints 2 is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#  
+#  EPrints 2 is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#  
+#  You should have received a copy of the GNU General Public License
+#  along with EPrints 2; if not, write to the Free Software
+#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 ######################################################################
 
@@ -42,7 +54,23 @@ undocumented
 #
 ######################################################################
 #
-#  __LICENSE__
+#  This file is part of GNU EPrints 2.
+#  
+#  Copyright (c) 2000-2004 University of Southampton, UK. SO17 1BJ.
+#  
+#  EPrints 2 is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#  
+#  EPrints 2 is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#  
+#  You should have received a copy of the GNU General Public License
+#  along with EPrints 2; if not, write to the Free Software
+#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 ######################################################################
 
@@ -141,9 +169,12 @@ sub process
 	$self->{eprintid}  = $self->{session}->param( "eprintid" );
 	$self->{user}      = $self->{session}->current_user();
 
+
+
 	# If we have an EPrint ID, retrieve its entry from the database
 	if( defined $self->{eprintid} )
 	{
+		
 		if( $self->{staff} )
 		{
 			if( defined $self->{session}->param( "dataset" ) )
@@ -168,7 +199,7 @@ sub process
 			$self->_database_err;
 			return( 0 );
 		}
-
+		
 		# check that we got the record we wanted - if we didn't
 		# then something is heap big bad. ( This is being a bit
 		# over paranoid, but what the hell )
@@ -227,6 +258,8 @@ sub process
 			return( 0 );
 		}
 	}
+
+
 
 	# Process the results of that stage - done 
 	# by calling the function &_from_stage_<stage>
@@ -539,6 +572,8 @@ sub _from_stage_home
 		$self->_set_stage_prev;
 		return( 1 );
 	}
+
+print STDERR "\nFROM_HOME: no valid action found: ".$self->{action};
 
 	# Don't have a valid action!
 	$self->_corrupt_err;
@@ -1312,6 +1347,7 @@ sub _do_stage_type
 		next => $self->{session}->phrase( 
 				"lib/submissionform:action_next" ) };
 
+	
 	$page->appendChild( $self->{session}->render_input_form( 
 		staff=>$self->{staff},
 		fields=>[ $self->{dataset}->get_field( "type" ) ],
@@ -1519,7 +1555,8 @@ sub _do_stage_meta
 	        	top_buttons=>$submit_buttons,
 			default_action=>"next",
 			hidden_fields=>$hidden_fields,
-			dest=>$self->{formtarget}."#t" ) );
+			dest=>$self->{formtarget}."#t",
+			obj=>$self->{eprint}) );
 
 	$self->{title_phrase} = "metapage_title_".$self->{pageid};
 
