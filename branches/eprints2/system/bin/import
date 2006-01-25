@@ -14,17 +14,19 @@
 
 =head1 NAME
 
-B<import_xml> - rebuild an EPrint archive dataset from the contents of a file
+B<import> - rebuild an EPrint archive dataset from the contents of a file
 
 =head1 SYNOPSIS
 
-B<import_xml> [B<options>] I<archiveid> I<dataset> I<xmlfile>
+B<import> [B<options>] I<archiveid> I<dataset> I<file>
 
 =head1 DESCRIPTION
 
 This script is the corrolary of I<export_xml>, as it will import xml in EPrints xml format into a dataset (by default replacing any existing data).
 
 Without the B<--force> option, this script asks for confirmation before actually erasing anything.
+
+This script shouldn't be used lightly, as some datasets may react badly to it.
 
 =head1 ARGUMENTS
 
@@ -36,11 +38,11 @@ The ID of the EPrint archive to use.
 
 =item I<dataset>
 
-The dataset to import the xml into.
+The dataset to import into.
 
-=item I<xmlfile>
+=item I<file>
 
-This is the file to import the xml from.
+The file to import from.
 
 =back
 
@@ -71,7 +73,11 @@ Output version information and exit.
 
 =item B<--nopurge>
 
-Do not purge the existing records from the subject table before importing this file. Rather than do this, it's probably easier to export the current xml as XML, then combine in your new file and reimport it.
+Do not purge the existing dataset.
+
+=item B<--schema>
+
+The format I<file> is in (defaults to "xml" - EPrints internal xml format).
 
 =item B<--force>
 
@@ -81,7 +87,7 @@ Don't ask before making the changes.
 
 =head1 FILE FORMAT
 
-See L<EPrints::ImportXML> for information on the xml schema.
+See L<EPrints::ImportXML> for information on the EPrints xml schema.
 
 __GENERICPOD__
 
@@ -103,6 +109,7 @@ my $force = 0;
 my $purge = 1;
 my $help = 0;
 my $man = 0;
+my $format = 'xml';
 
 GetOptions( 
 	'help|?' => \$help,
@@ -112,9 +119,10 @@ GetOptions(
 	'version' => \$version,
 	'silent' => \$quiet,
 	'quiet' => \$quiet,
-	'purge!' => \$purge
+	'purge!' => \$purge,
+	'schema=s' => \$format
 ) || pod2usage( 2 );
-EPrints::Utils::cmd_version( "import_xml" ) if $version;
+EPrints::Utils::cmd_version( "import" ) if $version;
 pod2usage( 1 ) if $help;
 pod2usage( -exitstatus => 0, -verbose => 2 ) if $man;
 pod2usage( 2 ) if( scalar @ARGV != 3 ); 
@@ -128,6 +136,11 @@ $|=1;
 
 my( $archiveid, $datasetid, $filename ) = @ARGV;
 
+unless( $format eq 'xml' )
+{
+	pod2usage( -message => "$0: schema [$format] isn't supported\n" );
+}
+
 my $session = new EPrints::Session( 1, $archiveid, $noise );
 exit( 1 ) unless defined $session;
 my $ds = $session->get_archive()->get_dataset( $datasetid );
@@ -139,10 +152,14 @@ if( $ds->confid eq 'eprint' )
 {
 	pod2usage( "$0: Use import_eprints to import eprints\n" );
 }
+if( $ds->confid eq 'subjects' )
+{
+	pod2usage( "$0: Use import_subjects to import subjects\n" );
+}
 
 unless( -e $filename )
 {
-	pod2usage( "$0: Not such file [$filename]\n" );
+	pod2usage( "$0: No such file [$filename]\n" );
 }
 
 unless( $force )
