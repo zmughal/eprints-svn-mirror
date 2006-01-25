@@ -92,7 +92,9 @@ sub get_value_label
 	my $ds = $session->get_archive()->get_dataset( 
 			$self->{datasetid} );	
 
-	return $ds->get_object( $session, $value )->get_label( $session );
+	return $session->make_text(
+		$ds->get_object( $session, $value )->get_label( $session )
+	);
 }
 
 sub get_property_defaults
