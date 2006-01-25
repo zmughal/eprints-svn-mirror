@@ -93,6 +93,7 @@ use EPrints::DataObj;
 use EPrints::User;
 use EPrints::EPrint;
 use EPrints::Subject;
+use EPrints::License;
 use EPrints::Document;
 
 use Unicode::String qw(utf8 latin1);
