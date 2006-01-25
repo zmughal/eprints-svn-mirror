@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<!--
+
+Usage licenses developed by the Creative Commons project:
+http://creativecommons.org/
+
+Use at your own risk!
+
+-->
+
+<eprintsdata xmlns="http://eprints.org/ep2/data">
+  <record>    <field name="licenseid">cc_01_by_nd</field>
+    <field name="rev_number">1</field>
+    <field name="url">http://creativecommons.org/licenses/by-nd/2.5/</field>
+    <field name="name"><lang id="en">Creative Commons Attribution No Derivatives</lang></field>
+  </record>
+
+  <record>    <field name="licenseid">cc_02_by</field>
+    <field name="rev_number">1</field>
+    <field name="url">http://creativecommons.org/licenses/by/2.5/</field>
+    <field name="name"><lang id="en">Creative Commons Attribution</lang></field>
+  </record>
+
+  <record>    <field name="licenseid">cc_03_by_nc</field>
+    <field name="rev_number">1</field>
+    <field name="url">http://creativecommons.org/licenses/by-nc/2.5/</field>
+    <field name="name"><lang id="en">Creative Commons Attribution Non-commercial</lang></field>
+  </record>
+
+  <record>    <field name="licenseid">cc_04_by_nc_nd</field>
+    <field name="rev_number">1</field>
+    <field name="url">http://creativecommons.org/licenses/by-nc-nd/2.5/</field>
+    <field name="name"><lang id="en">Creative Commons Attribution Non-commercial No Derivatives</lang></field>
+  </record>
+
+  <record>    <field name="licenseid">cc_05_by_nc_sa</field>
+    <field name="rev_number">1</field>
+    <field name="url">http://creativecommons.org/licenses/by-nc-sa/2.5/</field>
+    <field name="name"><lang id="en">Creative Commons Attribution Non-commercial Share Alike</lang></field>
+  </record>
+
+  <record>    <field name="licenseid">cc_06_by_sa</field>
+    <field name="rev_number">1</field>
+    <field name="url">http://creativecommons.org/licenses/by-sa/2.5/</field>
+    <field name="name"><lang id="en">Creative Commons Attribution Share Alike</lang></field>
+  </record>
+
+  <record>    <field name="licenseid">cc_07_public_domain</field>
+    <field name="rev_number">1</field>
+    <field name="url">http://creativecommons.org/licenses/publicdomain/</field>
+    <field name="name"><lang id="en">Creative Commons Public Domain Dedication</lang></field>
+  </record>
+
+  <record>    <field name="licenseid">cc_08_gnu_gpl</field>
+    <field name="rev_number">1</field>
+    <field name="url">http://creativecommons.org/licenses/GPL/2.0/</field>
+    <field name="name"><lang id="en">Creative Commons GNU GPL (Software)</lang></field>
+  </record>
+
+  <record>    <field name="licenseid">cc_09_gnu_lgpl</field>
+    <field name="rev_number">1</field>
+    <field name="url">http://creativecommons.org/licenses/LGPL/2.1/</field>
+    <field name="name"><lang id="en">Creative Commons GNU LGPL (Software)</lang></field>
+  </record>
+
+</eprintsdata>
