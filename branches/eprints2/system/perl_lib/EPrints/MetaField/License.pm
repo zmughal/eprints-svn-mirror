@@ -54,7 +54,7 @@ sub render_single_value
 			$self->get_property( "datasetid" ) );
 	my $obj = $session->get_db()->get_single( $ds, $value );
 
-	my $text = $session->make_text( $obj->get_label() );
+	my $text = $session->make_text( $obj->get_label( $session ) );
 
 	return $text if( $dont_link );
 
