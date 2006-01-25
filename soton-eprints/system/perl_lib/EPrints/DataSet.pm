@@ -206,6 +206,10 @@ my $INFO = {
 		sqlname => "subject",
 		class => "EPrints::Subject"
 	},
+	license => {
+		sqlname => "license",
+		class => "EPrints::License"
+	},
 	subscription => {
 		sqlname => "subscription",
 		class => "EPrints::Subscription"
