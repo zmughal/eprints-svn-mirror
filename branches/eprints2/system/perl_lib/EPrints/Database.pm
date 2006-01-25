@@ -2519,6 +2519,12 @@ sub index_queue
 ######################################################################
 =pod
 
+=back
+
+=head2 Permissions
+
+=over 4
+
 =item $db->add_roles( $privilege, $ip_from, $ip_to, @roles )
 
 Add $privilege to @roles, optionally in net space $ip_from to $ip_to.
