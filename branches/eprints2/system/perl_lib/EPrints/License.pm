@@ -214,12 +214,22 @@ sub tags_and_labels
 {
 	my( $class, $session, $ds ) = @_;
 
+	my $searchexp = EPrints::SearchExpression->new(
+		allow_blank => 1,
+		custom_order => "licenseid",
+		session => $session,
+		dataset => $ds );
+
+	$searchexp->perform_search();
+	
 	my( @tags, %labels );
-	foreach my $l ( $session->get_db()->get_all( $ds ) )
+	foreach my $l ( $searchexp->get_records() )
 	{
 		push @tags, my $id = $l->get_value( "licenseid" );
-		$labels{$id} = $l->get_label( $session );
+		$labels{$id} = $l->get_label();
 	}
+
+	$searchexp->dispose();
 
 	return( \@tags, \%labels );
 }
@@ -228,7 +238,7 @@ sub tags_and_labels
 
 =item $url = $obj->get_url( [$staff] )
 
-Returns the URL for the data object.
+The URL for the data object.
 
 =cut
 
@@ -240,18 +250,19 @@ sub get_url
 
 =pod
 
-=item $label = $obj->get_label( $session (
+=item $label = $obj->get_label()
 
-Returns the label for the current $session (handles multilanguage).
+The human-readable label for the $obj.
 
 =cut
 
 sub get_label
 {
-	my( $self, $session ) = @_;
+	my( $self ) = @_;
+	my $langid = $self->{ "session" }->get_langid();
 	
 	my $name = $self->get_value( "name" );
-	return $name->{ $session->get_langid() } || $name->{ "en" } || $self->get_value( "licenseid" );
+	return $name->{ $langid } || $name->{ "en" } || $self->get_value( "licenseid" );
 }
 
 # Licenses don't have a type.
