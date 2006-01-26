@@ -387,12 +387,12 @@ $c->{vlit}->{copyright_url} = $c->{base_url}."/vlit.html";
 #
 # Internal log handling
 #
-#  EPrints now supports a hook into Apache to catch logging events and
-#  record this directly into the eprints database
+#  Enables a hook into Apache to catch logging events and
+#  record them directly into the eprints database for usage analysis
 #
 ######################################################################
 
-# set this to 1 to enable log handling
+# set this to 1 to enable log handling (and run generate_apacheconf)
 $c->{loghandler}->{enable} = 0;
 
 
