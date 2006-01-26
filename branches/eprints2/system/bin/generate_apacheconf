@@ -437,7 +437,11 @@ print CONF <<END;
 END
 # EPrints log handler (this gets called for all requests, not just
 # mod_perl)
-if( $archive->get_conf( "loghandler" )->{enable} && $av == 2 )
+if(
+	$av == 2 &&
+	$archive->get_conf( "loghandler" ) &&
+	$archive->get_conf( "loghandler" )->{ "enable" }
+  )
 {
 	# apache 2
 	print CONF <<END;
@@ -619,7 +623,11 @@ $secureconfig
 END
 # EPrints log handler (this gets called for all requests, not just
 # mod_perl)
-if( $archive->get_conf( "loghandler" )->{enable} && $av == 2 )
+if(
+	$av == 2 &&
+	$archive->get_conf( "loghandler" ) &&
+	$archive->get_conf( "loghandler" )->{ "enable" }
+  )
 {
 	# apache 2
 	print CONF <<END;
