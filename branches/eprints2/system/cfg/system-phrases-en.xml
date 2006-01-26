@@ -927,6 +927,7 @@ Titles and Help for the System Fields
     <ep:phrase ref="document_fieldhelp_format">Please select the storage format of this document.</ep:phrase>
     <ep:phrase ref="document_fieldhelp_formatdesc">You may offer an additional brief description of the format.</ep:phrase>
     <ep:phrase ref="document_fieldhelp_security">Please indicate the required "security level" of this document. Who is allowed to download it?</ep:phrase>
+    <ep:phrase ref="document_fieldhelp_license">Specify an explicit license for this document (does not effect the rights you grant at the end of this deposit process)</ep:phrase>
 
     <ep:phrase ref="subject_fieldname_name">Subject Name</ep:phrase>
     <ep:phrase ref="subject_fieldhelp_name">This is the "screen" name of the subject, the one that the users will see.</ep:phrase>
