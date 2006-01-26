@@ -1,3 +1,17 @@
+######################################################################
+#
+# EPrints::Session
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
 package EPrints::TempDir;
 
 use strict;
@@ -26,6 +40,10 @@ EPrints::TempDir - Create temporary directories that can automatically be remove
 =head1 DESCRIPTION
 
 This module is basically a clone of File::Temp, but provides an object-interface to directory creation.
+
+=head1 METHODS
+
+This module does not provide any additional methods.
 
 =cut
 
