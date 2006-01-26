@@ -17,36 +17,29 @@
 
 =head1 NAME
 
-B<EPrints::License> - undocumented
+B<EPrints::License> - The name and URL for a license
 
 =head1 DESCRIPTION
 
-undocumented
+The C<name> is the multilanguage human-readable name of the license. The C<url> is the URL for the license (which is linked to in render_single_citation).
+
+=head1 INSTANCE VARIABLES
+
+=over 4
+
+=item $obj->{ "data" }
+
+=item $obj->{ "dataset" }
+
+=item $obj->{ "session" }
+
+=back
+
+=head1 METHODS
 
 =over 4
 
 =cut
-
-######################################################################
-#
-# INSTANCE VARIABLES:
-#
-#  $self->{foo}
-#     undefined
-#
-######################################################################
-
-######################################################################
-#
-# License class.
-#
-#  Handles the licenses dataset.
-#
-######################################################################
-#
-#  __LICENSE__
-#
-######################################################################
 
 package EPrints::License;
 @ISA = ( 'EPrints::DataObj' );
@@ -57,16 +50,13 @@ use EPrints::SearchExpression;
 
 use strict;
 
-
-######################################################################
 =pod
 
 =item $thing = EPrints::License->get_system_field_info
 
-undocumented
+Core fields contained in a license.
 
 =cut
-######################################################################
 
 sub get_system_field_info
 {
@@ -87,12 +77,18 @@ sub get_system_field_info
 ######################################################################
 =pod
 
-=item $thing = EPrints::License->new( $session, $licenseid )
-
-undocumented
+=head2 Constructor Methods
 
 =cut
 ######################################################################
+
+=pod
+
+=item $thing = EPrints::License->new( $session, $licenseid )
+
+The data object identified by $licenseid.
+
+=cut
 
 sub new
 {
@@ -103,17 +99,13 @@ sub new
 			$licenseid );
 }
 
-
-
-######################################################################
 =pod
 
 =item $thing = EPrints::License->new_from_data( $session, $known )
 
-undocumented
+A new C<EPrints::License> object containing data $known (a hash reference).
 
 =cut
-######################################################################
 
 sub new_from_data
 {
@@ -132,63 +124,18 @@ sub new_from_data
 ######################################################################
 =pod
 
-=item $foo = $thing->commit 
-
-undocumented
+=head2 Class Methods
 
 =cut
 ######################################################################
 
-sub commit 
-{
-	my( $self, $force ) = @_;
-
-	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
-	{
-		# don't do anything if there isn't anything to do
-		return( 1 ) unless $force;
-	}
-	$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
-
-	my $rv = $self->{session}->get_db()->update(
-			$self->{dataset},
-			$self->{data} );
-	
-	$self->queue_changes;
-
-	return $rv;
-}
-
-
-######################################################################
-=pod
-
-=item $foo = $thing->remove
-
-undocumented
-
-=cut
-######################################################################
-
-sub remove
-{
-	my( $self ) = @_;
-	
-	return $self->{session}->get_db()->remove(
-		$self->{dataset},
-		$self->get_id );
-}
-
-
-######################################################################
 =pod
 
 =item EPrints::License::remove_all( $session )
 
-undocumented
+Remove all records from the license dataset.
 
 =cut
-######################################################################
 
 sub remove_all
 {
@@ -234,6 +181,59 @@ sub tags_and_labels
 	return( \@tags, \%labels );
 }
 
+######################################################################
+=pod
+
+=head2 Object Methods
+
+=cut
+######################################################################
+
+=pod
+
+=item $foo = $thing->commit() 
+
+undocumented
+
+=cut
+
+sub commit 
+{
+	my( $self, $force ) = @_;
+
+	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
+	{
+		# don't do anything if there isn't anything to do
+		return( 1 ) unless $force;
+	}
+	$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
+
+	my $rv = $self->{session}->get_db()->update(
+			$self->{dataset},
+			$self->{data} );
+	
+	$self->queue_changes;
+
+	return $rv;
+}
+
+=pod
+
+=item $foo = $thing->remove()
+
+Remove this record from the data set.
+
+=cut
+
+sub remove
+{
+	my( $self ) = @_;
+	
+	return $self->{session}->get_db()->remove(
+		$self->{dataset},
+		$self->get_id );
+}
+
 =pod
 
 =item $url = $obj->get_url( [$staff] )
@@ -252,7 +252,7 @@ sub get_url
 
 =item $label = $obj->get_label()
 
-The human-readable label for the $obj.
+The human-readable label for the $obj in the current language. Defaults to english and, if that isn't available, the C<licenseid>.
 
 =cut
 
@@ -265,30 +265,6 @@ sub get_label
 	return $name->{ $langid } || $name->{ "en" } || $self->get_value( "licenseid" );
 }
 
-# Licenses don't have a type.
-#
-# sub get_type
-# {
-# }
-
-#deprecated
-
-sub create
-{
-	my( $session, $data ) = @_;
-
-	# don't want to mangle the origional data.
-	$data = EPrints::Utils::clone( $data );
-	
-	$data->{licenseid} = $session->get_db()->counter_next( "historyid" );
-	$data->{timestamp} = EPrints::Utils::get_datetimestamp( time );
-	my $dataset = $session->get_archive()->get_dataset( "license" );
-	my $success = $session->get_db()->add_record( $dataset, $data );
-
-	return( undef );
-}
-
-######################################################################
 =pod
 
 =item EPrints::License::render( "oooops" )
@@ -296,7 +272,6 @@ sub create
 undocumented
 
 =cut
-######################################################################
 
 sub render
 {
@@ -305,10 +280,13 @@ sub render
 
 1;
 
-######################################################################
-=pod
+__END__
 
 =back
+
+=head1 SEE ALSO
+
+L<EPrints::MetaField::License>, L<EPrints::DataObj> and L<EPrints::DataSet>.
 
 =cut
 
