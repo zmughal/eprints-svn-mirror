@@ -1,8 +1,31 @@
+######################################################################
+#
+# Select items for RAE return (possibly on behalf of someone else)
+#
+######################################################################
+#
+# This file is part of the EPrints RAE module developed by the 
+# Institutional Repositories and Research Assessment (IRRA) project,
+# funded by JISC within the Digital Repositories programme.
+#
+# http://irra.eprints.org/
+#
+# The EPrints RAE module is free software; you can redistributet 
+# and/or modify it under the terms of the GNU General Public License 
+# as published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+
+# The EPrints RAE module is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+# of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+######################################################################
+
 use EPrints::EPrint;
 use EPrints::Session;
 use EPrints::User;
 use strict;
-use warnings;
 
 # Enclosing the main part in {..} prevents accidental
 # (and *dangerous*) use of 'global' vars inside subroutines
@@ -11,81 +34,49 @@ use warnings;
 # Create session
 my $session = new EPrints::Session;
 exit( 0 ) unless( defined $session );
-my $archive = $session->get_archive();
+my $archive = $session->get_archive;
 
 # Check user has appropriate privs
-if(!$session->auth_check("deposit")) {
-    $session->terminate();
-    exit(0);
+if( !$session->auth_check( "deposit" ) )
+{
+    $session->terminate;
+    Apache::exit( 0 );
 }
 my $user = $session->current_user;
 
 # Init RAE config/phrases
-# TODO: better name/home for RAE/Loader.pm?
 use RAELoader;
 RAELoader::init_rae( $session );
 
-
-
-##seb: copied/pasted from raedata:
+# Check selected role
+my $role = $user;
+if( defined( $session->param( "role" ) ) )
+{
+	my $selected_role = EPrints::User->new( $session, $session->param( "role" ) );
+	my $check = $archive->get_conf( "rae", "can_user_assume_role" );
+	if( &$check( $session, $user, $selected_role ) ) {
+		$role = $selected_role;	
+	}
+	# Remove role parameter so that we
+	# can detect "internal" button presses
+	$session->{query}->delete( "role" );
+}
 
 # Show available roles
-my $roles_part = $session->make_doc_fragment();
-my $perms = $archive->get_conf("rae", "group_perms");
-
-
-# Check selected role, if any
-my $role;
-if (defined($session->param("role"))) {
-	$role = EPrints::User->new($session, $session->param("role"));
-	if (!defined($role)) {
-		$role = $user;
-	}
-	if ($perms->{$user->get_id} ne $role->get_value("dept")) {
-		# User cannot assume this role
-		# TODO: error message
-		$role = $user;
-	}
-} else {
-	$role = $user;
-}
-
-
-if (defined( $perms->{$user->get_id} )) {
-	my @roles;
-	my $searchexp = new EPrints::SearchExpression(
-		session => $session,
-		custom_order => "name",
-		dataset => $archive->get_dataset("user"),
-	);
-	$searchexp->add_field( $archive->get_dataset("user")->get_field("dept") , $perms->{$user->get_id} );
-	$searchexp->perform_search;
-	$searchexp->map( sub {
-		my ( $session, $dataset, $item, $info ) = @_;
-		push @roles, [ $item->get_id, EPrints::Utils::tree_to_utf8($item->render_description()) ];
-	});
-	my $form = $session->render_form();
-	$form->appendChild($session->render_option_list(name => 'role', pairs => \@roles));
-	$form->appendChild($session->render_action_buttons(submit => $session->phrase( "rae:change_role" )));
+my $roles_frag = $session->make_doc_fragment;
+my $get_roles = $archive->get_conf( "rae", "roles_for_user" );
+my @roles = &$get_roles( $session, $user );
+if( scalar @roles )
+{
+	my $form = $session->render_form;
+	$form->appendChild( $session->render_option_list(name => 'role', pairs => \@roles) );
+	$form->appendChild( $session->render_action_buttons(submit => $session->phrase( "rae:change_role" ) ) );
 	
-	if($role->get_id != $user->get_id)
-	{
-		$roles_part = $session->html_phrase( "rae:roles_behalf", 
-			change_role => $form,
-			current_user => $user->render_description(),
-			current_role => $role->render_description(),
-		);
-	}
-	else
-	{
-		$roles_part = $session->html_phrase( "rae:roles", 
-			change_role => $form,
-			current_user => $user->render_description(),
-		);		
-	}
+	$roles_frag = $session->html_phrase( "rae:roles", 
+		change_role => $form,
+		current_user => $user->render_description,
+	);
 }
-
-
 
 # Build the Search Expression
 my $search_conf = $archive->get_conf( "search", $archive->get_conf( "rae", "search_id" ) );
@@ -96,123 +87,62 @@ my $searchexp = new EPrints::SearchExpression(
 	%$search_conf,
 );
 # Init fields from config
-&{$archive->get_conf( "rae", "init" )}( $searchexp, $role );
-
+&{$archive->get_conf( "rae", "init_search" )}( $searchexp, $role );
 
 # Switch on user input
 # NB: based on process_webpage() in EPrints/SearchExpression.pm
 my $action_button = $session->get_action_button();
-my $search_page = undef;
-
+my $search_frag = undef;
 
 if( defined $action_button && $action_button eq "add" )
 {
 	my $id = $session->param( "_action_add" );
 	my $item = EPrints::EPrint->new( $session, $id );
-	if( defined $item ) # validate item
+	if( defined $item )
 	{
 		my $sql = "INSERT INTO rae_selected VALUES (" . $role->get_id. ", $id,".$user->get_id.", \'FALSE\', \'FALSE\');";
-		if( !$session->get_db->do( $sql ) )
-		{
-			# TODO: better error handling?
-			# (userid, eprintid) is the compound key in rae_selected, so silently
-			# ignoring this error actually works better for the moment e.g. if the
-			# user refreshes the page - could check for existence of row first?
-			#$session->render_error( "Error: $sql", $archive->get_conf( "perl_url" ) . "/users/rae/raeselect" );
-		}
+		$session->get_db->do( $sql );
 	}
-	$search_page = dopage_results($session, $searchexp, $role);
+	$search_frag = dopage_results( $session, $searchexp, $role );
 }
 
 if( defined $action_button && $action_button eq "remove")
 {
 	my $id = $session->param( "_action_remove" );
 	my $sql = "DELETE FROM rae_selected WHERE eprintid=$id AND userid=" . $role->get_id;
-	if( !$session->get_db->do( $sql ) )
-	{
-			# TODO: better error handling?
-			#$session->render_error( "Error: $sql", $archive->get_conf( "perl_url" ) . "/users/rae/raeselect" );
-	}
-	$search_page = dopage_results($session, $searchexp, $role);
+	$session->get_db->do( $sql );
+	$search_frag = dopage_results( $session, $searchexp, $role );
 }
 
 if( defined $action_button && $action_button eq "search" ) 
 {
-	$search_page = dopage_results($session, $searchexp, $role);
+	$search_frag = dopage_results( $session, $searchexp, $role );
 }
 
-if( !defined $action_button && $session->have_parameters() ) 
+if( !defined $action_button && $session->have_parameters ) 
 {
-	# Internal button e.g. Next, Prev
-	
-	$search_page = dopage_results($session, $searchexp, $role);
+	# Internal button (e.g. next, prev)
+	$search_frag = dopage_results( $session, $searchexp, $role );
 }
 
 if( defined $action_button && $action_button eq "update" )
 {
-	$searchexp->from_form();
+	$searchexp->from_form;
 }
-
-
-if( defined $action_button && $action_button eq "setflag" )
-{
-	my $id = $session->param( "item" );
-	my $flag = $session->param( "_action_setflag" ) eq 'C' ? 'confidential' : 'interdis';
-	
-	print STDERR "\nnow setting flag: ".$flag;
-	
-	my $sql = "UPDATE rae_selected SET ".$flag."=\'TRUE\' WHERE eprintid=$id AND userid=" . $role->get_id;
-	if( !$session->get_db->do( $sql ) )
-	{
-			# TODO: better error handling?
-			#$session->render_error( "Error: $sql", $archive->get_conf( "perl_url" ) . "/users/rae/raeselect" );
-	}
-	$search_page = dopage_results($session, $searchexp, $role);
-}
-
-if( defined $action_button && $action_button eq "unsetflag" )
-{
-	my $id = $session->param( "item" );
-	my $flag = $session->param( "_action_unsetflag" ) eq 'C' ? 'confidential' : 'interdis';
-	
-	print STDERR "\nnow unsetting flag: ".$flag;
-	
-	my $sql = "UPDATE rae_selected SET ".$flag."=\'FALSE\' WHERE eprintid=$id AND userid=" . $role->get_id;
-	if( !$session->get_db->do( $sql ) )
-	{
-			# TODO: better error handling?
-			#$session->render_error( "Error: $sql", $archive->get_conf( "perl_url" ) . "/users/rae/raeselect" );
-	}
-	$search_page = dopage_results($session, $searchexp, $role);
-}
-
 
 # Build + Send Page
-$search_page = $searchexp->render_search_form if !defined $search_page;
+$search_frag = $searchexp->render_search_form if !defined $search_frag;
+$search_frag->appendChild( $session->render_hidden_field( "role", $role->get_id ) );
 
-$search_page->appendChild( $session->render_hidden_field( "role", $role->get_id ) );
+my $data_url = $archive->get_conf("perl_url") . "/users/rae/raedata";
+$data_url .= "?role=" . $role->get_id if $user->get_id != $role->get_id;
 
-my $link = undef;
-
-##seb I guess we can send the _action_submit param all the time?
-if($role->get_id == $user->get_id)
-{
-	$link = $session->render_link( $archive->get_conf("perl_url") . "/users/rae/raedata?role=" . $role->get_id);
-}
-else
-{
-	$link = $session->render_link( $archive->get_conf("perl_url") . "/users/rae/raedata?role=" . $role->get_id."&_action_submit=Change+Role");
-}
-
+my $title = $session->html_phrase( "rae/select:page_title", user => $role->render_description );
 my $page = $session->html_phrase( "rae/select:page",
-	search => $search_page,
+	search => $search_frag,
 	selected => dopage_selected( $session, $searchexp, $role ),
-	roles => $roles_part,
-	data_link => $link,
-);
-my $title = $session->html_phrase( "rae/select:page_title",
-	##seb user => $user->render_description,
-	user => $role->render_description,
+	roles => $roles_frag,
+	data_link => $session->render_link( $data_url ),
 );
 $session->build_page( $title, $page );
 $session->send_page();
@@ -221,100 +151,47 @@ exit;
 
 }
 
-
-
-
-
-
-
-
 sub dopage_selected
 {
-	my ( $session, $searchexp, $role ) = @_;		## seb: need to know the user in case it's done on behalf of someone else
+	my ( $session, $searchexp, $role ) = @_;	
 	my %users_for_eprint;
-	my %flags_for_eprint;	##seb: stores the flags related to a specified eprint ( stored as an array ref: flagConfidential then flagInterdisciplinary)
 	
-	my $sql = "SELECT eprintid, userid, confidential, interdis FROM rae_selected WHERE eprintid IN (SELECT eprintid FROM rae_selected WHERE userid=".$role->get_id.")";
+	my $sql = "SELECT eprintid, userid FROM rae_selected WHERE eprintid IN (SELECT eprintid FROM rae_selected WHERE userid=".$role->get_id.")";
 	my $sth = $session->get_db->prepare( $sql );
 	if($session->get_db->execute( $sth, $sql ) )
 	{	
-		while ( my @row = $sth->fetchrow() ) {
+		while ( my @row = $sth->fetchrow() )
+		{
 			push @{ $users_for_eprint{$row[0]} }, $row[1];
-			
-			##seb: save flags for later use in render_item_row
-			if($row[1] == $role->get_id)
-			{
-				my @flags = ($row[2], $row[3]);
-				$flags_for_eprint{$row[0]} = \@flags;	
-			}
-			
 		}
 	}
 	
-	my $table = $session->make_element( "table", class => "bordered" );
-	my $tr = $session->make_element( "tr", class=>"row_b" );
-	$table->appendChild( $tr );
+	my $table = $session->make_element( "table" );
 	
-	my $th = $session->make_element( "th", class => "rightcol" );
-	$th->appendChild( $session->html_phrase( "rae/select:table_citation" ) );
-	$tr->appendChild( $th );
-
-	$th = $session->make_element( "th", class => "midcol"  );
-	$th->appendChild( $session->html_phrase( "rae/select:table_action" ) );
-	$tr->appendChild( $th );
-
-	$th = $session->make_element( "th", class => "leftcol"	);
-	$th->appendChild( $session->html_phrase( "rae/select:table_problem" ) );
-	$tr->appendChild( $th );
-	
-
 	my $i = 0;
 	foreach my $eprintid ( keys %users_for_eprint )
 	{
 		my $item = EPrints::EPrint->new( $session, $eprintid );
 		my $url = $session->get_uri();
 		
-		##seb: encoding of the role parameter in the url
-		if($session->current_user->get_id != $role->get_id)
-		{
-			$url = $url."?role=".$role->get_id."&";
-		}
-		else
-		{
-			$url = $url."?";	##seb: not to conflict with $fullurl below... but maybe we can still use the role param if role->id == user->id? it wouldn't harm anyway
-		}
-		
-		
 		my $escexp = $searchexp->serialise();
 		$escexp =~ s/ /+/g;
 		my $offset = 0;
-		if (defined($session->param( "_offset" )))
-		{
-			$offset += $session->param( "_offset" );
-		}
-		my $action_url;
+		$offset += $session->param( "_offset" ) if defined( $session->param( "_offset" ) );
 
-##seb: added checking if $searchexp->get_cache_id is defined as we sometimes get error dumps when running the script because that value is not defined....
-		
-		if (!defined $searchexp->get_cache_id)
-		{
-			$action_url=$url."_exp=$escexp&_offset=" . $offset;
-		}
-		else
-		{
-			$action_url=$url."_cache=".$searchexp->get_cache_id."&_exp=$escexp&_offset=" . $offset;
-		}
+		my $action_url;
+		$action_url = $url . "?_exp=$escexp&_offset=" . $offset;
+		$action_url .= "_cache=" . $searchexp->get_cache_id if defined( $searchexp->get_cache_id );
+		$action_url .= "&role=" . $role->get_id if $session->current_user->get_id != $role->get_id;
 		
 		my $others = $users_for_eprint{$eprintid};
-		my $flags = $flags_for_eprint{$eprintid};
-		$table->appendChild( render_item_row( $session, $item, $action_url, 'remove', $others, "rae/select:also_selected_by", $role, $flags, ($i++ % 2) ? "row_b" : "row_a" ) );
+		$table->appendChild( render_item_row( $session, $searchexp, $item, $action_url, 'remove', $others, "rae/select:also_selected_by", $role ) );
 	}
 	return $table;
-	
 }
 
+# Render the search results part of the page
 # NB: based on _dopage_results() in EPrints/SearchExpression.pm
-#seb: added role parameter in url
 sub dopage_results
 {
 	my ( $session, $searchexp, $role ) = @_;
@@ -329,18 +206,15 @@ sub dopage_results
 	$searchexp->perform_search();
 	if( defined $searchexp->{error} ) 
 	{	
-		# Error with search.
 		return dopage_problems( $session, $searchexp, $searchexp->{error} );
 	}
 
 	my $n_results = $searchexp->count();
-	#if added by anw 5/12/05 to stop addition error in logs
 	my $offset = 0;
-	if (defined $session->param("_offset"))
-	{
-		$offset += $session->param("_offset");
-	}
+	$offset += $session->param("_offset") if $session->param( "_offset" );
 	my $pagesize = $searchexp->{page_size};
+
+	# Get results slice
 	my @results = $searchexp->get_records( $offset , $pagesize );
 
 	$searchexp->dispose();
@@ -370,19 +244,8 @@ sub dopage_results
 	my $controls = $session->make_element( "p", class=>"searchcontrols" );
 	$page->appendChild( $controls );
 
-	my $url = $session->get_uri();
-	#cjg escape URL'ify urls in this bit... (4 of them?)
-	
-	
-	##seb:
-	if($session->current_user->get_id != $role->get_id)
-	{
-		$url = $url."?role=".$role->get_id."&";
-	}
-	else
-	{
-		$url = $url."?";	##seb: not to conflict with $fullurl below.. cf same comment on line 260ish
-	}
+	my $url = $session->get_uri() . "?";
+	$url .= "role=" . $role->get_id . "&" if $session->current_user->get_id != $role->get_id;
 	
 	my $escexp = $searchexp->serialise();	
 	$escexp =~ s/ /+/g; # not great way...
@@ -408,17 +271,15 @@ sub dopage_results
 	$a->appendChild( $session->html_phrase( "lib/searchexpression:refine" ) );
 	$cspan = $session->make_element( 'span', class=>"searchcontrol" );
 	$cspan->appendChild( $a );
-
-	##seb - makes it look neater:
-	$cspan->appendChild( $session->make_text(" ") );
 	
 	$controls->appendChild( $cspan );
 	$controls->appendChild( $session->html_phrase( "lib/searchexpression:seperator" ) );
-	$a = $session->render_link( $url."_action_newsearch&" );
+	$a = $session->render_link( $url ) ; #."_action_newsearch&" );
 	
 	$a->appendChild( $session->html_phrase( "lib/searchexpression:new" ) );
 	$cspan = $session->make_element( 'span', class=>"searchcontrol" );
 	$cspan->appendChild( $a );
+
 	$controls->appendChild( $cspan );
 
 	if( $offset + $pagesize < $n_results )
@@ -436,7 +297,7 @@ sub dopage_results
 	}
 	
 	# Render results
-	my $table = $session->make_element("table", class => "bordered" );
+	my $table = $session->make_element( "table" );
 	$page->appendChild($table);
  	
 	my %users_for_eprint;
@@ -455,29 +316,17 @@ sub dopage_results
 	{
 		my $action_url=$url."_cache=".$searchexp->get_cache_id."&_exp=$escexp&_offset=$offset";
 		my $others = $users_for_eprint{$result->get_id};
-		$table->appendChild( render_item_row( $session, $result, $action_url, 'add', $others, "rae/select:selected_by", $role, 
-			undef, ($i++ % 2)? "row_b" : "row_a") );
+		$table->appendChild( render_item_row( $session, $searchexp, $result, $action_url, 'add', $others, "rae/select:selected_by", $role ) );
 	}
 
 	if( $n_results > 0 )
 	{
-		# Only print a second set of controls if 
-		# there are matches.
+		# Only print a second set of controls if there are matches.
 		$page->appendChild(EPrints::XML::clone_node( $controls, 1 ) );
 	}
 	
-	return $page
+	return $page;
 }
-
-
-
-
-
-
-
-
-
-
 
 # Based on _dopage_problems in EPrints/SearchExpression.pm
 sub dopage_problems
@@ -507,53 +356,27 @@ sub dopage_problems
 	return $page;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-#seb: added role + flags handling
-
-#seb: and style! $style precises the CSS class for the TR tags (which can be either 'row_a' or 'row_b', cf. eprint.CSS)
-
 sub render_item_row {
-	my ( $session, $item, $url, $action, $others, $phraseid, $role, $flags, $style)  = @_;
+	my ( $session, $searchexp, $item, $url, $action, $others, $phraseid, $role )  = @_;
 	
-	my $tr = undef;
-	if(defined $style)
-	{
-		$tr = $session->make_element( "tr" , class => $style );
-	}
-	else
-	{
-		$tr = $session->make_element( "tr" );		
-	}
-		
+	my $tr = $session->make_element( "tr" );
 
 	# Each row contains a citation...
-	my $td_cite = $session->make_element( "td", class => "leftcol" );
+	my $td_cite = $session->make_element( "td" );
 	$tr->appendChild( $td_cite );
 	if( defined $item ) {
-		$td_cite->appendChild( $item->render_citation_link() );
+		$td_cite->appendChild( $item->render_citation_link( $searchexp->{citation} ) );
 	} else {
 		$td_cite->appendChild( $session->html_phrase( "rae:unknown_item" ) );
 		return;
 	}
 
 	# ... a list of other users related to that item ...
-	my $td_users = $session->make_element( "td", class => "rightcol" );
+	my $td_users = $session->make_element( "td" );
 	my $already_selected = 0;
 	my @names;
 	foreach my $otherid ( @$others )
 	{
-		##seb if( $otherid == $session->current_user->get_id ) 
 		if( $otherid == $role->get_id ) 
 		{
 			$already_selected = 1;
@@ -573,68 +396,10 @@ sub render_item_row {
 		$td_users->appendChild( $session->html_phrase( $phraseid, 
 			names => $session->make_text( join(", ", @names) ) ) );
 	}
+	$tr->appendChild( $td_users );
 	
-	
-
-	# the middle column contains at least the 'Remove' button, and optionnaly the C and I flags
-	my $td_act = $session->make_element( "td", class => "midcol" );
-	
-	if(defined @$flags)
-	{
-		
-		my ($link, $flagC, $flagI);
-		my ($iconC, $iconI);		# the little icons :)
-		
-		my $picurl = $session->get_archive->get_conf( "base_url" )."/images/raeicons/";
-		
-		if($$flags[0] eq 'TRUE')
-		{
-			# C flag is set
-			$iconC = $picurl."confidential_ON.ico";
-			$link = "$url&_action_unsetflag=C&item=".$item->get_id;
-			$flagC = $session->html_phrase( "rae/select:unset_flag_C", link => $session->render_link($link) );
-			
-		}
-		else
-		{
-			# C flag is unset
-			$iconC = $picurl."confidential_OFF.ico";
-			$link = "$url&_action_setflag=C&item=".$item->get_id;
-			$flagC = $session->html_phrase( "rae/select:set_flag_C", link => $session->render_link($link) );
-			
-		}
-		
-		if($$flags[1] eq 'TRUE')
-		{
-			# flag I is set
-			$iconI = $picurl."interdisc_ON.ico";
-			$link = "$url&_action_unsetflag=I&item=".$item->get_id;
-			$flagI = $session->html_phrase( "rae/select:unset_flag_I", link => $session->render_link($link) );
-		}
-		else
-		{
-			# flag I is unset
-			$iconI = $picurl."interdisc_OFF.ico";
-			$link = "$url&_action_setflag=I&item=".$item->get_id;
-			$flagI = $session->html_phrase( "rae/select:set_flag_I", link => $session->render_link($link) );
-			
-		}
-
-
-		$td_act->appendChild($flagC);
-		$td_act->appendChild( $session->make_element("br") );
-		$td_act->appendChild($flagI);
-		$td_act->appendChild( $session->make_element("br") );
-		
-		$td_act->appendChild( $session->make_element( "img", src=> $iconC ) );
-		$td_act->appendChild( $session->make_element( "img", src=> $iconI ) );
-		$td_act->appendChild( $session->make_element("br") );
-		
-
-	}
-	
-	
-	# ... and an action button (which actually goes before the list of other users)
+	# ... and an action button
+	my $td_act = $session->make_element( "td" );
 	
 	if( !$already_selected || $action eq "remove" ) {
 		my $button = $session->render_link( "$url&_action_$action=" . $item->get_id );
@@ -645,7 +410,6 @@ sub render_item_row {
 	}
 
 	$tr->appendChild( $td_act );
-	$tr->appendChild( $td_users );
 
 	return $tr;
 }
