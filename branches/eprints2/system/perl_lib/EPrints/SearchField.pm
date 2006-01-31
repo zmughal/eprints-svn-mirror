@@ -176,8 +176,24 @@ sub new
 	$self->{"dataset"} = $dataset;
 
 	$self->{"value"} = $value;
-	$self->{"match"} = ( defined $match ? $match : "EQ" );
-	$self->{"merge"} = ( defined $merge ? $merge : "AND" );
+	$self->{"match"} = "EQ";
+	$self->{"match"} = $match if( EPrints::Utils::is_set( $match ) );
+	$self->{"merge"} = "AND";
+	$self->{"merge"} = $merge if( EPrints::Utils::is_set( $merge ) );
+
+	if( $self->{match} ne "EQ" && $self->{match} ne "IN" && $self->{match} ne "EX" )
+	{
+		$session->get_archive->log( 
+"search field match value was '".$self->{match}."'. Should be EQ, IN or EX." );
+		$self->{merge} = "AND";
+	}
+
+	if( $self->{merge} ne "AND" && $self->{merge} ne "OR" )
+	{
+		$session->get_archive->log( 
+"search field merge value was '".$self->{merge}."'. Should be AND or OR." );
+		$self->{merge} = "AND";
+	}
 
 	if( ref( $fields ) ne "ARRAY" )
 	{

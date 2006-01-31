@@ -262,7 +262,7 @@ Clean up the cache table if appropriate.
 sub dispose
 {
 	my( $self ) = @_;
-	print STDERR "Dispose called.\n";
+
 	if( defined $self->{cache_id} && !$self->{keep_cache} )
 	{
 		$self->{session}->get_db->drop_cache( $self->{cache_id} );
