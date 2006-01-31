@@ -17,9 +17,11 @@
 
 =head1 NAME
 
-B<EPrints::License> - The name and URL for a license
+B<EPrints::License> - Licenses dataset
 
 =head1 DESCRIPTION
+
+Licenses contains a listing of end-user licenses that may be granted by a user (typically for Documents).
 
 The C<name> is the multilanguage human-readable name of the license. The C<url> is the URL for the license (which is linked to in render_single_citation).
 
