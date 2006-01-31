@@ -17,36 +17,15 @@
 
 =head1 NAME
 
-B<EPrints::Utils> - undocumented
+B<EPrints::Utils> - Utility functions for EPrints.
 
 =head1 DESCRIPTION
 
-undocumented
+This package contains functions which don't belong anywhere else.
 
 =over 4
 
 =cut
-
-######################################################################
-#
-# INSTANCE VARIABLES:
-#
-#  $self->{foo}
-#     undefined
-#
-######################################################################
-
-######################################################################
-#
-#  EPrints Utility module
-#
-#   Provides various useful functions
-#
-######################################################################
-#
-#  __LICENSE__
-#
-######################################################################
 
 package EPrints::Utils;
 
@@ -121,21 +100,14 @@ END
 }
 
 
-######################################################################
-# $dirspace = df_dir( $dir );
-#
-#  Returns the amount of free space in directory $dir, or undef
-#  if df could not be used.
-# 
-######################################################################
-
 
 ######################################################################
 =pod
 
-=item EPrints::Utils::df_dir( $dir )
+=item $space =  EPrints::Utils::df_dir( $dir )
 
-undocumented
+Return the number of bytes of disk space available in the directory
+$dir or undef if we can't find out.
 
 =cut
 ######################################################################
@@ -210,9 +182,11 @@ sub render_date
 ######################################################################
 =pod
 
-=item EPrints::Utils::get_month_label( $session, $monthid )
+=item $label = EPrints::Utils::get_month_label( $session, $monthid )
 
-undocumented
+Return a UTF-8 string describing the month, in the current lanugage.
+
+$monthid is a 3 character code: jan, feb, mar... etc.
 
 =cut
 ######################################################################
@@ -233,7 +207,19 @@ sub get_month_label
 
 =item $string = EPrints::Utils::make_name_string( $name, [$familylast] )
 
-undocumented
+Return a string containing the name described in the hash reference
+$name. 
+
+The keys of the hash are one or more of given, family, honourific and
+lineage. The values are utf-8 strings.
+
+Normally the result will be:
+
+"family lineage, honourific given"
+
+but if $familylast is true then it will be:
+
+"honourific given family lineage"
 
 =cut
 ######################################################################
@@ -272,143 +258,6 @@ sub make_name_string
 	return $secondbit.", ".$firstbit;
 }
 
-######################################################################
-#
-# ( $cmp ) = cmp_names( $val_a , $val_b )
-#
-#  This method compares (alphabetically) two arrays of names. Passed
-#  by reference.
-#
-######################################################################
-
-
-
-######################################################################
-=pod
-
-=item EPrints::Utils::cmp_namelists( $a, $b, $fieldname )
-
-undocumented
-
-=cut
-######################################################################
-
-sub cmp_namelists
-{
-	my( $a , $b , $fieldname ) = @_;
-
-	my $val_a = $a->get_value( $fieldname );
-	my $val_b = $b->get_value( $fieldname );
-	return _cmp_names_aux( $val_a, $val_b );
-}
-
-
-######################################################################
-=pod
-
-=item EPrints::Utils::cmp_names( $a, $b, $fieldname )
-
-undocumented
-
-=cut
-######################################################################
-
-sub cmp_names
-{
-	my( $a , $b , $fieldname ) = @_;
-
-	my $val_a = $a->get_value( $fieldname );
-	my $val_b = $b->get_value( $fieldname );
-	return _cmp_names_aux( [$val_a] , [$val_b] );
-}
-
-######################################################################
-# 
-# EPrints::Utils::_cmp_names_aux( $val_a, $val_b )
-#
-# undocumented
-#
-######################################################################
-
-sub _cmp_names_aux
-{
-	my( $val_a, $val_b ) = @_;
-
-	my( $texta , $textb ) = ( "" , "" );
-	if( defined $val_a )
-	{ 
-		foreach( @{$a} ) { $texta.=":$_->{family},$_->{given},$_->{honourific},$_->{lineage}"; } 
-	}
-	if( defined $val_b )
-	{ 
-		foreach( @{$b} ) { $textb.=":$_->{family},$_->{given},$_->{honourific},$_->{lineage}"; } 
-	}
-
-	return( $texta cmp $textb );
-}
-
-
-
-######################################################################
-=pod
-
-=item EPrints::Utils::cmp_ints( $a, $b, $fieldname )
-
-undocumented
-
-=cut
-######################################################################
-
-sub cmp_ints
-{
-	my( $a , $b , $fieldname ) = @_;
-	my $val_a = $a->get_value( $fieldname );
-	my $val_b = $b->get_value( $fieldname );
-	$val_a = 0 if( !defined $val_a );
-	$val_b= 0 if( !defined $val_b);
-	return $val_a <=> $val_b
-}
-
-
-######################################################################
-=pod
-
-=item EPrints::Utils::cmp_strings( $a, $b, $fieldname )
-
-undocumented
-
-=cut
-######################################################################
-
-sub cmp_strings
-{
-	my( $a , $b , $fieldname ) = @_;
-	my $val_a = $a->get_value( $fieldname );
-	my $val_b = $b->get_value( $fieldname );
-	$val_a = "" if( !defined $val_a );
-	$val_b= "" if( !defined $val_b);
-	return $val_a cmp $val_b
-}
-
-
-######################################################################
-=pod
-
-=item EPrints::Utils::cmp_dates( $a, $b, $fieldname )
-
-undocumented
-
-=cut
-######################################################################
-
-sub cmp_dates
-{
-	my( $a , $b , $fieldname ) = @_;
-	return cmp_strings( $a, $b, $fieldname );
-}
-
-# replyto / replytoname are optional (both or neither), they set
-# the reply-to header.
 
 ######################################################################
 =pod
@@ -418,16 +267,27 @@ sub cmp_dates
 Sends an email. 
 
 $archive - the archive sending the email.
+
 $langid - the language id (eg. "en")
+
 $name - the name of the recipient (UTF-8 encoded string)
+
 $address - the email address of the recipient
+
 $subject - the subject of the message (UTF-8 encoded string)
+
 $body - the body of the message as a DOM tree
+
 $sig - the signature file as a DOM tree
+
 $replyto -  the reply-to email address 
+
 $replytoname - the reply-to name (UTF-8 encoded string)
 
 Returns true if mail sending (appears to have) succeeded. False otherwise.
+
+Uses the config. option "send_email" to send the mail, or if that's
+not defined sends the email via STMP.
 
 =cut
 ######################################################################
@@ -487,24 +347,12 @@ sub email_date()
 
 
 ######################################################################
-#
-# $encoding = get_encoding($mystring)
-# 
-# Returns:
-# "7-bit" if 7-bit clean
-# "utf-8" if utf-8 encoded
-# "iso-8859-1" if 8859-1 encoded
-# "unknown" if of unknown origin (shouldn't really happen)
-#
-######################################################################
-
-
-######################################################################
 =pod
 
 =item EPrints::Utils::send_mail_via_smtp( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname )
 
-undocumented
+Send an email via STMP. Should not be called directly, but rather by
+EPrints::Utils::send_mail.
 
 =cut
 ######################################################################
@@ -598,7 +446,9 @@ END
 
 =item EPrints::Utils::send_mail_via_sendmail( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname )
 
-undocumented
+Also should not be called directly. The config. option "send_email"
+can be set to \&EPrints::Utils::send_mail_via_sendmail to use the
+sendmail command to send emails rather than send to a SMTP server.
 
 =cut
 ######################################################################
@@ -669,9 +519,10 @@ END
 ######################################################################
 =pod
 
-=item EPrints::Utils::get_encoding( $string )
+=item $enc = EPrints::Utils::get_encoding( $string )
 
-undocumented
+Return the best guess of the encoding of the given string. Results
+one of: 7-bit, utf-8, iso-8859-1, unknown. Used for sending email.
 
 =cut
 ######################################################################
@@ -702,14 +553,13 @@ sub get_encoding
 	return "unknown";
 }
 
-# Encode a utf8 string for a MIME header.
 
 ######################################################################
 =pod
 
-=item EPrints::Utils::mime_encode_q( $string )
+=item $header = EPrints::Utils::mime_encode_q( $string )
 
-undocumented
+Encode a utf-8 string as a mime header.
 
 =cut
 ######################################################################
@@ -753,9 +603,9 @@ sub mime_encode_q
 ######################################################################
 =pod
 
-=item EPrints::Utils::encode_str( $string )
+=item $encoded = EPrints::Utils::encode_str( $string )
 
-undocumented
+Used by mime_encode_q to escape non legal values in the string.
 
 =cut
 ######################################################################
@@ -781,14 +631,23 @@ sub encode_str
 	return $encoded;
 }
 
-# ALL cjg get_value should use this.
 
 ######################################################################
 =pod
 
-=item EPrints::Utils::is_set( $r )
+=item $boolean = EPrints::Utils::is_set( $r )
 
-undocumented
+Recursive function. 
+
+Return false if $r is not set.
+
+If $r is a scalar then returns true if it is not an empty string.
+
+For arrays and hashes return true if at least one value of them
+is_set().
+
+This is used to see if a complex data structure actually has any data
+in it.
 
 =cut
 ######################################################################
@@ -830,9 +689,21 @@ sub is_set
 ######################################################################
 =pod
 
-=item EPrints::Utils::tree_to_utf8( $node, $width, $pre, $whitespace_before )
+=item $string = EPrints::Utils::tree_to_utf8( $tree, $width, [$pre], [$whitespace_before] )
 
-undocumented
+Convert a XML DOM tree to a utf-8 encoded string.
+
+If $width is set then word-wrap at that many characters.
+
+XHTML elements are removed with the following exceptions:
+
+<br /> is converted to a newline.
+
+<p>...</p> will have a blank line above and below.
+
+<img /> will be replaced with the content of the alt attribute.
+
+<hr /> will, if a width was specified, insert a line of dashes.
 
 =cut
 ######################################################################
@@ -1017,9 +888,11 @@ sub _blank_lines
 ######################################################################
 =pod
 
-=item EPrints::Utils::mkdir( $full_path )
+=item $ok = EPrints::Utils::mkdir( $full_path )
 
-undocumented
+Create the specified directory.
+
+Return true on success.
 
 =cut
 ######################################################################
@@ -1041,19 +914,21 @@ sub mkdir
         return ( scalar @created > 0 )
 }
 
-# cjg - Potential bug if: <ifset a><ifset b></></> and ifset a is disposed
-# then ifset: b is processed it will crash.
-
 
 ######################################################################
 =pod
 
-=item EPrints::Utils::render_citation( $obj, $cstyle, $url )
+=item $xhtml = EPrints::Utils::render_citation( $obj, $cstyle, [$url] )
 
-undocumented
+Render the given object (EPrint, User, etc) using the citation style
+$cstyle. If $url is specified then the <ep:linkhere> element will be
+replaced with a link to that URL.
 
 =cut
 ######################################################################
+
+# cjg - Potential bug if: <ifset a><ifset b></></> and ifset a is disposed
+# then ifset: b is processed it will crash.
 
 sub render_citation
 {
@@ -1250,9 +1125,15 @@ sub _citation_field_value
 ######################################################################
 =pod
 
-=item EPrints::Utils::field_from_config_string( $dataset, $fieldname )
+=item $metafield = EPrints::Utils::field_from_config_string( $dataset, $fieldname )
 
-undocumented
+Return the EPrint::MetaField from $dataset with the given name.
+
+If fieldname ends in ".id" then return a metafield representing the
+ID part only.
+
+If fieldname has a semicolon followed by render options then these
+are passed as render_opts to the new EPrints::MetaField object.
 
 =cut
 ######################################################################
@@ -1333,9 +1214,20 @@ sub field_from_config_string
 ######################################################################
 =pod
 
-=item EPrints::Utils::get_input( $regexp, $prompt, $default )
+=item $string = EPrints::Utils::get_input( $regexp, [$prompt], [$default] )
 
-undocumented
+Read input from the keyboard.
+
+Prints the prompt and default value, if any. eg.
+ How many fish [5] >
+
+Return the value the user enters at the keyboard.
+
+If the value does not match the regexp then print the prompt again
+and try again.
+
+If a default is set and the user just hits return then the default
+value is returned.
 
 =cut
 ######################################################################
@@ -1373,9 +1265,13 @@ sub get_input
 ######################################################################
 =pod
 
-=item EPrints::Utils::get_input_hidden( $regexp, $prompt, $default )
+=item EPrints::Utils::get_input_hidden( $regexp, [$prompt], [$default] )
 
-Get input from the console without echoing the entered characters (mostly useful for getting passwords). This relies on stty being in the path.
+Get input from the console without echoing the entered characters 
+(mostly useful for getting passwords). This relies on stty being in 
+the path.
+
+Identical to get_input except the characters don't appear.
 
 =cut
 ######################################################################
@@ -1418,9 +1314,14 @@ sub get_input_hidden
 ######################################################################
 =pod
 
-=item EPrints::Utils::clone( $data )
+=item $clone_of_data = EPrints::Utils::clone( $data )
 
-undocumented
+Deep copies the data structure $data, following arrays and hashes.
+
+Does not handle blessed items.
+
+Useful when we want to modify a temporary copy of a data structure 
+that came from the configuration files.
 
 =cut
 ######################################################################
@@ -1461,9 +1362,9 @@ sub clone
 ######################################################################
 =pod
 
-=item EPrints::Utils::crypt_password( $value, $session )
+=item $crypted_value = EPrints::Utils::crypt_password( $value, $session )
 
-undocumented
+Apply the crypt encoding to the given $value.
 
 =cut
 ######################################################################
@@ -1486,9 +1387,9 @@ sub crypt_password
 ######################################################################
 =pod
 
-=item EPrints::Utils::url_escape( $url )
+=item $string = EPrints::Utils::url_escape( $url )
 
-undocumented
+Escape the given $url, so that it can appear safely in HTML.
 
 =cut
 ######################################################################
@@ -1537,15 +1438,14 @@ sub long2ip
 	return join('.', @octets);
 }
 
-# Command Version: Prints the GNU style --version comment for a command
-# line script. Then exits.
-
 ######################################################################
 =pod
 
 =item EPrints::Utils::cmd_version( $progname )
 
-undocumented
+Print out a "--version" style message to STDOUT.
+
+$progname is the name of the current script.
 
 =cut
 ######################################################################
@@ -1561,7 +1461,7 @@ sub cmd_version
 $progname (GNU EPrints $version_id)
 $version
 
-Copyright (C) 2001-2004 University of Southampton
+Copyright (C) 2001-2006 University of Southampton
 
 __LICENSE__
 END
@@ -1580,13 +1480,9 @@ END
 
 
 ######################################################################
-=pod
-
-=item EPrints::Utils::destroy( $ref )
-
-undocumented
-
-=cut
+#
+# EPrints::Utils::destroy( $ref )
+#
 ######################################################################
 
 sub destroy
@@ -1727,15 +1623,15 @@ sub get_date
 	my $hour = $date[2];
 	
 	# Ensure number of digits
-	while( length $day < 2 )
-	{
-		$day = "0".$day;
-	}
+	while( length $day < 2 ) { $day = "0".$day; }
 
-	while( length $month < 2 )
-	{
-		$month = "0".$month;
-	}
+	while( length $month < 2 ) { $month = "0".$month; }
+
+	while( length $hour < 2 ) { $hour = "0".$hour; }
+
+	while( length $min < 2 ) { $min = "0".$min; }
+
+	while( length $sec < 2 ) { $sec = "0".$sec; }
 
 	return( $year, $month, $day, $hour, $min, $sec );
 }
@@ -1831,44 +1727,6 @@ sub get_UTC_timestamp
 	return $stamp;
 }
 
-
-######################################################################
-=pod
-
-=item $boolean = EPrints::Utils::is_in( $needles, $haystack, $matchall )
-
-undocumented
-
-=cut
-######################################################################
-
-sub is_in
-{
-	my( $needles, $haystack, $matchall ) = @_;
-	
-	if( $matchall )
-	{
-		foreach my $n ( @{$needles} )
-		{
-			my $found = 0;
-			foreach my $h ( @{$haystack} )
-			{
-				$found = 1 if( $n eq $h );
-			}
-			return 0 unless( $found );
-		}
-		return 1;
-	}
-
-	foreach my $n ( @{$needles} )
-	{
-		foreach my $h ( @{$haystack} )
-		{
-			return 1 if( $n eq $h );
-		}
-	}
-	return 0;
-}
 
 ######################################################################
 =pod

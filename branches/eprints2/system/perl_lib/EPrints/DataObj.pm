@@ -24,6 +24,8 @@ This module is a base class which is inherited by EPrints::EPrint,
 EPrints::User, EPrints::Subject and EPrints::Document and several
 other classes.
 
+It is ABSTRACT, its methods should not be called directly.
+
 =over 4
 
 =cut
@@ -49,6 +51,141 @@ package EPrints::DataObj;
 use EPrints::Utils;
 
 use strict;
+
+
+######################################################################
+=pod
+
+=item $sys_fields = EPrints::DataObj->get_system_field_info
+
+ABSTRACT.
+
+Return an array describing the system metadata of the this 
+dataset.
+
+=cut
+######################################################################
+
+sub get_system_field_info
+{
+	my( $class ) = @_;
+
+	confess( "Abstract method called" );
+}
+
+######################################################################
+=pod
+
+=item $dataobj = EPrints::DataObj->new( $session, $id, [$dataset] )
+
+ABSTRACT.
+
+Return new data object, created by loading it from the database.
+
+$dataset is used by EPrint->new to save searching through all four
+tables that it could be in.
+
+=cut
+######################################################################
+
+sub new
+{
+	my( $class, $session, $id ) = @_;
+
+}
+
+######################################################################
+=pod
+
+=item $dataobj = EPrints::DataObj->new_from_data( $session, $data )
+
+ABSTRACT.
+
+Construct a new EPrints::DataObj object based on the $data hash 
+reference of metadata.
+
+Used to create an object from the data retrieved from the database.
+
+=cut
+######################################################################
+
+sub new_from_data
+{
+	my( $class, $session, $data ) = @_;
+
+}
+
+######################################################################
+=pod
+
+=item $dataobj = EPrints::DataObj->create( $session, @default_data )
+
+ABSTRACT.
+
+Create a new object of this type in the database. 
+
+The syntax for @default_data depends on the type of data object.
+
+=cut
+######################################################################
+
+sub create
+{
+	my( $class, $session, @defaunt_data ) = @_;
+
+}
+
+
+
+
+######################################################################
+=pod
+
+=item $success = $dataobj->remove
+
+ABSTRACT
+
+Remove this data object from the database. 
+
+Also removes any sub-objects or related files.
+
+Return true if successful.
+
+=cut
+######################################################################
+
+sub remove
+{
+	my( $self ) = @_;
+
+}
+
+
+######################################################################
+=pod
+
+=item $success = $dataobj->commit( [$force] )
+
+ABSTRACT.
+
+Write this object to the database.
+
+If $force isn't true then it only actually modifies the database
+if one or more fields have been changed.
+
+Commit may also log the changes, depending on the type of data 
+object.
+
+=cut
+######################################################################
+
+sub commit
+{
+	my( $self, $force ) = @_;
+	
+}
+
+
 
 
 ######################################################################

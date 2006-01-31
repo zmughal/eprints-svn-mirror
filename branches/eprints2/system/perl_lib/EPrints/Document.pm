@@ -1399,17 +1399,49 @@ sub get_text
 	return $words;
 }
 
+######################################################################
+=pod
+
+=item $filename = $doc->words_file
+
+Return the filename in which this document uses to cache words 
+extracted from the full text.
+
+=cut
+######################################################################
+
 sub words_file
 {
 	my( $self ) = @_;
 	return $self->cache_file( 'words' );
 }
 
+######################################################################
+=pod
+
+=item $filename = $doc->indexcodes_file
+
+Return the filename in which this document uses to cache indexcodes 
+extracted from the words cache file.
+
+=cut
+######################################################################
+
 sub indexcodes_file
 {
 	my( $self ) = @_;
 	return $self->cache_file( 'indexcodes' );
 }
+
+######################################################################
+=pod
+
+=item $filename = $doc->cache_file( $suffix );
+
+Return a cache filename for this document with the givven suffix.
+
+=cut
+######################################################################
 
 sub cache_file
 {

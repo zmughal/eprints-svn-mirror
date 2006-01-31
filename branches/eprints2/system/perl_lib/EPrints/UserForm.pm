@@ -12,16 +12,16 @@
 #
 ######################################################################
 
-
 =pod
 
 =head1 NAME
 
-B<EPrints::UserForm> - undocumented
+B<EPrints::UserForm> - The HTML form for editing user records.
 
 =head1 DESCRIPTION
 
-undocumented
+Object which handles rendering a form to edit EPrints::User objects
+and also processing the results of that form.
 
 =over 4
 
@@ -31,18 +31,21 @@ undocumented
 #
 # INSTANCE VARIABLES:
 #
-#  $self->{foo}
-#     undefined
+# $self->{session}
+#     The current EPrints::Session object.
 #
-######################################################################
-
-####################################################################
+# $self->{redirect}
+#     The URL to redirect to when we're done.
 #
-#  EPrints User Record Forms
+# $self->{staff}
+#     If staff mode is set to true then staffonly fields are included
+#     in the form.
 #
-######################################################################
+# $self->{user}
+#     The EPrints::User object being modified.
 #
-#  __LICENSE__
+# $self->{dest}
+#     The URL for the form to submit to.
 #
 ######################################################################
 
@@ -55,21 +58,21 @@ use EPrints::Database;
 use strict;
 
 ######################################################################
-#
-# $userform = new( $session, $redirect, $staff, $user )
-#
-#  Create a new user form session. If $user is unspecified, the current
-#  user (from Apache cookies) is used.
-#
-######################################################################
-
-
-######################################################################
 =pod
 
-=item $thing = EPrints::UserForm->new( $session, $redirect, $staff, $user )
+=item $userform = EPrints::UserForm->new( $session, $redirect, $staff, $user )
 
-undocumented
+Create a new user form session. If $user is unspecified, the current
+user (from Apache cookies) is used.
+
+$session is the current EPrints::Session object.
+
+$redirect is the URL to go to after the form is complete.
+
+If $staff is true then fields marked "staffonly" are included in
+the form.
+
+$user is the EPrints::User record to edit.
 
 =cut
 ######################################################################
@@ -95,22 +98,12 @@ sub new
 	return( $self );
 }
 
-
-######################################################################
-#
-# process()
-#
-#  Render and respond to the form
-#
-######################################################################
-
-
 ######################################################################
 =pod
 
-=item $foo = $thing->process
+=item $userform->process
 
-undocumented
+Handle results from the form and render the form.
 
 =cut
 ######################################################################
@@ -215,22 +208,13 @@ sub process
 	}
 }
 
-
-######################################################################
-#
-# render_form()
-#
-#  Render the current user as an HTML form for editing. If
-# $self->{staff} is 1, the staff-only fields will be available for
-#  editing, otherwise they won't.
-#
-######################################################################
-
 ######################################################################
 # 
-# $foo = $thing->_render_user_form
+# $form = $userform->_render_user_form
 #
-# undocumented
+#  Render the current user as an HTML DOM form for editing. If
+#  $self->{staff} is 1, the staff-only fields will be available for
+#  editing, otherwise they won't.
 #
 ######################################################################
 
@@ -260,20 +244,11 @@ sub _render_user_form
 }
 
 ######################################################################
-#
-# $success = update_from_form()
+# 
+# $success = $userform->_update_from_form()
 #
 #  Updates the user object from POSTed form data. Note that this
 #  methods does NOT update the database - for that use commit().
-#
-######################################################################
-
-
-######################################################################
-# 
-# $foo = $thing->_update_from_form
-#
-# undocumented
 #
 ######################################################################
 
@@ -319,21 +294,21 @@ sub _update_from_form
 
 
 ######################################################################
-=pod
-
-=item $foo = $thing->DESTROY
-
-undocumented
-
-=cut
+#=pod
+#
+#=item $foo = $thing->DESTROY
+#
+#undocumented
+#
+#=cut
 ######################################################################
 
-sub DESTROY
-{
-	my( $self ) = @_;
-
-	EPrints::Utils::destroy( $self );
-}
+#sub DESTROY
+#{
+#	my( $self ) = @_;
+#
+#	EPrints::Utils::destroy( $self );
+#}
 
 1;
 

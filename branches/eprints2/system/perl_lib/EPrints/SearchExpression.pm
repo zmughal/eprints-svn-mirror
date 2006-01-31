@@ -21,7 +21,14 @@ B<EPrints::SearchExpression> - Represents a single search
 =head1 DESCRIPTION
 
 The SearchExpression object represents the conditions of a single 
-search. 
+search.
+
+It used to also store the results of the search, but now it returns
+an EPrints::List object. 
+
+A search expression can also render itself as a web-form, populate
+itself with values from that web-form and render the results as a
+web page.
 
 =over 4
 
@@ -40,6 +47,7 @@ package EPrints::SearchExpression;
 
 use EPrints::SearchField;
 use EPrints::SearchCondition;
+use EPrints::List;
 use EPrints::Session;
 use EPrints::EPrint;
 use EPrints::Database;
@@ -53,9 +61,143 @@ $EPrints::SearchExpression::CustomOrder = "_CUSTOM_";
 ######################################################################
 =pod
 
-=item $thing = EPrints::SearchExpression->new( %data )
+=item $searchexp = EPrints::SearchExpression->new( %params )
 
-undocumented
+Create a new search expression.
+
+The parameters are split into two parts. The general parameters and those
+which influence how the HTML form is rendered, and the results displayed.
+
+GENERAL PARAMETERS
+
+=over 4
+
+=item session (required)
+
+The current EPrints::Session 
+
+=item dataset OR dataset_id (required)
+
+Either the EPrints::DataSet to search, or the ID of it.
+
+=item allow_blank (default 0)
+
+Unless this is set, a search with no conditions will return zero records 
+rather than all records.
+
+=item satisfy_all (default 1)
+
+If this is true than all search-fields much be satisfied, if false then 
+results matching any search-field will be returned.
+
+=item search_fields
+
+A reference to an array of search field configuration structures. Each 
+takes the form { id=>"...", default=>"..", meta_fields=>"..." } where
+the meaning is the same as for search configuration in ArchiveConfig.
+
+Search fields can also be added to the search expression after it has
+been constructed.
+
+=item order
+
+The order the results should be returned. This is a key to the list
+of orders available to this dataset, defined in ArchiveConfig.pm
+
+=item custom_order
+
+"order" limits you to the orders specified in ArchiveConfig, and is
+usually used by the web page based searching. custom_order allows
+you to specify any order you like. The format is 
+foo/-bar. This means that the results will be sorted
+by foo and then any with equal foo values will be reverse sorted
+by bar. More than 2 fields can be specified.
+
+=item keep_cache
+
+If true then the search results produced will be stored in the database
+even after the current script ends. This is useful for speeding up 
+page 2 onwards of a search.
+
+keep_cache may get set to true anyway for various reasons, but setting
+the parameter makes certain of it.
+
+=item cache_id
+
+The ID of a cached search. The cache contains both the results of the
+search, and the parameters used for the search.
+
+If the cache still exists, it will set the default values of the 
+search fields, and when the search is performed it will skip the 
+search and build a search results object directly from the cache.
+
+=item defaults
+
+A reference to a hash defining default values for search fields. The
+keys should be the "id" properties of search fields.
+
+=item fieldnames (default []) 
+
+Deprecated.
+
+=back
+
+WEB PAGE RELATED PARAMETERS
+
+=over 4
+
+=item prefix (default "")
+
+When generating the web form and reading back from the web form, the
+prefix is inserted before the form names of all fields. This is useful
+if you need to put two search expressions in a single form for some
+reason.
+
+=item preamble_phrase
+
+The phrase ID of the XHTML phrase to put at the top of the search form.
+
+=item title_phrase
+
+The phrase ID of the XHTML phrase which is to be used as the title for
+the search page.
+
+=item staff (default 0)
+
+If true then this is a "staff" search, which prevents searching unless
+the user is staff, and the results link to the staff URL of an item
+rather than the public URL.
+
+=item default_order
+
+The ID of a sort order (from ArchiveConfig) which will be the default
+option when the search form is rendered.
+
+=item controls ( default {top=>0, bottom=>1} )
+
+A hash containing two values: top and bottom. If top is true then
+the search control buttons appear at the top of the search. If bottom
+is true they appear at the bottom. Both may be true.
+
+=item citation
+
+A citation format to use to render results, instead of the default for 
+each item type.
+
+=item page_size (default: results_page_size opt. in ArchiveConfig.pm)
+
+How many records to return per page.
+
+=item filters
+
+A reference to an array of filter definitions.
+
+Filter definitions take the form of:
+{ value=>"..", match=>"..", merge=>"..", id=>".." } and work much
+like SearchFields except that they do not appear in the web form
+so force certain search parameters on the user.
+
+=back
 
 =cut
 ######################################################################
@@ -146,8 +288,6 @@ END
 	$self->{filterfields} = {};
 	# Map for MetaField names -> corresponding SearchField objects
 	$self->{searchfieldmap} = {};
-
-	$self->{allfields} = [];#kill this snipe.
 
 	# Little hack to solve the problem of not knowing what
 	# the fields in the subscription spec are until we load
@@ -280,7 +420,9 @@ END
 
 =item $ok = $thing->from_cache( $id )
 
-undocumented
+Populate this search expression with values from the given cache.
+
+Return false if the cache does not exist.
 
 =cut
 ######################################################################
@@ -353,7 +495,10 @@ sub add_field
 
 =item $searchfield = $searchexp->get_searchfield( $sf_id )
 
-undocumented
+Return a EPrints::SearchField belonging to this SearchExpression with
+the given id. 
+
+Return undef if not searchfield of that ID belongs to this search. 
 
 =cut
 ######################################################################
@@ -371,6 +516,8 @@ sub get_searchfield
 =item $searchexp->clear
 
 Clear the search values of all search fields in the expression.
+
+Resets satisfy_all to true.
 
 =cut
 ######################################################################
@@ -440,7 +587,13 @@ sub render_search_fields
 
 =item $xhtml = $searchexp->render_search_form( $help, $show_anyall )
 
-undocumented
+Return XHTML DOM describing this search expression as a HTML form.
+
+If $help is true then show the field help in addition to the field 
+names.
+
+If $show_anyall is false then the any-of-these-fields / 
+all-of-these-fields selector is not shown.
 
 =cut
 ######################################################################
@@ -510,7 +663,8 @@ sub render_controls
 
 =item $xhtml = $searchexp->render_order_menu
 
-undocumented
+Render the XHTML DOM describing the options of how to order this 
+search.
 
 =cut
 ######################################################################
@@ -1569,7 +1723,7 @@ sub get_set_searchfields
 #   {cache_id}  - the ID of the table the results are cached & 
 #			ordered in.
 #
-#   {results}  - the SearchResults object which describes the results.
+#   {results}  - the EPrints::List object which describes the results.
 #	
 
 
@@ -1599,7 +1753,7 @@ sub get_cache_id
 
 =item $results = $searchexp->perform_search
 
-Execute this search and return a EPrints::SearchResults object
+Execute this search and return a EPrints::List object
 representing the results.
 
 =cut
@@ -1618,7 +1772,7 @@ sub perform_search
 	# cjg hmmm check cache still exists?
 	if( defined $self->{cache_id} )
 	{
-		$self->{results} = EPrints::SearchResults->new( 
+		$self->{results} = EPrints::List->new( 
 			session => $self->{session},
 			dataset => $self->{dataset},
 			cache_id => $self->{cache_id}, 
@@ -1650,7 +1804,7 @@ sub perform_search
 	my $unsorted_matches = $self->get_conditions->process( 
 						$self->{session} );
 
-	$self->{results} = EPrints::SearchResults->new( 
+	$self->{results} = EPrints::List->new( 
 		session => $self->{session},
 		dataset => $self->{dataset},
 		order => $order,
@@ -1670,6 +1824,7 @@ sub perform_search
 
  ######################################################################
  # Legacy functions which daisy chain to the results object
+ # All deprecated.
  ######################################################################
 
 
@@ -1728,553 +1883,6 @@ sub map
 
 
 
-
-
-
-
-
-
-
-
-package EPrints::SearchResults;
-
-#   {ids} - a reference to an array of id's.
-#         undefined if search has not been performed
-#	  can be ["ALL"] to indicate all items in
-#	  dataset.
-#
-
-
-
-######################################################################
-=pod
-
-=item $results = EPrints::SearchResults->new( 
-			session => $session,
-			dataset => $dataset,
-			[desc => $desc],
-			[desc_order => $desc_order],
-			ids => $ids,
-			[encoded => $encoded],
-			[keep_cache => $keep_cache],
-			[order => $order] );
-
-=item $results = EPrints::SearchResults->new( 
-			session => $session,
-			dataset => $dataset,
-			[desc => $desc],
-			[desc_order => $desc_order],
-			cache_id => $cache_id );
-
-Creates a new search results object in memory only. Results will be
-cached if anything requiring order is required, or an explicit 
-cache() method is called.
-
-encoded is the serialised version of the searchexpression which
-created this results set.
-
-If keep_cache is set then the cache will not be disposed of at the
-end of the current $session. If cache_id is set then keep_cache is
-automatically true.
-
-=cut
-######################################################################
-
-sub new
-{
-	my( $class, %opts ) = @_;
-
-	my $self = {};
-	$self->{session} = $opts{session};
-	$self->{dataset} = $opts{dataset};
-	$self->{ids} = $opts{ids};
-	$self->{order} = $opts{order};
-	$self->{encoded} = $opts{encoded};
-	$self->{cache_id} = $opts{cache_id};
-	$self->{keep_cache} = $opts{keep_cache};
-	$self->{desc} = $opts{desc};
-	$self->{desc_order} = $opts{desc_order};
-
-	if( !defined $self->{cache_id} && !defined $self->{ids} ) 
-	{
-		EPrints::Config::abort( "cache_id or ids must be defined in a EPrints::SearchResults->new()" );
-	}
-	if( !defined $self->{session} )
-	{
-		EPrints::Config::abort( "session must be defined in a EPrints::SearchResults->new()" );
-	}
-	if( !defined $self->{dataset} )
-	{
-		EPrints::Config::abort( "dataset must be defined in a EPrints::SearchResults->new()" );
-	}
-	bless $self, $class;
-
-	if( $self->{cache_id} )
-	{
-		$self->{keep_cache} = 1;
-	}
-
-	if( $self->{keep_cache} )
-	{
-		$self->cache;
-	}
-
-	return $self;
-}
-
-
-######################################################################
-=pod
-
-=item $newresults = $results->reorder( $new_order );
-
-Create a new results set from this one, but sorted in a new way.
-
-=cut
-######################################################################
-
-sub reorder
-{
-	my( $self, $new_order ) = @_;
-
-	# must be cached to be reordered
-	$self->cache;
-
-	my $db = $self->{session}->get_db;
-
-	my $srctable = $db->cache_table( $self->{cache_id} );
-
-	my $new_cache_id  = $db->cache( 
-		$self->{encoded}."(reordered:$new_order)", # nb. not very neat. 
-		$self->{dataset},
-		$srctable,
-		$new_order );
-
-	my $new_list = EPrints::SearchResults->new( 
-		session=>$self->{session},
-		dataset=>$self->{dataset},
-		desc=>$self->{desc}, # don't pass desc_order!
-		order=>$new_order,
-		keep_cache=>$self->{keep_cache},
-		cache_id => $new_cache_id );
-		
-	return $new_list;
-}
-		
-
-######################################################################
-=pod
-
-=item $results->cache
-
-Cause the results of this search to be cached.
-
-=cut
-######################################################################
-
-sub cache
-{
-	my( $self ) = @_;
-
-	return if( defined $self->{cache_id} );
-
-	if( $self->_matches_none && !$self->{keep_cache} )
-	{
-		# not worth caching zero in a temp table!
-		return;
-	}
-
-	my $srctable;
-	if( $self->_matches_all )
-	{
-		$srctable = $self->{dataset}->get_sql_table_name();
-	}
-	else
-	{
-		$srctable = $self->{session}->get_db()->make_buffer(
-			$self->{dataset}->get_key_field()->get_name(),
-			$self->{ids} );
-	}
-
-	$self->{cache_id} = $self->{session}->get_db()->cache( 
-		$self->{encoded}, 
-		$self->{dataset},
-		$srctable,
-		$self->{order} );
-
-	unless( $self->_matches_all )
-	{
-		$self->{session}->get_db()->dispose_buffer( $srctable );
-	}
-		
-}
-
-######################################################################
-=pod
-
-=item $cache_id = $results->get_cache_id
-
-Return the ID of the cache table for these results, or undef.
-
-=cut
-######################################################################
-
-sub get_cache_id
-{
-	my( $self ) = @_;
-	
-	return $self->{cache_id};
-}
-
-
-
-######################################################################
-=pod
-
-=item $results->dispose
-
-Clean up the cache table if appropriate.
-
-=cut
-######################################################################
-
-sub dispose
-{
-	my( $self ) = @_;
-
-	if( defined $self->{cache_id} && !$self->{keep_cache} )
-	{
-		$self->{session}->get_db->drop_cache( $self->{cache_id} );
-		delete $self->{cache_id};
-	}
-}
-
-
-######################################################################
-=pod
-
-=item $n = $results->count 
-
-Return the number of values in this results set.
-
-=cut
-######################################################################
-
-sub count 
-{
-	my( $self ) = @_;
-
-	if( defined $self->{ids} )
-	{
-		if( $self->_matches_all )
-		{
-			return $self->{dataset}->count( $self->{session} );
-		}
-		return( scalar @{$self->{ids}} );
-	}
-
-	if( defined $self->{cache_id} )
-	{
-		#cjg Should really have a way to get at the
-		# cache. Maybe we should have a table object.
-		return $self->{session}->get_db()->count_table( 
-			"cache".$self->{cache_id} );
-	}
-
-	EPrints::Config::abort( "Called \$results->count() where there was no cache or ids." );
-}
-
-
-######################################################################
-=pod
-
-=item @dataobjs = $results->get_records( [$offset], [$count] )
-
-Return the objects described by these results. $count is the maximum
-to return. $offset is what index through the results to start from.
-
-=cut
-######################################################################
-
-sub get_records
-{
-	my( $self , $offset , $count ) = @_;
-	
-	return $self->_get_records( $offset , $count, 0 );
-}
-
-
-######################################################################
-=pod
-
-=item $ids = $results->get_ids( [$offset], [$count] )
-
-Return a reference to an array containing the ids of the specified
-range of results. This is more efficient if you just need the ids.
-
-=cut
-######################################################################
-
-sub get_ids
-{
-	my( $self , $offset , $count ) = @_;
-	
-	return $self->_get_records( $offset , $count, 1 );
-}
-
-
-######################################################################
-# 
-# $bool = $results->_matches_none
-#
-######################################################################
-
-sub _matches_none
-{
-	my( $self ) = @_;
-
-	if( !defined $self->{ids} )
-	{
-		EPrints::Config::abort( "Error: Calling _matches_none when {ids} not set\n" );
-	}
-
-	return( scalar @{$self->{ids}} == 0 );
-}
-
-######################################################################
-# 
-# $bool = $results->_matches_all
-#
-######################################################################
-
-sub _matches_all
-{
-	my( $self ) = @_;
-
-	if( !defined $self->{ids} )
-	{
-		EPrints::Config::abort( "Error: Calling _matches_all when {ids} not set\n" );
-	}
-
-	return( 0 ) if( !defined $self->{ids}->[0] );
-
-	return( $self->{ids}->[0] eq "ALL" );
-}
-
-######################################################################
-# 
-# $ids/@dataobjs = $results->_get_records ( $offset, $count, $justids )
-#
-# Method which handles getting results or ids.
-#
-######################################################################
-
-sub _get_records 
-{
-	my ( $self , $offset , $count, $justids ) = @_;
-
-	if( defined $self->{ids} )
-	{
-		if( $self->_matches_none )
-		{
-			if( $justids )
-			{
-				return [];
-			}
-			else
-			{
-				return ();
-			}
-		}
-
-		# quick solutions if we don't need to order anything...
-		if( !defined $offset && !defined $count && !defined $self->{order} )
-		{
-			if( $justids )
-			{
-				if( $self->_matches_all )
-				{
-					return $self->{dataset}->get_item_ids( $self->{session} );
-				}
-				else
-				{
-					return $self->{ids};
-				}
-			}
-	
-			if( $self->_matches_all )
-			{
-				return $self->{session}->get_db->get_all(
-					$self->{dataset} );
-			}
-		}
-
-		# If the above tests failed then	
-		# we are returning all matches, but there's no
-		# easy shortcut.
-	}
-
-	if( !defined $self->{cache_id} )
-	{
-		$self->cache;
-	}
-
-	my $r = $self->{session}->get_db()->from_cache( 
-			$self->{dataset}, 
-			$self->{cache_id},
-			$offset,
-			$count,	
-			$justids );
-
-	return $r if( $justids );
-		
-	return @{$r};
-}
-
-
-######################################################################
-=pod
-
-=item $results->map( $function, $info )
-
-Map the given function pointer to all the results in the set, in
-order. This loads the results in batches of 100 to reduce memory 
-requirements.
-
-$info is a datastructure which will be passed to the function each 
-time and is useful for holding or collecting state.
-
-Example:
-
- my $info = { matches => 0 };
- $results->map( \&deal, $info );
- print "Matches: ".$info->{matches}."\n";
-
-
- sub deal
- {
- 	my( $session, $dataset, $eprint, $info ) = @_;
- 
- 	if( $eprint->get_value( "a" ) eq $eprint->get_value( "b" ) ) {
- 		$info->{matches} += 1;
- 	}
- }	
-
-=cut
-######################################################################
-
-sub map
-{
-	my( $self, $function, $info ) = @_;	
-
-	my $count = $self->count();
-
-	my $CHUNKSIZE = 100;
-
-	for( my $offset = 0; $offset < $count; $offset+=$CHUNKSIZE )
-	{
-		my @records = $self->get_records( $offset, $CHUNKSIZE );
-		foreach my $item ( @records )
-		{
-			&{$function}( 
-				$self->{session}, 
-				$self->{dataset}, 
-				$item, 
-				$info );
-		}
-	}
-}
-
-######################################################################
-=pod
-
-=item $plugin_output = $results->export( $plugin_id, %params )
-
-Apply an output plugin to this list of items. If the param "fh"
-is set it will send the results to a filehandle rather than return
-them as a string. 
-
-=cut
-######################################################################
-
-sub export
-{
-	my( $self, $out_plugin_id, %params ) = @_;
-
-	my $plugin_id = "output/".$out_plugin_id;
-	my $plugin = $self->{session}->plugin( $plugin_id );
-
-	unless( defined $plugin )
-	{
-		EPrints::Config::abort( "Could not find plugin $plugin_id" );
-	}
-
-	my $req_plugin_type = "list/".$self->{dataset}->confid;
-
-	unless( $plugin->can_accept( $req_plugin_type ) )
-	{
-		EPrints::Config::abort( 
-"Plugin $plugin_id can't process $req_plugin_type data." );
-	}
-	
-	
-	return $plugin->output_list( list=>$self, %params );
-}
-
-######################################################################
-=pod
-
-=item $dataset = $results->get_dataset
-
-Return the EPrints::DataSet which this results set relates to.
-
-=cut
-######################################################################
-
-sub get_dataset
-{
-	my( $self ) = @_;
-
-	return $self->{dataset};
-}
-
-######################################################################
-=pod
-
-=item $xhtml = $results->render_description
-
-Return a DOM XHTML description of this list, if available, or an
-empty fragment.
-
-=cut
-######################################################################
-
-sub render_description
-{
-	my( $self ) = @_;
-
-	my $frag = $self->{session}->make_doc_fragment;
-
-	if( defined $self->{desc} )
-	{
-		$frag->appendChild( $self->{session}->clone_for_me( $self->{desc}, 1 ) );
-		$frag->appendChild( $self->{session}->make_text( " " ) );
-	}
-	if( defined $self->{desc_order} )
-	{
-		$frag->appendChild( $self->{session}->clone_for_me( $self->{desc_order}, 1 ) );
-	}
-
-	return $frag;
-}
-
-sub DESTROY
-{
-	my( $self ) = @_;
-
-	if( defined $self->{desc} ) { EPrints::XML::dispose( $self->{desc} ); }
-	if( defined $self->{desc_order} ) { EPrints::XML::dispose( $self->{desc_order} ); }
-}
 
 1;
 

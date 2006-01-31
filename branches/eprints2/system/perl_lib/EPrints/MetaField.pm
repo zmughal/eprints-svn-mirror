@@ -629,11 +629,16 @@ sub render_value
 
 
 ######################################################################
-# 
-# $xhtml = $field->render_value_no_multiple( $session, $value, $alllangs, $nolink )
-#
-# undocumented
-#
+=pod
+
+=item $xhtml = $field->render_value_no_multiple( $session, $value, $alllangs, $nolink )
+
+Render the XHTML for a non-multiple value. Can be either a from
+a non-multiple field, or a single value from a multiple field.
+
+Usually just used internally.
+
+=cut
 ######################################################################
 
 sub render_value_no_multiple
@@ -707,11 +712,17 @@ sub render_value_no_multiple
 }
 
 ######################################################################
-# 
-# $xhtml = $field->render_value_no_id( $session, $value, $alllangs, $nolink )
-#
-# undocumented
-#
+=pod
+
+=item $xhtml = $field->render_value_no_id( $session, $value, $alllangs, $nolink )
+
+Render the XHTML for a non-multiple value which has no id/main part. 
+Can be either a from a non-multiple field, non-id field or a part of
+a field which is non-multiple and is the main part.
+
+Usually just used internally.
+
+=cut
 ######################################################################
 
 sub render_value_no_id
@@ -757,11 +768,18 @@ sub render_value_no_id
 }
 
 ######################################################################
-# 
-# $xhtml = $field->render_value_no_multilang( $session, $value, $nolink )
-#
-# undocumented
-#
+=pod
+
+=item $xhtml = $field->render_value_no_multilang( $session, $value, $nolink )
+
+Render a basic value, with no multilang, id, or multiple parts.
+
+This uses either the field specific render_single_value or, if one
+is configured, the render_single_value specified in the config.
+
+Usually just used internally.
+
+=cut
 ######################################################################
 
 sub render_value_no_multilang

@@ -16,11 +16,14 @@
 
 =head1 NAME
 
-B<EPrints::Subscription> - undocumented
+B<EPrints::Subscription> - Single saved search.
 
 =head1 DESCRIPTION
 
-undocumented
+A subscription is a sub class of EPrints::DataObj.
+
+Each on belongs to one and only one user, although one user may own
+multiple subscriptions.
 
 =over 4
 
@@ -40,12 +43,6 @@ use EPrints::DataObj;
 
 use EPrints::Database;
 use EPrints::Utils;
-#cjg use EPrints::MetaField;
-#cjg use EPrints::SearchExpression;
-#cjg use EPrints::Session;
-#cjg use EPrints::User;
-
-### SUBS MUST BE FLAGGED AS BULK cjg
 
 use strict;
 
@@ -53,9 +50,10 @@ use strict;
 ######################################################################
 =pod
 
-=item $thing = EPrints::Subscription->get_system_field_info
+=item $subscription = EPrints::Subscription->get_system_field_info
 
-undocumented
+Return an array describing the system metadata of the Subscription
+dataset.
 
 =cut
 ######################################################################
@@ -90,9 +88,10 @@ sub get_system_field_info
 ######################################################################
 =pod
 
-=item EPrints::Subscription->new( $session, $id )
+=item $subscription = EPrints::Subscription->new( $session, $id )
 
-undocumented
+Return new subscription object, created by loading the subscription
+with id $id from the database.
 
 =cut
 ######################################################################
@@ -109,9 +108,10 @@ sub new
 ######################################################################
 =pod
 
-=item $thing = EPrints::Subscription->new_from_data( $session, $data )
+=item $subscription = EPrints::Subscription->new_from_data( $session, $data )
 
-undocumented
+Construct a new EPrints::Subscription object based on the $data hash 
+reference of metadata.
 
 =cut
 ######################################################################
@@ -134,9 +134,10 @@ sub new_from_data
 ######################################################################
 =pod
 
-=item $thing = EPrints::Subscription->create( $session, $userid )
+=item $subscription = EPrints::Subscription->create( $session, $userid )
 
-undocumented
+Create a new Subsciption entry in the database, belonging to user
+with id $userid.
 
 =cut
 ######################################################################
@@ -176,7 +177,7 @@ sub create
 ######################################################################
 =pod
 
-=item $foo = $thing->remove
+=item $success = $subscription->remove
 
 Remove the subscription.
 
@@ -201,9 +202,12 @@ sub remove
 ######################################################################
 =pod
 
-=item $foo = $thing->commit
+=item $success = $subscription->commit( [$force] )
 
-undocumented
+Write this object to the database.
+
+If $force isn't true then it only actually modifies the database
+if one or more fields have been changed.
 
 =cut
 ######################################################################
@@ -238,9 +242,9 @@ sub commit
 ######################################################################
 =pod
 
-=item $foo = $thing->get_user
+=item $user = $subscription->get_user
 
-undocumented
+Return the EPrints::User which owns this subscription.
 
 =cut
 ######################################################################
@@ -258,9 +262,10 @@ sub get_user
 ######################################################################
 =pod
 
-=item $searchexp = $thing->make_searchexp
+=item $searchexp = $subscription->make_searchexp
 
-undocumented
+Return a EPrints::SearchExpression describing how to find the eprints
+which are in the scope of this subscription.
 
 =cut
 ######################################################################
@@ -281,9 +286,11 @@ sub make_searchexp
 ######################################################################
 =pod
 
-=item $thing->send_out_subscription
+=item $subscription->send_out_subscription
 
-undocumented
+Send out an email for this subcription. If there are no matching new
+items then an email is only sent if the subscription has mailempty
+set to true.
 
 =cut
 ######################################################################
@@ -291,7 +298,6 @@ undocumented
 sub send_out_subscription
 {
 	my( $self ) = @_;
-
 
 	my $freq = $self->get_value( "frequency" );
 
@@ -424,7 +430,11 @@ sub send_out_subscription
 
 =item EPrints::Subscription::process_set( $session, $frequency );
 
-undocumented
+Static method. Calls send_out_subscriptions on every subscription 
+with a frequency matching $frequency.
+
+Also saves a file logging that the subscription for this frequency
+was sent out at the current time.
 
 =cut
 ######################################################################
@@ -486,7 +496,8 @@ END
 
 =item $timestamp = EPrints::Subscription::get_last_timestamp( $session, $frequency );
 
-Return the timestamp of the last time this frequency of subscription was sent.
+Static method. Return the timestamp of the last time this frequency 
+of subscription was sent.
 
 =cut
 ######################################################################

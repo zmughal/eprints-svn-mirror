@@ -17,42 +17,106 @@
 
 =head1 NAME
 
-B<EPrints::User> - undocumented
+B<EPrints::User> - Class representing a single user.
 
 =head1 DESCRIPTION
 
-undocumented
+This class represents a single eprint user record and the metadata 
+associated with it. 
+
+EPrints::User is a subclass of EPrints::DataObj with the following
+metadata fields (plus those defined in ArchiveMetadataFieldsConfig:
+
+=head1 SYSTEM METADATA
+
+=over 4
+
+=item userid (int)
+
+The unique ID number of this user record. Unique within the current archive.
+
+=item rev_number (int)
+
+The revision number of this record. Each time it is changed the revision
+number is increased. This is not currently used for anything but it may
+be used for logging later.
+
+=item username (text)
+
+The username of this user. Used for logging into the system. Unique within
+this archive.
+
+=item password (secret)
+
+The password of this user encoded with crypt. This may be ignored if the
+archive is using an alternate authentication system, eg. LDAP.
+
+=item usertype (datatype)
+
+The type of this user. The options are configured in metadata-phrases.xml.
+
+=item newemail (email)
+
+Used to store a new but as yet unconfirmed email address.
+
+=item newpassword (secret)
+
+Used to store a new but as yet unconfirmed password.
+
+=item pin (text)
+
+A code required to confirm a new username or password. This code is emailed
+to the user to confirm they are who they say they are.
+
+=item pinsettime (int)
+
+When the pin code was set, so we can make it time out.
+
+=item joined (time)
+
+The date and time that the user account was created. Before EPrints 2.4 this
+was a date field so users created before the upgrade will appear to have been 
+created at midnight.
+
+=item email (email)
+
+The email address of this user. Unique within the archive. 
+
+=item lang (datatype) 
+
+The ID of the prefered language of this user. Only really used in multilingual
+archives.
+
+=item editperms (search, multiple)
+
+This field is used to filter what eprints a staff member can approve and 
+modify. If it's unset then they can modify any (given the correct privs. but
+if it is set then an eprint must match at least one of the searches to be
+within their scope.
+
+=item frequency (set)
+
+Only relevant to staff accounts. Is the frequency they want to be mailed 
+about eprints matching their scope that are in editorial review. never, 
+daily, weekly or monthly.
+
+=item mailempty (boolean)
+
+Only relevant to staff accounts. If set to true then emails are sent
+even if there are no items matching the scope.
+
+=back
+
+=head1 METHODS
 
 =over 4
 
 =cut
 
-######################################################################
-#
-# INSTANCE VARIABLES:
-#
-#  $self->{foo}
-#     undefined
-#
-######################################################################
-
-#####################################################################j
-#
-# EPrints User class module
-#
-#  This module represents a user in the system, and provides utility
-#  methods for manipulating users' records.
-#
-######################################################################
-#
-#  __LICENSE__
-#
-######################################################################
-
-##cjg _ verify password is NOT non-ascii!
-
 package EPrints::User;
+
 @ISA = ( 'EPrints::DataObj' );
+
 use EPrints::DataObj;
 
 use EPrints::Database;
@@ -66,9 +130,10 @@ use strict;
 ######################################################################
 =pod
 
-=item $thing = EPrints::User->get_system_field_info
+=item $field_info = EPrints::User->get_system_field_info
 
-undocumented
+Return an array describing the system metadata of the this 
+dataset.
 
 =cut
 ######################################################################
@@ -124,24 +189,14 @@ sub get_system_field_info
 };
 
 
-######################################################################
-#
-# new( $session, $userid, $dbrow )
-#
-#  Construct a user object corresponding to the given userid.
-#  If $dbrow is undefined, user info is read in from the database.
-#  Pre-read data can be passed in (exactly as retrieved from the
-#  database) into $dbrow.
-#
-######################################################################
-
 
 ######################################################################
 =pod
 
-=item $thing = EPrints::User->new( $session, $userid )
+=item $user = EPrints::User->new( $session, $userid )
 
-undocumented
+Load the user with the ID of $userid from the database and return
+it as an EPrints::User object.
 
 =cut
 ######################################################################
@@ -159,9 +214,12 @@ sub new
 ######################################################################
 =pod
 
-=item $thing = EPrints::User->new_from_data( $session, $data )
+=item $user = EPrints::User->new_from_data( $session, $data )
 
-undocumented
+Construct a new EPrints::User object based on the $data hash 
+reference of metadata.
+
+Used to create an object from the data retrieved from the database.
 
 =cut
 ######################################################################
@@ -180,31 +238,19 @@ sub new_from_data
 }
 
 
-
-
-######################################################################
-#
-# $user = create_user( $session, $username_candidate, $email, $access_level )
-#
-#  Creates a new user with given access priviledges and a randomly
-#  generated password.
-#
-######################################################################
-
-
 ######################################################################
 =pod
 
-=item EPrints::User::create_user( $session, $access_level )
+=item $user = EPrints::User::create( $session, $user_type )
 
-undocumented
+Create a new user in the database with the specified user type.
 
 =cut
 ######################################################################
 
-sub create_user
+sub create
 {
-	my( $session, $access_level ) = @_;
+	my( $session, $user_type ) = @_;
 	
 	my $user_ds = $session->get_archive()->get_dataset( "user" );
 	my $userid = _create_userid( $session );
@@ -214,7 +260,7 @@ sub create_user
 
 	my $data = { 
 		"userid"=>$userid,
-		"usertype"=>$access_level,
+		"usertype"=>$user_type,
 		"joined"=>$date_joined,
 		"frequency"=>'never',
 		"mailempty"=>"FALSE"
@@ -239,21 +285,12 @@ sub create_user
 
 
 ######################################################################
-#
-# $user = user_with_email( $session, $email )
-#
-#  Find the user with address $email. If no user exists, undef is
-#  returned. [STATIC]
-#
-######################################################################
-
-
-######################################################################
 =pod
 
-=item EPrints::User::user_with_email( $session, $email )
+=item $user = EPrints::User::user_with_email( $session, $email )
 
-undocumented
+Return the EPrints::user with the specified $email, or undef if they
+are not found.
 
 =cut
 ######################################################################
@@ -283,9 +320,10 @@ sub user_with_email
 ######################################################################
 =pod
 
-=item EPrints::User::user_with_username( $session, $username )
+=item $user = EPrints::User::user_with_username( $session, $username )
 
-undocumented
+Return the EPrints::user with the specified $username, or undef if 
+they are not found.
 
 =cut
 ######################################################################
@@ -315,23 +353,17 @@ sub user_with_username
 
 
 ######################################################################
-#
-# $problems = validate()
-#  array_ref
-#
-#  Validate the user - find out if all the required fields are filled
-#  out, and that what's been filled in is OK. Returns an array of
-#  problem descriptions.
-#
-######################################################################
-
-
-######################################################################
 =pod
 
-=item $foo = $thing->validate
+=item $problems = $thing->validate
 
-undocumented
+Validate the user - find out if all the required fields are filled
+out, and that what's been filled in is OK. Returns a reference to an
+array of problem descriptions.
+
+If there are no probelms then the array is empty.
+
+The problems are XHTML DOM objects describing the problem.
 
 =cut
 ######################################################################
@@ -379,20 +411,14 @@ sub validate
 
 
 ######################################################################
-#
-# $success = commit()
-#
-#  Update the database with any changes that have been made.
-#
-######################################################################
-
-
-######################################################################
 =pod
 
-=item $foo = $thing->commit
+=item $user->commit( [$force] )
 
-undocumented
+Write this object to the database.
+
+If $force isn't true then it only actually modifies the database
+if one or more fields have been changed.
 
 =cut
 ######################################################################
@@ -425,21 +451,12 @@ sub commit
 
 
 ######################################################################
-#
-# $success = remove()
-#
-#  Removes the user from the archive, together with their EPrints
-#  and subscriptions.
-#
-######################################################################
-
-
-######################################################################
 =pod
 
-=item $foo = $thing->remove
+=item $success = $user->remove
 
-undocumented
+Remove this user from the database. Also, remove their subscriptions,
+but do not remove their eprints.
 
 =cut
 ######################################################################
@@ -469,9 +486,9 @@ sub remove
 ######################################################################
 =pod
 
-=item $foo = $thing->has_priv( $resource )
+=item $boolean = $user->has_priv( $privtype )
 
-undocumented
+Return true if the user is allowed to perform tasks of type $privtype.
 
 =cut
 ######################################################################
@@ -495,11 +512,13 @@ sub has_priv
 ######################################################################
 =pod
 
-=item $foo = $thing->get_eprints( $ds )
+=item @eprints = $user->get_eprints( $dataset )
 
-undocumented
+Return EPrints in the given EPrints::DataSet which have this user
+as their creator.
 
-You probably want to use get_owned_eprints instead.
+This can return a very large list as it returns an array rather than
+a results object.
 
 =cut
 ######################################################################
@@ -517,9 +536,6 @@ sub get_eprints
 		$ds->get_field( "userid" ),
 		$self->get_value( "userid" ) );
 
-#cjg set order (it's in the site config)
-# or order by deposit date?
-
 	my $searchid = $searchexp->perform_search;
 
 	my @records = $searchexp->get_records;
@@ -527,16 +543,15 @@ sub get_eprints
 	return @records;
 }
 
-# return eprints currently in the submission buffer for which this user is a 
-# valid editor.
-#cjg not done yet.
-
 ######################################################################
 =pod
 
-=item $foo = $thing->get_editable_eprints
+=item @eprints = $user->get_editable_eprints
 
-undocumented
+Return eprints currently in the editorial review buffer. If this user
+has editperms set then only return those records which match.
+
+Returns an array of eprints so can be inefficient.
 
 =cut
 ######################################################################
@@ -577,20 +592,14 @@ sub get_editable_eprints
 	return @records;
 }
 
-# This is subtley different from just getting all the
-# eprints this user deposited. They may 'own' - be allowed
-# to edit, request removal etc. of others, for example ones
-# on which they are an author. Although this is a problem for
-# the site admin, not the core code.
-
-# cjg not done- where is it needed?
-
 ######################################################################
 =pod
 
-=item $foo = $thing->get_owned_eprints( $dataset );
+=item @eprints = $user->get_owned_eprints( $dataset );
 
-undocumented
+Return a list of the eprints which this user owns. This is by default
+the same as $user->get_eprints( $dataset) but may be over-ridden by
+get_users_owned_eprints.
 
 =cut
 ######################################################################
@@ -609,18 +618,14 @@ sub get_owned_eprints
 	return &$fn( $self->{session}, $self, $ds );
 }
 
-# Is the given eprint in the set of eprints which would be returned by 
-# get_owned_eprints?
-# cjg not done
-#cjg means can this user request removal, and submit later versions of this item?
-# cjg could be ICK and just use get_owned_eprints...
-
 ######################################################################
 =pod
 
-=item $foo = $thing->is_owner( $eprint )
+=item $boolean = $user->is_owner( $eprint )
 
-undocumented
+True if this user "owns" the given $eprint. By default this is true
+if the eprint was created by this user, but this rule can be 
+overridden by the config option "does_user_own_eprint".
 
 =cut
 ######################################################################
@@ -649,9 +654,21 @@ sub is_owner
 ######################################################################
 =pod
 
-=item $foo = $thing->mail( $subjectid, $message, $replyto, $email )
+=item $ok = $user->mail( $subjectid, $message, [$replyto], [$email] )
 
-undocumented
+Send an email to this user. 
+
+$subjectid is the ID of a phrase to use as the subject of this email.
+
+$message is an XML DOM object describing the message in simple XHTML.
+
+$replyto is the reply to address for this email, if different to the
+archive default.
+
+$email is the email address to send this email to if different from
+this users configured email address.
+
+Return true if the email was sent OK.
 
 =cut
 ######################################################################
@@ -695,9 +712,9 @@ sub mail
 
 ######################################################################
 # 
-# EPrints::User::_create_userid( $session )
+# $userid = EPrints::User::_create_userid( $session )
 #
-# undocumented
+# Get the next unused userid value.
 #
 ######################################################################
 
@@ -714,9 +731,11 @@ sub _create_userid
 ######################################################################
 =pod
 
-=item $foo = $thing->render
+=item ( $page, $title ) = $user->render
 
-undocumented
+Render this user into HTML using the "user_render" method in
+ArchiveRenderConfig.pm. Returns both the rendered information and
+the title as XHTML DOM.
 
 =cut
 ######################################################################
@@ -740,9 +759,11 @@ sub render
 ######################################################################
 =pod
 
-=item $foo = $thing->render_full
+=item ( $page, $title ) = $user->render_full
 
-undocumented
+The same as $user->render, but renders all fields, not just those 
+intended for public viewing. This is the admin view of the user 
+record created by "user_render_full".
 
 =cut
 ######################################################################
@@ -765,9 +786,12 @@ sub render_full
 ######################################################################
 =pod
 
-=item $foo = $thing->get_url( $staff )
+=item $url = $user->get_url( [$staff] )
 
-undocumented
+Return the URL which will display information about this user.
+
+If $staff is true then return the URL for an administrator to view
+and modify this record.
 
 =cut
 ######################################################################
@@ -789,9 +813,10 @@ sub get_url
 ######################################################################
 =pod
 
-=item $foo = $thing->get_type
+=item $type = $user->get_type
 
-undocumented
+Return the type of this user. Equivalent of 
+$user->get_value( "usertype" );
 
 =cut
 ######################################################################
@@ -842,9 +867,12 @@ sub get_subscriptions
 ######################################################################
 =pod
 
-=item $thing->send_out_editor_alert
+=item $user->send_out_editor_alert
 
-undocumented
+Called on users who are editors, when it's time to send their update
+on what items are in the editorial review buffer.
+
+Sends the email if needed.
 
 =cut
 ######################################################################
@@ -919,7 +947,10 @@ sub send_out_editor_alert
 
 =item EPrints::User::process_editor_alerts( $session, $frequency );
 
-undocumented
+Static method.
+
+Called to send out all editor alerts of a given frequency (daily,
+weekly, monthly) for the current archive.
 
 =cut
 ######################################################################
@@ -1000,7 +1031,7 @@ sub user_roles
 ######################################################################
 =pod
 
-=item $user->can_edit( $eprint )
+=item $boolean = $user->can_edit( $eprint )
 
 Returns true if $user can edit $eprint (according to editperms).
 
@@ -1033,6 +1064,31 @@ sub can_edit
 	}
 
 	return 0;
+}
+
+
+
+
+
+
+
+
+
+######################################################################
+=pod
+
+=item $user = EPrints::User::create_user( $session, $user_type )
+
+DEPRECATED. Alias for create.
+
+=cut
+######################################################################
+
+sub create_user
+{
+	my( $session, $user_type ) = @_;
+
+	return create( $session, $user_type );
 }
 
 1;

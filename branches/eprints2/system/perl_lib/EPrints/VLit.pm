@@ -24,8 +24,8 @@ B<EPrints::VLit> - VLit Transclusion Module
 This module is consulted when any document file is served. It allows
 subsets of the whole to be served.
 
-This is an experimental feature. It may be turned off in the configuration
-if you object to it for some reason.
+This is an experimental feature. It may be turned off in the 
+configuration if you object to it for some reason.
 
 =over 4
 
@@ -46,13 +46,9 @@ my $TMPDIR = "/tmp/partial";
 
 
 ######################################################################
-=pod
-
-=item EPrints::VLit::handler( $r )
-
-undocumented
-
-=cut
+#
+# EPrints::VLit::handler( $r )
+#
 ######################################################################
 
 sub handler
@@ -125,13 +121,9 @@ sub handler
 
 
 ######################################################################
-=pod
-
-=item EPrints::VLit::send_http_error( $code, $message )
-
-undocumented
-
-=cut
+#
+# EPrints::VLit::send_http_error( $code, $message )
+#
 ######################################################################
 
 sub send_http_error
@@ -155,13 +147,9 @@ END
 
 
 ######################################################################
-=pod
-
-=item EPrints::VLit::send_http_header( $type )
-
-undocumented
-
-=cut
+#
+# EPrints::VLit::send_http_header( $type )
+#
 ######################################################################
 
 sub send_http_header
@@ -177,17 +165,12 @@ sub send_http_header
 	$r->send_http_header;
 }
 
-####################
 
 
 ######################################################################
-=pod
-
-=item EPrints::VLit::ls_charrange( $filename, $param, $locspec, $r, $baseurl, $args )
-
-undocumented
-
-=cut
+#
+# EPrints::VLit::ls_charrange( $filename, $param, $locspec, $r, $baseurl, $args )
+#
 ######################################################################
 
 sub ls_charrange
@@ -427,13 +410,9 @@ END
 
 
 ######################################################################
-=pod
-
-=item EPrints::VLit::ls_area( $file, $param, $resspec, $r, $baseurl, $args )
-
-undocumented
-
-=cut
+#
+# EPrints::VLit::ls_area( $file, $param, $resspec, $r, $baseurl, $args )
+#
 ######################################################################
 
 sub ls_area
@@ -589,13 +568,9 @@ END
 
 
 ######################################################################
-=pod
-
-=item EPrints::VLit::cache_file( $resspec, $param )
-
-undocumented
-
-=cut
+#
+# EPrints::VLit::cache_file( $resspec, $param )
+#
 ######################################################################
 
 sub cache_file

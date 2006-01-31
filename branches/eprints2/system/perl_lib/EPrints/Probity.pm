@@ -17,36 +17,20 @@
 
 =head1 NAME
 
-B<EPrints::Probity> - undocumented
+B<EPrints::Probity> - EPrints Probity Module
 
 =head1 DESCRIPTION
 
-undocumented
+Every time the files in an EPrint are modified, an checksum of the
+all the EPrints files is written to a file. This is used in checking
+the file hasn't been altered by some other means, and also can be
+used to prove that the file existed on a given date.
+
+See bin/export_hashes for more information.
 
 =over 4
 
 =cut
-
-######################################################################
-#
-# INSTANCE VARIABLES:
-#
-#  $self->{foo}
-#     undefined
-#
-######################################################################
-
-######################################################################
-#
-#  EPrints Probity module
-#
-#   Provides functions for logging checksums of documents
-#
-######################################################################
-#
-#  __LICENSE__
-#
-######################################################################
 
 package EPrints::Probity;
 use strict;

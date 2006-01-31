@@ -17,11 +17,11 @@
 
 =head1 NAME
 
-B<EPrints::Plugin> - undocumented
+B<EPrints::Plugin> - Base class of all EPrints Plugins
 
 =head1 DESCRIPTION
 
-undocumented
+This class provides the basic methods used by all EPrints Plugins.
 
 =over 4
 
@@ -36,7 +36,7 @@ use strict;
 
 =item $plugin = EPrints::Plugin->new( %params );
 
-undocumented
+Create a new instance of a plugin with the given parameters.
 
 =cut
 ######################################################################

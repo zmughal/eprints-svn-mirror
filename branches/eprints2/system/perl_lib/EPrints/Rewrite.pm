@@ -31,6 +31,8 @@ to
 
 and so forth.
 
+This should only ever be called from within the mod_perl system.
+
 =over 4
 
 =cut

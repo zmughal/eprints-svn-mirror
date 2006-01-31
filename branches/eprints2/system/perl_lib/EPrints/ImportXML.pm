@@ -26,6 +26,8 @@ ImportXML parses an XML file in the eprints data format and turns
 each record into an eprint object which is then passed to a function
 for further action.
 
+This currently handles version 1 of the EPrints XML schema.
+
 =over 4
 
 =cut
@@ -108,8 +110,6 @@ sub import_file
 # 
 # EPrints::ImportXML::_handle_start( $parser, $tag, %params )
 #
-# undocumented
-#
 ######################################################################
 
 sub _handle_start
@@ -188,8 +188,6 @@ sub _handle_start
 ######################################################################
 # 
 # EPrints::ImportXML::_handle_end( $parser, $tag )
-#
-# undocumented
 #
 ######################################################################
 
@@ -282,8 +280,6 @@ sub _handle_end
 # 
 # EPrints::ImportXML::_handle_char( $parser, $text )
 #
-# undocumented
-#
 ######################################################################
 
 sub _handle_char
@@ -316,7 +312,9 @@ sub _handle_char
 =pod
 =back
 
-=head1 XML File Format
+=head1 XML File Format (version one)
+
+Note that EPrints 2.4 uses a new XML schema.
 
 The top level element is "eprintsdata" which contains zero or more "record"
 elements.

@@ -291,7 +291,8 @@ sub get_query
 
 =item $session->terminate
 
-Perform any cleaning up necessary.
+Perform any cleaning up necessary, for example SQL cache tables which
+are no longer needed.
 
 =cut
 ######################################################################
@@ -608,9 +609,15 @@ sub best_language
 ######################################################################
 =pod
 
-=item $foo = $session->get_order_names( $dataset )
+=item $names = $session->get_order_names( $dataset )
 
-undocumented
+Return a reference to a hash.
+
+The keys of this hash are the id's of the orderings of the dataset
+available to the public. eg. "byyear", "title" etc.
+
+The values are UTF8 strings containing the human-readable version,
+eg. "By Year".
 
 =cut
 ######################################################################
@@ -633,9 +640,11 @@ sub get_order_names
 ######################################################################
 =pod
 
-=item $foo = $session->get_order_name( $dataset, $orderid )
+=item $name = $session->get_order_name( $dataset, $orderid )
 
-undocumented
+Return a UTF8 encoded string describing the human readable name of
+the ordering with ID $orderid in $dataset. For example, by default,
+"byyearoldest" will return "By Year (Oldest First)"
 
 =cut
 ######################################################################
@@ -652,9 +661,10 @@ sub get_order_name
 ######################################################################
 =pod
 
-=item $foo = $session->get_view_name( $dataset, $viewid )
+=item $viewname = $session->get_view_name( $dataset, $viewid )
 
-undocumented
+Return a UTF8 encoded string containing the human readable name
+of the /view/ section with the ID $viewid.
 
 =cut
 ######################################################################
@@ -688,9 +698,9 @@ sub get_view_name
 ######################################################################
 =pod
 
-=item $foo = $session->get_db
+=item $db = $session->get_db
 
-undocumented
+Return the current EPrints::Database connection.
 
 =cut
 ######################################################################
@@ -723,7 +733,7 @@ sub get_archive
 ######################################################################
 =pod
 
-=item $foo = $session->get_uri
+=item $uri = $session->get_uri
 
 Returns the URL of the current script. Or "undef".
 
@@ -916,9 +926,13 @@ sub make_text
 ######################################################################
 =pod
 
-=item $foo = $session->make_doc_fragment
+=item $fragment = $session->make_doc_fragment
 
-undocumented
+Return a new XML document fragment. This is an item which can have
+XML elements added to it, but does not actually get rendered itself.
+
+If appended to an element then it disappears and its children join
+the element at that point.
 
 =cut
 ######################################################################
@@ -957,9 +971,10 @@ These methods help build XHTML.
 ######################################################################
 =pod
 
-=item $foo = $session->render_ruler
+=item $ruler = $session->render_ruler
 
-undocumented
+Return the XHTML which this archive uses as a page divider. Configured
+in ruler.xml
 
 =cut
 ######################################################################
@@ -976,7 +991,7 @@ sub render_ruler
 ######################################################################
 =pod
 
-=item $foo = $session->render_nbsp
+=item $nbsp = $session->render_nbsp
 
 Return an XHTML &nbsp; character.
 
@@ -995,9 +1010,19 @@ sub render_nbsp
 ######################################################################
 =pod
 
-=item $foo = $session->render_data_element( $indent, $elementname, $value, %opts )
+=item $xhtml = $session->render_data_element( $indent, $elementname, $value, [%opts] )
 
-undocumented
+This is used to help render neat XML data. It returns a fragment 
+containing an element of name $elementname containing the value
+$value, the element is indented by $indent spaces.
+
+The %opts describe any extra attributes for the element
+
+eg.
+$session->render_data_element( 4, "foo", "bar", class=>"fred" )
+
+would return a XML DOM object describing:
+    <foo class="fred">bar</foo>
 
 =cut
 ######################################################################
@@ -1063,9 +1088,15 @@ sub render_language_name
 ######################################################################
 =pod
 
-=item $session->render_name( $name, [$familylast] )
+=item $xhtml_name = $session->render_name( $name, [$familylast] )
 
-undocumented
+$name is a ref. to a hash containing family, given etc.
+
+Returns an XML DOM fragment with the name rendered in the manner
+of the archive. Usually "John Smith".
+
+If $familylast is set then the family and given parts are reversed, eg.
+"Smith, John"
 
 =cut
 ######################################################################
@@ -1086,9 +1117,10 @@ sub render_name
 ######################################################################
 =pod
 
-=item $foo = $session->render_option_list( %params )
+=item $xhtml_select = $session->render_option_list( %params )
 
-undocumented
+This method renders an XHTML <select>. The options are complicated
+and may change, so it's better not to use it.
 
 =cut
 ######################################################################
@@ -1186,78 +1218,13 @@ sub render_option_list
 }
 
 
-sub old_render_option_list
-{
-	my( $self , %params ) = @_;
-
-	my %defaults = ();
-	if( ref( $params{default} ) eq "ARRAY" )
-	{
-		foreach( @{$params{default}} )
-		{
-			$defaults{$_} = 1;
-		}
-	}
-	else
-	{
-		$defaults{$params{default}} = 1;
-	}
-
-	my $element = $self->make_element( "select" , name => $params{name} );
-	if( defined $params{multiple} )
-	{
-		$element->setAttribute( "multiple" , $params{multiple} );
-	}
-	my $size = 0;
-	if( defined $params{pairs} )
-	{
-		my $pair;
-		foreach $pair ( @{$params{pairs}} )
-		{
-			$element->appendChild( 
-				$self->render_single_option(
-					$pair->[0],
-					$pair->[1],
-					$defaults{$pair->[0]} ) );
-			$size++;
-		}
-	}
-	else
-	{
-		foreach( @{$params{values}} )
-		{
-			$element->appendChild( 
-				$self->render_single_option(
-					$_,
-					$params{labels}->{$_},
-					$defaults{$_} ) );
-			$size++;
-			
-						
-		}
-	}
-
-	if( defined $params{height} )
-	{
-		if( $params{height} ne "ALL" )
-		{
-			if( $params{height} < $size )
-			{
-				$size = $params{height};
-			}
-		}
-		$element->setAttribute( "size" , $size );
-	}
-	return $element;
-}
-
 
 ######################################################################
 =pod
 
-=item $foo = $session->render_single_option( $key, $desc, $selected )
+=item $option = $session->render_single_option( $key, $desc, $selected )
 
-undocumented
+Used by render_option_list.
 
 =cut
 ######################################################################
@@ -1280,9 +1247,12 @@ sub render_single_option
 ######################################################################
 =pod
 
-=item $foo = $session->render_hidden_field( $name, $value )
+=item $xhtml_hidden = $session->render_hidden_field( $name, $value )
 
-undocumented
+Return the XHTML DOM describing an <input> element of type "hidden"
+and name and value as specified. eg.
+
+<input type="hidden" accept-charset="utf-8" name="foo" value="bar" />
 
 =cut
 ######################################################################
@@ -1307,9 +1277,12 @@ sub render_hidden_field
 ######################################################################
 =pod
 
-=item $foo = $session->render_upload_field( $name )
+=item $xhtml_uploda = $session->render_upload_field( $name )
 
-undocumented
+Render into XHTML DOM a file upload form button with the given name. 
+
+eg.
+<input type="file" name="foo" />
 
 =cut
 ######################################################################
@@ -1484,9 +1457,35 @@ sub render_form
 ######################################################################
 =pod
 
-=item $foo = $session->render_subjects( $subject_list, $baseid, $currentid, $linkmode, $sizes )
+=item $ul = $session->render_subjects( $subject_list, [$baseid], [$currentid], [$linkmode], [$sizes] )
 
-undocumented
+Return as XHTML DOM a nested set of <ul> and <li> tags describing
+part of a subject tree.
+
+$subject_list is a array ref of subject ids to render.
+
+$baseid is top top level node to render the tree from. If only a single
+subject is in subject_list, all subjects up to $baseid will still be
+rendered. Default is the ROOT element.
+
+If $currentid is set then the subject with that ID is rendered in
+<strong>
+
+$linkmode can 0, 1, 2 or 3.
+
+0. Don't link the subjects.
+
+1. Links subjects to the URL which edits them in edit_subjects.
+
+2. Links subjects to "subjectid.html" (where subjectid is the id of 
+the subject)
+
+3. Links the subjects to "subjectid/".  $sizes must be set. Only 
+subjects with a size of more than one are linked.
+
+$sizes may be a ref. to hash mapping the subjectid's to the number
+of items in that subject which will be rendered in brackets next to
+each subject.
 
 =cut
 ######################################################################
@@ -1515,9 +1514,9 @@ sub render_subjects
 
 ######################################################################
 # 
-# $foo = $session->_render_subjects_aux( $subjects, $id, $currentid, $linkmode, $sizes )
+# $ul = $session->_render_subjects_aux( $subjects, $id, $currentid, $linkmode, $sizes )
 #
-# undocumented
+# Recursive subroutine needed by render_subjects.
 #
 ######################################################################
 
@@ -1804,9 +1803,9 @@ sub render_input_form
 
 ######################################################################
 # 
-# $foo = $session->_render_input_form_field( $field, $value, $show_names, $show_help, $comment, $dataset, $type, $staff, $hiddenfields )
+# $xhtml_field = $session->_render_input_form_field( $field, $value, $show_names, $show_help, $comment, $dataset, $type, $staff, $hiddenfields )
 #
-# undocumented
+# Render a single field in a form being rendered by render_input_form
 #
 ######################################################################
 
@@ -1904,9 +1903,18 @@ sub _render_input_form_field
 ######################################################################
 =pod
 
-=item $foo = $session->build_page( $title, $mainbit, [$pageid], [$links], [$template_id] )
+=item $session->build_page( $title, $mainbit, [$pageid], [$links], [$template_id] )
 
-undocumented
+Create an XHTML page for this session. 
+
+$title, $mainbit, $pageid and $links are XHTML DOM objects which will
+be inserted into the template in the positions of the relevant 
+<ep:pin> elements.
+
+If template_id is set then an alternate template file is used.
+
+This function only builds the page it does not output it any way, see
+the methods below for that.
 
 =cut
 ######################################################################
@@ -1993,6 +2001,9 @@ sub build_page
 	return;
 }
 
+# recursive method used to insert elements into the
+# <pin> parts of the template.
+
 sub _process_page
 {
 	my( $self, $node, $map, $used, $ph ) = @_;
@@ -2064,9 +2075,14 @@ sub _process_page
 ######################################################################
 =pod
 
-=item $foo = $session->send_page( %httpopts )
+=item $session->send_page( %httpopts )
 
-undocumented
+Send a web page out by HTTP. Only relevant if this is a CGI script.
+build_page must have been called first.
+
+See send_http_header for an explanation of %httpopts
+
+Dispose of the XML once it's sent out.
 
 =cut
 ######################################################################
@@ -2088,9 +2104,13 @@ END
 ######################################################################
 =pod
 
-=item $foo = $session->page_to_file( $filename )
+=item $session->page_to_file( $filename )
 
-undocumented
+Write out the current webpage to the given filename.
+
+build_page must have been called first.
+
+Dispose of the XML once it's sent out.
 
 =cut
 ######################################################################
@@ -2108,9 +2128,14 @@ sub page_to_file
 ######################################################################
 =pod
 
-=item $foo = $session->set_page( $newhtml )
+=item $session->set_page( $newhtml )
 
-undocumented
+Erase the current page for this session, if any, and replace it with
+the XML DOM structure described by $newhtml.
+
+This page is what is output by page_to_file or send_page.
+
+$newhtml is a normal DOM Element, not a document object.
 
 =cut
 ######################################################################
@@ -2130,9 +2155,17 @@ sub set_page
 ######################################################################
 =pod
 
-=item $foo = $session->clone_for_me( $node, $deep )
+=item $copy_of_node = $session->clone_for_me( $node, [$deep] )
 
-undocumented
+XML DOM items can only be added to the document which they belong to.
+
+A EPrints::Session has it's own XML DOM DOcument. 
+
+This method copies an XML node from _any_ document. The copy belongs
+to this sessions document.
+
+If $deep is set then the children, (and their children etc.), are 
+copied too.
 
 =cut
 ######################################################################
@@ -2178,9 +2211,18 @@ sub redirect
 ######################################################################
 =pod
 
-=item $foo = $session->send_http_header( %opts )
+=item $session->send_http_header( %opts )
 
-undocumented
+Send the HTTP header. Only makes sense if this is running as a CGI 
+script.
+
+Opts supported are:
+
+content_type. Default value is "text/html; charset=UTF-8". This sets
+the http content type header.
+
+lang. If this is set then a cookie setting the language preference
+is set in the http header.
 
 =cut
 ######################################################################
@@ -2249,9 +2291,18 @@ These handle input from the user, browser and apache.
 ######################################################################
 =pod
 
-=item $foo = $session->param( $name )
+=item $value or @values = $session->param( $name )
 
-undocumented
+Passes through to CGI.pm param method.
+
+$value = $session->param( $name ): returns the value of CGI parameter
+$name.
+
+$value = $session->param( $name ): returns the value of CGI parameter
+$name.
+
+@values = $session->param: returns an array of the names of all the
+CGI parameters in the current request.
 
 =cut
 ######################################################################
@@ -2326,16 +2377,21 @@ sub has_privilege
 ######################################################################
 =pod
 
-=item $foo = $session->auth_check( $resource )
+=item $boolean = $session->auth_check( [$priv] )
 
-undocumented
+Return true if this session has a correcly logged in user.
+
+If it doesn't then send an error page and return false.
+
+If $priv is set then only return true (and not print an error) if
+the current user has the privilage $priv.
 
 =cut
 ######################################################################
 
 sub auth_check
 {
-	my( $self , $resource ) = @_;
+	my( $self , $priv ) = @_;
 
 	my $user = $self->current_user;
 
@@ -2346,13 +2402,13 @@ sub auth_check
 	}
 
 	# Don't need to do any more if we aren't checking for a specific
-	# resource.
-	if( !defined $resource )
+	# priv.
+	if( !defined $priv )
 	{
 		return 1;
 	}
 
-	unless( $user->has_priv( $resource ) )
+	unless( $user->has_priv( $priv ) )
 	{
 		$self->render_error( $self->html_phrase( "lib/session:no_priv" ) );
 		return 0;
@@ -2365,9 +2421,11 @@ sub auth_check
 ######################################################################
 =pod
 
-=item $foo = $session->current_user
+=item $user = $session->current_user
 
-undocumented
+Return the current EPrints::User for this session.
+
+Return undef if there isn't one.
 
 =cut
 ######################################################################
@@ -2405,9 +2463,13 @@ sub current_user
 ######################################################################
 =pod
 
-=item $foo = $session->seen_form
+=item $boolean = $session->seen_form
 
-undocumented
+Return true if the current request contains the values from a
+form generated by EPrints.
+
+This is identified by a hidden field placed into forms named
+_seen with value "true".
 
 =cut
 ######################################################################
@@ -2428,9 +2490,13 @@ sub seen_form
 ######################################################################
 =pod
 
-=item $foo = $session->internal_button_pressed( $buttonid )
+=item $boolean = $session->internal_button_pressed( $buttonid )
 
-undocumented
+Return true if a button has been pressed in a form which is intended
+to reload the current page with some change.
+
+Examples include the "more spaces" button on multiple fields, the 
+"lookup" button on succeeds, etc.
 
 =cut
 ######################################################################
@@ -2471,9 +2537,16 @@ sub internal_button_pressed
 ######################################################################
 =pod
 
-=item $foo = $session->get_action_button
+=item $action_id = $session->get_action_button
 
-undocumented
+Return the ID of the eprint action button which has been pressed in
+a form, if there was one. The name of the button is "_action_" 
+followed by the id. 
+
+This also handles the .x and .y inserted in image submit.
+
+This is designed to get back the name of an action button created
+by render_action_buttons.
 
 =cut
 ######################################################################
@@ -2502,9 +2575,10 @@ sub get_action_button
 ######################################################################
 =pod
 
-=item $foo = $session->get_internal_button
+=item $button_id = $session->get_internal_button
 
-undocumented
+Return the id of the internal button which has been pushed, or 
+undef if one wasn't.
 
 =cut
 ######################################################################
@@ -2536,9 +2610,19 @@ sub get_internal_button
 ######################################################################
 =pod
 
-=item $foo = $session->client
+=item $client = $session->client
 
-undocumented
+Return a string representing the kind of browser that made the 
+current request.
+
+Options are GECKO, LYNX, MSIE4, MSIE5, MSIE6, ?.
+
+GECKO covers mozilla and firefox.
+
+? is what's returned if none of the others were matched.
+
+These divisions are intended for modifying the way pages are rendered
+not logging what browser was used. Hence merging mozilla and firefox.
 
 =cut
 ######################################################################
@@ -2570,9 +2654,9 @@ sub client
 ######################################################################
 =pod
 
-=item $foo = $session->get_http_status
+=item $status = $session->get_http_status
 
-undocumented
+Return the status of the current HTTP request.
 
 =cut
 ######################################################################
@@ -2702,9 +2786,15 @@ sub plugin_list
 ######################################################################
 =pod
 
-=item $foo = $session->get_citation_spec( $dataset, $ctype )
+=item $spec = $session->get_citation_spec( $dataset, [$ctype] )
 
-undocumented
+Return the XML spec for the given dataset. If a $ctype is specified
+then return the named citation style for that dataset. eg.
+a $ctype of "foo" on the eprint dataset gives a copy of the citation
+spec with ID "eprint_foo".
+
+This returns a copy of the XML citation spec., so that it may be 
+safely modified.
 
 =cut
 ######################################################################
@@ -2734,9 +2824,13 @@ sub get_citation_spec
 ######################################################################
 =pod
 
-=item EPrints::Session::microtime( microtime )
+=item $time = EPrints::Session::microtime();
 
-undocumented
+This function is currently buggy so just returns the time in seconds.
+
+Return the time of day in seconds, but to a precision of microseconds.
+
+Accuracy depends on the operating system etc.
 
 =cut
 ######################################################################
@@ -2752,7 +2846,7 @@ sub microtime
 
         $t = pack($TIMEVAL_T, ());
 
-      syscall( &SYS_gettimeofday, $t, 0) != -1
+	syscall( &SYS_gettimeofday, $t, 0) != -1
                 or die "gettimeofday: $!";
 
         @t = unpack($TIMEVAL_T, $t);
@@ -2762,19 +2856,23 @@ sub microtime
 }
 
 
-# mail_administrator( $subject, $message )
-#
-#  Sends a mail to the archive administrator with the given subject and
-#  message body.
-#
-
 
 ######################################################################
 =pod
 
 =item $foo = $session->mail_administrator( $subjectid, $messageid, %inserts )
 
-undocumented
+Sends a mail to the archive administrator with the given subject and
+message body.
+
+$subjectid is the name of a phrase in the phrase file to use
+for the subject.
+
+$messageid is the name of a phrase in the phrase file to use as the
+basis for the mail body.
+
+%inserts is a hash. The keys are the pins in the messageid phrase and
+the values the utf8 strings to replace the pins with.
 
 =cut
 ######################################################################
@@ -2782,7 +2880,6 @@ undocumented
 sub mail_administrator
 {
 	my( $self,   $subjectid, $messageid, %inserts ) = @_;
-	#   Session, string,     string,     string->DOM
 
 	# Mail the admin in the default language
 	my $langid = $self->{archive}->get_conf( "defaultlanguage" );
@@ -2811,9 +2908,9 @@ sub mail_administrator
 ######################################################################
 =pod
 
-=item $foo = $session->DESTROY
+=item $session->DESTROY
 
-undocumented
+Destructor. Don't call directly.
 
 =cut
 ######################################################################

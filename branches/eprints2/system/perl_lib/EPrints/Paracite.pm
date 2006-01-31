@@ -22,7 +22,7 @@ B<EPrints::Paracite> - Module for rendering reference blocks into links.
 =head1 DESCRIPTION
 
 If your archive allows users to specify references in a reference field,
-you can use this function
+you can use this function.
 
 =over 4
 

@@ -309,5 +309,14 @@ sub get_property_defaults
 	return %defaults;
 }
 
+sub ordervalue_basic
+{
+	my( $self , $value ) = @_;
+
+	return $value;
+}
+
+
+
 ######################################################################
 1;

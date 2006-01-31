@@ -17,11 +17,74 @@
 
 =head1 NAME
 
-B<EPrints::SearchField> - undocumented
+B<EPrints::SearchField> - One field in a search expression.
 
 =head1 DESCRIPTION
 
-undocumented
+This class represents a single field in a search expression, and by
+extension a search form.
+
+It should not be confused with MetaField.
+
+It can search over several metadata fields, and the value of the
+value of the search field is usually a string containing a list of
+whitespace seperated words, or other search criteria.
+
+A search field has four key parameters:
+
+1. The list of the metadata fields it searches.
+
+2. The value to search for.
+
+3. The "match" parameter which can be one of:
+
+=over 4
+
+=item match=IN
+
+Treat the value as a list of whitespace-seperated words. Search for
+each one in the full-text index.
+
+In the case of subjects, match these subject ids or the those of any
+of their decendants in the subject tree.
+
+=item match=EQ (equal)
+
+Treat the value as a single string. Match only fields which have this
+value.
+
+=item match=EX (exact)
+
+If the value is an empty string then search for fields which are
+empty, as oppose to skipping this search field.
+
+In the case of subjects, match the specified subjects, but not their
+decendants.
+
+=item match=NO
+
+This is only really used internally, it means the search field will
+just fail to match anything without doing any actual searching.
+
+=back
+
+4. the "merge" parameter which can be one of:
+
+=over 4
+
+=item merge=ANY 
+
+Match an item if any of the words in the value match.
+
+=item merge=ALL 
+
+Match an item only if all of the words in the value match.
+
+=back
+
+
+
+=head2 METHODS
 
 =over 4
 
@@ -31,24 +94,40 @@ undocumented
 #
 # INSTANCE VARIABLES:
 #
-#  $self->{"foo"}
-#     undefined
+#  $searchfield->{"session"}
+#     The current EPrints::Session
+#
+#  $searchfield->{"dataset"}
+#     The EPrints::DataSet which this search field will search
+#
+#  $searchfield->{"match"}
+#     see above.
+#
+#  $searchfield->{"merge"}
+#     see above.
+#
+#  $searchfield->{"value"}
+#     see above.
+#
+#  $searchfield->{"fieldlist"}
+#     The list of EPrints::MetaField to search.
+#
+#  $searchfield->{"field"}
+#     A single field which is used to render the search form for
+#     that kind of field. 
+#
+#  $searchfield->{"form_name_prefix"}
+#     The prefix to use in the HTML form.
+#
+#  $searchfield->{"search_mode"}
+#     If all the fields are similar then this is their search group
+#     rough groups are dates, strings, integers, names and sets. If
+#     fields from more than one group are being searched at once then
+#     a search syntax specific to that group can't be used and the
+#     search_mode is set to "simple".
 #
 ######################################################################
 
-#####################################################################
-#
-#  Search Field
-#
-#   Represents a single field in a search.
-#
-######################################################################
-#
-#  __LICENSE__
-#
-######################################################################
-
-#cjg =- None of the SQL values are ESCAPED - do it at one go later!
 
 package EPrints::SearchField;
 
@@ -65,14 +144,20 @@ use strict;
 # EX search on subject only searches for that subject, not things
 # below it.
 
-#cjg MAKE $field $fields and _require_ a [] 
-
 ######################################################################
 =pod
 
-=item $thing = EPrints::SearchField->new( $session, $dataset, $fields, $value, $match, $merge, $prefix )
+=item $thing = EPrints::SearchField->new( $session, $dataset, $fields, $value, [$match], [$merge], [$prefix] )
 
-undocumented
+Create a new search field object. 
+
+$prefix is used when generating HTML forms and reading values from forms. 
+
+$fields is a reference to an array of field names.
+
+$match default is "EQ"
+
+$merge default is "AND"
 
 Special case - if match is "EX" and field type is name then value must
 be a name hash.
@@ -92,7 +177,7 @@ sub new
 
 	$self->{"value"} = $value;
 	$self->{"match"} = ( defined $match ? $match : "EQ" );
-	$self->{"merge"} = ( defined $merge ? $merge : "PHR" );
+	$self->{"merge"} = ( defined $merge ? $merge : "AND" );
 
 	if( ref( $fields ) ne "ARRAY" )
 	{
@@ -151,9 +236,10 @@ sub new
 ######################################################################
 =pod
 
-=item $foo = $sf->clear
+=item $sf->clear
 
-undocumented
+Set this searchfield's "match" to "NO" so that it always returns
+nothing when searched.
 
 =cut
 ######################################################################
@@ -165,22 +251,18 @@ sub clear
 	$self->{"match"} = "NO";
 }
 
-######################################################################
-#
-# $problem = from_form()
-#
-#  Update the value of the field from the form. Returns any problem
-#  that might have happened, or undef if everything was OK.
-#
-######################################################################
 
 
 ######################################################################
 =pod
 
-=item $foo = $sf->from_form
+=item $problem = $sf->from_form
 
-undocumented
+Modify the value, merge and match parameters of this field based on
+results from an HTML form.
+
+Return undef if everything is OK, otherwise return a ref to an array
+containing the problems as XHTML DOM objects.
 
 =cut
 ######################################################################
@@ -197,7 +279,7 @@ sub from_form
 			$self->{"form_name_prefix"} );
 
 	$self->{"value"} = "" unless( defined $self->{"value"} );
-	$self->{"merge"} = "PHR" unless( defined $self->{"merge"} );
+	$self->{"merge"} = "AND" unless( defined $self->{"merge"} );
 	$self->{"match"} = "EQ" unless( defined $self->{"match"} );
 
 	# match = NO? if value==""
@@ -218,9 +300,10 @@ sub from_form
 ######################################################################
 =pod
 
-=item $foo = $sf->get_conditions 
+=item $search_condition = $sf->get_conditions 
 
-undocumented
+Convert this SearchField into an EPrints::SearchCondition object which
+can actually perform the search.
 
 =cut
 ######################################################################
@@ -271,6 +354,8 @@ sub get_conditions
 		@r );
 }
 
+# Internal function for get_conditions
+
 sub get_conditions_no_split
 {
 	my( $self,  $search_value ) = @_;
@@ -296,9 +381,9 @@ sub get_conditions_no_split
 ######################################################################
 =pod
 
-=item $foo = $sf->get_value
+=item $value = $sf->get_value
 
-undocumented
+Return the current value parameter of this search field.
 
 =cut
 ######################################################################
@@ -314,9 +399,9 @@ sub get_value
 ######################################################################
 =pod
 
-=item $foo = $sf->get_match
+=item $match = $sf->get_match
 
-undocumented
+Return the current match parameter of this search field.
 
 =cut
 ######################################################################
@@ -332,9 +417,9 @@ sub get_match
 ######################################################################
 =pod
 
-=item $foo = $sf->get_merge
+=item $merge = $sf->get_merge
 
-undocumented
+Return the current merge parameter of this search field.
 
 =cut
 ######################################################################
@@ -348,14 +433,15 @@ sub get_merge
 
 
 
-#returns the FIRST field which should indicate type and stuff.
-
 ######################################################################
 =pod
 
-=item $foo = $sf->get_field
+=item $field = $sf->get_field
 
-undocumented
+Return the first of the metafields which we are searching. This is
+used for establishing the type of the search field. If this metafield
+has special input rendering methods then they will be used for this
+search field.
 
 =cut
 ######################################################################
@@ -369,9 +455,10 @@ sub get_field
 ######################################################################
 =pod
 
-=item $foo = $sf->get_fields
+=item $fields = $sf->get_fields
 
-undocumented
+Return a reference to an array of EPrints::MetaField objects which 
+this search field is going to search.
 
 =cut
 ######################################################################
@@ -428,7 +515,8 @@ sub get_form_prefix
 =item $xhtml = $sf->render_description
 
 Returns an XHTML DOM object describing this field and its current
-settings.
+settings. Used at the top of the search results page to describe
+the search.
 
 =cut
 ######################################################################
@@ -452,7 +540,7 @@ sub render_description
 ######################################################################
 =pod
 
-=item $foo = $sf->render_name
+=item $xhtml_name = $sf->render_name
 
 Return XHTML object of this searchfields name.
 
@@ -493,9 +581,10 @@ sub render_name
 ######################################################################
 =pod
 
-=item $foo = $sf->render_help
+=item $xhtml_help = $sf->render_help
 
-undocumented
+Return an XHTML DOM object containing the "help" for this search
+field.
 
 =cut
 ######################################################################
@@ -518,9 +607,10 @@ sub render_help
 ######################################################################
 =pod
 
-=item $foo = $sf->is_type( @types )
+=item $boolean = $sf->is_type( @types )
 
-undocumented
+Return true if the first metafield in the fieldlist is of any of the
+types in @types.
 
 =cut
 ######################################################################
@@ -535,9 +625,11 @@ sub is_type
 ######################################################################
 =pod
 
-=item $foo = $sf->get_id
+=item $id = $sf->get_id
 
-undocumented
+Return the string ID of this searchfield. It is the "id" specified
+when the string was configured, or failing that the names of all the
+metafields it searches, joined with a slash "/".
 
 =cut
 ######################################################################
@@ -552,9 +644,13 @@ sub get_id
 ######################################################################
 =pod
 
-=item $foo = $sf->is_set
+=item $boolean = $sf->is_set
 
-undocumented
+Returns true if this search field has a value to search.
+
+If the "match" parameter is set to "EX" then it always returns true,
+even if the value is "" because "" is a valid search value in
+"EX" searches.
 
 =cut
 ######################################################################
@@ -570,9 +666,9 @@ sub is_set
 ######################################################################
 =pod
 
-=item $foo = $sf->serialise
+=item $string = $sf->serialise
 
-undocumented
+Serialise the parameters of this search field into a string.
 
 =cut
 ######################################################################
@@ -614,9 +710,12 @@ sub serialise
 ######################################################################
 =pod
 
-=item $thing = EPrints::SearchField::unserialise( $string )
+=item $params = EPrints::SearchField->unserialise( $string )
 
-undocumented
+Convert a serialised searchfield into a hash reference containing the 
+params: id, merge, match, value.
+
+Does not return a EPrints::SearchField object.
 
 =cut
 ######################################################################
@@ -637,16 +736,14 @@ sub unserialise
 	return $data;
 }
 
-# only really meaningful to move between eprint datasets
-# could be dangerous later with complex datasets.
-# currently only used by the OAI code.
-
 ######################################################################
 =pod
 
-=item $foo = $sf->set_dataset( $dataset )
+=item $sf->set_dataset( $datasetid )
 
-undocumented
+Change the dataset of this searchfield. This is probably a bad idea,
+except moving between two datasets with the same confid. eg. buffer
+and inbox.
 
 =cut
 ######################################################################

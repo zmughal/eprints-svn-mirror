@@ -17,57 +17,38 @@
 
 =head1 NAME
 
-B<EPrints::Subject> - undocumented
+B<EPrints::Subject> - Class and methods relating to the subejcts tree.
 
 =head1 DESCRIPTION
 
-undocumented
+This class represents a single node in the subejcts tree. It also
+contains a number of methods for handling the entire tree.
+
+EPrints::Subject is a subclass of EPrints::DataObj
 
 =over 4
 
 =cut
 
-######################################################################
-#
-# INSTANCE VARIABLES:
-#
-#  $self->{foo}
-#     undefined
-#
-######################################################################
-
-######################################################################
-#
-# Subject class.
-#
-#  Handles the subject hierarchy.
-#
-######################################################################
-#
-#  __LICENSE__
-#
-######################################################################
-
 package EPrints::Subject;
-@ISA = ( 'EPrints::DataObj' );
-use EPrints::DataObj;
 
+@ISA = ( 'EPrints::DataObj' );
+
+use EPrints::DataObj;
 use EPrints::Database;
 use EPrints::SearchExpression;
 
 use strict;
 
-
 # Root subject specifier
 $EPrints::Subject::root_subject = "ROOT";
-
 
 ######################################################################
 =pod
 
 =item $thing = EPrints::Subject->get_system_field_info
 
-undocumented
+Return an array describing the system metadata of the Subject dataset.
 
 =cut
 ######################################################################
@@ -96,28 +77,14 @@ sub get_system_field_info
 }
 
 
-######################################################################
-#
-# $subject = new( $session, $id, $row )
-#
-#  Create a new subject object. Can either pass in fields from the
-#  database (which must be the same fields in the same order as given
-#  in @EPrints::Subject::system_meta_fields, including subjectid),
-#  or just the $id, in which case the database will be searched.
-#
-#  If both $id and $row are undefined, then the subject becomes the
-#  implicit, invisible root subject, whose children are the top-level
-#  subjects.
-#
-######################################################################
-
 
 ######################################################################
 =pod
 
-=item $thing = EPrints::Subject->new( $session, $subjectid )
+=item $subject = EPrints::Subject->new( $session, $subjectid )
 
-undocumented
+Create a new subject object given the id of the subject. The values
+for the subject are loaded from the database.
 
 =cut
 ######################################################################
@@ -155,20 +122,22 @@ sub new
 ######################################################################
 =pod
 
-=item $thing = EPrints::Subject->new_from_data( $session, $known )
+=item $subject = EPrints::Subject->new_from_data( $session, $data )
 
-undocumented
+Construct a new subject object from a hash reference containing
+the relevant fields. Generally this method is only used to construct
+new Subjects coming out of the database.
 
 =cut
 ######################################################################
 
 sub new_from_data
 {
-	my( $class, $session, $known ) = @_;
+	my( $class, $session, $data ) = @_;
 
 	my $self = {};
 	
-	$self->{data} = $known;
+	$self->{data} = $data;
 	$self->{dataset} = $session->get_archive()->get_dataset( "subject" ); 
 	$self->{session} = $session;
 	bless $self, $class;
@@ -181,9 +150,13 @@ sub new_from_data
 ######################################################################
 =pod
 
-=item $foo = $thing->commit 
+=item $success = $subject->commit( [$force] )
 
-undocumented
+Commit this subject to the database, but only if any fields have 
+changed since we loaded it.
+
+If $force is set then always commit, even if there appear to be no
+changes.
 
 =cut
 ######################################################################
@@ -223,9 +196,9 @@ sub commit
 ######################################################################
 =pod
 
-=item $foo = $thing->remove
+=item $success = $subject->remove
 
-undocumented
+Remove this subject from the database.
 
 =cut
 ######################################################################
@@ -253,7 +226,9 @@ sub remove
 
 =item EPrints::Subject::remove_all( $session )
 
-undocumented
+Static function.
+
+Remove all subjects from the database. Use with care!
 
 =cut
 ######################################################################
@@ -274,24 +249,16 @@ sub remove_all
 
 	
 ######################################################################
-#
-# $subject = create( $session, $id, $name, $parent, $depositable )
-#
-#  Creates the given subject in the database. $id is the ID of the subject,
-#  $name is a suitably meaningful name in English, and $depositable is
-#  a boolean specifying whether or not users can deposit articles in this
-#  subject. $parent is the parent subject, which should be undef if the
-#  subject is a top level subject.
-#
-######################################################################
-
-
-######################################################################
 =pod
 
-=item EPrints::Subject::create( $session, $id, $name, $parents, $depositable )
+=item $subject = EPrints::Subject::create( $session, $id, $name, $parents, $depositable )
 
-undocumented
+Creates a new subject in the database. $id is the ID of the subject,
+$name is a multilang data structure with the name of the subject in
+one or more languages. eg. { en=>"Trousers", en-us=>"Pants}. $parents
+is a reference to an array containing the ID's of one or more other
+subjects (don't make loops!). If $depositable is true then eprints may
+belong to this subject.
 
 =cut
 ######################################################################
@@ -329,16 +296,14 @@ END
 
 	$newsub->commit(); # will update ancestors
 
-
-	
 	return $newsub;
 }
 
 ######################################################################
 # 
-# $foo = $thing->_get_ancestors
+# @subject_ids = $subject->_get_ancestors
 #
-# undocumented
+# Get the ancestors of a given subject.
 #
 ######################################################################
 
@@ -364,21 +329,14 @@ sub _get_ancestors
 	return keys %ancestors;
 }
 
-######################################################################
-#
-# $subject = create_child( $id, $name, $depositable )
-#
-#  Create a child subject.
-#
-######################################################################
-
 
 ######################################################################
 =pod
 
-=item $foo = $thing->create_child( $id, $name, $depositable )
+=item $child_subject = $subject->create_child( $id, $name, $depositable )
 
-undocumented
+Similar to EPrints::Subject::create, but this creates the new subject
+as a child of the current subject.
 
 =cut
 ######################################################################
@@ -395,14 +353,13 @@ sub create_child
 }
 
 
-
-
 ######################################################################
 =pod
 
-=item $foo = $thing->children #cjg should be get_children()
+=item @children = $subject->children
 
-undocumented
+Return a list of EPrints::Subject objects which are direct children
+of the current subject.
 
 =cut
 ######################################################################
@@ -433,9 +390,10 @@ sub children #cjg should be get_children()
 ######################################################################
 =pod
 
-=item $foo = $thing->get_parents
+=item @parents = $subject->get_parents
 
-undocumented
+Return a list of EPrints::Subject objects which are direct parents
+of the current subject.
 
 =cut
 ######################################################################
@@ -454,22 +412,15 @@ sub get_parents
 
 
 ######################################################################
-#
-# $boolean = can_post( $user )
-#
-#  Determines whether the given user can post in this subject.
-#  At the moment, no user-specific stuff - each subject is just
-#  a yes or no.
-#
-######################################################################
-
-
-######################################################################
 =pod
 
-=item $foo = $thing->can_post( [$user] )
+=item $boolean = $subject->can_post( [$user] )
 
-undocumented
+Determines whether the given user can post in this subject.
+
+Currently there is no way to configure subjects for certain users,
+so this just returns the true or false depending on the "depositable"
+flag.
 
 =cut
 ######################################################################
@@ -487,9 +438,15 @@ sub can_post
 ######################################################################
 =pod
 
-=item $foo = $thing->render_with_path( $session, $topsubjid )
+=item $xhtml = $subject->render_with_path( $session, $topsubjid )
 
-undocumented
+Return the name of this subject including it's path from $topsubjid.
+
+$topsubjid must be an ancestor of this subject.
+
+eg. 
+
+Library of Congress > B Somthing > BC Somthing more Detailed
 
 =cut
 ######################################################################
@@ -530,15 +487,18 @@ sub render_with_path
 	return $v;
 }
 
-# This function returns all the paths from this subject back up to the
-# specified top subject.
 
 ######################################################################
 =pod
 
-=item $foo = $thing->get_paths( $session, $topsubjid )
+=item @paths = $subject->get_paths( $session, $topsubjid )
 
-undocumented
+This function returns all the paths from this subject back up to the
+specified top subject.
+
+@paths is an array of array references. Each of the inner arrays
+is a list of subject id's describing a path down the tree from
+$topsubjid to $session.
 
 =cut
 ######################################################################
@@ -585,35 +545,71 @@ sub get_paths
 ######################################################################
 =pod
 
-=item $foo = $thing->get_subjects ( $postableonly, $showtoplevel, $nestids, $nocascadelabel )
+=item $subject_pairs = $subject->get_subjects ( [$postable_only], [$show_top_level], [$nes_tids], [$no_nest_label] )
 
-undocumented
+Return a reference to an array. Each item in the array is a two 
+element list. 
+
+The first element in the list is an indenifier string. 
+
+The second element is a utf-8 string describing the subject (in the 
+current language), including all the items above it in the tree, but
+only as high as this subject.
+
+The subjects which are returned are this item and all its children, 
+and childrens children etc. The order is it returns 
+this subject, then the first child of this subject, then children of 
+that (recursively), then the second child of this subject etc.
+
+If $postable_only is true then filter the results to only contain 
+subjects which have the "depositable" flag set to true.
+
+If $show_top_level is not true then the pair representing the current
+subject is not included at the start of the list.
+
+If $nest_ids is true then each then the ids retured are nested so
+that the ids of the children of this subject are prefixed with this 
+subjects id and a colon, and their children are prefixed by their 
+nested id and a colon. eg. L:LC:LC003 rather than just "LC003"
+
+if $no_nest_label is true then the subject label only contains the
+name of the subject, not the higher level ones.
+
+A default result from this method would look something like this:
+
+  [
+    [ "D", "History" ],
+    [ "D1", "History: History (General)" ],
+    [ "D111", "History: History (General): Medieval History" ]
+ ]
 
 =cut
 ######################################################################
 
 sub get_subjects 
 {
-	my( $self, $postableonly, $showtoplevel, $nestids, $nocascadelabel ) = @_; 
+	my( $self, $postableonly, $showtoplevel, $nestids, $nonestlabel ) = @_; 
 
 #cjg optimisation to not bother getting labels?
+	$postableonly = 0 unless defined $postableonly;
+	$showtoplevel = 1 unless defined $showtoplevel;
+	$nestids = 0 unless defined $nestids;
+	$nonestlabel = 0 unless defined $nonestlabel;
 	my( $subjectmap, $rmap ) = EPrints::Subject::get_all( $self->{session} );
-	return $self->_get_subjects2( $postableonly, !$showtoplevel, $nestids, $subjectmap, $rmap, "", !$nocascadelabel );
-	
+	return $self->_get_subjects2( $postableonly, !$showtoplevel, $nestids, $subjectmap, $rmap, "", !$nonestlabel );
 }
 
 ######################################################################
 # 
-# $foo = $thing->_get_subjects2( $postableonly, $hidenode, $nestids, $subjectmap, $rmap, $prefix )
+# $subjects = $subject->_get_subjects2( $postableonly, $hidenode, $nestids, $subjectmap, $rmap, $prefix )
 #
-# undocumented
+# Recursive function used by get_subjects.
 #
 ######################################################################
 
 sub _get_subjects2
 {
 	my( $self, $postableonly, $hidenode, $nestids, $subjectmap, $rmap, $prefix, $cascadelabel ) = @_; 
-	
 
 	my $postable = ($self->get_value( "depositable" ) eq "TRUE" ? 1 : 0 );
 	my $id = $self->get_value( "subjectid" );
@@ -650,21 +646,14 @@ sub _get_subjects2
 }
 
 ######################################################################
-#
-# $label = subject_label( $session, $subject_tag )
-#
-#  Return the full label of a subject, including parents. Returns
-#  undef if the subject tag is invalid. [STATIC]
-#
-######################################################################
-
-
-######################################################################
 =pod
 
-=item EPrints::Subject::subject_label( $session, $subject_tag )
+=item $label = EPrints::Subject::subject_label( $session, $subject_id )
 
-undocumented
+Return the full label of a subject, including parents. Returns
+undef if the subject id is invalid.
+
+The returned string is encoded in utf8.
 
 =cut
 ######################################################################
@@ -710,9 +699,19 @@ sub subject_label
 ######################################################################
 =pod
 
-=item EPrints::Subject::get_all( $session )
+=item ( $subject_map, $reverse_map ) = EPrints::Subject::get_all( $session )
 
-undocumented
+Get all the subjects for the current archvive of $session.
+
+$subject_map is a reference to a hash. The keys of the hash are
+the id's of the subjects. The values of the hash are the 
+EPrint::Subject object relating to that id.
+
+$reverse_map is a reference to a hash. Each key is the id of a
+subject. Each value is a reference to an array. The array contains
+a EPrints::Subject objects, one for each child of the subject 
+with the id. The array is sorted by the labels for the subjects,
+in the current language.
 
 =cut
 ######################################################################
@@ -755,7 +754,6 @@ $bv = "" unless defined $bv;
 $av cmp $bv;
 			} @{$rmap{$_}};
 	}
-
 	
 	return( \%subjectmap, \%rmap );
 }
@@ -766,13 +764,17 @@ $av cmp $bv;
 
 
 ######################################################################
-=pod
-
-=item $foo = $thing->posted_eprints( $dataset )
-
-undocumented
-
-=cut
+#
+# @eprints  = $subject->posted_eprints( $dataset )
+#
+# Deprecated. This method is no longer used by eprints, and may be 
+# removed in a later release.
+# 
+# Return all the eprints which are in this subject (or below it in
+# the tree, its children etc.) It searches all fields of type subject.
+# 
+# $dataset is the dataset to return eprints from.
+# 
 ######################################################################
 
 sub posted_eprints
@@ -808,26 +810,13 @@ sub posted_eprints
 	return @data;
 }
 
-
-######################################################################
-#
-# $num = count_eprints( $table )
-#
-#  Simpler version of above function. Counts the EPrints in this
-#  subject fields from $table. If $table is unspecified, the main
-#  archive table is assumed.
-#
-######################################################################
-
-#cjg Should be a recursive method that does all things for which self is
-# an ancestor
-
 ######################################################################
 =pod
 
-=item $foo = $thing->count_eprints( $dataset )
+=item $count = $subject->count_eprints( $dataset )
 
-undocumented
+Return the number of eprints in the dataset which are in this subject
+or one of its decendants. Searches all fields of type subject.
 
 =cut
 ######################################################################
@@ -895,7 +884,7 @@ undocumented
 
 sub render
 {
-	confess( "oooops" ); # use render citation
+	confess( "subjects can't be rendered. Use render_description instead." ); 
 }
 
 1;

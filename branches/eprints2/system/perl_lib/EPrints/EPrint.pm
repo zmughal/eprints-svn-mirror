@@ -81,7 +81,7 @@ been an int and may be changed in a later upgrade.
 #
 # INSTANCE VARIABLES:
 #
-#  From DataObj.
+#  From EPrints::DataObj
 #
 ######################################################################
 
@@ -94,8 +94,6 @@ use EPrints::Document;
 
 use File::Path;
 use strict;
-
-#cjg doc validation lets through docs with no type (??)
 
 ######################################################################
 =pod

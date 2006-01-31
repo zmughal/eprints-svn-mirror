@@ -17,36 +17,18 @@
 
 =head1 NAME
 
-B<EPrints::OpenArchives> - undocumented
+B<EPrints::OpenArchives> - Methods for open archives support in EPrints.
 
 =head1 DESCRIPTION
 
-undocumented
+This module contains methods used by the EPrints OAI interface. 
+See http://www.openarchives.org/ for more information.
+
+=head1 METHODS 
 
 =over 4
 
 =cut
-
-######################################################################
-#
-# INSTANCE VARIABLES:
-#
-#  $self->{foo}
-#     undefined
-#
-######################################################################
-
-######################################################################
-#
-#  EPrints OpenArchives Support Module
-#
-#   Methods for open archives support in EPrints.
-#
-######################################################################
-#
-#  __LICENSE__
-#
-######################################################################
 
 package EPrints::OpenArchives;
 
@@ -58,26 +40,14 @@ use EPrints::Session;
 use strict;
 
 
-
-######################################################################
-#
-# $stamp = $utc_timestamp()
-#
-#  Return a UTC timestamp of the form YYYY-MM-DDTHH:MM:SSZ
-#
-#  Used by OAI v2.0
-#
-#  e.g. 2000-05-01T15:32:23Z
-#
-######################################################################
-
-
 ######################################################################
 =pod
 
-=item EPrints::OpenArchives::utc_timestamp( $sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst )
+=item $timestamp = EPrints::OpenArchives::utc_timestamp();
 
-undocumented
+Return a UTC timestamp of the form YYYY-MM-DDTHH:MM:SSZ
+
+e.g. 2005-02-12T09:23:33Z
 
 =cut
 ######################################################################
@@ -95,24 +65,17 @@ sub utc_timestamp
 
 
 ######################################################################
-#
-# $stamp = $full_timestamp()
-#
-#  Return a full timestamp of the form YYYY-MM-DDTHH:MM:SS[GMT-delta]
-#
-#  Used by OAI v1
-#
-#  e.g. 2000-05-01T15:32:23+01:00
-#
-######################################################################
-
-
-######################################################################
 =pod
 
-=item EPrints::OpenArchives::full_timestamp( full_timestamp )
+=item EPrints::OpenArchives::full_timestamp()
 
-undocumented
+DEPRECATED, as we no longer support OAI v1.
+
+Return a full timestamp of the form YYYY-MM-DDTHH:MM:SS[GMT-delta]
+
+Used by OAI v1
+
+e.g. 2000-05-01T15:32:23+01:00
 
 =cut
 ######################################################################
@@ -184,9 +147,12 @@ sub full_timestamp
 ######################################################################
 =pod
 
-=item EPrints::OpenArchives::make_header( $session, $eprint, $oai2 )
+=item $xml = EPrints::OpenArchives::make_header( $session, $eprint, $oai2 )
 
-undocumented
+Return a DOM tree containing the generic <header> part of a OAI response
+describing an EPrint. 
+
+Return the OAI2 version if $oai2 is true.
 
 =cut
 ######################################################################
@@ -292,9 +258,14 @@ sub make_header
 ######################################################################
 =pod
 
-=item EPrints::OpenArchives::make_record( $session, $eprint, $fn, $oai2 )
+=item $xml = EPrints::OpenArchives::make_record( $session, $eprint, $fn, $oai2 )
 
-undocumented
+Return XML DOM describing the entire OAI <record> for a single eprint.
+
+If $oai2 is true return the XML suitable for OAI v2.0
+
+$fn is a pointer to a function which takes ( $eprint, $session ) and
+returns an XML DOM tree describing the metadata in the desired format.
 
 =cut
 ######################################################################
@@ -331,21 +302,16 @@ sub make_record
 	return $record;
 }
 
-######################################################################
-#
-# $oai_identifier = to_oai_identifier( $archive_id , $eprintid )
-#
-#  Give the full OAI identifier of an eprint, given the local eprint id.
-#
-######################################################################
-
 
 ######################################################################
 =pod
 
-=item EPrints::OpenArchives::to_oai_identifier( $archive_id, $eprintid )
+=item $oai_id EPrints::OpenArchives::to_oai_identifier( $archive_id, $eprintid )
 
-undocumented
+Give the full OAI identifier of an eprint, given the local eprint id.
+
+$archive_id is the ID used for OAI, which may be different from that
+used by EPrints.
 
 =cut
 ######################################################################
@@ -359,21 +325,16 @@ sub to_oai_identifier
 
 
 ######################################################################
-#
-# $eprint_od = from_oai_identifier( $session , $oai_identifier )
-#
-#  Return the local eprint id of an oai eprint identifier. undef is
-#  returned if the full id is garbled.
-#
-######################################################################
-
-
-######################################################################
 =pod
 
-=item EPrints::OpenArchives::from_oai_identifier( $session, $oai_identifier )
+=item $eprintid = EPrints::OpenArchives::from_oai_identifier( $session, $oai_identifier )
 
-undocumented
+Return the local eprint id of an oai eprint identifier.
+
+Return undef if this does not match a possible eprint.
+
+This does not check the eprint actually exists, just that the OAI
+identifier is suitable.
 
 =cut
 ######################################################################
@@ -395,18 +356,13 @@ sub from_oai_identifier
 
 
 
-
-
-
-##
-
-
 ######################################################################
 =pod
 
-=item EPrints::OpenArchives::encode_setspec( @bits )
+=item $encoded = EPrints::OpenArchives::encode_setspec( @bits )
 
-undocumented
+This encodes a list of values in such a way that it is a legal 
+OAI setspec, even if it contains non-ascii characters etc.
 
 =cut
 ######################################################################
@@ -422,9 +378,9 @@ sub encode_setspec
 ######################################################################
 =pod
 
-=item EPrints::OpenArchives::decode_setspec( $encoded )
+=item @decoded = EPrints::OpenArchives::decode_setspec( $encoded )
 
-undocumented
+This decodes a list of parameters encoded by encode_setspec
 
 =cut
 ######################################################################
@@ -441,9 +397,9 @@ sub decode_setspec
 ######################################################################
 =pod
 
-=item EPrints::OpenArchives::text2bytestring( $string )
+=item $encoded = EPrints::OpenArchives::text2bytestring( $string )
 
-undocumented
+Converts a string into hex. eg. "A" becomes "41".
 
 =cut
 ######################################################################
@@ -463,9 +419,9 @@ sub text2bytestring
 ######################################################################
 =pod
 
-=item EPrints::OpenArchives::bytestring2text( $encstring )
+=item $decoded = EPrints::OpenArchives::bytestring2text( $encstring )
 
-undocumented
+Does the reverse of text2bytestring.
 
 =cut
 ######################################################################

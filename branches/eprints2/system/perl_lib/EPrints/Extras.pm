@@ -12,6 +12,23 @@
 #
 ######################################################################
 
+=pod
+
+=head1 NAME
+
+B<EPrints::Extras> - Alternate versions of certain methods.
+
+=head1 DESCRIPTION
+
+This module contains methods provided as alternates to the
+default render or input methods.
+
+=head1 METHODS
+
+=over 4
+
+=cut 
+
 package EPrints::Extras;
 
 use warnings;
@@ -21,7 +38,7 @@ use strict;
 ######################################################################
 =pod
 
-=item subject_browser_input
+=item $xhtml = EPrints::Extras::subject_browser_input(...)
 
 This is an alternate input renderer for "subject" fields. It is 
 intended to be passed by reference to the render_input parameter
@@ -313,6 +330,14 @@ sub _subject_browser_input_aux
 
 
 
+
 ######################################################################
-1;
+=pod
+
+=back
+
+=cut
+######################################################################
+
+1; # For use/require success
 

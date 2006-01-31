@@ -3104,3 +3104,28 @@ PACKAGE: 2.2.99.2
 
   * Added bin/import_xml script to import eprints xml data into an arbitrary
      dataset
+
+2006-01-30 cjg
+
+  * Added PerlDoc documentation to all methods in the top level EPrints modules,
+     not including Plugin/ and MetaField/
+  * Split SearchExpression into SearchExpression and List. List represents the
+     results of a search.
+  * Changed the default search style to "AND" not "PHR"
+  * When a List gets the perl DESTROY method it cleans up any tables it no
+     longer needs.
+  * Renamed some varilables inside methods to improve clarity.
+  * Added stub methods to EPrints::DataObj to make the inherritance clearer.
+     resolves. #1904.
+  * Fixed bug in multilingual fields to_xml function (in MetaField/Basic)
+  * Added order_value_basic to MetaField/Time
+  * Removed unused methods
+    * $session->old_render_option_list
+    * EPrints::Utils::cmp_names
+    * EPrints::Utils::cmp_namelists
+    * EPrints::Utils::cmp_ints
+    * EPrints::Utils::cmp_strings
+    * EPrints::Utils::cmp_dates
+    * EPrints::Utils::is_in
+  * Fixed a bug which wasn't padding the time part of time fields with 0.
+ 

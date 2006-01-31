@@ -12,39 +12,20 @@
 #
 ######################################################################
 
-
 =pod
 
 =head1 NAME
 
-B<EPrints::UserPage> - undocumented
+B<EPrints::UserPage> - Render information about user records.
 
 =head1 DESCRIPTION
 
-undocumented
+This module contains methods for rendering the EPrints::User
+object into a webpage.
 
 =over 4
 
 =cut
-
-######################################################################
-#
-# INSTANCE VARIABLES:
-#
-#  $self->{foo}
-#     undefined
-#
-######################################################################
-
-######################################################################
-#
-#  View User Record
-#
-######################################################################
-#
-#  __LICENSE__
-#
-######################################################################
 
 package EPrints::UserPage;
 
@@ -58,9 +39,15 @@ use strict;
 ######################################################################
 =pod
 
-=item EPrints::UserPage::user_from_param( $session )
+=item $user = EPrints::UserPage::user_from_param( $session )
 
-undocumented
+Return the EPrints::User object that we want to render. If the
+CGI parameter "userid" is set then that is used to identify the user.
+If it is not set then the CGI parameter "username" is used to 
+identify them.
+
+If neither parameter is set or the user can't be found then a
+page with an error message is sent to the browser.
 
 =cut
 ######################################################################
@@ -109,7 +96,11 @@ sub user_from_param
 
 =item EPrints::UserPage::process( $session, $staff )
 
-undocumented
+Render a webpage with the information about a certain user. The
+user rendered is decided by the parameters, see user_with_param.
+
+If $staff is set then eprint_render_full is used rather than 
+eprint_render.
 
 =cut
 ######################################################################

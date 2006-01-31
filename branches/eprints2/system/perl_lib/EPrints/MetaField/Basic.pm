@@ -1121,9 +1121,9 @@ sub to_xml_noid
 				
 		$langvar->appendChild( $session->make_text( "\n    $ind" ) );
 
-		my $value = $session->make_element( "value" );
-		$value->appendChild( $session->make_text( $self->to_xml_basic( $session, $value->{$langid}, $depth+2 ) ) );
-		$langvar->appendChild( $value );
+		my $valuetag = $session->make_element( "value" );
+		$valuetag->appendChild( $self->to_xml_basic( $session, $value->{$langid}, $depth+2 ) );
+		$langvar->appendChild( $valuetag );
 
 		$langvar->appendChild( $session->make_text( "\n  $ind" ) );
 

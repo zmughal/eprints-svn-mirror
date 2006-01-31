@@ -17,11 +17,18 @@
 
 =head1 NAME
 
-B<EPrints::SubmissionForm> - undocumented
+B<EPrints::SubmissionForm> - Form for modifying EPrints.
 
 =head1 DESCRIPTION
 
-undocumented
+This class represents an object which renders the forms for modifying
+an EPrint object, and reads the values from the form back in to the
+eprint.
+
+It also handles validation and submitting the eprint to the editorial
+review buffer.
+
+This will ultimately be replaced with the new workflow system.
 
 =over 4
 
@@ -31,18 +38,42 @@ undocumented
 #
 # INSTANCE VARIABLES:
 #
-#  $self->{foo}
-#     undefined
+# $self->{session}
+#    the current EPrints::Session object.
 #
-######################################################################
-
-######################################################################
+# $self->{redirect}
+#    The URL to go to after the form is complete.
 #
-#  EPrints Submission uploading/editing forms
+# $self->{staff}
+#    If true then any eprint can be edited, not just those belonging
+#    to the current user. Also if true then fields marked as staffonly
+#    in metadata phrases will be included.
 #
-######################################################################
+# $self->{dataset}
+#    The EPrints::DataSet to which the eprint being edited belongs.
 #
-#  __LICENSE__
+# $self->{eprint}
+#    The EPrints::EPrint currently being edited.
+#
+# $self->{formtarget}
+#    The URL of the form. Used as the target for <form>
+#
+# $self->{for_archive}
+#    If true then the validation for moving to the main archive is
+#    applied as oppose to the validation for moving to the editorial
+#    review buffer.
+#
+# $self->{autosend}
+#    If false then the resulting page is not sent to the browser,
+#    instead it is stored in $self->{page}. Used for embedding the
+#    form in a larger page.
+#
+# $self->{page} 
+#    See autosend.
+#
+# $self->{stages}
+#    If the default stage ordering is not being used then the new
+#    ordering is stored here.
 #
 ######################################################################
 
@@ -79,9 +110,26 @@ my $STAGES = {
 ######################################################################
 =pod
 
-=item $thing = EPrints::SubmissionForm->new( $session, $redirect, $staff, $dataset, $formtarget )
+=item $s_form = EPrints::SubmissionForm->new( $session, $redirect, $staff, $dataset, $formtarget )
 
-undocumented
+Create a new Submission Form Object.
+
+$session is the current EPrints::Session.
+
+$redirect is the URL to redirect to when the form is completed.
+
+$staff is a boolean. If it's true then the 'staffonly' fields are
+included in the form. If it's false and the eprint isn't owned by
+the current user then the form returns a permission denied error page. 
+
+$dataset is the EPrints::DataSet which the eprint being edited 
+belongs to. Or will belong to, if it's not created yet.
+
+$formtarget is the URL to submit the form to.
+
+If $autosend is set to zero then the search form is not send out to
+the browser, it is stored and may be retrieved with 
+$s_form->get_page()
 
 =cut
 ######################################################################
@@ -117,7 +165,6 @@ sub new
 #
 # process()
 #
-#  Process everything from the previous form, and render the next.
 #
 ######################################################################
 
@@ -125,9 +172,17 @@ sub new
 ######################################################################
 =pod
 
-=item $foo = $thing->process
+=item $ok = $s_form->process
 
-undocumented
+Process everything from the previous form, and render the next.
+
+Unless autosend was set to false, the next form is sent to the 
+browser.
+
+If the end of the form is reached then the browser is redirected to
+the redirect URL specified in construction.
+
+Returns true if the form was processed OK.
 
 =cut
 ######################################################################
@@ -286,14 +341,35 @@ sub process
 	return( 1 );
 }
 
-#cjg notdoc
+######################################################################
+=pod
+
+=item $xhtml_form = $s_form->get_page
+
+If we didn't send the rendered form to the browser, then this function
+will return it as an XHTML DOM data structure.
+
+=cut
+######################################################################
+
 sub get_page
 {
 	my( $self ) = @_;
 
 	return $self->{page};
 }
-#cjg notdoc
+
+######################################################################
+=pod
+
+=item $stage = $s_form->get_stage
+
+Return the identifier of the submission stage that we are in after
+the form has been processed.
+
+=cut
+######################################################################
+
 sub get_stage
 {
 	my( $self ) = @_;
@@ -304,9 +380,12 @@ sub get_stage
 ######################################################################
 =pod
 
-=item $submissionform->log_submission_stage
+=item $s_form->log_submission_stage( $stage )
 
-undocumented
+Log to the submission_timings file for this archive that this stage
+of the submission form was active at this time for the current user.
+
+Only called if the log_submission_timings config option is set.
 
 =cut
 ######################################################################
@@ -327,9 +406,7 @@ sub log_submission_stage
 
 ######################################################################
 # 
-# $foo = $thing->_corrupt_err
-#
-# undocumented
+# $s_form->_corrupt_err
 #
 ######################################################################
 
@@ -348,9 +425,7 @@ sub _corrupt_err
 
 ######################################################################
 # 
-# $foo = $thing->_database_err
-#
-# undocumented
+# $s_form->_database_err
 #
 ######################################################################
 
@@ -380,17 +455,11 @@ sub _database_err
 
 
 ######################################################################
+# 
+# $ok = $s_form->_from_stage_home
 #
 #  Came from an external page (usually author or staff home,
 #  or bookmarked)
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_from_stage_home
-#
-# undocumented
 #
 ######################################################################
 
@@ -545,18 +614,11 @@ sub _from_stage_home
 	return( 0 );
 }
 
-
-######################################################################
-#
-# Come from type form
-#
-######################################################################
-
 ######################################################################
 # 
-# $foo = $thing->_from_stage_type
+# $ok = $s_form->_from_stage_type
 #
-# undocumented
+# Come from type form
 #
 ######################################################################
 
@@ -599,16 +661,10 @@ sub _from_stage_type
 }
 
 ######################################################################
+# 
+# $ok = $s_form->_from_stage_linking
 #
 #  From sucession/commentary stage
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_from_stage_linking
-#
-# undocumented
 #
 ######################################################################
 
@@ -668,16 +724,10 @@ sub _from_stage_linking
 
 
 ######################################################################
+# 
+# $ok = $s_form->_from_stage_meta
 #
 # Come from metadata entry form
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_from_stage_meta
-#
-# undocumented
 #
 ######################################################################
 
@@ -798,18 +848,11 @@ sub _from_stage_meta
 	return( 0 );
 }
 
-
-######################################################################
-#
-#  From "select files" page
-#
-######################################################################
-
 ######################################################################
 # 
-# $foo = $thing->_from_stage_files
+# $ok = $s_form->_from_stage_files
 #
-# undocumented
+#  From "select files" page
 #
 ######################################################################
 
@@ -906,16 +949,10 @@ sub _from_stage_files
 }
 
 ######################################################################
+# 
+# $ok = $s_form->_from_stage_docmeta
 #
 #  From docmeta page
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_from_stage_docmeta
-#
-# undocumented
 #
 ######################################################################
 
@@ -972,16 +1009,10 @@ sub _from_stage_docmeta
 }
 
 ######################################################################
+# 
+# $ok = $s_form->_from_stage_fileview
 #
 #  From fileview page
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_from_stage_fileview
-#
-# undocumented
 #
 ######################################################################
 
@@ -1143,19 +1174,12 @@ sub _from_stage_fileview
 	return( 0 );
 }
 
-
-
-######################################################################
-#
-#  Come from verify page
-#
-######################################################################
-
 ######################################################################
 # 
-# EPrints::SubmissionForm::_from_stage_quickverify { return $_[0]->_from_stage_verify; }( _from_stage_quickverify { return $_[0]->_from_stage_verify; } )
+# $s_form->_from_stage_verify
+# $s_form->_from_stage_quickverify
 #
-# undocumented
+#  Come from verify page or the quickverify page.
 #
 ######################################################################
 
@@ -1217,19 +1241,11 @@ sub _from_stage_verify
 	return( 0 );
 }
 
-
-
-######################################################################
-#
-#  Come from confirm deletion page
-#
-######################################################################
-
 ######################################################################
 # 
-# $foo = $thing->_from_stage_confirmdel
+# $ok = $s_form->_from_stage_confirmdel
 #
-# undocumented
+#  Come from confirm deletion page
 #
 ######################################################################
 
@@ -1272,18 +1288,11 @@ sub _from_stage_confirmdel
 #
 ######################################################################
 
-
-######################################################################
-#
-#  Select type form
-#
-######################################################################
-
 ######################################################################
 # 
-# $foo = $thing->_do_stage_type
+# $page = $s_form->_do_stage_type
 #
-# undocumented
+#  Select type form
 #
 ######################################################################
 
@@ -1332,16 +1341,10 @@ sub _do_stage_type
 }
 
 ######################################################################
+# 
+# $page = $s_form->_do_stage_linking
 #
 #  Succession/Commentary form
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_do_stage_linking
-#
-# undocumented
 #
 ######################################################################
 
@@ -1432,20 +1435,11 @@ sub _do_stage_linking
 
 }
 	
-
-
-
-######################################################################
-#
-#  Enter metadata fields form
-#
-######################################################################
-
 ######################################################################
 # 
-# $foo = $thing->_do_stage_meta
+# $page = $s_form->_do_stage_meta
 #
-# undocumented
+#  Enter metadata fields form
 #
 ######################################################################
 
@@ -1524,19 +1518,11 @@ sub _do_stage_meta
 	return( $page );
 }
 
-
-
-######################################################################
-#
-#  Select an upload format
-#
-######################################################################
-
 ######################################################################
 # 
-# $foo = $thing->_do_stage_files
+# $page = $s_form->_do_stage_files
 #
-# undocumented
+#  Select an upload format
 #
 ######################################################################
 
@@ -1682,16 +1668,10 @@ sub _do_stage_files
 }
 
 ######################################################################
+# 
+# $page = $s_form->_do_stage_docmeta
 #
 #  Document metadata
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_do_stage_docmeta
-#
-# undocumented
 #
 ######################################################################
 
@@ -1752,16 +1732,10 @@ sub _do_stage_docmeta
 }
 
 ######################################################################
+# 
+# $page = $s_form->_do_stage_fileview
 #
 #  View / Delete files
-#
-######################################################################
-
-######################################################################
-# 
-# $foo = $thing->_do_stage_fileview
-#
-# undocumented
 #
 ######################################################################
 
@@ -2017,19 +1991,12 @@ sub _do_stage_fileview
 	return( $page );
 }
 	
-
-
-######################################################################
-#
-#  Confirm submission
-#
-######################################################################
-
 ######################################################################
 # 
-# EPrints::SubmissionForm::_do_stage_quickverify { return $_[0]->_do_stage_verify; }( _do_stage_quickverify { return $_[0]->_do_stage_verify; } )
+# $page = $s_form->_do_stage_quickverify
+# $page = $s_form->_do_stage_verify
 #
-# undocumented
+#  Confirm submission
 #
 ######################################################################
 
@@ -2119,18 +2086,11 @@ sub _do_stage_verify
 	return( $page );
 }		
 		
-
-######################################################################
-#
-#  All done.
-#
-######################################################################
-
 ######################################################################
 # 
-# $foo = $thing->_do_stage_done
+# $page = $s_form->_do_stage_done
 #
-# undocumented
+#  All done.
 #
 ######################################################################
 
@@ -2146,18 +2106,11 @@ sub _do_stage_done
 	return( $page );
 }
 
-
-######################################################################
-#
-#  Confirm deletion
-#
-######################################################################
-
 ######################################################################
 # 
-# $foo = $thing->_do_stage_confirmdel
+# $ok = $s_form->_do_stage_confirmdel
 #
-# undocumented
+#  Confirm deletion
 #
 ######################################################################
 
@@ -2196,18 +2149,11 @@ sub _do_stage_confirmdel
 	return( $page );
 }	
 
-
-######################################################################
-#
-#  Automatically return to author's home.
-#
-######################################################################
-
 ######################################################################
 # 
-# $foo = $thing->_do_stage_return
+# $page = $s_form->_do_stage_return
 #
-# undocumented
+#  Automatically return to author's home.
 #
 ######################################################################
 
@@ -2220,19 +2166,11 @@ sub _do_stage_return
 	return $self->{session}->make_doc_fragment;
 }	
 
-
-
-######################################################################
-#
-#  Miscellaneous Functions
-#
-######################################################################
-
 ######################################################################
 # 
-# $foo = $thing->_update_from_form( $field_id )
+# $s_form->_update_from_form( $field_id )
 #
-# undocumented
+#  Miscellaneous Functions
 #
 ######################################################################
 
@@ -2248,21 +2186,12 @@ sub _update_from_form
 }
 
 ######################################################################
-#
-# _render_problems( $before, $after )
+# 
+# $errors_xhtml = $s_form->_render_problems( $before, $after )
 #
 #  Lists the given problems with the form. If $before and/or $after
 #  are given, they are printed before and after the list. If they're
 #  undefined, default messages are printed.
-#
-######################################################################
-
-
-######################################################################
-# 
-# $foo = $thing->_render_problems( $before, $after )
-#
-# undocumented
 #
 ######################################################################
 
@@ -2327,15 +2256,9 @@ sub _render_problems
 	return $frag;
 }
 
-
-
-
-
 ######################################################################
 # 
-# $foo = $thing->_set_stage_next
-#
-# undocumented
+# $s_form->_set_stage_next
 #
 ######################################################################
 
@@ -2354,9 +2277,7 @@ sub _set_stage_next
 
 ######################################################################
 # 
-# $foo = $thing->_set_stage_prev
-#
-# undocumented
+# $s_form->_set_stage_prev
 #
 ######################################################################
 
@@ -2375,9 +2296,7 @@ sub _set_stage_prev
 
 ######################################################################
 # 
-# $foo = $thing->_set_stage_this
-#
-# undocumented
+# $s_form->_set_stage_this
 #
 ######################################################################
 
@@ -2388,22 +2307,12 @@ sub _set_stage_this
 	$self->{new_stage} = $self->{stage};
 }
 
-######################################################################
-=pod
-
-=item $foo = $thing->DESTROY
-
-undocumented
-
-=cut
-######################################################################
-
-sub DESTROY
-{
-	my( $self ) = @_;
-
-	EPrints::Utils::destroy( $self );
-}
+#sub DESTROY
+#{
+#	my( $self ) = @_;
+#
+#	EPrints::Utils::destroy( $self );
+#}
 
 1;
 

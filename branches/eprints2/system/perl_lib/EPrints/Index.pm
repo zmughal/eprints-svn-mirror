@@ -17,17 +17,19 @@
 
 =head1 NAME
 
-B<EPrints::Index> - 
+B<EPrints::Index> - Methods for indexing objects for later searching.
 
 =head1 DESCRIPTION
 
-???
+This module contains methods used to add and remove information from
+the free-text search indexes. 
+
+=head1 FUNCTIONS
 
 =over 4
 
 =cut
 
-######################################################################
 
 package EPrints::Index;
 
@@ -36,10 +38,6 @@ use EPrints::Session;
 use Unicode::String qw( latin1 utf8 );
 
 use strict;
-
-
-
-
 
 
 ######################################################################
@@ -206,10 +204,6 @@ sub add
 
 	} 
 
-
-
-
-
 	my $name = $field->get_name;
 
 	foreach my $grepcode ( @{$grepcodes} )
@@ -224,9 +218,18 @@ EPrints::Database::prep_value($objectid)."','".EPrints::Database::prep_value($na
 
 
 
+######################################################################
+=pod
 
+=item EPrints::Index::update_ordervalues( $session, $dataset, $data )
 
+Update the order values for an object. $data is a structure
+returned by $dataobj->get_data
 
+=cut
+######################################################################
+
+# $tmp should not be used any more.
 
 sub update_ordervalues
 {
@@ -235,6 +238,17 @@ sub update_ordervalues
 	&_do_ordervalues( $session, $dataset, $data, 0, $tmp );	
 }
 
+######################################################################
+=pod
+
+=item EPrints::Index::update_ordervalues( $session, $dataset, $data )
+
+Create the order values for an object. $data is a structure
+returned by $dataobj->get_data
+
+=cut
+######################################################################
+
 sub insert_ordervalues
 {
         my( $session, $dataset, $data, $tmp ) = @_;
@@ -242,6 +256,8 @@ sub insert_ordervalues
 	&_do_ordervalues( $session, $dataset, $data, 1, $tmp );	
 }
 
+# internal method to avoid code duplication. Update and insert are
+# very similar.
 
 sub _do_ordervalues
 {
@@ -296,6 +312,17 @@ sub _do_ordervalues
 	}
 }
 
+######################################################################
+=pod
+
+=item EPrints::Index::delete_ordervalues( $session, $dataset, $id )
+
+Remove the ordervalues for item $id from the ordervalues table of
+$dataset.
+
+=cut
+######################################################################
+
 sub delete_ordervalues
 {
         my( $session, $dataset, $id, $tmp ) = @_;
@@ -318,15 +345,15 @@ sub delete_ordervalues
 	}
 }
 
+######################################################################
+=pod
 
+=item @words = EPrints::Index::split_words( $session, $utext )
 
+Splits a utf8 string into individual words. 
 
-
-
-
-
-
-
+=cut
+######################################################################
 
 sub split_words
 {
@@ -355,6 +382,19 @@ sub split_words
 }
 
 
+######################################################################
+=pod
+
+=item $utext2 = EPrints::Index::apply_mapping( $session, $utext )
+
+Replaces certain unicode characters with ASCII equivalents and returns
+the new string.
+
+This is used before indexing words so that things like umlauts will
+be ignored when searching.
+
+=cut
+######################################################################
 
 sub apply_mapping
 {

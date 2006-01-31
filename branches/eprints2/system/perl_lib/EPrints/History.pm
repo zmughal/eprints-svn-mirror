@@ -153,7 +153,8 @@ sub new
 
 =item undef = EPrints::History->new_from_data( $session, $data )
 
-Not used for History.
+Create a new History object from the given $data. Used to turn items
+from the database into objects.
 
 =cut
 ######################################################################
@@ -255,9 +256,10 @@ sub create
 ######################################################################
 =pod
 
-=item EPrints::History::render( "oooops" )
+=item $history->render
 
-undocumented
+This can't be rendered in this way so this just reports an error
+and stack trace.
 
 =cut
 ######################################################################
