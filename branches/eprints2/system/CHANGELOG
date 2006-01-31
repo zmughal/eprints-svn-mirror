@@ -3091,7 +3091,14 @@ PACKAGE: 2.2.99.2
 
 2006-01-23 cjg
 
-  * changes to bin/upgrade to added the History dataset.
+  * Changes to bin/upgrade to added the History dataset.
+
+2006-01-30 cjg
+
+  * Changed "the rights you grant" to "the access rights you grant" for
+     clarity.
+  * Added links to the .ico file in the header of the template. Still needs
+     an actual .ico file to exist.
 
 2006-01-25 tdb
 

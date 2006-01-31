@@ -23,7 +23,10 @@
 
         <wf:component type="component/blister" />
         
-        <wf:component type="component/default"><wf:value name="maxlength">10</wf:value><wf:value name="field">title</wf:value></wf:component> 
+        <wf:component type="component/default">
+		<wf:value name="maxlength">10</wf:value>
+		<wf:value name="field">title</wf:value>
+	</wf:component> 
         <wf:component type="component/default"><wf:value name="field">creators</wf:value></wf:component>
         <wf:component type="component/multi"><wf:array name="components"><wf:array><wf:value name="field">publication</wf:value><wf:value name="maxlength">45</wf:value></wf:array><wf:array><wf:value name="field">volume</wf:value><wf:value name="maxlength">3</wf:value></wf:array><wf:array><wf:value name="field">number</wf:value><wf:value name="maxlength">3</wf:value></wf:array><wf:array><wf:value name="field">pages</wf:value><wf:value name="maxlength">10</wf:value></wf:array><wf:array><wf:value name="field">issn</wf:value><wf:value name="maxlength">10</wf:value></wf:array></wf:array></wf:component> 
         <wf:component type="component/default"><wf:value name="field">date_issue</wf:value></wf:component>

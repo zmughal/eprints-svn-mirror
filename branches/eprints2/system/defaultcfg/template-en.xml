@@ -12,6 +12,8 @@
 @import  url(&base_url;/eprints.css);
 @import  url(&base_url;/print.css);
     </style>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
     <link rel="Top" href="&frontpage;" />
     <link rel="Search" href="&perl_url;/search" />
     <link rel="Help" href="&base_url;/help" />
