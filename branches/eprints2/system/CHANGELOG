@@ -3128,4 +3128,15 @@ PACKAGE: 2.2.99.2
     * EPrints::Utils::cmp_dates
     * EPrints::Utils::is_in
   * Fixed a bug which wasn't padding the time part of time fields with 0.
- 
+
+2006-01-30 cjg
+
+  * Search API now gives warnings if non legal options are passed for match
+     and merge. Closes #1211.
+  * Removed a line of debug code from List.
+
+2006-01-30 cjg
+
+ - Added a robots.txt telling them to leave /perl/ alone. It's only in the
+    static website config, so will not appear on upgraded archives. Closes
+    #1897.
