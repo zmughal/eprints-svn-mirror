@@ -43,7 +43,7 @@ sub matches
 }
 
 
-# all or ""
+# all, staff or ""
 sub is_visible
 {
 	my( $plugin, $vis_level ) = @_;
@@ -53,6 +53,10 @@ sub is_visible
 	return( 0 ) unless( defined $plugin->{visible} );
 
 	if( $vis_level eq "all" && $plugin->{visible} ne "all" ) {
+		return 0;
+	}
+
+	if( $vis_level eq "staff" && $plugin->{visible} ne "all" && $plugin->{visible} ne "staff" ) {
 		return 0;
 	}
 

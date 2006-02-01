@@ -1146,7 +1146,8 @@ sub _dopage_export
 	my @plugins = $self->{session}->plugin_list( 
 		type=>"output",
 		can_accept=>"list/eprint", 
-		is_visible=>"all" );
+		is_visible=>$self->_vis_level );
+
 	my $ok = 0;
 	foreach( @plugins ) { if( $_ eq "output/$format" ) { $ok = 1; last; } }
 	unless( $ok ) {
@@ -1162,7 +1163,19 @@ sub _dopage_export
 	$self->{session}->send_http_header( "content_type"=>$plugin->param("mimetype") );
 	print $results->export( $format );	
 }
-	
+
+######################################################################
+# $min_vis_level = $searchexp->_vis_level
+######################################################################
+
+sub _vis_level
+{
+	my( $self ) = @_;
+
+	return "staff" if $self->{staff};
+
+	return "all";
+}	
 
 ######################################################################
 # 
@@ -1239,7 +1252,7 @@ sub _dopage_results
 	my @plugins = $self->{session}->plugin_list( 
 					type=>"output",
 					can_accept=>"list/".$self->{dataset}->confid, 
-					is_visible=>"all" );
+					is_visible=>$self->_vis_level );
 	$bits{export} = $self->{session}->make_doc_fragment;
 	if( scalar @plugins > 0 ) {
 		my $select = $self->{session}->make_element( "select", name=>"_output" );

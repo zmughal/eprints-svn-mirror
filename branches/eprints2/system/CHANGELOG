@@ -3140,3 +3140,8 @@ PACKAGE: 2.2.99.2
  - Added a robots.txt telling them to leave /perl/ alone. It's only in the
     static website config, so will not appear on upgraded archives. Closes
     #1897.
+
+2006-02-01 cjg
+
+ - Staff searches now show plugins with both "all" and "staff" visibility.
+    closing ticket #1673
