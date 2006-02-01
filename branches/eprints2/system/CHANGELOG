@@ -3157,4 +3157,9 @@ PACKAGE: 2.2.99.2
  - Fixed any incorrect calls to SearchField. Now all merges are "ALL" not
     "AND". Fixed some typos in previous commit.
 
+2006-02-01 cjg
+
+ - New command line script: erase_eprints. It erases the eprints without
+    touching the users or subjects. Also recreates the SQL tables so makes
+    metadata tweaking have a faster turn-around. Closes #1902
 
