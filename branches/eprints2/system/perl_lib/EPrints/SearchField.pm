@@ -155,9 +155,9 @@ $prefix is used when generating HTML forms and reading values from forms.
 
 $fields is a reference to an array of field names.
 
-$match default is "EQ"
+$match is one of EQ, IN, EX. default is EQ.
 
-$merge default is "AND"
+$merge is ANY or ALL. default is ALL
 
 Special case - if match is "EX" and field type is name then value must
 be a name hash.
@@ -178,21 +178,21 @@ sub new
 	$self->{"value"} = $value;
 	$self->{"match"} = "EQ";
 	$self->{"match"} = $match if( EPrints::Utils::is_set( $match ) );
-	$self->{"merge"} = "AND";
+	$self->{"merge"} = "ALL";
 	$self->{"merge"} = $merge if( EPrints::Utils::is_set( $merge ) );
 
 	if( $self->{match} ne "EQ" && $self->{match} ne "IN" && $self->{match} ne "EX" )
 	{
 		$session->get_archive->log( 
 "search field match value was '".$self->{match}."'. Should be EQ, IN or EX." );
-		$self->{merge} = "AND";
+		$self->{merge} = "ALL";
 	}
 
-	if( $self->{merge} ne "AND" && $self->{merge} ne "OR" )
+	if( $self->{merge} ne "ALL" && $self->{merge} ne "ANY" )
 	{
 		$session->get_archive->log( 
-"search field merge value was '".$self->{merge}."'. Should be AND or OR." );
-		$self->{merge} = "AND";
+"search field merge value was '".$self->{merge}."'. Should be ALL or ANY." );
+		$self->{merge} = "ALL";
 	}
 
 	if( ref( $fields ) ne "ARRAY" )
@@ -295,7 +295,7 @@ sub from_form
 			$self->{"form_name_prefix"} );
 
 	$self->{"value"} = "" unless( defined $self->{"value"} );
-	$self->{"merge"} = "AND" unless( defined $self->{"merge"} );
+	$self->{"merge"} = "ALL" unless( defined $self->{"merge"} );
 	$self->{"match"} = "EQ" unless( defined $self->{"match"} );
 
 	# match = NO? if value==""

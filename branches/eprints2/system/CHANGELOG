@@ -3151,3 +3151,10 @@ PACKAGE: 2.2.99.2
  - Added XMLFiles export plugin which outputs eprints 2.4 xml format with
     the files embeded (unlike the other XML output plugin).
 
+2006-02-01 cjg
+
+ - Removed some unwanted comments from Plugin::Output::XML
+ - Fixed any incorrect calls to SearchField. Now all merges are "ALL" not
+    "AND". Fixed some typos in previous commit.
+
+

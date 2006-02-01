@@ -1,9 +1,5 @@
 package EPrints::Plugin::Output::XML;
 
-# eprint needs magic documents field
-
-# documents needs magic files field
-
 use Unicode::String qw( utf8 );
 
 use EPrints::Plugin::Output;
