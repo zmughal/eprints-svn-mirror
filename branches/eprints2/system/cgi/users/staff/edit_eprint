@@ -555,7 +555,9 @@ sub bounce
 		"cgi/users/edit_eprint:subject_bounce",
 		$mail,
 		$session->current_user() ) )
-	{	
+	{
+		$eprint->log_mail_owner( $mail );
+
 		# Successfully bounced, redirect
 		$session->redirect( "buffer" );
 		return;

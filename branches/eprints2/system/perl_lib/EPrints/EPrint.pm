@@ -532,6 +532,26 @@ sub _transfer
 "Could not add record ".$self->get_value( "eprintid" )." to ".$dataset->id );
 		return 0;
 	}
+	
+	# log the change
+
+	my $user = $self->{session}->current_user;
+	my $userid = undef;
+	$userid = $user->get_id if defined $user;
+	my $d1 = $old_dataset->id;
+	my $d2 = $self->{dataset}->id;
+	my $code = "MOVE_"."\U$d1"."_TO_"."\U$d2";
+	EPrints::History::create( 
+		$self->{session},
+		{
+			userid=>$userid,
+			datasetid=>"eprint",
+			objectid=>$self->get_id,
+			revision=>$self->get_value( "rev_number" ),
+			action=>$code,
+			details=>undef
+		}
+	);
 
 	# Write self to new table
 	# (force it to write the eprint even if no fields have
@@ -573,6 +593,38 @@ sub _transfer
 	return( 1 );
 }
 
+######################################################################
+=pod
+
+=item $eprint->log_mail_owner( $mail )
+
+Log that the given mail message was send to the owner of this EPrint.
+
+$mail is the same XHTML DOM that was sent as the email.
+
+=cut
+######################################################################
+
+sub log_mail_owner
+{
+	my( $self, $mail ) = @_;
+
+	my $user = $self->{session}->current_user;
+	my $userid = undef;
+	$userid = $user->get_id if defined $user;
+
+	EPrints::History::create( 
+		$self->{session},
+		{
+			userid=>$userid,
+			datasetid=>"eprint",
+			objectid=>$self->get_id,
+			revision=>$self->get_value( "rev_number" ),
+			action=>"MAIL_OWNER",
+			details=> EPrints::Utils::tree_to_utf8( $mail , 80 ),
+		}
+	);
+}
 
 ######################################################################
 =pod

@@ -3172,4 +3172,14 @@ PACKAGE: 2.2.99.2
  - Added an option to $dataobj->to_xml. If embed is set to 1 then the 
     entire file is output encoded in base64.
 
+2006-02-01 cjg
+
+ - History now knows how to render itself as XHTML.
+ - When an email is sent to the owner of an eprint a history record is
+    created.
+ - When an eprint is moved between datasets, a history record is created.
+ - Moved render_xhtml_field from Utils to Extras (although the old method
+    still calls the new one for compatibility).
+ - New method in Extras: render_preformatted_field which renders a field
+    value in a diff.
 
