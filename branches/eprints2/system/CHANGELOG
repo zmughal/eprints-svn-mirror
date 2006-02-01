@@ -3162,4 +3162,9 @@ PACKAGE: 2.2.99.2
  - New command line script: erase_eprints. It erases the eprints without
     touching the users or subjects. Also recreates the SQL tables so makes
     metadata tweaking have a faster turn-around. Closes #1902
+ 
+2006-02-01 cjg
+
+ - Everywhere the code skips "CVS" directories it now also skips ".svn"
+
 

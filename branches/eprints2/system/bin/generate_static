@@ -175,6 +175,7 @@ sub generate_static
 
 	# Ignore CVS directories
 	return if( $File::Find::name =~ /\/CVS/ );
+	return if( $File::Find::name =~ /\/\.svn/ );
 	$session->change_lang( $langid );
 
 	my $destination_filename = $File::Find::name;

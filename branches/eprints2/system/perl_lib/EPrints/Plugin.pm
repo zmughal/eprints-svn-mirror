@@ -231,6 +231,7 @@ sub load_dir
 	{
 		next if( $fn =~ m/^\./ );
 		next if( $fn eq "CVS" );
+		next if( $fn eq ".svn" );
 		my $filename = "$path/$fn";
 		if( -d $filename )
 		{

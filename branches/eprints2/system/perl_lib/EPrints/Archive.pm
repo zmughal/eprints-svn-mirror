@@ -794,6 +794,7 @@ sub _plugin_dir_copy
 		delete $tfiles->{$file} if( defined $tfiles->{$file} );
 		next if( $file =~ m/^\./ );
 		next if( $file eq "CVS" );
+		next if( $file eq ".svn" );
 		if( -d "$source/$file" )
 		{
 			$self->_plugin_dir_copy( "$source/$file", "$target/$file" );
