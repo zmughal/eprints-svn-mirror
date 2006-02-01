@@ -3145,3 +3145,9 @@ PACKAGE: 2.2.99.2
 
  - Staff searches now show plugins with both "all" and "staff" visibility.
     closing ticket #1673
+
+2006-02-01 cjg
+
+ - Added XMLFiles export plugin which outputs eprints 2.4 xml format with
+    the files embeded (unlike the other XML output plugin).
+
