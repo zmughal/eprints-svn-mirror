@@ -3183,3 +3183,7 @@ PACKAGE: 2.2.99.2
  - New method in Extras: render_preformatted_field which renders a field
     value in a diff.
 
+2006-02-01 cjg
+
+ - New method to database. counter_reset which sets a counter back to 0.
+

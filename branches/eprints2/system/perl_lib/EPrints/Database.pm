@@ -1103,6 +1103,33 @@ sub counter_next
 	return( $row[0] );
 }
 
+######################################################################
+=pod
+
+=item $n = $db->counter_reset( $counter )
+
+Use with extreme caution.
+
+Reset the named counter to zero. Only useful if you are erasing the
+dataset. 
+
+=cut
+######################################################################
+
+sub counter_reset
+{
+	my( $self, $counter ) = @_;
+
+	my $ds = $self->{session}->get_archive()->get_dataset( "counter" );
+
+	# Update the counter	
+	my $sql = "UPDATE ".$ds->get_sql_table_name()." ";
+	$sql.="SET counter=0 WHERE countername = \"$counter\";";
+	
+	# Send to the database
+	$self->do( $sql );
+}
+
 
 ######################################################################
 =pod
