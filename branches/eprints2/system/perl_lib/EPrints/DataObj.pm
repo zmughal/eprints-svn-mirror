@@ -50,6 +50,8 @@ package EPrints::DataObj;
 
 use EPrints::Utils;
 
+use MIME::Base64 ();
+
 use strict;
 
 
@@ -627,14 +629,16 @@ Convert this object into an XML fragment.
 
 %opts are:
 
-$no_xmlns=>1 : do not include a xmlns attribute in the 
+no_xmlns=>1 : do not include a xmlns attribute in the 
 outer element. (This assumes this chunk appears in a larger tree 
 where the xmlns is already set correctly.
 
-$showempty=>1 : fields with no value are shown.
+showempty=>1 : fields with no value are shown.
 
-$version=>"code" : pick what version of the EPrints XML format
+version=>"code" : pick what version of the EPrints XML format
 to use "1" or "2"
+
+embed=>1 : include the data of a file, not just it's URL.
 
 =cut
 ######################################################################
@@ -696,7 +700,7 @@ sub to_xml
 			foreach my $doc ( $self->get_all_documents )
 			{
 				$docs->appendChild( $self->{session}->make_text( "  " ) );
-				$docs->appendChild( $doc->to_xml );
+				$docs->appendChild( $doc->to_xml( %opts ) );
 			}	
 			$r->appendChild( $self->{session}->make_text( "\n  " ) );
 			$r->appendChild( $docs );
@@ -728,6 +732,18 @@ sub to_xml
 						6, 
 						'url',
 						$self->get_url($filename) ) );
+				if( $opts{embed} )
+				{
+					my $fullpath = $self->local_path."/".$filename;
+					open( FH, $fullpath ) || die "fullpath '$fullpath' read error: $!";
+					my $data = join( "", <FH> );
+					close FH;
+					$file->appendChild( 
+						$self->{session}->render_data_element( 
+							6, 
+							'data',
+           						MIME::Base64::encode($data) ) );
+				}
 				$files->appendChild( $self->{session}->make_text( "    " ) );
 				$files->appendChild( $file );
 				$file->appendChild( $self->{session}->make_text( "\n    " ) );

@@ -3167,4 +3167,9 @@ PACKAGE: 2.2.99.2
 
  - Everywhere the code skips "CVS" directories it now also skips ".svn"
 
+2006-02-01 cjg
+
+ - Added an option to $dataobj->to_xml. If embed is set to 1 then the 
+    entire file is output encoded in base64.
+
 
