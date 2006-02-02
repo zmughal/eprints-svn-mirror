@@ -235,6 +235,8 @@ Otherwise the archive specific defaults (if any) are used.
 The fields "eprintid" and "dir" will be overridden even if they
 are set.
 
+If C<$data> is not defined calls L</set_eprint_defaults>.
+
 =cut
 ######################################################################
 
@@ -670,6 +672,8 @@ Commit any changes that might have been made to the database.
 If the item has not be changed then this function does nothing unless
 $force is true.
 
+Calls L</set_eprint_automatic_fields> just before the C<$eprint> is committed.
+
 =cut
 ######################################################################
 
@@ -790,6 +794,8 @@ submission.
 
 A reference to an empty array indicates no problems.
 
+Calls L</validate_field> for the C<type> field.
+
 =cut
 ######################################################################
 
@@ -837,6 +843,8 @@ validation problems with the results of the "linking" stage of eprint
 submission.
 
 A reference to an empty array indicates no problems.
+
+Calls L</validate_field> for the C<succeeds> and C<commentary> fields.
 
 =cut
 ######################################################################
@@ -918,6 +926,8 @@ submission.
 
 A reference to an empty array indicates no problems.
 
+Calls L</validate_eprint_meta> for the C<$eprint> and L</validate_field> for all required fields.
+
 =cut
 ######################################################################
 
@@ -977,6 +987,8 @@ submission. This just validates a single page rather than all metadata
 fields.
 
 A reference to an empty array indicates no problems.
+
+Calls L</validate_eprint_meta> for the C<$eprint> and L</validate_field> for all page fields.
 
 =cut
 ######################################################################
@@ -1120,6 +1132,8 @@ Return a reference to an array of XHTML DOM objects describing
 validation problems with the entire eprint.
 
 A reference to an empty array indicates no problems.
+
+Calls L</validate_eprint> for the C<$eprint>.
 
 =cut
 ######################################################################
@@ -1647,6 +1661,8 @@ objects. $description is the public viewable description of this eprint
 that appears as the body of the abstract page. $title is the title of
 the abstract page for this eprint. $links is any elements which should
 go in the <head> of this page.
+
+Calls L</eprint_render> to actually render the C<$eprint>, if it isn't deleted.
 
 =cut
 ######################################################################
@@ -2326,3 +2342,32 @@ sub datestamp
 
 1; # For use/require success
 
+__END__
+
+=head1 CALLBACKS
+
+Callbacks may optionally be defined in the ArchiveConfig.
+
+=over 4
+
+=item validate_field
+
+	validate_field( $field, $value, $session, [$for_archive] )
+
+=item validate_eprint_meta
+
+	validate_eprint_meta( $eprint, $session, [$for_archive] )
+
+=item set_eprint_defaults
+
+	set_eprint_defaults( $data, $session )
+
+=item set_eprint_automatic_fields
+
+	set_eprint_automatic_fields( $eprint )
+
+=item eprint_render
+
+	eprint_render( $eprint, $session )
+
+=back
