@@ -546,7 +546,7 @@ link directly to the documents.
 
 It is used to include file icons in a citation.
 
-The fileinfo field is updated using the "L<see_eprint_automatic_fields"|ArchiveMetadataConfig/see_eprint_automatic_fields>" method in C<ArchiveMetadataConfig.pm>.
+The fileinfo field is updated using the "L<set_eprint_automatic_fields"|ArchiveMetadataFieldsConfig/set_eprint_automatic_fields>" method in C<ArchiveMetadataFieldsConfig.pm>.
 
 =cut
 
