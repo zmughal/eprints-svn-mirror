@@ -14,7 +14,7 @@
 
 =head1 NAME
 
-ArchiveRenderConfig.pm - Rendering Routines
+ArchiveRenderConfig.pm - Archive-specific rendering routines
 
 =head1 DESCRIPTION
 
@@ -37,7 +37,8 @@ of this config for single language archives.
 
 =cut
 
-#---------------------------------------------------------------------
+######################################################################
+
 
 
 ######################################################################
@@ -545,7 +546,7 @@ link directly to the documents.
 
 It is used to include file icons in a citation.
 
-The fileinfo field is updated using the "L<eprint_automatic_fields"|ArchiveMetadataConfig/eprint_automatic_fields>" method in C<ArchiveMetadataConfig.pm>.
+The fileinfo field is updated using the "L<see_eprint_automatic_fields"|ArchiveMetadataConfig/see_eprint_automatic_fields>" method in C<ArchiveMetadataConfig.pm>.
 
 =cut
 
