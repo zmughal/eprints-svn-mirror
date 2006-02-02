@@ -224,6 +224,8 @@ The current session object.
 
 Returns nothing (Modify $data instead)
 
+=back
+
 =cut
 
 ######################################################################
