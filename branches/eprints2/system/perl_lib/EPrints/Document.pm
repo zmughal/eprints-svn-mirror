@@ -631,8 +631,10 @@ sub get_url
 
 	$file = $self->get_main unless( defined $file );
 
-	# unreserved characters according to RFC 2396
+	# just in case we don't *have* a main part yet.
+	return $self->get_baseurl unless( defined $file );
 
+	# unreserved characters according to RFC 2396
 	$file =~ s/([^-_\.!~\*'\(\)A-Za-z0-9])/sprintf('%%%02X',ord($1))/ge;
 	
 	return $self->get_baseurl.$file;

@@ -150,20 +150,20 @@ sub get_system_field_info
 
 		{ name=>"username", type=>"text", required=>1 },
 
-		{ name=>"password", type=>"secret", 
+		{ name=>"password", type=>"secret", show_in_html=>0,
 			fromform=>\&EPrints::Utils::crypt_password },
 
 		{ name=>"usertype", type=>"datatype", required=>1, 
 			datasetid=>"user" },
 	
-		{ name=>"newemail", type=>"email" },
+		{ name=>"newemail", type=>"email", show_in_html=>0 },
 	
-		{ name=>"newpassword", type=>"secret", 
+		{ name=>"newpassword", type=>"secret", show_in_html=>0, 
 			fromform=>\&EPrints::Utils::crypt_password },
 
-		{ name=>"pin", type=>"text" },
+		{ name=>"pin", type=>"text", show_in_html=>0 },
 
-		{ name=>"pinsettime", type=>"int" },
+		{ name=>"pinsettime", type=>"int", show_in_html=>0 },
 
 		{ name=>"joined", type=>"time", required=>1 },
 
@@ -762,8 +762,7 @@ sub render
 =item ( $page, $title ) = $user->render_full
 
 The same as $user->render, but renders all fields, not just those 
-intended for public viewing. This is the admin view of the user 
-record created by "user_render_full".
+intended for public viewing. This is the admin view of the user.
 
 =cut
 ######################################################################
@@ -772,14 +771,31 @@ sub render_full
 {
 	my( $self ) = @_;
 
-	my( $dom, $title ) = $self->{session}->get_archive()->call( "user_render_full", $self, $self->{session} );
+	my( $table, $title ) = $self->SUPER::render_full;
 
-	if( !defined $title )
+	my @subs = $self->get_subscriptions;
+	my $subs_ds = $self->{session}->get_archive->get_dataset( "subscription" );
+	foreach my $subscr ( @subs )
 	{
-		$title = $self->render_description;
+		my $rowright = $self->{session}->make_doc_fragment;
+		foreach( "frequency","spec","mailempty" )
+		{
+			my $strong;
+			$strong = $self->{session}->make_element( "strong" );
+			$strong->appendChild( $subs_ds->get_field( $_ )->render_name( $self->{session} ) );
+			$strong->appendChild( $self->{session}->make_text( ": " ) );
+			$rowright->appendChild( $strong );
+			$rowright->appendChild( $subscr->render_value( $_ ) );
+			$rowright->appendChild( $self->{session}->make_element( "br" ) );
+		}
+		$table->appendChild( $self->{session}->render_row(
+			$self->{session}->html_phrase(
+				"page:subscription" ),
+			$rowright ) );
+				
 	}
 
-	return( $dom, $title );
+	return( $table, $title );
 }
 
 

@@ -1372,6 +1372,7 @@ sub get_property_defaults
 		multilang 	=> 0,
 		multiple 	=> 0,
 		name 		=> $EPrints::MetaField::REQUIRED,
+		show_in_html	=> 1,
 		render_input 	=> $EPrints::MetaField::UNDEF,
 		render_opts 	=> {},
 		render_single_value 	=> $EPrints::MetaField::UNDEF,

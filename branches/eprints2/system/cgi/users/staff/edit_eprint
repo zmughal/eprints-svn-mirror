@@ -102,7 +102,7 @@ sub process
 
 	my $action = $session->get_action_button();
 
-	if( !defined $action )
+	if( !defined $action || $action eq "_cancel" || $action eq "stop" )
 	{
 		&view_page( $session, $eprint );
 		return;
@@ -129,74 +129,35 @@ sub process
 		return;
 	}
 
-	if( $action eq "_toarchive" )
+	if( $action =~ m/^_to/ )
 	{	
-		# Accept button pressed
-
+		# Status-change button pressed
 		my $dsid = $eprint->get_dataset()->id();
 
-		unless( $eprint->move_to_archive() )
-		{
-			$session->render_error( $session->html_phrase(
-				"cgi/users/edit_eprint:cant_move",
-				id=>$session->make_text( $eprintid ) ) );
-			return;
-		}
+		my $ok = 0;
+		$ok = $eprint->move_to_archive if( $action eq "_toarchive" );
+		$ok = $eprint->move_to_buffer if( $action eq "_tobuffer" );
+		$ok = $eprint->move_to_inbox if( $action eq "_toinbox" );
+		$ok = $eprint->move_to_deletion if( $action eq "_todeletion" );
 
-		# Successfully archived, redirect
-		if( $dsid eq "buffer" )
+		my $msg;
+
+		if( $ok )
 		{
-			$session->redirect( "buffer" );
+			$msg = $session->html_phrase( "cgi/users/edit_eprint:status_change",
+					status=>$session->html_phrase( "dataset_fieldopt_dataset_".$eprint->get_dataset()->id() ) );
 		}
 		else
 		{
-			$session->redirect( $session->get_archive()->get_conf( "userhome" ) );
-		}
-		return;
-	}
-
-	if( $action eq "_tobuffer" )
-	{
-		
-		unless( $eprint->move_to_buffer() )
-		{
-			$session->render_error( $session->html_phrase(
+			$msg = $session->html_phrase(
 				"cgi/users/edit_eprint:cant_move",
-				id=>$session->make_text( $eprintid ) ) );
-			return;
+				id=>$session->make_text( $eprintid ) );
 		}
 
-		my $page = $session->make_doc_fragment();
-		$page->appendChild( $session->html_phrase( 
-			"cgi/users/edit_eprint:moved",
-			link=>$session->render_link( "edit_eprint?dataset=buffer&eprintid=".$eprintid ) ) );
-		$page->appendChild( $session->html_phrase( 
-			"general:userhome_link" ) );
-		$session->build_page( $session->html_phrase( "cgi/users/edit_eprint:move_title" ), $page, "move_eprint" );
-		$session->send_page();
+		&view_page( $session, $eprint, $msg );
+		
 		return;
 	}
-
-
-	if( $action eq "_todeletion" )
-	{
-		unless( $eprint->move_to_deletion() )
-		{
-			$session->render_error( $session->html_phrase(
-				"cgi/users/edit_eprint:cant_remove",
-				id=>$session->make_text( $eprintid ) ) );
-			return;
-		}
-		my $page = $session->make_doc_fragment();
-		$page->appendChild( $session->html_phrase( 
-			"cgi/users/edit_eprint:removed" ) );
-		$page->appendChild( $session->html_phrase( 
-			"general:userhome_link" ) );
-		$session->build_page( $session->html_phrase( "cgi/users/edit_eprint:remove_title" ), $page, "move_removed" );
-		$session->send_page();
-		return;
-	}
-
 
 	if( $action eq "_clone" || $action eq "_copy" )
 	{
@@ -243,19 +204,24 @@ sub process
 
 
 	#########################################################
-	
+
 	# OK, so we are (presumably) editing it then...
+	my $dataview = $session->param( "dataview" );
+	$dataview = "summary" if( $dataview ne "full" && $dataview ne "history" );
+	my $redir_url =  "edit_eprint?eprintid=$eprintid&dataview=$dataview";
+
+
+	my $subform = new EPrints::SubmissionForm(
+		$session,
+		$redir_url,
+		1,
+		$dataset,
+		"edit_eprint" );
 
 	my $stage = $session->param( "stage" );
 	# If we are skipping the files stage then we have to work out what the
 	# actual last stage is...
-	my $laststage = "files";
-	my @stages = ( "type","linking","meta" );
-	while( $session->get_archive()->get_conf( "submission_stage_skip", $laststage ) )
-	{
-		$laststage = pop @stages;
-		last if( $laststage eq "type" );
-	}
+	my $laststage = $subform->last_edit_stage;
 
 	my $ls = $session->get_archive()->get_conf( "submission_stage_last_for_staff_edit" );
 	$laststage = $ls if( defined $ls );
@@ -273,18 +239,10 @@ sub process
 		if( $redir )
 		{
 			# Intercept the verify page, that's what we were doing!
-			$session->redirect( "edit_eprint?dataset=$datasetid&eprintid=$eprintid" );
+			$session->redirect( $redir_url );
 			return;
 		}
 	}
-
-	# Give other cases to the edit form
-	my $subform = new EPrints::SubmissionForm(
-		$session,
-		"edit_eprint?dataset=$datasetid&eprintid=$eprintid",
-		1,
-		$dataset,
-		"edit_eprint" );
 
 	$subform->process();
 	
@@ -312,16 +270,46 @@ sub process
 
 sub view_page
 {
-	my( $session, $eprint ) = @_;
+	my( $session, $eprint, $msg ) = @_;
 
 	my $page = $session->make_doc_fragment();
 	
-	$page->appendChild( $session->html_phrase( 
-		"cgi/users/edit_eprint:status",
-		dataset => $session->html_phrase( "dataset_fieldopt_dataset_".$eprint->get_dataset()->id() ) ) );
+	$page->appendChild( $eprint->render_citation );	
+
+	if( defined $msg )
+	{
+		my $div = $session->make_element( "div", style=>"border: solid 1px #f00; background-color: #fcc; padding: 1em; margin-top: 1em" );
+		$div->appendChild( $msg );
+		$page->appendChild( $div );
+	}
+
+	my $table = $session->make_element( "table",
+					style=>"margin-top: 1em;",
+					border=>"0",
+					cellpadding=>"3" );
+	$page->appendChild( $table );
+
+	$table->appendChild( $session->render_row(
+		$session->html_phrase( "cgi/users/edit_eprint:description" ),
+		$eprint->render_description ) );
+
+	$table->appendChild( $session->render_row(
+		$session->html_phrase( "cgi/users/edit_eprint:status" ),
+		$session->html_phrase( "dataset_fieldopt_dataset_".$eprint->get_dataset()->id() ) ) );
+
+	$table->appendChild( $session->render_row(
+		$session->html_phrase( "eprint_fieldname_userid" ),
+		$eprint->render_value( "userid" ) ) );
+
+	$table->appendChild( $session->render_row(
+		$session->html_phrase( "eprint_fieldname_datestamp" ),
+		$eprint->render_value( "datestamp" ) ) );
+
+	$table->appendChild( $session->render_row(
+		$session->html_phrase( "eprint_fieldname_lastmod" ),
+		$eprint->render_value( "lastmod" ) ) );
 	
-	$page->appendChild( $eprint->render_full() );
-			
+		
 	# Possible actions
 	# inbox buffer archive deletion
 	#   *     *       *       *      edit
@@ -337,81 +325,157 @@ sub view_page
 	# those passed to submission form)
 
 	my $sb = $session->get_archive()->get_conf( "skip_buffer" );	
-	my $buttons = {};
-	my $r1 = [];
-	my $r2 = [];
-	if( $eprint->get_dataset()->id() eq "inbox" )
+	my @actions = ();
+	my $dsid = $eprint->get_dataset->id;
+
+	if( $dsid eq "inbox" )
 	{
 		if( defined $sb && $sb == 1 )
 		{
-			$r1 = [ "_toarchive" ];
+			push @actions, "_toarchive";
 		}
 		else
 		{
-			$r1 = [ "_tobuffer" ];
+			push @actions, "_tobuffer";
 		}
-		$r2 = [ "edit", "_remove", "_copy" ];
 	}
-	if( $eprint->get_dataset()->id() eq "buffer" )
+
+	if( $dsid eq "buffer" )
 	{
-		$r1 = [];
-		# only offer to return this to the inbox
-		# if it's owned by a valid user.
 		if( defined $eprint->get_user() )
 		{
-			push @{$r1}, "_toinbox";
+			push @actions, "_toinbox";
 		}
-		push @{$r1}, "_toarchive";
-		$r2 = [ "edit", "_remove", "_copy" ];
+		push @actions, "_toarchive";
 	}
-	if( $eprint->get_dataset()->id() eq "archive" )
+
+	if( $dsid eq "archive" )
 	{
 		if( defined $sb && $sb == 1 )
 		{
-			$r1 = [ "_toinbox", "_todeletion" ];
+			push @actions, "_toinbox";
 		}
 		else
 		{
-			$r1 = [ "_tobuffer", "_todeletion" ];
+			push @actions, "_tobuffer";
 		}
-		$r2 = [ "edit", "_clone", "_copy" ];
-	}
-	if( $eprint->get_dataset()->id() eq "deletion" )
-	{
-		$r1 = [ "_toarchive" ];
-		if( $session->get_archive->get_conf( 'allow_edit_deleted' ) )
-		{
-			$r2 = [ "edit", "_clone", "_copy" ];
-		}
-		else
-		{
-			$r2 = [ "_clone", "_copy" ];
-		}
+		push @actions, "_todeletion";
 	}
 
-
-	my $form = $session->render_form( "post", "edit_eprint" );
-	foreach( @{$r1}, @{$r2} )
+	if( $dsid eq "deletion" )
 	{
-		$buttons->{$_} = $session->phrase( "cgi/users/edit_eprint:action_".$_ );
+		push @actions, "_toarchive";
 	}
-	#print STDERR "**". $eprint->get_dataset()->id()."**\n";
-	#print STDERR "**". join( '/', (@{$r1}, @{$r2}))."**\n";
+
+	if( $dsid eq "archive" || $dsid eq "deletion" )
+	{
+		push @actions, "_clone";
+	}
+
+	if( $dsid eq "inbox" || $dsid eq "buffer" )
+	{
+		push @actions, "_remove";
+	}
 	
-	$form->appendChild( $session->render_ruler() );
-	$buttons->{_order} = $r1;
-	$form->appendChild( $session->render_action_buttons( %{$buttons} ) );
+	push @actions, "_copy";
 
-	$form->appendChild( $session->render_ruler() );
-	$buttons->{_order} = $r2;
-	$form->appendChild( $session->render_action_buttons( %{$buttons} ) );
 
-	$form->appendChild( $session->render_hidden_field( "eprintid", $eprint->get_id() ) );
-	$form->appendChild( $session->render_hidden_field( "dataset", $eprint->get_dataset()->id() ) );
 
-	$page->appendChild( $form );
-	$page->appendChild( $session->html_phrase( "general:userhome_link" ) );
-		
+	my $dataview = $session->param( "dataview" );
+	$dataview = "summary" if( $dataview ne "full" && $dataview ne "history" );
+
+
+	my $ul = $session->make_element( "ul" );
+
+	foreach( @actions )
+	{
+		my $url = "edit_eprint?eprintid=".$eprint->get_id."&dataview=".$dataview."&_action_".$_."=1";
+		my $li = $session->make_element( "li", style=>"margin-bottom: 1em;" );
+		my $a = $session->render_link( $url );
+		$a->appendChild( $session->html_phrase( "cgi/users/edit_eprint:action_".$_ ) );
+		$li->appendChild( $a );
+		$ul->appendChild( $li );
+	}
+	$table->appendChild( $session->render_row(
+		$session->html_phrase( "cgi/users/edit_eprint:actions" ),
+		$ul ) );
+
+	unless( $dsid eq "deletion" && !$session->get_archive->get_conf( 'allow_edit_deleted' ) )
+	{
+		my $div = $session->make_element( "div" );
+
+		my $subform = new EPrints::SubmissionForm( $session, '', 1, $eprint->get_dataset, "edit_eprint" );
+		my $first = 1;
+		my @stages = $subform->get_stages;
+		foreach my $stage ( @stages )
+		{
+			next if $stage eq "done";
+			next if $stage eq "verify";
+			next if $stage eq "return";
+			if( $stage eq "meta" )
+			{
+				my @pages = $eprint->get_dataset->get_type_pages( $eprint->get_value("type") );
+				foreach my $page ( @pages )
+				{
+					$div->appendChild( $session->make_text( ", ") ) unless $first;
+					$first = 0;
+					my $url = "edit_eprint?eprintid=".$eprint->get_id."&dataview=".$dataview."&_action_jump=1&stage=".$stage."&pageid=".$page;
+					my $a = $session->render_link( $url );
+					$a->appendChild( $session->html_phrase( "metapage_title_".$page ) );
+					$div->appendChild( $a );
+				}
+				next;
+			}
+			$div->appendChild( $session->make_text( ", ") ) unless $first;
+			$first = 0;
+			my $url = "edit_eprint?eprintid=".$eprint->get_id."&dataview=".$dataview."&_action_jump=1&stage=".$stage;
+			my $a = $session->render_link( $url );
+			$a->appendChild( $session->make_text( $stage ) );
+			$div->appendChild( $a );
+		}
+		$div->appendChild( $session->make_text( "." ) );
+
+		$table->appendChild( $session->render_row(
+			$session->html_phrase( "cgi/users/edit_eprint:edit" ),
+			$div ) );
+	}
+
+
+	
+	my $ul2 = $session->make_element( "ul" );
+	
+	foreach my $view ( qw/ summary full history / )
+	{
+		my $li = $session->make_element( "li", style=>"margin-bottom: 1em;" );
+		my $label = $session->html_phrase( "cgi/users/edit_eprint:view_".$view );
+		if( $view eq $dataview )
+		{
+			my $strong = $session->make_element( "strong" );
+			$strong->appendChild( $label );
+			$li->appendChild( $strong );
+		}
+		else
+		{
+			my $url = "edit_eprint?eprintid=".$eprint->get_id."&dataview=".$view;
+			my $a = $session->render_link( $url );
+			$a->appendChild( $label );
+			$li->appendChild( $a );
+		}
+		$ul2->appendChild( $li );
+	}
+
+	$table->appendChild( $session->render_row(
+		$session->html_phrase( "cgi/users/edit_eprint:views" ),
+		$ul2 ) );
+	
+	my( $data, $title );
+	($data,$title) = $eprint->render if( $dataview eq "summary" );
+	($data,$title) = $eprint->render_full if( $dataview eq "full" );
+	($data,$title) = $eprint->render_history if( $dataview eq "history" );
+
+	$page->appendChild( $session->render_ruler );
+	$page->appendChild( $data );
+
 	$session->build_page( $session->html_phrase( "cgi/users/edit_eprint:form_title" ), $page, "move_form" );
 	$session->send_page();
 }
@@ -471,7 +535,9 @@ sub bounce_form
 		$form->appendChild( $div );
 
 		$form->appendChild( $session->render_action_buttons(
-			"_send" => $session->phrase( "cgi/users/edit_eprint:action_send" ) ) );
+			"_send" => $session->phrase( "cgi/users/edit_eprint:action_send" ),
+			"_cancel" => $session->phrase( "cgi/users/edit_eprint:action_cancel" ),
+ 		) );
 	}
 	else
 	{
@@ -480,7 +546,8 @@ sub bounce_form
 		$form->appendChild( $p );
 
 		$form->appendChild( $session->render_action_buttons(
-			"_send" => $session->phrase( "cgi/users/edit_eprint:action_reallydelete" ) ) );
+			"_send" => $session->phrase( "cgi/users/edit_eprint:action_reallydelete" ),
+			"_cancel" => $session->phrase( "cgi/users/edit_eprint:action_cancel" ), ));
 	}
 	
 
@@ -511,9 +578,7 @@ sub bounce
 	if( !defined $user && !$delete)
 	{
 		# Can't find the user
-		$session->render_error( 
-			$session->html_phrase( "cgi/users/edit_eprint:no_user" ),
-			"buffer" );
+		view_page( $session, $eprint, $session->html_phrase( "cgi/users/edit_eprint:no_user" ) );
 		return;
 	}
 	
@@ -533,9 +598,7 @@ sub bounce
 	unless( $success )
 	{
 		# Couldn't be bounced at all
-		$session->render_error( 
-			$session->html_phrase( "cgi/users/edit_eprint:bord_fail" ),
-			"buffer" );
+		view_page( $session, $eprint, $session->html_phrase( "cgi/users/edit_eprint:bord_fail" ) );
 		return;
 	}
 
@@ -543,7 +606,7 @@ sub bounce
 	{
 		# Can't send mail to a user what does not
 		# exist.
-		$session->redirect( "buffer" );
+		view_page( $session, $eprint );
 		return;
 	}
 
@@ -559,14 +622,15 @@ sub bounce
 		$eprint->log_mail_owner( $mail );
 
 		# Successfully bounced, redirect
-		$session->redirect( "buffer" );
+		view_page( $session, $eprint );
 		return;
 	}
 
 	# Couldn't mail
-	$session->render_error( 
+	view_page( 
+		$session, 
+		$eprint, 
 		$session->html_phrase( "cgi/users/edit_eprint:mail_fail",
 			username=>$user->render_value( "username" ),
-			email=>$user->render_value( "email" ) ),
-		"buffer" );
+			email=>$user->render_value( "email" ) ) );
 }

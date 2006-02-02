@@ -161,13 +161,6 @@ sub new
 }
 
 
-######################################################################
-#
-# process()
-#
-#
-######################################################################
-
 
 ######################################################################
 =pod
@@ -195,6 +188,7 @@ sub process
 	$self->{stage}     = $self->{session}->param( "stage" );
 	$self->{eprintid}  = $self->{session}->param( "eprintid" );
 	$self->{user}      = $self->{session}->current_user();
+	$self->{dataview}  = $self->{session}->param( "dataview" );
 
 	# If we have an EPrint ID, retrieve its entry from the database
 	if( defined $self->{eprintid} )
@@ -255,42 +249,52 @@ sub process
 
 	$self->{problems} = [];
 	my $ok = 1;
-	# Process data from previous stage
 
-	if( !defined $self->{stage} )
+
+	if( $self->{action} eq "jump" )
 	{
-		$self->{stage} = "home";
+		$self->{new_stage} = $self->{stage};
+		$self->{pageid} = $self->{session}->param( "pageid" );
 	}
 	else
 	{
-		# For stages other than home, 
-		# if we don't have an eprint then something's
-		# gone wrong.
-		if( !defined $self->{eprint} )
+		# Process data from previous stage
+
+		if( !defined $self->{stage} )
 		{
-			$self->_corrupt_err;
-			return( 0 );
+			$self->{stage} = "home";
+		}
+		else
+		{
+			# For stages other than home, 
+			# if we don't have an eprint then something's
+			# gone wrong.
+			if( !defined $self->{eprint} )
+			{
+				$self->_corrupt_err;
+				return( 0 );
+			}
+		}
+	
+		if( !defined $self->{stages}->{$self->{stage}} )
+		{
+			# It's not a valid stage. 
+			if( !defined $self->{eprint} )
+			{
+				$self->_corrupt_err;
+				return( 0 );
+			}
+		}
+	
+		# Process the results of that stage - done 
+		# by calling the function &_from_stage_<stage>
+		my $function_name = "_from_stage_".$self->{stage};
+		{
+			no strict 'refs';
+			$ok = $self->$function_name();
 		}
 	}
-
-	if( !defined $self->{stages}->{$self->{stage}} )
-	{
-		# It's not a valid stage. 
-		if( !defined $self->{eprint} )
-		{
-			$self->_corrupt_err;
-			return( 0 );
-		}
-	}
-
-	# Process the results of that stage - done 
-	# by calling the function &_from_stage_<stage>
-	my $function_name = "_from_stage_".$self->{stage};
-	{
-		no strict 'refs';
-		$ok = $self->$function_name();
-	}
-
+	
 	if( $ok )
 	{
 		# Render stuff for next stage
@@ -801,6 +805,7 @@ sub _from_stage_meta
 				$self->{eprint}->validate_meta_page( 
 					$self->{pageid},
 					$self->{for_archive} );
+
 			if( scalar @{$self->{problems}} > 0 )
 			{
 				$self->_set_stage_this;
@@ -1318,6 +1323,7 @@ sub _do_stage_type
 				"lib/submissionform:action_save" ),
 		next => $self->{session}->phrase( 
 				"lib/submissionform:action_next" ) };
+	$self->_staff_buttons( $submit_buttons ) if( $self->{staff} );
 
 	$page->appendChild( $self->{session}->render_input_form( 
 		staff=>$self->{staff},
@@ -1332,7 +1338,8 @@ sub _do_stage_type
 		{ 
 			stage => "type", 
 			dataset => $self->{dataset}->id(),
-			eprintid => $self->{eprint}->get_value( "eprintid" ) 
+			eprintid => $self->{eprint}->get_value( "eprintid" ) ,
+			dataview => $self->{dataview},
 		},
 		dest=>$self->{formtarget}."#t"
 	) );
@@ -1408,6 +1415,7 @@ sub _do_stage_linking
 				"lib/submissionform:action_save" ),
 		next => $self->{session}->phrase( 
 				"lib/submissionform:action_next" ) };
+	$self->_staff_buttons( $submit_buttons ) if( $self->{staff} );
 
 	$page->appendChild( $self->{session}->render_input_form( 
 		staff=>$self->{staff},
@@ -1425,6 +1433,7 @@ sub _do_stage_linking
 		{ 
 			stage => "linking", 
 			dataset => $self->{dataset}->id(),
+			dataview => $self->{dataview},
 			eprintid => $self->{eprint}->get_value( "eprintid" ) 
 		},
 		comments=>$comment,
@@ -1484,6 +1493,7 @@ sub _do_stage_meta
 	my $hidden_fields = {	
 			stage => "meta", 
 			dataset => $self->{dataset}->id(),
+			dataview => $self->{dataview},
 			eprintid => $self->{eprint}->get_value( "eprintid" ),
 			pageid => $self->{pageid} 
 		};
@@ -1497,6 +1507,7 @@ sub _do_stage_meta
 				"lib/submissionform:action_save" ),
 		next => $self->{session}->phrase( 
 				"lib/submissionform:action_next" ) };
+	$self->_staff_buttons( $submit_buttons ) if( $self->{staff} );
 
 	$page->appendChild( 
 		$self->{session}->render_input_form( 
@@ -1558,6 +1569,7 @@ sub _do_stage_files
 		$buttons{next} = $self->{session}->phrase( "lib/submissionform:action_next" ); 
 		$buttons{_order} = [ "prev", "save", "next" ];
 	}
+	$self->_staff_buttons( \%buttons ) if( $self->{staff} );
 
 	# buttons at top.
 	$form->appendChild( $self->{session}->render_action_buttons( %buttons ) );
@@ -1616,6 +1628,9 @@ sub _do_stage_files
 	$form->appendChild( $self->{session}->render_hidden_field(
 		"stage",
 		"files" ) );
+	$form->appendChild( $self->{session}->render_hidden_field(
+		"dataview",
+		$self->{dataview} ) );
 	$form->appendChild( $self->{session}->render_hidden_field(
 		"eprintid",
 		$self->{eprint}->get_value( "eprintid" ) ) );
@@ -1692,6 +1707,7 @@ sub _do_stage_docmeta
 	my $hidden_fields = {	
 		docid => $self->{document}->get_value( "docid" ),
 		dataset => $self->{eprint}->get_dataset()->id(),
+		dataview => $self->{dataview},
 		eprintid => $self->{eprint}->get_value( "eprintid" ),
 		stage => "docmeta" };
 
@@ -1757,6 +1773,7 @@ sub _do_stage_fileview
 		docid => $self->{document}->get_value( "docid" ),
 		dataset => $self->{eprint}->get_dataset()->id(),
 		eprintid => $self->{eprint}->get_value( "eprintid" ),
+		dataview => $self->{dataview},
 		_default_action => "upload",
 		stage => "fileview" };
 	############################
@@ -2017,6 +2034,7 @@ sub _do_stage_verify
 	my $hidden_fields = {
 		stage => $self->{new_stage},
 		dataset => $self->{eprint}->get_dataset()->id(),
+		dataview => $self->{dataview},
 		eprintid => $self->{eprint}->get_value( "eprintid" )
 	};
 
@@ -2081,6 +2099,7 @@ sub _do_stage_verify
 			staff=>$self->{staff},
 			buttons=>$submit_buttons,
 			hidden_fields=>$hidden_fields,
+			dataview => $self->{dataview},
 			dest=>$self->{formtarget}."#t" ) );
 
 	return( $page );
@@ -2127,6 +2146,7 @@ sub _do_stage_confirmdel
 	my $hidden_fields = {
 		stage => "confirmdel",
 		dataset => $self->{eprint}->get_dataset()->id(),
+		dataview => $self->{dataview},
 		eprintid => $self->{eprint}->get_value( "eprintid" )
 	};
 
@@ -2307,12 +2327,92 @@ sub _set_stage_this
 	$self->{new_stage} = $self->{stage};
 }
 
-#sub DESTROY
-#{
-#	my( $self ) = @_;
+######################################################################
+# 
+# $s_form->_staff_buttons( $buttons )
 #
-#	EPrints::Utils::destroy( $self );
-#}
+# this method modifies the buttons so as to be suitable for a staff
+# mode search.
+#
+######################################################################
+
+sub _staff_buttons
+{
+	my( $self, $buttons ) = @_;
+
+	my $islast = $self->{new_stage} eq $self->last_edit_stage;
+
+	my @o2 = ();
+	foreach( @{$buttons->{_order}} )
+	{
+		next if( $islast && $_ eq "next" );
+		push @o2, $_;
+		if( $_ eq "save" ) { push @o2,"stop"; }
+	}
+	delete $buttons->{next} if( $islast );
+	$buttons->{_order} = \@o2;
+	$buttons->{stop} = 
+		$self->{session}->phrase( "lib/submissionform:action_staff_stop" );
+	$buttons->{save} = 
+		$self->{session}->phrase( "lib/submissionform:action_staff_save" );
+}
+
+######################################################################
+=pod
+
+=item @stages = $s_form->get_stages;
+
+Return an array of the IDs of the stages of this submission form.
+
+=cut
+######################################################################
+
+sub get_stages
+{
+	my( $self ) = @_;
+
+	my @stages = ();
+
+	my $stage = "home";
+	while( $stage ne "return" && $stage ne "done" )
+	{
+		$stage = $self->{stages}->{$stage}->{next};
+
+		# Skip stage?
+		while( $self->{session}->get_archive->get_conf( "submission_stage_skip", $stage ) )
+		{
+			$stage = $self->{stages}->{$stage}->{next};
+		}
+		push @stages, $stage;
+	}
+
+	return @stages;
+}
+
+######################################################################
+=pod
+
+=item $stage = $s_form->last_edit_stage;
+
+Return the ID of the last stage which edits the eprint, ignores
+return, done and verify stages.
+
+=cut
+######################################################################
+
+sub last_edit_stage
+{
+	my( $self ) = @_;
+
+	my @stages = $self->get_stages;
+	my $laststage = pop @stages;
+	while( $laststage eq "verify" || $laststage eq "done" || $laststage eq "return" )
+	{
+		$laststage = pop @stages;
+	}
+	return $laststage;
+}
+
 
 1;
 

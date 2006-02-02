@@ -205,6 +205,7 @@ sub disconnect
 			$self->{session}->get_archive()->log( "Database disconnect error: ".
 				$self->{dbh}->errstr );
 	}
+	delete $self->{session};
 }
 
 
@@ -568,20 +569,39 @@ sub add_record
 	my( $self, $dataset, $data ) = @_;
 
 	my $table = $dataset->get_sql_table_name();
-	
 	my $keyfield = $dataset->get_key_field();
+	my $kf_sql = $keyfield->get_sql_name;
+	my $id = $data->{$kf_sql};
+
+	if( $self->exists( $dataset, $id ) )
+	{
+		# item already exists.
+		$self->{session}->get_archive->log( 
+"Attempt to create existing item $id in table $table." );
+		return 0;
+	}
 
 	# To save duplication of code, all this function does is insert
 	# a stub entry, then call the update method which does the hard
 	# work.
 
-	my $sql = "INSERT INTO ".$dataset->get_sql_table_name()." ";
-	$sql   .= " (".$dataset->get_key_field()->get_sql_name().") ";
-	$sql   .= "VALUES (\"".
-	          prep_value( $data->{$dataset->get_key_field()->get_sql_name()} )."\")";
+	my $sql = "INSERT INTO $table ( $kf_sql ) VALUES (\"";
+	$sql.= prep_value( $id )."\")";
 
 	# Send to the database
 	my $rv = $self->do( $sql );
+
+#	unless( $rv )
+#	{
+#		# something went wrong! try and clean up
+#
+#		my $sql = "DELETE FROM $table WHERE $kf_sql = (\"";
+#		$sql.= prep_value( $id )."\")";
+#		$self->do( $sql );
+#
+#		return 0;
+#	}
+
 
 	EPrints::Index::insert_ordervalues( $self->{session}, $dataset, $data );
 

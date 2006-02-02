@@ -581,6 +581,86 @@ sub render_description
 	return $r;
 }
 
+######################################################################
+=pod
+
+=item ($xhtml, $title ) = $dataobj->render
+
+Return a chunk of XHTML DOM describing this object in the normal way.
+This is the public view of the record, not the staff view.
+
+=cut
+######################################################################
+
+sub render
+{
+	my( $self ) = @_;
+
+	return( $self->render_description, $self->render_description );
+}
+
+######################################################################
+=pod
+
+=item ($xhtml, $title ) = $dataobj->render_full
+
+Return an XHTML table in DOM describing this record. All values of
+all fields are listed. This is the staff view.
+
+=cut
+######################################################################
+
+sub render_full
+{
+	my( $self ) = @_;
+
+	my $unspec_fields = $self->{session}->make_doc_fragment;
+	my $unspec_first = 1;
+
+	# Show all the fields
+	my $table = $self->{session}->make_element( "table",
+					border=>"0",
+					cellpadding=>"3" );
+
+	my @fields = $self->get_dataset->get_fields;
+	foreach my $field ( @fields )
+	{
+		next unless( $field->get_property( "show_in_html" ) );
+
+		my $name = $field->get_name();
+		if( $self->is_set( $name ) )
+		{
+			$table->appendChild( $self->{session}->render_row(
+				$field->render_name( $self->{session} ),	
+				$self->render_value( $field->get_name(), 1 ) ) );
+			next;
+		}
+
+		# unspecified value, add it to the list
+		if( $unspec_first )
+		{
+			$unspec_first = 0;
+		}
+		else
+		{
+			$unspec_fields->appendChild( 
+				$self->{session}->make_text( ", " ) );
+		}
+		$unspec_fields->appendChild( 
+			$field->render_name( $self->{session} ) );
+
+
+	}
+
+	$table->appendChild( $self->{session}->render_row(
+			$self->{session}->html_phrase( "lib/dataobj:unspecified" ),
+			$unspec_fields ) );
+
+	return $table;
+}
+
+
+
 
 ######################################################################
 =pod

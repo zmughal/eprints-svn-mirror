@@ -309,6 +309,9 @@ sub terminate
 	# it now.
 	EPrints::XML::dispose( $self->{doc} );
 
+	# give garbage collection a hand.
+	foreach( keys %{$self} ) { delete $self->{$_}; } 
+
 	if( $self->{noise} >= 2 ) { print "Ending EPrints Session.\n\n"; }
 }
 
@@ -1061,6 +1064,40 @@ sub render_link
 		href=>EPrints::Utils::url_escape( $uri ),
 		target=>$target );
 }
+
+######################################################################
+=pod
+
+=item $table_row = $session->render_row( $key, $value );
+
+Return the key and value in a DOM encoded HTML table row. eg.
+
+ <tr><th>$key:</th><td>$value</td></tr>
+
+=cut
+######################################################################
+
+sub render_row
+{
+	my( $session, $key, $value ) = @_;
+
+	my( $tr, $th, $td );
+
+	$tr = $session->make_element( "tr" );
+
+	$th = $session->make_element( "th", valign=>"top" ); 
+	$th->appendChild( $key );
+	$th->appendChild( $session->make_text( ":" ) );
+	$tr->appendChild( $th );
+
+	$td = $session->make_element( "td", valign=>"top" ); 
+	$td->appendChild( $value );
+	$tr->appendChild( $td );
+
+	return $tr;
+}
+
+
 
 ######################################################################
 =pod

@@ -219,8 +219,7 @@ sub eprint_render
 			$session->get_archive()->get_dataset( "archive" ) );
 		if( defined $target )
 		{
-			$table->appendChild( _render_row(
-				$session,
+			$table->appendChild( $session->render_row(
 				$session->html_phrase( 
 					"eprint_fieldname_commentary" ),
 				$target->render_citation_link() ) );
@@ -248,16 +247,14 @@ sub eprint_render
 		$frag->appendChild( $eprint->render_value( "thesis_type"  ) );
 		$frag->appendChild( $session->make_text( ")" ));
 	}
-	$table->appendChild( _render_row(
-		$session,
+	$table->appendChild( $session->render_row(
 		$session->html_phrase( "eprint_fieldname_type" ),
 		$frag ));
 
 	# Additional Info
 	if( $eprint->is_set( "note" ) )
 	{
-		$table->appendChild( _render_row(
-			$session,
+		$table->appendChild( $session->render_row(
 			$session->html_phrase( "eprint_fieldname_note" ),
 			$eprint->render_value( "note" ) ) );
 	}
@@ -266,8 +263,7 @@ sub eprint_render
 	# Keywords
 	if( $eprint->is_set( "keywords" ) )
 	{
-		$table->appendChild( _render_row(
-			$session,
+		$table->appendChild( $session->render_row(
 			$session->html_phrase( "eprint_fieldname_keywords" ),
 			$eprint->render_value( "keywords" ) ) );
 	}
@@ -275,13 +271,11 @@ sub eprint_render
 
 
 	# Subjects...
-	$table->appendChild( _render_row(
-		$session,
+	$table->appendChild( $session->render_row(
 		$session->html_phrase( "eprint_fieldname_subjects" ),
 		$eprint->render_value( "subjects" ) ) );
 
-	$table->appendChild( _render_row(
-		$session,
+	$table->appendChild( $session->render_row(
 		$session->html_phrase( "page:id_code" ),
 		$eprint->render_value( "eprintid" ) ) );
 
@@ -301,23 +295,20 @@ sub eprint_render
 		$usersname = $session->html_phrase( "page:invalid_user" );
 	}
 
-	$table->appendChild( _render_row(
-		$session,
+	$table->appendChild( $session->render_row(
 		$session->html_phrase( "page:deposited_by" ),
 		$usersname ) );
 
 	if( $eprint->is_set( "datestamp" ) )
 	{
-		$table->appendChild( _render_row(
-			$session,
+		$table->appendChild( $session->render_row(
 			$session->html_phrase( "page:deposited_on" ),
 			$eprint->render_value( "datestamp" ) ) );
 	}
 
 	if( $eprint->is_set( "lastmod" ) )
 	{
-		$table->appendChild( _render_row(
-			$session,
+		$table->appendChild( $session->render_row(
 			$session->html_phrase( "eprint_fieldname_lastmod" ),
 			$eprint->render_value( "lastmod" ) ) );
 	}
@@ -367,137 +358,6 @@ sub eprint_render
 
 	return( $page, $title, $links );
 }
-
-######################################################################
-#
-# $xhtmlfragment = eprint_render_full( $eprint, $session )
-#
-######################################################################
-# $eprint
-# - the EPrints::User to be rendered
-# $session
-# - the current EPrints::Session
-#
-# returns: $xhtmlfragment
-# - a pair of XHTML DOM fragments - the page and the title.
-######################################################################
-# This subroutine takes an eprint object and renders the XHTML view
-# of this eprint for viewing by editors and the person depositing
-# it. It should show all fields so they can be approved/checked.
-# 
-# By default it uses eprint_render to generate a view of the normal
-# abstract page.
-#
-######################################################################
-
-sub eprint_render_full
-{
-	my( $eprint, $session ) = @_;
-
-	my( $page, $p, $a );
-	$page = $session->make_doc_fragment;
-
-	$page->appendChild( $session->html_phrase( 
-		"page:abstract_intro" ) );
-
-	my( $table, $tr, $td );
-	my( $showdiv );
-	$showdiv = $session->make_element( "div", class=>"preview" );
-	$page->appendChild( $showdiv );
-	my( $abstractpage, $title ) = eprint_render( $eprint, $session );
-	$showdiv->appendChild( $abstractpage );
-
-	if( $eprint->is_set( "suggestions" ) )
-	{
-		$table = $session->make_element( "table", border=>1, cellpadding=>20 );
-		$page->appendChild( $session->html_phrase( "page:suggestions_intro" ) );
-		$page->appendChild( $table );
-	
-		$tr = $session->make_element( "tr" );
-		$td = $session->make_element( "td" );
-		$table->appendChild( $tr );
-		$tr->appendChild( $td );
-		$td->appendChild( $eprint->render_value( "suggestions" ) );
-	}
-
-	my $unspec_fields = $session->make_doc_fragment;
-	my $unspec_first = 1;
-
-	# Show all the other fields
-	$page->appendChild( $session->html_phrase( 
-		"page:allfields_intro" ) );
-	$table = $session->make_element( "table",
-				border=>"0",
-				cellpadding=>"3" );
-	$page->appendChild( $table );
-	my @tfields = $eprint->get_dataset()->get_type_fields( $eprint->get_value( "type" ) );
-	foreach my $field ( @tfields )
-	{
-		next if( $field->get_name() eq "suggestions" );
-
-		if( $eprint->is_set( $field->get_name() ) )
-		{
-			$table->appendChild( _render_row(
-				$session,
-				$field->render_name( $session ),	
-				$eprint->render_value( 
-					$field->get_name(), 
-					1 ) ) );
-			next;
-		}
-
-		# unspecified value, add it to the list
-		if( $unspec_first )
-		{
-			$unspec_first = 0;
-		}
-		else
-		{
-			$unspec_fields->appendChild( $session->make_text( ", " ) );
-		}
-		$unspec_fields->appendChild( $field->render_name( $session ) );
-	}
-
-	$page->appendChild( $session->html_phrase( "page:unspecified", fieldnames=>$unspec_fields ) );
-		
-
-
-	return( $page, $title );			
-}
-
-######################################################################
-#
-# $dom_tr = _render_row( $session, $key, $value )
-#
-######################################################################
-# Used by eprint_render, user_render_full and eprint_render_full to 
-# turn a key and value into an html table row. 
-#
-# Returns DOM representing:
-# <tr><th>$key:</th><td>$value</td></tr>
-#
-######################################################################
-
-sub _render_row
-{
-	my( $session, $key, $value ) = @_;
-
-	my( $tr, $th, $td );
-
-	$tr = $session->make_element( "tr" );
-
-	$th = $session->make_element( "th", valign=>"top" ); 
-	$th->appendChild( $key );
-	$th->appendChild( $session->make_text( ":" ) );
-	$tr->appendChild( $th );
-
-	$td = $session->make_element( "td", valign=>"top" ); 
-	$td->appendChild( $value );
-	$tr->appendChild( $td );
-
-	return $tr;
-}
-
 
 
 ######################################################################
@@ -577,88 +437,6 @@ sub user_render
 	return( $info );
 }
 
-######################################################################
-#
-# $xhtmlfragment = user_render_full( $user, $session )
-#
-######################################################################
-# $user
-# - the EPrints::User to be rendered
-# $session
-# - the current EPrints::Session
-#
-# returns: $xhtmlfragment
-# - a XHTML DOM fragment 
-######################################################################
-# This subroutine takes a user object and renders the XHTML view
-# of this user for viewing by system admins. It should show all
-# the information.
-#
-######################################################################
-
-
-sub user_render_full
-{
-	my( $user, $session ) = @_;
-
-	my $html;	
-
-	my( $info, $p, $a );
-	$info = $session->make_doc_fragment;
-
-	# Show all the fields
-	my( $table );
-	$table = $session->make_element( "table",
-					border=>"0",
-					cellpadding=>"3" );
-
-	my @fields = $user->get_dataset()->get_fields( $user->get_value( "usertype" ) );
-	my $field;
-	foreach $field ( @fields )
-	{
-		my $name = $field->get_name();
-		# Skip fields which are only used by eprints internals
-		# and would just confuse the issue to print
-		next if( $name eq "newemail" );
-		next if( $name eq "newpassword" );
-		next if( $name eq "password" );
-		next if( $name eq "pin" );
-		next if( $name eq "pinsettime" );
-		$table->appendChild( _render_row(
-			$session,
-			$field->render_name( $session ),	
-			$user->render_value( $field->get_name(), 1 ) ) );
-
-	}
-
-
-	my @subs = $user->get_subscriptions;
-	my $subs_ds = $session->get_archive->get_dataset( "subscription" );
-	foreach my $subscr ( @subs )
-	{
-		my $rowright = $session->make_doc_fragment;
-		foreach( "frequency","spec","mailempty" )
-		{
-			my $strong;
-			$strong = $session->make_element( "strong" );
-			$strong->appendChild( $subs_ds->get_field( $_ )->render_name( $session ) );
-			$strong->appendChild( $session->make_text( ": " ) );
-			$rowright->appendChild( $strong );
-			$rowright->appendChild( $subscr->render_value( $_ ) );
-			$rowright->appendChild( $session->make_element( "br" ) );
-		}
-		$table->appendChild( _render_row(
-			$session,
-			$session->html_phrase(
-				"page:subscription" ),
-			$rowright ) );
-				
-	}
-
-	$info->appendChild( $table );
-
-	return $info;
-}
 
 ######################################################################
 #

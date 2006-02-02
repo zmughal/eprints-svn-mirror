@@ -43,7 +43,8 @@ indicates that there was no user responsible (ie. a script did it).
 
 =item datasetid (text)
 
-The name of the dataset to which the modified item belongs.
+The name of the dataset to which the modified item belongs. "eprint"
+is used for eprints, rather than the inbox, buffer etc.
 
 =item objectid (int)
 
@@ -349,7 +350,12 @@ sub render_modify
 
 	my $r_file_old =  $eprint->local_path."/revisions/$r_old.xml";
 	my $r_file_new =  $eprint->local_path."/revisions/$r_new.xml";
-	next unless( -e $r_file_old && -e $r_file_new );
+	unless( -e $r_file_old && -e $r_file_new )
+	{
+		my $div = $self->{session}->make_element( "div" );
+		$div->appendChild( $self->{session}->make_text( "Earlier version not available. No diff possible." ) );
+		return $div;
+	}
 	my $file_old = EPrints::XML::parse_xml( $r_file_old );
 	my $file_new = EPrints::XML::parse_xml( $r_file_new );
 	my $dom_old = $file_old->getFirstChild;

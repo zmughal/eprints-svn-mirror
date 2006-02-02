@@ -1698,26 +1698,42 @@ sub render
 ######################################################################
 =pod
 
-=item $dom = $eprint->render_full
+=item ( $html ) = $eprint->render_history
 
-Render as XHTML DOM a full description of this eprint - the one
-intended for editors.
+Render the history of this eprint as XHTML DOM.
 
 =cut
 ######################################################################
 
-sub render_full
+sub render_history
 {
-        my( $self ) = @_;
+	my( $self ) = @_;
 
-        my( $dom, $title ) = $self->{session}->get_archive()->call( 
-		"eprint_render_full", 
-		$self, 
-		$self->{session} );
+	my $page = $self->{session}->make_doc_fragment;
 
-        return( $dom );
+	my $ds = $self->{session}->get_archive->get_dataset( "history" );
+	my $searchexp = EPrints::SearchExpression->new(
+		session=>$self->{session},
+		dataset=>$ds,
+		custom_order=>"-timestamp" );
+	
+	$searchexp->add_field(
+		$ds->get_field( "objectid" ),
+		$self->get_id );
+	$searchexp->add_field(
+		$ds->get_field( "datasetid" ),
+		'eprint' );
+	
+	my $results = $searchexp->perform_search;
+	
+	$results->map( sub {
+		my( $session, $dataset, $item ) = @_;
+	
+		$page->appendChild( $item->render );
+	} );
+
+	return $page;
 }
-
 
 ######################################################################
 =pod
@@ -1738,8 +1754,7 @@ sub get_url
 	{
 		return $self->{session}->get_archive()->get_conf( "perl_url" ).
 			"/users/staff/edit_eprint?eprintid=".
-			$self->get_value( "eprintid" )."&".
-			"dataset=".$self->get_dataset()->id();
+			$self->get_value( "eprintid" )
 	}
 	
 	return( $self->url_stem() );

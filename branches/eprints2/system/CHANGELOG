@@ -3187,3 +3187,35 @@ PACKAGE: 2.2.99.2
 
  - New method to database. counter_reset which sets a counter back to 0.
 
+2006-02-02 cjg (it's by birthday. I'm 30. Woooo!)
+
+ - Large redesign of the edit_eprint page. It now allows jumps into any
+    point in the edit process. The edit process has different buttons 
+    when running in staff mode. The edit_eprint page can show 3 different
+    views: summary, full metadata or history. 
+ - Added some missing phrases for new system metadata fields.
+ - Added a new render_full method to dataobj. 
+ - Removed the render full functions for eprint and user form. Now just 
+    uses the render_full method.
+ - Added new EPrints::Session method, render row. This takes a title and
+    a value and renders an HTML table row with them in.
+ - Rewrote default render functions in ArchiveRenderConfig.pm to use 
+    $session->render_row. 
+ - Removed the, now not needed, render row function from ArchiveRenderConfig
+ - New metafield property: show_in_html. Defaults to true, but if set
+    to false then won't be shown in render_full.
+ - Fields in user which are totally system only, such as pin and new
+    email are set to show_in_html.
+ - When an EPrints::Session terminates it now deletes all the properties
+    which should improve garbage collection. 
+ - When adding a record to a dataset, eprints now checks to make sure
+    that the record doesn't already exist in the dataset.
+ - removed dataset from edit_eprint. It is less efficient, but more 
+    reliable to just work through by elmimination.
+ - removed export_xml - export should handle the same functions in the new
+    plugin scheme.
+ - added 'documents' to the create tables in erase_eprints (forgot it last
+    commit)
+
+
+
