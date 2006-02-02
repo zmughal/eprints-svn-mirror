@@ -11,32 +11,45 @@
 # __LICENSE__
 #
 ######################################################################
-#
-# Metadata Configuration
-#
-#  The archive specific fields for users and eprints. Some fields
-#  come automatically like a user's username or an eprints type. See
-#  the docs for more information.
-#
-#  It's very tricky to change these fields without erasing the archive
-#  and starting from scratch. So make the effort to get it right!
-#
-#  Note: Changing the fields here (usually) requires you to make a 
-#  number of other configuration changes in some or all of the 
-#  following:
-#   - The metadata types config XML file
-#   - The citation config XML file(s)
-#   - The render functions
-#   - The search options 
-#   - The OAI support 
-#
-#  To (re)create the database you will need to run
-#   bin/erase_archive  (if you've already run create_tables before)
-#   bin/create_tables
-#
-#  See the documentation for more information.
-#
+
+=head1 NAME
+
+ArchiveMetadataFieldsConfig.pm - Archive specific metadata configuration
+
+=head1 DESCRIPTION
+
+The archive specific fields for users and eprints. Some fields
+come automatically like a user's username or an eprints type. See
+the docs for more information.
+
+It's very tricky to change these fields without erasing the archive
+and starting from scratch. So make the effort to get it right!
+
+Note: Changing the fields here (usually) requires you to make a 
+number of other configuration changes in some or all of the 
+following:
+
+ - The metadata types config XML file
+ - The citation config XML file(s)
+ - The render functions
+ - The search options 
+ - The OAI support 
+
+To (re)create the database you will need to run
+
+ bin/erase_archive  (if you've already run create_tables before)
+ bin/create_tables
+
+See the documentation for more information.
+
+=head1 METHODS
+
+=over 4
+
+=cut
+
 ######################################################################
+
 
 sub get_metadata_conf
 {
@@ -185,31 +198,34 @@ return $fields;
 
 
 ######################################################################
-#
-# set_eprint_defaults( $data , $session )
-# set_user_defaults( $data , $session )
-# set_document_defaults( $data , $session )
-# set_subscription_defaults( $data , $session )
-#
-######################################################################
-# $data 
-# - reference to HASH mapping 
-#      fieldname string
-#   to
-#      metadata value structure (see docs)
-# $session 
-# - the session object
-# $eprint 
-# - (only for set_document_defaults) this is the
-#   eprint to which this document will belong.
-#
-# returns: nothing (Modify $data instead)
-#
-######################################################################
-# These methods allow you to set some default values when things
-# are created. This is useful if you skip stages in the submission 
-# form or just want to set a default.
-#
+
+=item set_eprint_defaults( $data , $session )
+=item set_user_defaults( $data , $session )
+=item set_document_defaults( $data , $session )
+=item set_subscription_defaults( $data , $session )
+
+These methods allow you to set some default values when things
+are created. This is useful if you skip stages in the submission 
+form or just want to set a default.
+
+=over 4
+
+=item $data 
+
+Reference to HASH mapping I<fieldname string> to I<metadata value structure> (see docs)
+
+=item L<$session|EPrints::Session>
+
+The current session object.
+
+=item L<$eprint|EPrints::EPrint>
+
+(only for set_document_defaults) this is the eprint to which this document will belong.
+
+Returns nothing (Modify $data instead)
+
+=cut
+
 ######################################################################
 
 sub set_eprint_defaults
@@ -241,28 +257,27 @@ sub set_subscription_defaults
 
 
 ######################################################################
-#
-# set_eprint_automatic_fields( $eprint )
-# set_user_automatic_fields( $user )
-# set_document_automatic_fields( $doc )
-# set_subscription_automatic_fields( $subscription )
-#
-######################################################################
-# $eprint/$user/$doc/$subscription 
-# - the object to be modified
-#
-# returns: nothing (Modify the object instead).
-#
-######################################################################
-# These methods are called every time commit is called on an object
-# (commit writes it back into the database)
-# These methods allow you to read and modify fields just before this
-# happens. There are a number of uses for this. One is to encrypt 
-# passwords as "secret" fields are only set if they are being changed
-# otherwise they are empty. Another is to create fields which the
-# submitter can't edit directly but you want to be searchable. eg.
-# Number of authors.
-#
+
+=item set_eprint_automatic_fields( $eprint )
+=item set_user_automatic_fields( $user )
+=item set_document_automatic_fields( $doc )
+=item set_subscription_automatic_fields( $subscription )
+
+These methods are called every time commit is called on an object
+(commit writes it back into the database)
+These methods allow you to read and modify fields just before this
+happens. There are a number of uses for this. One is to encrypt 
+passwords as "secret" fields are only set if they are being changed
+otherwise they are empty. Another is to create fields which the
+submitter can't edit directly but you want to be searchable. eg.
+Number of authors.
+
+$eprint/$user/$doc/$subscription - the object to be modified
+
+Returns nothing (Modify the object instead).
+
+=cut
+
 ######################################################################
 
 sub set_eprint_automatic_fields
@@ -354,15 +369,6 @@ sub set_subscription_automatic_fields
 # Return true to indicate the module loaded OK.
 1;
 
+__END__
 
-
-
-
-
-
-
-
-
-
-
-
+=back
