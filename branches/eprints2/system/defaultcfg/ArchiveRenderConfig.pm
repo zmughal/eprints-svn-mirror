@@ -11,25 +11,33 @@
 # __LICENSE__
 #
 ######################################################################
-#
-# Rendering Routines
-#
-#   Functions which convert archive data into a human readable form.
-#
-#   A couple of these routines return UTF8 encoded strings, but the
-#   others return DOM structures. See the docs for more information
-#   about this.
-#   
-#   Anywhere text is set, it is requested from the archive phrases
-#   XML file, in case you are running the archive in more than one
-#   language.
-#
-#   Hopefully when we are in beta the'll be an alternative version
-#   of this config for single language archives.
-#
+
+=head1 NAME
+
+ArchiveRenderConfig.pm - Rendering Routines
+
+=head1 DESCRIPTION
+
+Functions which convert archive data into a human readable form.
+
+A couple of these routines return UTF8 encoded strings, but the
+others return DOM structures. See the docs for more information
+about this.
+
+Anywhere text is set, it is requested from the archive phrases
+XML file, in case you are running the archive in more than one
+language.
+
+Hopefully when we are in beta the'll be an alternative version
+of this config for single language archives.
+
+=head1 METHODS
+
+=over 4
+
+=cut
+
 #---------------------------------------------------------------------
-
-
 
 
 ######################################################################
@@ -357,21 +365,18 @@ sub eprint_render
 
 
 ######################################################################
-#
-# $xhtmlfragment = user_render( $user, $session )
-#
-######################################################################
-# $user
-# - the EPrints::User to be rendered
-# $session
-# - the current EPrints::Session
-#
-# returns: $xhtmlfragment
-# - a XHTML DOM fragment 
-######################################################################
-# This subroutine takes a user object and renders the XHTML view
-# of this user for public viewing.
-#
+
+=item $xhtmlfragment = user_render( $user, $session )
+
+This subroutine takes a user object and renders the XHTML view
+of this user for public viewing.
+
+Takes the L<$user|EPrints::User> to render and the current L<$session|EPrints::Session>.
+
+Returns an $xhtmlfragment (see L<EPrints::XML>).
+
+=cut
+
 ######################################################################
 
 
@@ -435,35 +440,43 @@ sub user_render
 
 
 ######################################################################
-#
-# $xhtmlfragment = render_value_with_id( $field, $session, $value,
-#			$alllangs, $rendered );
-#
-######################################################################
-# $field 
-# - the EPrints::MetaField to which this value belongs
-# $session
-# - the current EPrints::Session
-# $value
-# - the metadata value structure (see docs)
-# $alllangs
-# - boolean flag (1 or 0) - are we rendering for just the current
-# session language or showing all the data in the value.
-# - $rendered
-# XHTML DOM fragment containing the value rendered without any
-# attention to the ID.
-#
-# returns: $xhtmlfragment
-# - An XHTML DOM fragment containing the value rendered with 
-# attention to the ID (or by default just $rendered)
-#
-######################################################################
-# This function is used to madify how a field with an ID is rendered,
-# By default it just returns the rendered value as it was passed. The
-# most likely use for this function is to wrap the rendered value in
-# an anchor ( <a href="foo"> </a> ), generating the URL as appropriate
-# from the value's ID part.
-#
+
+=item $xhtmlfragment = render_value_with_id( $field, $session, $value, $alllangs, $rendered )
+
+This function is used to madify how a field with an ID is rendered,
+By default it just returns the rendered value as it was passed. The
+most likely use for this function is to wrap the rendered value in
+an anchor ( <a href="foo"> </a> ), generating the URL as appropriate
+from the value's ID part.
+
+=over 4
+
+=item L<$field|EPrints::MetaField>
+
+The field to which this value belongs.
+
+=item L<$session|EPrints::Session>
+
+The current session.
+
+=item $value
+
+The metadata value structure (see docs). (Field dependent, but most commonly a string or hash reference).
+
+=item $alllangs
+
+A boolean flag (1 or 0) indicating whether we rendering for just the current session language or showing all the data in the value.
+
+=item $rendered
+
+An XHTML DOM fragment containing the value rendered without any attention to the ID.
+
+=back
+
+Returns an XHTML DOM fragment (see L<EPrints::XML>) containing the value rendered with attention to the ID (or by default just $rendered)
+
+=cut
+
 ######################################################################
 
 sub render_value_with_id
@@ -492,33 +505,27 @@ sub render_value_with_id
 
 
 ######################################################################
-#
-# $label = id_label( $field, $session, $id );
-#
-######################################################################
-# $field 
-# - the EPrints::MetaField to which this ID belongs
-# $session
-# - the current EPrints::Session
-# $id
-# - ID part of a single metadata value 
-#
-# returns: $label
-# - XHTML DOM fragment describing human readable version of the ID.
-#
-######################################################################
-# Used when browsing by an ID field, this is used to convert the ID
-# to a displayable label. 
-# 
-# For example, if you are creating a browse-by for the authors ID
-# then you might want them displayed as the authors name. How you do 
-# this, if at all, depends very much on your data. By default it
-# just returns the value of the ID it was passed.
-#
-# It will almost always just contain text. It could in theory contain
-# an image. It will usually be wrapped in an anchor <a> </a> so it
-# should not have any links in.
-#
+
+=item $label = id_label( $field, $session, $id )
+
+Used when browsing by an ID field, this is used to convert the ID
+to a displayable label. 
+
+For example, if you are creating a browse-by for the authors ID
+then you might want them displayed as the authors name. How you do 
+this, if at all, depends very much on your data. By default it
+just returns the value of the ID it was passed.
+
+It will almost always just contain text. It could in theory contain
+an image. It will usually be wrapped in an anchor <a> </a> so it
+should not have any links in.
+
+The L<$field|EPrints::MetaField> to which this ID belongs, the current L<$session|EPrints::Session> and $id is the ID part of a single metadata value 
+
+Returns an XHTML DOM fragment (see L<EPrints::XML>), $label, describing human readable version of the ID.
+
+=cut
+
 ######################################################################
 
 sub id_label
@@ -529,18 +536,19 @@ sub id_label
 }
 
 ######################################################################
-#
-# $xhtml = render_fileinfo( $session, $field, $value )
-#
-######################################################################
-# This is a custom render method for the fileinfo field. It splits
-# up the information in the "fileinfo" field and renders icons which
-# link directly to the documents.
-#
-# It is used to include file icons in a citation.
-#
-# The fileinfo field is updated using the "eprint_automatic_fields"
-# method in ArchiveMetadataConfig.pm
+
+=item $xhtml = render_fileinfo( $session, $field, $value )
+
+This is a custom render method for the fileinfo field. It splits
+up the information in the "fileinfo" field and renders icons which
+link directly to the documents.
+
+It is used to include file icons in a citation.
+
+The fileinfo field is updated using the "L<eprint_automatic_fields"|ArchiveMetadataConfig/eprint_automatic_fields>" method in C<ArchiveMetadataConfig.pm>.
+
+=cut
+
 ######################################################################
 
 sub render_fileinfo
@@ -579,3 +587,7 @@ sub _render_fileicon
 
 # Return true to indicate the module loaded OK.
 1;
+
+__END__
+
+=back
