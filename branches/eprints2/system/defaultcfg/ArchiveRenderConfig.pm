@@ -33,22 +33,18 @@
 
 
 ######################################################################
-#
-# $xhtmlfragment = eprint_render( $eprint, $session )
-#
-######################################################################
-# $eprint
-# - the EPrints::User to be rendered
-# $session
-# - the current EPrints::Session
-#
-# returns: ( $xhtmlfragment, $title, $links )
-# - 3 XHTML DOM fragments - the page, the title and (optionally) the
-# metadata links to place in the webpage header.
-######################################################################
-# This subroutine takes an eprint object and renders the XHTML view
-# of this eprint for public viewing.
-#
+
+=item $xhtmlfragment = eprint_render( $eprint, $session )
+
+This subroutine takes an eprint object and renders the XHTML view
+of this eprint for public viewing.
+
+Takes two arguments: the L<EPrints::EPrint|$eprint> to render and the current L<EPrints::Session|$session>.
+
+Returns three XHTML DOM fragments (see L<EPrints::XML>): C<$page>, C<$title>, (and optionally) C<$links>.
+
+=cut
+
 ######################################################################
 
 sub eprint_render

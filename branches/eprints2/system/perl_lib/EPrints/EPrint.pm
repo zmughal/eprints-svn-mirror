@@ -2354,6 +2354,10 @@ Callbacks may optionally be defined in the ArchiveConfig.
 
 	validate_field( $field, $value, $session, [$for_archive] )
 
+=item validate_eprint
+
+	validate_eprint( $eprint, $session, [$for_archive] )
+	
 =item validate_eprint_meta
 
 	validate_eprint_meta( $eprint, $session, [$for_archive] )
@@ -2369,5 +2373,7 @@ Callbacks may optionally be defined in the ArchiveConfig.
 =item eprint_render
 
 	eprint_render( $eprint, $session )
+
+See L<ArchiveRenderConfig/eprint_render>.
 
 =back
