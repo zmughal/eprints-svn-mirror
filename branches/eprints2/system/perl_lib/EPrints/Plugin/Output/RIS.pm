@@ -9,18 +9,19 @@ use Unicode::String;
 use strict;
 
 
-sub defaults
+sub new
 {
-	my %d = $_[0]->SUPER::defaults();
+	my( $class, %opts ) = @_;
 
-	$d{id} = "output/ris";
-	$d{name} = "Reference Manager";
-	$d{accept} = [ 'list/eprint', 'dataobj/eprint' ];
-	$d{visible} = "all";
-	$d{suffix} = ".ris";
-	$d{mimetype} = "text/plain";
+	my $self = $class->SUPER::new( %opts );
 
-	return %d;
+	$self->{name} = "Reference Manager";
+	$self->{accept} = [ 'list/eprint', 'dataobj/eprint' ];
+	$self->{visible} = "all";
+	$self->{suffix} = ".ris";
+	$self->{mimetype} = "text/plain";
+
+	return $self;
 }
 
 

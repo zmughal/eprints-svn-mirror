@@ -10,20 +10,21 @@ use Unicode::String qw(latin1);
 
 use strict;
 
-sub defaults
+sub new
 {
-	my %d = $_[0]->SUPER::defaults();
+	my( $class, %opts ) = @_;
 
-	$d{id} = "output/rss";
-	$d{name} = "RSS";
-	$d{accept} = [ 'list/eprint' ];
-	$d{visible} = "all";
-	$d{suffix} = ".rss";
-	$d{mimetype} = "text/xml";
+	my $self = $class->SUPER::new( %opts );
 
-	$d{number_to_show} = 10;
+	$self->{name} = "RSS";
+	$self->{accept} = [ 'list/eprint' ];
+	$self->{visible} = "all";
+	$self->{suffix} = ".rss";
+	$self->{mimetype} = "text/xml";
 
-	return %d;
+	$self->{number_to_show} = 10;
+
+	return $self;
 }
 
 

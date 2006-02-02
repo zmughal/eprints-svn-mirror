@@ -48,29 +48,11 @@ sub new
 	my $self = EPrints::Utils::clone( \%params );
 	bless $self, $class;
 
-	my %d = $self->defaults;
-	foreach( keys %d )
-	{
-		next if defined $self->{$_};
-		$self->{$_} = $d{$_};
-	}		
+	$self->{id} = $class;
+	$self->{id} =~ s/^EPrints::Plugin:://;
+	$self->{id} =~ s/^EPrints::LocalPlugin::([^:]*):://;
 
 	return $self;
-}
-
-######################################################################
-=pod
-
-=item %defaults = EPrints::Plugin->defaults; [static]
-
-Return a hash of the default parameters for this plugin.
-
-=cut
-######################################################################
-
-sub defaults
-{
-	return ();
 }
 
 ######################################################################
@@ -158,7 +140,9 @@ sub matches
 
 	if( $test eq "type" )
 	{
-		return( $self->get_type eq $param );
+		my $l = length( $param );
+		my $start = substr( $self->{id}, 0, $l );
+		return( $start eq $param );
 	}
 
 	# didn't understand this match 
@@ -238,25 +222,20 @@ sub load_dir
 			load_dir( $reg, $filename, $baseclass, @prefix, $fn );
 			next;
 		}
-
 		next unless( $fn =~ s/\.pm// );
 		my $class = $baseclass."::".join("::",@prefix,$fn );
-		
-		eval "use $class;";
-		if( $@ ne "" )
-		{
-			print STDERR "Error with plugin $class... $@\n";
-			next;
-		}
+		#print STDERR "loading $class\n"; 
+		my $return = eval "use $class";
 
 		no strict "refs";
 		my $absvar = $class.'::ABSTRACT';
 		my $abstract = ${$absvar};
-		my %defaults = $class->defaults();
+		my $plugin = $class->new();
+		#my %defaults = $class->defaults();
 		use strict "refs";
 		next if( $abstract );
 
-		my $pluginid = $defaults{"id"};
+		my $pluginid = $plugin->{"id"};
 		if( !defined $pluginid )
 		{
 			print STDERR "Warning: plugin $class has no ID set.\n";

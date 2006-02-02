@@ -1456,6 +1456,23 @@ sub cache_file
 		$self->get_value( "docid" ).".".$suffix;
 }
 	
+######################################################################
+#
+# $doc->register_parent( $eprint )
+#
+# Give the document the EPrints::EPrint object that it belongs to.
+#
+# This may cause reference loops, but it does avoid two identical
+# EPrints objects existing at once.
+#
+######################################################################
+
+sub register_parent
+{
+	my( $self, $parent ) = @_;
+
+	$self->{eprint} = $parent;
+}
 
 1;
 

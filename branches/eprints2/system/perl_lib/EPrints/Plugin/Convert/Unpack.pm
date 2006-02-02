@@ -29,13 +29,16 @@ our %TYPES = qw(
 
 our $ABSTRACT = 0;
 
-sub defaults
+sub new
 {
-	my %d = $_[0]->SUPER::defaults();
-	$d{id} = "convert/unpack";
-	$d{name} = "Archive unpacking";
-	$d{visible} = "api";
-	return %d;
+	my( $class, %opts ) = @_;
+
+	my $self = $class->SUPER::new( %opts );
+
+	$self->{name} = "Archive unpacking";
+	$self->{visible} = "api";
+
+	return $self;
 }
 
 sub can_convert

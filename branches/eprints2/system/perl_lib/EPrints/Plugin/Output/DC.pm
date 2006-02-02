@@ -17,18 +17,19 @@ use strict;
 # not be any broken characters, but better to be
 # sure.
 
-sub defaults
+sub new
 {
-	my %d = $_[0]->SUPER::defaults();
+	my( $class, %params ) = @_;
 
-	$d{id} = "output/dc";
-	$d{name} = "Dublin Core";
-	$d{accept} = [ 'list/eprint', 'dataobj/eprint' ];
-	$d{visible} = "all";
-	$d{suffix} = ".txt";
-	$d{mimetype} = "text/plain";
+	my $self = $class->SUPER::new( %params );
 
-	return %d;
+	$self->{name} = "Dublin Core";
+	$self->{accept} = [ 'list/eprint', 'dataobj/eprint' ];
+	$self->{visible} = "all";
+	$self->{suffix} = ".txt";
+	$self->{mimetype} = "text/plain";
+
+	return $self;
 }
 
 

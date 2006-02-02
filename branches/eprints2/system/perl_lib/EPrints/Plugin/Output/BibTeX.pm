@@ -8,18 +8,19 @@ use Unicode::String qw(latin1);
 
 use strict;
 
-sub defaults
+sub new
 {
-	my %d = $_[0]->SUPER::defaults();
+	my( $class, %params ) = @_;
 
-	$d{id} = "output/bibtex";
-	$d{name} = "BibTeX";
-	$d{accept} = [ 'list/eprint', 'dataobj/eprint' ];
-	$d{visible} = "all";
-	$d{suffix} = ".bib";
-	$d{mimetype} = "text/plain";
+	my $self = $class->SUPER::new(%params);
 
-	return %d;
+	$self->{name} = "BibTeX";
+	$self->{accept} = [ 'list/eprint', 'dataobj/eprint' ];
+	$self->{visible} = "all";
+	$self->{suffix} = ".bib";
+	$self->{mimetype} = "text/plain";
+
+	return $self;
 }
 
 sub convert_dataobj

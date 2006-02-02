@@ -1106,7 +1106,7 @@ sub _dopage_export_redir
 	my $exp = $self->{session}->param( "_exp" );
 	my $cacheid = $self->{session}->param( "_cache" );
 	my $format = $self->{session}->param( "_output" );
-	my $plugin = $self->{session}->plugin( "output/".$format );
+	my $plugin = $self->{session}->plugin( "Output::".$format );
 
 	my $url = $self->{session}->get_uri();
 	#cjg escape URL'ify urls in this bit... (4 of them?)
@@ -1144,12 +1144,12 @@ sub _dopage_export
 	}
 
 	my @plugins = $self->{session}->plugin_list( 
-		type=>"output",
+		type=>"Output",
 		can_accept=>"list/eprint", 
 		is_visible=>$self->_vis_level );
 
 	my $ok = 0;
-	foreach( @plugins ) { if( $_ eq "output/$format" ) { $ok = 1; last; } }
+	foreach( @plugins ) { if( $_ eq "Output::$format" ) { $ok = 1; last; } }
 	unless( $ok ) {
 		$self->{session}->build_page( 
 			$self->{session}->html_phrase( "lib/searchexpression:export_error_title" ),
@@ -1159,7 +1159,7 @@ sub _dopage_export
 		return;
 	}
 
-	my $plugin = $self->{session}->plugin( "output/$format" );
+	my $plugin = $self->{session}->plugin( "Output::$format" );
 	$self->{session}->send_http_header( "content_type"=>$plugin->param("mimetype") );
 	print $results->export( $format );	
 }
@@ -1250,7 +1250,7 @@ sub _dopage_results
 
 
 	my @plugins = $self->{session}->plugin_list( 
-					type=>"output",
+					type=>"Output",
 					can_accept=>"list/".$self->{dataset}->confid, 
 					is_visible=>$self->_vis_level );
 	$bits{export} = $self->{session}->make_doc_fragment;

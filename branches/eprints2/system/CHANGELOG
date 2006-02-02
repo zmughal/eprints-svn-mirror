@@ -3215,7 +3215,16 @@ PACKAGE: 2.2.99.2
  - removed export_xml - export should handle the same functions in the new
     plugin scheme.
  - added 'documents' to the create tables in erase_eprints (forgot it last
-    commit)
+    commit).
+ - Changed Plugins to use the class name as the ID (with the EPrints::Plugin
+    removed).
+ - When a document object is created by an eprint it the document retains
+    a handle on the eprint rather than having to reload if get_eprint is
+    called.
+ - Changed the testdata script to commit the eprint before starting the
+    document to give cleaner diffs.
+ - Added a staff export eprint script to allow them to export individual
+    records in formats not available to the public.
 
 
 

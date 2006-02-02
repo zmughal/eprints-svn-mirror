@@ -522,12 +522,12 @@ sub export
 {
 	my( $self, $out_plugin_id, %params ) = @_;
 
-	my $plugin_id = "output/".$out_plugin_id;
+	my $plugin_id = "Output::".$out_plugin_id;
 	my $plugin = $self->{session}->plugin( $plugin_id );
 
 	unless( defined $plugin )
 	{
-		EPrints::Config::abort( "Could not find plugin $plugin_id" );
+		EPrints::Config::abort( "Could not find output plugin $plugin_id" );
 	}
 
 	my $req_plugin_type = "list/".$self->{dataset}->confid;

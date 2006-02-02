@@ -857,7 +857,7 @@ sub export
 {
 	my( $self, $out_plugin_id, %params ) = @_;
 
-	my $plugin_id = "output/".$out_plugin_id;
+	my $plugin_id = "Output::".$out_plugin_id;
 	my $plugin = $self->{session}->plugin( $plugin_id );
 
 	unless( defined $plugin )

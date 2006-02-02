@@ -21,6 +21,10 @@ EPrints Modules
 
     <ep:phrase ref="lib/dataset:no_language">Unknown/Other</ep:phrase>
 
+<!-- DataObj -->
+
+    <ep:phrase ref="lib/dataobj:unspecified">Unspecified fields</ep:phrase>
+
 <!-- Document -->
 
     <ep:phrase ref="lib/document:no_files">You haven't uploaded any files!</ep:phrase>
@@ -286,6 +290,8 @@ Enter a URL to capture a file from: <ep:pin ref="url" /><br />
     <ep:phrase ref="lib/submissionform:action_cancel">Cancel</ep:phrase>
     <ep:phrase ref="lib/submissionform:action_doc_cancel">Stop Editing Format</ep:phrase>
     <ep:phrase ref="lib/submissionform:action_save">Save for Later</ep:phrase>
+    <ep:phrase ref="lib/submissionform:action_staff_save">Save and Exit</ep:phrase>
+    <ep:phrase ref="lib/submissionform:action_staff_stop">Exit</ep:phrase>
     <ep:phrase ref="lib/submissionform:action_confirm">Confirm</ep:phrase>
     <ep:phrase ref="lib/submissionform:action_edit">Edit</ep:phrase>
     <ep:phrase ref="lib/submissionform:action_finished">Finished &gt;</ep:phrase>
@@ -633,11 +639,20 @@ Staff CGI Scripts
 
 <!-- edit_eprint -->
 
-    <ep:phrase ref="cgi/users/edit_eprint:status"><p>Current status of this item: in <ep:pin ref="dataset" />.</p></ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:status">Item Status</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:description">Description</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:actions">Actions</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:views">Views</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:edit">Edit</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:export">Export</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:stage_type">Item Type</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:stage_linking">Succession/Commentary</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:stage_files">Files</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:cant_find_it">Can't retrieve item with the ID "<ep:pin ref="id" />"</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:cant_edit">This item (id <ep:pin ref="id" />) does not match the scope of the items you are allowed to edit. If you need assistance please contact the repository administrator.</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:cant_remove">Problem removing item with the ID "<ep:pin ref="id" />"</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:cant_move">Problem moving item with the ID "<ep:pin ref="id" />"</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:status_change">Status of item changed to "<ep:pin ref="status" />".</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:cant_move">Problem changing status of item with the ID "<ep:pin ref="id" />".</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:cant_clone">Problem cloning item with the ID "<ep:pin ref="id" />"</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:bounce_form_intro"><p>Please enter in the box below the reason for bouncing/deleting this item, and any possible fix. This will be emailed to the relevant author.</p><p>(The authors language of preference is &quot;<ep:pin ref="langpref" />&quot;.)</p></ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:title_delete_form">Deleting Submission</ep:phrase>
@@ -647,7 +662,7 @@ Staff CGI Scripts
     <ep:phrase ref="cgi/users/edit_eprint:subject_bounce">Problem with Submission</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:mail_fail">The item was successfully deleted/bounced, but for some reason the user couldn't be mailed. Username: <strong><ep:pin ref="username" /></strong>, email <ep:pin ref="email" />.</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:bord_fail">The item could not be bounced/deleted - this probably indicates a database error. Check the logs.</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:form_title">Move/Edit Item</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:form_title">Item Control Page</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:remove_title">Removal Successful</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:removed"><p>Item Successfully Removed</p></ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:move_title">Move Successful</ep:phrase>
@@ -661,7 +676,11 @@ Staff CGI Scripts
     <ep:phrase ref="cgi/users/edit_eprint:action__toarchive">Move Item to Repository</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action__todeletion">Move Item to Deleted</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action_send">Send</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:action_cancel">Cancel</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action_reallydelete">Really Delete</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:view_summary">Summary</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:view_full">Full Record</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:view_history">History</ep:phrase>
     <ep:phrase ref="mail_delete_reason.inbox">
 The following eprint has been deleted from your User Area:
 
@@ -876,6 +895,7 @@ Titles and Help for the System Fields
 ***********************************************************************-->
 
     <ep:phrase ref="eprint_fieldname_eprintid">Item ID</ep:phrase>
+    <ep:phrase ref="eprint_fieldname_rev_number">Revision</ep:phrase>
     <ep:phrase ref="eprint_fieldname_userid">Depositing User</ep:phrase>
     <ep:phrase ref="eprint_fieldname_dir">Directory</ep:phrase>
     <ep:phrase ref="eprint_fieldname_datestamp">Date Deposited</ep:phrase>
@@ -887,10 +907,12 @@ Titles and Help for the System Fields
     <ep:phrase ref="eprint_fieldname_commentary">Commentary on</ep:phrase>
     <ep:phrase ref="eprint_fieldhelp_commentary">If your item is a commentary on another item (or author's response to a commentary) in the repository, please enter its ID in this box.</ep:phrase>
     <ep:phrase ref="eprint_fieldname_replacedby">Replaced by</ep:phrase>
+    <ep:phrase ref="eprint_fieldname_fileinfo">Links to files</ep:phrase>
 
     <ep:phrase ref="eprint_fieldname__fulltext_">Full Text</ep:phrase>
 
     <ep:phrase ref="user_fieldname_userid">User ID Number</ep:phrase>
+    <ep:phrase ref="user_fieldname_rev_number">Revision</ep:phrase>
     <ep:phrase ref="user_fieldname_username">Username</ep:phrase>
     <ep:phrase ref="user_fieldhelp_newemail">Enter your new email address</ep:phrase>
     <ep:phrase ref="user_fieldhelp_username"></ep:phrase>
@@ -923,6 +945,7 @@ Titles and Help for the System Fields
 
 
     <ep:phrase ref="document_fieldname_eprintid">ID of the owning item</ep:phrase>
+    <ep:phrase ref="document_fieldname_rev_number">Revision</ep:phrase>
     <ep:phrase ref="document_fieldhelp_language">Please indicate the primary language of this format.</ep:phrase>
     <ep:phrase ref="document_fieldhelp_format">Please select the storage format of this document.</ep:phrase>
     <ep:phrase ref="document_fieldhelp_formatdesc">You may offer an additional brief description of the format.</ep:phrase>
@@ -930,6 +953,7 @@ Titles and Help for the System Fields
     <ep:phrase ref="document_fieldhelp_license">Specify an explicit license for this document (does not effect the access rights you grant at the end of this deposit process).</ep:phrase>
 
     <ep:phrase ref="subject_fieldname_name">Subject Name</ep:phrase>
+    <ep:phrase ref="subject_fieldname_rev_number">Revision</ep:phrase>
     <ep:phrase ref="subject_fieldhelp_name">This is the "screen" name of the subject, the one that the users will see.</ep:phrase>
     <ep:phrase ref="subject_fieldname_parents">Subject Parents Subject(s)</ep:phrase>
     <ep:phrase ref="subject_fieldname_depositable">Depositable</ep:phrase>
@@ -937,6 +961,9 @@ Titles and Help for the System Fields
     <ep:phrase ref="subject_radio_depositable"><ep:pin ref="true" />Yes, users can add items to this subject.<br /><ep:pin ref="false" />No. (In which case it should probably have some children.</ep:phrase>
     <ep:phrase ref="subject_fieldname_newsubjectid">Subject ID String</ep:phrase>
     <ep:phrase ref="subject_fieldhelp_newsubjectid">This is the internal key for this subject. It is used in the database and to generate the "views" filenames. It shoud contain only a-z, 0-9 and dash "/"and underscore "_". If you enter the ID of an existing subject then that subject will be linked as a child of the current subject.</ep:phrase>
+
+    <ep:phrase ref="history_fieldname_objectid">Object ID</ep:phrase>
+    <ep:phrase ref="history_fieldname_datasetid">Object Type</ep:phrase>
 
     <ep:phrase ref="dataset_name_archive">Repository</ep:phrase>
     <ep:phrase ref="dataset_name_deletion">Deleted</ep:phrase>
@@ -946,5 +973,6 @@ Titles and Help for the System Fields
     <ep:phrase ref="dataset_name_subject">Subjects</ep:phrase>
     <ep:phrase ref="dataset_name_subscription">Subscriptions</ep:phrase>
     <ep:phrase ref="dataset_name_user">Users</ep:phrase>
+    <ep:phrase ref="dataset_name_history">History</ep:phrase>
 </ep:phrases>
 

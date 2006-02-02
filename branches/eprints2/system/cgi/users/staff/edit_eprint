@@ -35,7 +35,7 @@ if( !$session->auth_check( "editor" ) )
 
 my( $title, $page ) = &process( $session );
 
-$session->terminate();
+$session->terminate;
 
 
 
@@ -43,19 +43,9 @@ sub process
 {
 	my( $session ) = @_;
 
-	my $datasetid = $session->param( "dataset" );
-
-	# When in doubt, use the main archive.
-
 	my $eprintid = $session->param( "eprintid" );
 	
-	my $dataset;
-	if( defined $datasetid )
-	{
-		$dataset = $session->get_archive()->get_dataset( $datasetid );
-	}
-
-	my $eprint = new EPrints::EPrint( $session, $eprintid, $dataset );
+	my $eprint = new EPrints::EPrint( $session, $eprintid );
 
 	if( !defined $eprint )
 	{
@@ -65,32 +55,9 @@ sub process
 		return;
 	}
 
-	if( !defined $dataset )
-	{
-		$dataset = $eprint->get_dataset;
-	}
+	my $dataset = $eprint->get_dataset;
 
-	my $user_ds = $session->get_archive()->get_dataset( "user" );
-
-	my $can_edit = 0;
-	my $ef_field = $user_ds->get_field( 'editperms' );
-	my $searches = $session->current_user->get_value( 'editperms' );
-	if( scalar @{$searches} == 0 )
-	{
-		$can_edit = 1;
-	}
-
-	foreach my $s ( @{$searches} )
-	{
-		next if( $can_edit ); # skip the rest if one matches
-
-		my $search = $ef_field->make_searchexp( $session, $s );
-		if( $search->get_conditions->item_matches( $eprint ) )
-		{
-			$can_edit = 1;
-		}
-		$search->dispose;
-	}
+	my $can_edit = $session->current_user->can_edit( $eprint );
 
 	unless( $can_edit )
 	{
@@ -100,7 +67,7 @@ sub process
 		return;
 	}
 
-	my $action = $session->get_action_button();
+	my $action = $session->get_action_button;
 
 	if( !defined $action || $action eq "_cancel" || $action eq "stop" )
 	{
@@ -140,21 +107,20 @@ sub process
 		$ok = $eprint->move_to_inbox if( $action eq "_toinbox" );
 		$ok = $eprint->move_to_deletion if( $action eq "_todeletion" );
 
-		my $msg;
-
 		if( $ok )
 		{
-			$msg = $session->html_phrase( "cgi/users/edit_eprint:status_change",
+			my $msg = $session->html_phrase( "cgi/users/edit_eprint:status_change",
 					status=>$session->html_phrase( "dataset_fieldopt_dataset_".$eprint->get_dataset()->id() ) );
+			&view_page( $session, $eprint, $msg );
 		}
 		else
 		{
-			$msg = $session->html_phrase(
+			my $msg = $session->html_phrase(
 				"cgi/users/edit_eprint:cant_move",
 				id=>$session->make_text( $eprintid ) );
+			&view_page( $session, $eprint, $msg, 1 );
 		}
 
-		&view_page( $session, $eprint, $msg );
 		
 		return;
 	}
@@ -270,7 +236,7 @@ sub process
 
 sub view_page
 {
-	my( $session, $eprint, $msg ) = @_;
+	my( $session, $eprint, $msg, $is_error ) = @_;
 
 	my $page = $session->make_doc_fragment();
 	
@@ -278,7 +244,12 @@ sub view_page
 
 	if( defined $msg )
 	{
-		my $div = $session->make_element( "div", style=>"border: solid 1px #f00; background-color: #fcc; padding: 1em; margin-top: 1em" );
+		my $style = "border: solid 1px #0f0; background-color: #cfc; padding: 1em; margin-top: 1em";
+		if( $is_error )
+		{
+			$style = "border: solid 1px #f00; background-color: #fcc; padding: 1em; margin-top: 1em";
+		}
+		my $div = $session->make_element( "div", style=>$style );
 		$div->appendChild( $msg );
 		$page->appendChild( $div );
 	}
@@ -297,9 +268,25 @@ sub view_page
 		$session->html_phrase( "cgi/users/edit_eprint:status" ),
 		$session->html_phrase( "dataset_fieldopt_dataset_".$eprint->get_dataset()->id() ) ) );
 
+	my $usersname;
+	my $user = new EPrints::User( 
+			$session,
+ 			$eprint->get_value( "userid" ) );
+	if( defined $user )
+	{
+		$usersname = $session->make_element( "a", 
+				href=>$session->get_archive->get_conf( "perl_url" )."/user?userid=".$user->get_value( "userid" ) );
+		$usersname->appendChild( 
+			$user->render_description() );
+	}
+	else
+	{
+		$usersname = $session->make_text( "?" );
+	}
 	$table->appendChild( $session->render_row(
 		$session->html_phrase( "eprint_fieldname_userid" ),
-		$eprint->render_value( "userid" ) ) );
+		$usersname ) );
+
 
 	$table->appendChild( $session->render_row(
 		$session->html_phrase( "eprint_fieldname_datestamp" ),
@@ -385,27 +372,24 @@ sub view_page
 	$dataview = "summary" if( $dataview ne "full" && $dataview ne "history" );
 
 
-	my $ul = $session->make_element( "ul" );
+	my @list = ();
 
 	foreach( @actions )
 	{
 		my $url = "edit_eprint?eprintid=".$eprint->get_id."&dataview=".$dataview."&_action_".$_."=1";
-		my $li = $session->make_element( "li", style=>"margin-bottom: 1em;" );
 		my $a = $session->render_link( $url );
 		$a->appendChild( $session->html_phrase( "cgi/users/edit_eprint:action_".$_ ) );
-		$li->appendChild( $a );
-		$ul->appendChild( $li );
+		push @list , $a;
 	}
 	$table->appendChild( $session->render_row(
 		$session->html_phrase( "cgi/users/edit_eprint:actions" ),
-		$ul ) );
+		render_links_list( $session, @list ) ) );
 
 	unless( $dsid eq "deletion" && !$session->get_archive->get_conf( 'allow_edit_deleted' ) )
 	{
-		my $div = $session->make_element( "div" );
+		@list = ();
 
 		my $subform = new EPrints::SubmissionForm( $session, '', 1, $eprint->get_dataset, "edit_eprint" );
-		my $first = 1;
 		my @stages = $subform->get_stages;
 		foreach my $stage ( @stages )
 		{
@@ -417,33 +401,47 @@ sub view_page
 				my @pages = $eprint->get_dataset->get_type_pages( $eprint->get_value("type") );
 				foreach my $page ( @pages )
 				{
-					$div->appendChild( $session->make_text( ", ") ) unless $first;
-					$first = 0;
 					my $url = "edit_eprint?eprintid=".$eprint->get_id."&dataview=".$dataview."&_action_jump=1&stage=".$stage."&pageid=".$page;
 					my $a = $session->render_link( $url );
 					$a->appendChild( $session->html_phrase( "metapage_title_".$page ) );
-					$div->appendChild( $a );
+					push @list, $a;
 				}
 				next;
 			}
-			$div->appendChild( $session->make_text( ", ") ) unless $first;
-			$first = 0;
 			my $url = "edit_eprint?eprintid=".$eprint->get_id."&dataview=".$dataview."&_action_jump=1&stage=".$stage;
 			my $a = $session->render_link( $url );
-			$a->appendChild( $session->make_text( $stage ) );
-			$div->appendChild( $a );
+			$a->appendChild( $session->html_phrase( "cgi/users/edit_eprint:stage_".$stage ) );
+			push @list, $a;
 		}
-		$div->appendChild( $session->make_text( "." ) );
 
 		$table->appendChild( $session->render_row(
 			$session->html_phrase( "cgi/users/edit_eprint:edit" ),
-			$div ) );
+			render_links_list( $session, @list ) ) );
 	}
 
 
-	
-	my $ul2 = $session->make_element( "ul" );
-	
+	# EXPORT
+
+	@list = ();
+	my @plugins = $session->plugin_list( 
+					type=>"Output",
+					can_accept=>"dataobj/eprint", 
+					is_visible=>"staff" );
+	foreach my $plugin_id ( @plugins ) {
+		my $plugin = $session->plugin( $plugin_id );
+		my $url = $plugin->dataobj_export_url( $eprint, 1 );
+		my $a = $session->render_link( $url );
+		$a->appendChild( $plugin->render_name() );
+		push @list, $a;
+	}
+
+	$table->appendChild( $session->render_row(
+		$session->html_phrase( "cgi/users/edit_eprint:export" ),
+		render_links_list( $session, @list ) ) );
+
+	# VIEWS
+
+	@list = ();	
 	foreach my $view ( qw/ summary full history / )
 	{
 		my $li = $session->make_element( "li", style=>"margin-bottom: 1em;" );
@@ -452,21 +450,23 @@ sub view_page
 		{
 			my $strong = $session->make_element( "strong" );
 			$strong->appendChild( $label );
-			$li->appendChild( $strong );
+			push @list, $strong;
 		}
 		else
 		{
 			my $url = "edit_eprint?eprintid=".$eprint->get_id."&dataview=".$view;
 			my $a = $session->render_link( $url );
 			$a->appendChild( $label );
-			$li->appendChild( $a );
+			push @list, $a;
 		}
-		$ul2->appendChild( $li );
 	}
 
 	$table->appendChild( $session->render_row(
 		$session->html_phrase( "cgi/users/edit_eprint:views" ),
-		$ul2 ) );
+		render_links_list( $session, @list ) ) );
+
+
+	# VIEW DETAILS
 	
 	my( $data, $title );
 	($data,$title) = $eprint->render if( $dataview eq "summary" );
@@ -578,7 +578,7 @@ sub bounce
 	if( !defined $user && !$delete)
 	{
 		# Can't find the user
-		view_page( $session, $eprint, $session->html_phrase( "cgi/users/edit_eprint:no_user" ) );
+		view_page( $session, $eprint, $session->html_phrase( "cgi/users/edit_eprint:no_user" ), 1 );
 		return;
 	}
 	
@@ -598,7 +598,7 @@ sub bounce
 	unless( $success )
 	{
 		# Couldn't be bounced at all
-		view_page( $session, $eprint, $session->html_phrase( "cgi/users/edit_eprint:bord_fail" ) );
+		view_page( $session, $eprint, $session->html_phrase( "cgi/users/edit_eprint:bord_fail" ), 1 );
 		return;
 	}
 
@@ -632,5 +632,29 @@ sub bounce
 		$eprint, 
 		$session->html_phrase( "cgi/users/edit_eprint:mail_fail",
 			username=>$user->render_value( "username" ),
-			email=>$user->render_value( "email" ) ) );
+			email=>$user->render_value( "email" ) ),
+		1 );
 }
+
+sub render_links_list
+{
+	my( $session, @list ) = @_;
+
+	my $f = $session->make_doc_fragment;
+	my $first = 1;
+	foreach my $item ( @list )
+	{
+		if( $first ) 
+		{
+			$first = 0;
+		}
+		else
+		{
+			$f->appendChild( $session->make_text( " | " ) );
+		}
+		$f->appendChild( $item );
+	}
+	return $f;
+}
+
+

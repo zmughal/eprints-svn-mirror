@@ -15,23 +15,24 @@ use strict;
 
 
 
-sub defaults
+sub new
 {
-	my %d = $_[0]->SUPER::defaults();
+	my( $class, %opts ) = @_;
 
-	$d{id} = "output/xmlwithfiles";
-	$d{name} = "XML with Files Embeded";
-	$d{accept} = [ 'list/*', 'dataobj/*' ];
+	my $self = $class->SUPER::new( %opts );
+
+	$self->{name} = "XML with Files Embeded";
+	$self->{accept} = [ 'list/*', 'dataobj/*' ];
 
 	# this module outputs the files of an eprint with
 	# no regard to the security settings so should be 
 	# not made public without a very good reason.
-	$d{visible} = "";
+	$self->{visible} = "staff";
 
-	$d{suffix} = ".xml";
-	$d{mimetype} = "text/xml";
+	$self->{suffix} = ".xml";
+	$self->{mimetype} = "text/xml";
 
-	return %d;
+	return $self;
 }
 
 

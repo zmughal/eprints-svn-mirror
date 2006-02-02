@@ -48,6 +48,8 @@ sub deal
 
 	$eprint->set_value( "userid", $info->{userid} );
 	$eprint = EPrints::EPrint::create( $session, $info->{ds}, $eprint->get_data() );
+	$eprint->commit();
+
 	my $doc = EPrints::Document::create( $session, $eprint );
 	$doc->set_value( 'format','pdf');
 	my $pdf;
@@ -56,7 +58,6 @@ sub deal
 	close $pdf;
 	$doc->set_value( 'main','paper.pdf');
 	$doc->commit();
-	$eprint->commit();
 
 	print "added: ".$eprint->get_id."\n";
 }

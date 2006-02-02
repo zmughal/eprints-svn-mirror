@@ -192,7 +192,7 @@ foreach $dir (@doomeddirs)
 
 if( $noise>=1 ) { print "Creating tables.\n"; }
 
-foreach my $dsid ( qw/ inbox buffer archive deletion / )
+foreach my $dsid ( qw/ inbox buffer archive deletion document / )
 {
 	if( $noise>=2 ) { print "Creating tables for $dsid.\n"; }
 	my $dataset = $archive->get_dataset( $dsid );
@@ -201,6 +201,10 @@ foreach my $dsid ( qw/ inbox buffer archive deletion / )
 
 if( $noise>=1 ) { print "Resetting unique ID counter for eprints.\n"; }
 $db->counter_reset( "eprintid" );
+
+if( $noise>=1 ) { print "Erasing history for all eprints.\n"; }
+my $sql = "DELETE FROM history WHERE datasetid='eprint'";
+$db->do( $sql );
 
 
 

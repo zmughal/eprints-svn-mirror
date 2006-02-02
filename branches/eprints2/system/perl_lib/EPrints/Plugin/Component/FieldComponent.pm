@@ -8,15 +8,16 @@ use Unicode::String qw(latin1);
 
 use strict;
 
-sub defaults
+sub new
 {
-	my %d = $_[0]->SUPER::defaults();
+	my( $class, %opts ) = @_;
 
-	$d{id} = "component/default";
-	$d{name} = "FieldComponent";
-	$d{visible} = "all";
+	my $self = $class->SUPER::new( %opts );
 
-	return %d;
+	$self->{name} = "FieldComponent";
+	$self->{visible} = "all";
+
+	return $self;
 }
 
 =pod

@@ -41,13 +41,16 @@ our @ISA = qw/ EPrints::Plugin /;
 
 $EPrints::Plugin::Component::ABSTRACT = 1;
 
-sub defaults
+sub new
 {
-	my %d = $_[0]->SUPER::defaults();
-	$d{name} = "Base component plugin: This should have been subclassed";
-	$d{type} = "component";
-	$d{visible} = "all";
-	return %d;
+	my( $class, %opts ) = @_;
+
+	my $self = $class->SUPER::new( %opts );
+
+	$self->{name} = "Base component plugin: This should have been subclassed";
+	$self->{visible} = "all";
+
+	return $self;
 }
 
 sub render_shell

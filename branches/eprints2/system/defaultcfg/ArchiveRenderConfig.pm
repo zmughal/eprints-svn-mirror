@@ -351,7 +351,7 @@ sub eprint_render
 		"link",
 		rel => "schema.DC",
 		href => "http://purl.org/DC/elements/1.0/" ) );
-	my $dcplugin = $session->plugin( "output/dc" );
+	my $dcplugin = $session->plugin( "Output::DC" );
 	my $dc = $dcplugin->convert_dataobj( $eprint );
 	foreach( @{$dc} )
 	{

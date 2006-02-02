@@ -30,14 +30,16 @@ our @ISA = qw/ EPrints::Plugin /;
 
 our $ABSTRACT = 1;
 
-sub defaults
+sub new
 {
-	my %d = $_[0]->SUPER::defaults();
-	$d{id} = "convert/abstract";
-	$d{name} = "Base convert plugin: This should have been subclassed";
-	$d{visible} = "all";
-	$d{type} = "convert";
-	return %d;
+	my( $class, %opts ) = @_;
+
+	my $self = $class->SUPER::new( %opts );
+
+	$self->{name} = "Base convert plugin: This should have been subclassed";
+	$self->{visible} = "all";
+
+	return $self;
 }
 
 sub render_name

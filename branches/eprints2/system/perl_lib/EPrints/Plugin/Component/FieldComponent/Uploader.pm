@@ -8,15 +8,16 @@ use Unicode::String qw(latin1);
 
 use strict;
 
-sub defaults
+sub new
 {
-	my %d = $_[0]->SUPER::defaults();
+	my( $class, %opts ) = @_;
 
-	$d{id} = "component/uploader";
-	$d{name} = "Uploader";
-	$d{visible} = "all";
+	my $self = $class->SUPER::new( %opts );
+	
+	$self->{name} = "Uploader";
+	$self->{visible} = "all";
 
-	return %d;
+	return $self;
 }
 
 

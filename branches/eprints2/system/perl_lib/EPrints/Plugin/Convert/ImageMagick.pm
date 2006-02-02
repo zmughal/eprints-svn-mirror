@@ -41,13 +41,16 @@ for(my $i = 0; $i < @ORDERED; $i+=2)
 }
 our $EXTENSIONS_RE = join '|', keys %FORMATS;
 
-sub defaults
+sub new
 {
-	my %d = $_[0]->SUPER::defaults();
-	$d{id} = "convert/imagemagick";
-	$d{name} = "ImageMagick";
-	$d{visible} = "all";
-	return %d;
+	my( $class, %opts ) = @_;
+
+	my $self = $class->SUPER::new( %opts );
+
+	$self->{name} = "ImageMagick";
+	$self->{visible} = "all";
+
+	return $self;
 }
 
 sub can_convert

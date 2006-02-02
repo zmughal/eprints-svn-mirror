@@ -18,13 +18,16 @@ our @ISA = qw/ EPrints::Plugin::Convert /;
 
 our $ABSTRACT = 0;
 
-sub defaults
+sub new
 {
-	my %d = $_[0]->SUPER::defaults();
-	$d{id} = "convert/pdftotext";
-	$d{name} = "Foolabs xpdf";
-	$d{visible} = "all";
-	return %d;
+	my( $class, %opts ) = @_;
+
+	my $self = $class->SUPER::new( %opts );
+
+	$self->{name} = "Foolabs xpdf";
+	$self->{visible} = "all";
+
+	return $self;
 }
 
 sub can_convert

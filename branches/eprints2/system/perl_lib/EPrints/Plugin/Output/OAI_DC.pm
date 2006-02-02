@@ -17,21 +17,22 @@ use strict;
 # not be any broken characters, but better to be
 # sure.
 
-sub defaults
+sub new
 {
-	my %d = $_[0]->SUPER::defaults();
+	my( $class, %opts ) = @_;
 
-	$d{id} = "output/oai_dc";
-	$d{name} = "Dublin Core - OAI Schema";
-	$d{accept} = [ 'dataobj/eprint' ];
-	$d{visible} = "";
-	$d{suffix} = ".xml";
-	$d{mimetype} = "text/xml";
+	my $self = $class->SUPER::new( %opts );
+
+	$self->{name} = "Dublin Core - OAI Schema";
+	$self->{accept} = [ 'dataobj/eprint' ];
+	$self->{visible} = "";
+	$self->{suffix} = ".xml";
+	$self->{mimetype} = "text/xml";
 	
-	$d{xmlns} = "http://www.openarchives.org/OAI/2.0/oai_dc/";
-	$d{schemaLocation} = "http://www.openarchives.org/OAI/2.0/oai_dc.xsd";
+	$self->{xmlns} = "http://www.openarchives.org/OAI/2.0/oai_dc/";
+	$self->{schemaLocation} = "http://www.openarchives.org/OAI/2.0/oai_dc.xsd";
 
-	return %d;
+	return $self;
 }
 
 
@@ -49,7 +50,7 @@ sub xml_dataobj
 {
 	my( $plugin, $dataobj ) = @_;
 
-	my $main_dc_plugin = $plugin->{session}->plugin( "output/dc" );
+	my $main_dc_plugin = $plugin->{session}->plugin( "Output::DC" );
 	
 	my $data = $main_dc_plugin->convert_dataobj( $dataobj );
 

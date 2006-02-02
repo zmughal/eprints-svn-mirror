@@ -309,10 +309,10 @@ sub terminate
 	# it now.
 	EPrints::XML::dispose( $self->{doc} );
 
+	if( $self->{noise} >= 2 ) { print "Ending EPrints Session.\n\n"; }
+
 	# give garbage collection a hand.
 	foreach( keys %{$self} ) { delete $self->{$_}; } 
-
-	if( $self->{noise} >= 2 ) { print "Ending EPrints Session.\n\n"; }
 }
 
 

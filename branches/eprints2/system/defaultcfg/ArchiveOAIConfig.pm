@@ -34,7 +34,7 @@ $oai->{v2}->{archive_id} = "generic.eprints.org";
 
 # The output plugins must be loaded for the archive and have
 # the methods xml_dataobj, xmlns and schemaLocation
-$oai->{v2}->{output_plugins} = [ "oai_dc", "didl" ];
+$oai->{v2}->{output_plugins} = [ "OAI_DC", "DIDL" ];
 
 # Base URL of OAI 2.0
 $oai->{v2}->{base_url} = $perlurl."/oai2";

@@ -699,17 +699,19 @@ sub _map_oai_plugins
 
 	foreach my $plugin_id ( @{$self->{config}->{oai}->{v2}->{output_plugins}} )
 	{
-		my $class = $self->plugin_class( "output/$plugin_id" );
-
-		#no strict "refs";
-		my %defaults = $class->defaults();
-		#use strict "refs";
-		$self->{config}->{oai}->{v2}->{metadata_namespaces}->{$plugin_id} = $defaults{xmlns};
-		$self->{config}->{oai}->{v2}->{metadata_schemas}->{$plugin_id} = $defaults{schemaLocation};
+		my $class = $self->plugin_class( "Output::$plugin_id" );
+		if( !defined $class )
+		{
+			$self->log( "OAI Output plugin: $plugin_id not found." );
+			next;
+		}
+		my $plugin = $class->new();
+		$self->{config}->{oai}->{v2}->{metadata_namespaces}->{$plugin_id} = $plugin->{xmlns};
+		$self->{config}->{oai}->{v2}->{metadata_schemas}->{$plugin_id} = $plugin->{schemaLocation};
 		$self->{config}->{oai}->{v2}->{metadata_functions}->{$plugin_id} = sub {
 			my( $eprint, $session ) = @_;
 
-			my $plugin = $session->plugin( "output/$plugin_id" );
+			my $plugin = $session->plugin( "Output::$plugin_id" );
 			my $xml = $plugin->xml_dataobj( $eprint );
 			return $xml;
 		};

@@ -17,18 +17,19 @@ use strict;
 # not be any broken characters, but better to be
 # sure.
 
-sub defaults
+sub new
 {
-	my %d = $_[0]->SUPER::defaults();
+	my( $class, %opts ) = @_;
 
-	$d{id} = "output/oldxml";
-	$d{name} = "XML (eprints 2.3 style)";
-	$d{accept} = [ 'list/*', 'dataobj/*' ];
-	$d{visible} = "";
-	$d{suffix} = ".xml";
-	$d{mimetype} = "text/xml";
+	my $self = $class->SUPER::new( %opts );
 
-	return %d;
+	$self->{name} = "XML (eprints 2.3 style)";
+	$self->{accept} = [ 'list/*', 'dataobj/*' ];
+	$self->{visible} = "";
+	$self->{suffix} = ".xml";
+	$self->{mimetype} = "text/xml";
+
+	return $self;
 }
 
 

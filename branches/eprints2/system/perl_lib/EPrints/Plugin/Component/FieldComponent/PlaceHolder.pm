@@ -8,15 +8,16 @@ use Unicode::String qw(latin1);
 
 use strict;
 
-sub defaults
+sub new
 {
-	my %d = $_[0]->SUPER::defaults();
+	my( $class, %opts ) = @_;
 
-	$d{id} = "component/placeholder";
-	$d{name} = "PlaceHolder";
-	$d{visible} = "all";
+	my $self = $class->SUPER::new( %opts );
 
-	return %d;
+	$self->{name} = "PlaceHolder";
+	$self->{visible} = "all";
+
+	return $self;
 }
 
 sub render_field

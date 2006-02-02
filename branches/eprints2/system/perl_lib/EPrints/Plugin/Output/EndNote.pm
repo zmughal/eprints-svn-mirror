@@ -9,18 +9,19 @@ use Unicode::String qw(latin1);
 
 use strict;
 
-sub defaults
+sub new
 {
-	my %d = $_[0]->SUPER::defaults();
+	my( $class, %opts ) = @_;
+	
+	my $self = $class->SUPER::new( %opts );
 
-	$d{id} = "output/endnote";
-	$d{name} = "EndNote";
-	$d{accept} = [ 'list/eprint', 'dataobj/eprint' ];
-	$d{visible} = "all";
-	$d{suffix} = ".enw";
-	$d{mimetype} = "text/plain";
+	$self->{name} = "EndNote";
+	$self->{accept} = [ 'list/eprint', 'dataobj/eprint' ];
+	$self->{visible} = "all";
+	$self->{suffix} = ".enw";
+	$self->{mimetype} = "text/plain";
 
-	return %d;
+	return $self;
 }
 
 sub convert_dataobj

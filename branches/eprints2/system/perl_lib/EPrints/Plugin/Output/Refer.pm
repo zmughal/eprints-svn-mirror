@@ -8,18 +8,19 @@ use Unicode::String qw(latin1);
 
 use strict;
 
-sub defaults
+sub new
 {
-	my %d = $_[0]->SUPER::defaults();
+	my( $class, %params ) = @_;
 
-	$d{id} = "output/refer";
-	$d{name} = "Refer";
-	$d{accept} = [ 'list/eprint', 'dataobj/eprint' ];
-	$d{visible} = "all";
-	$d{suffix} = ".refer";
-	$d{mimetype} = "text/plain";
+	my $self = $class->SUPER::new( %params );
 
-	return %d;
+	$self->{name} = "Refer";
+	$self->{accept} = [ 'list/eprint', 'dataobj/eprint' ];
+	$self->{visible} = "all";
+	$self->{suffix} = ".refer";
+	$self->{mimetype} = "text/plain";
+
+	return $self;
 }
 
 

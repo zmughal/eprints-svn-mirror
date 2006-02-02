@@ -38,7 +38,7 @@ The name of the dataset to export, such as "archive", "subject" or "user".
 
 =item I<plugin>
 
-The id of the output plugin to use. This should not include the leading "output/". Examples: bibtex, xml.
+The id of the output plugin to use. This should not include the leading "Output::". Examples: BibTeX, XML.
 
 If this is ommited or an invalid plugin is requested, then 'export' will list all plugins compatible with the dataset and exit.
 
@@ -125,7 +125,7 @@ if( !defined $ds )
 my $plugin;
 if( defined $ARGV[2] )
 {
-	$plugin = $session->plugin( "output/".$ARGV[2] );
+	$plugin = $session->plugin( "Output::".$ARGV[2] );
 }
 if( !defined $plugin )
 {

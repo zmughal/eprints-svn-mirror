@@ -6,16 +6,18 @@ our @ISA = qw/ EPrints::Plugin /;
 
 $EPrints::Plugin::Output::ABSTRACT = 1;
 
-sub defaults
+sub new
 {
-	my %d = $_[0]->SUPER::defaults();
-	$d{id} = "output/abstract";
-	$d{name} = "Base output plugin: This should have been subclassed";
-	$d{suffix} = ".txt";
-	$d{visible} = "all";
-	$d{type} = "output";
-	$d{mimetype} = "text/plain";
-	return %d;
+	my( $class, %params ) = @_;
+
+	my $self = $class->SUPER::new(%params);
+
+	$self->{name} = "Base output plugin: This should have been subclassed";
+	$self->{suffix} = ".txt";
+	$self->{visible} = "all";
+	$self->{mimetype} = "text/plain";
+
+	return $self;
 }
 
 sub render_name
@@ -135,7 +137,7 @@ sub xml_dataobj
 # check that it's actually possible.
 sub dataobj_export_url
 {
-	my( $plugin, $dataobj ) = @_;
+	my( $plugin, $dataobj, $staff ) = @_;
 
 	my $dataset = $dataobj->get_dataset;
 	if( $dataset->confid ne "eprint" ) {
@@ -145,7 +147,7 @@ sub dataobj_export_url
 
 	my $pluginid = $plugin->{id};
 
-	unless( $pluginid =~ m#^output/(.*)$# )
+	unless( $pluginid =~ m#^Output::(.*)$# )
 	{
 		$plugin->{session}->get_archive->log( "Bad pluginid in dataobj_export_url: ".$pluginid );
 		return undef;
@@ -153,6 +155,7 @@ sub dataobj_export_url
 	my $format = $1;
 
 	my $url = $plugin->{session}->get_archive->get_conf( "perl_url" );
+	$url .= "/users/staff" if $staff;
 	$url .= "/export/".$dataobj->get_id."/".$format;
 	$url .= "/".$plugin->{session}->get_archive->get_id;
 	$url .= "-".$dataobj->get_dataset->confid."-".$dataobj->get_id.$plugin->{suffix};

@@ -485,9 +485,15 @@ sub clone
 	{
 		my @docs = $self->get_all_documents();
 
-		foreach (@docs)
+		foreach my $doc (@docs)
 		{
-			$ok = 0 if( !defined $_->clone( $new_eprint ) );
+			my $new_doc = $doc->clone( $new_eprint );
+			unless( $new_doc )
+			{	
+				$ok = 0;
+				next;
+			}
+			$new_doc->register_parent( $new_eprint );
 		}
 	}
 
@@ -777,7 +783,7 @@ sub write_revision
 		return;
 	}
 	print REVFILE '<?xml version="1.0" encoding="utf-8" ?>'."\n";
-	print REVFILE $self->export( "xml", fh=>*REVFILE );
+	print REVFILE $self->export( "XML", fh=>*REVFILE );
 	close REVFILE;
 }
 
@@ -1253,6 +1259,10 @@ sub get_all_documents
 	my $searchid = $searchexp->perform_search();
 	my @documents = $searchexp->get_records();
 	$searchexp->dispose();
+	foreach my $doc ( @documents )
+	{
+		$doc->register_parent( $self );
+	}
 
 	return( @documents );
 }
@@ -1731,7 +1741,7 @@ sub render_history
 	my $searchexp = EPrints::SearchExpression->new(
 		session=>$self->{session},
 		dataset=>$ds,
-		custom_order=>"-timestamp" );
+		custom_order=>"-timestamp/-historyid" );
 	
 	$searchexp->add_field(
 		$ds->get_field( "objectid" ),
@@ -2255,28 +2265,33 @@ sub get_type
 ######################################################################
 =pod
 
-=item $xhtml_ul_list = $eprint->render_export_links
+=item $xhtml_ul_list = $eprint->render_export_links( [$staff] )
 
 Return a <ul> list containing links to all the formats this eprint
 is available in. 
+
+If $staff is true then show all formats available to staff, and link
+to the staff export URL.
 
 =cut
 ######################################################################
 	
 sub render_export_links
 {
-	my( $self ) = @_;
+	my( $self, $staff ) = @_;
 
+	my $vis = "all";
+	$vis = "staff" if $staff;
 	my $id = $self->get_value( "eprintid" );
 	my $ul = $self->{session}->make_element( "ul" );
 	my @plugins = $self->{session}->plugin_list( 
-					type=>"output",
+					type=>"Output",
 					can_accept=>"dataobj/eprint", 
-					is_visible=>"all" );
+					is_visible=>$vis );
 	foreach my $plugin_id ( @plugins ) {
 		my $li = $self->{session}->make_element( "li" );
 		my $plugin = $self->{session}->plugin( $plugin_id );
-		my $url = $plugin->dataobj_export_url( $self );
+		my $url = $plugin->dataobj_export_url( $self, $staff );
 		my $a = $self->{session}->render_link( $url );
 		$a->appendChild( $plugin->render_name() );
 		$li->appendChild( $a );

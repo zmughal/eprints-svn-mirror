@@ -17,21 +17,22 @@ use strict;
 # not be any broken characters, but better to be
 # sure.
 
-sub defaults
+sub new
 {
-	my %d = $_[0]->SUPER::defaults();
+	my( $class, %opts ) = @_;
 
-	$d{id} = "output/didl";
-	$d{name} = "DIDL";
-	$d{accept} = [ 'dataobj/eprint' ];
-	$d{visible} = "all";
-	$d{suffix} = ".xml";
-	$d{mimetype} = "text/xml";
+	my $self = $class->SUPER::new( %opts );
 
-	$d{xmlns} = "urn:mpeg:mpeg21:2002:02-DIDL-NS",
-	$d{schemaLocation} = "http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-21_schema_files/did/didmodel.xsd";
+	$self->{name} = "DIDL";
+	$self->{accept} = [ 'dataobj/eprint' ];
+	$self->{visible} = "all";
+	$self->{suffix} = ".xml";
+	$self->{mimetype} = "text/xml";
 
-	return %d;
+	$self->{xmlns} = "urn:mpeg:mpeg21:2002:02-DIDL-NS",
+	$self->{schemaLocation} = "http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-21_schema_files/did/didmodel.xsd";
+
+	return $self;
 }
 
 
@@ -66,7 +67,7 @@ sub xml_dataobj
 
 	my $d2 = $plugin->{session}->make_element( "didl:Descriptior" );
 	my $s2 = $plugin->{session}->make_element( "didl:Statement", mimeType=>"application/xml; charset=utf-8" );
-	my $dc_plugin = $plugin->{session}->plugin( "output/oai_dc" );
+	my $dc_plugin = $plugin->{session}->plugin( "Output::OAI_DC" );
 	$s2->appendChild( $dc_plugin->xml_dataobj( $eprint ) ); 
 	$d2->appendChild( $s2 );
 	$item->appendChild( $d2 );
