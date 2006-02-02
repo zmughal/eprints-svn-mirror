@@ -39,7 +39,7 @@
 This subroutine takes an eprint object and renders the XHTML view
 of this eprint for public viewing.
 
-Takes two arguments: the L<EPrints::EPrint|$eprint> to render and the current L<EPrints::Session|$session>.
+Takes two arguments: the L<$eprint|EPrints::EPrint> to render and the current L<$session|EPrints::Session>.
 
 Returns three XHTML DOM fragments (see L<EPrints::XML>): C<$page>, C<$title>, (and optionally) C<$links>.
 
