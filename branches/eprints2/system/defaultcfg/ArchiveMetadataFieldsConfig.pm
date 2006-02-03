@@ -42,7 +42,7 @@ To (re)create the database you will need to run
 
 See the documentation for more information.
 
-=head1 METHODS
+=head1 ARCHIVE CALLBACKS
 
 =over 4
 
@@ -201,7 +201,7 @@ return $fields;
 
 =item set_eprint_defaults( $data , $session )
 =item set_user_defaults( $data , $session )
-=item set_document_defaults( $data , $session )
+=item set_document_defaults( $data , $session, $eprint )
 =item set_subscription_defaults( $data , $session )
 
 These methods allow you to set some default values when things
@@ -274,7 +274,7 @@ otherwise they are empty. Another is to create fields which the
 submitter can't edit directly but you want to be searchable. eg.
 Number of authors.
 
-$eprint/$user/$doc/$subscription - the object to be modified
+L<$eprint|EPrints::EPrint>/L<$user|EPrints::User>/L<$doc|EPrints::Document>/L<$subscription|EPrints::Subscription> - the object to be modified
 
 Returns nothing (Modify the object instead).
 
