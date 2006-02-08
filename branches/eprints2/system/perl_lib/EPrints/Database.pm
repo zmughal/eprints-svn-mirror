@@ -1191,7 +1191,7 @@ sub cache_exp
 =pod
 
 =item $cacheid = $db->cache( $searchexp, $dataset, $srctable, 
-[$order] )
+[$order], [$list] )
 
 Create a cache of the specified search expression from the SQL table
 $srctable.
@@ -1200,12 +1200,15 @@ If $order is set then the cache is ordered by the specified fields. For
 example "-year/title" orders by year (descending). Records with the same
 year are ordered by title.
 
+If $srctable is set to "LIST" then order is ignored and the list of
+ids is taken from the array reference $list.
+
 =cut
 ######################################################################
 
 sub cache
 {
-	my( $self , $code , $dataset , $srctable , $order ) = @_;
+	my( $self , $code , $dataset , $srctable , $order, $list ) = @_;
 
 	my $sql;
 	my $sth;
@@ -1234,6 +1237,16 @@ sub cache
 	$self->do( $sql );
 
 	return $id if( $srctable eq "NONE" ); 
+
+	if( $srctable eq "LIST" )
+	{
+		my $sth = $self->prepare( "INSERT INTO $cache_table VALUES (NULL,?)" );
+		foreach( @{$list} )
+		{
+			$sth->execute( $_ );
+		}
+		return $id;
+	}
 
 	my $keyname = $keyfield->get_name();
 	$sql = "INSERT INTO $cache_table SELECT NULL , B.$keyname from ".$srctable." as B";

@@ -18,11 +18,15 @@ B<export> - export all items in a dataset using an output plugin.
 
 =head1 SYNOPSIS
 
-B<export> I<archiveid> [B<options>] I<dataset> [I<plugin>]
+B<export> I<archiveid> [B<options>] I<dataset> [I<plugin>] [I<objectid>] [I<objectid>] ...
 
 =head1 DESCRIPTION
 
 This command outputs a dataset in the selected format. The formats available depend on what Output plugins have been installed.
+
+Some plugins only operate on lists (e.g. RSS), others only operate on single objects only. Some plugins act slightly differently in single-item only mode. For example, outputing a list of eprints as XML gives a number of <eprint> elements in an outer <eprints> element. 
+
+To get the plugin to export a single item use --single. This may not always return a complete file. For example it may be missing the <?xml header, depending on the plugin.
 
 =head1 ARGUMENTS
 
@@ -42,11 +46,19 @@ The id of the output plugin to use. This should not include the leading "Output:
 
 If this is ommited or an invalid plugin is requested, then 'export' will list all plugins compatible with the dataset and exit.
 
+=item I<objectid>
+
+If this is set then just output the single, specified item. 
+
 =back
 
 =head1 OPTIONS
 
 =over 8
+
+=item B<--help>
+
+Print a brief help message and exit.
 
 =item B<--help>
 
@@ -90,6 +102,7 @@ my $quiet = 0;
 my $purge = 1;
 my $help = 0;
 my $man = 0;
+my $single = 0;
 
 GetOptions( 
 	'help|?' => \$help,
@@ -97,12 +110,13 @@ GetOptions(
 	'version' => \$version,
 	'verbose+' => \$verbose,
 	'silent' => \$quiet,
-	'quiet' => \$quiet
+	'quiet' => \$quiet,
+	'single' => \$single,
 ) || pod2usage( 2 );
 EPrints::Utils::cmd_version( "export_xml" ) if $version;
 pod2usage( 1 ) if $help;
 pod2usage( -exitstatus => 0, -verbose => 2 ) if $man;
-pod2usage( 2 ) if( scalar @ARGV != 2 && scalar @ARGV != 3 );
+pod2usage( 2 ) if( scalar @ARGV < 2 );
 
 my $noise = 1;
 $noise = 0 if( $quiet );
@@ -111,57 +125,106 @@ $noise = 1+$verbose if( $verbose );
 # Set STDOUT to auto flush (without needing a \n)
 $|=1;
 
-my $session = new EPrints::Session( 1, $ARGV[0], $noise );
+my $archiveid = shift @ARGV;
+my $datasetid = shift @ARGV;
+my $opluginid = shift @ARGV;
+my @objectids = @ARGV;
+
+my $session = new EPrints::Session( 1, $archiveid, $noise );
 exit( 1 ) unless defined $session;
 
-my $ds = $session->get_archive()->get_dataset( $ARGV[1] ) ;
+my $ds = $session->get_archive()->get_dataset( $datasetid ) ;
 if( !defined $ds )
 {
-	print STDERR "Unknown Dataset ID: $ARGV[1]\n";
+	print STDERR "Unknown Dataset ID: $datasetid\n";
 	$session->terminate;
 	exit 1;
 }
 
-my $plugin;
-if( defined $ARGV[2] )
+if( $single && (scalar @objectids) != 1 )
 {
-	$plugin = $session->plugin( "Output::".$ARGV[2] );
+	print STDERR "With --single exactly one object ID must be specified.\n";
+	$session->terminate;
+	exit 1;
 }
-if( !defined $plugin )
+
+if( !defined $opluginid )
 {
-	my @plugins = $session->plugin_list( 
-					type=>"output",
+	my @list_plugins = $session->plugin_list( 
+					type=>"Output",
 					can_accept=>"list/".$ds->confid );
+	my @dataobj_plugins = $session->plugin_list( 
+					type=>"Output",
+					can_accept=>"dataobj/".$ds->confid );
+	my %p = ();
+	my %l = ();
+	my %d = ();
+	foreach( @list_plugins ) { $p{$_} = $_; $l{$_} = 1; }
+	foreach( @dataobj_plugins ) { $p{$_} = 1; $d{$_} = 1; }
 	print "Available output formats:\n";
-	foreach my $plugin_id ( @plugins ) 
+	foreach my $a_plugin_id ( sort keys %p ) 
 	{
-		$plugin = $session->plugin( $plugin_id );
-		my( $type, $subtype ) = split "/", $plugin_id;
-		print $subtype.": ".$plugin->get_name()."\n";
+		my $a_plugin = $session->plugin( $a_plugin_id );
+		print $a_plugin->get_subtype.": ".$a_plugin->get_name();
+		if( $l{$a_plugin_id} && !$d{$a_plugin_id} )
+		{
+			print " (List export only)";
+		}
+		if( $d{$a_plugin_id} && !$l{$a_plugin_id} )
+		{
+			print " (Single object export only)";
+		}
+		print "\n";
 	}
 	$session->terminate();
 	exit;
 }
 
+my $pluginid = "Output::".$opluginid;
+my $plugin = $session->plugin( $pluginid );
 
-my $req_plugin_type = "list/".$ds->confid;
-
-unless( $plugin->can_accept( $req_plugin_type ) )
+if( $single )
 {
-	print STDERR "Plugin ouput/".$ARGV[2]." can't process $req_plugin_type data.\n";
-	$session->terminate();
-	exit 1;
+	my $objectid = $objectids[0];
+
+	my $req_plugin_type = "dataobj/".$ds->confid;
+
+	unless( $plugin->can_accept( $req_plugin_type ) )
+	{
+		print STDERR "Plugin $pluginid can't process $req_plugin_type data.\n";
+		$session->terminate();
+		exit 1;
+	}
+	my $dataobj = $ds->get_object( $session, $objectid );
+	if( !defined $dataobj ) 
+	{
+		print STDERR "#$objectid not found in ".$ds->id.".\n";
+		$session->terminate();
+		exit 1;
+	}
+
+	print $dataobj->export( $opluginid );
 }
+else
+{
+	my $req_plugin_type = "list/".$ds->confid;
 	
-my $search = EPrints::SearchExpression->new(
-	allow_blank => 1,
-	dataset => $ds,
-	session => $session );
-my $results = $search->perform_search;
-$plugin->output_list( list=>$results, fh=>*STDOUT );
-$results->dispose();
+	unless( $plugin->can_accept( $req_plugin_type ) )
+	{
+		print STDERR "Plugin $pluginid can't process $req_plugin_type data.\n";
+		$session->terminate();
+		exit 1;
+	}
 
+	@objectids = ("ALL") unless( scalar @objectids );
 
+	my $list = EPrints::List->new(
+		dataset => $ds,
+		session => $session,
+		ids=>\@objectids );
+
+	$plugin->output_list( list=>$list, fh=>*STDOUT );
+}
 
 $session->terminate();
 exit;

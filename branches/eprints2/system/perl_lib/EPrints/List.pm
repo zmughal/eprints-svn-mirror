@@ -205,29 +205,35 @@ sub cache
 		return;
 	}
 
-	my $srctable;
+	my $db = $self->{session}->get_db;
 	if( $self->_matches_all )
 	{
-		$srctable = $self->{dataset}->get_sql_table_name();
+		$self->{cache_id} = $db->cache( 
+			$self->{encoded}, 
+			$self->{dataset},
+			$self->{dataset}->get_sql_table_name(),
+			$self->{order} );
 	}
 	else
 	{
-		$srctable = $self->{session}->get_db()->make_buffer(
-			$self->{dataset}->get_key_field()->get_name(),
-			$self->{ids} );
-	}
+		$self->{cache_id} = $db->cache( 
+			$self->{encoded}, 
+			$self->{dataset},
+			"LIST",	
+			undef,
+			$self->{ids} );	
 
-	$self->{cache_id} = $self->{session}->get_db()->cache( 
-		$self->{encoded}, 
-		$self->{dataset},
-		$srctable,
-		$self->{order} );
+		if( defined $self->{order} )
+		{
+			my $srctable = $db->cache_table( $self->{cache_id} );
 
-	unless( $self->_matches_all )
-	{
-		$self->{session}->get_db()->dispose_buffer( $srctable );
+			$self->{cache_id}  = $db->cache( 
+				$self->{encoded},
+				$self->{dataset},
+				$srctable,
+				$self->{order} );
+		}
 	}
-		
 }
 
 ######################################################################

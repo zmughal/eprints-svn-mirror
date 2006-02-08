@@ -3226,5 +3226,13 @@ PACKAGE: 2.2.99.2
  - Added a staff export eprint script to allow them to export individual
     records in formats not available to the public.
 
+2006-02-08 cjg
+
+ - EPrints::List can now be constructed with a list of values, and if no
+    order property is set, the initial ordering is preserved.
+ - Plugins now have a get type and a get sub-type method which returns 
+    everything before and after the first :: respectively.
+ - bin/export can now handle lists of objects ids, single objects and
+    can list which plugins can handle lists only or dataobjects only.
 
 
