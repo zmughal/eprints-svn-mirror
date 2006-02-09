@@ -124,7 +124,7 @@ sub get_system_field_info
 	( 
 		{ name=>"docid", type=>"text", required=>1 },
 
-		{ name=>"rev_number", type=>"int", required=>1 },
+		{ name=>"rev_number", type=>"int", required=>1, can_clone=>0 },
 
 		{ name=>"eprintid", type=>"itemref",
 			datasetid=>"eprint", required=>1 },

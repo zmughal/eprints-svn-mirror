@@ -3230,9 +3230,22 @@ PACKAGE: 2.2.99.2
 
  - EPrints::List can now be constructed with a list of values, and if no
     order property is set, the initial ordering is preserved.
- - Plugins now have a get type and a get sub-type method which returns 
-    everything before and after the first :: respectively.
  - bin/export can now handle lists of objects ids, single objects and
     can list which plugins can handle lists only or dataobjects only.
 
+2006-02-09 cjg
 
+ - Added phrases for the History module.
+ - The staff export script can now output EPrints from any dataset, not
+    just archive.
+ - added can_clone=0 to all rev_number fields. The revision number should
+    revert to 1.
+ - If a dataset is asked for the pages of an unknown type it now returns
+    an empty list instead of crashing.
+ - Plugins now have a get type and a get sub-type method which returns 
+    everything before and after the first :: respectively.
+ - History now renders nicely.
+ - A warning is now given if an EPrint has no valid directory set.
+ - bin/upgrade broken, but with notes of what it needs to do before we
+    make the next release.
+  

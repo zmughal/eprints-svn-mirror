@@ -111,7 +111,7 @@ sub get_name
 
 =item $name = $plugin->get_type
 
-Return the type of this plugin. eg. output
+Return the type of this plugin. eg. Output
 
 =cut
 ######################################################################
@@ -120,7 +120,30 @@ sub get_type
 {
 	my( $self ) = @_;
 
-	return $self->{type};
+	$self->{id} =~ m/^([^:]*)/;
+
+	return $1;
+}
+
+######################################################################
+=pod
+
+=item $name = $plugin->get_subtype
+
+Return the sub-type of this plugin. eg. BibTex
+
+This is the ID with the type stripped from the front.
+
+=cut
+######################################################################
+
+sub get_subtype
+{
+	my( $self ) = @_;
+
+	$self->{id} =~ m/^[^:]*::(.*)/;
+
+	return $1;
 }
 
 ######################################################################

@@ -496,9 +496,21 @@ END
 
 	}
 
+do this for every eprint?
+
+#	my $rev_file = $dir."/".$eprint->get_value("rev_number").".xml";
+#	unless( open( REVFILE, ">$rev_file" ) )
+#	{
+#		$eprint->{session}->get_archive()->log( "Error writing file: $!" );
+#		return;
+#	}
+#	print REVFILE '<?xml version="1.0" encoding="utf-8" ?>'."\n";
+#	print REVFILE $eprint->export( "XML", fh=>*REVFILE );
+#	close REVFILE;
+
 Text not integer?
 	# add "license" to the document dataobject.
-	$sql = "ALTER TABLE document ADD license INTEGER DEFAULT NULL AFTER security";
+	$sql = "ALTER TABLE document ADD license VARCHAR(255) DEFAULT NULL AFTER security";
 	$db->do( $sql );
 
 	# add the ordervalues for lastmod

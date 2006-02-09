@@ -146,7 +146,7 @@ sub get_system_field_info
 	( 
 		{ name=>"userid", type=>"int", required=>1 },
 
-		{ name=>"rev_number", type=>"int", required=>1 },
+		{ name=>"rev_number", type=>"int", required=>1, can_clone=>0 },
 
 		{ name=>"username", type=>"text", required=>1 },
 

@@ -50,6 +50,27 @@ EPrints Modules
     <ep:phrase ref="lib/eprint:later_version"><p>There is a later version of the item you are trying to access:<br /><ep:pin ref="citation" /></p></ep:phrase>
     <ep:phrase ref="lib/eprint:curr_disp"><strong>[Currently Displayed]</strong></ep:phrase>
 
+<!-- History -->
+
+    <ep:phrase ref="lib/history:title_modify">Modified</ep:phrase>
+    <ep:phrase ref="lib/history:title_move_inbox_to_buffer">Moved from Work Area to Editorial Review</ep:phrase>
+    <ep:phrase ref="lib/history:title_move_buffer_to_inbox">Moved from Editorial Review to Work Area</ep:phrase>
+    <ep:phrase ref="lib/history:title_move_buffer_to_archive">Moved from Editorial Review to Repository</ep:phrase>
+    <ep:phrase ref="lib/history:title_move_archive_to_buffer">Moved from Repository to Editorial Review</ep:phrase>
+    <ep:phrase ref="lib/history:title_move_archive_to_deletion">Moved from Repository to Deleted</ep:phrase>
+    <ep:phrase ref="lib/history:title_move_deletion_to_archive">Moved from Deleted to Repository</ep:phrase>
+    <ep:phrase ref="lib/history:title_mail_owner">Email sent to depositor of record</ep:phrase>
+    <ep:phrase ref="lib/history:before">Before</ep:phrase>
+    <ep:phrase ref="lib/history:after">After</ep:phrase>
+    <ep:phrase ref="lib/history:system">SYSTEM</ep:phrase>
+    <ep:phrase ref="lib/history:no_earlier">Earlier revision not available. No diff possible. Showing all data in this revision.</ep:phrase>
+    <ep:phrase ref="lib/history:no_file">Revision file not available.</ep:phrase>
+    <ep:phrase ref="lib/history:record">
+<div style="padding: 0.3em; margin-top: 2em; border: solid 1px black; background-color: #ccc;"><ep:pin ref="item" /></div>
+<div style="padding: 0.3em; background-color: black; color: white; font-weight: bold;"><ep:pin ref="action" /> by <ep:pin ref="cause" /> at <ep:pin ref="when" /></div>
+<div style="padding: 0.3em; margin-bottom: 2em; border: solid 1px black;"><ep:pin ref="details" /></div>
+    </ep:phrase>
+    <ep:phrase ref="lib/history:xmlblock"><pre style="margin: 0 0 0 0; padding: 3px 3px 3px 3px; border-left: 1px dashed black; border-bottom: 1px dashed black;"><ep:pin ref="xml" /></pre></ep:phrase>
 
 <!-- MetaField -->
 
@@ -315,6 +336,7 @@ Enter a URL to capture a file from: <ep:pin ref="url" /><br />
     <ep:phrase ref="lib/submissionform:title_quickverify">Edit item: Verification</ep:phrase>
     <ep:phrase ref="lib/submissionform:title_done">Completed Deposit</ep:phrase>
     <ep:phrase ref="lib/submissionform:title_error">Error</ep:phrase>
+    <ep:phrase ref="lib/submissionform:title_return">Return</ep:phrase>
     <ep:phrase ref="lib/submissionform:title_confirmdel">Confirm Deletion</ep:phrase>
     <ep:phrase ref="lib/submissionform:corrupt_err">An inconsistency in the posted data was detected. Usually this is caused by arriving directly to this page from a bookmark and not from your user page, or through using the browser's back/forwards or reload buttons. Always access the depositing mechanism via your author area and use the buttons on the form. (Code <ep:pin ref="line_no" />)</ep:phrase>
     <ep:phrase ref="lib/submissionform:database_err">There's been a problem accessing the repository database. Please try again later. (Code <ep:pin ref="line_no" />)</ep:phrase>

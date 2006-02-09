@@ -1224,7 +1224,9 @@ sub get_page_fields
 {
 	my( $self, $type, $page, $staff ) = @_;
 
-	return @{$self->{($staff?"staff_":"")."pages"}->{$type}->{$page}};
+	my $v = ($staff?"staff_":"")."pages";
+	my $l = $self->{$v}->{$type}->{$page};
+	return @{$l};
 }
 
 ######################################################################
@@ -1241,7 +1243,11 @@ sub get_type_pages
 {
 	my( $self, $type ) = @_;
 
-	return @{$self->{page_order}->{$type}};
+	my $l = $self->{page_order}->{$type};
+
+	return () unless( defined $l );
+
+	return @{$l};
 }
 
 

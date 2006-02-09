@@ -44,10 +44,7 @@ if( !defined $afterid ) {
 	exit;
 }
 
-my $eprint = EPrints::EPrint->new( 
-			$session, 
-			$id, 
-			$session->get_archive->get_dataset( "archive" ) );
+my $eprint = EPrints::EPrint->new( $session, $id );
 if( !defined $eprint ) {
 	error( 
 		$session, 

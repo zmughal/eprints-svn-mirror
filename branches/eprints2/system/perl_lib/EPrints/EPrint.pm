@@ -112,7 +112,7 @@ sub get_system_field_info
 	return ( 
 	{ name=>"eprintid", type=>"int", required=>1 },
 
-	{ name=>"rev_number", type=>"int", required=>1 },
+	{ name=>"rev_number", type=>"int", required=>1, can_clone=>0 },
 
 	# UserID is not required, as some bulk importers
 	# may not provide this info. maybe bulk importers should
@@ -1493,9 +1493,15 @@ No trailing slash.
 sub local_path
 {
 	my( $self ) = @_;
+
+	unless( $self->is_set( "dir" ) )
+	{
+		$self->{session}->get_archive->log( "EPrint ".$self->get_id." has no directory set." );
+		return undef;
+	}
 	
 	return( 
-		$self->{session}->get_archive()->get_conf( 
+		$self->{session}->get_archive->get_conf( 
 			"documents_path" )."/".$self->get_value( "dir" ) );
 }
 
