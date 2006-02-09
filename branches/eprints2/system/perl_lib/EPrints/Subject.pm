@@ -61,7 +61,7 @@ sub get_system_field_info
 	( 
 		{ name=>"subjectid", type=>"text", required=>1 },
 
-		{ name=>"rev_number", type=>"int", required=>1 },
+		{ name=>"rev_number", type=>"int", required=>1, can_clone=>0 },
 
 		{ name=>"name", type=>"text", required=>1, multilang=>1 },
 
