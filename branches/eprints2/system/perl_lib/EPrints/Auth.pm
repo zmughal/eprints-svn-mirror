@@ -75,7 +75,7 @@ sub authen
 
 	return OK unless $r->is_initial_req; # only the first internal request
 
-	my $session = new EPrints::Session;
+	my $session = new EPrints::Session(2); # don't open the CGI info
 	
 	if( !defined $session )
 	{
@@ -249,7 +249,7 @@ sub authz
 	# but if we are looking at a document in the secure area then
 	# we need to do some work.
 
-	my $session = new EPrints::Session;
+	my $session = new EPrints::Session(2); # don't open the CGI info
 	my $archive = $session->get_archive;
 
 	my $area = $r->dir_config( "EPrints_Security_Area" );

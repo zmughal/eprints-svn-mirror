@@ -42,7 +42,7 @@ sub process
 	return unless defined( $user );
 
 	my $arc_ds = $session->get_archive()->get_dataset( "archive" );
-	my @eprints = $user->get_owned_eprints( $arc_ds );
+	my $list = $user->get_owned_eprints( $arc_ds );
 	my $userid = $user->get_value( "userid" );
 
 	my $page = $session->make_doc_fragment();
@@ -54,14 +54,15 @@ sub process
 
 	$page->appendChild( $session->html_phrase(
 		"cgi/user_eprints:n_eprints",
-		n=>$session->make_text( scalar @eprints ) ) );
+		n=>$session->make_text( $list->count ) ) );
 
-	foreach( @eprints )
-	{
+	$list->map( sub {
+		my( $session, $dataset, $eprint ) = @_;
+
 		my $p = $session->make_element( "p" );
-		$p->appendChild( $_->render_citation_link() );
+		$p->appendChild( $eprint->render_citation_link() );
 		$page->appendChild( $p ); 
-	}
+	} );
 
 	$session->build_page(
 		$session->html_phrase( 

@@ -3248,4 +3248,22 @@ PACKAGE: 2.2.99.2
  - A warning is now given if an EPrint has no valid directory set.
  - bin/upgrade broken, but with notes of what it needs to do before we
     make the next release.
-  
+ 
+2006-02-09 cjg
+
+ - Changed $user->get_eprints, get_owned_eprints and get_editable_eprints
+    to return an EPrints::List instead of an array. 
+ - Everything which uses those methods now handles the list object instead
+    of the array.
+ - Added a new method to EPrints::List: merge, which creates a new list 
+    containing all the records from two existing lists.
+ - Set CGI module to compile on load, this may be slightly more efficient
+    under mod_perl.
+ - Added a new mode to session, mode 2, which means online, but ignore the
+    CGI data (so it's not consumed by the authentication sessions).
+ - Just in case, uploaded files filehandles are reset to the start of the
+    file.
+ - If there is a problem with the eval code in AnApache, it will now quit
+    reporting the problem.
+ - bin/export now quits with an error if an invalid plugin is selected. 
+

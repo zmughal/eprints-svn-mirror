@@ -37,9 +37,9 @@ my( $page, $p, $table, $tr, $td, $th, $link );
 $page = $session->make_doc_fragment();
 
 # Get EPrints in the submission buffer
-my @eprints = $user->get_editable_eprints();
+my $list = $user->get_editable_eprints();
 
-if( scalar @eprints == 0 )
+if( $list->count == 0 )
 {
 	# No EPrints
 	$page->appendChild( $session->html_phrase( 
@@ -69,12 +69,12 @@ else
 	$th->appendChild( $session->html_phrase( "cgi/users/buffer:sub_date" ) );
 	$tr->appendChild( $th );
 
-	my $e;
-	
-	my $row = 1;
-	foreach $e (@eprints)
-	{
-		$tr = $session->make_element( "tr", class=>"row_".($row%2?"b":"a") );
+	my $info = {row => 1};
+
+	$list->map( sub {
+		my( $session, $dataset, $e, $info ) = @_;
+
+		$tr = $session->make_element( "tr", class=>"row_".($info->{row}%2?"b":"a") );
 		$table->appendChild( $tr );
 
 		# Title
@@ -104,8 +104,8 @@ else
 		$td = $session->make_element( "td", class=>"last_col" );
 		$tr->appendChild( $td );
 		$td->appendChild( $buffds->get_field( "datestamp" )->render_value( $session, $e->get_value( "datestamp" ) ) );
-		++$row;
-	}
+		++$info->{row};
+	}, $info );
 }
 
 $page->appendChild( $session->html_phrase( "general:userhome_link" ) );

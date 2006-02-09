@@ -91,6 +91,7 @@ use File::Basename;
 use File::Path;
 use File::Copy;
 use Cwd;
+use Fcntl qw(:DEFAULT :seek);
 
 use URI::Heuristic;
 use Convert::PlainText;
@@ -913,7 +914,9 @@ sub upload
 	my( $bytes, $buffer );
 
 	my $out_path = $self->local_path() . "/" . sanitise( $filename );
-		
+
+	seek( $filehandle, 0, SEEK_SET );
+	
 	open OUT, ">$out_path" or return( 0 );
 	while( $bytes = read( $filehandle, $buffer, 1024 ) )
 	{

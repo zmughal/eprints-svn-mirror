@@ -310,14 +310,14 @@ sub render_workspace
 
 	### Get the actual items in the workspace
 	my $ds = $session->get_archive()->get_dataset( "inbox" );
-	my @eprints = $user->get_owned_eprints( $ds );
+	my $list = $user->get_owned_eprints( $ds );
 
 	my( $html, $form, $div );
 
 	$html = $session->make_doc_fragment();
 	$html->appendChild( $session->html_phrase( "cgi/users/home:docs" ));
 
-	if( scalar @eprints == 0)
+	if( $list->count == 0 )
 	{
 		# No items, oh well.
 		return $html;
@@ -335,8 +335,10 @@ sub render_workspace
 	my $e;
 	my $cnt = 0;
 	my $row = 0;
-	foreach $e (@eprints)
-	{
+		
+	$list->map( sub {
+		my( $session, $dataset, $e ) = @_;
+	
 		$tr = $session->make_element( "tr", class=>"row_".($row?"b":"a") );
 		$table->appendChild( $tr );	
 		$td = $session->make_element( "td", class=>'first_col userpage_table_emph' );
@@ -371,7 +373,7 @@ sub render_workspace
 		$a->appendChild( $session->html_phrase("cgi/users/home:action_delete") );
 		$td->appendChild( $a );
 		$row=!$row;
-	}
+	} );
 
 	$html->appendChild( $session->html_phrase( "cgi/users/home:depositing" ) );
 	$html->appendChild( $table );
@@ -395,13 +397,13 @@ sub render_pending
 
 	### Get the items in the buffer
 	my $ds = $session->get_archive()->get_dataset( "buffer" );
-	my @eprints =  $user->get_owned_eprints( $ds );
+	my $list = $user->get_owned_eprints( $ds );
 
 	my $html = $session->make_doc_fragment();
 
 	$html->appendChild( $session->html_phrase( "cgi/users/home:pending_title" ) );
 
-	if( scalar @eprints == 0 )
+	if( $list->count == 0 )
 	{
 		$html->appendChild( $session->html_phrase( "cgi/users/home:no_pending" ) );
 	}
@@ -415,8 +417,9 @@ sub render_pending
 				border=>0 );
 		$html->appendChild( $table );
 		my $row = 0;
-		foreach my $e (@eprints)
-		{
+		$list->map( sub {
+			my( $session, $dataset, $e ) = @_; 
+
 			$tr = $session->make_element( "tr", class=>"row_".($row?"b":"a") );
 			$table->appendChild( $tr );	
 			$td = $session->make_element( "td", class=>"first_col userpage_table_emph" );
@@ -428,7 +431,7 @@ sub render_pending
 				"cgi/users/home:deposited_at",
 				time=>$e->render_value( "datestamp" ) ) );
 			$row=!$row;
-		}
+		} );
 	}
 	return $html;
 }
@@ -449,13 +452,13 @@ sub render_recent
 	
 	### Get the items in the buffer
 	my $ds = $session->get_archive()->get_dataset( "archive" );
-	my @eprints =  $user->get_owned_eprints( $ds );
+	my $list = $user->get_owned_eprints( $ds );
 
 	my $html = $session->make_doc_fragment();
 
 	$html->appendChild( $session->html_phrase( "cgi/users/home:recent_title" ) );
 
-	if( scalar @eprints == 0 )
+	if( $list->count == 0 )
 	{
 		$html->appendChild( $session->html_phrase( "cgi/users/home:no_recent" ) );
 	}
@@ -471,7 +474,13 @@ sub render_recent
 		my $e;
 		my $cnt = 0;
 		my $row = 0;
-		foreach $e (reverse @eprints) 
+
+		my $size = $list->count;
+		my $offset = $list->count - $max;
+		my $count = $max;
+		$offset = 0 if( $offset < 0 );
+			
+		foreach $e ( reverse $list->get_records( $offset, $count ) )
 #cjg not exactly the right way!
 #cjg should really do it by deposit date
 		{

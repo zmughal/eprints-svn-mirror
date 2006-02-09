@@ -67,6 +67,8 @@ dataset. Usually this is the results of a search.
 
 package EPrints::List;
 
+use strict;
+
 ######################################################################
 =pod
 
@@ -182,6 +184,35 @@ sub reorder
 	return $new_list;
 }
 		
+######################################################################
+=pod
+
+=item $new_list = $list->merge( $list2, [$order] );
+
+Create a new list from this one plus another one. If order is not set
+then this list will not be in any certain order.
+
+=cut
+######################################################################
+
+sub merge
+{
+	my( $self, $list2, $order ) = @_;
+
+	my $ids1 = $self->get_ids;
+	my $ids2 = $list2->get_ids;
+
+	my %newids = ();
+	foreach( @{$ids1}, @{$ids2} ) { $newids{$_}=1; }
+	my @objectids = keys %newids;
+
+	# losing desc, although could be added later.
+	return EPrints::List->new(
+		dataset => $self->{dataset},
+		session => $self->{session},
+		order => $order,
+		ids=>\@objectids );
+}
 
 ######################################################################
 =pod

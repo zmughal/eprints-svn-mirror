@@ -55,14 +55,14 @@ sub make_form
 	# not just stuff you deposited.
 
 	my $ds = $session->get_archive()->get_dataset( "archive" );	
-	my @eprints = $user->get_owned_eprints( $ds );
+	my $list = $user->get_owned_eprints( $ds );
 
 	my $user = $session->current_user;
 	my $fullname = $user->render_description();
 	my $page = $session->make_doc_fragment();
 	my $title = $session->html_phrase( "cgi/users/review:title", name=>$fullname );
 
-	if( scalar @eprints == 0 )
+	if( $list->count == 0 )
 	{
 		$page->appendChild( $session->html_phrase( 
 			"cgi/users/review:no_docs" ) );
@@ -102,8 +102,9 @@ sub make_form
 	$form->appendChild( $table );
 
 	my $row = 0;
-	foreach my $eprint ( @eprints )
-	{
+	$list->map( sub {
+		my( $session, $dataset, $eprint ) = @_;
+
 		$tr = $session->make_element( "tr", class=>"row_".($row?"b":"a") );
 		$table->appendChild( $tr );	
 
@@ -145,7 +146,7 @@ sub make_form
 			$td->appendChild( $a );
 		}
 		$row=!$row;
-	}
+	} );
 	$session->build_page( $title, $page, "review_list" );
 	$session->send_page();
 	return;

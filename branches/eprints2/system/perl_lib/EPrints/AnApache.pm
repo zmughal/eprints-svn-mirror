@@ -138,7 +138,7 @@ if( defined $av && $av eq "2" )
 		sub upload_doc_file
 		{
 			my( $session, $document, $paramid ) = @_;
-		
+
 			my $cgi = $session->get_query;
 		
 			return $document->upload( 
@@ -192,7 +192,7 @@ if( defined $av && $av eq "2" )
 			die "Unknown ModPerlAPI version: $EPrints::AnApache::ModPerlAPI";
 		}
 	';
-	
+	if( $@ ) { die $@; }
 }
 else
 {
@@ -277,6 +277,7 @@ else
 			return Apache->request;
 		}
 	';
+	if( $@ ) { die $@; }
 }
 
 

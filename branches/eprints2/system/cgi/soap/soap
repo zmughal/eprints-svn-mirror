@@ -63,7 +63,7 @@ sub getEprint($;$)
 {
 	my( $class, $eprintid, $whole_files ) = @_;
 
-	if( $whole_files != 1 ) { $whole_files = 0; }
+	if( !defined $whole_files || $whole_files != 1 ) { $whole_files = 0; }
 	#$whole_files = 0;# hack!
 
 	print STDERR "get_eprint(".join(",",@_).")\n";
@@ -104,7 +104,7 @@ sub putEprint($)
 	my $archive = $session->get_archive;
 
 	$data->{type} = "article" unless defined $data->{type};
-	$data->{userid} = 4438;
+	$data->{userid} = 1;
 
 	my $ds = $session->get_archive->get_dataset( "inbox" );
 	my $eprint = EPrints::EPrint::create( $session, $ds, $data );

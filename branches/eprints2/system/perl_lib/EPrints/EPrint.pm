@@ -1218,8 +1218,7 @@ sub prune_documents
 	my( $self ) = @_;
 
 	# Check each one
-	my $doc;
-	foreach $doc ( $self->get_all_documents() )
+	foreach my $doc ( $self->get_all_documents() )
 	{
 		my %files = $doc->files();
 		if( scalar keys %files == 0 )

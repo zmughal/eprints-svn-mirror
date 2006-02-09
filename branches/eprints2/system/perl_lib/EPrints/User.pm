@@ -512,13 +512,12 @@ sub has_priv
 ######################################################################
 =pod
 
-=item @eprints = $user->get_eprints( $dataset )
+=item $list = $user->get_eprints( $dataset )
 
 Return EPrints in the given EPrints::DataSet which have this user
 as their creator.
 
-This can return a very large list as it returns an array rather than
-a results object.
+Since 2.4 this returns an EPrints::List object, not an array of eprints.
 
 =cut
 ######################################################################
@@ -536,22 +535,18 @@ sub get_eprints
 		$ds->get_field( "userid" ),
 		$self->get_value( "userid" ) );
 
-	my $searchid = $searchexp->perform_search;
-
-	my @records = $searchexp->get_records;
-	$searchexp->dispose();
-	return @records;
+	return $searchexp->perform_search;
 }
 
 ######################################################################
 =pod
 
-=item @eprints = $user->get_editable_eprints
+=item $list = $user->get_editable_eprints
 
 Return eprints currently in the editorial review buffer. If this user
 has editperms set then only return those records which match.
 
-Returns an array of eprints so can be inefficient.
+Since 2.4 this returns an EPrints::List object, not an array of eprints.
 
 =cut
 ######################################################################
@@ -569,14 +564,11 @@ sub get_editable_eprints
 			custom_order => "-datestamp",
 			dataset => $ds,
 			session => $self->{session} );
-		$searchexp->perform_search;
-		my @records =  $searchexp->get_records;
-		$searchexp->dispose();
-		return @records;
+		return $searchexp->perform_search;
 	}
 
 	my $editperms = $self->{dataset}->get_field( "editperms" );
-	my @records = ();
+	my $list = undef;
 	foreach my $sv ( @{$self->get_value( 'editperms' )} )
 	{
 		my $searchexp = $editperms->make_searchexp(
@@ -585,21 +577,29 @@ sub get_editable_eprints
 		$searchexp->{custom_order}="-datestamp";
 	        $searchexp->{order} = $EPrints::SearchExpression::CustomOrder;
 
-		$searchexp->perform_search;
-		push @records,  $searchexp->get_records;
-		$searchexp->dispose();
+		my $newlist = $searchexp->perform_search;
+		if( defined $list )
+		{
+			$list = $list->merge( $newlist );
+		}
+		else
+		{
+			$list = $newlist;
+		}
 	}
-	return @records;
+	return $list;
 }
 
 ######################################################################
 =pod
 
-=item @eprints = $user->get_owned_eprints( $dataset );
+=item $list = $user->get_owned_eprints( $dataset );
 
 Return a list of the eprints which this user owns. This is by default
 the same as $user->get_eprints( $dataset) but may be over-ridden by
 get_users_owned_eprints.
+
+Since 2.4 this returns an EPrints::List object, not an array of eprints.
 
 =cut
 ######################################################################
@@ -615,7 +615,12 @@ sub get_owned_eprints
 		return $self->get_eprints( $ds );
 	}
 
-	return &$fn( $self->{session}, $self, $ds );
+	my $result = &$fn( $self->{session}, $self, $ds );
+	unless( $result->isa( "EPrints::List" ) )
+	{
+		EPrints::Config::abort( "get_users_owned_eprints should now return an EPrints::List object." );
+	}
+	return $result;
 }
 
 ######################################################################
@@ -921,9 +926,9 @@ sub send_out_editor_alert
 	
 	$self->{session}->change_lang( $self->get_value( "lang" ) );
 
-	my @r = $self->get_editable_eprints;
+	my $list = $self->get_editable_eprints;
 
-	if( scalar @r > 0 || $self->get_value( "mailempty" ) eq 'TRUE' )
+	if( $list->count > 0 || $self->get_value( "mailempty" ) eq 'TRUE' )
 	{
 		my $url = $self->{session}->get_archive->get_conf( "perl_url" ).
 			"/users/record";
@@ -932,14 +937,16 @@ sub send_out_editor_alert
 		my $searchdesc = $self->render_value( "editperms" );
 
 		my $matches = $self->{session}->make_doc_fragment;
-		foreach my $item ( @r )
-		{
+
+		$list->map( sub {
+			my( $session, $dataset, $eprint ) = @_;
+
 			my $p = $self->{session}->make_element( "p" );
-			$p->appendChild( $item->render_citation );
+			$p->appendChild( $eprint->render_citation );
 			$matches->appendChild( $p );
-			$matches->appendChild( $self->{session}->make_text( $item->get_url( 1 ) ) );
+			$matches->appendChild( $self->{session}->make_text( $eprint->get_url( 1 ) ) );
 			$matches->appendChild( $self->{session}->make_element( "br" ) );
-		}
+		} );
 
 		my $mail = $self->{session}->html_phrase( 
 				"lib/user:editor_update_mail",

@@ -106,7 +106,7 @@ use Unicode::String qw(utf8 latin1);
 use EPrints::AnApache;
 
 #use URI::Escape;
-use CGI;
+use CGI qw(-compile);
 
 use strict;
 #require 'sys/syscall.ph';
@@ -150,6 +150,8 @@ sub new
 	my( $class, $mode, $archiveid, $noise, $nocheckdb ) = @_;
 	# mode = 0    - We are online (CGI script)
 	# mode = 1    - We are offline (bin script) $archiveid is archiveid
+	# mode = 2    - We are online, but don't create a CGI query (so we
+	#  don't consume the data).
 	my $self = {};
 	bless $self, $class;
 
@@ -157,10 +159,10 @@ sub new
 	$noise = 0 unless defined( $noise );
 	$self->{noise} = $noise;
 
-	if( $mode == 0 || !defined $mode )
+	if( $mode == 0 || $mode == 2 || !defined $mode )
 	{
 		$self->{request} = EPrints::AnApache::get_request();
-		$self->{query} = new CGI;
+		if( $mode == 0 ) { $self->{query} = new CGI; }
 		$self->{offline} = 0;
 		$self->{archive} = EPrints::Archive->new_from_request( $self->{request} );
 	}
