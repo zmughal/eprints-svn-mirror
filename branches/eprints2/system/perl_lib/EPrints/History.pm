@@ -273,38 +273,61 @@ sub render
 {
 	my( $self ) = @_;
 
-	my $div = $self->{session}->make_element( "div", style=>"border:solid 0px red; padding: 1em;" );
-	$div->appendChild( $self->{session}->make_text( "Time: " ) );
-	$div->appendChild( $self->render_value( "timestamp" ) );
-	my $user;
-	if( $self->get_value( "userid" ) )
-	{
-		$user = EPrints::User->new( $self->{session}, $self->get_value( "userid" ) );
-	}
-	$div->appendChild( $self->{session}->make_element("br" ));
-	$div->appendChild( $self->{session}->make_text( "User: " ) );
+	my %pins = ();
+	
+	my $user = $self->get_user;
 	if( defined $user )
 	{
-		$div->appendChild( $user->render_description() )
+		$pins{cause} = $user->render_description;
 	}
 	else
 	{
-		$div->appendChild( $self->{session}->make_text( "unknown - probably a script." ) );
+		$pins{cause} = $self->{session}->html_phrase( "lib/history:system" );
 	}
+
+	$pins{when} = $self->render_value( "timestamp" );
 
 	my $action = $self->get_value( "action" );
 
-	if( $action eq "MODIFY" ) { $div->appendChild( $self->render_modify ); }
-	elsif( $action eq "MOVE_INBOX_TO_BUFFER" ) { $div->appendChild( $self->render_move( $action ) ); }
-	elsif( $action eq "MOVE_BUFFER_TO_INBOX" ) { $div->appendChild( $self->render_move( $action ) ); }
-	elsif( $action eq "MOVE_BUFFER_TO_ARCHIVE" ) { $div->appendChild( $self->render_move( $action ) ); }
-	elsif( $action eq "MOVE_ARCHIVE_TO_BUFFER" ) { $div->appendChild( $self->render_move( $action ) ); }
-	elsif( $action eq "MOVE_ARCHIVE_TO_DELETION" ) { $div->appendChild( $self->render_move( $action ) ); }
-	elsif( $action eq "MOVE_DELETION_TO_ARCHIVE" ) { $div->appendChild( $self->render_move( $action ) ); }
-	elsif( $action eq "MAIL_OWNER" ) { $div->appendChild( $self->render_mail_owner ); }
-	else { $div->appendChild( $self->render_error( $action ) ); }
+	$pins{action} = $self->{session}->html_phrase( "lib/history:title_\L$action" );
+
+	if( $action eq "MODIFY" ) { $pins{details} = $self->render_modify; }
+	elsif( $action =~ m/^MOVE_/ ) { $pins{details} = $self->{session}->make_doc_fragment; }
+	elsif( $action eq "MAIL_OWNER" ) { $pins{details} = $self->render_mail_owner; }
+	else { $pins{details} = $self->{session}->make_text( "Don't know how to render history event: $action" ); }
+
+	my $obj  = $self->get_dataobj;
+	$pins{item} = $self->{session}->make_doc_fragment;
+	$pins{item}->appendChild( $obj->render_description );
+	$pins{item}->appendChild( $self->{session}->make_text( " (" ) );
+ 	my $a = $self->{session}->render_link( $obj->get_url( 1 ) );
+	$pins{item}->appendChild( $a );
+	$a->appendChild( $self->{session}->make_text( $self->get_value( "datasetid" )." ".$self->get_value("objectid" ) ) );
+	$pins{item}->appendChild( $self->{session}->make_text( ")" ) );
+	#$pins{item}->appendChild( $self->render_value( "historyid" ));
 	
-	return $div;
+	return $self->{session}->html_phrase( "lib/history:record", %pins );
+}
+
+sub get_dataobj
+{
+	my( $self ) = @_;
+
+	return unless( $self->is_set( "datasetid" ) );
+	my $ds = $self->{session}->get_archive->get_dataset( $self->get_value( "datasetid" ) );
+	return $ds->get_object( $self->{session}, $self->get_value( "objectid" ) );
+}
+
+sub get_user
+{
+	my( $self ) = @_;
+
+	if( $self->is_set( "userid" ) )
+	{
+		return EPrints::User->new( $self->{session}, $self->get_value( "userid" ) );
+	}
+
+	return undef;
 }
 
 sub render_mail_owner
@@ -312,32 +335,11 @@ sub render_mail_owner
 	my( $self, $action ) = @_;
 
 	my $div = $self->{session}->make_element( "div" );
-	$div->appendChild( $self->{session}->make_text( "Mail Owner" ) );
 	$div->appendChild( $self->render_value("details") );
 	return $div;
 }
 
 
-sub render_move
-{
-	my( $self, $action ) = @_;
-
-	my $div = $self->{session}->make_element( "div" );
-	$div->appendChild( $self->{session}->make_text( "Move EPrint: $action" ) );
-	return $div;
-}
-
-
-sub render_error
-{
-	my( $self, $action ) = @_;
-
-	my $div = $self->{session}->make_element( "div" );
-	$div->appendChild( $self->{session}->make_text( "Don't know how to render history event: $action" ) );
-	return $div;
-}
-
-# render_modify
 
 sub render_modify
 {
@@ -350,26 +352,38 @@ sub render_modify
 
 	my $r_file_old =  $eprint->local_path."/revisions/$r_old.xml";
 	my $r_file_new =  $eprint->local_path."/revisions/$r_new.xml";
-	unless( -e $r_file_old && -e $r_file_new )
+	unless( -e $r_file_new )
 	{
 		my $div = $self->{session}->make_element( "div" );
-		$div->appendChild( $self->{session}->make_text( "Earlier version not available. No diff possible." ) );
+		$div->appendChild( $self->{session}->html_phrase( "lib/history:no_file" ) );
 		return $div;
 	}
-	my $file_old = EPrints::XML::parse_xml( $r_file_old );
+
 	my $file_new = EPrints::XML::parse_xml( $r_file_new );
-	my $dom_old = $file_old->getFirstChild;
 	my $dom_new = $file_new->getFirstChild;
 
+	unless( -e $r_file_old )
+	{
+		my $div = $self->{session}->make_element( "div" );
+		$div->appendChild( $self->{session}->html_phrase( "lib/history:no_earlier" ) );
+		$div->appendChild( $self->{session}->html_phrase( "lib/history:xmlblock", xml=>render_xml( $self->{session}, $dom_new, 0, 0, 120 ) ) );
+		return $div;
+	}
+
+	my $file_old = EPrints::XML::parse_xml( $r_file_old );
+	my $dom_old = $file_old->getFirstChild;
+
 	my %fieldnames = ();
+
 	my %old_nodes = ();
-	my %new_nodes = ();
 	foreach my $cnode ( $file_old->getFirstChild->getChildNodes )
 	{
 		next unless EPrints::XML::is_dom( $cnode, "Element" );
 		$fieldnames{$cnode->getNodeName}=1;
 		$old_nodes{$cnode->getNodeName}=$cnode;
 	}
+
+	my %new_nodes = ();
 	foreach my $cnode ( $file_new->getFirstChild->getChildNodes )
 	{
 		next unless EPrints::XML::is_dom( $cnode, "Element" );
@@ -383,64 +397,64 @@ sub render_modify
 	$table = $self->{session}->make_element( "table" , width=>"100%", cellspacing=>"0", cellpadding=>"0");
 	$tr = $self->{session}->make_element( "tr" );
 	$td = $self->{session}->make_element( "td", valign=>"top", width=>"50%" );
-	$td->appendChild( $self->{session}->make_text( "Before" ) );
+	$td->appendChild( $self->{session}->html_phrase( "lib/history:before" ) );
 	$tr->appendChild( $td );
 	$td = $self->{session}->make_element( "td", valign=>"top", width=>"50%" );
-	$td->appendChild( $self->{session}->make_text( "After" ) );
+	$td->appendChild( $self->{session}->html_phrase( "lib/history:after" ) );
 	$tr->appendChild( $td );
 	$table->appendChild( $tr );
 
-	my $pre;
 	foreach my $fn ( keys %fieldnames )
 	{
 		if( !empty_tree( $old_nodes{$fn} ) && empty_tree( $new_nodes{$fn} ) )
 		{
-			my( $old, $pad ) = render_xml( $self->{session}, $old_nodes{$fn}, 0, 1 );
+			my( $old, $pad ) = render_xml( $self->{session}, $old_nodes{$fn}, 0, 1, 60 );
 			$tr = $self->{session}->make_element( "tr" );
+
 			$td = $self->{session}->make_element( "td", valign=>"top", width=>"50%", style=>"background-color: #fcc" );
-			$pre = mkpre( $self->{session} );
-			$td->appendChild( $pre );
-			$pre->appendChild( $old );
+			$td->appendChild( $self->{session}->html_phrase( "lib/history:xmlblock", xml=>$old ) );
 			$tr->appendChild( $td );
+
 			$td = $self->{session}->make_element( "td", valign=>"top", width=>"50%" );
-			$pre = mkpre( $self->{session} );
-			$td->appendChild( $pre );
-			$pre->appendChild( $self->{session}->render_nbsp );
-			$pre->appendChild( $pad );
+			my $f = $self->{session}->make_doc_fragment;			
+			$f->appendChild( $self->{session}->render_nbsp );
+			$f->appendChild( $pad );
+			$td->appendChild( $self->{session}->html_phrase( "lib/history:xmlblock", xml=>$f ) );
 			$tr->appendChild( $td );
+
 			$table->appendChild( $tr );
 		}
 		elsif( empty_tree( $old_nodes{$fn} ) && !empty_tree( $new_nodes{$fn} ) )
 		{
-			my( $new, $pad ) = render_xml( $self->{session}, $new_nodes{$fn}, 0, 1 );
+			my( $new, $pad ) = render_xml( $self->{session}, $new_nodes{$fn}, 0, 1, 60 );
 			$tr = $self->{session}->make_element( "tr" );
 			$td = $self->{session}->make_element( "td", valign=>"top", width=>"50%" );
-			$pre = mkpre( $self->{session} );
-			$td->appendChild( $pre );
-			$pre->appendChild( $self->{session}->render_nbsp );
-			$pre->appendChild( $pad );
+
+			my $f = $self->{session}->make_doc_fragment;			
+			$f->appendChild( $self->{session}->render_nbsp );
+			$f->appendChild( $pad );
+			$td->appendChild( $self->{session}->html_phrase( "lib/history:xmlblock", xml=>$f ) );
 			$tr->appendChild( $td );
+
 			$td = $self->{session}->make_element( "td", valign=>"top", width=>"50%", style=>"background-color: #cfc" );
-			$pre = mkpre( $self->{session} );
-			$td->appendChild( $pre );
-			$pre->appendChild( $new );
+			$td->appendChild( $self->{session}->html_phrase( "lib/history:xmlblock", xml=>$new ) );
 			$tr->appendChild( $td );
+
 			$table->appendChild( $tr );
 		}
 		elsif( diff( $old_nodes{$fn}, $new_nodes{$fn} ) )
 		{
 			$tr = $self->{session}->make_element( "tr" );
+			my( $t1, $t2 ) = render_xml_diffs( $self->{session}, $old_nodes{$fn}, $new_nodes{$fn}, 0, 60 );
+
 			$td = $self->{session}->make_element( "td", valign=>"top", width=>"50%", style=>"background-color: #ffc" );
-			my( $t1, $t2 ) = render_xml_diffs( $self->{session}, $old_nodes{$fn}, $new_nodes{$fn} );
-			my $pre1 = mkpre( $self->{session} );
-			$pre1->appendChild( $t1 );
-			$td->appendChild( $pre1 );
+			$td->appendChild( $self->{session}->html_phrase( "lib/history:xmlblock", xml=>$t1 ) );
 			$tr->appendChild( $td );
+
 			$td = $self->{session}->make_element( "td", valign=>"top", width=>"50%", style=>"background-color: #ffc" );
-			my $pre2 = mkpre( $self->{session} );
-			$pre2->appendChild( $t2 );
-			$td->appendChild( $pre2 );
+			$td->appendChild( $self->{session}->html_phrase( "lib/history:xmlblock", xml=>$t2 ) );
 			$tr->appendChild( $td );
+
 			$table->appendChild( $tr );
 		}
 	}
@@ -489,7 +503,7 @@ sub empty_tree
 
 sub render_xml_diffs
 {
-	my( $session, $tree1, $tree2, $indent ) = @_;
+	my( $session, $tree1, $tree2, $indent, $width ) = @_;
 
 	if( EPrints::XML::is_dom( $tree1, "Text" ) && EPrints::XML::is_dom( $tree2, "Text" ))
 	{
@@ -548,30 +562,30 @@ sub render_xml_diffs
 			if( $t1 eq $t2 )
 			{
 				$s1 = $session->make_element( "span", style=>"" );
-				$s1->appendChild( mktext( $session, $t1, $offset, $endw ) );
+				$s1->appendChild( mktext( $session, $t1, $offset, $endw, $width ) );
 				$s2 = $session->make_element( "span", style=>"" );
-				$s2->appendChild( mktext( $session, $t2, $offset, $endw ) );
+				$s2->appendChild( mktext( $session, $t2, $offset, $endw, $width ) );
 			}
 			elsif( $t1 eq "" )
 			{
-				$s1->appendChild( mkpad( $session, $t2, $offset, $endw ) );
+				$s1->appendChild( mkpad( $session, $t2, $offset, $endw, $width ) );
 				$s2 = $session->make_element( "span", style=>"background: #cfc" );
-				$s2->appendChild( mktext( $session, $t2, $offset, $endw ) );
+				$s2->appendChild( mktext( $session, $t2, $offset, $endw, $width ) );
 			}
 			elsif( $t2 eq "" )
 			{
 				$s1 = $session->make_element( "span", style=>"background: #fcc" );
-				$s1->appendChild( mktext( $session, $t1, $offset, $endw ) );
-				$s2->appendChild( mkpad( $session, $t1, $offset, $endw ) );
+				$s1->appendChild( mktext( $session, $t1, $offset, $endw, $width ) );
+				$s2->appendChild( mkpad( $session, $t1, $offset, $endw, $width ) );
 			}
 			else
 			{
-				my $h1 = scalar _mktext( $session, $t1, $offset, $endw );
-				my $h2 = scalar _mktext( $session, $t2, $offset, $endw );
+				my $h1 = scalar _mktext( $session, $t1, $offset, $endw, $width );
+				my $h2 = scalar _mktext( $session, $t2, $offset, $endw, $width );
 				$s1 = $session->make_element( "span", style=>"background: #cc0" );
-				$s1->appendChild( mktext( $session, $t1, $offset, $endw ) );
+				$s1->appendChild( mktext( $session, $t1, $offset, $endw, $width ) );
 				$s2 = $session->make_element( "span", style=>"background: #cc0" );
-				$s2->appendChild( mktext( $session, $t2, $offset, $endw ) );
+				$s2->appendChild( mktext( $session, $t2, $offset, $endw, $width ) );
 				if( $h1>$h2 )
 				{
 					$s2->appendChild( $session->make_text( "\n"x($h1-$h2) ) );
@@ -616,7 +630,7 @@ sub render_xml_diffs
 						for(my $i=$c1;$i<$removedto;++$i)
 						{
 							$r1 = $session->make_element( "span", style=>"background: #f88" );
-							my( $rem, $pad ) = render_xml( $session, $list1[$i], $indent+1, 1 );
+							my( $rem, $pad ) = render_xml( $session, $list1[$i], $indent+1, 1, $width );
 							$r1->appendChild( $rem );
 							$f1->appendChild( $r1 );
 							$f2->appendChild( $pad );
@@ -641,7 +655,7 @@ sub render_xml_diffs
 					{
 						for(my $i=$c2;$i<$addedto;++$i)
 						{
-							my( $add, $pad ) = render_xml( $session, $list2[$i], $indent+1, 1 );
+							my( $add, $pad ) = render_xml( $session, $list2[$i], $indent+1, 1, $width );
 							$f1->appendChild( $pad );
 							$r2 = $session->make_element( "span", style=>"background: #8f8" );
 							$r2->appendChild( $add );
@@ -652,14 +666,14 @@ sub render_xml_diffs
 					}
 				}
 
-				( $r1, $r2 ) = render_xml_diffs( $session, $list1[$c1], $list2[$c2], $indent+1 );
+				( $r1, $r2 ) = render_xml_diffs( $session, $list1[$c1], $list2[$c2], $indent+1, $width );
 			}	
 			else
 			{
 				$r1 = $session->make_element( "span" );
-				$r1->appendChild( render_xml( $session, $list1[$c1], $indent+1 ) );
+				$r1->appendChild( render_xml( $session, $list1[$c1], $indent+1, 0, $width ) );
 				$r2 = $session->make_element( "span" );
-				$r2->appendChild( render_xml( $session, $list2[$c2], $indent+1 ) );
+				$r2->appendChild( render_xml( $session, $list2[$c2], $indent+1, 0, $width ) );
 			}
 			$f1->appendChild( $r1 );
 			$f2->appendChild( $r2 );
@@ -672,40 +686,6 @@ sub render_xml_diffs
 		$f2->appendChild( $session->make_text( "</$name2>\n" ) );
 
 		return( $f1, $f2 );
-#		my $t = '';
-#		my $justtext = 1;
-#		foreach my $cnode ( $tree1->getChildNodes )
-##		{
-	#		if( EPrints::XML::is_dom( $cnode,"Element" ) )
-	##		{
-	##			$justtext = 0;
-	#			last;
-	#		}
-	#		if( EPrints::XML::is_dom( $cnode,"Text" ) )
-	#		{
-	#			$t.=$cnode->getNodeValue;
-	#		}
-	#	}
-	#	my $name = $tree1->getNodeName;
-	#	my $f = $session->make_doc_fragment;
-	#	if( $justtext )
-	#	{
-	#		$f->appendChild( $session->make_text( "  "x$indent ) );
-	#		$t = "" if( $t =~ m/^[\s\r\n]*$/ );
-	#		$f->appendChild( $session->make_text( "<$name>$t</$name>\n" ) );
-	#	}
-	#	else
-#		{
-#			$f->appendChild( $session->make_text( "  "x$indent ) );
-#			$f->appendChild( $session->make_text( "<$name>\n" ) );
-#	
-#			foreach my $cnode ( $tree1->getChildNodes )
-#			{
-#				$f->appendChild( render_xml( $session,$cnode, $indent+1 ) );
-#			}
-#
-	#	}
-#		return( $f, $f );
 	}
 	return $session->make_text( "eh?:".ref($tree1) );
 }
@@ -716,7 +696,7 @@ sub render_xml_diffs
 
 sub render_xml
 {
-	my( $session,$domtree,$indent,$mkpadder ) = @_;
+	my( $session,$domtree,$indent,$mkpadder,$width ) = @_;
 
 	if( EPrints::XML::is_dom( $domtree, "Text" ) )
 	{
@@ -759,11 +739,11 @@ sub render_xml
 			$f->appendChild( $session->make_text( "  "x$indent ) );
 			$t = "" if( $t =~ m/^[\s\r\n]*$/ );
 			$f->appendChild( $session->make_text( "<$name>" ) );
-			$f->appendChild( mktext( $session, $t, $offset, $endw ) );
+			$f->appendChild( mktext( $session, $t, $offset, $endw, $width ) );
 			$f->appendChild( $session->make_text( "</$name>\n" ) );
 			if( $mkpadder ) { 
 				$padder->appendChild( $session->make_text( "\n" ) ); 
-				$padder->appendChild( mkpad( $session, $t, $offset, $endw ) );
+				$padder->appendChild( mkpad( $session, $t, $offset, $endw, $width ) );
 			}
 		}
 		else
@@ -774,7 +754,7 @@ sub render_xml
 	
 			foreach my $cnode ( $domtree->getChildNodes )
 			{
-				my( $sub, $padsub ) = render_xml( $session,$cnode, $indent+1, $mkpadder );
+				my( $sub, $padsub ) = render_xml( $session,$cnode, $indent+1, $mkpadder, $width );
 				if( $mkpadder ) { $padder->appendChild( $padsub ); }
 				$f->appendChild( $sub );
 			}
@@ -851,11 +831,10 @@ sub diff
 
 sub _mktext
 {
-	my( $session, $text, $offset, $endw ) = @_;
+	my( $session, $text, $offset, $endw, $width ) = @_;
 
 	return () unless length( $text );
 
-	my $W = 60;
 	my $lb = utf8("");
 	$lb->pack( 8626 );
 	my @bits = split(/[\r\n]/, $text );
@@ -864,14 +843,14 @@ sub _mktext
 	foreach( @bits )
 	{
 		my $t2 = utf8($_);
-		while( $offset+length( $t2 ) > $W )
+		while( $offset+length( $t2 ) > $width )
 		{
-			my $cut = $W-1-$offset;
+			my $cut = $width-1-$offset;
 			push @b2, substr( $t2, 0, $cut ).$lb;
 			$t2 = substr( $t2, $cut );
 			$offset = 0;
 		}
-		if( $offset+$endw+length( $t2 ) > $W )
+		if( $offset+$endw+length( $t2 ) > $width )
 		{
 			push @b2, $t2.$lb, "";
 		}
@@ -888,9 +867,9 @@ sub _mktext
 
 sub mktext
 {
-	my( $session, $text, $offset, $endw ) = @_;
+	my( $session, $text, $offset, $endw, $width ) = @_;
 
-	my @bits = _mktext( $session, $text, $offset, $endw );
+	my @bits = _mktext( $session, $text, $offset, $endw, $width );
 
 	return $session->make_text( join( "\n", @bits ) );
 }
@@ -900,21 +879,11 @@ sub mktext
 
 sub mkpad
 {
-	my( $session, $text, $offset, $endw ) = @_;
+	my( $session, $text, $offset, $endw, $width ) = @_;
 
-	my @bits = _mktext( $session, $text, $offset, $endw );
+	my @bits = _mktext( $session, $text, $offset, $endw, $width );
 
 	return $session->make_text( "\n"x((scalar @bits)-1) );
-}
-
-# internal function. Returns a <pre> XML DOM Element with the correct
-# style.
-
-sub mkpre
-{
-	my( $session ) = @_;
-
-	return $session->make_element( "pre", style=>"margin: 0px 0em 0px 0; padding: 3px 3px 3px 3px; border-left: 1px dashed black; border-bottom: 1px dashed black;" );
 }
 
 
