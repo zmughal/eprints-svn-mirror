@@ -3286,4 +3286,5 @@ PACKAGE: 2.2.99.2
  - Added prepare_cmd to EPrints::Utils. Prepares a command as specified in
    SystemSettings by substituting named variables.
  - Cleaned up help text for get_input_hidden
+ - Fixed abort() location in bin/startup.pl
  

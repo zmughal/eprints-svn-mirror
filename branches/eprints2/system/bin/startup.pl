@@ -54,7 +54,7 @@ use EPrints::AnApache;
 use Apache::DBI;
 #$Apache::DBI::DEBUG = 3;
 
-$ENV{MOD_PERL} or EPrints::Utils::abort( "not running under mod_perl!" );
+$ENV{MOD_PERL} or EPrints::Config::abort( "not running under mod_perl!" );
 
 use EPrints::XML;
 use EPrints::Utils;
