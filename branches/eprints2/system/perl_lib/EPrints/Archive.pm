@@ -694,12 +694,15 @@ sub get_dataset
 sub _map_oai_plugins
 {
 	my( $self ) = @_;
+	
+	my $plugin_list = $self->{config}->{oai}->{v2}->{output_plugins};
+	
+	return( 1 ) unless( defined $plugin_list );
 
-	return( 1 ) unless( defined $self->{config}->{oai}->{v2}->{output_plugins} );
-
-	foreach my $plugin_id ( @{$self->{config}->{oai}->{v2}->{output_plugins}} )
+	foreach my $plugin_id ( keys %{$plugin_list} )
 	{
-		my $class = $self->plugin_class( "Output::$plugin_id" );
+		my $full_plugin_id = "Output::".$plugin_list->{$plugin_id};
+		my $class = $self->plugin_class( $full_plugin_id );
 		if( !defined $class )
 		{
 			$self->log( "OAI Output plugin: $plugin_id not found." );
@@ -711,7 +714,7 @@ sub _map_oai_plugins
 		$self->{config}->{oai}->{v2}->{metadata_functions}->{$plugin_id} = sub {
 			my( $eprint, $session ) = @_;
 
-			my $plugin = $session->plugin( "Output::$plugin_id" );
+			my $plugin = $session->plugin( $full_plugin_id );
 			my $xml = $plugin->xml_dataobj( $eprint );
 			return $xml;
 		};

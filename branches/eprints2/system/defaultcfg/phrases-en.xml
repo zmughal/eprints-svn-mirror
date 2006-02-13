@@ -271,6 +271,7 @@
     <ep:phrase ref="viewname_eprint_status">Status</ep:phrase>
     <ep:phrase ref="viewname_eprint_year">Year</ep:phrase>
     <ep:phrase ref="viewname_eprint_subjects">Subject</ep:phrase>
+    <ep:phrase ref="viewname_eprint_types">Type</ep:phrase>
 
 <!-- Submission Form Page Titles -->
 
