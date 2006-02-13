@@ -951,7 +951,7 @@ sub send_out_editor_alert
 		my $mail = $self->{session}->html_phrase( 
 				"lib/user:editor_update_mail",
 				howoften => $freqphrase,
-				n => $self->{session}->make_text( scalar @r ),
+				n => $self->{session}->make_text( $list->count ),
 				search => $searchdesc,
 				matches => $matches,
 				url => $self->{session}->make_text( $url ) );
