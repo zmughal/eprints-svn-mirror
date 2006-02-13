@@ -33,8 +33,14 @@ sub get_oai_conf { my( $perlurl ) = @_; my $oai={};
 $oai->{v2}->{archive_id} = "generic.eprints.org";
 
 # The output plugins must be loaded for the archive and have
-# the methods xml_dataobj, xmlns and schemaLocation
-$oai->{v2}->{output_plugins} = [ "OAI_DC", "DIDL" ];
+# the methods xml_dataobj and properties for xmlns and schemaLocation.
+#
+# The keys of this hash are the OAI metadataPrefix to use, and the values
+# are the ID of the output plugin to use for that prefix.
+$oai->{v2}->{output_plugins} = { 
+	"oai_dc" => "OAI_DC", 
+	"didl" => "DIDL", 
+	"uketd_dc" =>"OAI_UKETD_DC" };
 
 # Base URL of OAI 2.0
 $oai->{v2}->{base_url} = $perlurl."/oai2";
@@ -60,7 +66,8 @@ $oai->{sets} = [
 #	{ id=>"year", allow_null=>1, fields=>"date_effective" },
 #	{ id=>"person", allow_null=>0, fields=>"creators.id/editors.id" },
 	{ id=>"status", allow_null=>0, fields=>"ispublished" },
-	{ id=>"subjects", allow_null=>0, fields=>"subjects" }
+	{ id=>"subjects", allow_null=>0, fields=>"subjects" },
+	{ id=>"types", allow_null=>0, fields=>"type" },
 ];
 
 # Filter OAI export. If you want to stop certain records being exported

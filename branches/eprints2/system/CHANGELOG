@@ -3267,3 +3267,12 @@ PACKAGE: 2.2.99.2
     reporting the problem.
  - bin/export now quits with an error if an invalid plugin is selected. 
 
+2006-02-13 cjg
+
+ - Changed the OAI plugin config to be a hash not an array. This means that
+    the metadataPrefix does not have to be the plugin id.
+ - Added a new oai output plugin for the UK ETD project at the BL. It's 
+    enabled by default.
+ - Made eprints type an oai set to help the ETD project.
+
+
