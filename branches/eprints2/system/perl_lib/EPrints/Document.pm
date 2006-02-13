@@ -99,6 +99,7 @@ use Convert::PlainText;
 use EPrints::Database;
 use EPrints::EPrint;
 use EPrints::Probity;
+use EPrints::TempDir;
 
 
 
@@ -1385,23 +1386,31 @@ sub get_text
 {
 	my( $self ) = @_;
 
-	my $converter = new Convert::PlainText;
-	my $words_file = $self->words_file;
-	return '' unless defined $words_file;
+	# Get the main conversion plugin
+	my $session = $self->{ "session" };
+	my $convert = $session->plugin( "Convert" );
 
-	my %files = $self->files;
-	my @fullpath_files = ();
-	foreach( keys %files )
+	# Find a 'text/plain' converter
+	my $type = "text/plain";
+	my %types = $convert->can_convert( $self );
+	my $def = $types{$type} or return '';
+
+	# Convert the document
+	my $tempdir = EPrints::TempDir->new( UNLINK => 1 );
+	my @files = $def->{ "plugin" }->export( $tempdir, $self, $type );
+	
+	# Read all the outputted files
+	my $buffer = '';
+	for( @files )
 	{
-		push @fullpath_files, $self->local_path."/".$_;
+		open my $fi, "<:utf8", "$tempdir/$_" or next;
+		while( $fi->read($buffer,4096,length($buffer)) ) {
+			last if length($buffer) > 4 * 1024 * 1024;
+		}
+		close $fi;
 	}
-	$converter->build($words_file, @fullpath_files);
 
-	return '' unless open( WORDS, $words_file );
-	my $words = join( '', <WORDS> );
-	close WORDS;
-
-	return $words;
+	return $buffer;
 }
 
 ######################################################################

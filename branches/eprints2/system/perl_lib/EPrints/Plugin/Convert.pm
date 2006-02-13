@@ -10,10 +10,6 @@ EPrints::Plugin::Convert - Convert EPrints::Document into different formats
 
 This plugin and its dependents allow EPrints to convert documents from one format into another format.
 
-=head1 LAST MODIFIED BY
-
-$Id$
-
 =head1 METHODS
 
 =over 5
@@ -73,21 +69,61 @@ Returns the current archive
 
 =cut
 
-sub archive { shift->{archive} }
+sub archive { shift->{ "session" }->{ "archive" } }
 
 =pod
 
-=item @types = $p->can_convert( $doc )
+=item %types = $p->can_convert( $doc )
 
-Returns a list of mime-types that this plugin can convert the document $doc to.
+Returns a hash of types that this plugin can convert the document $doc to. The key is the type. The value is a hash ref containing:
+
+=over 4
+
+=item plugin
+
+The object that can do the conversion.
+
+=item encoding
+
+The encoding this conversion generates (e.g. 'utf-8').
+
+=item phraseid
+
+A unique phrase id for this conversion.
+
+=item preference
+
+A value between 0 and 1 representing the 'quality' or confidence in this conversion.
+
+=back
 
 =cut
 
 sub can_convert
 {
 	my ($plugin, $doc) = @_;
+	
+	my $session = $plugin->{ "session" };
+	my @ids = $session->plugin_list( type => 'Convert' );
 
-	return ();
+	my %types;
+	for(@ids)
+	{
+		next if $_ eq $plugin->get_id;
+		my %avail = $session->plugin( $_ )->can_convert( $doc );
+		while( my( $mt, $def ) = each %avail )
+		{
+			if(
+				!exists($types{$mt}) ||
+				!$types{$mt}->{ "preference" } ||
+				(defined($def->{ "preference" }) && $def->{ "preference" } > $types{$mt}->{ "preference" })
+			) {
+				$types{$mt} = $def;
+			}
+		}
+	}
+
+	return %types;
 }
 
 =pod

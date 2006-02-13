@@ -46,8 +46,8 @@ sub can_convert
 	my ($plugin, $doc) = @_;
 
 	# Get the main file name
-	my $mt = mime_type( $doc->local_path . '/' . $doc->get_main() ) or return ();
-	return $TYPES{$mt} ? ($TYPES{$mt}) : ();
+	my $mt = EPrints::Plugin::Convert::mime_type( $doc->local_path . '/' . $doc->get_main() ) or return ();
+	return $TYPES{$mt} ? ($TYPES{$mt}=>{plugin=>$plugin}) : ();
 }
 
 sub export

@@ -59,13 +59,19 @@ sub can_convert
 
 	my $convert = $plugin->archive->get_conf( 'executables', 'convert' ) or return ();
 
+	my %types;
+
 	# Get the main file name
 	my $fn = $doc->get_main();
 	if( $fn =~ /\.($EXTENSIONS_RE)$/o ) {
-		return values %FORMATS;
-	} else {
-		return ();
+		for(values %FORMATS) {
+			$types{$_} = {
+					plugin => $plugin,
+				};
+		}
 	}
+
+	return %types;
 }
 
 sub export

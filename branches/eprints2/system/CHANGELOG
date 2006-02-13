@@ -3287,4 +3287,6 @@ PACKAGE: 2.2.99.2
    SystemSettings by substituting named variables.
  - Cleaned up help text for get_input_hidden
  - Fixed abort() location in bin/startup.pl
- 
+ - Plain-text conversion now uses Convert plugin(s)
+ - Added search-like ability to Convert::can_convert
+

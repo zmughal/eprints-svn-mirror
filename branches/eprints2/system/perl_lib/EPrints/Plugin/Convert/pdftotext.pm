@@ -34,12 +34,12 @@ sub can_convert
 {
 	my ($plugin, $doc) = @_;
 
-	my $pdftotext = $plugin->archive->get_conf( 'executable', 'pdftotext' ) or return ();
+	my $pdftotext = $plugin->archive->get_conf( 'executables', 'pdftotext' ) or return ();
 
 	# Get the main file name
 	my $fn = $doc->get_main();
 	if( $fn =~ /\.pdf$/ ) {
-		return ('text/plain');
+		return ('text/plain' => { plugin=>$plugin, encoding=>'utf-8' });
 	} else {
 		return ();
 	}
@@ -49,7 +49,7 @@ sub export
 {
 	my ( $plugin, $dir, $doc, $type ) = @_;
 
-	my $pdftotext = $plugin->archive->get_conf( 'executable', 'pdftotext' ) or return ();
+	my $pdftotext = $plugin->archive->get_conf( 'executables', 'pdftotext' ) or return ();
 
 	# What to call the temporary file
 	my $fn = $doc->get_main;
