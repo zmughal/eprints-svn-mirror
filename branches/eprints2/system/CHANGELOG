@@ -3275,4 +3275,9 @@ PACKAGE: 2.2.99.2
     enabled by default.
  - Made eprints type an oai set to help the ETD project.
 
+2006-02-13 cjg
+
+ - Added SOAP methods to add/remove files. add/remove documents and modify
+    eprints and documents.
+ - Cleaned up WSDL generator to be more simple.
 

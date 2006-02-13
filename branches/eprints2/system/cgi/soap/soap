@@ -26,6 +26,177 @@ sub echo($$;$)
 }
 
 
+sub modifyEprint
+{
+	my( $class,$eprintid,$eprintdata ) = @_;
+
+	my $session = new EPrints::Session();
+	if( !defined $session )
+	{
+		die "can't open session";
+	}
+	my $archive = $session->get_archive;
+	my $dataset = $archive->get_dataset( 'eprint' ); 
+	my $eprint = $dataset->get_object( $session, $eprintid );
+	
+	if( !defined $eprint )
+	{
+		$session->terminate;
+		die "eprint $eprintid does not exist";
+	}
+	foreach( keys %{$eprintdata} )
+	{
+		next if( $_ eq "documents" );
+		$eprint->set_value( $_, $eprintdata->{$_} );
+	}
+	$eprint->commit;
+
+	$eprint->generate_static;
+		
+	$session->terminate;
+
+	return;
+}
+
+
+sub modifyDocument
+{
+	my( $class,$docid,$docdata ) = @_;
+
+	my $session = new EPrints::Session();
+	if( !defined $session )
+	{
+		die "can't open session";
+	}
+	my $archive = $session->get_archive;
+	my $dataset = $archive->get_dataset( 'document' ); 
+	my $document = $dataset->get_object( $session, $docid );
+	
+	if( !defined $document )
+	{
+		$session->terminate;
+		die "document $docid does not exist";
+	}
+
+	foreach( keys %{$docdata} )
+	{
+		next if( $_ eq "files" );
+		$document->set_value( $_, $docdata->{$_} );
+	}
+	$document->commit;
+
+	$document->get_eprint->generate_static;
+		
+	$session->terminate;
+
+
+	return;
+}
+
+
+sub removeDocument
+{
+	my( $class,$docid ) = @_;
+
+	my $session = new EPrints::Session();
+	if( !defined $session )
+	{
+		die "can't open session";
+	}
+	my $archive = $session->get_archive;
+	my $dataset = $archive->get_dataset( 'document' ); 
+	my $document = $dataset->get_object( $session, $docid );
+	
+	if( !defined $document )
+	{
+		$session->terminate;
+		die "document $docid does not exist";
+	}
+	if( !$document->remove )
+	{
+		$session->terminate;
+		die "failed to remove document";
+	}
+	$document->get_eprint->generate_static;
+		
+	$session->terminate;
+
+	return; 
+}
+
+sub addFile
+{
+	my( $class,$docid,$filename,$data ) = @_;
+
+	my $session = new EPrints::Session();
+	if( !defined $session )
+	{
+		die "can't open session";
+	}
+	my $archive = $session->get_archive;
+	my $dataset = $archive->get_dataset( 'document' ); 
+	my $document = $dataset->get_object( $session, $docid );
+	
+	if( !defined $document )
+	{
+		$session->terminate;
+		die "document $docid does not exist";
+	}
+	if( $filename =~ m#[\?\*\ \t\/]# )
+	{
+		$session->terminate;
+		die "$filename contains illegal characters";
+	}
+	unless( open( FH, ">".$document->local_path."/".$filename ) )
+	{
+		$session->terminate;
+		die "Could not add $filename: $!";
+	}
+	print FH $data;
+	close FH;
+
+	$document->get_eprint->generate_static;
+	$document->files_modified;
+		
+	$session->terminate;
+
+	return;
+}
+
+sub removeFile
+{
+	my( $class,$docid,$filename ) = @_;
+
+	my $session = new EPrints::Session();
+	if( !defined $session )
+	{
+		die "can't open session";
+	}
+	my $archive = $session->get_archive;
+	my $dataset = $archive->get_dataset( 'document' ); 
+	my $document = $dataset->get_object( $session, $docid );
+	if( !defined $document )
+	{
+		$session->terminate;
+		die "document $docid does not exist";
+	}
+	if( $filename =~ m#[\?\*\ \t\/]# )
+	{
+		$session->terminate;
+		die "$filename contains illegal characters";
+	}
+	unless( $document->remove_file( $filename ) )
+	{
+		$session->terminate;
+		die "Could not remove $filename: $!";
+	}
+		
+	$document->get_eprint->generate_static;
+	$session->terminate;
+
+	return;
+}
+
 sub removeEprint($)
 {
 	my( $class, $eprintid ) = @_;
@@ -142,10 +313,53 @@ sub putEprint($)
 	#my $result = object_to_soap( $eprint, $whole_files );
 
 	my $id = $eprint->get_id;
+	$eprint->generate_static;
 
 	$session->terminate;
 
 	return SOAP::Data->name( 'eprintID', $id )->type( "xsd:int" );
+}
+
+sub addDocument
+{
+	my( $class,$eprintid, $docdata ) = @_;
+
+	print STDERR "addDocument(".join(",",@_).")\n";
+	my $session = new EPrints::Session();
+	if( !defined $session )
+	{
+		die "can't open session";
+	}
+	my $archive = $session->get_archive;
+	my $dataset = $archive->get_dataset( 'eprint' ); 
+	my $eprint = $dataset->get_object( $session, $eprintid );
+	if( !defined $eprint )
+	{
+		$session->terminate;
+		die "eprint $eprintid does not exist";
+	}
+
+	my $doc = EPrints::Document::create( $session, $eprint );
+	foreach( keys %{$docdata} )
+	{
+		next if( $_ eq "files" );
+		$doc->set_value( $_, $docdata->{$_} );
+	}
+	foreach my $filedata ( @{$docdata->{files}} )
+	{
+		my $fn = $doc->local_path."/".$filedata->{filename};
+		open( FILE, ">$fn" ) || die "can't write file $fn: $!";
+		print FILE $filedata->{data};
+		close FILE;
+	}
+	$doc->commit;
+
+	my $id = $doc->get_id;
+	$eprint->generate_static;
+	
+	$session->terminate;
+
+	return $id;
 }
 
 sub searchEprint($$)
