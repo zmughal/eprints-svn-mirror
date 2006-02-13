@@ -56,7 +56,7 @@ sub new {
 		$templ = shift;
 	}
 	my %args = (TEMPLATE=>$templ,@_);
-	$args{dir} = SUPER::tempdir(%args);
+	$args{dir} = File::Temp::tempdir(%args);
 	return bless \%args, ref($class) || $class;
 }
 
