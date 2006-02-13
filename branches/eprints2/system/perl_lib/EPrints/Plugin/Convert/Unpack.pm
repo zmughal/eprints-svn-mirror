@@ -59,7 +59,7 @@ sub export
 	
 	my $cmd = $plugin->archive->get_conf( 'executables', $type ) or die "Executable location not set for $type conversion";
 	my $invo = $plugin->archive->get_conf->( 'invocation', $type ) or die "Invocation not set for $type conversion";
-	system(prepare_cmd($invo,
+	system(EPrints::Utils::prepare_cmd($invo,
 		$type => $cmd,
 		DIR => $dir,
 		ARC => $fn,

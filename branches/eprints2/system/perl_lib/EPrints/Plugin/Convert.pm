@@ -25,10 +25,11 @@ use warnings;
 
 use EPrints::TempDir;
 use EPrints::SystemSettings;
+use EPrints::Utils;
 
 our @ISA = qw/ EPrints::Plugin /;
 
-our $ABSTRACT = 1;
+our $ABSTRACT = 0;
 
 sub new
 {
@@ -36,7 +37,7 @@ sub new
 
 	my $self = $class->SUPER::new( %opts );
 
-	$self->{name} = "Base convert plugin: This should have been subclassed";
+	$self->{name} = "Base convert plugin";
 	$self->{visible} = "all";
 
 	return $self;
@@ -137,22 +138,6 @@ sub convert
 
 =pod
 
-=item $cmd = prepare_cmd($cmd,%VARS)
-
-Prepare command string $cmd by substituting variables (specified by $(varname)) with their values from %VARS. All %VARS are quoted before replacement.
-
-If a variable is specified in $cmd, but not present in %VARS a die is thrown.
-
-=cut
-
-sub prepare_cmd {
-	my ($cmd, %VARS) = @_;
-	$cmd =~ s/\$\(([\w_]+)\)/defined($VARS{$1}) ? quotemeta($VARS{$1}) : die("Unspecified variable $1 in $cmd")/seg;
-	$cmd;
-}
-
-=pod
-
 =item $mime_type = mime_type($fn)
 
 Returns the mime-type of the file located at $fn, using the Unix file command.
@@ -170,7 +155,7 @@ sub mime_type
 	my $file = $EPrints::SystemSettings::conf->{executables}->{file} || `which file` || 'file';
 	chomp($file);
 	my $file_cmd = $EPrints::SystemSettings::conf->{invocation}->{file} || '$(file) -b -i $(SOURCE)';
-	my $cmd = prepare_cmd(
+	my $cmd = EPrints::Utils::prepare_cmd(
 		$file_cmd,
 		file => $file,
 		SOURCE => $fn,
