@@ -3281,3 +3281,9 @@ PACKAGE: 2.2.99.2
     eprints and documents.
  - Cleaned up WSDL generator to be more simple.
 
+2006-02-13 tdb
+
+ - Added prepare_cmd to EPrints::Utils. Prepares a command as specified in
+   SystemSettings by substituting named variables.
+ - Cleaned up help text for get_input_hidden
+ 

@@ -121,6 +121,26 @@ sub df_dir
 }
 
 
+######################################################################
+=pod
+
+=item $cmd = prepare_cmd($cmd,%VARS)
+
+Prepare command string $cmd by substituting variables (specified by
+C<$(varname)>) with their value from %VARS (key is C<varname>). All %VARS are
+quoted before replacement to make it shell-safe.
+
+If a variable is specified in $cmd, but not present in %VARS a die is thrown.
+
+=cut
+######################################################################
+
+sub prepare_cmd {
+	my ($cmd, %VARS) = @_;
+	$cmd =~ s/\$\(([\w_]+)\)/defined($VARS{$1}) ? quotemeta($VARS{$1}) : die("Unspecified variable $1 in $cmd")/seg;
+	$cmd;
+}
+
 
 
 ######################################################################
@@ -1268,8 +1288,7 @@ sub get_input
 =item EPrints::Utils::get_input_hidden( $regexp, [$prompt], [$default] )
 
 Get input from the console without echoing the entered characters 
-(mostly useful for getting passwords). This relies on stty being in 
-the path.
+(mostly useful for getting passwords). Uses L<Term::ReadKey>.
 
 Identical to get_input except the characters don't appear.
 
