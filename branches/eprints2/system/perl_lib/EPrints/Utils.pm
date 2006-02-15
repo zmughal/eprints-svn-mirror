@@ -124,7 +124,7 @@ sub df_dir
 ######################################################################
 =pod
 
-=item $cmd = prepare_cmd($cmd,%VARS)
+=item $cmd = EPrints::Utils::prepare_cmd($cmd,%VARS)
 
 Prepare command string $cmd by substituting variables (specified by
 C<$(varname)>) with their value from %VARS (key is C<varname>). All %VARS are
@@ -141,7 +141,22 @@ sub prepare_cmd {
 	$cmd;
 }
 
+######################################################################
+=pod
 
+=item $path = EPrints::Utils::join_path(@PARTS)
+
+Join a path together in an OS-safe manner. Currently this just joins using '/'.
+If EPrints is adapted to work under WinOS it will need to use '\' to join paths
+together.
+
+=cut
+######################################################################
+
+sub join_path
+{
+	return join('/', @_);
+}
 
 ######################################################################
 =pod
