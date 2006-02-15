@@ -3294,4 +3294,7 @@ PACKAGE: 2.2.99.2
 
  - DC Output: Changed abstract page to be relation and full-text links to be
    identifier
+ - Changed Convert/pdftotext.pm to PlainText.pm
+ - Added support for antiword, ps2ascii, elinks (if configured in SystemSettings)
+
 
