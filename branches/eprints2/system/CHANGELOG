@@ -3296,5 +3296,5 @@ PACKAGE: 2.2.99.2
    identifier
  - Changed Convert/pdftotext.pm to PlainText.pm
  - Added support for antiword, ps2ascii, elinks (if configured in SystemSettings)
-
+ - Removed Convert/* modules (superceded by EPrints::Plugin::Convert)
 

@@ -94,7 +94,6 @@ use Cwd;
 use Fcntl qw(:DEFAULT :seek);
 
 use URI::Heuristic;
-use Convert::PlainText;
 
 use EPrints::Database;
 use EPrints::EPrint;
