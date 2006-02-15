@@ -112,13 +112,6 @@ sub convert_dataobj
 	push @dcdata, [ "type", $ref ];
 
 
-	# The identifier is the URL of the abstract page.
-	# possibly this should be the OAI ID, or both.
-	push @dcdata, [ "identifier", $eprint->get_url() ];
-	push @dcdata, [ "identifier",
-		EPrints::Utils::tree_to_utf8( $eprint->render_citation() ) ];
-
-
 	my @documents = $eprint->get_all_documents();
 	my $mimetypes = $plugin->{session}->get_archive->get_conf( "oai", "mime_types" );
 	foreach( @documents )
@@ -126,14 +119,22 @@ sub convert_dataobj
 		my $format = $mimetypes->{$_->get_value("format")};
 		$format = "application/octet-stream" unless defined $format;
 		push @dcdata, [ "format", $format ];
-		push @dcdata, [ "relation", $_->get_url() ];
+		push @dcdata, [ "identifier", $_->get_url() ];
 	}
 
+	# Most commonly a DOI or journal link
 	if( $eprint->is_set( "official_url" ) )
 	{
 		push @dcdata, [ "relation", $eprint->get_value( "official_url" ) ];
 	}
 	
+	# The citation for this eprint
+	push @dcdata, [ "identifier",
+		EPrints::Utils::tree_to_utf8( $eprint->render_citation() ) ];
+
+	# The URL of the abstract page
+	push @dcdata, [ "relation", $eprint->get_url() ];
+
 	# dc.language not handled yet.
 	# dc.source not handled yet.
 	# dc.coverage not handled yet.

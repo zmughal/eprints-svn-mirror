@@ -3290,3 +3290,8 @@ PACKAGE: 2.2.99.2
  - Plain-text conversion now uses Convert plugin(s)
  - Added search-like ability to Convert::can_convert
 
+2006-02-14 tdb
+
+ - DC Output: Changed abstract page to be relation and full-text links to be
+   identifier
+
