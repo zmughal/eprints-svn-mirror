@@ -16,18 +16,23 @@ use strict;
 use warnings;
 
 use Carp;
+use English;
+use Unicode::String;
 
 use EPrints::Plugin::Convert;
 our @ISA = qw/ EPrints::Plugin::Convert /;
 
 our $ABSTRACT = 0;
 
+# xml = ?
 our %APPS = qw(
 pdf		pdftotext
 doc		antiword
 htm		elinks
 html	elinks
+xml		elinks
 ps		ps2ascii
+txt		_special
 );
 
 sub new
@@ -54,6 +59,11 @@ sub can_convert
 		encoding => 'utf-8',
 		phraseid => 'plaintext',
 	});
+
+	if( $fn =~ /\.txt$/ )
+	{
+		return @type;
+	}
 
 	keys(%APPS);
 	while( my( $ext, $app ) = each %APPS )
@@ -95,15 +105,39 @@ sub export
 	{
 		my $tgt = $fn;
 		next unless $tgt =~ s/\.$ext$/\.txt/;
+		my $infile = EPrints::Utils::join_path( $doc->local_path, $fn );
+		my $outfile = EPrints::Utils::join_path( $dir, $tgt );
 		
-		my $cmd = EPrints::Utils::prepare_cmd( $invo,
-			$app => $bin,
-			SOURCE_DIR => $doc->local_path,
-			SOURCE => EPrints::Utils::join_path( $doc->local_path, $fn ),
-			TARGET_DIR => $dir,
-			TARGET => EPrints::Utils::join_path( $dir, $tgt )
-		);
-		system( $cmd );
+		if( $ext eq 'txt' )
+		{
+			# PerlIO
+			if( $PERL_VERSION gt v5.8.0 )
+			{
+				open( my $fh, "<:encoding(iso-8859-1)", $infile );
+				open( my $fo, ">:utf8", $outfile );
+				while(<$fh>) { print $fo $_ }
+				close( $fh ); close( $fo );
+			}
+			# Unicode::String
+			else
+			{
+				open( my $fh, "<", $infile );
+				open( my $fo, ">", $outfile );
+				while(<$fh>) { print $fo Unicode::String::latin1($_)->utf8; }
+				close( $fh ); close( $fo );
+			}
+		}
+		else
+		{
+			my $cmd = EPrints::Utils::prepare_cmd( $invo,
+				$app => $bin,
+				SOURCE_DIR => $doc->local_path,
+				SOURCE => $infile,
+				TARGET_DIR => $dir,
+				TARGET => $outfile,
+			);
+			system( $cmd );
+		}
 		
 		if( -s EPrints::Utils::join_path( $dir, $tgt ) > 0 ) {
 			if( $fn eq $doc->get_main ) {
