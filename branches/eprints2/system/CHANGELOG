@@ -3298,3 +3298,7 @@ PACKAGE: 2.2.99.2
  - Added support for antiword, ps2ascii, elinks (if configured in SystemSettings)
  - Removed Convert/* modules (superceded by EPrints::Plugin::Convert)
 
+2006-02-16 cjg
+
+ - Fixed bug in SearchExpression - didn't correctly extract the ID of 
+    output plugins. (due to change from / to :: as the seperator).

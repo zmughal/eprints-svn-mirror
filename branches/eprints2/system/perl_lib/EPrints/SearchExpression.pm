@@ -1257,7 +1257,7 @@ sub _dopage_results
 	if( scalar @plugins > 0 ) {
 		my $select = $self->{session}->make_element( "select", name=>"_output" );
 		foreach my $plugin_id ( @plugins ) {
-			$plugin_id =~ m/\/(.*)$/;
+			$plugin_id =~ m/^[^:]+::(.*)$/;
 			my $option = $self->{session}->make_element( "option", value=>$1 );
 			my $plugin = $self->{session}->plugin( $plugin_id );
 			$option->appendChild( $plugin->render_name );
