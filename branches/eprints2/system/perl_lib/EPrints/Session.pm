@@ -361,20 +361,10 @@ sub get_session_language
 	# IMPORTANT! This function must not consume
 	# The post request, if any.
 
-	my $cookies = EPrints::AnApache::header_in( 
-				$request,
-				'Cookie' );
-	if( defined $cookies )
-	{
-		foreach my $cookie ( split( /;\s*/, $cookies ) )
-		{
-			my( $k, $v ) = split( '=', $cookie );
-			if( $k eq $archive->get_conf( "lang_cookie_name") )
-			{
-				push @prefs, $v;
-			}
-		}
-	}
+	my $cookie = EPrints::AnApache::cookie( 
+		$request,
+		$archive->get_conf( "lang_cookie_name") );
+	push @prefs, $cookie if defined $cookie;
 
 	# then look at the accept language header
 	my $accept_language = EPrints::AnApache::header_in( 
@@ -2287,6 +2277,19 @@ sub send_http_header
 		$self->{"request"},
 		"Cache-Control",
 		"no-store, no-cache, must-revalidate" );
+
+	if( defined $opts{eplogin} )
+	{
+		my $cookie = $self->{query}->cookie(
+			-name    => "eplogin",
+			-path    => "/",
+			-value   => $opts{eplogin},
+			-expires => "+10y" );
+		EPrints::AnApache::header_out( 
+				$self->{"request"},
+				"Set-Cookie",
+				$cookie );
+	}
 
 	if( defined $opts{lang} )
 	{

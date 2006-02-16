@@ -3302,3 +3302,12 @@ PACKAGE: 2.2.99.2
 
  - Fixed bug in SearchExpression - didn't correctly extract the ID of 
     output plugins. (due to change from / to :: as the seperator).
+
+2006-02-16 cjg
+ 
+ - Added a method to AnApache which gets a named cookie, but does it
+    without using CGI.pm so that the POST request is not consumed.
+ - The language cookie now uses this method.
+ - The http_header method in session now can print an eplogin cookie
+    for cookie based authentication (being worked on).
+

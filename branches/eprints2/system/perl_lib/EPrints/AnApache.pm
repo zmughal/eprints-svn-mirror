@@ -280,5 +280,38 @@ else
 	if( $@ ) { die $@; }
 }
 
+######################################################################
+=pod
+
+=item $value = EPrints::AnApache::cookie( $request, $cookieid )
+
+Return the value of the named cookie, or undef if it is not set.
+
+This avoids using CGI.pm, so does not consume the POST data.
+
+=cut
+######################################################################
+
+sub cookie
+{
+	my( $request, $cookieid ) = @_;
+
+	my $cookies = EPrints::AnApache::header_in( $request, 'Cookie' );
+
+	return unless defined $cookies;
+
+	foreach my $cookie ( split( /;\s*/, $cookies ) )
+	{
+		my( $k, $v ) = split( '=', $cookie );
+		if( $k eq $cookieid )
+		{
+			return $v;
+		}
+	}
+
+	return undef;
+}
+
+
 
 1;
