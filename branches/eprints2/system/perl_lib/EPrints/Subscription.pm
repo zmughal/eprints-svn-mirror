@@ -146,32 +146,41 @@ sub create
 {
 	my( $class, $session, $userid ) = @_;
 
-	my $subs_ds = $session->get_archive()->get_dataset( "subscription" );
-	my $id = $session->get_db()->counter_next( "subscriptionid" );
 
-	my $data = {
-		subid => $id,
-		userid => $userid,
-		frequency => 'never',
-		mailempty => "TRUE",
-		spec => ''
-	};
+	return EPrints::Subscription->create_from_data( 
+		$session, 
+		{ userid=>$userid },
+		$session->get_archive->get_dataset( "subscription" ) );
+}
 
-	$session->get_archive()->call(
+######################################################################
+=pod
+
+=item $defaults = EPrints::Subscription->get_defaults( $session, $data )
+
+Return default values for this object based on the starting data.
+
+=cut
+######################################################################
+
+sub get_defaults
+{
+	my( $class, $session, $data ) = @_;
+
+	my $id = $session->get_db->counter_next( "subscriptionid" );
+
+	$data->{subid} = $id;
+	$data->{frequency} = 'never';
+	$data->{mailempty} = "TRUE";
+	$data->{spec} = '';
+
+	$session->get_archive->call(
 		"set_subscription_defaults",
 		$data,
 		$session );
 
-	# Add the subscription to the database
-	$session->get_db()->add_record( $subs_ds, $data );
-
-	my $subs = EPrints::Subscription->new( $session, $id );
-	$subs->queue_all;
-	# And return it as an object
-	return $subs;
-}
-
-
+	return $data;
+}	
 
 
 ######################################################################

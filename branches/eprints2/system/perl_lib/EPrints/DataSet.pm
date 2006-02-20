@@ -170,47 +170,57 @@ my $INFO = {
 	},
 	user => {
 		sqlname => "user",
-		class => "EPrints::User"
+		class => "EPrints::User",
+		import => 1,
 	},
 	archive => {
 		sqlname => "archive",
 		class => "EPrints::EPrint",
-		confid => "eprint"
+		confid => "eprint",
+		import => 1,
 	},
 	buffer => {
 		sqlname => "buffer",
 		class => "EPrints::EPrint",
-		confid => "eprint"
+		confid => "eprint",
+		import => 1,
 	},
 	inbox => {
 		sqlname => "inbox",
 		class => "EPrints::EPrint",
-		confid => "eprint"
+		confid => "eprint",
+		import => 1,
 	},
 	document => {
 		sqlname => "document",
-		class => "EPrints::Document"
+		class => "EPrints::Document",
+		import => 1,
 	},
 	subject => {
 		sqlname => "subject",
-		class => "EPrints::Subject"
+		class => "EPrints::Subject",
+		import => 1,
 	},
 	license => {
 		sqlname => "license",
-		class => "EPrints::License"
+		class => "EPrints::License",
+		import => 1,
 	},
 	history => {
 		sqlname => "history",
-		class => "EPrints::History"
+		class => "EPrints::History",
+		import => 1,
 	},
 	subscription => {
 		sqlname => "subscription",
-		class => "EPrints::Subscription"
+		class => "EPrints::Subscription",
+		import => 1,
 	},
 	deletion => {
 		sqlname => "deletion",
 		class => "EPrints::EPrint",
-		confid => "eprint"
+		confid => "eprint",
+		import => 1,
 	},
 	eprint => {
 		class => "EPrints::EPrint"
@@ -330,12 +340,10 @@ sub new
 	}
 			
 
-
-	if( defined $INFO->{$self->{confid}}->{class} )
+	my $oclass = $self->get_object_class;
+	if( defined $oclass )
 	{
-		my $class = $INFO->{$id}->{class};
-		my $fielddata;
-		foreach $fielddata ( $class->get_system_field_info() )
+		foreach my $fielddata ( $oclass->get_system_field_info() )
 		{
 			my $field = EPrints::MetaField->new( dataset=>$self , %{$fielddata} );	
 			push @{$self->{fields}}	, $field;
@@ -801,7 +809,7 @@ sub make_object
 {
 	my( $self , $session , $data ) = @_;
 
-	my $class = $INFO->{$self->{id}}->{class};
+	my $class = $self->get_object_class;
 
 	# If this table dosn't have an associated class, just
 	# return the data.	
@@ -811,13 +819,50 @@ sub make_object
 		return $data;
 	}
 
-	## EPrints have a slightly different
-	## constructor.
-
 	return $class->new_from_data( 
 		$session,
 		$data,
 		$self );
+}
+
+######################################################################
+=pod
+
+=item $obj = $ds->create_object( $session, $data )
+
+Create a new object in the given dataset. Return the new object.
+
+Return undef if the object could not be created.
+
+If $data describes sub-objects too then those will also be created.
+
+=cut
+######################################################################
+
+sub create_object
+{
+	my( $self , $session , $data ) = @_;
+
+	my $class = $self->get_object_class;
+
+	return $class->create_from_data( $session, $data, $self );
+}
+
+######################################################################
+=pod
+
+=item $class = $ds->get_object_class;
+
+Return the perl class to which objects in this dataset belong.
+
+=cut
+######################################################################
+
+sub get_object_class
+{
+	my( $self, $session ) = @_;
+
+	return $INFO->{$self->{id}}->{class};
 }
 
 ######################################################################
@@ -834,7 +879,7 @@ sub get_object
 {
 	my( $self, $session, $id ) = @_;
 
-	my $class= $INFO->{$self->{id}}->{class};
+	my $class = $self->get_object_class;
 
 	if( !defined $class )
 	{

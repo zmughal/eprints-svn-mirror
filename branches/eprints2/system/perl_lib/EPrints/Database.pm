@@ -445,6 +445,7 @@ sub create_table
 	foreach $field (@fields)
 	{
 		next unless ( $field->get_property( "multiple" ) || $field->get_property( "multilang" ) );
+		next if( $field->is_type( "file", "subobject" ) );
 		# make an aux. table for a multiple field
 		# which will contain the same type as the
 		# key of this table paired with the non-
@@ -502,6 +503,7 @@ sub create_table
 	{
 		next if( $field->get_property( "multiple" ) );
 		next if( $field->get_property( "multilang" ) );
+		next if( $field->is_type( "file", "subobject" ) );
 
 		if ( $first )
 		{
@@ -689,6 +691,8 @@ sub update
 	my $field;
 	foreach $field ( @fields ) 
 	{
+		next if( $field->is_type( "file","subobject" ) );
+
 		if( $field->is_type( "secret" ) &&
 			!EPrints::Utils::is_set( $data->{$field->get_name()} ) )
 		{
@@ -696,47 +700,47 @@ sub update
 			# is totally skipped when updating.
 			next;
 		}
+
 		if( $field->get_property( "multiple" ) || $field->get_property( "multilang" ) ) 
 		{ 
 			push @aux,$field;
+			next;
 		}
-		else 
+	
+		my $value = $field->which_bit( $data->{$field->get_name()} );
+		my $colname = $field->get_sql_name();
+		if( $field->get_property( "idpart" ) )
 		{
-			my $value = $field->which_bit( $data->{$field->get_name()} );
-			my $colname = $field->get_sql_name();
-			if( $field->get_property( "idpart" ) )
-			{
-				$value = $value->{id};
-			}
-			if( $field->get_property( "mainpart" ) )
-			{
-				$value = $value->{main};
-			}
-			# clearout the freetext search index table for this field.
+			$value = $value->{id};
+		}
+		if( $field->get_property( "mainpart" ) )
+		{
+			$value = $value->{main};
+		}
+		# clearout the freetext search index table for this field.
 
-			
-			if( $field->is_type( "name" ) )
-			{
-				$values{$colname."_honourific"} = $value->{honourific};
-				$values{$colname."_given"} = $value->{given};
-				$values{$colname."_family"} = $value->{family};
-				$values{$colname."_lineage"} = $value->{lineage};
-			}
-			elsif( $field->is_type( "date" ) )
-			{
-				$values{$colname} = pad_date($value);
-				$values{$colname."_resolution"} = $field->get_resolution( $value );
-			}
-			elsif( $field->is_type( "time" ) )
-			{
-				# pad time?
-				$values{$colname} = $value;
-				$values{$colname."_resolution"} = $field->get_resolution( $value );
-			}
-			else
-			{
-				$values{$colname} = $value;
-			}
+		
+		if( $field->is_type( "name" ) )
+		{
+			$values{$colname."_honourific"} = $value->{honourific};
+			$values{$colname."_given"} = $value->{given};
+			$values{$colname."_family"} = $value->{family};
+			$values{$colname."_lineage"} = $value->{lineage};
+		}
+		elsif( $field->is_type( "date" ) )
+		{
+			$values{$colname} = pad_date($value);
+			$values{$colname."_resolution"} = $field->get_resolution( $value );
+		}
+		elsif( $field->is_type( "time" ) )
+		{
+			# pad time?
+			$values{$colname} = $value;
+			$values{$colname."_resolution"} = $field->get_resolution( $value );
+		}
+		else
+		{
+			$values{$colname} = $value;
 		}
 	}
 	
@@ -1708,7 +1712,11 @@ sub _get
 	my $cols = "";
 	my @aux = ();
 	my $first = 1;
-	foreach $field ( @fields ) {
+
+	foreach $field ( @fields ) 
+	{
+		next if( $field->is_type( "file","subobject" ) );
+
 		if( $field->is_type( "secret" ) )
 		{
 			# We don't return the values of secret fields - 
@@ -1716,39 +1724,40 @@ sub _get
 			# accessed direct via SQL.
 			next;
 		}
+
 		if( $field->get_property( "multiple" ) || $field->get_property( "multilang" ) )
 		{ 
 			push @aux,$field;
+			next;
+		}
+
+		if ($first)
+		{
+			$first = 0;
+		}
+		else
+		{
+			$cols .= ", ";
+		}
+		my $fname = $field->get_sql_name();
+		if ( $field->is_type( "name" ) )
+		{
+			$cols .= "M.".$fname."_honourific, ".
+			         "M.".$fname."_given, ".
+			         "M.".$fname."_family, ".
+			         "M.".$fname."_lineage";
+		}
+		elsif( $field->is_type( "date", "time" ) )
+		{
+			$cols .= "M.".$fname.", ".
+			         "M.".$fname."_resolution";
 		}
 		else 
 		{
-			if ($first)
-			{
-				$first = 0;
-			}
-			else
-			{
-				$cols .= ", ";
-			}
-			my $fname = $field->get_sql_name();
-			if ( $field->is_type( "name" ) )
-			{
-				$cols .= "M.".$fname."_honourific, ".
-				         "M.".$fname."_given, ".
-				         "M.".$fname."_family, ".
-				         "M.".$fname."_lineage";
-			}
-			elsif( $field->is_type( "date", "time" ) )
-			{
-				$cols .= "M.".$fname.", ".
-				         "M.".$fname."_resolution";
-			}
-			else 
-			{
-				$cols .= "M.".$fname;
-			}
+			$cols .= "M.".$fname;
 		}
 	}
+
 	my $sql;
 	if ( $mode == 0 )
 	{
@@ -1778,61 +1787,57 @@ sub _get
 	my $sth = $self->prepare( $sql );
 	$self->execute( $sth, $sql );
 	my @data = ();
-	my @row;
 	my %lookup = ();
 	my $count = 0;
-	while( @row = $sth->fetchrow_array ) 
+	while( my @row = $sth->fetchrow_array ) 
 	{
 		my $record = {};
 		$lookup{$row[0]} = $count;
-		foreach $field ( @fields ) { 
-			if( $field->is_type( "secret" ) )
-			{
-				next;
-			}
+		foreach $field ( @fields ) 
+		{ 
+			next if( $field->is_type( "secret" ) );
+			next if( $field->is_type( "file","subobject" ) );
+
 			if( $field->get_property( "multiple" ) )
 			{
 				#cjg Maybe should do nothing.
 				$record->{$field->get_name()} = [];
+				next;
 			}
-			elsif( $field->get_property( "multilang" ) )
-			{
-				# Do Nothing
-			}
-			else 
-			{
-				my $value;
-				if( $field->is_type( "name" ) )
-				{
-					$value = {};
-					$value->{honourific} = shift @row;
-					$value->{given} = shift @row;
-					$value->{family} = shift @row;
-					$value->{lineage} = shift @row;
-				} 
-				elsif( $field->is_type( "date", "time" ) )
-				{
-					my $v = shift @row;
-					my $res = shift @row;
-					$value = $field->trim_date( $v, $res );
-				}
-				else
-				{
-					$value = shift @row;
-				}
 
-				if( $field->get_property( "mainpart" ) )
-				{
-					$record->{$field->get_name()}->{main} = $value;
-				}
-				elsif( $field->get_property( "idpart" ) )
-				{
-					$record->{$field->get_name()}->{id} = $value;
-				}
-				else
-				{
-					$record->{$field->get_name()} = $value;
-				}
+			next if( $field->get_property( "multilang" ) );
+
+			my $value;
+			if( $field->is_type( "name" ) )
+			{
+				$value = {};
+				$value->{honourific} = shift @row;
+				$value->{given} = shift @row;
+				$value->{family} = shift @row;
+				$value->{lineage} = shift @row;
+			} 
+			elsif( $field->is_type( "date", "time" ) )
+			{
+				my $v = shift @row;
+				my $res = shift @row;
+				$value = $field->trim_date( $v, $res );
+			}
+			else
+			{
+				$value = shift @row;
+			}
+
+			if( $field->get_property( "mainpart" ) )
+			{
+				$record->{$field->get_name()}->{main} = $value;
+			}
+			elsif( $field->get_property( "idpart" ) )
+			{
+				$record->{$field->get_name()}->{id} = $value;
+			}
+			else
+			{
+				$record->{$field->get_name()} = $value;
 			}
 		}
 		$data[$count] = $record;
@@ -1840,8 +1845,7 @@ sub _get
 	}
 	$sth->finish;
 
-	my $multifield;
-	foreach $multifield ( @aux )
+	foreach my $multifield ( @aux )
 	{
 		my $mn = $multifield->get_sql_name();
 		my $fn = $multifield->get_name();
@@ -1992,8 +1996,16 @@ sub get_values
 {
 	my( $self, $field, $dataset ) = @_;
 
+	# what if a subobjects field is called?
+	if( $field->is_type( "file","subobject" ) )
+	{
+		$self->{session}->get_archive->log( 
+"Attempt to call get_values on a subobject or file type field." );
+		return [];
+	}
+
 	my $table;
-	if ( $field->get_property( "multiple" ) || $field->get_property( "multilang" ) )
+	if( $field->get_property( "multiple" ) || $field->get_property( "multilang" ) )
 	{
 		$table = $dataset->get_sql_sub_table_name( $field );
 	} 
@@ -2071,6 +2083,7 @@ sub do
 	{
 		$self->{session}->get_archive()->log( "SQL ERROR (do): $sql" );
 		$self->{session}->get_archive()->log( "SQL ERROR (do): ".$self->{dbh}->errstr.' (#'.$self->{dbh}->err.')' );
+use Carp; confess;
 
 		return undef unless( $self->{dbh}->err == 2006 );
 

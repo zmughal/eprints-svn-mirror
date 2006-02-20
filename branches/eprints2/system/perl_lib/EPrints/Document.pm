@@ -66,6 +66,11 @@ The file which we should link to. For something like a PDF file this is
 the only file. For an HTML document with images it would be the name of
 the actual HTML file.
 
+=item documents (subobject, multiple)
+
+A virtual field which represents the list of Documents which are
+part of this record.
+
 =back
 
 Document has all the methods of dataobj with the addition of the following.
@@ -94,12 +99,12 @@ use Cwd;
 use Fcntl qw(:DEFAULT :seek);
 
 use URI::Heuristic;
+use Carp;
 
 use EPrints::Database;
 use EPrints::EPrint;
 use EPrints::Probity;
 use EPrints::TempDir;
-
 
 
 use strict;
@@ -127,6 +132,8 @@ sub get_system_field_info
 
 		{ name=>"rev_number", type=>"int", required=>1, can_clone=>0 },
 
+		{ name=>"files", type=>"file", multiple=>1 },
+
 		{ name=>"eprintid", type=>"itemref",
 			datasetid=>"eprint", required=>1 },
 
@@ -144,7 +151,7 @@ sub get_system_field_info
 		{ name=>"license", type=>"license", required=>0, 
 			datasetid=>"license" },
 
-		{ name=>"main", type=>"text", required=>1 }
+		{ name=>"main", type=>"text", required=>1 },
 
 	);
 
@@ -214,43 +221,107 @@ Note that this creates the document in the database, not just in memory.
 sub create
 {
 	my( $session, $eprint ) = @_;
-	
-	# Generate new doc id
-	my $doc_id = _generate_doc_id( $session, $eprint );
-	# Make directory on filesystem
-	return undef unless _create_directory( $doc_id, $eprint ); 
 
-	my $data = {};
+	return EPrints::Document->create_from_data( 
+		$session, 
+		{ eprintid=>$eprint->get_id },
+		$session->get_archive->get_dataset( "eprint" ) );
+}
+
+######################################################################
+=pod
+
+=item $dataobj = EPrints::Document->create_from_data( $session, $data, $dataset )
+
+Returns undef if a bad (or no) subjectid is specified.
+
+Otherwise calls the parent method in EPrints::DataObj.
+
+=cut
+######################################################################
+
+sub create_from_data
+{
+	my( $class, $session, $data, $dataset ) = @_;
+       
+	confess "session not defined" unless defined $session;
+	confess "data not defined" unless defined $data;
+                   
+	my $eprintid = $data->{eprintid}; 
+
+	my $eprint = EPrints::EPrint->new( $session, $eprintid );
+
+	unless( defined $eprint )
+	{
+		EPrints::Config::abort( <<END );
+Error. Can't create new document. 
+There is no eprint with id '$eprintid'.
+END
+	}
+	
+	my $document = $class->SUPER::create_from_data( $session, $data, $dataset );
+
+	return unless defined $document;
+
+	_create_directory( $document->get_id, $eprint ); 
+
+	if( defined $data->{files} )
+	{
+		foreach my $filedata ( @{$data->{files}} )
+		{
+			next unless defined $filedata->{data};
+
+			my $fn = $filedata->{filename};
+
+			if( $fn =~ m/^\// || $fn =~ m/\/../ || $fn=~m/\~/ )
+			{
+				$session->get_archive->log( "Bad filename for file in document: $fn (skipping)\n" );
+				next;
+			}
+
+			my $srcfile = $filedata->{data};		
+			$srcfile =~ s/^\s+//;
+			$srcfile =~ s/\s+$//;
+
+			$document->add_file( $srcfile, $filedata->{filename} );		
+		}
+	}
+
+	my $linkdir = _secure_symlink_path( $eprint );
+	$document->create_symlink( $eprint, $linkdir );
+
+	return $document;
+}
+
+######################################################################
+=pod
+
+=item $defaults = EPrints::Document->get_defaults( $session, $data )
+
+Return default values for this object based on the starting data.
+
+=cut
+######################################################################
+
+sub get_defaults
+{
+	my( $class, $session, $data ) = @_;
+
+	my $eprint = EPrints::EPrint->new( $session, $data->{eprintid} );
+
+	if( defined $data->{eprintid} )
+	{
+		$data->{docid} = _generate_doc_id( $session, $eprint );
+	}
+
 	$session->get_archive()->call( 
 			"set_document_defaults", 
 			$data,
  			$session,
  			$eprint );
-	$data->{docid} = $doc_id;
-	$data->{eprintid} = $eprint->get_value( "eprintid" );
 
-	# Make database entry
-	my $dataset = $session->get_archive()->get_dataset( "document" );
-
-	my $success = $session->get_db()->add_record(
-		$dataset,
-		$data );  
-
-	if( $success )
-	{
-		my $doc = EPrints::Document->new( $session, $doc_id );
-		# Make secure area symlink
-		my $linkdir = _secure_symlink_path( $eprint );
-		$doc->create_symlink( $eprint, $linkdir );
-		$doc->queue_all;
-		return $doc;
-	}
-	else
-	{
-		return( undef );
-	}
+	return $data;
 }
-
 
 ######################################################################
 # 

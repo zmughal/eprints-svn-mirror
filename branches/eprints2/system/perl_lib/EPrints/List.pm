@@ -187,7 +187,7 @@ sub reorder
 ######################################################################
 =pod
 
-=item $new_list = $list->merge( $list2, [$order] );
+=item $new_list = $list->union( $list2, [$order] );
 
 Create a new list from this one plus another one. If order is not set
 then this list will not be in any certain order.
@@ -195,7 +195,7 @@ then this list will not be in any certain order.
 =cut
 ######################################################################
 
-sub merge
+sub union
 {
 	my( $self, $list2, $order ) = @_;
 
@@ -205,6 +205,71 @@ sub merge
 	my %newids = ();
 	foreach( @{$ids1}, @{$ids2} ) { $newids{$_}=1; }
 	my @objectids = keys %newids;
+
+	# losing desc, although could be added later.
+	return EPrints::List->new(
+		dataset => $self->{dataset},
+		session => $self->{session},
+		order => $order,
+		ids=>\@objectids );
+}
+
+######################################################################
+=pod
+
+=item $new_list = $list->remainder( $list2, [$order] );
+
+Create a new list from this one minus another one. If order is not set
+then this list will not be in any certain order.
+
+Remove all items in $list2 from $list and return the result as a
+new EPrints::List.
+
+=cut
+######################################################################
+
+sub remainder
+{
+	my( $self, $list2, $order ) = @_;
+
+	my $ids1 = $self->get_ids;
+	my $ids2 = $list2->get_ids;
+
+	my %newids = ();
+	foreach( @{$ids1} ) { $newids{$_}=1; }
+	foreach( @{$ids2} ) { delete $newids{$_}; }
+	my @objectids = keys %newids;
+
+	# losing desc, although could be added later.
+	return EPrints::List->new(
+		dataset => $self->{dataset},
+		session => $self->{session},
+		order => $order,
+		ids=>\@objectids );
+}
+
+######################################################################
+=pod
+
+=item $new_list = $list->intersect( $list2, [$order] );
+
+Create a new list containing only the items which are in both lists.
+If order is not set then this list will not be in any certain order.
+
+=cut
+######################################################################
+
+sub intersect
+{
+	my( $self, $list2, $order ) = @_;
+
+	my $ids1 = $self->get_ids;
+	my $ids2 = $list2->get_ids;
+
+	my %n= ();
+	foreach( @{$ids1} ) { $n{$_}=1; }
+	my @objectids = ();
+	foreach( @{$ids2} ) { next unless( $n{$_} ); push @objectids, $_; }
 
 	# losing desc, although could be added later.
 	return EPrints::List->new(

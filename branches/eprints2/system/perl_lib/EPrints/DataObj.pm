@@ -99,7 +99,7 @@ sub new
 ######################################################################
 =pod
 
-=item $dataobj = EPrints::DataObj->new_from_data( $session, $data )
+=item $dataobj = EPrints::DataObj->new_from_data( $session, $data, $dataset )
 
 ABSTRACT.
 
@@ -113,7 +113,7 @@ Used to create an object from the data retrieved from the database.
 
 sub new_from_data
 {
-	my( $class, $session, $data ) = @_;
+	my( $class, $session, $data, $dataset ) = @_;
 
 }
 
@@ -138,7 +138,71 @@ sub create
 }
 
 
+######################################################################
+=pod
 
+=item $dataobj = EPrints::DataObj->create_from_data( $session, $data, $dataset )
+
+Create a new object of this type in the database. 
+
+$dataset is the dataset it will belong to. 
+
+$data is the data structured as with new_from_data.
+
+This will create sub objects also.
+
+=cut
+######################################################################
+
+sub create_from_data
+{
+	my( $class, $session, $data, $dataset ) = @_;
+
+	$data = EPrints::Utils::clone( $data );
+
+	my $defaults = $class->get_defaults( $session, $data );
+
+	foreach my $k ( keys %{$defaults} )
+	{
+		next if defined $data->{$k};
+		$data->{$k} = $defaults->{$k};
+	}
+
+	$session->get_db->add_record( $dataset, $data );
+                                                                                                                  
+	my $keyfield = $dataset->get_key_field;
+	my $kfname = $keyfield->get_name;
+	my $id = $data->{$kfname};
+                                                                                                                  
+	my $obj = $dataset->get_object( $session, $id );
+                                                                                                                  
+	return undef unless( defined $obj );
+
+	# queue all the fields for indexing.                                                          
+	$obj->queue_all;
+                                                                                                                  
+	return $obj;
+}
+                                                                                                                  
+
+######################################################################
+=pod
+
+=item $defaults = EPrints::User->get_defaults( $session, $data )
+
+Return default values for this object based on the starting data.
+
+Should be subclassed.
+
+=cut
+######################################################################
+
+sub get_defaults
+{
+	my( $class, $session, $data ) = @_;
+
+	return {};
+}
 
 ######################################################################
 =pod
@@ -451,7 +515,7 @@ sub is_set
 {
 	my( $self, $fieldname ) = @_;
 
-	if( !exists $self->{data}->{$fieldname} )
+	if( !$self->{dataset}->get_field( $fieldname ) )
 	{
 		$self->{session}->get_archive->log(
 			 "is_set( $fieldname ): Unknown field" );
@@ -818,11 +882,9 @@ sub to_xml
 					open( FH, $fullpath ) || die "fullpath '$fullpath' read error: $!";
 					my $data = join( "", <FH> );
 					close FH;
-					$file->appendChild( 
-						$self->{session}->render_data_element( 
-							6, 
-							'data',
-           						MIME::Base64::encode($data) ) );
+					my $data_el = $self->{session}->make_element( 'data', encoding=>"base64" );
+					$data_el->appendChild( $self->{session}->make_text( MIME::Base64::encode($data) ) );
+					$file->appendChild( $data_el );
 				}
 				$files->appendChild( $self->{session}->make_text( "    " ) );
 				$files->appendChild( $file );

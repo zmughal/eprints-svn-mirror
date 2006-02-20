@@ -247,8 +247,13 @@ sub load_dir
 		}
 		next unless( $fn =~ s/\.pm// );
 		my $class = $baseclass."::".join("::",@prefix,$fn );
-		#print STDERR "loading $class\n"; 
-		my $return = eval "use $class";
+
+		my $return = eval "use $class; 1";
+		if( !$return )
+		{
+			print STDERR "Problem loading $class:\n$@\n";
+			next;
+		}
 
 		no strict "refs";
 		my $absvar = $class.'::ABSTRACT';
@@ -258,7 +263,7 @@ sub load_dir
 		use strict "refs";
 		next if( $abstract );
 
-		my $pluginid = $plugin->{"id"};
+		my $pluginid = $plugin->{id};
 		if( !defined $pluginid )
 		{
 			print STDERR "Warning: plugin $class has no ID set.\n";

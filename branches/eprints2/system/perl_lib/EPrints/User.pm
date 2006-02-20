@@ -251,37 +251,47 @@ Create a new user in the database with the specified user type.
 sub create
 {
 	my( $session, $user_type ) = @_;
-	
-	my $user_ds = $session->get_archive()->get_dataset( "user" );
+
+
+	return EPrints::User->create_from_data( 
+		$session, 
+		{ usertype=>$user_type },
+		$session->get_archive->get_dataset( "user" ) );
+}
+
+######################################################################
+=pod
+
+=item $defaults = EPrints::User->get_defaults( $session, $data )
+
+Return default values for this object based on the starting data.
+
+=cut
+######################################################################
+
+sub get_defaults
+{
+	my( $class, $session, $data ) = @_;
+
 	my $userid = _create_userid( $session );
-		
-	# And work out the date joined.
+
 	my $date_joined = EPrints::Utils::get_datetimestamp( time );
 
-	my $data = { 
+	my $defaults = { 
 		"userid"=>$userid,
-		"usertype"=>$user_type,
 		"joined"=>$date_joined,
 		"frequency"=>'never',
 		"mailempty"=>"FALSE"
 	};
 
-	$session->get_archive()->call(
+	$session->get_archive->call(
 		"set_user_defaults",
-		$data,
+		$defaults,
 		$session );
 
-	
-	# Add the user to the database...
-	$session->get_db()->add_record( $user_ds, $data );
-	
-	my $user = EPrints::User->new( $session, $userid );
-
-	$user->queue_all;
-
-	# And return the new user as User object.
-	return $user;
+	return $defaults;
 }
+
 
 
 ######################################################################

@@ -3311,3 +3311,30 @@ PACKAGE: 2.2.99.2
  - The http_header method in session now can print an eplogin cookie
     for cookie based authentication (being worked on).
 
+2006-02-19 cjg
+
+ - Added input plugin system.
+ = Added bin/import to import things
+ - Added an import plugin for the new EPrints XML schema. It even handles
+    files.
+ - Added $dataset parameter to EPrints::DataObj->new_from_data, to bring 
+    it in line with EPrints::EPrint->new_frmo_data
+ - Also added a create_from_data method to dataobj which creates a
+    new object of that type from a standard data structure. This is a 
+    standardised function and deprecates the existing create method.
+ - Added get_defaults to all the DataObj objects which sets the default
+    values for a new object. Used by create_from_data.
+ - Fixed bug in is_set so that it does not need the data to be set in
+    the object, just the field exist in the dataset.
+ - Added intersect and remainder methods to List. Renamed merge to union.
+ - Added MetaField::File which is a no-sql-columns metafield which is 
+    used to represent the files in a document.
+ - Added MetaField::Subobject to represent documents in EPrints and
+    Subscriptions in User.
+ - Added a 'import' flag to certain types of dataset to indicate if it
+    is possible to import items into them.
+ - Several minor code relayouts. 
+ - Added a create_object method to dataset to create a new object in
+    the dataset.
+ - Improved the error reporting when loading plugins.
+ 

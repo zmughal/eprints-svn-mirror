@@ -282,6 +282,7 @@ sub _do_ordervalues
 		my @fvals = ( $keyvalue );
 		foreach my $field ( @fields )
 		{
+			next if( $field->is_type( "subobject","file" ) );
 			my $ov = $field->ordervalue( 
 					$data->{$field->get_name()},
 					$session,

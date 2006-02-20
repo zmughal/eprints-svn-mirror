@@ -238,26 +238,32 @@ sub create
 {
 	my( $session, $data ) = @_;
 
-	# don't want to mangle the origional data.
-	$data = EPrints::Utils::clone( $data );
-	
-	$data->{historyid} = $session->get_db()->counter_next( "historyid" );
-	$data->{timestamp} = EPrints::Utils::get_datetimestamp( time );
-	my $dataset = $session->get_archive()->get_dataset( "history" );
-	my $success = $session->get_db()->add_record( $dataset, $data );
-
-	return( undef );
-
-#	if( $success )
-#	{
-#		my $eprint = EPrints::History->new( $session, $new_id, $dataset );
-#		$eprint->queue_all;
-#		return $eprint;
-#	}
-#
-##	$newsub->queue_all;
+	return EPrints::History->create_from_data( 
+		$session, 
+		$data,
+		$session->get_archive->get_dataset( "history" ) );
 }
 
+######################################################################
+=pod
+
+=item $defaults = EPrints::History->get_defaults( $session, $data )
+
+Return default values for this object based on the starting data.
+
+=cut
+######################################################################
+
+sub get_defaults
+{
+	my( $class, $session, $data ) = @_;
+	
+	$data->{historyid} = $session->get_db->counter_next( "historyid" );
+
+	$data->{timestamp} = EPrints::Utils::get_datetimestamp( time );
+
+	return $data;
+}
 
 ######################################################################
 =pod

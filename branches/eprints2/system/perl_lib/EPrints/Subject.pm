@@ -267,7 +267,40 @@ sub create
 {
 	my( $session, $id, $name, $parents, $depositable ) = @_;
 
-	if( $id !~ m/^[^\s]+$/ )
+	my $actual_parents = $parents;
+	$actual_parents = [ $EPrints::Subject::root_subject ] if( !defined $parents );
+
+	my $data = 
+		{ "subjectid"=>$id,
+		  "name"=>$name,
+		  "parents"=>$actual_parents,
+		  "ancestors"=>[],
+		  "depositable"=>($depositable ? "TRUE" : "FALSE" ) };
+
+	return EPrints::User->create_from_data( 
+		$session, 
+		$data,
+		$session->get_archive->get_dataset( "subject" ) );
+}
+
+######################################################################
+=pod
+
+=item $dataobj = EPrints::Subject->create_from_data( $session, $data, $dataset )
+
+Returns undef if a bad (or no) subjectid is specified.
+
+Otherwise calls the parent method in EPrints::DataObj.
+
+=cut
+######################################################################
+
+sub create_from_data
+{
+	my( $class, $session, $data, $dataset ) = @_;
+                           
+	my $id = $data->{subjectid};                                                                                       
+	unless( valid_id( $id ) )
 	{
 		EPrints::Config::abort( <<END );
 Error. Can't create new subject. 
@@ -275,29 +308,17 @@ The value '$id' is not a valid subject identifier.
 Subject id's may not contain whitespace.
 END
 	}
+
+	my $subject = $class->SUPER::create_from_data( $session, $data, $dataset );
+
+	return unless( defined $subject );
 	
-	my $actual_parents = $parents;
-	$actual_parents = [ $EPrints::Subject::root_subject ] if( !defined $parents );
+	# regenerate ancestors field
+	$subject->commit;
 
-	my $newsubdata = 
-		{ "subjectid"=>$id,
-		  "name"=>$name,
-		  "parents"=>$actual_parents,
-		  "ancestors"=>[],
-		  "depositable"=>($depositable ? "TRUE" : "FALSE" ) };
-
-	return( undef ) unless( $session->get_db()->add_record( 
-		$session->get_archive()->get_dataset( "subject" ), 
-		$newsubdata ) );
-
-	my $newsub = EPrints::Subject->new_from_data( $session, $newsubdata );
-
-	$newsub->queue_all;
-
-	$newsub->commit(); # will update ancestors
-
-	return $newsub;
+	return $subject;
 }
+
 
 ######################################################################
 # 
@@ -310,22 +331,18 @@ END
 sub _get_ancestors
 {
 	my( $self ) = @_;
-#use Data::Dumper;
-#print "$self->{data}->{subjectid}->GETANCESTORS\n";
-#print Dumper( $self->{data} );
+
 	my %ancestors;
 	$ancestors{$self->{data}->{subjectid}} = 1;
 
-	my $parent;
-	foreach $parent ( $self->get_parents() )
+	foreach my $parent ( $self->get_parents() )
 	{
-
-#print ".\n";
 		foreach( $parent->_get_ancestors() )
 		{
 			$ancestors{$_} = 1;
 		}
 	}
+
 	return keys %ancestors;
 }
 
@@ -856,6 +873,26 @@ sub count_eprints
 
 }
 
+######################################################################
+=pod
+
+=item $boolean = EPrints::Subject::valid_id( $id )
+
+Return true if the string is an acceptable identifier for a subject.
+
+This does not check all possible illegal values, yet.
+
+=cut
+######################################################################
+
+sub valid_id
+{
+	my( $id ) = @_;
+
+	return 0 if( m/\s/ ); # no whitespace
+
+	return 1;
+}
 
 
 # Subjects don't have a URL.
@@ -875,7 +912,7 @@ sub count_eprints
 ######################################################################
 =pod
 
-=item EPrints::Subject::render( "oooops" )
+=item EPrints::Subject::render
 
 undocumented
 

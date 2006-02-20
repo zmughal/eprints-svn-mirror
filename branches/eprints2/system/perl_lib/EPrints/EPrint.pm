@@ -91,6 +91,7 @@ use EPrints::DataObj;
 
 use EPrints::Database;
 use EPrints::Document;
+use Carp;
 
 use File::Path;
 use strict;
@@ -113,6 +114,9 @@ sub get_system_field_info
 	{ name=>"eprintid", type=>"int", required=>1 },
 
 	{ name=>"rev_number", type=>"int", required=>1, can_clone=>0 },
+
+	{ name=>"documents", type=>"subobject", datasetid=>'document',
+		multiple=>1 },
 
 	# UserID is not required, as some bulk importers
 	# may not provide this info. maybe bulk importers should
@@ -167,6 +171,9 @@ search "deletion").
 sub new
 {
 	my( $class, $session, $id, $dataset ) = @_;
+
+	confess "session not defined" unless defined $session;
+	confess "id not defined" unless defined $id;
 
 	if( defined $dataset && $dataset->id ne "eprint" )
 	{
@@ -244,49 +251,76 @@ sub create
 {
 	my( $session, $dataset, $data ) = @_;
 
-	# don't want to mangle the origional data.
-	$data = EPrints::Utils::clone( $data );
-	
-	my $setdefaults = 0;
-	if( !defined $data )
+	return EPrints::User->create_from_data( 
+		$session, 
+		$data, 
+		$dataset );
+}
+
+######################################################################
+=pod
+
+=item $dataobj = EPrints::DataObj->create_from_data( $session, $data, $dataset )
+
+Create a new object of this type in the database. 
+
+$dataset is the dataset it will belong to. 
+
+$data is the data structured as with new_from_data.
+
+This will create sub objects also.
+
+=cut
+######################################################################
+
+sub create_from_data
+{
+	my( $class, $session, $data, $dataset ) = @_;
+
+	my $obj = $class->SUPER::create_from_data( $session, $data, $dataset );
+
+	return unless defined $obj;
+	if( defined $data->{documents} )
 	{
-		$data = {};
-		$setdefaults = 1;
+		foreach my $docdata_orig ( @{$data->{documents}} )
+		{
+			my %docdata = %{$docdata_orig};
+			$docdata{eprintid} = $obj->get_id;
+			my $docds = $session->get_archive->get_dataset( "document" );
+			EPrints::Document->create_from_data( $session,\%docdata,$docds );
+		}
 	}
+
+	return $obj;
+}
+                                                                                                                  
+######################################################################
+=pod
+
+=item $defaults = EPrints::EPrint->get_defaults( $session, $data )
+
+Return default values for this object based on the starting data.
+
+=cut
+######################################################################
+
+sub get_defaults
+{
+	my( $class, $session, $data ) = @_;
 
 	my $new_id = _create_id( $session );
 	my $dir = _create_directory( $session, $new_id );
 
-	if( !defined $dir )
-	{
-		return( undef );
-	}
-
 	$data->{eprintid} = $new_id;
 	$data->{dir} = $dir;
 
-	if( $setdefaults )
-	{	
-		$session->get_archive()->call(
-			"set_eprint_defaults",
-			$data,
-			$session );
-	}
+	$session->get_archive->call(
+		"set_eprint_defaults",
+		$data,
+		$session );
 
-	my $success = $session->get_db()->add_record( $dataset, $data );
-
-	if( $success )
-	{
-		my $eprint = EPrints::EPrint->new( $session, $new_id, $dataset );
-		$eprint->queue_all;
-		return $eprint;
-	}
-	else
-	{
-		return( undef );
-	}
+	return $data;
 }
-
 
 ######################################################################
 # 

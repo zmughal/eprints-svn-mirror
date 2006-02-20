@@ -14,7 +14,7 @@
 
 =head1 NAME
 
-B<export> - export all items in a dataset using an output plugin.
+B<export> - export some or all items in a dataset using an output plugin.
 
 =head1 SYNOPSIS
 
