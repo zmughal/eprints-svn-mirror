@@ -634,7 +634,12 @@ the other SQL tables names are based on this name.
 sub get_sql_table_name
 {
 	my( $self ) = @_;
-	return $INFO->{$self->{id}}->{sqlname};
+
+	my $table = $INFO->{$self->{id}}->{sqlname};
+
+	return $table if defined $table;
+
+	EPrints::abort( "Can't get a SQL table name for dataset: ".$self->{id} );
 }
 
 

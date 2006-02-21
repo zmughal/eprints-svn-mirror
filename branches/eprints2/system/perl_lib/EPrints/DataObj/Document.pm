@@ -219,7 +219,7 @@ sub create
 	return EPrints::DataObj::Document->create_from_data( 
 		$session, 
 		{ eprintid=>$eprint->get_id },
-		$session->get_archive->get_dataset( "eprint" ) );
+		$session->get_archive->get_dataset( "document" ) );
 }
 
 ######################################################################

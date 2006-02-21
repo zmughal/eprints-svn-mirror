@@ -3370,3 +3370,9 @@ PACKAGE: 2.2.99.2
  - Fixed a bug in the EPrints::create method from where create_from_data
     was added.
 
+2006-02-21 cjg
+
+ - Cleaned up some more typos from the DataObj/* change and the 
+    create_from_data change.
+ - Made the add record method skip subobject fields.
+

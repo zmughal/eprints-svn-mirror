@@ -941,6 +941,8 @@ sub remove
 	foreach $field ( @fields ) 
 	{
 		next unless( $field->get_property( "multiple" ) || $field->get_property( "multilang" ) );
+		# ideally this would actually remove the subobjects
+		next if( $field->is_type( "subobject", "file" ) );
 		my $auxtable = $dataset->get_sql_sub_table_name( $field );
 		my $sql = "DELETE FROM $auxtable WHERE $where";
 		$rv = $rv && $self->do( $sql );
