@@ -703,6 +703,7 @@ Staff CGI Scripts
     <ep:phrase ref="cgi/users/edit_eprint:view_summary">Summary</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:view_full">Full Record</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:view_history">History</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:view_buffer">View Records awaiting Editorial Review</ep:phrase>
     <ep:phrase ref="mail_delete_reason.inbox">
 The following eprint has been deleted from your User Area:
 

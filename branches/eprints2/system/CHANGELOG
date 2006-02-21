@@ -3376,3 +3376,7 @@ PACKAGE: 2.2.99.2
     create_from_data change.
  - Made the add record method skip subobject fields.
 
+2006-02-21 cjg
+
+ - Added a link from edit_eprint to buffer.
+

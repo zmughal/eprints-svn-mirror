@@ -384,6 +384,14 @@ sub view_page
 		$a->appendChild( $session->html_phrase( "cgi/users/edit_eprint:action_".$_ ) );
 		push @list , $a;
 	}
+
+	{
+		my $url = "buffer";
+		my $a = $session->render_link( $url );
+		$a->appendChild( $session->html_phrase( "cgi/users/edit_eprint:view_buffer" ) );
+		push @list , $a;
+	}
+
 	$table->appendChild( $session->render_row(
 		$session->html_phrase( "cgi/users/edit_eprint:actions" ),
 		render_links_list( $session, @list ) ) );
