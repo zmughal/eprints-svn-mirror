@@ -292,6 +292,10 @@ sub view_page
 		$eprint->render_value( "datestamp" ) ) );
 
 	$table->appendChild( $session->render_row(
+		$session->html_phrase( "eprint_fieldname_status_changed" ),
+		$eprint->render_value( "status_changed" ) ) );
+
+	$table->appendChild( $session->render_row(
 		$session->html_phrase( "eprint_fieldname_lastmod" ),
 		$eprint->render_value( "lastmod" ) ) );
 	

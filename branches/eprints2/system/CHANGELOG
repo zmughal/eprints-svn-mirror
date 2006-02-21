@@ -3359,3 +3359,14 @@ PACKAGE: 2.2.99.2
     work). 
  - Added several calls to abort() and changed some calls to confess() to
     use abort() instead.
+
+2006-02-21 cjg
+
+ - Added new field "status_changed" which is set to the current time each
+    time the status of the EPrint changes (ie. it moves between datasets).
+ - Made this field appear on the edit_eprint view.
+ - Removed a warning from new EPrint because sometimes eprints are created
+    without an ID field. Although this is iffy.
+ - Fixed a bug in the EPrints::create method from where create_from_data
+    was added.
+

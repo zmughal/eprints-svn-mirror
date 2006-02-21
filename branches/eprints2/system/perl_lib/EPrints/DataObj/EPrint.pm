@@ -130,6 +130,9 @@ sub get_system_field_info
 	{ name=>"lastmod", type=>"time", required=>0, 
 		render_opts=>{res=>"minute"}, can_clone=>0 },
 
+	{ name=>"status_changed", type=>"time", required=>0, 
+		render_opts=>{res=>"minute"}, can_clone=>0 },
+
 	{ name=>"type", type=>"datatype", datasetid=>"eprint", required=>1, 
 		input_rows=>"ALL" },
 
@@ -169,7 +172,7 @@ sub new
 	my( $class, $session, $id, $dataset ) = @_;
 
 	EPrints::abort "session not defined in EPrint->new" unless defined $session;
-	EPrints::abort "id not defined in EPrint->new" unless defined $id;
+	#EPrints::abort "id not defined in EPrint->new" unless defined $id;
 
 	if( defined $dataset && $dataset->id ne "eprint" )
 	{
@@ -247,7 +250,7 @@ sub create
 {
 	my( $session, $dataset, $data ) = @_;
 
-	return EPrints::User->create_from_data( 
+	return EPrints::EPrint->create_from_data( 
 		$session, 
 		$data, 
 		$dataset );
@@ -559,8 +562,12 @@ sub _transfer
 	# Copy to the new table
 	$self->{dataset} = $dataset;
 
-	# Create an entry in the new table
+	# set the status changed time to now.
+	$self->set_value( 
+		"status_changed" , 
+		EPrints::Utils::get_datetimestamp( time ) );
 
+	# Create an entry in the new table
 	my $success = $self->{session}->get_db()->add_record(
 		$dataset,
 		{ "eprintid"=>$self->get_value( "eprintid" ) } );
@@ -734,11 +741,6 @@ sub commit
 		return( 1 ) unless $force;
 	}
 
-#use Data::Dumper;
-#foreach( keys %{$self->{changed}} )
-#{
-#	print STDERR Dumper($self->{data}->{$_},$self->{changed}->{$_});
-#}
 	$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 
 	$self->set_value( 

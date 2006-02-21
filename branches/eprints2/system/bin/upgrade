@@ -482,7 +482,7 @@ END
 		$sql = "ALTER TABLE $tablename ADD rev_number INTEGER DEFAULT 1 AFTER $pkey";
 		$db->do( $sql );
 
-		# add the ordervalues for lastmod
+		# add the ordervalues for rev_number
 		foreach my $table ( @tables )
 		{
 			if( $table =~ m/^($tablename)__ordervalues_.*$/ )
@@ -507,11 +507,12 @@ do this for every eprint?
 #	close REVFILE;
 
 Text not integer?
+
 	# add "license" to the document dataobject.
 	$sql = "ALTER TABLE document ADD license VARCHAR(255) DEFAULT NULL AFTER security";
 	$db->do( $sql );
 
-	# add the ordervalues for lastmod
+	# add the ordervalues for license
 	foreach my $table ( @tables )
 	{
 		if( $table =~ m/^document__ordervalues_.*$/ )
@@ -520,6 +521,9 @@ Text not integer?
 			$db->do( $sql );
 		}
 	}
+
+
+
 
 	# add "date_embargo" to the eprint dataset
 	foreach my $table_id ( "inbox","buffer","archive","deletion" )
@@ -634,6 +638,10 @@ EOS
 		$db->do( $sql );
 		$sql = "UPDATE $table_id SET lastmod = datestamp";
 		$db->do( $sql );
+		$sql = "ALTER TABLE $table_id ADD status_changed DATETIME AFTER lastmod";
+		$db->do( $sql );
+		$sql = "UPDATE $table_id SET status_changed = datestamp";
+		$db->do( $sql );
 	}
 
 	# remove the datestamp for items which are not yet live
@@ -646,12 +654,14 @@ EOS
 	# re read the tables.	
 	@tables = $db->get_tables;
 
-	# add the ordervalues for lastmod
+	# add the ordervalues for lastmod and status_changed
 	foreach my $table ( @tables )
 	{
 		if( $table =~ m/^(archive|buffer|inbox|deletion)__ordervalues_.*$/ )
 		{
 			$sql = "ALTER TABLE $table ADD lastmod text AFTER datestamp",
+			$db->do( $sql );
+			$sql = "ALTER TABLE $table ADD status_changed text AFTER lastmod",
 			$db->do( $sql );
 		}
 	}

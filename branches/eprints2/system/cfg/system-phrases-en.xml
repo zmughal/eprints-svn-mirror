@@ -922,6 +922,7 @@ Titles and Help for the System Fields
     <ep:phrase ref="eprint_fieldname_dir">Directory</ep:phrase>
     <ep:phrase ref="eprint_fieldname_datestamp">Date Deposited</ep:phrase>
     <ep:phrase ref="eprint_fieldname_lastmod">Last Modified</ep:phrase>
+    <ep:phrase ref="eprint_fieldname_status_changed">Last Status Change</ep:phrase>
     <ep:phrase ref="eprint_fieldname_type">Item Type</ep:phrase>
     <ep:phrase ref="eprint_fieldhelp_type">Please select the most appropriate type for your deposit.</ep:phrase>
     <ep:phrase ref="eprint_fieldname_succeeds">Later Version of</ep:phrase>
