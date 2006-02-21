@@ -712,9 +712,7 @@ sub mail
 	return EPrints::Utils::send_mail(
 		$self->{session}->get_archive(),
 		$langid,
-		EPrints::Utils::make_name_string(
-			$self->get_value( "name" ), 
-			1 ),
+		EPrints::Utils::tree_to_utf8( $self->render_description ),
 		$email,
 		EPrints::Utils::tree_to_utf8( $lang->phrase( $subjectid, {}, $self->{session} ) ),
 		$message,

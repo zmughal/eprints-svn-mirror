@@ -3337,4 +3337,11 @@ PACKAGE: 2.2.99.2
  - Added a create_object method to dataset to create a new object in
     the dataset.
  - Improved the error reporting when loading plugins.
- 
+
+2006-02-21 cjg
+
+ - Fixed assumption in the user email method that the "name" field 
+    of a user would always exist and be of type "name". Now uses describe
+    instead.
+ - Added a confess if make_name is called with something other than a 
+    hash. 

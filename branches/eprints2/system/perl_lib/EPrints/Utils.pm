@@ -263,6 +263,8 @@ sub make_name_string
 {
 	my( $name, $familylast ) = @_;
 
+	confess unless ref($name) eq "HASH";
+
 	my $firstbit = "";
 	if( defined $name->{honourific} && $name->{honourific} ne "" )
 	{
