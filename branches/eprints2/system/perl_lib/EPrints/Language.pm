@@ -54,8 +54,6 @@ format of phrase files.
 
 package EPrints::Language;
 
-use EPrints::XML;
-
 use strict;
 
 ######################################################################

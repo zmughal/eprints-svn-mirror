@@ -50,9 +50,6 @@ single archive.
 
 package EPrints::Workflow;
 
-use EPrints::XML;
-use EPrints::Workflow::Stage;
-
 use strict;
 
 ######################################################################

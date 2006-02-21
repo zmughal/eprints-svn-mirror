@@ -53,7 +53,7 @@ This will ultimately be replaced with the new workflow system.
 #    The EPrints::DataSet to which the eprint being edited belongs.
 #
 # $self->{eprint}
-#    The EPrints::EPrint currently being edited.
+#    The EPrints::DataObj::EPrint currently being edited.
 #
 # $self->{formtarget}
 #    The URL of the form. Used as the target for <form>
@@ -79,9 +79,7 @@ This will ultimately be replaced with the new workflow system.
 
 package EPrints::SubmissionForm;
 
-use EPrints::EPrint;
-use EPrints::Session;
-use EPrints::Document;
+use EPrints;
 
 use Unicode::String qw(utf8 latin1);
 use strict;
@@ -202,7 +200,7 @@ sub process
 					$self->{session}->param( "dataset" ) );
 			}
 		}
-		$self->{eprint} = EPrints::EPrint->new( 
+		$self->{eprint} = EPrints::DataObj::EPrint->new( 
 			$self->{session},
 			$self->{eprintid},
 			$self->{dataset} );
@@ -483,7 +481,7 @@ sub _from_stage_home
 					"userhome" ) );
 			return( 0 );
 		}
-		$self->{eprint} = EPrints::EPrint::create(
+		$self->{eprint} = EPrints::DataObj::EPrint::create(
 			$self->{session},
 			$self->{dataset} );
 		$self->{eprint}->set_value( 
@@ -883,7 +881,7 @@ sub _from_stage_files
 		
 	if( $self->{action} eq "newdoc" )
 	{
-		$self->{document} = EPrints::Document::create( 
+		$self->{document} = EPrints::DataObj::Document::create( 
 			$self->{session},
 			$self->{eprint} );
 		if( !defined $self->{document} )
@@ -922,7 +920,7 @@ sub _from_stage_files
 	my( $doc_action, $docid ) = ( $1, $2 );
 		
 	# Find relevant document object
-	$self->{document} = EPrints::Document->new( $self->{session}, $docid );
+	$self->{document} = EPrints::DataObj::Document->new( $self->{session}, $docid );
 
 	if( !defined $self->{document} )
 	{
@@ -967,7 +965,7 @@ sub _from_stage_docmeta
 
 	# Check the document is OK, and that it is associated with the current
 	# eprint
-	$self->{document} = EPrints::Document->new(
+	$self->{document} = EPrints::DataObj::Document->new(
 		$self->{session},
 		$self->{session}->param( "docid" ) );
 
@@ -1027,7 +1025,7 @@ sub _from_stage_fileview
 
 	# Check the document is OK, and that it is associated with the current
 	# eprint
-	$self->{document} = EPrints::Document->new(
+	$self->{document} = EPrints::DataObj::Document->new(
 		$self->{session},
 		$self->{session}->param( "docid" ) );
 
@@ -1376,7 +1374,7 @@ sub _do_stage_linking
 	{
 		next unless( defined $self->{eprint}->get_value( $field_id ) );
 
-		my $older_eprint = new EPrints::EPrint( 
+		my $older_eprint = new EPrints::DataObj::EPrint( 
 			$self->{session}, 
 		        $self->{eprint}->get_value( $field_id ),
 		        $archive_ds );

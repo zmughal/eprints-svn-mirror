@@ -33,8 +33,6 @@ the free-text search indexes.
 
 package EPrints::Index;
 
-use EPrints::Session;
-
 use Unicode::String qw( latin1 utf8 );
 
 use strict;

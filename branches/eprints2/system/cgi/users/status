@@ -12,10 +12,7 @@
 #
 ######################################################################
 
-use EPrints::Session;
-use EPrints::Database;
-use EPrints::EPrint;
-use EPrints::User;
+use EPrints;
 
 use strict;
 
@@ -181,7 +178,7 @@ foreach my $freq ( "never", "daily", "weekly", "monthly" )
 	my $sent;
 	if( $freq ne "never" )
 	{
-		$sent = EPrints::Subscription::get_last_timestamp( 
+		$sent = EPrints::DataObj::Subscription::get_last_timestamp( 
 			$session, 
 			$freq );
 	}

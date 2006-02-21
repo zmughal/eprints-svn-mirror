@@ -74,9 +74,7 @@ __GENERICPOD__
 =cut
 
 
-use EPrints::EPrint;
-use EPrints::Session;
-use EPrints::Subject;
+use EPrints;
 
 use File::Copy;
 use File::Path;
@@ -450,7 +448,7 @@ sub make_menu
 
 		if( $fields[0]->is_type( "subject" ) )
 		{
-			my $subject = EPrints::Subject->new( $session, $value );
+			my $subject = EPrints::DataObj::Subject->new( $session, $value );
 			my @ids= @{$subject->get_value( "ancestors" )};
 			foreach( $subject->children() )
 			{
@@ -538,7 +536,7 @@ sub render_subj_menu
 		foreach my $value ( @{$values} )
 		{
 			next unless( $sizes->{$value} > 0 );
-			my $subject = EPrints::Subject->new(
+			my $subject = EPrints::DataObj::Subject->new(
 						$session, $value );
 			my @ids= @{$subject->get_value( "ancestors" )};
 			foreach my $id ( @ids ) { $show{$id} = 1; }

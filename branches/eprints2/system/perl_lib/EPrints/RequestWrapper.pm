@@ -41,6 +41,7 @@ pick which to use based on EPrints::SystemSettings
 package EPrints::RequestWrapper;
 
 use strict;
+
 use Apache;
 
 

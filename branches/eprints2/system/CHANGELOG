@@ -3345,3 +3345,17 @@ PACKAGE: 2.2.99.2
     instead.
  - Added a confess if make_name is called with something other than a 
     hash. 
+
+2006-02-21 cjg
+
+ - Moved all subclasses of DataObj into DataObj/
+ - Made stub functions in EPrints::Session to handle any pass along 
+    static calls to methods so that nothing breaks.
+ - Made a new module EPrints.pm which loads all the other modules in
+    the right order.
+ - All scripts and modules now just "use EPrints" without worrying
+    about additional details.
+ - Moved EPrints::Config::abort to EPrints::abort. (old name will still
+    work). 
+ - Added several calls to abort() and changed some calls to confess() to
+    use abort() instead.

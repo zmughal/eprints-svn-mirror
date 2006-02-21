@@ -84,7 +84,7 @@ __GENERICPOD__
 
 
 
-use EPrints::Session;
+use EPrints;
 
 use strict;
 use Getopt::Long;

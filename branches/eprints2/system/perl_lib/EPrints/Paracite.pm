@@ -32,8 +32,6 @@ you can use this function.
 
 package EPrints::Paracite;
 
-use EPrints::Session;
-use EPrints::Utils;
 use strict;
 
 ######################################################################

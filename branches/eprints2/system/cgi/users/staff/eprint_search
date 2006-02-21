@@ -14,9 +14,7 @@
 #
 ######################################################################
 
-use EPrints::Session;
-use EPrints::EPrint;
-use EPrints::SearchExpression;
+use EPrints;
 
 use strict;
 

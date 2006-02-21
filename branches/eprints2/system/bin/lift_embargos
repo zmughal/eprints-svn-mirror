@@ -71,7 +71,7 @@ __GENERICPOD__
 
 =cut
 
-use EPrints::Session;
+use EPrints;
 use Getopt::Long;
 use Pod::Usage;
 use strict;

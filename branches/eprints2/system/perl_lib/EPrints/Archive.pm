@@ -72,12 +72,7 @@ database and website.
 
 package EPrints::Archive;
 
-use EPrints::Config;
-use EPrints::Utils;
-use EPrints::DataSet;
-use EPrints::Language;
-use EPrints::Workflow;
-use EPrints::Plugin;
+use EPrints;
 
 use File::Copy;
 

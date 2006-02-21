@@ -96,10 +96,7 @@ __GENERICPOD__
 =cut
 
 
-
-
-use EPrints::Database;
-use EPrints::Archive;
+use EPrints;
 
 use strict;
 use Getopt::Long;

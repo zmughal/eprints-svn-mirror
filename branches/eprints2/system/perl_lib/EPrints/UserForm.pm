@@ -51,10 +51,6 @@ and also processing the results of that form.
 
 package EPrints::UserForm;
 
-use EPrints::User;
-use EPrints::Session;
-use EPrints::Database;
-
 use strict;
 
 ######################################################################

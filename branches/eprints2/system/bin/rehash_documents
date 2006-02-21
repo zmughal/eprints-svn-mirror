@@ -76,7 +76,7 @@ __GENERICPOD__
 
 =cut
 
-use EPrints::Session;
+use EPrints;
 
 use File::Copy;
 use File::Find;
@@ -115,7 +115,7 @@ exit( 1 ) unless( defined $session );
 
 if( defined $ARGV[1] )
 {
-	my $doc = EPrints::Document->new( $session, $ARGV[1] );
+	my $doc = EPrints::DataObj::Document->new( $session, $ARGV[1] );
 	if( !defined $doc )
 	{
 		$session->get_archive->log( 

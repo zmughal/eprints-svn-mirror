@@ -73,7 +73,7 @@ sub convert_dataobj
 	my $subjectid;
 	foreach $subjectid ( @{$eprint->get_value( "subjects" )} )
 	{
-		my $subject = EPrints::Subject->new( $plugin->{session}, $subjectid );
+		my $subject = EPrints::DataObj::Subject->new( $plugin->{session}, $subjectid );
 		# avoid problems with bad subjects
 		next unless( defined $subject ); 
 		push @dcdata, [ "subject", EPrints::Utils::tree_to_utf8( $subject->render_description() ) ];

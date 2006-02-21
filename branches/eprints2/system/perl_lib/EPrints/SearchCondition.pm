@@ -60,8 +60,6 @@ condition.
 
 package EPrints::SearchCondition;
 
-use EPrints::Database;
-
 use strict;
 
 # current conditional operators:
@@ -237,10 +235,8 @@ sub get_table
 
 	if( $field->get_property( "multiple" ) )
 	{	
-		return $dataset->get_sql_sub_table_name( $self->{field} );
+		return $dataset->get_sql_sub_table_name( $field );
 	}	
-
-
 	return $dataset->get_sql_table_name();
 }
 
@@ -413,7 +409,7 @@ END
 
 		foreach my $sub_id ( @sub_ids )
 		{
-			my $s = EPrints::Subject->new( 
+			my $s = EPrints::DataObj::Subject->new( 
 					$item->get_session,
 					$sub_id );	
 			if( !defined $s )

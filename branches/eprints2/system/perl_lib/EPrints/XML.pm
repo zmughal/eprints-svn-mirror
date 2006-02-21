@@ -32,7 +32,7 @@ specific code is in one place.
 
 package EPrints::XML;
 
-use EPrints::SystemSettings;
+#use EPrints::SystemSettings;
 
 use Unicode::String qw(utf8 latin1);
 use strict;
@@ -287,7 +287,7 @@ sub dispose
 
 	if( !defined $node )
 	{
-		confess "attempt to dispose an undefined dom node";
+		EPrints::abort "attempt to dispose an undefined dom node";
 	}
 
 	if( !$gdome )
@@ -316,8 +316,7 @@ sub clone_node
 
 	if( !defined $node )
 	{
-		# ey!
-		confess;
+		EPrints::abort "no node passed to clone_node";
 	}
 
 	# XML::DOM is easy

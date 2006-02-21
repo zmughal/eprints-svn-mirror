@@ -11,8 +11,7 @@
 ######################################################################
 # cjg not supported yet.
 
-use EPrints::Session;
-use EPrints::User;
+use EPrints;
 
 use strict;
 #cjg Nice Command Options

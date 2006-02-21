@@ -12,10 +12,7 @@
 #
 ######################################################################
 
-use EPrints::Database;
-use EPrints::MetaField;
-use EPrints::Session;
-use EPrints::User;
+use EPrints;
 
 use strict;
 
@@ -88,7 +85,7 @@ sub process_form
 		return;
 	}
 
-	if( defined EPrints::User::user_with_username( $session, $candidate_username ) )
+	if( defined EPrints::DataObj::User::user_with_username( $session, $candidate_username ) )
 	{
 		$page->appendChild(
 			$session->html_phrase( "cgi/users/add_user:user_exists",
@@ -106,7 +103,7 @@ sub process_form
 	}
 
 	# Attempt to create a new account
-	my $new_user = EPrints::User::create_user( $session, $usertype );
+	my $new_user = EPrints::DataObj::User::create_user( $session, $usertype );
 	
 	unless( defined $new_user )
 	{

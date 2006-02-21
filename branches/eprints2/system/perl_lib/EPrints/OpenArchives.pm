@@ -32,10 +32,7 @@ See http://www.openarchives.org/ for more information.
 
 package EPrints::OpenArchives;
 
-use EPrints::Database;
-use EPrints::EPrint;
-use EPrints::MetaField;
-use EPrints::Session;
+use EPrints;
 
 use strict;
 
@@ -218,7 +215,7 @@ sub make_header
 				my @l;
 				if( $afield->is_type( "subject" ) )
 				{
-					my $subj = new EPrints::Subject( $session, $v );
+					my $subj = new EPrints::DataObj::Subject( $session, $v );
 					next unless( defined $subj );
 	
 					my @paths = $subj->get_paths( 

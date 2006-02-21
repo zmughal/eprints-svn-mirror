@@ -30,9 +30,7 @@ use Getopt::Long;
 use Pod::Usage;
 use strict;
 
-use EPrints::Session;
-use EPrints::Subject;
-use EPrints::ImportXML;
+use EPrints;
 
 my $xml = 0;
 my $version = 0;

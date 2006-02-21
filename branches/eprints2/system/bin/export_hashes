@@ -93,9 +93,7 @@ use Getopt::Long;
 use Pod::Usage;
 use strict;
 
-use EPrints::Session;
-use EPrints::Subject;
-use EPrints::ImportXML;
+use EPrints;
 
 my $version = 0;
 my $verbose = 0;

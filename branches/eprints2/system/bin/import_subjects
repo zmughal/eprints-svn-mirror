@@ -162,9 +162,7 @@ use Getopt::Long;
 use Pod::Usage;
 use strict;
 
-use EPrints::Session;
-use EPrints::Subject;
-use EPrints::ImportXML;
+use EPrints;
 
 my $xml = 0;
 my $version = 0;
@@ -232,7 +230,7 @@ if( $purge )
 	{
 		print "Purging current subjects...\n";
 	}
-	EPrints::Subject::remove_all( $session );
+	EPrints::DataObj::Subject::remove_all( $session );
 	if( $noise > 0 )
 	{
 		print "...done purging.\n";
@@ -271,7 +269,7 @@ sub deal
 		print "Importing: ".$subject->get_value( "subjectid" )."\n";
 	}
 
-	$subject = EPrints::Subject::create( 
+	$subject = EPrints::DataObj::Subject::create( 
 		$session, 
 		$subject->get_value( "subjectid" ),
 		$subject->get_value( "name" ),
@@ -308,7 +306,7 @@ sub from_ascii_file
 			print "Importing: ".$vals[0]."\n";
 		}
 
-		EPrints::Subject::create( 
+		EPrints::DataObj::Subject::create( 
 			$session,
 		        $vals[0],
 		        {$lang=>$vals[1]},

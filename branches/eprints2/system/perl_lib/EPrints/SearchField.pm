@@ -131,12 +131,6 @@ Match an item only if all of the words in the value match.
 
 package EPrints::SearchField;
 
-use EPrints::Session;
-use EPrints::Database;
-use EPrints::Subject;
-use EPrints::Index;
-use EPrints::SearchCondition;
-
 use strict;
 
 # Nb. match=EX searches CANNOT be used in the HTML form (currently)

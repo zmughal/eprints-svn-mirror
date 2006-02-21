@@ -173,8 +173,9 @@ sub ordervalue_basic
 {
 	my( $self , $value ) = @_;
 
-if( ref($value) !~ m/^HASH/ ) { confess(); }
-use Carp;
+	unless( ref($value) =~ m/^HASH/ ) { 
+		EPrints::abort( "EPrints::MetaField::Name::ordervalue_basic called on something other than a hash." );
+	}
 
 	my @a;
 	foreach( "family", "lineage", "given", "honourific" )

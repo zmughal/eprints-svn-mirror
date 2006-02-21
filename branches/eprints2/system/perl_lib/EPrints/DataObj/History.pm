@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::History
+# EPrints::DataObj::History
 #
 ######################################################################
 #
@@ -17,7 +17,7 @@
 
 =head1 NAME
 
-B<EPrints::History> - An element in the history of the arcvhive.
+B<EPrints::DataObj::History> - An element in the history of the arcvhive.
 
 =head1 DESCRIPTION
 
@@ -78,11 +78,11 @@ to the user.
 
 =cut
 
-package EPrints::History;
+package EPrints::DataObj::History;
 
 @ISA = ( 'EPrints::DataObj' );
 
-use EPrints::DataObj;
+use EPrints;
 
 use Unicode::String qw(utf8 latin1);
 
@@ -92,7 +92,7 @@ use strict;
 ######################################################################
 =pod
 
-=item $field_info = EPrints::History->get_system_field_info
+=item $field_info = EPrints::DataObj::History->get_system_field_info
 
 Return the metadata field configuration for this object.
 
@@ -133,7 +133,7 @@ render_single_value => \&EPrints::Extras::render_preformatted_field },
 ######################################################################
 =pod
 
-=item $history = EPrints::History->new( $session, $historyid )
+=item $history = EPrints::DataObj::History->new( $session, $historyid )
 
 Return a history object with id $historyid, from the database.
 
@@ -157,7 +157,7 @@ sub new
 ######################################################################
 =pod
 
-=item undef = EPrints::History->new_from_data( $session, $data )
+=item undef = EPrints::DataObj::History->new_from_data( $session, $data )
 
 Create a new History object from the given $data. Used to turn items
 from the database into objects.
@@ -196,7 +196,7 @@ sub commit
 	my( $self, $force ) = @_;
 
 	$self->{session}->get_archive->log(
-		"WARNING: Called commit on a EPrints::History object." );
+		"WARNING: Called commit on a EPrints::DataObj::History object." );
 	return 0;
 }
 
@@ -216,14 +216,14 @@ sub remove
 	my( $self ) = @_;
 	
 	$self->{session}->get_archive->log(
-		"WARNING: Called remove on a EPrints::History object." );
+		"WARNING: Called remove on a EPrints::DataObj::History object." );
 	return 0;
 }
 
 ######################################################################
 =pod
 
-=item EPrints::History::create( $session, $data );
+=item EPrints::DataObj::History::create( $session, $data );
 
 Create a new history object from this data. Unlike other create
 methods this one does not return the new object as it's never 
@@ -238,7 +238,7 @@ sub create
 {
 	my( $session, $data ) = @_;
 
-	return EPrints::History->create_from_data( 
+	return EPrints::DataObj::History->create_from_data( 
 		$session, 
 		$data,
 		$session->get_archive->get_dataset( "history" ) );
@@ -247,7 +247,7 @@ sub create
 ######################################################################
 =pod
 
-=item $defaults = EPrints::History->get_defaults( $session, $data )
+=item $defaults = EPrints::DataObj::History->get_defaults( $session, $data )
 
 Return default values for this object based on the starting data.
 
@@ -351,7 +351,7 @@ sub render_modify
 {
 	my( $self ) = @_;
 
-	my $eprint = EPrints::EPrint->new( $self->{session}, $self->get_value( "objectid" ) );
+	my $eprint = EPrints::DataObj::EPrint->new( $self->{session}, $self->get_value( "objectid" ) );
 
 	my $r_new = $self->get_value( "revision" );
 	my $r_old = $r_new-1;

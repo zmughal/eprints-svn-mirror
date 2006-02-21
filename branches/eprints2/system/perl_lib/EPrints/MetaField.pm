@@ -61,13 +61,6 @@ documentation and will not be duplicated here.
 
 package EPrints::MetaField;
 
-# are these all needed?
-use EPrints::Utils;
-use EPrints::Session;
-use EPrints::Subject;
-use EPrints::Database;
-use EPrints::SearchExpression;
-
 use strict;
 
 $EPrints::MetaField::VARCHAR_SIZE 	= 255;

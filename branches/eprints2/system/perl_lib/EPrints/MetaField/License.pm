@@ -24,7 +24,7 @@ A URL that also contains a multi-language label. It is rendered as a link on the
 
 =head1 SEE ALSO
 
-L<EPrints::License>
+L<EPrints::DataObj::License>
 
 =over 4
 

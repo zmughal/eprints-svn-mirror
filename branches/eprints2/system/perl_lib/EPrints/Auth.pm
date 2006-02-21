@@ -35,10 +35,10 @@ package EPrints::Auth;
 use strict;
 
 use Apache::AuthDBI;
-use EPrints::AnApache;
+use EPrints::AnApache; # exports apache constants
 
-use EPrints::Session;
-use EPrints::SystemSettings;
+#use EPrints::Session;
+#use EPrints::SystemSettings;
 
 
 ######################################################################
@@ -173,7 +173,7 @@ sub authen
 
 	my $user_ds = $session->get_archive()->get_dataset( "user" );
 
-	my $user = EPrints::User::user_with_username( $session, $user_sent );
+	my $user = EPrints::DataObj::User::user_with_username( $session, $user_sent );
 	if( !defined $user )
 	{
 		$r->note_basic_auth_failure;
@@ -330,7 +330,7 @@ sub authz
 	# REQ should not have made it this far.
 
 	my $user_sent = $r->user;
-	my $user = EPrints::User::user_with_username( $session, $user_sent );
+	my $user = EPrints::DataObj::User::user_with_username( $session, $user_sent );
 	unless( $document->can_view( $user ) )
 	{
 		$session->terminate();
@@ -397,7 +397,7 @@ sub secure_doc_from_url
 "Request to ".$r->uri." in secure documents area failed to match REGEXP." );
 		return undef;
 	}
-	my $document = EPrints::Document->new( $session, $docid );
+	my $document = EPrints::DataObj::Document->new( $session, $docid );
 	if( !defined $document ) {
 		$archive->log( 
 "Request to ".$r->uri.": document $docid not found." );
@@ -442,7 +442,7 @@ sub user_roles
 
 =item @roles = EPrints::Auth::has_privilege( $session, $privilege, [$user, [$dataobj]] )
 
-Returns a list of roles available for privilege. If L<$user|EPrints::User> is defined finds additional roles available to them. If L<$dataobj|EPrints::DataObj> is defined adds the roles that $user might have on $dataobj.
+Returns a list of roles available for privilege. If L<$user|EPrints::DataObj::User> is defined finds additional roles available to them. If L<$dataobj|EPrints::DataObj> is defined adds the roles that $user might have on $dataobj.
 
 =cut
 

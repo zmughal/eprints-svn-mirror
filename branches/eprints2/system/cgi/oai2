@@ -16,11 +16,7 @@
 
 #cjg need to recomment all subs
 
-use EPrints::Database;
-use EPrints::EPrint;
-use EPrints::OpenArchives;
-use EPrints::Session;
-use EPrints::Subject;
+use EPrints;
 
 # use FileHandle;
 # use IO::File;
@@ -388,7 +384,7 @@ sub GetRecord
 			$session,
 			$args->{identifier} );
 
-	my $eprint = new EPrints::EPrint(
+	my $eprint = new EPrints::DataObj::EPrint(
 		$session,
 		$id,
 		$session->get_archive()->get_dataset( "archive" ) );
@@ -396,7 +392,7 @@ sub GetRecord
 	if( !defined $eprint )
 	{
 		# try deleted records
-		$eprint = new EPrints::EPrint(
+		$eprint = new EPrints::DataObj::EPrint(
 			$session,
 			$id,
 			$session->get_archive()->get_dataset( "deletion" ) );
@@ -764,7 +760,7 @@ sub ListMetadataFormats
 
 	if( defined $args->{identifier} )
 	{
-		my $eprint = new EPrints::EPrint(
+		my $eprint = new EPrints::DataObj::EPrint(
 			$session,
 			EPrints::OpenArchives::from_oai_identifier(
 				$session,
@@ -870,7 +866,7 @@ sub ListSets
 			my $field = EPrints::Utils::field_from_config_string( $ds, $fieldname );
 			if( $field->is_type( "subject" ) )
 			{
-				my $topsubj = EPrints::Subject->new(
+				my $topsubj = EPrints::DataObj::Subject->new(
 					$session,
 					$field->get_property( "top" ) );
 				my $i;

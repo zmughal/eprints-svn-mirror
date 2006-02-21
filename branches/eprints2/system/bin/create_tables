@@ -72,10 +72,7 @@ __GENERICPOD__
 =cut
 
 
-
-use EPrints::Database;
-use EPrints::Session;
-use EPrints::Subject;
+use EPrints;
 
 use strict;
 use Getopt::Long;

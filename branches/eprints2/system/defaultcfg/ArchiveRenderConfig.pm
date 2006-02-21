@@ -48,7 +48,7 @@ of this config for single language archives.
 This subroutine takes an eprint object and renders the XHTML view
 of this eprint for public viewing.
 
-Takes two arguments: the L<$eprint|EPrints::EPrint> to render and the current L<$session|EPrints::Session>.
+Takes two arguments: the L<$eprint|EPrints::DataObj::EPrint> to render and the current L<$session|EPrints::Session>.
 
 Returns three XHTML DOM fragments (see L<EPrints::XML>): C<$page>, C<$title>, (and optionally) C<$links>.
 
@@ -218,7 +218,7 @@ sub eprint_render
 	# Commentary
 	if( $eprint->is_set( "commentary" ) )
 	{
-		my $target = EPrints::EPrint->new( 
+		my $target = EPrints::DataObj::EPrint->new( 
 			$session,
 			$eprint->get_value( "commentary" ),
 			$session->get_archive()->get_dataset( "archive" ) );
@@ -284,7 +284,7 @@ sub eprint_render
 		$session->html_phrase( "page:id_code" ),
 		$eprint->render_value( "eprintid" ) ) );
 
-	my $user = new EPrints::User( 
+	my $user = new EPrints::DataObj::User( 
 			$eprint->{session},
  			$eprint->get_value( "userid" ) );
 	my $usersname;
@@ -372,7 +372,7 @@ sub eprint_render
 This subroutine takes a user object and renders the XHTML view
 of this user for public viewing.
 
-Takes the L<$user|EPrints::User> to render and the current L<$session|EPrints::Session>.
+Takes the L<$user|EPrints::DataObj::User> to render and the current L<$session|EPrints::Session>.
 
 Returns an $xhtmlfragment (see L<EPrints::XML>).
 

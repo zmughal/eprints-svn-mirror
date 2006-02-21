@@ -106,7 +106,7 @@ __GENERICPOD__
 
 =cut
 
-use EPrints::Session;
+use EPrints;
 
 use File::Copy;
 use File::Find;

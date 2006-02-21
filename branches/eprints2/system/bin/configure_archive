@@ -76,9 +76,7 @@ __GENERICPOD__
 #cjg Does not use noise levels
 
 
-use EPrints::Config;
-use EPrints::Database;
-use EPrints::Utils;
+use EPrints;
 
 use Sys::Hostname;
 use DBI;

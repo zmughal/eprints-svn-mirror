@@ -37,7 +37,7 @@ The "session" object also knows about the current apache connection,
 if there is one, including the CGI parameters. 
 
 If the connection requires a username and password then it can also 
-give access to the EPrints::User object representing the user who is
+give access to the EPrints::DataObj::User object representing the user who is
 causing this request. 
 
 The session object also provides many methods for creating XHTML 
@@ -88,22 +88,9 @@ results which can be returned via the web interface.
 
 package EPrints::Session;
 
-use EPrints::Database;
-use EPrints::Language;
-use EPrints::Archive;
-use EPrints::XML;
-
-use EPrints::DataObj;
-use EPrints::User;
-use EPrints::EPrint;
-use EPrints::Subject;
-use EPrints::License;
-use EPrints::Document;
-use EPrints::History;
-use EPrints::Plugin;
+use EPrints;
 
 use Unicode::String qw(utf8 latin1);
-use EPrints::AnApache;
 
 #use URI::Escape;
 use CGI qw(-compile);
@@ -1529,13 +1516,13 @@ sub render_subjects
 #cjg NO SUBJECT_LIST = ALL SUBJECTS under baseid!
 	if( !defined $baseid )
 	{
-		$baseid = $EPrints::Subject::root_subject;
+		$baseid = $EPrints::DataObj::Subject::root_subject;
 	}
 
 	my %subs = ();
 	foreach( @{$subject_list}, $baseid )
 	{
-		$subs{$_} = EPrints::Subject->new( $self, $_ );
+		$subs{$_} = EPrints::DataObj::Subject->new( $self, $_ );
 	}
 
 	return $self->_render_subjects_aux( \%subs, $baseid, $currentid, $linkmode, $sizes );
@@ -2465,7 +2452,7 @@ sub auth_check
 
 =item $user = $session->current_user
 
-Return the current EPrints::User for this session.
+Return the current EPrints::DataObj::User for this session.
 
 Return undef if there isn't one.
 
@@ -2493,7 +2480,7 @@ sub current_user
 		if( defined $username && $username ne "" )
 		{
 			$self->{currentuser} = 
-				EPrints::User::user_with_username( $self, $username );
+				EPrints::DataObj::User::user_with_username( $self, $username );
 		}
 	}
 
@@ -2970,4 +2957,72 @@ sub DESTROY
 =back
 
 =cut
+
+######################################################################
+
+package EPrints::Document;
+
+our @ISA = qw/ EPrints::DataObj::Document /;
+
+$INC{"EPrints/Document.pm"} = 1;
+
+sub create { return EPrints::DataObj::Document::create( @_ ); }
+
+sub docid_to_path { return EPrints::DataObj::Document::docid_to_path( @_ ); }
+
+######################################################################
+
+package EPrints::EPrint;
+
+our @ISA = qw/ EPrints::DataObj::EPrint /;
+
+$INC{"EPrints/EPrint.pm"} = 1;
+
+sub create { return EPrints::DataObj::EPrint::create( @_ ); }
+sub eprintid_to_path { return EPrints::DataObj::EPrint::eprintid_to_path( @_ ); }
+
+######################################################################
+
+package EPrints::Subject;
+
+our @ISA = qw/ EPrints::DataObj::Subject /;
+
+$INC{"EPrints/Subject.pm"} = 1;
+
+$EPrints::Subject::root_subject = "ROOT";
+sub remove_all { return EPrints::DataObj::Subject::remove_all( @_ ); }
+sub create { return EPrints::DataObj::Subject::create( @_ ); }
+sub subject_label { return EPrints::DataObj::Subject::subject_label( @_ ); }
+sub get_all { return EPrints::DataObj::Subject::get_all( @_ ); }
+sub valid_id { return EPrints::DataObj::Subject::valid_id( @_ ); }
+
+######################################################################
+
+package EPrints::Subscription;
+
+our @ISA = qw/ EPrints::DataObj::Subscription /;
+
+$INC{"EPrints/Subscription.pm"} = 1;
+
+sub process_set { return EPrints::DataObj::Subscription::process_set( @_ ); }
+sub get_last_timestamp { return EPrints::DataObj::Subscription::get_last_timestamp( @_ ); }
+
+######################################################################
+
+package EPrints::User;
+
+our @ISA = qw/ EPrints::DataObj::User /;
+
+$INC{"EPrints/User.pm"} = 1;
+
+sub create { return EPrints::DataObj::User::create( @_ ); }
+sub user_with_email { return EPrints::DataObj::User::user_with_email( @_ ); }
+sub user_with_username { return EPrints::DataObj::User::user_with_username( @_ ); }
+sub process_editor_alerts { return EPrints::DataObj::User::process_editor_alerts( @_ ); }
+sub create_user { return EPrints::DataObj::User::create( @_ ); }
+
+######################################################################
+
+1;
+
 

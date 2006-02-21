@@ -12,11 +12,7 @@
 #
 ######################################################################
 
-use EPrints::Database;
-use EPrints::EPrint;
-use EPrints::MetaField;
-use EPrints::Session;
-use EPrints::User;
+use EPrints;
 
 use strict;
 
@@ -166,7 +162,7 @@ sub process_form
 
 		my $r_req = $session->get_archive()->get_conf( "allow_user_removal_request" ); 
 		my $checkout = $session->get_archive()->get_conf( "allow_user_checkout_eprint" ); 
-		my $eprint = EPrints::EPrint->new( $session, $eprintid, $ds );
+		my $eprint = EPrints::DataObj::EPrint->new( $session, $eprintid, $ds );
 		if( !defined $eprint )
 		{
 			$session->render_error(
@@ -296,7 +292,7 @@ sub handle_removal_request
 	# Get the EPrint we're dealing with
 	my $ds = $session->get_archive()->get_dataset( "archive" );	
 
-	my $eprint = EPrints::EPrint->new( 
+	my $eprint = EPrints::DataObj::EPrint->new( 
 		$session, 
 		$session->param( "eprintid" ),
 		$ds );

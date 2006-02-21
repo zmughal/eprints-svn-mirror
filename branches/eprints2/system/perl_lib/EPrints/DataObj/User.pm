@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::User
+# EPrints::DataObj::User
 #
 ######################################################################
 #
@@ -17,14 +17,14 @@
 
 =head1 NAME
 
-B<EPrints::User> - Class representing a single user.
+B<EPrints::DataObj::User> - Class representing a single user.
 
 =head1 DESCRIPTION
 
 This class represents a single eprint user record and the metadata 
 associated with it. 
 
-EPrints::User is a subclass of EPrints::DataObj with the following
+EPrints::DataObj::User is a subclass of EPrints::DataObj with the following
 metadata fields (plus those defined in ArchiveMetadataFieldsConfig:
 
 =head1 SYSTEM METADATA
@@ -113,16 +113,12 @@ even if there are no items matching the scope.
 
 =cut
 
-package EPrints::User;
+package EPrints::DataObj::User;
 
 @ISA = ( 'EPrints::DataObj' );
 
-use EPrints::DataObj;
-
-use EPrints::Database;
-use EPrints::MetaField;
-use EPrints::Utils;
-use EPrints::Subscription;
+use EPrints;
+use EPrints::SearchExpression;
 
 use strict;
 
@@ -130,7 +126,7 @@ use strict;
 ######################################################################
 =pod
 
-=item $field_info = EPrints::User->get_system_field_info
+=item $field_info = EPrints::DataObj::User->get_system_field_info
 
 Return an array describing the system metadata of the this 
 dataset.
@@ -147,6 +143,9 @@ sub get_system_field_info
 		{ name=>"userid", type=>"int", required=>1 },
 
 		{ name=>"rev_number", type=>"int", required=>1, can_clone=>0 },
+
+		{ name=>"subscriptions", type=>"subobject", datasetid=>'subscription',
+			multiple=>1 },
 
 		{ name=>"username", type=>"text", required=>1 },
 
@@ -193,10 +192,10 @@ sub get_system_field_info
 ######################################################################
 =pod
 
-=item $user = EPrints::User->new( $session, $userid )
+=item $user = EPrints::DataObj::User->new( $session, $userid )
 
 Load the user with the ID of $userid from the database and return
-it as an EPrints::User object.
+it as an EPrints::DataObj::User object.
 
 =cut
 ######################################################################
@@ -214,9 +213,9 @@ sub new
 ######################################################################
 =pod
 
-=item $user = EPrints::User->new_from_data( $session, $data )
+=item $user = EPrints::DataObj::User->new_from_data( $session, $data )
 
-Construct a new EPrints::User object based on the $data hash 
+Construct a new EPrints::DataObj::User object based on the $data hash 
 reference of metadata.
 
 Used to create an object from the data retrieved from the database.
@@ -241,7 +240,7 @@ sub new_from_data
 ######################################################################
 =pod
 
-=item $user = EPrints::User::create( $session, $user_type )
+=item $user = EPrints::DataObj::User::create( $session, $user_type )
 
 Create a new user in the database with the specified user type.
 
@@ -253,7 +252,7 @@ sub create
 	my( $session, $user_type ) = @_;
 
 
-	return EPrints::User->create_from_data( 
+	return EPrints::DataObj::User->create_from_data( 
 		$session, 
 		{ usertype=>$user_type },
 		$session->get_archive->get_dataset( "user" ) );
@@ -262,7 +261,7 @@ sub create
 ######################################################################
 =pod
 
-=item $defaults = EPrints::User->get_defaults( $session, $data )
+=item $defaults = EPrints::DataObj::User->get_defaults( $session, $data )
 
 Return default values for this object based on the starting data.
 
@@ -297,7 +296,7 @@ sub get_defaults
 ######################################################################
 =pod
 
-=item $user = EPrints::User::user_with_email( $session, $email )
+=item $user = EPrints::DataObj::User::user_with_email( $session, $email )
 
 Return the EPrints::user with the specified $email, or undef if they
 are not found.
@@ -330,7 +329,7 @@ sub user_with_email
 ######################################################################
 =pod
 
-=item $user = EPrints::User::user_with_username( $session, $username )
+=item $user = EPrints::DataObj::User::user_with_username( $session, $username )
 
 Return the EPrints::user with the specified $username, or undef if 
 they are not found.
@@ -725,7 +724,7 @@ sub mail
 
 ######################################################################
 # 
-# $userid = EPrints::User::_create_userid( $session )
+# $userid = EPrints::DataObj::User::_create_userid( $session )
 #
 # Get the next unused userid value.
 #
@@ -976,7 +975,7 @@ sub send_out_editor_alert
 ######################################################################
 =pod
 
-=item EPrints::User::process_editor_alerts( $session, $frequency );
+=item EPrints::DataObj::User::process_editor_alerts( $session, $frequency );
 
 Static method.
 
@@ -994,7 +993,7 @@ sub process_editor_alerts
 		$frequency ne "weekly" && 
 		$frequency ne "monthly" )
 	{
-		$session->get_archive->log( "EPrints::User::process_editor_alerts called with unknown frequency: ".$frequency );
+		$session->get_archive->log( "EPrints::DataObj::User::process_editor_alerts called with unknown frequency: ".$frequency );
 		return;
 	}
 
@@ -1101,26 +1100,6 @@ sub can_edit
 
 
 
-
-
-
-
-######################################################################
-=pod
-
-=item $user = EPrints::User::create_user( $session, $user_type )
-
-DEPRECATED. Alias for create.
-
-=cut
-######################################################################
-
-sub create_user
-{
-	my( $session, $user_type ) = @_;
-
-	return create( $session, $user_type );
-}
 
 1;
 

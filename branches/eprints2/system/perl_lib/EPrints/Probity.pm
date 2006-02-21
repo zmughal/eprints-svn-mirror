@@ -33,14 +33,12 @@ See bin/export_hashes for more information.
 =cut
 
 package EPrints::Probity;
+
 use strict;
+
 use File::Path;
 use URI;
-use Carp;
 use Digest::MD5;
-
-use EPrints::XML;
-use EPrints::Utils;
 
 
 ######################################################################

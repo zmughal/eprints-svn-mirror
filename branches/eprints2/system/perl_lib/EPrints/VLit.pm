@@ -34,12 +34,12 @@ configuration if you object to it for some reason.
 package EPrints::VLit;
 
 use CGI;
-use EPrints::AnApache;
 use Digest::MD5;
 use FileHandle;
 
+use EPrints::AnApache; # exports apache constants
+
 use strict;
-use EPrints::XML;
 
 my $TMPDIR = "/tmp/partial";
 

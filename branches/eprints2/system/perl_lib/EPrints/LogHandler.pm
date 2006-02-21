@@ -27,8 +27,8 @@ use warnings;
 
 use Fcntl qw(:flock);
 
-use EPrints::Session;
-use EPrints::AnApache;
+#use EPrints::Session;
+#use EPrints::AnApache;
 
 sub handler
 {

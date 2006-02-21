@@ -12,9 +12,7 @@
 #
 ######################################################################
 
-use EPrints::Session;
-use EPrints::UserPage;
-use EPrints::AnApache;
+use EPrints;
 use strict;
 my $session = new EPrints::Session;
 

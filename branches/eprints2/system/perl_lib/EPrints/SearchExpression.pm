@@ -45,14 +45,6 @@ web page.
 
 package EPrints::SearchExpression;
 
-use EPrints::SearchField;
-use EPrints::SearchCondition;
-use EPrints::List;
-use EPrints::Session;
-use EPrints::EPrint;
-use EPrints::Database;
-use EPrints::Language;
-
 use URI::Escape;
 use strict;
 

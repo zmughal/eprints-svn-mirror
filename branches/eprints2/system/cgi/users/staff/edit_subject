@@ -14,8 +14,7 @@
 
 use strict;
 
-use EPrints::Session;
-use EPrints::Subject;
+use EPrints;
 
 my $session = EPrints::Session->new();
 exit( 0 ) unless( defined $session );
@@ -41,7 +40,7 @@ else
 	$session->build_page( 
 		$session->html_phrase( "cgi/users/edit_subject:intro_title" ),
 		$session->html_phrase( "cgi/users/edit_subject:intro_blurb",
-			continuelink=>$session->render_link( "edit_subject?subjectid=".$EPrints::Subject::root_subject ) ),
+			continuelink=>$session->render_link( "edit_subject?subjectid=".$EPrints::DataObj::Subject::root_subject ) ),
 		"edit_subject_intro" ); 
 	$session->send_page();
 }
@@ -59,7 +58,7 @@ sub mkpage_editsubject
 	my $subject_ds = $session->get_archive()->get_dataset( "subject" );
 	my $archive_ds = $session->get_archive()->get_dataset( "archive" );
 	my $buffer_ds = $session->get_archive()->get_dataset( "buffer" );
-	my $subject = EPrints::Subject->new( $session, $subid );
+	my $subject = EPrints::DataObj::Subject->new( $session, $subid );
 	if( !defined $subject )
 	{
 		$session->render_error( 
@@ -89,7 +88,7 @@ sub mkpage_editsubject
 		if( $action =~ m/^unlink_(.*)$/ )
 		{
 			my $victimid = $1;
-			my $victim = EPrints::Subject->new( $session, $victimid );
+			my $victim = EPrints::DataObj::Subject->new( $session, $victimid );
 				foreach( @{$victim->get_value( "parents" )} )
 				{
 				}
@@ -117,7 +116,7 @@ sub mkpage_editsubject
 			my $newid = $session->param( "newsubjectid" );
 			if( EPrints::Utils::is_set( $newid ) )
 			{
-				my $newchild = EPrints::Subject->new( $session, $newid );
+				my $newchild = EPrints::DataObj::Subject->new( $session, $newid );
 				if( defined $newchild )
 				{
 					if( grep( /^$newid$/, @{$subject->get_value( "ancestors" )} ) )
@@ -134,7 +133,7 @@ sub mkpage_editsubject
 				}
 				else
 				{
-					my $newsubject = EPrints::Subject::create( 
+					my $newsubject = EPrints::DataObj::Subject::create( 
 							$session, 
 							$newid, 
 							'', 
@@ -187,7 +186,7 @@ sub mkpage_editsubject
 	$page->appendChild( $session->html_phrase( "cgi/users/edit_subject:location" ) );
 	$page->appendChild( $session->render_subjects( \@ids, undef, $subid, 1 ) );
 
-	if( $subid ne $EPrints::Subject::root_subject )
+	if( $subid ne $EPrints::DataObj::Subject::root_subject )
 	{
 		my $div = $session->make_element( 	
 			"div", 

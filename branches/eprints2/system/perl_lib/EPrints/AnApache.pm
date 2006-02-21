@@ -39,7 +39,6 @@ BEGIN
 	@EXPORT  = qw(OK AUTH_REQUIRED FORBIDDEN DECLINED SERVER_ERROR NOT_FOUND DONE);
 }
 
-use EPrints::SystemSettings;
 use strict;
 
 ######################################################################

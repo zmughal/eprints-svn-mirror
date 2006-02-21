@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::EPrint
+# EPrints::DataObj::EPrint
 #
 ######################################################################
 #
@@ -16,7 +16,7 @@
 
 =head1 NAME
 
-B<EPrints::EPrint> - Class representing an actual EPrint
+B<EPrints::DataObj::EPrint> - Class representing an actual EPrint
 
 =head1 DESCRIPTION
 
@@ -24,7 +24,7 @@ This class represents a single eprint record and the metadata
 associated with it. This is associated with one of more 
 EPrint::Document objects.
 
-EPrints::EPrint is a subclass of EPrints::DataObj with the following
+EPrints::DataObj::EPrint is a subclass of EPrints::DataObj with the following
 metadata fields (plus those defined in ArchiveMetadataFieldsConfig:
 
 =head1 SYSTEM METADATA
@@ -85,13 +85,9 @@ been an int and may be changed in a later upgrade.
 #
 ######################################################################
 
-package EPrints::EPrint;
-@ISA = ( 'EPrints::DataObj' );
-use EPrints::DataObj;
+package EPrints::DataObj::EPrint;
 
-use EPrints::Database;
-use EPrints::Document;
-use Carp;
+@ISA = ( 'EPrints::DataObj' );
 
 use File::Path;
 use strict;
@@ -99,7 +95,7 @@ use strict;
 ######################################################################
 =pod
 
-=item $metadata = EPrints::EPrint->get_system_field_info
+=item $metadata = EPrints::DataObj::EPrint->get_system_field_info
 
 Return an array describing the system metadata of the EPrint dataset.
 
@@ -158,7 +154,7 @@ sub get_system_field_info
 ######################################################################
 =pod
 
-=item $eprint = EPrints::EPrint->new( $session, $id, [$dataset] )
+=item $eprint = EPrints::DataObj::EPrint->new( $session, $id, [$dataset] )
 
 Return the eprint with the given id, or undef if it does not exist.
 
@@ -172,8 +168,8 @@ sub new
 {
 	my( $class, $session, $id, $dataset ) = @_;
 
-	confess "session not defined" unless defined $session;
-	confess "id not defined" unless defined $id;
+	EPrints::abort "session not defined in EPrint->new" unless defined $session;
+	EPrints::abort "id not defined in EPrint->new" unless defined $id;
 
 	if( defined $dataset && $dataset->id ne "eprint" )
 	{
@@ -199,9 +195,9 @@ sub new
 ######################################################################
 =pod
 
-=item $eprint = EPrints::EPrint->new_from_data( $session, $data, $dataset )
+=item $eprint = EPrints::DataObj::EPrint->new_from_data( $session, $data, $dataset )
 
-Construct a new EPrints::EPrint object based on the $data hash 
+Construct a new EPrints::DataObj::EPrint object based on the $data hash 
 reference of metadata.
 
 =cut
@@ -232,7 +228,7 @@ sub new_from_data
 ######################################################################
 =pod
 
-=item $eprint = EPrints::EPrint::create( $session, $dataset, $data )
+=item $eprint = EPrints::DataObj::EPrint::create( $session, $dataset, $data )
 
 Create a new EPrint entry in the given dataset.
 
@@ -287,7 +283,7 @@ sub create_from_data
 			my %docdata = %{$docdata_orig};
 			$docdata{eprintid} = $obj->get_id;
 			my $docds = $session->get_archive->get_dataset( "document" );
-			EPrints::Document->create_from_data( $session,\%docdata,$docds );
+			EPrints::DataObj::Document->create_from_data( $session,\%docdata,$docds );
 		}
 	}
 
@@ -297,7 +293,7 @@ sub create_from_data
 ######################################################################
 =pod
 
-=item $defaults = EPrints::EPrint->get_defaults( $session, $data )
+=item $defaults = EPrints::DataObj::EPrint->get_defaults( $session, $data )
 
 Return default values for this object based on the starting data.
 
@@ -324,7 +320,7 @@ sub get_defaults
 
 ######################################################################
 # 
-# $eprintid = EPrints::EPrint::_create_id( $session )
+# $eprintid = EPrints::DataObj::EPrint::_create_id( $session )
 #
 #  Create a new EPrint ID code. (Unique across all eprint datasets)
 #
@@ -341,7 +337,7 @@ sub _create_id
 
 ######################################################################
 # 
-# $directory =  EPrints::EPrint::_create_directory( $session, $eprintid )
+# $directory =  EPrints::DataObj::EPrint::_create_directory( $session, $eprintid )
 #
 #  Create a directory on the local filesystem for the new document
 #  with the given ID. undef is returned if it couldn't be created
@@ -489,7 +485,7 @@ sub clone
 	}
 
 	# Create the new EPrint record
-	my $new_eprint = EPrints::EPrint::create(
+	my $new_eprint = EPrints::DataObj::EPrint::create(
 		$self->{session},
 		$dest_dataset,
 		$data );
@@ -583,7 +579,7 @@ sub _transfer
 	my $d1 = $old_dataset->id;
 	my $d2 = $self->{dataset}->id;
 	my $code = "MOVE_"."\U$d1"."_TO_"."\U$d2";
-	EPrints::History::create( 
+	EPrints::DataObj::History::create( 
 		$self->{session},
 		{
 			userid=>$userid,
@@ -655,7 +651,7 @@ sub log_mail_owner
 	my $userid = undef;
 	$userid = $user->get_id if defined $user;
 
-	EPrints::History::create( 
+	EPrints::DataObj::History::create( 
 		$self->{session},
 		{
 			userid=>$userid,
@@ -770,7 +766,7 @@ sub commit
 	my $userid = undef;
 	$userid = $user->get_id if defined $user;
 
-	EPrints::History::create( 
+	EPrints::DataObj::History::create( 
 		$self->{session},
 		{
 			userid=>$userid,
@@ -914,7 +910,7 @@ sub validate_linking
 		my $archive_ds = $self->{session}->get_archive()->get_dataset( 
 			"archive" );
 
-		my $test_eprint = new EPrints::EPrint( 
+		my $test_eprint = new EPrints::DataObj::EPrint( 
 			$self->{session}, 
 			$self->get_value( $field_id ),
 			$archive_ds );
@@ -1653,7 +1649,7 @@ sub generate_static
 	my @docs = $self->get_all_documents();
 	foreach my $doc ( @docs )
 	{
-		my $linkdir = EPrints::Document::_secure_symlink_path( $self );
+		my $linkdir = EPrints::DataObj::Document::_secure_symlink_path( $self );
 		$doc->create_symlink( $self, $linkdir );
 	}
 }
@@ -1729,7 +1725,7 @@ sub render
 		$dom = $self->{session}->make_doc_fragment();
 		$dom->appendChild( $self->{session}->html_phrase( 
 			"lib/eprint:eprint_gone" ) );
-		my $replacement = new EPrints::EPrint(
+		my $replacement = new EPrints::DataObj::EPrint(
 			$self->{session},
 			$self->get_value( "replacedby" ),
 			$self->{session}->get_archive()->get_dataset( 
@@ -1851,7 +1847,7 @@ sub get_user
 ######################################################################
 =pod
 
-=item $path = EPrints::EPrint::eprintid_to_path( $eprintid )
+=item $path = EPrints::DataObj::EPrint::eprintid_to_path( $eprintid )
 
 Return this eprints id converted into directories. Thousands of 
 files in one directory cause problems. For example, the eprint with the 
@@ -1981,7 +1977,7 @@ sub first_in_thread
 			last;
 		}
 		$below->{$first->get_id} = 1;
-		my $prev = EPrints::EPrint->new( 
+		my $prev = EPrints::DataObj::EPrint->new( 
 				$self->{session},
 				$first->get_value( $field->get_name() ),
 				$ds );

@@ -34,10 +34,6 @@ use Unicode::String qw(utf8 latin1 utf16);
 use File::Path;
 use Term::ReadKey;
 use URI;
-use Carp;
-
-use EPrints::SystemSettings;
-use EPrints::XML;
 
 use strict;
 
@@ -263,7 +259,7 @@ sub make_name_string
 {
 	my( $name, $familylast ) = @_;
 
-	confess unless ref($name) eq "HASH";
+	EPrints::abort "make_name_string expected hash reference" unless ref($name) eq "HASH";
 
 	my $firstbit = "";
 	if( defined $name->{honourific} && $name->{honourific} ne "" )

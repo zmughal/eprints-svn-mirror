@@ -81,7 +81,7 @@ sub subject_browser_input
 		$rexp = $field->get_name."_view_";
 		if( $button =~ m/^$rexp(.*)$/ )
 		{
-			$subject = EPrints::Subject->new( $session, $1 );
+			$subject = EPrints::DataObj::Subject->new( $session, $1 );
 			if( !defined $subject ) 
 			{ 
 				$subject = $topsubj; 
@@ -106,7 +106,7 @@ sub subject_browser_input
 
 	foreach my $s_id ( sort @{$values} )
 	{
-		my $s = EPrints::Subject->new( $session, $s_id );
+		my $s = EPrints::DataObj::Subject->new( $session, $s_id );
 		next if( !defined $s );
 
 		$html->appendChild( 

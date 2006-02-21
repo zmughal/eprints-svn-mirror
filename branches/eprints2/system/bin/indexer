@@ -106,10 +106,7 @@ __GENERICPOD__
 
 =cut
 
-use EPrints::Session;
-use EPrints::EPrint;
-use EPrints::Config;
-use EPrints::Index;
+use EPrints;
 
 use strict;
 use Getopt::Long;

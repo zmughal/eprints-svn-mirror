@@ -76,11 +76,7 @@ undocumented
 
 package EPrints::Workflow::Processor;
 
-use EPrints::EPrint;
-use EPrints::Session;
-use EPrints::Document;
-use EPrints::Workflow;
-use EPrints::Workflow::Stage;
+use EPrints;
 
 use Unicode::String qw(utf8 latin1);
 use strict;
@@ -167,7 +163,7 @@ sub render
 
 	$self->{eprintid} = 100;
 
-	$self->{eprint} = EPrints::EPrint->new(
+	$self->{eprint} = EPrints::DataObj::EPrint->new(
 	$self->{session},
 	$self->{eprintid},
 	$self->{dataset} );

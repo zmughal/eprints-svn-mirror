@@ -12,8 +12,7 @@
 #
 ######################################################################
 
-use EPrints::Session;
-use EPrints::DataSet;
+use EPrints;
 
 use strict;
 my $session = new EPrints::Session;
@@ -44,7 +43,7 @@ if( !defined $afterid ) {
 	exit;
 }
 
-my $eprint = EPrints::EPrint->new( 
+my $eprint = EPrints::DataObj::EPrint->new( 
 			$session, 
 			$id, 
 			$session->get_archive->get_dataset( "archive" ) );

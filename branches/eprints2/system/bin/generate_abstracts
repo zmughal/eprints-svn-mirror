@@ -71,8 +71,7 @@ __GENERICPOD__
 =cut
 
 
-use EPrints::Database;
-use EPrints::Session;
+use EPrints;
 
 use strict;
 use Getopt::Long;
@@ -109,7 +108,7 @@ exit( 1 ) unless( defined $session );
 
 if( defined $ARGV[1] )
 {
-	my $eprint = EPrints::EPrint->new( $session, $ARGV[1] );
+	my $eprint = EPrints::DataObj::EPrint->new( $session, $ARGV[1] );
 	if( !defined $eprint )
 	{
 		$session->get_archive->log( 

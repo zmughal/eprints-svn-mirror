@@ -15,8 +15,7 @@
 #
 ######################################################################
 
-use EPrints::EPrint;
-use EPrints::Session;
+use EPrints;
 
 use strict;
 
@@ -45,7 +44,7 @@ sub process
 
 	my $eprintid = $session->param( "eprintid" );
 	
-	my $eprint = new EPrints::EPrint( $session, $eprintid );
+	my $eprint = new EPrints::DataObj::EPrint( $session, $eprintid );
 
 	if( !defined $eprint )
 	{
@@ -220,7 +219,7 @@ sub process
 		# anyway.
 
 		# get it from the DB again - it's probably changed.
-		my $eprint = new EPrints::EPrint( 
+		my $eprint = new EPrints::DataObj::EPrint( 
 			$session, 
 			$eprintid,
 			$dataset );

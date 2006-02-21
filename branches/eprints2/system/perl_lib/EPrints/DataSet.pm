@@ -31,7 +31,7 @@ subscription, deletion, eprint, language, arclanguage, security,
 license.
 
 A normal dataset (eg. "user") has a package associated with it 
-(eg. EPrints::User) which must be a subclass of EPrints::DataObj 
+(eg. EPrints::DataObj::User) which must be a subclass of EPrints::DataObj 
 and a number of SQL tables which are prefixed with the dataset name.
 Most datasets also have a set of associated EPrints::MetaField's which
 may be optional or compulsary depending on the type eg. books have editors
@@ -156,9 +156,8 @@ $ds = $archive->get_dataset( "inbox" );
 
 package EPrints::DataSet;
 
-use EPrints::Document;
+use EPrints;
 
-use Carp;
 use strict;
 
 my $INFO = {
@@ -170,60 +169,60 @@ my $INFO = {
 	},
 	user => {
 		sqlname => "user",
-		class => "EPrints::User",
+		class => "EPrints::DataObj::User",
 		import => 1,
 	},
 	archive => {
 		sqlname => "archive",
-		class => "EPrints::EPrint",
+		class => "EPrints::DataObj::EPrint",
 		confid => "eprint",
 		import => 1,
 	},
 	buffer => {
 		sqlname => "buffer",
-		class => "EPrints::EPrint",
+		class => "EPrints::DataObj::EPrint",
 		confid => "eprint",
 		import => 1,
 	},
 	inbox => {
 		sqlname => "inbox",
-		class => "EPrints::EPrint",
+		class => "EPrints::DataObj::EPrint",
 		confid => "eprint",
 		import => 1,
 	},
 	document => {
 		sqlname => "document",
-		class => "EPrints::Document",
+		class => "EPrints::DataObj::Document",
 		import => 1,
 	},
 	subject => {
 		sqlname => "subject",
-		class => "EPrints::Subject",
+		class => "EPrints::DataObj::Subject",
 		import => 1,
 	},
 	license => {
 		sqlname => "license",
-		class => "EPrints::License",
+		class => "EPrints::DataObj::License",
 		import => 1,
 	},
 	history => {
 		sqlname => "history",
-		class => "EPrints::History",
+		class => "EPrints::DataObj::History",
 		import => 1,
 	},
 	subscription => {
 		sqlname => "subscription",
-		class => "EPrints::Subscription",
+		class => "EPrints::DataObj::Subscription",
 		import => 1,
 	},
 	deletion => {
 		sqlname => "deletion",
-		class => "EPrints::EPrint",
+		class => "EPrints::DataObj::EPrint",
 		confid => "eprint",
 		import => 1,
 	},
 	eprint => {
-		class => "EPrints::EPrint"
+		class => "EPrints::DataObj::EPrint"
 	},
 	# language and security are here so they can be used in
 	# "datatype" fields.
@@ -253,7 +252,7 @@ sub new_stub
 	if( !defined $INFO->{$id} )
 	{
 		# no archive info, so can't log.
-		confess( "Unknown dataset name: $id" );
+		EPrints::abort( "Unknown dataset name: $id" );
 	}
 	my $self = {};
 	bless $self, $class;

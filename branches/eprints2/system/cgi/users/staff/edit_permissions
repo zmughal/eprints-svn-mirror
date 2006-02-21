@@ -14,7 +14,7 @@
 
 use strict;
 
-use EPrints::Session;
+use EPrints;
 
 my $session = EPrints::Session->new();
 exit( 0 ) unless( defined $session );

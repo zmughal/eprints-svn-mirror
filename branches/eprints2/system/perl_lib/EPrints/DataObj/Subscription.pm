@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::Subscription
+# EPrints::DataObj::Subscription
 #
 ######################################################################
 #
@@ -16,7 +16,7 @@
 
 =head1 NAME
 
-B<EPrints::Subscription> - Single saved search.
+B<EPrints::DataObj::Subscription> - Single saved search.
 
 =head1 DESCRIPTION
 
@@ -37,12 +37,11 @@ multiple subscriptions.
 #
 ######################################################################
 
-package EPrints::Subscription;
-@ISA = ( 'EPrints::DataObj' );
-use EPrints::DataObj;
+package EPrints::DataObj::Subscription;
 
-use EPrints::Database;
-use EPrints::Utils;
+@ISA = ( 'EPrints::DataObj' );
+
+use EPrints;
 
 use strict;
 
@@ -50,7 +49,7 @@ use strict;
 ######################################################################
 =pod
 
-=item $subscription = EPrints::Subscription->get_system_field_info
+=item $subscription = EPrints::DataObj::Subscription->get_system_field_info
 
 Return an array describing the system metadata of the Subscription
 dataset.
@@ -88,7 +87,7 @@ sub get_system_field_info
 ######################################################################
 =pod
 
-=item $subscription = EPrints::Subscription->new( $session, $id )
+=item $subscription = EPrints::DataObj::Subscription->new( $session, $id )
 
 Return new subscription object, created by loading the subscription
 with id $id from the database.
@@ -108,9 +107,9 @@ sub new
 ######################################################################
 =pod
 
-=item $subscription = EPrints::Subscription->new_from_data( $session, $data )
+=item $subscription = EPrints::DataObj::Subscription->new_from_data( $session, $data )
 
-Construct a new EPrints::Subscription object based on the $data hash 
+Construct a new EPrints::DataObj::Subscription object based on the $data hash 
 reference of metadata.
 
 =cut
@@ -134,7 +133,7 @@ sub new_from_data
 ######################################################################
 =pod
 
-=item $subscription = EPrints::Subscription->create( $session, $userid )
+=item $subscription = EPrints::DataObj::Subscription->create( $session, $userid )
 
 Create a new Subsciption entry in the database, belonging to user
 with id $userid.
@@ -147,7 +146,7 @@ sub create
 	my( $class, $session, $userid ) = @_;
 
 
-	return EPrints::Subscription->create_from_data( 
+	return EPrints::DataObj::Subscription->create_from_data( 
 		$session, 
 		{ userid=>$userid },
 		$session->get_archive->get_dataset( "subscription" ) );
@@ -156,7 +155,7 @@ sub create
 ######################################################################
 =pod
 
-=item $defaults = EPrints::Subscription->get_defaults( $session, $data )
+=item $defaults = EPrints::DataObj::Subscription->get_defaults( $session, $data )
 
 Return default values for this object based on the starting data.
 
@@ -437,7 +436,7 @@ sub send_out_subscription
 ######################################################################
 =pod
 
-=item EPrints::Subscription::process_set( $session, $frequency );
+=item EPrints::DataObj::Subscription::process_set( $session, $frequency );
 
 Static method. Calls send_out_subscriptions on every subscription 
 with a frequency matching $frequency.
@@ -456,7 +455,7 @@ sub process_set
 		$frequency ne "weekly" && 
 		$frequency ne "monthly" )
 	{
-		$session->get_archive->log( "EPrints::Subscription::process_set called with unknown frequency: ".$frequency );
+		$session->get_archive->log( "EPrints::DataObj::Subscription::process_set called with unknown frequency: ".$frequency );
 		return;
 	}
 
@@ -485,7 +484,7 @@ sub process_set
 
 	unless( open( TIMESTAMP, ">$statusfile" ) )
 	{
-		$session->get_archive->log( "EPrints::Subscription::process_set failed to open\n$statusfile\nfor writing." );
+		$session->get_archive->log( "EPrints::DataObj::Subscription::process_set failed to open\n$statusfile\nfor writing." );
 	}
 	else
 	{
@@ -503,7 +502,7 @@ END
 ######################################################################
 =pod
 
-=item $timestamp = EPrints::Subscription::get_last_timestamp( $session, $frequency );
+=item $timestamp = EPrints::DataObj::Subscription::get_last_timestamp( $session, $frequency );
 
 Static method. Return the timestamp of the last time this frequency 
 of subscription was sent.
@@ -519,7 +518,7 @@ sub get_last_timestamp
 		$frequency ne "weekly" && 
 		$frequency ne "monthly" )
 	{
-		$session->get_archive->log( "EPrints::Subscription::get_last_timestamp called with unknown\nfrequency: ".$frequency );
+		$session->get_archive->log( "EPrints::DataObj::Subscription::get_last_timestamp called with unknown\nfrequency: ".$frequency );
 		return;
 	}
 

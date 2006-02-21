@@ -218,7 +218,7 @@ Reference to HASH mapping I<fieldname string> to I<metadata value structure> (se
 
 The current session object.
 
-=item L<$eprint|EPrints::EPrint>
+=item L<$eprint|EPrints::DataObj::EPrint>
 
 (only for set_document_defaults) this is the eprint to which this document will belong.
 
@@ -274,7 +274,7 @@ otherwise they are empty. Another is to create fields which the
 submitter can't edit directly but you want to be searchable. eg.
 Number of authors.
 
-L<$eprint|EPrints::EPrint>/L<$user|EPrints::User>/L<$doc|EPrints::Document>/L<$subscription|EPrints::Subscription> - the object to be modified
+L<$eprint|EPrints::DataObj::EPrint>/L<$user|EPrints::DataObj::User>/L<$doc|EPrints::DataObj::Document>/L<$subscription|EPrints::DataObj::Subscription> - the object to be modified
 
 Returns nothing (Modify the object instead).
 

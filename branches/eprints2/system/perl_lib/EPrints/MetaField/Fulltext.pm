@@ -65,7 +65,7 @@ sub get_index_codes_basic
 	{
 		return $self->SUPER::get_index_codes_basic( $session, $value );
 	}
-	my $doc = EPrints::Document->new( $session, $value );
+	my $doc = EPrints::DataObj::Document->new( $session, $value );
 
 	my $eprint =  $doc->get_eprint;
 	return( [], [], [] ) unless( defined $eprint );

@@ -278,7 +278,7 @@ sub putEprint($)
 	$data->{userid} = 1;
 
 	my $ds = $session->get_archive->get_dataset( "inbox" );
-	my $eprint = EPrints::EPrint::create( $session, $ds, $data );
+	my $eprint = EPrints::DataObj::EPrint::create( $session, $ds, $data );
 	if( !defined $eprint ) 
 	{
 		die "Failed to create eprint";
@@ -287,7 +287,7 @@ sub putEprint($)
 
 	foreach my $docdata ( @{$data->{documents}} )
 	{
-		my $doc = EPrints::Document::create( $session, $eprint );
+		my $doc = EPrints::DataObj::Document::create( $session, $eprint );
 		foreach( keys %{$docdata} )
 		{
 			next if( $_ eq "files" );
@@ -339,7 +339,7 @@ sub addDocument
 		die "eprint $eprintid does not exist";
 	}
 
-	my $doc = EPrints::Document::create( $session, $eprint );
+	my $doc = EPrints::DataObj::Document::create( $session, $eprint );
 	foreach( keys %{$docdata} )
 	{
 		next if( $_ eq "files" );

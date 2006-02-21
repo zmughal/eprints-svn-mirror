@@ -14,8 +14,7 @@
 #
 ######################################################################
 
-use EPrints::Session;
-use EPrints::EPrint;
+use EPrints;
 
 use strict;
 my $session = new EPrints::Session;
@@ -29,7 +28,7 @@ my $url;
 foreach( "archive" , "deletion" )
 {
 	my $ds = $session->get_archive()->get_dataset( $_ );
-	my $eprint = new EPrints::EPrint( $session, $eprintid, $ds );
+	my $eprint = new EPrints::DataObj::EPrint( $session, $eprintid, $ds );
 	if( defined $eprint )
 	{
 		$url = $eprint->get_url;

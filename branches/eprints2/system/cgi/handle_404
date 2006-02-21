@@ -15,7 +15,7 @@
 
 #cjg Not fully finnished. Should detect missing items.
 
-use EPrints::Session;
+use EPrints;
 
 use strict;
 
@@ -70,7 +70,7 @@ $session->terminate();
 #	else
 #	{
 #		# See if the eprint exists.
-#		my $eprint = new EPrints::EPrint(
+#		my $eprint = new EPrints::DataObj::EPrint(
 #			$session,
 #			$guessed_id,;
 #			EPrints::Database::table_name( "archive" ) );

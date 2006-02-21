@@ -1,6 +1,18 @@
-use EPrints::Session;
-use EPrints::EPrint;
-use EPrints::SearchExpression;
+######################################################################
+#
+#  Paracitation Module
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints;
 use ParaTools::CiteParser::Standard;
 use URI;
 

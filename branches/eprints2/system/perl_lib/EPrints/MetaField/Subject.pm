@@ -46,7 +46,7 @@ sub render_single_value
 {
 	my( $self, $session, $value, $dont_link ) = @_;
 
-	my $subject = new EPrints::Subject( $session, $value );
+	my $subject = new EPrints::DataObj::Subject( $session, $value );
 	if( !defined $subject )
 	{
 		return $session->make_text( "?? $value ??" );
@@ -62,7 +62,7 @@ sub render_single_value
 
 =item $subject = $field->get_top_subject( $session )
 
-Return the top EPrints::Subject object for this field. Only meaningful
+Return the top EPrints::DataObj::Subject object for this field. Only meaningful
 for "subject" type fields.
 
 =cut
@@ -81,7 +81,7 @@ sub get_top_subject
 		exit;
 	}
 		
-	my $topsubject = EPrints::Subject->new( $session, $topid );
+	my $topsubject = EPrints::DataObj::Subject->new( $session, $topid );
 
 	if( !defined $topsubject )
 	{
@@ -151,7 +151,7 @@ sub get_value_label
 {
 	my( $self, $session, $value ) = @_;
 
-	my $subj = EPrints::Subject->new( $session, $value );
+	my $subj = EPrints::DataObj::Subject->new( $session, $value );
 	if( !defined $subj )
 	{
 		return $session->make_text( 

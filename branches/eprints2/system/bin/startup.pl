@@ -56,38 +56,7 @@ use Apache::DBI;
 
 $ENV{MOD_PERL} or EPrints::Config::abort( "not running under mod_perl!" );
 
-use EPrints::XML;
-use EPrints::Utils;
-use EPrints::Config;
-
-# This code is interpreted *once* when the server starts
-use EPrints::Archive;
-use EPrints::Auth;
-use EPrints::Database;
-use EPrints::Document;
-use EPrints::EPrint;
-use EPrints::Extras;
-use EPrints::ImportXML;
-use EPrints::Language;
-use EPrints::Latex;
-use EPrints::MetaField;
-use EPrints::OpenArchives;
-use EPrints::Rewrite;
-use EPrints::SearchExpression;
-use EPrints::SearchField;
-use EPrints::SearchCondition;
-use EPrints::Session;
-use EPrints::Subject;
-use EPrints::SubmissionForm;
-use EPrints::Subscription;
-use EPrints::UserForm;
-use EPrints::User;
-use EPrints::UserPage;
-use EPrints::VLit;
-use EPrints::Paracite;
-use EPrints::Workflow;
-use EPrints::Workflow::Stage;
-use EPrints::Workflow::Processor;
+use EPrints;
 
 use strict;
 

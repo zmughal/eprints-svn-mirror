@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::License
+# EPrints::DataObj::License
 #
 ######################################################################
 #
@@ -17,7 +17,7 @@
 
 =head1 NAME
 
-B<EPrints::License> - Licenses dataset
+B<EPrints::DataObj::License> - Licenses dataset
 
 =head1 DESCRIPTION
 
@@ -43,18 +43,17 @@ The C<name> is the multilanguage human-readable name of the license. The C<url> 
 
 =cut
 
-package EPrints::License;
-@ISA = ( 'EPrints::DataObj' );
-use EPrints::DataObj;
+package EPrints::DataObj::License;
 
-use EPrints::Database;
-use EPrints::SearchExpression;
+@ISA = ( 'EPrints::DataObj' );
+
+use EPrints;
 
 use strict;
 
 =pod
 
-=item $thing = EPrints::License->get_system_field_info
+=item $thing = EPrints::DataObj::License->get_system_field_info
 
 Core fields contained in a license.
 
@@ -86,7 +85,7 @@ sub get_system_field_info
 
 =pod
 
-=item $thing = EPrints::License->new( $session, $licenseid )
+=item $thing = EPrints::DataObj::License->new( $session, $licenseid )
 
 The data object identified by $licenseid.
 
@@ -103,9 +102,9 @@ sub new
 
 =pod
 
-=item $thing = EPrints::License->new_from_data( $session, $known )
+=item $thing = EPrints::DataObj::License->new_from_data( $session, $known )
 
-A new C<EPrints::License> object containing data $known (a hash reference).
+A new C<EPrints::DataObj::License> object containing data $known (a hash reference).
 
 =cut
 
@@ -133,7 +132,7 @@ sub new_from_data
 
 =pod
 
-=item EPrints::License::remove_all( $session )
+=item EPrints::DataObj::License::remove_all( $session )
 
 Remove all records from the license dataset.
 
@@ -153,7 +152,7 @@ sub remove_all
 
 =pod
 
-=item ($tags,$labels) = EPrints::License::tags_and_labels( $session, $dataset )
+=item ($tags,$labels) = EPrints::DataObj::License::tags_and_labels( $session, $dataset )
 
 Returns the tags and labels for all records in this dataset.
 
@@ -269,7 +268,7 @@ sub get_label
 
 =pod
 
-=item EPrints::License::render( "oooops" )
+=item EPrints::DataObj::License::render( "oooops" )
 
 undocumented
 
@@ -277,7 +276,7 @@ undocumented
 
 sub render
 {
-	confess( "oooops" ); # use render citation
+	EPrints::abort( "oooops" ); # use render citation
 }
 
 1;

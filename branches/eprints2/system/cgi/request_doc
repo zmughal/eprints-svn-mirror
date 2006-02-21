@@ -1,9 +1,6 @@
 #!/usr/bin/perl -w -I/opt/eprints2/perl_lib
 
-use EPrints::Session;
-use EPrints::EPrint;
-use EPrints::User;
-use EPrints::Utils;
+use EPrints;
 use strict;
 
 my $session = new EPrints::Session();
@@ -12,7 +9,7 @@ exit( 1 ) unless( defined $session );
 # Check parameters
 my $eprintid = $session->param( "eprintid" );
 error_page( $session, $session->html_phrase( "request_doc/error" ) ) if !defined( $eprintid );
-my $eprint = EPrints::EPrint->new( $session, $eprintid );
+my $eprint = EPrints::DataObj::EPrint->new( $session, $eprintid );
 error_page( $session, $session->html_phrase( "request_doc/error" ) ) if !defined( $eprint );
 
 # Check request
@@ -43,7 +40,7 @@ if( defined( $email ) && $email ne "" )
 		requester	=> $session->make_text( $email ) ) );
 
 	my $result;
-	my $user = EPrints::User::user_with_email( $session, $contact_email );
+	my $user = EPrints::DataObj::User::user_with_email( $session, $contact_email );
 	if( defined( $user ) && $status eq "restricted" )
 	{
 		# Contact is registered user and EPrints holds restricted documents

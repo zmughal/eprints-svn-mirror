@@ -29,10 +29,6 @@ object into a webpage.
 
 package EPrints::UserPage;
 
-use EPrints::Session;
-use EPrints::SearchExpression;
-use EPrints::Utils;
-use EPrints::User;
 use strict;
 
 
@@ -41,7 +37,7 @@ use strict;
 
 =item $user = EPrints::UserPage::user_from_param( $session )
 
-Return the EPrints::User object that we want to render. If the
+Return the EPrints::DataObj::User object that we want to render. If the
 CGI parameter "userid" is set then that is used to identify the user.
 If it is not set then the CGI parameter "username" is used to 
 identify them.
@@ -68,13 +64,13 @@ sub user_from_param
 	my $user;
 	if( EPrints::Utils::is_set( $userid ) )
 	{
-		$user = EPrints::User->new( 
+		$user = EPrints::DataObj::User->new( 
 				$session, 
 				$userid );
 	}
 	else
 	{
-		$user = EPrints::User::user_with_username( 
+		$user = EPrints::DataObj::User::user_with_username( 
 				$session, 
 				$username );
 	}

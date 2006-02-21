@@ -12,7 +12,7 @@
 #
 ######################################################################
 
-use EPrints::Session;
+use EPrints;
 use strict;
 
 my $session = new EPrints::Session;
@@ -105,7 +105,7 @@ sub make_page
 		}
 	}
 
-	if( defined EPrints::User::user_with_email( $session, $v->{email} ) )
+	if( defined EPrints::DataObj::User::user_with_email( $session, $v->{email} ) )
 	{
 		return mk_err_page( 
 			$session,
@@ -115,7 +115,7 @@ sub make_page
 			{email=>$session->make_text( $v->{email} )} );
 	}
 
-	if( defined EPrints::User::user_with_username( $session, $v->{username} ) )
+	if( defined EPrints::DataObj::User::user_with_username( $session, $v->{username} ) )
 	{
 		return mk_err_page( 
 			$session,
@@ -125,7 +125,7 @@ sub make_page
 			{username=>$session->make_text( $v->{username} )} );
 	}
 
-	my $user = EPrints::User::create_user( $session, $default_type );
+	my $user = EPrints::DataObj::User::create_user( $session, $default_type );
 	foreach my $fieldid ( keys %{$f} )
 	{
 		$user->set_value( $fieldid, $v->{$fieldid} );

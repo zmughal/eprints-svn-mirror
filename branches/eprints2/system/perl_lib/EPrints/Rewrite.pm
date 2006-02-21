@@ -39,8 +39,7 @@ This should only ever be called from within the mod_perl system.
 
 package EPrints::Rewrite;
 
-use EPrints::AnApache;  
-use EPrints::Session;
+use EPrints::AnApache; # exports apache constants
 
 use strict;
   

@@ -35,9 +35,7 @@ use Unicode::String qw(utf8 latin1 utf16);
 
 use strict;
 
-use EPrints::Utils;
-use EPrints::XML;
-use EPrints::Latex;
+use EPrints;
 
 sub get_conf
 {

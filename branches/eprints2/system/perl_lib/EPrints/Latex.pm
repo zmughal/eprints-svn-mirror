@@ -34,8 +34,6 @@ that functionality.
 
 package EPrints::Latex;
 
-use EPrints::Session;
-
 use Digest::MD5;
 use Cwd;
 use strict;

@@ -20,8 +20,8 @@ B<EPrints::DataObj> - Base class for records in EPrints.
 
 =head1 DESCRIPTION
 
-This module is a base class which is inherited by EPrints::EPrint, 
-EPrints::User, EPrints::Subject and EPrints::Document and several
+This module is a base class which is inherited by EPrints::DataObj::EPrint, 
+EPrints::User, EPrints::DataObj::Subject and EPrints::DataObj::Document and several
 other classes.
 
 It is ABSTRACT, its methods should not be called directly.
@@ -48,8 +48,6 @@ It is ABSTRACT, its methods should not be called directly.
 
 package EPrints::DataObj;
 
-use EPrints::Utils;
-
 use MIME::Base64 ();
 
 use strict;
@@ -72,7 +70,7 @@ sub get_system_field_info
 {
 	my( $class ) = @_;
 
-	confess( "Abstract method called" );
+	EPrints::abort( "Abstract EPrints::DataObj->get_system_field_info method called" );
 }
 
 ######################################################################
@@ -837,6 +835,21 @@ sub to_xml
 
 	if( $opts{version} eq "2" )
 	{
+		if( $self->{dataset}->confid eq "user" )
+		{
+			my $subscriptions = $self->{session}->make_element( "subscriptions" );
+			$subscriptions->appendChild( $self->{session}->make_text( "\n" ) );
+			foreach my $subscription ( $self->get_subscriptions )
+			{
+				$subscriptions->appendChild( $self->{session}->make_text( "  " ) );
+				$subscriptions->appendChild( $subscription->to_xml( %opts ) );
+			}	
+			$r->appendChild( $self->{session}->make_text( "\n  " ) );
+			$r->appendChild( $subscriptions );
+			$subscriptions->appendChild( $self->{session}->make_text( "  " ) );
+			$r->appendChild( $self->{session}->make_text( "\n" ) );
+		}
+
 		if( $self->{dataset}->confid eq "eprint" )
 		{
 			my $docs = $self->{session}->make_element( "documents" );

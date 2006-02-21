@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::Document
+# EPrints::DataObj::Document
 #
 ######################################################################
 #
@@ -17,7 +17,7 @@
 
 =head1 NAME
 
-B<EPrints::Document> - A single format of a record.
+B<EPrints::DataObj::Document> - A single format of a record.
 
 =head1 DESCRIPTION
 
@@ -87,10 +87,11 @@ Document has all the methods of dataobj with the addition of the following.
 #
 ######################################################################
 
-package EPrints::Document;
-@ISA = ( 'EPrints::DataObj' );
-use EPrints::DataObj;
+package EPrints::DataObj::Document;
 
+@ISA = ( 'EPrints::DataObj' );
+
+use EPrints;
 
 use File::Basename;
 use File::Path;
@@ -99,23 +100,16 @@ use Cwd;
 use Fcntl qw(:DEFAULT :seek);
 
 use URI::Heuristic;
-use Carp;
-
-use EPrints::Database;
-use EPrints::EPrint;
-use EPrints::Probity;
-use EPrints::TempDir;
-
 
 use strict;
 
 # Field to use for unsupported formats (if archive allows their deposit)
-$EPrints::Document::OTHER = "OTHER";
+$EPrints::DataObj::Document::OTHER = "OTHER";
 
 ######################################################################
 =pod
 
-=item $metadata = EPrints::Document->get_system_field_info
+=item $metadata = EPrints::DataObj::Document->get_system_field_info
 
 Return an array describing the system metadata of the Document dataset.
 
@@ -161,7 +155,7 @@ sub get_system_field_info
 ######################################################################
 =pod
 
-=item $thing = EPrints::Document->new( $session, $docid )
+=item $thing = EPrints::DataObj::Document->new( $session, $docid )
 
 Return the document with the given $docid, or undef if it does not
 exist.
@@ -182,9 +176,9 @@ sub new
 ######################################################################
 =pod
 
-=item $doc = EPrints::Document->new_from_data( $session, $data )
+=item $doc = EPrints::DataObj::Document->new_from_data( $session, $data )
 
-Construct a new EPrints::Document based on the ref to a hash of metadata.
+Construct a new EPrints::DataObj::Document based on the ref to a hash of metadata.
 
 =cut
 ######################################################################
@@ -207,7 +201,7 @@ sub new_from_data
 ######################################################################
 =pod
 
-=item $doc = EPrints::Document::create( $session, $eprint )
+=item $doc = EPrints::DataObj::Document::create( $session, $eprint )
 
 Create and return a new Document belonging to the given $eprint object, 
 get the initial metadata from set_document_defaults in the configuration
@@ -222,7 +216,7 @@ sub create
 {
 	my( $session, $eprint ) = @_;
 
-	return EPrints::Document->create_from_data( 
+	return EPrints::DataObj::Document->create_from_data( 
 		$session, 
 		{ eprintid=>$eprint->get_id },
 		$session->get_archive->get_dataset( "eprint" ) );
@@ -231,7 +225,7 @@ sub create
 ######################################################################
 =pod
 
-=item $dataobj = EPrints::Document->create_from_data( $session, $data, $dataset )
+=item $dataobj = EPrints::DataObj::Document->create_from_data( $session, $data, $dataset )
 
 Returns undef if a bad (or no) subjectid is specified.
 
@@ -244,12 +238,12 @@ sub create_from_data
 {
 	my( $class, $session, $data, $dataset ) = @_;
        
-	confess "session not defined" unless defined $session;
-	confess "data not defined" unless defined $data;
+	EPrints::abort "session not defined" unless defined $session;
+	EPrints::abort "data not defined" unless defined $data;
                    
 	my $eprintid = $data->{eprintid}; 
 
-	my $eprint = EPrints::EPrint->new( $session, $eprintid );
+	my $eprint = EPrints::DataObj::EPrint->new( $session, $eprintid );
 
 	unless( defined $eprint )
 	{
@@ -296,7 +290,7 @@ END
 ######################################################################
 =pod
 
-=item $defaults = EPrints::Document->get_defaults( $session, $data )
+=item $defaults = EPrints::DataObj::Document->get_defaults( $session, $data )
 
 Return default values for this object based on the starting data.
 
@@ -307,7 +301,7 @@ sub get_defaults
 {
 	my( $class, $session, $data ) = @_;
 
-	my $eprint = EPrints::EPrint->new( $session, $data->{eprintid} );
+	my $eprint = EPrints::DataObj::EPrint->new( $session, $data->{eprintid} );
 
 	if( defined $data->{eprintid} )
 	{
@@ -325,7 +319,7 @@ sub get_defaults
 
 ######################################################################
 # 
-# $success = EPrints::Document::_create_directory( $id, $eprint )
+# $success = EPrints::DataObj::Document::_create_directory( $id, $eprint )
 #
 #  Make Document $id a directory. $eprint is the EPrint this document
 #  is associated with.
@@ -435,7 +429,7 @@ sub remove_symlink
 #cjg: should this belong to eprint?
 ######################################################################
 # 
-# EPrints::Document::_secure_symlink_path( $eprint )
+# EPrints::DataObj::Document::_secure_symlink_path( $eprint )
 #
 # undocumented
 #
@@ -447,14 +441,14 @@ sub _secure_symlink_path
 
 	my $archive = $eprint->get_session()->get_archive();
 		
-	return( $archive->get_conf( "htdocs_secure_path" )."/".EPrints::EPrint::eprintid_to_path( $eprint->get_value( "eprintid" ) ) );
+	return( $archive->get_conf( "htdocs_secure_path" )."/".EPrints::DataObj::EPrint::eprintid_to_path( $eprint->get_value( "eprintid" ) ) );
 }
 
 
 ######################################################################
 =pod
 
-=item $path = EPrints::Document::docid_to_path( $archive, $docid )
+=item $path = EPrints::DataObj::Document::docid_to_path( $archive, $docid )
 
 Return the name of the directory (in the eprint directory) in which
 to place this document.
@@ -481,7 +475,7 @@ sub docid_to_path
 
 ######################################################################
 # 
-# $docid = EPrints::Document::_generate_doc_id( $session, $eprint )
+# $docid = EPrints::DataObj::Document::_generate_doc_id( $session, $eprint )
 #
 #  Generate an ID for a new document associated with $eprint
 #
@@ -533,7 +527,7 @@ sub clone
 	my( $self, $eprint ) = @_;
 	
 	# First create a new doc object
-	my $new_doc = EPrints::Document::create( $self->{session}, $eprint );
+	my $new_doc = EPrints::DataObj::Document::create( $self->{session}, $eprint );
 
 	return( 0 ) if( !defined $new_doc );
 	
@@ -634,7 +628,7 @@ sub get_eprint
 	return( $self->{eprint} ) if( defined $self->{eprint} );
 
 	# Otherwise, create object and return
-	$self->{eprint} = new EPrints::EPrint( 
+	$self->{eprint} = new EPrints::DataObj::EPrint( 
 		$self->{session},
 		$self->get_value( "eprintid" ) );
 	
@@ -773,7 +767,7 @@ sub files
 # used by generate_static too?
 ######################################################################
 # 
-# %files = EPrints::Document::_get_files( $files, $root, $dir )
+# %files = EPrints::DataObj::Document::_get_files( $files, $root, $dir )
 #
 #  Recursively get all the files in $dir. Paths are returned relative
 #  to $root (i.e. $root is removed from the start of files.)
@@ -1542,7 +1536,7 @@ sub cache_file
 #
 # $doc->register_parent( $eprint )
 #
-# Give the document the EPrints::EPrint object that it belongs to.
+# Give the document the EPrints::DataObj::EPrint object that it belongs to.
 #
 # This may cause reference loops, but it does avoid two identical
 # EPrints objects existing at once.

@@ -59,10 +59,8 @@ $db = $session->get_archive
 package EPrints::Database;
 
 use DBI;
-use Carp;
 
-#use EPrints::EPrint;
-use EPrints::Subscription;
+use EPrints;
 
 use strict;
 my $DEBUG_SQL = 0;
@@ -1454,11 +1452,14 @@ of the keys MUST be "M".
 sub search
 {
 	my( $self, $keyfield, $tables, $conditions) = @_;
+
+	EPrints::abort "No SQL tables passed to search()" if( scalar keys %{$tables} == 0 );
 	
 	my $sql = "SELECT DISTINCT M.".$keyfield->get_sql_name()." FROM ";
 	my $first = 1;
 	foreach( keys %{$tables} )
 	{
+		EPrints::abort "Empty string passed to search() as an SQL table" if( $tables->{$_} eq "" );
 		$sql.= ", " unless($first);
 		$first = 0;
 		$sql.= $tables->{$_}." AS $_";
@@ -1694,7 +1695,7 @@ sub _get
 	my ( $self , $dataset , $mode , $param, $offset, $ntoreturn ) = @_;
 
 	# debug code.
-	if( !defined $dataset || ref($dataset) eq "") { confess(); }
+	if( !defined $dataset || ref($dataset) eq "") { EPrints::abort("no dataset passed to \$database->_get"); }
 
 	# mode 0 = one or none entries from a given primary key
 	# mode 1 = many entries from a buffer table
@@ -2083,7 +2084,6 @@ sub do
 	{
 		$self->{session}->get_archive()->log( "SQL ERROR (do): $sql" );
 		$self->{session}->get_archive()->log( "SQL ERROR (do): ".$self->{dbh}->errstr.' (#'.$self->{dbh}->err.')' );
-use Carp; confess;
 
 		return undef unless( $self->{dbh}->err == 2006 );
 

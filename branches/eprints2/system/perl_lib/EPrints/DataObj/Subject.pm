@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::Subject
+# EPrints::DataObj::Subject
 #
 ######################################################################
 #
@@ -17,36 +17,34 @@
 
 =head1 NAME
 
-B<EPrints::Subject> - Class and methods relating to the subejcts tree.
+B<EPrints::DataObj::Subject> - Class and methods relating to the subejcts tree.
 
 =head1 DESCRIPTION
 
 This class represents a single node in the subejcts tree. It also
 contains a number of methods for handling the entire tree.
 
-EPrints::Subject is a subclass of EPrints::DataObj
+EPrints::DataObj::Subject is a subclass of EPrints::DataObj
 
 =over 4
 
 =cut
 
-package EPrints::Subject;
+package EPrints::DataObj::Subject;
 
 @ISA = ( 'EPrints::DataObj' );
 
-use EPrints::DataObj;
-use EPrints::Database;
-use EPrints::SearchExpression;
+use EPrints;
 
 use strict;
 
 # Root subject specifier
-$EPrints::Subject::root_subject = "ROOT";
+$EPrints::DataObj::Subject::root_subject = "ROOT";
 
 ######################################################################
 =pod
 
-=item $thing = EPrints::Subject->get_system_field_info
+=item $thing = EPrints::DataObj::Subject->get_system_field_info
 
 Return an array describing the system metadata of the Subject dataset.
 
@@ -81,7 +79,7 @@ sub get_system_field_info
 ######################################################################
 =pod
 
-=item $subject = EPrints::Subject->new( $session, $subjectid )
+=item $subject = EPrints::DataObj::Subject->new( $session, $subjectid )
 
 Create a new subject object given the id of the subject. The values
 for the subject are loaded from the database.
@@ -93,13 +91,13 @@ sub new
 {
 	my( $class, $session, $subjectid ) = @_;
 
-	if( $subjectid eq $EPrints::Subject::root_subject )
+	if( $subjectid eq $EPrints::DataObj::Subject::root_subject )
 	{
 		my $data = {
-			subjectid => $EPrints::Subject::root_subject,
+			subjectid => $EPrints::DataObj::Subject::root_subject,
 			name => {},
 			parents => [],
-			ancestors => [ $EPrints::Subject::root_subject ],
+			ancestors => [ $EPrints::DataObj::Subject::root_subject ],
 			depositable => "FALSE" 
 		};
 		my $langid;
@@ -108,7 +106,7 @@ sub new
 			$data->{name}->{$langid} = EPrints::XML::to_string( $session->get_archive()->get_language( $langid )->phrase( "lib/subject:top_level", {}, $session ) );
 		}
 
-		return EPrints::Subject->new_from_data( $session, $data );
+		return EPrints::DataObj::Subject->new_from_data( $session, $data );
 	}
 
 	return $session->get_db()->get_single( 
@@ -122,7 +120,7 @@ sub new
 ######################################################################
 =pod
 
-=item $subject = EPrints::Subject->new_from_data( $session, $data )
+=item $subject = EPrints::DataObj::Subject->new_from_data( $session, $data )
 
 Construct a new subject object from a hash reference containing
 the relevant fields. Generally this method is only used to construct
@@ -166,7 +164,7 @@ sub commit
 	my( $self, $force ) = @_;
 
 	my @ancestors = $self->_get_ancestors();
-	$self->{data}->{ancestors} = \@ancestors;
+	$self->set_value( "ancestors", \@ancestors );
 
 	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
 	{
@@ -224,7 +222,7 @@ sub remove
 ######################################################################
 =pod
 
-=item EPrints::Subject::remove_all( $session )
+=item EPrints::DataObj::Subject::remove_all( $session )
 
 Static function.
 
@@ -251,7 +249,7 @@ sub remove_all
 ######################################################################
 =pod
 
-=item $subject = EPrints::Subject::create( $session, $id, $name, $parents, $depositable )
+=item $subject = EPrints::DataObj::Subject::create( $session, $id, $name, $parents, $depositable )
 
 Creates a new subject in the database. $id is the ID of the subject,
 $name is a multilang data structure with the name of the subject in
@@ -268,7 +266,7 @@ sub create
 	my( $session, $id, $name, $parents, $depositable ) = @_;
 
 	my $actual_parents = $parents;
-	$actual_parents = [ $EPrints::Subject::root_subject ] if( !defined $parents );
+	$actual_parents = [ $EPrints::DataObj::Subject::root_subject ] if( !defined $parents );
 
 	my $data = 
 		{ "subjectid"=>$id,
@@ -286,7 +284,7 @@ sub create
 ######################################################################
 =pod
 
-=item $dataobj = EPrints::Subject->create_from_data( $session, $data, $dataset )
+=item $dataobj = EPrints::DataObj::Subject->create_from_data( $session, $data, $dataset )
 
 Returns undef if a bad (or no) subjectid is specified.
 
@@ -352,7 +350,7 @@ sub _get_ancestors
 
 =item $child_subject = $subject->create_child( $id, $name, $depositable )
 
-Similar to EPrints::Subject::create, but this creates the new subject
+Similar to EPrints::DataObj::Subject::create, but this creates the new subject
 as a child of the current subject.
 
 =cut
@@ -362,7 +360,7 @@ sub create_child
 {
 	my( $self, $id, $name, $depositable ) = @_;
 	
-	return( EPrints::Subject::create( $self->{session},
+	return( EPrints::DataObj::Subject::create( $self->{session},
 	                                  $id,
 	                                  $name,
 	                                  $self->{subjectid},
@@ -375,7 +373,7 @@ sub create_child
 
 =item @children = $subject->children
 
-Return a list of EPrints::Subject objects which are direct children
+Return a list of EPrints::DataObj::Subject objects which are direct children
 of the current subject.
 
 =cut
@@ -385,7 +383,7 @@ sub children #cjg should be get_children()
 {
 	my( $self ) = @_;
 
-	my $searchexp = new EPrints::SearchExpression(
+	my $searchexp = EPrints::SearchExpression->new(
 		session=>$self->{session},
 		dataset=>$self->{dataset},
 		custom_order=>"name" );
@@ -409,7 +407,7 @@ sub children #cjg should be get_children()
 
 =item @parents = $subject->get_parents
 
-Return a list of EPrints::Subject objects which are direct parents
+Return a list of EPrints::DataObj::Subject objects which are direct parents
 of the current subject.
 
 =cut
@@ -422,7 +420,7 @@ sub get_parents
 	my @parents = ();
 	foreach( @{$self->{data}->{parents}} )
 	{
-		push @parents, new EPrints::Subject( $self->{session}, $_ );
+		push @parents, new EPrints::DataObj::Subject( $self->{session}, $_ );
 	}
 	return( @parents );
 }
@@ -529,14 +527,14 @@ sub get_paths
 		# empty list, for the top level we care about
 		return ([]);
 	}
-	if( $self->get_value( "subjectid" ) eq $EPrints::Subject::root_subject )
+	if( $self->get_value( "subjectid" ) eq $EPrints::DataObj::Subject::root_subject )
 	{
 		return ([]);
 	}
 	my( @paths ) = ();
 	foreach( @{$self->{data}->{parents}} )
 	{
-		my $subj = new EPrints::Subject( $session, $_ );
+		my $subj = new EPrints::DataObj::Subject( $session, $_ );
 		push @paths, $subj->get_paths( $session, $topsubjid );
 	}
 	foreach( @paths )
@@ -612,7 +610,7 @@ sub get_subjects
 	$showtoplevel = 1 unless defined $showtoplevel;
 	$nestids = 0 unless defined $nestids;
 	$nonestlabel = 0 unless defined $nonestlabel;
-	my( $subjectmap, $rmap ) = EPrints::Subject::get_all( $self->{session} );
+	my( $subjectmap, $rmap ) = EPrints::DataObj::Subject::get_all( $self->{session} );
 	return $self->_get_subjects2( $postableonly, !$showtoplevel, $nestids, $subjectmap, $rmap, "", !$nonestlabel );
 }
 
@@ -665,7 +663,7 @@ sub _get_subjects2
 ######################################################################
 =pod
 
-=item $label = EPrints::Subject::subject_label( $session, $subject_id )
+=item $label = EPrints::DataObj::Subject::subject_label( $session, $subject_id )
 
 Return the full label of a subject, including parents. Returns
 undef if the subject id is invalid.
@@ -682,7 +680,7 @@ sub subject_label
 	my $label = "";
 	my $tag = $subject_tag;
 
-	while( $tag ne $EPrints::Subject::root_subject )
+	while( $tag ne $EPrints::DataObj::Subject::root_subject )
 	{
 		my $ds = $session->get_archive()->get_dataset();
 		my $data = $session->{database}->get_single( $ds, $tag );
@@ -716,7 +714,7 @@ sub subject_label
 ######################################################################
 =pod
 
-=item ( $subject_map, $reverse_map ) = EPrints::Subject::get_all( $session )
+=item ( $subject_map, $reverse_map ) = EPrints::DataObj::Subject::get_all( $session )
 
 Get all the subjects for the current archvive of $session.
 
@@ -726,7 +724,7 @@ EPrint::Subject object relating to that id.
 
 $reverse_map is a reference to a hash. Each key is the id of a
 subject. Each value is a reference to an array. The array contains
-a EPrints::Subject objects, one for each child of the subject 
+a EPrints::DataObj::Subject objects, one for each child of the subject 
 with the id. The array is sorted by the labels for the subjects,
 in the current language.
 
@@ -876,7 +874,7 @@ sub count_eprints
 ######################################################################
 =pod
 
-=item $boolean = EPrints::Subject::valid_id( $id )
+=item $boolean = EPrints::DataObj::Subject::valid_id( $id )
 
 Return true if the string is an acceptable identifier for a subject.
 
@@ -912,7 +910,7 @@ sub valid_id
 ######################################################################
 =pod
 
-=item EPrints::Subject::render
+=item $subj->render()
 
 undocumented
 
@@ -921,7 +919,7 @@ undocumented
 
 sub render
 {
-	confess( "subjects can't be rendered. Use render_description instead." ); 
+	EPrints::abort( "subjects can't be rendered. Use render_description instead." ); 
 }
 
 1;

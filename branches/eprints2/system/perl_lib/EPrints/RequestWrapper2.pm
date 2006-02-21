@@ -32,14 +32,12 @@ near it!
 This is the version for use with Apache 2.0. EPrints::Auth will
 pick which to use based on EPrints::SystemSettings 
 
-
-
 =over 4
 
 =cut
 
-
 package EPrints::RequestWrapper2;
+
 use strict;
 
 BEGIN { 

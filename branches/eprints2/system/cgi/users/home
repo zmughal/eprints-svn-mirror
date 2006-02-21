@@ -12,10 +12,7 @@
 #
 ######################################################################
 
-use EPrints::User;
-use EPrints::Database;
-use EPrints::Session;
-use EPrints::EPrint;
+use EPrints;
 
 use strict;
 

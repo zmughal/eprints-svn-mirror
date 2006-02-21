@@ -12,8 +12,7 @@
 #
 ######################################################################
 
-use EPrints::Session;
-use EPrints::UserPage;
+use EPrints;
 
 use strict;
 

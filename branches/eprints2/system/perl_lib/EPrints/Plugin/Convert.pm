@@ -4,7 +4,7 @@ package EPrints::Plugin::Convert;
 
 =head1 NAME
 
-EPrints::Plugin::Convert - Convert EPrints::Document into different formats
+EPrints::Plugin::Convert - Convert EPrints::DataObj::Document into different formats
 
 =head1 DESCRIPTION
 
@@ -162,7 +162,7 @@ sub convert
 
 	my $session = $plugin->{session};
 
-	my $new_doc = EPrints::Document->create( $session, $eprint );
+	my $new_doc = EPrints::DataObj::Document->create( $session, $eprint );
 	
 	$new_doc->set_format( $type );
 	$new_doc->set_desc( $plugin->{name} . ' conversion from ' . $doc->get_type . ' to ' . $type );
