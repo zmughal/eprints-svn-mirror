@@ -187,7 +187,7 @@ sub _extract_words
 	my( $session, $value ) = @_;
 
 	my( $codes, $badwords ) = 
-		$session->get_archive()->call( 
+		$session->get_repository->call( 
 			"extract_words" , 
 			$value );
 	my $newbadwords = [];

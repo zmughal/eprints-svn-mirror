@@ -29,7 +29,7 @@ my $session = new EPrints::Session( 1 , $ARGV[0] );
 exit( 1 ) unless( defined $session );
 
 
-my $ds = $session->get_archive()->get_dataset( $ARGV[1] ); 
+my $ds = $session->get_repository->get_dataset( $ARGV[1] ); 
 if( !defined $ds )
 {
 	die "doh: bad dataset";

@@ -190,8 +190,8 @@ sub matches
 
 
 
-use EPrints::Archive;
-use EPrints::SystemSettings;
+use EPrints;
+
 $EPrints::Plugin::REGISTRY = {};
 
 EPrints::Plugin::load();

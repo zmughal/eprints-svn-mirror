@@ -247,7 +247,7 @@ sub get_search_conditions
 
 	my $indexmode = "index";
 
-	if( $session->get_archive->get_conf( "match_start_of_name" ) )
+	if( $session->get_repository->get_conf( "match_start_of_name" ) )
 	{
 		$indexmode = "index_start";
 	}

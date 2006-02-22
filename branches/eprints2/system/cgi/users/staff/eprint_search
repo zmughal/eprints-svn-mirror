@@ -21,7 +21,7 @@ use strict;
 my $session = new EPrints::Session;
 exit( 0 ) unless( defined $session );
 
-my $url = $session->get_archive->get_conf( "perl_url" )."/users/search";
+my $url = $session->get_repository->get_conf( "perl_url" )."/users/search";
 if( $session->get_request->args )
 {
 	$url.= "?".$session->get_request->args;

@@ -18,19 +18,19 @@ B<import_permissions> - build the permissions index from ArchiveConfig
 
 =head1 SYNOPSIS
 
-B<import_permissions> I<archiveid> [B<options>]
+B<import_permissions> I<repository_id> [B<options>]
 
 =head1 DESCRIPTION
 
-Import permissions into the permissions database using the configuration defined in the archive config.
+Import permissions into the permissions database using the configuration defined in the repository config.
 
 =head1 ARGUMENTS
 
 =over 8
 
-=item I<archiveid> 
+=item I<repository_id> 
 
-The ID of the EPrint archive to use.
+The ID of the EPrint repository to use.
 
 =back
 
@@ -131,7 +131,7 @@ my %PRIVS = (
 	'usertype.admin' => [qw( EDIT_ARCHIVE_PRIVILEGES )],
 );
 
-my $userauth = $session->get_archive->get_conf( "userauth" );
+my $userauth = $session->get_repository->get_conf( "userauth" );
 my $db = $session->get_db();
 
 # Clear the existing tables

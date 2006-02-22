@@ -24,7 +24,7 @@ the same metadata.
 
 This module describes an EPrint dataset.
 
-An archive has one of each type of dataset:
+An repository has one of each type of dataset:
 
 cachemap, counter, user, archive, buffer, inbox, document, subject,
 subscription, deletion, eprint, language, arclanguage, security,
@@ -38,7 +38,7 @@ may be optional or compulsary depending on the type eg. books have editors
 but posters don't but they are both EPrints.
 
 Types and what fields are in them is configured in metadata-types.xml
-for a given archive.
+for a given repository.
 
 Datasets have some default fields plus additional ones configured
 in ArchiveMetadataFieldsConfig.pm.
@@ -69,7 +69,7 @@ dataset for asking for properties of inbox, archive, buffer & deletion.
 
 These don't have fields or SQL tables, they are used in metadata
 field configuration as their types are part of the system - all known
-languages & languages supported by this archive, respectively.
+languages & languages supported by this repository, respectively.
 
 =item security
 
@@ -80,10 +80,10 @@ id of an empty string is handled specially as it means publically available.
 
 =back
 
-EPrints::DataSet objects are cached by the related EPrints::Archive
+EPrints::DataSet objects are cached by the related EPrints::Repository
 object and usually obtained by calling.
 
-$ds = $archive->get_dataset( "inbox" );
+$ds = $repository->get_dataset( "inbox" );
 
 =over 4
 
@@ -101,8 +101,8 @@ $ds = $archive->get_dataset( "inbox" );
 #     "eprints" for inbox,archive,buffer,deletion as they share the same
 #     configuration.
 #
-#  $self->{archive}
-#     A reference to the EPrints::Archive to which this dataset belongs.
+#  $self->{repository}
+#     A reference to the EPrints::Repository to which this dataset belongs.
 #
 #  $self->{fields}
 #     An array of all the EPrints::MetaField's belonging to this dataset.
@@ -251,7 +251,7 @@ sub new_stub
 
 	if( !defined $INFO->{$id} )
 	{
-		# no archive info, so can't log.
+		# no repository info, so can't log.
 		EPrints::abort( "Unknown dataset name: $id" );
 	}
 	my $self = {};
@@ -269,14 +269,14 @@ sub new_stub
 ######################################################################
 =pod
 
-=item $ds = EPrints::DataSet->new( $archive, $id, $typesconf )
+=item $ds = EPrints::DataSet->new( $repository, $id, $typesconf )
 
 Return the dataset specified by $id. It needs the information
 in $typesconf and you probably should not call this directly
-but get access to a dataset via the archive object as described
+but get access to a dataset via the repository object as described
 above.
 
-Note that dataset know $archive and vice versa - which means they
+Note that dataset know $repository and vice versa - which means they
 will not get garbage collected.
 
 =cut
@@ -284,11 +284,11 @@ will not get garbage collected.
 
 sub new
 {
-	my( $class , $archive , $id , $typesconf, $cache ) = @_;
+	my( $class , $repository , $id , $typesconf, $cache ) = @_;
 	
 	my $self = EPrints::DataSet->new_stub( $id );
 
-	$self->{archive} = $archive;
+	$self->{repository} = $repository;
 
 	$self->{fields} = [];
 	$self->{system_fields} = [];
@@ -313,7 +313,7 @@ sub new
 	}
 	if( $id eq "arclanguage" )
 	{	
-		foreach( @{$archive->get_conf( "languages" )} )
+		foreach( @{$repository->get_conf( "languages" )} )
 		{
 			$self->{types}->{$_} = [];
 			$self->{staff_types}->{$_} = [];
@@ -323,7 +323,7 @@ sub new
 	}
 
 
-	$self->{default_order} = $self->{archive}->
+	$self->{default_order} = $self->{repository}->
 			get_conf( "default_order" , $self->{confid} );
 
 
@@ -352,18 +352,17 @@ sub new
 
 		if( $self->{confid} eq "eprint" )
 		{
-			if( $self->{archive}->get_conf( "submission_long_types" ) )
+			if( $self->{repository}->get_conf( "submission_long_types" ) )
 			{
 				$self->{field_index}->{type}->set_property( 
 					"input_style", "long" );
 			}
 		}
 	}
-
-	my $archivefields = $archive->get_conf( "archivefields", $self->{confid} );
-	if( $archivefields )
+	my $repository_fields = $repository->get_conf( "archivefields", $self->{confid} );
+	if( $repository_fields )
 	{
-		foreach my $fielddata ( @{$archivefields} )
+		foreach my $fielddata ( @{$repository_fields} )
 		{
 			my $field = EPrints::MetaField->new( dataset=>$self , %{$fielddata} );	
 			push @{$self->{fields}}	, $field;
@@ -399,19 +398,17 @@ sub new
 			# }
 		
 			#cjg junk///?$self->{field_order}->{$typeid} = $typedata->{page_order};
-		
 #cjg the "sort" is to avoid it accidently looking right.
 			foreach my $fname ( @{$self->{type_field_order}->{$typeid}} )
 			{
 				#shouldn't get any not in the type, but paranoia's ok...
 				next unless defined $typedata->{fields}->{$fname}; 
 
-
 				my $f = $typedata->{fields}->{$fname};
 				if( !defined $self->{field_index}->{$f->{id}} )
 				{
-					EPrints::Config::abort( 
-$self->{archive}->get_id.": ".
+					EPrints::abort( 
+$self->{repository}->get_id.": ".
 'Could not find field "'.$f->{id}.'" in dataset "'.$id.'", '.
 'although it is'."\n".'part of type: "'.$typeid.'"' );
 				}
@@ -419,7 +416,7 @@ $self->{archive}->get_id.": ".
 				my $field = $self->{field_index}->{$f->{id}};
 				if( !defined $field )
 				{
-					$archive->log( "Unknown field: $_ in ".
+					$repository->log( "Unknown field: $_ in ".
 						$self->{confid}."($typeid)" );
 				}
 
@@ -509,7 +506,7 @@ sub get_field
 
 	my $value = $self->{field_index}->{$fieldname};
 	if (!defined $value) {
-		$self->{archive}->log( 
+		$self->{repository}->log( 
 			"dataset ".$self->{id}." has no field: ".
 			$fieldname );
 		return undef;
@@ -887,7 +884,7 @@ sub get_object
 
 	if( !defined $class )
 	{
-		$session->get_archive->log(
+		$session->get_repository->log(
 				"Can't get_object for dataset ".
 				$self->{confid} );
 		return undef;
@@ -1029,7 +1026,7 @@ sub get_type_fields
 	my $fields = $self->{($staff?"staff_":"")."types"}->{$type};
 	if( !defined $fields )
 	{
-		$self->{archive}->log( "Unknown type in get_type_fields ($type)" );
+		$self->{repository}->log( "Unknown type in get_type_fields ($type)" );
 		return ();
 	}
 	return @{$fields};
@@ -1102,18 +1099,19 @@ sub map
 ######################################################################
 =pod
 
-=item $archive = $ds->get_archive
+=item $repository = $ds->get_repository
 
-Returns the EPrints::Archive to which this dataset belongs.
+Returns the EPrints::Repository to which this dataset belongs.
 
 =cut
 ######################################################################
+sub get_archive { return $_[0]->get_repository; }
 
-sub get_archive
+sub get_repository
 {
 	my( $self ) = @_;
 	
-	return $self->{archive};
+	return $self->{repository};
 }
 
 

@@ -2,7 +2,7 @@
 #
 #  Site Information
 #
-#   Constants and information about the local EPrints archive
+#   Constants and information about the local EPrints repository
 #   *PATHS SHOULD NOT END WITH SLASHES, LEAVE THEM OUT*
 #
 ######################################################################
@@ -39,23 +39,23 @@ use EPrints;
 
 sub get_conf
 {
-	my( $archiveinfo ) = @_;
+	my( $repository_info ) = @_;
 	my $c = {};
 
 ######################################################################
 #
-#  General archive information
+#  General repository information
 #
 ######################################################################
 
 # First we import information that was configured in
 # the XML file. It can be over-ridden, but that's 
 # probably not a good idea.
-foreach( keys %{$archiveinfo} ) { 
-	$c->{$_} = $archiveinfo->{$_} 
+foreach( keys %{$repository_info} ) { 
+	$c->{$_} = $repository_info->{$_} 
 };
 
-# If 1, users can request the removal of their submissions from the archive
+# If 1, users can request the removal of their submissions from the repository
 $c->{allow_user_removal_request} = 1;
 
 ######################################################################
@@ -172,7 +172,7 @@ $c->{required_formats} =
 $c->{diskspace_error_threshold} = 64*1024;
 
 # If ever the amount of free space drops below this threshold, the
-# archive administrator is sent a warning email. In kilobytes.
+# repository administrator is sent a warning email. In kilobytes.
 $c->{diskspace_warn_threshold} = 512*1024;
 
 ######################################################################
@@ -320,7 +320,7 @@ $c->{submission_hide_formatdesc} = 0;
 
 # Hide the language field. This field does not do
 # anything useful anyway, but it might provide 
-# useful data in a multilingual archive.
+# useful data in a multilingual repository.
 $c->{submission_hide_language} = 1;
 
 # Hide the security field, you might want to do
@@ -398,7 +398,7 @@ $c->{loghandler}->{enable} = 0;
 #
 #  Search and subscription information
 #
-#   Before the archive goes public, ensure that these are correct and work OK.
+#   Before the repository goes public, ensure that these are correct and work OK.
 #
 #   To specify a search field that will search >1 metadata field, enter
 #   all of the fields to be searched separated by slashes "/" as a single
@@ -580,7 +580,7 @@ $c->{latest_citation} = "neat";
 # Latest_tool Configuration
 #
 #  the latest_tool script is used to output the last "n" items 
-#  accepted into the archive
+#  accepted into the repository
 #
 ######################################################################
 
@@ -729,8 +729,8 @@ $c->{use_mimetex} = 0;
 # instead.
 #
 # The function will have to take the following paramaters.
-# $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname
-# Archive   string   utf8   utf8      utf8      DOM    DOM   string    utf8
+# $repository, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname
+# repository   string   utf8   utf8      utf8      DOM    DOM   string    utf8
 #
 
 # $c->{send_email} = \&EPrints::Utils::send_mail_via_sendmail;
@@ -769,11 +769,11 @@ return $c;
 
 ######################################################################
 #
-# log( $archive, $message )
+# log( $repository, $message )
 #
 ######################################################################
-# $archive 
-# - archive object
+# $repository 
+# - repository object
 # $message 
 # - log message string
 #
@@ -784,29 +784,29 @@ return $c;
 # sends everything to STDERR which means it ends up in the apache
 # error log ( or just stderr for the command line scripts in bin/ )
 # If you want to write to a file instead, or add extra information 
-# such as the name of the archive, this is the place to do it.
+# such as the name of the repository, this is the place to do it.
 #
 ######################################################################
 
 sub log
 {
-	my( $archive, $message ) = @_;
+	my( $repository, $message ) = @_;
 
 	print STDERR $message."\n";
 
-	# You may wish to use this line instead if you have many archives, but if you
+	# You may wish to use this line instead if you have many repositories, but if you
 	# only have on then it's just more noise.
-	#print STDERR "[".$archive->get_id()."] ".$message."\n";
+	#print STDERR "[".$repository->get_id()."] ".$message."\n";
 }
 
 
 ######################################################################
 #
-# %entities = get_entities( $archive , $langid );
+# %entities = get_entities( $repository , $langid );
 #
 ######################################################################
-# $archive 
-# - the archive object
+# $repository 
+# - the repository object
 # $langid 
 # - the 2 digit language ID string
 #
@@ -820,8 +820,8 @@ sub log
 # get_entities is used by eprints to get the entities
 # for the phrase files and config files. 
 #
-# When EPrints loads the archive config, it is called once for each
-# supported language, although that probably only affects the archive
+# When EPrints loads the repository config, it is called once for each
+# supported language, although that probably only affects the repository
 # name.
 #
 # It should not need editing, unless you want to add entities to the
@@ -831,17 +831,17 @@ sub log
 
 sub get_entities
 {
-	my( $archive, $langid ) = @_;
+	my( $repository, $langid ) = @_;
 
 	my %entities = ();
-	$entities{archivename} = $archive->get_conf( "archivename", $langid );
-	$entities{adminemail} = $archive->get_conf( "adminemail" );
-	$entities{base_url} = $archive->get_conf( "base_url" );
-	$entities{perl_url} = $archive->get_conf( "perl_url" );
-	$entities{frontpage} = $archive->get_conf( "frontpage" );
-	$entities{userhome} = $archive->get_conf( "userhome" );
+	$entities{archivename} = $repository->get_conf( "archivename", $langid );
+	$entities{adminemail} = $repository->get_conf( "adminemail" );
+	$entities{base_url} = $repository->get_conf( "base_url" );
+	$entities{perl_url} = $repository->get_conf( "perl_url" );
+	$entities{frontpage} = $repository->get_conf( "frontpage" );
+	$entities{userhome} = $repository->get_conf( "userhome" );
 	$entities{version} = EPrints::Config::get( "version" );
-	$entities{ruler} = EPrints::XML::to_string( $archive->get_ruler() );
+	$entities{ruler} = EPrints::XML::to_string( $repository->get_ruler() );
 
 	return %entities;
 }
@@ -901,7 +901,7 @@ sub can_request_view_document
 	return( 1 ) if( $security eq "staffonly" );
 
 
-	$doc->get_session->get_archive->log( 
+	$doc->get_session->get_repository->log( 
 "unrecognized request security flag '$security' on document ".$doc->get_id );
 	# return 0 if we don't recognise the security flag.
 	return( 0 );
@@ -956,7 +956,7 @@ sub can_user_view_document
 		
 	}
 
-	$doc->get_session->get_archive->log( 
+	$doc->get_session->get_repository->log( 
 "unrecognized user security flag '$security' on document ".$doc->get_id );
 	# Unknown security type, be paranoid and deny permission.
 	return( 0 );
@@ -971,7 +971,7 @@ sub can_user_view_document
 #  Invoked each time a new session is needed (generally one per
 #  script invocation.) $session is a session object that can be used
 #  to store any values you want. To prevent future clashes, prefix
-#  all of the keys you put in the hash with archive.
+#  all of the keys you put in the hash with repository.
 #
 #  If $offline is non-zero, the session is an `off-line' session, i.e.
 #  it has been run as a shell script and not by the web server.
@@ -1019,7 +1019,7 @@ sub email_for_doc_request {
 	if ($user->is_set("email")) {
 		return $user->get_value("email");
 	}
-	return $session->get_archive->get_conf("adminemail");
+	return $session->get_repository->get_conf("adminemail");
 }
 
 # Return true to indicate the module loaded OK.

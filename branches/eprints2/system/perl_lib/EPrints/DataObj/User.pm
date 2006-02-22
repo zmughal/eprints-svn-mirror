@@ -33,7 +33,7 @@ metadata fields (plus those defined in ArchiveMetadataFieldsConfig:
 
 =item userid (int)
 
-The unique ID number of this user record. Unique within the current archive.
+The unique ID number of this user record. Unique within the current repository.
 
 =item rev_number (int)
 
@@ -44,12 +44,12 @@ be used for logging later.
 =item username (text)
 
 The username of this user. Used for logging into the system. Unique within
-this archive.
+this repository.
 
 =item password (secret)
 
 The password of this user encoded with crypt. This may be ignored if the
-archive is using an alternate authentication system, eg. LDAP.
+repository is using an alternate authentication system, eg. LDAP.
 
 =item usertype (datatype)
 
@@ -80,12 +80,12 @@ created at midnight.
 
 =item email (email)
 
-The email address of this user. Unique within the archive. 
+The email address of this user. Unique within the repository. 
 
 =item lang (datatype) 
 
 The ID of the prefered language of this user. Only really used in multilingual
-archives.
+repositories.
 
 =item editperms (search, multiple)
 
@@ -205,7 +205,7 @@ sub new
 	my( $class, $session, $userid ) = @_;
 
 	return $session->get_db()->get_single( 
-		$session->get_archive()->get_dataset( "user" ),
+		$session->get_repository->get_dataset( "user" ),
 		$userid );
 }
 
@@ -230,7 +230,7 @@ sub new_from_data
 	my $self = {};
 	bless $self, $class;
 	$self->{data} = $data;
-	$self->{dataset} = $session->get_archive()->get_dataset( "user" );
+	$self->{dataset} = $session->get_repository->get_dataset( "user" );
 	$self->{session} = $session;
 
 	return( $self );
@@ -255,7 +255,7 @@ sub create
 	return EPrints::DataObj::User->create_from_data( 
 		$session, 
 		{ usertype=>$user_type },
-		$session->get_archive->get_dataset( "user" ) );
+		$session->get_repository->get_dataset( "user" ) );
 }
 
 ######################################################################
@@ -283,7 +283,7 @@ sub get_defaults
 		"mailempty"=>"FALSE"
 	};
 
-	$session->get_archive->call(
+	$session->get_repository->call(
 		"set_user_defaults",
 		$defaults,
 		$session );
@@ -308,7 +308,7 @@ sub user_with_email
 {
 	my( $session, $email ) = @_;
 	
-	my $user_ds = $session->get_archive()->get_dataset( "user" );
+	my $user_ds = $session->get_repository->get_dataset( "user" );
 
 	my $searchexp = new EPrints::SearchExpression(
 		session=>$session,
@@ -341,7 +341,7 @@ sub user_with_username
 {
 	my( $session, $username ) = @_;
 	
-	my $user_ds = $session->get_archive()->get_dataset( "user" );
+	my $user_ds = $session->get_repository->get_dataset( "user" );
 
 	my $searchexp = new EPrints::SearchExpression(
 		session=>$session,
@@ -382,7 +382,7 @@ sub validate
 	my( $self ) = @_;
 
 	my @all_problems;
-	my $user_ds = $self->{session}->get_archive()->get_dataset( "user" );
+	my $user_ds = $self->{session}->get_repository->get_dataset( "user" );
 	my @rfields = $user_ds->get_required_type_fields( $self->get_value( "usertype" ) );
 	my @all_fields = $user_ds->get_fields();
 
@@ -402,7 +402,7 @@ sub validate
 	# Give the validation module a go
 	foreach $field ( @all_fields )
 	{
-		push @all_problems, $self->{session}->get_archive()->call(
+		push @all_problems, $self->{session}->get_repository->call(
 			"validate_field",
 			$field,
 			$self->get_value( $field->get_name() ),
@@ -410,7 +410,7 @@ sub validate
 			0 );
 	}
 
-	push @all_problems, $self->{session}->get_archive()->call(
+	push @all_problems, $self->{session}->get_repository->call(
 			"validate_user",
 			$self,
 			$self->{session} );
@@ -436,7 +436,7 @@ sub commit
 {
 	my( $self, $force ) = @_;
 
-	$self->{session}->get_archive()->call( 
+	$self->{session}->get_repository->call( 
 		"set_user_automatic_fields", 
 		$self );
 	
@@ -447,7 +447,7 @@ sub commit
 	}
 	$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 
-	my $user_ds = $self->{session}->get_archive()->get_dataset( "user" );
+	my $user_ds = $self->{session}->get_repository->get_dataset( "user" );
 	my $success = $self->{session}->get_db()->update(
 		$user_ds,
 		$self->{data} );
@@ -483,7 +483,7 @@ sub remove
 	}
 
 	# remove user record
-	my $user_ds = $self->{session}->get_archive()->get_dataset( "user" );
+	my $user_ds = $self->{session}->get_repository->get_dataset( "user" );
 	$success = $success && $self->{session}->get_db()->remove(
 		$user_ds,
 		$self->get_value( "userid" ) );
@@ -506,7 +506,7 @@ sub has_priv
 {
 	my( $self, $resource ) = @_;
 
-	my $userprivs = $self->{session}->get_archive()->
+	my $userprivs = $self->{session}->get_repository->
 		get_conf( "userauth", $self->get_value( "usertype" ), "priv" );
 
 	foreach my $priv ( @{$userprivs} )
@@ -566,7 +566,7 @@ sub get_editable_eprints
 
 	unless( $self->is_set( 'editperms' ) )
 	{
-		my $ds = $self->{session}->get_archive->get_dataset( 
+		my $ds = $self->{session}->get_repository->get_dataset( 
 			"buffer" );
 		my $searchexp = EPrints::SearchExpression->new(
 			allow_blank => 1,
@@ -617,7 +617,7 @@ sub get_owned_eprints
 {
 	my( $self, $ds ) = @_;
 
-	my $fn = $self->{session}->get_archive->get_conf( "get_users_owned_eprints" );
+	my $fn = $self->{session}->get_repository->get_conf( "get_users_owned_eprints" );
 
 	if( !defined $fn )
 	{
@@ -648,7 +648,7 @@ sub is_owner
 {
 	my( $self, $eprint ) = @_;
 
-	my $fn = $self->{session}->get_archive->get_conf( "does_user_own_eprint" );
+	my $fn = $self->{session}->get_repository->get_conf( "does_user_own_eprint" );
 
 	if( !defined $fn )
 	{
@@ -677,7 +677,7 @@ $subjectid is the ID of a phrase to use as the subject of this email.
 $message is an XML DOM object describing the message in simple XHTML.
 
 $replyto is the reply to address for this email, if different to the
-archive default.
+repository default.
 
 $email is the email address to send this email to if different from
 this users configured email address.
@@ -694,7 +694,7 @@ sub mail
 
 	# Mail the admin in the default language
 	my $langid = $self->get_value( "lang" );
-	my $lang = $self->{session}->get_archive()->get_language( $langid );
+	my $lang = $self->{session}->get_repository->get_language( $langid );
 
 	my $remail;
 	my $rname;
@@ -709,7 +709,7 @@ sub mail
 	}
 
 	return EPrints::Utils::send_mail(
-		$self->{session}->get_archive(),
+		$self->{session}->get_repository,
 		$langid,
 		EPrints::Utils::tree_to_utf8( $self->render_description ),
 		$email,
@@ -756,7 +756,7 @@ sub render
 {
 	my( $self ) = @_;
 
-	my( $dom, $title ) = $self->{session}->get_archive()->call( "user_render", $self, $self->{session} );
+	my( $dom, $title ) = $self->{session}->get_repository->call( "user_render", $self, $self->{session} );
 
 	if( !defined $title )
 	{
@@ -786,7 +786,7 @@ sub render_full
 	my( $table, $title ) = $self->SUPER::render_full;
 
 	my @subs = $self->get_subscriptions;
-	my $subs_ds = $self->{session}->get_archive->get_dataset( "subscription" );
+	my $subs_ds = $self->{session}->get_repository->get_dataset( "subscription" );
 	foreach my $subscr ( @subs )
 	{
 		my $rowright = $self->{session}->make_doc_fragment;
@@ -830,11 +830,11 @@ sub get_url
 
 	if( defined $staff && $staff )
 	{
-		return $self->{session}->get_archive()->get_conf( "perl_url" )."/users/staff/view_user?userid=".$self->get_value( "userid" );
+		return $self->{session}->get_repository->get_conf( "perl_url" )."/users/staff/view_user?userid=".$self->get_value( "userid" );
 
 	}
 
-	return $self->{session}->get_archive()->get_conf( "perl_url" )."/user?userid=".$self->get_value( "userid" );
+	return $self->{session}->get_repository->get_conf( "perl_url" )."/user?userid=".$self->get_value( "userid" );
 }
 
 
@@ -872,7 +872,7 @@ sub get_subscriptions
 {
 	my( $self ) = @_;
 
-	my $subs_ds = $self->{session}->get_archive()->get_dataset( 
+	my $subs_ds = $self->{session}->get_repository->get_dataset( 
 		"subscription" );
 
 	my $searchexp = EPrints::SearchExpression->new(
@@ -914,7 +914,7 @@ sub send_out_editor_alert
 
 	if( $freq eq "never" )
 	{
-		$self->{session}->get_archive->log( 
+		$self->{session}->get_repository->log( 
 			"Attempt to send out an editor alert for a user\n".
 			"which has frequency 'never'\n" );
 		return;
@@ -922,7 +922,7 @@ sub send_out_editor_alert
 
 	unless( $self->has_priv( "editor" ) )
 	{
-		$self->{session}->get_archive->log( 
+		$self->{session}->get_repository->log( 
 			"Attempt to send out an editor alert for a user\n".
 			"which does not have editor priv (".
 			$self->get_value("username").")\n" );
@@ -937,7 +937,7 @@ sub send_out_editor_alert
 
 	if( $list->count > 0 || $self->get_value( "mailempty" ) eq 'TRUE' )
 	{
-		my $url = $self->{session}->get_archive->get_conf( "perl_url" ).
+		my $url = $self->{session}->get_repository->get_conf( "perl_url" ).
 			"/users/record";
 		my $freqphrase = $self->{session}->html_phrase(
 			"lib/subscription:".$freq ); # nb. reusing the subscription.pm phrase
@@ -980,7 +980,7 @@ sub send_out_editor_alert
 Static method.
 
 Called to send out all editor alerts of a given frequency (daily,
-weekly, monthly) for the current archive.
+weekly, monthly) for the current repository.
 
 =cut
 ######################################################################
@@ -993,11 +993,11 @@ sub process_editor_alerts
 		$frequency ne "weekly" && 
 		$frequency ne "monthly" )
 	{
-		$session->get_archive->log( "EPrints::DataObj::User::process_editor_alerts called with unknown frequency: ".$frequency );
+		$session->get_repository->log( "EPrints::DataObj::User::process_editor_alerts called with unknown frequency: ".$frequency );
 		return;
 	}
 
-	my $subs_ds = $session->get_archive->get_dataset( "user" );
+	my $subs_ds = $session->get_repository->get_dataset( "user" );
 
 	my $searchexp = EPrints::SearchExpression->new(
 		session => $session,
@@ -1073,7 +1073,7 @@ sub can_edit
 	my( $user, $eprint ) = @_;
 	my $session = $user->{session};
 
-	my $user_ds = $session->get_archive()->get_dataset( "user" );
+	my $user_ds = $session->get_repository->get_dataset( "user" );
 
 	my $ef_field = $user_ds->get_field( 'editperms' );
 	my $searches = $session->current_user->get_value( 'editperms' );

@@ -26,7 +26,7 @@ my $url = $ENV{REDIRECT_URL};
 
 
 my $newurl;
-my $fn = $session->get_archive->get_conf( "catch404" );
+my $fn = $session->get_repository->get_conf( "catch404" );
 if( defined $fn )
 {
 	$newurl = &{$fn}( $session, $url );
@@ -160,7 +160,7 @@ sub noview_404
 		$session->html_phrase( "cgi/handle_http_error:404_title" ),
 		$session->make_text( $error ),
 		"noview_404" );
-	$session->get_archive()->log( $error );
+	$session->get_repository->log( $error );
 
         $session->send_page();
 }

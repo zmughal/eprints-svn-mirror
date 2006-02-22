@@ -49,7 +49,7 @@ sub convert_dataobj
 		$data->{TY} = "INPR" if $status eq "inpress"; 
 		$data->{TY} = "UNPB" if $status eq "unpub";
 	}
-	$data->{ID} = $plugin->{session}->get_archive->get_id . $dataobj->get_id;
+	$data->{ID} = $plugin->{session}->get_repository->get_id . $dataobj->get_id;
 	$data->{TI} = $dataobj->get_value( "title" ) if $dataobj->is_set( "title" );
 	$data->{T3} = $dataobj->get_value( "series" ) if $dataobj->is_set( "series" );
 	$data->{BT} = $dataobj->get_value( "book_title" ) if $dataobj->is_set( "book_title" );

@@ -16,7 +16,7 @@
 
 =head1 NAME
 
-B<EPrints::Language> - A Single Language supported by an Archive.
+B<EPrints::Language> - A Single Language supported by a repository.
 
 =head1 DESCRIPTION
 
@@ -36,15 +36,15 @@ format of phrase files.
 #     The ISO id of this language.
 #
 #  $self->{fallback}
-#     If $self is the primary language in its archive then this is
+#     If $self is the primary language in its repository then this is
 #     undef, otherwise it is a reference to the primary language
 #     object.
 #
-#  $self->{archivedata}
+#  $self->{repository_data}
 #  $self->{data}
 #     A reference to a hash. Keys are ids for phrases, values are
 #     DOM fragments containing the phases.
-#     archivedata contains archive specific phrases, data contains
+#     repository_data contains repository specific phrases, data contains
 #     generic eprints phrases. 
 #
 #  $self->{xmldoc}
@@ -59,21 +59,21 @@ use strict;
 ######################################################################
 =pod
 
-=item $language = EPrints::Language->new( $langid, $archive, [$fallback] )
+=item $language = EPrints::Language->new( $langid, $repository, [$fallback] )
 
 Create a new language object representing the phases eprints will
 use in a given language, loading them from the phrase config XML files.
 
-$langid is the ISO language ID of the language, $archive is the 
-archive to which this language object belongs. $fallback is either
-undef or a reference to the main language object for the archive.
+$langid is the ISO language ID of the language, $repository is the 
+repository to which this language object belongs. $fallback is either
+undef or a reference to the main language object for the repository.
 
 =cut
 ######################################################################
 
 sub new
 {
-	my( $class , $langid , $archive , $fallback ) = @_;
+	my( $class , $langid , $repository , $fallback ) = @_;
 
 	my $self = {};
 	bless $self, $class;
@@ -84,12 +84,12 @@ sub new
 	
 	$self->{fallback} = $fallback;
 
-	$self->{archivedata} = $self->_read_phrases( 
-		$archive->get_conf( "config_path" ).
+	$self->{repository_data} = $self->_read_phrases( 
+		$repository->get_conf( "config_path" ).
 			"/phrases-".$self->{id}.".xml", 
-		$archive );
+		$repository );
 	
-	if( !defined  $self->{archivedata} )
+	if( !defined  $self->{repository_data} )
 	{
 		return( undef );
 	}
@@ -97,7 +97,7 @@ sub new
 	$self->{data} = $self->_read_phrases( 
 		EPrints::Config::get( "phr_path" ).
 			"/system-phrases-".$self->{id}.".xml", 
-		$archive );
+		$repository );
 
 	if( !defined  $self->{data} )
 	{
@@ -121,9 +121,9 @@ one phrase file the system checks the next.
 
 =over 4
 
-=item This languages archive specific phrases.
+=item This languages repository specific phrases.
 
-=item The fallback languages archives specific phrases (if there is a fallback).
+=item The fallback languages repository specific phrases (if there is a fallback).
 
 =item This languages general phrases.
 
@@ -154,7 +154,7 @@ sub phrase
 		$response->appendChild( 
 			 $session->make_text(  
 				'["'.$phraseid.'" not defined]' ) );
-		$session->get_archive()->log( 
+		$session->get_repository->log( 
 			'Undefined phrase: "'.$phraseid.'" ('.$self->{id}.')' );
 	}
 	else
@@ -168,7 +168,7 @@ sub phrase
 			if( !$used->{$_} )
 			{
 				# Should log this, but somtimes it's supposed to happen!
-				# $session->get_archive->log( "Unused parameter \"$_\" passed to phrase \"$phraseid\"" );
+				# $session->get_repository->log( "Unused parameter \"$_\" passed to phrase \"$phraseid\"" );
 				EPrints::XML::dispose( $inserts->{$_} );
 			}
 		}
@@ -220,7 +220,7 @@ sub _insert_pins
 			{
 				$retnode = $session->make_text( 
 						"[ref missing: $ref]" );
-				$session->get_archive->log(
+				$session->get_repository->log(
 "missing parameter \"$ref\" when making phrase \"$phraseid\"" );
 			}
 		}
@@ -271,11 +271,11 @@ sub _phrase_aux
 
 	my $res = undef;
 
-	$res = $self->{archivedata}->{$phraseid};
+	$res = $self->{repository_data}->{$phraseid};
 	return( $res , 0 ) if ( defined $res );
 	if( defined $self->{fallback} )
 	{
-		$res = $self->{fallback}->_get_archivedata->{$phraseid};
+		$res = $self->{fallback}->_get_repositorydata->{$phraseid};
 		return ( $res , 1 ) if ( defined $res );
 	}
 
@@ -327,22 +327,22 @@ sub _get_data
 
 ######################################################################
 # 
-# $foo = $language->_get_archivedata
+# $foo = $language->_get_repositorydata
 #
 # undocumented
 #
 ######################################################################
 
-sub _get_archivedata
+sub _get_repositorydata
 {
 	my( $self ) = @_;
-	return $self->{archivedata};
+	return $self->{repository_data};
 }
 
 
 ######################################################################
 # 
-#  $phrases = $language->_read_phrases( $file, $archive )
+#  $phrases = $language->_read_phrases( $file, $repository )
 # 
 # Return a reference to a hash of DOM objects describing the phrases
 # from the XML phrase file $file.
@@ -351,9 +351,9 @@ sub _get_archivedata
 
 sub _read_phrases
 {
-	my( $self, $file, $archive ) = @_;
+	my( $self, $file, $repository ) = @_;
 
-	my $doc=$archive->parse_xml( $file );	
+	my $doc=$repository->parse_xml( $file );	
 	if( !defined $doc )
 	{
 		print STDERR "Error loading $file\n";

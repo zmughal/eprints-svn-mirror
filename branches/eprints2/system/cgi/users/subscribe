@@ -28,7 +28,7 @@ if( !$session->auth_check( "subscription" ) )
 
 my $user = $session->current_user;
 my $action = $session->get_action_button();
-my $subs_ds = $session->get_archive->get_dataset( "subscription" );
+my $subs_ds = $session->get_repository->get_dataset( "subscription" );
 
 # handle user response
 
@@ -52,7 +52,7 @@ elsif( $action =~ /^edit_([0-9]+)$/ || $action eq "finish" )
 	my $subscr = EPrints::DataObj::Subscription->new( $session, $subid );
 	if( !defined $subscr )
 	{
-		$session->get_archive->log( "Attempt by user #".
+		$session->get_repository->log( "Attempt by user #".
 			$session->current_user->get_id." to edit ".
 			"subscription #".$subid." which does not ".
 			"exist." );
@@ -60,7 +60,7 @@ elsif( $action =~ /^edit_([0-9]+)$/ || $action eq "finish" )
 	}
 	elsif( $subscr->get_value( "userid" ) != $user->get_id )
 	{
-		$session->get_archive->log( "Attempt by user #".
+		$session->get_repository->log( "Attempt by user #".
 			$session->current_user->get_id." to edit ".
 			"subscription #".$subid." which does does not ".
 			"belong to them." );
@@ -102,7 +102,7 @@ elsif( $action =~ /^remove_([0-9]+)$/ )
 	my $subscr = EPrints::DataObj::Subscription->new( $session, $1 );
 	if( !defined $subscr )
 	{
-		$session->get_archive->log( "Attempt by user #".
+		$session->get_repository->log( "Attempt by user #".
 			$session->current_user->get_id." to remove ".
 			"subscription #".$1." which does not ".
 			"exist." );
@@ -113,7 +113,7 @@ elsif( $action =~ /^remove_([0-9]+)$/ )
 	}
 	else
 	{
-		$session->get_archive->log( "Attempt by user #".
+		$session->get_repository->log( "Attempt by user #".
 			$session->current_user->get_id." to remove ".
 			"subscription #".$subscr->get_id." owned by user ".
 			"#".$subscr->get_user->get_id );

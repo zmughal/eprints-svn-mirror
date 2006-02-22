@@ -14,15 +14,15 @@
 
 =head1 NAME
 
-B<import_subjects> - rebuild an EPrint archive subjects list from the contents of a file
+B<import_subjects> - rebuild an EPrint repository subjects list from the contents of a file
 
 =head1 SYNOPSIS
 
-B<import_subjects> I<archiveid> [B<options>] [I<subjectfile>]
+B<import_subjects> I<repository_id> [B<options>] [I<subjectfile>]
 
 =head1 DESCRIPTION
 
-Import a set of subjects into an EPrints archive. The subjects are the heirarchical tree of options for "subject" type metadata fields in an eprint archive. 
+Import a set of subjects into an EPrints repository. The subjects are the heirarchical tree of options for "subject" type metadata fields in an eprint repository. 
 
 Use the staff admin subject editor for little tweaks. Use this command for the initial setup or bulk editing subjects. Use the exporter to dump the current subjects if you (an administrator) have edited them online.
 
@@ -34,13 +34,13 @@ Without the B<--force> option, this script asks for confirmation before actually
 
 =over 8
 
-=item I<archiveid> 
+=item I<repository_id> 
 
-The ID of the EPrint archive to use.
+The ID of the EPrint repository to use.
 
 =item I<subjectfile>
 
-This is the file to import the subjects from. If you do not specify it then the system will use "subjects" from the given archives cfg directory (or "subjects.xml" if you used B<--xml>).
+This is the file to import the subjects from. If you do not specify it then the system will use "subjects" from the given repository cfg directory (or "subjects.xml" if you used B<--xml>).
 
 =back
 
@@ -120,7 +120,7 @@ An ASCII string which is a unique ID for this subject.
 
 =item B<name> 
 
-The name of this subject, in the default language of the archive.
+The name of this subject, in the default language of the repository.
 
 =item B<parents> 
 
@@ -150,7 +150,7 @@ This is the standard eprints export format. It looks like this:
     .
   </eprintsdata>
 
-The fields have the same meaning as described for the ASCII format, with the following variations. The name field can (and should) have a name for each language supported by the archive. Multiple parents are indicated by multiple C<<lt>field name="parents<gt>> elements. Depositable should be either TRUE or FALSE.
+The fields have the same meaning as described for the ASCII format, with the following variations. The name field can (and should) have a name for each language supported by the repository. Multiple parents are indicated by multiple C<<lt>field name="parents<gt>> elements. Depositable should be either TRUE or FALSE.
 
 __GENERICPOD__
 
@@ -202,7 +202,7 @@ my $filename = $ARGV[1];
 
 if( !defined $filename )
 {
-	$filename = $session->get_archive()->get_conf( "config_path" )."/subjects";
+	$filename = $session->get_repository->get_conf( "config_path" )."/subjects";
 	$filename.= ".xml" if( $xml );
 }
 
@@ -211,7 +211,7 @@ unless( $force )
 	if( $noise > 0 )
 	{
 		print "You are about to make bulk changes to the subject table\n";
-		print "in the $ARGV[0] archive.\n";
+		print "in the $ARGV[0] repository.\n";
 	}
 	print "Continue (yes/no): ";
 	my $input = <STDIN>;
@@ -237,7 +237,7 @@ if( $purge )
 	}
 }
 
-my $subds = $session->get_archive()->get_dataset( "subject" );
+my $subds = $session->get_repository->get_dataset( "subject" );
 
 print "Importing from $filename...\n" if( $noise >= 1 );
 my $count = 0;
@@ -291,7 +291,7 @@ sub from_ascii_file
 	}
 
 	my $count = 0;
-	my $lang = $session->{archive}->get_conf( "defaultlanguage" );
+	my $lang = $session->get_repository->get_conf( "defaultlanguage" );
 	
 	while( <SUBJECTS> )
 	{

@@ -27,7 +27,7 @@ if( !$session->auth_check( "deposit" ) )
 
 my $user = $session->current_user();
 
-my $wfopt = $session->get_archive()->get_conf( "use_workflow" );
+my $wfopt = $session->get_repository->get_conf( "use_workflow" );
 
 if( $wfopt )
 {
@@ -40,9 +40,9 @@ else
 {
 	my $subform = new EPrints::SubmissionForm(
 		$session,
-		$session->get_archive->get_conf( "userhome" ),
+		$session->get_repository->get_conf( "userhome" ),
 		0,
-	       	$session->get_archive->get_dataset( "inbox" ),
+	       	$session->get_repository->get_dataset( "inbox" ),
 		"submit" );
 	$subform->process;
 }

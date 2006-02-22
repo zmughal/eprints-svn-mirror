@@ -113,7 +113,7 @@ sub from_search_form
 {
 	my( $self, $session, $prefix ) = @_;
 
-	$session->get_archive()->log( "Attempt to search a \"secret\" type field." );
+	$session->get_repository->log( "Attempt to search a \"secret\" type field." );
 
 	return;
 }

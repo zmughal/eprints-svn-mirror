@@ -116,7 +116,7 @@ sub output_dataobj
 	
 	my $r = "error. output_dataobj not subclassed";
 
-	$plugin->{session}->get_archive->log( $r );
+	$plugin->{session}->get_repository->log( $r );
 
 	return $r;
 }
@@ -127,7 +127,7 @@ sub xml_dataobj
 	
 	my $r = "error. xml_dataobj not subclassed";
 
-	$plugin->{session}->get_archive->log( $r );
+	$plugin->{session}->get_repository->log( $r );
 
 	return $plugin->{session}->make_text( $r );
 }
@@ -149,15 +149,15 @@ sub dataobj_export_url
 
 	unless( $pluginid =~ m#^Output::(.*)$# )
 	{
-		$plugin->{session}->get_archive->log( "Bad pluginid in dataobj_export_url: ".$pluginid );
+		$plugin->{session}->get_repository->log( "Bad pluginid in dataobj_export_url: ".$pluginid );
 		return undef;
 	}
 	my $format = $1;
 
-	my $url = $plugin->{session}->get_archive->get_conf( "perl_url" );
+	my $url = $plugin->{session}->get_repository->get_conf( "perl_url" );
 	$url .= "/users/staff" if $staff;
 	$url .= "/export/".$dataobj->get_id."/".$format;
-	$url .= "/".$plugin->{session}->get_archive->get_id;
+	$url .= "/".$plugin->{session}->get_repository->get_id;
 	$url .= "-".$dataobj->get_dataset->confid."-".$dataobj->get_id.$plugin->{suffix};
 
 	return $url;

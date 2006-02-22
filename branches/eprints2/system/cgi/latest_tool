@@ -18,15 +18,15 @@ use strict;
 my $session = new EPrints::Session;
 exit( 0 ) unless( defined $session );
 
-my $ds = $session->get_archive()->get_dataset( "archive" );
+my $ds = $session->get_repository->get_dataset( "archive" );
 my $page=$session->make_doc_fragment();
 
-my $citation = $session->get_archive->get_conf( "latest_tool_citation" );
+my $citation = $session->get_repository->get_conf( "latest_tool_citation" );
 my $max = 20;
 my $mode = $session->param( "mode" );
 $mode = "default" if( !defined $mode );
 my $filters = [];
-my $conf = $session->get_archive->get_conf( "latest_tool_modes", $mode );
+my $conf = $session->get_repository->get_conf( "latest_tool_modes", $mode );
 my $class= "latest_tool";
 if( defined $conf )
 {
@@ -84,19 +84,19 @@ if( $output eq "rss" )
 		4,
 		"title",
 		EPrints::Session::best_language( 
-			$session->get_archive(),
+			$session->get_repository,
 			$session->get_langid(),
-			%{$session->get_archive()->get_conf( "archivename" )} ) ) );
+			%{$session->get_repository->get_conf( "archivename" )} ) ) );
 
 	$channel->appendChild( $session->render_data_element(
 		4,
 		"link",
-		$session->get_archive()->get_conf( "frontpage" ) ) );
+		$session->get_repository->get_conf( "frontpage" ) ) );
 
 	$channel->appendChild( $session->render_data_element(
 		4,
 		"description", 
-		$session->get_archive()->get_conf( "oai","content","text" ) ) );
+		$session->get_repository->get_conf( "oai","content","text" ) ) );
 
 	$channel->appendChild( $session->render_data_element(
 		4,

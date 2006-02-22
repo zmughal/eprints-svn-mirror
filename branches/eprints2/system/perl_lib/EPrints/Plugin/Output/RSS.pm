@@ -46,9 +46,9 @@ sub output_list
 
 	my $title = "";
 	$title.= EPrints::Session::best_language( 
-			$session->get_archive(),
+			$session->get_repository,
 			$session->get_langid(),
-			%{$session->get_archive()->get_conf( "archivename" )} );
+			%{$session->get_repository->get_conf( "archivename" )} );
 	$title.= ": ".EPrints::Utils::tree_to_utf8( $list->render_description );
 
 	$channel->appendChild( $session->render_data_element(
@@ -59,12 +59,12 @@ sub output_list
 	$channel->appendChild( $session->render_data_element(
 		4,
 		"link",
-		$session->get_archive()->get_conf( "frontpage" ) ) );
+		$session->get_repository->get_conf( "frontpage" ) ) );
 
 	$channel->appendChild( $session->render_data_element(
 		4,
 		"description", 
-		$session->get_archive()->get_conf( "oai","content","text" ) ) );
+		$session->get_repository->get_conf( "oai","content","text" ) ) );
 
 	$channel->appendChild( $session->render_data_element(
 		4,

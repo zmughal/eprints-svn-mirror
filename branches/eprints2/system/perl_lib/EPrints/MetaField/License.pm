@@ -50,7 +50,7 @@ sub render_single_value
 {
 	my( $self, $session, $value, $dont_link ) = @_;
 	
-	my $ds = $session->get_archive()->get_dataset(
+	my $ds = $session->get_repository->get_dataset(
 			$self->get_property( "datasetid" ) );
 	my $obj = $session->get_db()->get_single( $ds, $value );
 
@@ -68,7 +68,7 @@ sub tags_and_labels
 {
 	my( $self, $session ) = @_;
 
-	my $ds = $session->get_archive()->get_dataset(
+	my $ds = $session->get_repository->get_dataset(
 			$self->get_property( "datasetid" ) );
 
 	return $ds->make_object( $session, {} )->tags_and_labels( $session, $ds );
@@ -89,7 +89,7 @@ sub get_value_label
 {
 	my( $self, $session, $value ) = @_;
 
-	my $ds = $session->get_archive()->get_dataset( 
+	my $ds = $session->get_repository->get_dataset( 
 			$self->{datasetid} );	
 
 	return $session->make_text(

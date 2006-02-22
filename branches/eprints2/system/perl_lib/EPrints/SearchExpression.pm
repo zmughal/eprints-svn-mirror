@@ -250,7 +250,7 @@ END
 
 	if( defined $data{"dataset_id"} )
 	{
-		$self->{"dataset"} = $self->{"session"}->get_archive->get_dataset( $data{"dataset_id"} );
+		$self->{"dataset"} = $self->{"session"}->get_repository->get_dataset( $data{"dataset_id"} );
 	}
 
 	if( defined $self->{custom_order} ) 
@@ -269,7 +269,7 @@ END
 #	{
 #		# Get {order} from {dataset} if possible.
 #
-#		$self->{order} = $self->{session}->get_archive->get_conf( 
+#		$self->{order} = $self->{session}->get_repository->get_conf( 
 #					"default_order", 
 #					$self->{dataset}->confid );
 #	}
@@ -286,13 +286,13 @@ END
 	# the config.
 	if( $self->{fieldnames} eq "subscriptionfields" )
 	{
-		$self->{fieldnames} = $self->{session}->get_archive->get_conf(
+		$self->{fieldnames} = $self->{session}->get_repository->get_conf(
 			"subscription_fields" );
 	}
 
 	if( $self->{fieldnames} eq "editpermfields" )
 	{
-		$self->{fieldnames} = $self->{session}->get_archive->get_conf(
+		$self->{fieldnames} = $self->{session}->get_repository->get_conf(
 			"editor_limit_fields" );
 	}
 
@@ -331,7 +331,7 @@ END
 	if( !defined $self->{"default_order"} )
 	{
 		$self->{"default_order"} = 
-			$self->{session}->get_archive->get_conf( 
+			$self->{session}->get_repository->get_conf( 
 				"default_order",
 				"eprint" );
 	}
@@ -339,7 +339,7 @@ END
 	if( !defined $self->{"page_size"} )
 	{
 		$self->{"page_size"} = 
-			$self->{session}->get_archive->get_conf( 
+			$self->{session}->get_repository->get_conf( 
 				"results_page_size" );
 	}
 
@@ -673,7 +673,7 @@ sub render_order_menu
 	}
 
 
-	my @tags = keys %{$self->{session}->get_archive()->get_conf(
+	my @tags = keys %{$self->{session}->get_repository->get_conf(
 			"order_methods",
 			$self->{dataset}->confid )};
 
@@ -894,7 +894,7 @@ sub from_string
 	$self->{order} = $parts[2];
 # not overriding these bits
 #	$self->{allow_blank} = $parts[0];
-#	$self->{dataset} = $self->{session}->get_archive()->get_dataset( $parts[3] ); 
+#	$self->{dataset} = $self->{session}->get_repository->get_dataset( $parts[3] ); 
 
 	my $sf_data = {};
 	foreach( split /\|/ , $fstring )
@@ -1104,7 +1104,7 @@ sub _dopage_export_redir
 	#cjg escape URL'ify urls in this bit... (4 of them?)
 	my $escexp = $exp;
 	$escexp =~ s/ /+/g; # not great way...
-	my $fullurl = "$url/export_".$self->{session}->get_archive->get_id."_".$format.$plugin->param("suffix")."?_exp=$escexp&_output=$format&_action_export=1&_cache=$cacheid";
+	my $fullurl = "$url/export_".$self->{session}->get_repository->get_id."_".$format.$plugin->param("suffix")."?_exp=$escexp&_output=$format&_action_export=1&_cache=$cacheid";
 
 	$self->{session}->redirect( $fullurl );
 }
@@ -1796,7 +1796,7 @@ sub perform_search
 		}
 		else
 		{
-			$order = $self->{session}->get_archive()->get_conf( 
+			$order = $self->{session}->get_repository->get_conf( 
 						"order_methods" , 
 						$self->{dataset}->confid(),
 						$self->{order} );
@@ -1839,7 +1839,7 @@ sub cache_results
 
 	if( !defined $self->{result} )
 	{
-		$self->{session}->get_archive()->log( "\$searchexp->cache_results() : Search has not been performed" );
+		$self->{session}->get_repository->log( "\$searchexp->cache_results() : Search has not been performed" );
 		return;
 	}
 

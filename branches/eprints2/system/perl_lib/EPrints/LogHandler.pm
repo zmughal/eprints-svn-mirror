@@ -38,9 +38,9 @@ sub handler
 	return EPrints::AnApache::DECLINED unless defined $session;
 
 	# The rest of this is a hack to test with
-	my $archive = $session->get_archive();
+	my $repository = $session->get_repository;
 
-	my $root = $archive->get_conf( "archiveroot" );
+	my $root = $repository->get_conf( "archiveroot" );
 	my $logpath = "$root/logs";
 
 	mkdir($logpath);
@@ -48,7 +48,7 @@ sub handler
 	my $logfile = "$logpath/handler.log";
 	open my $fh, ">>$logfile" or die "can't open $logfile: $!";
 	flock $fh, LOCK_EX;
-	print $fh sprintf("%d\t%s\t%s\n", time(), $archive->get_id, $r->uri);
+	print $fh sprintf("%d\t%s\t%s\n", time(), $repository->get_id, $r->uri);
 	close $fh;
 	return EPrints::AnApache::OK;
 }

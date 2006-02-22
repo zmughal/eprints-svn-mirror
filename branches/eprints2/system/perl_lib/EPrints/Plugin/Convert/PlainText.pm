@@ -68,7 +68,7 @@ sub can_convert
 	keys(%APPS);
 	while( my( $ext, $app ) = each %APPS )
 	{
-		if( $fn =~ /\.$ext$/ and defined($plugin->archive->get_conf( "executables", $app )) ) {
+		if( $fn =~ /\.$ext$/ and defined($plugin->get_repository->get_conf( "executables", $app )) ) {
 			return @type;
 		}
 	}
@@ -89,14 +89,14 @@ sub export
 	# Find the app to use
 	while( ( $ext, $app ) = each %APPS )
 	{
-		if( $main =~ /\.$ext$/ and defined($plugin->archive->get_conf( "executables", $app )) ) {
-			$bin = $plugin->archive->get_conf( "executables", $app );
+		if( $main =~ /\.$ext$/ and defined($plugin->get_repository->get_conf( "executables", $app )) ) {
+			$bin = $plugin->get_repository->get_conf( "executables", $app );
 			last if defined($bin);
 		}
 	}
 	return () unless defined($bin);
 	
-	my $invo = $plugin->archive->get_conf( "invocation", $app );
+	my $invo = $plugin->get_repository->get_conf( "invocation", $app );
 	$invo ||= "\$($app) \$(SOURCE) \$(TARGET)";
 	
 	my %files = $doc->files;

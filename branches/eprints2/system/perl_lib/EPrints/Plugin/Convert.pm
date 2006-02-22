@@ -63,13 +63,13 @@ sub is_visible
 
 =pod
 
-=item $archive = $p->archive()
+=item $repository = $p->get_repository
 
-Returns the current archive
+Returns the current respository
 
 =cut
 
-sub archive { shift->{ "session" }->{ "archive" } }
+sub get_repository { shift->{ "session" }->{ "repository" } }
 
 =pod
 

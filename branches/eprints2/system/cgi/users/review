@@ -50,7 +50,7 @@ sub make_form
 	# cjg. This should maybe extract stuff you can edit
 	# not just stuff you deposited.
 
-	my $ds = $session->get_archive()->get_dataset( "archive" );	
+	my $ds = $session->get_repository->get_dataset( "archive" );	
 	my $list = $user->get_owned_eprints( $ds );
 
 	my $user = $session->current_user;
@@ -70,9 +70,9 @@ sub make_form
 		$session->send_page();
 		return;
 	}
-	my $r_req = $session->get_archive()->get_conf( 
+	my $r_req = $session->get_repository->get_conf( 
 			"allow_user_removal_request" ); 
-	my $checkout = $session->get_archive()->get_conf( 
+	my $checkout = $session->get_repository->get_conf( 
 			"allow_user_checkout_eprint" ); 
 
 	$page->appendChild( $session->html_phrase( "cgi/users/review:blurb" ) );
@@ -154,14 +154,14 @@ sub process_form
 	my( $session, $action ) = @_;
 
 	my $user = $session->current_user;
-	my $ds = $session->get_archive()->get_dataset( "archive" );	
+	my $ds = $session->get_repository->get_dataset( "archive" );	
 
 	if( $action =~ m/^(clone|copy|remove|checkout)_(.+)$/ )
 	{
 		my( $act, $eprintid ) = ( $1, $2 );
 
-		my $r_req = $session->get_archive()->get_conf( "allow_user_removal_request" ); 
-		my $checkout = $session->get_archive()->get_conf( "allow_user_checkout_eprint" ); 
+		my $r_req = $session->get_repository->get_conf( "allow_user_removal_request" ); 
+		my $checkout = $session->get_repository->get_conf( "allow_user_checkout_eprint" ); 
 		my $eprint = EPrints::DataObj::EPrint->new( $session, $eprintid, $ds );
 		if( !defined $eprint )
 		{
@@ -172,7 +172,7 @@ sub process_form
 
 		if( $act eq "clone" || $act eq "copy" )
 		{
-			my $inbox_ds = $session->get_archive()->get_dataset( "inbox" );
+			my $inbox_ds = $session->get_repository->get_dataset( "inbox" );
 			my $copy;
 			if( $act eq "clone" )
 			{
@@ -252,7 +252,7 @@ sub removal_request_form
 
 
 	my $reason_field = EPrints::MetaField->new(
-		archive=> $session->get_archive(),
+		repository=> $session->get_repository,
 		confid=>'remove_request',
 		name=>'reason',
 		type=>'longtext',
@@ -290,7 +290,7 @@ sub handle_removal_request
 	my( $session, $user ) = @_;
 	
 	# Get the EPrint we're dealing with
-	my $ds = $session->get_archive()->get_dataset( "archive" );	
+	my $ds = $session->get_repository->get_dataset( "archive" );	
 
 	my $eprint = EPrints::DataObj::EPrint->new( 
 		$session, 
@@ -310,7 +310,7 @@ sub handle_removal_request
 	}
 
 	my $reason = $session->param( "reason" );
-	my $url = $session->get_archive()->get_conf( "perl_url" ).
+	my $url = $session->get_repository->get_conf( "perl_url" ).
 		"/users/staff/edit_eprint?eprintid=".$eprint->get_value( "eprintid" );
 	
 	my $rc = $session->mail_administrator(

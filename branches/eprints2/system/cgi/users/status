@@ -28,11 +28,11 @@ if( !$session->auth_check( "view-status" ) )
 my $rows;
 
 # Number of users in each group
-my $total_users = $session->get_archive()->get_dataset( "user" )->count( $session );
+my $total_users = $session->get_repo->get_dataset( "user" )->count( $session );
 
 my( %num_users, $usertypes, $usertype, $userds, $subds );
-$userds = $session->get_archive()->get_dataset( "user" );
-$subds = $session->get_archive()->get_dataset( "subscription" );
+$userds = $session->get_repo->get_dataset( "user" );
+$subds = $session->get_repo->get_dataset( "subscription" );
 $usertypes = $userds->get_types();
 foreach $usertype ( @{$usertypes} )
 {
@@ -55,7 +55,7 @@ my @esets = ( "archive", "buffer", "inbox", "deletion" );
 foreach( @esets )
 {
 	# Number of submissions in dataset
-	$num_eprints{$_} = $session->get_archive()->get_dataset( $_ )->count( $session );
+	$num_eprints{$_} = $session->get_repo->get_dataset( $_ )->count( $session );
 }
 
 my $db_status = ( $total_users > 0 ? "OK" : "DOWN" );
@@ -123,11 +123,11 @@ unless( $EPrints::SystemSettings::conf->{disable_df} )
 
 	my $best_size = 0;
 
-	my @dirs = $session->get_archive()->get_store_dirs();
+	my @dirs = $session->get_repo->get_store_dirs();
 	my $dir;
 	foreach $dir ( @dirs )
 	{
-		my $size = $session->get_archive()->get_store_dir_size( $dir );
+		my $size = $session->get_repo->get_store_dir_size( $dir );
 		$table->appendChild(
 			render_row( 
 				$session,
@@ -142,7 +142,7 @@ unless( $EPrints::SystemSettings::conf->{disable_df} )
 		$best_size = $size if( $size > $best_size );
 	}
 	
-	if( $best_size < $session->get_archive()->get_conf( 
+	if( $best_size < $session->get_repo->get_conf( 
 					"diskspace_error_threshold" ) )
 	{
 		$p = $session->make_element( "p" );
@@ -151,7 +151,7 @@ unless( $EPrints::SystemSettings::conf->{disable_df} )
 			$session->html_phrase( 
 				"cgi/users/status:out_of_space" ) );
 	}
-	elsif( $best_size < $session->get_archive()->get_conf( 
+	elsif( $best_size < $session->get_repo->get_conf( 
 						"diskspace_warn_threshold" ) )
 	{
 		$p = $session->make_element( "p" );

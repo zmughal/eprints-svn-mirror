@@ -19,9 +19,9 @@ error_page( $session, $session->html_phrase( "respond_doc/error" ) ) if !defined
 
 # Check user is authorised to respond
 my $contact_email = undef;
-if( $session->get_archive->can_call( "email_for_doc_request" ) )
+if( $session->get_repository->can_call( "email_for_doc_request" ) )
 {
-	$contact_email = $session->get_archive->call( "email_for_doc_request", $session, $eprint );
+	$contact_email = $session->get_repository->call( "email_for_doc_request", $session, $eprint );
 }
 error_page( $session, $session->html_phrase( "respond_doc/error:auth" ) ) if !defined( $contact_email ) || $session->current_user->get_value( "email" ) ne $contact_email;
 
@@ -86,7 +86,7 @@ if( $action eq "accept")
 	}
 
 	$result = send_mail_with_attachments(
-		$session->get_archive,
+		$session->get_repository,
 		$session->get_langid,
 		"",
 		$email,
@@ -100,7 +100,7 @@ else
 {
 	# Send rejection notice
 	$result = EPrints::Utils::send_mail(
-		$session->get_archive,
+		$session->get_repository,
 		$session->get_langid,
 		"",
 		$email,
@@ -135,24 +135,24 @@ sub error_page
 
 sub send_mail_with_attachments 
 {
-	my ($archive, $langid, $to_name, $to_address, $subject, $body, $sig, $attachments) = @_;
+	my ($respository, $langid, $to_name, $to_address, $subject, $body, $sig, $attachments) = @_;
 
-	my $smtphost = $archive->get_conf( 'smtp_server' );
+	my $smtphost = $respository->get_conf( 'smtp_server' );
 	if( defined $smtphost )
 	{
 		MIME::Lite->send( 'smtp', $smtphost );
 	} else {
-		MIME::Lite->send( 'sendmail', $archive->invocation( "sendmail" ) ); 
+		MIME::Lite->send( 'sendmail', $respository->invocation( "sendmail" ) ); 
 	}
 
 	# Build email header/body
 	my $MAILWIDTH = 80;
-	my $archivename = EPrints::Session::best_language( $archive, $langid, %{$archive->get_conf( "archivename" )} );
-	my $adminemail = $archive->get_conf( "adminemail" );
+	my $repositoryname = EPrints::Session::best_language( $repository, $langid, %{$repository->get_conf( "archivename" )} );
+	my $adminemail = $repository->get_conf( "adminemail" );
 	my $mime_msg = MIME::Lite->new(
-		From => "\"$archivename\" <$adminemail>",
+		From => "\"$repositoryname\" <$adminemail>",
 		To   => $to_address,
-		Subject => "$archivename: $subject",
+		Subject => "$repositoryname: $subject",
 		Type => 'TEXT',
 		Data => EPrints::Utils::tree_to_utf8( $body, $MAILWIDTH )->as_string . EPrints::Utils::tree_to_utf8( $sig, $MAILWIDTH )->as_string,
 	) or return 0; 

@@ -14,15 +14,15 @@
 
 =head1 NAME
 
-B<create_user> - add a new user to an EPrint archive
+B<create_user> - add a new user in an EPrint repository
 
 =head1 SYNOPSIS
 
-B<create_user> I<archiveid> [B<options>] I<username> I<email> I<usertype> [I<password>]
+B<create_user> I<repository_id> [B<options>] I<username> I<email> I<usertype> [I<password>]
 
 =head1 DESCRIPTION
 
-Create a new user to an eprint archive. 
+Create a new user in an eprint repository. 
 
 This is handy for making the initial admin user at the very least.
 
@@ -30,9 +30,9 @@ This is handy for making the initial admin user at the very least.
 
 =over 8
 
-=item I<archiveid> 
+=item I<repository_id> 
 
-The ID of the EPrint archive to add a user to.
+The ID of the EPrint repository to add a user to.
 
 =item I<username> 
 
@@ -54,11 +54,11 @@ Normal everyday joe public users.
 
 =item I<editor>
 
-Editors may approve eprints for addition, browse the submission buffer, and check the archive status.
+Editors may approve eprints for addition, browse the submission buffer, and check the repository status.
 
 =item I<admin>
 
-Administrators may do everything. That's probably what for yourself if you are the person setting up the archive.
+Administrators may do everything. That's probably what for yourself if you are the person setting up the repository.
 
 =back
 
@@ -68,9 +68,9 @@ The initial password for this user. You don't have to specify it here if you don
 encrypted, by EPrints, using UNIX crypt. This should not be a problem unless you are using a different
 method to authenticate users.
 
-=item I<archiveid> 
+=item I<repository_id> 
 
-The ID of the EPrint archive to add a user to.
+The ID of the EPrint repository to add a user to.
 
 =back
 
@@ -142,7 +142,7 @@ $|=1;
 my $session = EPrints::Session->new( 1 , $ARGV[0], $noise );
 exit unless( defined $session );
 
-my $user_ds = $session->get_archive()->get_dataset( "user" );
+my $user_ds = $session->get_repository->get_dataset( "user" );
 
 my $valid_access_level = 0;
 my $type;

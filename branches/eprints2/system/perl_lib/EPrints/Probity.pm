@@ -72,7 +72,7 @@ sub process_file
 
 	unless( defined $alg )
 	{
-		$session->get_archive->log( 
+		$session->get_repository->log( 
 "EPrints::Probity: Failed to create hash for '$filename'" );
 		return $session->make_doc_fragment;
 	}
@@ -99,7 +99,7 @@ sub _md5
 	}
 	else
 	{
-		$session->get_archive->log(
+		$session->get_repository->log(
 "Error opening '$filename' to create hash: $!" );
 		return undef;
 	}
@@ -160,7 +160,7 @@ sub create_log
 		}
 		else
 		{
-			$session->get_archive->log(
+			$session->get_repository->log(
 "Error opening '$outfile' to write log: $!" );
 		}
 	}

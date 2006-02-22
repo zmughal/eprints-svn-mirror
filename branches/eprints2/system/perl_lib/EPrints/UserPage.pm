@@ -127,7 +127,7 @@ sub process
 
 	$page->appendChild( $session->render_ruler() );
 
-	my $arc_ds = $session->get_archive()->get_dataset( "archive" );
+	my $arc_ds = $session->get_repository->get_dataset( "archive" );
 	my $searchexp = new EPrints::SearchExpression(
 		session => $session,
 		dataset => $arc_ds );
@@ -143,11 +143,11 @@ sub process
 	my $url;
 	if( $staff )
 	{
-		$url = $session->get_archive()->get_conf( "perl_url" )."/users/search/archive?userid=$userid&_action_search=1";
+		$url = $session->get_repository->get_conf( "perl_url" )."/users/search/archive?userid=$userid&_action_search=1";
 	}
 	else
 	{
-		$url = $session->get_archive()->get_conf( "perl_url" )."/user_eprints?userid=$userid";
+		$url = $session->get_repository->get_conf( "perl_url" )."/user_eprints?userid=$userid";
 	}
 	my $link = $session->render_link( $url );	
 

@@ -96,7 +96,7 @@ sub new
 	my( $class, $session, $licenseid ) = @_;
 
 	return $session->get_db()->get_single( 
-			$session->get_archive()->get_dataset( "license" ), 
+			$session->get_repository->get_dataset( "license" ), 
 			$licenseid );
 }
 
@@ -115,7 +115,7 @@ sub new_from_data
 	my $self = {};
 	
 	$self->{data} = $known;
-	$self->{dataset} = $session->get_archive()->get_dataset( "license" ); 
+	$self->{dataset} = $session->get_repository->get_dataset( "license" ); 
 	$self->{session} = $session;
 	bless $self, $class;
 
@@ -142,7 +142,7 @@ sub remove_all
 {
 	my( $class, $session ) = @_;
 
-	my $ds = $session->get_archive()->get_dataset( "license" );
+	my $ds = $session->get_repository->get_dataset( "license" );
 	foreach my $obj ( $session->get_db()->get_all( $ds ) )
 	{
 		$obj->remove();

@@ -88,8 +88,8 @@ sub handler
 	# undo eprints rewrite!
 	my $uri = $r->uri;	
 	$uri =~ s#/([0-9]+)/([0-9][0-9])/([0-9][0-9])/([0-9][0-9])/#/$1$2$3$4/#;
-	my $archive = EPrints::Archive->new_from_request( $r );
-	my $baseurl = $archive->get_conf( "base_url" ).$uri;
+	my $repository = EPrints::Repository->new_from_request( $r );
+	my $baseurl = $repository->get_conf( "base_url" ).$uri;
 	
 	my $LSMAP = {
 "area" => \&ls_area,
@@ -177,7 +177,7 @@ sub ls_charrange
 {
 	my( $filename, $param, $locspec, $r, $baseurl, $args ) = @_;
 
-	my $archive = EPrints::Archive->new_from_request( $r );
+	my $repository = EPrints::Repository->new_from_request( $r );
 	
 #	if( $r->content_type !~ m#^text/# )
 #	{
@@ -295,7 +295,7 @@ sub ls_charrange
 			}
 		}
 		$html.='</span>';
-		my $copyurl = $archive->get_conf( "vlit" )->{copyright_url};
+		my $copyurl = $repository->get_conf( "vlit" )->{copyright_url};
 		my $front = '<a href="'.$copyurl.'">trans &copy;</a>';
 		if( $param eq "" )
 		{
@@ -370,7 +370,7 @@ END
 </div>
 END
 		}
-		my $cssurl = $archive->get_conf( "base_url" )."/vlit.css";
+		my $cssurl = $repository->get_conf( "base_url" )."/vlit.css";
 		$r->print( <<END );
 <html>
 <head>
@@ -425,17 +425,17 @@ sub ls_area
 		hrange => { start=>0 },
 		vrange => { start=>0 }
 	};
-	my $archive = EPrints::Archive->new_from_request( $r );
+	my $repository = EPrints::Repository->new_from_request( $r );
 
 	my $mode = $args->{mode};
 
 	if( $mode eq "human" )
 	{
 		send_http_header( "text/html" );
-		my $cssurl = $archive->get_conf( "base_url" )."/vlit.css";
+		my $cssurl = $repository->get_conf( "base_url" )."/vlit.css";
 		my $title = "title";
 		my $html = "html";
-		my $copyurl = $archive->get_conf( "vlit" )->{copyright_url};
+		my $copyurl = $repository->get_conf( "vlit" )->{copyright_url};
 		my $front = '<a href="'.$copyurl.'">trans &copy;</a>';
 		my $fullurl = $baseurl.'?xuversion=1.0&locspec=area:&mode=human';
 		my $imgurl = $baseurl.'?xuversion=1.0&locspec=area:'.$param;
@@ -504,7 +504,7 @@ END
 		if( !-d $dir )
 		{
 			mkdir( $dir );
-			my $convert = $archive->get_conf( 'executables','convert' );
+			my $convert = $repository->get_conf( 'executables','convert' );
 			my $cmd = "$convert '$file' 'tif:$dir/%d'";
 			`$cmd`;
 		}
@@ -554,7 +554,7 @@ END
 		$scale2 = '-scale '.$s.'%x'.$s.'%';
 	}
 
-	my $convert = $archive->get_conf( 'executables','convert' );
+	my $convert = $repository->get_conf( 'executables','convert' );
 	$cmd = "$convert $scale $crop $scale2 '$dir/$pageindex' 'png:$cache'";
 	`$cmd`;
 	

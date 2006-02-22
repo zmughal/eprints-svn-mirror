@@ -14,11 +14,11 @@
 
 =head1 NAME
 
-B<create_tables> - create SQL tables for an EPrints archive
+B<create_tables> - create SQL tables for an EPrints repository
 
 =head1 SYNOPSIS
 
-B<create_tables> I<archiveid> [B<options>]
+B<create_tables> I<repository_id> [B<options>]
 
 =head1 DESCRIPTION
 
@@ -30,9 +30,9 @@ You should run B<import_subjects> after this, actually it will remind you unless
 
 =over 8
 
-=item I<archiveid> 
+=item I<repository_id> 
 
-The ID of the EPrint archive to effect.
+The ID of the EPrint repository to effect.
 
 =back
 
@@ -119,7 +119,7 @@ if( $session->get_db->has_table( "archive" ) )
 }
 foreach my $dsid ( &EPrints::DataSet::get_sql_dataset_ids )
 {
-	my $ds = $session->get_archive->get_dataset( $dsid );
+	my $ds = $session->get_repository->get_dataset( $dsid );
 	my $indexes = $ds->count_indexes;
 	if( $indexes > 32 )
 	{

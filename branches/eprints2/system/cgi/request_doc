@@ -19,9 +19,9 @@ error_page( $session, $session->html_phrase( "request_doc/error:bad_request" ), 
 
 # Check contact email for this eprint
 my $contact_email = undef;
-if( $session->get_archive->can_call( "email_for_doc_request" ) ) 
+if( $session->get_repository->can_call( "email_for_doc_request" ) ) 
 {
-	$contact_email = $session->get_archive->call( "email_for_doc_request", $session, $eprint );
+	$contact_email = $session->get_repository->call( "email_for_doc_request", $session, $eprint );
 }
 error_page( $session, $session->html_phrase( "request_doc/error:no_contact" ), $eprint->get_url ) if !defined( $contact_email );
 
@@ -46,7 +46,7 @@ if( defined( $email ) && $email ne "" )
 		# Contact is registered user and EPrints holds restricted documents
 		# Send email to contact with accept/reject links
 		# TODO: does encode_str do the right thing?
-		my $url =  $session->get_archive->get_conf( "perl_url" ) . 
+		my $url =  $session->get_repository->get_conf( "perl_url" ) . 
 			"/users/respond_doc?eprintid=" . $eprint->get_id . 
 			"&email=" . EPrints::Utils::encode_str( $session->param( "email" ) );
 		$mail->appendChild( $session->html_phrase( "request_doc/request:links",
@@ -54,7 +54,7 @@ if( defined( $email ) && $email ne "" )
 			reject => $session->make_text( "$url&action=reject" ) ) );
 
 		$result = EPrints::Utils::send_mail(
-			$session->get_archive,
+			$session->get_repository,
 			$session->get_langid,
 			EPrints::Utils::make_name_string( $user->get_value( "name" ), 1 ),
 			$contact_email,
@@ -68,7 +68,7 @@ if( defined( $email ) && $email ne "" )
 		# Contact is non-registered user or EPrints holds no documents
 		# Send email to contact with 'replyto'
 		$result = EPrints::Utils::send_mail(
-			$session->get_archive,
+			$session->get_repository,
 			$session->get_langid,
 			"",
 			$contact_email,
@@ -93,7 +93,7 @@ if( defined( $email ) && $email ne "" )
 			eprint	=> $session->make_text( EPrints::Utils::tree_to_utf8( $eprint->render_citation ) ),
 			url	=> $session->make_text( $eprint->get_url ) ) );
 		EPrints::Utils::send_mail(
-			$session->get_archive,
+			$session->get_repository,
 			$session->get_langid,
 			"",
 			$email,

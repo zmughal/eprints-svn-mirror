@@ -55,9 +55,9 @@ sub mkpage_editsubject
 {
 	my( $session, $subid ) = @_;
 
-	my $subject_ds = $session->get_archive()->get_dataset( "subject" );
-	my $archive_ds = $session->get_archive()->get_dataset( "archive" );
-	my $buffer_ds = $session->get_archive()->get_dataset( "buffer" );
+	my $subject_ds = $session->get_repository->get_dataset( "subject" );
+	my $archive_ds = $session->get_repository->get_dataset( "archive" );
+	my $buffer_ds = $session->get_repository->get_dataset( "buffer" );
 	my $subject = EPrints::DataObj::Subject->new( $session, $subid );
 	if( !defined $subject )
 	{

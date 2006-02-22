@@ -3,11 +3,11 @@ package EPrints::Workflow::Stage;
 use EPrints::Plugin;
 sub new
 {
-	my( $class, $stage, $archive ) = @_;
+	my( $class, $stage, $repository ) = @_;
 	my $self = {};
 	bless $self, $class;
 
-	$self->{archive} = $archive;
+	$self->{repository} = $repository;
 
 	if( $stage->hasAttribute( "name" ) )
 	{
@@ -64,11 +64,11 @@ sub _read_components
 			# Grab any values inside
 			my %params = %{$self->_read_params( $stage_node )};
 			$params{type} = $type;
-			my $class = $self->{archive}->plugin_class( $type );
+			my $class = $self->{repository}->plugin_class( $type );
 			if( !defined $class )
 			{
 				print STDERR "Using placeholder for $type\n";
-				$class = $self->{archive}->plugin_class( "component/placeholder" );
+				$class = $self->{repository}->plugin_class( "component/placeholder" );
 				$params{name} = $type;
 			}
 			if( defined $class )

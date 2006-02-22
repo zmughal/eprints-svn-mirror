@@ -95,7 +95,7 @@ foreach(
 	# unsets it.
 	$request_desc->setAttribute( $_, $value );
 }
-my $url = $session->get_archive->get_conf( "base_url" );
+my $url = $session->get_repository->get_conf( "base_url" );
 $url .= $session->get_uri;
 $request_desc->appendChild( $session->make_text( $url ) );
 
@@ -198,14 +198,14 @@ sub Identify
 		4,
 		"repositoryName",
 		EPrints::Session::best_language( 
-			$session->get_archive(),
+			$session->get_repository,
 			$session->get_langid(),
-			%{$session->get_archive()->get_conf( "archivename" )} ) ) );
+			%{$session->get_repository->get_conf( "archivename" )} ) ) );
 
 	$response->appendChild( $session->render_data_element(
 		4,
 		"baseURL",
-		$session->get_archive()->get_conf( "oai","v2","base_url" ) ) );
+		$session->get_repository->get_conf( "oai","v2","base_url" ) ) );
 
 	$response->appendChild( $session->render_data_element(
 		4,
@@ -215,7 +215,7 @@ sub Identify
 	$response->appendChild( $session->render_data_element(
 		4,
 		"adminEmail",
-		$session->get_archive()->get_conf( "adminemail" ) ) );
+		$session->get_repository->get_conf( "adminemail" ) ) );
 
 	# Later this may be either calcualted from the
 	# database, or configurable.
@@ -256,7 +256,7 @@ sub Identify
 	$oaiid->appendChild( $session->render_data_element(
 		8,
 		"repositoryIdentifier",
-		$session->get_archive()->get_conf( "oai","v2","archive_id" ) ) );
+		$session->get_repository->get_conf( "oai","v2","archive_id" ) ) );
 
 	$oaiid->appendChild( $session->render_data_element(
 		8,
@@ -266,7 +266,7 @@ sub Identify
 	$oaiid->appendChild( $session->render_data_element(
 		8,
 		"sampleIdentifier",
-		$session->get_archive()->get_conf( "oai","v2","sample_identifier" ) ) );
+		$session->get_repository->get_conf( "oai","v2","sample_identifier" ) ) );
 
 	my $d2 = $session->make_element( "description" );
 	my $eprints = $session->make_element( 	
@@ -282,24 +282,24 @@ sub Identify
 	$eprints->appendChild( render_text_url( 
 		$session,
 		"content", 
-		$session->get_archive()->get_conf( "oai","content" ) ) );
+		$session->get_repository->get_conf( "oai","content" ) ) );
                           
 	$eprints->appendChild( render_text_url( 
 		$session,
 		"metadataPolicy", 
-		$session->get_archive()->get_conf( "oai","metadata_policy" ) ) );
+		$session->get_repository->get_conf( "oai","metadata_policy" ) ) );
 
 	$eprints->appendChild( render_text_url( 
 		$session,
 		"dataPolicy", 
-		$session->get_archive()->get_conf( "oai","data_policy" ) ) );
+		$session->get_repository->get_conf( "oai","data_policy" ) ) );
 
 	$eprints->appendChild( render_text_url( 
 		$session,
 		"submissionPolicy", 
-		$session->get_archive()->get_conf( "oai","submission_policy" ) ) );
+		$session->get_repository->get_conf( "oai","submission_policy" ) ) );
 
-	foreach( @{$session->get_archive()->get_conf( "oai","comments" )} ) 
+	foreach( @{$session->get_repository->get_conf( "oai","comments" )} ) 
 	{
 		$eprints->appendChild( $session->render_data_element(
 			8,
@@ -371,7 +371,7 @@ sub GetRecord
 
 	return join_errors( $session, $errors ) if( scalar @{$errors} > 0 );
 		
-	if( !defined $session->get_archive()->get_conf( "oai", "v2", "metadata_namespaces" )->{$args->{metadataPrefix}} )
+	if( !defined $session->get_repository->get_conf( "oai", "v2", "metadata_namespaces" )->{$args->{metadataPrefix}} )
 	{
 		return render_oai_error(
 				$session,
@@ -387,7 +387,7 @@ sub GetRecord
 	my $eprint = new EPrints::DataObj::EPrint(
 		$session,
 		$id,
-		$session->get_archive()->get_dataset( "archive" ) );
+		$session->get_repository->get_dataset( "archive" ) );
 
 	if( !defined $eprint )
 	{
@@ -395,7 +395,7 @@ sub GetRecord
 		$eprint = new EPrints::DataObj::EPrint(
 			$session,
 			$id,
-			$session->get_archive()->get_dataset( "deletion" ) );
+			$session->get_repository->get_dataset( "deletion" ) );
 	}
 
 	if( !defined $eprint )
@@ -403,7 +403,7 @@ sub GetRecord
 		return render_oai_error(
 			$session,
 			"idDoesNotExist",
-			"ID: ".$args->{identifier}." does not exist in this archive" );
+			"ID: ".$args->{identifier}." does not exist in this repository" );
 	}
 
 
@@ -413,7 +413,7 @@ sub GetRecord
 	# if the metadataFormat isn't available for
 	# this record, only the header will be output.
 
-	my $fn = $session->get_archive()->get_conf( 
+	my $fn = $session->get_repository->get_conf( 
 		"oai","v2","metadata_functions" )->{$args->{metadataPrefix}};
 
 	$response->appendChild( $session->make_indent( 2 ) );
@@ -487,10 +487,10 @@ sub _list
 		my $cache_id;
 		( $offset, $cache_id, $metadata_format ) = ( $2, $3, $5 );
 		$searchexp = EPrints::SearchExpression->new( 
-			dataset => $session->get_archive->get_dataset( "$1" ),
+			dataset => $session->get_repository->get_dataset( "$1" ),
 			session => $session,
 			keep_cache => 1,
-			filters => $session->get_archive()->get_conf( 
+			filters => $session->get_repository->get_conf( 
 								"oai",
 								"filters" ),
 			cache_id => $cache_id );
@@ -515,7 +515,7 @@ sub _list
 
 		return join_errors( $session, $errors ) if( scalar @{$errors} > 0 );
 
-		if( defined $args->{metadataPrefix} && !defined $session->get_archive()->get_conf( "oai", "v2", "metadata_namespaces" )->{$args->{metadataPrefix}} )
+		if( defined $args->{metadataPrefix} && !defined $session->get_repository->get_conf( "oai", "v2", "metadata_namespaces" )->{$args->{metadataPrefix}} )
 		{
 			return render_oai_error(
 				$session,
@@ -552,12 +552,12 @@ sub _list
 				"from and until dates have different granularity ($g1 and $g2)" );
 		}
 
-		my $ds = $session->get_archive()->get_dataset( "archive" );
+		my $ds = $session->get_repository->get_dataset( "archive" );
 		$searchexp = new EPrints::SearchExpression(
 			session => $session,
 			keep_cache => 1,
 			allow_blank => 1,
-			filters => $session->get_archive()->get_conf( 
+			filters => $session->get_repository->get_conf( 
 								"oai",
 								"filters" ),
 			dataset => $ds );
@@ -567,7 +567,7 @@ sub _list
 			my( $head , @tail ) = EPrints::OpenArchives::decode_setspec( $args->{set} );
 			my( $key , $value ) = split( /=/ , $head );
 			$value = pop @tail if( scalar @tail > 0 );
-			my $views = $session->get_archive()->get_conf( "oai","sets" ); #cjg
+			my $views = $session->get_repository->get_conf( "oai","sets" ); #cjg
 			my $info;
 			foreach( @{$views} )
 			{
@@ -630,7 +630,7 @@ END
 		## End of archive items, time to do deleted ones.
 		my $delsearchexp = $searchexp->clone;
 		$delsearchexp->set_dataset(
-			$session->get_archive()->get_dataset( "deletion" ) );
+			$session->get_repository->get_dataset( "deletion" ) );
 		$delsearchexp->perform_search();
 		$searchexp->dispose();
 		$searchexp = $delsearchexp;
@@ -680,7 +680,7 @@ END
 	{
 		$response = $session->make_element( "ListRecords" );
 
-		my $fn = $session->get_archive()->get_conf( 
+		my $fn = $session->get_repository->get_conf( 
 			"oai","v2","metadata_functions" )->{$metadata_format};
 
 		my @records = $searchexp->get_records( $offset, $PAGESIZE );
@@ -713,7 +713,7 @@ END
 		## End of archive items, time to do deleted ones.
 		my $delsearchexp = $searchexp->clone;
 		$delsearchexp->set_dataset(
-			$session->get_archive()->get_dataset( "deletion" ) );
+			$session->get_repository->get_dataset( "deletion" ) );
 		$delsearchexp->perform_search();
 		my $cache = $delsearchexp->get_cache_id();
 		my $count = $delsearchexp->count();
@@ -755,7 +755,7 @@ sub ListMetadataFormats
 
 	return join_errors( $session, $errors ) if( scalar @{$errors} > 0 );
 
-	my @all_formats = keys %{$session->get_archive()->get_conf( "oai", "v2","metadata_namespaces" )};
+	my @all_formats = keys %{$session->get_repository->get_conf( "oai", "v2","metadata_namespaces" )};
 	my @metadata_formats;
 
 	if( defined $args->{identifier} )
@@ -765,19 +765,19 @@ sub ListMetadataFormats
 			EPrints::OpenArchives::from_oai_identifier(
 				$session,
 				$args->{identifier} ),
-			$session->get_archive()->get_dataset( "archive" ) );
+			$session->get_repository->get_dataset( "archive" ) );
 
 		if( !defined $eprint )
 		{	
 			return render_oai_error(
 				$session,
 				"idDoesNotExist",
-				"ID: ".$args->{identifier}." does not exist in this archive" );
+				"ID: ".$args->{identifier}." does not exist in this repository" );
 		}
 
 		foreach( @all_formats )
 		{
-			my $fn = $session->get_archive()->get_conf(
+			my $fn = $session->get_repository->get_conf(
 				"oai","v2","metadata_functions" )->{$_};
 			my $md = &{$fn}( $eprint, $session );
 			if( defined $md )
@@ -806,11 +806,11 @@ sub ListMetadataFormats
 		$mdf->appendChild( $session->render_data_element(
 			4,
 			"schema",
-			$session->get_archive()->get_conf( "oai", "v2", "metadata_schemas" )->{$_} ) );
+			$session->get_repository->get_conf( "oai", "v2", "metadata_schemas" )->{$_} ) );
 		$mdf->appendChild( $session->render_data_element(
 			4,
 			"metadataNamespace",
-			$session->get_archive()->get_conf( "oai", "v2","metadata_namespaces" )->{$_} ) );
+			$session->get_repository->get_conf( "oai", "v2","metadata_namespaces" )->{$_} ) );
 		$response->appendChild( $session->make_indent( 2 ) );
 		$response->appendChild( $mdf );
 	}
@@ -852,10 +852,10 @@ sub ListSets
 
 	my $response = $session->make_element( "ListSets" );
 
-	my $ds = $session->get_archive()->get_dataset( "archive" );
-	my $ds_del = $session->get_archive()->get_dataset( "deletion" );
+	my $ds = $session->get_repository->get_dataset( "archive" );
+	my $ds_del = $session->get_repository->get_dataset( "deletion" );
 
-	my $viewconf = $session->get_archive()->get_conf( "oai","sets" );
+	my $viewconf = $session->get_repository->get_conf( "oai","sets" );
 	my $info;
 	foreach $info ( @{$viewconf} )
 	{

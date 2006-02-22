@@ -93,7 +93,7 @@ sub xml_field_to_data
 				$plugin->warning( "<$type> where <$expect> was expected inside <".$field->get_name.">" );
 				next;
 			}
-			my $sub_dataset = $plugin->{session}->get_archive->get_dataset( $expect );
+			my $sub_dataset = $plugin->{session}->get_repository->get_dataset( $expect );
 			push @{$data}, $plugin->xml_to_data( $sub_dataset,$el );
 			next;
 		}

@@ -32,7 +32,7 @@ if( !EPrints::Utils::is_set( $referer ) )
 
 my $newlang = $session->param( "langid" );
 
-my @langids = @{$session->get_archive()->get_conf( "languages" )};
+my @langids = @{$session->get_repository->get_conf( "languages" )};
 
 if( !defined $newlang )
 {
@@ -60,7 +60,7 @@ if( !defined $newlang )
 elsif( $newlang eq "" )
 {
 	my $page = $session->make_doc_fragment;
-	my $langid = EPrints::Session::get_session_language( $session->get_archive, $session->get_request );
+	my $langid = EPrints::Session::get_session_language( $session->get_repository, $session->get_request );
 	$session->change_lang( $langid );
 	$page->appendChild( $session->html_phrase( 
 			"cgi/set_lang:cleared",
@@ -69,7 +69,7 @@ elsif( $newlang eq "" )
 	$page->appendChild( $session->html_phrase( 
 			"cgi/set_lang:default_lang",
 			lang=>$session->render_language_name( 
-				$session->get_archive()->get_conf( "defaultlanguage" ) ) ) );
+				$session->get_repository->get_conf( "defaultlanguage" ) ) ) );
 	$page->appendChild( $session->html_phrase( "cgi/set_lang:cache_warning" ) );
 	if( 0 && EPrints::Utils::is_set( $referer ) )
 	{
@@ -92,7 +92,7 @@ elsif( grep(/^$newlang$/,@langids) )
 	$page->appendChild( $session->html_phrase( 
 			"cgi/set_lang:default_lang",
 			lang=>$session->render_language_name( 
-				$session->get_archive()->get_conf( "defaultlanguage" ) ) ) );
+				$session->get_repository->get_conf( "defaultlanguage" ) ) ) );
 	$page->appendChild( $session->html_phrase( "cgi/set_lang:cache_warning" ) );
 	if( 0 && EPrints::Utils::is_set( $referer ) )
 	{

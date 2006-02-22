@@ -26,7 +26,7 @@ sub render
 
 	my $session = $params->{session};
 
-	my $user_ds = $session->get_archive()->get_dataset( "eprint" );
+	my $user_ds = $session->get_repository->get_dataset( "eprint" );
 	
 	my $helpf = $session->make_doc_fragment;
 	my $table = $session->make_element( "table" );

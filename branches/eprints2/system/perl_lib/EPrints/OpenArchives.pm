@@ -162,14 +162,14 @@ sub make_header
 	my $oai_id;
 	if( $oai2 )
 	{
-		$oai_id = $session->get_archive()->get_conf( 
+		$oai_id = $session->get_repository->get_conf( 
 			"oai", 
 			"v2", 
 			"archive_id" );
 	}
 	else
 	{
-		$oai_id = $session->get_archive()->get_conf( 
+		$oai_id = $session->get_repository->get_conf( 
 			"oai", 
 			"archive_id" );
 	}
@@ -200,7 +200,7 @@ sub make_header
 			return $header;
 		}
 
-		my $viewconf = $session->get_archive()->get_conf( "oai","sets" );
+		my $viewconf = $session->get_repository->get_conf( "oai","sets" );
         	foreach my $info ( @{$viewconf} )
         	{
 			my @values = $eprint->get_values( $info->{fields} );
@@ -339,8 +339,8 @@ identifier is suitable.
 sub from_oai_identifier
 {
         my( $session , $oai_identifier ) = @_;
-        my $arcid = $session->get_archive()->get_conf( "oai", "archive_id" );
-        my $arcid2 = $session->get_archive()->get_conf( "oai", "v2", "archive_id" );
+        my $arcid = $session->get_repository->get_conf( "oai", "archive_id" );
+        my $arcid2 = $session->get_repository->get_conf( "oai", "v2", "archive_id" );
         if( $oai_identifier =~ /^oai:($arcid|$arcid2):(\d+)$/ )
         {
                 return( $2 );

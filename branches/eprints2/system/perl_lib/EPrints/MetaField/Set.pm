@@ -145,7 +145,7 @@ sub render_set_input
 
 	if( $self->{multiple} )
 	{
-		$session->get_archive->log( "Using input_style long for a 'multiple' field. It's only intended for\nnon-multiple fields." );
+		$session->get_repository->log( "Using input_style long for a 'multiple' field. It's only intended for\nnon-multiple fields." );
 	}
 
 	my( $dl, $dt, $dd );

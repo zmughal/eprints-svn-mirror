@@ -29,7 +29,7 @@ my $searchid = $path_info;
 if( $searchid eq "advsearch" )
 {
 	# cover the old systems sins...
-	my $url = $session->get_archive->get_conf( "perl_url" ).
+	my $url = $session->get_repository->get_conf( "perl_url" ).
 			"/search/advanced";
 	if( defined $session->get_request->args )
 	{
@@ -39,10 +39,10 @@ if( $searchid eq "advsearch" )
 	$session->terminate;
 	exit;
 }
-my $sconf = $session->get_archive()->get_conf( "search", $searchid );
+my $sconf = $session->get_repository->get_conf( "search", $searchid );
 if( !defined $sconf )
 {
-	my $url = $session->get_archive->get_conf( "perl_url" ).
+	my $url = $session->get_repository->get_conf( "perl_url" ).
 			"/search/simple";
 	if( defined $session->get_request->args )
 	{
@@ -56,7 +56,7 @@ if( !defined $sconf )
 my $searchexp = new EPrints::SearchExpression(
 	keep_cache => 1,
 	session => $session,
-	dataset => $session->get_archive()->get_dataset( "archive" ),
+	dataset => $session->get_repository->get_dataset( "archive" ),
 	%{$sconf} );
 
 $searchexp->process_webpage();

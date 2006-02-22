@@ -295,11 +295,11 @@ sub make_name_string
 ######################################################################
 =pod
 
-=item EPrints::Utils::send_mail( $archive, $langid, $name, $address, $subject, $body, $sig, [$replyto, $replytoname] )
+=item EPrints::Utils::send_mail( $repository, $langid, $name, $address, $subject, $body, $sig, [$replyto, $replytoname] )
 
 Sends an email. 
 
-$archive - the archive sending the email.
+$repository - the repository sending the email.
 
 $langid - the language id (eg. "en")
 
@@ -327,20 +327,20 @@ not defined sends the email via STMP.
 
 sub send_mail
 {
-	my( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname ) = @_;
-	#   Archive   string   utf8   utf8      utf8      DOM    DOM   string    utf8
+	my( $repository, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname ) = @_;
+	#   repository   string   utf8   utf8      utf8      DOM    DOM   string    utf8
 
-	my $mail_func = $archive->get_conf( "send_email" );
+	my $mail_func = $repository->get_conf( "send_email" );
 	if( !defined $mail_func )
 	{
 		$mail_func = \&send_mail_via_sendmail;
 	}
 
-	my $result = &{$mail_func}( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname );
+	my $result = &{$mail_func}( $repository, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname );
 
 	if( !$result )
 	{
-		$archive->log( "Failed to send mail.\nTo: $address <$name>\nSubject: $subject\n" );
+		$repository->log( "Failed to send mail.\nTo: $address <$name>\nSubject: $subject\n" );
 	}
 
 	return $result;
@@ -382,7 +382,7 @@ sub email_date()
 ######################################################################
 =pod
 
-=item EPrints::Utils::send_mail_via_smtp( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname )
+=item EPrints::Utils::send_mail_via_smtp( $repository, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname )
 
 Send an email via STMP. Should not be called directly, but rather by
 EPrints::Utils::send_mail.
@@ -392,14 +392,14 @@ EPrints::Utils::send_mail.
 
 sub send_mail_via_smtp
 {
-	my( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname ) = @_;
-	#   Archive   string   utf8   utf8      utf8      DOM    DOM   string    utf8
+	my( $repository, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname ) = @_;
+	#   repository   string   utf8   utf8      utf8      DOM    DOM   string    utf8
 
-	my $smtphost = $archive->get_conf( 'smtp_server' );
+	my $smtphost = $repository->get_conf( 'smtp_server' );
 
 	if( !defined $smtphost )
 	{
-		$archive->log( "No STMP host has been defined. To fix this, find the full\naddress of your SMTP server (eg. smtp.example.com) and add it\nas the value of smtp_server in\nperl_lib/EPrints/SystemSettings.pm" );
+		$repository->log( "No STMP host has been defined. To fix this, find the full\naddress of your SMTP server (eg. smtp.example.com) and add it\nas the value of smtp_server in\nperl_lib/EPrints/SystemSettings.pm" );
 		return( 0 );
 	}
 
@@ -408,14 +408,14 @@ sub send_mail_via_smtp
 	my $smtp=Net::SMTP->new( $smtphost );
 	if( !defined $smtp )
 	{
-		$archive->log( "Failed to create smtp connection to $smtphost" );
+		$repository->log( "Failed to create smtp connection to $smtphost" );
 		return( 0 );
 	}
 	# test ?
-#	unless( open( SENDMAIL, "|".$archive->invocation( "sendmail" ) ) )
+#	unless( open( SENDMAIL, "|".$repository->invocation( "sendmail" ) ) )
 #	{
-#		$archive->log( "Failed to invoke sendmail: ".
-#			$archive->invocation( "sendmail" ) );
+#		$repository->log( "Failed to invoke sendmail: ".
+#			$repository->invocation( "sendmail" ) );
 #		return( 0 );
 #	}
 
@@ -425,13 +425,13 @@ sub send_mail_via_smtp
 	#cjg should be in the top of the file.
 	my $MAILWIDTH = 80;
 	my $arcname_q = mime_encode_q( EPrints::Session::best_language( 
-		$archive,
+		$repository,
 		$langid,
-		%{$archive->get_conf( "archivename" )} ) );
+		%{$repository->get_conf( "archivename" )} ) );
 
 	my $name_q = mime_encode_q( $name );
 	my $subject_q = mime_encode_q( $subject );
-	my $adminemail = $archive->get_conf( "adminemail" );
+	my $adminemail = $repository->get_conf( "adminemail" );
 
 	my $utf8body 	= EPrints::Utils::tree_to_utf8( $body , $MAILWIDTH );
 	my $utf8sig	= EPrints::Utils::tree_to_utf8( $sig , $MAILWIDTH );
@@ -477,7 +477,7 @@ END
 ######################################################################
 =pod
 
-=item EPrints::Utils::send_mail_via_sendmail( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname )
+=item EPrints::Utils::send_mail_via_sendmail( $repository, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname )
 
 Also should not be called directly. The config. option "send_email"
 can be set to \&EPrints::Utils::send_mail_via_sendmail to use the
@@ -488,12 +488,12 @@ sendmail command to send emails rather than send to a SMTP server.
 
 sub send_mail_via_sendmail
 {
-	my( $archive, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname ) = @_;
-	#   Archive   string   utf8   utf8      utf8      DOM    DOM   string    utf8
-	unless( open( SENDMAIL, "|".$archive->invocation( "sendmail" ) ) )
+	my( $repository, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname ) = @_;
+	#   repository   string   utf8   utf8      utf8      DOM    DOM   string    utf8
+	unless( open( SENDMAIL, "|".$repository->invocation( "sendmail" ) ) )
 	{
-		$archive->log( "Failed to invoke sendmail: ".
-			$archive->invocation( "sendmail" ) );
+		$repository->log( "Failed to invoke sendmail: ".
+			$repository->invocation( "sendmail" ) );
 		return( 0 );
 	}
 
@@ -503,13 +503,13 @@ sub send_mail_via_sendmail
 	#cjg should be in the top of the file.
 	my $MAILWIDTH = 80;
 	my $arcname_q = mime_encode_q( EPrints::Session::best_language( 
-		$archive,
+		$repository,
 		$langid,
-		%{$archive->get_conf( "archivename" )} ) );
+		%{$repository->get_conf( "archivename" )} ) );
 
 	my $name_q = mime_encode_q( $name );
 	my $subject_q = mime_encode_q( $subject );
-	my $adminemail = $archive->get_conf( "adminemail" );
+	my $adminemail = $repository->get_conf( "adminemail" );
 
 	my $utf8body 	= EPrints::Utils::tree_to_utf8( $body , $MAILWIDTH );
 	my $utf8sig	= EPrints::Utils::tree_to_utf8( $sig , $MAILWIDTH );

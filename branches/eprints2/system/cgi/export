@@ -30,7 +30,7 @@ unless( $path_info =~ m!^/([0-9]+)(/([^/]*)?)?! ) {
 my $id = $1;
 my $afterid = $2;
 my $format = $3;
-my $export_url = $session->get_archive->get_conf( "perl_url" )."/export";
+my $export_url = $session->get_repository->get_conf( "perl_url" )."/export";
 
 if( !defined $id ) {
 	error( $session, $session->html_phrase( "cgi/export:no_id" ) );
@@ -46,7 +46,7 @@ if( !defined $afterid ) {
 my $eprint = EPrints::DataObj::EPrint->new( 
 			$session, 
 			$id, 
-			$session->get_archive->get_dataset( "archive" ) );
+			$session->get_repository->get_dataset( "archive" ) );
 if( !defined $eprint ) {
 	error( 
 		$session, 

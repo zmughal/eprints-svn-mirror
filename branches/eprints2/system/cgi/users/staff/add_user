@@ -46,7 +46,7 @@ sub render_form
 	my( $session , $page ) = @_;
 
 	$page->appendChild( $session->html_phrase( "cgi/users/add_user:enter_username" ) );
-	my $userds = $session->get_archive()->get_dataset( "user" );
+	my $userds = $session->get_repository->get_dataset( "user" );
 
 	$page->appendChild( $session->render_input_form(
 		show_names=>1,
@@ -99,7 +99,7 @@ sub process_form
 	my $usertype = $session->param( "usertype" );
 	if( !defined $usertype )
 	{
-		$usertype = $session->get_archive()->get_conf( "default_user_type" ); 
+		$usertype = $session->get_repository->get_conf( "default_user_type" ); 
 	}
 
 	# Attempt to create a new account

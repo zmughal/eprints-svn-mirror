@@ -33,7 +33,7 @@ sub make_confirm_page
 
 	my $page = $session->make_doc_fragment;
 
-	my $user_ds = $session->get_archive()->get_dataset( "user" );
+	my $user_ds = $session->get_repository->get_dataset( "user" );
 
 	if( !$session->have_parameters() )
 	{
@@ -67,7 +67,7 @@ sub make_confirm_page
 		$page->appendChild( $session->html_phrase( "cgi/confirm:pin_mismatch" ) );
 		return( $session->html_phrase( "cgi/confirm:err_title" ) , $page );
 	}
-	my $maxdelta = $session->get_archive()->get_conf( "pin_timeout" );
+	my $maxdelta = $session->get_repository->get_conf( "pin_timeout" );
 	if( ( $maxdelta != 0 ) && ( $maxdelta * 60 * 60 < $delta ) )
 	{
 		$page->appendChild( $session->html_phrase( "cgi/confirm:pin_timeout" ) );

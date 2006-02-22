@@ -73,7 +73,7 @@ sub xml_to_dataobj
 {
 	my( $plugin, $dataset, $xml ) = @_;
 
-	$plugin->{session}->get_archive->error( "xml_to_dataobj should be overridden." );
+	$plugin->{session}->get_repository->error( "xml_to_dataobj should be overridden." );
 }
 
 # takes a chunck of XML and returns it as a utf8 string.

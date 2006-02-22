@@ -19,7 +19,7 @@ use strict;
 my $session = new EPrints::Session;
 exit( 0 ) unless( defined $session );
 
-if( $session->get_archive->get_conf( "disable_userinfo" ) )
+if( $session->get_repository->get_conf( "disable_userinfo" ) )
 {
 	$session->build_page( 
 	     $session->html_phrase( "general:disabled_feature_title" ),
@@ -40,7 +40,7 @@ sub process
 	my $user = EPrints::UserPage::user_from_param( $session );
 	return unless defined( $user );
 
-	my $arc_ds = $session->get_archive()->get_dataset( "archive" );
+	my $arc_ds = $session->get_repository->get_dataset( "archive" );
 	my $list = $user->get_owned_eprints( $arc_ds );
 	my $userid = $user->get_value( "userid" );
 

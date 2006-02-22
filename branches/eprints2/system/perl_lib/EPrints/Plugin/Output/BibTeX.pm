@@ -30,7 +30,7 @@ sub convert_dataobj
 	my $data = { normal=>{}, unescaped=>{} };
 
 	# Title and reference type
-	$data->{key} = $plugin->{session}->get_archive->get_id . $dataobj->get_id;
+	$data->{key} = $plugin->{session}->get_repository->get_id . $dataobj->get_id;
 	$data->{normal}->{title} 	= $dataobj->get_value( "title" ) if $dataobj->is_set( "title" );
 
 	my $type = $dataobj->get_type;

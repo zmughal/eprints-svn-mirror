@@ -23,7 +23,7 @@ B<EPrints::Config> - software configuration handler
 
 This module handles loading the main configuration for an instance
 of the eprints software - such as the list of language id's and 
-the top level configurations for archives - the XML files in /archives/
+the top level configurations for repositories - the XML files in /archives/
 
 =over 4
 
@@ -31,7 +31,7 @@ the top level configurations for archives - the XML files in /archives/
 
 ######################################################################
 
-#cjg SHOULD BE a way to configure an archive NOT to load the
+#cjg SHOULD BE a way to configure an repository NOT to load the
 # module except on demand (for buggy / testing ones )
 
 package EPrints::Config;
@@ -80,7 +80,7 @@ sub ensure_init
 
 Load all the EPrints configuration files, first the general files
 such as SystemSettings and languages.xml and then the configurations
-for each archive.
+for each repository.
 
 =cut
 ######################################################################
@@ -149,7 +149,7 @@ sub init
 		
 		my $id = $1;
 	
-		$ARCHIVES{$id} = load_archive_config( $id );
+		$ARCHIVES{$id} = load_repository_config( $id );
 	}
 	closedir( CFG );
 }
@@ -158,15 +158,16 @@ sub init
 ######################################################################
 =pod
 
-=item $arc_config = EPrints::Config::load_archive_config( $arc_id )
+=item $arc_config = EPrints::Config::load_repository_config( $arc_id )
 
-Load the configuration of the specified archive and return it as a 
+Load the configuration of the specified repository and return it as a 
 data structure.
 
 =cut
 ######################################################################
+sub load_archive_config { return load_repository_config( @_ ); }
 
-sub load_archive_config
+sub load_repository_config
 {
 	my( $id ) = @_;
 
@@ -271,15 +272,16 @@ sub load_archive_config
 ######################################################################
 =pod
 
-=item $archive = EPrints::Config::get_archive_config( $id )
+=item $repository = EPrints::Config::get_repository_config( $id )
 
-Returns a hash of the basic configuration for the archive with the
+Returns a hash of the basic configuration for the repository with the
 given id. This hash will include the properties from SystemSettings.
 
 =cut
 ######################################################################
+sub get_archive_config { return get_repository_config( @_ ); }
 
-sub get_archive_config
+sub get_repository_config
 {
 	my( $id ) = @_;
 
@@ -332,15 +334,16 @@ sub get_supported_languages
 ######################################################################
 =pod
 
-=item @ids = EPrints::Config::get_archive_ids( get_archive_ids )
+=item @ids = EPrints::Config::get_repository_ids()
 
-Return a list of ids of all archives belonging to this instance of
+Return a list of ids of all repositories belonging to this instance of
 the eprints software.
 
 =cut
 ######################################################################
+sub get_archive_ids { return get_repository_ids(); }
 
-sub get_archive_ids
+sub get_repository_ids
 {
 	ensure_init();
 
@@ -352,17 +355,18 @@ sub get_archive_ids
 ######################################################################
 =pod
 
-=item $arc_conf = EPrints::Config::load_archive_config_module( $id )
+=item $arc_conf = EPrints::Config::load_repository_config_module( $id )
 
-Load the full configuration for the specified archive unless the 
+Load the full configuration for the specified repository unless the 
 it has already been loaded.
 
-Return a reference to a hash containing the full archive configuration. 
+Return a reference to a hash containing the full repository configuration. 
 
 =cut
 ######################################################################
+sub load_archive_config_module { return load_repository_config_module( @_ ); }
 
-sub load_archive_config_module
+sub load_repository_config_module
 {
 	my( $id ) = @_;
 

@@ -3386,3 +3386,9 @@ PACKAGE: 2.2.99.2
     a seperate method which can be used by the workflow system: 
     collapse_conditions.
 
+2006-02-22 cjg
+
+ - Renamed EPrints::Archive to EPrints::Repository.
+ - Renamed all $archive variables to $repository 
+ - Changed all get_archive calls to get_repository
+ - Renamed s/archive/repository/ in comments.

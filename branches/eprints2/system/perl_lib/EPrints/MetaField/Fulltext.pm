@@ -79,7 +79,7 @@ sub get_index_codes_basic
 		my $codes = [];
 		unless( open( CODELOG, $indexcodes_file ) )
 		{
-			$session->get_archive->log( "Failed to open $indexcodes_file: $!" );
+			$session->get_repository->log( "Failed to open $indexcodes_file: $!" );
 		}
 		else
 		{
@@ -98,7 +98,7 @@ sub get_index_codes_basic
 	
 	unless( open( CODELOG, ">".$indexcodes_file ) )
 	{
-		$session->get_archive->log( "Failed to write to $indexcodes_file: $!" );
+		$session->get_repository->log( "Failed to write to $indexcodes_file: $!" );
 	}
 	else
 	{

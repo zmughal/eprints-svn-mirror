@@ -161,7 +161,7 @@ sub subject_browser_input
 
 	if( defined $search ) 
 	{
-		my $subject_ds = $session->get_archive()->get_dataset( "subject" );
+		my $subject_ds = $session->get_repository->get_dataset( "subject" );
 
 		my $searchexp = new EPrints::SearchExpression(
 			session=>$session,

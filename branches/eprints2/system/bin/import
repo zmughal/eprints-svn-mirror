@@ -18,7 +18,7 @@ B<import> - Import a file using an import plugin.
 
 =head1 SYNOPSIS
 
-B<import> I<archiveid> [B<options>] I<dataset> [I<plugin> I<filename>] 
+B<import> I<repository_id> [B<options>] I<dataset> [I<plugin> I<filename>] 
 
 =head1 DESCRIPTION
 
@@ -28,9 +28,9 @@ This command imports a set of EPrints from a file into the given dataset.
 
 =over 8
 
-=item I<archiveid> 
+=item I<repository_id> 
 
-The ID of the EPrint archive to import to.
+The ID of the EPrint repository to import to.
 
 =item I<dataset>
 
@@ -135,15 +135,15 @@ $noise = 1+$verbose if( $verbose );
 # Set STDOUT to auto flush (without needing a \n)
 $|=1;
 
-my $archiveid = shift @ARGV;
+my $repository_id = shift @ARGV;
 my $datasetid = shift @ARGV;
 my $ipluginid = shift @ARGV;
 my $filename = shift @ARGV;
 
-my $session = new EPrints::Session( 1, $archiveid, $noise );
+my $session = new EPrints::Session( 1, $repository_id, $noise );
 exit( 1 ) unless defined $session;
 
-my $ds = $session->get_archive()->get_dataset( $datasetid ) ;
+my $ds = $session->get_repository->get_dataset( $datasetid ) ;
 if( !defined $ds )
 {
 	print STDERR "Unknown Dataset ID: $datasetid\n";

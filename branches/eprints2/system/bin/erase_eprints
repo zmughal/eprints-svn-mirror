@@ -18,11 +18,11 @@ B<erase_archive> - Erase all EPrints and rebuilt the eprints SQL tables.
 
 =head1 SYNOPSIS
 
-B<erase_eprints> I<archiveid> [B<options>] 
+B<erase_eprints> I<repository_id> [B<options>] 
 
 =head1 DESCRIPTION
 
-This script completely erases the EPrints stored in the archive. It 
+This script completely erases the EPrints stored in the repository. It 
 erases all the documents and completely deleteds then recreates the
 SQL tables.
 
@@ -39,9 +39,9 @@ Without the B<--force> option, this script asks for confirmation before actually
 
 =over 8
 
-=item B<archiveid> 
+=item B<repository_id> 
 
-The ID of the eprint archive to use.
+The ID of the eprint repository to use.
 
 =back
 
@@ -125,18 +125,18 @@ $|=1;
 my $session = new EPrints::Session( 1, $ARGV[0], $noise, 1 );
 exit( 1 ) unless defined $session;
 
-my $archive = $session->get_archive;
+my $repo = $session->get_repository;
 
-my $documents_path = $archive->get_conf( "documents_path" );
-my $htdocs_path = $archive->get_conf( "htdocs_path" );
-my $database = $archive->get_conf( "dbname" );
+my $documents_path = $repo->get_conf( "documents_path" );
+my $htdocs_path = $repo->get_conf( "htdocs_path" );
+my $database = $repo->get_conf( "dbname" );
 
 my $input="";
 unless( $force )
 {
 	# Write the confirmation prompt
 	print "You are about to erase all the eprint records.\n";
-	print "From archive: ".$archive->get_id."\n";
+	print "From repository: ".$repo->get_id."\n";
 	print "Are you sure you want this to happen? (yes/no)\n";
 	
 	$input = <STDIN>;
@@ -195,7 +195,7 @@ if( $noise>=1 ) { print "Creating tables.\n"; }
 foreach my $dsid ( qw/ inbox buffer archive deletion document / )
 {
 	if( $noise>=2 ) { print "Creating tables for $dsid.\n"; }
-	my $dataset = $archive->get_dataset( $dsid );
+	my $dataset = $repo->get_dataset( $dsid );
 	$db->create_dataset_tables( $dataset );
 }
 

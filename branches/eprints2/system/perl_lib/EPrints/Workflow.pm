@@ -28,12 +28,12 @@
 
 =head1 NAME
 
-B<EPrints::Workflow> - Models the submission process used by an archive. 
+B<EPrints::Workflow> - Models the submission process used by an repository. 
 
 =head1 DESCRIPTION
 
 The workflow class handles loading the workflow configuration for a 
-single archive. 
+single repository. 
 
 =over 4
 
@@ -55,7 +55,7 @@ use strict;
 ######################################################################
 =pod
 
-=item $language = EPrints::Workflow->new( $archive )
+=item $language = EPrints::Workflow->new( $repository )
 
 Create a new workflow object representing the specification given in
 the workflow.xml configuration
@@ -65,18 +65,18 @@ the workflow.xml configuration
 
 sub new
 {
-	my( $class , $archive ) = @_;
+	my( $class , $repository ) = @_;
 
 	my $self = {};
 
 	bless $self, $class;
 	
-	$self->{archive} = $archive;
+	$self->{repository} = $repository;
 
 	my $content = $self->_read_workflow( 
-		$archive->get_conf( "config_path" ).
+		$repository->get_conf( "config_path" ).
 		"/workflow.xml", 
-		$archive );
+		$repository );
 
 	foreach my $item (keys %$content)
 	{
@@ -88,9 +88,9 @@ sub new
 
 sub _read_workflow
 {
-	my( $self, $file, $archive) = @_;
+	my( $self, $file, $repository) = @_;
 	my $workflow = {};
-	my $doc = $archive->parse_xml( $file );
+	my $doc = $repository->parse_xml( $file );
 	if( !defined $doc )
 	{
 		print STDERR "Error loading $file\n";
@@ -120,7 +120,7 @@ sub _read_stages
 	for( my $i=0; $i<$stages->getLength(); $i++)
 	{
 		next if( !$stages->item($i)->hasAttribute("name") );
-		my $stage = new EPrints::Workflow::Stage( $stages->item($i), $self->{archive} );
+		my $stage = new EPrints::Workflow::Stage( $stages->item($i), $self->{repository} );
 		push @$stageout, $stage;
 		$nummap->{ $stage->get_name() } = $pos++;
 	}

@@ -27,7 +27,7 @@ hard to change.
 EPrints::Session represents a connection to the EPrints system. It
 connects to a single EPrints repository, and the database used by
 that repository. Thus it has an associated EPrints::Database and
-EPrints::Archive object.
+EPrints::Repository object.
 
 Each "session" has a "current language". If you are running in a 
 multilingual mode, this is used by the HTML rendering functions to
@@ -51,8 +51,8 @@ results which can be returned via the web interface.
 #
 # INSTANCE VARIABLES:
 #
-#  $self->{archive}
-#     The EPrints::Archive object this session relates to.
+#  $self->{repository}
+#     The EPrints::Repository object this session relates to.
 #
 #  $self->{database}
 #     A EPrints::Database object representing this session's connection
@@ -103,18 +103,18 @@ use strict;
 ######################################################################
 =pod
 
-=item $session = EPrints::Session->new( $mode, [$archiveid], [$noise], [$nocheckdb] )
+=item $session = EPrints::Session->new( $mode, [$repository_id], [$noise], [$nocheckdb] )
 
 Create a connection to an EPrints repository which provides access 
 to the database and to the repository configuration.
 
 This method can be called in two modes. Setting $mode to 0 means this
-is a connection via a CGI web page. $archiveid is ignored, instead
+is a connection via a CGI web page. $repository_id is ignored, instead
 the value is taken from the "PerlSetVar EPrints_ArchiveID" option in
 the apache configuration for the current directory.
 
 If this is being called from a command line script, then $mode should
-be 1, and $archiveid should be the ID of the repository we want to
+be 1, and $repository_id should be the ID of the repository we want to
 connect to.
 
 $noise is the level of debugging output.
@@ -134,9 +134,9 @@ database without checking that the tables exist.
 
 sub new
 {
-	my( $class, $mode, $archiveid, $noise, $nocheckdb ) = @_;
+	my( $class, $mode, $repository_id, $noise, $nocheckdb ) = @_;
 	# mode = 0    - We are online (CGI script)
-	# mode = 1    - We are offline (bin script) $archiveid is archiveid
+	# mode = 1    - We are offline (bin script) $repository_id is repository_id
 	# mode = 2    - We are online, but don't create a CGI query (so we
 	#  don't consume the data).
 	my $self = {};
@@ -151,20 +151,20 @@ sub new
 		$self->{request} = EPrints::AnApache::get_request();
 		if( $mode == 0 ) { $self->{query} = new CGI; }
 		$self->{offline} = 0;
-		$self->{archive} = EPrints::Archive->new_from_request( $self->{request} );
+		$self->{repository} = EPrints::Repository->new_from_request( $self->{request} );
 	}
 	elsif( $mode == 1 )
 	{
 		$self->{offline} = 1;
-		if( !defined $archiveid || $archiveid eq "" )
+		if( !defined $repository_id || $repository_id eq "" )
 		{
-			print STDERR "No archive id specified.\n";
+			print STDERR "No repository id specified.\n";
 			return undef;
 		}
-		$self->{archive} = EPrints::Archive->new_archive_by_id( $archiveid );
-		if( !defined $self->{archive} )
+		$self->{repository} = EPrints::Repository->new( $repository_id );
+		if( !defined $self->{repository} )
 		{
-			print STDERR "Can't load archive module for: $archiveid\n";
+			print STDERR "Can't load repository module for: $repository_id\n";
 			return undef;
 		}
 	}
@@ -174,7 +174,7 @@ sub new
 		return undef;
 	}
 
-	#### Got Archive Config Module ###
+	#### Got Repository Config Module ###
 
 	if( $self->{noise} >= 2 ) { print "\nStarting EPrints Session.\n"; }
 
@@ -183,14 +183,14 @@ sub new
 		# Set a script to use the default language unless it 
 		# overrides it
 		$self->change_lang( 
-			$self->{archive}->get_conf( "defaultlanguage" ) );
+			$self->{repository}->get_conf( "defaultlanguage" ) );
 	}
 	else
 	{
 		# running as CGI, Lets work out what language the
 		# client wants...
 		$self->change_lang( get_session_language( 
-			$self->{archive}, 
+			$self->{repository}, 
 			$self->{request} ) );
 	}
 	
@@ -204,7 +204,7 @@ sub new
 		# Database connection failure - noooo!
 		$self->render_error( $self->html_phrase( 
 			"lib/session:fail_db_connect" ) );
-#$self->get_archive->log( "Failed to connect to database." );
+#$self->get_repository->log( "Failed to connect to database." );
 		return undef;
 	}
 
@@ -216,14 +216,14 @@ sub new
 		# if it's not there is a show stopper.
 		unless( $self->{database}->is_latest_version )
 		{ 
-			if( $self->{database}->has_table( "archive" ) )
+			if( $self->{database}->has_table( "repository" ) )
 			{	
-				$self->get_archive()->log( 
+				$self->get_repository->log( 
 	"Database tables are in old configuration. Please run bin/upgrade" );
 			}
 			else
 			{
-				$self->get_archive()->log( 
+				$self->get_repository->log( 
 					"No tables in the MySQL database! ".
 					"Did you run create_tables?" );
 			}
@@ -233,7 +233,7 @@ sub new
 	}
 	if( $self->{noise} >= 2 ) { print "done.\n"; }
 	
-	$self->{archive}->call( "session_init", $self, $self->{offline} );
+	$self->{repository}->call( "session_init", $self, $self->{offline} );
 
 	return( $self );
 }
@@ -291,7 +291,7 @@ sub terminate
 	my( $self ) = @_;
 	
 	$self->{database}->garbage_collect();
-	$self->{archive}->call( "session_close", $self );
+	$self->{repository}->call( "session_close", $self );
 	$self->{database}->disconnect();
 
 	# If we've not printed the XML page, we need to dispose of
@@ -324,24 +324,24 @@ sub terminate
 ######################################################################
 =pod
 
-=item $langid = EPrints::Session::get_session_language( $archive, $request )
+=item $langid = EPrints::Session::get_session_language( $repository, $request )
 
-Given an archive object and a Apache (mod_perl) request object, this
+Given an repository object and a Apache (mod_perl) request object, this
 method decides what language the session should be.
 
 First it looks at the HTTP cookie "lang_cookie_name", failing that it
 looks at the prefered language of the request from the HTTP header,
-failing that it looks at the default language for the archive.
+failing that it looks at the default language for the repository.
 
 The language ID it returns is the highest on the list that the given
-eprint archive actually supports.
+eprint repository actually supports.
 
 =cut
 ######################################################################
 
 sub get_session_language
 {
-	my( $archive, $request ) = @_; #$r should not really be passed???
+	my( $repository, $request ) = @_; #$r should not really be passed???
 
 	my @prefs;
 
@@ -350,7 +350,7 @@ sub get_session_language
 
 	my $cookie = EPrints::AnApache::cookie( 
 		$request,
-		$archive->get_conf( "lang_cookie_name") );
+		$repository->get_conf( "lang_cookie_name") );
 	push @prefs, $cookie if defined $cookie;
 
 	# then look at the accept language header
@@ -377,10 +377,10 @@ sub get_session_language
 	}
 		
 	# last choice is always...	
-	push @prefs, $archive->get_conf( "defaultlanguage" );
+	push @prefs, $repository->get_conf( "defaultlanguage" );
 
 	# So, which one to use....
-	my $arc_langs = $archive->get_conf( "languages" );	
+	my $arc_langs = $repository->get_conf( "languages" );	
 	foreach my $pref_lang ( @prefs )
 	{
 		foreach my $langid ( @{$arc_langs} )
@@ -406,7 +406,7 @@ END
 =item $session->change_lang( $newlangid )
 
 Change the current language of the session. $newlangid should be a
-valid country code for the current archive.
+valid country code for the current repository.
 
 An invalid code will cause eprints to terminate with an error.
 
@@ -419,9 +419,9 @@ sub change_lang
 
 	if( !defined $newlangid )
 	{
-		$newlangid = $self->{archive}->get_conf( "defaultlanguage" );
+		$newlangid = $self->{repository}->get_conf( "defaultlanguage" );
 	}
-	$self->{lang} = $self->{archive}->get_language( $newlangid );
+	$self->{lang} = $self->{repository}->get_language( $newlangid );
 
 	if( !defined $self->{lang} )
 	{
@@ -439,8 +439,8 @@ sub change_lang
 Return an XHTML DOM object describing a phrase from the phrase files.
 
 $phraseid is the id of the phrase to return. If the same ID appears
-in both the archive-specific phrases file and the system phrases file
-then the archive-specific one is used.
+in both the repository-specific phrases file and the system phrases file
+then the repository-specific one is used.
 
 If the phrase contains <ep:pin> elements, then each one should have
 an entry in %inserts where the key is the "ref" of the pin and the
@@ -534,14 +534,14 @@ sub get_langid
 
 
 
-#cjg: should be a util? or even a property of archive?
+#cjg: should be a util? or even a property of repository?
 
 ######################################################################
 =pod
 
-=item $value = EPrints::Session::best_language( $archive, $lang, %values )
+=item $value = EPrints::Session::best_language( $repository, $lang, %values )
 
-$archive is the current archive. $lang is the prefered language.
+$repository is the current repository. $lang is the prefered language.
 
 %values contains keys which are language ids, and values which is
 text or phrases in those languages, all translations of the same 
@@ -553,7 +553,7 @@ following logic:
 If possible, return the value for $lang.
 
 Otherwise, if possible return the value for the default language of
-this archive.
+this repository.
 
 Otherwise, if possible return the value for "en" (English).
 
@@ -566,7 +566,7 @@ This means that the view sees the best possible phrase.
 
 sub best_language
 {
-	my( $archive, $lang, %values ) = @_;
+	my( $repository, $lang, %values ) = @_;
 
 	# no options?
 	return undef if( scalar keys %values == 0 );
@@ -574,8 +574,8 @@ sub best_language
 	# The language of the current session is best
 	return $values{$lang} if( defined $lang && defined $values{$lang} );
 
-	# The default language of the archive is second best	
-	my $defaultlangid = $archive->get_conf( "defaultlanguage" );
+	# The default language of the repository is second best	
+	my $defaultlangid = $repository->get_conf( "defaultlanguage" );
 	return $values{$defaultlangid} if( defined $values{$defaultlangid} );
 
 	# Bit of personal bias: We'll try English before we just
@@ -609,7 +609,7 @@ sub get_order_names
 	my( $self, $dataset ) = @_;
 		
 	my %names = ();
-	foreach( keys %{$self->{archive}->get_conf(
+	foreach( keys %{$self->{repository}->get_conf(
 			"order_methods",
 			$dataset->confid() )} )
 	{
@@ -698,17 +698,18 @@ sub get_db
 ######################################################################
 =pod
 
-=item $archive = $session->get_archive
+=item $repository = $session->get_repository
 
-Return the EPrints::Archive object associated with the Session.
+Return the EPrints::Repository object associated with the Session.
 
 =cut
 ######################################################################
+sub get_archive { return $_[0]->get_repository; }
 
-sub get_archive
+sub get_repository
 {
 	my( $self ) = @_;
-	return $self->{archive};
+	return $self->{repository};
 }
 
 
@@ -955,7 +956,7 @@ These methods help build XHTML.
 
 =item $ruler = $session->render_ruler
 
-Return the XHTML which this archive uses as a page divider. Configured
+Return the XHTML which this repository uses as a page divider. Configured
 in ruler.xml
 
 =cut
@@ -965,7 +966,7 @@ sub render_ruler
 {
 	my( $self ) = @_;
 
-	my $ruler = $self->{archive}->get_ruler();
+	my $ruler = $self->{repository}->get_ruler();
 	
 	return $self->clone_for_me( $ruler, 1 );
 }
@@ -1109,7 +1110,7 @@ sub render_language_name
 $name is a ref. to a hash containing family, given etc.
 
 Returns an XML DOM fragment with the name rendered in the manner
-of the archive. Usually "John Smith".
+of the repository. Usually "John Smith".
 
 If $familylast is set then the family and given parts are reversed, eg.
 "Smith, John"
@@ -1615,7 +1616,7 @@ sub render_error
 	
 	if( !defined $back_to )
 	{
-		$back_to = $self->get_archive()->get_conf( "frontpage" );
+		$back_to = $self->get_repository->get_conf( "frontpage" );
 	}
 	if( !defined $back_to_text )
 	{
@@ -1634,7 +1635,7 @@ sub render_error
 	} 
 
 	# send text version to log
-	$self->get_archive->log( $textversion );
+	$self->get_repository->log( $textversion );
 
 	my( $p, $page, $a );
 	$page = $self->make_doc_fragment();
@@ -1716,7 +1717,7 @@ type: if this form relates to a user or an eprint, the type of
 eprint/user can effect what fields are flagged as required. This
 param contains the ID of the eprint/user if any, and if relevant.
 
-staff: if true, this form is being presented to archive staff 
+staff: if true, this form is being presented to repository staff 
 (admin, or editor). This may change which fields are required.
 
 hidden_fields: reference to a hash. The keys of which are CGI keys
@@ -1743,11 +1744,11 @@ sub render_input_form
 	$form =	$self->render_form( "post", $p{dest} );
 	if( defined $p{default_action} && $self->client() ne "LYNX" )
 	{
-		my $imagesurl = $self->get_archive->get_conf( "base_url" )."/images";
+		my $imagesurl = $self->get_repository->get_conf( "base_url" )."/images";
 		my $esec = $self->get_request->dir_config( "EPrints_Secure" );
 		if( defined $esec && $esec eq "yes" )
 		{
-			$imagesurl = $self->get_archive->get_conf( "securepath" )."/images";
+			$imagesurl = $self->get_repository->get_conf( "securepath" )."/images";
 		}
 		# This button will be the first on the page, so
 		# if a user hits return and the browser auto-
@@ -1965,7 +1966,7 @@ sub build_page
 		}
 	}
 
-	my $pagehooks = $self->get_archive->get_conf( "pagehooks" );
+	my $pagehooks = $self->get_repository->get_conf( "pagehooks" );
 	$pagehooks = {} if !defined $pagehooks;
 	my $ph = $pagehooks->{$pageid} if defined $pageid;
 	$ph = {} if !defined $ph;
@@ -2001,7 +2002,7 @@ sub build_page
 
 	my $used = {};
 	$self->{page} = $self->_process_page( 
-		$self->{archive}->get_template( 
+		$self->{repository}->get_template( 
 			$self->get_langid, 
 			$template_id ),
 		$map,
@@ -2250,7 +2251,7 @@ sub send_http_header
 	# Write HTTP headers if appropriate
 	if( $self->{offline} )
 	{
-		$self->{archive}->log( "Attempt to send HTTP Header while offline" );
+		$self->{repository}->log( "Attempt to send HTTP Header while offline" );
 		return;
 	}
 
@@ -2281,11 +2282,11 @@ sub send_http_header
 	if( defined $opts{lang} )
 	{
 		my $cookie = $self->{query}->cookie(
-			-name    => $self->{archive}->get_conf("lang_cookie_name"),
+			-name    => $self->{repository}->get_conf("lang_cookie_name"),
 			-path    => "/",
 			-value   => $opts{lang},
 			-expires => "+10y", # really long time
-			-domain  => $self->{archive}->get_conf("lang_cookie_domain") );
+			-domain  => $self->{repository}->get_conf("lang_cookie_domain") );
 		EPrints::AnApache::header_out( 
 				$self->{"request"},
 				"Set-Cookie",
@@ -2723,7 +2724,7 @@ sub get_http_status
 
 =item $plugin = $session->plugin( $pluginid )
 
-Return the plugin with the given pluginid, in this archive or, failing
+Return the plugin with the given pluginid, in this repository or, failing
 that, from the system level plugins.
 
 =cut
@@ -2733,11 +2734,11 @@ sub plugin
 {
 	my( $self, $pluginid, %params ) = @_;
 
-	my $class = $self->{archive}->plugin_class( $pluginid );
+	my $class = $self->{repository}->plugin_class( $pluginid );
 
 	if( !defined $class )
 	{
-		$self->{archive}->log( "Plugin '$pluginid' not found." );
+		$self->{repository}->log( "Plugin '$pluginid' not found." );
 		return undef;
 	}
 
@@ -2753,7 +2754,7 @@ sub plugin
 
 =item @plugin_ids  = $session->plugin_list( %restrictions )
 
-Return either a list of all the plugins available to this archive or
+Return either a list of all the plugins available to this repository or
 return a list of available plugins which can accept the given 
 restrictions.
 
@@ -2769,7 +2770,7 @@ sub plugin_list
 
 	my %pids = ();
 
-	foreach( $self->{archive}->plugin_list() ) { $pids{$_}=1; }
+	foreach( $self->{repository}->plugin_list() ) { $pids{$_}=1; }
 
 	return sort keys %pids if( !scalar %restrictions );
 	my @out = ();
@@ -2835,7 +2836,7 @@ sub get_citation_spec
 	my $citation_id = $dataset->confid();
 	$citation_id.="_".$ctype if( defined $ctype );
 
-	my $citespec = $self->{archive}->get_citation_spec( 
+	my $citespec = $self->{repository}->get_citation_spec( 
 					$self->{lang}->get_id(), 
 					$citation_id );
 
@@ -2891,7 +2892,7 @@ sub microtime
 
 =item $foo = $session->mail_administrator( $subjectid, $messageid, %inserts )
 
-Sends a mail to the archive administrator with the given subject and
+Sends a mail to the repository administrator with the given subject and
 message body.
 
 $subjectid is the name of a phrase in the phrase file to use
@@ -2911,15 +2912,15 @@ sub mail_administrator
 	my( $self,   $subjectid, $messageid, %inserts ) = @_;
 
 	# Mail the admin in the default language
-	my $langid = $self->{archive}->get_conf( "defaultlanguage" );
-	my $lang = $self->{archive}->get_language( $langid );
+	my $langid = $self->{repository}->get_conf( "defaultlanguage" );
+	my $lang = $self->{repository}->get_language( $langid );
 
 	return EPrints::Utils::send_mail(
-		$self->{archive},
+		$self->{repository},
 		$langid,
 		EPrints::Utils::tree_to_utf8( 
 			$lang->phrase( "lib/session:archive_admin", {}, $self ) ),
-		$self->{archive}->get_conf( "adminemail" ),
+		$self->{repository}->get_conf( "adminemail" ),
 		EPrints::Utils::tree_to_utf8( 
 			$lang->phrase( $subjectid, {}, $self ) ),
 		$lang->phrase( $messageid, \%inserts, $self ), 
@@ -3023,6 +3024,13 @@ sub create_user { return EPrints::DataObj::User::create( @_ ); }
 
 ######################################################################
 
+package EPrints::Archive;
+
+our @ISA = qw/ EPrints::Repository /;
+
+$INC{"EPrints/Archive.pm"} = 1;
+
+######################################################################
 1;
 
 

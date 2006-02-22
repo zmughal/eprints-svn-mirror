@@ -49,7 +49,7 @@ $|=1;
 my $session = new EPrints::Session( 1, $ARGV[0], $noise );
 exit( 1 ) unless defined $session;
 my $datasetid = $ARGV[1];
-my $dataset = $session->get_archive()->get_dataset( $datasetid );
+my $dataset = $session->get_repository->get_dataset( $datasetid );
 if( !defined $dataset )
 {
 	$session->terminate();
@@ -62,7 +62,7 @@ unless( $force )
 	if( $noise > 0 )
 	{
 		print "\n";
-		print "You are about to recommit \"$datasetid\" in the $ARGV[0] archive.\n";
+		print "You are about to recommit \"$datasetid\" in the $ARGV[0] repository.\n";
 		print "This can take some time.\n\n";
 		print "Number of records in set: ".$dataset->count( $session )."\n";
 

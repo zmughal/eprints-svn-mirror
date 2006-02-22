@@ -47,26 +47,26 @@ sub handler
 {
 	my( $r ) = @_;
 
-	my $archiveid = $r->dir_config( "EPrints_ArchiveID" );
-	if( !defined $archiveid )
+	my $repository_id = $r->dir_config( "EPrints_ArchiveID" );
+	if( !defined $repository_id )
 	{
 		return DECLINED;
 	}
-	my $archive = EPrints::Archive->new_archive_by_id( $archiveid );
+	my $repository = EPrints::Repository->new( $repository_id );
 	my $esec = $r->dir_config( "EPrints_Secure" );
 	my $secure = (defined $esec && $esec eq "yes" );
 	my $urlpath;
 	if( $secure ) 
 	{ 
-		$urlpath = $archive->get_conf( "securepath" );
+		$urlpath = $repository->get_conf( "securepath" );
 	}
 	else
 	{ 
-		$urlpath = $archive->get_conf( "urlpath" );
+		$urlpath = $repository->get_conf( "urlpath" );
 	}
 
 	my $uri = $r->uri;
-	my $lang = EPrints::Session::get_session_language( $archive, $r );
+	my $lang = EPrints::Session::get_session_language( $repository, $r );
 	my $args = $r->args;
 	if( $args ne "" ) { $args = '?'.$args; }
 
@@ -78,15 +78,15 @@ sub handler
 
 	# Skip rewriting the /perl/ path and any other specified in
 	# the config file.
-	my $econf = $archive->get_conf('rewrite_exceptions');
+	my $econf = $repository->get_conf('rewrite_exceptions');
 	my @exceptions = ( '/cgi/' );
 	if( defined $econf ) { @exceptions = @{$econf}; }
 	push @exceptions, '/perl/';
 
-	my $securehost = $archive->get_conf( "securehost" );
+	my $securehost = $repository->get_conf( "securehost" );
 	if( EPrints::Utils::is_set( $securehost ) && !$secure )
 	{
-		# If this archive has secure mode but we're not
+		# If this repository has secure mode but we're not
 		# on the https site then skip /secure/ to let
 		# it just get rediected to the secure site.
 		push @exceptions, '/secure/';
@@ -102,12 +102,12 @@ sub handler
 	# shorturl does not (yet) effect secure docs.
 	if( $uri =~ s#^/secure/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])#/secure/$1/$2/$3/$4# )
 	{
-		$r->filename( $archive->get_conf( "htdocs_path" )."/".$uri );
+		$r->filename( $repository->get_conf( "htdocs_path" )."/".$uri );
 		return OK;
 	}
 
 
-	my $shorturl = $archive->get_conf( "use_short_urls" );
+	my $shorturl = $repository->get_conf( "use_short_urls" );
 	$shorturl = 0 unless( defined $shorturl );
 
 	#$uri =~ s#^/archive/([0-9]+)([0-9][0-9])([0-9][0-9])([0-9][0-9])#/archive/$1/$2/$3/$4#;
@@ -162,11 +162,11 @@ sub handler
 	# apache 2 does not automatically look for index.html so we have to do it ourselves
 	if( $uri =~ m#/$# )
 	{
-		$r->filename( $archive->get_conf( "htdocs_path" )."/".$lang.$uri."index.html" );
+		$r->filename( $repository->get_conf( "htdocs_path" )."/".$lang.$uri."index.html" );
 	}
 	else
 	{
-		$r->filename( $archive->get_conf( "htdocs_path" )."/".$lang.$uri );
+		$r->filename( $repository->get_conf( "htdocs_path" )."/".$lang.$uri );
 	}
 
 	return OK;

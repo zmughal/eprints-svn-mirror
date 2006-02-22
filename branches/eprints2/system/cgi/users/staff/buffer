@@ -96,7 +96,7 @@ else
 			$td->appendChild( $session->html_phrase( "cgi/users/buffer:invalid" ) );
 		}
 	
-		my $buffds = $session->get_archive()->get_dataset( "buffer" );	
+		my $buffds = $session->get_repository->get_dataset( "buffer" );	
 		
 		$td = $session->make_element( "td", class=>"last_col" );
 		$tr->appendChild( $td );

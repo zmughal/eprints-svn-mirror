@@ -118,7 +118,7 @@ sub warning
 {
 	my( $plugin, $msg ) = @_;
 
-	$plugin->{session}->get_archive->log( $plugin->{id}.": ".$msg );
+	$plugin->{session}->get_repository->log( $plugin->{id}.": ".$msg );
 }	
 
 sub error

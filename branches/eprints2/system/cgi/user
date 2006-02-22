@@ -16,7 +16,7 @@ use EPrints;
 use strict;
 my $session = new EPrints::Session;
 
-if( $session->get_archive->get_conf( "disable_userinfo" ) )
+if( $session->get_repo->get_conf( "disable_userinfo" ) )
 {
 	$session->build_page( 
 	     $session->html_phrase( "general:disabled_feature_title" ),

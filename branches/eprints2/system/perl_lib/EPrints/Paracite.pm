@@ -21,7 +21,7 @@ B<EPrints::Paracite> - Module for rendering reference blocks into links.
 
 =head1 DESCRIPTION
 
-If your archive allows users to specify references in a reference field,
+If your repository allows users to specify references in a reference field,
 you can use this function.
 
 =over 4
@@ -53,9 +53,9 @@ sub render_reference
 	my $i=0;
 	my $mode = 0;
 	my $html = $session->make_doc_fragment();
-	my $perlurl = $session->get_archive()->get_conf( 
+	my $perlurl = $session->get_repository->get_conf( 
 		"perl_url" );
-	my $baseurl = $session->get_archive()->get_conf( 
+	my $baseurl = $session->get_repository->get_conf( 
 		"base_url" );
 
 	# Loop through all references

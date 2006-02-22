@@ -55,7 +55,7 @@ sub get_basic_input_elements
 
 	my $ex = $self->SUPER::get_basic_input_elements( $session, $value, $suffix, $staff );
 
-	my $ds = $session->get_archive->get_dataset( 
+	my $ds = $session->get_repository->get_dataset( 
 			$self->get_property('datasetid') );
 	my $desc;
 	if( defined $value )

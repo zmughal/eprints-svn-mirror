@@ -18,12 +18,12 @@ use strict;
 my $session = new EPrints::Session;
 exit( 0 ) unless( defined $session );
 
-my $ds = $session->get_archive()->get_dataset( "archive" );
+my $ds = $session->get_repository->get_dataset( "archive" );
 my $page=$session->make_doc_fragment();
 
 $page->appendChild( $session->html_phrase( "cgi/latest:intro" ) );
 
-my $citation = $session->get_archive->get_conf( "latest_citation" );
+my $citation = $session->get_repository->get_conf( "latest_citation" );
 
 my $seensome = 0;
 for( my $d=0; $d<7; ++$d )

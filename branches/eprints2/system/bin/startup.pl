@@ -64,12 +64,12 @@ use strict;
 EPrints::Config::ensure_init();
 
 my %done = ();
-foreach( EPrints::Config::get_archive_ids() )
+foreach( EPrints::Config::get_repository_ids() )
 {
 	next if $done{$_};
 	EPrints::Archive->new_archive_by_id( $_ );
 }
-print STDERR "EPrints archives loaded: ".join( ", ",  EPrints::Config::get_archive_ids() )."\n";
+print STDERR "EPrints archives loaded: ".join( ", ",  EPrints::Config::get_repository_ids() )."\n";
 
 # Tell me more about warnings
 $SIG{__WARN__} = \&Carp::cluck;

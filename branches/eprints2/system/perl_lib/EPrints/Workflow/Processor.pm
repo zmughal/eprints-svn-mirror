@@ -101,7 +101,7 @@ sub new
 	$self->{session} = $session;
 
 	# Use user configured order for stages or...
-	# $self->{workflow} = $session->get_archive->get_workflow( $workflow_id );
+	# $self->{workflow} = $session->get_repository->get_workflow( $workflow_id );
 
 	return( $self );
 }
@@ -145,7 +145,7 @@ sub render
 {
 	my( $self, $stage ) = @_;
 	
-	my $arc = $self->{session}->get_archive;
+	my $arc = $self->{session}->get_repository;
 	$self->{dataset} = $arc->get_dataset( "archive" );
 	$self->{workflow} = $arc->{workflow};
 

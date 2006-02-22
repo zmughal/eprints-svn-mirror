@@ -515,7 +515,7 @@ sub is_set
 
 	if( !$self->{dataset}->get_field( $fieldname ) )
 	{
-		$self->{session}->get_archive->log(
+		$self->{session}->get_repository->log(
 			 "is_set( $fieldname ): Unknown field" );
 	}
 
@@ -797,7 +797,7 @@ sub to_xml
 	my $ns = EPrints::XML::namespace( 'data', $opts{version} );
 	if( !defined $ns )
 	{
-		$self->{session}->get_archive->log(
+		$self->{session}->get_repository->log(
 			 "to_xml: unknown version: ".$opts{version} );
 		#error
 		return;

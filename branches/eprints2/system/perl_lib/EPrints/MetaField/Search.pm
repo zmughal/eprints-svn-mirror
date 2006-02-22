@@ -84,7 +84,7 @@ sub make_searchexp
 {
 	my( $self, $session, $value, $prefix ) = @_;
 
-	my $ds = $session->get_archive()->get_dataset( 
+	my $ds = $session->get_repository->get_dataset( 
 			$self->{datasetid} );	
 
 	my $searchexp = EPrints::SearchExpression->new(
@@ -128,7 +128,7 @@ sub form_value_basic
 {
 	my( $self, $session, $suffix ) = @_;
 	
-	my $ds = $session->get_archive()->get_dataset( 
+	my $ds = $session->get_repository->get_dataset( 
 			$self->{datasetid} );	
 	my $searchexp = EPrints::SearchExpression->new(
 		session => $session,

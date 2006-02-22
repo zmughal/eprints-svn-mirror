@@ -27,11 +27,11 @@ B<indexer> status
 
 =head1 DESCRIPTION
 
-This daemon runs in the background and creates index files for all eprints archives. It builds indexes for each archive in turn then starts again.
+This daemon runs in the background and creates index files for all eprints repositories. It builds indexes for each respository in turn then starts again.
 
 Messages and errors are logged to /opt/eprints2/var/indexer.log unless you change the log options. If it appears to be having problems try raising the log level and examining the log.
 
-Once all the archives have been indexed, the indexer rolls the logs (up to logfile.5) and then starts again. See --rollcount for ways to customise this.
+Once all the respositories have been indexed, the indexer rolls the logs (up to logfile.5) and then starts again. See --rollcount for ways to customise this.
 
 =over 8
 
@@ -82,7 +82,7 @@ Do not become a daemon, remain attached to the current terminal (errors still go
 
 =item B<--once>
 
-Only index each archive once rather than loop for ever.
+Only index each repository once rather than loop for ever.
 
 =item B<--version>
 
@@ -226,7 +226,7 @@ END
 }
 
 
-#foreach my $arc_id ( EPrints::Config::get_archive_ids() )
+#foreach my $arc_id ( EPrints::Config::get_repository_ids() )
 #{
 #
 #	my $session  = new EPrints::Session( 1 , $arc_id , $noise );
@@ -316,11 +316,11 @@ while( 1 )
 	if( $p->{kid} == 0 )
 	{
 		my @sessions = ();
-		my @arc_ids = EPrints::Config::get_archive_ids();
+		my @arc_ids = EPrints::Config::get_repository_ids();
 		foreach my $arc_id ( sort @arc_ids )
 		{
-			my $archive = EPrints::Archive->new_archive_by_id( $arc_id );
-			next unless $archive->get_conf( "index" );
+			my $repository = EPrints::Repository->new( $arc_id );
+			next unless $repository->get_conf( "index" );
 			push @sessions, new EPrints::Session( 1 , $arc_id );
 		}
 
@@ -364,7 +364,7 @@ while( 1 )
 				{
 					my( $datasetid, $objectid, $fieldid ) = split( /\./, $fieldcode );
 		
-					my $dataset = $session->get_archive->get_dataset( $datasetid );
+					my $dataset = $session->get_repository->get_dataset( $datasetid );
 					if( !defined $dataset )
 					{
 						indexlog( "Could not make dataset: $datasetid ($fieldcode)" );

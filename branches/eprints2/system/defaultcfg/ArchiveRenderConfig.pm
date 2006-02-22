@@ -14,22 +14,22 @@
 
 =head1 NAME
 
-ArchiveRenderConfig.pm - Archive-specific rendering routines
+ArchiveRenderConfig.pm - Repository-specific rendering routines
 
 =head1 DESCRIPTION
 
-Functions which convert archive data into a human readable form.
+Functions which convert repository data into a human readable form.
 
 A couple of these routines return UTF8 encoded strings, but the
 others return DOM structures. See the docs for more information
 about this.
 
-Anywhere text is set, it is requested from the archive phrases
-XML file, in case you are running the archive in more than one
+Anywhere text is set, it is requested from the repository phrases
+XML file, in case you are running the repository in more than one
 language.
 
 Hopefully when we are in beta the'll be an alternative version
-of this config for single language archives.
+of this config for single language repositories.
 
 =head1 METHODS
 
@@ -60,8 +60,8 @@ sub eprint_render
 {
 	my( $eprint, $session ) = @_;
 
-	my $succeeds_field = $session->get_archive()->get_dataset( "eprint" )->get_field( "succeeds" );
-	my $commentary_field = $session->get_archive()->get_dataset( "eprint" )->get_field( "commentary" );
+	my $succeeds_field = $session->get_repository->get_dataset( "eprint" )->get_field( "succeeds" );
+	my $commentary_field = $session->get_repository->get_dataset( "eprint" )->get_field( "commentary" );
 	my $has_multiple_versions = $eprint->in_thread( $succeeds_field );
 
 	my( $page, $p, $a );
@@ -74,7 +74,7 @@ sub eprint_render
 	$page->appendChild( $p );
 
 	# Put in a message describing how this document has other versions
-	# in the archive if appropriate
+	# in the repository if appropriate
 	if( $has_multiple_versions )
 	{
 		my $latest = $eprint->last_in_thread( $succeeds_field );
@@ -167,14 +167,14 @@ sub eprint_render
 		my $status = $eprint->get_value( "full_text_status" );
 		if( $status ne "public" )
 		{
-			if( $session->get_archive->can_call( "email_for_doc_request" ) )
+			if( $session->get_repository->can_call( "email_for_doc_request" ) )
 			{
-				if( defined( $session->get_archive->call( "email_for_doc_request", $session, $eprint ) ) )
+				if( defined( $session->get_repository->call( "email_for_doc_request", $session, $eprint ) ) )
 				{
 					# only render if there is a contact email address
 					my $p = $session->make_element( "p" );
 					$p->appendChild( $session->html_phrase( "request_doc:request_$status", 
-						link => $session->render_link( $session->get_archive->get_conf( "perl_url" ) . '/request_doc?eprintid=' . $eprint->get_id ),
+						link => $session->render_link( $session->get_repository->get_conf( "perl_url" ) . '/request_doc?eprintid=' . $eprint->get_id ),
 					) );
 					$page->appendChild( $p );
 				}
@@ -221,7 +221,7 @@ sub eprint_render
 		my $target = EPrints::DataObj::EPrint->new( 
 			$session,
 			$eprint->get_value( "commentary" ),
-			$session->get_archive()->get_dataset( "archive" ) );
+			$session->get_repository()->get_dataset( "archive" ) );
 		if( defined $target )
 		{
 			$table->appendChild( $session->render_row(
@@ -291,7 +291,7 @@ sub eprint_render
 	if( defined $user )
 	{
 		$usersname = $session->make_element( "a", 
-				href=>$eprint->{session}->get_archive()->get_conf( "perl_url" )."/user?userid=".$user->get_value( "userid" ) );
+				href=>$eprint->{session}->get_repository->get_conf( "perl_url" )."/user?userid=".$user->get_value( "userid" ) );
 		$usersname->appendChild( 
 			$user->render_description() );
 	}
@@ -577,7 +577,7 @@ sub _render_fileicon
 	my $a = $session->render_link( $url );
 	$a->appendChild( $session->make_element( 
 		"img", 
-		src=>$session->get_archive->get_conf("base_url")."/images/fileicons/$type.png",
+		src=>$session->get_repository->get_conf("base_url")."/images/fileicons/$type.png",
 		width=>48,
 		height=>48,
 		border=>0 ));

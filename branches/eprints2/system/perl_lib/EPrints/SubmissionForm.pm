@@ -150,7 +150,7 @@ sub new
 	unless( defined $self->{autosend} ) { $self->{autosend} = 1; }
 	
 	# Use user configured order for stages or...
-	$self->{stages} = $session->get_archive->get_conf( 
+	$self->{stages} = $session->get_repository->get_conf( 
 		"submission_stages" );
 
 	$self->{stages} = $STAGES if( !defined $self->{stages} );
@@ -195,7 +195,7 @@ sub process
 		{
 			if( defined $self->{session}->param( "dataset" ) )
 			{
-				my $arc = $self->{session}->get_archive;
+				my $arc = $self->{session}->get_repository;
 				$self->{dataset} = $arc->get_dataset( 
 					$self->{session}->param( "dataset" ) );
 			}
@@ -210,7 +210,7 @@ sub process
 		{
 			my $db_error = $self->{session}->get_db()->error;
 			#cjg LOG..
-			$self->{session}->get_archive()->log( 
+			$self->{session}->get_repository->log( 
 				"Database Error: $db_error" );
 			$self->_database_err;
 			return( 0 );
@@ -223,7 +223,7 @@ sub process
 	    		$self->{eprint}->get_value( "eprintid" ) )
 		{
 			my $form_id = $self->{session}->param( "eprintid" );
-			$self->{session}->get_archive()->log( 
+			$self->{session}->get_repository->log( 
 				"Form error: EPrint ID in form ".
 				$self->{session}->param( "eprintid" ).
 				" doesn't match object id ".
@@ -235,7 +235,7 @@ sub process
 		# Check it's owned by the current user
 		if( !$self->{staff} && !$self->{user}->is_owner( $self->{eprint} ) )
 		{
-			$self->{session}->get_archive()->log( 
+			$self->{session}->get_repository->log( 
 				"Illegal attempt to edit record ".
 				$self->{eprint}->get_value( "eprintid" ).
 				" by user with id ".
@@ -299,7 +299,7 @@ sub process
 
 		my $stage = $self->{new_stage};
 
-		if( $self->{session}->get_archive->get_conf( 'log_submission_timing' ) )
+		if( $self->{session}->get_repository->get_conf( 'log_submission_timing' ) )
 		{
 			if( $stage ne "meta" )
 			{
@@ -384,7 +384,7 @@ sub get_stage
 
 =item $s_form->log_submission_stage( $stage )
 
-Log to the submission_timings file for this archive that this stage
+Log to the submission_timings file for this repository that this stage
 of the submission form was active at this time for the current user.
 
 Only called if the log_submission_timings config option is set.
@@ -396,10 +396,10 @@ sub log_submission_stage
 {
 	my( $self, $stage ) = @_;
 
-	my $fn = EPrints::Config::get("var_path")."/submission_timings.".$self->{session}->get_archive->get_id.".log";
+	my $fn = EPrints::Config::get("var_path")."/submission_timings.".$self->{session}->get_repository->get_id.".log";
 	unless( open( SLOG, ">>$fn" ) )
 	{
-		$self->{session}->get_archive->log( "Could not append to $fn" );
+		$self->{session}->get_repository->log( "Could not append to $fn" );
 	}
 	my @data = ( time, $self->{eprintid}, $self->{user}->get_id, $stage, $self->{action} );
 	print SLOG join( "\t", @data )."\n";
@@ -421,7 +421,7 @@ sub _corrupt_err
 			"lib/submissionform:corrupt_err",
 			line_no => 
 				$self->{session}->make_text( (caller())[2] ) ),
-		$self->{session}->get_archive->get_conf( "userhome" ) );
+		$self->{session}->get_repository->get_conf( "userhome" ) );
 
 }
 
@@ -440,7 +440,7 @@ sub _database_err
 			"lib/submissionform:database_err",
 			line_no => 
 				$self->{session}->make_text( (caller())[2] ) ),
-		$self->{session}->get_archive->get_conf( "userhome" ) );
+		$self->{session}->get_repository->get_conf( "userhome" ) );
 }
 
 ######################################################################
@@ -477,7 +477,7 @@ sub _from_stage_home
 			$self->{session}->render_error( 
 				$self->{session}->html_phrase(
 		        		"lib/submissionform:use_auth_area" ),
-				$self->{session}->get_archive->get_conf( 
+				$self->{session}->get_repository->get_conf( 
 					"userhome" ) );
 			return( 0 );
 		}
@@ -493,7 +493,7 @@ sub _from_stage_home
 		if( !defined $self->{eprint} )
 		{
 			my $db_error = $self->{session}->get_db()->error();
-			$self->{session}->get_archive()->log( "Database Error: $db_error" );
+			$self->{session}->get_repository->log( "Database Error: $db_error" );
 			$self->_database_err;
 			return( 0 );
 		}
@@ -509,7 +509,7 @@ sub _from_stage_home
 			$self->{session}->render_error( 
 				$self->{session}->html_phrase( 
 					"lib/submissionform:nosel_err" ),
-				$self->{session}->get_archive->get_conf( 
+				$self->{session}->get_repository->get_conf( 
 					"userhome" ) );
 			return( 0 );
 		}
@@ -526,7 +526,7 @@ sub _from_stage_home
 			$self->{session}->render_error( 
 				$self->{session}->html_phrase( 
 					"lib/submissionform:nosel_err" ),
-				$self->{session}->get_archive->get_conf( 
+				$self->{session}->get_repository->get_conf( 
 					"userhome" ) );
 			return( 0 );
 		}
@@ -541,7 +541,7 @@ sub _from_stage_home
 		else
 		{
 			my $error = $self->{session}->get_db()->error();
-			$self->{session}->get_archive()->log( "SubmissionForm error: Error copying EPrint ".$self->{eprint}->get_value( "eprintid" ).": ".$error );
+			$self->{session}->get_repository->log( "SubmissionForm error: Error copying EPrint ".$self->{eprint}->get_value( "eprintid" ).": ".$error );
 			$self->_database_err;
 			return( 0 );
 		}
@@ -554,7 +554,7 @@ sub _from_stage_home
 			$self->{session}->render_error( 
 				$self->{session}->html_phrase( 
 					"lib/submissionform:nosel_err" ),
-				$self->{session}->get_archive->get_conf( 
+				$self->{session}->get_repository->get_conf( 
 					"userhome" ) );
 			return( 0 );
 		}
@@ -569,7 +569,7 @@ sub _from_stage_home
 		else
 		{
 			my $error = $self->{session}->get_db()->error();
-			$self->{session}->get_archive()->log( "SubmissionForm error: Error cloning EPrint ".$self->{eprint}->get_value( "eprintid" ).": ".$error );
+			$self->{session}->get_repository->log( "SubmissionForm error: Error cloning EPrint ".$self->{eprint}->get_value( "eprintid" ).": ".$error );
 			$self->_database_err;
 			return( 0 );
 		}
@@ -582,7 +582,7 @@ sub _from_stage_home
 			$self->{session}->render_error( 
 				$self->{session}->html_phrase( 
 					"lib/submissionform:nosel_err" ),
-				$self->{session}->get_archive->get_conf( 
+				$self->{session}->get_repository->get_conf( 
 					"userhome" ) );
 			return( 0 );
 		}
@@ -597,7 +597,7 @@ sub _from_stage_home
 			$self->{session}->render_error( 
 				$self->{session}->html_phrase( 
 					"lib/submissionform:nosel_err" ),
-				$self->{session}->get_archive->get_conf( 
+				$self->{session}->get_repository->get_conf( 
 					"userhome" ) );
 			return( 0 );
 		}
@@ -987,7 +987,7 @@ sub _from_stage_docmeta
 		# Update the description if appropriate
 		foreach( "formatdesc", "format", "language", "security", "license" )
 		{
-			next if( $self->{session}->get_archive()->get_conf(
+			next if( $self->{session}->get_repository->get_conf(
 				"submission_hide_".$_ ) );
 			$self->{document}->set_value( $_,
 				$self->{session}->param( $_ ) );
@@ -1213,7 +1213,7 @@ sub _from_stage_verify
 		{
 			# OK, no problems, submit it to the archive
 
-			my $sb = $self->{session}->get_archive()->get_conf( "skip_buffer" );	
+			my $sb = $self->{session}->get_repository->get_conf( "skip_buffer" );	
 			if( defined $sb && $sb == 1 )
 			{
 				if( $self->{eprint}->move_to_archive() )
@@ -1261,7 +1261,7 @@ sub _from_stage_confirmdel
 		if( !$self->{eprint}->remove() )
 		{
 			my $db_error = $self->{session}->get_db()->error();
-			$self->{session}->get_archive()->log( "DB error removing EPrint ".$self->{eprint}->get_value( "eprintid" ).": $db_error" );
+			$self->{session}->get_repository->log( "DB error removing EPrint ".$self->{eprint}->get_value( "eprintid" ).": $db_error" );
 			$self->_database_err;
 			return( 0 );
 		}
@@ -1367,7 +1367,7 @@ sub _do_stage_linking
 		desc=>$self->{eprint}->render_citation ) );
 
 	my $archive_ds =
-		$self->{session}->get_archive()->get_dataset( "archive" );
+		$self->{session}->get_repository->get_dataset( "archive" );
 	my $comment = {};
 	my $field_id;
 	foreach $field_id ( "succeeds", "commentary" )
@@ -1474,7 +1474,7 @@ sub _do_stage_meta
 		}
 	}
 
-	if( $self->{session}->get_archive->get_conf( 'log_submission_timing' ) )
+	if( $self->{session}->get_repository->get_conf( 'log_submission_timing' ) )
 	{
 		$self->log_submission_stage( "meta.".$self->{pageid} );
 	}
@@ -1593,7 +1593,7 @@ sub _do_stage_files
 		$th->appendChild( 
 			$self->{session}->html_phrase("lib/submissionform:files_uploaded") );
 		
-		my $docds = $self->{session}->get_archive()->get_dataset( "document" );
+		my $docds = $self->{session}->get_repository->get_dataset( "document" );
 		my $doc;
 		foreach $doc ( @docs )
 		{
@@ -1645,7 +1645,7 @@ sub _do_stage_files
 	}
 	else
 	{
- 		my $doc_ds = $self->{session}->get_archive()->get_dataset( 
+ 		my $doc_ds = $self->{session}->get_repository->get_dataset( 
 			"document" );
 		my $list = $self->{session}->make_doc_fragment();
 		my $c = scalar @reqformats;
@@ -1709,9 +1709,9 @@ sub _do_stage_docmeta
 		eprintid => $self->{eprint}->get_value( "eprintid" ),
 		stage => "docmeta" };
 
-	my $archive = $self->{session}->get_archive();
+	my $repository = $self->{session}->get_repository;
 
-	my $docds = $archive->get_dataset( "document" );
+	my $docds = $repository->get_dataset( "document" );
 
 	my $submit_buttons = 
 	{	
@@ -1724,7 +1724,7 @@ sub _do_stage_docmeta
 	my $fields = [];
 	foreach( "format", "formatdesc", "language", "security", "license" )
 	{
-		unless( $archive->get_conf( "submission_hide_".$_ ) )
+		unless( $repository->get_conf( "submission_hide_".$_ ) )
 		{
 			push @{$fields}, $docds->get_field( $_ );
 		}
@@ -1781,7 +1781,7 @@ sub _do_stage_fileview
 	foreach( "archive", "graburl", "plain" )
 	{
 		$hideopts->{$_} = 0;
-		my $copt = $self->{session}->get_archive->get_conf( 
+		my $copt = $self->{session}->get_repository->get_conf( 
 			"submission_hide_upload_".$_ );
 		$hideopts->{$_} = 1 if( defined $copt && $copt );
 	}
@@ -1789,13 +1789,13 @@ sub _do_stage_fileview
 	#push @{$options},"graburl" unless( $hideopts->{graburl} );
 	unless( $hideopts->{archive} )
 	{
-		push @{$options}, @{$self->{session}->get_archive()->get_conf( 
+		push @{$options}, @{$self->{session}->get_repository->get_conf( 
 					"archive_formats" )}
 	}
 
 	my $arc_format_field = EPrints::MetaField->new(
 		confid=>'format',
-		archive=> $self->{session}->get_archive(),
+		repository=> $self->{session}->get_repository,
 		name=>'arc_format',
 		required=>1,
 		input_rows => 1,
@@ -2287,7 +2287,7 @@ sub _set_stage_next
 	$self->{new_stage} = $self->{stages}->{$self->{stage}}->{next};
 
 	# Skip stage?
-	while( $self->{session}->get_archive()->get_conf( "submission_stage_skip", $self->{new_stage} ) )
+	while( $self->{session}->get_repository->get_conf( "submission_stage_skip", $self->{new_stage} ) )
 	{
 		$self->{new_stage} = $self->{stages}->{$self->{new_stage}}->{next};
 	}
@@ -2306,7 +2306,7 @@ sub _set_stage_prev
 	$self->{new_stage} = $self->{stages}->{$self->{stage}}->{prev};
 
 	# Skip stage?
-	while( $self->{session}->get_archive()->get_conf( "submission_stage_skip", $self->{new_stage} ) )
+	while( $self->{session}->get_repository->get_conf( "submission_stage_skip", $self->{new_stage} ) )
 	{
 		$self->{new_stage} = $self->{stages}->{$self->{new_stage}}->{prev};
 	}
@@ -2377,7 +2377,7 @@ sub get_stages
 		$stage = $self->{stages}->{$stage}->{next};
 
 		# Skip stage?
-		while( $self->{session}->get_archive->get_conf( "submission_stage_skip", $stage ) )
+		while( $self->{session}->get_repository->get_conf( "submission_stage_skip", $stage ) )
 		{
 			$stage = $self->{stages}->{$stage}->{next};
 		}

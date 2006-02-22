@@ -274,7 +274,7 @@ sub _do_ordervalues
 	my $keyvalue = EPrints::Database::prep_value( $data->{$keyfield->get_sql_name()} );
 	my @orderfields = ( $keyfield );
 
-	foreach my $langid ( @{$session->get_archive()->get_conf( "languages" )} )
+	foreach my $langid ( @{$session->get_repository->get_conf( "languages" )} )
 	{
 		my @fnames = ( $keyfield->get_sql_name() );
 		my @fvals = ( $keyvalue );
@@ -333,7 +333,7 @@ sub delete_ordervalues
 	my $keyfield = $dataset->get_key_field();
 	my $keyvalue = EPrints::Database::prep_value( $id );
 
-	foreach my $langid ( @{$session->get_archive()->get_conf( "languages" )} )
+	foreach my $langid ( @{$session->get_repository->get_conf( "languages" )} )
 	{
 		# cjg raw SQL!
 		my $ovt = $dataset->get_ordervalues_table_name( $langid );

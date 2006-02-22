@@ -15,11 +15,11 @@
 
 =head1 NAME
 
-B<generate_static> - Generate static pages of an EPrint archive using the template.
+B<generate_static> - Generate static pages of an EPrint repository using the template.
 
 =head1 SYNOPSIS
 
-B<generate_static> I<archiveid> [B<options>] 
+B<generate_static> I<repository_id> [B<options>] 
 
 =head1 DESCRIPTION
 
@@ -47,7 +47,7 @@ This is an XML file with the following structure:
    </body>
  </page>
 
-The resulting file will be a .html file (foo.xpage becomes foo.html). It will take the template for this archive and insert the title and body from the appropriate places.  It will also cause the the special EPrints entities to be converted as it is copied. See the main documentation.
+The resulting file will be a .html file (foo.xpage becomes foo.html). It will take the template for this repository and insert the title and body from the appropriate places.  It will also cause the the special EPrints entities to be converted as it is copied. See the main documentation.
 
 =item B<.xhtml> 
 
@@ -69,9 +69,9 @@ If you are running EPrints in a language other than English then place the stati
 
 =over 8
 
-=item B<archiveid> 
+=item B<repository_id> 
 
-The ID of the eprint archive to use.
+The ID of the eprint repository to use.
 
 =back
 
@@ -144,12 +144,12 @@ my $session = new EPrints::Session( 1 , $ARGV[0] , $noise );
 exit( 1 ) unless( defined $session );
 
 my $langid;
-my $generalpath = $session->get_archive()->get_conf( "static_path" )."/general";
+my $generalpath = $session->get_repository->get_conf( "static_path" )."/general";
 my $errcnt = 0;
-foreach $langid ( @{$session->get_archive()->get_conf( "languages" )} )
+foreach $langid ( @{$session->get_repository->get_conf( "languages" )} )
 {
 	print "Starting language $langid...\n" if( $noise >=1 );
-	my $basepath = $session->get_archive()->get_conf( "static_path" ).
+	my $basepath = $session->get_repository->get_conf( "static_path" ).
 	               "/$langid";
 	my $func;
 	$func = sub { generate_static( $langid, $basepath, $session, \$errcnt ) };
@@ -180,7 +180,7 @@ sub generate_static
 
 	my $destination_filename = $File::Find::name;
 
-	my $newpath = $session->get_archive()->get_conf( "htdocs_path" ).
+	my $newpath = $session->get_repository->get_conf( "htdocs_path" ).
 	              "/$langid";
 	$destination_filename =~ s/$basepath/$newpath/;
 
@@ -204,7 +204,7 @@ sub generate_static
 			my $mode = $1;
 			$destination_filename =~ s/\.x(html|page)$/.html/;
 
-			my $doc = $session->get_archive()->parse_xml(
+			my $doc = $session->get_repository->parse_xml(
 						$File::Find::name );
 
 			if( !defined $doc )

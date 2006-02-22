@@ -38,7 +38,7 @@ if( !$session->auth_check )
 # let's clean it up...
 if( $ENV{PATH_INFO} ne "" )
 {
-	$session->redirect( $session->get_archive()->get_conf( "userhome" ) );
+	$session->redirect( $session->get_repository->get_conf( "userhome" ) );
 	$session->terminate();
 	exit;
 }
@@ -71,8 +71,8 @@ my( $table, $tr, $td );
 
 
 my $changeuserpath = "/change_user/".($user->get_value( "username" ));
-my $securehost = $session->get_archive->get_conf( "securehost" );
-my $securepath = $session->get_archive->get_conf( "securepath" );
+my $securehost = $session->get_repository->get_conf( "securehost" );
+my $securepath = $session->get_repository->get_conf( "securepath" );
 if( EPrints::Utils::is_set( $securehost ) )
 {
 	$changeuserpath = $securepath.$changeuserpath;
@@ -100,14 +100,14 @@ my $tools = [
 		page=>"subscribe",
 		priv=>"subscription"
 	},
-	### View the archive status page
+	### View the repository status page
 	{ 
 		location=>"staff",
 		code=>"status",
 		page=>"status",
 		priv=>"view-status"
 	},
-	### Review items we've got in archive
+	### Review items we've got in live repository
 	{
 		location=>"review",
 		code=>"review",
@@ -168,7 +168,7 @@ my $tools = [
 
 
 
-my $sb = $session->get_archive()->get_conf( "skip_buffer" );	
+my $sb = $session->get_repository->get_conf( "skip_buffer" );	
 my $dls = {};
 my $tool;
 foreach	$tool (@{$tools})
@@ -293,7 +293,7 @@ exit;
 #   Edit    (Edit a selected EPrint)
 #   Clone   (Clone the selected EPrint)
 #   Delete  (Delete the selected EPrint)
-#   Deposit (Submit the selected EPrint to the archive)
+#   Deposit (Submit the selected EPrint to the respository)
 #
 #
 #  If the user has no items in the inbox, a single button is drawn,
@@ -306,7 +306,7 @@ sub render_workspace
 	my( $session, $user ) = @_;
 
 	### Get the actual items in the workspace
-	my $ds = $session->get_archive()->get_dataset( "inbox" );
+	my $ds = $session->get_repository->get_dataset( "inbox" );
 	my $list = $user->get_owned_eprints( $ds );
 
 	my( $html, $form, $div );
@@ -393,7 +393,7 @@ sub render_pending
 	my( $session, $user ) = @_;
 
 	### Get the items in the buffer
-	my $ds = $session->get_archive()->get_dataset( "buffer" );
+	my $ds = $session->get_repository->get_dataset( "buffer" );
 	my $list = $user->get_owned_eprints( $ds );
 
 	my $html = $session->make_doc_fragment();
@@ -439,7 +439,7 @@ sub render_pending
 # render_recent( $session, $user, $max, $review )
 #
 #  Render any items that have been recently accepted into the main 
-#  archive.
+#  respository.
 #
 ######################################################################
 
@@ -448,7 +448,7 @@ sub render_recent
 	my( $session, $user, $max, $review ) = @_;
 	
 	### Get the items in the buffer
-	my $ds = $session->get_archive()->get_dataset( "archive" );
+	my $ds = $session->get_repository->get_dataset( "archive" );
 	my $list = $user->get_owned_eprints( $ds );
 
 	my $html = $session->make_doc_fragment();

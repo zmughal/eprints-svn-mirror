@@ -147,7 +147,7 @@ sub new
 	my( $class, $session, $historyid ) = @_;
 
 	return $session->get_db()->get_single( 
-			$session->get_archive()->get_dataset( "history" ), 
+			$session->get_repository->get_dataset( "history" ), 
 			$historyid );
 
 }
@@ -172,7 +172,7 @@ sub new_from_data
 	my $self = {};
 	
 	$self->{data} = $data;
-	$self->{dataset} = $session->get_archive()->get_dataset( "history" ); 
+	$self->{dataset} = $session->get_repository->get_dataset( "history" ); 
 	$self->{session} = $session;
 	bless $self, $class;
 
@@ -195,7 +195,7 @@ sub commit
 {
 	my( $self, $force ) = @_;
 
-	$self->{session}->get_archive->log(
+	$self->{session}->get_repository->log(
 		"WARNING: Called commit on a EPrints::DataObj::History object." );
 	return 0;
 }
@@ -215,7 +215,7 @@ sub remove
 {
 	my( $self ) = @_;
 	
-	$self->{session}->get_archive->log(
+	$self->{session}->get_repository->log(
 		"WARNING: Called remove on a EPrints::DataObj::History object." );
 	return 0;
 }
@@ -241,7 +241,7 @@ sub create
 	return EPrints::DataObj::History->create_from_data( 
 		$session, 
 		$data,
-		$session->get_archive->get_dataset( "history" ) );
+		$session->get_repository->get_dataset( "history" ) );
 }
 
 ######################################################################
@@ -320,7 +320,7 @@ sub get_dataobj
 	my( $self ) = @_;
 
 	return unless( $self->is_set( "datasetid" ) );
-	my $ds = $self->{session}->get_archive->get_dataset( $self->get_value( "datasetid" ) );
+	my $ds = $self->{session}->get_repository->get_dataset( $self->get_value( "datasetid" ) );
 	return $ds->get_object( $self->{session}, $self->get_value( "objectid" ) );
 }
 

@@ -22,7 +22,7 @@ metadata as images.
 
 =head1 DESCRIPTION
 
-Some archives may want to spot latex style equations in titles and
+Some repositories may want to spot latex style equations in titles and
 abstracts and render these as images instead. This module provides
 that functionality.
 
@@ -124,7 +124,7 @@ sub render_string
 		{
 			my $url;
 
-			if( $session->get_archive->get_conf( "use_mimetex" ) ) 
+			if( $session->get_repository->get_conf( "use_mimetex" ) ) 
 			{
 				my $param = $buffer;
 
@@ -134,7 +134,7 @@ sub render_string
 				# Mimetex can't handle whitespace. Change it to ~'s.
 				$param =~ s/\\?\s/~/g;     
 
-				$url = $session->get_archive->get_conf( 
+				$url = $session->get_repository->get_conf( 
         				"base_url" )."/cgi/mimetex.cgi?".$param;
 			}
 			else
@@ -147,7 +147,7 @@ sub render_string
 				# strip $ from begining and end.
 				$param =~ s/^\$(.*)\$$/$1/; 
 	
-				$url = $session->get_archive->get_conf( 
+				$url = $session->get_repository->get_conf( 
 					"perl_url" )."/latex2png?latex=".$param;
 			}
 
@@ -223,7 +223,7 @@ $texstring.
 
 This uses a directory to generate and cache the images. So the system
 only has to go to the effort of rendering any equation once. The 
-directory is "latexcache" in the htdocs directory of the archive.
+directory is "latexcache" in the htdocs directory of the repository.
 
 The filename of the cached png is the md5 of the latex equation as
 a string of hex characters. 
@@ -246,9 +246,9 @@ sub texstring_to_png
 	# create an MD5 of the TexString to use as a cache filename.
 	my $ofile = Digest::MD5::md5_hex( $texstring ).".png";
 
-	my $archive =  $session->get_archive();
+	my $repository =  $session->get_repository;
 
-	my $cachedir = $archive->get_conf( "htdocs_path" )."/latexcache";
+	my $cachedir = $repository->get_conf( "htdocs_path" )."/latexcache";
 
 	unless( -d $cachedir )
 	{
@@ -278,9 +278,9 @@ $texstring
 END
 	close TEX;
 
-	$archive->exec( "latex", SOURCE=>"$fbase.tex" );
-	$archive->exec( "dvips", SOURCE=>"$fbase.dvi", TARGET=>"$fbase.ps" );
-	$archive->exec( 
+	$repository->exec( "latex", SOURCE=>"$fbase.tex" );
+	$repository->exec( "dvips", SOURCE=>"$fbase.dvi", TARGET=>"$fbase.ps" );
+	$repository->exec( 
 		"convert_crop_white", 
 		SOURCE => "$fbase.ps", 
 		TARGET => $ofile );

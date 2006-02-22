@@ -306,11 +306,11 @@ sub get_input_elements
 	}
 
 
-	my $imagesurl = $session->get_archive->get_conf( "base_url" )."/images";
+	my $imagesurl = $session->get_repository->get_conf( "base_url" )."/images";
 	my $esec = $session->get_request->dir_config( "EPrints_Secure" );
 	if( defined $esec && $esec eq "yes" )
 	{
-		$imagesurl = $session->get_archive->get_conf( "securepath" )."/images";
+		$imagesurl = $session->get_repository->get_conf( "securepath" )."/images";
 	}
 	
 	my $rows = [];
@@ -907,7 +907,7 @@ sub get_value_label
 
 #	if( $self->is_type( "id" ) )
 #	{
-#		return $session->get_archive()->call( 
+#		return $session->get_repository->call( 
 #			"id_label", 
 #			$self, 
 #			$session, 
@@ -918,7 +918,7 @@ sub get_value_label
 ######################################################################
 =pod
 
-=item $ov = $field->ordervalue( $value, $archive, $langid )
+=item $ov = $field->ordervalue( $value, $session, $langid )
 
 Return a string representing this value which can be used to sort
 it into order by comparing it alphabetically.
@@ -995,7 +995,7 @@ sub ordervalue_no_id
 	if( $self->get_property( "multilang" ) )
 	{
 		$value = EPrints::Session::best_language( 
-			$session->get_archive,
+			$session->get_repository,
 			$langid,
 			%{$value} );
 	}

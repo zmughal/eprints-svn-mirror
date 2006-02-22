@@ -20,7 +20,7 @@ B<reindex_dataset> - Queue everything in a dataset for indexing
 
 =head1 SYNOPSIS
 
-B<reindex_dataset> I<archiveid> I<datasetid> [B<options>] 
+B<reindex_dataset> I<repository_id> I<datasetid> [B<options>] 
 
 =cut
 
@@ -64,7 +64,7 @@ $|=1;
 my $session = new EPrints::Session( 1, $ARGV[0], $noise );
 exit( 1 ) unless defined $session;
 my $datasetid = $ARGV[1];
-my $dataset = $session->get_archive()->get_dataset( $datasetid );
+my $dataset = $session->get_repository->get_dataset( $datasetid );
 if( !defined $dataset )
 {
 	$session->terminate();

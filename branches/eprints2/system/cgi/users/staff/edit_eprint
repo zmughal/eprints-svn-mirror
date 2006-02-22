@@ -127,11 +127,11 @@ sub process
 	if( $action eq "_clone" || $action eq "_copy" )
 	{
 		my $target_ds_id = 'buffer';
-		if( $session->get_archive->get_conf( "skip_buffer" ) )
+		if( $session->get_repository->get_conf( "skip_buffer" ) )
 		{
 			$target_ds_id = 'archive';
 		}
-		my $target_ds = $session->get_archive()->get_dataset( $target_ds_id );
+		my $target_ds = $session->get_repository->get_dataset( $target_ds_id );
 		my $copy;
 		if( $action eq "_clone" )
 		{
@@ -159,7 +159,7 @@ sub process
 
 	if( $eprint->get_dataset->id eq "deletion" )
 	{
-		unless( $session->get_archive->get_conf( 'allow_edit_deleted' ) )
+		unless( $session->get_repository->get_conf( 'allow_edit_deleted' ) )
 		{
 			$session->render_error( $session->html_phrase(
 				"cgi/users/edit_eprint:cant_edit_deleted" ) );
@@ -188,7 +188,7 @@ sub process
 	# actual last stage is...
 	my $laststage = $subform->last_edit_stage;
 
-	my $ls = $session->get_archive()->get_conf( "submission_stage_last_for_staff_edit" );
+	my $ls = $session->get_repository->get_conf( "submission_stage_last_for_staff_edit" );
 	$laststage = $ls if( defined $ls );
 
 	if( defined $stage && $laststage eq $stage && defined $action && ($action eq "finished" || $action eq "next") )
@@ -274,7 +274,7 @@ sub view_page
 	if( defined $user )
 	{
 		$usersname = $session->make_element( "a", 
-				href=>$session->get_archive->get_conf( "perl_url" )."/user?userid=".$user->get_value( "userid" ) );
+				href=>$session->get_repository->get_conf( "perl_url" )."/user?userid=".$user->get_value( "userid" ) );
 		$usersname->appendChild( 
 			$user->render_description() );
 	}
@@ -314,7 +314,7 @@ sub view_page
 	# actions for this form begin with _ (except edit and
 	# those passed to submission form)
 
-	my $sb = $session->get_archive()->get_conf( "skip_buffer" );	
+	my $sb = $session->get_repository->get_conf( "skip_buffer" );	
 	my @actions = ();
 	my $dsid = $eprint->get_dataset->id;
 
@@ -396,7 +396,7 @@ sub view_page
 		$session->html_phrase( "cgi/users/edit_eprint:actions" ),
 		render_links_list( $session, @list ) ) );
 
-	unless( $dsid eq "deletion" && !$session->get_archive->get_conf( 'allow_edit_deleted' ) )
+	unless( $dsid eq "deletion" && !$session->get_repository->get_conf( 'allow_edit_deleted' ) )
 	{
 		@list = ();
 

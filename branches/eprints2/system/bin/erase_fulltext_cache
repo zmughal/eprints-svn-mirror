@@ -18,13 +18,13 @@ B<erase_fulltext_cache> - erase the cached full text search index files.
 
 =head1 SYNOPSIS
 
-B<erase_fulltext_cache> I<archiveid> [B<options>]
+B<erase_fulltext_cache> I<repository_id> [B<options>]
 
 =head1 DESCRIPTION
 
-This erases all the .words and .indexcodes cache files from your archive, forcing the indexer to rerun the tools used to extract full text from your documents.
+This erases all the .words and .indexcodes cache files from your repository, forcing the indexer to rerun the tools used to extract full text from your documents.
 
-This is useful if you only setup the fulltext indexing after your archive is already live, or if you discover there has been a problem.
+This is useful if you only setup the fulltext indexing after your repository is already live, or if you discover there has been a problem.
 
 Without the B<--force> option, this script asks for confirmation before actually erasing anything.
 
@@ -32,9 +32,9 @@ Without the B<--force> option, this script asks for confirmation before actually
 
 =over 8
 
-=item I<archiveid> 
+=item I<repository_id> 
 
-The ID of the EPrint archive to use.
+The ID of the EPrint repository to use.
 
 =back
 
@@ -122,7 +122,7 @@ unless( $force )
 	if( $noise > 0 )
 	{
 		print "You are about to erase all the fulltext cache files from\n";
-		print "the $ARGV[0] archive.\n";
+		print "the $ARGV[0] repository.\n";
 		print "This is not that dangerous, but will require the indexer\n";
 		print "to rebuild all the caches, which could take a some time.\n";
 	}
@@ -137,7 +137,7 @@ unless( $force )
 	}
 }
 
-my $ds = $session->get_archive()->get_dataset( "document" );
+my $ds = $session->get_repository->get_dataset( "document" );
 print "Stating to erase caches\n" if( $noise >= 1 );
 my $info= {};
 $info->{noise} = $noise;

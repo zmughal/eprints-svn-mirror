@@ -113,7 +113,7 @@ sub convert_dataobj
 
 
 	my @documents = $eprint->get_all_documents();
-	my $mimetypes = $plugin->{session}->get_archive->get_conf( "oai", "mime_types" );
+	my $mimetypes = $plugin->{session}->get_repository->get_conf( "oai", "mime_types" );
 	foreach( @documents )
 	{
 		my $format = $mimetypes->{$_->get_value("format")};

@@ -48,11 +48,11 @@ use EPrints::AnApache; # exports apache constants
 
 Authenticate a request. This works in a slightly whacky way.
 
-If the username isn't a valid user in the current archive then it
+If the username isn't a valid user in the current repository then it
 fails right away.
 
 Otherwise it looks up the type of the given user. Then it looks up
-in the archive configuration to find how to authenticate that user
+in the repository configuration to find how to authenticate that user
 type (a reference to another authen function, probably a normal
 3rd party mod_perl library like AuthDBI.) and then makes a mock
 request and attempts to authenticate it using the authen function for
@@ -102,21 +102,21 @@ sub authen
 #		}
 
 		my $rule = "REQ_AND_USER";
-		if( $session->get_archive->can_call( "document_security_rule" ) )
+		if( $session->get_repository->can_call( "document_security_rule" ) )
 		{
-			$rule = $session->get_archive->call("document_security_rule", $security );
+			$rule = $session->get_repository->call("document_security_rule", $security );
 		}
 		if( $rule !~ m/^REQ|REQ_AND_USER|REQ_OR_USER$/ )
 		{
-			$session->get_archive->log( "Bad document_security_rule: '$rule'." );
+			$session->get_repository->log( "Bad document_security_rule: '$rule'." );
 			$session->terminate();
 			return FORBIDDEN;
 		}
 
 		my $req_view = 1;
-		if( $session->get_archive->can_call( "can_request_view_document" ) )
+		if( $session->get_repository->can_call( "can_request_view_document" ) )
 		{
-			$req_view = $session->get_archive->call( "can_request_view_document", $document, $r );
+			$req_view = $session->get_repository->call( "can_request_view_document", $document, $r );
 		}
 
 		if( $rule eq "REQ" )
@@ -171,7 +171,7 @@ sub authen
 		return AUTH_REQUIRED;
 	}
 
-	my $user_ds = $session->get_archive()->get_dataset( "user" );
+	my $user_ds = $session->get_repository->get_dataset( "user" );
 
 	my $user = EPrints::DataObj::User::user_with_username( $session, $user_sent );
 	if( !defined $user )
@@ -181,12 +181,12 @@ sub authen
 		return AUTH_REQUIRED;
 	}
 
-	my $userauthdata = $session->get_archive()->get_conf( 
+	my $userauthdata = $session->get_repository->get_conf( 
 		"userauth", $user->get_value( "usertype" ) );
 
 	if( !defined $userauthdata )
 	{
-		$session->get_archive()->log(
+		$session->get_repository->log(
 			"Unknown user type: ".$user->get_value( "usertype" ) );
 		$session->terminate();
 		return AUTH_REQUIRED;
@@ -224,7 +224,7 @@ running them.
 =item Documents
 
 This is the secure documents area - for documents of records which
-are either not in the public archive, or have a non-public security
+are either not in the public repository, or have a non-public security
 option.
 
 In which case it works out which document is being viewed and calls
@@ -250,7 +250,7 @@ sub authz
 	# we need to do some work.
 
 	my $session = new EPrints::Session(2); # don't open the CGI info
-	my $archive = $session->get_archive;
+	my $repository = $session->get_repository;
 
 	my $area = $r->dir_config( "EPrints_Security_Area" );
 
@@ -279,7 +279,7 @@ sub authz
 		# Ok, It's not User or Documents which means
 		# something screwed up. 
 
-		$archive->log( "Request to ".$r->uri." in unknown EPrints HTTP Security area \"$area\"." );
+		$repository->log( "Request to ".$r->uri." in unknown EPrints HTTP Security area \"$area\"." );
 		$session->terminate();
 		return FORBIDDEN;
 	}
@@ -299,16 +299,16 @@ sub authz
 #	}
 
 	my $rule = "REQ_AND_USER";
-	if( $session->get_archive->can_call( "document_security_rule" ) )
+	if( $session->get_repository->can_call( "document_security_rule" ) )
 	{
-		$rule = $session->get_archive->call("document_security_rule", $security );
+		$rule = $session->get_repository->call("document_security_rule", $security );
 	}
 	# no need to check authen is always called first
 
 	my $req_view = 1;
-	if( $session->get_archive->can_call( "can_request_view_document" ) )
+	if( $session->get_repository->can_call( "can_request_view_document" ) )
 	{
-		$req_view = $session->get_archive->call( "can_request_view_document", $document, $r );
+		$req_view = $session->get_repository->call( "can_request_view_document", $document, $r );
 	}
 
 	if( $rule eq "REQ_AND_USER" )
@@ -361,20 +361,20 @@ sub secure_doc_from_url
 	# hack to reduce load. We cache the document in the request object.
 	#if( defined $r->{eprint_document} ) { return $r->{eprint_document}; }
 
-	my $archive = $session->{archive};
+	my $repository = $session->{repository};
 	my $uri = $r->uri;
 
-	my $secpath = $archive->get_conf( "secure_url_dir" );
+	my $secpath = $repository->get_conf( "secure_url_dir" );
 	my $esec = $r->dir_config( "EPrints_Secure" );
 	my $https = (defined $esec && $esec eq "yes" );
 	my $urlpath;
 	if( $https ) 
 	{ 
-		$urlpath = $archive->get_conf( "securepath" );
+		$urlpath = $repository->get_conf( "securepath" );
 	}
 	else
 	{ 
-		$urlpath = $archive->get_conf( "urlpath" );
+		$urlpath = $repository->get_conf( "urlpath" );
 	}
 
 	$uri =~ s/^$urlpath$secpath//;
@@ -393,13 +393,13 @@ sub secure_doc_from_url
 	}
 	else
 	{
-		$archive->log( 
+		$repository->log( 
 "Request to ".$r->uri." in secure documents area failed to match REGEXP." );
 		return undef;
 	}
 	my $document = EPrints::DataObj::Document->new( $session, $docid );
 	if( !defined $document ) {
-		$archive->log( 
+		$repository->log( 
 "Request to ".$r->uri.": document $docid not found." );
 		return undef;
 	}
@@ -452,7 +452,7 @@ sub has_privilege
 	my @roles = qw( anonymous ); # User can always be anonymous
 	my @permitted_roles;
 
-	my $func = $session->get_archive->get_conf( "user_roles" );
+	my $func = $session->get_repository->get_conf( "user_roles" );
 	$func ||= \&EPrints::Auth::user_roles;
 
 	push @roles, &{$func}( $user, $dataobj );

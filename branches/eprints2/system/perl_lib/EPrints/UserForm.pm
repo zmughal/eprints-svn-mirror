@@ -218,7 +218,7 @@ sub _render_user_form
 {
 	my( $self ) = @_;
 	
-	my $user_ds = $self->{session}->get_archive()->get_dataset( "user" );
+	my $user_ds = $self->{session}->get_repository->get_dataset( "user" );
 
 	my @fields = $user_ds->get_type_fields( $self->{user}->get_value( "usertype" ), $self->{staff} );
 
@@ -257,14 +257,14 @@ sub _update_from_form
 		$self->{user}->get_value( "userid" ) )
 	{
 		my $form_id = $self->{session}->param( "username" );
-		$self->{session}->get_archive()->log( 
+		$self->{session}->get_repository->log( 
 			"Username in $form_id doesn't match object username ".
 			 $self->{username} );
 	
 		return( 0 );
 	}
 	
-	my $user_ds = $self->{session}->get_archive()->get_dataset( "user" );
+	my $user_ds = $self->{session}->get_repository->get_dataset( "user" );
 
 	my $usertype;
 	if( $self->{staff} )

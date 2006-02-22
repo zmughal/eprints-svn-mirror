@@ -103,7 +103,7 @@ use URI::Heuristic;
 
 use strict;
 
-# Field to use for unsupported formats (if archive allows their deposit)
+# Field to use for unsupported formats (if repository allows their deposit)
 $EPrints::DataObj::Document::OTHER = "OTHER";
 
 ######################################################################
@@ -168,7 +168,7 @@ sub new
 	my( $class, $session, $docid ) = @_;
 
 	return $session->get_db()->get_single( 
-		$session->get_archive()->get_dataset( "document" ),
+		$session->get_repository->get_dataset( "document" ),
 		$docid );
 }
 
@@ -190,7 +190,7 @@ sub new_from_data
 	my $self = {};
 	bless $self, $class;
 	$self->{data} = $data;
-	$self->{dataset} = $session->get_archive()->get_dataset( "document" ),
+	$self->{dataset} = $session->get_repository->get_dataset( "document" ),
 	$self->{session} = $session;
 
 	return( $self );
@@ -205,7 +205,7 @@ sub new_from_data
 
 Create and return a new Document belonging to the given $eprint object, 
 get the initial metadata from set_document_defaults in the configuration
-for this archive.
+for this repository.
 
 Note that this creates the document in the database, not just in memory.
 
@@ -219,7 +219,7 @@ sub create
 	return EPrints::DataObj::Document->create_from_data( 
 		$session, 
 		{ eprintid=>$eprint->get_id },
-		$session->get_archive->get_dataset( "document" ) );
+		$session->get_repository->get_dataset( "document" ) );
 }
 
 ######################################################################
@@ -269,7 +269,7 @@ END
 
 			if( $fn =~ m/^\// || $fn =~ m/\/../ || $fn=~m/\~/ )
 			{
-				$session->get_archive->log( "Bad filename for file in document: $fn (skipping)\n" );
+				$session->get_repository->log( "Bad filename for file in document: $fn (skipping)\n" );
 				next;
 			}
 
@@ -308,7 +308,7 @@ sub get_defaults
 		$data->{docid} = _generate_doc_id( $session, $eprint );
 	}
 
-	$session->get_archive()->call( 
+	$session->get_repository->call( 
 			"set_document_defaults", 
 			$data,
  			$session,
@@ -330,18 +330,18 @@ sub _create_directory
 {
 	my( $id, $eprint ) = @_;
 	
-	my $dir = $eprint->local_path()."/".docid_to_path( $eprint->get_session()->get_archive(), $id );
+	my $dir = $eprint->local_path()."/".docid_to_path( $eprint->get_session()->get_repository, $id );
 
 	if( -d $dir )
 	{
-		$eprint->get_session()->get_archive()->log( "Dir $dir already exists!" );
+		$eprint->get_session()->get_repository->log( "Dir $dir already exists!" );
 		return 1;
 	}
 
 	# Return undef if dir creation failed. Should always have created 1 dir.
 	if(!EPrints::Utils::mkdir($dir))
 	{
-		$eprint->get_session()->get_archive()->log( "Error creating directory for EPrint ".$eprint->get_value( "eprintid" ).", docid=".$id." ($dir): ".$! );
+		$eprint->get_session()->get_repository->log( "Error creating directory for EPrint ".$eprint->get_value( "eprintid" ).", docid=".$id." ($dir): ".$! );
 		return 0;
 	}
 	else
@@ -368,9 +368,9 @@ sub create_symlink
 
 	my $id = $self->get_value( "docid" );
 
-	my $archive = $eprint->get_session()->get_archive();
+	my $repository = $eprint->get_session()->get_repository;
 
-	my $dir = $eprint->local_path()."/".docid_to_path( $archive, $id );
+	my $dir = $eprint->local_path()."/".docid_to_path( $repository, $id );
 
 	unless( -d $linkdir )
 	{
@@ -378,19 +378,19 @@ sub create_symlink
 
 		if( scalar @created == 0 )
 		{
-			$archive->log( "Error creating symlink target dir for EPrint ".$eprint->get_value( "eprintid" ).", docid=".$id." ($linkdir): ".$! );
+			$repository->log( "Error creating symlink target dir for EPrint ".$eprint->get_value( "eprintid" ).", docid=".$id." ($linkdir): ".$! );
 			return( 0 );
 		}
 	}
 
-	my $symlink = $linkdir."/".docid_to_path( $archive, $id );
+	my $symlink = $linkdir."/".docid_to_path( $repository, $id );
 	if( -e $symlink )
 	{
 		unlink( $symlink );
 	}
 	unless( symlink( $dir, $symlink ) )
 	{
-		$archive->log( "Error creating symlink for EPrint ".$eprint->get_value( "eprintid" ).", docid=".$id." symlink($dir to $symlink): ".$! );
+		$repository->log( "Error creating symlink for EPrint ".$eprint->get_value( "eprintid" ).", docid=".$id." symlink($dir to $symlink): ".$! );
 		return( 0 );
 	}	
 
@@ -414,13 +414,13 @@ sub remove_symlink
 
 	my $id = $self->get_value( "docid" );
 
-	my $archive = $eprint->get_session()->get_archive();
+	my $repository = $eprint->get_session()->get_repository;
 
-	my $symlink = $linkdir."/".docid_to_path( $archive, $id );
+	my $symlink = $linkdir."/".docid_to_path( $repository, $id );
 
 	unless( unlink( $symlink ) )
 	{
-		$archive->log( "Failed to unlink secure symlink for ".$eprint->get_value( "eprintid" ).", docid=".$id." ($symlink): ".$! );
+		$repository->log( "Failed to unlink secure symlink for ".$eprint->get_value( "eprintid" ).", docid=".$id." ($symlink): ".$! );
 		return( 0 );
 	}
 	return( 1 );	
@@ -439,16 +439,16 @@ sub _secure_symlink_path
 {
 	my( $eprint ) = @_;
 
-	my $archive = $eprint->get_session()->get_archive();
+	my $repository = $eprint->get_session()->get_repository;
 		
-	return( $archive->get_conf( "htdocs_secure_path" )."/".EPrints::DataObj::EPrint::eprintid_to_path( $eprint->get_value( "eprintid" ) ) );
+	return( $repository->get_conf( "htdocs_secure_path" )."/".EPrints::DataObj::EPrint::eprintid_to_path( $eprint->get_value( "eprintid" ) ) );
 }
 
 
 ######################################################################
 =pod
 
-=item $path = EPrints::DataObj::Document::docid_to_path( $archive, $docid )
+=item $path = EPrints::DataObj::Document::docid_to_path( $repository, $docid )
 
 Return the name of the directory (in the eprint directory) in which
 to place this document.
@@ -458,13 +458,13 @@ to place this document.
 
 sub docid_to_path
 {
-	my( $archive, $docid ) = @_;
+	my( $repository, $docid ) = @_;
 
 	$docid =~ m/-(\d+)$/;
 	my $id = $1;
 	if( !defined $1 )
 	{
-		$archive->log( "Doc ID did not take expected format: \"".$docid."\"" );
+		$repository->log( "Doc ID did not take expected format: \"".$docid."\"" );
 		# Setting id to "badid" is messy, but recoverable. And should
 		# be noticed easily enough.
 		$id = "badid";
@@ -485,7 +485,7 @@ sub _generate_doc_id
 {
 	my( $session, $eprint ) = @_;
 
-	my $dataset = $session->get_archive()->get_dataset( "document" );
+	my $dataset = $session->get_repository->get_dataset( "document" );
 
 	my $searchexp = EPrints::SearchExpression->new(
 				session=>$session,
@@ -543,7 +543,7 @@ sub clone
 	# If something's gone wrong...
 	if ( $rc!=0 )
 	{
-		$self->{session}->get_archive()->log( "Error copying from ".$self->local_path()." to ".$new_doc->local_path().": $!" );
+		$self->{session}->get_repository->log( "Error copying from ".$self->local_path()." to ".$new_doc->local_path().": $!" );
 		return( undef );
 	}
 
@@ -585,14 +585,14 @@ sub remove
 
 	# Remove database entry
 	my $success = $self->{session}->get_db()->remove(
-		$self->{session}->get_archive()->get_dataset( "document" ),
+		$self->{session}->get_repository->get_dataset( "document" ),
 		$self->get_value( "docid" ) );
 	
 
 	if( !$success )
 	{
 		my $db_error = $self->{session}->get_db()->error();
-		$self->{session}->get_archive()->log( "Error removing document ".$self->get_value( "docid" )." from database: $db_error" );
+		$self->{session}->get_repository->log( "Error removing document ".$self->get_value( "docid" )." from database: $db_error" );
 		return( 0 );
 	}
 
@@ -602,7 +602,7 @@ sub remove
 
 	if( $num_deleted <= 0 )
 	{
-		$self->{session}->get_archive()->log( "Error removing document files for ".$self->get_value("docid").", path ".$full_path.": $!" );
+		$self->{session}->get_repository->log( "Error removing document files for ".$self->get_value("docid").", path ".$full_path.": $!" );
 		$success = 0;
 	}
 
@@ -657,22 +657,22 @@ sub get_baseurl
 
 	return( undef ) if( !defined $eprint );
 
-	my $archive = $self->{session}->get_archive();
+	my $repository = $self->{session}->get_repository;
 
-	# Unless this is a public doc in "archive" then the url should
+	# Unless this is a public doc in "repository" then the url should
 	# point into the secure area. 
 
-	my $shorturl = $archive->get_conf( "use_short_urls" );
+	my $shorturl = $repository->get_conf( "use_short_urls" );
 	$shorturl = 0 unless( defined $shorturl );
 
-	my $docpath = docid_to_path( $archive, $self->get_value( "docid" ) );
+	my $docpath = docid_to_path( $repository, $self->get_value( "docid" ) );
 
 	if( !$self->is_set( "security" ) && $eprint->get_dataset()->id() eq "archive" )
 	{
 		return $eprint->url_stem.$docpath.'/';
 	}
 
-	my $url = $archive->get_conf( "secure_url" ).'/';
+	my $url = $repository->get_conf( "secure_url" ).'/';
 	$url .= sprintf( "%08d", $eprint->get_value( "eprintid" ) );
 	$url .= '/'.$docpath.'/';
 
@@ -726,12 +726,12 @@ sub local_path
 
 	if( !defined $eprint )
 	{
-		$self->{session}->get_archive->log(
+		$self->{session}->get_repository->log(
 			"Document ".$self->get_id." has no eprint (eprintid is ".$self->get_value( "eprintid" )."!" );
 		return( undef );
 	}	
 	
-	return( $eprint->local_path()."/".docid_to_path( $self->{session}->get_archive(), $self->get_value( "docid" ) ) );
+	return( $eprint->local_path()."/".docid_to_path( $self->{session}->get_repository, $self->get_value( "docid" ) ) );
 }
 
 
@@ -828,7 +828,7 @@ sub remove_file
 	
 	if( $count != 1 )
 	{
-		$self->{session}->get_archive()->log( "Error removing file $filename for doc ".$self->get_value( "docid" ).": $!" );
+		$self->{session}->get_repository->log( "Error removing file $filename for doc ".$self->get_value( "docid" ).": $!" );
 	}
 
 	$self->files_modified;
@@ -861,7 +861,7 @@ sub remove_all_files
 
 	if( $num_deleted < scalar @to_delete )
 	{
-		$self->{session}->get_archive()->log( "Error removing document files for ".$self->get_value( "docid" ).", path ".$full_path.": $!" );
+		$self->{session}->get_repository->log( "Error removing document files for ".$self->get_value( "docid" ).", path ".$full_path.": $!" );
 		return( 0 );
 	}
 
@@ -1091,7 +1091,7 @@ sub add_archive
 	my( $self, $file, $archive_format ) = @_;
 
 	# Do the extraction
-	my $rc = $self->{session}->get_archive()->exec( 
+	my $rc = $self->{session}->get_repository->exec( 
 			$archive_format, 
 			DIR => $self->local_path,
 			ARC => $file );
@@ -1159,7 +1159,7 @@ sub upload_url
 	# with no trailing slash, an INCORRECT result from URI::Heuristic
 	$cut_dirs = 0 if( $cut_dirs < 0 );
 
-	my $rc = $self->{session}->get_archive()->exec( 
+	my $rc = $self->{session}->get_repository->exec( 
 			"wget",
 			CUTDIRS => $cut_dirs,
 			URL => $url );
@@ -1209,9 +1209,9 @@ sub commit
 {
 	my( $self, $force ) = @_;
 
-	my $dataset = $self->{session}->get_archive()->get_dataset( "document" );
+	my $dataset = $self->{session}->get_repository->get_dataset( "document" );
 
-	$self->{session}->get_archive()->call( "set_document_automatic_fields", $self );
+	$self->{session}->get_repository->call( "set_document_automatic_fields", $self );
 
 	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
 	{
@@ -1227,7 +1227,7 @@ sub commit
 	if( !$success )
 	{
 		my $db_error = $self->{session}->get_db()->error();
-		$self->{session}->get_archive()->log( "Error committing Document ".$self->get_value( "docid" ).": $db_error" );
+		$self->{session}->get_repository->log( "Error committing Document ".$self->get_value( "docid" ).": $db_error" );
 	}
 
 	$self->queue_changes;
@@ -1267,7 +1267,7 @@ sub validate_meta
 					"lib/document:no_type" );
 	}
 	
-	push @problems, $self->{session}->get_archive()->call( 
+	push @problems, $self->{session}->get_repository->call( 
 		"validate_document_meta", 
 		$self, 
 		$self->{session},
@@ -1283,7 +1283,7 @@ sub validate_meta
 =item $problems = $doc->validate( [$for_archive] )
 
 Return an array of XHTML DOM objects describing validation problems
-with the entire document, including the metadata and archive config
+with the entire document, including the metadata and repository config
 specific requirements.
 
 A reference to an empty array indicates no problems.
@@ -1316,7 +1316,7 @@ sub validate
 	}
 		
 	# Site-specific checks
-	push @problems, $self->{session}->get_archive()->call( 
+	push @problems, $self->{session}->get_repository->call( 
 		"validate_document", 
 		$self, 
 		$self->{session},
@@ -1341,7 +1341,7 @@ sub can_view
 {
 	my( $self, $user ) = @_;
 
-	return $self->{session}->get_archive()->call( 
+	return $self->{session}->get_repository->call( 
 		"can_user_view_document",
 		$self,
 		$user );	
@@ -1418,7 +1418,7 @@ sub rehash
 	my $eprint = $self->get_eprint;
 	unless( defined $eprint )
 	{
-		$self->{session}->get_archive->log(
+		$self->{session}->get_repository->log(
 "rehash: skipped document with no associated eprint (".$self->get_id.")." );
 		return;
 	}

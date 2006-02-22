@@ -14,19 +14,19 @@
 
 =head1 NAME
 
-B<lift_embargos> - lift expired publisher- or funder-imposed embargos from an archive
+B<lift_embargos> - lift expired publisher- or funder-imposed embargos from an repository
 
 =head1 SYNOPSIS
 
-B<lift_embargos> - I<archiveid> [B<options>]
+B<lift_embargos> - I<repository_id> [B<options>]
 
 =head1 DESCRIPTION
 
-Lift expired publisher- or funder-imposed embargos from an archive.
+Lift expired publisher- or funder-imposed embargos from an repository.
 
 This script will:
 
-  - search the archive for eprints which have an expired publisher- or funder-imposed embargo date (relative to the system date)
+  - search the repository for eprints which have an expired publisher- or funder-imposed embargo date (relative to the system date)
   - make all documents associated with each eprint publically available
   - remove the expired embargo date value
   - re-generate the abstract page for the eprint
@@ -35,9 +35,9 @@ This script will:
 
 =over 8
 
-=item B<archiveid> 
+=item B<repository_id> 
 
-The ID of the EPrint archive to search.
+The ID of the EPrint repository to search.
 
 =back
 
@@ -105,7 +105,7 @@ $|=1;
 my $session = new EPrints::Session( 1 , $ARGV[0] , $noise );
 exit( 1 ) unless( defined $session );
 
-my $ds = $session->get_archive()->get_dataset( "archive" );
+my $ds = $session->get_repository->get_dataset( "archive" );
 
 # Search for expired embargos
 my $searchexp = new EPrints::SearchExpression( 

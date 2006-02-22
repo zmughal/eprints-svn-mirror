@@ -45,8 +45,8 @@ documentation and will not be duplicated here.
 #     to find config info about this field. Most importantly the name
 #     and other information from the phrase file.
 #
-#  $self->{archive}
-#     The archive to which this field belongs.
+#  $self->{repository}
+#     The repository to which this field belongs.
 #
 # The rest of the instance variables are the properties of the field.
 # The most important properties (which are always required) are:
@@ -81,7 +81,7 @@ $EPrints::MetaField::UNDEF 		= "272b7aa107d30cfa9c67c4bdfca7005d_UNDEF";
 
 Create a new metafield. %properties is a hash of the properties of the 
 field, with the addition of "dataset", or if "dataset" is not set then
-"confid" and "archive" must be provided instead.
+"confid" and "repository" must be provided instead.
 
 Some field types require certain properties to be explicitly set. See
 the main documentation.
@@ -97,6 +97,12 @@ sub new
 	eval 'use '.$realclass.';';
 	warn "couldn't parse $realclass: $@" if $@;
 
+	# for when repository was called archive.
+	if( defined $properties{archive} )
+	{
+		$properties{repository} = $properties{archive};
+	}
+
 	my $self = {};
 	bless $self, $realclass;
 
@@ -106,24 +112,24 @@ sub new
 	{ 
 		$self->{confid} = $properties{dataset}->confid(); 
 		$self->{dataset} = $properties{dataset};
-		$self->{archive} = $properties{dataset}->get_archive();
+		$self->{repository} = $properties{dataset}->get_repository;
 	}
 	else
 	{
-		if( !defined $properties{archive} )
+		if( !defined $properties{repository} )
 		{
 			EPrints::Config::abort( 
 				"Tried to create a metafield without a ".
-				"dataset or an archive." );
+				"dataset or an repository." );
 		}
-		$self->{archive} = $properties{archive};
+		$self->{repository} = $properties{repository};
 	}
 
 	# This gets reset later, but we need it for potential
 	# debug messages.
 	$self->{type} = $properties{type};
 	
-	$self->{field_defaults} = $self->{archive}->get_field_defaults( $properties{type} );
+	$self->{field_defaults} = $self->{repository}->get_field_defaults( $properties{type} );
 	if( !defined $self->{field_defaults} )
 	{
 		my %props = $self->get_property_defaults;
@@ -132,7 +138,7 @@ sub new
 		{
 			if( defined $props{$p_id} && $props{$p_id} eq $EPrints::MetaField::FROM_CONFIG )
 			{
-				my $v = $self->{archive}->get_conf( "field_defaults" )->{$p_id};
+				my $v = $self->{repository}->get_conf( "field_defaults" )->{$p_id};
 				if( !defined $v )
 				{
 					$v = $EPrints::MetaField::UNDEF;
@@ -141,7 +147,7 @@ sub new
 			}
 			$self->{field_defaults}->{$p_id} = $props{$p_id};
 		}
-		$self->{archive}->set_field_defaults( $properties{type}, $self->{field_defaults} );
+		$self->{repository}->set_field_defaults( $properties{type}, $self->{field_defaults} );
 	}
 
 	foreach my $p_id ( keys %{$self->{field_defaults}} )
@@ -159,9 +165,9 @@ sub new
 		next if( defined $self->{field_defaults}->{$p_id} );
 		# these params are always valid but have no defaults
 		next if( $p_id eq "field_defaults" );
-		next if( $p_id eq "archive" );
+		next if( $p_id eq "repository" );
 		next if( $p_id eq "dataset" );
-		$self->{archive}->log( "Field '".$self->{name}."' has invalid parameter:\n$p_id => $properties{$p_id}" );
+		$self->{repository}->log( "Field '".$self->{name}."' has invalid parameter:\n$p_id => $properties{$p_id}" );
 	}
 
 	return( $self );
@@ -650,7 +656,7 @@ sub render_value_no_multiple
 
 		my $rendered = $self->get_main_field()->render_value_no_id( $session, $value->{main}, $alllangs, $nolink );
 
-		return $session->get_archive()->call( 
+		return $session->get_repository->call( 
 			"render_value_with_id",  
 			$self, 
 			$session, 
@@ -667,9 +673,9 @@ sub render_value_no_multiple
 		return $rendered;
 	}
 
-	my $url = $session->get_archive()->get_conf(
+	my $url = $session->get_repository->get_conf(
 			"base_url" );
-	my $views = $session->get_archive()->get_conf( "browse_views" );
+	my $views = $session->get_repository->get_conf( "browse_views" );
 	my $linkview;
 	foreach my $view ( @{$views} )
 	{
@@ -681,7 +687,7 @@ sub render_value_no_multiple
 
 	if( !defined $linkview )
 	{
-		$session->get_archive()->log( "browse_link to view '".$self->{browse_link}."' not found for field '".$self->{name}."'\n" );
+		$session->get_repository->log( "browse_link to view '".$self->{browse_link}."' not found for field '".$self->{name}."'\n" );
 		return $rendered;
 	}
 
@@ -736,7 +742,7 @@ sub render_value_no_id
 	if( !$alllangs )
 	{
 		my $v = EPrints::Session::best_language( 
-			$session->get_archive(), 
+			$session->get_repository, 
 			$session->get_langid(), 
 			%$value );
 		return $self->render_value_no_multilang( $session, $v, $nolink );
@@ -943,7 +949,7 @@ sub _list_values2
 If this field is a multilang field then return the version of the 
 value most useful for the language of the session. In order of
 preference: The language of the session, the default language for
-the archive, any language at all. If it is not a multilang field
+the repository, any language at all. If it is not a multilang field
 then just return $value.
 
 =cut
@@ -954,7 +960,7 @@ sub most_local
 	my( $self, $session, $value ) = @_;
 	#cjg not done yet
 	my $bestvalue =  EPrints::Session::best_language( 
-		$session->get_archive(), $session->get_langid(), %{$value} );
+		$session->get_repository, $session->get_langid(), %{$value} );
 	return $bestvalue;
 }
 

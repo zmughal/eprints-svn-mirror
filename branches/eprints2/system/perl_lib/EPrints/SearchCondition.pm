@@ -315,7 +315,7 @@ sub item_matches
 
 	if( $self->{op} eq "PASS" )
 	{
-		$item->get_session->get_archive->log( <<END );
+		$item->get_session->get_repository->log( <<END );
 PASS condition used in 'item_matches', should have been optimised!
 END
 		return( 0 );
@@ -414,7 +414,7 @@ END
 					$sub_id );	
 			if( !defined $s )
 			{
-				$item->get_session->get_archive->log(
+				$item->get_session->get_repository->log(
 "Attempt to call item_matches on a searchfield with non-existant\n".
 "subject id: '$_', item was #".$item->get_id );
 				next;
@@ -587,7 +587,7 @@ sub process
 
 	if( $self->{op} eq "PASS" )
 	{
-		$session->get_archive->log( <<END );
+		$session->get_repository->log( <<END );
 PASS condition used in 'process', should have been optimised!
 END
 		return( 0 );

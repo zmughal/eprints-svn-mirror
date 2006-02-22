@@ -101,16 +101,16 @@ sub new
 			depositable => "FALSE" 
 		};
 		my $langid;
-		foreach $langid ( @{$session->get_archive()->get_conf( "languages" )} )
+		foreach $langid ( @{$session->get_repository->get_conf( "languages" )} )
 		{
-			$data->{name}->{$langid} = EPrints::XML::to_string( $session->get_archive()->get_language( $langid )->phrase( "lib/subject:top_level", {}, $session ) );
+			$data->{name}->{$langid} = EPrints::XML::to_string( $session->get_repository->get_language( $langid )->phrase( "lib/subject:top_level", {}, $session ) );
 		}
 
 		return EPrints::DataObj::Subject->new_from_data( $session, $data );
 	}
 
 	return $session->get_db()->get_single( 
-			$session->get_archive()->get_dataset( "subject" ), 
+			$session->get_repository->get_dataset( "subject" ), 
 			$subjectid );
 
 }
@@ -136,7 +136,7 @@ sub new_from_data
 	my $self = {};
 	
 	$self->{data} = $data;
-	$self->{dataset} = $session->get_archive()->get_dataset( "subject" ); 
+	$self->{dataset} = $session->get_repository->get_dataset( "subject" ); 
 	$self->{session} = $session;
 	bless $self, $class;
 
@@ -235,7 +235,7 @@ sub remove_all
 {
 	my( $session ) = @_;
 
-	my $ds = $session->get_archive()->get_dataset( "subject" );
+	my $ds = $session->get_repository->get_dataset( "subject" );
 	my @subjects = $session->get_db()->get_all( $ds );
 	foreach( @subjects )
 	{
@@ -278,7 +278,7 @@ sub create
 	return EPrints::User->create_from_data( 
 		$session, 
 		$data,
-		$session->get_archive->get_dataset( "subject" ) );
+		$session->get_repository->get_dataset( "subject" ) );
 }
 
 ######################################################################
@@ -682,7 +682,7 @@ sub subject_label
 
 	while( $tag ne $EPrints::DataObj::Subject::root_subject )
 	{
-		my $ds = $session->get_archive()->get_dataset();
+		my $ds = $session->get_repository->get_dataset();
 		my $data = $session->{database}->get_single( $ds, $tag );
 		
 		# If we can't find it, the tag must be invalid.
@@ -737,7 +737,7 @@ sub get_all
 	
 	# Retrieve all of the subjects
 	my @subjects = $session->get_db()->get_all( 
-		$session->get_archive()->get_dataset( "subject" ) );
+		$session->get_repository->get_dataset( "subject" ) );
 
 	return( undef ) if( scalar @subjects == 0 );
 
@@ -756,7 +756,7 @@ sub get_all
 			push @{$rmap{$_}}, $subject;
 		}
 	}
-	my $namefield = $session->get_archive->get_dataset(
+	my $namefield = $session->get_repository->get_dataset(
 		"subject" )->get_field( "name" );
 	foreach( keys %rmap )
 	{

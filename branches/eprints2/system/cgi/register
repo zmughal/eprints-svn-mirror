@@ -29,21 +29,21 @@ sub make_page
 {
 	my( $session ) = @_;
 
-	unless( $session->get_archive()->get_conf("allow_web_signup") )
+	unless( $session->get_repository->get_conf("allow_web_signup") )
 	{
 		return mk_err_page( 
 			$session,
 			"cgi/register:no_web_signup" );
 	}
 
-	my $mlangopt = $session->get_archive()->get_conf("multi_language_options");
+	my $mlangopt = $session->get_repository->get_conf("multi_language_options");
 
-	my $user_ds = $session->get_archive()->get_dataset( "user" );
+	my $user_ds = $session->get_repository->get_dataset( "user" );
 
-	my $extrafields = $session->get_archive()->get_conf( "extra_reg_fields" );
+	my $extrafields = $session->get_repository->get_conf( "extra_reg_fields" );
 
-	my $default_type = $session->get_archive()->get_conf( "default_user_type" ); 
-	my $extrafields =  $session->get_archive()->get_conf( "user_registration_fields" );
+	my $default_type = $session->get_repository->get_conf( "default_user_type" ); 
+	my $extrafields =  $session->get_repository->get_conf( "user_registration_fields" );
 	$extrafields = [] if( !defined $extrafields );
 
 	my $fieldlist = []; 
@@ -148,7 +148,7 @@ sub make_page
 		"cgi/register:account",
 		$session->html_phrase( 
 			"mail_password_pin", 
-			confirmurl => $session->make_text( $session->get_archive()->get_conf( "perl_url" )."/confirm?userid=".$user->get_value( "userid" )."&pin=".$pin ),
+			confirmurl => $session->make_text( $session->get_repository->get_conf( "perl_url" )."/confirm?userid=".$user->get_value( "userid" )."&pin=".$pin ),
 			username => $user->render_value( "username" ) ) );
 
 	if( !$rc )

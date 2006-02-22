@@ -114,7 +114,7 @@ sub render
 	my( $self, $defobj, $params ) = @_;
 	my $session = $params->{session};
 	my $field = $self->{field};
-	my $user_ds = $session->get_archive()->get_dataset( "eprint" );
+	my $user_ds = $session->get_repository->get_dataset( "eprint" );
 	my $metafield = $user_ds->get_field( $field );
 
 	my $value;

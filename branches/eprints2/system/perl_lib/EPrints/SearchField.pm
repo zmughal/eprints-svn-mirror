@@ -177,14 +177,14 @@ sub new
 
 	if( $self->{match} ne "EQ" && $self->{match} ne "IN" && $self->{match} ne "EX" )
 	{
-		$session->get_archive->log( 
+		$session->get_repository->log( 
 "search field match value was '".$self->{match}."'. Should be EQ, IN or EX." );
 		$self->{merge} = "ALL";
 	}
 
 	if( $self->{merge} ne "ALL" && $self->{merge} ne "ANY" )
 	{
-		$session->get_archive->log( 
+		$session->get_repository->log( 
 "search field merge value was '".$self->{merge}."'. Should be ALL or ANY." );
 		$self->{merge} = "ALL";
 	}

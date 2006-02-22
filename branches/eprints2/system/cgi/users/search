@@ -31,19 +31,19 @@ $path_info =~ s#^/##;
 $path_info =~ s#/.*$##;
 
 my $searchid = $path_info;
-my $sconf = $session->get_archive()->get_conf( "search", $searchid );
+my $sconf = $session->get_repository->get_conf( "search", $searchid );
 if( !defined $sconf )
 {
 	my $page = $session->make_doc_fragment;
 	my $ul = $session->make_element( "ul" );
 	$page->appendChild( $ul );
-	my $searches = $session->get_archive()->get_conf( "search" );
+	my $searches = $session->get_repository->get_conf( "search" );
 	foreach my $s_id ( keys %{$searches} )
 	{
 		next unless( $searches->{$s_id}->{"staff"} );
 		my $li = $session->make_element( "li" );
 		$ul->appendChild( $li );
-		my $url = $session->get_archive->get_conf( "perl_url" ).
+		my $url = $session->get_repository->get_conf( "perl_url" ).
 				"/users/search/".$s_id;
 		my $a = $session->render_link( $url );
 		$li->appendChild( $a );
@@ -67,7 +67,7 @@ else
 	my $searchexp = new EPrints::SearchExpression(
 		keep_cache => 1,
 		session => $session,
-		dataset => $session->get_archive()->get_dataset( "archive" ),
+		dataset => $session->get_repository->get_dataset( "archive" ),
 		%{$sconf} );
 	
 	$searchexp->process_webpage();

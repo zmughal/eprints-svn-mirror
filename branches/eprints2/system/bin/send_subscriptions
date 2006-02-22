@@ -18,11 +18,11 @@ B<send_subscriptions> - Send out all the email subscriptions for a given frequen
 
 =head1 SYNOPSIS
 
-B<generate_views> I<archiveid> I<frequency> [B<options>] 
+B<generate_views> I<repository_id> I<frequency> [B<options>] 
 
 =head1 DESCRIPTION
 
-This script sends out all the subscription emails for the specified archive
+This script sends out all the subscription emails for the specified repository
 and frequency. frequency must be one of daily|weekly|monthly.
 
 This script should probably be called from your "cron" system, soon after
@@ -41,9 +41,9 @@ Note the spacing out so that all 3 don't start at once and hammer the database.
 
 =over 8
 
-=item B<archiveid> 
+=item B<repository_id> 
 
-The ID of the eprint archive to use.
+The ID of the eprint repository to use.
 
 =item B<frequency> 
 

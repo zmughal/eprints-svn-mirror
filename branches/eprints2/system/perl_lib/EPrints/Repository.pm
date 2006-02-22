@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::Archive
+# EPrints::Repository
 #
 ######################################################################
 #
@@ -17,11 +17,11 @@
 
 =head1 NAME
 
-B<EPrints::Archive> - A single eprint archive
+B<EPrints::Repository> - A single eprint repository
 
 =head1 DESCRIPTION
 
-This class is a single eprint archive with its own configuration,
+This class is a single eprint repository with its own configuration,
 database and website.
 
 =over 4
@@ -40,14 +40,14 @@ database and website.
 #     The package to which the config functions belong.
 #
 #  $self->{id}
-#     The id of this archive.
+#     The id of this repository.
 #
 #  $self->{ruler}
-#     An XHTML tree describing the horizontal ruler for this archives
+#     An XHTML tree describing the horizontal ruler for this repository
 #     website.
 #
 #  $self->{langs}
-#     A hash containing EPrints::Language objects for this archive,
+#     A hash containing EPrints::Language objects for this repository,
 #     keyed by iso lang id.
 #
 #  $self->{cstyles}
@@ -60,7 +60,7 @@ database and website.
 #     lang id.
 #
 #  $self->{datasets}
-#     A cache of all the EPrints::DataSets belonging to this archive
+#     A cache of all the EPrints::DataSets belonging to this repository
 #     keyed by dataset id.
 #
 #  $self->{field_defaults}
@@ -70,7 +70,7 @@ database and website.
 #
 ######################################################################
 
-package EPrints::Archive;
+package EPrints::Repository;
 
 use EPrints;
 
@@ -81,51 +81,22 @@ use strict;
 my %ARCHIVE_CACHE = ();
 
 
-######################################################################
-=pod
-
-=item $archive = EPrints::Archive->get_request_archive( $request )
-
-This creates a new archive object. It looks at the given Apache
-request object and decides which archive to load based on the 
-value of the PerlVar "EPrints_ArchiveID".
-
-Aborts with an error if this is not possible.
-
-=cut
-######################################################################
-
-sub new_from_request
-{
-	my( $class, $request ) = @_;
-		
-	my $archiveid = $request->dir_config( "EPrints_ArchiveID" );
-
-	my $archive = EPrints::Archive->new_archive_by_id( $archiveid );
-
-	if( !defined $archive )
-	{
-		EPrints::Config::abort( "Can't load EPrints archive: $archiveid" );
-	}
-
-	return $archive;
-}
-
 
 ######################################################################
 =pod
 
-=item $archive = EPrints::Archive->new_archive_by_id( $id, [$noxml] )
+=item $repository = EPrints::Repository->new( $id, [$noxml] )
 
-Returns the archive with the given archiveid. If $noxml is specified
+Returns the repository with the given repository ID. If $noxml is specified
 then it skips loading the XML based configuration files (this is
-needed when creating an archive as it first has to create the DTD
+needed when creating an repository as it first has to create the DTD
 files, and if it can't start you have a catch 22 situtation).
 
 =cut
 ######################################################################
+sub new_archive_by_id { my $class= shift; return $class->new( @_ ); }
 
-sub new_archive_by_id
+sub new
 {
 	my( $class, $id, $noxml ) = @_;
 
@@ -146,12 +117,12 @@ sub new_archive_by_id
 		my $file = $self->get_conf( "variables_path" )."/last_changed.timestamp";
 		my $poketime = (stat( $file ))[9];
 		# If the /cfg/.changed file was touched since the config
-		# for this archive was loaded then we will reload it.
+		# for this repository was loaded then we will reload it.
 		# This is not as handy as it sounds as we'll have to reload
 		# it each time the main server forks.
 		if( defined $poketime && $poketime > $self->{loadtime} )
 		{
-			$self->log( "$file has been modified since the archive config was loaded: reloading!" );
+			$self->log( "$file has been modified since the repository config was loaded: reloading!" );
 		}
 		else
 		{
@@ -164,7 +135,7 @@ sub new_archive_by_id
 	my $self = {};
 	bless $self, $class;
 
-	$self->{config} = EPrints::Config::load_archive_config_module( $id );
+	$self->{config} = EPrints::Config::load_repository_config_module( $id );
 
 	$self->{loadtime} = time;
 
@@ -176,7 +147,7 @@ sub new_archive_by_id
 	$self->{xmldoc} = EPrints::XML::make_document();
 
 	# If loading any of the XML config files then 
-	# abort loading the config for this archive.
+	# abort loading the config for this repository.
 	unless( $noxml )
 	{
 		$self->generate_dtd() || return;
@@ -187,7 +158,7 @@ sub new_archive_by_id
 		$self->_load_citation_specs() || return;
 	}
 
-	# Load archive plugins
+	# Load repository plugins
 	$self->_load_plugins() || return;
 	if( $self->get_conf( "use_workflow" ) )
 	{
@@ -222,11 +193,41 @@ sub new_archive_by_id
 	return $self;
 }
 
+######################################################################
+=pod
+
+=item $repository = EPrints::Repository->new_from_request( $request )
+
+This creates a new repository object. It looks at the given Apache
+request object and decides which repository to load based on the 
+value of the PerlVar "EPrints_ArchiveID".
+
+Aborts with an error if this is not possible.
+
+=cut
+######################################################################
+
+sub new_from_request
+{
+	my( $class, $request ) = @_;
+		
+	my $repoid = $request->dir_config( "EPrints_ArchiveID" );
+
+	my $repository = EPrints::Repository->new( $repoid );
+
+	if( !defined $repository )
+	{
+		EPrints::Config::abort( "Can't load EPrints repository: $repoid" );
+	}
+
+	return $repository;
+}
+
 
 ######################################################################
 =pod
 
-=item $xhtml = $archive->get_ruler
+=item $xhtml = $repository->get_ruler
 
 Returns the ruler as specified in ruler.xml - it caches the result
 so the XML file only has to be loaded once.
@@ -268,9 +269,9 @@ sub get_ruler
 ######################################################################
 =pod
 
-=item $success = $archive->_load_workflow
+=item $success = $repository->_load_workflow
 
- Attempts to load and cache the workflow for this archive
+ Attempts to load and cache the workflow for this repository
 
 =cut
 ######################################################################
@@ -289,9 +290,9 @@ sub _load_workflow
 
 ######################################################################
 # 
-# $success = $archive->_load_languages
+# $success = $repository->_load_languages
 #
-# Attempts to load and cache all the phrase files for this archive.
+# Attempts to load and cache all the phrase files for this repository.
 #
 ######################################################################
 
@@ -330,10 +331,10 @@ sub _load_languages
 ######################################################################
 =pod
 
-=item $language = $archive->get_language( [$langid] )
+=item $language = $repository->get_language( [$langid] )
 
 Returns the EPrints::Language for the requested language id (or the
-default for this archive if $langid is not specified). 
+default for this repository if $langid is not specified). 
 
 =cut
 ######################################################################
@@ -351,9 +352,9 @@ sub get_language
 
 ######################################################################
 # 
-# $success = $archive->_load_citation_specs
+# $success = $repository->_load_citation_specs
 #
-# Attempts to load and cache all the citation styles for this archive.
+# Attempts to load and cache all the citation styles for this repository.
 #
 ######################################################################
 
@@ -445,7 +446,7 @@ END
 ######################################################################
 =pod
 
-=item $citation = $archive->get_citation_spec( $langid, $type )
+=item $citation = $repository->get_citation_spec( $langid, $type )
 
 Returns the DOM citation style for the given language and type. This
 is the origional and should be cloned before you alter it.
@@ -462,9 +463,9 @@ sub get_citation_spec
 
 ######################################################################
 # 
-# $success = $archive->_load_templates
+# $success = $repository->_load_templates
 #
-# Loads and caches all the html template files for this archive.
+# Loads and caches all the html template files for this repository.
 #
 ######################################################################
 
@@ -518,7 +519,7 @@ sub _load_template
 ######################################################################
 =pod
 
-=item $template = $archive->get_template( $langid, [$template_id] )
+=item $template = $repository->get_template( $langid, [$template_id] )
 
 Returns the DOM document which is the webpage template for the given
 language. Do not modify the template without cloning it first.
@@ -546,10 +547,10 @@ END
 
 ######################################################################
 # 
-# $success = $archive->_load_datasets
+# $success = $repository->_load_datasets
 #
 # Loads and caches all the EPrints::DataSet objects belonging to this
-# archive. Loads information from metadata-types.xml to pass to the
+# repository. Loads information from metadata-types.xml to pass to the
 # DataSet constructor about what types are available.
 #
 ######################################################################
@@ -615,8 +616,7 @@ sub _load_datasets
 						$finfo->{staffonly} = 1;
 					}
 					$typedata->{fields}->{$finfo->{id}} = $finfo;
-					push @{$typedata->{pages}->{$pageid}}, 
-						$finfo->{id};
+					push @{$typedata->{pages}->{$pageid}}, $finfo->{id};
 					push @{$typedata->{field_order}}, $finfo->{id};
 				}
 				elsif( $el eq "page" )
@@ -644,9 +644,7 @@ sub _load_datasets
 	my $cache = {};
 	foreach $ds_id ( EPrints::DataSet::get_dataset_ids() )
 	{
-		$self->{datasets}->{$ds_id} = 
-			EPrints::DataSet->new( $self, $ds_id, $dsconf,
-				$cache );
+		$self->{datasets}->{$ds_id} = EPrints::DataSet->new( $self, $ds_id, $dsconf, $cache );
 	}
 
 	EPrints::XML::dispose( $doc );
@@ -657,7 +655,7 @@ sub _load_datasets
 ######################################################################
 =pod
 
-=item $dataset = $archive->get_dataset( $setname )
+=item $dataset = $repository->get_dataset( $setname )
 
 Returns the cached EPrints::DataSet with the given dataset id name.
 
@@ -679,7 +677,7 @@ sub get_dataset
 
 ######################################################################
 # 
-# $success = $archive->_map_oai_plugins
+# $success = $repository->_map_oai_plugins
 #
 # The OAI interface now uses plugins. This checks each OAI plugin and
 # stores its namespace, and a function to render with it.
@@ -721,9 +719,9 @@ sub _map_oai_plugins
 
 ######################################################################
 # 
-# $success = $archive->_load_plugins
+# $success = $repository->_load_plugins
 #
-# Loads and caches all the plugins for this archive by loading 
+# Loads and caches all the plugins for this repository by loading 
 # everything in the plugins directory.
 #
 ######################################################################
@@ -754,9 +752,9 @@ sub _load_plugins
 ######################################################################
 =pod
 
-=item $archive->_plugin_dir_copy( $source, $target )
+=item $repository->_plugin_dir_copy( $source, $target )
 
-Ensure that all the archive plugins are copied into the perl path.
+Ensure that all the repository plugins are copied into the perl path.
 
 =cut
 ######################################################################
@@ -845,9 +843,9 @@ END
 ######################################################################
 =pod
 
-=item @plugin_ids  = $archive->plugin_list()
+=item @plugin_ids  = $repository->plugin_list()
 
-Return a list of all the ids of the archive specific plugins.
+Return a list of all the ids of the repository specific plugins.
 
 =cut
 ######################################################################
@@ -863,7 +861,7 @@ sub plugin_list
 ######################################################################
 =pod
 
-=item $class  = $archive->plugin_class( $pluginid )
+=item $class  = $repository->plugin_class( $pluginid )
 
 Return the Perl class of the given $pluginid as a string.
 
@@ -883,15 +881,15 @@ sub plugin_class
 ######################################################################
 =pod
 
-=item $confitem = $archive->get_conf( $key, [@subkeys] )
+=item $confitem = $repository->get_conf( $key, [@subkeys] )
 
 Returns a named configuration setting. Probably set in ArchiveConfig.pm
 
-$archive->get_conf( "stuff", "en", "foo" )
+$repository->get_conf( "stuff", "en", "foo" )
 
 is equivalent to 
 
-$archive->get_conf( "stuff" )->{en}->{foo} 
+$repository->get_conf( "stuff" )->{en}->{foo} 
 
 =cut
 ######################################################################
@@ -925,9 +923,9 @@ sub get_conf
 ######################################################################
 =pod
 
-=item $archive->log( $msg )
+=item $repository->log( $msg )
 
-Calls the log method from ArchiveConfig.pm for this archive with the 
+Calls the log method from ArchiveConfig.pm for this repository with the 
 given parameters. Basically logs the comments wherever the site admin
 wants them to go. Printed to STDERR by default.
 
@@ -955,10 +953,10 @@ sub log
 ######################################################################
 =pod
 
-=item $result = $archive->call( $cmd, @params )
+=item $result = $repository->call( $cmd, @params )
 
 Calls the subroutine named $cmd from the configuration perl modules
-for this archive with the given params and returns the result.
+for this repository with the given params and returns the result.
 
 =cut
 ######################################################################
@@ -974,9 +972,9 @@ sub call
 ######################################################################
 =pod
 
-=item $boolean = $archive->can_call( $cmd )
+=item $boolean = $repository->can_call( $cmd )
 
-Return true if the given subroutine exists in the archives config
+Return true if the given subroutine exists in this repository's config
 package.
 
 =cut
@@ -1003,10 +1001,10 @@ sub can_call($$)
 ######################################################################
 =pod
 
-=item $result = $archive->try_call( $cmd, @params )
+=item $result = $repository->try_call( $cmd, @params )
 
 Calls the subroutine named $cmd from the configuration perl modules
-for this archive with the given params and returns the result.
+for this repository with the given params and returns the result.
 
 If the subroutine does not exist then quietly returns undef.
 
@@ -1027,7 +1025,7 @@ sub try_call
 ######################################################################
 =pod
 
-=item @dirs = $archive->get_store_dirs
+=item @dirs = $repository->get_store_dirs
 
 Returns a list of directories available for storing documents. These
 may well be symlinks to other hard drives.
@@ -1060,10 +1058,10 @@ sub get_store_dirs
 ######################################################################
 =pod
 
-=item $size = $archive->get_store_dir_size( $dir )
+=item $size = $repository->get_store_dir_size( $dir )
 
 Returns the current storage (in bytes) used by a given documents dir.
-$dir should be one of the values returned by $archive->get_store_dirs.
+$dir should be one of the values returned by $repository->get_store_dirs.
 
 This should not be called if disable_df is set in SystemSettings.
 
@@ -1092,14 +1090,14 @@ sub get_store_dir_size
 ######################################################################
 =pod
 
-=item $domdocument = $archive->parse_xml( $file, $no_expand );
+=item $domdocument = $repository->parse_xml( $file, $no_expand );
 
 Turns the given $file into a XML DOM/GDOME document. If $no_expand
 is true then load &entities; but do not expand them to the values in
 the DTD.
 
 This function also sets the path in which the Parser will look for 
-DTD files to the archives config directory.
+DTD files to the repository's config directory.
 
 =cut
 ######################################################################
@@ -1123,9 +1121,9 @@ sub parse_xml
 ######################################################################
 =pod
 
-=item $id = $archive->get_id 
+=item $id = $repository->get_id 
 
-Returns the id string of this archive.
+Returns the id string of this repository.
 
 =cut
 ######################################################################
@@ -1141,7 +1139,7 @@ sub get_id
 ######################################################################
 =pod
 
-=item $returncode = $archive->exec( $cmd_id, %map )
+=item $returncode = $repository->exec( $cmd_id, %map )
 
 Executes a system command. $cmd_id is the id of the command as
 set in SystemSettings and %map contains a list of things to "fill in
@@ -1167,7 +1165,7 @@ sub exec
 ######################################################################
 =pod
 
-=item $commandstring = $archive->invocation( $cmd_id, %map )
+=item $commandstring = $repository->invocation( $cmd_id, %map )
 
 Finds the invocation for the specified command from SystemSetting and
 fills in the blanks using %map. Returns a string which may be executed
@@ -1196,7 +1194,7 @@ sub invocation
 ######################################################################
 =pod
 
-=item $defaults = $archive->get_field_defaults( $fieldtype )
+=item $defaults = $repository->get_field_defaults( $fieldtype )
 
 Return the cached default properties for this metadata field type.
 or undef.
@@ -1214,7 +1212,7 @@ sub get_field_defaults
 ######################################################################
 =pod
 
-=item $archive->set_field_defaults( $fieldtype, $defaults )
+=item $repository->set_field_defaults( $fieldtype, $defaults )
 
 Cache the default properties for this metadata field type.
 
@@ -1233,7 +1231,7 @@ sub set_field_defaults
 ######################################################################
 =pod
 
-=item $success = $archive->generate_dtd
+=item $success = $repository->generate_dtd
 
 Regenerate the DTD file for each language. This file is used when
 loading some of the XML files. It contains entities such as &ruler;
@@ -1254,7 +1252,7 @@ sub generate_dtd
 	my $dtdfile = $self->get_conf( "cfg_path")."/xhtml-entities.dtd";
 	open( XHTMLENTITIES, $dtdfile ) ||
 		die "Failed to open system DTD ($dtdfile) to include ".
-			"in archive DTD";
+			"in repository DTD";
 	my $xhtmlentities = join( "", <XHTMLENTITIES> );
 	close XHTMLENTITIES;
 	my $langid;
