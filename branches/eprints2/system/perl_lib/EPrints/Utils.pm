@@ -960,9 +960,6 @@ replaced with a link to that URL.
 =cut
 ######################################################################
 
-# cjg - Potential bug if: <ifset a><ifset b></></> and ifset a is disposed
-# then ifset: b is processed it will crash.
-
 sub render_citation
 {
 	my( $obj, $cstyle, $url ) = @_;
@@ -972,9 +969,143 @@ sub render_citation
 
 	my $session = $obj->get_session;
 
-	my $r= _render_citation_aux( $obj, $session, $cstyle, $url );
+	my $collapsed = collapse_conditions( $session, $cstyle, $obj );
+
+	my $r= _render_citation_aux( $obj, $session, $collapsed, $url );
 
 	return $r;
+}
+
+######################################################################
+=pod
+
+=item $xml = EPrints::Utils::collapse_conditions( $session, $xml, $object, [%params] )
+
+Using the given object and %params, collapse the <ep:ifset>,
+<ep:ifnotset>, <ep:ifmatch> and <ep:ifnotmatch>
+elements in XML and return the result.
+
+The name attribute in ifset etc. refer to the field name in $object,
+unless the are prefixed with a asterisk (*) in which case they are keys
+to values in %params.
+
+=cut
+######################################################################
+
+sub collapse_conditions
+{
+	my( $session, $node, $obj, %params ) = @_;
+
+# cjg - Potential bug if: <ifset a><ifset b></></> and ifset a is disposed
+# then ifset: b is processed it will crash.
+
+	my $addkids = $node->hasChildNodes;
+	my $collapsed;
+
+	if( EPrints::XML::is_dom( $node, "Element" ) )
+	{
+
+		my $name = $node->getTagName;
+		$name =~ s/^ep://;
+
+		my $fieldname = $node->getAttribute( "name" );
+		if( $name =~ s/^\*// )
+		{
+			if( $name eq "ifset" )
+			{
+				$collapsed = $session->make_doc_fragment;
+				$addkids = defined $params{$fieldname};
+			}
+			elsif( $name eq "ifnotset" )
+			{
+				$collapsed = $session->make_doc_fragment;
+				$addkids = !defined $params{$fieldname};
+			}
+			elsif( $name eq "ifmatch" || $name eq "ifnotmatch" )
+			{
+				my $value = $node->getAttribute( "value" );
+				$addkids = 0;
+				foreach( split( /\s+/,$value ) )
+				{
+					$addkids = 1 if( $_ eq $params{$fieldname} );
+				}
+
+				if( $name eq "ifnotmatch" )
+				{
+					$addkids = !$addkids;
+				}
+
+				$collapsed = $session->make_doc_fragment;
+			}
+		}
+		else
+		{
+			if( $name eq "ifset" )
+			{
+				$collapsed = $session->make_doc_fragment;
+				$addkids = $obj->is_set( $fieldname );
+			}
+			elsif( $name eq "ifnotset" )
+			{
+				$collapsed = $session->make_doc_fragment;
+				$addkids = !$obj->is_set( $fieldname );
+			}
+			elsif( $name eq "ifmatch" || $name eq "ifnotmatch" )
+			{
+				my $dataset = $obj->get_dataset;
+	
+				my $merge = $node->getAttribute( "merge" );
+				my $value = $node->getAttribute( "value" );
+				my $match = $node->getAttribute( "match" );
+	
+				my @multiple_names = split /\//, $fieldname;
+				my @multiple_fields;
+				
+				# Put the MetaFields in a list
+				foreach (@multiple_names)
+				{
+					push @multiple_fields, EPrints::Utils::field_from_config_string( $dataset, $_ );
+				}
+		
+				my $sf = EPrints::SearchField->new( 
+					$session, 
+					$dataset, 
+					\@multiple_fields,
+					$value,	
+					$match,
+					$merge );
+	
+				$addkids = $sf->get_conditions->item_matches( $obj );
+	
+				if( $name eq "ifnotmatch" )
+				{
+					$addkids = !$addkids;
+				}
+
+				$collapsed = $session->make_doc_fragment;
+			}
+		}
+	}
+
+	if( !defined $collapsed )
+	{
+		$collapsed = $session->clone_for_me( $node );
+	}
+
+	if( $addkids )
+	{
+		foreach my $child ( $node->getChildNodes )
+		{
+			$collapsed->appendChild(
+				collapse_conditions( 
+					$session,
+					$child,
+					$obj,
+					%params ) );			
+		}
+	}
+
+	return $collapsed;
 }
 
 sub _render_citation_aux
@@ -1030,52 +1161,7 @@ sub _render_citation_aux
 		my $name = $node->getTagName;
 		$name =~ s/^ep://;
 
-		if( $name eq "ifset" )
-		{
-			$rendered = $session->make_doc_fragment;
-			$addkids = $obj->is_set( $node->getAttribute( "name" ) );
-		}
-		elsif( $name eq "ifnotset" )
-		{
-			$rendered = $session->make_doc_fragment;
-			$addkids = !$obj->is_set( $node->getAttribute( "name" ) );
-		}
-		elsif( $name eq "ifmatch" || $name eq "ifnotmatch" )
-		{
-			my $dataset = $obj->get_dataset;
-
-			my $fieldname = $node->getAttribute( "name" );
-			my $merge = $node->getAttribute( "merge" );
-			my $value = $node->getAttribute( "value" );
-			my $match = $node->getAttribute( "match" );
-
-			my @multiple_names = split /\//, $fieldname;
-			my @multiple_fields;
-			
-			# Put the MetaFields in a list
-			foreach (@multiple_names)
-			{
-				push @multiple_fields, EPrints::Utils::field_from_config_string( $dataset, $_ );
-			}
-	
-			my $sf = EPrints::SearchField->new( 
-				$session, 
-				$dataset, 
-				\@multiple_fields,
-				$value,	
-				$match,
-				$merge );
-
-			$addkids = $sf->get_conditions->item_matches( $obj );
-
-			if( $name eq "ifnotmatch" )
-			{
-				$addkids = !$addkids;
-			}
-
-			$rendered = $session->make_doc_fragment;
-		}
-		elsif( $name eq "iflink" )
+		if( $name eq "iflink" )
 		{
 			$rendered = $session->make_doc_fragment;
 			$addkids = defined $url;

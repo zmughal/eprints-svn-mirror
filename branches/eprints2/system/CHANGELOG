@@ -3380,3 +3380,9 @@ PACKAGE: 2.2.99.2
 
  - Added a link from edit_eprint to buffer.
 
+2006-02-22 cjg
+
+ - Seperated the code from citations which handles ifset and ifmatch into
+    a seperate method which can be used by the workflow system: 
+    collapse_conditions.
+
