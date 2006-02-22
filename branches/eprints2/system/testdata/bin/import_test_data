@@ -10,9 +10,7 @@
 #
 ######################################################################
 
-use EPrints::Session;
-use EPrints::ImportXML;
-use EPrints::SystemSettings;
+use EPrints;
 use strict;
 $|=1;
 
