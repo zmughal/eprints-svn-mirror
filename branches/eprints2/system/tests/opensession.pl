@@ -3,7 +3,7 @@
 use Test::More tests => 15;
 
 use TestLib;
-use EPrints::Session;
+use EPrints;
 use strict;
 
 my $session;

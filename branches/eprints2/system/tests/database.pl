@@ -3,7 +3,7 @@
 use Test::More tests => 14;
 
 use TestLib;
-use EPrints::Database;
+use EPrints;
 use Test::MockObject;
 use strict;
 

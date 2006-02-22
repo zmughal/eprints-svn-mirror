@@ -1,44 +1,10 @@
 #!/usr/bin/perl -w  
 
 use TestLib;
-use Test::More tests => 35;
+use Test::More tests => 2;
 
 
-testmodule('EPrints::AnApache');
-testmodule('EPrints::Archive');
-testmodule('EPrints::Auth');
-testmodule('EPrints::Config');
-testmodule('EPrints::Database');
-testmodule('EPrints::DataObj');
-testmodule('EPrints::DataSet');
-testmodule('EPrints::Document');
-testmodule('EPrints::EPrint');
-testmodule('EPrints::Extras');
-testmodule('EPrints::ImportXML');
-testmodule('EPrints::Index');
-testmodule('EPrints::Language');
-testmodule('EPrints::Latex');
-testmodule('EPrints::MetaField');
-testmodule('EPrints::OpenArchives');
-testmodule('EPrints::Paracite');
-testmodule('EPrints::Probity');
-#testmodule('EPrints::RequestWrapper2');
-# needs to call AnApache first
-testmodule('EPrints::Rewrite');
-testmodule('EPrints::SearchCondition');
-testmodule('EPrints::SearchExpression');
-testmodule('EPrints::SearchField');
-testmodule('EPrints::Session');
-testmodule('EPrints::Subject');
-testmodule('EPrints::SubmissionForm');
-testmodule('EPrints::Subscription');
-testmodule('EPrints::SystemSettings');
-testmodule('EPrints::UserForm');
-testmodule('EPrints::UserPage');
-testmodule('EPrints::User');
-testmodule('EPrints::Utils');
-testmodule('EPrints::VLit');
-testmodule('EPrints::XML');
+testmodule('EPrints' );
 
 SKIP: {
 	skip( "Don't have mod_perl v1 tests yet",1 );

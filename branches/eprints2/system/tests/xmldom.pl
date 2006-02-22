@@ -8,7 +8,7 @@ BEGIN
 }
 use Test::More tests => 16;
 
-use EPrints::Session;
+use EPrints;
 
 # load perl modules
 ok(require EPrints::Session,'loaded EPrints::Session');
