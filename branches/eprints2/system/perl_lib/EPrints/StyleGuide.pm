@@ -17,8 +17,6 @@ package EPrints::StyleGuide;
 use strict;
 use warnings;
 
-=pod
-
 =head1 NAME
 
 EPrints::StyleGuide - Style guide to writing EPrints modules and code
@@ -88,8 +86,6 @@ Below the license block the name, description and synopsis (a synopsis is an
 example of usage). Lastly the METHODS title begins the section for inline
 subroutine documentation.
 
-	=pod
-
 	=head1 NAME
 
 	EPrints::MyModule - A one line description of MyModule
@@ -119,7 +115,6 @@ different sections, e.g. "CONSTRUCTOR METHODS", "ACCESSOR METHODS", etc.
 Private methods can be documented using Perl comments.
 
 	######################################################################
-	=pod
 
 	=item $objname = EPrints::StyleGuide->my_sub( $arg1, [$opt_arg2], \%opts )
 
@@ -142,6 +137,7 @@ Private methods can be documented using Perl comments.
 	Further elaboration on the effect of $var2.
 
 	=cut
+
 	######################################################################
 
 	sub my_sub
