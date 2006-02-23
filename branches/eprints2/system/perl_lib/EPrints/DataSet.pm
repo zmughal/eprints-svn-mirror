@@ -53,17 +53,12 @@ Don't have a package, types or metadata fields associated.
 
 =item archive, buffer, inbox, deletion
 
-All have the same types, package and metadata fields, but different
-SQL tables.
+All have the same types, package and metadata fields as eprints, but
+are filtered by eprint_status.
 
 =item subject, history
 
 Do not have types.
-
-=item eprint
-
-Does not have SQL tables associated with it. In fact it's a generic
-dataset for asking for properties of inbox, archive, buffer & deletion.
 
 =item language, arclanguage
 
@@ -160,6 +155,14 @@ use EPrints;
 
 use strict;
 
+# filters is the filters to apply to this dataset before returning
+# values.
+
+# dataset_id_field is a field to write the dataset id to when an item
+# is created. 
+
+# These are both used by the virtual datasets inbox, buffer etc.
+
 my $INFO = {
 	cachemap => {
 		sqlname => "cachemap"
@@ -173,22 +176,40 @@ my $INFO = {
 		import => 1,
 	},
 	archive => {
-		sqlname => "archive",
+		sqlname => "eprint",
 		class => "EPrints::DataObj::EPrint",
 		confid => "eprint",
 		import => 1,
+		filters => [ { meta_fields => [ 'eprint_status' ], value => 'archive', describe=>0 } ],
+		dataset_id_field => "eprint_status",
 	},
 	buffer => {
-		sqlname => "buffer",
+		sqlname => "eprint",
 		class => "EPrints::DataObj::EPrint",
 		confid => "eprint",
 		import => 1,
+		filters => [ { meta_fields => [ 'eprint_status' ], value => 'buffer', describe=>0 } ],
+		dataset_id_field => "eprint_status",
 	},
 	inbox => {
-		sqlname => "inbox",
+		sqlname => "eprint",
 		class => "EPrints::DataObj::EPrint",
 		confid => "eprint",
 		import => 1,
+		filters => [ { meta_fields => [ 'eprint_status' ], value => 'inbox', describe=>0 } ],
+		dataset_id_field => "eprint_status",
+	},
+	deletion => {
+		sqlname => "eprint",
+		class => "EPrints::DataObj::EPrint",
+		confid => "eprint",
+		import => 1,
+		filters => [ { meta_fields => [ 'eprint_status' ], value => 'deletion', describe=>0 } ],
+		dataset_id_field => "eprint_status",
+	},
+	eprint => {
+		sqlname => "eprint",
+		class => "EPrints::DataObj::EPrint"
 	},
 	document => {
 		sqlname => "document",
@@ -214,15 +235,6 @@ my $INFO = {
 		sqlname => "subscription",
 		class => "EPrints::DataObj::Subscription",
 		import => 1,
-	},
-	deletion => {
-		sqlname => "deletion",
-		class => "EPrints::DataObj::EPrint",
-		confid => "eprint",
-		import => 1,
-	},
-	eprint => {
-		class => "EPrints::DataObj::EPrint"
 	},
 	accesslog => {
 		sqlname => "accesslog",
@@ -617,6 +629,16 @@ Return the number of records in this dataset.
 sub count
 {
 	my( $self, $session ) = @_;
+
+	if( defined $self->get_filters )
+	{
+		my $searchexp = EPrints::SearchExpression->new(
+			allow_blank => 1,
+			dataset => $self,
+			session => $session );
+		my $list = $searchexp->perform_search;
+		return $list->count;
+	}
 
 	return $session->get_db()->count_table( $self->get_sql_table_name() );
 }
@@ -1178,7 +1200,7 @@ into SQL (not counters or cache which work a bit differently).
 
 sub get_sql_dataset_ids
 {
-	return( qw/ archive buffer inbox deletion user document subscription subject license history accesslog / );
+	return( qw/ eprint user document subscription subject license history accesslog / );
 }
 
 ######################################################################
@@ -1225,6 +1247,15 @@ sub get_item_ids
 {
 	my( $self, $session ) = @_;
 
+	if( defined $self->get_filters )
+	{
+		my $searchexp = EPrints::SearchExpression->new(
+			allow_blank => 1,
+			dataset => $self,
+			session => $session );
+		my $list = $searchexp->perform_search;
+		return $list->get_ids;
+	}
 	return $session->get_db->get_values( $self->get_key_field, $self );
 }
 
@@ -1303,6 +1334,46 @@ sub get_type_pages
 }
 
 
+######################################################################
+# 
+# $field_id = $ds->get_dataset_id_field
+# 
+# If this is a virtual dataset, return the id of a field in the object
+# metadata which should be set to the id of this dataset when the
+# object is created.
+#
+# Otherwise return undef.
+#
+######################################################################
+
+sub get_dataset_id_field
+{
+	my( $self ) = @_;
+
+	my $f = $INFO->{$self->{id}}->{dataset_id_field};
+
+	return $f;
+}
+
+######################################################################
+# 
+# @filters = $ds->get_filters
+# 
+# Return an array of filters that must always be applied to searches
+# on this dataset. Used for inbox, archive etc.
+#
+######################################################################
+
+sub get_filters
+{
+	my( $self ) = @_;
+
+	my $f = $INFO->{$self->{id}}->{filters};
+
+	return () unless defined $f;
+
+	return @{$f};
+}
 
 
 

@@ -172,6 +172,7 @@ sub get_defaults
 	$data->{frequency} = 'never';
 	$data->{mailempty} = "TRUE";
 	$data->{spec} = '';
+	$data->{rev_number} = 1;
 
 	$session->get_repository->call(
 		"set_subscription_defaults",

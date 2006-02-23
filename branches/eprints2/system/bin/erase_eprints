@@ -156,7 +156,7 @@ my $db = $session->get_db();
 my @tables = $db->get_tables;
 foreach my $table ( @tables )
 {
-	next unless( $table =~ m/^inbox|buffer|archive|deletion|document/ );
+	next unless( $table =~ m/^eprint|inbox|buffer|archive|deletion|document/ );
 	print "Erasing table $table\n" if( $noise >= 2 );
 	my $sql = "DROP TABLE ".$table;
 	$db->do( $sql );
@@ -192,18 +192,25 @@ foreach $dir (@doomeddirs)
 
 if( $noise>=1 ) { print "Creating tables.\n"; }
 
-foreach my $dsid ( qw/ inbox buffer archive deletion document / )
+foreach my $dsid ( qw/ document eprint / )
 {
 	if( $noise>=2 ) { print "Creating tables for $dsid.\n"; }
 	my $dataset = $repo->get_dataset( $dsid );
 	$db->create_dataset_tables( $dataset );
 }
 
+
+my $sql;
+
 if( $noise>=1 ) { print "Resetting unique ID counter for eprints.\n"; }
 $db->counter_reset( "eprintid" );
 
 if( $noise>=1 ) { print "Erasing history for all eprints.\n"; }
-my $sql = "DELETE FROM history WHERE datasetid='eprint'";
+$sql = "DELETE FROM history WHERE datasetid='eprint'";
+$db->do( $sql );
+
+if( $noise>=1 ) { print "Erasing index queue for all eprints.\n"; }
+$sql = "DELETE FROM indexqueue WHERE field LIKE 'inbox.%' OR field LIKE 'buffer.%' OR field LIKE 'archive.%' OR field LIKE 'deletion.%' OR field LIKE 'eprint.%'  OR field LIKE 'document.%' ";
 $db->do( $sql );
 
 

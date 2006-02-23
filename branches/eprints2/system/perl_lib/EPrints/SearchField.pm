@@ -749,6 +749,49 @@ sub unserialise
 ######################################################################
 =pod
 
+=item $boolean  = $sf->get_include_in_description
+
+Change the dataset of this searchfield. This is probably a bad idea,
+except moving between two datasets with the same confid. eg. buffer
+and inbox.
+
+=cut
+######################################################################
+
+sub get_include_in_description
+{
+	my( $self ) = @_;
+
+	my $r = $self->{"include_in_description"};
+
+	return $r if defined $r;
+
+	return 1;
+}
+
+######################################################################
+=pod
+
+=item $sf->set_include_in_description( $boolean )
+
+If set to zero then this search field will not be included in 
+descriptions of the search.
+
+=cut
+######################################################################
+
+sub set_include_in_description
+{
+	my( $self, $boolean ) = @_;
+
+	$self->{"include_in_description"} = 1;
+	if( defined $boolean && $boolean == 0 ) { $self->{"include_in_description"} = 0; }
+}
+
+
+######################################################################
+=pod
+
 =item $sf->set_dataset( $datasetid )
 
 Change the dataset of this searchfield. This is probably a bad idea,

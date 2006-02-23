@@ -12,8 +12,6 @@
 #
 ######################################################################
 
-=pod
-
 =head1 NAME
 
 B<EPrints::DataObj::EPrint> - Class representing an actual EPrint
@@ -25,7 +23,7 @@ associated with it. This is associated with one of more
 EPrint::Document objects.
 
 EPrints::DataObj::EPrint is a subclass of EPrints::DataObj with the following
-metadata fields (plus those defined in ArchiveMetadataFieldsConfig:
+metadata fields (plus those defined in ArchiveMetadataFieldsConfig):
 
 =head1 SYSTEM METADATA
 
@@ -34,6 +32,10 @@ metadata fields (plus those defined in ArchiveMetadataFieldsConfig:
 =item eprintid (int)
 
 The unique numerical ID of this eprint. 
+
+=item rev_number (int)
+
+The number of the current revision of this record.
 
 =item userid (itemref)
 
@@ -114,6 +116,9 @@ sub get_system_field_info
 	{ name=>"documents", type=>"subobject", datasetid=>'document',
 		multiple=>1 },
 
+	{ name=>"eprint_status", type=>"set", required=>1,
+		options=>[qw/ inbox buffer archive deletion /] },
+
 	# UserID is not required, as some bulk importers
 	# may not provide this info. maybe bulk importers should
 	# set a userid of -1 or something.
@@ -157,41 +162,23 @@ sub get_system_field_info
 ######################################################################
 =pod
 
-=item $eprint = EPrints::DataObj::EPrint->new( $session, $id, [$dataset] )
+=item $eprint = EPrints::DataObj::EPrint->new( $session, $eprint_id )
 
-Return the eprint with the given id, or undef if it does not exist.
-
-Setting dataset saves looking through all the datasets (does not
-search "deletion").
+Return the eprint with the given eprint_id, or undef if it does not exist.
 
 =cut
 ######################################################################
 
 sub new
 {
-	my( $class, $session, $id, $dataset ) = @_;
+	my( $class, $session, $eprint_id ) = @_;
 
 	EPrints::abort "session not defined in EPrint->new" unless defined $session;
-	#EPrints::abort "id not defined in EPrint->new" unless defined $id;
+	#EPrints::abort "eprint_id not defined in EPrint->new" unless defined $eprint_id;
 
-	if( defined $dataset && $dataset->id ne "eprint" )
-	{
-		return $session->get_db()->get_single( $dataset , $id );
-	}
+	my $dataset = $session->get_repository->get_dataset( "eprint" );
 
-	## Work out in which table the EPrint resides.
-	## and return the eprint.
-	foreach( "archive" , "inbox" , "buffer", "deletion" )
-	{
-		my $ds = $session->get_repository->get_dataset( $_ );
-		my $self = $session->get_db()->get_single( $ds, $id );
-		if ( defined $self ) 
-		{
-			$self->{dataset} = $ds;
-			return $self;
-		}
-	}
-	return undef;
+	return $session->get_db->get_single( $dataset , $eprint_id );
 }
 
 
@@ -276,23 +263,63 @@ sub create_from_data
 {
 	my( $class, $session, $data, $dataset ) = @_;
 
-	my $obj = $class->SUPER::create_from_data( $session, $data, $dataset );
+	my $new_eprint = $class->SUPER::create_from_data( $session, $data, $dataset );
 
-	return unless defined $obj;
+	return unless defined $new_eprint;
 	if( defined $data->{documents} )
 	{
 		foreach my $docdata_orig ( @{$data->{documents}} )
 		{
 			my %docdata = %{$docdata_orig};
-			$docdata{eprintid} = $obj->get_id;
+			$docdata{eprintid} = $new_eprint->get_id;
 			my $docds = $session->get_repository->get_dataset( "document" );
 			EPrints::DataObj::Document->create_from_data( $session,\%docdata,$docds );
 		}
 	}
 
-	return $obj;
+	$new_eprint->write_revision;
+
+	my $user = $session->current_user;
+	my $userid = undef;
+	$userid = $user->get_id if defined $user;
+
+	EPrints::DataObj::History::create( 
+		$session,
+		{
+			userid=>$userid,
+			datasetid=>"eprint",
+			objectid=>$new_eprint->get_id,
+			revision=>$new_eprint->get_value( "rev_number" ),
+			action=>"CREATE",
+			details=>undef
+		}
+	);
+
+	$new_eprint->generate_static;
+
+	return $new_eprint;
 }
                                                                                                                   
+######################################################################
+=pod
+
+=item $dataset = $eprint->get_dataset
+
+Return the dataset to which this object belongs. This will return
+one of the virtual datasets: inbox, buffer, archive or deletion.
+
+=cut
+######################################################################
+
+sub get_dataset
+{
+	my( $self ) = @_;
+
+	my $status = $self->get_value( "eprint_status" );
+
+	return $self->{session}->get_repository->get_dataset( $status );
+}
+
 ######################################################################
 =pod
 
@@ -312,6 +339,7 @@ sub get_defaults
 
 	$data->{eprintid} = $new_id;
 	$data->{dir} = $dir;
+	$data->{rev_number} = 1;
 
 	$session->get_repository->call(
 		"set_eprint_defaults",
@@ -333,7 +361,7 @@ sub _create_id
 {
 	my( $session ) = @_;
 	
-	return $session->get_db()->counter_next( "eprintid" );
+	return $session->get_db->counter_next( "eprintid" );
 
 }
 
@@ -356,7 +384,7 @@ sub _create_directory
 	my( $session, $eprintid ) = @_;
 	
 	# Get available directories
-	my @dirs = sort $session->get_repository->get_store_dirs();
+	my @dirs = sort $session->get_repository->get_store_dirs;
 	my $storedir;
 
 	if( $EPrints::SystemSettings::conf->{disable_df} )
@@ -498,13 +526,13 @@ sub clone
 		return undef;
 	}
 
+	my $status = $self->get_value( "eprint_status" );
 	unless( $nolink )
 	{
 		# We assume the new eprint will be a later version of this one,
 		# so we'll fill in the succeeds field, provided this one is
 		# already in the main repository.
-		if( $self->{dataset}->id() eq  "archive" || 
-	    	$self->{dataset}->id() eq  "deletion" )
+		if( $status eq "archive" || $status eq "deletion" )
 		{
 			$new_eprint->set_value( "succeeds" , 
 				$self->get_value( "eprintid" ) );
@@ -516,7 +544,7 @@ sub clone
 
 	if( $copy_documents )
 	{
-		my @docs = $self->get_all_documents();
+		my @docs = $self->get_all_documents;
 
 		foreach my $doc (@docs)
 		{
@@ -531,14 +559,14 @@ sub clone
 	}
 
 	# Now write the new EPrint to the database
-	if( $ok && $new_eprint->commit() )
+	if( $ok && $new_eprint->commit )
 	{
 		return( $new_eprint )
 	}
 	else
 	{
 		# Attempt to remove half-copied version
-		$new_eprint->remove();
+		$new_eprint->remove;
 		return( undef );
 	}
 }
@@ -546,46 +574,35 @@ sub clone
 
 ######################################################################
 # 
-# $success = $eprint->_transfer( $dataset )
+# $success = $eprint->_transfer( $new_status )
 #
-#  Move the EPrint to the given dataset.
+#  Change the eprint status.
 #
 ######################################################################
 
 sub _transfer
 {
-	my( $self, $dataset ) = @_;
+	my( $self, $new_status ) = @_;
 
 	# Keep the old table
-	my $old_dataset = $self->{dataset};
-
-	# Copy to the new table
-	$self->{dataset} = $dataset;
+	my $old_status = $self->get_value( "eprint_status" );
 
 	# set the status changed time to now.
 	$self->set_value( 
 		"status_changed" , 
 		EPrints::Utils::get_datetimestamp( time ) );
+	$self->set_value( 
+		"eprint_status" , 
+		$new_status );
 
-	# Create an entry in the new table
-	my $success = $self->{session}->get_db()->add_record(
-		$dataset,
-		{ "eprintid"=>$self->get_value( "eprintid" ) } );
+	# Write self
+	$self->commit( 1 );
 
-	if( !$success ) { 
-		$self->{session}->get_repository->log( 
-"Could not add record ".$self->get_value( "eprintid" )." to ".$dataset->id );
-		return 0;
-	}
-	
 	# log the change
-
 	my $user = $self->{session}->current_user;
 	my $userid = undef;
 	$userid = $user->get_id if defined $user;
-	my $d1 = $old_dataset->id;
-	my $d2 = $self->{dataset}->id;
-	my $code = "MOVE_"."\U$d1"."_TO_"."\U$d2";
+	my $code = "MOVE_"."\U$old_status"."_TO_"."\U$new_status";
 	EPrints::DataObj::History::create( 
 		$self->{session},
 		{
@@ -598,33 +615,11 @@ sub _transfer
 		}
 	);
 
-	# Write self to new table
-	# (force it to write the eprint even if no fields have
-	# changed.)
-	$success =  $self->commit( 1 );
-
-	if( !$success ) { 
-		$self->{session}->get_repository->log( 
-"Could not commit record ".$self->get_value( "eprintid" )." to ".$dataset->id );
-		return 0;
-	}
-
-	# If OK, remove the old copy
-	$success = $self->{session}->get_db()->remove(
-		$old_dataset,
-		$self->get_value( "eprintid" ) );
-
-	if( !$success ) { 
-		$self->{session}->get_repository->log( 
-"Could not fremove record ".$self->get_value( "eprintid" )." from ".$old_dataset->id );
-		return 0;
-	}
-
 	# Need to clean up stuff if we move this record out of the
 	# archive.
-	if( $old_dataset->id() eq "archive" )
+	if( $old_status eq "archive" )
 	{
-		$self->_move_from_archive();
+		$self->_move_from_archive;
 	}
 
 	# Trigger any actions which are configured for eprints status
@@ -632,7 +627,7 @@ sub _transfer
 	my $status_change_fn = $self->{session}->get_repository->get_conf( 'eprint_status_change' );
 	if( defined $status_change_fn )
 	{
-		&{$status_change_fn}( $self, $old_dataset->id, $dataset->id );
+		&{$status_change_fn}( $self, $old_status, $new_status );
 	}
 	
 	return( 1 );
@@ -689,12 +684,12 @@ sub remove
 	my( $self ) = @_;
 
 	my $doc;
-	foreach $doc ( $self->get_all_documents() )
+	foreach $doc ( $self->get_all_documents )
 	{
-		$doc->remove();
+		$doc->remove;
 	}
 
-	my $success = $self->{session}->get_db()->remove(
+	my $success = $self->{session}->get_db->remove(
 		$self->{dataset},
 		$self->get_value( "eprintid" ) );
 
@@ -728,7 +723,7 @@ sub commit
 		"set_eprint_automatic_fields", 
 		$self );
 
-	if( !$self->is_set( "datestamp" ) && $self->{dataset}->id eq "archive" )
+	if( !$self->is_set( "datestamp" ) && $self->get_value( "eprint_status" ) eq "archive" )
 	{
 		$self->set_value( 
 			"datestamp" , 
@@ -747,13 +742,13 @@ sub commit
 		"lastmod" , 
 		EPrints::Utils::get_datetimestamp( time ) );
 
-	my $success = $self->{session}->get_db()->update(
+	my $success = $self->{session}->get_db->update(
 		$self->{dataset},
 		$self->{data} );
 
 	if( !$success )
 	{
-		my $db_error = $self->{session}->get_db()->error();
+		my $db_error = $self->{session}->get_db->error;
 		$self->{session}->get_repository->log( 
 			"Error committing EPrint ".
 			$self->get_value( "eprintid" ).": ".$db_error );
@@ -763,6 +758,8 @@ sub commit
 	$self->write_revision;
 
 	$self->queue_changes;
+
+	$self->generate_static;
 	
 	my $user = $self->{session}->current_user;
 	my $userid = undef;
@@ -786,7 +783,7 @@ sub commit
 ######################################################################
 =pod
 
-=item $eprint->write_revision()
+=item $eprint->write_revision
 
 Write out a snapshot of the XML describing the current state of the
 eprint.
@@ -863,7 +860,7 @@ sub validate_type
 	push @problems, $self->{session}->get_repository->call(
 				"validate_field",
 				$field,
-				$self->get_value( $field->get_name() ),
+				$self->get_value( $field->get_name ),
 				$self->{session},
 				$for_archive );
 
@@ -903,19 +900,15 @@ sub validate_linking
 		push @problems, $self->{session}->get_repository->call(
 					"validate_field",
 					$field,
-					$self->get_value( $field->get_name() ),
+					$self->get_value( $field->get_name ),
 					$self->{session},
 					$for_archive );
 
 		next unless( defined $self->get_value( $field_id ) );
 
-		my $archive_ds = $self->{session}->get_repository->get_dataset( 
-			"archive" );
-
 		my $test_eprint = new EPrints::DataObj::EPrint( 
 			$self->{session}, 
-			$self->get_value( $field_id ),
-			$archive_ds );
+			$self->get_value( $field_id ) );
 
 		if( !defined( $test_eprint ) )
 		{
@@ -925,6 +918,7 @@ sub validate_linking
 						$self->{session} ) );
 			next;
 		}
+		# can link to non-live items. Is that a problem?
 
 		unless( $field_id eq "succeeds" )
 		{
@@ -936,7 +930,7 @@ sub validate_linking
 		# either the same user owns both eprints, or the 
 		# current user is an editor.
 
-		my $user = $self->{session}->current_user();
+		my $user = $self->{session}->current_user;
 		unless( 
 			( defined $user && $user->has_priv( "editor" ) ) ||
 			( $test_eprint->get_value("userid" ) eq 
@@ -978,13 +972,13 @@ sub validate_meta
 	my @all_problems;
 	my @req_fields = $self->{dataset}->get_required_type_fields( 
 		$self->get_value("type") );
-	my @all_fields = $self->{dataset}->get_fields();
+	my @all_fields = $self->{dataset}->get_fields;
 
 	# For all required fields...
 	foreach my $field (@req_fields)
 	{
 		# Check that the field is filled 
-		next if ( $self->is_set( $field->get_name() ) );
+		next if ( $self->is_set( $field->get_name ) );
 
 		my $problem = $self->{session}->html_phrase( 
 			"lib/eprint:not_done_field" ,
@@ -1106,7 +1100,7 @@ sub validate_documents
 	my @problems;
 	
         my @req_formats = $self->required_formats;
-	my @docs = $self->get_all_documents();
+	my @docs = $self->get_all_documents;
 
 	my $ok = 0;
 	$ok = 1 if( scalar @req_formats == 0 );
@@ -1125,7 +1119,7 @@ sub validate_documents
 	{
 		my $doc_ds = $self->{session}->get_repository->get_dataset( 
 			"document" );
-		my $prob = $self->{session}->make_doc_fragment();
+		my $prob = $self->{session}->make_doc_fragment;
 		$prob->appendChild( $self->{session}->html_phrase( 
 			"lib/eprint:need_a_format" ) );
 		my $ul = $self->{session}->make_element( "ul" );
@@ -1148,8 +1142,8 @@ sub validate_documents
 		my $probs = $doc->validate( $for_archive );
 		foreach (@$probs)
 		{
-			my $prob = $self->{session}->make_doc_fragment();
-			$prob->appendChild( $doc->render_description() );
+			my $prob = $self->{session}->make_doc_fragment;
+			$prob->appendChild( $doc->render_description );
 			$prob->appendChild( 
 				$self->{session}->make_text( ": " ) );
 			$prob->appendChild( $_ );
@@ -1250,13 +1244,13 @@ sub prune_documents
 	my( $self ) = @_;
 
 	# Check each one
-	foreach my $doc ( $self->get_all_documents() )
+	foreach my $doc ( $self->get_all_documents )
 	{
-		my %files = $doc->files();
+		my %files = $doc->files;
 		if( scalar keys %files == 0 )
 		{
 			# Has no associated files, prune
-			$doc->remove();
+			$doc->remove;
 		}
 	}
 }
@@ -1287,9 +1281,9 @@ sub get_all_documents
 		$doc_ds->get_field( "eprintid" ),
 		$self->get_value( "eprintid" ) );
 
-	my $searchid = $searchexp->perform_search();
-	my @documents = $searchexp->get_records();
-	$searchexp->dispose();
+	my $searchid = $searchexp->perform_search;
+	my @documents = $searchexp->get_records;
+	$searchexp->dispose;
 	foreach my $doc ( @documents )
 	{
 		$doc->register_parent( $self );
@@ -1343,10 +1337,9 @@ sub move_to_deletion
 {
 	my( $self ) = @_;
 
-	my $ds = $self->{session}->get_repository->get_dataset( "deletion" );
+	my $ds = $self->{session}->get_repository->get_dataset( "eprint" );
 	
-	my $last_in_thread = $self->last_in_thread( $ds->get_field( 
-		"succeeds" ) );
+	my $last_in_thread = $self->last_in_thread( $ds->get_field( "succeeds" ) );
 	my $replacement_id = $last_in_thread->get_value( "eprintid" );
 
 	if( $replacement_id == $self->get_value( "eprintid" ) )
@@ -1358,21 +1351,11 @@ sub move_to_deletion
 
 	$self->set_value( "replacedby" , $replacement_id );
 
-	my $success = $self->_transfer( $ds );
+	my $success = $self->_transfer( "deletion" );
 
 	if( $success )
 	{
-		$self->generate_static();
-
-		# Generate static pages for everything in threads, if 
-		# appropriate
-		my @to_update = $self->get_all_related();
-		
-		# Do the actual updates
-		foreach (@to_update)
-		{
-			$_->generate_static();
-		}
+		$self->generate_static_all_related;
 	}
 	
 	return $success;
@@ -1394,11 +1377,7 @@ sub move_to_inbox
 {
 	my( $self ) = @_;
 
-	# if we is currently in archive... cjg? eh???
-
-	my $ds = $self->{session}->get_repository->get_dataset( "inbox" );
-	
-	my $success = $self->_transfer( $ds );
+	my $success = $self->_transfer( "inbox" );
 
 	return $success;
 }
@@ -1419,9 +1398,7 @@ sub move_to_buffer
 {
 	my( $self ) = @_;
 	
-	my $ds = $self->{session}->get_repository->get_dataset( "buffer" );
-
-	my $success = $self->_transfer( $ds );
+	my $success = $self->_transfer( "buffer" );
 	
 	if( $success )
 	{
@@ -1430,7 +1407,7 @@ sub move_to_buffer
 		{
 			$self->{session}->get_repository->call( 
 				"update_submitted_eprint", $self );
-			$self->commit();
+			$self->commit;
 		}
 	}
 	
@@ -1451,17 +1428,7 @@ sub _move_from_archive
 {
 	my( $self ) = @_;
 
-	$self->remove_static();
-
-	# Generate static pages for everything in threads, if 
-	# appropriate
-	my @to_update = $self->get_all_related();
-		
-	# Do the actual updates
-	foreach (@to_update)
-	{
-		$_->generate_static();
-	}
+	$self->generate_static_all_related;
 }
 
 
@@ -1480,8 +1447,7 @@ sub move_to_archive
 {
 	my( $self ) = @_;
 
-	my $ds = $self->{session}->get_repository->get_dataset( "archive" );
-	my $success = $self->_transfer( $ds );
+	my $success = $self->_transfer( "archive" );
 	
 	if( $success )
 	{
@@ -1490,20 +1456,10 @@ sub move_to_archive
 		{
 			$self->{session}->get_repository->try_call( 
 				"update_archived_eprint", $self );
-			$self->commit();
+			$self->commit;
 		}
 
-		$self->generate_static();
-
-		# Generate static pages for everything in threads, if 
-		# appropriate
-		my @to_update = $self->get_all_related();
-		
-		# Do the actual updates
-		foreach (@to_update)
-		{
-			$_->generate_static();
-		}
+		$self->generate_static_all_related;
 	}
 	
 	return( $success );
@@ -1543,7 +1499,7 @@ sub local_path
 =item $url = $eprint->url_stem
 
 Return the URL to this EPrint's directory. Note, this INCLUDES the
-trailing slash, unlike the local_path() method.
+trailing slash, unlike the local_path method.
 
 =cut
 ######################################################################
@@ -1594,27 +1550,16 @@ sub generate_static
 {
 	my( $self ) = @_;
 
-	my $eprintid = $self->get_value( "eprintid" );
-
-	my $ds_id = $self->{dataset}->id();
-
-#	if( $ds_id ne "archive" && $ds_id ne "deletion" )
-#	{
-#		$self->{session}->get_repository->log( 
-#			"Attempt to generate static files for record ".
-#			$eprintid." in dataset $ds_id (may only generate ".
-#			"static for deletion and archive" );
-#	}
+	my $status = $self->get_value( "eprint_status" );
 
 	$self->remove_static;
 
 	# We is going to temporarily change the language of our session to
 	# render the abstracts in each language.
-	my $real_langid = $self->{session}->get_langid();
+	my $real_langid = $self->{session}->get_langid;
 
-	my $langid;
-	foreach $langid ( 
-		@{$self->{session}->get_repository->get_conf( "languages" )} ) 
+	my @langs = @{$self->{session}->get_repository->get_conf( "languages" )};
+	foreach my $langid ( @langs )
 	{
 		$self->{session}->change_lang( $langid );
 		my $full_path = $self->_htmlpath( $langid );
@@ -1626,18 +1571,18 @@ sub generate_static
 		};
 
 		# only deleted and live records have a web page.
-		next if( $ds_id ne "archive" && $ds_id ne "deletion" );
+		next if( $status ne "archive" && $status ne "deletion" );
 
-		my( $page, $title, $links ) = $self->render();
+		my( $page, $title, $links ) = $self->render;
 
 		$self->{session}->build_page( $title, $page, "abstract", $links, "default" );
 		$self->{session}->page_to_file( $full_path . "/index.html" );
 
-		next if( $ds_id ne "archive" );
+		next if( $status ne "archive" );
 		# Only live archive records have actual documents 
 		# available.
 
-		my @docs = $self->get_all_documents();
+		my @docs = $self->get_all_documents;
 		my $doc;
 		foreach $doc ( @docs )
 		{
@@ -1648,7 +1593,7 @@ sub generate_static
 		}
 	}
 	$self->{session}->change_lang( $real_langid );
-	my @docs = $self->get_all_documents();
+	my @docs = $self->get_all_documents;
 	foreach my $doc ( @docs )
 	{
 		my $linkdir = EPrints::DataObj::Document::_secure_symlink_path( $self );
@@ -1656,6 +1601,33 @@ sub generate_static
 	}
 }
 
+######################################################################
+=pod
+
+=item $eprint->generate_static_all_related
+
+Generate the static pages for this eprint plus any it's related to,
+by succession or commentary.
+
+=cut
+######################################################################
+
+sub generate_static_all_related
+{
+	my( $self ) = @_;
+
+	$self->generate_static;
+
+	# Generate static pages for everything in threads, if 
+	# appropriate
+	my @to_update = $self->get_all_related;
+	
+	# Do the actual updates
+	foreach my $related (@to_update)
+	{
+		$related->generate_static;
+	}
+}
 
 ######################################################################
 =pod
@@ -1719,22 +1691,21 @@ sub render
         my( $self ) = @_;
 
         my( $dom, $title, $links );
-	my $ds_id = $self->{dataset}->id();
-	if( $ds_id eq "deletion" )
+
+	my $status = $self->get_value( "eprint_status" );
+	if( $status eq "deletion" )
 	{
 		$title = $self->{session}->html_phrase( 
 			"lib/eprint:eprint_gone_title" );
-		$dom = $self->{session}->make_doc_fragment();
+		$dom = $self->{session}->make_doc_fragment;
 		$dom->appendChild( $self->{session}->html_phrase( 
 			"lib/eprint:eprint_gone" ) );
 		my $replacement = new EPrints::DataObj::EPrint(
 			$self->{session},
-			$self->get_value( "replacedby" ),
-			$self->{session}->get_repository->get_dataset( 
-				"archive" ) );
+			$self->get_value( "replacedby" ) );
 		if( defined $replacement )
 		{
-			my $cite = $replacement->render_citation_link();
+			my $cite = $replacement->render_citation_link;
 			$dom->appendChild( 
 				$self->{session}->html_phrase( 
 					"lib/eprint:later_version", 
@@ -1751,7 +1722,7 @@ sub render
 
 	if( !defined $links )
 	{
-		$links = $self->{session}->make_doc_fragment();
+		$links = $self->{session}->make_doc_fragment;
 	}
 	
         return( $dom, $title, $links );
@@ -1820,7 +1791,7 @@ sub get_url
 			$self->get_value( "eprintid" )
 	}
 	
-	return( $self->url_stem() );
+	return( $self->url_stem );
 }
 
 
@@ -1939,7 +1910,7 @@ sub in_thread
 {
 	my( $self, $field ) = @_;
 	
-	if( defined $self->get_value( $field->get_name() ) )
+	if( defined $self->get_value( $field->get_name ) )
 	{
 		return( 1 );
 	}
@@ -1968,10 +1939,8 @@ sub first_in_thread
 	my( $self, $field ) = @_;
 	
 	my $first = $self;
-	my $ds = $self->{session}->get_repository->get_dataset( "archive" );
-
 	my $below = {};	
-	while( defined $first->get_value( $field->get_name() ) )
+	while( defined $first->get_value( $field->get_name ) )
 	{
 		if( $below->{$first->get_id} )
 		{
@@ -1981,8 +1950,7 @@ sub first_in_thread
 		$below->{$first->get_id} = 1;
 		my $prev = EPrints::DataObj::EPrint->new( 
 				$self->{session},
-				$first->get_value( $field->get_name() ),
-				$ds );
+				$first->get_value( $field->get_name ) );
 
 		return( $first ) unless( defined $prev );
 		$first = $prev;
@@ -2016,9 +1984,9 @@ sub later_in_thread
 		$field, 
 		$self->get_value( "eprintid" ) );
 
-	my $searchid = $searchexp->perform_search();
-	my @eprints = $searchexp->get_records();
-	$searchexp->dispose();
+	my $searchid = $searchexp->perform_search;
+	my @eprints = $searchexp->get_records;
+	$searchexp->dispose;
 
 	return @eprints;
 }
@@ -2131,17 +2099,14 @@ sub remove_from_threads
 {
 	my( $self ) = @_;
 
-	if( $self->{dataset}->id() ne "archive" )
-	{
-		return;
-	}
+	return unless( $self->get_value( "eprint_status" ) eq "archive" );
 
 	# Remove thread info in this eprint
 	$self->set_value( "succeeds", undef );
 	$self->set_value( "commentary", undef );
-	$self->commit();
+	$self->commit;
 
-	my @related = $self->get_all_related();
+	my @related = $self->get_all_related;
 	my $eprint;
 	# Remove all references to this eprint
 	my $this_id = $self->get_value( "eprintid" );
@@ -2163,7 +2128,7 @@ sub remove_from_threads
 		}
 		if( $changed )
 		{
-			$eprint->commit();
+			$eprint->commit;
 		}
 	}
 
@@ -2171,7 +2136,7 @@ sub remove_from_threads
 	foreach $eprint (@related)
 	{
 		next if( $eprint->get_value( "eprintid" ) eq $this_id );
-		$eprint->generate_static(); 
+		$eprint->generate_static; 
 	}
 }
 
@@ -2224,7 +2189,7 @@ sub _render_version_thread_aux
 		return $li;
 	}
 	
-	my $cstyle = "thread_".$field->get_name();
+	my $cstyle = "thread_".$field->get_name;
 
 	if( $self->get_value( "eprintid" ) != $eprint_shown->get_value( "eprintid" ) )
 	{
@@ -2330,7 +2295,7 @@ sub render_export_links
 		my $plugin = $self->{session}->plugin( $plugin_id );
 		my $url = $plugin->dataobj_export_url( $self, $staff );
 		my $a = $self->{session}->render_link( $url );
-		$a->appendChild( $plugin->render_name() );
+		$a->appendChild( $plugin->render_name );
 		$li->appendChild( $a );
 		$ul->appendChild( $li );
 	}

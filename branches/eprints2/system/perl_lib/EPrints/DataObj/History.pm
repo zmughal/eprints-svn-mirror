@@ -299,6 +299,7 @@ sub render
 
 	if( $action eq "MODIFY" ) { $pins{details} = $self->render_modify; }
 	elsif( $action =~ m/^MOVE_/ ) { $pins{details} = $self->{session}->make_doc_fragment; }
+	elsif( $action eq "CREATE" ) { $pins{details} = $self->render_create; }
 	elsif( $action eq "MAIL_OWNER" ) { $pins{details} = $self->render_mail_owner; }
 	else { $pins{details} = $self->{session}->make_text( "Don't know how to render history event: $action" ); }
 
@@ -346,6 +347,21 @@ sub render_mail_owner
 }
 
 
+sub render_create
+{
+	my( $self ) = @_;
+
+	my $eprint = EPrints::DataObj::EPrint->new( $self->{session}, $self->get_value( "objectid" ) );
+	my $r_new = $self->get_value( "revision" );
+	my $r_file_new =  $eprint->local_path."/revisions/$r_new.xml";
+
+	my $file_new = EPrints::XML::parse_xml( $r_file_new );
+	my $dom_new = $file_new->getFirstChild;
+
+	my $div = $self->{session}->make_element( "div" );
+	$div->appendChild( $self->{session}->html_phrase( "lib/history:xmlblock", xml=>render_xml( $self->{session}, $dom_new, 0, 0, 120 ) ) );
+	return $div;
+}
 
 sub render_modify
 {

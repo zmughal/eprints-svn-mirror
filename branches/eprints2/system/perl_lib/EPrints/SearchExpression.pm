@@ -370,8 +370,10 @@ END
 			$fielddata->{id},
 			0 );
 	}
-
-	foreach my $filterdata (@{$self->{filters}})
+	$self->{filters} = [] unless defined $self->{filters};
+	my @filters = @{$self->{filters}};
+	push @filters, $self->{dataset}->get_filters;
+	foreach my $filterdata (@filters)
 	{
 		my @meta_fields;
 		foreach my $fieldname ( @{$filterdata->{meta_fields}} )
@@ -382,13 +384,14 @@ END
 		}
 	
 		# Add a reference to the list
-		$self->add_field(
+		my $sf = $self->add_field(
 			\@meta_fields, 
 			$filterdata->{value},
 			$filterdata->{match},
 			$filterdata->{merge},
 			$filterdata->{id},
 			1 );
+		$sf->set_include_in_description( $filterdata->{describe} );
 	}
 
 	$self->{controls} = {} unless( defined $self->{controls} );
@@ -1548,6 +1551,7 @@ sub render_conditions_description
 	foreach my $sf ( $self->get_searchfields )
 	{
 		next unless( $sf->is_set );
+		next unless( $sf->get_include_in_description );
 		push @bits, $sf->render_description;
 	}
 

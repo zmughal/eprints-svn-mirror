@@ -34,7 +34,6 @@ package EPrints::Auth;
 
 use strict;
 
-use Apache::AuthDBI;
 use EPrints::AnApache; # exports apache constants
 
 #use EPrints::Session;

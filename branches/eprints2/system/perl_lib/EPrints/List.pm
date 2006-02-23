@@ -691,6 +691,12 @@ sub render_description
 	return $frag;
 }
 
+######################################################################
+#
+# Clean up any caches and XML belonging to this object.
+#
+######################################################################
+
 sub DESTROY
 {
 	my( $self ) = @_;

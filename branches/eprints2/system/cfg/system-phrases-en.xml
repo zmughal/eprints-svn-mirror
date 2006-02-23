@@ -60,6 +60,7 @@ EPrints Modules
     <ep:phrase ref="lib/history:title_move_archive_to_deletion">Moved from Repository to Deleted</ep:phrase>
     <ep:phrase ref="lib/history:title_move_deletion_to_archive">Moved from Deleted to Repository</ep:phrase>
     <ep:phrase ref="lib/history:title_mail_owner">Email sent to depositor of record</ep:phrase>
+    <ep:phrase ref="lib/history:title_create">Created</ep:phrase>
     <ep:phrase ref="lib/history:before">Before</ep:phrase>
     <ep:phrase ref="lib/history:after">After</ep:phrase>
     <ep:phrase ref="lib/history:system">SYSTEM</ep:phrase>
@@ -71,6 +72,7 @@ EPrints Modules
 <div style="padding: 0.3em; margin-bottom: 2em; border: solid 1px black;"><ep:pin ref="details" /></div>
     </ep:phrase>
     <ep:phrase ref="lib/history:xmlblock"><pre style="margin: 0 0 0 0; padding: 3px 3px 3px 3px; border-left: 1px dashed black; border-bottom: 1px dashed black;"><ep:pin ref="xml" /></pre></ep:phrase>
+
 
 <!-- MetaField -->
 
@@ -919,6 +921,11 @@ Titles and Help for the System Fields
 
     <ep:phrase ref="eprint_fieldname_eprintid">Item ID</ep:phrase>
     <ep:phrase ref="eprint_fieldname_rev_number">Revision</ep:phrase>
+    <ep:phrase ref="eprint_fieldname_eprint_status">Item Status</ep:phrase>
+    <ep:phrase ref="eprint_fieldopt_eprint_status_buffer">Editorial Review</ep:phrase>
+    <ep:phrase ref="eprint_fieldopt_eprint_status_inbox">User Workarea</ep:phrase>
+    <ep:phrase ref="eprint_fieldopt_eprint_status_deletion">Deleted</ep:phrase>
+    <ep:phrase ref="eprint_fieldopt_eprint_status_archive">Live Archive</ep:phrase>
     <ep:phrase ref="eprint_fieldname_userid">Depositing User</ep:phrase>
     <ep:phrase ref="eprint_fieldname_dir">Directory</ep:phrase>
     <ep:phrase ref="eprint_fieldname_datestamp">Date Deposited</ep:phrase>

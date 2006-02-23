@@ -317,6 +317,22 @@ END
 	return $subject;
 }
 
+######################################################################
+# 
+# $defaults = EPrints::DataObj::Subscription->get_defaults( $session, $data )
+#
+# Return default values for this object based on the starting data.
+# 
+######################################################################
+
+sub get_defaults
+{
+	my( $class, $session, $data ) = @_;
+
+	$data->{"rev_number"} = 1;
+
+	return $data;
+}
 
 ######################################################################
 # 

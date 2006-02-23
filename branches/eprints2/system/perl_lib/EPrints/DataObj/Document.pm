@@ -307,6 +307,7 @@ sub get_defaults
 	{
 		$data->{docid} = _generate_doc_id( $session, $eprint );
 	}
+	$data->{rev_number} = 1;
 
 	$session->get_repository->call( 
 			"set_document_defaults", 
@@ -1386,6 +1387,19 @@ sub files_modified
 		$self->get_eprint->get_dataset->id,
 		$self->get_eprint->get_id,
 		$EPrints::Utils::FULLTEXT );
+
+	# Pick a file to be the one that gets linked. There will 
+	# usually only be one, if there's more than one then this
+	# uses the first alphabetically.
+	if( !$self->get_value( "main" ) )
+	{
+		my %files = $self->files;
+		my @filenames = sort keys %files;
+		if( scalar @filenames ) 
+		{
+			$self->set_value( "main", $filenames[0] );
+		}
+	}
 
 	$self->commit( 1 );
 

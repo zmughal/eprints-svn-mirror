@@ -166,6 +166,12 @@ sub create_from_data
 		$data->{$k} = $defaults->{$k};
 	}
 
+	my $ds_id_field = $dataset->get_dataset_id_field;
+	if( defined $ds_id_field )
+	{
+		$data->{$ds_id_field} = $dataset->id;
+	}
+
 	$session->get_db->add_record( $dataset, $data );
                                                                                                                   
 	my $keyfield = $dataset->get_key_field;

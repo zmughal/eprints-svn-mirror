@@ -280,7 +280,8 @@ sub get_defaults
 		"userid"=>$userid,
 		"joined"=>$date_joined,
 		"frequency"=>'never',
-		"mailempty"=>"FALSE"
+		"mailempty"=>"FALSE",
+		"rev_number"=>1,
 	};
 
 	$session->get_repository->call(

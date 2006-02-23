@@ -3407,3 +3407,31 @@ PACKAGE: 2.2.99.2
 
  - Added accesslog dataset to store accesses to the EPrints server, with
     supporting Access DataObj.
+
+2006-02-23 cjg
+
+ * Changed SOAP scripts to use get_repository.
+
+2006-02-23 cjg
+
+ * Merged inbox,buffer, archive and deletion into a single set of SQL tables
+    prefixed with "eprint".
+ * Status is now represented as the field eprint_status. Which is of type
+    set.
+ * The seperate datasets continue to exist but as sub versions of eprint. 
+    If an eprint is added to these datasets it gets its eprint_status set
+    to the id of the dataset. If a dataset map, count or get_item_ids is called
+    on one it only returns the appropriate ones, not all.
+ * Added feature to search fields so that they can be excluded from the
+    description.
+ * All items with rev_number now set it to 1 in their defaults.
+ * When the files of a document are modified, if main is not set then it is
+    set to the alphabetically first file.
+ * Added CREATE history even for when EPrints are created.
+ * Removed () from the end of methods in EPrint.pm
+ * Rewrote the eprints _transfer code to reflect the fact it is now much
+    more simple.
+ * Made some changes to the version/succeeds threading. May cause eprints to
+    be included which are not in the "archive" dataset. It's not clear how
+    much of a problem this will cause.
+
