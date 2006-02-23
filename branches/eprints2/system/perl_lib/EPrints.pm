@@ -104,6 +104,7 @@ END
 }
 
 use EPrints::AnApache;
+use EPrints::BackCompatibility;
 use EPrints::XML;
 use EPrints::Utils;
 use EPrints::Config;

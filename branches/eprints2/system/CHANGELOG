@@ -3398,3 +3398,7 @@ PACKAGE: 2.2.99.2
  * Fixed bug in Plugin::loaddir where subclasses were being loaded before
    superclasses
 
+2006-02-23 cjg
+
+ * Added a BackCompatability module and moved all the stub packages from
+    Session into it.
