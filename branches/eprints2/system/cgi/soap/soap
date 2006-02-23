@@ -35,8 +35,8 @@ sub modifyEprint
 	{
 		die "can't open session";
 	}
-	my $archive = $session->get_archive;
-	my $dataset = $archive->get_dataset( 'eprint' ); 
+	my $repository = $session->get_repository;
+	my $dataset = $repository->get_dataset( 'eprint' ); 
 	my $eprint = $dataset->get_object( $session, $eprintid );
 	
 	if( !defined $eprint )
@@ -68,8 +68,8 @@ sub modifyDocument
 	{
 		die "can't open session";
 	}
-	my $archive = $session->get_archive;
-	my $dataset = $archive->get_dataset( 'document' ); 
+	my $repository = $session->get_repository;
+	my $dataset = $repository->get_dataset( 'document' ); 
 	my $document = $dataset->get_object( $session, $docid );
 	
 	if( !defined $document )
@@ -103,8 +103,8 @@ sub removeDocument
 	{
 		die "can't open session";
 	}
-	my $archive = $session->get_archive;
-	my $dataset = $archive->get_dataset( 'document' ); 
+	my $repository = $session->get_repository;
+	my $dataset = $repository->get_dataset( 'document' ); 
 	my $document = $dataset->get_object( $session, $docid );
 	
 	if( !defined $document )
@@ -133,8 +133,8 @@ sub addFile
 	{
 		die "can't open session";
 	}
-	my $archive = $session->get_archive;
-	my $dataset = $archive->get_dataset( 'document' ); 
+	my $repository = $session->get_repository;
+	my $dataset = $repository->get_dataset( 'document' ); 
 	my $document = $dataset->get_object( $session, $docid );
 	
 	if( !defined $document )
@@ -172,8 +172,8 @@ sub removeFile
 	{
 		die "can't open session";
 	}
-	my $archive = $session->get_archive;
-	my $dataset = $archive->get_dataset( 'document' ); 
+	my $repository = $session->get_repository;
+	my $dataset = $repository->get_dataset( 'document' ); 
 	my $document = $dataset->get_object( $session, $docid );
 	if( !defined $document )
 	{
@@ -208,8 +208,8 @@ sub removeEprint($)
 	{
 		die "can't open session";
 	}
-	my $archive = $session->get_archive;
-	my $dataset = $archive->get_dataset( 'eprint' ); 
+	my $repository = $session->get_repository;
+	my $dataset = $repository->get_dataset( 'eprint' ); 
 	my $eprint = $dataset->get_object( $session, $eprintid );
 	if( !defined $eprint )
 	{
@@ -243,8 +243,8 @@ sub getEprint($;$)
 	{
 		die "can't open session";
 	}
-	my $archive = $session->get_archive;
-	my $dataset = $archive->get_dataset( 'eprint' ); 
+	my $repository = $session->get_repository;
+	my $dataset = $repository->get_dataset( 'eprint' ); 
 	my $eprint = $dataset->get_object( $session, $eprintid );
 	if( !defined $eprint )
 	{
@@ -272,12 +272,12 @@ sub putEprint($)
 	{
 		die "can't open session";
 	}
-	my $archive = $session->get_archive;
+	my $repository = $session->get_repository;
 
 	$data->{type} = "article" unless defined $data->{type};
 	$data->{userid} = 1;
 
-	my $ds = $session->get_archive->get_dataset( "inbox" );
+	my $ds = $session->get_repository->get_dataset( "inbox" );
 	my $eprint = EPrints::DataObj::EPrint::create( $session, $ds, $data );
 	if( !defined $eprint ) 
 	{
@@ -330,8 +330,8 @@ sub addDocument
 	{
 		die "can't open session";
 	}
-	my $archive = $session->get_archive;
-	my $dataset = $archive->get_dataset( 'eprint' ); 
+	my $repository = $session->get_repository;
+	my $dataset = $repository->get_dataset( 'eprint' ); 
 	my $eprint = $dataset->get_object( $session, $eprintid );
 	if( !defined $eprint )
 	{
@@ -373,8 +373,8 @@ sub searchEprint($$)
 	{
 		die "can't open session";
 	}
-	my $archive = $session->get_archive;
-	my $dataset = $archive->get_dataset( 'archive' ); 
+	my $repository = $session->get_repository;
+	my $dataset = $repository->get_dataset( 'archive' ); 
 	my %p = ();
 	$paramlist = [] unless defined $paramlist;
 	foreach my $pair ( @{$paramlist} )
@@ -417,7 +417,7 @@ sub searchEprint($$)
 	
 	$session->terminate;
 
-	my $host = $archive->get_conf( "base_url" );
+	my $host = $repository->get_conf( "base_url" );
 	return SOAP::Data->name('results', \@r )->attr( {"SOAP-ENC:arrayType"=>"eprints:Eprint[".(scalar @r)."]", "xmlns:eprints"=>"$host/EPrints/WebServices"});
 }
 	
@@ -467,7 +467,7 @@ sub object_to_soap($$)
 		$data->{files} = SOAP::Data->attr( {"SOAP-ENC:arrayType"=>"eprints:DocumentFilesItem[".(scalar @f)."]" }, \@f );
     }
 
-	my $host = $obj->get_session->get_archive->get_conf( "base_url" );
+	my $host = $obj->get_session->get_repository->get_conf( "base_url" );
 	foreach my $field ( $obj->get_dataset->get_fields )
 	{
 		my $fname = $field->get_name;

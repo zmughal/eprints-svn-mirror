@@ -5,11 +5,11 @@ use EPrints::Session;
 use strict;
 
 my $session = new EPrints::Session();
-my $archive = $session->get_archive;
+my $repository = $session->get_repository;
 
 $session->send_http_header( content_type=>'text/xml' );
 
-my $host = $archive->get_conf( "base_url" );
+my $host = $repository->get_conf( "base_url" );
 
 use strict;
 
@@ -101,7 +101,7 @@ my @datasetids = ( "eprint","subject","user","subscription","document" );
 
 #foreach my $dsid ( @datasetids )
 #{
-#	my $ds = $session->get_archive()->get_dataset( $dsid );
+#	my $ds = $session->get_repository()->get_dataset( $dsid );
 #        print "        <xsd:sequence>\n";
 #        print "          <xsd:element ref=\"".$ds->confid."\" maxOccurs=\"unbounded\" minOccurs=\"0\" />\n";
 #        print "        </xsd:sequence>\n";
@@ -135,7 +135,7 @@ sub dataset_schema
 
 	my $data = "";
 
-	my $ds = $session->get_archive()->get_dataset( $dsid );
+	my $ds = $session->get_repository->get_dataset( $dsid );
 
 	$data.= "<xsd:complexType name=\"List\u$dsid\">\n";
 	$data.="  <xsd:complexContent>\n";

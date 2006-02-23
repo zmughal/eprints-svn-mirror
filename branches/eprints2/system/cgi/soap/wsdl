@@ -5,12 +5,12 @@ use EPrints::Session;
 use strict;
 
 my $session = new EPrints::Session();
-my $archive = $session->get_archive;
+my $repository = $session->get_repository;
 
 $session->send_http_header( content_type=>'text/xml' );
 
-my $host = $archive->get_conf( "base_url" );
-my $perl = $archive->get_conf( "perl_url" );
+my $host = $repository->get_conf( "base_url" );
+my $perl = $repository->get_conf( "perl_url" );
 
 my @ops = (qw/ echo removeEprint getEprintFiles getEprint putEprint modifyEprint addDocument modifyDocument removeDocument addFile removeFile searchEprint/);
 
