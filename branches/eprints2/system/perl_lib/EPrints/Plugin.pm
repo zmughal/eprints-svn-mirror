@@ -234,7 +234,7 @@ sub load_dir
 
 	my $dh;
 	opendir( $dh, $path ) || die "Could not open $path";
-	while( my $fn = readdir( $dh ) )
+	while( my $fn = sort { -d "$path/$a" <=> -d "$path/$b" } readdir( $dh ) )
 	{
 		next if( $fn =~ m/^\./ );
 		next if( $fn eq "CVS" );
