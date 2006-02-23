@@ -234,7 +234,9 @@ sub load_dir
 
 	my $dh;
 	opendir( $dh, $path ) || die "Could not open $path";
-	foreach my $fn (sort { -d "$path/$a" <=> -d "$path/$b" } readdir( $dh ) )
+	# This sorts the directory such that directories are last
+	my @filenames = sort { -d "$path/$a" <=> -d "$path/$b" } readdir( $dh );
+	foreach my $fn ( @filenames )
 	{
 		next if( $fn =~ m/^\./ );
 		next if( $fn eq "CVS" );
