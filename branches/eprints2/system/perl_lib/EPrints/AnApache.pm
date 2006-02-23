@@ -117,11 +117,16 @@ if( defined $av && $av eq "2" )
 	);
 	if( $EPrints::AnApache::ModPerlAPI == 1 )
 	{
-		push @modules, 'Apache::Const';
+		push @modules,
+			'Apache::Const',
+			'Apache::Connection',
+			'Apache::RequestRec';
 	}
 	if( $EPrints::AnApache::ModPerlAPI == 2 )
 	{
-		push @modules, 'Apache2::Const';
+		push @modules,
+			'Apache2::Const',
+			'Apache2::Connection';
 	}
 	foreach my $module ( @modules )
 	{

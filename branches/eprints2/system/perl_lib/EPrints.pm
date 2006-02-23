@@ -111,6 +111,7 @@ use EPrints::Config;
 use EPrints::Auth;
 use EPrints::Database;
 use EPrints::DataObj;
+use EPrints::DataObj::Access;
 use EPrints::DataObj::Document;
 use EPrints::DataObj::EPrint;
 use EPrints::DataObj::History;

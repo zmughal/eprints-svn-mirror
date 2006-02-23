@@ -75,7 +75,7 @@ $EPrints::Database::DBVersion = "2.3.99.3";
 #
 # Counters
 #
-@EPrints::Database::counters = ( "eprintid", "userid", "subscriptionid","historyid" );
+@EPrints::Database::counters = ( "eprintid", "userid", "subscriptionid","historyid","accessid" );
 
 
 # ID of next buffer table. This can safely reset to zero each time

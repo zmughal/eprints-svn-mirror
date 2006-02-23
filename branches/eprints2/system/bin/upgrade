@@ -508,6 +508,8 @@ do this for every eprint?
 
 Text not integer?
 
+historyid and accessid
+
 	# add "license" to the document dataobject.
 	$sql = "ALTER TABLE document ADD license VARCHAR(255) DEFAULT NULL AFTER security";
 	$db->do( $sql );

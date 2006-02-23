@@ -28,7 +28,7 @@ An repository has one of each type of dataset:
 
 cachemap, counter, user, archive, buffer, inbox, document, subject,
 subscription, deletion, eprint, language, arclanguage, security,
-license.
+license, accesslog.
 
 A normal dataset (eg. "user") has a package associated with it 
 (eg. EPrints::DataObj::User) which must be a subclass of EPrints::DataObj 
@@ -223,6 +223,11 @@ my $INFO = {
 	},
 	eprint => {
 		class => "EPrints::DataObj::EPrint"
+	},
+	accesslog => {
+		sqlname => "accesslog",
+		class => "EPrints::DataObj::Access",
+		import => 1,
 	},
 	# language and security are here so they can be used in
 	# "datatype" fields.
@@ -1173,7 +1178,7 @@ into SQL (not counters or cache which work a bit differently).
 
 sub get_sql_dataset_ids
 {
-	return( qw/ archive buffer inbox deletion user document subscription subject license history / );
+	return( qw/ archive buffer inbox deletion user document subscription subject license history accesslog / );
 }
 
 ######################################################################
