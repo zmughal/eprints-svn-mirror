@@ -61,15 +61,18 @@ sub is_visible
 	return 1;
 }
 
-=pod
-
 =item $repository = $p->get_repository
 
 Returns the current respository
 
 =cut
 
-sub get_repository { shift->{ "session" }->{ "repository" } }
+sub get_repository
+{
+	my( $plugin ) = @_;
+	
+	return $plugin->{ "session" }->get_repository;
+}
 
 =pod
 
