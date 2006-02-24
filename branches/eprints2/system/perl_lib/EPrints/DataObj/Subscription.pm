@@ -273,7 +273,7 @@ sub get_user
 
 =item $searchexp = $subscription->make_searchexp
 
-Return a EPrints::SearchExpression describing how to find the eprints
+Return a EPrints::Search describing how to find the eprints
 which are in the scope of this subscription.
 
 =cut
@@ -462,7 +462,7 @@ sub process_set
 
 	my $subs_ds = $session->get_repository->get_dataset( "subscription" );
 
-	my $searchexp = EPrints::SearchExpression->new(
+	my $searchexp = EPrints::Search->new(
 		session => $session,
 		dataset => $subs_ds );
 

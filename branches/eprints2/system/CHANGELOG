@@ -3435,3 +3435,7 @@ PACKAGE: 2.2.99.2
     be included which are not in the "archive" dataset. It's not clear how
     much of a problem this will cause.
 
+2006-02-24 cjg
+
+ * Renamed Search modules to be EPrints::Search, EPrints::Search::Condition
+    and EPrints::Search::Field

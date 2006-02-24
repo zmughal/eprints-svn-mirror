@@ -147,7 +147,7 @@ sub get_search_conditions_not_ex
 
 	if( $search_value =~ m/^\d+$/ )
 	{
-		return EPrints::SearchCondition->new( 
+		return EPrints::Search::Condition->new( 
 			'=', 
 			$dataset,
 			$self, 
@@ -156,13 +156,13 @@ sub get_search_conditions_not_ex
 
 	unless( $search_value=~ m/^(\d+)?\-(\d+)?$/ )
 	{
-		return EPrints::SearchCondition->new( 'FALSE' );
+		return EPrints::Search::Condition->new( 'FALSE' );
 	}
 
 	my @r = ();
 	if( defined $1 && $1 ne "" )
 	{
-		push @r, EPrints::SearchCondition->new( 
+		push @r, EPrints::Search::Condition->new( 
 				'>=',
 				$dataset,
 				$self,
@@ -171,7 +171,7 @@ sub get_search_conditions_not_ex
 
 	if( defined $2 && $2 ne "" )
 	{
-		push @r, EPrints::SearchCondition->new( 
+		push @r, EPrints::Search::Condition->new( 
 				'<=',
 				$dataset,
 				$self,
@@ -181,10 +181,10 @@ sub get_search_conditions_not_ex
 	if( scalar @r == 1 ) { return $r[0]; }
 	if( scalar @r == 0 )
 	{
-		return EPrints::SearchCondition->new( 'FALSE' );
+		return EPrints::Search::Condition->new( 'FALSE' );
 	}
 
-	return EPrints::SearchCondition->new( "AND", @r );
+	return EPrints::Search::Condition->new( "AND", @r );
 }
 
 sub get_search_group { return 'int'; } 

@@ -75,7 +75,7 @@ sub render_single_value
 #
 # This method should only be called on fields of type "search". 
 # Return a search expression from the serialised expression in value.
-# $prefix is passed to the SearchExpression to prefix all HTML form
+# $prefix is passed to the Search to prefix all HTML form
 # field ids when more than one search will exist in the same form. 
 #
 ######################################################################
@@ -87,7 +87,7 @@ sub make_searchexp
 	my $ds = $session->get_repository->get_dataset( 
 			$self->{datasetid} );	
 
-	my $searchexp = EPrints::SearchExpression->new(
+	my $searchexp = EPrints::Search->new(
 		session => $session,
 		dataset => $ds,
 		prefix => $prefix,
@@ -130,7 +130,7 @@ sub form_value_basic
 	
 	my $ds = $session->get_repository->get_dataset( 
 			$self->{datasetid} );	
-	my $searchexp = EPrints::SearchExpression->new(
+	my $searchexp = EPrints::Search->new(
 		session => $session,
 		dataset => $ds,
 		prefix => $self->{name}.$suffix."_",

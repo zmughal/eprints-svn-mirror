@@ -128,7 +128,7 @@ sub process
 	$page->appendChild( $session->render_ruler() );
 
 	my $arc_ds = $session->get_repository->get_dataset( "archive" );
-	my $searchexp = new EPrints::SearchExpression(
+	my $searchexp = new EPrints::Search(
 		session => $session,
 		dataset => $arc_ds );
 

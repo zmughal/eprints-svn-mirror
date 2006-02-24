@@ -350,7 +350,7 @@ sub get_search_conditions_not_ex
 
 	if( !defined $firstdate && !defined $lastdate )
 	{
-		return EPrints::SearchCondition->new( 'FALSE' );
+		return EPrints::Search::Condition->new( 'FALSE' );
 	}
 
 	if( $drange ne "-" )
@@ -363,7 +363,7 @@ sub get_search_conditions_not_ex
 	if( defined $firstdate )
 	{
 		$firstdate = EPrints::Database::pad_date( $firstdate );
-		push @r, EPrints::SearchCondition->new( 
+		push @r, EPrints::Search::Condition->new( 
 				'>=',
 				$dataset,
 				$self,
@@ -374,7 +374,7 @@ sub get_search_conditions_not_ex
 	{
 		if( length( $lastdate ) == 10 )
 		{
-			push @r, EPrints::SearchCondition->new( 
+			push @r, EPrints::Search::Condition->new( 
 					'<=',
 					$dataset,
 					$self,
@@ -385,7 +385,7 @@ sub get_search_conditions_not_ex
 			$lastdate = EPrints::Database::pad_date( 
 					$lastdate, 
 					1 );
-			push @r, EPrints::SearchCondition->new( 
+			push @r, EPrints::Search::Condition->new( 
 					'<',
 					$dataset,
 					$self,
@@ -395,11 +395,11 @@ sub get_search_conditions_not_ex
 
 	if( scalar @r == 0 )
 	{
-		return EPrints::SearchCondition->new( 'FALSE' );
+		return EPrints::Search::Condition->new( 'FALSE' );
 	}
 	if( scalar @r == 1 ) { return $r[0]; }
 
-	return EPrints::SearchCondition->new( "AND", @r );
+	return EPrints::Search::Condition->new( "AND", @r );
 	# error if @r is empty?
 }
 

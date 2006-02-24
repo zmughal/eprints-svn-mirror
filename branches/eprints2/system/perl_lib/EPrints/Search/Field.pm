@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::SearchField
+# EPrints::Search::Field
 #
 ######################################################################
 #
@@ -17,7 +17,7 @@
 
 =head1 NAME
 
-B<EPrints::SearchField> - One field in a search expression.
+B<EPrints::Search::Field> - One field in a search expression.
 
 =head1 DESCRIPTION
 
@@ -129,7 +129,7 @@ Match an item only if all of the words in the value match.
 ######################################################################
 
 
-package EPrints::SearchField;
+package EPrints::Search::Field;
 
 use strict;
 
@@ -141,7 +141,7 @@ use strict;
 ######################################################################
 =pod
 
-=item $thing = EPrints::SearchField->new( $session, $dataset, $fields, $value, [$match], [$merge], [$prefix] )
+=item $thing = EPrints::Search::Field->new( $session, $dataset, $fields, $value, [$match], [$merge], [$prefix] )
 
 Create a new search field object. 
 
@@ -312,7 +312,7 @@ sub from_form
 
 =item $search_condition = $sf->get_conditions 
 
-Convert this SearchField into an EPrints::SearchCondition object which
+Convert this Search::Field into an EPrints::Search::Condition object which
 can actually perform the search.
 
 =cut
@@ -324,7 +324,7 @@ sub get_conditions
 
 	if( $self->{"match"} eq "NO" )
 	{
-		return EPrints::SearchCondition->new( 'FALSE' );
+		return EPrints::Search::Condition->new( 'FALSE' );
 	}
 
 	if( $self->{"match"} eq "EX" )
@@ -334,7 +334,7 @@ sub get_conditions
 
 	if( !EPrints::Utils::is_set( $self->{"value"} ) )
 	{
-		return EPrints::SearchCondition->new( 'FALSE' );
+		return EPrints::Search::Condition->new( 'FALSE' );
 	}
 
 	my @parts;
@@ -359,7 +359,7 @@ sub get_conditions
 		push @r, $self->get_conditions_no_split( $value );
 	}
 	
-	return EPrints::SearchCondition->new( 
+	return EPrints::Search::Condition->new( 
 		($self->{"merge"}eq"ANY"?"OR":"AND"), 
 		@r );
 }
@@ -383,7 +383,7 @@ sub get_conditions_no_split
 				$self->{"merge"},
 				$self->{"search_mode"} );
 	}
-	return EPrints::SearchCondition->new( 'OR', @r );
+	return EPrints::Search::Condition->new( 'OR', @r );
 }	
 
 
@@ -720,12 +720,12 @@ sub serialise
 ######################################################################
 =pod
 
-=item $params = EPrints::SearchField->unserialise( $string )
+=item $params = EPrints::Search::Field->unserialise( $string )
 
 Convert a serialised searchfield into a hash reference containing the 
 params: id, merge, match, value.
 
-Does not return a EPrints::SearchField object.
+Does not return a EPrints::Search::Field object.
 
 =cut
 ######################################################################

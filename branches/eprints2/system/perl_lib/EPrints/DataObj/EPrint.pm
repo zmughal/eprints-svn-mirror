@@ -1273,7 +1273,7 @@ sub get_all_documents
 
 	my $doc_ds = $self->{session}->get_repository->get_dataset( "document" );
 
-	my $searchexp = EPrints::SearchExpression->new(
+	my $searchexp = EPrints::Search->new(
 		session=>$self->{session},
 		dataset=>$doc_ds );
 
@@ -1746,7 +1746,7 @@ sub render_history
 	my $page = $self->{session}->make_doc_fragment;
 
 	my $ds = $self->{session}->get_repository->get_dataset( "history" );
-	my $searchexp = EPrints::SearchExpression->new(
+	my $searchexp = EPrints::Search->new(
 		session=>$self->{session},
 		dataset=>$ds,
 		custom_order=>"-timestamp/-historyid" );
@@ -1974,7 +1974,7 @@ sub later_in_thread
 {
 	my( $self, $field ) = @_;
 
-	my $searchexp = EPrints::SearchExpression->new(
+	my $searchexp = EPrints::Search->new(
 		session => $self->{session},
 		dataset => $self->{session}->get_repository->get_dataset( 
 			"archive" ) );

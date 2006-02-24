@@ -218,7 +218,7 @@ sub get_pfilter_count
 
 	if( scalar @{$pfilters} )
 	{
-		my $searchexp = new EPrints::SearchExpression(
+		my $searchexp = new EPrints::Search(
 					satisfy_all=>1,
 					session=>$session,
 					dataset=>$ds );
@@ -734,7 +734,7 @@ sub render_list
 		$links->appendChild( $cite );
 	};
 	
-	my $searchexp = new EPrints::SearchExpression(
+	my $searchexp = new EPrints::Search(
 				custom_order=>$view->{order},
 				satisfy_all=>1,
 				session=>$session,

@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::SearchCondition
+# EPrints::Search::Condition
 #
 ######################################################################
 #
@@ -17,7 +17,7 @@
 
 =head1 NAME
 
-B<EPrints::SearchCondition> - undocumented
+B<EPrints::Search::Condition> - Atomic search condition.
 
 =head1 DESCRIPTION
 
@@ -30,6 +30,9 @@ forming a tree-like data-structure.
 Search conditions can be used either to create search results (as
 a list of id's), or to test if a single object matches the 
 condition.
+
+This module should usually not be used directly. It is used
+internally by EPrints::Search.
 
 =over 4
 
@@ -58,13 +61,13 @@ condition.
 #
 ######################################################################
 
-package EPrints::SearchCondition;
+package EPrints::Search::Condition;
 
 use strict;
 
 # current conditional operators:
 
-$EPrints::SearchCondition::operators = {
+$EPrints::Search::Condition::operators = {
 	'CANPASS'=>0,		#	should only be used in optimisation
 	'PASS'=>0,		#	should only be used in optimisation
 	'TRUE'=>0,		#	should only be used in optimisation
@@ -92,7 +95,7 @@ $EPrints::SearchCondition::operators = {
 ######################################################################
 =pod
 
-=item $scond = EPrints::SearchCondition->new( $op, @params );
+=item $scond = EPrints::Search::Condition->new( $op, @params );
 
 Create a new search condition object with the given operation and
 parameters.
@@ -543,7 +546,7 @@ sub get_op_val
 {
 	my( $self ) = @_;
 
-	return $EPrints::SearchCondition::operators->{$self->{op}};
+	return $EPrints::Search::Condition::operators->{$self->{op}};
 }
 
 
@@ -879,7 +882,7 @@ sub optimise
 
 			if( $canpass || $mustpass )
 			{
-				my $newop = new EPrints::SearchCondition();
+				my $newop = new EPrints::Search::Condition();
 				$newop->copy_from( $self );
 				$self->{op} = "CANPASS";
 				$self->{sub_ops} = [ $newop ];

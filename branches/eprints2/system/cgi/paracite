@@ -77,7 +77,7 @@ sub process
 		return;
 	}
 
-	my $searchexp = new EPrints::SearchExpression(
+	my $searchexp = new EPrints::Search(
 		session => $session,
 		dataset => $ds );
 

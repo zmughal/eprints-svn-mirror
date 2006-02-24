@@ -92,7 +92,7 @@ sub get_search_conditions_not_ex
 	
 	if( $match eq "EQ" )
 	{
-		return EPrints::SearchCondition->new( 
+		return EPrints::Search::Condition->new( 
 			'=', 
 			$dataset,
 			$self, 
@@ -107,10 +107,10 @@ sub get_search_conditions_not_ex
 	# Just go "yeah" if stemming removed the word
 	if( !EPrints::Utils::is_set( $codes->[0] ) )
 	{
-		return EPrints::SearchCondition->new( "PASS" );
+		return EPrints::Search::Condition->new( "PASS" );
 	}
 
-	return EPrints::SearchCondition->new( 
+	return EPrints::Search::Condition->new( 
 			'index',
  			$dataset,
 			$self, 

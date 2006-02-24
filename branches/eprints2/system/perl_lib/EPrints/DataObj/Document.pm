@@ -488,7 +488,7 @@ sub _generate_doc_id
 
 	my $dataset = $session->get_repository->get_dataset( "document" );
 
-	my $searchexp = EPrints::SearchExpression->new(
+	my $searchexp = EPrints::Search->new(
 				session=>$session,
 				dataset=>$dataset );
 	$searchexp->add_field(

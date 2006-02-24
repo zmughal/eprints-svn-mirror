@@ -897,7 +897,7 @@ Return a list of every distinct value in this field.
  - for multiple fields: return @{$value}
  - for multilang fields: return all the variations in a list.
 
-This function is used by the item_matches method in SearchExpression.
+This function is used by the item_matches method in Search.
 
 =cut
 ######################################################################

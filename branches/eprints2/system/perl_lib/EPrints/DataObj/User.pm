@@ -118,7 +118,7 @@ package EPrints::DataObj::User;
 @ISA = ( 'EPrints::DataObj' );
 
 use EPrints;
-use EPrints::SearchExpression;
+use EPrints::Search;
 
 use strict;
 
@@ -311,7 +311,7 @@ sub user_with_email
 	
 	my $user_ds = $session->get_repository->get_dataset( "user" );
 
-	my $searchexp = new EPrints::SearchExpression(
+	my $searchexp = new EPrints::Search(
 		session=>$session,
 		dataset=>$user_ds );
 
@@ -344,7 +344,7 @@ sub user_with_username
 	
 	my $user_ds = $session->get_repository->get_dataset( "user" );
 
-	my $searchexp = new EPrints::SearchExpression(
+	my $searchexp = new EPrints::Search(
 		session=>$session,
 		dataset=>$user_ds );
 
@@ -536,7 +536,7 @@ sub get_eprints
 {
 	my( $self , $ds ) = @_;
 
-	my $searchexp = new EPrints::SearchExpression(
+	my $searchexp = new EPrints::Search(
 		session=>$self->{session},
 		custom_order=>"eprintid",
 		dataset=>$ds );
@@ -569,7 +569,7 @@ sub get_editable_eprints
 	{
 		my $ds = $self->{session}->get_repository->get_dataset( 
 			"buffer" );
-		my $searchexp = EPrints::SearchExpression->new(
+		my $searchexp = EPrints::Search->new(
 			allow_blank => 1,
 			custom_order => "-datestamp",
 			dataset => $ds,
@@ -585,7 +585,7 @@ sub get_editable_eprints
 			$self->{session},
 			$sv );
 		$searchexp->{custom_order}="-datestamp";
-	        $searchexp->{order} = $EPrints::SearchExpression::CustomOrder;
+	        $searchexp->{order} = $EPrints::Search::CustomOrder;
 
 		my $newlist = $searchexp->perform_search;
 		if( defined $list )
@@ -876,7 +876,7 @@ sub get_subscriptions
 	my $subs_ds = $self->{session}->get_repository->get_dataset( 
 		"subscription" );
 
-	my $searchexp = EPrints::SearchExpression->new(
+	my $searchexp = EPrints::Search->new(
 		session=>$self->{session},
 		dataset=>$subs_ds,
 		custom_order=>"subid" );
@@ -1000,7 +1000,7 @@ sub process_editor_alerts
 
 	my $subs_ds = $session->get_repository->get_dataset( "user" );
 
-	my $searchexp = EPrints::SearchExpression->new(
+	my $searchexp = EPrints::Search->new(
 		session => $session,
 		dataset => $subs_ds );
 

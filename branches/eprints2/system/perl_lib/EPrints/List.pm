@@ -44,7 +44,7 @@ dataset. Usually this is the results of a search.
 #
 #  $self->{order}
 #     The order to return these items in. Is of the same format as
-#     custom_order in SearchExpression.
+#     custom_order in Search.
 #
 #  $self->{encoded} 
 #     encoded is the serialised version of the searchexpression which

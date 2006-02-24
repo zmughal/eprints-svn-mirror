@@ -119,6 +119,46 @@ our @ISA = qw/ EPrints::Repository /;
 $INC{"EPrints/Archive.pm"} = 1;
 
 ######################################################################
-1;
 
+package EPrints::SearchExpression;
+
+our @ISA = qw/ EPrints::Search /;
+
+@EPrints::SearchExpression::OPTS = (
+	"session", 	"dataset", 	"allow_blank", 	"satisfy_all", 	
+	"fieldnames", 	"staff", 	"order", 	"custom_order",
+	"keep_cache", 	"cache_id", 	"prefix", 	"defaults",
+	"citation", 	"page_size", 	"filters", 	"default_order",
+	"preamble_phrase", 		"title_phrase", "search_fields",
+	"controls" );
+
+$EPrints::SearchExpression::CustomOrder = "_CUSTOM_";
+
+$INC{"EPrints/SearchExpression.pm"} = 1;
+
+######################################################################
+
+package EPrints::SearchField;
+
+our @ISA = qw/ EPrints::Search::Field /;
+
+$INC{"EPrints/SearchField.pm"} = 1;
+
+######################################################################
+
+package EPrints::SearchCondition;
+
+our @ISA = qw/ EPrints::Search::Condition /;
+
+$EPrints::SearchCondition::operators = {
+	'CANPASS'=>0, 'PASS'=>0, 'TRUE'=>0, 'FALSE'=>0,
+	'index'=>1, 'index_start'=>1,
+	'='=>2, 'name_match'=>2, 'AND'=>3, 'OR'=>3,
+	'is_null'=>4, '>'=>4, '<'=>4, '>='=>4, '<='=>4, 'in_subject'=>4,
+	'grep'=>4	};
+
+$INC{"EPrints/SearchCondition.pm"} = 1;
+
+######################################################################
+1;
 

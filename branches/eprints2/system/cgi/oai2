@@ -486,7 +486,7 @@ sub _list
 		}
 		my $cache_id;
 		( $offset, $cache_id, $metadata_format ) = ( $2, $3, $5 );
-		$searchexp = EPrints::SearchExpression->new( 
+		$searchexp = EPrints::Search->new( 
 			dataset => $session->get_repository->get_dataset( "$1" ),
 			session => $session,
 			keep_cache => 1,
@@ -553,7 +553,7 @@ sub _list
 		}
 
 		my $ds = $session->get_repository->get_dataset( "archive" );
-		$searchexp = new EPrints::SearchExpression(
+		$searchexp = new EPrints::Search(
 			session => $session,
 			keep_cache => 1,
 			allow_blank => 1,
@@ -618,7 +618,7 @@ END
 			return render_oai_error(
 				$session,
 				"badArgument",
-				"Could not make SearchExpression (system error)." );
+				"Could not make Search (system error)." );
 		}
 	}
 	

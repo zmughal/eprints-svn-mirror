@@ -399,7 +399,7 @@ sub children #cjg should be get_children()
 {
 	my( $self ) = @_;
 
-	my $searchexp = EPrints::SearchExpression->new(
+	my $searchexp = EPrints::Search->new(
 		session=>$self->{session},
 		dataset=>$self->{dataset},
 		custom_order=>"name" );
@@ -812,7 +812,7 @@ sub posted_eprints
 {
 	my( $self, $dataset ) = @_;
 
-	my $searchexp = new EPrints::SearchExpression(
+	my $searchexp = new EPrints::Search(
 		session => $self->{session},
 		dataset => $dataset,
 		satisfy_all => 0 );
@@ -847,7 +847,7 @@ sub posted_eprints
 =item $count = $subject->count_eprints( $dataset )
 
 Return the number of eprints in the dataset which are in this subject
-or one of its decendants. Searches all fields of type subject.
+or one of its decendants. Search all fields of type subject.
 
 =cut
 ######################################################################
@@ -857,7 +857,7 @@ sub count_eprints
 	my( $self, $dataset ) = @_;
 
 	# Create a search expression
-	my $searchexp = new EPrints::SearchExpression(
+	my $searchexp = new EPrints::Search(
 		satisfy_all => 0, 
 		session => $self->{session},
 		dataset => $dataset );

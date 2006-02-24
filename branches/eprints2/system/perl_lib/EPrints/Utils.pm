@@ -1067,7 +1067,7 @@ sub collapse_conditions
 					push @multiple_fields, EPrints::Utils::field_from_config_string( $dataset, $_ );
 				}
 		
-				my $sf = EPrints::SearchField->new( 
+				my $sf = EPrints::Search::Field->new( 
 					$session, 
 					$dataset, 
 					\@multiple_fields,

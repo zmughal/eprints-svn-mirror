@@ -231,7 +231,7 @@ sub tags_and_labels
 {
 	my( $class, $session, $ds ) = @_;
 
-	my $searchexp = EPrints::SearchExpression->new(
+	my $searchexp = EPrints::Search->new(
 		allow_blank => 1,
 		custom_order => "accessid",
 		session => $session,

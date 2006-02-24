@@ -108,7 +108,7 @@ exit( 1 ) unless( defined $session );
 my $ds = $session->get_repository->get_dataset( "archive" );
 
 # Search for expired embargos
-my $searchexp = new EPrints::SearchExpression( 
+my $searchexp = new EPrints::Search( 
 		session=>$session, 
 		dataset=>$ds,
 		custom_order=>"title");

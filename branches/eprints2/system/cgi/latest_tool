@@ -44,7 +44,7 @@ if( $n > 0 && $n <= $max )
 {
 	$number_to_get = $n;
 }
-my $searchexp = new EPrints::SearchExpression(
+my $searchexp = new EPrints::Search(
 	allow_blank => 1,
 	session => $session,
 	filters => $filters,

@@ -29,7 +29,7 @@ my $seensome = 0;
 for( my $d=0; $d<7; ++$d )
 {
 	my $t = time-60*60*24*$d;
-	my $searchexp = new EPrints::SearchExpression(
+	my $searchexp = new EPrints::Search(
 		session => $session,
 		dataset => $ds );
 	

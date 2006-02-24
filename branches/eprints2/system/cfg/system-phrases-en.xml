@@ -144,7 +144,7 @@ EPrints Modules
 
 
 
-<!-- SearchExpression -->
+<!-- Search (used to be SearchExpression) -->
 
     <ep:phrase ref="lib/searchexpression:least_one">You need to specify something for at least one field!</ep:phrase>
     <ep:phrase ref="lib/searchexpression:any">any</ep:phrase>
@@ -185,7 +185,7 @@ EPrints Modules
     <ep:phrase ref="lib/searchexpression:export_error_search"><p>The search failed to execute correctly.</p></ep:phrase>
     <ep:phrase ref="lib/searchexpression:export_error_format"><p>The requested output format is not available.</p></ep:phrase>
 
-<!-- SearchField -->
+<!-- Search::Field (Used to be SearchField)-->
 
     <ep:phrase ref="lib/searchfield:year_err">A year search must be specified as a single year, e.g. `2000', or a range of years, e.g. `1990-2000', `1990-' or `-2000'</ep:phrase>
     <ep:phrase ref="lib/searchfield:int_err">A numerical search must be specified as a single integer number, e.g. `23', or a range of numbers, e.g. `9-21', `17-' or `-93'</ep:phrase>

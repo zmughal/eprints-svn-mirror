@@ -197,7 +197,7 @@ sub get_search_conditions_not_ex
 	my( $self, $session, $dataset, $search_value, $match, $merge,
 		$search_mode ) = @_;
 	
-	return EPrints::SearchCondition->new( 
+	return EPrints::Search::Condition->new( 
 		'in_subject', 
 		$dataset,
 		$self, 

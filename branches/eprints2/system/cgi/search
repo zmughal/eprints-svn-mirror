@@ -53,7 +53,7 @@ if( !defined $sconf )
 	exit;
 }
 
-my $searchexp = new EPrints::SearchExpression(
+my $searchexp = new EPrints::Search(
 	keep_cache => 1,
 	session => $session,
 	dataset => $session->get_repository->get_dataset( "archive" ),

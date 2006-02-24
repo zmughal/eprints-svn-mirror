@@ -28,9 +28,6 @@ Provides access to the backend database. All database access done
 via this module, in the hope that the backend can be replaced
 as easily as possible.
 
-Not quite all the SQL is in the module. There is some in EPrints::SearchField,
-EPrints::SearchExpression & EPrints::MetaField.
-
 The database object is created automatically when you start a new
 eprints session. To get a handle on it use:
 
@@ -1160,7 +1157,7 @@ sub counter_reset
 
 =item $searchexp = $db->cache_exp( $cacheid )
 
-Return the serialised SearchExpression of a the cached search with
+Return the serialised Search of a the cached search with
 id $cacheid. Return undef if the id is invalid or expired.
 
 =cut

@@ -632,7 +632,7 @@ sub count
 
 	if( defined $self->get_filters )
 	{
-		my $searchexp = EPrints::SearchExpression->new(
+		my $searchexp = EPrints::Search->new(
 			allow_blank => 1,
 			dataset => $self,
 			session => $session );
@@ -1104,7 +1104,7 @@ sub is_valid_type
 =item $ds->map( $session, $fn, $info )
 
 Maps the function $fn onto every record in this dataset. See 
-SearchExpression for a full explanation.
+Search for a full explanation.
 
 =cut
 ######################################################################
@@ -1113,7 +1113,7 @@ sub map
 {
 	my( $self, $session, $fn, $info ) = @_;
 
-	my $searchexp = EPrints::SearchExpression->new(
+	my $searchexp = EPrints::Search->new(
 		allow_blank => 1,
 		dataset => $self,
 		session => $session );
@@ -1249,7 +1249,7 @@ sub get_item_ids
 
 	if( defined $self->get_filters )
 	{
-		my $searchexp = EPrints::SearchExpression->new(
+		my $searchexp = EPrints::Search->new(
 			allow_blank => 1,
 			dataset => $self,
 			session => $session );

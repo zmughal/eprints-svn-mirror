@@ -1321,13 +1321,13 @@ sub get_search_conditions
 	{
 		if( $search_value eq "" )
 		{	
-			return EPrints::SearchCondition->new( 
+			return EPrints::Search::Condition->new( 
 					'is_null', 
 					$dataset, 
 					$self );
 		}
 
-		return EPrints::SearchCondition->new( 
+		return EPrints::Search::Condition->new( 
 				'=', 
 				$dataset, 
 				$self, 

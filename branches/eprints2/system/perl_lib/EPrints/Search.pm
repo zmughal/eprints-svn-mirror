@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::SearchExpression
+# EPrints::Search
 #
 ######################################################################
 #
@@ -16,11 +16,11 @@
 
 =head1 NAME
 
-B<EPrints::SearchExpression> - Represents a single search
+B<EPrints::Search> - Represents a single search
 
 =head1 DESCRIPTION
 
-The SearchExpression object represents the conditions of a single 
+The Search object represents the conditions of a single 
 search.
 
 It used to also store the results of the search, but now it returns
@@ -43,17 +43,17 @@ web page.
 #
 ######################################################################
 
-package EPrints::SearchExpression;
+package EPrints::Search;
 
 use URI::Escape;
 use strict;
 
-$EPrints::SearchExpression::CustomOrder = "_CUSTOM_";
+$EPrints::Search::CustomOrder = "_CUSTOM_";
 
 ######################################################################
 =pod
 
-=item $searchexp = EPrints::SearchExpression->new( %params )
+=item $searchexp = EPrints::Search->new( %params )
 
 Create a new search expression.
 
@@ -186,15 +186,18 @@ A reference to an array of filter definitions.
 
 Filter definitions take the form of:
 { value=>"..", match=>"..", merge=>"..", id=>".." } and work much
-like SearchFields except that they do not appear in the web form
+like normal search fields except that they do not appear in the web form
 so force certain search parameters on the user.
+
+An optional parameter of describe=>0 can be set to supress the filter
+being mentioned in the description of the search.
 
 =back
 
 =cut
 ######################################################################
 
-@EPrints::SearchExpression::OPTS = (
+@EPrints::Search::OPTS = (
 	"session", 	"dataset", 	"allow_blank", 	"satisfy_all", 	
 	"fieldnames", 	"staff", 	"order", 	"custom_order",
 	"keep_cache", 	"cache_id", 	"prefix", 	"defaults",
@@ -223,7 +226,7 @@ sub new
 		my ($package, $filename, $line) = caller;
 		print STDERR <<END;
 -----------------------------------------------------------------------
-EPRINTS WARNING: The old cache parameters to SearchExpression have been
+EPRINTS WARNING: The old cache parameters to Search have been
 deprecated. Everything will probably work as expected, but you should 
 maybe check your scripts. (if it's in the core code, please email 
 support\@eprints.org
@@ -236,14 +239,14 @@ All cache's are now private. oneshot caches will be created and
 destroyed automatically if "order" or "custom_order" is set or if a 
 range of results is requested.
 -----------------------------------------------------------------------
-The deprecated parameter was passed to SearchExpression->new from
+The deprecated parameter was passed to Search->new from
 $filename line $line
 -----------------------------------------------------------------------
 END
 
 	}
 
-	foreach( @EPrints::SearchExpression::OPTS )
+	foreach( @EPrints::Search::OPTS )
 	{
 		$self->{$_} = $data{$_};
 	}
@@ -255,7 +258,7 @@ END
 
 	if( defined $self->{custom_order} ) 
 	{ 
-		$self->{order} = $EPrints::SearchExpression::CustomOrder;
+		$self->{order} = $EPrints::Search::CustomOrder;
 		# can't cache a search with a custom ordering.
 	}
 
@@ -275,10 +278,10 @@ END
 #	}
 	
 
-	# Arrays for the SearchField objects
+	# Arrays for the Search::Field objects
 	$self->{searchfields} = [];
 	$self->{filterfields} = {};
-	# Map for MetaField names -> corresponding SearchField objects
+	# Map for MetaField names -> corresponding EPrints::Search::Field objects
 	$self->{searchfieldmap} = {};
 
 	# Little hack to solve the problem of not knowing what
@@ -456,7 +459,7 @@ sub add_field
 	# metafields may be a field OR a ref to an array of fields
 
 	# Create a new searchfield
-	my $searchfield = EPrints::SearchField->new( 
+	my $searchfield = EPrints::Search::Field->new( 
 					$self->{session},
 					$self->{dataset},
 					$metafields,
@@ -490,7 +493,7 @@ sub add_field
 
 =item $searchfield = $searchexp->get_searchfield( $sf_id )
 
-Return a EPrints::SearchField belonging to this SearchExpression with
+Return a EPrints::Search::Field belonging to this Search with
 the given id. 
 
 Return undef if not searchfield of that ID belongs to this search. 
@@ -902,7 +905,7 @@ sub from_string
 	my $sf_data = {};
 	foreach( split /\|/ , $fstring )
 	{
-		my $data = EPrints::SearchField->unserialise( $_ );
+		my $data = EPrints::Search::Field->unserialise( $_ );
 		$sf_data->{$data->{"id"}} = $data;	
 	}
 
@@ -934,7 +937,7 @@ sub clone
 {
 	my( $self ) = @_;
 
-	my $clone = EPrints::SearchExpression->new( %{$self} );
+	my $clone = EPrints::Search->new( %{$self} );
 	
 	foreach my $sf_id ( keys %{$self->{searchfieldmap}} )
 	{
@@ -958,7 +961,7 @@ sub clone
 
 =item $conditions = $searchexp->get_conditons
 
-Return a tree of EPrints::SearchCondition objects describing the
+Return a tree of EPrints::Search::Condition objects describing the
 simple steps required to perform this search.
 
 =cut
@@ -983,22 +986,22 @@ sub get_conditions
 	{
 		if( $self->{satisfy_all} )
 		{
-			$cond = EPrints::SearchCondition->new( "AND", @r );
+			$cond = EPrints::Search::Condition->new( "AND", @r );
 		}
 		else
 		{
-			$cond = EPrints::SearchCondition->new( "OR", @r );
+			$cond = EPrints::Search::Condition->new( "OR", @r );
 		}
 	}
 	else
 	{
 		if( $self->{allow_blank} )
 		{
-			$cond = EPrints::SearchCondition->new( "TRUE" );
+			$cond = EPrints::Search::Condition->new( "TRUE" );
 		}
 		else
 		{
-			$cond = EPrints::SearchCondition->new( "FALSE" );
+			$cond = EPrints::Search::Condition->new( "FALSE" );
 		}
 	}
 		
@@ -1607,7 +1610,7 @@ sub render_order_description
 	return $frag unless( EPrints::Utils::is_set( $self->{order} ) );
 
 	# empty if it's a custom ordering
-	return $frag if( $self->{"order"} eq $EPrints::SearchExpression::CustomOrder );
+	return $frag if( $self->{"order"} eq $EPrints::Search::CustomOrder );
 
 	$frag->appendChild( $self->{session}->html_phrase(
 		"lib/searchexpression:desc_order",
@@ -1644,7 +1647,7 @@ sub set_property
 
 =item @search_fields = $searchexp->get_searchfields()
 
-Return the EPrints::SearchField objects relating to this search.
+Return the EPrints::Search::Field objects relating to this search.
 
 =cut
 ######################################################################
@@ -1667,7 +1670,7 @@ sub get_searchfields
 
 =item @search_fields = $searchexp->get_non_filter_searchfields();
 
-Return the EPrints::SearchField objects relating to this search,
+Return the EPrints::Search::Field objects relating to this search,
 which are normal search fields, and not "filters".
 
 =cut
@@ -1794,7 +1797,7 @@ sub perform_search
 	my $order;
 	if( defined $self->{order} )
 	{
-		if( $self->{order} eq $EPrints::SearchExpression::CustomOrder )
+		if( $self->{order} eq $EPrints::Search::CustomOrder )
 		{
 			$order = $self->{custom_order};
 		}

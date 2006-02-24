@@ -163,7 +163,7 @@ sub subject_browser_input
 	{
 		my $subject_ds = $session->get_repository->get_dataset( "subject" );
 
-		my $searchexp = new EPrints::SearchExpression(
+		my $searchexp = new EPrints::Search(
 			session=>$session,
 			dataset=>$subject_ds );
 	

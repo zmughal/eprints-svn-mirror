@@ -234,7 +234,7 @@ sub get_search_conditions
 	if( $match eq "EX" )
 	{
 		# not correct yet. Only used for browse-by-name
-		return EPrints::SearchCondition->new( 
+		return EPrints::Search::Condition->new( 
 			'name_match', 
 			$dataset,
 			$self, 
@@ -257,7 +257,7 @@ sub get_search_conditions
 
 	if( $search_mode eq "simple" )
 	{
-		return EPrints::SearchCondition->new( 
+		return EPrints::Search::Condition->new( 
 			$indexmode,
 			$dataset,
 			$self, 
@@ -276,7 +276,7 @@ sub get_search_conditions
 	foreach my $fpart ( split /\s+/, $family )
 	{
 		next unless EPrints::Utils::is_set( $fpart );
-		push @freetexts, EPrints::SearchCondition->new( 
+		push @freetexts, EPrints::Search::Condition->new( 
 						$indexmode, 
 						$dataset,
 						$self, 
@@ -334,14 +334,14 @@ sub get_search_conditions
 	if( $noskip >= 2 )
 	{
 		# it IS worth cropping 
-		push @freetexts, EPrints::SearchCondition->new( 
+		push @freetexts, EPrints::Search::Condition->new( 
 						'grep', 
 						$dataset,
 						$self, 
 						@{$list} );
 	}
 
-	return EPrints::SearchCondition->new( 'AND', @freetexts );
+	return EPrints::Search::Condition->new( 'AND', @freetexts );
 }
 
 # INHERRITS get_search_conditions_not_ex, but it's not called.
