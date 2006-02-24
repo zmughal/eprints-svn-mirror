@@ -24,6 +24,38 @@ To enable the LogHandler add to your ArchiveConfig:
 
    $c->{loghandler}->{enable} = 1;
 
+You also need to specify the C<geoip> configuration option in SystemSettings:
+
+	geoip => {
+		class => "Geo::IP",
+		country => "/usr/local/share/GeoIP/GeoIP.dat",
+		organisation => "/usr/local/share/GeoIP/GeoIPOrg.dat",
+	},
+
+=head1 DATA FORMAT
+
+=over 4
+
+=item requester
+
+The requester is stored using their IP in URN format: C<urn:ip:x.x.x.x>.
+
+=item serviceType
+
+ServiceType is in format L<info:ofi/fmt:kev:mtx:sch_svc|http://alcme.oclc.org/openurl/servlet/OAIHandler?verb=GetRecord&metadataPrefix=oai_dc&identifier=info:ofi/fmt:kev:mtx:sch_svc>.
+
+The value is encoded as C<?name=yes> (where C<name> is one of the services defined).
+
+=item referent, referringEntity
+
+These are stored in URN format: C<info:oai:repositoryid:eprintid>.
+
+=item referent_docid
+
+The document id as a fragment of the referent: C<#docid>.
+
+=back
+
 =head1 METHODS
 
 =over 4
@@ -35,69 +67,98 @@ package EPrints::LogHandler;
 use strict;
 use warnings;
 
-use Geo::IP::PurePerl;
-our $GEOIP_DB = Geo::IP::PurePerl->new( GEOIP_STANDARD );
+use vars qw( $GEOIP $GEOIP_DB $GEOORG_DB );
 
-#use Apache::RequestRec;
-#use Apache::Connection;
+$GEOIP = 0;
+
+use URI;
+
+use EPrints;
+use EPrints::AnApache;
+
+use constant NOT_MODIFIED => 304;
 
 sub handler
 {
 	my( $r ) = @_;
 
-	my $session = new EPrints::Session;
-	return EPrints::AnApache::DECLINED unless defined $session;
+	# If you're confused its probably because your browser is issuing NOT
+	# MODIFIED SINCE (304 NOT MODIFIED)
+	unless(
+		$r->status == OK
+	) {
+		return DECLINED;
+	}
 
+	my $session = new EPrints::Session or return DECLINED;
 	my $repository = $session->get_repository;
+
+	# Open the GeoIP databases once on the first request
+	unless( $GEOIP )
+	{
+		if( defined(my $conf = $repository->get_conf( "geoip" )) )
+		{
+			geoip_open( $conf );
+		} else {
+			EPrints::abort( "geoip not configured in SystemSettings" );
+		}
+		$GEOIP = 1;
+	}
 
 	my $c = $r->connection;
 	my $ip = $c->remote_ip;
-	my $doc = $r->filename;
+	my $uri = URI->new($r->uri);
 
+	my $req = 'urn:ip:' . $ip;
 	my $rft = $r->uri;
+	my $doc = undef;
 	my $rfr = $r->headers_in->{ "Referer" };
 	my $svc = '';
+	my $uagent = $r->headers_in->{ "User-Agent" };
+	my $cntry = $GEOIP_DB ? $GEOIP_DB->country_code_by_addr( $ip ) : undef;
+	my $org = $GEOORG_DB ? $GEOORG_DB->org_by_name( $ip ) : undef;
 
-	# Ignore stylesheets
-	if( $rft =~ /\.css$/ )
-	{
-		return EPrints::AnApache::OK;
-	}
-	
-	# Track requests to external links
-	if( $doc and $doc =~ /redirect$/ )
+	# External full-text request
+	if( $r->filename and $r->filename =~ /redirect$/ )
 	{
 	}
-	# translate referent to an eprint id
-	elsif( defined(my $eprintid = uri_to_eprintid( $session, $r->uri )) )
+	# Request for an abstract page or full-text
+	elsif( defined(my $eprintid = uri_to_eprintid( $session, $uri )) )
 	{
 		$rft = $eprintid;
-		if( defined(my $docid = uri_to_docid( $session, $eprintid, $r->uri )) )
+		if( defined(my $docid = uri_to_docid( $session, $eprintid, $uri )) )
 		{
 			$doc = $docid;
+			$svc = "?fulltext=yes";
+		}
+		else
+		{
+			$svc = "?abstract=yes";
 		}
 	}
-	
-	# referrer is HTTP Referer
-	if( $rfr )
+	# Otherwise, ignore the request
+	else
 	{
-		if( $rfr !~ /^https?:/ )
-		{
+		return DECLINED;
+	}
+	
+	# Check for an internal referrer
+	if( !$rfr or $rfr !~ /^https?:/ )
+	{
 			$rfr = '';
-		}
-		elsif( defined(my $eprintid = uri_to_eprintid( $session, $r->uri )) )
-		{
-			$rfr = $eprintid;
-		}
+	}
+	elsif( defined(my $eprintid = uri_to_eprintid( $session, URI->new($rfr) )) )
+	{
+		$rfr = $eprintid;
 	}
 
 	my $data = EPrints::DataObj::Access->get_defaults(
 		$session,
 		{
-			requester_id => 'urn:ip:' . $ip,
-			requester_user_agent => $r->headers_in->{ "User-Agent" },
-			requester_country => $GEOIP_DB->country_code_by_addr( $ip ),
-			requester_institution => undef,
+			requester_id => $req,
+			requester_user_agent => $uagent,
+			requester_country => $cntry,
+			requester_institution => $org,
 			referring_entity_id => $rfr,
 			service_type_id => $svc,
 			referent_id => $rft,
@@ -110,7 +171,7 @@ sub handler
 		$session->get_repository->get_dataset( "accesslog" )
 	);
 	
-	return EPrints::AnApache::OK;
+	return OK;
 }
 
 =item $id = EPrints::LogHandler::uri_to_eprintid( $session, $uri )
@@ -124,7 +185,7 @@ sub uri_to_eprintid
 	my( $session, $uri ) = @_;
 
 	# uri is something like /xxxxxx/?
-	if( $uri =~ m#/(\d+)/# )
+	if( $uri->path =~ m#^(?:/archive)?/(\d+)/# )
 	{
 		return 'info:oai:' . $session->get_repository->get_id . ':' . 1 * $1;
 	}
@@ -142,12 +203,37 @@ sub uri_to_docid
 {
 	my( $session, $eprintid, $uri ) = @_;
 
-	if( $uri =~ m#/(\d+)/(\d+)/# )
+	if( $uri->path =~ m#^(?:/archive)?/(\d+)/(\d+)/# )
 	{
-		return $eprintid . '#' . 1 * $2;
+		return '#' . 1 * $2;
 	}
 
 	undef;
 }
 
+sub geoip_open
+{
+	my $geoip = shift;;
+	my $class = $geoip->{ "class" } or return;
+	eval "use $class";
+	if( my $fn = $geoip->{ "country" } )
+	{
+		eval { $GEOIP_DB = $class->open( $fn ) };
+		warn "LogHandler: Country lookup unavailable: $@" if $@;
+	}
+	if( my $fn = $geoip->{ "organisation" } )
+	{
+		eval { $GEOORG_DB = $class->open( $fn ) };
+		warn "LogHandler: Organisation lookup unavailable: $@" if $@;
+	}
+}
+
 1;
+
+__END__
+
+=back
+
+=head1 SEE ALSO
+
+L<EPrints::DataObj::Access>
