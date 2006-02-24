@@ -236,4 +236,6 @@ __END__
 
 =head1 SEE ALSO
 
-L<EPrints::DataObj::Access>
+L<EPrints::DataObj::Access>, L<Geo::IP> or L<Geo::IP::PurePerl>.
+
+Download GeoIP databases from L<http://www.maxmind.com/>.
