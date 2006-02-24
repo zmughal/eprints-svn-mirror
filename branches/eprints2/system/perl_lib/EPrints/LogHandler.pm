@@ -85,7 +85,7 @@ sub handler
 	# If you're confused its probably because your browser is issuing NOT
 	# MODIFIED SINCE (304 NOT MODIFIED)
 	unless(
-		$r->status == OK
+		$r->status == 200
 	) {
 		return DECLINED;
 	}
@@ -187,7 +187,7 @@ sub uri_to_eprintid
 	# uri is something like /xxxxxx/?
 	if( $uri->path =~ m#^(?:/archive)?/(\d+)/# )
 	{
-		return 'info:oai:' . $session->get_repository->get_id . ':' . 1 * $1;
+		return 'info: ' . EPrints::OpenArchives::to_oai_identifier( $session->get_repository->get_conf( "oai" )->{v2}->{ "archive_id" }, $1 );
 	}
 	
 	undef;

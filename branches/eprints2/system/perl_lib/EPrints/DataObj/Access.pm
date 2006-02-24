@@ -107,7 +107,7 @@ sub get_system_field_info
 	( 
 		{ name=>"accessid", type=>"int", required=>1 },
 
-		{ name=>"timestamp", type=>"time", required=>1, },
+		{ name=>"datestamp", type=>"time", required=>1, },
 
 		{ name=>"requester_id", type=>"text", required=>1, },
 

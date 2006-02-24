@@ -3439,3 +3439,10 @@ PACKAGE: 2.2.99.2
 
  * Renamed Search modules to be EPrints::Search, EPrints::Search::Condition
     and EPrints::Search::Field
+
+2006-02-24 tdb
+
+ * Modified LogHandler to use L<EPrints::OpenArchives>::oai_identifier
+ * Changed timestamp to datestamp field in Access to be consistent with EPrint
+ * Added ContextObject and Journal output plugins (Journal is really an
+    auxillary plugin)
