@@ -93,8 +93,6 @@ use EPrints;
 
 use strict;
 
-=pod
-
 =item $thing = EPrints::DataObj::Access->get_system_field_info
 
 Core fields contained in a Web access.
@@ -130,7 +128,6 @@ sub get_system_field_info
 }
 
 ######################################################################
-=pod
 
 =back
 
@@ -139,9 +136,8 @@ sub get_system_field_info
 =over 4
 
 =cut
-######################################################################
 
-=pod
+######################################################################
 
 =item $thing = EPrints::DataObj::Access->new( $session, $accessid )
 
@@ -157,8 +153,6 @@ sub new
 			$session->get_repository->get_dataset( "accesslog" ), 
 			$accessid );
 }
-
-=pod
 
 =item $thing = EPrints::DataObj::Access->new_from_data( $session, $known )
 
@@ -181,14 +175,12 @@ sub new_from_data
 }
 
 ######################################################################
-=pod
 
 =head2 Class Methods
 
 =cut
-######################################################################
 
-=pod
+######################################################################
 
 =item EPrints::DataObj::Access::remove_all( $session )
 
@@ -209,13 +201,13 @@ sub remove_all
 }
 
 ######################################################################
-=pod
 
 =item $defaults = EPrints::DataObj::Access->get_defaults( $session, $data )
 
 Return default values for this object based on the starting data.
 
 =cut
+
 ######################################################################
 
 sub get_defaults
@@ -260,46 +252,16 @@ sub tags_and_labels
 }
 
 ######################################################################
-=pod
 
 =head2 Object Methods
 
 =cut
+
 ######################################################################
-
-=pod
-
-=item $foo = $thing->commit() 
-
-undocumented
-
-=cut
-
-sub commit 
-{
-	my( $self, $force ) = @_;
-
-	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
-	{
-		# don't do anything if there isn't anything to do
-		return( 1 ) unless $force;
-	}
-	$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
-
-	my $rv = $self->{session}->get_db()->update(
-			$self->{dataset},
-			$self->{data} );
-	
-	$self->queue_changes;
-
-	return $rv;
-}
-
-=pod
 
 =item $foo = $thing->remove()
 
-Remove this record from the data set.
+Remove this record from the data set (see L<EPrints::Database>).
 
 =cut
 
@@ -310,19 +272,6 @@ sub remove
 	return $self->{session}->get_db()->remove(
 		$self->{dataset},
 		$self->get_id );
-}
-
-=pod
-
-=item EPrints::DataObj::Access::render( "oooops" )
-
-undocumented
-
-=cut
-
-sub render
-{
-	EPrints::abort( "oooops" ); # use render citation
 }
 
 1;
