@@ -1077,11 +1077,11 @@ sub _create_permission_table
 	my( $self ) = @_;
 	my( $sql, $rc );
 
-	$sql = "CREATE TABLE permission (role char(64) not null, privilege char(64) not null, net_from long, net_to long, PRIMARY KEY(role,privilege), UNIQUE(privilege,role))";
+	$sql = "CREATE TABLE permission (role CHAR(64) NOT NULL, privilege CHAR(64) NOT NULL, net_from LONG, net_to LONG, PRIMARY KEY(role,privilege), UNIQUE(privilege,role))";
 
 	$self->do( $sql ) or return 0;
 
-	$sql = "CREATE TABLE permission_group (user char(64) not null, role char(64) not null, PRIMARY KEY(user,role))";
+	$sql = "CREATE TABLE permission_group (user CHAR(64) NOT NULL, role CHAR(64) NOT NULL, PRIMARY KEY(user,role))";
 
 	$self->do( $sql ) or return 0;
 
@@ -1174,7 +1174,7 @@ sub cache_exp
 	my $sql = "SELECT searchexp FROM ".$ds->get_sql_table_name() . " WHERE tableid = '$id' ";
 
 	# Never include items past maxlife
-	$sql.= " AND created > now()-interval ".$a->get_conf("cache_maxlife")." hour"; 
+	$sql.= " AND created > NOW()-INTERVAL ".$a->get_conf("cache_maxlife")." HOUR"; 
 
 	my $sth = $self->prepare( $sql );
 	$self->execute( $sth , $sql );
@@ -1632,8 +1632,8 @@ sub drop_old_caches
 	my $ds = $self->{session}->get_repository->get_dataset( "cachemap" );
 	my $a = $self->{session}->get_repository;
 	my $sql = "SELECT tableid FROM ".$ds->get_sql_table_name()." WHERE";
-	$sql.= " (lastused < now()-interval ".($a->get_conf("cache_timeout") + 5)." minute AND oneshot = 'FALSE' )";
-	$sql.= " OR created < now()-interval ".$a->get_conf("cache_maxlife")." hour"; 
+	$sql.= " (lastused < NOW()-INTERVAL ".($a->get_conf("cache_timeout") + 5)." MINUTE AND oneshot = 'FALSE' )";
+	$sql.= " OR created < NOW()-INTERVAL ".$a->get_conf("cache_maxlife")." HOUR"; 
 	my $sth = $self->prepare( $sql );
 	$self->execute( $sth , $sql );
 	my $id;
@@ -2775,14 +2775,14 @@ sub get_roles
 
 	# Standard WHERE clauses
 	if( $priv =~ s/\.\*$// ) {
-		push @clauses, "privilege like '" . prep_value( $priv ) . "\%'";
+		push @clauses, "privilege LIKE '" . prep_value( $priv ) . "\%'";
 	} else {
 		push @clauses, "privilege = '" . prep_value( $priv ) . "'";
 	}
 	if( defined( $ip ) )
 	{
 		my $longip = EPrints::Util::ip2long( $ip );
-		push @clauses, "(net_from is Null OR ($longip >= net_from AND $longip <= net_to))";
+		push @clauses, "(net_from IS NULL OR ($longip >= net_from AND $longip <= net_to))";
 	}
 
 	# Get roles from the permissions table
