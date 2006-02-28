@@ -241,14 +241,16 @@ sub get_input_elements
 				$obj );
 		if( defined $self->{input_advice_right} )
 		{
-			my $advice = &{$self->{input_advice_right}}( $session, $self, $value );
+			my $advice = $self->call_property( "input_advice_right", $session, $self, $value );
 			my $row = pop @{$elements};
 			push @{$row}, { el=>$advice };
 			push @{$elements}, $row;
 		}
 		if( defined $self->{input_advice_below} )
 		{
-			my $advice = &{$self->{input_advice_below}}( $session, $self, $value );
+			no strict "refs";
+			my $advice = $self->call_property( "input_advice_below", $session, $self, $value );
+			use strict "refs";
 			push @{$elements}, [ {el=>$advice,colspan=>3} ];
 		}
 		if( defined $assist )
@@ -371,13 +373,13 @@ sub get_input_elements
 			my $row =  [ $col1, @{$section->[$n]}, $lastcol ];
 			if( defined $self->{input_advice_right} )
 			{
-				my $advice = &{$self->{input_advice_right}}( $session, $self, $value->[$i-1] );
+				my $advice = $self->call_property( "input_advice_right", $session, $self, $value->[$i-1] );
 				push @{$row}, { el=>$advice };
 			}
 			push @{$rows}, $row;
 			if( defined $self->{input_advice_below} )
 			{
-				my $advice = &{$self->{input_advice_below}}( $session, $self, $value->[$i-1] );
+				my $advice = $self->call_property( "input_advice_below", $session, $self, $value->[$i-1] );
 				push @{$rows}, [ {},{el=>$advice,colspan=>3} ];
 			}
 		}
@@ -934,7 +936,8 @@ sub ordervalue
 
 	if( defined $self->{make_value_orderkey} )
 	{
-		return &{$self->{make_value_orderkey}}( 
+		no strict "refs";
+		return $self->call_property( "make_value_orderkey",
 			$self, 
 			$value, 
 			$session, 
@@ -1002,7 +1005,7 @@ sub ordervalue_no_id
 
 	if( defined $self->{make_single_value_orderkey} )
 	{
-		return &{$self->{make_single_value_orderkey}}( 
+		return $self->call_property( "make_single_value_orderkey",
 			$self, 
 			$value ); 
 	}

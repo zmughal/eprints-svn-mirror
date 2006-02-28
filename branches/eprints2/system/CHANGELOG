@@ -3487,3 +3487,10 @@ PACKAGE: 2.2.99.2
     yes/no value. Also fixed bug where it didn't trim "\n" from the inputed
     data.
 
+2006-02-28 cjg
+
+ * The call-back properties in Metafield can now be scalars describing the
+    method name, rather than code references. 
+ * Added a method $metafield->call_property() which calls the named property
+    regardless of if it's a code reference or a scalar. 
+

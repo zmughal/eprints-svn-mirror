@@ -170,7 +170,7 @@ sub new
 		$self->{repository}->log( "Field '".$self->{name}."' has invalid parameter:\n$p_id => $properties{$p_id}" );
 	}
 
-	return( $self );
+	return $self;
 }
 
 ######################################################################
@@ -391,12 +391,12 @@ sub render_input_field
 
 	if( defined $self->{toform} )
 	{
-		$value = &{$self->{toform}}( $value, $session );
+		$value = $self->call_property( "toform", $value, $session );
 	}
 
 	if( defined $self->{render_input} )
 	{
-		return &{$self->{render_input}}(
+		return $self->call_property( "render_input",
 			$self,
 			$session, 
 			$value, 
@@ -437,7 +437,7 @@ sub form_value
 
 	if( defined $self->{fromform} )
 	{
-		$value = &{$self->{fromform}}( $value, $session );
+		$value = $self->call_property( "fromform", $value, $session );
 	}
 
 	return $value;
@@ -557,7 +557,7 @@ sub render_value
 
 	if( defined $self->{render_value} )
 	{
-		return &{$self->{render_value}}( 
+		return $self->call_property( "render_value", 
 			$session, 
 			$self, 
 			$value, 
@@ -812,7 +812,7 @@ sub render_value_no_multilang
 
 	if( defined $self->{render_single_value} )
 	{
-		return &{$self->{render_single_value}}( 
+		return $self->call_property( "render_single_value",
 			$session, 
 			$self, 
 			$value );
@@ -1053,7 +1053,45 @@ sub which_bit
 	return $value;
 }
 
+######################################################################
+=pod
 
+=item $value2 = $field->call_property( $property, @args )
+
+Call the method described by $property. Pass it the arguments and
+return the result.
+
+The property may contain either a code reference, or the scalar name
+of a method.
+
+=cut
+######################################################################
+
+sub call_property
+{
+	my( $self, $property, @args ) = @_;
+
+	my $v = $self->{$property};
+
+	return unless defined $v;
+
+	if( ref( $v ) eq "CODE" )
+	{
+		return &{$v}(@args);
+	}	
+
+	# We've got a scalar then...
+
+	unless( $v=~/::/ )
+	{
+		$v = "EPrints::Config::".$self->{repository}->get_id."::".$v;
+	}
+
+	no strict "refs";
+	my @r = &{$v}(@args);
+	use strict "refs";
+	return @r;
+}
 
 
 

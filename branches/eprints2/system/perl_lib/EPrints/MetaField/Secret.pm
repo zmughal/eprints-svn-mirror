@@ -53,7 +53,7 @@ sub render_value
 
 	if( defined $self->{render_value} )
 	{
-		return &{$self->{render_value}}(
+		return $self->call_property( "render_value",
 			$session, 
 			$self, 
 			$value, 
