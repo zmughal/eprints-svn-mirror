@@ -45,7 +45,7 @@ sub output_list
 	$part = <<EOX;
 <?xml version="1.0" encoding="utf-8" ?>
 
-<$toplevel xmlns="info:ofi/fmt:xml:xsd:ctx" xsi:schemaLocation="info:ofi/fmt:xml:xsd:ctx http://www.openurl.info/registry/docs/info:ofi/fmt:xml:xsd:ctx">
+<$toplevel xmlns="info:ofi/fmt:xml:xsd:ctx" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="info:ofi/fmt:xml:xsd:ctx http://www.openurl.info/registry/docs/info:ofi/fmt:xml:xsd:ctx">
 EOX
 	if( defined $opts{fh} )
 	{
@@ -191,7 +191,7 @@ sub xml_dataobj
 		$co->appendChild( $svc );
 
 		my $md_val = $session->make_element( "ctx:metadata-by-val" );
-		$rft->appendChild( $md_val );
+		$svc->appendChild( $md_val );
 	
 		my $fmt = $session->make_element( "ctx:format" );
 		$md_val->appendChild( $fmt );
@@ -202,7 +202,7 @@ sub xml_dataobj
 			"xmlns:sv" => "info:ofi/fmt:xml:xsd:sch_svc",
 			"xsi:schemaLocation" => "info:ofi/fmt:xml:xsd:sch_svc http://www.openurl.info/registry/docs/info:ofi/fmt:xml:xsd:sch_svc",
 		);
-		$svc->appendChild( $md );
+		$md_val->appendChild( $md );
 
 		my $uri = URI->new( $dataobj->get_value( "service_type_id" ), 'http' );
 		my( $key, $value ) = $uri->query_form;
