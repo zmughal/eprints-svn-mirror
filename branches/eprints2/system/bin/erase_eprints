@@ -131,20 +131,17 @@ my $documents_path = $repo->get_conf( "documents_path" );
 my $htdocs_path = $repo->get_conf( "htdocs_path" );
 my $database = $repo->get_conf( "dbname" );
 
-my $input="";
 unless( $force )
 {
 	# Write the confirmation prompt
 	print "You are about to erase all the eprint records.\n";
 	print "From repository: ".$repo->get_id."\n";
-	$input = EPrints::Utils::get_input_bool( "Are you sure you want this to happen ");
-}
-
-# We'll only work if they type "yes" exactly, otherwise we just abort.
-if( !$force && !$input )
-{
-	print "Aborting then.\n";
-	exit( 1 );
+	my $sure = EPrints::Utils::get_input_bool( "Are you sure you want this to happen ");
+	unless( $sure )
+	{
+		print "Aborting then.\n";
+		exit( 1 );
+	}
 }
 
 print "Erasing tables.\n" if( $noise >= 1 );

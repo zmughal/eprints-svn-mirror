@@ -148,7 +148,6 @@ my $documents_path = $repo->get_conf( "documents_path" );
 my $htdocs_path = $repo->get_conf( "htdocs_path" );
 my $database = $repo->get_conf( "dbname" );
 
-my $input="";
 unless( $force )
 {
 	# Write the confirmation prompt
@@ -156,15 +155,14 @@ unless( $force )
 	if( $erasedb ) { print "- all database tables\n"; }
 	if( $erasefiles ) { print "- all eprint files\n"; }
 	print "From repository: ".$repo->get_id."\n";
-	$input = EPrints::Utils::get_input_bool( "Are you sure you want this to happen" );
+	my $sure = EPrints::Utils::get_input_bool( "Are you sure you want this to happen" );
+	unless( $sure )
+	{
+		print "Aborting then.\n";
+		exit( 1 );
+	}
 }
 
-# We'll only work if they confirm, otherwise we just abort.
-if( !$force && !$input )
-{
-	print "Aborting then.\n";
-	exit( 1 );
-}
 
 if( $erasedb )
 {

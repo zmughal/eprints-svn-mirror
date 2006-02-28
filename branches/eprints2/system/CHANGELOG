@@ -3461,5 +3461,10 @@ PACKAGE: 2.2.99.2
                                                                                                                                                              
  * Added $dataobj->exists_and_set which is like is_set but does not give a
     warning if the field does not exist.
-                                                                                                                                                             
+
+2006-02-28 cjg
+
+ * Change to the are-you-sure code in bin scripts - now uses a variable called
+    $sure for clarity, and also tidied the code a little.
+ 
 
