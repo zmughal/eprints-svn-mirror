@@ -251,7 +251,7 @@ sub create_archive_tables
 
 	$success = $success && $self->_create_indexqueue_table();
 
-	$success = $success && $self->_create_permission_table();
+	#$success = $success && $self->_create_permission_table();
 
 	$self->create_version_table;	
 	
