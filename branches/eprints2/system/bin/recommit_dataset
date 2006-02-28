@@ -67,10 +67,8 @@ unless( $force )
 		print "Number of records in set: ".$dataset->count( $session )."\n";
 
 	}
-	print "Continue (yes/no): ";
-	my $input = <STDIN>;
-	chomp( $input );
-	unless( $input eq "yes" )
+	my $input = EPrints::Utils::get_input_bool( "Continue" );
+	unless( $input )
 	{
 		print "Aborting then.\n\n";
 		$session->terminate();

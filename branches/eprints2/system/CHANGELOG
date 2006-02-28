@@ -3442,7 +3442,15 @@ PACKAGE: 2.2.99.2
 
 2006-02-24 tdb
 
- * Modified LogHandler to use L<EPrints::OpenArchives>::oai_identifier
+ * Modified LogHandler to use EPrints::OpenArchives::oai_identifier
  * Changed timestamp to datestamp field in Access to be consistent with EPrint
  * Added ContextObject and Journal output plugins (Journal is really an
     auxillary plugin)
+
+2006-02-28 tdb
+
+ * Added wrap_text method to EPrints::Utils
+ * Added get_input_bool method to EPrints::Utils (uses wrap_text)
+ * Modified scripts to use get_input_bool
+ * Modified EPrints::Utils xml_to_utf8 to use wrap_text and cleaned up
+    indenting

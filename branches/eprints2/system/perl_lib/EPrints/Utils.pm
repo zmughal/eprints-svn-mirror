@@ -33,6 +33,7 @@ use Filesys::DiskSpace;
 use Unicode::String qw(utf8 latin1 utf16);
 use File::Path;
 use Term::ReadKey;
+use Text::Wrap qw();
 use URI;
 
 use strict;
@@ -548,6 +549,39 @@ END
 	return( 1 );
 }
 
+######################################################################
+=pod
+
+=item $str = EPrints::Utils::wrap_text( $text, [$width], [$init_tab], [$sub_tab] )
+
+Wrap $text to be at most $width (or 80 if undefined) characters per line. As a
+special case $width may be C<console>, in which case the width used is the
+current console width (L<Term::ReadKey>).
+
+$init_tab and $sub_tab allow indenting on the first and subsequent lines
+respectively (see L<Text::Wrap> for more information).
+
+=cut
+######################################################################
+
+sub wrap_text
+{
+	my( $text, $width, $init_tab, $sub_tab ) = @_;
+
+	$width ||= 80;
+	if( $width eq 'console' )
+	{
+		($width) = Term::ReadKey::GetTerminalSize;
+		$width ||= 80;
+	}
+	$width = 80 if $width < 1;
+	$init_tab = "" if( !defined $init_tab );
+	$sub_tab = "" if( !defined $sub_tab );
+
+	local $Text::Wrap::columns = $width;
+
+	return join "", Text::Wrap::fill( $init_tab, $sub_tab, $text );
+}
 
 ######################################################################
 =pod
@@ -743,7 +777,7 @@ XHTML elements are removed with the following exceptions:
 
 sub tree_to_utf8
 {
-        my( $node, $width, $pre, $whitespace_before ) = @_;
+	my( $node, $width, $pre, $whitespace_before ) = @_;
 
 	$whitespace_before = 0 unless defined $whitespace_before;
 
@@ -753,155 +787,79 @@ sub tree_to_utf8
 	}
 	if( EPrints::XML::is_dom( $node, "NodeList" ) )
 	{
-		# Hmm, a node list, not a node.
-        	my $string = utf8("");
+# Hmm, a node list, not a node.
+		my $string = utf8("");
 		my $ws = $whitespace_before;
-        	for( my $i=0 ; $i<$node->getLength ; ++$i )
-        	{
-                	$string .= tree_to_utf8( 
-				$node->index( $i ), 
-				$width,
- 				$pre,
-				$ws );
+		for( my $i=0 ; $i<$node->getLength ; ++$i )
+		{
+			$string .= tree_to_utf8( 
+					$node->index( $i ), 
+					$width,
+					$pre,
+					$ws );
 			$ws = _blank_lines( $ws, $string );
 		}
 		return $string;
 	}
 
-        if( defined $width )
-        {
-                # If we are supposed to be doing an 80 character wide display
-                # then only do 78, so the last char does not force a line break.                
-		$width = $width - 2;
-        }
-
-	
 	if( EPrints::XML::is_dom( $node, "Text" ) ||
-	    EPrints::XML::is_dom( $node, "CDataSection" ) )
-        {
-        	my $v = $node->getNodeValue();
-                $v =~ s/[\s\r\n\t]+/ /g unless( $pre );
-                return $v;
-        }
+		EPrints::XML::is_dom( $node, "CDataSection" ) )
+	{
+		my $v = $node->getNodeValue();
+		$v =~ s/[\s\r\n\t]+/ /g unless( $pre );
+		return $v;
+	}
 
-        my $name = $node->getNodeName();
+	my $name = $node->getNodeName();
 
-        my $string = utf8("");
+	my $string = utf8("");
 	my $ws = $whitespace_before;
-        foreach( $node->getChildNodes )
-        {
-                $string .= tree_to_utf8( 
-			$_,
-			$width, 
-			( $pre || $name eq "pre" || $name eq "mail" ),
-			$ws );
+	foreach( $node->getChildNodes )
+	{
+		$string .= tree_to_utf8( 
+				$_,
+				$width, 
+				( $pre || $name eq "pre" || $name eq "mail" ),
+				$ws );
 		$ws = _blank_lines( $ws, $string );
-        }
+	}
 
-        if( $name eq "fallback" )
-        {
-                $string = "*".$string."*";
-        }
+	if( $name eq "fallback" )
+	{
+		$string = "*".$string."*";
+	}
 
-        # <hr /> only makes sense if we are generating a known width.
-        if( $name eq "hr" && defined $width )
-        {
-                $string = latin1("\n"."-"x$width."\n");
-        }
+	# <hr /> only makes sense if we are generating a known width.
+	if( $name eq "hr" && defined $width )
+	{
+		$string = latin1("\n"."-"x$width."\n");
+	}
 
-        # Handle wrapping block elements if a width was set.
-        if( ( $name eq "p" || $name eq "mail" ) && defined $width)
-        {
-                my @chars = $string->unpack;
-                my @donechars = ();
-                my $i;
-                while( scalar @chars > 0 )
-                {
-                        # remove whitespace at the start of a line
-                        if( $chars[0] == 32 )
-                        {
-                                splice( @chars, 0, 1 );
-                                next;
-                        }
-
-                        # no whitespace at start, so look for first line break
-                        $i=0;
-                        while( $i<$width && defined $chars[$i] && $chars[$i] !=
-10 ) { ++$i; }
-                        if( defined $chars[$i] && $chars[$i] == 10 )
-                        {
-                                push @donechars, splice( @chars, 0, $i+1 );
-                                next;
-                        }
-
-                        # no line breaks, so if remaining text is smaller
-                        # than the width then just add it to the end and
-                        # we're done.
-                        if( scalar @chars < $width )
-                        {
-                                push @donechars,@chars;
-                                last;
-                        }
-
-                        # no line break, more than $width chars.
-                        # so look for the last whitespace within $width
-                        $i=$width-1;
-                        while( $i>=0 && $chars[$i] != 32 ) { --$i; }
-                        if( defined $chars[$i] && $chars[$i] == 32 )
-                        {
-                                # up to BUT NOT INCLUDING the whitespace
-                                my @line = splice( @chars, 0, $i );
-# This code makes the output "flush" by inserting extra spaces where
-# there is currently one. Is that what we want? cjg
-#my $j=0;
-#while( scalar @line < $width )
-#{
-#       if( $line[$j] == 32 )
-#       {
-#               splice(@line,$j,0,-1);
-#               ++$j;
-#       }
-#       ++$j;
-#       $j=0 if( $j >= scalar @line );
-#}
-#foreach(@line) { $_ = 32 if $_ == -1; }
-                                push @donechars, @line;
-
-                                # just consume the whitespace
-                                splice( @chars, 0, 1);
-                                # and a CR...
-                                push @donechars,10;
-                                next;
-                        }
-
-                        # No CR's, no whitespace, just split on width then.
-                        push @donechars,splice(@chars,0,$width);
-
-                        # Not the end of the block, so add a \n
-                        push @donechars,10;
-                }
-                $string->pack( @donechars );
-        }
+	# Handle wrapping block elements if a width was set.
+	if( ( $name eq "p" || $name eq "mail" ) && defined $width)
+	{
+		$string = utf8( wrap_text( $string, $width ) );
+	}
 	$ws = $whitespace_before;
-        if( $name eq "p" )
-        {
+	if( $name eq "p" )
+	{
 		while( $ws < 2 ) { $string="\n".$string; ++$ws; }
-        }
+	}
 	$ws = _blank_lines( $whitespace_before, $string );
-        if( $name eq "p" )
-        {
+	if( $name eq "p" )
+	{
 		while( $ws < 1 ) { $string.="\n"; ++$ws; }
-        }
-        if( $name eq "br" )
-        {
+	}
+	if( $name eq "br" )
+	{
 		while( $ws < 1 ) { $string.="\n"; ++$ws; }
-        }
-        if( $name eq "img" )
-        {
+	}
+	if( $name eq "img" )
+	{
 		my $alt = $node->getAttribute( "alt" );
 		$string = $alt if( defined $alt );
-        }
-        return $string;
+	}
+	return $string;
 }
 
 sub _blank_lines
@@ -1356,15 +1314,13 @@ sub get_input
 	my( $regexp, $prompt, $default ) = @_;
 
 	$prompt = "" if( !defined $prompt);
+	$prompt .= " [$default] " if( defined $default );
+	$prompt .= "? ";
 	for(;;)
 	{
-		print $prompt;
-		if( defined $default )
-		{
-			print " [$default] ";
-		}
-		print "? ";
-		my $in = <STDIN>;
+		print wrap_text( $prompt, 'console' );
+
+		my $in = Term::ReadKey::ReadLine(0);
 		chomp $in;
 		if( $in eq "" && defined $default )
 		{
@@ -1399,26 +1355,24 @@ sub get_input_hidden
 	my( $regexp, $prompt, $default ) = @_;
 
 	$prompt = "" if( !defined $prompt);
+	$prompt .= " [$default] " if( defined $default );
+	$prompt .= "? ";
 	for(;;)
 	{
-		print $prompt;
-		if( defined $default )
-		{
-			print " [$default] ";
-		}
-		print "? ";
-		ReadMode('noecho');
-		my $in = ReadLine( 0 );
-		ReadMode('normal');
+		print wrap_text( $prompt, 'console' );
+		
+		Term::ReadKey::ReadMode('noecho');
+		my $in = Term::ReadKey::ReadLine( 0 );
+		Term::ReadKey::ReadMode('normal');
 		chomp $in;
+		print "\n";
+
 		if( $in eq "" && defined $default )
 		{
-			print "\n";
 			return $default;
 		}
 		if( $in=~m/^$regexp$/ )
 		{
-			print "\n";
 			return $in;
 		}
 		else
@@ -1427,6 +1381,45 @@ sub get_input_hidden
 		}
 	}
 
+}
+
+######################################################################
+=pod
+
+=item EPrints::Utils::get_input_bool( [$prompt], [$default] )
+
+Asks the user for confirmation (Yes/No). Uses L<Term::ReadKey>.
+
+Returns true if the user presses 'Y', false if the user presses 'N', otherwise
+$default.
+
+=cut
+######################################################################
+
+sub get_input_bool
+{
+	my( $prompt, $default ) = @_;
+
+	$prompt = "" if( !defined $prompt );
+	$prompt .= " [Yes/No] ? ";
+
+	print wrap_text( $prompt, 'console' );
+
+	Term::ReadKey::ReadMode('raw');
+	my $in = Term::ReadKey::ReadKey( 0 );
+	Term::ReadKey::ReadMode('normal');	
+	print "\n";
+	
+	if( lc($in) eq 'y' )
+	{
+		return 1;
+	}
+	elsif( lc($in) eq 'n' )
+	{
+		return 0;
+	}
+
+	return $default;
 }
 
 ######################################################################

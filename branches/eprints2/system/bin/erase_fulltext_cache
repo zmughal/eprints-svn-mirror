@@ -126,10 +126,8 @@ unless( $force )
 		print "This is not that dangerous, but will require the indexer\n";
 		print "to rebuild all the caches, which could take a some time.\n";
 	}
-	print "Continue (yes/no): ";
-	my $input = <STDIN>;
-	chomp( $input );
-	unless( $input eq "yes" )
+	my $input = EPrints::Utils::get_input_bool( "Continue" );
+	unless( $input )
 	{
 		print "Aborting then.\n\n";
 		$session->terminate();

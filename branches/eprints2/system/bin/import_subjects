@@ -208,15 +208,8 @@ if( !defined $filename )
 
 unless( $force )
 {
-	if( $noise > 0 )
-	{
-		print "You are about to make bulk changes to the subject table\n";
-		print "in the $ARGV[0] repository.\n";
-	}
-	print "Continue (yes/no): ";
-	my $input = <STDIN>;
-	chomp( $input );
-	unless( $input eq "yes" )
+	my $input = EPrints::Utils::get_input_bool( "Are you sure you want to make bulk changes to the subject table in the $ARGV[0] repository" );
+	unless( $input )
 	{
 		print "Aborting then.\n\n";
 		$session->terminate();

@@ -156,12 +156,10 @@ This will:
    tables "archive","deletion","inbox" and "buffer" from VARCHAR to
    INTEGER. These fields should have been INT's in the first place.
 
-Are you sure you want to do this? (yes/no)
 END
 	
-	my $input = <STDIN>;
-	chomp( $input );
-	if( $input ne "yes" )
+	my $input = EPrints::Utils::get_input_bool( "Are you sure you want to do this" );
+	unless( $input )
 	{
 		print "Aborting then.\n";
 		$session->terminate();
@@ -255,12 +253,10 @@ This will:
        + mailempty (boolean) 
        + frequency (set) 
 
-Are you sure you want to do this? (yes/no)
 END
 	
-	my $input = <STDIN>;
-	chomp( $input );
-	if( $input ne "yes" )
+	my $input = EPrints::Utils::get_input_bool( "Are you sure you want to do this" );
+	unless( $input )
 	{
 		print "Aborting then.\n";
 		$session->terminate();
@@ -365,12 +361,10 @@ This will:
 
  * Grant ALTER permissions to the database user. 
 
-Are you sure you want to do this? (yes/no)
 END
 	
-	my $input = <STDIN>;
-	chomp( $input );
-	if( $input ne "yes" )
+	my $input = EPrints::Utils::get_input_bool( "Are you sure you want to do this" );
+	unless( $input )
 	{
 		print "Aborting then.\n";
 		$session->terminate();
@@ -444,12 +438,10 @@ This will:
  * Add a field to the dataset "eprint" called "date_embargo".
  * Add two permissions tables: user_permisssions and user_groups
 
-Are you sure you want to do this? (yes/no)
 END
 	
-	my $input = <STDIN>;
-	chomp( $input );
-	if( $input ne "yes" )
+	my $input = EPrints::Utils::get_input_bool( "Are you sure you want to do this" );
+	unless( $input )
 	{
 		print "Aborting then.\n";
 		$session->terminate();

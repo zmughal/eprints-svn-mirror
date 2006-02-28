@@ -156,14 +156,11 @@ unless( $force )
 	if( $erasedb ) { print "- all database tables\n"; }
 	if( $erasefiles ) { print "- all eprint files\n"; }
 	print "From repository: ".$repo->get_id."\n";
-	print "Are you sure you want this to happen? (yes/no)\n";
-	
-	$input = <STDIN>;
-	chomp( $input );
+	$input = EPrints::Utils::get_input_bool( "Are you sure you want this to happen" );
 }
 
-# We'll only work if they type "yes" exactly, otherwise we just abort.
-if( !$force && $input ne "yes" )
+# We'll only work if they confirm, otherwise we just abort.
+if( !$force && !$input )
 {
 	print "Aborting then.\n";
 	exit( 1 );
