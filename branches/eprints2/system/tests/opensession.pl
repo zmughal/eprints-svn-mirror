@@ -19,8 +19,8 @@ is($session->{noise},2,"Correct noise setting?");
 is($session->{offline},1,"Correct offline setting?");
 is($session->{query},undef,"There should be no query, we're offline");
 
-ok(defined $session->get_archive, "is there an archive config attached?");
-ok($session->get_archive->isa('EPrints::Archive'), "and it's really an archive config?");
+ok(defined $session->get_repository, "is there an repository config attached?");
+ok($session->get_repository->isa('EPrints::Repository'), "and it's really an repository config?");
 
 
 ok(defined $session->get_db, "is there a database attached?");

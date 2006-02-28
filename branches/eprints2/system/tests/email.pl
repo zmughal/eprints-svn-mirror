@@ -11,22 +11,22 @@ use strict;
 
 
 #
-my $mock_archive;
-$mock_archive = Test::MockObject->new();
-$mock_archive->set_always( 'get_conf', sub { return 1; } );
+my $mock_repository;
+$mock_repository = Test::MockObject->new();
+$mock_repository->set_always( 'get_conf', sub { return 1; } );
 
-ok( EPrints::Utils::send_mail( $mock_archive, 'en','Bob Smith','cjg@ecs.soton.ac.uk','test',undef,undef),
+ok( EPrints::Utils::send_mail( $mock_repository, 'en','Bob Smith','cjg@ecs.soton.ac.uk','test',undef,undef),
  	"sending mail returned true on success" );
 
 
-$mock_archive = Test::MockObject->new();
-$mock_archive->set_true( 'log' );
-$mock_archive->set_always( 'get_conf', sub { return 0; } );
-ok( !EPrints::Utils::send_mail( $mock_archive, 'en','Bob Smith','cjg@ecs.soton.ac.uk','test subject',undef,undef),
+$mock_repository = Test::MockObject->new();
+$mock_repository->set_true( 'log' );
+$mock_repository->set_always( 'get_conf', sub { return 0; } );
+ok( !EPrints::Utils::send_mail( $mock_repository, 'en','Bob Smith','cjg@ecs.soton.ac.uk','test subject',undef,undef),
  	"sending mail returned false on failure" );
-my @args = $mock_archive->call_args( 2 );
-$mock_archive->called_ok( 'log' );
-is( $args[0], $mock_archive, "log to correct archive" );
+my @args = $mock_repository->call_args( 2 );
+$mock_repository->called_ok( 'log' );
+is( $args[0], $mock_repository, "log to correct repository" );
 ok( index($args[1],'Failed to send mail')!=-1, 'Failure causes warning to be logged' );
 ok( index($args[1],'Bob Smith')!=-1, 'Warning mentions name' );
 ok( index($args[1],'cjg@ecs.soton.ac.uk')!=-1, 'Warning mentions email' );
