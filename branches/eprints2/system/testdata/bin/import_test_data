@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/eprints2/perl_lib
+#!/usr/bin/perl -w -I/opt/eprints2/perl_lib 
 
 ######################################################################
 #
@@ -46,7 +46,6 @@ sub deal
 
 	$eprint->set_value( "userid", $info->{userid} );
 	$eprint = EPrints::EPrint::create( $session, $info->{ds}, $eprint->get_data() );
-	$eprint->commit();
 
 	my $doc = EPrints::Document::create( $session, $eprint );
 	$doc->set_value( 'format','pdf');
@@ -55,7 +54,7 @@ sub deal
 	$doc->upload( $pdf, 'paper.pdf' );
 	close $pdf;
 	$doc->set_value( 'main','paper.pdf');
-	$doc->commit();
+	$doc->commit;
 
 	print "added: ".$eprint->get_id."\n";
 }
