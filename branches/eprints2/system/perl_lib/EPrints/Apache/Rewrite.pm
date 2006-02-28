@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::Rewrite
+# EPrints::Apache::Rewrite
 #
 ######################################################################
 #
@@ -17,7 +17,7 @@
 
 =head1 NAME
 
-B<EPrints::Rewrite> - rewrite cosmetic URL's to internally useful ones.
+B<EPrints::Apache::Rewrite> - rewrite cosmetic URL's to internally useful ones.
 
 =head1 DESCRIPTION
 
@@ -37,9 +37,9 @@ This should only ever be called from within the mod_perl system.
 
 =cut
 
-package EPrints::Rewrite;
+package EPrints::Apache::Rewrite;
 
-use EPrints::AnApache; # exports apache constants
+use EPrints::Apache::AnApache; # exports apache constants
 
 use strict;
   
@@ -178,8 +178,8 @@ sub redir
 	my( $r, $url ) = @_;
 
 	$r->status_line( "302 Close but no Cigar" );
-	EPrints::AnApache::header_out( $r, "Location", $url );
-	EPrints::AnApache::send_http_header( $r );
+	EPrints::Apache::AnApache::header_out( $r, "Location", $url );
+	EPrints::Apache::AnApache::send_http_header( $r );
 	return DONE;
 } 
 

@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::AnApache
+# EPrints::Apache::AnApache
 #
 ######################################################################
 #
@@ -17,7 +17,7 @@
 
 =head1 NAME
 
-B<EPrints::AnApache> - Load appropriate Apache Module
+B<EPrints::Apache::AnApache> - Load appropriate Apache Module
 
 =head1 DESCRIPTION
 
@@ -29,7 +29,7 @@ Plus functions to paper over the cracks between the two interfaces.
 
 =cut
 
-package EPrints::AnApache;
+package EPrints::Apache::AnApache;
 
 BEGIN
 {
@@ -44,33 +44,33 @@ use strict;
 ######################################################################
 =pod
 
-=item EPrints::AnApache::upload_doc_file( $session, $document, $paramid );
+=item EPrints::Apache::AnApache::upload_doc_file( $session, $document, $paramid );
 
 Collect a file named $paramid uploaded via HTTP and add it to the 
 specified $document.
 
-=item EPrints::AnApache::upload_doc_archive( $session, $document, $paramid, $archive_format );
+=item EPrints::Apache::AnApache::upload_doc_archive( $session, $document, $paramid, $archive_format );
 
 Collect an archive file (.ZIP, .tar.gz, etc.) uploaded via HTTP and 
 unpack it then add it to the specified document.
 
-=item EPrints::AnApache::send_http_header( $request )
+=item EPrints::Apache::AnApache::send_http_header( $request )
 
 Send the HTTP header, if needed.
 
 $request is the current Apache request. 
 
-=item EPrints::AnApache::header_out( $request, $header, $value )
+=item EPrints::Apache::AnApache::header_out( $request, $header, $value )
 
 Set a value in the HTTP headers of the response. $request is the
 apache request object, $header is the name of the header and 
 $value is the value to give that header.
 
-=item $value = EPrints::AnApache::header_in( $request, $header )
+=item $value = EPrints::Apache::AnApache::header_in( $request, $header )
 
 Return the specified HTTP header from the current request.
 
-=item $request = EPrints::AnApache::get_request
+=item $request = EPrints::Apache::AnApache::get_request
 
 Return the current Apache request object.
 
@@ -83,19 +83,19 @@ if( defined $av && $av eq "2" )
 	# Apache 2
 
 	# Detect API version, either 1 or 2 
-	$EPrints::AnApache::ModPerlAPI = 0;
+	$EPrints::Apache::AnApache::ModPerlAPI = 0;
 
 	eval "require Apache2::Util"; 
-	unless( $@ ) { $EPrints::AnApache::ModPerlAPI = 2; }
+	unless( $@ ) { $EPrints::Apache::AnApache::ModPerlAPI = 2; }
 
-	if( !$EPrints::AnApache::ModPerlAPI ) 
+	if( !$EPrints::Apache::AnApache::ModPerlAPI ) 
 	{ 
 		eval "require Apache2"; 
-		unless( $@ ) { $EPrints::AnApache::ModPerlAPI = 1; } 
+		unless( $@ ) { $EPrints::Apache::AnApache::ModPerlAPI = 1; } 
 	}
 
 	# no API version, is mod_perl 2 even installed?
-	if( !$EPrints::AnApache::ModPerlAPI )
+	if( !$EPrints::Apache::AnApache::ModPerlAPI )
 	{
 		# can't find either old OR new mod_perl API
 
@@ -111,18 +111,18 @@ if( defined $av && $av eq "2" )
 	};
 
 	my @modules = ( 
-		'EPrints::RequestWrapper2', 
+		'EPrints::Apache::AnApache::RequestWrapper2', 
 		'Apache::AuthDBI', 
 		'ModPerl::Registry' 
 	);
-	if( $EPrints::AnApache::ModPerlAPI == 1 )
+	if( $EPrints::Apache::AnApache::ModPerlAPI == 1 )
 	{
 		push @modules,
 			'Apache::Const',
 			'Apache::Connection',
 			'Apache::RequestRec';
 	}
-	if( $EPrints::AnApache::ModPerlAPI == 2 )
+	if( $EPrints::Apache::AnApache::ModPerlAPI == 2 )
 	{
 		push @modules,
 			'Apache2::Const',
@@ -135,7 +135,7 @@ if( defined $av && $av eq "2" )
 		die "Error loading module $module:\n$@";
 	}
 
-	$EPrints::AnApache::RequestWrapper = "EPrints::RequestWrapper2"; 
+	$EPrints::Apache::AnApache::RequestWrapper = "EPrints::Apache::AnApache::RequestWrapper2"; 
 
 	eval '
 
@@ -185,15 +185,15 @@ if( defined $av && $av eq "2" )
 
 		sub get_request
 		{
-			if( $EPrints::AnApache::ModPerlAPI == 1 )
+			if( $EPrints::Apache::AnApache::ModPerlAPI == 1 )
 			{
 				return Apache->request;
 			}
-			if( $EPrints::AnApache::ModPerlAPI == 2 )
+			if( $EPrints::Apache::AnApache::ModPerlAPI == 2 )
 			{
 				return Apache2::RequestUtil->request();
 			}
-			die "Unknown ModPerlAPI version: $EPrints::AnApache::ModPerlAPI";
+			die "Unknown ModPerlAPI version: $EPrints::Apache::AnApache::ModPerlAPI";
 		}
 	';
 	if( $@ ) { die $@; }
@@ -216,11 +216,11 @@ else
 
 		die;
 	};
-	eval "require EPrints::RequestWrapper"; if( $@ ) { die $@; }
+	eval "require EPrints::Apache::AnApache::RequestWrapper"; if( $@ ) { die $@; }
 	eval "require Apache::AuthDBI"; if( $@ ) { die $@; }
 	eval "require Apache::Registry"; if( $@ ) { die $@; }
 	eval "require Apache::Constants; "; if( $@ ) { die $@; }
-	$EPrints::AnApache::RequestWrapper = "EPrints::RequestWrapper"; 
+	$EPrints::Apache::AnApache::RequestWrapper = "EPrints::Apache::AnApache::RequestWrapper"; 
 	eval '
 
 		sub OK { &Apache::Constants::OK; }
@@ -287,7 +287,7 @@ else
 ######################################################################
 =pod
 
-=item $value = EPrints::AnApache::cookie( $request, $cookieid )
+=item $value = EPrints::Apache::AnApache::cookie( $request, $cookieid )
 
 Return the value of the named cookie, or undef if it is not set.
 
@@ -300,7 +300,7 @@ sub cookie
 {
 	my( $request, $cookieid ) = @_;
 
-	my $cookies = EPrints::AnApache::header_in( $request, 'Cookie' );
+	my $cookies = EPrints::Apache::AnApache::header_in( $request, 'Cookie' );
 
 	return unless defined $cookies;
 

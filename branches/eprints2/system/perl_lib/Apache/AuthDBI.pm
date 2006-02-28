@@ -1,6 +1,6 @@
 package Apache::AuthDBI;
 
-use EPrints::AnApache; #cjg eprints hack
+use EPrints::Apache::AnApache; #cjg eprints hack
 use DBI ();
 use IPC::SysV qw( IPC_CREAT IPC_RMID S_IRUSR S_IWUSR );
 use strict;

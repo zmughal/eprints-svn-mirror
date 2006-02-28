@@ -74,7 +74,7 @@ $GEOIP = 0;
 use URI;
 
 use EPrints;
-use EPrints::AnApache;
+use EPrints::Apache::AnApache;
 
 use constant NOT_MODIFIED => 304;
 

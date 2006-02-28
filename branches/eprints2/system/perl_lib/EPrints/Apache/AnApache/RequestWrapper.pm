@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::RequestWrapper
+# EPrints::Apache::AnApache::RequestWrapper
 #
 ######################################################################
 #
@@ -17,19 +17,19 @@
 
 =head1 NAME
 
-B<EPrints::RequestWrapper> - Pretends to be an apache request.
+B<EPrints::Apache::AnApache::RequestWrapper> - Pretends to be an apache request.
 
 =head1 DESCRIPTION
 
-A EPrints::RequestWrapper is created from a real apache request and
+A EPrints::Apache::AnApache::RequestWrapper is created from a real apache request and
 a hash of "dir_config" options. It will pass all methods straight
 through to the origional apache request except for dir_config()
 which it will return its own config instead.
 
-It's a hack used by EPrints::Auth - you really do not want to go
+It's a hack used by EPrints::Apache::Auth - you really do not want to go
 near it!
 
-This is the version for use with Apache 1.3. EPrints::Auth will
+This is the version for use with Apache 1.3. EPrints::Apache::Auth will
 pick which to use based on EPrints::SystemSettings 
 
 =over 4
@@ -38,7 +38,7 @@ pick which to use based on EPrints::SystemSettings
 
 
 
-package EPrints::RequestWrapper;
+package EPrints::Apache::AnApache::RequestWrapper;
 
 use strict;
 

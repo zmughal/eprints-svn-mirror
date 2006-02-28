@@ -3466,5 +3466,8 @@ PACKAGE: 2.2.99.2
 
  * Change to the are-you-sure code in bin scripts - now uses a variable called
     $sure for clarity, and also tidied the code a little.
- 
+
+2006-02-28 cjg
+
+ * Moved Apache related methods into a subdirectory Apache/ and renamed them. 
 

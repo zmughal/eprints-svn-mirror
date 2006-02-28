@@ -49,7 +49,7 @@ END
 
 use Carp qw(verbose);
 
-use EPrints::AnApache;
+use EPrints::Apache::AnApache;
 
 use Apache::DBI;
 #$Apache::DBI::DEBUG = 3;

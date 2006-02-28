@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::Auth
+# EPrints::Apache::Auth
 #
 ######################################################################
 #
@@ -17,7 +17,7 @@
 
 =head1 NAME
 
-B<EPrints::Auth> - Password authentication & authorisation checking 
+B<EPrints::Apache::Auth> - Password authentication & authorisation checking 
 for EPrints.
 
 =head1 DESCRIPTION
@@ -30,11 +30,11 @@ viewing private sections of an EPrints website.
 =cut
 ######################################################################
 
-package EPrints::Auth;
+package EPrints::Apache::Auth;
 
 use strict;
 
-use EPrints::AnApache; # exports apache constants
+use EPrints::Apache::AnApache; # exports apache constants
 
 #use EPrints::Session;
 #use EPrints::SystemSettings;
@@ -43,7 +43,7 @@ use EPrints::AnApache; # exports apache constants
 ######################################################################
 =pod
 
-=item $result = EPrints::Auth::authen( $r )
+=item $result = EPrints::Apache::Auth::authen( $r )
 
 Authenticate a request. This works in a slightly whacky way.
 
@@ -195,7 +195,7 @@ sub authen
 	# {handler} should really be removed before passing authconfig
 	# to the requestwrapper. cjg
 
-	my $rwrapper = $EPrints::AnApache::RequestWrapper->new( $r , $authconfig );
+	my $rwrapper = $EPrints::Apache::AnApache::RequestWrapper->new( $r , $authconfig );
 	my $result = &{$handler}( $rwrapper );
 	$session->terminate();
 	return $result;
@@ -205,7 +205,7 @@ sub authen
 ######################################################################
 =pod
 
-=item $results = EPrints::Auth::authz( $r )
+=item $results = EPrints::Apache::Auth::authz( $r )
 
 Tests to see if the user making the current request is authorised to
 see this URL.
@@ -344,7 +344,7 @@ sub authz
 ######################################################################
 =pod
 
-=item $document = EPrints::Auth::secure_doc_from_url( $r, $session )
+=item $document = EPrints::Apache::Auth::secure_doc_from_url( $r, $session )
 
 Return the document that the current URL, in the secure documents area
 relates to, if any. Or undef.
@@ -412,7 +412,7 @@ sub secure_doc_from_url
 
 =pod
 
-=item @roles = EPrints::Auth::user_roles( $user, [$dataobj] )
+=item @roles = EPrints::Apache::Auth::user_roles( $user, [$dataobj] )
 
 Return the roles $user has, optionally also roles available for $dataobj.
 
@@ -439,7 +439,7 @@ sub user_roles
 
 =pod
 
-=item @roles = EPrints::Auth::has_privilege( $session, $privilege, [$user, [$dataobj]] )
+=item @roles = EPrints::Apache::Auth::has_privilege( $session, $privilege, [$user, [$dataobj]] )
 
 Returns a list of roles available for privilege. If L<$user|EPrints::DataObj::User> is defined finds additional roles available to them. If L<$dataobj|EPrints::DataObj> is defined adds the roles that $user might have on $dataobj.
 
@@ -452,7 +452,7 @@ sub has_privilege
 	my @permitted_roles;
 
 	my $func = $session->get_repository->get_conf( "user_roles" );
-	$func ||= \&EPrints::Auth::user_roles;
+	$func ||= \&EPrints::Apache::Auth::user_roles;
 
 	push @roles, &{$func}( $user, $dataobj );
 

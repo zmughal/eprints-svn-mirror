@@ -1083,7 +1083,7 @@ sub _from_stage_fileview
 
 		if( $arc_format eq "plain" )
 		{
-			$success = EPrints::AnApache::upload_doc_file( 
+			$success = EPrints::Apache::AnApache::upload_doc_file( 
 				$self->{session},
 				$self->{document},
 				'file' );
@@ -1095,7 +1095,7 @@ sub _from_stage_fileview
 		}
 		else
 		{
-			$success = EPrints::AnApache::upload_doc_archive( 
+			$success = EPrints::Apache::AnApache::upload_doc_archive( 
 				$self->{session},
 				$self->{document},
 				'file',

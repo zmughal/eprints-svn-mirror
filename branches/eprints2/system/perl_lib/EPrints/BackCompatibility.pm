@@ -160,5 +160,30 @@ $EPrints::SearchCondition::operators = {
 $INC{"EPrints/SearchCondition.pm"} = 1;
 
 ######################################################################
-1;
 
+package EPrints::AnApache;
+
+sub upload_doc_file { return EPrints::Apache::AnApache::upload_doc_file( @_ ); }
+sub upload_doc_archive { return EPrints::Apache::AnApache::upload_doc_archive( @_ ); }
+sub send_http_header { return EPrints::Apache::AnApache::send_http_header( @_ ); }
+sub header_out { return EPrints::Apache::AnApache::header_out( @_ ); }
+sub header_in { return EPrints::Apache::AnApache::header_in( @_ ); }
+sub get_request { return EPrints::Apache::AnApache::get_request( @_ ); }
+sub cookie { return EPrints::Apache::AnApache::cookie( @_ ); }
+
+$INC{"EPrints/AnApache.pm"} = 1;
+
+######################################################################
+
+package EPrints::Auth;
+
+sub authz { return EPrints::Apache::Auth::authz( @_ ); }
+sub authen { return EPrints::Apache::Auth::authen( @_ ); }
+
+$INC{"EPrints/Auth.pm"} = 1;
+
+######################################################################
+
+
+
+1;

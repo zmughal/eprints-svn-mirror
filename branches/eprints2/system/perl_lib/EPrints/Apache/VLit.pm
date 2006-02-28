@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::VLit
+# EPrints::Apache::VLit
 #
 ######################################################################
 #
@@ -17,7 +17,7 @@
 
 =head1 NAME
 
-B<EPrints::VLit> - VLit Transclusion Module
+B<EPrints::Apache::VLit> - VLit Transclusion Module
 
 =head1 DESCRIPTION
 
@@ -31,13 +31,13 @@ configuration if you object to it for some reason.
 
 =cut
 
-package EPrints::VLit;
+package EPrints::Apache::VLit;
 
 use CGI;
 use Digest::MD5;
 use FileHandle;
 
-use EPrints::AnApache; # exports apache constants
+use EPrints::Apache::AnApache; # exports apache constants
 
 use strict;
 
@@ -47,7 +47,7 @@ my $TMPDIR = "/tmp/partial";
 
 ######################################################################
 #
-# EPrints::VLit::handler( $r )
+# EPrints::Apache::VLit::handler( $r )
 #
 ######################################################################
 
@@ -122,7 +122,7 @@ sub handler
 
 ######################################################################
 #
-# EPrints::VLit::send_http_error( $code, $message )
+# EPrints::Apache::VLit::send_http_error( $code, $message )
 #
 ######################################################################
 
@@ -130,11 +130,11 @@ sub send_http_error
 {
 	my( $code, $message ) = @_;
 
-	my $r = EPrints::AnApache::get_request();
+	my $r = EPrints::Apache::AnApache::get_request();
 	$r->content_type( 'text/html' );
 	$r->status_line( "$code $message" );
 	$r->send_http_header;
-	my $title = "Error $code in VLit request";
+	my $title = "Error $code in Apache::VLit request";
 	$r->print( <<END );
 <html>
 <head><title>$title</title></head>
@@ -148,7 +148,7 @@ END
 
 ######################################################################
 #
-# EPrints::VLit::send_http_header( $type )
+# EPrints::Apache::VLit::send_http_header( $type )
 #
 ######################################################################
 
@@ -169,7 +169,7 @@ sub send_http_header
 
 ######################################################################
 #
-# EPrints::VLit::ls_charrange( $filename, $param, $locspec, $r, $baseurl, $args )
+# EPrints::Apache::VLit::ls_charrange( $filename, $param, $locspec, $r, $baseurl, $args )
 #
 ######################################################################
 
@@ -411,7 +411,7 @@ END
 
 ######################################################################
 #
-# EPrints::VLit::ls_area( $file, $param, $resspec, $r, $baseurl, $args )
+# EPrints::Apache::VLit::ls_area( $file, $param, $resspec, $r, $baseurl, $args )
 #
 ######################################################################
 
@@ -569,7 +569,7 @@ END
 
 ######################################################################
 #
-# EPrints::VLit::cache_file( $resspec, $param )
+# EPrints::Apache::VLit::cache_file( $resspec, $param )
 #
 ######################################################################
 

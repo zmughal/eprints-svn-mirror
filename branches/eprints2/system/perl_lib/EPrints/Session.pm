@@ -148,7 +148,7 @@ sub new
 
 	if( $mode == 0 || $mode == 2 || !defined $mode )
 	{
-		$self->{request} = EPrints::AnApache::get_request();
+		$self->{request} = EPrints::Apache::AnApache::get_request();
 		if( $mode == 0 ) { $self->{query} = new CGI; }
 		$self->{offline} = 0;
 		$self->{repository} = EPrints::Repository->new_from_request( $self->{request} );
@@ -348,13 +348,13 @@ sub get_session_language
 	# IMPORTANT! This function must not consume
 	# The post request, if any.
 
-	my $cookie = EPrints::AnApache::cookie( 
+	my $cookie = EPrints::Apache::AnApache::cookie( 
 		$request,
 		$repository->get_conf( "lang_cookie_name") );
 	push @prefs, $cookie if defined $cookie;
 
 	# then look at the accept language header
-	my $accept_language = EPrints::AnApache::header_in( 
+	my $accept_language = EPrints::Apache::AnApache::header_in( 
 				$request,
 				"Accept-Language" );
 
@@ -2217,11 +2217,11 @@ sub redirect
 	}
 
 	$self->{"request"}->status_line( "302 Moved" );
-	EPrints::AnApache::header_out( 
+	EPrints::Apache::AnApache::header_out( 
 		$self->{"request"},
 		"Location",
 		$url );
-	EPrints::AnApache::send_http_header( $self->{"request"} );
+	EPrints::Apache::AnApache::send_http_header( $self->{"request"} );
 }
 
 
@@ -2261,7 +2261,7 @@ sub send_http_header
 	}
 	$self->{request}->content_type( $opts{content_type} );
 
-	EPrints::AnApache::header_out( 
+	EPrints::Apache::AnApache::header_out( 
 		$self->{"request"},
 		"Cache-Control",
 		"no-store, no-cache, must-revalidate" );
@@ -2273,7 +2273,7 @@ sub send_http_header
 			-path    => "/",
 			-value   => $opts{eplogin},
 			-expires => "+10y" );
-		EPrints::AnApache::header_out( 
+		EPrints::Apache::AnApache::header_out( 
 				$self->{"request"},
 				"Set-Cookie",
 				$cookie );
@@ -2287,13 +2287,13 @@ sub send_http_header
 			-value   => $opts{lang},
 			-expires => "+10y", # really long time
 			-domain  => $self->{repository}->get_conf("lang_cookie_domain") );
-		EPrints::AnApache::header_out( 
+		EPrints::Apache::AnApache::header_out( 
 				$self->{"request"},
 				"Set-Cookie",
 				$cookie );
 	}
 
-	EPrints::AnApache::send_http_header( $self->{request} );
+	EPrints::Apache::AnApache::send_http_header( $self->{request} );
 }
 
 
@@ -2401,7 +2401,7 @@ sub has_privilege
 {
 	my( $self, $priv, $dataobj ) = @_;
 
-	return EPrints::Auth::has_privilege( $self, $priv, $self->current_user, $dataobj );
+	return EPrints::Apache::Auth::has_privilege( $self, $priv, $self->current_user, $dataobj );
 }
 
 ######################################################################

@@ -25,7 +25,7 @@ exit( 0 ) unless( defined $session );
 my $referer = $session->param( "fromurl" );
 if( !EPrints::Utils::is_set( $referer ) )
 {
-	$referer = EPrints::AnApache::header_in( 
+	$referer = EPrints::Apache::AnApache::header_in( 
 				$session->get_request,
 				'Referer' );
 }

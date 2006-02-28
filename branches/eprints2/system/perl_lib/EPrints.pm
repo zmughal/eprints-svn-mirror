@@ -63,7 +63,7 @@ used to report errors when initialising modules.
 		my $r;
 		if( $ENV{MOD_PERL} && $EPrints::SystemSettings::loaded)
 		{
-			$r = EPrints::AnApache::get_request();
+			$r = EPrints::Apache::AnApache::get_request();
 		}
 		if( defined $r )
 		{
@@ -73,7 +73,7 @@ used to report errors when initialising modules.
 			# user in addition to logging to STDERR.
 
 			$r->content_type( 'text/html' );
-			EPrints::AnApache::send_http_header( $r );
+			EPrints::Apache::AnApache::send_http_header( $r );
 			print <<END;
 <html>
   <head>
@@ -103,12 +103,11 @@ END
 	}
 }
 
-use EPrints::AnApache;
+use EPrints::Apache::AnApache;
 use EPrints::BackCompatibility;
 use EPrints::XML;
 use EPrints::Utils;
 use EPrints::Config;
-use EPrints::Auth;
 use EPrints::Database;
 use EPrints::DataObj;
 use EPrints::DataObj::Access;
@@ -131,7 +130,6 @@ use EPrints::MetaField;
 use EPrints::OpenArchives;
 use EPrints::Probity;
 use EPrints::Repository;
-use EPrints::Rewrite;
 use EPrints::Search;
 use EPrints::Search::Field;
 use EPrints::Search::Condition;
@@ -139,8 +137,10 @@ use EPrints::Session;
 use EPrints::SubmissionForm;
 use EPrints::UserForm;
 use EPrints::UserPage;
-use EPrints::VLit;
 use EPrints::Paracite;
+use EPrints::Apache::Auth;
+use EPrints::Apache::Rewrite;
+use EPrints::Apache::VLit;
 use EPrints::Workflow;
 use EPrints::Workflow::Stage;
 use EPrints::Workflow::Processor;

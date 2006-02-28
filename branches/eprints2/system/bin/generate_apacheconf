@@ -453,7 +453,7 @@ print CONF <<END;
   # Note that PerlTransHandler can't go inside
   # a "Location" block as it occurs before the
   # Location is known.
-  PerlTransHandler EPrints::Rewrite
+  PerlTransHandler EPrints::Apache::Rewrite
 
 END
 
@@ -486,7 +486,7 @@ if( $repository->get_conf( "vlit" )->{enable} )
 		print CONF <<END;
   <Directory "$htdocs_path/$langid/archive">
     SetHandler perl-script
-    PerlHandler EPrints::VLit::handler
+    PerlHandler EPrints::Apache::VLit::handler
   </Directory>
 
 END
@@ -523,8 +523,8 @@ my $secureconfig = <<END;
   <Directory "$cgidir/users">
     AuthName "User Area"
     AuthType "Basic"
-    PerlAuthenHandler EPrints::Auth::authen
-    PerlAuthzHandler EPrints::Auth::authz
+    PerlAuthenHandler EPrints::Apache::Auth::authen
+    PerlAuthzHandler EPrints::Apache::Auth::authz
     PerlSetVar EPrints_Security_Area User
     require valid-user
 
@@ -540,8 +540,8 @@ my $secureconfig = <<END;
   <Directory "$htdocs_secure_path">
     AuthName "Secure Document Area"
     AuthType "Basic"
-    PerlAuthenHandler EPrints::Auth::authen
-    PerlAuthzHandler EPrints::Auth::authz
+    PerlAuthenHandler EPrints::Apache::Auth::authen
+    PerlAuthzHandler EPrints::Apache::Auth::authz
     PerlSetVar EPrints_Security_Area Documents
     require valid-user
   </Directory>
@@ -554,8 +554,8 @@ my $secureconfig = <<END;
   <Location "$securepath/change_user">
     AuthName "User Area"
     AuthType "Basic"
-    PerlAuthenHandler EPrints::Auth::authen
-    PerlAuthzHandler EPrints::Auth::authz
+    PerlAuthenHandler EPrints::Apache::Auth::authen
+    PerlAuthzHandler EPrints::Apache::Auth::authz
     PerlSetVar EPrints_Security_Area ChangeUser
     PerlSetVar EPrints_ArchiveID $repository_id
     require valid-user
@@ -642,7 +642,7 @@ print CONF <<END;
     Options ExecCGI FollowSymLinks
   </Directory>
 
-  PerlTransHandler EPrints::Rewrite
+  PerlTransHandler EPrints::Apache::Rewrite
 
   Alias $securepath/perl/accounts/confirm $cgidir/confirm
   Alias $securepath/perl/accounts/register $cgidir/register

@@ -1,6 +1,6 @@
 package Apache::DBI;
 
-use EPrints::AnApache; #cjg eprints hack
+use EPrints::Apache::AnApache; #cjg eprints hack
 use DBI ();
 use strict;
 
