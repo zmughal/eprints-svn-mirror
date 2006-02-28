@@ -33,7 +33,7 @@ sub convert_dataobj
 	# The EndNote Format <http://www.ecst.csuchico.edu/~jacobsd/bib/formats/endnote.html>
 
 	delete( $data->{A} );
-	if( $dataobj->is_set( "creators" ) )
+	if( $dataobj->exists_and_set( "creators" ) )
 	{
 		foreach my $name ( @{ $dataobj->get_value( "creators" ) } )
 		{
@@ -42,7 +42,7 @@ sub convert_dataobj
 		}
 	}
 	delete( $data->{E} );
-	if( $dataobj->is_set( "editors" ) )
+	if( $dataobj->exists_and_set( "editors" ) )
 	{
 		foreach my $name ( @{ $dataobj->get_value( "editors" ) } )
 		{
@@ -61,9 +61,9 @@ sub convert_dataobj
 	$data->{0} = "Report" if $type eq "monograph";
 	$data->{0} = "Thesis" if $type eq "thesis";
 	
-	$data->{8} = $dataobj->get_value( "event_dates" ) if $dataobj->is_set( "event_dates" );
-	$data->{9} = EPrints::Utils::tree_to_utf8( $dataobj->render_value( "monograph_type" ) ) if $dataobj->is_set( "monograph_type" );
-	$data->{9} = EPrints::Utils::tree_to_utf8( $dataobj->render_value( "thesis_type" ) ) if $dataobj->is_set( "thesis_type" );
+	$data->{8} = $dataobj->get_value( "event_dates" ) if $dataobj->exists_and_set( "event_dates" );
+	$data->{9} = EPrints::Utils::tree_to_utf8( $dataobj->render_value( "monograph_type" ) ) if $dataobj->exists_and_set( "monograph_type" );
+	$data->{9} = EPrints::Utils::tree_to_utf8( $dataobj->render_value( "thesis_type" ) ) if $dataobj->exists_and_set( "thesis_type" );
 
 	return $data;
 }

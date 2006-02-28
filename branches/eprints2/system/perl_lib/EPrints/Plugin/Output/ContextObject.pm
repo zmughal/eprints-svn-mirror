@@ -153,7 +153,7 @@ sub xml_dataobj
 	}
 
 	# referring-entity
-	if( $dataobj->is_set( "referring_entity_id" ) )
+	if( $dataobj->exists_and_set( "referring_entity_id" ) )
 	{
 		my $rfr = $session->make_element( "ctx:referring-entity" );
 		$co->appendChild( $rfr );
@@ -175,7 +175,7 @@ sub xml_dataobj
 		$session->make_text( $dataobj->get_value( "requester_id" ))
 	);
 	
-	if( $dataobj->is_set( "requester_user_agent" ) )
+	if( $dataobj->exists_and_set( "requester_user_agent" ) )
 	{
 		$req->appendChild(
 			$session->make_element( "ctx:private-data" )
@@ -185,7 +185,7 @@ sub xml_dataobj
 	}
 
 	# service-type
-	if( $dataobj->is_set( "service_type_id" ) )
+	if( $dataobj->exists_and_set( "service_type_id" ) )
 	{
 		my $svc = $session->make_element( "ctx:service-type" );
 		$co->appendChild( $svc );

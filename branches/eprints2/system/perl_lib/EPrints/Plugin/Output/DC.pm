@@ -105,7 +105,7 @@ sub convert_dataobj
 	push @dcdata, [ "type", $ds->get_type_name( $plugin->{session}, $eprint->get_value( "type" ) ) ];
 	
 	my $ref = "NonPeerReviewed";
-	if( $eprint->is_set( "refereed" ) && $eprint->get_value( "refereed" ) eq "TRUE" )
+	if( $eprint->exists_and_set( "refereed" ) && $eprint->get_value( "refereed" ) eq "TRUE" )
 	{
 		$ref = "PeerReviewed";
 	}
@@ -123,7 +123,7 @@ sub convert_dataobj
 	}
 
 	# Most commonly a DOI or journal link
-	if( $eprint->is_set( "official_url" ) )
+	if( $eprint->exists_and_set( "official_url" ) )
 	{
 		push @dcdata, [ "relation", $eprint->get_value( "official_url" ) ];
 	}

@@ -33,7 +33,7 @@ sub convert_dataobj
 	# The Refer Format <http://www.ecst.csuchico.edu/~jacobsd/bib/formats/refer.html>
 	# Doug Arnold's Common Bibliography Reference Card <http://clwww.essex.ac.uk/search/refer_local_help>
 
-	if( $dataobj->is_set( "creators" ) )
+	if( $dataobj->exists_and_set( "creators" ) )
 	{
 		foreach my $name ( @{ $dataobj->get_value( "creators" ) } )
 		{
@@ -41,7 +41,7 @@ sub convert_dataobj
 			push @{ $data->{A} }, EPrints::Utils::make_name_string( $name->{main}, 1 );
 		}
 	}
-	if( $dataobj->is_set( "editors" ) )
+	if( $dataobj->exists_and_set( "editors" ) )
 	{
 		foreach my $name ( @{ $dataobj->get_value( "editors" ) } )
 		{
@@ -50,31 +50,31 @@ sub convert_dataobj
 		}
 	}
 
-	$data->{T} = $dataobj->get_value( "title" ) if $dataobj->is_set( "title" );
-	$data->{B} = $dataobj->get_value( "event_title" ) if $dataobj->is_set( "event_title" );
-	$data->{B} = $dataobj->get_value( "book_title" ) if $dataobj->is_set( "book_title" );
+	$data->{T} = $dataobj->get_value( "title" ) if $dataobj->exists_and_set( "title" );
+	$data->{B} = $dataobj->get_value( "event_title" ) if $dataobj->exists_and_set( "event_title" );
+	$data->{B} = $dataobj->get_value( "book_title" ) if $dataobj->exists_and_set( "book_title" );
 
-	if( $dataobj->is_set( "date_effective" ) )
+	if( $dataobj->exists_and_set( "date_effective" ) )
 	{
 		$dataobj->get_value( "date_effective" ) =~ /^([0-9]{4})/;
 		$data->{D} = $1;
 	}
 
-	$data->{J} = $dataobj->get_value( "publication" ) if $dataobj->is_set( "publication" );
-	$data->{V} = $dataobj->get_value( "volume" ) if $dataobj->is_set( "volume" );
-	$data->{N} = $dataobj->get_value( "number" ) if $dataobj->is_set( "number" );
-	$data->{S} = $dataobj->get_value( "series" ) if $dataobj->is_set( "series" );
-	$data->{P} = $dataobj->get_value( "pagerange" ) if $dataobj->is_set( "pagerange" );
-	$data->{R} = $dataobj->get_value( "id_number" ) if $dataobj->is_set( "id_number" );
+	$data->{J} = $dataobj->get_value( "publication" ) if $dataobj->exists_and_set( "publication" );
+	$data->{V} = $dataobj->get_value( "volume" ) if $dataobj->exists_and_set( "volume" );
+	$data->{N} = $dataobj->get_value( "number" ) if $dataobj->exists_and_set( "number" );
+	$data->{S} = $dataobj->get_value( "series" ) if $dataobj->exists_and_set( "series" );
+	$data->{P} = $dataobj->get_value( "pagerange" ) if $dataobj->exists_and_set( "pagerange" );
+	$data->{R} = $dataobj->get_value( "id_number" ) if $dataobj->exists_and_set( "id_number" );
 
-	$data->{I} = $dataobj->get_value( "institution" ) if $dataobj->is_set( "institution" );
-	$data->{I} = $dataobj->get_value( "publisher" ) if $dataobj->is_set( "publisher" );
-	$data->{C} = $dataobj->get_value( "event_location" ) if $dataobj->is_set( "event_location" );
-	$data->{C} = $dataobj->get_value( "place_of_pub" ) if $dataobj->is_set( "place_of_pub" );
+	$data->{I} = $dataobj->get_value( "institution" ) if $dataobj->exists_and_set( "institution" );
+	$data->{I} = $dataobj->get_value( "publisher" ) if $dataobj->exists_and_set( "publisher" );
+	$data->{C} = $dataobj->get_value( "event_location" ) if $dataobj->exists_and_set( "event_location" );
+	$data->{C} = $dataobj->get_value( "place_of_pub" ) if $dataobj->exists_and_set( "place_of_pub" );
 
-	$data->{O} = $dataobj->get_value( "note" ) if $dataobj->is_set( "note" );
-	$data->{K} = $dataobj->get_value( "keywords" ) if $dataobj->is_set( "keywords" );
-	$data->{X} = $dataobj->get_value( "abstract" ) if $dataobj->is_set( "abstract" );
+	$data->{O} = $dataobj->get_value( "note" ) if $dataobj->exists_and_set( "note" );
+	$data->{K} = $dataobj->get_value( "keywords" ) if $dataobj->exists_and_set( "keywords" );
+	$data->{X} = $dataobj->get_value( "abstract" ) if $dataobj->exists_and_set( "abstract" );
 
 	$data->{L} = $plugin->{session}->get_repository->get_id . $dataobj->get_id;
 

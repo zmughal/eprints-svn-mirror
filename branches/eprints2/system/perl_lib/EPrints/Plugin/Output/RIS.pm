@@ -43,20 +43,20 @@ sub convert_dataobj
 	$data->{TY} = "RPRT" if $type eq "monograph";
 	$data->{TY} = "PAT" if $type eq "patent";
 	$data->{TY} = "THES" if $type eq "thesis";
-	if( $dataobj->is_set( "ispublished" ) )
+	if( $dataobj->exists_and_set( "ispublished" ) )
 	{
 		my $status = $dataobj->get_value( "ispublished" );
 		$data->{TY} = "INPR" if $status eq "inpress"; 
 		$data->{TY} = "UNPB" if $status eq "unpub";
 	}
 	$data->{ID} = $plugin->{session}->get_repository->get_id . $dataobj->get_id;
-	$data->{TI} = $dataobj->get_value( "title" ) if $dataobj->is_set( "title" );
-	$data->{T3} = $dataobj->get_value( "series" ) if $dataobj->is_set( "series" );
-	$data->{BT} = $dataobj->get_value( "book_title" ) if $dataobj->is_set( "book_title" );
-	$data->{BT} = $dataobj->get_value( "event_title" ) if $dataobj->is_set( "event_title" );
+	$data->{TI} = $dataobj->get_value( "title" ) if $dataobj->exists_and_set( "title" );
+	$data->{T3} = $dataobj->get_value( "series" ) if $dataobj->exists_and_set( "series" );
+	$data->{BT} = $dataobj->get_value( "book_title" ) if $dataobj->exists_and_set( "book_title" );
+	$data->{BT} = $dataobj->get_value( "event_title" ) if $dataobj->exists_and_set( "event_title" );
 	
 	# Authors
-	if( $dataobj->is_set( "creators" ) )
+	if( $dataobj->exists_and_set( "creators" ) )
 	{
 		foreach my $name ( @{ $dataobj->get_value( "creators" ) } )
 		{
@@ -64,7 +64,7 @@ sub convert_dataobj
 			push @{ $data->{AU} }, EPrints::Utils::make_name_string( $name->{main}, 0 );
 		}
 	}
-	if( $dataobj->is_set( "editors" ) )
+	if( $dataobj->exists_and_set( "editors" ) )
 	{
 		foreach my $name ( @{ $dataobj->get_value( "editors" ) } )
 		{
@@ -74,14 +74,14 @@ sub convert_dataobj
 	}
 
 	# Year and Free Text
-	if( $dataobj->is_set( "date_effective" ) ) {
+	if( $dataobj->exists_and_set( "date_effective" ) ) {
 		$dataobj->get_value( "date_effective" ) =~ /([0-9]{4})-([0-9]{2})-([0-9]{2})/;
 		# YYYY/MM/DD - slashes required
 		$data->{PY} = sprintf( "%s/%s/%s", $1, $2 ne "00" ? $2 : "", $3 ne "00" ? $3 : "");
 	}
-	$data->{N1} = $dataobj->get_value( "note" ) if $dataobj->is_set( "note" );
-	$data->{N2} = $dataobj->get_value( "abstract" ) if $dataobj->is_set( "abstract" );
-	if( $dataobj->is_set( "keywords" ) ) {
+	$data->{N1} = $dataobj->get_value( "note" ) if $dataobj->exists_and_set( "note" );
+	$data->{N2} = $dataobj->get_value( "abstract" ) if $dataobj->exists_and_set( "abstract" );
+	if( $dataobj->exists_and_set( "keywords" ) ) {
 		foreach( split ",", $dataobj->get_value( "keywords" ) )
 		{
 			push @{ $data->{KW} }, $_;
@@ -89,22 +89,22 @@ sub convert_dataobj
 	}
 	
 	# Periodical and publisher
-	$data->{JO} = $dataobj->get_value( "publication" ) if $dataobj->is_set( "publication" );
-	$data->{VL} = $dataobj->get_value( "volume" ) if $dataobj->is_set( "volume" );
-	$data->{IS} = $dataobj->get_value( "number" ) if $dataobj->is_set( "number" );
-	$data->{IS} = $dataobj->get_value( "id_number" ) if $dataobj->is_set( "id_number" );
-	if( $dataobj->is_set( "pagerange" ) )
+	$data->{JO} = $dataobj->get_value( "publication" ) if $dataobj->exists_and_set( "publication" );
+	$data->{VL} = $dataobj->get_value( "volume" ) if $dataobj->exists_and_set( "volume" );
+	$data->{IS} = $dataobj->get_value( "number" ) if $dataobj->exists_and_set( "number" );
+	$data->{IS} = $dataobj->get_value( "id_number" ) if $dataobj->exists_and_set( "id_number" );
+	if( $dataobj->exists_and_set( "pagerange" ) )
 	{
 		$dataobj->get_value( "pagerange" ) =~ /([0-9]+)-([0-9]+)/;
 		$data->{SP} = $1 if $1;
 		$data->{EP} = $2 if $2;
 	}
-	$data->{CY} = $dataobj->get_value( "place_of_pub" ) if $dataobj->is_set( "place_of_pub" );
-	$data->{CY} = $dataobj->get_value( "event_location" ) if $dataobj->is_set( "event_location" );
-	$data->{SN} = $dataobj->get_value( "isbn" ) if $dataobj->is_set( "isbn" );
-	$data->{SN} = $dataobj->get_value( "issn" ) if $dataobj->is_set( "issn" );
-	$data->{PB} = $dataobj->get_value( "insitution") if $dataobj->is_set( "institution" );
-	$data->{PB} = $dataobj->get_value( "publisher" ) if $dataobj->is_set( "publisher" );
+	$data->{CY} = $dataobj->get_value( "place_of_pub" ) if $dataobj->exists_and_set( "place_of_pub" );
+	$data->{CY} = $dataobj->get_value( "event_location" ) if $dataobj->exists_and_set( "event_location" );
+	$data->{SN} = $dataobj->get_value( "isbn" ) if $dataobj->exists_and_set( "isbn" );
+	$data->{SN} = $dataobj->get_value( "issn" ) if $dataobj->exists_and_set( "issn" );
+	$data->{PB} = $dataobj->get_value( "insitution") if $dataobj->exists_and_set( "institution" );
+	$data->{PB} = $dataobj->get_value( "publisher" ) if $dataobj->exists_and_set( "publisher" );
 	
 	# Misc
 	$data->{UR} = $dataobj->get_url;

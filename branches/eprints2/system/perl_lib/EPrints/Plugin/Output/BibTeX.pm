@@ -31,7 +31,7 @@ sub convert_dataobj
 
 	# Title and reference type
 	$data->{key} = $plugin->{session}->get_repository->get_id . $dataobj->get_id;
-	$data->{normal}->{title} 	= $dataobj->get_value( "title" ) if $dataobj->is_set( "title" );
+	$data->{normal}->{title} 	= $dataobj->get_value( "title" ) if $dataobj->exists_and_set( "title" );
 
 	my $type = $dataobj->get_type;
 	$data->{type} = "misc";
@@ -41,56 +41,56 @@ sub convert_dataobj
 	$data->{type} = "inproceedings" if $type eq "conference_item";
 	$data->{type} = "techreport" if $type eq "monograph";
 	$data->{type} = "phdthesis" if $type eq "thesis";
-	$data->{type} = "mastersthesis" if $type eq "thesis" && $dataobj->is_set( "thesis_type" ) && $dataobj->get_value( "thesis_type" ) eq "masters";
-	$data->{type} = "unpublished" if $dataobj->is_set( "ispublished" ) && $dataobj->get_value( "ispublished" ) eq "unpub";
+	$data->{type} = "mastersthesis" if $type eq "thesis" && $dataobj->exists_and_set( "thesis_type" ) && $dataobj->get_value( "thesis_type" ) eq "masters";
+	$data->{type} = "unpublished" if $dataobj->exists_and_set( "ispublished" ) && $dataobj->get_value( "ispublished" ) eq "unpub";
 
-	$data->{normal}->{booktitle} = $dataobj->get_value( "event_title" ) if $dataobj->is_set( "event_title" );
-	$data->{normal}->{booktitle} = $dataobj->get_value( "book_title" ) if $dataobj->is_set( "book_title" );
+	$data->{normal}->{booktitle} = $dataobj->get_value( "event_title" ) if $dataobj->exists_and_set( "event_title" );
+	$data->{normal}->{booktitle} = $dataobj->get_value( "book_title" ) if $dataobj->exists_and_set( "book_title" );
 
 	# Authors
-	if( $dataobj->is_set( "creators" ) )
+	if( $dataobj->exists_and_set( "creators" ) )
 	{
 		# given name first
 		$data->{normal}->{author} = join( " and ", map { EPrints::Utils::make_name_string( $_->{main}, 1 ) } @{ $dataobj->get_value( "creators"  ) } );
 	}
-	if( $dataobj->is_set( "editors" ) )
+	if( $dataobj->exists_and_set( "editors" ) )
 	{
 		# given name first
 		$data->{normal}->{editor} = join( " and ", map { EPrints::Utils::make_name_string( $_->{main}, 1 ) } @{ $dataobj->get_value( "editors"  ) } );
 	}
 
 	# Year and free text
-	if ($dataobj->is_set( "date_effective" )) {
+	if ($dataobj->exists_and_set( "date_effective" )) {
 		my $date = $dataobj->get_value( "date_effective" );
 		if ($date =~ /^([0-9]{4})-([0-9]{2})/) {
 			$data->{normal}->{year} = $1;
 			$data->{normal}->{month} = EPrints::Utils::get_month_label($plugin->{session}, $2) if $2 ne "00";
 		}
 	}
-	$data->{normal}->{note} 	= $dataobj->get_value( "note" ) if $dataobj->is_set( "note" );
-	$data->{unescaped}->{abstract} 	= $dataobj->get_value( "abstract" ) if $dataobj->is_set( "abstract" );
+	$data->{normal}->{note} 	= $dataobj->get_value( "note" ) if $dataobj->exists_and_set( "note" );
+	$data->{unescaped}->{abstract} 	= $dataobj->get_value( "abstract" ) if $dataobj->exists_and_set( "abstract" );
 
 	# Periodical and publisher
-	$data->{normal}->{journal} = $dataobj->get_value( "publication" ) if $dataobj->is_set( "publication" );
-	$data->{normal}->{volume} = $dataobj->get_value( "volume" ) if $dataobj->is_set( "volume" );
-	$data->{normal}->{number} = $dataobj->get_value( "id_number" ) if $dataobj->is_set( "id_number" );
-	$data->{normal}->{number} = $dataobj->get_value( "number" ) if $dataobj->is_set( "number" );
-	$data->{normal}->{series} = $dataobj->get_value( "series" ) if $dataobj->is_set( "series" );
-	if( $dataobj->is_set( "pagerange" ) )
+	$data->{normal}->{journal} = $dataobj->get_value( "publication" ) if $dataobj->exists_and_set( "publication" );
+	$data->{normal}->{volume} = $dataobj->get_value( "volume" ) if $dataobj->exists_and_set( "volume" );
+	$data->{normal}->{number} = $dataobj->get_value( "id_number" ) if $dataobj->exists_and_set( "id_number" );
+	$data->{normal}->{number} = $dataobj->get_value( "number" ) if $dataobj->exists_and_set( "number" );
+	$data->{normal}->{series} = $dataobj->get_value( "series" ) if $dataobj->exists_and_set( "series" );
+	if( $dataobj->exists_and_set( "pagerange" ) )
 	{	
 		$data->{normal}->{pages} = $dataobj->get_value( "pagerange" );
 		$data->{normal}->{pages} =~ s/^(\d*)-(\d*)$/$1--$2/;
 	}
 
-	$data->{normal}->{publisher} = $dataobj->get_value( "publisher" ) if $dataobj->is_set( "publisher" );
-	$data->{normal}->{address} = $dataobj->get_value( "place_of_pub" ) if $dataobj->is_set( "place_of_pub" );
+	$data->{normal}->{publisher} = $dataobj->get_value( "publisher" ) if $dataobj->exists_and_set( "publisher" );
+	$data->{normal}->{address} = $dataobj->get_value( "place_of_pub" ) if $dataobj->exists_and_set( "place_of_pub" );
 
-	$data->{normal}->{institution} = $dataobj->get_value( "institution" ) if $dataobj->is_set( "institution" ) && $type eq "monograph";
-	$data->{normal}->{school} = $dataobj->get_value( "institution" ) if $dataobj->is_set( "institution" ) && $type eq "thesis";
+	$data->{normal}->{institution} = $dataobj->get_value( "institution" ) if $dataobj->exists_and_set( "institution" ) && $type eq "monograph";
+	$data->{normal}->{school} = $dataobj->get_value( "institution" ) if $dataobj->exists_and_set( "institution" ) && $type eq "thesis";
 
 	# Misc
 	$data->{normal}->{howpublished} = $dataobj->get_url(); 
-	$data->{unescaped}->{keywords} = $dataobj->get_value( "keywords" ) if $dataobj->is_set( "keywords" );
+	$data->{unescaped}->{keywords} = $dataobj->get_value( "keywords" ) if $dataobj->exists_and_set( "keywords" );
 
 	return $data;
 }

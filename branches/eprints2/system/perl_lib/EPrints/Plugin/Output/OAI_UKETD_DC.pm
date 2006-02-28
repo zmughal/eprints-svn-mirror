@@ -209,51 +209,51 @@ sub eprint_to_uketd_dc
 		}
 	
 		# Steve Carr : we're using isreferencedby for the official url splash page
-		if( $eprint->is_set( "official_url" ) )
+		if( $eprint->exists_and_set( "official_url" ) )
 		{
 			push @etddata, [ "isReferencedBy", $eprint->get_value( "official_url" ), "dcterms", "dcterms:URI"];
 		}
 			
-		if( $eprint->is_set( "thesis_name" )){
+		if( $eprint->exists_and_set( "thesis_name" )){
 			push @etddata, [ "qualificationname", $eprint->get_value( "thesis_name" ), "uketdterms"];
 		}
-		if( $eprint->is_set( "thesis_type")){
+		if( $eprint->exists_and_set( "thesis_type")){
 			push @etddata, [ "qualificationlevel", $eprint->get_value( "thesis_type" ), "uketdterms"];
 		}
-		if( $eprint->is_set( "institution" )){
+		if( $eprint->exists_and_set( "institution" )){
 			push @etddata, [ "institution", $eprint->get_value( "institution" ), "uketdterms"];
 		}
-		if( $eprint->is_set( "department" )){
+		if( $eprint->exists_and_set( "department" )){
 			push @etddata, [ "department", $eprint->get_value( "department" ), "uketdterms"];
 		}
-		if( $eprint->is_set( "advisor" )){
+		if( $eprint->exists_and_set( "advisor" )){
 			push @etddata, [ "advisor", $eprint->get_value( "advisor" ), "uketdterms"];
 		}
-		if( $eprint->is_set( "language" )){
+		if( $eprint->exists_and_set( "language" )){
 			push @etddata, [ "language", $eprint->get_value( "language" ), "dc"];
 		}
-		if( $eprint->is_set( "sponsors" )){
+		if( $eprint->exists_and_set( "sponsors" )){
 			push @etddata, [ "sponsor", $eprint->get_value( "sponsors" ), "uketdterms"];
 		}
-		if( $eprint->is_set( "alt_title" )){
+		if( $eprint->exists_and_set( "alt_title" )){
 			push @etddata, [ "alternative", $eprint->get_value("alt_title" ), "dcterms"];
 		}
-		if( $eprint->is_set( "checksum" )){
+		if( $eprint->exists_and_set( "checksum" )){
 			push @etddata, [ "checksum", $eprint->get_value("checksum"), "uketdterms" ];
 		}
-		if( $eprint->is_set( "date_embargo" )){
+		if( $eprint->exists_and_set( "date_embargo" )){
 			push @etddata, ["date_embargo", $eprint->get_value("date_embargo"), "uketdterms"];
 		}
-		if( $eprint->is_set( "embargo_reason" )){
+		if( $eprint->exists_and_set( "embargo_reason" )){
 			push @etddata, ["embargo_reason", $eprint->get_value("embargo_reason"), "uketdterms"];
 		}
-		if( $eprint->is_set( "rights" )){
+		if( $eprint->exists_and_set( "rights" )){
 			push @etddata, ["rights", $eprint->get_value("rights"), "dc"];
 		}
-		if( $eprint->is_set( "citations" )){
+		if( $eprint->exists_and_set( "citations" )){
 			push @etddata, ["hasVersion", $eprint->get_value("citations"), "dcterms"];
 		}
-		if( $eprint->is_set( "referencetext" )){
+		if( $eprint->exists_and_set( "referencetext" )){
 			push @etddata, ["references", $eprint->get_value("referencetext"), "dcterms"];
 		}
 		
