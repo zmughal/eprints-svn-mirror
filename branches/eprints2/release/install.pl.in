@@ -46,6 +46,8 @@ if(
 
 ######################################################################
 
+if( defined $ARGV[0] ) { print "Destination directory overridden to: $ARGV[0]\n"; }
+
 use strict;
 use Cwd;
 use Digest::MD5;
@@ -74,8 +76,11 @@ if( $from_configure{"prefix"} =~ s#/$## )
 ### cause problems if incorrect.
 
 # shorter variables for clarity later
-my $to_path = $from_configure{prefix};
 my $from_path = $from_configure{dist_path};
+my $to_path = $from_configure{prefix};
+# Implement DESTDIR support for GNU compatibility.
+# If an argument is specified install there instead.
+if( defined $ARGV[0] ) { $to_path = $ARGV[0]; }
 
 print "Installing from: $from_path\n";
 
@@ -667,6 +672,9 @@ sub upgrade
  - restart your web server
  - restart the eprints indexer
 
+ - To find and share ideas and problems try the EPrints technical
+    mailing list and wiki at http://eprints.org/software/
+
 ======================================================================
 HOORAY
 }
@@ -702,6 +710,9 @@ Hooray! Your EPrints2 installation was successful!
      bin/configure_archive
 
  Good Luck!
+
+ - To find and share ideas and problems try the EPrints technical
+    mailing list and wiki at http://eprints.org/software/
 
 ======================================================================
 HOORAY
@@ -744,21 +755,21 @@ sub read_version
 
 	unless( open(VERSIONIN, $from_configure{"dist_path"}."/VERSION") )
 	{
-		print "No VERSION file in distribution - invalid distribution?";
+		print "No VERSION file in distribution - invalid distribution?\n";
 		exit 1;
 	}
 	binmode(VERSIONIN);
 	my $version_id = <VERSIONIN>;
 	unless( defined($version_id) ) 
 	{
-		print "Undefined version number.";
+		print "Undefined version number.\n";
 		exit 1;
 	}
 	chomp($version_id);
 	my $version = <VERSIONIN>;
 	unless( defined($version) ) 
 	{
-		print "Undefined version description."; 
+		print "Undefined version description.\n"; 
 		exit 1;
 	}
 	chomp($version);

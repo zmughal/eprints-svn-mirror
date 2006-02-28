@@ -13,7 +13,7 @@ unless( $CGI::VERSION =~ m/^(\d+)\.(\d+)/ )
 }
 
 my( $major, $minor ) = ( $1, $2 );
-print "old";exit;
+
 my $version = $major*1000+$minor;
 
 if( $version <= 3007 )

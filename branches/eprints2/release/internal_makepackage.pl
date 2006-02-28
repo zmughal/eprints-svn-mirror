@@ -89,6 +89,7 @@ cmd("cp $from/release/configure $to/eprints/configure");
 cmd("cp $from/release/install.pl.in $to/eprints/install.pl.in");
 cmd("cp $from/release/df-check.pl $to/eprints/df-check.pl");
 cmd("cp $from/release/perlmodules.pl $to/eprints/perlmodules.pl");
+cmd("cp $from/release/Makefile $to/eprints/Makefile");
 
 print "Inserting top level text files...\n";
 cmd("cp $from/system/CHANGELOG $to/eprints/CHANGELOG");
