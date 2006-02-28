@@ -116,6 +116,7 @@ use EPrints::DataObj::Document;
 use EPrints::DataObj::EPrint;
 use EPrints::DataObj::History;
 use EPrints::DataObj::License;
+use EPrints::DataObj::Permission;
 use EPrints::DataObj::Subject;
 use EPrints::DataObj::Subscription;
 use EPrints::DataObj::User;

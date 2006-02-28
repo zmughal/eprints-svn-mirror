@@ -139,6 +139,9 @@ sub get_system_field_info
 		{ name=>"language", type=>"datatype", required=>1, 
 			datasetid=>"language" },
 
+		{ name => "permission_group", multiple => 1, type => "datatype", 
+			datasetid => "permission_group", },
+
 		{ name=>"security", type=>"datatype", required=>1, 
 			datasetid=>"security" },
 

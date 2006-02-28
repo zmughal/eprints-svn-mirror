@@ -180,6 +180,9 @@ sub get_system_field_info
 			fieldnames => "editpermfields",
 			allow_set_order => 0 },
 
+		{ name => "permission_group", multiple => 1, type => "datatype", 
+			datasetid => "permission_group", },
+
 		{ name=>"frequency", type=>"set", 
 			options=>["never","daily","weekly","monthly"] },
 

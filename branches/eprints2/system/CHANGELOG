@@ -3454,3 +3454,6 @@ PACKAGE: 2.2.99.2
  * Modified scripts to use get_input_bool
  * Modified EPrints::Utils xml_to_utf8 to use wrap_text and cleaned up
     indenting
+ * Added Permission dataset
+ * Added permission_group to User and Document
+
