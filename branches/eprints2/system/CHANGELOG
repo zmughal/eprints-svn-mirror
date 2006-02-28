@@ -3457,3 +3457,9 @@ PACKAGE: 2.2.99.2
  * Added Permission dataset
  * Added permission_group to User and Document
 
+2006-02-28 cjg
+                                                                                                                                                             
+ * Added $dataobj->exists_and_set which is like is_set but does not give a
+    warning if the field does not exist.
+                                                                                                                                                             
+

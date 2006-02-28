@@ -512,6 +512,8 @@ sub get_dataset
 
 Returns true if the named field is set in this record, otherwise false.
 
+Warns if the field does not exist.
+
 =cut
 ######################################################################
 
@@ -523,6 +525,33 @@ sub is_set
 	{
 		$self->{session}->get_repository->log(
 			 "is_set( $fieldname ): Unknown field" );
+	}
+
+	return EPrints::Utils::is_set( $self->{data}->{$fieldname} );
+}
+
+######################################################################
+=pod 
+
+=item $bool = $dataobj->exists_and_set( $fieldname )
+
+Returns true if the named field is set in this record, otherwise false.
+
+If the field does not exist, just return false.
+
+This method is useful for plugins which may operate on multiple 
+repositories, and the fact a field does not exist is not an issue.
+
+=cut
+######################################################################
+
+sub exists_and_set
+{
+	my( $self, $fieldname ) = @_;
+
+	if( !$self->{dataset}->get_field( $fieldname ) )
+	{
+		return 0;
 	}
 
 	return EPrints::Utils::is_set( $self->{data}->{$fieldname} );
