@@ -444,7 +444,7 @@ if(
 {
 	# apache 2
 	print CONF <<END;
-	PerlLogHandler EPrints::LogHandler
+	PerlLogHandler EPrints::Apache::LogHandler
 END
 }
 print CONF <<END;
@@ -630,7 +630,7 @@ if(
 {
 	# apache 2
 	print CONF <<END;
-	PerlLogHandler EPrints::LogHandler
+	PerlLogHandler EPrints::Apache::LogHandler
 END
 }
 print CONF <<END;

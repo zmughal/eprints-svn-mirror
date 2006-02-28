@@ -3479,3 +3479,4 @@ PACKAGE: 2.2.99.2
 
  * Renamed Utils::get_input_bool to get_input_confirm and changed $default
     option to be $quick (ask only for [y/n])
+ * Moved LogHandler to Apache/

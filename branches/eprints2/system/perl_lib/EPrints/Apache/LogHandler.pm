@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::LogHandler
+# EPrints::Apache::LogHandler
 #
 ######################################################################
 #
@@ -16,11 +16,11 @@
 
 =head1 NAME
 
-EPrints::LogHandler - Main handler for Apache log events
+EPrints::Apache::LogHandler - Main handler for Apache log events
 
 =head1 CONFIGURATION
 
-To enable the LogHandler add to your ArchiveConfig:
+To enable the Apache::LogHandler add to your ArchiveConfig:
 
    $c->{loghandler}->{enable} = 1;
 
@@ -62,7 +62,7 @@ The document id as a fragment of the referent: C<#docid>.
 
 =cut
 
-package EPrints::LogHandler;
+package EPrints::Apache::LogHandler;
 
 use strict;
 use warnings;
@@ -174,7 +174,7 @@ sub handler
 	return OK;
 }
 
-=item $id = EPrints::LogHandler::uri_to_eprintid( $session, $uri )
+=item $id = EPrints::Apache::LogHandler::uri_to_eprintid( $session, $uri )
 
 Returns the eprint id that $uri corresponds to, or undef.
 
@@ -193,7 +193,7 @@ sub uri_to_eprintid
 	undef;
 }
 
-=item $id = EPrints::LogHandler::uri_to_docid( $session, $eprintid, $uri )
+=item $id = EPrints::Apache::LogHandler::uri_to_docid( $session, $eprintid, $uri )
 
 Returns the docid that $uri corresponds to (given the $eprintid), or undef.
 
@@ -219,12 +219,12 @@ sub geoip_open
 	if( my $fn = $geoip->{ "country" } )
 	{
 		eval { $GEOIP_DB = $class->open( $fn ) };
-		warn "LogHandler: Country lookup unavailable: $@" if $@;
+		warn "Apache::LogHandler: Country lookup unavailable: $@" if $@;
 	}
 	if( my $fn = $geoip->{ "organisation" } )
 	{
 		eval { $GEOORG_DB = $class->open( $fn ) };
-		warn "LogHandler: Organisation lookup unavailable: $@" if $@;
+		warn "Apache::LogHandler: Organisation lookup unavailable: $@" if $@;
 	}
 }
 
