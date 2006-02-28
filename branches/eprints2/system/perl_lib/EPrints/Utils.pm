@@ -1386,40 +1386,48 @@ sub get_input_hidden
 ######################################################################
 =pod
 
-=item EPrints::Utils::get_input_bool( [$prompt], [$default] )
+=item EPrints::Utils::get_input_confirm( [$prompt], [$quick] )
 
-Asks the user for confirmation (Yes/No). Uses L<Term::ReadKey>.
+Asks the user for confirmation (yes/no). If $quick is true only checks for a
+single-character input ('y' or 'n').
 
-Returns true if the user presses 'Y', false if the user presses 'N', otherwise
-$default.
+Returns true if the user answers 'yes' or false for any other value.
 
 =cut
 ######################################################################
 
-sub get_input_bool
+sub get_input_confirm
 {
-	my( $prompt, $default ) = @_;
+	my( $prompt, $quick ) = @_;
 
 	$prompt = "" if( !defined $prompt );
-	$prompt .= " [Yes/No] ? ";
 
-	print wrap_text( $prompt, 'console' );
+	if( $quick )
+	{
+		$prompt .= " [y/n] ? ";
+		print wrap_text( $prompt, 'console' );
 
-	Term::ReadKey::ReadMode('raw');
-	my $in = Term::ReadKey::ReadKey( 0 );
-	Term::ReadKey::ReadMode('normal');	
-	print "\n";
+		Term::ReadKey::ReadMode( 'raw' );
+		my $in = Term::ReadKey::ReadKey( 0 );
+		Term::ReadKey::ReadMode( 'normal' );
+		if( lc($in) eq 'y' )
+		{
+			return 1;
+		}
+	}
+	else
+	{
+		$prompt .= " [yes/no] ? ";
+		print wrap_text( $prompt, 'console' );
+
+		my $in = Term::ReadKey::ReadLine( 0 );
+		if( lc($in) eq 'yes' )
+		{
+			return 1;
+		}
+	}
 	
-	if( lc($in) eq 'y' )
-	{
-		return 1;
-	}
-	elsif( lc($in) eq 'n' )
-	{
-		return 0;
-	}
-
-	return $default;
+	return 0;
 }
 
 ######################################################################

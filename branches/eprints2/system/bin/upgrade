@@ -158,7 +158,7 @@ This will:
 
 END
 	
-	my $sure = EPrints::Utils::get_input_bool( "Are you sure you want to do this" );
+	my $sure = EPrints::Utils::get_input_confirm( "Are you sure you want to do this" );
 	unless( $sure )
 	{
 		print "Aborting then.\n";
@@ -255,8 +255,8 @@ This will:
 
 END
 	
-	my $input = EPrints::Utils::get_input_bool( "Are you sure you want to do this" );
-	unless( $input )
+	my $sure = EPrints::Utils::get_input_confirm( "Are you sure you want to do this" );
+	unless( $sure )
 	{
 		print "Aborting then.\n";
 		$session->terminate();
@@ -363,8 +363,8 @@ This will:
 
 END
 	
-	my $input = EPrints::Utils::get_input_bool( "Are you sure you want to do this" );
-	unless( $input )
+	my $sure = EPrints::Utils::get_input_confirm( "Are you sure you want to do this" );
+	unless( $sure )
 	{
 		print "Aborting then.\n";
 		$session->terminate();
@@ -440,8 +440,8 @@ This will:
 
 END
 	
-	my $input = EPrints::Utils::get_input_bool( "Are you sure you want to do this" );
-	unless( $input )
+	my $sure = EPrints::Utils::get_input_confirm( "Are you sure you want to do this" );
+	unless( $sure )
 	{
 		print "Aborting then.\n";
 		$session->terminate();

@@ -136,7 +136,7 @@ unless( $force )
 	# Write the confirmation prompt
 	print "You are about to erase all the eprint records.\n";
 	print "From repository: ".$repo->get_id."\n";
-	my $sure = EPrints::Utils::get_input_bool( "Are you sure you want this to happen ");
+	my $sure = EPrints::Utils::get_input_confirm( "Are you sure you want this to happen ");
 	unless( $sure )
 	{
 		print "Aborting then.\n";

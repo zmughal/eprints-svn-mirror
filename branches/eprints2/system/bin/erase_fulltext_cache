@@ -126,7 +126,7 @@ unless( $force )
 		print "This is not that dangerous, but will require the indexer\n";
 		print "to rebuild all the caches, which could take a some time.\n";
 	}
-	my $sure = EPrints::Utils::get_input_bool( "Continue" );
+	my $sure = EPrints::Utils::get_input_confirm( "Continue" );
 	unless( $sure )
 	{
 		print "Aborting then.\n\n";
