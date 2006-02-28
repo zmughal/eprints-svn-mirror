@@ -1407,24 +1407,30 @@ sub get_input_confirm
 		$prompt .= " [y/n] ? ";
 		print wrap_text( $prompt, 'console' );
 
-		Term::ReadKey::ReadMode( 'raw' );
-		my $in = Term::ReadKey::ReadKey( 0 );
-		Term::ReadKey::ReadMode( 'normal' );
-		if( lc($in) eq 'y' )
+		my $in="";
+		while( $in ne "y" && $in ne "n" )
 		{
-			return 1;
+			Term::ReadKey::ReadMode( 'raw' );
+			$in = lc(Term::ReadKey::ReadKey( 0 ));
+			Term::ReadKey::ReadMode( 'normal' );
 		}
+		if( $in eq "y" ) { print wrap_text( "yes" ); }
+		if( $in eq "n" ) { print wrap_text( "no" ); }
+		print "\n";
+		return( $in eq "y" );
 	}
 	else
 	{
 		$prompt .= " [yes/no] ? ";
-		print wrap_text( $prompt, 'console' );
-
-		my $in = Term::ReadKey::ReadLine( 0 );
-		if( lc($in) eq 'yes' )
+		my $in="";
+		while( $in ne "no" && $in ne "yes" )
 		{
-			return 1;
+			print wrap_text( $prompt, 'console' );
+
+			$in = lc(Term::ReadKey::ReadLine( 0 ));
+			chomp $in;
 		}
+		return( $in eq "yes" );
 	}
 	
 	return 0;

@@ -3480,3 +3480,10 @@ PACKAGE: 2.2.99.2
  * Renamed Utils::get_input_bool to get_input_confirm and changed $default
     option to be $quick (ask only for [y/n])
  * Moved LogHandler to Apache/
+
+2006-02-28 cjg
+
+ * Improved behaviour of get_input_confirm - now reprompts if it gets a non
+    yes/no value. Also fixed bug where it didn't trim "\n" from the inputed
+    data.
+
