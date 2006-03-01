@@ -3494,3 +3494,12 @@ PACKAGE: 2.2.99.2
  * Added a method $metafield->call_property() which calls the named property
     regardless of if it's a code reference or a scalar. 
 
+2006-03-01 tdb
+
+ * Changed create_user to create in cgi scripts
+ * Changed 'to' to 'recipient' and added check in send_mail_via_smtp (otherwise
+	rejection by the smtp server wouldn't be caught) - 'to' isn't documented in
+	Net::SMTP???
+ * Added brackets around URLs in emails (confirmation email and document
+    request) - most mail clients should be able to handle wrapped URLs if
+    enclosed in brackets

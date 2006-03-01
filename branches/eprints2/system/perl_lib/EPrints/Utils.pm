@@ -447,7 +447,12 @@ sub send_mail_via_smtp
 	}
 
 	$smtp->mail( $adminemail );
-	$smtp->to( $address );
+	if( !$smtp->recipient( $address ) )
+	{
+		$repository->log( "smtp server refused <$address>" );
+		$smtp->quit;
+		return 0;
+	}
 	$smtp->data();
 
 	my $mailheader = <<END;

@@ -417,19 +417,19 @@ terms.</p>
 
 <p>You now need to activate your new password, using the following URL:</p>
 
-<ep:pin ref="confirmurl" />
+&lt;<ep:pin ref="confirmurl" />&gt;
 
 <p>Your username is: <ep:pin ref="username" />.</p>
 
 <p>After you have successfully confirmed your password, you can deposit items at the following Web address:</p>
 
-&userhome;
+&lt;&userhome;&gt;
 
 <p>Once you have confirmed your identity you may also subscribe to the email alerts service, to be automatically informed of new deposits in the repository in your chosen subject areas in a daily, weekly or monthly digest.</p>
 
 <p>You can create a subscription by visiting the following page:</p>
 
-<p>&perl_url;/users/subscribe</p>
+<p>&lt;&perl_url;/users/subscribe&gt;</p>
 
 <p>Have your username and password ready when visiting any of the above pages.</p> <p>This message was generated automatically by software. If you have any questions, then please feel free to email a real person at:</p>
 
@@ -507,11 +507,11 @@ Please consider removing restrictions or uploading the full text to the archive 
 <ep:phrase ref="request_doc/request:links">
 To send the requested item, use the following link:
 
-<ep:pin ref="accept" />
+&lt;<ep:pin ref="accept" />&gt;
 
 To reject the request, use:
 
-<ep:pin ref="reject" />
+&lt;<ep:pin ref="reject" />&gt;
 </ep:phrase>
 
 <ep:phrase ref="request_doc/ack"><p>Your request has been sent.</p><ep:pin ref="link">Return to abstract page</ep:pin></ep:phrase>
@@ -519,7 +519,7 @@ To reject the request, use:
 <ep:phrase ref="request_doc/ack:body">Your request for the following item has been passed on for action: 
 
 <ep:pin ref="eprint" />
-<ep:pin ref="url" />
+&lt;<ep:pin ref="url" />&gt;
 
 If you do not receive a reply or need advice at a later time please contact &adminemail;. For items with copyright implications, you may also be able to contact your local interlibrary loan service.
 </ep:phrase>

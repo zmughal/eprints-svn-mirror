@@ -103,7 +103,7 @@ sub process_form
 	}
 
 	# Attempt to create a new account
-	my $new_user = EPrints::DataObj::User::create_user( $session, $usertype );
+	my $new_user = EPrints::DataObj::User::create( $session, $usertype );
 	
 	unless( defined $new_user )
 	{

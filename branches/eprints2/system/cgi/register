@@ -125,7 +125,7 @@ sub make_page
 			{username=>$session->make_text( $v->{username} )} );
 	}
 
-	my $user = EPrints::DataObj::User::create_user( $session, $default_type );
+	my $user = EPrints::DataObj::User::create( $session, $default_type );
 	foreach my $fieldid ( keys %{$f} )
 	{
 		$user->set_value( $fieldid, $v->{$fieldid} );
