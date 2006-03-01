@@ -35,7 +35,7 @@ sub new
 	my $self = $class->SUPER::new( %opts );
 
 	$self->{name} = "METS";
-	$self->{accept} = [ 'dataobj/eprint' ];
+	$self->{accept} = [ 'dataobj/eprint', 'list/eprint' ];
 	$self->{visible} = "all";
 	$self->{suffix} = ".xml";
 	$self->{mimetype} = "text/xml";
@@ -47,18 +47,69 @@ sub new
 }
 
 
+sub output_list
+{
+	my( $plugin, %opts ) = @_;
+
+	my $type = $opts{list}->get_dataset->confid;
+	my $toplevel = "mets";
+	
+	my $r = [];
+
+	my $part;
+	$part = <<EOX;
+<?xml version="1.0" encoding="utf-8" ?>
+
+<$toplevel xmlns="http://www.loc.gov/METS/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/METS/ http://www.loc.gov/standards/mets/mets.xsd">
+EOX
+	if( defined $opts{fh} )
+	{
+		print {$opts{fh}} $part;
+	}
+	else
+	{
+		push @{$r}, $part;
+	}
+
+	foreach my $dataobj ( $opts{list}->get_records )
+	{
+		$part = $plugin->output_dataobj( $dataobj, %opts );
+		if( defined $opts{fh} )
+		{
+			print {$opts{fh}} $part;
+		}
+		else
+		{
+			push @{$r}, $part;
+		}
+	}	
+
+	$part= "</$toplevel>\n";
+	if( defined $opts{fh} )
+	{
+		print {$opts{fh}} $part;
+	}
+	else
+	{
+		push @{$r}, $part;
+	}
+
+
+	if( defined $opts{fh} )
+	{
+		return;
+	}
+
+	return join( '', @{$r} );
+}
 
 sub xml_dataobj
 {
-	my( $plugin, $obj ) = @_;
+	my( $plugin, $obj, %opts ) = @_;
 
-	if( $obj->isa("EPrints::EPrint") )
-	{
-		return _eprint($plugin, $obj);
-	}
-	# Support for EPrints::Document
+	# Do we need to support document too?
 
-	croak("Unsupported object type [".ref($obj)."]");
+	return _eprint($plugin, $obj);
 }
 
 sub _eprint

@@ -113,6 +113,7 @@ sub xml_dataobj
 	my $co = $session->make_element(
 		"ctx:context-object",
 		"xmlns:ctx" => "info:ofi/fmt:xml:xsd:ctx",
+		"xmlns:xsi" => "http://www.w3.org/2001/XML",
 		"xsi:schemaLocation" => "info:ofi/fmt:xml:xsd:ctx http://www.openurl.info/registry/docs/info:ofi/fmt:xml:xsd:ctx",
 		"timestamp" => $dataobj->get_value( "datestamp" ),
 	);
