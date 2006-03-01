@@ -19,7 +19,7 @@ sub new
 
 	my( $self ) = $class->SUPER::new( %opts );
 
-	$self->{name} = "ContextObject";
+	$self->{name} = "OpenURL ContextObject";
 	$self->{accept} = [ 'list/eprint', 'list/accesslog', 'dataobj/eprint', 'dataobj/accesslog' ];
 	$self->{visible} = "all";
 	$self->{suffix} = ".xml";

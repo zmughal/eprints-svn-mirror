@@ -34,8 +34,8 @@ sub new
 
 	my( $self ) = $class->SUPER::new( %opts );
 
-	$self->{name} = "Journal ContextObject";
-	$self->{accept} = [ 'dataobj/eprint', 'dataobj/accesslog' ];
+	$self->{name} = "OpenURL Journal";
+	$self->{accept} = [ 'dataobj/eprint' ];
 	$self->{visible} = "all";
 	$self->{suffix} = ".xml";
 	$self->{mimetype} = "text/xml";
@@ -68,6 +68,7 @@ sub xml_dataobj
 	my $jnl = $session->make_element(
 		"jnl:journal",
 		"xmlns:jnl" => "info:ofi/fmt:xml:xsd:journal",
+		"xmlns:xsi" => "http://www.w3.org/2001/XML",
 		"xsi:schemaLocation" => "info:ofi/fmt:xml:xsd:journal http://www.openurl.info/registry/docs/info:ofi/fmt:xml:xsd:journal",
 	);
 
