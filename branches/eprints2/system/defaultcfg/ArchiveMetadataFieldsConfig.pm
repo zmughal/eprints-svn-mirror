@@ -89,7 +89,7 @@ $fields->{eprint} = [
 
 	{ name => "subjects", type=>"subject", top=>"subjects", multiple => 1, 
 		browse_link => "subjects",
-		render_input=>\&EPrints::Extras::subject_browser_input },
+		render_input=>"EPrints::Extras::subject_browser_input" },
 
 	{ name => "full_text_status", type=>"set",
 			options => [ "public", "restricted", "none" ] },
@@ -169,7 +169,7 @@ $fields->{eprint} = [
 	{ name => "issn", type => "text" },
 
 	{ name => "fileinfo", type => "longtext",
-		render_value=>\&render_fileinfo },
+		render_value=>"render_fileinfo" },
 
 	{ name => "book_title", type => "text" },
 	
