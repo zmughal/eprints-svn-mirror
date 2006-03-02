@@ -3509,3 +3509,6 @@ PACKAGE: 2.2.99.2
  * Changed default ArchiveRenderConfig to use scalars for call-backs instead 
     of code references.
 
+2006-03-02 tmb
+
+ * Added ssl_base_url entity and template-secure-en.xml for easier HTTPS setup
