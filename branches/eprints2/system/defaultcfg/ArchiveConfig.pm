@@ -838,7 +838,7 @@ sub get_entities
 	$entities{adminemail} = $repository->get_conf( "adminemail" );
 	$entities{base_url} = $repository->get_conf( "base_url" );
 	$entities{perl_url} = $repository->get_conf( "perl_url" );
-	$entities{ssl_base_url} = "https://" . $repository->get_conf("securehost") . $repository->get_conf("securepath");
+	$entities{https_base_url} = "https://" . $repository->get_conf("securehost") . $repository->get_conf("securepath");
 	$entities{frontpage} = $repository->get_conf( "frontpage" );
 	$entities{userhome} = $repository->get_conf( "userhome" );
 	$entities{version} = EPrints::Config::get( "version" );
