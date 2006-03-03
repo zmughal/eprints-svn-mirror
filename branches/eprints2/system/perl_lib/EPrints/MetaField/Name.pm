@@ -71,9 +71,11 @@ sub get_sql_index
 	
 sub render_single_value
 {
-	my( $self, $session, $value, $dont_link ) = @_;
+	my( $self, $session, $value, %render_opts ) = @_;
 
-	my $order = $self->get_property( "render_opts" )->{order};
+	$self->copy_in_render_opts( \%render_opts );
+
+	my $order = $render_opts{order};
 	
 	# If the render opt "order" is set to "gf" then we order
 	# the name with given name first. 

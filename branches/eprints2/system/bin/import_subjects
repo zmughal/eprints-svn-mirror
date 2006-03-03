@@ -208,7 +208,7 @@ if( !defined $filename )
 
 unless( $force )
 {
-	my $sure = EPrints::Utils::get_input_bool( "Are you sure you want to make bulk changes to the subject table in the $ARGV[0] repository" );
+	my $sure = EPrints::Utils::get_input_confirm( "Are you sure you want to make bulk changes to the subject table in the $ARGV[0] repository" );
 	unless( $sure )
 	{
 		print "Aborting then.\n\n";

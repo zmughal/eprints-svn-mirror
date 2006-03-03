@@ -142,6 +142,12 @@ sub _handle_end
 		{
 			push @{$parser->{eprints}->{imported}}, $item->get_id;
 		}
+
+		# don't keep tmpfiles between items...
+		foreach( @{$parser->{eprints}->{plugin}->{tmpfiles}} )
+		{
+			unlink( $_ );
+		}
 	}
 
 	if( $parser->{eprints}->{depth} > 1 )

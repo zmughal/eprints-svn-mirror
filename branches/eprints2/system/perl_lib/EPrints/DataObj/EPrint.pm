@@ -109,7 +109,7 @@ sub get_system_field_info
 	my( $class ) = @_;
 
 	return ( 
-	{ name=>"eprintid", type=>"int", required=>1 },
+	{ name=>"eprintid", type=>"int", required=>1, import=>0 },
 
 	{ name=>"rev_number", type=>"int", required=>1, can_clone=>0 },
 
@@ -127,15 +127,15 @@ sub get_system_field_info
 		datasetid=>"user", required=>0 },
 
 	{ name=>"dir", type=>"text", required=>0, can_clone=>0,
-		text_index=>0 },
+		text_index=>0, import=>0 },
 
-	{ name=>"datestamp", type=>"time", required=>0, 
+	{ name=>"datestamp", type=>"time", required=>0, import=>0,
 		render_opts=>{res=>"minute"}, can_clone=>0 },
 
-	{ name=>"lastmod", type=>"time", required=>0, 
+	{ name=>"lastmod", type=>"time", required=>0, import=>0,
 		render_opts=>{res=>"minute"}, can_clone=>0 },
 
-	{ name=>"status_changed", type=>"time", required=>0, 
+	{ name=>"status_changed", type=>"time", required=>0, import=>0,
 		render_opts=>{res=>"minute"}, can_clone=>0 },
 
 	{ name=>"type", type=>"datatype", datasetid=>"eprint", required=>1, 
@@ -291,7 +291,7 @@ sub create_from_data
 			objectid=>$new_eprint->get_id,
 			revision=>$new_eprint->get_value( "rev_number" ),
 			action=>"CREATE",
-			details=>undef
+			details=>undef,
 		}
 	);
 
@@ -754,7 +754,6 @@ sub commit
 			$self->get_value( "eprintid" ).": ".$db_error );
 		return $success;
 	}
-
 	$self->write_revision;
 
 	$self->queue_changes;

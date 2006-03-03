@@ -108,10 +108,19 @@ sub data_to_dataobj
 	
 	if( $plugin->{parse_only} )
 	{
+		if( $plugin->{session}->get_noise > 1 )
+		{
+			print STDERR "Would have imported an object into dataset ".$dataset->id."\n";
+		}	
 		return;
 	}
 
-	return $dataset->create_object( $plugin->{session}, $data );
+	my $item = $dataset->create_object( $plugin->{session}, $data );
+	if( $plugin->{session}->get_noise > 1 )
+	{
+		print STDERR "Imported ".$dataset->id.".".$item->get_id."\n";
+	}	
+	return $item;
 }
 
 sub warning

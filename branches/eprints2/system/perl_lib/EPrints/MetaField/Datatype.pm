@@ -44,7 +44,7 @@ use EPrints::MetaField::Set;
 
 sub render_single_value
 {
-	my( $self, $session, $value, $dont_link ) = @_;
+	my( $self, $session, $value, %render_opts ) = @_;
 	
 	my $ds = $session->get_repository->get_dataset(
 			$self->get_property( "datasetid" ) );

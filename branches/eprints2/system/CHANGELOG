@@ -3512,3 +3512,26 @@ PACKAGE: 2.2.99.2
 2006-03-02 tmb
 
  * Added ssl_base_url entity and template-secure-en.xml for easier HTTPS setup
+
+2006-03-03
+
+ * Caused the Apache related modules to only be loaded under mod_perl. This 
+    also fixes a problem between the Apache modules and Devel::DProf
+ * Added a new metafield property: import (default 1). If set to zero then
+    this field is ignored when the item is created. Used for eprintid's,
+    user'ids (*not* subjectids). Also used for "dir" and "last modified".
+ * $field->render_single_value and $field->get_values now accept render_opts
+    as a parameter, over-riding those set in the field.
+ * Added a final method to fields to indicate they are cached and should not
+    be modified. Causes an error if a property is set on a finalised field.
+ * DefaultXML import now removes tmp files after each item, rather than 
+    waiting until the end.
+ * Input plugins now output more information if noise is set.
+ * field_from_config_string now only clones the field if render_opts was set.
+ * Updated the POD for bin/indexer
+ * The indexer now rolls the logs once per day.
+ * Cleaned up the non-daemon mode of the indexer.
+ * import_subjects had an import_bool which needed to be changed to 
+    input_confirm .
+ * Minor tweaks to import_test_data
+

@@ -45,17 +45,18 @@ sub deal
 	my( $session , $table , $eprint, $info ) = @_;
 
 	$eprint->set_value( "userid", $info->{userid} );
-	$eprint = EPrints::EPrint::create( $session, $info->{ds}, $eprint->get_data() );
-
+	my $data = $eprint->get_data;
+	$eprint = EPrints::EPrint::create( $session, $info->{ds}, $data ); #slow
 	my $doc = EPrints::Document::create( $session, $eprint );
 	$doc->set_value( 'format','pdf');
 	my $pdf;
 	open( $pdf, $info->{datapath}."/demo.pdf" );
-	$doc->upload( $pdf, 'paper.pdf' );
+	$doc->upload( $pdf, 'paper.pdf' ); # slow
 	close $pdf;
 	$doc->set_value( 'main','paper.pdf');
-	$doc->commit;
+	$doc->commit; # slow
 
 	print "added: ".$eprint->get_id."\n";
 }
+
 

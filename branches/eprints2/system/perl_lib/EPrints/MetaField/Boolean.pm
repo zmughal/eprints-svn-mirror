@@ -58,7 +58,7 @@ sub get_index_codes
 
 sub render_single_value
 {
-	my( $self, $session, $value, $dont_link ) = @_;
+	my( $self, $session, $value, %render_opts ) = @_;
 
 	return $session->html_phrase(
 		"lib/metafield:".($value eq "TRUE"?"true":"false") );

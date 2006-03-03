@@ -158,7 +158,16 @@ sub create_from_data
 
 	$data = EPrints::Utils::clone( $data );
 
-	my $defaults = $class->get_defaults( $session, $data );
+	# get defaults modifies the hash so we must copy it.
+	my $defaults = {};
+	foreach( keys %{$data} ) { $defaults->{$_} = $data->{$_}; }
+	$defaults = $class->get_defaults( $session, $defaults );
+	
+	foreach my $field ( $dataset->get_fields )
+	{
+		next if $field->get_property( "import" );
+		delete $data->{$field->get_name};
+	}
 
 	foreach my $k ( keys %{$defaults} )
 	{

@@ -167,6 +167,8 @@ sub new
 		next if( $p_id eq "field_defaults" );
 		next if( $p_id eq "repository" );
 		next if( $p_id eq "dataset" );
+		# internal values ignored. They start with .
+		next if( $p_id =~ m/^\./ );
 		$self->{repository}->log( "Field '".$self->{name}."' has invalid parameter:\n$p_id => $properties{$p_id}" );
 	}
 
@@ -176,9 +178,35 @@ sub new
 ######################################################################
 =pod
 
+=item $field->final
+
+This method tells the metafield that it is now read only. Any call to
+set_property will produce a abort error.
+
+=cut
+######################################################################
+
+sub final
+{
+	my( $self ) = @_;
+
+	$self->{".final"} = 1;
+}
+
+
+######################################################################
+=pod
+
 =item $field->set_property( $property, $value )
 
 Set the named property to the given value.
+
+This should not be called on metafields unless they've been cloned
+first.
+
+This method will cause an abort error if the metafield is read only.
+
+In these cases a cloned version of the field should be used.
 
 =cut
 ######################################################################
@@ -186,6 +214,14 @@ Set the named property to the given value.
 sub set_property
 {
 	my( $self , $property , $value ) = @_;
+
+	if( $self->{".final"} )
+	{
+		EPrints::Config::abort( <<END );
+Attempt to set property "$property" on a finalised metafield.
+Field: $self->{name}, type: $self->{type}
+END
+	}
 
 	if( !defined $self->{field_defaults}->{$property} )
 	{
@@ -983,16 +1019,20 @@ sub get_id_field
 	#cjg SHould log an issue if otherwise?
 	#returns undef for non-id fields.
 	return unless( $self->get_property( "hasid" ) );
-	# hack to make the cloned field a different type
-	my $tmp_type = $self->{type}; 
-	$self->{type} = 'id'; 
-	my $idfield = $self->clone();
-	$self->{type} = $tmp_type;
-	$idfield->set_property( "multilang", 0 );
-	$idfield->set_property( "hasid", 0 );
-	$idfield->set_property( "type", "id" );
-	$idfield->set_property( "idpart", 1 );
-	return $idfield;
+
+	unless( $self->{".idfield"} )
+	{	
+		# hack to make the cloned field a different type
+		my $tmp_type = $self->{type}; 
+		$self->{type} = 'id'; 
+		$self->{".idfield"} = $self->clone();
+		$self->{type} = $tmp_type;
+		$self->{".idfield"}->set_property( "multilang", 0 );
+		$self->{".idfield"}->set_property( "hasid", 0 );
+		$self->{".idfield"}->set_property( "type", "id" );
+		$self->{".idfield"}->set_property( "idpart", 1 );
+	}
+	return $self->{".idfield"};
 }
 
 
@@ -1013,10 +1053,13 @@ sub get_main_field
 	# only meaningful to call this on "hasid" fields
 	return unless( $self->get_property( "hasid" ) );
 
-	my $idfield = $self->clone();
-	$idfield->set_property( "hasid", 0 );
-	$idfield->set_property( "mainpart", 1 );
-	return $idfield;
+	unless( $self->{".mainfield"} )
+	{
+		$self->{".mainfield"} = $self->clone();
+		$self->{".mainfield"}->set_property( "hasid", 0 );
+		$self->{".mainfield"}->set_property( "mainpart", 1 );
+	}
+	return $self->{".mainfield"};
 }
 
 

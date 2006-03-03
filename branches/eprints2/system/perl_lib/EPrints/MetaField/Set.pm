@@ -42,7 +42,7 @@ use EPrints::MetaField::Basic;
 
 sub render_single_value
 {
-	my( $self, $session, $value, $dont_link ) = @_;
+	my( $self, $session, $value, %render_opts ) = @_;
 
 	return $self->render_option( $session , $value );
 }

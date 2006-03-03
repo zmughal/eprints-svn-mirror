@@ -44,7 +44,7 @@ use EPrints::MetaField::Text;
 # eprints 2.2
 sub render_single_value
 {
-	my( $self, $session, $value, $dont_link ) = @_;
+	my( $self, $session, $value, %render_opts ) = @_;
 
 	unless( $value =~ m/^(\d+)-(\d+)$/ )
 	{

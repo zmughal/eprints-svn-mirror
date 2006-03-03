@@ -486,6 +486,12 @@ $self->{repository}->get_id.": ".
 	} 
 	$cache->{$self->{confid}} = $self;
 
+	# lock these metadata fields against being modified again.
+	foreach my $field ( @{$self->{fields}} )
+	{
+		$field->final;
+	}
+
 	return $self;
 }
 
@@ -510,12 +516,17 @@ sub get_field
 	# not really exist.
 	if( $fieldname eq $EPrints::Utils::FULLTEXT )
 	{
-		my $field = EPrints::MetaField->new( 
-			dataset=>$self , 
-			name=>$fieldname,
-			multiple=>1,
-			type=>"fulltext" );
-		return $field;
+		if( !defined $self->{fulltext_field} )
+		{
+			$self->{fulltext_field} = EPrints::MetaField->new( 
+				dataset=>$self , 
+				name=>$fieldname,
+				multiple=>1,
+				type=>"fulltext" );
+			$self->{fulltext_field}->set_property( "multiple",1 );
+			$self->{fulltext_field}->final;
+		}
+		return $self->{fulltext_field};
 	}
 	if( $fieldname =~ m/^_/ )
 	{

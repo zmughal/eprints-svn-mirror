@@ -92,25 +92,42 @@ sub get_sql_index
 ######################################################################
 =pod
 
-=item $xhtml_dom = $field->render_single_value( $session, $value, $dont_link )
+=item $xhtml_dom = $field->render_single_value( $session, $value, %render_opts )
 
 Returns the XHTML representation of the value. The value will be
 non-multiple and non-multilang and have no "id" part. Just the
 simple value.
 
-If $dont_link then do not render any hypertext links in the returned XHTML.
+%render_opts over ride the render options of the field.
 
 =cut
 ######################################################################
 
 sub render_single_value
 {
-	my( $self, $session, $value, $dont_link ) = @_;
+	my( $self, $session, $value, %render_opts ) = @_;
 
 	return $session->make_text( $value );
 }
 
 
+# $field->copy_in_render_opts
+#
+# Used internally to replace any undefined keys in a hash with values
+# from this fields render_opts.
+#
+
+sub copy_in_render_opts
+{
+	my( $self, $opts ) = @_;
+
+	return unless defined $self->{render_opts};
+
+	foreach( keys %{$self->{render_opts}} ) 
+	{ 
+		$opts->{$_} = $self->{render_opts}->{$_} unless defined $opts->{$_}; 
+	}
+}
 
 
 ######################################################################
@@ -1361,6 +1378,7 @@ sub get_property_defaults
 		hasid 		=> 0,
 		id_editors_only	=> 0,
 		idpart 		=> 0, # internal
+		import		=> 1,
 		input_add_boxes => $EPrints::MetaField::FROM_CONFIG,
 		input_advice_right => $EPrints::MetaField::UNDEF,
 		input_advice_below => $EPrints::MetaField::UNDEF,

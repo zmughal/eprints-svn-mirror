@@ -50,9 +50,11 @@ sub get_sql_type
 
 sub render_single_value
 {
-	my( $self, $session, $value, $dont_link ) = @_;
+	my( $self, $session, $value, %render_opts ) = @_;
 
-	my $res = $self->get_property( "render_opts" )->{res};
+	$self->copy_in_render_opts( \%render_opts );
+
+	my $res = $render_opts{res};
 
 	my $l = 19;
 	if( $res eq "minute" ) { $l = 16; }
@@ -261,11 +263,13 @@ sub form_value_basic
 
 sub get_unsorted_values
 {
-	my( $self, $session, $dataset, %opts ) = @_;
+	my( $self, $session, $dataset, %render_opts ) = @_;
 
 	my $values = $session->get_db()->get_values( $self, $dataset );
 
-	my $res = $self->get_property( "render_opts" )->{res};
+	$self->copy_in_render_opts( \%render_opts );
+
+	my $res = $render_opts{res};
 
 	if( $res eq "day" )
 	{

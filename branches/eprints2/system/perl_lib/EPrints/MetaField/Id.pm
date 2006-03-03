@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::MetaField::Boolean;
+# EPrints::MetaField::Id;
 #
 ######################################################################
 #
@@ -16,7 +16,7 @@
 
 =head1 NAME
 
-B<EPrints::MetaField::Boolean> - no description
+B<EPrints::MetaField::Id> - no description
 
 =head1 DESCRIPTION
 

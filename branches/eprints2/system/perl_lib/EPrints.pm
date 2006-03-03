@@ -41,6 +41,17 @@ BEGIN {
 		# otherwise ok.
 	}
 
+	if( $ENV{MOD_PERL} )
+	{
+		eval '
+use EPrints::Apache::AnApache;
+use EPrints::Apache::Auth;
+use EPrints::Apache::Rewrite;
+use EPrints::Apache::VLit;
+1;';
+		if( $@ ) { abort( $@ ); }
+	}
+
 	# abort($err) Defined here so modules can abort even at startup
 ######################################################################
 =pod
@@ -103,7 +114,6 @@ END
 	}
 }
 
-use EPrints::Apache::AnApache;
 use EPrints::BackCompatibility;
 use EPrints::XML;
 use EPrints::Utils;
@@ -138,9 +148,6 @@ use EPrints::SubmissionForm;
 use EPrints::UserForm;
 use EPrints::UserPage;
 use EPrints::Paracite;
-use EPrints::Apache::Auth;
-use EPrints::Apache::Rewrite;
-use EPrints::Apache::VLit;
 use EPrints::Workflow;
 use EPrints::Workflow::Stage;
 use EPrints::Workflow::Processor;

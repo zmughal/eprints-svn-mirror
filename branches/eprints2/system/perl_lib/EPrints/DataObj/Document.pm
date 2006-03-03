@@ -122,7 +122,7 @@ sub get_system_field_info
 
 	return 
 	( 
-		{ name=>"docid", type=>"text", required=>1 },
+		{ name=>"docid", type=>"text", required=>1, import=>0 },
 
 		{ name=>"rev_number", type=>"int", required=>1, can_clone=>0 },
 

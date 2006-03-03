@@ -1244,19 +1244,7 @@ sub field_from_config_string
 		}
 	}
 
-	my $field;
-	if( $fieldname eq $EPrints::Utils::FULLTEXT )
-	{
-		$field = new EPrints::MetaField(
-				dataset=>$dataset,
-				multiple=>1,
-				name=>$EPrints::Utils::FULLTEXT,
-				type=>"fulltext" );
-	}
-	else
-	{
-		$field = $dataset->get_field( $fieldname );
-	}
+	my $field = $dataset->get_field( $fieldname );
 
 	if( !defined $field )
 	{
@@ -1278,17 +1266,20 @@ sub field_from_config_string
 
 	unless( $modifiers ) { return $field; }
 
-	$field = $field->clone;
-
-	my $opts = {};
-	foreach( keys %q )
+	if( scalar keys %q )
 	{
-		my( $k, $v ) = split( /=/, $_ );
-		$v = 1 unless defined $v;
-		$opts->{$k} = $v;
-	}
+		my $opts = {};
+		foreach( keys %q )
+		{
+			my( $k, $v ) = split( /=/, $_ );
+			$v = 1 unless defined $v;
+			$opts->{$k} = $v;
+		}
 
-	$field->set_property( "render_opts", $opts );
+		$field = $field->clone;
+	
+		$field->set_property( "render_opts", $opts );
+	}
 	
 	return $field;
 }
@@ -1300,7 +1291,7 @@ sub field_from_config_string
 
 Read input from the keyboard.
 
-Prints the prompt and default value, if any. eg.
+Prints the promp and default value, if any. eg.
  How many fish [5] >
 
 Return the value the user enters at the keyboard.
