@@ -481,13 +481,10 @@ sub _from_stage_home
 					"userhome" ) );
 			return( 0 );
 		}
-		$self->{eprint} = EPrints::DataObj::EPrint::create(
-			$self->{session},
-			$self->{dataset} );
-		$self->{eprint}->set_value( 
-			"userid", 
-			$self->{user}->get_value( "userid" ) );
-		$self->{eprint}->commit();
+		
+		$self->{eprint} = $self->{dataset}->create_object( $self->{session}, { 
+			userid => $self->{user}->get_value( "userid" ) } );
+
 		$self->{eprintid} = $self->{eprint}->get_id;
 
 		if( !defined $self->{eprint} )
@@ -881,9 +878,9 @@ sub _from_stage_files
 		
 	if( $self->{action} eq "newdoc" )
 	{
-		$self->{document} = EPrints::DataObj::Document::create( 
-			$self->{session},
-			$self->{eprint} );
+		my $doc_ds = $self->{session}->get_repository->get_dataset( 'document' );
+		$self->{document} = $doc_ds->create_object( $self->{session}, { 
+			eprintid => $self->{eprint}->get_id } );
 		if( !defined $self->{document} )
 		{
 			$self->_database_err;

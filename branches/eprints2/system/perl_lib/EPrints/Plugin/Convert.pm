@@ -165,12 +165,13 @@ sub convert
 
 	my $session = $plugin->{session};
 
-	my $new_doc = EPrints::DataObj::Document->create( $session, $eprint );
-	
-	$new_doc->set_format( $type );
-	$new_doc->set_desc( $plugin->{name} . ' conversion from ' . $doc->get_type . ' to ' . $type );
+	my $doc_ds = $session->get_repository->get_dataset( "document" );
+	my $new_doc = $doc_ds->create_object( $session, { 
+		eprintid => $eprint->get_id,
+		type => $type,
+		format_desc => $plugin->{name} . ' conversion from ' . $doc->get_type . ' to ' . $type } );
 	$new_doc->add_file( $_ ) for map { "$dir/$_" } @files;
-	$new_doc->commit;
+	$new_doc->commit; # can this be done without a commit at all?
 
 	return $new_doc;
 }

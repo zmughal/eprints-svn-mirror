@@ -241,13 +241,13 @@ sub new_from_data
 
 
 ######################################################################
-=pod
-
-=item $user = EPrints::DataObj::User::create( $session, $user_type )
-
-Create a new user in the database with the specified user type.
-
-=cut
+# =pod
+# 
+# =item $user = EPrints::DataObj::User::create( $session, $user_type )
+# 
+# Create a new user in the database with the specified user type.
+# 
+# =cut
 ######################################################################
 
 sub create

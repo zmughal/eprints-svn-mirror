@@ -116,18 +116,18 @@ sub new_from_data
 }
 
 ######################################################################
-=pod
-
-=item $dataobj = EPrints::DataObj->create( $session, @default_data )
-
-ABSTRACT.
-
-Create a new object of this type in the database. 
-
-The syntax for @default_data depends on the type of data object.
-
-=cut
-######################################################################
+#=pod
+#
+#=item $dataobj = EPrints::DataObj->create( $session, @default_data )
+#
+#ABSTRACT.
+#
+#Create a new object of this type in the database. 
+#
+#The syntax for @default_data depends on the type of data object.
+#
+#=cut
+#######################################################################
 
 sub create
 {
@@ -137,19 +137,21 @@ sub create
 
 
 ######################################################################
-=pod
-
-=item $dataobj = EPrints::DataObj->create_from_data( $session, $data, $dataset )
-
-Create a new object of this type in the database. 
-
-$dataset is the dataset it will belong to. 
-
-$data is the data structured as with new_from_data.
-
-This will create sub objects also.
-
-=cut
+#=pod
+#
+#=item $dataobj = EPrints::DataObj->create_from_data( $session, $data, $dataset )
+#
+#Create a new object of this type in the database. 
+#
+#$dataset is the dataset it will belong to. 
+#
+#$data is the data structured as with new_from_data.
+#
+#This will create sub objects also.
+#
+#Call this via $dataset->create_object( $session, $data )
+#
+#=cut
 ######################################################################
 
 sub create_from_data

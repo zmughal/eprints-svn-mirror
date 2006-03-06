@@ -241,18 +241,18 @@ sub remove_all
 
 	
 ######################################################################
-=pod
-
-=item $permission = EPrints::DataObj::Permission::create( $session, $id, $name, $parents, $depositable )
-
-Creates a new permission in the database. $id is the ID of the permission,
-$name is a multilang data structure with the name of the permission in
-one or more languages. eg. { en=>"Trousers", en-us=>"Pants}. $parents
-is a reference to an array containing the ID's of one or more other
-permissions (don't make loops!). If $depositable is true then eprints may
-belong to this permission.
-
-=cut
+# =pod
+# 
+# =item $permission = EPrints::DataObj::Permission::create( $session, $id, $name, $parents, $depositable )
+# 
+# Creates a new permission in the database. $id is the ID of the permission,
+# $name is a multilang data structure with the name of the permission in
+# one or more languages. eg. { en=>"Trousers", en-us=>"Pants}. $parents
+# is a reference to an array containing the ID's of one or more other
+# permissions (don't make loops!). If $depositable is true then eprints may
+# belong to this permission.
+# 
+# =cut
 ######################################################################
 
 sub create
@@ -276,15 +276,15 @@ sub create
 }
 
 ######################################################################
-=pod
-
-=item $dataobj = EPrints::DataObj::Permission->create_from_data( $session, $data, $dataset )
-
-Returns undef if a bad (or no) permissionid is specified.
-
-Otherwise calls the parent method in EPrints::DataObj.
-
-=cut
+# =pod
+# 
+# =item $dataobj = EPrints::DataObj::Permission->create_from_data( $session, $data, $dataset )
+# 
+# Returns undef if a bad (or no) permissionid is specified.
+# 
+# Otherwise calls the parent method in EPrints::DataObj.
+# 
+# =cut
 ######################################################################
 
 sub create_from_data
@@ -369,7 +369,8 @@ as a child of the current permission.
 sub create_child
 {
 	my( $self, $id, $name, $depositable ) = @_;
-	
+
+	#old create method!	
 	return( EPrints::DataObj::Permission::create( $self->{session},
 	                                  $id,
 	                                  $name,

@@ -247,18 +247,18 @@ sub remove_all
 
 	
 ######################################################################
-=pod
-
-=item $subject = EPrints::DataObj::Subject::create( $session, $id, $name, $parents, $depositable )
-
-Creates a new subject in the database. $id is the ID of the subject,
-$name is a multilang data structure with the name of the subject in
-one or more languages. eg. { en=>"Trousers", en-us=>"Pants}. $parents
-is a reference to an array containing the ID's of one or more other
-subjects (don't make loops!). If $depositable is true then eprints may
-belong to this subject.
-
-=cut
+# =pod
+# 
+# =item $subject = EPrints::DataObj::Subject::create( $session, $id, $name, $parents, $depositable )
+# 
+# Creates a new subject in the database. $id is the ID of the subject,
+# $name is a multilang data structure with the name of the subject in
+# one or more languages. eg. { en=>"Trousers", en-us=>"Pants}. $parents
+# is a reference to an array containing the ID's of one or more other
+# subjects (don't make loops!). If $depositable is true then eprints may
+# belong to this subject.
+# 
+# =cut
 ######################################################################
 
 sub create
@@ -282,15 +282,15 @@ sub create
 }
 
 ######################################################################
-=pod
-
-=item $dataobj = EPrints::DataObj::Subject->create_from_data( $session, $data, $dataset )
-
-Returns undef if a bad (or no) subjectid is specified.
-
-Otherwise calls the parent method in EPrints::DataObj.
-
-=cut
+# =pod
+# 
+# =item $dataobj = EPrints::DataObj::Subject->create_from_data( $session, $data, $dataset )
+# 
+# Returns undef if a bad (or no) subjectid is specified.
+# 
+# Otherwise calls the parent method in EPrints::DataObj.
+# 
+# =cut
 ######################################################################
 
 sub create_from_data
@@ -375,12 +375,13 @@ as a child of the current subject.
 sub create_child
 {
 	my( $self, $id, $name, $depositable ) = @_;
-	
-	return( EPrints::DataObj::Subject::create( $self->{session},
-	                                  $id,
-	                                  $name,
-	                                  $self->{subjectid},
-	                                  $depositable ) );
+
+	return $self->{dataset}->create_object( $self->{session}, 	
+		{ "subjectid"=>$id,
+		  "name"=>$name,
+		  "parents"=>[$self->{subjectid}],
+		  "ancestors"=>[],
+		  "depositable"=>($depositable ? "TRUE" : "FALSE" ) } );
 }
 
 
@@ -903,7 +904,7 @@ sub valid_id
 {
 	my( $id ) = @_;
 
-	return 0 if( m/\s/ ); # no whitespace
+	return 0 if( $id =~ m/\s/ ); # no whitespace
 
 	return 1;
 }

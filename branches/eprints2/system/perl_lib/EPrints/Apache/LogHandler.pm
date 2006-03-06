@@ -165,11 +165,7 @@ sub handler
 			referent_docid => $doc,
 		});
 
-	EPrints::DataObj::Access->create_from_data(
-		$session,
-		$data,
-		$session->get_repository->get_dataset( "accesslog" )
-	);
+	$session->get_repository->get_dataset( "accesslog" )->create_object( $session, $data );
 	
 	return OK;
 }

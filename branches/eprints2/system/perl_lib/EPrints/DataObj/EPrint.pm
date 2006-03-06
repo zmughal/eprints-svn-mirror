@@ -216,21 +216,21 @@ sub new_from_data
 	
 
 ######################################################################
-=pod
-
-=item $eprint = EPrints::DataObj::EPrint::create( $session, $dataset, $data )
-
-Create a new EPrint entry in the given dataset.
-
-If data is defined, then this is used as the base for the new record.
-Otherwise the repository specific defaults (if any) are used.
-
-The fields "eprintid" and "dir" will be overridden even if they
-are set.
-
-If C<$data> is not defined calls L</set_eprint_defaults>.
-
-=cut
+# =pod
+# 
+# =item $eprint = EPrints::DataObj::EPrint::create( $session, $dataset, $data )
+# 
+# Create a new EPrint entry in the given dataset.
+# 
+# If data is defined, then this is used as the base for the new record.
+# Otherwise the repository specific defaults (if any) are used.
+# 
+# The fields "eprintid" and "dir" will be overridden even if they
+# are set.
+# 
+# If C<$data> is not defined calls L</set_eprint_defaults>.
+# 
+# =cut
 ######################################################################
 
 sub create
@@ -244,19 +244,19 @@ sub create
 }
 
 ######################################################################
-=pod
-
-=item $dataobj = EPrints::DataObj->create_from_data( $session, $data, $dataset )
-
-Create a new object of this type in the database. 
-
-$dataset is the dataset it will belong to. 
-
-$data is the data structured as with new_from_data.
-
-This will create sub objects also.
-
-=cut
+# =pod
+# 
+# =item $dataobj = EPrints::DataObj->create_from_data( $session, $data, $dataset )
+# 
+# Create a new object of this type in the database. 
+# 
+# $dataset is the dataset it will belong to. 
+# 
+# $data is the data structured as with new_from_data.
+# 
+# This will create sub objects also.
+# 
+# =cut
 ######################################################################
 
 sub create_from_data
@@ -283,7 +283,8 @@ sub create_from_data
 	my $userid = undef;
 	$userid = $user->get_id if defined $user;
 
-	EPrints::DataObj::History::create( 
+	my $history_ds = $session->get_repository->get_dataset( "history" );
+	$history_ds->create_object( 
 		$session,
 		{
 			userid=>$userid,
@@ -516,9 +517,8 @@ sub clone
 	}
 
 	# Create the new EPrint record
-	my $new_eprint = EPrints::DataObj::EPrint::create(
+	my $new_eprint = $dest_dataset->create_object(
 		$self->{session},
-		$dest_dataset,
 		$data );
 	
 	unless( defined $new_eprint )
@@ -603,7 +603,8 @@ sub _transfer
 	my $userid = undef;
 	$userid = $user->get_id if defined $user;
 	my $code = "MOVE_"."\U$old_status"."_TO_"."\U$new_status";
-	EPrints::DataObj::History::create( 
+	my $history_ds = $self->{session}->get_repository->get_dataset( "history" );
+	$history_ds->create_object( 
 		$self->{session},
 		{
 			userid=>$userid,
@@ -653,7 +654,8 @@ sub log_mail_owner
 	my $userid = undef;
 	$userid = $user->get_id if defined $user;
 
-	EPrints::DataObj::History::create( 
+	my $history_ds = $self->{session}->get_repository->get_dataset( "history" );
+	$history_ds->create_object( 
 		$self->{session},
 		{
 			userid=>$userid,
@@ -764,7 +766,8 @@ sub commit
 	my $userid = undef;
 	$userid = $user->get_id if defined $user;
 
-	EPrints::DataObj::History::create( 
+	my $history_ds = $self->{session}->get_repository->get_dataset( "history" );
+	$history_ds->create_object( 
 		$self->{session},
 		{
 			userid=>$userid,

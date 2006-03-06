@@ -202,17 +202,17 @@ sub new_from_data
 
 
 ######################################################################
-=pod
-
-=item $doc = EPrints::DataObj::Document::create( $session, $eprint )
-
-Create and return a new Document belonging to the given $eprint object, 
-get the initial metadata from set_document_defaults in the configuration
-for this repository.
-
-Note that this creates the document in the database, not just in memory.
-
-=cut
+# =pod
+# 
+# =item $doc = EPrints::DataObj::Document::create( $session, $eprint )
+# 
+# Create and return a new Document belonging to the given $eprint object, 
+# get the initial metadata from set_document_defaults in the configuration
+# for this repository.
+# 
+# Note that this creates the document in the database, not just in memory.
+# 
+# =cut
 ######################################################################
 
 sub create
@@ -226,15 +226,15 @@ sub create
 }
 
 ######################################################################
-=pod
-
-=item $dataobj = EPrints::DataObj::Document->create_from_data( $session, $data, $dataset )
-
-Returns undef if a bad (or no) subjectid is specified.
-
-Otherwise calls the parent method in EPrints::DataObj.
-
-=cut
+# =pod
+# 
+# =item $dataobj = EPrints::DataObj::Document->create_from_data( $session, $data, $dataset )
+# 
+# Returns undef if a bad (or no) subjectid is specified.
+# 
+# Otherwise calls the parent method in EPrints::DataObj.
+# 
+# =cut
 ######################################################################
 
 sub create_from_data
@@ -531,7 +531,8 @@ sub clone
 	my( $self, $eprint ) = @_;
 	
 	# First create a new doc object
-	my $new_doc = EPrints::DataObj::Document::create( $self->{session}, $eprint );
+	my $new_doc = $self->{dataset}->create_object( $self->{session},
+		{ eprintid=>$eprint->get_id } );
 
 	return( 0 ) if( !defined $new_doc );
 	

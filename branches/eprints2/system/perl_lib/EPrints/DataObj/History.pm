@@ -221,17 +221,17 @@ sub remove
 }
 
 ######################################################################
-=pod
-
-=item EPrints::DataObj::History::create( $session, $data );
-
-Create a new history object from this data. Unlike other create
-methods this one does not return the new object as it's never 
-needed, and would increase the load of modifying items.
-
-Also, this does not queue the fields for indexing.
-
-=cut
+# =pod
+# 
+# =item EPrints::DataObj::History::create( $session, $data );
+# 
+# Create a new history object from this data. Unlike other create
+# methods this one does not return the new object as it's never 
+# needed, and would increase the load of modifying items.
+# 
+# Also, this does not queue the fields for indexing.
+# 
+# =cut
 ######################################################################
 
 sub create

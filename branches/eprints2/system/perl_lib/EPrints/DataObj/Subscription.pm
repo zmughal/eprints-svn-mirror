@@ -131,14 +131,14 @@ sub new_from_data
 }
 
 ######################################################################
-=pod
-
-=item $subscription = EPrints::DataObj::Subscription->create( $session, $userid )
-
-Create a new Subsciption entry in the database, belonging to user
-with id $userid.
-
-=cut
+# =pod
+# 
+# =item $subscription = EPrints::DataObj::Subscription->create( $session, $userid )
+# 
+# Create a new Subsciption entry in the database, belonging to user
+# with id $userid.
+# 
+# =cut
 ######################################################################
 
 sub create
