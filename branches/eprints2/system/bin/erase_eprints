@@ -146,7 +146,7 @@ unless( $force )
 
 print "Erasing tables.\n" if( $noise >= 1 );
 
-my $db = $session->get_db();
+my $db = $session->get_database;
 my @tables = $db->get_tables;
 foreach my $table ( @tables )
 {

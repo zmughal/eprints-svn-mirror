@@ -132,7 +132,7 @@ my %PRIVS = (
 );
 
 my $userauth = $session->get_repository->get_conf( "userauth" );
-my $db = $session->get_db();
+my $db = $session->get_database;
 
 # Clear the existing tables
 if( 0 and $purge ) {

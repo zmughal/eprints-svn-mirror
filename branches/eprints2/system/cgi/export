@@ -17,7 +17,7 @@ use EPrints;
 use strict;
 my $session = new EPrints::Session;
 exit( 0 ) unless( defined $session );
-# $session->get_db->set_debug( 1 );
+# $session->get_database->set_debug( 1 );
 
 my $path_info = $session->get_request->path_info;
 

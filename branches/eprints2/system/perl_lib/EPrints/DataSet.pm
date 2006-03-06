@@ -656,7 +656,7 @@ sub count
 		return $list->count;
 	}
 
-	return $session->get_db()->count_table( $self->get_sql_table_name() );
+	return $session->get_database->count_table( $self->get_sql_table_name() );
 }
  
 
@@ -1272,7 +1272,7 @@ sub get_item_ids
 		my $list = $searchexp->perform_search;
 		return $list->get_ids;
 	}
-	return $session->get_db->get_values( $self->get_key_field, $self );
+	return $session->get_database->get_values( $self->get_key_field, $self );
 }
 
 

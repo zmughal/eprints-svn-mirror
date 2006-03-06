@@ -462,7 +462,7 @@ sub has_privilege
 	}
 
 	# TODO: Replace undef with remote IP address (if available)
-	push @permitted_roles, $session->get_db->get_roles( $priv, undef, @roles );
+	push @permitted_roles, $session->get_database->get_roles( $priv, undef, @roles );
 
 	return @permitted_roles;
 }

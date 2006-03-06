@@ -109,7 +109,7 @@ sub new
 		return EPrints::DataObj::Subject->new_from_data( $session, $data );
 	}
 
-	return $session->get_db()->get_single( 
+	return $session->get_database->get_single( 
 			$session->get_repository->get_dataset( "subject" ), 
 			$subjectid );
 
@@ -173,7 +173,7 @@ sub commit
 	}
 	$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 
-	my $rv = $self->{session}->get_db()->update(
+	my $rv = $self->{session}->get_database->update(
 			$self->{dataset},
 			$self->{data} );
 	
@@ -213,7 +213,7 @@ sub remove
 	#cjg Should we unlink all eprints linked to this subject from
 	# this subject?
 
-	return $self->{session}->get_db()->remove(
+	return $self->{session}->get_database->remove(
 		$self->{dataset},
 		$self->{data}->{subjectid} );
 }
@@ -236,11 +236,11 @@ sub remove_all
 	my( $session ) = @_;
 
 	my $ds = $session->get_repository->get_dataset( "subject" );
-	my @subjects = $session->get_db()->get_all( $ds );
+	my @subjects = $session->get_database->get_all( $ds );
 	foreach( @subjects )
 	{
 		my $id = $_->get_value( "subjectid" );
-		$session->get_db()->remove( $ds, $id );
+		$session->get_database->remove( $ds, $id );
 	}
 	return;
 }
@@ -752,7 +752,7 @@ sub get_all
 	my( $session ) = @_;
 	
 	# Retrieve all of the subjects
-	my @subjects = $session->get_db()->get_all( 
+	my @subjects = $session->get_database->get_all( 
 		$session->get_repository->get_dataset( "subject" ) );
 
 	return( undef ) if( scalar @subjects == 0 );

@@ -84,7 +84,7 @@ sub make_confirm_page
 	{
 		# check no one else has this email! cjg
 		my $sql = "UPDATE ".$user_ds->get_sql_table_name()." SET email=newemail, newemail=NULL, pin=NULL where userid=".$userid; 
-		$session->get_db()->do( $sql );
+		$session->get_database->do( $sql );
 		$page->appendChild( $session->html_phrase( 
 			"cgi/confirm:set_email",
 			newemail=>$session->make_text( $user->get_value( "newemail" ) ) ) );
@@ -93,7 +93,7 @@ sub make_confirm_page
 	{
 		# Must be password then. Can't see it 'cus it's a "secret".
 		my $sql = "UPDATE ".$user_ds->get_sql_table_name()." SET password=newpassword, newpassword=NULL, pin=NULL where userid=".$userid; 
-		$session->get_db()->do( $sql );
+		$session->get_database->do( $sql );
 		$page->appendChild( $session->html_phrase( "cgi/confirm:set_password" ) );
 	}
 

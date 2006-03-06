@@ -3513,7 +3513,7 @@ PACKAGE: 2.2.99.2
 
  * Added ssl_base_url entity and template-secure-en.xml for easier HTTPS setup
 
-2006-03-03
+2006-03-03 cjg
 
  * Caused the Apache related modules to only be loaded under mod_perl. This 
     also fixes a problem between the Apache modules and Devel::DProf
@@ -3534,4 +3534,8 @@ PACKAGE: 2.2.99.2
  * import_subjects had an import_bool which needed to be changed to 
     input_confirm .
  * Minor tweaks to import_test_data
+
+2006-03-06 cjg
+
+ * Renamed get_db to get_database
 

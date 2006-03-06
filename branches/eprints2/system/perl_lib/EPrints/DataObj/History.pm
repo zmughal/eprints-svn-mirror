@@ -146,7 +146,7 @@ sub new
 {
 	my( $class, $session, $historyid ) = @_;
 
-	return $session->get_db()->get_single( 
+	return $session->get_database->get_single( 
 			$session->get_repository->get_dataset( "history" ), 
 			$historyid );
 
@@ -258,7 +258,7 @@ sub get_defaults
 {
 	my( $class, $session, $data ) = @_;
 	
-	$data->{historyid} = $session->get_db->counter_next( "historyid" );
+	$data->{historyid} = $session->get_database->counter_next( "historyid" );
 
 	$data->{timestamp} = EPrints::Utils::get_datetimestamp( time );
 

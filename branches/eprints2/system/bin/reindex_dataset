@@ -79,14 +79,14 @@ my $fn = sub {
 	{
 		next unless( $field->get_property( "text_index" ) );
 
-		$session->get_db->index_queue( 
+		$session->get_database->index_queue( 
 			$dataset->id,
 			$item->get_id,
 			$field->get_name );
 	}	
 	if( $dataset->confid eq "eprint" )
 	{
-		$session->get_db->index_queue( 
+		$session->get_database->index_queue( 
 			$dataset->id,
 			$item->get_id,
 			$EPrints::Utils::FULLTEXT );

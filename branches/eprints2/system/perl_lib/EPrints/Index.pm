@@ -63,8 +63,8 @@ sub remove
 	my $rindextable = $dataset->get_sql_rindex_table_name();
 
 	$sql = "SELECT word FROM $rindextable WHERE $where";
-	my $sth=$session->get_db->prepare( $sql );
-	$rv = $rv && $session->get_db->execute( $sth, $sql );
+	my $sth=$session->get_database->prepare( $sql );
+	$rv = $rv && $session->get_database->execute( $sth, $sql );
 	my @codes = ();
 	while( my( $c ) = $sth->fetchrow_array )
 	{
@@ -76,18 +76,18 @@ sub remove
 	{
 		my $fieldword = EPrints::Database::prep_value( "$fieldid:$code" );
 		$sql = "SELECT ids,pos FROM $indextable WHERE fieldword='$fieldword' AND ids LIKE '%:$objectid:%'";
-		$sth=$session->get_db->prepare( $sql );
-		$rv = $rv && $session->get_db->execute( $sth, $sql );
+		$sth=$session->get_database->prepare( $sql );
+		$rv = $rv && $session->get_database->execute( $sth, $sql );
 		if( my($ids,$pos) = $sth->fetchrow_array )
 		{
 			$ids =~ s/:$objectid:/:/g;
 			$sql = "UPDATE $indextable SET ids = '$ids' WHERE fieldword='$fieldword' AND pos='$pos'";
-			$rv = $rv && $session->get_db->do( $sql );
+			$rv = $rv && $session->get_database->do( $sql );
 		}
 		$sth->finish;
 	}
 	$sql = "DELETE FROM $rindextable WHERE $where";
-	$rv = $rv && $session->get_db->do( $sql );
+	$rv = $rv && $session->get_database->do( $sql );
 
 	return $rv;
 }
@@ -110,8 +110,8 @@ sub purge_index
 	my $indextable = $dataset->get_sql_index_table_name();
 	my $rindextable = $dataset->get_sql_rindex_table_name();
 	my $sql;
-	$session->get_db->do( "DELETE FROM $indextable" );
-	$session->get_db->do( "DELETE FROM $rindextable" );
+	$session->get_database->do( "DELETE FROM $indextable" );
+	$session->get_database->do( "DELETE FROM $rindextable" );
 	return;
 }
 
@@ -158,8 +158,8 @@ sub add
 		my $fieldword = EPrints::Database::prep_value($field->get_sql_name().":$code");
 		my $sth;
 		$sql = "SELECT max(pos) FROM $indextable where fieldword='$fieldword'"; 
-		$sth=$session->get_db->prepare( $sql );
-		$rv = $rv && $session->get_db->execute( $sth, $sql );
+		$sth=$session->get_database->prepare( $sql );
+		$rv = $rv && $session->get_database->execute( $sth, $sql );
 		return 0 unless $rv;
 		my ( $n ) = $sth->fetchrow_array;
 		$sth->finish;
@@ -172,8 +172,8 @@ sub add
 		else
 		{
 			$sql = "SELECT ids FROM $indextable WHERE fieldword='$fieldword' AND pos=$n"; 
-			$sth=$session->get_db->prepare( $sql );
-			$rv = $rv && $session->get_db->execute( $sth, $sql );
+			$sth=$session->get_database->prepare( $sql );
+			$rv = $rv && $session->get_database->execute( $sth, $sql );
 			my( $ids ) = $sth->fetchrow_array;
 			$sth->finish;
 			my( @list ) = split( ":",$ids );
@@ -181,7 +181,7 @@ sub add
 			if( (scalar @list)-2 < 128 )
 			{
 				$sql = "UPDATE $indextable SET ids='$ids$objectid:' WHERE fieldword='$fieldword' AND pos=$n";	
-				$rv = $rv && $session->get_db->do( $sql );
+				$rv = $rv && $session->get_database->do( $sql );
 				return 0 unless $rv;
 			}
 			else
@@ -193,11 +193,11 @@ sub add
 		if( $insert )
 		{
 			$sql = "INSERT INTO $indextable (fieldword,pos,ids ) VALUES ('$fieldword',$n,':$objectid:')";
-			$rv = $rv && $session->get_db->do( $sql );
+			$rv = $rv && $session->get_database->do( $sql );
 			return 0 unless $rv;
 		}
 		$sql = "INSERT INTO $rindextable (field,word,".$keyfield->get_sql_name()." ) VALUES ('".$field->get_sql_name."','$code','$objectid')";
-		$rv = $rv && $session->get_db->do( $sql );
+		$rv = $rv && $session->get_database->do( $sql );
 		return 0 unless $rv;
 
 	} 
@@ -208,7 +208,7 @@ sub add
 	{
 		my $sql = "INSERT INTO ".$dataset->get_sql_grep_table_name." VALUES ('".
 EPrints::Database::prep_value($objectid)."','".EPrints::Database::prep_value($name)."','".EPrints::Database::prep_value($grepcode)."');";
-		$session->get_db->do( $sql ); 
+		$session->get_database->do( $sql ); 
 	}
 }
 
@@ -307,7 +307,7 @@ sub _do_ordervalues
 			}
 			$sql = "UPDATE ".$ovt." SET ".join( ",", @l )." WHERE ".$keyfield->get_sql_name().' = "'.EPrints::Database::prep_value( $keyvalue ).'"';
 		}
-		$session->get_db->do( $sql );
+		$session->get_database->do( $sql );
 	}
 }
 
@@ -340,7 +340,7 @@ sub delete_ordervalues
 		if( $tmp ) { $ovt .= "_tmp"; }
 		my $sql;
 		$sql = "DELETE FROM ".$ovt." WHERE ".$keyfield->get_sql_name().' = "'.EPrints::Database::prep_value( $keyvalue ).'"';
-		$session->get_db->do( $sql );
+		$session->get_database->do( $sql );
 	}
 }
 

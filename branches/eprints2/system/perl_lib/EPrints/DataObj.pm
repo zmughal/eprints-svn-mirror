@@ -181,7 +181,7 @@ sub create_from_data
 		$data->{$ds_id_field} = $dataset->id;
 	}
 
-	$session->get_db->add_record( $dataset, $data );
+	$session->get_database->add_record( $dataset, $data );
                                                                                                                   
 	my $keyfield = $dataset->get_key_field;
 	my $kfname = $keyfield->get_name;
@@ -1016,7 +1016,7 @@ sub queue_changes
 
 		next unless( $field->get_property( "text_index" ) );
 
-		$self->{session}->get_db->index_queue( 
+		$self->{session}->get_database->index_queue( 
 			$self->{dataset}->id,
 			$self->get_id,
 			$fieldname );
@@ -1042,7 +1042,7 @@ sub queue_all
 	{
 		next unless( $field->get_property( "text_index" ) );
 
-		$self->{session}->get_db->index_queue( 
+		$self->{session}->get_database->index_queue( 
 			$self->{dataset}->id,
 			$self->get_id,
 			$field->get_name );

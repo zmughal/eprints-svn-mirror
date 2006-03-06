@@ -265,7 +265,7 @@ sub get_unsorted_values
 {
 	my( $self, $session, $dataset, %render_opts ) = @_;
 
-	my $values = $session->get_db()->get_values( $self, $dataset );
+	my $values = $session->get_database->get_values( $self, $dataset );
 
 	$self->copy_in_render_opts( \%render_opts );
 

@@ -95,7 +95,7 @@ sub new
 {
 	my( $class, $session, $licenseid ) = @_;
 
-	return $session->get_db()->get_single( 
+	return $session->get_database->get_single( 
 			$session->get_repository->get_dataset( "license" ), 
 			$licenseid );
 }
@@ -161,7 +161,7 @@ sub remove_all
 	my( $class, $session ) = @_;
 
 	my $ds = $session->get_repository->get_dataset( "license" );
-	foreach my $obj ( $session->get_db()->get_all( $ds ) )
+	foreach my $obj ( $session->get_database->get_all( $ds ) )
 	{
 		$obj->remove();
 	}
@@ -227,7 +227,7 @@ sub commit
 	}
 	$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 
-	my $rv = $self->{session}->get_db()->update(
+	my $rv = $self->{session}->get_database->update(
 			$self->{dataset},
 			$self->{data} );
 	
@@ -248,7 +248,7 @@ sub remove
 {
 	my( $self ) = @_;
 	
-	return $self->{session}->get_db()->remove(
+	return $self->{session}->get_database->remove(
 		$self->{dataset},
 		$self->get_id );
 }

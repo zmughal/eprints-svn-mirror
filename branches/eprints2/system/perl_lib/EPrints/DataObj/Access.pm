@@ -149,7 +149,7 @@ sub new
 {
 	my( $class, $session, $accessid ) = @_;
 
-	return $session->get_db()->get_single( 
+	return $session->get_database->get_single( 
 			$session->get_repository->get_dataset( "accesslog" ), 
 			$accessid );
 }
@@ -193,7 +193,7 @@ sub remove_all
 	my( $class, $session ) = @_;
 
 	my $ds = $session->get_repository->get_dataset( "accesslog" );
-	foreach my $obj ( $session->get_db()->get_all( $ds ) )
+	foreach my $obj ( $session->get_database->get_all( $ds ) )
 	{
 		$obj->remove();
 	}
@@ -214,7 +214,7 @@ sub get_defaults
 {
 	my( $class, $session, $data ) = @_;
 	
-	$data->{accessid} = $session->get_db->counter_next( "accessid" );
+	$data->{accessid} = $session->get_database->counter_next( "accessid" );
 
 	$data->{timestamp} = EPrints::Utils::get_datetimestamp( time );
 
@@ -269,7 +269,7 @@ sub remove
 {
 	my( $self ) = @_;
 	
-	return $self->{session}->get_db()->remove(
+	return $self->{session}->get_database->remove(
 		$self->{dataset},
 		$self->get_id );
 }

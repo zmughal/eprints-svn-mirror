@@ -52,7 +52,7 @@ sub render_single_value
 	
 	my $ds = $session->get_repository->get_dataset(
 			$self->get_property( "datasetid" ) );
-	my $obj = $session->get_db()->get_single( $ds, $value );
+	my $obj = $session->get_database->get_single( $ds, $value );
 
 	my $text = $session->make_text( $obj->get_label() );
 

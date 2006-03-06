@@ -170,7 +170,7 @@ sub new
 {
 	my( $class, $session, $docid ) = @_;
 
-	return $session->get_db()->get_single( 
+	return $session->get_database->get_single( 
 		$session->get_repository->get_dataset( "document" ),
 		$docid );
 }
@@ -588,14 +588,14 @@ sub remove
 		_secure_symlink_path( $eprint ) );
 
 	# Remove database entry
-	my $success = $self->{session}->get_db()->remove(
+	my $success = $self->{session}->get_database->remove(
 		$self->{session}->get_repository->get_dataset( "document" ),
 		$self->get_value( "docid" ) );
 	
 
 	if( !$success )
 	{
-		my $db_error = $self->{session}->get_db()->error();
+		my $db_error = $self->{session}->get_database->error();
 		$self->{session}->get_repository->log( "Error removing document ".$self->get_value( "docid" )." from database: $db_error" );
 		return( 0 );
 	}
@@ -1224,13 +1224,13 @@ sub commit
 	}
 	$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 
-	my $success = $self->{session}->get_db()->update(
+	my $success = $self->{session}->get_database->update(
 		$dataset,
 		$self->{data} );
 	
 	if( !$success )
 	{
-		my $db_error = $self->{session}->get_db()->error();
+		my $db_error = $self->{session}->get_database->error();
 		$self->{session}->get_repository->log( "Error committing Document ".$self->get_value( "docid" ).": $db_error" );
 	}
 
@@ -1386,7 +1386,7 @@ sub files_modified
 
 	$self->rehash;
 
-	$self->{session}->get_db->index_queue( 
+	$self->{session}->get_database->index_queue( 
 		$self->get_eprint->get_dataset->id,
 		$self->get_eprint->get_id,
 		$EPrints::Utils::FULLTEXT );

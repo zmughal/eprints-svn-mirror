@@ -103,7 +103,7 @@ sub new
 		return EPrints::DataObj::Permission->new_from_data( $session, $data );
 	}
 
-	return $session->get_db()->get_single( 
+	return $session->get_database->get_single( 
 			$session->get_repository->get_dataset( "permission" ), 
 			$permissionid );
 
@@ -167,7 +167,7 @@ sub commit
 	}
 	$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 
-	my $rv = $self->{session}->get_db()->update(
+	my $rv = $self->{session}->get_database->update(
 			$self->{dataset},
 			$self->{data} );
 	
@@ -207,7 +207,7 @@ sub remove
 	#cjg Should we unlink all eprints linked to this permission from
 	# this permission?
 
-	return $self->{session}->get_db()->remove(
+	return $self->{session}->get_database->remove(
 		$self->{dataset},
 		$self->{data}->{permissionid} );
 }
@@ -230,11 +230,11 @@ sub remove_all
 	my( $session ) = @_;
 
 	my $ds = $session->get_repository->get_dataset( "permission" );
-	my @permissions = $session->get_db()->get_all( $ds );
+	my @permissions = $session->get_database->get_all( $ds );
 	foreach( @permissions )
 	{
 		my $id = $_->get_value( "permissionid" );
-		$session->get_db()->remove( $ds, $id );
+		$session->get_database->remove( $ds, $id );
 	}
 	return;
 }
@@ -746,7 +746,7 @@ sub get_all
 	my( $session ) = @_;
 	
 	# Retrieve all of the permissions
-	my @permissions = $session->get_db()->get_all( 
+	my @permissions = $session->get_database->get_all( 
 		$session->get_repository->get_dataset( "permission" ) );
 
 	return( undef ) if( scalar @permissions == 0 );

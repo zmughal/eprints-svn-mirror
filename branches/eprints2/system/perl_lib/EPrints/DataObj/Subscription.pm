@@ -99,7 +99,7 @@ sub new
 {
 	my( $class, $session, $id ) = @_;
 
-	return $session->get_db()->get_single( 	
+	return $session->get_database->get_single( 	
 		$session->get_repository->get_dataset( "subscription" ),
 		$id );
 }
@@ -166,7 +166,7 @@ sub get_defaults
 {
 	my( $class, $session, $data ) = @_;
 
-	my $id = $session->get_db->counter_next( "subscriptionid" );
+	my $id = $session->get_database->counter_next( "subscriptionid" );
 
 	$data->{subid} = $id;
 	$data->{frequency} = 'never';
@@ -200,7 +200,7 @@ sub remove
 	my $subs_ds = $self->{session}->get_repository->get_dataset( 
 		"subscription" );
 	
-	my $success = $self->{session}->get_db()->remove(
+	my $success = $self->{session}->get_database->remove(
 		$subs_ds,
 		$self->get_value( "subid" ) );
 
@@ -238,7 +238,7 @@ sub commit
 
 	my $subs_ds = $self->{session}->get_repository->get_dataset( 
 		"subscription" );
-	my $success = $self->{session}->get_db()->update(
+	my $success = $self->{session}->get_database->update(
 		$subs_ds,
 		$self->{data} );
 

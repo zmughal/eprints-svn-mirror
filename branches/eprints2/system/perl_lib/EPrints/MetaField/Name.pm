@@ -365,7 +365,7 @@ sub get_unsorted_values
 {
 	my( $self, $session, $dataset, %opts ) = @_;
 
-	my $list = $session->get_db()->get_values( $self, $dataset );
+	my $list = $session->get_database->get_values( $self, $dataset );
 
 	return $list;
 

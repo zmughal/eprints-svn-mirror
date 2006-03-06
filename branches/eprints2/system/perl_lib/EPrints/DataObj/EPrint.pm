@@ -178,7 +178,7 @@ sub new
 
 	my $dataset = $session->get_repository->get_dataset( "eprint" );
 
-	return $session->get_db->get_single( $dataset , $eprint_id );
+	return $session->get_database->get_single( $dataset , $eprint_id );
 }
 
 
@@ -361,7 +361,7 @@ sub _create_id
 {
 	my( $session ) = @_;
 	
-	return $session->get_db->counter_next( "eprintid" );
+	return $session->get_database->counter_next( "eprintid" );
 
 }
 
@@ -689,7 +689,7 @@ sub remove
 		$doc->remove;
 	}
 
-	my $success = $self->{session}->get_db->remove(
+	my $success = $self->{session}->get_database->remove(
 		$self->{dataset},
 		$self->get_value( "eprintid" ) );
 
@@ -742,13 +742,13 @@ sub commit
 		"lastmod" , 
 		EPrints::Utils::get_datetimestamp( time ) );
 
-	my $success = $self->{session}->get_db->update(
+	my $success = $self->{session}->get_database->update(
 		$self->{dataset},
 		$self->{data} );
 
 	if( !$success )
 	{
-		my $db_error = $self->{session}->get_db->error;
+		my $db_error = $self->{session}->get_database->error;
 		$self->{session}->get_repository->log( 
 			"Error committing EPrint ".
 			$self->get_value( "eprintid" ).": ".$db_error );

@@ -644,13 +644,13 @@ END
 	{
 		my $where = "fieldword = '".EPrints::Database::prep_value( 
 			$self->{field}->get_sql_name.":".$self->{params}->[0] )."'";
-		$r = $session->get_db()->get_index_ids( $self->get_table, $where );
+		$r = $session->get_database->get_index_ids( $self->get_table, $where );
 	}
 	if( $self->{op} eq "index_start" )
 	{
 		my $where = "fieldword LIKE '".EPrints::Database::prep_value( 
 			$self->{field}->get_sql_name.":".$self->{params}->[0] )."%'";
-		$r = $session->get_db()->get_index_ids( $self->get_table, $where );
+		$r = $session->get_database->get_index_ids( $self->get_table, $where );
 	}
 
        	my $keyfield = $self->{dataset}->get_key_field();
@@ -685,7 +685,7 @@ END
 			$max = $total-1 if( $max > $total - 1 );
 			my @fset = @{$filter}[$i..$max];
 			
-			my $set = $session->get_db->search( 
+			my $set = $session->get_database->search( 
 				$keyfield, 
 				{ M=>$gtable },
 				$where.' AND ('.$kfn.'='.join(' OR '.$kfn.'=', @fset ).' )' );
@@ -698,7 +698,7 @@ END
 	if( $self->{op} eq "in_subject" )
 	{
 		my $where = "( M.$sql_col = S.subjectid AND  S.ancestors='".EPrints::Database::prep_value( $self->{params}->[0] )."' )";
-		$r = $session->get_db->search( 
+		$r = $session->get_database->search( 
 			$keyfield, 
 			{	
 				S=>"subject_ancestors",
@@ -712,7 +712,7 @@ END
 	{
 		my $where = "(M.$sql_col IS NULL OR ";
 		$where .= "M.$sql_col = '')";
-		$r = $session->get_db->search( 
+		$r = $session->get_database->search( 
 			$keyfield, 
 			{ M=>$self->get_table },
 			$where );
@@ -721,7 +721,7 @@ END
 	if( $self->{op} eq 'name_match' )
 	{
 		my $where = "(M.".$sql_col."_given = '".EPrints::Database::prep_value( $self->{params}->[0]->{given} )."' AND M.".$sql_col."_family = '".EPrints::Database::prep_value( $self->{params}->[0]->{family} )."')";
-		$r = $session->get_db->search( 
+		$r = $session->get_database->search( 
 			$keyfield, 
 			{ M=>$self->get_table },
 			$where );
@@ -732,13 +732,13 @@ END
 	{
 		my $where = "M.$sql_col ".$self->{op}." ".
 			"'".EPrints::Database::prep_value( $self->{params}->[0] )."'";
-		$r = $session->get_db->search( 
+		$r = $session->get_database->search( 
 			$keyfield, 
 			{ M=>$self->get_table },
 			$where );
 	}
-#$session->get_db->set_debug( 1 ); print STDERR "\n";
-#$session->get_db->set_debug( 0 );
+#$session->get_database->set_debug( 1 ); print STDERR "\n";
+#$session->get_database->set_debug( 0 );
 
 #	print STDERR " [".join(",",@{$r})."]";
 #	print STDERR "\n";

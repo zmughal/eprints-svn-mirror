@@ -900,7 +900,7 @@ sub get_unsorted_values
 {
 	my( $self, $session, $dataset, %opts ) = @_;
 
-	return $session->get_db()->get_values( $self, $dataset );
+	return $session->get_database->get_values( $self, $dataset );
 }
 
 ######################################################################

@@ -208,7 +208,7 @@ sub process
 		# Check it was retrieved OK
 		if( !defined $self->{eprint} )
 		{
-			my $db_error = $self->{session}->get_db()->error;
+			my $db_error = $self->{session}->get_database->error;
 			#cjg LOG..
 			$self->{session}->get_repository->log( 
 				"Database Error: $db_error" );
@@ -492,7 +492,7 @@ sub _from_stage_home
 
 		if( !defined $self->{eprint} )
 		{
-			my $db_error = $self->{session}->get_db()->error();
+			my $db_error = $self->{session}->get_database->error();
 			$self->{session}->get_repository->log( "Database Error: $db_error" );
 			$self->_database_err;
 			return( 0 );
@@ -540,7 +540,7 @@ sub _from_stage_home
 		}
 		else
 		{
-			my $error = $self->{session}->get_db()->error();
+			my $error = $self->{session}->get_database->error();
 			$self->{session}->get_repository->log( "SubmissionForm error: Error copying EPrint ".$self->{eprint}->get_value( "eprintid" ).": ".$error );
 			$self->_database_err;
 			return( 0 );
@@ -568,7 +568,7 @@ sub _from_stage_home
 		}
 		else
 		{
-			my $error = $self->{session}->get_db()->error();
+			my $error = $self->{session}->get_database->error();
 			$self->{session}->get_repository->log( "SubmissionForm error: Error cloning EPrint ".$self->{eprint}->get_value( "eprintid" ).": ".$error );
 			$self->_database_err;
 			return( 0 );
@@ -1260,7 +1260,7 @@ sub _from_stage_confirmdel
 	{
 		if( !$self->{eprint}->remove() )
 		{
-			my $db_error = $self->{session}->get_db()->error();
+			my $db_error = $self->{session}->get_database->error();
 			$self->{session}->get_repository->log( "DB error removing EPrint ".$self->{eprint}->get_value( "eprintid" ).": $db_error" );
 			$self->_database_err;
 			return( 0 );

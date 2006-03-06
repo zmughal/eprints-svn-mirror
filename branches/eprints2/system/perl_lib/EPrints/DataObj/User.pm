@@ -207,7 +207,7 @@ sub new
 {
 	my( $class, $session, $userid ) = @_;
 
-	return $session->get_db()->get_single( 
+	return $session->get_database->get_single( 
 		$session->get_repository->get_dataset( "user" ),
 		$userid );
 }
@@ -452,7 +452,7 @@ sub commit
 	$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 
 	my $user_ds = $self->{session}->get_repository->get_dataset( "user" );
-	my $success = $self->{session}->get_db()->update(
+	my $success = $self->{session}->get_database->update(
 		$user_ds,
 		$self->{data} );
 	
@@ -488,7 +488,7 @@ sub remove
 
 	# remove user record
 	my $user_ds = $self->{session}->get_repository->get_dataset( "user" );
-	$success = $success && $self->{session}->get_db()->remove(
+	$success = $success && $self->{session}->get_database->remove(
 		$user_ds,
 		$self->get_value( "userid" ) );
 	
@@ -738,7 +738,7 @@ sub _create_userid
 {
 	my( $session ) = @_;
 	
-	my $new_id = $session->get_db()->counter_next( "userid" );
+	my $new_id = $session->get_database->counter_next( "userid" );
 
 	return( $new_id );
 }

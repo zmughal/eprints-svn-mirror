@@ -163,7 +163,7 @@ sub reorder
 	# must be cached to be reordered
 	$self->cache;
 
-	my $db = $self->{session}->get_db;
+	my $db = $self->{session}->get_database;
 
 	my $srctable = $db->cache_table( $self->{cache_id} );
 
@@ -301,7 +301,7 @@ sub cache
 		return;
 	}
 
-	my $db = $self->{session}->get_db;
+	my $db = $self->{session}->get_database;
 	if( $self->_matches_all )
 	{
 		$self->{cache_id} = $db->cache( 
@@ -367,7 +367,7 @@ sub dispose
 
 	if( defined $self->{cache_id} && !$self->{keep_cache} )
 	{
-		$self->{session}->get_db->drop_cache( $self->{cache_id} );
+		$self->{session}->get_database->drop_cache( $self->{cache_id} );
 		delete $self->{cache_id};
 	}
 }
@@ -400,7 +400,7 @@ sub count
 	{
 		#cjg Should really have a way to get at the
 		# cache. Maybe we should have a table object.
-		return $self->{session}->get_db()->count_table( 
+		return $self->{session}->get_database->count_table( 
 			"cache".$self->{cache_id} );
 	}
 
@@ -527,7 +527,7 @@ sub _get_records
 	
 			if( $self->_matches_all )
 			{
-				return $self->{session}->get_db->get_all(
+				return $self->{session}->get_database->get_all(
 					$self->{dataset} );
 			}
 		}
@@ -542,7 +542,7 @@ sub _get_records
 		$self->cache;
 	}
 
-	my $r = $self->{session}->get_db()->from_cache( 
+	my $r = $self->{session}->get_database->from_cache( 
 			$self->{dataset}, 
 			$self->{cache_id},
 			$offset,

@@ -429,7 +429,7 @@ sub from_cache
 {
 	my( $self, $id ) = @_;
 
-	my $string = $self->{session}->get_db()->cache_exp( $id );
+	my $string = $self->{session}->get_database->cache_exp( $id );
 
 	return( 0 ) if( !defined $string );
 	$self->from_string( $string );

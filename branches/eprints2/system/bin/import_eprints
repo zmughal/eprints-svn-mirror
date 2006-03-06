@@ -67,7 +67,7 @@ sub deal
 {
 	my( $session , $table , $eprint, $info ) = @_;
 
-	if( $session->get_db()->exists( $info->{ds} , $eprint->get_value( "eprintid" ) ) )
+	if( $session->get_database->exists( $info->{ds} , $eprint->get_value( "eprintid" ) ) )
 	{
 		print  "EXISTS!\n";
 		$eprint->commit;

@@ -680,14 +680,15 @@ sub get_view_name
 ######################################################################
 =pod
 
-=item $db = $session->get_db
+=item $db = $session->get_database
 
-Return the current EPrints::Database connection.
+Return the current EPrints::Database connection object.
 
 =cut
 ######################################################################
+sub get_db { return $_[0]->get_database; } # back compatibility
 
-sub get_db
+sub get_database
 {
 	my( $self ) = @_;
 	return $self->{database};
