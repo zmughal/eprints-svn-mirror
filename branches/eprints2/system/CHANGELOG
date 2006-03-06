@@ -3538,4 +3538,4 @@ PACKAGE: 2.2.99.2
 2006-03-06 cjg
 
  * Renamed get_db to get_database
-
+ * Rewrote ->error() as ->error

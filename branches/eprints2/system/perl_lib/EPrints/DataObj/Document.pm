@@ -595,7 +595,7 @@ sub remove
 
 	if( !$success )
 	{
-		my $db_error = $self->{session}->get_database->error();
+		my $db_error = $self->{session}->get_database->error;
 		$self->{session}->get_repository->log( "Error removing document ".$self->get_value( "docid" )." from database: $db_error" );
 		return( 0 );
 	}
@@ -1230,7 +1230,7 @@ sub commit
 	
 	if( !$success )
 	{
-		my $db_error = $self->{session}->get_database->error();
+		my $db_error = $self->{session}->get_database->error;
 		$self->{session}->get_repository->log( "Error committing Document ".$self->get_value( "docid" ).": $db_error" );
 	}
 

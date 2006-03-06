@@ -140,7 +140,7 @@ if( $session->get_database->create_archive_tables() )
 }
 else
 {
-	my $error = $session->get_database->error();
+	my $error = $session->get_database->error;
 	print STDERR "DB Error: $error\n";
 }
 
