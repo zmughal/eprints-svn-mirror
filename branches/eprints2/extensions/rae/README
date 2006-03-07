@@ -1,67 +1,40 @@
+EPrints RAE Module - BRONZE RELEASE
 
-eprints-rae: facilitates the RAE process via an EPrints archive.
+FEATURES
 
-FILES
+- Enter measures of esteem (optionally on behalf of another user)
+- Search for publications (optionally on behalf of another user)
+- Add publications from search results to "selected" list (optionally on behalf of another user)
+- View/export reports (Microsoft Word, Microsoft Excel)
 
-raedata
+MANUAL INSTALLATION
 
-	based on the rae/rae_fields config, renders an input form for
-users to enter their measures of esteem. Values are stored in a
-rae_data table for the archive.
+1. Create database tables
 
-raeselect
+The following tables need to be added to the ARCHIVEID database:
 
-	based on the rae/search_id config, renders an interface for
-users to search for and select RAE items. Selected items are recorded in
-a rae_selected table for the archive.
+CREATE TABLE `rae_data` (
+  `userid` int(11) default NULL,
+  `field` varchar(255) default NULL,
+  `value` longtext,
+  `chooserid` int(11) default NULL,
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
-	the rae/init config allows the search form to be initialised for 
-the given user.
+CREATE TABLE `rae_selected` (
+  `userid` int(11) NOT NULL default '0',
+  `eprintid` int(11) NOT NULL default '0',
+  `chooserid` int(11) default NULL,
+  PRIMARY KEY  (`userid`,`eprintid`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
-raereport
+2. Install scripts
 
-	based on the rae/group_by config, renders a reporting interface for 
-RAE returns. The rae/exclude_group and rae/show_all configs can be used
-to hide certain groups and provide an 'all staff' group respectively. The 
-rae/check_item config is called for each item in in order to report problems
-(for example, an item is selected by more than one user, an item has no
-documents attached). 
+Copy all files to /opt/eprints2/cgi/users/rae/.
 
-	the rae/csv-[header|row|footer] configs generate CSV
-output specific to the requirements of an institution.
+Symlink the RAELoader.pm module to the /opt/eprints2/perl_lib/ directory.
 
-RAELoader.pm	
+3. Configuration
 
-	loads archives/[archiveid]/cfg/rae-phrases-en.xml and 
-archives/[archiveid]/cfg/ArchiveRAEConfig.pm and 'injects' RAE-specific 
-phrases/config into the current Archive object.
+Copy the cfg/rae-phrases-en.xml and cfg/ArchiveRAEConfig.pm to the /opt/eprints2/archives/ARCHIVEID/cfg/ directory.
 
-	only reloaded thereafter if phrases or config files change.
-
-ArchiveRAEConfig.pm
-
-	defines an archive-specific RAE configuration.
-
-	needs to be placed under archives/[archiveid]/cfg/.
-
-rae-phrases-en.xml
-
-	defines language- and archive-specific RAE phrases.
-
-	needs to be placed under archives/[archiveid]/cfg/.
-
-CHANGELOG
-
-2005-10-21
-
- - moved config/phrase 'injecting' code to RAELoader.pm
- - fixed problems caused by use of 'global' vars under mod_perl
-   (*all* vars now explicitly passed to *all* subs)
-
-2005-10-19
-
- - first prototype based on ECS RAE scripts
- - uses separate DB tables rather than add fields to user types
- - all phrases extracted to rae-phrases-en.xml
- - config extracted to ArchiveRAEConfig.pm
- - first cut at test cases for each script (see testcases-rae*)
+These configuration settings are based on those currently used by the University of Southampton Eprints repository and are provided as a starting point. You will need to adjust these settings to suit your EPrints setup.

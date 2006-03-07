@@ -1,11 +1,38 @@
+######################################################################
+#
+# Load RAE-specific configuration and phrases, and add them to the 
+# loaded EPrints configuration.
+#
+######################################################################
+#
+# This file is part of the EPrints RAE module developed by the 
+# Institutional Repositories and Research Assessment (IRRA) project,
+# funded by JISC within the Digital Repositories programme.
+#
+# http://irra.eprints.org/
+#
+# The EPrints RAE module is free software; you can redistributet 
+# and/or modify it under the terms of the GNU General Public License 
+# as published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+
+# The EPrints RAE module is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+# of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+######################################################################
 
 package RAELoader;
 
-# TODO: EPrints::RAE::PHRASES unique for different archives? (vs. EPrints::$archive_id::RAE::PHRASES)
+# TODO: Is EPrints::RAE::PHRASES unique for different archives?
+# => EPrints::$archive_id::RAE::PHRASES instead
 
 sub init_rae
 {
 	my ( $session ) = @_;
+
+	my $archiveid = $session->get_archive->get_id;
 
 	print STDERR "Initialising RAE\n";
 
@@ -15,7 +42,7 @@ sub init_rae
 
 	if( !defined $EPrints::RAE::PHRASES )
 	{
-		print STDERR "RAE::PHRASES undef, loading.\n";
+		print STDERR "EPrints::RAE::PHRASES undef, loading.\n";
 		init_rae_load_phrases( $session, $phrasefile );
 	}
 	else	
@@ -29,7 +56,7 @@ sub init_rae
 
 	if( !defined $EPrints::RAE::CONFIG )
 	{
-		print STDERR "RAE::CONFIG undef, loading.\n";
+		print STDERR "EPrints::RAE::CONFIG undef, loading.\n";
 		init_rae_load_config( $session, $configfile );
 	}
 	else

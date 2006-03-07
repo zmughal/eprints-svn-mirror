@@ -1,56 +1,121 @@
-use EPrints::DisambiguateCreators;
-# Configuration for eprints@soton
+######################################################################
+#
+# RAE-specific configuration options
+#
+######################################################################
+#
+# This file is part of the EPrints RAE module developed by the 
+# Institutional Repositories and Research Assessment (IRRA) project,
+# funded by JISC within the Digital Repositories programme.
+#
+# http://irra.eprints.org/
+#
+# The EPrints RAE module is free software; you can redistributet 
+# and/or modify it under the terms of the GNU General Public License 
+# as published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+
+# The EPrints RAE module is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+# of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+######################################################################
 
 sub get_rae_conf {
 
 my $c = ();
 
-$c->{group_perms} = {
-	"500" => "uos-fp", #tmb
-	"341" => "uos-jf", # anw
-	"7985" => "uos-fp", # sf11
+# Measures of esteem fields - define names and help text in 
+# rae-phrases-XX.xml
+$c->{moe_fields} = [
+	"memberships",
+	"pubs",
+	"confs",
+	"awards",
+	"funding",
+	"impacts",
+	"contribs",
+	"output",
+	"other",
+];
+
+# Test whether the given user can assume the given role.
+# Example: let certain users assume role of any person in school
+$c->{can_user_assume_role} = sub {
+	
+	my ( $session, $user, $role ) = @_;
+
+	if( !defined( $role ) )
+	{
+		return 0;
+	}
+	if ( dept_for_user( $user ) ne $role->get_value( "dept" ) )
+	{
+		return 0;
+	}
+
+	return 1;
 };
 
-# 'Measures of esteem' fields
-$c->{rae_fields} = ["rae_conf", "rae_prof", "rae_gbod", "rae_extexam", "rae_vispos", "rae_advbod", "rae_ed", 
-	"rae_fell", "rae_lect", "rae_awards", "rae_hdeg", "rae_grants", "rae_papawards", "rae_rmono", 
-	"rae_patents", "rae_sorgs", "rae_rcent", "rae_consind", "rae_entract", "rae_sciboards", "rae_other"];
+# Return a list of (id, name) pairs representing the user roles the
+# given user is able to assume
+# Example: let certain users assume role of any person in school
+$c->{roles_for_user} = sub {
 
-# Id of the search used to select RAE items
+	my ( $session, $user ) = @_;
+
+	my @roles;
+	my $searchexp = new EPrints::SearchExpression(
+		session => $session,
+		custom_order => "name",
+		dataset => $session->get_archive->get_dataset( "user" ),
+	);
+	$searchexp->add_field( $session->get_archive->get_dataset( "user" )->get_field( "dept" ) , dept_for_user( $user ) );
+	$searchexp->perform_search;
+
+	foreach ( $searchexp->get_records ) {
+		push @roles, [ $_->get_id, EPrints::Utils::tree_to_utf8( $_->render_description ) ];
+	}
+	
+	return @roles;
+};
+
+
+# The id of the search (as defined in ArchiveConfig.pm) used on the
+# eprint selection page
 $c->{search_id} = "advanced";
 
-# Default values for the $searchexp
-# in context of current $user
-$c->{init} = sub {
+# Set the default values for the search used on the eprint
+# selection page
+$c->{init_search} = sub {
+
 	my ($searchexp, $user) = @_;
-	
-	#print STDERR "Hello: ".$searchexp->render_description()->toString();
-			
-	#$searchexp->get_searchfield( "creators/editors" )->{value} = $user->get_value("name")->{family};
+	print STDERR $user->get_value( "name" )->{family} . "\n\n\n";
+
 	$searchexp->get_searchfield( "creators" )->{value} = $user->get_value("name")->{family};
-	
 	$searchexp->get_searchfield( "date_effective" )->{value} = "2003-";
 };
 
-# Grouping field for RAE reports
+# The field to group by on the reporting page
 $c->{group_by} = "dept";
 
-# Groups to exclude from the list
+# The groups to exclude from the list on the reporting page
 $c->{exclude_group} = {
 	uos => 1,
 };
 
-# Show the group of 'all staff'
+# Set this flag to show the group of "all staff" on the reporting page
 $c->{show_all} = 1;
 
-# Check a selected item for problems in RAE report
-# $user is the user who has selected the $item
-# $others is the list of all users (inc. $user) who
-# have selected the item
+
+# Return a list of problems with the given item as selected by the 
+# given user (and possibly other users)
 $c->{check_item} = sub { 
 	my ( $session, $user, $item, $others ) = @_;
 	my @problems;
-	# Check no other users have selected this item
+
+	# Example: check no other users have selected this item
 	my @names;
 	foreach my $otherid ( @$others )
         {
@@ -65,44 +130,37 @@ $c->{check_item} = sub {
         }
         if( scalar( @names ) > 0 )
         {
+		my $prob = $session->make_doc_fragment;
+		my $perl_url = $session->get_archive->get_conf("perl_url");
+		my $link = $session->render_link( $perl_url . "/users/rae/raeselect?role=" . $user->get_id );	
+	
 		push @problems, $session->html_phrase( "rae/report:problem_multiple_users",
-                        names => $session->make_text( join(", ", @names) ) );
-        }	
-	# Check item has a document
+                        names => $session->make_text( join(", ", @names) ),
+			resolve_link => $link );
+        }
+	
+	# Example: check item has full text
 	my @docs = $item->get_all_documents();
 	if( scalar( @docs ) == 0 ) {
 		push @problems, $session->html_phrase( "rae/report:problem_no_doc",
 			type => $session->make_text( $item->get_value( "type" ) ) );
 	}
-	my $perl_url = $session->get_archive->get_conf("perl_url");
-	#seb: added link to raeselect if problem
-	if(scalar(@problems) > 0)
-	{
-		my $link = $session->render_link( $perl_url . "/users/rae/raeselect?role=" . $user->get_id."&_action_submit=Change+Role");
-	
-		push @problems, $session->html_phrase( "rae/report:problem_select_link",
-                        select_link => $link );
-	}
-	
-	
+
 	return \@problems;
 };
 
-# Print CSV header
+# Return the header line of the CSV output
 $c->{csv_header} = sub {
-	print csv_line('Dept', 'Username', 'Surname', 'First Name', 'Score', 'Publication', 'Paper', 'Author Disposition');
+	print csv_line('Dept', 'Username', 'Surname', 'First Name', 'Score', 'Publication', 'Paper' );
 };
 
 
-# Print CSV row for a selected item
-# (called for each selected item)
+# Return a CSV row for the given item as selected by the given user
 $c->{csv_row} = sub {
 	my ( $session, $user, $item ) = @_;
 	my $name = $user->get_value( 'name' );
 	my $book = $item->get_value( 'publication' );
 	$book = $item->get_value( 'event_title' ) if !defined $book;
-	
-	
 	
 	print csv_line(
 		$user->get_value( "dept" ),
@@ -112,12 +170,11 @@ $c->{csv_row} = sub {
 		'',
 		$book,
 		EPrints::Utils::tree_to_utf8( $item->render_citation ),
-		DisambiguateCreators::renderRAECreatorStatusText($session, $item->get_value("eprintid")),
 	);
 };
 
-# Print CSV footer
-# $rows is the number of item rows already output
+# Return the footer line(s) of the CSV output, given the number
+# of rows already output
 $c->{csv_footer} = sub {
 	my ( $rows ) = @_;
 	print csv_line( '','','','','','','' );
@@ -130,15 +187,13 @@ $c->{csv_footer} = sub {
 	print csv_line( '4', "4*", "=INDEX(FREQUENCY($range,A".($rows+7).":A".($rows+8)."),2)",'','','','','' );
 };
 
-$c->{testconf} = "Hello World!";
-
 return $c;
 }
 
-
+# Format a list of values as a CSV row
+# (used by csv_header, csv_row and csv_footer)
 sub csv_line
 {
-	# Format a list of values as a CSV row
 	my( @values ) = @_;
 	foreach( @values )
 	{
@@ -147,5 +202,13 @@ sub csv_line
 	return '"'.join( '","', @values ).'"'."\n";
 }
 
+# Map users to schools
+sub dept_for_user {
+	my ( $user ) = @_;
+	return "uos-fp" if $user->get_id eq "500";
+	return "uos-jf" if $user->get_id eq "341";
+	return "uos-fp" if $user->get_id eq "7985";
+	return undef;
+}
 
 1;

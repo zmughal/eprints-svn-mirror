@@ -226,11 +226,22 @@ sub do_user {
 				( $session, $user, $item, $users_for_eprint->{$eprintid} );
 			if( defined $problems && scalar( @$problems ) > 0 )
 			{
+				my $ul = $session->make_element("ul");
+				$td_probs->appendChild($ul);
 				$tr->setAttribute( "class", "problems" );
 				foreach my $problem ( @$problems )
 				{
-					$td_probs->appendChild( $problem );
-					$td_probs->appendChild( $session->make_element( "br" ) );
+					my $tmp = substr($problem->toString(), 0, 6);
+					next if($tmp eq "No doc");
+					my $li = $session->make_element("li");
+					$ul->appendChild($li);
+					
+#					$td_probs->appendChild( $problem );
+#					$td_probs->appendChild( $session->make_element( "br" ) );
+#					my $tmp = substr($problem, 0, 11);
+#					next if($tmp eq "No document");
+					$li->appendChild($problem);
+#					$li->appendChild
 				}
 			}
 			
