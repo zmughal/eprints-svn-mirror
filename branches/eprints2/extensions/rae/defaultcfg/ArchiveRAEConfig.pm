@@ -119,10 +119,9 @@ sub roles_for_user {
 sub init_search {
 
 	my ($searchexp, $user) = @_;
-	print STDERR $user->get_value( "name" )->{family} . "\n\n\n";
 
 	$searchexp->get_searchfield( "creators" )->{value} = $user->get_value("name")->{family};
-	$searchexp->get_searchfield( "date_effective" )->{value} = "2003-";
+	$searchexp->get_searchfield( "date_effective" )->{value} = "2001-";
 };
 
 # Return a list of problems with the given item as selected by the 

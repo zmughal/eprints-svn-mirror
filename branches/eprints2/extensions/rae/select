@@ -23,8 +23,11 @@
 ######################################################################
 
 use EPrints::EPrint;
+use EPrints::SearchExpression;
 use EPrints::Session;
 use EPrints::User;
+use EPrints::Utils;
+use EPrints::XML;
 use strict;
 
 # Enclosing the main part in {..} prevents accidental
@@ -44,17 +47,12 @@ if( !$session->auth_check( "deposit" ) )
 }
 my $user = $session->current_user;
 
-# Init RAE config/phrases
-use RAELoader;
-RAELoader::init_rae( $session );
-
 # Check selected role
 my $role = $user;
 if( defined( $session->param( "role" ) ) )
 {
 	my $selected_role = EPrints::User->new( $session, $session->param( "role" ) );
-	my $check = $archive->get_conf( "rae", "can_user_assume_role" );
-	if( &$check( $session, $user, $selected_role ) ) {
+	if( $archive->call( "can_user_assume_role", $session, $user, $selected_role ) ) {
 		$role = $selected_role;	
 	}
 	# Remove role parameter so that we
@@ -64,8 +62,8 @@ if( defined( $session->param( "role" ) ) )
 
 # Show available roles
 my $roles_frag = $session->make_doc_fragment;
-my $get_roles = $archive->get_conf( "rae", "roles_for_user" );
-my @roles = &$get_roles( $session, $user );
+#TODO: all ArchiveRAEConfig should have rae_ prefix
+my @roles = $archive->call( "roles_for_user", $session, $user );
 if( scalar @roles )
 {
 	my $form = $session->render_form;
@@ -87,12 +85,12 @@ my $searchexp = new EPrints::SearchExpression(
 	%$search_conf,
 );
 # Init fields from config
-&{$archive->get_conf( "rae", "init_search" )}( $searchexp, $role );
+$archive->call( "init_search", $searchexp, $role );
 
 # Switch on user input
 # NB: based on process_webpage() in EPrints/SearchExpression.pm
 my $action_button = $session->get_action_button();
-my $search_frag = undef;
+my $search_frag;
 
 if( defined $action_button && $action_button eq "add" )
 {
@@ -100,61 +98,36 @@ if( defined $action_button && $action_button eq "add" )
 	my $item = EPrints::EPrint->new( $session, $id );
 	if( defined $item )
 	{
-		my $sql = "INSERT INTO rae_selected VALUES (" . $role->get_id. ", $id,".$user->get_id;
-
-		my @flags = @{ $archive->get_conf( "rae", "edit_flags" ) };
-		my @textboxes = @{ $archive->get_conf( "rae", "edit_textboxes" ) };
-		my @ratings = @{ $archive->get_conf( "rae", "edit_ratings" ) };
-	
-#		my $i = 0;
-		foreach(@flags, @textboxes, @ratings)
-		{
-#			push @options, $_;
-		
-			$sql = $sql.", \'\'";	# building the SQL statement
-#			$sql = $sql.$_;
-		}
-		
-		$sql = $sql.");";
-		
-		
-#		my $args = scalar(
-#		,\'FALSE\', \'FALSE\',\'FALSE\',\'FALSE\',\'FALSE\', '','','','');";
-
+		my $sql = "INSERT INTO rae_selections (userid, eprintid, userid_actual) VALUES (" . $role->get_id . ", $id," . $user->get_id . ")";
 		$session->get_db->do( $sql );
 	}
-	$search_frag = dopage_results( $session, $searchexp, $role );
 }
 
 if( defined $action_button && $action_button eq "remove")
 {
 	my $id = $session->param( "_action_remove" );
-	my $sql = "DELETE FROM rae_selected WHERE eprintid=$id AND userid=" . $role->get_id;
+	my $sql = "DELETE FROM rae_selections WHERE eprintid=$id AND userid=" . $role->get_id;
 	$session->get_db->do( $sql );
-	$search_frag = dopage_results( $session, $searchexp, $role );
-}
-
-if( defined $action_button && $action_button eq "search" ) 
-{
-	$search_frag = dopage_results( $session, $searchexp, $role );
-}
-
-if( !defined $action_button && $session->have_parameters ) 
-{
-	# Internal button (e.g. next, prev)
-	$search_frag = dopage_results( $session, $searchexp, $role );
 }
 
 if( defined $action_button && $action_button eq "update" )
 {
 	$searchexp->from_form;
+	$search_frag = $searchexp->render_search_form;
+}
+
+if( defined $action_button && $action_button eq "newsearch" )
+{
+	# TODO: Clear parameters
+	#$searchexp->clear;
+	$search_frag = $searchexp->render_search_form;
 }
 
 # Build + Send Page
-$search_frag = $searchexp->render_search_form if !defined $search_frag;
-$search_frag->appendChild( $session->render_hidden_field( "role", $role->get_id ) );
+$search_frag = dopage_results( $session, $searchexp, $role ) if !defined $search_frag;
+$search_frag->appendChild( $session->render_hidden_field( "role", $role->get_id ) ) if $user->get_id != $role->get_id;
 
-my $data_url = $archive->get_conf("perl_url") . "/users/rae/raedata";
+my $data_url = $archive->get_conf("perl_url") . "/users/rae/moe";
 $data_url .= "?role=" . $role->get_id if $user->get_id != $role->get_id;
 
 my $title = $session->html_phrase( "rae/select:page_title", user => $role->render_description );
@@ -175,8 +148,10 @@ sub dopage_selected
 {
 	my ( $session, $searchexp, $role ) = @_;	
 	my %users_for_eprint;
-	
-	my $sql = "SELECT eprintid, userid FROM rae_selected WHERE eprintid IN (SELECT eprintid FROM rae_selected WHERE userid=".$role->get_id.")";
+
+	# TODO avoid nested SQL	
+	# Get the eprints selected by the user, and also the other users who have selected these
+	my $sql = "SELECT eprintid, userid FROM rae_selections WHERE eprintid IN (SELECT eprintid FROM rae_selections WHERE userid=".$role->get_id.")";
 	my $sth = $session->get_db->prepare( $sql );
 	if($session->get_db->execute( $sth, $sql ) )
 	{	
@@ -186,14 +161,14 @@ sub dopage_selected
 		}
 	}
 	
-	if(scalar keys %users_for_eprint == 0)
+	# Check for selected items
+	if( scalar keys %users_for_eprint == 0 )
 	{
-		return $session->html_phrase("rae/select:selection_empty");
+		return $session->html_phrase( "rae/select:none_selected" );
 	}
 	
 	my $table = $session->make_element( "table", class=>"bordered" );
 	
-	my $i = 0;
 	foreach my $eprintid ( keys %users_for_eprint )
 	{
 		my $item = EPrints::EPrint->new( $session, $eprintid );
@@ -210,7 +185,7 @@ sub dopage_selected
 		$action_url .= "&role=" . $role->get_id if $session->current_user->get_id != $role->get_id;
 		
 		my $others = $users_for_eprint{$eprintid};
-		$table->appendChild( render_item_row( $session, $searchexp, $item, $action_url, 'remove', $others, "rae/select:also_selected_by", $role, $i++ % 2 ? "row_a":"row_b" ) );
+		$table->appendChild( render_item_row( $session, $searchexp, $item, $action_url, 'remove', $others, "rae/select:also_selected_by", $role ) );
 	}
 	return $table;
 }
@@ -220,9 +195,9 @@ sub dopage_selected
 sub dopage_results
 {
 	my ( $session, $searchexp, $role ) = @_;
-	my $page = $session->render_form( "GET" );
+	my $page = $session->render_form( "POST" );
 
-	my $problems = $searchexp->from_form;
+	my $problems = $searchexp->from_form if $session->have_parameters;
 	if( defined $problems && scalar( @$problems ) > 0 )
 	{
 		return dopage_problems( $session, $searchexp, @$problems );
@@ -264,6 +239,7 @@ sub dopage_results
 				"lib/searchexpression:noresults" ) );
 	}
 
+	$page->appendChild( $session->make_text( " " ) );
 	$page->appendChild( $searchexp->render_description );
 	
 	my $controls = $session->make_element( "p", class=>"searchcontrols" );
@@ -298,9 +274,8 @@ sub dopage_results
 	$cspan->appendChild( $a );
 	
 	$controls->appendChild( $cspan );
-	#$controls->appendChild( $session->html_phrase( "lib/searchexpression:seperator" ) );
-	$controls->appendChild( $session->make_text(" - ") );
-	$a = $session->render_link( $url ) ; #."_action_newsearch&" );
+	$controls->appendChild( $session->html_phrase( "lib/searchexpression:seperator" ) );
+	$a = $session->render_link( $url . "_action_newsearch&" );
 	
 	$a->appendChild( $session->html_phrase( "lib/searchexpression:new" ) );
 	$cspan = $session->make_element( 'span', class=>"searchcontrol" );
@@ -323,12 +298,12 @@ sub dopage_results
 	}
 	
 	# Render results
-	my $table = $session->make_element( "table", class=>"bordered" );
+	my $table = $session->make_element( "table" );
 	$page->appendChild($table);
  	
 	my %users_for_eprint;
 	my $cacheid = $searchexp->get_cache_id;
-	my $sql = "SELECT rae_selected.eprintid, userid FROM rae_selected, cache$cacheid WHERE rae_selected.eprintid=cache$cacheid.eprintid";
+	my $sql = "SELECT rae_selections.eprintid, userid FROM rae_selections, cache$cacheid WHERE rae_selections.eprintid=cache$cacheid.eprintid";
 	my $sth = $session->get_db->prepare( $sql );
 	if( $session->get_db->execute( $sth, $sql ) )
 	{
@@ -340,9 +315,9 @@ sub dopage_results
 	my $i = 0;
 	foreach my $result ( @results )
 	{
-		my $action_url=$url."_cache=".$searchexp->get_cache_id."&_exp=$escexp&_offset=$offset";
+		my $action_url = $url . "_cache=" . $searchexp->get_cache_id . "&_exp=$escexp&_offset=$offset";
 		my $others = $users_for_eprint{$result->get_id};
-		$table->appendChild( render_item_row( $session, $searchexp, $result, $action_url, 'add', $others, "rae/select:selected_by", $role, "row_a" ) );
+		$table->appendChild( render_item_row( $session, $searchexp, $result, $action_url, 'add', $others, "rae/select:selected_by", $role ) );
 	}
 
 	if( $n_results > 0 )
@@ -383,14 +358,15 @@ sub dopage_problems
 }
 
 sub render_item_row {
-	my ( $session, $searchexp, $item, $url, $action, $others, $phraseid, $role, $style )  = @_;
+	my ( $session, $searchexp, $item, $url, $action, $others, $phraseid, $role )  = @_;
 	
-	my $tr = $session->make_element( "tr", class=>$style );
+	my $tr = $session->make_element( "tr" );
 
 	# Each row contains a citation...
-	my $td_cite = $session->make_element( "td", class=>"leftcol" );
+	my $td_cite = $session->make_element( "td" );
 	$tr->appendChild( $td_cite );
 	if( defined $item ) {
+		# Use citation style defined by search configuration
 		$td_cite->appendChild( $item->render_citation_link( $searchexp->{citation} ) );
 	} else {
 		$td_cite->appendChild( $session->html_phrase( "rae:unknown_item" ) );
@@ -398,7 +374,7 @@ sub render_item_row {
 	}
 
 	# ... a list of other users related to that item ...
-	my $td_users = $session->make_element( "td", class=>"midcol" );
+	my $td_users = $session->make_element( "td" );
 	my $already_selected = 0;
 	my @names;
 	foreach my $otherid ( @$others )
@@ -425,28 +401,22 @@ sub render_item_row {
 	$tr->appendChild( $td_users );
 	
 	# ... and an action button
-	my $td_act = $session->make_element( "td", class=>"rightcol" );
-	
+	my $td_act = $session->make_element( "td" );
 	
 	if( !$already_selected || $action eq "remove" ) {
-		#foreach("remove", "edit")
-		#{
-		##seb CHANGE THIS MONSTRUOSITY!
 		if($action eq "remove")
 		{
-#			foreach("remove","edit")
-#			{
-				my $button = $session->render_link( "$url&_action_$action=" . $item->get_id );
-				$button->appendChild( $session->html_phrase( "rae/select:" . $action . "_button" ) );
-				$td_act->appendChild( $button );
-				$td_act->appendChild( $session->make_element("br") );
-				$td_act->appendChild( $session->make_element("br") );
-				$button = $session->render_link( "./raeedit?role=".$role->get_id."&eprintid=" . $item->get_id );
-				$button->appendChild( $session->html_phrase( "rae/select:edit_button" ) );
-				$td_act->appendChild( $button );
-				$td_act->appendChild( $session->make_element("br") );
+			my $button = $session->render_link( "$url&_action_$action=" . $item->get_id );
+			$button->appendChild( $session->html_phrase( "rae/select:" . $action . "_button" ) );
+			$td_act->appendChild( $button );
 
-#			}
+			$td_act->appendChild( $session->make_text(" ") );
+
+			my $edit_url = $session->get_archive->get_conf("perl_url") . "/users/rae/edit?eprintid=" . $item->get_id;
+			$edit_url .= "&role=" . $role->get_id if $session->current_user->get_id != $role->get_id;
+			my $button = $session->render_link( $edit_url);
+			$button->appendChild( $session->html_phrase( "rae/select:edit_button" ) );
+			$td_act->appendChild( $button );
 			
 		}
 		else
@@ -455,7 +425,6 @@ sub render_item_row {
 			$button->appendChild( $session->html_phrase( "rae/select:" . $action . "_button" ) );
 			$td_act->appendChild( $button );	
 		}
-		#}
 		
 	} else {
 		$td_act->appendChild( $session->html_phrase( "rae/select:already_selected" ) );	
@@ -465,6 +434,3 @@ sub render_item_row {
 
 	return $tr;
 }
-
-
-

@@ -184,13 +184,13 @@ Selected Items: <ep:pin ref="user" />
 <div style="float:right"><ep:pin ref="roles" /></div>
 <p><i><b>PLEASE NOTE:</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</i></p>
 <p>Use the <ep:pin ref="data_link">Measures of Esteem</ep:pin> page to declare measures of esteem.</p>
-<p>Use this page to search for and select items.</p>
+<p>Use this page to select items.</p>
 <hr />
 <h2>Selected Items:</h2>
 <ep:pin ref="selected" />
 <br />
 <hr />
-<h2>Search for Items:</h2>
+<h2>Available Items:</h2>
 <ep:pin ref="search" />
 </ep:phrase>
 
@@ -200,6 +200,10 @@ Add
 
 <ep:phrase ref="rae/select:remove_button" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
 Remove
+</ep:phrase>
+
+<ep:phrase ref="rae/select:edit_button" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Add Info
 </ep:phrase>
 
 <ep:phrase ref="rae/select:already_selected" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
@@ -212,6 +216,10 @@ Selected by: <ep:pin ref="names" />
 
 <ep:phrase ref="rae/select:also_selected_by" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
 Also selected by: <ep:pin ref="names" />
+</ep:phrase>
+
+<ep:phrase ref="rae/select:none_selected" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+No items selected.
 </ep:phrase>
 
 <!-- Page: report -->
