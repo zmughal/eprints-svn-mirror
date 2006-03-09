@@ -17,7 +17,7 @@
 
 # The EPrints RAE module is distributed in the hope that it will be
 # useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
-# of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# OF MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 ######################################################################
@@ -26,23 +26,56 @@ sub get_rae_conf {
 
 my $c = ();
 
-# Measures of esteem fields - define names and help text in 
-# rae-phrases-XX.xml
-$c->{moe_fields} = [
-	"memberships",
-	"pubs",
-	"confs",
-	"awards",
-	"funding",
-	"impacts",
-	"contribs",
-	"output",
-	"other",
+my $fields = {};
+
+# Measures of esteem fields
+$c->{fields}->{moe} = [ 
+	{ name => "memberships", type => "longtext" },
+	{ name => "pubs", type => "longtext" },
+	{ name => "confs", type => "longtext" },
+	{ name => "awards", type => "longtext" },
+	{ name => "funding", type => "longtext" },
+	{ name => "impacts", type => "longtext" },
+	{ name => "contribs", type => "longtext" },
+	{ name => "output", type => "longtext" },
+	{ name => "other", type => "longtext" },
 ];
+
+# Selection fields
+$c->{fields}->{edit} = [
+	{ name => "full_text", type => "boolean" },
+	{ name => "external", type => "boolean" },
+	{ name => "confidential", type => "boolean" },
+	{ name => "interdis", type => "boolean" },
+	{ name => "foreign_lang", type => "boolean" },
+	{ name => "scholar", type => "boolean" },
+	{ name => "details", type => "longtext" },
+	{ name => "self_rating", type => "set", options => [0, 1, 2, 3, 4] },
+	{ name => "ext_rating", type => "set", options => [0, 1, 2, 3, 4] },
+	{ name => "int_rating", type => "set", options => [0, 1, 2, 3, 4] },
+];
+
+# The id of the search (as defined in ArchiveConfig.pm) used on
+# the item selection page
+$c->{search_id} = "advanced";
+
+# The field to group by on the reporting page
+$c->{group_by} = "dept";
+
+# The groups to exclude from the list on the reporting page
+$c->{exclude_group} = {
+	uos => 1,
+};
+
+# Set this flag to show the group of "all staff" on the reporting page
+$c->{show_all} = 1;
+
+return $c;
+}
 
 # Test whether the given user can assume the given role.
 # Example: let certain users assume role of any person in school
-$c->{can_user_assume_role} = sub {
+sub can_user_assume_role {
 	
 	my ( $session, $user, $role ) = @_;
 
@@ -61,7 +94,7 @@ $c->{can_user_assume_role} = sub {
 # Return a list of (id, name) pairs representing the user roles the
 # given user is able to assume
 # Example: let certain users assume role of any person in school
-$c->{roles_for_user} = sub {
+sub roles_for_user {
 
 	my ( $session, $user ) = @_;
 
@@ -81,14 +114,9 @@ $c->{roles_for_user} = sub {
 	return @roles;
 };
 
-
-# The id of the search (as defined in ArchiveConfig.pm) used on the
-# eprint selection page
-$c->{search_id} = "advanced";
-
 # Set the default values for the search used on the eprint
 # selection page
-$c->{init_search} = sub {
+sub init_search {
 
 	my ($searchexp, $user) = @_;
 	print STDERR $user->get_value( "name" )->{family} . "\n\n\n";
@@ -97,21 +125,9 @@ $c->{init_search} = sub {
 	$searchexp->get_searchfield( "date_effective" )->{value} = "2003-";
 };
 
-# The field to group by on the reporting page
-$c->{group_by} = "dept";
-
-# The groups to exclude from the list on the reporting page
-$c->{exclude_group} = {
-	uos => 1,
-};
-
-# Set this flag to show the group of "all staff" on the reporting page
-$c->{show_all} = 1;
-
-
 # Return a list of problems with the given item as selected by the 
 # given user (and possibly other users)
-$c->{check_item} = sub { 
+sub check_item { 
 	my ( $session, $user, $item, $others ) = @_;
 	my @problems;
 
@@ -150,13 +166,13 @@ $c->{check_item} = sub {
 };
 
 # Return the header line of the CSV output
-$c->{csv_header} = sub {
+sub csv_header {
 	print csv_line('Dept', 'Username', 'Surname', 'First Name', 'Score', 'Publication', 'Paper' );
 };
 
 
 # Return a CSV row for the given item as selected by the given user
-$c->{csv_row} = sub {
+ sub csv_row {
 	my ( $session, $user, $item ) = @_;
 	my $name = $user->get_value( 'name' );
 	my $book = $item->get_value( 'publication' );
@@ -175,7 +191,7 @@ $c->{csv_row} = sub {
 
 # Return the footer line(s) of the CSV output, given the number
 # of rows already output
-$c->{csv_footer} = sub {
+sub csv_footer {
 	my ( $rows ) = @_;
 	print csv_line( '','','','','','','' );
 	my $range = 'E2:E'.($rows+1); # E1 is header row
@@ -186,9 +202,6 @@ $c->{csv_footer} = sub {
 	print csv_line( '3', "3*", "=INDEX(FREQUENCY($range,A".($rows+6).":A".($rows+8)."),2)",'','','','','' );
 	print csv_line( '4', "4*", "=INDEX(FREQUENCY($range,A".($rows+7).":A".($rows+8)."),2)",'','','','','' );
 };
-
-return $c;
-}
 
 # Format a list of values as a CSV row
 # (used by csv_header, csv_row and csv_footer)
