@@ -23,7 +23,9 @@
 #
 ######################################################################
 
+use EPrints::Database;
 use EPrints::EPrint;
+use EPrints::Metafield;
 use EPrints::Session;
 use EPrints::User;
 use strict;
@@ -82,7 +84,7 @@ if( scalar @roles )
 	);
 }
 
-# Get values from DB
+# Get selection info from DB
 my %selection;
 my $sql = "SELECT * FROM rae_selections WHERE userid=" . $role->get_id . " AND eprintid=" . $eprint->get_id;
 my $sth = $session->get_db->prepare( $sql );
@@ -114,7 +116,7 @@ foreach my $field ( @{ $archive->get_conf( "rae", "fields", "edit" ) } )
 	);
 	push @metafields, $metafield;
 
-	# Check for updated values
+	# Check for updated value
 	my $action_button = $session->get_action_button;
 	if( defined $action_button && $action_button eq "submit" )
 	{
@@ -165,4 +167,3 @@ $session->build_page( $title, $page );
 $session->send_page();
 $session->terminate();
 exit;
-

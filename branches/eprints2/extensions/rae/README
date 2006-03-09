@@ -29,6 +29,35 @@ CREATE TABLE `rae_selected` (
 
 2. Install scripts
 
+foreach my $file (
+        "cfg/ArchiveOAIConfig.pm",
+        "cfg/ArchiveRenderConfig.pm",
+        "cfg/ArchiveValidateConfig.pm",
+        "cfg/ArchiveTextIndexingConfig.pm",
+        "cfg/ArchiveMetadataFieldsConfig.pm",
+        "cfg/ArchiveRAEConfig.pm" )
+
+
+sub get_entities
+{
+        my( $archive, $langid ) = @_;
+
+        my %entities = ();
+        $entities{archivename} = $archive->get_conf( "archivename", $langid );
+        $entities{adminemail} = $archive->get_conf( "adminemail" );
+        $entities{base_url} = $archive->get_conf( "base_url" );
+        $entities{perl_url} = $archive->get_conf( "perl_url" );
+        $entities{frontpage} = $archive->get_conf( "frontpage" );
+        $entities{userhome} = $archive->get_conf( "userhome" );
+        $entities{version} = EPrints::Config::get( "version" );
+        $entities{ruler} = EPrints::XML::to_string( $archive->get_ruler() );
+        $entities{rae_phrases} = "SYSTEM phrases-rae-" . $langid . ".xml";
+
+        return %entities;
+}
+
+
+
 Copy all files to /opt/eprints2/cgi/users/rae/.
 
 Symlink the RAELoader.pm module to the /opt/eprints2/perl_lib/ directory.
