@@ -3,12 +3,7 @@
 use EPrints::Session;
 use strict;
 
-my $noise = 1;
-
-# Set STDOUT to auto flush (without needing a \n)
-$|=1;
-
-my $session = new EPrints::Session( 1, $ARGV[0], $noise, 1 );
+my $session = new EPrints::Session( 1, $ARGV[0] );
 exit( 1 ) unless defined $session;
 
 # TODO: warn if unsupported property encountered?
@@ -33,6 +28,10 @@ if( !$session->get_db->has_table( "rae_moe" ) )
 		print STDERR "DB Error: $error\n";
 	}
 }
+else
+{
+	print STDERR "Skipping table rae_moe: already exists.\n";
+}
 
 if( !$session->get_db->has_table( "rae_selections" ) )
 {
@@ -52,6 +51,10 @@ if( !$session->get_db->has_table( "rae_selections" ) )
 		my $error = $session->get_db()->error();
 		print STDERR "DB Error: $error\n";
 	}
+}
+else
+{
+	print STDERR "Skipping table rae_selections: already exists\n";
 }
 
 $session->terminate();
