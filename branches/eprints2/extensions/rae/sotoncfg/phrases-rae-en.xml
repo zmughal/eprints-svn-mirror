@@ -1,13 +1,11 @@
-<?xml version="1.0" encoding="iso-8859-1" standalone="no" ?>
-<!DOCTYPE phrases SYSTEM "entities-en.dtd">
 
-<ep:phrases xmlns="http://www.w3.org/1999/xhtml"
-            xmlns:ep="http://eprints.org/ep2/phrases">
+<!-- Measures of Esteem -->
 
-<!-- Measures of Esteem fields -->
+<ep:phrase ref="rae_fieldname_memberships" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<a name="memberships">Memberships</a>
+</ep:phrase>
 
-<ep:phrase ref="rae_fieldname_memberships"><a name="memberships">Memberships</a></ep:phrase>
-<ep:phrase ref="rae_fieldhelp_memberships">
+<ep:phrase ref="rae_fieldhelp_memberships" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
 Please give details of membership of:
 <ul>
 	<li>major funding bodies</li>
@@ -20,8 +18,12 @@ Please give details of membership of:
 	<li>university and industry advisory panels</li>
 </ul>
 </ep:phrase>
-<ep:phrase ref="rae_fieldname_pubs"><a name="pubs">Publications</a></ep:phrase>
-<ep:phrase ref="rae_fieldhelp_pubs">
+
+<ep:phrase ref="rae_fieldname_pubs" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<a name="pubs">Publications</a>
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldhelp_pubs" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
 Please give details of:
 <ul>
 	<li>editorships of major research journals (national and international)</li>
@@ -30,8 +32,12 @@ Please give details of:
 	<li>refereeing or reviewing for publishers or journals</li>
 </ul>
 </ep:phrase>
-<ep:phrase ref="rae_fieldname_confs"><a name="confs">Conferences/Lectures</a></ep:phrase>
-<ep:phrase ref="rae_fieldhelp_confs">
+
+<ep:phrase ref="rae_fieldname_confs" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<a name="confs">Conferences/Lectures</a>
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldhelp_confs" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
 Please give details of: 
 <ul>
 	<li>speaking at a major research meeting</li>
@@ -41,8 +47,12 @@ Please give details of:
 	<li>conference chairing</li>
 </ul>
 </ep:phrase>
-<ep:phrase ref="rae_fieldname_awards"><a name="awards">Awards/Honours</a></ep:phrase>
-<ep:phrase ref="rae_fieldhelp_awards">
+
+<ep:phrase ref="rae_fieldname_awards" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<a name="awards">Awards/Honours</a>
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldhelp_awards" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
 Please give details of:
 <ul>
 	<li>fellowships</li>
@@ -51,16 +61,24 @@ Please give details of:
 	<li>election to learned society</li>
 </ul>
 </ep:phrase>
-<ep:phrase ref="rae_fieldname_funding"><a name="funding">Funding</a></ep:phrase>
-<ep:phrase ref="rae_fieldhelp_funding">
+
+<ep:phrase ref="rae_fieldname_funding" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<a name="funding">Funding</a>
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldhelp_funding" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
 Please give details of: 
 <ul>
 	<li>external funding</li>
 	<li>research income</li>
 </ul>
 </ep:phrase>
-<ep:phrase ref="rae_fieldname_impacts"><a name="impacts">Impacts</a></ep:phrase>
-<ep:phrase ref="rae_fieldhelp_impacts">
+
+<ep:phrase ref="rae_fieldname_impacts" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<a name="impacts">Impacts</a>
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldhelp_impacts" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
 Please give details of:
 <ul>
 	<li>impacts on the research community</li>
@@ -69,8 +87,12 @@ Please give details of:
 	<li>national and international practice</li>
 </ul>
 </ep:phrase>
-<ep:phrase ref="rae_fieldname_contribs"><a name="contribs">Contributions/Consultancies</a></ep:phrase>
-<ep:phrase ref="rae_fieldhelp_contribs">
+
+<ep:phrase ref="rae_fieldname_contribs" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<a name="contribs">Contributions/Consultancies</a>
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldhelp_contribs" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
 Please give details of contributions to:
 <ul>
 	<li>public, voluntary, government and industrial advisory bodies</li>
@@ -79,8 +101,12 @@ Please give details of contributions to:
 	<li>arts, media and creative industries</li>
 </ul>
 </ep:phrase>
-<ep:phrase ref="rae_fieldname_output"><a name="output">Research Output</a></ep:phrase>
-<ep:phrase ref="rae_fieldhelp_output">
+
+<ep:phrase ref="rae_fieldname_output" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<a name="output">Research Output</a>
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldhelp_output" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
 Please give details of:
 <ul>
 	<li>high volume of citations</li>
@@ -91,8 +117,12 @@ Please give details of:
 	<li>prominent public dissemination</li>
 </ul>
 </ep:phrase>
-<ep:phrase ref="rae_fieldname_other"><a name="other">Other</a></ep:phrase>
-<ep:phrase ref="rae_fieldhelp_other">
+
+<ep:phrase ref="rae_fieldname_other" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<a name="other">Other</a>
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldhelp_other" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
 Please give any other details here. For example:
 <ul>
 	<li>number of PhD external examiner appointments</li>
@@ -104,65 +134,238 @@ Please give any other details here. For example:
 </ep:phrase>
 
 <!-- General -->
-<ep:phrase ref="rae:unknown_item">Unknown Item <ep:pin ref="id" /></ep:phrase>
-<ep:phrase ref="rae:unknown_user">Unknown User <ep:pin ref="id" /></ep:phrase>
+
+<ep:phrase ref="rae:unknown_item" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Unknown Item <ep:pin ref="id" />
+</ep:phrase>
+
+<ep:phrase ref="rae:unknown_user" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Unknown User <ep:pin ref="id" />
+</ep:phrase>
 
 <!-- Roles -->
-<ep:phrase ref="rae:change_role">Change Role</ep:phrase>
-<ep:phrase ref="rae:roles">Logged in as: <b><ep:pin ref="current_user" /></b><ep:pin ref="change_role" /></ep:phrase>
 
-<!-- Measures of Esteem -->
-<ep:phrase ref="rae/data:page_title">Measures of Esteem: <ep:pin ref="user" /></ep:phrase>
-<ep:phrase ref="rae/data:page">
-	<div style="float:right"><ep:pin ref="roles" /></div>
-	<p><i><b>PLEASE NOTE:</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</i></p>
-	<p>Use the <ep:pin ref="select_link">Select Items</ep:pin> page to select items from EPrints.</p>
-	<p>Use this page to declare the following measures of esteem:</p>
-	<ep:pin ref="shortcuts" />
-	<br />
-	<hr />
-	<ep:pin ref="form" />
+<ep:phrase ref="rae:change_role" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Change Role
 </ep:phrase>
-<ep:phrase ref="rae/data:submit_button">Update</ep:phrase>
 
-<!-- Select items -->
-<ep:phrase ref="rae/select:page_title">Selected Items: <ep:pin ref="user" /></ep:phrase>
-<ep:phrase ref="rae/select:page">
-	<div style="float:right"><ep:pin ref="roles" /></div>
-	<p><i><b>PLEASE NOTE:</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</i></p>
-	<p>Use the <ep:pin ref="data_link">Measures of Esteem</ep:pin> page to declare measures of esteem.</p>
-	<p>Use this page to search for and select items.</p>
-	<hr />
-	<h2>Selected Items:</h2>
-	<ep:pin ref="selected" />
-	<br />
-	<hr />
-	<h2>Search for Items:</h2>
-	<ep:pin ref="search" />
+<ep:phrase ref="rae:roles" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Logged in as: <b><ep:pin ref="current_user" /></b><ep:pin ref="change_role" />
 </ep:phrase>
-<ep:phrase ref="rae/select:add_button">Add</ep:phrase>
-<ep:phrase ref="rae/select:remove_button">Remove</ep:phrase>
-<ep:phrase ref="rae/select:already_selected">Already Selected</ep:phrase>
-<ep:phrase ref="rae/select:selected_by">Selected by: <ep:pin ref="names" /></ep:phrase>
-<ep:phrase ref="rae/select:also_selected_by">Also selected by: <ep:pin ref="names" /></ep:phrase>
 
-<!-- View/Export report -->
-<ep:phrase ref="rae/report:list_page_title">Report</ep:phrase>
-<ep:phrase ref="rae/report:list_page">
-	<p><i><b>PLEASE NOTE:</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</i></p>
-	<p>Select a group:</p>
-	<p><ep:pin ref="list" /></p>
+<!-- Page: moe -->
+
+<ep:phrase ref="rae/moe:page_title" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Measures of Esteem: <ep:pin ref="user" />
 </ep:phrase>
-<ep:phrase ref="rae/report:group_page_title">Report: <ep:pin ref="group" /></ep:phrase>
-<ep:phrase ref="rae/report:all_group_page_title">Report: All Staff</ep:phrase>
-<ep:phrase ref="rae/report:group_page">
-	<p><i><b>PLEASE NOTE:</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</i></p>
-	<p><ep:pin ref="mainonly">Printable version</ep:pin> (each staff member starts on new page). Save page to your computer and print from Microsoft Word.</p>
-	<p><ep:pin ref="csv">CSV version</ep:pin> suitable for Microsoft Excel.</p>
-	<p><ep:pin ref="report" /></p>
+
+<ep:phrase ref="rae/moe:page" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<div style="float:right"><ep:pin ref="roles" /></div>
+<p><i><b>PLEASE NOTE:</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</i></p>
+<p>Use the <ep:pin ref="select_link">Select Items</ep:pin> page to select items from EPrints.</p>
+<p>Use this page to declare the following measures of esteem:</p>
+<ep:pin ref="shortcuts" />
+<br />
+<hr />
+<ep:pin ref="form" />
 </ep:phrase>
-<ep:phrase ref="rae/report:all_users_group">All Staff</ep:phrase>
-<ep:phrase ref="rae/report:problem_multiple_users">Also selected by: <ep:pin ref="names" /> <ep:pin ref="resolve_link">Edit Selection</ep:pin></ep:phrase>
-<ep:phrase ref="rae/report:problem_no_doc">No document (type=<ep:pin ref="type" />)</ep:phrase>
-	
-</ep:phrases>
+
+<ep:phrase ref="rae/moe:submit_button" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Update
+</ep:phrase>
+
+<!-- Page: select -->
+
+<ep:phrase ref="rae/select:page_title" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Selected Items: <ep:pin ref="user" />
+</ep:phrase>
+
+<ep:phrase ref="rae/select:page" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<div style="float:right"><ep:pin ref="roles" /></div>
+<p><i><b>PLEASE NOTE:</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</i></p>
+<p>Use the <ep:pin ref="data_link">Measures of Esteem</ep:pin> page to declare measures of esteem.</p>
+<p>Use this page to search for and select items.</p>
+<hr />
+<h2>Selected Items:</h2>
+<ep:pin ref="selected" />
+<br />
+<hr />
+<h2>Search for Items:</h2>
+<ep:pin ref="search" />
+</ep:phrase>
+
+<ep:phrase ref="rae/select:add_button" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Add
+</ep:phrase>
+
+<ep:phrase ref="rae/select:remove_button" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Remove
+</ep:phrase>
+
+<ep:phrase ref="rae/select:already_selected" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Already Selected
+</ep:phrase>
+
+<ep:phrase ref="rae/select:selected_by" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Selected by: <ep:pin ref="names" />
+</ep:phrase>
+
+<ep:phrase ref="rae/select:also_selected_by" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Also selected by: <ep:pin ref="names" />
+</ep:phrase>
+
+<!-- Page: report -->
+
+<ep:phrase ref="rae/report:list_page_title" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Report
+</ep:phrase>
+
+<ep:phrase ref="rae/report:list_page" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<p><i><b>PLEASE NOTE:</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</i></p>
+<p>Select a group:</p>
+<p><ep:pin ref="list" /></p>
+</ep:phrase>
+
+<ep:phrase ref="rae/report:group_page_title" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Report: <ep:pin ref="group" />
+</ep:phrase>
+
+<ep:phrase ref="rae/report:all_group_page_title" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Report: All Staff
+</ep:phrase>
+
+<ep:phrase ref="rae/report:group_page" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<p><i><b>PLEASE NOTE:</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</i></p>
+<p><ep:pin ref="mainonly">Printable version</ep:pin> (each staff member starts on new page). Save page to your computer and print from Microsoft Word.</p>
+<p><ep:pin ref="csv">CSV version</ep:pin> suitable for Microsoft Excel.</p>
+<p><ep:pin ref="report" /></p>
+</ep:phrase>
+
+<ep:phrase ref="rae/report:all_users_group" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+All Staff
+</ep:phrase>
+
+<ep:phrase ref="rae/report:problem_multiple_users" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Also selected by: <ep:pin ref="names" /> <ep:pin ref="resolve_link">Edit Selection</ep:pin>
+</ep:phrase>
+
+<ep:phrase ref="rae/report:problem_no_doc" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+No document (type=<ep:pin ref="type" />)
+</ep:phrase>
+
+<!-- Page: edit -->
+
+<ep:phrase ref="rae/edit:page_title" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Selection Details: <ep:pin ref="user" />
+</ep:phrase>
+
+<ep:phrase ref="rae/edit:page" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<div style="float:right"><ep:pin ref="roles" /></div>
+<p><i><b>PLEASE NOTE:</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</i></p>
+<p>Go back to the <ep:pin ref="select_link">Select Items</ep:pin> page to continuing selecting items.</p>
+<p>Use this page to provide additional information about the selected item.</p>
+<hr />
+<h2>Selected Item:</h2>
+<div class="citation"><ep:pin ref="citation" /></div>
+<br />
+<ep:pin ref="form" />
+</ep:phrase>
+
+<ep:phrase ref="rae/edit:submit_button" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Submit
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldname_full_text" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Full Text
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldhelp_full_text" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Tick this box if the full text is available for this item. Full text output is required for journal articles, this can either be a web link to the e-journal (UoS subscription or public only) or attached to this output as a document.
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldname_external" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+External Report
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldhelp_external" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Tick this box if this item is a report for an external body. Enter any further details in the box at the bottom of this page.
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldname_confidential" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Confidential
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldhelp_confidential" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Tick this box if this item should be treated as confidential. Enter any further details in the box at the bottom of this page.
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldname_interdis" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Interdisciplinary Research
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldhelp_interdis" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Tick this box if this item is the product of interdisciplinary reserach. Enter any further details in the box at the bottom of this page.
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldname_foreign_lang" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Foreign Language
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldhelp_foreign_lang" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Tick this box if this is a foreign language item. Note, an English version of the abstract needs to be provided.
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldname_scholar" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Scholarly Edition.
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldhelp_scholar" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Tick this box if this item is part of a scholarly edition. Enter any further details in the box at the bottom of this page.
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldname_details" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Further Details
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldhelp_details" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Include here any additional information about the output that you feel the panel members need to consider. You are strongly advised to check the relevant panel criteria (<a href="http://www.rae.ac.uk/pubs/2006/01/">HEFCE panel guidance website</a>).
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldname_self_rating" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Self Rating
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldhelp_self_rating" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldopt_self_rating_0" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">0</ep:phrase>
+<ep:phrase ref="rae_fieldopt_self_rating_1" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">1</ep:phrase>
+<ep:phrase ref="rae_fieldopt_self_rating_2" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">2</ep:phrase>
+<ep:phrase ref="rae_fieldopt_self_rating_3" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">3</ep:phrase>
+<ep:phrase ref="rae_fieldopt_self_rating_4" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">4</ep:phrase>
+
+<ep:phrase ref="rae_fieldname_ext_rating" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+External Rating
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldhelp_ext_rating" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldopt_ext_rating_0" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">0</ep:phrase>
+<ep:phrase ref="rae_fieldopt_ext_rating_1" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">1</ep:phrase>
+<ep:phrase ref="rae_fieldopt_ext_rating_2" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">2</ep:phrase>
+<ep:phrase ref="rae_fieldopt_ext_rating_3" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">3</ep:phrase>
+<ep:phrase ref="rae_fieldopt_ext_rating_4" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">4</ep:phrase>
+
+<ep:phrase ref="rae_fieldname_int_rating" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Internal Rating
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldhelp_int_rating" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+</ep:phrase>
+
+<ep:phrase ref="rae_fieldopt_int_rating_0" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">0</ep:phrase>
+<ep:phrase ref="rae_fieldopt_int_rating_1" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">1</ep:phrase>
+<ep:phrase ref="rae_fieldopt_int_rating_2" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">2</ep:phrase>
+<ep:phrase ref="rae_fieldopt_int_rating_3" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">3</ep:phrase>
+<ep:phrase ref="rae_fieldopt_int_rating_4" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">4</ep:phrase>
