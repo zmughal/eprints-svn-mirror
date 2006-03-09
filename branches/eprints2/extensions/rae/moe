@@ -22,9 +22,11 @@
 #
 ######################################################################
 
+use EPrints::Database;
 use EPrints::MetaField;
 use EPrints::Session;
 use EPrints::User;
+use EPrints::Utils;
 use strict;
 
 # Create session
@@ -40,25 +42,19 @@ if( !$session->auth_check( "deposit" ) )
 }
 my $user = $session->current_user;
 
-# Init RAE config/phrases
-use RAELoader;
-RAELoader::init_rae( $session );
-
 # Check selected role
 my $role = $user;
 if( defined( $session->param( "role" ) ) )
 {
 	my $selected_role = EPrints::User->new( $session, $session->param( "role" ) );
-	my $check = $archive->get_conf( "rae", "can_user_assume_role" );
-	if( &$check( $session, $user, $selected_role ) ) {
+	if( $archive->call( "can_user_assume_role", $session, $user, $selected_role ) ) {
 		$role = $selected_role;	
 	}
 }
 
 # Show available roles
 my $roles_frag = $session->make_doc_fragment;
-my $get_roles = $archive->get_conf( "rae", "roles_for_user" );
-my @roles = &$get_roles( $session, $user );
+my @roles = $archive->call( "roles_for_user", $session, $user );
 if( scalar @roles )
 {
 	my $form = $session->render_form;
@@ -73,67 +69,51 @@ if( scalar @roles )
 
 # Get measures of esteem from DB
 my %moe;
-my $sql = "SELECT field, value FROM rae_data WHERE userid=" . $role->get_id;
+my $sql = "SELECT * FROM rae_moe WHERE userid=" . $role->get_id;
 my $sth = $session->get_db->prepare( $sql );
 if( $session->get_db->execute( $sth, $sql ) )
 {
-	while( my @row = $sth->fetchrow )
+	my $hashref = $sth->fetchrow_hashref;
+	if( defined $hashref )
 	{
-		$moe{$row[0]} = $row[1];
+		%moe = %$hashref;
+	}
+	else
+	{
+		# Insert stub for this user
+		my $sql = "INSERT INTO rae_moe (userid) VALUES ( " . $role->get_id . ")";
+		if( !$session->get_db->do( $sql ) )
+		{
+			# Handle error
+		}
 	}
 }
 
 my @metafields;
+my @updates;
 my $shortcuts_frag = $session->make_element( "ul" );
-foreach my $field ( @{ $archive->get_conf( "rae", "moe_fields" ) } )
+foreach my $field ( @{ $archive->get_conf( "rae", "fields", "moe" ) } )
 {
 
 	# Create metafield	
 	my $metafield = EPrints::MetaField->new(
-		# TODO: more flexible field definition in config
-		type => "longtext",
-		archive => $session->get_archive(),
+		archive => $archive,
 		confid => "rae",
-		name => $field,
+		%$field,
 	);
-
-	# Check for input value	
-	my $val = $session->param( $field );
-	if( defined $val )
-	{
-		my $qfield = $session->get_db->{dbh}->quote( $field );
-		my $qval = $session->get_db->{dbh}->quote( $val );
-				
-		my $sql;
-		if( defined $moe{$field} )
-		{
-			# Has the value changed?
-			if( $moe{ $field } ne $val )
-			{
-				$sql = "UPDATE rae_data SET value=$qval, chooserid=" . $user->get_id . " WHERE field=$qfield AND userid=" . $role->get_id;
-			}
-			
-		}
-		elsif( $val ne "" ) 
-		{
-			$sql = "INSERT INTO rae_data VALUES (" . $role->get_id . ", $qfield, $qval," . $user->get_id . ");";
-		}
-
-		# Update DB
-		if( defined $sql )
-		{
-			if ( !$session->get_db->do( $sql ) )
-			{
-				# TODO: error handling?
-				#$session->render_error("Error: $sql", $archive->get_conf( "perl_url" ) . "/users/rae/raeselect" );
-			}
-			else
-			{
-				$moe{ $field } = $val;
-			}
-		}
-	} 
 	push @metafields, $metafield;
+
+	# Check for updated value
+	my $action_button = $session->get_action_button;
+	if( defined $action_button && $action_button eq "submit" )
+	{	
+		my $value = $metafield->form_value( $session );
+		if( defined $value && $value ne $moe{ $metafield->get_name } )
+		{
+			$moe{ $metafield->get_name } = $value;
+			push @updates, sprintf( '%s="%s"', $metafield->get_name, EPrints::Database::prep_value( $value ) );
+		}
+	}
 
 	# Create shortcut
 	my $li = $session->make_element( "li" );
@@ -143,6 +123,16 @@ foreach my $field ( @{ $archive->get_conf( "rae", "moe_fields" ) } )
 	$li->appendChild( $link );
 }
 
+# Update DB
+# TODO: INSERT stub
+if( scalar @updates ) {
+	my $sql = "UPDATE rae_moe SET " . join( ", ", @updates ) . 
+		", userid_actual=" . $user->get_id . " WHERE userid=" . $role->get_id;
+	if( !$session->get_db->do( $sql ) ) 
+	{
+		# Handle error
+	}
+}
 
 # Render input form
 my $form_frag = $session->render_form( "post" );
@@ -151,18 +141,18 @@ $form_frag = $session->render_input_form(
 	values => \%moe,
 	show_names => 1,
 	show_help => 1,
-	buttons => { submit => $session->phrase( "rae/data:submit_button" ) },
+	buttons => { submit => $session->phrase( "rae/moe:submit_button" ) },
 );
-$form_frag->appendChild( $session->render_hidden_field( "role", $role->get_id ) );
+$form_frag->appendChild( $session->render_hidden_field( "role", $role->get_id ) ) if $user->get_id != $role->get_id;
 
 # Build & Send page
 my $select_url = $archive->get_conf("perl_url") . "/users/rae/raeselect";
 $select_url .= "?role=" . $role->get_id if $user->get_id != $role->get_id;
-my $title = $session->html_phrase( "rae/data:page_title", user => $role->render_description );
-my $page = $session->html_phrase( "rae/data:page",
-	shortcuts => $shortcuts_frag,
+my $title = $session->html_phrase( "rae/moe:page_title", user => $role->render_description );
+my $page = $session->html_phrase( "rae/moe:page",
 	form => $form_frag,
 	roles => $roles_frag,
+	shortcuts => $shortcuts_frag,
 	select_link => $session->render_link( $select_url ),
 );
 
