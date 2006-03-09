@@ -146,7 +146,7 @@ $form_frag = $session->render_input_form(
 $form_frag->appendChild( $session->render_hidden_field( "role", $role->get_id ) ) if $user->get_id != $role->get_id;
 
 # Build & Send page
-my $select_url = $archive->get_conf("perl_url") . "/users/rae/raeselect";
+my $select_url = $archive->get_conf("perl_url") . "/users/rae/select";
 $select_url .= "?role=" . $role->get_id if $user->get_id != $role->get_id;
 my $title = $session->html_phrase( "rae/moe:page_title", user => $role->render_description );
 my $page = $session->html_phrase( "rae/moe:page",
