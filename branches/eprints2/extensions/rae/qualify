@@ -105,7 +105,7 @@ if( $session->get_db->execute( $sth, $sql ) )
 
 my @metafields;
 my @updates;
-foreach my $field ( @{ $archive->get_conf( "rae", "fields", "edit" ) } )
+foreach my $field ( @{ $archive->get_conf( "rae", "fields", "qualify" ) } )
 {
 
 	# Create metafield	
@@ -147,7 +147,7 @@ $form_frag = $session->render_input_form(
 	values => \%selection,
 	show_names => 1,
 	show_help => 1,
-	buttons => { submit => $session->phrase( "rae/edit:submit_button" ) },
+	buttons => { submit => $session->phrase( "rae/qualify:submit_button" ) },
 );
 $form_frag->appendChild( $session->render_hidden_field( "role", $role->get_id ) ) if $user->get_id != $role->get_id;
 $form_frag->appendChild( $session->render_hidden_field( "eprintid", $eprint->get_id ) );
@@ -155,8 +155,8 @@ $form_frag->appendChild( $session->render_hidden_field( "eprintid", $eprint->get
 # Build & Send page
 my $select_url = $archive->get_conf("perl_url") . "/users/rae/select";
 $select_url .= "?role=" . $role->get_id if $user->get_id != $role->get_id;
-my $title = $session->html_phrase( "rae/edit:page_title", user => $role->render_description );
-my $page = $session->html_phrase( "rae/edit:page",
+my $title = $session->html_phrase( "rae/qualify:page_title", user => $role->render_description );
+my $page = $session->html_phrase( "rae/qualify:page",
 	form => $form_frag,
 	roles => $roles_frag,
 	citation => $eprint->render_citation,

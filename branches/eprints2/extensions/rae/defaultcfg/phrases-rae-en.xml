@@ -202,7 +202,7 @@ Add
 Remove
 </ep:phrase>
 
-<ep:phrase ref="rae/select:edit_button" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<ep:phrase ref="rae/select:qualify_button" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
 Add Info
 </ep:phrase>
 
@@ -261,13 +261,13 @@ Also selected by: <ep:pin ref="names" /> <ep:pin ref="resolve_link">Edit Selecti
 No document (type=<ep:pin ref="type" />)
 </ep:phrase>
 
-<!-- Page: edit -->
+<!-- Page: qualify -->
 
-<ep:phrase ref="rae/edit:page_title" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<ep:phrase ref="rae/qualify:page_title" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
 Selection Details: <ep:pin ref="user" />
 </ep:phrase>
 
-<ep:phrase ref="rae/edit:page" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<ep:phrase ref="rae/qualify:page" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
 <div style="float:right"><ep:pin ref="roles" /></div>
 <p><i><b>PLEASE NOTE:</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</i></p>
 <p>Go back to the <ep:pin ref="select_link">Select Items</ep:pin> page to continuing selecting items.</p>
@@ -279,7 +279,7 @@ Selection Details: <ep:pin ref="user" />
 <ep:pin ref="form" />
 </ep:phrase>
 
-<ep:phrase ref="rae/edit:submit_button" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<ep:phrase ref="rae/qualify:submit_button" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
 Submit
 </ep:phrase>
 

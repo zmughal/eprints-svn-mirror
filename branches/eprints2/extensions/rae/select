@@ -412,10 +412,10 @@ sub render_item_row {
 
 			$td_act->appendChild( $session->make_text(" ") );
 
-			my $edit_url = $session->get_archive->get_conf("perl_url") . "/users/rae/edit?eprintid=" . $item->get_id;
-			$edit_url .= "&role=" . $role->get_id if $session->current_user->get_id != $role->get_id;
-			my $button = $session->render_link( $edit_url);
-			$button->appendChild( $session->html_phrase( "rae/select:edit_button" ) );
+			my $qualify_url = $session->get_archive->get_conf("perl_url") . "/users/rae/qualify?eprintid=" . $item->get_id;
+			$qualify_url .= "&role=" . $role->get_id if $session->current_user->get_id != $role->get_id;
+			my $button = $session->render_link( $qualify_url);
+			$button->appendChild( $session->html_phrase( "rae/select:qualify_button" ) );
 			$td_act->appendChild( $button );
 			
 		}
