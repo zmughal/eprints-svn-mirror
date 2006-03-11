@@ -30,9 +30,6 @@ sub convert_dataobj
 
 	my $data = {};
 
-	# The Refer Format <http://www.ecst.csuchico.edu/~jacobsd/bib/formats/refer.html>
-	# Doug Arnold's Common Bibliography Reference Card <http://clwww.essex.ac.uk/search/refer_local_help>
-
 	if( $dataobj->exists_and_set( "creators" ) )
 	{
 		foreach my $name ( @{ $dataobj->get_value( "creators" ) } )
@@ -51,7 +48,7 @@ sub convert_dataobj
 	}
 
 	$data->{T} = $dataobj->get_value( "title" ) if $dataobj->exists_and_set( "title" );
-	$data->{B} = $dataobj->get_value( "event_title" ) if $dataobj->exists_and_set( "event_title" );
+	#??$data->{B} = $dataobj->get_value( "event_title" ) if $dataobj->exists_and_set( "event_title" );
 	$data->{B} = $dataobj->get_value( "book_title" ) if $dataobj->exists_and_set( "book_title" );
 
 	if( $dataobj->exists_and_set( "date_effective" ) )
@@ -61,9 +58,15 @@ sub convert_dataobj
 	}
 
 	$data->{J} = $dataobj->get_value( "publication" ) if $dataobj->exists_and_set( "publication" );
-	$data->{V} = $dataobj->get_value( "volume" ) if $dataobj->exists_and_set( "volume" );
-	$data->{N} = $dataobj->get_value( "number" ) if $dataobj->exists_and_set( "number" );
+	$data->{V} = $dataobj->get_value( "volume" ) if $dataobj->exists_and_set( "volume" ) && $dataobj->get_type ne "patent";
+	$data->{N} = $dataobj->get_value( "number" ) if $dataobj->exists_and_set( "number" ) && $dataobj->get_type ne "patent";
 	$data->{S} = $dataobj->get_value( "series" ) if $dataobj->exists_and_set( "series" );
+	
+	if( $dataobj->get_type eq "book" || $dataobj->get_type eq "thesis" )
+	{
+		
+	}
+
 	$data->{P} = $dataobj->get_value( "pagerange" ) if $dataobj->exists_and_set( "pagerange" );
 	$data->{R} = $dataobj->get_value( "id_number" ) if $dataobj->exists_and_set( "id_number" );
 
