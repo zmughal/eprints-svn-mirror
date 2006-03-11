@@ -3539,3 +3539,7 @@ PACKAGE: 2.2.99.2
 
  * Renamed get_db to get_database
  * Rewrote ->error() as ->error
+
+2006-03-11 tmb
+
+ * Added EndNote Input plugin
