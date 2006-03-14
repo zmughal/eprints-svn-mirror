@@ -125,23 +125,24 @@ sub make_page
 			{username=>$session->make_text( $v->{username} )} );
 	}
 
-	my $user = EPrints::DataObj::User::create( $session, $default_type );
+	my $pin = sprintf( "%04X%04X%04X%04X",int rand 0xffff,int rand 0xffff,int rand 0xffff,int rand 0xffff );
 	foreach my $fieldid ( keys %{$f} )
 	{
-		$user->set_value( $fieldid, $v->{$fieldid} );
+		$user_data->{$fieldid} = $v->{$fieldid};
 	}
+	my $user_data = { 
+		usertype => $default_type,
+		newemail => undef,
+		pin => $pin,
+		pinsettime => time(),
+	};
+	my $user = $userds->create_object( $session, $user_data );
 
 	my $page = $session->make_doc_fragment;
 	$page->appendChild( $session->html_phrase( 
 		"cgi/register:created_new_user",
 			email=>$session->make_text( $v->{email} ),
 			username=>$session->make_text( $v->{username} ) ) );
-
-	my $pin = sprintf( "%04X%04X%04X%04X",int rand 0xffff,int rand 0xffff,int rand 0xffff,int rand 0xffff );
-	$user->set_value( "newemail", undef );
-	$user->set_value( "pin", $pin );
-	$user->set_value( "pinsettime", time() );
-	$user->commit();
 
 	# If email fails then we should abort
 	my $rc = $user->mail( 

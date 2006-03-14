@@ -262,12 +262,7 @@ sub deal
 		print "Importing: ".$subject->get_value( "subjectid" )."\n";
 	}
 
-	$subject = EPrints::DataObj::Subject::create( 
-		$session, 
-		$subject->get_value( "subjectid" ),
-		$subject->get_value( "name" ),
-		$subject->get_value( "parents" ),
-		$subject->get_value( "depositable" ) eq "TRUE" );
+	$dataset->create_object( $session, $subject->get_data );
 
 	$info->{count}+=1;
 }
@@ -285,6 +280,8 @@ sub from_ascii_file
 
 	my $count = 0;
 	my $lang = $session->get_repository->get_conf( "defaultlanguage" );
+
+	my $subject_ds = $session->get_repository->get_dataset( "subject" );
 	
 	while( <SUBJECTS> )
 	{
@@ -299,12 +296,11 @@ sub from_ascii_file
 			print "Importing: ".$vals[0]."\n";
 		}
 
-		EPrints::DataObj::Subject::create( 
-			$session,
-		        $vals[0],
-		        {$lang=>$vals[1]},
-			\@parents,					
-		        $vals[3] );
+		$subject_ds->create_object( $session, {
+			subjectid=>$vals[0],
+			name=>{$lang=>$vals[1]},
+			parents=>\@parents,					
+		        depositable=>$vals[3] } );
 
 		$count+=1;
 

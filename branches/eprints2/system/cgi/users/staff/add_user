@@ -103,7 +103,11 @@ sub process_form
 	}
 
 	# Attempt to create a new account
-	my $new_user = EPrints::DataObj::User::create( $session, $usertype );
+	my $user_ds = $session->get_repository->get_dataset( "user" );
+
+	my $new_user = $user_ds->create_object( $session, { 
+				usertype=>$usertype,
+				username=>$candidate_username } );
 	
 	unless( defined $new_user )
 	{
@@ -111,9 +115,6 @@ sub process_form
 			$session->html_phrase( "cgi/users/add_user:mk_acc_err" ) );
 		return;
 	}
-
-	$new_user->set_value( "username", $candidate_username );
-	$new_user->commit();
 
 	# Created the user OK, send to edit screen
 	$session->redirect(

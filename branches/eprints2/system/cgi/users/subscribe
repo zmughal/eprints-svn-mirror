@@ -28,14 +28,14 @@ if( !$session->auth_check( "subscription" ) )
 
 my $user = $session->current_user;
 my $action = $session->get_action_button();
-my $subs_ds = $session->get_repository->get_dataset( "subscription" );
+my $subject_ds = $session->get_repository->get_dataset( "subscription" );
 
 # handle user response
 
 if( $action eq "new" )
 {
-	my $newsub = EPrints::DataObj::Subscription->create( $session, $user->get_id );
-	edit_subscription( $session, $subs_ds, $user, $newsub );
+	my $newsub = $subject_ds->create_object( $session, { userid=>$user->get_id } );
+	edit_subscription( $session, $subject_ds, $user, $newsub );
 } 
 elsif( $action =~ /^edit_([0-9]+)$/ || $action eq "finish" )
 {
@@ -56,7 +56,7 @@ elsif( $action =~ /^edit_([0-9]+)$/ || $action eq "finish" )
 			$session->current_user->get_id." to edit ".
 			"subscription #".$subid." which does not ".
 			"exist." );
-		&show_subscriptions( $session, $subs_ds, $user );
+		&show_subscriptions( $session, $subject_ds, $user );
 	}
 	elsif( $subscr->get_value( "userid" ) != $user->get_id )
 	{
@@ -64,7 +64,7 @@ elsif( $action =~ /^edit_([0-9]+)$/ || $action eq "finish" )
 			$session->current_user->get_id." to edit ".
 			"subscription #".$subid." which does does not ".
 			"belong to them." );
-		&show_subscriptions( $session, $subs_ds, $user );
+		&show_subscriptions( $session, $subject_ds, $user );
 	}
 	else
 	{
@@ -72,24 +72,24 @@ elsif( $action =~ /^edit_([0-9]+)$/ || $action eq "finish" )
 		{
 			$subscr->set_value( 
 				"spec",
-				$subs_ds->get_field( "spec" )->form_value(
+				$subject_ds->get_field( "spec" )->form_value(
 					$session ) );
 			$subscr->set_value( 
 				"frequency",
-				$subs_ds->get_field( 
+				$subject_ds->get_field( 
 					"frequency" )->form_value(
 						$session ) );
 			$subscr->set_value( 
 				"mailempty",
-				$subs_ds->get_field( 
+				$subject_ds->get_field( 
 					"mailempty" )->form_value(
 						$session ) );
 			$subscr->commit()
-			&show_subscriptions( $session, $subs_ds, $user );
+			&show_subscriptions( $session, $subject_ds, $user );
 		}
 		else
 		{
-			edit_subscription( $session, $subs_ds, $user, $subscr );
+			edit_subscription( $session, $subject_ds, $user, $subscr );
 		}
 	}
 }
@@ -118,18 +118,18 @@ elsif( $action =~ /^remove_([0-9]+)$/ )
 			"subscription #".$subscr->get_id." owned by user ".
 			"#".$subscr->get_user->get_id );
 	}
-	&show_subscriptions( $session, $subs_ds, $user );
+	&show_subscriptions( $session, $subject_ds, $user );
 }
 else
 {
-	&show_subscriptions( $session, $subs_ds, $user );
+	&show_subscriptions( $session, $subject_ds, $user );
 }
 $session->terminate();
 
 
 sub show_subscriptions
 {
-	my( $session, $subs_ds, $user ) = @_;
+	my( $session, $subject_ds, $user ) = @_;
 
 	my $page = $session->make_doc_fragment;
 
@@ -188,7 +188,7 @@ sub show_subscriptions
 			{
 				my $strong;
 				$strong = $session->make_element( "strong" );
-				$strong->appendChild( $subs_ds->get_field( $_ )->render_name( $session ) );
+				$strong->appendChild( $subject_ds->get_field( $_ )->render_name( $session ) );
 				$strong->appendChild( 
 					$session->make_text( ": " ) );
 				$td->appendChild( $strong );
@@ -212,7 +212,7 @@ sub show_subscriptions
 
 sub edit_subscription
 {
-	my( $session, $subs_ds, $user, $subscr ) = @_;
+	my( $session, $subject_ds, $user, $subscr ) = @_;
 
 	my $page = $session->make_doc_fragment;
 
@@ -224,9 +224,9 @@ sub edit_subscription
 	$page->appendChild(
 		$session->render_input_form( 
 			fields => [
-				$subs_ds->get_field( "spec" ),
-				$subs_ds->get_field( "frequency" ),
-				$subs_ds->get_field( "mailempty" )
+				$subject_ds->get_field( "spec" ),
+				$subject_ds->get_field( "frequency" ),
+				$subject_ds->get_field( "mailempty" )
 			],
 			values => $subscr->get_data,
 			show_names => 1,

@@ -133,12 +133,12 @@ sub mkpage_editsubject
 				}
 				else
 				{
-					my $newsubject = EPrints::DataObj::Subject::create( 
-							$session, 
-							$newid, 
-							'', 
-							[ $subject->get_value( "subjectid" ) ],
-							1 );
+					my $new_subject = $subject_ds->create_object( $session, {
+						subjectid => $newid,
+						name => ''
+						parents => [ $subject->get_value( "subjectid" ) ],
+						depositable => 1 } );
+
 					my $newname = $session->param( "name" );
 					$newsubject->set_value( 
 						"name", 

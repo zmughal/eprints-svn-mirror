@@ -61,7 +61,7 @@ sub modifyEprint
 
 sub modifyDocument
 {
-	my( $class,$docid,$docdata ) = @_;
+	my( $class,$docid,$doc_data ) = @_;
 
 	my $session = new EPrints::Session();
 	if( !defined $session )
@@ -78,10 +78,10 @@ sub modifyDocument
 		die "document $docid does not exist";
 	}
 
-	foreach( keys %{$docdata} )
+	foreach( keys %{$doc_data} )
 	{
 		next if( $_ eq "files" );
-		$document->set_value( $_, $docdata->{$_} );
+		$document->set_value( $_, $doc_data->{$_} );
 	}
 	$document->commit;
 
@@ -277,30 +277,27 @@ sub putEprint($)
 	$data->{type} = "article" unless defined $data->{type};
 	$data->{userid} = 1;
 
-	my $ds = $session->get_repository->get_dataset( "inbox" );
-	my $eprint = EPrints::DataObj::EPrint::create( $session, $ds, $data );
+	my $eprint_ds = $session->get_repository->get_dataset( "inbox" );
+	my $document_ds = $session->get_repository->get_dataset( "inbox" );
+	my $eprint = $eprint_ds->create_object( $session, $data );
 	if( !defined $eprint ) 
 	{
 		die "Failed to create eprint";
 	}
-	$eprint->commit();
 
-	foreach my $docdata ( @{$data->{documents}} )
+	foreach my $doc_data ( @{$data->{documents}} )
 	{
-		my $doc = EPrints::DataObj::Document::create( $session, $eprint );
-		foreach( keys %{$docdata} )
-		{
-			next if( $_ eq "files" );
-			$doc->set_value( $_, $docdata->{$_} );
-		}
-		foreach my $filedata ( @{$docdata->{files}} )
+		$doc_data->{eprintid} = $eprint->get_id;
+		my $files = delete $doc_data->{files};
+		my $doc = $document_ds->create_object( $session, $doc_data );
+		
+		foreach my $filedata ( @{$files} )
 		{
 			my $fn = $doc->local_path."/".$filedata->{filename};
 			open( FILE, ">$fn" ) || die "can't write file $fn: $!";
 			print FILE $filedata->{data};
 			close FILE;
 		}
-		$doc->commit;
 	}
 
 
@@ -322,7 +319,7 @@ sub putEprint($)
 
 sub addDocument
 {
-	my( $class,$eprintid, $docdata ) = @_;
+	my( $class,$eprintid, $doc_data ) = @_;
 
 	print STDERR "addDocument(".join(",",@_).")\n";
 	my $session = new EPrints::Session();
@@ -339,20 +336,19 @@ sub addDocument
 		die "eprint $eprintid does not exist";
 	}
 
-	my $doc = EPrints::DataObj::Document::create( $session, $eprint );
-	foreach( keys %{$docdata} )
-	{
-		next if( $_ eq "files" );
-		$doc->set_value( $_, $docdata->{$_} );
-	}
-	foreach my $filedata ( @{$docdata->{files}} )
+
+
+	$doc_data->{eprintid} = $eprint->get_id;
+	my $files = delete $doc_data->{files};
+	my $doc = $document_ds->create_object( $session, $doc_data );
+	
+	foreach my $filedata ( @{$files} )
 	{
 		my $fn = $doc->local_path."/".$filedata->{filename};
 		open( FILE, ">$fn" ) || die "can't write file $fn: $!";
 		print FILE $filedata->{data};
 		close FILE;
 	}
-	$doc->commit;
 
 	my $id = $doc->get_id;
 	$eprint->generate_static;

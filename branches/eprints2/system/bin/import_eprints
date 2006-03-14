@@ -76,7 +76,7 @@ sub deal
 	{
 		print  "NOT EXISTS!\n";
 		#cjg needs a userid
-		$eprint = EPrints::DataObj::EPrint::create( $session, $info->{ds}, $eprint->get_data() );
+		$eprint = $info->{ds}->create_object( $session, $eprint->get_data );
 	}
 	foreach( $eprint->get_all_related() )
 	{

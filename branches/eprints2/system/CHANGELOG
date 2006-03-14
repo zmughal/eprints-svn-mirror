@@ -3543,3 +3543,11 @@ PACKAGE: 2.2.99.2
 2006-03-11 tmb
 
  * Added EndNote Input plugin
+
+2006-03-14 cjg
+
+ * Deprecated create class method on dataobj's in favour of the create_object
+    method on $dataset (which could do with renaming).
+ * Fixed a bug in the validate subject id method.
+ * Cleaned up some variable names and calls to create.
+
