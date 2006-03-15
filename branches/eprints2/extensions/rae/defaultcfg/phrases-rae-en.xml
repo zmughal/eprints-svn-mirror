@@ -244,9 +244,10 @@ Report: All Staff
 
 <ep:phrase ref="rae/report:group_page" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
 <p><i><b>PLEASE NOTE:</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</i></p>
-<p><ep:pin ref="mainonly">Printable version</ep:pin> (each staff member starts on new page). Save page to your computer and print from Microsoft Word.</p>
-<p><ep:pin ref="csv">CSV version</ep:pin> suitable for Microsoft Excel.</p>
+<p><ep:pin ref="mainonly_link">Printable version</ep:pin> (each staff member starts on new page). Save page to your computer and print from Microsoft Word.</p>
+<p><ep:pin ref="csv_link">CSV version</ep:pin> suitable for Microsoft Excel.</p>
 <p><ep:pin ref="report" /></p>
+<p>Number of problems: <ep:pin ref="problem_count"/>.</p>
 </ep:phrase>
 
 <ep:phrase ref="rae/report:all_users_group" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">

@@ -5,9 +5,12 @@ FEATURES
 - Enter measures of esteem (optionally on behalf of another user)
 - Search for publications (optionally on behalf of another user)
 - Add publications from search results to "selected" list (optionally on behalf of another user)
+- Qualify each selected publication for RAE return (optionally on behalf of another user)
 - View/export reports (Microsoft Word, Microsoft Excel)
 
 MANUAL INSTALLATION
+
+
 
 1. Create database tables
 

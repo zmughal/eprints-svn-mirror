@@ -60,12 +60,7 @@ $c->{fields}->{edit} = [
 $c->{search_id} = "advanced";
 
 # The field to group by on the reporting page
-$c->{group_by} = "dept";
-
-# The groups to exclude from the list on the reporting page
-$c->{exclude_group} = {
-	uos => 1,
-};
+$c->{group_reports_by} = "dept";
 
 # Set this flag to show the group of "all staff" on the reporting page
 $c->{show_all} = 1;
@@ -127,7 +122,7 @@ sub init_search {
 # Return a list of problems with the given item as selected by the 
 # given user (and possibly other users)
 sub check_item { 
-	my ( $session, $user, $item, $others ) = @_;
+	my ( $session, $user, $item, $values, $others ) = @_;
 	my @problems;
 
 	# Example: check no other users have selected this item
@@ -165,19 +160,19 @@ sub check_item {
 };
 
 # Return the header line of the CSV output
-sub csv_header {
-	print csv_line('Dept', 'Username', 'Surname', 'First Name', 'Score', 'Publication', 'Paper' );
+sub rae_print_csv_header {
+	print _rae_escape_csv('Dept', 'Username', 'Surname', 'First Name', 'Score', 'Publication', 'Paper' );
 };
 
 
 # Return a CSV row for the given item as selected by the given user
- sub csv_row {
+ sub rae_print_csv_row {
 	my ( $session, $user, $item ) = @_;
 	my $name = $user->get_value( 'name' );
 	my $book = $item->get_value( 'publication' );
 	$book = $item->get_value( 'event_title' ) if !defined $book;
 	
-	print csv_line(
+	print _rae_escape_csv(
 		$user->get_value( "dept" ),
 		$user->get_value( "username" ),
 		$name->{family},
@@ -190,21 +185,20 @@ sub csv_header {
 
 # Return the footer line(s) of the CSV output, given the number
 # of rows already output
-sub csv_footer {
+sub rae_print_csv_footer {
 	my ( $rows ) = @_;
-	print csv_line( '','','','','','','' );
+	print _rae_escape_csv( '','','','','','','' );
 	my $range = 'E2:E'.($rows+1); # E1 is header row
-	print csv_line( 'Score','Label','Total Papers','','','','','');
-	print csv_line( '0', "Unclassified", '='.$rows."-INDEX(FREQUENCY($range,A".($rows+4).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+5).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+6).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+7).":A".($rows+8)."),2)", '','','','','' );
-	print csv_line( '1', "1*", "=INDEX(FREQUENCY($range,A".($rows+4).":A".($rows+8)."),2)",'','','','','' );
-	print csv_line( '2', "2*", "=INDEX(FREQUENCY($range,A".($rows+5).":A".($rows+8)."),2)",'','','','','' );
-	print csv_line( '3', "3*", "=INDEX(FREQUENCY($range,A".($rows+6).":A".($rows+8)."),2)",'','','','','' );
-	print csv_line( '4', "4*", "=INDEX(FREQUENCY($range,A".($rows+7).":A".($rows+8)."),2)",'','','','','' );
+	print _rae_escape_csv( 'Score','Label','Total Papers','','','','','');
+	print _rae_escape_csv( '0', "Unclassified", '='.$rows."-INDEX(FREQUENCY($range,A".($rows+4).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+5).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+6).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+7).":A".($rows+8)."),2)", '','','','','' );
+	print _rae_escape_csv( '1', "1*", "=INDEX(FREQUENCY($range,A".($rows+4).":A".($rows+8)."),2)",'','','','','' );
+	print _rae_escape_csv( '2', "2*", "=INDEX(FREQUENCY($range,A".($rows+5).":A".($rows+8)."),2)",'','','','','' );
+	print _rae_escape_csv( '3', "3*", "=INDEX(FREQUENCY($range,A".($rows+6).":A".($rows+8)."),2)",'','','','','' );
+	print _rae_escape_csv( '4', "4*", "=INDEX(FREQUENCY($range,A".($rows+7).":A".($rows+8)."),2)",'','','','','' );
 };
 
-# Format a list of values as a CSV row
-# (used by csv_header, csv_row and csv_footer)
-sub csv_line
+# Helper function: format a list of values as a CSV row
+sub _rae_escape_csv
 {
 	my( @values ) = @_;
 	foreach( @values )
