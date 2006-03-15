@@ -42,13 +42,11 @@ use EPrints::MetaField::Text;
 
 sub render_single_value
 {
-	my( $self, $session, $value, %render_opts ) = @_;
+	my( $self, $session, $value ) = @_;
 	
 	my $text = $session->make_text( $value );
 
-	$self->copy_in_render_opts( \%render_opts );
-
-	return $text if( $render_opts{dont_link} );
+	return $text if( $self->{render_dont_link} );
 
 	my $a = $session->render_link( "mailto:".$value );
 	$a->appendChild( $text );

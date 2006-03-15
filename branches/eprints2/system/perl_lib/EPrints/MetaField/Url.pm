@@ -43,13 +43,11 @@ use EPrints::MetaField::Text;
 
 sub render_single_value
 {
-	my( $self, $session, $value, %render_opts ) = @_;
+	my( $self, $session, $value ) = @_;
 
-	$self->copy_in_render_opts( \%render_opts );
-	
 	my $text = $session->make_text( $value );
 
-	return $text if( $render_opts{dont_link} );
+	return $text if( $self->{render_dont_link} );
 
 	my $a = $session->render_link( $value );
 	$a->appendChild( $text );

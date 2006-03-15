@@ -97,11 +97,19 @@ sub new
 	eval 'use '.$realclass.';';
 	warn "couldn't parse $realclass: $@" if $@;
 
+	###########################################
+	#
+	# Pre 2.4 compatibility 
+	#
+
 	# for when repository was called archive.
 	if( defined $properties{archive} )
 	{
 		$properties{repository} = $properties{archive};
 	}
+
+	# end of 2.4
+	###########################################
 
 	my $self = {};
 	bless $self, $realclass;
@@ -604,7 +612,7 @@ sub render_value
 
 	unless( EPrints::Utils::is_set( $value ) )
 	{
-		if( $self->{render_opts}->{quiet} )
+		if( $self->{render_quiet} )
 		{
 			return $session->make_doc_fragment;
 		}
@@ -828,7 +836,7 @@ sub render_value_no_multilang
 			fieldname => $self->render_name( $session ) );
 	}
 
-	if( $self->{render_opts}->{magicstop} )
+	if( $self->{render_magicstop} )
 	{
 		# add a full stop if the vale does not end with ? ! or .
 		$value =~ s/\s*$//;
@@ -838,7 +846,7 @@ sub render_value_no_multilang
 		}
 	}
 
-	if( $self->{render_opts}->{noreturn} )
+	if( $self->{render_noreturn} )
 	{
 		# turn  all CR's and LF's to spaces
 		$value =~ s/[\r\n]/ /g;

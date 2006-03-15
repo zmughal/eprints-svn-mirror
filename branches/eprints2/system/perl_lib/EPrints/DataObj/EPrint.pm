@@ -130,13 +130,13 @@ sub get_system_field_info
 		text_index=>0, import=>0 },
 
 	{ name=>"datestamp", type=>"time", required=>0, import=>0,
-		render_opts=>{res=>"minute"}, can_clone=>0 },
+		render_res=>"minute", can_clone=>0 },
 
 	{ name=>"lastmod", type=>"time", required=>0, import=>0,
-		render_opts=>{res=>"minute"}, can_clone=>0 },
+		render_res=>"minute", can_clone=>0 },
 
 	{ name=>"status_changed", type=>"time", required=>0, import=>0,
-		render_opts=>{res=>"minute"}, can_clone=>0 },
+		render_res=>"minute", can_clone=>0 },
 
 	{ name=>"type", type=>"datatype", datasetid=>"eprint", required=>1, 
 		input_rows=>"ALL" },

@@ -71,11 +71,9 @@ sub get_sql_index
 	
 sub render_single_value
 {
-	my( $self, $session, $value, %render_opts ) = @_;
+	my( $self, $session, $value ) = @_;
 
-	$self->copy_in_render_opts( \%render_opts );
-
-	my $order = $render_opts{order};
+	my $order = $self->{render_order};
 	
 	# If the render opt "order" is set to "gf" then we order
 	# the name with given name first. 
@@ -358,6 +356,7 @@ sub get_property_defaults
 	$defaults{hide_honourific} = $EPrints::MetaField::FROM_CONFIG;
 	$defaults{hide_lineage} = $EPrints::MetaField::FROM_CONFIG;
 	$defaults{family_first} = $EPrints::MetaField::FROM_CONFIG;
+	$defaults{render_order} = "fg";
 	return %defaults;
 }
 

@@ -48,7 +48,7 @@ use EPrints::MetaField::Set;
 
 sub render_single_value
 {
-	my( $self, $session, $value, %render_opts ) = @_;
+	my( $self, $session, $value ) = @_;
 	
 	my $ds = $session->get_repository->get_dataset(
 			$self->get_property( "datasetid" ) );
@@ -56,9 +56,7 @@ sub render_single_value
 
 	my $text = $session->make_text( $obj->get_label() );
 
-	$self->copy_in_render_opts( \%render_opts );
-
-	return $text if( $render_opts{dont_link} );
+	return $text if( $self->{render_dont_link} );
 
 	my $a = $session->render_link( $obj->get_url() );
 	$a->appendChild( $text );

@@ -1215,7 +1215,7 @@ If fieldname ends in ".id" then return a metafield representing the
 ID part only.
 
 If fieldname has a semicolon followed by render options then these
-are passed as render_opts to the new EPrints::MetaField object.
+are passed as render options to the new EPrints::MetaField object.
 
 =cut
 ######################################################################
@@ -1268,17 +1268,15 @@ sub field_from_config_string
 
 	if( scalar keys %q )
 	{
-		my $opts = {};
+		$field = $field->clone;
+	
 		foreach( keys %q )
 		{
 			my( $k, $v ) = split( /=/, $_ );
 			$v = 1 unless defined $v;
-			$opts->{$k} = $v;
+			$field->set_property( "render_$k", $v );
 		}
 
-		$field = $field->clone;
-	
-		$field->set_property( "render_opts", $opts );
 	}
 	
 	return $field;

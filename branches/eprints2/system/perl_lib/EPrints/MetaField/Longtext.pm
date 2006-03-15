@@ -59,7 +59,7 @@ sub get_sql_index
 
 sub render_single_value
 {
-	my( $self, $session, $value, %render_opts ) = @_;
+	my( $self, $session, $value ) = @_;
 	
 #	my @paras = split( /\r\n\r\n|\r\r|\n\n/ , $value );
 #

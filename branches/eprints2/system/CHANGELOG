@@ -3551,3 +3551,7 @@ PACKAGE: 2.2.99.2
  * Fixed a bug in the validate subject id method.
  * Cleaned up some variable names and calls to create.
 
+2006-03-15 cjg
+
+ * Removed render_opts property. Each render_opt becomes a property in its
+    own right. Closes #1989.

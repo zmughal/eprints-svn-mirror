@@ -92,41 +92,20 @@ sub get_sql_index
 ######################################################################
 =pod
 
-=item $xhtml_dom = $field->render_single_value( $session, $value, %render_opts )
+=item $xhtml_dom = $field->render_single_value( $session, $value )
 
 Returns the XHTML representation of the value. The value will be
 non-multiple and non-multilang and have no "id" part. Just the
 simple value.
-
-%render_opts over ride the render options of the field.
 
 =cut
 ######################################################################
 
 sub render_single_value
 {
-	my( $self, $session, $value, %render_opts ) = @_;
+	my( $self, $session, $value ) = @_;
 
 	return $session->make_text( $value );
-}
-
-
-# $field->copy_in_render_opts
-#
-# Used internally to replace any undefined keys in a hash with values
-# from this fields render_opts.
-#
-
-sub copy_in_render_opts
-{
-	my( $self, $opts ) = @_;
-
-	return unless defined $self->{render_opts};
-
-	foreach( keys %{$self->{render_opts}} ) 
-	{ 
-		$opts->{$_} = $self->{render_opts}->{$_} unless defined $opts->{$_}; 
-	}
 }
 
 
@@ -1395,8 +1374,11 @@ sub get_property_defaults
 		name 		=> $EPrints::MetaField::REQUIRED,
 		show_in_html	=> 1,
 		render_input 	=> $EPrints::MetaField::UNDEF,
-		render_opts 	=> {},
 		render_single_value 	=> $EPrints::MetaField::UNDEF,
+		render_quiet	=> 0,
+		render_magicstop	=> 0,
+		render_noreturn	=> 0,
+		render_dont_link	=> 0,
 		render_value 	=> $EPrints::MetaField::UNDEF,
 		required 	=> 0,
 		requiredlangs 	=> [],

@@ -44,7 +44,7 @@ use EPrints::MetaField::Set;
 
 sub render_single_value
 {
-	my( $self, $session, $value, %render_opts ) = @_;
+	my( $self, $session, $value ) = @_;
 
 	my $subject = new EPrints::DataObj::Subject( $session, $value );
 	if( !defined $subject )

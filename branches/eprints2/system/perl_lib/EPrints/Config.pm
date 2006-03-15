@@ -499,6 +499,36 @@ END
 		$config->{allow_reset_password} = 1;
 	}
 
+	###########################################
+	#
+	# Pre 2.4 compatibility 
+	#
+
+
+	foreach my $ds_id ( keys %{$config->{archivefields}} )
+	{
+		my $field_list = $config->{archivefields}->{$ds_id};
+		foreach my $field_data ( @{$field_list} )
+		{
+			# render opts become normal properties
+
+			if( defined $field_data->{render_opts} )
+			{
+				foreach my $k ( keys %{$field_data->{render_opts}} )
+				{
+					$field_data->{"render_$k"} = $field_data->{render_opts}->{$k};
+				}
+				delete $field_data->{render_opts};
+			}
+		}
+	}
+
+	# end of 2.4
+	###########################################
+
+
+
+
 	#
 	# End of config updater
 	#

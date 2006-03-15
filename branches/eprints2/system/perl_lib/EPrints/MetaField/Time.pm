@@ -50,11 +50,9 @@ sub get_sql_type
 
 sub render_single_value
 {
-	my( $self, $session, $value, %render_opts ) = @_;
+	my( $self, $session, $value ) = @_;
 
-	$self->copy_in_render_opts( \%render_opts );
-
-	my $res = $render_opts{res};
+	my $res = $self->{render_res};
 
 	my $l = 19;
 	if( $res eq "minute" ) { $l = 16; }
@@ -263,13 +261,11 @@ sub form_value_basic
 
 sub get_unsorted_values
 {
-	my( $self, $session, $dataset, %render_opts ) = @_;
+	my( $self, $session, $dataset ) = @_;
 
 	my $values = $session->get_database->get_values( $self, $dataset );
 
-	$self->copy_in_render_opts( \%render_opts );
-
-	my $res = $render_opts{res};
+	my $res = $self->{render_res};
 
 	if( $res eq "day" )
 	{
@@ -309,7 +305,7 @@ sub get_property_defaults
 	my( $self ) = @_;
 	my %defaults = $self->SUPER::get_property_defaults;
 	$defaults{min_resolution} = "second";
-	$defaults{render_opts}->{res} = "second";
+	$defaults{render_res} = "second";
 	return %defaults;
 }
 

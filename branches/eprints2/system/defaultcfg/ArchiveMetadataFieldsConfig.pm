@@ -57,7 +57,7 @@ my $fields = {};
 
 $fields->{user} = [
 
-	{ name => "name", type => "name", render_opts=>{order=>"gf"} },
+	{ name => "name", type => "name", render_order=>"gf" },
 
 	{ name => "dept", type => "text" },
 
