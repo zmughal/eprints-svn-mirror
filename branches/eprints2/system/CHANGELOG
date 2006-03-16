@@ -3555,3 +3555,8 @@ PACKAGE: 2.2.99.2
 
  * Removed render_opts property. Each render_opt becomes a property in its
     own right. Closes #1989.
+
+2006-03-16 cjg
+ 
+ * Added an XML tidy method to produce indented XML.
+

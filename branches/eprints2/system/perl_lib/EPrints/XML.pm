@@ -734,6 +734,96 @@ sub _find_elements2
 ######################################################################
 =pod
 
+=item EPrints::XML::tidy( $session, $domtree, [$indent] )
+
+Neatly indent the DOM tree. 
+
+Note that this should not be done to XHTML as the differenct between
+white space and no white space does matter sometimes.
+
+This method modifies the tree it is given. Possibly there should be
+a version which returns a new version without modifying the tree.
+
+Indent is the number of levels to ident by.
+
+=cut
+######################################################################
+
+sub tidy 
+{
+	my( $session, $node, $indent ) = @_;
+
+	$indent = $indent || 0;
+
+	my $state = "empty";
+	my $text = "";
+	foreach my $c ( $node->getChildNodes )
+	{
+		unless( EPrints::XML::is_dom( $c, "Text", "CDATASection", "EntityReference" ) ) {
+			$state = "complex";
+			last;
+		}
+
+		unless( EPrints::XML::is_dom( $c, "Text" ) ) { $state = "text"; }
+		next if $state eq "text";
+		$text.=$c->nodeValue;
+		$state = "simpletext";
+	}
+	if( $state eq "simpletext" )
+	{
+		$text =~ s/^\s*//;
+		$text =~ s/\s*$//;
+		foreach my $c ( $node->getChildNodes )
+		{
+			$node->removeChild( $c );
+		}
+		$node->appendChild( $session->make_text( $text ));
+		return;
+	}
+	return if $state eq "text";
+	return if $state eq "empty";
+	$text = "";
+	my $replacement = $session->make_doc_fragment;
+	$replacement->appendChild( $session->make_text( "\n" ) );
+	foreach my $c ( $node->getChildNodes )
+	{
+		tidy($session,$c,$indent+1);
+		$node->removeChild( $c );
+		if( EPrints::XML::is_dom( $c, "Text" ) )
+		{
+			$text.= $c->nodeValue;
+			next;
+		}
+		$text =~ s/^\s*//;	
+		$text =~ s/\s*$//;	
+		if( $text ne "" )
+		{
+			$replacement->appendChild( $session->make_text( "  "x($indent+1) ) );
+			$replacement->appendChild( $session->make_text( $text ) );
+			$replacement->appendChild( $session->make_text( "\n" ) );
+			$text = "";
+		}
+		$replacement->appendChild( $session->make_text( "  "x($indent+1) ) );
+		$replacement->appendChild( $c );
+		$replacement->appendChild( $session->make_text( "\n" ) );
+	}
+	$text =~ s/^\s*//;	
+	$text =~ s/\s*$//;	
+	if( $text ne "" )
+	{
+		$replacement->appendChild( $session->make_text( "  "x($indent+1) ) );
+		$replacement->appendChild( $session->make_text( $text ) );
+		$replacement->appendChild( $session->make_text( "\n" ) );
+	}
+	$replacement->appendChild( $session->make_text( "  "x($indent) ) );
+	$node->appendChild( $replacement );
+
+}
+
+
+######################################################################
+=pod
+
 =item $namespace = EPrints::XML::namespace( $thing, $version )
 
 Return the namespace for the given version of the eprints xml.
