@@ -72,7 +72,8 @@ sub validate_field
 	{
 		my ($thisyear, $thismonth, $thisday) = EPrints::Utils::get_date( time );
 		my ($year, $month, $day) = split( '-', $value );
-		if( $year < $thisyear || ( $year == $thisyear && $month <= $thismonth ))
+		if( $year < $thisyear || ( $year == $thisyear && $month < $thismonth ) ||
+			( $year == $thisyear && $month == $thismonth && $day <= $thisday ) )
 		{
 			push @problems,
 				$session->html_phrase( "embargo:invalid_date",
