@@ -161,7 +161,7 @@ sub eprint_render
 			date => EPrints::Utils::render_date( $session, $eprint->get_value( "date_embargo" ) ) ) );
 	}
 
-	# Request restricted document(s) link 
+	# Request document(s) link 
 	if( $eprint->is_set( "full_text_status" ) )
 	{
 		my $status = $eprint->get_value( "full_text_status" );
@@ -172,11 +172,12 @@ sub eprint_render
 				if( defined( $session->get_repository->call( "email_for_doc_request", $session, $eprint ) ) )
 				{
 					# only render if there is a contact email address
-					my $p = $session->make_element( "p" );
-					$p->appendChild( $session->html_phrase( "request_doc:request_$status", 
-						link => $session->render_link( $session->get_repository->get_conf( "perl_url" ) . '/request_doc?eprintid=' . $eprint->get_id ),
+					my $form = $session->render_form( "post", $session->get_repository->get_conf( "perl_url" ) . "/request_doc" );
+					$form->appendChild( $session->render_hidden_field( "eprintid", $eprint->get_id ) );
+					$form->appendChild( $session->render_action_buttons( 
+						"submit" => $session->phrase( "request_doc:request_$status" )
 					) );
-					$page->appendChild( $p );
+					$page->appendChild( $form );
 				}
 			}
 		}

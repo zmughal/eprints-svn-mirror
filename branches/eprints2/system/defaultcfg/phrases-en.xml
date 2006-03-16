@@ -481,9 +481,9 @@ activated you can start to use the registered features of the repository.</p>
 <ep:phrase ref="embargo:status"><p>These documents will be made publically accessible from <ep:pin ref="date" />.</p></ep:phrase>
 <ep:phrase ref="embargo:invalid_date"><ep:pin ref="fieldname" /> must be in the future.</ep:phrase>
 
-<!-- Phrases related to requesting restricted documents -->
-<ep:phrase ref="request_doc:request_none"><ep:pin ref="link">Request Document(s)</ep:pin></ep:phrase>
-<ep:phrase ref="request_doc:request_restricted"><ep:pin ref="link">Request Restricted Document(s)</ep:pin></ep:phrase>
+<!-- Phrases related to requesting documents -->
+<ep:phrase ref="request_doc:request_none">Request Items(s)</ep:phrase>
+<ep:phrase ref="request_doc:request_restricted">Request Item(s)</ep:phrase>
 
 <ep:phrase ref="request_doc/page:title_none">Request Document(s)</ep:phrase>
 <ep:phrase ref="request_doc/page:title_restricted">Request Restricted Document(s)</ep:phrase>
@@ -499,7 +499,7 @@ activated you can start to use the registered features of the repository.</p>
 <ep:phrase ref="request_doc/request:body">This item has been requested from the &archivename; by <ep:pin ref="requester" />. Please can you respond.
 
 <ep:pin ref="eprint" />
-<ep:pin ref="url" />
+&lt;<ep:pin ref="url" />&gt;
 
 Please consider removing restrictions or uploading the full text to the archive so that it will be available immediately to future searchers.
 </ep:phrase>
@@ -537,7 +537,7 @@ If you do not receive a reply or need advice at a later time please contact &adm
 <ep:phrase ref="respond_doc/response:body_accept">Your request for the following item has been accepted:
 
 <ep:pin ref="eprint" />
-<ep:pin ref="url" />
+&lt;<ep:pin ref="url" />&gt;
 
 Please find the requested document(s) attached.
 </ep:phrase>
@@ -545,7 +545,7 @@ Please find the requested document(s) attached.
 <ep:phrase ref="respond_doc/response:body_reject">Your request for the following item has been rejected:
 
 <ep:pin ref="eprint" />
-<ep:pin ref="url" />
+&lt;<ep:pin ref="url" />&gt;
 
 It may not always be straightforward to provide full text. Your local library may also be able to help you. For more general queries you may also contact &adminemail;
 </ep:phrase>
