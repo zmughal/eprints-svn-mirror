@@ -9,11 +9,9 @@ See L<EPrints::Plugin::Input::EndNote>
 package EPrints::Plugin::Output::EndNote;
 
 use EPrints::Plugin::Output;
-use EPrints::Plugin::Output::Refer;
+use EPrints;
 
 @ISA = ( "EPrints::Plugin::Output" );
-
-use Unicode::String qw(latin1);
 
 use strict;
 
@@ -59,7 +57,7 @@ sub convert_dataobj
 	# J Journal
 	if( $type eq "article" )
 	{
-		$data->{J} = $$dataobj->get_value( "publication" ) if dataobj->exists_and_set( "publication" );
+		$data->{J} = $dataobj->get_value( "publication" ) if $dataobj->exists_and_set( "publication" );
 	}
 	# K Keywords
 	$data->{K} = $dataobj->get_value( "keywords" ) if $dataobj->exists_and_set( "keywords" );
@@ -209,6 +207,55 @@ sub convert_dataobj
 	return $data;
 }
 
-#TODO: bring other routines from Refer.pm
+sub output_dataobj
+{
+	my( $plugin, $dataobj ) = @_;
+
+	my $data = $plugin->convert_dataobj( $dataobj );
+
+	my $out;
+	foreach my $k ( sort keys %{ $data } )
+	{
+		if( ref( $data->{$k} ) eq "ARRAY" )
+		{
+			foreach( @{ $data->{$k} } )
+			{
+				$out .= "%$k " . remove_utf8( $_ ) . "\n";
+			}
+		} else {
+			$out .= "%$k " . remove_utf8( $data->{$k} ) . "\n";
+		}
+	}
+	$out .= "\n";
+
+	return $out;
+}
+
+sub remove_utf8
+{
+	my( $text, $char ) = @_;
+
+	$char = '?' unless defined $char;
+
+	$text = "" unless( defined $text );
+
+	my $stringobj = Unicode::String->new();
+	$stringobj->utf8( $text );
+	my $escstr = "";
+
+	foreach($stringobj->unpack())
+	{
+		if( $_ < 128)
+		{
+			$escstr .= chr( $_ );
+		}
+		else
+		{
+			$escstr .= $char;
+		}
+	}
+
+	return $escstr;
+}
 
 1;
