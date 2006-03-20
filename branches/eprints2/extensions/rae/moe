@@ -14,7 +14,7 @@
 # and/or modify it under the terms of the GNU General Public License 
 # as published by the Free Software Foundation; either version 2 of 
 # the License, or (at your option) any later version.
-
+#
 # The EPrints RAE module is distributed in the hope that it will be
 # useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
 # of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -47,17 +47,20 @@ my $role = $user;
 if( defined( $session->param( "role" ) ) )
 {
 	my $selected_role = EPrints::User->new( $session, $session->param( "role" ) );
-	if( $archive->call( "can_user_assume_role", $session, $user, $selected_role ) ) {
-		$role = $selected_role;	
+	if( defined $selected_role )
+	{
+		if( $archive->call( "rae_can_user_assume_role", $session, $user, $selected_role ) ) {
+			$role = $selected_role;	
+		}
 	}
 }
 
 # Show available roles
 my $roles_frag = $session->make_doc_fragment;
-my @roles = $archive->call( "roles_for_user", $session, $user );
+my @roles = $archive->call( "rae_roles_for_user", $session, $user );
 if( scalar @roles )
 {
-	my $form = $session->render_form;
+	my $form = $session->render_form( "post" );
 	$form->appendChild( $session->render_option_list(name => 'role', pairs => \@roles) );
 	$form->appendChild( $session->render_action_buttons(submit => $session->phrase( "rae:change_role" ) ) );
 	
@@ -106,8 +109,8 @@ foreach my $field ( @{ $archive->get_conf( "rae", "fields", "moe" ) } )
 	# Check for updated value
 	my $action_button = $session->get_action_button;
 	if( defined $action_button && $action_button eq "submit" )
-	{	
-		my $value = $metafield->form_value( $session );
+	{
+		my $value = $session->param( $metafield->get_name );
 		if( defined $value && $value ne $moe{ $metafield->get_name } )
 		{
 			$moe{ $metafield->get_name } = $value;
@@ -118,13 +121,12 @@ foreach my $field ( @{ $archive->get_conf( "rae", "fields", "moe" ) } )
 	# Create shortcut
 	my $li = $session->make_element( "li" );
 	$shortcuts_frag->appendChild( $li );
-	my $link = $session->render_link( "#" . $field );
+	my $link = $session->render_link( "#" . $metafield->get_name );
 	$link->appendChild( $session->make_text( EPrints::Utils::tree_to_utf8( $metafield->render_name( $session ) ) ) );
 	$li->appendChild( $link );
 }
 
 # Update DB
-# TODO: INSERT stub
 if( scalar @updates ) {
 	my $sql = "UPDATE rae_moe SET " . join( ", ", @updates ) . 
 		", userid_actual=" . $user->get_id . " WHERE userid=" . $role->get_id;

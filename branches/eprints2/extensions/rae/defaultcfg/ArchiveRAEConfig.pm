@@ -42,7 +42,7 @@ $c->{fields}->{moe} = [
 ];
 
 # Selection fields
-$c->{fields}->{edit} = [
+$c->{fields}->{qualify} = [
 	{ name => "full_text", type => "boolean" },
 	{ name => "external", type => "boolean" },
 	{ name => "confidential", type => "boolean" },
@@ -57,71 +57,63 @@ $c->{fields}->{edit} = [
 
 # The id of the search (as defined in ArchiveConfig.pm) used on
 # the item selection page
-$c->{search_id} = "advanced";
+$c->{selection_search} = "advanced";
 
 # The field to group by on the reporting page
 $c->{group_reports_by} = "dept";
-
-# Set this flag to show the group of "all staff" on the reporting page
-$c->{show_all} = 1;
 
 return $c;
 }
 
 # Test whether the given user can assume the given role.
 # Example: let certain users assume role of any person in school
-sub can_user_assume_role {
+sub rae_can_user_assume_role {
 	
 	my ( $session, $user, $role ) = @_;
 
-	if( !defined( $role ) )
-	{
-		return 0;
-	}
-	if ( dept_for_user( $user ) ne $role->get_value( "dept" ) )
-	{
-		return 0;
-	}
+	return 1 if defined $role && $user->get_type eq "admin";
 
-	return 1;
+	return 0;
 };
 
 # Return a list of (id, name) pairs representing the user roles the
 # given user is able to assume
 # Example: let certain users assume role of any person in school
-sub roles_for_user {
+sub rae_roles_for_user {
 
 	my ( $session, $user ) = @_;
 
 	my @roles;
-	my $searchexp = new EPrints::SearchExpression(
-		session => $session,
-		custom_order => "name",
-		dataset => $session->get_archive->get_dataset( "user" ),
-	);
-	$searchexp->add_field( $session->get_archive->get_dataset( "user" )->get_field( "dept" ) , dept_for_user( $user ) );
-	$searchexp->perform_search;
-
-	foreach ( $searchexp->get_records ) {
-		push @roles, [ $_->get_id, EPrints::Utils::tree_to_utf8( $_->render_description ) ];
+	if( $user->get_type eq "admin" )
+	{
+		my $dataset = $session->get_archive->get_dataset( "user" );
+		my $ids = $dataset->get_item_ids( $session );
+		for ( @$ids )
+		{
+			my $obj = EPrints::User->new( $session, $_ );
+			push @roles, [ $obj->get_id, EPrints::Utils::tree_to_utf8( $obj->render_description ) ];
+		}
 	}
-	
+
 	return @roles;
 };
 
 # Set the default values for the search used on the eprint
 # selection page
-sub init_search {
+sub rae_default_selection_search {
 
-	my ($searchexp, $user) = @_;
+	my ( $session, $searchexp, $user ) = @_;
 
-	$searchexp->get_searchfield( "creators" )->{value} = $user->get_value("name")->{family};
-	$searchexp->get_searchfield( "date_effective" )->{value} = "2001-";
+	my $dataset = $session->get_archive->get_dataset( "archive" );
+
+	#$searchexp->add_field( $dataset->get_field( "title" ), "man", "IN", "ALL" );
+	$searchexp->add_field( $dataset->get_field( "creators" ), $user->get_value( "name" )->{family}, "IN", "ALL" );
+	$searchexp->add_field( $dataset->get_field( "date_effective" ), "2001-" );
 };
 
 # Return a list of problems with the given item as selected by the 
 # given user (and possibly other users)
-sub check_item { 
+sub rae_problems_with_selection { 
 	my ( $session, $user, $item, $values, $others ) = @_;
 	my @problems;
 
@@ -166,7 +158,7 @@ sub rae_print_csv_header {
 
 
 # Return a CSV row for the given item as selected by the given user
- sub rae_print_csv_row {
+sub rae_print_csv_row {
 	my ( $session, $user, $item ) = @_;
 	my $name = $user->get_value( 'name' );
 	my $book = $item->get_value( 'publication' );

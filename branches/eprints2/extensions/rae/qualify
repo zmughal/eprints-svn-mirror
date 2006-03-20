@@ -49,9 +49,12 @@ my $role = $user;
 if( defined( $session->param( "role" ) ) )
 {
 	my $selected_role = EPrints::User->new( $session, $session->param( "role" ) );
-	if( $archive->call( "can_user_assume_role", $session, $user, $selected_role ) )
+	if( defined $selected_role )
 	{
-		$role = $selected_role;	
+		if( $archive->call( "rae_can_user_assume_role", $session, $user, $selected_role ) )
+		{
+			$role = $selected_role;	
+		}
 	}
 }
 
@@ -59,29 +62,12 @@ if( defined( $session->param( "role" ) ) )
 my $eprintid = $session->param("eprintid");
 if(!defined $eprintid)
 {
-	$session->redirect( "select" );
 	exit( 0 );
 }
 my $eprint = EPrints::EPrint->new( $session, $eprintid );
 if(!defined $eprint)
 {
-	$session->redirect( "select" );
 	exit( 0 );
-}
-
-# Show available roles
-my $roles_frag = $session->make_doc_fragment;
-my @roles = $archive->call( "roles_for_user", $session, $user );
-if( scalar @roles )
-{
-	my $form = $session->render_form;
-	$form->appendChild( $session->render_option_list(name => 'role', pairs => \@roles) );
-	$form->appendChild( $session->render_action_buttons(submit => $session->phrase( "rae:change_role" ) ) );
-	
-	$roles_frag = $session->html_phrase( "rae:roles", 
-		change_role => $form,
-		current_user => $user->render_description,
-	);
 }
 
 # Get selection info from DB
@@ -98,7 +84,6 @@ if( $session->get_db->execute( $sth, $sql ) )
 	else
 	{
 		# Trying to add info to a non-existent selection
-		$session->redirect( "select" );
 		exit( 0 );
 	}
 }
@@ -158,7 +143,6 @@ $select_url .= "?role=" . $role->get_id if $user->get_id != $role->get_id;
 my $title = $session->html_phrase( "rae/qualify:page_title", user => $role->render_description );
 my $page = $session->html_phrase( "rae/qualify:page",
 	form => $form_frag,
-	roles => $roles_frag,
 	citation => $eprint->render_citation,
 	select_link => $session->render_link( $select_url ),
 );

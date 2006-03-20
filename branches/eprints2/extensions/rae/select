@@ -52,21 +52,24 @@ my $role = $user;
 if( defined( $session->param( "role" ) ) )
 {
 	my $selected_role = EPrints::User->new( $session, $session->param( "role" ) );
-	if( $archive->call( "can_user_assume_role", $session, $user, $selected_role ) ) {
-		$role = $selected_role;	
+	if( defined $selected_role )
+	{
+		if( $archive->call( "rae_can_user_assume_role", $session, $user, $selected_role ) ) {
+			$role = $selected_role;	
+		}
 	}
-	# Remove role parameter so that we
+	# Remove parameters so that we
 	# can detect "internal" button presses
 	$session->{query}->delete( "role" );
+	$session->{query}->delete( "_action_submit" );
 }
 
 # Show available roles
 my $roles_frag = $session->make_doc_fragment;
-#TODO: all ArchiveRAEConfig should have rae_ prefix
-my @roles = $archive->call( "roles_for_user", $session, $user );
+my @roles = $archive->call( "rae_roles_for_user", $session, $user );
 if( scalar @roles )
 {
-	my $form = $session->render_form;
+	my $form = $session->render_form( "post" );
 	$form->appendChild( $session->render_option_list(name => 'role', pairs => \@roles) );
 	$form->appendChild( $session->render_action_buttons(submit => $session->phrase( "rae:change_role" ) ) );
 	
@@ -77,7 +80,7 @@ if( scalar @roles )
 }
 
 # Build the Search Expression
-my $search_conf = $archive->get_conf( "search", $archive->get_conf( "rae", "search_id" ) );
+my $search_conf = $archive->get_conf( "search", $archive->get_conf( "rae", "selection_search" ) );
 my $searchexp = new EPrints::SearchExpression(
 	keep_cache => 1,
 	session => $session,
@@ -85,7 +88,7 @@ my $searchexp = new EPrints::SearchExpression(
 	%$search_conf,
 );
 # Init fields from config
-$archive->call( "init_search", $searchexp, $role );
+$archive->call( "rae_default_selection_search", $session, $searchexp, $role );
 
 # Switch on user input
 # NB: based on process_webpage() in EPrints/SearchExpression.pm
@@ -118,8 +121,7 @@ if( defined $action_button && $action_button eq "update" )
 
 if( defined $action_button && $action_button eq "newsearch" )
 {
-	# TODO: Clear parameters
-	#$searchexp->clear;
+	$searchexp->clear;
 	$search_frag = $searchexp->render_search_form;
 }
 
@@ -127,15 +129,15 @@ if( defined $action_button && $action_button eq "newsearch" )
 $search_frag = dopage_results( $session, $searchexp, $role ) if !defined $search_frag;
 $search_frag->appendChild( $session->render_hidden_field( "role", $role->get_id ) ) if $user->get_id != $role->get_id;
 
-my $data_url = $archive->get_conf("perl_url") . "/users/rae/moe";
-$data_url .= "?role=" . $role->get_id if $user->get_id != $role->get_id;
+my $moe_url = $archive->get_conf("perl_url") . "/users/rae/moe";
+$moe_url .= "?role=" . $role->get_id if $user->get_id != $role->get_id;
 
 my $title = $session->html_phrase( "rae/select:page_title", user => $role->render_description );
 my $page = $session->html_phrase( "rae/select:page",
 	search => $search_frag,
 	selected => dopage_selected( $session, $searchexp, $role ),
 	roles => $roles_frag,
-	data_link => $session->render_link( $data_url ),
+	moe_link => $session->render_link( $moe_url ),
 );
 $session->build_page( $title, $page );
 $session->send_page();
@@ -149,10 +151,9 @@ sub dopage_selected
 	my ( $session, $searchexp, $role ) = @_;	
 	my %users_for_eprint;
 
-	# TODO avoid nested SQL	
-	# Get the eprints selected by the user, and also the other users who have selected these
-	my $sql = "SELECT eprintid, userid FROM rae_selections WHERE eprintid IN (SELECT eprintid FROM rae_selections WHERE userid=".$role->get_id.")";
-	my $sth = $session->get_db->prepare( $sql );
+	# Get the eprints selected by the user, and also the other users who have selected these eprints
+	my $sql = "SELECT rae_selections.eprintid, rae_selections.userid FROM rae_selections, rae_selections as tmp WHERE rae_selections.eprintid=tmp.eprintid AND tmp.userid=".$role->get_id;
+	my $sth = $session->get_db->prepare( $sql ); 
 	if($session->get_db->execute( $sth, $sql ) )
 	{	
 		while ( my @row = $sth->fetchrow() )
@@ -195,7 +196,7 @@ sub dopage_selected
 sub dopage_results
 {
 	my ( $session, $searchexp, $role ) = @_;
-	my $page = $session->render_form( "POST" );
+	my $page = $session->render_form( "post" );
 
 	my $problems = $searchexp->from_form if $session->have_parameters;
 	if( defined $problems && scalar( @$problems ) > 0 )
@@ -406,17 +407,17 @@ sub render_item_row {
 	if( !$already_selected || $action eq "remove" ) {
 		if($action eq "remove")
 		{
-			my $button = $session->render_link( "$url&_action_$action=" . $item->get_id );
-			$button->appendChild( $session->html_phrase( "rae/select:" . $action . "_button" ) );
-			$td_act->appendChild( $button );
-
-			$td_act->appendChild( $session->make_text(" ") );
+			my $remove = $session->render_link( "$url&_action_$action=" . $item->get_id );
+			$remove->appendChild( $session->html_phrase( "rae/select:" . $action . "_button" ) );
 
 			my $qualify_url = $session->get_archive->get_conf("perl_url") . "/users/rae/qualify?eprintid=" . $item->get_id;
 			$qualify_url .= "&role=" . $role->get_id if $session->current_user->get_id != $role->get_id;
-			my $button = $session->render_link( $qualify_url);
-			$button->appendChild( $session->html_phrase( "rae/select:qualify_button" ) );
-			$td_act->appendChild( $button );
+			my $qualify = $session->render_link( $qualify_url);
+			$qualify->appendChild( $session->html_phrase( "rae/select:qualify_button" ) );
+
+			$td_act->appendChild( $qualify );
+			$td_act->appendChild( $session->make_element( "br" ) );
+			$td_act->appendChild( $remove );
 			
 		}
 		else
