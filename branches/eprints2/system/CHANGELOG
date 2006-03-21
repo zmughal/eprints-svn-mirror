@@ -3566,3 +3566,8 @@ PACKAGE: 2.2.99.2
  * Added Dissertation ContextObject support
  * Few fixes to OpenURL Output
  * Added ContextObject to OAI outputs
+
+2006-03-21 cjg
+
+ * Changed dates (and times) to use INT's with NULL indicating an unknown value.
+   

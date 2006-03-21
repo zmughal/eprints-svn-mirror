@@ -455,7 +455,7 @@ print STDERR "\n---name_match comparisson not done yet...\n";
 	{
 		my $mode = "string";
 		$mode = "int" if( $self->{field}->is_type( "year","int") );
-		$mode = "date" if( $self->{field}->is_type( "date" ) );
+		$mode = "date" if( $self->{field}->is_type( "date","time" ) );
 		
 		my @values = $self->{field}->list_values( 
 			$item->get_value( $self->{field}->get_name ) );
@@ -730,8 +730,29 @@ END
 
 	if( $self->is_comparison )
 	{
-		my $where = "M.$sql_col ".$self->{op}." ".
-			"'".EPrints::Database::prep_value( $self->{params}->[0] )."'";
+		my $where;
+		if( $self->{field}->is_type( "date" ) )
+		{
+			my @parts = split( "-", $self->{params}->[0] );
+			$where = "M.${sql_col}_year ".$self->{op}." "."'".EPrints::Database::prep_value( $parts[0] )."'";
+			if( $parts[1] && $parts[1]+0 ) { $where.= " AND M.${sql_col}_month ".$self->{op}." "."'".EPrints::Database::prep_value( $parts[1] )."'"; }
+			if( $parts[2] && $parts[2]+0 ) { $where.= " AND M.${sql_col}_day ".$self->{op}." "."'".EPrints::Database::prep_value( $parts[2] )."'"; }
+		}
+		elsif( $self->{field}->is_type( "time" ) )
+		{
+			# time searching needs more testing. Esp. boundary conditions.
+			my @parts = split( /[-: ]/, $self->{params}->[0] );
+			$where = "M.${sql_col}_year ".$self->{op}." "."'".EPrints::Database::prep_value( $parts[0] )."'";
+			if( $parts[1] ) { $where.= " AND M.${sql_col}_month ".$self->{op}." "."'".EPrints::Database::prep_value( $parts[1] )."'"; }
+			if( $parts[2] ) { $where.= " AND M.${sql_col}_day ".$self->{op}." "."'".EPrints::Database::prep_value( $parts[2] )."'"; }
+			if( $parts[3] ) { $where.= " AND M.${sql_col}_hour ".$self->{op}." "."'".EPrints::Database::prep_value( $parts[3] )."'"; }
+			if( $parts[4] ) { $where.= " AND M.${sql_col}_minute ".$self->{op}." "."'".EPrints::Database::prep_value( $parts[4] )."'"; }
+			if( $parts[5] ) { $where.= " AND M.${sql_col}_second ".$self->{op}." "."'".EPrints::Database::prep_value( $parts[5] )."'"; }
+		}
+		else
+		{
+			$where = "M.$sql_col ".$self->{op}." "."'".EPrints::Database::prep_value( $self->{params}->[0] )."'";
+		}
 		$r = $session->get_database->search( 
 			$keyfield, 
 			{ M=>$self->get_table },

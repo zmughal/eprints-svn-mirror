@@ -461,6 +461,10 @@ END
 	}
 
 
+	# Merge inbox,archive,deletion and buffer into one place.
+
+
+
 	# reread the tables as they've changed
 	@tables = $db->get_tables;
 

@@ -724,14 +724,22 @@ sub update
 		}
 		elsif( $field->is_type( "date" ) )
 		{
-			$values{$colname} = pad_date($value);
-			$values{$colname."_resolution"} = $field->get_resolution( $value );
+			my @parts;
+			@parts = split( /[-]/, $value ) if defined $value;
+			$values{$colname."_year"} = $parts[0];
+			$values{$colname."_month"} = $parts[1];
+			$values{$colname."_day"} = $parts[2];
 		}
 		elsif( $field->is_type( "time" ) )
 		{
-			# pad time?
-			$values{$colname} = $value;
-			$values{$colname."_resolution"} = $field->get_resolution( $value );
+			my @parts;
+			@parts = split( /[-: ]/, $value ) if defined $value;
+			$values{$colname."_year"} = $parts[0];
+			$values{$colname."_month"} = $parts[1];
+			$values{$colname."_day"} = $parts[2];
+			$values{$colname."_hour"} = $parts[3];
+			$values{$colname."_minute"} = $parts[4];
+			$values{$colname."_second"} = $parts[5];
 		}
 		else
 		{
@@ -858,10 +866,20 @@ sub update
 				$sql .= $fname."_family, ";
 				$sql .= $fname."_lineage ";
 			}
-			elsif( $multifield->is_type( "date", "time" ) )
+			elsif( $multifield->is_type( "date" ) )
 			{
-				$sql .= $fname;
-				$sql .= $fname."_resolution";
+				$sql .= $fname."_year, ";
+				$sql .= $fname."_month, ";
+				$sql .= $fname."_day";
+			}
+			elsif( $multifield->is_type( "time" ) )
+			{
+				$sql .= $fname."_year, ";
+				$sql .= $fname."_month, ";
+				$sql .= $fname."_day, ";
+				$sql .= $fname."_hour, ";
+				$sql .= $fname."_minute, ";
+				$sql .= $fname."_second";
 			}
 			else
 			{
@@ -879,14 +897,37 @@ sub update
 			}
 			elsif( $multifield->is_type( "date" ) )
 			{
-				$sql .= "\"".prep_value( pad_date($v->{v}) )."\"";
-				$sql .= "\"".prep_value( $multifield->get_resolution( $v->{v} ) )."\"";
+				my @parts = split( /-/, $v->{v} );
+				my @list = ();
+				for(0..2)
+				{
+					if( defined $parts[$_] )
+					{
+						push @list, $parts[$_];
+					}
+					else
+					{
+						push @list, "NULL";
+					}
+				}
+				$sql .= join( ", ", @list );
 			}
 			elsif( $multifield->is_type( "time" ) )
 			{
-				# maybe need a pad_time method?
-				$sql .= "\"".prep_value( $v->{v} )."\"";
-				$sql .= "\"".prep_value( $multifield->get_resolution( $v->{v} ) )."\"";
+				my @parts = split( /[-: ]/, $v->{v} );
+				my @list = ();
+				for(0..5)
+				{
+					if( defined $parts[$_] )
+					{
+						push @list, $parts[$_];
+					}
+					else
+					{
+						push @list, "NULL";
+					}
+				}
+				$sql .= join( ", ", @list );
 			}
 			else
 			{
@@ -1747,10 +1788,20 @@ sub _get
 			         "M.".$fname."_family, ".
 			         "M.".$fname."_lineage";
 		}
-		elsif( $field->is_type( "date", "time" ) )
+		elsif( $field->is_type( "date" ) )
 		{
-			$cols .= "M.".$fname.", ".
-			         "M.".$fname."_resolution";
+			$cols .= "M.".$fname."_year, ".
+			         "M.".$fname."_month, ".
+			         "M.".$fname."_day";
+		}
+		elsif( $field->is_type( "time" ) )
+		{
+			$cols .= "M.".$fname."_year, ".
+			         "M.".$fname."_month, ".
+			         "M.".$fname."_day, ".
+			         "M.".$fname."_hour, ".
+			         "M.".$fname."_minute, ".
+			         "M.".$fname."_second";
 		}
 		else 
 		{
@@ -1816,11 +1867,17 @@ sub _get
 				$value->{family} = shift @row;
 				$value->{lineage} = shift @row;
 			} 
-			elsif( $field->is_type( "date", "time" ) )
+			elsif( $field->is_type( "date" ) )
 			{
-				my $v = shift @row;
-				my $res = shift @row;
-				$value = $field->trim_date( $v, $res );
+				my @parts;
+				for(0..2) { push @parts, shift @row; }
+				$value = mk_date( @parts );
+			}
+			elsif( $field->is_type( "time" ) )
+			{
+				my @parts;
+				for(0..5) { push @parts, shift @row; }
+				$value = mk_time( @parts );
 			}
 			else
 			{
@@ -1854,9 +1911,13 @@ sub _get
 		{
 			$col = "M.$mn\_honourific,M.$mn\_given,M.$mn\_family,M.$mn\_lineage";
 		}
-		elsif( $multifield->is_type( "date", "time" ) )
+		elsif( $multifield->is_type( "date" ) )
 		{
-			$col = "M.$mn,M.$mn\_resolution";
+			$col = "M.$mn\_year,M.$mn\_month,M.$mn\_day";
+		}
+		elsif( $multifield->is_type( "time" ) )
+		{
+			$col = "M.$mn\_year,M.$mn\_month,M.$mn\_day,M.$mn\_hour,M.$mn\_minute,M.$mn\_second";
 		}
 		my $fields_sql = "M.$kn, ";
 		$fields_sql .= "M.pos, " if( $multifield->get_property( "multiple" ) );
@@ -1909,11 +1970,17 @@ sub _get
 				$value->{family} = shift @values;
 				$value->{lineage} = shift @values;
 			} 
-			elsif( $multifield->is_type( "date", "time" ) )
+			elsif( $multifield->is_type( "date" ) )
 			{
-				my $v = shift @values;
-				my $res = shift @values;
-				$value = $multifield->trim_date( $v, $res );
+				my @parts;
+				for(0..2) { push @parts, shift @values; }
+				$value = mk_date( @parts );
+			}
+			elsif( $multifield->is_type( "time" ) )
+			{
+				my @parts;
+				for(0..5) { push @parts, shift @values; }
+				$value = mk_time( @parts );
 			}
 			else
 			{
@@ -2018,9 +2085,13 @@ sub get_values
 	{
 		$fn = "$fn\_honourific,$fn\_given,$fn\_family,$fn\_lineage";
 	}
-	elsif( $field->is_type( "date", "time" ) )
+	elsif( $field->is_type( "date" ) )
 	{
-		$fn = "$fn,$fn\_resolution";
+		$fn = "$fn\_year,$fn\_month,$fn\_day";
+	}
+	elsif( $field->is_type( "time" ) )
+	{
+		$fn = "$fn\_year,$fn\_month,$fn\_day,$fn\_hour,$fn\_minute,$fn\_second";
 	}
 	my $sql = "SELECT DISTINCT $fn FROM $table";
 	my $sth = $self->prepare( $sql );
@@ -2038,11 +2109,17 @@ sub get_values
 			$value->{lineage} = shift @row;
 			push @values, $value;
 		}
-		elsif( $field->is_type( "date", "time" ) )
+		elsif( $field->is_type( "date" ) )
 		{
-			my $v = shift @row;
-			my $res = shift @row;
-			push @values, $field->trim_date( $v, $res );
+			my @parts;
+			for(0..2) { push @parts, shift @row; }
+			push @values, mk_date( @parts );
+		}
+		elsif( $field->is_type( "time" ) )
+		{
+			my @parts;
+			for(0..5) { push @parts, shift @row; }
+			push @values, mk_time( @parts );
 		}
 		else
 		{
@@ -2818,6 +2895,31 @@ sub get_roles
 	}
 
 	return @permitted_roles;
+}
+
+sub mk_date
+{
+	my( @parts ) = @_;
+
+	my $value = "";
+	$value.= sprintf("%04d",$parts[0]) if( defined $parts[0] );
+	$value.= sprintf("-%02d",$parts[1]) if( defined $parts[1] );
+	$value.= sprintf("-%02d",$parts[2]) if( defined $parts[2] );
+	return $value;
+}
+
+sub mk_time
+{
+	my( @parts ) = @_;
+
+	my $value = "";
+	$value.= sprintf("%04d",$parts[0]) if( defined $parts[0] );
+	$value.= sprintf("-%02d",$parts[1]) if( defined $parts[1] );
+	$value.= sprintf("-%02d",$parts[2]) if( defined $parts[2] );
+	$value.= sprintf(" %02d",$parts[3]) if( defined $parts[3] );
+	$value.= sprintf(":%02d",$parts[4]) if( defined $parts[4] );
+	$value.= sprintf(":%02d",$parts[5]) if( defined $parts[5] );
+	return $value;
 }
 
 1; # For use/require success

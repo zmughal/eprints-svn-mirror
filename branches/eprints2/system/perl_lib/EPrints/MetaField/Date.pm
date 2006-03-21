@@ -45,7 +45,24 @@ sub get_sql_type
 {
 	my( $self, $notnull ) = @_;
 
-	return $self->get_sql_name()." DATE".($notnull?" NOT NULL":"").", ".$self->get_sql_name()."_resolution INTEGER";
+	# ignoring notnull.
+
+	return 
+		$self->get_sql_name()."_year INTEGER, ".
+		$self->get_sql_name()."_month INTEGER, ".
+		$self->get_sql_name()."_day INTEGER";
+}
+
+sub get_sql_index
+{
+	my( $self ) = @_;
+
+	return undef unless( $self->get_property( "sql_index" ) );
+
+	return "INDEX( ".
+		$self->get_sql_name()."_year, ".
+		$self->get_sql_name()."_month, ".
+		$self->get_sql_name()."_day )";
 }
 
 sub render_single_value
@@ -353,16 +370,20 @@ sub get_search_conditions_not_ex
 		return EPrints::Search::Condition->new( 'FALSE' );
 	}
 
+	# not a range.
 	if( $drange ne "-" )
 	{
-		$lastdate = $firstdate;
+		return EPrints::Search::Condition->new( 
+				'=',
+				$dataset,
+				$self,
+				$firstdate );
 	}		
 
 	my @r = ();
 
 	if( defined $firstdate )
 	{
-		$firstdate = EPrints::Database::pad_date( $firstdate );
 		push @r, EPrints::Search::Condition->new( 
 				'>=',
 				$dataset,
@@ -372,25 +393,11 @@ sub get_search_conditions_not_ex
 
 	if( defined $lastdate )
 	{
-		if( length( $lastdate ) == 10 )
-		{
-			push @r, EPrints::Search::Condition->new( 
-					'<=',
-					$dataset,
-					$self,
-					$lastdate);
-		}
-		else
-		{
-			$lastdate = EPrints::Database::pad_date( 
-					$lastdate, 
-					1 );
-			push @r, EPrints::Search::Condition->new( 
-					'<',
-					$dataset,
-					$self,
-					$lastdate);
-		}
+		push @r, EPrints::Search::Condition->new( 
+				'<=',
+				$dataset,
+				$self,
+				$lastdate);
 	}
 
 	if( scalar @r == 0 )
