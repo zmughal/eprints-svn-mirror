@@ -40,7 +40,8 @@ $oai->{v2}->{archive_id} = "generic.eprints.org";
 $oai->{v2}->{output_plugins} = { 
 	"oai_dc" => "OAI_DC", 
 	"didl" => "DIDL", 
-	"uketd_dc" =>"OAI_UKETD_DC" };
+	"uketd_dc" =>"OAI_UKETD_DC",
+	"context_object" => "ContextObject" };
 
 # Base URL of OAI 2.0
 $oai->{v2}->{base_url} = $perlurl."/oai2";

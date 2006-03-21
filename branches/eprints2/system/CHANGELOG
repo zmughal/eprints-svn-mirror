@@ -3560,3 +3560,9 @@ PACKAGE: 2.2.99.2
  
  * Added an XML tidy method to produce indented XML.
 
+2006-03-21 tdb
+
+ * Removed METS test plugin (no relevant profile for eprints)
+ * Added Dissertation ContextObject support
+ * Few fixes to OpenURL Output
+ * Added ContextObject to OAI outputs

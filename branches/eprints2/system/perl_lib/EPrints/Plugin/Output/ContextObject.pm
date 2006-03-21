@@ -25,6 +25,9 @@ sub new
 	$self->{suffix} = ".xml";
 	$self->{mimetype} = "text/xml";
 
+	$self->{xmlns} = "info:ofi/fmt:xml:xsd:ctx";
+	$self->{schemaLocation} = "http://www.openurl.info/registry/docs/info:ofi/fmt:xml:xsd:ctx";
+
 	return $self;
 }
 
@@ -126,30 +129,38 @@ sub xml_dataobj
 		'info:' . EPrints::OpenArchives::to_oai_identifier( $oai->{v2}->{ "archive_id" }, $dataobj->get_id ) :
 		$dataobj->get_value( "referent_id" );
 
-	$rft->appendChild(
+	$rft->appendChild( 
 		$session->make_element( "ctx:identifier" )
 	)->appendChild(
 		$session->make_text( $rft_id )
 	);
 
-	if( $dataobj->isa( "EPrints::DataObj::EPrint" ) ) {
-		my $jnl_plugin = $session->plugin( "Output::ContextObject::Journal" );
-
-		my $md_val = $session->make_element( "ctx:metadata-by-val" );
-		$rft->appendChild( $md_val );
-	
-		my $fmt = $session->make_element( "ctx:format" );
-		$md_val->appendChild( $fmt );
-		$fmt->appendChild( $session->make_text( "info:ofi/fmt:xml:xsd:journal" ));
-	
-		my $md = $session->make_element( "ctx:metadata" );
-		$md_val->appendChild( $md );
-
-		$md->appendChild( $jnl_plugin->xml_dataobj( $dataobj ) );
-	}
-	
-	if( $dataobj->isa( "EPrints::DataObj::EPrint" ) )
+	if( $itemtype eq "eprint" )
 	{
+		my $etype = $dataobj->get_value( "type" );
+		if( $etype eq "article" or $etype eq "conference_item" )
+		{
+			$rft->appendChild( $plugin->_metadata_by_val( $dataobj, %opts,
+				schema => "info:ofi/fmt:xml:xsd:journal",
+				plugin => "Output::ContextObject::Journal"
+			));
+		}
+		elsif( $etype eq "thesis" )
+		{
+			$rft->appendChild( $plugin->_metadata_by_val( $dataobj, %opts,
+				schema => "info:ofi/fmt:xml:xsd:journal",
+				plugin => "Output::ContextObject::Dissertation"
+			));
+		}
+		else
+		{
+			$rft->appendChild( $plugin->_metadata_by_val( $dataobj, %opts,
+				schema => "info:ofi/fmt:xml:xsd:oai_dc",
+				plugin => "Output::OAI_DC"
+			));
+		}
+	
+		# Only need other entities for accesslog
 		return $co;
 	}
 
@@ -215,6 +226,28 @@ sub xml_dataobj
 	}
 	
 	return $co;
+}
+
+sub _metadata_by_val
+{
+	my( $plugin, $dataobj, %opts ) = @_;
+	my $session = $plugin->{ "session" };
+
+	my $md_val = $session->make_element( "ctx:metadata-by-val" );
+	
+	$md_val->appendChild(
+		$session->make_element( "ctx:format" )
+	)->appendChild(
+		$session->make_text( $opts{ "schema" } )
+	);
+	
+	my $md = $session->make_element( "ctx:metadata" );
+	$md_val->appendChild( $md );
+
+	my $jnl_plugin = $session->plugin( $opts{ "plugin" } );
+	$md->appendChild( $jnl_plugin->xml_dataobj( $dataobj ) );
+
+	return $md_val;
 }
 
 1;
