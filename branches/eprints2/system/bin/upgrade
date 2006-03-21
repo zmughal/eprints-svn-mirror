@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/ep2stable/perl_lib
+#!/usr/bin/perl -w -I/opt/upgradetest/perl_lib
 
 ######################################################################
 #
@@ -183,7 +183,7 @@ END
 		}
 	}
 	print "Making new subscription tables.\n";
-	my $subs_ds = $session->get_repo->get_dataset( "subscription" );
+	my $subs_ds = $session->get_repository->get_dataset( "subscription" );
 	$ok = $ok && $db->create_dataset_tables( $subs_ds );
 	print "Creating subscriptionid counter.\n";
 	$sql = "DELETE FROM counters WHERE countername = 'subscriptionid'"; 
@@ -197,7 +197,7 @@ END
 			$table_id;
 		my $sth = $db->prepare( $sql );
 		$ok = $ok && $db->execute( $sth, $sql );
-		my $file = "/tmp/valuedump-".$session->get_repo->get_id."-".
+		my $file = "/tmp/valuedump-".$session->get_repository->get_id."-".
 			$table_id;
 		open( VDUMP, ">$file" );
 		print VDUMP "eprintid,succeeds,replacedby,commentary\n";
@@ -391,8 +391,8 @@ END
 
 	# Grant ALTER
 
-	my $dbname = $session->get_repo->get_conf( "dbname" );
-	my $dbuser = $session->get_repo->get_conf( "dbuser" );
+	my $dbname = $session->get_repository->get_conf( "dbname" );
+	my $dbuser = $session->get_repository->get_conf( "dbuser" );
 	my $SQL = 'GRANT ALTER ON '.$dbname.'.* TO '.$dbuser.'@localhost';
 	$rootdbh->do( $SQL );
 
@@ -440,46 +440,38 @@ This will:
 
 END
 	
-	my $sure = EPrints::Utils::get_input_confirm( "Are you sure you want to do this" );
-	unless( $sure )
-	{
-		print "Aborting then.\n";
-		$session->terminate();
-		exit( 1 );
-	}
+#	my $sure = EPrints::Utils::get_input_confirm( "Are you sure you want to do this" );
+#	unless( $sure )
+#	{
+#		print "Aborting then.\n";
+#		$session->terminate();
+#		exit( 1 );
+#	}
 
-	my $ok = 1;
+$db->set_debug(1);
 
-	my @tables = $db->get_tables;
-	# change the sql tables for the "user" dstaset to be "user..." rather
-	# than users...
-	foreach my $table ( @tables )
+	my @epds = qw/ archive buffer inbox deletion /;
+
+	print "Renaming the users* tables to user*.\n";
+	foreach my $table ( $db->get_tables )
 	{
 		next unless( $table =~ m/^users(.*)/ );
 		$sql = "RENAME TABLE users$1 TO user$1";
 		$db->do( $sql );
 	}
 
-
-	# Merge inbox,archive,deletion and buffer into one place.
-
-
-
-	# reread the tables as they've changed
-	@tables = $db->get_tables;
-
-	# rev_number to all dataobj's
-	foreach my $datasetid ( qw/ archive buffer inbox deletion user document subscription subject / )
+	print "Adding rev_number field to every dataset.\n";
+	foreach my $datasetid ( @epds, qw/ user document subscription subject / )
 	{
-		my $dataset = $session->get_repo->get_dataset( $datasetid );
+		my $dataset = $session->get_repository->get_dataset( $datasetid );
 		my $pkey = $dataset->get_key_field->get_sql_name;
-		my $tablename = $dataset->get_sql_table_name;
+		my $tablename = $datasetid; # dataset will now say "inbox" as SQL table of "eprint".
 
 		$sql = "ALTER TABLE $tablename ADD rev_number INTEGER DEFAULT 1 AFTER $pkey";
 		$db->do( $sql );
 
 		# add the ordervalues for rev_number
-		foreach my $table ( @tables )
+		foreach my $table ( $db->get_tables )
 		{
 			if( $table =~ m/^($tablename)__ordervalues_.*$/ )
 			{
@@ -490,7 +482,151 @@ END
 
 	}
 
-do this for every eprint?
+
+	print "Adding the License field to the document object\n";
+	add_single_field_after( $db, "document","license","VARCHAR(255) DEFAULT NULL","security" );
+
+	print "Adding the embargo field to the eprint object.\n";
+	foreach( @epds ) { add_single_field_after( $db, $_,"date_embargo","DATE DEFAULT NULL","replacedby" ); }
+
+	print "Adding the contact_email field to the eprint object.\n";
+	foreach( @epds ) { add_single_field_after( $db, $_,"contact_email","VARCHAR(255) DEFAULT NULL","date_embargo" ); }
+
+	print "Altering the joined date of a user to be time instead of date.\n";
+	$sql = "ALTER TABLE user MODIFY joined DATETIME";
+	$db->do( $sql );
+
+	print "Alter the system DATE fields to use DATETIME instead.\n";
+	foreach my $table_id ( @epds )
+	{
+		$sql = "ALTER TABLE $table_id MODIFY datestamp DATETIME";
+		$db->do( $sql );
+		add_single_field_after( $db, $table_id,"lastmod","DATETIME DEFAULT NULL","datestamp" );
+		add_single_field_after( $db, $table_id,"status_changed","DATETIME DEFAULT NULL","lastmod" );
+		$sql = "UPDATE $table_id SET lastmod = datestamp";
+		$db->do( $sql );
+		$sql = "UPDATE $table_id SET status_changed = datestamp";
+		$db->do( $sql );
+	}
+
+	print "Clearing the datestamp field for items which are not yet live.\n";
+	foreach my $table_id ( "inbox","buffer" )
+	{
+		$sql = "UPDATE $table_id SET datestamp = NULL";
+		$db->do( $sql );
+	}
+
+	print "Convert DATE fields into 3 integers and TIME fields into 6.\n";
+	my @timefields;
+	my @datefields;
+	foreach my $table ( $db->get_tables )
+	{
+		next unless( $table =~ m/^(archive|buffer|inbox|deletion|user|document|subscription|subject)/ );
+
+		$sql = "DESCRIBE $table";
+		my $sth = $db->prepare( $sql );
+		$db->execute( $sth, $sql );
+		while( my @row = $sth->fetchrow_array )
+		{
+			if( $row[1] eq "date" )
+			{
+				push @datefields, [ $table, $row[0] ];
+			}
+			if( $row[1] eq "datetime" )
+			{
+				push @timefields, [ $table, $row[0] ];
+			}
+		}
+        	$sth->finish;
+	}
+
+	print "Creating new INT style dates\n";
+	foreach my $pair ( @datefields, @timefields )
+	{
+		my( $table, $col ) = @{$pair};
+		print $pair->[0]." .. ".$pair->[1]."\n";
+		$sql = "ALTER TABLE $table ADD ${col}_year INTEGER AFTER $col";
+		$db->do( $sql );
+		$sql = "ALTER TABLE $table ADD ${col}_month INTEGER AFTER ${col}_year";
+		$db->do( $sql );
+		$sql = "ALTER TABLE $table ADD ${col}_day INTEGER AFTER ${col}_month";
+		$db->do( $sql );
+	}
+	foreach my $pair ( @timefields )
+	{
+		my( $table, $col ) = @{$pair};
+		print "TIME: ".$pair->[0]." .. ".$pair->[1]."\n";
+		$sql = "ALTER TABLE $table ADD ${col}_hour INTEGER AFTER ${col}_day";
+		$db->do( $sql );
+		$sql = "ALTER TABLE $table ADD ${col}_minute INTEGER AFTER ${col}_hour";
+		$db->do( $sql );
+		$sql = "ALTER TABLE $table ADD ${col}_second INTEGER AFTER ${col}_minute";
+		$db->do( $sql );
+	}
+
+	print "Populating new INT style dates\n";
+	foreach my $pair ( @datefields, @timefields )
+	{
+		my( $table, $col ) = @{$pair};
+
+		$sql = "UPDATE $table SET ".
+				"${col}_year=IF( year($col), year($col), NULL), ".
+				"${col}_month=IF( month($col), month($col), NULL), ".
+				"${col}_day=IF( day($col), day($col), NULL)";
+		$db->do( $sql );
+	}
+
+	print "Removing old DATE and DATETIME columns.\n";
+	foreach my $pair ( @datefields, @timefields )
+	{
+		my( $table, $col ) = @{$pair};
+
+		$sql = "ALTER TABLE $table DROP COLUMN ${col}";
+		$db->do( $sql );
+	}
+
+	print "Removing old index index_grep rindex and temporary index tables\n";
+	foreach my $table ( $db->get_tables )
+	{
+		next unless $table =~ m/__index(_grep)?(_tmp)?$|__rindex$/;
+		$sql = "DROP TABLE $table";
+		$db->do( $sql );
+		
+		print "REMOVING: $table\n";
+	}
+
+	print "Add eprint_status to eprint, and default it the the old dataset.\n";
+	foreach my $table_id ( @epds )
+	{
+		add_single_field_after( $db, $table_id,"eprint_status","VARCHAR(255) DEFAULT '$table_id'","rev_number" );
+	}
+	
+	print "Creating eprint dataset tables.\n";
+	$db->create_dataset_tables( $session->get_repository->get_dataset( "eprint" ) );
+
+	print "Moving data from archive,inbox,deletion and buffer into eprint.\n";
+	foreach my $table ( $db->get_tables )
+	{
+		next unless( $table=~m/^(archive|inbox|deletion|buffer)(_[^_].*)?$/ );
+		my $from_table = $table;
+		my $to_table = "eprint";
+		$to_table.=$2 if defined $2;
+		$sql = "INSERT INTO $to_table SELECT * FROM $from_table";
+		$db->do( $sql );
+	}
+
+	print "Removing archive,inbox,deletion and buffer.\n";
+	foreach my $table ( $db->get_tables )
+	{
+		next unless( $table=~m/^(archive|inbox|deletion|buffer)(_[^_].*)?$/ );
+		$sql = "DROP TABLE $table";
+		$db->do( $sql );
+	}
+		
+	
+
+
+#do this for every eprint?
 
 #	my $rev_file = $dir."/".$eprint->get_value("rev_number").".xml";
 #	unless( open( REVFILE, ">$rev_file" ) )
@@ -502,215 +638,25 @@ do this for every eprint?
 #	print REVFILE $eprint->export( "XML", fh=>*REVFILE );
 #	close REVFILE;
 
-Text not integer?
+#Text not integer?
 
-historyid and accessid
+#historyid and accessid
 
-	# add "license" to the document dataobject.
-	$sql = "ALTER TABLE document ADD license VARCHAR(255) DEFAULT NULL AFTER security";
-	$db->do( $sql );
-
-	# add the ordervalues for license
-	foreach my $table ( @tables )
-	{
-		if( $table =~ m/^document__ordervalues_.*$/ )
-		{
-			$sql = "ALTER TABLE $table ADD license text AFTER security",
-			$db->do( $sql );
-		}
-	}
+#	# add user_permissions and user_groups
+#	$sql = "CREATE TABLE user_permissions (role char(64) not null, privilege char(64) not null, net_from long, net_to long, PRIMARY KEY(role,privilege), UNIQUE(privilege,role))";
+#	$db->do( $sql );
+#	$sql = "CREATE TABLE user_groups (user char(64) not null, role char(64) not null, PRIMARY KEY(user,role))";
+#	$db->do( $sql );
 
 
 
 
-	# add "date_embargo" to the eprint dataset
-	foreach my $table_id ( "inbox","buffer","archive","deletion" )
-	{
-		$sql = "ALTER TABLE $table_id ADD date_embargo DATE AFTER replacedby";
-		$db->do( $sql );
-	}
-	
-	# add the ordervalues for date_embargo
-	foreach my $table ( @tables )
-	{
-		if( $table =~ m/^(archive|buffer|inbox|deletion)__ordervalues_.*$/ )
-		{
-			$sql = "ALTER TABLE $table ADD date_embargo text AFTER replacedby",
-			$db->do( $sql );
-		}
-	}
 
-	# add "contact_email" to the eprint dataset
-
-	foreach my $table_id ( "inbox","buffer","archive","deletion" )
-	{
-		$sql = "ALTER TABLE $table_id ADD contact_email VARCHAR(255) AFTER date_embargo";
-		$db->do( $sql );
-	}
-	
-	# add the ordervalues for contact_email
-	foreach my $table ( @tables )
-	{
-		if( $table =~ m/^(archive|buffer|inbox|deletion)__ordervalues_.*$/ )
-		{
-			$sql = "ALTER TABLE $table ADD contact_email text AFTER date_embargo",
-			$db->do( $sql );
-		}
-	}
-
-	# add user_permissions and user_groups
-	$sql = "CREATE TABLE user_permissions (role char(64) not null, privilege char(64) not null, net_from long, net_to long, PRIMARY KEY(role,privilege), UNIQUE(privilege,role))";
-	$db->do( $sql );
-	$sql = "CREATE TABLE user_groups (user char(64) not null, role char(64) not null, PRIMARY KEY(user,role))";
-	$db->do( $sql );
-
-	# add the default privileges
-	$sql = <<EOS;
-INSERT IGNORE INTO user_permissions VALUES
-	('\@subscription','EDIT_USER_SUBSCRIPTIONS',null,null),
-	('\@set_password','EDIT_USER_PASSWORD',null,null),
-	('\@deposit','CREATE_EPRINT_INBOX',null,null),
-	('\@deposit','DERIVE_EPRINT_CLONE',null,null),
-	('\@deposit','DERIVE_EPRINT_VERSION',null,null),
-	('\@deposit','EDIT_EPRINT_INBOX',null,null),
-	('\@deposit','MOVE_EPRINT_INBOX_BUFFER',null,null),
-	('\@deposit','REQUEST_EPRINT_DELETION',null,null),
-	('\@change_email','EDIT_USER_EMAIL',null,null),
-	('\@change_user','LOGIN_USER',null,null),
-	('\@change_user','LOGOUT_USER',null,null),
-	('\@change_user','EDIT_USER',null,null),
-	('\@editor','DELETE_EPRINT_INBOX',null,null),
-	('\@editor','DELETE_EPRINT_BUFFER',null,null),
-	('\@editor','DELETE_EPRINT_ARCHIVE',null,null),
-	('\@editor','DELETE_EPRINT_DELETION',null,null),
-	('\@editor','EDIT_EPRINT_INBOX',null,null),
-	('\@editor','EDIT_EPRINT_BUFFER',null,null),
-	('\@editor','EDIT_EPRINT_ARCHIVE',null,null),
-	('\@editor','EDIT_EPRINT_DELETION',null,null),
-	('\@editor','EDIT_EPRINT_INBOX_ALL',null,null),
-	('\@editor','EDIT_EPRINT_BUFFER_ALL',null,null),
-	('\@editor','EDIT_EPRINT_ARCHIVE_ALL',null,null),
-	('\@editor','EDIT_EPRINT_DELETION_ALL',null,null),
-	('\@editor','MOVE_EPRINT_INBOX_BUFFER',null,null),
-	('\@editor','MOVE_EPRINT_BUFFER_INBOX',null,null),
-	('\@editor','MOVE_EPRINT_BUFFER_ARCHIVE',null,null),
-	('\@editor','MOVE_EPRINT_ARCHIVE_BUFFER',null,null),
-	('\@editor','MOVE_EPRINT_ARCHIVE_DELETION',null,null),
-	('\@editor','MOVE_EPRINT_DELETION_ARCHIVE',null,null),
-	('\@staff_view','VIEW_EPRINT_ALL',null,null),
-	('\@staff_view','VIEW_EPRINT_FILES_ALL',null,null),
-	('\@edit_subject','EDIT_ARCHIVE_SUBJECTS',null,null),
-	('\@edit_user','DELETE_USER',null,null),
-	('\@edit_user','EDIT_USER_FULL',null,null),
-	('eprint.owner','VIEW_EPRINT_INBOX',null,null),
-	('eprint.owner','VIEW_EPRINT_BUFFER',null,null),
-	('eprint.owner','VIEW_EPRINT_ARCHIVE',null,null),
-	('eprint.owner','VIEW_EPRINT_DELETION',null,null),
-	('eprint.owner','EDIT_EPRINT_INBOX',null,null),
-	('eprint.owner','MOVE_EPRINT_INBOX_BUFFER',null,null),
-	('eprint.owner','REQUEST_EPRINT_DELETION',null,null),
-	('user.owner','EDIT_USER_SUBSCRIPTIONS',null,null),
-	('user.owner','VIEW_USER',null,null),
-	('user.owner','VIEW_USER_CONTRIBUTIONS',null,null),
-	('user.owner','LOGOUT_USER',null,null),
-	('anonymous','LOGIN_USER',null,null),
-	('anonymous','REGISTER_USER',null,null),
-	('anonymous','VALIDATE_USER',null,null),
-	('anonymous','VIEW_PAGES_BROWSE',null,null),
-	('anonymous','VIEW_PAGES_STATIC',null,null),
-	('usertype.admin','EDIT_ARCHIVE_PRIVILEGES',null,null);
-EOS
-	$dbh->do( $sql );
-	
-	# convert most system DATE fields into DATETIME fields.
-
-	$sql = "ALTER TABLE user MODIFY joined DATETIME";
-	$db->do( $sql );
-
-
-	foreach my $table_id ( "inbox","buffer","archive","deletion" )
-	{
-		$sql = "ALTER TABLE $table_id MODIFY datestamp DATETIME";
-		$db->do( $sql );
-		$sql = "ALTER TABLE $table_id ADD lastmod DATETIME AFTER datestamp";
-		$db->do( $sql );
-		$sql = "UPDATE $table_id SET lastmod = datestamp";
-		$db->do( $sql );
-		$sql = "ALTER TABLE $table_id ADD status_changed DATETIME AFTER lastmod";
-		$db->do( $sql );
-		$sql = "UPDATE $table_id SET status_changed = datestamp";
-		$db->do( $sql );
-	}
-
-	# remove the datestamp for items which are not yet live
-	foreach my $table_id ( "inbox","buffer" )
-	{
-		$sql = "UPDATE $table_id SET datestamp = NULL";
-		$db->do( $sql );
-	}
-
-	# re read the tables.	
-	@tables = $db->get_tables;
-
-	# add the ordervalues for lastmod and status_changed
-	foreach my $table ( @tables )
-	{
-		if( $table =~ m/^(archive|buffer|inbox|deletion)__ordervalues_.*$/ )
-		{
-			$sql = "ALTER TABLE $table ADD lastmod text AFTER datestamp",
-			$db->do( $sql );
-			$sql = "ALTER TABLE $table ADD status_changed text AFTER lastmod",
-			$db->do( $sql );
-		}
-	}
-
-	# add a resolution column to every date or datestamp field
-
-	my @datefields = ();
-	foreach my $table ( @tables )
-	{
-		next unless( $table =~ m/^(archive|buffer|inbox|deletion|user|document|subscription|subject)/ );
-		
-		$sql = "DESCRIBE $table";
-		my $sth = $db->prepare( $sql );
-		$ok = $ok && $db->execute( $sth, $sql );
-		while( my @row = $sth->fetchrow_array )
-		{
-			next unless $row[1] eq "date" || $row[1] eq "datetime";
-			push @datefields, [ $table, $row[0] ];
-		}
-        	$sth->finish;
-	}
-	foreach my $pair ( @datefields )
-	{
-		my( $table, $col ) = @{$pair};
-		my $rescol = $col."_resolution";
-		print $pair->[0]." .. ".$pair->[1]."\n";
-		$sql = "ALTER TABLE $table ADD $rescol INTEGER AFTER $col";
-		$db->do( $sql );
-		$sql = "UPDATE $table SET $rescol=3";
-		$db->do( $sql );
-		$sql = "UPDATE $table SET $rescol=2 where day($col)=0";
-		$db->do( $sql );
-		$sql = "UPDATE $table SET $rescol=1 where month($col)=0";
-		$db->do( $sql );
-	}
-
-	# remove old index index_grep rindex and temporary index tables
-	foreach my $table ( @tables )
-	{
-		next unless $table =~ m/__index(_grep)?(_tmp)?$|__rindex$/;
-		$sql = "DROP TABLE $table";
-		$db->do( $sql );
-		
-		print "REMOVING: $table\n";
-	}
-#userid, eprintid,docid,subid,subjectid
 	$db->_create_indexqueue_table;
-	foreach my $datasetid ( qw/ archive buffer inbox deletion user document subscription subject / )
+	foreach my $datasetid ( qw/ eprint user document subscription subject / )
 	{
 		print "Making new index tables: $datasetid\n";
-		my $dataset = $session->get_repo->get_dataset( $datasetid );
+		my $dataset = $session->get_repository->get_dataset( $datasetid );
 		$db->create_dataset_index_tables( $dataset );
 
 		# queue all items for indexing
@@ -741,7 +687,7 @@ EOS
 
 	}
 
-	if( !$ok )
+	if(0 )
 	{
 		print "\nFailed.\n";
 		print "Please investigate cause of errors then try again.\n";
@@ -754,27 +700,6 @@ EOS
 	}
 }
 
-if( $dbversion eq "2.3.99.2" )
-{
-	my $ok = $db->create_dataset_tables( $session->get_repo->get_dataset( 'history' ) );
-
-	$sql = "INSERT INTO ".$counter_ds->get_sql_table_name()." ".
-		"VALUES (\"$counter\", 0);";
-
-	$ok &= $self->do( $sql );
-		
-	if( !$ok )
-	{
-		print "\nFailed.\n";
-		print "Please investigate cause of errors then try again.\n";
-	}
-	else
-	{
-		print "\n2.3.99.2 -> 2.3.99.3 done!\n";
-		$dbversion = "2.3.99.3";
-		$db->set_version( $dbversion );
-	}
-}
 
 
 
@@ -821,12 +746,34 @@ END
 	print "Connecting to the database [as root]\n";
         my $dbh = DBI->connect(
                 EPrints::Database::build_connection_string(
-                        dbname=>$session->get_repo->get_conf("dbname"),
-                        dbsock=>$session->get_repo->get_conf("dbsock"),
-                        dbport=>$session->get_repo->get_conf("dbport"),
-                        dbhost=>$session->get_repo->get_conf("dbhost") ),
+                        dbname=>$session->get_repository->get_conf("dbname"),
+                        dbsock=>$session->get_repository->get_conf("dbsock"),
+                        dbport=>$session->get_repository->get_conf("dbport"),
+                        dbhost=>$session->get_repository->get_conf("dbhost") ),
                 "root",
                 $mysqlrootpass );
 
 	return $dbh;
 }
+
+sub add_single_field_after
+{
+	my( $db, $datasetid, $fieldname, $type, $after ) = @_;
+
+	# add the ordervalues for $fieldname after $after
+
+	my $sql = "ALTER TABLE $datasetid ADD $fieldname $type AFTER $after";
+	$db->do( $sql );
+	foreach my $table ( $db->get_tables )
+	{
+		if( $table =~ m/^$datasetid\__ordervalues_.*$/ )
+		{
+			$sql = "ALTER TABLE $table ADD $fieldname TEXT AFTER $after",
+			$db->do( $sql );
+		}
+	}
+}
+
+
+
+

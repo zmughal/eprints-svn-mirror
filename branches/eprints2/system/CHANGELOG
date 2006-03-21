@@ -3570,4 +3570,9 @@ PACKAGE: 2.2.99.2
 2006-03-21 cjg
 
  * Changed dates (and times) to use INT's with NULL indicating an unknown value.
+
+2006-03-21 cjg
+
+ * Updated bin/upgrade to get more of the way from 2.3 to the next release. Not
+    quite there yet. 
    
