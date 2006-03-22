@@ -318,6 +318,8 @@ sub get_dataset
 
 	my $status = $self->get_value( "eprint_status" );
 
+	EPrints::abort "eprint_status not set" unless defined $status;
+
 	return $self->{session}->get_repository->get_dataset( $status );
 }
 

@@ -3580,4 +3580,6 @@ PACKAGE: 2.2.99.2
 
  * Moved around Output::ContextObject - made it a little easier to understand.
 
-   
+2006-03-22 cjg
+ 
+ * Added an error if the dataset is requested from an eprint with no eprint_status 
