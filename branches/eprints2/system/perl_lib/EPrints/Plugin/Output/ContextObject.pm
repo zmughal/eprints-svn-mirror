@@ -109,8 +109,6 @@ sub xml_dataobj
 	my $itemtype = $dataobj->get_dataset->confid;
 
 	my $session = $plugin->{ "session" };
-	my $repository = $session->get_repository;
-	my $oai = $repository->get_conf( "oai" );
 
 	# TODO: fix timestamp format
 	my $co = $session->make_element(
@@ -121,86 +119,119 @@ sub xml_dataobj
 		"timestamp" => $dataobj->get_value( "datestamp" ),
 	);
 
+	if( $itemtype eq "eprint" )
+	{
+		$co->appendChild( $plugin->xml_eprint( $dataobj, %opts ) );
+	}
+	else
+	{
+		$co->appendChild( $plugin->xml_accesslog( $dataobj, %opts ) );
+	}
+
+	return $co;
+}
+
+
+sub xml_eprint
+{
+	my( $plugin, $eprint, %opts ) = @_;
+
+	my $session = $plugin->{ "session" };
+
 	# Referent
 	my $rft = $session->make_element( "ctx:referent" );
-	$co->appendChild( $rft );
 	
-	my $rft_id = $dataobj->isa( "EPrints::DataObj::EPrint" ) ?
-		'info:' . EPrints::OpenArchives::to_oai_identifier( $oai->{v2}->{ "archive_id" }, $dataobj->get_id ) :
-		$dataobj->get_value( "referent_id" );
+	my $oai = $session->get_repository->get_conf( "oai" );
+
+	my $oai_id = EPrints::OpenArchives::to_oai_identifier( 
+			$oai->{v2}->{ "archive_id" }, 
+			$eprint->get_id );
 
 	$rft->appendChild( 
 		$session->make_element( "ctx:identifier" )
 	)->appendChild(
-		$session->make_text( $rft_id )
+		$session->make_text( "info:".$oai_id )
 	);
 
-	if( $itemtype eq "eprint" )
+	my $etype = $eprint->get_value( "type" );
+	if( $etype eq "article" or $etype eq "conference_item" )
 	{
-		my $etype = $dataobj->get_value( "type" );
-		if( $etype eq "article" or $etype eq "conference_item" )
-		{
-			$rft->appendChild( $plugin->_metadata_by_val( $dataobj, %opts,
-				schema => "info:ofi/fmt:xml:xsd:journal",
-				plugin => "Output::ContextObject::Journal"
-			));
-		}
-		elsif( $etype eq "thesis" )
-		{
-			$rft->appendChild( $plugin->_metadata_by_val( $dataobj, %opts,
-				schema => "info:ofi/fmt:xml:xsd:journal",
-				plugin => "Output::ContextObject::Dissertation"
-			));
-		}
-		else
-		{
-			$rft->appendChild( $plugin->_metadata_by_val( $dataobj, %opts,
-				schema => "info:ofi/fmt:xml:xsd:oai_dc",
-				plugin => "Output::OAI_DC"
-			));
-		}
-	
-		# Only need other entities for accesslog
-		return $co;
+		$rft->appendChild( $plugin->_metadata_by_val( $eprint, %opts,
+			schema => "info:ofi/fmt:xml:xsd:journal",
+			plugin => "Output::ContextObject::Journal"
+		));
+	}
+	elsif( $etype eq "thesis" )
+	{
+		$rft->appendChild( $plugin->_metadata_by_val( $eprint, %opts,
+			schema => "info:ofi/fmt:xml:xsd:journal",
+			plugin => "Output::ContextObject::Dissertation"
+		));
+	}
+	else
+	{
+		$rft->appendChild( $plugin->_metadata_by_val( $eprint, %opts,
+			schema => "info:ofi/fmt:xml:xsd:oai_dc",
+			plugin => "Output::OAI_DC"
+		));
 	}
 
+	return $rft;
+}
+
+sub xml_accesslog
+{
+	my( $plugin, $accesslog, %opts ) = @_;
+
+	my $session = $plugin->{ "session" };
+
+	my $r = $session->make_doc_fragment;
+
+	my $rft = $session->make_element( "ctx:referent" );
+	
+	$rft->appendChild( 
+		$session->make_element( "ctx:identifier" )
+	)->appendChild(
+		$session->make_text( $accesslog->get_value( "referent_id" ) )
+	);
+
 	# referring-entity
-	if( $dataobj->exists_and_set( "referring_entity_id" ) )
+	if( $accesslog->exists_and_set( "referring_entity_id" ) )
 	{
 		my $rfr = $session->make_element( "ctx:referring-entity" );
-		$co->appendChild( $rfr );
+		$r->appendChild( $rfr );
 
 		$rfr->appendChild(
 			$session->make_element( "ctx:identifier" )
 		)->appendChild(
-			$session->make_text( $dataobj->get_value( "referring_entity_id" ))
+			$session->make_text( $accesslog->get_value( "referring_entity_id" ))
 		);
 	}
 
 	# requester
 	my $req = $session->make_element( "ctx:requester" );
-	$co->appendChild( $req );
+	$r->appendChild( $req );
 
 	$req->appendChild(
 		$session->make_element( "ctx:identifier" )
 	)->appendChild(
-		$session->make_text( $dataobj->get_value( "requester_id" ))
+		$session->make_text( $accesslog->get_value( "requester_id" ))
 	);
 	
-	if( $dataobj->exists_and_set( "requester_user_agent" ) )
+	if( $accesslog->exists_and_set( "requester_user_agent" ) )
 	{
 		$req->appendChild(
-			$session->make_element( "ctx:private-data" )
+			$session->make_element( "ctx:private-accesslog" )
 		)->appendChild(
-			$session->make_text( $dataobj->get_value( "requester_user_agent" ))
+			$session->make_text( $accesslog->get_value( "requester_user_agent" ))
 		);
 	}
 
 	# service-type
-	if( $dataobj->exists_and_set( "service_type_id" ) )
+	if( $accesslog->exists_and_set( "service_type_id" ) )
 	{
 		my $svc = $session->make_element( "ctx:service-type" );
-		$co->appendChild( $svc );
+		$r->appendChild( $svc );
 
 		my $md_val = $session->make_element( "ctx:metadata-by-val" );
 		$svc->appendChild( $md_val );
@@ -216,7 +247,7 @@ sub xml_dataobj
 		);
 		$md_val->appendChild( $md );
 
-		my $uri = URI->new( $dataobj->get_value( "service_type_id" ), 'http' );
+		my $uri = URI->new( $accesslog->get_value( "service_type_id" ), 'http' );
 		my( $key, $value ) = $uri->query_form;
 		$md->appendChild(
 			$session->make_element( "sv:$key" )
@@ -224,8 +255,8 @@ sub xml_dataobj
 			$session->make_text( $value )
 		);
 	}
-	
-	return $co;
+
+	return $r;	
 }
 
 sub _metadata_by_val
