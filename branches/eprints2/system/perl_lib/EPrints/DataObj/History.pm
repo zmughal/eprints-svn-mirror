@@ -105,20 +105,22 @@ sub get_system_field_info
 
 	return 
 	( 
-		{ name=>"historyid", type=>"int", required=>1 }, 
+		{ name=>"historyid", type=>"int", required=>1, }, 
 
 		{ name=>"userid", type=>"itemref", 
 			datasetid=>"user", required=>0 },
 
+		{ name=>"actor", type=>"text", text_index=>0, },
+	
 		# should maybe be a set?
 		{ name=>"datasetid", type=>"text", text_index=>0, }, 
 
 		# is this required?
-		{ name=>"objectid", type=>"int" }, 
+		{ name=>"objectid", type=>"int", }, 
 
-		{ name=>"revision", type=>"int" },
+		{ name=>"revision", type=>"int", },
 
-		{ name=>"timestamp", type=>"time" }, 
+		{ name=>"timestamp", type=>"time", }, 
 
 		# TODO should be a set when I know what the actions will be
 		{ name=>"action", type=>"text", text_index=>0, }, 
@@ -262,6 +264,21 @@ sub get_defaults
 
 	$data->{timestamp} = EPrints::Utils::get_datetimestamp( time );
 
+	my $user;
+	if( $data->{userid} )
+	{
+		$user = EPrints::User->new( $session, $data->{userid} );
+	}
+	if( defined $user ) 
+	{
+		$data->{actor} = EPrints::Utils::tree_to_utf8( $user->render_description() );
+	}
+	else
+	{
+		# command line or not logged in. Store script name.
+		$data->{actor} = $0;
+	}
+
 	return $data;
 }
 
@@ -288,7 +305,8 @@ sub render
 	}
 	else
 	{
-		$pins{cause} = $self->{session}->html_phrase( "lib/history:system" );
+		$pins{cause} = $self->{session}->make_element( "tt" );
+		$pins{cause}->appendChild( $self->{session}->make_text( $self->get_value( "actor" ) ) );
 	}
 
 	$pins{when} = $self->render_value( "timestamp" );

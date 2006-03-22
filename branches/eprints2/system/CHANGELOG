@@ -3603,3 +3603,4 @@ PACKAGE: 2.2.99.2
  * Added optimisation to List.pm - no point caching a single item - now just
     does a get instead.
  * Added microsecond timer to SQL do method (for debugging).
+ * Added script name/user name to history dataset
