@@ -260,6 +260,8 @@ END
 
 	return unless defined $document;
 
+	$document->{under_construction} = 1;
+
 	_create_directory( $document->get_id, $eprint ); 
 
 	if( defined $data->{files} )
@@ -286,6 +288,8 @@ END
 
 	my $linkdir = _secure_symlink_path( $eprint );
 	$document->create_symlink( $eprint, $linkdir );
+
+	delete $document->{under_construction};
 
 	return $document;
 }
@@ -1392,23 +1396,31 @@ sub files_modified
 		$self->get_eprint->get_id,
 		$EPrints::Utils::FULLTEXT );
 
-	# Pick a file to be the one that gets linked. There will 
-	# usually only be one, if there's more than one then this
-	# uses the first alphabetically.
-	if( !$self->get_value( "main" ) )
-	{
-		my %files = $self->files;
-		my @filenames = sort keys %files;
-		if( scalar @filenames ) 
-		{
-			$self->set_value( "main", $filenames[0] );
-		}
-	}
-
-	$self->commit( 1 );
-
 	# remove the now invalid cache of words from this document
 	unlink $self->words_file if( -e $self->words_file );
+
+	# nb. The "main" part is not automatically calculated when
+	# the item is under contruction. This means bulk imports 
+	# will have to set the name themselves.
+	unless( $self->{under_construction} )
+	{
+
+		# Pick a file to be the one that gets linked. There will 
+		# usually only be one, if there's more than one then this
+		# uses the first alphabetically.
+		if( !$self->get_value( "main" ) )
+		{
+			my %files = $self->files;
+			my @filenames = sort keys %files;
+			if( scalar @filenames ) 
+			{
+				$self->set_value( "main", $filenames[0] );
+			}
+		}
+	
+		$self->commit( 1 );
+	}
+
 }
 
 ######################################################################

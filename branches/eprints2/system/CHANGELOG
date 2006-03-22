@@ -3595,3 +3595,7 @@ PACKAGE: 2.2.99.2
     they should except either.
  * Added new input method for XML plugins: xml_to_dataobj which just calls
     xml_to_epdata, which should be subclassed.
+ * Renamed the accesslog dataset to access for consistancy
+ * Disabled the privilages dataset
+ * Added an under construction flag to documents so that they don't cause an
+    eprint to be re-commited when they are constructed. 
