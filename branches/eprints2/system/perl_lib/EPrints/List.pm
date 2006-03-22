@@ -161,6 +161,7 @@ sub reorder
 	my( $self, $new_order ) = @_;
 
 	# must be cached to be reordered
+
 	$self->cache;
 
 	my $db = $self->{session}->get_database;
@@ -300,6 +301,13 @@ sub cache
 		# not worth caching zero in a temp table!
 		return;
 	}
+
+#	if( defined $self->{ids} && scalar @{$self->{ids}} < 2 )
+#	{
+#		# not worth caching one item either. Can't sort one
+#		# item can you?
+#		return;
+#	}
 
 	my $db = $self->{session}->get_database;
 	if( $self->_matches_all )
@@ -496,6 +504,10 @@ sub _get_records
 {
 	my ( $self , $offset , $count, $justids ) = @_;
 
+	$offset = $offset || 0;
+	$count = $count || 1;
+	$justids = $justids || 0;
+
 	if( defined $self->{ids} )
 	{
 		if( $self->_matches_none )
@@ -535,6 +547,16 @@ sub _get_records
 		# If the above tests failed then	
 		# we are returning all matches, but there's no
 		# easy shortcut.
+
+		if( !$justids && scalar @{$self->{ids}} <= 1 )
+		{
+			my @ids = @{$self->{ids}};
+			my $from = $offset;
+			my $to = $offset+$count-1;
+			my @range = @ids[($from..$to)];
+		
+			return $self->{session}->get_database->get_single( $self->{dataset}, $range[0] );
+		}	
 	}
 
 	if( !defined $self->{cache_id} )

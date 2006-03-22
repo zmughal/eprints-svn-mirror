@@ -3600,4 +3600,5 @@ PACKAGE: 2.2.99.2
  * Added an under construction flag to documents so that they don't cause an
     eprint to be re-commited when they are constructed. 
  * Rearranged code in LogHandler for readability
-
+ * Added optimisation to List.pm - no point caching a single item - now just
+    does a get instead.
