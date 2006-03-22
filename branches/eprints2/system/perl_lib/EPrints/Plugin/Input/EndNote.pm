@@ -371,14 +371,24 @@ package EPrints::Plugin::Input::EndNote;
 
 use strict;
 
-use Text::Refer;
-use File::Temp qw( tempfile );
-
 our @ISA = qw/ EPrints::Plugin::Input /;
 
 sub new
 {
 	my( $class, %params ) = @_;
+
+	my $rc = eval( "use Text::Refer;" );
+	unless( $rc ) 
+	{
+		print STDERR "Failed to load Text::Refer. Disabling Endnote Import plugin.\n";
+		return undef;
+	}
+	$rc = eval( "use File::Temp qw( tempfile );" );
+	unless( $rc ) 
+	{
+		print STDERR "Failed to load File::Temp. Disabling Endnote Import plugin.\n";
+		return undef;
+	}
 
 	my $self = $class->SUPER::new( %params );
 

@@ -3575,4 +3575,9 @@ PACKAGE: 2.2.99.2
 
  * Updated bin/upgrade to get more of the way from 2.3 to the next release. Not
     quite there yet. 
+
+2006-03-22 cjg
+
+ * Moved around Output::ContextObject - made it a little easier to understand.
+
    
