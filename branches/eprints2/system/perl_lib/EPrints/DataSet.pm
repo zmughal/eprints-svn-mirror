@@ -28,7 +28,7 @@ An repository has one of each type of dataset:
 
 cachemap, counter, user, archive, buffer, inbox, document, subject,
 subscription, deletion, eprint, language, arclanguage, security,
-license, accesslog.
+license, access.
 
 A normal dataset (eg. "user") has a package associated with it 
 (eg. EPrints::DataObj::User) which must be a subclass of EPrints::DataObj 
@@ -226,11 +226,11 @@ my $INFO = {
 		class => "EPrints::DataObj::License",
 		import => 1,
 	},
-	permission => {
-		sqlname => "permission",
-		class => "EPrints::DataObj::Permission",
-		import => 1,
-	},
+#	permission => {
+#		sqlname => "permission",
+#		class => "EPrints::DataObj::Permission",
+#		import => 1,
+#	},
 	history => {
 		sqlname => "history",
 		class => "EPrints::DataObj::History",
@@ -241,8 +241,8 @@ my $INFO = {
 		class => "EPrints::DataObj::Subscription",
 		import => 1,
 	},
-	accesslog => {
-		sqlname => "accesslog",
+	access => {
+		sqlname => "access",
 		class => "EPrints::DataObj::Access",
 		import => 1,
 	},
@@ -1216,7 +1216,7 @@ into SQL (not counters or cache which work a bit differently).
 
 sub get_sql_dataset_ids
 {
-	return( qw/ eprint user document subscription subject license permission history accesslog / );
+	return( qw/ eprint user document subscription subject license history access / );
 }
 
 ######################################################################

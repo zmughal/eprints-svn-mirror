@@ -111,7 +111,7 @@ sub get_system_field_info
 			datasetid=>"user", required=>0 },
 
 		# should maybe be a set?
-		{ name=>"datasetid", type=>"text" }, 
+		{ name=>"datasetid", type=>"text", text_index=>0, }, 
 
 		# is this required?
 		{ name=>"objectid", type=>"int" }, 
@@ -121,9 +121,9 @@ sub get_system_field_info
 		{ name=>"timestamp", type=>"time" }, 
 
 		# TODO should be a set when I know what the actions will be
-		{ name=>"action", type=>"text" }, 
+		{ name=>"action", type=>"text", text_index=>0, }, 
 
-		{ name=>"details", type=>"longtext", 
+		{ name=>"details", type=>"longtext", text_index=>0, 
 render_single_value => \&EPrints::Extras::render_preformatted_field }, 
 	);
 }

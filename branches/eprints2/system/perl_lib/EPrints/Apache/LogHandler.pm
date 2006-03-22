@@ -165,7 +165,7 @@ sub handler
 			referent_docid => $doc,
 		});
 
-	$session->get_repository->get_dataset( "accesslog" )->create_object( $session, $data );
+	$session->get_repository->get_dataset( "access" )->create_object( $session, $data );
 	
 	return OK;
 }

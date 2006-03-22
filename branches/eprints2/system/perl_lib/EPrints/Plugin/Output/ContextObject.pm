@@ -20,7 +20,7 @@ sub new
 	my( $self ) = $class->SUPER::new( %opts );
 
 	$self->{name} = "OpenURL ContextObject";
-	$self->{accept} = [ 'list/eprint', 'list/accesslog', 'dataobj/eprint', 'dataobj/accesslog' ];
+	$self->{accept} = [ 'list/eprint', 'list/access', 'dataobj/eprint', 'dataobj/access' ];
 	$self->{visible} = "all";
 	$self->{suffix} = ".xml";
 	$self->{mimetype} = "text/xml";
@@ -125,7 +125,7 @@ sub xml_dataobj
 	}
 	else
 	{
-		$co->appendChild( $plugin->xml_accesslog( $dataobj, %opts ) );
+		$co->appendChild( $plugin->xml_access( $dataobj, %opts ) );
 	}
 
 	return $co;
@@ -179,9 +179,9 @@ sub xml_eprint
 	return $rft;
 }
 
-sub xml_accesslog
+sub xml_access
 {
-	my( $plugin, $accesslog, %opts ) = @_;
+	my( $plugin, $access, %opts ) = @_;
 
 	my $session = $plugin->{ "session" };
 
@@ -192,11 +192,11 @@ sub xml_accesslog
 	$rft->appendChild( 
 		$session->make_element( "ctx:identifier" )
 	)->appendChild(
-		$session->make_text( $accesslog->get_value( "referent_id" ) )
+		$session->make_text( $access->get_value( "referent_id" ) )
 	);
 
 	# referring-entity
-	if( $accesslog->exists_and_set( "referring_entity_id" ) )
+	if( $access->exists_and_set( "referring_entity_id" ) )
 	{
 		my $rfr = $session->make_element( "ctx:referring-entity" );
 		$r->appendChild( $rfr );
@@ -204,7 +204,7 @@ sub xml_accesslog
 		$rfr->appendChild(
 			$session->make_element( "ctx:identifier" )
 		)->appendChild(
-			$session->make_text( $accesslog->get_value( "referring_entity_id" ))
+			$session->make_text( $access->get_value( "referring_entity_id" ))
 		);
 	}
 
@@ -215,20 +215,20 @@ sub xml_accesslog
 	$req->appendChild(
 		$session->make_element( "ctx:identifier" )
 	)->appendChild(
-		$session->make_text( $accesslog->get_value( "requester_id" ))
+		$session->make_text( $access->get_value( "requester_id" ))
 	);
 	
-	if( $accesslog->exists_and_set( "requester_user_agent" ) )
+	if( $access->exists_and_set( "requester_user_agent" ) )
 	{
 		$req->appendChild(
 			$session->make_element( "ctx:private-accesslog" )
 		)->appendChild(
-			$session->make_text( $accesslog->get_value( "requester_user_agent" ))
+			$session->make_text( $access->get_value( "requester_user_agent" ))
 		);
 	}
 
 	# service-type
-	if( $accesslog->exists_and_set( "service_type_id" ) )
+	if( $access->exists_and_set( "service_type_id" ) )
 	{
 		my $svc = $session->make_element( "ctx:service-type" );
 		$r->appendChild( $svc );
@@ -247,7 +247,7 @@ sub xml_accesslog
 		);
 		$md_val->appendChild( $md );
 
-		my $uri = URI->new( $accesslog->get_value( "service_type_id" ), 'http' );
+		my $uri = URI->new( $access->get_value( "service_type_id" ), 'http' );
 		my( $key, $value ) = $uri->query_form;
 		$md->appendChild(
 			$session->make_element( "sv:$key" )

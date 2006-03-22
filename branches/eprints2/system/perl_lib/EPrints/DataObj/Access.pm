@@ -109,21 +109,21 @@ sub get_system_field_info
 
 		{ name=>"datestamp", type=>"time", required=>1, },
 
-		{ name=>"requester_id", type=>"text", required=>1, },
+		{ name=>"requester_id", type=>"text", required=>1, text_index=>0, },
 
-		{ name=>"requester_user_agent", type=>"text", required=>0, },
+		{ name=>"requester_user_agent", type=>"text", required=>0, text_index=>0, },
 
-		{ name=>"requester_country", type=>"text", required=>0, },
+		{ name=>"requester_country", type=>"text", required=>0, text_index=>0, },
 
-		{ name=>"requester_institution", type=>"text", required=>0, },
+		{ name=>"requester_institution", type=>"text", required=>0, text_index=>0, },
 
-		{ name=>"referring_entity_id", type=>"text", required=>0, },
+		{ name=>"referring_entity_id", type=>"text", required=>0, text_index=>0, },
 
-		{ name=>"service_type_id", type=>"text", required=>1, },
+		{ name=>"service_type_id", type=>"text", required=>1, text_index=>0, },
 
-		{ name=>"referent_id", type=>"text", required=>1, },
+		{ name=>"referent_id", type=>"text", required=>1, text_index=>0, },
 
-		{ name=>"referent_docid", type=>"text", required=>0, },
+		{ name=>"referent_docid", type=>"text", required=>0, text_index=>0, },
 	);
 }
 
@@ -150,7 +150,7 @@ sub new
 	my( $class, $session, $accessid ) = @_;
 
 	return $session->get_database->get_single( 
-			$session->get_repository->get_dataset( "accesslog" ), 
+			$session->get_repository->get_dataset( "access" ), 
 			$accessid );
 }
 
@@ -167,7 +167,7 @@ sub new_from_data
 	my $self = {};
 	
 	$self->{data} = $known;
-	$self->{dataset} = $session->get_repository->get_dataset( "accesslog" ); 
+	$self->{dataset} = $session->get_repository->get_dataset( "access" ); 
 	$self->{session} = $session;
 	bless $self, $class;
 
@@ -192,7 +192,7 @@ sub remove_all
 {
 	my( $class, $session ) = @_;
 
-	my $ds = $session->get_repository->get_dataset( "accesslog" );
+	my $ds = $session->get_repository->get_dataset( "access" );
 	foreach my $obj ( $session->get_database->get_all( $ds ) )
 	{
 		$obj->remove();
