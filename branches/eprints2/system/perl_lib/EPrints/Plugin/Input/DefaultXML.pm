@@ -61,7 +61,7 @@ sub input_list
 	$parser->{eprints}->{plugin} = $plugin;
 	$parser->{eprints}->{depth} = 0;
 	$parser->{eprints}->{imported} = [];
-	$parser->parse( $opts{data} );
+	$parser->parse( $opts{fh} );
 
 	return EPrints::List->new(
 			dataset=>$opts{dataset},
@@ -73,7 +73,16 @@ sub xml_to_dataobj
 {
 	my( $plugin, $dataset, $xml ) = @_;
 
-	$plugin->{session}->get_repository->error( "xml_to_dataobj should be overridden." );
+	my $epdata = $plugin->xml_to_epdata( $dataset, $xml );
+
+	return $plugin->epdata_to_dataobj( $dataset, $epdata );
+}
+
+sub xml_to_epdata
+{
+	my( $plugin, $dataset, $xml ) = @_;
+
+	$plugin->error( "xml_to_epdata should be overridden." );
 }
 
 # takes a chunck of XML and returns it as a utf8 string.

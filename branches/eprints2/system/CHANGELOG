@@ -3582,5 +3582,16 @@ PACKAGE: 2.2.99.2
 
 2006-03-22 cjg
  
- * Added an error if the dataset is requested from an eprint with no eprint_status 
+ * Added an error if the dataset is requested from an eprint with no 
+    eprint_status 
  * Added HTML and ASCII output plugins
+ * Added system to detect broken plugins and disable them
+ * import and export scripts now warn of broken plugins, and can explain why
+ * EndNote now correctly registers as broken if the required modules are not 
+    installed.
+ * Renamed parameters and methods in plugins to call eprints data structures
+    epdata rather than data.
+ * Input plugins now take a file handle rather than a string. Possibly later
+    they should except either.
+ * Added new input method for XML plugins: xml_to_dataobj which just calls
+    xml_to_epdata, which should be subclassed.

@@ -149,6 +149,42 @@ sub get_subtype
 ######################################################################
 =pod
 
+=item $msg = $plugin->error_message
+
+Return the error message, if this plugin can't be used.
+
+=cut
+######################################################################
+
+sub error_message
+{
+	my( $self ) = @_;
+
+	return $self->{error};
+}
+
+
+######################################################################
+=pod
+
+=item $boolean = $plugin->broken
+
+Return the value of a parameter in the current plugin.
+
+=cut
+######################################################################
+
+sub broken
+{
+	my( $self ) = @_;
+
+	return defined $self->{error};
+}
+
+
+######################################################################
+=pod
+
 =item $name = $plugin->matches( $test, $param )
 
 Return true if this plugin matches the test, false otherwise. If the
@@ -268,7 +304,8 @@ sub load_dir
 		my $pluginid = $plugin->{id};
 		if( !defined $pluginid )
 		{
-			print STDERR "Warning: plugin $class has no ID set.\n";
+#			print STDERR "Warning: plugin $class has no ID set.\n";
+print "$class: $@\n";
 			next;
 		}
 		$reg->{$pluginid} = $class;

@@ -26,16 +26,7 @@ sub top_level_tag
 	return $dataset->confid."s";
 }
 
-sub xml_to_dataobj
-{
-	my( $plugin, $dataset, $xml ) = @_;
-
-	my $data = $plugin->xml_to_data( $dataset, $xml );
-
-	return $plugin->data_to_dataobj( $dataset, $data );
-}
-
-sub xml_to_data
+sub xml_to_epdata
 {
 	my( $plugin, $dataset, $xml ) = @_;
 
@@ -45,13 +36,13 @@ sub xml_to_data
 
 	my %toprocess = $plugin->get_known_nodes( $xml, @fieldnames );
 
-	my $data = {};
+	my $epdata = {};
 	foreach my $fn ( keys %toprocess )
 	{
 		my $field = $dataset->get_field( $fn );
-		$data->{$fn} = $plugin->xml_field_to_data( $dataset, $field, $toprocess{$fn} );
+		$epdata->{$fn} = $plugin->xml_field_to_epdatafield( $dataset, $field, $toprocess{$fn} );
 	}
-	return $data;
+	return $epdata;
 }
 
 sub xml_to_file
@@ -70,7 +61,7 @@ sub xml_to_file
 }
 
 
-sub xml_field_to_data
+sub xml_field_to_epdatafield
 {
 	my( $plugin,$dataset,$field,$xml ) = @_;
 
@@ -79,7 +70,7 @@ sub xml_field_to_data
 		return $plugin->xml_field_to_data_single( $dataset,$field,$xml );
 	}
 
-	my $data = [];
+	my $epdatafield = [];
 	my @list = $xml->getChildNodes;
 	foreach my $el ( @list )
 	{
@@ -94,7 +85,7 @@ sub xml_field_to_data
 				next;
 			}
 			my $sub_dataset = $plugin->{session}->get_repository->get_dataset( $expect );
-			push @{$data}, $plugin->xml_to_data( $sub_dataset,$el );
+			push @{$epdatafield}, $plugin->xml_to_epdata( $sub_dataset,$el );
 			next;
 		}
 
@@ -105,7 +96,7 @@ sub xml_field_to_data
 				$plugin->warning( "<$type> where <file> was expected inside <".$field->get_name.">" );
 				next;
 			}
-			push @{$data}, $plugin->xml_to_file( $dataset,$el );
+			push @{$epdatafield}, $plugin->xml_to_file( $dataset,$el );
 			next;
 		}
 
@@ -114,10 +105,10 @@ sub xml_field_to_data
 			$plugin->warning( "<$type> where <item> was expected inside <".$field->get_name.">" );
 			next;
 		}
-		push @{$data}, $plugin->xml_field_to_data_single( $dataset,$field,$el );
+		push @{$epdatafield}, $plugin->xml_field_to_data_single( $dataset,$field,$el );
 	}
 
-	return $data;
+	return $epdatafield;
 }
 
 sub xml_field_to_data_single
@@ -131,16 +122,16 @@ sub xml_field_to_data_single
 
 	my %toprocess = $plugin->get_known_nodes( $xml, qw/ id main / );
 
-	my $data = {};
+	my $epdatafield = {};
 	if( defined $toprocess{id} ) 
 	{
-		$data->{id} = $plugin->xml_to_text( $toprocess{id} );
+		$epdatafield->{id} = $plugin->xml_to_text( $toprocess{id} );
 	}
 	if( defined $toprocess{main} ) 
 	{
-		$data->{main} = $plugin->xml_field_to_data_noid( $dataset, $field, $toprocess{main} );
+		$epdatafield->{main} = $plugin->xml_field_to_data_noid( $dataset, $field, $toprocess{main} );
 	}
-	return $data;
+	return $epdatafield;
 
 
 }
@@ -167,12 +158,12 @@ sub xml_field_to_data_basic
 
 	my %toprocess = $plugin->get_known_nodes( $xml, qw/ given family lineage honourific / );
 
-	my $data = {};
+	my $epdatafield = {};
 	foreach my $part ( keys %toprocess )
 	{
-		$data->{$part} = $plugin->xml_to_text( $toprocess{$part} );
+		$epdatafield->{$part} = $plugin->xml_to_text( $toprocess{$part} );
 	}
-	return $data;
+	return $epdatafield;
 }
 
 sub get_known_nodes

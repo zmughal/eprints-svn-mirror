@@ -67,10 +67,6 @@ Don't import, just check the file.
 
 Print a brief help message and exit.
 
-=item B<--help>
-
-Print a brief help message and exit.
-
 =item B<--man>
 
 Print the full manual page and then exit.
@@ -83,6 +79,8 @@ Be vewwy vewwy quiet. This option will supress all output unless an error occurs
 
 Explain in detail what is going on.
 May be repeated for greater effect.
+
+Shows why a plugin is disabled.
 
 =item B<--version>
 
@@ -178,6 +176,11 @@ if( !defined $ipluginid )
 		{
 			print " (Single object input only)";
 		}
+		if( $a_plugin->broken )
+		{
+			print " (DISABLED)";
+			print "\n** Disabled because: ".$a_plugin->error_message if( $noise > 1 );
+		}
 		print "\n";
 	}
 	$session->terminate();
@@ -205,10 +208,18 @@ unless( $plugin->can_produce( $req_plugin_type ) )
 	exit 1;
 }
 
-my $data;
+if( $plugin->broken )
+{
+	print STDERR "Plugin $pluginid could not run because:\n";
+	print STDERR $plugin->error_message."\n";
+	$session->terminate();
+	exit 1;
+}
+
+my $fh;
 if( $filename eq "-" )
 {
-	$data = join('',<>);
+	$fh = *STDIN;
 }
 else
 {
@@ -218,11 +229,16 @@ else
 		$session->terminate();
 		exit 1;
 	}
-	$data = join('',<INFILE>);
-	close  INFILE;
+	$fh = *INFILE;
 }
 
-my $list = $plugin->input_list( dataset=>$ds, data=>$data );
+my $list = $plugin->input_list( dataset=>$ds, fh=>$fh );
+
+unless( $filename eq "-" )
+{
+	close $fh;
+}
+
 if( defined $list )
 {
 	print "Number of records imported: ".$list->count."\n" if $noise > 0;

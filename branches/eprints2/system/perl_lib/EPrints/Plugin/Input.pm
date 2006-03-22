@@ -83,6 +83,8 @@ sub can_produce
 
 # parse a file of records.
 # return an EPrints::List of the imported items.
+# the data will be supplied as a file handle (fh)
+# the dataset should be passed as dataset=>$ds
 sub input_list
 {
 	my( $plugin, %opts ) = @_;
@@ -90,21 +92,27 @@ sub input_list
 	return undef;
 }
 
-#stub.
 sub input_dataobj
 {
-	my( $plugin, $data ) = @_;
-	
-	my $r = "error. input_dataobj should be overridden";
+	my( $plugin, $input_data ) = @_;
 
-	$plugin->log( $r );
+	my $epdata = $plugin->convert_input( $input_data );
 
-	return $r;
+	return $plugin->data_to_dataobj( $plugin->{dataset}, $epdata ); 
 }
 
-sub data_to_dataobj
+sub convert_input
 {
-	my( $plugin, $dataset, $data ) = @_;
+	my( $plugin, $input_data ) = @_;
+
+	my $r = "error. convert_dataobj should be overridden";
+
+	$plugin->log( $r );
+}
+
+sub epdata_to_dataobj
+{
+	my( $plugin, $dataset, $epdata ) = @_;
 	
 	if( $plugin->{parse_only} )
 	{
@@ -115,7 +123,7 @@ sub data_to_dataobj
 		return;
 	}
 
-	my $item = $dataset->create_object( $plugin->{session}, $data );
+	my $item = $dataset->create_object( $plugin->{session}, $epdata );
 	if( $plugin->{session}->get_noise > 1 )
 	{
 		print STDERR "Imported ".$dataset->id.".".$item->get_id."\n";

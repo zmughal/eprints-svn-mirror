@@ -60,10 +60,6 @@ If this is set then just output the single, specified item.
 
 Print a brief help message and exit.
 
-=item B<--help>
-
-Print a brief help message and exit.
-
 =item B<--man>
 
 Print the full manual page and then exit.
@@ -76,6 +72,8 @@ Be vewwy vewwy quiet. This option will supress all output unless an error occurs
 
 Explain in detail what is going on.
 May be repeated for greater effect.
+
+Shows why a plugin is disabled.
 
 =item B<--version>
 
@@ -173,6 +171,11 @@ if( !defined $opluginid )
 		{
 			print " (Single object export only)";
 		}
+		if( $a_plugin->broken )
+		{
+			print " (DISABLED)";
+			print "\n** Disabled because: ".$a_plugin->error_message if( $noise > 1 );
+		}
 		print "\n";
 	}
 	$session->terminate();
@@ -191,6 +194,13 @@ if( !defined $plugin )
 	exit 1;
 }
 	
+if( $plugin->broken )
+{
+	print STDERR "Plugin $pluginid could not run because:\n";
+	print STDERR $plugin->error_message."\n";
+	$session->terminate();
+	exit 1;
+}
 
 if( $single )
 {

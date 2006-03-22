@@ -377,24 +377,18 @@ sub new
 {
 	my( $class, %params ) = @_;
 
-	my $rc = eval( "use Text::Refer;" );
-	unless( $rc ) 
-	{
-		print STDERR "Failed to load Text::Refer. Disabling Endnote Import plugin.\n";
-		return undef;
-	}
-	$rc = eval( "use File::Temp qw( tempfile );" );
-	unless( $rc ) 
-	{
-		print STDERR "Failed to load File::Temp. Disabling Endnote Import plugin.\n";
-		return undef;
-	}
-
 	my $self = $class->SUPER::new( %params );
 
 	$self->{name} = "EndNote";
 	$self->{visible} = "all";
 	$self->{produce} = [ 'list/eprint', 'dataobj/eprint' ];
+
+	my $rc = eval( "use Text::Refer;" );
+	unless( $rc ) 
+	{
+		$self->{visible} = "";
+		$self->{error} = "Failed to load required module Text::Refer";
+	}
 
 	return $self;
 }
@@ -415,266 +409,259 @@ sub input_list
 		ForgiveEOF => 1
 	);
 
-	#my $list = EPrints::List->new;
-
-	#TODO: need temp file
-	my ( $fh, $filename ) = tempfile( DIR => '/tmp' );
-	print $fh $opts{ data };
-	close $fh;
-
-	open( IN, $filename );
-
 	my @ids;
-	while (my $ref = $parser->input( *IN ) ) {
-		my $data = $plugin->ref_to_data( $ref );
-		if( defined $data )
+
+	while (my $input_data = $parser->input( $opts{fh} ) ) 
+	{
+		my $epdata = $plugin->convert_input( $input_data );
+
+		next unless( defined $epdata );
+
+		use Data::Dumper;
+		print Dumper( $epdata );
+		my $dataobj = $plugin->epdata_to_dataobj( $opts{dataset}, $epdata );
+		if( defined $dataobj )
 		{
-			use Data::Dumper;
-			print Dumper( $data );
-			my $dataobj = $plugin->data_to_dataobj( $opts{dataset}, $data );
-			if( defined $dataobj )
-			{
-				push @ids, $dataobj->get_id;
-			}
+			push @ids, $dataobj->get_id;
 		}
 	}
 	
-	close( IN );
-
 	return EPrints::List->new( 
 		dataset => $opts{dataset}, 
 		session => $plugin->{session},
 		ids=>\@ids );
 }
 
-sub ref_to_data {
-	my ( $plugin, $ref ) = @_;
-	my $data = ();
+sub convert_input 
+{
+	my ( $plugin, $input_data ) = @_;
+	my $epdata = ();
 
 	# 0 Citation type
-	my $ref_type = $ref->get( "0" ) || "[none]";
-	$data->{type} = "article" if $ref_type =~ /Article/;
-	$data->{type} = "book" if $ref_type =~ /Book/ || $ref_type eq "Conference Proceedings";
-	$data->{type} = "book_section" if $ref_type eq "Book Section";
-	if( $ref_type eq "Conference Paper" )
+	my $input_data_type = $input_data->get( "0" ) || "[none]";
+	$epdata->{type} = "article" if $input_data_type =~ /Article/;
+	$epdata->{type} = "book" if $input_data_type =~ /Book/ || $input_data_type eq "Conference Proceedings";
+	$epdata->{type} = "book_section" if $input_data_type eq "Book Section";
+	if( $input_data_type eq "Conference Paper" )
 	{
-		$data->{type} = "conference_item";
-		$data->{pres_type} = "paper";
+		$epdata->{type} = "conference_item";
+		$epdata->{pres_type} = "paper";
 	}
-	$data->{type} = "monograph" if $ref_type eq "Report";
-	$data->{type} = "patent" if $ref_type eq "Patent";
-	$data->{type} = "thesis" if $ref_type eq "Thesis";
-	if( !defined $data->{type} ) {
-		$plugin->warning( "Skipping unsupported citation type $ref_type" );
+	$epdata->{type} = "monograph" if $input_data_type eq "Report";
+	$epdata->{type} = "patent" if $input_data_type eq "Patent";
+	$epdata->{type} = "thesis" if $input_data_type eq "Thesis";
+	if( !defined $epdata->{type} ) 
+	{
+		$plugin->warning( "Skipping unsupported citation type $input_data_type" );
 		return undef;
 	}
 
 	# D Year
-	$data->{date_issue} = $ref->date if defined $ref->date;
+	$epdata->{date_issue} = $input_data->date if defined $input_data->date;
 	# J Journal
-	$data->{publication} = $ref->journal if defined $ref->journal && $ref_type eq "Journal Article";
+	$epdata->{publication} = $input_data->journal if defined $input_data->journal && $input_data_type eq "Journal Article";
 	# K Keywords
-	$data->{keywords} = $ref->keywords if defined $ref->keywords;
+	$epdata->{keywords} = $input_data->keywords if defined $input_data->keywords;
 	# T Title
-	$data->{title} = $ref->title if defined $ref->title;
+	$epdata->{title} = $input_data->title if defined $input_data->title;
 	# U URL
-	$data->{official_url} = $ref->get( "U" ) if defined $ref->get( "U" );
+	$epdata->{official_url} = $input_data->get( "U" ) if defined $input_data->get( "U" );
 	# X Abstract
-	$data->{abstract} = $ref->abstract if defined $ref->abstract;
+	$epdata->{abstract} = $input_data->abstract if defined $input_data->abstract;
 	# Z Notes
-	$data->{note} = $ref->get( "Z" ) if defined $ref->get( "Z" );
+	$epdata->{note} = $input_data->get( "Z" ) if defined $input_data->get( "Z" );
 
 	# 9 Thesis Type, Report Type
-	if( defined $ref->get( "9" ) )
+	if( defined $input_data->get( "9" ) )
 	{
 
-		my $type = $ref->get( "9" );
-		if( $ref_type eq "Thesis" )
+		my $type = $input_data->get( "9" );
+		if( $input_data_type eq "Thesis" )
 		{
-			$data->{thesis_type} = "phd" if $type =~ /ph\.?d/i;
-			$data->{thesis_type} = "masters" if $type =~ /master/i;
+			$epdata->{thesis_type} = "phd" if $type =~ /ph\.?d/i;
+			$epdata->{thesis_type} = "masters" if $type =~ /master/i;
 		}
-		elsif( $ref_type eq "Report" )
+		elsif( $input_data_type eq "Report" )
 		{
-			$data->{monograph_type} = "technical_report" if $type =~ /tech/i;
-			$data->{monograph_type} = "project_report" if $type =~ /proj/i;
-			$data->{monograph_type} = "documentation" if $type =~ /doc/i;
-			$data->{monograph_type} = "manual" if $type =~ /manual/i;
+			$epdata->{monograph_type} = "technical_report" if $type =~ /tech/i;
+			$epdata->{monograph_type} = "project_report" if $type =~ /proj/i;
+			$epdata->{monograph_type} = "documentation" if $type =~ /doc/i;
+			$epdata->{monograph_type} = "manual" if $type =~ /manual/i;
 		}
 	}
 
 	# A Editor (Edited Book), Author (Other Types)
-	for ( $ref->author )
+	for ( $input_data->author )
 	{
 		# Author's names should be in Lastname, Firstname format
 		if( /^(.*?),(.*?)(,(.*?))?$/ )
 		{
-			if( $ref_type eq "Edited Book" )
+			if( $input_data_type eq "Edited Book" )
 			{
-				push @{$data->{editors}}, { family => $1, given => $2, lineage => $4 };
+				push @{$epdata->{editors}}, { family => $1, given => $2, lineage => $4 };
 			}
 			else
 			{
-				push @{$data->{creators}}, { family => $1, given => $2, lineage => $4 };
+				push @{$epdata->{creators}}, { family => $1, given => $2, lineage => $4 };
 			}
 		} else {
-			output_warning($ref, "Could not parse author: $_");
+			output_warning($input_data, "Could not parse author: $_");
 		}
 	}
 
 	# B Conference Name, Department (Thesis), Newspaper, Magazine, Series (Book, Edited Book, Report), Book Title (Book Section)
-	if( defined $ref->book )
+	if( defined $input_data->book )
 	{
-		if( $ref_type eq "Conference Paper" || $ref_type eq "Conference Proceedings" )
+		if( $input_data_type eq "Conference Paper" || $input_data_type eq "Conference Proceedings" )
 		{
-			$data->{event_title} = $ref->book;
+			$epdata->{event_title} = $input_data->book;
 		}
-		elsif( $ref_type eq "Thesis" )
+		elsif( $input_data_type eq "Thesis" )
 		{
-			$data->{department} = $ref->book;
+			$epdata->{department} = $input_data->book;
 		}
-		elsif( $ref_type eq "Newspaper Article" || $ref_type eq "Magazine Article" || $ref_type eq "Electronic Article" )
+		elsif( $input_data_type eq "Newspaper Article" || $input_data_type eq "Magazine Article" || $input_data_type eq "Electronic Article" )
 		{
-			$data->{publication} = $ref->book;
+			$epdata->{publication} = $input_data->book;
 		}
-		elsif( $ref_type eq "Book" || $ref_type eq "Edited Book" || $ref_type eq "Report" )
+		elsif( $input_data_type eq "Book" || $input_data_type eq "Edited Book" || $input_data_type eq "Report" )
 		{
-			$data->{series} = $ref->book;
+			$epdata->{series} = $input_data->book;
 		}
-		elsif( $ref_type eq "Book Section" ) 
+		elsif( $input_data_type eq "Book Section" ) 
 		{
-			$data->{book_title} = $ref->book;
+			$epdata->{book_title} = $input_data->book;
 		}
 	}
 
 	# C Conference Location, Country (Patent), City (Other Types)
-	if( defined $ref->city )
+	if( defined $input_data->city )
 	{
-		if( $ref_type eq "Conference Paper" || $ref_type eq "Conference Proceedings" )
+		if( $input_data_type eq "Conference Paper" || $input_data_type eq "Conference Proceedings" )
 		{
-			$data->{event_location} = $ref->city;
+			$epdata->{event_location} = $input_data->city;
 		}
-		elsif( $ref_type eq "Patent" )
+		elsif( $input_data_type eq "Patent" )
 		{
 			# Unsupported
 		}
 		else
 		{
-			$data->{place_of_pub} = $ref->city;
+			$epdata->{place_of_pub} = $input_data->city;
 		}
 	}
 
 	# E Issuing Organisation (Patent), Series Editor (Book, Edited Book, Report), Editor (Other Types)
-	for ( $ref->editor )
+	for ( $input_data->editor )
 	{
-		if( $ref_type eq "Patent" ) {
-			$data->{institution} = $_;
+		if( $input_data_type eq "Patent" ) {
+			$epdata->{institution} = $_;
 		}
 		# Editor's names should be in Lastname, Firstname format
 		elsif( /^(.*?),(.*?)(,(.*?))?$/ )
 		{
-			if( $ref_type eq "Book" || $ref_type eq "Edited Book" || $ref_type eq "Report" )
+			if( $input_data_type eq "Book" || $input_data_type eq "Edited Book" || $input_data_type eq "Report" )
 			{
 				# Unsupported
 			}
 			else
 			{
-				push @{$data->{editors}}, { family => $1, given => $2, lineage => $4 };
+				push @{$epdata->{editors}}, { family => $1, given => $2, lineage => $4 };
 			}
 		} else {
-			output_warning($ref, "Could not parse editor: $_");
+			output_warning($input_data, "Could not parse editor: $_");
 		}
 	}
 
 	# I Institution (Report), University (Thesis), Assignee (Patent), Publisher (Other Types)
-	if( defined $ref->publisher )
+	if( defined $input_data->publisher )
 	{
-		if( $ref_type eq "Report" || $ref_type eq "Thesis" )
+		if( $input_data_type eq "Report" || $input_data_type eq "Thesis" )
 		{
-			$data->{institution} = $ref->publisher;
+			$epdata->{institution} = $input_data->publisher;
 		}
-		elsif( $ref_type eq "Patent" )
+		elsif( $input_data_type eq "Patent" )
 		{
 			# Unsupported
 		}
 		else
 		{
-			$data->{publisher} = $ref->publisher;
+			$epdata->{publisher} = $input_data->publisher;
 		}
 	}
 
 	# N Application Number (Patent), Issue (Other Types)
-	if( defined $ref->number )
+	if( defined $input_data->number )
 	{
-		if( $ref_type eq "Patent" )
+		if( $input_data_type eq "Patent" )
 		{
 			# Unsupported
 		}
 		else
 		{
-			$data->{number} = $ref->number;
+			$epdata->{number} = $input_data->number;
 		}
 	}
 
 	# P Number of Pages (Book, Edited Book, Thesis), Pages (Other Types)
-	if( defined $ref->page )
+	if( defined $input_data->page )
 	{
-		if( $ref_type eq "Book" || $ref_type eq "Edited Book" || $ref_type eq "Thesis" )
+		if( $input_data_type eq "Book" || $input_data_type eq "Edited Book" || $input_data_type eq "Thesis" )
 		{
-			$data->{pages} = $ref->page;
+			$epdata->{pages} = $input_data->page;
 		}
 		else
 		{
-			$data->{pagerange} = $ref->page;
+			$epdata->{pagerange} = $input_data->page;
 		}
 	}
 
 	# S Series (Book Section, Conference Proceedings)
-	if( defined $ref->series )
+	if( defined $input_data->series )
 	{
-		if( $ref_type eq "Book Section" || $ref_type eq "Conference Proceedings" )
+		if( $input_data_type eq "Book Section" || $input_data_type eq "Conference Proceedings" )
 		{
-			$data->{series} = $ref->series;
+			$epdata->{series} = $input_data->series;
 		}
 	}
 
 	# V Patent Version Number, Degree (Thesis), Volume (Other Types) 
-	if( defined $ref->volume )
+	if( defined $input_data->volume )
 	{
-		if( $ref_type eq "Patent" ) 
+		if( $input_data_type eq "Patent" ) 
 		{
 			# Unsupported
 		}
-		elsif( $ref_type eq "Thesis" )
+		elsif( $input_data_type eq "Thesis" )
 		{
 			# Unsupported
 		}
 		else
 		{
-			$data->{volume} = $ref->volume;
+			$epdata->{volume} = $input_data->volume;
 		}
 	}
 
 	# @ ISSN (Journal Article, Newspaper Article, Magazine Article), 
 	#   Patent Number, Report Number, 
 	#   ISBN (Book, Edited Book, Book Section, Conference Proceedings)
-	if( defined $ref->get( "@" ) )
+	if( defined $input_data->get( "@" ) )
 	{
-		if( $ref_type =~ /Article/ )
+		if( $input_data_type =~ /Article/ )
 		{
-			$data->{issn} = $ref->get( "@" );
+			$epdata->{issn} = $input_data->get( "@" );
 		}
-		elsif( $ref_type eq "Patent" || $ref_type eq "Report" )
+		elsif( $input_data_type eq "Patent" || $input_data_type eq "Report" )
 		{
-			$data->{id_number} = $ref->get( "@" );
+			$epdata->{id_number} = $input_data->get( "@" );
 		}
-		elsif( $ref_type =~ /Book/ || $ref_type eq "Conference Proceedings" )
+		elsif( $input_data_type =~ /Book/ || $input_data_type eq "Conference Proceedings" )
 		{
-			$data->{isbn} = $ref->get( "@" );
+			$epdata->{isbn} = $input_data->get( "@" );
 		}
 	}
 
-	return $data;
+	return $epdata;
 }
 
 1;
