@@ -2151,9 +2151,14 @@ sub do
 	{
 		$sql = &{$adjust_fn}( $sql );
 	}
+	my( $secs, $micro );
 	if( $self->{debug} )
 	{
 		$self->{session}->get_repository->log( "Database execute debug: $sql" );
+	}
+	if( $self->{timer} )
+	{
+		($secs,$micro) = gettimeofday();
 	}
 	my $result = $self->{dbh}->do( $sql );
 	if( !$result )
@@ -2179,6 +2184,12 @@ sub do
 		}
 		$self->{session}->get_repository->log( "Giving up after 10 tries" );
 		return undef;
+	}
+	if( $self->{timer} )
+	{
+		my($secs2,$micro2) = gettimeofday();
+		my $s = ($secs2-$secs)+($micro2-$micro)/1000000;
+		$self->{session}->get_repository->log( "$s : $sql" );
 	}
 
 	return $result;
@@ -2308,6 +2319,26 @@ sub exists
 }
 
 
+
+######################################################################
+=pod
+
+=item $db->set_timer( $boolean )
+
+Set the detailed timing option.
+
+=cut
+######################################################################
+
+sub set_timer
+{
+	my( $self, $boolean ) = @_;
+
+	$self->{timer} = $boolean;
+	eval 'use Time::HiRes qw( gettimeofday );';
+
+	if( $@ ne "" ) { EPrints::abort $@; }
+}
 
 ######################################################################
 =pod
