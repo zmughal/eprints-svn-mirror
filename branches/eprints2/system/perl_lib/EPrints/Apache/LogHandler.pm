@@ -96,12 +96,14 @@ sub handler
 	# Open the GeoIP databases once on the first request
 	unless( $GEOIP )
 	{
-		if( defined(my $conf = $repository->get_conf( "geoip" )) )
+		my $conf = $repository->get_conf( "geoip" );
+
+		unless( defined $conf )
 		{
-			geoip_open( $conf );
-		} else {
 			EPrints::abort( "geoip not configured in SystemSettings" );
 		}
+
+		geoip_open( $conf );
 		$GEOIP = 1;
 	}
 
@@ -109,63 +111,68 @@ sub handler
 	my $ip = $c->remote_ip;
 	my $uri = URI->new($r->uri);
 
-	my $req = 'urn:ip:' . $ip;
-	my $rft = $r->uri;
-	my $doc = undef;
-	my $rfr = $r->headers_in->{ "Referer" };
-	my $svc = '';
-	my $uagent = $r->headers_in->{ "User-Agent" };
-	my $cntry = $GEOIP_DB ? $GEOIP_DB->country_code_by_addr( $ip ) : undef;
-	my $org = $GEOORG_DB ? $GEOORG_DB->org_by_name( $ip ) : undef;
+	my $access = {};
+	$access->{requester_id} = 'urn:ip:' . $ip;
+	$access->{referent_id} = $r->uri;
+	$access->{referent_docid} = undef;
+	$access->{referring_entity_id} = $r->headers_in->{ "Referer" };
+	$access->{service_type_id} = '';
+	$access->{requester_user_agent} = $r->headers_in->{ "User-Agent" };
+	if( $GEOIP_DB )
+	{
+		$access->{country} = $GEOIP_DB->country_code_by_addr( $ip );
+	}
+	if( $GEOORG_DB )
+	{
+		$access->{institution} = $GEOORG_DB->org_by_name( $ip );
+	}
 
 	# External full-text request
 	if( $r->filename and $r->filename =~ /redirect$/ )
 	{
 	}
-	# Request for an abstract page or full-text
-	elsif( defined(my $eprintid = uri_to_eprintid( $session, $uri )) )
+	else
 	{
-		$rft = $eprintid;
-		if( defined(my $docid = uri_to_docid( $session, $eprintid, $uri )) )
+		my $eprintid = uri_to_eprintid( $session, $uri );
+		unless( defined $eprintid )
 		{
-			$doc = $docid;
-			$svc = "?fulltext=yes";
+			# Not interested in this URL.
+			return DECLINED;
+		}
+
+		# Request for an abstract page or full-text
+		$access->{referent_id} = $eprintid;
+
+		my $docid = uri_to_docid( $session, $eprintid, $uri );
+
+		if( defined $docid )
+		{
+			$access->{referent_docid} = $docid;
+			$access->{service_type_id} = "?fulltext=yes";
 		}
 		else
 		{
-			$svc = "?abstract=yes";
+			$access->{service_type_id} = "?abstract=yes";
 		}
 	}
-	# Otherwise, ignore the request
-	else
+
+	if( !$access->{referring_entity_id} or $access->{referring_entity_id} !~ /^https?:/ )
 	{
-		return DECLINED;
+			$access->{referring_entity_id} = '';
 	}
-	
+
+
 	# Check for an internal referrer
-	if( !$rfr or $rfr !~ /^https?:/ )
+	my $eprintid = uri_to_eprintid( 
+				$session, 
+				URI->new($access->{referring_entity_id}) );
+
+	if( defined $eprintid ) 
 	{
-			$rfr = '';
-	}
-	elsif( defined(my $eprintid = uri_to_eprintid( $session, URI->new($rfr) )) )
-	{
-		$rfr = $eprintid;
+		$access->{referring_entity_id} = $eprintid;
 	}
 
-	my $data = EPrints::DataObj::Access->get_defaults(
-		$session,
-		{
-			requester_id => $req,
-			requester_user_agent => $uagent,
-			requester_country => $cntry,
-			requester_institution => $org,
-			referring_entity_id => $rfr,
-			service_type_id => $svc,
-			referent_id => $rft,
-			referent_docid => $doc,
-		});
-
-	$session->get_repository->get_dataset( "access" )->create_object( $session, $data );
+	$session->get_repository->get_dataset( "access" )->create_object( $session, $access );
 	
 	return OK;
 }

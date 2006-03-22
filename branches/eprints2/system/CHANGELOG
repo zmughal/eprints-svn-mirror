@@ -3599,3 +3599,5 @@ PACKAGE: 2.2.99.2
  * Disabled the privilages dataset
  * Added an under construction flag to documents so that they don't cause an
     eprint to be re-commited when they are constructed. 
+ * Rearranged code in LogHandler for readability
+
