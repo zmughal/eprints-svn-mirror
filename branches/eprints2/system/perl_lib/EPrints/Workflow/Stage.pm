@@ -1,6 +1,5 @@
 package EPrints::Workflow::Stage;
 
-use EPrints::Plugin;
 sub new
 {
 	my( $class, $stage, $repository ) = @_;
