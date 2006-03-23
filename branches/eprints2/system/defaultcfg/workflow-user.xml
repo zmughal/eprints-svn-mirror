@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wf:workflow xmlns="http://www.w3.org/1999/xhtml" xmlns:wf="http://eprints.org/ep2/workflow" xmlns:ep="http://eprints.org/ep2/">
+  <wf:flow>
+    <wf:stage ref="default"/>
+  </wf:flow>
+  
+  <wf:stage name="default">
+    <wf:component type="component/default">
+      <wf:value name="field">password</wf:value>
+    </wf:component>
+    <wf:component type="component/default">
+      <wf:value name="staffonly">yes</wf:value>
+      <wf:value name="field">usertype</wf:value>
+    </wf:component>
+    <wf:component type="component/default">
+      <wf:value name="staffonly">yes</wf:value>
+      <wf:value name="field">username</wf:value>
+    </wf:component>
+    <wf:component type="component/default">
+      <wf:value name="staffonly">yes</wf:value>
+      <wf:value name="field">email</wf:value>
+    </wf:component>
+    <wf:component type="component/default">
+      <wf:value name="field">hideemail</wf:value>
+    </wf:component>
+    <wf:component type="component/default">
+      <wf:value name="required">yes</wf:value>
+      <wf:value name="field">name</wf:value>
+    </wf:component>
+    <wf:component type="component/default">
+      <wf:value name="field">dept</wf:value>
+    </wf:component>
+    <wf:component type="component/default">
+      <wf:value name="field">org</wf:value>
+    </wf:component>
+    <wf:component type="component/default">
+      <wf:value name="field">address</wf:value>
+    </wf:component>
+    <wf:component type="component/default">
+      <wf:value name="field">country</wf:value>
+    </wf:component>
+    <wf:component type="component/default">
+      <wf:value name="field">os</wf:value>
+    </wf:component>
+    <wf:component type="component/default">
+      <wf:value name="field">url</wf:value>
+    </wf:component>
+
+    <ep:ifmatch name="type" value="editor admin">
+      <wf:component type="component/default">
+        <wf:value name="staffonly">yes</wf:value>
+        <wf:value name="field">editperms</wf:value>
+      </wf:component>
+      <wf:component type="component/default">
+        <wf:value name="required">yes</wf:value>
+        <wf:value name="field">frequency</wf:value>
+      </wf:component>
+      <wf:component type="component/default">
+        <wf:value name="required">yes</wf:value>
+        <wf:value name="field">mailempty</wf:value>
+      </wf:component>
+    </ep:ifmatch>
+  </wf:stage>
+</wf:workflow>
