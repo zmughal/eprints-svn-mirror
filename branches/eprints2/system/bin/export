@@ -22,7 +22,7 @@ B<export> I<repository_id> [B<options>] I<dataset> [I<plugin>] [I<objectid>] [I<
 
 =head1 DESCRIPTION
 
-This command outputs a dataset in the selected format. The formats available depend on what Output plugins have been installed.
+This command outputs a dataset in the selected format. The formats available depend on what Export plugins have been installed.
 
 Some plugins only operate on lists (e.g. RSS), others only operate on single objects only. Some plugins act slightly differently in single-item only mode. For example, outputing a list of eprints as XML gives a number of <eprint> elements in an outer <eprints> element. 
 
@@ -42,7 +42,7 @@ The name of the dataset to export, such as "archive", "subject" or "user".
 
 =item I<plugin>
 
-The id of the output plugin to use. This should not include the leading "Output::". Examples: BibTeX, XML.
+The id of the output plugin to use. This should not include the leading "Export::". Examples: BibTeX, XML.
 
 If this is ommited or an invalid plugin is requested, then 'export' will list all plugins compatible with the dataset and exit.
 
@@ -148,10 +148,10 @@ if( $single && (scalar @objectids) != 1 )
 if( !defined $opluginid )
 {
 	my @list_plugins = $session->plugin_list( 
-					type=>"Output",
+					type=>"Export",
 					can_accept=>"list/".$ds->confid );
 	my @dataobj_plugins = $session->plugin_list( 
-					type=>"Output",
+					type=>"Export",
 					can_accept=>"dataobj/".$ds->confid );
 	my %p = ();
 	my %l = ();
@@ -182,7 +182,7 @@ if( !defined $opluginid )
 	exit;
 }
 
-my $pluginid = "Output::".$opluginid;
+my $pluginid = "Export::".$opluginid;
 my $plugin = $session->plugin( $pluginid );
 
 if( !defined $plugin )

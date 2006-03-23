@@ -435,7 +435,7 @@ sub view_page
 
 	@list = ();
 	my @plugins = $session->plugin_list( 
-					type=>"Output",
+					type=>"Export",
 					can_accept=>"dataobj/eprint", 
 					is_visible=>"staff" );
 	foreach my $plugin_id ( @plugins ) {

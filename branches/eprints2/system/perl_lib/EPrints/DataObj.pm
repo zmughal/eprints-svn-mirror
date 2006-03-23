@@ -160,6 +160,14 @@ sub create_from_data
 
 	$data = EPrints::Utils::clone( $data );
 
+	# If there is a field which indicates the virtual dataset,
+	# set that now, so it's visible to get_defaults.
+	my $ds_id_field = $dataset->get_dataset_id_field;
+	if( defined $ds_id_field )
+	{
+		$data->{$ds_id_field} = $dataset->id;
+	}
+
 	# get defaults modifies the hash so we must copy it.
 	my $defaults = {};
 	foreach( keys %{$data} ) { $defaults->{$_} = $data->{$_}; }
@@ -175,12 +183,6 @@ sub create_from_data
 	{
 		next if defined $data->{$k};
 		$data->{$k} = $defaults->{$k};
-	}
-
-	my $ds_id_field = $dataset->get_dataset_id_field;
-	if( defined $ds_id_field )
-	{
-		$data->{$ds_id_field} = $dataset->id;
 	}
 
 	$session->get_database->add_record( $dataset, $data );
@@ -1001,7 +1003,7 @@ sub export
 {
 	my( $self, $out_plugin_id, %params ) = @_;
 
-	my $plugin_id = "Output::".$out_plugin_id;
+	my $plugin_id = "Export::".$out_plugin_id;
 	my $plugin = $self->{session}->plugin( $plugin_id );
 
 	unless( defined $plugin )

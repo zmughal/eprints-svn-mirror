@@ -1,4 +1,4 @@
-package EPrints::Plugin::Output::DC;
+package EPrints::Plugin::Export::DC;
 
 # eprint needs magic documents field
 
@@ -6,9 +6,9 @@ package EPrints::Plugin::Output::DC;
 
 use Unicode::String qw( utf8 );
 
-use EPrints::Plugin::Output;
+use EPrints::Plugin::Export;
 
-@ISA = ( "EPrints::Plugin::Output" );
+@ISA = ( "EPrints::Plugin::Export" );
 
 use strict;
 

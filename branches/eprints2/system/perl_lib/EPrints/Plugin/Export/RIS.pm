@@ -1,8 +1,8 @@
-package EPrints::Plugin::Output::RIS;
+package EPrints::Plugin::Export::RIS;
 
-use EPrints::Plugin::Output;
+use EPrints::Plugin::Export;
 
-@ISA = ( "EPrints::Plugin::Output" );
+@ISA = ( "EPrints::Plugin::Export" );
 
 use Unicode::String;
 

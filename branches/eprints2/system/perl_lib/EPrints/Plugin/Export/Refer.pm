@@ -1,8 +1,8 @@
-package EPrints::Plugin::Output::Refer;
+package EPrints::Plugin::Export::Refer;
 
-use EPrints::Plugin::Output;
+use EPrints::Plugin::Export;
 
-@ISA = ( "EPrints::Plugin::Output" );
+@ISA = ( "EPrints::Plugin::Export" );
 
 use Unicode::String qw(latin1);
 

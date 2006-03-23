@@ -1,10 +1,10 @@
-package EPrints::Plugin::Output;
+package EPrints::Plugin::Export;
 
 use strict;
 
 our @ISA = qw/ EPrints::Plugin /;
 
-$EPrints::Plugin::Output::ABSTRACT = 1;
+$EPrints::Plugin::Export::ABSTRACT = 1;
 
 sub new
 {
@@ -147,7 +147,7 @@ sub dataobj_export_url
 
 	my $pluginid = $plugin->{id};
 
-	unless( $pluginid =~ m#^Output::(.*)$# )
+	unless( $pluginid =~ m#^Export::(.*)$# )
 	{
 		$plugin->{session}->get_repository->log( "Bad pluginid in dataobj_export_url: ".$pluginid );
 		return undef;

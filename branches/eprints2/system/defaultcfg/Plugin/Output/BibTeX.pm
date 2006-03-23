@@ -1,8 +1,8 @@
-package __PLUGIN__::Output::BibTeX;
+package __PLUGIN__::Export::BibTeX;
 
-use EPrints::Plugin::Output::BibTeX;
+use EPrints::Plugin::Export::BibTeX;
 
-@ISA = ( 'EPrints::Plugin::Output::BibTeX' );
+@ISA = ( 'EPrints::Plugin::Export::BibTeX' );
 
 use strict;
 

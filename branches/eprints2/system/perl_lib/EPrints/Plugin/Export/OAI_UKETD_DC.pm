@@ -1,4 +1,4 @@
-package EPrints::Plugin::Output::OAI_UKETD_DC;
+package EPrints::Plugin::Export::OAI_UKETD_DC;
 
 ######################################################################
 # Copyright (C) British Library Board, St. Pancras, UK
@@ -24,9 +24,9 @@ package EPrints::Plugin::Output::OAI_UKETD_DC;
 
 use Unicode::String qw( utf8 );
 
-use EPrints::Plugin::Output;
+use EPrints::Plugin::Export;
 
-@ISA = ( "EPrints::Plugin::Output" );
+@ISA = ( "EPrints::Plugin::Export" );
 
 use strict;
 

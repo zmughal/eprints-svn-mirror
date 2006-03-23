@@ -70,11 +70,11 @@ if( !defined $format || $format eq "" ) {
 }
 
 my @plugins = $session->plugin_list( 
-				type=>"Output", 
+				type=>"Export", 
 				can_accept=>"dataobj/eprint", 
 				is_visible=>"all" );
 my $ok = 0;
-foreach( @plugins ) { if( $_ eq "Output::$format" ) { $ok = 1; last; } }
+foreach( @plugins ) { if( $_ eq "Export::$format" ) { $ok = 1; last; } }
 unless( $ok ) {
 	error( $session, $session->html_phrase( "cgi/export:not_available",
 				format => $session->make_text( $format ) ) );
@@ -82,7 +82,7 @@ unless( $ok ) {
 	exit;
 }
 
-my $plugin = $session->plugin( "Output::$format" );
+my $plugin = $session->plugin( "Export::$format" );
 $session->send_http_header( "content_type"=>$plugin->param("mimetype") );
 print $eprint->export( $format );	
 	

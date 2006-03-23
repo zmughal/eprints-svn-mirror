@@ -111,7 +111,7 @@ sub get_name
 
 =item $name = $plugin->get_type
 
-Return the type of this plugin. eg. Output
+Return the type of this plugin. eg. Export
 
 =cut
 ######################################################################
@@ -285,14 +285,13 @@ sub load_dir
 		}
 		next unless( $fn =~ s/\.pm// );
 		my $class = $baseclass."::".join("::",@prefix,$fn );
+		eval "use $class; 1";
 
-		my $return = eval "use $class; 1";
-		if( !$return )
+		if( $@ ne "" )
 		{
 			print STDERR "Problem loading $class:\n$@\n";
 			next;
 		}
-
 		no strict "refs";
 		my $absvar = $class.'::ABSTRACT';
 		my $abstract = ${$absvar};
@@ -305,7 +304,6 @@ sub load_dir
 		if( !defined $pluginid )
 		{
 #			print STDERR "Warning: plugin $class has no ID set.\n";
-print "$class: $@\n";
 			next;
 		}
 		$reg->{$pluginid} = $class;

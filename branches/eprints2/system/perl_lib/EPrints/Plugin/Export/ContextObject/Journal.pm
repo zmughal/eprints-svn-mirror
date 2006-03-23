@@ -1,10 +1,10 @@
-package EPrints::Plugin::Output::ContextObject::Journal;
+package EPrints::Plugin::Export::ContextObject::Journal;
 
 use Unicode::String qw( utf8 );
 
-use EPrints::Plugin::Output;
+use EPrints::Plugin::Export;
 
-@ISA = ( "EPrints::Plugin::Output" );
+@ISA = ( "EPrints::Plugin::Export" );
 
 use strict;
 
@@ -12,6 +12,8 @@ use strict;
 # any broken characters are removed. There should
 # not be any broken characters, but better to be
 # sure.
+
+# map eprint type to genre
 
 our %MAPPING = qw(
 	title	atitle
@@ -74,13 +76,14 @@ sub xml_dataobj
 
 	if( $dataobj->is_set( "type" ) )
 	{
-		my $type = $dataobj->get_value( "type" );
-		if( defined($type = $TYPE_MAPPING{$type}) )
+		my $genre = $TYPE_MAPPING{$dataobj->get_value( "type" )};
+
+		if( defined $genre )
 		{
 			$jnl->appendChild(
 				$session->make_element( "jnl:genre" )
 			)->appendChild(
-				$session->make_text( $type )
+				$session->make_text( $genre )
 			);
 		}
 	}
@@ -90,7 +93,7 @@ sub xml_dataobj
 		my $auths = $session->make_element( "jnl:authors" );
 		$jnl->appendChild( $auths );
 
-		foreach my $author ( map { $_->{ "main" } } @{$dataobj->get_value( "creators" )} )
+		foreach my $author ( @{$dataobj->get_value( "creators", 1 )} )
 		{
 			my $auth = $auths->appendChild( $session->make_element( "jnl:author" ) );
 			
@@ -99,6 +102,7 @@ sub xml_dataobj
 			)->appendChild(
 				$session->make_text( $author->{ "family" } )
 			);
+
 			$auth->appendChild(
 				$session->make_element( "jnl:aufirst" )
 			)->appendChild(

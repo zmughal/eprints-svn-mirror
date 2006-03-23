@@ -1,12 +1,12 @@
-package EPrints::Plugin::Output::RSS;
+package EPrints::Plugin::Export::RSS;
 
-use EPrints::Plugin::Output;
+use EPrints::Plugin::Export;
 
-@ISA = ( "EPrints::Plugin::Output" );
+@ISA = ( "EPrints::Plugin::Export" );
 
 use Unicode::String qw(latin1);
 
-# $EPrints::Plugin::Output::BibTeX::ABSTRACT = 1;
+# $EPrints::Plugin::Export::BibTeX::ABSTRACT = 1;
 
 use strict;
 

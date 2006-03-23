@@ -694,11 +694,11 @@ sub _map_oai_plugins
 
 	foreach my $plugin_id ( keys %{$plugin_list} )
 	{
-		my $full_plugin_id = "Output::".$plugin_list->{$plugin_id};
+		my $full_plugin_id = "Export::".$plugin_list->{$plugin_id};
 		my $class = $self->plugin_class( $full_plugin_id );
 		if( !defined $class )
 		{
-			$self->log( "OAI Output plugin: $plugin_id not found." );
+			$self->log( "OAI Export plugin: $plugin_id not found." );
 			next;
 		}
 		my $plugin = $class->new();

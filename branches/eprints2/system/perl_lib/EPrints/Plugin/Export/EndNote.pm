@@ -6,12 +6,12 @@ See L<EPrints::Plugin::Import::EndNote>
 
 =cut
 
-package EPrints::Plugin::Output::EndNote;
+package EPrints::Plugin::Export::EndNote;
 
-use EPrints::Plugin::Output;
+use EPrints::Plugin::Export;
 use EPrints;
 
-@ISA = ( "EPrints::Plugin::Output" );
+@ISA = ( "EPrints::Plugin::Export" );
 
 use strict;
 

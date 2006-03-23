@@ -1,10 +1,10 @@
-package EPrints::Plugin::Output::XMLFiles;
+package EPrints::Plugin::Export::XMLFiles;
 
 use Unicode::String qw( utf8 );
 
-use EPrints::Plugin::Output;
+use EPrints::Plugin::Export;
 
-@ISA = ( "EPrints::Plugin::Output" );
+@ISA = ( "EPrints::Plugin::Export" );
 
 use strict;
 

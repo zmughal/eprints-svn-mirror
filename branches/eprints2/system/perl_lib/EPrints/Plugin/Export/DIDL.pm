@@ -1,4 +1,4 @@
-package EPrints::Plugin::Output::DIDL;
+package EPrints::Plugin::Export::DIDL;
 
 # eprint needs magic documents field
 
@@ -6,9 +6,9 @@ package EPrints::Plugin::Output::DIDL;
 
 use Unicode::String qw( utf8 );
 
-use EPrints::Plugin::Output;
+use EPrints::Plugin::Export;
 
-@ISA = ( "EPrints::Plugin::Output" );
+@ISA = ( "EPrints::Plugin::Export" );
 
 use strict;
 
@@ -67,7 +67,7 @@ sub xml_dataobj
 
 	my $d2 = $plugin->{session}->make_element( "didl:Descriptior" );
 	my $s2 = $plugin->{session}->make_element( "didl:Statement", mimeType=>"application/xml; charset=utf-8" );
-	my $dc_plugin = $plugin->{session}->plugin( "Output::OAI_DC" );
+	my $dc_plugin = $plugin->{session}->plugin( "Export::OAI_DC" );
 	$s2->appendChild( $dc_plugin->xml_dataobj( $eprint ) ); 
 	$d2->appendChild( $s2 );
 	$item->appendChild( $d2 );

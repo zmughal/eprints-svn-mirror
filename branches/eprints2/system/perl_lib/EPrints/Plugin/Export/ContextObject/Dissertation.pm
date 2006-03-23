@@ -1,10 +1,10 @@
-package EPrints::Plugin::Output::ContextObject::Dissertation;
+package EPrints::Plugin::Export::ContextObject::Dissertation;
 
 use Unicode::String qw( utf8 );
 
-use EPrints::Plugin::Output;
+use EPrints::Plugin::Export;
 
-@ISA = ( "EPrints::Plugin::Output" );
+@ISA = ( "EPrints::Plugin::Export" );
 
 use strict;
 
@@ -75,17 +75,17 @@ sub xml_dataobj
 		my $auths = $session->make_element( "dis:authors" );
 		$jnl->appendChild( $auths );
 
-		foreach my $author ( map { $_->{ "main" } } @{$dataobj->get_value( "creators" )} )
+		foreach my $author ( @{$dataobj->get_value( "creators", 1 )} )
 		{
-			my $auth = $auths->appendChild(
-				$session->make_element( "dis:author" )
-			);
+			my $auth = $session->make_element( "dis:author" );
+			$auths->appendChild( $auth );
 			
 			$auth->appendChild(
 				$session->make_element( "dis:aulast" )
 			)->appendChild(
 				$session->make_text( $author->{ "family" } )
 			);
+
 			$auth->appendChild(
 				$session->make_element( "dis:aufirst" )
 			)->appendChild(

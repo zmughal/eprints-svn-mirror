@@ -337,6 +337,26 @@ sub eprint_render
 			$eprint->render_version_thread( $commentary_field ) );
 	}
 
+	
+	# Experimental SFX Link
+	my $url ="http://demo.exlibrisgroup.com:9003/demo?";
+	#my $url = "http://aire.cab.unipd.it:9003/unipr?";
+	$url .= "title=".$eprint->get_value( "title" );
+	$url .= "&";
+	my $authors = $eprint->get_value( "creators" );
+	my $first_author = $authors->[0];
+	$url .= "aulast=".$first_author->{main}->{family};
+	$url .= "&";
+	$url .= "aufirst=".$first_author->{main}->{family};
+	$url .= "&";
+	$url .= "date=".$eprint->get_value( "date_issue" );
+	my $sfx_block = $session->make_element( "p" );
+	$page->appendChild( $sfx_block );
+	my $sfx_link = $session->render_link( $url );
+	$sfx_block->appendChild( $sfx_link );
+	$sfx_link->appendChild( $session->make_text( "SFX" ) );
+
+
 	# Add a link to the edit-page for this record. Handy for staff.
 	my $edit_para = $session->make_element( "p", align=>"right" );
 	$edit_para->appendChild( $session->html_phrase( 
@@ -352,7 +372,7 @@ sub eprint_render
 		"link",
 		rel => "schema.DC",
 		href => "http://purl.org/DC/elements/1.0/" ) );
-	my $dcplugin = $session->plugin( "Output::DC" );
+	my $dcplugin = $session->plugin( "Export::DC" );
 	my $dc = $dcplugin->convert_dataobj( $eprint );
 	foreach( @{$dc} )
 	{

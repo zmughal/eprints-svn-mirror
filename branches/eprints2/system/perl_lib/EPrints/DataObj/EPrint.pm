@@ -347,6 +347,12 @@ sub get_defaults
 	$data->{eprintid} = $new_id;
 	$data->{dir} = $dir;
 	$data->{rev_number} = 1;
+	$data->{lastmod} = EPrints::Utils::get_datetimestamp( time );
+	$data->{status_changed} = $data->{lastmod};
+	if( $data->{eprint_status} eq "archive" )
+	{
+		$data->{datestamp} = $data->{lastmod};
+	}
 
 	$session->get_repository->call(
 		"set_eprint_defaults",
@@ -2298,7 +2304,7 @@ sub render_export_links
 	my $id = $self->get_value( "eprintid" );
 	my $ul = $self->{session}->make_element( "ul" );
 	my @plugins = $self->{session}->plugin_list( 
-					type=>"Output",
+					type=>"Export",
 					can_accept=>"dataobj/eprint", 
 					is_visible=>$vis );
 	foreach my $plugin_id ( @plugins ) {

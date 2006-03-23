@@ -363,7 +363,7 @@ Sponsor (Conference Proceedings), Translator (Other Types)
 
 =head1 SEE ALSO
 
-L<Text::Refer>, L<XML::Writer>, L<EPrints::Plugin::Output::EndNote>
+L<Text::Refer>, L<XML::Writer>, L<EPrints::Plugin::Export::EndNote>
 
 =cut
 

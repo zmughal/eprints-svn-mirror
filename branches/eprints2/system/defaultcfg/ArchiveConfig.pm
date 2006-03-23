@@ -390,8 +390,9 @@ $c->{vlit}->{copyright_url} = $c->{base_url}."/vlit.html";
 #
 ######################################################################
 
-# set this to 1 to enable log handling (and run generate_apacheconf)
-$c->{loghandler}->{enable} = 0;
+# set this to 1 to enable log handling
+# (then run generate_apacheconf and restart apache)
+$c->{loghandler}->{enable} = 1;
 
 
 ######################################################################

@@ -1,10 +1,10 @@
-package EPrints::Plugin::Output::ContextObject;
+package EPrints::Plugin::Export::ContextObject;
 
 use Unicode::String qw( utf8 );
 
-use EPrints::Plugin::Output;
+use EPrints::Plugin::Export;
 
-@ISA = ( "EPrints::Plugin::Output" );
+@ISA = ( "EPrints::Plugin::Export" );
 
 use strict;
 
@@ -158,21 +158,21 @@ sub xml_eprint
 	{
 		$rft->appendChild( $plugin->_metadata_by_val( $eprint, %opts,
 			schema => "info:ofi/fmt:xml:xsd:journal",
-			plugin => "Output::ContextObject::Journal"
+			plugin => "Export::ContextObject::Journal"
 		));
 	}
 	elsif( $etype eq "thesis" )
 	{
 		$rft->appendChild( $plugin->_metadata_by_val( $eprint, %opts,
 			schema => "info:ofi/fmt:xml:xsd:journal",
-			plugin => "Output::ContextObject::Dissertation"
+			plugin => "Export::ContextObject::Dissertation"
 		));
 	}
 	else
 	{
 		$rft->appendChild( $plugin->_metadata_by_val( $eprint, %opts,
 			schema => "info:ofi/fmt:xml:xsd:oai_dc",
-			plugin => "Output::OAI_DC"
+			plugin => "Export::OAI_DC"
 		));
 	}
 

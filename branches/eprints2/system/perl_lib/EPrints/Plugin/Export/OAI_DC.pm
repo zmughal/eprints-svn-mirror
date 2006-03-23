@@ -1,4 +1,4 @@
-package EPrints::Plugin::Output::OAI_DC;
+package EPrints::Plugin::Export::OAI_DC;
 
 # eprint needs magic documents field
 
@@ -6,9 +6,9 @@ package EPrints::Plugin::Output::OAI_DC;
 
 use Unicode::String qw( utf8 );
 
-use EPrints::Plugin::Output;
+use EPrints::Plugin::Export;
 
-@ISA = ( "EPrints::Plugin::Output" );
+@ISA = ( "EPrints::Plugin::Export" );
 
 use strict;
 
@@ -50,7 +50,7 @@ sub xml_dataobj
 {
 	my( $plugin, $dataobj ) = @_;
 
-	my $main_dc_plugin = $plugin->{session}->plugin( "Output::DC" );
+	my $main_dc_plugin = $plugin->{session}->plugin( "Export::DC" );
 	
 	my $data = $main_dc_plugin->convert_dataobj( $dataobj );
 
