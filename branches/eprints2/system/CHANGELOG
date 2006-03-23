@@ -3604,3 +3604,10 @@ PACKAGE: 2.2.99.2
     does a get instead.
  * Added microsecond timer to SQL do method (for debugging).
  * Added script name/user name to history dataset
+
+2006-03-23 cjg
+
+ * Under construction flag for dataobjects. Used to avoid generating logs and
+    static pages twice.
+ * Renamed Plugin::Input to Plugin::Import
+

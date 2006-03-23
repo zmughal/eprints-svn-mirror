@@ -1,10 +1,10 @@
-package EPrints::Plugin::Input;
+package EPrints::Plugin::Import;
 
 use strict;
 
 our @ISA = qw/ EPrints::Plugin /;
 
-$EPrints::Plugin::Input::ABSTRACT = 1;
+$EPrints::Plugin::Import::ABSTRACT = 1;
 
 sub new
 {

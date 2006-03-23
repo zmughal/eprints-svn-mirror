@@ -2,7 +2,7 @@
 
 =head1 FILE FORMAT
 
-See L<EPrints::Plugin::Input::EndNote>
+See L<EPrints::Plugin::Import::EndNote>
 
 =cut
 

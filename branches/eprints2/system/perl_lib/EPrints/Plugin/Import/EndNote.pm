@@ -367,11 +367,11 @@ L<Text::Refer>, L<XML::Writer>, L<EPrints::Plugin::Output::EndNote>
 
 =cut
 
-package EPrints::Plugin::Input::EndNote;
+package EPrints::Plugin::Import::EndNote;
 
 use strict;
 
-our @ISA = qw/ EPrints::Plugin::Input /;
+our @ISA = qw/ EPrints::Plugin::Import /;
 
 sub new
 {

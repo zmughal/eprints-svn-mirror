@@ -38,7 +38,7 @@ The name of the dataset to import into, such as "archive", "subject" or "user".
 
 =item I<plugin>
 
-The id of the input plugin to use. This should not include the leading "Input::". Examples: BibTeX, XML.
+The id of the input plugin to use. This should not include the leading "Import::". Examples: BibTeX, XML.
 
 If this is ommited or an invalid plugin is requested, then 'import' will list all plugins compatible with the dataset and exit.
 
@@ -153,10 +153,10 @@ if( !defined $ds )
 if( !defined $ipluginid )
 {
 	my @list_plugins = $session->plugin_list( 
-					type=>"Input",
+					type=>"Import",
 					can_produce=>"list/".$ds->confid );
 	my @dataobj_plugins = $session->plugin_list( 
-					type=>"Input",
+					type=>"Import",
 					can_produce=>"dataobj/".$ds->confid );
 	my %p = ();
 	my %l = ();
@@ -187,7 +187,7 @@ if( !defined $ipluginid )
 	exit;
 }
 
-my $pluginid = "Input::".$ipluginid;
+my $pluginid = "Import::".$ipluginid;
 my $plugin = $session->plugin( $pluginid, parse_only=>$parse_only );
 
 if( !defined $plugin )

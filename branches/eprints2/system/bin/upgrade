@@ -418,25 +418,11 @@ if( $dbversion eq "2.3" )
 	my $sql;
 	print <<END;
 ======================================================================
-About to upgrade tables from 2.3 to 2.3.99.3
+About to upgrade tables from 2.3 to 3.a.1
 
 This will:
 
- * Change datestamp to a datetime (was a date)
- * Add a new datetime called "first live" with
-    the default value taken from datestamp.
- * Rename all the users_ tables to user_
- * Erase the old index tables and create new
-    ones.
- * Add a new table: indexqueue
- * Insert a new column next to every date field
-    to store the resolution.
- * Insert a "rev_number" field into all dataobj's
-    which will be used to store what revision the
-    record is.
- * Add a field to "document" called "license".
- * Add a field to the dataset "eprint" called "date_embargo".
- * Add two permissions tables: user_permisssions and user_groups
+ * Do some stuff.. 
 
 END
 	
@@ -694,8 +680,8 @@ $db->set_debug(1);
 	}
 	else
 	{
-		print "\n2.3 -> 2.3.99.3 done!\n";
-		$dbversion = "2.3.99.3";
+		print "\n2.3 -> 3.a.1 done!\n";
+		$dbversion = "3.a.1";
 		$db->set_version( $dbversion );
 	}
 }

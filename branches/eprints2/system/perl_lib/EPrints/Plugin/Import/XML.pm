@@ -1,10 +1,10 @@
-package EPrints::Plugin::Input::XML;
+package EPrints::Plugin::Import::XML;
 
 use strict;
 
-use EPrints::Plugin::Input::DefaultXML;
+use EPrints::Plugin::Import::DefaultXML;
 
-our @ISA = qw/ EPrints::Plugin::Input::DefaultXML /;
+our @ISA = qw/ EPrints::Plugin::Import::DefaultXML /;
 
 sub new
 {

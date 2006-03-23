@@ -1,8 +1,8 @@
-package EPrints::Plugin::Input::DefaultXML;
+package EPrints::Plugin::Import::DefaultXML;
 
 use strict;
 
-our @ISA = qw/ EPrints::Plugin::Input /;
+our @ISA = qw/ EPrints::Plugin::Import /;
 
 
 # This reads in all the second level XML elements and passes them
@@ -14,7 +14,7 @@ use XML::Parser;
 # a single record.
 
 
-$EPrints::Plugin::Input::ABSTRACT = 1;
+$EPrints::Plugin::Import::ABSTRACT = 1;
 
 sub new
 {
