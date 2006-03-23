@@ -241,6 +241,29 @@ sub remove
 
 }
 
+# $dataobj->set_under_construction( $boolean )
+#
+# Set a flag to indicate this object is being constructed and 
+# any house keeping will be handled by the method constructing it
+# so don't do it elsewhere
+
+sub set_under_construction
+{
+	my( $self, $boolean ) = @_;
+
+	$self->{under_construction} = $boolean;
+}
+
+# $boolean = $dataobj->under_construction
+# 
+# True if this object is part way through being constructed.
+
+sub under_construction
+{
+	my( $self ) = @_;
+
+	return $self->{under_construction};
+}
 
 ######################################################################
 =pod

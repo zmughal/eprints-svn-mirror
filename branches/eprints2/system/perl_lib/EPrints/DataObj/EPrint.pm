@@ -265,6 +265,8 @@ sub create_from_data
 
 	my $new_eprint = $class->SUPER::create_from_data( $session, $data, $dataset );
 
+	$new_eprint->set_under_construction( 1 );
+
 	return unless defined $new_eprint;
 	if( defined $data->{documents} )
 	{
@@ -276,6 +278,8 @@ sub create_from_data
 			EPrints::DataObj::Document->create_from_data( $session,\%docdata,$docds );
 		}
 	}
+
+	$new_eprint->set_under_construction( 0 );
 
 	$new_eprint->write_revision;
 
@@ -300,7 +304,7 @@ sub create_from_data
 
 	return $new_eprint;
 }
-                                                                                                                  
+        
 ######################################################################
 =pod
 
@@ -762,7 +766,10 @@ sub commit
 
 	$self->queue_changes;
 
-	$self->generate_static;
+	unless( $self->under_construction )
+	{
+		$self->generate_static;
+	}
 	
 	my $user = $self->{session}->current_user;
 	my $userid = undef;

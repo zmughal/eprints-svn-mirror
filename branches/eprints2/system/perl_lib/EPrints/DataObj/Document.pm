@@ -260,7 +260,9 @@ END
 
 	return unless defined $document;
 
-	$document->{under_construction} = 1;
+	$document->{eprint} = $eprint;
+
+	$document->set_under_construction( 1 );
 
 	_create_directory( $document->get_id, $eprint ); 
 
@@ -289,7 +291,7 @@ END
 	my $linkdir = _secure_symlink_path( $eprint );
 	$document->create_symlink( $eprint, $linkdir );
 
-	delete $document->{under_construction};
+	$document->set_under_construction( 0 );
 
 	return $document;
 }
@@ -1241,9 +1243,12 @@ sub commit
 
 	$self->queue_changes;
 
-	# cause a new new revision of the parent eprint.
-	$self->get_eprint->commit( 1 );
-
+	unless( $self->{eprint}->under_construction )
+	{
+		# cause a new new revision of the parent eprint.
+		$self->get_eprint->commit( 1 );
+	}
+	
 	return( $success );
 }
 	
@@ -1402,7 +1407,7 @@ sub files_modified
 	# nb. The "main" part is not automatically calculated when
 	# the item is under contruction. This means bulk imports 
 	# will have to set the name themselves.
-	unless( $self->{under_construction} )
+	unless( $self->under_construction )
 	{
 
 		# Pick a file to be the one that gets linked. There will 
