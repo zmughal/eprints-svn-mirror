@@ -67,35 +67,20 @@ return $c;
 
 # Test whether the given user can assume the given role.
 # Example: let certain users assume role of any person in school
-sub rae_can_user_assume_role {
-	
+sub rae_can_user_assume_role
+{	
 	my ( $session, $user, $role ) = @_;
-
-	return 1 if defined $role && $user->get_type eq "admin";
-
+	return 1 if $user->has_priv( "edit-user" );
 	return 0;
 };
 
 # Return a list of (id, name) pairs representing the user roles the
 # given user is able to assume
 # Example: let certain users assume role of any person in school
-sub rae_roles_for_user {
-
+sub rae_roles_for_user
+{
 	my ( $session, $user ) = @_;
-
-	my @roles;
-	if( $user->get_type eq "admin" )
-	{
-		my $dataset = $session->get_archive->get_dataset( "user" );
-		my $ids = $dataset->get_item_ids( $session );
-		for ( @$ids )
-		{
-			my $obj = EPrints::User->new( $session, $_ );
-			push @roles, [ $obj->get_id, EPrints::Utils::tree_to_utf8( $obj->render_description ) ];
-		}
-	}
-
-	return @roles;
+	return ();
 };
 
 # Set the default values for the search used on the eprint
@@ -146,6 +131,15 @@ sub rae_problems_with_selection {
 	if( scalar( @docs ) == 0 ) {
 		push @problems, $session->html_phrase( "rae/report:problem_no_doc",
 			type => $session->make_text( $item->get_value( "type" ) ) );
+	}
+
+	# Example: if this item is an article, check it has an ISSN
+	if( $item->get_type eq "article" )
+	{
+		if( !$item->is_set( "issn" ) )
+		{
+			push @problems, $session->html_phrase( "rae/report:problem_no_issn" );
+		}
 	}
 
 	return \@problems;

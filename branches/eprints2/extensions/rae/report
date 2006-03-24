@@ -96,12 +96,15 @@ if( $session->get_db->execute( $sth, $sql ) )
 
 # Get eprints selected by the group of users,
 # (plus any other users who have also selected those eprints)
-# TODO: don't use nested SQL
 my %users_for_eprint;
 my %eprints_for_user;
 
-#$sql = "SELECT * from rae_selections, rae_selections AS tmp, cache$cacheid WHERE rae_selections.eprintid=tmp.eprintid AND tmp.userid=cache$cacheid.userid";
+$sql = "SELECT ";
+$sql .= join( ", ", map { "rae_selections." . $_->{name} } @{ $archive->get_conf( "rae", "fields", "qualify" ) } );
+$sql .= ", rae_selections.userid, rae_selections.eprintid FROM rae_selections, rae_selections AS tmp, cache$cacheid WHERE rae_selections.eprintid=tmp.eprintid AND tmp.userid=cache$cacheid.userid GROUP BY rae_selections.userid, rae_selections.eprintid";
+
 #$sql = "SELECT * FROM rae_selections WHERE eprintid IN (SELECT rae_selections.eprintid FROM rae_selections, cache$cacheid WHERE rae_selections.userid=cache$cacheid.userid)";
+
 $sth = $session->get_db->prepare( $sql );
 if( $session->get_db->execute( $sth, $sql ) )
 {
@@ -112,15 +115,13 @@ if( $session->get_db->execute( $sth, $sql ) )
 	}
 }
 
-my $group_page = $session->make_doc_fragment;
-
 my $csv = defined( $session->param( "csv" ) ) && $session->param( "csv" ) == 1;
 my $mainonly = defined( $session->param( "mainonly" ) ) && $session->param( "mainonly" ) eq "yes";
 
 my $info = {
 	prob_count => 0,
 	#csv_rows => 0,
-	page => $group_page,
+	page => $session->make_doc_fragment,
 	moe_for_user => \%moe_for_user,
 	eprints_for_user => \%eprints_for_user,
 	users_for_eprint => \%users_for_eprint,
@@ -136,11 +137,12 @@ if ( $csv )
 elsif( $mainonly )
 {
 	$searchexp->map( \&do_user_mainonly, $info );
-	$session->build_page( $session->make_doc_fragment, $group_page );
+	$session->build_page( $session->make_doc_fragment, $info->{page} );
 	$session->send_page();
 }
 else
 {
+	$info->{page} = $session->make_element( "table" );
 	$searchexp->map( \&do_user, $info );
 	my $title = $session->html_phrase( "rae/report:group_page_title", 
 		group => $group_by->render_value( $session, $group )
@@ -149,7 +151,7 @@ else
 	# mainonly parameter picked up by build_page
 	my $mainonly_link = $session->render_link( "./report/rae-" . $group. ".html?group=" . $group . "&mainonly=yes" );
 	my $page = $session->html_phrase( "rae/report:group_page", 
-		report => $group_page,
+		report => $info->{page},
 		csv_link => $csv_link,
 		mainonly_link => $mainonly_link,
 		problem_count => $session->make_text( $info->{prob_count} )
@@ -262,9 +264,7 @@ sub do_user_mainonly
 sub do_user {
 	my ( $session, $dataset, $user, $info ) = @_;
 
-	my $page = $info->{page};
-	my $table = $session->make_element( "table" );
-	$page->appendChild( $table );
+	my $table = $info->{page};
 
 	my $selections = $info->{eprints_for_user}{$user->get_id};
 

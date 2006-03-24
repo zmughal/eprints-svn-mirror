@@ -87,8 +87,6 @@ my $searchexp = new EPrints::SearchExpression(
 	dataset => $archive->get_dataset("archive"),
 	%$search_conf,
 );
-# Init fields from config
-$archive->call( "rae_default_selection_search", $session, $searchexp, $role );
 
 # Switch on user input
 # NB: based on process_webpage() in EPrints/SearchExpression.pm
@@ -121,12 +119,15 @@ if( defined $action_button && $action_button eq "update" )
 
 if( defined $action_button && $action_button eq "newsearch" )
 {
-	$searchexp->clear;
 	$search_frag = $searchexp->render_search_form;
 }
 
 # Build + Send Page
-$search_frag = dopage_results( $session, $searchexp, $role ) if !defined $search_frag;
+if( !defined $search_frag )
+{
+	$archive->call( "rae_default_selection_search", $session, $searchexp, $role );
+	$search_frag = dopage_results( $session, $searchexp, $role );
+}
 $search_frag->appendChild( $session->render_hidden_field( "role", $role->get_id ) ) if $user->get_id != $role->get_id;
 
 my $moe_url = $archive->get_conf("perl_url") . "/users/rae/moe";

@@ -1,4 +1,38 @@
 
+<!-- User Area -->
+
+<ep:phrase ref="cgi/users/home:rae_moe_link" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Declare RAE measures of esteem 
+</ep:phrase>
+
+<ep:phrase ref="cgi/users/home:rae_moe_info" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<p>Select this option to declare measures of esteem for your RAE return.</p>
+</ep:phrase>
+
+<ep:phrase ref="cgi/users/home:rae_select_link" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Select RAE items
+</ep:phrase>
+
+<ep:phrase ref="cgi/users/home:rae_select_info" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<p>Select this option to select items from the repository for your RAE return.</p>
+</ep:phrase>
+
+<ep:phrase ref="cgi/users/home:rae_report_link" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+View/export RAE report
+</ep:phrase>
+
+<ep:phrase ref="cgi/users/home:rae_report_info" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+<p>This option allows you to view and export RAE reports.</p>
+</ep:phrase>
+
+<ep:phrase ref="cgi/users/staff/view_user:rae_moe_link" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+View/edit RAE measures of esteem
+</ep:phrase>
+
+<ep:phrase ref="cgi/users/staff/view_user:rae_select_link" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+View/edit RAE selections
+</ep:phrase>
+
 <!-- Measures of Esteem -->
 
 <ep:phrase ref="rae_fieldname_memberships" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
@@ -161,8 +195,6 @@ Measures of Esteem: <ep:pin ref="user" />
 
 <ep:phrase ref="rae/moe:page" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
 <div style="float:right"><ep:pin ref="roles" /></div>
-<p><i><b>PLEASE NOTE:</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</i></p>
-<p>Use the <ep:pin ref="select_link">Select Items</ep:pin> page to select items from EPrints.</p>
 <p>Use this page to declare the following measures of esteem:</p>
 <ep:pin ref="shortcuts" />
 <br />
@@ -182,8 +214,6 @@ Selected Items: <ep:pin ref="user" />
 
 <ep:phrase ref="rae/select:page" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
 <div style="float:right"><ep:pin ref="roles" /></div>
-<p><i><b>PLEASE NOTE:</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</i></p>
-<p>Use the <ep:pin ref="moe_link">Measures of Esteem</ep:pin> page to declare measures of esteem.</p>
 <p>Use this page to select items.</p>
 <hr />
 <h2>Selected Items:</h2>
@@ -229,7 +259,6 @@ Report
 </ep:phrase>
 
 <ep:phrase ref="rae/report:list_page" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
-<p><i><b>PLEASE NOTE:</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</i></p>
 <p>Select a group:</p>
 <p><ep:pin ref="list" /></p>
 </ep:phrase>
@@ -243,7 +272,6 @@ Report: All Staff
 </ep:phrase>
 
 <ep:phrase ref="rae/report:group_page" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
-<p><i><b>PLEASE NOTE:</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</i></p>
 <p><ep:pin ref="mainonly_link">Printable version</ep:pin> (each staff member starts on new page). Save page to your computer and print from Microsoft Word.</p>
 <p><ep:pin ref="csv_link">CSV version</ep:pin> suitable for Microsoft Excel.</p>
 <p>Number of problems: <ep:pin ref="problem_count"/>.</p>
@@ -269,7 +297,6 @@ Selection Details: <ep:pin ref="user" />
 </ep:phrase>
 
 <ep:phrase ref="rae/qualify:page" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
-<p><i><b>PLEASE NOTE:</b> this page and associated data is a <b>work in progress</b> and is subject to change without notice.</i></p>
 <p>Go back to the <ep:pin ref="select_link">Select Items</ep:pin> page to continuing selecting items.</p>
 <p>Use this page to provide additional information about the selected item.</p>
 <hr />
