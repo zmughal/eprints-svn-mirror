@@ -106,11 +106,8 @@ foreach my $field ( @{ $archive->get_conf( "rae", "fields", "qualify" ) } )
 	if( defined $action_button && $action_button eq "submit" )
 	{
 		my $value = $metafield->form_value( $session );
-		if( defined $value && $value ne $selection{ $metafield->get_name } )
-		{
-			$selection{ $metafield->get_name } = $value;
-			push @updates, sprintf( '%s="%s"', $metafield->get_name, EPrints::Database::prep_value( $value ) );
-		}
+		$selection{ $metafield->get_name } = $value;
+		push @updates, sprintf( '%s="%s"', $metafield->get_name, EPrints::Database::prep_value( $value ) );
 	}
 }
 

@@ -110,12 +110,9 @@ foreach my $field ( @{ $archive->get_conf( "rae", "fields", "moe" ) } )
 	my $action_button = $session->get_action_button;
 	if( defined $action_button && $action_button eq "submit" )
 	{
-		my $value = $session->param( $metafield->get_name );
-		if( defined $value && $value ne $moe{ $metafield->get_name } )
-		{
-			$moe{ $metafield->get_name } = $value;
-			push @updates, sprintf( '%s="%s"', $metafield->get_name, EPrints::Database::prep_value( $value ) );
-		}
+		my $value = $metafield->form_value( $session );
+		$moe{ $metafield->get_name } = $value;
+		push @updates, sprintf( '%s="%s"', $metafield->get_name, EPrints::Database::prep_value( $value ) );
 	}
 
 	# Create shortcut

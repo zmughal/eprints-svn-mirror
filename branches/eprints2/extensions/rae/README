@@ -1,6 +1,6 @@
 EPrints RAE Module - BRONZE RELEASE
 
-FEATURES
+What does the RAE plugin do?
 
 - Enter measures of esteem (optionally on behalf of another user)
 - Search for publications (optionally on behalf of another user)
@@ -8,27 +8,21 @@ FEATURES
 - Qualify each selected publication for RAE return (optionally on behalf of another user)
 - View/export reports (Microsoft Word, Microsoft Excel)
 
-MANUAL INSTALLATION
+What doesn't the RAE plugin do?
 
+- Optimise your RAE return
+- Produce a HEFCE upload
 
+Infrastructure that you should probably have in place
+
+- Organisation structure, added to users
+- Unique IDs for users
+
+INSTALLATION
 
 1. Create database tables
 
-The following tables need to be added to the ARCHIVEID database:
-
-CREATE TABLE `rae_data` (
-  `userid` int(11) default NULL,
-  `field` varchar(255) default NULL,
-  `value` longtext,
-  `chooserid` int(11) default NULL,
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-
-CREATE TABLE `rae_selected` (
-  `userid` int(11) NOT NULL default '0',
-  `eprintid` int(11) NOT NULL default '0',
-  `chooserid` int(11) default NULL,
-  PRIMARY KEY  (`userid`,`eprintid`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+create_rae_tables
 
 2. Install scripts
 
@@ -62,8 +56,6 @@ sub get_entities
 
 
 Copy all files to /opt/eprints2/cgi/users/rae/.
-
-Symlink the RAELoader.pm module to the /opt/eprints2/perl_lib/ directory.
 
 3. Configuration
 
