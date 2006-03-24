@@ -428,8 +428,38 @@ User Area CGI Scripts
 
 <!-- home -->
 
+    <ep:phrase ref="cgi/users/home:layout">
+<p>Welcome to the registered user area at &archivename;. Please select one of the options below.</p>
+<table>
+  <tr>
+    <td>
+      <ep:pin ref="create" />
+
+      <h3>Undeposited Items</h3>
+      <ep:pin ref="workspace" />
+
+      <h3>Pending Items</h3>
+      <ep:pin ref="pending" />
+
+      <h3>Most Recently Accepted Items</h3>
+      <ep:pin ref="recent" />
+    </td>
+    <td>&nbsp;</td>
+    <td valign="top">
+      <ep:pin ref="user" />
+    </td>
+  </tr>
+</table>
+<ep:pin ref="layout_staff" />
+</ep:phrase>
+
+    <ep:phrase ref="cgi/users/home:layout_staff">
+&ruler;
+<h2>Advanced Options</h2>
+<ep:pin ref="options" />
+</ep:phrase>
+
     <ep:phrase ref="cgi/users/home:user_home">User Area Homepage - <ep:pin ref="name" /></ep:phrase>
-    <ep:phrase ref="cgi/users/home:intro"><p>Welcome to the registered user area at &archivename;. Please select one of the options below.</p></ep:phrase>
     <ep:phrase ref="cgi/users/home:before"><p>Before you use any of the user area functions, you must fill out your user information.</p></ep:phrase>
 
     <ep:phrase ref="cgi/users/home:change_link">View/change your user record</ep:phrase>
@@ -468,9 +498,7 @@ User Area CGI Scripts
     <ep:phrase ref="cgi/users/home:change_user_link">Change User Login</ep:phrase>
     <ep:phrase ref="cgi/users/home:change_user_info"><p>Log in to the repository as a different user. There is currently no "logout" feature.</p></ep:phrase>
 
-    <ep:phrase ref="cgi/users/home:docs"><h3>Undeposited Items</h3></ep:phrase>
     <ep:phrase ref="cgi/users/home:depositing"><p>These are items you are currently in the process of depositing. These will not be considered for the repository until you <i>deposit</i> them.</p></ep:phrase>
-    <ep:phrase ref="cgi/users/home:pending_title"><h3>Pending Items</h3></ep:phrase>
     <ep:phrase ref="cgi/users/home:no_pending"><p>You currently have no pending items</p></ep:phrase>
     <ep:phrase ref="cgi/users/home:deposited_at">Deposited <ep:pin ref="time" /></ep:phrase>
     <ep:phrase ref="cgi/users/home:action_new">New</ep:phrase>
@@ -479,10 +507,8 @@ User Area CGI Scripts
     <ep:phrase ref="cgi/users/home:action_copy">Use&nbsp;as&nbsp;template</ep:phrase>
     <ep:phrase ref="cgi/users/home:action_clone">New&nbsp;version</ep:phrase>
     <ep:phrase ref="cgi/users/home:action_submit">Deposit</ep:phrase>
-    <ep:phrase ref="cgi/users/home:recent_title"><h3>Most Recently Accepted Items</h3></ep:phrase>
     <ep:phrase ref="cgi/users/home:no_recent"><p>You have no accepted items</p></ep:phrase>
     <ep:phrase ref="cgi/users/home:accepted_at">Accepted <ep:pin ref="time" /></ep:phrase>
-    <ep:phrase ref="cgi/users/home:staff_options"><h2>Advanced Options</h2></ep:phrase>
 
 
 <!-- review -->

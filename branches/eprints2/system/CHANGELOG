@@ -3615,3 +3615,8 @@ PACKAGE: 2.2.99.2
  * Renamed Plugin::Output to Plugin::Export
  * EPrint default values now sets status_change and lastmod. datestamp is set
     if it's part of the archive dataset only.
+
+2006-03-24 cjg
+
+ * user home page now uses a phrase to control layout.
+

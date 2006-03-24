@@ -211,62 +211,44 @@ foreach	$tool (@{$tools})
 
 
 
-$page = $session->make_doc_fragment();
-
-### Welcome author blurb
-$page->appendChild( $session->html_phrase( "cgi/users/home:intro" ) );
-
-$table = $session->make_element("table");
-$tr = $session->make_element("tr");
-$table->appendChild( $tr );
-$page->appendChild( $table );
+my %pins;
 
 if( $user->has_priv( "deposit" ) )
 {
-	$td = $session->make_element("td",valign=>"top");
-	$tr->appendChild( $td );
-
-	my $div;
-
-	### Begin new item
-	$div = $session->make_element("div",class=>"box");
-	$div->appendChild( $dls->{create} );
-	$td->appendChild( $div );
-
-	### Workspace
-	$div = $session->make_element("div",class=>"box");
-	$div->appendChild( &render_workspace( $session, $user ) );
-	$td->appendChild( $div );
-
-	### Pending
-	$div = $session->make_element("div",class=>"box");
-	$div->appendChild(
-		&render_pending( $session, $user ) );
-	$td->appendChild( $div );
-
-	### Recent Additions
-	$div = $session->make_element("div",class=>"box");
-	$div->appendChild(
-		&render_recent( $session, $user, 10, $dls->{review} ) );
-	$td->appendChild( $div );
+	$pins{create} = $dls->{create};
+	$pins{workspace} = &render_workspace( $session, $user );
+	$pins{pending} = &render_pending( $session, $user );
+	$pins{recent} = &render_recent( $session, $user, 10, $dls->{review} );
+}
+else
+{
+	$pins{create} = $session->make_doc_fragment;
+	$pins{workspace} = $session->make_doc_fragment;
+	$pins{pending} = $session->make_doc_fragment;
+	$pins{recent} = $session->make_doc_fragment;
 }
 
 if( defined $dls->{user} )
 {
-	$td = $session->make_element("td",valign=>"top", style=>"padding-left: 3em;");
-	$tr->appendChild( $td );
-	$td->appendChild( $dls->{user} );
+	$pins{user} = $dls->{user};
+}
+else
+{
+	$pins{user} = $session->make_doc_fragment;
 }
 
 
 if( defined $dls->{staff} )
 {
-	$page->appendChild( $session->render_ruler );
-	$page->appendChild( $session->html_phrase( "cgi/users/home:staff_options" ) );
-	$page->appendChild( $dls->{staff} );
+	$pins{layout_staff} = $session->html_phrase( "cgi/users/home:layout_staff", options => $dls->{staff} );
+}
+else
+{
+	$pins{layout_staff} = $session->make_doc_fragment;
 }
 
 
+$page= $session->html_phrase( "cgi/users/home:layout", %pins );
 
 $session->build_page( 
 		$session->html_phrase( 
@@ -312,7 +294,6 @@ sub render_workspace
 	my( $html, $form, $div );
 
 	$html = $session->make_doc_fragment();
-	$html->appendChild( $session->html_phrase( "cgi/users/home:docs" ));
 
 	if( $list->count == 0 )
 	{
@@ -398,8 +379,6 @@ sub render_pending
 
 	my $html = $session->make_doc_fragment();
 
-	$html->appendChild( $session->html_phrase( "cgi/users/home:pending_title" ) );
-
 	if( $list->count == 0 )
 	{
 		$html->appendChild( $session->html_phrase( "cgi/users/home:no_pending" ) );
@@ -452,8 +431,6 @@ sub render_recent
 	my $list = $user->get_owned_eprints( $ds );
 
 	my $html = $session->make_doc_fragment();
-
-	$html->appendChild( $session->html_phrase( "cgi/users/home:recent_title" ) );
 
 	if( $list->count == 0 )
 	{
