@@ -281,8 +281,6 @@ sub create_from_data
 
 	$new_eprint->set_under_construction( 0 );
 
-	$new_eprint->write_revision;
-
 	my $user = $session->current_user;
 	my $userid = undef;
 	$userid = $user->get_id if defined $user;
@@ -300,7 +298,8 @@ sub create_from_data
 		}
 	);
 
-	$new_eprint->generate_static;
+	# write revision, generate static and set auto fields
+	$new_eprint->commit;
 
 	return $new_eprint;
 }
@@ -768,14 +767,14 @@ sub commit
 			$self->get_value( "eprintid" ).": ".$db_error );
 		return $success;
 	}
-	$self->write_revision;
-
-	$self->queue_changes;
 
 	unless( $self->under_construction )
 	{
+		$self->write_revision;
 		$self->generate_static;
 	}
+
+	$self->queue_changes;
 	
 	my $user = $self->{session}->current_user;
 	my $userid = undef;
