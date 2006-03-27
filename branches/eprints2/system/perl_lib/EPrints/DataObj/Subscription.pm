@@ -395,10 +395,9 @@ sub send_out_subscription
 		my( $session, $dataset, $item, $info ) = @_;
 
 		my $p = $session->make_element( "p" );
-		$p->appendChild( $item->render_citation );
+		$p->appendChild( $item->render_citation_link );
 		$info->{matches}->appendChild( $p );
-		$info->{matches}->appendChild( $session->make_text( $item->get_url ) );
-		$info->{matches}->appendChild( $session->make_element( "br" ) );
+#		$info->{matches}->appendChild( $session->make_text( $item->get_url ) );
 	};
 
 

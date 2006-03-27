@@ -34,6 +34,7 @@ use Unicode::String qw(utf8 latin1 utf16);
 use File::Path;
 use Term::ReadKey;
 use Text::Wrap qw();
+use MIME::Lite;
 use URI;
 
 use strict;
@@ -296,105 +297,91 @@ sub make_name_string
 ######################################################################
 =pod
 
-=item EPrints::Utils::send_mail( $repository, $langid, $name, $address, $subject, $body, $sig, [$replyto, $replytoname] )
+=item EPrints::Utils::send_mail( %properties )
 
 Sends an email. 
 
-$repository - the repository sending the email.
+Required properties:
 
-$langid - the language id (eg. "en")
+session - the current session
 
-$name - the name of the recipient (UTF-8 encoded string)
+langid - the id of the language to send the email in.
 
-$address - the email address of the recipient
+to_email, to_name - who to send it to
 
-$subject - the subject of the message (UTF-8 encoded string)
+subject - the subject of the message (UTF-8 encoded string)
 
-$body - the body of the message as a DOM tree
+message - the body of the message as a DOM tree
 
-$sig - the signature file as a DOM tree
+optional properties:
 
-$replyto -  the reply-to email address 
+from_email, from_name - who is sending the email (defaults to the archive admin)
 
-$replytoname - the reply-to name (UTF-8 encoded string)
+sig - the signature file as a DOM tree
+
+replyto_email, reply_to name 
 
 Returns true if mail sending (appears to have) succeeded. False otherwise.
 
 Uses the config. option "send_email" to send the mail, or if that's
 not defined sends the email via STMP.
 
+names and the subject should be encoded as utf-8
+
+
 =cut
 ######################################################################
 
 sub send_mail
 {
-	my( $repository, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname ) = @_;
-	#   repository   string   utf8   utf8      utf8      DOM    DOM   string    utf8
+	my( %p ) = @_;
 
-	my $mail_func = $repository->get_conf( "send_email" );
+	my $repository = $p{session}->get_repository;
+
+	if( !defined $p{from_email} ) 
+	{
+		$p{from_name} = EPrints::Session::best_language( 
+			$repository,
+			$p{langid},
+			%{$repository->get_conf( "archivename" )} );
+		$p{from_email} = $repository->get_conf( "adminemail" );
+	}
+
+	my $mail_func = $p{session}->get_repository->get_conf( "send_email" );
 	if( !defined $mail_func )
 	{
 		$mail_func = \&send_mail_via_sendmail;
 	}
 
-	my $result = &{$mail_func}( $repository, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname );
+	my $result = &{$mail_func}( %p );
 
 	if( !$result )
 	{
-		$repository->log( "Failed to send mail.\nTo: $address <$name>\nSubject: $subject\n" );
+		$p{session}->get_repository->log( "Failed to send mail.\nTo: $p{to_email} <$p{to_name}>\nSubject: $p{subject}\n" );
 	}
 
 	return $result;
 }
 
-######################################################################
-=pod
-
-=item $datestring = EPrints::Utils::email_date()
-
-Returns the current date and time formatted appropriately for an email
-Date: field.
-
-=cut
-######################################################################
-
-sub email_date()
-{
-	my @D = qw/Sun Mon Tue Wed Thu Fri Sat/;
-	my @M = qw/Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec/;
-
-	my( $sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst ) = localtime(time);
-	my @gmt = gmtime(time);
-
-	my $zone = $hour-$gmt[2];
-	if( $zone > 12 ) { $zone-=24; }
-	if( $zone < -12 ) { $zone+=24; }
-
-	my $date = $D[$wday].', '.$mday.' '.$M[$mon].' '.($year+1900).' ';
-	$date .= sprintf( "%02d:%02d:%02d ", $hour, $min, $sec );
-	if( $zone < 0 ) { $date.='-'; $zone = -$zone; } else { $date.='+'; }
-	$date .= sprintf( "%02d",$zone ).'00';
-
-	return $date;
-}
-
-
 
 ######################################################################
-=pod
-
-=item EPrints::Utils::send_mail_via_smtp( $repository, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname )
-
-Send an email via STMP. Should not be called directly, but rather by
-EPrints::Utils::send_mail.
-
-=cut
+#=pod
+#
+#=item EPrints::Utils::send_mail_via_smtp( %properties )
+#
+#Send an email via STMP. Should not be called directly, but rather by
+#EPrints::Utils::send_mail.
+#
+#=cut
 ######################################################################
 
 sub send_mail_via_smtp
 {
-	my( $repository, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname ) = @_;
-	#   repository   string   utf8   utf8      utf8      DOM    DOM   string    utf8
+	my( %p ) = @_;
+
+	eval 'use Net::SMTP';
+
+	my $repository = $p{session}->get_repository;
 
 	my $smtphost = $repository->get_conf( 'smtp_server' );
 
@@ -404,154 +391,109 @@ sub send_mail_via_smtp
 		return( 0 );
 	}
 
-
-	use Net::SMTP;
-	my $smtp=Net::SMTP->new( $smtphost );
+	my $smtp = Net::SMTP->new( $smtphost );
 	if( !defined $smtp )
 	{
 		$repository->log( "Failed to create smtp connection to $smtphost" );
 		return( 0 );
 	}
-	# test ?
-#	unless( open( SENDMAIL, "|".$repository->invocation( "sendmail" ) ) )
-#	{
-#		$repository->log( "Failed to invoke sendmail: ".
-#			$repository->invocation( "sendmail" ) );
-#		return( 0 );
-#	}
 
-	# Addresses should be 7bit clean, but I'm not checking yet.
-	# god only knows what 8bit data does in an email address.
-
-	#cjg should be in the top of the file.
-	my $MAILWIDTH = 80;
-	my $arcname_q = mime_encode_q( EPrints::Session::best_language( 
-		$repository,
-		$langid,
-		%{$repository->get_conf( "archivename" )} ) );
-
-	my $name_q = mime_encode_q( $name );
-	my $subject_q = mime_encode_q( $subject );
-	my $adminemail = $repository->get_conf( "adminemail" );
-
-	my $utf8body 	= EPrints::Utils::tree_to_utf8( $body , $MAILWIDTH );
-	my $utf8sig	= EPrints::Utils::tree_to_utf8( $sig , $MAILWIDTH );
-	my $utf8all	= $utf8body.$utf8sig;
-	my $type	= get_encoding($utf8all);
-	my $date	= email_date();
-	my $content_type_q = 'text/plain; charset="'.$type.'"';
-	my $msg = $utf8all;
-	if ($type eq "iso-8859-1")
+	
+	$smtp->mail( $p{from_email} );
+	if( !$smtp->recipient( $p{to_email} ) )
 	{
-		$msg = $utf8all->latin1; 
-	}
-
-	$smtp->mail( $adminemail );
-	if( !$smtp->recipient( $address ) )
-	{
-		$repository->log( "smtp server refused <$address>" );
+		$repository->log( "smtp server refused <$p{to_email}>" );
 		$smtp->quit;
 		return 0;
 	}
+	my $message = build_email( %p );
 	$smtp->data();
-
-	my $mailheader = <<END;
-From: "$arcname_q" <$adminemail>
-To: "$name_q" <$address>
-Subject: $arcname_q: $subject_q
-Date: $date
-Precedence: bulk
-Content-Type: $content_type_q
-Content-Transfer-Encoding: 8bit
-END
-	if( defined $replyto )
-	{
-		my $replytoname_q = mime_encode_q( $replytoname );
-		$mailheader.= "Reply-To: \"$replytoname_q\" <$replyto>\n";
-	}
-
-	# de Unicode::String the strings!
-	$smtp->datasend( "$mailheader" );  
-	$smtp->datasend( "\n" );
-	$smtp->datasend( "$msg" );  
+	$smtp->datasend( $message->as_string );
 	$smtp->dataend();
 	$smtp->quit;
 
-	return( 1 );
+	return 1;
 }
 
 ######################################################################
-=pod
-
-=item EPrints::Utils::send_mail_via_sendmail( $repository, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname )
-
-Also should not be called directly. The config. option "send_email"
-can be set to \&EPrints::Utils::send_mail_via_sendmail to use the
-sendmail command to send emails rather than send to a SMTP server.
-
-=cut
+# =pod
+# 
+# =item EPrints::Utils::send_mail_via_sendmail( %params )
+# 
+# Also should not be called directly. The config. option "send_email"
+# can be set to \&EPrints::Utils::send_mail_via_sendmail to use the
+# sendmail command to send emails rather than send to a SMTP server.
+# 
+# =cut
 ######################################################################
 
 sub send_mail_via_sendmail
 {
-	my( $repository, $langid, $name, $address, $subject, $body, $sig, $replyto, $replytoname ) = @_;
-	#   repository   string   utf8   utf8      utf8      DOM    DOM   string    utf8
+	my( %p )  = @_;
+
+	my $repository = $p{session}->get_repository;
+
 	unless( open( SENDMAIL, "|".$repository->invocation( "sendmail" ) ) )
 	{
 		$repository->log( "Failed to invoke sendmail: ".
 			$repository->invocation( "sendmail" ) );
 		return( 0 );
 	}
-
-	# Addresses should be 7bit clean, but I'm not checking yet.
-	# god only knows what 8bit data does in an email address.
-
-	#cjg should be in the top of the file.
-	my $MAILWIDTH = 80;
-	my $arcname_q = mime_encode_q( EPrints::Session::best_language( 
-		$repository,
-		$langid,
-		%{$repository->get_conf( "archivename" )} ) );
-
-	my $name_q = mime_encode_q( $name );
-	my $subject_q = mime_encode_q( $subject );
-	my $adminemail = $repository->get_conf( "adminemail" );
-
-	my $utf8body 	= EPrints::Utils::tree_to_utf8( $body , $MAILWIDTH );
-	my $utf8sig	= EPrints::Utils::tree_to_utf8( $sig , $MAILWIDTH );
-	my $utf8all	= $utf8body.$utf8sig;
-	my $type	= get_encoding($utf8all);
-	my $date	= email_date();
-	my $content_type_q = 'text/plain; charset="'.$type.'"';
-	my $msg = $utf8all;
-	if ($type eq "iso-8859-1")
-	{
-		$msg = $utf8all->latin1; 
-	}
-	#precedence bulk to avoid automail replies?  cjg
-	my $mailheader = "";
-	if( defined $replyto )
-	{
-		my $replytoname_q = mime_encode_q( $replytoname );
-		$mailheader.= <<END;
-Reply-To: "$replytoname_q" <$replyto>
-END
-	}
-	$mailheader.= <<END;
-From: "$arcname_q" <$adminemail>
-To: "$name_q" <$address>
-Subject: $arcname_q: $subject_q
-Date: $date
-Precedence: bulk
-Content-Type: $content_type_q
-Content-Transfer-Encoding: 8bit
-END
-
-	print SENDMAIL $mailheader;
-	print SENDMAIL "\n";
-	print SENDMAIL $msg;
+	my $message = build_email( %p );
+	print SENDMAIL $message->as_string;
 	close(SENDMAIL) or return( 0 );
 	return( 1 );
+}
+
+# $mime_message = EPrints::Utils::build_mail( %params ) 
+#
+# Takes the same parameters as send_mail. This creates a MIME::Lite email
+# object with both a text and an HTML part.
+
+sub build_email
+{
+	my( %p ) = @_;
+
+	my $MAILWIDTH = 80;
+
+	my $repository = $p{session}->get_repository;
+
+	my $mimemsg = MIME::Lite->new(
+		From       => "$p{from_name} <$p{from_email}>",
+		To         => "$p{to_name} <$p{to_email}>",
+		Subject    => $p{subject},
+		Type       => "multipart/alternative",
+		Precedence => "bulk",
+	);
+
+	if( defined $p{replyto_email} )
+	{
+		$mimemsg->attr( "Reply-to" => "$p{replyto_name} <$p{replyto_email}>" );
+	}
+	$mimemsg->replace( "X-Mailer" => "EPrints http://eprints.org/" );
+
+	my $fullmsg = $p{session}->make_doc_fragment;
+	$fullmsg->appendChild( $p{message} );
+	if( defined $p{sig} )
+	{
+		$fullmsg->appendChild( $p{sig} );
+	}
+
+	my $text = MIME::Lite->new( 
+		Type  => "TEXT",
+		Data  => EPrints::Utils::tree_to_utf8( $fullmsg , $MAILWIDTH ),
+	);
+	$text->attr("Content-disposition" => "");
+	$mimemsg->attach( $text );
+
+	my $html = MIME::Lite->new( 
+		Type  => "text/html",
+		Data  => $fullmsg->toString,
+	);
+	$html->attr("Content-disposition" => "");
+	$mimemsg->attach( $html );
+print STDERR "xxxx\n";
+	return $mimemsg;
 }
 
 ######################################################################
@@ -864,6 +806,11 @@ sub tree_to_utf8
 		my $alt = $node->getAttribute( "alt" );
 		$string = $alt if( defined $alt );
 	}
+	if( $name eq "a" )
+	{
+		my $href = $node->getAttribute( "href" );
+		$string .= " [$href]" if( defined $href );
+	}
 	return $string;
 }
 
@@ -932,7 +879,7 @@ sub render_citation
 
 	my $session = $obj->get_session;
 
-	my $collapsed = collapse_conditions( $session, $cstyle, $obj );
+	my $collapsed = collapse_conditions( $session, $cstyle, item=>$obj );
 
 	my $r= _render_citation_aux( $obj, $session, $collapsed, $url );
 
@@ -957,96 +904,23 @@ to values in %params.
 
 sub collapse_conditions
 {
-	my( $session, $node, $obj, %params ) = @_;
+	my( $session, $node, %params ) = @_;
 
 # cjg - Potential bug if: <ifset a><ifset b></></> and ifset a is disposed
 # then ifset: b is processed it will crash.
 
 	my $addkids = $node->hasChildNodes;
+
 	my $collapsed;
 
 	if( EPrints::XML::is_dom( $node, "Element" ) )
 	{
-
 		my $name = $node->getTagName;
 		$name =~ s/^ep://;
-
-		my $fieldname = $node->getAttribute( "name" );
-		if( $name =~ s/^\*// )
+		if( $name =~ m/^ifset|ifnotset|ifmatch|ifnotmatch$/ )
 		{
-			if( $name eq "ifset" )
-			{
-				$collapsed = $session->make_doc_fragment;
-				$addkids = defined $params{$fieldname};
-			}
-			elsif( $name eq "ifnotset" )
-			{
-				$collapsed = $session->make_doc_fragment;
-				$addkids = !defined $params{$fieldname};
-			}
-			elsif( $name eq "ifmatch" || $name eq "ifnotmatch" )
-			{
-				my $value = $node->getAttribute( "value" );
-				$addkids = 0;
-				foreach( split( /\s+/,$value ) )
-				{
-					$addkids = 1 if( $_ eq $params{$fieldname} );
-				}
-
-				if( $name eq "ifnotmatch" )
-				{
-					$addkids = !$addkids;
-				}
-
-				$collapsed = $session->make_doc_fragment;
-			}
-		}
-		else
-		{
-			if( $name eq "ifset" )
-			{
-				$collapsed = $session->make_doc_fragment;
-				$addkids = $obj->is_set( $fieldname );
-			}
-			elsif( $name eq "ifnotset" )
-			{
-				$collapsed = $session->make_doc_fragment;
-				$addkids = !$obj->is_set( $fieldname );
-			}
-			elsif( $name eq "ifmatch" || $name eq "ifnotmatch" )
-			{
-				my $dataset = $obj->get_dataset;
-	
-				my $merge = $node->getAttribute( "merge" );
-				my $value = $node->getAttribute( "value" );
-				my $match = $node->getAttribute( "match" );
-	
-				my @multiple_names = split /\//, $fieldname;
-				my @multiple_fields;
-				
-				# Put the MetaFields in a list
-				foreach (@multiple_names)
-				{
-					push @multiple_fields, EPrints::Utils::field_from_config_string( $dataset, $_ );
-				}
-		
-				my $sf = EPrints::Search::Field->new( 
-					$session, 
-					$dataset, 
-					\@multiple_fields,
-					$value,	
-					$match,
-					$merge );
-	
-				$addkids = $sf->get_conditions->item_matches( $obj );
-	
-				if( $name eq "ifnotmatch" )
-				{
-					$addkids = !$addkids;
-				}
-
-				$collapsed = $session->make_doc_fragment;
-			}
+			$collapsed = $session->make_doc_fragment;
+			$addkids = _test_collapse_condition( $session, $node, %params );
 		}
 	}
 
@@ -1063,13 +937,106 @@ sub collapse_conditions
 				collapse_conditions( 
 					$session,
 					$child,
-					$obj,
 					%params ) );			
 		}
 	}
 
 	return $collapsed;
 }
+
+sub _test_collapse_condition
+{
+	my( $session, $node, %params ) = @_;
+
+	my $fieldname = $node->getAttribute( "name" );
+	my $element_name = $node->getTagName;
+	$element_name =~ s/^ep://;
+
+	my $param;
+	my $obj;
+	if( $fieldname =~ s/^\$// )
+	{
+		# fieldname started with $
+		if( $fieldname =~ s/^([^.]+.)// )
+		{
+			# fieldname is property of an object
+			$obj = $param;
+		}
+		else
+		{
+			# fieldname is a simple field
+			$param = $params{$fieldname};
+		}
+	}
+	else
+	{
+		# fieldname in item object
+		$obj = $params{item};
+	}
+
+	my $condition = 0;
+
+	if( $element_name eq "ifset" || $element_name eq "ifnotset" )
+	{
+		if( defined $obj )
+		{
+			$condition = $obj->is_set( $fieldname );
+		}
+		else
+		{
+			$condition = defined $params{$fieldname};
+		}
+	}
+
+	if( $element_name eq "ifmatch" || $element_name eq "ifnotmatch" )
+	{
+		if( defined $obj )
+		{
+			my $dataset = $obj->get_dataset;
+	
+			my $merge = $node->getAttribute( "merge" );
+			my $value = $node->getAttribute( "value" );
+			my $match = $node->getAttribute( "match" );
+
+			my @multiple_names = split /\//, $fieldname;
+			my @multiple_fields;
+			
+			# Put the MetaFields in a list
+			foreach (@multiple_names)
+			{
+				push @multiple_fields, EPrints::Utils::field_from_config_string( $dataset, $_ );
+			}
+	
+			my $sf = EPrints::Search::Field->new( 
+				$session, 
+				$dataset, 
+				\@multiple_fields,
+				$value,	
+				$match,
+				$merge );
+	
+			$condition = $sf->get_conditions->item_matches( $obj );
+		}
+		else
+		{
+			my $value = $node->getAttribute( "value" );
+			foreach( split( /\s+/,$value ) )
+			{
+				$condition = 1 if( $_ eq $params{$fieldname} );
+			}
+		}
+	}
+
+	if( $element_name eq "ifnotmatch" || $element_name eq "ifnotset" )
+	{
+		return !$condition;
+	}
+
+	return $condition;
+}
+
+
+
 
 sub _render_citation_aux
 {

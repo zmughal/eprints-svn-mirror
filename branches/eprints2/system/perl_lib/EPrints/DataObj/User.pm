@@ -713,15 +713,16 @@ sub mail
 	}
 
 	return EPrints::Utils::send_mail(
-		$self->{session}->get_repository,
-		$langid,
-		EPrints::Utils::tree_to_utf8( $self->render_description ),
-		$email,
-		EPrints::Utils::tree_to_utf8( $lang->phrase( $subjectid, {}, $self->{session} ) ),
-		$message,
-		$lang->phrase( "mail_sig", {}, $self->{session} ),
-		$remail,
-		$rname ); 
+		session  => $self->{session},
+		langid   => $langid,
+		to_name  => EPrints::Utils::tree_to_utf8( $self->render_description ),
+		to_email => $email,
+		subject  => EPrints::Utils::tree_to_utf8( $lang->phrase( $subjectid, {}, $self->{session} ) ),
+		message  => $message,
+		sig      => $lang->phrase( "mail_sig", {}, $self->{session} ),
+		replyto_name  => $rname, 
+		replyto_email => $remail,
+	); 
 }
 
 

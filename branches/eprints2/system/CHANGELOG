@@ -3623,4 +3623,13 @@ PACKAGE: 2.2.99.2
 2006-03-27 cjg
 
  * Fixed bug in cgi/register (didn't work!)
- 
+ * Changed email system to use MIME::Lite
+ * Changed email system to send HTML as well as text emails
+ * Tweaked the subscriptions to look better under HTML
+ * Made <a href=""> convert to text by inserting the URL in brackets after
+    the link text.
+ * Rewrote collapse conditions to handle more complicated paramteters, ready
+    for the new workflow code.
+ * The email methods have a new hash based set of paramters. This will break
+    any configs with custom email setups, but should be easy to adapt them.
+  
