@@ -3620,3 +3620,7 @@ PACKAGE: 2.2.99.2
 
  * user home page now uses a phrase to control layout.
 
+2006-03-27 cjg
+
+ * Fixed bug in cgi/register (didn't work!)
+ 

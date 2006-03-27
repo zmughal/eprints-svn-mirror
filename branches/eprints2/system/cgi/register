@@ -126,17 +126,18 @@ sub make_page
 	}
 
 	my $pin = sprintf( "%04X%04X%04X%04X",int rand 0xffff,int rand 0xffff,int rand 0xffff,int rand 0xffff );
-	foreach my $fieldid ( keys %{$f} )
-	{
-		$user_data->{$fieldid} = $v->{$fieldid};
-	}
 	my $user_data = { 
 		usertype => $default_type,
 		newemail => undef,
 		pin => $pin,
 		pinsettime => time(),
 	};
-	my $user = $userds->create_object( $session, $user_data );
+	foreach my $fieldid ( keys %{$f} )
+	{
+		$user_data->{$fieldid} = $v->{$fieldid};
+	}
+	my $user_dataset = $session->get_repository->get_dataset( "user" );
+	my $user = $user_dataset->create_object( $session, $user_data );
 
 	my $page = $session->make_doc_fragment;
 	$page->appendChild( $session->html_phrase( 
