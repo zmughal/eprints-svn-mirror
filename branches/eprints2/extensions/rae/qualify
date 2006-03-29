@@ -101,7 +101,7 @@ foreach my $field ( @{ $archive->get_conf( "rae", "fields", "qualify" ) } )
 	);
 	push @metafields, $metafield;
 
-	# Check for updated value
+	# Get updated value
 	my $action_button = $session->get_action_button;
 	if( defined $action_button && $action_button eq "submit" )
 	{

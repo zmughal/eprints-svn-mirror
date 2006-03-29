@@ -39,8 +39,13 @@ my $archive = $session->get_archive();
 
 my $page = $session->make_doc_fragment;
 my $user_ds = $session->get_archive()->get_dataset( "user" );
-my $group_by = $user_ds->get_field( $archive->get_conf( "rae", "group_reports_by") );
-# TODO: check $group_by has a value
+my $group_by = $user_ds->get_field( $archive->get_conf( "rae", "group_reports_by" ) );
+if( !defined $group_by )
+{
+	$session->render_error( $session->make_text( "group_reports_by has invalid value: " . $archive->get_conf( "rae", "group_reports_by" ) ) );
+	$session->terminate;
+	exit( 0 );
+}
 
 my $group = $session->param( "group" );
 if( !defined $group || $group eq "" )
@@ -49,7 +54,15 @@ if( !defined $group || $group eq "" )
 	my $list_frag = $session->make_doc_fragment;
 	my $ul = $session->make_element( "ul" );
 	$list_frag->appendChild( $ul );
+	
+	# "All" group
+	my $li = $session->make_element( "li" );
+	$ul->appendChild( $li );
+	my $a = $session->render_link( "?group=all" );
+	$li->appendChild( $a );
+	$a->appendChild( $session->html_phrase( "rae/report:all_users_group" ) );
 
+	# Groups
 	my $groups = $group_by->get_values( $session, $user_ds );
 	foreach my $group ( @$groups )
 	{
@@ -77,8 +90,12 @@ my $searchexp = new EPrints::SearchExpression(
 	custom_order => "name",
 	dataset => $user_ds,
 	keep_cache => 1,
+	allow_blank => 1,
 );
-$searchexp->add_field( $group_by , $group, "IN", "ALL" );
+if( $group ne "all" )
+{
+	$searchexp->add_field( $group_by , $group, "IN", "ALL" );
+}
 $searchexp->perform_search;
 
 # Get measures of esteem for the group of users
@@ -120,7 +137,7 @@ my $mainonly = defined( $session->param( "mainonly" ) ) && $session->param( "mai
 
 my $info = {
 	prob_count => 0,
-	#csv_rows => 0,
+	csv_rows => 0,
 	page => $session->make_doc_fragment,
 	moe_for_user => \%moe_for_user,
 	eprints_for_user => \%eprints_for_user,
@@ -144,9 +161,19 @@ else
 {
 	$info->{page} = $session->make_element( "table" );
 	$searchexp->map( \&do_user, $info );
-	my $title = $session->html_phrase( "rae/report:group_page_title", 
-		group => $group_by->render_value( $session, $group )
-	);
+	
+	my $title;
+	if( $group eq "all" )
+	{
+		$title = $session->html_phrase( "rae/report:all_group_page_title" );
+	}
+	else
+	{
+		$title = $session->html_phrase( "rae/report:group_page_title", 
+			group => $group_by->render_value( $session, $group )
+		);
+	}
+
 	my $csv_link = $session->render_link( "./report/rae-" . $group . ".csv?group=" . $group . "&csv=1" );
 	# mainonly parameter picked up by build_page
 	my $mainonly_link = $session->render_link( "./report/rae-" . $group. ".html?group=" . $group . "&mainonly=yes" );
@@ -254,7 +281,7 @@ sub do_user_mainonly
 			$h3->appendChild( $metafield->render_name( $session ) );
 			my $p = $session->make_element( "p" );
 			$div->appendChild( $p );
-			# TODO: newlines
+			$value =~ s/\n/\n<br>/g;
 			$p->appendChild( $session->make_text( $value  ) );
 		}
 	}

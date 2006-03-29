@@ -25,6 +25,8 @@ View/export RAE report
 <p>This option allows you to view and export RAE reports.</p>
 </ep:phrase>
 
+<!-- View User -->
+
 <ep:phrase ref="cgi/users/staff/view_user:rae_moe_link" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
 View/edit RAE measures of esteem
 </ep:phrase>
@@ -287,7 +289,11 @@ Also selected by: <ep:pin ref="names" /> <ep:pin ref="resolve_link">Edit Selecti
 </ep:phrase>
 
 <ep:phrase ref="rae/report:problem_no_doc" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
-No document (type=<ep:pin ref="type" />)
+No document (type=<ep:pin ref="type" />) <ep:pin ref="resolve_link">Edit Item</ep:pin>
+</ep:phrase>
+
+<ep:phrase ref="rae/report:problem_no_issn" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+No ISSN <ep:pin ref="resolve_link">Edit Item</ep:pin>
 </ep:phrase>
 
 <!-- Page: qualify -->

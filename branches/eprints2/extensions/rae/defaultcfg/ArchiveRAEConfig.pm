@@ -26,8 +26,6 @@ sub get_rae_conf {
 
 my $c = ();
 
-my $fields = {};
-
 # Measures of esteem fields
 $c->{fields}->{moe} = [ 
 	{ name => "memberships", type => "longtext" },
@@ -41,7 +39,7 @@ $c->{fields}->{moe} = [
 	{ name => "other", type => "longtext" },
 ];
 
-# Selection fields
+# Qualify selection fields
 $c->{fields}->{qualify} = [
 	{ name => "full_text", type => "boolean" },
 	{ name => "external", type => "boolean" },
@@ -59,48 +57,30 @@ $c->{fields}->{qualify} = [
 # the item selection page
 $c->{selection_search} = "advanced";
 
-# The field to group by on the reporting page
+# The (user) field to group by on the reporting page
 $c->{group_reports_by} = "dept";
 
 return $c;
 }
 
-# Test whether the given user can assume the given role.
-# Example: let certain users assume role of any person in school
-sub rae_can_user_assume_role
-{	
-	my ( $session, $user, $role ) = @_;
-	return 1 if $user->has_priv( "edit-user" );
-	return 0;
-};
-
-# Return a list of (id, name) pairs representing the user roles the
-# given user is able to assume
-# Example: let certain users assume role of any person in school
-sub rae_roles_for_user
-{
-	my ( $session, $user ) = @_;
-	return ();
-};
-
-# Set the default values for the search used on the eprint
-# selection page
+# Populate the "Available Items" search for the given user
 sub rae_default_selection_search {
 
 	my ( $session, $searchexp, $user ) = @_;
 
 	my $dataset = $session->get_archive->get_dataset( "archive" );
 
-	#$searchexp->add_field( $dataset->get_field( "title" ), "man", "IN", "ALL" );
 	$searchexp->add_field( $dataset->get_field( "creators" ), $user->get_value( "name" )->{family}, "IN", "ALL" );
 	$searchexp->add_field( $dataset->get_field( "date_effective" ), "2001-" );
 };
 
-# Return a list of problems with the given item as selected by the 
-# given user (and possibly other users)
+# Return a list of problems with the given item as selected by the given user
+# $values is a hashref of qualifying metadata the user entered for this selection
+# $others is a reference to an array of all users who have selected this item
 sub rae_problems_with_selection { 
 	my ( $session, $user, $item, $values, $others ) = @_;
-	my @problems;
+
+	my @problems;	
 
 	# Example: check no other users have selected this item
 	my @names;
@@ -111,15 +91,16 @@ sub rae_problems_with_selection {
                 if( defined $other )
                 {
                         push @names, EPrints::Utils::tree_to_utf8( $other->render_description );
-                } else {
+                }
+		else
+		{
 			push @names, $session->phrase( "rae:unknown_user", id => $otherid );
 		}
         }
         if( scalar( @names ) > 0 )
         {
-		my $prob = $session->make_doc_fragment;
 		my $perl_url = $session->get_archive->get_conf("perl_url");
-		my $link = $session->render_link( $perl_url . "/users/rae/raeselect?role=" . $user->get_id );	
+		my $link = $session->render_link( $perl_url . "/users/rae/select?role=" . $user->get_id );	
 	
 		push @problems, $session->html_phrase( "rae/report:problem_multiple_users",
                         names => $session->make_text( join(", ", @names) ),
@@ -128,9 +109,11 @@ sub rae_problems_with_selection {
 	
 	# Example: check item has full text
 	my @docs = $item->get_all_documents();
-	if( scalar( @docs ) == 0 ) {
+	if( scalar( @docs ) == 0 )
+	{
 		push @problems, $session->html_phrase( "rae/report:problem_no_doc",
-			type => $session->make_text( $item->get_value( "type" ) ) );
+			type => $session->make_text( $item->get_value( "type" ) ),
+			resolve_link => $session->render_link( $item->get_url( 1 ) ) ); 
 	}
 
 	# Example: if this item is an article, check it has an ISSN
@@ -138,69 +121,95 @@ sub rae_problems_with_selection {
 	{
 		if( !$item->is_set( "issn" ) )
 		{
-			push @problems, $session->html_phrase( "rae/report:problem_no_issn" );
+			push @problems, $session->html_phrase( "rae/report:problem_no_issn",
+				resolve_link => $session->render_link( $item->get_url( 1 ) ) ); 
 		}
 	}
 
 	return \@problems;
 };
 
-# Return the header line of the CSV output
+# Print CSV header row(s)
 sub rae_print_csv_header {
-	print _rae_escape_csv('Dept', 'Username', 'Surname', 'First Name', 'Score', 'Publication', 'Paper' );
+	print _rae_escape_csv( "Dept", "Username", "Surname", "First Name", "Score", "Publication", "Paper" );
 };
 
 
-# Return a CSV row for the given item as selected by the given user
+# Print CSV row for item as selected by user
 sub rae_print_csv_row {
 	my ( $session, $user, $item ) = @_;
-	my $name = $user->get_value( 'name' );
-	my $book = $item->get_value( 'publication' );
-	$book = $item->get_value( 'event_title' ) if !defined $book;
+
+	my $name = $user->get_value( "name" );
+
+	my $book = "";
+	if( $item->get_type eq "article" )
+	{
+		$book = $item->get_value( "publication" );
+	}
+	elsif( $item->get_type eq "conference_item" )
+	{
+		$book = $item->get_value( "event_title" );
+	}
+	elsif( $item->get_type eq "book_section" )
+	{
+		$book = $item->get_value( "book_title" );
+	}
 	
 	print _rae_escape_csv(
 		$user->get_value( "dept" ),
 		$user->get_value( "username" ),
 		$name->{family},
 		$name->{given},
-		'',
+		"",
 		$book,
-		EPrints::Utils::tree_to_utf8( $item->render_citation ),
-	);
-};
+		EPrints::Utils::tree_to_utf8( $item->render_citation ) );
+}
 
-# Return the footer line(s) of the CSV output, given the number
-# of rows already output
+# Print CSV footer row(s)
+# $rows is the number of times rae_print_csv_row has been called
 sub rae_print_csv_footer {
 	my ( $rows ) = @_;
-	print _rae_escape_csv( '','','','','','','' );
-	my $range = 'E2:E'.($rows+1); # E1 is header row
-	print _rae_escape_csv( 'Score','Label','Total Papers','','','','','');
-	print _rae_escape_csv( '0', "Unclassified", '='.$rows."-INDEX(FREQUENCY($range,A".($rows+4).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+5).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+6).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+7).":A".($rows+8)."),2)", '','','','','' );
-	print _rae_escape_csv( '1', "1*", "=INDEX(FREQUENCY($range,A".($rows+4).":A".($rows+8)."),2)",'','','','','' );
-	print _rae_escape_csv( '2', "2*", "=INDEX(FREQUENCY($range,A".($rows+5).":A".($rows+8)."),2)",'','','','','' );
-	print _rae_escape_csv( '3', "3*", "=INDEX(FREQUENCY($range,A".($rows+6).":A".($rows+8)."),2)",'','','','','' );
-	print _rae_escape_csv( '4', "4*", "=INDEX(FREQUENCY($range,A".($rows+7).":A".($rows+8)."),2)",'','','','','' );
+
+	print _rae_escape_csv( "", "", "", "", "", "", "" );
+
+	my $range = "E2:E".($rows+1); # E1 is header row
+	print _rae_escape_csv( "Score", "Label", "Total Papers", "", "", "", "", "");
+
+	print _rae_escape_csv( "0", "Unclassified", "=".$rows."-INDEX(FREQUENCY($range,A".($rows+4).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+5).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+6).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+7).":A".($rows+8)."),2)", "", "", "", "", "" );
+	print _rae_escape_csv( "1", "1*", "=INDEX(FREQUENCY($range,A".($rows+4).":A".($rows+8)."),2)", "", "", "", "", "" );
+	print _rae_escape_csv( "2", "2*", "=INDEX(FREQUENCY($range,A".($rows+5).":A".($rows+8)."),2)", "", "", "", "", "" );
+	print _rae_escape_csv( "3", "3*", "=INDEX(FREQUENCY($range,A".($rows+6).":A".($rows+8)."),2)", "", "", "", "", "" );
+	print _rae_escape_csv( "4", "4*", "=INDEX(FREQUENCY($range,A".($rows+7).":A".($rows+8)."),2)", "", "", "", "", "" );
 };
 
-# Helper function: format a list of values as a CSV row
+# Helper function: format a list of values as CSV
 sub _rae_escape_csv
 {
 	my( @values ) = @_;
+
 	foreach( @values )
 	{
 		s/([\\\"])/\\$1/g;
 	}
-	return '"'.join( '","', @values ).'"'."\n";
+	return '"' . join( '","', @values ) . '"' ."\n";
 }
 
-# Map users to schools
-sub dept_for_user {
-	my ( $user ) = @_;
-	return "uos-fp" if $user->get_id eq "500";
-	return "uos-jf" if $user->get_id eq "341";
-	return "uos-fp" if $user->get_id eq "7985";
-	return undef;
-}
+# Can the given user can assume the given role?
+sub rae_can_user_assume_role
+{	
+	my ( $session, $user, $role ) = @_;
+
+	return 1 if $user->has_priv( "edit-user" );
+	return 0;
+};
+
+# Return a list of (id, name) pairs representing the user roles the
+# given user can assume
+sub rae_roles_for_user
+{
+	my ( $session, $user ) = @_;
+
+	return ();
+};
 
 1;

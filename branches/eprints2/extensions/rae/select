@@ -130,15 +130,11 @@ if( !defined $search_frag )
 }
 $search_frag->appendChild( $session->render_hidden_field( "role", $role->get_id ) ) if $user->get_id != $role->get_id;
 
-my $moe_url = $archive->get_conf("perl_url") . "/users/rae/moe";
-$moe_url .= "?role=" . $role->get_id if $user->get_id != $role->get_id;
-
 my $title = $session->html_phrase( "rae/select:page_title", user => $role->render_description );
 my $page = $session->html_phrase( "rae/select:page",
 	search => $search_frag,
 	selected => dopage_selected( $session, $searchexp, $role ),
 	roles => $roles_frag,
-	moe_link => $session->render_link( $moe_url ),
 );
 $session->build_page( $title, $page );
 $session->send_page();

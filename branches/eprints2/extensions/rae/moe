@@ -106,7 +106,7 @@ foreach my $field ( @{ $archive->get_conf( "rae", "fields", "moe" ) } )
 	);
 	push @metafields, $metafield;
 
-	# Check for updated value
+	# Get updated value
 	my $action_button = $session->get_action_button;
 	if( defined $action_button && $action_button eq "submit" )
 	{
@@ -145,14 +145,11 @@ $form_frag = $session->render_input_form(
 $form_frag->appendChild( $session->render_hidden_field( "role", $role->get_id ) ) if $user->get_id != $role->get_id;
 
 # Build & Send page
-my $select_url = $archive->get_conf("perl_url") . "/users/rae/select";
-$select_url .= "?role=" . $role->get_id if $user->get_id != $role->get_id;
 my $title = $session->html_phrase( "rae/moe:page_title", user => $role->render_description );
 my $page = $session->html_phrase( "rae/moe:page",
 	form => $form_frag,
 	roles => $roles_frag,
 	shortcuts => $shortcuts_frag,
-	select_link => $session->render_link( $select_url ),
 );
 
 $session->build_page( $title, $page );
