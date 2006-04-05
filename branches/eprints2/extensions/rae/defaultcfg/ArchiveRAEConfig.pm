@@ -199,7 +199,7 @@ sub rae_can_user_assume_role
 {	
 	my ( $session, $user, $role ) = @_;
 
-	return 1 if $user->has_priv( "edit-user" );
+	return 1 if $user->has_priv( "staff-view" );
 	return 0;
 };
 

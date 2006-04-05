@@ -4,6 +4,8 @@ OVERVIEW
 
 What will the RAE plugin do for your repository?
 
+Provide a base for customising to your repository's specific RAE requirements.
+
 Facilitate the gathering of evidence for RAE returns by allowing users to:
 
 * Record measures of esteem
@@ -88,13 +90,13 @@ $ service httpd restart
 
 The database tables used by the RAE module in this release are dependant on configuration settings, rather like EPrints datasets.
 
-The structure of the tables depend on which fields are used in the "Measures of Esteem" and "Qualify Selection" forms.
+The structure of the tables depend on which fields are needed in the "Measures of Esteem" and "Qualify Selection" forms.
 
 A command line script has been provided to generate these tables:
 
 $ /opt/eprints2/bin/create_rae_tables ARCHIVEID
 
-4. Add links to User Areaa page
+4. Add links to User Area page
 
 Edit /opt/eprints2/cgi/users/home
 
@@ -125,41 +127,8 @@ The following links are a suggested starting point:
 	location=>"user",
 	code=>"rae_report",
 	page=>"rae/report",
-	priv=>"edit-user"
+	priv=>"editor"
 },
-
-Default english language phrases for these links are defined in phrases-rae-en.xml
-
-5. Add links to View User page
-
-The simplest way to allow unit managers to edit a user's measures of esteem or selections is via an admin level account.
-
-Unit managers can then use the User Search facility to find specific users. Clicking on a search result goes to a page listing all the user details, enabling the manager to verify that this is the right user.
-
-Add links to this page to allow the unit manager to go on to edit that user's RAE selections.
-
-Edit /opt/eprints2/archives/ARCHIVEID/cfg/ArchiveRenderConfig.pm and find the user_render_full subroutine:
-
-577	sub user_render_full
-	{
-		...
-
-635		$info->appendChild( $table );
-
-		my $perl_url = $session->get_archive->get_conf( "perl_url" );
-
-		my $moe_link = $session->render_link( "$perl_url/users/rae/moe?role=" . $user->get_id );
-		$moe_link->appendChild( $session->html_phrase(  "cgi/users/staff/view_user:rae_moe_link" ) );
-		$info->appendChild( $moe_link );
-
-		$info->appendChild( $session->make_element( "br" ) );
-
-		my $select_link = $session->render_link( "$perl_url/users/rae/select?role=" . $user->get_id );
-		$select_link->appendChild( $session->html_phrase( "cgi/users/staff/view_user:rae_select_link" ) );
-		$info->appendChild( $select_link );
-
-		return $info;
-	}
 
 Default english language phrases for these links are defined in phrases-rae-en.xml
 
@@ -253,10 +222,88 @@ To change the way that the CSV output is produced, change these hooks.
 
 NOTE: use the _rae_escape_csv helper function to format a list of values as a CSV row.
 
-8. Finer-grained control over who can edit what
-
-As detailed in section 5, adding links to the View User page is the simplest way to allow unit managers edit access to users' measures of esteem and selections.
-
-However, the rae_can_user_assume_role and rae_roles_for_user allow you to configure other access rules.
+8. Allowing some users to enter data/make selections on behalf of others
 
 By default, anyone with the appropriate priviledges can edit another user's measures of esteem or selections.
+
+Example: A secretary needs to enter measures of esteem/selections on behalf of academics in the Maths department.
+
+Use the rae_can_user_assume_role and rae_roles_for_user hook to add this rule:
+
+sub can_user_assume_role {
+	       
+	my ( $session, $user, $role ) = @_;
+
+        return 1 if $user->has_priv( "staff-view" );
+	
+	return 0 if !defined $role;
+
+	# Secretary is user 123
+	return 1 if $user->get_id eq "123" && $role->get_value( "dept" ) eq "maths";
+
+	return 0;
+};
+
+sub roles_for_user {
+
+	my ( $session, $user ) = @_;
+
+	if( $user->get_id eq "123" )
+	{
+		my @roles;
+
+		# Search for all the users in the maths department
+		my $searchexp = new EPrints::SearchExpression(
+			session => $session,
+			custom_order => "name",
+			dataset => $session->get_archive->get_dataset( "user" ),
+		);
+		$searchexp->add_field( $session->get_archive->get_dataset( "user" )->get_field( "dept" ) , "maths" );
+		$searchexp->perform_search;
+		foreach ( $searchexp->get_records ) {
+			push @roles, [ $_->get_id, EPrints::Utils::tree_to_utf8( $_->render_description ) ];
+		}
+		return @roles;
+	}
+
+	return ();
+}
+
+Now when the secretary views the measures of esteem/selections pages, they will be presented a list of users for whom they are able to view and edit measures of esteem/selections.
+
+9. Alternative to #8
+
+Alternatively, the secretary could use the "User Search" facility to find specific users. Clicking on a search result page takes them to a page listing all the user details (so it can be verified that this is the right user); we can add links to this page to allow the secretary to edit that user's measures of esteem and selections.
+
+Create a new user type called "raeuser" which is based on the normal "user" type but has one extra priviledge ("staff view") by editing ArchiveConfig.pm.
+
+An administrator then needs to edit the secretary's user record to make them an "raeuser" by using the User Search and then Edit User.
+
+When the secretary logs in, the "Staff Search" option will now be available from their User Area page.
+
+Edit /opt/eprints2/archives/ARCHIVEID/cfg/ArchiveRenderConfig.pm and add links the measures of esteem and selections pages to the user_render_full subroutine:
+
+577	sub user_render_full
+	{
+		...
+
+635		$info->appendChild( $table );
+
+		my $perl_url = $session->get_archive->get_conf( "perl_url" );
+
+		my $moe_link = $session->render_link( "$perl_url/users/rae/moe?role=" . $user->get_id );
+		$moe_link->appendChild( $session->html_phrase(  "cgi/users/staff/view_user:rae_moe_link" ) );
+		$info->appendChild( $moe_link );
+
+		$info->appendChild( $session->make_element( "br" ) );
+
+		my $select_link = $session->render_link( "$perl_url/users/rae/select?role=" . $user->get_id );
+		$select_link->appendChild( $session->html_phrase( "cgi/users/staff/view_user:rae_select_link" ) );
+		$info->appendChild( $select_link );
+
+		return $info;
+	}
+
+Default english language phrases for these links are defined in phrases-rae-en.xml
+
+Now when the secretary carries out a staff search, 
