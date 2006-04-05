@@ -56,7 +56,7 @@ else
 if( !$session->get_db->has_table( "rae_selections" ) )
 {
 	my $sql = "CREATE TABLE rae_selections (userid INT(11), eprintid INT(11), userid_actual INT(11), PRIMARY KEY (userid, eprintid)";
-	foreach my $field ( @{ $session->get_archive->get_conf( "rae", "fields", "edit" ) } )
+	foreach my $field ( @{ $session->get_archive->get_conf( "rae", "fields", "qualify" ) } )
 	{
 		my $metafield = EPrints::MetaField->new( 
 			archive => $session->get_archive(),
