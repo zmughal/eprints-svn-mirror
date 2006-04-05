@@ -273,15 +273,23 @@ Now when the secretary views the measures of esteem/selections pages, they will 
 
 9. Alternative to #8
 
-Alternatively, the secretary could use the "User Search" facility to find specific users. Clicking on a search result page takes them to a page listing all the user details (so it can be verified that this is the right user); we can add links to this page to allow the secretary to edit that user's measures of esteem and selections.
+Alternatively, the secretary could use the "User Search" facility to find specific users. Clicking on a search result page takes them to a "View User" page listing all the user details (so it can be verified that this is the right user).
 
-Create a new user type called "raeuser" which is based on the normal "user" type but has one extra priviledge ("staff view") by editing ArchiveConfig.pm.
+Create a new user type called "raeuser" which is based on the normal "user" type but has one extra priviledge ("staff-view") by editing ArchiveConfig.pm.
+
+637	$c->{userauth} = {
+		user => {
+			auth  => $CRYPTED_DBI,
+			priv  =>  [ "subscription", "set-password", "deposit", "change-email", "change-user" ] },
+		raeuser => {
+			auth  => $CRYPTED_DBI,
+			priv  =>  [ "subscription", "set-password", "deposit", "change-email", "change-user", "staff-view" ] },
 
 An administrator then needs to edit the secretary's user record to make them an "raeuser" by using the User Search and then Edit User.
 
-When the secretary logs in, the "Staff Search" option will now be available from their User Area page.
+When the secretary logs in, the "User Search" option will now be available from their User Area page. The secretary can now search for and view the user records for the academics; we need to add a couple of links to the "View User" page to allow the secretary to edit their measures of esteem and selections.
 
-Edit /opt/eprints2/archives/ARCHIVEID/cfg/ArchiveRenderConfig.pm and add links the measures of esteem and selections pages to the user_render_full subroutine:
+Edit /opt/eprints2/archives/ARCHIVEID/cfg/ArchiveRenderConfig.pm and add change the user_render_full subroutine:
 
 577	sub user_render_full
 	{
@@ -305,5 +313,3 @@ Edit /opt/eprints2/archives/ARCHIVEID/cfg/ArchiveRenderConfig.pm and add links t
 	}
 
 Default english language phrases for these links are defined in phrases-rae-en.xml
-
-Now when the secretary carries out a staff search, 
