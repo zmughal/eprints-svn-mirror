@@ -2,27 +2,21 @@ EPrints RAE Module - SILVER RELEASE
 
 OVERVIEW
 
-What will the RAE plugin do for your repository?
+What can the RAE plugin do for your repository?
 
-Provide a base for customising to your repository's specific RAE requirements.
+1. Provide a base for customising to your repository's specific RAE requirements
 
-Facilitate the gathering of evidence for RAE returns by allowing users to:
+2. Facilitate the gathering of evidence for RAE returns by allowing users to:
 
-* Record measures of esteem
-* Select items from the repository
-* Qualify each selected item for RAE return 
+ * Record measures of esteem
+ * Select items from the repository
+ * Qualify each selected item for RAE return 
 
-And allowing unit managers to:
+   And allowing unit managers/administrators to:
 
-* Carry out each of the above on behalf of a user (e.g. to adjudicate between two users selecting the same item)
-* Identify and resolve problems with selections
-* Produce reports in Word and Excel format
-
-What won't the RAE plugin do for your repository?
-
-* Optimise your RAE return
-* Produce an HEFCE XML upload
-* Align deposit types and metadata with the RAE
+ * Carry out each of the above on behalf of a user (e.g. to adjudicate between two users selecting the same item)
+ * Identify and resolve problems with selections
+ * Produce reports in Word and Excel format
 
 INSTALLATION
 
@@ -61,16 +55,13 @@ Add ArchiveRAEConfig.pm to the list of configuration files loaded:
 	$c->{archivefields} = get_metadata_conf();
 	$c->{rae} = get_rae_conf();
 
-
-phrases-rae-XX.xml will need to be included in phrases-XX.xml as an entity:
-
 823	$entities{version} = EPrints::Config::get( "version" );
 	$entities{ruler} = EPrints::XML::to_string( $archive->get_ruler() );
 	$entities{"raephrases SYSTEM"} = "phrases-rae-" . $langid . ".xml";
 
 	return %entities;
 
-Finally, edit phrases-en.xml* and add the raephrases entity:
+Edit phrases-en.xml* and add the raephrases entity:
 
 1	<?xml version="1.0" encoding="iso-8859-1" standalone="no" ?>
 	<!DOCTYPE phrases SYSTEM "entities-en.dtd">
@@ -80,7 +71,7 @@ Finally, edit phrases-en.xml* and add the raephrases entity:
 
 	&raephrases;
 
-Restart apache to load in the new RAE configuration.
+Restart apache to load in the new RAE configuration:
 
 $ service httpd restart
 
@@ -134,19 +125,19 @@ Default english language phrases for these links are defined in phrases-rae-en.x
 
 CONFIGURATION
 
-The ArchiveRAEConfig.pm and phrases-rae-en.xml files provide a general configuration, but may need fine tuning to meet the specific requirements of your institution.
+The ArchiveRAEConfig.pm and phrases-rae-en.xml files provide a general configuration. It is likely that these files will need fine tuning to meet the specific requirements of your institution.
 
 NOTE: After making changes to a configuration file, you must reload the configuration via force_config_reload or by restarting apache.
 
 1. Changing the text that appears one or more of the RAE module pages
 
-Locate the phrase in phrases-rae-XX.xml and make required changes.
+Locate the phrase in phrases-rae-*.xml and make required changes.
 
 2. Changing the fields that are displayed on the measures of esteem or qualify selection forms
 
 Locate the $c->{fields}->{moe} (measures of esteem fields) or $c->{fields}->{qualify} (qualify fields) structure in ArchiveRAEConfig.pm.
 
-Add or remove fields as required. The addition of new fields requires the phrases rae_fieldname_FIELDNAME and rae_fieldhelp_FIELDNAME to be defined in phrases-rae-XX.xml. See http://www.eprints.org/documentation/tech/php/metadata.php for available types, although note that only single-value, single-part fields are currently supported.
+Add or remove fields as required. The addition of new fields requires the phrases rae_fieldname_FIELDNAME and rae_fieldhelp_FIELDNAME to be defined in phrases-rae-*.xml. See http://www.eprints.org/documentation/tech/php/metadata.php for available types, although note that only single-value, single-part fields are currently supported.
 
 If new fields have been added, the RAE module database tables must be regenerated. If the tables contain no valuable data, drop them and rerun create_rae_tables. Otherwise, the additional fields need to be added manually; see http://wiki.eprints.org/w/Adding_a_Field_to_a_Live_Repository.
 
@@ -157,11 +148,12 @@ By default, the RAE plugin uses the "advanced" search, as specified in ArchiveCo
 To use a different search instead, change the "selection_search" option in ArchiveRAEConfig.pm, e.g.:
 
 $c->{selection_search} = "simple";
+
 $c->{selection_search} = "rae"; # if you want to design a search specifically for the RAE plugin
 
 4. Changing the way the default search is populated
 
-When users visit the "Select Items" page, the "Available items" that they see are the results of a search. By default, this search looks for item whose creators include the user and which were effective from 2001.
+When users visit the "Select Items" page, the "Available items" that they see are the results of a search. By default, this search looks for items whose creators include the user (or at least have a matching surname) and which were effective from 2001.
 
 To use different search parameters instead, change the "rae_default_selection_search" hook.
 
@@ -269,7 +261,7 @@ sub roles_for_user {
 	return ();
 }
 
-Now when the secretary views the measures of esteem/selections pages, they will be presented a list of users for whom they are able to view and edit measures of esteem/selections.
+Now when the secretary views the "Measures of Esteem" and "Select Items" pages, they will be presented a list of users on whose behalf they can enter data/make selections.
 
 9. Alternative to #8
 
@@ -287,7 +279,7 @@ Create a new user type called "raeuser" which is based on the normal "user" type
 
 An administrator then needs to edit the secretary's user record to make them an "raeuser" by using the User Search and then Edit User.
 
-When the secretary logs in, the "User Search" option will now be available from their User Area page. The secretary can now search for and view the user records for the academics; we need to add a couple of links to the "View User" page to allow the secretary to edit their measures of esteem and selections.
+When the secretary logs in, the "User Search" option will now be available from their User Area page. The secretary can now search for and view the user records for the academics; add links to the "View User" page to also allow the secretary to edit their measures of esteem and selections.
 
 Edit /opt/eprints2/archives/ARCHIVEID/cfg/ArchiveRenderConfig.pm and add change the user_render_full subroutine:
 
