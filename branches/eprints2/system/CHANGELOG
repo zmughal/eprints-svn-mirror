@@ -3633,3 +3633,8 @@ PACKAGE: 2.2.99.2
  * The email methods have a new hash based set of paramters. This will break
     any configs with custom email setups, but should be easy to adapt them.
  * EPrints now set automatic fields when they first get created. 
+
+2006-04-06 cjg
+
+ * XML to_string method now allows ProcessingInstructions. Things in <?..?>
+

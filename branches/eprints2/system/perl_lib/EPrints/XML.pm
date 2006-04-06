@@ -517,6 +517,7 @@ sub to_string
 			$node, 
 			"Text", 
 			"CDATASection", 
+			"ProcessingInstruction",
 			"EntityReference" ) )
 	{
 		push @n, $node->toString;
