@@ -175,7 +175,7 @@ sub eprint_render
 					my $form = $session->render_form( "post", $session->get_repository->get_conf( "perl_url" ) . "/request_doc" );
 					$form->appendChild( $session->render_hidden_field( "eprintid", $eprint->get_id ) );
 					$form->appendChild( $session->render_action_buttons( 
-						"submit" => $session->phrase( "request_doc:request_$status" )
+						"submit" => $session->phrase( "request:button" )
 					) );
 					$page->appendChild( $form );
 				}

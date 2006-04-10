@@ -11,11 +11,24 @@ exit( 1 ) unless( defined $session );
 
 # Check parameters
 my $eprintid = $session->param( "eprintid" );
-error_page( $session, $session->html_phrase( "respond_doc/error" ) ) if !defined( $eprintid );
 my $eprint = EPrints::DataObj::EPrint->new( $session, $eprintid );
-error_page( $session, $session->html_phrase( "respond_doc/error" ) ) if !defined( $eprint );
+if( !defined $eprint )
+{
+	$session->render_error( $session->html_phrase( 
+		"cgi/users/edit_eprint:cant_find_it", 
+		id => $session->make_text( $eprintid ) ) );
+	$session->terminate();
+	exit( 1 );
+}
+
 my $email = $session->param( "email" );
-error_page( $session, $session->html_phrase( "respond_doc/error" ) ) if !defined( $email ) || $email eq "";
+if( !defined( $email ) || $email eq "" )
+{
+	$session->render_error( $session->html_phrase( 
+		"request/error:no_email" ) );
+	$session->terminate();
+	exit( 1 );
+}
 
 # Check user is authorised to respond
 my $contact_email = undef;
@@ -23,22 +36,27 @@ if( $session->get_repository->can_call( "email_for_doc_request" ) )
 {
 	$contact_email = $session->get_repository->call( "email_for_doc_request", $session, $eprint );
 }
-error_page( $session, $session->html_phrase( "respond_doc/error:auth" ) ) if !defined( $contact_email ) || $session->current_user->get_value( "email" ) ne $contact_email;
+if( !defined( $contact_email ) || $session->current_user->get_value( "email" ) ne $contact_email )
+{
+	$session->render_error( $session->html_phrase( 
+		"request/error:not_auth" ) );
+	$session->terminate();
+	exit( 1 );
+}
 
-# Check request
-error_page( $session, $session->html_phrase( "respond_doc/error" ) ) if $eprint->get_value( "full_text_status" ) eq "public";
-
-my $title = $session->html_phrase( "respond_doc/page:title" );
+my $title = $session->html_phrase( "request/respond_page:title" );
 my $page = $session->make_doc_fragment();
 
 my $action = $session->param("action");
 $action = "reject" if $action ne "accept";
 
-my $body = $session->param( "body" );
-if( !defined( $body ) || $body eq "" )
+# Has item been made OA in a previous accept?
+$action = "oa" if $eprint->get_value( "full_text_status" ) eq "public";
+
+if( $session->get_action_button ne "submit" )
 {
 
-	$page->appendChild( $session->html_phrase( "respond_doc/page:$action",
+	$page->appendChild( $session->html_phrase( "request/respond_page:$action",
 		eprint => $eprint->render_citation
 	) );
 
@@ -46,23 +64,29 @@ if( !defined( $body ) || $body eq "" )
 	my $form =  $session->render_form( "post" );
 	$page->appendChild( $form );
 	my $textarea = $session->make_element( "textarea", 
-		name => "body",
+		name => "reason",
 		"accept-charset" => "utf-8",
 		rows => 20,
 		cols => 60,
 		wrap => "virtual",
 	);
-	my $email_body = $session->html_phrase( "respond_doc/response:body_$action", 
-		eprint	=> $session->make_text( EPrints::Utils::tree_to_utf8( $eprint->render_citation ) ),
-		url	=> $session->make_text( $eprint->get_url ) );
-	$textarea->appendChild( $email_body );
 	$form->appendChild( $textarea );
+
+	if( $action eq "accept" )
+	{
+		my $p = $session->make_element( "p" );
+		$form->appendChild( $p );
+		my $cb = $session->make_element( "input", type => "checkbox", name => "oa" );
+		$cb->appendChild( $session->html_phrase(
+			"request/respond_page:fieldname_oa" ) );
+		$p->appendChild( $cb );
+	}
 
 	$form->appendChild( $session->make_element( "br" ) );
 	$form->appendChild( $session->render_hidden_field( "eprintid", $eprintid ) );
 	$form->appendChild( $session->render_hidden_field( "email", $email ) );
 	$form->appendChild( $session->render_hidden_field( "action", $action ) );
-	$form->appendChild( $session->render_action_buttons( submit => $session->phrase( "respond_doc/page:respond" ) ) );
+	$form->appendChild( $session->render_action_buttons( submit => $session->phrase( "request/respond_page:action_respond" ) ) );
 
 	$session->build_page( $title, $page );
 	$session->send_page();
@@ -71,24 +95,53 @@ if( !defined( $body ) || $body eq "" )
 	exit( 0 );
 }
 
-my $subject = $session->phrase( "respond_doc/response:subject", eprint => $eprint->get_value( "title" ) );
+my $subject = $session->phrase( 
+	"request/response_email:subject", 
+	eprint => $eprint->get_value( "title" ) );
+
+
 
 my $mail = $session->make_element( "mail" );
-$mail->appendChild( $session->make_text( $body ) );
+$mail->appendChild( $session->html_phrase(
+	"request/response_email:body_$action",
+	eprint => $eprint->render_citation_link ) );
+
+if( defined $session->param( "reason" ) )
+{
+	my $p = $session->make_element( "p" );
+	$p->appendChild( $session->make_text( $session->param( "reason" ) ) );
+	$mail->appendChild( $p );
+}
 
 my $result;
 if( $action eq "accept")
 {
 	# Send acceptance notice with restricted documents attached
+	# (remove restrictions if OA flag set)
 	my @restricted_docs;
-	for ($eprint->get_all_documents) {
-		push @restricted_docs, $_ if $_->get_value( "security" ) ne "";
+	my $oa = 0;
+	$oa = 1 if defined $session->param( "oa" ) && $session->param( "oa" ) eq "on";
+	foreach my $doc ( $eprint->get_all_documents )
+	{
+		if( $doc->is_set( "security" ) && $doc->get_value( "security" ) ne "" )
+		{
+			push @restricted_docs, $doc;
+			if( $oa )
+			{
+				$doc->set_value( "security", "" );
+				$doc->commit;
+			}
+		}
+	}
+	if( $oa )
+	{
+		$eprint->commit;
+		$eprint->generate_static;
 	}
 
 	$result = send_mail_with_attachments(
 		$session->get_repository,
 		$session->get_langid,
-		"",
 		$email,
 		$subject,
 		$mail,
@@ -100,49 +153,41 @@ else
 {
 	# Send rejection notice
 	$result = EPrints::Utils::send_mail(
-		$session->get_repository,
-		$session->get_langid,
-		"",
-		$email,
-		$subject,
-		$mail,
-		$session->html_phrase( "mail_sig" ),
+		session => $session,
+		langid => $session->get_langid,
+		to_email => $email,
+		subject => $subject,
+		message => $mail,
+		sig => $session->html_phrase( "mail_sig" ),
 	);
 }
 
 if( !$result )
 {
-	error_page( $session, $session->html_phrase( "respond_doc/error:email" ) );
+	$session->render_error( $session->html_phrase( "request/error:email" ) );
+	$session->terminate();
+	exit( 1 );
 }
 else
 {
 	# Render confirmation page
-	$page->appendChild( $session->html_phrase( "respond_doc/ack:$action" ) );
+	$page->appendChild( $session->html_phrase( "request/ack_page:$action" ) );
 	$session->build_page( $title, $page );
 	$session->send_page();
 	$session->terminate();
 	exit( 1 );
 }
 
-sub error_page
-{
-	my ( $session, $msg ) = @_;
-	$session->render_error( $msg );
-	$session->terminate();
-	exit( 1 );
-}
-
-
 sub send_mail_with_attachments 
 {
-	my ($respository, $langid, $to_name, $to_address, $subject, $body, $sig, $attachments) = @_;
+	my ($repository, $langid, $to_address, $subject, $body, $sig, $attachments) = @_;
 
-	my $smtphost = $respository->get_conf( 'smtp_server' );
+	my $smtphost = $repository->get_conf( 'smtp_server' );
 	if( defined $smtphost )
 	{
 		MIME::Lite->send( 'smtp', $smtphost );
 	} else {
-		MIME::Lite->send( 'sendmail', $respository->invocation( "sendmail" ) ); 
+		MIME::Lite->send( 'sendmail', $repository->invocation( "sendmail" ) ); 
 	}
 
 	# Build email header/body
