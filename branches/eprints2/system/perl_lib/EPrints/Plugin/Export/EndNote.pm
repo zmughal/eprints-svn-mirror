@@ -83,7 +83,7 @@ sub convert_dataobj
 		}
 	}
 
-	# B Conference Name, Department (Thesis), Newspaper, Magazine, Series (Book, Report), Book Title (Book Section)
+	# B Conference Name, Department (Thesis), Series (Book, Report), Book Title (Book Section)
 	if( $type eq "conference_item")
 	{
 		$data->{B} = $dataobj->get_value( "event_title" ) if $dataobj->exists_and_set( "event_title" );
@@ -91,10 +91,6 @@ sub convert_dataobj
 	elsif( $type eq "thesis" )
 	{
 		$data->{B} = $dataobj->get_value( "department" ) if $dataobj->exists_and_set( "department" );
-	}
-	elsif( $type eq "article" )
-	{
-		$data->{B} = $dataobj->get_value( "publication" ) if $dataobj->exists_and_set( "publication" );
 	}
 	elsif( $type eq "book" || $type eq "monograph" )
 	{
