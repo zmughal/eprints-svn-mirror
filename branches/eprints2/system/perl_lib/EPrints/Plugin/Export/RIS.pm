@@ -368,13 +368,13 @@ sub convert_dataobj
 	# Y1 Pub Date
 	# TODO: month and day
 	if( $dataobj->exists_and_set( "date_effective" ) ) {
-		my $date = $dataobj->get_value( "date_effective" );
+		$dataobj->get_value( "date_effective" ) =~ /^([0-9]{4})(-([0-9]{2}))?(-([0-9]{2}))?$/;
 		# YYYY/MM/DD/other info - slashes required
 		$data->{Y1} = sprintf(
 			"%s/%s/%s/", 
-			$date->{year}, 
-			defined $date->{month} ? $date->{month} : "",
-			defined $date->{day} ? $date->{month} : "" );
+			$1, 
+			$3 ? $3 : "",
+			$5 ? $5 : "" );
 	}
 	
 	# N1 Notes
@@ -485,7 +485,7 @@ sub convert_dataobj
 		{
 			$data->{SN} = $dataobj->get_value( "issn" );
 		}
-		elsif( dataobj->exists_and_set( "isbn" ) )
+		elsif( $dataobj->exists_and_set( "isbn" ) )
 		{
 			$data->{SN} = $dataobj->get_value( "isbn" );
 		}
