@@ -89,6 +89,7 @@ if( defined( $email ) && $email ne "" )
 		$result = EPrints::Utils::send_mail(
 			session => $session,
 			langid => $session->get_langid,
+			to_name => defined $user ? EPrints::Utils::tree_to_utf8( $user->render_description ) : "",
 			to_email => $contact_email,
 			subject => $subject,
 			message => $mail,
