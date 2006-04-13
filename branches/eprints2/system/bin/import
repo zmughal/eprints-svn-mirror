@@ -232,7 +232,7 @@ else
 	$fh = *INFILE;
 }
 
-my $list = $plugin->input_list( dataset=>$ds, fh=>$fh );
+my $list = $plugin->input_list( dataset=>$ds, fh=>$fh, filename=>$filename );
 
 unless( $filename eq "-" )
 {
