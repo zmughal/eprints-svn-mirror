@@ -1,3 +1,11 @@
+=pod
+
+=head1 FILE FORMAT
+
+See L<EPrints::Plugin::Import::BibTeX>
+
+=cut
+
 package EPrints::Plugin::Export::BibTeX;
 
 use EPrints::Plugin::Export;
@@ -27,70 +35,143 @@ sub convert_dataobj
 {
 	my( $plugin, $dataobj ) = @_;
 
-	my $data = { normal=>{}, unescaped=>{} };
+	my $data = ();
 
-	# Title and reference type
+	# Key
 	$data->{key} = $plugin->{session}->get_repository->get_id . $dataobj->get_id;
-	$data->{normal}->{title} 	= $dataobj->get_value( "title" ) if $dataobj->exists_and_set( "title" );
 
+	# Entry Type
 	my $type = $dataobj->get_type;
 	$data->{type} = "misc";
 	$data->{type} = "article" if $type eq "article";
 	$data->{type} = "book" if $type eq "book";
 	$data->{type} = "incollection" if $type eq "book_section";
 	$data->{type} = "inproceedings" if $type eq "conference_item";
-	$data->{type} = "techreport" if $type eq "monograph";
-	$data->{type} = "phdthesis" if $type eq "thesis";
-	$data->{type} = "mastersthesis" if $type eq "thesis" && $dataobj->exists_and_set( "thesis_type" ) && $dataobj->get_value( "thesis_type" ) eq "masters";
-	$data->{type} = "unpublished" if $dataobj->exists_and_set( "ispublished" ) && $dataobj->get_value( "ispublished" ) eq "unpub";
-
-	$data->{normal}->{booktitle} = $dataobj->get_value( "event_title" ) if $dataobj->exists_and_set( "event_title" );
-	$data->{normal}->{booktitle} = $dataobj->get_value( "book_title" ) if $dataobj->exists_and_set( "book_title" );
-
-	# Authors
-	if( $dataobj->exists_and_set( "creators" ) )
+	if( $type eq "monograph" )
 	{
-		# given name first
-		$data->{normal}->{author} = join( " and ", map { EPrints::Utils::make_name_string( $_->{main}, 1 ) } @{ $dataobj->get_value( "creators"  ) } );
-	}
-	if( $dataobj->exists_and_set( "editors" ) )
-	{
-		# given name first
-		$data->{normal}->{editor} = join( " and ", map { EPrints::Utils::make_name_string( $_->{main}, 1 ) } @{ $dataobj->get_value( "editors"  ) } );
-	}
-
-	# Year and free text
-	if ($dataobj->exists_and_set( "date_effective" )) {
-		my $date = $dataobj->get_value( "date_effective" );
-		if ($date =~ /^([0-9]{4})-([0-9]{2})/) {
-			$data->{normal}->{year} = $1;
-			$data->{normal}->{month} = EPrints::Utils::get_month_label($plugin->{session}, $2) if $2 ne "00";
+		if( $dataobj->exists_and_set( "monograph_type" ) &&
+			( $dataobj->get_value( "monograph_type" ) eq "manual" ||
+			$dataobj->get_value( "monograph_type" ) eq "documentation" ) )
+		{
+			$data->{type} = "manual";
+		}
+		else
+		{
+			$data->{type} = "techreport";
 		}
 	}
-	$data->{normal}->{note} 	= $dataobj->get_value( "note" ) if $dataobj->exists_and_set( "note" );
-	$data->{unescaped}->{abstract} 	= $dataobj->get_value( "abstract" ) if $dataobj->exists_and_set( "abstract" );
-
-	# Periodical and publisher
-	$data->{normal}->{journal} = $dataobj->get_value( "publication" ) if $dataobj->exists_and_set( "publication" );
-	$data->{normal}->{volume} = $dataobj->get_value( "volume" ) if $dataobj->exists_and_set( "volume" );
-	$data->{normal}->{number} = $dataobj->get_value( "id_number" ) if $dataobj->exists_and_set( "id_number" );
-	$data->{normal}->{number} = $dataobj->get_value( "number" ) if $dataobj->exists_and_set( "number" );
-	$data->{normal}->{series} = $dataobj->get_value( "series" ) if $dataobj->exists_and_set( "series" );
-	if( $dataobj->exists_and_set( "pagerange" ) )
-	{	
-		$data->{normal}->{pages} = $dataobj->get_value( "pagerange" );
-		$data->{normal}->{pages} =~ s/^(\d*)-(\d*)$/$1--$2/;
+	if( $type eq "thesis")
+	{
+		if( $dataobj->exists_and_set( "thesis_type" ) && $dataobj->get_value( "thesis_type" ) eq "masters" )
+		{
+			$data->{type} = "mastersthesis";
+		}
+		else
+		{
+			$data->{type} = "phdthesis";	
+		}
+	}
+	if( $dataobj->exists_and_set( "ispublished" ) )
+	{
+		$data->{type} = "unpublished" if $dataobj->get_value( "ispublished" ) eq "unpub";
 	}
 
-	$data->{normal}->{publisher} = $dataobj->get_value( "publisher" ) if $dataobj->exists_and_set( "publisher" );
-	$data->{normal}->{address} = $dataobj->get_value( "place_of_pub" ) if $dataobj->exists_and_set( "place_of_pub" );
+	# address
+	$data->{bibtex}->{address} = $dataobj->get_value( "place_of_pub" ) if $dataobj->exists_and_set( "place_of_pub" );
 
-	$data->{normal}->{institution} = $dataobj->get_value( "institution" ) if $dataobj->exists_and_set( "institution" ) && $type eq "monograph";
-	$data->{normal}->{school} = $dataobj->get_value( "institution" ) if $dataobj->exists_and_set( "institution" ) && $type eq "thesis";
+	# author
+	if( $dataobj->exists_and_set( "creators" ) )
+	{
+		my $names = $dataobj->get_value( "creators" );	
+		$data->{bibtex}->{author} = join( " and ", map { EPrints::Utils::make_name_string( $_->{main}, 1 ) } @$names );
+	}
+	
+	# booktitle
+	$data->{bibtex}->{booktitle} = $dataobj->get_value( "event_title" ) if $dataobj->exists_and_set( "event_title" );
+	$data->{bibtex}->{booktitle} = $dataobj->get_value( "book_title" ) if $dataobj->exists_and_set( "book_title" );
 
-	# Misc
-	$data->{normal}->{howpublished} = $dataobj->get_url(); 
-	$data->{unescaped}->{keywords} = $dataobj->get_value( "keywords" ) if $dataobj->exists_and_set( "keywords" );
+	# editor
+	if( $dataobj->exists_and_set( "editors" ) )
+	{
+		my $names = $dataobj->get_value( "editors" );	
+		$data->{bibtex}->{editor} = join( " and ", map { EPrints::Utils::make_name_string( $_->{main}, 1 ) } @$names );
+	}
+
+	# institution
+	if( $type eq "monograph" && $data->{type} ne "manual" )
+	{
+		$data->{bibtex}->{institution} = $dataobj->get_value( "institution" ) if $dataobj->exists_and_set( "institution" );
+	}
+
+	# journal
+	$data->{bibtex}->{journal} = $dataobj->get_value( "publication" ) if $dataobj->exists_and_set( "publication" );
+
+	# month
+	if ($dataobj->exists_and_set( "date_effective" )) {
+		$dataobj->get_value( "date_effective" ) =~ /^[0-9]{4}-([0-9]{2})/;
+		$data->{bibtex}->{month} = EPrints::Utils::get_month_label( $plugin->{session}, $1 ) if $1;
+	}
+
+	# note	
+	$data->{bibtex}->{note}	= $dataobj->get_value( "note" ) if $dataobj->exists_and_set( "note" );
+
+	# number
+	if( $type eq "monograph" )
+	{
+		$data->{bibtex}->{number} = $dataobj->get_value( "id_number" ) if $dataobj->exists_and_set( "id_number" );
+	}
+	else
+	{
+		$data->{bibtex}->{number} = $dataobj->get_value( "number" ) if $dataobj->exists_and_set( "number" );
+	}
+
+	# organization
+	if( $data->{type} eq "manual" )
+	{
+		$data->{bibtex}->{organization} = $dataobj->get_value( "institution" ) if $dataobj->exists_and_set( "institution" );
+	}
+
+	# pages
+	if( $dataobj->exists_and_set( "pagerange" ) )
+	{	
+		$data->{bibtex}->{pages} = $dataobj->get_value( "pagerange" );
+		$data->{bibtex}->{pages} =~ s/-/--/;
+	}
+
+	# publisher
+	$data->{bibtex}->{publisher} = $dataobj->get_value( "publisher" ) if $dataobj->exists_and_set( "publisher" );
+
+	# school
+	if( $type eq "thesis" )
+	{
+		$data->{bibtex}->{school} = $dataobj->get_value( "institution" ) if $dataobj->exists_and_set( "institution" );
+	}
+
+	# series
+	$data->{bibtex}->{series} = $dataobj->get_value( "series" ) if $dataobj->exists_and_set( "series" );
+
+	# title
+	$data->{bibtex}->{title} = $dataobj->get_value( "title" ) if $dataobj->exists_and_set( "title" );
+
+	# type
+	if( $type eq "monograph" && $dataobj->exists_and_set( "monograph_type" ) )
+	{
+		$data->{bibtex}->{type} = EPrints::Utils::tree_to_utf8( $dataobj->render_value( "monograph_type" ) );
+	}
+
+	# volume
+	$data->{bibtex}->{volume} = $dataobj->get_value( "volume" ) if $dataobj->exists_and_set( "volume" );
+
+	# year
+	if ($dataobj->exists_and_set( "date_effective" )) {
+		$dataobj->get_value( "date_effective" ) =~ /^([0-9]{4})/;
+		$data->{bibtex}->{year} = $1 if $1;
+	}
+
+	# Not part of BibTeX
+	$data->{additional}->{abstract} = $dataobj->get_value( "abstract" ) if $dataobj->exists_and_set( "abstract" );
+	$data->{additional}->{url} = $dataobj->get_url(); 
+	$data->{additional}->{keywords} = $dataobj->get_value( "keywords" ) if $dataobj->exists_and_set( "keywords" );
 
 	return $data;
 }
@@ -102,13 +183,13 @@ sub output_dataobj
 	my $data = $plugin->convert_dataobj( $dataobj );
 
 	my @list = ();
-	foreach my $k ( keys %{$data->{normal}} )
+	foreach my $k ( keys %{$data->{bibtex}} )
 	{
-		push @list, sprintf( "%16s = {%s}", $k, utf8_to_tex( $data->{normal}->{$k} ));
+		push @list, sprintf( "%16s = {%s}", $k, utf8_to_tex( $data->{bibtex}->{$k} ));
 	}
-	foreach my $k ( keys %{$data->{unescaped}} )
+	foreach my $k ( keys %{$data->{additional}} )
 	{
-		push @list, sprintf( "%16s = {%s}", $k, remove_utf8( $data->{unescaped}->{$k} ));
+		push @list, sprintf( "%16s = {%s}", $k, remove_utf8( $data->{additional}->{$k} ));
 	}
 
 	my $out = '@' . $data->{type} . "{" . $data->{key} . ",\n";

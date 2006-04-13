@@ -337,6 +337,7 @@ sub convert_dataobj
 
 	# TY Pub Type
 	my $type = $dataobj->get_type;
+	$data->{TY} = "GEN";
 	$data->{TY} = "JOUR" if $type eq "article";
 	$data->{TY} = "BOOK" if $type eq "book";
 	$data->{TY} = "CHAP" if $type eq "book_section";
@@ -344,7 +345,6 @@ sub convert_dataobj
 	$data->{TY} = "RPRT" if $type eq "monograph";
 	$data->{TY} = "PAT" if $type eq "patent";
 	$data->{TY} = "THES" if $type eq "thesis";
-	$data->{TY} = "GEN" if $type eq "other";
 	if( $dataobj->exists_and_set( "ispublished" ) )
 	{
 		my $status = $dataobj->get_value( "ispublished" );
