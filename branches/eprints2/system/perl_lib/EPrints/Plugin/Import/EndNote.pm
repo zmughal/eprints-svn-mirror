@@ -383,7 +383,7 @@ sub new
 	$self->{visible} = "all";
 	$self->{produce} = [ 'list/eprint', 'dataobj/eprint' ];
 
-	my $rc = eval( "use Text::Refer;" );
+	my $rc = eval "require Text::Refer";
 	unless( $rc ) 
 	{
 		$self->{visible} = "";
@@ -393,12 +393,9 @@ sub new
 	return $self;
 }
 
-# TODO sort out warnings
 # TODO creators and editors need main
 # TODO type keeps getting changed to article?!
 
-# parse a file of records.
-# return an EPrints::List of the imported items.
 sub input_list
 {
 	my( $plugin, %opts ) = @_;
