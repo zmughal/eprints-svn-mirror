@@ -38,6 +38,7 @@ sub convert_dataobj
 
 	# 0 Citation type
 	my $type = $dataobj->get_type;
+	$data->{0} = "Generic";
 	$data->{0} = "Book" if $type eq "book";
 	$data->{0} = "Book Section" if $type eq "book_section";
 	$data->{0} = "Conference Paper" if $type eq "conference_item";
@@ -46,7 +47,6 @@ sub convert_dataobj
 	$data->{0} = "Patent" if $type eq "patent";
 	$data->{0} = "Report" if $type eq "monograph";
 	$data->{0} = "Thesis" if $type eq "thesis";
-	$data->{0} = "Generic" if $type eq "other";
 
 	# D Year
 	if( $dataobj->exists_and_set( "date_effective" ) )
