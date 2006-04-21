@@ -26,7 +26,6 @@ use EPrints::EPrint;
 use EPrints::MetaField;
 use EPrints::SearchExpression;
 use EPrints::Session;
-use Data::Dumper::Simple;
 use strict;
 
 # Enclosing the main part in {..} prevents accidental
