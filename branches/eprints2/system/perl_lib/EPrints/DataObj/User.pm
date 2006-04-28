@@ -323,7 +323,7 @@ sub user_with_email
 		$email );
 
 	my $searchid = $searchexp->perform_search;
-	my @records = $searchexp->get_records;
+	my @records = $searchexp->get_records(0,1);
 	$searchexp->dispose();
 	
 	return $records[0];
@@ -356,10 +356,8 @@ sub user_with_username
 		$username,
 		"EX" );
 
-	my $searchid = $searchexp->perform_search;
-
-	my @records = $searchexp->get_records;
-	$searchexp->dispose();
+	my $results = $searchexp->perform_search;
+	my @records = $results->get_records(0,1);
 	
 	return $records[0];
 }

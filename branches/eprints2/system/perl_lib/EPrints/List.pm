@@ -505,7 +505,7 @@ sub _get_records
 	my ( $self , $offset , $count, $justids ) = @_;
 
 	$offset = $offset || 0;
-	$count = $count || 1;
+	# $count = $count || 1; # unspec. means ALL not 1.
 	$justids = $justids || 0;
 
 	if( defined $self->{ids} )

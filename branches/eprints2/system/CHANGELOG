@@ -3647,3 +3647,8 @@ PACKAGE: 2.2.99.2
     until needed.
  * A SQL table stores the tickets for logged in users.
 
+2006-04-28 cjg
+
+ * Fixed only-one-result bug. 
+ * Made user methods only request one result for by-username etc.
+
