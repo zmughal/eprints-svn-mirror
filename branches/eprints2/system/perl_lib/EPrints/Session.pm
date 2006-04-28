@@ -149,7 +149,7 @@ sub new
 	if( $mode == 0 || $mode == 2 || !defined $mode )
 	{
 		$self->{request} = EPrints::Apache::AnApache::get_request();
-		if( $mode == 0 ) { $self->{query} = new CGI; }
+		if( $mode == 0 ) { $self->read_params; }
 		$self->{offline} = 0;
 		$self->{repository} = EPrints::Repository->new_from_request( $self->{request} );
 	}
@@ -1941,7 +1941,7 @@ sub build_page
 {
 	my( $self, $title, $mainbit, $pageid, $links, $template_id ) = @_;
 
-	unless( $self->{offline} )
+	unless( $self->{offline} || !defined $self->{query} )
 	{
 		my $mo = $self->param( "mainonly" );
 		if( defined $mo && $mo eq "yes" )
@@ -2267,17 +2267,19 @@ sub send_http_header
 		"Cache-Control",
 		"no-store, no-cache, must-revalidate" );
 
-	if( defined $opts{eplogin} )
+	my $c = $self->{request}->connection;
+	my $code = $c->notes->get( "cookie_code" );
+	if( defined $code )
 	{
 		my $cookie = $self->{query}->cookie(
 			-name    => "eplogin",
 			-path    => "/",
-			-value   => $opts{eplogin},
+			-value   => $code,
 			-expires => "+10y" );
 		EPrints::Apache::AnApache::header_out( 
-				$self->{"request"},
-				"Set-Cookie",
-				$cookie );
+			$self->{"request"},
+			"Set-Cookie",
+			$cookie );
 	}
 
 	if( defined $opts{lang} )
@@ -2364,6 +2366,29 @@ sub param
 
 }
 
+# $session->read_params
+# 
+# If we're online but have not yet read the CGI parameters then this
+# will cause sesssion to read (and consume) them.
+
+# If we're coming from cookie login page then grab the CGI params
+# from an apache note set in Login.pm
+
+sub read_params
+{
+	my( $self ) = @_;
+
+	my $c = $self->{request}->connection;
+	my $code = $c->notes->get( "params" );
+	if( defined $code )
+	{
+ 		$self->{query} = new CGI( $code ); 
+	}
+	else
+	{
+ 		$self->{query} = new CGI;
+	}
+}
 
 
 ######################################################################
@@ -2465,28 +2490,70 @@ sub current_user
 {
 	my( $self ) = @_;
 
-	my $user = undef;
-
-	# If we've already done this once, no point
-	# in doing it again.
-	unless( defined $self->{currentuser} )
-	{	
-		if( !defined $self->{request} )
+	if( !defined $self->{current_user} )
+	{
+		if( $self->get_archive->get_conf( "cookie_auth" ) ) 
 		{
-			# not a cgi script.
-			return undef;
+			$self->{current_user} = $self->_current_user_auth_cookie;
 		}
-
-		my $username = $self->{request}->user;
-
-		if( defined $username && $username ne "" )
+		else
 		{
-			$self->{currentuser} = 
-				EPrints::DataObj::User::user_with_username( $self, $username );
+			$self->{current_user} = $self->_current_user_auth_basic;
 		}
 	}
+	return $self->{current_user};
+}
 
-	return $self->{currentuser};
+sub _current_user_auth_basic
+{
+	my( $self ) = @_;
+
+	if( !defined $self->{request} )
+	{
+		# not a cgi script.
+		return undef;
+	}
+
+	my $username = $self->{request}->user;
+
+	return undef if( !EPrints::Utils::is_set( $username ) );
+
+	my $user = EPrints::DataObj::User::user_with_username( $self, $username );
+	return $user;
+}
+
+# Attempt to login using cookie based login.
+
+# Returns a user on success or undef on failure.
+
+sub _current_user_auth_cookie
+{
+	my( $self ) = @_;
+
+	# we won't have the cookie for the page after login.
+	my $c = $self->{request}->connection;
+	my $userid = $c->notes->get( "userid" );
+
+	if( EPrints::Utils::is_set( $userid ) )
+	{	
+		my $user = EPrints::DataObj::User->new( $self, $userid );
+		return $user;
+	}
+	
+	my $cookie = EPrints::Apache::AnApache::cookie( $self->get_request, "eplogin" );
+
+	return undef if( !defined $cookie );
+	return undef if( $cookie eq "" );
+
+	my $c = $self->{request}->connection(); # apache 2 only
+	my $remote_addr = $c->get_remote_host;
+	
+	$userid = $self->{database}->get_ticket_userid( $cookie, $remote_addr );
+	
+	return undef if( !EPrints::Utils::is_set( $userid ) );
+
+	my $user = EPrints::DataObj::User->new( $self, $userid );
+	return $user;
 }
 
 

@@ -615,48 +615,18 @@ $c->{latest_tool_modes} = {
 #
 ######################################################################
 
-# We need to calculate the connection string, so we can pass it
-# into the AuthDBI config. 
-my $connect_string = EPrints::Database::build_connection_string(
-	dbname  =>  $c->{dbname}, 
-	dbport  =>  $c->{dbport},
-	dbsock  =>  $c->{dbsock}, 
-	dbhost  =>  $c->{dbhost}  );
-
-# By default all users authenticate with the AuthDBI module,
-# using passwords in UNIX crypt format. $AUTH_DBI contains
-# the info EPrints needs to call AuthDBI and is used below
-# to set userauth.
-#
-# Parameters other than "handler" are seen by AuthDBI 
-# as if they came from the .htaccess file. You can use any
-# mod_perl authentication module in this manner, or write
-# your own.
-
-my $userdata = EPrints::DataSet->new_stub( "user" );
-my $CRYPTED_DBI = {
-	handler  =>  \&Apache::AuthDBI::authen,
-	Auth_DBI_data_source  =>  $connect_string,
-	Auth_DBI_username  =>  $c->{dbuser},
-	Auth_DBI_password  =>  $c->{dbpass},
-	Auth_DBI_pwd_table  =>  $userdata->get_sql_table_name(),
-	Auth_DBI_uid_field  =>  "username",
-	Auth_DBI_pwd_field  =>  "password",
-	Auth_DBI_grp_field  =>  "usertype",
-	Auth_DBI_encrypted  =>  "on" };
+# If true then use cookie based authentication.
+# Don't use basic login unless you are coming from EPrints 2.
+$c->{cookie_auth} = 1;
 
 # Please the the documentation for a full explanation of user privs.
-
 $c->{userauth} = {
 	user => { 
-		auth  => $CRYPTED_DBI,
 		priv  =>  [ "subscription", "set-password", "deposit", "change-email", "change-user" ] },
 	editor => { 
-		auth  => $CRYPTED_DBI,
 		priv  =>  [ "subscription", "set-password", "deposit", "change-email", "change-user",
 				"view-status", "editor", "staff-view" ] },
 	admin => { 
-		auth  => $CRYPTED_DBI,
 		priv  =>  [ "subscription", "set-password", "deposit", "change-email", "change-user",
 				"view-status", "editor", "staff-view", 
 				"edit-subject", "edit-user" ] }

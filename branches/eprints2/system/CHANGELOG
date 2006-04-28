@@ -3638,3 +3638,12 @@ PACKAGE: 2.2.99.2
 
  * XML to_string method now allows ProcessingInstructions. Things in <?..?>
 
+2006-04-28 cjg
+
+ * Added cookie authentication
+ * Removed old basic auth configuration
+ * Split current_user and authentication methods into basic and cookie
+ * Added a read_params method to session. Session parameters are not consumed
+    until needed.
+ * A SQL table stores the tickets for logged in users.
+

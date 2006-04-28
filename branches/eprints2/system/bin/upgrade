@@ -673,6 +673,11 @@ $db->set_debug(1);
 
 	}
 
+
+
+	print "Adding table to store login tickets.\n";
+	$db->create_login_tickets_table();
+
 	if(0 )
 	{
 		print "\nFailed.\n";

@@ -623,6 +623,26 @@ User Area CGI Scripts
     <ep:phrase ref="cgi/export:not_available"><p>Requested output format '<ep:pin ref="format" />' is not available.</p></ep:phrase>
     <ep:phrase ref="cgi/export:error_title">Error in export</ep:phrase>
 
+<!-- login -->
+
+    <ep:phrase ref="cgi/login:page_layout">
+      <ep:pin ref="problems" />
+      <p>Please enter your username and password.</p>
+      <table>
+        <tr><td>Username:</td><td><ep:pin ref="input_username" /></td></tr>
+        <tr><td>Password:</td><td><ep:pin ref="input_password" /></td></tr>
+        <tr><td>Keep logged in:</td><td><ep:pin ref="log_in_until" /></td></tr>
+        <tr><td>Bind to IP:</td><td><ep:pin ref="bind_to_ip" /></td></tr>
+        <tr><td><ep:pin ref="login_button" /></td></tr>
+      </table>
+      <p>Binding your login to a single IP (Internet address) is more secure, but may be annoying if you use an internet service provider which changes your IP address each time you dial in.</p>
+    </ep:phrase>
+    <ep:phrase ref="cgi/login:until_close">until the browser closes</ep:phrase>
+    <ep:phrase ref="cgi/login:forever">forever (until I log out)</ep:phrase>
+    <ep:phrase ref="cgi/login:bind">yes (more secure)</ep:phrase>
+    <ep:phrase ref="cgi/login:dont_bind">no (more convenient)</ep:phrase>
+    <ep:phrase ref="cgi/login:logged_in_as"><p>You are already logged in as <ep:pin ref="name" />.</p> <p>If you wish to log in as a different user you must <a href="/perl/users/logout">Logout</a> first.</p></ep:phrase>
+
 
 <!--********************************************************************** 
 Staff CGI Scripts

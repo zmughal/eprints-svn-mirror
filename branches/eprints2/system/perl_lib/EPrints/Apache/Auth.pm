@@ -147,20 +147,59 @@ sub authen
 				return OK;
 			}
 		}
+
+		#otherwise we need a valid username
 	}
 
+
+	my $rc;
+	if( $session->get_archive->get_conf( "cookie_auth" ) ) 
+	{
+		$rc = auth_cookie( $r, $session );
+	}
+	else
+	{
+		$rc = auth_basic( $r, $session );
+	}
+
+	$session->terminate();
+
+	return $rc;
+}
+
+
+
+sub auth_cookie
+{
+	my( $r, $session ) = @_;
+
+	my $user = $session->current_user;
+
+	if( !defined $user ) 
+	{
+		# bad ticket or no ticket
+		$r->set_handlers(PerlResponseHandler =>[ 'EPrints::Apache::Login', 'ModPerl::Registry' ] );
+	}
+
+	return OK;
+}
+
+
+sub auth_basic
+{
+	my( $r, $session ) = @_;
 
 	my( $res, $passwd_sent ) = $r->get_basic_auth_pw;
 	my( $user_sent ) = $r->user;
+
 	if( !defined $user_sent )
 	{
-		$session->terminate();
 		return AUTH_REQUIRED;
 	}
 
+	my $area = $r->dir_config( "EPrints_Security_Area" );
 	if( $area eq "ChangeUser" )
 	{
-		my $user_sent = $r->user;
 		if( $r->uri !~ m/\/$user_sent$/i )
 		{
 			return OK;
@@ -176,7 +215,6 @@ sub authen
 	if( !defined $user )
 	{
 		$r->note_basic_auth_failure;
-		$session->terminate();
 		return AUTH_REQUIRED;
 	}
 
@@ -187,7 +225,6 @@ sub authen
 	{
 		$session->get_repository->log(
 			"Unknown user type: ".$user->get_value( "usertype" ) );
-		$session->terminate();
 		return AUTH_REQUIRED;
 	}
 	my $authconfig = $userauthdata->{auth};
@@ -197,7 +234,6 @@ sub authen
 
 	my $rwrapper = $EPrints::Apache::AnApache::RequestWrapper->new( $r , $authconfig );
 	my $result = &{$handler}( $rwrapper );
-	$session->terminate();
 	return $result;
 }
 
@@ -466,6 +502,9 @@ sub has_privilege
 
 	return @permitted_roles;
 }
+
+
+
 
 1;
 
