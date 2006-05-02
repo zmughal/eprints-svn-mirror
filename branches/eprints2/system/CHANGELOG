@@ -3652,3 +3652,8 @@ PACKAGE: 2.2.99.2
  * Fixed only-one-result bug. 
  * Made user methods only request one result for by-username etc.
 
+2006-05-02 cjg
+
+ * Minor style changes to LogHandler
+ * Commended out not-yet-working GEOIP code.
+

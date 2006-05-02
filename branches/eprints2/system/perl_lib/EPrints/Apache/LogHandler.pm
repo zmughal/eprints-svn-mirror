@@ -84,9 +84,8 @@ sub handler
 
 	# If you're confused its probably because your browser is issuing NOT
 	# MODIFIED SINCE (304 NOT MODIFIED)
-	unless(
-		$r->status == 200
-	) {
+	unless( $r->status == 200 ) 
+	{
 		return DECLINED;
 	}
 
@@ -94,18 +93,18 @@ sub handler
 	my $repository = $session->get_repository;
 
 	# Open the GeoIP databases once on the first request
-	unless( $GEOIP )
-	{
-		my $conf = $repository->get_conf( "geoip" );
-
-		unless( defined $conf )
-		{
-			EPrints::abort( "geoip not configured in SystemSettings" );
-		}
-
-		geoip_open( $conf );
-		$GEOIP = 1;
-	}
+#	unless( $GEOIP )
+#	{
+#		my $conf = $repository->get_conf( "geoip" );
+#
+#		unless( defined $conf )
+#		{
+#			EPrints::abort( "geoip not configured in SystemSettings" );
+#		}
+#
+#		geoip_open( $conf );
+#		$GEOIP = 1;
+#	}
 
 	my $c = $r->connection;
 	my $ip = $c->remote_ip;
@@ -158,7 +157,7 @@ sub handler
 
 	if( !$access->{referring_entity_id} or $access->{referring_entity_id} !~ /^https?:/ )
 	{
-			$access->{referring_entity_id} = '';
+		$access->{referring_entity_id} = '';
 	}
 
 
@@ -193,7 +192,7 @@ sub uri_to_eprintid
 		return 'info:' . EPrints::OpenArchives::to_oai_identifier( $session->get_repository->get_conf( "oai" )->{v2}->{ "archive_id" }, $1 );
 	}
 	
-	undef;
+	return undef;
 }
 
 =item $id = EPrints::Apache::LogHandler::uri_to_docid( $session, $eprintid, $uri )
@@ -211,19 +210,22 @@ sub uri_to_docid
 		return '#' . 1 * $2;
 	}
 
-	undef;
+	return undef;
 }
 
 sub geoip_open
 {
-	my $geoip = shift;;
+	my( $geoip ) = @_;
+
 	my $class = $geoip->{ "class" } or return;
 	eval "use $class";
+
 	if( my $fn = $geoip->{ "country" } )
 	{
 		eval { $GEOIP_DB = $class->open( $fn ) };
 		warn "Apache::LogHandler: Country lookup unavailable: $@" if $@;
 	}
+
 	if( my $fn = $geoip->{ "organisation" } )
 	{
 		eval { $GEOORG_DB = $class->open( $fn ) };
