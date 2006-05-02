@@ -251,6 +251,8 @@ sub create_archive_tables
 
 	$success = $success && $self->_create_indexqueue_table();
 
+	$success = $success && $self->create_login_tickets_table();
+
 	#$success = $success && $self->_create_permission_table();
 
 	$self->create_version_table;	
@@ -416,6 +418,38 @@ sub create_dataset_ordervalues_tables
 
 	return $rv;
 }
+
+
+# $db->create_login_tickets_table()
+# 
+# create the login_tickets table.
+
+sub create_login_tickets_table
+{
+	my( $self ) = @_;
+
+	my $sql = "CREATE TABLE login_tickets ( code CHAR(32) NOT NULL, userid INTEGER, ip VARCHAR(64), expires INTEGER, primary key( code ) )";
+
+	return $self->do( $sql );
+}
+
+# $db->get_ticket_userid( $code, $ip )
+# 
+# return the userid, if any, associated with the given ticket code and IP address.
+
+sub get_ticket_userid
+{
+	my( $self, $code, $ip ) = @_;
+
+	my $sql = "SELECT userid FROM login_tickets WHERE (ip='' OR ip='".prep_value($ip)."') AND code='".prep_value($code)."'";
+	my $sth = $self->prepare( $sql );
+	$self->execute( $sth , $sql );
+	my( $userid ) = $sth->fetchrow_array;
+	$sth->finish;
+
+	return $userid;
+}
+
 
 ######################################################################
 =pod

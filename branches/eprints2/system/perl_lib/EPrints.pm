@@ -45,6 +45,7 @@ BEGIN {
 	{
 		eval '
 use EPrints::Apache::AnApache;
+use EPrints::Apache::Login;
 use EPrints::Apache::Auth;
 use EPrints::Apache::Rewrite;
 use EPrints::Apache::VLit;
