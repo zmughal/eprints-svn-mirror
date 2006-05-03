@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/ep2stable/perl_lib
+#!/usr/bin/perl -w -I/opt/eprints/perl_lib
 
 ######################################################################
 #
@@ -89,11 +89,11 @@ This file contains the system wide apache directives required by EPrints. This f
 This file is not updated if it already exists, so you can add repository-specific
 apache configuration directives here. By default it just includes the automatically generated repository specific file: auto-apache.conf
 
-=item B<EPRINTS/archives/ARCHIVEDIR/cfg/auto-apache.conf>
+=item B<EPRINTS/archives/ARCHIVEDIR/var/auto-apache.conf>
 
 This file contains all the configuration directives needed for an repository. This is where the bulk of the configuration appears, the clever stuff, if you will. This file should not be edited by hand.
 
-=item B<EPRINTS/archives/ARCHIVEDIR/cfg/auto-secure.conf>
+=item B<EPRINTS/archives/ARCHIVEDIR/var/auto-secure.conf>
 
 Only created if the repository has a securehost configured. This file contains all the configuration options that need to be included into the secure server virtualhost.
 
@@ -145,19 +145,19 @@ $|=1;
 my $av =  $EPrints::SystemSettings::conf->{apache};
 $av = "1" unless defined $av;
 
-my $site_sysfile = EPrints::Config::get( "sys_path" )."/auto-apache.conf";
-my $site_incfile = EPrints::Config::get( "sys_path" )."/auto-apache-includes.conf";
+my $site_sysfile = EPrints::Config::get( "var_path" )."/auto-apache.conf";
+my $site_incfile = EPrints::Config::get( "var_path" )."/auto-apache-includes.conf";
 my $site_userfile = EPrints::Config::get( "cfg_path" )."/apache.conf";
 
 print "Creating system wide apache conf files.\n" if( $noise >= 1 );
 
 # Clean up old auto files. Especially old secure ones
-opendir( my $dir, EPrints::Config::get( "sys_path" ) );
+opendir( my $dir, EPrints::Config::get( "var_path" ) );
 while( my $file = readdir( $dir ) )
 {
 	if( $file =~ m/^auto-.*\.conf$/ )
 	{
-		my $fn = EPrints::Config::get( "sys_path" ).'/'.$file;
+		my $fn = EPrints::Config::get( "var_path" ).'/'.$file;
 		unlink( $fn );
 	}
 }
@@ -289,10 +289,10 @@ foreach my $repository_id ( EPrints::Config::get_repository_ids() )
 my $repository = EPrints::Repository->new( $repository_id, 1 );
 exit( 1 ) unless( defined $repository );
 
-my $sysfile = $repository->get_conf( "config_path" )."/auto-apache.conf";
+my $sysfile = $repository->get_conf( "variables_path" )."/auto-apache.conf";
 my $userfile = $repository->get_conf( "config_path" )."/apache.conf";
 my $vhostfile = $repository->get_conf( "config_path" )."/apachevhost.conf";
-my $securefile = $repository->get_conf( "config_path" )."/auto-secure.conf";
+my $securefile = $repository->get_conf( "variables_path" )."/auto-secure.conf";
 
 my $id = $repository->get_id();
 

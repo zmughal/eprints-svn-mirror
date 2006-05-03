@@ -104,7 +104,6 @@ sub init
 	$SYSTEMCONF{cfg_path} = $SYSTEMCONF{base_path}."/cfg";
 	$SYSTEMCONF{arc_path} = $SYSTEMCONF{base_path}."/archives";
 	$SYSTEMCONF{phr_path} = $SYSTEMCONF{base_path}."/cfg";
-	$SYSTEMCONF{sys_path} = $SYSTEMCONF{base_path}."/cfg";
 	$SYSTEMCONF{bin_path} = $SYSTEMCONF{base_path}."/bin";
 	$SYSTEMCONF{var_path} = $SYSTEMCONF{base_path}."/var";
 	

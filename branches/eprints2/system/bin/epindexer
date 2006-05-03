@@ -1,4 +1,4 @@
-#!/usr/bin/perl -T -w -I/opt/eprints2/perl_lib 
+#!/usr/bin/perl -T -w -I/opt/eprints/perl_lib 
 
 ######################################################################
 #

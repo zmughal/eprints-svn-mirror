@@ -1,4 +1,4 @@
-use lib '/opt/ep2stable/perl_lib';
+use lib '/opt/eprints/perl_lib';
 
 BEGIN
 {
