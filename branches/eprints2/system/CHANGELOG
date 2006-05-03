@@ -3657,3 +3657,7 @@ PACKAGE: 2.2.99.2
  * Minor style changes to LogHandler
  * Commended out not-yet-working GEOIP code.
 
+2006-05-03 cjg
+
+ * Remove duplicate ->connection line in Session
+ * Added a check to current_user_cookie to check it's not in command line mode.

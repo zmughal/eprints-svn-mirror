@@ -2530,6 +2530,14 @@ sub _current_user_auth_cookie
 {
 	my( $self ) = @_;
 
+	if( !defined $self->{request} )
+	{
+		# not a cgi script.
+		return undef;
+	}
+
+	my $username = $self->{request}->user;
+
 	# we won't have the cookie for the page after login.
 	my $c = $self->{request}->connection;
 	my $userid = $c->notes->get( "userid" );
@@ -2545,7 +2553,6 @@ sub _current_user_auth_cookie
 	return undef if( !defined $cookie );
 	return undef if( $cookie eq "" );
 
-	my $c = $self->{request}->connection(); # apache 2 only
 	my $remote_addr = $c->get_remote_host;
 	
 	$userid = $self->{database}->get_ticket_userid( $cookie, $remote_addr );
