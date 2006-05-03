@@ -552,6 +552,7 @@ sub _get_records
 		{
 			my @ids = @{$self->{ids}};
 			my $from = $offset;
+			if( !defined $count ) { $count = (scalar @ids)-$offset; }
 			my $to = $offset+$count-1;
 			my @range = @ids[($from..$to)];
 		

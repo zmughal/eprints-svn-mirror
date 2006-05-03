@@ -3661,3 +3661,5 @@ PACKAGE: 2.2.99.2
 
  * Remove duplicate ->connection line in Session
  * Added a check to current_user_cookie to check it's not in command line mode.
+ * When an undef is passed into List->get_ids for the count, but not the offset,
+    it now works out the correct value rather than printing a warning.
