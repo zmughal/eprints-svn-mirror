@@ -12,7 +12,7 @@ foreach my $filename (<*>)
     undef $/;
     open(FIN, $filename);
     my $content = <FIN>;
-    $content =~ s/ep2stable/$dest/gs;
+    $content =~ s/eprints/$dest/gs;
     close FIN;
     open(FOUT, ">$filename");
     print FOUT $content;

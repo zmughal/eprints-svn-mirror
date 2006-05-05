@@ -3,8 +3,8 @@
 my $ARCID;
 BEGIN
 {
-	@INC = ( '/opt/eprints2/perl_lib',@INC);
-	$ARCID = "ep2stable";
+	@INC = ( '/opt/eprints/perl_lib',@INC);
+	$ARCID = "devel";
 }
 use Test::More tests => 16;
 

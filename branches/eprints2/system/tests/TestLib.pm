@@ -1,5 +1,5 @@
 
 package TestLib;
 
-@INC = ( '/opt/eprints2/perl_lib',@INC);
-$TestLib::ARCID = "ep2stable";
+@INC = ( '/opt/eprints/perl_lib',@INC);
+$TestLib::ARCID = "devel";
