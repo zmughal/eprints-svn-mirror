@@ -51,7 +51,7 @@ $response->appendChild(
 my @bits = ();
 my $request_desc = $session->make_element( "request" );
 
-foreach( 
+foreach my $attr ( 
 	"verb",
 	"identifier",
 	"metadataPrefix",
@@ -60,10 +60,10 @@ foreach(
 	"set",
 	"resumptionToken" )
 {
-	my $value = $session->param( $_ );
+	my $value = $session->param( $attr );
 
 	# check it matches schema
-	if( $_ eq "verb" )
+	if( $attr eq "verb" )
 	{
 		next unless( 
 			$value eq "Identify" ||
@@ -73,27 +73,28 @@ foreach(
 			$value eq "ListMetadataFormats" ||
 			$value eq "ListSets" );
 	}
-	if( $_ eq "identifier" )
+	if( $attr eq "identifier" )
 	{
 		next unless( $value =~ m/^[a-z]+:.*$/ );
 	}
-	if( $_ eq "metadataPrefix" )
+	if( $attr eq "metadataPrefix" )
 	{
-		next unless( $value =~ m/^[A-Za-z0-9_!'$\(\)\+\-\.\*]+$/ );
+		next unless( $value =~ m/^[A-Za-z0-9attr!'$\(\)\+\-\.\*]+$/ );
 	}
-	if( $_ eq "from" || $_ eq "until")
+	if( $attr eq "from" || $attr eq "until")
 	{
 		next unless( $value =~ m/^\d\d\d\d-\d\d-\d\dT(\d\d:\d\d:\d\dZ)?$/ );
 	}
-	if( $_ eq "set" )
+	if( $attr eq "set" )
 	{
 		next unless( $value =~ m/^([A-Za-z0-9_!'$\(\)\+\-\.\*])+(:[A-Za-z0-9_!'$\(\)\+\-\.\*]+)*$/ );
 	}
-	# if( $_ eq "resumptionToken" ) { } # just any string
+	# if( $attr eq "resumptionToken" ) { } # just any string
 
 	# may be setting it to undef - but that won't matter as that
 	# unsets it.
-	$request_desc->setAttribute( $_, $value );
+	next unless defined $value;
+	$request_desc->setAttribute( $attr=>$value );
 }
 my $url = $session->get_repository->get_conf( "base_url" );
 $url .= $session->get_uri;

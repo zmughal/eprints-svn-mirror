@@ -3682,4 +3682,4 @@ PACKAGE: 2.2.99.2
     the abstract page, and "hide" which supresses the data and abstract 
     page from all non-registered users. no_search does not remove the item 
     from OAI, but hide does.
-
+ * Fixed a DOM warning in oai2.
