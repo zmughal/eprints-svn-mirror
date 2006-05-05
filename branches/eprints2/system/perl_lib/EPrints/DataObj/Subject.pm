@@ -644,7 +644,8 @@ sub _get_subjects2
 {
 	my( $self, $postableonly, $hidenode, $nestids, $subjectmap, $rmap, $prefix, $cascadelabel ) = @_; 
 
-	my $postable = ($self->get_value( "depositable" ) eq "TRUE" ? 1 : 0 );
+	my $depositable = $self->get_value( "depositable" );
+	my $postable = (defined $depositable && $depositable eq "TRUE" ? 1 : 0 );
 	my $id = $self->get_value( "subjectid" );
 
 	my $desc = $self->render_description;
