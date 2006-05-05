@@ -759,6 +759,7 @@ sub render_full
 	foreach my $field ( @fields )
 	{
 		next unless( $field->get_property( "show_in_html" ) );
+		next if( $field->is_type( "subobject" ) );
 
 		my $name = $field->get_name();
 		if( $self->is_set( $name ) )

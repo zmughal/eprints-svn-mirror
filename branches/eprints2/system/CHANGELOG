@@ -3668,3 +3668,8 @@ PACKAGE: 2.2.99.2
  * auto apache config files are now stored in var dirs rather than cfg
  * removed config element sys_path as it is not used.
 
+2006-05-04 cjg
+
+ * Fixed bug in List which was introduced by the code which skipped caches when
+    only item was required. The bug occured when ALL items where requested.
+ * DataObj->render_full no longer renders subobjects.
