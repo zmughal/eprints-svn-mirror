@@ -643,7 +643,6 @@ User Area CGI Scripts
     <ep:phrase ref="cgi/login:dont_bind">no (more convenient)</ep:phrase>
     <ep:phrase ref="cgi/login:logged_in_as"><p>You are already logged in as <ep:pin ref="name" />.</p> <p>If you wish to log in as a different user you must <a href="/perl/users/logout">Logout</a> first.</p></ep:phrase>
 
-
 <!--********************************************************************** 
 Staff CGI Scripts
 ***********************************************************************-->
@@ -985,6 +984,11 @@ Titles and Help for the System Fields
     <ep:phrase ref="eprint_fieldhelp_commentary">If your item is a commentary on another item (or author's response to a commentary) in the repository, please enter its ID in this box.</ep:phrase>
     <ep:phrase ref="eprint_fieldname_replacedby">Replaced by</ep:phrase>
     <ep:phrase ref="eprint_fieldname_fileinfo">Links to files</ep:phrase>
+    <ep:phrase ref="eprint_fieldname_metadata_visibility">Metadata Visibility</ep:phrase>
+    <ep:phrase ref="eprint_fieldhelp_metadata_visibility"></ep:phrase>
+    <ep:phrase ref="eprint_fieldopt_metadata_visibility_show">Always Show</ep:phrase>
+    <ep:phrase ref="eprint_fieldopt_metadata_visibility_no_search">Hide in search results</ep:phrase>
+    <ep:phrase ref="eprint_fieldopt_metadata_visibility_hide">Always Hide</ep:phrase>
 
     <ep:phrase ref="eprint_fieldname__fulltext_">Full Text</ep:phrase>
 

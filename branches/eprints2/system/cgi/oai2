@@ -33,7 +33,7 @@ my $session = new EPrints::Session();
 exit( 0 ) unless( defined $session );
 # What are we begin asked?
 my $verb = $session->param( "verb" );
-
+$session->get_database->set_debug(1);
 my $NS = "http://www.openarchives.org/OAI/2.0/";
 my $response = $session->make_element( 
 		"OAI-PMH",
@@ -398,14 +398,13 @@ sub GetRecord
 			$session->get_repository->get_dataset( "deletion" ) );
 	}
 
-	if( !defined $eprint )
+	if( !defined $eprint || $eprint->get_value( "metadata_visibility" ) eq "hide" ) 
 	{	
 		return render_oai_error(
 			$session,
 			"idDoesNotExist",
 			"ID: ".$args->{identifier}." does not exist in this repository" );
 	}
-
 
 	my $response = $session->make_element( "GetRecord" );
 
@@ -484,15 +483,18 @@ sub _list
 				"badResumptionToken",
 				"Token is invalid (does not match regexp)" );
 		}
+		my $filters => $session->get_repository->get_conf( "oai", "filters" );
+		$filters = [] unless defined $filters;
 		my $cache_id;
 		( $offset, $cache_id, $metadata_format ) = ( $2, $3, $5 );
 		$searchexp = EPrints::Search->new( 
 			dataset => $session->get_repository->get_dataset( "$1" ),
 			session => $session,
 			keep_cache => 1,
-			filters => $session->get_repository->get_conf( 
-								"oai",
-								"filters" ),
+			filters => [
+				{ meta_fields=>[ 'metadata_visibility' ], value=>'show no_search', match=>'EQ', merge=>"ANY", describe=>0 },
+				@{$filters},
+			],
 			cache_id => $cache_id );
 
 		unless( defined $searchexp )
@@ -553,13 +555,16 @@ sub _list
 		}
 
 		my $ds = $session->get_repository->get_dataset( "archive" );
+		my $filters => $session->get_repository->get_conf( "oai", "filters" );
+		$filters = [] unless defined $filters;
 		$searchexp = new EPrints::Search(
 			session => $session,
 			keep_cache => 1,
 			allow_blank => 1,
-			filters => $session->get_repository->get_conf( 
-								"oai",
-								"filters" ),
+			filters => [
+				{ meta_fields=>[ 'metadata_visibility' ], value=>'show no_search', match=>'EQ', merge=>"ANY", describe=>0 },
+				@{$filters},
+			],
 			dataset => $ds );
 
 		if( defined $args->{set} )
@@ -767,7 +772,7 @@ sub ListMetadataFormats
 				$args->{identifier} ),
 			$session->get_repository->get_dataset( "archive" ) );
 
-		if( !defined $eprint )
+		if( !defined $eprint || $eprint->get_value( "metadata_visibility" ) eq "hide" ) 
 		{	
 			return render_oai_error(
 				$session,

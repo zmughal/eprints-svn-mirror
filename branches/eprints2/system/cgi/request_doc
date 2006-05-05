@@ -9,7 +9,7 @@ exit( 1 ) unless( defined $session );
 # Check parameters
 my $eprintid = $session->param( "eprintid" );
 my $eprint = EPrints::DataObj::EPrint->new( $session, $eprintid );
-if( !defined $eprint )
+if( !defined $eprint || $eprint->get_value( "metadata_visibility" ) eq "hide" ) 
 {
 	$session->render_error( $session->html_phrase( 
 		"cgi/users/edit_eprint:cant_find_it", 

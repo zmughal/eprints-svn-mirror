@@ -137,14 +137,14 @@ foreach $langid ( @{$session->get_repository->get_conf( "languages" )} )
 
 		my @f = split( ',', $view->{fields} );
 		my $fieldids = \@f;
-
+		my $filters = [];
 		make_menu( 
 			$session, 
 			$tmpdir.'/'.$view->{id}, 
 			$ds, 
 			$view, 
 			$fieldids, 
-			[],
+			$filters,
 			$noise );
 		
 	}
@@ -222,10 +222,13 @@ sub get_pfilter_count
 					satisfy_all=>1,
 					session=>$session,
 					dataset=>$ds );
+		# filter nosearch and hide metadata
+		$searchexp->add_field( $ds->get_field('metadata_visibility'), 'show', 'EQ' );
 		foreach my $filter ( @{$pfilters} )
 		{
      			$searchexp->add_field( $filter->[0], $filter->[1], $mode );
 		}
+		
       		$searchexp->perform_search();
 		$count = $searchexp->count();
 		$searchexp->dispose;
@@ -739,6 +742,7 @@ sub render_list
 				satisfy_all=>1,
 				session=>$session,
 				dataset=>$ds );
+	$searchexp->add_field( $ds->get_field('metadata_visibility'), 'show', 'EQ' );
 	foreach my $filter ( @{$pfilters} )
 	{
      		$searchexp->add_field( $filter->[0], $filter->[1], "EX" );

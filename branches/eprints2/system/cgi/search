@@ -53,12 +53,15 @@ if( !defined $sconf )
 	exit;
 }
 
+my $ds = $session->get_repository->get_dataset( "archive" );
 my $searchexp = new EPrints::Search(
 	keep_cache => 1,
 	session => $session,
-	dataset => $session->get_repository->get_dataset( "archive" ),
+	dataset => $ds,
+	filters => [
+		{ meta_fields=>[ 'metadata_visibility' ], value=>'show', match=>'EX', describe=>0 },
+	],
 	%{$sconf} );
-
 $searchexp->process_webpage();
 
 $session->terminate;

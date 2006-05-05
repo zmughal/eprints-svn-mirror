@@ -153,6 +153,13 @@ sub get_system_field_info
 	{ name=>"date_embargo", type=>"date", required=>0,
 		min_resolution=>"year" },	
 
+	# empty string: normal visibility
+	# no_search: does not appear on search/view pages. 
+	# hide: as for no_search but also the abstract page & export
+	# page don't work.
+	{ name=>"metadata_visibility", type=>"set", required=>1,
+		options=>[ "show", "no_search", "hide" ] },
+
 	{ name=>"contact_email", type=>"email", required=>0, can_clone=>0 },
 
 	);
@@ -352,6 +359,7 @@ sub get_defaults
 	{
 		$data->{datestamp} = $data->{lastmod};
 	}
+	$data->{metadata_visibility} = "show";
 
 	$session->get_repository->call(
 		"set_eprint_defaults",
@@ -1570,45 +1578,49 @@ sub generate_static
 
 	$self->remove_static;
 
-	# We is going to temporarily change the language of our session to
-	# render the abstracts in each language.
-	my $real_langid = $self->{session}->get_langid;
-
-	my @langs = @{$self->{session}->get_repository->get_conf( "languages" )};
-	foreach my $langid ( @langs )
+	if( $self->get_value( "metadata_visibility" ) ne "hide" )
 	{
-		$self->{session}->change_lang( $langid );
-		my $full_path = $self->_htmlpath( $langid );
+		# We is going to temporarily change the language of our session to
+		# render the abstracts in each language.
+		my $real_langid = $self->{session}->get_langid;
 
-		my @created = eval
+		my @langs = @{$self->{session}->get_repository->get_conf( "languages" )};
+		foreach my $langid ( @langs )
 		{
-			my @created = mkpath( $full_path, 0, 0775 );
-			return( @created );
-		};
-
-		# only deleted and live records have a web page.
-		next if( $status ne "archive" && $status ne "deletion" );
-
-		my( $page, $title, $links ) = $self->render;
-
-		$self->{session}->build_page( $title, $page, "abstract", $links, "default" );
-		$self->{session}->page_to_file( $full_path . "/index.html" );
-
-		next if( $status ne "archive" );
-		# Only live archive records have actual documents 
-		# available.
-
-		my @docs = $self->get_all_documents;
-		my $doc;
-		foreach $doc ( @docs )
-		{
-			unless( $doc->is_set( "security" ) )
+			$self->{session}->change_lang( $langid );
+			my $full_path = $self->_htmlpath( $langid );
+	
+			my @created = eval
 			{
-				$doc->create_symlink( $self, $full_path );
+				my @created = mkpath( $full_path, 0, 0775 );
+				return( @created );
+			};
+	
+			# only deleted and live records have a web page.
+			next if( $status ne "archive" && $status ne "deletion" );
+	
+			my( $page, $title, $links ) = $self->render;
+	
+			$self->{session}->build_page( $title, $page, "abstract", $links, "default" );
+			$self->{session}->page_to_file( $full_path . "/index.html" );
+	
+			next if( $status ne "archive" );
+			# Only live archive records have actual documents 
+			# available.
+	
+			my @docs = $self->get_all_documents;
+			my $doc;
+			foreach $doc ( @docs )
+			{
+				unless( $doc->is_set( "security" ) )
+				{
+					$doc->create_symlink( $self, $full_path );
+				}
 			}
 		}
+		$self->{session}->change_lang( $real_langid );
 	}
-	$self->{session}->change_lang( $real_langid );
+
 	my @docs = $self->get_all_documents;
 	foreach my $doc ( @docs )
 	{

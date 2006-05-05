@@ -38,6 +38,7 @@ if( defined $conf )
 	}
 	$class.= "_".$mode;
 }
+push @{$filters}, { meta_fields=>[ 'metadata_visibility' ], value=>'show', match=>'EX', describe=>0 };
 my $number_to_get = $max;
 my $n = $session->param( "n" );
 if( $n > 0 && $n <= $max )

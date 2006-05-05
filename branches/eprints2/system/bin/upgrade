@@ -475,8 +475,11 @@ $db->set_debug(1);
 	print "Adding the embargo field to the eprint object.\n";
 	foreach( @epds ) { add_single_field_after( $db, $_,"date_embargo","DATE DEFAULT NULL","replacedby" ); }
 
+	print "Adding the embargo field to the eprint object.\n";
+	foreach( @epds ) { add_single_field_after( $db, $_,"metadata_visibility","VARCHAR(255) DEFAULT 'show'","date_embargo" ); }
+
 	print "Adding the contact_email field to the eprint object.\n";
-	foreach( @epds ) { add_single_field_after( $db, $_,"contact_email","VARCHAR(255) DEFAULT NULL","date_embargo" ); }
+	foreach( @epds ) { add_single_field_after( $db, $_,"contact_email","VARCHAR(255) DEFAULT NULL","metadata_visibility" ); }
 
 	print "Altering the joined date of a user to be time instead of date.\n";
 	$sql = "ALTER TABLE user MODIFY joined DATETIME";

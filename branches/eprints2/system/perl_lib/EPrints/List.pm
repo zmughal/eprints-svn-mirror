@@ -312,7 +312,6 @@ sub cache
 	my $db = $self->{session}->get_database;
 	if( $self->_matches_all )
 	{
-print STDERR "ALL\n";
 		$self->{cache_id} = $db->cache( 
 			$self->{encoded}, 
 			$self->{dataset},
@@ -321,7 +320,6 @@ print STDERR "ALL\n";
 	}
 	else
 	{
-print STDERR "SOME\n";
 		$self->{cache_id} = $db->cache( 
 			$self->{encoded}, 
 			$self->{dataset},

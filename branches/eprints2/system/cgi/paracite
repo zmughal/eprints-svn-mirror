@@ -78,6 +78,9 @@ sub process
 	}
 
 	my $searchexp = new EPrints::Search(
+		filters => [
+			{ meta_fields=>[ 'metadata_visibility' ], value=>'show', match=>'EQ', merge=>"ANY", describe=>0 },
+		],
 		session => $session,
 		dataset => $ds );
 
