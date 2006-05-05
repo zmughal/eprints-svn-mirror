@@ -15,7 +15,7 @@
 #
 ######################################################################
 
-package EPrints::Config::ep2stable;
+package EPrints::Config::devel;
 
 foreach my $file ( 
 	"cfg/ArchiveOAIConfig.pm",
@@ -988,7 +988,7 @@ sub email_for_doc_request {
 		return $eprint->get_value("contact_email");
 	}
 	my $user = $eprint->get_user;
-	if ($user->is_set("email")) {
+	if( defined $user && $user->is_set("email")) {
 		return $user->get_value("email");
 	}
 	return $session->get_repository->get_conf("adminemail");

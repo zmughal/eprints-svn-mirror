@@ -3674,3 +3674,4 @@ PACKAGE: 2.2.99.2
     only item was required. The bug occured when ALL items where requested.
  * DataObj->render_full no longer renders subobjects.
  * Fixed a warning in DataObj/Subject.pm
+ * ArchiveConfig can now handle an eprint without a valid userid.
