@@ -312,6 +312,7 @@ sub cache
 	my $db = $self->{session}->get_database;
 	if( $self->_matches_all )
 	{
+print STDERR "ALL\n";
 		$self->{cache_id} = $db->cache( 
 			$self->{encoded}, 
 			$self->{dataset},
@@ -320,6 +321,7 @@ sub cache
 	}
 	else
 	{
+print STDERR "SOME\n";
 		$self->{cache_id} = $db->cache( 
 			$self->{encoded}, 
 			$self->{dataset},
@@ -548,7 +550,7 @@ sub _get_records
 		# we are returning all matches, but there's no
 		# easy shortcut.
 
-		if( !$justids && scalar @{$self->{ids}} <= 1 )
+		if( !$self->_matches_all && !$justids && scalar @{$self->{ids}} <= 1 )
 		{
 			my @ids = @{$self->{ids}};
 			my $from = $offset;
