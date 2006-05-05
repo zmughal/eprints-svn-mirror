@@ -814,11 +814,11 @@ sub make_element
 	my( $self , $ename , %attribs ) = @_;
 
 	my $element = $self->{doc}->createElement( $ename );
-	foreach( keys %attribs )
+	foreach my $attr_name ( keys %attribs )
 	{
-		next unless( defined $attribs{$_} );
-		my $value = "$attribs{$_}"; # ensure it's just a string
-		$element->setAttribute( $_ , $value );
+		next unless( defined $attribs{$attr_name} );
+		my $value = "$attribs{$attr_name}"; # ensure it's just a string
+		$element->setAttribute( $attr_name , $value );
 	}
 
 	return $element;
