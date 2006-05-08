@@ -3689,3 +3689,5 @@ PACKAGE: 2.2.99.2
  * When an eprint has its status changed or has its succeeds setting changed
     then it, the item it succeeds (if any) and the item it previously 
     succeeded (if any). 
+ * Fixed bug in History that aborted with an error if the 1.xml file did not
+    exist rather then rendering a warning and continuing.

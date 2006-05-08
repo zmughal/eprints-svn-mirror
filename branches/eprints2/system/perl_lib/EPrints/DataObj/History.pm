@@ -373,6 +373,13 @@ sub render_create
 	my $r_new = $self->get_value( "revision" );
 	my $r_file_new =  $eprint->local_path."/revisions/$r_new.xml";
 
+	unless( -e $r_file_new )
+	{
+		my $div = $self->{session}->make_element( "div" );
+		$div->appendChild( $self->{session}->html_phrase( "lib/history:no_file" ) );
+		return $div;
+	}
+
 	my $file_new = EPrints::XML::parse_xml( $r_file_new );
 	my $dom_new = $file_new->getFirstChild;
 
