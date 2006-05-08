@@ -649,6 +649,13 @@ sub _transfer
 	{
 		&{$status_change_fn}( $self, $old_status, $new_status );
 	}
+
+	# if this succeeds something then update its metadata visibility
+	my $successor = EPrints::EPrint->new( $self->{session}, $self->{data}->{succeeds} );
+	$successor->succeed_thread_modified if( defined $successor );
+
+	# update this eprints metadata visibility if needed.
+	$self->succeed_thread_modified;
 	
 	return( 1 );
 }
@@ -739,6 +746,15 @@ Calls L</set_eprint_automatic_fields> just before the C<$eprint> is committed.
 sub commit
 {
 	my( $self, $force ) = @_;
+
+	if( $self->{changed}->{succeeds} )
+	{
+		my $old_succ = EPrints::EPrint->new( $self->{session}, $self->{changed}->{succeeds} );
+		$old_succ->succeed_thread_modified if( defined $old_succ );
+
+		my $new_succ = EPrints::EPrint->new( $self->{session}, $self->{data}->{succeeds} );
+		$new_succ->succeed_thread_modified if( defined $new_succ );
+	}
 
 	$self->{session}->get_repository->call( 
 		"set_eprint_automatic_fields", 
@@ -2168,6 +2184,53 @@ sub remove_from_threads
 	}
 }
 
+#
+# $eprint->succeed_thread_modified
+#
+# Something either started or stopped succeeding this eprint.
+# Update the metadata_visibility flag accordingly.
+# If metadata visibility is "hide" then do nothing as this must not
+# be overridden.
+
+sub succeed_thread_modified
+{
+	my( $self ) = @_;
+
+	my $mvis = $self->get_value( "metadata_visibility" );
+
+	if( $mvis eq "hide" )
+	{
+		# do nothing
+		return;
+	}
+
+	my $ds = $self->{session}->get_repository->get_dataset( "eprint" );
+
+	my $last_in_thread = $self->last_in_thread( $ds->get_field( "succeeds" ) );
+	my $replacement_id = $last_in_thread->get_value( "eprintid" );
+
+	if( $replacement_id == $self->get_value( "eprintid" ) )
+	{
+		# This IS the last in the thread, so we should make
+		# the metadata discoverable, if it isn't already.
+		if( $mvis eq "no_search" )
+		{
+			$self->set_value( "metadata_visibility", "show" );
+			$self->commit;
+		}
+		return;
+	}
+
+	# this is _not_ the last in its thread, so we should hide the
+	# metadata from searches and browsing.
+	
+	if( $mvis eq "show" )
+	{
+		$self->set_value( "metadata_visibility", "no_search" );
+		$self->commit;
+	}
+	return;
+}
 
 ######################################################################
 =pod

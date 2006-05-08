@@ -3683,3 +3683,9 @@ PACKAGE: 2.2.99.2
     page from all non-registered users. no_search does not remove the item 
     from OAI, but hide does.
  * Fixed a DOM warning in oai2.
+
+2006-05-08 cjg
+
+ * When an eprint has its status changed or has its succeeds setting changed
+    then it, the item it succeeds (if any) and the item it previously 
+    succeeded (if any). 
