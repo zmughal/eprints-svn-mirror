@@ -31,6 +31,9 @@ Parses the supplied DOM object and populates $component->{config}
 sub parse_config
 {
 	my( $self, $dom ) = @_;
+
+
+	$self->{config}->{phraseid} = $dom->getAttribute("ref");
 }
 
 =pod
@@ -45,7 +48,9 @@ Returns the DOM for the content of this component.
 sub render_content
 {
 	my( $self, $session ) = @_;
+
 	my $phrase = $session->html_phrase( $self->{config}->{phraseid} );
+
 	return $phrase; 
 }
 

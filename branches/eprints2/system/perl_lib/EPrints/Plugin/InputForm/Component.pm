@@ -78,7 +78,7 @@ workflow may proceed
 sub is_required
 {
 	my( $self ) = @_;
-	return 1;
+	return 0;
 }
 
 =pod

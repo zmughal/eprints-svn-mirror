@@ -3697,4 +3697,8 @@ PACKAGE: 2.2.99.2
  * Removed debug line from FieldComponent.
  * Moved arround Input plugins to new layout. Fixed some minor issues like
     a missing ISA.
+ * Fixed lots of typos and bugs in the FieldComponents to make it actually 
+    work with the demo.
+ * Added a demo script to check workflow stuff works - remove before beta.
+
 

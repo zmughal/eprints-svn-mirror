@@ -24,7 +24,19 @@ sub parse_config
 {
 	my( $self, $config_dom ) = @_;
 
-	# Set up $self->{config} with $self->{config}->{metafield}
+	$self->{config}->{field} = static_field_parse( $self->{dataobj}->get_dataset, $config_dom );
+	# Set up $self->{config} with $self->{config}->{field}
+}
+
+sub static_field_parse
+{
+	my( $dataset, $field_dom ) = @_;
+
+	# check it's a workflow:field or give error
+
+	my $field = $dataset->get_field(  $field_dom->getAttribute("name") );
+	# clone the field, set the required and collapsed properties.
+	return $field;
 }
 
 =pod
@@ -38,7 +50,7 @@ Set the values of the object we are working with from the submitted form.
 sub update_from_form
 {
 	my( $self, $session ) = @_;
-	my $value = $self->{config}->{metafield}->form_value( $session );
+	my $value = $self->{config}->{field}->form_value( $session );
 	$self->{dataobj}->set_value( $self->{field}, $value );
 }
 
@@ -58,22 +70,21 @@ sub validate
 
 	my $for_archive = 1; # moj: 
 
-	my $field = $self->{field};
-	my $metafield = $self->{config}->{metafield};
+	my $field = $self->{config}->{field};
 	my @problems;
 
-	if( $self->is_required() && !$self->{dataobj}->is_set( $field ) )
+	if( $self->is_required() && !$self->{dataobj}->is_set( $field->get_name ) )
 	{
 		my $problem = $session->html_phrase(
 			"lib/eprint:not_done_field" ,
-			fieldname=> $metafield->render_name( $session ) );
+			fieldname=> $field->render_name( $session ) );
 		push @problems, $problem;
 	}
 	
 	push @problems, $session->get_archive()->call(
 		"validate_field",
-		$metafield,
-		$self->{dataobj}->get_value( $field ),
+		$field,
+		$self->{dataobj}->get_value( $field->get_name ),
 		$session,
 		$for_archive );
 
@@ -94,8 +105,9 @@ workflow may proceed
 sub is_required
 {
 	my( $self ) = @_;
-	return $self->{stage}->get_workflow->is_required( 
-		$self->{config}->{metafield} );
+
+# not complete
+	return $self->{config}->{field}->get_property( "required" ) eq "yes";
 }
 
 =pod
@@ -109,9 +121,9 @@ Returns DOM containing the help text for this component.
 sub render_help
 {
 	my( $self, $session ) = @_;
-	return $self->{config}->{metafield}->render_help( 
+	return $self->{config}->{field}->render_help( 
 		$session, 
-		$self->{config}->{metafield}->get_type() );
+		$self->{config}->{field}->get_type() );
 }
 
 =pod
@@ -125,7 +137,7 @@ Returns the unique name of this field (for prefixes, etc).
 sub get_name
 {
 	my( $self ) = @_;
-	return $self->{config}->{metafield}->get_name();
+	return $self->{config}->{field}->get_name();
 }
 
 =pod
@@ -139,7 +151,7 @@ Returns the title of this component as a DOM object.
 sub render_title
 {
 	my( $self, $session ) = @_;
-	return $self->{config}->{metafield}->render_name( $session );
+	return $self->{config}->{field}->render_name( $session );
 }
 
 =pod
@@ -157,14 +169,14 @@ sub render_content
 	my $value;
 	if( $self->{dataobj} )
 	{
-		$value = $self->{dataobj}->get_value( $self->{field} );
+		$value = $self->{dataobj}->get_value( $self->{config}->{field}->get_name );
 	}
 	else
 	{
 		$value = $self->{default};
 	}
 
-	return $self->{config}->{metafield}->render_input_field( $session, $value );
+	return $self->{config}->{field}->render_input_field( $session, $value );
 }
 
 ######################################################################

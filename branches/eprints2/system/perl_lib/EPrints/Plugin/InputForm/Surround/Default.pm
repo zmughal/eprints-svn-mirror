@@ -6,13 +6,13 @@ our @ISA = qw/ EPrints::Plugin /;
 
 sub render
 {
-	my( $component, $session ) = @_;
+	my( $self, $component, $session ) = @_;
 
 	my $is_req = $component->is_required();
-	my $help = $component->render_help();
+	my $help = $component->render_help($session);
 	my $collapsed = $component->is_collapsed();
 	my $comp_name = $component->get_name();
-	my $title = $component->render_title();
+	my $title = $component->render_title($session);
 
 	my $surround = $session->make_element( "div", class => "wf_component" );
 
@@ -39,11 +39,14 @@ sub render
 
 	$title_div->appendChild( $title );
 
+	$surround->appendChild( $title_div );
+	$surround->appendChild( $help_div );
+
 	# Finally add the content (unless we're collapsed)
 	my $input_div = $session->make_element( "div", class => "wf_input" );
 	if( !$collapsed )
 	{
-		$input_div->appendChild( $component->render_content() );
+		$input_div->appendChild( $component->render_content($session, $self) );
 	}
 	
 	$surround->appendChild( $input_div );

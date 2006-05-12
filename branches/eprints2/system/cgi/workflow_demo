@@ -1,0 +1,29 @@
+# temp file remove before beta!
+
+use EPrints;
+
+use strict;
+my $session = new EPrints::Session;
+exit( 0 ) unless( defined $session );
+# $session->get_database->set_debug( 1 );
+
+my $item = EPrints::DataObj::EPrint->new( $session, 30 );
+my $surround = $session->plugin( "InputForm::Surround::Default" );
+my $plugin = $session->plugin( "InputForm::Component::FieldComponent", dataobj=>$item );
+my $plugin2 = $session->plugin( "InputForm::Component::Phrase" );
+
+my $page=$session->make_doc_fragment();
+
+$plugin->parse_config( $session->make_element( "field", name=>"creators", required=>"yes" ) );
+$plugin2->parse_config( $session->make_element( "phrase", ref=>"lib/document:no_files" ) );
+
+my $title = $session->make_text( "Workflow Demo" );
+
+$page->appendChild( $surround->render( $plugin, $session ) );
+$page->appendChild( $surround->render( $plugin2, $session ) );
+
+$session->build_page( $title, $page );
+$session->send_page();
+
+
+$session->terminate;
