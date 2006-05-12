@@ -1,7 +1,6 @@
 package EPrints::Plugin::Component::FieldComponent;
 
 use EPrints::Plugin::Component;
-use Tie::Watch;
 
 @ISA = ( "EPrints::Plugin::Component" );
 

@@ -3691,3 +3691,8 @@ PACKAGE: 2.2.99.2
     succeeded (if any). 
  * Fixed bug in History that aborted with an error if the 1.xml file did not
     exist rather then rendering a warning and continuing.
+
+2006-05-12 cjg
+
+ * Removed debug line from FieldComponent.
+
