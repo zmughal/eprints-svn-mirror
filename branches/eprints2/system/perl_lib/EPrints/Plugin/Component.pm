@@ -53,61 +53,99 @@ sub new
 	return $self;
 }
 
-sub render_shell
+=pod
+
+=item $bool = $component->parse_config( $dom )
+
+Parses the supplied DOM object and populates $component->{config}
+
+=cut
+
+sub parse_config
 {
-	my( $self, $session, $metafield, $dataset, $type ) = @_;
-	my $shell = $session->make_element( "div", class => "wf_component" );
-	my $name = $metafield->get_name;
-	
-	my $helpimg = $session->make_element( "img", src => "/images/help.gif", class => "wf_help_icon", border => "0" );
-	my $reqimg = $session->make_element( "img", src => "/images/req.gif", class => "wf_req_icon", border => "0" );
-
-	my $title = $session->make_element( "div", class => "wf_title" );
-
-	my $helplink = $session->make_element( "a", onClick => "doToggle('help_$name')" );
-	$helplink->appendChild($helpimg);
-
-	$title->appendChild( $helplink );
-	
-	my $req = $dataset->field_required_in_type( $metafield, $type );
-	if($req)
-	{
-		$title->appendChild( $reqimg );
-	}
-	$title->appendChild( $session->make_text(" ") );
-	$title->appendChild( $metafield->render_name( $session ) );
-
-	my $help = $session->make_element( "div", class => "wf_help", style => "display: none", id => "help_$name" );
-	$help->appendChild( $metafield->render_help( $session, $metafield->get_type() ) );
-
-	$shell->appendChild( $title );
-	$shell->appendChild( $help );
-	return $shell;
+	my( $self, $dom ) = @_;
 }
 
-sub from_form
-{
-	my( $self, $modobj ) = @_;
-}
+=pod
 
-sub validate
+=item $bool = $component->is_required()
+
+returns true if this component is required to be completed before the
+workflow may proceed
+
+=cut
+
+sub is_required
 {
+	my( $self ) = @_;
 	return 1;
 }
 
-# all or ""
-sub is_visible
+=pod
+
+=item $bool = $component->is_collapsed()
+
+returns true if this component is to be rendered in a compact form
+(for example, just title / required / help).
+
+=cut
+
+sub is_collapsed
 {
-	my( $plugin, $vis_level ) = @_;
-	return( 1 ) unless( defined $vis_level );
+	my( $self ) = @_;
+	return 0;
+}
 
-	return( 0 ) unless( defined $plugin->{visible} );
+=pod
 
-	if( $vis_level eq "all" && $plugin->{visible} ne "all" ) {
-		return 0;
-	}
+=item $help = $component->render_help( $session )
 
-	return 1;
+Returns DOM containing the help text for this component.
+
+=cut
+
+sub render_help
+{
+	my( $self, $session ) = @_;
+}
+
+=pod
+
+=item $name = $component->get_name()
+
+Returns the unique name of this field (for prefixes, etc).
+
+=cut
+
+sub get_name
+{
+	my( $self ) = @_;
+}
+
+=pod
+
+=item $title = $component->render_title( $session )
+
+Returns the title of this component as a DOM object.
+
+=cut
+
+sub render_title
+{
+	my( $self, $session ) = @_;
+}
+
+=pod
+
+=item $content = $component->render_content( $session )
+
+Returns the DOM for the content of this component.
+
+=cut
+
+sub render_content
+{
+	my( $self, $session ) = @_;
 }
 
 ######################################################################

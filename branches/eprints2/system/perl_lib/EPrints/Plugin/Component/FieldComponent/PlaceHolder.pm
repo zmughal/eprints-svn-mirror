@@ -20,11 +20,12 @@ sub new
 	return $self;
 }
 
-sub render_field
+sub render_content
 {
-	my( $self, $session, $metafield, $value ) = @_;
+	my( $self, $session ) = @_;
 	my $out = $session->make_doc_fragment;
-	$out->appendChild( $session->make_text( "This is a placeholder for the ".$self->{params}->{name}." component" ) );
+	$out->appendChild( $session->make_text( "This is a placeholder for the ".$self->{name}." component" ) );
+	return $out;
 }
 
 1;

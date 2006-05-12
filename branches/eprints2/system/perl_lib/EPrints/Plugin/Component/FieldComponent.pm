@@ -1,6 +1,7 @@
 package EPrints::Plugin::Component::FieldComponent;
 
 use EPrints::Plugin::Component;
+use Tie::Watch;
 
 @ISA = ( "EPrints::Plugin::Component" );
 
@@ -20,140 +21,152 @@ sub new
 	return $self;
 }
 
+sub parse_config
+{
+	my( $self, $config_dom ) = @_;
+
+	# Set up $self->{config} with $self->{config}->{metafield}
+}
+
 =pod
 
-=item $dom = $fieldcomponent->render_field()
+=item $dom = $fieldcomponent->update_from_form( $session )
 
-Returns DOM for the input field of this component. This may be overridden to provide
-extra functionality,
+Set the values of the object we are working with from the submitted form.
 
 =cut
 
-sub render_field
+sub update_from_form
 {
-	my( $self, $session, $metafield, $value ) = @_;
-	return $metafield->render_input_field( $session, $value );
+	my( $self, $session ) = @_;
+	my $value = $self->{config}->{metafield}->form_value( $session );
+	$self->{dataobj}->set_value( $self->{field}, $value );
 }
 
 =pod
 
-=item $dom = $fieldcomponent->render_shell()
-
-Returns DOM representing the 'shell' of the component - i.e. a container including
-help information, the field name, and an indication of its requirement. 
-
-Parameters:
-help - the DOM to render as the help text
-req - true if this field is required, false if not
-title - the DOM to render as the title text
-name - a unique ID for reference.
-
-=cut
-
-sub render_shell
-{
-	my( $self, %params) = @_;
-	
-	my $session = $params{session};
-
-	my $shell = $session->make_element( "div", class => "wf_component" );
-	$shell->appendChild( $self->render_title( $session, $params{title}, $params{req}, $params{name} ) );
-	$shell->appendChild( $self->render_help( $session, $params{help}, $params{name} ) );
-	return $shell;
-}
-
-sub render_help
-{
-	my( $self, $session, $help, $name ) = @_;
-	my $helpdiv = $session->make_element( "div", class => "wf_help", style => "display: none", id => "help_$name" );
-	$helpdiv->appendChild( $help ); 
-	return $helpdiv;
-}
-
-sub render_title
-{
-	my( $self, $session, $title, $req, $name) = @_;
-	
-	my $helpimg = $session->make_element( "img", src => "/images/help.gif", class => "wf_help_icon", border => "0" );
-	my $reqimg = $session->make_element( "img", src => "/images/req.gif", class => "wf_req_icon", border => "0" );
-
-	my $titlediv = $session->make_element( "div", class => "wf_title" );
-
-	my $helplink = $session->make_element( "a", onClick => "doToggle('help_$name')" );
-	$helplink->appendChild($helpimg);
-
-	$titlediv->appendChild( $helplink );
-	
-	if($req)
-	{
-		$titlediv->appendChild( $reqimg );
-	}
-	
-	$titlediv->appendChild( $session->make_text(" ") );
-	$titlediv->appendChild( $title );
-
-	return $titlediv;
-}
-
-=pod
-
-=item @problems = $plugin->validate()
+=item @problems = $fieldcomponent->validate( $session )
 
 Returns a set of problems (DOM objects) if the component is unable to validate.
 
 =cut
 
-
 sub validate
 {
-	return 1;
+	my( $self, $session ) = @_;
+
+	# moj: Requirement validation can be done at a workflow level.
+
+	my $for_archive = 1; # moj: 
+
+	my $field = $self->{field};
+	my $metafield = $self->{config}->{metafield};
+	my @problems;
+
+	if( $self->is_required() && !$self->{dataobj}->is_set( $field ) )
+	{
+		my $problem = $session->html_phrase(
+			"lib/eprint:not_done_field" ,
+			fieldname=> $metafield->render_name( $session ) );
+		push @problems, $problem;
+	}
+	
+	push @problems, $session->get_archive()->call(
+		"validate_field",
+		$metafield,
+		$self->{dataobj}->get_value( $field ),
+		$session,
+		$for_archive );
+
+	$self->{problems} = \@problems;
+
+	return @problems;
 }
 
-sub render
-{
-	my( $self, $defobj, $params ) = @_;
-	my $session = $params->{session};
-	my $field = $self->{field};
-	my $user_ds = $session->get_repository->get_dataset( "eprint" );
-	my $metafield = $user_ds->get_field( $field );
+=pod
 
+=item $bool = $component->is_required()
+
+returns true if this component is required to be completed before the
+workflow may proceed
+
+=cut
+
+sub is_required
+{
+	my( $self ) = @_;
+	return $self->{stage}->get_workflow->is_required( 
+		$self->{config}->{metafield} );
+}
+
+=pod
+
+=item $help = $component->render_help( $session )
+
+Returns DOM containing the help text for this component.
+
+=cut
+
+sub render_help
+{
+	my( $self, $session ) = @_;
+	return $self->{config}->{metafield}->render_help( 
+		$session, 
+		$self->{config}->{metafield}->get_type() );
+}
+
+=pod
+
+=item $name = $component->get_name()
+
+Returns the unique name of this field (for prefixes, etc).
+
+=cut
+
+sub get_name
+{
+	my( $self ) = @_;
+	return $self->{config}->{metafield}->get_name();
+}
+
+=pod
+
+=item $title = $component->render_title( $session )
+
+Returns the title of this component as a DOM object.
+
+=cut
+
+sub render_title
+{
+	my( $self, $session ) = @_;
+	return $self->{config}->{metafield}->render_name( $session );
+}
+
+=pod
+
+=item $content = $component->render_content( $session )
+
+Returns the DOM for the content of this component.
+
+=cut
+
+sub render_content
+{
+	my( $self, $session ) = @_;
+	
 	my $value;
-	if( $params->{eprint} )
+	if( $self->{dataobj} )
 	{
-		$value = $params->{eprint}->get_value( $field );
+		$value = $self->{dataobj}->get_value( $self->{field} );
 	}
 	else
 	{
-		$value = $params->{default};
+		$value = $self->{default};
 	}
 
-	# Get a few values
-	my $title = $metafield->render_name( $session );
-	my $help  = $metafield->render_help( $session, $metafield->get_type() );
-	my $name  = $metafield->get_name;
-	my $req   = $user_ds->field_required_in_type( $metafield, "article" );
-
-	# Get the shell
-	my $outer = $self->render_shell( 
-		session => $session, 
-		title => $title,
-		help => $help,
-		req => $req,
-		name => $name );
-		
-		
-	# Render the input
-	
-	my $div = $session->make_element( "div", class => "wf_input" );
-
-	$div->appendChild( $self->render_field( $session, $metafield, $value ) );
-	$outer->appendChild( $div );
-	return $outer;
+	return $self->{config}->{metafield}->render_input_field( $session, $value );
 }
 
+######################################################################
 1;
-
-
-
-
-

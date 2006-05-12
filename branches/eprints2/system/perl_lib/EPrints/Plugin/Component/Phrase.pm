@@ -20,10 +20,32 @@ sub new
 	return $self;
 }
 
-sub render
+=pod
+
+=item $bool = $component->parse_config( $dom )
+
+Parses the supplied DOM object and populates $component->{config}
+
+=cut
+
+sub parse_config
 {
-	my( $self, $defobj, $params ) = @_;
-	my $phrase = $params->{session}->html_phrase( $self->{params}->{phraseid} );
+	my( $self, $dom ) = @_;
+}
+
+=pod
+
+=item $content = $component->render_content( $session )
+
+Returns the DOM for the content of this component.
+
+=cut
+
+
+sub render_content
+{
+	my( $self, $session ) = @_;
+	my $phrase = $session->html_phrase( $self->{config}->{phraseid} );
 	return $phrase; 
 }
 

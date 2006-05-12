@@ -20,30 +20,43 @@ sub new
 	return $self;
 }
 
+=pod
 
-sub render
+=item $content = $component->render_content( $session )
+
+Returns the DOM for the content of this component.
+
+=cut
+
+sub render_content
 {
-	my( $self, $defobj, $params ) = @_;
+	my( $self, $session ) = @_;
 	
-	my $session = $params->{session};
-	my $workflow = $params->{workflow};
+	my $workflow = $self->{stage}->get_workflow();
 
 	my $base = $session->make_element( "div", class => "wf_blister" );
 	my $stages = $session->make_element( "div", class => "wf_blister_stages" );
 	
 	my @stages = @{$workflow->{stages}};
-	my $current = $session->make_element( "div", class => "wf_blister_stage_curr" );;
+	my $current = $session->make_element( "div", class => "wf_blister_stage_curr" );
+	
 	foreach(@stages)
 	{
 		my $div;
-		if( $params->{stage} eq $_->get_name() )
+		my $err = "";
+		if( $_->has_problems() )
 		{
-			$div = $session->make_element( "div", class => "wf_blister_stage_curr" );
+			$err = "_prob";
+		}
+		
+		if( $self->{stage}->get_name() eq $_->get_name() )
+		{
+			$div = $session->make_element( "div", class => "wf_blister_stage_curr$err" );
 			$current->appendChild( $session->make_text( $_->get_title() ) );
 		}
 		else
 		{
-			$div = $session->make_element( "div", class => "wf_blister_stage" );
+			$div = $session->make_element( "div", class => "wf_blister_stage$err" );
 		}
 		$div->appendChild( $session->make_text( $_->get_name() ) );
 		$stages->appendChild( $div );
