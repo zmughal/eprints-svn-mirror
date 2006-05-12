@@ -1,4 +1,8 @@
-package EPrints::Plugin::Component::Surround::Default;
+package EPrints::Plugin::InputForm::Surround::Default;
+
+use strict;
+
+our @ISA = qw/ EPrints::Plugin /;
 
 sub render
 {

@@ -1,8 +1,8 @@
-package EPrints::Plugin::Component::Blister;
+package EPrints::Plugin::InputForm::Component::Blister;
 
-use EPrints::Plugin::Component;
+use EPrints::Plugin::InputForm::Component;
 
-@ISA = ( "EPrints::Plugin::Component" );
+@ISA = ( "EPrints::Plugin::InputForm::Component" );
 
 use Unicode::String qw(latin1);
 

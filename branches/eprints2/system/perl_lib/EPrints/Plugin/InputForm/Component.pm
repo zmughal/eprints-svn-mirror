@@ -1,7 +1,7 @@
 
 ######################################################################
 #
-# EPrints::Component
+# EPrints::Plugin::InputForm::Component
 #
 ######################################################################
 #
@@ -29,17 +29,17 @@
 
 =head1 NAME
 
-B<EPrints::Component> - A single form component 
+B<EPrints::Plugin::InputForm::Component> - A single form component 
 
 =cut
 
-package EPrints::Plugin::Component;
+package EPrints::Plugin::InputForm::Component;
 
 use strict;
 
 our @ISA = qw/ EPrints::Plugin /;
 
-$EPrints::Plugin::Component::ABSTRACT = 1;
+$EPrints::Plugin::InputForm::Component::ABSTRACT = 1;
 
 sub new
 {

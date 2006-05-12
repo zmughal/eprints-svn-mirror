@@ -3695,4 +3695,6 @@ PACKAGE: 2.2.99.2
 2006-05-12 cjg
 
  * Removed debug line from FieldComponent.
+ * Moved arround Input plugins to new layout. Fixed some minor issues like
+    a missing ISA.
 

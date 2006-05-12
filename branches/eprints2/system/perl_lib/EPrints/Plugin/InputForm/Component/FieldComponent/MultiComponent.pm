@@ -1,8 +1,8 @@
-package EPrints::Plugin::Component::FieldComponent::MultiComponent;
+package EPrints::Plugin::InputForm::Component::FieldComponent::MultiComponent;
 
-use EPrints::Plugin::Component::FieldComponent;
+use EPrints::Plugin::InputForm::Component::FieldComponent;
 
-@ISA = ( "EPrints::Plugin::Component::FieldComponent" );
+@ISA = ( "EPrints::Plugin::InputForm::Component::FieldComponent" );
 
 use Unicode::String qw(latin1);
 
