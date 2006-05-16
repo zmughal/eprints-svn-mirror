@@ -3701,4 +3701,7 @@ PACKAGE: 2.2.99.2
     work with the demo.
  * Added a demo script to check workflow stuff works - remove before beta.
 
+2006-05-16 cjg
 
+ * Moved metafield to Plugin::Field - will break code until the backcomp. 
+    stuff is in place.
