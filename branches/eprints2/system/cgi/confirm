@@ -86,8 +86,9 @@ sub make_confirm_page
 		my $sql = "UPDATE ".$user_ds->get_sql_table_name()." SET email=newemail, newemail=NULL, pin=NULL where userid=".$userid; 
 		$session->get_database->do( $sql );
 		# if this is a minimal user, update the username
-		if( !$session->get_repository->get_conf( "allow_web_signup" ) &&
-			$session->get_repository->get_conf( "allow_minimal_signup" ) )
+		my $signup_style = $session->get_repository->get_conf( "signup_style" );
+		if( $session->get_repository->get_conf( "allow_web_signup" ) &&
+			defined( $signup_style ) && $signup_style eq "minimal" )
 		{
 			my $sql = "UPDATE ".$user_ds->get_sql_table_name()." SET username=email where userid=".$userid; 
 			$session->get_database->do( $sql );

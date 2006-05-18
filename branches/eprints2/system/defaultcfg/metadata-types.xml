@@ -29,7 +29,7 @@
   </dataset>
 
   <dataset name="user">
-    <type name="minuser" />
+<!--    <type name="minuser" /> -->
     <type name="user" />
     <type name="editor" />
     <type name="admin" />
