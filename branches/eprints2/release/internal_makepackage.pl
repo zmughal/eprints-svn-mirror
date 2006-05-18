@@ -88,6 +88,7 @@ print "Inserting configure and install scripts...\n";
 cmd("cp $from/release/configure $to/eprints/configure");
 cmd("cp $from/release/install.pl.in $to/eprints/install.pl.in");
 cmd("cp $from/release/df-check.pl $to/eprints/df-check.pl");
+cmd("cp $from/release/cgi-check.pl $to/eprints/cgi-check.pl");
 cmd("cp $from/release/perlmodules.pl $to/eprints/perlmodules.pl");
 cmd("cp $from/release/Makefile $to/eprints/Makefile");
 

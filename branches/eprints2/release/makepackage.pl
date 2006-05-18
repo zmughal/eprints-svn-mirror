@@ -80,7 +80,7 @@ print "Removing temporary directories...\n";
 erase_dir( "export" );
 
 print "Done.\n";
-print "./upload.pl $package_file.tar.gz\n":
+print "./upload.pl $package_file.tar.gz\n";
 
 exit;
 
