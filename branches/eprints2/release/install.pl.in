@@ -548,7 +548,7 @@ sub install_file
 	my $currline = "";
 	open(INFILE, $distdir."/$dir/$file");
 	binmode(INFILE);
-	if ($dir eq "bin")
+	if ($dir eq "bin" || $dir eq "testdata/bin")
 	{
 		if ($file eq "startup.pl")
 		{
