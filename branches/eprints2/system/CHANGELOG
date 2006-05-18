@@ -3705,3 +3705,13 @@ PACKAGE: 2.2.99.2
 
  * Moved metafield to Plugin::Field - will break code until the backcomp. 
     stuff is in place.
+ * And undid it again because it all went wrong.
+
+2006-05-17 cjg
+
+ * Added experimental OVID link to abstract page
+ * generate_workflows now generates a more compressed version with if's
+    removed if possible.
+ * EPrints::XML now has "strict" mode working properly - some minor fixes
+    were required as a result.
+ * the XML tidy method now can be told to ignore certain elements.

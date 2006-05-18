@@ -1,334 +1,160 @@
 <?xml version="1.0" encoding="utf-8"?>
-<wf:workflow xmlns="http://www.w3.org/1999/xhtml" xmlns:wf="http://eprints.org/ep2/workflow" xmlns:ep="http://eprints.org/ep2/">
-  <wf:flow>
-      <wf:stage ref="core"/>
-      <wf:stage ref="pubinfo"/>
-	  <ep:ifmatch name="type" value="conference_item">
-        <wf:stage ref="event" />
-      </ep:ifmatch>
-      <ep:ifnotmatch name="type" value="patent">
-	    <wf:state ref="status" />
-	  </ep:ifnotmatch>
-      <wf:stage ref="abstract"/>
-      <wf:stage ref="subjects"/>
-      <wf:stage ref="notes"/>
-  </wf:flow>
-  
-  <wf:stage name="core">
-	<wf:component type="component/default">
-      <wf:value name="required">yes</wf:value>
-      <wf:value name="field">title</wf:value>
-    </wf:component>
-	<ep:ifmatch name="type" value="monograph">
-      <wf:component type="component/default">
-        <wf:value name="required">yes</wf:value>
-        <wf:value name="field">monograph_type</wf:value>
-      </wf:component>
+<workflow xmlns="http://eprints.org/ep2/workflow" xmlns:ep="http://eprints.org/ep2/">
+
+  <flow>
+    <stage ref="core"/>
+    <stage ref="pubinfo"/>
+    <ep:ifmatch name="type" value="conference_item">
+      <stage ref="event"/>
+      <stage ref="status"/>
     </ep:ifmatch>
-	<ep:ifmatch name="type" value="conference_item">
-      <wf:component type="component/default">
-        <wf:value name="required">yes</wf:value>
-        <wf:value name="field">pres_type</wf:value>
-      </wf:component>
+    <ep:ifmatch name="type" value="thesis book_section other book article monograph">
+      <stage ref="status"/>
+    </ep:ifmatch>
+    <stage ref="abstract"/>
+    <stage ref="subjects"/>
+    <stage ref="notes"/>
+  </flow>
+
+  <stage name="core">
+    <component><field ref="title"><required/></field></component>
+    <ep:ifmatch name="type" value="monograph">
+      <component><field ref="monograph_type"><required/></field></component>
+      <component><field ref="creators"><required/></field></component>
     </ep:ifmatch>
     <ep:ifmatch name="type" value="thesis">
-      <wf:component type="component/default">
-        <wf:value name="required">yes</wf:value>
-        <wf:value name="field">thesis_type</wf:value>
-      </wf:component>
+      <component><field ref="thesis_type"><required/></field></component>
+      <component><field ref="creators"><required/></field></component>
     </ep:ifmatch>
-    <wf:component type="component/default">
-      <wf:value name="required">yes</wf:value>
-      <wf:value name="field">creators</wf:value>
-    </wf:component>
-    <ep:ifmatch name="type" value="book_section book">
-      <wf:component type="component/default">
-        <wf:value name="field">editors</wf:value>
-      </wf:component>
-	</ep:ifmatch>
-  </wf:stage>
+    <ep:ifmatch name="type" value="other article patent">
+      <component><field ref="creators"><required/></field></component>
+    </ep:ifmatch>
+    <ep:ifmatch name="type" value="book">
+      <component><field ref="creators"/></component>
+      <component><field ref="editors"/></component>
+    </ep:ifmatch>
+    <ep:ifmatch name="type" value="conference_item">
+      <component><field ref="pres_type"><required/></field></component>
+      <component><field ref="creators"><required/></field></component>
+    </ep:ifmatch>
+    <ep:ifmatch name="type" value="book_section">
+      <component><field ref="creators"><required/></field></component>
+      <component><field ref="editors"/></component>
+    </ep:ifmatch>
+  </stage>
 
-  
-  <wf:stage name="event">
-	<wf:component type="component/default">
-      <wf:value name="required">yes</wf:value>
-      <wf:value name="field">event_title</wf:value>
-    </wf:component>
-	<wf:component type="component/default">
-      <wf:value name="required">yes</wf:value>
-      <wf:value name="field">event_type</wf:value>
-    </wf:component>
-	<wf:component type="component/default">
-      <wf:value name="field">event_location</wf:value>
-    </wf:component>
-	<wf:component type="component/default">
-      <wf:value name="field">event_dates</wf:value>
-    </wf:component>
-  </wf:stage>
-  
-  <wf:stage name="pubinfo">
+  <stage name="pubinfo">
+    <ep:ifmatch name="type" value="patent">
+      <component><field ref="date_issue"><required/></field></component>
+      <component><field ref="official_url"/></component>
+      <component><field ref="patent_applicant"><required/></field></component>
+      <component><field ref="id_number"><required/></field></component>
+      <component><field ref="pages"/></component>
+    </ep:ifmatch>
+    <ep:ifmatch name="type" value="monograph">
+      <component><field ref="institution"/></component>
+      <component><field ref="department"/></component>
+      <component><field ref="place_of_pub"/></component>
+      <component><field ref="publisher"><required/></field></component>
+      <component><field ref="id_number"/></component>
+      <component><field ref="pages"/></component>
+      <component><field ref="date_issue"/></component>
+      <component><field ref="date_sub"/></component>
+      <component><field ref="official_url"/></component>
+    </ep:ifmatch>
+    <ep:ifmatch name="type" value="book">
+      <component><field ref="date_issue"/></component>
+      <component><field ref="date_sub"/></component>
+      <component><field ref="place_of_pub"/></component>
+      <component><field ref="publisher"><required/></field></component>
+      <component><field ref="pages"/></component>
+      <component><field ref="series"/></component>
+      <component><field ref="volume"/></component>
+      <component><field ref="number"/></component>
+      <component><field ref="isbn"/></component>
+      <component><field ref="official_url"/></component>
+    </ep:ifmatch>
+    <ep:ifmatch name="type" value="other">
+      <component><field ref="date_issue"/></component>
+      <component><field ref="date_sub"/></component>
+      <component><field ref="official_url"/></component>
+      <component><field ref="place_of_pub"/></component>
+      <component><field ref="publisher"><required/></field></component>
+      <component><field ref="id_number"/></component>
+    </ep:ifmatch>
+    <ep:ifmatch name="type" value="book_section">
+      <component><field ref="pagerange"/></component>
+      <component><field ref="book_title"><required/></field></component>
+      <component><field ref="volume"/></component>
+      <component><field ref="place_of_pub"/></component>
+      <component><field ref="publisher"><required/></field></component>
+      <component><field ref="pages"/></component>
+      <component><field ref="id_number"/></component>
+      <component><field ref="series"/></component>
+      <component><field ref="number"/></component>
+      <component><field ref="isbn"/></component>
+      <component><field ref="date_issue"/></component>
+      <component><field ref="date_sub"/></component>
+      <component><field ref="official_url"/></component>
+    </ep:ifmatch>
+    <ep:ifmatch name="type" value="thesis">
+      <component><field ref="date_issue"><required/></field></component>
+      <component><field ref="official_url"/></component>
+      <component><field ref="institution"><required/></field></component>
+      <component><field ref="department"><required/></field></component>
+      <component><field ref="pages"/></component>
+    </ep:ifmatch>
+    <ep:ifmatch name="type" value="conference_item">
+      <component><field ref="date_issue"/></component>
+      <component><field ref="date_sub"/></component>
+      <component><field ref="pages"/></component>
+      <component><field ref="official_url"/></component>
+    </ep:ifmatch>
     <ep:ifmatch name="type" value="article">
-      <wf:component type="component/default">
-        <wf:value name="required">yes</wf:value>
-        <wf:value name="field">publication</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">volume</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">number</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">pagerange</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">date_issue</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">date_sub</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">id_number</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">official_url</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">issn</wf:value>
-      </wf:component>
+      <component><field ref="publication"><required/></field></component>
+      <component><field ref="volume"/></component>
+      <component><field ref="number"/></component>
+      <component><field ref="pagerange"/></component>
+      <component><field ref="date_issue"/></component>
+      <component><field ref="date_sub"/></component>
+      <component><field ref="id_number"/></component>
+      <component><field ref="official_url"/></component>
+      <component><field ref="issn"/></component>
     </ep:ifmatch>
-    
-	<ep:ifmatch name="type" value="book_section">
-      <wf:component type="component/default">
-        <wf:value name="field">pagerange</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="required">yes</wf:value>
-        <wf:value name="field">book_title</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">volume</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">place_of_pub</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="required">yes</wf:value>
-        <wf:value name="field">publisher</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">pages</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">id_number</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">series</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">number</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">isbn</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">date_issue</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">date_sub</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">official_url</wf:value>
-      </wf:component>
+  </stage>
+
+  <stage name="status">
+    <ep:ifmatch name="type" value="thesis other monograph">
+      <component><field ref="ispublished"><required/></field></component>
     </ep:ifmatch>
-    
-	<ep:ifmatch name="type" value="monograph">
-      <wf:component type="component/default">
-        <wf:value name="field">institution</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">department</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">place_of_pub</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="required">yes</wf:value>
-        <wf:value name="field">publisher</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">id_number</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">pages</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">date_issue</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">date_sub</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">official_url</wf:value>
-      </wf:component>
+    <ep:ifmatch name="type" value="book_section book article conference_item">
+      <component><field ref="ispublished"><required/></field></component>
+      <component><field ref="refereed"><required/></field></component>
     </ep:ifmatch>
-    
-	<ep:ifmatch name="type" value="conference_item">
-      <wf:component type="component/default">
-        <wf:value name="field">date_issue</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">date_sub</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">pages</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">official_url</wf:value>
-      </wf:component>
+  </stage>
+
+  <stage name="abstract">
+    <component><field ref="abstract"/></component>
+    <component><field ref="referencetext"/></component>
+    <component><field ref="keywords"/></component>
+  </stage>
+
+  <stage name="subjects">
+    <component><field ref="subjects"><required/></field></component>
+  </stage>
+
+  <stage name="notes">
+    <component><field ref="note"/></component>
+    <component><field ref="suggestions"/></component>
+  </stage>
+
+  <stage name="event">
+    <ep:ifmatch name="type" value="conference_item">
+      <component><field ref="event_title"><required/></field></component>
+      <component><field ref="event_type"><required/></field></component>
+      <component><field ref="event_location"/></component>
+      <component><field ref="event_dates"/></component>
     </ep:ifmatch>
-    
-	<ep:ifmatch name="type" value="book">
-      <wf:component type="component/default">
-        <wf:value name="field">date_issue</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">date_sub</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">place_of_pub</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="required">yes</wf:value>
-        <wf:value name="field">publisher</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">pages</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">series</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">volume</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">number</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">isbn</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">official_url</wf:value>
-      </wf:component>
-    </ep:ifmatch>
-    
-	<ep:ifmatch name="type" value="thesis">
-      <wf:component type="component/default">
-        <wf:value name="required">yes</wf:value>
-        <wf:value name="field">date_issue</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">official_url</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="required">yes</wf:value>
-        <wf:value name="field">institution</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="required">yes</wf:value>
-        <wf:value name="field">department</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">pages</wf:value>
-      </wf:component>
-    </ep:ifmatch>
-    
-	<ep:ifmatch name="type" value="patent">
-      <wf:component type="component/default">
-        <wf:value name="required">yes</wf:value>
-        <wf:value name="field">date_issue</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">official_url</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="required">yes</wf:value>
-        <wf:value name="field">patent_applicant</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="required">yes</wf:value>
-        <wf:value name="field">id_number</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">pages</wf:value>
-      </wf:component>
-    </ep:ifmatch>
-    
-	<ep:ifmatch name="type" value="other">
-      <wf:component type="component/default">
-        <wf:value name="field">date_issue</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">date_sub</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">official_url</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">place_of_pub</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="required">yes</wf:value>
-        <wf:value name="field">publisher</wf:value>
-      </wf:component>
-      <wf:component type="component/default">
-        <wf:value name="field">id_number</wf:value>
-      </wf:component>
-    </ep:ifmatch>
-  </wf:stage>
-  
-  <wf:stage name="status">
-	<wf:component type="component/default">
-      <wf:value name="required">yes</wf:value>
-      <wf:value name="field">ispublished</wf:value>
-    </wf:component>
-	
-    <ep:ifmatch name="type" value="article book_section conference_item book">
-      <wf:component type="component/default">
-        <wf:value name="required">yes</wf:value>
-        <wf:value name="field">refereed</wf:value>
-      </wf:component>
-    </ep:ifmatch>
-  </wf:stage>
-  
-  <wf:stage name="abstract">
-    <wf:component type="component/default">
-      <wf:value name="field">abstract</wf:value>
-    </wf:component>
-    
-	<wf:component type="component/default">
-      <wf:value name="field">referencetext</wf:value>
-    </wf:component>
-    
-	<wf:component type="component/default">
-      <wf:value name="field">keywords</wf:value>
-    </wf:component>
-  </wf:stage>
-  
-  <wf:stage name="subjects">
-	<wf:component type="component/default">
-      <wf:value name="required">yes</wf:value>
-      <wf:value name="field">subjects</wf:value>
-    </wf:component>
-  </wf:stage>
-  
-  <wf:stage name="notes">
-	<wf:component type="component/default">
-      <wf:value name="field">note</wf:value>
-    </wf:component>
-  
-    <wf:component type="component/default">
-      <wf:value name="field">suggestions</wf:value>
-    </wf:component>
-  </wf:stage>
-</wf:workflow>
+  </stage>
+
+</workflow>

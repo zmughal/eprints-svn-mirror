@@ -35,7 +35,6 @@ package EPrints::XML;
 #use EPrints::SystemSettings;
 
 use Unicode::String qw(utf8 latin1);
-use strict;
 use Carp;
 
 @EPrints::XML::COMPRESS_TAGS = qw/br hr img link input meta/;
@@ -57,6 +56,7 @@ else
 	XML::DOM::setTagCompression( \&_xmldom_tag_compression );
 }
 
+use strict;
 use bytes;
 
 
@@ -735,7 +735,7 @@ sub _find_elements2
 ######################################################################
 =pod
 
-=item EPrints::XML::tidy( $session, $domtree, [$indent] )
+=item EPrints::XML::tidy( $domtree, { collapse=>['element','element'...] }, [$indent] )
 
 Neatly indent the DOM tree. 
 
@@ -752,9 +752,26 @@ Indent is the number of levels to ident by.
 
 sub tidy 
 {
-	my( $session, $node, $indent ) = @_;
+	my( $node, $opts, $indent ) = @_;
+
+	my $name = $node->getNodeName;
+	if( defined $opts->{collapse} )
+	{
+		foreach my $col_id ( @{$opts->{collapse}} )
+		{
+			return if $col_id eq $name;
+		}
+	}
+
+	# tidys the node in it's own document so we don't require $session
+	my $doc = $node->getOwnerDocument;
 
 	$indent = $indent || 0;
+
+	if( !defined $node )
+	{
+		EPrints::abort( "Attempt to call EPrints::XML::tidy on a undefined node." );
+	}
 
 	my $state = "empty";
 	my $text = "";
@@ -778,17 +795,17 @@ sub tidy
 		{
 			$node->removeChild( $c );
 		}
-		$node->appendChild( $session->make_text( $text ));
+		$node->appendChild( $doc->createTextNode( $text ) );
 		return;
 	}
 	return if $state eq "text";
 	return if $state eq "empty";
 	$text = "";
-	my $replacement = $session->make_doc_fragment;
-	$replacement->appendChild( $session->make_text( "\n" ) );
+	my $replacement = $doc->createDocumentFragment;
+	$replacement->appendChild( $doc->createTextNode( "\n" ) );
 	foreach my $c ( $node->getChildNodes )
 	{
-		tidy($session,$c,$indent+1);
+		tidy($c,$opts,$indent+1);
 		$node->removeChild( $c );
 		if( EPrints::XML::is_dom( $c, "Text" ) )
 		{
@@ -799,26 +816,25 @@ sub tidy
 		$text =~ s/\s*$//;	
 		if( $text ne "" )
 		{
-			$replacement->appendChild( $session->make_text( "  "x($indent+1) ) );
-			$replacement->appendChild( $session->make_text( $text ) );
-			$replacement->appendChild( $session->make_text( "\n" ) );
+			$replacement->appendChild( $doc->createTextNode( "  "x($indent+1) ) );
+			$replacement->appendChild( $doc->createTextNode( $text ) );
+			$replacement->appendChild( $doc->createTextNode( "\n" ) );
 			$text = "";
 		}
-		$replacement->appendChild( $session->make_text( "  "x($indent+1) ) );
+		$replacement->appendChild( $doc->createTextNode( "  "x($indent+1) ) );
 		$replacement->appendChild( $c );
-		$replacement->appendChild( $session->make_text( "\n" ) );
+		$replacement->appendChild( $doc->createTextNode( "\n" ) );
 	}
 	$text =~ s/^\s*//;	
 	$text =~ s/\s*$//;	
 	if( $text ne "" )
 	{
-		$replacement->appendChild( $session->make_text( "  "x($indent+1) ) );
-		$replacement->appendChild( $session->make_text( $text ) );
-		$replacement->appendChild( $session->make_text( "\n" ) );
+		$replacement->appendChild( $doc->createTextNode( "  "x($indent+1) ) );
+		$replacement->appendChild( $doc->createTextNode( $text ) );
+		$replacement->appendChild( $doc->createTextNode( "\n" ) );
 	}
-	$replacement->appendChild( $session->make_text( "  "x($indent) ) );
+	$replacement->appendChild( $doc->createTextNode( "  "x($indent) ) );
 	$node->appendChild( $replacement );
-
 }
 
 

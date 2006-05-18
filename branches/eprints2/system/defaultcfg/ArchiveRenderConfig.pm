@@ -355,6 +355,42 @@ sub eprint_render
 	my $sfx_link = $session->render_link( $url );
 	$sfx_block->appendChild( $sfx_link );
 	$sfx_link->appendChild( $session->make_text( "SFX" ) );
+{
+	# Experimental OVID Link
+	my $url ="http://linksolver.ovid.com/OpenUrl/LinkSolver?";
+	$url .= "atitle=".$eprint->get_value( "title" );
+	$url .= "&";
+	my $authors = $eprint->get_value( "creators" );
+	my $first_author = $authors->[0];
+	$url .= "aulast=".$first_author->{main}->{family};
+	$url .= "&";
+	$url .= "date=".substr($eprint->get_value( "date_issue" ),0,4);
+	if( $eprint->is_set( "issn" ) )
+	{
+		$url .= "&issn=".$eprint->get_value( "issn" );
+	}
+	if( $eprint->is_set( "volume" ) )
+	{
+		$url .= "&volume=".$eprint->get_value( "volume" );
+	}
+	if( $eprint->is_set( "number" ) )
+	{
+		$url .= "&issue=".$eprint->get_value( "number" );
+	}
+	if( $eprint->is_set( "pagerange" ) )
+	{
+		my $pr = $eprint->get_value( "pagerange" );
+		$pr =~ m/^([^-]+)-/;
+		$url .= "&spage=$1";
+	}
+
+	my $ovid_block = $session->make_element( "p" );
+	$page->appendChild( $ovid_block );
+	my $ovid_link = $session->render_link( $url );
+	$ovid_block->appendChild( $ovid_link );
+	$ovid_link->appendChild( $session->make_text( "OVID" ) );
+}
+
 
 
 	# Add a link to the edit-page for this record. Handy for staff.

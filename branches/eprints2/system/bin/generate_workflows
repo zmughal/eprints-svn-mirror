@@ -10,6 +10,11 @@
 #
 ######################################################################
 
+
+
+# note - this should be combined with upgrade before beta release.
+
+
 =pod
 
 =head1 NAME
@@ -210,82 +215,91 @@ sub _update_workflow_conf
 		$workflow_root->appendChild( $flow );
 		
 		my $conf = $dsconf->{$dataset};
+use Data::Dumper;
+#print STDERR Dumper( $conf );
+		my $pages = new OptList();
+
+		foreach my $type ( @{$conf->{_order}} )
+		{
+			my $cond = new OptCondition( $type );
+			$pages->add( $cond );
+			my $typeconf = $conf->{$type};
+			if( !$typeconf->{page_order} )
+			{
+				print STDERR "no page order";
+				exit;
+			}
+			foreach my $page ( @{ $typeconf->{page_order} } )
+			{
+				my $stageref = $workflow_doc->createElement( "stage" );
+				$stageref->setAttribute( "ref", $page );
+				$cond->list->add( new OptData($stageref) );
+			}
+		}
+
+		$pages->optimise($doc,$conf->{_order});
+		my $xml = EPrints::XML::clone_and_own( $pages->xml($doc), $workflow_doc, 1 );
+		$flow->appendChild( $xml );
+
+	
+		my @stage_order = ();	
 		my %stages = ();
 		foreach my $type ( @{$conf->{_order}} )
 		{
-			my $cond = $workflow_doc->createElement( "ep:ifmatch" );
-			$cond->setAttribute( "name", "type" );
-			$cond->setAttribute( "value", $type );
-			
 			my $typeconf = $conf->{$type};
-			if( $typeconf->{page_order} )
-			{
-				foreach my $page ( @{ $typeconf->{page_order} } )
-				{
-					# Add the stage ref to the flow
-					my $stageref = $workflow_doc->createElement( "stage" );
-					$stageref->setAttribute( "ref", $page );
-					$cond->appendChild( $stageref );
-				
-					# Create the page for the stage
-					if( !defined $stages{$page} )
-					{
-						$stages{$page} = $workflow_doc->createElement( "stage" );
-						$stages{$page}->setAttribute( "name", $page );
-					}
-					my $pagecond = $workflow_doc->createElement( "ep:ifmatch" );
-					$pagecond->setAttribute( "name", "type" );
-					$pagecond->setAttribute( "value", $type );
-					my $fields = $typeconf->{pages}->{$page};
-					foreach my $field ( @$fields )
-					{
-						my $component = $workflow_doc->createElement( "component" );
-						$component->setAttribute( "type", "default" );
-						
-						my $field_el = $workflow_doc->createElement( "field" );
-						my $params = $typeconf->{fields}->{$field};
-						foreach my $param ( keys %$params )
-						{
-							if( $param eq "id" )
-							{
-								$field_el->setAttribute( "ref", $params->{$param} );
-							}
-							else
-							{
-								my $val = "no";
-								$val = "yes" if( $params->{$param} == 1);
-								$field_el->setAttribute( $param, $val );
-							}
-						}
-						
-				#		if( $params->{required} && $params->{required} == 1)
-				#		{
-				#			$component->appendChild( _make_value( $workflow_doc, "required", "yes" ) );
-				#		}
-				#		if( $params->{staffonly} && $params->{staffonly} == 1)
-				#		{
-				#			$component->appendChild( _make_value( $workflow_doc, "staffonly", "yes" ) );
-				#		}
-				#		$component->appendChild( _make_value( $workflow_doc, "field", $params->{id} ) );
-						$component->appendChild( $field_el );
-						# Create the component
-						$pagecond->appendChild( $component );
-					}
-					$stages{$page}->appendChild( $pagecond );	
-				}
-			}
-			$flow->appendChild( $cond );	
-
 			foreach my $page ( @{ $typeconf->{page_order} } )
 			{
-				$workflow_root->appendChild( $stages{$page} );
+				if( !defined $stages{$page} )
+				{
+					push @stage_order, $page;
+					$stages{$page} = new OptList();
+				}
+				my $cond = new OptCondition( $type );
+				$stages{$page}->add( $cond );
+
+				my $fields = $typeconf->{pages}->{$page};
+				foreach my $field ( @$fields )
+				{
+					my $component = $workflow_doc->createElement( "component" );
+					#$component->setAttribute( "type", "default" );
+						
+					my $field_el = $workflow_doc->createElement( "field" );
+					my $params = $typeconf->{fields}->{$field};
+					$field_el->setAttribute( "ref", $params->{id} );
+					if( $params->{required} )
+					{
+						$field_el->appendChild( $workflow_doc->createElement( "required" ) );
+					}
+					if( $params->{staffonly} )
+					{
+						my $if = $workflow_doc->createElement( "ep:ifmatch" );
+						$if->setAttribute( "name", '$STAFF_ONLY' );
+						$if->setAttribute( "value", "TRUE" );
+						$if->appendChild( $field_el );
+						$field_el = $if;
+					}
+					$component->appendChild( $field_el );
+					$cond->list->add( new OptData($component) );
+				}
 			}
 		}
-		EPrints::XML::tidy( $workflow_root );
+
+		foreach my $stage ( @stage_order )
+		{
+			my $stageref = $workflow_doc->createElement( "stage" );
+			$stageref->setAttribute( "name", $stage );
+			$stages{$stage}->optimise($doc,$conf->{_order});
+			my $xml = EPrints::XML::clone_and_own( $stages{$stage}->xml($doc), $workflow_doc, 1 );
+			$stageref->appendChild( $xml );
+			$workflow_root->appendChild( $stageref );
+		}
+
+		EPrints::XML::tidy( $workflow_root, { collapse=>['component'] } );
 		$workflow_doc->appendChild( $workflow_root );
 		
 		open( TO, ">$to" ) ||  EPrints::Config::abort( "can't write file $to: $!" );
 		print TO EPrints::XML::to_string( $workflow_doc );
+		print EPrints::XML::to_string( $workflow_doc );
 		close TO;
 	}
 
@@ -305,3 +319,234 @@ sub _make_value
 	return $value;
 }
 
+package OptList;
+
+sub new
+{
+	my( $class ) = @_;
+
+	return bless { items=>[] }, $class;
+}
+
+sub add
+{
+	my( $self,@adds ) = @_;
+
+	push @{$self->{items}}, @adds;
+}
+
+sub xml
+{
+	my( $self, $doc ) = @_;
+
+	my $f = $doc->createDocumentFragment;
+
+	foreach my $item ( @{$self->{items}} )
+	{
+		$f->appendChild( $item->xml( $doc ) );
+	}
+
+	return $f;
+}
+
+sub optimise
+{
+	my( $self, $doc, $opts ) = @_;
+
+	my $newitems = [];
+
+	while( 1 )
+	{
+		# analyse first item in each if.
+		my $map = [];
+		my $imap = [];
+		foreach my $if ( @{$self->{items}} )
+		{
+			my $type = $if->{type};
+			my $i = 0;
+			foreach my $item ( @{$if->list->{items}} )
+			{
+				my $value = $item->xml($doc)->toString;
+				push @{$map->[$i]->{$value}}, $type;
+				push @{$imap->[$i]->{$type}}, $value;
+				++$i
+			}
+		}
+
+	
+		last if( scalar keys %{$map->[0]} == 0 );
+
+		my @keys0 = keys %{$map->[0]};
+		# only one choice and it covers ALL types
+		if( scalar @keys0 == 1 && scalar( @{$map->[0]->{$keys0[0]}} ) == scalar @{$opts} )
+		{
+			my @a;
+			foreach my $if ( @{$self->{items}} )
+                	{
+				@a = splice( @{$if->{list}->{items}}, 0, 1 );
+			}
+			push @{$newitems}, $a[0];
+			next;
+		} 
+
+		# no easy answer. produce a score for removing each if block and see which scores highest
+		# score = biggest resulting block if the condition was removed from the head
+
+		my $score = -100;
+		my $top = "";
+		foreach my $value ( @keys0 )
+		{
+			my $blocks = {};
+			foreach my $value2 ( @keys0 )
+			{
+				my @l = @{$map->[0]->{$value2}};
+				$blocks->{$value2} = \@l; 
+			}
+			# remove the candidate
+			delete $blocks->{$value};
+
+			foreach my $type ( @{$map->[0]->{$value}} )
+			{
+				foreach my $add_to_if (@{ $imap->[1]->{$type}} )
+				{
+					push @{$blocks->{$add_to_if}}, $type;
+				}
+			}
+			my $this_score = 0;
+			foreach( keys %{$blocks} )
+			{
+				my $s = scalar @{$blocks->{$_}};
+				$this_score = $s if( $s > $this_score );	
+			}
+
+			# tie breaker - if we can remove a big chunk or a little
+			# chunk then take the little one.
+			$this_score -= ( scalar @{$map->[0]->{$value}} )/100.0;
+			print "($this_score) -> $value\n";
+			if( $this_score > $score )
+			{
+				$score = $this_score;
+				$top = $value;
+			}
+	
+		}
+		my @removed;
+		foreach my $if ( @{$self->{items}} )
+               	{
+			my $head  = $if->{list}->{items}->[0];
+			next if( !defined $head );
+			if( $head->{data}->toString eq $top )
+			{
+				@removed = splice( @{$if->{list}->{items}}, 0, 1 );
+			}
+		}
+		my @types = @{$map->[0]->{$top}};
+		foreach my $type ( @types )
+		{
+			my $cond = OptCondition->new( $type );
+			$cond->{list}->add( $removed[0] );
+			push @{$newitems}, $cond;
+		}
+		next;	
+	}
+
+	$self->{items} = $newitems;
+
+	# now sort the items into blocks of the list which are restricted and blocks that are not.
+	#  Then collect the fields by type in the conditional block (preserving order within the
+	# type) and then make them into lists in a single condition.
+
+	$newitems = [];
+
+	my $current = {};
+	foreach my $item ( @{$self->{items}} )
+	{
+		if( $item->isa( "OptData" ) )
+		{
+			push @{$newitems}, $self->skoodge( $current, $doc );
+			$current = {};
+
+			push @{$newitems}, $item;
+			next;
+		}
+
+		# OptCondition
+use Data::Dumper;
+		#print STDERR $item->{type}."!\n";
+		#print STDERR Dumper($item)."!\n";
+		push @{$current->{$item->{type}}}, @{$item->{list}->{items}};
+	}
+	push @{$newitems}, $self->skoodge( $current, $doc );
+	$self->{items} = $newitems;
+}
+
+sub skoodge
+{
+	my( $self, $current, $doc ) = @_;
+
+	my %adds = ();
+	my %lists = ();
+	foreach my $type ( keys %{$current} )
+	{
+		my $id = "";
+		foreach my $i ( @{$current->{$type}} ) { print "($i)\n"; $id.=$i->xml($doc)->toString; }
+		push @{$adds{$id}}, $type;
+		$lists{$id} = $current->{$type};	
+	}
+	print Dumper( \%adds,\%lists );
+	my @r = ();
+	foreach my $id ( keys %adds )
+	{
+		my @types = @{$adds{$id}};
+		my @list = @{$lists{$id}};
+		my $cond = OptCondition->new( join( " ", @types ) );
+		$cond->{list}->add( @list );
+		push @r, $cond;
+	}
+	return @r;
+}
+			
+package OptData;
+
+sub new
+{
+	my( $class, $data ) = @_;
+
+	return bless { data=>$data }, $class;
+}
+
+sub xml
+{
+	my( $self, $doc ) = @_;
+	my $node = EPrints::XML::clone_and_own( $self->{data}, $doc, 1 );
+	return $node;
+}
+
+	
+
+package OptCondition;
+
+sub new
+{
+	my( $class, $type ) = @_;
+
+	return bless { list=>new OptList(), type=>$type }, $class;
+}
+
+sub list
+{
+	my( $self ) = @_;
+
+	return $self->{list};
+}
+
+sub xml
+{
+	my( $self, $doc ) = @_;
+
+	my $if = $doc->createElement( "ep:ifmatch" );
+	$if->setAttribute( "name", "type" );
+	$if->setAttribute( "value", $self->{type} );
+	$if->appendChild( $self->{list}->xml( $doc ) );
+	return $if;
+}
