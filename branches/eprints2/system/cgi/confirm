@@ -85,6 +85,15 @@ sub make_confirm_page
 		# check no one else has this email! cjg
 		my $sql = "UPDATE ".$user_ds->get_sql_table_name()." SET email=newemail, newemail=NULL, pin=NULL where userid=".$userid; 
 		$session->get_database->do( $sql );
+		# if this is a minimal user, update the username
+		if( !$session->get_repository->get_conf( "allow_web_signup" ) &&
+			$session->get_repository->get_conf( "allow_minimal_signup" ) )
+		{
+			my $sql = "UPDATE ".$user_ds->get_sql_table_name()." SET username=email where userid=".$userid; 
+			$session->get_database->do( $sql );
+			# shim the username in the current user object
+			$user->set_value( "username", $user->get_value( "newemail" ) );
+		}
 		$page->appendChild( $session->html_phrase( 
 			"cgi/confirm:set_email",
 			newemail=>$session->make_text( $user->get_value( "newemail" ) ) ) );

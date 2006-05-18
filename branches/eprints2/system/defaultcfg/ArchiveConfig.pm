@@ -197,13 +197,14 @@ $c->{skip_buffer} = 0;
 ######################################################################
 
 # Allow users to sign up for an account on
-# the web. 
+# the web.
 # NOTE: If you disable this you should edit the template file 
 #   cfg/template-en.xml
 # and the error page 
 #   cfg/static/en/error401.xpage 
 # to remove the links to web registration.
 $c->{allow_web_signup} = 1;
+$c->{allow_minimal_signup} = 1;
 
 # Allow users to change their password via the web?
 # You may wish to disable this if you import passwords from an
@@ -214,6 +215,7 @@ $c->{allow_reset_password} = 1;
 # over the web. This can be modified after they sign up by
 # staff with the right priv. set. 
 $c->{default_user_type} = "user";
+$c->{default_minimal_user_type} = "minuser";
 
 # This is a list of fields which the user is asked for when registering
 # in addition to the required username, email and password.
@@ -621,6 +623,8 @@ $c->{cookie_auth} = 1;
 
 # Please the the documentation for a full explanation of user privs.
 $c->{userauth} = {
+	minuser => { 
+		priv  =>  [ "subscription", "set-password", "change-email", "change-user", "no_edit_own_record" ] },
 	user => { 
 		priv  =>  [ "subscription", "set-password", "deposit", "change-email", "change-user" ] },
 	editor => { 

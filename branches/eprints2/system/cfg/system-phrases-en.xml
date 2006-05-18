@@ -432,6 +432,16 @@ User Area CGI Scripts
 <p>Welcome to the registered user area at &archivename;. Please select one of the options below.</p>
 <table>
   <tr>
+    <ep:pin ref="layout_deposit" />
+    <td valign="top">
+      <ep:pin ref="user" />
+    </td>
+  </tr>
+</table>
+<ep:pin ref="layout_staff" />
+</ep:phrase>
+
+    <ep:phrase ref="cgi/users/home:layout_deposit">
     <td>
       <ep:pin ref="create" />
 
@@ -445,12 +455,6 @@ User Area CGI Scripts
       <ep:pin ref="recent" />
     </td>
     <td>&nbsp;</td>
-    <td valign="top">
-      <ep:pin ref="user" />
-    </td>
-  </tr>
-</table>
-<ep:pin ref="layout_staff" />
 </ep:phrase>
 
     <ep:phrase ref="cgi/users/home:layout_staff">
@@ -564,6 +568,7 @@ User Area CGI Scripts
     <ep:phrase ref="cgi/users/change_email:no_email"><p>You did not actually supply a new email address.</p></ep:phrase>
     <ep:phrase ref="cgi/users/change_email:mail_sent"><p>An email has been sent to <b><ep:pin ref="email" /></b> containing the code required to confirm this new email address.</p><p>This code is only valid for a short time</p></ep:phrase>
     <ep:phrase ref="cgi/users/change_email:changeemail">Email Change Request</ep:phrase>
+    <ep:phrase ref="cgi/users/change_email:email_exists"><p>A user with the email address <tt><ep:pin ref="email" /></tt> already exists.</p></ep:phrase>
 
 <!-- status -->
 

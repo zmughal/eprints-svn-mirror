@@ -65,6 +65,32 @@ sub make_page
 	# Process the form.
 	my $newemail = $f_newemail->form_value( $session );
 
+	# check this email doesnt already exist! tmb
+	if( defined EPrints::DataObj::User::user_with_email( $session, $newemail ) )
+	{
+		my $page = $session->make_doc_fragment;
+		my $problems = $session->make_element( "div",class=>'problems' );
+		$page->appendChild( $problems );
+		$problems->appendChild( $session->html_phrase( 
+			"cgi/users/change_email:email_exists", 
+			email => $session->make_text( $newemail ) ) );
+
+		my $fields = [ $f_newemail ];
+
+		$page->appendChild( $session->render_input_form(
+			fields=>$fields,
+			values=>{},
+			show_help=>1,
+			default_action=>"submit",
+			buttons=>{
+				submit=>$session->phrase( "cgi/users/change_email:action_submit" )
+			},
+			dest=>"change_email" ) );
+
+		return( $page, $title );
+	}
+	
+
 	if( !EPrints::Utils::is_set( $newemail ) )
 	{
 		$page->appendChild( $session->html_phrase( 

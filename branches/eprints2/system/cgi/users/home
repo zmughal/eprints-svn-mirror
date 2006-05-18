@@ -215,17 +215,17 @@ my %pins;
 
 if( $user->has_priv( "deposit" ) )
 {
-	$pins{create} = $dls->{create};
-	$pins{workspace} = &render_workspace( $session, $user );
-	$pins{pending} = &render_pending( $session, $user );
-	$pins{recent} = &render_recent( $session, $user, 10, $dls->{review} );
+	my %dpins;
+	$dpins{create} = $dls->{create};
+	$dpins{workspace} = &render_workspace( $session, $user );
+	$dpins{pending} = &render_pending( $session, $user );
+	$dpins{recent} = &render_recent( $session, $user, 10, $dls->{review} );
+
+	$pins{layout_deposit} = $session->html_phrase( "cgi/users/home:layout_deposit", %dpins );
 }
 else
 {
-	$pins{create} = $session->make_doc_fragment;
-	$pins{workspace} = $session->make_doc_fragment;
-	$pins{pending} = $session->make_doc_fragment;
-	$pins{recent} = $session->make_doc_fragment;
+	$pins{layout_deposit} = $session->make_doc_fragment;
 }
 
 if( defined $dls->{user} )

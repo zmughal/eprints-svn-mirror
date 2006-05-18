@@ -29,11 +29,19 @@ sub make_page
 {
 	my( $session ) = @_;
 
+	my $min = 0;
+
 	unless( $session->get_repository->get_conf("allow_web_signup") )
 	{
-		return mk_err_page( 
-			$session,
-			"cgi/register:no_web_signup" );
+		# allow_web_signup = 0
+		$min = $session->get_repository->get_conf( "allow_minimal_signup" );
+		unless( $min )
+		{
+			# allow_web_signup = 0 && allow_min_signup = 0
+			return mk_err_page( 
+				$session,
+				"cgi/register:no_web_signup" );
+		}
 	}
 
 	my $mlangopt = $session->get_repository->get_conf("multi_language_options");
@@ -42,8 +50,16 @@ sub make_page
 
 	my $extrafields = $session->get_repository->get_conf( "extra_reg_fields" );
 
-	my $default_type = $session->get_repository->get_conf( "default_user_type" ); 
-	my $extrafields =  $session->get_repository->get_conf( "user_registration_fields" );
+	my( $default_type, $extrafields );
+	unless( $min )
+	{
+		$default_type = $session->get_repository->get_conf( "default_user_type" ); 
+		$extrafields =  $session->get_repository->get_conf( "user_registration_fields" );
+	}
+	else
+	{
+		$default_type = $session->get_repository->get_conf( "default_minimal_user_type" ); 
+	}
 	$extrafields = [] if( !defined $extrafields );
 
 	my $fieldlist = []; 
@@ -58,7 +74,15 @@ sub make_page
 		push @{$fieldlist}, $f->{$fieldid};
 	}
 
-	my @sysfields = ( "email", "username", "newpassword" );
+	my @sysfields;
+	unless( $min )
+	{
+		@sysfields = ( "email", "username", "newpassword" );
+	}
+	else
+	{
+		@sysfields = ( "email", "newpassword" );
+	}
 	if( $mlangopt ) { push @sysfields,'lang'; }
 
 	foreach my $fieldid ( @sysfields )
@@ -72,7 +96,14 @@ sub make_page
 	if( !$session->have_parameters() )
 	{
 		my $page = $session->make_doc_fragment;
-		$page->appendChild( $session->html_phrase( "cgi/register:intro" ) );
+		unless( $min )
+		{
+			$page->appendChild( $session->html_phrase( "cgi/register:intro" ) );
+		}
+		else
+		{
+			$page->appendChild( $session->html_phrase( "cgi/register:intro_minimal" ) );
+		}
 		my $defaults = { lang => $session->get_langid() };
 		$page->appendChild( make_reg_form( $session, $fieldlist, $defaults ));
 		
@@ -90,6 +121,10 @@ sub make_page
 	foreach my $field ( @{$fieldlist} )
 	{
 		$v->{$field->get_name} = $field->form_value( $session );
+		if( $min && $field->get_name eq "email" )
+		{
+			$v->{username} = $field->form_value( $session );
+		}
 	}
 	foreach my $field ( @{$fieldlist} )
 	{
@@ -135,6 +170,10 @@ sub make_page
 	foreach my $fieldid ( keys %{$f} )
 	{
 		$user_data->{$fieldid} = $v->{$fieldid};
+	}
+	if( $min )
+	{
+		$user_data->{username} = $v->{email};
 	}
 	my $user_dataset = $session->get_repository->get_dataset( "user" );
 	my $user = $user_dataset->create_object( $session, $user_data );

@@ -477,6 +477,21 @@ activated you can start to use the registered features of the repository.</p>
 <a href="reset_password">click here</a> to set a new password.</p>
     </ep:phrase>
 
+    <ep:phrase ref="cgi/register:intro_minimal">
+<p>As a registered user you will be able to set up
+subscription options, so that email notifications are sent when new eprints 
+are placed in the repository.</p>
+
+<p>Please complete the details on this page to register with &archivename;.</p>
+
+<p>The registration process uses email to send you details of how to activate
+your account. You must then check your email and activate your password. Once
+activated you can start to use the registered features of the repository.</p>
+
+<p>If you have already registered but have forgotten your username or password,
+<a href="reset_password">click here</a> to set a new password.</p>
+    </ep:phrase>
+
 <!-- Publisher- or funder-imposed embargos -->
 <ep:phrase ref="embargo:status"><p>These documents will be made publically accessible from <ep:pin ref="date" />.</p></ep:phrase>
 <ep:phrase ref="embargo:invalid_date"><ep:pin ref="fieldname" /> must be in the future.</ep:phrase>
