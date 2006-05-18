@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/eprints2/perl_lib 
+#!/usr/bin/perl -w -I/opt/eprints/perl_lib 
 
 #-d:DProf
 
@@ -38,7 +38,9 @@ my $info =  {
 	datapath => $datapath,
 };
 my $infile = $datapath."/set-01.xml";
+#print `date`;
 EPrints::ImportXML::import_file( $session , $infile , \&deal, $ds, $info );
+#print `date`;
 
 $session->terminate();
 
