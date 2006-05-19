@@ -628,7 +628,7 @@ $c->{cookie_auth} = 1;
 # Please the the documentation for a full explanation of user privs.
 $c->{userauth} = {
 #	minuser => { 
-#		priv  =>  [ "subscription", "set-password", "change-email", "change-user", "no_edit_own_record" ] },
+#		priv  =>  [ "subscription", "set-password", "change-email", "change-user", "no_edit_own_record", "lock-username-to-email" ] },
 	user => { 
 		priv  =>  [ "subscription", "set-password", "deposit", "change-email", "change-user" ] },
 	editor => { 

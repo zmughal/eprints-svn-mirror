@@ -319,6 +319,7 @@
     <ep:phrase ref="user_fieldname_expertise">Expertise</ep:phrase>
     <ep:phrase ref="user_fieldhelp_expertise">Please list keyword/phrases describing your areas of specialisation using the terms likely to be used by someone searching for work in those areas. Avoid over-general terms (`chemistry') and over-particular terms (`my non-quantal theory of chemical reactions') that no one is likely to search on. Enter as many keyword/phrases as you wish.</ep:phrase>
 
+    <ep:phrase ref="user_typename_minuser">Minimal User</ep:phrase>
     <ep:phrase ref="user_typename_user">User</ep:phrase>
     <ep:phrase ref="user_typename_editor">Editor</ep:phrase>
     <ep:phrase ref="user_typename_admin">Repository Administrator</ep:phrase>
