@@ -48,12 +48,26 @@ AC_ARG_WITH(user,
     [
         INSTALL_USER=$withval
     ])
+AC_MSG_CHECKING([whether the user $INSTALL_USER exists])
+if $PERL_PATH -e "getpwnam(\"$INSTALL_USER\")?exit 0:exit 1;" > /dev/null 2>&1 ; then
+    AC_MSG_RESULT(yes)
+else
+    AC_MSG_RESULT(no)	
+    AC_MSG_ERROR(User $INSTALL_USER does not appear to exist)
+fi
 
 AC_ARG_WITH(group,
     [  --with-group=[GROUP]      install eprints to run as GROUP ],
     [
         INSTALL_GROUP=$withval
     ])
+AC_MSG_CHECKING([whether the group $INSTALL_GROUP exists])
+if $PERL_PATH -e "getgrnam(\"$INSTALL_GROUP\")?exit 0:exit 1;" > /dev/null 2>&1 ; then
+    AC_MSG_RESULT(yes)
+else
+    AC_MSG_RESULT(no)	
+    AC_MSG_ERROR(Group $INSTALL_GROUP does not appear to exist)
+fi
 
 AC_ARG_WITH(virtualhost,
     [  --with-virtualhost=[VIRTUALHOST]    
