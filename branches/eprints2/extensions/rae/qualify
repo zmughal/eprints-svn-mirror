@@ -87,6 +87,7 @@ if( $session->get_db->execute( $sth, $sql ) )
 		exit( 0 );
 	}
 }
+$sth->finish;
 
 my @metafields;
 my @updates;

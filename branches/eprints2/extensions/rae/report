@@ -109,6 +109,7 @@ if( $session->get_db->execute( $sth, $sql ) )
 		$moe_for_user{ $hashref->{userid} } = $hashref;
 	}
 }
+$sth->finish;
 
 # Get eprints selected by the group of users,
 # (plus any other users who have also selected those eprints)
@@ -121,15 +122,16 @@ $sql .= ", rae_selections.userid, rae_selections.eprintid FROM rae_selections, r
 
 #$sql = "SELECT * FROM rae_selections WHERE eprintid IN (SELECT rae_selections.eprintid FROM rae_selections, cache$cacheid WHERE rae_selections.userid=cache$cacheid.userid)";
 
-$sth = $session->get_db->prepare( $sql );
-if( $session->get_db->execute( $sth, $sql ) )
+my $sth2 = $session->get_db->prepare( $sql );
+if( $session->get_db->execute( $sth2, $sql ) )
 {
-	while( my $hashref = $sth->fetchrow_hashref )
+	while( my $hashref = $sth2->fetchrow_hashref )
 	{
 		push @{ $users_for_eprint{ $hashref->{eprintid} } }, $hashref->{userid};
 		push @{ $eprints_for_user{ $hashref->{userid} } }, $hashref;
 	}
 }
+$sth2->finish;
 
 my $csv = defined( $session->param( "csv" ) ) && $session->param( "csv" ) == 1;
 my $mainonly = defined( $session->param( "mainonly" ) ) && $session->param( "mainonly" ) eq "yes";

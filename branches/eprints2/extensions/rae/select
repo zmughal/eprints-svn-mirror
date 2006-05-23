@@ -158,6 +158,7 @@ sub dopage_selected
 			push @{ $users_for_eprint{$row[0]} }, $row[1];
 		}
 	}
+	$sth->finish;
 	
 	# Check for selected items
 	if( scalar keys %users_for_eprint == 0 )
@@ -309,6 +310,7 @@ sub dopage_results
 			push @{ $users_for_eprint{$row[0]} }, $row[1];
 		}
 	}
+	$sth->finish;
 	
 	my $i = 0;
 	foreach my $result ( @results )

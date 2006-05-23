@@ -62,7 +62,8 @@ if( scalar @roles )
 {
 	my $form = $session->render_form( "post" );
 	$form->appendChild( $session->render_option_list(name => 'role', pairs => \@roles) );
-	$form->appendChild( $session->render_action_buttons(submit => $session->phrase( "rae:change_role" ) ) );
+	# Renamed submit button to change to avoid confusion between changing roles and submitting
+	$form->appendChild( $session->render_action_buttons(change => $session->phrase( "rae:change_role" ) ) );
 	
 	$roles_frag = $session->html_phrase( "rae:roles", 
 		change_role => $form,
@@ -91,6 +92,7 @@ if( $session->get_db->execute( $sth, $sql ) )
 		}
 	}
 }
+$sth->finish;
 
 my @metafields;
 my @updates;
