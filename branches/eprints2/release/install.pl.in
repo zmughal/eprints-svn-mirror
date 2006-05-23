@@ -219,8 +219,8 @@ unless( getgrnam($systemsettings->{"group"}) )
 	exit 1;
 }
 
-# this gets the wrong gid!
-my(undef,undef,$uid,$gid) = getpwnam($systemsettings->{"user"});
+my(undef,undef,$uid) = getpwnam($systemsettings->{"user"});
+my(undef,undef,$gid) = getgrnam($systemsettings->{"group"});
 
 my %oldhashes = ();
 
