@@ -4,6 +4,7 @@ use strict;
 
 our @ISA = qw/ EPrints::Plugin /;
 
+
 sub render
 {
 	my( $self, $component, $session ) = @_;

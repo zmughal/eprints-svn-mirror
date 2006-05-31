@@ -8,19 +8,48 @@ exit( 0 ) unless( defined $session );
 # $session->get_database->set_debug( 1 );
 
 my $item = EPrints::DataObj::EPrint->new( $session, 30 );
+
 my $surround = $session->plugin( "InputForm::Surround::Default" );
 my $plugin = $session->plugin( "InputForm::Component::FieldComponent", dataobj=>$item );
-my $plugin2 = $session->plugin( "InputForm::Component::Phrase" );
+#my $plugin2 = $session->plugin( "InputForm::Component::MultiComponent", dataobj=>$item );
+
+#<wf:component>
+#<wf:field ref="creators">
+#  <wf:required />
+#</wf:field>
+#</wf:component>
+
+#<wf:component>
+#<wf:field ref="title">
+#  <wf:required />
+#</wf:field>
+#<wf:field ref="abstract">
+#  <wf:required />
+#</wf:field>
+#</wf:component>
+
 
 my $page=$session->make_doc_fragment();
+my $stage=$session->make_element( "div", class => "wf_stage" );
+$page->appendChild( $stage );
 
-$plugin->parse_config( $session->make_element( "field", name=>"creators", required=>"yes" ) );
-$plugin2->parse_config( $session->make_element( "phrase", ref=>"lib/document:no_files" ) );
+# Create some field configs
+
+my $cre_field = $session->make_element( "wf:field", "ref"=>"creators" );
+$cre_field->appendChild( $session->make_element( "wf:required" ) );
+
+my $title_field = $session->make_element( "wf:field", "ref"=>"title" );
+
+#my $conf2 = $session->make_doc_fragment();
+#$conf2->appendChild( $cre_field );
+#$conf2->appendChild( $title_field );
+
+$plugin->parse_config( $cre_field ); 
+#$plugin2->parse_config( $conf2 ); 
 
 my $title = $session->make_text( "Workflow Demo" );
 
-$page->appendChild( $surround->render( $plugin, $session ) );
-$page->appendChild( $surround->render( $plugin2, $session ) );
+$stage->appendChild( $surround->render( $plugin, $session ) );
 
 $session->build_page( $title, $page );
 $session->send_page();
