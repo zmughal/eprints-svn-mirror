@@ -96,9 +96,19 @@ sub is_collapsed
 	return 0;
 }
 
+sub are_all_collapsed
+{
+	my( $self, $fields ) = @_;
+	foreach my $field ( @$fields )
+	{
+		return 0 if( $field->{collapsed} ne "yes" );
+	}
+	return 1;
+}
+
 =pod
 
-=item $help = $component->render_help( $session )
+=item $help = $component->render_help( $session, $surround )
 
 Returns DOM containing the help text for this component.
 
@@ -106,7 +116,7 @@ Returns DOM containing the help text for this component.
 
 sub render_help
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $surround ) = @_;
 }
 
 =pod
@@ -124,7 +134,7 @@ sub get_name
 
 =pod
 
-=item $title = $component->render_title( $session )
+=item $title = $component->render_title( $session, $surround )
 
 Returns the title of this component as a DOM object.
 
@@ -132,12 +142,12 @@ Returns the title of this component as a DOM object.
 
 sub render_title
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $surround ) = @_;
 }
 
 =pod
 
-=item $content = $component->render_content( $session )
+=item $content = $component->render_content( $session, $surround )
 
 Returns the DOM for the content of this component.
 
@@ -145,7 +155,7 @@ Returns the DOM for the content of this component.
 
 sub render_content
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $surround ) = @_;
 }
 
 ######################################################################

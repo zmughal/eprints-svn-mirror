@@ -10,10 +10,10 @@ sub render
 	my( $self, $component, $session ) = @_;
 
 	my $is_req = $component->is_required();
-	my $help = $component->render_help($session);
+	my $help = $component->render_help( $session, $self );
 	my $collapsed = $component->is_collapsed();
 	my $comp_name = $component->get_name();
-	my $title = $component->render_title($session);
+	my $title = $component->render_title( $session, $self );
 
 	my $surround = $session->make_element( "div", class => "wf_component" );
 
@@ -32,13 +32,13 @@ sub render
 
 	# Add the title and 'required' button if necessary. 
 	
+	$title_div->appendChild( $title );
+	
 	if( $is_req )
 	{
-		my $reqimg = $session->make_element( "img", src => "/images/req.gif", class => "wf_req_icon", border => "0" );
-		$title_div->appendChild( $reqimg );
+		$title_div->appendChild( $self->get_req_icon( $session ) );
 	}
 
-	$title_div->appendChild( $title );
 
 	$surround->appendChild( $title_div );
 	$surround->appendChild( $help_div );
@@ -47,7 +47,7 @@ sub render
 	my $input_div = $session->make_element( "div", class => "wf_input" );
 	if( !$collapsed )
 	{
-		$input_div->appendChild( $component->render_content($session, $self) );
+		$input_div->appendChild( $component->render_content( $session, $self ) );
 	}
 	
 	$surround->appendChild( $input_div );
@@ -55,5 +55,11 @@ sub render
 	return $surround;
 }
 
+sub get_req_icon
+{
+	my( $self, $session ) = @_;
+	my $reqimg = $session->make_element( "img", src => "/images/req.gif", class => "wf_req_icon", border => "0" );
+	return $reqimg;
+}
 
 1;

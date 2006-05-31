@@ -7,11 +7,11 @@ my $session = new EPrints::Session;
 exit( 0 ) unless( defined $session );
 # $session->get_database->set_debug( 1 );
 
-my $item = EPrints::DataObj::EPrint->new( $session, 30 );
+my $item = EPrints::DataObj::EPrint->new( $session, 51 );
 
 my $surround = $session->plugin( "InputForm::Surround::Default" );
 my $plugin = $session->plugin( "InputForm::Component::FieldComponent", dataobj=>$item );
-#my $plugin2 = $session->plugin( "InputForm::Component::MultiComponent", dataobj=>$item );
+my $plugin2 = $session->plugin( "InputForm::Component::FieldComponent::MultiComponent", dataobj=>$item );
 
 #<wf:component>
 #<wf:field ref="creators">
@@ -26,30 +26,48 @@ my $plugin = $session->plugin( "InputForm::Component::FieldComponent", dataobj=>
 #<wf:field ref="abstract">
 #  <wf:required />
 #</wf:field>
+#<title ref="..." />
+#<help ref="..." />
 #</wf:component>
 
-
-my $page=$session->make_doc_fragment();
-my $stage=$session->make_element( "div", class => "wf_stage" );
-$page->appendChild( $stage );
+my $comp1 = $session->make_element( "wf:component" );
+my $comp2 = $session->make_element( "wf:component" );
 
 # Create some field configs
 
 my $cre_field = $session->make_element( "wf:field", "ref"=>"creators" );
 $cre_field->appendChild( $session->make_element( "wf:required" ) );
+#$cre_field->appendChild( $session->make_element( "wf:collapsed" ) );
+$comp1->appendChild( $cre_field );
 
+# MultiComponent
+
+$comp2->appendChild( $session->make_element( "wf:field", "ref"=>"publication" ) );
+$comp2->appendChild( $session->make_element( "wf:field", "ref"=>"volume" ) );
+$comp2->appendChild( $session->make_element( "wf:field", "ref"=>"number" ) );
+$comp2->appendChild( $session->make_element( "wf:field", "ref"=>"pagerange" ) );
+$comp2->appendChild( $session->make_element( "wf:field", "ref"=>"issn" ) );
 my $title_field = $session->make_element( "wf:field", "ref"=>"title" );
+$title_field->appendChild( $session->make_element( "wf:required" ) );
+$title_field->appendChild( $session->make_element( "wf:collapsed" ) );
+$comp2->appendChild( $title_field );
 
-#my $conf2 = $session->make_doc_fragment();
-#$conf2->appendChild( $cre_field );
-#$conf2->appendChild( $title_field );
+my $c2_title = $session->make_element( "title", "ref"=>"eprint_fieldname_abstract" );
+my $c2_help = $session->make_element( "help", "ref"=>"eprint_fieldhelp_abstract" );
+$comp2->appendChild( $c2_title );
+$comp2->appendChild( $c2_help );
 
-$plugin->parse_config( $cre_field ); 
-#$plugin2->parse_config( $conf2 ); 
+# Render the page
 
+my $page=$session->make_doc_fragment();
+my $stage=$session->make_element( "div", class => "wf_stage" );
+$page->appendChild( $stage );
+
+$plugin->parse_config( $comp1 ); 
+$plugin2->parse_config( $comp2 ); 
 my $title = $session->make_text( "Workflow Demo" );
-
 $stage->appendChild( $surround->render( $plugin, $session ) );
+$stage->appendChild( $surround->render( $plugin2, $session ) );
 
 $session->build_page( $title, $page );
 $session->send_page();

@@ -24,8 +24,17 @@ sub new
 sub parse_config
 {
 	my( $self, $config_dom ) = @_;
-	
-	$self->{config}->{field} = new EPrints::InputField( dom => $config_dom, dataobj => $self->{dataobj} );
+
+	my @fields = $config_dom->getElementsByTagName( "wf:field" );
+
+	if( scalar @fields != 1 )
+	{
+		print STDERR "Meep!\n";
+	}
+	else
+	{
+		$self->{config}->{field} = new EPrints::InputField( dom => $fields[0], dataobj => $self->{dataobj} );
+	}
 }
 
 =pod
@@ -118,7 +127,7 @@ Returns DOM containing the help text for this component.
 
 sub render_help
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $surround ) = @_;
 	return $self->{config}->{field}->{handle}->render_help( 
 		$session, 
 		$self->{config}->{field}->{handle}->get_type() );
@@ -148,7 +157,7 @@ Returns the title of this component as a DOM object.
 
 sub render_title
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $surround ) = @_;
 	return $self->{config}->{field}->{handle}->render_name( $session );
 }
 
@@ -162,7 +171,7 @@ Returns the DOM for the content of this component.
 
 sub render_content
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $surround ) = @_;
 	
 	my $value;
 	if( $self->{dataobj} )
@@ -175,6 +184,13 @@ sub render_content
 	}
 
 	return $self->{config}->{field}->{handle}->render_input_field( $session, $value );
+}
+
+sub is_collapsed
+{
+	my( $self, $session ) = @_;
+
+	return( $self->{config}->{field}->{collapsed} eq "yes" );
 }
 
 ######################################################################
