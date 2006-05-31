@@ -1,0 +1,179 @@
+.wf_stage
+{
+	border: 1px solid #888;
+	padding: 0.25em;
+	width: 44.5em;
+	background-color: #e6f6ff;
+}
+
+.wf_component
+{
+	background-color: #e6f6ff;
+	padding: 0.25em;
+	width: 44em;
+}
+
+.wf_component .wf_title
+{
+	border: 1px solid #888;
+	color: #fff;
+	background-color: #000;
+	padding: 0.25em;
+	margin-bottom: 0.25em;
+}
+
+.wf_component .wf_name
+{
+	font-weight: bold;
+}
+
+.wf_component .wf_req_icon
+{
+	vertical-align: text-top;
+}
+
+.wf_component .wf_help_icon
+{
+	float: right;
+}
+
+.wf_component .wf_help .field
+{
+	font-family: "lucida grande", verdana, sans-serif;
+	font-size: 10pt;
+	border-bottom: 1px solid #888;
+	margin-bottom: 2px;
+	font-weight: bold;
+}
+
+.wf_component .wf_help .desc
+{
+	margin: 0px;
+	margin-bottom: 0.3em;
+}
+
+.wf_component .wf_help
+{
+/*      display: none;*/
+	margin-top: 1px;
+	border-bottom: 1px solid #cccc66;
+	border-right: 1px solid #cccc66;
+	background-color: #ffffcc;
+	width: 43.25em;
+	padding: 0.25em;
+	z-index: 100;
+	margin-bottom: 0.25em;
+}
+
+.wf_component .wf_body {
+}
+
+.wf_component .wf_input {
+	text-align: center;
+}
+
+.wf_problems
+{
+	border: 1px solid #cc9999;
+	width: 44.5em;
+	padding: 0.25em;
+	margin-bottom: 0.25em;
+	background-color: #ffcccc;
+}
+
+.wf_options {
+	border: 1px solid #888;
+	width: 44.5em;
+	padding: 0.25em;
+	background-color: #e6f6ff;
+	margin-bottom: 0.25em;
+	margin-top: 0.25em;
+}
+
+
+.wf_blister {
+	margin-top: 0.25em;
+	border: 1px solid #888;
+	width: 44.5em;
+	padding: 0.25em;
+	background-color: #e6f6ff;
+	margin-bottom: 0.25em;
+}
+
+.wf_blister_stages {
+	float: right;
+}
+
+.wf_blister_stage {
+	font-family: "lucida grande", verdana, sans-serif;
+	display: inline;
+	padding: 0.25em;
+}
+
+.wf_blister_stage_curr {
+	font-family: "lucida grande", verdana, sans-serif;
+	display: inline;
+	padding: 0.25em;
+	font-weight: bold;
+}
+
+.sidetable th {
+	background: #000;
+	color: #fff;
+	text-align: right;
+}
+
+
+
+/*
+
+
+
+
+
+/* For file selector */
+
+#filelist {
+	border: 1px solid #666666;
+	background: #fff;
+	width: 26em;
+}
+
+#filelist tbody tr td,th {
+	font-family: "lucida grande", verdana, sans-serif;
+	font-size: 10pt;
+	padding: 0.25em 0.25em; //3px 8px;
+	border-left: 1px solid #d9d9d9;
+}
+
+#filelist tbody tr.selected td {
+	border-left: 1px solid #346dbe;
+	border-bottom: 1px solid #7daaea;
+}
+
+#filelist th {
+	background: #000;
+	color: #fff;
+}
+
+/* For blister */
+
+.graph {
+	position: relative;
+	width: 200px;
+	border: 1px solid #B1D632;
+	padding: 2px;
+}
+
+.graph .bar {
+	display: block;
+	position: relative;
+	background: #B1D632;
+	text-align: center;
+	color: #333;
+	height: 2em;
+	line-height: 2em;
+}
+
+.graph .bar span { position: absolute; left: 1em }
+
