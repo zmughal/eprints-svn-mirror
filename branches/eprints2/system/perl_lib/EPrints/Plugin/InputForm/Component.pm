@@ -55,7 +55,7 @@ sub new
 
 =pod
 
-=item $bool = $component->parse_config( $dom )
+=item $bool = $component->parse_config( $config_dom )
 
 Parses the supplied DOM object and populates $component->{config}
 
@@ -63,7 +63,7 @@ Parses the supplied DOM object and populates $component->{config}
 
 sub parse_config
 {
-	my( $self, $dom ) = @_;
+	my( $self, $session, $config_dom ) = @_;
 }
 
 =pod

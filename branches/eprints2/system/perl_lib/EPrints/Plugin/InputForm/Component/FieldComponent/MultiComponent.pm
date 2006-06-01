@@ -23,7 +23,7 @@ sub new
 
 sub parse_config
 {
-	my( $self, $config_dom ) = @_;
+	my( $self, $session, $config_dom ) = @_;
 	
 	$self->{config}->{fields} = [];
 
@@ -39,7 +39,16 @@ sub parse_config
 	{
 		if( $title_nodes[0]->hasAttribute( "ref" ) )
 		{
-			$self->{config}->{title} = $title_nodes[0]->getAttribute( "ref" );
+			my $phrase_ref = $title_nodes[0]->getAttribute( "ref" );
+			$self->{config}->{title} = $session->html_phrase( $phrase_ref );
+		}
+		else
+		{
+			my @phrase_dom = $title_nodes[0]->getElementsByTagName( "phrase" );
+			if( scalar @phrase_dom == 1 )
+			{
+				$self->{config}->{title} = $phrase_dom[0];
+			}
 		}
 	}
 	
@@ -47,7 +56,16 @@ sub parse_config
 	{
 		if( $help_nodes[0]->hasAttribute( "ref" ) )
 		{
-			$self->{config}->{help} = $help_nodes[0]->getAttribute( "ref" );
+			my $phrase_ref = $help_nodes[0]->getAttribute( "ref" );
+			$self->{config}->{help} = $session->html_phrase( $phrase_ref );
+		}
+		else
+		{
+			my @phrase_dom = $help_nodes[0]->getElementsByTagName( "phrase" );
+			if( scalar @phrase_dom == 1 )
+			{
+				$self->{config}->{title} = $phrase_dom[0];
+			}
 		}
 	}
 
@@ -114,15 +132,13 @@ sub render_content
 sub render_help
 {
 	my( $self, $session, $surround ) = @_;
-	my $phrase = $session->html_phrase( $self->{config}->{help} );
-	return $phrase;
+	return $self->{config}->{help};
 }
 
 sub render_title
 {
 	my( $self, $session, $surround ) = @_;
-	my $phrase = $session->html_phrase( $self->{config}->{title} );
-	return $phrase;
+	return $self->{config}->{title};
 }
 
 

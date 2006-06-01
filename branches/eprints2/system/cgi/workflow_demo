@@ -52,7 +52,11 @@ $title_field->appendChild( $session->make_element( "wf:required" ) );
 $title_field->appendChild( $session->make_element( "wf:collapsed" ) );
 $comp2->appendChild( $title_field );
 
-my $c2_title = $session->make_element( "title", "ref"=>"eprint_fieldname_abstract" );
+my $c2_title = $session->make_element( "title" );
+my $title_phrase = $session->make_element( "phrase" );
+$title_phrase->appendChild( $session->make_text( "A Title" ) );
+$c2_title->appendChild( $title_phrase );
+
 my $c2_help = $session->make_element( "help", "ref"=>"eprint_fieldhelp_abstract" );
 $comp2->appendChild( $c2_title );
 $comp2->appendChild( $c2_help );
@@ -63,8 +67,8 @@ my $page=$session->make_doc_fragment();
 my $stage=$session->make_element( "div", class => "wf_stage" );
 $page->appendChild( $stage );
 
-$plugin->parse_config( $comp1 ); 
-$plugin2->parse_config( $comp2 ); 
+$plugin->parse_config( $session, $comp1 ); 
+$plugin2->parse_config( $session, $comp2 ); 
 my $title = $session->make_text( "Workflow Demo" );
 $stage->appendChild( $surround->render( $plugin, $session ) );
 $stage->appendChild( $surround->render( $plugin2, $session ) );

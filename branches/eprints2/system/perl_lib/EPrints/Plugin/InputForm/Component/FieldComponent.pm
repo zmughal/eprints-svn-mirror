@@ -23,7 +23,7 @@ sub new
 
 sub parse_config
 {
-	my( $self, $config_dom ) = @_;
+	my( $self, $session, $config_dom ) = @_;
 
 	my @fields = $config_dom->getElementsByTagName( "wf:field" );
 
