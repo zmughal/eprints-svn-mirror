@@ -2,7 +2,7 @@
 {
 	border: 1px solid #888;
 	padding: 0.25em;
-	width: 44.5em;
+	width: 54.5em;
 	background-color: #e6f6ff;
 }
 
@@ -10,8 +10,9 @@
 {
 	background-color: #e6f6ff;
 	padding: 0.25em;
-	width: 44em;
+	width: 54em;
 }
+
 
 .wf_component .wf_title
 {
@@ -30,6 +31,7 @@
 .wf_component .wf_req_icon
 {
 	vertical-align: text-top;
+	padding-left: 5px;
 }
 
 .wf_component .wf_help_icon
@@ -59,7 +61,7 @@
 	border-bottom: 1px solid #cccc66;
 	border-right: 1px solid #cccc66;
 	background-color: #ffffcc;
-	width: 43.25em;
+	width: 53.25em;
 	padding: 0.25em;
 	z-index: 100;
 	margin-bottom: 0.25em;
@@ -75,7 +77,7 @@
 .wf_problems
 {
 	border: 1px solid #cc9999;
-	width: 44.5em;
+	width: 54.5em;
 	padding: 0.25em;
 	margin-bottom: 0.25em;
 	background-color: #ffcccc;
@@ -83,7 +85,7 @@
 
 .wf_options {
 	border: 1px solid #888;
-	width: 44.5em;
+	width: 54.5em;
 	padding: 0.25em;
 	background-color: #e6f6ff;
 	margin-bottom: 0.25em;
@@ -94,7 +96,7 @@
 .wf_blister {
 	margin-top: 0.25em;
 	border: 1px solid #888;
-	width: 44.5em;
+	width: 54.5em;
 	padding: 0.25em;
 	background-color: #e6f6ff;
 	margin-bottom: 0.25em;
@@ -121,6 +123,11 @@
 	background: #000;
 	color: #fff;
 	text-align: right;
+	vertical-align: top;
+}
+
+.sidetable td {
+	text-align: left;
 }
 
 
