@@ -386,6 +386,25 @@ $c->{vlit}->{copyright_url} = $c->{base_url}."/vlit.html";
 
 ######################################################################
 #
+# Userhome Extra Bits
+#
+#  Allows you to add additional links to the user home page.
+#
+######################################################################
+
+#$c->{userhome_extras} =
+#[
+#        {
+#                location=>"review",
+#                code=>"footle2",
+#                page=>"/perl/users/status",
+#                priv=>"view-status"
+#        },
+#];
+
+
+######################################################################
+#
 # Internal log handling
 #
 #  Enables a hook into Apache to catch logging events and

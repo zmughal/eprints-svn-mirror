@@ -165,8 +165,11 @@ my $tools = [
 	}
 ];
 
-
-
+my $extras = $session->get_repository->get_conf( "userhome_extras" );
+if( defined $extras )
+{
+	push @{$tools},@{$extras};
+}
 
 my $sb = $session->get_repository->get_conf( "skip_buffer" );	
 my $dls = {};
