@@ -1243,7 +1243,7 @@ sub commit
 
 	$self->queue_changes;
 
-	unless( $self->{eprint}->under_construction )
+	unless( !defined $self->{eprint} || $self->{eprint}->under_construction )
 	{
 		# cause a new new revision of the parent eprint.
 		$self->get_eprint->commit( 1 );
