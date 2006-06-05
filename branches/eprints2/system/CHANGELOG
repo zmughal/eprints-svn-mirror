@@ -3719,3 +3719,4 @@ PACKAGE: 2.2.99.2
 2006-06-05 cjg
 
  * Fixed bug in phrase for user homepage.
+ * Commented-out code which generates experimental OVID/SFX links

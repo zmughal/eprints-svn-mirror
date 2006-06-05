@@ -337,7 +337,7 @@ sub eprint_render
 			$eprint->render_version_thread( $commentary_field ) );
 	}
 
-	
+if(0){	
 	# Experimental SFX Link
 	my $url ="http://demo.exlibrisgroup.com:9003/demo?";
 	#my $url = "http://aire.cab.unipd.it:9003/unipr?";
@@ -355,7 +355,9 @@ sub eprint_render
 	my $sfx_link = $session->render_link( $url );
 	$sfx_block->appendChild( $sfx_link );
 	$sfx_link->appendChild( $session->make_text( "SFX" ) );
-{
+}
+
+if(0){
 	# Experimental OVID Link
 	my $url ="http://linksolver.ovid.com/OpenUrl/LinkSolver?";
 	$url .= "atitle=".$eprint->get_value( "title" );
