@@ -479,6 +479,33 @@ END
 		};
 	}
 
+	if( !defined $config->{"search"}->{"history"} )
+	{
+		$config->{search}->{"history"} = {
+			title_phrase => "history_search_title",
+			preamble_phrase => "history_search_premble",
+			staff => 1,
+			dataset_id => "history",
+			search_fields => [
+				{ meta_fields=>[ "userid" ] },
+				{ meta_fields=>[ "historyid" ] },
+				{ meta_fields=>[ "actor" ] },
+				{ meta_fields=>[ "datasetid" ] },
+				{ meta_fields=>[ "objectid" ] },
+				{ meta_fields=>[ "timestamp" ] },
+				{ meta_fields=>[ "action" ] },
+			],
+			default_order=>"revtime",
+		};
+
+		$config->{order_methods}->{history} =
+		{
+			"revtime"	 =>  "-timestamp",
+			"time" 		 =>  "timestamp",
+			"userid"	 =>  "userid,-timestamp",
+			"objectid"	 =>  "objectid,-timestamp",
+		};
+	}
 
 	if( !defined $config->{field_defaults}->{hide_honourific} )
 	{
@@ -500,7 +527,7 @@ END
 
 	###########################################
 	#
-	# Pre 2.4 compatibility 
+	# Pre 3.0 compatibility 
 	#
 
 
@@ -522,7 +549,7 @@ END
 		}
 	}
 
-	# end of 2.4
+	# end of 3.0 compat
 	###########################################
 
 

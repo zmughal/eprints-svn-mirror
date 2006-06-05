@@ -3732,3 +3732,4 @@ PACKAGE: 2.2.99.2
     bunch of workflows to work out what values to return. It's not very
     efficient, but the plan is to phase it out.
  * Workflow configs are now loaded when eprints start.
+ * Added a cheap and cheerful way for staff to search the history.

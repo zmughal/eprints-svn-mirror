@@ -73,6 +73,20 @@ EPrints Modules
     </ep:phrase>
     <ep:phrase ref="lib/history:xmlblock"><pre style="margin: 0 0 0 0; padding: 3px 3px 3px 3px; border-left: 1px dashed black; border-bottom: 1px dashed black;"><ep:pin ref="xml" /></pre></ep:phrase>
 
+    <ep:phrase ref="history_fieldname_action">Action</ep:phrase>
+    <ep:phrase ref="history_fieldname_actor">Cause of Action</ep:phrase>
+    <ep:phrase ref="history_fieldname_historyid">History ID Number</ep:phrase>
+    <ep:phrase ref="history_fieldname_timestamp">Timestamp</ep:phrase>
+    <ep:phrase ref="history_fieldname_userid">User ID Number</ep:phrase>
+    <ep:phrase ref="history_search_premble">Search the logs of changes made to records.</ep:phrase>
+    <ep:phrase ref="history_search_title">History Search</ep:phrase>
+    <ep:phrase ref="ordername_history_objectid">Object</ep:phrase>
+    <ep:phrase ref="ordername_history_revtime">Time (newest first)</ep:phrase>
+    <ep:phrase ref="ordername_history_time">Time (oldest first)</ep:phrase>
+    <ep:phrase ref="ordername_history_userid">User</ep:phrase>
+
+
+
 
 <!-- MetaField -->
 
@@ -191,6 +205,11 @@ EPrints Modules
     <ep:phrase ref="lib/searchfield:int_err">A numerical search must be specified as a single integer number, e.g. `23', or a range of numbers, e.g. `9-21', `17-' or `-93'</ep:phrase>
     <ep:phrase ref="lib/searchfield:date_err">A date search must be specified as a single date or a range.</ep:phrase>
     <ep:phrase ref="lib/searchfield:no_words">Search field contains no indexable words: "<ep:pin ref="words" />". The system ignores very small or common words.</ep:phrase>
+    <ep:phrase ref="lib/searchfield:help_time">Enter a date or date range. 
+<br />Examples:  "<span class="example">1985-</span>", 
+"<span class="example">2001-05-17-2002-05-16</span>",
+"<span class="example">-11-1980</span>"
+</ep:phrase>
     <ep:phrase ref="lib/searchfield:help_date">Enter a date or date range. 
 <br />Examples:  "<span class="example">1985-</span>", 
 "<span class="example">2001-05-17-2002-05-16</span>",

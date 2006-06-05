@@ -933,7 +933,14 @@ sub mkpad
 	return $session->make_text( "\n"x((scalar @bits)-1) );
 }
 
+# no citations, we just show the record in search results
 
+sub render_citation
+{
+	my( $self , $style , $url ) = @_;
+
+	return $self->render;
+}
 
 ######################################################################
 1;

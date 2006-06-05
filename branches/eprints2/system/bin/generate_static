@@ -163,7 +163,7 @@ if( $errcnt )
 {
 	print "Errors Encountered: $errcnt\n";
 }
-
+$session->get_repository->get_dataset( "user" )->load_workflows;
 $session->terminate();
 
 exit;
