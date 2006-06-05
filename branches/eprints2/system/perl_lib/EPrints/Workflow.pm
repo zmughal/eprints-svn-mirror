@@ -50,154 +50,200 @@ single repository.
 
 package EPrints::Workflow;
 
+use EPrints::Workflow::Stage;
+
 use strict;
 
 ######################################################################
 =pod
 
-=item $language = EPrints::Workflow->new( $repository )
+=item $language = EPrints::Workflow->new( $session, $workflow_id, %params )
 
 Create a new workflow object representing the specification given in
 the workflow.xml configuration
+
+# needs more config - about object etc.
 
 =cut
 ######################################################################
 
 sub new
 {
-	my( $class , $repository ) = @_;
+	my( $class , $session, $workflow_id, %params ) = @_;
 
 	my $self = {};
 
 	bless $self, $class;
 	
-	$self->{repository} = $repository;
+	$self->{repository} = $session->get_repository;
+	$self->{session} = $session;
+	$self->{dataset} = $params{item}->get_dataset;
+	$self->{item} = $params{item};
+	$self->{workflow_id} = $workflow_id;
 
-	my $content = $self->_read_workflow( 
-		$repository->get_conf( "config_path" ).
-		"/workflow.xml", 
-		$repository );
+	$self->{raw_config} = $self->{repository}->get_workflow_config( $self->{dataset}->confid, $workflow_id );
+	$self->{config} = EPrints::Utils::collapse_conditions( $session, $self->{raw_config}, %params );
 
-	foreach my $item (keys %$content)
-	{
-		$self->{$item} = $content->{$item};
-	}
+	$self->_read_flow;
+	$self->_read_stages;
+
 	print STDERR "Workflow loaded\n";
 	return( $self );
-}
-
-sub _read_workflow
-{
-	my( $self, $file, $repository) = @_;
-	my $workflow = {};
-	my $doc = $repository->parse_xml( $file );
-	if( !defined $doc )
-	{
-		print STDERR "Error loading $file\n";
-		return;
-	}
-
-	$workflow->{flow} = $self->_read_flow( $doc );
-	($workflow->{stages}, $workflow->{nummap}) = $self->_read_stages( $doc );
-
-	return $workflow;
-}
-
-sub _read_stages
-{
-	my( $self, $doc ) = @_;
-	print STDERR "Reading stages\n";
-	my $stageout = [];
-	my $nummap = {};
-	my $stages = ($doc->getElementsByTagName("stage"));
-
-	if(!defined $stages)
-	{
-		print STDERR "Error loading workflow: No stages defined\n";
-		return;
-	}
-	my $pos = 0;
-	for( my $i=0; $i<$stages->getLength(); $i++)
-	{
-		next if( !$stages->item($i)->hasAttribute("name") );
-		my $stage = new EPrints::Workflow::Stage( $stages->item($i), $self->{repository} );
-		push @$stageout, $stage;
-		$nummap->{ $stage->get_name() } = $pos++;
-	}
-
-	return ($stageout, $nummap);  
-}
-
-sub get_stage
-{
-	my( $self, $stage ) = @_;
-  
-	return $self->{stages}->[ $self->{nummap}->{$stage} ];
-}
-
-sub get_first_stage
-{
-	my( $self ) = @_;
-	my $stage = $self->{stages}->[0];
-	return $stage->get_name();
-}
-
-sub get_next_stage
-{
-	my( $self, $currstage ) = @_;
-	my $num = $self->{nummap}->{$currstage};
-	if( $num == scalar @{$self->{stages}}-1 )
-	{
-		return $currstage;
-	}
-	else
-	{
-		$num++;
-		my $stage = $self->{stages}->[ $num ];
-		return $stage->get_name(); 
-	}
-}
-
-sub get_prev_stage
-{
-	my( $self, $currstage ) = @_;
-	my $num = $self->{nummap}->{$currstage};
-	if( $num == 0 )
-	{
-		return $currstage;
-	}
-	else
-	{
-		$num--;
-		my $stage = $self->{stages}->[ $num ];
-		return $stage->get_name(); 
-	}
 }
 
 sub _read_flow
 {
 	my( $self, $doc ) = @_;
 
-	my $flowout = [];
+	$self->{stage_order} = [];
+	$self->{stage_number} = {};
 
-	my $flow = ($doc->getElementsByTagName("flow"))[0];
+	my $flow = ($self->{config}->getElementsByTagName("flow"))[0];
 	if(!defined $flow)
 	{
-		print STDERR "Error loading workflow: No wf:flow defined\n";
+		EPrints::abort( "Workflow (".$self->{dataset}->confid.",".$self->{workflow_id}.") - no <flow> element.\n" );
 		return;
 	}
-  
-  
-	my $element;
+ 
+	my $n = 0; 
 	foreach my $element ( $flow->getChildNodes )
 	{
 		my $name = $element->getNodeName;
-		if( $name eq "wf:stage" )
+		if( $name eq "stage" )
 		{
-			push @$flowout, $element->getAttribute("ref");
+			if( !$element->hasAttribute("ref") )
+			{
+				EPrints::abort( "Workflow (".$self->{dataset}->confid.",".$self->{workflow_id}.") - <stage> in <flow> has no ref attribute." );
+			}
+			my $ref = $element->getAttribute("ref");
+			push @{$self->{stage_order}}, $ref;
+			$self->{stage_number}->{$ref} = $n++;
 		}
 	}
-	return $flowout;
+
+	if( $n == 0 )
+	{
+		EPrints::abort( "Workflow (".$self->{dataset}->confid.",".$self->{workflow_id}.") - no stages in <flow> element.\n" );
+	}
+}
+
+
+sub _read_stages
+{
+	my( $self ) = @_;
+	print STDERR "Reading stages\n";
+
+	$self->{stages}={};
+
+	foreach my $element ( $self->{config}->getChildNodes )
+	{
+		my $e_name = $element->getNodeName;
+		next unless( $e_name eq "stage" );
+
+		if( !$element->hasAttribute("name") )
+		{
+			EPrints::abort( "Workflow (".$self->{dataset}->confid.",".$self->{workflow_id}.") - <element> definition has no name attribute.\n".$element->toString );
+		}
+		my $stage_id = $element->getAttribute("name");
+print STDERR "***$stage_id\n".$self->{item}."\n";
+		$self->{stages}->{$stage_id} = new EPrints::Workflow::Stage( $element, $self->{session}, $self->{item} );
+	}
+
+	foreach my $stage_id ( @{$self->{stage_order}} )
+	{
+		if( !defined $self->{stages}->{$stage_id} )
+		{
+			EPrints::abort( "Workflow (".$self->{dataset}->confid.",".$self->{workflow_id}.") - stage $stage_id defined in <flow> but not actually defined in the body of the workflow\n" );
+		}
+	}
+}
+
+sub get_stage_ids
+{
+	my( $self ) = @_;
+
+	return @{$self->{stage_order}};
+}
+
+# note - this can return a stage not in the flow, but defined in the body.
+sub get_stage
+{
+	my( $self, $stage_id ) = @_;
+  
+	return $self->{stages}->{$stage_id};
+}
+
+sub get_first_stage_id
+{
+	my( $self ) = @_;
+
+	return $self->{stage_order}->[0];
+}
+
+sub get_next_stage_id
+{
+	my( $self, $currstage ) = @_;
+
+	my $num = $self->{stage_number}->{$currstage};
+
+	if( $num == scalar @{$self->{stage_order}}-1 )
+	{
+		return $currstage;
+	}
+
+	return $self->{stage_order}->[$num+1];
+}
+
+sub get_prev_stage_id
+{
+	my( $self, $currstage ) = @_;
+	my $num = $self->{stage_number}->{$currstage};
+	if( $num == 0 )
+	{
+		return undef;
+	}
+
+	return $self->{stage_order}->[$num-1];
+}
+
+
+
+
+
+
+
+
+
+
+# static method to return all workflow documents for a single repository
+
+sub load_all
+{
+	my( $path ) = @_;
+
+	my $v = {};
+	my $dh;
+	opendir( $dh, $path ) || die "Could not open $path";
+	# This sorts the directory such that directories are last
+	my @filenames = sort { -d "$path/$a" <=> -d "$path/$b" } readdir( $dh );
+	foreach my $fn ( @filenames )
+	{
+		next if( $fn =~ m/^\./ );
+		next if( $fn eq "CVS" );
+		next if( $fn eq ".svn" );
+		my $filename = "$path/$fn";
+		if( -d $filename )
+		{
+			$v->{$fn} = load_all( $filename );
+			next;
+		}
+		if( $fn=~m/^(.*)\.xml$/ )
+		{
+			my $doc = EPrints::XML::parse_xml( $filename );
+			$v->{$1} = $doc->getDocumentElement();
+		}
+	}
+	return $v;
 }
 
 1;

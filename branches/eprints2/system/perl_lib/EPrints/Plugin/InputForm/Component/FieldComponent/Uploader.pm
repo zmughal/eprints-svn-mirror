@@ -25,11 +25,9 @@ sub render
 {
 	my( $self, $defobj, $params ) = @_;
 
-
-	my $session = $params->{session};
 	my $workflow = $params->{workflow};
 
-	my $doc = $session->{doc};
+	my $doc = $self->{session}->{doc}; ##<<< GAH!!! MIKE - VALUES IN SESSION ARE NOT PUBLIC. 
 # moj: Move this into config file
 my $component = EPrints::XML::parse_xml_string('<div class="wf_component">
 <div class="wf_control_name">Document Upload</div>

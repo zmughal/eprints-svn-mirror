@@ -5,7 +5,6 @@ use EPrints::Plugin::InputForm::Component;
 @ISA = ( "EPrints::Plugin::InputForm::Component" );
 
 use Unicode::String qw(latin1);
-use EPrints::InputField;
 
 use strict;
 
@@ -23,23 +22,23 @@ sub new
 
 sub parse_config
 {
-	my( $self, $session, $config_dom ) = @_;
+	my( $self, $config_dom ) = @_;
 
-	my @fields = $config_dom->getElementsByTagName( "wf:field" );
+	my @fields = $config_dom->getElementsByTagName( "field" );
 
 	if( scalar @fields != 1 )
 	{
-		print STDERR "Meep!\n";
+		EPrints::abort( "Bad configuration for FieldComponent\n".$config_dom->toString );
 	}
 	else
 	{
-		$self->{config}->{field} = new EPrints::InputField( dom => $fields[0], dataobj => $self->{dataobj} );
+		$self->{config}->{field} = $self->xml_to_metafield( $fields[0] );
 	}
 }
 
 =pod
 
-=item $dom = $fieldcomponent->update_from_form( $session )
+=item $dom = $fieldcomponent->update_from_form()
 
 Set the values of the object we are working with from the submitted form.
 
@@ -47,15 +46,15 @@ Set the values of the object we are working with from the submitted form.
 
 sub update_from_form
 {
-	my( $self, $session ) = @_;
+	my( $self ) = @_;
 	my $field = $self->{config}->{field};
-	my $value = $field->{handle}->form_value( $session );
+	my $value = $field->form_value( $self->{session} );
 	$self->{dataobj}->set_value( $field->{name}, $value );
 }
 
 =pod
 
-=item @problems = $fieldcomponent->validate( $session )
+=item @problems = $fieldcomponent->validate()
 
 Returns a set of problems (DOM objects) if the component is unable to validate.
 
@@ -63,7 +62,7 @@ Returns a set of problems (DOM objects) if the component is unable to validate.
 
 sub validate
 {
-	my( $self, $session ) = @_;
+	my( $self ) = @_;
 
 	my $field = $self->{config}->{field};
 	
@@ -78,17 +77,17 @@ sub validate
 
 	if( $self->is_required() && !$self->{dataobj}->is_set( $field->{name} ) )
 	{
-		my $problem = $session->html_phrase(
+		my $problem = $self->{session}->html_phrase(
 			"lib/eprint:not_done_field" ,
-			fieldname=> $field->{handle}->render_name( $session ) );
+			fieldname=> $field->render_name( $self->{session} ) );
 		push @problems, $problem;
 	}
 	
-	push @problems, $session->get_archive()->call(
+	push @problems, $field->{session}->get_repository->call(
 		"validate_field",
-		$field->{handle},
+		$field,
 		$self->{dataobj}->get_value( $field->{name} ),
-		$session,
+		$self->{session},
 		$for_archive );
 
 	$self->{problems} = \@problems;
@@ -119,7 +118,7 @@ sub is_required
 
 =pod
 
-=item $help = $component->render_help( $session )
+=item $help = $component->render_help()
 
 Returns DOM containing the help text for this component.
 
@@ -127,10 +126,10 @@ Returns DOM containing the help text for this component.
 
 sub render_help
 {
-	my( $self, $session, $surround ) = @_;
-	return $self->{config}->{field}->{handle}->render_help( 
-		$session, 
-		$self->{config}->{field}->{handle}->get_type() );
+	my( $self, $surround ) = @_;
+	return $self->{config}->{field}->render_help( 
+		$self->{session}, 
+		$self->{config}->{field}->get_type() );
 }
 
 =pod
@@ -149,7 +148,7 @@ sub get_name
 
 =pod
 
-=item $title = $component->render_title( $session )
+=item $title = $component->render_title()
 
 Returns the title of this component as a DOM object.
 
@@ -157,13 +156,13 @@ Returns the title of this component as a DOM object.
 
 sub render_title
 {
-	my( $self, $session, $surround ) = @_;
-	return $self->{config}->{field}->{handle}->render_name( $session );
+	my( $self, $surround ) = @_;
+	return $self->{config}->{field}->render_name( $self->{session} );
 }
 
 =pod
 
-=item $content = $component->render_content( $session )
+=item $content = $component->render_content( $surround )
 
 Returns the DOM for the content of this component.
 
@@ -171,7 +170,7 @@ Returns the DOM for the content of this component.
 
 sub render_content
 {
-	my( $self, $session, $surround ) = @_;
+	my( $self, $surround ) = @_;
 	
 	my $value;
 	if( $self->{dataobj} )
@@ -183,15 +182,22 @@ sub render_content
 		$value = $self->{default};
 	}
 
-	return $self->{config}->{field}->{handle}->render_input_field( $session, $value );
+	return $self->{config}->{field}->render_input_field( $self->{session}, $value );
 }
 
-sub is_collapsed
+sub is_collapsed 
 {
-	my( $self, $session ) = @_;
+	my( $self ) = @_;
 
-	return( $self->{config}->{field}->{collapsed} eq "yes" );
+	return( $self->{config}->{field}->get_property( "collapsed" ) );
 }
+
+sub get_field
+{
+	my( $self ) = @_;
+
+	return $self->{config}->{field};
+}	
 
 ######################################################################
 1;

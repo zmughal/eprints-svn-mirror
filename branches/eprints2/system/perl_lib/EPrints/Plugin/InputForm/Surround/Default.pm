@@ -7,27 +7,27 @@ our @ISA = qw/ EPrints::Plugin /;
 
 sub render
 {
-	my( $self, $component, $session ) = @_;
+	my( $self, $component ) = @_;
 
 	my $is_req = $component->is_required();
-	my $help = $component->render_help( $session, $self );
+	my $help = $component->render_help( $self );
 	my $collapsed = $component->is_collapsed();
 	my $comp_name = $component->get_name();
-	my $title = $component->render_title( $session, $self );
+	my $title = $component->render_title( $self );
 
-	my $surround = $session->make_element( "div", class => "wf_component" );
+	my $surround = $self->{session}->make_element( "div", class => "wf_component" );
 
 	# Help rendering
 	
-	my $helpimg = $session->make_element( "img", src => "/images/help.gif", class => "wf_help_icon", border => "0" );
-	my $helplink = $session->make_element( "a", onClick => "doToggle('help_${comp_name}')" );
+	my $helpimg = $self->{session}->make_element( "img", src => "/images/help.gif", class => "wf_help_icon", border => "0" );
+	my $helplink = $self->{session}->make_element( "a", onClick => "doToggle('help_${comp_name}')" );
 	$helplink->appendChild( $helpimg );
-	my $help_div = $session->make_element( "div", class => "wf_help", style => "display: none", id => "help_${comp_name}" );
+	my $help_div = $self->{session}->make_element( "div", class => "wf_help", style => "display: none", id => "help_${comp_name}" );
 	$help_div->appendChild( $help );
 	
 	# Title rendering
 	
-	my $title_div = $session->make_element( "div", class => "wf_title" );
+	my $title_div = $self->{session}->make_element( "div", class => "wf_title" );
 	$title_div->appendChild( $helplink );
 
 	# Add the title and 'required' button if necessary. 
@@ -36,7 +36,7 @@ sub render
 	
 	if( $is_req )
 	{
-		$title_div->appendChild( $self->get_req_icon( $session ) );
+		$title_div->appendChild( $self->get_req_icon() );
 	}
 
 
@@ -44,10 +44,10 @@ sub render
 	$surround->appendChild( $help_div );
 
 	# Finally add the content (unless we're collapsed)
-	my $input_div = $session->make_element( "div", class => "wf_input" );
+	my $input_div = $self->{session}->make_element( "div", class => "wf_input" );
 	if( !$collapsed )
 	{
-		$input_div->appendChild( $component->render_content( $session, $self ) );
+		$input_div->appendChild( $component->render_content( $self ) );
 	}
 	
 	$surround->appendChild( $input_div );
@@ -57,8 +57,8 @@ sub render
 
 sub get_req_icon
 {
-	my( $self, $session ) = @_;
-	my $reqimg = $session->make_element( "img", src => "/images/req.gif", class => "wf_req_icon", border => "0" );
+	my( $self ) = @_;
+	my $reqimg = $self->{session}->make_element( "img", src => "/images/req.gif", class => "wf_req_icon", border => "0" );
 	return $reqimg;
 }
 

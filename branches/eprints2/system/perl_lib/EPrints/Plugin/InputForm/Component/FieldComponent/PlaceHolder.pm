@@ -22,9 +22,9 @@ sub new
 
 sub render_content
 {
-	my( $self, $session ) = @_;
-	my $out = $session->make_doc_fragment;
-	$out->appendChild( $session->make_text( "This is a placeholder for the ".$self->{name}." component" ) );
+	my( $self ) = @_;
+	my $out = $self->{session}->make_doc_fragment;
+	$out->appendChild( $self->{session}->make_text( "This is a placeholder for the ".$self->{name}." component" ) );
 	return $out;
 }
 

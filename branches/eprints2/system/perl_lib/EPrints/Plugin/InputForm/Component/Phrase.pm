@@ -38,7 +38,7 @@ sub parse_config
 
 =pod
 
-=item $content = $component->render_content( $session )
+=item $content = $component->render_content()
 
 Returns the DOM for the content of this component.
 
@@ -47,9 +47,9 @@ Returns the DOM for the content of this component.
 
 sub render_content
 {
-	my( $self, $session ) = @_;
+	my( $self ) = @_;
 
-	my $phrase = $session->html_phrase( $self->{config}->{phraseid} );
+	my $phrase = $self->{session}->html_phrase( $self->{config}->{phraseid} );
 
 	return $phrase; 
 }

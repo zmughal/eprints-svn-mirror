@@ -152,6 +152,7 @@ sub new
 	{
 		$self->generate_dtd() || return;
 		$self->get_ruler() || return;
+		$self->_load_workflows() || return;
 		$self->_load_datasets() || return;
 		$self->_load_languages() || return;
 		$self->_load_templates() || return;
@@ -160,10 +161,6 @@ sub new
 
 	# Load repository plugins
 	$self->_load_plugins() || return;
-	if( $self->get_conf( "use_workflow" ) )
-	{
-		$self->_load_workflow() || return;
-	}
 	
 	# Map OAI plugins to functions, namespaces etc.
 	$self->_map_oai_plugins() || return;
@@ -267,26 +264,45 @@ sub get_ruler
 }	
  
 ######################################################################
-=pod
-
-=item $success = $repository->_load_workflow
-
- Attempts to load and cache the workflow for this repository
-
-=cut
+#=pod
+#
+#=item $success = $repository->_load_workflows
+#
+# Attempts to load and cache the workflows for this repository
+#
+#=cut
 ######################################################################
 
-sub _load_workflow
+sub _load_workflows
 {
 	my( $self ) = @_;
-	$self->{workflow} = EPrints::Workflow->new( $self );
-	if( !defined $self->{workflow} )
+
+	$self->{workflows} = EPrints::Workflow::load_all( $self->get_conf( "config_path" )."/workflows" );
+
+	if( !defined $self->{workflows} )
 	{
 		return 0;
 	}
 	return 1;
 }
+
 	
+######################################################################
+# 
+# $workflow_xml = $repository->get_workflow_config( $datasetid, $workflowid )
+#
+# Return the XML of the requested workflow
+#
+######################################################################
+
+sub get_workflow_config
+{
+	my( $self, $datasetid, $workflowid ) = @_;
+
+	my $r = $self->{workflows}->{$datasetid}->{$workflowid};
+
+	return $r;
+}
 
 ######################################################################
 # 
@@ -559,6 +575,9 @@ sub _load_datasets
 {
 	my( $self ) = @_;
 
+
+	# read config data from metadata-types.xml
+
 	my $file = $self->get_conf( "config_path" ).
 			"/metadata-types.xml";
 	my $doc = $self->parse_xml( $file );
@@ -581,70 +600,20 @@ sub _load_datasets
 	{
 		my $ds_id = $ds_tag->getAttribute( "name" );
 		my $type_tag;
-		$dsconf->{$ds_id}->{_order} = [];
+		$dsconf->{$ds_id} = [];
 		foreach $type_tag ( $ds_tag->getElementsByTagName( "type" ) )
 		{
 			my $type_id = $type_tag->getAttribute( "name" );
-			$dsconf->{$ds_id}->{$type_id} = {};
-			push @{$dsconf->{$ds_id}->{_order}}, $type_id;
-
-			my $pageid = undef;
-			my $typedata = $dsconf->{$ds_id}->{$type_id}; #ref
-			$typedata->{pages} = {};
-			$typedata->{page_order} = [];
-			$typedata->{fields} = {};
-			foreach my $node ( $type_tag->getChildNodes )
-			{
-				next unless( EPrints::XML::is_dom( $node, "Element" ) );
-				my $el = $node->getTagName;
-				if( $el eq "field" )
-				{
-					if( !defined $pageid )
-					{
-						# we have a "default" page then
-						$pageid = "default";
-						push @{$typedata->{page_order}}, $pageid;
-					}
-					my $finfo = {};
-					$finfo->{id} = $node->getAttribute( "name" );
-					if( $node->getAttribute( "required" ) eq "yes" )
-					{
-						$finfo->{required} = 1;
-					}
-					if( $node->getAttribute( "staffonly" ) eq "yes" )
-					{
-						$finfo->{staffonly} = 1;
-					}
-					$typedata->{fields}->{$finfo->{id}} = $finfo;
-					push @{$typedata->{pages}->{$pageid}}, $finfo->{id};
-					push @{$typedata->{field_order}}, $finfo->{id};
-				}
-				elsif( $el eq "page" )
-				{
-					my $n = $node->getAttribute( "name" );
-					unless( defined  $n )
-					{
-						print STDERR "No name attribute in <page> tag in $type_tag\n";
-					}
-					else
-					{
-						$pageid = $n;
-						push @{$typedata->{page_order}}, $pageid;
-					}
-				}
-				else
-				{
-					print STDERR "Unknown element <$el> in No name attribute in <page> tag in $type_tag\n";
-				}
-			}
+			push @{$dsconf->{$ds_id}}, $type_id;
 		}
 	}
+
+	# read config data from workflow (if there is one).
+
 	$self->{datasets} = {};
-	my $ds_id;
-	my $cache = {};
-	foreach $ds_id ( EPrints::DataSet::get_dataset_ids() )
+	foreach my $ds_id ( EPrints::DataSet::get_dataset_ids() )
 	{
-		$self->{datasets}->{$ds_id} = EPrints::DataSet->new( $self, $ds_id, $dsconf, $cache );
+		$self->{datasets}->{$ds_id} = EPrints::DataSet->new( $self, $ds_id, $dsconf );
 	}
 
 	EPrints::XML::dispose( $doc );

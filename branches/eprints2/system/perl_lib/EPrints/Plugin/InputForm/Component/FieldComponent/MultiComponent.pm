@@ -5,7 +5,6 @@ use EPrints::Plugin::InputForm::Component::FieldComponent;
 @ISA = ( "EPrints::Plugin::InputForm::Component::FieldComponent" );
 
 use Unicode::String qw(latin1);
-use EPrints::InputField;
 
 use strict;
 
@@ -23,7 +22,7 @@ sub new
 
 sub parse_config
 {
-	my( $self, $session, $config_dom ) = @_;
+	my( $self, $config_dom ) = @_;
 	
 	$self->{config}->{fields} = [];
 
@@ -40,7 +39,7 @@ sub parse_config
 		if( $title_nodes[0]->hasAttribute( "ref" ) )
 		{
 			my $phrase_ref = $title_nodes[0]->getAttribute( "ref" );
-			$self->{config}->{title} = $session->html_phrase( $phrase_ref );
+			$self->{config}->{title} = $self->{session}->html_phrase( $phrase_ref );
 		}
 		else
 		{
@@ -57,7 +56,7 @@ sub parse_config
 		if( $help_nodes[0]->hasAttribute( "ref" ) )
 		{
 			my $phrase_ref = $help_nodes[0]->getAttribute( "ref" );
-			$self->{config}->{help} = $session->html_phrase( $phrase_ref );
+			$self->{config}->{help} = $self->{session}->html_phrase( $phrase_ref );
 		}
 		else
 		{
@@ -76,10 +75,10 @@ sub parse_config
 	}
 	else
 	{
-		foreach my $field ( @fields )
+		foreach my $field_tag ( @fields )
 		{
-			my $input_field = new EPrints::InputField( dom => $field, dataobj => $self->{dataobj} );
-			push @{$self->{config}->{fields}}, $input_field;
+			my $field = $self->xml_to_metafield( $field_tag );
+			push @{$self->{config}->{fields}}, $field;
 			
 		}
 	}
@@ -87,15 +86,15 @@ sub parse_config
 
 sub render_content
 {
-	my( $self, $session, $surround ) = @_;
+	my( $self, $surround ) = @_;
 
-	my $table = $session->make_element( "table" );
-	my $tbody = $session->make_element( "tbody", class => "sidetable" );
+	my $table = $self->{session}->make_element( "table" );
+	my $tbody = $self->{session}->make_element( "tbody", class => "sidetable" );
 	$table->appendChild( $tbody );
 	my ($th, $tr, $td);
 	foreach my $field ( @{$self->{config}->{fields}} )
 	{
-		$tr = $session->make_element( "tr" );
+		$tr = $self->{session}->make_element( "tr" );
 		
 		# Get the field and its value/default
 		my $value;
@@ -110,18 +109,17 @@ sub render_content
 		}
 		
 		# Append field
-		$th = $session->make_element( "th" );
-		$th->appendChild( $field->{handle}->render_name( $session ) );
+		$th = $self->{session}->make_element( "th" );
+		$th->appendChild( $field->render_name( $self->{session} ) );
 
  
 		if( $field->{required} eq "yes" ) # moj: Handle for_archive
 		{
-			$th->appendChild( 
-				$surround->get_req_icon( $session ) );
+			$th->appendChild( $surround->get_req_icon );
 		}
 		
-		$td = $session->make_element( "td" );
-		$td->appendChild( $field->{handle}->render_input_field( $session, $value ) );
+		$td = $self->{session}->make_element( "td" );
+		$td->appendChild( $field->render_input_field( $self->{session}, $value ) );
 		$tr->appendChild( $th );
 		$tr->appendChild( $td );
 		$tbody->appendChild( $tr );
@@ -131,20 +129,20 @@ sub render_content
 
 sub render_help
 {
-	my( $self, $session, $surround ) = @_;
+	my( $self, $surround ) = @_;
 	return $self->{config}->{help};
 }
 
 sub render_title
 {
-	my( $self, $session, $surround ) = @_;
+	my( $self, $surround ) = @_;
 	return $self->{config}->{title};
 }
 
 
 sub is_collapsed
 {
-	my( $self, $session ) = @_;
+	my( $self ) = @_;
 	return $self->are_all_collapsed( $self->{config}->{fields} );
 }
 

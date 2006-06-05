@@ -2,90 +2,70 @@ package EPrints::Workflow::Stage;
 
 sub new
 {
-	my( $class, $stage, $repository ) = @_;
+	my( $class, $stage, $session, $item ) = @_;
 	my $self = {};
 	bless $self, $class;
 
-	$self->{repository} = $repository;
+	$self->{session} = $session;
+	$self->{item} = $item;
+	$self->{repository} = $session->get_repository;
 
-	if( $stage->hasAttribute( "name" ) )
+	unless( $stage->hasAttribute( "name" ) )
 	{
-		# Creating a new stage
-		$self->{name} = $stage->getAttribute("name");
-		$self->{components} = $self->_read_components( $stage->getChildNodes );
+		EPrints::abort( "Workflow stage with no name attribute." );
 	}
+
+	# Creating a new stage
+	$self->{name} = $stage->getAttribute("name");
+	$self->_read_components( $stage->getChildNodes );
+
 	return $self;
 }
 
-sub _read_params
-{
-	my( $self, $root ) = @_;
-	my $out = {};
-
-	foreach my $comp_node ( $root->getChildNodes )
-	{
-			return $comp_node->toString if EPrints::XML::is_dom( $comp_node, "Text" );
-
-			my $elname = $comp_node->getNodeName;
-			my $field_name = $comp_node->getAttribute( "name" );
-			my $field_value = undef;
-			if( $elname eq "wf:value" )
-			{
-				$field_value = $comp_node->getFirstChild->getNodeValue;
-			}
-			elsif( $elname eq "wf:array" )
-			{
-				$field_value = [];
-				foreach my $val_node ( $comp_node->getChildNodes )
-				{
-					push @$field_value, $self->_read_params( $val_node );
-				}
-			}
-			$out->{$field_name} = $field_value;
-	}
-	return $out;
-}
 	
 
 sub _read_components
 {
 	my( $self, @stage_nodes ) = @_;
 	print STDERR "Reading components\n"; 
-	my $component_list = [];
+
+	$self->{components} = [];
 	
 	foreach my $stage_node ( @stage_nodes )
 	{
 		my $name = $stage_node->getNodeName;
-		if( $name eq "wf:component" )
+		if( $name eq "component" )
 		{
 			# Pull out the type
-			my $type = $stage_node->getAttribute( "type" );
+			my $type = "FieldComponent";
+			if( $stage_node->hasAttribute( "type" ) )
+			{
+				$type = $stage_node->getAttribute( "type" );
+			}
 			# Grab any values inside
-			my %params = %{$self->_read_params( $stage_node )};
 			$params{type} = $type;
-			my $class = $self->{repository}->plugin_class( $type );
+			my $class = $self->{repository}->plugin_class( "InputForm::Component::$type" );
 			if( !defined $class )
 			{
 				print STDERR "Using placeholder for $type\n";
-				$class = $self->{repository}->plugin_class( "component/placeholder" );
+				$class = $self->{repository}->plugin_class( "InputForm::Component::FieldComponent::PlaceHolder" );
 				$params{name} = $type;
 			}
 			if( defined $class )
 			{
-				my $plugin = $class->new( %params );
-				push @$component_list, $plugin;
+				my $plugin = $class->new( session=>$self->{session}, xml_config=>$stage_node, dataobj=>$self->{item} );
+				push @{$self->{components}}, $plugin;
 			}
 		}
-		elsif( $name eq "wf:title" )
+		elsif( $name eq "title" )
 		{
 			$self->{title} = $stage_node->getFirstChild->getNodeValue;
 		}
-		elsif( $name eq "wf:short-title" )
+		elsif( $name eq "short-title" )
 		{
 			$self->{short_title} = $stage_node->getFirstChild->getNodeValue;
 		}
 	}
-	return $component_list;
 }
 
 sub get_name
@@ -106,6 +86,13 @@ sub get_short_title
 	my( $self ) = @_;
 	return $self->{short_title};
 }
+
+sub get_components
+{
+	my( $self ) = @_;
+	return @{$self->{components}};
+}
+
 
 sub render
 {

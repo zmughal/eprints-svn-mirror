@@ -3723,3 +3723,12 @@ PACKAGE: 2.2.99.2
  * Removed use_workflow option - it's not going to be optional.
  * Documents now only update their EPrint if they know what that eprint is
     (workaround for bug)
+ * Fixed problem with generate_workflows - the if's needed merge="ANY"
+    as they default to ALL.
+ * Overhaul of MOJ's components: 
+ * Components now know what session and dataobj they are working on.
+ * Removed InputField - it now just makes a cloned metafield.
+ * If type/page related methods are called on dataset it now loads a 
+    bunch of workflows to work out what values to return. It's not very
+    efficient, but the plan is to phase it out.
+ * Workflow configs are now loaded when eprints start.

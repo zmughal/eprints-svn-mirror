@@ -50,6 +50,15 @@ sub new
 	$self->{name} = "Base component plugin: This should have been subclassed";
 	$self->{visible} = "all";
 
+	# don't have a config when we first load this to register it as a plugin class
+	if( defined $opts{xml_config} )
+	{
+		$self->{session} = $opts{session};
+		$self->{dataobj} = $opts{dataobj};
+		$self->{dataset} = $opts{dataobj}->get_dataset;
+		$self->parse_config( $opts{xml_config} );
+	}
+
 	return $self;
 }
 
@@ -63,7 +72,7 @@ Parses the supplied DOM object and populates $component->{config}
 
 sub parse_config
 {
-	my( $self, $session, $config_dom ) = @_;
+	my( $self, $config_dom ) = @_;
 }
 
 =pod
@@ -108,7 +117,7 @@ sub are_all_collapsed
 
 =pod
 
-=item $help = $component->render_help( $session, $surround )
+=item $help = $component->render_help( $surround )
 
 Returns DOM containing the help text for this component.
 
@@ -116,7 +125,7 @@ Returns DOM containing the help text for this component.
 
 sub render_help
 {
-	my( $self, $session, $surround ) = @_;
+	my( $self, $surround ) = @_;
 }
 
 =pod
@@ -134,7 +143,7 @@ sub get_name
 
 =pod
 
-=item $title = $component->render_title( $session, $surround )
+=item $title = $component->render_title( $surround )
 
 Returns the title of this component as a DOM object.
 
@@ -142,12 +151,12 @@ Returns the title of this component as a DOM object.
 
 sub render_title
 {
-	my( $self, $session, $surround ) = @_;
+	my( $self, $surround ) = @_;
 }
 
 =pod
 
-=item $content = $component->render_content( $session, $surround )
+=item $content = $component->render_content( $surround )
 
 Returns the DOM for the content of this component.
 
@@ -155,7 +164,72 @@ Returns the DOM for the content of this component.
 
 sub render_content
 {
-	my( $self, $session, $surround ) = @_;
+	my( $self, $surround ) = @_;
+}
+
+
+
+# $metafield = $self->xml_to_metafield( $xml )
+#
+# Take an XML configuration of a field in a component and return a metafield.
+# tweak the metafield to make it required, collapsed etc. if needed.
+
+sub xml_to_metafield
+{
+	my( $self, $xml ) = @_;
+
+	# Do a few validation checks.
+	if( $xml->getNodeName ne "field" )
+	{
+		EPrints::abort(
+			"xml_to_metafield config error: Not a field node" );
+	}
+	if( !$xml->hasAttribute( "ref" ) )
+	{
+		EPrints::abort(
+			"xml_to_metafield config error: No field ref attribute" );
+	}
+
+	my $ref = $xml->getAttribute( "ref" );	
+	my $field = $self->{dataset}->get_field( $ref );
+	
+	if( !defined $field )
+	{
+		EPrints::abort(
+			"xml_to_metafield config error: Invalid field ref attribute($ref)" );
+	}
+
+	my $cloned = 0;
+
+	if( $xml->hasChildNodes )
+	{
+		foreach my $child ( $xml->getChildNodes )
+		{
+			my $node_name = $child->getNodeName;
+			next unless( $node_name eq "required" || $node_name eq "required-for-archive" || $node_name eq "collapsed" );
+
+			if( !$cloned )
+			{
+				$field = $field->clone;
+				$cloned = 1;
+			}	
+
+			if( $node_name eq "required" )
+			{
+				$field->set_property( "required", "yes" );
+			}
+			elsif( $node_name eq "required-for-archive" )
+			{
+				$field->set_property( "required", "for_archive" );
+			}
+			elsif( $node_name eq "collapsed" )
+			{
+				$field->set_property( "collapsed", "yes" );
+			}
+		}
+	}
+
+	return $field;
 }
 
 ######################################################################

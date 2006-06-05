@@ -21,7 +21,7 @@ sub defaults
 
 =pod
 
-=item $content = $component->render_content( $session )
+=item $content = $component->render_content()
 
 Returns the DOM for the content of this component.
 
@@ -29,17 +29,17 @@ Returns the DOM for the content of this component.
 
 sub render_content
 {
-	my( $self, $session ) = @_;
+	my( $self ) = @_;
 	
-	my $out = $session->make_doc_fragment;
+	my $out = $self->{session}->make_doc_fragment;
 
 	if( $self->{stage}->has_problems() )
 	{
-		my $div = $session->make_element( "div", class => "wf_problems" );
-		my $ul = $session->make_element( "ul" );
+		my $div = $self->{session}->make_element( "div", class => "wf_problems" );
+		my $ul = $self->{session}->make_element( "ul" );
 		foreach my $problem ( $self->{stage}->get_problems() )
 		{
-			my $li = $session->make_element( "li" );
+			my $li = $self->{session}->make_element( "li" );
 			$li->appendChild( $problem );
 			$ul->appendChild( $li );
 		}
