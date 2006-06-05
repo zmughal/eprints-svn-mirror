@@ -3715,3 +3715,7 @@ PACKAGE: 2.2.99.2
  * EPrints::XML now has "strict" mode working properly - some minor fixes
     were required as a result.
  * the XML tidy method now can be told to ignore certain elements.
+
+2006-06-05 cjg
+
+ * Fixed bug in phrase for user homepage.

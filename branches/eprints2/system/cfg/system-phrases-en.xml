@@ -429,33 +429,33 @@ User Area CGI Scripts
 <!-- home -->
 
     <ep:phrase ref="cgi/users/home:layout">
-<p>Welcome to the registered user area at &archivename;. Please select one of the options below.</p>
-<table>
-  <tr>
-    <ep:pin ref="layout_deposit" />
-    <td valign="top">
-      <ep:pin ref="user" />
-    </td>
-  </tr>
-</table>
-<ep:pin ref="layout_staff" />
-</ep:phrase>
+      <p>Welcome to the registered user area at &archivename;. Please select one of the options below.</p>
+      <table>
+        <tr>
+          <ep:pin ref="layout_deposit" />
+          <td valign="top">
+            <ep:pin ref="user" />
+          </td>
+        </tr>
+      </table>
+      <ep:pin ref="layout_staff" />
+    </ep:phrase>
 
     <ep:phrase ref="cgi/users/home:layout_deposit">
-    <td>
-      <ep:pin ref="create" />
-
-      <h3>Undeposited Items</h3>
-      <ep:pin ref="workspace" />
-
-      <h3>Pending Items</h3>
-      <ep:pin ref="pending" />
-
-      <h3>Most Recently Accepted Items</h3>
-      <ep:pin ref="recent" />
-    </td>
-    <td>&nbsp;</td>
-</ep:phrase>
+      <td>
+        <ep:pin ref="create" />
+  
+        <h3>Undeposited Items</h3>
+        <ep:pin ref="workspace" />
+  
+        <h3>Pending Items</h3>
+        <ep:pin ref="pending" />
+  
+        <h3>Most Recently Accepted Items</h3>
+        <ep:pin ref="recent" />
+      </td>
+      <td>&nbsp;</td>
+    </ep:phrase>
 
     <ep:phrase ref="cgi/users/home:layout_staff">
 &ruler;
