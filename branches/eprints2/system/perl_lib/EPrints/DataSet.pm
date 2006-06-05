@@ -1321,7 +1321,6 @@ sub load_workflows
 		my $workflow = EPrints::Workflow->new( $mini_session, "default", item=> $item );
 		my $s_workflow = EPrints::Workflow->new( $mini_session, "default", item=> $item, "STAFF_ONLY"=>"TRUE" );
 		$tdata->{page_order} = [$workflow->get_stage_ids];
-print STDERR ">>>>>>$typeid#PAGE_ORDER--".join(",",$workflow->get_stage_ids)."\n";
 		$tdata->{fields} = { staff=>[], normal=>[] };
 		$tdata->{req_field_map} = {};
 		$tdata->{req_fields} = [];

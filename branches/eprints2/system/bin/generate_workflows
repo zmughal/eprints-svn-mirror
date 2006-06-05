@@ -549,7 +549,7 @@ sub xml
 	my( $self, $doc ) = @_;
 
 	my $if = $doc->createElement( "ep:ifmatch" );
-	print ">>>>>>>>>>". $EPrints::generate_workflow_ds_id."<<<\n";
+
 	if( $EPrints::generate_workflow_ds_id eq "user" )
 	{
 		$if->setAttribute( "name", "usertype" );
