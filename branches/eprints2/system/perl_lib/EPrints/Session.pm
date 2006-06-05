@@ -117,6 +117,12 @@ If this is being called from a command line script, then $mode should
 be 1, and $repository_id should be the ID of the repository we want to
 connect to.
 
+$mode :
+mode = 0    - We are online (CGI script)
+mode = 1    - We are offline (bin script) $repository_id is repository_id
+mode = 2    - We are online, but don't create a CGI query (so we
+ don't consume the data).
+
 $noise is the level of debugging output.
 0 - silent
 1 - quietish
@@ -135,10 +141,6 @@ database without checking that the tables exist.
 sub new
 {
 	my( $class, $mode, $repository_id, $noise, $nocheckdb ) = @_;
-	# mode = 0    - We are online (CGI script)
-	# mode = 1    - We are offline (bin script) $repository_id is repository_id
-	# mode = 2    - We are online, but don't create a CGI query (so we
-	#  don't consume the data).
 	my $self = {};
 	bless $self, $class;
 
