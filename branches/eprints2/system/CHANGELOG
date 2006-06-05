@@ -3720,3 +3720,5 @@ PACKAGE: 2.2.99.2
 
  * Fixed bug in phrase for user homepage.
  * Commented-out code which generates experimental OVID/SFX links
+ * Removed use_workflow option - it's not going to be optional.
+
