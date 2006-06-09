@@ -3734,3 +3734,7 @@ PACKAGE: 2.2.99.2
  * Workflow configs are now loaded when eprints start.
  * Added a cheap and cheerful way for staff to search the history.
  * Added a config option to add additional tools to the user home page.
+
+2006-06-09 cjg
+ 
+ * Added methods to append and prepend stages to a workflow.

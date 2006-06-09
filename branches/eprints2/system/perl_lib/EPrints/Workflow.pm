@@ -91,6 +91,37 @@ sub new
 	return( $self );
 }
 
+sub append_stage
+{
+	my( $self, $stage_id, $stage ) = @_;
+
+	$self->{stage_order} = [ @{$self->{stage_order}}, $stage_id ];
+	$self->{stages}->{$stage_id} = $stage;
+	$self->renumber_stages;
+}
+
+sub prepend_stage
+{
+	my( $self, $stage_id, $stage ) = @_;
+
+	$self->{stage_order} = [ $stage_id, @{$self->{stage_order}} ];
+	$self->{stages}->{$stage_id} = $stage;
+	$self->renumber_stages;
+}
+
+sub renumber_stages
+{
+	my( $self ) = @_;
+
+	my $n = 1;
+	$self->{stage_number} = {};
+	foreach my $stage_id ( @{$self->{stage_order}} )
+	{
+		$self->{stage_number}->{$stage_id} = $n;
+		$n += 1;
+	}
+}
+
 sub _read_flow
 {
 	my( $self, $doc ) = @_;
@@ -104,8 +135,7 @@ sub _read_flow
 		EPrints::abort( "Workflow (".$self->{dataset}->confid.",".$self->{workflow_id}.") - no <flow> element.\n" );
 		return;
 	}
- 
-	my $n = 0; 
+	my $has_stages = 0; 
 	foreach my $element ( $flow->getChildNodes )
 	{
 		my $name = $element->getNodeName;
@@ -117,14 +147,15 @@ sub _read_flow
 			}
 			my $ref = $element->getAttribute("ref");
 			push @{$self->{stage_order}}, $ref;
-			$self->{stage_number}->{$ref} = $n++;
+			$has_stages = 1;
 		}
 	}
 
-	if( $n == 0 )
+	if( $has_stages == 0 )
 	{
 		EPrints::abort( "Workflow (".$self->{dataset}->confid.",".$self->{workflow_id}.") - no stages in <flow> element.\n" );
 	}
+	$self->renumber_stages;
 }
 
 
