@@ -3742,3 +3742,7 @@ PACKAGE: 2.2.99.2
 2006-05-12 cjg
 
  * Properly commented EPrints::DataObj::History
+ * Fixed bug which didn't write the revision of an EPrint when it was 
+    created.
+ * History now shows revision number.
+

@@ -344,6 +344,7 @@ sub render
  	my $a = $self->{session}->render_link( $obj->get_url( 1 ) );
 	$pins{item}->appendChild( $a );
 	$a->appendChild( $self->{session}->make_text( $self->get_value( "datasetid" )." ".$self->get_value("objectid" ) ) );
+	$pins{item}->appendChild( $self->{session}->make_text( " r".$self->get_value( "revision" ) ) );
 	$pins{item}->appendChild( $self->{session}->make_text( ")" ) );
 	#$pins{item}->appendChild( $self->render_value( "historyid" ));
 	

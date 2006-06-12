@@ -304,6 +304,7 @@ sub create_from_data
 			details=>undef,
 		}
 	);
+	$new_eprint->write_revision;
 
 	# write revision, generate static and set auto fields
 	$new_eprint->commit;
@@ -746,7 +747,7 @@ Calls L</set_eprint_automatic_fields> just before the C<$eprint> is committed.
 sub commit
 {
 	my( $self, $force ) = @_;
-
+print "COMMIT EPRINT\n";
 	if( $self->{changed}->{succeeds} )
 	{
 		my $old_succ = EPrints::EPrint->new( $self->{session}, $self->{changed}->{succeeds} );
@@ -773,7 +774,10 @@ sub commit
 		return( 1 ) unless $force;
 	}
 
-	$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
+	my $rev_number = $self->get_value( "rev_number" ) || 0;
+	$rev_number += 1;
+	
+	$self->set_value( "rev_number", $rev_number );
 
 	$self->set_value( 
 		"lastmod" , 
