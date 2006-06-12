@@ -3747,4 +3747,7 @@ PACKAGE: 2.2.99.2
  * History now shows revision number.
  * Fixed bugs which meant 1.xml revision didn't get written.
  * Made "action" in history into a set rather than text field.
+ * EPrints now log when they are destroyed
+ * Fixed the history so it can now render history events for destroyed
+    items.
 

@@ -52,15 +52,6 @@ EPrints Modules
 
 <!-- History -->
 
-    <ep:phrase ref="lib/history:title_modify">Modified</ep:phrase>
-    <ep:phrase ref="lib/history:title_move_inbox_to_buffer">Moved from Work Area to Editorial Review</ep:phrase>
-    <ep:phrase ref="lib/history:title_move_buffer_to_inbox">Moved from Editorial Review to Work Area</ep:phrase>
-    <ep:phrase ref="lib/history:title_move_buffer_to_archive">Moved from Editorial Review to Repository</ep:phrase>
-    <ep:phrase ref="lib/history:title_move_archive_to_buffer">Moved from Repository to Editorial Review</ep:phrase>
-    <ep:phrase ref="lib/history:title_move_archive_to_deletion">Moved from Repository to Deleted</ep:phrase>
-    <ep:phrase ref="lib/history:title_move_deletion_to_archive">Moved from Deleted to Repository</ep:phrase>
-    <ep:phrase ref="lib/history:title_mail_owner">Email sent to depositor of record</ep:phrase>
-    <ep:phrase ref="lib/history:title_create">Created</ep:phrase>
     <ep:phrase ref="lib/history:before">Before</ep:phrase>
     <ep:phrase ref="lib/history:after">After</ep:phrase>
     <ep:phrase ref="lib/history:system">SYSTEM</ep:phrase>
@@ -72,6 +63,7 @@ EPrints Modules
 <div style="padding: 0.3em; margin-bottom: 2em; border: solid 1px black;"><ep:pin ref="details" /></div>
     </ep:phrase>
     <ep:phrase ref="lib/history:xmlblock"><pre style="margin: 0 0 0 0; padding: 3px 3px 3px 3px; border-left: 1px dashed black; border-bottom: 1px dashed black;"><ep:pin ref="xml" /></pre></ep:phrase>
+    <ep:phrase ref="lib/history:no_such_item"><ep:pin ref="datasetid" /> <ep:pin ref="objectid" /> does not exist. It may have been erased.</ep:phrase>
 
     <ep:phrase ref="history_fieldname_action">Action</ep:phrase>
     <ep:phrase ref="history_fieldname_actor">Cause of Action</ep:phrase>
@@ -80,10 +72,22 @@ EPrints Modules
     <ep:phrase ref="history_fieldname_userid">User ID Number</ep:phrase>
     <ep:phrase ref="history_search_premble">Search the logs of changes made to records.</ep:phrase>
     <ep:phrase ref="history_search_title">History Search</ep:phrase>
+
     <ep:phrase ref="ordername_history_objectid">Object</ep:phrase>
     <ep:phrase ref="ordername_history_revtime">Time (newest first)</ep:phrase>
     <ep:phrase ref="ordername_history_time">Time (oldest first)</ep:phrase>
     <ep:phrase ref="ordername_history_userid">User</ep:phrase>
+
+    <ep:phrase ref="history_fieldopt_action_modify">Modified</ep:phrase>
+    <ep:phrase ref="history_fieldopt_action_move_inbox_to_buffer">Moved from Work Area to Editorial Review</ep:phrase>
+    <ep:phrase ref="history_fieldopt_action_move_buffer_to_inbox">Moved from Editorial Review to Work Area</ep:phrase>
+    <ep:phrase ref="history_fieldopt_action_move_buffer_to_archive">Moved from Editorial Review to Repository</ep:phrase>
+    <ep:phrase ref="history_fieldopt_action_move_archive_to_buffer">Moved from Repository to Editorial Review</ep:phrase>
+    <ep:phrase ref="history_fieldopt_action_move_archive_to_deletion">Moved from Repository to Deleted</ep:phrase>
+    <ep:phrase ref="history_fieldopt_action_move_deletion_to_archive">Moved from Deleted to Repository</ep:phrase>
+    <ep:phrase ref="history_fieldopt_action_mail_owner">Email sent to depositor of record</ep:phrase>
+    <ep:phrase ref="history_fieldopt_action_create">Created</ep:phrase>
+    <ep:phrase ref="history_fieldopt_action_destroy">Destroyed</ep:phrase>
 
 
 

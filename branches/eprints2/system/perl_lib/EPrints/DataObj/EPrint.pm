@@ -712,8 +712,24 @@ sub remove
 {
 	my( $self ) = @_;
 
-	my $doc;
-	foreach $doc ( $self->get_all_documents )
+	my $user = $self->{session}->current_user;
+	my $userid = undef;
+	$userid = $user->get_id if defined $user;
+
+	my $history_ds = $self->{session}->get_repository->get_dataset( "history" );
+	$history_ds->create_object( 
+		$self->{session},
+		{
+			userid=>$userid,
+			datasetid=>"eprint",
+			objectid=>$self->get_id,
+			revision=>$self->get_value( "rev_number" ),
+			action=>"destroy",
+			details=>undef,
+		}
+	);
+
+	foreach my $doc ( $self->get_all_documents )
 	{
 		$doc->remove;
 	}

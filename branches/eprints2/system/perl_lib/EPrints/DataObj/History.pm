@@ -133,6 +133,7 @@ sub get_system_field_info
 				move_archive_to_deletion 
 				move_archive_to_buffer 
 				move_deletion_to_archive
+				destroy
 				/], },
 
 		{ name=>"details", type=>"longtext", text_index=>0, 
@@ -343,19 +344,32 @@ sub render
 
 	if( $action eq "modify" ) { $pins{details} = $self->render_modify; }
 	elsif( $action =~ m/^move_/ ) { $pins{details} = $self->{session}->render_nbsp; } # no details
+	elsif( $action eq "destroy" ) { $pins{details} = $self->{session}->render_nbsp; } # no details
 	elsif( $action eq "create" ) { $pins{details} = $self->render_create; }
 	elsif( $action eq "mail_owner" ) { $pins{details} = $self->render_mail_owner; }
 	else { $pins{details} = $self->{session}->make_text( "Don't know how to render history event: $action" ); }
 
 	my $obj  = $self->get_dataobj;
-	$pins{item} = $self->{session}->make_doc_fragment;
-	$pins{item}->appendChild( $obj->render_description );
-	$pins{item}->appendChild( $self->{session}->make_text( " (" ) );
- 	my $a = $self->{session}->render_link( $obj->get_url( 1 ) );
-	$pins{item}->appendChild( $a );
-	$a->appendChild( $self->{session}->make_text( $self->get_value( "datasetid" )." ".$self->get_value("objectid" ) ) );
-	$pins{item}->appendChild( $self->{session}->make_text( " r".$self->get_value( "revision" ) ) );
-	$pins{item}->appendChild( $self->{session}->make_text( ")" ) );
+	if( defined $obj )
+	{
+		$pins{item} = $self->{session}->make_doc_fragment;
+		$pins{item}->appendChild( $obj->render_description );
+		$pins{item}->appendChild( $self->{session}->make_text( " (" ) );
+ 		my $a = $self->{session}->render_link( $obj->get_url( 1 ) );
+		$pins{item}->appendChild( $a );
+		$a->appendChild( $self->{session}->make_text( $self->get_value( "datasetid" )." ".$self->get_value("objectid" ) ) );
+		$pins{item}->appendChild( $self->{session}->make_text( " r".$self->get_value( "revision" ) ) );
+		$pins{item}->appendChild( $self->{session}->make_text( ")" ) );
+	}
+	else
+	{
+		$pins{item} = $self->{session}->html_phrase( 
+			"lib/history:no_such_item", 
+			datasetid=>$self->{session}->make_text($self->get_value( "datasetid" ) ),
+			objectid=>$self->{session}->make_text($self->get_value( "objectid" ) ),
+			 );
+	}
+		
 	#$pins{item}->appendChild( $self->render_value( "historyid" ));
 	
 	return $self->{session}->html_phrase( "lib/history:record", %pins );
@@ -470,6 +484,11 @@ sub render_modify
 	my( $self ) = @_;
 
 	my $eprint = EPrints::DataObj::EPrint->new( $self->{session}, $self->get_value( "objectid" ) );
+
+	if( !defined $eprint )
+	{
+		return $self->{session}->render_nbsp;
+	}
 
 	my $r_new = $self->get_value( "revision" );
 	my $r_old = $r_new-1;
