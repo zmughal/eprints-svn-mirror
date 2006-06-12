@@ -3738,3 +3738,7 @@ PACKAGE: 2.2.99.2
 2006-06-09 cjg
  
  * Added methods to append and prepend stages to a workflow.
+
+2006-05-12 cjg
+
+ * Properly commented EPrints::DataObj::History

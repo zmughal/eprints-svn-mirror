@@ -283,9 +283,25 @@ sub get_defaults
 }
 
 ######################################################################
+#
+# $xhtml = $history->render_citation( $style, $url )
+#
+# This overrides the normal citation rendering and just does a full
+# render of the event.
+#
+######################################################################
+
+sub render_citation
+{
+	my( $self , $style , $url ) = @_;
+
+	return $self->render;
+}
+
+######################################################################
 =pod
 
-=item $xhtml = history->render
+=item $xhtml = $history->render
 
 Render this change as XHTML DOM.
 
@@ -334,6 +350,16 @@ sub render
 	return $self->{session}->html_phrase( "lib/history:record", %pins );
 }
 
+######################################################################
+=pod
+
+=item $object = $history->get_dataobj
+
+Returns the object to which this history event relates.
+
+=cut
+######################################################################
+
 sub get_dataobj
 {
 	my( $self ) = @_;
@@ -342,6 +368,16 @@ sub get_dataobj
 	my $ds = $self->{session}->get_repository->get_dataset( $self->get_value( "datasetid" ) );
 	return $ds->get_object( $self->{session}, $self->get_value( "objectid" ) );
 }
+
+######################################################################
+=pod
+
+=item $user = $history->get_user
+
+Returns the user object of the user who caused this event.
+
+=cut
+######################################################################
 
 sub get_user
 {
@@ -355,15 +391,37 @@ sub get_user
 	return undef;
 }
 
+######################################################################
+#
+# methods to render various types of history event
+#
+######################################################################
+
+
+######################################################################
+#
+# $xhtml = $history->render_mail_owner
+#
+# Render a MAIL_OWNER history event. 
+#
+######################################################################
+
 sub render_mail_owner
 {
-	my( $self, $action ) = @_;
+	my( $self ) = @_;
 
 	my $div = $self->{session}->make_element( "div" );
 	$div->appendChild( $self->render_value("details") );
 	return $div;
 }
 
+######################################################################
+#
+# $xhtml = $history->render_create( $action )
+#
+# Render a CREATE history event. 
+#
+######################################################################
 
 sub render_create
 {
@@ -387,6 +445,14 @@ sub render_create
 	$div->appendChild( $self->{session}->html_phrase( "lib/history:xmlblock", xml=>render_xml( $self->{session}, $dom_new, 0, 0, 120 ) ) );
 	return $div;
 }
+
+######################################################################
+#
+# $xhtml = $history->render_modify( $action )
+#
+# Render a MODIFY history event. 
+#
+######################################################################
 
 sub render_modify
 {
@@ -511,8 +577,16 @@ sub render_modify
 
 
 
+######################################################################
+#
+# $boolean = EPrints::DataObj::History::empty_tree( $domtree )
+#
 # return true if there is no text in the tree other than
 # whitespace,
+#
+# Will maybe be moved to XML or Utils
+#
+######################################################################
 
 sub empty_tree
 {
@@ -546,7 +620,13 @@ sub empty_tree
 	return 1;
 }
 
-# render the diffs between tree1 and tree2
+######################################################################
+#
+# $xhtml = EPrints::DataObj::History::render_xml_diffs( $tree1, $tree2, $indent, $width )
+#
+# Render the diffs between tree1 and tree2 as XHTML
+#
+######################################################################
 
 sub render_xml_diffs
 {
@@ -739,7 +819,17 @@ sub render_xml_diffs
 
 	
 
-# return domtree rendered as xml. 
+######################################################################
+#
+# ($xhtml, [$xhtml_padding]) = EPrints::DataObj::History::render_domtree( $session, $tree, $indent, $make_padded, $width )
+#
+# Render the given tree as XHTML (showing the actual XML structure).
+#
+# If make_padded is true then also generate another element, which is 
+# empty but the same height to be used in the other column to keep
+# things level.
+#
+######################################################################
 
 sub render_xml
 {
@@ -816,7 +906,13 @@ sub render_xml
 	return( $session->make_text( "eh?:".ref($domtree) ), $session->make_doc_fragment );
 }
 
-# diff 2 XML DOM nodes.
+######################################################################
+#
+# $boolean = EPrints::DataObj::History::diff( $tree1, $tree2 )
+#
+# Return true if the XML trees are not the same, otherwise false.
+#
+######################################################################
 
 sub diff
 {
@@ -876,6 +972,18 @@ sub diff
 	return 0;
 }
 
+######################################################################
+#
+# @lines = EPrints::DataObj::History::_mktext( $session, $text, $offset, $endw, $width )
+#
+# Return the $text string broken into lines which are $width long, or
+# less.
+#
+# Inserts a 90 degree arrow at the end of each broken line to indicate
+# that it has been broken.
+#
+######################################################################
+
 sub _mktext
 {
 	my( $session, $text, $offset, $endw, $width ) = @_;
@@ -910,7 +1018,14 @@ sub _mktext
 	return @b2;
 }
 
+######################################################################
+#
+# $boolean = EPrints::DataObj::History::diff( $tree1, $tree2 )
+#
+# Return true if the XML trees are not the same, otherwise false.
 # render $text into wrapped XML DOM.
+#
+######################################################################
 
 sub mktext
 {
@@ -921,8 +1036,15 @@ sub mktext
 	return $session->make_text( join( "\n", @bits ) );
 }
 
-# return DOM of vertical padding equiv. to the lines that would
+######################################################################
+#
+# $xhtml = EPrints::DataObj::History::mkpad( $session, $text, $offset, $endw, $width )
+#
+# Return DOM of vertical padding equiv. to the lines that would
 # be needed to render $text.
+#
+######################################################################
+
 
 sub mkpad
 {
@@ -933,14 +1055,6 @@ sub mkpad
 	return $session->make_text( "\n"x((scalar @bits)-1) );
 }
 
-# no citations, we just show the record in search results
-
-sub render_citation
-{
-	my( $self , $style , $url ) = @_;
-
-	return $self->render;
-}
 
 ######################################################################
 1;
