@@ -3745,4 +3745,6 @@ PACKAGE: 2.2.99.2
  * Fixed bug which didn't write the revision of an EPrint when it was 
     created.
  * History now shows revision number.
+ * Fixed bugs which meant 1.xml revision didn't get written.
+ * Made "action" in history into a set rather than text field.
 

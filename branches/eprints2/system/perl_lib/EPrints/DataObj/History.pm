@@ -123,7 +123,17 @@ sub get_system_field_info
 		{ name=>"timestamp", type=>"time", }, 
 
 		# TODO should be a set when I know what the actions will be
-		{ name=>"action", type=>"text", text_index=>0, }, 
+		{ name=>"action", type=>"set", text_index=>0, options=>[qw/
+				create 
+				modify 
+				mail_owner 
+				move_inbox_to_buffer 
+				move_buffer_to_archive 
+				move_buffer_to_inbox 
+				move_archive_to_deletion 
+				move_archive_to_buffer 
+				move_deletion_to_archive
+				/], },
 
 		{ name=>"details", type=>"longtext", text_index=>0, 
 render_single_value => \&EPrints::Extras::render_preformatted_field }, 
@@ -329,12 +339,12 @@ sub render
 
 	my $action = $self->get_value( "action" );
 
-	$pins{action} = $self->{session}->html_phrase( "lib/history:title_\L$action" );
+	$pins{action} = $self->render_value( "action" );
 
-	if( $action eq "MODIFY" ) { $pins{details} = $self->render_modify; }
-	elsif( $action =~ m/^MOVE_/ ) { $pins{details} = $self->{session}->make_doc_fragment; }
-	elsif( $action eq "CREATE" ) { $pins{details} = $self->render_create; }
-	elsif( $action eq "MAIL_OWNER" ) { $pins{details} = $self->render_mail_owner; }
+	if( $action eq "modify" ) { $pins{details} = $self->render_modify; }
+	elsif( $action =~ m/^move_/ ) { $pins{details} = $self->{session}->render_nbsp; } # no details
+	elsif( $action eq "create" ) { $pins{details} = $self->render_create; }
+	elsif( $action eq "mail_owner" ) { $pins{details} = $self->render_mail_owner; }
 	else { $pins{details} = $self->{session}->make_text( "Don't know how to render history event: $action" ); }
 
 	my $obj  = $self->get_dataobj;

@@ -300,7 +300,7 @@ sub create_from_data
 			datasetid=>"eprint",
 			objectid=>$new_eprint->get_id,
 			revision=>$new_eprint->get_value( "rev_number" ),
-			action=>"CREATE",
+			action=>"create",
 			details=>undef,
 		}
 	);
@@ -622,7 +622,7 @@ sub _transfer
 	my $user = $self->{session}->current_user;
 	my $userid = undef;
 	$userid = $user->get_id if defined $user;
-	my $code = "MOVE_"."\U$old_status"."_TO_"."\U$new_status";
+	my $code = "move_"."$old_status"."_to_"."$new_status";
 	my $history_ds = $self->{session}->get_repository->get_dataset( "history" );
 	$history_ds->create_object( 
 		$self->{session},
@@ -689,7 +689,7 @@ sub log_mail_owner
 			datasetid=>"eprint",
 			objectid=>$self->get_id,
 			revision=>$self->get_value( "rev_number" ),
-			action=>"MAIL_OWNER",
+			action=>"mail_owner",
 			details=> EPrints::Utils::tree_to_utf8( $mail , 80 ),
 		}
 	);
@@ -747,7 +747,7 @@ Calls L</set_eprint_automatic_fields> just before the C<$eprint> is committed.
 sub commit
 {
 	my( $self, $force ) = @_;
-print "COMMIT EPRINT\n";
+
 	if( $self->{changed}->{succeeds} )
 	{
 		my $old_succ = EPrints::EPrint->new( $self->{session}, $self->{changed}->{succeeds} );
@@ -816,7 +816,7 @@ print "COMMIT EPRINT\n";
 			datasetid=>"eprint",
 			objectid=>$self->get_id,
 			revision=>$self->get_value( "rev_number" ),
-			action=>"MODIFY",
+			action=>"modify",
 			details=>undef
 		}
 	);
