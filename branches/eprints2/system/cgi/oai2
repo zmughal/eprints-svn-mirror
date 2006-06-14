@@ -33,7 +33,7 @@ my $session = new EPrints::Session();
 exit( 0 ) unless( defined $session );
 # What are we begin asked?
 my $verb = $session->param( "verb" );
-$session->get_database->set_debug(1);
+#$session->get_database->set_debug(1);
 my $NS = "http://www.openarchives.org/OAI/2.0/";
 my $response = $session->make_element( 
 		"OAI-PMH",
