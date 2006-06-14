@@ -444,9 +444,10 @@ if(
 {
 	# apache 2
 	print CONF <<END;
-	PerlLogHandler EPrints::Apache::LogHandler
+    PerlLogHandler EPrints::Apache::LogHandler
 END
 }
+
 print CONF <<END;
   </Location>
 
@@ -487,6 +488,20 @@ if( $repository->get_conf( "vlit" )->{enable} )
   <Directory "$htdocs_path/$langid/archive">
     SetHandler perl-script
     PerlHandler EPrints::Apache::VLit::handler
+  </Directory>
+
+END
+	}
+}
+
+if( $repository->get_conf( "dynamic_template","enable" ) )
+{
+	foreach my $langid ( @langs )
+	{
+		print CONF <<END;
+  <Directory "/opt/eprints/archives/devel/html">
+    SetHandler perl-script
+    PerlResponseHandler EPrints::Apache::Template::handler
   </Directory>
 
 END

@@ -59,6 +59,10 @@ database and website.
 #     A cache of the webpage templates for this site. A hash keyed by
 #     lang id.
 #
+#  $self->{text_templates}
+#     A cache of the webpage templates for this site stored as strings
+#     and pin id's.
+#
 #  $self->{datasets}
 #     A cache of all the EPrints::DataSets belonging to this repository
 #     keyed by dataset id.
@@ -497,7 +501,8 @@ sub _load_templates
 		$template = $self->_load_template( $file );
 		if( !defined $template ) { return 0; }
 		$self->{html_templates}->{default}->{$langid} = $template;
-		
+		$self->{text_templates}->{default}->{$langid} = _template_to_text( $template );
+
 		# load the secure site template if there is one.
 		$file = $self->get_conf( "config_path" ).
 			"/template-secure-$langid.xml";
@@ -505,8 +510,41 @@ sub _load_templates
 		$template = $self->_load_template( $file );
 		if( !defined $template ) { return 0; }
 		$self->{html_templates}->{secure}->{$langid} = $template;
+		$self->{text_templates}->{secure}->{$langid} = _template_to_text( $template );
 	}
 	return 1;
+}
+
+sub _template_to_text
+{
+	my( $template ) = @_;
+
+	my $doc = $template->getOwnerDocument;
+	my @r = ( "fnord" );	
+
+	$template = EPrints::XML::clone_and_own( 
+			$template,
+			$doc,
+			1 );
+
+	my $divide = "61fbfe1a470b4799264feccbbeb7a5ef";
+        my @pins = $template->getElementsByTagName("pin");
+	foreach my $pin ( @pins )
+	{
+		#$template
+		my $parent = $pin->getParentNode;
+		my $textonly = $pin->getAttribute( "textonly" );
+		my $ref = $pin->getAttribute( "ref" );
+		if( defined $textonly && $textonly eq "yes" )
+		{
+			$ref.=":textonly";
+		}
+		my $textnode = $doc->createTextNode( $divide.$ref.$divide );
+		$parent->replaceChild( $textnode, $pin );
+	}
+	@r = split( "$divide", $template->toString );
+
+	return \@r;
 }
 
 sub _load_template
@@ -532,6 +570,34 @@ sub _load_template
 }
 
 
+######################################################################
+=pod
+
+=item $template = $repository->get_template_parts( $langid, [$template_id] )
+
+Returns an array of utf-8 strings alternating between XML and the id
+of a pin to replace. This is used for the faster template construction.
+
+=cut
+######################################################################
+
+sub get_template_parts
+{
+	my( $self, $langid, $tempid ) = @_;
+  
+	if( !defined $tempid ) { $tempid = 'default'; }
+	my $t = $self->{text_templates}->{$tempid}->{$langid};
+	if( !defined $t ) 
+	{
+		EPrints::Config::abort( <<END );
+Error. Template not loaded.
+Language: $langid
+Template ID: $tempid
+END
+	}
+
+	return $t;
+}
 ######################################################################
 =pod
 

@@ -3755,3 +3755,12 @@ PACKAGE: 2.2.99.2
 
  * Fixed possible bug with Apache 1 in cookie login (although it might
     not work for other reasons)
+ * Changed GET and POST to lowercase to be stanadards compliant
+ * Templates are now optimised to avoid using the DOM system where 
+    possible.
+ * Static pages are now written using a single function, which also
+    creates cache files describing just the page_content, title and
+    title with images stripped. This can be used by the optimised 
+    template system.
+ * Dynamic pages: this allows dynamic content to be included in other-
+    wise static pages.

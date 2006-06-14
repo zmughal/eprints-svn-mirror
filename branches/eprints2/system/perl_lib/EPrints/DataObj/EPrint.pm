@@ -1637,8 +1637,10 @@ sub generate_static
 	
 			my( $page, $title, $links ) = $self->render;
 	
-			$self->{session}->build_page( $title, $page, "abstract", $links, "default" );
-			$self->{session}->page_to_file( $full_path . "/index.html" );
+			$self->{session}->write_static_page( 
+				$full_path . "/index",
+				{title=>$title, page=>$page, head=>$links },
+				"default" );
 	
 			next if( $status ne "archive" );
 			# Only live archive records have actual documents 

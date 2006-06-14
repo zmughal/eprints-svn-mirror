@@ -169,8 +169,8 @@ foreach $langid ( @{$session->get_repository->get_conf( "languages" )} )
 	
 	$title = $session->html_phrase( "bin/generate_views:browsetitle" );
 	$file = $tmpdir."/index.html";
-	$session->build_page( $title, $page, "browsemain" );
-	$session->page_to_file( $file );
+
+	$session->write_static_page( $tmpdir."/index", {title=>$title, page=>$page}, "browsemain" );
 	print "done\n" if( $noise > 1 );
 
 	print "Moving $langid views to be online ... " if( $noise > 1 );
@@ -467,10 +467,7 @@ sub make_menu
 
 		$htmlpage->appendChild( $page );
 
-		my $file = $dir."/".$fileid.".html";
-		$session->build_page( $title, $htmlpage, "browseview" );
-		print "Writing: $file\n" if( $noise > 1 );
-		$session->page_to_file( $file );
+		$session->write_static_page( $dir."/".$fileid, {title=>$title, page=>$htmlpage}, "browseview" );
 	}
 
 	#################################
@@ -518,10 +515,7 @@ sub make_menu
 		close FILE;
 	}
 	
-	my $file = $dir."/index.html";
-	$session->build_page( $title, $page, "browseindex" );
-	print "Writing: $file\n" if( $noise > 1 );
-	$session->page_to_file( $file );
+	$session->write_static_page( $dir."/index", {title=>$title, page=>$page}, "browseindex" );
 
 	return( $count );
 }

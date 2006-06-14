@@ -168,6 +168,7 @@ sub handler
 	{
 		$r->filename( $repository->get_conf( "htdocs_path" )."/".$lang.$uri );
 	}
+	$r->set_handlers(PerlResponseHandler =>[ 'EPrints::Apache::Template' ] );
 
 	return OK;
 }

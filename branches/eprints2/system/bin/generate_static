@@ -163,7 +163,6 @@ if( $errcnt )
 {
 	print "Errors Encountered: $errcnt\n";
 }
-$session->get_repository->get_dataset( "user" )->load_workflows;
 $session->terminate();
 
 exit;
@@ -195,77 +194,69 @@ sub generate_static
 			mkdir( $destination_filename, 0775 )
 				or die "Can't make directory $destination_filename: $!\n";
 		}
+		return;
 	}
-	else
+
+	if(  $destination_filename !~ m/\.x(html|page)$/ )
 	{
-		# Is this is an HTML template file?
-		if( $destination_filename =~ m/\.x(html|page)$/ )
+		# Just need to copy the file verbatim
+		File::Copy::copy( $File::Find::name, $destination_filename ) or
+			print STDERR "Couldn't copy $File::Find::name to $destination_filename: $!\n";
+		return;
+	}
+
+	my $mode = $1;
+	$destination_filename =~ s/\.x(html|page)$//;
+
+	my $doc = $session->get_repository->parse_xml( $File::Find::name );
+
+	if( !defined $doc )
+	{
+		print STDERR "Could not load file: $File::Find::name\n";
+		$$errcnt++;
+		return;
+	}
+
+	if( $mode eq "html" )
+	{
+		my( $elements ) = EPrints::XML::find_elements( $doc, "html" );
+		if( !defined $elements->{html} )
 		{
-			my $mode = $1;
-			$destination_filename =~ s/\.x(html|page)$/.html/;
+			print STDERR "Error: no html element in ".$File::Find::name."\n";
+			EPrints::XML::dispose( $doc );
+			$$errcnt++;
+			return;
+		}
+		# why clone?
+		$session->set_page( $session->clone_for_me( $elements->{html}, 1 ) );
+		$session->page_to_file( $destination_filename.".html" );
+	}
 
-			my $doc = $session->get_repository->parse_xml(
-						$File::Find::name );
+	if( $mode eq "page" )
+	{
+		my( $elements ) = EPrints::XML::find_elements( $doc, "title", "body" );
 
-			if( !defined $doc )
+		my $parts;
+		foreach( "title", "body" )
+		{
+			if( !defined $elements->{$_} )
 			{
-				print STDERR "Could not load file: $File::Find::name\n";
+				print STDERR "Error: no $_ element in ".$File::Find::name."\n";
+				EPrints::XML::dispose( $doc );
 				$$errcnt++;
 				return;
 			}
-
-			if( $mode eq "html" )
+			$parts->{$_} = $session->make_doc_fragment;
+			
+			foreach my $kid ( $elements->{$_}->getChildNodes )
 			{
-				my( $elements ) = EPrints::XML::find_elements( $doc, "html" );
-				if( !defined $elements->{html} )
-				{
-					print STDERR "Error: no html element in ".$File::Find::name."\n";
-					EPrints::XML::dispose( $doc );
-					$$errcnt++;
-					return;
-				}
-				$session->set_page( $session->clone_for_me( $elements->{html}, 1 ) );
+				$parts->{$_}->appendChild( 
+					$session->clone_for_me( $kid, 1 ) );
 			}
-
-			if( $mode eq "page" )
-			{
-				my $kid;
-				my( $elements ) = EPrints::XML::find_elements( $doc, "title", "body" );
-
-				my $parts;
-				foreach( "title", "body" )
-				{
-					if( !defined $elements->{$_} )
-					{
-						print STDERR "Error: no $_ element in ".$File::Find::name."\n";
-						EPrints::XML::dispose( $doc );
-						$$errcnt++;
-						return;
-					}
-					$parts->{$_} = $session->make_doc_fragment;
-					
-					foreach $kid ( $elements->{$_}->getChildNodes )
-					{
-						$parts->{$_}->appendChild( 
-							$session->clone_for_me( $kid, 1 ) );
-					}
-				}
-
-				$session->build_page( 
-					$parts->{title}, 
-					$parts->{body},
-					"static" );
-			}
-			EPrints::XML::dispose( $doc );
-
-			$session->page_to_file( $destination_filename );
-
 		}
-		else
-		{
-			# Just need to copy the file verbatim
-			File::Copy::copy( $File::Find::name, $destination_filename ) or
-				print STDERR "Couldn't copy $File::Find::name to $destination_filename: $!\n";
-		}
+
+		$session->write_static_page( $destination_filename, $parts, "static" );
 	}
+	EPrints::XML::dispose( $doc );
+
 }

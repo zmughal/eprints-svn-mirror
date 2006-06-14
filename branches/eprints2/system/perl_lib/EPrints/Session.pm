@@ -1433,19 +1433,19 @@ sub _render_buttons_aux
 
 Return a DOM object describing an HTML form element. 
 
-$method should be "GET" or "POST"
+$method should be "get" or "post"
 
 $dest is the target of the form. By default the current page.
 
 eg.
 
-$session->render_form( "GET", "http://example.com/perl/foo" );
+$session->render_form( "geT", "http://example.com/perl/foo" );
 
 returns a DOM object representing:
 
-<form method="GET" action="http://example.com/perl/foo" accept-charset="utf-8" />
+<form method="get" action="http://example.com/perl/foo" accept-charset="utf-8" />
 
-If $method is "POST" then an addition attribute is set:
+If $method is "post" then an addition attribute is set:
 enctype="multipart/form-data" 
 
 This just controls how the data is passed from the browser to the
@@ -1465,7 +1465,7 @@ sub render_form
 	{
 		$dest = $self->get_uri;
 	}
-	$form->setAttribute( "action", $dest );
+	$form->setAttribute( "action", "\L$dest" );
 	if( "\L$method" eq "post" )
 	{
 		$form->setAttribute( "enctype", "multipart/form-data" );
@@ -1919,176 +1919,195 @@ sub _render_input_form_field
 #############################################################
 #############################################################
 
+######################################################################
+=pod
+
+=item $session->write_static_page( $filebase, $parts, [$page_id] )
+
+Write an .html file plus a set of files describing the parts of the
+page for use with the dynamic template option.
+
+File base is the name of the page without the .html suffix.
+
+parts is a reference to a hash containing DOM trees.
+
+=cut
+######################################################################
+
+sub write_static_page
+{
+	my( $self, $filebase, $parts, $page_id ) = @_;
+
+	print "Writing: $filebase\n" if( $self->{noise} > 1 );
+
+
+	foreach my $part_id ( keys %{$parts} )
+	{
+		my $file = $filebase.".".$part_id;
+		if( open( CACHE, ">$file" ) )
+		{
+			print CACHE $parts->{$part_id}->toString;
+			close CACHE;
+		}
+		else
+		{
+			$self->{repository}->log( "Could not write to file $file" );
+		}
+	}
+
+
+	my $title_textonly_file = $filebase.".title.textonly";
+	if( open( CACHE, ">$title_textonly_file" ) )
+	{
+		print CACHE EPrints::Utils::tree_to_utf8( $parts->{title} );
+		close CACHE;
+	}
+	else
+	{
+		$self->{repository}->log( "Could not write to file $title_textonly_file" );
+	}
+
+	my $html_file = $filebase.".html";
+	$self->prepare_page( $parts, page_id=>$page_id );
+	$self->page_to_file( $html_file );
+}
 
 ######################################################################
 =pod
 
-=item $session->build_page( $title, $mainbit, [$pageid], [$links], [$template_id] )
+=item $session->prepare_page( $parts, %options )
 
 Create an XHTML page for this session. 
 
-$title, $mainbit, $pageid and $links are XHTML DOM objects which will
-be inserted into the template in the positions of the relevant 
-<ep:pin> elements.
+$parts is a hash of XHTML elements to insert into the pins in the
+template. Usually: title, page. Maybe pagetop and head.
 
 If template_id is set then an alternate template file is used.
 
 This function only builds the page it does not output it any way, see
 the methods below for that.
 
+Options include:
+
+page_id=>"id to put in body tag"
+template_id=>"The template to use instead of default."
+
 =cut
 ######################################################################
-
+# move to compat module?
 sub build_page
 {
-	my( $self, $title, $mainbit, $pageid, $links, $template_id ) = @_;
+	my( $self, $title, $mainbit, $page_id, $links, $template_id ) = @_;
+	$self->prepare_page( { title=>$title, page=>$mainbit, pagetop=>undef,head=>$links}, $page_id, $template_id );
+}
+
+
+sub prepare_page
+{
+	my( $self, $map, %options ) = @_;
 
 	unless( $self->{offline} || !defined $self->{query} )
 	{
 		my $mo = $self->param( "mainonly" );
 		if( defined $mo && $mo eq "yes" )
 		{
-			$self->{page} = $mainbit;
+			$self->{page} = $map->{page};
 			return;
 		}
 	}
-	my $topofpage;
-
-	my $map = {
-		title => $title,
-		page => $mainbit,
-		pagetop => $topofpage,
-		head => $links 
-	};
-
-	foreach( keys %{$map} )
+	
+	if( $self->get_repository->get_conf( "dynamic_template","enable" ) )
 	{
-		if( !defined $map->{$_} )
+		my $fn = $self->get_repository->get_conf( "dynamic_template","function" );
+		if( defined !$fn )
 		{
-			$map->{$_} = $self->make_doc_fragment();
+			&{$fn}( $self, $map );
 		}
 	}
 
 	my $pagehooks = $self->get_repository->get_conf( "pagehooks" );
 	$pagehooks = {} if !defined $pagehooks;
-	my $ph = $pagehooks->{$pageid} if defined $pageid;
+	my $ph = $pagehooks->{$options{page_id}} if defined $options{page_id};
 	$ph = {} if !defined $ph;
-	$ph->{bodyattr}->{id} = "page_$pageid";
+	if( defined $options{page_id} )
+	{
+		$ph->{bodyattr}->{id} = "page_".$options{page_id};
+	}
 
 	# only really useful for head & pagetop, but it might as
 	# well support the others
 
 	foreach( keys %{$map} )
 	{
-		if( defined $ph->{$_} )
-		{
-			my $pt = $self->make_doc_fragment;
-			$pt->appendChild( $map->{$_} );
-			my $ptnew = $self->clone_for_me(
-				$ph->{$_},
-				1 );
-			$pt->appendChild( $ptnew );
-			$map->{$_} = $pt;
-		}
+		next if( !defined $ph->{$_} );
+
+		my $pt = $self->make_doc_fragment;
+		$pt->appendChild( $map->{$_} );
+		my $ptnew = $self->clone_for_me(
+			$ph->{$_},
+			1 );
+		$pt->appendChild( $ptnew );
+		$map->{$_} = $pt;
 	}
 
-	if( !defined $template_id )
+	if( !defined $options{template_id} )
 	{
 		my $secure = 0;
 		unless( $self->{offline} )
 		{
 			my $esec = $self->{request}->dir_config( "EPrints_Secure" );
 			$secure = (defined $esec && $esec eq "yes" );
-		}
-		if( $secure ) { $template_id = 'secure'; }
+		}	
+		$options{template_id} = "default";
+		if( $secure ) { $options{template_id} = 'secure'; }
 	}
 
-	my $used = {};
-	$self->{page} = $self->_process_page( 
-		$self->{repository}->get_template( 
-			$self->get_langid, 
-			$template_id ),
-		$map,
-		$used,
-		$ph );
+	my $parts = $self->get_repository->get_template_parts( $self->get_langid, $options{template_id} );
+	my @output = ();
+	my $is_html = 0;
 
-	foreach( keys %{$used} )
+	foreach my $bit ( @{$parts} )
 	{
-		next if $used->{$_};
-		EPrints::XML::dispose( $map->{$_} );
+		$is_html = !$is_html;
+
+		if( $is_html )
+		{
+			push @output, $bit;
+			next;
+		}
+
+		my( $pin_id, $modifier ) = split( ":", $bit );
+		
+		if( defined $modifier && $modifier eq "textonly" )
+		{
+			if( defined $map->{"utf-8.".$pin_id.".textonly"} )
+			{
+				push @output, $map->{"utf-8.".$pin_id.".textonly"};
+			}
+			elsif( defined $map->{$pin_id} )
+			{
+				push @output, EPrints::Utils::tree_to_utf8( $map->{$pin_id} );
+			}
+			# else no title
+	
+			next;
+		}
+
+		if( defined $map->{"utf-8.".$pin_id} )
+		{
+			push @output, $map->{"utf-8.".$pin_id};
+		}
+		elsif( defined $map->{$bit} )
+		{
+			push @output, $map->{$bit}->toString;
+		}
+
+		# otherwise this element is missing. Leave it blank.
+	
 	}
+	$self->{text_page} = join( "", @output );
 
 	return;
-}
-
-# recursive method used to insert elements into the
-# <pin> parts of the template.
-
-sub _process_page
-{
-	my( $self, $node, $map, $used, $ph ) = @_;
-
-
-	if( EPrints::XML::is_dom( $node, "Element" ) )
-	{
-		my $name = $node->getTagName;
-		$name =~ s/^ep://;
-		if( $name eq "pin" )
-		{
-			my $ref = $node->getAttribute( "ref" );
-			my $insert = $map->{$ref};
-
-			if( !defined $insert )
-			{
-				return $self->make_text(
-					"[Missing pin: $ref]" );
-			}
-
-			if( $node->getAttribute( "textonly" ) eq "yes" )
-			{
-				return $self->make_text(
-					EPrints::Utils::tree_to_utf8( 
-						$insert ) );
-			}
-
-			if( !$used->{$ref} )
-			{
-				$used->{$ref} = 1;
-				return $insert;
-			}
-
-			return EPrints::XML::clone_node( $insert );
-		}
-	}
-
-	my $element = $self->clone_for_me( $node, 0 );
-
-
-	# Handle extra attributes for <body> tag page hook.
-
-	if( 	EPrints::XML::is_dom( $node, "Element" ) && 
-		$node->getTagName eq "body" &&
-		defined $ph->{bodyattr} )
-	{
-		foreach( keys %{$ph->{bodyattr}} )
-		{
-			$element->setAttribute( 
-				$_, 
-				$ph->{bodyattr}->{$_} );	
-		}
-	}
-
-	
-	foreach my $c ( $node->getChildNodes )
-	{
-		$element->appendChild(
-			$self->_process_page(
-				$c, 
-				$map, 
-				$used, 
-				$ph ) );
-	}
-	return $element;
 }
 
 
@@ -2115,9 +2134,17 @@ sub send_page
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 END
-	print EPrints::XML::to_string( $self->{page}, undef, 1 );
-	EPrints::XML::dispose( $self->{page} );
-	delete $self->{page};
+	if( defined $self->{text_page} )
+	{
+		print $self->{text_page};
+	}
+	else
+	{
+		print EPrints::XML::to_string( $self->{page}, undef, 1 );
+		EPrints::XML::dispose( $self->{page} );
+		delete $self->{page};
+	}
+	delete $self->{text_page};
 }
 
 
@@ -2139,9 +2166,24 @@ sub page_to_file
 {
 	my( $self , $filename ) = @_;
 	
-	EPrints::XML::write_xhtml_file( $self->{page}, $filename );
-	EPrints::XML::dispose( $self->{page} );
+	if( defined $self->{text_page} )
+	{
+		unless( open( XMLFILE, ">$filename" ) )
+		{
+			EPrints::Config::abort( <<END );
+Can't open to write to XML file: $filename
+END
+		}
+		print XMLFILE $self->{text_page};
+		close XMLFILE;
+	}
+	else
+	{
+		EPrints::XML::write_xhtml_file( $self->{page}, $filename );
+		EPrints::XML::dispose( $self->{page} );
+	}
 	delete $self->{page};
+	delete $self->{text_page};
 }
 
 
@@ -2398,7 +2440,7 @@ sub read_params
 
 =item $bool = $session->have_parameters
 
-Return true if the current script had any parameters (POST or GET)
+Return true if the current script had any parameters (post or get)
 
 =cut
 ######################################################################
