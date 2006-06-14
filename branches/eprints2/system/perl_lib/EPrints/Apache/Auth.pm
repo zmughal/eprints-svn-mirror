@@ -178,7 +178,17 @@ sub auth_cookie
 	if( !defined $user ) 
 	{
 		# bad ticket or no ticket
-		$r->set_handlers(PerlResponseHandler =>[ 'EPrints::Apache::Login', 'ModPerl::Registry' ] );
+		my $registry_module;
+		my $av =  $EPrints::SystemSettings::conf->{apache};
+		if( !defined $av || $av eq "1" ) 
+		{
+			$r->set_handlers(PerlResponseHandler =>[ 'EPrints::Apache::Login', 'Apache::Registry' ] );
+		}
+		else # apache 2
+		{
+			$r->set_handlers(PerlResponseHandler =>[ 'EPrints::Apache::Login', 'ModPerl::Registry' ] );
+		}
+
 	}
 
 	return OK;

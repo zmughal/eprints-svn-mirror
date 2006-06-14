@@ -3739,7 +3739,7 @@ PACKAGE: 2.2.99.2
  
  * Added methods to append and prepend stages to a workflow.
 
-2006-05-12 cjg
+2006-06-12 cjg
 
  * Properly commented EPrints::DataObj::History
  * Fixed bug which didn't write the revision of an EPrint when it was 
@@ -3751,3 +3751,7 @@ PACKAGE: 2.2.99.2
  * Fixed the history so it can now render history events for destroyed
     items.
 
+2006-06-14 cjg
+
+ * Fixed possible bug with Apache 1 in cookie login (although it might
+    not work for other reasons)
