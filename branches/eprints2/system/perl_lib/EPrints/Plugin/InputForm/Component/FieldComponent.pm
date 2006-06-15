@@ -188,8 +188,8 @@ sub render_content
 sub is_collapsed 
 {
 	my( $self ) = @_;
-
-	return( $self->{config}->{field}->get_property( "collapsed" ) );
+	return 0;
+#	return( $self->{config}->{field}->get_property( "collapsed" ) );
 }
 
 sub get_field

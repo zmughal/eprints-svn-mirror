@@ -80,6 +80,8 @@ sub new
 	$self->{dataset} = $params{item}->get_dataset;
 	$self->{item} = $params{item};
 	$self->{workflow_id} = $workflow_id;
+	$self->{autosend} = $params{autosend};
+	unless( defined $self->{autosend} ) { $self->{autosend} = 1; }
 
 	$self->{raw_config} = $self->{repository}->get_workflow_config( $self->{dataset}->confid, $workflow_id );
 	$self->{config} = EPrints::Utils::collapse_conditions( $session, $self->{raw_config}, %params );
@@ -177,7 +179,7 @@ sub _read_stages
 		}
 		my $stage_id = $element->getAttribute("name");
 print STDERR "***$stage_id\n".$self->{item}."\n";
-		$self->{stages}->{$stage_id} = new EPrints::Workflow::Stage( $element, $self->{session}, $self->{item} );
+		$self->{stages}->{$stage_id} = new EPrints::Workflow::Stage( $element, $self );
 	}
 
 	foreach my $stage_id ( @{$self->{stage_order}} )
@@ -211,15 +213,22 @@ sub get_first_stage_id
 	return $self->{stage_order}->[0];
 }
 
+sub get_last_stage_id
+{
+	my( $self ) = @_;
+
+	return $self->{stage_order}->[-1];
+}
+
 sub get_next_stage_id
 {
-	my( $self, $currstage ) = @_;
+	my( $self ) = @_;
 
-	my $num = $self->{stage_number}->{$currstage};
+	my $num = $self->{stage_number}->{$self->{curr_stage}};
 
 	if( $num == scalar @{$self->{stage_order}}-1 )
 	{
-		return $currstage;
+		return $self->{curr_stage};
 	}
 
 	return $self->{stage_order}->[$num+1];
@@ -227,8 +236,8 @@ sub get_next_stage_id
 
 sub get_prev_stage_id
 {
-	my( $self, $currstage ) = @_;
-	my $num = $self->{stage_number}->{$currstage};
+	my( $self ) = @_;
+	my $num = $self->{stage_number}->{$self->{curr_stage}};
 	if( $num == 0 )
 	{
 		return undef;
@@ -238,6 +247,148 @@ sub get_prev_stage_id
 }
 
 
+sub process
+{
+	my( $self ) = @_;
+	
+	$self->{action}    = $self->{session}->get_action_button();
+	$self->{stage}     = $self->{session}->param( "stage" );
+	$self->{user}      = $self->{session}->current_user();
+	$self->{dataview}  = $self->{session}->param( "dataview" );
+
+	$self->{problems} = [];
+	my $ok = 1;
+
+
+	if( $self->{action} eq "jump" )
+	{
+		$self->{new_stage} = $self->{stage};
+	}
+	else
+	{
+		# Process data from previous stage
+
+		if( !defined $self->{stage} )
+		{
+			$self->{stage} = $self->get_first_stage_id;
+		}
+		
+		# If we don't have an item then something's
+		# gone wrong.
+		if( !defined $self->{item} )
+		{
+			$self->_corrupt_err;
+			return( 0 );
+		}
+
+		if( !defined $self->{stages}->{$self->{stage}} )
+		{
+			# Not a valid stage
+			$self->_corrupt_err;
+			return( 0 );
+		}
+		
+		$self->{new_stage} = $self->get_next_stage_id;
+	
+		my $stage_obj = $self->get_stage( $self->{stage} );
+		$ok = $stage_obj->validate();
+	
+	}
+	
+	if( $ok )
+	{
+		# Render stuff for next stage
+
+		my $stage = $self->{new_stage};
+
+#		if( $self->{session}->get_repository->get_conf( 'log_submission_timing' ) )
+#		{
+#			if( $stage ne "meta" )
+#			{
+#				$self->log_submission_stage($stage);
+#			}
+#			# meta gets logged after pageid is worked out
+#		}
+	
+		
+		my $form = $self->{session}->render_form( "post", $self->{formtarget}."#t" );
+		
+		my $hidden_fields = {
+			stage => $stage,
+		};
+
+		foreach (keys %$hidden_fields)
+		{
+			$form->appendChild( $self->{session}->render_hidden_field(
+			$_,
+			$hidden_fields->{$_} ) );
+		}
+
+		# Add the stage components
+
+		my $stage_obj = $self->get_stage( $stage );
+		my $stage_dom;
+		$stage_dom = $stage_obj->render( $self->{session}, $self );
+
+		$form->appendChild( $stage_dom );
+		
+		if( $self->{autosend} )
+		{	
+			my $title_phraseid = "metapage_title_".$stage;
+			$self->{session}->build_page(
+				$self->{session}->html_phrase( 
+					$title_phraseid,
+					type => $self->{item}->render_value( "type" ),
+					desc => $self->{item}->render_description ),
+				$form,
+				"submission_".$stage );
+			$self->{session}->send_page();
+		}
+		else
+		{
+			$self->{page} = $form;
+		}
+	}
+	return( 1 );
+}
+
+
+######################################################################
+# 
+# $s_form->_corrupt_err
+#
+######################################################################
+
+sub _corrupt_err
+{
+	my( $self ) = @_;
+
+	$self->{session}->render_error( 
+		$self->{session}->html_phrase( 
+			"lib/submissionform:corrupt_err",
+			line_no => 
+				$self->{session}->make_text( (caller())[2] ) ),
+		$self->{session}->get_repository->get_conf( "userhome" ) );
+
+}
+
+######################################################################
+# 
+# $s_form->_database_err
+#
+######################################################################
+
+sub _database_err
+{
+	my( $self ) = @_;
+
+	$self->{session}->render_error( 
+		$self->{session}->html_phrase( 
+			"lib/submissionform:database_err",
+			line_no => 
+				$self->{session}->make_text( (caller())[2] ) ),
+		$self->{session}->get_repository->get_conf( "userhome" ) );
+}
 
 
 

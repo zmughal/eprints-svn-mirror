@@ -2,13 +2,14 @@ package EPrints::Workflow::Stage;
 
 sub new
 {
-	my( $class, $stage, $session, $item ) = @_;
+	my( $class, $stage, $workflow ) = @_;
 	my $self = {};
 	bless $self, $class;
 
-	$self->{session} = $session;
-	$self->{item} = $item;
-	$self->{repository} = $session->get_repository;
+	$self->{workflow} = $workflow;
+	$self->{session} = $workflow->{session};
+	$self->{item} = $workflow->{item};
+	$self->{repository} = $self->{session}->get_repository;
 
 	unless( $stage->hasAttribute( "name" ) )
 	{
@@ -42,18 +43,35 @@ sub _read_components
 			{
 				$type = $stage_node->getAttribute( "type" );
 			}
+			my $surround = "Default";
+			if( $stage_node->hasAttribute( "surround" ) )
+			{
+				$surround = $stage_node->getAttribute( "surround" );
+			}
 			# Grab any values inside
 			$params{type} = $type;
+			print STDERR "Create with type [$type]\n";
 			my $class = $self->{repository}->plugin_class( "InputForm::Component::$type" );
 			if( !defined $class )
 			{
 				print STDERR "Using placeholder for $type\n";
-				$class = $self->{repository}->plugin_class( "InputForm::Component::FieldComponent::PlaceHolder" );
+				$class = $self->{repository}->plugin_class( "InputForm::Component::PlaceHolder" );
 				$params{name} = $type;
 			}
 			if( defined $class )
 			{
-				my $plugin = $class->new( session=>$self->{session}, xml_config=>$stage_node, dataobj=>$self->{item} );
+				my $surround_obj = $self->{session}->plugin( "InputForm::Surround::$surround" );
+				if( !defined $surround_obj )
+				{
+					$surround_obj = $self->{session}->plugin( "InputForm::Surround::Default" ); 
+				}
+				
+				my $plugin = $class->new( 
+					session=>$self->{session}, 
+					xml_config=>$stage_node, 
+					dataobj=>$self->{item}, 
+					workflow=>$self->{workflow}, 
+					surround=>$surround_obj );
 				push @{$self->{components}}, $plugin;
 			}
 		}
@@ -93,62 +111,36 @@ sub get_components
 	return @{$self->{components}};
 }
 
+sub validate
+{
+	my( $self, $session ) = @_;
+
+	return 1;
+}
 
 sub render
 {
-	my( $self, $session, $workflow, $eprint ) = @_;
+	my( $self, $session, $workflow ) = @_;
 
-	my $page = $session->make_doc_fragment();
 
-	my $form = $session->render_form( "post", $target );
-
-	my $submit_buttons = {
-		_order => [ "prev", "save", "next" ],
-		_class => "submission_buttons",
-		prev => $session->phrase(
-		"lib/submissionform:action_prev" ),
-		save => $session->phrase(
-		"lib/submissionform:action_save" ),
-		next => $session->phrase(
-		"lib/submissionform:action_next" ) };
-
-	my $hidden_fields = {
-		stage => $self->get_name,
-		pageid => $session->param( "pageid" ), 
-	};
-      
-
-	$form->appendChild( $session->render_action_buttons( %$submit_buttons ) );
+	my $dom = $session->make_doc_fragment();
 
 	foreach my $component (@{$self->{components}})
 	{
 		my $div;
-
+		my $surround;
+		
 		$div = $session->make_element(
 			"div",
 			class => "formfieldinput",
 			id => "inputfield_".$params{field} );
-		%params = ();
-		$params{eprint} = $eprint if( defined $eprint);
-		$params{workflow} = $workflow;
-		$params{stage} = $self->{name};
-		$params{session} = $session;
-		$params{show_help} = 1;
-		$div->appendChild( $component->render( undef, \%params ) );
-		$form->appendChild( $div );
+		$div->appendChild( $component->{surround}->render( $component, $session ) );
+		$dom->appendChild( $div );
 	}
-
-	foreach (keys %$hidden_fields)
-	{
-		$form->appendChild( $session->render_hidden_field(
-			$_,
-			$hidden_fields->{$_} ) );
-	}
-        
 
 #  $form->appendChild( $session->render_action_buttons( %$submit_buttons ) ); 
   
-	return $form;
+	return $dom;
 }
 
 1;

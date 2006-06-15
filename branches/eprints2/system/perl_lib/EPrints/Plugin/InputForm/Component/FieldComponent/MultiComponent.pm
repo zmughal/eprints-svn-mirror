@@ -30,7 +30,7 @@ sub parse_config
 #	$self->{config}->{title} = ""; 
 #	$self->{config}->{help} = ""; 
 
-	my @fields = $config_dom->getElementsByTagName( "wf:field" );
+	my @fields = $config_dom->getElementsByTagName( "field" );
 	my @title_nodes = $config_dom->getElementsByTagName( "title" );
 	my @help_nodes  = $config_dom->getElementsByTagName( "help" );
 
