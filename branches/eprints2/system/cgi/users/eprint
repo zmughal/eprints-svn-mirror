@@ -683,4 +683,20 @@ sub render_links_list
 	return $f;
 }
 
+sub allowed_action 
+{
+	my( $session, $action, $eprint, $user, $staff_mode ) = @_;
 
+	return 1 if( $action eq "view_summary" );
+# 6 move
+# reject-with-email
+# remove-with-email
+# deposit
+# request_delete 
+# destory
+# link to buffer page
+# use as template
+# new version
+# 3 views
+
+}
