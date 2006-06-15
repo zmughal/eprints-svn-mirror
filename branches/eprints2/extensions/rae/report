@@ -239,7 +239,8 @@ sub do_user_mainonly
 
 		if( !defined $item )
 		{
-			$p->appendChild( $session->html_phrase( "rae:unknown_item", id => $_->eprintid ) );
+			$p->appendChild( $session->html_phrase( "rae:unknown_item", 
+				id => $session->make_text( $_->{eprintid} ) ) );
 			next;
 		}
 		$p->appendChild( $item->render_citation_link );
@@ -296,13 +297,13 @@ sub do_user {
 
 	my $selections = $info->{eprints_for_user}{$user->get_id};
 
-	for ( @$selections )
+	foreach my $selection ( @$selections )
 	{
-		my $item = EPrints::EPrint->new( $session, $_->{eprintid} );
+		my $item = EPrints::EPrint->new( $session, $selection->{eprintid} );
 
-		my $others = $info->{users_for_eprint}{ $_->{eprintid} };
+		my $others = $info->{users_for_eprint}{ $selection->{eprintid} };
 
-		my $problems = $session->get_archive->call( "rae_problems_with_selection", $session, $user, $item, $_, $others );
+		my $problems = $session->get_archive->call( "rae_problems_with_selection", $session, $user, $item, $selection, $others );
 		foreach my $problem ( @$problems )
 		{
 			my $tr = $session->make_element( "tr" );
@@ -317,7 +318,12 @@ sub do_user {
 			$tr->appendChild( $td_user );
 
 			my $td_item = $session->make_element( "td" );
-			$td_item->appendChild( $item->render_citation );
+			if( defined $item ) {
+				$td_item->appendChild( $item->render_citation );
+			} else {
+				$td_item->appendChild( $session->html_phrase( "rae:unknown_item", 
+					id=> $session->make_text( $selection->{eprintid} ) ) );
+			}
 			$tr->appendChild( $td_item );
 
 			my $td_prob = $session->make_element( "td" );

@@ -106,6 +106,13 @@ sub rae_problems_with_selection {
                         names => $session->make_text( join(", ", @names) ),
 			resolve_link => $link );
         }
+
+	# Check item exists
+	if( !defined $item )
+	{
+		push @problems, $session->html_phrase( "rae/report:problem_null_item" );
+		return \@problems;
+	}
 	
 	# Example: check item has full text
 	my @docs = $item->get_all_documents();
@@ -136,24 +143,36 @@ sub rae_print_csv_header {
 
 
 # Print CSV row for item as selected by user
+# $values is a hashref of qualifying metadata the user entered for this selection
 sub rae_print_csv_row {
-	my ( $session, $user, $item ) = @_;
+	my ( $session, $user, $item, $values ) = @_;
 
 	my $name = $user->get_value( "name" );
 
 	my $book = "";
-	if( $item->get_type eq "article" )
+	my $citation;
+	if( defined $item )
 	{
-		$book = $item->get_value( "publication" );
+		if( $item->get_type eq "article" )
+		{
+			$book = $item->get_value( "publication" );
+		}
+		elsif( $item->get_type eq "conference_item" )
+		{
+			$book = $item->get_value( "event_title" );
+		}
+		elsif( $item->get_type eq "book_section" )
+		{
+			$book = $item->get_value( "book_title" );
+		}
+		$citation = EPrints::Utils::tree_to_utf8( $item->render_citation );
 	}
-	elsif( $item->get_type eq "conference_item" )
+	else
 	{
-		$book = $item->get_value( "event_title" );
+		$citation = $session->phrase( "rae:unknown_item", id => $values->{eprintid} );
 	}
-	elsif( $item->get_type eq "book_section" )
-	{
-		$book = $item->get_value( "book_title" );
-	}
+
+	
 	
 	print _rae_escape_csv(
 		$user->get_value( "dept" ),
@@ -162,7 +181,8 @@ sub rae_print_csv_row {
 		$name->{given},
 		"",
 		$book,
-		EPrints::Utils::tree_to_utf8( $item->render_citation ) );
+		$citation
+	);
 }
 
 # Print CSV footer row(s)

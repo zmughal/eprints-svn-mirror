@@ -184,7 +184,7 @@ sub dopage_selected
 		$action_url .= "&role=" . $role->get_id if $session->current_user->get_id != $role->get_id;
 		
 		my $others = $users_for_eprint{$eprintid};
-		$table->appendChild( render_item_row( $session, $searchexp, $item, $action_url, 'remove', $others, "rae/select:also_selected_by", $role ) );
+		$table->appendChild( render_item_row( $session, $searchexp, $item, $eprintid, $action_url, 'remove', $others, "rae/select:also_selected_by", $role ) );
 	}
 	return $table;
 }
@@ -317,7 +317,7 @@ sub dopage_results
 	{
 		my $action_url = $url . "_cache=" . $searchexp->get_cache_id . "&_exp=$escexp&_offset=$offset";
 		my $others = $users_for_eprint{$result->get_id};
-		$table->appendChild( render_item_row( $session, $searchexp, $result, $action_url, 'add', $others, "rae/select:selected_by", $role ) );
+		$table->appendChild( render_item_row( $session, $searchexp, $result, $result->get_id, $action_url, 'add', $others, "rae/select:selected_by", $role ) );
 	}
 
 	if( $n_results > 0 )
@@ -358,7 +358,7 @@ sub dopage_problems
 }
 
 sub render_item_row {
-	my ( $session, $searchexp, $item, $url, $action, $others, $phraseid, $role )  = @_;
+	my ( $session, $searchexp, $item, $itemid, $url, $action, $others, $phraseid, $role )  = @_;
 	
 	my $tr = $session->make_element( "tr" );
 
@@ -369,8 +369,8 @@ sub render_item_row {
 		# Use citation style defined by search configuration
 		$td_cite->appendChild( $item->render_citation_link( $searchexp->{citation} ) );
 	} else {
-		$td_cite->appendChild( $session->html_phrase( "rae:unknown_item" ) );
-		return;
+		$td_cite->appendChild( $session->html_phrase( "rae:unknown_item",
+			id => $session->make_text( $itemid ) ) );
 	}
 
 	# ... a list of other users related to that item ...
@@ -406,10 +406,10 @@ sub render_item_row {
 	if( !$already_selected || $action eq "remove" ) {
 		if($action eq "remove")
 		{
-			my $remove = $session->render_link( "$url&_action_$action=" . $item->get_id );
+			my $remove = $session->render_link( "$url&_action_$action=" . $itemid );
 			$remove->appendChild( $session->html_phrase( "rae/select:" . $action . "_button" ) );
 
-			my $qualify_url = $session->get_archive->get_conf("perl_url") . "/users/rae/qualify?eprintid=" . $item->get_id;
+			my $qualify_url = $session->get_archive->get_conf("perl_url") . "/users/rae/qualify?eprintid=" . $itemid;
 			$qualify_url .= "&role=" . $role->get_id if $session->current_user->get_id != $role->get_id;
 			my $qualify = $session->render_link( $qualify_url);
 			$qualify->appendChild( $session->html_phrase( "rae/select:qualify_button" ) );
@@ -421,7 +421,7 @@ sub render_item_row {
 		}
 		else
 		{
-			my $button = $session->render_link( "$url&_action_$action=" . $item->get_id );
+			my $button = $session->render_link( "$url&_action_$action=" . $itemid );
 			$button->appendChild( $session->html_phrase( "rae/select:" . $action . "_button" ) );
 			$td_act->appendChild( $button );	
 		}

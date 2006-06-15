@@ -65,14 +65,14 @@ if(!defined $eprintid)
 	exit( 0 );
 }
 my $eprint = EPrints::EPrint->new( $session, $eprintid );
-if(!defined $eprint)
-{
-	exit( 0 );
-}
+#if(!defined $eprint)
+#{
+#	exit( 0 );
+#}
 
 # Get selection info from DB
 my %selection;
-my $sql = "SELECT * FROM rae_selections WHERE userid=" . $role->get_id . " AND eprintid=" . $eprint->get_id;
+my $sql = "SELECT * FROM rae_selections WHERE userid=" . $role->get_id . " AND eprintid=" . $eprintid;
 my $sth = $session->get_db->prepare( $sql );
 if( $session->get_db->execute( $sth, $sql ) )
 {
@@ -116,7 +116,7 @@ foreach my $field ( @{ $archive->get_conf( "rae", "fields", "qualify" ) } )
 if( scalar @updates ) {
 	my $sql = "UPDATE rae_selections SET " . join( ", ", @updates ) . 
 		", userid_actual=" . $user->get_id . " WHERE userid=" . 
-		$role->get_id . " AND eprintid=" . $eprint->get_id;
+		$role->get_id . " AND eprintid=" . $eprintid;
 	if( !$session->get_db->do( $sql ) ) 
 	{
 		# Handle error
@@ -133,15 +133,27 @@ $form_frag = $session->render_input_form(
 	buttons => { submit => $session->phrase( "rae/qualify:submit_button" ) },
 );
 $form_frag->appendChild( $session->render_hidden_field( "role", $role->get_id ) ) if $user->get_id != $role->get_id;
-$form_frag->appendChild( $session->render_hidden_field( "eprintid", $eprint->get_id ) );
+$form_frag->appendChild( $session->render_hidden_field( "eprintid", $eprintid ) );
 
 # Build & Send page
 my $select_url = $archive->get_conf("perl_url") . "/users/rae/select";
 $select_url .= "?role=" . $role->get_id if $user->get_id != $role->get_id;
 my $title = $session->html_phrase( "rae/qualify:page_title", user => $role->render_description );
+
+my $citation;
+if( defined $eprint )
+{
+	$citation = $eprint->render_citation;
+}
+else
+{
+	$citation = $session->html_phrase( "rae:unknown_item",
+		id => $session->make_text( $eprintid ) );
+}
+
 my $page = $session->html_phrase( "rae/qualify:page",
 	form => $form_frag,
-	citation => $eprint->render_citation,
+	citation => $citation,
 	select_link => $session->render_link( $select_url ),
 );
 

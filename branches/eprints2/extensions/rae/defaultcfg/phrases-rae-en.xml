@@ -288,6 +288,10 @@ All Staff
 Also selected by: <ep:pin ref="names" /> <ep:pin ref="resolve_link">Edit Selection</ep:pin>
 </ep:phrase>
 
+<ep:phrase ref="rae/report:problem_null_item" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Selected item does not exist
+</ep:phrase>
+
 <ep:phrase ref="rae/report:problem_no_doc" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
 No document (type=<ep:pin ref="type" />) <ep:pin ref="resolve_link">Edit Item</ep:pin>
 </ep:phrase>
