@@ -3764,3 +3764,8 @@ PACKAGE: 2.2.99.2
     template system.
  * Dynamic pages: this allows dynamic content to be included in other-
     wise static pages.
+
+2006-06-16
+
+ * Loads of work on cgi/epint to make it have a neat interface.
+

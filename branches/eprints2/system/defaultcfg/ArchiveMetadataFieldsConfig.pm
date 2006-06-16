@@ -78,6 +78,12 @@ $fields->{user} = [
 
 $fields->{eprint} = [
 
+#	{ name=>"authors", type=>"compound", multiple=>1, fields=>
+#		{ name=>"authors_name", type=>"name" },
+#		{ name=>"authors_email", type=>"email" },
+#	}},
+
+
 	{ name => "creators", type => "name", multiple => 1, input_boxes => 4,
 		hasid => 1, input_id_cols=>20, 
 		family_first=>1, hide_honourific=>1, hide_lineage=>1 }, 

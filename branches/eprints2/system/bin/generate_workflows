@@ -147,6 +147,12 @@ sub _update_workflow_conf
 			$typedata->{pages} = {};
 			$typedata->{page_order} = [];
 			$typedata->{fields} = {};
+			if( $ds_id eq "eprint" )
+			{
+				push @{$typedata->{page_order}}, "type";
+				$typedata->{pages}->{type} = ['type'];
+				$typedata->{fields}->{type} = { id=>"type", required=>1 };
+			}
 			foreach my $node ( $type_tag->getChildNodes )
 			{
 				next unless( EPrints::XML::is_dom( $node, "Element" ) );
@@ -171,7 +177,6 @@ sub _update_workflow_conf
 					}
 					$typedata->{fields}->{$finfo->{id}} = $finfo;
 					push @{$typedata->{pages}->{$pageid}}, $finfo->{id};
-					push @{$typedata->{field_order}}, $finfo->{id};
 				}
 				elsif( $el eq "page" )
 				{

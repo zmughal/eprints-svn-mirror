@@ -130,12 +130,13 @@ h4 {
 
 .alert {
 	color: #ff0000;
-        font: bold 100% ;
+        font-weight: bold;
+	font-size: 100% ;
 }
 
 .namefieldheading {
 	text-align: left;
-	font: small ;
+	font-size: small;
 }
 
 .searchorder {
@@ -264,4 +265,44 @@ th.empty_heading, tr.header_plain th {
 	padding: 1em;
 	border: 2px #c0c0ff dashed;
 }
+
+
+
+/* CONTROL PAGE */
+
+.ep_control_view {
+	border-right: solid black 1px;
+	border-bottom: solid black 1px;
+	border-left: solid black 1px;
+	padding: 12px;
+	clear: both;
+}
+ul.ep_control_view_tabs {
+	margin: 0;
+	padding: 0 0 26px 0;
+	border-bottom: 1px solid black;
+}
+
+ul.ep_control_view_tabs li {
+	height: 25px;
+	margin: 0 0 0 8px;
+	padding: 0px;
+	list-style: none;
+	float: left;
+	border: solid 1px black;
+	background-color: #e0e0e0;
+}
+ul.ep_control_view_tabs li a {
+	text-decoration: none;
+	display: block;
+	padding: 3px 8px 3px 8px;
+	color: #666;
+}
+ul.ep_control_view_tabs li.ep_selected {
+	border-bottom-color: white;
+}
 	
+ul.ep_control_view_tabs li.ep_selected a {
+	color: black;
+	background-color: #fff;
+}
