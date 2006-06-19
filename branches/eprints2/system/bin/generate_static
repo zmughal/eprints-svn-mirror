@@ -254,6 +254,7 @@ sub generate_static
 					$session->clone_for_me( $kid, 1 ) );
 			}
 		}
+		$parts->{page} = delete $parts->{body};
 
 		$session->write_static_page( $destination_filename, $parts, "static" );
 	}

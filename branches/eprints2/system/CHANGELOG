@@ -3769,3 +3769,7 @@ PACKAGE: 2.2.99.2
 
  * Loads of work on cgi/epint to make it have a neat interface.
 
+2006-06-19
+
+ * Fixed bug in generate_static which used "body" instead of "page"
+    as the part name for generating pages.
