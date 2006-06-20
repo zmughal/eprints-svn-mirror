@@ -319,7 +319,7 @@ from_email, from_name - who is sending the email (defaults to the archive admin)
 
 sig - the signature file as a DOM tree
 
-replyto_email, reply_to name 
+replyto_email, replyto_name 
 
 Returns true if mail sending (appears to have) succeeded. False otherwise.
 
@@ -526,6 +526,7 @@ sub wrap_text
 	$sub_tab = "" if( !defined $sub_tab );
 
 	local $Text::Wrap::columns = $width;
+	local $Text::Wrap::huge = "overflow";
 
 	return join "", Text::Wrap::fill( $init_tab, $sub_tab, $text );
 }
