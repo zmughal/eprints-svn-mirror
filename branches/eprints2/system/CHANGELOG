@@ -3765,6 +3765,22 @@ PACKAGE: 2.2.99.2
  * Dynamic pages: this allows dynamic content to be included in other-
     wise static pages.
 
+2006-06-15 moj
+ 
+ * Added cgi/users/eprint - this makes use of the Workflow modules to
+    handle EPrint editing
+ * Added get_last_stage_id to Workflow for use by button bars/blisters
+ * Added process to Workflow - this is the equivalent of the SubmissionForm
+    method, but greatly trimmed down and not reliant on any specific 
+	stages.
+ * Tided Stage to only require the stage XML and Workflow object on 
+    construction.
+ * Stage now pulls the 'surround' choice from the <component> if it's
+    there. Could probably move to a <surround> config option later.
+ * Added ReviewComponent (currently a null component), PlaceHolder (for
+    when components can't load), and ButtonBar (renders prev/next etc).
+ * Added the None surround - renders a component with no extra decoration.
+
 2006-06-16
 
  * Loads of work on cgi/epint to make it have a neat interface.
@@ -3773,3 +3789,13 @@ PACKAGE: 2.2.99.2
 
  * Fixed bug in generate_static which used "body" instead of "page"
     as the part name for generating pages.
+
+2006-06-21 moj
+
+ * Updated CSS for the control tabs + action bar
+ * Interface/EPrint/Control and Interface/EPrint now use the actions as defined
+    on the wiki.
+ * Added 'interface' method to Interface/EPrint - this returns the prefix for
+    any phrases.
+ * allow_action now has the same functionality as edit_eprint
+

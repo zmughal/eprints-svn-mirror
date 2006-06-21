@@ -21,6 +21,12 @@ sub screen
 	return $self->{screen};
 }
 
+sub interface
+{
+	# Used for phrases
+	return "cgi/users/eprint";
+}
+
 sub process
 {
 	my( $class, $session ) = @_;
@@ -125,19 +131,118 @@ sub action_not_allowed
 	$self->add_message( "error", $self->{session}->make_text( "Action not allowed." ) ); #cjg lang
 }
 	
+sub make_action_bar
+{
+	my( $self, @actions ) = @_;
+
+	my @list = ();
+	foreach( @actions )
+	{
+		next unless( $self->allow_action( $_ ) );
+		my $url = "?eprintid=".$self->{eprintid}."&screen=".$self->{screenid}."&action=".$_;
+		my $a = $self->{session}->render_link( $url );
+		$a->appendChild( $self->{session}->html_phrase( $self->interface.":action_".$_ ) );
+		push @list , $a;
+	}
+
+
+	my $f = $self->{session}->make_doc_fragment;
+	my $first = 1;
+	foreach my $item ( @list )
+	{
+		if( $first )
+		{
+			$first = 0;
+		}
+		else
+		{
+			$f->appendChild( $self->{session}->make_text( " | " ) );
+		}
+		$f->appendChild( $item );
+	}
+	return $f;
+
+}
 
 
 sub allow_action 
 {
 	my( $self, $action ) = @_;
 
+	my $eprint_status = $self->{eprint}->get_value( "eprint_status" );
+	
+	# Can we skip the buffer?
+	my $sb = $self->{session}->get_repository->get_conf( "skip_buffer" ) || 0;
+	
 	#view_history
 	#view_full
 	#view_summary
-	return 0 if( $action eq "deposit" && $self->{eprint}->get_value( "eprint_status" ) ne "inbox" );
 
-	return 1;
+    # inbox buffer archive deletion
+	#   *     *       *       *      edit
+	#   *     *                      remove - and send message to depositing user
+	#         *                      move to inbox - and send message to user
+	#   *             *              move to buffer  - "
+	#         *               *      move to archive  - "
+	#                 *              move to deletion  - "
+	#                 *       *      clone(new version) to buffer
+	#   *     *       *       *      copy(as template) to buffer
+
+
+	if( $eprint_status eq "inbox" )
+	{
+		# moj: This is here as an abstraction of move_inbox_archive/move_inbox_buffer
+		return 1 if( $action eq "deposit" );
+		return 1 if( $action eq "edit_eprint" );
+		return 1 if( $action eq "request_eprint_deletion" );
+		if( $sb )
+		{
+			return 1 if( $action eq "move_eprint_inbox_archive" );
+		}
+		else
+		{
+			return 1 if( $action eq "move_eprint_inbox_buffer" );
+		}
+		return 1 if( $action eq "derive_eprint_version" );
+	}
+	elsif( $eprint_status eq "buffer" )
+	{
+		return 1 if( $action eq "edit_eprint" );
+		return 1 if( $action eq "request_eprint_deletion" );
+		return 1 if( $action eq "move_eprint_buffer_inbox" && defined $self->{eprint}->get_user() );
+		return 1 if( $action eq "move_eprint_buffer_archive" );
+		return 1 if( $action eq "derive_eprint_version" );
+	}
+	elsif( $eprint_status eq "archive" )
+	{
+		return 1 if( $action eq "edit_eprint" );
+		if( $sb )
+		{
+			return 1 if( $action eq "move_eprint_archive_inbox" );
+		}
+		else
+		{
+			return 1 if( $action eq "move_eprint_archive_buffer" );
+		}
+		return 1 if( $action eq "move_eprint_archive_deletion" );
+		return 1 if( $action eq "derive_eprint_clone" );
+		return 1 if( $action eq "derive_eprint_version" );
+	}
+	elsif( $eprint_status eq "deletion" )
+	{
+		return 1 if( $action eq "edit_eprint" );
+		return 1 if( $action eq "move_eprint_deletion_archive" && $eprint_status eq "deletion" );
+		return 1 if( $action eq "derive_eprint_clone" );
+		return 1 if( $action eq "derive_eprint_version" );
+	}
+
+	return 1 if( $action eq "view_history" );
+	return 1 if( $action eq "view_full" );
 	return 1 if( $action eq "view_summary" );
+	
+	return 1 if( $action eq "view_buffer" );
+
+	return 0;
 # FORMS
 # reject-with-email
 # remove-with-email
@@ -146,7 +251,7 @@ sub allow_action
 
 # ACTIONS
 # 6 move (8 move,actually)
-# destory
+# destroy
 # link to buffer page
 # use as template
 # new version

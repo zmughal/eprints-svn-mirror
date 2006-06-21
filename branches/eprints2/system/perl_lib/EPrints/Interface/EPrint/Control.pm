@@ -64,8 +64,33 @@ sub render
 		$hidden_div->appendChild( EPrints::Interface::EPrint::Deposit->render_deposit_form( $interface ) );
 		$status_div->appendChild( $hidden_div );
 	}
-
+	
 	# if in archive and can request delete then do that here TODO
+
+	# Actions bar
+	my @actions;
+
+	my $sb = $interface->{session}->get_repository->get_conf( "skip_buffer" ) || 0;
+	
+	@actions = ( 
+		# Move actions (deposit is handled above)
+		"move_eprint_buffer_inbox", # Bounce
+		"move_eprint_buffer_archive", # Approve
+		"move_eprint_archive_inbox",  # Back to inbox from archive
+		"move_eprint_archive_buffer", # Back to review from archive
+		"move_eprint_archive_deletion", # Retire
+		"move_eprint_deletion_archive", # Unretire 
+		
+		"derive_eprint_version", # New version
+		"derive_eprint_clone", # Use as template
+		"request_eprint_deletion",  
+		"view_buffer",  
+	);
+
+	my $action_bar = $interface->{session}->make_element( "div", class => "ep_action_bar" );
+	$action_bar->appendChild( $interface->make_action_bar( @actions ) );
+	$chunk->appendChild( $action_bar );
+
 
 	my $ul = $interface->{session}->make_element( "ul",class=>"ep_control_view_tabs" );
 
@@ -81,26 +106,28 @@ sub render
 		next if( !$interface->allow_action( "view_$view_i" ) );
 
 		$view = $view_i if !defined $view;
+		
+		my $a = $interface->{session}->render_link( "?eprintid=".$interface->{eprintid}."&view=".$view_i );
+		my $label = $interface->{session}->html_phrase( $interface->interface.":action_view_".$view_i );
 
 		my $li;
 		if( $view eq $view_i )
 		{
 			$li = $interface->{session}->make_element( "li", class=>"ep_selected" );
+			$li->appendChild( $label );
 		}
 		else
 		{
 			$li = $interface->{session}->make_element( "li" );
+			$a->appendChild( $label );
+			$li->appendChild( $a );
 		}
 
-		my $a = $interface->{session}->render_link( "?eprintid=".$interface->{eprintid}."&view=".$view_i );
-		my $label = $interface->{session}->html_phrase( "cgi/users/edit_eprint:view_".$view_i );
-		$a->appendChild( $label );
-		$li->appendChild( $a );
 		$ul->appendChild( $li );
 	}
 
 	my $view_div = $interface->{session}->make_element( "div", class=>"ep_control_view" );
-	my( $data, $title ) = @_;
+	my( $data, $title );
 	if( $view eq "summary" ) { ($data,$title) = $interface->{eprint}->render; }
 	if( $view eq "full" ) { ($data,$title) = $interface->{eprint}->render_full; }
 	if( $view eq "history" ) { ($data,$title) = $interface->{eprint}->render_history; }
