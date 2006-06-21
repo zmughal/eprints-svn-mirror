@@ -734,57 +734,60 @@ Staff CGI Scripts
     <ep:phrase ref="dataset_fieldopt_dataset_buffer">Editorial Review</ep:phrase>
     <ep:phrase ref="dataset_fieldopt_dataset_inbox">User Workareas</ep:phrase>
 
-<!-- edit_eprint -->
 
-    <ep:phrase ref="cgi/users/edit_eprint:status">Item Status</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:description">Description</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:actions">Actions</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:views">Views</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:edit">Edit</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:export">Export</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:stage_type">Item Type</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:stage_linking">Succession/Commentary</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:stage_files">Files</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:cant_find_it">Can't retrieve item with the ID "<ep:pin ref="id" />"</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:cant_edit">This item (id <ep:pin ref="id" />) does not match the scope of the items you are allowed to edit. If you need assistance please contact the repository administrator.</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:cant_remove">Problem removing item with the ID "<ep:pin ref="id" />"</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:status_change">Status of item changed to "<ep:pin ref="status" />".</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:cant_move">Problem changing status of item with the ID "<ep:pin ref="id" />".</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:cant_clone">Problem cloning item with the ID "<ep:pin ref="id" />"</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:bounce_form_intro"><p>Please enter in the box below the reason for bouncing/deleting this item, and any possible fix. This will be emailed to the relevant author.</p><p>(The authors language of preference is &quot;<ep:pin ref="langpref" />&quot;.)</p></ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:title_delete_form">Deleting Submission</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:title_bounce_form">Bouncing Submission</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_send">Send</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:no_user">Cannot find the data for the user who submitted this item.</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:subject_bounce">Problem with Submission</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:mail_fail">The item was successfully deleted/bounced, but for some reason the user couldn't be mailed. Username: <strong><ep:pin ref="username" /></strong>, email <ep:pin ref="email" />.</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:bord_fail">The item could not be bounced/deleted - this probably indicates a database error. Check the logs.</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:form_title">Item Control Page</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:remove_title">Removal Successful</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:removed"><p>Item Successfully Removed</p></ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:move_title">Move Successful</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:moved"><p>Item Successfully moved back into editorial review.</p><p>You may now <ep:pin ref="link">edit it</ep:pin> if you wish.</p></ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_edit">Edit Item</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action__remove">Remove Item</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action__clone">New Version</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action__copy">Use as Template</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action__toinbox">Bounce Item back to Submitter</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action__tobuffer">Move Item to Editorial Review</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action__toarchive">Move Item to Repository</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action__todeletion">Move Item to Deleted</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_send">Send</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_cancel">Cancel</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_reallydelete">Really Delete</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:view_summary">Summary</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:view_full">Full Record</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:view_history">History</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:view_buffer">View Records awaiting Editorial Review</ep:phrase>
+<!-- eprint -->
+
+    <ep:phrase ref="cgi/users/eprint:status">Item Status</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:description">Description</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:actions">Actions</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:views">Views</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:edit">Edit</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:export">Export</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:stage_type">Item Type</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:stage_linking">Succession/Commentary</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:stage_files">Files</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:cant_find_it">Can't retrieve item with the ID "<ep:pin ref="id" />"</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:cant_edit">This item (id <ep:pin ref="id" />) does not match the scope of the items you are allowed to edit. If you need assistance please contact the repository administrator.</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:cant_remove">Problem removing item with the ID "<ep:pin ref="id" />"</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:status_change">Status of item changed to "<ep:pin ref="status" />".</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:cant_move">Problem changing status of item with the ID "<ep:pin ref="id" />".</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:cant_clone">Problem cloning item with the ID "<ep:pin ref="id" />"</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:bounce_form_intro"><p>Please enter in the box below the reason for bouncing/deleting this item, and any possible fix. This will be emailed to the relevant author.</p><p>(The authors language of preference is &quot;<ep:pin ref="langpref" />&quot;.)</p></ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:title_delete_form">Deleting Submission</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:title_bounce_form">Bouncing Submission</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:action_send">Send</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:no_user">Cannot find the data for the user who submitted this item.</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:subject_bounce">Problem with Submission</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:mail_fail">The item was successfully deleted/bounced, but for some reason the user couldn't be mailed. Username: <strong><ep:pin ref="username" /></strong>, email <ep:pin ref="email" />.</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:bord_fail">The item could not be bounced/deleted - this probably indicates a database error. Check the logs.</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:form_title">Item Control Page</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:remove_title">Removal Successful</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:removed"><p>Item Successfully Removed</p></ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:move_title">Move Successful</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:moved"><p>Item Successfully moved back into editorial review.</p><p>You may now <ep:pin ref="link">edit it</ep:pin> if you wish.</p></ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:action_edit">Edit Item</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:action__remove">Remove Item</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:action_derive_eprint_version">New Version</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:action_derive_eprint_clone">Use as Template</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:action_move_eprint_archive_inbox">Bounce Item back to Submitter</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:action_move_eprint_buffer_inbox">Bounce Item back to Submitter</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:action_move_eprint_archive_buffer">Move Item to Editorial Review</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:action_move_eprint_buffer_archive">Move Item to Repository</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:action_move_eprint_archive_deletion">Retire Item</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:action_move_eprint_deletion_archive">Reinstate Item</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:action_send">Send</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:action_cancel">Cancel</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:action_reallydelete">Really Delete</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:action_view_summary">Summary</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:action_view_full">Full Record</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:action_view_history">History</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:action_view_buffer">View Records awaiting Editorial Review</ep:phrase>
     <ep:phrase ref="mail_delete_reason.inbox">
 The following eprint has been deleted from your User Area:
 
 <ep:pin ref="title" />
 </ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:cant_edit_deleted">Modifying deleted records is not allowed.</ep:phrase>
+    <ep:phrase ref="cgi/users/eprint:cant_edit_deleted">Modifying deleted records is not allowed.</ep:phrase>
 
 
 <!-- edit_user -->
