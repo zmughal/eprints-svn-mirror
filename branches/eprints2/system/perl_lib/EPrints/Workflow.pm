@@ -115,7 +115,7 @@ sub renumber_stages
 {
 	my( $self ) = @_;
 
-	my $n = 1;
+	my $n = 0;
 	$self->{stage_number} = {};
 	foreach my $stage_id ( @{$self->{stage_order}} )
 	{
@@ -272,7 +272,7 @@ sub process
 		{
 			$self->{stage} = $self->get_first_stage_id;
 		}
-		
+			
 		# If we don't have an item then something's
 		# gone wrong.
 		if( !defined $self->{item} )
@@ -288,17 +288,22 @@ sub process
 			return( 0 );
 		}
 		
-		$self->{new_stage} = $self->get_next_stage_id;
-	
 		my $stage_obj = $self->get_stage( $self->{stage} );
 		$ok = $stage_obj->validate();
-	
+		$ok = 0; #moj	
+		if( $ok )
+		{
+			$self->{new_stage} = $self->get_next_stage_id;
+		}
+		else
+		{
+			$self->{new_stage} = $self->{stage};
+		}
 	}
 	
-	if( $ok )
-	{
+#	if( $ok )
+#	{
 		# Render stuff for next stage
-
 		my $stage = $self->{new_stage};
 
 #		if( $self->{session}->get_repository->get_conf( 'log_submission_timing' ) )
@@ -348,7 +353,7 @@ sub process
 		{
 			$self->{page} = $form;
 		}
-	}
+#	}
 	return( 1 );
 }
 
