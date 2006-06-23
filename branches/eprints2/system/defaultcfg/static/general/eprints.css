@@ -365,29 +365,3 @@ hr.last {
 	margin-bottom: 8pt;
 	padding: 16pt;
 }
-
-/*
-ul.ep_control_view_tabs li {
-	height: 25px;
-	margin: 0 0 0 8px;
-	padding: 0px;
-	list-style: none;
-	float: left;
-	border: solid 1px black;
-	background-color: #e0e0e0;
-}
-ul.ep_control_view_tabs li a {
-	text-decoration: none;
-	display: block;
-	padding: 3px 8px 3px 8px;
-	color: #666;
-}
-ul.ep_control_view_tabs li.ep_selected {
-	border-bottom-color: white;
-}
-	
-ul.ep_control_view_tabs li.ep_selected a {
-	color: black;
-	background-color: #fff;
-}
-*/

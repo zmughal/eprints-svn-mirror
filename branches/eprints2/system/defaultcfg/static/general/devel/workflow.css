@@ -1,3 +1,46 @@
+div.autocomplete 
+{
+	background-color: white;
+	border: 1px solid #888;
+	margin: 0px;
+	padding: 0px;
+}
+
+div.autocomplete ul 
+{
+	list-style-type: none;
+	margin: 0px;
+	padding: 0px;
+}
+
+div.autocomplete ul li.selected .name
+{
+	background-color: #ddd;	
+}
+
+div.autocomplete ul li
+{
+	list-style-type: none;
+	display: block;
+	border-bottom: dotted thin black;
+}
+
+div.autocomplete ul li .name
+{
+	font-size: 10pt;
+	padding-top: 5px;
+	padding-bottom: 3px;
+	text-align: center;
+}
+
+div.autocomplete ul li .bottom
+{
+	text-align: center;
+	background-color: #cec;
+	padding-top: 3px;
+	font-size: 8pt;
+}
+
 .wf_stage
 {
 	border: 1px solid #888;
