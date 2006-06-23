@@ -7,6 +7,32 @@ my $session = new EPrints::Session;
 exit( 0 ) unless( defined $session );
 # $session->get_database->set_debug( 1 );
 
+my $title = $session->make_text( "Lookup Demo" );
+my $page = $session->make_doc_fragment;
+
+my $div = $session->make_element( "div" );
+my $field = $session->make_element( "input", type => "text", id => "autocomplete", name => "search" );
+my $field2 = $session->make_element( "input", type => "text", id => "autocomplete2", name => "search2" );
+
+$div->appendChild( $field );
+$div->appendChild( $field2 );
+
+my $results = $session->make_element( "div", id => "autocomplete_choices", class => "autocomplete" );
+$div->appendChild( $results );
+
+$page->appendChild( $div );
+my $script = $session->make_element( "script", type => "text/javascript" );
+$script->appendChild( $session->make_text( 'new Ajax.Autocompleter("autocomplete", "autocomplete_choices", "/perl/lookup", {});' ) );
+
+$page->appendChild( $script );
+
+$session->build_page( $title, $page );
+$session->send_page();
+
+$session->terminate;
+
+exit;
+
 my $item = EPrints::DataObj::EPrint->new( $session, 51 );
 my $workflow = new EPrints::Workflow( $session, "default", dataset => $item->get_dataset, item => $item );
 

@@ -96,7 +96,9 @@ sub get_matches
 	while( my( $match_str, $score, $xml, $provenance ) = $sth->fetchrow_array )
 	{	
 		$out .= "<li>\n";
-		$out .= "<div style='display: none'>".$match_str." ($provenance)\n";
+		$out .= "<div class='name'>".$match_str."</div>";
+		$out .= "<div class='informal bottom'>".$provenance."</div>";
+		$out .= "<div class='informal' style='display: none'>";
 		$out .= "<ep:inserts>\n";
 		$out .= $xml;
 		#$out .= "<score>".$score."</score>";
