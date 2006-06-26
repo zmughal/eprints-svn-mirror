@@ -499,7 +499,7 @@ if( $repository->get_conf( "dynamic_template","enable" ) )
 	foreach my $langid ( @langs )
 	{
 		print CONF <<END;
-  <Directory "/opt/eprints/archives/devel/html">
+  <Directory "$htdocs_path">
     SetHandler perl-script
     PerlResponseHandler EPrints::Apache::Template::handler
   </Directory>
