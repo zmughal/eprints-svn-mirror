@@ -1336,7 +1336,8 @@ sub _do_stage_type
 			eprintid => $self->{eprint}->get_value( "eprintid" ) ,
 			dataview => $self->{dataview},
 		},
-		dest=>$self->{formtarget}."#t"
+		dest=>$self->{formtarget}."#t",
+		object=>$self->{eprint},
 	) );
 
 	return( $page );
@@ -1432,7 +1433,8 @@ sub _do_stage_linking
 			eprintid => $self->{eprint}->get_value( "eprintid" ) 
 		},
 		comments=>$comment,
-		dest=>$self->{formtarget}."#t"
+		dest=>$self->{formtarget}."#t",
+		object=>$self->{eprint},
 	) );
 
 	return( $page );
@@ -1517,6 +1519,7 @@ sub _do_stage_meta
 	        	top_buttons=>$submit_buttons,
 			default_action=>"next",
 			hidden_fields=>$hidden_fields,
+		object=>$self->{eprint},
 			dest=>$self->{formtarget}."#t" ) );
 
 	$self->{title_phrase} = "metapage_title_".$self->{pageid};
@@ -1737,6 +1740,7 @@ sub _do_stage_docmeta
 	        	top_buttons=>$submit_buttons,
 			default_action=>"next",
 			hidden_fields=>$hidden_fields,
+		object=>$self->{eprint},
 			dest=>$self->{formtarget}."#t" ) );
 
 	return( $page );
@@ -2195,7 +2199,9 @@ sub _update_from_form
 	
 	my $field = $self->{dataset}->get_field( $field_id );
 
-	my $value = $field->form_value( $self->{session} );
+	my $value = $field->form_value( $self->{session}, $self->{eprint} );
+print STDERR Dumper( $field_id, $value );
+use Data::Dumper;
 
 	$self->{eprint}->set_value( $field_id, $value );
 }

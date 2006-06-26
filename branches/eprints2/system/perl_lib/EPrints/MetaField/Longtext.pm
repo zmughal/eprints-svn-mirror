@@ -81,6 +81,8 @@ sub get_basic_input_elements
 {
 	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
 
+	$suffix = $suffix || "";
+
 	my $textarea = $session->make_element(
 		"textarea",
 		"accept-charset" => "utf-8",

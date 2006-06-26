@@ -133,12 +133,6 @@ sub add
 
 	my $field = $dataset->get_field( $fieldid );
 
-	if( $field->get_property( "hasid" ) )
-	{
-		#push @fields,$field->get_id_field();
-		$field = $field->get_main_field();
-	}
-
 	my( $codes, $grepcodes, $ignored ) = $field->get_index_codes( $session, $value );
 
 	my %done = ();
@@ -280,7 +274,7 @@ sub _do_ordervalues
 		my @fvals = ( $keyvalue );
 		foreach my $field ( @fields )
 		{
-			next if( $field->is_type( "subobject","file" ) );
+			next if( $field->is_virtual );
 			my $ov = $field->ordervalue( 
 					$data->{$field->get_name()},
 					$session,

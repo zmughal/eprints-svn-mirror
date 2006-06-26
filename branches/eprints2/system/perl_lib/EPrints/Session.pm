@@ -1727,6 +1727,8 @@ hidden_fields: reference to a hash. The keys of which are CGI keys
 and the values are the values they are set to. This causes hidden
 form elements to be set, so additional information can be passed.
 
+object: The DataObj which this form is editing, if any.
+
 comment: not yet used.
 
 =cut
@@ -1797,7 +1799,8 @@ sub render_input_form
 			$p{dataset},
 			$p{type},
 			$p{staff},
-			$p{hidden_fields} ) );
+			$p{hidden_fields},
+			$p{object} ) );
 	}
 
 	# Hidden field, so caller can tell whether or not anything's
@@ -1823,7 +1826,7 @@ sub render_input_form
 
 ######################################################################
 # 
-# $xhtml_field = $session->_render_input_form_field( $field, $value, $show_names, $show_help, $comment, $dataset, $type, $staff, $hiddenfields )
+# $xhtml_field = $session->_render_input_form_field( $field, $value, $show_names, $show_help, $comment, $dataset, $type, $staff, $hiddenfields, $object )
 #
 # Render a single field in a form being rendered by render_input_form
 #
@@ -1832,7 +1835,7 @@ sub render_input_form
 sub _render_input_form_field
 {
 	my( $self, $field, $value, $show_names, $show_help, $comment,
-			$dataset, $type, $staff, $hidden_fields ) = @_;
+			$dataset, $type, $staff, $hidden_fields , $object) = @_;
 	
 	my( $div, $html, $span );
 
@@ -1887,7 +1890,7 @@ sub _render_input_form_field
 		class => "formfieldinput",
 		id => "inputfield_".$field->get_name );
 	$div->appendChild( $field->render_input_field( 
-		$self, $value, $dataset, $type, $staff, $hidden_fields ) );
+		$self, $value, $dataset, $type, $staff, $hidden_fields , $object ) );
 	$html->appendChild( $div );
 				
 	return( $html );

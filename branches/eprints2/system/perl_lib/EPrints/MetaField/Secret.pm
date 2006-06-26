@@ -66,9 +66,7 @@ sub render_value
 	# field. If they do, we'll use a more default render
 	# method.
 
-	if( $self->get_property( 'multiple' ) ||
-	  $self->get_property( 'multilang' ) ||
-	  $self->get_property( 'hasid' ) )
+	if( $self->get_property( 'multiple' ) || $self->get_property( 'multilang' )  )
 	{
 		return $self->SUPER::render_value( $session, $value, $alllangs, $nolink );
 	}

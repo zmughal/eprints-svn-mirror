@@ -297,21 +297,18 @@ sub commit
 ######################################################################
 =pod
 
-=item $value = $dataobj->get_value( $fieldname, [$no_id] )
+=item $value = $dataobj->get_value( $fieldname )
 
 Get a the value of a metadata field. If the field is not set then it returns
 undef unless the field has the property multiple set, in which case it returns 
 [] (a reference to an empty array).
-
-If $no_id is true and the field has an ID part then only the main part is
-returned.
 
 =cut
 ######################################################################
 
 sub get_value
 {
-	my( $self, $fieldname, $no_id ) = @_;
+	my( $self, $fieldname ) = @_;
 	
 	my $field = EPrints::Utils::field_from_config_string( $self->{dataset}, $fieldname );
 
@@ -334,18 +331,7 @@ sub get_value
 		}
 	}
 
-	return $r unless( $no_id );
-
-	return $r unless( $field->get_property( "hasid" ) || $field->get_property( "mainpart" ) );
-
-	# Ok, we need to strip out the {id} parts. It's easy if
-	# this isn't multiple
-	return $r->{main} unless( $field->get_property( "multiple" ) );
-
-	# It's a multiple field, then. Strip the ids from each.
-	my $r2 = [];
-	foreach( @$r ) { push @{$r2}, $_->{main}; }
-	return $r2;
+	return $r;
 }
 
 sub get_value_raw
@@ -366,6 +352,20 @@ Set the value of the named metadata field in this record.
 ######################################################################
 
 sub set_value
+{
+	my( $self, $fieldname, $value ) = @_;
+
+	my $field = EPrints::Utils::field_from_config_string( $self->{dataset}, $fieldname );
+
+	if( !defined $field )
+	{
+		EPrints::Config::abort( "Attempt to set value on not existant field: ".$self->{dataset}->id()."/$fieldname" );
+	}
+
+	$field->set_value( $self, $value );
+}
+
+sub set_value_raw
 {
 	my( $self , $fieldname, $value ) = @_;
 
@@ -473,12 +473,12 @@ sub get_values
 		{
 			foreach( @{$v} )
 			{
-				$values{$field->which_bit( $_ )} = 1;
+				$values{$_} = 1;
 			}
 		}
 		else
 		{
-			$values{$field->which_bit( $v )} = 1;
+			$values{$v} = 1
 		}
 	}
 
@@ -518,6 +518,15 @@ by fieldname.
 sub get_data
 {
 	my( $self ) = @_;
+
+	# update compound fields
+
+	foreach my $field ( $self->{dataset}->get_fields )
+	{
+		next unless $field->is_type( "compound" );
+		my $name = $field->get_name;
+		$self->{data}->{$name} = $self->get_value( $name );
+	}
 	
 	return $self->{data};
 }
@@ -563,7 +572,9 @@ sub is_set
 			 "is_set( $fieldname ): Unknown field" );
 	}
 
-	return EPrints::Utils::is_set( $self->{data}->{$fieldname} );
+	my $value = $self->get_value( $fieldname );
+
+	return EPrints::Utils::is_set( $value );
 }
 
 ######################################################################
@@ -632,7 +643,7 @@ sub render_value
 
 	my $field = $self->{dataset}->get_field( $fieldname );	
 	
-	return $field->render_value( $self->{session}, $self->get_value($fieldname), $showall );
+	return $field->render_value( $self->{session}, $self->get_value($fieldname), $showall, undef,$self );
 }
 
 

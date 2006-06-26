@@ -322,7 +322,6 @@ sub render_name
 	my( $self, $session ) = @_;
 
 	my $phrasename = $self->{confid}."_fieldname_".$self->{name};
-	$phrasename.= "_id" if( $self->get_property( "idpart" ) );
 
 	return $session->html_phrase( $phrasename );
 }
@@ -348,7 +347,7 @@ sub display_name
 #	print STDERR "CALLED DEPRECATED FUNCTION EPrints::MetaField::display_name\n";
 
 	my $phrasename = $self->{confid}."_fieldname_".$self->{name};
-	$phrasename.= "_id" if( $self->get_property( "idpart" ) );
+
 	return $session->phrase( $phrasename );
 }
 
@@ -375,7 +374,7 @@ sub display_help
 	my( $self, $session, $type ) = @_;
 
 	my $phrasename = $self->{confid}."_fieldhelp_".$self->{name};
-	$phrasename.= "_id" if( $self->get_property( "idpart" ) );
+
 	if( defined $type && $session->get_lang->has_phrase( $phrasename.".".$type ) )
 	{	
 		return $session->phrase( $phrasename.".".$type );
@@ -405,7 +404,7 @@ sub render_help
 	my( $self, $session, $type ) = @_;
 
 	my $phrasename = $self->{confid}."_fieldhelp_".$self->{name};
-	$phrasename.= "_id" if( $self->get_property( "idpart" ) );
+
 	if( defined $type && $session->get_lang->has_phrase( $phrasename.".".$type ) )
 	{	
 		return $session->html_phrase( $phrasename.".".$type );
@@ -418,7 +417,7 @@ sub render_help
 ######################################################################
 =pod
 
-=item $xhtml = $field->render_input_field( $session, $value, [$dataset, $type], [$staff], [$hidden_fields] )
+=item $xhtml = $field->render_input_field( $session, $value, [$dataset, $type], [$staff], [$hidden_fields], $obj )
 
 Return the XHTML of the fields for an form which will allow a user
 to input metadata to this field. $value is the default value for
@@ -465,7 +464,7 @@ sub render_input_field
 ######################################################################
 =pod
 
-=item $value = $field->form_value( $session )
+=item $value = $field->form_value( $session, $object )
 
 Get a value for this field from the CGI parameters, assuming that
 the form contained the input fields for this metadata field.
@@ -475,13 +474,13 @@ the form contained the input fields for this metadata field.
 
 sub form_value
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $object ) = @_;
 
-	my $value = $self->form_value_actual( $session );
+	my $value = $self->form_value_actual( $session, $object );
 
 	if( defined $self->{fromform} )
 	{
-		$value = $self->call_property( "fromform", $value, $session );
+		$value = $self->call_property( "fromform", $value, $session, $object );
 	}
 
 	return $value;
@@ -581,7 +580,7 @@ sub is_type
 ######################################################################
 =pod
 
-=item $xhtml = $field->render_value( $session, $value, [$alllangs], [$nolink] )
+=item $xhtml = $field->render_value( $session, $value, [$alllangs], [$nolink], $object )
 
 Render the given value of this given string as XHTML DOM. If $alllangs 
 is true and this is a multilang field then render all language versions,
@@ -597,7 +596,7 @@ control the rendering instead.
 
 sub render_value
 {
-	my( $self, $session, $value, $alllangs, $nolink ) = @_;
+	my( $self, $session, $value, $alllangs, $nolink, $object ) = @_;
 
 	if( defined $self->{render_value} )
 	{
@@ -606,7 +605,8 @@ sub render_value
 			$self, 
 			$value, 
 			$alllangs, 
-			$nolink );
+			$nolink,
+			$object );
 	}
 
 
@@ -631,7 +631,8 @@ sub render_value
 			$session, 
 			$value, 
 			$alllangs, 
-			$nolink );
+			$nolink,
+			$object );
 	}
 
 	my @rendered_values = ();
@@ -664,7 +665,8 @@ sub render_value
 				$session, 
 				$sv, 
 				$alllangs, 
-				$nolink ) );
+				$nolink,
+				$object ) );
 	}
 	return $html;
 
@@ -674,7 +676,7 @@ sub render_value
 ######################################################################
 =pod
 
-=item $xhtml = $field->render_value_no_multiple( $session, $value, $alllangs, $nolink )
+=item $xhtml = $field->render_value_no_multiple( $session, $value, $alllangs, $nolink, $object )
 
 Render the XHTML for a non-multiple value. Can be either a from
 a non-multiple field, or a single value from a multiple field.
@@ -686,31 +688,42 @@ Usually just used internally.
 
 sub render_value_no_multiple
 {
-	my( $self, $session, $value, $alllangs, $nolink ) = @_;
+	my( $self, $session, $value, $alllangs, $nolink, $object ) = @_;
 
-	# just main/id if that's what we're rendering
-	$value = $self->which_bit( $value );
 
-	if( $self->get_property( "hasid" ) )
+	my $rendered;
+	if( !$self->get_property( "multilang" ) )
 	{
-		# Ask the usercode to fiddle with this bit of HTML
-		# based on the value of it's ID. 
-		# It will either just pass it through, redo it from scratch
-		# or wrap it in a link.
-
-		my $rendered = $self->get_main_field()->render_value_no_id( $session, $value->{main}, $alllangs, $nolink );
-
-		return $session->get_repository->call( 
-			"render_value_with_id",  
-			$self, 
-			$session, 
-			$value, 
-			$alllangs, 
-			$rendered, 
-			$nolink );
+		$rendered = $self->render_value_no_multilang( $session, $value, $nolink, $object );
 	}
-
-	my $rendered = $self->render_value_no_id( $session, $value, $alllangs, $nolink );
+	elsif( !$alllangs )
+	{
+		my $v = EPrints::Session::best_language( 
+			$session->get_repository, 
+			$session->get_langid(), 
+			%$value );
+		$rendered = $self->render_value_no_multilang( $session, $v, $nolink, $object );
+	}
+	else
+	{
+		my( $tr, $td, $th );
+		$rendered = $session->make_element( "table" );
+		foreach( keys %$value )
+		{
+			$tr = $session->make_element( "tr" );
+			$rendered->appendChild( $tr );
+			$td = $session->make_element( "td" );
+			$tr->appendChild( $td );
+			$td->appendChild( 
+				$self->render_value_no_multilang( $session, $value->{$_}, $nolink, $object ) );
+			$th = $session->make_element( "th" );
+			$tr->appendChild( $th );
+			$th->appendChild( $session->make_text( '(' ) );
+			$th->appendChild( $session->render_language_name( $_ ) );
+			$th->appendChild( $session->make_text( ')' ) );
+		}
+	}
+	
 
 	if( !defined $self->{browse_link} || $nolink)
 	{
@@ -754,66 +767,11 @@ sub render_value_no_multiple
 	return $a;
 }
 
-######################################################################
-=pod
-
-=item $xhtml = $field->render_value_no_id( $session, $value, $alllangs, $nolink )
-
-Render the XHTML for a non-multiple value which has no id/main part. 
-Can be either a from a non-multiple field, non-id field or a part of
-a field which is non-multiple and is the main part.
-
-Usually just used internally.
-
-=cut
-######################################################################
-
-sub render_value_no_id
-{
-	my( $self, $session, $value, $alllangs, $nolink ) = @_;
-
-	# We don't care about the ID
-	if( $self->get_property( "hasid" ) )
-	{
-		$value = $value->{main};
-	}
-
-	if( !$self->get_property( "multilang" ) )
-	{
-		return $self->render_value_no_multilang( $session, $value, $nolink );
-	}
-
-	if( !$alllangs )
-	{
-		my $v = EPrints::Session::best_language( 
-			$session->get_repository, 
-			$session->get_langid(), 
-			%$value );
-		return $self->render_value_no_multilang( $session, $v, $nolink );
-	}
-	my( $table, $tr, $td, $th );
-	$table = $session->make_element( "table" );
-	foreach( keys %$value )
-	{
-		$tr = $session->make_element( "tr" );
-		$table->appendChild( $tr );
-		$td = $session->make_element( "td" );
-		$tr->appendChild( $td );
-		$td->appendChild( 
-			$self->render_value_no_multilang( $session, $value->{$_} ) );
-		$th = $session->make_element( "th" );
-		$tr->appendChild( $th );
-		$th->appendChild( $session->make_text( '(' ) );
-		$th->appendChild( $session->render_language_name( $_ ) );
-		$th->appendChild( $session->make_text( ')' ) );
-	}
-	return $table;
-}
 
 ######################################################################
 =pod
 
-=item $xhtml = $field->render_value_no_multilang( $session, $value, $nolink )
+=item $xhtml = $field->render_value_no_multilang( $session, $value, $nolink, $object )
 
 Render a basic value, with no multilang, id, or multiple parts.
 
@@ -827,7 +785,7 @@ Usually just used internally.
 
 sub render_value_no_multilang
 {
-	my( $self, $session, $value, $nolink ) = @_;
+	my( $self, $session, $value, $nolink, $object ) = @_;
 
 	if( !defined $value )
 	{
@@ -859,10 +817,11 @@ sub render_value_no_multilang
 		return $self->call_property( "render_single_value",
 			$session, 
 			$self, 
-			$value );
+			$value,
+			$object );
 	}
 
-	return $self->render_single_value( $session, $value );
+	return $self->render_single_value( $session, $value, $object );
 }
 
 
@@ -972,8 +931,6 @@ sub _list_values2
 {
 	my( $self, $value ) = @_;
 
-	my $v2 = $self->which_bit( $value );
-
 	if( $self->get_property( "multilang" ) )
 	{
 		return values %{$value};
@@ -1009,100 +966,6 @@ sub most_local
 }
 
 
-######################################################################
-=pod
-
-=item $idfield = $field->get_id_field
-
-Only meaningful on fields with "hasid" property. Return a field 
-representing just the id part of this field.
-
-=cut
-######################################################################
-
-sub get_id_field
-{
-	my( $self ) = @_;
-	# only meaningful to call this on "hasid" fields
-	#cjg SHould log an issue if otherwise?
-	#returns undef for non-id fields.
-	return unless( $self->get_property( "hasid" ) );
-
-	unless( $self->{".idfield"} )
-	{	
-		# hack to make the cloned field a different type
-		my $tmp_type = $self->{type}; 
-		$self->{type} = 'id'; 
-		$self->{".idfield"} = $self->clone();
-		$self->{type} = $tmp_type;
-		$self->{".idfield"}->set_property( "multilang", 0 );
-		$self->{".idfield"}->set_property( "hasid", 0 );
-		$self->{".idfield"}->set_property( "type", "id" );
-		$self->{".idfield"}->set_property( "idpart", 1 );
-	}
-	return $self->{".idfield"};
-}
-
-
-######################################################################
-=pod
-
-=item $mainfield = $field->get_main_field
-
-Only meaningful on fields with "hasid" property. Return a field 
-representing just the main part of this field.
-
-=cut
-######################################################################
-
-sub get_main_field
-{
-	my( $self ) = @_;
-	# only meaningful to call this on "hasid" fields
-	return unless( $self->get_property( "hasid" ) );
-
-	unless( $self->{".mainfield"} )
-	{
-		$self->{".mainfield"} = $self->clone();
-		$self->{".mainfield"}->set_property( "hasid", 0 );
-		$self->{".mainfield"}->set_property( "mainpart", 1 );
-	}
-	return $self->{".mainfield"};
-}
-
-
-# Which bit do we care about in an eprints value (the id, main, or all of it?)
-
-######################################################################
-=pod
-
-=item $value2 = $field->which_bit( $value )
-
-If this field represents the id part of a field only, then return the
-id part of $value.
-
-If this field represents the main part of a field only, then return the
-id part of $value.
-
-Otherwise return $value.
-
-=cut
-######################################################################
-
-sub which_bit
-{
-	my( $self, $value ) = @_;
-
-	if( $self->get_property( "idpart" ) )
-	{
-		return $value->{id};
-	}
-	if( $self->get_property( "mainpart" ) )
-	{
-		return $value->{main};
-	}
-	return $value;
-}
 
 ######################################################################
 =pod

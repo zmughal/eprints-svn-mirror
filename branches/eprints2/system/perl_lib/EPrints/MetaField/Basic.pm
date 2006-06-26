@@ -144,7 +144,7 @@ sub render_input_field_actual
 	my $table = $session->make_element( "table", border=>0 );
 
 	my $col_titles = $self->get_input_col_titles( $session, $staff );
-	if( defined $col_titles || $self->get_property( "hasid" ) )
+	if( defined $col_titles )
 	{
 		my $tr = $session->make_element( "tr" );
 		my $th;
@@ -170,14 +170,6 @@ sub render_input_field_actual
 		if( $self->get_property( "multilang" ) )
 		{
 			$th = $session->make_element( "th" );
-			$tr->appendChild( $th );
-		}
-		if( $self->get_property( "hasid" ) )
-		{
-			$th = $session->make_element( "th" );
-			$th->appendChild( 
-				$self->get_id_field()->render_name( 
-								$session ) );
 			$tr->appendChild( $th );
 		}
 		$table->appendChild( $tr );
@@ -232,7 +224,7 @@ sub get_input_elements
 		my $elements = $self->get_input_elements_single( 
 				$session, 
 				$value,
-				undef,
+				"",
 				$staff,
 				$obj );
 		if( defined $self->{input_advice_right} )
@@ -317,7 +309,7 @@ sub get_input_elements
 		my $section = $self->get_input_elements_single( 
 				$session, 
 				$value->[$i-1], 
-				$i,
+				"_".$i,
 				$staff,
 				$obj );
 		my $first = 1;
@@ -404,89 +396,7 @@ sub get_input_elements
 
 
 
-######################################################################
-# 
-# $xhtml = $field->get_input_elements_single( $session, $value, $n, $staff, $obj )
-#
-# undocumented
-#
-######################################################################
-
 sub get_input_elements_single
-{
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
-
-	$suffix = (defined $suffix ? "_$suffix" : "" );	
-
-	unless( $self->get_property( "hasid" ) )
-	{
-		return $self->get_input_elements_no_id( 
-			$session, 
-			$value, 
-			$suffix, 
-			$staff,
-			$obj );
-	}
-
-	my $elements = $self->get_input_elements_no_id( 
-		$session, 
-		$value->{main}, 
-		$suffix, 
-		$staff,
-		$obj );
-
-	my $idvalue = $value->{id};
-
-
-	# id_editors_only is _not_ security feature, it's just
-	# to stop normal users getting bothered by confusing
-	# ID fields.
-	if( $self->get_property( "id_editors_only" ) && !$staff  )
-	{
-		my $f = $session->make_doc_fragment;
-		my $hidden = $session->make_element(
-				"input",
-				"accept-charset" => "utf-8",
-				type => "hidden",
-				name => $self->{name}.$suffix."_id",
-				value => $idvalue );
-		# cache it in the table...
-		my $firstel = $elements->[0]->[0];
-		if( defined $firstel->{el} )
-		{
-			$f->appendChild( $firstel->{el} );
-		}
-		$f->appendChild( $hidden );
-		$firstel->{el} = $f;
-
-		return $elements;
-	}
-
-	my $div = $session->make_element( 
-			"div",
-			class=>"formfieldidinput" );
-	$div->appendChild( $session->make_element(
-		"input",
-		"accept-charset" => "utf-8",
-		name => $self->{name}.$suffix."_id",
-		value => $idvalue,
-		size => $self->{input_id_cols} ) );
-
-	my $first = 1;
-	for my $n (0..(scalar @{$elements})-1)
-	{
-		my $lastcol = {};
-		if( $n == 0 )
-		{
-			$lastcol = { el=>$div };
-		}
-		push @{$elements->[$n]}, $lastcol;
-	}
-	
-	return $elements;
-}
-
-sub get_input_elements_no_id
 {
 	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
 
@@ -650,7 +560,7 @@ sub get_max_input_size
 
 ######################################################################
 # 
-# $foo = $field->form_value_actual( $session )
+# $foo = $field->form_value_actual( $session, $object )
 #
 # undocumented
 #
@@ -658,7 +568,7 @@ sub get_max_input_size
 
 sub form_value_actual
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $object ) = @_;
 
 	if( $self->get_property( "multiple" ) )
 	{
@@ -667,7 +577,7 @@ sub form_value_actual
 		$boxcount = 1 if( $boxcount < 1 );
 		for( my $i=1; $i<=$boxcount; ++$i )
 		{
-			my $value = $self->form_value_single( $session, $i );
+			my $value = $self->form_value_single( $session, $i, $object );
 			if( defined $value || $session->internal_button_pressed )
 			{
 				push @values, $value;
@@ -680,12 +590,12 @@ sub form_value_actual
 		return \@values;
 	}
 
-	return $self->form_value_single( $session );
+	return $self->form_value_single( $session, undef, $object );
 }
 
 ######################################################################
 # 
-# $foo = $field->form_value_single( $session, $n )
+# $foo = $field->form_value_single( $session, $n, $object )
 #
 # undocumented
 #
@@ -693,37 +603,15 @@ sub form_value_actual
 
 sub form_value_single
 {
-	my( $self, $session, $n ) = @_;
+	my( $self, $session, $n, $object ) = @_;
 
 	my $suffix = "";
 	$suffix = "_$n" if( defined $n );
 
-	my $value = $self->form_value_no_id( $session, $suffix );
-
-	if( $self->get_property( "hasid" ) )
-	{
-		my $id = $session->param( $self->{name}.$suffix."_id" );
-		if( 
-			!EPrints::Utils::is_set( $value ) &&
-			!EPrints::Utils::is_set( $id ) )
-		{
-			# id part and main part are undef!
-			return undef;
-		}
-		return { id=>$id, main=>$value };
-	}
-
-	return $value;
-}
-
-sub form_value_no_id
-{
-	my( $self, $session, $suffix ) = @_;
-
 	unless( $self->get_property( "multilang" ) )
 	{
 		# simple case; not multilang
-		my $value = $self->form_value_basic( $session, $suffix );
+		my $value = $self->form_value_basic( $session, $suffix, $object );
 		return undef unless( EPrints::Utils::is_set( $value ) );
 		return $value;
 	}
@@ -735,7 +623,8 @@ sub form_value_no_id
 	{
 		my $subvalue = $self->form_value_basic( 
 			$session, 
-			$suffix."_".$i );
+			$suffix."_".$i,
+			$object );
 		my $langid = $session->param( 
 			$self->{name}.$suffix."_".$i."_lang" );
 		if( $langid eq "" ) 
@@ -756,7 +645,7 @@ sub form_value_no_id
 
 ######################################################################
 # 
-# $foo = $field->form_value_basic( $session, $suffix )
+# $foo = $field->form_value_basic( $session, $suffix, $object )
 #
 # undocumented
 #
@@ -764,7 +653,7 @@ sub form_value_no_id
 
 sub form_value_basic
 {
-	my( $self, $session, $suffix ) = @_;
+	my( $self, $session, $suffix, $object ) = @_;
 	
 	my $value = $session->param( $self->{name}.$suffix );
 
@@ -793,18 +682,6 @@ sub get_sql_name
 {
 	my( $self ) = @_;
 
-	if( $self->get_property( "idpart" ) )
-	{
-		return $self->{name}."_id";
-	}
-	if( $self->get_property( "mainpart" ) )
-	{
-		#cjg I'm not at all sure about if the main
-		# bit should be the plain name or name_main
-		#return $self->{name}."_main";
-
-		return $self->{name};
-	}
 	return $self->{name};
 }
 
@@ -969,28 +846,6 @@ sub ordervalue_single
 
 	return "" unless( EPrints::Utils::is_set( $value ) );
 
-	unless( ref($value) eq "" )
-	{
-		if( $self->get_property( "idpart" ) )
-		{
-			$value = $value->{id};
-		}
-		if( $self->get_property( "mainpart" ) )
-		{
-			$value = $value->{main};
-		}
-	}
-	# what if it HAS id but is not a sub-part??
-
-	return $self->ordervalue_no_id( $value, $session, $langid );
-}
-
-sub ordervalue_no_id
-{
-	my( $self , $value , $session , $langid ) = @_;
-
-	return "" unless( EPrints::Utils::is_set( $value ) );
-
 	if( $self->get_property( "multilang" ) )
 	{
 		$value = EPrints::Session::best_language( 
@@ -1066,34 +921,6 @@ sub to_xml
 }
 
 sub to_xml_single
-{
-	my( $self, $session, $value, $depth ) = @_;
-
-	$depth = 0 unless defined $depth;
-
-	unless( $self->get_property( "hasid" ) )
-	{
-		return $self->to_xml_noid( $session, $value, $depth );
-	}
-
-	my $ind = "  "x$depth;
-	my $r = $session->make_doc_fragment;	
-	my $v = $value->{id};
-	$v = "" unless( defined $v );
-	$r->appendChild( $session->make_text( "\n  $ind" ) );
-	my $id = $session->make_element( "id" );
-	$id->appendChild( $session->make_text( $v ) );
-	$r->appendChild( $id );
-	$r->appendChild( $session->make_text( "\n  $ind" ) );
-	my $main = $session->make_element( "main" );
-	$main->appendChild( $self->to_xml_noid( $session, $value->{main}, $depth+1 ) );
-	$r->appendChild( $main );
-	$r->appendChild( $session->make_text( "\n$ind" ) );
-
-	return $r;
-}
-
-sub to_xml_noid
 {
 	my( $self, $session, $value, $depth ) = @_;
 
@@ -1186,11 +1013,6 @@ sub to_xml_old_single
 	my %attrs = ( name=>$self->get_name() );
 	$attrs{'xmlns'}="http://eprints.org/ep2/data" unless( $no_xmlns );
 
-	if( $self->get_property( "hasid" ) )
-	{
-		$attrs{id} = $v->{id};
-		$v = $v->{main};
-	}
 	my $r = $session->make_element( "field", %attrs );
 
 	if( $self->get_property( "multilang" ) )
@@ -1349,14 +1171,12 @@ sub get_search_group { return 'basic'; }
 sub get_property_defaults
 {
 	return (
+		allow_null 	=> 0,
 		browse_link 	=> $EPrints::MetaField::UNDEF,
 		can_clone 	=> 1,
 		confid 		=> $EPrints::MetaField::NO_CHANGE,
 		export_as_xml 	=> 1,
 		fromform 	=> $EPrints::MetaField::UNDEF,
-		hasid 		=> 0,
-		id_editors_only	=> 0,
-		idpart 		=> 0, # internal
 		import		=> 1,
 		input_add_boxes => $EPrints::MetaField::FROM_CONFIG,
 		input_advice_right => $EPrints::MetaField::UNDEF,
@@ -1365,7 +1185,6 @@ sub get_property_defaults
 		input_boxes 	=> $EPrints::MetaField::FROM_CONFIG,
 		input_cols 	=> $EPrints::MetaField::FROM_CONFIG,
 		input_id_cols	=> $EPrints::MetaField::FROM_CONFIG,
-		mainpart 	=> 0, #internal
 		make_single_value_orderkey 	=> $EPrints::MetaField::UNDEF,
 		make_value_orderkey 		=> $EPrints::MetaField::UNDEF,
 		maxlength 	=> $VARCHAR_SIZE,
@@ -1386,7 +1205,9 @@ sub get_property_defaults
 		sql_index 	=> 1,
 		text_index 	=> 0,
 		toform 		=> $EPrints::MetaField::UNDEF,
-		type 		=> $EPrints::MetaField::REQUIRED );
+		type 		=> $EPrints::MetaField::REQUIRED,
+		hasid		=> 0, # do not use!
+);
 }
 		
 # Most types are not indexed		
@@ -1402,6 +1223,21 @@ sub get_value
 	my( $self, $object ) = @_;
 
 	return $object->get_value_raw( $self->{name} );
+}
+sub set_value
+{
+	my( $self, $object, $value ) = @_;
+
+	return $object->set_value_raw( $self->{name},$value );
+}
+
+# return true if this is a virtual field which does not exist in the
+# database.
+sub is_virtual
+{
+	my( $self ) = @_;
+
+	return 0;
 }
 
 ######################################################################

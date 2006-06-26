@@ -147,10 +147,6 @@ sub get_index_codes_single
 
 	return( [], [], [] ) unless( EPrints::Utils::is_set( $value ) );
 
-	$value = $self->which_bit( $value );
-
-	return( [], [], [] ) unless( EPrints::Utils::is_set( $value ) );
-
 	if( !$self->get_property( "multilang" ) )
 	{
 		return $self->get_index_codes_basic( $session, $value );

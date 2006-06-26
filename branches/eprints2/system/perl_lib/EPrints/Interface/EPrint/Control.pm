@@ -46,7 +46,7 @@ sub render
 		$chunk->appendChild( $div );
 	}
 
-	my $status_phrase = $interface->{session}->html_phrase( "cgi/users/eprint:item_is_in_".$status );
+	my $status_phrase = $interface->{session}->html_phrase( "cgi/users/edit_eprint:item_is_in_".$status );
 
 	my $status_div = $interface->{session}->make_element( "div", style=>"border: 1px solid black; margin: 1em 0 1em 0; padding: 1em" );
 	$status_div->appendChild( $status_phrase );
@@ -101,27 +101,27 @@ sub render
 		$view = undef;
 	}
 
-	foreach my $view_i ( qw/ summary full history / )
+	foreach my $view_i ( qw/ summary full history export staffexport / )
 	{	
 		next if( !$interface->allow_action( "view_$view_i" ) );
 
 		$view = $view_i if !defined $view;
-		
-		my $a = $interface->{session}->render_link( "?eprintid=".$interface->{eprintid}."&view=".$view_i );
-		my $label = $interface->{session}->html_phrase( $interface->interface.":action_view_".$view_i );
-
+		my $a;
 		my $li;
 		if( $view eq $view_i )
 		{
+			$a = $interface->{session}->make_element( "a" );
 			$li = $interface->{session}->make_element( "li", class=>"ep_selected" );
-			$li->appendChild( $label );
 		}
 		else
 		{
+			$a = $interface->{session}->render_link( "?eprintid=".$interface->{eprintid}."&view=".$view_i );
 			$li = $interface->{session}->make_element( "li" );
-			$a->appendChild( $label );
-			$li->appendChild( $a );
 		}
+		my $label = $interface->{session}->html_phrase( $interface->interface.":action_view_".$view_i );
+
+		$a->appendChild( $label );
+		$li->appendChild( $a );
 
 		$ul->appendChild( $li );
 	}
@@ -131,6 +131,8 @@ sub render
 	if( $view eq "summary" ) { ($data,$title) = $interface->{eprint}->render; }
 	if( $view eq "full" ) { ($data,$title) = $interface->{eprint}->render_full; }
 	if( $view eq "history" ) { ($data,$title) = $interface->{eprint}->render_history; }
+	if( $view eq "export" ) { $data = $interface->{eprint}->render_export_links; }
+	if( $view eq "staffexport" ) { $data = $interface->{eprint}->render_export_links(1); }
 	$view_div->appendChild( $data );	
 	$chunk->appendChild( $ul );
 	$chunk->appendChild( $view_div );

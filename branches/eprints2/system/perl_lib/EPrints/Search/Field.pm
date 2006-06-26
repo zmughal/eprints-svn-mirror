@@ -214,11 +214,6 @@ sub new
 	$self->{"form_name_prefix"} = $prefix.$self->{"id"};
 	$self->{"field"} = $fields->[0];
 
-	if( $self->{"field"}->get_property( "hasid" ) )
-	{
-		$self->{"field"} = $self->{"field"}->get_main_field();
-	}
-
 	# a search is "simple" if it contains a mix of fields. 
 	# 'text indexable" fields (longtext,text,url & email) all count 
 	# as one type. int & year count as one type.
@@ -702,19 +697,6 @@ sub serialise
 	return join( ":" , @escapedparts );
 }
 
-
-#sub serial_id
-#{
-#	my( $self ) = @_;
-#
-#	my @fnames;
-#	foreach( @{$self->{"fieldlist"}} )
-#	{
-#		push @fnames, $_->get_name().($_->get_property( "idpart" )?".id":"");
-#	}
-#	return join( "/", sort @fnames ),
-#}
-	
 
 
 ######################################################################

@@ -65,7 +65,8 @@ sub convert_dataobj
 	if( defined $creators )
 	{
 		foreach my $creator ( @{$creators} )
-		{
+		{	
+			next if !defined $creator;
 			push @dcdata, [ "creator", EPrints::Utils::make_name_string( $creator ) ];
 		}
 	}

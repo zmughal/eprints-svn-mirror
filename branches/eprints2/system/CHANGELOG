@@ -3799,3 +3799,17 @@ PACKAGE: 2.2.99.2
     any phrases.
  * allow_action now has the same functionality as edit_eprint
 
+2006-06-26 cjg
+
+ * Reverted some changes to CSS and phrases by moj :)
+ * Added Compound fields
+ * Removed hasid support
+ * Added object passing to all render and input field methods
+ * Added code for set_value and get_value to do something special for compound
+    fields. 
+ * and get_data too.
+ * Added concept of virtual fields for fields which do not exist in the
+    database.
+ * Added export links tabs to eprint control page
+
+

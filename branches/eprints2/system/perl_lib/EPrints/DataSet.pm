@@ -648,42 +648,19 @@ sub get_sql_sub_table_name
 ######################################################################
 =pod
 
-=item $fields = $ds->get_fields( [$split_id] )
+=item $fields = $ds->get_fields
 
 Returns a list of the EPrints::Metafields belonging to this dataset.
-
-If $split_id is set then fields with the has_id property are split into
-id_part and main_part. This is useful for database functions.
 
 =cut
 ######################################################################
 
 sub get_fields
 {
-	my( $self, $split_id ) = @_;
+	my( $self ) = @_;
 
-	my @fields = ();
-	if( $split_id )
-	{
-		# Split "id" fields into component parts
-		my $field;
-		foreach $field ( @{ $self->{fields} } )
-		{
-			if( $field->get_property( "hasid" ) )
-			{
-				push @fields,$field->get_id_field();
-				push @fields,$field->get_main_field();
-			}
-			else
-			{
-				push @fields,$field;
-			}
-		}
-	}
-	else
-	{
-		@fields = @{ $self->{fields} };
-	}
+	my @fields = @{ $self->{fields} };
+
 	return @fields;
 }
 

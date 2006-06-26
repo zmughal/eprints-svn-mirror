@@ -24,7 +24,7 @@ sub screen
 sub interface
 {
 	# Used for phrases
-	return "cgi/users/eprint";
+	return "cgi/users/edit_eprint";
 }
 
 sub process
@@ -231,7 +231,7 @@ sub allow_action
 	elsif( $eprint_status eq "deletion" )
 	{
 		return 1 if( $action eq "edit_eprint" );
-		return 1 if( $action eq "move_eprint_deletion_archive" && $eprint_status eq "deletion" );
+		return 1 if( $action eq "move_eprint_deletion_archive" );
 		return 1 if( $action eq "derive_eprint_clone" );
 		return 1 if( $action eq "derive_eprint_version" );
 	}
@@ -239,6 +239,8 @@ sub allow_action
 	return 1 if( $action eq "view_history" );
 	return 1 if( $action eq "view_full" );
 	return 1 if( $action eq "view_summary" );
+	return 1 if( $action eq "view_export" );
+	return 1 if( $action eq "view_staffexport" );
 	
 	return 1 if( $action eq "view_buffer" );
 

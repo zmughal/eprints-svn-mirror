@@ -1219,19 +1219,6 @@ sub field_from_config_string
 		EPrints::Config::abort( "Can't make field from config_string: $fieldname" );
 	}
 
-	if( $field->get_property( "hasid" ) )
-	{
-		if( $q{id} )
-		{
-			$field = $field->get_id_field();
-		}
-		else
-		{
-			$field = $field->get_main_field();
-		
-		}
-	}
-
 	unless( $modifiers ) { return $field; }
 
 	if( scalar keys %q )

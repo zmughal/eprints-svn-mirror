@@ -52,13 +52,11 @@ sub handler
 	my( $r ) = @_;
 
 	my $filename = $r->filename;
-print STDERR ">>>$filename\n";
+
 	return DECLINED unless( $filename =~ s/.html$// );
 
-print STDERR ">>$filename\n";
 	return DECLINED unless( -r $filename.".page" );
 
-print STDERR ">$filename\n";
 	my $session = new EPrints::Session;
 
 	my $parts;

@@ -55,33 +55,39 @@ sub get_basic_input_elements
 
 	my $ex = $self->SUPER::get_basic_input_elements( $session, $value, $suffix, $staff );
 
-	my $ds = $session->get_repository->get_dataset( 
-			$self->get_property('datasetid') );
-	my $desc;
-	if( defined $value )
-	{
-		my $object = $ds->get_object( $session, $value );
-		if( defined $object )
-		{
-			$desc = $object->render_citation_link;
-		}
-		else
-		{
-			$desc = $session->html_phrase( 
-				"lib/metafield/itemref:not_found",
-					id=>$session->make_text($value),
-					objtype=>$session->html_phrase(
-				"general:dataset_object_".$ds->confid));
-		}
-	}
-	else
-	{
-		$desc = $session->make_doc_fragment;
-	}
+	my $desc = $self->render_single_value( $session, $value );
+
 	push @{$ex->[0]}, {el=>$desc};
 
 	return $ex;
 }
+
+sub render_single_value
+{
+	my( $self, $session, $value ) = @_;
+
+	if( !defined $value )
+	{
+		return $session->make_doc_fragment;
+	}
+
+	my $ds = $session->get_repository->get_dataset( 
+			$self->get_property('datasetid') );
+
+	my $object = $ds->get_object( $session, $value );
+
+	if( defined $object )
+	{
+		return $object->render_citation_link;
+	}
+
+	return $session->html_phrase( 
+		"lib/metafield/itemref:not_found",
+			id=>$session->make_text($value),
+			objtype=>$session->html_phrase(
+		"general:dataset_object_".$ds->confid));
+}
+
 
 sub get_input_elements
 {   

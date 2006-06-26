@@ -51,6 +51,17 @@ sub get_sql_type
 	return undef;
 }
 
+
+# This type of field is virtual.
+sub is_virtual
+{
+	my( $self ) = @_;
+
+	return 1;
+}
+
+######################################################################
+
 sub get_property_defaults
 {
 	my( $self ) = @_;

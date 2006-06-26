@@ -474,7 +474,7 @@ sub create_table
 	foreach $field (@fields)
 	{
 		next unless ( $field->get_property( "multiple" ) || $field->get_property( "multilang" ) );
-		next if( $field->is_type( "file", "subobject" ) );
+		next if( $field->is_virtual );
 		# make an aux. table for a multiple field
 		# which will contain the same type as the
 		# key of this table paired with the non-
@@ -532,7 +532,7 @@ sub create_table
 	{
 		next if( $field->get_property( "multiple" ) );
 		next if( $field->get_property( "multilang" ) );
-		next if( $field->is_type( "file", "subobject" ) );
+		next if( $field->is_virtual );
 
 		if ( $first )
 		{
@@ -720,7 +720,7 @@ sub update
 	my $field;
 	foreach $field ( @fields ) 
 	{
-		next if( $field->is_type( "file","subobject" ) );
+		next if( $field->is_virtual );
 
 		if( $field->is_type( "secret" ) &&
 			!EPrints::Utils::is_set( $data->{$field->get_name()} ) )
@@ -736,16 +736,8 @@ sub update
 			next;
 		}
 	
-		my $value = $field->which_bit( $data->{$field->get_name()} );
+		my $value = $data->{$field->get_name()};
 		my $colname = $field->get_sql_name();
-		if( $field->get_property( "idpart" ) )
-		{
-			$value = $value->{id};
-		}
-		if( $field->get_property( "mainpart" ) )
-		{
-			$value = $value->{main};
-		}
 		# clearout the freetext search index table for this field.
 
 		
@@ -829,7 +821,7 @@ sub update
 			my $pos;
 			foreach $pos (0..(scalar @{$fieldvalue}-1) )
 			{
-				my $value = $multifield->which_bit( $fieldvalue->[$pos] );
+				my $value = $fieldvalue->[$pos];
 				my $incp = 0;
 				if( $multifield->get_property( "multilang" ) )
 				{
@@ -850,7 +842,7 @@ sub update
 				}
 				else
 				{
-					if( defined $value )
+					if( defined $value || $multifield->get_property( "allow_null" ))
 					{
 						push @values, {
 							v => $value,
@@ -864,7 +856,7 @@ sub update
 		}
 		else
 		{
-			my $value = $multifield->which_bit( $fieldvalue );
+			my $value = $fieldvalue;
 			if( $multifield->get_property( "multilang" ) )
 			{
 				my $langid;
@@ -1014,7 +1006,7 @@ sub remove
 	{
 		next unless( $field->get_property( "multiple" ) || $field->get_property( "multilang" ) );
 		# ideally this would actually remove the subobjects
-		next if( $field->is_type( "subobject", "file" ) );
+		next if( $field->is_virtual );
 		my $auxtable = $dataset->get_sql_sub_table_name( $field );
 		my $sql = "DELETE FROM $auxtable WHERE $where";
 		$rv = $rv && $self->do( $sql );
@@ -1790,7 +1782,7 @@ sub _get
 
 	foreach $field ( @fields ) 
 	{
-		next if( $field->is_type( "file","subobject" ) );
+		next if( $field->is_virtual );
 
 		if( $field->is_type( "secret" ) )
 		{
@@ -1881,7 +1873,7 @@ sub _get
 		foreach $field ( @fields ) 
 		{ 
 			next if( $field->is_type( "secret" ) );
-			next if( $field->is_type( "file","subobject" ) );
+			next if( $field->is_virtual );
 
 			if( $field->get_property( "multiple" ) )
 			{
@@ -1918,18 +1910,7 @@ sub _get
 				$value = shift @row;
 			}
 
-			if( $field->get_property( "mainpart" ) )
-			{
-				$record->{$field->get_name()}->{main} = $value;
-			}
-			elsif( $field->get_property( "idpart" ) )
-			{
-				$record->{$field->get_name()}->{id} = $value;
-			}
-			else
-			{
-				$record->{$field->get_name()} = $value;
-			}
+			$record->{$field->get_name()} = $value;
 		}
 		$data[$count] = $record;
 		$count++;
@@ -2021,48 +2002,22 @@ sub _get
 				$value = shift @values;
 			}
 
-			my $subbit;
-			$subbit = "id" if( $multifield->get_property( "idpart" ) );
-			$subbit = "main" if( $multifield->get_property( "mainpart" ) );
-
 			if( $multifield->get_property( "multiple" ) )
 			{
 				if( $multifield->get_property( "multilang" ) )
 				{
-					if( defined $subbit )
-					{
-						$data[$n]->{$fn}->[$pos]->{$subbit}->{$lang} = $value;
-					}
-					else
-					{
-						$data[$n]->{$fn}->[$pos]->{$lang} = $value;
-					}
+					$data[$n]->{$fn}->[$pos]->{$lang} = $value;
 				}
 				else
 				{
-					if( defined $subbit )
-					{
-						$data[$n]->{$fn}->[$pos]->{$subbit} = $value;
-					}
-					else
-					{
-						$data[$n]->{$fn}->[$pos] = $value;
-					}
+					$data[$n]->{$fn}->[$pos] = $value;
 				}
 			}
 			else
 			{
 				if( $multifield->get_property( "multilang" ) )
 				{
-					if( defined $subbit )
-					{
-						$data[$n]->{$fn}->{$subbit}->{$lang} = $value;
-					}
-					else
-					{
-
-						$data[$n]->{$fn}->{$lang} = $value;
-					}
+					$data[$n]->{$fn}->{$lang} = $value;
 				}
 				else
 				{
@@ -2098,10 +2053,10 @@ sub get_values
 	my( $self, $field, $dataset ) = @_;
 
 	# what if a subobjects field is called?
-	if( $field->is_type( "file","subobject" ) )
+	if( $field->is_virtual )
 	{
 		$self->{session}->get_repository->log( 
-"Attempt to call get_values on a subobject or file type field." );
+"Attempt to call get_values on a virtual field." );
 		return [];
 	}
 

@@ -99,6 +99,13 @@ sub xml_field_to_epdatafield
 			push @{$epdatafield}, $plugin->xml_to_file( $dataset,$el );
 			next;
 		}
+	
+		if( $field->is_virtual )
+		{
+			$plugin->warning( "<$type> is an unknown virtual field inside <".$field->get_name.">" );
+			next;
+		}
+	
 
 		if( $type ne "item" )
 		{
@@ -112,31 +119,6 @@ sub xml_field_to_epdatafield
 }
 
 sub xml_field_to_data_single
-{
-	my( $plugin,$dataset,$field,$xml ) = @_;
-
-	unless( $field->get_property( "hasid" ) )
-	{
-		return $plugin->xml_field_to_data_noid( $dataset, $field, $xml );
-	}
-
-	my %toprocess = $plugin->get_known_nodes( $xml, qw/ id main / );
-
-	my $epdatafield = {};
-	if( defined $toprocess{id} ) 
-	{
-		$epdatafield->{id} = $plugin->xml_to_text( $toprocess{id} );
-	}
-	if( defined $toprocess{main} ) 
-	{
-		$epdatafield->{main} = $plugin->xml_field_to_data_noid( $dataset, $field, $toprocess{main} );
-	}
-	return $epdatafield;
-
-
-}
-
-sub xml_field_to_data_noid
 {
 	my( $plugin,$dataset,$field,$xml ) = @_;
 
