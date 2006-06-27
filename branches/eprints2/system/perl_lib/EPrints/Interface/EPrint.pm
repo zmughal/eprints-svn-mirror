@@ -241,6 +241,8 @@ sub allow_action
 	return 1 if( $action eq "view_summary" );
 	return 1 if( $action eq "view_export" );
 	return 1 if( $action eq "view_staffexport" );
+	return 1 if( $action eq "view_edit" );
+	return 1 if( $action eq "view_staffedit" );
 	
 	return 1 if( $action eq "view_buffer" );
 

@@ -92,8 +92,6 @@ sub render
 	$chunk->appendChild( $action_bar );
 
 
-	my $ul = $interface->{session}->make_element( "ul",class=>"ep_control_view_tabs" );
-
 	my $view = $interface->{session}->param( "view" );
 
 	if( !$interface->allow_action( "view_$view" ) )
@@ -101,23 +99,54 @@ sub render
 		$view = undef;
 	}
 
-	foreach my $view_i ( qw/ summary full history export staffexport / )
+	my $script = $interface->{session}->make_element( "script", type=>"text/javascript" );
+	$chunk->appendChild( $script );
+	$script->appendChild( $interface->{session}->make_text( '
+window.ep_showTab = function( baseid, tabid )
+{
+
+	panels = document.getElementById( baseid+"_panels" );
+	for( i=0; ep_lt(i,panels.childNodes.length); i++ ) 
+	{
+		child = panels.childNodes[i];
+		child.style.display = "none";
+	}
+
+	tabs = document.getElementById( baseid+"_tabs" );
+	for( i=0; ep_lt(i,tabs.childNodes.length); i++ ) 
+	{
+		child = tabs.childNodes[i];
+		child.className -= "ep_selected";
+	}
+
+	panel = document.getElementById( baseid+"_panel_"+tabid );
+	panel.style.display = "block";
+
+	tab = document.getElementById( baseid+"_tab_"+tabid );
+	tab.style.font_size = "30px";
+	tab.className = "ep_selected";
+};
+
+' ) );
+
+	my $ul = $interface->{session}->make_element( "ul",id=>"ep_control_view_tabs",  class=>"ep_control_view_tabs" );
+
+	my @lite_views = qw/ summary full export staffexport edit staffedit /;
+	my @views = ( @lite_views, "history" );
+	foreach my $view_i ( @views )
 	{	
 		next if( !$interface->allow_action( "view_$view_i" ) );
 
 		$view = $view_i if !defined $view;
-		my $a;
-		my $li;
-		if( $view eq $view_i )
-		{
-			$a = $interface->{session}->make_element( "a" );
-			$li = $interface->{session}->make_element( "li", class=>"ep_selected" );
-		}
-		else
-		{
-			$a = $interface->{session}->render_link( "?eprintid=".$interface->{eprintid}."&view=".$view_i );
-			$li = $interface->{session}->make_element( "li" );
-		}
+		my %a_opts = ( 
+			onClick => "ep_showTab('ep_control_view','$view_i' ); return false;", 
+			href    => "?eprintid=".$interface->{eprintid}."&view=".$view_i, 
+		);
+		my %li_opts = ( id => "ep_control_view_tab_$view_i" );
+		if( $view eq $view_i ) { $li_opts{class} = "ep_selected"; }
+
+		my $a = $interface->{session}->make_element( "a", %a_opts );
+		my $li = $interface->{session}->make_element( "li", %li_opts );
 		my $label = $interface->{session}->html_phrase( $interface->interface.":action_view_".$view_i );
 
 		$a->appendChild( $label );
@@ -125,19 +154,69 @@ sub render
 
 		$ul->appendChild( $li );
 	}
+	$chunk->appendChild( $ul );
 
-	my $view_div = $interface->{session}->make_element( "div", class=>"ep_control_view" );
+	my $panel = $interface->{session}->make_element( "div", id=>"ep_control_view_panels" );
+	$chunk->appendChild( $panel );
+	my $view_div = $interface->{session}->make_element( "div", class=>"ep_control_view", id=>"ep_control_view_panel_$view" );
+	$view_div->appendChild( render_view( $interface, $view ) );	
+	$panel->appendChild( $view_div );
+
+	foreach my $view_i ( @lite_views )
+	{
+		next if( !$interface->allow_action( "view_$view_i" ) );
+		next if $view_i eq $view;
+		my $other_view = $interface->{session}->make_element( "div", class=>"ep_control_view", id=>"ep_control_view_panel_$view_i", style=>"display: none" );
+		$other_view->appendChild( render_view( $interface, $view_i ) );	
+		$panel->appendChild( $other_view );
+	}
+
+	return $chunk;
+}
+
+sub render_view
+{
+	my( $interface, $view ) = @_;
+
 	my( $data, $title );
+	if( !$interface->allow_action( "view_$view" ) )
+	{
+		return $interface->{session}->html_phrase( "cgi/users/edit_eprint:cant_view_view" );
+	}
+
 	if( $view eq "summary" ) { ($data,$title) = $interface->{eprint}->render; }
 	if( $view eq "full" ) { ($data,$title) = $interface->{eprint}->render_full; }
 	if( $view eq "history" ) { ($data,$title) = $interface->{eprint}->render_history; }
 	if( $view eq "export" ) { $data = $interface->{eprint}->render_export_links; }
 	if( $view eq "staffexport" ) { $data = $interface->{eprint}->render_export_links(1); }
-	$view_div->appendChild( $data );	
-	$chunk->appendChild( $ul );
-	$chunk->appendChild( $view_div );
+	if( $view eq "edit" ) { $data = render_edit_tab( $interface->{session}, $interface->{eprint}, 0 ); }
+	if( $view eq "staffedit" ) { $data = render_edit_tab( $interface->{session}, $interface->{eprint}, 1 ); }
 
-	return $chunk;
+	if( !defined $view )
+	{
+		return $interface->{session}->html_phrase( "cgi/users/edit_eprint:no_such_view" );
+	}
+
+	return $data;
+}
+
+sub render_edit_tab
+{
+	my( $session, $eprint, $staff ) = @_;
+
+	my %opts = ( item=> $eprint );
+	if( $staff ) { $opts{STAFF_ONLY} = "TRUE"; }
+	my $workflow = EPrints::Workflow->new( $session, "default", %opts );
+	my $ul = $session->make_element( "ul" );
+	foreach my $stage_id ( $workflow->get_stage_ids )
+	{
+		my $li = $session->make_element( "li" );
+		my $a = $session->render_link( "xxxx" );
+		$li->appendChild( $a );
+		$a->appendChild( $session->make_text( $stage_id ) );
+		$ul->appendChild( $li );
+	}
+	return $ul;
 }
 
 

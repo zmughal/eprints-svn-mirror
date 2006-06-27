@@ -336,7 +336,7 @@ hr.last {
 .ep_control_view_tabs {
 	border-bottom: solid black 1px;
 	margin: 0;
-	padding-bottom: 19px;
+	padding-bottom: 23px;
 	padding-left: 10px;
 }
 
@@ -351,13 +351,15 @@ hr.last {
 	border: solid black 1px;
 	float: left;
 	border: solid 1px black;
+	margin-right: 10px;
 	background-color: #e0e0ff;
 }
 
-.ep_control_view_tabs a:link, .ep_control_view_tabs a:visited {
+.ep_control_view_tabs a {
 	text-decoration: none;
 	display: block;
 	padding: 3px 8px 3px 8px;
+	font-size: 14px;
 }
 ul.ep_control_view_tabs li.ep_selected {
 	border-bottom-color: white;

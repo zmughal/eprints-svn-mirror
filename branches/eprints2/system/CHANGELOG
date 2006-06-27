@@ -3812,4 +3812,10 @@ PACKAGE: 2.2.99.2
     database.
  * Added export links tabs to eprint control page
 
+2006-06-27 cjg
 
+ * Another fix to the tab css
+ * Added "edit" tabs to the control page
+ * Added javascript to switch between tabs
+ * Fixed issue with // in a stylesheet
+ * Added padder to stop problem with script tags being collapsed.

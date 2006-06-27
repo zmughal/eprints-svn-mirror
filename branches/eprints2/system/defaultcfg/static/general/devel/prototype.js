@@ -2004,3 +2004,6 @@ if (/Konqueror|Safari|KHTML/.test(navigator.userAgent)) {
     return [valueL, valueT];
   }
 }
+
+function ep_gt( a, b ) { return a>b; }
+function ep_lt( a, b ) { return a<b; }

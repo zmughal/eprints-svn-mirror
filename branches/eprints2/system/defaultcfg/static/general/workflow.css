@@ -142,7 +142,7 @@
 #filelist tbody tr td,th {
 	font-family: "lucida grande", verdana, sans-serif;
 	font-size: 10pt;
-	padding: 0.25em 0.25em; //3px 8px;
+	padding: 0.25em 0.25em 3px 8px;
 	border-left: 1px solid #d9d9d9;
 }
 

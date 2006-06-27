@@ -784,6 +784,8 @@ Staff CGI Scripts
     <ep:phrase ref="cgi/users/edit_eprint:action_view_buffer">View Records awaiting Editorial Review</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action_view_export">Export</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action_view_staffexport">Export</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:action_view_edit">Edit</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:action_view_staffedit">Edit</ep:phrase>
     <ep:phrase ref="mail_delete_reason.inbox">
 The following eprint has been deleted from your User Area:
 
