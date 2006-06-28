@@ -580,7 +580,7 @@ User Area CGI Scripts
 
     </ep:phrase>
     <ep:phrase ref="cgi/users/review:no_reason">No reason was given.</ep:phrase>
-    <ep:phrase ref="cgi/users/review:done"><p>Your request has been sent the the adminstrator.</p></ep:phrase>
+    <ep:phrase ref="cgi/users/review:done"><p>Your request has been sent the the administrator.</p></ep:phrase>
     <ep:phrase ref="cgi/users/review:cant_remove">You may not request the removal of this item</ep:phrase>
 
 <!-- change_email -->
