@@ -172,7 +172,7 @@ sub eprint_render
 				if( defined( $session->get_repository->call( "email_for_doc_request", $session, $eprint ) ) )
 				{
 					# only render if there is a contact email address
-					my $form = $session->render_form( "post", $session->get_repository->get_conf( "perl_url" ) . "/request_doc" );
+					my $form = $session->render_form( "post", $session->get_repository->get_conf( "perl_url" ) . "/users/request_doc" );
 					$form->appendChild( $session->render_hidden_field( "eprintid", $eprint->get_id ) );
 					$form->appendChild( $session->render_action_buttons( 
 						"submit" => $session->phrase( "request:button" )
