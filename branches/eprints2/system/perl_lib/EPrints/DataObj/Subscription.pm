@@ -417,7 +417,7 @@ sub send_out_subscription
 				n => $self->{session}->make_text( $searchexp->count ),
 				search => $searchdesc,
 				matches => $info->{matches},
-				url => $self->{session}->make_text( $url ) );
+				url => $self->{session}->render_link( $url ) );
 		if( $self->{session}->get_noise >= 2 )
 		{
 			print "Sending out subscription #".$self->get_id." to ".$user->get_value( "email" )."\n";

@@ -964,7 +964,7 @@ sub send_out_editor_alert
 				n => $self->{session}->make_text( $list->count ),
 				search => $searchdesc,
 				matches => $matches,
-				url => $self->{session}->make_text( $url ) );
+				url => $self->{session}->render_link( $url ) );
 		$self->mail( 
 			"lib/user:editor_update_subject",
 			$mail );

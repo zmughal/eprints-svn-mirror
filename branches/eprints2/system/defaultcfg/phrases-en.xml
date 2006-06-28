@@ -332,8 +332,8 @@
     <ep:phrase ref="ordername_user_byrevjoin">By registration date (newest first)</ep:phrase>
 
     <ep:phrase ref="mail_sig">
-<hr /><p>
-&archivename;<br />
+<hr />
+<p>&archivename;<br />
 &frontpage;<br />
 &adminemail;
 </p>

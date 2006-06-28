@@ -321,7 +321,7 @@ sub handle_removal_request
 		email=>$user->render_value( "email" ),
 		reason=>( EPrints::Utils::is_set( $reason ) ? $session->make_text( $reason ) 
 			 : $session->html_phrase( "cgi/users/review:no_reason" ) ),
-		url=>$session->make_text( $url ) );
+		url=>$session->render_link( $url ) );
 	if( !$rc )
 	{
 		$session->render_error(

@@ -385,7 +385,7 @@ Enter a URL to capture a file from: <ep:pin ref="url" /><br />
 <p>This mail contains your <ep:pin ref="howoften" /> subscription to &archivename;.</p>
 <p>Number of new (or changed) submissions: <ep:pin ref="n" />.</p>
 <p>Your subscription is: <ep:pin ref="search" /></p>
-<p>To cancel, temporarily disable or alter your subscription, visit the following web page:<br /><ep:pin ref="url" /></p>
+<p>To cancel, temporarily disable or alter your subscription, <ep:pin ref="url">click here</ep:pin>.</p>
 &ruler;
 <ep:pin ref="matches" />
 </ep:phrase>
@@ -402,7 +402,7 @@ Enter a URL to capture a file from: <ep:pin ref="url" /><br />
 <p>This mail is your <ep:pin ref="howoften" /> summary of items awaiting approval for addition to &archivename;.</p>
 <p>Number of items: <ep:pin ref="n" />.</p>
 <p>Only items matching your editorial scope are listed. Your scope is: <ep:pin ref="search" /></p>
-<p>To cancel or temporarily disable this email update, visit the following web page:<br /><ep:pin ref="url" /></p>
+<p>To cancel or temporarily disable this email update, <ep:pin ref="url">click here</ep:pin>.</p>
 &ruler;
 <ep:pin ref="matches" />
 </ep:phrase>
@@ -574,10 +574,7 @@ User Area CGI Scripts
 
 <p><ep:pin ref="reason" /></p>
 
-<p>Visit the following URL to view the item and have the option to remove it:</p>
-
-<p><ep:pin ref="url" /></p>
-
+<p>To view the item and have the option to remove it, <ep:pin ref="url">click here</ep:pin>.</p>
     </ep:phrase>
     <ep:phrase ref="cgi/users/review:no_reason">No reason was given.</ep:phrase>
     <ep:phrase ref="cgi/users/review:done"><p>Your request has been sent the the administrator.</p></ep:phrase>
