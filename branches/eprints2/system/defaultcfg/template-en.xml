@@ -36,7 +36,7 @@
 
 	<table class="searchbar" border="0" cellpadding="0" cellspacing="0" width="100%">
 		<tr>
-			<td align="left">Not logged in: <a href="&userhome;">login</a> | <a href="&perl_url;/register">register</a></td>
+			<td align="left"><ep:pin ref="login_status"/></td>
 			<td align="right">
 				<form method="get" accept-charset="utf-8" action="http://flag.ecs.soton.ac.uk/perl/search" style="display:inline">
 					<img alt="Search" src="/images/search.gif" /> Search
@@ -54,7 +54,6 @@
 
     <div class="main">
       <div align="center"><table width="720"><tr><td align="left">
-    <ep:pin ref="testing" />
         <h1 class="pagetitle"><ep:pin ref="title" /></h1>
         <ep:pin ref="page" />
       </td></tr></table></div>

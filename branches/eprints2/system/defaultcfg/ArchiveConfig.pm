@@ -709,11 +709,12 @@ $c->{dynamic_template}->{function} = sub {
 	my $user = $session->current_user;
 	if( defined $user )
 	{
-		$parts->{testing} = $user->render_description;
+		$parts->{login_status} = $session->html_phrase( "dynamic:logged_in", 
+			user => $user->render_description );
 	}
 	else
 	{
-		$parts->{testing} = $session->make_text( "login" );
+		$parts->{login_status} = $session->html_phrase( "dynamic:not_logged_in" );
 	}
 };
 
