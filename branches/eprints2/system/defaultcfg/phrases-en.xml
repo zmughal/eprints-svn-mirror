@@ -416,21 +416,15 @@ terms.</p>
 
 <p>Thank you for your interest in &archivename;.</p>
 
-<p>You now need to activate your new password, using the following URL:</p>
-
-&lt;<ep:pin ref="confirmurl" />&gt;
+<p>You now need to activate your new password, <ep:pin ref="confirmurl">click here</ep:pin>.</p>
 
 <p>Your username is: <ep:pin ref="username" />.</p>
 
-<p>After you have successfully confirmed your password, you can deposit items at the following Web address:</p>
-
-&lt;&userhome;&gt;
+<p>After you have successfully confirmed your password, you can deposit items <a href="&userhome;">here</a>.</p>
 
 <p>Once you have confirmed your identity you may also subscribe to the email alerts service, to be automatically informed of new deposits in the repository in your chosen subject areas in a daily, weekly or monthly digest.</p>
 
-<p>You can create a subscription by visiting the following page:</p>
-
-<p>&lt;&perl_url;/users/subscribe&gt;</p>
+<p>You can create a subscription by <a href="&perl_url;/users/subscribe">clicking here</a>.</p>
 
 <p>Have your username and password ready when visiting any of the above pages.</p> <p>This message was generated automatically by software. If you have any questions, then please feel free to email a real person at:</p>
 
@@ -443,9 +437,7 @@ terms.</p>
 
 <p>You have requested your email to be changed to <pin ref="newemail" /></p> 
 
-<p>To activate this new address please visit the following URL:</p>
-
-<ep:pin ref="confirmurl" />
+<p>To activate this new address please <ep:pin ref="confirmurl">click here</ep:pin>.</p>
 
     </ep:phrase>
 
