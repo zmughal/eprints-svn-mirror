@@ -92,6 +92,16 @@ sub eprint_render
 		}
 	}		
 
+	# Contact email address
+	my $hascontact = 0;
+	if( $session->get_repository->can_call( "email_for_doc_request" ) )
+	{
+		if( defined( $session->get_repository->call( "email_for_doc_request", $session, $eprint ) ) )
+		{
+			$hascontact = 1;
+		}
+	}
+
 	# Available documents
 	my @documents = $eprint->get_all_documents();
 
@@ -117,6 +127,16 @@ sub eprint_render
 	if( $docs_to_show == 0 )
 	{
 		$p->appendChild( $session->html_phrase( "page:nofulltext" ) );
+		if( $hascontact )
+		{
+			# "Request a copy" button
+			my $form = $session->render_form( "post", $session->get_repository->get_conf( "perl_url" ) . "/request_doc" );
+			$form->appendChild( $session->render_hidden_field( "eprintid", $eprint->get_id ) );
+			$form->appendChild( $session->render_action_buttons( 
+				"submit" => $session->phrase( "request:button" )
+			) );
+			$p->appendChild( $form );
+		}
 	}
 	else
 	{
@@ -149,6 +169,21 @@ sub eprint_render
 				$doctd->appendChild( $session->make_element( 'br' ) );
 				$doctd->appendChild( $session->make_text( EPrints::Utils::human_filesize($size) ));
 			}
+
+			my $security = $doc->get_value( "security" );
+			if( $hascontact && defined $security && $security ne "" )
+			{
+				# "Request a copy" button
+				$doctd = $session->make_element( "td" );
+				my $form = $session->render_form( "post", $session->get_repository->get_conf( "perl_url" ) . "/request_doc" );
+				$form->appendChild( $session->render_hidden_field( "docid", $doc->get_id ) );
+				$form->appendChild( $session->render_action_buttons( 
+					"submit" => $session->phrase( "request:button" )
+				) );
+				$doctd->appendChild( $form );
+				$doctr->appendChild( $doctd );
+			}
+
 			$doctable->appendChild( $doctr );
 		}
 		$page->appendChild( $doctable );
@@ -161,27 +196,6 @@ sub eprint_render
 			date => EPrints::Utils::render_date( $session, $eprint->get_value( "date_embargo" ) ) ) );
 	}
 
-	# Request document(s) link 
-	if( $eprint->is_set( "full_text_status" ) )
-	{
-		my $status = $eprint->get_value( "full_text_status" );
-		if( $status ne "public" )
-		{
-			if( $session->get_repository->can_call( "email_for_doc_request" ) )
-			{
-				if( defined( $session->get_repository->call( "email_for_doc_request", $session, $eprint ) ) )
-				{
-					# only render if there is a contact email address
-					my $form = $session->render_form( "post", $session->get_repository->get_conf( "perl_url" ) . "/users/request_doc" );
-					$form->appendChild( $session->render_hidden_field( "eprintid", $eprint->get_id ) );
-					$form->appendChild( $session->render_action_buttons( 
-						"submit" => $session->phrase( "request:button" )
-					) );
-					$page->appendChild( $form );
-				}
-			}
-		}
-	}
 
 	# Alternative locations
 	if( $eprint->is_set( "official_url" ) )

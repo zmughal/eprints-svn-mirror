@@ -490,76 +490,71 @@ activated you can start to use the registered features of the repository.</p>
 <ep:phrase ref="embargo:invalid_date"><ep:pin ref="fieldname" /> must be in the future.</ep:phrase>
 
 <!-- Request eprint -->
-<ep:phrase ref="request:button">Request item</ep:phrase>
+<ep:phrase ref="request:button">Request a copy</ep:phrase>
 
-<ep:phrase ref="request/request_page:title">Request Item</ep:phrase>
+<ep:phrase ref="request/request_page:title">Request a copy</ep:phrase>
 <ep:phrase ref="request/request_page:fieldname_email">Enter your email address: </ep:phrase>
 <ep:phrase ref="request/request_page:action_request">Request</ep:phrase>
 
 <ep:phrase ref="request/error:already_oa">This item is already Open Access.</ep:phrase>
 <ep:phrase ref="request/error:no_contact">No contact information available for this item.</ep:phrase>
-<ep:phrase ref="request/error:email">Error sending email.</ep:phrase>
-<ep:phrase ref="request/error:not_auth">You are not authorised to carry out this function.</ep:phrase>
-<ep:phrase ref="request/error:no_email">The email address of the recipient must be provided.</ep:phrase>
+<ep:phrase ref="request/error:not_auth">Only the contact author can carry out this function.</ep:phrase>
 
 <ep:phrase ref="request/request_email:subject">Request for &quot;<ep:pin ref="eprint" />&quot;</ep:phrase>
-<ep:phrase ref="request/request_email:body">
-<p>This item has been requested from the &archivename; by <ep:pin ref="requester" />. Please can you respond.</p>
+<ep:phrase ref="request/request_email:body"><p>This item has been requested from the &archivename; by <ep:pin ref="requester" />. Please can you respond.</p>
 
-<p><ep:pin ref="eprint" /></p>
+<p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p>
 
 <p>Please consider removing restrictions or uploading the full text to the archive so that it will be available immediately to future searchers.</p>
 </ep:phrase>
 
 <ep:phrase ref="request/request_email:links">
-<p><ep:pin ref="accept">Click here</ep:pin> to send the requested item.</p>
+<p>To send the requested document, <ep:pin ref="accept">click here</ep:pin>.</p>
 
-<p><ep:pin ref="reject">Click here</ep:pin> to reject the request.</p>
+<p>To reject the request, <ep:pin ref="reject">click here</ep:pin>.</p>
 </ep:phrase>
 
-<ep:phrase ref="request/ack_page"><p>Your request has been sent.</p><ep:pin ref="link">Return to abstract page</ep:pin></ep:phrase>
+<ep:phrase ref="request/ack_page"><p>Your request has been sent.</p><ep:pin ref="link">Return to item</ep:pin></ep:phrase>
 <ep:phrase ref="request/ack_email:subject">Confirmation of request for &quot;<ep:pin ref="eprint" />&quot;</ep:phrase>
-<ep:phrase ref="request/ack_email:body">
-<p>Your request for the following item has been passed on for action:</p>
+<ep:phrase ref="request/ack_email:body"><p>Your request for the following item has been passed on for action:</p>
 
-<p><ep:pin ref="eprint" /></p>
+<p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p>
 
 <p>If you do not receive a reply or need advice at a later time please contact &adminemail;. For items with copyright implications, you may also be able to contact your local interlibrary loan service.</p>
 </ep:phrase>
 
-<ep:phrase ref="request/respond_page:title">Respond to item request</ep:phrase>
-<ep:phrase ref="request/respond_page:action_respond">Send</ep:phrase>
-<ep:phrase ref="request/respond_page:accept"><p>You have chosen to accept the request for the following item:</p><p><ep:pin ref="eprint" /></p><p>You may enter a reason elow if you wish. This will be emailed to the requester with the restricted document(s) attached.</p></ep:phrase>
-<ep:phrase ref="request/respond_page:reject"><p>You have chosen to reject the request for the following item:</p><p><ep:pin ref="eprint" /></p><p>You may edit the response below if you wish. This will be emailed to the requester.</p></ep:phrase>
-<ep:phrase ref="request/respond_page:oa"><p>Please let the requester know that this item has been made publically accessible since the request was made:</p><p><ep:pin ref="eprint" /></p><p>You may edit the response below if you wish. This will be emailed to the requester.</p></ep:phrase>
-<ep:phrase ref="request/respond_page:fieldname_oa">Tick this box to make all documents associated with this item publically available.</ep:phrase>
+<ep:phrase ref="request/respond_page:title">Confirm response</ep:phrase>
+<ep:phrase ref="request/respond_page:action_respond">Confirm</ep:phrase>
+<ep:phrase ref="request/respond_page:accept"><p>You have chosen to accept the request for the following item:</p><p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p><p>An acceptance notice will be emailed to the requester with the requested document attached.</p></ep:phrase>
+<ep:phrase ref="request/respond_page:reject"><p>You have chosen to reject the request for the following item:</p><p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p><p>You may enter a reason below if you wish. This will be emailed to the requester along with a rejection notice.</p></ep:phrase>
+<ep:phrase ref="request/respond_page:oa"><p>This item has been made publically accessible since the request was made:</p><p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p><p>A notice will be emailed to the requester.</p></ep:phrase>
+<ep:phrase ref="request/respond_page:fieldname_oa">Tick this box to make this document publically available from now on.</ep:phrase>
 
 <ep:phrase ref="request/response_email:subject">Result of request for &quot;<ep:pin ref="eprint" />&quot;</ep:phrase>
-<ep:phrase ref="request/response_email:body_accept">
-<p>Your request for the following item has been accepted:</p>
+<ep:phrase ref="request/response_email:body_accept"><p>Your request for the following item has been accepted:</p>
 
-<p><ep:pin ref="eprint" /></p>
+<p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p>
 
-<p>Please find the requested document(s) attached.</p>
+<p>Please find the requested document attached.</p>
 </ep:phrase>
 
-<ep:phrase ref="request/response_email:body_reject">
-<p>Your request for the following item has been rejected:</p>
+<ep:phrase ref="request/response_email:body_reject"><p>Your request for the following item has been rejected:</p>
 
-<p><ep:pin ref="eprint" /></p>
+<p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p>
 
 <p>It may not always be straightforward to provide full text. Your local library may also be able to help you. For more general queries you may also contact &adminemail;</p>
+
+<p>The following reason was given:</p>
+
+<ep:pin ref="reason" />
 </ep:phrase>
 
-<ep:phrase ref="request/response_email:body_oa">
-<p>The item you requested is now publically accessible:</p>
+<ep:phrase ref="request/response_email:body_oa"><p>The item you requested is now publically accessible:</p>
 
-<p><ep:pin ref="eprint" /></p>
+<p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p>
 </ep:phrase>
 
-<ep:phrase ref="request/ack_page:accept"><p>The acceptance notice has been sent.</p></ep:phrase>
-<ep:phrase ref="request/ack_page:reject"><p>The rejection notice has been sent.</p></ep:phrase>
-<ep:phrase ref="request/ack_page:oa"><p>The notice has been sent.</p></ep:phrase>
+<ep:phrase ref="request/response:ack_page"><p>Thank you. The email has been sent to the requester.</p></ep:phrase>
 
 <ep:phrase ref="dynamic:logged_in">Logged in as <ep:pin ref="user"/> <a href="&perl_url;/logout">logout</a></ep:phrase>
 <ep:phrase ref="dynamic:not_logged_in">Not logged in. <a href="&userhome;">login</a> | <a href="&perl_url;/register">register</a></ep:phrase>

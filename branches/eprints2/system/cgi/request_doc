@@ -6,27 +6,49 @@ use strict;
 my $session = new EPrints::Session();
 exit( 1 ) unless( defined $session );
 
-# Check parameters
-my $eprintid = $session->param( "eprintid" );
-my $eprint = EPrints::DataObj::EPrint->new( $session, $eprintid );
-if( !defined $eprint || $eprint->get_value( "metadata_visibility" ) eq "hide" ) 
+my ( $eprint, $doc );
+
+# Get requested document
+my $docid = $session->param( "docid" );
+$doc = EPrints::DataObj::Document->new( $session, $docid );
+if( !defined $doc )
 {
-	$session->render_error( $session->html_phrase( 
-		"cgi/users/edit_eprint:cant_find_it", 
-		id => $session->make_text( $eprintid ) ) );
-	$session->terminate();
-	exit( 1 );
+	my $eprintid = $session->param( "eprintid" );
+	$eprint = EPrints::DataObj::EPrint->new( $session, $eprintid );
+	# If no docid is specified we need a valid eprintid..
+	if( !defined $eprint || $eprint->get_value( "metadata_visibility" ) eq "hide" ) 
+	{
+		$session->render_error( $session->html_phrase( 
+			"cgi/users/edit_eprint:cant_find_it", 
+			id => $session->make_text( $eprintid ) ) );
+		$session->terminate();
+		exit( 1 );
+	}
+	# ..and the eprint must have no documents
+	if( $eprint->get_value( "full_text_status" ) ne "none" )
+	{
+		$session->render_error( $session->html_phrase( "general:bad_param" ),
+			$eprint->get_url );
+		$session->terminate();
+		exit( 1 );
+	}
+}
+else
+{
+	$eprint = $doc->get_eprint;
 }
 
-# Check item isn't already OA
-my $status = $eprint->get_value( "full_text_status" );
-if( $status eq "public" )
+# Check requested document isn't already OA
+if( defined $doc )
 {
-	$session->render_error( $session->html_phrase( 
-		"request/error:already_oa" ), 
-		$eprint->get_url );
-	$session->terminate();
-	exit( 1 );
+	my $security = $doc->get_value( "security" );
+	if( !defined $security || $security eq "" )
+	{
+		$session->render_error( $session->html_phrase( "request/error:already_oa" ),
+			$eprint->get_url );
+		$session->terminate();
+		exit( 1 );
+	}
 }
 
 # Check contact email for this eprint
@@ -37,8 +59,7 @@ if( $session->get_repository->can_call( "email_for_doc_request" ) )
 }
 if( !defined( $contact_email ) )
 {
-	$session->render_error( $session->html_phrase( 
-		"request/error:no_contact" ), 
+	$session->render_error( $session->html_phrase( "request/error:no_contact" ),
 		$eprint->get_url );
 	$session->terminate();
 	exit( 1 );
@@ -55,17 +76,18 @@ if( defined( $email ) && $email ne "" )
 	my $mail = $session->make_element( "mail" );
 	$mail->appendChild($session->html_phrase(
 		"request/request_email:body", 
-		eprint 		=> $eprint->render_citation_link,
-		requester	=> $session->make_text( $email ) ) );
+		eprint => $eprint->render_citation_link,
+		document => defined $doc ? $doc->render_citation_link : $session->make_doc_fragment,
+		requester => $session->make_text( $email ) ) );
 
 	my $result;
 	my $user = EPrints::DataObj::User::user_with_email( $session, $contact_email );
-	if( defined( $user ) && $status eq "restricted" )
+	if( defined $user && defined $doc )
 	{
-		# Contact is registered user and EPrints holds restricted documents
+		# Contact is registered user and EPrints holds requested document
 		# Send email to contact with accept/reject links
 		my $url =  $session->get_repository->get_conf( "perl_url" ) . 
-			"/users/respond_doc?eprintid=" . $eprint->get_id . 
+			"/users/respond_doc?docid=" . $doc->get_id .
 			"&email=" . EPrints::Utils::encode_str( $session->param( "email" ) );
 
 		$mail->appendChild( $session->html_phrase( "request/request_email:links",
@@ -99,24 +121,25 @@ if( defined( $email ) && $email ne "" )
 
 	}
 
+	my $tryagain = "?eprintid=" . $eprint->get_id;
+	$tryagain .= "&docid=" . $doc->get_id if defined $doc;
+
 	if( !$result )
 	{
-		$session->render_error( $session->html_phrase( 
-			"request/error:email" ), 
-			'?eprintid=' . $eprint->get_id );
+		$session->render_error( $session->html_phrase( "general:email_failed" ), $tryagain );
 		$session->terminate();
 		exit( 1 );
 	}
 	else
 	{
 		# Send acknowledgement to requester
-		# TODO: worry about the result?
 		my $mail = $session->make_element( "mail" );
 		$mail->appendChild( $session->html_phrase(
 			"request/ack_email:body", 
+			document => defined $doc ? $doc->render_citation : $session->make_doc_fragment,
 			eprint	=> $eprint->render_citation_link ) );
 
-		EPrints::Utils::send_mail(
+		my $result = EPrints::Utils::send_mail(
 			session => $session,
 			langid => $session->get_langid,
 			to_email => $email,
@@ -124,6 +147,13 @@ if( defined( $email ) && $email ne "" )
 			message => $mail,
 			sig => $session->html_phrase( "mail_sig" )
 		);
+
+		if( !$result )
+		{
+			$session->render_error( $session->html_phrase( "general:email_failed" ), $tryagain );
+			$session->terminate();
+			exit( 1 );
+		}
 
 		# Render confirmation page
 		$page->appendChild( $session->html_phrase( "request/ack_page",
@@ -136,10 +166,16 @@ if( defined( $email ) && $email ne "" )
 	}
 }
 
-# Render requested eprint
+# Render requested eprint/document
 my $p = $session->make_element( "p" );
 $page->appendChild( $p );
 $p->appendChild( $eprint->render_citation );
+if( defined $doc )
+{
+	my $p = $session->make_element( "p" );
+	$page->appendChild( $p );
+	$p->appendChild( $doc->render_citation );
+}
 
 # Render request form
 my $form =  $session->render_form( "post" );
@@ -147,7 +183,12 @@ $page->appendChild( $form );
 $form->appendChild( $session->html_phrase( "request/request_page:fieldname_email" ) );
 $form->appendChild( $session->make_element( "input", type => "text", name => "email" ) );
 $form->appendChild( $session->make_element( "br" ) );
-$form->appendChild( $session->render_hidden_field( "eprintid", $eprintid ) );
+$form->appendChild( $session->render_hidden_field( "eprintid", $eprint->get_id ) );
+if( defined $doc )
+{
+	$form->appendChild( $session->render_hidden_field( "docid", $doc->get_id ) );
+}
+$form->appendChild( $session->make_element( "br" ) );
 $form->appendChild( $session->render_action_buttons( submit => $session->phrase( "request/request_page:action_request" ) ) );
 
 $session->build_page( $title, $page );
