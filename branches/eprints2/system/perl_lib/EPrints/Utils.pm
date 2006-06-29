@@ -35,6 +35,7 @@ use File::Path;
 use Term::ReadKey;
 use Text::Wrap qw();
 use MIME::Lite;
+use LWP::MediaTypes qw( guess_media_type );
 use URI;
 
 use strict;
@@ -319,7 +320,9 @@ from_email, from_name - who is sending the email (defaults to the archive admin)
 
 sig - the signature file as a DOM tree
 
-replyto_email, replyto_name 
+replyto_email, replyto_name
+
+attach - ref to an array of filenames (with full paths) to attach to the message 
 
 Returns true if mail sending (appears to have) succeeded. False otherwise.
 
@@ -479,6 +482,19 @@ sub build_email
 		$fullmsg->appendChild( $p{sig} );
 	}
 
+	# If there are file attachments, change to a "mixed" type
+	# and attach the body Text and HTML to an "alternative" subpart
+	my $mixedmsg;
+	if( $p{attach} )
+	{
+		$mixedmsg = $mimemsg;
+		$mixedmsg->attr( "Content-Type" => "multipart/mixed" );
+		$mimemsg = MIME::Lite->new(
+			Type => "multipart/alternative",
+		);
+		$mixedmsg->attach( $mimemsg );
+	}
+
 	my $text = MIME::Lite->new( 
 		Type  => "TEXT",
 		Data  => EPrints::Utils::tree_to_utf8( $fullmsg , $MAILWIDTH ),
@@ -492,7 +508,17 @@ sub build_email
 	);
 	$html->attr("Content-disposition" => "");
 	$mimemsg->attach( $html );
-print STDERR "xxxx\n";
+
+	for( @{ $p{attach} } )
+	{
+		my $part = MIME::Lite->new(
+			Type => guess_media_type( $_ ),
+			Path => $_,
+		);
+		$mixedmsg->attach( $part );
+		return $mixedmsg;
+	}
+
 	return $mimemsg;
 }
 
