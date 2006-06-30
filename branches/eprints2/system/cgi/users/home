@@ -86,6 +86,13 @@ my $tools = [
 		page=>"submit?_action_new=1",
 		priv=>"deposit"
 	},
+	### Import Item
+	{
+		location=>"create",
+		code=>"import_item",
+		page=>"import",
+		priv=>"deposit"
+	},
 	### Change User Info
 	{ 
 		location=>"user",

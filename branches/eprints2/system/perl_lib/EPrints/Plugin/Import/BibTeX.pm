@@ -18,6 +18,10 @@ B<eprintid>
 
 =item book B<book>
 
+=item conference B<conference_item>
+
+=item inbook B<book_section>
+
 =item incollection B<book_section>
 
 =item inproceedings B<conference_item>
@@ -29,6 +33,8 @@ B<eprintid>
 =item misc B<other>
 
 =item phdthesis B<thesis>, B<thesis_type>=phd
+
+=item proceedings B<book>
 
 =item techreport B<monograph>, B<monograph_type>!=manual|documentation
 
@@ -68,9 +74,9 @@ Journal name B<publication>
 
 =over 8
 
-=item Month written (unpublished) B<date_effective>
+=item Month written (unpublished) B<date_issue>
 
-=item Month published (Other Types) B<date_effective>
+=item Month published (Other Types) B<date_issue>
 
 =back
 
@@ -142,13 +148,33 @@ Volume B<volume>
 
 =over 8
 
-=item Year written (unpublished) B<date_effective>
+=item Year written (unpublished) B<date_issue>
 
-=item Year published (Other Types) B<date_effective>
+=item Year published (Other Types) B<date_issue>
+
+=back
 
 =back
 
+=head2 Not strictly BibTeX but often used
+
+=over 8
+
+=item abstract B<abstract>
+
+Abstract
+
+=item keywords B<keywords>
+
+Keywords
+
+=item url B<official_url>
+
+URL
+
 =back
+
+Abstract
 
 =head2 Unsupported fields
 
@@ -240,6 +266,21 @@ sub input_list
 		ids=>\@ids );
 }
 
+sub input_dataobj
+{
+	# TODO: should dataset be passed in here?
+	my( $plugin, $data, $ds ) = @_;
+
+	my $entry = Text::BibTeX::Entry->new;
+	$entry->parse_s( $data );
+	if( $entry->parse_ok )
+	{
+		my $epdata = $plugin->convert_input( $entry );
+		return $plugin->epdata_to_dataobj( $ds, $epdata );
+	}
+	return undef;
+}
+
 sub convert_input 
 {
 	my ( $plugin, $input_data ) = @_;
@@ -250,8 +291,12 @@ sub convert_input
 	my $input_data_type = $input_data->type;
 	$epdata->{type} = "article" if $input_data_type eq "article";
 	$epdata->{type} = "book" if $input_data_type eq "book";
+	$epdata->{type} = "book" if $input_data_type eq "proceedings";
+	$epdata->{type} = "book_section" if $input_data_type eq "inbook";
 	$epdata->{type} = "book_section" if $input_data_type eq "incollection";
 	$epdata->{type} = "conference_item" if $input_data_type eq "inproceedings";
+	$epdata->{type} = "conference_item" if $input_data_type eq "conference";
+	$epdata->{type} = "other" if $input_data_type eq "misc";
 	if( $input_data_type eq "manual" )
 	{
 		$epdata->{type} = "monograph";
@@ -272,6 +317,11 @@ sub convert_input
 		$epdata->{type} = "thesis";
 		$epdata->{thesis_type} = "phd";
 	}
+	if( $input_data_type eq "unpublished" )
+	{
+		$epdata->{type} = "other";
+		$epdata->{ispublished} = "unpub";
+	}
 	if( !defined $epdata->{type} )
 	{
 		$plugin->warning( "Skipping unsupported citation type $input_data_type" );
@@ -287,9 +337,9 @@ sub convert_input
 		my $name;
 		$name->{given} = join( " ", $_->part( "first" ) ) if scalar $_->part( "first" );
 		$name->{family} = join( " ", $_->part( "von" ) ) if scalar $_->part( "von" );
-		$name->{family} = join( " ", $_->part( "last" ) ) if scalar $_->part( "last" );
+		$name->{family} .= join( " ", $_->part( "last" ) ) if scalar $_->part( "last" );
 		$name->{lineage} = join( " ", $_->part( "jr" ) ) if scalar $_->part( "jr" );
-		push @{ $epdata->{creators} }, { main => $name };
+		push @{ $epdata->{creators} }, $name;
 	}
 	
 	# booktitle
@@ -308,9 +358,9 @@ sub convert_input
 		my $name;
 		$name->{given} = join( " ", $_->part( "first" ) ) if scalar $_->part( "first" );
 		$name->{family} = join( " ", $_->part( "von" ) ) if scalar $_->part( "von" );
-		$name->{family} = join( " ", $_->part( "last" ) ) if scalar $_->part( "last" );
+		$name->{family} .= join( " ", $_->part( "last" ) ) if scalar $_->part( "last" );
 		$name->{lineage} = join( " ", $_->part( "jr" ) ) if scalar $_->part( "jr" );
-		push @{ $epdata->{editors} }, { main => $name };
+		push @{ $epdata->{editors} }, $name;
 	}
 
 	# institution
@@ -379,7 +429,7 @@ sub convert_input
 		my $year = $input_data->get( "year" );
 		if( $year =~ /^[0-9]{4}$/ )
 		{
-			$epdata->{date_effective} = $year;
+			$epdata->{date_issue} = $year;
 		}
 		else
 		{
@@ -404,16 +454,23 @@ sub convert_input
 			nov => "11",
 			dec => "12",
 		);
-		my $month = lc( $input_data->get( "month" ) );
+		my $month = substr( lc( $input_data->get( "month" ) ), 0, 3 );
 		if( defined $months{$month} )
 		{
-			$epdata->{date_effective} .= "-" . $months{$month}; 
+			$epdata->{date_issue} .= "-" . $months{$month}; 
 		}
 		else
 		{
 			$plugin->warning( "Skipping month '$month'" );
 		}
 	}
+
+	# abstract
+	$epdata->{abstract} = $input_data->get( "abstract" ) if $input_data->exists( "abstract" );
+	# keywords
+	$epdata->{keywords} = $input_data->get( "keywords" ) if $input_data->exists( "keywords" );
+	# url
+	$epdata->{official_url} = $input_data->get( "url" ) if $input_data->exists( "url" );
 
 	return $epdata;
 }

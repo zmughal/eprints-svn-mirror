@@ -498,6 +498,9 @@ User Area CGI Scripts
     <ep:phrase ref="cgi/users/home:new_item_link">Begin a New Item</ep:phrase>
     <ep:phrase ref="cgi/users/home:new_item_info"><p>This will create a new item start editing it and allow you to attach files. You must <i>deposit</i> the item for it to be added to the repository. Deposited items will not appear until they have been checked by a person with that responsibility. You should <a href="review">review your existing items</a> if you can't remember if you have deposited an item or not.</p></ep:phrase>
 
+    <ep:phrase ref="cgi/users/home:import_item_link">Import an Item</ep:phrase>
+    <ep:phrase ref="cgi/users/home:import_item_info"><p>Create a new item by cutting and pasting an existing bibliographic record.</p></ep:phrase>
+
     <ep:phrase ref="cgi/users/home:subscribe_link">Change your subscription options</ep:phrase>
     <ep:phrase ref="cgi/users/home:subscribe_info"><p>Select this option to change your subscription. This allows you to instruct the repository to automatically email you with lists of documents deposited that match your criteria every day, week or month.</p></ep:phrase>
 
