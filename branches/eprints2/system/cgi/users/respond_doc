@@ -6,40 +6,29 @@ use strict;
 my $session = new EPrints::Session();
 exit( 1 ) unless( defined $session );
 
-my ( $eprint, $doc );
+my $requestid = $session->param( "requestid" );
+my $request = EPrints::DataObj::Request->new( $session, $requestid );
+&_error( $session ) if !defined $request;
 
-# Get requested document
-my $docid = $session->param( "docid" );
-$doc = EPrints::DataObj::Document->new( $session, $docid );
-if( !defined $doc )
-{
-	$session->render_error( $session->html_phrase( 
-		"cgi/users/edit_eprint:cant_find_it", 
-		id => $session->make_text( $docid ) ) );
-	$session->terminate();
-	exit( 1 );
-}
-$eprint = $doc->get_eprint;
+my $doc = EPrints::DataObj::Document->new( $session, $request->get_value( "docid" ) );
+&_error( $session ) if !defined $doc;
 
-my $email = $session->param( "email" );
-if( !defined( $email ) || $email eq "" )
-{
-	$session->render_error( $session->html_phrase( "general:bad_param" ) );
-	$session->terminate();
-	exit( 1 );
-}
+my $eprint = EPrints::DataObj::EPrint->new( $session, $request->get_value( "eprintid" ) );
+&_error( $session ) if !defined $eprint;
+
+my $user = EPrints::DataObj::User->new( $session, $request->get_value( "userid" ) );
+&_error( $session ) if !defined $user;
+
+my $email = $request->get_value( "email" );
 
 # Check current user can respond
-my $contact_email = undef;
-if( $session->get_repository->can_call( "email_for_doc_request" ) )
+&_error( $session ) unless $user->get_id eq $session->current_user->get_id;
+
+sub _error
 {
-	$contact_email = $session->get_repository->call( "email_for_doc_request", $session, $eprint );
-}
-if( !defined( $contact_email ) || $session->current_user->get_value( "email" ) ne $contact_email )
-{
-	$session->render_error( $session->html_phrase( 
-		"request/error:not_auth" ) );
-	$session->terminate();
+	my( $session ) = @_;
+	$session->render_error( $session->html_phrase( "general:bad_param" ) );
+	$session->terminate;
 	exit( 1 );
 }
 
@@ -47,11 +36,9 @@ my $title = $session->html_phrase( "request/respond_page:title" );
 my $page = $session->make_doc_fragment();
 
 my $action = $session->param("action");
-$action = "reject" if $action ne "accept";
-
-# Check whether requested document been made OA in the meantime
-my $security = $doc->get_value( "security" );
-$action = "oa" if !defined $security || $security eq "";
+$action = "reject" if !defined $action || $action ne "accept";
+# Special case - requested document been made OA in the meantime
+$action = "oa" if !$doc->is_set( "security" ) || $doc->get_value( "security" ) eq "";
 
 my $button = $session->get_action_button;
 unless( defined $button && $button eq "submit" )
@@ -90,8 +77,7 @@ unless( defined $button && $button eq "submit" )
 	}
 
 	$form->appendChild( $session->make_element( "br" ) );
-	$form->appendChild( $session->render_hidden_field( "docid", $doc->get_id ) );
-	$form->appendChild( $session->render_hidden_field( "email", $email ) );
+	$form->appendChild( $session->render_hidden_field( "requestid", $request->get_id ) );
 	$form->appendChild( $session->render_hidden_field( "action", $action ) );
 	$form->appendChild( $session->render_action_buttons( submit => $session->phrase( "request/respond_page:action_respond" ) ) );
 
@@ -157,6 +143,20 @@ else
 		sig => $session->html_phrase( "mail_sig" ),
 	);
 }
+	
+# Log event
+my $history_ds = $session->get_repository->get_dataset( "history" );
+$history_ds->create_object(
+	$session,
+	{
+		userid =>$user->get_id,
+		actor=>EPrints::Utils::tree_to_utf8( $user->render_description ),
+		datasetid=>"request",
+		objectid=>$request->get_id,
+		action=>$session->param( "action" ) eq "accept" ? "accept_request" : "reject_request",
+		details=>EPrints::Utils::is_set( $reason ) ? $reason : undef,
+	}
+);
 
 if( !$result )
 {
@@ -164,13 +164,10 @@ if( !$result )
 	$session->terminate();
 	exit( 1 );
 }
-else
-{
-	# Render confirmation page
-	$page->appendChild( $session->html_phrase( "request/response:ack_page" ) );
-	$session->build_page( $title, $page );
-	$session->send_page();
-	$session->terminate();
-	exit( 1 );
-}
-
+	
+# Render confirmation page
+$page->appendChild( $session->html_phrase( "request/response:ack_page" ) );
+$session->build_page( $title, $page );
+$session->send_page();
+$session->terminate();
+exit( 1 );

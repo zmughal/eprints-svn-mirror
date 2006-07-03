@@ -134,6 +134,8 @@ sub get_system_field_info
 				move_archive_to_buffer 
 				move_deletion_to_archive
 				destroy
+				reject_request
+				accept_request
 				/], },
 
 		{ name=>"details", type=>"longtext", text_index=>0, 

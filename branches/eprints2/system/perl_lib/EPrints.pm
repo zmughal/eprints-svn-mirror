@@ -128,6 +128,7 @@ use EPrints::DataObj::EPrint;
 use EPrints::DataObj::History;
 use EPrints::DataObj::License;
 use EPrints::DataObj::Permission;
+use EPrints::DataObj::Request;
 use EPrints::DataObj::Subject;
 use EPrints::DataObj::Subscription;
 use EPrints::DataObj::User;

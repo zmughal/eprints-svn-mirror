@@ -218,6 +218,11 @@ my $INFO = {
 		class => "EPrints::DataObj::Access",
 		import => 1,
 	},
+	request => {
+		sqlname => "request",	
+		class => "EPrints::DataObj::Request",
+		import => 1,
+	},
 	# language and security are here so they can be used in
 	# "datatype" fields.
 	language => {},
@@ -905,7 +910,7 @@ into SQL (not counters or cache which work a bit differently).
 
 sub get_sql_dataset_ids
 {
-	return( qw/ eprint user document subscription subject license history access / );
+	return( qw/ eprint user document subscription subject license history access request / );
 }
 
 ######################################################################

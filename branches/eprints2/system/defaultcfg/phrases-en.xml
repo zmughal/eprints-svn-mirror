@@ -492,18 +492,19 @@ activated you can start to use the registered features of the repository.</p>
 <!-- Request eprint -->
 <ep:phrase ref="request:button">Request a copy</ep:phrase>
 
-<ep:phrase ref="request/request_page:title">Request a copy</ep:phrase>
-<ep:phrase ref="request/request_page:fieldname_email">Enter your email address: </ep:phrase>
-<ep:phrase ref="request/request_page:action_request">Request</ep:phrase>
-
-<ep:phrase ref="request/error:already_oa">This item is already Open Access.</ep:phrase>
-<ep:phrase ref="request/error:no_contact">No contact information available for this item.</ep:phrase>
-<ep:phrase ref="request/error:not_auth">Only the contact author can carry out this function.</ep:phrase>
+<ep:phrase ref="request_fieldname_requester_email">Email address</ep:phrase>
+<ep:phrase ref="request_fieldhelp_requester_email">Enter your email address.</ep:phrase>
+<ep:phrase ref="request_fieldname_reason">Reason</ep:phrase>
+<ep:phrase ref="request_fieldhelp_reason">You may enter a rationale for requesting this document.</ep:phrase>
 
 <ep:phrase ref="request/request_email:subject">Request for &quot;<ep:pin ref="eprint" />&quot;</ep:phrase>
 <ep:phrase ref="request/request_email:body"><p>This item has been requested from the &archivename; by <ep:pin ref="requester" />. Please can you respond.</p>
 
 <p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p>
+
+<p>The following reason was given:</p>
+
+<ep:pin ref="reason" />
 
 <p>Please consider removing restrictions or uploading the full text to the archive so that it will be available immediately to future searchers.</p>
 </ep:phrase>
