@@ -15,7 +15,7 @@ my $button = $session->get_action_button;
 if( defined $button && $button eq "submit" )
 {
 	my $pluginid = $session->param( "pluginid" );
-	my $plugin = $session->plugin( $pluginid );
+	my $plugin = $session->plugin( $pluginid, dataset=>$ds );
 
 	my $home = $session->get_repository->get_conf( "userhome" );
 	if( !defined $plugin )
@@ -36,7 +36,7 @@ if( defined $button && $button eq "submit" )
 	}
 
 	my $data = $session->param( "data" );
-	my $eprint = $plugin->input_dataobj( $data, $ds );
+	my $eprint = $plugin->input_dataobj( $data );
 	if( defined $eprint )
 	{
 		$eprint->set_value( "userid", $session->current_user->get_id );

@@ -98,7 +98,7 @@ sub input_dataobj
 
 	my $epdata = $plugin->convert_input( $input_data );
 
-	return $plugin->data_to_dataobj( $plugin->{dataset}, $epdata ); 
+	return $plugin->epdata_to_dataobj( $plugin->{dataset}, $epdata ); 
 }
 
 sub convert_input

@@ -268,15 +268,14 @@ sub input_list
 
 sub input_dataobj
 {
-	# TODO: should dataset be passed in here?
-	my( $plugin, $data, $ds ) = @_;
+	my( $plugin, $data ) = @_;
 
 	my $entry = Text::BibTeX::Entry->new;
 	$entry->parse_s( $data );
 	if( $entry->parse_ok )
 	{
 		my $epdata = $plugin->convert_input( $entry );
-		return $plugin->epdata_to_dataobj( $ds, $epdata );
+		return $plugin->epdata_to_dataobj( $plugin->{dataset}, $epdata );
 	}
 	return undef;
 }
