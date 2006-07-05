@@ -116,7 +116,10 @@ window.ep_showTab = function( baseid, tabid )
 	for( i=0; ep_lt(i,tabs.childNodes.length); i++ ) 
 	{
 		child = tabs.childNodes[i];
-		child.className -= "ep_selected";
+		if( child.className == "ep_tab_selected" )
+		{
+			child.className = "ep_tab";
+		}
 	}
 
 	panel = document.getElementById( baseid+"_panel_"+tabid );
@@ -124,15 +127,20 @@ window.ep_showTab = function( baseid, tabid )
 
 	tab = document.getElementById( baseid+"_tab_"+tabid );
 	tab.style.font_size = "30px";
-	tab.className = "ep_selected";
+	tab.className = "ep_tab_selected";
 };
 
 ' ) );
 
-	my $ul = $interface->{session}->make_element( "ul",id=>"ep_control_view_tabs",  class=>"ep_control_view_tabs" );
+	my $table = $interface->{session}->make_element( "table", class=>"ep_tabs", cellspacing=>0 );
+	my $tr = $interface->{session}->make_element( "tr", id=>"ep_control_view_tabs" );
+	$table->appendChild( $tr );
 
 	my @lite_views = qw/ summary full export staffexport edit staffedit /;
 	my @views = ( @lite_views, "history" );
+	my $spacer = $interface->{session}->make_element( "td", class=>"ep_tab_spacer" );
+	$spacer->appendChild( $interface->{session}->render_nbsp );
+	$tr->appendChild( $spacer );
 	foreach my $view_i ( @views )
 	{	
 		next if( !$interface->allow_action( "view_$view_i" ) );
@@ -142,19 +150,23 @@ window.ep_showTab = function( baseid, tabid )
 			onClick => "ep_showTab('ep_control_view','$view_i' ); return false;", 
 			href    => "?eprintid=".$interface->{eprintid}."&view=".$view_i, 
 		);
-		my %li_opts = ( id => "ep_control_view_tab_$view_i" );
-		if( $view eq $view_i ) { $li_opts{class} = "ep_selected"; }
+		my %td_opts = ( id => "ep_control_view_tab_$view_i", class=>"ep_tab" );
+		if( $view eq $view_i ) { $td_opts{class} = "ep_tab_selected"; }
 
 		my $a = $interface->{session}->make_element( "a", %a_opts );
-		my $li = $interface->{session}->make_element( "li", %li_opts );
+		my $td = $interface->{session}->make_element( "td", %td_opts );
 		my $label = $interface->{session}->html_phrase( $interface->interface.":action_view_".$view_i );
 
 		$a->appendChild( $label );
-		$li->appendChild( $a );
+		$td->appendChild( $a );
 
-		$ul->appendChild( $li );
+		$tr->appendChild( $td );
+
+		my $spacer = $interface->{session}->make_element( "td", class=>"ep_tab_spacer" );
+		$spacer->appendChild( $interface->{session}->render_nbsp );
+		$tr->appendChild( $spacer );
 	}
-	$chunk->appendChild( $ul );
+	$chunk->appendChild( $table );
 
 	my $panel = $interface->{session}->make_element( "div", id=>"ep_control_view_panels" );
 	$chunk->appendChild( $panel );

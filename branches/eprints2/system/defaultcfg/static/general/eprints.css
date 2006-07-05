@@ -325,6 +325,31 @@ hr.last {
 
 /* CONTROL PAGE */
 
+table.ep_tabs {
+	width: 100%;
+}
+
+td.ep_tab {
+	background-color: #e0e0ff;
+	text-align: center;
+	border: solid #000000 1px;
+}
+
+td.ep_tab_selected {
+	text-align: center;
+	background-color: #ffffff;
+	border-left: solid #000000 1px;
+	border-top: solid #000000 1px;
+	border-right: solid #000000 1px;
+	border-bottom: solid #ffffff 1px;
+}
+
+td.ep_tab_spacer {
+	background-color: #ffffff;
+	border-bottom: solid #000000 1px;
+	width: 20px;
+}
+
 .ep_control_view {
 	border-right: solid black 1px;
 	border-bottom: solid black 1px;
@@ -333,39 +358,3 @@ hr.last {
 	clear: both;
 }
 
-.ep_control_view_tabs {
-	border-bottom: solid black 1px;
-	margin: 0;
-	padding-bottom: 23px;
-	padding-left: 10px;
-}
-
-.ep_control_view_tabs ul, .ep_control_view_tabs li {
-	display: inline;
-	list-style-type: none;
-	margin: 0;
-	padding: 0;
-}
-
-.ep_control_view_tabs li {
-	border: solid black 1px;
-	float: left;
-	border: solid 1px black;
-	margin-right: 10px;
-	background-color: #e0e0ff;
-}
-
-.ep_control_view_tabs a {
-	text-decoration: none;
-	display: block;
-	padding: 3px 8px 3px 8px;
-	font-size: 14px;
-}
-ul.ep_control_view_tabs li.ep_selected {
-	border-bottom-color: white;
-	background-color: #fff;
-}
-	
-ul.ep_control_view_tabs li.ep_selected a {
-	color: black;
-}

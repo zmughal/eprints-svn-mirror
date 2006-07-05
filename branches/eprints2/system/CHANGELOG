@@ -3823,3 +3823,4 @@ PACKAGE: 2.2.99.2
 2006-07-05 cjg
 
  * Fixed a bug in the history rendering of xml diffs
+ * Control page tabs now use <table> not <ul>
