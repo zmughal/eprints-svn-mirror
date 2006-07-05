@@ -3819,3 +3819,7 @@ PACKAGE: 2.2.99.2
  * Added javascript to switch between tabs
  * Fixed issue with // in a stylesheet
  * Added padder to stop problem with script tags being collapsed.
+
+2006-07-05 cjg
+
+ * Fixed a bug in the history rendering of xml diffs

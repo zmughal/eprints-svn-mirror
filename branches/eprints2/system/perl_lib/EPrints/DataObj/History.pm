@@ -727,6 +727,7 @@ sub render_xml_diffs
 			}
 			elsif( $t1 eq "" )
 			{
+				$s1 = $session->make_element( "span", style=>"" );
 				$s1->appendChild( mkpad( $session, $t2, $offset, $endw, $width ) );
 				$s2 = $session->make_element( "span", style=>"background: #cfc" );
 				$s2->appendChild( mktext( $session, $t2, $offset, $endw, $width ) );
@@ -735,6 +736,7 @@ sub render_xml_diffs
 			{
 				$s1 = $session->make_element( "span", style=>"background: #fcc" );
 				$s1->appendChild( mktext( $session, $t1, $offset, $endw, $width ) );
+				$s2 = $session->make_element( "span", style=>"" );
 				$s2->appendChild( mkpad( $session, $t1, $offset, $endw, $width ) );
 			}
 			else
