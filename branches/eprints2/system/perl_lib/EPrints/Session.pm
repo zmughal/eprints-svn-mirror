@@ -1896,6 +1896,51 @@ sub _render_input_form_field
 	return( $html );
 }	
 
+######################################################################
+# 
+# $xhtml = $session->render_toolbox( $title, $content )
+#
+# Render a toolbox. This method will probably gain a whole bunch of new
+# options.
+#
+# title and content are DOM objects.
+#
+######################################################################
+
+sub render_toolbox
+{
+	my( $self, $title, $content ) = @_;
+
+	my $div = $self->make_element( "div", class=>"ep_toolbox" );
+	my $title_div = $self->make_element( "div", class=>"ep_toolbox_title" );
+	my $content_div = $self->make_element( "div", class=>"ep_toolbox_content" );
+	$div->appendChild( $title_div );
+	$div->appendChild( $content_div );
+	$title_div->appendChild( $title );
+	$content_div->appendChild( $content );
+	return $div;
+}
+
+######################################################################
+# 
+# $id = $session->get_next_id
+#
+# Return a number unique within this session. Used to generate id's
+# in the HTML.
+#
+######################################################################
+
+sub get_next_id
+{
+	my( $self ) = @_;
+
+	if( !defined $self->{id_counter} )
+	{
+		$self->{id_counter} = 1;
+	}
+
+	return $self->{id_counter}++;
+}
 
 
 

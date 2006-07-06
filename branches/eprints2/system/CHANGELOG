@@ -3824,3 +3824,9 @@ PACKAGE: 2.2.99.2
 
  * Fixed a bug in the history rendering of xml diffs
  * Control page tabs now use <table> not <ul>
+
+2006-07-06 cjg
+
+ * Added minimal render_toolbox method to session
+ * Added get_next_id method to session to create unique id's in the
+    HTML page.
