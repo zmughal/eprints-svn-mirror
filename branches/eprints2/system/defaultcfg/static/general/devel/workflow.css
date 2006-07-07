@@ -120,7 +120,6 @@ div.autocomplete ul li .bottom
 .wf_problems
 {
 	border: 1px solid #cc9999;
-	width: 54.5em;
 	padding: 0.25em;
 	margin-bottom: 0.25em;
 	background-color: #ffcccc;
@@ -174,37 +173,55 @@ div.autocomplete ul li .bottom
 }
 
 
-
-/*
-
-
-
-
-
-/* For file selector */
-
-#filelist {
-	border: 1px solid #666666;
-	background: #fff;
-	width: 26em;
-}
-
-#filelist tbody tr td,th {
-	font-family: "lucida grande", verdana, sans-serif;
+.wf_uploadcomponent .wf_file_table {
+	width: 100%;
+	text-align: center;
 	font-size: 10pt;
-	padding: 0.25em 0.25em 3px 8px;
-	border-left: 1px solid #d9d9d9;
 }
 
-#filelist tbody tr.selected td {
-	border-left: 1px solid #346dbe;
-	border-bottom: 1px solid #7daaea;
-}
-
-#filelist th {
+.wf_uploadcomponent .wf_file_table th {
 	background: #000;
 	color: #fff;
 }
+
+.wf_uploadcomponent .wf_file_table td {
+	background-color: #fff;
+}
+
+.wf_uploadcomponent .wf_file_table .wf_footer {
+	background-color: #000;
+}
+
+.wf_uploadcomponent .wf_add_format {
+	color: #fff;
+	padding: 2px;
+	margin-top: 2px;
+	text-align: left;
+	background-color: #000;
+}
+
+.wf_uploadcomponent .wf_toolbar {
+	padding: 2px;
+	margin-top: 2px;
+}
+
+.wf_uploadcomponent
+{
+}
+
+.wf_uploadcomponent .wf_format_name
+{
+	background: #000;
+	color: #fff;
+	font-weight: bold;
+}
+
+.wf_uploadcomponent .wf_format
+{
+	border: solid thin black;
+	margin-bottom: 5px;
+}
+
 
 /* For blister */
 
