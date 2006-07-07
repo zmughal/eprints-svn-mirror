@@ -178,8 +178,7 @@ sub _read_stages
 			EPrints::abort( "Workflow (".$self->{dataset}->confid.",".$self->{workflow_id}.") - <element> definition has no name attribute.\n".$element->toString );
 		}
 		my $stage_id = $element->getAttribute("name");
-print STDERR "***$stage_id\n".$self->{item}."\n";
-		$self->{stages}->{$stage_id} = new EPrints::Workflow::Stage( $element, $self );
+		$self->{stages}->{$stage_id} = new EPrints::Workflow::Stage( $element, $self, $stage_id );
 	}
 
 	foreach my $stage_id ( @{$self->{stage_order}} )
@@ -289,11 +288,14 @@ sub process
 		}
 		
 		my $stage_obj = $self->get_stage( $self->{stage} );
-		$ok = $stage_obj->validate();
-		$ok = 0; #moj	
+		# Carry out any updates
+		$ok = $stage_obj->update_from_form();
+		$ok &= $stage_obj->validate();
+		$ok = 0;
 		if( $ok )
 		{
-			$self->{new_stage} = $self->get_next_stage_id;
+			# moj: If moving prev, use get_prev_stage_id
+			# $self->{new_stage} = $self->get_next_stage_id;
 		}
 		else
 		{

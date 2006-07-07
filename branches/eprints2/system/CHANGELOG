@@ -3830,3 +3830,12 @@ PACKAGE: 2.2.99.2
  * Added minimal render_toolbox method to session
  * Added get_next_id method to session to create unique id's in the
     HTML page.
+
+2006-07-07 moj
+
+ * Workflow now runs update_from_form on stages
+ * Added validate/update_from_form to stage
+ * Surround now handles ->{problems}
+ * Created UploadComponent for file uploads
+ * New methods in Component: update_from_form, validate, params/param
+    (to get component-specific parameters), and get_problems

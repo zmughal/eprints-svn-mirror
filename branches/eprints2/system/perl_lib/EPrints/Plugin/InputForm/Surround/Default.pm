@@ -14,6 +14,7 @@ sub render
 	my $collapsed = $component->is_collapsed();
 	my $comp_name = $component->get_name();
 	my $title = $component->render_title( $self );
+	my @problems = @{$component->get_problems()};
 
 	my $surround = $self->{session}->make_element( "div", class => "wf_component" );
 
@@ -39,9 +40,20 @@ sub render
 		$title_div->appendChild( $self->get_req_icon() );
 	}
 
-
 	$surround->appendChild( $title_div );
 	$surround->appendChild( $help_div );
+	
+	# Problem rendering
+
+	if( scalar @problems > 0 )
+	{
+		my $problem_div = $self->{session}->make_element( "div", class => "wf_problems" );
+		foreach my $problem ( @problems )
+		{
+			$problem_div->appendChild( $problem );
+		}
+		$surround->appendChild( $problem_div );
+	}
 
 	# Finally add the content (unless we're collapsed)
 	my $input_div = $self->{session}->make_element( "div", class => "wf_input" );

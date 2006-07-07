@@ -31,7 +31,6 @@ sub _read_components
 	print STDERR "Reading components\n"; 
 
 	$self->{components} = [];
-	
 	foreach my $stage_node ( @stage_nodes )
 	{
 		my $name = $stage_node->getNodeName;
@@ -65,13 +64,14 @@ sub _read_components
 				{
 					$surround_obj = $self->{session}->plugin( "InputForm::Surround::Default" ); 
 				}
-				
+				my $lctype = lc $type;
 				my $plugin = $class->new( 
 					session=>$self->{session}, 
 					xml_config=>$stage_node, 
 					dataobj=>$self->{item}, 
 					workflow=>$self->{workflow}, 
-					surround=>$surround_obj );
+					surround=>$surround_obj,
+					);
 				push @{$self->{components}}, $plugin;
 			}
 		}
@@ -114,8 +114,25 @@ sub get_components
 sub validate
 {
 	my( $self, $session ) = @_;
+	
+	my $ok = 1;
+	foreach my $component (@{$self->{components}})
+	{
+		$ok &= $component->validate();
+	}
+	return $ok;
+}
 
-	return 1;
+sub update_from_form
+{
+	my( $self ) = @_;
+
+	my $ok = 1;
+	foreach my $component (@{$self->{components}})
+	{
+		$ok &= $component->update_from_form();
+	}
+	return $ok;
 }
 
 sub render

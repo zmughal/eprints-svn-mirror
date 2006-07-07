@@ -49,15 +49,16 @@ sub new
 
 	$self->{name} = "Base component plugin: This should have been subclassed";
 	$self->{visible} = "all";
-
 	# don't have a config when we first load this to register it as a plugin class
 	if( defined $opts{xml_config} )
 	{
 		$self->{session} = $opts{session};
+		$self->{prefix} = "id".$self->{session}->get_next_id;
 		$self->{dataobj} = $opts{dataobj};
 		$self->{dataset} = $opts{dataobj}->get_dataset;
 		$self->parse_config( $opts{xml_config} );
 	}
+	$self->{problems} = [];	
 
 	return $self;
 }
@@ -113,6 +114,60 @@ sub are_all_collapsed
 		return 0 if( $field->{collapsed} ne "yes" );
 	}
 	return 1;
+}
+
+sub update_from_form
+{
+	return 1;
+}
+
+sub validate
+{
+	return 1;
+}
+
+
+# Useful parameter methods
+
+
+# Returns all parameters for this component as a hash,
+# with the prefix removed.
+
+sub params
+{
+	my( $self ) = @_;
+	my $prefix = $self->{prefix}."_";
+	my %params = ();
+
+	foreach my $p ( $self->{session}->param() )
+	{
+		if( $p =~ /^$prefix(.+)$/ )
+		{
+			$params{$1} = $self->{session}->param( $p );
+		}
+	}
+
+	use Data::Dumper; print STDERR Dumper( \%params );
+	return %params;
+}
+
+sub param
+{
+	my( $self, $param ) = @_;
+
+	my $fullname = $self->{prefix}."_".$param;
+	
+	if( defined $self->{session}->param( $fullname ) )
+	{
+		return $self->{session}->param( $fullname );
+	}
+	return 0;
+}
+
+sub get_problems
+{
+	my( $self ) = @_;
+	return $self->{problems};
 }
 
 =pod
