@@ -58,6 +58,48 @@ sub new
 ######################################################################
 =pod
 
+=item $value = EPrints::Plugin->local_uri
+
+Return a unique ID for this plugin as it relates to the current 
+repository. This can be used to distinguish that XML import for 
+different repositories may have minor differences.
+
+This URL will not resolve to anything useful.
+
+=cut
+######################################################################
+
+sub local_uri
+{
+	my( $self ) = @_;
+
+	return $self->{session}->get_conf( "base_url" )."#Plugin/".$self->{id};
+}
+
+######################################################################
+=pod
+
+=item $value = EPrints::Plugin->global_uri
+
+Return a unique ID for this plugin, but not just in this repository
+but for any repository. This can be used for fuzzier tools which do
+not care about the minor differences between EPrints repositories.
+
+This URL will not resolve to anything useful.
+
+=cut
+######################################################################
+
+sub global_uri
+{
+	my( $self ) = @_;
+
+	return "http://eprints.org/eprints3#Plugin/".$self->{id};
+}
+
+######################################################################
+=pod
+
 =item $value = EPrints::Plugin->param( $key )
 
 Return the value of a parameter in the current plugin.

@@ -3839,3 +3839,7 @@ PACKAGE: 2.2.99.2
  * Created UploadComponent for file uploads
  * New methods in Component: update_from_form, validate, params/param
     (to get component-specific parameters), and get_problems
+
+2006-07-13 cjg
+
+ * Added URIs to all plugins
