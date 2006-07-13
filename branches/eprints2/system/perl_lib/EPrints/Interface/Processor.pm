@@ -1,46 +1,10 @@
-package EPrints::Interface::EPrint;
+package EPrints::Interface::Processor;
 
-use EPrints::Interface::EPrint::Edit;
-#use EPrints::Interface::EPrint::Deposit;
-use EPrints::Interface::EPrint::Control;
+use EPrints::Interface::Screen::EPrint;
+use EPrints::Interface::Screen::EPrint::Edit;
+use EPrints::Interface::Screen::EPrint::Deposit;
 
 use strict;
-
-sub screen
-{
-	my( $self ) = @_;
-
-	my $screen = $self->{screenid};
-	my $class = "EPrints::Interface::EPrint::\u$screen";
-
-	eval '
-		use '.$class.';
-		$self->{screen} = $class;
-	';
-
-	if( $@ ) 
-	{
-		print STDERR $@;
-		if( $screen ne "control" )
-		{
-			$self->add_message( 
-				"error", 
-				$self->{session}->html_phrase( 
-					"cgi/users/edit_eprint:unknown_screen",
-					screen=>$self->{session}->make_text( $screen ) ) );
-			$self->{screenid} = "control";
-			return $self->screen;
-		}
-	}
-
-	return $self->{screen};
-}
-
-sub interface
-{
-	# Used for phrases
-	return "cgi/users/edit_eprint";
-}
 
 sub process
 {
@@ -56,29 +20,22 @@ sub process
 	{
 		EPrints::abort( "session not passed to EPrints::Interface::EPrint->process" );
 	}
+
 	foreach my $k ( keys %opts )
 	{
 		$self->{$k} = $opts{$k};
 	}
 
-	$self->{eprintid} = $self->{session}->param( "eprintid" );
-	$self->{eprint} = new EPrints::DataObj::EPrint( $self->{session}, $self->{eprintid} );
-
-	if( !defined $self->{eprint} )
-	{
-		$self->{session}->render_error( $self->{session}->html_phrase(
-			"cgi/users/edit_eprint:cant_find_it",
-			id=>$self->{session}->make_text( $self->{eprintid} ) ) );
-		return;
-	}
-
-	$self->{dataset} = $self->{eprint}->get_dataset;
-
 	$self->{screenid} = $self->{session}->param( "screen" );
-	$self->{screenid} = "control" unless defined $self->{screenid};
+	$self->{screenid} = "Home" unless defined( $self->{screenid} );
+
+	# This loads the properties of what the screen is about,
+	# Rather than parameters for the action, if any.
+	$self->screen->properties_from; 
+	
 	$self->{action} = $self->{session}->get_action_button;
 
-	$self->screen->from( $self );
+	$self->screen->from;
 
 	if( defined $self->{redirect} )
 	{
@@ -86,14 +43,12 @@ sub process
 		return;
 	}
 
-	my $content = $self->screen->render( $self );
+	$self->screen->register_furniture;
+
+	my $content = $self->screen->render;
 
 	$self->{page} = $self->{session}->make_doc_fragment;
 
-	my $citation = $self->{session}->render_toolbox( 
-		$self->{session}->make_text( "Current item" ),
-		$self->{eprint}->render_citation  );
-	$self->{page}->appendChild( $citation );
 	foreach my $chunk ( @{$self->{before_messages}} )
 	{
 		$self->{page}->appendChild( $chunk );
@@ -118,6 +73,37 @@ sub add_message
 	my( $self, $type, $message ) = @_;
 
 	push @{$self->{messages}},{type=>$type,content=>$message};
+}
+
+
+sub screen
+{
+	my( $self ) = @_;
+
+	my $screen = $self->{screenid};
+	my $class = "EPrints::Interface::Screen::$screen";
+
+	eval '
+		use '.$class.';
+		$self->{screen} = $class->new( $self );
+	';
+
+	if( $@ ) 
+	{
+		print STDERR $@;
+		if( $screen ne "Error" )
+		{
+			$self->add_message( 
+				"error", 
+				$self->{session}->html_phrase( 
+					"cgi/users/edit_eprint:unknown_screen",
+					screen=>$self->{session}->make_text( $screen ) ) );
+			$self->{screenid} = "Error";
+			return $self->screen;
+		}
+	}
+
+	return $self->{screen};
 }
 
 sub render_messages
@@ -155,19 +141,6 @@ sub render_messages
 	return $chunk;
 }
 
-sub render_hidden_bits
-{
-	my( $self ) = @_;
-
-	my $chunk = $self->{session}->make_doc_fragment;
-
-	$chunk->appendChild( $self->{session}->render_hidden_field( "eprintid", $self->{eprintid} ) );
-	$chunk->appendChild( $self->{session}->render_hidden_field( "screen", $self->{screenid} ) );
-
-	return $chunk;
-}
-
-	
 
 sub action_not_allowed
 {
@@ -179,40 +152,6 @@ sub action_not_allowed
 			"cgi/users/edit_eprint:action_$action" ) ) );
 }
 	
-sub make_action_bar
-{
-	my( $self, @actions ) = @_;
-
-	my @list = ();
-	foreach( @actions )
-	{
-		next unless( $self->allow_action( $_ ) );
-		my $url = "?eprintid=".$self->{eprintid}."&screen=".$self->{screenid}."&action=".$_;
-		my $a = $self->{session}->render_link( $url );
-		$a->appendChild( $self->{session}->html_phrase( $self->interface.":action_".$_ ) );
-		push @list , $a;
-	}
-
-
-	my $f = $self->{session}->make_doc_fragment;
-	my $first = 1;
-	foreach my $item ( @list )
-	{
-		if( $first )
-		{
-			$first = 0;
-		}
-		else
-		{
-			$f->appendChild( $self->{session}->make_text( " | " ) );
-		}
-		$f->appendChild( $item );
-	}
-	return $f;
-
-}
-
-
 sub allow_action 
 {
 	my( $self, $action ) = @_;
@@ -325,87 +264,6 @@ sub allow_view
 	return 1 if( $view eq "actions" );
 
 	return 0;
-}
-
-sub workflow
-{
-	my( $interface ) = @_;
-
-	if( !defined $interface->{workflow} )
-	{
-		my %opts = ( item=> $interface->{eprint}, session=>$interface->{session} );
-		if( $interface->{staff} ) { $opts{STAFF_ONLY} = "TRUE"; }
- 		$interface->{workflow} = EPrints::Workflow->new( $interface->{session}, "default", %opts );
-	}
-
-	return $interface->{workflow};
-}
-
-sub render_form
-{
-	my( $self ) = @_;
-
-	my $form = $self->{session}->render_form( "post", $self->{url}."#t" );
-	$form->appendChild( $self->{session}->render_hidden_field( "eprintid", $self->{eprintid} ) );
-	$form->appendChild( $self->{session}->render_hidden_field( "screen", $self->{screenid} ) );
-	return $form;
-}
-
-
-
-sub render_blister
-{
-	my( $interface, $sel_stage_id, $with_deposit ) = @_;
-
-	my $eprint = $interface->{eprint};
-	my $session = $interface->{session};
-	my $staff = 0;
-
-	my $workflow = $interface->workflow;
-	my $table = $session->make_element( "table", cellspacing=>0, class=>"ep_blister_bar" );
-	my $tr = $session->make_element( "tr" );
-	$table->appendChild( $tr );
-	my $first = 1;
-	foreach my $stage_id ( $workflow->get_stage_ids )
-	{
-		if( !$first )  { $tr->appendChild( $session->make_element( "td", class=>"ep_blister_join" ) ); }
-		my $td;
-		if( $stage_id eq $sel_stage_id )
-		{
-			$td = $session->make_element( "td", class=>"ep_blister_node_selected" );
-		}
-		else
-		{
-			$td = $session->make_element( "td", class=>"ep_blister_node" );
-		}
-		my $a = $session->render_link( "eprint?eprintid=".$interface->{eprintid}."&screen=edit&stage=$stage_id" );
-		$td->appendChild( $a );
-		$a->appendChild( $session->html_phrase( "metapage_title_".$stage_id ) );
-		$tr->appendChild( $td );
-		$first = 0;
-	}
-
-	if( $with_deposit )
-	{
-		$tr->appendChild( $session->make_element( "td", class=>"ep_blister_join" ) );
-		my $td;
-		if( $sel_stage_id eq "deposit" ) 
-		{
-			$td = $session->make_element( "td", class=>"ep_blister_node_selected" );
-		}
-		else
-		{
-			$td = $session->make_element( "td", class=>"ep_blister_node" );
-		}
-		my $a = $session->render_link( "eprint?eprintid=".$interface->{eprintid}."&screen=deposit" );
-		$td->appendChild( $a );
-		$a->appendChild( $session->make_text( "Deposit" ) );
-		$tr->appendChild( $td );
-	}
-
-	return $interface->{session}->render_toolbox( 
-			$interface->{session}->make_text( "Deposit progress" ),
-			$table );
 }
 
 

@@ -393,7 +393,7 @@ sub link_problem_xhtml
 		{
 			my $stage = $self->{field_stages}->{$1};
 			return if( !defined $stage );
-			my $url = "?eprintid=".$self->{item}->get_id."&screen=edit&stage=$stage#$1";
+			my $url = "?eprintid=".$self->{item}->get_id."&screen=EPrint::Edit&stage=$stage#$1";
 			if( $self->get_stage_id eq $stage )
 			{
 				$url = "#$1";

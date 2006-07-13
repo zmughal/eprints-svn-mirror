@@ -73,7 +73,9 @@ sub local_uri
 {
 	my( $self ) = @_;
 
-	return $self->{session}->get_conf( "base_url" )."#Plugin/".$self->{id};
+	my $id = $self->{id};
+	$id =~ s!::!/!g;
+	return $self->{session}->get_repository->get_conf( "base_url" )."/#Plugin/".$id;
 }
 
 ######################################################################
@@ -94,7 +96,9 @@ sub global_uri
 {
 	my( $self ) = @_;
 
-	return "http://eprints.org/eprints3#Plugin/".$self->{id};
+	my $id = $self->{id};
+	$id =~ s!::!/!g;
+	return "http://eprints.org/eprints3/#Plugin/".$id;
 }
 
 ######################################################################
