@@ -48,9 +48,9 @@ sub get_sql_type
 	# ignoring notnull.
 
 	return 
-		$self->get_sql_name()."_year INTEGER, ".
-		$self->get_sql_name()."_month INTEGER, ".
-		$self->get_sql_name()."_day INTEGER";
+		$self->get_sql_name()."_year SMALLINT, ".
+		$self->get_sql_name()."_month SMALLINT, ".
+		$self->get_sql_name()."_day SMALLINT";
 }
 
 sub get_sql_index

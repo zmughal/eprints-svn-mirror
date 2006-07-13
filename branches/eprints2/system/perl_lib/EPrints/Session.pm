@@ -2436,6 +2436,11 @@ sub param
 {
 	my( $self, $name ) = @_;
 
+	if( !defined $self->{query} ) 
+	{
+		EPrints::abort("CGI Query object not defined!" );
+	}
+
 	if( !wantarray )
 	{
 		my $value = ( $self->{query}->param( $name ) );

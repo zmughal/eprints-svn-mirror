@@ -744,7 +744,7 @@ sub get_values
 			$value, 
 			$session, 
 			$langid );
-		$orderkeys{$v2} = $orderkey;
+		$orderkeys{$v2} = $orderkey || "";
 	}
 
 	my @outvalues = sort {$orderkeys{$a} cmp $orderkeys{$b}} @values;

@@ -337,27 +337,28 @@ sub render_workspace
 	#	$td->appendChild( $session->html_phrase( 
 	#		"cgi/users/home:accepted_at",
 	#		time=>$e->render_value( "datestamp" ) ) );
+
 		my $a;
 
-		$a = $session->render_link( "submit?eprintid=".$e->get_id."&_action_edit=1" );
+		$a = $session->render_link( "eprint?eprintid=".$e->get_id."&screen=edit" );
 		$a->appendChild( $session->html_phrase("cgi/users/home:action_edit") );
 		$td->appendChild( $a );
 
 		$td->appendChild( $session->make_text( ", " ) );
 
-		$a = $session->render_link( "submit?eprintid=".$e->get_id."&_action_submit=1" );
+		$a = $session->render_link( "eprint?eprintid=".$e->get_id."&screen=deposit" );
 		$a->appendChild( $session->html_phrase("cgi/users/home:action_submit") );
 		$td->appendChild( $a );
 
 		$td->appendChild( $session->make_text( ", " ) );
 
-		$a = $session->render_link( "submit?eprintid=".$e->get_id."&_action_copy=1" );
+		$a = $session->render_link( "eprint?eprintid=".$e->get_id."&_action_derive_eprint_clone=1" );
 		$a->appendChild( $session->html_phrase("cgi/users/home:action_copy") );
 		$td->appendChild( $a );
 
 		$td->appendChild( $session->make_text( ", " ) );
 
-		$a = $session->render_link( "submit?eprintid=".$e->get_id."&_action_delete=1" );
+		$a = $session->render_link( "eprint?eprintid=".$e->get_id."&screen=remove" );
 		$a->appendChild( $session->html_phrase("cgi/users/home:action_delete") );
 		$td->appendChild( $a );
 		$row=!$row;

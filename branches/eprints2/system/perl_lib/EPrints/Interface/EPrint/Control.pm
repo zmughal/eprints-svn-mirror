@@ -13,21 +13,76 @@ sub from
 {
 	my( $class, $interface ) = @_;
 
-	if( $interface->{action} eq "deposit" )
+	# actions with their own screens
+	foreach my $a ( 
+		"remove", 
+		"deposit", 
+		"reject_with_email", 
+		"remove_with_email",
+		"request_eprint_deletion",
+	)
 	{
-		$interface->action_deposit;
-	}
-	elsif( $interface->{action} eq "want_to_deposit" )
-	{
-		if( $interface->allow_action( "deposit" ) )
+		next unless( $interface->{action} eq $a );
+	
+		if( !$interface->allow_action( $a ) )
 		{
-			$interface->{screenid} = "deposit";
+			$interface->action_not_allowed( $a );
+			return;
+		}
+
+		$interface->{screenid} = $a;
+		return;
+	}
+
+	foreach my $a ( "derive_eprint_version", "derive_eprint_clone" )
+	{
+		next unless( $interface->{action} eq $a );
+
+		if( !$interface->allow_action( $a ) )
+		{
+			$interface->action_not_allowed( $a );
+			return;
+		}
+
+		derive_eprint_version( $interface ) if( $a eq "derive_eprint_version" );
+
+		derive_eprint_clone( $interface ) if( $a eq "derive_eprint_clone" );
+
+		return;
+	}
+
+	if( $interface->{action} =~ m/move_eprint_(.*)_(.*)$/ )
+	{
+		my( $a, $b ) = ( $1, $2 );
+		if( $interface->allow_action( $interface->{action} ) )
+		{
+			my $ok;
+			$ok = $interface->{eprint}->move_to_archive if( $b eq "archive" );
+			$ok = $interface->{eprint}->move_to_buffer if( $b eq "buffer" );
+			$ok = $interface->{eprint}->move_to_inbox if( $b eq "inbox" );
+			$ok = $interface->{eprint}->move_to_deletion if( $b eq "deletion" );
+			if( $ok )
+			{
+				$interface->add_message( "message",
+					$interface->{session}->html_phrase( "cgi/users/edit_eprint:status_changed" ) );
+			}
+			else
+			{
+				$interface->add_message( "error",
+					$interface->{session}->html_phrase(
+						"cgi/users/edit_eprint:cant_move",
+						id=>$interface->{session}->make_text( $interface->{eprintid} ) ) );
+			}
 		}
 		else
 		{
-			$interface->action_not_allowed;
+			$interface->action_not_allowed( $interface->{action} );
 		}
+
+		return;
 	}
+
+	$class->SUPER::from( $interface );
 }
 
 sub render
@@ -36,65 +91,61 @@ sub render
 
 	my $chunk = $interface->{session}->make_doc_fragment;
 
-	$interface->{title} = $interface->{session}->make_text("Hi mom");
+	$interface->{title} = $interface->{session}->make_text("Item Control Page");
 
 	my $status = $interface->{eprint}->get_value( "eprint_status" );
-	if( $status eq "inbox" )
-	{
-		my $div = $interface->{session}->make_element( "div", style=>"border: 1px solid black; margin: 1em 0 1em 0; padding: 1em" );
-		$div->appendChild( $interface->{session}->make_text( "blister bar!" ) );
-		$chunk->appendChild( $div );
-	}
 
-	my $status_phrase = $interface->{session}->html_phrase( "cgi/users/edit_eprint:item_is_in_".$status );
-
-	my $status_div = $interface->{session}->make_element( "div", style=>"border: 1px solid black; margin: 1em 0 1em 0; padding: 1em" );
-	$status_div->appendChild( $status_phrase );
-	$chunk->appendChild( $status_div );
+	my $status_fragment = $interface->{session}->make_doc_fragment;
+	$status_fragment->appendChild( $interface->{session}->html_phrase( "cgi/users/edit_eprint:item_is_in_".$status ) );
 
 	if( $interface->allow_action( "deposit" ) )
 	{
 		# clean up
 		my $deposit_div = $interface->{session}->make_element( "div", id=>"controlpage_deposit_link" );
-		my $a = $interface->{session}->make_element( "a", href=>"?screen=control&eprintid=".$interface->{eprintid}."&action=want_to_deposit", onclick=>"Element.toggle( 'controlpage_deposit_link','controlpage_deposit_form'); return false;" );
-		$a->appendChild( $interface->{session}->make_text( "deposit now!" ) );
+		my $a = $interface->{session}->make_element( "a", href=>"?screen=control&eprintid=".$interface->{eprintid}."&_action_deposit=1" );
+		$a->appendChild( $interface->{session}->make_text( "Deposit now!" ) );
 		$deposit_div->appendChild( $a );
-		$status_div->appendChild( $deposit_div );
-		my $hidden_div = $interface->{session}->make_element( "div", id=>"controlpage_deposit_form", style=>"display: none" );
-		$hidden_div->appendChild( EPrints::Interface::EPrint::Deposit->render_deposit_form( $interface ) );
-		$status_div->appendChild( $hidden_div );
+		$status_fragment->appendChild( $deposit_div );
 	}
-	
-	# if in archive and can request delete then do that here TODO
 
-	# Actions bar
-	my @actions;
+	my @staff_actions = ();
+	foreach my $action (
+		"reject_with_email",
+		"remove_with_email",
+		"move_eprint_inbox_buffer", 
+		"move_eprint_buffer_archive",
+		"move_eprint_archive_buffer", 
+		"move_eprint_archive_deletion",
+		"move_eprint_deletion_archive",
+	) 
+	{
+		push @staff_actions, $action if( $interface->allow_action( $action ) );
+	}
+	if( scalar @staff_actions )
+	{
+		my %buttons = ( _order=>[] );
+		foreach my $action ( @staff_actions )
+		{
+			push @{$buttons{_order}}, $action;
+			$buttons{$action} = $interface->{session}->phrase( "cgi/users/edit_eprint:action_".$action );
+		}
+		my $form = $interface->render_form;
+		$form->appendChild( $interface->{session}->render_action_buttons( %buttons ) );
+		$status_fragment->appendChild( $form );
+	} 
+
+	$chunk->appendChild( 
+		 $interface->{session}->render_toolbox( 
+			$interface->{session}->make_text( "Status" ),
+			$status_fragment ) );
+
+	# if in archive and can request delete then do that here TODO
 
 	my $sb = $interface->{session}->get_repository->get_conf( "skip_buffer" ) || 0;
 	
-	@actions = ( 
-		# Move actions (deposit is handled above)
-		"move_eprint_buffer_inbox", # Bounce
-		"move_eprint_buffer_archive", # Approve
-		"move_eprint_archive_inbox",  # Back to inbox from archive
-		"move_eprint_archive_buffer", # Back to review from archive
-		"move_eprint_archive_deletion", # Retire
-		"move_eprint_deletion_archive", # Unretire 
-		
-		"derive_eprint_version", # New version
-		"derive_eprint_clone", # Use as template
-		"request_eprint_deletion",  
-		"view_buffer",  
-	);
-
-	my $action_bar = $interface->{session}->make_element( "div", class => "ep_action_bar" );
-	$action_bar->appendChild( $interface->make_action_bar( @actions ) );
-	$chunk->appendChild( $action_bar );
-
-
 	my $view = $interface->{session}->param( "view" );
 
-	if( !$interface->allow_action( "view_$view" ) )
+	if( !$interface->allow_view( "$view" ) )
 	{
 		$view = undef;
 	}
@@ -128,6 +179,21 @@ window.ep_showTab = function( baseid, tabid )
 	tab = document.getElementById( baseid+"_tab_"+tabid );
 	tab.style.font_size = "30px";
 	tab.className = "ep_tab_selected";
+	for( i=0; ep_lt(i,tab.childNodes.length); i++ ) 
+	{
+		child = tab.childNodes[i];
+		if( child.nodeName == "A" )
+		{
+			child.blur();
+		}
+	}
+
+	if( tabid == "history" )
+	{
+		return true;
+	}
+
+	return false;
 };
 
 ' ) );
@@ -136,20 +202,22 @@ window.ep_showTab = function( baseid, tabid )
 	my $tr = $interface->{session}->make_element( "tr", id=>"ep_control_view_tabs" );
 	$table->appendChild( $tr );
 
-	my @lite_views = qw/ summary full export staffexport edit staffedit /;
-	my @views = ( @lite_views, "history" );
+	my @views = qw/ summary full actions export staffexport edit staffedit history /;
 	my $spacer = $interface->{session}->make_element( "td", class=>"ep_tab_spacer" );
 	$spacer->appendChild( $interface->{session}->render_nbsp );
 	$tr->appendChild( $spacer );
 	foreach my $view_i ( @views )
 	{	
-		next if( !$interface->allow_action( "view_$view_i" ) );
+		next if( !$interface->allow_view( "$view_i" ) );
 
 		$view = $view_i if !defined $view;
 		my %a_opts = ( 
-			onClick => "ep_showTab('ep_control_view','$view_i' ); return false;", 
 			href    => "?eprintid=".$interface->{eprintid}."&view=".$view_i, 
 		);
+		if( quick_tab($view_i) && quick_tab($view) )
+		{
+			$a_opts{onClick} = "return ep_showTab('ep_control_view','$view_i' );";
+		}
 		my %td_opts = ( id => "ep_control_view_tab_$view_i", class=>"ep_tab" );
 		if( $view eq $view_i ) { $td_opts{class} = "ep_tab_selected"; }
 
@@ -170,20 +238,40 @@ window.ep_showTab = function( baseid, tabid )
 
 	my $panel = $interface->{session}->make_element( "div", id=>"ep_control_view_panels" );
 	$chunk->appendChild( $panel );
-	my $view_div = $interface->{session}->make_element( "div", class=>"ep_control_view", id=>"ep_control_view_panel_$view" );
+	my $view_div = $interface->{session}->make_element( "div", class=>"ep_tab_panel", id=>"ep_control_view_panel_$view" );
 	$view_div->appendChild( render_view( $interface, $view ) );	
 	$panel->appendChild( $view_div );
 
-	foreach my $view_i ( @lite_views )
+	# don't render the other tabs if this is a slow tab - they must reload
+	if( quick_tab($view) )
 	{
-		next if( !$interface->allow_action( "view_$view_i" ) );
-		next if $view_i eq $view;
-		my $other_view = $interface->{session}->make_element( "div", class=>"ep_control_view", id=>"ep_control_view_panel_$view_i", style=>"display: none" );
-		$other_view->appendChild( render_view( $interface, $view_i ) );	
-		$panel->appendChild( $other_view );
+		foreach my $view_i ( @views )
+		{
+			next if( !$interface->allow_view( "$view_i" ) );
+			next if $view_i eq $view;
+			my $other_view = $interface->{session}->make_element( "div", class=>"ep_tab_panel", id=>"ep_control_view_panel_$view_i", style=>"display: none" );
+			if( quick_tab( $view_i ) )
+			{
+				$other_view->appendChild( render_view( $interface, $view_i ) );	
+			}
+			else	
+			{
+				$other_view->appendChild( $interface->{session}->html_phrase( "cgi/users/edit_eprint:loading" ) );
+			}
+			$panel->appendChild( $other_view );
+		}
 	}
 
 	return $chunk;
+}
+
+sub quick_tab
+{
+	my( $tab_id ) = @_;
+
+	return 0 if $tab_id eq "history";
+	
+	return 1;
 }
 
 sub render_view
@@ -191,18 +279,19 @@ sub render_view
 	my( $interface, $view ) = @_;
 
 	my( $data, $title );
-	if( !$interface->allow_action( "view_$view" ) )
+	if( !$interface->allow_view( "$view" ) )
 	{
 		return $interface->{session}->html_phrase( "cgi/users/edit_eprint:cant_view_view" );
 	}
 
+	if( $view eq "actions" ) { $data = render_action_tab( $interface ); }
 	if( $view eq "summary" ) { ($data,$title) = $interface->{eprint}->render; }
 	if( $view eq "full" ) { ($data,$title) = $interface->{eprint}->render_full; }
 	if( $view eq "history" ) { ($data,$title) = $interface->{eprint}->render_history; }
 	if( $view eq "export" ) { $data = $interface->{eprint}->render_export_links; }
 	if( $view eq "staffexport" ) { $data = $interface->{eprint}->render_export_links(1); }
-	if( $view eq "edit" ) { $data = render_edit_tab( $interface->{session}, $interface->{eprint}, 0 ); }
-	if( $view eq "staffedit" ) { $data = render_edit_tab( $interface->{session}, $interface->{eprint}, 1 ); }
+	if( $view eq "edit" ) { $data = render_edit_tab( $interface ); }
+	if( $view eq "staffedit" ) { $data = render_edit_tab( $interface ); }
 
 	if( !defined $view )
 	{
@@ -212,9 +301,64 @@ sub render_view
 	return $data;
 }
 
+sub render_action_tab
+{
+	my( $interface ) = @_;
+
+	my @actions = ( 
+		"deposit",
+		"reject_with_email",
+		"remove_with_email",
+
+		"move_eprint_inbox_buffer", 
+		"move_eprint_buffer_inbox", 
+		"move_eprint_buffer_archive",
+		"move_eprint_archive_buffer", 
+		"move_eprint_archive_deletion",
+		"move_eprint_deletion_archive",
+
+		"move_eprint_inbox_archive", 
+		"move_eprint_archive_inbox",  
+		
+		"derive_eprint_version", # New version
+		"derive_eprint_clone", # Use as template
+
+		"request_eprint_deletion",  
+		"remove",
+	);
+	my $session = $interface->{session};
+	my $form = $interface->render_form;
+	my $table = $session->make_element( "table" );
+	$form->appendChild( $table );
+	foreach my $action ( @actions )
+	{
+		next unless( $interface->allow_action( $action ) );
+		my $tr = $session->make_element( "tr" );
+		my $td = $session->make_element( "th" );
+		$td->appendChild( $session->render_hidden_field( "action", $action ) );
+		$td->appendChild( 
+			$session->make_element( 
+				"input", 
+				type=>"submit",
+				class=>"actionbutton",
+				name=>"_action_$action", 
+				value=>$session->phrase( "cgi/users/edit_eprint:action_".$action ) ) );
+		$tr->appendChild( $td );
+		my $td2 = $session->make_element( "td" );
+		$td2->appendChild( $session->html_phrase( "cgi/users/edit_eprint:help_".$action ) ); 
+		$tr->appendChild( $td2 );
+		$table->appendChild( $tr );
+	}
+	return $form;
+}
+
 sub render_edit_tab
 {
-	my( $session, $eprint, $staff ) = @_;
+	my( $interface ) = @_;
+
+	my $session = $interface->{session};
+	my $eprint = $interface->{eprint};
+	my $staff = $interface->{staff};
 
 	my %opts = ( item=> $eprint );
 	if( $staff ) { $opts{STAFF_ONLY} = "TRUE"; }
@@ -223,14 +367,51 @@ sub render_edit_tab
 	foreach my $stage_id ( $workflow->get_stage_ids )
 	{
 		my $li = $session->make_element( "li" );
-		my $a = $session->render_link( "xxxx" );
+		my $a = $session->render_link( "eprint?eprintid=".$interface->{eprintid}."&screen=edit&stage=$stage_id" );
 		$li->appendChild( $a );
-		$a->appendChild( $session->make_text( $stage_id ) );
+		$a->appendChild( $session->html_phrase( "metapage_title_".$stage_id ) );
 		$ul->appendChild( $li );
 	}
 	return $ul;
 }
 
+sub derive_eprint_version
+{
+	my( $interface ) = @_;
+
+	my $ds_inbox = $interface->{session}->get_repository->get_dataset( "inbox" );
+	my $new_eprint = $interface->{eprint}->clone( $ds_inbox, 1, 0 );
+
+	if( !defined $new_eprint )
+	{
+		$interface->add_message( "error", 
+			$interface->{session}->make_text( "Failed" ) );
+		return;
+	}
+	
+	$interface->{eprint} = $new_eprint;
+	$interface->{eprintid} = $new_eprint->get_id;
+	$interface->{screenid} = "edit";
+}
+
+sub derive_eprint_clone
+{
+	my( $interface ) = @_;
+
+	my $ds_inbox = $interface->{session}->get_repository->get_dataset( "inbox" );
+	my $new_eprint = $interface->{eprint}->clone( $ds_inbox, 0, 1 );
+
+	if( !defined $new_eprint )
+	{
+		$interface->add_message( "error", 
+			$interface->{session}->make_text( "Failed" ) );
+		return;
+	}
+	
+	$interface->{eprint} = $new_eprint;
+	$interface->{eprintid} = $new_eprint->get_id;
+	$interface->{screenid} = "edit";
+}
 
 1;
 

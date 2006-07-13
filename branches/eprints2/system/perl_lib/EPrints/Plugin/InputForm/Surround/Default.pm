@@ -17,30 +17,44 @@ sub render
 	my @problems = @{$component->get_problems()};
 
 	my $surround = $self->{session}->make_element( "div", class => "wf_component" );
+	foreach my $field_id ( $component->get_fields_handled )
+	{
+		$surround->appendChild( $self->{session}->make_element( "a", name=>$field_id ) );
+	}
 
 	# Help rendering
-	
-	my $helpimg = $self->{session}->make_element( "img", src => "/images/help.gif", class => "wf_help_icon", border => "0" );
-	my $helplink = $self->{session}->make_element( "a", onClick => "doToggle('help_${comp_name}')" );
-	$helplink->appendChild( $helpimg );
-	my $help_div = $self->{session}->make_element( "div", class => "wf_help", style => "display: none", id => "help_${comp_name}" );
-	$help_div->appendChild( $help );
-	
-	# Title rendering
-	
-	my $title_div = $self->{session}->make_element( "div", class => "wf_title" );
-	$title_div->appendChild( $helplink );
 
-	# Add the title and 'required' button if necessary. 
+	my $id_prefix = $component->{prefix}."_help";
+
+	my $title_table = $self->{session}->make_element( "table", cellspacing=>0, class=>"wf_title_table" );
+	my $title_tr = $self->{session}->make_element( "tr" );
+	$title_table->appendChild( $title_tr );
+
+	my $title_td1 = $self->{session}->make_element( "td", class=>"wf_title" );
+	$title_td1->appendChild( $title );
+	$title_tr->appendChild( $title_td1 );
+
+	my $title_td2 = $self->{session}->make_element( "td", class=>"wf_show_help ep_js_only", id=>$id_prefix."_show" );
+	my $helplink = $self->{session}->make_element( "a", onClick => "Element.toggle('$id_prefix');Element.toggle('${id_prefix}_hide');Element.toggle('${id_prefix}_show');return false", href=>"#" );
+	$helplink->appendChild( $self->{session}->make_text( "Help" ) );
+	$title_td2->appendChild( $helplink );
+	$title_tr->appendChild( $title_td2 );
+
+	my $title_td3 = $self->{session}->make_element( "td", class=>"wf_hide_help ep_js_only", style=>"display: none", id=>$id_prefix."_hide" );
+	my $helplink2 = $self->{session}->make_element( "a", onClick => "Element.toggle('$id_prefix');Element.toggle('${id_prefix}_hide');Element.toggle('${id_prefix}_show');return false", href=>"#" );
+	$helplink2->appendChild( $self->{session}->make_text( "Hide help" ) );
+	$title_td3->appendChild( $helplink2 );
+	$title_tr->appendChild( $title_td3 );
 	
-	$title_div->appendChild( $title );
+	my $help_div = $self->{session}->make_element( "div", class => "wf_help ep_no_js", style => "display: none", id => $id_prefix );
+	$help_div->appendChild( $help );
 	
 	if( $is_req )
 	{
-		$title_div->appendChild( $self->get_req_icon() );
+		$title_td1->appendChild( $self->get_req_icon() );
 	}
 
-	$surround->appendChild( $title_div );
+	$surround->appendChild( $title_table );
 	$surround->appendChild( $help_div );
 	
 	# Problem rendering

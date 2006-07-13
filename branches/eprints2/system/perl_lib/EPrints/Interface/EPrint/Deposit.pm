@@ -11,7 +11,11 @@ sub from
 	if( $interface->{action} eq "deposit" )
 	{
 		$class->action_deposit( $interface );
+		$interface->{screenid} = "control";	
+		return;
 	}
+	
+	$class->SUPER::from( $interface );
 }
 
 sub render
@@ -19,8 +23,31 @@ sub render
 	my( $class, $interface ) = @_;
 
 	$interface->{title} = $interface->{session}->make_text( "Deposit item" ); #cjg lang
+	my $problems = $interface->{eprint}->validate_full( $interface->{for_archive} );
+	if( scalar @{$problems} > 0 )
+	{
+		my $warnings = $interface->{session}->make_element( "ul" );
+		foreach my $problem_xhtml ( @{$problems} )
+		{
+			my $li = $interface->{session}->make_element( "li" );
+			$li->appendChild( $problem_xhtml );
+			$warnings->appendChild( $li );
+		}
+		$interface->workflow->link_problem_xhtml( $warnings );
+		$interface->add_message( "warning", $warnings );
+	}
 
-	return $class->render_deposit_form( $interface );
+	$interface->before_messages( 
+		 $interface->render_blister( "deposit", 1 ) );
+
+	my $page = $interface->{session}->make_doc_fragment;
+	if( scalar @{$problems} == 0 )
+	{
+		$page->appendChild(
+		 	$class->render_deposit_form( $interface ) );
+	}
+
+	return $page;
 }
 
 sub render_deposit_form
@@ -31,10 +58,12 @@ sub render_deposit_form
 
 	$chunk->appendChild( $interface->{session}->html_phrase( "deposit_agreement_text" ) );
 
-	my $dep_a = $interface->{session}->make_element( "a", href=>"?screen=deposit&eprintid=".$interface->{eprintid}."&action=deposit" );
-	$dep_a->appendChild( $interface->{session}->make_text( "Deposit this Item now" ) ); #cjg lang
+	my $form = $interface->render_form;
+	$form->appendChild(
+		 $interface->{session}->render_action_buttons( 
+			deposit=>$interface->{session}->phrase( "cgi/users/edit_eprint:action_deposit" ) ) );
 
-	$chunk->appendChild( $dep_a );
+	$chunk->appendChild( $form );
 
 	return $chunk;
 }
@@ -49,17 +78,21 @@ sub action_deposit
 		return;
 	}
 
-	my $problems = $interface->{eprint}->validate_full( $interface->{for_archive} );
 		
 	$interface->{screenid} = "control";
 
+	my $problems = $interface->{eprint}->validate_full( $interface->{for_archive} );
 	if( scalar @{$problems} > 0 )
 	{
 		$interface->add_message( "error", $interface->{session}->make_text( "Could not deposit due to validation errors." ) ); #cjg lang
-		foreach( @{$problems} )
+		my $warnings = $interface->{session}->make_element( "ul" );
+		foreach my $problem_xhtml ( @{$problems} )
 		{
-			$interface->add_message( "warning", $_ );
+			my $li = $interface->{session}->make_element( "li" );
+			$li->appendChild( $problem_xhtml );
+			$warnings->appendChild( $li );
 		}
+		$interface->add_message( "warning", $warnings );
 		return;
 	}
 

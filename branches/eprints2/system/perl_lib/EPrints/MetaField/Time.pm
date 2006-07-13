@@ -48,12 +48,12 @@ sub get_sql_type
 	# ignoring notnull.
 
 	return 
-		$self->get_sql_name()."_year INTEGER, ".
-		$self->get_sql_name()."_month INTEGER, ".
-		$self->get_sql_name()."_day INTEGER, ".
-		$self->get_sql_name()."_hour INTEGER, ".
-		$self->get_sql_name()."_minute INTEGER, ".
-		$self->get_sql_name()."_second INTEGER ";
+		$self->get_sql_name()."_year SMALLINT, ".
+		$self->get_sql_name()."_month SMALLINT, ".
+		$self->get_sql_name()."_day SMALLINT, ".
+		$self->get_sql_name()."_hour SMALLINT, ".
+		$self->get_sql_name()."_minute SMALLINT, ".
+		$self->get_sql_name()."_second SMALLINT ";
 }
 
 sub get_sql_index

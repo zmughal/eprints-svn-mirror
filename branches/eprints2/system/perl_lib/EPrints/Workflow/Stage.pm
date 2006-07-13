@@ -111,28 +111,45 @@ sub get_components
 	return @{$self->{components}};
 }
 
-sub validate
+sub get_fields_handled
 {
-	my( $self, $session ) = @_;
-	
-	my $ok = 1;
-	foreach my $component (@{$self->{components}})
+	my( $self ) = @_;
+
+	my @list = ();
+	foreach my $component ( $self->get_components )
 	{
-		$ok &= $component->validate();
+		push @list, $component->get_fields_handled;
 	}
-	return $ok;
+	return @list;
 }
 
+# return an array of problems
+sub validate
+{
+	my( $self ) = @_;
+	
+	my @problems = ();
+	foreach my $component (@{$self->{components}})
+	{
+		push @problems, $component->validate();
+	}
+	return @problems;
+}
+
+# return an array of problems
 sub update_from_form
 {
 	my( $self ) = @_;
 
-	my $ok = 1;
+	my @problems = ();
 	foreach my $component (@{$self->{components}})
 	{
-		$ok &= $component->update_from_form();
+		push @problems, $component->update_from_form();
 	}
-	return $ok;
+	
+	$self->{item}->commit;
+
+	return @problems;
 }
 
 sub render
@@ -159,5 +176,6 @@ sub render
   
 	return $dom;
 }
+
 
 1;

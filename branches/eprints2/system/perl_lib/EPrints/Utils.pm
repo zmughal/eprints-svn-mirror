@@ -262,7 +262,8 @@ sub make_name_string
 {
 	my( $name, $familylast ) = @_;
 
-	EPrints::abort "make_name_string expected hash reference" unless ref($name) eq "HASH";
+	#EPrints::abort "make_name_string expected hash reference" unless ref($name) eq "HASH";
+	return "make_name_string expected hash reference" unless ref($name) eq "HASH";
 
 	my $firstbit = "";
 	if( defined $name->{honourific} && $name->{honourific} ne "" )

@@ -3843,3 +3843,4 @@ PACKAGE: 2.2.99.2
 2006-07-13 cjg
 
  * Added URIs to all plugins
+ * More work on eprint control page. Not complete, but much progress.

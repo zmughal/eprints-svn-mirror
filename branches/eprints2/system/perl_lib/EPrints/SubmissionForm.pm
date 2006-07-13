@@ -516,6 +516,7 @@ sub _from_stage_home
 	}
 
 
+	# use as template
 	if( $self->{action} eq "copy" )
 	{
 		if( !defined $self->{eprint} )
@@ -544,6 +545,7 @@ sub _from_stage_home
 		}
 	}
 
+	# new version
 	if( $self->{action} eq "clone" )
 	{
 		if( !defined $self->{eprint} )

@@ -1040,9 +1040,11 @@ sub validate_meta
 		# Check that the field is filled 
 		next if ( $self->is_set( $field->get_name ) );
 
+		my $fieldname = $self->{session}->make_element( "span", class=>"problem_field:".$field->{name} );
+		$fieldname->appendChild( $field->render_name( $self->{session} ) );
 		my $problem = $self->{session}->html_phrase( 
 			"lib/eprint:not_done_field" ,
-			fieldname=> $field->render_name( $self->{session} ) );
+			fieldname=> $fieldname );
 
 		push @all_problems,$problem;
 	}
@@ -1108,10 +1110,11 @@ sub validate_meta_page
 		{
 			# field	is required but not set!
 
+			my $fieldname = $self->{session}->make_element( "span", class=>"problem_field:".$field->{name} );
+			$fieldname->appendChild( $field->render_name( $self->{session} ) );
 			my $problem = $self->{session}->html_phrase( 
 				"lib/eprint:not_done_field" ,
-				fieldname=> $field->render_name( 
-						$self->{session} ) );
+				fieldname=> $fieldname );
 			push @problems,$problem;
 		}
 

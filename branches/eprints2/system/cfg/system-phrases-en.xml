@@ -33,22 +33,22 @@ EPrints Modules
 
 <!-- EPrint -->
 
-    <ep:phrase ref="lib/edit_eprint:disklow_sub">Warning: Low on disk space</ep:phrase>
-    <ep:phrase ref="lib/edit_eprint:disklow"><p>The amount of disk space available for new EPrints has dropped below the repository threshold. New disk space will be needed soon.</p><p>If you get sick of this message, lower the "diskspace_warn_threshold" in the config file. If you do this then don't forget to put it back after you add more disk space.</p><p>The usual way to add disk space is to symlink a directory on a new drive into the repository "documents" directory.</p></ep:phrase>
-    <ep:phrase ref="lib/edit_eprint:diskout_sub">ERROR: Out of Disk Space</ep:phrase>
-    <ep:phrase ref="lib/edit_eprint:diskout"><p>There are no available partitions with enough disk space to create new items. This needs sorting out urgently.</p><p>NO NEW ITEMS WILL BE ADDED UNTIL YOU FIX THIS.</p><p>To add more capacity, symlink a directory on a new drive into the repository "documents" directory.</p></ep:phrase>
-    <ep:phrase ref="lib/edit_eprint:no_type">You haven't selected a type for this item.</ep:phrase>
-    <ep:phrase ref="lib/edit_eprint:invalid_type">This item doesn't seem to have a valid type.</ep:phrase>
-    <ep:phrase ref="lib/edit_eprint:not_done_field">You haven't filled out the required <ep:pin ref="fieldname" /> field.</ep:phrase>
-    <ep:phrase ref="lib/edit_eprint:invalid_users">The following usernames are not valid: <ep:pin ref="usernames" />.</ep:phrase>
-    <ep:phrase ref="lib/edit_eprint:least_one_sub">You need to select at least one subject from the list!</ep:phrase>
-    <ep:phrase ref="lib/edit_eprint:cant_succ">You cannot succeed an item that someone else has posted</ep:phrase>
-    <ep:phrase ref="lib/edit_eprint:invalid_id">Item ID in "<ep:pin ref="field" />" field is invalid</ep:phrase>
-    <ep:phrase ref="lib/edit_eprint:need_a_format">You need to upload at least one of the following formats:</ep:phrase>
-    <ep:phrase ref="lib/edit_eprint:eprint_gone_title">Item Removed</ep:phrase>
-    <ep:phrase ref="lib/edit_eprint:eprint_gone"><p>You seem to be attempting to access an item that has been removed from the repository.</p></ep:phrase>
-    <ep:phrase ref="lib/edit_eprint:later_version"><p>There is a later version of the item you are trying to access:<br /><ep:pin ref="citation" /></p></ep:phrase>
-    <ep:phrase ref="lib/edit_eprint:curr_disp"><strong>[Currently Displayed]</strong></ep:phrase>
+    <ep:phrase ref="lib/eprint:disklow_sub">Warning: Low on disk space</ep:phrase>
+    <ep:phrase ref="lib/eprint:disklow"><p>The amount of disk space available for new EPrints has dropped below the repository threshold. New disk space will be needed soon.</p><p>If you get sick of this message, lower the "diskspace_warn_threshold" in the config file. If you do this then don't forget to put it back after you add more disk space.</p><p>The usual way to add disk space is to symlink a directory on a new drive into the repository "documents" directory.</p></ep:phrase>
+    <ep:phrase ref="lib/eprint:diskout_sub">ERROR: Out of Disk Space</ep:phrase>
+    <ep:phrase ref="lib/eprint:diskout"><p>There are no available partitions with enough disk space to create new items. This needs sorting out urgently.</p><p>NO NEW ITEMS WILL BE ADDED UNTIL YOU FIX THIS.</p><p>To add more capacity, symlink a directory on a new drive into the repository "documents" directory.</p></ep:phrase>
+    <ep:phrase ref="lib/eprint:no_type">You haven't selected a type for this item.</ep:phrase>
+    <ep:phrase ref="lib/eprint:invalid_type">This item doesn't seem to have a valid type.</ep:phrase>
+    <ep:phrase ref="lib/eprint:not_done_field">You haven't filled out the required <ep:pin ref="fieldname" /> field.</ep:phrase>
+    <ep:phrase ref="lib/eprint:invalid_users">The following usernames are not valid: <ep:pin ref="usernames" />.</ep:phrase>
+    <ep:phrase ref="lib/eprint:least_one_sub">You need to select at least one subject from the list!</ep:phrase>
+    <ep:phrase ref="lib/eprint:cant_succ">You cannot succeed an item that someone else has posted</ep:phrase>
+    <ep:phrase ref="lib/eprint:invalid_id">Item ID in "<ep:pin ref="field" />" field is invalid</ep:phrase>
+    <ep:phrase ref="lib/eprint:need_a_format">You need to upload at least one of the following formats:</ep:phrase>
+    <ep:phrase ref="lib/eprint:eprint_gone_title">Item Removed</ep:phrase>
+    <ep:phrase ref="lib/eprint:eprint_gone"><p>You seem to be attempting to access an item that has been removed from the repository.</p></ep:phrase>
+    <ep:phrase ref="lib/eprint:later_version"><p>There is a later version of the item you are trying to access:<br /><ep:pin ref="citation" /></p></ep:phrase>
+    <ep:phrase ref="lib/eprint:curr_disp"><strong>[Currently Displayed]</strong></ep:phrase>
 
 <!-- History -->
 
@@ -765,33 +765,93 @@ Staff CGI Scripts
     <ep:phrase ref="cgi/users/edit_eprint:removed"><p>Item Successfully Removed</p></ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:move_title">Move Successful</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:moved"><p>Item Successfully moved back into editorial review.</p><p>You may now <ep:pin ref="link">edit it</ep:pin> if you wish.</p></ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_edit">Edit Item</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action__remove">Remove Item</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_derive_eprint_version">New Version</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_derive_eprint_clone">Use as Template</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_move_eprint_archive_inbox">Bounce Item back to Submitter</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_move_eprint_buffer_inbox">Bounce Item back to Submitter</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_move_eprint_archive_buffer">Move Item to Editorial Review</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_move_eprint_buffer_archive">Move Item to Repository</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_move_eprint_archive_deletion">Retire Item</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_move_eprint_deletion_archive">Reinstate Item</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:action_edit">Edit item</ep:phrase>
+
+    <ep:phrase ref="cgi/users/edit_eprint:action_derive_eprint_version">New version</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:help_derive_eprint_version">Use this to submit a new version of this item. It will create an exact copy which you can then make changes to. This item and the new version will be linked.</ep:phrase>
+
+    <ep:phrase ref="cgi/users/edit_eprint:action_request_eprint_deletion">Request deletion</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:help_request_eprint_deletion">Request deletion</ep:phrase>
+
+    <ep:phrase ref="cgi/users/edit_eprint:action_derive_eprint_clone">Use as template</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:help_derive_eprint_clone">Create a new item using this item as a template. There will be no connection between the two items.</ep:phrase>
+
+    <ep:phrase ref="cgi/users/edit_eprint:action_move_eprint_archive_inbox">Return item to user work area</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:help_move_eprint_archive_inbox">Return to user work area, allowing the user to make changes to it and re-deposit it.</ep:phrase>
+
+    <ep:phrase ref="cgi/users/edit_eprint:action_move_eprint_inbox_buffer">Move item into editorial review</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:help_move_eprint_inbox_buffer">Move this item into editorial review as if the owner had deposited it. Use with caution as the user will not have clicked the button on the confirmation that they have the right to deposit.</ep:phrase>
+
+    <ep:phrase ref="cgi/users/edit_eprint:action_move_eprint_buffer_inbox">Return item to user work area</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:help_move_eprint_buffer_inbox">Return to user work area, allowing the user to make changes to it and re-deposit it.</ep:phrase>
+
+    <ep:phrase ref="cgi/users/edit_eprint:action_move_eprint_archive_buffer">Move Item to editorial review</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:help_move_eprint_archive_buffer">Move Item to editorial review</ep:phrase>
+
+    <ep:phrase ref="cgi/users/edit_eprint:action_move_eprint_buffer_archive">Move Item to repository</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:help_move_eprint_buffer_archive">Move Item to repository</ep:phrase>
+
+    <ep:phrase ref="cgi/users/edit_eprint:action_move_eprint_archive_deletion">Retire item</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:help_move_eprint_archive_deletion">Retire item</ep:phrase>
+
+    <ep:phrase ref="cgi/users/edit_eprint:action_move_eprint_deletion_archive">Reinstate item</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:help_move_eprint_deletion_archive">Reinstate item</ep:phrase>
+
+    <ep:phrase ref="cgi/users/edit_eprint:action_deposit">Deposit item</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:help_deposit">Deposit item</ep:phrase>
+
+    <ep:phrase ref="cgi/users/edit_eprint:action_remove">Destroy item</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:help_remove">Remove this item from the system forever.</ep:phrase>
+
     <ep:phrase ref="cgi/users/edit_eprint:action_send">Send</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:help_send">Send</ep:phrase>
+
     <ep:phrase ref="cgi/users/edit_eprint:action_cancel">Cancel</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_reallydelete">Really Delete</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:help_cancel">Cancel</ep:phrase>
+
+    <ep:phrase ref="cgi/users/edit_eprint:action_reallydelete">Really delete</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:help_reallydelete">Really delete</ep:phrase>
+
+    <ep:phrase ref="cgi/users/edit_eprint:action_remove_with_email">Destroy item (with notification)</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:help_remove_with_email">Remove this item from the system forever, but send an email to the user who deposited it to inform them why.</ep:phrase>
+
+    <ep:phrase ref="cgi/users/edit_eprint:action_reject_with_email">Return item (with notification)</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:help_reject_with_email">Return this item from to the user work area and send an email to the user who deposited it to explain why it cannot yet be accepted.</ep:phrase>
+
+    <ep:phrase ref="cgi/users/edit_eprint:action_edit_eprint">Edit item</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:status_changed">Item status successfully changed.</ep:phrase>
+
+    <ep:phrase ref="cgi/users/edit_eprint:unknown_action">This screen does not know how to process this action: <ep:pin ref="action" />.</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:unknown_screen">The requested screen does not exist, or has a fatal error: <ep:pin ref="screen" />.</ep:phrase>
+	
     <ep:phrase ref="cgi/users/edit_eprint:action_view_summary">Summary</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_view_full">Full Record</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:action_view_full">Details</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action_view_history">History</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_view_buffer">View Records awaiting Editorial Review</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:action_view_buffer">View records awaiting editorial review</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action_view_export">Export</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action_view_staffexport">Export</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action_view_edit">Edit</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:action_view_staffedit">Edit</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:action_view_actions">Actions</ep:phrase>
     <ep:phrase ref="mail_delete_reason.inbox">
 The following eprint has been deleted from your User Area:
 
 <ep:pin ref="title" />
 </ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:action_not_allowed"><ep:pin ref="action" />: You may not perform this action on this item.</ep:phrase>
+
     <ep:phrase ref="cgi/users/edit_eprint:cant_edit_deleted">Modifying deleted records is not allowed.</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:item_is_in_inbox">This item is still in your work area. It will not appear in the repository until you deposit it.</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:item_is_in_buffer">This item is in editorial review. It will not appear in the repository until it has been checked by an editor.</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:item_is_in_archive">This item is in the repository.</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:item_is_in_deletion">This item has been retired from the repository..</ep:phrase>
+
+    <ep:phrase ref="cgi/users/edit_eprint:message_message">Message</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:message_error">Error</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:message_warning">Warning</ep:phrase>
+
+    <ep:phrase ref="cgi/users/edit_eprint:loading">Loading...</ep:phrase>
+
 
 
 <!-- edit_user -->

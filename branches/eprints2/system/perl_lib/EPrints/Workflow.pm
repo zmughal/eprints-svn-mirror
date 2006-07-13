@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::Workflow
+#foi EPrints::Workflow
 #
 ######################################################################
 #
@@ -80,8 +80,6 @@ sub new
 	$self->{dataset} = $params{item}->get_dataset;
 	$self->{item} = $params{item};
 	$self->{workflow_id} = $workflow_id;
-	$self->{autosend} = $params{autosend};
-	unless( defined $self->{autosend} ) { $self->{autosend} = 1; }
 
 	$self->{raw_config} = $self->{repository}->get_workflow_config( $self->{dataset}->confid, $workflow_id );
 	$self->{config} = EPrints::Utils::collapse_conditions( $session, $self->{raw_config}, %params );
@@ -89,40 +87,28 @@ sub new
 	$self->_read_flow;
 	$self->_read_stages;
 
+	$self->{user}      = $self->{session}->current_user();
+
 	print STDERR "Workflow loaded\n";
 	return( $self );
 }
 
-sub append_stage
-{
-	my( $self, $stage_id, $stage ) = @_;
-
-	$self->{stage_order} = [ @{$self->{stage_order}}, $stage_id ];
-	$self->{stages}->{$stage_id} = $stage;
-	$self->renumber_stages;
-}
-
-sub prepend_stage
-{
-	my( $self, $stage_id, $stage ) = @_;
-
-	$self->{stage_order} = [ $stage_id, @{$self->{stage_order}} ];
-	$self->{stages}->{$stage_id} = $stage;
-	$self->renumber_stages;
-}
-
-sub renumber_stages
+sub get_stage_id
 {
 	my( $self ) = @_;
-
-	my $n = 0;
-	$self->{stage_number} = {};
-	foreach my $stage_id ( @{$self->{stage_order}} )
+	
+	if( !defined $self->{stage} )
 	{
-		$self->{stage_number}->{$stage_id} = $n;
-		$n += 1;
+		$self->{stage} = $self->{session}->param( "stage" );
 	}
+	if( !defined $self->{stage} )
+	{
+		$self->{stage} = $self->get_first_stage_id;
+	}
+
+	return $self->{stage};
 }
+
 
 sub _read_flow
 {
@@ -157,7 +143,15 @@ sub _read_flow
 	{
 		EPrints::abort( "Workflow (".$self->{dataset}->confid.",".$self->{workflow_id}.") - no stages in <flow> element.\n" );
 	}
-	$self->renumber_stages;
+
+	# renumber stages
+	my $n = 0;
+	$self->{stage_number} = {};
+	foreach my $stage_id ( @{$self->{stage_order}} )
+	{
+		$self->{stage_number}->{$stage_id} = $n;
+		$n += 1;
+	}
 }
 
 
@@ -167,6 +161,7 @@ sub _read_stages
 	print STDERR "Reading stages\n";
 
 	$self->{stages}={};
+	$self->{field_stages}={};
 
 	foreach my $element ( $self->{config}->getChildNodes )
 	{
@@ -179,6 +174,10 @@ sub _read_stages
 		}
 		my $stage_id = $element->getAttribute("name");
 		$self->{stages}->{$stage_id} = new EPrints::Workflow::Stage( $element, $self, $stage_id );
+		foreach my $field_id ( $self->{stages}->{$stage_id}->get_fields_handled )
+		{
+			$self->{field_stages}->{$field_id} = $stage_id;
+		}
 	}
 
 	foreach my $stage_id ( @{$self->{stage_order}} )
@@ -189,6 +188,7 @@ sub _read_stages
 		}
 	}
 }
+
 
 sub get_stage_ids
 {
@@ -223,20 +223,29 @@ sub get_next_stage_id
 {
 	my( $self ) = @_;
 
-	my $num = $self->{stage_number}->{$self->{curr_stage}};
+	my $num = $self->{stage_number}->{$self->get_stage_id};
 
 	if( $num == scalar @{$self->{stage_order}}-1 )
 	{
-		return $self->{curr_stage};
+		return undef;
 	}
 
 	return $self->{stage_order}->[$num+1];
 }
 
+sub next
+{
+	my( $self ) = @_;
+
+	$self->{stage} = $self->get_next_stage_id;
+}
+
 sub get_prev_stage_id
 {
 	my( $self ) = @_;
-	my $num = $self->{stage_number}->{$self->{curr_stage}};
+
+	my $num = $self->{stage_number}->{$self->get_stage_id};
+
 	if( $num == 0 )
 	{
 		return undef;
@@ -245,118 +254,91 @@ sub get_prev_stage_id
 	return $self->{stage_order}->[$num-1];
 }
 
+sub prev
+{
+	my( $self ) = @_;
+
+	$self->{stage} = $self->get_prev_stage_id;
+}
 
 sub process
 {
 	my( $self ) = @_;
-	
-	$self->{action}    = $self->{session}->get_action_button();
-	$self->{stage}     = $self->{session}->param( "stage" );
-	$self->{user}      = $self->{session}->current_user();
-	$self->{dataview}  = $self->{session}->param( "dataview" );
 
-	$self->{problems} = [];
-	my $ok = 1;
+	$self->from;
+	$self->render;
+}
 
 
-	if( $self->{action} eq "jump" )
-	{
-		$self->{new_stage} = $self->{stage};
-	}
-	else
-	{
-		# Process data from previous stage
-
-		if( !defined $self->{stage} )
-		{
-			$self->{stage} = $self->get_first_stage_id;
-		}
-			
-		# If we don't have an item then something's
-		# gone wrong.
-		if( !defined $self->{item} )
-		{
-			$self->_corrupt_err;
-			return( 0 );
-		}
-
-		if( !defined $self->{stages}->{$self->{stage}} )
-		{
-			# Not a valid stage
-			$self->_corrupt_err;
-			return( 0 );
-		}
+sub from
+{
+	my( $self ) = @_;
 		
-		my $stage_obj = $self->get_stage( $self->{stage} );
-		# Carry out any updates
-		$ok = $stage_obj->update_from_form();
-		$ok &= $stage_obj->validate();
-		$ok = 0;
-		if( $ok )
-		{
-			# moj: If moving prev, use get_prev_stage_id
-			# $self->{new_stage} = $self->get_next_stage_id;
-		}
-		else
-		{
-			$self->{new_stage} = $self->{stage};
-		}
+	my @problems = ();
+
+	# Process data from previous stage
+
+	# If we don't have an item then something's
+	# gone wrong.
+	if( !defined $self->{item} )
+	{
+		$self->_corrupt_err;
+		return( 0 );
+	}
+
+	if( !defined $self->{stages}->{$self->get_stage_id} )
+	{
+		# Not a valid stage
+		$self->_corrupt_err;
+		return( 0 );
 	}
 	
-#	if( $ok )
+	my $stage_obj = $self->get_stage( $self->get_stage_id );
+	# Carry out any updates
+	push @problems, $stage_obj->update_from_form;
+	push @problems, $stage_obj->validate;
+
+	return @problems;
+}
+
+
+# return a fragement of a form.
+
+sub render
+{
+	my ( $self) = @_;
+
+#	if( $self->{session}->get_repository->get_conf( 'log_submission_timing' ) )
 #	{
-		# Render stuff for next stage
-		my $stage = $self->{new_stage};
-
-#		if( $self->{session}->get_repository->get_conf( 'log_submission_timing' ) )
+#		if( $stage ne "meta" )
 #		{
-#			if( $stage ne "meta" )
-#			{
-#				$self->log_submission_stage($stage);
-#			}
-#			# meta gets logged after pageid is worked out
+#			$self->log_submission_stage($stage);
 #		}
-	
-		
-		my $form = $self->{session}->render_form( "post", $self->{formtarget}."#t" );
-		
-		my $hidden_fields = {
-			stage => $stage,
-		};
-
-		foreach (keys %$hidden_fields)
-		{
-			$form->appendChild( $self->{session}->render_hidden_field(
-			$_,
-			$hidden_fields->{$_} ) );
-		}
-
-		# Add the stage components
-
-		my $stage_obj = $self->get_stage( $stage );
-		my $stage_dom;
-		$stage_dom = $stage_obj->render( $self->{session}, $self );
-
-		$form->appendChild( $stage_dom );
-		
-		if( $self->{autosend} )
-		{	
-			my $title_phraseid = "metapage_title_".$stage;
-			$self->{session}->build_page(
-				$self->{session}->html_phrase( 
-					$title_phraseid,
-					type => $self->{item}->render_value( "type" ),
-					desc => $self->{item}->render_description ),
-				$form,
-				"submission_".$stage );
-			$self->{session}->send_page();
-		}
-		else
-		{
-			$self->{page} = $form;
-		}
+#		# meta gets logged after pageid is worked out
 #	}
-	return( 1 );
+	
+	my $fragment = $self->{session}->make_doc_fragment;
+		
+	my $hidden_fields = {
+		stage => $self->get_stage_id,
+	};
+
+	foreach my $name ( keys %$hidden_fields )
+	{
+		$fragment->appendChild( $self->{session}->render_hidden_field(
+		$name,
+		$hidden_fields->{$name} ) );
+	}
+
+	# Add the stage components
+
+	my $stage_obj = $self->get_stage( $self->get_stage_id );
+print STDERR "[".$self->get_stage_id."]\n";
+	my $stage_dom = $stage_obj->render( $self->{session}, $self );
+
+	$fragment->appendChild( $stage_dom );
+	
+	return $fragment;
 }
 
 
@@ -399,6 +381,42 @@ sub _database_err
 
 
 
+# add links to fields in problem-report xhtml chunks.
+sub link_problem_xhtml
+{
+	my( $self, $node ) = @_;
+
+	if( EPrints::XML::is_dom( $node, "Element" ) )
+	{
+		my $class = $node->getAttribute( "class" );
+		if( $class=~m/^problem_field:(.*)$/ )
+		{
+			my $stage = $self->{field_stages}->{$1};
+			return if( !defined $stage );
+			my $url = "?eprintid=".$self->{item}->get_id."&screen=edit&stage=$stage#$1";
+			if( $self->get_stage_id eq $stage )
+			{
+				$url = "#$1";
+			}
+			
+			my $newnode = $self->{session}->render_link( $url );
+			foreach my $kid ( $node->getChildNodes )
+			{
+				$node->removeChild( $kid );
+				$newnode->appendChild( $kid );
+			}
+			$node->getParentNode->replaceChild( $newnode, $node ); 
+			return;
+		}
+
+		foreach my $kid ( $node->getChildNodes )
+		{
+			$self->link_problem_xhtml( $kid );
+		}
+	}
+	
+
+}
 
 
 
@@ -434,6 +452,7 @@ sub load_all
 	}
 	return $v;
 }
+
 
 1;
 

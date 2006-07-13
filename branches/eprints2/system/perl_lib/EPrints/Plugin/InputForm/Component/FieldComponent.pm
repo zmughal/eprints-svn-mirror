@@ -38,7 +38,7 @@ sub parse_config
 
 =pod
 
-=item $dom = $fieldcomponent->update_from_form()
+=item @problems = $fieldcomponent->update_from_form()
 
 Set the values of the object we are working with from the submitted form.
 
@@ -48,8 +48,10 @@ sub update_from_form
 {
 	my( $self ) = @_;
 	my $field = $self->{config}->{field};
-	my $value = $field->form_value( $self->{session} );
+	my $value = $field->form_value( $self->{session}, $self->{dataobj} );
 	$self->{dataobj}->set_value( $field->{name}, $value );
+
+	return ();
 }
 
 =pod
@@ -77,13 +79,15 @@ sub validate
 
 	if( $self->is_required() && !$self->{dataobj}->is_set( $field->{name} ) )
 	{
+		my $fieldname = $self->{session}->make_element( "span", class=>"problem_field:".$field->{name} );
+		$fieldname->appendChild( $field->render_name( $self->{session} ) );
 		my $problem = $self->{session}->html_phrase(
 			"lib/eprint:not_done_field" ,
-			fieldname=> $field->render_name( $self->{session} ) );
+			fieldname=>$fieldname );
 		push @problems, $problem;
 	}
 	
-	push @problems, $field->{session}->get_repository->call(
+	push @problems, $self->{session}->get_repository->call(
 		"validate_field",
 		$field,
 		$self->{dataobj}->get_value( $field->{name} ),
@@ -114,6 +118,13 @@ sub is_required
 	return( $req eq "yes" );
 	
 	# || ( $req eq "for_archive" && $staff_mode ) );
+}
+
+sub get_fields_handled
+{
+	my( $self ) = @_;
+
+	return ( $self->{config}->{field}->{name} );
 }
 
 =pod
@@ -182,7 +193,15 @@ sub render_content
 		$value = $self->{default};
 	}
 
-	return $self->{config}->{field}->render_input_field( $self->{session}, $value );
+	return $self->{config}->{field}->render_input_field( 
+			$self->{session}, 
+			$value, 
+			$self->{dataobj}->get_dataset,
+			$self->{dataobj}->get_value( "type" ),
+			0, # staff mode should be detected from workflow
+			undef,
+			$self->{dataobj},
+ 	);
 }
 
 sub is_collapsed 

@@ -19,9 +19,12 @@ sub new
 	return $self;
 }
 
+# return an array of problems
 sub update_from_form
 {
 	my( $self ) = @_;
+
+	my @problems = ();
 
 	my %params = $self->params();
 	
@@ -44,7 +47,7 @@ sub update_from_form
 			
 			if( !$success )
 			{
-				push @{$self->{problems}}, 
+				push @problems,
 					$self->{session}->html_phrase( "lib/submissionform:upload_prob" );
 			}
 		}
@@ -84,7 +87,7 @@ sub update_from_form
 		}
 	}
 
-	return 1;
+	return @problems;
 }
 
 
@@ -168,6 +171,7 @@ sub _make_toolbar
 	$toolbar->appendChild( $session->render_nbsp );
 	my $se_change_button = $session->make_element( "input", 
 		type => "submit", 
+		class => "internalbutton",
 		value => "Change", 
 		name => $prefix."_change" );
 	$toolbar->appendChild( $se_change_button );
@@ -175,7 +179,7 @@ sub _make_toolbar
 	return $toolbar;
 }
 
-sub _make_bottombar
+sub _make_addbar
 {
 	my( $self ) = @_;
 
@@ -186,6 +190,7 @@ sub _make_bottombar
 	
 	my $add_format_button = $session->make_element( "input", 
 		type => "submit", 
+		class => "internalbutton",
 		value => "Add", 
 		name => $self->{prefix}."_add_format" );
 	$toolbar->appendChild( $add_format_button );
@@ -213,6 +218,7 @@ sub _make_uploadbar
 		name => $prefix."upload",
 		value => "Upload",
 		type => "submit",
+		class => "internalbutton",
 		);
 	
 	$toolbar->appendChild( $file_button );
@@ -316,6 +322,7 @@ sub render_content
 	
 	my $session = $self->{session};
 	my $out = $self->{session}->make_element( "div", class => "wf_uploadcomponent" );
+	$out->appendChild( $self->_make_addbar );	
 
 	my $eprint = $self->{workflow}->{item};
 
@@ -385,7 +392,7 @@ window.ep_showTab = function( baseid, tabid )
 	$tab_tr->appendChild( $spacer );
 
 
-	my $format_block = $session->make_element( "div", id => $self->{prefix}."_panels" );
+	my $format_block = $session->make_element( "div", id => $self->{prefix}."_panels", class=>"ep_tab_panel" );
 	my $first = undef;
 
 	if( $self->param( "current" ) )
@@ -420,6 +427,10 @@ window.ep_showTab = function( baseid, tabid )
 			my $td = $session->make_element( "td", %td_opts );
 			my $label = $doc_ds->render_type_name( $session, $format );
 			$a->appendChild( $label );
+			#my %files = $document->files;
+			#my $main_file = $document->get_main;
+			#my $num_files = scalar keys %files;
+			#$a->appendChild( $session->make_text( " ($num_files)" ) ); # html phrase 
 			$td->appendChild( $a );
 			$tab_tr->appendChild( $td );
 		
@@ -450,7 +461,6 @@ window.ep_showTab = function( baseid, tabid )
 	$out->appendChild( $current );
 	$out->appendChild( $tab_table );
 	$out->appendChild( $format_block );
-	$out->appendChild( $self->_make_bottombar );	
 	return $out;
 }
 
@@ -460,11 +470,20 @@ sub render_title
 	return $self->{session}->html_phrase( "lib/submissionform:title_fileview" );	
 }
 
+# hmmm. May not be true!
 sub is_required
 {
 	my( $self ) = @_;
 	return 1;
 }
+
+sub get_fields_handled
+{
+	my( $self ) = @_;
+
+	return ( "documents" );
+}
+
 
 1;
 

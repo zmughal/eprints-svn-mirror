@@ -275,6 +275,7 @@
 
 <!-- Submission Form Page Titles -->
 
+    <ep:phrase ref="metapage_title_type">Type</ep:phrase>
     <ep:phrase ref="metapage_title_core">Core Bibliographic Information</ep:phrase>
     <ep:phrase ref="metapage_title_pubinfo">Publication Information</ep:phrase>
     <ep:phrase ref="metapage_title_status">Status of Item</ep:phrase>

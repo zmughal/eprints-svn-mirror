@@ -19,10 +19,12 @@ img.logo {
 }
 
 ul.menu {
+	clear: both;
 	background: #204f76;
 	list-style: none;
 	margin: 0px;
 	padding: 0px;
+	background-image: url(/images/style/blue_bar.png);
 }
 
 ul.menu li {
@@ -52,14 +54,6 @@ input, select, textarea {
 	font-size: 100%;
 }
 
-.actionbutton, .searchcontrol {
-	color: #0000c0;
-	border: #8080f0 1px solid;
-	background: #d0d0e0; 
-	padding: 3px;
-	margin: 2px;
-	font-weight: bold;
-}
 .searchcontrol a {
 	text-decoration: none;
 	color: blue;
@@ -81,6 +75,7 @@ input, select, textarea {
 
 
 h1 {
+	margin: 0px;
         font: bold 130% Arial,Sans-serif;
         color: #606060;
 }
@@ -302,6 +297,7 @@ hr.last {
 	padding-bottom: 4px;
 	border-top: solid 4px white;
 	background: #ccc;
+	background-image: url(/images/style/gray_bar.png);
 }
 
 .searchbarbutton {
@@ -326,35 +322,194 @@ hr.last {
 /* CONTROL PAGE */
 
 table.ep_tabs {
+	margin-top: 20px;
 	width: 100%;
 }
 
 td.ep_tab {
 	background-color: #e0e0ff;
 	text-align: center;
-	border: solid #000000 1px;
+	border: solid #d8dbef 1px;
+	padding-bottom: 4px;
+	background-image: url(/images/style/gray_bar.png);
 }
 
 td.ep_tab_selected {
 	text-align: center;
 	background-color: #ffffff;
-	border-left: solid #000000 1px;
-	border-top: solid #000000 1px;
-	border-right: solid #000000 1px;
+	border-left: solid #d8dbef 1px;
+	border-top: solid #d8dbef 1px;
+	border-right: solid #d8dbef 1px;
 	border-bottom: solid #ffffff 1px;
+}
+td.ep_tab_selected a {
+	text-decoration: none;
+	color: #808080;
 }
 
 td.ep_tab_spacer {
-	background-color: #ffffff;
-	border-bottom: solid #000000 1px;
+	border-bottom: solid #d8dbef 1px;
 	width: 20px;
 }
 
-.ep_control_view {
-	border-right: solid black 1px;
-	border-bottom: solid black 1px;
-	border-left: solid black 1px;
+.ep_tab_panel {
+	border-right: solid #d8dbef 1px;
+	border-bottom: solid #d8dbef 1px;
+	border-left: solid #d8dbef 1px;
+	background-image: url(/images/style/toolbox.png);
 	padding: 12px;
 	clear: both;
 }
 
+/* Blister Bar */
+
+.ep_blister_bar {
+	width: 100%;
+}
+.ep_blister_node {
+	background-image: url(/images/style/gray_bar.png);
+	border: solid 1px #cccccc;
+	text-align: center;
+	padding: 4px;
+}
+.ep_blister_join {
+	background-image: url(/images/style/blackline.png);
+	background-repeat: repeat-x;
+	background-position: center;
+	width: 10px;
+}
+.ep_blister_node_selected {
+	text-align: center;
+	padding: 4px;
+	border: solid 1px #204f76;
+	background-image: url(/images/style/blue_bar.png);
+}
+.ep_blister_node_selected a {
+	text-decoration: none;
+	color: #ffffff;
+}
+
+/* toolbox and messages */
+
+.ep_toolbox, .ep_message, .ep_warning, .ep_error {
+	margin-bottom: 10px;
+}
+
+.ep_toolbox_title, .ep_message_title, .ep_warning_title, .ep_error_title {
+	padding: 2px 10px 2px 10px;
+}
+.ep_toolbox_title {
+	color: #808080;
+}
+.ep_message_title {
+	color: #70cf70;
+}
+.ep_error_title {
+	color: #ff8080;
+}
+.ep_warning_title {
+	color: #cf9070;
+}
+
+.ep_toolbox_content, .ep_message_content, .ep_warning_content, .ep_error_content {
+	padding: 10px;
+}
+.ep_toolbox_content {
+	background-image: url(/images/style/toolbox.png);
+	border: solid 1px #d8dbef;
+}
+.ep_message_content {
+	background-image: url(/images/style/green_back.png);
+	border: solid 1px #80ff80;
+}
+.ep_error_content {
+	background-image: url(/images/style/red_back.png);
+	border: solid 1px #ffc0c0;
+}
+.ep_warning_content {
+	background-image: url(/images/style/orange_back.png);
+	border: solid 1px #ffc080;
+}
+
+/* dev stuff */
+
+.ep_close_icon {
+	float: right;
+	border: 0;
+}
+.ep_button_bar {
+	text-align: center;
+	padding: 4px;
+	background-image: url(/images/style/toolbox.png);
+	clear: both;
+	border: solid 1px #d8dbef;
+}
+.status_row_heading, th, .submission_buttons, .searchbuttons, .searchcontrols
+{
+	text-align: center;
+	padding: 4px;
+	border: solid 1px #204f76;
+	background-image: url(/images/style/gray_bar.png);
+	clear: both;
+	color: black;
+	border-color: #ccc;
+	font-weight: normal;
+}
+.actionbutton, .searchcontrol,.internalbutton {
+	text-align: center;
+	/*border: solid 1px #204f76;*/
+	background-image: url(/images/style/blue_bar.png);
+	color: white;
+	font-weight: normal;
+}
+
+/* workflow hackery */
+
+.wf_component {
+	padding: 0px;
+	background-color: transparent;
+	margin-bottom: 10px;
+	margin-top: 10px;
+}
+.wf_component .wf_title {
+	background-color: white;
+	color: #444;
+	border: 0;
+}
+.wf_component .wf_input {
+	text-align: left;
+	/*background-image: url(/images/style/toolbox.png);*/
+	border: solid 1px #d8dbef;
+	padding: 8px;
+}
+
+/* help style - not primetime */
+
+.wf_component .wf_help {
+	padding: 4px;
+	background-image: url(/images/style/toolbox.png);
+	border-left: solid 1px #d8dbef;
+	border-right: solid 1px #d8dbef;
+}
+.wf_component .wf_show_help {
+	background-image: url(/images/style/blue_bar.png);
+	color: white;
+	white-space: nowrap;
+	border: solid 1px #d8dbef;
+}
+.wf_component .wf_hide_help {
+	white-space: nowrap;
+	border-left: solid 1px #d8dbef;
+	border-right: solid 1px #d8dbef;
+	border-top: solid 1px #d8dbef;
+}
+.wf_component .wf_show_help a {
+	color: white;
+}
+.wf_component .wf_title {
+	width: 100%;
+	border-bottom: solid 1px #d8dbef;
+}
+.wf_component .wf_title_table {
+	width: 100%;
+}

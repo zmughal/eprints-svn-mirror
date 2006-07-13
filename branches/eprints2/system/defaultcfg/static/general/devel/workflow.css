@@ -76,7 +76,7 @@ div.autocomplete ul li .bottom
 	vertical-align: text-top;
 	padding-left: 5px;
 }
-
+/*
 .wf_component .wf_help_icon
 {
 	float: right;
@@ -96,10 +96,11 @@ div.autocomplete ul li .bottom
 	margin: 0px;
 	margin-bottom: 0.3em;
 }
-
+*/
 .wf_component .wf_help
 {
 /*      display: none;*/
+/*
 	margin-top: 1px;
 	border-bottom: 1px solid #cccc66;
 	border-right: 1px solid #cccc66;
@@ -108,6 +109,7 @@ div.autocomplete ul li .bottom
 	padding: 0.25em;
 	z-index: 100;
 	margin-bottom: 0.25em;
+*/
 }
 
 .wf_component .wf_body {
@@ -172,7 +174,7 @@ div.autocomplete ul li .bottom
 	text-align: left;
 }
 
-
+/*
 .wf_uploadcomponent .wf_file_table {
 	width: 100%;
 	text-align: center;
@@ -221,7 +223,7 @@ div.autocomplete ul li .bottom
 	border: solid thin black;
 	margin-bottom: 5px;
 }
-
+*/
 
 /* For blister */
 

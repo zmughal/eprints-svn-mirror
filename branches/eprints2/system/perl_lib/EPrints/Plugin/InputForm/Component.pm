@@ -118,12 +118,12 @@ sub are_all_collapsed
 
 sub update_from_form
 {
-	return 1;
+	return ();
 }
 
 sub validate
 {
-	return 1;
+	return ();
 }
 
 
@@ -222,6 +222,22 @@ sub render_content
 	my( $self, $surround ) = @_;
 }
 
+
+=pod
+
+=item @field_ids = $component->get_fields_handled
+
+Returns an array of the names of the metadata fields which this
+field handles. Used for jumps.
+
+=cut
+
+sub get_fields_handled
+{
+	my( $self ) = @_;
+
+	return ();
+}
 
 
 # $metafield = $self->xml_to_metafield( $xml )
