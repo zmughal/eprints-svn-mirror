@@ -26,8 +26,46 @@ sub update_from_form
 {
 	my( $self ) = @_;
 	my $field = $self->{config}->{field};
-#	my $value = $field->form_value( $self->{session} );
-#	$self->{dataobj}->set_value( $field->{name}, $value );
+
+	my %params = $self->params();
+
+	foreach my $param ( keys %params )
+	{
+		if( $param =~ /^root_(.+)_add$/ )
+		{
+			my $subject = $1;
+			my %vals = ();
+			$vals{$subject} = 1;
+			
+			my $values = $self->{dataobj}->get_value( "subjects" );
+			foreach my $s ( @$values )
+			{
+				$vals{$s} = 1;
+			}
+			
+			my @out = keys %vals;
+			
+			$self->{dataobj}->set_value( "subjects", \@out );
+			$self->{dataobj}->commit;
+		}
+		elsif( $param =~ /^root_(.+)_remove$/ )
+		{
+			my $subject = $1;
+			my %vals = ();
+			
+			my $values = $self->{dataobj}->get_value( "subjects" );
+			foreach my $s ( @$values )
+			{
+				$vals{$s} = 1;
+			}
+			delete $vals{$subject};
+			
+			my @out = keys %vals;
+			
+			$self->{dataobj}->set_value( "subjects", \@out );
+			$self->{dataobj}->commit;
+		}
+	}
 }
 
 
@@ -46,6 +84,7 @@ sub _render_portion
 	my @children = $subject->children();
 	my $n_kids = scalar @children;
 	my $root_id = $subject->get_value( "subjectid" );
+	my $pre = $self->{prefix}."_root_".$root_id;
 	
 	my $out;
 	$out = $session->make_doc_fragment;
@@ -71,64 +110,66 @@ sub _render_portion
 		{
 			$root_state = 0;
 		}
+	
+
+		my $desc = $subject->render_description;
 		
 		if( $n_kids != 0 )
 		{
-			my $pre = $self->{prefix}."_root_".$root_id;
 			
-			my $a_hide = $session->make_element( "a", 
-				id => "${pre}_hide", 
+			my $a_toggle = $session->make_element( "a", 
+				id => "${pre}_toggle", 
 				href=>"#", 
-				onClick=>"Element.toggle('$pre');Element.toggle('${pre}_hide');Element.toggle('${pre}_show');return false" );
+				onClick=>"Element.toggle('$pre');Element.toggle('${pre}_dots');return false" ); 
 			
-			my $hide = $session->make_element( "span", 
-				class => "ep_js_only" );
-			$hide->appendChild( $session->make_text( "-" ) );
-			$a_hide->appendChild( $hide ); 
+			my $dots = $session->make_element( "span", id => $pre."_dots" );
+			$dots->appendChild( $session->html_phrase( "lib/extras:subject_browser_expandable" ) );
 			
-			my $a_show = $session->make_element( "a", 
-				id => "${pre}_show", 
-				href=>"#", 
-				onClick=>"Element.toggle('$pre');Element.toggle('${pre}_hide');Element.toggle('${pre}_show');return false" ); 
-				
-			my $show = $session->make_element( "span", 
-				class => "ep_js_only" );
-			$show->appendChild( $session->make_text( "+" ) );
-			$a_show->appendChild( $show ); 
-
 			if( $root_state == 1 )
 			{
-				# Expanded, so show the content and hide the '+'
-				$a_show->setAttribute( "style", "display: none" );
+				# Expanded, so show the content and hide the '...'
+				$dots->setAttribute( "style", "display: none" );
 			}
 			else
 			{
-				# Contracted, so hide the content and hide the '-'
-				$a_hide->setAttribute( "style", "display: none" );
+				# Contracted, so hide the content 
 				$children_div->setAttribute( "style", "display: none" );
 				$children_div->setAttribute( "class", "ep_no_js" );
 			}
-			
-			$div->appendChild( $a_hide );
-			$div->appendChild( $a_show );
-			$div->appendChild( $session->make_text( " " ) );
+
+			$a_toggle->appendChild( $desc );
+			$div->appendChild( $a_toggle );
+			$div->appendChild( $dots );
 		}
+		else
+		{	
+			$div->appendChild( $desc );
+		}
+		
+		$div->appendChild( $session->make_text( " " ) );
 		
 		if( $selected->{$root_id} )
 		{
 			$div->setAttribute( "class", "tree_node_selected" );
 		}
-
-		$div->appendChild( $subject->render_description ); 
+		
 		if( $subject->can_post )
 		{
 			if( $selected->{$root_id} )
 			{
-				$div->appendChild( $session->make_text( " [remove]" ) );
+				my $rem_button = $session->make_element( "input", 
+					type => "submit",
+					name => "_internal_".$pre."_remove",
+					value => "Remove" );
+				$div->appendChild( $rem_button ); 
 			}
 			else
 			{
-				$div->appendChild( $session->make_text( " [add]" ) );
+				my $add_button = $session->make_element( "input", 
+					type => "submit",
+					name => "_internal_".$pre."_add",
+					value => "Add" );
+				$div->appendChild( $add_button ); 
 			}
 		}
 		$out->appendChild( $div );
