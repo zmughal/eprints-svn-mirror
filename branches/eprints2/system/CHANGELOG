@@ -3854,3 +3854,4 @@ PACKAGE: 2.2.99.2
 2006-07-19 cjg
 
  * Fixed template - search was hardlinked to flag.ecs
+ * Added $session->render_tabs plus a javascript function to support it.

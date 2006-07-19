@@ -1921,6 +1921,72 @@ sub render_toolbox
 	return $div;
 }
 
+
+######################################################################
+# 
+# $xhtml = $session->render_tabs( $id_prefix, $current, $tabs, $labels, $links, [$slow_tabs] )
+#
+# Render java script tabs to switch between views. The views must be
+# rendered sepearely. 
+# $id_prefix is the prefix of the id attributes.
+# $current is the id of the current tab
+# $tabs is an array of tag ids (in order to display them)
+# $labels maps $tabs to DOM labels for each tab.
+# $links maps $tabs to the URL for each view if there is no javascript.
+# $slow_tabs is an optional array of tabs which must always be linked
+#  slowly rather than using javascript.
+#
+######################################################################
+
+sub render_tabs
+{
+	my( $self, $id_prefix, $current, $tabs, $labels, $links, $slow_tabs ) = @_;
+
+	my $f = $self->make_doc_fragment;
+	my $st = {};
+	if( defined $slow_tabs )
+	{
+		foreach( @{$slow_tabs} ) { $st->{$_} = 1; }
+	}
+
+	my $table = $self->make_element( "table", class=>"ep_tabs", cellspacing=>0 );
+	my $tr = $self->make_element( "tr", id=>"${id_prefix}_tabs" );
+	$table->appendChild( $tr );
+
+	my $spacer = $self->make_element( "td", class=>"ep_tab_spacer" );
+	$spacer->appendChild( $self->render_nbsp );
+	$tr->appendChild( $spacer );
+	foreach my $tab ( @{$tabs} )
+	{	
+		my %a_opts = ( 
+			href    => $links->{$tab},
+		);
+		# if the current tab is slow, or the tab we're rendering is slow then
+		# don't make a javascript toggle for it.
+		if( !$st->{$current} && !$st->{$tab} )
+		{
+			$a_opts{onClick} = "return ep_showTab('${id_prefix}','$tab' );";
+		}
+		my %td_opts = ( id => "${id_prefix}_tab_$tab", class=>"ep_tab" );
+		if( $current eq $tab ) { $td_opts{class} = "ep_tab_selected"; }
+
+		my $a = $self->make_element( "a", %a_opts );
+		my $td = $self->make_element( "td", %td_opts );
+
+		$a->appendChild( $labels->{$tab} );
+		$td->appendChild( $a );
+
+		$tr->appendChild( $td );
+
+		my $spacer = $self->make_element( "td", class=>"ep_tab_spacer" );
+		$spacer->appendChild( $self->render_nbsp );
+		$tr->appendChild( $spacer );
+	}
+	$f->appendChild( $table );
+
+	return $f;
+}
+
 ######################################################################
 # 
 # $id = $session->get_next_id
