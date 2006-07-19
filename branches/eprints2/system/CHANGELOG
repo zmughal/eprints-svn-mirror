@@ -3845,3 +3845,12 @@ PACKAGE: 2.2.99.2
  * Added URIs to all plugins
  * More work on eprint control page. Not complete, but much progress.
  * Moved around the interface code to make better use of inheritance.
+
+2006-07-14 cjg
+
+ * More development on new user interface. The interface is no longer
+    staff or not staff, that's a property of the screen or tab.
+
+2006-07-19 cjg
+
+ * Fixed template - search was hardlinked to flag.ecs
