@@ -123,35 +123,13 @@
 	text-align: right;
 }
 
-
-
-/*
-
-
-
-
-
-/* For file selector */
-
-#filelist {
-	border: 1px solid #666666;
-	background: #fff;
-	width: 26em;
+.wf_component .wf_upload
+{
+	border: solid thin black;
 }
 
-#filelist tbody tr td,th {
-	font-family: "lucida grande", verdana, sans-serif;
-	font-size: 10pt;
-	padding: 0.25em 0.25em 3px 8px;
-	border-left: 1px solid #d9d9d9;
-}
-
-#filelist tbody tr.selected td {
-	border-left: 1px solid #346dbe;
-	border-bottom: 1px solid #7daaea;
-}
-
-#filelist th {
+.wf_component .wf_format
+{
 	background: #000;
 	color: #fff;
 }

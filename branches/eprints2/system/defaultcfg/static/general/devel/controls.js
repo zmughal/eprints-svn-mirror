@@ -50,6 +50,8 @@ Autocompleter.Base.prototype = {
     else
       this.options = options || {};
 
+    this.options.base_id           = this.options.base_id || "";
+    this.options.valuesof           = this.options.valuesof || new Array();
     this.options.paramName    = this.options.paramName || this.element.name;
     this.options.tokens       = this.options.tokens || [];
     this.options.frequency    = this.options.frequency || 0.4;
@@ -333,6 +335,14 @@ Object.extend(Object.extend(Ajax.Autocompleter.prototype, Autocompleter.Base.pro
     if(this.options.defaultParams) 
       this.options.parameters += '&' + this.options.defaultParams;
 
+	this.options.parameters += "&base_id="+this.options.base_id;
+
+    for (var i = 0; i < this.options.valuesof.length ; i++ )
+	{
+		var k = this.options.valuesof[i];
+		this.options.parameters += "&"+k+"="+$F(k);
+	}
+	  
     new Ajax.Request(this.url, this.options);
   },
 
@@ -342,6 +352,12 @@ Object.extend(Object.extend(Ajax.Autocompleter.prototype, Autocompleter.Base.pro
 
 });
 
+// delete this later
+function gt( a,b )
+{
+	return a>b;
+}
+	
 // The local array autocompleter. Used when you'd prefer to
 // inject an array of autocompletion options into the page, rather
 // than sending out Ajax queries, which can be quite slow sometimes.

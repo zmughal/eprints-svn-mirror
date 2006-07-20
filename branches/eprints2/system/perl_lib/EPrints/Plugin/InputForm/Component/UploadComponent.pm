@@ -32,62 +32,134 @@ sub update_from_form
 	
 	foreach my $param ( keys %params )
 	{
-		if( $param =~ /^doc(.+)_upload$/ )
+		if( $param =~ /^doc(.+)_(.+)$/ )
 		{
 			my $docid = $1;
+			my $action = $2;
+			my $do_commit = 0;
 			
 			my $doc = EPrints::DataObj::Document->new(
 				$self->{session},
 				$docid );
-				
-			my $success = EPrints::Apache::AnApache::upload_doc_file(
-				$self->{session},
-				$doc,
-				$self->{prefix}.'_doc'.$docid.'_file' );
 			
-			if( !$success )
+			if( $action eq "upload" )
 			{
-				push @problems,
-					$self->{session}->html_phrase( "lib/submissionform:upload_prob" );
+				my $success = EPrints::Apache::AnApache::upload_doc_file(
+					$self->{session},
+					$doc,
+					$self->{prefix}.'_doc'.$docid.'_file' );
+				
+				if( !$success )
+				{
+					push @problems,
+						$self->{session}->html_phrase( "lib/submissionform:upload_prob" );
+				}
+			}
+			elsif( $action eq "change" )
+			{
+				my $new_format = $self->param( "doc".$docid."_format" );
+				my $new_security = $self->param( "doc".$docid."_security" );
+			
+				$doc->set_format( $new_format );
+				$doc->set_value( "security", $new_security );
+				$do_commit = 1;
+			}
+			elsif( $action eq "deleteall" )
+			{
+				print STDERR "Delete all!\n";
+				$doc->remove_all_files();
+				$do_commit = 1;
+			}
+			elsif( $action =~ /^delete_(\d+)$/ )
+			{
+				my $fileid = $1;
+				
+				my %files_unsorted = $doc->files();
+				my @files = sort keys %files_unsorted;
+
+				if( !defined $files[$fileid] )
+				{
+					# Not a valid filenumber
+					$self->_corrupt_err;
+					return( 0 );
+				}
+				
+				# Pressed "Delete" button for this file
+				$doc->remove_file( $files[$fileid] );
+			}
+			elsif( $action =~ m/^main_(\d+)$/ )
+			{
+				my $fileid = $1;
+
+				my %files_unsorted = $doc->files();
+				my @files = sort keys %files_unsorted;
+
+				if( !defined $files[$fileid] )
+				{
+					# Not a valid filenumber
+					$self->_corrupt_err;
+					return( 0 );
+				}
+				
+				# Pressed "Show First" button for this file
+				$doc->set_main( $files[$fileid] );
+
+				$do_commit = 1;
+			}
+
+			if( $do_commit )
+			{
+				unless( $doc->commit() )
+				{
+					$self->_database_err;
+					return( 0 );
+				}
 			}
 		}
-
-		if( $param =~ /^doc(.+)_change$/ )
+		elsif( $param eq "add_format" )
 		{
-			my $docid = $1;
-
-			my $doc = EPrints::DataObj::Document->new(
-				$self->{session},
-				$docid );
-			
-			my $new_format = $self->param( "doc".$docid."_format" );
-			my $new_security = $self->param( "doc".$docid."_security" );
-		
-			$doc->set_format( $new_format );
-			$doc->set_value( "security", $new_security );
-			$doc->commit();
-		}
-	}
-
-	if( $self->param( "add_format" ) )
-	{
-		my $format = $self->param( "select_format" );
-		my $doc_ds = $self->{session}->get_repository->get_dataset( 'document' );
-		my $doc = $doc_ds->create_object( $self->{session}, {
-			eprintid => $self->{workflow}->{item}->get_id } );
-		if( !defined $doc )
-		{
-			$self->_database_err;
-			return( 0 );
-		}
-		else
-		{
-			$doc->set_format( $format );
-			$doc->commit();
+			my $format = $self->param( "select_format" );
+			my $doc_ds = $self->{session}->get_repository->get_dataset( 'document' );
+			my $doc = $doc_ds->create_object( $self->{session}, {
+				eprintid => $self->{workflow}->{item}->get_id } );
+			if( !defined $doc )
+			{
+				$self->_database_err;
+				return( 0 );
+			}
+			else
+			{
+				$doc->set_format( $format );
+				$doc->commit();
+			}
 		}
 	}
 
 	return @problems;
+}
+
+sub _corrupt_err
+{
+	my( $self ) = @_;
+
+	$self->{session}->render_error(
+		$self->{session}->html_phrase(
+			"lib/submissionform:corrupt_err",
+			line_no =>
+				$self->{session}->make_text( (caller())[2] ) ),
+		$self->{session}->get_repository->get_conf( "userhome" ) );
+}
+
+sub _database_err
+{
+	my( $self ) = @_;
+
+	$self->{session}->render_error(
+		$self->{session}->html_phrase(
+			"lib/submissionform:database_err",
+			line_no =>
+				$self->{session}->make_text( (caller())[2] ) ),
+		$self->{session}->get_repository->get_conf( "userhome" ) );
 }
 
 
@@ -173,7 +245,7 @@ sub _make_toolbar
 		type => "submit", 
 		class => "internalbutton",
 		value => "Change", 
-		name => $prefix."_change" );
+		name => "_internal_".$prefix."change" );
 	$toolbar->appendChild( $se_change_button );
 
 	return $toolbar;
@@ -192,7 +264,7 @@ sub _make_addbar
 		type => "submit", 
 		class => "internalbutton",
 		value => "Add", 
-		name => $self->{prefix}."_add_format" );
+		name => "_internal_".$self->{prefix}."_add_format" );
 	$toolbar->appendChild( $add_format_button );
 	
 	return $toolbar; 
@@ -215,14 +287,23 @@ sub _make_uploadbar
 		type => "file",
 		);
 	my $upload_button = $session->make_element( "input",
-		name => $prefix."upload",
+		name => "_internal_".$prefix."upload",
 		value => "Upload",
 		type => "submit",
 		class => "internalbutton",
 		);
 	
+	my $delete_fmt_button = $session->make_element( "input",
+		name => "_internal_".$prefix."deleteall",
+		value => "Delete All Files",
+		type => "submit",
+		class => "internalbutton",
+		);
+	
+	
 	$toolbar->appendChild( $file_button );
 	$toolbar->appendChild( $upload_button );
+	$toolbar->appendChild( $delete_fmt_button );
 	return $toolbar; 
 }
 
@@ -252,64 +333,77 @@ sub _make_filelist
 	my %files = $document->files;
 	my $main_file = $document->get_main;
 	my $num_files = scalar keys %files;
-	my $show_radios = ( $num_files > 1 ); 
+	my $has_multi = ( $num_files > 1 ); 
+	
+	my $docid = $document->get_id;
+	my $prefix = $self->{prefix}."_doc".$docid."_";
 
 	
 	my $table = $session->make_element( "table", class => "wf_file_table" );
 	my $tbody = $session->make_element( "tbody" );
-	my $headings = $session->make_element( "tr" );
-	if( $show_radios )
-	{
-		$headings->appendChild( $self->_make_heading( "Primary" ) );
-	}
-	$headings->appendChild( $self->_make_heading( "Filename" ) );
-	$headings->appendChild( $self->_make_heading( "Size" ) );
-	$headings->appendChild( $self->_make_heading( "Type" ) );
-	$tbody->appendChild( $headings );
 
 	if( !defined $document || $num_files == 0 ) 
 	{
 		$tbody->appendChild( $self->_make_placeholder );
 	}
 	else
-	{
-			foreach my $filename ( keys %files )
+	{	
+		my $i = 0;
+		foreach my $filename ( sort keys %files )
+		{
+			my $tr = $session->make_element( "tr" );
+		
+		
+			my $td_filename = $session->make_element( "td" );
+			my $a = $session->render_link( $document->get_url( $filename ), "_blank" );
+			$a->appendChild( $session->make_text( $filename ) );
+			
+			$td_filename->appendChild( $a );
+			$tr->appendChild( $td_filename );
+			
+			my $td_filesize = $session->make_element( "td" );
+			my $size = EPrints::Utils::human_filesize( $files{$filename} );
+			$size =~ m/^([0-9]+)([^0-9]*)$/;
+			my( $n, $units ) = ( $1, $2 );
+			$td_filesize->appendChild( $session->make_text( $n ) );
+			$td_filesize->appendChild( $session->make_text( $units ) );
+			$tr->appendChild( $td_filesize );
+			
+			my $td_delete = $session->make_element( "td" );
+			my $del_btn_text = $session->html_phrase( "lib/submissionform:delete" );
+			my $del_btn = $session->make_element( "input", 
+				type => "submit", 
+				name => "_internal_".$prefix."delete_$i",
+				value => "Delete" );
+				
+			$td_delete->appendChild( $del_btn );
+			$tr->appendChild( $td_delete );
+			
+			if( $has_multi )
 			{
-				my $tr = $session->make_element( "tr" );
-				
-				if( $show_radios )
+				my $td_primary = $session->make_element( "td" );
+				if ( $main_file ne $filename )
 				{
-					my $prefix = $session->{prefix};
-					$prefix .= $document->get_id()."_";
-					my $td_primary = $session->make_element( "td" );
-					my $radio = $session->make_element( 
-						"input",
-						type => "radio",
-						name => $prefix."_primary",
-						value => "" );
-					if( $main_file eq $filename )
-					{
-						$radio->setAttribute( "checked", "1" );
-					}
-					
-					$td_primary->appendChild( $radio );
-					$tr->appendChild( $td_primary );
+					my $pri_btn_text = $session->html_phrase( "lib/submissionform:shown_first" );
+					my $pri_btn = $session->make_element( "input", 
+						type => "submit", 
+						name => "_internal_".$prefix."main_$i",
+						value => "Make Front Page" );
+						
+					$td_primary->appendChild( $pri_btn );
 				}
-				
-				my $td_filename = $session->make_element( "td" );
-				$td_filename->appendChild( $session->make_text( $filename ) );
-				$tr->appendChild( $td_filename );
-				
-				my $td_filesize = $session->make_element( "td" );
-				$td_filesize->appendChild( $session->make_text( $files{$filename} ) );
-				$tr->appendChild( $td_filesize );
-				
-				my $td_filetype = $session->make_element( "td" );
-				$td_filetype->appendChild( $session->make_text( "" ) );
-				$tr->appendChild( $td_filetype );
-				
-				$tbody->appendChild( $tr );
+				else
+				{
+				}
+				$tr->appendChild( $td_primary );
 			}
+			my $td_filetype = $session->make_element( "td" );
+			$td_filetype->appendChild( $session->make_text( "" ) );
+			$tr->appendChild( $td_filetype );
+			
+			$tbody->appendChild( $tr );
+			$i++;
+		}
 	}
 	
 	$table->appendChild( $tbody );
@@ -329,7 +423,6 @@ sub render_content
 	my @formats = $eprint->required_formats;
 	my @eprint_docs = $eprint->get_all_documents;
 
-	
 	# Collate the documents by type to make ordering easier.
 	
 	my %doc_formats = ();
@@ -383,6 +476,7 @@ window.ep_showTab = function( baseid, tabid )
 ' ) );
 
 
+	my $tab_count = 0;
 	my $tab_table = $session->make_element( "table", class=>"ep_tabs", cellspacing=>0 );
 	my $tab_tr = $session->make_element( "tr", id=> $self->{prefix}."_tabs" );
 	$tab_table->appendChild( $tab_tr );
@@ -404,10 +498,9 @@ window.ep_showTab = function( baseid, tabid )
 	{
 		my $doc_ds = $self->{session}->get_repository->get_dataset(
 		            "document" );
-	
 		foreach my $document ( @{$doc_formats{$format}} )
 		{
-
+			$tab_count++;
 			my $base = $self->{prefix};
 			my $tabid = $document->get_id;
 			
@@ -444,6 +537,8 @@ window.ep_showTab = function( baseid, tabid )
 				$format_opts{style} = "display: none";
 			}
 
+			
+
 			my $format_div = $session->make_element( "div", %format_opts ); 
 
 			
@@ -459,7 +554,8 @@ window.ep_showTab = function( baseid, tabid )
 	}
 	my $current = $session->make_element( "input", type => "hidden", name => $self->{prefix}."_current", id => $self->{prefix}."_current", value => $first );
 	$out->appendChild( $current );
-	$out->appendChild( $tab_table );
+
+	$out->appendChild( $tab_table ) unless( $tab_count <= 1 );
 	$out->appendChild( $format_block );
 	return $out;
 }

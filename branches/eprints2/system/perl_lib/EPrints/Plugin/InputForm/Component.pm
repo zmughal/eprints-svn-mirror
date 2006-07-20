@@ -131,7 +131,8 @@ sub validate
 
 
 # Returns all parameters for this component as a hash,
-# with the prefix removed.
+# with the prefix removed. This also handles internal 
+# buttons containing the prefix.
 
 sub params
 {
@@ -141,13 +142,11 @@ sub params
 
 	foreach my $p ( $self->{session}->param() )
 	{
-		if( $p =~ /^$prefix(.+)$/ )
+		if( $p =~ /^$prefix(.+)$/ || $p =~ /^_internal_$prefix(.+)$/ )
 		{
 			$params{$1} = $self->{session}->param( $p );
 		}
 	}
-
-	use Data::Dumper; print STDERR Dumper( \%params );
 	return %params;
 }
 
@@ -161,6 +160,14 @@ sub param
 	{
 		return $self->{session}->param( $fullname );
 	}
+	
+	my $fullname_int = "_internal_".$self->{prefix}."_".$param;
+	
+	if( defined $self->{session}->param( $fullname_int ) )
+	{
+		return $self->{session}->param( $fullname_int );
+	}
+	
 	return 0;
 }
 
