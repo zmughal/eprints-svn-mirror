@@ -11,13 +11,13 @@ sub from
 	if( $self->{processor}->{action} eq "confirm" )
 	{
 		$self->action_remove;
-		$self->{processor}->{screenid} = "Control";
+		$self->{processor}->{screenid} = "Home";
 		return;
 	}
 
 	if( $self->{processor}->{action} eq "cancel" )
 	{
-		$self->{processor}->{screenid} = "EPrint";
+		$self->{processor}->{screenid} = "EPrint::View";
 		return;
 	}
 
@@ -58,9 +58,9 @@ sub action_remove
 {
 	my( $self ) = @_;
 
-	if( !$self->{processor}->allow_action( "remove" ) )
+	if( !$self->{processor}->allow( "action/eprint/remove" ) )
 	{
-		$self->{processor}->action_not_allowed( "remove" );
+		$self->{processor}->action_not_allowed( "eprint/remove" );
 		return;
 	}
 		
@@ -74,8 +74,7 @@ sub action_remove
 		return;
 	}
 
-	#$self->{processor}->add_message( "message", $self->{session}->make_text( "Item has been removed." ) ); #cjg lang
-	$self->{processor}->{redirect} = $self->{session}->get_repository->get_conf( "userhome" );
+	$self->{processor}->add_message( "message", $self->{session}->make_text( "Item has been removed." ) ); #cjg lang
 }
 
 

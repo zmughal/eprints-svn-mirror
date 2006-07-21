@@ -1,4 +1,4 @@
-package EPrints::Interface::Screen::EPrint::Edit;
+package EPrints::Interface::Screen::EPrint::Edit_staff;
 
 @ISA = ( 'EPrints::Interface::Screen::EPrint' );
 
@@ -8,7 +8,7 @@ sub from
 {
 	my( $self ) = @_;
 
-	if( !$self->{processor}->allow( "action/eprint/edit" ) )
+	if( !$self->{processor}->allow( "action/eprint/edit_staff" ) )
 	{
 		$self->{processor}->action_not_allowed( "edit" );
 		$self->{processor}->{screenid} = "EPrint::View";
@@ -55,7 +55,7 @@ sub from
 		{
 			if( !defined $workflow->get_next_stage_id )
 			{
-				$self->{processor}->{screenid} = "EPrint::Deposit";
+				$self->{processor}->{screenid} = "EPrint::View";
 				return;
 			}
 
@@ -85,7 +85,7 @@ sub render
 	my( $self ) = @_;
 
 	$self->{processor}->before_messages( 
-		$self->render_blister( $self->workflow->get_stage_id, 1 ) );
+		$self->render_blister( $self->workflow->get_stage_id, 0 ) );
 
 	my $form = $self->render_form;
 
@@ -110,14 +110,18 @@ sub render_buttons
 			$self->{session}->phrase( "lib/submissionform:action_prev" );
 	}
 
-	push @{$buttons{_order}}, "save";
+	push @{$buttons{_order}}, "stop", "save";
+	$buttons{stop} = 
+		$self->{session}->phrase( "lib/submissionform:action_staff_stop" );
 	$buttons{save} = 
-		$self->{session}->phrase( "lib/submissionform:action_save" );
+		$self->{session}->phrase( "lib/submissionform:action_staff_save" );
 
-	push @{$buttons{_order}}, "next";
-	$buttons{next} = 
-		$self->{session}->phrase( "lib/submissionform:action_next" );
-
+	if( defined $self->workflow->get_next_stage_id )
+	{
+		push @{$buttons{_order}}, "next";
+		$buttons{next} = 
+			$self->{session}->phrase( "lib/submissionform:action_next" );
+	}	
 	return $self->{session}->render_action_buttons( %buttons );
 }
 

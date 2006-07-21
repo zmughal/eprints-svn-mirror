@@ -11,7 +11,7 @@ sub from
 	if( $self->{processor}->{action} eq "deposit" )
 	{
 		$self->action_deposit;
-		$self->{processor}->{screenid} = "EPrint";	
+		$self->{processor}->{screenid} = "EPrint::View";	
 		return;
 	}
 	
@@ -49,7 +49,7 @@ sub render
 		my $form = $self->render_form;
 		$form->appendChild(
 		 	$self->{session}->render_action_buttons( 
-				deposit=>$self->{session}->phrase( "cgi/users/edit_eprint:action_deposit" ) ) );
+				deposit=>$self->{session}->phrase( "priv:action/eprint/deposit" ) ) );
 	
 		$page->appendChild( $form );
 	}
@@ -62,9 +62,9 @@ sub action_deposit
 {
 	my( $self ) = @_;
 
-	if( !$self->{processor}->allow_action( "deposit" ) )
+	if( !$self->{processor}->allow( "action/eprint/deposit" ) )
 	{
-		$self->{processor}->action_not_allowed;
+		$self->{processor}->action_not_allowed( "deposit" );
 		return;
 	}
 
