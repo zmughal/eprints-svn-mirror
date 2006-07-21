@@ -276,13 +276,13 @@
 <!-- Submission Form Page Titles -->
 
     <ep:phrase ref="metapage_title_type">Type</ep:phrase>
-    <ep:phrase ref="metapage_title_core">Core Bibliographic Information</ep:phrase>
-    <ep:phrase ref="metapage_title_pubinfo">Publication Information</ep:phrase>
-    <ep:phrase ref="metapage_title_status">Status of Item</ep:phrase>
-    <ep:phrase ref="metapage_title_event">Details of Conference/Workshop</ep:phrase>
-    <ep:phrase ref="metapage_title_abstract">Abstract and References</ep:phrase>
+    <ep:phrase ref="metapage_title_core">Core Info.</ep:phrase>
+    <ep:phrase ref="metapage_title_pubinfo">Publication</ep:phrase>
+    <ep:phrase ref="metapage_title_status">Status</ep:phrase>
+    <ep:phrase ref="metapage_title_event">Event</ep:phrase>
+    <ep:phrase ref="metapage_title_abstract">Abstract</ep:phrase>
     <ep:phrase ref="metapage_title_subjects">Subjects</ep:phrase>
-    <ep:phrase ref="metapage_title_notes">Additional Information</ep:phrase>
+    <ep:phrase ref="metapage_title_notes">Extras</ep:phrase>
 
 <!-- User Field Names -->
 
