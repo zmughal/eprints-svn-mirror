@@ -3855,3 +3855,21 @@ PACKAGE: 2.2.99.2
 
  * Fixed template - search was hardlinked to flag.ecs
  * Added $session->render_tabs plus a javascript function to support it.
+
+2006-07-21 cjg
+
+ * Removed workflow->process as it's not used any more.
+ * Added Home as a screen in the interface. Currently home is the deposit
+    screen, but it will probably become a jump-off screen to take you to
+    the first tool you can use. The current code will probably become
+    "Deposit".
+ * Deposit tool now shows all owned eprints in any dataset (will be 
+    filter-able later)
+ * Removed user-page layout stuff from phrases.
+ * Renamed the action phrases to have a logical set of ids for names and
+    help text.
+ * Tweaked workflow demo to use an eprintid on my machine and handle the
+    changes to workflow.pm
+ * Shortend the names of the workflow stages
+ 
+

@@ -451,41 +451,6 @@ User Area CGI Scripts
 
 <!-- home -->
 
-    <ep:phrase ref="cgi/users/home:layout">
-      <p>Welcome to the registered user area at &archivename;. Please select one of the options below.</p>
-      <table>
-        <tr>
-          <ep:pin ref="layout_deposit" />
-          <td valign="top">
-            <ep:pin ref="user" />
-          </td>
-        </tr>
-      </table>
-      <ep:pin ref="layout_staff" />
-    </ep:phrase>
-
-    <ep:phrase ref="cgi/users/home:layout_deposit">
-      <td>
-        <ep:pin ref="create" />
-  
-        <h3>Undeposited Items</h3>
-        <ep:pin ref="workspace" />
-  
-        <h3>Pending Items</h3>
-        <ep:pin ref="pending" />
-  
-        <h3>Most Recently Accepted Items</h3>
-        <ep:pin ref="recent" />
-      </td>
-      <td>&nbsp;</td>
-    </ep:phrase>
-
-    <ep:phrase ref="cgi/users/home:layout_staff">
-&ruler;
-<h2>Advanced Options</h2>
-<ep:pin ref="options" />
-</ep:phrase>
-
     <ep:phrase ref="cgi/users/home:user_home">User Area Homepage - <ep:pin ref="name" /></ep:phrase>
     <ep:phrase ref="cgi/users/home:before"><p>Before you use any of the user area functions, you must fill out your user information.</p></ep:phrase>
 
@@ -765,74 +730,7 @@ Staff CGI Scripts
     <ep:phrase ref="cgi/users/edit_eprint:removed"><p>Item Successfully Removed</p></ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:move_title">Move Successful</ep:phrase>
     <ep:phrase ref="cgi/users/edit_eprint:moved"><p>Item Successfully moved back into editorial review.</p><p>You may now <ep:pin ref="link">edit it</ep:pin> if you wish.</p></ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_edit">Edit item</ep:phrase>
-
-    <ep:phrase ref="cgi/users/edit_eprint:action_derive_eprint_version">New version</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:help_derive_eprint_version">Use this to submit a new version of this item. It will create an exact copy which you can then make changes to. This item and the new version will be linked.</ep:phrase>
-
-    <ep:phrase ref="cgi/users/edit_eprint:action_request_eprint_deletion">Request deletion</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:help_request_eprint_deletion">Request deletion</ep:phrase>
-
-    <ep:phrase ref="cgi/users/edit_eprint:action_derive_eprint_clone">Use as template</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:help_derive_eprint_clone">Create a new item using this item as a template. There will be no connection between the two items.</ep:phrase>
-
-    <ep:phrase ref="cgi/users/edit_eprint:action_move_eprint_archive_inbox">Return item to user work area</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:help_move_eprint_archive_inbox">Return to user work area, allowing the user to make changes to it and re-deposit it.</ep:phrase>
-
-    <ep:phrase ref="cgi/users/edit_eprint:action_move_eprint_inbox_buffer">Move item into editorial review</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:help_move_eprint_inbox_buffer">Move this item into editorial review as if the owner had deposited it. Use with caution as the user will not have clicked the button on the confirmation that they have the right to deposit.</ep:phrase>
-
-    <ep:phrase ref="cgi/users/edit_eprint:action_move_eprint_buffer_inbox">Return item to user work area</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:help_move_eprint_buffer_inbox">Return to user work area, allowing the user to make changes to it and re-deposit it.</ep:phrase>
-
-    <ep:phrase ref="cgi/users/edit_eprint:action_move_eprint_archive_buffer">Move Item to editorial review</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:help_move_eprint_archive_buffer">Move Item to editorial review</ep:phrase>
-
-    <ep:phrase ref="cgi/users/edit_eprint:action_move_eprint_buffer_archive">Move Item to repository</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:help_move_eprint_buffer_archive">Move Item to repository</ep:phrase>
-
-    <ep:phrase ref="cgi/users/edit_eprint:action_move_eprint_archive_deletion">Retire item</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:help_move_eprint_archive_deletion">Retire item</ep:phrase>
-
-    <ep:phrase ref="cgi/users/edit_eprint:action_move_eprint_deletion_archive">Reinstate item</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:help_move_eprint_deletion_archive">Reinstate item</ep:phrase>
-
-    <ep:phrase ref="cgi/users/edit_eprint:action_deposit">Deposit item</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:help_deposit">Deposit item</ep:phrase>
-
-    <ep:phrase ref="cgi/users/edit_eprint:action_remove">Destroy item</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:help_remove">Remove this item from the system forever.</ep:phrase>
-
-    <ep:phrase ref="cgi/users/edit_eprint:action_send">Send</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:help_send">Send</ep:phrase>
-
-    <ep:phrase ref="cgi/users/edit_eprint:action_cancel">Cancel</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:help_cancel">Cancel</ep:phrase>
-
-    <ep:phrase ref="cgi/users/edit_eprint:action_reallydelete">Really delete</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:help_reallydelete">Really delete</ep:phrase>
-
-    <ep:phrase ref="cgi/users/edit_eprint:action_remove_with_email">Destroy item (with notification)</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:help_remove_with_email">Remove this item from the system forever, but send an email to the user who deposited it to inform them why.</ep:phrase>
-
-    <ep:phrase ref="cgi/users/edit_eprint:action_reject_with_email">Return item (with notification)</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:help_reject_with_email">Return this item from to the user work area and send an email to the user who deposited it to explain why it cannot yet be accepted.</ep:phrase>
-
-    <ep:phrase ref="cgi/users/edit_eprint:action_edit_eprint">Edit item</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:status_changed">Item status successfully changed.</ep:phrase>
-
-    <ep:phrase ref="cgi/users/edit_eprint:unknown_action">This screen does not know how to process this action: <ep:pin ref="action" />.</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:unknown_screen">The requested screen does not exist, or has a fatal error: <ep:pin ref="screen" />.</ep:phrase>
-	
-    <ep:phrase ref="cgi/users/edit_eprint:action_view_summary">Summary</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_view_full">Details</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_view_history">History</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_view_buffer">View records awaiting editorial review</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_view_export">Export</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_view_staffexport">Export</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_view_edit">Edit</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_view_staffedit">Edit</ep:phrase>
-    <ep:phrase ref="cgi/users/edit_eprint:action_view_actions">Actions</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:view_unavailable">This view is not available.</ep:phrase>
     <ep:phrase ref="mail_delete_reason.inbox">
 The following eprint has been deleted from your User Area:
 
@@ -851,6 +749,75 @@ The following eprint has been deleted from your User Area:
     <ep:phrase ref="cgi/users/edit_eprint:message_warning">Warning</ep:phrase>
 
     <ep:phrase ref="cgi/users/edit_eprint:loading">Loading...</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:status_changed">Item status successfully changed.</ep:phrase>
+
+    <ep:phrase ref="cgi/users/edit_eprint:unknown_action">This screen (<ep:pin ref="screen" />) does not know how to process this action: <ep:pin ref="action" />.</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:unknown_screen">The requested screen does not exist, or has a fatal error: <ep:pin ref="screen" />.</ep:phrase>
+    <ep:phrase ref="cgi/users/edit_eprint:view_as_either">View this item as <ep:pin ref="owner_link">an owner</ep:pin> or as <ep:pin ref="editor_link">an editor</ep:pin> of it.</ep:phrase>
+
+<!-- priv related phrases -->
+
+    <ep:phrase ref="priv:action/eprint/edit">Edit item</ep:phrase>
+    <ep:phrase ref="priv:action/eprint/edit.help">Edit item</ep:phrase>
+
+    <ep:phrase ref="priv:action/eprint/edit_staff">Edit item</ep:phrase>
+    <ep:phrase ref="priv:action/eprint/edit_staff.help">Edit item (as an editor)</ep:phrase>
+
+    <ep:phrase ref="priv:action/eprint/derive_version">New version</ep:phrase>
+    <ep:phrase ref="priv:action/eprint/derive_version.help">Use this to submit a new version of this item. It will create an exact copy which you can then make changes to. This item and the new version will be linked.</ep:phrase>
+
+    <ep:phrase ref="priv:action/eprint/request_deletion">Request deletion</ep:phrase>
+    <ep:phrase ref="priv:action/eprint/request_deletion.help">Request deletion</ep:phrase>
+
+    <ep:phrase ref="priv:action/eprint/derive_clone">Use as template</ep:phrase>
+    <ep:phrase ref="priv:action/eprint/derive_clone.help">Create a new item using this item as a template. There will be no connection between the two items.</ep:phrase>
+
+    <ep:phrase ref="priv:action/eprint/move_archive_inbox">Return item to user work area</ep:phrase>
+    <ep:phrase ref="priv:action/eprint/move_archive_inbox.help">Return to user work area, allowing the user to make changes to it and re-deposit it.</ep:phrase>
+
+    <ep:phrase ref="priv:action/eprint/move_inbox_buffer">Move item into editorial review</ep:phrase>
+    <ep:phrase ref="priv:action/eprint/move_inbox_buffer.help">Move this item into editorial review as if the owner had deposited it. Use with caution as the user will not have clicked the button on the confirmation that they have the right to deposit.</ep:phrase>
+
+    <ep:phrase ref="priv:action/eprint/move_buffer_inbox">Return item to user work area</ep:phrase>
+    <ep:phrase ref="priv:action/eprint/move_buffer_inbox.help">Return to user work area, allowing the user to make changes to it and re-deposit it.</ep:phrase>
+
+    <ep:phrase ref="priv:action/eprint/move_archive_buffer">Move Item to editorial review</ep:phrase>
+    <ep:phrase ref="priv:action/eprint/move_archive_buffer.help">Move Item to editorial review</ep:phrase>
+
+    <ep:phrase ref="priv:action/eprint/move_inbox_archive">Move Item to repository</ep:phrase>
+    <ep:phrase ref="priv:action/eprint/move_inbox_archive.help">Move Item to repository</ep:phrase>
+
+    <ep:phrase ref="priv:action/eprint/move_buffer_archive">Move Item to repository</ep:phrase>
+    <ep:phrase ref="priv:action/eprint/move_buffer_archive.help">Move Item to repository</ep:phrase>
+
+    <ep:phrase ref="priv:action/eprint/move_archive_deletion">Retire item</ep:phrase>
+    <ep:phrase ref="priv:action/eprint/move_archive_deletion.help">Retire item</ep:phrase>
+
+    <ep:phrase ref="priv:action/eprint/move_deletion_archive">Reinstate item</ep:phrase>
+    <ep:phrase ref="priv:action/eprint/move_deletion_archive.help">Reinstate item</ep:phrase>
+
+    <ep:phrase ref="priv:action/eprint/deposit">Deposit item</ep:phrase>
+    <ep:phrase ref="priv:action/eprint/deposit.help">Deposit item</ep:phrase>
+
+    <ep:phrase ref="priv:action/eprint/remove">Destroy item</ep:phrase>
+    <ep:phrase ref="priv:action/eprint/remove.help">Remove this item from the system forever.</ep:phrase>
+
+    <ep:phrase ref="priv:action/eprint/remove_with_email">Destroy item (with notification)</ep:phrase>
+    <ep:phrase ref="priv:action/eprint/remove_with_email.help">Remove this item from the system forever, but send an email to the user who deposited it to inform them why.</ep:phrase>
+
+    <ep:phrase ref="priv:action/eprint/reject_with_email">Return item (with notification)</ep:phrase>
+    <ep:phrase ref="priv:action/eprint/reject_with_email.help">Return this item from to the user work area and send an email to the user who deposited it to explain why it cannot yet be accepted.</ep:phrase>
+
+	
+    <ep:phrase ref="priv:view/eprint/summary">Summary</ep:phrase>
+    <ep:phrase ref="priv:view/eprint/full">Details</ep:phrase>
+    <ep:phrase ref="priv:view/eprint/history">History</ep:phrase>
+    <ep:phrase ref="priv:view/eprint/buffer">View records awaiting editorial review</ep:phrase>
+    <ep:phrase ref="priv:view/eprint/export">Export</ep:phrase>
+    <ep:phrase ref="priv:view/eprint/export_staff">Export</ep:phrase>
+    <ep:phrase ref="priv:view/eprint/edit">Edit</ep:phrase>
+    <ep:phrase ref="priv:view/eprint/edit_staff">Edit</ep:phrase>
+    <ep:phrase ref="priv:view/eprint/actions">Actions</ep:phrase>
 
 
 
