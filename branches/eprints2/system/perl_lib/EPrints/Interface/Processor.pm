@@ -14,6 +14,7 @@ sub process
 	bless $self, $class;
 
 	$self->{messages} = [];
+	$self->{after_messages} = [];
 	$self->{before_messages} = [];
 
 	if( !defined $opts{session} ) 
@@ -43,6 +44,18 @@ sub process
 		return;
 	}
 
+	# used to swap to a different screen if appropriate
+	$self->screen->about_to_render;
+	
+	# rendering
+
+	if( !$self->screen->can_be_viewed )
+	{
+		$self->{screenid} = "Error";
+		$self->add_message( "error", $self->{session}->html_phrase( 
+			"cgi/users/edit_eprint:screen_not_allowed" ) );
+	}
+	
 	$self->screen->register_furniture;
 
 	my $content = $self->screen->render;
@@ -54,6 +67,10 @@ sub process
 		$self->{page}->appendChild( $chunk );
 	}
 	$self->{page}->appendChild( $self->render_messages );
+	foreach my $chunk ( @{$self->{after_messages}} )
+	{
+		$self->{page}->appendChild( $chunk );
+	}
 
 	$self->{page}->appendChild( $content );
 
@@ -66,6 +83,13 @@ sub before_messages
 	my( $self, $chunk ) = @_;
 
 	push @{$self->{before_messages}},$chunk;
+}
+
+sub after_messages
+{
+	my( $self, $chunk ) = @_;
+
+	push @{$self->{after_messages}},$chunk;
 }
 
 sub add_message
@@ -116,24 +140,24 @@ sub render_messages
 	{
 		my $id = "m".$self->{session}->get_next_id;
 		my $div = $self->{session}->make_element( "div", class=>"ep_".$message->{type}, id=>$id );
-		my $title_div = $self->{session}->make_element( "div", class=>"ep_".$message->{type}."_title" );
-		my $close_a =  $self->{session}->make_element( "a", onclick=>'document.getElementById( "'.$id.'" ).style.display = "none"; return false;', href=>'#' );
-		my $close = $self->{session}->make_element( "img", src=>"/images/style/close.gif", class=>"ep_close_icon js_only" );
-		$close_a->appendChild( $close );
+#		my $title_div = $self->{session}->make_element( "div", class=>"ep_".$message->{type}."_title" );
+#		my $close_a =  $self->{session}->make_element( "a", onclick=>'document.getElementById( "'.$id.'" ).style.display = "none"; return false;', href=>'#' );
+#		my $close = $self->{session}->make_element( "img", src=>"/images/style/close.gif", class=>"ep_close_icon js_only" );
+#		$close_a->appendChild( $close );
 		my $content_div = $self->{session}->make_element( "div", class=>"ep_".$message->{type}."_content" );
-		$title_div->appendChild( $close_a );
-		$title_div->appendChild( $self->{session}->html_phrase( "cgi/users/edit_eprint:message_".$message->{type} ) );
+#		$title_div->appendChild( $close_a );
+#		$title_div->appendChild( $self->{session}->html_phrase( "cgi/users/edit_eprint:message_".$message->{type} ) );
 		my $table = $self->{session}->make_element( "table" );
 		my $tr = $self->{session}->make_element( "tr" );
 		$table->appendChild( $tr );
 		my $td1 = $self->{session}->make_element( "td" );
-		$td1->appendChild( $self->{session}->make_element( "img", src=>"/images/style/".$message->{type}.".png" ) );
+		$td1->appendChild( $self->{session}->make_element( "img", src=>"/images/style/".$message->{type}.".png", alt=>$self->{session}->phrase( "cgi/users/edit_eprint:message_".$message->{type} ) ) );
 		$tr->appendChild( $td1 );
 		my $td2 = $self->{session}->make_element( "td" );
 		$tr->appendChild( $td2 );
 		$td2->appendChild( $message->{content} );
 		$content_div->appendChild( $table );
-		$div->appendChild( $title_div );
+#		$div->appendChild( $title_div );
 		$div->appendChild( $content_div );
 		$chunk->appendChild( $div );
 	}
@@ -149,121 +173,189 @@ sub action_not_allowed
 	$self->add_message( "error", $self->{session}->html_phrase( 
 		"cgi/users/edit_eprint:action_not_allowed",
 		action=>$self->{session}->html_phrase(
-			"cgi/users/edit_eprint:action_$action" ) ) );
+			"priv:action/$action" ) ) );
 }
-	
-sub allow_action 
-{
-	my( $self, $action ) = @_;
 
-	my $status = $self->{eprint}->get_value( "eprint_status" );
+# 0 = not allowed
+# 1 = for anybody
+# 2 = for registered user
+# 4 = for owner of item
+# 8 = for editor of item
+
+# for_user and on_item required for some privs	
+sub allow
+{
+	my( $self, $priv, $on_item, $for_user ) = @_;
+
+	if( !defined $for_user )
+	{
+		$for_user = $self->{session}->current_user;
+	}
+
+	if( $priv=~s/^action\/// )
+	{
+		return $self->allow_action( $priv, $on_item, $for_user );
+	}
+
+	if( $priv=~s/^view\/// )
+	{
+		return $self->allow_view( $priv, $on_item, $for_user );
+	}
+
+	return 0;
+}
+
+sub allow_action
+{
+	my( $self, $action, $on_item, $for_user ) = @_;
+
+	if( $action=~s/^eprint\/// )
+	{
+		return $self->allow_eprint_action( $action, $on_item, $for_user );
+	}
+	
+	if( $action eq "deposit" )
+	{
+		return $for_user->has_priv( "deposit" );
+	}
+
+	return 0;
+}
+
+sub allow_eprint_action
+{
+	my( $self, $action, $on_item, $for_user ) = @_;
+	
+	# all actions are action/eprint/...
+
+	if( !defined $on_item )
+	{
+		$on_item = $self->{eprint};
+	}
+
+	my $status = $on_item->get_value( "eprint_status" );
 	
 	# Can we skip the buffer?
 	my $sb = $self->{session}->get_repository->get_conf( "skip_buffer" ) || 0;
 
-	if( $action eq "deposit" )
-	{
-		return 1 if( $status eq "inbox" && !$self->{staff} );
-	}
-	if( $action eq "edit_eprint" )
-	{
-		return 1 if( $status eq "inbox" && !$self->{staff} );
-		return 1 if( $self->{staff} );
-	}
-	if( $action eq "remove" )
-	{
-		return 1 if( $status eq "inbox" && !$self->{staff} );
-		return 1 if( $status eq "buffer" && $self->{staff} );
-	}
-	if( $action eq "reject_with_email" )
-	{
-		return 1 if( $status eq "buffer" && $self->{staff} );
-	}
-	if( $action eq "remove_with_email" )
-	{
-		return 1 if( $status eq "buffer" && $self->{staff} );
-		return 1 if( $status eq "inbox" && $self->{staff} );
+
+	my $r = 0;
+	if( $for_user->is_owner( $on_item ) )
+	{	
+		if( $status eq "inbox" )
+		{
+			$r |= 4 if( $action eq "deposit" );
+			$r |= 4 if( $action eq "edit" );
+			$r |= 4 if( $action eq "remove" );
+		}
+		if( $status eq "buffer" )
+		{
+			$r |= 4 if( $action eq "move_buffer_inbox" );
+			$r |= 4 if( $action eq "request_deletion" );
+		}
+		if( $status eq "archive" )
+		{
+			$r |= 4 if( $action eq "request_deletion" );
+		}
+		$r |= 4 if( $action eq "derive_clone" );
+		$r |= 4 if( $action eq "derive_version" );
 	}
 
-	if( $action eq "move_eprint_inbox_archive" )
-	{
-		#return 1 if( $self->{staff} && $status eq "inbox"); 
-	}
-	if( $action eq "move_eprint_archive_inbox" )
-	{
-		#return 1 if( $self->{staff} && $status eq "archive"); 
+	if( $for_user->can_edit( $on_item ) )
+	{	
+		if( $status eq "inbox" )
+		{
+			$r |= 8 if( $action eq "remove_with_email" );
+			$r |= 8 if( $action eq "move_inbox_archive" );
+			$r |= 8 if( $action eq "move_inbox_buffer" );
+		}
+		if( $status eq "buffer" )
+		{
+			$r |= 8 if( $action eq "remove_with_email" );
+			$r |= 8 if( $action eq "reject_with_email" );
+			$r |= 8 if( $action eq "move_buffer_inbox" && defined $on_item->get_user );
+			$r |= 8 if( $action eq "move_buffer_archive" );
+		}
+		if( $status eq "archive" )
+		{
+			$r |= 8 if( $action eq "move_archive_inbox" && defined $on_item->get_user );
+			$r |= 8 if( $action eq "move_archive_buffer" );
+			$r |= 8 if( $action eq "move_archive_deletion" );
+		}
+		if( $status eq "deletion" )
+		{
+			$r |= 8 if( $action eq "move_deletion_archive" );
+		}
+
+		$r |= 8 if( $action eq "derive_clone" );
+		$r |= 8 if( $action eq "derive_version" );
+		$r |= 8 if( $action eq "edit_staff" );
 	}
 
-	if( $action eq "move_eprint_inbox_buffer" )
-	{
-		return 1 if( $self->{staff} && $status eq "inbox"); 
-	}
-	if( $action eq "move_eprint_buffer_inbox" )
-	{
-		# allowing users to do this too? is that OK?
-		return 1 if( defined $self->{eprint}->get_user() && $status eq "buffer");
-	}
+	$r |= 2 if( $action eq "derive_clone" );
+	$r |= 2 if( $action eq "derive_version" );
 
-	if( $action eq "move_eprint_buffer_archive" )
-	{
-		return 1 if( $self->{staff} && $status eq "buffer"); 
-	}
-	if( $action eq "move_eprint_archive_buffer" )
-	{
-		return 1 if( $self->{staff} && $status eq "archive" ); 
-	}
+	return $r;
+}
 
-	if( $action eq "move_eprint_archive_deletion" && $status eq "archive")
-	{
-		return 1 if( $self->{staff} ); 
-	}
-	if( $action eq "move_eprint_deletion_archive" && $status eq "deletion")
-	{
-		return 1 if( $self->{staff} ); 
-	}
+sub allow_view
+{
+	my( $self, $view, $on_item, $for_user ) = @_;
 
-	if( $action eq "derive_eprint_clone" )
+	if( $view=~s/^eprint\/// )
 	{
-		return 1;
-	}
-	if( $action eq "derive_eprint_version" )
-	{
-		return 1;
-	}
-
-	if( $action eq "request_eprint_deletion" )
-	{
-		return 1 if( !$self->{staff} && $status ne "inbox" );
+		return $self->allow_eprint_view( $view, $on_item, $for_user );
 	}
 
 	return 0;
 }
 
-sub allow_view
+sub allow_eprint_view
 {
-	my( $self, $view ) = @_;
+	my( $self, $view, $on_item, $for_user ) = @_;
 
-	if( $self->{staff} )
+	if( !defined $on_item )
 	{
-		return 1 if( $view eq "staffexport" );
-		return 1 if( $view eq "staffedit" );
-		return 1 if( $view eq "buffer" );
-		return 1 if( $view eq "history" );
-	}
-	else
-	{
-		if( $view eq "edit" )
-		{
-			return( $self->allow_action( "edit_eprint" ) );
-		}
-		return 1 if( $view eq "export" );
+		$on_item = $self->{eprint};
 	}
 
-	return 1 if( $view eq "full" );
-	return 1 if( $view eq "summary" );
-	return 1 if( $view eq "actions" );
+	my $status = $on_item->get_value( "eprint_status" );
 
-	return 0;
+	my $r = 0;
+
+	if( $for_user->is_owner( $on_item ) )
+	{
+		$r |= 4 if( $view eq "edit" && $self->allow("action/eprint/edit", $on_item, $for_user ) );
+		$r |= 4 if( $view eq "export" );
+		$r |= 4 if( $view eq "full" );
+		$r |= 4 if( $view eq "summary" );
+		$r |= 4 if( $view eq "actions" );
+		$r |= 4 if( $view eq "view" );
+		$r |= 4 if( $view eq "view/owner" );
+	}
+
+	if( $for_user->can_edit( $on_item ) )
+	{
+		$r |= 8 if( $view eq "edit_staff" && $self->allow("action/eprint/edit_staff", $on_item, $for_user ) );
+		$r |= 8 if( $view eq "export_staff" );
+		$r |= 8 if( $view eq "history" );
+		$r |= 8 if( $view eq "full" );
+		$r |= 8 if( $view eq "summary" );
+		$r |= 8 if( $view eq "actions" );
+		$r |= 8 if( $view eq "view" );
+		$r |= 8 if( $view eq "view/editor" );
+	}
+
+	if( $status eq "archive" )
+	{
+		$r |= 2 if( $view eq "view" );
+		$r |= 2 if( $view eq "view/other" );
+		$r |= 2 if( $view eq "export" );
+		$r |= 2 if( $view eq "summary" );
+		$r |= 2 if( $view eq "actions" );
+	}
+
+	return $r;
 }
 
 

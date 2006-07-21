@@ -3872,5 +3872,10 @@ PACKAGE: 2.2.99.2
     changes to workflow.pm
  * Shortend the names of the workflow stages
  * Improved MetaField::Set to handle null defaults in the input renderer.
+ * Many more changes to the user Interface modules, including addin a 
+    new view of eprints for non-owner, non-editors. Making the views all
+    subclass EPrint::View. Making EPrint::View make a redirect to a 
+    sensible view. Adding a wrapper for all logged in pages, and a weapper
+    for pages dealing with a single eprint record.
  
 
