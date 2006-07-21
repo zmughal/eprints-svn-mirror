@@ -7,12 +7,21 @@ my $session = new EPrints::Session;
 exit( 0 ) unless( defined $session );
 # $session->get_database->set_debug( 1 );
 
-my $item = EPrints::DataObj::EPrint->new( $session, 55 );
+my $item = EPrints::DataObj::EPrint->new( $session, 112 );
 my $workflow = new EPrints::Workflow( $session, "default", dataset => $item->get_dataset, item => $item );
 
-$workflow->process();
+$workflow->from();
+my $page= $workflow->render;
+
 
 print STDERR $workflow->{stage};
+$session->build_page( 
+	$session->make_text("Workflow Demo" ),
+	$page,
+	"status" );
+
+$session->send_page(); 
+
 
 $session->terminate();
 exit;
