@@ -261,14 +261,6 @@ sub prev
 	$self->{stage} = $self->get_prev_stage_id;
 }
 
-sub process
-{
-	my( $self ) = @_;
-
-	$self->from;
-	$self->render;
-}
-
 
 sub from
 {
