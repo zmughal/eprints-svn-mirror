@@ -3871,5 +3871,6 @@ PACKAGE: 2.2.99.2
  * Tweaked workflow demo to use an eprintid on my machine and handle the
     changes to workflow.pm
  * Shortend the names of the workflow stages
+ * Improved MetaField::Set to handle null defaults in the input renderer.
  
 

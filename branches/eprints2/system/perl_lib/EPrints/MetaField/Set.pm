@@ -153,13 +153,18 @@ sub render_set_input
 	foreach my $opt ( @{$tags} )
 	{
 		$dt = $session->make_element( "dt" );
+		my $checked = undef;
+		if( defined $default->[0] && $default->[0] eq $opt )
+		{
+			$checked = "checked";
+		}
 		$dt->appendChild( $session->make_element(
 			"input",
 			"accept-charset" => "utf-8",
 			type => "radio",
 			name => $self->{name},
 			value => $opt,
-			checked => ( $default->[0] eq $opt ?"checked":undef) ));
+			checked => $checked ) );
 		$dt->appendChild( $session->make_text( " ".$labels->{$opt} ));
 		$dl->appendChild( $dt );
 		$dd = $session->make_element( "dd" );
