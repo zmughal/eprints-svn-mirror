@@ -1073,13 +1073,15 @@ Returns true if $user can edit $eprint (according to editperms).
 
 sub can_edit
 {
-	my( $user, $eprint ) = @_;
-	my $session = $user->{session};
+	my( $self, $eprint ) = @_;
+
+	my $session = $self->{session};
 
 	my $user_ds = $session->get_repository->get_dataset( "user" );
 
 	my $ef_field = $user_ds->get_field( 'editperms' );
-	my $searches = $session->current_user->get_value( 'editperms' );
+
+	my $searches = $self->get_value( 'editperms' );
 	if( scalar @{$searches} == 0 )
 	{
 		return 1;
@@ -1088,12 +1090,10 @@ sub can_edit
 	foreach my $s ( @{$searches} )
 	{
 		my $search = $ef_field->make_searchexp( $session, $s );
-		if( $search->get_conditions->item_matches( $eprint ) )
-		{
-			$search->dispose;
-			return 1;
-		}
+		my $r = $search->get_conditions->item_matches( $eprint );
 		$search->dispose;
+
+		return 1 if $r;
 	}
 
 	return 0;
