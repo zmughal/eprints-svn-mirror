@@ -3882,5 +3882,8 @@ PACKAGE: 2.2.99.2
 
  * Added javascript to template which causes the scroll bar to always be
     shown.
-
+ * Added stubs for all user tools.
+ * Added sketch of tool defintion code to Screen.pm
+ * Added Status tool.
+ * Added colour codes to the deposit view.
   

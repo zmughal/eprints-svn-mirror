@@ -57,34 +57,131 @@ sub register_furniture
 
  " );
 
-	my @options = ( 'deposit','user profile','subscriptions','editorial review' );
-	my %links = ( 
-		deposit=>"control?screen=Home",
-		"user profile"=>"control?screen=Home",
-		subscriptions=>"control?screen=Home",
-		'editorial review'=>"control?screen=Review" );
-	foreach( @options )
+	my $tools = [
+		{
+			      id => "deposit",
+			    priv => "view/deposit",
+			position => 100,
+	 		    core => 1,
+			     url => "?screen=Home",
+		},
+		{
+			      id => "user",
+			    priv => "view/user",
+			position => 200,
+	 		    core => 1,
+			     url => "?screen=User",
+		},
+		{
+			      id => "subscription",
+			    priv => "view/subscription",
+			position => 300,
+	 		    core => 1,
+			     url => "?screen=Subscription",
+		},
+		{
+			      id => "edreview",
+			    priv => "view/editor",
+			position => 400,
+	 		    core => 1,
+			     url => "?screen=Review",
+		},
+		{
+			      id => "status",
+			    priv => "view/status",
+			position => 1100,
+	 		    core => 0,
+			     url => "?screen=Status",
+		},
+		{
+			      id => "search_eprint",
+			    priv => "view/search/eprint",
+			position => 1200,
+	 		    core => 0,
+			     url => "?screen=Search::EPrint",
+		},
+		{
+			      id => "search_user",
+			    priv => "view/search/user",
+			position => 1300,
+	 		    core => 0,
+			     url => "?screen=Search::User",
+		},
+		{
+			      id => "add_user",
+			    priv => "view/add_user",
+			position => 1400,
+	 		    core => 0,
+			     url => "?screen=AddUser",
+		},
+		{
+			      id => "subject",
+			    priv => "view/subject_tool",
+			position => 1500,
+	 		    core => 0,
+			     url => "?screen=Subject",
+		},
+	];
+
+	my @core = ();
+	my @other = ();
+	foreach my $tool ( sort { $a->{position} <=> $b->{position} } @{$tools} )
 	{
-		my $a = $self->{session}->render_link( $links{$_} );
-		$a->appendChild( $self->{session}->make_text( "\u$_" ) );
+		if( $tool->{core} )
+		{
+			push @core, $tool;
+		}
+		else
+		{
+			push @other, $tool;
+		}
+	}
+
+	my $first;
+
+	$first = 1;
+	foreach my $tool ( @core )
+	{
+		if( $first )
+		{
+			$first = 0;
+		}
+		else
+		{
+			$div->appendChild( $self->{session}->make_text( " | " ) );
+		}
+		my $a = $self->{session}->render_link( $tool->{url} );
+		$a->appendChild( $self->{session}->make_text( $tool->{id} ) );
 		$div->appendChild( $a );
-		$div->appendChild( $self->{session}->make_text( " | " ) );
 	}
-	my $more = $self->{session}->make_element( "a", id=>"ep_user_menu_more", class=>"ep_js_only", href=>"#", onClick => "Element.toggle('ep_user_menu_more');Element.toggle('ep_user_menu_extra');return false", );
-	$more->appendChild( $self->{session}->make_text( "all tools..." ) );
-	$div->appendChild( $more );
 
-	my $span = $self->{session}->make_element( "span", id=>"ep_user_menu_extra", style=>"display: none", class=>"ep_no_js" );
-	$div->appendChild( $span );
-	foreach( @options, @options, @options, @options )
+	if( scalar @other )
 	{
-		my $a = $self->{session}->render_link( $links{$_} );
-		$a->appendChild( $self->{session}->make_text( "\u$_" ) );
-		$span->appendChild( $a );
-		$span->appendChild( $self->{session}->make_text( " | " ) );
-	}
+		$div->appendChild( $self->{session}->make_text( " | " ) );
+		my $more = $self->{session}->make_element( "a", id=>"ep_user_menu_more", class=>"ep_js_only", href=>"#", onClick => "Element.toggle('ep_user_menu_more');Element.toggle('ep_user_menu_extra');return false", );
+		$more->appendChild( $self->{session}->make_text( "all tools..." ) );
+		$div->appendChild( $more );
 
+		my $span = $self->{session}->make_element( "span", id=>"ep_user_menu_extra", style=>"display: none", class=>"ep_no_js" );
+		$div->appendChild( $span );
+
+		$first = 1;
+		foreach my $tool ( @other )
+		{
+			if( $first )
+			{
+				$first = 0;
+			}
+			else
+			{
+				$span->appendChild( $self->{session}->make_text( " | " ) );
+			}
+			my $a = $self->{session}->render_link( $tool->{url} );
+			$a->appendChild( $self->{session}->make_text( $tool->{id} ) );
+			$span->appendChild( $a );
+		}
 	
+	}
 		
 	$f->appendChild( $div );
 

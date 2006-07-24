@@ -56,28 +56,61 @@ sub render
 	### Get the items in the buffer
 	my $ds = $self->{session}->get_repository->get_dataset( "eprint" );
 	my $list = $self->{session}->current_user->get_owned_eprints( $ds );
+	$list = $list->reorder( "-status_changed" );
+
 
 	if( $list->count == 0 )
 	{
 		$chunk->appendChild( $self->{session}->html_phrase( "cgi/users/home:no_pending" ) );
+		return $chunk;
 	}
-	else
-	{
-		my $div = $self->{session}->make_element( "div" );
-		$chunk->appendChild( $div );
-		$list->map( sub {
-			my( $session, $dataset, $e ) = @_; 
 
-			my $div2 = $session->make_element( "div", style=>"padding-top: 0.5em" );
-			my $a = $session->render_link( "?eprintid=".$e->get_id."&screen=EPrint::View::Owner" );
-			$a->appendChild( $e->render_description() );
-			$div2->appendChild( $a );
-			$div2->appendChild( $session->html_phrase( 
-				"cgi/users/home:deposited_at",
-				time=>$e->render_value( "status_changed" ) ) );
-			$div->appendChild( $div2 );
-		} );
-	}
+	my $table = $self->{session}->make_element( "table", cellspacing=>0 );
+	$chunk->appendChild( $table );
+	$list->map( sub {
+		my( $session, $dataset, $e ) = @_; 
+
+		my $tr = $session->make_element( "tr" );
+
+		my $style = "";
+		my $status = $e->get_value( "eprint_status" );
+
+		if( $status eq "inbox" )
+		{
+			$style="background-color: #ffc;";
+		}
+		if( $status eq "buffer" )
+		{
+			$style="background-color: #ddf;";
+		}
+		if( $status eq "archive" )
+		{
+			$style="background-color: #cfc;";
+		}
+		if( $status eq "deletion" )
+		{
+			$style="background-color: #ccc;";
+		}
+		$style.=" border-bottom: 1px solid #888; padding: 4px;";
+
+		my $td;
+
+		$td = $session->make_element( "td", style=>$style." text-align: center;" );
+		$tr->appendChild( $td );
+		$td->appendChild( $e->render_value( "eprint_status" ) );
+
+		$td = $session->make_element( "td", style=>$style );
+		$tr->appendChild( $td );
+		$td->appendChild( $e->render_value( "status_changed" ) );
+
+		$td = $session->make_element( "td", style=>$style );
+		$tr->appendChild( $td );
+		my $a = $session->render_link( "?eprintid=".$e->get_id."&screen=EPrint::View::Owner" );
+		$a->appendChild( $e->render_description() );
+		$td->appendChild( $a );
+		
+		$table->appendChild( $tr );
+	} );
 
 
 	return $chunk;
