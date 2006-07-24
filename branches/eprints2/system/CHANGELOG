@@ -3886,4 +3886,5 @@ PACKAGE: 2.2.99.2
  * Added sketch of tool defintion code to Screen.pm
  * Added Status tool.
  * Added colour codes to the deposit view.
-  
+ * Added a new default workflow for eprints - shorter and nearer.
+ * Added phrases to make workflow look neater.

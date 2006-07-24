@@ -38,7 +38,10 @@
     <ep:phrase ref="eprint_fieldname_keywords">Uncontrolled Keywords</ep:phrase>
     <ep:phrase ref="eprint_fieldhelp_keywords">Natural language terms to describe the content of the item</ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_creators">Authors/Creators</ep:phrase>
+    <ep:phrase ref="eprint_fieldname_creators_list">Creators</ep:phrase>
+    <ep:phrase ref="eprint_fieldname_editors_list">Editors</ep:phrase>
+
+    <ep:phrase ref="eprint_fieldname_creators">Creators</ep:phrase>
     <ep:phrase ref="eprint_fieldname_creators_id">Creators email (if known)</ep:phrase>
     <ep:phrase ref="eprint_fieldhelp_creators">Enter in the format given on the first page or title page. If there are more than four authors, click on the [More&nbsp;Spaces] button.
 <br />Example: [<span class="example">Smith</span>] [<span class="example">J.P.</span>] [<span class="example">j.smith@soton.ac.uk</span>]
@@ -276,7 +279,8 @@
 <!-- Submission Form Page Titles -->
 
     <ep:phrase ref="metapage_title_type">Type</ep:phrase>
-    <ep:phrase ref="metapage_title_core">Core Info.</ep:phrase>
+    <ep:phrase ref="metapage_title_files">Files</ep:phrase>
+    <ep:phrase ref="metapage_title_core">Details</ep:phrase>
     <ep:phrase ref="metapage_title_pubinfo">Publication</ep:phrase>
     <ep:phrase ref="metapage_title_status">Status</ep:phrase>
     <ep:phrase ref="metapage_title_event">Event</ep:phrase>
