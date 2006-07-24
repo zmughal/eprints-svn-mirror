@@ -3878,4 +3878,9 @@ PACKAGE: 2.2.99.2
     sensible view. Adding a wrapper for all logged in pages, and a weapper
     for pages dealing with a single eprint record.
  
+2006-06-24 cjg
 
+ * Added javascript to template which causes the scroll bar to always be
+    shown.
+
+  

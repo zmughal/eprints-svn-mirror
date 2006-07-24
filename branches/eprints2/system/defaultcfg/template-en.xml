@@ -29,6 +29,11 @@
       </style>
     </noscript>
     <script src="&base_url;/devel/prototype.js" type="text/javascript"><!-- nope --></script>
+    <script language="JavaScript" type="text/JavaScript">
+    <!--
+        window.document.write( '<style>body { height: '+(window.innerHeight+1)+'px; }</style>' );
+    -->
+    </script>
     <ep:pin ref="head" />
   </head>
   <body bgcolor="#ffffff" text="#000000">
