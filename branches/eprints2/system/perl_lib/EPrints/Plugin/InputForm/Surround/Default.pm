@@ -34,19 +34,19 @@ sub render
 	$title_td1->appendChild( $title );
 	$title_tr->appendChild( $title_td1 );
 
-	my $title_td2 = $self->{session}->make_element( "td", class=>"wf_show_help ep_js_only", id=>$id_prefix."_show" );
-	my $helplink = $self->{session}->make_element( "a", onClick => "Element.toggle('$id_prefix');Element.toggle('${id_prefix}_hide');Element.toggle('${id_prefix}_show');return false", href=>"#" );
+	my $title_td2 = $self->{session}->make_element( "td", class=>"wf_show_help ep_only_js", id=>$id_prefix."_show" );
+	my $helplink = $self->{session}->make_element( "a", onClick => "EPJS_toggle('$id_prefix',false,'block');EPJS_toggle('${id_prefix}_hide',false,'table-cell');EPJS_toggle('${id_prefix}_show',true,'table-cell');return false", href=>"#" );
 	$helplink->appendChild( $self->{session}->make_text( "Help" ) );
 	$title_td2->appendChild( $helplink );
 	$title_tr->appendChild( $title_td2 );
 
-	my $title_td3 = $self->{session}->make_element( "td", class=>"wf_hide_help ep_js_only", style=>"display: none", id=>$id_prefix."_hide" );
-	my $helplink2 = $self->{session}->make_element( "a", onClick => "Element.toggle('$id_prefix');Element.toggle('${id_prefix}_hide');Element.toggle('${id_prefix}_show');return false", href=>"#" );
+	my $title_td3 = $self->{session}->make_element( "td", class=>"wf_hide_help ep_hide", id=>$id_prefix."_hide" );
+	my $helplink2 = $self->{session}->make_element( "a", onClick => "EPJS_toggle('$id_prefix',false,'block');EPJS_toggle('${id_prefix}_hide',false,'table-cell');EPJS_toggle('${id_prefix}_show',true,'table-cell');return false", href=>"#" );
 	$helplink2->appendChild( $self->{session}->make_text( "Hide help" ) );
 	$title_td3->appendChild( $helplink2 );
 	$title_tr->appendChild( $title_td3 );
 	
-	my $help_div = $self->{session}->make_element( "div", class => "wf_help ep_no_js", style => "display: none", id => $id_prefix );
+	my $help_div = $self->{session}->make_element( "div", class => "wf_help ep_no_js", id => $id_prefix );
 	$help_div->appendChild( $help );
 	
 	if( $is_req )

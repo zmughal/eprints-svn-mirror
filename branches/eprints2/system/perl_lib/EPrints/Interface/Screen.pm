@@ -158,11 +158,11 @@ sub register_furniture
 	if( scalar @other )
 	{
 		$div->appendChild( $self->{session}->make_text( " | " ) );
-		my $more = $self->{session}->make_element( "a", id=>"ep_user_menu_more", class=>"ep_js_only", href=>"#", onClick => "Element.toggle('ep_user_menu_more');Element.toggle('ep_user_menu_extra');return false", );
+		my $more = $self->{session}->make_element( "a", id=>"ep_user_menu_more", class=>"ep_only_js", href=>"#", onClick => "EPJS_toggle('ep_user_menu_more',true,'inline');EPJS_toggle('ep_user_menu_extra',false,'inline');return false", );
 		$more->appendChild( $self->{session}->make_text( "all tools..." ) );
 		$div->appendChild( $more );
 
-		my $span = $self->{session}->make_element( "span", id=>"ep_user_menu_extra", style=>"display: none", class=>"ep_no_js" );
+		my $span = $self->{session}->make_element( "span", id=>"ep_user_menu_extra", class=>"ep_no_js" );
 		$div->appendChild( $span );
 
 		$first = 1;

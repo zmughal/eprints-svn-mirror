@@ -5,8 +5,9 @@
       xmlns:ep="http://eprints.org/ep2/template">
   <head>
     <title>&archivename; - <ep:pin ref="title" textonly="yes" /></title>
-  <script src="&base_url;/devel/prototype.js" type="text/javascript"><!-- nope --></script>
-  <script src="&base_url;/devel/default.js" type="text/javascript"><!-- nope --></script>
+    <script src="&base_url;/eprints.js" type="text/javascript"><!-- nope --></script>
+    <script src="&base_url;/devel/prototype.js" type="text/javascript"><!-- nope --></script>
+    <script src="&base_url;/devel/default.js" type="text/javascript"><!-- nope --></script>
   
     <style type="text/css" media="screen">
 @import  url(&base_url;/devel/workflow.css);
@@ -22,10 +23,14 @@
     <link rel="Top" href="&frontpage;" />
     <link rel="Search" href="&perl_url;/search" />
     <link rel="Help" href="&base_url;/help" />
+    <style type='text/css'>
+      .ep_no_js { display: none; }
+      .ep_hide { display: none; }
+    </style>
     <noscript>
       <style type='text/css'>
-        .ep_no_js { display: block !important }
-        .ep_js_only { display: none }
+        .ep_no_js { display: block; }
+        .ep_only_js { display: none; }
       </style>
     </noscript>
     <script src="&base_url;/devel/prototype.js" type="text/javascript"><!-- nope --></script>

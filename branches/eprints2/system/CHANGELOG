@@ -3892,3 +3892,10 @@ PACKAGE: 2.2.99.2
 2006-06-25 cjg
 
  * Merged MetaField::Basic into MetaField. Removed MetaField::Basic.
+ * Added eprints.js for eprints own javascript functions.
+ * Included it from the template
+ * Added a javascript toggle which can handle toggling things which start
+    hidden, without needing a style='none' in their element. 
+ * Added classes to handle only_js and no_js without using !important for
+    IE compatability.
+ * Surround help and the tools bar now use these functions.
