@@ -3925,3 +3925,5 @@ PACKAGE: 2.2.99.2
     sub files. One or the other is required.
  * Removed all uses of hasAttribute as it's not available in XML::DOM
  * Added phrases for tools names.
+ * Removed unused components eg. BlisterBar
+ * Renaming components to shorter names.

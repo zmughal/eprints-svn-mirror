@@ -59,6 +59,8 @@
   </stage>
 
   <stage name="pubinfo">
+    <component><field ref="note"/></component>
+    <component><field ref="suggestions"/></component>
     <ep:ifmatch name="type" merge="ANY" value="patent">
       <component><field ref="date_issue"><required/></field></component>
       <component><field ref="official_url"/></component>
@@ -141,8 +143,6 @@
 
   <stage name="subjects">
     <component type="FieldComponent::SubjectComponent"><field ref="subjects"><required/></field></component>
-    <component><field ref="note"/></component>
-    <component><field ref="suggestions"/></component>
   </stage>
 
   <stage name="event">
