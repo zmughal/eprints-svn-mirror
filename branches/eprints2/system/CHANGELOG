@@ -3909,3 +3909,4 @@ PACKAGE: 2.2.99.2
  * Restructured defaultcfg directory - this will take several commit's to
     get all done.
  * Changed Repository and Language to load files from new locations.
+ * Fixed minor bug in toolbar.

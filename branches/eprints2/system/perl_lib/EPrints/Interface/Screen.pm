@@ -154,7 +154,7 @@ sub register_furniture
 		{
 			$div->appendChild( $self->{session}->make_text( " | " ) );
 		}
-		my $a = $self->{session}->render_link( "?screen=".$tool->{url} );
+		my $a = $self->{session}->render_link( "?screen=".$tool->{screen} );
 		$a->appendChild( $self->{session}->make_text( $tool->{id} ) );
 		$div->appendChild( $a );
 	}
@@ -180,7 +180,7 @@ sub register_furniture
 			{
 				$span->appendChild( $self->{session}->make_text( " | " ) );
 			}
-			my $a = $self->{session}->render_link( "?screen=".$tool->{url} );
+			my $a = $self->{session}->render_link( "?screen=".$tool->{screen} );
 			$a->appendChild( $self->{session}->make_text( $tool->{id} ) );
 			$span->appendChild( $a );
 		}
