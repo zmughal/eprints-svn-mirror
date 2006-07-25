@@ -425,7 +425,7 @@ END
 	foreach $langid ( @{$self->get_conf( "languages" )} )
 	{
 		my $file = $self->get_conf( "config_path" ).
-				"/citations-$langid.xml";
+				"/$langid/citations.xml";
 		my $doc = $self->parse_xml( $file , 1 );
 		if( !defined $doc )
 		{
@@ -497,7 +497,7 @@ sub _load_templates
 	{
 		my( $file, $template );
 		$file = $self->get_conf( "config_path" ).
-			"/template-$langid.xml";
+			"/$langid/template.xml";
 		$template = $self->_load_template( $file );
 		if( !defined $template ) { return 0; }
 		$self->{html_templates}->{default}->{$langid} = $template;
@@ -505,7 +505,7 @@ sub _load_templates
 
 		# load the secure site template if there is one.
 		$file = $self->get_conf( "config_path" ).
-			"/template-secure-$langid.xml";
+			"/$langid/template-secure.xml";
 		if( !-e $file ) { next; }
 		$template = $self->_load_template( $file );
 		if( !defined $template ) { return 0; }

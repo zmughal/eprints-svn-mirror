@@ -73,10 +73,6 @@ $c->{documents_path} = $c->{archiveroot}."/documents";
 # automatic files will be written to)
 $c->{config_path} = $c->{archiveroot}."/cfg";
 
-# The location of the initial static website, before it's processed
-# with the DTD and the site template.
-$c->{static_path} = $c->{archiveroot}."/cfg/static";
-
 # The location where eprints will build the website
 $c->{htdocs_path} = $c->{archiveroot}."/html";
 

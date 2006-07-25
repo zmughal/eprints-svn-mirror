@@ -144,13 +144,13 @@ my $session = new EPrints::Session( 1 , $ARGV[0] , $noise );
 exit( 1 ) unless( defined $session );
 
 my $langid;
-my $generalpath = $session->get_repository->get_conf( "static_path" )."/general";
+my $generalpath = $session->get_repository->get_conf( "config_path" )."/static";
 my $errcnt = 0;
 foreach $langid ( @{$session->get_repository->get_conf( "languages" )} )
 {
 	print "Starting language $langid...\n" if( $noise >=1 );
-	my $basepath = $session->get_repository->get_conf( "static_path" ).
-	               "/$langid";
+	my $basepath = $session->get_repository->get_conf( "config_path" ).
+	               "/$langid/static";
 	my $func;
 	$func = sub { generate_static( $langid, $basepath, $session, \$errcnt ) };
 	find( { wanted=>$func, follow=>1 }, $basepath );
