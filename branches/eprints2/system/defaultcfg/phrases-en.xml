@@ -2,29 +2,29 @@
 <!DOCTYPE phrases SYSTEM "entities-en.dtd">
 
 <ep:phrases xmlns="http://www.w3.org/1999/xhtml"
-            xmlns:ep="http://eprints.org/ep2/phrases">
-    <ep:phrase ref="document_typename_ascii">ASCII</ep:phrase>
-    <ep:phrase ref="document_typename_html">HTML</ep:phrase>
-    <ep:phrase ref="document_typename_pdf">PDF</ep:phrase>
-    <ep:phrase ref="document_typename_ps">Postscript</ep:phrase>
-    <ep:phrase ref="document_typename_other">Other</ep:phrase>
-    <ep:phrase ref="document_typename_coverimage">Image of Cover (to show on abstract page)</ep:phrase>
+            xmlns:ep="http://eprints.org/ep3/phrases">
+    <ep:phrase id="document_typename_ascii">ASCII</ep:phrase>
+    <ep:phrase id="document_typename_html">HTML</ep:phrase>
+    <ep:phrase id="document_typename_pdf">PDF</ep:phrase>
+    <ep:phrase id="document_typename_ps">Postscript</ep:phrase>
+    <ep:phrase id="document_typename_other">Other</ep:phrase>
+    <ep:phrase id="document_typename_coverimage">Image of Cover (to show on abstract page)</ep:phrase>
 
-    <ep:phrase ref="security_typename_">Anyone</ep:phrase>
-    <ep:phrase ref="security_typename_validuser">Registered users only</ep:phrase>
-    <ep:phrase ref="security_typename_staffonly">Repository staff only</ep:phrase>
+    <ep:phrase id="security_typename_">Anyone</ep:phrase>
+    <ep:phrase id="security_typename_validuser">Registered users only</ep:phrase>
+    <ep:phrase id="security_typename_staffonly">Repository staff only</ep:phrase>
 
 
 <!-- locally defined fields -->
 
-    <ep:phrase ref="eprint_fieldname_title">Title</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_title">The title of the item. The title should not end with a full stop, but may end with a question mark. There is no way to make italic text, please enter it normally. If you have a subtitle, it should be preceded with a colon [:]. Use capitals only for the first word and for proper nouns.
+    <ep:phrase id="eprint_fieldname_title">Title</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_title">The title of the item. The title should not end with a full stop, but may end with a question mark. There is no way to make italic text, please enter it normally. If you have a subtitle, it should be preceded with a colon [:]. Use capitals only for the first word and for proper nouns.
 <br />Example: <span class="example">A brief history of time</span>
 <br />Example: <span class="example">Life: an unauthorised biography</span>
 <br />Example: <span class="example">Mathematics for engineers and scientists. 5th edition</span>
 <br />Example: <span class="example">Ecosystems of the world. Vol. 26. Estuaries of the world</span>
 </ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_title.book">The title of the book, usually found on the title page. The title should not end with a full stop, but may end with a question mark. There is no way to make italic text, please enter it normally. If it has a subtitle, it should be preceded with a colon [:]. Use capitals only for the first word and for proper nouns.
+    <ep:phrase id="eprint_fieldhelp_title.book">The title of the book, usually found on the title page. The title should not end with a full stop, but may end with a question mark. There is no way to make italic text, please enter it normally. If it has a subtitle, it should be preceded with a colon [:]. Use capitals only for the first word and for proper nouns.
 <br />Example: <span class="example">A brief history of time</span>
 <br />Example: <span class="example">Life: an unauthorised biography</span>
 <br />Example: <span class="example">Mathematics for engineers and scientists. 5th edition</span>
@@ -32,211 +32,211 @@
 </ep:phrase>
 
 
-    <ep:phrase ref="eprint_fieldname_abstract">Abstract</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_abstract">A summary of the items content. If the item has a formal abstract then that is what should be entered here. No complicated text formatting is possible.</ep:phrase>
+    <ep:phrase id="eprint_fieldname_abstract">Abstract</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_abstract">A summary of the items content. If the item has a formal abstract then that is what should be entered here. No complicated text formatting is possible.</ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_keywords">Uncontrolled Keywords</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_keywords">Natural language terms to describe the content of the item</ep:phrase>
+    <ep:phrase id="eprint_fieldname_keywords">Uncontrolled Keywords</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_keywords">Natural language terms to describe the content of the item</ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_creators_list">Creators</ep:phrase>
-    <ep:phrase ref="eprint_fieldname_editors_list">Editors</ep:phrase>
+    <ep:phrase id="eprint_fieldname_creators_list">Creators</ep:phrase>
+    <ep:phrase id="eprint_fieldname_editors_list">Editors</ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_creators">Creators</ep:phrase>
-    <ep:phrase ref="eprint_fieldname_creators_id">Creators email (if known)</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_creators">Enter in the format given on the first page or title page. If there are more than four authors, click on the [More&nbsp;Spaces] button.
+    <ep:phrase id="eprint_fieldname_creators">Creators</ep:phrase>
+    <ep:phrase id="eprint_fieldname_creators_id">Creators email (if known)</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_creators">Enter in the format given on the first page or title page. If there are more than four authors, click on the [More&nbsp;Spaces] button.
 <br />Example: [<span class="example">Smith</span>] [<span class="example">J.P.</span>] [<span class="example">j.smith@soton.ac.uk</span>]
 <br />Example: [<span class="example">Chance-Collins</span>] [<span class="example">Chris</span>] [<span class="example">chris@bar.com</span>]
 <br />Example: [<span class="example">Fu</span>] [<span class="example">Yan-Li</span>] []
 <br />Example: [<span class="example">von Höpfner</span>] [<span class="example">Ludwig G.</span>] []
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_pages">Number of Pages</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_pages">The total number of pages of the item.
+    <ep:phrase id="eprint_fieldname_pages">Number of Pages</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_pages">The total number of pages of the item.
 <br />Example: <span class="example">123</span>
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_pagerange">Page Range</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_pagerange">Numerals only. The sequence of pages of the item. Do not enter pp.
+    <ep:phrase id="eprint_fieldname_pagerange">Page Range</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_pagerange">Numerals only. The sequence of pages of the item. Do not enter pp.
 <br />Example:  <span class="example">21</span> to <span class="example">34</span>
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_series">Series Name</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_series">The name of the series to which the document belongs. Enter without punctuation.
+    <ep:phrase id="eprint_fieldname_series">Series Name</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_series">The name of the series to which the document belongs. Enter without punctuation.
 <br />Example:  <span class="example">Elseview Oceanography Series</span>
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_publication">Journal/Publication Title</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_publication">The title of a journal, publication or magzine.
+    <ep:phrase id="eprint_fieldname_publication">Journal/Publication Title</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_publication">The title of a journal, publication or magzine.
 <br />Example:  <span class="example">Marine Biology</span>
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_publisher">Publisher</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_publisher">A person, firm or corporate body responsible for placing an item on the market. Do not use abbreviations, enter in full.
+    <ep:phrase id="eprint_fieldname_publisher">Publisher</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_publisher">A person, firm or corporate body responsible for placing an item on the market. Do not use abbreviations, enter in full.
 <br />Example: <span class="example">Oxford University Press</span>
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_place_of_pub">Place of Publication</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_place_of_pub">Locality of the publisher. Use city or town then country. If city is not known then just use country.
+    <ep:phrase id="eprint_fieldname_place_of_pub">Place of Publication</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_place_of_pub">Locality of the publisher. Use city or town then country. If city is not known then just use country.
 <br />Example: <span class="example">Southampton, UK</span>
 <br />Example: <span class="example">Brazil</span>
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_event_location">Event Location</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_event_location">City or town then country where event was held. If city is not known then just use country.
+    <ep:phrase id="eprint_fieldname_event_location">Event Location</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_event_location">City or town then country where event was held. If city is not known then just use country.
 <br />Example: <span class="example">Rome, Italy</span>
 <br />Example: <span class="example">Greece</span>
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_event_dates">Event Dates</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_event_dates">Start and end dates for the event
+    <ep:phrase id="eprint_fieldname_event_dates">Event Dates</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_event_dates">Start and end dates for the event
 <br />Example: <span class="example">13-15 Dec 2003</span>
 <br />Example: <span class="example">31 Oct - 02 Nov 1999</span>
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_event_title">Event Title</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_event_title">The title of the conference or workshop.
+    <ep:phrase id="eprint_fieldname_event_title">Event Title</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_event_title">The title of the conference or workshop.
 <br />Example: <span class="example">11th onference of PanHellenic Librarians</span>
 <br />Example: <span class="example">SIGIR 2001</span>
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_event_type">Event Type</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_event_type">Specific type of the event.
+    <ep:phrase id="eprint_fieldname_event_type">Event Type</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_event_type">Specific type of the event.
 </ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_event_type_conference">Conference</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_event_type_workshop">Workshop</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_event_type_other">Other</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_event_type_conference">Conference</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_event_type_workshop">Workshop</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_event_type_other">Other</ep:phrase>
     
-    <ep:phrase ref="eprint_fieldname_isbn">ISBN</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_isbn">Unique 10 digit code identifying a book.
+    <ep:phrase id="eprint_fieldname_isbn">ISBN</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_isbn">Unique 10 digit code identifying a book.
 <br />Example: <span class="example">1 871438 57 8</span>
 <br />Example: <span class="example">067157826X</span>
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_issn">ISSN</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_issn">Unique 8 digit code identifying a serial.
+    <ep:phrase id="eprint_fieldname_issn">ISSN</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_issn">Unique 8 digit code identifying a serial.
 <br />Example: <span class="example">1055-0143</span>
 <br />Example: <span class="example">0891-060X</span>
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_pres_type">Presentation Type</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_pres_type">The type of the item presented at a conference or workshop.
+    <ep:phrase id="eprint_fieldname_pres_type">Presentation Type</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_pres_type">The type of the item presented at a conference or workshop.
 </ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_pres_type_paper">Paper</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_pres_type_poster">Poster</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_pres_type_speech">Speech</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_pres_type_lecture">Lecture</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_pres_type_other">Other</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_pres_type_paper">Paper</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_pres_type_poster">Poster</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_pres_type_speech">Speech</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_pres_type_lecture">Lecture</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_pres_type_other">Other</ep:phrase>
     
-    <ep:phrase ref="eprint_fieldname_book_title">Title of Book</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_book_title">Title usually found on the title page (first page of book).
+    <ep:phrase id="eprint_fieldname_book_title">Title of Book</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_book_title">Title usually found on the title page (first page of book).
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_official_url">Official URL</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_official_url">The canonical URL for this item. Some journals require you to provide a link to their version.
+    <ep:phrase id="eprint_fieldname_official_url">Official URL</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_official_url">The canonical URL for this item. Some journals require you to provide a link to their version.
 <!-- fnord -->
 <br />Example: <span class="example">http://www.stuffjournal.com/2003/3/</span>
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_editors">Editors</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_editors">Please enter the names of the editors.<br />
+    <ep:phrase id="eprint_fieldname_editors">Editors</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_editors">Please enter the names of the editors.<br />
 <span   class="requiredstar">*</span> This field is required if no creators are listed.
 </ep:phrase>
-    <ep:phrase ref="eprint_fieldname_editors_id">Editors email (if known)</ep:phrase>
+    <ep:phrase id="eprint_fieldname_editors_id">Editors email (if known)</ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_date_sub">Date of Submission</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_date_sub">The date this item was submitted to a publisher. <b>Not</b> the date of submission to this service.<br />
+    <ep:phrase id="eprint_fieldname_date_sub">Date of Submission</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_date_sub">The date this item was submitted to a publisher. <b>Not</b> the date of submission to this service.<br />
 <span   class="requiredstar">*</span> Date of submission is required if the item has no date of issue. If the item has not yet been submitted to a journal, conference or publisher, or is not intended for submission then please enter the date it was completed as the date of issue.
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_date_issue">Date of Issue</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_date_issue">The date this item was issued or published. For items not intended for publication this is the date they were completed or made public.
+    <ep:phrase id="eprint_fieldname_date_issue">Date of Issue</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_date_issue">The date this item was issued or published. For items not intended for publication this is the date they were completed or made public.
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_date_effective">Date</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_date_effective">This is an automatic field, you should never see this text!</ep:phrase>
+    <ep:phrase id="eprint_fieldname_date_effective">Date</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_date_effective">This is an automatic field, you should never see this text!</ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_volume">Volume</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_volume">Enter the volume number of the journal or series in which your item appeared.</ep:phrase>
+    <ep:phrase id="eprint_fieldname_volume">Volume</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_volume">Enter the volume number of the journal or series in which your item appeared.</ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_number">Number</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_number">Enter the issue number of the journal or series in which your item appeared.</ep:phrase>
+    <ep:phrase id="eprint_fieldname_number">Number</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_number">Enter the issue number of the journal or series in which your item appeared.</ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_id_number">Identification Number</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_id_number">The unique identification number of this item, or a DOI.</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_id_number.patent">The patent application number of this item.</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_id_number.monograph">The number, if any, of a technical report or similar item.</ep:phrase>
-
-
-    <ep:phrase ref="eprint_fieldname_monograph_type">Monograph Type</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_monograph_type">Please select the specific type of this monograph.</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_monograph_type_technical_report">Technical Report</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_monograph_type_project_report">Project Report</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_monograph_type_documentation">Documentation</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_monograph_type_manual">Manual</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_monograph_type_working_paper">Working Paper</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_monograph_type_discussion_paper">Discussion Paper</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_monograph_type_other">Other</ep:phrase>
-
-    <ep:phrase ref="eprint_fieldname_ispublished">Status</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_ispublished">Please state here whether your deposit has been published, is currently in the process of being published (<strong>in press</strong>), or has not been previously published.</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_ispublished_unpub">Unpublished</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_ispublished_submitted">Submitted</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_ispublished_inpress">In Press</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_ispublished_pub">Published</ep:phrase>
+    <ep:phrase id="eprint_fieldname_id_number">Identification Number</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_id_number">The unique identification number of this item, or a DOI.</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_id_number.patent">The patent application number of this item.</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_id_number.monograph">The number, if any, of a technical report or similar item.</ep:phrase>
 
 
-    <ep:phrase ref="eprint_fieldname_refereed">Refereed</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_refereed">Please indicate whether this version of the work been refereed below.</ep:phrase>
-    <ep:phrase ref="eprint_radio_refereed"><ep:pin ref="true" />Yes, this version has been refereed.<br /><ep:pin ref="false" />No, this version has not been refereed.</ep:phrase>
+    <ep:phrase id="eprint_fieldname_monograph_type">Monograph Type</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_monograph_type">Please select the specific type of this monograph.</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_monograph_type_technical_report">Technical Report</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_monograph_type_project_report">Project Report</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_monograph_type_documentation">Documentation</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_monograph_type_manual">Manual</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_monograph_type_working_paper">Working Paper</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_monograph_type_discussion_paper">Discussion Paper</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_monograph_type_other">Other</ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_referencetext">References</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_referencetext">You are strongly encouraged to paste in the reference list of your item into the box below. It may be used to link your item to those it cites and to those that cite it.</ep:phrase>
+    <ep:phrase id="eprint_fieldname_ispublished">Status</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_ispublished">Please state here whether your deposit has been published, is currently in the process of being published (<strong>in press</strong>), or has not been previously published.</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_ispublished_unpub">Unpublished</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_ispublished_submitted">Submitted</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_ispublished_inpress">In Press</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_ispublished_pub">Published</ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_subjects">Subjects</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_subjects">Please select at least one main subject category, and optionally up to two other subject categories you think are appropriate for your submisson, from the list below.</ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_note">Additional Information</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_note">If you think you can specify some useful information about your deposit that can't be entered anywhere else, please enter it here. This information <strong>will</strong> appear on the public summary page for this item.</ep:phrase>
+    <ep:phrase id="eprint_fieldname_refereed">Refereed</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_refereed">Please indicate whether this version of the work been refereed below.</ep:phrase>
+    <ep:phrase id="eprint_radio_refereed"><ep:pin ref="true" />Yes, this version has been refereed.<br /><ep:pin ref="false" />No, this version has not been refereed.</ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_suggestions">Comments and Suggestions</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_suggestions">Any comments to the editor. This information <strong>will not</strong> be displayed to the public.</ep:phrase>
+    <ep:phrase id="eprint_fieldname_referencetext">References</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_referencetext">You are strongly encouraged to paste in the reference list of your item into the box below. It may be used to link your item to those it cites and to those that cite it.</ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_department">Department</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_department">Please enter the department from which the item originated.
+    <ep:phrase id="eprint_fieldname_subjects">Subjects</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_subjects">Please select at least one main subject category, and optionally up to two other subject categories you think are appropriate for your submisson, from the list below.</ep:phrase>
+
+    <ep:phrase id="eprint_fieldname_note">Additional Information</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_note">If you think you can specify some useful information about your deposit that can't be entered anywhere else, please enter it here. This information <strong>will</strong> appear on the public summary page for this item.</ep:phrase>
+
+    <ep:phrase id="eprint_fieldname_suggestions">Comments and Suggestions</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_suggestions">Any comments to the editor. This information <strong>will not</strong> be displayed to the public.</ep:phrase>
+
+    <ep:phrase id="eprint_fieldname_department">Department</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_department">Please enter the department from which the item originated.
 <br />Example: <span class="example">School of Electronics and Computer Science</span>
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_institution">Institution</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_institution">Please enter the institution from which the item originated.
+    <ep:phrase id="eprint_fieldname_institution">Institution</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_institution">Please enter the institution from which the item originated.
 <br />Example: <span class="example">University of Whitezombia</span>
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_thesis_type">Thesis Type</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_thesis_type">Please select the thesis type.</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_thesis_type_masters">Masters</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_thesis_type_phd">PhD</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_thesis_type_other">Other</ep:phrase>
+    <ep:phrase id="eprint_fieldname_thesis_type">Thesis Type</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_thesis_type">Please select the thesis type.</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_thesis_type_masters">Masters</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_thesis_type_phd">PhD</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_thesis_type_other">Other</ep:phrase>
 
 
-    <ep:phrase ref="eprint_fieldname_patent_applicant">Patent Applicant</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_patent_applicant">The name of the applicant to whom the patent was granted. May be a person or an organisation.
+    <ep:phrase id="eprint_fieldname_patent_applicant">Patent Applicant</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_patent_applicant">The name of the applicant to whom the patent was granted. May be a person or an organisation.
 <br />Example: <span class="example">Purdue Research Institute</span>
 <br />Example: <span class="example">John K. Ducklingson</span>
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_full_text_status">Full Text Status</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_full_text_status"></ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_full_text_status_public">Public</ep:phrase>
-    <ep:phrase ref="eprint_fieldopt_full_text_status_none">None</ep:phrase>
+    <ep:phrase id="eprint_fieldname_full_text_status">Full Text Status</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_full_text_status"></ep:phrase>
+    <ep:phrase id="eprint_fieldopt_full_text_status_public">Public</ep:phrase>
+    <ep:phrase id="eprint_fieldopt_full_text_status_none">None</ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_date_embargo">Embargo expiry date</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_date_embargo">The date that a publisher- or funder-imposed embargo expires. On and after this date, <em>all</em> documents associated with this deposit will be made publically accessible. For more complex embargo requirements, please contact the repository administrator.
+    <ep:phrase id="eprint_fieldname_date_embargo">Embargo expiry date</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_date_embargo">The date that a publisher- or funder-imposed embargo expires. On and after this date, <em>all</em> documents associated with this deposit will be made publically accessible. For more complex embargo requirements, please contact the repository administrator.
 <br />Example: <span class="example">2006 - all documents made publically accessible on 1st January 2006</span>
 <br />Example: <span class="example">2006 June - all documents made publically accessible on 1st June 2006</span>
 </ep:phrase>
 
-    <ep:phrase ref="eprint_fieldname_contact_email">Contact Email Address</ep:phrase>
-    <ep:phrase ref="eprint_fieldhelp_contact_email">The contact email address for this item.</ep:phrase>
+    <ep:phrase id="eprint_fieldname_contact_email">Contact Email Address</ep:phrase>
+    <ep:phrase id="eprint_fieldhelp_contact_email">The contact email address for this item.</ep:phrase>
 
 <!---#######################-->
 
@@ -244,99 +244,99 @@
 
 <!-- Eprint Type Names -->
 
-    <ep:phrase ref="eprint_typename_book">Book</ep:phrase>
-    <ep:phrase ref="eprint_optdetails_type_book">A book or a conference volume.</ep:phrase>
-    <ep:phrase ref="eprint_typename_book_section">Book Section</ep:phrase>
-    <ep:phrase ref="eprint_optdetails_type_book_section">A chapter or section in a book.</ep:phrase>
-    <ep:phrase ref="eprint_typename_article">Article</ep:phrase>
-    <ep:phrase ref="eprint_optdetails_type_article">An article in a journal, magazine, newspaper. Not necessarily peer-reviewed. May be an electronic-only medium, such as an online journal or news website.</ep:phrase>
-    <ep:phrase ref="eprint_typename_conference_item">Conference or Workshop Item</ep:phrase>
-    <ep:phrase ref="eprint_optdetails_type_conference_item">A paper, poster, speech, lecture or presentation given at a conference, workshop or other event. If the conference item has been published in a journal or book then please use "Book Section" or "Article" instead.</ep:phrase>
-    <ep:phrase ref="eprint_typename_monograph">Monograph</ep:phrase>
-    <ep:phrase ref="eprint_optdetails_type_monograph">A monograph. This may be a technical report, project report, documentation, manual, working paper or discussion paper.</ep:phrase>
-    <ep:phrase ref="eprint_typename_thesis">Thesis</ep:phrase>
-    <ep:phrase ref="eprint_optdetails_type_thesis">A thesis or dissertation.</ep:phrase>
-    <ep:phrase ref="eprint_typename_patent">Patent</ep:phrase>
-    <ep:phrase ref="eprint_optdetails_type_patent">A published patent. Do <em>not</em> include as yet unpublished patent applications.</ep:phrase>
-    <ep:phrase ref="eprint_typename_other">Other</ep:phrase>
-    <ep:phrase ref="eprint_optdetails_type_other">Something within the scope of the repository, but not covered by the other categories.</ep:phrase>
+    <ep:phrase id="eprint_typename_book">Book</ep:phrase>
+    <ep:phrase id="eprint_optdetails_type_book">A book or a conference volume.</ep:phrase>
+    <ep:phrase id="eprint_typename_book_section">Book Section</ep:phrase>
+    <ep:phrase id="eprint_optdetails_type_book_section">A chapter or section in a book.</ep:phrase>
+    <ep:phrase id="eprint_typename_article">Article</ep:phrase>
+    <ep:phrase id="eprint_optdetails_type_article">An article in a journal, magazine, newspaper. Not necessarily peer-reviewed. May be an electronic-only medium, such as an online journal or news website.</ep:phrase>
+    <ep:phrase id="eprint_typename_conference_item">Conference or Workshop Item</ep:phrase>
+    <ep:phrase id="eprint_optdetails_type_conference_item">A paper, poster, speech, lecture or presentation given at a conference, workshop or other event. If the conference item has been published in a journal or book then please use "Book Section" or "Article" instead.</ep:phrase>
+    <ep:phrase id="eprint_typename_monograph">Monograph</ep:phrase>
+    <ep:phrase id="eprint_optdetails_type_monograph">A monograph. This may be a technical report, project report, documentation, manual, working paper or discussion paper.</ep:phrase>
+    <ep:phrase id="eprint_typename_thesis">Thesis</ep:phrase>
+    <ep:phrase id="eprint_optdetails_type_thesis">A thesis or dissertation.</ep:phrase>
+    <ep:phrase id="eprint_typename_patent">Patent</ep:phrase>
+    <ep:phrase id="eprint_optdetails_type_patent">A published patent. Do <em>not</em> include as yet unpublished patent applications.</ep:phrase>
+    <ep:phrase id="eprint_typename_other">Other</ep:phrase>
+    <ep:phrase id="eprint_optdetails_type_other">Something within the scope of the repository, but not covered by the other categories.</ep:phrase>
 
 <!-- Sort Order names -->
 
-    <ep:phrase ref="ordername_eprint_byyear">by year (most recent first)</ep:phrase>
-    <ep:phrase ref="ordername_eprint_byyearoldest">by year (oldest first)</ep:phrase>
-    <ep:phrase ref="ordername_eprint_byname">by author's name</ep:phrase>
-    <ep:phrase ref="ordername_eprint_bytitle">by title</ep:phrase>
+    <ep:phrase id="ordername_eprint_byyear">by year (most recent first)</ep:phrase>
+    <ep:phrase id="ordername_eprint_byyearoldest">by year (oldest first)</ep:phrase>
+    <ep:phrase id="ordername_eprint_byname">by author's name</ep:phrase>
+    <ep:phrase id="ordername_eprint_bytitle">by title</ep:phrase>
 
 <!-- Browse Views Names -->
 
-    <ep:phrase ref="viewname_eprint_people">Person</ep:phrase>
-    <ep:phrase ref="viewname_eprint_status">Status</ep:phrase>
-    <ep:phrase ref="viewname_eprint_year">Year</ep:phrase>
-    <ep:phrase ref="viewname_eprint_subjects">Subject</ep:phrase>
-    <ep:phrase ref="viewname_eprint_types">Type</ep:phrase>
+    <ep:phrase id="viewname_eprint_people">Person</ep:phrase>
+    <ep:phrase id="viewname_eprint_status">Status</ep:phrase>
+    <ep:phrase id="viewname_eprint_year">Year</ep:phrase>
+    <ep:phrase id="viewname_eprint_subjects">Subject</ep:phrase>
+    <ep:phrase id="viewname_eprint_types">Type</ep:phrase>
 
 <!-- Submission Form Page Titles -->
 
-    <ep:phrase ref="metapage_title_type">Type</ep:phrase>
-    <ep:phrase ref="metapage_title_files">Files</ep:phrase>
-    <ep:phrase ref="metapage_title_core">Details</ep:phrase>
-    <ep:phrase ref="metapage_title_pubinfo">Publication</ep:phrase>
-    <ep:phrase ref="metapage_title_status">Status</ep:phrase>
-    <ep:phrase ref="metapage_title_event">Event</ep:phrase>
-    <ep:phrase ref="metapage_title_abstract">Abstract</ep:phrase>
-    <ep:phrase ref="metapage_title_subjects">Subjects</ep:phrase>
-    <ep:phrase ref="metapage_title_notes">Extras</ep:phrase>
+    <ep:phrase id="metapage_title_type">Type</ep:phrase>
+    <ep:phrase id="metapage_title_files">Files</ep:phrase>
+    <ep:phrase id="metapage_title_core">Details</ep:phrase>
+    <ep:phrase id="metapage_title_pubinfo">Publication</ep:phrase>
+    <ep:phrase id="metapage_title_status">Status</ep:phrase>
+    <ep:phrase id="metapage_title_event">Event</ep:phrase>
+    <ep:phrase id="metapage_title_abstract">Abstract</ep:phrase>
+    <ep:phrase id="metapage_title_subjects">Subjects</ep:phrase>
+    <ep:phrase id="metapage_title_notes">Extras</ep:phrase>
 
 <!-- User Field Names -->
 
-    <ep:phrase ref="user_fieldname_name">Name</ep:phrase>
-    <ep:phrase ref="user_fieldhelp_name"></ep:phrase>
+    <ep:phrase id="user_fieldname_name">Name</ep:phrase>
+    <ep:phrase id="user_fieldhelp_name"></ep:phrase>
 
-    <ep:phrase ref="user_fieldname_os">Operating System</ep:phrase>
-    <ep:phrase ref="user_fieldhelp_os"></ep:phrase>
-    <ep:phrase ref="user_fieldopt_os_win">Windows/DOS</ep:phrase>
-    <ep:phrase ref="user_fieldopt_os_unix">UNIX</ep:phrase>
-    <ep:phrase ref="user_fieldopt_os_vms">VMS</ep:phrase>
-    <ep:phrase ref="user_fieldopt_os_mac">Macintosh</ep:phrase>
-    <ep:phrase ref="user_fieldopt_os_other">Other</ep:phrase>
+    <ep:phrase id="user_fieldname_os">Operating System</ep:phrase>
+    <ep:phrase id="user_fieldhelp_os"></ep:phrase>
+    <ep:phrase id="user_fieldopt_os_win">Windows/DOS</ep:phrase>
+    <ep:phrase id="user_fieldopt_os_unix">UNIX</ep:phrase>
+    <ep:phrase id="user_fieldopt_os_vms">VMS</ep:phrase>
+    <ep:phrase id="user_fieldopt_os_mac">Macintosh</ep:phrase>
+    <ep:phrase id="user_fieldopt_os_other">Other</ep:phrase>
 
-    <ep:phrase ref="user_fieldname_hideemail">Hide Email</ep:phrase>
-    <ep:phrase ref="user_fieldhelp_hideemail">This option allows or prevents a users email being shown on their public summary page.</ep:phrase>
-    <ep:phrase ref="user_radio_hideemail"><ep:pin ref="false" />Make email visible to all.<br /><ep:pin ref="true" />Hide email to all except repository administrators.</ep:phrase>
+    <ep:phrase id="user_fieldname_hideemail">Hide Email</ep:phrase>
+    <ep:phrase id="user_fieldhelp_hideemail">This option allows or prevents a users email being shown on their public summary page.</ep:phrase>
+    <ep:phrase id="user_radio_hideemail"><ep:pin ref="false" />Make email visible to all.<br /><ep:pin ref="true" />Hide email to all except repository administrators.</ep:phrase>
 
 
-    <ep:phrase ref="user_fieldname_dept">Department</ep:phrase>
-    <ep:phrase ref="user_fieldhelp_dept"></ep:phrase>
+    <ep:phrase id="user_fieldname_dept">Department</ep:phrase>
+    <ep:phrase id="user_fieldhelp_dept"></ep:phrase>
 
-    <ep:phrase ref="user_fieldname_org">Organisation</ep:phrase>
-    <ep:phrase ref="user_fieldhelp_org"></ep:phrase>
+    <ep:phrase id="user_fieldname_org">Organisation</ep:phrase>
+    <ep:phrase id="user_fieldhelp_org"></ep:phrase>
 
-    <ep:phrase ref="user_fieldname_address">Address</ep:phrase>
-    <ep:phrase ref="user_fieldhelp_address"></ep:phrase>
+    <ep:phrase id="user_fieldname_address">Address</ep:phrase>
+    <ep:phrase id="user_fieldhelp_address"></ep:phrase>
 
-    <ep:phrase ref="user_fieldname_country">Country</ep:phrase>
-    <ep:phrase ref="user_fieldhelp_country"></ep:phrase>
+    <ep:phrase id="user_fieldname_country">Country</ep:phrase>
+    <ep:phrase id="user_fieldhelp_country"></ep:phrase>
 
-    <ep:phrase ref="user_fieldname_url">Homepage URL</ep:phrase>
-    <ep:phrase ref="user_fieldhelp_url"></ep:phrase>
+    <ep:phrase id="user_fieldname_url">Homepage URL</ep:phrase>
+    <ep:phrase id="user_fieldhelp_url"></ep:phrase>
 
-    <ep:phrase ref="user_fieldname_expertise">Expertise</ep:phrase>
-    <ep:phrase ref="user_fieldhelp_expertise">Please list keyword/phrases describing your areas of specialisation using the terms likely to be used by someone searching for work in those areas. Avoid over-general terms (`chemistry') and over-particular terms (`my non-quantal theory of chemical reactions') that no one is likely to search on. Enter as many keyword/phrases as you wish.</ep:phrase>
+    <ep:phrase id="user_fieldname_expertise">Expertise</ep:phrase>
+    <ep:phrase id="user_fieldhelp_expertise">Please list keyword/phrases describing your areas of specialisation using the terms likely to be used by someone searching for work in those areas. Avoid over-general terms (`chemistry') and over-particular terms (`my non-quantal theory of chemical reactions') that no one is likely to search on. Enter as many keyword/phrases as you wish.</ep:phrase>
 
-    <ep:phrase ref="user_typename_minuser">Minimal User</ep:phrase>
-    <ep:phrase ref="user_typename_user">User</ep:phrase>
-    <ep:phrase ref="user_typename_editor">Editor</ep:phrase>
-    <ep:phrase ref="user_typename_admin">Repository Administrator</ep:phrase>
+    <ep:phrase id="user_typename_minuser">Minimal User</ep:phrase>
+    <ep:phrase id="user_typename_user">User</ep:phrase>
+    <ep:phrase id="user_typename_editor">Editor</ep:phrase>
+    <ep:phrase id="user_typename_admin">Repository Administrator</ep:phrase>
 
 <!-- User Sort Order names -->
 
-    <ep:phrase ref="ordername_user_byjoin">By registration date (oldest first)</ep:phrase>
-    <ep:phrase ref="ordername_user_bytype">By user type</ep:phrase>
-    <ep:phrase ref="ordername_user_byname">By name</ep:phrase>
-    <ep:phrase ref="ordername_user_byrevjoin">By registration date (newest first)</ep:phrase>
+    <ep:phrase id="ordername_user_byjoin">By registration date (oldest first)</ep:phrase>
+    <ep:phrase id="ordername_user_bytype">By user type</ep:phrase>
+    <ep:phrase id="ordername_user_byname">By name</ep:phrase>
+    <ep:phrase id="ordername_user_byrevjoin">By registration date (newest first)</ep:phrase>
 
-    <ep:phrase ref="mail_sig">
+    <ep:phrase id="mail_sig">
 <hr />
 <p>&archivename;<br />
 &frontpage;<br />
@@ -344,7 +344,7 @@
 </p>
     </ep:phrase>
 
-    <ep:phrase ref="mail_bounce_reason">
+    <ep:phrase id="mail_bounce_reason">
 Unfortunately your eprint:
 
 <ep:pin ref="title" />
@@ -356,7 +356,7 @@ visit your item depositing page you will be able to
 edit your eprint, fix the problem and redeposit.
     </ep:phrase>
 
-    <ep:phrase ref="mail_delete_reason">
+    <ep:phrase id="mail_delete_reason">
 Unfortunately your eprint:
 
 <ep:pin ref="title" />
@@ -366,7 +366,7 @@ could not be accepted into &archivename;.
 The eprint has been deleted.
     </ep:phrase>
 
-    <ep:phrase ref="deposit_agreement_text">
+    <ep:phrase id="deposit_agreement_text">
 <p><strong>For work being deposited by its own author:</strong> 
 In self-archiving this collection of files and associated bibliographic 
 metadata, I grant &archivename; the right to store 
@@ -388,34 +388,34 @@ that distributing these files or metadata may entail.</p>
 terms.</p>
     </ep:phrase>
 
-    <ep:phrase ref="page:fulltext">Full text available as:</ep:phrase>
-    <ep:phrase ref="page:nofulltext">Full text not available from this repository.</ep:phrase>
-    <ep:phrase ref="page:abstract">Abstract</ep:phrase>
-    <ep:phrase ref="page:deposited_by">Deposited By</ep:phrase>
-    <ep:phrase ref="page:deposited_on">Deposited On</ep:phrase>
-    <ep:phrase ref="page:id_code">ID Code</ep:phrase>
-    <ep:phrase ref="page:invalid_user">INVALID USER</ep:phrase>
-    <ep:phrase ref="page:latest_version"><p><em>This is the latest version of this eprint.</em></p></ep:phrase>
-    <ep:phrase ref="page:not_latest_version"><p class="notice">There is a more recent version of this eprint available. <ep:pin ref="link">Click here to view it.</ep:pin></p></ep:phrase>
-    <ep:phrase ref="page:available_versions"><h3>Available Versions of this Item</h3></ep:phrase>
-    <ep:phrase ref="page:commentary_threads"><h3>Commentary/Response Threads</h3></ep:phrase>
+    <ep:phrase id="page:fulltext">Full text available as:</ep:phrase>
+    <ep:phrase id="page:nofulltext">Full text not available from this repository.</ep:phrase>
+    <ep:phrase id="page:abstract">Abstract</ep:phrase>
+    <ep:phrase id="page:deposited_by">Deposited By</ep:phrase>
+    <ep:phrase id="page:deposited_on">Deposited On</ep:phrase>
+    <ep:phrase id="page:id_code">ID Code</ep:phrase>
+    <ep:phrase id="page:invalid_user">INVALID USER</ep:phrase>
+    <ep:phrase id="page:latest_version"><p><em>This is the latest version of this eprint.</em></p></ep:phrase>
+    <ep:phrase id="page:not_latest_version"><p class="notice">There is a more recent version of this eprint available. <ep:pin ref="link">Click here to view it.</ep:pin></p></ep:phrase>
+    <ep:phrase id="page:available_versions"><h3>Available Versions of this Item</h3></ep:phrase>
+    <ep:phrase id="page:commentary_threads"><h3>Commentary/Response Threads</h3></ep:phrase>
 
-    <ep:phrase ref="page:abstract_intro"><h3>This is how the metadata summary page will look:</h3></ep:phrase>
-    <ep:phrase ref="page:allfields_intro"><h3>This is complete contents of all the fields in this eprint:</h3></ep:phrase>
-    <ep:phrase ref="page:suggestions_intro"><h3>The depositing user made the following comments and suggestions:</h3></ep:phrase>
-    <ep:phrase ref="page:subscription">Subscription</ep:phrase>
-    <ep:phrase ref="page:edit_link">Repository Staff Only: <ep:pin ref="link">edit this item</ep:pin></ep:phrase>
+    <ep:phrase id="page:abstract_intro"><h3>This is how the metadata summary page will look:</h3></ep:phrase>
+    <ep:phrase id="page:allfields_intro"><h3>This is complete contents of all the fields in this eprint:</h3></ep:phrase>
+    <ep:phrase id="page:suggestions_intro"><h3>The depositing user made the following comments and suggestions:</h3></ep:phrase>
+    <ep:phrase id="page:subscription">Subscription</ep:phrase>
+    <ep:phrase id="page:edit_link">Repository Staff Only: <ep:pin ref="link">edit this item</ep:pin></ep:phrase>
 
 
-    <ep:phrase ref="validate:missing_http">The URL given for <b><ep:pin ref="fieldname" /></b> is invalid. Did you include the initial <strong>http://</strong>?</ep:phrase>
-    <ep:phrase ref="validate:bad_email">The email given for <b><ep:pin ref="fieldname" /></b> is invalid.</ep:phrase>
-    <ep:phrase ref="validate:missing_family">Name in field <b><ep:pin ref="fieldname" /></b> is missing the "family" part.</ep:phrase>
-    <ep:phrase ref="validate:missing_given">Name in field <b><ep:pin ref="fieldname" /></b> is missing the "given names/initials" part.</ep:phrase>
-    <ep:phrase ref="validate:need_description">Documents of type <em><ep:pin ref="type" /></em> need a description.</ep:phrase>
-    <ep:phrase ref="validate:need_sub_or_issue">An item must have at least one of a submission date and an issue date.</ep:phrase>
-    <ep:phrase ref="validate:need_creators_or_editors">If an item does not have any creators then it must have at least one editor.</ep:phrase>
+    <ep:phrase id="validate:missing_http">The URL given for <b><ep:pin ref="fieldname" /></b> is invalid. Did you include the initial <strong>http://</strong>?</ep:phrase>
+    <ep:phrase id="validate:bad_email">The email given for <b><ep:pin ref="fieldname" /></b> is invalid.</ep:phrase>
+    <ep:phrase id="validate:missing_family">Name in field <b><ep:pin ref="fieldname" /></b> is missing the "family" part.</ep:phrase>
+    <ep:phrase id="validate:missing_given">Name in field <b><ep:pin ref="fieldname" /></b> is missing the "given names/initials" part.</ep:phrase>
+    <ep:phrase id="validate:need_description">Documents of type <em><ep:pin ref="type" /></em> need a description.</ep:phrase>
+    <ep:phrase id="validate:need_sub_or_issue">An item must have at least one of a submission date and an issue date.</ep:phrase>
+    <ep:phrase id="validate:need_creators_or_editors">If an item does not have any creators then it must have at least one editor.</ep:phrase>
 
-    <ep:phrase ref="mail_password_pin">
+    <ep:phrase id="mail_password_pin">
 
 <p>Dear User,</p>
 
@@ -436,7 +436,7 @@ terms.</p>
 <p>&adminemail;</p>
     </ep:phrase>
 
-    <ep:phrase ref="mail_email_pin">
+    <ep:phrase id="mail_email_pin">
 
 <p>Dear User,</p>
 
@@ -448,11 +448,11 @@ terms.</p>
 
     <!-- we now use a style sheet to lay out this, but the core code still
          makes the seperator be a pipe "|" for back-compatibility. -->
-    <ep:phrase ref="lib/searchexpression:seperator"></ep:phrase>
+    <ep:phrase id="lib/searchexpression:seperator"></ep:phrase>
 
 
     <!-- registration introduction. -->
-    <ep:phrase ref="cgi/register:intro">
+    <ep:phrase id="cgi/register:intro">
 <p>You need to register in order to be able to deposit eprints in the 
 repository. </p>
 
@@ -475,7 +475,7 @@ activated you can start to use the registered features of the repository.</p>
 <a href="reset_password">click here</a> to set a new password.</p>
     </ep:phrase>
 
-    <ep:phrase ref="cgi/register:intro_minimal">
+    <ep:phrase id="cgi/register:intro_minimal">
 <p>As a registered user you will be able to set up
 subscription options, so that email notifications are sent when new eprints 
 are placed in the repository.</p>
@@ -491,19 +491,19 @@ activated you can start to use the registered features of the repository.</p>
     </ep:phrase>
 
 <!-- Publisher- or funder-imposed embargos -->
-<ep:phrase ref="embargo:status"><p>These documents will be made publically accessible from <ep:pin ref="date" />.</p></ep:phrase>
-<ep:phrase ref="embargo:invalid_date"><ep:pin ref="fieldname" /> must be in the future.</ep:phrase>
+<ep:phrase id="embargo:status"><p>These documents will be made publically accessible from <ep:pin ref="date" />.</p></ep:phrase>
+<ep:phrase id="embargo:invalid_date"><ep:pin ref="fieldname" /> must be in the future.</ep:phrase>
 
 <!-- Request eprint -->
-<ep:phrase ref="request:button">Request a copy</ep:phrase>
+<ep:phrase id="request:button">Request a copy</ep:phrase>
 
-<ep:phrase ref="request_fieldname_requester_email">Email address</ep:phrase>
-<ep:phrase ref="request_fieldhelp_requester_email">Enter your email address.</ep:phrase>
-<ep:phrase ref="request_fieldname_reason">Reason</ep:phrase>
-<ep:phrase ref="request_fieldhelp_reason">You may enter a rationale for requesting this document.</ep:phrase>
+<ep:phrase id="request_fieldname_requester_email">Email address</ep:phrase>
+<ep:phrase id="request_fieldhelp_requester_email">Enter your email address.</ep:phrase>
+<ep:phrase id="request_fieldname_reason">Reason</ep:phrase>
+<ep:phrase id="request_fieldhelp_reason">You may enter a rationale for requesting this document.</ep:phrase>
 
-<ep:phrase ref="request/request_email:subject">Request for &quot;<ep:pin ref="eprint" />&quot;</ep:phrase>
-<ep:phrase ref="request/request_email:body"><p>This item has been requested from the &archivename; by <ep:pin ref="requester" />. Please can you respond.</p>
+<ep:phrase id="request/request_email:subject">Request for &quot;<ep:pin ref="eprint" />&quot;</ep:phrase>
+<ep:phrase id="request/request_email:body"><p>This item has been requested from the &archivename; by <ep:pin ref="requester" />. Please can you respond.</p>
 
 <p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p>
 
@@ -514,37 +514,37 @@ activated you can start to use the registered features of the repository.</p>
 <p>Please consider removing restrictions or uploading the full text to the archive so that it will be available immediately to future searchers.</p>
 </ep:phrase>
 
-<ep:phrase ref="request/request_email:links">
+<ep:phrase id="request/request_email:links">
 <p>To send the requested document, <ep:pin ref="accept">click here</ep:pin>.</p>
 
 <p>To reject the request, <ep:pin ref="reject">click here</ep:pin>.</p>
 </ep:phrase>
 
-<ep:phrase ref="request/ack_page"><p>Your request has been sent.</p><ep:pin ref="link">Return to item</ep:pin></ep:phrase>
-<ep:phrase ref="request/ack_email:subject">Confirmation of request for &quot;<ep:pin ref="eprint" />&quot;</ep:phrase>
-<ep:phrase ref="request/ack_email:body"><p>Your request for the following item has been passed on for action:</p>
+<ep:phrase id="request/ack_page"><p>Your request has been sent.</p><ep:pin ref="link">Return to item</ep:pin></ep:phrase>
+<ep:phrase id="request/ack_email:subject">Confirmation of request for &quot;<ep:pin ref="eprint" />&quot;</ep:phrase>
+<ep:phrase id="request/ack_email:body"><p>Your request for the following item has been passed on for action:</p>
 
 <p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p>
 
 <p>If you do not receive a reply or need advice at a later time please contact &adminemail;. For items with copyright implications, you may also be able to contact your local interlibrary loan service.</p>
 </ep:phrase>
 
-<ep:phrase ref="request/respond_page:title">Confirm response</ep:phrase>
-<ep:phrase ref="request/respond_page:action_respond">Confirm</ep:phrase>
-<ep:phrase ref="request/respond_page:accept"><p>You have chosen to accept the request for the following item:</p><p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p><p>An acceptance notice will be emailed to the requester with the requested document attached.</p></ep:phrase>
-<ep:phrase ref="request/respond_page:reject"><p>You have chosen to reject the request for the following item:</p><p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p><p>You may enter a reason below if you wish. This will be emailed to the requester along with a rejection notice.</p></ep:phrase>
-<ep:phrase ref="request/respond_page:oa"><p>This item has been made publically accessible since the request was made:</p><p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p><p>A notice will be emailed to the requester.</p></ep:phrase>
-<ep:phrase ref="request/respond_page:fieldname_oa">Tick this box to make this document publically available from now on.</ep:phrase>
+<ep:phrase id="request/respond_page:title">Confirm response</ep:phrase>
+<ep:phrase id="request/respond_page:action_respond">Confirm</ep:phrase>
+<ep:phrase id="request/respond_page:accept"><p>You have chosen to accept the request for the following item:</p><p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p><p>An acceptance notice will be emailed to the requester with the requested document attached.</p></ep:phrase>
+<ep:phrase id="request/respond_page:reject"><p>You have chosen to reject the request for the following item:</p><p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p><p>You may enter a reason below if you wish. This will be emailed to the requester along with a rejection notice.</p></ep:phrase>
+<ep:phrase id="request/respond_page:oa"><p>This item has been made publically accessible since the request was made:</p><p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p><p>A notice will be emailed to the requester.</p></ep:phrase>
+<ep:phrase id="request/respond_page:fieldname_oa">Tick this box to make this document publically available from now on.</ep:phrase>
 
-<ep:phrase ref="request/response_email:subject">Result of request for &quot;<ep:pin ref="eprint" />&quot;</ep:phrase>
-<ep:phrase ref="request/response_email:body_accept"><p>Your request for the following item has been accepted:</p>
+<ep:phrase id="request/response_email:subject">Result of request for &quot;<ep:pin ref="eprint" />&quot;</ep:phrase>
+<ep:phrase id="request/response_email:body_accept"><p>Your request for the following item has been accepted:</p>
 
 <p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p>
 
 <p>Please find the requested document attached.</p>
 </ep:phrase>
 
-<ep:phrase ref="request/response_email:body_reject"><p>Your request for the following item has been rejected:</p>
+<ep:phrase id="request/response_email:body_reject"><p>Your request for the following item has been rejected:</p>
 
 <p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p>
 
@@ -555,14 +555,14 @@ activated you can start to use the registered features of the repository.</p>
 <ep:pin ref="reason" />
 </ep:phrase>
 
-<ep:phrase ref="request/response_email:body_oa"><p>The item you requested is now publically accessible:</p>
+<ep:phrase id="request/response_email:body_oa"><p>The item you requested is now publically accessible:</p>
 
 <p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p>
 </ep:phrase>
 
-<ep:phrase ref="request/response:ack_page"><p>Thank you. The email has been sent to the requester.</p></ep:phrase>
+<ep:phrase id="request/response:ack_page"><p>Thank you. The email has been sent to the requester.</p></ep:phrase>
 
-<ep:phrase ref="dynamic:logged_in">Logged in as <ep:pin ref="user"/> <a href="&perl_url;/logout">logout</a></ep:phrase>
-<ep:phrase ref="dynamic:not_logged_in">Not logged in. <a href="&userhome;">login</a> | <a href="&perl_url;/register">register</a></ep:phrase>
+<ep:phrase id="dynamic:logged_in">Logged in as <ep:pin ref="user"/> <a href="&perl_url;/logout">logout</a></ep:phrase>
+<ep:phrase id="dynamic:not_logged_in">Not logged in. <a href="&userhome;">login</a> | <a href="&perl_url;/register">register</a></ep:phrase>
 
 </ep:phrases>

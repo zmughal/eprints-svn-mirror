@@ -3899,3 +3899,6 @@ PACKAGE: 2.2.99.2
  * Added classes to handle only_js and no_js without using !important for
     IE compatability.
  * Surround help and the tools bar now use these functions.
+ * Changed ref="" in phrases files to id="" and changed the namespace to ep3.
+ * Added a warning if a phrase with no id is loaded, although it will fall
+    back to ref="" for easy compatibility.

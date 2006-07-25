@@ -370,12 +370,36 @@ sub _read_phrases
 	my $data = {};
 
 	my $element;
+	my $warned = 1; # set to zero if we want to warn about ref="" vs id=""
+	my $near;
 	foreach $element ( $phrases->getChildNodes )
 	{
 		my $name = $element->getNodeName;
 		if( $name eq "phrase" || $name eq "ep:phrase" )
 		{
-			my $key = $element->getAttribute( "ref" );
+			my $key = $element->getAttribute( "id" );
+			if( !defined $key || $key eq "")
+			{
+				$key = $element->getAttribute( "ref" );
+				if(  !$key || $key eq "" || !$warned )
+				{
+					my $warning = "Warning: in $file";
+					if( defined $near ) 
+					{
+						$warning.=", near '$near'";
+					}
+					$warning.= " found phrase without 'id' attribute.";
+					if( !$key || $key eq "")
+					{
+						$repository->log( $warning );
+						next;
+					}
+					$repository->log( 
+"$warning The phrase did have a 'ref' attribute so this probably means it's an EPrints v2 phrase file." );
+					$warned = 1;
+				}
+			}
+			$near = $key;
 			$data->{$key} = $element;
 		}
 	}
