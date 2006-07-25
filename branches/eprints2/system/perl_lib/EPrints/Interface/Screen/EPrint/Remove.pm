@@ -11,7 +11,7 @@ sub from
 	if( $self->{processor}->{action} eq "confirm" )
 	{
 		$self->action_remove;
-		$self->{processor}->{screenid} = "Home";
+		$self->{processor}->{screenid} = "Items";
 		return;
 	}
 

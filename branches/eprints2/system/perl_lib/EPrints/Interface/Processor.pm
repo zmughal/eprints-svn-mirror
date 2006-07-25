@@ -28,7 +28,7 @@ sub process
 	}
 
 	$self->{screenid} = $self->{session}->param( "screen" );
-	$self->{screenid} = "Home" unless defined( $self->{screenid} );
+	$self->{screenid} = "FirstTool" unless EPrints::Utils::is_set( $self->{screenid} );
 
 	# This loads the properties of what the screen is about,
 	# Rather than parameters for the action, if any.

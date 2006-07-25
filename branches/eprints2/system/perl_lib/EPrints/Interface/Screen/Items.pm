@@ -1,5 +1,5 @@
 
-package EPrints::Interface::Screen::Home;
+package EPrints::Interface::Screen::Items;
 
 use EPrints::Interface::Screen;
 
@@ -65,7 +65,7 @@ sub render
 
 	my $user = $self->{session}->current_user;
 
-	$self->{processor}->{title} = $self->{session}->make_text("Home");
+	$self->{processor}->{title} = $self->{session}->make_text("Items");
 
 	my $sb = $self->{session}->get_repository->get_conf( "skip_buffer" );	
 
@@ -76,7 +76,7 @@ sub render
 
 	$dt = $self->{session}->make_element( "dt" );
 	$dd = $self->{session}->make_element( "dd" );
-	$a = $self->{session}->render_link( "?screen=Home&_action_create=1" );
+	$a = $self->{session}->render_link( "?screen=Items&_action_create=1" );
 	$a->appendChild( $self->{session}->html_phrase( "cgi/users/home:new_item_link" ) );
 	$dt->appendChild( $a );
 	$dd->appendChild( $self->{session}->html_phrase( "cgi/users/home:new_item_info" ) );

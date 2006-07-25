@@ -41,6 +41,78 @@ sub render
 	return $self->{session}->make_text( "Error. \$screen->render should be sub-classed for $self." );
 }
 
+
+sub get_allowed_tools
+{
+	my $tools = [
+		{
+			      id => "eprints",
+			    priv => "view/eprints",
+			position => 100,
+	 		    core => 1,
+			  screen => "Items",
+		},
+		{
+			      id => "user",
+			    priv => "view/user",
+			position => 200,
+	 		    core => 1,
+			  screen => "User",
+		},
+		{
+			      id => "subscription",
+			    priv => "view/subscription",
+			position => 300,
+	 		    core => 1,
+			  screen => "Subscription",
+		},
+		{
+			      id => "edreview",
+			    priv => "view/editor",
+			position => 400,
+	 		    core => 1,
+			  screen => "Review",
+		},
+		{
+			      id => "status",
+			    priv => "view/status",
+			position => 1100,
+	 		    core => 0,
+			  screen => "Status",
+		},
+		{
+			      id => "search_eprint",
+			    priv => "view/search/eprint",
+			position => 1200,
+	 		    core => 0,
+			  screen => "Search::EPrint",
+		},
+		{
+			      id => "search_user",
+			    priv => "view/search/user",
+			position => 1300,
+	 		    core => 0,
+			  screen => "Search::User",
+		},
+		{
+			      id => "add_user",
+			    priv => "view/add_user",
+			position => 1400,
+	 		    core => 0,
+			  screen => "AddUser",
+		},
+		{
+			      id => "subject",
+			    priv => "view/subject_tool",
+			position => 1500,
+	 		    core => 0,
+			  screen => "Subject",
+		},
+	];
+
+	return sort { $a->{position} <=> $b->{position} } @{$tools};
+}
+
 sub register_furniture
 {
 	my( $self ) = @_;
@@ -54,78 +126,10 @@ sub register_furniture
         border-bottom: solid 1px #d8dbef;
 	padding-top:4px;
 	padding-bottom:4px;
-
  " );
-
-	my $tools = [
-		{
-			      id => "deposit",
-			    priv => "view/deposit",
-			position => 100,
-	 		    core => 1,
-			     url => "?screen=Home",
-		},
-		{
-			      id => "user",
-			    priv => "view/user",
-			position => 200,
-	 		    core => 1,
-			     url => "?screen=User",
-		},
-		{
-			      id => "subscription",
-			    priv => "view/subscription",
-			position => 300,
-	 		    core => 1,
-			     url => "?screen=Subscription",
-		},
-		{
-			      id => "edreview",
-			    priv => "view/editor",
-			position => 400,
-	 		    core => 1,
-			     url => "?screen=Review",
-		},
-		{
-			      id => "status",
-			    priv => "view/status",
-			position => 1100,
-	 		    core => 0,
-			     url => "?screen=Status",
-		},
-		{
-			      id => "search_eprint",
-			    priv => "view/search/eprint",
-			position => 1200,
-	 		    core => 0,
-			     url => "?screen=Search::EPrint",
-		},
-		{
-			      id => "search_user",
-			    priv => "view/search/user",
-			position => 1300,
-	 		    core => 0,
-			     url => "?screen=Search::User",
-		},
-		{
-			      id => "add_user",
-			    priv => "view/add_user",
-			position => 1400,
-	 		    core => 0,
-			     url => "?screen=AddUser",
-		},
-		{
-			      id => "subject",
-			    priv => "view/subject_tool",
-			position => 1500,
-	 		    core => 0,
-			     url => "?screen=Subject",
-		},
-	];
-
 	my @core = ();
 	my @other = ();
-	foreach my $tool ( sort { $a->{position} <=> $b->{position} } @{$tools} )
+	foreach my $tool ( $self->get_allowed_tools )
 	{
 		if( $tool->{core} )
 		{
@@ -150,7 +154,7 @@ sub register_furniture
 		{
 			$div->appendChild( $self->{session}->make_text( " | " ) );
 		}
-		my $a = $self->{session}->render_link( $tool->{url} );
+		my $a = $self->{session}->render_link( "?screen=".$tool->{url} );
 		$a->appendChild( $self->{session}->make_text( $tool->{id} ) );
 		$div->appendChild( $a );
 	}
@@ -176,7 +180,7 @@ sub register_furniture
 			{
 				$span->appendChild( $self->{session}->make_text( " | " ) );
 			}
-			my $a = $self->{session}->render_link( $tool->{url} );
+			my $a = $self->{session}->render_link( "?screen=".$tool->{url} );
 			$a->appendChild( $self->{session}->make_text( $tool->{id} ) );
 			$span->appendChild( $a );
 		}

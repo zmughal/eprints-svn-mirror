@@ -3903,3 +3903,7 @@ PACKAGE: 2.2.99.2
  * Added a warning if a phrase with no id is loaded, although it will fall
     back to ref="" for easy compatibility.
  * Begin new item link now works again.
+ * Renamed "Home" screen to "Items"
+ * Added "FirstTool" screen which redirects to the first available tool,
+    usually Items.
+
