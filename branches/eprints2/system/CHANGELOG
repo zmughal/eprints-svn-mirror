@@ -3902,3 +3902,4 @@ PACKAGE: 2.2.99.2
  * Changed ref="" in phrases files to id="" and changed the namespace to ep3.
  * Added a warning if a phrase with no id is loaded, although it will fall
     back to ref="" for easy compatibility.
+ * Begin new item link now works again.

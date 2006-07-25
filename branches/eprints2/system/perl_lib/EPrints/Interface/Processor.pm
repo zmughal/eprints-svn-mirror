@@ -228,6 +228,10 @@ sub allow_eprint_action
 	
 	# all actions are action/eprint/...
 
+	# need to do before we get the status as the eprint does not 
+	# exist yet for "create"
+	return 4 if( $action eq "create" );
+
 	if( !defined $on_item )
 	{
 		$on_item = $self->{eprint};

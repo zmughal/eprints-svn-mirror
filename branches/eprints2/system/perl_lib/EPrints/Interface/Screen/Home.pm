@@ -14,6 +14,49 @@ sub new
 	$class->SUPER::new( $processor );
 }
 
+
+sub from
+{
+	my( $self ) = @_;
+
+	my $user = $self->{session}->current_user;
+
+	if( $self->{processor}->{action} eq "create" )
+	{
+		if( !$self->{processor}->allow( "action/eprint/create" ) )
+		{
+			$self->{processor}->action_not_allowed( $a );
+			return;
+		}
+
+		my $ds = $self->{processor}->{session}->get_repository->get_dataset( "inbox" );
+
+		$self->{processor}->{eprint} = $ds->create_object( $self->{session}, { 
+			userid => $user->get_value( "userid" ) } );
+
+		if( !defined $self->{processor}->{eprint} )
+		{
+			my $db_error = $self->{session}->get_database->error;
+			$self->{processor}->{session}->get_repository->log( "Database Error: $db_error" );
+			$self->{processor}->add_message( 
+				"error",
+				$self->{processor}->{session}->make_text( "Database Error" ) );
+			return;
+		}
+
+		$self->{processor}->{eprintid} = $self->{processor}->{eprint}->get_id;
+		$self->{processor}->{screenid} = "EPrint::Edit";
+
+		return;
+	}
+
+	return;
+}
+
+
+
+
+
 sub render
 {
 	my( $self ) = @_;
@@ -33,7 +76,7 @@ sub render
 
 	$dt = $self->{session}->make_element( "dt" );
 	$dd = $self->{session}->make_element( "dd" );
-	$a = $self->{session}->render_link( "?XXX" );
+	$a = $self->{session}->render_link( "?screen=Home&_action_create=1" );
 	$a->appendChild( $self->{session}->html_phrase( "cgi/users/home:new_item_link" ) );
 	$dt->appendChild( $a );
 	$dd->appendChild( $self->{session}->html_phrase( "cgi/users/home:new_item_info" ) );
@@ -42,7 +85,7 @@ sub render
 
 	$dt = $self->{session}->make_element( "dt" );
 	$dd = $self->{session}->make_element( "dd" );
-	$a = $self->{session}->render_link( "?XXX" );
+	$a = $self->{session}->render_link( "?screen=Items::Import" );
 	$a->appendChild( $self->{session}->html_phrase( "cgi/users/home:import_item_link" ) );
 	$dt->appendChild( $a );
 	$dd->appendChild( $self->{session}->html_phrase( "cgi/users/home:import_item_info" ) );
@@ -115,16 +158,6 @@ sub render
 
 	return $chunk;
 }
-
-# ignore the form. We're screwed at this point, and are just reporting.
-sub from
-{
-	my( $self ) = @_;
-
-	return;
-}
-
-
 
 
 sub can_be_viewed
