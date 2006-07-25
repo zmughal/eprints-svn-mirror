@@ -3888,3 +3888,7 @@ PACKAGE: 2.2.99.2
  * Added colour codes to the deposit view.
  * Added a new default workflow for eprints - shorter and nearer.
  * Added phrases to make workflow look neater.
+
+2006-06-25 cjg
+
+ * Merged MetaField::Basic into MetaField. Removed MetaField::Basic.

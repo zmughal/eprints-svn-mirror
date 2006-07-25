@@ -36,7 +36,7 @@ BEGIN
 {
 	our( @ISA );
 	
-	@ISA = qw( EPrints::MetaField::Basic );
+	@ISA = qw( EPrints::MetaField );
 }
 
 use EPrints::MetaField::Text;

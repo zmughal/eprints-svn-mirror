@@ -31,12 +31,12 @@ package EPrints::MetaField::Text;
 use strict;
 use warnings;
 
-use EPrints::MetaField::Basic;
+use EPrints::MetaField;
 
 BEGIN
 {
 	our( @ISA );
-	@ISA = qw( EPrints::MetaField::Basic );
+	@ISA = qw( EPrints::MetaField );
 }
 
 
