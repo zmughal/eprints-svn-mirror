@@ -70,7 +70,7 @@ sub action_remove
 		my $db_error = $self->{session}->get_database->error;
 		$self->{session}->get_repository->log( "DB error removing EPrint ".$self->{processor}->{eprint}->get_value( "eprintid" ).": $db_error" );
 		$self->{processor}->add_message( "message", $self->{session}->make_text( "Item could not be removed." ) ); #cjg lang
-		$self->{processor}->{screenid} = "control";
+		$self->{processor}->{screenid} = "FirstTool";
 		return;
 	}
 

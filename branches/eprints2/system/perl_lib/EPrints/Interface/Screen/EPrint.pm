@@ -122,11 +122,11 @@ sub render_blister
 		my $a;
 		if( $staff_mode )
 		{
-			$a = $session->render_link( "control?eprintid=".$self->{processor}->{eprintid}."&screen=EPrint::Edit&stage=$stage_id" );
+			$a = $session->render_link( "?eprintid=".$self->{processor}->{eprintid}."&screen=EPrint::Edit&stage=$stage_id" );
 		}
 		else
 		{
-			$a = $session->render_link( "control?eprintid=".$self->{processor}->{eprintid}."&screen=EPrint::Edit_staff&stage=$stage_id" );
+			$a = $session->render_link( "?eprintid=".$self->{processor}->{eprintid}."&screen=EPrint::Edit_staff&stage=$stage_id" );
 		}
 		$td->appendChild( $a );
 		$a->appendChild( $session->html_phrase( "metapage_title_".$stage_id ) );
@@ -146,7 +146,7 @@ sub render_blister
 		{
 			$td = $session->make_element( "td", class=>"ep_blister_node" );
 		}
-		my $a = $session->render_link( "control?eprintid=".$self->{processor}->{eprintid}."&screen=EPrint::Deposit" );
+		my $a = $session->render_link( "?eprintid=".$self->{processor}->{eprintid}."&screen=EPrint::Deposit" );
 		$td->appendChild( $a );
 		$a->appendChild( $session->make_text( "Deposit" ) );
 		$tr->appendChild( $td );
