@@ -3924,4 +3924,4 @@ PACKAGE: 2.2.99.2
  * Split XML::GDOME and XML::DOM specific parts of EPrints::XML into two
     sub files. One or the other is required.
  * Removed all uses of hasAttribute as it's not available in XML::DOM
-
+ * Added phrases for tools names.

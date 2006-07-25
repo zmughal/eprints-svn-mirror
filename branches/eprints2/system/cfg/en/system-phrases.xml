@@ -1117,5 +1117,17 @@ Titles and Help for the System Fields
     <ep:phrase id="dataset_name_subscription">Subscriptions</ep:phrase>
     <ep:phrase id="dataset_name_user">Users</ep:phrase>
     <ep:phrase id="dataset_name_history">History</ep:phrase>
+
+    <ep:phrase id="tool:eprints">Your Items</ep:phrase>
+    <ep:phrase id="tool:user">Your Details</ep:phrase>
+    <ep:phrase id="tool:subscription">Subscriptions</ep:phrase>
+    <ep:phrase id="tool:edreview">Editorial Review</ep:phrase>
+    <ep:phrase id="tool:status">Repository Status</ep:phrase>
+    <ep:phrase id="tool:search_eprint">Search Items</ep:phrase>
+    <ep:phrase id="tool:search_user">Search Users</ep:phrase>
+    <ep:phrase id="tool:add_user">Add User</ep:phrase>
+    <ep:phrase id="tool:subject">Manage Subject Tree</ep:phrase>
+    <ep:phrase id="tool:all">all tools </ep:phrase>
+    <ep:phrase id="tool:divide"> | </ep:phrase>
 </ep:phrases>
 

@@ -152,18 +152,18 @@ sub register_furniture
 		}
 		else
 		{
-			$div->appendChild( $self->{session}->make_text( " | " ) );
+			$div->appendChild( $self->{session}->html_phrase( "tool:divide" ) );
 		}
 		my $a = $self->{session}->render_link( "?screen=".$tool->{screen} );
-		$a->appendChild( $self->{session}->make_text( $tool->{id} ) );
+		$a->appendChild( $self->{session}->html_phrase( "tool:".$tool->{id} ) );
 		$div->appendChild( $a );
 	}
 
 	if( scalar @other )
 	{
-		$div->appendChild( $self->{session}->make_text( " | " ) );
+		$div->appendChild( $self->{session}->html_phrase( "tool:divide" ) );
 		my $more = $self->{session}->make_element( "a", id=>"ep_user_menu_more", class=>"ep_only_js", href=>"#", onClick => "EPJS_toggle('ep_user_menu_more',true,'inline');EPJS_toggle('ep_user_menu_extra',false,'inline');return false", );
-		$more->appendChild( $self->{session}->make_text( "all tools..." ) );
+		$more->appendChild( $self->{session}->html_phrase( "tool:all" ) );
 		$div->appendChild( $more );
 
 		my $span = $self->{session}->make_element( "span", id=>"ep_user_menu_extra", class=>"ep_no_js" );
@@ -178,10 +178,10 @@ sub register_furniture
 			}
 			else
 			{
-				$span->appendChild( $self->{session}->make_text( " | " ) );
+				$span->appendChild( $self->{session}->html_phrase( "tool:divide" ) );
 			}
 			my $a = $self->{session}->render_link( "?screen=".$tool->{screen} );
-			$a->appendChild( $self->{session}->make_text( $tool->{id} ) );
+			$a->appendChild( $self->{session}->html_phrase( "tool:".$tool->{id} ) );
 			$span->appendChild( $a );
 		}
 	
