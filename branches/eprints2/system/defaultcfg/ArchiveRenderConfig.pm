@@ -413,7 +413,7 @@ if(0){
 	my $edit_para = $session->make_element( "p", align=>"right" );
 	$edit_para->appendChild( $session->html_phrase( 
 		"page:edit_link",
-		link => $session->render_link( $eprint->get_url( 1 ) ) ) );
+		link => $session->render_link( $eprint->get_control_url ) ) );
 	$page->appendChild( $edit_para );
 
 	my $title = $eprint->render_description();

@@ -1841,10 +1841,28 @@ sub render_history
 ######################################################################
 =pod
 
-=item $url = $eprint->get_url( [$staff] )
+=item $url = $eprint->get_control_url
 
-Return the public URL of this eprints abstract page. If $staff is
-true then return the URL of the staff view of this eprint.
+Return the URL of the control page for this eprint.
+
+=cut
+######################################################################
+
+sub get_control_url
+{
+	my( $self ) = @_;
+
+	return $self->{session}->get_repository->get_conf( "perl_url" ).
+		"/users/home?screen=EPrint::View&eprintid=".
+		$self->get_value( "eprintid" )
+}
+
+######################################################################
+=pod
+
+=item $url = $eprint->get_url
+
+Return the public URL of this eprints abstract page. 
 
 =cut
 ######################################################################
@@ -1853,13 +1871,6 @@ sub get_url
 {
 	my( $self , $staff ) = @_;
 
-	if( defined $staff && $staff )
-	{
-		return $self->{session}->get_repository->get_conf( "perl_url" ).
-			"/users/staff/edit_eprint?eprintid=".
-			$self->get_value( "eprintid" )
-	}
-	
 	return( $self->url_stem );
 }
 

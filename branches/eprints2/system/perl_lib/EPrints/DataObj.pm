@@ -810,12 +810,10 @@ sub render_full
 ######################################################################
 =pod
 
-=item $url = $dataobj->get_url( [$staff] )
+=item $url = $dataobj->get_url
 
 Returns the URL for this record, for example the URL of the abstract page
-of an eprint. If $staff is true then this returns the URL to the staff 
-page for this item, which will show the full record and offer staff edit
-options.
+of an eprint.
 
 =cut
 ######################################################################
@@ -825,6 +823,23 @@ sub get_url
 	my( $self , $staff ) = @_;
 
 	return "EPrints::DataObj::get_url should have been over-ridden.";
+}
+
+######################################################################
+=pod
+
+=item $url = $dataobj->get_control_url
+
+Returns the URL for the control page for this object. 
+
+=cut
+######################################################################
+
+sub get_control_url
+{
+	my( $self , $staff ) = @_;
+
+	return "EPrints::DataObj::get_control_url should have been over-ridden.";
 }
 
 
