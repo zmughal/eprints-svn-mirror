@@ -180,7 +180,7 @@ sub parse_xml
 		if( defined $basepath )
 		{	
 			$tmpfile =~ s#/#_#g;
-			$tmpfile = $basepath."/.".$tmpfile;
+			$tmpfile = $basepath."/".$tmpfile;
 			symlink( $file, $tmpfile );
 		}
 
@@ -194,6 +194,10 @@ sub parse_xml
 			$opts += 4; #GDOME_LOAD_SUBSTITUTE_ENTITIES
 		}
 		$doc = XML::GDOME->createDocFromURI( $tmpfile, $opts );
+		if( defined $basepath )
+		{
+			unlink( $tmpfile );
+		}
 	}
 	else
 	{

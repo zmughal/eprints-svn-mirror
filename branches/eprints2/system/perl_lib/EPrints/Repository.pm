@@ -382,45 +382,6 @@ sub _load_citation_specs
 {
 	my( $self ) = @_;
 
-	# Generate a fields.dtd file, even though we are not actually
-	# going to expand the attributes, it may be needed for loading
-	# the XML file.
-
-	my $file = $self->get_conf( "config_path" )."/fields.dtd";
-	my $tmpfile = $file.".".$$;
-	open( DTD, ">$tmpfile" ) || die "Failed to open $tmpfile for writing";
-
-	my $siteid = $self->{id};
-	
-	print DTD <<END;
-<!-- 
-	Field DTD file for $siteid
-	This is only used to make the XML parser accept the attributes
-	used in the citations file.
-
-	*** DO NOT EDIT, This is auto-generated ***
--->
-
-END
-	my %list = ();
-	foreach my $dsid ( "eprint", "user", "document", "subscription",
-			"subject" )
-	{
-		foreach my $f ( $self->get_dataset( $dsid )->get_fields() )
-		{
-			$list{$f->get_name} = 1;
-		}
-	}
-
-	foreach my $fname ( keys %list )
-	{
-		print DTD "<!ENTITY $fname \"placeholder\" >\n";
-	}
-	close DTD;
-	move( $tmpfile, $file );
-
-	# OK, now try and load the XML...
-
 	my $langid;
 	foreach $langid ( @{$self->get_conf( "languages" )} )
 	{
@@ -1143,7 +1104,7 @@ sub parse_xml
 
 	my $doc = EPrints::XML::parse_xml( 
 		$file, 
-		$self->get_conf( "config_path" )."/",
+		$self->get_conf( "variables_path" )."/",
 		$no_expand );
 	if( !defined $doc )
 	{
@@ -1294,7 +1255,7 @@ sub generate_dtd
 	foreach $langid ( @{$self->get_conf( "languages" )} )
 	{	
 		my %entities = $self->call( "get_entities", $self, $langid );
-		my $file = $self->get_conf( "config_path" )."/entities-$langid.dtd";
+		my $file = $self->get_conf( "variables_path" )."/entities-$langid.dtd";
 		my $tmpfile = $file.".".$$;
 		open( DTD, ">$tmpfile" ) || die "Failed to open $tmpfile for writing";
 

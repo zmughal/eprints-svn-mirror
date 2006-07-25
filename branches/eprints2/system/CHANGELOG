@@ -3917,3 +3917,7 @@ PACKAGE: 2.2.99.2
  * Deprecated get_url( 1 ) as we no longer have staff mode per se.
  * Added $eprint->get_control_url 
  * Made the abstract renderer call that method to link to the control page.
+ * entities-en.dtd is now generated in var/ to avoid messing up /cfg
+ * XML files are symlink/loaded from var not cfg now. 
+ * XML files symlinks are now removed from var after use.
+ * fields.dtd is no longer used. 
