@@ -341,7 +341,7 @@ print STDERR "tick\n";
 	foreach my $stage_id ( $workflow->get_stage_ids )
 	{
 		my $li = $session->make_element( "li" );
-		my $a = $session->render_link( "eprint?eprintid=".$self->{processor}->{eprintid}."&screen=$escreen&stage=$stage_id" );
+		my $a = $session->render_link( "?eprintid=".$self->{processor}->{eprintid}."&screen=$escreen&stage=$stage_id" );
 		$li->appendChild( $a );
 		$a->appendChild( $session->html_phrase( "metapage_title_".$stage_id ) );
 		$ul->appendChild( $li );

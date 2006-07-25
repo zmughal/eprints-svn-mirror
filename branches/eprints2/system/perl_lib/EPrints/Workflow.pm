@@ -129,11 +129,11 @@ sub _read_flow
 		my $name = $element->getNodeName;
 		if( $name eq "stage" )
 		{
-			if( !$element->hasAttribute("ref") )
+			my $ref = $element->getAttribute("ref");
+			if( !EPrints::Utils::is_set( $ref ) )
 			{
 				EPrints::abort( "Workflow (".$self->{dataset}->confid.",".$self->{workflow_id}.") - <stage> in <flow> has no ref attribute." );
 			}
-			my $ref = $element->getAttribute("ref");
 			push @{$self->{stage_order}}, $ref;
 			$has_stages = 1;
 		}
@@ -168,11 +168,11 @@ sub _read_stages
 		my $e_name = $element->getNodeName;
 		next unless( $e_name eq "stage" );
 
-		if( !$element->hasAttribute("name") )
+		my $stage_id = $element->getAttribute("name");
+		if( !EPrints::Utils::is_set( $stage_id ) )
 		{
 			EPrints::abort( "Workflow (".$self->{dataset}->confid.",".$self->{workflow_id}.") - <element> definition has no name attribute.\n".$element->toString );
 		}
-		my $stage_id = $element->getAttribute("name");
 		$self->{stages}->{$stage_id} = new EPrints::Workflow::Stage( $element, $self, $stage_id );
 		foreach my $field_id ( $self->{stages}->{$stage_id}->get_fields_handled )
 		{

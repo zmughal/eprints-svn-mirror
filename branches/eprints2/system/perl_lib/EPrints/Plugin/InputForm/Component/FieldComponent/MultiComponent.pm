@@ -36,9 +36,9 @@ sub parse_config
 
 	if( scalar @title_nodes == 1 )
 	{
-		if( $title_nodes[0]->hasAttribute( "ref" ) )
+		my $phrase_ref = $title_nodes[0]->getAttribute( "ref" );
+		if( EPrints::Utils::is_set( $phrase_ref ) )
 		{
-			my $phrase_ref = $title_nodes[0]->getAttribute( "ref" );
 			$self->{config}->{title} = $self->{session}->html_phrase( $phrase_ref );
 		}
 		else
@@ -53,9 +53,9 @@ sub parse_config
 	
 	if( scalar @help_nodes == 1 )
 	{
-		if( $help_nodes[0]->hasAttribute( "ref" ) )
+		my $phrase_ref = $help_nodes[0]->getAttribute( "ref" );
+		if( EPrints::Utils::is_set( $phrase_ref ) )
 		{
-			my $phrase_ref = $help_nodes[0]->getAttribute( "ref" );
 			$self->{config}->{help} = $self->{session}->html_phrase( $phrase_ref );
 		}
 		else

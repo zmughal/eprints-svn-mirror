@@ -3921,3 +3921,7 @@ PACKAGE: 2.2.99.2
  * XML files are symlink/loaded from var not cfg now. 
  * XML files symlinks are now removed from var after use.
  * fields.dtd is no longer used. 
+ * Split XML::GDOME and XML::DOM specific parts of EPrints::XML into two
+    sub files. One or the other is required.
+ * Removed all uses of hasAttribute as it's not available in XML::DOM
+

@@ -262,13 +262,13 @@ sub xml_to_metafield
 		EPrints::abort(
 			"xml_to_metafield config error: Not a field node" );
 	}
-	if( !$xml->hasAttribute( "ref" ) )
+	my $ref = $xml->getAttribute( "ref" );	
+	if( !EPrints::Utils::is_set( $ref ) )
 	{
 		EPrints::abort(
 			"xml_to_metafield config error: No field ref attribute" );
 	}
 
-	my $ref = $xml->getAttribute( "ref" );	
 	my $field = $self->{dataset}->get_field( $ref );
 	
 	if( !defined $field )

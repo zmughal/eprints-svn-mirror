@@ -11,13 +11,13 @@ sub new
 	$self->{item} = $workflow->{item};
 	$self->{repository} = $self->{session}->get_repository;
 
-	unless( $stage->hasAttribute( "name" ) )
+	$self->{name} = $stage->getAttribute("name");
+	unless( EPrints::Utils::is_set( $self->{name} ) )
 	{
 		EPrints::abort( "Workflow stage with no name attribute." );
 	}
 
 	# Creating a new stage
-	$self->{name} = $stage->getAttribute("name");
 	$self->_read_components( $stage->getChildNodes );
 
 	return $self;
@@ -37,16 +37,12 @@ sub _read_components
 		if( $name eq "component" )
 		{
 			# Pull out the type
-			my $type = "FieldComponent";
-			if( $stage_node->hasAttribute( "type" ) )
-			{
-				$type = $stage_node->getAttribute( "type" );
-			}
-			my $surround = "Default";
-			if( $stage_node->hasAttribute( "surround" ) )
-			{
-				$surround = $stage_node->getAttribute( "surround" );
-			}
+			my $type = $stage_node->getAttribute( "type" );
+			$type = "FieldComponent" if( !EPrints::Utils::is_set( $type ) );
+
+			my $surround = $stage_node->getAttribute( "surround" );
+			$surround = "Default" if( !EPrints::Utils::is_set( $surround ) );
+
 			# Grab any values inside
 			$params{type} = $type;
 			print STDERR "Create with type [$type]\n";

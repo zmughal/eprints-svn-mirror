@@ -45,42 +45,16 @@ my $gdome = (
 
 if( $gdome )
 {
-	require XML::GDOME;
+	require EPrints::XML::GDOME;
 }
 else
 {
-	require XML::DOM; 
-	# DOM runs really slowly if it checks all it's data is
-	# valid...
-	$XML::DOM::SafeMode = 0;
-	XML::DOM::setTagCompression( \&_xmldom_tag_compression );
+	require EPrints::XML::DOM; 
 }
 
 use strict;
 use bytes;
 
-
-######################################################################
-# 
-# EPrints::XML::_xmldom_tag_compression( $tag, $elem )
-#
-# Only used by the DOM module.
-#
-######################################################################
-
-sub _xmldom_tag_compression
-{
-	my ($tag, $elem) = @_;
-	
-	# Print empty br, hr and img tags like this: <br />
-	foreach my $ctag ( @EPrints::XML::COMPRESS_TAGS )
-	{
-		return 2 if( $ctag eq $tag );
-	}
-
-	# Print other empty tags like this: <empty></empty>
-	return 1;
-}
 
 ######################################################################
 =pod
@@ -98,50 +72,7 @@ return undef.
 =cut
 ######################################################################
 
-sub parse_xml_string
-{
-	my( $string ) = @_;
-
-#	print "Loading XML: $file\n";
-
-	my $doc;
-	if( $gdome )
-	{
-		# For some reason the GDOME constants give an error,
-		# using their values instead (could cause a problem if
-		# they change in a subsequent version).
-
-		my $opts = 8; #GDOME_LOAD_COMPLETE_ATTRS
-		#unless( $no_expand )
-		#{
-			#$opts += 4; #GDOME_LOAD_SUBSTITUTE_ENTITIES
-		#}
-		$doc = XML::GDOME->createDocFromString( $string, $opts );
-	}
-	else
-	{
-
-		my( %c ) = (
-			Namespaces => 1,
-			ParseParamEnt => 1,
-			ErrorContext => 2,
-			NoLWP => 1 );
-		$c{ParseParamEnt} = 0;
-		my $parser =  XML::DOM::Parser->new( %c );
-
-		$doc = eval { $parser->parse( $string ); };
-		if( $@ )
-		{
-			my $err = $@;
-			$err =~ s# at /.*##;
-			$err =~ s#\sXML::Parser::Expat.*$##s;
-			print STDERR "Error parsing XML $string";
-			return;
-		}
-	}
-	return $doc;
-}
-
+# in DOM specific module
 	
 
 ######################################################################
@@ -162,76 +93,7 @@ return undef.
 =cut
 ######################################################################
 
-sub parse_xml
-{
-	my( $file, $basepath, $no_expand ) = @_;
-
-#	print "Loading XML: $file\n";
-
-	unless( -r $file )
-	{
-		EPrints::Config::abort( "Can't read XML file: '$file'" );
-	}
-
-	my $doc;
-	if( $gdome )
-	{
-		my $tmpfile = $file;
-		if( defined $basepath )
-		{	
-			$tmpfile =~ s#/#_#g;
-			$tmpfile = $basepath."/".$tmpfile;
-			symlink( $file, $tmpfile );
-		}
-
-		# For some reason the GDOME constants give an error,
-		# using their values instead (could cause a problem if
-		# they change in a subsequent version).
-
-		my $opts = 8; #GDOME_LOAD_COMPLETE_ATTRS
-		unless( $no_expand )
-		{
-			$opts += 4; #GDOME_LOAD_SUBSTITUTE_ENTITIES
-		}
-		$doc = XML::GDOME->createDocFromURI( $tmpfile, $opts );
-		if( defined $basepath )
-		{
-			unlink( $tmpfile );
-		}
-	}
-	else
-	{
-
-		my( %c ) = (
-			Base => $basepath,
-			Namespaces => 1,
-			ParseParamEnt => 1,
-			ErrorContext => 2,
-			NoLWP => 1 );
-		if( $no_expand )
-		{
-			$c{ParseParamEnt} = 0;
-		}
-		my $parser =  XML::DOM::Parser->new( %c );
-
-		unless( open( XML, $file ) )
-		{
-			print STDERR "Error opening XML file: $file\n";
-			return;
-		}
-		$doc = eval { $parser->parse( *XML ); };
-		close XML;
-		if( $@ )
-		{
-			my $err = $@;
-			$err =~ s# at /.*##;
-			print STDERR "Error parsing XML $file ($err)";
-			return;
-		}
-	}
-
-	return $doc;
-}
+# in required dom module
 
 	
 ######################################################################
@@ -252,21 +114,11 @@ sub is_dom
 {
 	my( $node, @nodestrings ) = @_;
 
-	my $s;
-	if( $gdome )
-	{
-		$s ="XML::GDOME::";
-	}
-	else
-	{
-		$s ="XML::DOM::";
-	}
-
 	return 1 if( scalar @nodestrings == 0 );
 
 	foreach( @nodestrings )
 	{
-		my $v = $s.$_;
+		my $v = $EPrints::XML::PREFIX.$_;
 		return 1 if( substr( ref($node), 0, length( $v ) ) eq $v );
 	}
 
@@ -285,20 +137,8 @@ disposed as they have cyclic references. XML::GDOME nodes are C structs.
 =cut
 ######################################################################
 
-sub dispose
-{
-	my( $node ) = @_;
+# in required dom module
 
-	if( !defined $node )
-	{
-		EPrints::abort "attempt to dispose an undefined dom node";
-	}
-
-	if( !$gdome )
-	{
-		$node->dispose;
-	}
-}
 
 ######################################################################
 =pod
@@ -314,39 +154,7 @@ but the result should be the same.
 =cut
 ######################################################################
 
-sub clone_node
-{
-	my( $node, $deep ) = @_;
-
-	if( !defined $node )
-	{
-		EPrints::abort "no node passed to clone_node";
-	}
-
-	# XML::DOM is easy
-	if( !$gdome )
-	{
-		return $node->cloneNode( $deep );
-	}
-
-	if( is_dom( $node, "DocumentFragment" ) )
-	{
-		my $doc = $node->getOwnerDocument;
-		my $f = $doc->createDocumentFragment;
-		return $f unless $deep;
-		
-		foreach my $c ( $node->getChildNodes )
-		{
-			$f->appendChild( $c->cloneNode( 1 ) );
-		}
-		return $f;
-	}
-	my $doc = $node->getOwnerDocument;
-	my $newnode = $node->cloneNode( 1 );
-	$doc->importNode( $newnode, 1 );
-	return $newnode;
-
-}
+# in required dom module
 
 ######################################################################
 =pod
@@ -365,58 +173,7 @@ to $node, recursively.
 =cut
 ######################################################################
 
-sub clone_and_own
-{
-	my( $node, $doc, $deep ) = @_;
-
-	my $newnode;
-	$deep = 0 unless defined $deep;
-
-	if( $gdome )
-	{
-		# XML::GDOME
-		if( is_dom( $node, "DocumentFragment" ) )
-		{
-			$newnode = $doc->createDocumentFragment;
-
-			if( $deep )
-			{	
-				foreach my $c ( $node->getChildNodes )
-				{
-					$newnode->appendChild( 
-						$doc->importNode( $c, 1 ) );
-				}
-			}
-		}
-		else
-		{
-			$newnode = $doc->importNode( $node, $deep );
-			# bug in importNode NOT being deep that it does
-			# not appear to clone attributes, so lets work
-			# around it!
-
-			my $attrs = $node->getAttributes;
-			if( $attrs )
-			{
-				for my $i ( 0..$attrs->getLength-1 )
-				{
-					my $attr = $attrs->item( $i );
-					my $k = $attr->getName;
-					my $v = $attr->getValue;
-					$newnode->setAttribute( $k, $v );
-				}
-			}
-		}
-
-	}
-	else
-	{
-		# XML::DOM 
-		$newnode = $node->cloneNode( $deep );
-		$newnode->setOwnerDocument( $doc );
-	}
-	return $newnode;
-}
+# in required dom module
 
 ######################################################################
 =pod
@@ -508,14 +265,7 @@ sub to_string
    		#my $docType  = $node->getDoctype();
 	 	#my $elem     = $node->getDocumentElement();
 		#push @n, $docType->toString, "\n";, to_string( $elem , $enc, $noxmlns);
-		if( $gdome )
-		{
-			push @n, $node->toStringEnc( $enc );
-		}
-		else
-		{
-			push @n, $node->toString;
-		}
+		push @n, document_to_string( $node, $enc );
 	}
 	elsif( EPrints::XML::is_dom( 
 			$node, 
@@ -528,7 +278,7 @@ sub to_string
 	}
 	elsif( EPrints::XML::is_dom( $node, "Comment" ) )
 	{
-		push @n, "<!--", $gdome?$node->getData:$node->toString, "-->"
+		push @n, "<!--",$node->getData, "-->"
 	}
 	else
 	{
@@ -538,50 +288,6 @@ sub to_string
 	return join '', @n;
 }
 
-######################################################################
-#=pod
-#
-#=item $document = EPrints::XML::make_xhtml_document()
-#
-#Create and return an empty XHTML document.
-#
-#=cut
-#######################################################################
-#
-#sub make_xhtml_document
-#{
-#	# no params
-#
-#	my @doctdata = (
-#				"html",
-#				"DTD/xhtml1-transitional.dtd",
-#				"-//W3C//DTD XHTML 1.0 Transitional//EN" );
-#	my $doc;
-#
-#	if( $gdome )
-#	{
-#		# XML::GDOME
-#		my $dtd = XML::GDOME->createDocumentType( @doctdata );
-#		$doc = XML::GDOME->createDocument( undef, "html", $dtd );
-#		my $html = ($doc->getElementsByTagName( "html" ))[0];
-#		$doc->removeChild( $html );
-#	}
-#	else
-#	{
-#		# XML::DOM
-#		$doc = new XML::DOM::Document();
-#	
-#		my $doctype = $doc->createDocumentType( @doctdata );
-#		$doc->setDoctype( $doctype );
-#	
-#		my $xmldecl = $doc->createXMLDecl( "1.0", "UTF-8", "yes" );
-#		$doc->setXMLDecl( $xmldecl );
-#	}
-#	
-#
-#
-#	return $doc;
-#}
 
 ######################################################################
 =pod
@@ -593,24 +299,7 @@ Create and return an empty document.
 =cut
 ######################################################################
 
-sub make_document
-{
-	# no params
-
-	# XML::DOM
-	if( !$gdome )
-	{
-		my $doc = new XML::DOM::Document();
-	
-		return $doc;
-	}
-	
-	# XML::GDOME
-	my $doc = XML::GDOME->createDocument( undef, "thing", undef );
-	$doc->removeChild( $doc->getFirstChild );
-
-	return $doc;
-}
+# in required dom module
 
 ######################################################################
 =pod
@@ -626,22 +315,14 @@ sub write_xml_file
 {
 	my( $node, $filename ) = @_;
 
-	if( $gdome )
+	unless( open( XMLFILE, ">$filename" ) )
 	{
-		unless( open( XMLFILE, ">$filename" ) )
-		{
-			EPrints::Config::abort( <<END );
+		EPrints::Config::abort( <<END );
 Can't open to write to XML file: $filename
 END
-		}
-#		print XMLFILE $node->toStringEnc("utf8",0);
-		print XMLFILE EPrints::XML::to_string( $node, "utf-8" );
-		close XMLFILE;
 	}
-	else
-	{
-        	$node->printToFile( $filename );
-	}
+	print XMLFILE EPrints::XML::to_string( $node, "utf-8" );
+	close XMLFILE;
 }
 
 ######################################################################
@@ -670,15 +351,8 @@ END
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 END
 
-	if( $gdome )
-	{
-#		print XMLFILE $node->toStringEnc("utf8",0);
-		print XMLFILE EPrints::XML::to_string( $node, "utf-8", 1 );
-	}
-	else
-	{
-        	print XMLFILE $node->toString;
-	}
+	print XMLFILE EPrints::XML::to_string( $node, "utf-8", 1 );
+
 	close XMLFILE;
 }
 
@@ -873,9 +547,10 @@ sub namespace
 sub debug_xml
 {
 	my( $node, $depth ) = @_;
-#push @{$x}, $node;
-print STDERR ">"."  "x$depth;
-print STDERR "DEBUG(".ref($node).")\n";
+
+	#push @{$x}, $node;
+	print STDERR ">"."  "x$depth;
+	print STDERR "DEBUG(".ref($node).")\n";
 	if( is_dom( $node, "Document", "Element" ) )
 	{
 		foreach my $c ( $node->getChildNodes )
@@ -900,3 +575,278 @@ print STDERR "DEBUG(".ref($node).")\n";
 
 =cut
 ######################################################################
+
+
+
+
+
+
+
+
+
+
+
+__DATA__
+
+if( $gdome )
+{
+	require XML::GDOME;
+}
+else
+{
+	require XML::DOM; 
+	# DOM runs really slowly if it checks all it's data is
+	# valid...
+	$XML::DOM::SafeMode = 0;
+	XML::DOM::setTagCompression( \&_xmldom_tag_compression );
+}
+
+$EPrints::XML::PREFIX = "XML::GDOME::";
+$EPrints::XML::PREFIX = "XML::DOM::";
+
+sub parse_xml_string
+{
+	my( $string ) = @_;
+
+	if( $gdome )
+	{
+		my $doc;
+		# For some reason the GDOME constants give an error,
+		# using their values instead (could cause a problem if
+		# they change in a subsequent version).
+
+		my $opts = 8; #GDOME_LOAD_COMPLETE_ATTRS
+		#unless( $no_expand )
+		#{
+			#$opts += 4; #GDOME_LOAD_SUBSTITUTE_ENTITIES
+		#}
+		$doc = XML::GDOME->createDocFromString( $string, $opts );
+	}
+	else
+	{
+		my $doc;
+		my( %c ) = (
+			Namespaces => 1,
+			ParseParamEnt => 1,
+			ErrorContext => 2,
+			NoLWP => 1 );
+		$c{ParseParamEnt} = 0;
+		my $parser =  XML::DOM::Parser->new( %c );
+
+		$doc = eval { $parser->parse( $string ); };
+		if( $@ )
+		{
+			my $err = $@;
+			$err =~ s# at /.*##;
+			$err =~ s#\sXML::Parser::Expat.*$##s;
+			print STDERR "Error parsing XML $string";
+			return;
+		}
+		return $doc;
+	}
+}
+
+sub parse_xml
+{
+	my( $file, $basepath, $no_expand ) = @_;
+
+	unless( -r $file )
+	{
+		EPrints::Config::abort( "Can't read XML file: '$file'" );
+	}
+
+	my $doc;
+	if( $gdome )
+	{
+		my $tmpfile = $file;
+		if( defined $basepath )
+		{	
+			$tmpfile =~ s#/#_#g;
+			$tmpfile = $basepath."/".$tmpfile;
+			symlink( $file, $tmpfile );
+		}
+
+		# For some reason the GDOME constants give an error,
+		# using their values instead (could cause a problem if
+		# they change in a subsequent version).
+
+		my $opts = 8; #GDOME_LOAD_COMPLETE_ATTRS
+		unless( $no_expand )
+		{
+			$opts += 4; #GDOME_LOAD_SUBSTITUTE_ENTITIES
+		}
+		$doc = XML::GDOME->createDocFromURI( $tmpfile, $opts );
+		if( defined $basepath )
+		{
+			unlink( $tmpfile );
+		}
+	}
+	else
+	{
+
+		my( %c ) = (
+			Base => $basepath,
+			Namespaces => 1,
+			ParseParamEnt => 1,
+			ErrorContext => 2,
+			NoLWP => 1 );
+		if( $no_expand )
+		{
+			$c{ParseParamEnt} = 0;
+		}
+		my $parser =  XML::DOM::Parser->new( %c );
+
+		unless( open( XML, $file ) )
+		{
+			print STDERR "Error opening XML file: $file\n";
+			return;
+		}
+		$doc = eval { $parser->parse( *XML ); };
+		close XML;
+		if( $@ )
+		{
+			my $err = $@;
+			$err =~ s# at /.*##;
+			print STDERR "Error parsing XML $file ($err)";
+			return;
+		}
+	}
+
+	return $doc;
+}
+
+sub dispose
+{
+	my( $node ) = @_;
+
+	if( !defined $node )
+	{
+		EPrints::abort "attempt to dispose an undefined dom node";
+	}
+
+	if( !$gdome )
+	{
+		$node->dispose;
+	}
+}
+
+
+sub clone_node
+{
+	my( $node, $deep ) = @_;
+
+	if( !defined $node )
+	{
+		EPrints::abort "no node passed to clone_node";
+	}
+
+	# XML::DOM is easy
+	if( !$gdome )
+	{
+		return $node->cloneNode( $deep );
+	}
+
+	if( is_dom( $node, "DocumentFragment" ) )
+	{
+		my $doc = $node->getOwnerDocument;
+		my $f = $doc->createDocumentFragment;
+		return $f unless $deep;
+		
+		foreach my $c ( $node->getChildNodes )
+		{
+			$f->appendChild( $c->cloneNode( 1 ) );
+		}
+		return $f;
+	}
+	my $doc = $node->getOwnerDocument;
+	my $newnode = $node->cloneNode( 1 );
+	$doc->importNode( $newnode, 1 );
+	return $newnode;
+
+}
+
+sub clone_and_own
+{
+	my( $node, $doc, $deep ) = @_;
+
+	my $newnode;
+	$deep = 0 unless defined $deep;
+
+	if( $gdome )
+	{
+		# XML::GDOME
+		if( is_dom( $node, "DocumentFragment" ) )
+		{
+			$newnode = $doc->createDocumentFragment;
+
+			if( $deep )
+			{	
+				foreach my $c ( $node->getChildNodes )
+				{
+					$newnode->appendChild( 
+						$doc->importNode( $c, 1 ) );
+				}
+			}
+		}
+		else
+		{
+			$newnode = $doc->importNode( $node, $deep );
+			# bug in importNode NOT being deep that it does
+			# not appear to clone attributes, so lets work
+			# around it!
+
+			my $attrs = $node->getAttributes;
+			if( $attrs )
+			{
+				for my $i ( 0..$attrs->getLength-1 )
+				{
+					my $attr = $attrs->item( $i );
+					my $k = $attr->getName;
+					my $v = $attr->getValue;
+					$newnode->setAttribute( $k, $v );
+				}
+			}
+		}
+
+	}
+	else
+	{
+		# XML::DOM 
+		$newnode = $node->cloneNode( $deep );
+		$newnode->setOwnerDocument( $doc );
+	}
+	return $newnode;
+}
+
+sub document_to_string
+{
+	my( $doc, $enc ) = @_;
+
+	if( $gdome )
+	{
+		return $doc->toStringEnc( $enc );
+	}
+	else
+	{
+		return $doc->toString;
+	}
+}
+
+sub make_document
+{
+	# no params
+
+	# XML::DOM
+	if( !$gdome )
+	{
+		my $doc = new XML::DOM::Document();
+	
+		return $doc;
+	}
+	
+	# XML::GDOME
+	my $doc = XML::GDOME->createDocument( undef, "thing", undef );
+	$doc->removeChild( $doc->getFirstChild );
+
+	return $doc;
+}
