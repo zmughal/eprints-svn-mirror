@@ -3906,4 +3906,5 @@ PACKAGE: 2.2.99.2
  * Renamed "Home" screen to "Items"
  * Added "FirstTool" screen which redirects to the first available tool,
     usually Items.
-
+ * Restructured defaultcfg directory - this will take several commit's to
+    get all done.
