@@ -98,47 +98,6 @@ th.empty_heading, tr.header_plain th {
 
 
 
-/* toolbox and messages */
-
-.ep_toolbox, .ep_message, .ep_warning, .ep_error {
-	margin-bottom: 10px;
-}
-
-.ep_toolbox_title, .ep_message_title, .ep_warning_title, .ep_error_title {
-	padding: 2px 10px 2px 10px;
-}
-.ep_toolbox_title {
-	color: #808080;
-}
-.ep_message_title {
-	color: #70cf70;
-}
-.ep_error_title {
-	color: #ff8080;
-}
-.ep_warning_title {
-	color: #cf9070;
-}
-
-.ep_toolbox_content, .ep_message_content, .ep_warning_content, .ep_error_content {
-	padding: 10px;
-}
-.ep_toolbox_content {
-	background-image: url(/images/style/toolbox.png);
-	border: solid 1px #d8dbef;
-}
-.ep_message_content {
-	background-image: url(/images/style/green_back.png);
-	border: solid 1px #80ff80;
-}
-.ep_error_content {
-	background-image: url(/images/style/red_back.png);
-	border: solid 1px #ffc0c0;
-}
-.ep_warning_content {
-	background-image: url(/images/style/orange_back.png);
-	border: solid 1px #ffc080;
-}
 
 /* dev stuff */
 

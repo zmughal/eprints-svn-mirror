@@ -139,14 +139,8 @@ sub render_messages
 	foreach my $message ( @{$self->{messages}} )
 	{
 		my $id = "m".$self->{session}->get_next_id;
-		my $div = $self->{session}->make_element( "div", class=>"ep_".$message->{type}, id=>$id );
-#		my $title_div = $self->{session}->make_element( "div", class=>"ep_".$message->{type}."_title" );
-#		my $close_a =  $self->{session}->make_element( "a", onclick=>'document.getElementById( "'.$id.'" ).style.display = "none"; return false;', href=>'#' );
-#		my $close = $self->{session}->make_element( "img", src=>"/images/style/close.gif", class=>"ep_close_icon only_js" );
-#		$close_a->appendChild( $close );
-		my $content_div = $self->{session}->make_element( "div", class=>"ep_".$message->{type}."_content" );
-#		$title_div->appendChild( $close_a );
-#		$title_div->appendChild( $self->{session}->html_phrase( "cgi/users/edit_eprint:message_".$message->{type} ) );
+		my $div = $self->{session}->make_element( "div", class=>"ep_msg_".$message->{type}, id=>$id );
+		my $content_div = $self->{session}->make_element( "div", class=>"ep_msg_".$message->{type}."_content" );
 		my $table = $self->{session}->make_element( "table" );
 		my $tr = $self->{session}->make_element( "tr" );
 		$table->appendChild( $tr );

@@ -21,13 +21,6 @@ perl_lib/EPrints/Session.pm:	my $span = $self->make_element( "span", class=>"per
 
 
 
-perl_lib/EPrints/Session.pm:	my $div = $self->make_element( "div", class=>"ep_toolbox" );
-perl_lib/EPrints/Session.pm:	my $title_div = $self->make_element( "div", class=>"ep_toolbox_title" );
-perl_lib/EPrints/Session.pm:	my $content_div = $self->make_element( "div", class=>"ep_toolbox_content" );
-perl_lib/EPrints/Session.pm:	my $table = $self->make_element( "table", class=>"ep_tabs", cellspacing=>0 );
-
-
-
 perl_lib/EPrints/MetaField/Set.pm:	$dl = $session->make_element( "dl", class=>"longset" );
 perl_lib/EPrints/MetaField/Longtext.pm:#			class=>$self->{name}."_paragraph" );
 perl_lib/EPrints/MetaField.pm:			$th = $session->make_element( "th", class=>"empty_heading" );
@@ -35,12 +28,6 @@ perl_lib/EPrints/MetaField.pm:			$th = $session->make_element( "th", class=>"emp
 perl_lib/EPrints/MetaField.pm:				class => "requiredlang" );
 perl_lib/EPrints/UserForm.pm:					class=>"problems" );
 
-
-# processor (messages)
-perl_lib/EPrints/Interface/Processor.pm:		my $div = $self->{session}->make_element( "div", class=>"ep_".$message->{type}, id=>$id );
-perl_lib/EPrints/Interface/Processor.pm:#		my $title_div = $self->{session}->make_element( "div", class=>"ep_".$message->{type}."_title" );
-perl_lib/EPrints/Interface/Processor.pm:#		my $close = $self->{session}->make_element( "img", src=>"/images/style/close.gif", class=>"ep_close_icon only_js" );
-perl_lib/EPrints/Interface/Processor.pm:		my $content_div = $self->{session}->make_element( "div", class=>"ep_".$message->{type}."_content" );
 
 
 
@@ -95,10 +82,11 @@ defaultcfg/en/phrases.xml:<br />Example: <span class="example">2006 June - all d
 # class= notice?
 defaultcfg/en/phrases.xml:    <ep:phrase id="page:not_latest_version"><p class="notice">There is a more recent version of this eprint available. <ep:pin ref="link">Click here to view it.</ep:pin></p></ep:phrase>
 
-
-# needs redoing anyway!
+# status
 perl_lib/EPrints/Interface/Screen/Status.pm:		$td = $session->make_element( "td", class=>"status_row_heading" );
 perl_lib/EPrints/Interface/Screen/Status.pm:		$td = $session->make_element( "td", align=>"center", class=>"status_cell"  );
+
+# needs redoing anyway!
 perl_lib/EPrints/Interface/Screen/Review.pm:	$tr = $self->{session}->make_element( "tr", class=>"header_plain" );
 perl_lib/EPrints/Interface/Screen/Review.pm:		$tr = $session->make_element( "tr", class=>"row_".($info->{row}%2?"b":"a") );
 perl_lib/EPrints/Interface/Screen/Review.pm:		$td = $session->make_element( "td", class=>"first_col" );
