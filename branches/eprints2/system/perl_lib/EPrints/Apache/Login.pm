@@ -100,7 +100,7 @@ sub input_form
 			"accept-charset" => "utf-8",
 			name => '_action_login',
 			value => "Login",
-			class => 'actionbutton',
+			class => 'ep_form_action_button',
 			type => "submit" );
 
 	my $op1;

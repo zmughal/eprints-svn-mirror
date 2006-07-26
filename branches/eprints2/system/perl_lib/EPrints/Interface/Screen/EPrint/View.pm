@@ -308,7 +308,7 @@ sub render_action_tab
 			$session->make_element( 
 				"input", 
 				type=>"submit",
-				class=>"actionbutton",
+				class=>"ep_form_action_button",
 				name=>"_action_$action", 
 				value=>$session->phrase( "priv:action/eprint/".$action ) ) );
 		$tr->appendChild( $td );

@@ -1392,7 +1392,7 @@ sub _render_buttons_aux
 	my( $self, $btype, %buttons ) = @_;
 
 	#my $frag = $self->make_doc_fragment();
-	my $class = "buttons";
+	my $class = "";
 	if( defined $buttons{_class} )
 	{
 		$class = $buttons{_class};
@@ -1414,7 +1414,7 @@ sub _render_buttons_aux
 		next if( $button_id eq '_order' );
 		$div->appendChild(
 			$self->make_element( "input",
-				class => $btype."button",
+				class => "ep_form_".$btype."_button",
 				type => "submit",
 				name => "_".$btype."_".$button_id,
 				value => $buttons{$button_id} ) );
@@ -1855,7 +1855,7 @@ sub _render_input_form_field
 
 	if( $show_names )
 	{
-		$div = $self->make_element( "div", class => "formfieldname" );
+		$div = $self->make_element( "div", class => "ep_form_field_name" );
 
 		# Field name should have a star next to it if it is required
 		# special case for booleans - even if they're required it
@@ -1877,7 +1877,7 @@ sub _render_input_form_field
 
 	if( $show_help )
 	{
-		$div = $self->make_element( "div", class => "formfieldhelp" );
+		$div = $self->make_element( "div", class => "ep_form_field_help" );
 
 		$div->appendChild( $field->render_help( $self, $type ) );
 		$div->appendChild( $self->make_text( "" ) );
@@ -1887,7 +1887,7 @@ sub _render_input_form_field
 
 	$div = $self->make_element( 
 		"div", 
-		class => "formfieldinput",
+		class => "ep_form_field_input",
 		id => "inputfield_".$field->get_name );
 	$div->appendChild( $field->render_input_field( 
 		$self, $value, $dataset, $type, $staff, $hidden_fields , $object ) );

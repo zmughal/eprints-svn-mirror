@@ -101,7 +101,7 @@ sub render_buttons
 {
 	my( $self ) = @_;
 
-	my %buttons = ( _order=>[], _class=>"ep_button_bar" );
+	my %buttons = ( _order=>[], _class=>"ep_form_button_bar" );
 
 	if( defined $self->workflow->get_prev_stage_id )
 	{

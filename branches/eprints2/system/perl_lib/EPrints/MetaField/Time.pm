@@ -100,7 +100,7 @@ sub get_basic_input_elements
 
 	if( defined $min_res && $min_res ne "second" )
 	{	
-		$div = $session->make_element( "div", class=>"formfieldhelp" );	
+		$div = $session->make_element( "div", class=>"ep_form_field_help" );	
 		$div->appendChild( $session->html_phrase( 
 			"lib/metafield:date_res_".$min_res ) );
 		$frag->appendChild( $div );

@@ -4,12 +4,6 @@
 }
 
 
-input, select, textarea {
-	color: #204f76;
-	font-weight: bold;
-	font-size: 100%;
-}
-
 
 .example
 {
@@ -17,67 +11,15 @@ input, select, textarea {
 	color: blue;
 }
 
-.box
-{
-	font-family: sans-serif; 
-	padding: 8pt; 
-	margin-bottom: 1pt;
-}
 
 
-
-
-
-.formfieldhelp {
-        font-size: small ;
-}
-
-
-.formfieldname {
-        padding-top: 1em;
-	font-weight: bold;
-	font-size: 120%;
-}
-
-.formfieldidname {
-	font-weight: bold;
-	font-size: 120%;
-}
-
-
-.formfieldinput {
-        padding-bottom: 3pt;
-}
-.formfieldidinput {
-}
-
-
-.formfieldcomment {
-	font-style: italic;
-        padding-bottom: 3pt;
-}
 
 .requiredstar,.requiredlang {
 	color: #ff0000;
 }
 
 
-.alert {
-	color: #ff0000;
-        font-weight: bold;
-	font-size: 100% ;
-}
-
-.namefieldheading {
-	text-align: left;
-	font-size: small;
-}
-
 dt {
-	font-weight: bold;
-}
-
-.numeral {
 	font-weight: bold;
 }
 
@@ -86,34 +28,10 @@ dt {
 }
 
 
-.subject_browser_opts, .subject_browser_selections, .subject_browser_search
-{
-	margin-left: 1em;
-	margin-right: 1em;
-	padding: 0.5em;
-	border-style: solid;
-	border-color: #ccc;
-	border-width: 1px;
-}
-.subject_browser_selections
-{
-	margin-top: 0.5em;
-	background: #ffffaa;
-}
 
-.subject_browser_selections span.subject
-{
-	font-weight: bold;
-}
-.subject_browser_opts
-{
-	margin-bottom: 0.5em;
-}
-.subject_browser_selected
-{
-	font-style: italic;
-}
 
+
+/* ??? */
 .row_a
 {
 	background: #efefff; 
@@ -143,7 +61,7 @@ td.middle_col
 }
 
 
-.status_row_heading, th, .submission_buttons
+.status_row_heading, th
 {
 	clear: both;
         font-family: Arial,Sans-serif;
@@ -157,14 +75,6 @@ th.empty_heading, tr.header_plain th {
 	border-style: none;
 }
 
-.submission_buttons
-{
-	margin-top: 8pt;
-	text-align: center;
-        padding: 4px;
-	text-decoration: none;
-}
-	
 .problems
 {
 	margin-top: 8pt;
@@ -187,34 +97,6 @@ th.empty_heading, tr.header_plain th {
 }
 
 
-
-/* Blister Bar */
-
-.ep_blister_bar {
-	width: 100%;
-}
-.ep_blister_node {
-	background-image: url(/images/style/gray_bar.png);
-	border: solid 1px #cccccc;
-	text-align: center;
-	padding: 4px;
-}
-.ep_blister_join {
-	background-image: url(/images/style/blackline.png);
-	background-repeat: repeat-x;
-	background-position: center;
-	width: 10px;
-}
-.ep_blister_node_selected {
-	text-align: center;
-	padding: 4px;
-	border: solid 1px #204f76;
-	background-image: url(/images/style/blue_bar.png);
-}
-.ep_blister_node_selected a {
-	text-decoration: none;
-	color: #ffffff;
-}
 
 /* toolbox and messages */
 
@@ -260,18 +142,7 @@ th.empty_heading, tr.header_plain th {
 
 /* dev stuff */
 
-.ep_close_icon {
-	float: right;
-	border: 0;
-}
-.ep_button_bar {
-	text-align: center;
-	padding: 4px;
-	background-image: url(/images/style/toolbox.png);
-	clear: both;
-	border: solid 1px #d8dbef;
-}
-.status_row_heading, th, .submission_buttons
+.status_row_heading, th
 {
 	text-align: center;
 	padding: 4px;
@@ -282,11 +153,3 @@ th.empty_heading, tr.header_plain th {
 	border-color: #ccc;
 	font-weight: normal;
 }
-.actionbutton, .internalbutton {
-	text-align: center;
-	/*border: solid 1px #204f76;*/
-	background-image: url(/images/style/blue_bar.png);
-	color: white;
-	font-weight: normal;
-}
-

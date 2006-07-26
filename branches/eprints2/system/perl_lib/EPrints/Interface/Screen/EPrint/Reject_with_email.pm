@@ -53,7 +53,7 @@ sub render
 	
 	$page->appendChild( $form );
 	
-	my $div = $self->{session}->make_element( "div", class => "formfieldinput" );
+	my $div = $self->{session}->make_element( "div", class => "ep_form_field_input" );
 
 	my $textarea = $self->{session}->make_element(
 		"textarea",

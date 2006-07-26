@@ -3941,4 +3941,4 @@ PACKAGE: 2.2.99.2
  * Moved the workflow surround styles into the new scheme.
  * Moved the search form and results styles into the new scheme.
  * Moved the blister bar style into the new scheme.
-
+ * Moved the old style input form components and buttons into the new scheme.

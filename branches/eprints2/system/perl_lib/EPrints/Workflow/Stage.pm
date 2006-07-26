@@ -161,7 +161,7 @@ sub render
 		
 		$div = $session->make_element(
 			"div",
-			class => "formfieldinput",
+			class => "ep_form_field_input",
 			id => "inputfield_"."cjg???" );
 		$div->appendChild( $component->{surround}->render( $component, $session ) );
 		$dom->appendChild( $div );

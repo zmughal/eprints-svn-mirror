@@ -110,7 +110,7 @@ sub get_basic_input_elements
 	
 	if( $min_res eq "month" || $min_res eq "year" )
 	{	
-		$div = $session->make_element( "div", class=>"formfieldhelp" );	
+		$div = $session->make_element( "div", class=>"ep_form_field_help" );	
 		$div->appendChild( $session->html_phrase( 
 			"lib/metafield:date_res_".$min_res ) );
 		$frag->appendChild( $div );
