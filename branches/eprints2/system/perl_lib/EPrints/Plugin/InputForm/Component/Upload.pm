@@ -475,6 +475,15 @@ window.ep_showTab = function( baseid, tabid )
 
 ' ) );
 
+#
+
+#
+#
+#
+#
+#
+# use the tab renderer in Session.pm!
+#
 
 	my $tab_count = 0;
 	my $tab_table = $session->make_element( "table", class=>"ep_tabs", cellspacing=>0 );

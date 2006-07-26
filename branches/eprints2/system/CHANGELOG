@@ -3943,3 +3943,4 @@ PACKAGE: 2.2.99.2
  * Moved the blister bar style into the new scheme.
  * Moved the old style input form components and buttons into the new scheme.
  * Moved the toolbox and messages styles over.
+ * Tidied up last style in tabs 

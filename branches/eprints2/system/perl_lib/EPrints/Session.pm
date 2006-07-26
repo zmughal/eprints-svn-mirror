@@ -1949,7 +1949,7 @@ sub render_tabs
 		foreach( @{$slow_tabs} ) { $st->{$_} = 1; }
 	}
 
-	my $table = $self->make_element( "table", class=>"ep_tabs", cellspacing=>0 );
+	my $table = $self->make_element( "table", class=>"ep_tab_bar", cellspacing=>0 );
 	my $tr = $self->make_element( "tr", id=>"${id_prefix}_tabs" );
 	$table->appendChild( $tr );
 
