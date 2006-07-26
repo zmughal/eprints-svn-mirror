@@ -558,21 +558,21 @@ sub render_search_fields
 	{
 		my $div = $self->{session}->make_element( 
 				"div" , 
-				class => "searchfieldname" );
+				class => "ep_search_field_name" );
 		$div->appendChild( $sf->render_name );
 		$frag->appendChild( $div );
 		if( $help )
 		{
 			$div = $self->{session}->make_element( 
 				"div" , 
-				class => "searchfieldhelp" );
+				class => "ep_search_field_help" );
 			$div->appendChild( $sf->render_help );
 			$frag->appendChild( $div );
 		}
 
 		$div = $self->{session}->make_element( 
 			"div" , 
-			class => "searchfieldinput" );
+			class => "ep_search_field_input" );
 		$frag->appendChild( $sf->render() );
 	}
 
@@ -622,7 +622,7 @@ sub render_search_form
 
 		my $div = $self->{session}->make_element( 
 			"div" , 
-			class => "searchanyall" );
+			class => "ep_search_anyall" );
 		$div->appendChild( 
 			$self->{session}->html_phrase( 
 				"lib/searchexpression:must_fulfill",  
@@ -646,7 +646,7 @@ sub render_controls
 
 	my $div = $self->{session}->make_element( 
 		"div" , 
-		class => "searchbuttons" );
+		class => "ep_search_buttons" );
 	$div->appendChild( $self->{session}->render_action_buttons( 
 		_order => [ "search", "newsearch" ],
 		newsearch => $self->{session}->phrase( "lib/searchexpression:action_reset" ),
@@ -691,7 +691,7 @@ sub render_order_menu
 						$self->{dataset} ) );
 	my $div = $self->{session}->make_element( 
 		"div" , 
-		class => "searchorder" );
+		class => "ep_search_ordermenu" );
 	$div->appendChild( 
 		$self->{session}->html_phrase( 
 			"lib/searchexpression:order_results", 
@@ -1230,13 +1230,14 @@ sub _dopage_results
 	
 	if( scalar $n_results > 0 )
 	{
-		$bits{matches} = 
-			$self->{session}->html_phrase( 
-				"lib/searchexpression:results",
-				from => $self->{session}->make_text( $offset+1 ),
-				to => $self->{session}->make_text( $plast ),
-				n => $self->{session}->make_text( $n_results )  
-			);
+		my %numbers = ();
+		$numbers{from} = $self->{session}->make_element( "span", class=>"ep_search_number" );
+		$numbers{from}->appendChild( $self->{session}->make_text( $offset+1 ) );
+		$numbers{to} = $self->{session}->make_element( "span", class=>"ep_search_number" );
+		$numbers{to}->appendChild( $self->{session}->make_text( $plast ) );
+		$numbers{n} = $self->{session}->make_element( "span", class=>"ep_search_number" );
+		$numbers{n}->appendChild( $self->{session}->make_text( $n_results ) );
+		$bits{matches} = $self->{session}->html_phrase( "lib/searchexpression:results", %numbers );
 	}
 	else
 	{
@@ -1285,14 +1286,16 @@ sub _dopage_results
 	}
 	
 
-	$bits{time} = $self->{session}->html_phrase( 
-		"lib/searchexpression:search_time", 
-		searchtime => $self->{session}->make_text($t3-$t1) );
+	$bits{time} = $self->{session}->make_element( "span", class=>"ep_search_time" );
+	$bits{time}->appendChild(
+		$self->{session}->html_phrase( 
+			"lib/searchexpression:search_time", 
+			searchtime => $self->{session}->make_text($t3-$t1) ) );
 
 	$bits{searchdesc} = $self->render_description;
 
 	my $links = $self->{session}->make_doc_fragment();
-	$bits{controls} = $self->{session}->make_element( "p", class=>"searchcontrols" );
+	$bits{controls} = $self->{session}->make_element( "div", class=>"ep_search_controls" );
 	my $url = $self->{session}->get_uri();
 	#cjg escape URL'ify urls in this bit... (4 of them?)
 	my $escexp = $self->serialise();	
@@ -1309,7 +1312,7 @@ sub _dopage_results
 			$self->{session}->html_phrase( 
 				"lib/searchexpression:prev",
 				n=>$self->{session}->make_text( $pn ) ) );
-		$cspan = $self->{session}->make_element( 'span', class=>"searchcontrol" );
+		$cspan = $self->{session}->make_element( 'span', class=>"ep_search_control" );
 		$cspan->appendChild( $a );
 		$bits{controls}->appendChild( $cspan );
 		$bits{controls}->appendChild( $self->{session}->html_phrase( "lib/searchexpression:seperator" ) );
@@ -1320,14 +1323,14 @@ sub _dopage_results
 
 	$a = $self->{session}->render_link( "$url?_cache=".$self->{cache_id}."&_exp=$escexp&_action_update=1" );
 	$a->appendChild( $self->{session}->html_phrase( "lib/searchexpression:refine" ) );
-	$cspan = $self->{session}->make_element( 'span', class=>"searchcontrol" );
+	$cspan = $self->{session}->make_element( 'span', class=>"ep_search_control" );
 	$cspan->appendChild( $a );
 	$bits{controls}->appendChild( $cspan );
 	$bits{controls}->appendChild( $self->{session}->html_phrase( "lib/searchexpression:seperator" ) );
 
 	$a = $self->{session}->render_link( $url );
 	$a->appendChild( $self->{session}->html_phrase( "lib/searchexpression:new" ) );
-	$cspan = $self->{session}->make_element( 'span', class=>"searchcontrol" );
+	$cspan = $self->{session}->make_element( 'span', class=>"ep_search_control" );
 	$cspan->appendChild( $a );
 	$bits{controls}->appendChild( $cspan );
 
@@ -1340,7 +1343,7 @@ sub _dopage_results
 		$a->appendChild( $self->{session}->html_phrase( "lib/searchexpression:next",
 					n=>$self->{session}->make_text( $nn ) ) );
 		$bits{controls}->appendChild( $self->{session}->html_phrase( "lib/searchexpression:seperator" ) );
-		$cspan = $self->{session}->make_element( 'span', class=>"searchcontrol" );
+		$cspan = $self->{session}->make_element( 'span', class=>"ep_search_control" );
 		$cspan->appendChild( $a );
 		$bits{controls}->appendChild( $cspan );
 		$links->appendChild( $self->{session}->make_element( "link",
@@ -1351,12 +1354,12 @@ sub _dopage_results
 	$bits{results} = $self->{session}->make_doc_fragment;
 	foreach my $result ( @results )
 	{
-		my $p = $self->{session}->make_element( "p" );
-		$p->appendChild( 
+		my $div = $self->{session}->make_element( "div", class=>"ep_search_result" );
+		$div->appendChild( 
 			$result->render_citation_link( 
 				$self->{citation},  #undef unless specified
 				$self->{staff} ) );
-		$bits{results}->appendChild( $p );
+		$bits{results}->appendChild( $div );
 	}
 	
 
@@ -1443,7 +1446,7 @@ sub _dopage_problems
 
 	my $problem_box = $self->{session}->make_element( 
 				"div",
-				class=>"problems" );
+				class=>"ep_search_problems" );
 	$problem_box->appendChild( $self->{session}->html_phrase( "lib/searchexpression:form_problem" ) );
 
 	# List the problem(s)
@@ -1454,7 +1457,7 @@ sub _dopage_problems
 	{
 		my $li = $self->{session}->make_element( 
 			"li",
-			class=>"problem" );
+			class=>"ep_search_proble" );
 		$ul->appendChild( $li );
 		$li->appendChild( $self->{session}->make_text( $problem ) );
 	}

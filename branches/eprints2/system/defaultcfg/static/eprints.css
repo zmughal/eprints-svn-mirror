@@ -32,12 +32,12 @@ input, select, textarea {
 
 
 
-.searchfieldhelp,.formfieldhelp {
+.formfieldhelp {
         font-size: small ;
 }
 
 
-.formfieldname, .searchfieldname {
+.formfieldname {
         padding-top: 1em;
 	font-weight: bold;
 	font-size: 120%;
@@ -75,14 +75,6 @@ input, select, textarea {
 .namefieldheading {
 	text-align: left;
 	font-size: small;
-}
-
-.searchorder {
-        padding-top: 12pt;
-}
-
-.searchmustfulfill {
-        padding-top: 12pt;
 }
 
 dt {
@@ -155,7 +147,7 @@ td.middle_col
 }
 
 
-.status_row_heading, th, .submission_buttons, .searchbuttons, .searchcontrols
+.status_row_heading, th, .submission_buttons
 {
 	clear: both;
         font-family: Arial,Sans-serif;

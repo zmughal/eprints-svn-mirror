@@ -3939,5 +3939,5 @@ PACKAGE: 2.2.99.2
     the classes as they are reasonably prefixed and pretty much a seperate  
     system.
  * Moved the workflow surround styles into the new scheme.
-
+ * Moved the search form and results styles into the new scheme.
 

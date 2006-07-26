@@ -175,7 +175,7 @@ EPrints Modules
     <ep:phrase id="lib/searchexpression:action_update">Update the search</ep:phrase>
     <ep:phrase id="lib/searchexpression:form_problem"><p>There is a problem with the form:</p></ep:phrase>
     <ep:phrase id="lib/searchexpression:results_for">Results for <ep:pin ref="title" /></ep:phrase>
-    <ep:phrase id="lib/searchexpression:results">Displaying results <span class="numeral"><ep:pin ref="from" /></span> to <span class="numeral"><ep:pin ref="to" /></span> of <span class="numeral"><ep:pin ref="n" /></span>.</ep:phrase>
+    <ep:phrase id="lib/searchexpression:results">Displaying results <ep:pin ref="from" /> to <ep:pin ref="to" /> of <ep:pin ref="n" />.</ep:phrase>
     <ep:phrase id="lib/searchexpression:search_time">Search time: <ep:pin ref="searchtime" />s.</ep:phrase>
     <ep:phrase id="lib/searchexpression:noresults">No matches.</ep:phrase>
     <ep:phrase id="lib/searchexpression:results_page">

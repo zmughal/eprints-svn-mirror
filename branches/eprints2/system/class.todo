@@ -18,83 +18,32 @@ perl_lib/EPrints/MetaField/Time.pm:		$div = $session->make_element( "div", class
 perl_lib/EPrints/MetaField/Set.pm:	$dl = $session->make_element( "dl", class=>"longset" );
 perl_lib/EPrints/MetaField/Longtext.pm:#			class=>$self->{name}."_paragraph" );
 perl_lib/EPrints/MetaField/Date.pm:		$div = $session->make_element( "div", class=>"formfieldhelp" );	
-perl_lib/EPrints/Plugin/InputForm/Surround/Default.pm:		my $problem_div = $self->{session}->make_element( "div", class => "wf_problems" );
-perl_lib/EPrints/Plugin/InputForm/Surround/Default.pm:	my $reqimg = $self->{session}->make_element( "img", src => "/images/req.gif", class => "wf_req_icon", border => "0" );
-perl_lib/EPrints/Plugin/InputForm/Surround/None.pm:	my $reqimg = $self->{session}->make_element( "img", src => "/images/req.gif", class => "wf_req_icon", border => "0" );
-perl_lib/EPrints/Plugin/InputForm/Component/Field.pm:		my $fieldname = $self->{session}->make_element( "span", class=>"problem_field:".$field->{name} );
-perl_lib/EPrints/Plugin/InputForm/Component/Field/Multi.pm:	my $tbody = $self->{session}->make_element( "tbody", class => "sidetable" );
-perl_lib/EPrints/Plugin/InputForm/Component/Field/Subject.pm:		my $div = $session->make_element( "div", class => "tree_node", id => $self->{prefix}."_node_".$root_id );
-perl_lib/EPrints/Plugin/InputForm/Component/Field/Subject.pm:			$div->setAttribute( "class", "tree_node_selected" );
-perl_lib/EPrints/Plugin/InputForm/Component/Field/Subject.pm:			$div2 = $session->make_element( "div", class => "tree_portion" );
-perl_lib/EPrints/Plugin/InputForm/Component/Field/Subject.pm:	my $out = $self->{session}->make_element( "div", class => "wf_subjectcomponent" );
-perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:	my $toolbar = $session->make_element( "div", class => "wf_toolbar" );
-perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:		class => "internalbutton",
-perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:	my $toolbar = $session->make_element( "div", class => "wf_add_format" );
-perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:		class => "internalbutton",
-perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:	my $toolbar = $session->make_element( "div", class => "wf_toolbar" );
-perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:		class => "internalbutton",
-perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:		class => "internalbutton",
-perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:	my $table = $session->make_element( "table", class => "wf_file_table" );
-perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:	my $out = $self->{session}->make_element( "div", class => "wf_uploadcomponent" );
-perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:	my $tab_table = $session->make_element( "table", class=>"ep_tabs", cellspacing=>0 );
-perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:	my $spacer = $session->make_element( "td", class=>"ep_tab_spacer" );
-perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:			my %format_opts = ( class => "wf_format", id => $base."_panel_".$tabid );
-perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:			my $format_name_div = $session->make_element( "div", class => "wf_format_name" );
 perl_lib/EPrints/MetaField.pm:			$th = $session->make_element( "th", class=>"empty_heading" );
 perl_lib/EPrints/MetaField.pm:			$th = $session->make_element( "th", class=>"empty_heading" );
 perl_lib/EPrints/MetaField.pm:				class => "requiredlang" );
-perl_lib/EPrints/DataObj/EPrint.pm:		my $fieldname = $self->{session}->make_element( "span", class=>"problem_field:".$field->{name} );
-perl_lib/EPrints/DataObj/EPrint.pm:			my $fieldname = $self->{session}->make_element( "span", class=>"problem_field:".$field->{name} );
-perl_lib/EPrints/Interface/Processor.pm:		my $div = $self->{session}->make_element( "div", class=>"ep_".$message->{type}, id=>$id );
-perl_lib/EPrints/Interface/Processor.pm:#		my $title_div = $self->{session}->make_element( "div", class=>"ep_".$message->{type}."_title" );
-perl_lib/EPrints/Interface/Processor.pm:#		my $close = $self->{session}->make_element( "img", src=>"/images/style/close.gif", class=>"ep_close_icon only_js" );
-perl_lib/EPrints/Interface/Processor.pm:		my $content_div = $self->{session}->make_element( "div", class=>"ep_".$message->{type}."_content" );
 perl_lib/EPrints/Interface/Screen/EPrint/View.pm:				class=>"actionbutton",
 perl_lib/EPrints/Interface/Screen/EPrint/Edit.pm:	my %buttons = ( _order=>[], _class=>"ep_button_bar" );
 perl_lib/EPrints/Interface/Screen/EPrint/View/Owner.pm:				class=>"actionbutton",
 perl_lib/EPrints/Interface/Screen/EPrint/Edit_staff.pm:	my %buttons = ( _order=>[], _class=>"ep_button_bar" );
 perl_lib/EPrints/Interface/Screen/EPrint/Reject_with_email.pm:	my $div = $self->{session}->make_element( "div", class => "formfieldinput" );
-perl_lib/EPrints/Interface/Screen/Status.pm:		$td = $session->make_element( "td", class=>"status_row_heading" );
-perl_lib/EPrints/Interface/Screen/Status.pm:		$td = $session->make_element( "td", align=>"center", class=>"status_cell"  );
-perl_lib/EPrints/Interface/Screen/Review.pm:	$tr = $self->{session}->make_element( "tr", class=>"header_plain" );
-perl_lib/EPrints/Interface/Screen/Review.pm:		$tr = $session->make_element( "tr", class=>"row_".($info->{row}%2?"b":"a") );
-perl_lib/EPrints/Interface/Screen/Review.pm:		$td = $session->make_element( "td", class=>"first_col" );
-perl_lib/EPrints/Interface/Screen/Review.pm:		$td = $session->make_element( "td", class=>"middle_col" );
-perl_lib/EPrints/Interface/Screen/Review.pm:		$td = $session->make_element( "td", class=>"last_col" );
-perl_lib/EPrints/Interface/Screen/EPrint.pm:	my $table = $session->make_element( "table", cellspacing=>0, class=>"ep_blister_bar" );
-perl_lib/EPrints/Interface/Screen/EPrint.pm:		if( !$first )  { $tr->appendChild( $session->make_element( "td", class=>"ep_blister_join" ) ); }
-perl_lib/EPrints/Interface/Screen/EPrint.pm:			$td = $session->make_element( "td", class=>"ep_blister_node_selected" );
-perl_lib/EPrints/Interface/Screen/EPrint.pm:			$td = $session->make_element( "td", class=>"ep_blister_node" );
-perl_lib/EPrints/Interface/Screen/EPrint.pm:		$tr->appendChild( $session->make_element( "td", class=>"ep_blister_join" ) );
-perl_lib/EPrints/Interface/Screen/EPrint.pm:			$td = $session->make_element( "td", class=>"ep_blister_node_selected" );
-perl_lib/EPrints/Interface/Screen/EPrint.pm:			$td = $session->make_element( "td", class=>"ep_blister_node" );
-perl_lib/EPrints/SubmissionForm.pm:		_class => "submission_buttons",
-perl_lib/EPrints/SubmissionForm.pm:		_class => "submission_buttons",
-perl_lib/EPrints/SubmissionForm.pm:		_class => "submission_buttons",
-perl_lib/EPrints/SubmissionForm.pm:	$buttons{_class} = "submission_buttons";
-perl_lib/EPrints/SubmissionForm.pm:		_class => "submission_buttons",
-perl_lib/EPrints/SubmissionForm.pm:		_class => "submission_buttons",
-perl_lib/EPrints/SubmissionForm.pm:		_class => "submission_buttons",
-perl_lib/EPrints/SubmissionForm.pm:			class=>"submission_buttons" );
-perl_lib/EPrints/SubmissionForm.pm:				class=>"problems" );
-perl_lib/EPrints/Extras.pm:			class=>"subject_browser_".($selected?"":"un")."selected" );
-perl_lib/EPrints/Search.pm:				class => "searchfieldname" );
-perl_lib/EPrints/Search.pm:				class => "searchfieldhelp" );
-perl_lib/EPrints/Search.pm:			class => "searchfieldinput" );
-perl_lib/EPrints/Search.pm:			class => "searchanyall" );
-perl_lib/EPrints/Search.pm:		class => "searchbuttons" );
-perl_lib/EPrints/Search.pm:		class => "searchorder" );
-perl_lib/EPrints/Search.pm:	$bits{controls} = $self->{session}->make_element( "p", class=>"searchcontrols" );
-perl_lib/EPrints/Search.pm:		$cspan = $self->{session}->make_element( 'span', class=>"searchcontrol" );
-perl_lib/EPrints/Search.pm:	$cspan = $self->{session}->make_element( 'span', class=>"searchcontrol" );
-perl_lib/EPrints/Search.pm:	$cspan = $self->{session}->make_element( 'span', class=>"searchcontrol" );
-perl_lib/EPrints/Search.pm:		$cspan = $self->{session}->make_element( 'span', class=>"searchcontrol" );
-perl_lib/EPrints/Search.pm:				class=>"problems" );
-perl_lib/EPrints/Search.pm:			class=>"problem" );
 perl_lib/EPrints/UserForm.pm:					class=>"problems" );
-perl_lib/EPrints/Workflow.pm:		if( $class=~m/^problem_field:(.*)$/ )
 perl_lib/EPrints/Workflow/Stage.pm:			class => "formfieldinput",
 perl_lib/EPrints/Apache/Login.pm:			class => 'actionbutton',
+
+
+# processor (messages)
+perl_lib/EPrints/Interface/Processor.pm:		my $div = $self->{session}->make_element( "div", class=>"ep_".$message->{type}, id=>$id );
+perl_lib/EPrints/Interface/Processor.pm:#		my $title_div = $self->{session}->make_element( "div", class=>"ep_".$message->{type}."_title" );
+perl_lib/EPrints/Interface/Processor.pm:#		my $close = $self->{session}->make_element( "img", src=>"/images/style/close.gif", class=>"ep_close_icon only_js" );
+perl_lib/EPrints/Interface/Processor.pm:		my $content_div = $self->{session}->make_element( "div", class=>"ep_".$message->{type}."_content" );
+
+
+
+
+
+
+
+# just example & notice
 defaultcfg/en/phrases.xml:<br />Example: <span class="example">A brief history of time</span>
 defaultcfg/en/phrases.xml:<br />Example: <span class="example">Life: an unauthorised biography</span>
 defaultcfg/en/phrases.xml:<br />Example: <span class="example">Mathematics for engineers and scientists. 5th edition</span>
@@ -134,3 +83,87 @@ defaultcfg/en/phrases.xml:<br />Example: <span class="example">John K. Ducklings
 defaultcfg/en/phrases.xml:<br />Example: <span class="example">2006 - all documents made publically accessible on 1st January 2006</span>
 defaultcfg/en/phrases.xml:<br />Example: <span class="example">2006 June - all documents made publically accessible on 1st June 2006</span>
 defaultcfg/en/phrases.xml:    <ep:phrase id="page:not_latest_version"><p class="notice">There is a more recent version of this eprint available. <ep:pin ref="link">Click here to view it.</ep:pin></p></ep:phrase>
+
+
+# blister
+perl_lib/EPrints/Interface/Screen/EPrint.pm:	my $table = $session->make_element( "table", cellspacing=>0, class=>"ep_blister_bar" );
+perl_lib/EPrints/Interface/Screen/EPrint.pm:		if( !$first )  { $tr->appendChild( $session->make_element( "td", class=>"ep_blister_join" ) ); }
+perl_lib/EPrints/Interface/Screen/EPrint.pm:			$td = $session->make_element( "td", class=>"ep_blister_node_selected" );
+perl_lib/EPrints/Interface/Screen/EPrint.pm:			$td = $session->make_element( "td", class=>"ep_blister_node" );
+perl_lib/EPrints/Interface/Screen/EPrint.pm:		$tr->appendChild( $session->make_element( "td", class=>"ep_blister_join" ) );
+perl_lib/EPrints/Interface/Screen/EPrint.pm:			$td = $session->make_element( "td", class=>"ep_blister_node_selected" );
+perl_lib/EPrints/Interface/Screen/EPrint.pm:			$td = $session->make_element( "td", class=>"ep_blister_node" );
+
+
+
+# needs redoing anyway!
+perl_lib/EPrints/Interface/Screen/Status.pm:		$td = $session->make_element( "td", class=>"status_row_heading" );
+perl_lib/EPrints/Interface/Screen/Status.pm:		$td = $session->make_element( "td", align=>"center", class=>"status_cell"  );
+perl_lib/EPrints/Interface/Screen/Review.pm:	$tr = $self->{session}->make_element( "tr", class=>"header_plain" );
+perl_lib/EPrints/Interface/Screen/Review.pm:		$tr = $session->make_element( "tr", class=>"row_".($info->{row}%2?"b":"a") );
+perl_lib/EPrints/Interface/Screen/Review.pm:		$td = $session->make_element( "td", class=>"first_col" );
+perl_lib/EPrints/Interface/Screen/Review.pm:		$td = $session->make_element( "td", class=>"middle_col" );
+perl_lib/EPrints/Interface/Screen/Review.pm:		$td = $session->make_element( "td", class=>"last_col" );
+
+
+# problem field!
+perl_lib/EPrints/Workflow.pm:		if( $class=~m/^problem_field:(.*)$/ )
+perl_lib/EPrints/Plugin/InputForm/Component/Field.pm:		my $fieldname = $self->{session}->make_element( "span", class=>"problem_field:".$field->{name} );
+perl_lib/EPrints/DataObj/EPrint.pm:		my $fieldname = $self->{session}->make_element( "span", class=>"problem_field:".$field->{name} );
+perl_lib/EPrints/DataObj/EPrint.pm:			my $fieldname = $self->{session}->make_element( "span", class=>"problem_field:".$field->{name} );
+
+
+# component stuff
+perl_lib/EPrints/Plugin/InputForm/Surround/Default.pm:		my $problem_div = $self->{session}->make_element( "div", class => "wf_problems" );
+perl_lib/EPrints/Plugin/InputForm/Surround/Default.pm:	my $reqimg = $self->{session}->make_element( "img", src => "/images/req.gif", class => "wf_req_icon", border => "0" );
+perl_lib/EPrints/Plugin/InputForm/Surround/None.pm:	my $reqimg = $self->{session}->make_element( "img", src => "/images/req.gif", class => "wf_req_icon", border => "0" );
+perl_lib/EPrints/Plugin/InputForm/Component/Field/Multi.pm:	my $tbody = $self->{session}->make_element( "tbody", class => "sidetable" );
+perl_lib/EPrints/Plugin/InputForm/Component/Field/Subject.pm:		my $div = $session->make_element( "div", class => "tree_node", id => $self->{prefix}."_node_".$root_id );
+perl_lib/EPrints/Plugin/InputForm/Component/Field/Subject.pm:			$div->setAttribute( "class", "tree_node_selected" );
+perl_lib/EPrints/Plugin/InputForm/Component/Field/Subject.pm:			$div2 = $session->make_element( "div", class => "tree_portion" );
+perl_lib/EPrints/Plugin/InputForm/Component/Field/Subject.pm:	my $out = $self->{session}->make_element( "div", class => "wf_subjectcomponent" );
+perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:	my $toolbar = $session->make_element( "div", class => "wf_toolbar" );
+perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:		class => "internalbutton",
+perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:	my $toolbar = $session->make_element( "div", class => "wf_add_format" );
+perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:		class => "internalbutton",
+perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:	my $toolbar = $session->make_element( "div", class => "wf_toolbar" );
+perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:		class => "internalbutton",
+perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:		class => "internalbutton",
+perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:	my $table = $session->make_element( "table", class => "wf_file_table" );
+perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:	my $out = $self->{session}->make_element( "div", class => "wf_uploadcomponent" );
+perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:	my $tab_table = $session->make_element( "table", class=>"ep_tabs", cellspacing=>0 );
+perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:	my $spacer = $session->make_element( "td", class=>"ep_tab_spacer" );
+perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:			my %format_opts = ( class => "wf_format", id => $base."_panel_".$tabid );
+perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:			my $format_name_div = $session->make_element( "div", class => "wf_format_name" );
+
+
+<p class="resultsinfo"><!---------biggy!
+
+# doomed
+    <ep:phrase id="lib/extras:subject_browser"><div class="subject_browser_selections"><table><tr><td valign="top">Selections:</td><td><ep:pin ref="selections" /></td></tr></table></div><div class="subject_browser_search"><ep:pin ref="search" /></div><div class="subject_browser_opts"><ep:pin ref="opts" /></div></ep:phrase>
+# doomed anyway
+perl_lib/EPrints/SubmissionForm.pm:		_class => "submission_buttons",
+perl_lib/EPrints/SubmissionForm.pm:		_class => "submission_buttons",
+perl_lib/EPrints/SubmissionForm.pm:		_class => "submission_buttons",
+perl_lib/EPrints/SubmissionForm.pm:	$buttons{_class} = "submission_buttons";
+perl_lib/EPrints/SubmissionForm.pm:		_class => "submission_buttons",
+perl_lib/EPrints/SubmissionForm.pm:		_class => "submission_buttons",
+perl_lib/EPrints/SubmissionForm.pm:		_class => "submission_buttons",
+perl_lib/EPrints/SubmissionForm.pm:			class=>"submission_buttons" );
+perl_lib/EPrints/SubmissionForm.pm:				class=>"problems" );
+perl_lib/EPrints/Extras.pm:			class=>"subject_browser_".($selected?"":"un")."selected" );
+
+
+
+# system phrases
+<br />Examples:  "<span class="example">1985-</span>", 
+"<span class="example">2001-05-17-2002-05-16</span>",
+"<span class="example">-11-1980</span>"
+<br />Examples:  "<span class="example">1985-</span>", 
+"<span class="example">2001-05-17-2002-05-16</span>",
+"<span class="example">-11-1980</span>"
+#remove, I think.
+    <ep:phrase id="lib/submissionform:bib_info"><p>Current item: <strong><ep:pin ref="desc" /></strong></p><p>Please enter the information about this item. Fields marked with a <span class="requiredstar">*</span> are fields that must be filled out before your deposit will be accepted.</p></ep:phrase>
+    <ep:phrase id="lib/userform:blurb"><p>Please enter correct information about yourself for our records. This information will be useful to us and readers of your items. You don't have to supply all this information if you don't want to; you need only fill out those fields marked with a <span class="requiredstar">*</span> to start using the repository.</p><p>For instructions on how to change your email address, <a href="&perl_url;/users/change_email">click here</a>.</p></ep:phrase>
+    <ep:phrase id="cgi/users/status:out_of_space"><span class="alert">NO DISK SPACE LEFT!</span></ep:phrase>
+    <ep:phrase id="cgi/users/status:nearly_out_of_space"><span class="alert">WARNING:</span> Available space for new items is running low</ep:phrase>
