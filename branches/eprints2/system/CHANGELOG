@@ -3945,3 +3945,8 @@ PACKAGE: 2.2.99.2
  * Moved the toolbox and messages styles over.
  * Tidied up last style in tabs 
  * Changed requiredness of a field to be a red star icon. Not css'd yet.
+ * Sorted out style of required stars.
+ * removed *'s from phrases. May put them back in later.
+ * Fixed bug in View::Owner which auto forwarded to View::Editor due to
+    inherriting from View
+

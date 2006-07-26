@@ -139,13 +139,13 @@
 
     <ep:phrase id="eprint_fieldname_editors">Editors</ep:phrase>
     <ep:phrase id="eprint_fieldhelp_editors">Please enter the names of the editors.<br />
-<span   class="requiredstar">*</span> This field is required if no creators are listed.
+This field is required if no creators are listed.
 </ep:phrase>
     <ep:phrase id="eprint_fieldname_editors_id">Editors email (if known)</ep:phrase>
 
     <ep:phrase id="eprint_fieldname_date_sub">Date of Submission</ep:phrase>
     <ep:phrase id="eprint_fieldhelp_date_sub">The date this item was submitted to a publisher. <b>Not</b> the date of submission to this service.<br />
-<span   class="requiredstar">*</span> Date of submission is required if the item has no date of issue. If the item has not yet been submitted to a journal, conference or publisher, or is not intended for submission then please enter the date it was completed as the date of issue.
+Date of submission is required if the item has no date of issue. If the item has not yet been submitted to a journal, conference or publisher, or is not intended for submission then please enter the date it was completed as the date of issue.
 </ep:phrase>
 
     <ep:phrase id="eprint_fieldname_date_issue">Date of Issue</ep:phrase>

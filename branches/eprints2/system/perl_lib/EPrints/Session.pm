@@ -1861,17 +1861,14 @@ sub _render_input_form_field
 		# special case for booleans - even if they're required it
 		# dosn't make much sense to highlight them.	
 
-		$div->appendChild( $field->render_name( $self ) );
 
 		if( $req && !$field->is_type( "boolean" ) )
 		{
-			$span = $self->make_element( 
-					"span", 
-					class => "requiredstar" );	
-			$span->appendChild( $self->make_text( "*" ) );	
-			$div->appendChild( $self->make_text( " " ) );	
-			$div->appendChild( $span );
+			my $reqimg = $self->make_element( "img", src => "/images/style/required.png", class => "wf_req_icon", border => "0" );
+			$div->appendChild( $reqimg );
 		}
+		$div->appendChild( $field->render_name( $self ) );
+
 		$html->appendChild( $div );
 	}
 

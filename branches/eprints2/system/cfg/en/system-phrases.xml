@@ -282,7 +282,6 @@ EPrints Modules
 <!-- SubmissionForm -->
 
     <ep:phrase id="lib/submissionform:use_auth_area">Use the user area to deposit new items</ep:phrase>
-    <ep:phrase id="lib/submissionform:bib_info"><p>Current item: <strong><ep:pin ref="desc" /></strong></p><p>Please enter the information about this item. Fields marked with a <span class="requiredstar">*</span> are fields that must be filled out before your deposit will be accepted.</p></ep:phrase>
     <ep:phrase id="lib/submissionform:verify">Verify: <ep:pin ref="citation" /></ep:phrase>
     <ep:phrase id="lib/submissionform:invalid_eprint">ID <ep:pin ref="eprintid" /> is not a valid item ID!</ep:phrase>
     <ep:phrase id="lib/submissionform:current_docs"><p>Here are the documents currently attached to this item, and how many files you have uploaded for each.</p></ep:phrase>
@@ -411,7 +410,7 @@ Enter a URL to capture a file from: <ep:pin ref="url" /><br />
 
     <ep:phrase id="lib/userform:dont_know">I don't know who you are</ep:phrase>
     <ep:phrase id="lib/userform:record_for">Record for <ep:pin ref="name" /></ep:phrase>
-    <ep:phrase id="lib/userform:blurb"><p>Please enter correct information about yourself for our records. This information will be useful to us and readers of your items. You don't have to supply all this information if you don't want to; you need only fill out those fields marked with a <span class="requiredstar">*</span> to start using the repository.</p><p>For instructions on how to change your email address, <a href="&perl_url;/users/change_email">click here</a>.</p></ep:phrase>
+    <ep:phrase id="lib/userform:blurb"><p>Please enter correct information about yourself for our records. This information will be useful to us and readers of your items. You don't have to supply all this information if you don't want to; you need only fill out those fields marked with a star to start using the repository.</p><p>For instructions on how to change your email address, <a href="&perl_url;/users/change_email">click here</a>.</p></ep:phrase>
     <ep:phrase id="lib/userform:staff_blurb"><p>You may update the users record.</p></ep:phrase>
     <ep:phrase id="lib/userform:form_incorrect"><p>The form doesn't seem to be filled out correctly:</p></ep:phrase>
     <ep:phrase id="lib/userform:complete_form"><p>Please complete the form before continuing.</p></ep:phrase>

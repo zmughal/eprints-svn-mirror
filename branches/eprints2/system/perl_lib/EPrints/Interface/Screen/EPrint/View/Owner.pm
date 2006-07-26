@@ -32,8 +32,6 @@ sub render_status
 	my $status_fragment = $self->{session}->make_doc_fragment;
 	$status_fragment->appendChild( $self->{session}->html_phrase( "cgi/users/edit_eprint:item_is_in_".$status ) );
 
-
-
 	if( $self->allow( "action/eprint/deposit" ) )
 	{
 		# clean up
@@ -83,5 +81,11 @@ sub can_be_viewed
 
 	return $self->SUPER::can_be_viewed;
 }
+
+# don't do what view does 
+sub about_to_render 
+{
+}
+
 1;
 
