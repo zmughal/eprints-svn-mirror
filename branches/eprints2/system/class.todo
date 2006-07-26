@@ -18,14 +18,7 @@ perl_lib/EPrints/MetaField/Time.pm:		$div = $session->make_element( "div", class
 perl_lib/EPrints/MetaField/Set.pm:	$dl = $session->make_element( "dl", class=>"longset" );
 perl_lib/EPrints/MetaField/Longtext.pm:#			class=>$self->{name}."_paragraph" );
 perl_lib/EPrints/MetaField/Date.pm:		$div = $session->make_element( "div", class=>"formfieldhelp" );	
-perl_lib/EPrints/Plugin/InputForm/Surround/Default.pm:	my $surround = $self->{session}->make_element( "div", class => "wf_component" );
-perl_lib/EPrints/Plugin/InputForm/Surround/Default.pm:	my $title_table = $self->{session}->make_element( "table", cellspacing=>0, class=>"wf_title_table" );
-perl_lib/EPrints/Plugin/InputForm/Surround/Default.pm:	my $title_td1 = $self->{session}->make_element( "td", class=>"wf_title" );
-perl_lib/EPrints/Plugin/InputForm/Surround/Default.pm:	my $title_td2 = $self->{session}->make_element( "td", class=>"wf_show_help ep_only_js", id=>$id_prefix."_show" );
-perl_lib/EPrints/Plugin/InputForm/Surround/Default.pm:	my $title_td3 = $self->{session}->make_element( "td", class=>"wf_hide_help ep_hide", id=>$id_prefix."_hide" );
-perl_lib/EPrints/Plugin/InputForm/Surround/Default.pm:	my $help_div = $self->{session}->make_element( "div", class => "wf_help ep_no_js", id => $id_prefix );
 perl_lib/EPrints/Plugin/InputForm/Surround/Default.pm:		my $problem_div = $self->{session}->make_element( "div", class => "wf_problems" );
-perl_lib/EPrints/Plugin/InputForm/Surround/Default.pm:	my $input_div = $self->{session}->make_element( "div", class => "wf_input" );
 perl_lib/EPrints/Plugin/InputForm/Surround/Default.pm:	my $reqimg = $self->{session}->make_element( "img", src => "/images/req.gif", class => "wf_req_icon", border => "0" );
 perl_lib/EPrints/Plugin/InputForm/Surround/None.pm:	my $reqimg = $self->{session}->make_element( "img", src => "/images/req.gif", class => "wf_req_icon", border => "0" );
 perl_lib/EPrints/Plugin/InputForm/Component/Field.pm:		my $fieldname = $self->{session}->make_element( "span", class=>"problem_field:".$field->{name} );

@@ -3938,4 +3938,6 @@ PACKAGE: 2.2.99.2
  * Moved vlit.css to sit in same dir as other css files, but didn't rename 
     the classes as they are reasonably prefixed and pretty much a seperate  
     system.
+ * Moved the workflow surround styles into the new scheme.
+
 

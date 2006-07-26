@@ -16,7 +16,7 @@ sub render
 	my $title = $component->render_title( $self );
 	my @problems = @{$component->get_problems()};
 
-	my $surround = $self->{session}->make_element( "div", class => "wf_component" );
+	my $surround = $self->{session}->make_element( "div", class => "ep_sr_component" );
 	foreach my $field_id ( $component->get_fields_handled )
 	{
 		$surround->appendChild( $self->{session}->make_element( "a", name=>$field_id ) );
@@ -26,27 +26,27 @@ sub render
 
 	my $id_prefix = $component->{prefix}."_help";
 
-	my $title_table = $self->{session}->make_element( "table", cellspacing=>0, class=>"wf_title_table" );
+	my $title_table = $self->{session}->make_element( "table", cellspacing=>0, class=>"ep_sr_title_table" );
 	my $title_tr = $self->{session}->make_element( "tr" );
 	$title_table->appendChild( $title_tr );
 
-	my $title_td1 = $self->{session}->make_element( "td", class=>"wf_title" );
+	my $title_td1 = $self->{session}->make_element( "td", class=>"ep_sr_title" );
 	$title_td1->appendChild( $title );
 	$title_tr->appendChild( $title_td1 );
 
-	my $title_td2 = $self->{session}->make_element( "td", class=>"wf_show_help ep_only_js", id=>$id_prefix."_show" );
+	my $title_td2 = $self->{session}->make_element( "td", class=>"ep_sr_show_help ep_only_js", id=>$id_prefix."_show" );
 	my $helplink = $self->{session}->make_element( "a", onClick => "EPJS_toggle('$id_prefix',false,'block');EPJS_toggle('${id_prefix}_hide',false,'table-cell');EPJS_toggle('${id_prefix}_show',true,'table-cell');return false", href=>"#" );
 	$helplink->appendChild( $self->{session}->make_text( "Help" ) );
 	$title_td2->appendChild( $helplink );
 	$title_tr->appendChild( $title_td2 );
 
-	my $title_td3 = $self->{session}->make_element( "td", class=>"wf_hide_help ep_hide", id=>$id_prefix."_hide" );
+	my $title_td3 = $self->{session}->make_element( "td", class=>"ep_sr_hide_help ep_hide", id=>$id_prefix."_hide" );
 	my $helplink2 = $self->{session}->make_element( "a", onClick => "EPJS_toggle('$id_prefix',false,'block');EPJS_toggle('${id_prefix}_hide',false,'table-cell');EPJS_toggle('${id_prefix}_show',true,'table-cell');return false", href=>"#" );
 	$helplink2->appendChild( $self->{session}->make_text( "Hide help" ) );
 	$title_td3->appendChild( $helplink2 );
 	$title_tr->appendChild( $title_td3 );
 	
-	my $help_div = $self->{session}->make_element( "div", class => "wf_help ep_no_js", id => $id_prefix );
+	my $help_div = $self->{session}->make_element( "div", class => "ep_sr_help ep_no_js", id => $id_prefix );
 	$help_div->appendChild( $help );
 	
 	if( $is_req )
@@ -70,7 +70,7 @@ sub render
 	}
 
 	# Finally add the content (unless we're collapsed)
-	my $input_div = $self->{session}->make_element( "div", class => "wf_input" );
+	my $input_div = $self->{session}->make_element( "div", class => "ep_sr_input" );
 	if( !$collapsed )
 	{
 		$input_div->appendChild( $component->render_content( $self ) );
