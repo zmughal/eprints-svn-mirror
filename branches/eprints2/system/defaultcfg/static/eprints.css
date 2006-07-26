@@ -10,10 +10,6 @@ input, select, textarea {
 	font-size: 100%;
 }
 
-.searchcontrol a {
-	text-decoration: none;
-	color: blue;
-}
 
 .example
 {
@@ -161,16 +157,12 @@ th.empty_heading, tr.header_plain th {
 	border-style: none;
 }
 
-.submission_buttons, .searchbuttons, .searchcontrols
+.submission_buttons
 {
 	margin-top: 8pt;
 	text-align: center;
         padding: 4px;
 	text-decoration: none;
-}
-.searchcontrols 
-{
-	padding: 8px;
 }
 	
 .problems
@@ -194,10 +186,6 @@ th.empty_heading, tr.header_plain th {
 	border: 2px #c0c0ff dashed;
 }
 
-
-.searchanyall {
-	margin-top: 1em;
-}
 
 
 /* Blister Bar */
@@ -283,7 +271,7 @@ th.empty_heading, tr.header_plain th {
 	clear: both;
 	border: solid 1px #d8dbef;
 }
-.status_row_heading, th, .submission_buttons, .searchbuttons, .searchcontrols
+.status_row_heading, th, .submission_buttons
 {
 	text-align: center;
 	padding: 4px;
@@ -294,7 +282,7 @@ th.empty_heading, tr.header_plain th {
 	border-color: #ccc;
 	font-weight: normal;
 }
-.actionbutton, .searchcontrol,.internalbutton {
+.actionbutton, .internalbutton {
 	text-align: center;
 	/*border: solid 1px #204f76;*/
 	background-image: url(/images/style/blue_bar.png);
