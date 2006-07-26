@@ -3933,3 +3933,4 @@ PACKAGE: 2.2.99.2
  * Split style sheet into parts. Began process of making rational class names
     for all css used in eprints.
  * Removed debug code from workflow.pm
+ * Rejigged eprints workflow to be closer to what we plan for 3.0

@@ -4,10 +4,6 @@
     <stage ref="type"/>
     <stage ref="files"/>
     <stage ref="core"/>
-    <stage ref="pubinfo"/>
-    <ep:ifmatch name="type" merge="ANY" value="conference_item">
-      <stage ref="event"/>
-    </ep:ifmatch>
     <stage ref="subjects"/>
   </flow>
 
@@ -17,22 +13,21 @@
   </stage>
 
   <stage name="files">
-    <component type="UploadComponent"></component>
+    <component type="Upload"></component>
   </stage>
 
 
   <stage name="core">
 
     <component><field ref="title"><required/></field></component>
+    <component><field ref="abstract"/></component>
 
     <ep:ifmatch name="type" merge="ANY" value="monograph">
       <component><field ref="monograph_type"><required/></field></component>
     </ep:ifmatch>
-
     <ep:ifmatch name="type" merge="ANY" value="thesis">
       <component><field ref="thesis_type"><required/></field></component>
     </ep:ifmatch>
-
     <ep:ifmatch name="type" merge="ANY" value="conference_item">
       <component><field ref="pres_type"><required/></field></component>
     </ep:ifmatch>
@@ -45,110 +40,114 @@
       <component><field ref="creators_list"><required/></field></component>
     </ep:ifnotmatch>
 
-    <ep:ifmatch name="type" merge="ANY" value="book_section book article conference_item">
-      <component><field ref="refereed"><required/></field></component>
-    </ep:ifmatch>
-    <ep:ifnotmatch name="type" merge="ANY" value="patent">
-      <component><field ref="ispublished"><required/></field></component>
+    <ep:ifnotmatch name="type" merge="ANY" value="patent"> 
+      <component type="Field::Multi">
+        <ep:ifmatch name="type" merge="ANY" value="book_section book article conference_item">
+          <field ref="refereed"><required/></field>
+        </ep:ifmatch>
+        <field ref="ispublished"><required/></field>
+      </component>
     </ep:ifnotmatch>
 
-    <component><field ref="abstract"/></component>
+    <component type="Field::Multi">
+      <title><phrase>Publication Details</phrase></title>
+      <ep:ifmatch name="type" merge="ANY" value="patent">
+        <field ref="date_issue"><required/></field>
+        <field ref="official_url"/>
+        <field ref="patent_applicant"><required/></field>
+        <field ref="id_number"><required/></field>
+        <field ref="pages"/>
+      </ep:ifmatch>
+      <ep:ifmatch name="type" merge="ANY" value="monograph">
+        <field ref="institution"/>
+        <field ref="department"/>
+        <field ref="place_of_pub"/>
+        <field ref="publisher"><required/></field>
+        <field ref="id_number"/>
+        <field ref="pages"/>
+        <field ref="date_issue"/>
+        <field ref="date_sub"/>
+        <field ref="official_url"/>
+      </ep:ifmatch>
+      <ep:ifmatch name="type" merge="ANY" value="book">
+        <field ref="date_issue"/>
+        <field ref="date_sub"/>
+        <field ref="place_of_pub"/>
+        <field ref="publisher"><required/></field>
+        <field ref="pages"/>
+        <field ref="series"/>
+        <field ref="volume"/>
+        <field ref="number"/>
+        <field ref="isbn"/>
+        <field ref="official_url"/>
+      </ep:ifmatch>
+      <ep:ifmatch name="type" merge="ANY" value="other">
+        <field ref="date_issue"/>
+        <field ref="date_sub"/>
+        <field ref="official_url"/>
+        <field ref="place_of_pub"/>
+        <field ref="publisher"><required/></field>
+        <field ref="id_number"/>
+      </ep:ifmatch>
+      <ep:ifmatch name="type" merge="ANY" value="book_section">
+        <field ref="pagerange"/>
+        <field ref="book_title"><required/></field>
+        <field ref="volume"/>
+        <field ref="place_of_pub"/>
+        <field ref="publisher"><required/></field>
+        <field ref="pages"/>
+        <field ref="id_number"/>
+        <field ref="series"/>
+        <field ref="number"/>
+        <field ref="isbn"/>
+        <field ref="date_issue"/>
+        <field ref="date_sub"/>
+        <field ref="official_url"/>
+      </ep:ifmatch>
+      <ep:ifmatch name="type" merge="ANY" value="thesis">
+        <field ref="date_issue"><required/></field>
+        <field ref="official_url"/>
+        <field ref="institution"><required/></field>
+        <field ref="department"><required/></field>
+        <field ref="pages"/>
+      </ep:ifmatch>
+      <ep:ifmatch name="type" merge="ANY" value="conference_item">
+        <field ref="date_issue"/>
+        <field ref="date_sub"/>
+        <field ref="pages"/>
+        <field ref="official_url"/>
+      </ep:ifmatch>
+      <ep:ifmatch name="type" merge="ANY" value="article">
+        <field ref="publication"><required/></field>
+        <field ref="volume"/>
+        <field ref="number"/>
+        <field ref="pagerange"/>
+        <field ref="date_issue"/>
+        <field ref="date_sub"/>
+        <field ref="id_number"/>
+        <field ref="official_url"/>
+        <field ref="issn"/>
+      </ep:ifmatch>
+    </component>
+    <ep:ifmatch name="type" merge="ANY" value="conference_item">
+      <component type="Field::Multi">
+        <title><phrase>Event Details</phrase></title>
+        <field ref="event_title"><required/></field>
+        <field ref="event_type"><required/></field>
+        <field ref="event_location"/>
+        <field ref="event_dates"/>
+      </component>
+    </ep:ifmatch>
+
     <component><field ref="referencetext"/></component>
     <component><field ref="keywords"/></component>
-
-  </stage>
-
-  <stage name="pubinfo">
     <component><field ref="note"/></component>
     <component><field ref="suggestions"/></component>
-    <ep:ifmatch name="type" merge="ANY" value="patent">
-      <component><field ref="date_issue"><required/></field></component>
-      <component><field ref="official_url"/></component>
-      <component><field ref="patent_applicant"><required/></field></component>
-      <component><field ref="id_number"><required/></field></component>
-      <component><field ref="pages"/></component>
-    </ep:ifmatch>
-    <ep:ifmatch name="type" merge="ANY" value="monograph">
-      <component><field ref="institution"/></component>
-      <component><field ref="department"/></component>
-      <component><field ref="place_of_pub"/></component>
-      <component><field ref="publisher"><required/></field></component>
-      <component><field ref="id_number"/></component>
-      <component><field ref="pages"/></component>
-      <component><field ref="date_issue"/></component>
-      <component><field ref="date_sub"/></component>
-      <component><field ref="official_url"/></component>
-    </ep:ifmatch>
-    <ep:ifmatch name="type" merge="ANY" value="book">
-      <component><field ref="date_issue"/></component>
-      <component><field ref="date_sub"/></component>
-      <component><field ref="place_of_pub"/></component>
-      <component><field ref="publisher"><required/></field></component>
-      <component><field ref="pages"/></component>
-      <component><field ref="series"/></component>
-      <component><field ref="volume"/></component>
-      <component><field ref="number"/></component>
-      <component><field ref="isbn"/></component>
-      <component><field ref="official_url"/></component>
-    </ep:ifmatch>
-    <ep:ifmatch name="type" merge="ANY" value="other">
-      <component><field ref="date_issue"/></component>
-      <component><field ref="date_sub"/></component>
-      <component><field ref="official_url"/></component>
-      <component><field ref="place_of_pub"/></component>
-      <component><field ref="publisher"><required/></field></component>
-      <component><field ref="id_number"/></component>
-    </ep:ifmatch>
-    <ep:ifmatch name="type" merge="ANY" value="book_section">
-      <component><field ref="pagerange"/></component>
-      <component><field ref="book_title"><required/></field></component>
-      <component><field ref="volume"/></component>
-      <component><field ref="place_of_pub"/></component>
-      <component><field ref="publisher"><required/></field></component>
-      <component><field ref="pages"/></component>
-      <component><field ref="id_number"/></component>
-      <component><field ref="series"/></component>
-      <component><field ref="number"/></component>
-      <component><field ref="isbn"/></component>
-      <component><field ref="date_issue"/></component>
-      <component><field ref="date_sub"/></component>
-      <component><field ref="official_url"/></component>
-    </ep:ifmatch>
-    <ep:ifmatch name="type" merge="ANY" value="thesis">
-      <component><field ref="date_issue"><required/></field></component>
-      <component><field ref="official_url"/></component>
-      <component><field ref="institution"><required/></field></component>
-      <component><field ref="department"><required/></field></component>
-      <component><field ref="pages"/></component>
-    </ep:ifmatch>
-    <ep:ifmatch name="type" merge="ANY" value="conference_item">
-      <component><field ref="date_issue"/></component>
-      <component><field ref="date_sub"/></component>
-      <component><field ref="pages"/></component>
-      <component><field ref="official_url"/></component>
-    </ep:ifmatch>
-    <ep:ifmatch name="type" merge="ANY" value="article">
-      <component><field ref="publication"><required/></field></component>
-      <component><field ref="volume"/></component>
-      <component><field ref="number"/></component>
-      <component><field ref="pagerange"/></component>
-      <component><field ref="date_issue"/></component>
-      <component><field ref="date_sub"/></component>
-      <component><field ref="id_number"/></component>
-      <component><field ref="official_url"/></component>
-      <component><field ref="issn"/></component>
-    </ep:ifmatch>
 
   </stage>
 
   <stage name="subjects">
-    <component type="FieldComponent::SubjectComponent"><field ref="subjects"><required/></field></component>
+    <component type="Field::Subject"><field ref="subjects"><required/></field></component>
   </stage>
 
-  <stage name="event">
-    <component><field ref="event_title"><required/></field></component>
-    <component><field ref="event_type"><required/></field></component>
-    <component><field ref="event_location"/></component>
-    <component><field ref="event_dates"/></component>
-  </stage>
 </workflow>
