@@ -66,9 +66,7 @@ sub render_single_value
 #	my $frag = $session->make_doc_fragment();
 #	foreach( @paras )
 #	{
-#		my $p = $session->make_element( 
-#			"p", 
-#			class=>$self->{name}."_paragraph" );
+#		my $p = $session->make_element( "p" );
 #		$p->appendChild( $session->make_text( $_ ) );
 #		$frag->appendChild( $p );
 #	}

@@ -3949,4 +3949,6 @@ PACKAGE: 2.2.99.2
  * removed *'s from phrases. May put them back in later.
  * Fixed bug in View::Owner which auto forwarded to View::Editor due to
     inherriting from View
-
+ * Added a phrase for adding required icon to a label
+ * Moved example style to ep_form_example
+ * Added a ep_ prefix to problem_field classes

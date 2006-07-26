@@ -210,14 +210,14 @@ EPrints Modules
     <ep:phrase id="lib/searchfield:date_err">A date search must be specified as a single date or a range.</ep:phrase>
     <ep:phrase id="lib/searchfield:no_words">Search field contains no indexable words: "<ep:pin ref="words" />". The system ignores very small or common words.</ep:phrase>
     <ep:phrase id="lib/searchfield:help_time">Enter a date or date range. 
-<br />Examples:  "<span class="example">1985-</span>", 
-"<span class="example">2001-05-17-2002-05-16</span>",
-"<span class="example">-11-1980</span>"
+<br />Examples:  "<span class="ep_form_example">1985-</span>", 
+"<span class="ep_form_example">2001-05-17-2002-05-16</span>",
+"<span class="ep_form_example">-11-1980</span>"
 </ep:phrase>
     <ep:phrase id="lib/searchfield:help_date">Enter a date or date range. 
-<br />Examples:  "<span class="example">1985-</span>", 
-"<span class="example">2001-05-17-2002-05-16</span>",
-"<span class="example">-11-1980</span>"
+<br />Examples:  "<span class="ep_form_example">1985-</span>", 
+"<span class="ep_form_example">2001-05-17-2002-05-16</span>",
+"<span class="ep_form_example">-11-1980</span>"
 </ep:phrase>
     <ep:phrase id="lib/searchfield:help_boolean">Select a value.</ep:phrase>
     <ep:phrase id="lib/searchfield:help_email">Enter some text to search for.</ep:phrase>
@@ -1128,5 +1128,7 @@ Titles and Help for the System Fields
     <ep:phrase id="tool:subject">Manage Subject Tree</ep:phrase>
     <ep:phrase id="tool:all">all tools </ep:phrase>
     <ep:phrase id="tool:divide"> | </ep:phrase>
+
+    <ep:phrase id="sys:ep_form_required"><img src="/images/style/required.png" border="0" alt="*" /> <ep:pin ref="label" /></ep:phrase>
 </ep:phrases>
 

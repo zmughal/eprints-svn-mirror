@@ -8,6 +8,13 @@ input, select, textarea {
 }
 
 
+.ep_form_example {
+	font-weight: bold;
+	color: blue;
+}
+
+/* buttons */
+
 .ep_form_button_bar {
 	text-align: center;
 	padding: 4px;
@@ -23,7 +30,7 @@ input, select, textarea {
 	font-weight: normal;
 }
 
-
+/* form fields */
 
 .ep_form_field_help {
         font-size: small ;

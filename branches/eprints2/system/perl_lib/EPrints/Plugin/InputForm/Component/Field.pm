@@ -79,7 +79,7 @@ sub validate
 
 	if( $self->is_required() && !$self->{dataobj}->is_set( $field->{name} ) )
 	{
-		my $fieldname = $self->{session}->make_element( "span", class=>"problem_field:".$field->{name} );
+		my $fieldname = $self->{session}->make_element( "span", class=>"ep_problem_field:".$field->{name} );
 		$fieldname->appendChild( $field->render_name( $self->{session} ) );
 		my $problem = $self->{session}->html_phrase(
 			"lib/eprint:not_done_field" ,

@@ -1861,13 +1861,13 @@ sub _render_input_form_field
 		# special case for booleans - even if they're required it
 		# dosn't make much sense to highlight them.	
 
-
+		my $label = $field->render_name( $self );
 		if( $req && !$field->is_type( "boolean" ) )
 		{
-			my $reqimg = $self->make_element( "img", src => "/images/style/required.png", class => "wf_req_icon", border => "0" );
-			$div->appendChild( $reqimg );
+			$label = $self->html_phrase( "sys:ep_form_required",
+				label=>$label );
 		}
-		$div->appendChild( $field->render_name( $self ) );
+		$div->appendChild( $label );
 
 		$html->appendChild( $div );
 	}

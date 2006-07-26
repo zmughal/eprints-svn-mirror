@@ -31,10 +31,14 @@ sub render
 	$title_table->appendChild( $title_tr );
 
 	my $title_td1 = $self->{session}->make_element( "td", class=>"ep_sr_title" );
+
 	if( $is_req )
 	{
-		$title_td1->appendChild( $self->get_req_icon() );
+		$title = $self->{session}->html_phrase( 
+			"sys:ep_form_required",
+			label=>$title );
 	}
+
 	$title_td1->appendChild( $title );
 	$title_tr->appendChild( $title_td1 );
 
@@ -79,13 +83,6 @@ sub render
 	$surround->appendChild( $input_div );
 	
 	return $surround;
-}
-
-sub get_req_icon
-{
-	my( $self ) = @_;
-	my $reqimg = $self->{session}->make_element( "img", src => "/images/style/required.png", class => "wf_req_icon", border => "0" );
-	return $reqimg;
 }
 
 1;

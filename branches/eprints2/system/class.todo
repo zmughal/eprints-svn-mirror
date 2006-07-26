@@ -4,74 +4,18 @@ They all need to be inspected, renamed to a standard ep_xx_yyyy scheme and then 
 
 
 
-# in session.pm
-			my $reqimg = $session->make_element( "img", src => "/images/style/required.png", class => "wf_req_icon", border => "0" );
-
-
 # citation spans!
 
 
 perl_lib/EPrints/Paracite.pm:			class=>"citation_reference" );
 perl_lib/EPrints/Session.pm:	my $span = $self->make_element( "span", class=>"person_name" );
 
-
-
 perl_lib/EPrints/MetaField/Set.pm:	$dl = $session->make_element( "dl", class=>"longset" );
-perl_lib/EPrints/MetaField/Longtext.pm:#			class=>$self->{name}."_paragraph" );
 perl_lib/EPrints/MetaField.pm:			$th = $session->make_element( "th", class=>"empty_heading" );
 perl_lib/EPrints/MetaField.pm:			$th = $session->make_element( "th", class=>"empty_heading" );
-perl_lib/EPrints/MetaField.pm:				class => "requiredlang" );
-perl_lib/EPrints/UserForm.pm:					class=>"problems" );
+PERL_lib/EPrints/MetaField.pm:				class => "requiredlang" );
 
 
-
-
-
-
-# "example"
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">A brief history of time</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">Life: an unauthorised biography</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">Mathematics for engineers and scientists. 5th edition</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">Ecosystems of the world. Vol. 26. Estuaries of the world</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">A brief history of time</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">Life: an unauthorised biography</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">Mathematics for engineers and scientists. 5th edition</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">Ecosystems of the world. Vol. 26. Estuaries of the world</span>
-defaultcfg/en/phrases.xml:<br />Example: [<span class="example">Smith</span>] [<span class="example">J.P.</span>] [<span class="example">j.smith@soton.ac.uk</span>]
-defaultcfg/en/phrases.xml:<br />Example: [<span class="example">Chance-Collins</span>] [<span class="example">Chris</span>] [<span class="example">chris@bar.com</span>]
-defaultcfg/en/phrases.xml:<br />Example: [<span class="example">Fu</span>] [<span class="example">Yan-Li</span>] []
-defaultcfg/en/phrases.xml:<br />Example: [<span class="example">von Höpfner</span>] [<span class="example">Ludwig G.</span>] []
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">123</span>
-defaultcfg/en/phrases.xml:<br />Example:  <span class="example">21</span> to <span class="example">34</span>
-defaultcfg/en/phrases.xml:<br />Example:  <span class="example">Elseview Oceanography Series</span>
-defaultcfg/en/phrases.xml:<br />Example:  <span class="example">Marine Biology</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">Oxford University Press</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">Southampton, UK</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">Brazil</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">Rome, Italy</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">Greece</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">13-15 Dec 2003</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">31 Oct - 02 Nov 1999</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">11th onference of PanHellenic Librarians</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">SIGIR 2001</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">1 871438 57 8</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">067157826X</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">1055-0143</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">0891-060X</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">http://www.stuffjournal.com/2003/3/</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">School of Electronics and Computer Science</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">University of Whitezombia</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">Purdue Research Institute</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">John K. Ducklingson</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">2006 - all documents made publically accessible on 1st January 2006</span>
-defaultcfg/en/phrases.xml:<br />Example: <span class="example">2006 June - all documents made publically accessible on 1st June 2006</span>
-# system phrases
-<br />Examples:  "<span class="example">1985-</span>", 
-"<span class="example">2001-05-17-2002-05-16</span>",
-"<span class="example">-11-1980</span>"
-<br />Examples:  "<span class="example">1985-</span>", 
-"<span class="example">2001-05-17-2002-05-16</span>",
-"<span class="example">-11-1980</span>"
 
 
 # class= notice?
@@ -80,26 +24,14 @@ defaultcfg/en/phrases.xml:    <ep:phrase id="page:not_latest_version"><p class="
 # status
 perl_lib/EPrints/Interface/Screen/Status.pm:		$td = $session->make_element( "td", class=>"status_row_heading" );
 perl_lib/EPrints/Interface/Screen/Status.pm:		$td = $session->make_element( "td", align=>"center", class=>"status_cell"  );
+#alert
+    <ep:phrase id="cgi/users/status:out_of_space"><span class="alert">NO DISK SPACE LEFT!</span></ep:phrase>
+    <ep:phrase id="cgi/users/status:nearly_out_of_space"><span class="alert">WARNING:</span> Available space for new items is running low</ep:phrase>
 
-# needs redoing anyway!
-perl_lib/EPrints/Interface/Screen/Review.pm:	$tr = $self->{session}->make_element( "tr", class=>"header_plain" );
-perl_lib/EPrints/Interface/Screen/Review.pm:		$tr = $session->make_element( "tr", class=>"row_".($info->{row}%2?"b":"a") );
-perl_lib/EPrints/Interface/Screen/Review.pm:		$td = $session->make_element( "td", class=>"first_col" );
-perl_lib/EPrints/Interface/Screen/Review.pm:		$td = $session->make_element( "td", class=>"middle_col" );
-perl_lib/EPrints/Interface/Screen/Review.pm:		$td = $session->make_element( "td", class=>"last_col" );
-
-
-# problem field!
-perl_lib/EPrints/Workflow.pm:		if( $class=~m/^problem_field:(.*)$/ )
-perl_lib/EPrints/Plugin/InputForm/Component/Field.pm:		my $fieldname = $self->{session}->make_element( "span", class=>"problem_field:".$field->{name} );
-perl_lib/EPrints/DataObj/EPrint.pm:		my $fieldname = $self->{session}->make_element( "span", class=>"problem_field:".$field->{name} );
-perl_lib/EPrints/DataObj/EPrint.pm:			my $fieldname = $self->{session}->make_element( "span", class=>"problem_field:".$field->{name} );
 
 
 # component stuff
 perl_lib/EPrints/Plugin/InputForm/Surround/Default.pm:		my $problem_div = $self->{session}->make_element( "div", class => "wf_problems" );
-perl_lib/EPrints/Plugin/InputForm/Surround/Default.pm:	my $reqimg = $self->{session}->make_element( "img", src => "/images/req.gif", class => "wf_req_icon", border => "0" );
-perl_lib/EPrints/Plugin/InputForm/Surround/None.pm:	my $reqimg = $self->{session}->make_element( "img", src => "/images/req.gif", class => "wf_req_icon", border => "0" );
 perl_lib/EPrints/Plugin/InputForm/Component/Field/Multi.pm:	my $tbody = $self->{session}->make_element( "tbody", class => "sidetable" );
 perl_lib/EPrints/Plugin/InputForm/Component/Field/Subject.pm:		my $div = $session->make_element( "div", class => "tree_node", id => $self->{prefix}."_node_".$root_id );
 perl_lib/EPrints/Plugin/InputForm/Component/Field/Subject.pm:			$div->setAttribute( "class", "tree_node_selected" );
@@ -125,11 +57,6 @@ perl_lib/EPrints/Plugin/InputForm/Component/Upload.pm:			my $format_name_div = $
 
 
 
-#alert
-    <ep:phrase id="cgi/users/status:out_of_space"><span class="alert">NO DISK SPACE LEFT!</span></ep:phrase>
-    <ep:phrase id="cgi/users/status:nearly_out_of_space"><span class="alert">WARNING:</span> Available space for new items is running low</ep:phrase>
-
-
 
 
 
@@ -150,3 +77,12 @@ perl_lib/EPrints/SubmissionForm.pm:		_class => "submission_buttons",
 perl_lib/EPrints/SubmissionForm.pm:			class=>"submission_buttons" );
 perl_lib/EPrints/SubmissionForm.pm:				class=>"problems" );
 perl_lib/EPrints/Extras.pm:			class=>"subject_browser_".($selected?"":"un")."selected" );
+
+# needs redoing anyway!
+perl_lib/EPrints/Interface/Screen/Review.pm:	$tr = $self->{session}->make_element( "tr", class=>"header_plain" );
+perl_lib/EPrints/Interface/Screen/Review.pm:		$tr = $session->make_element( "tr", class=>"row_".($info->{row}%2?"b":"a") );
+perl_lib/EPrints/Interface/Screen/Review.pm:		$td = $session->make_element( "td", class=>"first_col" );
+perl_lib/EPrints/Interface/Screen/Review.pm:		$td = $session->make_element( "td", class=>"middle_col" );
+perl_lib/EPrints/Interface/Screen/Review.pm:		$td = $session->make_element( "td", class=>"last_col" );
+perl_lib/EPrints/UserForm.pm:					class=>"problems" );
+

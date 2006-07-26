@@ -130,12 +130,16 @@ sub render_content
 		# Append field
 		$th = $self->{session}->make_element( "th" );
 
+		my $label = $field->render_name( $self->{session} );
+
 		if( $field->{required} eq "yes" ) # moj: Handle for_archive
 		{
-			$th->appendChild( $surround->get_req_icon );
+			$label = $self->{session}->html_phrase( 
+				"sys:ep_form_required",
+				label=>$label );
 		}
 		
-		$th->appendChild( $field->render_name( $self->{session} ) );
+		$th->appendChild( $label );
  
 		$td = $self->{session}->make_element( "td" );
 		$td->appendChild( $field->render_input_field( $self->{session}, $value ) );
