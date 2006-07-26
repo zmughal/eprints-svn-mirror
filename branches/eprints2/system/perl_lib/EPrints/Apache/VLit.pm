@@ -370,7 +370,7 @@ END
 </div>
 END
 		}
-		my $cssurl = $repository->get_conf( "base_url" )."/vlit.css";
+		my $cssurl = $repository->get_conf( "base_url" )."/style/vlit.css";
 		$r->print( <<END );
 <html>
 <head>

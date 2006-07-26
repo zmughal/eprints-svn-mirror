@@ -3935,3 +3935,7 @@ PACKAGE: 2.2.99.2
  * Removed debug code from workflow.pm
  * Rejigged eprints workflow to be closer to what we plan for 3.0
  * Shortend names of several component modules to be more manageable.
+ * Moved vlit.css to sit in same dir as other css files, but didn't rename 
+    the classes as they are reasonably prefixed and pretty much a seperate  
+    system.
+

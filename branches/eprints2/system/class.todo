@@ -102,17 +102,6 @@ perl_lib/EPrints/UserForm.pm:					class=>"problems" );
 perl_lib/EPrints/Workflow.pm:		if( $class=~m/^problem_field:(.*)$/ )
 perl_lib/EPrints/Workflow/Stage.pm:			class => "formfieldinput",
 perl_lib/EPrints/Apache/Login.pm:			class => 'actionbutton',
-perl_lib/EPrints/Apache/VLit.pm:		$html.='<span class="vlit-charrange">';
-perl_lib/EPrints/Apache/VLit.pm:			my $class = "vlit-spanlink".($toggle+1);
-perl_lib/EPrints/Apache/VLit.pm:				$html.='<span class="vlit-highlight">';
-perl_lib/EPrints/Apache/VLit.pm:				$c ='<a class="'.$class.'" href="'.$url.'">'.$c.'</a>';
-perl_lib/EPrints/Apache/VLit.pm:				$c ='<a class="'.$class.'" href="'.$url.'">'.$c.'</a>';
-perl_lib/EPrints/Apache/VLit.pm:				$c ='<a class="'.$class.'" href="'.$url.'">'.$c.'</a>';
-perl_lib/EPrints/Apache/VLit.pm:				$c ='<a class="'.$class.'" href="'.$url.'">'.$c.'</a>';
-perl_lib/EPrints/Apache/VLit.pm:<body class="vlit">
-perl_lib/EPrints/Apache/VLit.pm:<div class="vlit-controls">$front</div><div class="vlit-human">$html</div><a name="end" />
-perl_lib/EPrints/Apache/VLit.pm:<body class="vlit">
-perl_lib/EPrints/Apache/VLit.pm:<div class="vlit-controls">$front</div><div class="vlit-human"><a href='$linkurl'><img src='$imgurl' border="0" /></a></div><a name="end" />
 defaultcfg/en/phrases.xml:<br />Example: <span class="example">A brief history of time</span>
 defaultcfg/en/phrases.xml:<br />Example: <span class="example">Life: an unauthorised biography</span>
 defaultcfg/en/phrases.xml:<br />Example: <span class="example">Mathematics for engineers and scientists. 5th edition</span>
