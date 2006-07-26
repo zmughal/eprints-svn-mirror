@@ -31,6 +31,10 @@ sub render
 	$title_table->appendChild( $title_tr );
 
 	my $title_td1 = $self->{session}->make_element( "td", class=>"ep_sr_title" );
+	if( $is_req )
+	{
+		$title_td1->appendChild( $self->get_req_icon() );
+	}
 	$title_td1->appendChild( $title );
 	$title_tr->appendChild( $title_td1 );
 
@@ -49,10 +53,6 @@ sub render
 	my $help_div = $self->{session}->make_element( "div", class => "ep_sr_help ep_no_js", id => $id_prefix );
 	$help_div->appendChild( $help );
 	
-	if( $is_req )
-	{
-		$title_td1->appendChild( $self->get_req_icon() );
-	}
 
 	$surround->appendChild( $title_table );
 	$surround->appendChild( $help_div );
@@ -84,7 +84,7 @@ sub render
 sub get_req_icon
 {
 	my( $self ) = @_;
-	my $reqimg = $self->{session}->make_element( "img", src => "/images/req.gif", class => "wf_req_icon", border => "0" );
+	my $reqimg = $self->{session}->make_element( "img", src => "/images/style/required.png", class => "wf_req_icon", border => "0" );
 	return $reqimg;
 }
 

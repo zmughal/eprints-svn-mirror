@@ -3944,3 +3944,4 @@ PACKAGE: 2.2.99.2
  * Moved the old style input form components and buttons into the new scheme.
  * Moved the toolbox and messages styles over.
  * Tidied up last style in tabs 
+ * Changed requiredness of a field to be a red star icon. Not css'd yet.

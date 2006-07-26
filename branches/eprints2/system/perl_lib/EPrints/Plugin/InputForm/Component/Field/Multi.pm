@@ -129,14 +129,14 @@ sub render_content
 		
 		# Append field
 		$th = $self->{session}->make_element( "th" );
-		$th->appendChild( $field->render_name( $self->{session} ) );
 
- 
 		if( $field->{required} eq "yes" ) # moj: Handle for_archive
 		{
 			$th->appendChild( $surround->get_req_icon );
 		}
 		
+		$th->appendChild( $field->render_name( $self->{session} ) );
+ 
 		$td = $self->{session}->make_element( "td" );
 		$td->appendChild( $field->render_input_field( $self->{session}, $value ) );
 		$tr->appendChild( $th );
