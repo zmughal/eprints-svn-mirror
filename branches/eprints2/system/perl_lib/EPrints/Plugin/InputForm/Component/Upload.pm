@@ -1,4 +1,4 @@
-package EPrints::Plugin::InputForm::Component::UploadComponent;
+package EPrints::Plugin::InputForm::Component::Upload;
 
 use EPrints;
 use EPrints::Plugin::InputForm::Component;
@@ -14,7 +14,7 @@ sub new
 
 	my $self = $class->SUPER::new( %opts );
 	
-	$self->{name} = "UploadComponent";
+	$self->{name} = "Upload";
 	$self->{visible} = "all";
 	return $self;
 }

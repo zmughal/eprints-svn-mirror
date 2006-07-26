@@ -1,4 +1,4 @@
-package EPrints::Plugin::InputForm::Component::ReviewComponent;
+package EPrints::Plugin::InputForm::Component::Review;
 
 use EPrints::Plugin::InputForm::Component;
 
@@ -14,7 +14,7 @@ sub new
 
 	my $self = $class->SUPER::new( %opts );
 
-	$self->{name} = "ReviewComponent";
+	$self->{name} = "Review";
 	$self->{visible} = "all";
 
 	return $self;

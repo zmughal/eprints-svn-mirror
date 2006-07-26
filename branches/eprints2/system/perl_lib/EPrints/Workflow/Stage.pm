@@ -1,5 +1,7 @@
 package EPrints::Workflow::Stage;
 
+use strict;
+
 sub new
 {
 	my( $class, $stage, $workflow ) = @_;
@@ -28,7 +30,6 @@ sub new
 sub _read_components
 {
 	my( $self, @stage_nodes ) = @_;
-	print STDERR "Reading components\n"; 
 
 	$self->{components} = [];
 	foreach my $stage_node ( @stage_nodes )
@@ -38,36 +39,35 @@ sub _read_components
 		{
 			# Pull out the type
 			my $type = $stage_node->getAttribute( "type" );
-			$type = "FieldComponent" if( !EPrints::Utils::is_set( $type ) );
+			$type = "Field" if( !EPrints::Utils::is_set( $type ) );
 
 			my $surround = $stage_node->getAttribute( "surround" );
 			$surround = "Default" if( !EPrints::Utils::is_set( $surround ) );
 
+			my $surround_obj = $self->{session}->plugin( "InputForm::Surround::$surround" );
+			if( !defined $surround_obj )
+			{
+				$surround_obj = $self->{session}->plugin( "InputForm::Surround::Default" ); 
+			}
+
+			my %params = (
+					session=>$self->{session}, 
+					xml_config=>$stage_node, 
+					dataobj=>$self->{item}, 
+					workflow=>$self->{workflow}, 
+					surround=>$surround_obj );
+
 			# Grab any values inside
-			$params{type} = $type;
-			print STDERR "Create with type [$type]\n";
 			my $class = $self->{repository}->plugin_class( "InputForm::Component::$type" );
 			if( !defined $class )
 			{
 				print STDERR "Using placeholder for $type\n";
 				$class = $self->{repository}->plugin_class( "InputForm::Component::PlaceHolder" );
-				$params{name} = $type;
+				$params{placeholding}=$type;
 			}
 			if( defined $class )
 			{
-				my $surround_obj = $self->{session}->plugin( "InputForm::Surround::$surround" );
-				if( !defined $surround_obj )
-				{
-					$surround_obj = $self->{session}->plugin( "InputForm::Surround::Default" ); 
-				}
-				my $lctype = lc $type;
-				my $plugin = $class->new( 
-					session=>$self->{session}, 
-					xml_config=>$stage_node, 
-					dataobj=>$self->{item}, 
-					workflow=>$self->{workflow}, 
-					surround=>$surround_obj,
-					);
+				my $plugin = $class->new( %params );
 				push @{$self->{components}}, $plugin;
 			}
 		}
@@ -152,7 +152,6 @@ sub render
 {
 	my( $self, $session, $workflow ) = @_;
 
-
 	my $dom = $session->make_doc_fragment();
 
 	foreach my $component (@{$self->{components}})
@@ -163,7 +162,7 @@ sub render
 		$div = $session->make_element(
 			"div",
 			class => "formfieldinput",
-			id => "inputfield_".$params{field} );
+			id => "inputfield_"."cjg???" );
 		$div->appendChild( $component->{surround}->render( $component, $session ) );
 		$dom->appendChild( $div );
 	}

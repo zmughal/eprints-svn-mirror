@@ -1,8 +1,8 @@
-package EPrints::Plugin::InputForm::Component::FieldComponent::SubjectComponent;
+package EPrints::Plugin::InputForm::Component::Field::Subject;
 
 use EPrints;
-use EPrints::Plugin::InputForm::Component::FieldComponent;
-@ISA = ( "EPrints::Plugin::InputForm::Component::FieldComponent" );
+use EPrints::Plugin::InputForm::Component::Field;
+@ISA = ( "EPrints::Plugin::InputForm::Component::Field" );
 
 use Time::HiRes qw(gettimeofday tv_interval);
 use Unicode::String qw(latin1);
@@ -15,7 +15,7 @@ sub new
 
 	my $self = $class->SUPER::new( %opts );
 	
-	$self->{name} = "SubjectComponent";
+	$self->{name} = "Subject";
 	$self->{visible} = "all";
 	$self->{visdepth} = 1;
 	return $self;

@@ -23,11 +23,24 @@ sub new
 sub render_content
 {
 	my( $self ) = @_;
-	my $out = $self->{session}->make_doc_fragment;
-	$out->appendChild( $self->{session}->make_text( "This is a placeholder for the ".$self->{name}." component" ) );
-	return $out;
+
+	return $self->{session}->make_text( "This is a placeholder for the ".$self->{placeholding}." component" );
 }
 
+sub render_help
+{
+	my( $self, $surround ) = @_;
+	
+	return $self->{session}->make_text( "Help placeholder for ".$self->{placeholding}. " component" );
+}
+
+sub render_title
+{
+	my( $self, $surround ) = @_;
+
+	return $self->{session}->make_text( "Problem loading component: ".$self->{placeholding} );
+}
+	
 1;
 
 

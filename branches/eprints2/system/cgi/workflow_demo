@@ -84,8 +84,8 @@ my $page=$session->make_doc_fragment();
 my $stage=$session->make_element( "div", class => "wf_stage" );
 $page->appendChild( $stage );
 
-my $plugin = $session->plugin( "InputForm::Component::FieldComponent", dataobj=>$item, xml_config=>$comp1, session=>$session );
-my $plugin2 = $session->plugin( "InputForm::Component::FieldComponent::MultiComponent", dataobj=>$item, xml_config=>$comp2, session=>$session );
+my $plugin = $session->plugin( "InputForm::Component::Field", dataobj=>$item, xml_config=>$comp1, session=>$session );
+my $plugin2 = $session->plugin( "InputForm::Component::Field::Multi", dataobj=>$item, xml_config=>$comp2, session=>$session );
 
 my $title = $session->make_text( "Workflow Demo" );
 $stage->appendChild( $surround->render( $plugin, $session ) );

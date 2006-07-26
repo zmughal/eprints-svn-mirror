@@ -1312,7 +1312,7 @@ sub load_workflows
 			my @components = $stage->get_components;
 			foreach my $component ( @components )
 			{
-				next unless ref( $component ) eq "EPrints::Plugin::InputForm::Component::FieldComponent";
+				next unless ref( $component ) eq "EPrints::Plugin::InputForm::Component::Field";
 				my $field = $component->get_field;
 				push @{$tdata->{fields}->{normal}}, $field;	
 				push @{$tdata->{pages}->{$page_id}->{normal}}, $field;
@@ -1327,7 +1327,7 @@ sub load_workflows
 			my @s_components = $s_stage->get_components;
 			foreach my $s_component ( @s_components )
 			{
-				next unless ref( $s_component ) eq "EPrints::Plugin::InputForm::Component::FieldComponent";
+				next unless ref( $s_component ) eq "EPrints::Plugin::InputForm::Component::Field";
 				my $field = $s_component->get_field;
 				push @{$tdata->{pages}->{$page_id}->{staff}}, $field;
 				push @{$tdata->{fields}->{staff}}, $field;

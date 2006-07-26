@@ -1,4 +1,4 @@
-package EPrints::Plugin::InputForm::Component::FieldComponent;
+package EPrints::Plugin::InputForm::Component::Field;
 
 use EPrints::Plugin::InputForm::Component;
 
@@ -14,7 +14,7 @@ sub new
 
 	my $self = $class->SUPER::new( %opts );
 
-	$self->{name} = "FieldComponent";
+	$self->{name} = "Field";
 	$self->{visible} = "all";
 
 	return $self;
@@ -28,7 +28,7 @@ sub parse_config
 
 	if( scalar @fields != 1 )
 	{
-		EPrints::abort( "Bad configuration for FieldComponent\n".$config_dom->toString );
+		EPrints::abort( "Bad configuration for Field Component\n".$config_dom->toString );
 	}
 	else
 	{
@@ -154,6 +154,7 @@ Returns the unique name of this field (for prefixes, etc).
 sub get_name
 {
 	my( $self ) = @_;
+
 	return $self->{config}->{field}->{name};
 }
 
@@ -168,6 +169,7 @@ Returns the title of this component as a DOM object.
 sub render_title
 {
 	my( $self, $surround ) = @_;
+
 	return $self->{config}->{field}->render_name( $self->{session} );
 }
 

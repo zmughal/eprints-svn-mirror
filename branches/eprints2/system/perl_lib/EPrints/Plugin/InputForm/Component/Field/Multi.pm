@@ -1,8 +1,8 @@
-package EPrints::Plugin::InputForm::Component::FieldComponent::MultiComponent;
+package EPrints::Plugin::InputForm::Component::Field::Multi;
 
-use EPrints::Plugin::InputForm::Component::FieldComponent;
+use EPrints::Plugin::InputForm::Component::Field;
 
-@ISA = ( "EPrints::Plugin::InputForm::Component::FieldComponent" );
+@ISA = ( "EPrints::Plugin::InputForm::Component::Field" );
 
 use Unicode::String qw(latin1);
 
@@ -14,7 +14,7 @@ sub new
 
 	my $self = $class->SUPER::new( %opts );
 
-	$self->{name} = "MultiComponent";
+	$self->{name} = "Multi";
 	$self->{visible} = "all";
 
 	return $self;
@@ -34,6 +34,19 @@ sub parse_config
 	my @title_nodes = $config_dom->getElementsByTagName( "title" );
 	my @help_nodes  = $config_dom->getElementsByTagName( "help" );
 
+	if( @fields == 0 )
+	{
+		# error!
+		EPrints::abort( "Multifield with no fields defined." );
+	}
+
+	foreach my $field_tag ( @fields )
+	{
+		my $field = $self->xml_to_metafield( $field_tag );
+		push @{$self->{config}->{fields}}, $field;
+	}
+
+
 	if( scalar @title_nodes == 1 )
 	{
 		my $phrase_ref = $title_nodes[0]->getAttribute( "ref" );
@@ -50,6 +63,13 @@ sub parse_config
 			}
 		}
 	}
+
+	# multi fields don't _have_ to have a title really...	
+	if( !defined $self->{config}->{title} ) 
+	{
+		$self->{config}->{title} = $self->{session}->make_doc_fragment;
+	}
+
 	
 	if( scalar @help_nodes == 1 )
 	{
@@ -63,25 +83,24 @@ sub parse_config
 			my @phrase_dom = $help_nodes[0]->getElementsByTagName( "phrase" );
 			if( scalar @phrase_dom == 1 )
 			{
-				$self->{config}->{title} = $phrase_dom[0];
+				$self->{config}->{help} = $phrase_dom[0];
 			}
 		}
 	}
-
-	if( scalar @fields < 1 )
-	{
-
-		print STDERR "Meep!\n";
-	}
 	else
 	{
-		foreach my $field_tag ( @fields )
+		# no <help> configured. Do something sensible.
+		
+		$self->{config}->{help} = $self->{session}->make_doc_fragment;
+		foreach my $field ( @{$self->{config}->{fields}} )
 		{
-			my $field = $self->xml_to_metafield( $field_tag );
-			push @{$self->{config}->{fields}}, $field;
-			
+			$self->{config}->{help}->appendChild( 
+				$field->render_help( 
+					$self->{session}, 
+					$field->get_type() ) );
 		}
 	}
+
 }
 
 sub render_content
