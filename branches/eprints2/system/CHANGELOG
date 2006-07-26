@@ -3927,3 +3927,9 @@ PACKAGE: 2.2.99.2
  * Added phrases for tools names.
  * Removed unused components eg. BlisterBar
  * Renaming components to shorter names.
+
+2006-06-26 cjg
+
+ * Split style sheet into parts. Began process of making rational class names
+    for all css used in eprints.
+ * Removed debug code from workflow.pm

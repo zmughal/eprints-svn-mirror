@@ -89,7 +89,6 @@ sub new
 
 	$self->{user}      = $self->{session}->current_user();
 
-	print STDERR "Workflow loaded\n";
 	return( $self );
 }
 
@@ -158,7 +157,6 @@ sub _read_flow
 sub _read_stages
 {
 	my( $self ) = @_;
-	print STDERR "Reading stages\n";
 
 	$self->{stages}={};
 	$self->{field_stages}={};
@@ -325,7 +323,6 @@ sub render
 	# Add the stage components
 
 	my $stage_obj = $self->get_stage( $self->get_stage_id );
-print STDERR "[".$self->get_stage_id."]\n";
 	my $stage_dom = $stage_obj->render( $self->{session}, $self );
 
 	$fragment->appendChild( $stage_dom );
