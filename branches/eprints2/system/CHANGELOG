@@ -3952,3 +3952,7 @@ PACKAGE: 2.2.99.2
  * Added a phrase for adding required icon to a label
  * Moved example style to ep_form_example
  * Added a ep_ prefix to problem_field classes
+
+2006-06-27 cjg
+
+ * Added alt tag to required Star.

@@ -1129,6 +1129,6 @@ Titles and Help for the System Fields
     <ep:phrase id="tool:all">all tools </ep:phrase>
     <ep:phrase id="tool:divide"> | </ep:phrase>
 
-    <ep:phrase id="sys:ep_form_required"><img src="/images/style/required.png" border="0" alt="*" /> <ep:pin ref="label" /></ep:phrase>
+    <ep:phrase id="sys:ep_form_required"><img src="/images/style/required.png" border="0" alt="Required" /> <ep:pin ref="label" /></ep:phrase>
 </ep:phrases>
 
