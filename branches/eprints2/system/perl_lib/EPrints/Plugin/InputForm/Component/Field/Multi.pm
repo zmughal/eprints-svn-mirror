@@ -37,7 +37,7 @@ sub parse_config
 	if( @fields == 0 )
 	{
 		# error!
-		EPrints::abort( "Multifield with no fields defined." );
+		EPrints::abort( "Multifield with no fields defined. Config was:\n".EPrints::XML::to_string( $config_dom ) );
 	}
 
 	foreach my $field_tag ( @fields )
