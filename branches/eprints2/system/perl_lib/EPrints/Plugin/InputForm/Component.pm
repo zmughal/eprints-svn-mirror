@@ -279,32 +279,27 @@ sub xml_to_metafield
 
 	my $cloned = 0;
 
-	if( $xml->hasChildNodes )
+	# attributes
+	my $required = $xml->getAttribute( "required" );
+
+	if( defined $required && $required eq "for_archive" )
 	{
-		foreach my $child ( $xml->getChildNodes )
+		if( !$cloned )
 		{
-			my $node_name = $child->getNodeName;
-			next unless( $node_name eq "required" || $node_name eq "required-for-archive" || $node_name eq "collapsed" );
+			$field = $field->clone;
+			$cloned = 1;
+		}	
+		$field->set_property( "required", "for_archive" );
+	}
 
-			if( !$cloned )
-			{
-				$field = $field->clone;
-				$cloned = 1;
-			}	
-
-			if( $node_name eq "required" )
-			{
-				$field->set_property( "required", "yes" );
-			}
-			elsif( $node_name eq "required-for-archive" )
-			{
-				$field->set_property( "required", "for_archive" );
-			}
-			elsif( $node_name eq "collapsed" )
-			{
-				$field->set_property( "collapsed", "yes" );
-			}
-		}
+	if( defined $required && $required eq "yes" )
+	{
+		if( !$cloned )
+		{
+			$field = $field->clone;
+			$cloned = 1;
+		}	
+		$field->set_property( "required", "yes" );
 	}
 
 	return $field;
