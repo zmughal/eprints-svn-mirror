@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/eprints/perl_lib 
+#!/usr/bin/perl -w -I/opt/eprints3/perl_lib 
 
 ######################################################################
 #
@@ -31,7 +31,7 @@ B<indexer> --help
 
 This daemon runs in the background and creates index files for all eprints repositories.
 
-Messages and errors are logged to /opt/eprints2/var/indexer.log unless you change the log options. If it appears to be having problems try raising the log level and examining the log.
+Messages and errors are logged to /opt/eprints3/var/indexer.log unless you change the log options. If it appears to be having problems try raising the log level and examining the log.
 
 Once every 24 hours, the indexer rolls the logs (up to logfile.5) and then starts again. See --rollcount for ways to customise this.
 
@@ -102,7 +102,7 @@ This has only been tested under redhat linux. It make work on other OS's, but no
 
 To make the indexer into a service which starts and stops on reboots etc. like httpd and mysqld do the following (as root):
 
- ln -s /opt/eprints2/bin/epindexer /etc/init.d/epindexer 
+ ln -s /opt/eprints3/bin/epindexer /etc/init.d/epindexer 
  chkconfig --add epindexer
  chkconfig epindexer on
 

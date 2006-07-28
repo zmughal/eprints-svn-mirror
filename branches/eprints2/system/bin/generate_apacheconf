@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+#!/usr/bin/perl -w -I/opt/eprints3/perl_lib
 
 ######################################################################
 #
@@ -24,9 +24,9 @@ B<generate_apacheconf> [B<options>]
 
 This script generates the apache config files which will be used by EPrints. In the simple case all you need to do is run this script then add a line to your main apache configuration file - often, but not always, B</usr/local/apache/conf/httpd.conf>
 
- Include /opt/eprints2/cfg/apache.conf
+ Include /opt/eprints3/cfg/apache.conf
 
-Or elsewhere if you installed EPrints somewhere other than /opt/eprints2. This file then uses the "Include" directive to include all relevant apache config files from this EPrints installation.
+Or elsewhere if you installed EPrints somewhere other than /opt/eprints3. This file then uses the "Include" directive to include all relevant apache config files from this EPrints installation.
 
 By default the virtualhost directives are
 

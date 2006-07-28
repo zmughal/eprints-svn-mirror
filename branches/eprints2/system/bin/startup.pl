@@ -1,4 +1,4 @@
-use lib '/opt/eprints/perl_lib';
+use lib '/opt/eprints3/perl_lib';
 
 BEGIN
 {

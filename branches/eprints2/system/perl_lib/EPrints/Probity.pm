@@ -49,7 +49,7 @@ use Digest::MD5;
 Process the given file and return an XML chunk in the format. 
 
  <hash>
-    <name>/opt/eprints2/documents/disk0/00/00/05/04/02/stuff.pdf</name>
+    <name>/opt/eprints3/documents/disk0/00/00/05/04/02/stuff.pdf</name>
     <algorithm>SHA-1</algorithm>
     <value>cc7a32915ab0a73ba1f94b34d3a265bdccd3c8b9</value>
     <date>Fri Sep 27 10:53:10 BST 2002</date>
@@ -119,7 +119,7 @@ Create an XML file $outfile of the format:
  <?xml version="1.0" encoding="UTF-8"?>
  <hashlist xmlns="http://probity.org/XMLprobity">
     <hash>
-       <name>/opt/eprints2/documents/disk0/00/00/05/04/02/stuff.pdf</name>
+       <name>/opt/eprints3/documents/disk0/00/00/05/04/02/stuff.pdf</name>
        <algorithm>SHA-1</algorithm>
        <value>cc7a32915ab0a73ba1f94b34d3a265bdccd3c8b9</value>
        <date>Fri Sep 27 10:53:10 BST 2002</date>

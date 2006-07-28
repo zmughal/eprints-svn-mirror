@@ -360,11 +360,11 @@ if test $DISABLE_GDOME = "0"; then
    fi
 fi
 
-AC_PREFIX_DEFAULT(/opt/eprints2)
+AC_PREFIX_DEFAULT(/opt/eprints3)
 
 PREFIX=$prefix
 if test $PREFIX = "NONE" ; then
-    PREFIX=/opt/eprints2
+    PREFIX=/opt/eprints3
 fi
 
 AC_SUBST(PERL_PATH)

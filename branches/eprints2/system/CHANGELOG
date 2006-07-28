@@ -3959,3 +3959,5 @@ PACKAGE: 2.2.99.2
  * Added a mini scripting language for collapsing workflow (and citations)
  * Changed to using attributes for 'required' rather than elements
  * Fixed bug which meant database opened too many connections.
+ * Moved install dir to /opt/eprints3 and made the scripts expect this when
+    running from SVN checkout.
