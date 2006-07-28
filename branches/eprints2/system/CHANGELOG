@@ -3961,3 +3961,5 @@ PACKAGE: 2.2.99.2
  * Fixed bug which meant database opened too many connections.
  * Moved install dir to /opt/eprints3 and made the scripts expect this when
     running from SVN checkout.
+ * Multi fields now validate required contents.
+ * Multi fields now available as problem_field targets.

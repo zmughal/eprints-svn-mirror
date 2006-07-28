@@ -20,6 +20,58 @@ sub new
 	return $self;
 }
 
+sub update_from_form
+{
+	my( $self ) = @_;
+
+	foreach my $field ( @{$self->{config}->{fields}} )
+	{
+		my $value = $field->form_value( $self->{session}, $self->{dataobj} );
+		$self->{dataobj}->set_value( $field->{name}, $value );
+	}
+
+	return ();
+}
+
+sub validate
+{
+	my( $self ) = @_;
+
+	my @problems;
+	
+	foreach my $field ( @{$self->{config}->{fields}} )
+	{
+		my $for_archive = 0;
+		
+		if( $field->{required} eq "for_archive" )
+		{
+			$for_archive = 1;
+		}
+
+		# cjg bug - not handling for_archive here.
+		if( $field->{required} eq "yes" && !$self->{dataobj}->is_set( $field->{name} ) )
+		{
+			my $fieldname = $self->{session}->make_element( "span", class=>"ep_problem_field:".$field->{name} );
+			$fieldname->appendChild( $field->render_name( $self->{session} ) );
+			my $problem = $self->{session}->html_phrase(
+				"lib/eprint:not_done_field" ,
+				fieldname=>$fieldname );
+			push @problems, $problem;
+		}
+		
+		push @problems, $self->{session}->get_repository->call(
+			"validate_field",
+			$field,
+			$self->{dataobj}->get_value( $field->{name} ),
+			$self->{session},
+			$for_archive );
+	}
+	
+	$self->{problems} = \@problems;
+	
+	return @problems;
+}
+
 sub parse_config
 {
 	my( $self, $config_dom ) = @_;
@@ -167,6 +219,18 @@ sub is_collapsed
 {
 	my( $self ) = @_;
 	return $self->are_all_collapsed( $self->{config}->{fields} );
+}
+
+sub get_fields_handled
+{
+	my( $self ) = @_;
+
+	my @names = ();
+	foreach my $field ( @{$self->{config}->{fields}} )
+	{
+		push @names, $field->{name};
+	}
+	return @names;
 }
 
 1;
