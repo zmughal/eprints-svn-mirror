@@ -83,7 +83,7 @@ sub new
 
 	$self->{raw_config} = $self->{repository}->get_workflow_config( $self->{dataset}->confid, $workflow_id );
 	$self->{config} = EPrints::Utils::collapse_conditions( $session, $self->{raw_config}, %params );
-
+print STDERR $self->{config}->toString;
 	$self->_read_flow;
 	$self->_read_stages;
 

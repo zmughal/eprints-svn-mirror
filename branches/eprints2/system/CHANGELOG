@@ -3956,3 +3956,4 @@ PACKAGE: 2.2.99.2
 2006-06-27 cjg
 
  * Added alt tag to required Star.
+ * Added a mini scripting language for collapsing workflow (and citations)

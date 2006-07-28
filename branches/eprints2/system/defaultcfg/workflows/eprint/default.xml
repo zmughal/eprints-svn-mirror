@@ -22,18 +22,18 @@
     <component><field ref="title" required="yes" /></component>
     <component><field ref="abstract"/></component>
 
-    <ep:if test="type = 'monograph">
+    <ep:if test="$item.type = 'monograph'">
       <component><field ref="monograph_type" required="yes" /></component>
     </ep:if>
-    <ep:if test="type = 'thesis">
+    <ep:if test="$item.type = 'thesis'">
       <component><field ref="thesis_type" required="yes" /></component>
     </ep:if>
-    <ep:if test="type = 'conference_item">
+    <ep:if test="$item.type = 'conference_item'">
       <component><field ref="pres_type" required="yes" /></component>
     </ep:if>
 
     <ep:choose>
-      <ep:when test="type = 'book' or type = 'book_section'">
+      <ep:when test="$item.type.one_of('book','book_section')">
         <component><field ref="creators_list"/></component>
         <component><field ref="editors_list"/></component>
       </ep:when>
@@ -43,11 +43,11 @@
     </ep:choose>
 
     <ep:choose>
-      <ep:when test="type = 'patent' ">
+      <ep:when test="$item.type = 'patent' ">
       </ep:when>
       <ep:otherwise>
         <component type="Field::Multi">
-          <ep:if test="type = 'book_section' or type='book' or type='article' or type='conference_item'">
+          <ep:if test="$item.type.one_of('book_section', 'book', 'article', 'conference_item')">
             <field ref="refereed" required="yes" />
           </ep:if>
           <field ref="ispublished" required="yes" />
@@ -57,14 +57,14 @@
 
     <component type="Field::Multi">
       <title><phrase>Publication Details</phrase></title>
-      <ep:if test='type = "patent"'>
+      <ep:if test='$item.type = "patent"'>
         <field ref="date_issue" required="yes" />
         <field ref="official_url"/>
         <field ref="patent_applicant" required="yes" />
         <field ref="id_number" required="yes" />
         <field ref="pages"/>
       </ep:if>
-      <ep:if test="type = 'monograph'">
+      <ep:if test="$item.type = 'monograph'">
         <field ref="institution"/>
         <field ref="department"/>
         <field ref="place_of_pub"/>
@@ -75,7 +75,7 @@
         <field ref="date_sub"/>
         <field ref="official_url"/>
       </ep:if>
-      <ep:if test="type = 'book'">
+      <ep:if test="$item.type = 'book'">
         <field ref="date_issue"/>
         <field ref="date_sub"/>
         <field ref="place_of_pub"/>
@@ -87,7 +87,7 @@
         <field ref="isbn"/>
         <field ref="official_url"/>
       </ep:if>
-      <ep:if test="type = 'other'">
+      <ep:if test="$item.type = 'other'">
         <field ref="date_issue"/>
         <field ref="date_sub"/>
         <field ref="official_url"/>
@@ -95,7 +95,7 @@
         <field ref="publisher" required="yes" />
         <field ref="id_number"/>
       </ep:if>
-      <ep:if test="type = 'book_section'">
+      <ep:if test="$item.type = 'book_section'">
         <field ref="pagerange"/>
         <field ref="book_title" required="yes" />
         <field ref="volume"/>
@@ -110,20 +110,20 @@
         <field ref="date_sub"/>
         <field ref="official_url"/>
       </ep:if>
-      <ep:if test="type = 'thesis'">
+      <ep:if test="$item.type = 'thesis'">
         <field ref="date_issue" required="yes" />
         <field ref="official_url"/>
         <field ref="institution" required="yes" />
         <field ref="department" required="yes" />
         <field ref="pages"/>
       </ep:if>
-      <ep:if test="type = 'conference_item'">
+      <ep:if test="$item.type = 'conference_item'">
         <field ref="date_issue"/>
         <field ref="date_sub"/>
         <field ref="pages"/>
         <field ref="official_url"/>
       </ep:if>
-      <ep:if test="type = 'article'">
+      <ep:if test="$item.type = 'article'">
         <field ref="publication" required="yes" />
         <field ref="volume"/>
         <field ref="number"/>
@@ -136,7 +136,7 @@
       </ep:if>
     </component>
 
-    <ep:if test="type = 'conference_item'">
+    <ep:if test="$item.type = 'conference_item'">
       <component type="Field::Multi">
         <title><phrase>Event Details</phrase></title>
         <field ref="event_title" required="yes" />
@@ -153,7 +153,7 @@
 
   </stage>
 
-  <stage name="subjects'">
+  <stage name="subjects">
     <component type="Field::Subject"><field ref="subjects" required="yes" /></component>
   </stage>
 

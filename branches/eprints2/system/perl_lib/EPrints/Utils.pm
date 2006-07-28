@@ -937,42 +937,115 @@ sub collapse_conditions
 # cjg - Potential bug if: <ifset a><ifset b></></> and ifset a is disposed
 # then ifset: b is processed it will crash.
 
-	my $addkids = $node->hasChildNodes;
-
-	my $collapsed;
 
 	if( EPrints::XML::is_dom( $node, "Element" ) )
 	{
 		my $name = $node->getTagName;
 		$name =~ s/^ep://;
+
+		# old style
 		if( $name =~ m/^ifset|ifnotset|ifmatch|ifnotmatch$/ )
 		{
-			$collapsed = $session->make_doc_fragment;
-			$addkids = _test_collapse_condition( $session, $node, %params );
+			return _collapse_condition( $session, $node, %params );
 		}
-	}
 
-	if( !defined $collapsed )
-	{
-		$collapsed = $session->clone_for_me( $node );
-	}
-
-	if( $addkids )
-	{
-		foreach my $child ( $node->getChildNodes )
+		# new style
+		if( $name eq "if" )
 		{
-			$collapsed->appendChild(
-				collapse_conditions( 
-					$session,
-					$child,
-					%params ) );			
+			return _collapse_if( $session, $node, %params );
 		}
+		if( $name eq "choose" )
+		{
+			return _collapse_choose( $session, $node, %params );
+		}
+	}
+
+	my $collapsed = $session->clone_for_me( $node );
+	$collapsed->appendChild( _collapse_kids( $session, $node, %params ) );
+
+	return $collapsed;
+}
+
+sub _collapse_kids
+{
+	my( $session, $node, %params ) = @_;
+
+	my $collapsed = $session->make_doc_fragment;
+
+	foreach my $child ( $node->getChildNodes )
+	{
+		$collapsed->appendChild(
+			collapse_conditions( 
+				$session,
+				$child,
+				%params ) );			
 	}
 
 	return $collapsed;
 }
 
-sub _test_collapse_condition
+sub _collapse_if
+{
+	my( $session, $node, %params ) = @_;
+
+	my $test = $node->getAttribute( "test" );
+
+	my $result = EPrints::Script::execute( $test, \%params );
+	print STDERR  "IFTEST:::".$test." == $result\n";
+
+	my $collapsed = $session->make_doc_fragment;
+
+	if( $result )
+	{
+		$collapsed->appendChild( _collapse_kids( $session, $node, %params ) );
+	}
+
+	return $collapsed;
+}
+
+sub _collapse_choose
+{
+	my( $session, $node, %params ) = @_;
+
+	my $collapsed = $session->make_doc_fragment;
+
+	# when
+	foreach my $child ( $node->getChildNodes )
+	{
+		next unless( EPrints::XML::is_dom( $child, "Element" ) );
+		my $name = $child->getTagName;
+		$name=~s/^ep://;
+		next unless $name eq "when";
+		
+		my $test = $child->getAttribute( "test" );
+		my $result = EPrints::Script::execute( $test, \%params );
+		print STDERR  "WHENTEST:::".$test." == $result\n";
+		if( $result )
+		{
+			$collapsed->appendChild( _collapse_kids( $session, $child, %params ) );
+			return $collapsed;
+		}
+	}
+
+	# otherwise
+	foreach my $child ( $node->getChildNodes )
+	{
+		next unless( EPrints::XML::is_dom( $child, "Element" ) );
+		my $name = $child->getTagName;
+		$name=~s/^ep://;
+		next unless $name eq "otherwise";
+		
+		$collapsed->appendChild( _collapse_kids( $session, $child, %params ) );
+		return $collapsed;
+	}
+
+	# no otherwise...
+	return $collapsed;
+}
+
+
+
+sub _collapse_condition
 {
 	my( $session, $node, %params ) = @_;
 
@@ -1002,17 +1075,17 @@ sub _test_collapse_condition
 		$obj = $params{item};
 	}
 
-	my $condition = 0;
+	my $result = 0;
 
 	if( $element_name eq "ifset" || $element_name eq "ifnotset" )
 	{
 		if( defined $obj )
 		{
-			$condition = $obj->is_set( $fieldname );
+			$result = $obj->is_set( $fieldname );
 		}
 		else
 		{
-			$condition = defined $params{$fieldname};
+			$result = defined $params{$fieldname};
 		}
 	}
 
@@ -1043,24 +1116,29 @@ sub _test_collapse_condition
 				$match,
 				$merge );
 	
-			$condition = $sf->get_conditions->item_matches( $obj );
+			$result = $sf->get_conditions->item_matches( $obj );
 		}
 		else
 		{
 			my $value = $node->getAttribute( "value" );
 			foreach( split( /\s+/,$value ) )
 			{
-				$condition = 1 if( $_ eq $params{$fieldname} );
+				$result = 1 if( $_ eq $params{$fieldname} );
 			}
 		}
 	}
 
 	if( $element_name eq "ifnotmatch" || $element_name eq "ifnotset" )
 	{
-		return !$condition;
+		$result = !$result;
 	}
 
-	return $condition;
+	if( $result )
+	{
+		return _collapse_kids( $session, $node, %params );
+	}
+
+	return $session->make_doc_fragment;
 }
 
 
