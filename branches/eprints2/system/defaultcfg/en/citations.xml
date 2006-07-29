@@ -121,6 +121,14 @@ In: @event_title@<ep:ifset name="event_dates">, @event_dates</ep:ifset><ep:ifset
     <ep:citation type="document_other"><ep:linkhere><span class="documentcitation"><ep:ifset name="format">@format@</ep:ifset><ep:ifset name="formatdesc"> (@formatdesc@)</ep:ifset></span></ep:linkhere><ep:ifset name="security"> - @security@</ep:ifset></ep:citation>
 
 <!-- subject citations -->
-    <ep:citation type="subject"><ep:linkhere><span class="subject"><ep:ifset name="name">@name@</ep:ifset><ep:ifnotset name="name">[subjectid=@subjectid@]</ep:ifnotset></span></ep:linkhere></ep:citation>
+<!--
+    <ep:citation type="subject">
+<ep:linkhere><span class="ep_subject"><ep:choose>
+	<ep:when test="$item.name.is_set()">@name@</ep:when>
+	<ep:otherwise>[subjectid=@subjectid@]</ep:otherwise>
+</ep:choose>></span></ep:linkhere>
+</ep:citation>
+-->
+    <ep:citation type="subject">@name</ep:citation>
 
 </ep:citations>
