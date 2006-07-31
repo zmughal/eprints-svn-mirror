@@ -215,10 +215,17 @@ sub render_title
 }
 
 
-sub is_collapsed
+sub could_collapse
 {
 	my( $self ) = @_;
-	return $self->are_all_collapsed( $self->{config}->{fields} );
+
+	foreach my $field ( @{$self->{config}->{fields}} )
+	{
+		my $set = $self->{dataobj}->is_set( $field->{name} );
+		return 0 if( $set );
+	}
+	
+	return 1;
 }
 
 sub get_fields_handled

@@ -42,21 +42,16 @@
       </ep:otherwise>
     </ep:choose>
 
-    <ep:choose>
-      <ep:when test="$item.type = 'patent' ">
-      </ep:when>
-      <ep:otherwise>
-        <component type="Field::Multi">
-          <ep:if test="$item.type.one_of('book_section', 'book', 'article', 'conference_item')">
-            <field ref="refereed" required="yes" />
-          </ep:if>
-          <field ref="ispublished" required="yes" />
-        </component>
-      </ep:otherwise>
-    </ep:choose>
 
     <component type="Field::Multi">
       <title><phrase>Publication Details</phrase></title>
+      <ep:if test="$item.type != 'patent' ">
+        <ep:if test="$item.type.one_of('book_section', 'book', 'article', 'conference_item')">
+          <field ref="refereed" required="yes" />
+        </ep:if>
+        <field ref="ispublished" required="yes" />
+      </ep:if>
+
       <ep:if test='$item.type = "patent"'>
         <field ref="date_issue" required="yes" />
         <field ref="official_url"/>
@@ -146,10 +141,10 @@
       </component>
     </ep:if>
 
-    <component><field ref="referencetext"/></component>
-    <component><field ref="keywords"/></component>
-    <component><field ref="note"/></component>
-    <component><field ref="suggestions"/></component>
+    <component collapse="yes"><field ref="referencetext"/></component>
+    <component collapse="yes"><field ref="keywords"/></component>
+    <component collapse="yes"><field ref="note"/></component>
+    <component collapse="yes"><field ref="suggestions"/></component>
 
   </stage>
 

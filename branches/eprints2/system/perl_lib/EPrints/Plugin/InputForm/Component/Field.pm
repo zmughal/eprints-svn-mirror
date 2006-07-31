@@ -206,11 +206,11 @@ sub render_content
  	);
 }
 
-sub is_collapsed 
+sub could_collapse
 {
 	my( $self ) = @_;
-	return 0;
-#	return( $self->{config}->{field}->get_property( "collapsed" ) );
+
+	return !$self->{dataobj}->is_set( $self->{config}->{field}->{name} );
 }
 
 sub get_field

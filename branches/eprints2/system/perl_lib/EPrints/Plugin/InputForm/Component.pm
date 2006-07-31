@@ -53,6 +53,7 @@ sub new
 	if( defined $opts{xml_config} )
 	{
 		$self->{session} = $opts{session};
+		$self->{collapse} = $opts{collapse};
 		$self->{prefix} = "id".$self->{session}->get_next_id;
 		$self->{dataobj} = $opts{dataobj};
 		$self->{dataset} = $opts{dataobj}->get_dataset;
@@ -103,16 +104,20 @@ returns true if this component is to be rendered in a compact form
 sub is_collapsed
 {
 	my( $self ) = @_;
-	return 0;
+
+	return 0 if( !$self->{collapse} );
+
+	my $r =  $self->could_collapse;
+	
+	return $r;
 }
 
-sub are_all_collapsed
+# return false if this component does not want to be collapsed, even if
+# the config requested it.
+sub could_collapse
 {
-	my( $self, $fields ) = @_;
-	foreach my $field ( @$fields )
-	{
-		return 0 if( $field->{collapsed} ne "yes" );
-	}
+	my( $self ) = @_;
+
 	return 1;
 }
 
@@ -250,7 +255,7 @@ sub get_fields_handled
 # $metafield = $self->xml_to_metafield( $xml )
 #
 # Take an XML configuration of a field in a component and return a metafield.
-# tweak the metafield to make it required, collapsed etc. if needed.
+# tweak the metafield to make it required if needed.
 
 sub xml_to_metafield
 {

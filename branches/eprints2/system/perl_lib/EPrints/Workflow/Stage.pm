@@ -44,6 +44,9 @@ sub _read_components
 			my $surround = $stage_node->getAttribute( "surround" );
 			$surround = "Default" if( !EPrints::Utils::is_set( $surround ) );
 
+			my $collapse_attr = $stage_node->getAttribute( "collapse" );
+			my $collapse = 1 if( defined $collapse_attr && $collapse_attr eq "yes" );
+
 			my $surround_obj = $self->{session}->plugin( "InputForm::Surround::$surround" );
 			if( !defined $surround_obj )
 			{
@@ -54,6 +57,7 @@ sub _read_components
 					session=>$self->{session}, 
 					xml_config=>$stage_node, 
 					dataobj=>$self->{item}, 
+					collapse=>$collapse,
 					workflow=>$self->{workflow}, 
 					surround=>$surround_obj );
 
