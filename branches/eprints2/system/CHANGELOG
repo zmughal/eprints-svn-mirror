@@ -3974,3 +3974,5 @@ PACKAGE: 2.2.99.2
  * Got reject_with_email screen working. 
  * Fixed bug in mailer which corrupted the message which meant a seg-fault
     when the email got logged.
+ * Got reject_with_email and remove_with_email working.
+ * Changed email messages to talk of "items" not "eprints"

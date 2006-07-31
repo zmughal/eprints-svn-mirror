@@ -345,25 +345,25 @@ Date of submission is required if the item has no date of issue. If the item has
     </ep:phrase>
 
     <ep:phrase id="mail_bounce_reason">
-Unfortunately your eprint:
+Unfortunately your item:
 
 <ep:pin ref="title" />
 
 could not be accepted into &archivename; as-is.
 
-The eprint has been returned to your workspace. If you
+The item has been returned to your workspace. If you
 visit your item depositing page you will be able to
-edit your eprint, fix the problem and redeposit.
+edit your item, fix the problem and redeposit.
     </ep:phrase>
 
     <ep:phrase id="mail_delete_reason">
-Unfortunately your eprint:
+Unfortunately your item:
 
 <ep:pin ref="title" />
 
 could not be accepted into &archivename;.
 
-The eprint has been deleted.
+The item has been deleted.
     </ep:phrase>
 
     <ep:phrase id="deposit_agreement_text">
@@ -395,13 +395,13 @@ terms.</p>
     <ep:phrase id="page:deposited_on">Deposited On</ep:phrase>
     <ep:phrase id="page:id_code">ID Code</ep:phrase>
     <ep:phrase id="page:invalid_user">INVALID USER</ep:phrase>
-    <ep:phrase id="page:latest_version"><p><em>This is the latest version of this eprint.</em></p></ep:phrase>
-    <ep:phrase id="page:not_latest_version"><p class="notice">There is a more recent version of this eprint available. <ep:pin ref="link">Click here to view it.</ep:pin></p></ep:phrase>
+    <ep:phrase id="page:latest_version"><p><em>This is the latest version of this item.</em></p></ep:phrase>
+    <ep:phrase id="page:not_latest_version"><p class="notice">There is a more recent version of this item available. <ep:pin ref="link">Click here to view it.</ep:pin></p></ep:phrase>
     <ep:phrase id="page:available_versions"><h3>Available Versions of this Item</h3></ep:phrase>
     <ep:phrase id="page:commentary_threads"><h3>Commentary/Response Threads</h3></ep:phrase>
 
     <ep:phrase id="page:abstract_intro"><h3>This is how the metadata summary page will look:</h3></ep:phrase>
-    <ep:phrase id="page:allfields_intro"><h3>This is complete contents of all the fields in this eprint:</h3></ep:phrase>
+    <ep:phrase id="page:allfields_intro"><h3>This is complete contents of all the fields in this item:</h3></ep:phrase>
     <ep:phrase id="page:suggestions_intro"><h3>The depositing user made the following comments and suggestions:</h3></ep:phrase>
     <ep:phrase id="page:subscription">Subscription</ep:phrase>
     <ep:phrase id="page:edit_link">Repository Staff Only: <ep:pin ref="link">edit this item</ep:pin></ep:phrase>
@@ -453,16 +453,16 @@ terms.</p>
 
     <!-- registration introduction. -->
     <ep:phrase id="cgi/register:intro">
-<p>You need to register in order to be able to deposit eprints in the 
+<p>You need to register in order to be able to deposit items in the 
 repository. </p>
 
-<p>As a registered user you will be able to manage your eprints, up to the point
+<p>As a registered user you will be able to manage your items, up to the point
 of submitting them for Editorial Review. If the review is successful your 
-eprint will be deposited in the repository, if it is unsuccessful it will be 
+item will be deposited in the repository, if it is unsuccessful it will be 
 returned to you with editorial comments.</p>
 
-<p>In addition to managing your eprints a registered user can set up
-subscription options, so that email notifications are sent when new eprints 
+<p>In addition to managing your items a registered user can set up
+subscription options, so that email notifications are sent when new items 
 are placed in the repository.</p>
 
 <p>Please complete the details on this page to register with &archivename;.</p>
@@ -477,7 +477,7 @@ activated you can start to use the registered features of the repository.</p>
 
     <ep:phrase id="cgi/register:intro_minimal">
 <p>As a registered user you will be able to set up
-subscription options, so that email notifications are sent when new eprints 
+subscription options, so that email notifications are sent when new items 
 are placed in the repository.</p>
 
 <p>Please complete the details on this page to register with &archivename;.</p>

@@ -1,4 +1,4 @@
-package EPrints::Plugin::Screen::EPrint::Reject_with_email;
+package EPrints::Plugin::Screen::EPrint::Remove_with_email;
 
 our @ISA = ( 'EPrints::Plugin::Screen::EPrint' );
 
@@ -10,7 +10,7 @@ sub from
 
 	if( $self->{processor}->{action} eq "send" )
 	{
-		$self->action_reject_with_email;
+		$self->action_remove_with_email;
 		return;
 	}
 
@@ -27,9 +27,9 @@ sub render
 {
 	my( $self ) = @_;
 
-	if( !$self->{processor}->allow( "action/eprint/reject_with_email" ) )
+	if( !$self->{processor}->allow( "action/eprint/remove_with_email" ) )
 	{
-		$self->{processor}->action_not_allowed( "eprint/reject_with_email" );
+		$self->{processor}->action_not_allowed( "eprint/remove_with_email" );
 		return;
 	}
 
@@ -73,9 +73,18 @@ sub render
 		EPrints::Utils::tree_to_utf8( 
 			$self->{processor}->{eprint}->render_description() ) );
 
+	my $phraseid;
+	if( $self->{processor}->{eprint}->get_dataset->id eq "inbox" )
+	{
+		$phraseid = "mail_delete_reason.inbox";
+	}
+	else
+	{
+		$phraseid = "mail_delete_reason";
+	}
 	$textarea->appendChild( 
 		$self->{session}->html_phrase( 
-			"mail_bounce_reason", 
+			$phraseid,
 			title => $title ) );
 
 	$div->appendChild( $textarea );
@@ -83,7 +92,7 @@ sub render
 	$form->appendChild( $div );
 
 	$form->appendChild( $self->{session}->render_action_buttons(
-		"send" => $self->{session}->phrase( "priv:action/eprint/reject_with_email" ),
+		"send" => $self->{session}->phrase( "priv:action/eprint/remove_with_email" ),
 		"cancel" => $self->{session}->phrase( "cgi/users/edit_eprint:action_cancel" ),
  	) );
 
@@ -91,7 +100,7 @@ sub render
 }	
 
 
-sub action_reject_with_email
+sub action_remove_with_email
 {
 	my( $self ) = @_;
 
@@ -100,25 +109,24 @@ sub action_reject_with_email
 
 	$self->{processor}->{screenid} = "EPrint::View";
 
-	if( !$self->{processor}->allow( "action/eprint/reject_with_email" ) )
+	if( !$self->{processor}->allow( "action/eprint/remove_with_email" ) )
 	{
-		$self->{processor}->action_not_allowed( "eprint/reject_with_email" );
+		$self->{processor}->action_not_allowed( "eprint/remove_with_email" );
 		return;
 	}
 
-	if( !$self->{processor}->{eprint}->move_to_inbox )
+	if( !$self->{processor}->{eprint}->remove )
 	{
-		$self->{processor}->add_message( 
-			"error",
-			$self->{session}->html_phrase( 
-				"cgi/users/edit_eprint:bord_fail" ) );
+		my $db_error = $self->{session}->get_database->error;
+		$self->{session}->get_repository->log( "DB error removing EPrint ".$self->{processor}->{eprint}->get_value( "eprintid" ).": $db_error" );
+		$self->{processor}->add_message( "message", $self->{session}->make_text( "Item could not be removed." ) ); #cjg lang
+		$self->{processor}->{screenid} = "FirstTool";
+		return;
 	}
 
-	$self->{processor}->add_message( "message",
-		$self->{session}->html_phrase( 
-			"cgi/users/edit_eprint:status_changed" ) );
+	$self->{processor}->add_message( "message", $self->{session}->make_text( "Item has been removed." ) ); #cjg lang
 
-	# Successfully transferred, mail the user with the reason
+	# Successfully removed, mail the user with the reason
 
 	my $mail = $self->{session}->make_element( "mail" );
 	$mail->appendChild( 

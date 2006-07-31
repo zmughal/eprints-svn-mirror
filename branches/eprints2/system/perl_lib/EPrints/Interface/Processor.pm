@@ -104,9 +104,8 @@ sub screen
 	my $plugin_id = "Screen::".$screen;
 	$self->{screen} = $self->{session}->plugin( $plugin_id, processor=>$self );
 
-	if( $@ ) 
+	if( !defined $self->{screen} )
 	{
-		print STDERR $@;
 		if( $screen ne "Error" )
 		{
 			$self->add_message( 
