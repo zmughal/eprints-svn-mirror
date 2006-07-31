@@ -3983,3 +3983,4 @@ PACKAGE: 2.2.99.2
  * Moved the help to be inside the toolbox
  * Added seperating lines to multihelp and added names of fields before each
     help section in multi.
+ * Added test_config to load a repository but not do anything.
