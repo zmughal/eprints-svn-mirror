@@ -3878,7 +3878,7 @@ PACKAGE: 2.2.99.2
     sensible view. Adding a wrapper for all logged in pages, and a weapper
     for pages dealing with a single eprint record.
  
-2006-06-24 cjg
+2006-07-24 cjg
 
  * Added javascript to template which causes the scroll bar to always be
     shown.
@@ -3889,7 +3889,7 @@ PACKAGE: 2.2.99.2
  * Added a new default workflow for eprints - shorter and nearer.
  * Added phrases to make workflow look neater.
 
-2006-06-25 cjg
+2006-07-25 cjg
 
  * Merged MetaField::Basic into MetaField. Removed MetaField::Basic.
  * Added eprints.js for eprints own javascript functions.
@@ -3928,7 +3928,7 @@ PACKAGE: 2.2.99.2
  * Removed unused components eg. BlisterBar
  * Renaming components to shorter names.
 
-2006-06-26 cjg
+2006-07-26 cjg
 
  * Split style sheet into parts. Began process of making rational class names
     for all css used in eprints.
@@ -3953,7 +3953,7 @@ PACKAGE: 2.2.99.2
  * Moved example style to ep_form_example
  * Added a ep_ prefix to problem_field classes
 
-2006-06-27 cjg
+2006-07-27 cjg
 
  * Added alt tag to required Star.
  * Added a mini scripting language for collapsing workflow (and citations)
@@ -3964,7 +3964,7 @@ PACKAGE: 2.2.99.2
  * Multi fields now validate required contents.
  * Multi fields now available as problem_field targets.
  
-2006-07-01 cjg
+2006-07-31 cjg
 
  * Added a new debugging message to Script when property or method is called 
     on an undefined value.
