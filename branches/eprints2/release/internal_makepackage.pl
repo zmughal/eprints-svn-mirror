@@ -42,9 +42,9 @@ chomp $date;
 
 if( $type eq "nightly" ) 
 { 
-	$package_version = "eprints-2-cvs-".$date;
+	$package_version = "eprints-3-build-".$date;
 	$package_desc = "EPrints Nightly Build - $package_version";
-	$package_file = "eprints-2-cvs-$date";
+	$package_file = "eprints-3-build-$date";
 }
 else
 {

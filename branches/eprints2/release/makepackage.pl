@@ -34,8 +34,6 @@ if( !defined $type || $type eq "" )
 }
 
 my $version_path;
-my $package_version;
-my $package_desc;
 my $package_file;
 
 my $date = `date +%Y-%m-%d`;
@@ -44,9 +42,7 @@ chomp $date;
 if( $type eq "nightly" ) 
 { 
 	$version_path = "/branches/eprints2";
-	$package_version = "eprints-2-cvs-".$date;
-	$package_desc = "EPrints Nightly Build - $package_version";
-	$package_file = "eprints-2-cvs-$date";
+	$package_file = "eprints-3-build-$date";
 }
 else
 {
@@ -56,9 +52,7 @@ else
 		print "Available:\n".join("\n",sort keys %codenames)."\n\n";
 		exit;
 	}
-	$package_version = $ids{$type};
 	$version_path = "/tags/".$ids{$type};
-	$package_desc = "EPrints ".$ids{$type}." (".$codenames{$type}.") [Born on $date]";
 	$package_file = "eprints-".$ids{$type};
 	print "YAY - $ids{$type}\n";
 }
