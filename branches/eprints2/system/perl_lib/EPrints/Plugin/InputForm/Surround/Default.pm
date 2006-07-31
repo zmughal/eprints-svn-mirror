@@ -25,11 +25,9 @@ sub render
 	# Help rendering
 
 
-	my $title_table = $self->{session}->make_element( "table", cellspacing=>0, class=>"ep_sr_title_table" );
-	my $title_tr = $self->{session}->make_element( "tr" );
-	$title_table->appendChild( $title_tr );
+	my $title_bar = $self->{session}->make_element( "div" );
 
-	my $title_td1 = $self->{session}->make_element( "td", class=>"ep_sr_title" );
+	my $title_div = $self->{session}->make_element( "div", class=>"ep_sr_title" );
 
 	if( $is_req )
 	{
@@ -38,26 +36,24 @@ sub render
 			label=>$title );
 	}
 
-	$title_td1->appendChild( $title );
-	$title_tr->appendChild( $title_td1 );
+	$title_div->appendChild( $title );
 
 	my $help_prefix = $component->{prefix}."_help";
 
-	my $title_td2 = $self->{session}->make_element( "td", class=>"ep_sr_show_help ep_only_js", id=>$help_prefix."_show" );
-	my $helplink = $self->{session}->make_element( "a", onClick => "EPJS_toggle('$help_prefix',false,'block');EPJS_toggle('${help_prefix}_hide',false,'table-cell');EPJS_toggle('${help_prefix}_show',true,'table-cell');return false", href=>"#" );
-	$helplink->appendChild( $self->{session}->make_text( "Help" ) );
-	$title_td2->appendChild( $helplink );
-	$title_tr->appendChild( $title_td2 );
+	my $show_help = $self->{session}->make_element( "div", class=>"ep_sr_show_help ep_only_js", id=>$help_prefix."_show" );
+	my $helplink = $self->{session}->make_element( "a", onClick => "EPJS_toggle('$help_prefix',false,'block');EPJS_toggle('${help_prefix}_hide',false,'block');EPJS_toggle('${help_prefix}_show',true,'block');return false", href=>"#" );
+	$show_help->appendChild( $self->{session}->html_phrase( "inputform/surround/default:show_help",link=>$helplink ) );
+	$title_bar->appendChild( $show_help );
 
-	my $title_td3 = $self->{session}->make_element( "td", class=>"ep_sr_hide_help ep_hide", id=>$help_prefix."_hide" );
-	my $helplink2 = $self->{session}->make_element( "a", onClick => "EPJS_toggle('$help_prefix',false,'block');EPJS_toggle('${help_prefix}_hide',false,'table-cell');EPJS_toggle('${help_prefix}_show',true,'table-cell');return false", href=>"#" );
-	$helplink2->appendChild( $self->{session}->make_text( "Hide help" ) );
-	$title_td3->appendChild( $helplink2 );
-	$title_tr->appendChild( $title_td3 );
+	my $hide_help = $self->{session}->make_element( "div", class=>"ep_sr_hide_help ep_hide", id=>$help_prefix."_hide" );
+	my $helplink2 = $self->{session}->make_element( "a", onClick => "EPJS_toggle('$help_prefix',false,'block');EPJS_toggle('${help_prefix}_hide',false,'block');EPJS_toggle('${help_prefix}_show',true,'block');return false", href=>"#" );
+	$hide_help->appendChild( $self->{session}->html_phrase( "inputform/surround/default:hide_help",link=>$helplink2 ) );
+	$title_bar->appendChild( $hide_help );
 	
+	$title_bar->appendChild( $title_div );
+
 	my $help_div = $self->{session}->make_element( "div", class => "ep_sr_help ep_no_js", id => $help_prefix );
 	$help_div->appendChild( $help );
-	
 
 	# Problem rendering
 
@@ -74,10 +70,10 @@ sub render
 	# Finally add the content 
 	my $input_div = $self->{session}->make_element( "div", class => "ep_sr_input" );
 
+	$input_div->appendChild( $help_div );
 	$input_div->appendChild( $component->render_content( $self ) );
 
-	$surround->appendChild( $title_table );
-	$surround->appendChild( $help_div );
+	$surround->appendChild( $title_bar );
 	$surround->appendChild( $input_div );
 
 	if( $collapsed )

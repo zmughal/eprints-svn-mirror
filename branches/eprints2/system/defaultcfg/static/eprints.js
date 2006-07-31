@@ -12,8 +12,6 @@ function EPJS_toggle( element_id, start_visible, display )
 	{
 		current_vis = (element.style.display == display );
 	}
-	/*alert( element_id+"("+start_visible+")("+current_vis+")("+display+")("+element.style.display+")" );*/
-
 
 	if( current_vis )
 	{

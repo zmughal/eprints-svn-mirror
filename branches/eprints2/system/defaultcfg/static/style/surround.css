@@ -16,6 +16,7 @@
 }
 .ep_sr_component .ep_sr_input {
 	text-align: left;
+	clear: both;
 	background-image: url(/images/style/toolbox.png);
 	border: solid 1px #d8dbef;
 	padding: 8px;
@@ -33,30 +34,26 @@
 /* help style - not primetime */
 
 .ep_sr_component .ep_sr_help {
-	padding: 4px;
-	background-image: url(/images/style/toolbox.png);
-	border-left: solid 1px #d8dbef;
-	border-right: solid 1px #d8dbef;
+	padding-bottom: 8px;
 }
 .ep_sr_component .ep_sr_show_help {
-	background-image: url(/images/style/blue_bar.png);
-	color: white;
 	white-space: nowrap;
-	border: solid 1px #d8dbef;
+	padding-bottom: 4px;
+	float: right;
 }
 .ep_sr_component .ep_sr_hide_help {
 	white-space: nowrap;
-	border-left: solid 1px #d8dbef;
-	border-right: solid 1px #d8dbef;
-	border-top: solid 1px #d8dbef;
+	padding-bottom: 4px;
+	float: right;
 }
-.ep_sr_component .ep_sr_show_help a {
-	color: white;
-}
-.ep_sr_component .ep_sr_title {
+.ep_sr_component .ep_sr_title_bar {
 	width: 100%;
-	border-bottom: solid 1px #d8dbef;
 }
-.ep_sr_component .ep_sr_title_table {
-	width: 100%;
+
+
+/* used for multi, maybe should be elsewhere */
+.ep_sr_component .ep_sr_help_chunk {
+	border-bottom: 1px solid #888;
+	padding-bottom: 4px; 
+	margin-bottom: 4px;
 }

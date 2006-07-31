@@ -1132,5 +1132,9 @@ Titles and Help for the System Fields
     <ep:phrase id="tool:divide"> | </ep:phrase>
 
     <ep:phrase id="sys:ep_form_required"><img src="/images/style/required.png" border="0" alt="Required"/>&nbsp;<ep:pin ref="label" /></ep:phrase>
+
+    <ep:phrase id="inputform/surround/default:show_help"><ep:pin ref="link">Help <img alt="+" src="/images/style/plus.png" border="0" /></ep:pin></ep:phrase>
+    <ep:phrase id="inputform/surround/default:hide_help"><ep:pin ref="link">Help <img alt="-" src="/images/style/minus.png" border="0" /></ep:pin></ep:phrase>
+   
 </ep:phrases>
 

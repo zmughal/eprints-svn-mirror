@@ -3976,3 +3976,10 @@ PACKAGE: 2.2.99.2
     when the email got logged.
  * Got reject_with_email and remove_with_email working.
  * Changed email messages to talk of "items" not "eprints"
+ * Fixed bug which meant the help toggle didn't work on IE (can't use display
+    type of "table-cell")
+ * Changed surround title bar to use a div not a table.
+ * Added + and - icons to the show/hide help.
+ * Moved the help to be inside the toolbox
+ * Added seperating lines to multihelp and added names of fields before each
+    help section in multi.

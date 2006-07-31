@@ -138,9 +138,10 @@ Returns DOM containing the help text for this component.
 sub render_help
 {
 	my( $self, $surround ) = @_;
+
 	return $self->{config}->{field}->render_help( 
-		$self->{session}, 
-		$self->{config}->{field}->get_type() );
+			$self->{session}, 
+			$self->{config}->{field}->get_type() );
 }
 
 =pod
