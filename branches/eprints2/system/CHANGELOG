@@ -3970,3 +3970,4 @@ PACKAGE: 2.2.99.2
     on an undefined value.
  * Tweaks to improve the look of the input form.
  * Added collapse feature to components.
+ * Moved Screen into the plugins system

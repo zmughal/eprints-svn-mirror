@@ -1,18 +1,11 @@
 
-package EPrints::Interface::Screen::EPrint::View;
+package EPrints::Plugin::Screen::EPrint::View;
 
-use EPrints::Interface::Screen::EPrint;
+use EPrints::Plugin::Screen::EPrint;
 
-@ISA = ( 'EPrints::Interface::Screen::EPrint' );
+@ISA = ( 'EPrints::Plugin::Screen::EPrint' );
 
 use strict;
-
-sub new
-{
-	my( $class, $processor ) = @_;
-
-	$class->SUPER::new( $processor );
-}
 
 
 sub from

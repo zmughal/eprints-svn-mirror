@@ -1,6 +1,6 @@
-package EPrints::Interface::Screen::EPrint::Deposit;
+package EPrints::Plugin::Screen::EPrint::Deposit;
 
-@ISA = ( 'EPrints::Interface::Screen::EPrint' );
+@ISA = ( 'EPrints::Plugin::Screen::EPrint' );
 
 use strict;
 
@@ -15,7 +15,7 @@ sub from
 		return;
 	}
 	
-	$self->EPrints::Interface::Screen::from;
+	$self->EPrints::Plugin::Screen::from;
 }
 
 sub render

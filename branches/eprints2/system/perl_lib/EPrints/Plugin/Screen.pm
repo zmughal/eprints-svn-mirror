@@ -1,14 +1,22 @@
-package EPrints::Interface::Screen;
+package EPrints::Plugin::Screen;
 
 # Top level screen.
 # Abstract.
 # 
 
+use strict;
+
+our @ISA = qw/ EPrints::Plugin /;
+
 sub new
 {
-	my( $class, $processor ) = @_;
+	my( $class, %params ) = @_;
 
-	return bless { session=>$processor->{session}, processor=>$processor }, $class;
+	my $self = $class->SUPER::new(%params);
+
+	$self->{session} = $self->{processor}->{session};
+
+	return $self;
 }
 
 sub properties_from

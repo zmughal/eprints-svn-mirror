@@ -1,9 +1,5 @@
 package EPrints::Interface::Processor;
 
-use EPrints::Interface::Screen::EPrint;
-use EPrints::Interface::Screen::EPrint::Edit;
-use EPrints::Interface::Screen::EPrint::Deposit;
-
 use strict;
 
 sub process
@@ -105,12 +101,8 @@ sub screen
 	my( $self ) = @_;
 
 	my $screen = $self->{screenid};
-	my $class = "EPrints::Interface::Screen::$screen";
-
-	eval '
-		use '.$class.';
-		$self->{screen} = $class->new( $self );
-	';
+	my $plugin_id = "Screen::".$screen;
+	$self->{screen} = $self->{session}->plugin( $plugin_id, processor=>$self );
 
 	if( $@ ) 
 	{

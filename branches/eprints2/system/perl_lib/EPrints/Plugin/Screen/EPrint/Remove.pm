@@ -1,6 +1,6 @@
-package EPrints::Interface::Screen::EPrint::Remove;
+package EPrints::Plugin::Screen::EPrint::Remove;
 
-our @ISA = ( 'EPrints::Interface::Screen::EPrint' );
+our @ISA = ( 'EPrints::Plugin::Screen::EPrint' );
 
 use strict;
 
@@ -21,7 +21,7 @@ sub from
 		return;
 	}
 
-	$self->EPrints::Interface::Screen::from;
+	$self->EPrints::Plugin::Screen::from;
 }
 
 sub render

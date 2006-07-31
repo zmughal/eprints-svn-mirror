@@ -1,18 +1,11 @@
 
-package EPrints::Interface::Screen::EPrint::View::Editor;
+package EPrints::Plugin::Screen::EPrint::View::Editor;
 
-use EPrints::Interface::Screen::EPrint::View;
+use EPrints::Plugin::Screen::EPrint::View;
 
-@ISA = ( 'EPrints::Interface::Screen::EPrint::View' );
+@ISA = ( 'EPrints::Plugin::Screen::EPrint::View' );
 
 use strict;
-
-sub new
-{
-	my( $class, $processor ) = @_;
-
-	$class->SUPER::new( $processor );
-}
 
 
 sub set_title

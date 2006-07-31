@@ -1,6 +1,6 @@
-package EPrints::Interface::Screen::EPrint::Reject_with_email;
+package EPrints::Plugin::Screen::EPrint::Reject_with_email;
 
-our @ISA = ( 'EPrints::Interface::Screen::EPrint::Reject_with_email' );
+our @ISA = ( 'EPrints::Plugin::Screen::EPrint' );
 
 use strict;
 
@@ -20,7 +20,7 @@ sub from
 		return;
 	}
 
-	$self->EPrints::Interface::Screen::from;
+	$self->EPrints::Plugin::Screen::from;
 }
 
 sub render

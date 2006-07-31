@@ -1,18 +1,12 @@
 
-package EPrints::Interface::Screen::Error;
+#remove !
+package EPrints::Plugin::Screen::EPrint::Error;
 
-use EPrints::Interface::Screen::EPrint;
+use EPrints::Plugin::Screen::EPrint;
 
-@ISA = ( 'EPrints::Interface::Screen::EPrint' );
+@ISA = ( 'EPrints::Plugin::Screen::EPrint' );
 
 use strict;
-
-sub new
-{
-	my( $class, $processor ) = @_;
-
-	$class->SUPER::new( $processor );
-}
 
 sub render
 {
