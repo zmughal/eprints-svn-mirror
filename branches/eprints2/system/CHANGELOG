@@ -3968,3 +3968,4 @@ PACKAGE: 2.2.99.2
 
  * Added a new debugging message to Script when property or method is called 
     on an undefined value.
+ * Tweaks to improve the look of the input form.

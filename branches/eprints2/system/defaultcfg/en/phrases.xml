@@ -65,7 +65,7 @@
 <br />Example:  <span class="ep_form_example">Elseview Oceanography Series</span>
 </ep:phrase>
 
-    <ep:phrase id="eprint_fieldname_publication">Journal/Publication Title</ep:phrase>
+    <ep:phrase id="eprint_fieldname_publication">Journal or Publication Title</ep:phrase>
     <ep:phrase id="eprint_fieldhelp_publication">The title of a journal, publication or magzine.
 <br />Example:  <span class="ep_form_example">Marine Biology</span>
 </ep:phrase>
