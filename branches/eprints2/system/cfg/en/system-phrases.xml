@@ -720,8 +720,10 @@ Staff CGI Scripts
     <ep:phrase id="cgi/users/edit_eprint:title_delete_form">Deleting Submission</ep:phrase>
     <ep:phrase id="cgi/users/edit_eprint:title_bounce_form">Bouncing Submission</ep:phrase>
     <ep:phrase id="cgi/users/edit_eprint:action_send">Send</ep:phrase>
+    <ep:phrase id="cgi/users/edit_eprint:action_cancel">Cancel</ep:phrase>
     <ep:phrase id="cgi/users/edit_eprint:no_user">Cannot find the data for the user who submitted this item.</ep:phrase>
     <ep:phrase id="cgi/users/edit_eprint:subject_bounce">Problem with Submission</ep:phrase>
+    <ep:phrase id="cgi/users/edit_eprint:mail_sent">Email successfully sent.</ep:phrase>
     <ep:phrase id="cgi/users/edit_eprint:mail_fail">The item was successfully deleted/bounced, but for some reason the user couldn't be mailed. Username: <strong><ep:pin ref="username" /></strong>, email <ep:pin ref="email" />.</ep:phrase>
     <ep:phrase id="cgi/users/edit_eprint:bord_fail">The item could not be bounced/deleted - this probably indicates a database error. Check the logs.</ep:phrase>
     <ep:phrase id="cgi/users/edit_eprint:form_title">Item Control Page</ep:phrase>

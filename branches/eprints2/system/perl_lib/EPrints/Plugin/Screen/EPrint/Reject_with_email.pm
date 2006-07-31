@@ -16,7 +16,7 @@ sub from
 
 	if( $self->{processor}->{action} eq "cancel" )
 	{
-		$self->{processor}->{screenid} = "EPrint";
+		$self->{processor}->{screenid} = "EPrint::View";
 		return;
 	}
 
@@ -26,6 +26,12 @@ sub from
 sub render
 {
 	my( $self ) = @_;
+
+	if( !$self->{processor}->allow( "action/eprint/reject_with_email" ) )
+	{
+		$self->{processor}->action_not_allowed( "eprint/reject_with_email" );
+		return;
+	}
 
 	my $user = $self->{processor}->{eprint}->get_user();
 	# We can't bounce it if there's no user associated 
@@ -92,11 +98,11 @@ sub action_reject_with_email
 	my $user = $self->{processor}->{eprint}->get_user();
 	# We can't bounce it if there's no user associated 
 
-	$self->{processor}->{screenid} = "EPrint";
+	$self->{processor}->{screenid} = "EPrint::View";
 
-	if( !$self->{processor}->allow_action( "reject_with_email" ) )
+	if( !$self->{processor}->allow( "action/eprint/reject_with_email" ) )
 	{
-		$self->{processor}->action_not_allowed( "reject_with_email" );
+		$self->{processor}->action_not_allowed( "eprint/reject_with_email" );
 		return;
 	}
 
@@ -119,10 +125,12 @@ sub action_reject_with_email
 		$self->{session}->make_text( 
 			$self->{session}->param( "reason" ) ) );
 
-	if( !$user->mail(
+	my $mail_ok = $user->mail(
 		"cgi/users/edit_eprint:subject_bounce",
 		$mail,
-		$self->{session}->current_user ) )
+		$self->{session}->current_user );
+	
+	if( !$mail_ok ) 
 	{
 		$self->{processor}->add_message( "warning",
 			$self->{session}->html_phrase( 
@@ -132,6 +140,9 @@ sub action_reject_with_email
 		return;
 	}
 
+	$self->{processor}->add_message( "message",
+		$self->{session}->html_phrase( 
+			"cgi/users/edit_eprint:mail_sent" ) );
 	$self->{processor}->{eprint}->log_mail_owner( $mail );
 }
 

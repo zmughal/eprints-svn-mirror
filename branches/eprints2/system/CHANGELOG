@@ -3971,3 +3971,6 @@ PACKAGE: 2.2.99.2
  * Tweaks to improve the look of the input form.
  * Added collapse feature to components.
  * Moved Screen into the plugins system
+ * Got reject_with_email screen working. 
+ * Fixed bug in mailer which corrupted the message which meant a seg-fault
+    when the email got logged.

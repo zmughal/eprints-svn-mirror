@@ -410,6 +410,7 @@ sub send_mail_via_smtp
 		$smtp->quit;
 		return 0;
 	}
+
 	my $message = build_email( %p );
 	$smtp->data();
 	$smtp->datasend( $message->as_string );
@@ -476,12 +477,6 @@ sub build_email
 	}
 	$mimemsg->replace( "X-Mailer" => "EPrints http://eprints.org/" );
 
-	my $fullmsg = $p{session}->make_doc_fragment;
-	$fullmsg->appendChild( $p{message} );
-	if( defined $p{sig} )
-	{
-		$fullmsg->appendChild( $p{sig} );
-	}
 
 	# If there are file attachments, change to a "mixed" type
 	# and attach the body Text and HTML to an "alternative" subpart
@@ -496,16 +491,23 @@ sub build_email
 		$mixedmsg->attach( $mimemsg );
 	}
 
+	my $xml_mail = $p{message};
+	if( defined $p{sig} )
+	{
+		$xml_mail = $p{session}->clone_for_me( $xml_mail );
+		$xml_mail->appendChild( $p{session}->clone_for_me( $p{sig} ) );
+	}
+	my $data = EPrints::Utils::tree_to_utf8( $xml_mail , $MAILWIDTH );
+
 	my $text = MIME::Lite->new( 
 		Type  => "TEXT",
-		Data  => EPrints::Utils::tree_to_utf8( $fullmsg , $MAILWIDTH ),
+		Data  => $data
 	);
 	$text->attr("Content-disposition" => "");
 	$mimemsg->attach( $text );
-
 	my $html = MIME::Lite->new( 
 		Type  => "text/html",
-		Data  => $fullmsg->toString,
+		Data  => $p{message}->toString,
 	);
 	$html->attr("Content-disposition" => "");
 	$mimemsg->attach( $html );
@@ -784,7 +786,6 @@ sub tree_to_utf8
 		$v =~ s/[\s\r\n\t]+/ /g unless( $pre );
 		return $v;
 	}
-
 	my $name = $node->getNodeName();
 
 	my $string = utf8("");

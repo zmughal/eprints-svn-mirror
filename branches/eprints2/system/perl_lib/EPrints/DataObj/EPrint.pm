@@ -682,6 +682,7 @@ sub log_mail_owner
 	$userid = $user->get_id if defined $user;
 
 	my $history_ds = $self->{session}->get_repository->get_dataset( "history" );
+	my $details = EPrints::Utils::tree_to_utf8( $mail , 80 );
 	$history_ds->create_object( 
 		$self->{session},
 		{
@@ -690,7 +691,7 @@ sub log_mail_owner
 			objectid=>$self->get_id,
 			revision=>$self->get_value( "rev_number" ),
 			action=>"mail_owner",
-			details=> EPrints::Utils::tree_to_utf8( $mail , 80 ),
+			details=> $details,
 		}
 	);
 }
