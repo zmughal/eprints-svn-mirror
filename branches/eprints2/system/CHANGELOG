@@ -3963,3 +3963,8 @@ PACKAGE: 2.2.99.2
     running from SVN checkout.
  * Multi fields now validate required contents.
  * Multi fields now available as problem_field targets.
+ 
+2006-07-01 cjg
+
+ * Added a new debugging message to Script when property or method is called 
+    on an undefined value.

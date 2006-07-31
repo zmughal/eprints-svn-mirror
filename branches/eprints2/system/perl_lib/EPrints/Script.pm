@@ -159,6 +159,10 @@ sub run_PROPERTY
 {
 	my( $tree, $obj, $property ) = @_;
 
+	if( !defined $obj )
+	{
+		EPrints::abort( "can't get a property from undef" );
+	}
 	if( !$obj->isa( "EPrints::DataObj" ) )
 	{
 		EPrints::abort( "can't get a property from a non-dataobj ($obj)" );
@@ -177,6 +181,11 @@ sub run_reverse
 sub run_is_set
 {
 	my( $tree, $obj, $property ) = @_;
+
+	if( !defined $obj )
+	{
+		EPrints::abort( "can't get a property from undef" );
+	}
 
 	if( !$obj->isa( "EPrints::DataObj" ) )
 	{
