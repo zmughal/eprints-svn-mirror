@@ -3984,3 +3984,10 @@ PACKAGE: 2.2.99.2
  * Added seperating lines to multihelp and added names of fields before each
     help section in multi.
  * Added test_config to load a repository but not do anything.
+
+2006-08-03 cjg
+
+ * Moved citations into seperate files for clarity
+ * Citations now use new style workflow control
+ * Commented out pod for citation methods - they should not be part of the
+    API execpt via $dataobjs.

@@ -163,6 +163,11 @@ sub run_PROPERTY
 	{
 		EPrints::abort( "can't get a property from undef" );
 	}
+	my $ref = ref($obj);
+	if( $ref !~ m/::/ )
+	{
+		EPrints::abort( "can't get a property from a non-object" );
+	}
 	if( !$obj->isa( "EPrints::DataObj" ) )
 	{
 		EPrints::abort( "can't get a property from a non-dataobj ($obj)" );
@@ -186,7 +191,11 @@ sub run_is_set
 	{
 		EPrints::abort( "can't get a property from undef" );
 	}
-
+	my $ref = ref($obj);
+	if( $ref !~ m/::/ )
+	{
+		EPrints::abort( "can't get a property from a non-object" );
+	}
 	if( !$obj->isa( "EPrints::DataObj" ) )
 	{
 		EPrints::abort( "can't get a property from a non-dataobj" );

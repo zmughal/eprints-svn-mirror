@@ -3049,19 +3049,19 @@ sub plugin_list
 
 
 ######################################################################
-=pod
-
-=item $spec = $session->get_citation_spec( $dataset, [$ctype] )
-
-Return the XML spec for the given dataset. If a $ctype is specified
-then return the named citation style for that dataset. eg.
-a $ctype of "foo" on the eprint dataset gives a copy of the citation
-spec with ID "eprint_foo".
-
-This returns a copy of the XML citation spec., so that it may be 
-safely modified.
-
-=cut
+# =pod
+# 
+# =item $spec = $session->get_citation_spec( $dataset, [$ctype] )
+# 
+# Return the XML spec for the given dataset. If a $ctype is specified
+# then return the named citation style for that dataset. eg.
+# a $ctype of "foo" on the eprint dataset gives a copy of the citation
+# spec with ID "eprint_foo".
+# 
+# This returns a copy of the XML citation spec., so that it may be 
+# safely modified.
+# 
+# =cut
 ######################################################################
 
 sub get_citation_spec
@@ -3069,11 +3069,11 @@ sub get_citation_spec
 	my( $self, $dataset, $ctype ) = @_;
 
 	my $citation_id = $dataset->confid();
-	$citation_id.="_".$ctype if( defined $ctype );
 
 	my $citespec = $self->{repository}->get_citation_spec( 
 					$self->{lang}->get_id(), 
-					$citation_id );
+					$citation_id,
+					$ctype );
 
 	if( !defined $citespec )
 	{

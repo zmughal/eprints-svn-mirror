@@ -385,61 +385,104 @@ sub _load_citation_specs
 	my $langid;
 	foreach $langid ( @{$self->get_conf( "languages" )} )
 	{
-		my $file = $self->get_conf( "config_path" ).
-				"/$langid/citations.xml";
-		my $doc = $self->parse_xml( $file , 1 );
-		if( !defined $doc )
+		my $dir = $self->get_conf( "config_path" ).
+				"/$langid/citations";
+		my $dh;
+		opendir( $dh, $dir );
+		my @dirs = ();
+		while( my $fn = readdir( $dh ) )
 		{
-			return 0;
+			next if $fn =~ m/^\./;
+			push @dirs,$fn if( -d "$dir/$fn" );
 		}
+		close $dh;
 
-		my $citations = ($doc->getElementsByTagName( "citations" ))[0];
-		if( !defined $citations )
+		$self->{cstyles}->{$langid} = {};
+		# for each dataset dir
+		foreach my $dsid ( @dirs )
 		{
-			print STDERR  "Missing <citations> tag in $file\n";
-			EPrints::XML::dispose( $doc );
-			return 0;
-		}
-
-		my $citation;
-		foreach $citation ($doc->getElementsByTagName( "citation" ))
-		{
-			my( $type ) = $citation->getAttribute( "type" );
-			
-			my( $frag ) = $self->{xmldoc}->createDocumentFragment();
-			foreach( $citation->getChildNodes )
+			opendir( $dh, "$dir/$dsid" );
+			my @files = ();
+			while( my $fn = readdir( $dh ) )
 			{
-				$frag->appendChild( 
-					EPrints::XML::clone_and_own(
-						$_,
-						$self->{xmldoc},
-						1 ) );
+				next if $fn =~ m/^\./;
+				next unless $fn =~ s/\.xml$//;
+				push @files,$fn;
 			}
-			$self->{cstyles}->{$langid}->{$type} = $frag;
+			close $dh;
+			$self->{cstyles}->{$langid}->{$dsid} = {};
+			foreach my $file ( @files )
+			{
+				$self->{cstyles}->{$langid}->{$dsid}->{$file} = 
+					$self->_parse_citation_file( "$dir/$dsid/$file.xml" );
+			}
 		}
-		EPrints::XML::dispose( $doc );
-
 	}
 	return 1;
 }
 
+sub _parse_citation_file
+{
+	my( $self, $file ) = @_;
+
+	my $doc = $self->parse_xml( $file , 1 );
+	if( !defined $doc )
+	{
+		$self->log( "Error parsing $file\n" );
+		return undef;
+	}
+
+	my $citation = ($doc->getElementsByTagName( "citation" ))[0];
+	if( !defined $citation )
+	{
+		$self->log(  "Missing <citations> tag in $file\n" );
+		EPrints::XML::dispose( $doc );
+		return undef;
+	}
+
+	# is this cloning really needed?
+	my( $frag ) = $self->{xmldoc}->createDocumentFragment();
+	foreach( $citation->getChildNodes )
+	{
+		$frag->appendChild( 
+			EPrints::XML::clone_and_own(
+				$_,
+				$self->{xmldoc},
+				1 ) );
+	}
+
+	EPrints::XML::dispose( $doc );
+
+	return $frag;
+}
 
 ######################################################################
-=pod
-
-=item $citation = $repository->get_citation_spec( $langid, $type )
-
-Returns the DOM citation style for the given language and type. This
-is the origional and should be cloned before you alter it.
-
-=cut
+# =pod
+# 
+# =item $citation = $repository->get_citation_spec( $langid, $type, [$style] )
+# 
+# Returns the DOM citation style for the given language and type. This
+# is the origional and should be cloned before you alter it.
+# 
+# If $style is specified then returns a certain style if available, 
+# otherwise the default.
+# 
+# =cut
 ######################################################################
 
 sub get_citation_spec
 {
-	my( $self, $langid, $type ) = @_;
+	my( $self, $langid, $type, $style  ) = @_;
 
-	return $self->{cstyles}->{$langid}->{$type};
+	$style = "default" unless defined $style;
+
+	my $spec = $self->{cstyles}->{$langid}->{$type}->{$style};
+	if( !defined $spec )
+	{
+		$spec = $self->{cstyles}->{$langid}->{$type}->{default};
+	}
+	
+	return $spec;
 }
 
 ######################################################################

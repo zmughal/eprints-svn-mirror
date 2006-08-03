@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+
+<!-- 
+	Neat citation for eprints used in search results.
+-->
+
+<ep:citation
+        xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:ep="http://eprints.org/ep3/citations">
+<table border="0" width="100%">
+  <tr>
+    <td><span class="citation">@creators@<br /><ep:linkhere>@title@</ep:linkhere><br /><ep:if test="$item.set('date_issue')">@date_issue@, </ep:if>@type@.
+<ep:if test="$item.full_text_status = 'none'"> Item not available online.</ep:if>
+<ep:if test="$item.full_text_status = 'restricted'"> Item availablity restricted.</ep:if>
+<span style="color: #ccc"> [Deposited @datestamp@]</span></span></td>
+    <td>@fileinfo@</td>
+  </tr>
+</table>
+
+</ep:citation>

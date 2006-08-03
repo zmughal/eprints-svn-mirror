@@ -666,7 +666,7 @@ sub render_citation
 
 	unless( defined $style )
 	{
-		$style=$self->get_type();
+		$style = 'default';
 	}
 
 	my $stylespec = $self->{session}->get_citation_spec(
@@ -718,7 +718,7 @@ sub render_description
 	my( $self ) = @_;
 
 	my $stylespec = $self->{session}->get_citation_spec(
-					$self->{dataset} );
+					$self->{dataset},"brief" );
 				
 	my $r =  EPrints::Utils::render_citation( $self , $stylespec );
 
