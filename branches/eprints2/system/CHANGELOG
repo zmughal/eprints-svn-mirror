@@ -3991,3 +3991,5 @@ PACKAGE: 2.2.99.2
  * Citations now use new style workflow control
  * Commented out pod for citation methods - they should not be part of the
     API execpt via $dataobjs.
+ * Subject now bypasses the citation system to improve the speed of rendering
+    the subjects page.

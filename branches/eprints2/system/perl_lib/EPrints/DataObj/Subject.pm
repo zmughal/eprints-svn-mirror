@@ -924,6 +924,14 @@ sub valid_id
 # {
 # }
 
+sub render_description
+{
+	my( $self ) = @_;
+
+	return $self->render_value( "name" );
+}
+
+
 #deprecated
 
 ######################################################################
