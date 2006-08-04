@@ -166,7 +166,7 @@ sub get_value_label
 {
 	my( $self, $session, $value ) = @_;
 
-	return $session->render_name( $value );
+	return $self->render_single_value( $session, $value );
 }
 
 sub ordervalue_basic
