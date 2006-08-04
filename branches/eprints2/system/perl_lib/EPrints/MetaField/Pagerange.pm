@@ -81,11 +81,11 @@ sub render_single_value
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
+	my( $self, $session, $value, $basename, $staff, $obj ) = @_;
 
 	my @pages = split /-/, $value if( defined $value );
- 	my $fromid = $self->{name}.$suffix."_from";
- 	my $toid = $self->{name}.$suffix."_to";
+ 	my $fromid = $basename."_from";
+ 	my $toid = $basename."_to";
 		
 	my $frag = $session->make_doc_fragment;
 
@@ -120,10 +120,10 @@ sub is_browsable
 
 sub form_value_basic
 {
-	my( $self, $session, $suffix ) = @_;
+	my( $self, $session, $basename ) = @_;
 	
-	my $from = $session->param( $self->{name}.$suffix."_from" );
-	my $to = $session->param( $self->{name}.$suffix."_to" );
+	my $from = $session->param( $basename."_from" );
+	my $to = $session->param( $basename."_to" );
 
 	if( !defined $to || $to eq "" )
 	{

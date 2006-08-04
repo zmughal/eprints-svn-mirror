@@ -83,7 +83,7 @@ sub render_single_value
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
+	my( $self, $session, $value, $basename, $staff, $obj ) = @_;
 
 	my $maxlength = $self->get_max_input_size;
 	my $size = ( $maxlength > $self->{input_cols} ?
@@ -93,7 +93,7 @@ sub get_basic_input_elements
 		"input",
 		"accept-charset" => "utf-8",
 		type => "password",
-		name => $self->{name}.$suffix,
+		name => $basename,
 		value => $value,
 		size => $size,
 		maxlength => $maxlength );

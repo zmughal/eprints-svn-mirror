@@ -2,9 +2,6 @@
 /* Form related styles */
 
 input, select, textarea {
-	color: #204f76;
-	font-weight: bold;
-	font-size: 100%;
 }
 
 
@@ -39,7 +36,6 @@ input, select, textarea {
 .ep_form_field_name {
         padding-top: 1em;
 	font-weight: bold;
-	font-size: 120%;
 }
 
 .ep_form_field_input {

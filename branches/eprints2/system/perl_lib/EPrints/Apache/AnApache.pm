@@ -139,29 +139,6 @@ if( defined $av && $av eq "2" )
 
 	eval '
 
-		sub upload_doc_file
-		{
-			my( $session, $document, $paramid ) = @_;
-
-			my $cgi = $session->get_query;
-		
-			return $document->upload( 
-				$cgi->upload( $paramid ), 
-				$cgi->param( $paramid ) );	
-		}
-
-		sub upload_doc_archive
-		{
-			my( $session, $document, $paramid, $archive_format ) = @_;
-
-			my $cgi = $session->get_query;
-		
-			return $document->upload_archive( 
-				$cgi->upload( $paramid ), 
-				$cgi->param( $paramid ), 
-				$archive_format );	
-		}
-
 		sub send_http_header
 		{
 			my( $request ) = @_;
@@ -231,29 +208,6 @@ else
 		sub NOT_FOUND { &Apache::Constants::NOT_FOUND; }
 		sub DONE { &Apache::Constants::DONE; }
 
-		sub upload_doc_file
-		{
-			my( $session, $document, $paramid ) = @_;
-		
-			my $cgi = $session->get_query;
-		
-			return $document->upload( 
-				$cgi->upload( $paramid ), 
-				$cgi->param( $paramid ) );	
-		}
-
-		sub upload_doc_archive
-		{
-			my( $session, $document, $paramid, $archive_format ) = @_;
-
-			my $cgi = $session->get_query;
-		
-			return $document->upload_archive( 
-				$cgi->upload( $paramid ), 
-				$cgi->param( $paramid ), 
-				$archive_format );	
-		}
-
 		sub send_http_header
 		{
 			my( $request ) = @_;
@@ -316,6 +270,29 @@ sub cookie
 	return undef;
 }
 
+
+sub upload_doc_file
+{
+	my( $session, $document, $paramid ) = @_;
+
+	my $cgi = $session->get_query;
+
+	return $document->upload( 
+		$cgi->upload( $paramid ), 
+		$cgi->param( $paramid ) );	
+}
+
+sub upload_doc_archive
+{
+	my( $session, $document, $paramid, $archive_format ) = @_;
+
+	my $cgi = $session->get_query;
+
+	return $document->upload_archive( 
+		$cgi->upload( $paramid ), 
+		$cgi->param( $paramid ), 
+		$archive_format );	
+}
 
 
 1;

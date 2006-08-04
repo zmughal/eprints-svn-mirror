@@ -419,7 +419,7 @@ sub render_help
 ######################################################################
 =pod
 
-=item $xhtml = $field->render_input_field( $session, $value, [$dataset, $type], [$staff], [$hidden_fields], $obj )
+=item $xhtml = $field->render_input_field( $session, $value, [$dataset, $type], [$staff], [$hidden_fields], $obj, [$basename] )
 
 Return the XHTML of the fields for an form which will allow a user
 to input metadata to this field. $value is the default value for
@@ -432,7 +432,16 @@ The actual function called may be overridden from the config.
 
 sub render_input_field
 {
-	my( $self, $session, $value, $dataset, $type, $staff, $hidden_fields, $obj ) = @_;
+	my( $self, $session, $value, $dataset, $type, $staff, $hidden_fields, $obj, $basename ) = @_;
+
+	if( defined $basename )
+	{
+		$basename = $basename."_".$self->{name};
+	}
+	else
+	{
+		$basename = $self->{name};
+	}
 
 	if( defined $self->{toform} )
 	{
@@ -449,7 +458,8 @@ sub render_input_field
 			$type, 
 			$staff,
 			$hidden_fields,
-			$obj );
+			$obj,
+			$basename );
 	}
 
 	return $self->render_input_field_actual( 
@@ -459,14 +469,15 @@ sub render_input_field
 			$type, 
 			$staff,
 			$hidden_fields,
-			$obj );
+			$obj,
+			$basename );
 }
 
 
 ######################################################################
 =pod
 
-=item $value = $field->form_value( $session, $object )
+=item $value = $field->form_value( $session, $object, [$prefix] )
 
 Get a value for this field from the CGI parameters, assuming that
 the form contained the input fields for this metadata field.
@@ -476,13 +487,23 @@ the form contained the input fields for this metadata field.
 
 sub form_value
 {
-	my( $self, $session, $object ) = @_;
+	my( $self, $session, $object, $prefix ) = @_;
 
-	my $value = $self->form_value_actual( $session, $object );
+	my $basename;
+	if( defined $prefix )
+	{
+		$basename = $prefix."_".$self->{name};
+	}
+	else
+	{
+		$basename = $self->{name};
+	}
+
+	my $value = $self->form_value_actual( $session, $object, $basename );
 
 	if( defined $self->{fromform} )
 	{
-		$value = $self->call_property( "fromform", $value, $session, $object );
+		$value = $self->call_property( "fromform", $value, $session, $object, $basename );
 	}
 
 	return $value;
@@ -1075,7 +1096,7 @@ sub render_single_value
 ######################################################################
 =pod
 
-=item $xhtml = $field->render_input_field_actual( $session, $value, [$dataset, $type], [$staff], [$hidden_fields], [$obj] )
+=item $xhtml = $field->render_input_field_actual( $session, $value, [$dataset, $type], [$staff], [$hidden_fields], [$obj], [$basename] )
 
 Return the XHTML of the fields for an form which will allow a user
 to input metadata to this field. $value is the default value for
@@ -1092,9 +1113,10 @@ with, if any.
 
 sub render_input_field_actual
 {
-	my( $self, $session, $value, $dataset, $type, $staff, $hidden_fields, $obj ) = @_;
+	my( $self, $session, $value, $dataset, $type, $staff, $hidden_fields, $obj, $basename ) = @_;
 
-	my $elements = $self->get_input_elements( $session, $value, $staff, $obj );
+
+	my $elements = $self->get_input_elements( $session, $value, $staff, $obj, $basename );
 
 	# if there's only one element then lets not bother making
 	# a table to put it in
@@ -1170,7 +1192,7 @@ sub get_input_col_titles
 
 sub get_input_elements
 {
-	my( $self, $session, $value, $staff, $obj ) = @_;	
+	my( $self, $session, $value, $staff, $obj, $basename ) = @_;	
 
 	my $assist;
 	if( $self->{input_assist} )
@@ -1187,7 +1209,7 @@ sub get_input_elements
 		my $elements = $self->get_input_elements_single( 
 				$session, 
 				$value,
-				"",
+				$basename,
 				$staff,
 				$obj );
 		if( defined $self->{input_advice_right} )
@@ -1228,25 +1250,25 @@ sub get_input_elements
 			$boxcount = $cnt+$self->{input_add_boxes};
 		}
 	}
-	my $spacesid = $self->{name}."_spaces";
+	my $spacesid = $basename."_spaces";
 
 	if( $session->internal_button_pressed() )
 	{
 		$boxcount = $session->param( $spacesid );
 		if( $session->internal_button_pressed( 
-			$self->{name}."_morespaces" ) )
+			$basename."_morespaces" ) )
 		{
 			$boxcount += $self->{input_add_boxes};
 		}
 
 		for( my $i=1 ; $i<=$boxcount ; ++$i )
 		{
-			if( $i>1 && $session->internal_button_pressed( $self->{name}."_up_".$i ) )
+			if( $i>1 && $session->internal_button_pressed( $basename."_up_".$i ) )
 			{
 				my( $a, $b ) = ( $value->[$i-1], $value->[$i-2] );
 				( $value->[$i-1], $value->[$i-2] ) = ( $b, $a );
 			}
-			if( $session->internal_button_pressed( $self->{name}."_down_".$i ) )
+			if( $session->internal_button_pressed( $basename."_down_".$i ) )
 			{
 				my( $a, $b ) = ( $value->[$i-1], $value->[$i+0] );
 				( $value->[$i-1], $value->[$i+0] ) = ( $b, $a );
@@ -1272,7 +1294,7 @@ sub get_input_elements
 		my $section = $self->get_input_elements_single( 
 				$session, 
 				$value->[$i-1], 
-				"_".$i,
+				$basename."_".$i,
 				$staff,
 				$obj );
 		my $first = 1;
@@ -1291,7 +1313,7 @@ sub get_input_elements
 						type=>"image",
 						alt=>"up",
 						src=> "$imagesurl/multi_up.png",
-                				name=>"_internal_".$self->{name}."_up_$i",
+                				name=>"_internal_".$basename."_up_$i",
 						value=>"1" ));
 				}
 				else
@@ -1309,7 +1331,7 @@ sub get_input_elements
 						type=>"image",
 						src=> "$imagesurl/multi_down.png",
 						alt=>"down",
-                				name=>"_internal_".$self->{name}."_down_$i",
+                				name=>"_internal_".$basename."_down_$i",
 						value=>"1" ));
 				}
 				else
@@ -1343,7 +1365,7 @@ sub get_input_elements
 		name => $spacesid,
 		value => $boxcount ) );
 	$more->appendChild( $session->render_internal_buttons(
-		$self->{name}."_morespaces" => 
+		$basename."_morespaces" => 
 			$session->phrase( 
 				"lib/metafield:more_spaces" ) ) );
 	if( defined $assist )
@@ -1361,22 +1383,22 @@ sub get_input_elements
 
 sub get_input_elements_single
 {
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
+	my( $self, $session, $value, $basename, $staff, $obj ) = @_;
 
 	unless( $self->get_property( "multilang" ) )
 	{
 		return $self->get_basic_input_elements( 
 			$session, 
 			$value, 
-			$suffix, 
+			$basename, 
 			$staff,
 			$obj );
 	}
 
 
 	my $boxcount = 1;
-	my $spacesid = $self->{name}.$suffix."_langspaces";
-	my $buttonid = $self->{name}.$suffix."_morelangspaces";
+	my $spacesid = $basename."_langspaces";
+	my $buttonid = $basename."_morelangspaces";
 
 	if( $session->internal_button_pressed() )
 	{
@@ -1427,7 +1449,7 @@ sub get_input_elements_single
 			delete( $langstodo{$langid} );
 		}
 		
-		my $langparamid = $self->{name}.$suffix."_".$i."_lang";
+		my $langparamid = $basename."_".$i."_lang";
 		my $langbit;
 		if( $forced )
 		{
@@ -1455,7 +1477,7 @@ sub get_input_elements_single
 		my $elements = $self->get_basic_input_elements( 
 			$session, 
 			$value->{$langid}, 
-			$suffix."_".$i, 
+			$basename."_".$i, 
 			$staff,
 			$obj );
 
@@ -1495,7 +1517,7 @@ sub get_input_elements_single
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
+	my( $self, $session, $value, $basename, $staff, $obj ) = @_;
 
 	my $maxlength = $self->get_max_input_size;
 	my $size = ( $maxlength > $self->{input_cols} ?
@@ -1504,7 +1526,7 @@ sub get_basic_input_elements
 	my $input = $session->make_element(
 		"input",
 		"accept-charset" => "utf-8",
-		name => $self->{name}.$suffix,
+		name => $basename,
 		value => $value,
 		size => $size,
 		maxlength => $maxlength );
@@ -1523,7 +1545,7 @@ sub get_max_input_size
 
 ######################################################################
 # 
-# $foo = $field->form_value_actual( $session, $object )
+# $foo = $field->form_value_actual( $session, $object, $basename )
 #
 # undocumented
 #
@@ -1531,16 +1553,16 @@ sub get_max_input_size
 
 sub form_value_actual
 {
-	my( $self, $session, $object ) = @_;
+	my( $self, $session, $object, $basename ) = @_;
 
 	if( $self->get_property( "multiple" ) )
 	{
 		my @values = ();
-		my $boxcount = $session->param( $self->{name}."_spaces" );
+		my $boxcount = $session->param( $basename."_spaces" );
 		$boxcount = 1 if( $boxcount < 1 );
 		for( my $i=1; $i<=$boxcount; ++$i )
 		{
-			my $value = $self->form_value_single( $session, $i, $object );
+			my $value = $self->form_value_single( $session, $basename."_".$i, $object );
 			if( defined $value || $session->internal_button_pressed )
 			{
 				push @values, $value;
@@ -1553,7 +1575,7 @@ sub form_value_actual
 		return \@values;
 	}
 
-	return $self->form_value_single( $session, undef, $object );
+	return $self->form_value_single( $session, $basename, $object );
 }
 
 ######################################################################
@@ -1566,30 +1588,27 @@ sub form_value_actual
 
 sub form_value_single
 {
-	my( $self, $session, $n, $object ) = @_;
-
-	my $suffix = "";
-	$suffix = "_$n" if( defined $n );
+	my( $self, $session, $basename, $object ) = @_;
 
 	unless( $self->get_property( "multilang" ) )
 	{
 		# simple case; not multilang
-		my $value = $self->form_value_basic( $session, $suffix, $object );
+		my $value = $self->form_value_basic( $session, $basename, $object );
 		return undef unless( EPrints::Utils::is_set( $value ) );
 		return $value;
 	}
 
 	my $value = {};
-	my $boxcount = $session->param( $self->{name}.$suffix."_langspaces" );
+	my $boxcount = $session->param( $basename."_langspaces" );
 	$boxcount = 1 if( $boxcount < 1 );
 	for( my $i=1; $i<=$boxcount; ++$i )
 	{
 		my $subvalue = $self->form_value_basic( 
 			$session, 
-			$suffix."_".$i,
+			$basename."_".$i,
 			$object );
 		my $langid = $session->param( 
-			$self->{name}.$suffix."_".$i."_lang" );
+			$basename."_".$i."_lang" );
 		if( $langid eq "" ) 
 		{ 
 			$langid = "_".$i; 
@@ -1608,7 +1627,7 @@ sub form_value_single
 
 ######################################################################
 # 
-# $foo = $field->form_value_basic( $session, $suffix, $object )
+# $foo = $field->form_value_basic( $session, $basename, $object )
 #
 # undocumented
 #
@@ -1616,9 +1635,9 @@ sub form_value_single
 
 sub form_value_basic
 {
-	my( $self, $session, $suffix, $object ) = @_;
+	my( $self, $session, $basename, $object ) = @_;
 	
-	my $value = $session->param( $self->{name}.$suffix );
+	my $value = $session->param( $basename );
 
 	return undef if( !EPrints::Utils::is_set( $value ) );
 
@@ -2029,15 +2048,15 @@ sub render_search_input
 
 sub from_search_form
 {
-	my( $self, $session, $prefix ) = @_;
+	my( $self, $session, $basename ) = @_;
 
 	# complex text types
 
-	my $val = $session->param( $prefix );
+	my $val = $session->param( $basename );
 	return unless defined $val;
 
-	my $search_type = $session->param( $prefix."_merge" );
-	my $search_match = $session->param( $prefix."_match" );
+	my $search_type = $session->param( $basename."_merge" );
+	my $search_match = $session->param( $basename."_match" );
 		
 	# Default search type if none supplied (to allow searches 
 	# using simple HTTP GETs)

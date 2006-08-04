@@ -98,7 +98,7 @@ sub get_top_subject
 
 sub render_set_input
 {
-	my( $self, $session, $default, $required, $obj ) = @_;
+	my( $self, $session, $default, $required, $obj, $basename ) = @_;
 
 
 	my $topsubj = $self->get_top_subject( $session );
@@ -122,7 +122,7 @@ sub render_set_input
 	return $session->render_option_list(
 		pairs => $pairs,
 		defaults_at_top => 1,
-		name => $self->{name},
+		name => $basename,
 		default => $default,
 		multiple => $self->{multiple},
 		height => $self->{input_rows}  );

@@ -48,7 +48,7 @@ sub update_from_form
 {
 	my( $self ) = @_;
 	my $field = $self->{config}->{field};
-	my $value = $field->form_value( $self->{session}, $self->{dataobj} );
+	my $value = $field->form_value( $self->{session}, $self->{dataobj}, $self->{prefix} );
 	$self->{dataobj}->set_value( $field->{name}, $value );
 
 	return ();
@@ -204,6 +204,7 @@ sub render_content
 			0, # staff mode should be detected from workflow
 			undef,
 			$self->{dataobj},
+			$self->{prefix},
  	);
 }
 

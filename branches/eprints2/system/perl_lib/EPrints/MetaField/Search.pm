@@ -71,18 +71,18 @@ sub render_single_value
 
 ######################################################################
 # 
-# $searchexp = $field->make_searchexp( $session, $value, [$prefix] )
+# $searchexp = $field->make_searchexp( $session, $value, [$basename] )
 #
 # This method should only be called on fields of type "search". 
 # Return a search expression from the serialised expression in value.
-# $prefix is passed to the Search to prefix all HTML form
+# $basename is passed to the Search to prefix all HTML form
 # field ids when more than one search will exist in the same form. 
 #
 ######################################################################
 
 sub make_searchexp
 {
-	my( $self, $session, $value, $prefix ) = @_;
+	my( $self, $session, $value, $basename ) = @_;
 
 	my $ds = $session->get_repository->get_dataset( 
 			$self->{datasetid} );	
@@ -90,7 +90,7 @@ sub make_searchexp
 	my $searchexp = EPrints::Search->new(
 		session => $session,
 		dataset => $ds,
-		prefix => $prefix,
+		prefix => $basename,
 		fieldnames => $self->get_property( "fieldnames" ) );
 	$searchexp->from_string( $value );
 
@@ -99,7 +99,7 @@ sub make_searchexp
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
+	my( $self, $session, $value, $basename, $staff, $obj ) = @_;
 
 	#cjg NOT CSS'd properly.
 
@@ -112,7 +112,7 @@ sub get_basic_input_elements
 	my $searchexp = $self->make_searchexp( 
 		$session,
 		$value,
-		$self->{name}.$suffix."_" );
+		$basename."_" );
 	$div->appendChild( $searchexp->render_search_fields( 0 ) );
 	if( $self->get_property( "allow_set_order" ) )
 	{
@@ -126,14 +126,14 @@ sub get_basic_input_elements
 
 sub form_value_basic
 {
-	my( $self, $session, $suffix ) = @_;
+	my( $self, $session, $basename ) = @_;
 	
 	my $ds = $session->get_repository->get_dataset( 
 			$self->{datasetid} );	
 	my $searchexp = EPrints::Search->new(
 		session => $session,
 		dataset => $ds,
-		prefix => $self->{name}.$suffix."_",
+		prefix => $basename."_",
 		fieldnames => $self->get_property( "fieldnames" ) );
 	$searchexp->from_form;
 	my $value = undef;

@@ -90,7 +90,7 @@ sub render_single_value
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
+	my( $self, $session, $value, $basename, $staff, $obj ) = @_;
 
 	my $frag = $session->make_doc_fragment;
 		
@@ -118,12 +118,12 @@ sub get_basic_input_elements
 		$minute = "" if( !defined $minute || $minute == 0 );
 		$second = "" if( !defined $second || $second == 0 );
 	}
- 	my $dayid = $self->{name}.$suffix."_day";
- 	my $monthid = $self->{name}.$suffix."_month";
- 	my $yearid = $self->{name}.$suffix."_year";
- 	my $hourid = $self->{name}.$suffix."_hour";
- 	my $minuteid = $self->{name}.$suffix."_minute";
- 	my $secondid = $self->{name}.$suffix."_second";
+ 	my $dayid = $basename."_day";
+ 	my $monthid = $basename."_month";
+ 	my $yearid = $basename."_year";
+ 	my $hourid = $basename."_hour";
+ 	my $minuteid = $basename."_minute";
+ 	my $secondid = $basename."_second";
 
 	$div->appendChild( 
 		$session->html_phrase( "lib/metafield:year" ) );
@@ -251,17 +251,17 @@ sub get_basic_input_elements
 
 sub form_value_basic
 {
-	my( $self, $session, $suffix ) = @_;
+	my( $self, $session, $basename ) = @_;
 	
-	my $day = $session->param( $self->{name}.$suffix."_day" );
-	my $month = $session->param( $self->{name}.$suffix."_month" );
-	my $year = $session->param( $self->{name}.$suffix."_year" );
+	my $day = $session->param( $basename."_day" );
+	my $month = $session->param( $basename."_month" );
+	my $year = $session->param( $basename."_year" );
 	$month = undef if( !EPrints::Utils::is_set($month) || $month == 0 );
 	$year = undef if( !EPrints::Utils::is_set($year) || $year == 0 );
 	$day = undef if( !EPrints::Utils::is_set($day) || $day == 0 );
-	my $second = $session->param( $self->{name}.$suffix."_second" );
-	my $minute = $session->param( $self->{name}.$suffix."_minute" );
-	my $hour = $session->param( $self->{name}.$suffix."_hour" );
+	my $second = $session->param( $basename."_second" );
+	my $minute = $session->param( $basename."_minute" );
+	my $hour = $session->param( $basename."_hour" );
 	$second = undef if( !EPrints::Utils::is_set($second) || $second eq "" );
 	$minute = undef if( !EPrints::Utils::is_set($minute) || $minute eq "" );
 	$hour = undef if( !EPrints::Utils::is_set($hour) || $hour eq "" );

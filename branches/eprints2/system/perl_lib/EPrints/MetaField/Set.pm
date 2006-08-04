@@ -94,7 +94,7 @@ sub render_option
 
 sub render_input_field_actual
 {
-	my( $self, $session, $value, $dataset, $type, $staff, $hidden_fields, $obj ) = @_;
+	my( $self, $session, $value, $dataset, $type, $staff, $hidden_fields, $obj, $basename ) = @_;
 
 	my $required = $self->get_property( "required" );
 	if( defined $dataset && defined $type )
@@ -109,15 +109,29 @@ sub render_input_field_actual
 
 	# called as a seperate function because subject does this
 	# bit differently, and overrides render_set_input.
-	return $self->render_set_input( $session, $default, $required, $obj );
+	return $self->render_set_input( $session, $default, $required, $obj, $basename );
+}
+
+sub input_tags_and_labels
+{
+	my( $self, $session, $obj ) = @_;
+
+	if( defined $self->get_property("input_tags_and_labels") )
+	{
+		return $self->call_property( "input_tags_and_labels", 
+			$session, 
+			$obj );
+	}
+
+	return $self->tags_and_labels( $session );
 }
 
 # basic input renderer for "set" type fields
 sub render_set_input
 {
-	my( $self, $session, $default, $required, $obj ) = @_;
+	my( $self, $session, $default, $required, $obj, $basename ) = @_;
 
-	my( $tags, $labels ) = $self->tags_and_labels( $session );
+	my( $tags, $labels ) = $self->input_tags_and_labels( $session, $obj );
 
 	if( $self->get_property( "input_style" ) ne "long" )
 	{
@@ -136,7 +150,7 @@ sub render_set_input
 		return( $session->render_option_list(
 				values => $tags,
 				labels => $labels,
-				name => $self->{name},
+				name => $basename,
 				default => $default,
 				multiple => $self->{multiple},
 				height => $self->{input_rows}  ) );
@@ -162,7 +176,7 @@ sub render_set_input
 			"input",
 			"accept-charset" => "utf-8",
 			type => "radio",
-			name => $self->{name},
+			name => $basename,
 			value => $opt,
 			checked => $checked ) );
 		$dt->appendChild( $session->make_text( " ".$labels->{$opt} ));
@@ -177,9 +191,9 @@ sub render_set_input
 
 sub form_value_actual
 {
-	my( $self, $session ) = @_;
-	
-	my @values = $session->param( $self->{name} );
+	my( $self, $session, $obj, $basename ) = @_;
+
+	my @values = $session->param( $basename );
 	
 	if( scalar( @values ) == 0 )
 	{
@@ -393,6 +407,7 @@ sub get_property_defaults
 	$defaults{input_rows} = $EPrints::MetaField::FROM_CONFIG;
 	$defaults{search_rows} = $EPrints::MetaField::FROM_CONFIG;
 	$defaults{options} = $EPrints::MetaField::REQUIRED;
+	$defaults{input_tags_and_labels} = $EPrints::MetaField::UNDEF;
 	$defaults{text_index} = 0;
 	return %defaults;
 }

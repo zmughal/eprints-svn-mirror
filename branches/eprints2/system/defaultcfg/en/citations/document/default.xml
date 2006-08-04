@@ -13,8 +13,8 @@
 <ep:linkhere><span class="ep_document_citation">@format@ <ep:if test="$item.is_set('formatdesc')"> (@formatdesc@)</ep:if></span></ep:linkhere>
 <ep:if test="$item.is_set('security')"> - @security@</ep:if>
 <ep:choose>
-  <ep:when test="$item.type = 'pdf'"> - Requires a PDF viewer such as <a href="http://www.cs.wisc.edu/~ghost/gsview/index.htm">GSview</a>, <a href="http://www.foolabs.com/xpdf/download.html">Xpdf</a> or <a href="http://www.adobe.com/products/acrobat/">Adobe Acrobat Reader</a></ep:when>
-  <ep:when test="$item.type = 'ps'">> - Requires a viewer, such as <a href="http://www.cs.wisc.edu/~ghost/gsview/index.htm">GSview</a></ep:when>
+  <ep:when test="$item.format = 'pdf'"> - Requires a PDF viewer such as <a href="http://www.cs.wisc.edu/~ghost/gsview/index.htm">GSview</a>, <a href="http://www.foolabs.com/xpdf/download.html">Xpdf</a> or <a href="http://www.adobe.com/products/acrobat/">Adobe Acrobat Reader</a></ep:when>
+  <ep:when test="$item.format = 'ps'"> - Requires a viewer, such as <a href="http://www.cs.wisc.edu/~ghost/gsview/index.htm">GSview</a></ep:when>
 </ep:choose>
 
 </ep:citation>

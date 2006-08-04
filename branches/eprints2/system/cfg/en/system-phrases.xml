@@ -1091,10 +1091,16 @@ Titles and Help for the System Fields
     <ep:phrase id="document_fieldname_eprintid">ID of the owning item</ep:phrase>
     <ep:phrase id="document_fieldname_rev_number">Revision</ep:phrase>
     <ep:phrase id="document_fieldhelp_language">Please indicate the primary language of this format.</ep:phrase>
+    <ep:phrase id="document_fieldname_format">Format</ep:phrase>
     <ep:phrase id="document_fieldhelp_format">Please select the storage format of this document.</ep:phrase>
+    <ep:phrase id="document_fieldname_formatdesc">Description</ep:phrase>
     <ep:phrase id="document_fieldhelp_formatdesc">You may offer an additional brief description of the format.</ep:phrase>
+    <ep:phrase id="document_fieldname_security">Visible to</ep:phrase>
     <ep:phrase id="document_fieldhelp_security">Please indicate the required "security level" of this document. Who is allowed to download it?</ep:phrase>
+    <ep:phrase id="document_fieldname_license">License</ep:phrase>
     <ep:phrase id="document_fieldhelp_license">Specify an explicit license for this document (does not effect the access rights you grant at the end of this deposit process).</ep:phrase>
+    <ep:phrase id="document_fieldname_main">Main file</ep:phrase>
+    <ep:phrase id="document_fieldhelp_main">The file which is linked to.</ep:phrase>
 
     <ep:phrase id="subject_fieldname_name">Subject Name</ep:phrase>
     <ep:phrase id="subject_fieldname_rev_number">Revision</ep:phrase>
@@ -1135,6 +1141,7 @@ Titles and Help for the System Fields
 
     <ep:phrase id="inputform/surround/default:show_help"><ep:pin ref="link">Help <img alt="+" src="/images/style/plus.png" border="0" /></ep:pin></ep:phrase>
     <ep:phrase id="inputform/surround/default:hide_help"><ep:pin ref="link">Help <img alt="-" src="/images/style/minus.png" border="0" /></ep:pin></ep:phrase>
+
    
 </ep:phrases>
 

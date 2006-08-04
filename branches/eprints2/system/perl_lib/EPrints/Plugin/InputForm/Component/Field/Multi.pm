@@ -26,7 +26,7 @@ sub update_from_form
 
 	foreach my $field ( @{$self->{config}->{fields}} )
 	{
-		my $value = $field->form_value( $self->{session}, $self->{dataobj} );
+		my $value = $field->form_value( $self->{session}, $self->{dataobj}, $self->{prefix} );
 		$self->{dataobj}->set_value( $field->{name}, $value );
 	}
 
@@ -201,7 +201,17 @@ sub render_content
 		$th->appendChild( $label );
  
 		$td = $self->{session}->make_element( "td" );
-		$td->appendChild( $field->render_input_field( $self->{session}, $value ) );
+		$td->appendChild( $field->render_input_field( 
+			$self->{session}, 
+			$value, 
+			undef,
+			undef,
+			0,
+			undef,
+			$self->{dataobj},
+			$self->{prefix},
+			
+		  ) );
 		$tr->appendChild( $th );
 		$tr->appendChild( $td );
 		$tbody->appendChild( $tr );

@@ -100,7 +100,7 @@ sub _month_names
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
+	my( $self, $session, $value, $basename, $staff, $obj ) = @_;
 
 	my( $frag, $div, $yearid, $monthid, $dayid );
 
@@ -125,9 +125,9 @@ sub get_basic_input_elements
 		$day = "00" if( !defined $day || $day == 0 );
 		$year = "" if( !defined $year || $year == 0 );
 	}
- 	$dayid = $self->{name}.$suffix."_day";
- 	$monthid = $self->{name}.$suffix."_month";
- 	$yearid = $self->{name}.$suffix."_year";
+ 	$dayid = $basename."_day";
+ 	$monthid = $basename."_month";
+ 	$yearid = $basename."_year";
 
 	$div->appendChild( 
 		$session->html_phrase( "lib/metafield:year" ) );
@@ -185,12 +185,12 @@ sub get_basic_input_elements
 
 sub form_value_basic
 {
-	my( $self, $session, $suffix ) = @_;
+	my( $self, $session, $basename ) = @_;
 	
-	my $day = $session->param( $self->{name}.$suffix."_day" );
+	my $day = $session->param( $basename."_day" );
 	my $month = $session->param( 
-				$self->{name}.$suffix."_month" );
-	my $year = $session->param( $self->{name}.$suffix."_year" );
+				$basename."_month" );
+	my $year = $session->param( $basename."_year" );
 	$month = undef if( !EPrints::Utils::is_set($month) || $month == 0 );
 	$year = undef if( !EPrints::Utils::is_set($year) || $year == 0 );
 	$day = undef if( !EPrints::Utils::is_set($day) || $day == 0 );
@@ -259,9 +259,9 @@ sub render_search_input
 
 sub from_search_form
 {
-	my( $self, $session, $prefix ) = @_;
+	my( $self, $session, $basename ) = @_;
 
-	my $val = $session->param( $prefix );
+	my $val = $session->param( $basename );
 	return unless defined $val;
 
 	my $drange = $val;

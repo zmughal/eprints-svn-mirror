@@ -182,7 +182,7 @@ sub set_value
 # assumes all basic input elements are 1 high, x wide.
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff, $object ) = @_;
+	my( $self, $session, $value, $basename, $staff, $object ) = @_;
 
 	if( !defined $object ) { EPrints::abort( "Object not defined in Metafield Compound get_basic_input_elements!" ); }
 
@@ -192,7 +192,7 @@ sub get_basic_input_elements
 	foreach my $part_id ( keys %{$f} )
 	{
 		my $field = $object->get_dataset->get_field( $f->{$part_id} );
-		my $part_grid = $field->get_basic_input_elements( $session, $value->{$part_id}, $suffix, $staff, $object );
+		my $part_grid = $field->get_basic_input_elements( $session, $value->{$part_id}, $basename, $staff, $object );
 		my $top_row = $part_grid->[0];
 		push @{$grid_row}, @{$top_row};
 	}
@@ -202,7 +202,7 @@ sub get_basic_input_elements
 
 sub form_value_basic
 {
-	my( $self, $session, $suffix, $object ) = @_;
+	my( $self, $session, $basename, $object ) = @_;
 	
 	if( !defined $object ) { EPrints::abort( "Object not defined in Metafield Compound form_value_basic!" ); }
 
@@ -212,7 +212,7 @@ sub form_value_basic
 	foreach my $part_id ( keys %{$f} )
 	{
 		my $field = $object->get_dataset->get_field( $f->{$part_id} );
-		my $v = $field->form_value_basic( $session, $suffix, $object );
+		my $v = $field->form_value_basic( $session, $basename, $object );
 		$value->{$part_id} = $v;
 	}
 

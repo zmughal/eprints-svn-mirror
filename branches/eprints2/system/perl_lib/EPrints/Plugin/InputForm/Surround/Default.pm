@@ -21,6 +21,10 @@ sub render
 	{
 		$surround->appendChild( $self->{session}->make_element( "a", name=>$field_id ) );
 	}
+	if( $component->get_internal_button )
+	{
+		$surround->appendChild( $self->{session}->make_element( "a", name=>"t" ) );
+	}
 
 	# Help rendering
 

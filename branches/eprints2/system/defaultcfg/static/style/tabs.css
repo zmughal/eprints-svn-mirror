@@ -2,7 +2,7 @@
 /* Tab Bar */
 
 table.ep_tab_bar {
-	margin-top: 20px;
+	margin-top: 10px;
 	width: 100%;
 }
 
@@ -24,7 +24,7 @@ td.ep_tab_selected {
 }
 td.ep_tab_selected a {
 	text-decoration: none;
-	color: #808080;
+	color: #000000;
 }
 
 td.ep_tab_spacer {

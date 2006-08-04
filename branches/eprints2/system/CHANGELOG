@@ -3993,3 +3993,22 @@ PACKAGE: 2.2.99.2
     API execpt via $dataobjs.
  * Subject now bypasses the citation system to improve the speed of rendering
     the subjects page.
+
+2006-08-04 cjg
+
+ * Tidied up file upload component.
+ * Changed coverimage to image (more work needed there)
+ * Changed AnApache to have file upload methods in the non-apache specific
+    bit, as they are not.
+ * Caused object handle to be passed throughout rendering input and from-
+    forming of fields.
+ * Changed the "prefix" passed around fields into a basename to tie it in with
+    the workflow basenames.
+ * Added a hacky property to set fields to allow their tags and labels to 
+    depend dynamically on the object. Used this for $doc->main
+ * Internal buttons can now be images.
+ * Made Edit_staff inherit from Edit
+ * Made internal buttons in components use #t to keep them on screen.
+ * Added method to component that tests if a button was pressed within that
+    component.
+ 

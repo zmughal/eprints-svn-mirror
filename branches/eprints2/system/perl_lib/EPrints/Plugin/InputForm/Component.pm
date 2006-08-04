@@ -136,8 +136,7 @@ sub validate
 
 
 # Returns all parameters for this component as a hash,
-# with the prefix removed. This also handles internal 
-# buttons containing the prefix.
+# with the prefix removed.
 
 sub params
 {
@@ -147,7 +146,7 @@ sub params
 
 	foreach my $p ( $self->{session}->param() )
 	{
-		if( $p =~ /^$prefix(.+)$/ || $p =~ /^_internal_$prefix(.+)$/ )
+		if( $p =~ /^$prefix(.+)$/ )
 		{
 			$params{$1} = $self->{session}->param( $p );
 		}
@@ -161,19 +160,21 @@ sub param
 
 	my $fullname = $self->{prefix}."_".$param;
 	
-	if( defined $self->{session}->param( $fullname ) )
-	{
-		return $self->{session}->param( $fullname );
-	}
-	
-	my $fullname_int = "_internal_".$self->{prefix}."_".$param;
-	
-	if( defined $self->{session}->param( $fullname_int ) )
-	{
-		return $self->{session}->param( $fullname_int );
-	}
-	
-	return 0;
+	return $self->{session}->param( $fullname );
+}
+
+sub get_internal_button
+{
+	my( $self ) = @_;
+
+	my $internal_button = $self->{session}->get_internal_button;
+
+	return undef unless defined $internal_button;
+
+	my $prefix = $self->{prefix}."_";
+	return undef unless $internal_button =~ s/^$prefix//;
+
+	return $internal_button;
 }
 
 sub get_problems

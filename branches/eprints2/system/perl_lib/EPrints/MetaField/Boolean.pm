@@ -67,11 +67,8 @@ sub render_single_value
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
+	my( $self, $session, $value, $basename, $staff, $obj ) = @_;
 
-	my( $div , $id);
- 	$id = $self->{name}.$suffix;
-		
 	if( $self->{input_style} eq "menu" )
 	{
 		my %settings = (
@@ -81,7 +78,7 @@ sub get_basic_input_elements
 TRUE=> $session->phrase( $self->{confid}."_fieldopt_".$self->{name}."_TRUE"),
 FALSE=> $session->phrase( $self->{confid}."_fieldopt_".$self->{name}."_FALSE")
 			},
-			name=>$id,
+			name=>$basename,
 			default=>$value
 		);
 		return [[{ el=>$session->render_option_list( %settings ) }]];
@@ -97,7 +94,7 @@ FALSE=> $session->phrase( $self->{confid}."_fieldopt_".$self->{name}."_FALSE")
 			type => "radio",
 			checked=>( defined $value && $value eq 
 					"TRUE" ? "checked" : undef ),
-			name => $id,
+			name => $basename,
 			value => "TRUE" );
 		my $false = $session->make_element(
 			"input",
@@ -105,7 +102,7 @@ FALSE=> $session->phrase( $self->{confid}."_fieldopt_".$self->{name}."_FALSE")
 			type => "radio",
 			checked=>( defined $value && $value ne 
 					"TRUE" ? "checked" : undef ),
-			name => $id,
+			name => $basename,
 			value => "FALSE" );
 		return [[{ el=>$session->html_phrase(
 			$self->{confid}."_radio_".$self->{name},
@@ -120,15 +117,15 @@ FALSE=> $session->phrase( $self->{confid}."_fieldopt_".$self->{name}."_FALSE")
 				type => "checkbox",
 				checked=>( defined $value && $value eq 
 						"TRUE" ? "checked" : undef ),
-				name => $id,
+				name => $basename,
 				value => "TRUE" ) }]];
 }
 
 sub form_value_basic
 {
-	my( $self, $session, $suffix ) = @_;
+	my( $self, $session, $basename ) = @_;
 	
-	my $form_val = $session->param( $self->{name}.$suffix );
+	my $form_val = $session->param( $basename );
 	my $true = 0;
 	if( 
 		$self->{input_style} eq "radio" || 
@@ -173,9 +170,9 @@ sub render_search_input
 
 sub from_search_form
 {
-	my( $self, $session, $prefix ) = @_;
+	my( $self, $session, $basename ) = @_;
 
-	my $val = $session->param( $prefix );
+	my $val = $session->param( $basename );
 
 	return unless defined $val;
 

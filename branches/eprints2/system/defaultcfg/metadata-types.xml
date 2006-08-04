@@ -7,8 +7,8 @@
     <type name="pdf" />
     <type name="ps" />
     <type name="ascii" />
+    <type name="image" />
     <type name="other" />
-    <type name="coverimage" />
   </dataset>
 
   <dataset name="security">

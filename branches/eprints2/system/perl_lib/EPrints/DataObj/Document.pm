@@ -131,29 +131,44 @@ sub get_system_field_info
 		{ name=>"eprintid", type=>"itemref",
 			datasetid=>"eprint", required=>1 },
 
-		{ name=>"format", type=>"datatype", required=>1, 
+		{ name=>"format", type=>"datatype", required=>1, input_rows=>1,
 			datasetid=>"document" },
 
-		{ name=>"formatdesc", type=>"text" },
+		{ name=>"formatdesc", type=>"text", input_cols=>40 },
 
-		{ name=>"language", type=>"datatype", required=>1, 
+		{ name=>"language", type=>"datatype", required=>1, input_rows=>1,
 			datasetid=>"language" },
 
 		{ name => "permission_group", multiple => 1, type => "datatype", 
 			datasetid => "permission_group", },
 
-		{ name=>"security", type=>"datatype", required=>1, 
+		{ name=>"security", type=>"datatype", required=>1, input_rows=>1,
 			datasetid=>"security" },
 
-		{ name=>"license", type=>"license", required=>0, 
+		{ name=>"license", type=>"license", required=>0, input_rows=>1,
 			datasetid=>"license" },
 
-		{ name=>"main", type=>"text", required=>1 },
-
+		{ name=>"main", type=>"set", required=>1, options=>[], input_rows=>1,
+			input_tags_and_labels=>\&main_input_tags_and_labels },
 	);
 
 }
 
+sub main_input_tags_and_labels
+{
+	my( $session, $object ) = @_;
+
+	my %files = $object->files;
+	my $tags = [];
+	my $labels = {};
+	foreach ( sort keys %files )
+	{
+		push @{$tags},$_;
+		$labels->{$_} = $_;
+	}
+
+	return( $tags, $labels );
+}
 
 ######################################################################
 =pod

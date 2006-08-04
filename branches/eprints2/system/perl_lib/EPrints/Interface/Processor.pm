@@ -31,6 +31,9 @@ sub process
 	$self->screen->properties_from; 
 	
 	$self->{action} = $self->{session}->get_action_button;
+	$self->{internal} = $self->{session}->get_internal_button;
+	delete $self->{action} if( $self->{action} eq "" );
+	delete $self->{internal} if( $self->{internal} eq "" );
 
 	$self->screen->from;
 

@@ -110,7 +110,7 @@ sub get_input_bits
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
+	my( $self, $session, $value, $basename, $staff, $obj ) = @_;
 
 	my $parts = [];
 	foreach( $self->get_input_bits( $session ) )
@@ -119,7 +119,7 @@ sub get_basic_input_elements
 		push @{$parts}, {el=>$session->make_element(
 			"input",
 			"accept-charset" => "utf-8",
-			name => $self->{name}.$suffix."_".$_,
+			name => $basename."_".$_,
 			value => $value->{$_},
 			size => $size,
 			maxlength => $self->{maxlength} ) };
@@ -145,13 +145,13 @@ sub get_input_col_titles
 
 sub form_value_basic
 {
-	my( $self, $session, $suffix ) = @_;
+	my( $self, $session, $basename ) = @_;
 	
 	my $data = {};
 	foreach( "honourific", "given", "family", "lineage" )
 	{
 		$data->{$_} = 
-			$session->param( $self->{name}.$suffix."_".$_ );
+			$session->param( $basename."_".$_ );
 	}
 
 	unless( EPrints::Utils::is_set( $data ) )

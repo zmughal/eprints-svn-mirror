@@ -992,7 +992,7 @@ sub _collapse_if
 	my $test = $node->getAttribute( "test" );
 
 	my $result = EPrints::Script::execute( $test, \%params );
-	print STDERR  "IFTEST:::".$test." == $result\n";
+#	print STDERR  "IFTEST:::".$test." == $result\n";
 
 	my $collapsed = $session->make_doc_fragment;
 
@@ -1020,7 +1020,7 @@ sub _collapse_choose
 		
 		my $test = $child->getAttribute( "test" );
 		my $result = EPrints::Script::execute( $test, \%params );
-		print STDERR  "WHENTEST:::".$test." == $result\n";
+#		print STDERR  "WHENTEST:::".$test." == $result\n";
 		if( $result )
 		{
 			$collapsed->appendChild( _collapse_kids( $session, $child, %params ) );

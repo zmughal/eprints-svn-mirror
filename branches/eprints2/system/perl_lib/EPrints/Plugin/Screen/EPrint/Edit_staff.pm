@@ -1,14 +1,16 @@
 package EPrints::Plugin::Screen::EPrint::Edit_staff;
 
-@ISA = ( 'EPrints::Plugin::Screen::EPrint' );
+@ISA = ( 'EPrints::Plugin::Screen::EPrint::Edit' );
 
 use strict;
+
+sub priv {  "action/eprint/edit_staff"; }
 
 sub from
 {
 	my( $self ) = @_;
 
-	if( !$self->{processor}->allow( "action/eprint/edit_staff" ) )
+	if( !$self->{processor}->allow( $self->priv ) )
 	{
 		$self->{processor}->action_not_allowed( "edit" );
 		$self->{processor}->{screenid} = "EPrint::View";
@@ -16,68 +18,23 @@ sub from
 	}
 
 	my $workflow = $self->workflow;
-
-	if( $self->{processor}->{action} eq "stop" )
-	{
-		$self->{processor}->{screenid} = "EPrint::View";
-		return;
-	}
 	
 	if( $self->{processor}->{action} eq "staff_save" )
 	{
-		my $ok = $workflow->from;
+		$workflow->from;
 	
 		$self->{processor}->{screenid} = "EPrint::View";
 		return;
 	}
 	
-	if( $self->{processor}->{action} eq "save" )
-	{
-		my $ok = $workflow->from;
-	
-		$self->{processor}->{screenid} = "EPrint::View";
-		return;
-	}
-	
-	if( $self->{processor}->{action} eq "prev" )
-	{
-		my $ok = $workflow->from;
-	
-		$workflow->prev;
+	$self->EPrints::Plugin::Screen::EPrint::Edit::from;
+}
 
-		return;
-	}
+sub screen_after_flow
+{
+	my( $self ) = @_;
 
-	if( $self->{processor}->{action} eq "next" )
-	{
-		my @problems = $workflow->from;
-		if( !scalar @problems )
-		{
-			if( !defined $workflow->get_next_stage_id )
-			{
-				$self->{processor}->{screenid} = "EPrint::View";
-				return;
-			}
-
-			$workflow->next;
-		}
-		else
-		{
-			my $warnings = $self->{session}->make_element( "ul" );
-			foreach my $problem_xhtml ( @problems )
-			{
-				my $li = $self->{session}->make_element( "li" );
-				$li->appendChild( $problem_xhtml );
-				$warnings->appendChild( $li );
-			}
-			$workflow->link_problem_xhtml( $warnings );
-			$self->{processor}->add_message( "warning", $warnings );
-		}
-
-		return;
-	}
-
-	$self->EPrints::Plugin::Screen::from;
+	return "EPrint::View";
 }
 
 sub render

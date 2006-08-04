@@ -13,7 +13,7 @@
   </stage>
 
   <stage name="files">
-    <component type="Upload" />
+    <component type="Upload" surround="None" />
   </stage>
 
 

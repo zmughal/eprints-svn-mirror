@@ -2863,6 +2863,7 @@ sub get_internal_button
 	{
 		if( $p =~ m/^_internal_/ )
 		{
+			$p =~ s/\.[xy]$//;
 			$self->{internalbutton} = substr($p,10);
 			return $self->{internalbutton};
 		}

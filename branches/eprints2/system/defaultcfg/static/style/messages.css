@@ -27,13 +27,11 @@ Not currently using titles
 .ep_msg_message_content {
 	background-image: url(/images/style/green_back.png);
 	border: solid 1px #80ff80;
-	padding: 10px;
 }
 
 .ep_msg_error_content {
 	background-image: url(/images/style/red_back.png);
 	border: solid 1px #ffc0c0;
-	padding: 10px;
 }
 
 .ep_msg_warning_content {

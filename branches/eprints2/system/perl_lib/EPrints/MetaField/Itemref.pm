@@ -51,9 +51,9 @@ sub get_property_defaults
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff ) = @_;
+	my( $self, $session, $value, $basename, $staff ) = @_;
 
-	my $ex = $self->SUPER::get_basic_input_elements( $session, $value, $suffix, $staff );
+	my $ex = $self->SUPER::get_basic_input_elements( $session, $value, $basename, $staff );
 
 	my $desc = $self->render_single_value( $session, $value );
 

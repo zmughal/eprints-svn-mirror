@@ -77,14 +77,12 @@ sub render_single_value
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $suffix, $staff, $obj ) = @_;
-
-	$suffix = $suffix || "";
+	my( $self, $session, $value, $basename, $staff, $obj ) = @_;
 
 	my $textarea = $session->make_element(
 		"textarea",
 		"accept-charset" => "utf-8",
-		name => $self->{name}.$suffix,
+		name => $basename,
 		rows => $self->{input_rows},
 		cols => $self->{input_cols},
 		wrap => "virtual" );
@@ -95,12 +93,12 @@ sub get_basic_input_elements
 
 sub form_value_basic
 {
-	my( $self, $session, $suffix ) = @_;
+	my( $self, $session, $basename ) = @_;
 
 	# this version is just like that for Basic except it
 	# does not remove line breaks.
 	
-	my $value = $session->param( $self->{name}.$suffix );
+	my $value = $session->param( $basename );
 
 	return undef if( $value eq "" );
 
