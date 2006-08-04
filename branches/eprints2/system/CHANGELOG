@@ -4012,3 +4012,4 @@ PACKAGE: 2.2.99.2
  * Added method to component that tests if a button was pressed within that
     component.
  * Rendering names for views now obeys render options. 
+ * Moved templates into template directory.
