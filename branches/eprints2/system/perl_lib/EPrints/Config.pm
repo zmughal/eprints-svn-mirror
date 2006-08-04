@@ -102,8 +102,8 @@ sub init
 	# cjg Should these be hardwired? Probably they should.
 	$SYSTEMCONF{cgi_path} = $SYSTEMCONF{base_path}."/cgi";
 	$SYSTEMCONF{cfg_path} = $SYSTEMCONF{base_path}."/cfg";
+	$SYSTEMCONF{lib_path} = $SYSTEMCONF{base_path}."/lib";
 	$SYSTEMCONF{arc_path} = $SYSTEMCONF{base_path}."/archives";
-	$SYSTEMCONF{phr_path} = $SYSTEMCONF{base_path}."/cfg";
 	$SYSTEMCONF{bin_path} = $SYSTEMCONF{base_path}."/bin";
 	$SYSTEMCONF{var_path} = $SYSTEMCONF{base_path}."/var";
 	
@@ -118,7 +118,7 @@ sub init
 
 	###############################################
 
-	my $file = $SYSTEMCONF{cfg_path}."/languages.xml";
+	my $file = $SYSTEMCONF{lib_path}."/languages.xml";
 	my $lang_doc = EPrints::XML::parse_xml( $file );
 	my $top_tag = ($lang_doc->getElementsByTagName( "languages" ))[0];
 	if( !defined $top_tag )

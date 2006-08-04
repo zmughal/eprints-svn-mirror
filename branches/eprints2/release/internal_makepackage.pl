@@ -106,6 +106,7 @@ my %r = (
 
 copydir( "$from/system/bin", "$to/eprints/bin", \%r );
 copydir( "$from/system/cfg", "$to/eprints/cfg", \%r );
+copydir( "$from/system/lib", "$to/eprints/lib", \%r );
 copydir( "$from/system/cgi", "$to/eprints/cgi", \%r );
 copydir( "$from/system/defaultcfg", "$to/eprints/defaultcfg", \%r );
 copydir( "$from/system/perl_lib", "$to/eprints/perl_lib", \%r );

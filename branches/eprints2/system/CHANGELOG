@@ -4013,3 +4013,4 @@ PACKAGE: 2.2.99.2
     component.
  * Rendering names for views now obeys render options. 
  * Moved templates into template directory.
+ * Moved non-editable files from /cfg into /lib

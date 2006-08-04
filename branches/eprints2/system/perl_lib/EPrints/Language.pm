@@ -95,7 +95,7 @@ sub new
 	}
 
 	$self->{data} = $self->_read_phrases( 
-		EPrints::Config::get( "phr_path" ).
+		EPrints::Config::get( "lib_path" ).
 			"/".$self->{id}."/system-phrases.xml", 
 		$repository );
 

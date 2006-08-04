@@ -499,22 +499,35 @@ sub _load_templates
 
 	foreach my $langid ( @{$self->get_conf( "languages" )} )
 	{
-		my( $file, $template );
-		$file = $self->get_conf( "config_path" ).
-			"/$langid/template.xml";
-		$template = $self->_load_template( $file );
-		if( !defined $template ) { return 0; }
-		$self->{html_templates}->{default}->{$langid} = $template;
-		$self->{text_templates}->{default}->{$langid} = _template_to_text( $template );
+		my $dir = $self->get_conf( "config_path" )."/$langid/templates";
+		my $dh;
+		opendir( $dh, $dir );
+		my @template_files = ();
+		while( my $fn = readdir( $dh ) )
+		{
+			next if $fn=~m/^\./;
+			push @template_files, $fn if $fn=~m/\.xml$/;
+		}
+		closedir( $dh );
 
-		# load the secure site template if there is one.
-		$file = $self->get_conf( "config_path" ).
-			"/$langid/template-secure.xml";
-		if( !-e $file ) { next; }
-		$template = $self->_load_template( $file );
-		if( !defined $template ) { return 0; }
-		$self->{html_templates}->{secure}->{$langid} = $template;
-		$self->{text_templates}->{secure}->{$langid} = _template_to_text( $template );
+		foreach my $fn ( @template_files )
+		{
+			my $file = $self->get_conf( "config_path" ).
+				"/$langid/templates/$fn";
+			my $id = $fn;
+			$id=~s/\.xml$//;
+
+			my $template = $self->_load_template( $file );
+			if( !defined $template ) { return 0; }
+
+			$self->{html_templates}->{$id}->{$langid} = $template;
+			$self->{text_templates}->{$id}->{$langid} = _template_to_text( $template );
+		}
+
+		if( !defined $self->{html_templates}->{default}->{$langid} )
+		{
+			EPrints::abort( "Failed to load default template for language $langid" );
+		}
 	}
 	return 1;
 }
@@ -1288,7 +1301,7 @@ sub generate_dtd
 {
 	my( $self ) = @_;
 
-	my $dtdfile = $self->get_conf( "cfg_path")."/xhtml-entities.dtd";
+	my $dtdfile = $self->get_conf( "lib_path")."/xhtml-entities.dtd";
 	open( XHTMLENTITIES, $dtdfile ) ||
 		die "Failed to open system DTD ($dtdfile) to include ".
 			"in repository DTD";
