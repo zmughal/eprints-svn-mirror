@@ -4,78 +4,89 @@ package EPrints::Plugin::Screen::EPrint::Edit;
 
 use strict;
 
+sub new
+{
+	my( $class, %params ) = @_;
 
-sub priv {  "action/eprint/edit"; }
+	my $self = $class->SUPER::new(%params);
+
+	$self->{priv} = "action/eprint/edit";
+
+	$self->{actions} = {
+		"stop" => "action/eprint/edit",
+		"save" => "action/eprint/edit",
+		"next" => "action/eprint/edit",
+		"prev" => "action/eprint/edit",
+	};
+
+	return $self;
+}
+
+
 
 sub from
 {
 	my( $self ) = @_;
 
-	if( !$self->{processor}->allow($self->priv) )
-	{
-		$self->{processor}->action_not_allowed( "edit" );
-		$self->{processor}->{screenid} = "EPrint::View";
-		return;
-	}
-
-	my $workflow = $self->workflow;
-
 	if( defined $self->{processor}->{internal} )
 	{
-		my @problems = $workflow->from;
+		my @problems = $self->workflow->from;
 		if( scalar @problems )
 		{
 			$self->add_problems( @problems );
 		}
-		return;
-	}
-	
-	if( $self->{processor}->{action} eq "stop" )
-	{
-		$self->{processor}->{screenid} = "EPrint::View";
-		return;
-	}
-	
-	if( $self->{processor}->{action} eq "save" )
-	{
-		$workflow->from;
-	
-		$self->{processor}->{screenid} = "EPrint::View";
-		return;
-	}
-	
-	if( $self->{processor}->{action} eq "prev" )
-	{
-		$workflow->from;
-	
-		$workflow->prev;
-
-		return;
-	}
-
-	if( $self->{processor}->{action} eq "next" )
-	{
-		my @problems = $workflow->from;
-		if( scalar @problems )
-		{
-			$self->add_problems( @problems );
-		}
-		else
-		{
-			if( !defined $workflow->get_next_stage_id )
-			{
-				$self->{processor}->{screenid} = $self->screen_after_flow;
-				return;
-			}
-
-			$workflow->next;
-		}
-
 		return;
 	}
 
 	$self->EPrints::Plugin::Screen::from;
 }
+	
+sub action_stop
+{
+	my( $self ) = @_;
+
+	$self->{processor}->{screenid} = "EPrint::View";
+}	
+
+sub action_save
+{
+	my( $self ) = @_;
+
+	$self->workflow->from;
+	
+	$self->{processor}->{screenid} = "EPrint::View";
+}
+	
+sub action_prev
+{
+	my( $self ) = @_;
+
+	$self->workflow->from;
+	$self->workflow->prev;
+}
+
+sub action_next
+{
+	my( $self ) = @_;
+
+	my @problems = $self->workflow->from;
+	if( scalar @problems )
+	{
+		$self->add_problems( @problems );
+		return;
+	}
+
+	if( !defined $self->workflow->get_next_stage_id )
+	{
+		$self->{processor}->{screenid} = $self->screen_after_flow;
+		return;
+	}
+
+	$self->workflow->next;
+}
+
+	
+
 
 sub screen_after_flow
 {

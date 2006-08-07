@@ -15,6 +15,11 @@ sub new
 	my $self = $class->SUPER::new(%params);
 
 	$self->{session} = $self->{processor}->{session};
+	$self->{actions} = {};
+
+	# flag to indicate that it takes some effort to make this screen, so
+	# don't make it up as a tab. eg. EPrint::History.
+	$self->{expensive} = 0; 
 
 	return $self;
 }
@@ -32,6 +37,13 @@ sub from
 
 	if( $self->{processor}->{action} eq "" )
 	{
+		return;
+	}
+
+	if( defined $self->{actions}->{$self->{processor}->{action}} )
+	{
+		my $fn = "action_".$self->{processor}->{action};
+		$self->$fn;
 		return;
 	}
 
@@ -186,7 +198,8 @@ sub register_furniture
 			}
 			else
 			{
-				$span->appendChild( $self->{session}->html_phrase( "tool:divide" ) );
+				$span->appendChild( 
+					$self->{session}->html_phrase( "tool:divide" ) );
 			}
 			my $a = $self->{session}->render_link( "?screen=".$tool->{screen} );
 			$a->appendChild( $self->{session}->html_phrase( "tool:".$tool->{id} ) );
@@ -206,7 +219,10 @@ sub render_hidden_bits
 
 	my $chunk = $self->{session}->make_doc_fragment;
 
-	$chunk->appendChild( $self->{session}->render_hidden_field( "screen", $self->{processor}->{screenid} ) );
+	$chunk->appendChild( 
+		$self->{session}->render_hidden_field( 
+			"screen", 
+			$self->{processor}->{screenid} ) );
 
 	return $chunk;
 }
@@ -232,7 +248,49 @@ sub can_be_viewed
 {
 	my( $self ) = @_;
 
-	return 1;
+	return 1 unless defined $self->{priv};
+
+	return $self->{processor}->allow( $self->{priv} );
+}
+
+
+
+# these methods all could be properties really
+
+sub show_in
+{
+	return();
+}
+
+
+
+sub get_position
+{
+	my( $self, $list_id ) = @_;
+
+	my %s = $self->show_in;
+
+	return $s{$list_id};
+}	
+
+sub matches 
+{
+	my( $self, $test, $param ) = @_;
+
+	if( $test eq "show_in" )
+	{
+		my %shown_in = $self->show_in;
+		return defined $shown_in{$param};
+	}
+
+	return $self->SUPER::matches( $test, $param );
+}
+
+sub render_title
+{
+	my( $self ) = @_;
+
+	return $self->{session}->make_text( $self->{id} );
 }
 
 1;

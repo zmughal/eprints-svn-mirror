@@ -4,6 +4,18 @@ our @ISA = ( 'EPrints::Plugin::Screen::EPrint' );
 
 use strict;
 
+sub new
+{
+	my( $class, %params ) = @_;
+
+	my $self = $class->SUPER::new(%params);
+
+	$self->{priv} = "action/eprint/reject_with_email";
+
+	return $self;
+}
+
+
 sub from
 {
 	my( $self ) = @_;

@@ -35,7 +35,16 @@ sub process
 	delete $self->{action} if( $self->{action} eq "" );
 	delete $self->{internal} if( $self->{internal} eq "" );
 
-	$self->screen->from;
+	if( !$self->screen->can_be_viewed )
+	{
+		$self->{screenid} = "Error";
+		$self->add_message( "error", $self->{session}->html_phrase( 
+			"cgi/users/edit_eprint:screen_not_allowed" ) );
+	}
+	else
+	{
+		$self->screen->from;
+	}
 
 	if( defined $self->{redirect} )
 	{

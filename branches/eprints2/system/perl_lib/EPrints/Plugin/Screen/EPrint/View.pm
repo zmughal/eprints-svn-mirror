@@ -156,25 +156,48 @@ sub render
 	my $sb = $self->{session}->get_repository->get_conf( "skip_buffer" ) || 0;
 	
 	my $view = $self->{session}->param( "view" );
-
-	if( !$self->allow( "view/eprint/$view" ) )
+	if( defined $view )
 	{
-		$view = undef;
+		$view = "Screen::$view";
 	}
+
 	my $id_prefix = "ep_eprint_views";
 
-	my @views = qw/ summary full actions export export_staff edit edit_staff history /;
+#	my @views = qw/ summary full actions export export_staff edit edit_staff history /;
+#	my @views = qw/ Summary Details Export History /;
+	my @views = $self->{session}->plugin_list( 
+				type => "Screen",
+				show_in => "eprint_view_tabs" );
 	my $tabs = [];
 	my $labels = {};
 	my $links = {};
-	foreach my $view_i ( @views )
+	my $slowlist = [];
+	my $position = {};
+	foreach my $screen_id ( @views )
 	{	
-		next if( !$self->allow( "view/eprint/$view_i" ) );
-		$view = $view_i if !defined $view;
-		push @{$tabs}, $view_i;
-		$labels->{$view_i} = $self->{session}->html_phrase( "priv:view/eprint/".$view_i );
-		$links->{$view_i} = "?screen=".$self->{processor}->{screenid}."&eprintid=".$self->{processor}->{eprintid}."&view=".$view_i, 
+		my $screen = $self->{session}->plugin( 
+			$screen_id, 
+			processor => $self->{processor} );
+
+		if( $screen->{expensive} )
+		{
+			push @{$slowlist}, $screen_id;
+		}
+
+		next if( defined $screen->{priv} && !$self->allow( $screen->{priv} ) );
+
+		$view = $screen_id if !defined $view;
+		push @{$tabs}, $screen_id;
+		$position->{$screen_id} = $screen->get_position( "eprint_view_tabs" );
+		if( !defined $position->{$screen_id} )
+		{
+			$position->{$screen_id} = 999999;
+		}
+		$labels->{$screen_id} = $screen->render_title;
+		$links->{$screen_id} = "?screen=".$self->{processor}->{screenid}."&eprintid=".$self->{processor}->{eprintid}."&view=".substr( $screen_id, 8 );
 	}
+
+	@{$tabs} = sort { $position->{$a} <=> $position->{$b} } @{$tabs};
 
 	$chunk->appendChild( 
 		$self->{session}->render_tabs( 
@@ -183,34 +206,61 @@ sub render
 			$tabs,
 			$labels,
 			$links,
-			[ "history" ] ) );
+			$slowlist ) );
 			
-
-
-	my $panel = $self->{session}->make_element( "div", id=>"${id_prefix}_panels", class=>"ep_tab_panel" );
+	my $panel = $self->{session}->make_element( 
+			"div", 
+			id => "${id_prefix}_panels", 
+			class => "ep_tab_panel" );
 	$chunk->appendChild( $panel );
-	my $view_div = $self->{session}->make_element( "div", id=>"${id_prefix}_panel_$view" );
-	$view_div->appendChild( $self->render_view( $view ) );	
+	my $view_div = $self->{session}->make_element( 
+			"div", 
+			id => "${id_prefix}_panel_$view" );
+
+	my $screen = $self->{session}->plugin( 
+			$view,
+			processor => $self->{processor} );
+	if( defined $screen->{priv} && !$self->allow( $screen->{priv} ) )
+	{
+		$view_div->appendChild( 
+			$self->{session}->html_phrase(
+				"cgi/users/edit_eprint:view_unavailable" ) );
+	}
+	else
+	{
+		$view_div->appendChild( $screen->render );
+	}
+
 	$panel->appendChild( $view_div );
 
-	# don't render the other tabs if this is a slow tab - they must reload
-	if( $view ne "history" )
+	my $view_slow = 0;
+	foreach my $slow ( @{$slowlist} )
 	{
-		foreach my $view_i ( @views )
+		$view_slow = 1 if( $slow eq $view );
+	}
+	return $chunk if $view_slow;
+	
+	# don't render the other tabs if this is a slow tab - they must reload
+	foreach my $screen_id ( @{$tabs} )
+	{
+		next if $screen_id eq $view;
+		my $other_view = $self->{session}->make_element( 
+			"div", 
+			id => "${id_prefix}_panel_$screen_id", 
+			style => "display: none" );
+		$panel->appendChild( $other_view );
+
+		my $screen = $self->{session}->plugin( 
+			$screen_id,
+			processor=>$self->{processor} );
+		if( $screen->{expensive} )
 		{
-			next if( !$self->allow( "view/eprint/$view_i" ) );
-			next if $view_i eq $view;
-			my $other_view = $self->{session}->make_element( "div", id=>"${id_prefix}_panel_$view_i", style=>"display: none" );
-			if( $view_i ne "history" )
-			{
-				$other_view->appendChild( $self->render_view( $view_i ) );	
-			}
-			else	
-			{
-				$other_view->appendChild( $self->{session}->html_phrase( "cgi/users/edit_eprint:loading" ) );
-			}
-			$panel->appendChild( $other_view );
+			$other_view->appendChild( $self->{session}->html_phrase( 
+					"cgi/users/edit_eprint:loading" ) );
+			next;
 		}
+
+		$other_view->appendChild( $screen->render );
 	}
 
 	return $chunk;
@@ -221,17 +271,24 @@ sub render_view
 {
 	my( $self, $view ) = @_;
 
-	my( $data, $title );
-	if( !$self->allow( "view/eprint/$view" ) )
+	my $plugin_id = "Screen::EPrint::$view";
+	my $screen = $self->{session}->plugin( $plugin_id, processor=>$self->{processor} );
+
+	my $priv = $screen->get_priv;
+	if( defined $priv && !$self->allow( $priv ) )
 	{
 		return $self->{session}->html_phrase("cgi/users/edit_eprint:view_unavailable" );
 	}
 
+	return $screen->render;
+
+	my( $data, $title );
+
 	if( $view eq "actions" ) { $data = $self->render_action_tab; }
-	if( $view eq "summary" ) { ($data,$title) = $self->{processor}->{eprint}->render; }
-	if( $view eq "full" ) { ($data,$title) = $self->{processor}->{eprint}->render_full; }
-	if( $view eq "history" ) { ($data,$title) = $self->{processor}->{eprint}->render_history; }
-	if( $view eq "export" ) { $data = $self->{processor}->{eprint}->render_export_links; }
+#	if( $view eq "summary" ) { ($data,$title) = $self->{processor}->{eprint}->render; }
+#	if( $view eq "full" ) { ($data,$title) = $self->{processor}->{eprint}->render_full; }
+#	if( $view eq "history" ) { ($data,$title) = $self->{processor}->{eprint}->render_history; }
+#	if( $view eq "export" ) { $data = $self->{processor}->{eprint}->render_export_links; }
 	if( $view eq "export_staff" ) { $data = $self->{processor}->{eprint}->render_export_links(1); }
 	if( $view eq "edit" ) { $data = $self->render_edit_tab(0); }
 	if( $view eq "edit_staff" ) { $data = $self->render_edit_tab(1); }
@@ -240,84 +297,6 @@ sub render_view
 		return $self->{session}->html_phrase( "cgi/users/edit_eprint:no_such_view" );
 	}
 	return $data;
-}
-
-sub get_allowed_actions
-{
-	my( $self ) = @_;
-
-	my @actions = ( 
-		"deposit",
-		"reject_with_email",
-		"remove_with_email",
-
-		"move_inbox_buffer", 
-		"move_buffer_inbox", 
-		"move_buffer_archive",
-		"move_archive_buffer", 
-		"move_archive_deletion",
-		"move_deletion_archive",
-
-		"move_inbox_archive", 
-		"move_archive_inbox",  
-		
-		"derive_version", # New version
-		"derive_clone", # Use as template
-
-		"request_deletion",  
-		"remove",
-		"edit",
-		"edit_staff",
-	);
-
-	my @r = ();
-
-	foreach my $action ( @actions )
-	{
-		my $allow = $self->allow( "action/eprint/$action" );
-		next if( !$allow );
-		push @r, $action;
-	}
-	
-	return @r;
-}
-
-sub render_action_tab
-{
-	my( $self ) = @_;
-
-	my $session = $self->{session};
-	my $form = $self->render_form;
-	my $table = $session->make_element( "table" );
-	$form->appendChild( $table );
-	my @actions =  $self->get_allowed_actions;
-
-	foreach my $action ( $self->get_allowed_actions )
-	{
-		my $tr = $session->make_element( "tr" );
-		my $td = $session->make_element( "th" );
-		$td->appendChild( $session->render_hidden_field( "action", $action ) );
-		$td->appendChild( 
-			$session->make_element( 
-				"input", 
-				type=>"submit",
-				class=>"ep_form_action_button",
-				name=>"_action_$action", 
-				value=>$session->phrase( "priv:action/eprint/".$action ) ) );
-		$tr->appendChild( $td );
-		my $td2 = $session->make_element( "td", style=>'border: 1px #ccc solid; padding-left: 0.5em' );
-		$td2->appendChild( $session->html_phrase( "priv:action/eprint/".$action.".help" ) ); 
-		$tr->appendChild( $td2 );
-		$table->appendChild( $tr );
-	}
-	return $form;
-}
-
-sub allow
-{
-	my( $self, $priv ) = @_;
-
-	return 0; # should be subclassed
 }
 
 sub render_edit_tab
@@ -378,6 +357,15 @@ sub derive_clone
 	$self->{processor}->{eprintid} = $new_eprint->get_id;
 	$self->{processor}->{screenid} = "EPrint::Edit";
 }
+
+
+sub allow
+{
+	my( $self, $priv ) = @_;
+
+	return 0; # should be subclassed
+}
+
 
 
 1;

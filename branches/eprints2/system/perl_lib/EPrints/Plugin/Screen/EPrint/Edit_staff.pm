@@ -6,28 +6,22 @@ use strict;
 
 sub priv {  "action/eprint/edit_staff"; }
 
-sub from
+sub new
 {
-	my( $self ) = @_;
+	my( $class, %params ) = @_;
 
-	if( !$self->{processor}->allow( $self->priv ) )
-	{
-		$self->{processor}->action_not_allowed( "edit" );
-		$self->{processor}->{screenid} = "EPrint::View";
-		return;
-	}
+	my $self = $class->SUPER::new(%params);
 
-	my $workflow = $self->workflow;
-	
-	if( $self->{processor}->{action} eq "staff_save" )
-	{
-		$workflow->from;
-	
-		$self->{processor}->{screenid} = "EPrint::View";
-		return;
-	}
-	
-	$self->EPrints::Plugin::Screen::EPrint::Edit::from;
+	$self->{priv} = "action/eprint/edit_staff";
+
+	$self->{actions} = {
+		"stop" => "action/eprint/edit_staff",
+		"save" => "action/eprint/edit_staff",
+		"next" => "action/eprint/edit_staff",
+		"prev" => "action/eprint/edit_staff",
+	};
+
+	return $self;
 }
 
 sub screen_after_flow

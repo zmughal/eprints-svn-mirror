@@ -4,6 +4,17 @@ package EPrints::Plugin::Screen::EPrint::Deposit;
 
 use strict;
 
+sub new
+{
+	my( $class, %params ) = @_;
+
+	my $self = $class->SUPER::new(%params);
+
+	$self->{priv} = "action/eprint/deposit";
+
+	return $self;
+}
+
 sub from
 {
 	my( $self ) = @_;

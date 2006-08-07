@@ -53,6 +53,7 @@ window.ep_showTab = function( baseid, tabid )
 	}
 
 	panel = document.getElementById( baseid+"_panel_"+tabid );
+
 	panel.style.display = "block";
 
 	tab = document.getElementById( baseid+"_tab_"+tabid );

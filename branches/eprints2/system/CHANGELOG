@@ -4014,3 +4014,12 @@ PACKAGE: 2.2.99.2
  * Rendering names for views now obeys render options. 
  * Moved templates into template directory.
  * Moved non-editable files from /cfg into /lib
+
+2006-08-07 cjg
+
+ * Reworked screens to use properties rather than methods for expensive, 
+    and the priv required to view them.
+ * Checked the $screen->{priv} property where appropriate.
+ * Actions now can be called on screens as methods, but they must be 
+    registered in the constructor.
+ * Shifted edit and edit_staff to use actions like this.

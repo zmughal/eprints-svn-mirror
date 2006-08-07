@@ -7,6 +7,17 @@ use EPrints::Plugin::Screen;
 
 use strict;
 
+sub new
+{
+	my( $class, %params ) = @_;
+
+	my $self = $class->SUPER::new(%params);
+
+	$self->{priv} = undef;
+
+	return $self;
+}
+
 sub render
 {
 	my( $self ) = @_;
