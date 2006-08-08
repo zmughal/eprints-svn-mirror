@@ -21,13 +21,6 @@ sub new
 	return $self;
 }
 
-sub render_title
-{
-	my( $self ) = @_;
-	
-	return $self->{session}->make_text( "Summary" );
-}
-
 sub render
 {
 	my( $self ) = @_;

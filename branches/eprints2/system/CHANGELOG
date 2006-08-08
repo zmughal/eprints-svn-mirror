@@ -4032,3 +4032,12 @@ PACKAGE: 2.2.99.2
  * Renamed screens with _ in the module name to use CamelCase instead.
  * If there is only one "other" tool then it doesn't bother hiding it below
     the cut.
+ * Plugins now have their own logical prefix in phrases, and a handy method
+    which gets their phrases without adding the prefix by hand.
+ * Added a move screen to handle moving eprints around, although it never
+    actually gets rendered.
+ * Actions work in lists, as well as just screens.
+ * The actions screen now picks up actions and has (most) of the actions 
+    registered with it.
+
+

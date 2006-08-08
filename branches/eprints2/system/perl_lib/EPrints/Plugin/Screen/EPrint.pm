@@ -119,7 +119,7 @@ sub render_blister
 		}
 		else
 		{
-			$a = $session->render_link( "?eprintid=".$self->{processor}->{eprintid}."&screen=EPrint::Edit_staff&stage=$stage_id" );
+			$a = $session->render_link( "?eprintid=".$self->{processor}->{eprintid}."&screen=EPrint::Staff::Edit&stage=$stage_id" );
 		}
 		$td->appendChild( $a );
 		$a->appendChild( $session->html_phrase( "metapage_title_".$stage_id ) );

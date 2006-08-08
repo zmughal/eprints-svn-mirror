@@ -24,29 +24,31 @@ sub new
 sub get_allowed_actions
 {
 	my( $self ) = @_;
-
 	my @actions = ( 
-		"deposit",
-		"reject_with_email",
-		"remove_with_email",
 
-		"move_inbox_buffer", 
-		"move_buffer_inbox", 
-		"move_buffer_archive",
-		"move_archive_buffer", 
-		"move_archive_deletion",
-		"move_deletion_archive",
-
-		"move_inbox_archive", 
-		"move_archive_inbox",  
 		
-		"derive_version", # New version
+		"derive_version", # New version 1200
 		"derive_clone", # Use as template
 
-		"request_deletion",  
-		"remove",
-		"edit",
-		"edit_staff",
+		"request_deletion",  #1400 # 
+
+
+###########done
+		"edit", #1600
+		"edit_staff",#1700
+		"deposit", #100 #done.
+		"reject_with_email", #done
+		"remove_with_email", #done
+		"remove", #done
+		"move_inbox_buffer", #400
+		"move_buffer_inbox", #500
+		"move_buffer_archive",#600
+		"move_archive_buffer", #700
+		"move_archive_deletion",#800
+		"move_deletion_archive",#900
+
+		"move_inbox_archive", #1000
+		"move_archive_inbox",  #1100
 	);
 
 	my @r = ();
@@ -66,37 +68,50 @@ sub render
 	my( $self ) = @_;
 
 	my $session = $self->{session};
-	my $form = $self->render_form;
+
 	my $table = $session->make_element( "table" );
-	$form->appendChild( $table );
-
-
-	my @actions =  $self->get_allowed_actions;
-
-	foreach my $action ( $self->get_allowed_actions )
+	foreach my $item ( $self->list_items( "eprint_actions" ) )
 	{
 		my $tr = $session->make_element( "tr" );
-		my $td = $session->make_element( "th" );
-		$td->appendChild( $session->render_hidden_field( "action", $action ) );
-		$td->appendChild( 
+		$table->appendChild( $tr );
+
+		my $td = $session->make_element( "td" );
+		$tr->appendChild( $td );
+
+		my $form = $session->render_form( "form" );
+		$td->appendChild( $form );
+		$form->appendChild( $session->render_hidden_field( "eprintid", $self->{processor}->{eprintid} ) );
+
+		$form->appendChild( $session->render_hidden_field( "screen", substr( $item->{screen_id}, 8 ) ) );
+		my( $action, $title, $description );
+		if( defined $item->{action} )
+		{
+			$action = $item->{action};
+			$title = $item->{screen}->phrase( "action:$action:title" );
+			$description = $item->{screen}->html_phrase( "action:$action:description" );
+		}
+		else
+		{
+			$action = "null";
+			$title = $item->{screen}->phrase( "title" );
+			$description = $item->{screen}->html_phrase( "description" );
+		}
+		$form->appendChild( 
 			$session->make_element( 
 				"input", 
 				type=>"submit",
 				class=>"ep_form_action_button",
 				name=>"_action_$action", 
-				value=>$session->phrase( "priv:action/eprint/".$action ) ) );
-		$tr->appendChild( $td );
-		my $td2 = $session->make_element( 
-				"td", 
-				style => 'border: 1px #ccc solid; padding-left: 0.5em' );
-		$td2->appendChild( 
-			$session->html_phrase( 
-				"priv:action/eprint/".$action.".help" ) ); 
-		$tr->appendChild( $td2 );
-		$table->appendChild( $tr );
-	}
+				value=>$title ));
 
-	return $form;
+		my $td2 = $session->make_element( "td" );
+		$tr->appendChild( $td2 );
+
+		$td2->appendChild( $description );
+	}
+	
+	return $table;
+#				style => 'border: 1px #ccc solid; padding-left: 0.5em' );
 }
 
 1;

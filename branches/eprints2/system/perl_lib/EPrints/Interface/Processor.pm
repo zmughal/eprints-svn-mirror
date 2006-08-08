@@ -169,8 +169,7 @@ sub action_not_allowed
 
 	$self->add_message( "error", $self->{session}->html_phrase( 
 		"cgi/users/edit_eprint:action_not_allowed",
-		action=>$self->{session}->html_phrase(
-			"priv:action/$action" ) ) );
+		action=>$action ) );
 }
 
 # 0 = not allowed
@@ -233,7 +232,10 @@ sub allow_eprint_action
 	{
 		$on_item = $self->{eprint};
 	}
-
+	if( !defined $on_item )
+	{
+		return 0;
+	}
 	my $status = $on_item->get_value( "eprint_status" );
 	
 	# Can we skip the buffer?
@@ -318,6 +320,10 @@ sub allow_eprint_view
 	if( !defined $on_item )
 	{
 		$on_item = $self->{eprint};
+	}
+	if( !defined $on_item )
+	{
+		return 0;
 	}
 
 	my $status = $on_item->get_value( "eprint_status" );

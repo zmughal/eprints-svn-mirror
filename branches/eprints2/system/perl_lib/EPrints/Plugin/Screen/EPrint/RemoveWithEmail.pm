@@ -12,6 +12,13 @@ sub new
 
 	$self->{priv} = "action/eprint/remove_with_email";
 
+	$self->{appears} = [
+		{
+			place => "eprint_actions",
+			position => 300,
+		}
+	];
+
 	return $self;
 }
 

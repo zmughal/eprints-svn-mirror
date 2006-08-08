@@ -12,6 +12,13 @@ sub new
 
 	$self->{priv} = "action/eprint/deposit";
 
+	$self->{appears} = [
+		{
+			place => "eprint_actions",
+			position => 100,
+		}
+	];
+
 	return $self;
 }
 

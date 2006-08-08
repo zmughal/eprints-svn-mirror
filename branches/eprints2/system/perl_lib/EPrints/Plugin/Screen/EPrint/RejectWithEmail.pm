@@ -12,6 +12,13 @@ sub new
 
 	$self->{priv} = "action/eprint/reject_with_email";
 
+	$self->{appears} = [
+		{
+			place => "eprint_actions",
+			position => 200,
+		}
+	];
+
 	return $self;
 }
 

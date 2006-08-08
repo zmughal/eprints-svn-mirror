@@ -8,6 +8,7 @@ use EPrints::Plugin::Screen::EPrint;
 use strict;
 
 
+# lose this! cjg
 sub from
 {
 	my( $self ) = @_;
@@ -52,36 +53,6 @@ sub from
 		return;
 	}
 
-	if( $self->{processor}->{action} =~ m/move_(.*)_(.*)$/ )
-	{
-		my( $a, $b ) = ( $1, $2 );
-		if( $self->allow( "action/eprint/".$self->{processor}->{action} ) )
-		{
-			my $ok;
-			$ok = $self->{processor}->{eprint}->move_to_archive if( $b eq "archive" );
-			$ok = $self->{processor}->{eprint}->move_to_buffer if( $b eq "buffer" );
-			$ok = $self->{processor}->{eprint}->move_to_inbox if( $b eq "inbox" );
-			$ok = $self->{processor}->{eprint}->move_to_deletion if( $b eq "deletion" );
-			if( $ok )
-			{
-				$self->{processor}->add_message( "message",
-					$self->{session}->html_phrase( "cgi/users/edit_eprint:status_changed" ) );
-			}
-			else
-			{
-				$self->{processor}->add_message( "error",
-					$self->{session}->html_phrase(
-						"cgi/users/edit_eprint:cant_move",
-						id=>$self->{session}->make_text( $self->{processor}->{eprintid} ) ) );
-			}
-		}
-		else
-		{
-			$self->{processor}->action_not_allowed( "eprint/".$self->{processor}->{action} );
-		}
-
-		return;
-	}
 
 	$self->SUPER::from;
 }
@@ -115,9 +86,6 @@ sub render_status
 	}
 
 	return $status_fragment;
-#	return $self->{session}->render_toolbox( 
-#			$self->{session}->make_text( "Status" ),
-#			$status_fragment );
 }
 
 sub about_to_render 
@@ -164,7 +132,6 @@ sub render
 	my $id_prefix = "ep_eprint_views";
 
 #	my @views = qw/ summary full actions export export_staff edit edit_staff history /;
-
 
 
 	my $tabs = [];
@@ -265,7 +232,7 @@ sub render
 }
 
 
-
+# move somewhere else
 sub derive_version
 {
 	my( $self ) = @_;

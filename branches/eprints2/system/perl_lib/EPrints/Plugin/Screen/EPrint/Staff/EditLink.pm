@@ -33,7 +33,7 @@ sub things
 {
 	my( $self ) = @_;
 
-	return( "EPrint::Edit_staff", $self->workflow(1) );
+	return( "EPrint::Staff::Edit", $self->workflow(1) );
 }
 
 

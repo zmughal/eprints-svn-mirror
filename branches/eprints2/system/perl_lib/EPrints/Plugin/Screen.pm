@@ -35,22 +35,32 @@ sub from
 {
 	my( $self ) = @_;
 
-	if( $self->{processor}->{action} eq "" )
-	{
-		return;
-	}
+	my $action = $self->{processor}->{action};
+	
+	return if( $action eq "" );
 
-	if( defined $self->{actions}->{$self->{processor}->{action}} )
+	return if( $action eq "null" );
+
+	my $act_priv = $self->{actions}->{$action};
+	if( defined $act_priv )
 	{
-		my $fn = "action_".$self->{processor}->{action};
-		$self->$fn;
+		if( !$self->{processor}->allow( $act_priv ) )
+		{
+			$self->{processor}->action_not_allowed( 
+				$self->html_phrase( "action:$action:title" ) );
+		}
+		else
+		{
+			my $fn = "action_".$action;
+			$self->$fn;
+		}
 		return;
 	}
 
 	$self->{processor}->add_message( "error",
-		$self->{session}->html_phrase(
-	      		"cgi/users/edit_eprint:unknown_action",
-			action=>$self->{session}->make_text( $self->{processor}->{action} ),
+		$self->{session}->html_phrase( 
+	      		"Plugin/Screen:unknown_action",
+			action=>$self->{session}->make_text( $action ),
 			screen=>$self->{session}->make_text( $self->{processor}->{screenid} ) ) );
 }
 
@@ -62,6 +72,7 @@ sub render
 }
 
 
+## remove this!
 sub get_allowed_tools
 {
 	my $tools = [
@@ -161,7 +172,7 @@ sub register_furniture
 		}
 		else
 		{
-			$div->appendChild( $self->{session}->html_phrase( "tool:divide" ) );
+			$div->appendChild( $self->{session}->html_phrase( "Plugin/Screen:tool_divide" ) );
 		}
 		my $a = $self->{session}->render_link( "?screen=".substr($tool->{screen_id},8) );
 		$a->appendChild( $tool->{screen}->render_title );
@@ -170,7 +181,7 @@ sub register_furniture
 
 	if( scalar @other == 1 )
 	{
-		$div->appendChild( $self->{session}->html_phrase( "tool:divide" ) );	
+		$div->appendChild( $self->{session}->html_phrase( "Plugin/Screen:tool_divide" ) );	
 		my $tool = $other[0];
 		my $a = $self->{session}->render_link( "?screen=".substr($tool->{screen_id},8) );
 		$a->appendChild( $tool->{screen}->render_title );
@@ -178,9 +189,9 @@ sub register_furniture
 	}
 	elsif( scalar @other > 1 )
 	{
-		$div->appendChild( $self->{session}->html_phrase( "tool:divide" ) );
+		$div->appendChild( $self->{session}->html_phrase( "Plugin/Screen:tool_divide" ) );	
 		my $more = $self->{session}->make_element( "a", id=>"ep_user_menu_more", class=>"ep_only_js", href=>"#", onClick => "EPJS_toggle('ep_user_menu_more',true,'inline');EPJS_toggle('ep_user_menu_extra',false,'inline');return false", );
-		$more->appendChild( $self->{session}->html_phrase( "tool:all" ) );
+		$more->appendChild( $self->{session}->html_phrase( "Plugin/Screen:tool_divide" ) );	
 		$div->appendChild( $more );
 
 		my $span = $self->{session}->make_element( "span", id=>"ep_user_menu_extra", class=>"ep_no_js" );
@@ -196,7 +207,7 @@ sub register_furniture
 			else
 			{
 				$span->appendChild( 
-					$self->{session}->html_phrase( "tool:divide" ) );
+					$self->{session}->html_phrase( "Plugin/Screen:tool_divide" ) );
 			}
 			my $a = $self->{session}->render_link( "?screen=".substr($tool->{screen_id},8) );
 			$a->appendChild( $tool->{screen}->render_title );
@@ -219,7 +230,7 @@ sub render_hidden_bits
 	$chunk->appendChild( 
 		$self->{session}->render_hidden_field( 
 			"screen", 
-			$self->{processor}->{screenid} ) );
+			substr($self->{id},8) ) );
 
 	return $chunk;
 }
@@ -267,7 +278,7 @@ sub render_title
 {
 	my( $self ) = @_;
 
-	return $self->{session}->make_text( $self->{id} );
+	return $self->html_phrase( "title" );
 }
 
 sub list_items
@@ -281,9 +292,7 @@ sub list_items
 		my $screen = $self->{session}->plugin( 
 			$screen_id, 
 			processor => $self->{processor} );
-
 		next if( !defined $screen->{appears} );
-
 		next if( defined $screen->{priv} && !$self->allow( $screen->{priv} ) );
 
 		foreach my $opt ( @{$screen->{appears}} )
@@ -291,10 +300,15 @@ sub list_items
 			next if( $opt->{place} ne $list_id );
 			my $p = $opt->{position};
 			$p = 999999 if( !defined $p );
+			if( defined $opt->{action} )
+			{
+ 				next if( !$self->allow( $screen->{actions}->{$opt->{action}} ) );
+			}
 
 			push @list_items, {
 				screen => $screen,
 				screen_id => $screen_id,
+				action => $opt->{action},
 				position => $p,
 			};
 		}
@@ -307,7 +321,9 @@ sub allow
 {
 	my( $self, $priv ) = @_;
 
-	return 0; # should be subclassed
+	my $allow_code = $self->{processor}->allow( $priv );
+
+	return $allow_code;
 }
 
 

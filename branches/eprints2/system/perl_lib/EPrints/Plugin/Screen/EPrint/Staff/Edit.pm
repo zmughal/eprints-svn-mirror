@@ -21,6 +21,13 @@ sub new
 		"prev" => "action/eprint/edit_staff",
 	};
 
+	$self->{appears} = [
+		{
+			place => "eprint_actions",
+			position => 1700,
+		}
+	];
+
 	return $self;
 }
 

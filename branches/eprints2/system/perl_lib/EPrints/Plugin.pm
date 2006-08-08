@@ -254,6 +254,52 @@ sub matches
 	return 0;
 }
 
+######################################################################
+=pod
+
+=item $xhtml = $plugin->html_phrase( $id, %bits )
+
+Return the phrase belonging to this plugin, with the given id.
+
+Returns a DOM tree.
+
+=cut
+######################################################################
+
+sub html_phrase 
+{
+	my( $self, $id, %bits ) = @_;
+
+#	my $base = substr( caller(0), 9 );
+	my $base = "Plugin/".$self->{id};
+	$base =~ s/::/\//g;
+
+	return $self->{session}->html_phrase( $base.":".$id, %bits );
+}
+
+######################################################################
+=pod
+
+=item $utf8 = $plugin->phrase( $id, %bits )
+
+Return the phrase belonging to this plugin, with the given id.
+
+Returns a utf-8 encoded string.
+
+=cut
+######################################################################
+
+sub phrase 
+{
+	my( $self, $id, %bits ) = @_;
+
+	#my $base = substr( caller(0), 9 );
+	my $base = "Plugin/".$self->{id};
+	$base =~ s/::/\//g;
+
+	return $self->{session}->phrase( $base.":".$id, %bits );
+}
+
 
 
 ######################################################################

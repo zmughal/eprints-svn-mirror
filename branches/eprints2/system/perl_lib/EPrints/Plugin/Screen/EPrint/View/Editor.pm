@@ -61,11 +61,11 @@ sub allow
 
 	# Special case for the action tab when there is no possible actions
 
-	if( $priv eq "view/eprint/actions" )
-	{
-		my @a = $self->get_allowed_actions;
-		return 0 if( scalar @a == 0 );
-	}
+#	if( $priv eq "view/eprint/actions" )
+#	{
+#		my @a = $self->get_allowed_actions;
+#		return 0 if( scalar @a == 0 );
+#	}
 
 	my $allow_code = $self->{processor}->allow( $priv );
 
