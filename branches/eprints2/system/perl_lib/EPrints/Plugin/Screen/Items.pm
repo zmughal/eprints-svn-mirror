@@ -7,6 +7,23 @@ use EPrints::Plugin::Screen;
 
 use strict;
 
+sub new
+{
+	my( $class, %params ) = @_;
+
+	my $self = $class->SUPER::new(%params);
+
+	$self->{appears} = [
+		{
+			place => "key_tools",
+			position => 100,
+		}
+	];
+
+	return $self;
+}
+
+
 
 sub from
 {
@@ -152,15 +169,5 @@ sub render
 	return $chunk;
 }
 
-
-sub can_be_viewed
-{
-	my( $self ) = @_;
-
-	my $r = $self->{processor}->allow( "action/deposit" );
-	return 0 unless $r;
-
-	return $self->SUPER::can_be_viewed;
-}
 
 1;

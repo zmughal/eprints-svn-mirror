@@ -55,14 +55,5 @@ sub about_to_render
 	my( $self ) = @_;
 }
 
-sub can_be_viewed
-{
-	my( $self ) = @_;
-
-	my $r = $self->{processor}->allow( "view/eprint/view/other" );
-	return 0 unless $r;
-
-	return $self->SUPER::can_be_viewed;
-}
 1;
 

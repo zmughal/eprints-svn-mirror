@@ -1,4 +1,4 @@
-package EPrints::Plugin::Screen::EPrint::Edit_staff;
+package EPrints::Plugin::Screen::EPrint::Staff::Edit;
 
 @ISA = ( 'EPrints::Plugin::Screen::EPrint::Edit' );
 

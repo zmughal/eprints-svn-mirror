@@ -7,6 +7,25 @@ use EPrints::Plugin::Screen;
 
 use strict;
 
+sub new
+{
+	my( $class, %params ) = @_;
+
+	my $self = $class->SUPER::new(%params);
+
+	$self->{appears} = [
+		{
+			place => "other_tools",
+			position => 100,
+		}
+	];
+
+	return $self;
+}
+
+
+
+
 sub render
 {
 	my( $self ) = @_;

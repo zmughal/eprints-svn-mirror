@@ -1,4 +1,4 @@
-package EPrints::Plugin::Screen::EPrint::Reject_with_email;
+package EPrints::Plugin::Screen::EPrint::RejectWithEmail;
 
 our @ISA = ( 'EPrints::Plugin::Screen::EPrint' );
 

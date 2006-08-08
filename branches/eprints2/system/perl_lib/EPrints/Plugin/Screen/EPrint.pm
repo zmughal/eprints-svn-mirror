@@ -162,15 +162,5 @@ sub render_hidden_bits
 	return $chunk;
 }
 
-sub can_be_viewed
-{
-	my( $self ) = @_;
-
-	my $r = $self->{processor}->allow( "view/eprint/view" );
-	return 0 unless $r;
-
-	return $self->SUPER::can_be_viewed;
-}
-
 1;
 

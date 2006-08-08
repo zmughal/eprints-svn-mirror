@@ -4023,3 +4023,12 @@ PACKAGE: 2.2.99.2
  * Actions now can be called on screens as methods, but they must be 
     registered in the constructor.
  * Shifted edit and edit_staff to use actions like this.
+
+2006-08-08 cjg
+ 
+ * Moved _staff screens into a Staff/ directory.
+ * Made screens register themselves as parts of lists. These lists are now 
+    used by the tools, other tools and eprint view tabs.
+ * Renamed screens with _ in the module name to use CamelCase instead.
+ * If there is only one "other" tool then it doesn't bother hiding it below
+    the cut.

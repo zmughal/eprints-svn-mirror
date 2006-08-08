@@ -1,4 +1,4 @@
-package EPrints::Plugin::Screen::EPrint::Remove_with_email;
+package EPrints::Plugin::Screen::EPrint::RemoveWithEmail;
 
 our @ISA = ( 'EPrints::Plugin::Screen::EPrint' );
 

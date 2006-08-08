@@ -164,40 +164,32 @@ sub render
 	my $id_prefix = "ep_eprint_views";
 
 #	my @views = qw/ summary full actions export export_staff edit edit_staff history /;
-#	my @views = qw/ Summary Details Export History /;
-	my @views = $self->{session}->plugin_list( 
-				type => "Screen",
-				show_in => "eprint_view_tabs" );
+
+
+
 	my $tabs = [];
 	my $labels = {};
 	my $links = {};
 	my $slowlist = [];
 	my $position = {};
-	foreach my $screen_id ( @views )
-	{	
-		my $screen = $self->{session}->plugin( 
-			$screen_id, 
-			processor => $self->{processor} );
-
-		if( $screen->{expensive} )
+	foreach my $item ( $self->list_items( "eprint_view_tabs" ) )
+	{
+		if( $item->{screen}->{expensive} )
 		{
-			push @{$slowlist}, $screen_id;
+			push @{$slowlist}, $item->{screen_id};
 		}
 
-		next if( defined $screen->{priv} && !$self->allow( $screen->{priv} ) );
-
-		$view = $screen_id if !defined $view;
-		push @{$tabs}, $screen_id;
-		$position->{$screen_id} = $screen->get_position( "eprint_view_tabs" );
-		if( !defined $position->{$screen_id} )
-		{
-			$position->{$screen_id} = 999999;
-		}
-		$labels->{$screen_id} = $screen->render_title;
-		$links->{$screen_id} = "?screen=".$self->{processor}->{screenid}."&eprintid=".$self->{processor}->{eprintid}."&view=".substr( $screen_id, 8 );
+		push @{$tabs}, $item->{screen_id};
+		$position->{$item->{screen_id}} = $item->{position};
+		$labels->{$item->{screen_id}} = $item->{screen}->render_title;
+		$links->{$item->{screen_id}} = "?screen=".$self->{processor}->{screenid}."&eprintid=".$self->{processor}->{eprintid}."&view=".substr( $item->{screen_id}, 8 );
 	}
 
 	@{$tabs} = sort { $position->{$a} <=> $position->{$b} } @{$tabs};
+	if( !defined $view )
+	{
+		$view = $tabs->[0] 
+	}
 
 	$chunk->appendChild( 
 		$self->{session}->render_tabs( 
@@ -220,7 +212,13 @@ sub render
 	my $screen = $self->{session}->plugin( 
 			$view,
 			processor => $self->{processor} );
-	if( defined $screen->{priv} && !$self->allow( $screen->{priv} ) )
+	if( !defined $screen )
+	{
+		$view_div->appendChild( 
+			$self->{session}->html_phrase(
+				"cgi/users/edit_eprint:view_unavailable" ) ); # error
+	}
+	elsif(  defined $screen->{priv} && !$self->allow( $screen->{priv} ) )
 	{
 		$view_div->appendChild( 
 			$self->{session}->html_phrase(
@@ -267,58 +265,6 @@ sub render
 }
 
 
-sub render_view
-{
-	my( $self, $view ) = @_;
-
-	my $plugin_id = "Screen::EPrint::$view";
-	my $screen = $self->{session}->plugin( $plugin_id, processor=>$self->{processor} );
-
-	my $priv = $screen->get_priv;
-	if( defined $priv && !$self->allow( $priv ) )
-	{
-		return $self->{session}->html_phrase("cgi/users/edit_eprint:view_unavailable" );
-	}
-
-	return $screen->render;
-
-	my( $data, $title );
-
-	if( $view eq "actions" ) { $data = $self->render_action_tab; }
-#	if( $view eq "summary" ) { ($data,$title) = $self->{processor}->{eprint}->render; }
-#	if( $view eq "full" ) { ($data,$title) = $self->{processor}->{eprint}->render_full; }
-#	if( $view eq "history" ) { ($data,$title) = $self->{processor}->{eprint}->render_history; }
-#	if( $view eq "export" ) { $data = $self->{processor}->{eprint}->render_export_links; }
-	if( $view eq "export_staff" ) { $data = $self->{processor}->{eprint}->render_export_links(1); }
-	if( $view eq "edit" ) { $data = $self->render_edit_tab(0); }
-	if( $view eq "edit_staff" ) { $data = $self->render_edit_tab(1); }
-	if( !defined $view )
-	{
-		return $self->{session}->html_phrase( "cgi/users/edit_eprint:no_such_view" );
-	}
-	return $data;
-}
-
-sub render_edit_tab
-{
-	my( $self, $staff ) = @_;
-
-	my $session = $self->{processor}->{session};
-	my $eprint = $self->{processor}->{eprint};
-	my $escreen = "EPrint::Edit";
-	if( $staff ) { $escreen = "EPrint::Edit_staff"; }
-	my $workflow = $self->workflow( $staff );
-	my $ul = $session->make_element( "ul" );
-	foreach my $stage_id ( $workflow->get_stage_ids )
-	{
-		my $li = $session->make_element( "li" );
-		my $a = $session->render_link( "?eprintid=".$self->{processor}->{eprintid}."&screen=$escreen&stage=$stage_id" );
-		$li->appendChild( $a );
-		$a->appendChild( $session->html_phrase( "metapage_title_".$stage_id ) );
-		$ul->appendChild( $li );
-	}
-	return $ul;
-}
 
 sub derive_version
 {
@@ -356,14 +302,6 @@ sub derive_clone
 	$self->{processor}->{eprint} = $new_eprint;
 	$self->{processor}->{eprintid} = $new_eprint->get_id;
 	$self->{processor}->{screenid} = "EPrint::Edit";
-}
-
-
-sub allow
-{
-	my( $self, $priv ) = @_;
-
-	return 0; # should be subclassed
 }
 
 

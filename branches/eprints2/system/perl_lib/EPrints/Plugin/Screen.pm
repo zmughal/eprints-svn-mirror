@@ -147,23 +147,12 @@ sub register_furniture
 	padding-top:4px;
 	padding-bottom:4px;
  " );
-	my @core = ();
-	my @other = ();
-	foreach my $tool ( $self->get_allowed_tools )
-	{
-		if( $tool->{core} )
-		{
-			push @core, $tool;
-		}
-		else
-		{
-			push @other, $tool;
-		}
-	}
 
-	my $first;
+	my @core = $self->list_items( "key_tools" );
+	my @other = $self->list_items( "other_tools" );
 
-	$first = 1;
+
+	my $first = 1;
 	foreach my $tool ( @core )
 	{
 		if( $first )
@@ -174,12 +163,20 @@ sub register_furniture
 		{
 			$div->appendChild( $self->{session}->html_phrase( "tool:divide" ) );
 		}
-		my $a = $self->{session}->render_link( "?screen=".$tool->{screen} );
-		$a->appendChild( $self->{session}->html_phrase( "tool:".$tool->{id} ) );
+		my $a = $self->{session}->render_link( "?screen=".substr($tool->{screen_id},8) );
+		$a->appendChild( $tool->{screen}->render_title );
 		$div->appendChild( $a );
 	}
 
-	if( scalar @other )
+	if( scalar @other == 1 )
+	{
+		$div->appendChild( $self->{session}->html_phrase( "tool:divide" ) );	
+		my $tool = $other[0];
+		my $a = $self->{session}->render_link( "?screen=".substr($tool->{screen_id},8) );
+		$a->appendChild( $tool->{screen}->render_title );
+		$div->appendChild( $a );
+	}
+	elsif( scalar @other > 1 )
 	{
 		$div->appendChild( $self->{session}->html_phrase( "tool:divide" ) );
 		my $more = $self->{session}->make_element( "a", id=>"ep_user_menu_more", class=>"ep_only_js", href=>"#", onClick => "EPJS_toggle('ep_user_menu_more',true,'inline');EPJS_toggle('ep_user_menu_extra',false,'inline');return false", );
@@ -201,8 +198,8 @@ sub register_furniture
 				$span->appendChild( 
 					$self->{session}->html_phrase( "tool:divide" ) );
 			}
-			my $a = $self->{session}->render_link( "?screen=".$tool->{screen} );
-			$a->appendChild( $self->{session}->html_phrase( "tool:".$tool->{id} ) );
+			my $a = $self->{session}->render_link( "?screen=".substr($tool->{screen_id},8) );
+			$a->appendChild( $tool->{screen}->render_title );
 			$span->appendChild( $a );
 		}
 	
@@ -257,31 +254,11 @@ sub can_be_viewed
 
 # these methods all could be properties really
 
-sub show_in
-{
-	return();
-}
-
-
-
-sub get_position
-{
-	my( $self, $list_id ) = @_;
-
-	my %s = $self->show_in;
-
-	return $s{$list_id};
-}	
 
 sub matches 
 {
 	my( $self, $test, $param ) = @_;
 
-	if( $test eq "show_in" )
-	{
-		my %shown_in = $self->show_in;
-		return defined $shown_in{$param};
-	}
 
 	return $self->SUPER::matches( $test, $param );
 }
@@ -293,4 +270,46 @@ sub render_title
 	return $self->{session}->make_text( $self->{id} );
 }
 
+sub list_items
+{
+	my( $self, $list_id ) = @_;
+
+	my @screens = $self->{session}->plugin_list( type => "Screen" );
+	my @list_items = ();
+	foreach my $screen_id ( @screens )
+	{	
+		my $screen = $self->{session}->plugin( 
+			$screen_id, 
+			processor => $self->{processor} );
+
+		next if( !defined $screen->{appears} );
+
+		next if( defined $screen->{priv} && !$self->allow( $screen->{priv} ) );
+
+		foreach my $opt ( @{$screen->{appears}} )
+		{
+			next if( $opt->{place} ne $list_id );
+			my $p = $opt->{position};
+			$p = 999999 if( !defined $p );
+
+			push @list_items, {
+				screen => $screen,
+				screen_id => $screen_id,
+				position => $p,
+			};
+		}
+	}
+
+	return sort { $a->{position} <=> $b->{position} } @list_items;
+}	
+
+sub allow
+{
+	my( $self, $priv ) = @_;
+
+	return 0; # should be subclassed
+}
+
+
+		
 1;
