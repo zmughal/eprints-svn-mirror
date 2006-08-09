@@ -4089,4 +4089,9 @@ PACKAGE: 2.2.99.2
     field which has the options of the languages allowed for the 
     current repository.
 
+2006-08-09 cjg
+
+ * Removed DataObj::License and DataObj::Permissions, MetaField::License
+    and import_permissions. Removed them as datasets too.
+   (permissions may make a come back in 3.1)
 

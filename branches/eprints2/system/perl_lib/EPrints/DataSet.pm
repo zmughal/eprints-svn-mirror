@@ -165,16 +165,6 @@ my $INFO = {
 		class => "EPrints::DataObj::Subject",
 		import => 1,
 	},
-	license => {
-		sqlname => "license",
-		class => "EPrints::DataObj::License",
-		import => 1,
-	},
-#	permission => {
-#		sqlname => "permission",
-#		class => "EPrints::DataObj::Permission",
-#		import => 1,
-#	},
 	history => {
 		sqlname => "history",
 		class => "EPrints::DataObj::History",
@@ -839,7 +829,7 @@ into SQL (not counters or cache which work a bit differently).
 
 sub get_sql_dataset_ids
 {
-	return( qw/ eprint user document subscription subject license history access request / );
+	return( qw/ eprint user document subscription subject history access request / );
 }
 
 ######################################################################
