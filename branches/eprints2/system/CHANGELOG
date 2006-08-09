@@ -4081,3 +4081,12 @@ PACKAGE: 2.2.99.2
 2006-08-09 cjg
 
  * Moved subscriptions to the new user interface
+
+2006-08-09 cjg
+
+ * Shifted old type methods into backcompatibility.pm
+ * arclanguages dataset now replaced with a special subclass of "set" 
+    field which has the options of the languages allowed for the 
+    current repository.
+
+

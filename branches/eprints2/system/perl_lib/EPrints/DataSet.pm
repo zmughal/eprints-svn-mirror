@@ -27,8 +27,7 @@ This module describes an EPrint dataset.
 An repository has one of each type of dataset:
 
 cachemap, counter, user, archive, buffer, inbox, document, subject,
-subscription, deletion, eprint, language, arclanguage, security,
-license, access.
+subscription, deletion, eprint, access.
 
 A normal dataset (eg. "user") has a package associated with it 
 (eg. EPrints::DataObj::User) which must be a subclass of EPrints::DataObj 
@@ -37,11 +36,8 @@ Most datasets also have a set of associated EPrints::MetaField's which
 may be optional or compulsary depending on the type eg. books have editors
 but posters don't but they are both EPrints.
 
-Types and what fields are in them is configured in metadata-types.xml
-for a given repository.
-
 Datasets have some default fields plus additional ones configured
-in ArchiveMetadataFieldsConfig.pm.
+in Fields.pm.
 
 But there are some exceptions:
 
@@ -49,29 +45,12 @@ But there are some exceptions:
 
 =item cachemap, counter
 
-Don't have a package, types or metadata fields associated.
+Don't have a package or metadata fields associated.
 
 =item archive, buffer, inbox, deletion
 
-All have the same types, package and metadata fields as eprints, but
+All have the same package and metadata fields as eprints, but
 are filtered by eprint_status.
-
-=item subject, history
-
-Do not have types.
-
-=item language, arclanguage
-
-These don't have fields or SQL tables, they are used in metadata
-field configuration as their types are part of the system - all known
-languages & languages supported by this repository, respectively.
-
-=item security
-
-Does not have fields or SQL tables but does have types - these are the 
-security options for a documenmt. A document already has a type - pdf/ps/html 
-so the set of security settings belong to this dataset instead. A type with an 
-id of an empty string is handled specially as it means publically available.
 
 =back
 
@@ -108,13 +87,6 @@ $ds = $repository->get_dataset( "inbox" );
 #
 #  $self->{field_index}
 #     A hash keyed on fieldname containing the fields in {fields}
-#
-#  $self->{types}->{$typeid} = 1 or {}
-#     Quick lookup to check if types exist or not. Contains cache of
-#     type data if the load_workflow method has been called.
-#
-#  $self->{type_order}
-#     A list of type-ids in the order they should be displayed.
 #
 #  $self->{default_order}
 #     The default option for "order by?" in a search form.
@@ -223,11 +195,6 @@ my $INFO = {
 		class => "EPrints::DataObj::Request",
 		import => 1,
 	},
-	# language and security are here so they can be used in
-	# "datatype" fields.
-	languages => {},
-	arclanguage => {},
-	security => {}
 };
 
 
@@ -236,7 +203,7 @@ my $INFO = {
 
 =item $ds = EPrints::DataSet->new_stub( $id )
 
-Creates a dataset object without any types or fields. Useful to
+Creates a dataset object without any fields. Useful to
 avoid problems with something a dataset does depending on loading
 the dataset. It can still be queried about other things, such as
 SQL table names. 
@@ -268,12 +235,9 @@ sub new_stub
 ######################################################################
 =pod
 
-=item $ds = EPrints::DataSet->new( $repository, $id, $typesconf )
+=item $ds = EPrints::DataSet->new( $repository, $id )
 
-Return the dataset specified by $id. It needs the information
-in $typesconf and you probably should not call this directly
-but get access to a dataset via the repository object as described
-above.
+Return the dataset specified by $id.
 
 Note that dataset know $repository and vice versa - which means they
 will not get garbage collected.
@@ -283,7 +247,7 @@ will not get garbage collected.
 
 sub new
 {
-	my( $class , $repository , $id , $typesconf ) = @_;
+	my( $class , $repository , $id ) = @_;
 	
 	my $self = EPrints::DataSet->new_stub( $id );
 
@@ -293,25 +257,8 @@ sub new
 	$self->{system_fields} = [];
 	$self->{field_index} = {};
 
-	$self->{types} = {};
-	$self->{type_order} = [];
-
-	#TODO
-	if( $id eq "arclanguage" )
-	{	
-		foreach( @{$repository->get_conf( "languages" )} )
-		{
-			$self->{types}->{$_} = []; #TODO
-			$self->{staff_types}->{$_} = []; #TODO
-			push @{$self->{type_order}},$_; #TODO
-		}
-		return $self;
-	}
-
-
 	$self->{default_order} = $self->{repository}->
 			get_conf( "default_order" , $self->{confid} );
-
 
 	my $oclass = $self->get_object_class;
 	if( defined $oclass )
@@ -343,18 +290,6 @@ sub new
 			$self->{field_index}->{$field->get_name()} = $field;
 		}
 	}
-
-	# deprecate this!
-	if( defined $typesconf->{$self->{confid}} )
-	{
-		$self->{type_order} = $typesconf->{$self->{confid}};
-		foreach my $typeid ( @{$self->{type_order}} )
-		{
-			$self->{types}->{$typeid} = 1;
-		}
-	}
-
-
 
 
 	# lock these metadata fields against being modified again.
@@ -1005,368 +940,6 @@ sub get_filters
 	return @{$f};
 }
 
-
-
-
-######################################################################
-######################################################################
-# start of TYPE and PAGE related methods
-######################################################################
-######################################################################
-
-# These are all deprecated!
-
-
-######################################################################
-# =pod
-# 
-# =item $boolean = $ds->field_required_in_type( $field, $type )
-# 
-# Return true if the field is required by in the specified type. Nb.
-# If the field is required generally but not specicially for this field
-# then this function returns TRUE.
-# 
-# =cut
-######################################################################
-
-
-sub field_required_in_type
-{
-	my( $self, $field, $type ) = @_;
-
-	EPrints::deprecated;
-
-	if( $field->get_property( "required" ) eq "yes" )
-	{
-		return 1;
-	}
-
-	$self->load_workflows();
-
-	return $self->{types}->{$type}->{req_field_map}->{$field->get_name};	
-}
-
-######################################################################
-# =pod
-# 
-# =item @fields = $ds->get_page_fields( $type, $page, $staff )
-# 
-# Return an array of fields in the order they appear on page id $page
-# of type $type.
-# 
-# =cut
-######################################################################
-
-sub get_page_fields
-{
-	my( $self, $type, $page, $staff ) = @_;
-
-	EPrints::deprecated;
-
-	$self->load_workflows();
-
-	my $mode = "normal";
-	$mode = "staff" if $staff;
-
-	my $fields = $self->{types}->{$type}->{pages}->{$page}->{$mode};
-	if( !defined $fields )
-	{
-		$self->{repository}->log( "No fields found in get_page_fields ($type,$page)" );
-		return ();
-	}
-	return @{$fields};
-}
-
-######################################################################
-# =pod
-# 
-# =item @pages = $ds->get_type_pages( $type );
-# 
-# Return an array of page ids in the order they should be displayed.
-# 
-# =cut
-######################################################################
-
-sub get_type_pages
-{
-	my( $self, $type ) = @_;
-
-	EPrints::deprecated;
-
-	$self->load_workflows();
-
-	my $l = $self->{types}->{$type}->{page_order};
-
-	return () unless( defined $l );
-
-	return @{$l};
-}
-
-
-######################################################################
-# =pod
-# 
-# =item @fields = $ds->get_type_fields( $type, [$staff] )
-# 
-# Return a list of EPrints::MetaField's which may be edited by a user
-# on a record of the given type. Or by a editor/admin if $staff is
-# true.
-# 
-# =cut
-######################################################################
-
-sub get_type_fields
-{
-	my( $self, $type, $staff ) = @_;
-
-	EPrints::deprecated;
-
-	$self->load_workflows();
-
-	my $mode = "normal";
-	$mode = "staff" if $staff;
-
-	my $fields = $self->{types}->{$type}->{fields}->{$mode};
-	if( !defined $fields )
-	{
-		$self->{repository}->log( "Unknown type in get_type_fields ($type)" );
-		return ();
-	}
-	return @{$fields};
-}
-
-
-
-######################################################################
-# =pod
-# 
-# =item @fields = $ds->get_required_type_fields( $type )
-# 
-# Return an array of the EPrints::MetaField's which are required for
-# the given type.
-# 
-# =cut
-######################################################################
-
-sub get_required_type_fields
-{
-	my( $self, $type ) = @_;
-# Can't do this any more without loading lots of workflow gubbins
-	EPrints::deprecated;
-
-	return(); 
-
-
-}
-
-
-
-######################################################################
-# =pod
-# 
-# =item $boolean = $ds->is_valid_type( $type )
-# 
-# Returns true if the specified $type is indeed a type in this dataset.
-# 
-# =cut
-######################################################################
-
-sub is_valid_type
-{
-	my( $self, $type ) = @_;
-
-	EPrints::deprecated;
-
-	return( defined $self->{types}->{$type} );
-}
-
-
-######################################################################
-# =pod
-# 
-# =item $types = $ds->get_types
-# 
-# Return a reference to a list of all types of this dataset (eg. 
-# eprint record types or types of user)
-# 
-# =cut
-######################################################################
-
-sub get_types
-{
-	my( $self ) = @_;
-
-	EPrints::deprecated;
-
-	return $self->{type_order};
-}
-
-
-######################################################################
-# =pod
-# 
-# =item $foo = $ds->get_type_names( $session )
-# 
-# Returns a reference to a hash table which maps the id's of types given
-# by get_types to printable names in the language of the session (utf-8
-# encoded). 
-# 
-# =cut
-######################################################################
-
-sub get_type_names
-{
-	my( $self, $session ) = @_;
-		
-	EPrints::deprecated;
-
-	my %names = ();
-	foreach( keys %{$self->{types}} ) 
-	{
-		$names{$_} = $self->get_type_name( $session, $_ );
-	}
-	return( \%names );
-}
-
-
-######################################################################
-# =pod
-# 
-# =item $name = $ds->get_type_name( $session, $type )
-# 
-# Return a utf-8 string containing a human-readable name for the
-# specified type.
-# 
-# =cut
-######################################################################
-
-sub get_type_name
-{
-	my( $self, $session, $type ) = @_;
-
-	EPrints::deprecated;
-
-	if( $self->{confid} eq "language"  || $self->{confid} eq "arclanguage" )
-	{
-		if( $type eq "?" )
-		{
-			return $session->phrase( "lib/dataset:no_language" );
-		}
-		return EPrints::Utils::tree_to_utf8(
-			$session->render_language_name( $type ) );
-	}
-
-        return $session->phrase( $self->confid()."_typename_".$type );
-}
-
-
-######################################################################
-# =pod
-# 
-# =item $xhtml = $ds->render_type_name( $session, $type )
-# 
-# Return a piece of XHTML describing the name of the given type in the
-# language of the session.
-# 
-# =cut
-######################################################################
-
-sub render_type_name
-{
-	my( $self, $session, $type ) = @_;
-	
-	EPrints::deprecated;
-
-	if( $self->{confid} eq "language"  || $self->{confid} eq "arclanguage" )
-	{
-		return $session->make_text( $self->get_type_name( $session, $type ) );
-	}
-        return $session->html_phrase( $self->confid()."_typename_".$type );
-}
-
-######################################################################
-# =pod
-# 
-# =item $ds->load_workflows
-# 
-# Load the workflows for this dataset to work out the legacy config for
-# types and pages etc.
-# 
-# =cut
-######################################################################
-
-sub load_workflows
-{
-	my( $self ) = @_;
-
-	return if $self->{workflows_loaded};
-
-	my $mini_session = EPrints::Session->new( 1, $self->{repository}->get_id );
-	foreach my $typeid ( @{$self->{type_order}} )
-	{
-		my $tdata = {};
-		my $data = {};
-		if( $self->{confid} eq "user" ) 
-		{
-			$data = {usertype=>$typeid};
-		}
-		if( $self->{confid} eq "eprint" ) 
-		{
-			$data = {type=>$typeid,eprint_status=>"buffer"};
-		}
-		my $item = $self->make_object( $mini_session, $data );
-		my $workflow = EPrints::Workflow->new( $mini_session, "default", item=> $item );
-		my $s_workflow = EPrints::Workflow->new( $mini_session, "default", item=> $item, "STAFF_ONLY"=>"TRUE" );
-		$tdata->{page_order} = [$workflow->get_stage_ids];
-		$tdata->{fields} = { staff=>[], normal=>[] };
-		$tdata->{req_field_map} = {};
-		$tdata->{req_fields} = [];
-		foreach my $page_id ( @{$tdata->{page_order}} )
-		{
-			my $stage = $workflow->get_stage( $page_id );
-			my @components = $stage->get_components;
-			foreach my $component ( @components )
-			{
-				next unless ref( $component ) eq "EPrints::Plugin::InputForm::Component::Field";
-				my $field = $component->get_field;
-				push @{$tdata->{fields}->{normal}}, $field;	
-				push @{$tdata->{pages}->{$page_id}->{normal}}, $field;
-				if( $field->get_property( "required" ) )
-				{
-					push @{$tdata->{req_fields}}, $field;	
-					$tdata->{req_field_map}->{$field->get_name} = 1;
-				}
-			}
-
-			my $s_stage = $s_workflow->get_stage( $page_id );
-			my @s_components = $s_stage->get_components;
-			foreach my $s_component ( @s_components )
-			{
-				next unless ref( $s_component ) eq "EPrints::Plugin::InputForm::Component::Field";
-				my $field = $s_component->get_field;
-				push @{$tdata->{pages}->{$page_id}->{staff}}, $field;
-				push @{$tdata->{fields}->{staff}}, $field;
-			}
-		}
-		$self->{types}->{$typeid} = $tdata;
-
-
-	}
-	$mini_session->terminate;
-
-
-
-
-	$self->{workflows_loaded} = 1;
-}
-
-
-
-######################################################################
-######################################################################
-# end of TYPE and PAGE related methods
-######################################################################
-######################################################################
 
 
 

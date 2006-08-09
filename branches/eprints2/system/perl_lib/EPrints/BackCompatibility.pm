@@ -184,6 +184,204 @@ $INC{"EPrints/Auth.pm"} = 1;
 
 ######################################################################
 
+package EPrints::DataSet;
+
+sub field_required_in_type
+{
+	my( $self, $field, $type ) = @_;
+
+	EPrints::deprecated;
+
+	if( $field->get_property( "required" ) eq "yes" )
+	{
+		return 1;
+	}
+
+	$self->load_workflows();
+
+	return $self->{types}->{$type}->{req_field_map}->{$field->get_name};	
+}
+
+sub get_page_fields
+{
+	my( $self, $type, $page, $staff ) = @_;
+
+	EPrints::deprecated;
+
+	$self->load_workflows();
+
+	my $mode = "normal";
+	$mode = "staff" if $staff;
+
+	my $fields = $self->{types}->{$type}->{pages}->{$page}->{$mode};
+	if( !defined $fields )
+	{
+		$self->{repository}->log( "No fields found in get_page_fields ($type,$page)" );
+		return ();
+	}
+	return @{$fields};
+}
+
+sub get_type_pages
+{
+	my( $self, $type ) = @_;
+
+	EPrints::deprecated;
+
+	$self->load_workflows();
+
+	my $l = $self->{types}->{$type}->{page_order};
+
+	return () unless( defined $l );
+
+	return @{$l};
+}
+
+sub get_type_fields
+{
+	my( $self, $type, $staff ) = @_;
+
+	EPrints::deprecated;
+
+	$self->load_workflows();
+
+	my $mode = "normal";
+	$mode = "staff" if $staff;
+
+	my $fields = $self->{types}->{$type}->{fields}->{$mode};
+	if( !defined $fields )
+	{
+		$self->{repository}->log( "Unknown type in get_type_fields ($type)" );
+		return ();
+	}
+	return @{$fields};
+}
+
+sub get_required_type_fields
+{
+	my( $self, $type ) = @_;
+	# Can't do this any more without loading lots of workflow gubbins
+	EPrints::deprecated;
+
+	return(); 
+
+
+}
+
+sub is_valid_type
+{
+	my( $self, $type ) = @_;
+	EPrints::deprecated;
+	return( defined $self->{repository}->{types}->{$self->conf_id}->{$type} );
+}
+
+sub get_types
+{
+	my( $self ) = @_;
+
+	EPrints::deprecated;
+
+	return( $self->{repository}->{types}->{$self->conf_id} );
+}
+
+sub get_type_names
+{
+	my( $self, $session ) = @_;
+		
+	EPrints::deprecated;
+
+	my %names = ();
+	foreach( @{$self->get_types} )
+	{
+		$names{$_} = $self->get_type_name( $session, $_ );
+	}
+	return( \%names );
+}
+
+sub get_type_name
+{
+	my( $self, $session, $type ) = @_;
+
+	EPrints::deprecated;
+
+        return $session->phrase( $self->confid()."_typename_".$type );
+}
+
+sub render_type_name
+{
+	my( $self, $session, $type ) = @_;
+	
+	EPrints::deprecated;
+
+	if( $self->{confid} eq "language"  || $self->{confid} eq "arclanguage" )
+	{
+		return $session->make_text( $self->get_type_name( $session, $type ) );
+	}
+        return $session->html_phrase( $self->confid()."_typename_".$type );
+}
+
+sub load_workflows
+{
+	my( $self ) = @_;
+
+	return if $self->{workflows_loaded};
+
+	my $mini_session = EPrints::Session->new( 1, $self->{repository}->get_id );
+	foreach my $typeid ( @{$self->{type_order}} )
+	{
+		my $tdata = {};
+		my $data = {};
+		if( $self->{confid} eq "user" ) 
+		{
+			$data = {usertype=>$typeid};
+		}
+		if( $self->{confid} eq "eprint" ) 
+		{
+			$data = {type=>$typeid,eprint_status=>"buffer"};
+		}
+		my $item = $self->make_object( $mini_session, $data );
+		my $workflow = EPrints::Workflow->new( $mini_session, "default", item=> $item );
+		my $s_workflow = EPrints::Workflow->new( $mini_session, "default", item=> $item, "STAFF_ONLY"=>"TRUE" );
+		$tdata->{page_order} = [$workflow->get_stage_ids];
+		$tdata->{fields} = { staff=>[], normal=>[] };
+		$tdata->{req_field_map} = {};
+		$tdata->{req_fields} = [];
+		foreach my $page_id ( @{$tdata->{page_order}} )
+		{
+			my $stage = $workflow->get_stage( $page_id );
+			my @components = $stage->get_components;
+			foreach my $component ( @components )
+			{
+				next unless ref( $component ) eq "EPrints::Plugin::InputForm::Component::Field";
+				my $field = $component->get_field;
+				push @{$tdata->{fields}->{normal}}, $field;	
+				push @{$tdata->{pages}->{$page_id}->{normal}}, $field;
+				if( $field->get_property( "required" ) )
+				{
+					push @{$tdata->{req_fields}}, $field;	
+					$tdata->{req_field_map}->{$field->get_name} = 1;
+				}
+			}
+
+			my $s_stage = $s_workflow->get_stage( $page_id );
+			my @s_components = $s_stage->get_components;
+			foreach my $s_component ( @s_components )
+			{
+				next unless ref( $s_component ) eq "EPrints::Plugin::InputForm::Component::Field";
+				my $field = $s_component->get_field;
+				push @{$tdata->{pages}->{$page_id}->{staff}}, $field;
+				push @{$tdata->{fields}->{staff}}, $field;
+			}
+		}
+		$self->{types}->{$typeid} = $tdata;
+
+
+	}
+	$mini_session->terminate;
+
+	$self->{workflows_loaded} = 1;
+}
+
 
 
 1;
