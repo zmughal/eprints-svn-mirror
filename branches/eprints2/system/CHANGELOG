@@ -4048,3 +4048,4 @@ PACKAGE: 2.2.99.2
  * Datasets no longer have types (actually they still do in the code, but
     the don't conceptually)
  * Renamed archive config perl modules to have shorter names.
+ * Fixed typos in types/eprint.xml

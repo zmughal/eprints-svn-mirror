@@ -4,14 +4,14 @@
 
 <types xmlns="http://eprints.org/ep3/types">
 
-    <option name="article" />
-    <option name="book_section" />
-    <option name="monograph" />
-    <option name="conference_item" />
-    <option name="book" />
-    <option name="thesis" />
-    <option name="patent" />
-    <option name="other" />
+    <type name="article" />
+    <type name="book_section" />
+    <type name="monograph" />
+    <type name="conference_item" />
+    <type name="book" />
+    <type name="thesis" />
+    <type name="patent" />
+    <type name="other" />
 
 </types>
 

@@ -354,6 +354,8 @@ sub new
 			$self->{field_index}->{$field->get_name()} = $field;
 		}
 	}
+print STDERR Dumper( $typesconf );
+use Data::Dumper;
 	if( defined $typesconf->{$self->{confid}} )
 	{
 		$self->{type_order} = $typesconf->{$self->{confid}};
