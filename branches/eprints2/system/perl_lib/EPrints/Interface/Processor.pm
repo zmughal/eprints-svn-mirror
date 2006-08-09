@@ -37,9 +37,10 @@ sub process
 
 	if( !$self->screen->can_be_viewed )
 	{
-		$self->{screenid} = "Error";
 		$self->add_message( "error", $self->{session}->html_phrase( 
-			"cgi/users/edit_eprint:screen_not_allowed" ) );
+			"Plugin/Screen:screen_not_allowed",
+			screen=>$self->{session}->make_text( $self->{screenid} ) ) );
+		$self->{screenid} = "Error";
 	}
 	else
 	{
@@ -59,30 +60,32 @@ sub process
 
 	if( !$self->screen->can_be_viewed )
 	{
-		$self->{screenid} = "Error";
 		$self->add_message( "error", $self->{session}->html_phrase( 
-			"cgi/users/edit_eprint:screen_not_allowed" ) );
+			"Plugin/Screen:screen_not_allowed",
+			screen=>$self->{session}->make_text( $self->{screenid} ) ) );
+		$self->{screenid} = "Error";
 	}
 	
 	$self->screen->register_furniture;
 
 	my $content = $self->screen->render;
+	my $title = $self->screen->render_title;
 
-	$self->{page} = $self->{session}->make_doc_fragment;
+	my $page = $self->{session}->make_doc_fragment;
 
 	foreach my $chunk ( @{$self->{before_messages}} )
 	{
-		$self->{page}->appendChild( $chunk );
+		$page->appendChild( $chunk );
 	}
-	$self->{page}->appendChild( $self->render_messages );
+	$page->appendChild( $self->render_messages );
 	foreach my $chunk ( @{$self->{after_messages}} )
 	{
-		$self->{page}->appendChild( $chunk );
+		$page->appendChild( $chunk );
 	}
 
-	$self->{page}->appendChild( $content );
+	$page->appendChild( $content );
 
-	$self->{session}->build_page( $self->{title}, $self->{page} );
+	$self->{session}->build_page( $title, $page );
 	$self->{session}->send_page();
 }
 
@@ -123,7 +126,7 @@ sub screen
 			$self->add_message( 
 				"error", 
 				$self->{session}->html_phrase( 
-					"cgi/users/edit_eprint:unknown_screen",
+					"Plugin/Screen:unknown_screen",
 					screen=>$self->{session}->make_text( $screen ) ) );
 			$self->{screenid} = "Error";
 			return $self->screen;
@@ -148,7 +151,7 @@ sub render_messages
 		my $tr = $self->{session}->make_element( "tr" );
 		$table->appendChild( $tr );
 		my $td1 = $self->{session}->make_element( "td" );
-		$td1->appendChild( $self->{session}->make_element( "img", src=>"/images/style/".$message->{type}.".png", alt=>$self->{session}->phrase( "cgi/users/edit_eprint:message_".$message->{type} ) ) );
+		$td1->appendChild( $self->{session}->make_element( "img", src=>"/images/style/".$message->{type}.".png", alt=>$self->{session}->phrase( "Plugin/Screen:message_".$message->{type} ) ) );
 		$tr->appendChild( $td1 );
 		my $td2 = $self->{session}->make_element( "td" );
 		$tr->appendChild( $td2 );
@@ -168,7 +171,7 @@ sub action_not_allowed
 	my( $self, $action ) = @_;
 
 	$self->add_message( "error", $self->{session}->html_phrase( 
-		"cgi/users/edit_eprint:action_not_allowed",
+		"Plugin/Screen:action_not_allowed",
 		action=>$action ) );
 }
 
@@ -205,6 +208,10 @@ sub allow_action
 {
 	my( $self, $action, $on_item, $for_user ) = @_;
 
+	if( $action=~s/^subscription\/// )
+	{
+		return $self->allow_subscription_action( $action, $on_item, $for_user );
+	}
 	if( $action=~s/^eprint\/// )
 	{
 		return $self->allow_eprint_action( $action, $on_item, $for_user );
@@ -218,6 +225,29 @@ sub allow_action
 	return 0;
 }
 
+sub allow_subscription_action
+{
+	my( $self, $action, $on_item, $for_user ) = @_;
+	
+	# all actions are action/eprint/...
+
+	return 4 if( $action eq "view" );
+	return 4 if( $action eq "create" );
+
+	if( !defined $on_item ) { $on_item = $self->{subscription}; }
+	if( !defined $on_item ) { return 0; }
+
+	my $r = 0;
+	if( $on_item->get_user->get_id == $for_user->get_id )
+	{
+		$r |= 4 if( $action eq "edit" );
+		$r |= 4 if( $action eq "remove" );
+	}
+	return $r;
+}
+	
+
+	
 sub allow_eprint_action
 {
 	my( $self, $action, $on_item, $for_user ) = @_;

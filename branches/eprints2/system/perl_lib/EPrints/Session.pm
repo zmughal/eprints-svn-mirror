@@ -1475,7 +1475,7 @@ $dest is the target of the form. By default the current page.
 
 eg.
 
-$session->render_form( "geT", "http://example.com/perl/foo" );
+$session->render_form( "GET", "http://example.com/perl/foo" );
 
 returns a DOM object representing:
 

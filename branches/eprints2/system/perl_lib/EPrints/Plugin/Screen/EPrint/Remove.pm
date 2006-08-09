@@ -18,30 +18,15 @@ sub new
 			position => 1500,
 		}
 	];
+	
+	$self->{actions} = {
+		remove => "action/eprint/remove",	
+		cancel => "",
+	};
 
 	return $self;
 }
 
-
-sub from
-{
-	my( $self ) = @_;
-
-	if( $self->{processor}->{action} eq "confirm" )
-	{
-		$self->action_remove;
-		$self->{processor}->{screenid} = "Items";
-		return;
-	}
-
-	if( $self->{processor}->{action} eq "cancel" )
-	{
-		$self->{processor}->{screenid} = "EPrint::View";
-		return;
-	}
-
-	$self->EPrints::Plugin::Screen::from;
-}
 
 sub render
 {
@@ -58,7 +43,7 @@ sub render
 	my %buttons = (
 		cancel => $self->{session}->phrase(
 				"lib/submissionform:action_cancel" ),
-		confirm => $self->{session}->phrase(
+		remove => $self->{session}->phrase(
 				"lib/submissionform:action_confirm" ),
 		_order => [ "confirm", "cancel" ]
 	);
@@ -72,10 +57,18 @@ sub render
 	return( $page );
 }	
 
+sub action_cancel
+{
+	my( $self ) = @_;
+
+	$self->{processor}->{screenid} = "EPrint::View";
+}
 
 sub action_remove
 {
 	my( $self ) = @_;
+
+	$self->{processor}->{screenid} = "Items";
 
 	if( !$self->{processor}->allow( "action/eprint/remove" ) )
 	{

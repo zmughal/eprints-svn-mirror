@@ -4073,3 +4073,11 @@ PACKAGE: 2.2.99.2
  * Function currently in a new Paginate module, but needs a better home 
     - perhaps in List?
  * Added page jumps to existing Next/Prev page links
+
+2006-08-09 cjg
+ 
+ * Removed old submission code.
+
+2006-08-09 cjg
+
+ * Moved subscriptions to the new user interface

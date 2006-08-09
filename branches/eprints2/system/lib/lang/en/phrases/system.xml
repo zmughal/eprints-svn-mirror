@@ -578,32 +578,6 @@ User Area CGI Scripts
     <ep:phrase id="cgi/users/status:nearly_out_of_space"><span class="alert">WARNING:</span> Available space for new items is running low</ep:phrase>
     <ep:phrase id="cgi/users/status:title">Server Status</ep:phrase>
 
-<!-- subscribe -->
-
-    <ep:phrase id="cgi/users/subscribe:list_title">&archivename; Subscription Service</ep:phrase>
-    <ep:phrase id="cgi/users/subscribe:intro"><p>You may configure subscriptions to this repository. A subscription is a stored search which will be run every day, week or month. Any matching items which have been added or modified since last time will be mailed to you.</p></ep:phrase>
-    <ep:phrase id="cgi/users/subscribe:edit_blurb"><p>Please specify the properties of this subscription.</p></ep:phrase>
-    <ep:phrase id="cgi/users/subscribe:no_subs"><p>You currently have no subscriptions.</p></ep:phrase>
-    <ep:phrase id="cgi/users/subscribe:action_new">New Subscription</ep:phrase>
-    <ep:phrase id="cgi/users/subscribe:action_edit">Edit</ep:phrase>
-    <ep:phrase id="cgi/users/subscribe:action_remove">Remove</ep:phrase>
-    <ep:phrase id="cgi/users/subscribe:action_finish">Submit Changes</ep:phrase>
-    <ep:phrase id="cgi/users/subscribe:action_cancel">Cancel</ep:phrase>
-
-    <ep:phrase id="subscription_fieldname_spec">Subscription Conditions</ep:phrase>
-    <ep:phrase id="subscription_fieldhelp_spec">New or changed items matching this search will be mailed to you.</ep:phrase>
-    <ep:phrase id="subscription_fieldname_frequency">Frequency of Subscription Mailings</ep:phrase>
-    <ep:phrase id="subscription_fieldhelp_frequency">How often do you want to be sent this subscription. A setting of "never" disables this subscription.</ep:phrase>
-    <ep:phrase id="subscription_fieldopt_frequency_never">Never</ep:phrase>
-    <ep:phrase id="subscription_fieldopt_frequency_daily">Once per Day</ep:phrase>
-    <ep:phrase id="subscription_fieldopt_frequency_weekly">Once per Week</ep:phrase>
-    <ep:phrase id="subscription_fieldopt_frequency_monthly">Once per Month</ep:phrase>
-    <ep:phrase id="subscription_fieldname_userid">User ID of Subscriber</ep:phrase>
-    <ep:phrase id="subscription_fieldname_mailempty">Mail Empty Results</ep:phrase>
-    <ep:phrase id="subscription_fieldhelp_mailempty">If there are no new items matching your subscription, since it was last mailed, do you still want to be mailed?</ep:phrase>
-    <ep:phrase id="subscription_radio_mailempty"><ep:pin ref="true" />Yes, mail me empty subscriptions.<br /><ep:pin ref="false" />No. Only mail me subscriptions with content.</ep:phrase>
-
-<!-- export -->
 
     <ep:phrase id="cgi/export:no_id"><p>No valid EPrint ID Number was specified.</p></ep:phrase>
     <ep:phrase id="cgi/export:eprint_not_fount">EPrint with ID <ep:pin ref="eprintid" /> was not found.</ep:phrase>
@@ -752,8 +726,6 @@ The following eprint has been deleted from your User Area:
     <ep:phrase id="cgi/users/edit_eprint:loading">Loading...</ep:phrase>
     <ep:phrase id="cgi/users/edit_eprint:status_changed">Item status successfully changed.</ep:phrase>
 
-    <ep:phrase id="cgi/users/edit_eprint:unknown_action">This screen (<ep:pin ref="screen" />) does not know how to process this action: <ep:pin ref="action" />.</ep:phrase>
-    <ep:phrase id="cgi/users/edit_eprint:unknown_screen">The requested screen does not exist, or has a fatal error: <ep:pin ref="screen" />.</ep:phrase>
     <ep:phrase id="cgi/users/edit_eprint:view_as_either">View this item as <ep:pin ref="owner_link">an owner</ep:pin> or as <ep:pin ref="editor_link">an editor</ep:pin> of it.</ep:phrase>
 
 
@@ -1077,6 +1049,9 @@ Titles and Help for the System Fields
 <!-- Plugin phrases -->
 
     <ep:phrase id="Plugin/Screen:tool_divide"> | </ep:phrase>
+    <ep:phrase id="Plugin/Screen:unknown_action">This screen (<ep:pin ref="screen" />) does not know how to process this action: <ep:pin ref="action" />.</ep:phrase>
+    <ep:phrase id="Plugin/Screen:unknown_screen">The requested screen does not exist, or has a fatal error: <ep:pin ref="screen" />.</ep:phrase>
+    <ep:phrase id="Plugin/Screen:screen_not_allowed">You may not view this screen: <ep:pin ref="screen" />.</ep:phrase>
    
     <ep:phrase id="Plugin/Screen/Items:title">Items</ep:phrase>
 
@@ -1157,6 +1132,23 @@ Titles and Help for the System Fields
 
 
 -->
+
+    <!-- Subscribe screen -->
+
+    <ep:phrase id="Plugin/Screen/Subscription/List:title">Subscriptions</ep:phrase>
+    <ep:phrase id="Plugin/Screen/Subscription/List:intro"><p>You may configure subscriptions to this repository. A subscription is a stored search which will be run every day, week or month. Any matching items which have been added or modified since last time will be mailed to you.</p></ep:phrase>
+    <ep:phrase id="Plugin/Screen/Subscription/List:no_subs"><p>You currently have no subscriptions.</p></ep:phrase>
+    <ep:phrase id="Plugin/Screen/Subscription/List:new">New Subscription</ep:phrase>
+    <ep:phrase id="Plugin/Screen/Subscription/List:edit">Edit</ep:phrase>
+    <ep:phrase id="Plugin/Screen/Subscription/List:remove">Remove</ep:phrase>
+
+    <ep:phrase id="Plugin/Screen/Subscription/Edit:title">Edit subscription</ep:phrase>
+    <ep:phrase id="Plugin/Screen/Subscription/Edit:edit_blurb"><p>Please specify the properties of this subscription.</p></ep:phrase>
+    <ep:phrase id="Plugin/Screen/Subscription/Edit:save">Submit Changes</ep:phrase>
+    <ep:phrase id="Plugin/Screen/Subscription/Edit:cancel">Cancel</ep:phrase>
+
+
+<!-- export -->
 
     <ep:phrase id="sys:ep_form_required"><img src="/images/style/required.png" border="0" alt="Required"/>&nbsp;<ep:pin ref="label" /></ep:phrase>
 
@@ -1360,4 +1352,19 @@ Titles and Help for the System Fields
   <ep:phrase id="licenses_description_cc_gnu_lgpl"><a href="http://creativecommons.org/licenses/LGPL/2.1/">Creative Commons GNU LGPL (Software)</a></ep:phrase>
 
    
+
+    <ep:phrase id="subscription_fieldname_spec">Subscription Conditions</ep:phrase>
+    <ep:phrase id="subscription_fieldhelp_spec">New or changed items matching this search will be mailed to you.</ep:phrase>
+    <ep:phrase id="subscription_fieldname_frequency">Frequency of Subscription Mailings</ep:phrase>
+    <ep:phrase id="subscription_fieldhelp_frequency">How often do you want to be sent this subscription. A setting of "never" disables this subscription.</ep:phrase>
+    <ep:phrase id="subscription_fieldopt_frequency_never">Never</ep:phrase>
+    <ep:phrase id="subscription_fieldopt_frequency_daily">Once per Day</ep:phrase>
+    <ep:phrase id="subscription_fieldopt_frequency_weekly">Once per Week</ep:phrase>
+    <ep:phrase id="subscription_fieldopt_frequency_monthly">Once per Month</ep:phrase>
+    <ep:phrase id="subscription_fieldname_userid">User ID of Subscriber</ep:phrase>
+    <ep:phrase id="subscription_fieldname_mailempty">Mail Empty Results</ep:phrase>
+    <ep:phrase id="subscription_fieldhelp_mailempty">If there are no new items matching your subscription, since it was last mailed, do you still want to be mailed?</ep:phrase>
+    <ep:phrase id="subscription_radio_mailempty"><ep:pin ref="true" />Yes, mail me empty subscriptions.<br /><ep:pin ref="false" />No. Only mail me subscriptions with content.</ep:phrase>
+
+
 </ep:phrases>
