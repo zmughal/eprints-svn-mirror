@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+
+<!-- types for user -->
+
+<types xmlns="http://eprints.org/ep3/types">
+
+    <type name="user" />
+    <type name="editor" />
+    <type name="admin" />
+
+</types>
+
+

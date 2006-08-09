@@ -157,6 +157,7 @@ sub new
 		$self->generate_dtd() || return;
 		$self->get_ruler() || return;
 		$self->_load_workflows() || return;
+		$self->_load_types() || return;
 		$self->_load_datasets() || return;
 		$self->_load_languages() || return;
 		$self->_load_templates() || return;
@@ -646,11 +647,71 @@ END
 
 ######################################################################
 # 
+# $success = $repository->_load_types
+#
+# Loads and caches all the types lists from the cfg/types/ directory.
+#
+######################################################################
+
+sub _load_types
+{
+	my( $self ) = @_;
+
+
+	# load /types/*.xml 
+
+	my $dir = $self->get_conf( "config_path" )."/types";
+	my $dh;
+	opendir( $dh, $dir );
+	my @type_files = ();
+	while( my $fn = readdir( $dh ) )
+	{
+		next if $fn=~m/^\./;
+		push @type_files, $fn if $fn=~m/\.xml$/;
+	}
+	closedir( $dh );
+
+	foreach my $tfile ( @type_files )
+	{
+		my $file = $dir."/".$tfile;
+
+		my $doc = $self->parse_xml( $file );
+		if( !defined $doc )
+		{
+			EPrints::abort( "Could not parse $file" );
+		}
+
+		my $types_tag = ($doc->getElementsByTagName( "types" ))[0];
+		if( !defined $types_tag )
+		{
+			EPrints::XML::dispose( $doc );
+			print STDERR "Missing <types> tag in $file\n";
+			return 0;
+		}
+
+		my $type_set = substr($tfile,0,(length $tfile)-4 );
+	
+		my @types = ();
+		foreach my $type_tag ( $types_tag->getElementsByTagName( "type" ) )
+		{
+			my $type_id = $type_tag->getAttribute( "name" );
+			push @types, $type_id;
+		}
+		EPrints::XML::dispose( $doc );
+
+		$self->{types}->{$type_set} = \@types;
+	}
+
+	return 1;
+}
+
+
+######################################################################
+# 
 # $success = $repository->_load_datasets
 #
 # Loads and caches all the EPrints::DataSet objects belonging to this
-# repository. Loads information from metadata-types.xml to pass to the
-# DataSet constructor about what types are available.
+# repository.
 #
 ######################################################################
 
@@ -658,48 +719,12 @@ sub _load_datasets
 {
 	my( $self ) = @_;
 
-
-	# read config data from metadata-types.xml
-
-	my $file = $self->get_conf( "config_path" ).
-			"/metadata-types.xml";
-	my $doc = $self->parse_xml( $file );
-	if( !defined $doc )
-	{
-		return 0;
-	}
-
-	my $types_tag = ($doc->getElementsByTagName( "metadatatypes" ))[0];
-	if( !defined $types_tag )
-	{
-		EPrints::XML::dispose( $doc );
-		print STDERR "Missing <metadatatypes> tag in $file\n";
-		return 0;
-	}
-
-	my $dsconf = {};
-	my $ds_tag;	
-	foreach $ds_tag ( $types_tag->getElementsByTagName( "dataset" ) )
-	{
-		my $ds_id = $ds_tag->getAttribute( "name" );
-		my $type_tag;
-		$dsconf->{$ds_id} = [];
-		foreach $type_tag ( $ds_tag->getElementsByTagName( "type" ) )
-		{
-			my $type_id = $type_tag->getAttribute( "name" );
-			push @{$dsconf->{$ds_id}}, $type_id;
-		}
-	}
-
-	# read config data from workflow (if there is one).
-
 	$self->{datasets} = {};
 	foreach my $ds_id ( EPrints::DataSet::get_dataset_ids() )
 	{
-		$self->{datasets}->{$ds_id} = EPrints::DataSet->new( $self, $ds_id, $dsconf );
+		$self->{datasets}->{$ds_id} = EPrints::DataSet->new( $self, $ds_id, $self->{types} );
 	}
 
-	EPrints::XML::dispose( $doc );
 	return 1;
 }
 

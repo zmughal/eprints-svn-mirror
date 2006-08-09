@@ -1020,24 +1020,27 @@ sub get_filters
 ######################################################################
 ######################################################################
 
+# These are all deprecated!
 
 
 ######################################################################
-=pod
-
-=item $boolean = $ds->field_required_in_type( $field, $type )
-
-Return true if the field is required by in the specified type. Nb.
-If the field is required generally but not specicially for this field
-then this function returns TRUE.
-
-=cut
+# =pod
+# 
+# =item $boolean = $ds->field_required_in_type( $field, $type )
+# 
+# Return true if the field is required by in the specified type. Nb.
+# If the field is required generally but not specicially for this field
+# then this function returns TRUE.
+# 
+# =cut
 ######################################################################
 
 
 sub field_required_in_type
 {
 	my( $self, $field, $type ) = @_;
+
+	EPrints::deprecated;
 
 	if( $field->get_property( "required" ) eq "yes" )
 	{
@@ -1050,19 +1053,21 @@ sub field_required_in_type
 }
 
 ######################################################################
-=pod
-
-=item @fields = $ds->get_page_fields( $type, $page, $staff )
-
-Return an array of fields in the order they appear on page id $page
-of type $type.
-
-=cut
+# =pod
+# 
+# =item @fields = $ds->get_page_fields( $type, $page, $staff )
+# 
+# Return an array of fields in the order they appear on page id $page
+# of type $type.
+# 
+# =cut
 ######################################################################
 
 sub get_page_fields
 {
 	my( $self, $type, $page, $staff ) = @_;
+
+	EPrints::deprecated;
 
 	$self->load_workflows();
 
@@ -1079,18 +1084,20 @@ sub get_page_fields
 }
 
 ######################################################################
-=pod
-
-=item @pages = $ds->get_type_pages( $type );
-
-Return an array of page ids in the order they should be displayed.
-
-=cut
+# =pod
+# 
+# =item @pages = $ds->get_type_pages( $type );
+# 
+# Return an array of page ids in the order they should be displayed.
+# 
+# =cut
 ######################################################################
 
 sub get_type_pages
 {
 	my( $self, $type ) = @_;
+
+	EPrints::deprecated;
 
 	$self->load_workflows();
 
@@ -1103,20 +1110,22 @@ sub get_type_pages
 
 
 ######################################################################
-=pod
-
-=item @fields = $ds->get_type_fields( $type, [$staff] )
-
-Return a list of EPrints::MetaField's which may be edited by a user
-on a record of the given type. Or by a editor/admin if $staff is
-true.
-
-=cut
+# =pod
+# 
+# =item @fields = $ds->get_type_fields( $type, [$staff] )
+# 
+# Return a list of EPrints::MetaField's which may be edited by a user
+# on a record of the given type. Or by a editor/admin if $staff is
+# true.
+# 
+# =cut
 ######################################################################
 
 sub get_type_fields
 {
 	my( $self, $type, $staff ) = @_;
+
+	EPrints::deprecated;
 
 	$self->load_workflows();
 
@@ -1135,80 +1144,88 @@ sub get_type_fields
 
 
 ######################################################################
-=pod
-
-=item @fields = $ds->get_required_type_fields( $type )
-
-Return an array of the EPrints::MetaField's which are required for
-the given type.
-
-=cut
+# =pod
+# 
+# =item @fields = $ds->get_required_type_fields( $type )
+# 
+# Return an array of the EPrints::MetaField's which are required for
+# the given type.
+# 
+# =cut
 ######################################################################
 
 sub get_required_type_fields
 {
 	my( $self, $type ) = @_;
+# Can't do this any more without loading lots of workflow gubbins
+	EPrints::deprecated;
 
-	$self->load_workflows();
+	return(); 
 
-	return @{$self->{types}->{$type}->{req_fields}};	
+
 }
 
 
 
 ######################################################################
-=pod
-
-=item $boolean = $ds->is_valid_type( $type )
-
-Returns true if the specified $type is indeed a type in this dataset.
-
-=cut
+# =pod
+# 
+# =item $boolean = $ds->is_valid_type( $type )
+# 
+# Returns true if the specified $type is indeed a type in this dataset.
+# 
+# =cut
 ######################################################################
 
 sub is_valid_type
 {
 	my( $self, $type ) = @_;
 
+	EPrints::deprecated;
+
 	return( defined $self->{types}->{$type} );
 }
 
 
 ######################################################################
-=pod
-
-=item $types = $ds->get_types
-
-Return a reference to a list of all types of this dataset (eg. 
-eprint record types or types of user)
-
-=cut
+# =pod
+# 
+# =item $types = $ds->get_types
+# 
+# Return a reference to a list of all types of this dataset (eg. 
+# eprint record types or types of user)
+# 
+# =cut
 ######################################################################
 
 sub get_types
 {
 	my( $self ) = @_;
 
+	EPrints::deprecated;
+
 	return $self->{type_order};
 }
 
 
 ######################################################################
-=pod
-
-=item $foo = $ds->get_type_names( $session )
-
-Returns a reference to a hash table which maps the id's of types given
-by get_types to printable names in the language of the session (utf-8
-encoded). 
-
-=cut
+# =pod
+# 
+# =item $foo = $ds->get_type_names( $session )
+# 
+# Returns a reference to a hash table which maps the id's of types given
+# by get_types to printable names in the language of the session (utf-8
+# encoded). 
+# 
+# =cut
 ######################################################################
 
 sub get_type_names
 {
 	my( $self, $session ) = @_;
 		
+	EPrints::deprecated;
+
 	my %names = ();
 	foreach( keys %{$self->{types}} ) 
 	{
@@ -1219,19 +1236,21 @@ sub get_type_names
 
 
 ######################################################################
-=pod
-
-=item $name = $ds->get_type_name( $session, $type )
-
-Return a utf-8 string containing a human-readable name for the
-specified type.
-
-=cut
+# =pod
+# 
+# =item $name = $ds->get_type_name( $session, $type )
+# 
+# Return a utf-8 string containing a human-readable name for the
+# specified type.
+# 
+# =cut
 ######################################################################
 
 sub get_type_name
 {
 	my( $self, $session, $type ) = @_;
+
+	EPrints::deprecated;
 
 	if( $self->{confid} eq "language"  || $self->{confid} eq "arclanguage" )
 	{
@@ -1248,19 +1267,21 @@ sub get_type_name
 
 
 ######################################################################
-=pod
-
-=item $xhtml = $ds->render_type_name( $session, $type )
-
-Return a piece of XHTML describing the name of the given type in the
-language of the session.
-
-=cut
+# =pod
+# 
+# =item $xhtml = $ds->render_type_name( $session, $type )
+# 
+# Return a piece of XHTML describing the name of the given type in the
+# language of the session.
+# 
+# =cut
 ######################################################################
 
 sub render_type_name
 {
 	my( $self, $session, $type ) = @_;
+	
+	EPrints::deprecated;
 
 	if( $self->{confid} eq "language"  || $self->{confid} eq "arclanguage" )
 	{
@@ -1270,14 +1291,14 @@ sub render_type_name
 }
 
 ######################################################################
-=pod
-
-=item $ds->load_workflows
-
-Load the workflows for this dataset to work out the legacy config for
-types and pages etc.
-
-=cut
+# =pod
+# 
+# =item $ds->load_workflows
+# 
+# Load the workflows for this dataset to work out the legacy config for
+# types and pages etc.
+# 
+# =cut
 ######################################################################
 
 sub load_workflows

@@ -1850,6 +1850,7 @@ sub _render_input_form_field
 	my $req = $field->get_property( "required" );
 	if( defined $dataset && defined $type )
 	{
+		# deprecated!
 		$req = $dataset->field_required_in_type( $field, $type );
 	}
 

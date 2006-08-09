@@ -1103,6 +1103,7 @@ sub validate_meta_page
 	# For all fields we need to check
 	foreach my $field ( @check_fields )
 	{
+		# this should be deprecated!
 		if( $self->{dataset}->field_required_in_type(
 			$field,
 			$self->get_value("type") ) 

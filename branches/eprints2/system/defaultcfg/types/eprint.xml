@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+
+<!-- types for eprint -->
+
+<types xmlns="http://eprints.org/ep3/types">
+
+    <option name="article" />
+    <option name="book_section" />
+    <option name="monograph" />
+    <option name="conference_item" />
+    <option name="book" />
+    <option name="thesis" />
+    <option name="patent" />
+    <option name="other" />
+
+</types>
+
+

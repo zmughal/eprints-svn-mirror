@@ -4040,4 +4040,10 @@ PACKAGE: 2.2.99.2
  * The actions screen now picks up actions and has (most) of the actions 
     registered with it.
 
+2006-08-09 cjg
 
+ * Split metadata-types.xml into /types/document.xml etc.
+ * Added deprecated warnings to type-related methods in dataset
+ * Nerfed get_fields_required_for_type as it won't be used soon.
+ * Datasets no longer have types (actually they still do in the code, but
+    the don't conceptually)

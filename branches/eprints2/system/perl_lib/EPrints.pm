@@ -116,6 +116,12 @@ END
 		exit;
 		#exit;
 	}
+
+	sub deprecated
+	{
+		my @c = caller(1);
+		print STDERR "Called deprecated function $c[3] from $c[1] line $c[2]\n";
+	}
 }
 
 use EPrints::BackCompatibility;

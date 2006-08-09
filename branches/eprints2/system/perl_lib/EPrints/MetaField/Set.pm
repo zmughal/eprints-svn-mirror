@@ -97,10 +97,13 @@ sub render_input_field_actual
 	my( $self, $session, $value, $dataset, $type, $staff, $hidden_fields, $obj, $basename ) = @_;
 
 	my $required = $self->get_property( "required" );
-	if( defined $dataset && defined $type )
-	{
-		$required = $dataset->field_required_in_type( $self, $type );
-	}
+
+	# this should not be needed anymore.
+
+#	if( defined $dataset && defined $type )
+#	{
+#		$required = $dataset->field_required_in_type( $self, $type );
+#	}
 
 	my %settings;
 	my $default = $value;

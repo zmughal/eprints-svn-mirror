@@ -103,7 +103,7 @@ sub convert_dataobj
 
 
 	my $ds = $eprint->get_dataset();
-	push @dcdata, [ "type", $ds->get_type_name( $plugin->{session}, $eprint->get_value( "type" ) ) ];
+	push @dcdata, [ "type", EPrints::Utils::tree_to_utf8( $eprint->render_value( "type" ) ) ];
 	
 	my $ref = "NonPeerReviewed";
 	if( $eprint->exists_and_set( "refereed" ) && $eprint->get_value( "refereed" ) eq "TRUE" )
