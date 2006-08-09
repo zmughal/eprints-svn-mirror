@@ -149,6 +149,7 @@ use EPrints::Latex;
 use EPrints::List;
 use EPrints::MetaField;
 use EPrints::OpenArchives;
+use EPrints::Paginate;
 use EPrints::Probity;
 use EPrints::Plugin;
 use EPrints::Repository;

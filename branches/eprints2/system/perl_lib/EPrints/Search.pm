@@ -1201,11 +1201,11 @@ sub _dopage_results
 
 	my( $t1 , $t2 , $t3 , @results );
 
-	$t1 = EPrints::Session::microtime();
+	#$t1 = EPrints::Session::microtime();
 
-	$self->perform_search();
+	my $list = $self->perform_search();
 
-	$t2 = EPrints::Session::microtime();
+	#$t2 = EPrints::Session::microtime();
 
 	if( defined $self->{error} ) 
 	{	
@@ -1214,39 +1214,9 @@ sub _dopage_results
 		return;
 	}
 
-	my $n_results = $self->count();
-
-	my $offset = $self->{session}->param( "_offset" ) + 0;
-	my $pagesize = $self->{page_size};
-
-	@results = $self->get_records( $offset , $pagesize );
-	$t3 = EPrints::Session::microtime();
 	$self->dispose();
 
-	my $plast = $offset + $pagesize;
-	$plast = $n_results if $n_results< $plast;
-
 	my %bits = ();
-	
-	if( scalar $n_results > 0 )
-	{
-		my %numbers = ();
-		$numbers{from} = $self->{session}->make_element( "span", class=>"ep_search_number" );
-		$numbers{from}->appendChild( $self->{session}->make_text( $offset+1 ) );
-		$numbers{to} = $self->{session}->make_element( "span", class=>"ep_search_number" );
-		$numbers{to}->appendChild( $self->{session}->make_text( $plast ) );
-		$numbers{n} = $self->{session}->make_element( "span", class=>"ep_search_number" );
-		$numbers{n}->appendChild( $self->{session}->make_text( $n_results ) );
-		$bits{matches} = $self->{session}->html_phrase( "lib/searchexpression:results", %numbers );
-	}
-	else
-	{
-		$bits{matches} = 
-			$self->{session}->html_phrase( 
-				"lib/searchexpression:noresults" );
-	}
-
-
 
 	my @plugins = $self->{session}->plugin_list( 
 					type=>"Export",
@@ -1286,100 +1256,46 @@ sub _dopage_results
 	}
 	
 
-	$bits{time} = $self->{session}->make_element( "span", class=>"ep_search_time" );
-	$bits{time}->appendChild(
-		$self->{session}->html_phrase( 
-			"lib/searchexpression:search_time", 
-			searchtime => $self->{session}->make_text($t3-$t1) ) );
+	$bits{time} = $self->{session}->make_doc_fragment;
 
-	$bits{searchdesc} = $self->render_description;
 
-	my $links = $self->{session}->make_doc_fragment();
-	$bits{controls} = $self->{session}->make_element( "div", class=>"ep_search_controls" );
-	my $url = $self->{session}->get_uri();
-	#cjg escape URL'ify urls in this bit... (4 of them?)
-	my $escexp = $self->serialise();	
-	$escexp =~ s/ /+/g; # not great way...
-	my $a;
-	my $cspan;
-	if( $offset > 0 ) 
-	{
-		my $bk = $offset-$pagesize;
-		my $fullurl = "$url?_cache=".$self->{cache_id}."&_exp=$escexp&_offset=".($bk<0?0:$bk);
-		$a = $self->{session}->render_link( $fullurl );
-		my $pn = $pagesize>$offset?$offset:$pagesize;
-		$a->appendChild( 
-			$self->{session}->html_phrase( 
-				"lib/searchexpression:prev",
-				n=>$self->{session}->make_text( $pn ) ) );
-		$cspan = $self->{session}->make_element( 'span', class=>"ep_search_control" );
-		$cspan->appendChild( $a );
-		$bits{controls}->appendChild( $cspan );
-		$bits{controls}->appendChild( $self->{session}->html_phrase( "lib/searchexpression:seperator" ) );
-		$links->appendChild( $self->{session}->make_element( "link",
-						rel=>"Prev",
-						href=>EPrints::Utils::url_escape( $fullurl ) ) );
-	}
+	my $links = $self->{session}->make_doc_fragment(); # TODO: links in document header?
 
-	$a = $self->{session}->render_link( "$url?_cache=".$self->{cache_id}."&_exp=$escexp&_action_update=1" );
-	$a->appendChild( $self->{session}->html_phrase( "lib/searchexpression:refine" ) );
-	$cspan = $self->{session}->make_element( 'span', class=>"ep_search_control" );
-	$cspan->appendChild( $a );
-	$bits{controls}->appendChild( $cspan );
-	$bits{controls}->appendChild( $self->{session}->html_phrase( "lib/searchexpression:seperator" ) );
+	my $cacheid = $self->{cache_id};
+	my $escexp = $self->serialise;
+	my @controls_before = (
+		{
+			url => $self->{session}->get_uri . "?_cache=$cacheid&_exp=$escexp&_action_update=1",
+			label => $self->{session}->html_phrase( "lib/searchexpression:refine" ),
+		},
+		{
+			url => $self->{session}->get_uri,
+			label => $self->{session}->html_phrase( "lib/searchexpression:new" ),
+		}
+	);
 
-	$a = $self->{session}->render_link( $url );
-	$a->appendChild( $self->{session}->html_phrase( "lib/searchexpression:new" ) );
-	$cspan = $self->{session}->make_element( 'span', class=>"ep_search_control" );
-	$cspan->appendChild( $a );
-	$bits{controls}->appendChild( $cspan );
-
-	if( $offset + $pagesize < $n_results )
-	{
-		my $fullurl="$url?_cache=".$self->{cache_id}."&_exp=$escexp&_offset=".($offset+$pagesize);
-		$a = $self->{session}->render_link( $fullurl );
-		my $nn = $n_results - $offset - $pagesize;
-		$nn = $pagesize if( $pagesize < $nn);
-		$a->appendChild( $self->{session}->html_phrase( "lib/searchexpression:next",
-					n=>$self->{session}->make_text( $nn ) ) );
-		$bits{controls}->appendChild( $self->{session}->html_phrase( "lib/searchexpression:seperator" ) );
-		$cspan = $self->{session}->make_element( 'span', class=>"ep_search_control" );
-		$cspan->appendChild( $a );
-		$bits{controls}->appendChild( $cspan );
-		$links->appendChild( $self->{session}->make_element( "link",
-						rel=>"Next",
-						href=>EPrints::Utils::url_escape( $fullurl ) ) );
-	}
-
-	$bits{results} = $self->{session}->make_doc_fragment;
-	foreach my $result ( @results )
-	{
-		my $div = $self->{session}->make_element( "div", class=>"ep_search_result" );
-		$div->appendChild( 
-			$result->render_citation_link( 
-				$self->{citation},  #undef unless specified
-				$self->{staff} ) );
-		$bits{results}->appendChild( $div );
-	}
-	
-
-	if( $n_results > 0 )
-	{
-		# Only print a second set of controls if 
-		# there are matches.
-		$bits{controls_if_matches} = 
-			EPrints::XML::clone_node( $bits{controls}, 1 );
-	}
-	else
-	{
-		$bits{controls_if_matches} = 
-			$self->{session}->make_doc_fragment;
-	}
+	my %opts = (
+		bits => \%bits,
+		controls_before => \@controls_before,
+		phrase => "lib/searchexpression:results_page",
+		params => { 
+			_cache => $cacheid,
+			_exp => $escexp,
+		},
+		render_result => sub {
+			my( $session, $result, $searchexp ) = @_;
+			my $div = $session->make_element( "div", class=>"ep_search_result" );
+			$div->appendChild( 
+				$result->render_citation_link(
+					$searchexp->{citation},  #undef unless specified
+					$searchexp->{staff} ) );
+			return $div;
+		},
+		render_result_params => $self,
+	);
 
 	my $page = $self->{session}->render_form( "GET" );
-	$page->appendChild( $self->{session}->html_phrase(
-		"lib/searchexpression:results_page",
-		%bits ));
+	$page->appendChild( EPrints::Paginate->paginate_list( $self->{session}, "_search", $list, %opts ) );
 
 	$self->{session}->build_page( 
 		$self->{session}->html_phrase( 
@@ -1790,6 +1706,7 @@ sub perform_search
 		$self->{results} = EPrints::List->new( 
 			session => $self->{session},
 			dataset => $self->{dataset},
+			encoded => $self->serialise,
 			cache_id => $self->{cache_id}, 
 			desc => $self->render_conditions_description,
 			desc_order => $self->render_order_description,

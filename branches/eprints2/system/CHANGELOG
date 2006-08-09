@@ -4052,3 +4052,11 @@ PACKAGE: 2.2.99.2
  * Shifted /en/ to be /lang/en/ in .../cfg/ and /lib/
  * Made systems phrases file be in a phrases dir, so there can later be
     other top level phrase files (eg. for plugins)
+
+2006-08-09 tmb
+
+ * Split search result pagination out of Search into a generic function 
+    which paginates any List of items
+ * Function currently in a new Paginate module, but needs a better home 
+    - perhaps in List?
+ * Added page jumps to existing Next/Prev page links
