@@ -158,7 +158,6 @@ use EPrints::Search::Field;
 use EPrints::Search::Condition;
 use EPrints::Session;
 use EPrints::Script;
-use EPrints::SubmissionForm;
 use EPrints::UserForm;
 use EPrints::UserPage;
 use EPrints::Paracite;
