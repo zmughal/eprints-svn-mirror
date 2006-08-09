@@ -705,6 +705,29 @@ sub _load_types
 	return 1;
 }
 
+######################################################################
+=pod
+
+=item @type_ids = $repository->get_types( $type_set )
+
+Return an array of keys for the named set. Comes from 
+/cfg/types/foo.xml
+
+=cut
+######################################################################
+
+sub get_types
+{
+	my( $self, $type_set ) = @_;
+
+	if( !defined $self->{types}->{$type_set} )
+	{
+		$self->log( "Request for unknown type set: $type_set" );
+		return ();
+	}
+
+	return @{$self->{types}->{$type_set}};
+}
 
 ######################################################################
 # 

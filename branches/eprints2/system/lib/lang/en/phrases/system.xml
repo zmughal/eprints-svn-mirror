@@ -808,7 +808,7 @@ Public CGI Scripts
 <!-- setlang -->
 
     <ep:phrase id="cgi/set_lang:title">Change Language</ep:phrase>
-    <ep:phrase id="cgi/set_lang:blurb"><p>Choose your preferred language:</p></ep:phrase>
+    <ep:phrase id="cgi/set_lang:blurb"><p>Choose your preferred languages_typename_</p></ep:phrase>
     <ep:phrase id="cgi/set_lang:changed_to"><p>Preferred language set to <ep:pin ref="lang" /></p></ep:phrase>
     <ep:phrase id="cgi/set_lang:cleared"><p>Your language preference has been cleared. From now on this repository will use the closest language to your browser setting. This is currently <ep:pin ref="lang" />.</p></ep:phrase>
     <ep:phrase id="cgi/set_lang:default_lang"><p>The default language of this repository is <ep:pin ref="lang" />.</p></ep:phrase>
@@ -1025,6 +1025,7 @@ Titles and Help for the System Fields
 
     <ep:phrase id="document_fieldname_eprintid">ID of the owning item</ep:phrase>
     <ep:phrase id="document_fieldname_rev_number">Revision</ep:phrase>
+    <ep:phrase id="document_fieldname_language">Language</ep:phrase>
     <ep:phrase id="document_fieldhelp_language">Please indicate the primary language of this format.</ep:phrase>
     <ep:phrase id="document_fieldname_format">Format</ep:phrase>
     <ep:phrase id="document_fieldhelp_format">Please select the storage format of this document.</ep:phrase>
@@ -1166,6 +1167,197 @@ Titles and Help for the System Fields
 
 
 
+
+
+
+  <ep:phrase id="languages_typename_aa">Afar</ep:phrase>  
+  <ep:phrase id="languages_typename_ab">Abkhazian</ep:phrase>  
+  <ep:phrase id="languages_typename_af">Afrikaans</ep:phrase>  
+  <ep:phrase id="languages_typename_am">Amharic</ep:phrase>  
+  <ep:phrase id="languages_typename_ar">Arabic</ep:phrase>  
+  <ep:phrase id="languages_typename_as">Assamese</ep:phrase>  
+  <ep:phrase id="languages_typename_ay">Aymara</ep:phrase>  
+  <ep:phrase id="languages_typename_az">Azerbaijani</ep:phrase>  
+
+  <ep:phrase id="languages_typename_ba">Bashkir</ep:phrase>  
+  <ep:phrase id="languages_typename_be">Byelorussian</ep:phrase>  
+  <ep:phrase id="languages_typename_bg">Bulgarian</ep:phrase>  
+  <ep:phrase id="languages_typename_bh">Bihari</ep:phrase>  
+  <ep:phrase id="languages_typename_bi">Bislama</ep:phrase>  
+  <ep:phrase id="languages_typename_bn">Bengali; Bangla</ep:phrase>  
+  <ep:phrase id="languages_typename_bo">Tibetan</ep:phrase>  
+  <ep:phrase id="languages_typename_br">Breton</ep:phrase>  
+
+  <ep:phrase id="languages_typename_ca">Catalan</ep:phrase>  
+  <ep:phrase id="languages_typename_co">Corsican</ep:phrase>  
+  <ep:phrase id="languages_typename_cs">Czech</ep:phrase>  
+  <ep:phrase id="languages_typename_cy">Welsh</ep:phrase>  
+
+  <ep:phrase id="languages_typename_da">Danish</ep:phrase> 
+  <ep:phrase id="languages_typename_de">Deutsch</ep:phrase>  
+  <ep:phrase id="languages_typename_dz">Bhutani</ep:phrase>  
+
+  <ep:phrase id="languages_typename_el">Greek</ep:phrase>  
+  <ep:phrase id="languages_typename_en">English</ep:phrase>  
+  <ep:phrase id="languages_typename_eo">Esperanto</ep:phrase>  
+  <ep:phrase id="languages_typename_es">Espa&ntilde;ol</ep:phrase> 
+  <ep:phrase id="languages_typename_et">Estonian</ep:phrase>  
+  <ep:phrase id="languages_typename_eu">Basque</ep:phrase>  
+
+  <ep:phrase id="languages_typename_fa">Persian</ep:phrase>  
+  <ep:phrase id="languages_typename_fi">Finnish</ep:phrase>  
+  <ep:phrase id="languages_typename_fj">Fiji</ep:phrase>  
+  <ep:phrase id="languages_typename_fo">Faroese</ep:phrase>  
+  <ep:phrase id="languages_typename_fr">French</ep:phrase>
+  <ep:phrase id="languages_typename_fy">Frisian</ep:phrase>  
+
+  <ep:phrase id="languages_typename_ga">Irish</ep:phrase>  
+  <ep:phrase id="languages_typename_gd">Scots Gaelic</ep:phrase>  
+  <ep:phrase id="languages_typename_gl">Galician</ep:phrase>  
+  <ep:phrase id="languages_typename_gn">Guarani</ep:phrase>  
+  <ep:phrase id="languages_typename_gu">Gujarati</ep:phrase>  
+
+  <ep:phrase id="languages_typename_ha">Hausa</ep:phrase>  
+  <ep:phrase id="languages_typename_he">Hebrew</ep:phrase>  
+  <ep:phrase id="languages_typename_hi">Hindi</ep:phrase>  
+  <ep:phrase id="languages_typename_hr">Croatian</ep:phrase>  
+  <ep:phrase id="languages_typename_hu">Hungarian</ep:phrase>  
+  <ep:phrase id="languages_typename_hy">Armenian</ep:phrase>  
+
+  <ep:phrase id="languages_typename_ia">Interlingua</ep:phrase>  
+  <ep:phrase id="languages_typename_id">Indonesian</ep:phrase>  
+  <ep:phrase id="languages_typename_ie">Interlingue</ep:phrase>  
+  <ep:phrase id="languages_typename_ik">Inupiak</ep:phrase>  
+  <ep:phrase id="languages_typename_is">Icelandic</ep:phrase>  
+  <ep:phrase id="languages_typename_it">Italiano</ep:phrase>  
+  <ep:phrase id="languages_typename_iu">Inuktitut</ep:phrase>  
+
+  <ep:phrase id="languages_typename_ja">Japanese</ep:phrase>  
+  <ep:phrase id="languages_typename_jw">Javanese</ep:phrase>  
+
+  <ep:phrase id="languages_typename_ka">Georgian</ep:phrase>  
+  <ep:phrase id="languages_typename_kk">Kazakh</ep:phrase>  
+  <ep:phrase id="languages_typename_kl">Greenlandic</ep:phrase>  
+  <ep:phrase id="languages_typename_km">Cambodian</ep:phrase>  
+  <ep:phrase id="languages_typename_kn">Kannada</ep:phrase>  
+  <ep:phrase id="languages_typename_ko">Korean</ep:phrase>  
+  <ep:phrase id="languages_typename_ks">Kashmiri</ep:phrase>  
+  <ep:phrase id="languages_typename_ku">Kurdish</ep:phrase>  
+  <ep:phrase id="languages_typename_ky">Kirghiz</ep:phrase>  
+
+  <ep:phrase id="languages_typename_la">Latin</ep:phrase>  
+  <ep:phrase id="languages_typename_ln">Lingala</ep:phrase>  
+  <ep:phrase id="languages_typename_lo">Laothian</ep:phrase>  
+  <ep:phrase id="languages_typename_lt">Lithuanian</ep:phrase>  
+  <ep:phrase id="languages_typename_lv">Latvian, Lettish</ep:phrase>  
+
+  <ep:phrase id="languages_typename_mg">Malagasy</ep:phrase>  
+  <ep:phrase id="languages_typename_mi">Maori</ep:phrase>  
+  <ep:phrase id="languages_typename_mk">Macedonian</ep:phrase>  
+  <ep:phrase id="languages_typename_ml">Malayalam</ep:phrase>  
+  <ep:phrase id="languages_typename_mn">Mongolian</ep:phrase>  
+  <ep:phrase id="languages_typename_mo">Moldavian</ep:phrase>  
+  <ep:phrase id="languages_typename_mr">Marathi</ep:phrase>  
+  <ep:phrase id="languages_typename_ms">Malay</ep:phrase>  
+  <ep:phrase id="languages_typename_mt">Maltese</ep:phrase>  
+  <ep:phrase id="languages_typename_my">Burmese</ep:phrase>  
+
+  <ep:phrase id="languages_typename_na">Nauru</ep:phrase>  
+  <ep:phrase id="languages_typename_ne">Nepali</ep:phrase>  
+  <ep:phrase id="languages_typename_nl">Dutch</ep:phrase>  
+  <ep:phrase id="languages_typename_no">Norwegian</ep:phrase> 
+
+  <ep:phrase id="languages_typename_oc">Occitan</ep:phrase>  
+  <ep:phrase id="languages_typename_om">(Afan) Oromo</ep:phrase>  
+  <ep:phrase id="languages_typename_or">Oriya</ep:phrase>  
+
+  <ep:phrase id="languages_typename_pa">Punjabi</ep:phrase>  
+  <ep:phrase id="languages_typename_pl">Polish</ep:phrase> 
+  <ep:phrase id="languages_typename_ps">Pashto, Pushto</ep:phrase>  
+  <ep:phrase id="languages_typename_pt">Portuguese</ep:phrase> 
+
+  <ep:phrase id="languages_typename_qu">Quechua</ep:phrase>  
+
+  <ep:phrase id="languages_typename_rm">Rhaeto-Romance</ep:phrase>  
+  <ep:phrase id="languages_typename_rn">Kirundi</ep:phrase>  
+  <ep:phrase id="languages_typename_ro">Romanian</ep:phrase>  
+  <ep:phrase id="languages_typename_ru">Russian</ep:phrase>
+  <ep:phrase id="languages_typename_rw">Kinyarwanda</ep:phrase>  
+
+  <ep:phrase id="languages_typename_sa">Sanskrit</ep:phrase>  
+  <ep:phrase id="languages_typename_sd">Sindhi</ep:phrase>  
+  <ep:phrase id="languages_typename_sg">Sangho</ep:phrase>  
+  <ep:phrase id="languages_typename_sh">Serbo-Croatian</ep:phrase>  
+  <ep:phrase id="languages_typename_si">Sinhalese</ep:phrase>  
+  <ep:phrase id="languages_typename_sk">Slovak</ep:phrase>  
+  <ep:phrase id="languages_typename_sl">Slovenian</ep:phrase>  
+  <ep:phrase id="languages_typename_sm">Samoan</ep:phrase>  
+  <ep:phrase id="languages_typename_sn">Shona</ep:phrase>  
+  <ep:phrase id="languages_typename_so">Somali</ep:phrase>  
+  <ep:phrase id="languages_typename_sq">Albanian</ep:phrase>  
+  <ep:phrase id="languages_typename_sr">Serbian</ep:phrase>  
+  <ep:phrase id="languages_typename_ss">Siswati</ep:phrase>  
+  <ep:phrase id="languages_typename_st">Sesotho</ep:phrase>  
+  <ep:phrase id="languages_typename_su">Sundanese</ep:phrase>  
+  <ep:phrase id="languages_typename_sv">Swedish</ep:phrase>  
+  <ep:phrase id="languages_typename_sw">Swahili</ep:phrase>  
+
+  <ep:phrase id="languages_typename_ta">Tamil</ep:phrase>  
+  <ep:phrase id="languages_typename_te">Telugu</ep:phrase>  
+  <ep:phrase id="languages_typename_tg">Tajik</ep:phrase>  
+  <ep:phrase id="languages_typename_th">Thai</ep:phrase>  
+  <ep:phrase id="languages_typename_ti">Tigrinya</ep:phrase>  
+  <ep:phrase id="languages_typename_tk">Turkmen</ep:phrase>  
+  <ep:phrase id="languages_typename_tl">Tagalog</ep:phrase>  
+  <ep:phrase id="languages_typename_tn">Setswana</ep:phrase>  
+  <ep:phrase id="languages_typename_to">Tonga</ep:phrase>  
+  <ep:phrase id="languages_typename_tr">Turkish</ep:phrase>  
+  <ep:phrase id="languages_typename_ts">Tsonga</ep:phrase>  
+  <ep:phrase id="languages_typename_tt">Tatar</ep:phrase>  
+  <ep:phrase id="languages_typename_tw">Twi</ep:phrase>  
+
+  <ep:phrase id="languages_typename_ug">Uighur</ep:phrase>  
+  <ep:phrase id="languages_typename_uk">Ukrainian</ep:phrase>  
+  <ep:phrase id="languages_typename_ur">Urdu</ep:phrase>  
+  <ep:phrase id="languages_typename_uz">Uzbek</ep:phrase>  
+
+  <ep:phrase id="languages_typename_vi">Vietnamese</ep:phrase>  
+  <ep:phrase id="languages_typename_vo">Volapuk</ep:phrase>  
+
+  <ep:phrase id="languages_typename_wo">Wolof</ep:phrase>  
+
+  <ep:phrase id="languages_typename_xh">Xhosa</ep:phrase>  
+
+  <ep:phrase id="languages_typename_yi">Yiddish</ep:phrase>  
+  <ep:phrase id="languages_typename_yo">Yoruba</ep:phrase>  
+
+  <ep:phrase id="languages_typename_za">Zhuang</ep:phrase>  
+  <ep:phrase id="languages_typename_zh">Chinese</ep:phrase>  
+  <ep:phrase id="languages_typename_zu">Zulu</ep:phrase>  
+
+  <ep:phrase id="languages_typename_?">[undefined]</ep:phrase>  
+
+
+  <ep:phrase id="licenses_typename_cc_by_nd">Creative Commons Attribution No Derivatives</ep:phrase>
+  <ep:phrase id="licenses_typename_cc_by">Creative Commons Attribution</ep:phrase>
+  <ep:phrase id="licenses_typename_cc_by_nc">Creative Commons Attribution Non-commercial</ep:phrase>
+  <ep:phrase id="licenses_typename_cc_by_nc_nd">Creative Commons Attribution Non-commercial No Derivatives</ep:phrase>
+  <ep:phrase id="licenses_typename_cc_by_nc_sa">Creative Commons Attribution Non-commercial Share Alike</ep:phrase>
+  <ep:phrase id="licenses_typename_cc_by_sa">Creative Commons Attribution Share Alike</ep:phrase>
+  <ep:phrase id="licenses_typename_cc_public_domain">Creative Commons Public Domain Dedication</ep:phrase>
+  <ep:phrase id="licenses_typename_cc_gnu_gpl">Creative Commons GNU GPL (Software)</ep:phrase>
+  <ep:phrase id="licenses_typename_cc_gnu_lgpl">Creative Commons GNU LGPL (Software)</ep:phrase>
+
+
+  <ep:phrase id="licenses_description_cc_by_nd"><a href="http://creativecommons.org/licenses/by-nd/2.5/">Creative Commons Attribution No Derivatives</a></ep:phrase>
+  <ep:phrase id="licenses_description_cc_by"><a href="http://creativecommons.org/licenses/by/2.5/">Creative Commons Attribution</a></ep:phrase>
+  <ep:phrase id="licenses_description_cc_by_nc"><a href="http://creativecommons.org/licenses/by-nc/2.5/">Creative Commons Attribution Non-commercial</a></ep:phrase>
+  <ep:phrase id="licenses_description_cc_by_nc_nd"><a href="http://creativecommons.org/licenses/by-nc-nd/2.5/">Creative Commons Attribution Non-commercial No Derivatives</a></ep:phrase>
+  <ep:phrase id="licenses_description_cc_by_nc_sa"><a href="http://creativecommons.org/licenses/by-nc-sa/2.5/">Creative Commons Attribution Non-commercial Share Alike</a></ep:phrase>
+  <ep:phrase id="licenses_description_cc_by_sa"><a href="http://creativecommons.org/licenses/by-sa/2.5/">Creative Commons Attribution Share Alike</a></ep:phrase>
+  <ep:phrase id="licenses_description_cc_public_domain"><a href="http://creativecommons.org/licenses/publicdomain/">Creative Commons Public Domain Dedication</a></ep:phrase>
+  <ep:phrase id="licenses_description_cc_gnu_gpl"><a href="http://creativecommons.org/licenses/GPL/2.0/">Creative Commons GNU GPL (Software)</a></ep:phrase>
+  <ep:phrase id="licenses_description_cc_gnu_lgpl"><a href="http://creativecommons.org/licenses/LGPL/2.1/">Creative Commons GNU LGPL (Software)</a></ep:phrase>
+
    
 </ep:phrases>
-

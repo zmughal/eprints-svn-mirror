@@ -71,6 +71,13 @@ sub tags_and_labels
 	return ($self->{options}, \%labels);
 }
 
+sub tags
+{
+	my( $self, $session ) = @_;
+
+	return @{$self->{options}};
+}
+
 ######################################################################
 =pod
 
@@ -85,6 +92,11 @@ XHTML DOM object.
 sub render_option
 {
 	my( $self, $session, $option ) = @_;
+
+	if( defined $self->get_property("render_option") )
+	{
+		return $self->call_property( "render_option", $session, $option );
+	}
 
 	my $phrasename = $self->{confid}."_fieldopt_".$self->{name}."_".$option;
 
@@ -119,14 +131,20 @@ sub input_tags_and_labels
 {
 	my( $self, $session, $obj ) = @_;
 
-	if( defined $self->get_property("input_tags_and_labels") )
+	my @tags = $self->tags( $session );
+	if( defined $self->get_property("input_tags") )
 	{
-		return $self->call_property( "input_tags_and_labels", 
-			$session, 
-			$obj );
+		@tags = $self->call_property( "input_tags", $session, $obj );
 	}
 
-	return $self->tags_and_labels( $session );
+	my %labels = ();
+	foreach( @tags )
+	{
+		$labels{$_} = EPrints::Utils::tree_to_utf8( 
+			$self->render_option( $session, $_ ) );
+	}
+
+	return( \@tags, \%labels );
 }
 
 # basic input renderer for "set" type fields
@@ -224,7 +242,9 @@ sub get_values
 {
 	my( $self, $session, $dataset, %opts ) = @_;
 
-	return $self->get_property( "options" );
+	my @tags = $self->tags( $session );
+
+	return \@tags;
 }
 
 sub get_value_label
@@ -410,7 +430,8 @@ sub get_property_defaults
 	$defaults{input_rows} = $EPrints::MetaField::FROM_CONFIG;
 	$defaults{search_rows} = $EPrints::MetaField::FROM_CONFIG;
 	$defaults{options} = $EPrints::MetaField::REQUIRED;
-	$defaults{input_tags_and_labels} = $EPrints::MetaField::UNDEF;
+	$defaults{input_tags} = $EPrints::MetaField::UNDEF;
+	$defaults{render_option} = $EPrints::MetaField::UNDEF;
 	$defaults{text_index} = 0;
 	return %defaults;
 }

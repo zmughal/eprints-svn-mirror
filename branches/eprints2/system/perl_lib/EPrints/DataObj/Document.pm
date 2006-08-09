@@ -132,43 +132,49 @@ sub get_system_field_info
 			datasetid=>"eprint", required=>1 },
 
 		{ name=>"format", type=>"datatype", required=>1, input_rows=>1,
-			datasetid=>"document" },
+			type_set=>"document" },
 
 		{ name=>"formatdesc", type=>"text", input_cols=>40 },
 
 		{ name=>"language", type=>"datatype", required=>1, input_rows=>1,
-			datasetid=>"language" },
+			type_set=>"languages" },
 
 		{ name => "permission_group", multiple => 1, type => "datatype", 
-			datasetid => "permission_group", },
+			type_set => "permission_group", },
 
 		{ name=>"security", type=>"datatype", required=>1, input_rows=>1,
-			datasetid=>"security" },
+			type_set=>"security" },
 
-		{ name=>"license", type=>"license", required=>0, input_rows=>1,
-			datasetid=>"license" },
+		{ name=>"license", type=>"datatype", required=>0, input_rows=>1,
+			type_set=>"licenses" },
 
 		{ name=>"main", type=>"set", required=>1, options=>[], input_rows=>1,
-			input_tags_and_labels=>\&main_input_tags_and_labels },
+			input_tags=>\&main_input_tags,
+			render_option=>\&main_render_option },
 	);
 
 }
 
-sub main_input_tags_and_labels
+sub main_input_tags
 {
 	my( $session, $object ) = @_;
 
 	my %files = $object->files;
-	my $tags = [];
-	my $labels = {};
-	foreach ( sort keys %files )
-	{
-		push @{$tags},$_;
-		$labels->{$_} = $_;
-	}
 
-	return( $tags, $labels );
+	my @tags;
+	foreach ( sort keys %files ) { push @tags, $_; }
+
+	return( @tags );
 }
+
+sub main_render_option
+{
+	my( $session, $option ) = @_;
+
+	return $session->make_text( $option );
+}
+
+
 
 ######################################################################
 =pod

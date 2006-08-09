@@ -320,7 +320,7 @@ $c->{submission_hide_formatdesc} = 0;
 # Hide the language field. This field does not do
 # anything useful anyway, but it might provide 
 # useful data in a multilingual repository.
-$c->{submission_hide_language} = 1;
+$c->{submission_hide_language} = 0;
 
 # Hide the security field, you might want to do
 # this if you don't plan to have any secret or
@@ -330,7 +330,7 @@ $c->{submission_hide_security} = 0;
 # The document license field, you might want this
 # if you want to allow users to specify a
 # per-document license
-$c->{submission_hide_license} = 1;
+$c->{submission_hide_license} = 0;
 
 # These options allow you to suppress various file
 # upload methods. You almost certainly do not want

@@ -79,7 +79,7 @@ sub ensure_init
 =item EPrints::Config::init()
 
 Load all the EPrints configuration files, first the general files
-such as SystemSettings and languages.xml and then the configurations
+such as SystemSettings and then the configurations
 for each repository.
 
 =cut
@@ -117,31 +117,9 @@ sub init
 
 
 	###############################################
-
-	my $file = $SYSTEMCONF{lib_path}."/languages.xml";
-	my $lang_doc = EPrints::XML::parse_xml( $file );
-	my $top_tag = ($lang_doc->getElementsByTagName( "languages" ))[0];
-	if( !defined $top_tag )
-	{
-		EPrints::Config::abort( "Missing <languages> tag in $file" );
-	}
-	foreach my $lang_tag ( $top_tag->getElementsByTagName( "lang" ) )
-	{
-		my $id = $lang_tag->getAttribute( "id" );
-		my $supported = ($lang_tag->getAttribute( "supported" ) eq "yes" );
-		my $val = EPrints::Utils::tree_to_utf8( $lang_tag );
-		push @LANGLIST,$id;
-		if( $supported )
-		{
-			push @SUPPORTEDLANGLIST,$id;
-		}
-		$LANGNAMES{$id} = $val;
-	}
-	EPrints::XML::dispose( $lang_doc );
-	
-	###############################################
 	
 	opendir( CFG, $SYSTEMCONF{arc_path} );
+	my $file;
 	while( $file = readdir( CFG ) )
 	{
 		next unless( $file=~m/^(.*)\.xml$/ );
@@ -290,44 +268,6 @@ sub get_repository_config
 }
 
 
-######################################################################
-=pod
-
-=item @languages = EPrints::Config::get_languages
-
-Return a list of all known languages ids (from languages.xml).
-
-=cut
-######################################################################
-
-sub get_languages
-{
-	ensure_init();
-
-	return @LANGLIST;
-}
-
-
-######################################################################
-=pod
-
-=item @languages = EPrints::Config::get_supported_languages
-
-Return a list of ids of all supported languages. 
-
-EPrints does not yet formally support languages other then "en". You
-have to configure others yourself. This will be fixed in a later 
-version.
-
-=cut
-######################################################################
-
-sub get_supported_languages
-{
-	ensure_init();
-
-	return @SUPPORTEDLANGLIST;
-}
 
 
 ######################################################################

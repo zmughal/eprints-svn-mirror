@@ -4052,6 +4052,19 @@ PACKAGE: 2.2.99.2
  * Shifted /en/ to be /lang/en/ in .../cfg/ and /lib/
  * Made systems phrases file be in a phrases dir, so there can later be
     other top level phrase files (eg. for plugins)
+ * Removed other types related code called on dataset. Now uses session
+    an repository calls.
+ * Changed set to have two overriding methods input_tags and render_option
+    (this fixes issues with datatype.pm)
+ * Changed the datasetid param in datatype fields to be "type_set"
+ * languages.xml is no longer loaded by the repository and has been removed.
+ * languages are now loaded from the types.
+ * removed lanuage dataset
+ * removed language related methods
+ * added lots of phrases for all major languages to system phrases.
+ * removed licenses.xml
+ * used datatype system for licence field in document.
+
 
 2006-08-09 tmb
 

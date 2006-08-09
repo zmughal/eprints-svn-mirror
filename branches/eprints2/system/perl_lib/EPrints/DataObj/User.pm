@@ -153,7 +153,7 @@ sub get_system_field_info
 			fromform=>\&EPrints::Utils::crypt_password },
 
 		{ name=>"usertype", type=>"datatype", required=>1, 
-			datasetid=>"user" },
+			type_set=>"user" },
 	
 		{ name=>"newemail", type=>"email", show_in_html=>0 },
 	
@@ -169,7 +169,7 @@ sub get_system_field_info
 		{ name=>"email", type=>"email", required=>1 },
 
 		{ name=>"lang", type=>"datatype", required=>0, 
-			datasetid=>"arclanguage", input_rows=>1 },
+			type_set=>"arclanguage", input_rows=>1 },
 
 		{ name => "editperms", 
 			multiple => 1,
@@ -181,7 +181,7 @@ sub get_system_field_info
 			allow_set_order => 0 },
 
 		{ name => "permission_group", multiple => 1, type => "datatype", 
-			datasetid => "permission_group", },
+			type_set => "permission_group", },
 
 		{ name=>"frequency", type=>"set", 
 			options=>["never","daily","weekly","monthly"] },

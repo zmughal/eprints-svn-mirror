@@ -38,11 +38,11 @@ sub render
 	# Number of users in each group
 	my $total_users = $session->get_repository->get_dataset( "user" )->count( $session );
 
-	my( %num_users, $usertypes, $usertype, $userds, $subds );
-	$userds = $session->get_repository->get_dataset( "user" );
-	$subds = $session->get_repository->get_dataset( "subscription" );
-	$usertypes = $userds->get_types();
-	foreach $usertype ( @{$usertypes} )
+	my %num_users = ();
+	my $userds = $session->get_repository->get_dataset( "user" );
+	my $subds = $session->get_repository->get_dataset( "subscription" );
+	my @usertypes = $session->get_repository->get_types( "user" );
+	foreach my $usertype ( @usertypes )
 	{
 		my $searchexp = new EPrints::Search(
 			session => $session,
@@ -93,14 +93,15 @@ sub render
 	$html->appendChild( $session->html_phrase( "cgi/users/status:usertitle" ) );
 	$html->appendChild( $table );
 	
-	foreach $usertype ( keys %num_users )
+	foreach my $usertype ( keys %num_users )
 	{
+		my $k = $session->make_doc_fragment;
+		$k->appendChild( $session->render_type_name( "user", $usertype ) );
+		$k->appendChild( $session->make_text( ":" ) );
 		$table->appendChild(
 			render_row( 
 				$session,
-				$session->make_text(
-					$userds->get_type_name( $session, $usertype ).
-						":"), 
+				$k, 
 				$session->make_text( $num_users{$usertype} ) ) );
 	}
 	$table->appendChild(

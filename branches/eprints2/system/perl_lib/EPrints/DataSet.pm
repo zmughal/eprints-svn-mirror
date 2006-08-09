@@ -225,7 +225,7 @@ my $INFO = {
 	},
 	# language and security are here so they can be used in
 	# "datatype" fields.
-	language => {},
+	languages => {},
 	arclanguage => {},
 	security => {}
 };
@@ -296,17 +296,6 @@ sub new
 	$self->{types} = {};
 	$self->{type_order} = [];
 
-
-	#TODO
-	if( $id eq "language" )
-	{	
-		foreach( EPrints::Config::get_languages() )
-		{
-			$self->{types}->{$_} = [];
-			push @{$self->{type_order}},$_;
-		}
-		return $self;
-	}
 	#TODO
 	if( $id eq "arclanguage" )
 	{	

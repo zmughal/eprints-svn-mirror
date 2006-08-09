@@ -26,7 +26,7 @@ not done
 
 =cut
 
-# datasetid
+# type_set
 
 package EPrints::MetaField::Datatype;
 
@@ -42,65 +42,38 @@ BEGIN
 
 use EPrints::MetaField::Set;
 
-sub render_single_value
-{
-	my( $self, $session, $value ) = @_;
-	
-	my $ds = $session->get_repository->get_dataset(
-			$self->get_property( "datasetid" ) );
-
-	return $ds->render_type_name( $session, $value );
-}
-
-
-sub tags_and_labels
+sub tags
 {
 	my( $self, $session ) = @_;
 
-	my $ds = $session->get_repository->get_dataset( 
-			$self->{datasetid} );	
-
-	return( $ds->get_types(), $ds->get_type_names( $session ) );
+	return $session->get_repository->get_types( $self->{type_set} );
 }
 
 sub get_unsorted_values
 {
 	my( $self, $session, $dataset, %opts ) = @_;
 
-	my $ds = $session->get_repository->get_dataset( 
-			$self->{datasetid} );	
-	return $ds->get_types();
+	my @types = $session->get_repository->get_types( $self->{type_set} );
+
+	return @types;
 }
 
-sub get_value_label
+sub render_option
 {
 	my( $self, $session, $value ) = @_;
 
-	my $ds = $session->get_repository->get_dataset( 
-			$self->{datasetid} );	
-	return $session->make_text( 
-		$ds->get_type_name( $session, $value ) );
+	return $session->render_type_name( $self->{type_set}, $value );
 }
 
 sub get_property_defaults
 {
 	my( $self ) = @_;
 	my %defaults = $self->SUPER::get_property_defaults;
-	$defaults{datasetid} = $EPrints::MetaField::REQUIRED;
+	$defaults{type_set} = $EPrints::MetaField::REQUIRED;
 	delete $defaults{options}; # inherrited but unwanted
 	return %defaults;
 }
 
-sub get_values
-{
-	my( $self, $session, $dataset, %opts ) = @_;
-
-	my $ds = $session->get_repository->get_dataset(
-		$self->{datasetid} );
-	my @outvalues = @{$ds->get_types()};
-
-	return \@outvalues;
-}
 
 
 ######################################################################

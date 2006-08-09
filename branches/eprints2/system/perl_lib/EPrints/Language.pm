@@ -156,6 +156,7 @@ sub phrase
 				'["'.$phraseid.'" not defined]' ) );
 		$session->get_repository->log( 
 			'Undefined phrase: "'.$phraseid.'" ('.$self->{id}.')' );
+if( $phraseid eq "document_fieldopt_main_Error.pm" ){ EPrints::abort("wheee");}
 	}
 	else
 	{

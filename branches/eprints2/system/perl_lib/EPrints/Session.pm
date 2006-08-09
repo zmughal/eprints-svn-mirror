@@ -1108,6 +1108,42 @@ sub render_language_name
 ######################################################################
 =pod
 
+=item $xhtml = $session->render_type_name( $type_set, $type ) 
+
+Return a DOM object containing the description of the specified type
+in the type set. eg. "eprint", "article"
+
+=cut
+######################################################################
+
+sub render_type_name
+{
+	my( $self, $type_set, $type ) = @_;
+
+        return $self->html_phrase( $type_set."_typename_".$type );
+}
+
+######################################################################
+=pod
+
+=item $string = $session->get_type_name( $type_set, $type ) 
+
+As above, but return a utf-8 string. Used in <option> elements, for
+example.
+
+=cut
+######################################################################
+
+sub get_type_name
+{
+	my( $self, $type_set, $type ) = @_;
+
+        return $self->phrase( $type_set."_typename_".$type );
+}
+
+######################################################################
+=pod
+
 =item $xhtml_name = $session->render_name( $name, [$familylast] )
 
 $name is a ref. to a hash containing family, given etc.

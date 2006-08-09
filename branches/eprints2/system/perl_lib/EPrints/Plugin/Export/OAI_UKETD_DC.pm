@@ -189,7 +189,7 @@ sub eprint_to_uketd_dc
 	
 	
 		my $ds = $eprint->get_dataset();
-		push @etddata, [ "type", $ds->get_type_name( $session, $eprint->get_value( "type" ) ), "dc" ];
+		push @etddata, [ "type", $session->get_type_name( "eprint", $eprint->get_value( "type" ) ), "dc" ];
 		
 		# The URL of the abstract page is the dcterms isreferencedby
 		push @etddata, [ "isReferencedBy", $eprint->get_url(), "dcterms" ];

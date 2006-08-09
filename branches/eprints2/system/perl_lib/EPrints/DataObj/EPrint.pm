@@ -138,7 +138,7 @@ sub get_system_field_info
 	{ name=>"status_changed", type=>"time", required=>0, import=>0,
 		render_res=>"minute", can_clone=>0 },
 
-	{ name=>"type", type=>"datatype", datasetid=>"eprint", required=>1, 
+	{ name=>"type", type=>"datatype", type_set=>"eprint", required=>1, 
 		input_rows=>"ALL" },
 
 	{ name=>"succeeds", type=>"itemref", required=>0,
@@ -1194,8 +1194,7 @@ sub validate_documents
 		{
 			my $li = $self->{session}->make_element( "li" );
 			$ul->appendChild( $li );
-			$li->appendChild( $doc_ds->render_type_name( 
-				$self->{session}, $_ ) );
+			$li->appendChild( $self->{session}->render_type_name( "document", $_ ) );
 		}
 			
 		push @problems, $prob;

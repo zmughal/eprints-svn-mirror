@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+
+
+<!-- types for document -->
+
+<types xmlns="http://eprints.org/ep3/types">
+
+    <type name="cc_by_nd" />
+    <type name="cc_by" />
+    <type name="cc_by_nc" />
+    <type name="cc_by_nc_nd" />
+    <type name="cc_by_nc_sa" />
+    <type name="cc_by_sa" />
+    <type name="cc_public_domain" />
+    <type name="cc_gnu_gpl" />
+    <type name="cc_gnu_lgpl" />
+
+</types>
