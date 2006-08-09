@@ -18,11 +18,11 @@
 package EPrints::Config::devel;
 
 foreach my $file ( 
-	"cfg/ArchiveOAIConfig.pm",
-	"cfg/ArchiveRenderConfig.pm",
-	"cfg/ArchiveValidateConfig.pm",
-	"cfg/ArchiveTextIndexingConfig.pm",
-	"cfg/ArchiveMetadataFieldsConfig.pm" )
+	"cfg/OAI.pm",
+	"cfg/Render.pm",
+	"cfg/Validate.pm",
+	"cfg/Indexing.pm",
+	"cfg/Fields.pm" )
 {
 	unless (my $return = do $file) {
 		warn "couldn't parse $file: $@" if $@;

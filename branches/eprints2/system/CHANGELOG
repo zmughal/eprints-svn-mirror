@@ -4047,3 +4047,4 @@ PACKAGE: 2.2.99.2
  * Nerfed get_fields_required_for_type as it won't be used soon.
  * Datasets no longer have types (actually they still do in the code, but
     the don't conceptually)
+ * Renamed archive config perl modules to have shorter names.
