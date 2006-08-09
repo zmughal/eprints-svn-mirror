@@ -4049,3 +4049,6 @@ PACKAGE: 2.2.99.2
     the don't conceptually)
  * Renamed archive config perl modules to have shorter names.
  * Fixed typos in types/eprint.xml
+ * Shifted /en/ to be /lang/en/ in .../cfg/ and /lib/
+ * Made systems phrases file be in a phrases dir, so there can later be
+    other top level phrase files (eg. for plugins)

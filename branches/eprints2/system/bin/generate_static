@@ -150,7 +150,7 @@ foreach $langid ( @{$session->get_repository->get_conf( "languages" )} )
 {
 	print "Starting language $langid...\n" if( $noise >=1 );
 	my $basepath = $session->get_repository->get_conf( "config_path" ).
-	               "/$langid/static";
+	               "/lang/$langid/static";
 	my $func;
 	$func = sub { generate_static( $langid, $basepath, $session, \$errcnt ) };
 	find( { wanted=>$func, follow=>1 }, $basepath );

@@ -354,8 +354,8 @@ sub new
 			$self->{field_index}->{$field->get_name()} = $field;
 		}
 	}
-print STDERR Dumper( $typesconf );
-use Data::Dumper;
+
+	# deprecate this!
 	if( defined $typesconf->{$self->{confid}} )
 	{
 		$self->{type_order} = $typesconf->{$self->{confid}};
@@ -364,6 +364,9 @@ use Data::Dumper;
 			$self->{types}->{$typeid} = 1;
 		}
 	}
+
+
+
 
 	# lock these metadata fields against being modified again.
 	foreach my $field ( @{$self->{fields}} )

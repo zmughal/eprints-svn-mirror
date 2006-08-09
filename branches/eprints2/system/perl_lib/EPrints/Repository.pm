@@ -387,7 +387,7 @@ sub _load_citation_specs
 	foreach $langid ( @{$self->get_conf( "languages" )} )
 	{
 		my $dir = $self->get_conf( "config_path" ).
-				"/$langid/citations";
+				"/lang/$langid/citations";
 		my $dh;
 		opendir( $dh, $dir );
 		my @dirs = ();
@@ -500,7 +500,7 @@ sub _load_templates
 
 	foreach my $langid ( @{$self->get_conf( "languages" )} )
 	{
-		my $dir = $self->get_conf( "config_path" )."/$langid/templates";
+		my $dir = $self->get_conf( "config_path" )."/lang/$langid/templates";
 		my $dh;
 		opendir( $dh, $dir );
 		my @template_files = ();
@@ -514,7 +514,7 @@ sub _load_templates
 		foreach my $fn ( @template_files )
 		{
 			my $file = $self->get_conf( "config_path" ).
-				"/$langid/templates/$fn";
+				"/lang/$langid/templates/$fn";
 			my $id = $fn;
 			$id=~s/\.xml$//;
 

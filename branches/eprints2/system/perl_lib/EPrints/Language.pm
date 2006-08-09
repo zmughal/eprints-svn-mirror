@@ -86,7 +86,7 @@ sub new
 
 	$self->{repository_data} = $self->_read_phrases( 
 		$repository->get_conf( "config_path" ).
-			"/".$self->{id}."/phrases.xml", 
+			"/lang/".$self->{id}."/phrases.xml", 
 		$repository );
 	
 	if( !defined  $self->{repository_data} )
@@ -96,7 +96,7 @@ sub new
 
 	$self->{data} = $self->_read_phrases( 
 		EPrints::Config::get( "lib_path" ).
-			"/".$self->{id}."/system-phrases.xml", 
+			"/lang/".$self->{id}."/phrases/system.xml", 
 		$repository );
 
 	if( !defined  $self->{data} )
