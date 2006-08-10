@@ -31,7 +31,7 @@ This script will prompt the user for various basic information about the reposit
   - copy default files into the repository directory
   - create the MySQL database (but not the tables)
 
-After running this script you should edit the files created in the repository B<cfg> directory, especially B<ArchiveConfig.pm> then you will need to run a number of setup scripts, starting with B<create_tables>.
+After running this script you should edit the files created in the repository B<cfg> directory, especially B<Config.pm> then you will need to run a number of setup scripts, starting with B<create_tables>.
 
 =head1 ARGUMENTS
 
@@ -173,7 +173,7 @@ else
 	$config{host} = undef;
 	$config{urlpath} = '/';
 	$config{archiveroot} = "archives/".$repoid;
-	$config{configmodule} = "cfg/ArchiveConfig.pm";
+	$config{configmodule} = "cfg/Config.pm";
 	$config{aliases} = [];
 	$config{dbname} = $repoid;
 	$config{dbhost} = "localhost";
@@ -618,7 +618,7 @@ sub install
 		open(OUTFILE, ">$dest/$_") or die "Can't write to $dest/$_";
 		while(my $line=<INFILE>)
 		{
-			if( $_ eq "ArchiveConfig.pm" && $line=~m/^package/ )
+			if( $_ eq "Config.pm" && $line=~m/^package/ )
 			{
 				#hack about with the config module
 				$line = "package EPrints::Config::$repoid;\n";
