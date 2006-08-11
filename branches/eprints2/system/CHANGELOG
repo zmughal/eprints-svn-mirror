@@ -4101,3 +4101,9 @@ PACKAGE: 2.2.99.2
  * Added missing Fields.pm
  * Added missing languages.xml
 
+2006-08-11 tmb
+ * Lists on Items and Editorial Review screens are now paginated
+ * Added sorting functionality to Editorial Review screen
+ * Added simple default template for rendering pages
+
+
