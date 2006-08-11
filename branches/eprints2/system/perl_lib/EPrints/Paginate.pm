@@ -227,21 +227,24 @@ sub paginate_list
 
 	$start_page = 0 if $start_page < 0; # normalise
 	$end_page = $num_pages if $end_page > $num_pages; # normalise
-	for( $start_page..$end_page )
+	unless( $start_page == $end_page ) # only one page, don't need jumps
 	{
-		my $jumplink;
-		if( $_ != $cur_page )
+		for( $start_page..$end_page )
 		{
-			my $jumpurl = "$url&$basename\_offset=" . $_ * $pagesize;
-			$jumplink = $session->render_link( $jumpurl );
-			$jumplink->appendChild( $session->make_text( $_ + 1 ) );
+			my $jumplink;
+			if( $_ != $cur_page )
+			{
+				my $jumpurl = "$url&$basename\_offset=" . $_ * $pagesize;
+				$jumplink = $session->render_link( $jumpurl );
+				$jumplink->appendChild( $session->make_text( $_ + 1 ) );
+			}
+			else
+			{
+				$jumplink = $session->make_element( "strong" );
+				$jumplink->appendChild( $session->make_text( $_ + 1 ) );
+			}
+			push @controls, $jumplink;
 		}
-		else
-		{
-			$jumplink = $session->make_element( "strong" );
-			$jumplink->appendChild( $session->make_text( $_ + 1 ) );
-		}
-		push @controls, $jumplink;
 	}
 
 	# Next page link
