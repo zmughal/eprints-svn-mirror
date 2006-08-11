@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+
+<!-- language choices for documents etc. -->
+
+<types xmlns="http://eprints.org/ep3/types">
+
+  <type name="?" />
+  <type name="en" />
+  <type name="da" />
+  <type name="de" />
+  <type name="el" />
+  <type name="fr" />
+  <type name="nl" />
+  <type name="no" />
+  <type name="pl" />
+  <type name="pt" />
+  <type name="ru" />
+  <type name="sv" />
+
+</types>
+
+
