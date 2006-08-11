@@ -6,9 +6,8 @@ use strict;
 my $session = new EPrints::Session();
 exit( 1 ) unless( defined $session );
 
-# TODO: Validate input
-
-# Get requested document
+# What is being requested? Need:
+# valid docid OR valid eprintid (and eprint must have 0 docs)
 my $docid = $session->param( "docid" );
 my $doc = EPrints::DataObj::Document->new( $session, $docid );
 my $eprint;
@@ -16,9 +15,7 @@ if( !defined $doc )
 {
 	my $eprintid = $session->param( "eprintid" );
 	$eprint = EPrints::DataObj::EPrint->new( $session, $eprintid );
-	# if no docid is specified we need a valid eprint
 	&_error( $session ) if !defined $eprint || $eprint->get_value( "metadata_visibility" ) eq "hide";
-	# ..and the eprint must have no documents
 	&_error( $session ) if $eprint->get_value( "full_text_status" ) ne "none";
 }
 else
@@ -26,13 +23,13 @@ else
 	$eprint = $doc->get_eprint;
 }
 
-# Check requested document isn't already OA
+# No point if requested document is already OA
 if( defined $doc )
 {
 	&_error( $session ) if !$doc->is_set( "security" ) || $doc->get_value( "security" ) eq "";
 }
 
-# Check contact email for this eprint
+# Need a contact email
 my $contact_email = undef;
 if( $session->get_repository->can_call( "email_for_doc_request" ) ) 
 {
@@ -82,7 +79,7 @@ if( defined( $email ) && $email ne "" )
 	# Send request email
 	my $subject = $session->phrase( "request/request_email:subject", eprint => $eprint->get_value( "title" ) );
 	my $mail = $session->make_element( "mail" );
-	$mail->appendChild($session->html_phrase(
+	$mail->appendChild( $session->html_phrase(
 		"request/request_email:body", 
 		eprint => $eprint->render_citation_link,
 		document => defined $doc ? $doc->render_citation_link : $session->make_doc_fragment,
