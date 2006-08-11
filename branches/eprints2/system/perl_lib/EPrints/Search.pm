@@ -1275,7 +1275,7 @@ sub _dopage_results
 	);
 
 	my %opts = (
-		bits => \%bits,
+		pins => \%bits,
 		controls_before => \@controls_before,
 		phrase => "lib/searchexpression:results_page",
 		params => { 

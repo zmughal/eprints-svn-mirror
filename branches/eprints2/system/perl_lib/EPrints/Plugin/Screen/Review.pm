@@ -33,32 +33,54 @@ sub render
 
 	$self->{processor}->{title} = $self->{session}->html_phrase( "cgi/users/buffer:overview_title" ), 
 
-	my( $page, $p, $table, $tr, $td, $th, $link );
-
-	$page = $self->{session}->make_doc_fragment();
-
-	# Get EPrints in the submission buffer
-	my $list = $user->get_editable_eprints();
-	
-	if( $list->count == 0 )
-	{
-		# No EPrints
-		$page->appendChild( $self->{session}->html_phrase( 
-			"cgi/users/buffer:no_entries",
-			scope=>$user->render_value( "editperms" ) ) );
-		return $page;
-	}
+	my $page = $self->{session}->make_doc_fragment();
 
 	$page->appendChild( $self->{session}->html_phrase( 
 		"cgi/users/buffer:buffer_blurb",
 		scope=>$user->render_value( "editperms" ) ) );
 
-	$table = $self->{session}->make_element( "table", border=>0, cellpadding=>4, cellspacing=>0 );
-	$page->appendChild( $table );
-	$tr = $self->{session}->make_element( "tr", class=>"header_plain" );
+	# Filtering/sorting options
+	my $form = $self->{session}->render_form( "GET" );
+	$page->appendChild( $form );
+
+	my $sort_order = $self->{session}->param( "_order" );
+	my $search = EPrints::Search->new(
+		session => $self->{session},
+		dataset => $self->{session}->get_repository->get_dataset( "eprint" ),
+		order => $sort_order,
+	);
+	$form->appendChild( $search->render_order_menu );
+
+	my $basename = "_review";
+	my $offset = $self->{session}->param( "$basename\_offset" );
+	if( defined $offset && $offset ne "" )
+	{
+		$form->appendChild( $self->{session}->render_hidden_field( "$basename\_offset", $offset ) );
+	}
+	$form->appendChild( $self->{session}->render_hidden_field( "screen", "Review" ) );
+	$form->appendChild( $self->{session}->render_action_buttons( submit => "Submit" ) ); 
+
+	# TODO Add filters that respect editorial scope
+	#my $fieldnames = $self->{session}->get_repository->get_conf( "editor_limit_fields" );
+	#foreach my $sv ( @{ $user->get_value( "editperms" ) } )
+	#{
+	#	my $data = EPrints::Search::Field->unserialise( $sv );
+	#}
+	
+	# Get EPrints in the submission buffer
+	my $list = $user->get_editable_eprints();
+	if( defined $sort_order && $sort_order ne "" )
+	{
+		my $order = $self->{session}->get_repository->get_conf( "order_methods" , "eprint", $sort_order );
+		$list = $list->reorder( $order );
+	}
+
+	# Headers for paginated list
+	my $table = $self->{session}->make_element( "table", border=>0, cellpadding=>4, cellspacing=>0, width=>"100%" );
+	my $tr = $self->{session}->make_element( "tr", class=>"header_plain" );
 	$table->appendChild( $tr );
 	
-	$th = $self->{session}->make_element( "th" );
+	my $th = $self->{session}->make_element( "th" );
 	$th->appendChild( $self->{session}->html_phrase( "cgi/users/buffer:title" ) );
 	$tr->appendChild( $th );
 
@@ -69,44 +91,68 @@ sub render
 	$th = $self->{session}->make_element( "th" );
 	$th->appendChild( $self->{session}->html_phrase( "cgi/users/buffer:sub_date" ) );
 	$tr->appendChild( $th );
+	
+	my %bits;
+	if( $list->count == 0 )
+	{
+		# Empty list
+		$bits{searchdesc} = $self->{session}->html_phrase( 
+			"cgi/users/buffer:no_entries",
+			scope=>$user->render_value( "editperms" ) );
+	}
+	else
+	{
+		$bits{searchdesc} = $user->render_value( "editperms" );
+	}
 
 	my $info = {row => 1};
+	my %opts = (
+		params => {
+			screen => "Review",
+			_order => defined $sort_order ? $sort_order : "",
+		},
+		container => $table,
+		pins => \%bits,
+		render_result_params => $info,
+		render_result => sub {
+			my( $session, $e, $info ) = @_;
 
-	$list->map( sub {
-		my( $session, $dataset, $e, $info ) = @_;
+			my $tr = $session->make_element( "tr", class=>"row_".($info->{row}%2?"b":"a") );
 
-		$tr = $session->make_element( "tr", class=>"row_".($info->{row}%2?"b":"a") );
-		$table->appendChild( $tr );
-
-		# Title
-		$td = $session->make_element( "td", class=>"first_col" );
-		$tr->appendChild( $td );
-		$link = $session->render_link( "?screen=EPrint::View::Editor&eprintid=".$e->get_value("eprintid") );
-		$link->appendChild( $e->render_description() );
-		$td->appendChild( $link );
+			# Title
+			my $td = $session->make_element( "td", class=>"first_col" );
+			$tr->appendChild( $td );
+			my $link = $session->render_link( "?screen=EPrint::View::Editor&eprintid=".$e->get_value("eprintid") );
+			$link->appendChild( $e->render_description() );
+			$td->appendChild( $link );
 		
-		# Link to user
-		my $user = new EPrints::User( $session, $e->get_value( "userid" ) );
+			# Link to user
+			my $user = new EPrints::User( $session, $e->get_value( "userid" ) );
 		
-		$td = $session->make_element( "td", class=>"middle_col" );
-		$tr->appendChild( $td );
-		if( defined $user )
-		{
-#cjg Has view-user priv?
-			$td->appendChild( $user->render_citation_link( undef, 1 ) );
-		}
-		else
-		{
-			$td->appendChild( $session->html_phrase( "cgi/users/buffer:invalid" ) );
-		}
+			$td = $session->make_element( "td", class=>"middle_col" );
+			$tr->appendChild( $td );
+			if( defined $user )
+			{
+				#cjg Has view-user priv?
+				$td->appendChild( $user->render_citation_link( undef, 1 ) );
+			}
+			else
+			{
+				$td->appendChild( $session->html_phrase( "cgi/users/buffer:invalid" ) );
+			}
 	
-		my $buffds = $session->get_repository->get_dataset( "buffer" );	
+			my $buffds = $session->get_repository->get_dataset( "buffer" );	
 		
-		$td = $session->make_element( "td", class=>"last_col" );
-		$tr->appendChild( $td );
-		$td->appendChild( $buffds->get_field( "datestamp" )->render_value( $session, $e->get_value( "datestamp" ) ) );
-		++$info->{row};
-	}, $info );
+			$td = $session->make_element( "td", class=>"last_col" );
+			$tr->appendChild( $td );
+			$td->appendChild( $buffds->get_field( "datestamp" )->render_value( $session, $e->get_value( "datestamp" ) ) );
+			++$info->{row};
+
+			return $tr;
+		},
+	);
+	$page->appendChild( EPrints::Paginate->paginate_list( $self->{session}, $basename, $list, %opts ) );
+
 
 	return $page;
 }

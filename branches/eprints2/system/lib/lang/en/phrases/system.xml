@@ -161,6 +161,17 @@ EPrints Modules
     <ep:phrase id="lib/extras:subject_browser_no_matches"><p>No matches</p></ep:phrase>
 
 
+<!-- List Pagination -->
+<ep:phrase id="lib/list:page">
+<ep:pin ref="controls" />
+<p>
+	<ep:pin ref="searchdesc" />
+	<br />
+	<ep:pin ref="matches" />
+</p>
+<ep:pin ref="results" />
+<ep:pin ref="controls_if_matches" />
+</ep:phrase>
 
 <!-- Search (used to be SearchExpression) -->
 

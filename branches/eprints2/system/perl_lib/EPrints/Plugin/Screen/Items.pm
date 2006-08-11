@@ -105,66 +105,83 @@ sub render
 
 	$chunk->appendChild( $dl );	
 
-
 	### Get the items in the buffer
 	my $ds = $self->{session}->get_repository->get_dataset( "eprint" );
 	my $list = $self->{session}->current_user->get_owned_eprints( $ds );
 	$list = $list->reorder( "-status_changed" );
 
+	my $table = $self->{session}->make_element( "table", cellspacing=>0, width => "100%" );
+	my $tr = $self->{session}->make_element( "tr", class=>"header_plain" );
+	$table->appendChild( $tr );
 
-	if( $list->count == 0 )
-	{
-		$chunk->appendChild( $self->{session}->html_phrase( "cgi/users/home:no_pending" ) );
-		return $chunk;
-	}
+	my $th = $self->{session}->make_element( "th" );
+	$th->appendChild( $ds->get_field( "eprint_status" )->render_name( $self->{session} ) );
+	$tr->appendChild( $th );
 
-	my $table = $self->{session}->make_element( "table", cellspacing=>0 );
-	$chunk->appendChild( $table );
-	$list->map( sub {
-		my( $session, $dataset, $e ) = @_; 
+	$th = $self->{session}->make_element( "th" );
+	$th->appendChild( $ds->get_field( "status_changed" )->render_name( $self->{session} ) );
+	$tr->appendChild( $th );
 
-		my $tr = $session->make_element( "tr" );
+	$th = $self->{session}->make_element( "th" );
+	$th->appendChild( $ds->get_field( "title" )->render_name( $self->{session} ) );
+	$tr->appendChild( $th );
 
-		my $style = "";
-		my $status = $e->get_value( "eprint_status" );
+	my %opts = (
+		params => {
+			screen => "Items",
+		},
+		container => $table,
+		pins => {
+			searchdesc => $self->{session}->make_doc_fragment,
+		},
+		render_result => sub {
+			my( $session, $e ) = @_;
 
-		if( $status eq "inbox" )
-		{
-			$style="background-color: #ffc;";
-		}
-		if( $status eq "buffer" )
-		{
-			$style="background-color: #ddf;";
-		}
-		if( $status eq "archive" )
-		{
-			$style="background-color: #cfc;";
-		}
-		if( $status eq "deletion" )
-		{
-			$style="background-color: #ccc;";
-		}
-		$style.=" border-bottom: 1px solid #888; padding: 4px;";
+			my $tr = $session->make_element( "tr" );
 
-		my $td;
+			my $style = "";
+			my $status = $e->get_value( "eprint_status" );
 
-		$td = $session->make_element( "td", style=>$style." text-align: center;" );
-		$tr->appendChild( $td );
-		$td->appendChild( $e->render_value( "eprint_status" ) );
+			if( $status eq "inbox" )
+			{
+				$style="background-color: #ffc;";
+			}
+			if( $status eq "buffer" )
+			{
+				$style="background-color: #ddf;";
+			}
+			if( $status eq "archive" )
+			{
+				$style="background-color: #cfc;";
+			}
+			if( $status eq "deletion" )
+			{
+				$style="background-color: #ccc;";
+			}
+			$style.=" border-bottom: 1px solid #888; padding: 4px;";
 
-		$td = $session->make_element( "td", style=>$style );
-		$tr->appendChild( $td );
-		$td->appendChild( $e->render_value( "status_changed" ) );
+			my $td;
 
-		$td = $session->make_element( "td", style=>$style );
-		$tr->appendChild( $td );
-		my $a = $session->render_link( "?eprintid=".$e->get_id."&screen=EPrint::View::Owner" );
-		$a->appendChild( $e->render_description() );
-		$td->appendChild( $a );
-		
-		$table->appendChild( $tr );
-	} );
+			$td = $session->make_element( "td", style=>$style." text-align: center;" );
+			$tr->appendChild( $td );
+			$td->appendChild( $e->render_value( "eprint_status" ) );
 
+			$td = $session->make_element( "td", style=>$style );
+			$tr->appendChild( $td );
+			$td->appendChild( $e->render_value( "status_changed" ) );
+
+			$td = $session->make_element( "td", style=>$style );
+			$tr->appendChild( $td );
+			my $a = $session->render_link( "?eprintid=".$e->get_id."&screen=EPrint::View::Owner" );
+			$a->appendChild( $e->render_description() );
+			$td->appendChild( $a );
+			
+			return $tr;
+		},
+	); 
+	$chunk->appendChild( EPrints::Paginate->paginate_list( $self->{session}, "_buffer", $list, %opts ) );
+
+	# TODO: alt phrase for empty list e.g. "cgi/users/home:no_pending"
 
 	return $chunk;
 }

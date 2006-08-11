@@ -110,12 +110,12 @@ prev/next/jump links (only if list contains >0 items)
 
 =back
 
-These can be overridden in the "bits" option (below).
+These can be overridden in the "pins" option (below).
 
-=item bits
+=item pins
 
-Named "bits" to render on the page. These may override the default 
-"bits" (see above), or specify new "bits" (although you would need 
+Named "pins" to render on the page. These may override the default 
+"pins" (see above), or specify new "pins" (although you would need 
 to define a custom phrase in order to make use of them).
 
 =back
@@ -135,10 +135,12 @@ sub paginate_list
 	my $plast = $offset + $pagesize;
 	$plast = $n_results if $n_results< $plast;
 
-	my %bits = ();
+	my %pins = ();
 	
 	if( scalar $n_results > 0 )
 	{
+		# TODO default phrase for item range
+		# TODO override default phrase with opts
 		my %numbers = ();
 		$numbers{from} = $session->make_element( "span", class=>"ep_search_number" );
 		$numbers{from}->appendChild( $session->make_text( $offset+1 ) );
@@ -146,16 +148,18 @@ sub paginate_list
 		$numbers{to}->appendChild( $session->make_text( $plast ) );
 		$numbers{n} = $session->make_element( "span", class=>"ep_search_number" );
 		$numbers{n}->appendChild( $session->make_text( $n_results ) );
-		$bits{matches} = $session->html_phrase( "lib/searchexpression:results", %numbers );
+		$pins{matches} = $session->html_phrase( "lib/searchexpression:results", %numbers );
 	}
 	else
 	{
-		$bits{matches} = 
+		# TODO default phrase for empty list
+		# override default phrase with opts
+		$pins{matches} = 
 			$session->html_phrase( 
 				"lib/searchexpression:noresults" );
 	}
 
-	$bits{searchdesc} = $list->render_description;
+	$pins{searchdesc} = $list->render_description;
 
 	# Add params to action urls
 	my $url = $session->get_uri . "?";
@@ -264,23 +268,30 @@ sub paginate_list
 		}
 	}
 
-	$bits{controls} = $session->make_element( "div", class=>"ep_search_controls" );
-	for( @controls )
+	if( scalar @controls )
 	{
-		my $cspan = $session->make_element( 'span', class=>"ep_search_control" );
-		$cspan->appendChild( $_ );
-		$bits{controls}->appendChild( $cspan );
-		$bits{controls}->appendChild( $session->html_phrase( "lib/searchexpression:seperator" ) );
+		$pins{controls} = $session->make_element( "div", class=>"ep_search_controls" );
+		for( @controls )
+		{
+			my $cspan = $session->make_element( 'span', class=>"ep_search_control" );
+			$cspan->appendChild( $_ );
+			$pins{controls}->appendChild( $cspan );
+			$pins{controls}->appendChild( $session->html_phrase( "lib/searchexpression:seperator" ) );
+		}
+	}
+	else
+	{
+		$pins{controls} = $session->make_doc_fragment;
 	}
 
 	# Container for results (e.g. table, div..)
 	if( defined $opts{container} )
 	{
-		$bits{results} = $opts{container};
+		$pins{results} = $opts{container};
 	}
 	else
 	{
-		$bits{results} = $session->make_doc_fragment;
+		$pins{results} = $session->make_doc_fragment;
 	}
 
 	foreach my $result ( @results )
@@ -291,43 +302,42 @@ sub paginate_list
 			# Custom rendering routine specified
 			my $params = $opts{render_result_params};
 			my $custom = &{ $opts{render_result} }( $session, $result, $params );
-			$bits{results}->appendChild( $custom );
+			$pins{results}->appendChild( $custom );
 		}
 		else
 		{
 			# Default: render citation
 			my $div = $session->make_element( "div", class=>"ep_search_result" );
 			$div->appendChild( $result->render_citation_link() ); 
-			$bits{results}->appendChild( $div );
+			$pins{results}->appendChild( $div );
 		}
 	}
 	
 	if( $n_results > 0 )
 	{
 		# Only print a second set of controls if there are matches.
-		$bits{controls_if_matches} = EPrints::XML::clone_node( $bits{controls}, 1 );
+		$pins{controls_if_matches} = EPrints::XML::clone_node( $pins{controls}, 1 );
 	}
 	else
 	{
-		$bits{controls_if_matches} = $session->make_doc_fragment;
+		$pins{controls_if_matches} = $session->make_doc_fragment;
 	}
 
 	# Render a page of results
-	my $custom_bits = $opts{bits};
-	for( keys %$custom_bits )
+	my $custom_pins = $opts{pins};
+	for( keys %$custom_pins )
 	{
-		$bits{$_} = $custom_bits->{$_} if defined $custom_bits->{$_};
+		$pins{$_} = $custom_pins->{$_} if defined $custom_pins->{$_};
 	}
 	my $page;
 	if( defined $opts{phrase} )
 	{
-		$page = $session->html_phrase( $opts{phrase}, %bits );
+		$page = $session->html_phrase( $opts{phrase}, %pins );
 	}
 	else
 	{
 		# Default: use built-in phrase
-		# TODO: make a basic phrase for paginated list
-		$page = $session->html_phrase( "lib/searchexpression:results_page", %bits );
+		$page = $session->html_phrase( "lib/list:page", %pins );
 	}
 	return $page;
 }
