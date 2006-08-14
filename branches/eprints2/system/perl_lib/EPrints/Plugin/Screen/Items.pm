@@ -119,7 +119,7 @@ sub render
 	$tr->appendChild( $th );
 
 	$th = $self->{session}->make_element( "th" );
-	$th->appendChild( $ds->get_field( "status_changed" )->render_name( $self->{session} ) );
+	$th->appendChild( $ds->get_field( "lastmod" )->render_name( $self->{session} ) );
 	$tr->appendChild( $th );
 
 	$th = $self->{session}->make_element( "th" );
@@ -168,7 +168,7 @@ sub render
 
 			$td = $session->make_element( "td", style=>$style );
 			$tr->appendChild( $td );
-			$td->appendChild( $e->render_value( "status_changed" ) );
+			$td->appendChild( $e->render_value( "lastmod" ) );
 
 			$td = $session->make_element( "td", style=>$style );
 			$tr->appendChild( $td );

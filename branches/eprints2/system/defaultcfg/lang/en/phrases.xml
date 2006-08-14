@@ -270,6 +270,10 @@ Date of submission is required if the item has no date of issue. If the item has
     <ep:phrase id="ordername_eprint_byname">by author's name</ep:phrase>
     <ep:phrase id="ordername_eprint_bytitle">by title</ep:phrase>
 
+    <ep:phrase id="ordername_eprint_bytitlerev">by title (reverse)</ep:phrase>
+    <ep:phrase id="ordername_eprint_bystatuschanged">by status changed (most recent first)</ep:phrase>
+    <ep:phrase id="ordername_eprint_bystatuschangedoldest">by status changed (oldest first)</ep:phrase>
+
 <!-- Browse Views Names -->
 
     <ep:phrase id="viewname_eprint_people">Person</ep:phrase>

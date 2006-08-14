@@ -109,6 +109,7 @@ EPrints Modules
     <ep:phrase id="lib/metafield:more_langs">More Languages</ep:phrase>
     <ep:phrase id="lib/metafield:unspecified"><pin ref="fieldname" /> UNSPECIFIED</ep:phrase>
     <ep:phrase id="lib/metafield:unspecified_selection">UNSPECIFIED</ep:phrase>
+    <ep:phrase id="lib/metafield:unspecified_editperms">No Restrictions</ep:phrase>
     <ep:phrase id="lib/metafield:true">Yes</ep:phrase>
     <ep:phrase id="lib/metafield:false">No</ep:phrase>
 

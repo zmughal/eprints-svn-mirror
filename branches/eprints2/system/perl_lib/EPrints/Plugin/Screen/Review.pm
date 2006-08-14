@@ -35,11 +35,20 @@ sub render
 
 	my $page = $self->{session}->make_doc_fragment();
 
+	# Get EPrints in the submission buffer
+	my $list = $user->get_editable_eprints();
+
+	if( $list->count == 0 )
+	{
+		# Empty list
+		return $self->{session}->html_phrase( "cgi/users/buffer:no_entries", scope=>$self->_get_scope( $user ) );
+	}
+
 	$page->appendChild( $self->{session}->html_phrase( 
 		"cgi/users/buffer:buffer_blurb",
-		scope=>$user->render_value( "editperms" ) ) );
+		scope=>$self->_get_scope( $user ) ) );
 
-	# Filtering/sorting options
+	# Sorting options
 	my $form = $self->{session}->render_form( "GET" );
 	$page->appendChild( $form );
 
@@ -68,11 +77,9 @@ sub render
 	#	my $data = EPrints::Search::Field->unserialise( $sv );
 	#}
 	
-	# Get EPrints in the submission buffer
-	my $list = $user->get_editable_eprints();
 	if( defined $sort_order && $sort_order ne "" )
 	{
-		my $order = $self->{session}->get_repository->get_conf( "order_methods" , "eprint", $sort_order );
+		my $order = $self->{session}->get_repository->get_conf( "order_methods" , "eprint.review", $sort_order );
 		$list = $list->reorder( $order );
 	}
 
@@ -93,19 +100,6 @@ sub render
 	$th->appendChild( $self->{session}->html_phrase( "cgi/users/buffer:sub_date" ) );
 	$tr->appendChild( $th );
 	
-	my %bits;
-	if( $list->count == 0 )
-	{
-		# Empty list
-		$bits{searchdesc} = $self->{session}->html_phrase( 
-			"cgi/users/buffer:no_entries",
-			scope=>$user->render_value( "editperms" ) );
-	}
-	else
-	{
-		$bits{searchdesc} = $user->render_value( "editperms" );
-	}
-
 	my $info = {row => 1};
 	my %opts = (
 		params => {
@@ -113,7 +107,9 @@ sub render
 			_order => defined $sort_order ? $sort_order : "",
 		},
 		container => $table,
-		pins => \%bits,
+		pins => {
+			searchdesc => $self->_get_scope( $user ),
+		},
 		render_result_params => $info,
 		render_result => sub {
 			my( $session, $e, $info ) = @_;
@@ -146,7 +142,7 @@ sub render
 		
 			$td = $session->make_element( "td", class=>"last_col" );
 			$tr->appendChild( $td );
-			$td->appendChild( $buffds->get_field( "datestamp" )->render_value( $session, $e->get_value( "datestamp" ) ) );
+			$td->appendChild( $buffds->get_field( "status_changed" )->render_value( $session, $e->get_value( "status_changed" ) ) );
 			++$info->{row};
 
 			return $tr;
@@ -156,6 +152,19 @@ sub render
 
 
 	return $page;
+}
+
+sub _get_scope
+{
+	my( $self, $user ) = @_;
+	if( $user->is_set( "editperms" ) )
+	{
+		return $user->render_value( "editperms" );
+	}
+	else
+	{
+		return $self->{session}->html_phrase( "lib/metafield:unspecified_editperms" );
+	}
 }
 
 # ignore the form. We're screwed at this point, and are just reporting.

@@ -4109,3 +4109,11 @@ PACKAGE: 2.2.99.2
 2006-08-14 cjg
  * Added order_methods param to searches to override default options.
  * Added custom order list for editorial review screen.
+
+2006-08-14 tmb
+ * Deprecated get_order_names and get_order_name
+ * render_order_menu in Search now renders labels for its order_methods 
+ * Added specific configuration options for sorting methods on editorial 
+    review screen
+ * Displayed the right datetime info on items (lastmod) and review 
+    (status_changed) screens

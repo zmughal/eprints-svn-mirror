@@ -686,12 +686,19 @@ sub render_order_menu
 
 	my $methods = $self->order_methods;
 
+	my %labels = ();
+	foreach( keys %$methods )
+	{
+                $labels{$_} = $self->{session}->phrase(
+                	"ordername_".$self->{dataset}->confid() . "_" . $_ );
+        }
+
 	my $menu = $self->{session}->render_option_list(
 		name=>$self->{prefix}."_order",
 		values=>[keys %{$methods}],
 		default=>$order,
-		labels=>$self->{session}->get_order_names( 
-						$self->{dataset} ) );
+		labels=>\%labels );
+
 	my $div = $self->{session}->make_element( 
 		"div" , 
 		class => "ep_search_ordermenu" );
