@@ -4106,4 +4106,6 @@ PACKAGE: 2.2.99.2
  * Added sorting functionality to Editorial Review screen
  * Added simple default template for rendering pages
 
-
+2006-08-14 cjg
+ * Added order_methods param to searches to override default options.
+ * Added custom order list for editorial review screen.

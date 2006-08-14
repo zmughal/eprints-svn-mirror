@@ -165,6 +165,12 @@ rather than the public URL.
 The ID of a sort order (from ArchiveConfig) which will be the default
 option when the search form is rendered.
 
+=item order_methods
+
+An optional hash mapping order id to a custom order definition.
+Only required for Searches generating a web interface. If not specified
+then the default for the dataset is used.
+
 =item controls ( default {top=>0, bottom=>1} )
 
 A hash containing two values: top and bottom. If top is true then
@@ -203,7 +209,7 @@ being mentioned in the description of the search.
 	"keep_cache", 	"cache_id", 	"prefix", 	"defaults",
 	"citation", 	"page_size", 	"filters", 	"default_order",
 	"preamble_phrase", 		"title_phrase", "search_fields",
-	"controls" );
+	"controls",	"order_methods" );
 
 sub new
 {
@@ -678,14 +684,11 @@ sub render_order_menu
 		$order = $self->{default_order};
 	}
 
-
-	my @tags = keys %{$self->{session}->get_repository->get_conf(
-			"order_methods",
-			$self->{dataset}->confid )};
+	my $methods = $self->order_methods;
 
 	my $menu = $self->{session}->render_option_list(
 		name=>$self->{prefix}."_order",
-		values=>\@tags,
+		values=>[keys %{$methods}],
 		default=>$order,
 		labels=>$self->{session}->get_order_names( 
 						$self->{dataset} ) );
@@ -700,8 +703,26 @@ sub render_order_menu
 	return $div;
 }
 
+# $method_map = $searche->order_methods
+# 
+# Return the available orderings for this search, using the default
+# for the dataset if needed.
 
 
+sub order_methods
+{
+	my( $self ) = @_;
+
+	if( !defined $self->{order_methods} )
+	{
+		$self->{order_methods} = $self->{session}->get_repository->get_conf(
+			"order_methods",
+			$self->{dataset}->confid );
+	}
+
+	return $self->{order_methods};
+}
+	
 ######################################################################
 =pod
 
@@ -1723,10 +1744,8 @@ sub perform_search
 		}
 		else
 		{
-			$order = $self->{session}->get_repository->get_conf( 
-						"order_methods" , 
-						$self->{dataset}->confid(),
-						$self->{order} );
+			my $methods = $self->order_methods;
+			$order = $methods->{ $self->{order} };
 		}
 	}
 

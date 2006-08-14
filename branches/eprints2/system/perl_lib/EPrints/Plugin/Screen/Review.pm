@@ -47,6 +47,7 @@ sub render
 	my $search = EPrints::Search->new(
 		session => $self->{session},
 		dataset => $self->{session}->get_repository->get_dataset( "eprint" ),
+		order_methods => $self->{session}->get_repository->get_conf( "order_methods", "eprint.review" ), # will use default if not defined
 		order => $sort_order,
 	);
 	$form->appendChild( $search->render_order_menu );

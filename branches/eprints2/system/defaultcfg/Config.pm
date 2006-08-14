@@ -557,6 +557,14 @@ $c->{order_methods}->{eprint} =
 	"bytitle" 	 => "title/creators/-date_effective"
 };
 
+$c->{order_methods}->{"eprint.review"} =
+{
+	"bystatuschange" => "-status_changed",
+	"byyearoldest"	 => "date_effective/creators/title",
+	"byname"  	 => "creators/-date_effective/title",
+	"bytitle" 	 => "title/creators/-date_effective"
+};
+
 
 
 # Fields for a staff user search.
