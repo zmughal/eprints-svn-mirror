@@ -363,7 +363,7 @@ $config{dbsock} = EPrints::Utils::get_input( '^.*$', 'MySQL Socket (# for no set
 $config{dbsock} = undef if( $config{dbsock} eq "#" );
 
 $config{dbuser} = EPrints::Utils::get_input( $REGEXP_VARNAME, 'Database User',  $config{dbuser} );
-$config{dbpass} = EPrints::Utils::get_input( $REGEXP_VARNAME, 'Database Password',  $config{dbpass} );
+$config{dbpass} = EPrints::Utils::get_input_hidden( $REGEXP_VARNAME, 'Database Password',  $config{dbpass} );
 
 print <<END;
 
