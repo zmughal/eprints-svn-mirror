@@ -113,8 +113,7 @@ $errmsg
 END
 		$@="";
 		cluck( "EPrints System Error inducing stack dump\n" );
-		exit;
-		#exit;
+		exit( 1 );
 	}
 
 	sub deprecated
