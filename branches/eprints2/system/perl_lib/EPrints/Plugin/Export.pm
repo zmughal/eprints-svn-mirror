@@ -39,6 +39,10 @@ sub matches
 	{
 		return( $self->can_accept( $param ) );
 	}
+	if( $test eq "has_xmlns" )
+	{
+		return( $self->has_xmlns( $param ) );
+	}
 
 	# didn't understand this match 
 	return $self->SUPER::matches( $test, $param );
@@ -80,6 +84,13 @@ sub can_accept
 	}
 
 	return 0;
+}
+
+sub has_xmlns
+{
+	my( $plugin, $unused ) = @_;
+
+	return 1 if( defined $plugin->{xmlns} );
 }
 
 
