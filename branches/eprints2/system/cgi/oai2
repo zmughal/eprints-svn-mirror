@@ -31,6 +31,10 @@ use strict;
 # New session
 my $session = new EPrints::Session();
 exit( 0 ) unless( defined $session );
+
+# Allowed exports (OAI restricts the prefixes that can be used)
+our %FORMATS = %{$session->get_repository->get_conf( "oai", "v2", "output_plugins" )};
+
 # What are we begin asked?
 my $verb = $session->param( "verb" );
 #$session->get_database->set_debug(1);
@@ -413,15 +417,20 @@ sub GetRecord
 	# if the metadataFormat isn't available for
 	# this record, only the header will be output.
 
-	my $fn = $session->get_repository->get_conf( 
-		"oai","v2","metadata_functions" )->{$args->{metadataPrefix}};
+	my $plugin_id = "Export::" . $FORMATS{ $args->{metadataPrefix} };
+	my $plugin = $session->plugin( $plugin_id );
+
+	unless( defined $plugin )
+	{
+		EPrints::Config::abort( "Could not find plugin $plugin_id" );
+	}
 
 	$response->appendChild( $session->make_indent( 2 ) );
 	$response->appendChild( 
 		EPrints::OpenArchives::make_record(
 			$session,
 			$eprint,
-			$fn,
+			$plugin,
 			1 ) );
 
 	my $f = $session->make_doc_fragment();
@@ -518,15 +527,15 @@ sub _list
 
 		return join_errors( $session, $errors ) if( scalar @{$errors} > 0 );
 
-		if( defined $args->{metadataPrefix} && !defined $session->get_repository->get_conf( "oai", "v2", "metadata_namespaces" )->{$args->{metadataPrefix}} )
+		$metadata_format = $args->{metadataPrefix};
+
+		if( !defined($FORMATS{ $metadata_format }) )
 		{
 			return render_oai_error(
 				$session,
 				"cannotDisseminateFormat",
 				"Record not available as metadata type: ".$args->{metadataPrefix} );
 		}
-
-		$metadata_format = $args->{metadataPrefix};
 
 		my $date_range;
 		my( $date, $date, $errors, $g1, $g2, $e );
@@ -686,8 +695,14 @@ END
 	{
 		$response = $session->make_element( "ListRecords" );
 
-		my $fn = $session->get_repository->get_conf( 
-			"oai","v2","metadata_functions" )->{$metadata_format};
+		my $plugin_id = "Export::" . $FORMATS{ $metadata_format };
+		my $plugin = $session->plugin( $plugin_id );
+
+		unless( defined $plugin )
+		{
+			EPrints::Config::abort( "Could not find plugin $plugin_id" );
+		}
+
 
 		my @records = $searchexp->get_records( $offset, $PAGESIZE );
                	my $eprint;
@@ -698,7 +713,7 @@ END
 				EPrints::OpenArchives::make_record(
 					$session,
 					$eprint,
-					$fn,
+					$plugin,
 					1 ) );
 		}	
 
@@ -761,12 +776,10 @@ sub ListMetadataFormats
 
 	return join_errors( $session, $errors ) if( scalar @{$errors} > 0 );
 
-	my @all_formats = keys %{$session->get_repository->get_conf( "oai", "v2","metadata_namespaces" )};
-	my @metadata_formats;
-
+	my $eprint;
 	if( defined $args->{identifier} )
 	{
-		my $eprint = new EPrints::DataObj::EPrint(
+		$eprint = new EPrints::DataObj::EPrint(
 			$session,
 			EPrints::OpenArchives::from_oai_identifier(
 				$session,
@@ -781,27 +794,20 @@ sub ListMetadataFormats
 				"ID: ".$args->{identifier}." does not exist in this repository" );
 		}
 
-		foreach( @all_formats )
-		{
-			my $fn = $session->get_repository->get_conf(
-				"oai","v2","metadata_functions" )->{$_};
-			my $md = &{$fn}( $eprint, $session );
-			if( defined $md )
-			{
-				push @metadata_formats, $_;
-				EPrints::XML::dispose( $md );
-			}
-		}
-	}
-	else
-	{
-		@metadata_formats = @all_formats;
 	}
 	
 	my $response = $session->make_element( "ListMetadataFormats" );
 
-	foreach ( @metadata_formats )
+	foreach ( keys %FORMATS )
 	{
+		my $plugin_id = "Export::" . $FORMATS{ $_ };
+		my $plugin = $session->plugin( $plugin_id ) or next;
+		if( defined($eprint) )
+		{
+			my $md = $eprint->export( $FORMATS{ $_ } ) or next;
+			EPrints::XML::dispose( $md );
+		}
+		
 		my $mdf = $session->make_element( "metadataFormat" );
 
 		$mdf->appendChild( $session->render_data_element(
@@ -812,11 +818,13 @@ sub ListMetadataFormats
 		$mdf->appendChild( $session->render_data_element(
 			4,
 			"schema",
-			$session->get_repository->get_conf( "oai", "v2", "metadata_schemas" )->{$_} ) );
+			$plugin->{ 'schemaLocation' }
+		));
 		$mdf->appendChild( $session->render_data_element(
 			4,
 			"metadataNamespace",
-			$session->get_repository->get_conf( "oai", "v2","metadata_namespaces" )->{$_} ) );
+			$plugin->{ 'xmlns' }
+		));
 		$response->appendChild( $session->make_indent( 2 ) );
 		$response->appendChild( $mdf );
 	}

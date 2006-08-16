@@ -179,7 +179,7 @@ sub make_header
 		"identifier",
 		EPrints::OpenArchives::to_oai_identifier(
 			$oai_id,
-			$eprint->get_value( "eprintid" ) ) ) );
+			$eprint->get_id ) ) );
 
 	my $datestamp = $eprint->get_value( "datestamp" );
 	unless( EPrints::Utils::is_set( $datestamp ) )
@@ -269,7 +269,7 @@ returns an XML DOM tree describing the metadata in the desired format.
 
 sub make_record
 {
-	my( $session, $eprint, $fn, $oai2 ) = @_;
+	my( $session, $eprint, $plugin, $oai2 ) = @_;
 
 	my $record = $session->make_element( "record" );
 
@@ -286,7 +286,7 @@ sub make_record
 		return $record;
 	}
 
-	my $md = &{$fn}( $eprint, $session );
+	my $md = $plugin->xml_dataobj( $eprint );
 	if( defined $md )
 	{
 		my $metadata = $session->make_element( "metadata" );
