@@ -627,6 +627,24 @@ sub get_id
 ######################################################################
 =pod
 
+=item $id = $dataobj->get_gid
+
+Returns the globally referential fully-qualified identifier for this object or
+undef if this object can not be externally referenced.
+
+=cut
+######################################################################
+
+sub get_gid
+{
+	my( $self ) = @_;
+
+	return undef;
+}
+
+######################################################################
+=pod
+
 
 =item $xhtml = $dataobj->render_value( $fieldname, [$showall] )
 

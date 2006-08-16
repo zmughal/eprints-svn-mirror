@@ -4117,3 +4117,6 @@ PACKAGE: 2.2.99.2
     review screen
  * Displayed the right datetime info on items (lastmod) and review 
     (status_changed) screens
+
+2006-08-15 tdb
+ * Added get_gid method to DataObj (implemented for EPrint and Access)
