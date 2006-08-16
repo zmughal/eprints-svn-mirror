@@ -1743,25 +1743,9 @@ sub get_date
 	my( $time ) = @_;
 
 	my @date = localtime( $time );
-	my $day = $date[3];
-	my $month = $date[4]+1;
-	my $year = $date[5]+1900;
-	my $sec = $date[0];
-	my $min = $date[1];
-	my $hour = $date[2];
-	
-	# Ensure number of digits
-	while( length $day < 2 ) { $day = "0".$day; }
-
-	while( length $month < 2 ) { $month = "0".$month; }
-
-	while( length $hour < 2 ) { $hour = "0".$hour; }
-
-	while( length $min < 2 ) { $min = "0".$min; }
-
-	while( length $sec < 2 ) { $sec = "0".$sec; }
-
-	return( $year, $month, $day, $hour, $min, $sec );
+	$date[4]+=1; # month
+	$date[5]+=1900; # year
+	return reverse map { sprintf("%02d",$_) } splice(@date,0,6);
 }
 
 
