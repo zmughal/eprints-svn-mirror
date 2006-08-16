@@ -111,6 +111,7 @@ sub handler
 	my $uri = URI->new($r->uri);
 
 	my $access = {};
+	$access->{datestamp} = EPrints::Utils::get_datetimestamp( $r->request_time );
 	$access->{requester_id} = 'urn:ip:' . $ip;
 	$access->{referent_id} = $r->uri;
 	$access->{referent_docid} = undef;
