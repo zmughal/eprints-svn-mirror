@@ -3,7 +3,7 @@
 use Test::Harness;
 use strict;
 
-my $dir = "/opt/eprints/tests";
+my $dir = "/opt/eprints3/tests";
 chdir( $dir );
 my $dh;
 my @files = ();
