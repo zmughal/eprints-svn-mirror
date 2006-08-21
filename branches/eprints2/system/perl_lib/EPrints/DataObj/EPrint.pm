@@ -51,7 +51,7 @@ this eprints data is stored in. Eg. disk0/00/00/03/34 for record 334.
 
 The date this record was last modified.
 
-=item type (datatype)
+=item type (namedset)
 
 The type of this record, one of the types of the "eprint" dataset.
 
@@ -138,7 +138,7 @@ sub get_system_field_info
 	{ name=>"status_changed", type=>"time", required=>0, import=>0,
 		render_res=>"minute", can_clone=>0 },
 
-	{ name=>"type", type=>"datatype", type_set=>"eprint", required=>1, 
+	{ name=>"type", type=>"namedset", set_name=>"eprint", required=>1, 
 		input_rows=>"ALL" },
 
 	{ name=>"succeeds", type=>"itemref", required=>0,
@@ -1680,7 +1680,7 @@ sub generate_static
 			my $doc;
 			foreach $doc ( @docs )
 			{
-				unless( $doc->is_set( "security" ) )
+				if( $doc->public )
 				{
 					$doc->create_symlink( $self, $full_path );
 				}

@@ -26,7 +26,7 @@ else
 # No point if requested document is already OA
 if( defined $doc )
 {
-	&_error( $session ) if !$doc->is_set( "security" ) || $doc->get_value( "security" ) eq "";
+	&_error( $session ) if $doc->public;
 }
 
 # Need a contact email

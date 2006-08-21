@@ -232,8 +232,8 @@ $c->{user_registration_fields} = [ "name" ];
 # a metafield will override these values.
 
 # Number of rows of a textarea input or max number of elements before
-# a scrollbar appears in sets, subjects and datatype fields. A value
-# of ALL will show all the settings in a set, subject or datatype.
+# a scrollbar appears in sets, subjects and namedset fields. A value
+# of ALL will show all the settings in a set, subject or namedset.
 $c->{field_defaults}->{input_rows} = 10;
 
 # Number of columns (characters) of a textarea input or text
@@ -916,7 +916,7 @@ sub can_request_view_document
 	#my $eprint = $doc->get_eprint();
 	my $security = $doc->get_value( "security" );
 
-	return( 1 ) if( $security eq "" );
+	return( 1 ) if( $security eq "public" );
 
 	# This _should_ work according to the mod_perl2 documentation,
 	# but does not seem to. 
@@ -965,7 +965,7 @@ sub can_user_view_document
 	# Add/remove types of security in metadata-types.xml
 
 	# Trivial cases:
-	return( 1 ) if( $security eq "" );
+	return( 1 ) if( $security eq "public" );
 	return( 1 ) if( $security eq "validuser" );
 
 	# examples for location validation

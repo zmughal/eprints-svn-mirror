@@ -41,7 +41,7 @@ of EPrints may change this.
 
 The id number of the eprint to which this document belongs.
 
-=item format (datatype)
+=item format (namedset)
 
 The format of this document. One of the types of the dataset "document".
 
@@ -50,12 +50,12 @@ The format of this document. One of the types of the dataset "document".
 An additional description of this document. For example the specific version
 of a format.
 
-=item language (datatype)
+=item language (namedset)
 
 The ISO ID of the language of this document. The default configuration of
 EPrints does not set this.
 
-=item security (datatype)
+=item security (namedset)
 
 The security type of this document - who can view it. One of the types
 of the dataset "security".
@@ -131,22 +131,22 @@ sub get_system_field_info
 		{ name=>"eprintid", type=>"itemref",
 			datasetid=>"eprint", required=>1 },
 
-		{ name=>"format", type=>"datatype", required=>1, input_rows=>1,
-			type_set=>"document" },
+		{ name=>"format", type=>"namedset", required=>1, input_rows=>1,
+			set_name=>"document" },
 
 		{ name=>"formatdesc", type=>"text", input_cols=>40 },
 
-		{ name=>"language", type=>"datatype", required=>1, input_rows=>1,
-			type_set=>"languages" },
+		{ name=>"language", type=>"namedset", required=>1, input_rows=>1,
+			set_name=>"languages" },
 
-		{ name => "permission_group", multiple => 1, type => "datatype", 
-			type_set => "permission_group", },
+		{ name => "permission_group", multiple => 1, type => "namedset", 
+			set_name => "permission_group", },
 
-		{ name=>"security", type=>"datatype", required=>1, input_rows=>1,
-			type_set=>"security" },
+		{ name=>"security", type=>"namedset", required=>1, input_rows=>1,
+			set_name=>"security" },
 
-		{ name=>"license", type=>"datatype", required=>0, input_rows=>1,
-			type_set=>"licenses" },
+		{ name=>"license", type=>"namedset", required=>0, input_rows=>1,
+			set_name=>"licenses" },
 
 		{ name=>"main", type=>"set", required=>1, options=>[], input_rows=>1,
 			input_tags=>\&main_input_tags,
@@ -699,7 +699,7 @@ sub get_baseurl
 
 	my $docpath = docid_to_path( $repository, $self->get_value( "docid" ) );
 
-	if( !$self->is_set( "security" ) && $eprint->get_dataset()->id() eq "archive" )
+	if( $self->public )
 	{
 		return $eprint->url_stem.$docpath.'/';
 	}
@@ -709,6 +709,29 @@ sub get_baseurl
 	$url .= '/'.$docpath.'/';
 
 	return $url;
+}
+
+######################################################################
+=pod
+
+=item $boolean = $doc->public()
+
+True if this document has no security set and is in the live archive.
+
+=cut
+######################################################################
+
+sub public
+{
+	my( $self ) = @_;
+
+	my $eprint = $self->get_eprint;
+
+	return 0 if( $self->get_value( "security" ) ne "public" );
+
+	return 0 if( $eprint->get_dataset()->id() eq "archive" );
+
+	return 1;
 }
 
 ######################################################################

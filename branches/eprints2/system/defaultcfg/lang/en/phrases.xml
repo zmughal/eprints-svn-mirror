@@ -11,7 +11,7 @@
     <ep:phrase id="document_typename_image">Image</ep:phrase>
     <ep:phrase id="document_typename_coverimage">Image of Cover (to show on abstract page)</ep:phrase>
 
-    <ep:phrase id="security_typename_">Anyone</ep:phrase>
+    <ep:phrase id="security_typename_public">Anyone</ep:phrase>
     <ep:phrase id="security_typename_validuser">Registered users only</ep:phrase>
     <ep:phrase id="security_typename_staffonly">Repository staff only</ep:phrase>
 

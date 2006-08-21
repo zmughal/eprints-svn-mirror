@@ -51,7 +51,7 @@ this repository.
 The password of this user encoded with crypt. This may be ignored if the
 repository is using an alternate authentication system, eg. LDAP.
 
-=item usertype (datatype)
+=item usertype (namedset)
 
 The type of this user. The options are configured in metadata-phrases.xml.
 
@@ -82,7 +82,7 @@ created at midnight.
 
 The email address of this user. Unique within the repository. 
 
-=item lang (datatype) 
+=item lang (namedset) 
 
 The ID of the prefered language of this user. Only really used in multilingual
 repositories.
@@ -152,8 +152,8 @@ sub get_system_field_info
 		{ name=>"password", type=>"secret", show_in_html=>0,
 			fromform=>\&EPrints::Utils::crypt_password },
 
-		{ name=>"usertype", type=>"datatype", required=>1, 
-			type_set=>"user" },
+		{ name=>"usertype", type=>"namedset", required=>1, 
+			set_name=>"user" },
 	
 		{ name=>"newemail", type=>"email", show_in_html=>0 },
 	
@@ -180,8 +180,8 @@ sub get_system_field_info
 			fieldnames => "editpermfields",
 			allow_set_order => 0 },
 
-		{ name => "permission_group", multiple => 1, type => "datatype", 
-			type_set => "permission_group", },
+		{ name => "permission_group", multiple => 1, type => "namedset", 
+			set_name => "permission_group", },
 
 		{ name=>"frequency", type=>"set", 
 			options=>["never","daily","weekly","monthly"] },

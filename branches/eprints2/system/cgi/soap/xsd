@@ -67,7 +67,7 @@ END
 
 if( 0) {
 	foreach my $fieldtype ( qw/
-	boolean child datatype date email fulltext id int itemref langid
+	boolean child namedset date email fulltext id int itemref langid
 	longtext pagerange search secret set subject text url year 
 	raeeprintid data / ) {
 		print <<END

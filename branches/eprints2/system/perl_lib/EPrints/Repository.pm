@@ -157,7 +157,7 @@ sub new
 		$self->generate_dtd() || return;
 		$self->get_ruler() || return;
 		$self->_load_workflows() || return;
-		$self->_load_types() || return;
+		$self->_load_namedsets() || return;
 		$self->_load_datasets() || return;
 		$self->_load_languages() || return;
 		$self->_load_templates() || return;
@@ -647,27 +647,27 @@ END
 
 ######################################################################
 # 
-# $success = $repository->_load_types
+# $success = $repository->_load_namedsets
 #
-# Loads and caches all the types lists from the cfg/types/ directory.
+# Loads and caches all the named set lists from the cfg/namedsets/ directory.
 #
 ######################################################################
 
-sub _load_types
+sub _load_namedsets
 {
 	my( $self ) = @_;
 
 
-	# load /types/*.xml 
+	# load /namedsets/* 
 
-	my $dir = $self->get_conf( "config_path" )."/types";
+	my $dir = $self->get_conf( "config_path" )."/namedsets";
 	my $dh;
 	opendir( $dh, $dir );
 	my @type_files = ();
 	while( my $fn = readdir( $dh ) )
 	{
 		next if $fn=~m/^\./;
-		push @type_files, $fn if $fn=~m/\.xml$/;
+		push @type_files, $fn;
 	}
 	closedir( $dh );
 
@@ -675,29 +675,20 @@ sub _load_types
 	{
 		my $file = $dir."/".$tfile;
 
-		my $doc = $self->parse_xml( $file );
-		if( !defined $doc )
-		{
-			EPrints::abort( "Could not parse $file" );
-		}
+		my $type_set = $tfile;	
+		open( FILE, $file ) || EPrints::abort( "Could not read $file" );
 
-		my $types_tag = ($doc->getElementsByTagName( "types" ))[0];
-		if( !defined $types_tag )
-		{
-			EPrints::XML::dispose( $doc );
-			print STDERR "Missing <types> tag in $file\n";
-			return 0;
-		}
-
-		my $type_set = substr($tfile,0,(length $tfile)-4 );
-	
 		my @types = ();
-		foreach my $type_tag ( $types_tag->getElementsByTagName( "type" ) )
+		foreach my $line (<FILE>)
 		{
-			my $type_id = $type_tag->getAttribute( "name" );
-			push @types, $type_id;
+			chomp $line;
+			$line =~ s/#.*$//;
+			$line =~ s/^\s+//;
+			$line =~ s/\s+$//;
+			next if $line eq "";
+			push @types, $line;
 		}
-		EPrints::XML::dispose( $doc );
+		close FILE;
 
 		$self->{types}->{$type_set} = \@types;
 	}
@@ -722,7 +713,7 @@ sub get_types
 
 	if( !defined $self->{types}->{$type_set} )
 	{
-		$self->log( "Request for unknown type set: $type_set" );
+		$self->log( "Request for unknown named set: $type_set" );
 		return ();
 	}
 

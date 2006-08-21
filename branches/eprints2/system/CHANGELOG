@@ -4129,3 +4129,8 @@ PACKAGE: 2.2.99.2
 
 2006-08-21 cjg
  * Rewrote generate_static to use /lib/static as well as archive static.
+
+2006-08-21 cjg
+ * Changed datatype fields to be called namedset
+ * types/*.xml are now namedset/* and are plain text, not XML
+ * Changed public security from "" to "public" on documents.

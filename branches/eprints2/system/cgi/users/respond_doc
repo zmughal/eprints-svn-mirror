@@ -38,7 +38,7 @@ my $page = $session->make_doc_fragment();
 my $action = $session->param("action");
 $action = "reject" if !defined $action || $action ne "accept";
 # Special case - requested document been made OA in the meantime
-$action = "oa" if !$doc->is_set( "security" ) || $doc->get_value( "security" ) eq "";
+$action = "oa" if $doc->public;
 
 my $button = $session->get_action_button;
 unless( defined $button && $button eq "submit" )
@@ -115,7 +115,7 @@ if( $action eq "accept")
 	# Make document OA if flag set
 	if( defined $session->param( "oa" ) && $session->param( "oa" ) eq "on" )
 	{
-		$doc->set_value( "security", "" );
+		$doc->set_value( "security", "public" );
 		$doc->commit;
 		$eprint->commit;
 		$eprint->generate_static;

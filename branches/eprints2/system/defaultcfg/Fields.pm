@@ -264,7 +264,7 @@ sub set_document_defaults
 	my( $data, $session, $eprint ) = @_;
 
 	$data->{language} = $session->get_langid();
-	$data->{security} = "";
+	$data->{security} = "public";
 }
 
 sub set_subscription_defaults
@@ -346,13 +346,13 @@ sub set_eprint_automatic_fields
 	if( scalar @docs > 0 )
 	{
 		$textstatus = "public";
-		foreach( @docs )
+		foreach my $doc ( @docs )
 		{
-			if( $_->is_set( "security" ) )
+			if( !$doc->public )
 			{
 				$textstatus = "restricted"
 			}
-			push @finfo, $_->get_type.";".$_->get_url;
+			push @finfo, $doc->get_type.";".$doc->get_url;
 		}
 	}
 	$eprint->set_value( "full_text_status", $textstatus );

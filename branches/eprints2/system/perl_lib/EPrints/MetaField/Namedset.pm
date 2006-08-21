@@ -1,6 +1,6 @@
 ######################################################################
 #
-# EPrints::MetaField::Datatype;
+# EPrints::MetaField::Namedset;
 #
 ######################################################################
 #
@@ -16,7 +16,7 @@
 
 =head1 NAME
 
-B<EPrints::MetaField::Datatype> - no description
+B<EPrints::MetaField::Namedset> - no description
 
 =head1 DESCRIPTION
 
@@ -26,9 +26,9 @@ not done
 
 =cut
 
-# type_set
+# set_name
 
-package EPrints::MetaField::Datatype;
+package EPrints::MetaField::Namedset;
 
 use strict;
 use warnings;
@@ -46,14 +46,14 @@ sub tags
 {
 	my( $self, $session ) = @_;
 
-	return $session->get_repository->get_types( $self->{type_set} );
+	return $session->get_repository->get_types( $self->{set_name} );
 }
 
 sub get_unsorted_values
 {
 	my( $self, $session, $dataset, %opts ) = @_;
 
-	my @types = $session->get_repository->get_types( $self->{type_set} );
+	my @types = $session->get_repository->get_types( $self->{set_name} );
 
 	return @types;
 }
@@ -62,14 +62,14 @@ sub render_option
 {
 	my( $self, $session, $value ) = @_;
 
-	return $session->render_type_name( $self->{type_set}, $value );
+	return $session->render_type_name( $self->{set_name}, $value );
 }
 
 sub get_property_defaults
 {
 	my( $self ) = @_;
 	my %defaults = $self->SUPER::get_property_defaults;
-	$defaults{type_set} = $EPrints::MetaField::REQUIRED;
+	$defaults{set_name} = $EPrints::MetaField::REQUIRED;
 	delete $defaults{options}; # inherrited but unwanted
 	return %defaults;
 }

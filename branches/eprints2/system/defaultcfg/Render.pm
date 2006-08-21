@@ -170,8 +170,7 @@ sub eprint_render
 				$doctd->appendChild( $session->make_text( EPrints::Utils::human_filesize($size) ));
 			}
 
-			my $security = $doc->get_value( "security" );
-			if( $hascontact && defined $security && $security ne "" )
+			if( $hascontact && !$doc->public )
 			{
 				# "Request a copy" button
 				$doctd = $session->make_element( "td" );

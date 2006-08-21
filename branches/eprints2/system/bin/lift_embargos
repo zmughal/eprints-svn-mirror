@@ -129,9 +129,9 @@ $searchexp->map( sub {
 	}
 	foreach my $doc ( $eprint->get_all_documents )
 	{
-		if( $doc->is_set( "security" ) && $doc->get_value( "security" ) ne "" )
+		if( !$doc->public )
 		{
-			$doc->set_value( "security", "" );
+			$doc->set_value( "security", "public" );
 			$doc->commit;
 		}	
 	}
