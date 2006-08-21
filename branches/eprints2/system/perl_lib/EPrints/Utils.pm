@@ -877,7 +877,6 @@ sub mkdir
 	# Unicode::String borks mkdir
 	$full_path = "$full_path";
 
-
 	my @created = eval
         {
                 return mkpath( $full_path, 0, 0775 );
