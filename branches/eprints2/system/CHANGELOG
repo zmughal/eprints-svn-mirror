@@ -4124,6 +4124,8 @@ PACKAGE: 2.2.99.2
  * Modified OA:make_record to take a plugin argument to export to XML
  * Now only uses output_plugins argument from config
 
-2005-08-15 cjg
+2006-08-15 cjg
  * Added addition filter to export plugins to test if they have an xmlns.
 
+2006-08-21 cjg
+ * Rewrote generate_static to use /lib/static as well as archive static.
