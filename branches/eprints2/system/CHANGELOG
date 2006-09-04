@@ -4153,3 +4153,7 @@ PACKAGE: 2.2.99.2
 2006-09-04 cjg
  * Removed unused javascript and css files
  * Moved all system images to /lib from /defaultcfg
+
+2006-09-04 cjg
+ * Action tabs now work with actions as well as screens
+ * Sorted out priv methods for remaining screens

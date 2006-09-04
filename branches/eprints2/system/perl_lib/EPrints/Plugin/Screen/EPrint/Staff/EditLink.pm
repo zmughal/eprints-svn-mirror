@@ -28,10 +28,6 @@ sub can_be_viewed
 
 	return $self->allow( "eprint/staff/edit" );
 }
-sub show_in
-{
-	return( eprint_view_tabs => 400 );
-}
 
 sub things
 {

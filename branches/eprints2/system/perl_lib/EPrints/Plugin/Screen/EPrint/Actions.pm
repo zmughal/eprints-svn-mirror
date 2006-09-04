@@ -20,48 +20,42 @@ sub new
 	return $self;
 }
 
-
-sub get_allowed_actions_delete_me
+sub can_be_viewed
 {
 	my( $self ) = @_;
-	my @actions = ( 
 
-		
-		"derive_version", # New version 1200
-		"derive_clone", # Use as template
+	return 0 unless scalar $self->action_list;
 
-		"request_deletion",  #1400 # 
-
-
-###########done
-		"edit", #1600
-		"edit_staff",#1700
-		"deposit", #100 #done.
-		"reject_with_email", #done
-		"remove_with_email", #done
-		"remove", #done
-		"move_inbox_buffer", #400
-		"move_buffer_inbox", #500
-		"move_buffer_archive",#600
-		"move_archive_buffer", #700
-		"move_archive_deletion",#800
-		"move_deletion_archive",#900
-
-		"move_inbox_archive", #1000
-		"move_archive_inbox",  #1100
-	);
-
-	my @r = ();
-
-	foreach my $action ( @actions )
-	{
-#		my $allow = $self->allow( "action/eprint/$action" );
-#		next if( !$allow );
-		push @r, $action;
-	}
-	
-	return @r;
+	return $self->who_filter;
 }
+
+sub who_filter { return 4; }
+
+sub action_list
+{
+	my( $self ) = @_;
+
+	my @list = ();
+	foreach my $item ( $self->list_items( "eprint_actions" ) )
+	{
+		my $who_allowed;
+		if( defined $item->{action} )
+		{
+ 			$who_allowed = $item->{screen}->allow_action( $item->{action} );
+		}
+		else
+		{
+			$who_allowed = $item->{screen}->can_be_viewed;
+		}
+
+		next unless( $who_allowed & $self->who_filter );
+
+		push @list, $item;
+	}
+
+	return @list;
+}
+
 
 sub render
 {
@@ -70,7 +64,7 @@ sub render
 	my $session = $self->{session};
 
 	my $table = $session->make_element( "table" );
-	foreach my $item ( $self->list_items( "eprint_actions" ) )
+	foreach my $item ( $self->action_list )
 	{
 		my $tr = $session->make_element( "tr" );
 		$table->appendChild( $tr );
@@ -111,7 +105,6 @@ sub render
 	}
 	
 	return $table;
-#				style => 'border: 1px #ccc solid; padding-left: 0.5em' );
 }
 
 1;

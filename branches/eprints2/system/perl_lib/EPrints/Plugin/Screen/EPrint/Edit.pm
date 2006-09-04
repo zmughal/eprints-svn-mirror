@@ -10,14 +10,12 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 
-	$self->{priv} = "action/eprint/edit";
-
 	$self->{actions} = [qw/ stop save next prev /];
 
 	$self->{appears} = [
 		{
 			place => "eprint_actions",
-			position => 1600,
+			position => 1500,
 		}
 	];
 
@@ -47,13 +45,28 @@ sub from
 
 	$self->EPrints::Plugin::Screen::from;
 }
-	
+
+sub allow_stop
+{
+	my( $self ) = @_;
+
+	return $self->can_be_viewed;
+}
+
 sub action_stop
 {
 	my( $self ) = @_;
 
 	$self->{processor}->{screenid} = "EPrint::View";
 }	
+
+
+sub allow_save
+{
+	my( $self ) = @_;
+
+	return $self->can_be_viewed;
+}
 
 sub action_save
 {
@@ -63,6 +76,14 @@ sub action_save
 	
 	$self->{processor}->{screenid} = "EPrint::View";
 }
+
+
+sub allow_prev
+{
+	my( $self ) = @_;
+
+	return $self->can_be_viewed;
+}
 	
 sub action_prev
 {
@@ -70,6 +91,14 @@ sub action_prev
 
 	$self->workflow->from;
 	$self->workflow->prev;
+}
+
+
+sub allow_next
+{
+	my( $self ) = @_;
+
+	return $self->can_be_viewed;
 }
 
 sub action_next

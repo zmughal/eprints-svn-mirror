@@ -326,16 +326,26 @@ sub list_items
 			$screen_id, 
 			processor => $self->{processor} );
 		next if( !defined $screen->{appears} );
-		next if( !$screen->can_be_viewed );
 
+		my @things_in_list = ();
 		foreach my $opt ( @{$screen->{appears}} )
 		{
 			next if( $opt->{place} ne $list_id );
+			push @things_in_list, $opt;
+		}
+		next if( scalar @things_in_list == 0 );
+
+		# must be done after checking things in the list
+		# to prevent actions looping.
+		next if( !$screen->can_be_viewed );
+	
+		foreach my $opt ( @things_in_list )
+		{	
 			my $p = $opt->{position};
 			$p = 999999 if( !defined $p );
 			if( defined $opt->{action} )
 			{
- 				next if( !$self->allow_action( $opt->{action} ) );
+ 				next if( !$screen->allow_action( $opt->{action} ) );
 			}
 
 			push @list_items, {

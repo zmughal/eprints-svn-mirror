@@ -39,14 +39,6 @@ sub allow_deposit
 	return $self->can_be_viewed;
 }
 
-sub action_deposit
-{
-	my( $self ) = @_;
-
-	$self->action_deposit;
-	$self->{processor}->{screenid} = "EPrint::View";	
-}
-
 
 sub render
 {
@@ -92,11 +84,7 @@ sub action_deposit
 {
 	my( $self ) = @_;
 
-	if( !$self->{processor}->allow( "action/eprint/deposit" ) )
-	{
-		$self->{processor}->action_not_allowed( "deposit" );
-		return;
-	}
+	$self->{processor}->{screenid} = "EPrint::View";	
 
 	my $problems = $self->{processor}->{eprint}->validate_full( $self->{processor}->{for_archive} );
 	if( scalar @{$problems} > 0 )

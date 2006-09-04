@@ -47,6 +47,13 @@ sub about_to_render
 	$self->EPrints::Plugin::Screen::EPrint::View::about_to_render;
 }
 
+sub allow_move_buffer
+{
+	my( $self ) = @_;
+
+	return $self->allow( "eprint/move_buffer" );
+}
+
 sub action_move_buffer
 {
 	my( $self ) = @_;
@@ -56,9 +63,27 @@ sub action_move_buffer
 	$self->add_result_message( $ok );
 }
 
+sub allow_move_inbox
+{
+	my( $self ) = @_;
+
+	return $self->allow( "eprint/move_inbox" );
+}
 sub action_move_inbox
 {
 	my( $self ) = @_;
+
+	my $user = $self->{processor}->{eprint}->get_user();
+	# We can't bounce it if there's no user associated 
+
+	if( !defined $user )
+	{
+		$self->{session}->render_error( 
+			$self->{session}->html_phrase( 
+				"cgi/users/edit_eprint:no_user" ),
+			"error" );
+		return;
+	}
 
 	my $ok = $self->{processor}->{eprint}->move_to_inbox;
 
@@ -66,6 +91,12 @@ sub action_move_inbox
 }
 
 
+sub allow_move_archive
+{
+	my( $self ) = @_;
+
+	return $self->allow( "eprint/move_archive" );
+}
 sub action_move_archive
 {
 	my( $self ) = @_;
@@ -76,6 +107,12 @@ sub action_move_archive
 }
 
 
+sub allow_move_deletion
+{
+	my( $self ) = @_;
+
+	return $self->allow( "eprint/move_deletion" );
+}
 sub action_move_deletion
 {
 	my( $self ) = @_;

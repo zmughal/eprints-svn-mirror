@@ -67,7 +67,7 @@ sub render
 		$self->{session}->render_error( 
 			$self->{session}->html_phrase( 
 				"cgi/users/edit_eprint:no_user" ),
-			"buffer" );
+			"error" );
 		return;
 	}
 

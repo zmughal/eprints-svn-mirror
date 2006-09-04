@@ -10,12 +10,10 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 
-	$self->{priv} = "action/eprint/remove";
-
 	$self->{appears} = [
 		{
 			place => "eprint_actions",
-			position => 1500,
+			position => 1600,
 		}
 	];
 	
@@ -25,12 +23,16 @@ sub new
 }
 
 
-sub render
+sub can_be_viewed
 {
 	my( $self ) = @_;
 
+	return $self->allow( "eprint/remove" );
+}
 
-	# no title! cjg
+sub render
+{
+	my( $self ) = @_;
 
 	my $page = $self->{session}->make_doc_fragment();
 
@@ -54,6 +56,20 @@ sub render
 	return( $page );
 }	
 
+sub allow_remove
+{
+	my( $self ) = @_;
+
+	return $self->can_be_viewed;
+}
+
+sub allow_cancel
+{
+	my( $self ) = @_;
+
+	return 1;
+}
+
 sub action_cancel
 {
 	my( $self ) = @_;
@@ -66,13 +82,6 @@ sub action_remove
 	my( $self ) = @_;
 
 	$self->{processor}->{screenid} = "Items";
-
-	if( !$self->{processor}->allow( "action/eprint/remove" ) )
-	{
-		$self->{processor}->action_not_allowed( "eprint/remove" );
-		return;
-	}
-		
 
 	if( !$self->{processor}->{eprint}->remove )
 	{

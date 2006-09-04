@@ -1228,7 +1228,7 @@ my $editor = {
 
 =item $result = $user->allow( $priv, [$item] )
 
-Returns true if $user can perform this action/view this screen.
+Rleturns true if $user can perform this action/view this screen.
 
 A true result is 1..31 where the value indicates what about the user
 allowed the priv to be performed. This is used for filtering owner/
@@ -1256,7 +1256,6 @@ sub allow
 	foreach( keys %{$editor} ) { $self->{privs}->{$_} = ($self->{privs}->{$_}||0) + $editor->{$_}; }
 	foreach( keys %{$subscribe} ) { $self->{privs}->{$_} = ($self->{privs}->{$_}||0) + $subscribe->{$_}; }
 	foreach( keys %{$status} ) { $self->{privs}->{$_} = ($self->{privs}->{$_}||0) + $status->{$_}; }
-	print STDERR "allow? $priv\n";
 
 	my $r = $self->{privs}->{$priv} || 0;
 
