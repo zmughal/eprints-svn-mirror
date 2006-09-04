@@ -926,21 +926,9 @@ sub validate_type
 	my( $self, $for_archive ) = @_;
 	
 	return [] if $self->skip_validation;
+# deprecate entirely?
 
 	my @problems;
-
-	# Make sure we have a value for the type, and that it's one of the
-	# configured EPrint types
-	if( !defined $self->get_value( "type" ) )
-	{
-		push @problems, 
-			$self->{session}->html_phrase( "lib/eprint:no_type" );
-	} 
-	elsif( ! $self->{dataset}->is_valid_type( $self->get_value( "type" ) ) )
-	{
-		push @problems, $self->{session}->html_phrase( 
-					"lib/eprint:invalid_type" );
-	}
 
 	my $field = $self->{dataset}->get_field( "type" );
 

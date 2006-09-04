@@ -4134,3 +4134,6 @@ PACKAGE: 2.2.99.2
  * Changed datatype fields to be called namedset
  * types/*.xml are now namedset/* and are plain text, not XML
  * Changed public security from "" to "public" on documents.
+
+2006-09-04 cjg
+ * Removed type validation from EPrint
