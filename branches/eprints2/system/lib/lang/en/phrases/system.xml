@@ -1071,6 +1071,7 @@ Titles and Help for the System Fields
 
     <ep:phrase id="Plugin/Screen/Status:title">Repository status</ep:phrase>
 
+    <ep:phrase id="Plugin/Screen/Error:title">Error</ep:phrase>
 
     <!-- eprint action screens -->
 
@@ -1130,7 +1131,10 @@ Titles and Help for the System Fields
 
     <ep:phrase id="Plugin/Screen/EPrint/History:title">History</ep:phrase>
 
-<!--
+    <ep:phrase id="Plugin/Screen/EPrint/View/Owner:title">View Item</ep:phrase>
+    <ep:phrase id="Plugin/Screen/EPrint/View/Editor:title">View Item</ep:phrase>
+    <ep:phrase id="Plugin/Screen/EPrint/View/Other:title">View Item</ep:phrase>
+
     <ep:phrase id="Plugin/Screen/EPrint/derive_version:title">New version</ep:phrase>
     <ep:phrase id="Plugin/Screen/EPrint/derive_version:description">Use this to submit a new version of this item. It will create an exact copy which you can then make changes to. This item and the new version will be linked.</ep:phrase>
 
@@ -1139,7 +1143,6 @@ Titles and Help for the System Fields
 
     <ep:phrase id="Plugin/Screen/EPrint/derive_clone:title">Use as template</ep:phrase>
     <ep:phrase id="Plugin/Screen/EPrint/derive_clone:description">Create a new item using this item as a template. There will be no connection between the two items.</ep:phrase>
-
 
 
 

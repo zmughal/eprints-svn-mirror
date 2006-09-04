@@ -31,15 +31,16 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 
-	$self->{priv} = "action/subscription/edit";
-
-	$self->{actions} = {
-		cancel => "",
-		remove => "action/subscription/remove",
-		save => "action/subscription/edit",
-	};
+	$self->{actions} = [qw/ cancel remove save /];
 
 	return $self;
+}
+
+sub can_be_viewed
+{
+	my( $self ) = @_;
+
+	return $self->allow( "subscription/edit" );
 }
 
 

@@ -15,7 +15,7 @@ sub new
 	my $self = $class->SUPER::new(%params);
 
 	$self->{session} = $self->{processor}->{session};
-	$self->{actions} = {};
+	$self->{actions} = [];
 
 	# flag to indicate that it takes some effort to make this screen, so
 	# don't make it up as a tab. eg. EPrint::History.
@@ -31,39 +31,6 @@ sub properties_from
 	# no properties assumed at top levels
 }
 
-sub from
-{
-	my( $self ) = @_;
-
-	my $action = $self->{processor}->{action};
-	
-	return if( $action eq "" );
-
-	return if( $action eq "null" );
-
-	my $act_priv = $self->{actions}->{$action};
-	if( defined $act_priv )
-	{
-		if( !$self->{processor}->allow( $act_priv ) )
-		{
-			$self->{processor}->action_not_allowed( 
-				$self->html_phrase( "action:$action:title" ) );
-		}
-		else
-		{
-			my $fn = "action_".$action;
-			$self->$fn;
-		}
-		return;
-	}
-
-	$self->{processor}->add_message( "error",
-		$self->{session}->html_phrase( 
-	      		"Plugin/Screen:unknown_action",
-			action=>$self->{session}->make_text( $action ),
-			screen=>$self->{session}->make_text( $self->{processor}->{screenid} ) ) );
-}
-
 sub render
 {
 	my( $self ) = @_;
@@ -73,76 +40,76 @@ sub render
 
 
 ## remove this!
-sub get_allowed_tools
-{
-	my $tools = [
-		{
-			      id => "eprints",
-			    priv => "view/eprints",
-			position => 100,
-	 		    core => 1,
-			  screen => "Items",
-		},
-		{
-			      id => "user",
-			    priv => "view/user",
-			position => 200,
-	 		    core => 1,
-			  screen => "User",
-		},
-		{
-			      id => "subscription",
-			    priv => "view/subscription",
-			position => 300,
-	 		    core => 1,
-			  screen => "Subscription",
-		},
-		{
-			      id => "edreview",
-			    priv => "view/editor",
-			position => 400,
-	 		    core => 1,
-			  screen => "Review",
-		},
-		{
-			      id => "status",
-			    priv => "view/status",
-			position => 1100,
-	 		    core => 0,
-			  screen => "Status",
-		},
-		{
-			      id => "search_eprint",
-			    priv => "view/search/eprint",
-			position => 1200,
-	 		    core => 0,
-			  screen => "Search::EPrint",
-		},
-		{
-			      id => "search_user",
-			    priv => "view/search/user",
-			position => 1300,
-	 		    core => 0,
-			  screen => "Search::User",
-		},
-		{
-			      id => "add_user",
-			    priv => "view/add_user",
-			position => 1400,
-	 		    core => 0,
-			  screen => "AddUser",
-		},
-		{
-			      id => "subject",
-			    priv => "view/subject_tool",
-			position => 1500,
-	 		    core => 0,
-			  screen => "Subject",
-		},
-	];
-
-	return sort { $a->{position} <=> $b->{position} } @{$tools};
-}
+#sub get_allowed_tools
+#{
+#	my $tools = [
+#		{
+#			      id => "eprints",
+#			    priv => "view/eprints",
+#			position => 100,
+#	 		    core => 1,
+#			  screen => "Items",
+#		},
+#		{
+#			      id => "user",
+#			    priv => "view/user",
+#			position => 200,
+#	 		    core => 1,
+#			  screen => "User",
+#		},
+#		{
+#			      id => "subscription",
+#			    priv => "view/subscription",
+#			position => 300,
+#	 		    core => 1,
+#			  screen => "Subscription",
+#		},
+#		{
+#			      id => "edreview",
+#			    priv => "view/editor",
+#			position => 400,
+#	 		    core => 1,
+#			  screen => "Review",
+#		},
+#		{
+#			      id => "status",
+#			    priv => "view/status",
+#			position => 1100,
+#	 		    core => 0,
+#			  screen => "Status",
+#		},
+#		{
+#			      id => "search_eprint",
+#			    priv => "view/search/eprint",
+#			position => 1200,
+#	 		    core => 0,
+#			  screen => "Search::EPrint",
+#		},
+#		{
+#			      id => "search_user",
+#			    priv => "view/search/user",
+#			position => 1300,
+#	 		    core => 0,
+#			  screen => "Search::User",
+#		},
+#		{
+#			      id => "add_user",
+#			    priv => "view/add_user",
+#			position => 1400,
+#	 		    core => 0,
+#			  screen => "AddUser",
+#		},
+#		{
+#			      id => "subject",
+#			    priv => "view/subject_tool",
+#			position => 1500,
+#	 		    core => 0,
+#			  screen => "Subject",
+#		},
+#	];
+#
+#	return sort { $a->{position} <=> $b->{position} } @{$tools};
+#}
 
 sub register_furniture
 {
@@ -256,11 +223,77 @@ sub can_be_viewed
 {
 	my( $self ) = @_;
 
-	return 1 unless defined $self->{priv};
-
-	return $self->{processor}->allow( $self->{priv} );
+	return 1;
 }
 
+sub allow_action
+{
+	my( $self, $action_id ) = @_;
+
+	my $ok = 0;
+	foreach my $an_action ( @{$self->{actions}} )
+	{
+		if( $an_action eq $action_id )
+		{
+			$ok = 1;
+			last;
+		}
+	}
+
+	return( 0 ) if( !$ok );
+
+	my $fn = "allow_".$action_id;
+	return $self->$fn;
+}
+
+sub from
+{
+	my( $self ) = @_;
+
+	my $action_id = $self->{processor}->{action};
+	
+	return if( $action_id eq "" );
+
+	return if( $action_id eq "null" );
+
+	my $ok = 0;
+	foreach my $an_action ( @{$self->{actions}} )
+	{
+		if( $an_action eq $action_id )
+		{
+			$ok = 1;
+			last;
+		}
+	}
+
+	if( !$ok )
+	{
+		$self->{processor}->add_message( "error",
+			$self->{session}->html_phrase( 
+	      			"Plugin/Screen:unknown_action",
+				action=>$self->{session}->make_text( $action_id ),
+				screen=>$self->{session}->make_text( $self->{processor}->{screenid} ) ) );
+		return;
+	}
+
+	if( $self->allow_action( $action_id ) )
+	{
+		my $fn = "action_".$action_id;
+		$self->$fn;
+	}
+	else
+	{
+		$self->{processor}->action_not_allowed( 
+			$self->html_phrase( "action:$action_id:title" ) );
+	}
+}
+
+sub allow
+{
+	my( $self, $priv ) = @_;
+
+	return $self->{session}->current_user->allow( $priv );
+}
 
 
 # these methods all could be properties really
@@ -293,7 +326,7 @@ sub list_items
 			$screen_id, 
 			processor => $self->{processor} );
 		next if( !defined $screen->{appears} );
-		next if( defined $screen->{priv} && !$self->allow( $screen->{priv} ) );
+		next if( !$screen->can_be_viewed );
 
 		foreach my $opt ( @{$screen->{appears}} )
 		{
@@ -302,7 +335,7 @@ sub list_items
 			$p = 999999 if( !defined $p );
 			if( defined $opt->{action} )
 			{
- 				next if( !$self->allow( $screen->{actions}->{$opt->{action}} ) );
+ 				next if( !$self->allow_action( $opt->{action} ) );
 			}
 
 			push @list_items, {
@@ -317,14 +350,6 @@ sub list_items
 	return sort { $a->{position} <=> $b->{position} } @list_items;
 }	
 
-sub allow
-{
-	my( $self, $priv ) = @_;
-
-	my $allow_code = $self->{processor}->allow( $priv );
-
-	return $allow_code;
-}
 
 
 		

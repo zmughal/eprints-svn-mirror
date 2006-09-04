@@ -12,9 +12,9 @@ sub from
 {
 	my( $self ) = @_;
 
-	my @tools = $self->get_allowed_tools;
+	my @tools = ( $self->list_items( "key_tools" ), $self->list_items( "other_tools" ) );
 
-	$self->{processor}->{screenid} = $tools[0]->{screen};
+	$self->{processor}->{screenid} = substr( $tools[0]->{screen}->{id}, 8 );
 
 	$self->SUPER::from;
 }

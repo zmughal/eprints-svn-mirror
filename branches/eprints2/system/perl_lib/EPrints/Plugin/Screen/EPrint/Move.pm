@@ -12,57 +12,28 @@ sub new
 
 	#	$self->{priv} = # no specific priv - one per action
 
-	$self->{actions} = {
-		"move_inbox_buffer" => "action/eprint/move_inbox_buffer",
-		"move_buffer_inbox" => "action/eprint/move_buffer_inbox",
-		"move_buffer_archive" => "action/eprint/move_buffer_archive",
-		"move_archive_buffer" => "action/eprint/move_archive_buffer",
-		"move_archive_deletion" => "action/eprint/move_archive_deletion",
-		"move_deletion_archive" => "action/eprint/move_deletion_archive",
-		"move_inbox_archive" => "action/eprint/move_inbox_archive",
-		"move_archive_inbox" => "action/eprint/move_archive_inbox",
-	};
+	$self->{actions} = [qw/ move_inbox move_buffer move_archive move_deletion /];
 
 	$self->{appears} = [
 		{
 			place => "eprint_actions",
-			action => "move_inbox_buffer",
+			action => "move_archive",
 			position => 400,
 		},
 		{
 			place => "eprint_actions",
-			action => "move_buffer_inbox",
+			action => "move_buffer",
 			position => 500,
 		},
 		{
 			place => "eprint_actions",
-			action => "move_buffer_archive",
+			action => "move_inbox",
 			position => 600,
 		},
 		{
 			place => "eprint_actions",
-			action => "move_archive_buffer",
+			action => "move_deletion",
 			position => 700,
-		},
-		{
-			place => "eprint_actions",
-			action => "move_archive_deletion",
-			position => 800,
-		},
-		{
-			place => "eprint_actions",
-			action => "move_deletion_archive",
-			position => 900,
-		},
-		{
-			place => "eprint_actions",
-			action => "move_inbox_archive",
-			position => 1000,
-		},
-		{
-			place => "eprint_actions",
-			action => "move_archive_inbox" ,
-			position => 1100,
 		},
 	];
 
@@ -76,7 +47,7 @@ sub about_to_render
 	$self->EPrints::Plugin::Screen::EPrint::View::about_to_render;
 }
 
-sub action_move_inbox_buffer
+sub action_move_buffer
 {
 	my( $self ) = @_;
 
@@ -85,26 +56,7 @@ sub action_move_inbox_buffer
 	$self->add_result_message( $ok );
 }
 
-sub action_move_archive_buffer
-{
-	my( $self ) = @_;
-
-	my $ok = $self->{processor}->{eprint}->move_to_buffer;
-
-	$self->add_result_message( $ok );
-}
-
-
-sub action_move_buffer_inbox
-{
-	my( $self ) = @_;
-
-	my $ok = $self->{processor}->{eprint}->move_to_inbox;
-
-	$self->add_result_message( $ok );
-}
-
-sub action_move_archive_inbox
+sub action_move_inbox
 {
 	my( $self ) = @_;
 
@@ -114,25 +66,7 @@ sub action_move_archive_inbox
 }
 
 
-sub action_move_deletion_archive
-{
-	my( $self ) = @_;
-
-	my $ok = $self->{processor}->{eprint}->move_to_archive;
-
-	$self->add_result_message( $ok );
-}
-
-sub action_move_buffer_archive
-{
-	my( $self ) = @_;
-
-	my $ok = $self->{processor}->{eprint}->move_to_archive;
-
-	$self->add_result_message( $ok );
-}
-
-sub action_move_inbox_archive
+sub action_move_archive
 {
 	my( $self ) = @_;
 
@@ -142,7 +76,7 @@ sub action_move_inbox_archive
 }
 
 
-sub action_move_archive_deletion
+sub action_move_deletion
 {
 	my( $self ) = @_;
 

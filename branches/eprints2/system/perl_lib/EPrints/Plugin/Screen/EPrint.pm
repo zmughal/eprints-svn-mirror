@@ -28,6 +28,18 @@ sub properties_from
 	$self->SUPER::properties_from;
 }
 
+sub allow
+{
+	my( $self, $priv ) = @_;
+
+	return 0 unless defined $self->{processor}->{eprint};
+
+	my $status = $self->{processor}->{eprint}->get_value( "eprint_status" );
+
+	$priv =~ s/^eprint\//eprint\/$status\//;	
+
+	return $self->{session}->current_user->allow( $priv, $self->{processor}->{eprint} );
+}
 
 sub register_furniture
 {

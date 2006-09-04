@@ -10,7 +10,6 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 
-	$self->{priv} = "view/eprint/history";
 	$self->{expensive} = 1;
 	$self->{appears} = [
 		{
@@ -22,6 +21,12 @@ sub new
 	return $self;
 }
 
+sub can_be_viewed
+{
+	my( $self ) = @_;
+
+	return $self->allow( "eprint/history" );
+}
 
 
 

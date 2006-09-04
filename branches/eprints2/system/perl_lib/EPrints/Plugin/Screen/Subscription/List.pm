@@ -13,8 +13,6 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 
-	$self->{priv} = "action/subscription/view";
-
 	$self->{appears} = [
 		{
 			place => "key_tools",
@@ -22,11 +20,23 @@ sub new
 		}
 	];
 
-	$self->{actions} = {
-		create => "action/subscription/create",
-	};
+	$self->{actions} = [qw/ create /];
 
 	return $self;
+}
+
+sub can_be_viewed
+{
+	my( $self ) = @_;
+
+	return $self->allow( "subscription" );
+}
+
+sub allow_create
+{
+	my( $self ) = @_;
+
+	return $self->allow( "create_subscription" );
 }
 
 sub action_create

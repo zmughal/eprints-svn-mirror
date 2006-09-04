@@ -12,12 +12,7 @@ sub new
 
 	$self->{priv} = "action/eprint/edit";
 
-	$self->{actions} = {
-		"stop" => "action/eprint/edit",
-		"save" => "action/eprint/edit",
-		"next" => "action/eprint/edit",
-		"prev" => "action/eprint/edit",
-	};
+	$self->{actions} = [qw/ stop save next prev /];
 
 	$self->{appears} = [
 		{
@@ -29,7 +24,12 @@ sub new
 	return $self;
 }
 
+sub can_be_viewed
+{
+	my( $self ) = @_;
 
+	return $self->allow( "eprint/edit" );
+}
 
 sub from
 {

@@ -10,8 +10,6 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 
-	$self->{priv} = "action/eprint/deposit";
-
 	$self->{appears} = [
 		{
 			place => "eprint_actions",
@@ -19,22 +17,36 @@ sub new
 		}
 	];
 
+	$self->{actions} = [qw/ deposit /];
+
 	return $self;
 }
 
-sub from
+sub can_be_viewed
 {
 	my( $self ) = @_;
 
-	if( $self->{processor}->{action} eq "deposit" )
-	{
-		$self->action_deposit;
-		$self->{processor}->{screenid} = "EPrint::View";	
-		return;
-	}
-	
-	$self->EPrints::Plugin::Screen::from;
+	return 0 unless defined $self->{processor}->{eprint};
+	return 0 unless $self->{processor}->{eprint}->get_value( "eprint_status" ) eq "inbox";
+
+	return $self->allow( "eprint/deposit" );
 }
+
+sub allow_deposit
+{
+	my( $self ) = @_;
+
+	return $self->can_be_viewed;
+}
+
+sub action_deposit
+{
+	my( $self ) = @_;
+
+	$self->action_deposit;
+	$self->{processor}->{screenid} = "EPrint::View";	
+}
+
 
 sub render
 {

@@ -4137,3 +4137,16 @@ PACKAGE: 2.2.99.2
 
 2006-09-04 cjg
  * Removed type validation from EPrint
+
+2006-09-04 cjg
+ * Mapped status, editor, deposit and editor user flags into detailed privs
+    - still needs other flags doing, and some privs may need tweaking.
+ * Added $user->allow() to test if a user can do a lowlevel priv on a given
+    item.
+ * Shifted more of screens to use action methods
+ * Added $screen->allow_foo() methods to test if a given action is allowed.
+ * Removed {priv} property of screens and replaced it with can_be_viewed
+ * Removed get_allowed_actions and get_allowed_tools - replaced with
+    list_items.
+ * Added some missing phrases.
+

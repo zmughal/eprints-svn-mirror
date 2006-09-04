@@ -23,6 +23,12 @@ sub new
 	return $self;
 }
 
+sub can_be_viewed
+{
+	my( $self ) = @_;
+
+	return $self->allow( "editorial_review" );
+}
 
 
 sub render

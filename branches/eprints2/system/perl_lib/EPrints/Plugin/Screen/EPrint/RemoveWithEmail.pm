@@ -10,8 +10,6 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 
-	$self->{priv} = "action/eprint/remove_with_email";
-
 	$self->{appears} = [
 		{
 			place => "eprint_actions",
@@ -19,38 +17,40 @@ sub new
 		}
 	];
 
+	$self->{actions} = [qw/ send cancel /];
+
 	return $self;
 }
 
 
-sub from
+sub can_be_viewed
 {
 	my( $self ) = @_;
 
-	if( $self->{processor}->{action} eq "send" )
-	{
-		$self->action_remove_with_email;
-		return;
-	}
+	return 0 unless defined $self->{processor}->{eprint};
+	return 0 if( !defined $self->{processor}->{eprint}->get_user );
 
-	if( $self->{processor}->{action} eq "cancel" )
-	{
-		$self->{processor}->{screenid} = "EPrint::View";
-		return;
-	}
-
-	$self->EPrints::Plugin::Screen::from;
+	return $self->allow( "eprint/remove_with_email" );
 }
+
+sub allow_send
+{
+	my( $self ) = @_;
+
+	return $self->can_be_viewed;
+}
+
+sub allow_cancel
+{
+	my( $self ) = @_;
+
+	return 1;
+}
+
 
 sub render
 {
 	my( $self ) = @_;
-
-	if( !$self->{processor}->allow( "action/eprint/remove_with_email" ) )
-	{
-		$self->{processor}->action_not_allowed( "eprint/remove_with_email" );
-		return;
-	}
 
 	my $user = $self->{processor}->{eprint}->get_user();
 	# We can't bounce it if there's no user associated 
@@ -119,7 +119,7 @@ sub render
 }	
 
 
-sub action_remove_with_email
+sub action_send
 {
 	my( $self ) = @_;
 
@@ -127,12 +127,6 @@ sub action_remove_with_email
 	# We can't bounce it if there's no user associated 
 
 	$self->{processor}->{screenid} = "EPrint::View";
-
-	if( !$self->{processor}->allow( "action/eprint/remove_with_email" ) )
-	{
-		$self->{processor}->action_not_allowed( "eprint/remove_with_email" );
-		return;
-	}
 
 	if( !$self->{processor}->{eprint}->remove )
 	{

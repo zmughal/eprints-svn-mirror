@@ -24,6 +24,12 @@ sub new
 }
 
 
+sub can_be_viewed
+{
+	my( $self ) = @_;
+
+	return $self->allow( "status" );
+}
 
 
 sub render

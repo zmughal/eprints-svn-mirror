@@ -22,9 +22,11 @@ sub new
 	return $self;
 }
 
-sub show_in
+sub can_be_viewed
 {
-	return( eprint_view_tabs => 400 );
+	my( $self ) = @_;
+
+	return $self->allow( "eprint/staff/export" );
 }
 
 sub render

@@ -1100,6 +1100,172 @@ sub can_edit
 }
 
 
+my $status = {
+	"status" => 2,
+};
+
+my $subscribe = {
+	"subscription" => 2,
+	"create_subscription" => 2,
+	"subscription/edit" => 2,
+};
+
+my $deposit = {
+	"items" => 2,
+	"create_eprint" => 2,
+	
+
+	"eprint/inbox/view" => 4,
+	"eprint/inbox/summary" => 4,
+	"eprint/inbox/deposit" => 4,
+	"eprint/inbox/edit" => 4,
+	"eprint/inbox/remove" => 4,
+	"eprint/inbox/export" => 4,
+	"eprint/inbox/details" => 4,
+	"eprint/inbox/history" => 4,
+
+	"eprint/inbox/deposit" => 4,
+	"eprint/inbox/derive_clone" => 4,
+	"eprint/inbox/derive_version" => 4,
+
+
+	"eprint/buffer/view" => 4,
+	"eprint/buffer/summary" => 4,
+	"eprint/buffer/move_inbox" => 4,
+	"eprint/buffer/export" => 4,
+	"eprint/buffer/details" => 4,
+	"eprint/buffer/history" => 4,
+
+	"eprint/buffer/request_deletion" => 4,
+	"eprint/buffer/derive_clone" => 4,
+	"eprint/buffer/derive_version" => 4,
+
+
+	"eprint/archive/view" => 4,
+	"eprint/archive/summary" => 4,
+	"eprint/archive/export" => 4,
+	"eprint/archive/details" => 4,
+	"eprint/archive/history" => 4,
+
+	"eprint/archive/request_deletion" => 4,
+	"eprint/archive/derive_clone" => 4,
+	"eprint/archive/derive_version" => 4,
+
+
+	"eprint/deletion/view" => 4,
+	"eprint/deletion/summary" => 4,
+	"eprint/deletion/export" => 4,
+	"eprint/deletion/details" => 4,
+	"eprint/deletion/history" => 4,
+
+	"eprint/deletion/derive_clone" => 4,
+	"eprint/deletion/derive_version" => 4,
+};
+
+my $editor = {
+	"editorial_review" => 8,
+
+
+	"eprint/inbox/view" => 8,
+	"eprint/inbox/summary" => 8,
+	"eprint/inbox/staff/export" => 8,
+	"eprint/inbox/details" => 8,
+	"eprint/inbox/history" => 8,
+
+	"eprint/inbox/remove_with_email" => 8,
+	"eprint/inbox/move_archive" => 8,
+	"eprint/inbox/move_buffer" => 8,
+	"eprint/inbox/derive_clone" => 8,
+	"eprint/inbox/derive_version" => 8,
+	"eprint/inbox/staff/edit" => 8,
+
+
+	"eprint/buffer/view" => 8,
+	"eprint/buffer/summary" => 8,
+	"eprint/buffer/staff/export" => 8,
+	"eprint/buffer/details" => 8,
+	"eprint/buffer/history" => 8,
+
+	"eprint/buffer/remove_with_email" => 8,
+	"eprint/buffer/reject_with_email" => 8,
+	"eprint/buffer/move_inbox" => 8,
+	"eprint/buffer/move_archive" => 8,
+	"eprint/buffer/derive_clone" => 8,
+	"eprint/buffer/derive_version" => 8,
+	"eprint/buffer/staff/edit" => 8,
+
+
+	"eprint/archive/view" => 8,
+	"eprint/archive/summary" => 8,
+	"eprint/archive/staff/export" => 8,
+	"eprint/archive/details" => 8,
+	"eprint/archive/history" => 8,
+
+	"eprint/archive/move_buffer" => 8,
+	"eprint/archive/move_deletion" => 8,
+	"eprint/archive/derive_clone" => 8,
+	"eprint/archive/derive_version" => 8,
+	"eprint/archive/staff/edit" => 8,
+
+
+	"eprint/deletion/view" => 8,
+	"eprint/deletion/summary" => 8,
+	"eprint/deletion/staff/export" => 8,
+	"eprint/deletion/details" => 8,
+	"eprint/deletion/history" => 8,
+
+	"eprint/deletion/move_archive" => 8,
+	"eprint/deletion/derive_clone" => 8,
+	"eprint/deletion/derive_version" => 8,
+	#"eprint/archive/staff/edit" => 8,
+
+};
+
+
+
+######################################################################
+=pod
+
+=item $result = $user->allow( $priv, [$item] )
+
+Returns true if $user can perform this action/view this screen.
+
+A true result is 1..31 where the value indicates what about the user
+allowed the priv to be performed. This is used for filtering owner/
+editor actions in eprint control screens.
+
+1 = anybody
+2 = registered user
+4 = owner of item
+8 = editor of item
+
+For non item related privs the result will normally be 2.
+
+Nb. That create eprint is NOT a priv related to an eprint, as you 
+don't own it at that stage.
+
+=cut
+######################################################################
+
+sub allow
+{
+	my( $self, $priv, $item ) = @_;
+
+	$self->{privs} = {};
+	foreach( keys %{$deposit} ) { $self->{privs}->{$_} = ($self->{privs}->{$_}||0) + $deposit->{$_}; }
+	foreach( keys %{$editor} ) { $self->{privs}->{$_} = ($self->{privs}->{$_}||0) + $editor->{$_}; }
+	foreach( keys %{$subscribe} ) { $self->{privs}->{$_} = ($self->{privs}->{$_}||0) + $subscribe->{$_}; }
+	foreach( keys %{$status} ) { $self->{privs}->{$_} = ($self->{privs}->{$_}||0) + $status->{$_}; }
+	print STDERR "allow? $priv\n";
+
+	my $r = $self->{privs}->{$priv} || 0;
+
+	# if 4 or 12 filter on owner/editor
+
+	return $r;
+}
+
+
 
 
 

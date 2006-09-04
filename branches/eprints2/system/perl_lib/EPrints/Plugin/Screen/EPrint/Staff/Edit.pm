@@ -12,14 +12,7 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 
-	$self->{priv} = "action/eprint/edit_staff";
-
-	$self->{actions} = {
-		"stop" => "action/eprint/edit_staff",
-		"save" => "action/eprint/edit_staff",
-		"next" => "action/eprint/edit_staff",
-		"prev" => "action/eprint/edit_staff",
-	};
+	$self->{actions} = [qw/ stop save next prev /];
 
 	$self->{appears} = [
 		{
@@ -29,6 +22,13 @@ sub new
 	];
 
 	return $self;
+}
+
+sub can_be_viewed
+{
+	my( $self ) = @_;
+
+	return $self->allow( "eprint/staff/edit" );
 }
 
 sub screen_after_flow

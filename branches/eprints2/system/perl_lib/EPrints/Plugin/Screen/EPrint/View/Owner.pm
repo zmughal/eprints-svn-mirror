@@ -16,6 +16,8 @@ sub set_title
 	$self->{processor}->{title} = $self->{session}->make_text("View Item");
 }
 
+sub who_filter { return 4; }
+
 sub render_status
 {
 	my( $self ) = @_;
@@ -41,28 +43,6 @@ sub render_status
 #			$status_fragment );
 }
 
-
-
-sub allow
-{
-	my( $self, $priv ) = @_;
-
-	# Special case for the action tab when there is no possible actions
-
-#	if( $priv eq "view/eprint/actions" )
-#	{
-#		my @a = $self->get_allowed_actions;
-#		return 0 if( scalar @a == 0 );
-#	}
-
-	my $allow_code = $self->{processor}->allow( $priv );
-
-	# if we only have this because we're the editor then
-	# don't allow this option.
-	return 0 if( !( $allow_code & 4 ) );
-
-	return $allow_code;
-}
 
 
 # don't do what view does 

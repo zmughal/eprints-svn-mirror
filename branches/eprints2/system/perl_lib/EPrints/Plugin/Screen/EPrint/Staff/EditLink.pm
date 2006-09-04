@@ -12,8 +12,6 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 
-	$self->{priv} = "action/eprint/edit_staff";
-
 	$self->{appears} = [
 		{
 			place => "eprint_view_tabs",
@@ -24,6 +22,12 @@ sub new
 	return $self;
 }
 
+sub can_be_viewed
+{
+	my( $self ) = @_;
+
+	return $self->allow( "eprint/staff/edit" );
+}
 sub show_in
 {
 	return( eprint_view_tabs => 400 );

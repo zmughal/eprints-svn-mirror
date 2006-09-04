@@ -8,85 +8,30 @@ use EPrints::Plugin::Screen::EPrint;
 use strict;
 
 
-# lose this! cjg
-sub from
-{
-	my( $self ) = @_;
 
-	# actions with their own screens
-	foreach my $a ( 
-		"remove", 
-		"deposit", 
-		"reject_with_email", 
-		"remove_with_email",
-		"request_deletion",
-		"edit",
-		"edit_staff",
-	)
-	{
-		next unless( $self->{processor}->{action} eq $a );
-	
-		if( !$self->allow( "action/eprint/$a" ) )
-		{
-			$self->{processor}->action_not_allowed( $a );
-			return;
-		}
-
-		$self->{processor}->{screenid} = "EPrint::\u$a";
-		return;
-	}
-
-	foreach my $a ( "derive_version", "derive_clone" )
-	{
-		next unless( $self->{processor}->{action} eq $a );
-
-		if( !$self->allow( "action/eprint/$a" ) )
-		{
-			$self->{processor}->action_not_allowed( $a );
-			return;
-		}
-
-		$self->derive_version if( $a eq "derive_version" );
-
-		$self->derive_clone if( $a eq "derive_clone" );
-
-		return;
-	}
-
-
-	$self->SUPER::from;
-}
 
 sub set_title
 {
 	my( $self ) = @_;
 
-	$self->{processor}->{title} = $self->{session}->make_text("View Item");
+	$self->{processor}->{title} = $self->{session}->make_text( "View Item" );
 }
 
 sub render_status
 {
 	my( $self ) = @_;
 
-	my $status = $self->{processor}->{eprint}->get_value( "eprint_status" );
-
-	my $status_fragment = $self->{session}->make_doc_fragment;
-	$status_fragment->appendChild( $self->{session}->html_phrase( "cgi/users/edit_eprint:item_is_in_".$status ) );
-
-
-
-	if( $self->allow( "action/eprint/deposit" ) )
-	{
-		# clean up
-		my $deposit_div = $self->{session}->make_element( "div", id=>"controlpage_deposit_link" );
-		my $a = $self->{session}->make_element( "a", href=>"?screen=EPrint::Deposit&eprintid=".$self->{processor}->{eprintid} );
-		$a->appendChild( $self->{session}->make_text( "Deposit now!" ) );
-		$deposit_div->appendChild( $a );
-		$status_fragment->appendChild( $deposit_div );
-	}
-
-	return $status_fragment;
+	return $self->{session}->make_text( "render_status should have been subclassed." );
 }
+
+sub can_be_viewed
+{
+	my( $self ) = @_;
+
+	return $self->allow( "eprint/view" ) & $self->who_filter;
+}
+
+sub who_filter { return 0; }
 
 sub about_to_render 
 {
@@ -141,6 +86,11 @@ sub render
 	my $position = {};
 	foreach my $item ( $self->list_items( "eprint_view_tabs" ) )
 	{
+		if( !($item->{screen}->can_be_viewed & $self->who_filter) )
+		{
+			print STDERR "Skipping: ".$item->{screen_id}."\n";
+			next;
+		}
 		if( $item->{screen}->{expensive} )
 		{
 			push @{$slowlist}, $item->{screen_id};
@@ -185,7 +135,7 @@ sub render
 			$self->{session}->html_phrase(
 				"cgi/users/edit_eprint:view_unavailable" ) ); # error
 	}
-	elsif(  defined $screen->{priv} && !$self->allow( $screen->{priv} ) )
+	elsif(! ($screen->can_be_viewed & $self->who_filter ) )
 	{
 		$view_div->appendChild( 
 			$self->{session}->html_phrase(

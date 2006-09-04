@@ -10,8 +10,6 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 
-	$self->{priv} = "view/eprint/export";
-
 	$self->{appears} = [
 		{
 			place => "eprint_view_tabs",
@@ -22,6 +20,12 @@ sub new
 	return $self;
 }
 
+sub can_be_viewed
+{
+	my( $self ) = @_;
+
+	return $self->allow( "eprint/export" );
+}
 
 sub render
 {

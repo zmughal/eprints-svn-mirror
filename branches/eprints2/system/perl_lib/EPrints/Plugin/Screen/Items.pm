@@ -13,6 +13,8 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 
+	$self->{actions} = [qw/ create /];
+
 	$self->{appears} = [
 		{
 			place => "key_tools",
@@ -23,44 +25,44 @@ sub new
 	return $self;
 }
 
-
-
-sub from
+sub can_be_viewed
 {
 	my( $self ) = @_;
 
+	return $self->allow( "items" );
+}
+
+sub allow_create
+{
+	my ( $self ) = @_;
+
+	return $self->allow( "create_eprint" );
+}
+
+sub action_create
+{
+	my( $self ) = @_;
+
+	my $ds = $self->{processor}->{session}->get_repository->get_dataset( "inbox" );
+
 	my $user = $self->{session}->current_user;
 
-	if( $self->{processor}->{action} eq "create" )
+	$self->{processor}->{eprint} = $ds->create_object( $self->{session}, { 
+		userid => $user->get_value( "userid" ) } );
+
+	if( !defined $self->{processor}->{eprint} )
 	{
-		if( !$self->{processor}->allow( "action/eprint/create" ) )
-		{
-			$self->{processor}->action_not_allowed( $a );
-			return;
-		}
-
-		my $ds = $self->{processor}->{session}->get_repository->get_dataset( "inbox" );
-
-		$self->{processor}->{eprint} = $ds->create_object( $self->{session}, { 
-			userid => $user->get_value( "userid" ) } );
-
-		if( !defined $self->{processor}->{eprint} )
-		{
-			my $db_error = $self->{session}->get_database->error;
-			$self->{processor}->{session}->get_repository->log( "Database Error: $db_error" );
-			$self->{processor}->add_message( 
-				"error",
-				$self->{processor}->{session}->make_text( "Database Error" ) );
-			return;
-		}
-
-		$self->{processor}->{eprintid} = $self->{processor}->{eprint}->get_id;
-		$self->{processor}->{screenid} = "EPrint::Edit";
-
+		my $db_error = $self->{session}->get_database->error;
+		$self->{processor}->{session}->get_repository->log( "Database Error: $db_error" );
+		$self->{processor}->add_message( 
+			"error",
+			$self->{processor}->{session}->make_text( "Database Error" ) );
 		return;
 	}
 
-	return;
+	$self->{processor}->{eprintid} = $self->{processor}->{eprint}->get_id;
+	$self->{processor}->{screenid} = "EPrint::Edit";
+
 }
 
 

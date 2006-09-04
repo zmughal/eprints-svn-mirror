@@ -19,10 +19,7 @@ sub new
 		}
 	];
 	
-	$self->{actions} = {
-		remove => "action/eprint/remove",	
-		cancel => "",
-	};
+	$self->{actions} = [qw/ remove cancel /];
 
 	return $self;
 }

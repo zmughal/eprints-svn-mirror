@@ -21,7 +21,7 @@ sub new
 }
 
 
-sub get_allowed_actions
+sub get_allowed_actions_delete_me
 {
 	my( $self ) = @_;
 	my @actions = ( 
