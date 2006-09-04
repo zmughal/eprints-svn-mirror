@@ -2460,8 +2460,7 @@ sub send_http_header
 
 	EPrints::Apache::AnApache::header_out( 
 		$self->{"request"},
-		"Cache-Control",
-		"no-store, no-cache, must-revalidate" );
+		"Cache-Control" => "no-store, no-cache, must-revalidate" );
 
 	my $c = $self->{request}->connection;
 	my $code = $c->notes->get( "cookie_code" );
@@ -2474,8 +2473,7 @@ sub send_http_header
 			-expires => "+10y" );
 		EPrints::Apache::AnApache::header_out( 
 			$self->{"request"},
-			"Set-Cookie",
-			$cookie );
+			"Set-Cookie" => $cookie );
 	}
 
 	if( defined $opts{lang} )
@@ -2488,8 +2486,7 @@ sub send_http_header
 			-domain  => $self->{repository}->get_conf("lang_cookie_domain") );
 		EPrints::Apache::AnApache::header_out( 
 				$self->{"request"},
-				"Set-Cookie",
-				$cookie );
+				"Set-Cookie" => $cookie );
 	}
 
 	EPrints::Apache::AnApache::send_http_header( $self->{request} );
