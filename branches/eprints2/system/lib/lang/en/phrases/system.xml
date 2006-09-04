@@ -1121,6 +1121,8 @@ Titles and Help for the System Fields
 
     <ep:phrase id="Plugin/Screen/EPrint/Actions:title">Actions</ep:phrase>
 
+    <ep:phrase id="Plugin/Screen/EPrint/Staff/Actions:title">Actions</ep:phrase>
+
     <ep:phrase id="Plugin/Screen/EPrint/EditLink:title">Edit</ep:phrase>
 
     <ep:phrase id="Plugin/Screen/EPrint/Staff/EditLink:title">Edit</ep:phrase>

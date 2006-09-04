@@ -4150,3 +4150,6 @@ PACKAGE: 2.2.99.2
     list_items.
  * Added some missing phrases.
 
+2006-09-04 cjg
+ * Removed unused javascript and css files
+ * Moved all system images to /lib from /defaultcfg
