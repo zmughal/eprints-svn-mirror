@@ -9,8 +9,8 @@
 	xmlns:ep="http://eprints.org/ep3/citations">
 
 <ep:linkhere><ep:choose>
-  <ep:when test="$item.is_set('title')">@title@</ep:when>
-  <ep:otherwise>@type@ #@eprintid@</ep:otherwise>
+  <ep:when test="title"><ep:print expr="title" /></ep:when>
+  <ep:otherwise><ep:print expr="type" /> #<ep:print expr="eprintid" /></ep:otherwise>
 </ep:choose></ep:linkhere>
 
 </ep:citation>

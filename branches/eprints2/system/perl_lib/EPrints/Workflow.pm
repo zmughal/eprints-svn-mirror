@@ -83,7 +83,9 @@ sub new
 
 	$params{session} = $session;
 	$params{current_user} = $session->current_user;
-	$self->{user}      = $params{current_user};
+	$self->{user} = $params{current_user};
+
+	$params{in} = $self->describe;
 
 	$self->{raw_config} = $self->{repository}->get_workflow_config( $self->{dataset}->confid, $workflow_id );
 	$self->{config} = EPrints::XML::collapse_conditions( $self->{raw_config}, %params );
@@ -111,6 +113,12 @@ sub get_stage_id
 	return $self->{stage};
 }
 
+sub description
+{
+	my( $self ) = @_;
+
+	return "Workflow (".$self->{dataset}->confid.",".$self->{workflow_id}.")";
+}
 
 sub _read_flow
 {
@@ -122,7 +130,7 @@ sub _read_flow
 	my $flow = ($self->{config}->getElementsByTagName("flow"))[0];
 	if(!defined $flow)
 	{
-		EPrints::abort( "Workflow (".$self->{dataset}->confid.",".$self->{workflow_id}.") - no <flow> element.\n" );
+		EPrints::abort( $self->description." - no <flow> element.\n" );
 		return;
 	}
 	my $has_stages = 0; 
@@ -134,7 +142,7 @@ sub _read_flow
 			my $ref = $element->getAttribute("ref");
 			if( !EPrints::Utils::is_set( $ref ) )
 			{
-				EPrints::abort( "Workflow (".$self->{dataset}->confid.",".$self->{workflow_id}.") - <stage> in <flow> has no ref attribute." );
+				EPrints::abort( $self->description." - <stage> in <flow> has no ref attribute." );
 			}
 			push @{$self->{stage_order}}, $ref;
 			$has_stages = 1;
@@ -143,7 +151,7 @@ sub _read_flow
 
 	if( $has_stages == 0 )
 	{
-		EPrints::abort( "Workflow (".$self->{dataset}->confid.",".$self->{workflow_id}.") - no stages in <flow> element.\n" );
+		EPrints::abort( $self->description." - no stages in <flow> element." );
 	}
 
 	# renumber stages
@@ -172,7 +180,7 @@ sub _read_stages
 		my $stage_id = $element->getAttribute("name");
 		if( !EPrints::Utils::is_set( $stage_id ) )
 		{
-			EPrints::abort( "Workflow (".$self->{dataset}->confid.",".$self->{workflow_id}.") - <element> definition has no name attribute.\n".$element->toString );
+			EPrints::abort( $self->descipriont." - <element> definition has no name attribute.\n".$element->toString );
 		}
 		$self->{stages}->{$stage_id} = new EPrints::Workflow::Stage( $element, $self, $stage_id );
 		foreach my $field_id ( $self->{stages}->{$stage_id}->get_fields_handled )
@@ -185,7 +193,7 @@ sub _read_stages
 	{
 		if( !defined $self->{stages}->{$stage_id} )
 		{
-			EPrints::abort( "Workflow (".$self->{dataset}->confid.",".$self->{workflow_id}.") - stage $stage_id defined in <flow> but not actually defined in the body of the workflow\n" );
+			EPrints::abort( $self->description." - stage $stage_id defined in <flow> but not actually defined in the body of the workflow\n" );
 		}
 	}
 }

@@ -545,27 +545,30 @@ sub mkdir
 
 
 ######################################################################
-=pod
-
-=item $xhtml = EPrints::Utils::render_citation( $obj, $cstyle, [$url] )
-
-Render the given object (EPrint, User, etc) using the citation style
-$cstyle. If $url is specified then the <ep:linkhere> element will be
-replaced with a link to that URL.
-
-=cut
+#=pod
+#
+# =item $xhtml = EPrints::Utils::render_citation( $obj, $cstyle, [$url], [$indesc] )
+#
+# Render the given object (EPrint, User, etc) using the citation style
+# $cstyle. If $url is specified then the <ep:linkhere> element will be
+# replaced with a link to that URL.
+#
+# $indesc describes where this came from in case it needs to report an
+# error.
+#
+#=cut
 ######################################################################
 
 sub render_citation
 {
-	my( $obj, $cstyle, $url ) = @_;
+	my( $obj, $cstyle, $url, $indesc ) = @_;
 
 	# This should belong to the base class of EPrint User Subject and
 	# Subscription, if we were better OO people...
 
 	my $session = $obj->get_session;
 
-	my $collapsed = EPrints::XML::collapse_conditions( $cstyle, session=>$session, item=>$obj );
+	my $collapsed = EPrints::XML::collapse_conditions( $cstyle, session=>$session, item=>$obj, in=>$indesc );
 
 	my $r= _render_citation_aux( $obj, $session, $collapsed, $url );
 
@@ -762,7 +765,6 @@ sub field_from_config_string
 			$v = 1 unless defined $v;
 			$field->set_property( "render_$k", $v );
 		}
-
 	}
 	
 	return $field;

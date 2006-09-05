@@ -648,22 +648,53 @@ sub _collapse_print
 {
 	my( $node, %params ) = @_;
 
-	my $test = $node->getAttribute( "expr" );
-foreach( keys %params ) { print STDERR "$_: ".$params{$_}."\n"; }
-	my $result = EPrints::Script::execute( $test, \%params );
+	if( !$node->hasAttribute( "expr" ) )
+	{
+		EPrints::abort( "In ".$params{in}.": print element with no expr attribute.\n".substr( $node->toString, 0, 100 ) );
+	}
+	my $expr = $node->getAttribute( "expr" );
+	if( $expr =~ m/^\s*$/ )
+	{
+		EPrints::abort( "In ".$params{in}.": print element with empty expr attribute.\n".substr( $node->toString, 0, 100 ) );
+	}
+
+	my $result = EPrints::Script::execute( $expr, \%params );
 	
-#	print STDERR  "IFTEST:::".$test." == $result\n";
+#	print STDERR  "IFTEST:::".$expr." == $result\n";
 
-	my $collapsed = $result->[1]->render_value( $params{session}, $result->[0], 0, 0, $result->[2] );
+	my $field = $result->[1];
 
-	return $collapsed;
+	# apply any render opts
+	if( $node->hasAttribute( "opts" ) )
+	{
+		$field = $field->clone;
+	
+		my $opts = $node->getAttribute( "opts" );
+		
+		foreach my $opt ( split( /;/, $opts ) )
+		{
+			my( $k, $v ) = split( /=/, $opt );
+			$v = 1 unless defined $v;
+			$field->set_property( "render_$k", $v );
+		}
+	}
+	
+	return $field->render_value( $params{session}, $result->[0], 0, 0, $result->[2] );
 }
 
 sub _collapse_if
 {
 	my( $node, %params ) = @_;
 
+	if( !$node->hasAttribute( "test" ) )
+	{
+		EPrints::abort( "In ".$params{in}.": if element with no text attribute.\n".substr( $node->toString, 0, 100 ) );
+	}
 	my $test = $node->getAttribute( "test" );
+	if( $test =~ m/^\s*$/ )
+	{
+		EPrints::abort( "In ".$params{in}.": if element with empty test attribute.\n".substr( $node->toString, 0, 100 ) );
+	}
 
 	my $result = EPrints::Script::execute( $test, \%params );
 #	print STDERR  "IFTEST:::".$test." == $result\n";
@@ -692,7 +723,15 @@ sub _collapse_choose
 		$name=~s/^ep://;
 		next unless $name eq "when";
 		
+		if( !$child->hasAttribute( "test" ) )
+		{
+			EPrints::abort( "In ".$params{in}.": when element with no text attribute.\n".substr( $child->toString, 0, 100 ) );
+		}
 		my $test = $child->getAttribute( "test" );
+		if( $test =~ m/^\s*$/ )
+		{
+			EPrints::abort( "In ".$params{in}.": when element with empty test attribute.\n".substr( $child->toString, 0, 100 ) );
+		}
 		my $result = EPrints::Script::execute( $test, \%params );
 #		print STDERR  "WHENTEST:::".$test." == $result\n";
 		if( $result->[0] )

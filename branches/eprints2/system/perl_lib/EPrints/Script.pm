@@ -53,30 +53,41 @@ sub execute
 #print STDERR "Exec: $code\n";
 #foreach( keys %{$state} ) { print STDERR "$_: ".$state->{$_}."\n"; }
 
-	my @tokens = token( $code );
+	my $compiled = EPrints::Script::Compiler->new()->compile( $code, $state->{in} );
 
-	my $tree = parse_expr( \@tokens );
+#print STDERR $compiled->debug;
 
-#print STDERR debug( $tree );
-
-	my $result = run( $tree, $state );
-
-	return $result;
+	return $compiled->run( $state );
 }
+
+sub error
+{
+	my( $msg, $in, $pos, $code ) = @_;
+#print STDERR "msg:$msg\n";
+#print STDERR "POS:$pos\n";
+	
+	my $error = "Script in ".(defined $in?$in:"unknown").": ".$msg;
+	if( defined $pos ) { $error.= " at byte ".$pos; }
+	if( defined $code ) { $error .= "\n".$code; }
+	if( defined $code && defined $pos ) {  $error .=  "\n".(" "x$pos). "^ here"; }
+	EPrints::abort( $error );
+}
+
+package EPrints::Script::Compiled;
 
 sub debug
 {
-	my( $tree, $depth ) = @_;
+	my( $self, $depth ) = @_;
 
 	$depth = $depth || 0;
 	my $r = "";
 
 	$r.= "  "x$depth;
-	$r.= $tree->{id};
-	if( defined $tree->{value} ) { $r.= " (".$tree->{value}.")"; }
-	if( defined $tree->{pos} ) { $r.= "   #".$tree->{pos}; }
+	$r.= $self->{id};
+	if( defined $self->{value} ) { $r.= " (".$self->{value}.")"; }
+	if( defined $self->{pos} ) { $r.= "   #".$self->{pos}; }
 	$r.= "\n";
-	foreach( @{$tree->{params}} )
+	foreach( @{$self->{params}} )
 	{
 		$r.=debug( $_, $depth+1 );
 	}
@@ -85,26 +96,24 @@ sub debug
 
 sub run
 {
-	my( $tree, $state ) = @_;
+	my( $self, $state ) = @_;
 
-	if( !defined $tree->{id} ) 
+	if( !defined $self->{id} ) 
 	{
-		runtime_error( "No ID in parse tree node", $tree->{code}, $tree->{pos} );
+		$self->runtime_error( "No ID in tree node" );
 	}
 
-	my $fn = "run_".$tree->{id};
-
-	if( $tree->{id} eq "STRING" )
+	if( $self->{id} eq "STRING" )
 	{
-		return [ $tree->{value}, "STRING" ];
+		return [ $self->{value}, "STRING" ];
 	}
 
-	if( $tree->{id} eq "VAR" )
+	if( $self->{id} eq "VAR" )
 	{
-		my $r = $state->{$tree->{value}};
+		my $r = $state->{$self->{value}};
 		if( !defined $r )
 		{
-			#runtime_error( "Unknown state variable ".$tree->{value}, $tree->{code}, $tree->{pos} );
+			#runtime_error( "Unknown state variable ".$self->{value} );
 		
 			return [ 0, "BOOLEAN" ];
 		}
@@ -112,99 +121,111 @@ sub run
 	}
 
 	my @params;
-	foreach( @{$tree->{params}} ) 
+	foreach my $param ( @{$self->{params}} ) 
 	{ 
-		my $p = run( $_ , $state ); 
+		my $p = $param->run( $state ); 
 		push @params, $p;
 	}
-#print STDERR "Call: $fn( $tree, ".join(",",@params ).")\n";
+
+	my $fn = "run_".$self->{id};
+
 	no strict "refs";
-	my $result = &$fn( $tree, $state, @params );
+	my $result = $self->$fn( $state, @params );
 	use strict "refs";
 
 	return $result;
 }
 
+sub runtime_error 
+{ 
+	my( $self, $msg ) = @_;
+
+	error( $msg, $self->{in}, $self->{pos}, $self->{code} )
+}
+
 sub run_EQUALS
 {
-	my( $tree, $state, $left, $right ) = @_;
+	my( $self, $state, $left, $right ) = @_;
 	
 	return [ $left->[0] eq $right->[0], "BOOLEAN" ];
 }
 
 sub run_NOTEQUALS
 {
-	my( $tree, $state, $left, $right ) = @_;
+	my( $self, $state, $left, $right ) = @_;
 	
 	return [ $left->[0] ne $right->[0], "BOOLEAN" ];
 }
 
 sub run_NOT
 {
-	my( $tree, $state, $left ) = @_;
+	my( $self, $state, $left ) = @_;
 
 	return [ !$left->[0], "BOOLEAN" ];
 }
 
 sub run_AND
 {
-	my( $tree, $state, $left, $right ) = @_;
+	my( $self, $state, $left, $right ) = @_;
 	
 	return [ $left->[0] && $right->[0], "BOOLEAN" ];
 }
 
 sub run_OR
 {
-	my( $tree, $state, $left, $right ) = @_;
+	my( $self, $state, $left, $right ) = @_;
 	
 	return [ $left->[0] || $right->[0], "BOOLEAN" ];
 }
 
 sub run_PROPERTY
 {
-	my( $tree, $state, $objvar, $property ) = @_;
+	my( $self, $state, $objvar ) = @_;
 
-	if( !defined $tree )
-	{
-		runtime_error( "no parse tree", $tree->{code}, $tree->{pos} );
-	}
 	if( !defined $objvar->[0] )
 	{
-		runtime_error( "can't get a property from undef".$tree->{value}, $tree->{code}, $tree->{pos} );
+		$self->runtime_error( "can't get a property from undef".$self->{value} );
 	}
 	my $ref = ref($objvar->[0]);
 	if( $ref !~ m/::/ )
 	{
-		runtime_error( "can't get a property from a non-object: ".$tree->{value}, $tree->{code}, $tree->{pos} );
+		$self->runtime_error( "can't get a property from a non-object: ".$self->{value} );
 	}
 	if( !$objvar->[0]->isa( "EPrints::DataObj" ) )
 	{
-		runtime_error( "can't get a property from non-dataobj: ".$tree->{value}, $tree->{code}, $tree->{pos} );
+		$self->runtime_error( "can't get a property from non-dataobj: ".$self->{value} );
 	}
 
 	return [ 
-		$objvar->[0]->get_value( $property->[0] ), 
-		$objvar->[0]->get_dataset->get_field( $property->[0] ),
+		$objvar->[0]->get_value( $self->{value} ),
+		$objvar->[0]->get_dataset->get_field( $self->{value} ),
 		$objvar->[0] ];
+}
+
+sub run_MAIN_ITEM_PROPERTY
+{
+	my( $self, $state ) = @_;
+
+	return run_PROPERTY( $self, $state, [$state->{item}] );
 }
 
 sub run_reverse
 {
-	my( $tree, $state, $string ) = @_;
+	my( $self, $state, $string ) = @_;
 
 	return [ reverse $string->[0], "STRING" ];
 } 
 	
 sub run_is_set
 {
-	my( $tree, $state, $param ) = @_;
+	my( $self, $state, $param ) = @_;
 
 	return [ EPrints::Utils::is_set( $param->[0] ), "BOOLEAN" ];
 } 
 
 sub run_one_of
 {
-	my( $tree, $state, $string, @list ) = @_;
+	my( $self, $state, $string, @list ) = @_;
 
 	if( !defined $string )
 	{
@@ -220,11 +241,11 @@ sub run_one_of
 
 sub run_as_item # maybe change later
 {
-	my( $tree, $state, $itemref ) = @_;
+	my( $self, $state, $itemref ) = @_;
 
 	if( !$itemref->[1]->isa( "EPrints::MetaField::Itemref" ) )
 	{
-		runtime_error( "can't call as_item on anything but a value of type itemref", $tree->{code}, $tree->{pos} );
+		$self->runtime_error( "can't call as_item on anything but a value of type itemref" );
 	}
 
 	my $object = $itemref->[1]->get_item( $state->{session}, $itemref->[0] );
@@ -235,242 +256,357 @@ sub run_as_item # maybe change later
 ########################################################
 
 
-sub token
+package EPrints::Script::Compiler;
+
+use strict;
+
+sub new
 {
-	my( $code ) = @_;
+	my( $class ) = @_;
 
-	my @tokens = ();
+	return bless {}, $class;
+}
 
-	my $fullcode = $code;
+sub compile
+{
+	my( $self, $code, $in ) = @_;
+
+	$in = "unknown" unless defined $in;
+
+	$self->{code} = $code;
+	$self->{in} = $in;	
+	$self->{tokens} = [];
+
+	$self->tokenise;
+	
+	if( scalar @{$self->{tokens}} == 0 ) 
+	{
+		#$state->{session}->get_repository->log( "Script in: ".$state->{in}.": Empty script." );
+		return [ 0, "BOOLEAN" ];
+	}
+		
+	return $self->compile_expr;
+}
+
+
+sub tokenise
+{
+	my( $self ) = @_;
+
+	my @tokens;
+
+	my $code = $self->{code};
 	my $len = length $code;
 
 	while( $code ne "" )
 	{
 		my $pos = $len-length $code;
 		if( $code =~ s/^\s+// ) { next; }
-		if( $code =~ s/^'([^']*)'// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'STRING',value=>$1 }; next; }
-		if( $code =~ s/^"([^"]*)"// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'STRING',value=>$1 };  next;}
-		if( $code =~ s/^\$([a-zA-Z0-9_-]+)// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'VAR',value=>$1 };  next;}
-		if( $code =~ s/^\.([a-zA-Z0-9_-]+)// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'M_OR_P', value=>$1 };  next;}
-		if( $code =~ s/^\(// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'OPEN_B' };  next;}
-		if( $code =~ s/^\)// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'CLOSE_B' };  next;}
-		if( $code =~ s/^=// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'EQUALS' };  next;}
-		if( $code =~ s/^!=// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'NOTEQUALS' };  next;}
-		if( $code =~ s/^,// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'COMMA' };  next;}
-		if( $code =~ s/^!// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'NOT' };  next;}
-		if( $code =~ s/^and// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'AND' };  next;}
-		if( $code =~ s/^or// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'OR' };  next;}
-		if( $code =~ s/^([a-zA-Z][a-zA-Z0-9_-]*)// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'FNAME', value=>$1 };  next;}
-		parse_error( "Parse error", \$fullcode, $pos );
+		if( $code =~ s/^'([^']*)'// ) { push @tokens, { pos=>$pos, id=>'STRING',value=>$1 }; next; }
+		if( $code =~ s/^"([^"]*)"// ) { push @tokens, { pos=>$pos, id=>'STRING',value=>$1 };  next;}
+		if( $code =~ s/^\$// ) { push @tokens, { pos=>$pos, id=>'DOLLAR',value=>$1 };  next;}
+		if( $code =~ s/^\.// ) { push @tokens, { pos=>$pos, id=>'DOT', value=>$1 };  next;}
+		if( $code =~ s/^\(// ) { push @tokens, { pos=>$pos, id=>'OPEN_B' };  next;}
+		if( $code =~ s/^\)// ) { push @tokens, { pos=>$pos, id=>'CLOSE_B' };  next;}
+		if( $code =~ s/^\{// ) { push @tokens, { pos=>$pos, id=>'OPEN_C' };  next;}
+		if( $code =~ s/^\}// ) { push @tokens, { pos=>$pos, id=>'CLOSE_C' };  next;}
+		if( $code =~ s/^=// ) { push @tokens, { pos=>$pos, id=>'EQUALS' };  next;}
+		if( $code =~ s/^!=// ) { push @tokens, { pos=>$pos, id=>'NOTEQUALS' };  next;}
+		if( $code =~ s/^,// ) { push @tokens, { pos=>$pos, id=>'COMMA' };  next;}
+		if( $code =~ s/^!// ) { push @tokens, { pos=>$pos, id=>'NOT' };  next;}
+		if( $code =~ s/^and// ) { push @tokens, { pos=>$pos, id=>'AND' };  next;}
+		if( $code =~ s/^or// ) { push @tokens, { pos=>$pos, id=>'OR' };  next;}
+		if( $code =~ s/^([a-zA-Z][a-zA-Z0-9_-]*)// ) { push @tokens, { pos=>$pos, id=>'IDENT', value=>$1 };  next;}
+		$self->compile_error( "Parse error" );
 	}
 
-	return @tokens;
-}
-
-sub parse_expr
-{
-	my( $tokens ) = @_;
-
-	my $tree = parse_and_expr( $tokens );
-	
-	if( defined $tokens->[0] && $tokens->[0]->{id} eq "OR" )
-	{
-		my $subj = $tree;
-		$tree = shift @$tokens;
-		$tree->{params} = [ $subj, parse_expr( $tokens ) ];
-	}
-
-	return $tree;
-
-}
-
-sub parse_and_expr
-{
-	my( $tokens ) = @_;
-
-	my $tree = parse_test_expr( $tokens );
-	
-	if( defined $tokens->[0] && $tokens->[0]->{id} eq "AND" )
-	{
-		my $subj = $tree;
-		$tree = shift @$tokens;
-		$tree->{params} = [ $subj, parse_and_expr( $tokens ) ];
-	}
-
-	return $tree;
-}
-
-
-sub parse_test_expr
-{
-	my( $tokens ) = @_;
-
-	my $tree = parse_not_expr( $tokens );
-	
-	if( defined $tokens->[0] && ( $tokens->[0]->{id} eq "EQUALS" || $tokens->[0]->{id} eq "NOTEQUALS" ) )
-	{
-		my $subj =  $tree;
-		$tree = shift @$tokens;
-		$tree->{params} = [ $subj, parse_test_expr( $tokens ) ];
-	}
-
-	return $tree;
-}
-
-sub parse_not_expr
-{
-	my( $tokens ) = @_;
-	
-	if( defined $tokens->[0] && ( $tokens->[0]->{id} eq "NOT" ) )
-	{
-		my $tree = shift @$tokens;
-		$tree->{params} = [ parse_not_expr( $tokens ) ];
-		return $tree;
-	}
-
-	my $tree = parse_method_expr( $tokens );
-
-	return $tree;
-}
-
-sub parse_method_expr
-{
-	my( $tokens ) = @_;
-
-	my $tree = parse_b_expr( $tokens );
-
-	while( defined $tokens->[0] && $tokens->[0]->{id} eq "M_OR_P" )
+	$self->{tokens} = [];
+	foreach my $token ( @tokens )
 	{	
-		my $subj = $tree;
-		$tree = shift @$tokens;
+		$token->{in} = $self->{in};
+		$token->{code} = $self->{code};
+		push @{$self->{tokens}}, bless $token, "EPrints::Script::Compiled";
+	}
 
-		if( defined $tokens->[0] && $tokens->[0]->{id} eq "OPEN_B" )
+}
+
+sub give_me
+{
+	my( $self, $want, $err_msg ) = @_;
+
+	my $token = shift @{$self->{tokens}}; # pull off list
+
+	if( !defined $token || $token->{id} ne $want )
+	{
+		if( !defined $err_msg )
 		{
-			shift @$tokens; #consume "("
-			$tree->{id} = $tree->{value};
-			$tree->{params} = [ $subj, @{parse_list( $tokens )} ]; # like ( $self, @params ) in Perl
-			if( $tokens->[0]->{id} ne "CLOSE_B" )
-			{
-				parse_error( "expected closing method bracket", $tokens->[0]->{code}, $tokens->[0]->{pos} );
-			}
-			shift @$tokens; #consume ")"
+			$err_msg = "Expected $want";
+		}	
+		if( !defined $token )
+		{
+			$err_msg.=" (found end of script)";
 		}
 		else
 		{
-			$tree->{id} = "PROPERTY";
-			$tree->{params} = [ $subj, { id=>"STRING", value=>$tree->{value}, code=>$tree->{code}, pos=>$tree->{pos} } ];
+			$err_msg.=" (found ".$token->{id}.")";
 		}
+		$self->compile_error( $err_msg );
+	}
+
+	return $token;
+}
+
+sub next_is
+{
+	my( $self, $type ) = @_;
+
+	return 0 if !defined $self->{tokens}->[0];
+
+	return( $self->{tokens}->[0]->{id} eq $type );
+}
+
+sub compile_expr
+{
+	my( $self ) = @_;
+
+	my $tree = $self->compile_and_expr;
+	
+	if( $self->next_is( "OR" ) )
+	{
+		my $left = $tree;
+		my $or = $self->give_me( "OR" );
+		my $right = $self->compile_expr;	
+		$or->{params} = [ $left, $right ];
+		return $or;
+	}
+
+	return $tree;
+
+}
+
+sub compile_and_expr
+{
+	my( $self ) = @_;
+
+	my $tree = $self->compile_test_expr;
+	
+	if( $self->next_is( "AND" ) )
+	{
+		my $left = $tree;
+		my $and = $self->give_me( "AND" );
+		my $right = $self->compile_and_expr;	
+		$and->{params} = [ $left, $right ];
+		return $and;
 	}
 
 	return $tree;
 }
 
-sub parse_b_expr
-{
-	my( $tokens ) = @_;
 
-	if( $tokens->[0]->{id} eq "OPEN_B" )
+sub compile_test_expr
+{
+	my( $self ) = @_;
+
+	my $tree = $self->compile_not_expr;
+	
+	if( $self->next_is( "EQUALS" ) )
 	{
-		shift @$tokens; #consume "("
-		my $tree = parse_expr( $tokens );
-		if( $tokens->[0]->{id} ne "CLOSE_B" )
+		my $left = $tree;
+		my $eq = $self->give_me( "EQUALS" );
+		my $right = $self->compile_test_expr;	
+		$eq->{params} = [ $left, $right ];
+		return $eq;
+	}
+	if( $self->next_is( "NOTEQUALS" ) )
+	{
+		my $left = $tree;
+		my $neq = $self->give_me( "NOTEQUALS" );
+		my $right = $self->compile_test_expr;	
+		$neq->{params} = [ $left, $right ];
+		return $neq;
+	}
+
+	return $tree;
+}
+
+sub compile_not_expr
+{
+	my( $self ) = @_;
+
+	if( $self->next_is( "NOT" ) )	
+	{
+		my $not = $self->give_me( "NOT" );
+		my $param = $self->compile_not_expr;
+		$not->{params} = [ $param ];
+		return $not;
+	}
+
+	return $self->compile_method_expr;
+}
+
+# METH_EXPR = B_EXPR + METH_OR_PROP*
+# METH_OR_PROP = "{" + ident + "}"		# property	
+#              | "." + ident + "(" + LIST + ")"	# method
+
+sub compile_method_expr
+{
+	my( $self ) = @_;
+
+	my $tree = $self->compile_b_expr;
+
+	while( $self->next_is( "DOT" ) || $self->next_is( "OPEN_C" ) )
+	{	
+		# method.
+		if( $self->next_is( "DOT" ) )
 		{
-			parse_error( "expected closing bracket", $tokens->[0]->{code}, $tokens->[0]->{pos} );
+			$self->give_me( "DOT" );
+			
+			my $method_on = $tree;
+
+			$tree = $self->give_me( "IDENT", "expected method name after dot" );
+			
+			$self->give_me( "OPEN_B", "expected opening method bracket" ); 
+
+			$tree->{id} = $tree->{value};
+			$tree->{params} = [ $method_on, @{$self->compile_list} ]; # like ( $self, @params ) in Perl
+
+			$self->give_me( "CLOSE_B", "expected closing method bracket" ); 
+
+			next;
 		}
-		shift @$tokens; #consume ")"
+
+		# property.
+		if( $self->next_is( "OPEN_C" ) )
+		{
+			$self->give_me( "OPEN_C", "expected opening curly bracket" ); 
+			
+			my $prop_on = $tree;
+
+			$tree = $self->give_me( "IDENT", "expected property name after {" );
+
+			$tree->{id} = "PROPERTY";
+			$tree->{params} = [ $prop_on ];
+
+			$self->give_me( "CLOSE_C", "expected closing curly bracket" ); 
+
+			next;
+		}
+
+		$self->compile_error( "odd error. this code should be unreachable" );
+	}
+
+	return $tree;
+}
+
+sub compile_b_expr
+{
+	my( $self ) = @_;
+
+	if( !defined $self->{tokens}->[0] )
+	{
+		$self->compile_error( "expected '(', string, variable or function" );
+	}
+
+	if( $self->next_is( "OPEN_B" ) )
+	{
+		$self->give_me( "OPEN_B", "expected opening bracket" ); 
+		my $tree = $self->compile_expr;
+		$self->give_me( "CLOSE_B", "expected closing bracket" ); 
 		return $tree;
 	}
 
-	if( $tokens->[0]->{id} eq "STRING" )
-	{
-		return shift @$tokens;
-	}
-
-	if( $tokens->[0]->{id} eq "VAR" )
-	{
-		return shift @$tokens;
-	}
-
-	if( $tokens->[0]->{id} eq "FNAME" )
-	{
-		my $func = shift @$tokens;
-
-		unless( defined $tokens->[0]->{id} && $tokens->[0]->{id} eq "OPEN_B" )
-		{
-			parse_error( "expected opening function bracket", $tokens->[0]->{code}, $tokens->[0]->{pos} );
-		}
-		shift @$tokens; #consume "("
-
-		$func->{id} = $func->{value};
-		$func->{params} = [ @{parse_list( $tokens )} ];
-
-		if( $tokens->[0]->{id} ne "CLOSE_B" )
-		{
-			parse_error( "expected function method bracket", $tokens->[0]->{code}, $tokens->[0]->{pos} );
-		}
-		shift @$tokens; #consume ")"
-
-		return $func;
-	}
-
-
-	parse_error( "expected '(', string, variable or function", $tokens->[0]->{code}, $tokens->[0]->{pos} );
+	return $self->compile_thing;
 }
 
-sub parse_list
-{
-	my( $tokens ) = @_;
+# THING = VAR 
+#       | string
+#       | ident				# item param shortcut
+#       | ident + "(" + LIST + ")"	# function
+# VAR   = "\$" + IDENT
 
-	return [] if( $tokens->[0]->{id} eq "CLOSE_B" );
+sub compile_thing
+{
+	my( $self ) = @_;
+
+	if( $self->next_is( "STRING" ) )
+	{
+		return $self->give_me( "STRING" );
+	}
+
+	if( $self->next_is( "DOLLAR" ) )
+	{
+		$self->give_me( "DOLLAR", "Expected dollar" );
+		my $var = $self->give_me( "IDENT", "Expected state variable name" );
+		$var->{id} = "VAR";
+		return $var;
+	}
+
+	my $ident = $self->give_me( "IDENT", "Expected function, main-item parameter name, string or state variable" );
+
+	# function
+	if( $self->next_is( "OPEN_B" ) )
+	{
+		$self->give_me( "OPEN_B", "Expected open bracket" );
+
+		$ident->{id} = $ident->{value};
+		$ident->{params} = [ @{$self->compile_list} ];
+
+		$self->give_me( "CLOSE_B", "Expected close bracket" );
+
+		return $ident;
+	}
+
+	# must be an ident by itself (shortcut for $item{foo}
+
+	$ident->{id} = "MAIN_ITEM_PROPERTY";
+	return $ident;
+}
+
+sub compile_list
+{
+	my( $self ) = @_;
+
+	return [] if( $self->next_is( "CLOSE_B" ) );
 
 	my $values = [];
-	push @$values, parse_expr( $tokens );
-	while (  $tokens->[0]->{id} eq "COMMA"  )
+	push @$values, $self->compile_expr;
+	while( $self->next_is( "COMMA" ) )
 	{
-		shift @$tokens; # consume COMMA;
-		push @$values, parse_expr( $tokens );
+		$self->give_me( "COMMA", "Expected comma" );
+		push @$values, $self->compile_expr;
 	}
 	
 	return $values;
 }
 
-sub parse_error 
+sub compile_error 
 { 
-	my( $msg, $code, $pos ) = @_;
-	error( $msg, $code, $pos );
-}	
-sub runtime_error 
-{ 
-	my( $msg, $code, $pos ) = @_;
-	error( $msg, $code, $pos );
-}
+	my( $self, $msg ) = @_;
 
-sub error
-{
-	my( $msg, $code, $pos ) = @_;
-#print STDERR "msg:$msg\n";
-#print STDERR "POS:$pos\n";
-	my $error = "$msg at byte $pos\n";	
-	$error .= ${$code}."\n";
-	$error .= " "x$pos;
-	$error .= "^ here";
-	EPrints::abort( $error );
-}
+	EPrints::Script::error( $msg, $self->{in}, $self->{tokens}->[0]->{pos}, $self->{code} );
+}	
 
 my $x=<<__;
-EXPR = AND_EXPR + ("or + EXPR)?
+EXPR = AND_EXPR + ( "or + EXPR)?
 AND_EXPR = OR_EXPR + ( "and" + AND_EXPR )?
 OR_EXPR = TEST_EXPR + ( "or + OR_EXPR )?
-TEST_EXPR = NOT_EXPR + ( ("="||"!=") + TEST_EXPR )?
+TEST_EXPR = NOT_EXPR + ( TESTOP + TEST_EXPR )?
+TEST_OP = "=" 
+        | "!=" 
 NOT_EXPR = ("!")? + METH_EXPR
-METH_EXPR = B_EXPR + METHOROP*
-METHORPROP = M_OR_P || M_OR_P + "(" + LIST + ")"
+METH_EXPR = B_EXPR + METH_OR_PROP*
+METH_OR_PROP = "{" + ident + "}"		# property	
+             | "." + ident + "(" + LIST + ")"	# method
+B_EXPR = THING 
+       | "(" + EXPR + ")"
+THING = VAR 
+      | string
+      | ident				# item param shortcut
+      | ident + "(" + LIST + ")"	# function
+VAR = "\$" + IDENT
 
-B_EXPR = THING || "(" + EXPR + ")"
-THING = VAR || STRING || FUNC
-
-LIST = "" || EXPR + ( "," + EXPR )*
-FUNC = FNAME + "(" + LIST + ")"
+LIST = "" 
+     | EXPR + ( "," + EXPR )*
 
 __
 

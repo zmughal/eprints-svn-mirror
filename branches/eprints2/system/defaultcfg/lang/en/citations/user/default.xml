@@ -9,8 +9,8 @@
 	xmlns:ep="http://eprints.org/ep3/citations">
 
 <ep:linkhere><span class="ep_name_citation"><ep:choose>
-  <ep:when test="$item.is_set('name')">@name@</ep:when>
-  <ep:otherwise>No name, email=@email@</ep:otherwise>
+  <ep:when test="name"><ep:print expr="name" /></ep:when>
+  <ep:otherwise>No name, email=<ep:print expr="email" /></ep:otherwise>
 </ep:choose></span></ep:linkhere>
 
 </ep:citation>

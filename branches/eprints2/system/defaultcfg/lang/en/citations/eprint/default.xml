@@ -10,73 +10,76 @@
 
 <choose>
 
-  <when test="$item.type = 'book'">
-    <ifset name="creators">@creators@</ifset><ifnotset  name="creators">@editors@, ed.</ifnotset>
+  <when test="$item{type} = 'book' and is_set( $item{creators} )">
+    <print expr="creators" />
   </when>
 
-  <when test="$item.type = 'patent'">@patent_applicant@</when>
+  <when test="$item{type} = 'book' and !is_set( $item{creators} )">
+    <print expr="editors" />, ed.
+  </when>
 
-  <otherwise>@creators@</otherwise>
+  <when test="type = 'patent'">
+    <print expr="patent_applicant" />
+  </when>
+
+  <otherwise>
+    <print expr="creators" />
+  </otherwise>
 
 </choose>
 
-<print expr="$item.creators" />
-<xhtml:hr />
-<print expr="$item.userid.as_item().name" />
-<xhtml:hr />
+<if test="date_effective">(<print expr="date_effective" opts="res=year" />)</if>
 
-<if test="$user" >
-<xhtml:h1>
-  <print expr="$user.name" />
-</xhtml:h1>
-</if>
-
-<if test="$item.date_effective">(@date_effective;res=year@)</if>
-<linkhere><em>@title;magicstop@</em></linkhere>
+<linkhere><em><print expr="title" opts="magicstop" /></em></linkhere>
 
 <choose>
 
-  <when test="$item.type.one_of( 'book','book_section' )">
-    <if test="$item.type = 'book_section'">
-      In: <ifnotset  name="creators">@editors@, (eds).</ifnotset> 
-      @book_title;magicstop@
+  <when test="type.one_of( 'book','book_section' )">
+    <if test="type = 'book_section'">
+      In: <if test="!is_set(creators)"><print expr="editors" />, (eds).</if> 
+      <print expr="book_title" opts="magicstop" />
     </if>
-    <ifset name="series">@series@<ifset name="volume">, @volume</ifset><ifset name="number"> (@number@)</ifset>.</ifset>
-@publisher@<ifset name="place_of_pub">, @place_of_pub</ifset><ifset name="pagerange">, @pagerange@</ifset>.
-    <ifset name="isbn"> ISBN @isbn@</ifset>
+    <if test="series">
+      <print expr="series" /><if test="volume">, <print expr="volume" /></if>
+      <if test="number"> (<print expr="number" />)</if>.
+    </if>
+    <print expr="publisher" /><if test="place_of_pub">, <print expr="place_of_pub" /></if><if test="pagerange">, <print expr="pagerange" /></if>.
+    <if test="isbn"> ISBN <print expr="isbn" /></if>
   </when>
 
-  <when test="$item.type = 'article'">
-    <ifset name="publication">@publication@<if test="$item.is_set( 'volume' )">, @volume</if><ifset name="number"> (@number@)</ifset>.</ifset>
-    <ifset name="pagerange"> @pagerange@.</ifset>
-    <ifset name="issn"> ISSN @issn@</ifset>
+  <when test="type = 'article'">
+    <if test="publication"><print expr="publication" /><if test="volume">, <print expr="volume" /></if>
+      <if test="number"> (<print expr="number" />)</if>.
+    </if>
+    <if test="pagerange"> <print expr="pagerange" />.</if>
+    <if test="issn"> ISSN <print expr="issn" /></if>
   </when>
 
-  <when test="$item.type = 'monograph'">
-    @monograph_type@.
-    @publisher@<ifset name="place_of_pub">, @place_of_pub</ifset>.
+  <when test="type = 'monograph'">
+    <print expr="monograph_type" />.
+    <print expr="publisher" /><if test="place_of_pub">, <print expr="place_of_pub" /></if>.
   </when>
 
-  <when test="$item.type = 'conference_item'">
-    In: @event_title@<ifset name="event_dates">, @event_dates</ifset><ifset name="event_location">, @event_location</ifset>.
+  <when test="type = 'conference_item'">
+    In: <print expr="event_title" /><if test="event_dates">, <print expr="event_dates" /></if><if test="event_location">, <print expr="event_location" /></if>.
   </when>
 
-  <when test="$item.type = 'thesis'">
-    @thesis_type@ thesis, @institution@.
+  <when test="type = 'thesis'">
+    <print expr="thesis_type" /> thesis, <print expr="institution" />.
   </when>
 
-  <when test="$item.type = 'patent'">
-    @id_number@.
+  <when test="type = 'patent'">
+    <print expr="id_number" />.
   </when>
 
-  <when test="$item.type = 'other'">
-    @publisher@<ifset name="place_of_pub">, @place_of_pub</ifset>.
+  <when test="type = 'other'">
+    <print expr="publisher" /><if name="place_of_pub">, <print expr="place_of_pub" /></if>.
   </when>
 
 </choose>
 
-<if test="! $item.type.one_of( 'patent','thesis' )">
-  <if test="$item.ispublished.one_of('unpub', 'submitted', 'inpress')"> (@ispublished@)</if>
+<if test=" ! type.one_of( 'patent','thesis' )">
+  <if test="ispublished.one_of('unpub', 'submitted', 'inpress')"> (<print expr="ispublished" />)</if>
 </if>
 
 </citation>

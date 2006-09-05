@@ -691,7 +691,7 @@ sub render_citation
 					$self->{dataset},
 					$style );
 
-	EPrints::Utils::render_citation( $self , $stylespec , $url );
+	my $r =  EPrints::Utils::render_citation( $self , $stylespec, undef, "citation ".$self->{dataset}->confid."/".$style );
 }
 
 
@@ -738,7 +738,7 @@ sub render_description
 	my $stylespec = $self->{session}->get_citation_spec(
 					$self->{dataset},"brief" );
 				
-	my $r =  EPrints::Utils::render_citation( $self , $stylespec );
+	my $r =  EPrints::Utils::render_citation( $self , $stylespec, undef, "citation ".$self->{dataset}->confid."/brief" );
 
 	return $r;
 }

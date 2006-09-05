@@ -4177,3 +4177,10 @@ PACKAGE: 2.2.99.2
  * Changed default eprints citation file to have eprints, not
     xhtml as the default namespace.
 
+2006-09-05 cjg
+ * Made Script use objects for the compiler and compiled scripts.
+ * <print /> now can have a opts attribute to set render options
+ * Script now has a cleaner tokeniser
+ * Script now gets fields from dataobjs using $item{foo}
+ * a bareword in a Script eg. foo is now equiv to $item{foo}
+

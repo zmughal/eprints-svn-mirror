@@ -10,6 +10,6 @@
 
 <!-- document citations -->
 
-<ep:linkhere><span class="ep_document_citation">@format@ <ep:if test="$item.is_set('formatdesc')"> (@formatdesc@)</ep:if></span></ep:linkhere>
+<ep:linkhere><span class="ep_document_citation"><ep:print expr='format' /> <ep:if test="formatdesc"> (<ep:print expr="formatdesc" />)</ep:if></span></ep:linkhere>
 
 </ep:citation>
