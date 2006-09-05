@@ -1,0 +1,94 @@
+{
+
+	# EPrint
+	
+	"cgi/users/edit_eprint:cant_find_it" 
+	"cgi/users/edit_eprint:view_as_either"
+	"cgi/users/home:new_item_link"
+	"cgi/users/home:new_item_info"
+	"cgi/users/home:import_item_link"
+	"cgi/users/home:import_item_info"
+	
+	# Review
+	
+	"cgi/users/buffer:overview_title"
+	"cgi/users/buffer:no_entries"
+	"cgi/users/buffer:buffer_blurb"
+	"cgi/users/buffer:title"
+	"cgi/users/buffer:sub_by"
+	"cgi/users/buffer:sub_date"
+	"cgi/users/buffer:invalid"
+	"lib/metafield:unspecified_editperms"
+
+	# Status
+	
+	"cgi/users/status:release"
+	"cgi/users/status:database"
+	"cgi/users/status:usertitle"
+	"cgi/users/status:users"
+	"cgi/users/status:articles"
+	"cgi/users/status:set_"
+	"cgi/users/status:diskspace"
+	"cgi/users/status:diskfree"
+	"cgi/users/status:mbfree"
+	"cgi/users/status:out_of_space"
+	"cgi/users/status:nearly_out_of_space"
+	"cgi/users/status:subscriptions"
+	"cgi/users/status:subcount"
+	"cgi/users/status:subsent"
+	"cgi/users/status:title"
+	
+	# Deposit
+	"priv:action/eprint/deposit"
+
+	# Edit
+
+	"lib/submissionform:action_prev"
+	"lib/submissionform:action_staff_save"
+	"lib/submissionform:action_next"
+	
+	# EditLink
+
+	"metapage_title_"
+
+	# Move
+
+	"cgi/users/edit_eprint:no_user"
+	
+	
+	# Reject with email
+	"cgi/users/edit_eprint:no_user"
+	"cgi/users/edit_eprint:title_bounce_form"
+	"cgi/users/edit_eprint:bounce_form_intro"
+	"cgi/users/edit_eprint:action_cancel"
+	"cgi/users/edit_eprint:bord_fail"
+	"cgi/users/edit_eprint:status_changed"
+	"cgi/users/edit_eprint:subject_bounce"
+	"cgi/users/edit_eprint:mail_fail"
+	"cgi/users/edit_eprint:mail_sent"
+	
+	# Remove
+	lib/submissionform:sure_delete
+	"lib/submissionform:action_cancel"
+	"lib/submissionform:action_confirm"
+	
+	# Remove with email
+	"cgi/users/edit_eprint:no_user"
+	"cgi/users/edit_eprint:title_bounce_form"
+	"cgi/users/edit_eprint:bounce_form_intro"
+	"cgi/users/edit_eprint:action_cancel"
+	"cgi/users/edit_eprint:subject_bounce"
+	"cgi/users/edit_eprint:mail_sent"
+
+	# View
+	"cgi/users/edit_eprint:view_unavailable"
+	"cgi/users/edit_eprint:loading"
+
+	# Staff/Edit
+
+	"lib/submissionform:action_prev"
+	"lib/submissionform:action_staff_stop"
+	"lib/submissionform:action_staff_save"
+	"lib/submissionform:action_next"
+
+}
