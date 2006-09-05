@@ -4157,3 +4157,23 @@ PACKAGE: 2.2.99.2
 2006-09-04 cjg
  * Action tabs now work with actions as well as screens
  * Sorted out priv methods for remaining screens
+
+2006-09-04 cjg
+ * Split mail related methods out of Utils.pm into Email.pm
+ * Removed some old unused mail encoding methods
+ * Script now has typed variables
+ * Improved error messages in Script to shop point of error
+ * Changed the Script is_set method to take different params
+ * Added functions to Script in addition to methods
+ * Added types to variables in Script
+ * Added as_item() to Script to turn itemrefs into objects.
+ * Removed unused constant from Apache/Template
+ * Changed collapse_conditions to pass session in the param hash
+ * Workflow now passes current user as an param
+ * Added a get_item() method to MetaField::Itemref
+ * Added deprecated message to all BackCompatability methods
+ * Fixed bug that meant Screen::EPrint::View didn't work
+ * Removed some commented out old code from the end of XML
+ * Changed default eprints citation file to have eprints, not
+    xhtml as the default namespace.
+

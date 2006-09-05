@@ -39,7 +39,6 @@ The syntax is
  dataobj.property := string or datastructure
  dataobj.is_set( fieldname ) := boolean
  string.one_of( string, string, string... ) := boolean
- 
 
 =cut
 
@@ -51,9 +50,14 @@ sub execute
 {
 	my( $code, $state ) = @_;
 
+#print STDERR "Exec: $code\n";
+#foreach( keys %{$state} ) { print STDERR "$_: ".$state->{$_}."\n"; }
+
 	my @tokens = token( $code );
 
 	my $tree = parse_expr( \@tokens );
+
+#print STDERR debug( $tree );
 
 	my $result = run( $tree, $state );
 
@@ -70,6 +74,7 @@ sub debug
 	$r.= "  "x$depth;
 	$r.= $tree->{id};
 	if( defined $tree->{value} ) { $r.= " (".$tree->{value}.")"; }
+	if( defined $tree->{pos} ) { $r.= "   #".$tree->{pos}; }
 	$r.= "\n";
 	foreach( @{$tree->{params}} )
 	{
@@ -84,14 +89,14 @@ sub run
 
 	if( !defined $tree->{id} ) 
 	{
-		EPrints::abort( "No ID in parse tree node.");
+		runtime_error( "No ID in parse tree node", $tree->{code}, $tree->{pos} );
 	}
 
 	my $fn = "run_".$tree->{id};
 
 	if( $tree->{id} eq "STRING" )
 	{
-		return $tree->{value};
+		return [ $tree->{value}, "STRING" ];
 	}
 
 	if( $tree->{id} eq "VAR" )
@@ -99,9 +104,11 @@ sub run
 		my $r = $state->{$tree->{value}};
 		if( !defined $r )
 		{
-			EPrints::abort( "Unknown state variable ".$tree->{value} );
+			#runtime_error( "Unknown state variable ".$tree->{value}, $tree->{code}, $tree->{pos} );
+		
+			return [ 0, "BOOLEAN" ];
 		}
-		return $r;
+		return [ $r ];
 	}
 
 	my @params;
@@ -110,112 +117,122 @@ sub run
 		my $p = run( $_ , $state ); 
 		push @params, $p;
 	}
-
+#print STDERR "Call: $fn( $tree, ".join(",",@params ).")\n";
 	no strict "refs";
-	my $result = &$fn( $tree, @params );
+	my $result = &$fn( $tree, $state, @params );
 	use strict "refs";
-
-	debug( $tree );
 
 	return $result;
 }
 
 sub run_EQUALS
 {
-	my( $tree, $left, $right ) = @_;
+	my( $tree, $state, $left, $right ) = @_;
 	
-	return( $left eq $right );
+	return [ $left->[0] eq $right->[0], "BOOLEAN" ];
 }
 
 sub run_NOTEQUALS
 {
-	my( $tree, $left, $right ) = @_;
+	my( $tree, $state, $left, $right ) = @_;
 	
-	return( $left ne $right );
+	return [ $left->[0] ne $right->[0], "BOOLEAN" ];
 }
 
 sub run_NOT
 {
-	my( $tree, $left ) = @_;
+	my( $tree, $state, $left ) = @_;
 
-	return !$left;
+	return [ !$left->[0], "BOOLEAN" ];
 }
 
 sub run_AND
 {
-	my( $tree, $left, $right ) = @_;
+	my( $tree, $state, $left, $right ) = @_;
 	
-	return( $left && $right );
+	return [ $left->[0] && $right->[0], "BOOLEAN" ];
 }
 
 sub run_OR
 {
-	my( $tree, $left, $right ) = @_;
+	my( $tree, $state, $left, $right ) = @_;
 	
-	return( $left || $right );
+	return [ $left->[0] || $right->[0], "BOOLEAN" ];
 }
 
 sub run_PROPERTY
 {
-	my( $tree, $obj, $property ) = @_;
+	my( $tree, $state, $objvar, $property ) = @_;
 
-	if( !defined $obj )
+	if( !defined $tree )
 	{
-		EPrints::abort( "can't get a property from undef" );
+		runtime_error( "no parse tree", $tree->{code}, $tree->{pos} );
 	}
-	my $ref = ref($obj);
+	if( !defined $objvar->[0] )
+	{
+		runtime_error( "can't get a property from undef".$tree->{value}, $tree->{code}, $tree->{pos} );
+	}
+	my $ref = ref($objvar->[0]);
 	if( $ref !~ m/::/ )
 	{
-		EPrints::abort( "can't get a property from a non-object" );
+		runtime_error( "can't get a property from a non-object: ".$tree->{value}, $tree->{code}, $tree->{pos} );
 	}
-	if( !$obj->isa( "EPrints::DataObj" ) )
+	if( !$objvar->[0]->isa( "EPrints::DataObj" ) )
 	{
-		EPrints::abort( "can't get a property from a non-dataobj ($obj)" );
+		runtime_error( "can't get a property from non-dataobj: ".$tree->{value}, $tree->{code}, $tree->{pos} );
 	}
 
-	return $obj->get_value( $property );
+	return [ 
+		$objvar->[0]->get_value( $property->[0] ), 
+		$objvar->[0]->get_dataset->get_field( $property->[0] ),
+		$objvar->[0] ];
 }
 
 sub run_reverse
 {
-	my( $tree, $string ) = @_;
+	my( $tree, $state, $string ) = @_;
 
-	return reverse $string;
+	return [ reverse $string->[0], "STRING" ];
 } 
 	
 sub run_is_set
 {
-	my( $tree, $obj, $property ) = @_;
+	my( $tree, $state, $param ) = @_;
 
-	if( !defined $obj )
-	{
-		EPrints::abort( "can't get a property from undef" );
-	}
-	my $ref = ref($obj);
-	if( $ref !~ m/::/ )
-	{
-		EPrints::abort( "can't get a property from a non-object" );
-	}
-	if( !$obj->isa( "EPrints::DataObj" ) )
-	{
-		EPrints::abort( "can't get a property from a non-dataobj" );
-	}
-
-	return $obj->is_set( $property );
+	return [ EPrints::Utils::is_set( $param->[0] ), "BOOLEAN" ];
 } 
 
 sub run_one_of
 {
-	my( $tree, $string, @list ) = @_;
+	my( $tree, $state, $string, @list ) = @_;
+
+	if( !defined $string )
+	{
+		return [ 0, "BOOLEAN" ];
+	}
 
 	foreach( @list )
 	{
-		return 1 if( $string eq $_ );
+		return [ 1, "BOOLEAN" ] if( $string eq $_ );
 	}
-	return 0;
+	return [ 0, "BOOLEAN" ];
 } 
 
+sub run_as_item # maybe change later
+{
+	my( $tree, $state, $itemref ) = @_;
 
+	if( !$itemref->[1]->isa( "EPrints::MetaField::Itemref" ) )
+	{
+		runtime_error( "can't call as_item on anything but a value of type itemref", $tree->{code}, $tree->{pos} );
+	}
+
+	my $object = $itemref->[1]->get_item( $state->{session}, $itemref->[0] );
+
+	return [ $object ];
+}
+
+########################################################
 
 
 sub token
@@ -224,22 +241,27 @@ sub token
 
 	my @tokens = ();
 
+	my $fullcode = $code;
+	my $len = length $code;
+
 	while( $code ne "" )
 	{
+		my $pos = $len-length $code;
 		if( $code =~ s/^\s+// ) { next; }
-		if( $code =~ s/^'([^']*)'// ) { push @tokens, { near=>$code, id=>'STRING',value=>$1 }; next; }
-		if( $code =~ s/^"([^"]*)"// ) { push @tokens, { near=>$code, id=>'STRING',value=>$1 };  next;}
-		if( $code =~ s/^\$([a-zA-Z0-9_-]+)// ) { push @tokens, { near=>$code, id=>'VAR',value=>$1 };  next;}
-		if( $code =~ s/^\.([a-zA-Z0-9_-]+)// ) { push @tokens, { near=>$code, id=>'M_OR_P', value=>$1 };  next;}
-		if( $code =~ s/^\(// ) { push @tokens, { near=>$code, id=>'OPEN_B' };  next;}
-		if( $code =~ s/^\)// ) { push @tokens, { near=>$code, id=>'CLOSE_B' };  next;}
-		if( $code =~ s/^=// ) { push @tokens, { near=>$code, id=>'EQUALS' };  next;}
-		if( $code =~ s/^!=// ) { push @tokens, { near=>$code, id=>'NOTEQUALS' };  next;}
-		if( $code =~ s/^,// ) { push @tokens, { near=>$code, id=>'COMMA' };  next;}
-		if( $code =~ s/^!// ) { push @tokens, { near=>$code, id=>'NOT' };  next;}
-		if( $code =~ s/^and// ) { push @tokens, { near=>$code, id=>'AND' };  next;}
-		if( $code =~ s/^or// ) { push @tokens, { near=>$code, id=>'OR' };  next;}
-		die "Unknown code: $code\n";
+		if( $code =~ s/^'([^']*)'// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'STRING',value=>$1 }; next; }
+		if( $code =~ s/^"([^"]*)"// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'STRING',value=>$1 };  next;}
+		if( $code =~ s/^\$([a-zA-Z0-9_-]+)// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'VAR',value=>$1 };  next;}
+		if( $code =~ s/^\.([a-zA-Z0-9_-]+)// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'M_OR_P', value=>$1 };  next;}
+		if( $code =~ s/^\(// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'OPEN_B' };  next;}
+		if( $code =~ s/^\)// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'CLOSE_B' };  next;}
+		if( $code =~ s/^=// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'EQUALS' };  next;}
+		if( $code =~ s/^!=// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'NOTEQUALS' };  next;}
+		if( $code =~ s/^,// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'COMMA' };  next;}
+		if( $code =~ s/^!// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'NOT' };  next;}
+		if( $code =~ s/^and// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'AND' };  next;}
+		if( $code =~ s/^or// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'OR' };  next;}
+		if( $code =~ s/^([a-zA-Z][a-zA-Z0-9_-]*)// ) { push @tokens, { code=>\$fullcode, pos=>$pos, id=>'FNAME', value=>$1 };  next;}
+		parse_error( "Parse error", \$fullcode, $pos );
 	}
 
 	return @tokens;
@@ -306,12 +328,12 @@ sub parse_not_expr
 		return $tree;
 	}
 
-	my $tree = parse_func_expr( $tokens );
+	my $tree = parse_method_expr( $tokens );
 
 	return $tree;
 }
 
-sub parse_func_expr
+sub parse_method_expr
 {
 	my( $tokens ) = @_;
 
@@ -321,21 +343,22 @@ sub parse_func_expr
 	{	
 		my $subj = $tree;
 		$tree = shift @$tokens;
-		if( defined $tokens->[0]->{id} && $tokens->[0]->{id} eq "OPEN_B" )
+
+		if( defined $tokens->[0] && $tokens->[0]->{id} eq "OPEN_B" )
 		{
 			shift @$tokens; #consume "("
 			$tree->{id} = $tree->{value};
-			$tree->{params} = [ $subj, @{parse_list( $tokens )} ];
+			$tree->{params} = [ $subj, @{parse_list( $tokens )} ]; # like ( $self, @params ) in Perl
 			if( $tokens->[0]->{id} ne "CLOSE_B" )
 			{
-				EPrints::abort( "expected closing method bracket near ".$tokens->[0]->{near} );
+				parse_error( "expected closing method bracket", $tokens->[0]->{code}, $tokens->[0]->{pos} );
 			}
 			shift @$tokens; #consume ")"
 		}
 		else
 		{
 			$tree->{id} = "PROPERTY";
-			$tree->{params} = [ $subj, { id=>"STRING", value=>$tree->{value} } ];
+			$tree->{params} = [ $subj, { id=>"STRING", value=>$tree->{value}, code=>$tree->{code}, pos=>$tree->{pos} } ];
 		}
 	}
 
@@ -352,7 +375,7 @@ sub parse_b_expr
 		my $tree = parse_expr( $tokens );
 		if( $tokens->[0]->{id} ne "CLOSE_B" )
 		{
-			die "expected closing bracket";
+			parse_error( "expected closing bracket", $tokens->[0]->{code}, $tokens->[0]->{pos} );
 		}
 		shift @$tokens; #consume ")"
 		return $tree;
@@ -368,7 +391,30 @@ sub parse_b_expr
 		return shift @$tokens;
 	}
 
-	die "Expected '(' or string or variable";
+	if( $tokens->[0]->{id} eq "FNAME" )
+	{
+		my $func = shift @$tokens;
+
+		unless( defined $tokens->[0]->{id} && $tokens->[0]->{id} eq "OPEN_B" )
+		{
+			parse_error( "expected opening function bracket", $tokens->[0]->{code}, $tokens->[0]->{pos} );
+		}
+		shift @$tokens; #consume "("
+
+		$func->{id} = $func->{value};
+		$func->{params} = [ @{parse_list( $tokens )} ];
+
+		if( $tokens->[0]->{id} ne "CLOSE_B" )
+		{
+			parse_error( "expected function method bracket", $tokens->[0]->{code}, $tokens->[0]->{pos} );
+		}
+		shift @$tokens; #consume ")"
+
+		return $func;
+	}
+
+
+	parse_error( "expected '(', string, variable or function", $tokens->[0]->{code}, $tokens->[0]->{pos} );
 }
 
 sub parse_list
@@ -387,21 +433,44 @@ sub parse_list
 	
 	return $values;
 }
-	
+
+sub parse_error 
+{ 
+	my( $msg, $code, $pos ) = @_;
+	error( $msg, $code, $pos );
+}	
+sub runtime_error 
+{ 
+	my( $msg, $code, $pos ) = @_;
+	error( $msg, $code, $pos );
+}
+
+sub error
+{
+	my( $msg, $code, $pos ) = @_;
+#print STDERR "msg:$msg\n";
+#print STDERR "POS:$pos\n";
+	my $error = "$msg at byte $pos\n";	
+	$error .= ${$code}."\n";
+	$error .= " "x$pos;
+	$error .= "^ here";
+	EPrints::abort( $error );
+}
 
 my $x=<<__;
 EXPR = AND_EXPR + ("or + EXPR)?
 AND_EXPR = OR_EXPR + ( "and" + AND_EXPR )?
 OR_EXPR = TEST_EXPR + ( "or + OR_EXPR )?
 TEST_EXPR = NOT_EXPR + ( ("="||"!=") + TEST_EXPR )?
-NOT_EXPR = ("!")? + FUNC_EXPR
-FUNC_EXPR = B_EXPR + FUNCOROP*
-FUNCORPROP = M_OR_P || M_OR_P + "(" + LIST + ")"
+NOT_EXPR = ("!")? + METH_EXPR
+METH_EXPR = B_EXPR + METHOROP*
+METHORPROP = M_OR_P || M_OR_P + "(" + LIST + ")"
 
 B_EXPR = THING || "(" + EXPR + ")"
-THING = VAR || STRING
+THING = VAR || STRING || FUNC
 
 LIST = "" || EXPR + ( "," + EXPR )*
+FUNC = FNAME + "(" + LIST + ")"
 
 __
 

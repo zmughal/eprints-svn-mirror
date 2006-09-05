@@ -4,69 +4,80 @@
 	Full citation for an eprint. 
 -->
 
-<ep:citation
-        xmlns="http://www.w3.org/1999/xhtml"
-	xmlns:ep="http://eprints.org/ep3/citations">
+<citation
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+	xmlns="http://eprints.org/ep3/citations">
 
-<ep:choose>
+<choose>
 
-  <ep:when test="$item.type = 'book'">
-    <ep:ifset name="creators">@creators@</ep:ifset><ep:ifnotset  name="creators">@editors@, ed.</ep:ifnotset>
-  </ep:when>
+  <when test="$item.type = 'book'">
+    <ifset name="creators">@creators@</ifset><ifnotset  name="creators">@editors@, ed.</ifnotset>
+  </when>
 
-  <ep:when test="$item.type = 'patent'">@patent_applicant@</ep:when>
+  <when test="$item.type = 'patent'">@patent_applicant@</when>
 
-  <ep:otherwise>@creators@</ep:otherwise>
+  <otherwise>@creators@</otherwise>
 
-</ep:choose>
+</choose>
 
-<ep:ifset name="date_effective">(@date_effective;res=year@)</ep:ifset>
-<ep:linkhere><em>@title;magicstop@</em></ep:linkhere>
+<print expr="$item.creators" />
+<xhtml:hr />
+<print expr="$item.userid.as_item().name" />
+<xhtml:hr />
 
-<ep:choose>
+<if test="$user" >
+<xhtml:h1>
+  <print expr="$user.name" />
+</xhtml:h1>
+</if>
 
-  <ep:when test="$item.type.one_of( 'book','book_section' )">
-    <ep:if test="$item.type = 'book_section'">
-      In: <ep:ifnotset  name="creators">@editors@, (eds).</ep:ifnotset> 
+<if test="$item.date_effective">(@date_effective;res=year@)</if>
+<linkhere><em>@title;magicstop@</em></linkhere>
+
+<choose>
+
+  <when test="$item.type.one_of( 'book','book_section' )">
+    <if test="$item.type = 'book_section'">
+      In: <ifnotset  name="creators">@editors@, (eds).</ifnotset> 
       @book_title;magicstop@
-    </ep:if>
-    <ep:ifset name="series">@series@<ep:ifset name="volume">, @volume</ep:ifset><ep:ifset name="number"> (@number@)</ep:ifset>.</ep:ifset>
-@publisher@<ep:ifset name="place_of_pub">, @place_of_pub</ep:ifset><ep:ifset name="pagerange">, @pagerange@</ep:ifset>.
-    <ep:ifset name="isbn"> ISBN @isbn@</ep:ifset>
-  </ep:when>
+    </if>
+    <ifset name="series">@series@<ifset name="volume">, @volume</ifset><ifset name="number"> (@number@)</ifset>.</ifset>
+@publisher@<ifset name="place_of_pub">, @place_of_pub</ifset><ifset name="pagerange">, @pagerange@</ifset>.
+    <ifset name="isbn"> ISBN @isbn@</ifset>
+  </when>
 
-  <ep:when test="$item.type = 'article'">
-    <ep:ifset name="publication">@publication@<ep:if test="$item.is_set( 'volume' )">, @volume</ep:if><ep:ifset name="number"> (@number@)</ep:ifset>.</ep:ifset>
-    <ep:ifset name="pagerange"> @pagerange@.</ep:ifset>
-    <ep:ifset name="issn"> ISSN @issn@</ep:ifset>
-  </ep:when>
+  <when test="$item.type = 'article'">
+    <ifset name="publication">@publication@<if test="$item.is_set( 'volume' )">, @volume</if><ifset name="number"> (@number@)</ifset>.</ifset>
+    <ifset name="pagerange"> @pagerange@.</ifset>
+    <ifset name="issn"> ISSN @issn@</ifset>
+  </when>
 
-  <ep:when test="$item.type = 'monograph'">
+  <when test="$item.type = 'monograph'">
     @monograph_type@.
-    @publisher@<ep:ifset name="place_of_pub">, @place_of_pub</ep:ifset>.
-  </ep:when>
+    @publisher@<ifset name="place_of_pub">, @place_of_pub</ifset>.
+  </when>
 
-  <ep:when test="$item.type = 'conference_item'">
-    In: @event_title@<ep:ifset name="event_dates">, @event_dates</ep:ifset><ep:ifset name="event_location">, @event_location</ep:ifset>.
-  </ep:when>
+  <when test="$item.type = 'conference_item'">
+    In: @event_title@<ifset name="event_dates">, @event_dates</ifset><ifset name="event_location">, @event_location</ifset>.
+  </when>
 
-  <ep:when test="$item.type = 'thesis'">
+  <when test="$item.type = 'thesis'">
     @thesis_type@ thesis, @institution@.
-  </ep:when>
+  </when>
 
-  <ep:when test="$item.type = 'patent'">
+  <when test="$item.type = 'patent'">
     @id_number@.
-  </ep:when>
+  </when>
 
-  <ep:when test="$item.type = 'other'">
-    @publisher@<ep:ifset name="place_of_pub">, @place_of_pub</ep:ifset>.
-  </ep:when>
+  <when test="$item.type = 'other'">
+    @publisher@<ifset name="place_of_pub">, @place_of_pub</ifset>.
+  </when>
 
-</ep:choose>
+</choose>
 
-<ep:if test="! $item.type.one_of( 'patent','thesis' )">
-  <ep:if test="$item.ispublished.one_of('unpub', 'submitted', 'inpress')"> (@ispublished@)</ep:if>
-</ep:if>
+<if test="! $item.type.one_of( 'patent','thesis' )">
+  <if test="$item.ispublished.one_of('unpub', 'submitted', 'inpress')"> (@ispublished@)</if>
+</if>
 
-</ep:citation>
+</citation>
 

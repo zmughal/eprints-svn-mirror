@@ -138,6 +138,7 @@ use EPrints::DataObj::Subject;
 use EPrints::DataObj::Subscription;
 use EPrints::DataObj::User;
 use EPrints::DataSet;
+use EPrints::Email;
 use EPrints::Extras;
 use EPrints::Index;
 use EPrints::ImportXML;

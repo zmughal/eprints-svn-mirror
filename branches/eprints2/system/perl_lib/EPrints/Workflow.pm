@@ -81,13 +81,16 @@ sub new
 	$self->{item} = $params{item};
 	$self->{workflow_id} = $workflow_id;
 
+	$params{session} = $session;
+	$params{current_user} = $session->current_user;
+	$self->{user}      = $params{current_user};
+
 	$self->{raw_config} = $self->{repository}->get_workflow_config( $self->{dataset}->confid, $workflow_id );
-	$self->{config} = EPrints::Utils::collapse_conditions( $session, $self->{raw_config}, %params );
+	$self->{config} = EPrints::XML::collapse_conditions( $self->{raw_config}, %params );
 
 	$self->_read_flow;
 	$self->_read_stages;
 
-	$self->{user}      = $self->{session}->current_user();
 
 	return( $self );
 }

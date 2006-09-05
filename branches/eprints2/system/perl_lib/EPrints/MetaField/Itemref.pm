@@ -71,21 +71,31 @@ sub render_single_value
 		return $session->make_doc_fragment;
 	}
 
-	my $ds = $session->get_repository->get_dataset( 
-			$self->get_property('datasetid') );
-
-	my $object = $ds->get_object( $session, $value );
+	my $object = $self->get_item( $session, $value );
 
 	if( defined $object )
 	{
 		return $object->render_citation_link;
 	}
 
+	my $ds = $session->get_repository->get_dataset( 
+			$self->get_property('datasetid') );
+
 	return $session->html_phrase( 
 		"lib/metafield/itemref:not_found",
 			id=>$session->make_text($value),
 			objtype=>$session->html_phrase(
 		"general:dataset_object_".$ds->confid));
+}
+
+sub get_item
+{
+	my( $self, $session, $value ) = @_;
+
+	my $ds = $session->get_repository->get_dataset( 
+			$self->get_property('datasetid') );
+
+	return $ds->get_object( $session, $value );
 }
 
 

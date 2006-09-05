@@ -55,9 +55,9 @@ our @ISA = qw/ EPrints::DataObj::Document /;
 
 $INC{"EPrints/Document.pm"} = 1;
 
-sub create { return EPrints::DataObj::Document::create( @_ ); }
+sub create { EPrints::deprecated; return EPrints::DataObj::Document::create( @_ ); }
 
-sub docid_to_path { return EPrints::DataObj::Document::docid_to_path( @_ ); }
+sub docid_to_path { EPrints::deprecated; return EPrints::DataObj::Document::docid_to_path( @_ ); }
 
 ######################################################################
 
@@ -67,8 +67,8 @@ our @ISA = qw/ EPrints::DataObj::EPrint /;
 
 $INC{"EPrints/EPrint.pm"} = 1;
 
-sub create { return EPrints::DataObj::EPrint::create( @_ ); }
-sub eprintid_to_path { return EPrints::DataObj::EPrint::eprintid_to_path( @_ ); }
+sub create { EPrints::deprecated; return EPrints::DataObj::EPrint::create( @_ ); }
+sub eprintid_to_path { EPrints::deprecated; return EPrints::DataObj::EPrint::eprintid_to_path( @_ ); }
 
 ######################################################################
 
@@ -79,11 +79,11 @@ our @ISA = qw/ EPrints::DataObj::Subject /;
 $INC{"EPrints/Subject.pm"} = 1;
 
 $EPrints::Subject::root_subject = "ROOT";
-sub remove_all { return EPrints::DataObj::Subject::remove_all( @_ ); }
-sub create { return EPrints::DataObj::Subject::create( @_ ); }
-sub subject_label { return EPrints::DataObj::Subject::subject_label( @_ ); }
-sub get_all { return EPrints::DataObj::Subject::get_all( @_ ); }
-sub valid_id { return EPrints::DataObj::Subject::valid_id( @_ ); }
+sub remove_all { EPrints::deprecated; return EPrints::DataObj::Subject::remove_all( @_ ); }
+sub create { EPrints::deprecated; return EPrints::DataObj::Subject::create( @_ ); }
+sub subject_label { EPrints::deprecated; return EPrints::DataObj::Subject::subject_label( @_ ); }
+sub get_all { EPrints::deprecated; return EPrints::DataObj::Subject::get_all( @_ ); }
+sub valid_id { EPrints::deprecated; return EPrints::DataObj::Subject::valid_id( @_ ); }
 
 ######################################################################
 
@@ -93,8 +93,8 @@ our @ISA = qw/ EPrints::DataObj::Subscription /;
 
 $INC{"EPrints/Subscription.pm"} = 1;
 
-sub process_set { return EPrints::DataObj::Subscription::process_set( @_ ); }
-sub get_last_timestamp { return EPrints::DataObj::Subscription::get_last_timestamp( @_ ); }
+sub process_set { EPrints::deprecated; return EPrints::DataObj::Subscription::process_set( @_ ); }
+sub get_last_timestamp { EPrints::deprecated; return EPrints::DataObj::Subscription::get_last_timestamp( @_ ); }
 
 ######################################################################
 
@@ -104,11 +104,21 @@ our @ISA = qw/ EPrints::DataObj::User /;
 
 $INC{"EPrints/User.pm"} = 1;
 
-sub create { return EPrints::DataObj::User::create( @_ ); }
-sub user_with_email { return EPrints::DataObj::User::user_with_email( @_ ); }
-sub user_with_username { return EPrints::DataObj::User::user_with_username( @_ ); }
-sub process_editor_alerts { return EPrints::DataObj::User::process_editor_alerts( @_ ); }
-sub create_user { return EPrints::DataObj::User::create( @_ ); }
+sub create { EPrints::deprecated; return EPrints::DataObj::User::create( @_ ); }
+sub user_with_email { EPrints::deprecated; return EPrints::DataObj::User::user_with_email( @_ ); }
+sub user_with_username { EPrints::deprecated; return EPrints::DataObj::User::user_with_username( @_ ); }
+sub process_editor_alerts { EPrints::deprecated; return EPrints::DataObj::User::process_editor_alerts( @_ ); }
+sub create_user { EPrints::deprecated; return EPrints::DataObj::User::create( @_ ); }
+
+######################################################################
+
+package EPrints::Utils;
+
+sub send_mail { EPrints::deprecated; return EPrints::Email::send_mail( @_ ); }
+sub send_mail_via_smtp { EPrints::deprecated; return EPrints::Email::send_mail_via_smtp( @_ ); }
+sub send_mail_via_sendmail { EPrints::deprecated; return EPrints::Email::send_mail_via_sendmail( @_ ); }
+sub collapse_conditions { EPrints::deprecated; return EPrints::XML::collapse_conditions( @_ ); }
+
 
 ######################################################################
 
@@ -163,13 +173,13 @@ $INC{"EPrints/SearchCondition.pm"} = 1;
 
 package EPrints::AnApache;
 
-sub upload_doc_file { return EPrints::Apache::AnApache::upload_doc_file( @_ ); }
-sub upload_doc_archive { return EPrints::Apache::AnApache::upload_doc_archive( @_ ); }
-sub send_http_header { return EPrints::Apache::AnApache::send_http_header( @_ ); }
-sub header_out { return EPrints::Apache::AnApache::header_out( @_ ); }
-sub header_in { return EPrints::Apache::AnApache::header_in( @_ ); }
-sub get_request { return EPrints::Apache::AnApache::get_request( @_ ); }
-sub cookie { return EPrints::Apache::AnApache::cookie( @_ ); }
+sub upload_doc_file { EPrints::deprecated; return EPrints::Apache::AnApache::upload_doc_file( @_ ); }
+sub upload_doc_archive { EPrints::deprecated; return EPrints::Apache::AnApache::upload_doc_archive( @_ ); }
+sub send_http_header { EPrints::deprecated; return EPrints::Apache::AnApache::send_http_header( @_ ); }
+sub header_out { EPrints::deprecated; return EPrints::Apache::AnApache::header_out( @_ ); }
+sub header_in { EPrints::deprecated; return EPrints::Apache::AnApache::header_in( @_ ); }
+sub get_request { EPrints::deprecated; return EPrints::Apache::AnApache::get_request( @_ ); }
+sub cookie { EPrints::deprecated; return EPrints::Apache::AnApache::cookie( @_ ); }
 
 $INC{"EPrints/AnApache.pm"} = 1;
 
@@ -177,8 +187,8 @@ $INC{"EPrints/AnApache.pm"} = 1;
 
 package EPrints::Auth;
 
-sub authz { return EPrints::Apache::Auth::authz( @_ ); }
-sub authen { return EPrints::Apache::Auth::authen( @_ ); }
+sub authz { EPrints::deprecated; return EPrints::Apache::Auth::authz( @_ ); }
+sub authen { EPrints::deprecated; return EPrints::Apache::Auth::authen( @_ ); }
 
 $INC{"EPrints/Auth.pm"} = 1;
 

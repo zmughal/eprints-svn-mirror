@@ -37,8 +37,6 @@ use EPrints::Apache::AnApache; # exports apache constants
 
 use strict;
 
-my $TMPDIR = "/tmp/partial";
-
 
 
 ######################################################################

@@ -566,6 +566,271 @@ sub debug_xml
 	print STDERR "<\n";
 }
 
+
+
+
+
+######################################################################
+=pod
+
+=item $xml = EPrints::Utils::collapse_conditions( $xml, [%params] )
+
+Using the given object and %params, collapse the <ep:ifset>,
+<ep:ifnotset>, <ep:ifmatch> and <ep:ifnotmatch>
+elements in XML and return the result.
+
+The name attribute in ifset etc. refer to the field name in $object,
+unless the are prefixed with a asterisk (*) in which case they are keys
+to values in %params.
+
+=cut
+######################################################################
+
+sub collapse_conditions
+{
+	my( $node, %params ) = @_;
+
+# cjg - Potential bug if: <ifset a><ifset b></></> and ifset a is disposed
+# then ifset: b is processed it will crash.
+	
+	$params{repository} = $params{session}->get_repository;
+
+	if( EPrints::XML::is_dom( $node, "Element" ) )
+	{
+		my $name = $node->getTagName;
+		$name =~ s/^ep://;
+
+		# old style
+		if( $name =~ m/^ifset|ifnotset|ifmatch|ifnotmatch$/ )
+		{
+			return _collapse_condition( $node, %params );
+		}
+
+		# new style
+		if( $name eq "if" )
+		{
+			return _collapse_if( $node, %params );
+		}
+		if( $name eq "choose" )
+		{
+			return _collapse_choose( $node, %params );
+		}
+		if( $name eq "print" )
+		{
+			return _collapse_print( $node, %params );
+		}
+	}
+
+	my $collapsed = $params{session}->clone_for_me( $node );
+	$collapsed->appendChild( _collapse_kids( $node, %params ) );
+
+	return $collapsed;
+}
+
+sub _collapse_kids
+{
+	my( $node, %params ) = @_;
+
+	my $collapsed = $params{session}->make_doc_fragment;
+
+	foreach my $child ( $node->getChildNodes )
+	{
+		$collapsed->appendChild(
+			collapse_conditions( 
+				$child,
+				%params ) );			
+	}
+
+	return $collapsed;
+}
+
+sub _collapse_print
+{
+	my( $node, %params ) = @_;
+
+	my $test = $node->getAttribute( "expr" );
+foreach( keys %params ) { print STDERR "$_: ".$params{$_}."\n"; }
+	my $result = EPrints::Script::execute( $test, \%params );
+	
+#	print STDERR  "IFTEST:::".$test." == $result\n";
+
+	my $collapsed = $result->[1]->render_value( $params{session}, $result->[0], 0, 0, $result->[2] );
+
+	return $collapsed;
+}
+
+sub _collapse_if
+{
+	my( $node, %params ) = @_;
+
+	my $test = $node->getAttribute( "test" );
+
+	my $result = EPrints::Script::execute( $test, \%params );
+#	print STDERR  "IFTEST:::".$test." == $result\n";
+
+	my $collapsed = $params{session}->make_doc_fragment;
+
+	if( $result->[0] )
+	{
+		$collapsed->appendChild( _collapse_kids( $node, %params ) );
+	}
+
+	return $collapsed;
+}
+
+sub _collapse_choose
+{
+	my( $node, %params ) = @_;
+
+	my $collapsed = $params{session}->make_doc_fragment;
+
+	# when
+	foreach my $child ( $node->getChildNodes )
+	{
+		next unless( EPrints::XML::is_dom( $child, "Element" ) );
+		my $name = $child->getTagName;
+		$name=~s/^ep://;
+		next unless $name eq "when";
+		
+		my $test = $child->getAttribute( "test" );
+		my $result = EPrints::Script::execute( $test, \%params );
+#		print STDERR  "WHENTEST:::".$test." == $result\n";
+		if( $result->[0] )
+		{
+			$collapsed->appendChild( _collapse_kids( $child, %params ) );
+			return $collapsed;
+		}
+	}
+
+	# otherwise
+	foreach my $child ( $node->getChildNodes )
+	{
+		next unless( EPrints::XML::is_dom( $child, "Element" ) );
+		my $name = $child->getTagName;
+		$name=~s/^ep://;
+		next unless $name eq "otherwise";
+		
+		$collapsed->appendChild( _collapse_kids( $child, %params ) );
+		return $collapsed;
+	}
+
+	# no otherwise...
+	return $collapsed;
+}
+
+
+
+sub _collapse_condition
+{
+	my( $node, %params ) = @_;
+
+	my $fieldname = $node->getAttribute( "name" );
+	my $element_name = $node->getTagName;
+	$element_name =~ s/^ep://;
+
+	my $param;
+	my $obj;
+	if( $fieldname =~ s/^\$// )
+	{
+		# fieldname started with $
+		if( $fieldname =~ s/^([^.]+.)// )
+		{
+			# fieldname is property of an object
+			$obj = $param;
+		}
+		else
+		{
+			# fieldname is a simple field
+			$param = $params{$fieldname};
+		}
+	}
+	else
+	{
+		# fieldname in item object
+		$obj = $params{item};
+	}
+
+	my $result = 0;
+
+	if( $element_name eq "ifset" || $element_name eq "ifnotset" )
+	{
+		if( defined $obj )
+		{
+			$result = $obj->is_set( $fieldname );
+		}
+		else
+		{
+			$result = defined $params{$fieldname};
+		}
+	}
+
+	if( $element_name eq "ifmatch" || $element_name eq "ifnotmatch" )
+	{
+		if( defined $obj )
+		{
+			my $dataset = $obj->get_dataset;
+	
+			my $merge = $node->getAttribute( "merge" );
+			my $value = $node->getAttribute( "value" );
+			my $match = $node->getAttribute( "match" );
+
+			my @multiple_names = split /\//, $fieldname;
+			my @multiple_fields;
+			
+			# Put the MetaFields in a list
+			foreach (@multiple_names)
+			{
+				push @multiple_fields, EPrints::Utils::field_from_config_string( $dataset, $_ );
+			}
+	
+			my $sf = EPrints::Search::Field->new( 
+				$params{session}, 
+				$dataset, 
+				\@multiple_fields,
+				$value,	
+				$match,
+				$merge );
+	
+			$result = $sf->get_conditions->item_matches( $obj );
+		}
+		else
+		{
+			my $value = $node->getAttribute( "value" );
+			foreach( split( /\s+/,$value ) )
+			{
+				$result = 1 if( $_ eq $params{$fieldname} );
+			}
+		}
+	}
+
+	if( $element_name eq "ifnotmatch" || $element_name eq "ifnotset" )
+	{
+		$result = !$result;
+	}
+
+	if( $result )
+	{
+		return _collapse_kids( $node, %params );
+	}
+
+	return $params{session}->make_doc_fragment;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ######################################################################
 1;
 ######################################################################
@@ -576,277 +841,3 @@ sub debug_xml
 =cut
 ######################################################################
 
-
-
-
-
-
-
-
-
-
-
-__DATA__
-
-if( $gdome )
-{
-	require XML::GDOME;
-}
-else
-{
-	require XML::DOM; 
-	# DOM runs really slowly if it checks all it's data is
-	# valid...
-	$XML::DOM::SafeMode = 0;
-	XML::DOM::setTagCompression( \&_xmldom_tag_compression );
-}
-
-$EPrints::XML::PREFIX = "XML::GDOME::";
-$EPrints::XML::PREFIX = "XML::DOM::";
-
-sub parse_xml_string
-{
-	my( $string ) = @_;
-
-	if( $gdome )
-	{
-		my $doc;
-		# For some reason the GDOME constants give an error,
-		# using their values instead (could cause a problem if
-		# they change in a subsequent version).
-
-		my $opts = 8; #GDOME_LOAD_COMPLETE_ATTRS
-		#unless( $no_expand )
-		#{
-			#$opts += 4; #GDOME_LOAD_SUBSTITUTE_ENTITIES
-		#}
-		$doc = XML::GDOME->createDocFromString( $string, $opts );
-	}
-	else
-	{
-		my $doc;
-		my( %c ) = (
-			Namespaces => 1,
-			ParseParamEnt => 1,
-			ErrorContext => 2,
-			NoLWP => 1 );
-		$c{ParseParamEnt} = 0;
-		my $parser =  XML::DOM::Parser->new( %c );
-
-		$doc = eval { $parser->parse( $string ); };
-		if( $@ )
-		{
-			my $err = $@;
-			$err =~ s# at /.*##;
-			$err =~ s#\sXML::Parser::Expat.*$##s;
-			print STDERR "Error parsing XML $string";
-			return;
-		}
-		return $doc;
-	}
-}
-
-sub parse_xml
-{
-	my( $file, $basepath, $no_expand ) = @_;
-
-	unless( -r $file )
-	{
-		EPrints::Config::abort( "Can't read XML file: '$file'" );
-	}
-
-	my $doc;
-	if( $gdome )
-	{
-		my $tmpfile = $file;
-		if( defined $basepath )
-		{	
-			$tmpfile =~ s#/#_#g;
-			$tmpfile = $basepath."/".$tmpfile;
-			symlink( $file, $tmpfile );
-		}
-
-		# For some reason the GDOME constants give an error,
-		# using their values instead (could cause a problem if
-		# they change in a subsequent version).
-
-		my $opts = 8; #GDOME_LOAD_COMPLETE_ATTRS
-		unless( $no_expand )
-		{
-			$opts += 4; #GDOME_LOAD_SUBSTITUTE_ENTITIES
-		}
-		$doc = XML::GDOME->createDocFromURI( $tmpfile, $opts );
-		if( defined $basepath )
-		{
-			unlink( $tmpfile );
-		}
-	}
-	else
-	{
-
-		my( %c ) = (
-			Base => $basepath,
-			Namespaces => 1,
-			ParseParamEnt => 1,
-			ErrorContext => 2,
-			NoLWP => 1 );
-		if( $no_expand )
-		{
-			$c{ParseParamEnt} = 0;
-		}
-		my $parser =  XML::DOM::Parser->new( %c );
-
-		unless( open( XML, $file ) )
-		{
-			print STDERR "Error opening XML file: $file\n";
-			return;
-		}
-		$doc = eval { $parser->parse( *XML ); };
-		close XML;
-		if( $@ )
-		{
-			my $err = $@;
-			$err =~ s# at /.*##;
-			print STDERR "Error parsing XML $file ($err)";
-			return;
-		}
-	}
-
-	return $doc;
-}
-
-sub dispose
-{
-	my( $node ) = @_;
-
-	if( !defined $node )
-	{
-		EPrints::abort "attempt to dispose an undefined dom node";
-	}
-
-	if( !$gdome )
-	{
-		$node->dispose;
-	}
-}
-
-
-sub clone_node
-{
-	my( $node, $deep ) = @_;
-
-	if( !defined $node )
-	{
-		EPrints::abort "no node passed to clone_node";
-	}
-
-	# XML::DOM is easy
-	if( !$gdome )
-	{
-		return $node->cloneNode( $deep );
-	}
-
-	if( is_dom( $node, "DocumentFragment" ) )
-	{
-		my $doc = $node->getOwnerDocument;
-		my $f = $doc->createDocumentFragment;
-		return $f unless $deep;
-		
-		foreach my $c ( $node->getChildNodes )
-		{
-			$f->appendChild( $c->cloneNode( 1 ) );
-		}
-		return $f;
-	}
-	my $doc = $node->getOwnerDocument;
-	my $newnode = $node->cloneNode( 1 );
-	$doc->importNode( $newnode, 1 );
-	return $newnode;
-
-}
-
-sub clone_and_own
-{
-	my( $node, $doc, $deep ) = @_;
-
-	my $newnode;
-	$deep = 0 unless defined $deep;
-
-	if( $gdome )
-	{
-		# XML::GDOME
-		if( is_dom( $node, "DocumentFragment" ) )
-		{
-			$newnode = $doc->createDocumentFragment;
-
-			if( $deep )
-			{	
-				foreach my $c ( $node->getChildNodes )
-				{
-					$newnode->appendChild( 
-						$doc->importNode( $c, 1 ) );
-				}
-			}
-		}
-		else
-		{
-			$newnode = $doc->importNode( $node, $deep );
-			# bug in importNode NOT being deep that it does
-			# not appear to clone attributes, so lets work
-			# around it!
-
-			my $attrs = $node->getAttributes;
-			if( $attrs )
-			{
-				for my $i ( 0..$attrs->getLength-1 )
-				{
-					my $attr = $attrs->item( $i );
-					my $k = $attr->getName;
-					my $v = $attr->getValue;
-					$newnode->setAttribute( $k, $v );
-				}
-			}
-		}
-
-	}
-	else
-	{
-		# XML::DOM 
-		$newnode = $node->cloneNode( $deep );
-		$newnode->setOwnerDocument( $doc );
-	}
-	return $newnode;
-}
-
-sub document_to_string
-{
-	my( $doc, $enc ) = @_;
-
-	if( $gdome )
-	{
-		return $doc->toStringEnc( $enc );
-	}
-	else
-	{
-		return $doc->toString;
-	}
-}
-
-sub make_document
-{
-	# no params
-
-	# XML::DOM
-	if( !$gdome )
-	{
-		my $doc = new XML::DOM::Document();
-	
-		return $doc;
-	}
-	
-	# XML::GDOME
-	my $doc = XML::GDOME->createDocument( undef, "thing", undef );
-	$doc->removeChild( $doc->getFirstChild );
-
-	return $doc;
-}
