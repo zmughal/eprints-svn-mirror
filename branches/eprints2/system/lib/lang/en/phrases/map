@@ -1,4 +1,7 @@
-{
+#!/usr/bin/perl -w -I/opt/eprints3/perl_lib
+use EPrints;
+
+$renamed = {
 	"cgi/users/edit_eprint:cant_find_it" 		=> "Screen/EPrint:cant_find_it", 
 	"cgi/users/edit_eprint:view_as_either" 		=> "Screen/EPrint:view_as_either",
 	"cgi/users/home:new_item_link" 				=> "Screen/EPrint:new_item_link",
@@ -35,8 +38,8 @@
 #	"lib/submissionform:action_save"			=> "Screen/EPrint/Edit:action_save",
 #	"lib/submissionform:action_next"			=> "Screen/EPrint/Edit:action_next",
 	
-	"cgi/users/edit_eprint:no_user" 			=> "Screen/EPrint/Move:no_user",
-	"cgi/users/edit_eprint:no_user" 			=> "Screen/EPrint/RejectWithEmail:no_user",
+#	"cgi/users/edit_eprint:no_user" 			=> "Screen/EPrint/Move:no_user",
+#	"cgi/users/edit_eprint:no_user" 			=> "Screen/EPrint/RejectWithEmail:no_user",
 	"cgi/users/edit_eprint:title_bounce_form" 	=> "Screen/EPrint/RejectWithEmail:title_bounce_form",
 	"cgi/users/edit_eprint:bounce_form_intro" 	=> "Screen/EPrint/RejectWithEmail:bounce_form_intro",
 #	"cgi/users/edit_eprint:action_cancel" 		=> "Screen/EPrint/RejectWithEmail:action_cancel",
@@ -62,4 +65,31 @@
 	"cgi/users/edit_eprint:item_is_in_buffer" 	=> "Screen/EPrint:item_is_in_buffer",
 	"cgi/users/edit_eprint:item_is_in_archive" 	=> "Screen/EPrint:item_is_in_archive",
 	"cgi/users/edit_eprint:item_is_in_deletion" => "Screen/EPrint:item_is_in_deletion",
+};
+
+
+my $doc = EPrints::XML::parse_xml( "system.xml", "/opt/eprints3/lib/lang/en/phrases/", 0  );
+
+if( !$doc )
+{
+	print "Eep!\n";
 }
+
+my $phrases = ($doc->getElementsByTagName( "phrases" ))[0];
+
+foreach my $element ( $phrases->getChildNodes )
+{
+	my $name = $element->getNodeName;
+	if( $name eq "phrase" || $name eq "ep:phrase" )
+	{
+		my $id = $element->getAttribute( "id" );
+		if( defined $id )
+		{
+			if( $renamed->{$id} )
+			{
+				print "Renamed: $id\n";
+			}
+		}
+	}
+}
+
