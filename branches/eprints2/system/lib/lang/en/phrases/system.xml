@@ -1061,6 +1061,7 @@ Titles and Help for the System Fields
 <!-- Plugin phrases -->
 
     <ep:phrase id="Plugin/Screen:tool_divide"> | </ep:phrase>
+    <ep:phrase id="Plugin/Screen:more">more...</ep:phrase>
     <ep:phrase id="Plugin/Screen:unknown_action">This screen (<ep:pin ref="screen" />) does not know how to process this action: <ep:pin ref="action" />.</ep:phrase>
     <ep:phrase id="Plugin/Screen:unknown_screen">The requested screen does not exist, or has a fatal error: <ep:pin ref="screen" />.</ep:phrase>
     <ep:phrase id="Plugin/Screen:screen_not_allowed">You may not view this screen: <ep:pin ref="screen" />.</ep:phrase>
