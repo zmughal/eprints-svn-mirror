@@ -662,6 +662,19 @@ sub _collapse_print
 	
 #	print STDERR  "IFTEST:::".$expr." == $result\n";
 
+	if( $result->[1] eq "BOOLEAN"  )
+	{
+		return $params{session}->make_text( $result->[0]?"TRUE":"FALSE" );
+	}
+	if( $result->[1] eq "STRING"  )
+	{
+		return $params{session}->make_text( $result->[0] );
+	}
+	if( $result->[1] eq "INTEGER"  )
+	{
+		return $params{session}->make_text( $result->[0] );
+	}
+
 	my $field = $result->[1];
 
 	# apply any render opts

@@ -4184,3 +4184,25 @@ PACKAGE: 2.2.99.2
  * Script now gets fields from dataobjs using $item{foo}
  * a bareword in a Script eg. foo is now equiv to $item{foo}
 
+2006-09-11 cjg
+ * Removed priv code from Apache::Auth
+ * Fixed typo in workflow
+ * Removed auth_check and has_privilage from Session.pm
+ * Removed the priv code from Processor.pm that is no longer used.
+ * $user->is_owner and is_editor now take any dataobj, not just eprints.
+ * renamed can_edit to is_editor (and made a fwd in BackCompatability)
+ * Removed TDB's get_roles method
+ * Added system which turns macro user privs into ep3 privs (mapping)
+ * Added get_privs and get_roles methods to User.
+ * Removed check in EPrint which said only owners or editors can 
+    post new versions of an eprint.
+
+2006-06-11 cjg
+ * Fixed bug in run_eq and run_oneof EPScript methods.
+ * Added integers to epscript
+ * expr's in citations which resolve to boolean, int or string now
+    get rendered - handy for debugging.
+ * added new epscript function: length() to return the length of
+    a list.
+ * Modified default citation to make ed/eds show when eds list is 
+    plural/single.

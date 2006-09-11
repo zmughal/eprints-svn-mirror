@@ -103,6 +103,10 @@ sub run
 		$self->runtime_error( "No ID in tree node" );
 	}
 
+	if( $self->{id} eq "INTEGER" )
+	{
+		return [ $self->{value}, "INTEGER" ];
+	}
 	if( $self->{id} eq "STRING" )
 	{
 		return [ $self->{value}, "STRING" ];
@@ -141,6 +145,20 @@ sub runtime_error
 	my( $self, $msg ) = @_;
 
 	error( $msg, $self->{in}, $self->{pos}, $self->{code} )
+}
+
+sub run_LESS_THAN
+{
+	my( $self, $state, $left, $right ) = @_;
+	
+	return [ $left->[0] < $right->[0], "BOOLEAN" ];
+}
+
+sub run_GREATER_THAN
+{
+	my( $self, $state, $left, $right ) = @_;
+	
+	return [ $left->[0] > $right->[0], "BOOLEAN" ];
 }
 
 sub run_EQUALS
@@ -234,7 +252,7 @@ sub run_one_of
 
 	foreach( @list )
 	{
-		return [ 1, "BOOLEAN" ] if( $string eq $_ );
+		return [ 1, "BOOLEAN" ] if( $string->[0] eq $_->[0] );
 	}
 	return [ 0, "BOOLEAN" ];
 } 
@@ -251,6 +269,28 @@ sub run_as_item # maybe change later
 	my $object = $itemref->[1]->get_item( $state->{session}, $itemref->[0] );
 
 	return [ $object ];
+}
+
+sub run_length
+{
+	my( $self, $state, $value ) = @_;
+
+	if( !EPrints::Utils::is_set( $value->[0] ) )
+	{
+		return [0,"INTEGER"];
+	}
+	
+	if( !$value->[1]->isa( "EPrints::MetaField" ) )
+	{
+		return [1,"INTEGER"];
+	}
+
+	if( !$value->[1]->get_property( "multiple" ) ) 
+	{
+		return [1,"INTEGER"];
+	}
+
+	return [ scalar @{$value->[0]}, "INTEGER" ];
 }
 
 ########################################################
@@ -293,8 +333,6 @@ sub tokenise
 {
 	my( $self ) = @_;
 
-	my @tokens;
-
 	my $code = $self->{code};
 	my $len = length $code;
 
@@ -302,32 +340,31 @@ sub tokenise
 	{
 		my $pos = $len-length $code;
 		if( $code =~ s/^\s+// ) { next; }
-		if( $code =~ s/^'([^']*)'// ) { push @tokens, { pos=>$pos, id=>'STRING',value=>$1 }; next; }
-		if( $code =~ s/^"([^"]*)"// ) { push @tokens, { pos=>$pos, id=>'STRING',value=>$1 };  next;}
-		if( $code =~ s/^\$// ) { push @tokens, { pos=>$pos, id=>'DOLLAR',value=>$1 };  next;}
-		if( $code =~ s/^\.// ) { push @tokens, { pos=>$pos, id=>'DOT', value=>$1 };  next;}
-		if( $code =~ s/^\(// ) { push @tokens, { pos=>$pos, id=>'OPEN_B' };  next;}
-		if( $code =~ s/^\)// ) { push @tokens, { pos=>$pos, id=>'CLOSE_B' };  next;}
-		if( $code =~ s/^\{// ) { push @tokens, { pos=>$pos, id=>'OPEN_C' };  next;}
-		if( $code =~ s/^\}// ) { push @tokens, { pos=>$pos, id=>'CLOSE_C' };  next;}
-		if( $code =~ s/^=// ) { push @tokens, { pos=>$pos, id=>'EQUALS' };  next;}
-		if( $code =~ s/^!=// ) { push @tokens, { pos=>$pos, id=>'NOTEQUALS' };  next;}
-		if( $code =~ s/^,// ) { push @tokens, { pos=>$pos, id=>'COMMA' };  next;}
-		if( $code =~ s/^!// ) { push @tokens, { pos=>$pos, id=>'NOT' };  next;}
-		if( $code =~ s/^and// ) { push @tokens, { pos=>$pos, id=>'AND' };  next;}
-		if( $code =~ s/^or// ) { push @tokens, { pos=>$pos, id=>'OR' };  next;}
-		if( $code =~ s/^([a-zA-Z][a-zA-Z0-9_-]*)// ) { push @tokens, { pos=>$pos, id=>'IDENT', value=>$1 };  next;}
-		$self->compile_error( "Parse error" );
-	}
+		my $newtoken;
+		if( $code =~ s/^'([^']*)'// ) { $newtoken= { pos=>$pos, id=>'STRING',value=>$1 }; }
+		elsif( $code =~ s/^"([^"]*)"// ) { $newtoken= { pos=>$pos, id=>'STRING',value=>$1 };  }
+		elsif( $code =~ s/^\$// ) { $newtoken= { pos=>$pos, id=>'DOLLAR',value=>$1 };  }
+		elsif( $code =~ s/^\.// ) { $newtoken= { pos=>$pos, id=>'DOT', value=>$1 };  }
+		elsif( $code =~ s/^\(// ) { $newtoken= { pos=>$pos, id=>'OPEN_B' };  }
+		elsif( $code =~ s/^\)// ) { $newtoken= { pos=>$pos, id=>'CLOSE_B' };  }
+		elsif( $code =~ s/^\{// ) { $newtoken= { pos=>$pos, id=>'OPEN_C' };  }
+		elsif( $code =~ s/^\}// ) { $newtoken= { pos=>$pos, id=>'CLOSE_C' };  }
+		elsif( $code =~ s/^=// ) { $newtoken= { pos=>$pos, id=>'EQUALS' };  }
+		elsif( $code =~ s/^!=// ) { $newtoken= { pos=>$pos, id=>'NOTEQUALS' };  }
+		elsif( $code =~ s/^gt// ) { $newtoken= { pos=>$pos, id=>'GREATER_THAN' };  }
+		elsif( $code =~ s/^lt// ) { $newtoken= { pos=>$pos, id=>'LESS_THAN' };  }
+		elsif( $code =~ s/^,// ) { $newtoken= { pos=>$pos, id=>'COMMA' };  }
+		elsif( $code =~ s/^!// ) { $newtoken= { pos=>$pos, id=>'NOT' };  }
+		elsif( $code =~ s/^and// ) { $newtoken= { pos=>$pos, id=>'AND' };  }
+		elsif( $code =~ s/^or// ) { $newtoken= { pos=>$pos, id=>'OR' };  }
+		elsif( $code =~ s/^([0-9]+)// ) { $newtoken= { pos=>$pos, id=>'INTEGER', value=>$1 };  }
+		elsif( $code =~ s/^([a-zA-Z][a-zA-Z0-9_-]*)// ) { $newtoken= { pos=>$pos, id=>'IDENT', value=>$1 };  }
+		else { $self->compile_error( "Parse error near: ".substr( $code, 0, 20) ); }
 
-	$self->{tokens} = [];
-	foreach my $token ( @tokens )
-	{	
-		$token->{in} = $self->{in};
-		$token->{code} = $self->{code};
-		push @{$self->{tokens}}, bless $token, "EPrints::Script::Compiled";
+		$newtoken->{in} = $self->{in};
+		$newtoken->{code} = $self->{code};
+		push @{$self->{tokens}}, bless $newtoken, "EPrints::Script::Compiled";
 	}
-
 }
 
 sub give_me
@@ -408,22 +445,15 @@ sub compile_test_expr
 	my( $self ) = @_;
 
 	my $tree = $self->compile_not_expr;
-	
-	if( $self->next_is( "EQUALS" ) )
+
+	foreach my $test ( qw/ EQUALS NOTEQUALS GREATER_THAN LESS_THAN / )
 	{
+		next unless( $self->next_is( $test ) );
 		my $left = $tree;
-		my $eq = $self->give_me( "EQUALS" );
+		my $eq = $self->give_me( $test );
 		my $right = $self->compile_test_expr;	
 		$eq->{params} = [ $left, $right ];
 		return $eq;
-	}
-	if( $self->next_is( "NOTEQUALS" ) )
-	{
-		my $left = $tree;
-		my $neq = $self->give_me( "NOTEQUALS" );
-		my $right = $self->compile_test_expr;	
-		$neq->{params} = [ $left, $right ];
-		return $neq;
 	}
 
 	return $tree;
@@ -521,6 +551,7 @@ sub compile_b_expr
 # THING = VAR 
 #       | string
 #       | ident				# item param shortcut
+#       | integer
 #       | ident + "(" + LIST + ")"	# function
 # VAR   = "\$" + IDENT
 
@@ -528,6 +559,10 @@ sub compile_thing
 {
 	my( $self ) = @_;
 
+	if( $self->next_is( "INTEGER" ) )
+	{
+		return $self->give_me( "INTEGER" );
+	}
 	if( $self->next_is( "STRING" ) )
 	{
 		return $self->give_me( "STRING" );
