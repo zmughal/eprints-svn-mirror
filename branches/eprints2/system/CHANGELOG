@@ -4206,3 +4206,7 @@ PACKAGE: 2.2.99.2
     a list.
  * Modified default citation to make ed/eds show when eds list is 
     plural/single.
+
+2006-06-11 cjg
+ * Restored hide help/show help buttons in surround/default
+ * Added a [-] button to collapsed fields which have been un-collapsed.

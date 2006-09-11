@@ -40,18 +40,17 @@ sub render
 			label=>$title );
 	}
 
-	$title_div->appendChild( $title );
 
 	my $help_prefix = $component->{prefix}."_help";
 
 	my $show_help = $self->{session}->make_element( "div", class=>"ep_sr_show_help ep_only_js", id=>$help_prefix."_show" );
 	my $helplink = $self->{session}->make_element( "a", onClick => "EPJS_toggle('$help_prefix',false,'block');EPJS_toggle('${help_prefix}_hide',false,'block');EPJS_toggle('${help_prefix}_show',true,'block');return false", href=>"#" );
-	$show_help->appendChild( $self->{session}->html_phrase( "inputform/surround/default:show_help",link=>$helplink ) );
+	$show_help->appendChild( $self->html_phrase( "show_help",link=>$helplink ) );
 	$title_bar->appendChild( $show_help );
 
 	my $hide_help = $self->{session}->make_element( "div", class=>"ep_sr_hide_help ep_hide", id=>$help_prefix."_hide" );
 	my $helplink2 = $self->{session}->make_element( "a", onClick => "EPJS_toggle('$help_prefix',false,'block');EPJS_toggle('${help_prefix}_hide',false,'block');EPJS_toggle('${help_prefix}_show',true,'block');return false", href=>"#" );
-	$hide_help->appendChild( $self->{session}->html_phrase( "inputform/surround/default:hide_help",link=>$helplink2 ) );
+	$hide_help->appendChild( $self->html_phrase( "hide_help",link=>$helplink2 ) );
 	$title_bar->appendChild( $hide_help );
 	
 	$title_bar->appendChild( $title_div );
@@ -86,19 +85,29 @@ sub render
 		my $col_prefix = $component->{prefix}."_help";
 		my $col_div = $self->{session}->make_element( "div", class=>"ep_sr_collapse_bar ep_only_js", id => $col_prefix."_bar" );
 		my $col_link =  $self->{session}->make_element( "a", onClick => "EPJS_toggle('${col_prefix}_bar',true,'block');EPJS_toggle('${col_prefix}_full',false,'block');return false", href=>"#" );
-		$col_link->appendChild( $component->render_title( $self ) );
-		my $col_link2 =  $self->{session}->make_element( "a", onClick => "EPJS_toggle('${col_prefix}_bar',true,'block');EPJS_toggle('${col_prefix}_full',false,'block');return false", href=>"#" );
-		$col_link2->appendChild( $self->{session}->make_element( "img", alt=>"+", src=>"/images/style/plus.png", border=>0 ) );
-		$col_div->appendChild( $col_link2 );
-		$col_div->appendChild( $self->{session}->make_text( " " ) );
 		$col_div->appendChild( $col_link );
+		$col_link->appendChild( $self->{session}->make_element( "img", alt=>"+", src=>"/images/style/plus.png", border=>0 ) );
+		$col_link->appendChild( $self->{session}->make_text( " " ) );
+		$col_link->appendChild( $component->render_title( $self ) );
 		$outer->appendChild( $col_div );
 		my $inner = $self->{session}->make_element( "div", class=>"ep_no_js", id => $col_prefix."_full" );
 		$inner->appendChild( $surround );
 		$outer->appendChild( $inner );
+
+		# alternate title to allow it to re-hide
+		my $recol_link =  $self->{session}->make_element( "a", onClick => "EPJS_toggle('${col_prefix}_bar',true,'block');EPJS_toggle('${col_prefix}_full',false,'block');return false", href=>"#" );
+		$recol_link->appendChild( $self->{session}->make_element( "img", alt=>"-", src=>"/images/style/minus.png", border=>0 ) );
+		$recol_link->appendChild( $self->{session}->make_text( " " ) );
+		$recol_link->appendChild( $title );
+		$title_div->appendChild( $recol_link );
+		
+
 		return $outer;
 	}
-		
+	else
+	{	
+		$title_div->appendChild( $title );
+	}
 	
 	
 	return $surround;
