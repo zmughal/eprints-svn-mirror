@@ -1000,21 +1000,6 @@ sub validate_linking
 			next;
 		}
 
-		# so it is "succeeds"...
-		# Ensure that the user is authorised to post to this
-		# either the same user owns both eprints, or the 
-		# current user is an editor.
-
-		my $user = $self->{session}->current_user;
-		unless( 
-			( defined $user && $user->has_priv( "editor" ) ) ||
-			( $test_eprint->get_value("userid" ) eq 
-				$self->get_value("userid") ) )
-		{
- 			# Not the same user. 
-			push @problems, $self->{session}->html_phrase( 
-				"lib/eprint:cant_succ" );
-		}
 	}
 
 	

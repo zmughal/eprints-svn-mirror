@@ -456,63 +456,6 @@ sub secure_doc_from_url
 	return $document;
 }
 
-=pod
-
-=item @roles = EPrints::Apache::Auth::user_roles( $user, [$dataobj] )
-
-Return the roles $user has, optionally also roles available for $dataobj.
-
-=cut
-
-sub user_roles
-{
-	my( $user, $dataobj ) = @_;
-	my @roles;
-
-	if( defined( $user ) ) {
-		# A user might have administrative permission for another
-		# user
-		push @roles, $user->user_roles( $dataobj );
-		# I don't think dataobj could have a role that isn't dependent
-		# on the $user?
-		if( defined( $dataobj ) ) {
-			push @roles, $dataobj->user_roles( $user );
-		}
-	}
-
-	return @roles;
-}
-
-=pod
-
-=item @roles = EPrints::Apache::Auth::has_privilege( $session, $privilege, [$user, [$dataobj]] )
-
-Returns a list of roles available for privilege. If L<$user|EPrints::DataObj::User> is defined finds additional roles available to them. If L<$dataobj|EPrints::DataObj> is defined adds the roles that $user might have on $dataobj.
-
-=cut
-
-sub has_privilege
-{
-	my ($session, $priv, $user, $dataobj) = @_;
-	my @roles = qw( anonymous ); # User can always be anonymous
-	my @permitted_roles;
-
-	my $func = $session->get_repository->get_conf( "user_roles" );
-	$func ||= \&EPrints::Apache::Auth::user_roles;
-
-	push @roles, &{$func}( $user, $dataobj );
-
-	# Admin 'god-mode'
-	if( grep { $_ eq 'usertype.admin' } @roles ) {
-		push @roles, 'usertype.admin';
-	}
-
-	# TODO: Replace undef with remote IP address (if available)
-	push @permitted_roles, $session->get_database->get_roles( $priv, undef, @roles );
-
-	return @permitted_roles;
-}
-
 
 
 

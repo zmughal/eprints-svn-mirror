@@ -10,11 +10,11 @@
 
 <choose>
 
-  <when test="$item{type} = 'book' and is_set( $item{creators} )">
+  <when test="type = 'book' and is_set( creators )">
     <print expr="creators" />
   </when>
 
-  <when test="$item{type} = 'book' and !is_set( $item{creators} )">
+  <when test="type = 'book' and !is_set( creators )">
     <print expr="editors" />, ed.
   </when>
 
@@ -30,7 +30,7 @@
 
 <if test="date_effective">(<print expr="date_effective" opts="res=year" />)</if>
 
-<linkhere><em><print expr="title" opts="magicstop" /></em></linkhere>
+<linkhere><xhtml:em><print expr="title" opts="magicstop" /></xhtml:em></linkhere>
 
 <choose>
 

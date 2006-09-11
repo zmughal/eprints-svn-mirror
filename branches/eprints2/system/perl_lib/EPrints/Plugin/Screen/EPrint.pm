@@ -51,7 +51,7 @@ sub register_furniture
 
 	my $cuser = $self->{session}->current_user;
 	my $owner = $cuser->is_owner( $self->{processor}->{eprint} );
-	my $editor = $cuser->can_edit( $self->{processor}->{eprint} );
+	my $editor = $cuser->is_editor( $self->{processor}->{eprint} );
 
 	my $h2 = $self->{session}->make_element( "h2", style=>"margin: 0px" );
 	my $title = $self->{processor}->{eprint}->render_description;

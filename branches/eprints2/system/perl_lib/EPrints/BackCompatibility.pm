@@ -110,6 +110,9 @@ sub user_with_username { EPrints::deprecated; return EPrints::DataObj::User::use
 sub process_editor_alerts { EPrints::deprecated; return EPrints::DataObj::User::process_editor_alerts( @_ ); }
 sub create_user { EPrints::deprecated; return EPrints::DataObj::User::create( @_ ); }
 
+package EPrints::DataObj::User;
+sub can_edit { EPrints::deprecated; return EPrints::DataObj::User::is_editor( @_ ); }
+
 ######################################################################
 
 package EPrints::Utils;

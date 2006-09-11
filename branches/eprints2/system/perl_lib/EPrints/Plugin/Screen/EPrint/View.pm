@@ -39,7 +39,7 @@ sub about_to_render
 
 	my $cuser = $self->{session}->current_user;
 	my $owner = $cuser->is_owner( $self->{processor}->{eprint} );
-	my $editor = $cuser->can_edit( $self->{processor}->{eprint} );
+	my $editor = $cuser->is_editor( $self->{processor}->{eprint} );
 
 	if( $editor )
 	{

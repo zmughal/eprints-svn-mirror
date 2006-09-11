@@ -2611,66 +2611,6 @@ sub have_parameters
 
 
 
-######################################################################
-=pod
-
-=item @roles = $session->has_privilege( $privilege [, $dataobj] )
-
-Check the current user has $privilege (optionally also check on $dataobj).
-
-=cut
-######################################################################
-
-sub has_privilege
-{
-	my( $self, $priv, $dataobj ) = @_;
-
-	return EPrints::Apache::Auth::has_privilege( $self, $priv, $self->current_user, $dataobj );
-}
-
-######################################################################
-=pod
-
-=item $boolean = $session->auth_check( [$priv] )
-
-Return true if this session has a correcly logged in user.
-
-If it doesn't then send an error page and return false.
-
-If $priv is set then only return true (and not print an error) if
-the current user has the privilage $priv.
-
-=cut
-######################################################################
-
-sub auth_check
-{
-	my( $self , $priv ) = @_;
-
-	my $user = $self->current_user;
-
-	if( !defined $user )
-	{
-		$self->render_error( $self->html_phrase( "lib/session:no_login" ) );
-		return 0;
-	}
-
-	# Don't need to do any more if we aren't checking for a specific
-	# priv.
-	if( !defined $priv )
-	{
-		return 1;
-	}
-
-	unless( $user->has_priv( $priv ) )
-	{
-		$self->render_error( $self->html_phrase( "lib/session:no_priv" ) );
-		return 0;
-	}
-	return 1;
-}
-
-
 
 ######################################################################
 =pod

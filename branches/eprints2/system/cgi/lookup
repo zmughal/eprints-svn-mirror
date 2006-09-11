@@ -21,7 +21,7 @@ exit( 0 ) unless( defined $session );
 
 my $search = $session->param( "search" ) || "";
 
-if( !$session->auth_check)
+if( !$session->auth_check) #cjg this needs to change!
 {
 	$session->terminate();
 	exit( 0 );

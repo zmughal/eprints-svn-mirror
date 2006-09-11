@@ -85,7 +85,7 @@ sub new
 	$params{current_user} = $session->current_user;
 	$self->{user} = $params{current_user};
 
-	$params{in} = $self->describe;
+	$params{in} = $self->description;
 
 	$self->{raw_config} = $self->{repository}->get_workflow_config( $self->{dataset}->confid, $workflow_id );
 	$self->{config} = EPrints::XML::collapse_conditions( $self->{raw_config}, %params );

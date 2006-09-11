@@ -494,30 +494,6 @@ sub remove
 }
 
 
-######################################################################
-=pod
-
-=item $boolean = $user->has_priv( $privtype )
-
-Return true if the user is allowed to perform tasks of type $privtype.
-
-=cut
-######################################################################
-
-sub has_priv
-{
-	my( $self, $resource ) = @_;
-
-	my $userprivs = $self->{session}->get_repository->
-		get_conf( "userauth", $self->get_value( "usertype" ), "priv" );
-
-	foreach my $priv ( @{$userprivs} )
-	{
-		return 1 if( $priv eq $resource );
-	}
-
-	return 0;
-}
 
 
 ######################################################################
@@ -637,32 +613,101 @@ sub get_owned_eprints
 ######################################################################
 =pod
 
-=item $boolean = $user->is_owner( $eprint )
+=item $boolean = $user->is_owner( $dataobj )
 
-True if this user "owns" the given $eprint. By default this is true
-if the eprint was created by this user, but this rule can be 
-overridden by the config option "does_user_own_eprint".
+True if this user "owns" the given $dataobj. By default this is true
+if the dataobj was created by this user, but this rule can be 
+overridden for eprints by the config option "does_user_own_eprint".
 
 =cut
 ######################################################################
 
 sub is_owner
 {
-	my( $self, $eprint ) = @_;
+	my( $self, $dataobj ) = @_;
 
-	my $fn = $self->{session}->get_repository->get_conf( "does_user_own_eprint" );
-
-	if( !defined $fn )
+	if( $dataobj->get_dataset->confid eq "eprint" )
 	{
-		if( $eprint->get_value( "userid" ) == $self->get_value( "userid" ) )
+		my $fn = $self->{session}->get_repository->get_conf( "does_user_own_eprint" );
+
+		if( !defined $fn )
+		{
+			if( $dataobj->get_value( "userid" ) == $self->get_value( "userid" ) )
+			{
+				return 1;
+			}
+			return 0;
+		}
+
+		return &$fn( $self->{session}, $self, $dataobj );
+	}
+
+	if( $dataobj->get_dataset->confid eq "user" )
+	{
+		# you own your own user record.
+		if( $dataobj->get_value( "userid" ) == $self->get_value( "userid" ) )
 		{
 			return 1;
 		}
 		return 0;
 	}
 
-	return &$fn( $self->{session}, $self, $eprint );
+	return 0;
 }
+
+######################################################################
+=pod
+
+=item $boolean = $user->is_editor( $dataobj )
+
+Returns true if $user can edit $dataobj. For eprints this is 
+(according to editperms). Otherwise it is currently false.
+
+This does not mean the user has the editor priv., just that if they
+do then they may edit the given item.
+
+=cut
+######################################################################
+
+sub is_editor
+{
+	my( $self, $dataobj ) = @_;
+
+	my $session = $self->{session};
+
+	if( $dataobj->get_dataset->confid eq "eprint" )
+	{
+		my $user_ds = $session->get_repository->get_dataset( "user" );
+	
+		my $ef_field = $user_ds->get_field( 'editperms' );
+	
+		my $searches = $self->get_value( 'editperms' );
+		if( scalar @{$searches} == 0 )
+		{
+			return 1;
+		}
+	
+		foreach my $s ( @{$searches} )
+		{
+			my $search = $ef_field->make_searchexp( $session, $s );
+			my $r = $search->get_conditions->item_matches( $dataobj );
+			$search->dispose;
+	
+			return 1 if $r;
+		}
+	}
+
+	# currently people with the priv have no limits to what
+	# users they can edit.
+	if( $dataobj->get_dataset->confid eq "user" )
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
+
 
 
 
@@ -1029,196 +1074,195 @@ sub process_editor_alerts
 	# currently no timestamp for editor alerts 
 }
 
-######################################################################
-=pod
 
-=item @roles = $user->user_roles( [$user] )
 
-Return the roles the user has and anything that the user can do to $user.
 
-=cut
-######################################################################
 
-sub user_roles
+# Privs and Role related methods
+
+# this maps roles onto privs
+my $PRIVMAP = 
 {
-	my ($self, $user) = @_;
-	my @roles;
-	
-	# Can always be ourselves
-	push @roles, $self->get_value( "userid" );
-	
-	# Set our usertype
-	push @roles, "usertype." . $self->get_type();
 
-	# Can $self do something to $user ?
-	if( defined( $user ) )
+	general => 
 	{
-		if( $self->get_value( "userid" ) eq $user->get_value( "userid" ) ) {
-			push @roles, qw( user.owner );
-		}
-	}
-	
-	return @roles;
-}
-
-######################################################################
-=pod
-
-=item $boolean = $user->can_edit( $eprint )
-
-Returns true if $user can edit $eprint (according to editperms).
-
-=cut
-######################################################################
-
-sub can_edit
-{
-	my( $self, $eprint ) = @_;
-
-	my $session = $self->{session};
-
-	my $user_ds = $session->get_repository->get_dataset( "user" );
-
-	my $ef_field = $user_ds->get_field( 'editperms' );
-
-	my $searches = $self->get_value( 'editperms' );
-	if( scalar @{$searches} == 0 )
+		"user/view" => 2,
+	},
+		
+	"set-password" => 
 	{
-		return 1;
-	}
+		# not done
+	},
 
-	foreach my $s ( @{$searches} )
+	"change-email" => 
 	{
-		my $search = $ef_field->make_searchexp( $session, $s );
-		my $r = $search->get_conditions->item_matches( $eprint );
-		$search->dispose;
+		# not done
+	},
 
-		return 1 if $r;
-	}
+	"change-user" => 
+	{
+		# not done
+	},
 
-	return 0;
-}
+	"staff-view" => 
+	{
+		# still needs search tools
 
+		"eprint/inbox/view" => 2,
+		"eprint/inbox/summary" => 2,
+		"eprint/inbox/staff/export" => 2,
+		"eprint/inbox/details" => 2,
+		"eprint/inbox/history" => 2,
 
-my $status = {
-	"status" => 2,
-};
+		"eprint/buffer/view" => 2,
+		"eprint/buffer/summary" => 2,
+		"eprint/buffer/staff/export" => 2,
+		"eprint/buffer/details" => 2,
+		"eprint/buffer/history" => 2,
 
-my $subscribe = {
-	"subscription" => 2,
-	"create_subscription" => 2,
-	"subscription/edit" => 2,
-};
+		"eprint/archive/view" => 2,
+		"eprint/archive/summary" => 2,
+		"eprint/archive/staff/export" => 2,
+		"eprint/archive/details" => 2,
+		"eprint/archive/history" => 2,
 
-my $deposit = {
-	"items" => 2,
-	"create_eprint" => 2,
+		"eprint/deletion/view" => 2,
+		"eprint/deletion/summary" => 2,
+		"eprint/deletion/staff/export" => 2,
+		"eprint/deletion/details" => 2,
+		"eprint/deletion/history" => 2,
+	},
+	"edit-subject" => 
+	{
+		# not done
+	},
+	"edit-user" => 
+	{
+		# not done
+	},
+
+	"view-status" => 
+	{
+		"status" => 1,
+	},
+
+	subscription => 
+	{
+		"subscription" => 2,
+		"create_subscription" => 2,
+		"subscription/edit" => 2,
+	},
+
+	deposit => 
+	{
+		"items" => 2,
+		"create_eprint" => 2,
+	
+		"eprint/inbox/view" => 4,
+		"eprint/inbox/summary" => 4,
+		"eprint/inbox/deposit" => 4,
+		"eprint/inbox/edit" => 4,
+		"eprint/inbox/remove" => 4,
+		"eprint/inbox/export" => 4,
+		"eprint/inbox/details" => 4,
+		"eprint/inbox/history" => 4,
+	
+		"eprint/inbox/deposit" => 4,
+		"eprint/inbox/derive_clone" => 4,
+		"eprint/inbox/derive_version" => 4,
+	
+	
+		"eprint/buffer/view" => 4,
+		"eprint/buffer/summary" => 4,
+		"eprint/buffer/move_inbox" => 4,
+		"eprint/buffer/export" => 4,
+		"eprint/buffer/details" => 4,
+		"eprint/buffer/history" => 4,
+	
+		"eprint/buffer/request_deletion" => 4,
+		"eprint/buffer/derive_clone" => 4,
+		"eprint/buffer/derive_version" => 4,
+	
+	
+		"eprint/archive/view" => 4,
+		"eprint/archive/summary" => 4,
+		"eprint/archive/export" => 4,
+		"eprint/archive/details" => 4,
+		"eprint/archive/history" => 4,
+	
+		"eprint/archive/request_deletion" => 4,
+		"eprint/archive/derive_clone" => 4,
+		"eprint/archive/derive_version" => 4,
 	
 
-	"eprint/inbox/view" => 4,
-	"eprint/inbox/summary" => 4,
-	"eprint/inbox/deposit" => 4,
-	"eprint/inbox/edit" => 4,
-	"eprint/inbox/remove" => 4,
-	"eprint/inbox/export" => 4,
-	"eprint/inbox/details" => 4,
-	"eprint/inbox/history" => 4,
+		"eprint/deletion/view" => 4,
+		"eprint/deletion/summary" => 4,
+		"eprint/deletion/export" => 4,
+		"eprint/deletion/details" => 4,
+		"eprint/deletion/history" => 4,
+	
+		"eprint/deletion/derive_clone" => 4,
+		"eprint/deletion/derive_version" => 4,
+	},
 
-	"eprint/inbox/deposit" => 4,
-	"eprint/inbox/derive_clone" => 4,
-	"eprint/inbox/derive_version" => 4,
+	editor => 
+	{
+		"editorial_review" => 2,
 
+		"eprint/inbox/view" => 8,
+		"eprint/inbox/summary" => 8,
+		"eprint/inbox/staff/export" => 8,
+		"eprint/inbox/details" => 8,
+		"eprint/inbox/history" => 8,
 
-	"eprint/buffer/view" => 4,
-	"eprint/buffer/summary" => 4,
-	"eprint/buffer/move_inbox" => 4,
-	"eprint/buffer/export" => 4,
-	"eprint/buffer/details" => 4,
-	"eprint/buffer/history" => 4,
-
-	"eprint/buffer/request_deletion" => 4,
-	"eprint/buffer/derive_clone" => 4,
-	"eprint/buffer/derive_version" => 4,
-
-
-	"eprint/archive/view" => 4,
-	"eprint/archive/summary" => 4,
-	"eprint/archive/export" => 4,
-	"eprint/archive/details" => 4,
-	"eprint/archive/history" => 4,
-
-	"eprint/archive/request_deletion" => 4,
-	"eprint/archive/derive_clone" => 4,
-	"eprint/archive/derive_version" => 4,
+		"eprint/inbox/remove_with_email" => 8,
+		"eprint/inbox/move_archive" => 8,
+		"eprint/inbox/move_buffer" => 8,
+		"eprint/inbox/derive_clone" => 8,
+		"eprint/inbox/derive_version" => 8,
+		"eprint/inbox/staff/edit" => 8,
 
 
-	"eprint/deletion/view" => 4,
-	"eprint/deletion/summary" => 4,
-	"eprint/deletion/export" => 4,
-	"eprint/deletion/details" => 4,
-	"eprint/deletion/history" => 4,
+		"eprint/buffer/view" => 8,
+		"eprint/buffer/summary" => 8,
+		"eprint/buffer/staff/export" => 8,
+		"eprint/buffer/details" => 8,
+		"eprint/buffer/history" => 8,
 
-	"eprint/deletion/derive_clone" => 4,
-	"eprint/deletion/derive_version" => 4,
-};
-
-my $editor = {
-	"editorial_review" => 8,
-
-
-	"eprint/inbox/view" => 8,
-	"eprint/inbox/summary" => 8,
-	"eprint/inbox/staff/export" => 8,
-	"eprint/inbox/details" => 8,
-	"eprint/inbox/history" => 8,
-
-	"eprint/inbox/remove_with_email" => 8,
-	"eprint/inbox/move_archive" => 8,
-	"eprint/inbox/move_buffer" => 8,
-	"eprint/inbox/derive_clone" => 8,
-	"eprint/inbox/derive_version" => 8,
-	"eprint/inbox/staff/edit" => 8,
+		"eprint/buffer/remove_with_email" => 8,
+		"eprint/buffer/reject_with_email" => 8,
+		"eprint/buffer/move_inbox" => 8,
+		"eprint/buffer/move_archive" => 8,
+		"eprint/buffer/derive_clone" => 8,
+		"eprint/buffer/derive_version" => 8,
+		"eprint/buffer/staff/edit" => 8,
 
 
-	"eprint/buffer/view" => 8,
-	"eprint/buffer/summary" => 8,
-	"eprint/buffer/staff/export" => 8,
-	"eprint/buffer/details" => 8,
-	"eprint/buffer/history" => 8,
+		"eprint/archive/view" => 8,
+		"eprint/archive/summary" => 8,
+		"eprint/archive/staff/export" => 8,
+		"eprint/archive/details" => 8,
+		"eprint/archive/history" => 8,
 
-	"eprint/buffer/remove_with_email" => 8,
-	"eprint/buffer/reject_with_email" => 8,
-	"eprint/buffer/move_inbox" => 8,
-	"eprint/buffer/move_archive" => 8,
-	"eprint/buffer/derive_clone" => 8,
-	"eprint/buffer/derive_version" => 8,
-	"eprint/buffer/staff/edit" => 8,
+		"eprint/archive/move_buffer" => 8,
+		"eprint/archive/move_deletion" => 8,
+		"eprint/archive/derive_clone" => 8,
+		"eprint/archive/derive_version" => 8,
+		"eprint/archive/staff/edit" => 8,
 
 
-	"eprint/archive/view" => 8,
-	"eprint/archive/summary" => 8,
-	"eprint/archive/staff/export" => 8,
-	"eprint/archive/details" => 8,
-	"eprint/archive/history" => 8,
+		"eprint/deletion/view" => 8,
+		"eprint/deletion/summary" => 8,
+		"eprint/deletion/staff/export" => 8,
+		"eprint/deletion/details" => 8,
+		"eprint/deletion/history" => 8,
 
-	"eprint/archive/move_buffer" => 8,
-	"eprint/archive/move_deletion" => 8,
-	"eprint/archive/derive_clone" => 8,
-	"eprint/archive/derive_version" => 8,
-	"eprint/archive/staff/edit" => 8,
-
-
-	"eprint/deletion/view" => 8,
-	"eprint/deletion/summary" => 8,
-	"eprint/deletion/staff/export" => 8,
-	"eprint/deletion/details" => 8,
-	"eprint/deletion/history" => 8,
-
-	"eprint/deletion/move_archive" => 8,
-	"eprint/deletion/derive_clone" => 8,
-	"eprint/deletion/derive_version" => 8,
-	#"eprint/archive/staff/edit" => 8,
-
+		"eprint/deletion/move_archive" => 8,
+		"eprint/deletion/derive_clone" => 8,
+		"eprint/deletion/derive_version" => 8,
+		#"eprint/archive/staff/edit" => 8,
+	},
+	
 };
 
 
@@ -1230,14 +1274,14 @@ my $editor = {
 
 Rleturns true if $user can perform this action/view this screen.
 
-A true result is 1..31 where the value indicates what about the user
+A true result is 1..15 where the value indicates what about the user
 allowed the priv to be performed. This is used for filtering owner/
 editor actions in eprint control screens.
 
-1 = anybody
-2 = registered user
-4 = owner of item
-8 = editor of item
+1 = anybody (not currently used)
+2 = only if logged in 
+4 = only if owner of item
+8 = only if editor of item
 
 For non item related privs the result will normally be 2.
 
@@ -1251,17 +1295,78 @@ sub allow
 {
 	my( $self, $priv, $item ) = @_;
 
-	$self->{privs} = {};
-	foreach( keys %{$deposit} ) { $self->{privs}->{$_} = ($self->{privs}->{$_}||0) + $deposit->{$_}; }
-	foreach( keys %{$editor} ) { $self->{privs}->{$_} = ($self->{privs}->{$_}||0) + $editor->{$_}; }
-	foreach( keys %{$subscribe} ) { $self->{privs}->{$_} = ($self->{privs}->{$_}||0) + $subscribe->{$_}; }
-	foreach( keys %{$status} ) { $self->{privs}->{$_} = ($self->{privs}->{$_}||0) + $status->{$_}; }
+	my $r = $self->get_privs->{$priv} || 0;
 
-	my $r = $self->{privs}->{$priv} || 0;
+	if( !($r & 3 ) && ( $r & 4 || $r & 8 ) && !defined $item )
+	{
+		$self->{session}->get_repository->log(
+"\$user->allow( $priv ) called. It returned a value of $r which meant it needed an item to resolve the permission, but none was passed. Assuming false, but this may indicate a bug." );
+		return 0;
+	}
 
-	# if 4 or 12 filter on owner/editor
+	if( $r & 4 )
+	{
+		if( !defined $item || !$self->is_owner( $item ) )
+		{
+			$r-=4;
+		}
+	}
+	if( $r & 8 )
+	{
+		if( !defined $item || !$self->is_editor( $item ) )
+		{
+			$r-=8;
+		}
+	}
 
 	return $r;
+}
+
+######################################################################
+#
+# $privs = $user->get_privs;
+#
+# Return the privs a user has. Currently just based on roles, but 
+# could do more later. Returns a reference to a hash. Caches the 
+# result to save time.
+#
+######################################################################
+
+sub get_privs
+{
+	my( $self ) = @_;
+
+	return $self->{".privs"} if( defined $self->{".privs"} ) ;
+
+	$self->{".privs"} = {};
+	foreach my $role ( $self->get_roles )
+	{
+		foreach my $priv ( keys %{$PRIVMAP->{$role}} ) 
+		{ 
+			$self->{".privs"}->{$priv} = ($self->{".privs"}->{$priv}||0) + $PRIVMAP->{$role}->{$priv}; 
+		}
+	}
+
+	return $self->{".privs"};
+}
+	
+######################################################################
+#
+# @roles = $user->get_roles;
+#
+# Return the roles the user has. Each role represents a whole bunch
+# of privs.
+#
+######################################################################
+
+sub get_roles
+{
+	my( $self ) = @_;
+
+	my $rep = $self->{session}->get_repository;
+	my $roles = $rep->get_conf( "userauth", $self->get_value( "usertype" ), "priv" );
+
+	return @{$roles};
 }
 
 
