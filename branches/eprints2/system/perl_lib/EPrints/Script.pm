@@ -67,7 +67,7 @@ sub error
 #print STDERR "POS:$pos\n";
 	
 	my $error = "Script in ".(defined $in?$in:"unknown").": ".$msg;
-	if( defined $pos ) { $error.= " at byte ".$pos; }
+	if( defined $pos ) { $error.= " at character ".$pos; }
 	if( defined $code ) { $error .= "\n".$code; }
 	if( defined $code && defined $pos ) {  $error .=  "\n".(" "x$pos). "^ here"; }
 	EPrints::abort( $error );
@@ -587,9 +587,9 @@ sub compile_error
 }	
 
 my $x=<<__;
-EXPR = AND_EXPR + ( "or + EXPR)?
+EXPR = AND_EXPR + ( "or" + EXPR)?
 AND_EXPR = OR_EXPR + ( "and" + AND_EXPR )?
-OR_EXPR = TEST_EXPR + ( "or + OR_EXPR )?
+OR_EXPR = TEST_EXPR + ( "or" + OR_EXPR )?
 TEST_EXPR = NOT_EXPR + ( TESTOP + TEST_EXPR )?
 TEST_OP = "=" 
         | "!=" 
