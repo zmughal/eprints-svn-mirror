@@ -68,7 +68,7 @@ sub validate_field
 	# CHECKS IN HERE
 
 	# Check that embargo expiry date is in the future
-	if( $field->get_name eq "date_embargo" && $value ne "public" )
+	if( $field->get_name eq "date_embargo" && EPrints::Utils::is_set( $value ) )
 	{
 		my ($thisyear, $thismonth, $thisday) = EPrints::Utils::get_date( time );
 		my ($year, $month, $day) = split( '-', $value );

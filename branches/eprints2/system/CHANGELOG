@@ -4223,4 +4223,8 @@ PACKAGE: 2.2.99.2
  * Removed the <phrase> config element from Component/Field/Multi as
     this is now handled at the collapse level.
 
+2006-06-12 cjg
+ * Bug in validate which was using "public" where it should have been 
+    testing for is_set().
+
     
