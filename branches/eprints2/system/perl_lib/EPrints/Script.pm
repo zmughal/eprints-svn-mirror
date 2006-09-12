@@ -249,6 +249,10 @@ sub run_one_of
 	{
 		return [ 0, "BOOLEAN" ];
 	}
+	if( !defined $string->[0] )
+	{
+		return [ 0, "BOOLEAN" ];
+	}
 
 	foreach( @list )
 	{
