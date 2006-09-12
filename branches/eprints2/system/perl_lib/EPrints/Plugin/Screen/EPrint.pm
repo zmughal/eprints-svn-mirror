@@ -50,8 +50,8 @@ sub register_furniture
 	my $f = $self->{session}->make_doc_fragment;
 
 	my $cuser = $self->{session}->current_user;
-	my $owner = $cuser->is_owner( $self->{processor}->{eprint} );
-	my $editor = $cuser->is_editor( $self->{processor}->{eprint} );
+	my $owner  = $self->{processor}->{eprint}->has_owner( $cuser );
+	my $editor = $self->{processor}->{eprint}->has_editor( $cuser );
 
 	my $h2 = $self->{session}->make_element( "h2", style=>"margin: 0px" );
 	my $title = $self->{processor}->{eprint}->render_description;

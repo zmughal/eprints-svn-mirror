@@ -55,7 +55,7 @@ if( !defined $eprint ) {
 }
 
 
-my $can_edit = $session->current_user->can_edit( $eprint );
+my $can_edit = $eprint->has_editor( $session->current_user );
 
 unless( $can_edit )
 {

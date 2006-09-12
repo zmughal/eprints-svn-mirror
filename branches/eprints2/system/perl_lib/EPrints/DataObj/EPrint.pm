@@ -2479,6 +2479,82 @@ sub datestamp
 ######################################################################
 =pod
 
+=item $boolean = $eprint->has_editor( $possible_editor )
+
+Returns true if $possible_editor can edit this eprint. This is
+according to the user editperms. 
+
+This does not mean the user has the editor priv., just that if they
+do then they may edit the given item.
+
+=cut
+######################################################################
+
+sub has_editor
+{
+	my( $self, $possible_editor ) = @_;
+
+	my $session = $self->{session};
+
+	my $user_ds = $session->get_repository->get_dataset( "user" );
+
+	my $ef_field = $user_ds->get_field( 'editperms' );
+
+	my $searches = $possible_editor->get_value( 'editperms' );
+	if( scalar @{$searches} == 0 )
+	{
+		return 1;
+	}
+
+	foreach my $s ( @{$searches} )
+	{
+		my $search = $ef_field->make_searchexp( $session, $s );
+		my $r = $search->get_conditions->item_matches( $self );
+		$search->dispose;
+
+		return 1 if $r;
+	}
+
+	return 0;
+}
+
+######################################################################
+=pod
+
+=item $boolean = $eprint->has_owner( $possible_owner )
+
+Returns true if $possible_owner can edit this eprint. This is
+according to the user editperms. 
+
+This does not mean the user has the editor priv., just that if they
+do then they may edit the given item.
+
+Uses the callback "does_user_own_eprint" if available.
+
+=cut
+######################################################################
+
+sub has_owner
+{
+	my( $self, $possible_owner ) = @_;
+
+	my $fn = $self->{session}->get_repository->get_conf( "does_user_own_eprint" );
+
+	if( !defined $fn )
+	{
+		if( $possible_owner->get_value( "userid" ) == $self->get_value( "userid" ) )
+		{
+			return 1;
+		}
+		return 0;
+	}
+
+	return &$fn( $self->{session}, $possible_owner, $self );
+}
+
+######################################################################
+=pod
+
 =back
 
 =cut

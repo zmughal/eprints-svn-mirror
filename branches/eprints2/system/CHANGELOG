@@ -4239,3 +4239,6 @@ PACKAGE: 2.2.99.2
     dir. 
  * Removed test code from eprint/default citation.
 
+2006-06-12 cjg
+ * Moved $user->can_edit is_editor and is_creator to be instead,
+    $dataobj->has_owner( $user ) and ->has_editor( $user) 

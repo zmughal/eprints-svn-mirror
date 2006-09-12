@@ -111,7 +111,7 @@ sub process_editor_alerts { EPrints::deprecated; return EPrints::DataObj::User::
 sub create_user { EPrints::deprecated; return EPrints::DataObj::User::create( @_ ); }
 
 package EPrints::DataObj::User;
-sub can_edit { EPrints::deprecated; return EPrints::DataObj::User::is_editor( @_ ); }
+sub can_edit { EPrints::deprecated; return $_->has_editor( $_[0] ); }
 
 ######################################################################
 

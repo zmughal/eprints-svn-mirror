@@ -37,9 +37,9 @@ sub about_to_render
 {
 	my( $self ) = @_;
 
-	my $cuser = $self->{session}->current_user;
-	my $owner = $cuser->is_owner( $self->{processor}->{eprint} );
-	my $editor = $cuser->is_editor( $self->{processor}->{eprint} );
+	my $cuser  = $self->{session}->current_user;
+	my $owner  = $self->{processor}->{eprint}->has_owner( $cuser );
+	my $editor = $self->{processor}->{eprint}->has_editor( $cuser );
 
 	if( $editor )
 	{

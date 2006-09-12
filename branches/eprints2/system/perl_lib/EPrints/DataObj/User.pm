@@ -613,93 +613,18 @@ sub get_owned_eprints
 ######################################################################
 =pod
 
-=item $boolean = $user->is_owner( $dataobj )
+=item $boolean = $user->has_owner( $possible_owner )
 
-True if this user "owns" the given $dataobj. By default this is true
-if the dataobj was created by this user, but this rule can be 
-overridden for eprints by the config option "does_user_own_eprint".
+True if the users are the same record.
 
 =cut
 ######################################################################
 
 sub is_owner
 {
-	my( $self, $dataobj ) = @_;
+	my( $self, $possible_owner ) = @_;
 
-	if( $dataobj->get_dataset->confid eq "eprint" )
-	{
-		my $fn = $self->{session}->get_repository->get_conf( "does_user_own_eprint" );
-
-		if( !defined $fn )
-		{
-			if( $dataobj->get_value( "userid" ) == $self->get_value( "userid" ) )
-			{
-				return 1;
-			}
-			return 0;
-		}
-
-		return &$fn( $self->{session}, $self, $dataobj );
-	}
-
-	if( $dataobj->get_dataset->confid eq "user" )
-	{
-		# you own your own user record.
-		if( $dataobj->get_value( "userid" ) == $self->get_value( "userid" ) )
-		{
-			return 1;
-		}
-		return 0;
-	}
-
-	return 0;
-}
-
-######################################################################
-=pod
-
-=item $boolean = $user->is_editor( $dataobj )
-
-Returns true if $user can edit $dataobj. For eprints this is 
-(according to editperms). Otherwise it is currently false.
-
-This does not mean the user has the editor priv., just that if they
-do then they may edit the given item.
-
-=cut
-######################################################################
-
-sub is_editor
-{
-	my( $self, $dataobj ) = @_;
-
-	my $session = $self->{session};
-
-	if( $dataobj->get_dataset->confid eq "eprint" )
-	{
-		my $user_ds = $session->get_repository->get_dataset( "user" );
-	
-		my $ef_field = $user_ds->get_field( 'editperms' );
-	
-		my $searches = $self->get_value( 'editperms' );
-		if( scalar @{$searches} == 0 )
-		{
-			return 1;
-		}
-	
-		foreach my $s ( @{$searches} )
-		{
-			my $search = $ef_field->make_searchexp( $session, $s );
-			my $r = $search->get_conditions->item_matches( $dataobj );
-			$search->dispose;
-	
-			return 1 if $r;
-		}
-	}
-
-	# currently people with the priv have no limits to what
-	# users they can edit.
-	if( $dataobj->get_dataset->confid eq "user" )
+	if( $possible_owner->get_value( "userid" ) == $self->get_value( "userid" ) )
 	{
 		return 1;
 	}
@@ -1306,14 +1231,14 @@ sub allow
 
 	if( $r & 4 )
 	{
-		if( !defined $item || !$self->is_owner( $item ) )
+		if( !defined $item || !$self->has_owner( $self ) )
 		{
 			$r-=4;
 		}
 	}
 	if( $r & 8 )
 	{
-		if( !defined $item || !$self->is_editor( $item ) )
+		if( !defined $item || !$item->has_editor( $self ) )
 		{
 			$r-=8;
 		}
