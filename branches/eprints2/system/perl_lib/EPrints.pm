@@ -86,7 +86,10 @@ used to report errors when initialising modules.
 			# AND this is actually a request, not startup,
 			# then we should print an explanation to the
 			# user in addition to logging to STDERR.
-
+			my $htmlerrmsg = $errmsg;
+			$htmlerrmsg=~s/&/&amp;/g;
+			$htmlerrmsg=~s/>/&gt;/g;
+			$htmlerrmsg=~s/</&lt;/g;
 			$r->content_type( 'text/html' );
 			EPrints::Apache::AnApache::send_http_header( $r );
 			print <<END;
@@ -96,7 +99,7 @@ used to report errors when initialising modules.
   </head>
   <body>
     <h1>EPrints System Error</h1>
-    <p><tt>$errmsg</tt></p>
+    <p><tt>$htmlerrmsg</tt></p>
   </body>
 </html>
 END

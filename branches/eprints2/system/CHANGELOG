@@ -4210,3 +4210,7 @@ PACKAGE: 2.2.99.2
 2006-06-11 cjg
  * Restored hide help/show help buttons in surround/default
  * Added a [-] button to collapsed fields which have been un-collapsed.
+
+2006-06-12 cjg
+ * HTML-Escaped the error message in abort()
+
