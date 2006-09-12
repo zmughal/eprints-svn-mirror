@@ -4214,3 +4214,9 @@ PACKAGE: 2.2.99.2
 2006-06-12 cjg
  * HTML-Escaped the error message in abort()
 
+2006-06-12 cjg
+ * Fixed Issue in Language with spanning pins being passed as a fragment
+    containing just that one element. Internal nodes were added to the
+    fragment not inside the element.
+
+    

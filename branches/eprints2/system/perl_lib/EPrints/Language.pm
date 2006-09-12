@@ -216,6 +216,20 @@ sub _insert_pins
 					$retnode = $inserts->{$ref};
 					$used->{$ref} = 1;
 				}
+				# special case if the pin is a docfragment containing only 
+				# one element. Sometimes this is used to pass <a> elements which
+				# are going to be spanning something in the phrase.
+				# in this case we set retnode to that only element.
+				if( EPrints::XML::is_dom( $retnode, "DocumentFragment" ) )
+				{ 
+					my @retkids = $retnode->getChildNodes;
+					if( scalar @retkids == 1 && EPrints::XML::is_dom( $retkids[0], "Element" ))
+					{
+						$retnode = $retkids[0];
+					}
+			
+				}
+				
 			}
 			else
 			{
@@ -224,6 +238,8 @@ sub _insert_pins
 				$session->get_repository->log(
 "missing parameter \"$ref\" when making phrase \"$phraseid\"" );
 			}
+		
+
 		}
 
 		if( $name eq "phrase" )
