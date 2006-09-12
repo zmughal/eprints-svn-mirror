@@ -44,7 +44,7 @@
 
 
     <component type="Field::Multi">
-      <title><phrase>Publication Details</phrase></title>
+      <title>Publication Details</title>
       <ep:if test="type != 'patent' ">
         <ep:if test="type.one_of('book_section', 'book', 'article', 'conference_item')">
           <field ref="refereed" required="yes" />
@@ -134,7 +134,7 @@
 
     <ep:if test="type = 'conference_item'">
       <component type="Field::Multi">
-        <title><phrase>Event Details</phrase></title>
+        <title>Event Details</title>
         <field ref="event_title" required="yes" />
         <field ref="event_type" required="yes" />
         <field ref="event_location"/>
