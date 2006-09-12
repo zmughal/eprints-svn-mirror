@@ -1124,19 +1124,47 @@ sub queue_all
 ######################################################################
 =pod
 
-=item @roles = $dataobj->user_roles( $user )
+=item $boolean = $dataobj->has_owner( $user )
 
-Return any roles $user might have on $dataobj.
+Return true if $user owns this record. Normally this means they 
+created it, but a group of users could count as owners of the same
+record if you wanted.
+
+It's false on most dataobjs, except those which override this method.
 
 =cut
 ######################################################################
 
-sub user_roles
+sub has_owner
 {
 	my( $self, $user ) = @_;
 
-	return ();
+	return 0;
 }
+
+######################################################################
+=pod
+
+=item $boolean = $dataobj->has_edior( $user )
+
+As for has_owner, but if the user is identified as someone with an
+editorial scope which includes this record.
+
+Defaults to true. Which doesn't mean that they have the right to 
+edit it, just that their scope matches. You also need editor rights
+to use this. It's currently used just to filter eprint editors so
+that only ones with a scope AND a priv can edit.
+
+=cut
+######################################################################
+
+sub has_editor
+{
+	my( $self, $user ) = @_;
+
+	return 1;
+}
+
 
 
 ######################################################################
