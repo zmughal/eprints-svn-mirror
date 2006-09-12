@@ -699,7 +699,7 @@ sub get_baseurl
 
 	my $docpath = docid_to_path( $repository, $self->get_value( "docid" ) );
 
-	if( $self->public )
+	if( $self->is_public )
 	{
 		return $eprint->url_stem.$docpath.'/';
 	}
@@ -714,14 +714,14 @@ sub get_baseurl
 ######################################################################
 =pod
 
-=item $boolean = $doc->public()
+=item $boolean = $doc->is_public()
 
 True if this document has no security set and is in the live archive.
 
 =cut
 ######################################################################
 
-sub public
+sub is_public
 {
 	my( $self ) = @_;
 
@@ -729,7 +729,7 @@ sub public
 
 	return 0 if( $self->get_value( "security" ) ne "public" );
 
-	return 0 if( $eprint->get_dataset()->id() eq "archive" );
+	return 0 if( $eprint->get_value( "eprint_status" ) ne "archive" );
 
 	return 1;
 }

@@ -348,7 +348,7 @@ sub set_eprint_automatic_fields
 		$textstatus = "public";
 		foreach my $doc ( @docs )
 		{
-			if( !$doc->public )
+			if( !$doc->is_public )
 			{
 				$textstatus = "restricted"
 			}

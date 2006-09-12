@@ -94,7 +94,7 @@ sub authen
 
 		my $security = $document->get_value( "security" );
 
-#		if( $security->public )
+#		if( $security->is_public )
 #		{
 #			$session->terminate();
 #			return OK;
@@ -337,7 +337,7 @@ sub authz
 
 	my $security = $document->get_value( "security" );
 
-#	if( $security->public )
+#	if( $security->is_public )
 #	{
 #		$session->terminate();
 #		return OK;

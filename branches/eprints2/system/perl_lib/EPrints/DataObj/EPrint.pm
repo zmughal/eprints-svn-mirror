@@ -1653,7 +1653,7 @@ sub generate_static
 			my $doc;
 			foreach $doc ( @docs )
 			{
-				if( $doc->public )
+				if( $doc->is_public )
 				{
 					$doc->create_symlink( $self, $full_path );
 				}

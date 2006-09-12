@@ -38,7 +38,7 @@ my $page = $session->make_doc_fragment();
 my $action = $session->param("action");
 $action = "reject" if !defined $action || $action ne "accept";
 # Special case - requested document been made OA in the meantime
-$action = "oa" if $doc->public;
+$action = "oa" if $doc->is_public;
 
 my $button = $session->get_action_button;
 unless( defined $button && $button eq "submit" )
