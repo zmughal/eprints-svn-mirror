@@ -4245,3 +4245,6 @@ PACKAGE: 2.2.99.2
 
 2006-06-12 cjg
  * Renamed $doc->public to $dsoc->is_public for clarity
+
+2006-06-12 cjg
+ * Renamed Interface/Processor to ScreenProcessor

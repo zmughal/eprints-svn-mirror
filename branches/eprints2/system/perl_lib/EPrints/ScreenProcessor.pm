@@ -1,4 +1,4 @@
-package EPrints::Interface::Processor;
+package EPrints::ScreenProcessor;
 
 use strict;
 
@@ -15,7 +15,7 @@ sub process
 
 	if( !defined $opts{session} ) 
 	{
-		EPrints::abort( "session not passed to EPrints::Interface::EPrint->process" );
+		EPrints::abort( "session not passed to EPrints::ScreenProcessor->process" );
 	}
 
 	foreach my $k ( keys %opts )
