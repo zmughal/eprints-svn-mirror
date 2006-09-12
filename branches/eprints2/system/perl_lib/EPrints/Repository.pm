@@ -383,42 +383,38 @@ sub _load_citation_specs
 {
 	my( $self ) = @_;
 
-	my $langid;
-	foreach $langid ( @{$self->get_conf( "languages" )} )
+	my $dir = $self->get_conf( "config_path" )."/citations";
+	my $dh;
+	opendir( $dh, $dir );
+	my @dirs = ();
+	while( my $fn = readdir( $dh ) )
 	{
-		my $dir = $self->get_conf( "config_path" ).
-				"/lang/$langid/citations";
-		my $dh;
-		opendir( $dh, $dir );
-		my @dirs = ();
+		next if $fn =~ m/^\./;
+		push @dirs,$fn if( -d "$dir/$fn" );
+	}
+	close $dh;
+
+	$self->{cstyles} = {};
+	# for each dataset dir
+	foreach my $dsid ( @dirs )
+	{
+		opendir( $dh, "$dir/$dsid" );
+		my @files = ();
 		while( my $fn = readdir( $dh ) )
 		{
 			next if $fn =~ m/^\./;
-			push @dirs,$fn if( -d "$dir/$fn" );
+			next unless $fn =~ s/\.xml$//;
+			push @files,$fn;
 		}
 		close $dh;
-
-		$self->{cstyles}->{$langid} = {};
-		# for each dataset dir
-		foreach my $dsid ( @dirs )
+		$self->{cstyles}->{$dsid} = {};
+		foreach my $file ( @files )
 		{
-			opendir( $dh, "$dir/$dsid" );
-			my @files = ();
-			while( my $fn = readdir( $dh ) )
-			{
-				next if $fn =~ m/^\./;
-				next unless $fn =~ s/\.xml$//;
-				push @files,$fn;
-			}
-			close $dh;
-			$self->{cstyles}->{$langid}->{$dsid} = {};
-			foreach my $file ( @files )
-			{
-				$self->{cstyles}->{$langid}->{$dsid}->{$file} = 
-					$self->_parse_citation_file( "$dir/$dsid/$file.xml" );
-			}
+			$self->{cstyles}->{$dsid}->{$file} = 
+				$self->_parse_citation_file( "$dir/$dsid/$file.xml" );
 		}
 	}
+
 	return 1;
 }
 
@@ -460,27 +456,29 @@ sub _parse_citation_file
 ######################################################################
 # =pod
 # 
-# =item $citation = $repository->get_citation_spec( $langid, $type, [$style] )
+# =item $citation = $repository->get_citation_spec( $type, [$style] )
 # 
-# Returns the DOM citation style for the given language and type. This
+# Returns the DOM citation style for the given type of object. This
 # is the origional and should be cloned before you alter it.
 # 
 # If $style is specified then returns a certain style if available, 
 # otherwise the default.
+#
+# type = user,eprint etc.
 # 
 # =cut
 ######################################################################
 
 sub get_citation_spec
 {
-	my( $self, $langid, $type, $style  ) = @_;
+	my( $self, $type, $style  ) = @_;
 
 	$style = "default" unless defined $style;
 
-	my $spec = $self->{cstyles}->{$langid}->{$type}->{$style};
+	my $spec = $self->{cstyles}->{$type}->{$style};
 	if( !defined $spec )
 	{
-		$spec = $self->{cstyles}->{$langid}->{$type}->{default};
+		$spec = $self->{cstyles}->{$type}->{default};
 	}
 	
 	return $spec;

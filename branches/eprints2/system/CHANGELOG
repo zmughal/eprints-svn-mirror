@@ -4230,6 +4230,12 @@ PACKAGE: 2.2.99.2
 2006-06-12 cjg
  * Added <phrase> to collapse which inserts a phrase in the current 
     language.
-   
 
-    
+2006-06-12 cjg
+ * Fixed warning if the first value passed to one_of in Script was undef.
+   
+2006-06-12 cjg
+ * Moved citations into general config dir from the lang specific config
+    dir. 
+ * Removed test code from eprint/default citation.
+

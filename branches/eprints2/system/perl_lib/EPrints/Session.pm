@@ -3050,7 +3050,6 @@ sub get_citation_spec
 	my $citation_id = $dataset->confid();
 
 	my $citespec = $self->{repository}->get_citation_spec( 
-					$self->{lang}->get_id(), 
 					$citation_id,
 					$ctype );
 
