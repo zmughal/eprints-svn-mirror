@@ -31,7 +31,7 @@
 <if test="date_effective">(<print expr="date_effective" opts="res=year" />)</if>
 
 <linkhere><xhtml:em><print expr="title" opts="magicstop" /></xhtml:em></linkhere>
-
+<phrase ref="Plugin/InputForm/Surround/Default:show_help"><param name="link"><a href="http://totl.net/"></a></param></phrase>
 <choose>
 
   <when test="type.one_of( 'book','book_section' )">
