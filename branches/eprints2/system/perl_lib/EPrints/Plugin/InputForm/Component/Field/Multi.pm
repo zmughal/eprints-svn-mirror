@@ -99,27 +99,13 @@ sub parse_config
 	}
 
 
+	$self->{config}->{title} = $self->{session}->make_doc_fragment;
 	if( scalar @title_nodes == 1 )
 	{
-		my $phrase_ref = $title_nodes[0]->getAttribute( "ref" );
-		if( EPrints::Utils::is_set( $phrase_ref ) )
+		foreach my $kid ( $title_nodes[0]->getChildNodes )
 		{
-			$self->{config}->{title} = $self->{session}->html_phrase( $phrase_ref );
-		}
-		else
-		{
-			my @phrase_dom = $title_nodes[0]->getElementsByTagName( "phrase" );
-			if( scalar @phrase_dom == 1 )
-			{
-				$self->{config}->{title} = $phrase_dom[0];
-			}
-		}
-	}
-
-	# multi fields don't _have_ to have a title really...	
-	if( !defined $self->{config}->{title} ) 
-	{
-		$self->{config}->{title} = $self->{session}->make_doc_fragment;
+			$self->{config}->{title}->appendChild( $kid );
+		}	
 	}
 
 	

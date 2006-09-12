@@ -4219,4 +4219,8 @@ PACKAGE: 2.2.99.2
     containing just that one element. Internal nodes were added to the
     fragment not inside the element.
 
+2006-06-12 cjg
+ * Removed the <phrase> config element from Component/Field/Multi as
+    this is now handled at the collapse level.
+
     
