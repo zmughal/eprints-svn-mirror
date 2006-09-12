@@ -15,7 +15,7 @@
 
 =head1 NAME
 
-B<EPrints::DataObj::Request> - Log document requests and responses
+B<EPrints::DataObj::Request> - Log document requests and responses (for request document button)
 
 =head1 METHODS
 
