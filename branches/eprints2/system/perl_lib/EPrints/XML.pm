@@ -619,6 +619,10 @@ sub collapse_conditions
 		{
 			return _collapse_print( $node, %params );
 		}
+		if( $name eq "phrase" )
+		{
+			return _collapse_phrase( $node, %params );
+		}
 	}
 
 	my $collapsed = $params{session}->clone_for_me( $node );
@@ -640,6 +644,37 @@ sub _collapse_kids
 				$child,
 				%params ) );			
 	}
+
+	return $collapsed;
+}
+
+sub _collapse_phrase
+{
+	my( $node, %params ) = @_;
+
+	if( !$node->hasAttribute( "ref" ) )
+	{
+		EPrints::abort( "In ".$params{in}.": phrase element with no ref attribute.\n".substr( $node->toString, 0, 100 ) );
+	}
+	my $ref = $node->getAttribute( "ref" );
+
+	my %pins = ();
+	foreach my $param ( $node->getChildNodes )
+	{
+		next unless( $param->getTagName eq "param" );
+
+		if( !$param->hasAttribute( "name" ) )
+		{
+			EPrints::abort( "In ".$params{in}.": param element in phrase with no name attribute.\n".substr( $param->toString, 0, 100 ) );
+		}
+		my $name = $param->getAttribute( "name" );
+		
+		$pins{$name} = _collapse_kids( $param, %params );
+	}
+
+	my $collapsed = $params{session}->html_phrase( $ref, %pins );
+
+#	print $collapsed->toString."\n";
 
 	return $collapsed;
 }

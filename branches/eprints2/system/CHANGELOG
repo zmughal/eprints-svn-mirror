@@ -4227,4 +4227,9 @@ PACKAGE: 2.2.99.2
  * Bug in validate which was using "public" where it should have been 
     testing for is_set().
 
+2006-06-12 cjg
+ * Added <phrase> to collapse which inserts a phrase in the current 
+    language.
+   
+
     
