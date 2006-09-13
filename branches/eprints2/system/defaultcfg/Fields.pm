@@ -199,14 +199,6 @@ $fields->{eprint} = [
 
 ];
 
-# Don't worry about this bit, remove it if you want.
-# it's to store some information for a citation-linking
-# modules we've not built yet. 
-	
-$fields->{document} = [
-	{ name => "citeinfo", type => "longtext", multiple => 1 }
-];
-
 return $fields;
 }
 
