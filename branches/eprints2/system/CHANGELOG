@@ -4257,3 +4257,6 @@ PACKAGE: 2.2.99.2
  * Added $session to one of the indexing.pl methods
  * Fixed bug in has_owner permission checks
  * Renamed config {archivefields} to {fields}
+
+2006-06-13 cjg
+ * Removed @foo@ from citations

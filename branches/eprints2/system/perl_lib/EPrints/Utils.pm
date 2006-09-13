@@ -578,38 +578,6 @@ sub render_citation
 sub _render_citation_aux
 {
 	my( $obj, $session, $node, $url ) = @_;
-	my $rendered;
-
-	if( EPrints::XML::is_dom( $node, "Text" ) ||
-	    EPrints::XML::is_dom( $node, "CDataSection" ) )
-	{
-		my $rendered = $session->make_doc_fragment;
-		my $v = $node->getData;
-		my $inside = 0;
-		foreach( split( '@' , $v ) )
-		{
-			if( $inside )
-			{
-				$inside = 0;
-				unless( EPrints::Utils::is_set( $_ ) )
-				{
-					$rendered->appendChild( 
-						$session->make_text( '@' ) );
-					next;
-				}
-                                my $field = EPrints::Utils::field_from_config_string( 
-					$obj->get_dataset(), 
-					$_ );
-				$rendered->appendChild( _citation_field_value( $obj, $field ) );
-				next;
-			}
-
-			$rendered->appendChild( 
-				$session->make_text( $_ ) );
-			$inside = 1;
-		}
-		return $rendered;
-	}
 
 	if( EPrints::XML::is_dom( $node, "EntityReference" ) )
 	{
@@ -623,6 +591,7 @@ sub _render_citation_aux
 
 	my $addkids = $node->hasChildNodes;
 
+	my $rendered;
 	if( EPrints::XML::is_dom( $node, "Element" ) )
 	{
 		my $name = $node->getTagName;
