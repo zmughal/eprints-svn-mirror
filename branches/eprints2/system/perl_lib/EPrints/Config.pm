@@ -173,7 +173,7 @@ sub load_repository_config
 	foreach( keys %SYSTEMCONF ) { $ainfo->{$_} = $SYSTEMCONF{$_}; }
 	my $tagname;
 	foreach $tagname ( 
-			"host", "urlpath", "configmodule", "port", 
+			"host", "urlpath", "port", 
 			"archiveroot", "dbname", "dbhost", "dbport",
 			"dbsock", "dbuser", "dbpass", "defaultlanguage",
 			"adminemail", "securehost", "securepath", "index" )
@@ -194,10 +194,6 @@ sub load_repository_config
 	unless( $ainfo->{archiveroot}=~m#^/# )
 	{
 		$ainfo->{archiveroot}= $SYSTEMCONF{base_path}."/".$ainfo->{archiveroot};
-	}
-	unless( $ainfo->{configmodule}=~m#^/# )
-	{
-		$ainfo->{configmodule}= $ainfo->{archiveroot}."/".$ainfo->{configmodule};
 	}
 
 	# remove any trailing slash from the urlpath
@@ -323,15 +319,29 @@ sub load_repository_config_module
 	#my $return = do $file;
 	#chdir $prev_dir;
 
-	my $file = $info->{configmodule};
-	@! = $@ = undef;
-	my $return = do $file;
-	unless( $return )
+	my $dir = $info->{archiveroot}."/cfg/perl";
+	my $dh;
+	opendir( $dh, $dir ) || EPrints::abort( "Can't read perl config files: $!" );
+	my @files = ();
+	while( my $file = readdir( $dh ) )
 	{
-		my $errors = "couldn't run $file";
-		$errors = "couldn't do $file:\n$!" unless defined $return;
-		$errors = "couldn't parse $file:\n$@" if $@;
-		print STDERR <<END;
+		next if $file =~ /^\./;
+		push @files, $file;
+	}
+	closedir( $dh );
+
+	foreach my $file ( sort @files )
+	{
+		$! = $@ = undef;
+		my $filepath = "$dir/$file";
+		my $return;
+	 	eval "package EPrints::Config::$id; \$return = do \$filepath";
+		unless( $return )
+		{
+			my $errors = "couldn't run $filepath";
+			$errors = "couldn't do $filepath:\n$!" unless defined $return;
+			$errors = "couldn't parse $filepath:\n$@" if $@;
+			print STDERR <<END;
 ------------------------------------------------------------------
 ---------------- EPrints System Warning --------------------------
 ------------------------------------------------------------------
@@ -342,7 +352,8 @@ Errors follow:
 $errors
 ------------------------------------------------------------------
 END
-		return;
+			return;
+		}
 	}
 	
 

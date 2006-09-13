@@ -7,36 +7,16 @@
 #
 ######################################################################
 #
-#  __COPYRIGHT__
-#
-# Copyright 2000-2008 University of Southampton. All Rights Reserved.
-# 
 # __LICENSE__
 #
 ######################################################################
-
-package EPrints::Config::devel;
-
-foreach my $file ( 
-	"cfg/OAI.pm",
-	"cfg/Render.pm",
-	"cfg/Validate.pm",
-	"cfg/Indexing.pm",
-	"cfg/Fields.pm" )
-{
-	unless (my $return = do $file) {
-		warn "couldn't parse $file: $@" if $@;
-		warn "couldn't do $file: $!"    unless defined $return;
-		warn "couldn't run $file"       unless $return;
-	}
-}
 
 use Unicode::String qw(utf8 latin1 utf16);
 
 use strict;
 
 use EPrints;
-
+print __PACKAGE__."\n";
 sub get_conf
 {
 	my( $repository_info ) = @_;

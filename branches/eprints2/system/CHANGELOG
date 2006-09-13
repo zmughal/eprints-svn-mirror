@@ -4248,3 +4248,6 @@ PACKAGE: 2.2.99.2
 
 2006-06-12 cjg
  * Renamed Interface/Processor to ScreenProcessor
+
+2006-06-12 cjg
+ * First part of splitting up Config.pm etc.
