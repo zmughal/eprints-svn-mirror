@@ -7,33 +7,19 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
 # __LICENSE__
 #
 ######################################################################
 
-use Unicode::String qw(utf8 latin1 utf16);
 
 use strict;
 
 use EPrints;
-print __PACKAGE__."\n";
-sub get_conf
-{
-	my( $repository_info ) = @_;
-	my $c = {};
-
-######################################################################
-#
-#  General repository information
-#
-######################################################################
-
-# First we import information that was configured in
-# the XML file. It can be over-ridden, but that's 
-# probably not a good idea.
-foreach( keys %{$repository_info} ) { 
-	$c->{$_} = $repository_info->{$_} 
-};
+use Unicode::String qw(utf8 latin1 utf16);
 
 # If 1, users can request the removal of their submissions from the repository
 $c->{allow_user_removal_request} = 1;
@@ -776,12 +762,6 @@ $c->{send_email} = \&EPrints::Utils::send_mail_via_smtp;
 
 ######################################################################
 
-# Stuff from other config files which are require'd above:
-$c->{oai} = get_oai_conf( $c->{perl_url} );
-$c->{archivefields} = get_metadata_conf();
-
-return $c;
-}
 
 
 
@@ -1042,5 +1022,3 @@ sub email_for_doc_request {
 	return $session->get_repository->get_conf("adminemail");
 }
 
-# Return true to indicate the module loaded OK.
-1;

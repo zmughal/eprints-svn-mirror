@@ -270,7 +270,7 @@ sub new
 			}
 		}
 	}
-	my $repository_fields = $repository->get_conf( "archivefields", $self->{confid} );
+	my $repository_fields = $repository->get_conf( "fields", $self->{confid} );
 	if( $repository_fields )
 	{
 		foreach my $fielddata ( @{$repository_fields} )

@@ -330,17 +330,25 @@ sub load_repository_config_module
 	}
 	closedir( $dh );
 
+	eval '$EPrints::Config::'.$id.'::config = $info';
 	foreach my $file ( sort @files )
 	{
-		$! = $@ = undef;
+		$@ = undef;
 		my $filepath = "$dir/$file";
-		my $return;
-	 	eval "package EPrints::Config::$id; \$return = do \$filepath";
-		unless( $return )
+		my $err;
+		print "$filepath\n";
+		unless( open( CFGFILE, $filepath ) )
 		{
-			my $errors = "couldn't run $filepath";
-			$errors = "couldn't do $filepath:\n$!" unless defined $return;
-			$errors = "couldn't parse $filepath:\n$@" if $@;
+			EPrints::abort( "Could not open $filepath: $!" );
+		}
+		my $cfgfile = join('',<CFGFILE>);
+		close CFGFILE;
+	 	my $todo = 'package EPrints::Config::'.$id.'; our $c = $EPrints::Config::'.$id.'::config; '.$cfgfile;
+		eval $todo;
+
+		if( $@ )
+		{
+			my $errors = "error in $filepath:\n$@";
 			print STDERR <<END;
 ------------------------------------------------------------------
 ---------------- EPrints System Warning --------------------------
@@ -356,163 +364,7 @@ END
 		}
 	}
 	
-
-	my $function = \&{"EPrints::Config::".$id."::get_conf"};
-	my $config = &$function( $info );
-
-	##########################################################
-	#
-	# Change old configs into 2.3 format...
-	#
-
-	foreach my $stype ( "simple", "advanced" )
-	{
-		next if( defined $config->{"search"}->{$stype} );
-
-		$config->{"search"}->{$stype} = {
-			fieldnames => $config->{$stype."_search_fields"},
-			# don't make search_fields yet!
-			citation => $config->{$stype."_search_citation"} };
-		if( $stype eq "simple" )
-		{
-			$config->{"search"}->{$stype}->{preamble_phrase} =
-						 "cgi/search:preamble";
-			$config->{"search"}->{$stype}->{title_phrase} =
-						 "cgi/search:simple_search";
-		}
-		if( $stype eq "advanced" )
-		{
-			$config->{"search"}->{$stype}->{preamble_phrase} =
-						 "cgi/advsearch:preamble";
-			$config->{"search"}->{$stype}->{title_phrase} =
-						 "cgi/advsearch:adv_search";
-		}
-	}
-
-	foreach my $ds_id ( "inbox", "buffer", "archive", "deletion" )
-	{
-		my $stype = $ds_id;
-		next if( defined $config->{"search"}->{$stype} );
-		$config->{search}->{$stype} = {
-			title_phrase => "cgi/users/eprint_search:title_".$stype,
-			staff => 1,
-			dataset_id => $ds_id,
-			citation => $config->{"search"}->{"advanced"}->{"citation"}
-		};
-		if( defined $config->{"search"}->{"advanced"}->{"fieldnames"} )
-		{
-			my @fnames = ( 
-					"eprintid", 
-					"userid", 
-					"dir", 
-					@{$config->{"search"}->{"advanced"}->{"fieldnames"}} );
-			$config->{search}->{$stype}->{"fieldnames"} = \@fnames;
-		}
-		else
-		{
-			my @sfields = ( 
-					{ meta_fields => ["eprintid"] }, 
-					{ meta_fields => ["userid"] }, 
-					{ meta_fields => ["dir"] },
-					@{$config->{"search"}->{"advanced"}->{"search_fields"}} );
-			$config->{search}->{$stype}->{"search_fields"} = \@sfields;
-		}
-	}
-
-	if( !defined $config->{"search"}->{"users"} )
-	{
-		$config->{search}->{"users"} = {
-			title_phrase => "cgi/users/user_search:simple_search",
-			preamble_phrase => "cgi/users/user_search:preamble",
-			staff => 1,
-			dataset_id => "user",
-			fieldnames => $config->{"user_search_fields"}
-		};
-	}
-
-	if( !defined $config->{"search"}->{"history"} )
-	{
-		$config->{search}->{"history"} = {
-			title_phrase => "history_search_title",
-			preamble_phrase => "history_search_premble",
-			staff => 1,
-			dataset_id => "history",
-			search_fields => [
-				{ meta_fields=>[ "userid" ] },
-				{ meta_fields=>[ "historyid" ] },
-				{ meta_fields=>[ "actor" ] },
-				{ meta_fields=>[ "datasetid" ] },
-				{ meta_fields=>[ "objectid" ] },
-				{ meta_fields=>[ "timestamp" ] },
-				{ meta_fields=>[ "action" ] },
-			],
-			default_order=>"revtime",
-		};
-
-		$config->{order_methods}->{history} =
-		{
-			"revtime"	 =>  "-timestamp",
-			"time" 		 =>  "timestamp",
-			"userid"	 =>  "userid,-timestamp",
-			"objectid"	 =>  "objectid,-timestamp",
-		};
-	}
-
-	if( !defined $config->{field_defaults}->{hide_honourific} )
-	{
-		$config->{field_defaults}->{hide_honourific} = $config->{hide_honourific};
-	}
-	if( !defined $config->{field_defaults}->{hide_lineage} )
-	{
-		$config->{field_defaults}->{hide_lineage} = $config->{hide_lineage};
-	}
-
-	#
-	# Defaults for >2.3.11
-	#
-
-	if( !defined $config->{allow_reset_password} )
-	{
-		$config->{allow_reset_password} = 1;
-	}
-
-	###########################################
-	#
-	# Pre 3.0 compatibility 
-	#
-
-
-	foreach my $ds_id ( keys %{$config->{archivefields}} )
-	{
-		my $field_list = $config->{archivefields}->{$ds_id};
-		foreach my $field_data ( @{$field_list} )
-		{
-			# render opts become normal properties
-
-			if( defined $field_data->{render_opts} )
-			{
-				foreach my $k ( keys %{$field_data->{render_opts}} )
-				{
-					$field_data->{"render_$k"} = $field_data->{render_opts}->{$k};
-				}
-				delete $field_data->{render_opts};
-			}
-		}
-	}
-
-	# end of 3.0 compat
-	###########################################
-
-
-
-
-	#
-	# End of config updater
-	#
-	##########################################################
-
-
-	return $config;
+	return eval '$EPrints::Config::'.$id.'::config';
 }
 
 

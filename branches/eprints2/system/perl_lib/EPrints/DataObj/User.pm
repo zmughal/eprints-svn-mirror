@@ -1228,10 +1228,9 @@ sub allow
 "\$user->allow( $priv ) called. It returned a value of $r which meant it needed an item to resolve the permission, but none was passed. Assuming false, but this may indicate a bug." );
 		return 0;
 	}
-
 	if( $r & 4 )
 	{
-		if( !defined $item || !$self->has_owner( $self ) )
+		if( !defined $item || !$item->has_owner( $self ) )
 		{
 			$r-=4;
 		}

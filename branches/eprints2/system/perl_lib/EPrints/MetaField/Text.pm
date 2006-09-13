@@ -184,7 +184,8 @@ sub _extract_words
 
 	my( $codes, $badwords ) = 
 		$session->get_repository->call( 
-			"extract_words" , 
+			"extract_words" ,
+			$session,
 			$value );
 	my $newbadwords = [];
 	foreach( @{$badwords} ) 

@@ -4251,3 +4251,9 @@ PACKAGE: 2.2.99.2
 
 2006-06-12 cjg
  * First part of splitting up Config.pm etc.
+
+2006-06-13 cjg
+ * Broke up .pm files into cfg.d/*.pl
+ * Added $session to one of the indexing.pl methods
+ * Fixed bug in has_owner permission checks
+ * Renamed config {archivefields} to {fields}

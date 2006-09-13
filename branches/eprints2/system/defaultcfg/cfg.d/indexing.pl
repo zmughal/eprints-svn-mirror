@@ -65,7 +65,7 @@ my $FREETEXT_SEPERATOR_CHARS = {
 
 ######################################################################
 #
-# extract_words( $text )
+# extract_words( $session, $text )
 #
 #  This method is used when indexing a record, to decide what words
 #  should be used as index words.
@@ -79,7 +79,7 @@ my $FREETEXT_SEPERATOR_CHARS = {
 
 sub extract_words
 {
-	my( $text ) = @_;
+	my( $session, $text ) = @_;
 
 	# Acronym processing only works on uppercase non accented
 	# latin letters. If you don't want this processing comment
@@ -190,5 +190,3 @@ sub extract_words
 	return( \@g , \@b );
 }
 
-# Return true to indicate the module loaded OK.
-1;

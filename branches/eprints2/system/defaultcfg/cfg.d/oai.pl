@@ -14,9 +14,7 @@
 
 use EPrints::OpenArchives;
 
-sub get_oai_conf { my( $perlurl ) = @_; my $oai={};
-
-
+my $oai;
 ##########################################################################
 # OAI-PMH 2.0 
 #
@@ -44,7 +42,7 @@ $oai->{v2}->{output_plugins} = {
 	"context_object" => "ContextObject" };
 
 # Base URL of OAI 2.0
-$oai->{v2}->{base_url} = $perlurl."/oai2";
+$oai->{v2}->{base_url} = $c->{perl_url}."/oai2";
 
 $oai->{v2}->{sample_identifier} = EPrints::OpenArchives::to_oai_identifier(
 	$oai->{v2}->{archive_id},
@@ -155,8 +153,4 @@ $oai->{mime_types} = {
 	ascii => "text/plain"
 };
 
-return $oai; }
-
-
-1;
-
+$c->{oai} = $oai;
