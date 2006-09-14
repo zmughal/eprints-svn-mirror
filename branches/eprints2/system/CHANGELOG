@@ -4260,3 +4260,6 @@ PACKAGE: 2.2.99.2
 
 2006-06-13 cjg
  * Removed @foo@ from citations
+
+2006-06-14 cjg
+ * Removed links to old prototype.js in template

@@ -6,9 +6,6 @@
   <head>
     <title>&archivename; - <ep:pin ref="title" textonly="yes" /></title>
     <script src="&base_url;/eprints.js" type="text/javascript"><!-- nope --></script>
-    <script src="&base_url;/devel/prototype.js" type="text/javascript"><!-- nope --></script>
-    <script src="&base_url;/devel/default.js" type="text/javascript"><!-- nope --></script>
-  
     <style type="text/css" media="screen">
 @import  url(&base_url;/style/eprints.css);
     </style>
@@ -29,7 +26,6 @@
         .ep_only_js { display: none; }
       </style>
     </noscript>
-    <script src="&base_url;/devel/prototype.js" type="text/javascript"><!-- nope --></script>
     <script language="JavaScript" type="text/JavaScript">
     <!--
         window.document.write( '<style>body { height: '+(window.innerHeight+1)+'px; }</style>' );
