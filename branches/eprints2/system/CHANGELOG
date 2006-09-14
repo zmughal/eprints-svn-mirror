@@ -4263,3 +4263,6 @@ PACKAGE: 2.2.99.2
 
 2006-06-14 cjg
  * Removed links to old prototype.js in template
+
+2006-06-14 cjg
+ * Moved defaultcfg to lib
