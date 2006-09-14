@@ -514,7 +514,7 @@ if( $mkfiles eq "yes" )
 	my(undef,undef,$uid,$gid) = getpwnam( EPrints::Config::get( "user" ) );
 	print "\nCreating initial files:\n";
 	&install( 
-		EPrints::Config::get( "base_path" )."/defaultcfg",
+		EPrints::Config::get( "base_path" )."/lib/defaultcfg",
 		0644,
 		$uid,
 		$gid,
