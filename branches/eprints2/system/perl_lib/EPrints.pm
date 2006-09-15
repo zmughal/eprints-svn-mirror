@@ -90,7 +90,10 @@ used to report errors when initialising modules.
 			$htmlerrmsg=~s/&/&amp;/g;
 			$htmlerrmsg=~s/>/&gt;/g;
 			$htmlerrmsg=~s/</&lt;/g;
+			$htmlerrmsg=~s/\n/<br \/>/g;
 			$r->content_type( 'text/html' );
+			$r->status_line( "500 EPrints Internal Error" );
+
 			EPrints::Apache::AnApache::send_http_header( $r );
 			print <<END;
 <html>
