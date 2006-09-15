@@ -4272,3 +4272,8 @@ PACKAGE: 2.2.99.2
 
 2006-09-15 cjg
  * Made line breaks in abort show as <br> in HTML report.
+
+2006-09-15 cjg
+ * Fixed bug in Script::Compiled->runtime_error
+ * Made Scripts report an error if an unknown function 
+    call is met rather than just bailing with a perl error.

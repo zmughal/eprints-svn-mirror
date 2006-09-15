@@ -133,6 +133,12 @@ sub run
 
 	my $fn = "run_".$self->{id};
 
+        if( !defined $EPrints::Script::Compiled::{$fn} )
+        {
+		$self->runtime_error( "call to unknown fuction: ".$self->{id} );
+                next;
+        }
+
 	no strict "refs";
 	my $result = $self->$fn( $state, @params );
 	use strict "refs";
@@ -144,7 +150,7 @@ sub runtime_error
 { 
 	my( $self, $msg ) = @_;
 
-	error( $msg, $self->{in}, $self->{pos}, $self->{code} )
+	EPrints::Script::error( $msg, $self->{in}, $self->{pos}, $self->{code} )
 }
 
 sub run_LESS_THAN
