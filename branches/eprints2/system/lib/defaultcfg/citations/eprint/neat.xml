@@ -9,11 +9,12 @@
 	xmlns:ep="http://eprints.org/ep3/citations">
 <table border="0" width="100%">
   <tr>
-    <td><span class="citation"><ep:print expr="creators" /><br /><ep:linkhere><ep:print expr="title" /></ep:linkhere><br /><ep:if test="set('date_issue')">@date_issue@, </ep:if><ep:print expr="type" />.
+    <td><span class="citation"><ep:print expr="creators" /><br /><ep:linkhere><ep:print expr="title" /></ep:linkhere><br /><ep:if test="is_set('date_issue')"><ep:print expr="date_issue" />, </ep:if><ep:print expr="type" />.
+
 <ep:if test="full_text_status = 'none'"> Item not available online.</ep:if>
 <ep:if test="full_text_status = 'restricted'"> Item availablity restricted.</ep:if>
-<span style="color: #ccc"> [Deposited <ep:print expr="datestamp" />]</span></span></td>
-    <td><ep:print expr="fileinfo" /></td>
+</span></td>
+    <td align="right"><ep:print expr="fileinfo" /></td>
   </tr>
 </table>
 
