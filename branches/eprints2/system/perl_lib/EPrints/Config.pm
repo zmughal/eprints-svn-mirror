@@ -336,7 +336,6 @@ sub load_repository_config_module
 		$@ = undef;
 		my $filepath = "$dir/$file";
 		my $err;
-		print "$filepath\n";
 		unless( open( CFGFILE, $filepath ) )
 		{
 			EPrints::abort( "Could not open $filepath: $!" );
