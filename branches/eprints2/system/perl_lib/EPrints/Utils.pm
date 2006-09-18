@@ -36,7 +36,9 @@ use Term::ReadKey;
 use Text::Wrap qw();
 use MIME::Lite;
 use LWP::MediaTypes qw( guess_media_type );
+use POSIX qw(strftime);
 use URI;
+use Time::Local 'timegm_nocheck';
 
 use strict;
 
@@ -164,6 +166,8 @@ sub join_path
 
 Render the given date or date and time as a chunk of XHTML.
 
+The date given is in UTC but it will be rendered in the local offset.
+
 =cut
 ######################################################################
 
@@ -179,7 +183,20 @@ sub render_date
 	# remove 0'd days and months
 	$datevalue =~ s/(-0+)+$//;
 
-	my( $year,$mon,$day,$hour,$min,$sec ) = split /[- :]/, $datevalue;
+	# the is the gmtime
+	my( $year,$mon,$day,$hour,$min,$sec ) = split /[- :TZ]/, $datevalue;
+
+	if( defined $hour )
+	{
+		# if we have a time as well as a date then shift it to
+		# localtime.
+		my $t = timegm_nocheck $sec||0,$min||0,$hour,$day,$mon,$year;
+		my @l = localtime( $t );
+		$l[0] = undef unless defined $sec;
+		$l[1] = undef unless defined $min;
+		( $sec,$min,$hour,$day,$mon,$year ) = ( $l[0], $l[1], $l[2], $l[3], $l[4]+1, $l[5]+1900 );
+	}
+
 
 	if( !defined $year || $year eq "undef" || $year == 0 ) 
 	{
@@ -191,25 +208,68 @@ sub render_date
 
 	$r = EPrints::Utils::get_month_label( $session, $mon )." $r" if( defined $mon );
 	$r = "$day $r" if( defined $day );
-	if( defined $hour )
+
+	if( !defined $hour )
 	{
-		my $time;
-		if( defined $sec ) 
-		{
-			$time = sprintf( "%02d:%02d:%02d",$hour,$min,$sec );
-		}
-		elsif( defined $min )
-		{
-			$time = sprintf( "%02d:%02d",$hour,$min );
-		}
-		else
-		{
-			$time = sprintf( "%02d",$hour );
-		}
-		$r = "$time on $r";
-	}	
+		return $session->make_text( $r );
+	}
+
+	my $time;
+	if( defined $sec ) 
+	{
+		$time = sprintf( "%02d:%02d:%02d",$hour,$min,$sec );
+	}
+	elsif( defined $min )
+	{
+		$time = sprintf( "%02d:%02d",$hour,$min );
+	}
+	else
+	{
+		$time = sprintf( "%02d",$hour );
+	}
+	$r = "$time on $r";
+	my $gmt_off = gmt_off();
+	my $hour_diff = $gmt_off/60/60;
+	my $min_diff = ($gmt_off/60)%60;
+	my $c = "";
+	if( $hour_diff > 0 ) { $c="+"; }
+	$r.= sprintf( ' %s%02d:%02d', $c, $hour_diff, $min_diff );
 
 	return $session->make_text( $r );
+}
+
+######################################################################
+=pod
+
+=item $xhtml = EPrints::Utils::gmt_off()
+
+Render the current time offset in seconds. This just diffs gmtime
+and localtime.
+
+=cut
+######################################################################
+
+sub gmt_off
+{
+        my $time = time;
+        my( @local ) = localtime($time);
+        my( @gmt ) = gmtime($time);
+ 
+        my @diff;
+ 
+        for(0..2) { $diff[$_] = $local[$_] - $gmt[$_]; }
+ 
+        if( $local[3] > $gmt[3] || $local[4] > $gmt[4] || $local[5] > $gmt[5] )
+        {
+                $diff[2] += 24;
+        }
+ 
+        if( $local[3] < $gmt[3] || $local[4] < $gmt[4] || $local[5] < $gmt[5] )
+        {
+                $diff[2] -= 24;
+        }
+ 
+        return $diff[2]*60*60 + $diff[1]*60 + $diff[0];
 }
 
 
@@ -1126,22 +1186,29 @@ sub destroy
 ######################################################################
 =pod
 
-=item ($year,$month,$day,$hour,$min,$sec) = EPrints::Utils::get_date( $time )
+=item ($year,$month,$day) = EPrints::Utils::get_date_array( [$time] )
 
 Static method that returns the given time (in UNIX time, seconds 
 since 1.1.79) in an array.
 
+This is the local date not the UTC date.
+
 =cut
 ######################################################################
+sub get_date { return get_date_array( @_ ); }
 
-sub get_date
+sub get_date_array
 {
 	my( $time ) = @_;
 
+	$time = time unless defined $time;
+
 	my @date = localtime( $time );
-	$date[4]+=1; # month
-	$date[5]+=1900; # year
-	return reverse map { sprintf("%02d",$_) } splice(@date,0,6);
+
+	return( 
+		sprintf( "%02d", $date[5]+1900 ),
+		sprintf( "%02d", $date[4]+1 ),
+		sprintf( "%02d", $date[3] ) );
 }
 
 
@@ -1149,61 +1216,49 @@ sub get_date
 ######################################################################
 =pod
 
-=item  $datestamp = EPrints::Utils::get_datestamp( $time )
+=item  $datestamp = EPrints::Utils::get_iso_date( [$time] )
 
 Method that returns the given time (in UNIX time, seconds 
 since 1.1.79) in the format used by EPrints and MySQL (YYYY-MM-DD).
 
+This is the localtime date, not UTC.
+
 =cut
 ######################################################################
+sub get_datestamp { EPrints::deprecated; return get_iso_date( @_ ); }
 
-sub get_datestamp
+sub get_iso_date
 {
 	my( $time ) = @_;
+
+	$time = time unless defined $time;
 
 	my( $year, $month, $day ) = EPrints::Utils::get_date( $time );
 
 	return( $year."-".$month."-".$day );
 }
 
+
 ######################################################################
 =pod
 
-=item  $datetimestamp = EPrints::Utils::get_datetimestamp( $time )
+=item $timestamp = EPrints::Utils::human_time( [$time] )
 
-Method that returns the given time (in UNIX time, seconds 
-since 1.1.79) in the datetime format used by EPrints and MySQL
-YYYY-MM-DD HH:MM:SS
-
-Does not zero pad.
+Return a string discribing the current local date and time in a human
+readable way.
 
 =cut
 ######################################################################
+sub get_timestamp { return human_time( @_ ); }
 
-sub get_datetimestamp
+sub human_time
 {
 	my( $time ) = @_;
 
-	my( $year, $month, $day, $hour, $min, $sec ) = EPrints::Utils::get_date( $time );
+	$time = time unless defined $time;
 
-	return( "$year-$month-$day $hour:$min:$sec" );
-}
-
-######################################################################
-=pod
-
-=item $timestamp = EPrints::Utils::get_timestamp()
-
-Return a string discribing the current local date and time.
-
-=cut
-######################################################################
-
-sub get_timestamp
-{
 	my $stamp = "Error in get_timestamp";
 	eval {
-		use POSIX qw(strftime);
 		$stamp = strftime( "%a %b %e %H:%M:%S %Z %Y", localtime);
 	};	
 	return $stamp;
@@ -1212,28 +1267,32 @@ sub get_timestamp
 ######################################################################
 =pod
 
-=item $timestamp = EPrints::Utils::get_UTC_timestamp()
+=item $timestamp = EPrints::Utils::get_iso_timestamp( [$time] );
 
-Return a string discribing the current local date and time. 
-In UTC Format. eg:
+Return a UTC timestamp of the form YYYY-MM-DDTHH:MM:SSZ
 
- 1957-03-20T20:30:00Z
+e.g. 2005-02-12T09:23:33Z
 
-This the UTC time, not the localtime.
+$time in seconds from 1970. If not defined then assume current time.
 
 =cut
 ######################################################################
 
-sub get_UTC_timestamp
+sub get_iso_timestamp
 {
-	my $stamp = "Error in get_UTC_timestamp";
-	eval {
-		use POSIX qw(strftime);
-		$stamp = strftime( "%Y-%m-%dT%H:%M:%SZ", gmtime);
-	};
+	my( $time ) = @_;
 
-	return $stamp;
+	$time = time unless defined $time;
+
+	my( $sec, $min, $hour, $mday, $mon, $year ) = gmtime($time);
+
+	return sprintf( "%04d-%02d-%02dT%02d:%02d:%02dZ", 
+			$year+1900, $mon+1, $mday, 
+			$hour, $min, $sec );
 }
+
+
+
 
 
 ######################################################################
@@ -1327,14 +1386,11 @@ sub human_filesize
 	return $size_in_meg.'Mb';
 }
 
+
 ######################################################################
 # Redirect as this function has been moved.
 ######################################################################
-
-sub render_xhtml_field
-{
-	return EPrints::Extras::render_xhtml_field( @_ );
-}
+sub render_xhtml_field { return EPrints::Extras::render_xhtml_field( @_ ); }
 
 1;
 

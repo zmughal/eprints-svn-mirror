@@ -110,7 +110,7 @@ sub get_basic_input_elements
 	my( $hour,$minute,$second,$year, $month, $day ) = ("", "", "","","","");
 	if( defined $value && $value ne "" )
 	{
-		($year, $month, $day, $hour,$minute,$second) = split /[-: ]/, $value;
+		($year, $month, $day, $hour,$minute,$second) = split /[-: TZ]/, $value;
 		$month = "00" if( !defined $month || $month == 0 );
 		$day = "00" if( !defined $day || $day == 0 );
 		$year = "" if( !defined $year || $year == 0 );

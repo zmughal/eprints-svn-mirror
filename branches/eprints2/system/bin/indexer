@@ -313,7 +313,7 @@ if( $p->{daemon} )
 # to be running.
 END
 	print PID $$."\n";
-	print PID EPrints::Utils::get_timestamp()."\n";
+	print PID EPrints::Utils::human_time()."\n";
 	close PID;
 }
 

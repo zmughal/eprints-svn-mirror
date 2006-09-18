@@ -114,7 +114,7 @@ unless( open( CHANGEDFILE, ">$file" ) )
 {
 	EPrints::Config::abort( "Cannot write to file $file" );
 }
-print CHANGEDFILE "This file last poked at: ".EPrints::Utils::get_timestamp()."\n";
+print CHANGEDFILE "This file last poked at: ".EPrints::Utils::human_time()."\n";
 close CHANGEDFILE;
 if( $noise > 0 )
 {

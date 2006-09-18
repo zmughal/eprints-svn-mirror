@@ -759,7 +759,7 @@ sub update
 		elsif( $field->is_type( "time" ) )
 		{
 			my @parts;
-			@parts = split( /[-: ]/, $value ) if defined $value;
+			@parts = split( /[-: TZ]/, $value ) if defined $value;
 			$values{$colname."_year"} = $parts[0];
 			$values{$colname."_month"} = $parts[1];
 			$values{$colname."_day"} = $parts[2];
@@ -940,7 +940,7 @@ sub update
 			}
 			elsif( $multifield->is_type( "time" ) )
 			{
-				my @parts = split( /[-: ]/, $v->{v} );
+				my @parts = split( /[-: TZ]/, $v->{v} );
 				my @list = ();
 				for(0..5)
 				{

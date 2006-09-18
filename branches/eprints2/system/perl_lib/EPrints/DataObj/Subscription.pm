@@ -342,7 +342,7 @@ sub send_out_subscription
 	if( $freq eq "daily" )
 	{
 		# Get the date for yesterday
-		my $yesterday = EPrints::Utils::get_datestamp( 
+		my $yesterday = EPrints::Utils::get_iso_date( 
 			time - (24*60*60) );
 		# Get from the last day
 		$searchexp->add_field( 
@@ -352,7 +352,7 @@ sub send_out_subscription
 	elsif( $freq eq "weekly" )
 	{
 		# Work out date a week ago
-		my $last_week = EPrints::Utils::get_datestamp( 
+		my $last_week = EPrints::Utils::get_iso_date( 
 			time - (7*24*60*60) );
 
 		# Get from the last week
@@ -363,7 +363,7 @@ sub send_out_subscription
 	elsif( $freq eq "monthly" )
 	{
 		# Get today's date
-		my( $year, $month, $day ) = EPrints::Utils::get_date( time );
+		my( $year, $month, $day ) = EPrints::Utils::get_iso_date( time );
 		# Substract a month		
 		$month--;
 
@@ -493,7 +493,7 @@ sub process_set
 # this repository successfully completed sending the *$frequency* 
 # subscriptions. It should not be edited.
 END
-		print TIMESTAMP EPrints::Utils::get_timestamp()."\n";
+		print TIMESTAMP EPrints::Utils::human_time()."\n";
 		close TIMESTAMP;
 	}
 }

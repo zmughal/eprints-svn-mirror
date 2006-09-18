@@ -275,7 +275,7 @@ sub get_defaults
 	
 	$data->{historyid} = $session->get_database->counter_next( "historyid" );
 
-	$data->{timestamp} = EPrints::Utils::get_datetimestamp( time );
+	$data->{timestamp} = EPrints::Utils::get_iso_timestamp();
 
 	my $user;
 	if( $data->{userid} )

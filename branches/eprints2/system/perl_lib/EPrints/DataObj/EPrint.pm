@@ -380,7 +380,7 @@ sub get_defaults
 	$data->{eprintid} = $new_id;
 	$data->{dir} = $dir;
 	$data->{rev_number} = 1;
-	$data->{lastmod} = EPrints::Utils::get_datetimestamp( time );
+	$data->{lastmod} = EPrints::Utils::get_iso_timestamp();
 	$data->{status_changed} = $data->{lastmod};
 	if( $data->{eprint_status} eq "archive" )
 	{
@@ -636,7 +636,7 @@ sub _transfer
 	# set the status changed time to now.
 	$self->set_value( 
 		"status_changed" , 
-		EPrints::Utils::get_datetimestamp( time ) );
+		EPrints::Utils::get_iso_timestamp() );
 	$self->set_value( 
 		"eprint_status" , 
 		$new_status );
@@ -808,7 +808,7 @@ sub commit
 	{
 		$self->set_value( 
 			"datestamp" , 
-			EPrints::Utils::get_datetimestamp( time ) );
+			EPrints::Utils::get_iso_timestamp() );
 	}
 
 	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
@@ -824,7 +824,7 @@ sub commit
 
 	$self->set_value( 
 		"lastmod" , 
-		EPrints::Utils::get_datetimestamp( time ) );
+		EPrints::Utils::get_iso_timestamp() );
 
 	my $success = $self->{session}->get_database->update(
 		$self->{dataset},
@@ -1040,7 +1040,9 @@ sub validate_meta
 		# Check that the field is filled 
 		next if ( $self->is_set( $field->get_name ) );
 
-		my $fieldname = $self->{session}->make_element( "span", class=>"ep_problem_field:".$field->{name} );
+		my $fieldname = $self->{session}->make_element( 
+			"span", 
+			class=>"ep_problem_field:".$field->{name} );
 		$fieldname->appendChild( $field->render_name( $self->{session} ) );
 		my $problem = $self->{session}->html_phrase( 
 			"lib/eprint:not_done_field" ,

@@ -411,7 +411,7 @@ sub make_menu
 			$page->appendChild( $session->html_phrase(
 				"bin/generate_views:timestamp",
 				time=>$session->make_text(
-				EPrints::Utils::get_timestamp() ) ) );
+				EPrints::Utils::human_time() ) ) );
 	       	}
 
 

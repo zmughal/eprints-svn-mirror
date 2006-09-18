@@ -4277,3 +4277,13 @@ PACKAGE: 2.2.99.2
  * Fixed bug in Script::Compiled->runtime_error
  * Made Scripts report an error if an unknown function 
     call is met rather than just bailing with a perl error.
+
+2006-09-18 cjg
+ * Sorted out time. Times in the db are GMT. Logs are logged in
+    localtime. When times are rendered they are converted into
+    localtime. Dates are not subject to localtime unless they have
+    an hour set too.
+ * Time functions in Utils reworked for local/GMT issues.
+ * Dates inside eprints can now have T separating date and time and
+    Z at the end so it can take ISO date-times.
+

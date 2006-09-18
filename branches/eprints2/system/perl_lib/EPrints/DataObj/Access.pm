@@ -242,7 +242,7 @@ sub get_defaults
 	
 	$data->{accessid} = $session->get_database->counter_next( "accessid" );
 
-	$data->{timestamp} = EPrints::Utils::get_datetimestamp( time );
+	$data->{timestamp} = EPrints::Utils::get_iso_timestamp();
 
 	return $data;
 }
