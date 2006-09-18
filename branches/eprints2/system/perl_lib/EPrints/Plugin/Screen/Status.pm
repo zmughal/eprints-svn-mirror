@@ -18,14 +18,6 @@ sub new
 			place => "other_tools",
 			position => 100,
 		},
-		{
-			place => "other_tools",
-			position => 101,
-		},
-		{
-			place => "other_tools",
-			position => 102,
-		}
 	];
 
 	return $self;

@@ -258,16 +258,11 @@ sub gmt_off
         my @diff;
  
         for(0..2) { $diff[$_] = $local[$_] - $gmt[$_]; }
- 
-        if( $local[3] > $gmt[3] || $local[4] > $gmt[4] || $local[5] > $gmt[5] )
-        {
-                $diff[2] += 24;
-        }
- 
-        if( $local[3] < $gmt[3] || $local[4] < $gmt[4] || $local[5] < $gmt[5] )
-        {
-                $diff[2] -= 24;
-        }
+
+	my $local_cmp_code = $local[3]+$local[4]*100+$local[5]*10000; 
+	my $gmt_cmp_code = $gmt[3]+$gmt[4]*100+$gmt[5]*10000; 
+        if( $local_cmp_code > $gmt_cmp_code ) { $diff[2] += 24; }
+        if( $local_cmp_code < $gmt_cmp_code ) { $diff[2] -= 24; }
  
         return $diff[2]*60*60 + $diff[1]*60 + $diff[0];
 }
