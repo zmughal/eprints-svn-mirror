@@ -4287,3 +4287,6 @@ PACKAGE: 2.2.99.2
  * Dates inside eprints can now have T separating date and time and
     Z at the end so it can take ISO date-times.
 
+2006-09-19 cjg
+ * Broke up core.pl
+ * Fixed some small bugs
