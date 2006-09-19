@@ -39,6 +39,8 @@ The syntax is
  dataobj.property := string or datastructure
  dataobj.is_set( fieldname ) := boolean
  string.one_of( string, string, string... ) := boolean
+ string.reverse() := string ( foobar=>raboof ) 
+ ?.length() := integer
 
 =cut
 
