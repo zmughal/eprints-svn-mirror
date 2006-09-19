@@ -4294,3 +4294,8 @@ PACKAGE: 2.2.99.2
 2006-09-19 cjg
  * Changed ref="" to name="" in pins in phrase files.
 
+2006-09-19 cjg
+ * Added phrases for alt text in warning/error icons
+ * Fixed bug in subject component being slow!
+ * Reworked subject component (still needs js and css)
+ * Removed unused Subjects input component

@@ -4,7 +4,6 @@ use EPrints;
 use EPrints::Plugin::InputForm::Component::Field;
 @ISA = ( "EPrints::Plugin::InputForm::Component::Field" );
 
-use Time::HiRes qw(gettimeofday tv_interval);
 use Unicode::String qw(latin1);
 
 use strict;
@@ -27,172 +26,47 @@ sub update_from_form
 	my( $self ) = @_;
 	my $field = $self->{config}->{field};
 
-	my %params = $self->params();
+	my $ibutton = $self->get_internal_button;
 
-	foreach my $param ( keys %params )
+	if( $ibutton =~ /^(.+)_add$/ )
 	{
-		if( $param =~ /^root_(.+)_add$/ )
+		my $subject = $1;
+		my %vals = ();
+		$vals{$subject} = 1;
+			
+		my $values = $self->{dataobj}->get_value( "subjects" );
+		foreach my $s ( @$values )
 		{
-			my $subject = $1;
-			my %vals = ();
-			$vals{$subject} = 1;
-			
-			my $values = $self->{dataobj}->get_value( "subjects" );
-			foreach my $s ( @$values )
-			{
-				$vals{$s} = 1;
-			}
-			
-			my @out = keys %vals;
-			
-			$self->{dataobj}->set_value( "subjects", \@out );
-			$self->{dataobj}->commit;
+			$vals{$s} = 1;
 		}
-		elsif( $param =~ /^root_(.+)_remove$/ )
-		{
-			my $subject = $1;
-			my %vals = ();
-			
-			my $values = $self->{dataobj}->get_value( "subjects" );
-			foreach my $s ( @$values )
-			{
-				$vals{$s} = 1;
-			}
-			delete $vals{$subject};
-			
-			my @out = keys %vals;
-			
-			$self->{dataobj}->set_value( "subjects", \@out );
-			$self->{dataobj}->commit;
-		}
+		
+		my @out = keys %vals;
+		$self->{dataobj}->set_value( "subjects", \@out );
+		$self->{dataobj}->commit;
 	}
+
+	if( $ibutton =~ /^(.+)_remove$/ )
+	{
+		my $subject = $1;
+		my %vals = ();
+		
+		my $values = $self->{dataobj}->get_value( "subjects" );
+		foreach my $s ( @$values )
+		{
+			$vals{$s} = 1;
+		}
+		delete $vals{$subject};
+		
+		my @out = keys %vals;
+		
+		$self->{dataobj}->set_value( "subjects", \@out );
+		$self->{dataobj}->commit;
+	}
+
+	return ();
 }
 
 
-sub render_help
-{
-	my( $self, $surround ) = @_;
-	return $self->{session}->make_text( "Help goes here" );
-}
-
-sub _render_portion
-{
-	my( $self, $subject, $depth, $expanded, $selected ) = @_;
-
-	my $session = $self->{session};
-	
-	my @children = $subject->children();
-	my $n_kids = scalar @children;
-	my $root_id = $subject->get_value( "subjectid" );
-	my $pre = $self->{prefix}."_root_".$root_id;
-	
-	my $out;
-	$out = $session->make_doc_fragment;
-	
-	my $children_div = $session->make_element( "div", id => $self->{prefix}."_root_".$root_id );
-	
-	if( $depth > 0 )
-	{
-		my $div = $session->make_element( "div", class => "tree_node", id => $self->{prefix}."_node_".$root_id );
-		
-		# Decide on the state of the root node.
-		# 1 = expanded, 0 = contracted
-		
-		my $root_state = 0;
-		
-		# By default, expand everything up to visdepth and everything
-		# that is expanded (by being a value).
-		if( $depth < $self->{visdepth} || $expanded->{$root_id} )
-		{
-			$root_state = 1;
-		}
-		else
-		{
-			$root_state = 0;
-		}
-	
-
-		my $desc = $subject->render_description;
-		
-		if( $n_kids != 0 )
-		{
-			
-			my $a_toggle = $session->make_element( "a", 
-				id => "${pre}_toggle", 
-				href=>"#", 
-				onClick=>"Element.toggle('$pre');Element.toggle('${pre}_dots');return false" ); 
-			
-			my $dots = $session->make_element( "span", id => $pre."_dots" );
-			$dots->appendChild( $session->html_phrase( "lib/extras:subject_browser_expandable" ) );
-			
-			if( $root_state == 1 )
-			{
-				# Expanded, so show the content and hide the '...'
-				$dots->setAttribute( "style", "display: none" );
-			}
-			else
-			{
-				# Contracted, so hide the content 
-				$children_div->setAttribute( "style", "display: none" );
-				$children_div->setAttribute( "class", "ep_no_js" );
-			}
-
-			$a_toggle->appendChild( $desc );
-			$div->appendChild( $a_toggle );
-			$div->appendChild( $dots );
-		}
-		else
-		{	
-			$div->appendChild( $desc );
-		}
-		
-		$div->appendChild( $session->make_text( " " ) );
-		
-		if( $selected->{$root_id} )
-		{
-			$div->setAttribute( "class", "tree_node_selected" );
-		}
-		
-		if( $subject->can_post )
-		{
-			if( $selected->{$root_id} )
-			{
-				my $rem_button = $session->make_element( "input", 
-					type => "submit",
-					name => "_internal_".$pre."_remove",
-					value => "Remove" );
-				$div->appendChild( $rem_button ); 
-			}
-			else
-			{
-				my $add_button = $session->make_element( "input", 
-					type => "submit",
-					name => "_internal_".$pre."_add",
-					value => "Add" );
-				$div->appendChild( $add_button ); 
-			}
-		}
-		$out->appendChild( $div );
-	}
-	
-
-	
-	# Then append any children
-
-	if( $n_kids != 0 )
-	{
-		my $div2;
-		foreach my $child ( @children )
-		{
-			$div2 = $session->make_element( "div", class => "tree_portion" );
-			$div2->appendChild( $self->_render_portion( $child, $depth+1, $expanded, $selected ) );
-			$children_div->appendChild( $div2 );
-		}
-		$out->appendChild( $children_div );
-	}
-
-	return $out;
-}
 
 sub render_content
 {
@@ -202,57 +76,183 @@ sub render_content
 	my $field = $self->{config}->{field};
 	my $eprint = $self->{workflow}->{item};
 
+	( $self->{subject_map}, $self->{reverse_map} ) = EPrints::DataObj::Subject::get_all( $session );
 
-
-	my $out = $self->{session}->make_element( "div", class => "wf_subjectcomponent" );
+	my $out = $self->{session}->make_element( "div" );
 
 	my $top_subj = $field->get_top_subject( $session );
-my $time = [gettimeofday()];
-	
-	my %expanded = ();
-	my %selected = ();
+
+	# populate selected and expanded values	
+
+	$self->{expanded} = {};
+	$self->{selected} = {};
 	my @values = @{$field->get_value( $eprint )};
 	foreach my $subj_id ( @values )
 	{
-		$selected{$subj_id} = 1;
-		my $subj = new EPrints::DataObj::Subject( $session, $subj_id );
+		$self->{selected}->{$subj_id} = 1;
+		my $subj = $self->{subject_map}->{ $subj_id };
 		my @paths = $subj->get_paths( $session, $top_subj );
 		foreach my $path ( @paths )
 		{
 			foreach my $s ( @{$path} )
 			{
-				$expanded{$s->get_id} = 1;
+				$self->{expanded}->{$s->get_id} = 1;
 			}
 		}
 	}
-my $elapsed = tv_interval($time);
-print STDERR "Default paths: $elapsed\n";
-$time = [gettimeofday()];
-	
-	$out->appendChild( $self->_render_portion( $top_subj, 0, \%expanded, \%selected ) );
 
-$elapsed = tv_interval($time);
-print STDERR "Render: $elapsed\n";
+	# render the tree
 	
+	$out->appendChild( $self->_render_subnodes( $top_subj, 0 ) );
 
 	return $out;
 }
 
-sub render_title
+
+sub _render_subnodes
 {
-	my( $self, $surround ) = @_;
-	return $self->{session}->html_phrase( "lib/submissionform:title_fileview" );	
+	my( $self, $subject, $depth ) = @_;
+
+	my $session = $self->{session};
+
+	my $node_id = $subject->get_value( "subjectid" );
+
+	my @children = ();
+	if( defined $self->{reverse_map}->{$node_id} )
+	{
+		@children = @{$self->{reverse_map}->{$node_id}};
+	}
+
+	if( scalar @children == 0 ) { return $session->make_doc_fragment; }
+
+	my $ul = $session->make_element( "ul" );
+	
+	foreach my $child ( @children )
+	{
+		my $li = $session->make_element( "li" );
+		$li->appendChild( $self->_render_subnode( $child, $depth+1 ) );
+		$ul->appendChild( $li );
+	}
+	
+	return $ul;
 }
 
-sub is_required
+
+sub _render_subnode
 {
-	my( $self ) = @_;
-	return 1;
+	my( $self, $subject, $depth ) = @_;
+
+	my $session = $self->{session};
+
+	my $node_id = $subject->get_value( "subjectid" );
+
+	my $has_kids = 0;
+	$has_kids = 1 if( defined $self->{reverse_map}->{$node_id} );
+
+	my $prefix = $self->{prefix}."_".$node_id;
+	
+	my $out = $session->make_doc_fragment;
+	my $desc = $subject->render_description;
+	$out->appendChild( $desc );
+
+	if( $subject->can_post )
+	{
+		if( $self->{selected}->{$node_id} )
+		{
+			my $rem_button = $session->make_element( "input", 
+				class=> "ep_form_action_button",
+				type => "submit",
+				name => "_internal_".$prefix."_remove",
+				value => "Remove" );
+			$out->appendChild( $session->make_text( " " ) );
+			$out->appendChild( $rem_button ); 
+		}
+		else
+		{
+			my $add_button = $session->make_element( "input", 
+				class=> "ep_form_action_button",
+				type => "submit",
+				name => "_internal_".$prefix."_add",
+				value => "Add" );
+			$out->appendChild( $session->make_text( " " ) );
+			$out->appendChild( $add_button ); 
+		}
+	}
+
+	$out->appendChild( $self->_render_subnodes( $subject, $depth ) );
+	return $out;
+	
+#	my $children_div = $session->make_element( "div", id => $pre );
+#	
+#	if( $depth > 0 )
+#	{
+#		my $div = $session->make_element( "div", class => "tree_node", id => $self->{prefix}."_node_".$root_id );
+#		
+#		# Decide on the state of the root node.
+#		# 1 = expanded, 0 = contracted
+#		
+#		my $root_expanded = 0;
+#		
+#		# By default, expand everything up to visdepth and everything
+#		# that is expanded (by being a value).
+#		if( $depth < $self->{visdepth} || $expanded->{$root_id} )
+#		{
+#			$root_expanded = 1;
+#		}
+#		else
+#		{
+#			$root_expanded = 0;
+#		}
+#	
+#
+#		my $desc = $subject->render_description;
+#		
+#		if( $n_kids != 0 )
+#		{
+#			my $dots = $session->make_element( "span", id => $pre."_dots" );
+#			$dots->appendChild( $session->html_phrase( "lib/extras:subject_browser_expandable" ) );
+#			my $a_toggle = $session->make_element( "a", id => "${pre}_toggle", href=>"#" );
+#
+#			if( $root_expanded )
+#			{
+#				# Expanded, so show the content and hide the '...'
+#				$dots->setAttribute( "style", "display: none" );
+#				$a_toggle->setAttribute( "onClick"=>"EPJS_toggle('$pre',true,'inline');EPJS_toggle('${pre}_dots',false,'inline');return false" ); 
+#			}
+#			else
+#			{
+#				# Contracted, so hide the content  (show the '...')
+#				#$children_div->setAttribute( "style", "display: none" );
+#				$children_div->setAttribute( "class", "ep_no_js" );
+#				$a_toggle->setAttribute( "onClick"=>"EPJS_toggle('$pre',false,'inline');EPJS_toggle('${pre}_dots',true,'inline');return false" ); 
+#			}
+#
+#			
+#			
+#			
+#			$a_toggle->appendChild( $desc );
+#			$div->appendChild( $a_toggle );
+#			$div->appendChild( $dots );
+#		}
+#		else
+#		{	
+#			$div->appendChild( $desc );
+#		}
+#		
+#		$div->appendChild( $session->make_text( " " ) );
+#		
+#		if( $selected->{$root_id} )
+#		{
+#			$div->setAttribute( "class", "tree_node_selected" );
+#		}
+#		
+#	}
+	
+
+	
+	# Then append any children
+
+	return $out;
 }
 
 1;
-
-
-
-
-

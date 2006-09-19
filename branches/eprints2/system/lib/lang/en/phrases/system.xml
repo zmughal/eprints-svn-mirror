@@ -1065,6 +1065,9 @@ Titles and Help for the System Fields
     <ep:phrase id="Plugin/Screen:unknown_action">This screen (<ep:pin name="screen" />) does not know how to process this action: <ep:pin name="action" />.</ep:phrase>
     <ep:phrase id="Plugin/Screen:unknown_screen">The requested screen does not exist, or has a fatal error: <ep:pin name="screen" />.</ep:phrase>
     <ep:phrase id="Plugin/Screen:screen_not_allowed">You may not view this screen: <ep:pin name="screen" />.</ep:phrase>
+    <ep:phrase id="Plugin/Screen:message_message">Message</ep:phrase>
+    <ep:phrase id="Plugin/Screen:message_error">Error</ep:phrase>
+    <ep:phrase id="Plugin/Screen:message_warning">Warning</ep:phrase>
    
     <ep:phrase id="Plugin/Screen/Items:title">Items</ep:phrase>
 
@@ -1384,6 +1387,5 @@ Titles and Help for the System Fields
     <ep:phrase id="subscription_fieldname_mailempty">Mail Empty Results</ep:phrase>
     <ep:phrase id="subscription_fieldhelp_mailempty">If there are no new items matching your subscription, since it was last mailed, do you still want to be mailed?</ep:phrase>
     <ep:phrase id="subscription_radio_mailempty"><ep:pin name="true" />Yes, mail me empty subscriptions.<br /><ep:pin name="false" />No. Only mail me subscriptions with content.</ep:phrase>
-
 
 </ep:phrases>
