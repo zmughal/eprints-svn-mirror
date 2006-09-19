@@ -1288,7 +1288,7 @@ sub get_roles
 	my( $self ) = @_;
 
 	my $rep = $self->{session}->get_repository;
-	my $roles = $rep->get_conf( "userauth", $self->get_value( "usertype" ), "priv" );
+	my $roles = $rep->get_conf( "user_roles", $self->get_value( "usertype" ) );
 
 	return @{$roles};
 }
