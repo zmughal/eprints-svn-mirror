@@ -188,7 +188,7 @@ Date of submission is required if the item has no date of issue. If the item has
 
     <ep:phrase id="eprint_fieldname_refereed">Refereed</ep:phrase>
     <ep:phrase id="eprint_fieldhelp_refereed">Please indicate whether this version of the work been refereed below.</ep:phrase>
-    <ep:phrase id="eprint_radio_refereed"><ep:pin ref="true" />Yes, this version has been refereed.<br /><ep:pin ref="false" />No, this version has not been refereed.</ep:phrase>
+    <ep:phrase id="eprint_radio_refereed"><ep:pin name="true" />Yes, this version has been refereed.<br /><ep:pin name="false" />No, this version has not been refereed.</ep:phrase>
 
     <ep:phrase id="eprint_fieldname_referencetext">References</ep:phrase>
     <ep:phrase id="eprint_fieldhelp_referencetext">You are strongly encouraged to paste in the reference list of your item into the box below. It may be used to link your item to those it cites and to those that cite it.</ep:phrase>
@@ -309,7 +309,7 @@ Date of submission is required if the item has no date of issue. If the item has
 
     <ep:phrase id="user_fieldname_hideemail">Hide Email</ep:phrase>
     <ep:phrase id="user_fieldhelp_hideemail">This option allows or prevents a users email being shown on their public summary page.</ep:phrase>
-    <ep:phrase id="user_radio_hideemail"><ep:pin ref="false" />Make email visible to all.<br /><ep:pin ref="true" />Hide email to all except repository administrators.</ep:phrase>
+    <ep:phrase id="user_radio_hideemail"><ep:pin name="false" />Make email visible to all.<br /><ep:pin name="true" />Hide email to all except repository administrators.</ep:phrase>
 
 
     <ep:phrase id="user_fieldname_dept">Department</ep:phrase>
@@ -353,7 +353,7 @@ Date of submission is required if the item has no date of issue. If the item has
     <ep:phrase id="mail_bounce_reason">
 Unfortunately your item:
 
-<ep:pin ref="title" />
+<ep:pin name="title" />
 
 could not be accepted into &archivename; as-is.
 
@@ -365,7 +365,7 @@ edit your item, fix the problem and redeposit.
     <ep:phrase id="mail_delete_reason">
 Unfortunately your item:
 
-<ep:pin ref="title" />
+<ep:pin name="title" />
 
 could not be accepted into &archivename;.
 
@@ -402,7 +402,7 @@ terms.</p>
     <ep:phrase id="page:id_code">ID Code</ep:phrase>
     <ep:phrase id="page:invalid_user">INVALID USER</ep:phrase>
     <ep:phrase id="page:latest_version"><p><em>This is the latest version of this item.</em></p></ep:phrase>
-    <ep:phrase id="page:not_latest_version"><p class="notice">There is a more recent version of this item available. <ep:pin ref="link">Click here to view it.</ep:pin></p></ep:phrase>
+    <ep:phrase id="page:not_latest_version"><p class="notice">There is a more recent version of this item available. <ep:pin name="link">Click here to view it.</ep:pin></p></ep:phrase>
     <ep:phrase id="page:available_versions"><h3>Available Versions of this Item</h3></ep:phrase>
     <ep:phrase id="page:commentary_threads"><h3>Commentary/Response Threads</h3></ep:phrase>
 
@@ -410,14 +410,14 @@ terms.</p>
     <ep:phrase id="page:allfields_intro"><h3>This is complete contents of all the fields in this item:</h3></ep:phrase>
     <ep:phrase id="page:suggestions_intro"><h3>The depositing user made the following comments and suggestions:</h3></ep:phrase>
     <ep:phrase id="page:subscription">Subscription</ep:phrase>
-    <ep:phrase id="page:edit_link">Repository Staff Only: <ep:pin ref="link">edit this item</ep:pin></ep:phrase>
+    <ep:phrase id="page:edit_link">Repository Staff Only: <ep:pin name="link">edit this item</ep:pin></ep:phrase>
 
 
-    <ep:phrase id="validate:missing_http">The URL given for <b><ep:pin ref="fieldname" /></b> is invalid. Did you include the initial <strong>http://</strong>?</ep:phrase>
-    <ep:phrase id="validate:bad_email">The email given for <b><ep:pin ref="fieldname" /></b> is invalid.</ep:phrase>
-    <ep:phrase id="validate:missing_family">Name in field <b><ep:pin ref="fieldname" /></b> is missing the "family" part.</ep:phrase>
-    <ep:phrase id="validate:missing_given">Name in field <b><ep:pin ref="fieldname" /></b> is missing the "given names/initials" part.</ep:phrase>
-    <ep:phrase id="validate:need_description">Documents of type <em><ep:pin ref="type" /></em> need a description.</ep:phrase>
+    <ep:phrase id="validate:missing_http">The URL given for <b><ep:pin name="fieldname" /></b> is invalid. Did you include the initial <strong>http://</strong>?</ep:phrase>
+    <ep:phrase id="validate:bad_email">The email given for <b><ep:pin name="fieldname" /></b> is invalid.</ep:phrase>
+    <ep:phrase id="validate:missing_family">Name in field <b><ep:pin name="fieldname" /></b> is missing the "family" part.</ep:phrase>
+    <ep:phrase id="validate:missing_given">Name in field <b><ep:pin name="fieldname" /></b> is missing the "given names/initials" part.</ep:phrase>
+    <ep:phrase id="validate:need_description">Documents of type <em><ep:pin name="type" /></em> need a description.</ep:phrase>
     <ep:phrase id="validate:need_sub_or_issue">An item must have at least one of a submission date and an issue date.</ep:phrase>
     <ep:phrase id="validate:need_creators_or_editors">If an item does not have any creators then it must have at least one editor.</ep:phrase>
 
@@ -427,9 +427,9 @@ terms.</p>
 
 <p>Thank you for your interest in &archivename;.</p>
 
-<p>You now need to activate your new password, <ep:pin ref="confirmurl">click here</ep:pin>.</p>
+<p>You now need to activate your new password, <ep:pin name="confirmurl">click here</ep:pin>.</p>
 
-<p>Your username is: <ep:pin ref="username" />.</p>
+<p>Your username is: <ep:pin name="username" />.</p>
 
 <p>After you have successfully confirmed your password, you can deposit items <a href="&userhome;">here</a>.</p>
 
@@ -446,9 +446,9 @@ terms.</p>
 
 <p>Dear User,</p>
 
-<p>You have requested your email to be changed to <pin ref="newemail" /></p> 
+<p>You have requested your email to be changed to <pin name="newemail" /></p> 
 
-<p>To activate this new address please <ep:pin ref="confirmurl">click here</ep:pin>.</p>
+<p>To activate this new address please <ep:pin name="confirmurl">click here</ep:pin>.</p>
 
     </ep:phrase>
 
@@ -497,8 +497,8 @@ activated you can start to use the registered features of the repository.</p>
     </ep:phrase>
 
 <!-- Publisher- or funder-imposed embargos -->
-<ep:phrase id="embargo:status"><p>These documents will be made publically accessible from <ep:pin ref="date" />.</p></ep:phrase>
-<ep:phrase id="embargo:invalid_date"><ep:pin ref="fieldname" /> must be in the future.</ep:phrase>
+<ep:phrase id="embargo:status"><p>These documents will be made publically accessible from <ep:pin name="date" />.</p></ep:phrase>
+<ep:phrase id="embargo:invalid_date"><ep:pin name="fieldname" /> must be in the future.</ep:phrase>
 
 <!-- Request eprint -->
 <ep:phrase id="request:button">Request a copy</ep:phrase>
@@ -508,67 +508,67 @@ activated you can start to use the registered features of the repository.</p>
 <ep:phrase id="request_fieldname_reason">Reason</ep:phrase>
 <ep:phrase id="request_fieldhelp_reason">You may enter a rationale for requesting this document.</ep:phrase>
 
-<ep:phrase id="request/request_email:subject">Request for &quot;<ep:pin ref="eprint" />&quot;</ep:phrase>
-<ep:phrase id="request/request_email:body"><p>This item has been requested from the &archivename; by <ep:pin ref="requester" />. Please can you respond.</p>
+<ep:phrase id="request/request_email:subject">Request for &quot;<ep:pin name="eprint" />&quot;</ep:phrase>
+<ep:phrase id="request/request_email:body"><p>This item has been requested from the &archivename; by <ep:pin name="requester" />. Please can you respond.</p>
 
-<p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p>
+<p><ep:pin name="eprint" /><br /><ep:pin name="document" /></p>
 
 <p>The following reason was given:</p>
 
-<ep:pin ref="reason" />
+<ep:pin name="reason" />
 
 <p>Please consider removing restrictions or uploading the full text to the archive so that it will be available immediately to future searchers.</p>
 </ep:phrase>
 
 <ep:phrase id="request/request_email:links">
-<p>To send the requested document, <ep:pin ref="accept">click here</ep:pin>.</p>
+<p>To send the requested document, <ep:pin name="accept">click here</ep:pin>.</p>
 
-<p>To reject the request, <ep:pin ref="reject">click here</ep:pin>.</p>
+<p>To reject the request, <ep:pin name="reject">click here</ep:pin>.</p>
 </ep:phrase>
 
-<ep:phrase id="request/ack_page"><p>Your request has been sent.</p><ep:pin ref="link">Return to item</ep:pin></ep:phrase>
-<ep:phrase id="request/ack_email:subject">Confirmation of request for &quot;<ep:pin ref="eprint" />&quot;</ep:phrase>
+<ep:phrase id="request/ack_page"><p>Your request has been sent.</p><ep:pin name="link">Return to item</ep:pin></ep:phrase>
+<ep:phrase id="request/ack_email:subject">Confirmation of request for &quot;<ep:pin name="eprint" />&quot;</ep:phrase>
 <ep:phrase id="request/ack_email:body"><p>Your request for the following item has been passed on for action:</p>
 
-<p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p>
+<p><ep:pin name="eprint" /><br /><ep:pin name="document" /></p>
 
 <p>If you do not receive a reply or need advice at a later time please contact &adminemail;. For items with copyright implications, you may also be able to contact your local interlibrary loan service.</p>
 </ep:phrase>
 
 <ep:phrase id="request/respond_page:title">Confirm response</ep:phrase>
 <ep:phrase id="request/respond_page:action_respond">Confirm</ep:phrase>
-<ep:phrase id="request/respond_page:accept"><p>You have chosen to accept the request for the following item:</p><p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p><p>An acceptance notice will be emailed to the requester with the requested document attached.</p></ep:phrase>
-<ep:phrase id="request/respond_page:reject"><p>You have chosen to reject the request for the following item:</p><p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p><p>You may enter a reason below if you wish. This will be emailed to the requester along with a rejection notice.</p></ep:phrase>
-<ep:phrase id="request/respond_page:oa"><p>This item has been made publically accessible since the request was made:</p><p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p><p>A notice will be emailed to the requester.</p></ep:phrase>
+<ep:phrase id="request/respond_page:accept"><p>You have chosen to accept the request for the following item:</p><p><ep:pin name="eprint" /><br /><ep:pin name="document" /></p><p>An acceptance notice will be emailed to the requester with the requested document attached.</p></ep:phrase>
+<ep:phrase id="request/respond_page:reject"><p>You have chosen to reject the request for the following item:</p><p><ep:pin name="eprint" /><br /><ep:pin name="document" /></p><p>You may enter a reason below if you wish. This will be emailed to the requester along with a rejection notice.</p></ep:phrase>
+<ep:phrase id="request/respond_page:oa"><p>This item has been made publically accessible since the request was made:</p><p><ep:pin name="eprint" /><br /><ep:pin name="document" /></p><p>A notice will be emailed to the requester.</p></ep:phrase>
 <ep:phrase id="request/respond_page:fieldname_oa">Tick this box to make this document publically available from now on.</ep:phrase>
 
-<ep:phrase id="request/response_email:subject">Result of request for &quot;<ep:pin ref="eprint" />&quot;</ep:phrase>
+<ep:phrase id="request/response_email:subject">Result of request for &quot;<ep:pin name="eprint" />&quot;</ep:phrase>
 <ep:phrase id="request/response_email:body_accept"><p>Your request for the following item has been accepted:</p>
 
-<p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p>
+<p><ep:pin name="eprint" /><br /><ep:pin name="document" /></p>
 
 <p>Please find the requested document attached.</p>
 </ep:phrase>
 
 <ep:phrase id="request/response_email:body_reject"><p>Your request for the following item has been rejected:</p>
 
-<p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p>
+<p><ep:pin name="eprint" /><br /><ep:pin name="document" /></p>
 
 <p>It may not always be straightforward to provide full text. Your local library may also be able to help you. For more general queries you may also contact &adminemail;</p>
 
 <p>The following reason was given:</p>
 
-<ep:pin ref="reason" />
+<ep:pin name="reason" />
 </ep:phrase>
 
 <ep:phrase id="request/response_email:body_oa"><p>The item you requested is now publically accessible:</p>
 
-<p><ep:pin ref="eprint" /><br /><ep:pin ref="document" /></p>
+<p><ep:pin name="eprint" /><br /><ep:pin name="document" /></p>
 </ep:phrase>
 
 <ep:phrase id="request/response:ack_page"><p>Thank you. The email has been sent to the requester.</p></ep:phrase>
 
-<ep:phrase id="dynamic:logged_in">Logged in as <ep:pin ref="user"/> <a href="&perl_url;/logout">logout</a></ep:phrase>
+<ep:phrase id="dynamic:logged_in">Logged in as <ep:pin name="user"/> <a href="&perl_url;/logout">logout</a></ep:phrase>
 <ep:phrase id="dynamic:not_logged_in">Not logged in. <a href="&userhome;">login</a> | <a href="&perl_url;/register">register</a></ep:phrase>
 
 </ep:phrases>

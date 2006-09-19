@@ -134,8 +134,8 @@ one phrase file the system checks the next.
 =back
 
 If the phrase contains "pin" elements then $inserts must be a reference
-to a hash. Each "pin" has a "ref" attribute. For each pin there must be
-a key in $inserts of the "ref". The value is a XHTML DOM object which
+to a hash. Each "pin" has a "name" attribute. For each pin there must be
+a key in $inserts of the "name". The value is a XHTML DOM object which
 will replace the "pin" when returing this phrase.
 
 =cut
@@ -202,19 +202,19 @@ sub _insert_pins
 		$name =~ s/^ep://;
 		if( $name eq "pin" )
 		{
-			my $ref = $node->getAttribute( "ref" );
+			my $name = $node->getAttribute( "name" );
 			my $repl;
-			if( defined $inserts->{$ref} )
+			if( defined $inserts->{$name} )
 			{
-				if( $used->{$ref} )
+				if( $used->{$name} )
 				{
 					$retnode = EPrints::XML::clone_node( 
-						$inserts->{$ref}, 1 );
+						$inserts->{$name}, 1 );
 				}
 				else
 				{
-					$retnode = $inserts->{$ref};
-					$used->{$ref} = 1;
+					$retnode = $inserts->{$name};
+					$used->{$name} = 1;
 				}
 				# special case if the pin is a docfragment containing only 
 				# one element. Sometimes this is used to pass <a> elements which
@@ -234,9 +234,9 @@ sub _insert_pins
 			else
 			{
 				$retnode = $session->make_text( 
-						"[ref missing: $ref]" );
+						"[name missing: $name]" );
 				$session->get_repository->log(
-"missing parameter \"$ref\" when making phrase \"$phraseid\"" );
+"missing parameter \"$name\" when making phrase \"$phraseid\"" );
 			}
 		
 
@@ -387,7 +387,7 @@ sub _read_phrases
 	my $data = {};
 
 	my $element;
-	my $warned = 1; # set to zero if we want to warn about ref="" vs id=""
+	my $warned = 1; # set to zero if we want to warn about name="" vs id=""
 	my $near;
 	foreach $element ( $phrases->getChildNodes )
 	{
@@ -397,7 +397,7 @@ sub _read_phrases
 			my $key = $element->getAttribute( "id" );
 			if( !defined $key || $key eq "")
 			{
-				$key = $element->getAttribute( "ref" );
+				$key = $element->getAttribute( "name" );
 				if(  !$key || $key eq "" || !$warned )
 				{
 					my $warning = "Warning: in $file";
@@ -412,7 +412,7 @@ sub _read_phrases
 						next;
 					}
 					$repository->log( 
-"$warning The phrase did have a 'ref' attribute so this probably means it's an EPrints v2 phrase file." );
+"$warning The phrase did have a 'name' attribute so this probably means it's an EPrints v2 phrase file." );
 					$warned = 1;
 				}
 			}

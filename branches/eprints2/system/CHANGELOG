@@ -4290,3 +4290,7 @@ PACKAGE: 2.2.99.2
 2006-09-19 cjg
  * Broke up core.pl
  * Fixed some small bugs
+
+2006-09-19 cjg
+ * Changed ref="" to name="" in pins in phrase files.
+
