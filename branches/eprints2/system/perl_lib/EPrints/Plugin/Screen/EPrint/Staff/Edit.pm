@@ -21,6 +21,8 @@ sub new
 		}
 	];
 
+	$self->{staff} = 1;
+
 	return $self;
 }
 

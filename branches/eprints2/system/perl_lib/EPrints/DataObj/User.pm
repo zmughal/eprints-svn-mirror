@@ -1036,25 +1036,25 @@ my $PRIVMAP =
 		"eprint/inbox/view" => 2,
 		"eprint/inbox/summary" => 2,
 		"eprint/inbox/staff/export" => 2,
-		"eprint/inbox/details" => 2,
+		"eprint/inbox/staff/details" => 2,
 		"eprint/inbox/history" => 2,
 
 		"eprint/buffer/view" => 2,
 		"eprint/buffer/summary" => 2,
 		"eprint/buffer/staff/export" => 2,
-		"eprint/buffer/details" => 2,
+		"eprint/buffer/staff/details" => 2,
 		"eprint/buffer/history" => 2,
 
 		"eprint/archive/view" => 2,
 		"eprint/archive/summary" => 2,
 		"eprint/archive/staff/export" => 2,
-		"eprint/archive/details" => 2,
+		"eprint/archive/staff/details" => 2,
 		"eprint/archive/history" => 2,
 
 		"eprint/deletion/view" => 2,
 		"eprint/deletion/summary" => 2,
 		"eprint/deletion/staff/export" => 2,
-		"eprint/deletion/details" => 2,
+		"eprint/deletion/staff/details" => 2,
 		"eprint/deletion/history" => 2,
 	},
 	"edit-subject" => 
@@ -1137,7 +1137,7 @@ my $PRIVMAP =
 		"eprint/inbox/view" => 8,
 		"eprint/inbox/summary" => 8,
 		"eprint/inbox/staff/export" => 8,
-		"eprint/inbox/details" => 8,
+		"eprint/inbox/staff/details" => 8,
 		"eprint/inbox/history" => 8,
 
 		"eprint/inbox/remove_with_email" => 8,
@@ -1151,7 +1151,7 @@ my $PRIVMAP =
 		"eprint/buffer/view" => 8,
 		"eprint/buffer/summary" => 8,
 		"eprint/buffer/staff/export" => 8,
-		"eprint/buffer/details" => 8,
+		"eprint/buffer/staff/details" => 8,
 		"eprint/buffer/history" => 8,
 
 		"eprint/buffer/remove_with_email" => 8,
@@ -1166,7 +1166,7 @@ my $PRIVMAP =
 		"eprint/archive/view" => 8,
 		"eprint/archive/summary" => 8,
 		"eprint/archive/staff/export" => 8,
-		"eprint/archive/details" => 8,
+		"eprint/archive/staff/details" => 8,
 		"eprint/archive/history" => 8,
 
 		"eprint/archive/move_buffer" => 8,
@@ -1179,7 +1179,7 @@ my $PRIVMAP =
 		"eprint/deletion/view" => 8,
 		"eprint/deletion/summary" => 8,
 		"eprint/deletion/staff/export" => 8,
-		"eprint/deletion/details" => 8,
+		"eprint/deletion/staff/details" => 8,
 		"eprint/deletion/history" => 8,
 
 		"eprint/deletion/move_archive" => 8,
@@ -1228,6 +1228,7 @@ sub allow
 "\$user->allow( $priv ) called. It returned a value of $r which meant it needed an item to resolve the permission, but none was passed. Assuming false, but this may indicate a bug." );
 		return 0;
 	}
+
 	if( $r & 4 )
 	{
 		if( !defined $item || !$item->has_owner( $self ) )
@@ -1235,6 +1236,7 @@ sub allow
 			$r-=4;
 		}
 	}
+
 	if( $r & 8 )
 	{
 		if( !defined $item || !$item->has_editor( $self ) )
@@ -1242,6 +1244,7 @@ sub allow
 			$r-=8;
 		}
 	}
+
 
 	return $r;
 }

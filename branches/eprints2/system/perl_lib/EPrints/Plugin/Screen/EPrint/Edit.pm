@@ -19,6 +19,8 @@ sub new
 		}
 	];
 
+	$self->{staff} = 0;
+
 	return $self;
 }
 
@@ -139,8 +141,8 @@ sub add_problems
 	foreach my $problem_xhtml ( @problems )
 	{
 		my $li = $self->{session}->make_element( "li" );
-		$li->appendChild( $problem_xhtml );
-				$warnings->appendChild( $li );
+		$li->appendChild( $problem_xhtml, $self->{staff} );
+		$warnings->appendChild( $li );
 	}
 	$self->workflow->link_problem_xhtml( $warnings );
 	$self->{processor}->add_message( "warning", $warnings );

@@ -401,7 +401,7 @@ sub _database_err
 # add links to fields in problem-report xhtml chunks.
 sub link_problem_xhtml
 {
-	my( $self, $node ) = @_;
+	my( $self, $node, $staff ) = @_;
 
 	if( EPrints::XML::is_dom( $node, "Element" ) )
 	{
@@ -410,7 +410,7 @@ sub link_problem_xhtml
 		{
 			my $stage = $self->{field_stages}->{$1};
 			return if( !defined $stage );
-			my $url = "?eprintid=".$self->{item}->get_id."&screen=EPrint::Edit&stage=$stage#$1";
+			my $url = "?eprintid=".$self->{item}->get_id."&screen=EPrint::".($staff?"Staff::":"")."Edit&stage=$stage#$1";
 			if( $self->get_stage_id eq $stage )
 			{
 				$url = "#$1";
@@ -431,7 +431,7 @@ sub link_problem_xhtml
 			$self->link_problem_xhtml( $kid );
 		}
 	}
-	
+
 
 }
 

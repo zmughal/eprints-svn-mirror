@@ -88,7 +88,6 @@ sub render
 	{
 		if( !($item->{screen}->can_be_viewed & $self->who_filter) )
 		{
-			print STDERR "Skipping: ".$item->{screen_id}."\n";
 			next;
 		}
 		if( $item->{screen}->{expensive} )

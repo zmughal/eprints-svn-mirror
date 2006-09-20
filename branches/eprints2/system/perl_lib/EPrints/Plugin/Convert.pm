@@ -182,14 +182,17 @@ sub convert
 
 Returns the mime-type of the file located at $fn, using the Unix file command.
 
+Return undef if it can't work it out.
+
 =cut
 
 sub mime_type
 {
 	my $fn = shift;
-	die "File does not exist: $fn" unless -e $fn;
-	die "Can not read file: $fn" unless -r $fn;
-	die "Can not type a directory: $fn" if -d $fn;
+
+	return undef unless -e $fn;
+	return undef unless -r $fn;
+	return undef if -d $fn;
 
 	# Prepare the command to call
 	my $file = $EPrints::SystemSettings::conf->{executables}->{file} || `which file` || 'file';
