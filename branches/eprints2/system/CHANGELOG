@@ -4310,3 +4310,12 @@ PACKAGE: 2.2.99.2
 2006-09-20 cjg
  * Subject Component now collapses and expands using javascript
  * Errors in document validation now link to the right page
+
+2006-09-20 cjg
+ * Broke up validate.pl into separate files
+ * Cleaned up validate of eprints
+ * Fixed it so that document & file validation errors now have a link
+    to the page with the upload component on.
+ * Moved delete-document button to be in the tab label
+ * Removed the document-change button
+ * s/upload some files/upload a file/

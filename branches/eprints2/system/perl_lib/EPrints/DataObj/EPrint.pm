@@ -904,334 +904,11 @@ sub write_revision
 	close REVFILE;
 }
 
-	
 
 ######################################################################
 =pod
 
-=item $problems = $eprint->validate_type( [$for_archive] )
-
-Return a reference to an array of XHTML DOM objects describing
-validation problems with the results of the "type" stage of eprint
-submission.
-
-A reference to an empty array indicates no problems.
-
-Calls L</validate_field> for the C<type> field.
-
-=cut
-######################################################################
-
-sub validate_type
-{
-	my( $self, $for_archive ) = @_;
-	
-	return [] if $self->skip_validation;
-# deprecate entirely?
-
-	my @problems;
-
-	my $field = $self->{dataset}->get_field( "type" );
-
-	push @problems, $self->{session}->get_repository->call(
-				"validate_field",
-				$field,
-				$self->get_value( $field->get_name ),
-				$self->{session},
-				$for_archive );
-
-	return( \@problems );
-}
-
-
-######################################################################
-=pod
-
-=item $problems = $eprint->validate_linking( [$for_archive] )
-
-Return a reference to an array of XHTML DOM objects describing
-validation problems with the results of the "linking" stage of eprint
-submission.
-
-A reference to an empty array indicates no problems.
-
-Calls L</validate_field> for the C<succeeds> and C<commentary> fields.
-
-=cut
-######################################################################
-
-sub validate_linking
-{
-	my( $self, $for_archive ) = @_;
-
-	return [] if $self->skip_validation;
-
-	my @problems;
-	
-	my $field_id;
-	foreach $field_id ( "succeeds", "commentary" )
-	{
-		my $field = $self->{dataset}->get_field( $field_id );
-	
-		push @problems, $self->{session}->get_repository->call(
-					"validate_field",
-					$field,
-					$self->get_value( $field->get_name ),
-					$self->{session},
-					$for_archive );
-
-		next unless( defined $self->get_value( $field_id ) );
-
-		my $test_eprint = new EPrints::DataObj::EPrint( 
-			$self->{session}, 
-			$self->get_value( $field_id ) );
-
-		if( !defined( $test_eprint ) )
-		{
-			push @problems, $self->{session}->html_phrase(
-				"lib/eprint:invalid_id",	
-				field => $field->render_name( 
-						$self->{session} ) );
-			next;
-		}
-		# can link to non-live items. Is that a problem?
-
-		unless( $field_id eq "succeeds" )
-		{
-			next;
-		}
-
-	}
-
-	
-	return( \@problems );
-}
-
-
-######################################################################
-=pod
-
-=item $problems = $eprint->validate_meta( [$for_archive] )
-
-Return a reference to an array of XHTML DOM objects describing
-validation problems with the results of the "meta" stage of eprint
-submission.
-
-A reference to an empty array indicates no problems.
-
-Calls L</validate_eprint_meta> for the C<$eprint> and L</validate_field> for all required fields.
-
-=cut
-######################################################################
-
-sub validate_meta
-{
-	my( $self, $for_archive ) = @_;
-	
-	return [] if $self->skip_validation;
-
-	my @all_problems;
-	my @req_fields = $self->{dataset}->get_required_type_fields( 
-		$self->get_value("type") );
-	my @all_fields = $self->{dataset}->get_fields;
-
-	# For all required fields...
-	foreach my $field (@req_fields)
-	{
-		# Check that the field is filled 
-		next if ( $self->is_set( $field->get_name ) );
-
-		my $fieldname = $self->{session}->make_element( 
-			"span", 
-			class=>"ep_problem_field:".$field->{name} );
-		$fieldname->appendChild( $field->render_name( $self->{session} ) );
-		my $problem = $self->{session}->html_phrase( 
-			"lib/eprint:not_done_field" ,
-			fieldname=> $fieldname );
-
-		push @all_problems,$problem;
-	}
-
-	# Give the site validation module a go
-	foreach my $field (@all_fields)
-	{
-		push @all_problems, $self->{session}->get_repository->call(
-			"validate_field",
-			$field,
-			$self->get_value( $field->{name} ),
-			$self->{session},
-			$for_archive );
-	}
-
-	# Site validation routine for eprint metadata as a whole:
-	push @all_problems, $self->{session}->get_repository->call(
-		"validate_eprint_meta",
-		$self, 
-		$self->{session},
-		$for_archive );
-
-	return( \@all_problems );
-}
-	
-######################################################################
-=pod
-
-=item $problems = $eprint->validate_meta_page( $page, [$for_archive] )
-
-Return a reference to an array of XHTML DOM objects describing
-validation problems with the results of the "meta" stage of eprint
-submission. This just validates a single page rather than all metadata
-fields.
-
-A reference to an empty array indicates no problems.
-
-Calls L</validate_eprint_meta> for the C<$eprint> and L</validate_field> for all page fields.
-
-=cut
-######################################################################
-
-sub validate_meta_page
-{
-	my( $self, $page, $for_archive ) = @_;
-	
-	return [] if $self->skip_validation;
-
-	my @problems;
-
-	my @check_fields = $self->{dataset}->get_page_fields( 
-		$self->get_value( "type" ),
-		$page );
-
-	# For all fields we need to check
-	foreach my $field ( @check_fields )
-	{
-		# this should be deprecated!
-		if( $self->{dataset}->field_required_in_type(
-			$field,
-			$self->get_value("type") ) 
-			&&
-			(!  $self->is_set( $field->get_name ) ) )
-		{
-			# field	is required but not set!
-
-			my $fieldname = $self->{session}->make_element( "span", class=>"ep_problem_field:".$field->{name} );
-			$fieldname->appendChild( $field->render_name( $self->{session} ) );
-			my $problem = $self->{session}->html_phrase( 
-				"lib/eprint:not_done_field" ,
-				fieldname=> $fieldname );
-			push @problems,$problem;
-		}
-
-		push @problems, $self->{session}->get_repository->call(
-			"validate_field",
-			$field,
-			$self->get_value( $field->{name} ),
-			$self->{session},
-			$for_archive );
-	}
-
-	# then call the validate page function for this page
-	push @problems, $self->{session}->get_repository->call(
-		"validate_eprint_meta_page",
-		$self,
-		$self->{session},
-		$page,
-		$for_archive );
-
-	return( \@problems );
-}
-
-
-
-
-######################################################################
-=pod
-
-=item $problems = $eprint->validate_documents( [$for_archive] )
-
-Return a reference to an array of XHTML DOM objects describing
-validation problems with the results of the "documents" stage of eprint
-submission. That is to say, validate all the documents.
-
-A reference to an empty array indicates no problems.
-
-=cut
-######################################################################
-
-sub validate_documents
-{
-	my( $self, $for_archive ) = @_;
-	
-	return [] if $self->skip_validation;
-
-	my @problems;
-	
-        my @req_formats = $self->required_formats;
-	my @docs = $self->get_all_documents;
-
-	my $ok = 0;
-	$ok = 1 if( scalar @req_formats == 0 );
-
-	my $doc;
-	foreach $doc ( @docs )
-        {
-		my $docformat = $doc->get_value( "format" );
-		foreach( @req_formats )
-		{
-                	$ok = 1 if( $docformat eq $_ );
-		}
-        }
-#		$fieldname->appendChild( $field->render_name( $self->{session} ) );
-#		my $problem = $self->{session}->html_phrase(
-#			"lib/eprint:not_done_field" ,
-#			fieldname=>$fieldname );
-#		push @problems, $problem;
-
-	if( !$ok )
-	{
-		my $doc_ds = $self->{session}->get_repository->get_dataset( 
-			"document" );
-		my $fieldname = $self->{session}->make_element( "span", class=>"ep_problem_field:documents" );
-		my $prob = $self->{session}->make_doc_fragment;
-		$prob->appendChild( $self->{session}->html_phrase( 
-			"lib/eprint:need_a_format",
-			fieldname=>$fieldname ) );
-		my $ul = $self->{session}->make_element( "ul" );
-		$prob->appendChild( $ul );
-		
-		foreach( @req_formats )
-		{
-			my $li = $self->{session}->make_element( "li" );
-			$ul->appendChild( $li );
-			$li->appendChild( $self->{session}->render_type_name( "document", $_ ) );
-		}
-			
-		push @problems, $prob;
-
-	}
-
-	foreach $doc (@docs)
-	{
-		my $probs = $doc->validate( $for_archive );
-		foreach (@$probs)
-		{
-			my $prob = $self->{session}->make_doc_fragment;
-			$prob->appendChild( $doc->render_description );
-			$prob->appendChild( 
-				$self->{session}->make_text( ": " ) );
-			$prob->appendChild( $_ );
-			push @problems, $prob;
-		}
-	}
-
-	return( \@problems );
-}
-
-
-######################################################################
-=pod
-
-=item $problems = $eprint->validate_full( [$for_archive] )
+=item $problems = $eprint->validate( [$for_archive] )
 
 Return a reference to an array of XHTML DOM objects describing
 validation problems with the entire eprint.
@@ -1243,28 +920,22 @@ Calls L</validate_eprint> for the C<$eprint>.
 =cut
 ######################################################################
 
-sub validate_full
+sub validate
 {
 	my( $self , $for_archive ) = @_;
 
 	return [] if $self->skip_validation;
 	
-	my @problems;
 
-	# Firstly, all the previous checks, just to be certain... it's possible
-	# that some problems remain, but the user is submitting direct from
-	# the author home.	
-	my $probs = $self->validate_type( $for_archive );
-	push @problems, @$probs;
+	# get the workflow
 
-	$probs = $self->validate_linking( $for_archive );
-	push @problems, @$probs;
+	my %opts = ( item=> $self, session=>$self->{session} );
+	if( $for_archive ) { $opts{STAFF_ONLY} = "TRUE"; }
+ 	my $workflow = EPrints::Workflow->new( $self->{session}, "default", %opts );
 
-	$probs = $self->validate_meta( $for_archive );
-	push @problems, @$probs;
+	my @problems = ();
 
-	$probs = $self->validate_documents( $for_archive );
-	push @problems, @$probs;
+	push @problems, $workflow->validate;
 
 	# Now give the site specific stuff one last chance to have a gander.
 	push @problems, $self->{session}->get_repository->call( 
@@ -2588,10 +2259,6 @@ Callbacks may optionally be defined in the ArchiveConfig.
 
 	validate_eprint( $eprint, $session, [$for_archive] )
 	
-=item validate_eprint_meta
-
-	validate_eprint_meta( $eprint, $session, [$for_archive] )
-
 =item set_eprint_defaults
 
 	set_eprint_defaults( $data, $session )

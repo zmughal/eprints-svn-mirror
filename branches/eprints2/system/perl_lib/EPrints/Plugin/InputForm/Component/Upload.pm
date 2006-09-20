@@ -120,12 +120,6 @@ sub doc_update
 	my $docid = $doc->get_id;
 	my $doc_prefix = $self->{prefix}."_doc".$docid;
 	
-	# for now a null op. Could maybe validate.
-	if( $doc_internal eq "change" )
-	{
-		return ();
-	}
-			
 	if( $doc_internal eq "delete_doc" )
 	{
 		$doc->remove();
@@ -240,7 +234,18 @@ sub render_content
 	foreach my $doc ( @eprint_docs )
 	{	
 		push @docids, $doc->get_id;
-		$labels->{$doc->get_id} = $doc->render_description;
+		my $doc_prefix = $self->{prefix}."_doc".$self->get_id;
+		my $label = $session->make_doc_fragment;
+		$label->appendChild( $doc->render_description );
+		$label->appendChild( $session->make_text( " " ) );
+		my $del_btn = $session->make_element( "input", 
+			type => "image", 
+			src => "/images/style/delete.png",
+			name => "_internal_".$doc_prefix."_delete_doc",
+			onClick => "if( !confirm( 'Delete entire document: are you sure?' ) ) { return false; }",
+			value => "Delete" );
+		$label->appendChild( $del_btn );
+		$labels->{$doc->get_id} = $label;
 	}
 
 	@docids = sort @docids;
@@ -360,7 +365,7 @@ sub _render_doc
 		}
 	}
 
-	my $tool_div = $session->make_element( "div" );
+	my $tool_div = $session->make_element( "div", class=>"ep_no_js" );
 	my $delete_fmt_button = $session->make_element( "input",
 		name => "_internal_".$doc_prefix."_delete_doc",
 		value => "Delete document",
@@ -368,15 +373,7 @@ sub _render_doc
 		type => "submit",
 		onClick => "if( !confirm( 'Delete entire document: are you sure?' ) ) { return false; }",
 		);
-	my $update_fmt_button = $session->make_element( "input",
-		name => "_internal_".$doc_prefix."_change",
-		value => "Change",
-		class => "ep_form_internal_button",
-		type => "submit",
-		);
 
-	$tool_div->appendChild( $update_fmt_button );
-	$tool_div->appendChild( $session->make_text( " " ) );
 	$tool_div->appendChild( $delete_fmt_button );
 
 	$doc_cont->appendChild( $tool_div );
@@ -526,9 +523,76 @@ sub _render_placeholder
 	my $session = $self->{session};
 	my $placeholder = $session->make_element( "tr", id => "placeholder" );
 	my $td = $session->make_element( "td", colspan => "3" );
-	$td->appendChild( $session->make_text( "Please upload some files." ) );
+	$td->appendChild( $session->make_text( "Please upload a file." ) );
 	$placeholder->appendChild( $td );
 	return $placeholder;
+}
+
+sub validate
+{
+	my( $self ) = @_;
+	
+	my @problems = ();
+
+	my $for_archive = $self->{workflow}->{for_archive};
+
+	my $eprint = $self->{workflow}->{item};
+	my $session = $self->{session};
+	
+        my @req_formats = $eprint->required_formats;
+	my @docs = $eprint->get_all_documents;
+
+	my $ok = 0;
+	$ok = 1 if( scalar @req_formats == 0 );
+
+	my $doc;
+	foreach $doc ( @docs )
+        {
+		my $docformat = $doc->get_value( "format" );
+		foreach( @req_formats )
+		{
+                	$ok = 1 if( $docformat eq $_ );
+		}
+        }
+
+	if( !$ok )
+	{
+		my $doc_ds = $eprint->{session}->get_repository->get_dataset( 
+			"document" );
+		my $fieldname = $eprint->{session}->make_element( "span", class=>"ep_problem_field:documents" );
+		my $prob = $eprint->{session}->make_doc_fragment;
+		$prob->appendChild( $eprint->{session}->html_phrase( 
+			"lib/eprint:need_a_format",
+			fieldname=>$fieldname ) );
+		my $ul = $eprint->{session}->make_element( "ul" );
+		$prob->appendChild( $ul );
+		
+		foreach( @req_formats )
+		{
+			my $li = $eprint->{session}->make_element( "li" );
+			$ul->appendChild( $li );
+			$li->appendChild( $eprint->{session}->render_type_name( "document", $_ ) );
+		}
+			
+		push @problems, $prob;
+
+	}
+
+	foreach $doc (@docs)
+	{
+		my $probs = $doc->validate( $for_archive );
+		foreach (@$probs)
+		{
+			my $prob = $eprint->{session}->make_doc_fragment;
+			$prob->appendChild( $doc->render_description );
+			$prob->appendChild( 
+				$eprint->{session}->make_text( ": " ) );
+			$prob->appendChild( $_ );
+			push @problems, $prob;
+		}
+	}
+
+	return @problems;
 }
 
 1;

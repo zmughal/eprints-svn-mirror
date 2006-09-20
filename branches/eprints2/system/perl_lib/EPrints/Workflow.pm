@@ -85,6 +85,10 @@ sub new
 	$params{current_user} = $session->current_user;
 	$self->{user} = $params{current_user};
 
+	# a bit of a hack so validating documents can know where
+	# they are validating for (live/buffer)
+	$self->{for_archive} = $params{STAFF_ONLY} eq "TRUE";
+
 	$params{in} = $self->description;
 
 	$self->{raw_config} = $self->{repository}->get_workflow_config( $self->{dataset}->confid, $workflow_id );
@@ -198,6 +202,19 @@ sub _read_stages
 	}
 }
 
+sub validate
+{
+	my( $self ) = @_;
+
+	my @problems = ();
+	foreach my $stage_id ( $self->get_stage_ids )
+	{
+		my $stage_obj = $self->get_stage( $stage_id );
+		push @problems, $stage_obj->validate;
+	}
+
+	return @problems;
+}
 
 sub get_stage_ids
 {

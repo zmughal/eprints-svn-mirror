@@ -1297,44 +1297,9 @@ sub commit
 }
 	
 
-######################################################################
-=pod
 
-=item $problems = $doc->validate_meta( [$for_archive] )
 
-Return an array of XHTML DOM objects describing validation problems
-with the metadata of this document.
-
-A reference to an empty array indicates no problems.
-
-=cut
-######################################################################
-
-sub validate_meta
-{
-	my( $self, $for_archive ) = @_;
-
-	return [] if $self->get_eprint->skip_validation;
-
-	my @problems;
-
-	unless( EPrints::Utils::is_set( $self->get_type() ) )
-	{
-		# No type specified
-		my $fieldname = $self->{session}->make_element( "span", class=>"ep_problem_field:documents" );
-		push @problems, $self->{session}->html_phrase( 
-					"lib/document:no_type",
-					fieldname=>$fieldname );
-	}
 	
-	push @problems, $self->{session}->get_repository->call( 
-		"validate_document_meta", 
-		$self, 
-		$self->{session},
-		$for_archive );
-
-	return( \@problems );
-}
 
 
 ######################################################################
@@ -1359,7 +1324,14 @@ sub validate
 
 	my @problems;
 
-	push @problems,@{$self->validate_meta( $for_archive )};
+	unless( EPrints::Utils::is_set( $self->get_type() ) )
+	{
+		# No type specified
+		my $fieldname = $self->{session}->make_element( "span", class=>"ep_problem_field:documents" );
+		push @problems, $self->{session}->html_phrase( 
+					"lib/document:no_type",
+					fieldname=>$fieldname );
+	}
 	
 	# System default checks:
 	# Make sure there's at least one file!!

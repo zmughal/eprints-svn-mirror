@@ -95,11 +95,15 @@ sub render
 		$outer->appendChild( $inner );
 
 		# alternate title to allow it to re-hide
-		my $recol_link =  $self->{session}->make_element( "a", onClick => "EPJS_toggle('${col_prefix}_bar',true,'block');EPJS_toggle('${col_prefix}_full',false,'block');return false", href=>"#" );
+		my $recol_link =  $self->{session}->make_element( "a", onClick => "EPJS_toggle('${col_prefix}_bar',true,'block');EPJS_toggle('${col_prefix}_full',false,'block');return false", href=>"#", class=>"ep_only_js" );
 		$recol_link->appendChild( $self->{session}->make_element( "img", alt=>"-", src=>"/images/style/minus.png", border=>0 ) );
 		$recol_link->appendChild( $self->{session}->make_text( " " ) );
 		$recol_link->appendChild( $title );
 		$title_div->appendChild( $recol_link );
+
+		my $nojstitle = $self->{session}->make_element( "div", class=>"ep_no_js" );
+		$nojstitle->appendChild( $component->render_title( $self ) );
+		$title_div->appendChild( $nojstitle );
 		
 
 		return $outer;
