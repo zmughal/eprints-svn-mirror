@@ -736,7 +736,7 @@ sub _collapse_if
 
 	if( !$node->hasAttribute( "test" ) )
 	{
-		EPrints::abort( "In ".$params{in}.": if element with no text attribute.\n".substr( $node->toString, 0, 100 ) );
+		EPrints::abort( "In ".$params{in}.": if element with no test attribute.\n".substr( $node->toString, 0, 100 ) );
 	}
 	my $test = $node->getAttribute( "test" );
 	if( $test =~ m/^\s*$/ )
@@ -773,7 +773,7 @@ sub _collapse_choose
 		
 		if( !$child->hasAttribute( "test" ) )
 		{
-			EPrints::abort( "In ".$params{in}.": when element with no text attribute.\n".substr( $child->toString, 0, 100 ) );
+			EPrints::abort( "In ".$params{in}.": when element with no test attribute.\n".substr( $child->toString, 0, 100 ) );
 		}
 		my $test = $child->getAttribute( "test" );
 		if( $test =~ m/^\s*$/ )

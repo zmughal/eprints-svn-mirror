@@ -73,7 +73,7 @@
   </when>
 
   <when test="type = 'other'">
-    <print expr="publisher" /><if name="place_of_pub">, <print expr="place_of_pub" /></if>.
+    <print expr="publisher" /><if test="place_of_pub">, <print expr="place_of_pub" /></if>.
   </when>
 
 </choose>
