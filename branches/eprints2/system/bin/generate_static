@@ -143,17 +143,29 @@ exit( 1 ) unless( defined $session );
 
 my @static_dirs = ();
 
+my $theme = $session->get_repository->get_conf( "theme" );
+
 $static_dirs[0] = $session->get_repository->get_conf( "lib_path" )."/static";
-$static_dirs[2] = $session->get_repository->get_conf( "config_path" )."/static";
+if( defined $theme )
+{	
+	$static_dirs[2] = $session->get_repository->get_conf( "lib_path" )."/themes/$theme/static";
+}
+$static_dirs[4] = $session->get_repository->get_conf( "config_path" )."/static";
 
 foreach my $langid ( @{$session->get_repository->get_conf( "languages" )} )
 {
 	$static_dirs[1] = $session->get_repository->get_conf( "lib_path" )."/lang/$langid/static";
-	$static_dirs[3] = $session->get_repository->get_conf( "config_path" )."/lang/$langid/static";
+	if( defined $theme )
+	{	
+		$static_dirs[3] = $session->get_repository->get_conf( "lib_path" )."/themes/$theme/lang/$langid/static";
+	}
+	$static_dirs[5] = $session->get_repository->get_conf( "config_path" )."/lang/$langid/static";
 
 	my $map = {};
 	foreach my $dir ( @static_dirs )
 	{
+		next if !defined $dir;
+		next if !-d $dir;
 		scan_static_dir( $dir, $map );
 	}
 	$session->change_lang( $langid );

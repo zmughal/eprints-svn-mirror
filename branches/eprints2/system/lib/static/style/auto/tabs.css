@@ -11,7 +11,7 @@ td.ep_tab {
 	text-align: center;
 	border: solid #d8dbef 1px;
 	padding-bottom: 4px;
-	background-image: url(/images/style/gray_bar.png);
+	background-image: url(/style/images/gray_bar.png);
 }
 
 td.ep_tab_selected {
@@ -36,7 +36,7 @@ td.ep_tab_spacer {
 	border-right: solid #d8dbef 1px;
 	border-bottom: solid #d8dbef 1px;
 	border-left: solid #d8dbef 1px;
-	background-image: url(/images/style/toolbox.png);
+	background-image: url(/style/images/toolbox.png);
 	padding: 12px;
 	clear: both;
 }

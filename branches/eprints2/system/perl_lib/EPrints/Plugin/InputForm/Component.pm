@@ -253,14 +253,21 @@ sub get_fields_handled
 }
 
 
-# $metafield = $self->xml_to_metafield( $xml )
+# $metafield = $self->xml_to_metafield( $xml, [$dataset] )
 #
 # Take an XML configuration of a field in a component and return a metafield.
 # tweak the metafield to make it required if needed.
+#
+# If dataset is not defined then use the dataset of the current item.
 
 sub xml_to_metafield
 {
-	my( $self, $xml ) = @_;
+	my( $self, $xml, $dataset ) = @_;
+
+	if( !defined $dataset )
+	{
+		$dataset = $self->{dataset};
+	}
 
 	# Do a few validation checks.
 	if( $xml->getNodeName ne "field" )
@@ -275,7 +282,7 @@ sub xml_to_metafield
 			"xml_to_metafield config error: No field ref attribute" );
 	}
 
-	my $field = $self->{dataset}->get_field( $ref );
+	my $field = $dataset->get_field( $ref );
 	
 	if( !defined $field )
 	{

@@ -119,7 +119,7 @@ sub register_furniture
 
 	#my $div = $self->{session}->make_element( "div", style=>"padding-bottom: 4px; border-bottom: solid 1px black; margin-bottom: 8px;" );
 	my $div = $self->{session}->make_element( "div", style=>"margin-bottom: 8px; text-align: center;
-        background-image: url(/images/style/toolbox.png);
+        background-image: url(/style/images/toolbox.png);
         border-top: solid 1px #d8dbef;
         border-bottom: solid 1px #d8dbef;
 	padding-top:4px;

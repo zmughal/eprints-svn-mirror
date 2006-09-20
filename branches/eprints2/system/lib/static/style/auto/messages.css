@@ -25,17 +25,17 @@ Not currently using titles
 */
 
 .ep_msg_message_content {
-	background-image: url(/images/style/green_back.png);
+	background-image: url(/style/images/green_back.png);
 	border: solid 1px #80ff80;
 }
 
 .ep_msg_error_content {
-	background-image: url(/images/style/red_back.png);
+	background-image: url(/style/images/red_back.png);
 	border: solid 1px #ffc0c0;
 }
 
 .ep_msg_warning_content {
-	background-image: url(/images/style/orange_back.png);
+	background-image: url(/style/images/orange_back.png);
 	border: solid 1px #ffc080;
 }
 

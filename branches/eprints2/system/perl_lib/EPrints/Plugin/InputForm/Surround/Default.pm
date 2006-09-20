@@ -86,7 +86,7 @@ sub render
 		my $col_div = $self->{session}->make_element( "div", class=>"ep_sr_collapse_bar ep_only_js", id => $col_prefix."_bar" );
 		my $col_link =  $self->{session}->make_element( "a", onClick => "EPJS_toggle('${col_prefix}_bar',true,'block');EPJS_toggle('${col_prefix}_full',false,'block');return false", href=>"#" );
 		$col_div->appendChild( $col_link );
-		$col_link->appendChild( $self->{session}->make_element( "img", alt=>"+", src=>"/images/style/plus.png", border=>0 ) );
+		$col_link->appendChild( $self->{session}->make_element( "img", alt=>"+", src=>"/style/images/plus.png", border=>0 ) );
 		$col_link->appendChild( $self->{session}->make_text( " " ) );
 		$col_link->appendChild( $component->render_title( $self ) );
 		$outer->appendChild( $col_div );
@@ -96,7 +96,7 @@ sub render
 
 		# alternate title to allow it to re-hide
 		my $recol_link =  $self->{session}->make_element( "a", onClick => "EPJS_toggle('${col_prefix}_bar',true,'block');EPJS_toggle('${col_prefix}_full',false,'block');return false", href=>"#", class=>"ep_only_js" );
-		$recol_link->appendChild( $self->{session}->make_element( "img", alt=>"-", src=>"/images/style/minus.png", border=>0 ) );
+		$recol_link->appendChild( $self->{session}->make_element( "img", alt=>"-", src=>"/style/images/minus.png", border=>0 ) );
 		$recol_link->appendChild( $self->{session}->make_text( " " ) );
 		$recol_link->appendChild( $title );
 		$title_div->appendChild( $recol_link );

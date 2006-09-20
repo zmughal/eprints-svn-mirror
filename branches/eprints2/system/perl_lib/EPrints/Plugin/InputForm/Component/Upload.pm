@@ -240,7 +240,7 @@ sub render_content
 		$label->appendChild( $session->make_text( " " ) );
 		my $del_btn = $session->make_element( "input", 
 			type => "image", 
-			src => "/images/style/delete.png",
+			src => "/style/images/delete.png",
 			name => "_internal_".$doc_prefix."_delete_doc",
 			onClick => "if( !confirm( 'Delete entire document: are you sure?' ) ) { return false; }",
 			value => "Delete" );
@@ -308,14 +308,8 @@ sub doc_fields
 {
 	my( $self, $document ) = @_;
 
-	my @fields = ();
 	my $ds = $self->{session}->get_repository->get_dataset('document');
-	foreach( "format", "formatdesc", "language", "security", "license" )
-	{
-		next if( $self->{session}->get_repository->get_conf(
-			"submission_hide_".$_ ) );
-		push @fields, $ds->get_field( $_ );
-	}
+	my @fields = @{$self->{config}->{doc_fields}};
 
 	my %files = $document->files;
 	if( scalar keys %files > 1 )
@@ -497,7 +491,7 @@ sub _render_filelist
 		my $del_btn_text = $session->html_phrase( "lib/submissionform:delete" );
 		my $del_btn = $session->make_element( "input", 
 			type => "image", 
-			src => "/images/style/delete.png",
+			src => "/style/images/delete.png",
 			name => "_internal_".$doc_prefix."_delete_$i",
 			onClick => "if( !confirm( 'Delete file $filename: are you sure?' ) ) { return false; }",
 			value => "Delete" );
@@ -594,5 +588,28 @@ sub validate
 
 	return @problems;
 }
+
+sub parse_config
+{
+	my( $self, $config_dom ) = @_;
+	
+	$self->{config}->{fields} = [];
+
+# moj: We need some default phrases for when these aren't specified.
+#	$self->{config}->{title} = ""; 
+#	$self->{config}->{help} = ""; 
+
+	my @fields = $config_dom->getElementsByTagName( "field" );
+
+	my $doc_ds = $self->{session}->get_repository->get_dataset( "document" );
+
+	foreach my $field_tag ( @fields )
+	{
+		my $field = $self->xml_to_metafield( $field_tag, $doc_ds );
+		push @{$self->{config}->{doc_fields}}, $field;
+	}
+}
+
+
 
 1;

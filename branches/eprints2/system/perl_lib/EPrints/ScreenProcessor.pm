@@ -151,7 +151,7 @@ sub render_messages
 		my $tr = $self->{session}->make_element( "tr" );
 		$table->appendChild( $tr );
 		my $td1 = $self->{session}->make_element( "td" );
-		$td1->appendChild( $self->{session}->make_element( "img", src=>"/images/style/".$message->{type}.".png", alt=>$self->{session}->phrase( "Plugin/Screen:message_".$message->{type} ) ) );
+		$td1->appendChild( $self->{session}->make_element( "img", src=>"/style/images/".$message->{type}.".png", alt=>$self->{session}->phrase( "Plugin/Screen:message_".$message->{type} ) ) );
 		$tr->appendChild( $td1 );
 		my $td2 = $self->{session}->make_element( "td" );
 		$tr->appendChild( $td2 );

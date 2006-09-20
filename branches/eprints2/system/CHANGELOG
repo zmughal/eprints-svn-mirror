@@ -4329,3 +4329,11 @@ PACKAGE: 2.2.99.2
     to be included by the template. Handy for plugins.
  * Sorted some issues with print.css
  * Moved appropriate .js and .css into the auto dirs.
+
+2006-09-20 cjg
+ * Upload component now takes which doc fields to ask for as a workflow 
+    config.
+ * Moved style related images to /style/images rather than /images/style
+ * Moved all style related images into that dir.
+ * Added option to xml_to_metafield to take an alternate dataset
+ * Added a minimal green theme to prove themes are working.

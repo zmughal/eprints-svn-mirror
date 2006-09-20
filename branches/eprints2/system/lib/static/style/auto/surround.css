@@ -17,7 +17,7 @@
 .ep_sr_component .ep_sr_input {
 	text-align: left;
 	clear: both;
-	background-image: url(/images/style/toolbox.png);
+	background-image: url(/style/images/toolbox.png);
 	border: solid 1px #d8dbef;
 	padding: 8px;
 }
@@ -26,7 +26,7 @@
 
 .ep_sr_collapse_bar {
 	text-align: left;
-	background-image: url(/images/style/toolbox.png);
+	background-image: url(/style/images/toolbox.png);
 	border: solid 1px #d8dbef;
 	padding: 8px;
 }

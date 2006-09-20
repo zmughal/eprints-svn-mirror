@@ -35,7 +35,7 @@ ul.ep_tm_menu {
 	list-style: none;
 	margin: 0px;
 	padding: 0px;
-	background-image: url(/images/style/blue_bar.png);
+	background-image: url(/style/images/blue_bar.png);
 }
 
 ul.ep_tm_menu li {
@@ -71,7 +71,7 @@ ul.ep_tm_menu li a:visited {
 	padding-bottom: 4px;
 	border-top: solid 4px white;
 	background: #ccc;
-	background-image: url(/images/style/gray_bar.png);
+	background-image: url(/style/images/gray_bar.png);
 }
 
 .ep_tm_searchbarbutton {

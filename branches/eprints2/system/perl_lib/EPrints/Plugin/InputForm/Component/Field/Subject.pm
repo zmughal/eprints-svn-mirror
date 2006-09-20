@@ -170,13 +170,13 @@ sub _render_subnode
 			$toggle = $self->{session}->make_element( "a", onClick => "EPJS_toggle('${prefix}_kids',true,'block');EPJS_toggle('${prefix}_hide',true,'inline');EPJS_toggle('${prefix}_show',false,'inline');return false", href=>"#", class=>"ep_only_js" );
 	
 			my $hide = $self->{session}->make_element( "span", id=>$prefix."_hide" );
-			$hide->appendChild( $self->{session}->make_element( "img", alt=>"-", src=>"/images/style/minus.png", border=>0 ) );
+			$hide->appendChild( $self->{session}->make_element( "img", alt=>"-", src=>"/style/images/minus.png", border=>0 ) );
 			$hide->appendChild( $self->{session}->make_text( " " ) );
 			$hide->appendChild( $subject->render_description );
 			$toggle->appendChild( $hide );
 	
 			my $show = $self->{session}->make_element( "span", id=>$prefix."_show", style=>"display:none" );
-			$show->appendChild( $self->{session}->make_element( "img", alt=>"+", src=>"/images/style/plus.png", border=>0 ) );
+			$show->appendChild( $self->{session}->make_element( "img", alt=>"+", src=>"/style/images/plus.png", border=>0 ) );
 			$show->appendChild( $self->{session}->make_text( " " ) );
 			$show->appendChild( $subject->render_description );
 			$toggle->appendChild( $show );
@@ -188,13 +188,13 @@ sub _render_subnode
 			$toggle = $self->{session}->make_element( "a", onClick => "EPJS_toggle('${prefix}_kids',false,'block');EPJS_toggle('${prefix}_hide',false,'inline');EPJS_toggle('${prefix}_show',true,'inline');return false", href=>"#", class=>"ep_only_js" );
 	
 			my $hide = $self->{session}->make_element( "span", id=>$prefix."_hide", style=>"display:none" );
-			$hide->appendChild( $self->{session}->make_element( "img", alt=>"-", src=>"/images/style/minus.png", border=>0 ) );
+			$hide->appendChild( $self->{session}->make_element( "img", alt=>"-", src=>"/style/images/minus.png", border=>0 ) );
 			$hide->appendChild( $self->{session}->make_text( " " ) );
 			$hide->appendChild( $subject->render_description );
 			$toggle->appendChild( $hide );
 	
 			my $show = $self->{session}->make_element( "span", id=>$prefix."_show" );
-			$show->appendChild( $self->{session}->make_element( "img", alt=>"+", src=>"/images/style/plus.png", border=>0 ) );
+			$show->appendChild( $self->{session}->make_element( "img", alt=>"+", src=>"/style/images/plus.png", border=>0 ) );
 			$show->appendChild( $self->{session}->make_text( " " ) );
 			$show->appendChild( $subject->render_description );
 			$toggle->appendChild( $show );

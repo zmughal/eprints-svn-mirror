@@ -14,7 +14,13 @@
   </stage>
 
   <stage name="files">
-    <component type="Upload" surround="None" />
+    <component type="Upload" surround="None">
+      <field ref="format" />
+      <field ref="formatdesc" />
+      <field ref="security" />
+      <field ref="license" />
+<!--  <field ref="language" /> -->
+    </component>
   </stage>
 
 

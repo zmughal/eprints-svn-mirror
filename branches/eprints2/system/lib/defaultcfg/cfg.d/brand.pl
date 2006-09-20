@@ -8,4 +8,4 @@ $c->{site_logo} = "/images/sitelogo.gif";
 # eprints. A theme must exist as a directory in 
 # /opt/eprints3/lib/themes
 
-$c->{theme} = "green";
+# $c->{theme} = "green";

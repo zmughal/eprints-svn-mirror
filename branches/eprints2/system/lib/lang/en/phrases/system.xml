@@ -1170,14 +1170,14 @@ Titles and Help for the System Fields
 
 <!-- export -->
 
-    <ep:phrase id="sys:ep_form_required"><img src="/images/style/required.png" border="0" alt="Required"/>&nbsp;<ep:pin name="label" /></ep:phrase>
+    <ep:phrase id="sys:ep_form_required"><img src="/style/images/required.png" border="0" alt="Required"/>&nbsp;<ep:pin name="label" /></ep:phrase>
 
 
 
 
 
-    <ep:phrase id="Plugin/InputForm/Surround/Default:show_help"><ep:pin name="link">Help <img alt="+" src="/images/style/plus.png" border="0" /></ep:pin></ep:phrase>
-    <ep:phrase id="Plugin/InputForm/Surround/Default:hide_help"><ep:pin name="link">Help <img alt="-" src="/images/style/minus.png" border="0" /></ep:pin></ep:phrase>
+    <ep:phrase id="Plugin/InputForm/Surround/Default:show_help"><ep:pin name="link">Help <img alt="+" src="/style/images/plus.png" border="0" /></ep:pin></ep:phrase>
+    <ep:phrase id="Plugin/InputForm/Surround/Default:hide_help"><ep:pin name="link">Help <img alt="-" src="/style/images/minus.png" border="0" /></ep:pin></ep:phrase>
 
 
 
