@@ -5,6 +5,8 @@ use EPrints::SystemSettings;
 BEGIN {
 	use Carp qw(cluck);
 
+	umask( 0002 );
+	
 	# Paranoia: This may annoy people, or help them... cjg
 
 	# mod_perl will probably be running as root for the main httpd.
@@ -126,6 +128,17 @@ END
 	{
 		my @c = caller(1);
 		print STDERR "Called deprecated function $c[3] from $c[1] line $c[2]\n";
+	}
+
+	sub try
+	{
+		my( $code ) = @_;
+
+		my $r = eval { &$code };
+
+		if( $@ ) { EPrints::abort( $@ ); }
+
+		return $r;
 	}
 }
 

@@ -883,6 +883,7 @@ sub write_revision
 	my( $self ) = @_;
 
 	my $dir = $self->local_path."/revisions";
+
 	if( !-d $dir )
 	{
 		if(!EPrints::Utils::mkdir($dir))
@@ -1633,7 +1634,7 @@ sub generate_static
 	
 			my @created = eval
 			{
-				my @created = mkpath( $full_path, 0, 0775 );
+				my @created = EPrints::try sub { mkpath( $full_path, 0,  $EPrints::SystemSettings::conf->{"dir_perms"}  ); };
 				return( @created );
 			};
 	

@@ -177,25 +177,6 @@ sub new
 
 	$self->{field_defaults} = {};
 
-	# The var directory was added in version 2.3, create it
-	# if it does not already exist
-	# and tidy up some stuff from cfg which has moved into
-	# var
-	
-	my $var_dir = $self->get_conf( "variables_path" );
-	if( !-d $var_dir )
-	{
-                mkdir( $var_dir, 0755 );
-		my $cfg_dir = $self->get_conf( "config_path" );
-		foreach( "daily", "weekly", "monthly", ".changed" )
-		{
-			my $file = $cfg_dir."/".$_;
-			unlink( $file ) if( -e $file );
-		}
-	}
-		
-
-
 	$ARCHIVE_CACHE{$id} = $self;
 	return $self;
 }
@@ -864,7 +845,7 @@ sub _plugin_dir_copy
 
 	unless( -e $target )
 	{
-		mkdir( $target, 0711 ) || EPrints::Config::abort( "can't make dir $target: $!" );
+		mkdir( $target, $EPrints::SystemSettings::conf->{"dir_perms"} ) || EPrints::Config::abort( "can't make dir $target: $!" );
 	}
 
 	if( -e $target && !-d $target )

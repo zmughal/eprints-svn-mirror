@@ -4299,3 +4299,11 @@ PACKAGE: 2.2.99.2
  * Fixed bug in subject component being slow!
  * Reworked subject component (still needs js and css)
  * Removed unused Subjects input component
+
+2006-09-20 cjg
+ * EPrints should now install as group apache and group
+    writable directories.
+ * Added EPrints::try method which runs a code reference in an eval and
+    if it fails calls abort with the error.
+ * Added dir_perms and file_perms to SystemSettings
+

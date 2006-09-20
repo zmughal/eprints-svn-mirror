@@ -501,7 +501,7 @@ open( CONF, ">$configfile" ) || die "can't open $configfile for writing";
 print CONF EPrints::XML::to_string( $doc );
 close CONF;
 # It's got a password in so 600 to be safe!
-chmod( 0600, $configfile );
+chmod( $EPrints::SystemSettings::conf->{"file_perms"} ), $configfile );
 print <<END;
 
 Copy across initial config files? You have to do this for a new repository but
@@ -515,7 +515,7 @@ if( $mkfiles eq "yes" )
 	print "\nCreating initial files:\n";
 	&install( 
 		EPrints::Config::get( "base_path" )."/lib/defaultcfg",
-		0644,
+		$EPrints::SystemSettings::conf->{"file_perms"},
 		$uid,
 		$gid,
 		$repodir."/cfg",
@@ -524,7 +524,7 @@ if( $mkfiles eq "yes" )
 	foreach( "var", "html", "documents", "documents/disk0" )
 	{
 		my $dir = $repodir."/".$_;
-		mkdir( $dir, 0755 );
+		mkdir( $dir, $EPrints::SystemSettings::conf->{"dir_perms"} );
 		chown( $uid, $gid, $dir );
 	}
 	print <<END;
@@ -603,7 +603,7 @@ sub install
 	opendir(INDIR, $dir) or die("Unable to install directory: $dir");
 	my @dirs = ();
 	my @files = ();
-	mkdir( $dest, 0755 );
+	mkdir( $dest, $EPrints::SystemSettings::conf->{"dir_perms"} );
 	chown($user, $group, $dest);
 	while(my $item = readdir(INDIR))
 	{

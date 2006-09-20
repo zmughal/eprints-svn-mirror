@@ -592,7 +592,7 @@ sub mkdir
 
 	my @created = eval
         {
-                return mkpath( $full_path, 0, 0775 );
+                return EPrints::try sub { mkpath( $full_path, 0,  $EPrints::SystemSettings::conf->{"dir_perms"}  ); };
         };
 	if( defined $@ && $@ ne "" ) { warn $@; }
         return ( scalar @created > 0 )

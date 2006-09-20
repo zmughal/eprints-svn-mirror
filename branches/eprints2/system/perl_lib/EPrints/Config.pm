@@ -107,15 +107,6 @@ sub init
 	$SYSTEMCONF{bin_path} = $SYSTEMCONF{base_path}."/bin";
 	$SYSTEMCONF{var_path} = $SYSTEMCONF{base_path}."/var";
 	
-
-	foreach my $dir ( $SYSTEMCONF{base_path}."/var" )
-	{
-		next if( -d $dir );
-			mkdir( $dir, 0755 );
-	}
-	#chown( $uid, $gid, $dir );
-
-
 	###############################################
 	
 	opendir( CFG, $SYSTEMCONF{arc_path} );

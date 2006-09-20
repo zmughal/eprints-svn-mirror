@@ -405,7 +405,7 @@ sub create_symlink
 
 	unless( -d $linkdir )
 	{
-		my @created = mkpath( $linkdir, 0, 0775 );
+		my @created = EPrints::try sub { mkpath( $linkdir, 0,  $EPrints::SystemSettings::conf->{"dir_perms"}  ); };
 
 		if( scalar @created == 0 )
 		{
