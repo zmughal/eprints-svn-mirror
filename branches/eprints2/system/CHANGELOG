@@ -4319,3 +4319,13 @@ PACKAGE: 2.2.99.2
  * Moved delete-document button to be in the tab label
  * Removed the document-change button
  * s/upload some files/upload a file/
+
+2006-09-20 cjg
+ * renamed core.pl to Core.pl so it loads first
+ * Added brand.pl to contain quick and easy branding stuff like sitelogo
+    and theme.
+ * Added a new entity &logo; which is an image of the url spec'd in site_logo
+ * Added style/auto and javascript/auto which cause all files in these dirs 
+    to be included by the template. Handy for plugins.
+ * Sorted some issues with print.css
+ * Moved appropriate .js and .css into the auto dirs.

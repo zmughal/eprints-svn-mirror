@@ -156,7 +156,6 @@ foreach my $langid ( @{$session->get_repository->get_conf( "languages" )} )
 	{
 		scan_static_dir( $dir, $map );
 	}
-
 	$session->change_lang( $langid );
 	my $base_target_dir = $session->get_repository->get_conf( "htdocs_path" )."/$langid";
 	foreach my $target ( keys %{$map} )
@@ -181,6 +180,38 @@ foreach my $langid ( @{$session->get_repository->get_conf( "languages" )} )
 		elsif( $suffix eq "xpage" ) { copy_xpage( $session, $source, $target ); }
 		else { copy_plain( $session, $source, $target ); }
 	}	
+
+	# do the magic auto.js and auto.css
+	my $js = "";
+	my $css = "";
+	my $fn;
+	my $base_url = $session->get_repository->get_conf( "base_url" );
+	foreach my $target ( keys %{$map} )
+	{
+		if( $target =~ m/(\/style\/auto\/.*\.css$)/ )
+		{
+			$css .= "\@import url($base_url$1);\n";
+
+		}	
+		if( $target =~ m/(\/javascript\/auto\/.*\.js$)/ )
+		{
+			$fn = $map->{$target};
+			open( JS, $fn ) || EPrints::abort( "Can't read $fn: $!" );
+			$js .= "\n\n\n/* From: $fn */\n\n";
+			$js .= join( "", <JS> );
+			close JS;	
+		}	
+	}
+
+	$fn = "$base_target_dir/style/auto.css";
+	open( CSS, ">$fn" ) || EPrints::abort( "Can't write $fn: $!" );
+	print CSS $css;
+	close CSS;
+
+	$fn = "$base_target_dir/javascript/auto.js";
+	open( JS, ">$fn" ) || EPrints::abort( "Can't write $fn: $!" );
+	print JS $js;
+	close JS;
 }
 
 $session->terminate();

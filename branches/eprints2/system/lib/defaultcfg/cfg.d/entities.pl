@@ -42,6 +42,7 @@ sub get_entities
 	$entities{userhome} = $repository->get_conf( "userhome" );
 	$entities{version} = EPrints::Config::get( "version" );
 	$entities{ruler} = EPrints::XML::to_string( $repository->get_ruler() );
+	$entities{logo} = '<img alt="Logo" src="'.$repository->get_conf("site_logo").'" />';
 
 	return %entities;
 }

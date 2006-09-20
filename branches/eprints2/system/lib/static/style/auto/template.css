@@ -2,7 +2,7 @@
 /* EPrints 3 template styles */
 /* prefix all styles with ep_tm */
 
-img.ep_tm_logo {
+.ep_tm_logo img {
 	float: right;
 	padding-bottom: 4px;
 	border-style: none;
