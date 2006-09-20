@@ -4307,3 +4307,6 @@ PACKAGE: 2.2.99.2
     if it fails calls abort with the error.
  * Added dir_perms and file_perms to SystemSettings
 
+2006-09-20 cjg
+ * Subject Component now collapses and expands using javascript
+ * Errors in document validation now link to the right page

@@ -1321,8 +1321,10 @@ sub validate_meta
 	unless( EPrints::Utils::is_set( $self->get_type() ) )
 	{
 		# No type specified
+		my $fieldname = $self->{session}->make_element( "span", class=>"ep_problem_field:documents" );
 		push @problems, $self->{session}->html_phrase( 
-					"lib/document:no_type" );
+					"lib/document:no_type",
+					fieldname=>$fieldname );
 	}
 	
 	push @problems, $self->{session}->get_repository->call( 
@@ -1365,12 +1367,14 @@ sub validate
 
 	if( scalar keys %files ==0 )
 	{
-		push @problems, $self->{session}->html_phrase( "lib/document:no_files" );
+		my $fieldname = $self->{session}->make_element( "span", class=>"ep_problem_field:documents" );
+		push @problems, $self->{session}->html_phrase( "lib/document:no_files", fieldname=>$fieldname );
 	}
 	elsif( !defined $self->get_main() || $self->get_main() eq "" )
 	{
 		# No file selected as main!
-		push @problems, $self->{session}->html_phrase( "lib/document:no_first" );
+		my $fieldname = $self->{session}->make_element( "span", class=>"ep_problem_field:documents" );
+		push @problems, $self->{session}->html_phrase( "lib/document:no_first", fieldname=>$fieldname );
 	}
 		
 	# Site-specific checks

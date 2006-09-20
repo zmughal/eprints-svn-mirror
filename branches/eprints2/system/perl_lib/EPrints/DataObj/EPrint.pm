@@ -1181,14 +1181,21 @@ sub validate_documents
                 	$ok = 1 if( $docformat eq $_ );
 		}
         }
+#		$fieldname->appendChild( $field->render_name( $self->{session} ) );
+#		my $problem = $self->{session}->html_phrase(
+#			"lib/eprint:not_done_field" ,
+#			fieldname=>$fieldname );
+#		push @problems, $problem;
 
 	if( !$ok )
 	{
 		my $doc_ds = $self->{session}->get_repository->get_dataset( 
 			"document" );
+		my $fieldname = $self->{session}->make_element( "span", class=>"ep_problem_field:documents" );
 		my $prob = $self->{session}->make_doc_fragment;
 		$prob->appendChild( $self->{session}->html_phrase( 
-			"lib/eprint:need_a_format" ) );
+			"lib/eprint:need_a_format",
+			fieldname=>$fieldname ) );
 		my $ul = $self->{session}->make_element( "ul" );
 		$prob->appendChild( $ul );
 		

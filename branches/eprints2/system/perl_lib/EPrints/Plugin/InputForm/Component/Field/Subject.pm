@@ -149,11 +149,61 @@ sub _render_subnode
 	my $has_kids = 0;
 	$has_kids = 1 if( defined $self->{reverse_map}->{$node_id} );
 
+	my $expanded = 0;
+	$expanded = 1 if( $depth < $self->{visdepth} );
+	$expanded = 1 if( $self->{expanded}->{$node_id} );
+	$expanded = 0 if( !$has_kids );
+
 	my $prefix = $self->{prefix}."_".$node_id;
 	
-	my $out = $session->make_doc_fragment;
-	my $desc = $subject->render_description;
-	$out->appendChild( $desc );
+	my $r_node = $session->make_doc_fragment;
+
+	my $desc = $session->make_element( "span" );
+	$desc->appendChild( $subject->render_description );
+	$r_node->appendChild( $desc );
+
+	if( $has_kids )
+	{
+		my $toggle;
+		if( $expanded )
+		{
+			$toggle = $self->{session}->make_element( "a", onClick => "EPJS_toggle('${prefix}_kids',true,'block');EPJS_toggle('${prefix}_hide',true,'inline');EPJS_toggle('${prefix}_show',false,'inline');return false", href=>"#", class=>"ep_only_js" );
+	
+			my $hide = $self->{session}->make_element( "span", id=>$prefix."_hide" );
+			$hide->appendChild( $self->{session}->make_element( "img", alt=>"-", src=>"/images/style/minus.png", border=>0 ) );
+			$hide->appendChild( $self->{session}->make_text( " " ) );
+			$hide->appendChild( $subject->render_description );
+			$toggle->appendChild( $hide );
+	
+			my $show = $self->{session}->make_element( "span", id=>$prefix."_show", style=>"display:none" );
+			$show->appendChild( $self->{session}->make_element( "img", alt=>"+", src=>"/images/style/plus.png", border=>0 ) );
+			$show->appendChild( $self->{session}->make_text( " " ) );
+			$show->appendChild( $subject->render_description );
+			$toggle->appendChild( $show );
+
+			$desc->setAttribute( "class", "ep_no_js" );
+		}
+		else # not expanded
+		{
+			$toggle = $self->{session}->make_element( "a", onClick => "EPJS_toggle('${prefix}_kids',false,'block');EPJS_toggle('${prefix}_hide',false,'inline');EPJS_toggle('${prefix}_show',true,'inline');return false", href=>"#", class=>"ep_only_js" );
+	
+			my $hide = $self->{session}->make_element( "span", id=>$prefix."_hide", style=>"display:none" );
+			$hide->appendChild( $self->{session}->make_element( "img", alt=>"-", src=>"/images/style/minus.png", border=>0 ) );
+			$hide->appendChild( $self->{session}->make_text( " " ) );
+			$hide->appendChild( $subject->render_description );
+			$toggle->appendChild( $hide );
+	
+			my $show = $self->{session}->make_element( "span", id=>$prefix."_show" );
+			$show->appendChild( $self->{session}->make_element( "img", alt=>"+", src=>"/images/style/plus.png", border=>0 ) );
+			$show->appendChild( $self->{session}->make_text( " " ) );
+			$show->appendChild( $subject->render_description );
+			$toggle->appendChild( $show );
+
+			$desc->setAttribute( "class", "ep_no_js" );
+		}
+
+		$r_node->appendChild( $toggle );
+	}
 
 	if( $subject->can_post )
 	{
@@ -164,8 +214,8 @@ sub _render_subnode
 				type => "submit",
 				name => "_internal_".$prefix."_remove",
 				value => "Remove" );
-			$out->appendChild( $session->make_text( " " ) );
-			$out->appendChild( $rem_button ); 
+			$r_node->appendChild( $session->make_text( " " ) );
+			$r_node->appendChild( $rem_button ); 
 		}
 		else
 		{
@@ -174,85 +224,23 @@ sub _render_subnode
 				type => "submit",
 				name => "_internal_".$prefix."_add",
 				value => "Add" );
-			$out->appendChild( $session->make_text( " " ) );
-			$out->appendChild( $add_button ); 
+			$r_node->appendChild( $session->make_text( " " ) );
+			$r_node->appendChild( $add_button ); 
 		}
 	}
 
-	$out->appendChild( $self->_render_subnodes( $subject, $depth ) );
-	return $out;
-	
-#	my $children_div = $session->make_element( "div", id => $pre );
-#	
-#	if( $depth > 0 )
-#	{
-#		my $div = $session->make_element( "div", class => "tree_node", id => $self->{prefix}."_node_".$root_id );
-#		
-#		# Decide on the state of the root node.
-#		# 1 = expanded, 0 = contracted
-#		
-#		my $root_expanded = 0;
-#		
-#		# By default, expand everything up to visdepth and everything
-#		# that is expanded (by being a value).
-#		if( $depth < $self->{visdepth} || $expanded->{$root_id} )
-#		{
-#			$root_expanded = 1;
-#		}
-#		else
-#		{
-#			$root_expanded = 0;
-#		}
-#	
-#
-#		my $desc = $subject->render_description;
-#		
-#		if( $n_kids != 0 )
-#		{
-#			my $dots = $session->make_element( "span", id => $pre."_dots" );
-#			$dots->appendChild( $session->html_phrase( "lib/extras:subject_browser_expandable" ) );
-#			my $a_toggle = $session->make_element( "a", id => "${pre}_toggle", href=>"#" );
-#
-#			if( $root_expanded )
-#			{
-#				# Expanded, so show the content and hide the '...'
-#				$dots->setAttribute( "style", "display: none" );
-#				$a_toggle->setAttribute( "onClick"=>"EPJS_toggle('$pre',true,'inline');EPJS_toggle('${pre}_dots',false,'inline');return false" ); 
-#			}
-#			else
-#			{
-#				# Contracted, so hide the content  (show the '...')
-#				#$children_div->setAttribute( "style", "display: none" );
-#				$children_div->setAttribute( "class", "ep_no_js" );
-#				$a_toggle->setAttribute( "onClick"=>"EPJS_toggle('$pre',false,'inline');EPJS_toggle('${pre}_dots',true,'inline');return false" ); 
-#			}
-#
-#			
-#			
-#			
-#			$a_toggle->appendChild( $desc );
-#			$div->appendChild( $a_toggle );
-#			$div->appendChild( $dots );
-#		}
-#		else
-#		{	
-#			$div->appendChild( $desc );
-#		}
-#		
-#		$div->appendChild( $session->make_text( " " ) );
-#		
-#		if( $selected->{$root_id} )
-#		{
-#			$div->setAttribute( "class", "tree_node_selected" );
-#		}
-#		
-#	}
-	
+	if( $has_kids )
+	{
+		my $div = $session->make_element( "div", id => $prefix."_kids" );
+		if( !$expanded ) 
+		{ 
+			$div->setAttribute( "class", "ep_no_js" ); 
+		}
+		$div->appendChild( $self->_render_subnodes( $subject, $depth ) );
+		$r_node->appendChild( $div );
+	}
 
-	
-	# Then append any children
-
-	return $out;
+	return $r_node;
 }
-
+	
 1;

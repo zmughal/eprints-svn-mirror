@@ -27,9 +27,9 @@ EPrints Modules
 
 <!-- Document -->
 
-    <ep:phrase id="lib/document:no_files">You haven't uploaded any files!</ep:phrase>
-    <ep:phrase id="lib/document:no_type">You haven't specified a document type!</ep:phrase>
-    <ep:phrase id="lib/document:no_first">You need to select a file to be shown first.</ep:phrase>
+    <ep:phrase id="lib/document:no_files">You haven't <ep:pin name="fieldname">uploaded</ep:pin> any files!</ep:phrase>
+    <ep:phrase id="lib/document:no_type">You haven't <ep:pin name="fieldname">specified a document type</ep:pin>!</ep:phrase>
+    <ep:phrase id="lib/document:no_first">You need to <ep:pin name="fieldname">select a file to be shown first</ep:pin>.</ep:phrase>
 
 <!-- EPrint -->
 
@@ -44,7 +44,7 @@ EPrints Modules
     <ep:phrase id="lib/eprint:least_one_sub">You need to select at least one subject from the list!</ep:phrase>
     <ep:phrase id="lib/eprint:cant_succ">You cannot succeed an item that someone else has posted</ep:phrase>
     <ep:phrase id="lib/eprint:invalid_id">Item ID in "<ep:pin name="field" />" field is invalid</ep:phrase>
-    <ep:phrase id="lib/eprint:need_a_format">You need to upload at least one of the following formats:</ep:phrase>
+    <ep:phrase id="lib/eprint:need_a_format">You need to <ep:pin name="fieldname">upload</ep:pin> at least one of the following formats:</ep:phrase>
     <ep:phrase id="lib/eprint:eprint_gone_title">Item Removed</ep:phrase>
     <ep:phrase id="lib/eprint:eprint_gone"><p>You seem to be attempting to access an item that has been removed from the repository.</p></ep:phrase>
     <ep:phrase id="lib/eprint:later_version"><p>There is a later version of the item you are trying to access:<br /><ep:pin name="citation" /></p></ep:phrase>
