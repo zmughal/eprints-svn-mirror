@@ -20,7 +20,7 @@
     <ep:pin ref="pagetop" />
     <div class="ep_tm_header ep_noprint">
 
-      <div class="ep_tm_logo"><a href="http://www.eprints.org/">&logo;</a></div>
+      <div class="ep_tm_logo"><a href="&frontpage;">&logo;</a></div>
       <div><a class="ep_tm_archivetitle" href="&frontpage;">&archivename;</a></div>
 
   <ul class="ep_tm_menu"><li><a href="&frontpage;">Home</a></li><li><a href="&base_url;/information.html">About</a></li><li><a href="&base_url;/view/year">Browse by Year</a></li><li><a href="&base_url;/view/subjects">Browse by Subject</a></li><li><a href="&userhome;">User Area</a></li><li><a href="&base_url;/help">Help</a></li></ul>

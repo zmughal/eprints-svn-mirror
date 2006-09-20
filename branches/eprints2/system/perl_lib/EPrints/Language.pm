@@ -84,22 +84,22 @@ sub new
 	
 	$self->{fallback} = $fallback;
 
-	$self->{repository_data} = $self->_read_phrases( 
+	$self->{repository_data} = $self->_read_phrases_dir(
+		$repository,
 		$repository->get_conf( "config_path" ).
-			"/lang/".$self->{id}."/phrases.xml", 
-		$repository );
-	
-	if( !defined  $self->{repository_data} )
+			"/lang/".$self->{id}."/phrases" );
+
+	if( !defined $self->{repository_data} )
 	{
 		return( undef );
 	}
 
-	$self->{data} = $self->_read_phrases( 
-		EPrints::Config::get( "lib_path" ).
-			"/lang/".$self->{id}."/phrases/system.xml", 
-		$repository );
+	$self->{data} = $self->_read_phrases_dir(
+		$repository,
+		$repository->get_conf( "lib_path" ).
+			"/lang/".$self->{id}."/phrases" );
 
-	if( !defined  $self->{data} )
+	if( !defined $self->{data} )
 	{
 		return( undef );
 	}
@@ -107,6 +107,30 @@ sub new
 	return( $self );
 }
 
+sub _read_phrases_dir
+{
+	my( $self, $repository, $dir ) = @_;
+
+	my $dh;
+	opendir( $dh, $dir ) || EPrints::abort( "Failed to read: $dir: $!" );
+	my @phrase_files = ();
+	while( my $fn = readdir( $dh ) )
+	{
+		next if $fn =~ m/^\./;
+		push @phrase_files,$fn;
+	}
+	close $dh;
+
+	my %phrases = ();
+	foreach my $fn ( sort @phrase_files )
+	{
+		my $new = $self->_read_phrases( $dir."/".$fn, $repository );
+
+		foreach( keys %{$new} ) { $phrases{$_} = $new->{$_}; }
+	}
+	return \%phrases;
+}
+	
 
 
 ######################################################################

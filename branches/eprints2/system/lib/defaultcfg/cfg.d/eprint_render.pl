@@ -149,7 +149,7 @@ sub eprint_render
 	# Embargo date
 	if( $eprint->is_set( "date_embargo" ) && $eprint->get_value( "full_text_status") eq "restricted" )
 	{
-		$page->appendChild( $session->html_phrase( "embargo:status", 
+		$page->appendChild( $session->html_phrase( "page:embargo_status", 
 			date => EPrints::Utils::render_date( $session, $eprint->get_value( "date_embargo" ) ) ) );
 	}
 

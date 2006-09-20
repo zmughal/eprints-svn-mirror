@@ -4337,3 +4337,7 @@ PACKAGE: 2.2.99.2
  * Moved all style related images into that dir.
  * Added option to xml_to_metafield to take an alternate dataset
  * Added a minimal green theme to prove themes are working.
+
+2006-09-20 cjg
+ * Phrases now work from a directory of phrase files, not a single file.
+ * Broke up phrases.xml for archive phrases.

@@ -40,7 +40,7 @@ sub validate_field
 			( $year == $thisyear && $month == $thismonth && $day <= $thisday ) )
 		{
 			push @problems,
-				$session->html_phrase( "embargo:invalid_date",
+				$session->html_phrase( "validate:embargo_invalid_date",
 				fieldname=>$field->render_name( $session ) );
 		}
 	}

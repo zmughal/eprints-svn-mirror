@@ -1388,4 +1388,74 @@ Titles and Help for the System Fields
     <ep:phrase id="subscription_fieldhelp_mailempty">If there are no new items matching your subscription, since it was last mailed, do you still want to be mailed?</ep:phrase>
     <ep:phrase id="subscription_radio_mailempty"><ep:pin name="true" />Yes, mail me empty subscriptions.<br /><ep:pin name="false" />No. Only mail me subscriptions with content.</ep:phrase>
 
+
+<!-- Request eprint -->
+<ep:phrase id="request:button">Request a copy</ep:phrase>
+
+<ep:phrase id="request_fieldname_requester_email">Email address</ep:phrase>
+<ep:phrase id="request_fieldhelp_requester_email">Enter your email address.</ep:phrase>
+<ep:phrase id="request_fieldname_reason">Reason</ep:phrase>
+<ep:phrase id="request_fieldhelp_reason">You may enter a rationale for requesting this document.</ep:phrase>
+
+<ep:phrase id="request/request_email:subject">Request for &quot;<ep:pin name="eprint" />&quot;</ep:phrase>
+<ep:phrase id="request/request_email:body"><p>This item has been requested from the &archivename; by <ep:pin name="requester" />. Please can you respond.</p>
+
+<p><ep:pin name="eprint" /><br /><ep:pin name="document" /></p>
+
+<p>The following reason was given:</p>
+
+<ep:pin name="reason" />
+
+<p>Please consider removing restrictions or uploading the full text to the archive so that it will be available immediately to future searchers.</p>
+</ep:phrase>
+
+<ep:phrase id="request/request_email:links">
+<p>To send the requested document, <ep:pin name="accept">click here</ep:pin>.</p>
+
+<p>To reject the request, <ep:pin name="reject">click here</ep:pin>.</p>
+</ep:phrase>
+
+<ep:phrase id="request/ack_page"><p>Your request has been sent.</p><ep:pin name="link">Return to item</ep:pin></ep:phrase>
+<ep:phrase id="request/ack_email:subject">Confirmation of request for &quot;<ep:pin name="eprint" />&quot;</ep:phrase>
+<ep:phrase id="request/ack_email:body"><p>Your request for the following item has been passed on for action:</p>
+
+<p><ep:pin name="eprint" /><br /><ep:pin name="document" /></p>
+
+<p>If you do not receive a reply or need advice at a later time please contact &adminemail;. For items with copyright implications, you may also be able to contact your local interlibrary loan service.</p>
+</ep:phrase>
+
+<ep:phrase id="request/respond_page:title">Confirm response</ep:phrase>
+<ep:phrase id="request/respond_page:action_respond">Confirm</ep:phrase>
+<ep:phrase id="request/respond_page:accept"><p>You have chosen to accept the request for the following item:</p><p><ep:pin name="eprint" /><br /><ep:pin name="document" /></p><p>An acceptance notice will be emailed to the requester with the requested document attached.</p></ep:phrase>
+<ep:phrase id="request/respond_page:reject"><p>You have chosen to reject the request for the following item:</p><p><ep:pin name="eprint" /><br /><ep:pin name="document" /></p><p>You may enter a reason below if you wish. This will be emailed to the requester along with a rejection notice.</p></ep:phrase>
+<ep:phrase id="request/respond_page:oa"><p>This item has been made publically accessible since the request was made:</p><p><ep:pin name="eprint" /><br /><ep:pin name="document" /></p><p>A notice will be emailed to the requester.</p></ep:phrase>
+<ep:phrase id="request/respond_page:fieldname_oa">Tick this box to make this document publically available from now on.</ep:phrase>
+
+<ep:phrase id="request/response_email:subject">Result of request for &quot;<ep:pin name="eprint" />&quot;</ep:phrase>
+<ep:phrase id="request/response_email:body_accept"><p>Your request for the following item has been accepted:</p>
+
+<p><ep:pin name="eprint" /><br /><ep:pin name="document" /></p>
+
+<p>Please find the requested document attached.</p>
+</ep:phrase>
+
+<ep:phrase id="request/response_email:body_reject"><p>Your request for the following item has been rejected:</p>
+
+<p><ep:pin name="eprint" /><br /><ep:pin name="document" /></p>
+
+<p>It may not always be straightforward to provide full text. Your local library may also be able to help you. For more general queries you may also contact &adminemail;</p>
+
+<p>The following reason was given:</p>
+
+<ep:pin name="reason" />
+</ep:phrase>
+
+<ep:phrase id="request/response_email:body_oa"><p>The item you requested is now publically accessible:</p>
+
+<p><ep:pin name="eprint" /><br /><ep:pin name="document" /></p>
+</ep:phrase>
+
+<ep:phrase id="request/response:ack_page"><p>Thank you. The email has been sent to the requester.</p></ep:phrase>
+
+
 </ep:phrases>
