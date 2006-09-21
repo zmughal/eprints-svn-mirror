@@ -556,7 +556,7 @@ sub render_modify
 			my( $old, $pad ) = render_xml( $self->{session}, $old_nodes{$fn}, 0, 1, 60 );
 			$tr = $self->{session}->make_element( "tr" );
 
-			$td = $self->{session}->make_element( "td", valign=>"top", width=>"50%", style=>"background-color: #fcc" );
+			$td = $self->{session}->make_element( "td", valign=>"top", width=>"50%", style=>"background-color: #fcc; " );
 			$td->appendChild( $self->{session}->html_phrase( "lib/history:xmlblock", xml=>$old ) );
 			$tr->appendChild( $td );
 
@@ -678,177 +678,212 @@ sub render_xml_diffs
 		return( $session->make_text( ("  "x$indent).$v1."\n" ), $session->make_text( ("  "x$indent).$v2."\n" ) );
 	}
 
-	if( EPrints::XML::is_dom( $tree1, "Element" ) && EPrints::XML::is_dom( $tree2, "Element" ))
+	unless( EPrints::XML::is_dom( $tree1, "Element" ) && EPrints::XML::is_dom( $tree2, "Element" ))
 	{
-		my $f1 = $session->make_doc_fragment;
-		my $f2 = $session->make_doc_fragment;
-		my $name1 = $tree1->getNodeName;
-		my $name2 = $tree2->getNodeName;
-		my( @list1 ) = $tree1->getChildNodes;
-		my( @list2 ) = $tree2->getChildNodes;
-		my $justtext = 1;
-		my $t1 = "";
-		my $t2 = "";
-		foreach my $cnode ( @list1 )
-		{
-			unless( EPrints::XML::is_dom( $cnode,"Text" ) )
-			{	
-				$justtext = 0;
-				last;
-			}
-			$t1.=$cnode->getNodeValue;
-		}
-		foreach my $cnode ( @list2 )
-		{
-			unless( EPrints::XML::is_dom( $cnode,"Text" ) )
-			{	
-				$justtext = 0;
-				last;
-			}
-			$t2.=$cnode->getNodeValue;
-		}
+		return $session->make_text( "eh?:".ref($tree1) );
+	}
 
-		if( $justtext )
-		{
-			$f1->appendChild( $session->make_text( "  "x$indent ) );
-			$f1->appendChild( $session->make_text( "<$name1>" ) );
-			$f2->appendChild( $session->make_text( "  "x$indent ) );
-			$f2->appendChild( $session->make_text( "<$name2>" ) );
-			my $offset = $indent*2+length($name1)+2;
-			my $endw = length($name1)+3;
-			my $s1;
-			my $s2;
-			if( $t1 eq $t2 )
-			{
-				$s1 = $session->make_element( "span", style=>"" );
-				$s1->appendChild( mktext( $session, $t1, $offset, $endw, $width ) );
-				$s2 = $session->make_element( "span", style=>"" );
-				$s2->appendChild( mktext( $session, $t2, $offset, $endw, $width ) );
-			}
-			elsif( $t1 eq "" )
-			{
-				$s1 = $session->make_element( "span", style=>"" );
-				$s1->appendChild( mkpad( $session, $t2, $offset, $endw, $width ) );
-				$s2 = $session->make_element( "span", style=>"background: #cfc" );
-				$s2->appendChild( mktext( $session, $t2, $offset, $endw, $width ) );
-			}
-			elsif( $t2 eq "" )
-			{
-				$s1 = $session->make_element( "span", style=>"background: #fcc" );
-				$s1->appendChild( mktext( $session, $t1, $offset, $endw, $width ) );
-				$s2 = $session->make_element( "span", style=>"" );
-				$s2->appendChild( mkpad( $session, $t1, $offset, $endw, $width ) );
-			}
-			else
-			{
-				my $h1 = scalar _mktext( $session, $t1, $offset, $endw, $width );
-				my $h2 = scalar _mktext( $session, $t2, $offset, $endw, $width );
-				$s1 = $session->make_element( "span", style=>"background: #cc0" );
-				$s1->appendChild( mktext( $session, $t1, $offset, $endw, $width ) );
-				$s2 = $session->make_element( "span", style=>"background: #cc0" );
-				$s2->appendChild( mktext( $session, $t2, $offset, $endw, $width ) );
-				if( $h1>$h2 )
-				{
-					$s2->appendChild( $session->make_text( "\n"x($h1-$h2) ) );
-				}
-				if( $h2>$h1 )
-				{
-					$s1->appendChild( $session->make_text( "\n"x($h2-$h1) ) );
-				}
-			}
-			$f1->appendChild( $s1 );
-			$f2->appendChild( $s2 );
-			$f1->appendChild( $session->make_text( "</$name1>\n" ) );
-			$f2->appendChild( $session->make_text( "</$name2>\n" ) );
-			return( $f1, $f2 );
+	my $f1 = $session->make_doc_fragment;
+	my $f2 = $session->make_doc_fragment;
+	my $name1 = $tree1->getNodeName;
+	my $name2 = $tree2->getNodeName;
+	my( @list1 ) = $tree1->getChildNodes;
+	my( @list2 ) = $tree2->getChildNodes;
+	my $justtext = 1;
+	my $t1 = "";
+	my $t2 = "";
+	foreach my $cnode ( @list1 )
+	{
+		unless( EPrints::XML::is_dom( $cnode,"Text" ) )
+		{	
+			$justtext = 0;
+			last;
 		}
-		
-	
+		$t1.=$cnode->getNodeValue;
+	}
+	foreach my $cnode ( @list2 )
+	{
+		unless( EPrints::XML::is_dom( $cnode,"Text" ) )
+		{	
+			$justtext = 0;
+			last;
+		}
+		$t2.=$cnode->getNodeValue;
+	}
+
+	if( $justtext )
+	{
 		$f1->appendChild( $session->make_text( "  "x$indent ) );
-		$f1->appendChild( $session->make_text( "<$name1>\n" ) );
+		$f1->appendChild( $session->make_text( "<$name1>" ) );
 		$f2->appendChild( $session->make_text( "  "x$indent ) );
-		$f2->appendChild( $session->make_text( "<$name2>\n" ) );
-		my $c1 = 0;
-		my $c2 = 0;
-		while( $c1<scalar @list1 && $c2<scalar @list2 )
+		$f2->appendChild( $session->make_text( "<$name2>" ) );
+		my $offset = $indent*2+length($name1)+2;
+		my $endw = length($name1)+3;
+		my $s1;
+		my $s2;
+		if( $t1 eq $t2 )
 		{
-			my( $r1, $r2 );
-			if( diff( $list1[$c1], $list2[$c2] ) )
-			{
-				if( $c1+1<scalar @list1 )
-				{
-					my $removedto = 0;
-					for(my $i=$c1+1;$i<scalar @list1;++$i)
-					{
-						if( !diff( $list1[$i], $list2[$c2] ) )
-						{
-							$removedto = $i;
-							last;
-						}
-					}
-					if( $removedto )
-					{
-						for(my $i=$c1;$i<$removedto;++$i)
-						{
-							$r1 = $session->make_element( "span", style=>"background: #f88" );
-							my( $rem, $pad ) = render_xml( $session, $list1[$i], $indent+1, 1, $width );
-							$r1->appendChild( $rem );
-							$f1->appendChild( $r1 );
-							$f2->appendChild( $pad );
-						}
-						$c1 = $removedto;
-						next;
-					}
-				}
-
-				if( $c2+1<scalar @list2 )
-				{
-					my $addedto = 0;
-					for(my $i=$c2+1;$i<scalar @list2;++$i)
-					{
-						if( !diff( $list2[$i], $list1[$c1] ) )
-						{
-							$addedto = $i;
-							last;
-						}
-					}
-					if( $addedto )
-					{
-						for(my $i=$c2;$i<$addedto;++$i)
-						{
-							my( $add, $pad ) = render_xml( $session, $list2[$i], $indent+1, 1, $width );
-							$f1->appendChild( $pad );
-							$r2 = $session->make_element( "span", style=>"background: #8f8" );
-							$r2->appendChild( $add );
-							$f2->appendChild( $r2 );
-						}
-						$c2 = $addedto;
-						next;
-					}
-				}
-
-				( $r1, $r2 ) = render_xml_diffs( $session, $list1[$c1], $list2[$c2], $indent+1, $width );
-			}	
-			else
-			{
-				$r1 = $session->make_element( "span" );
-				$r1->appendChild( render_xml( $session, $list1[$c1], $indent+1, 0, $width ) );
-				$r2 = $session->make_element( "span" );
-				$r2->appendChild( render_xml( $session, $list2[$c2], $indent+1, 0, $width ) );
-			}
-			$f1->appendChild( $r1 );
-			$f2->appendChild( $r2 );
-			++$c1;
-			++$c2;
+			$s1 = $session->make_element( "span", style=>"" );
+			$s1->appendChild( mktext( $session, $t1, $offset, $endw, $width ) );
+			$s2 = $session->make_element( "span", style=>"" );
+			$s2->appendChild( mktext( $session, $t2, $offset, $endw, $width ) );
 		}
-		$f1->appendChild( $session->make_text( "  "x$indent ) );
+		elsif( $t1 eq "" )
+		{
+			$s1 = $session->make_element( "span", style=>"" );
+			$s1->appendChild( mkpad( $session, $t2, $offset, $endw, $width ) );
+			$s2 = $session->make_element( "span", style=>"background: #cfc; font: bold 15pt sans-serif" );
+			$s2->appendChild( mktext( $session, $t2, $offset, $endw, $width ) );
+			$s1->appendChild( $session->make_text("debug1"));
+			$s2->appendChild( $session->make_text("debug1"));
+		}
+		elsif( $t2 eq "" )
+		{
+			$s1 = $session->make_element( "span", style=>"background: #fcc" );
+			$s1->appendChild( mktext( $session, $t1, $offset, $endw, $width ) );
+			$s2 = $session->make_element( "span", style=>"" );
+			$s2->appendChild( mkpad( $session, $t1, $offset, $endw, $width ) );
+			$s1->appendChild( $session->make_text("debug3"));
+			$s2->appendChild( $session->make_text("debug4"));
+		}
+		else
+		{
+			my $h1 = scalar _mktext( $session, $t1, $offset, $endw, $width );
+			my $h2 = scalar _mktext( $session, $t2, $offset, $endw, $width );
+			$s1 = $session->make_element( "span", style=>"background: #cc0" );
+			$s1->appendChild( mktext( $session, $t1, $offset, $endw, $width ) );
+			$s2 = $session->make_element( "span", style=>"background: #cc0" );
+			$s2->appendChild( mktext( $session, $t2, $offset, $endw, $width ) );
+			if( $h1>$h2 )
+			{
+				$s2->appendChild( $session->make_text( "\n"x($h1-$h2) ) );
+			}
+			if( $h2>$h1 )
+			{
+				$s1->appendChild( $session->make_text( "\n"x($h2-$h1) ) );
+			}
+		}
+		$f1->appendChild( $s1 );
+		$f2->appendChild( $s2 );
 		$f1->appendChild( $session->make_text( "</$name1>\n" ) );
-		$f2->appendChild( $session->make_text( "  "x$indent ) );
 		$f2->appendChild( $session->make_text( "</$name2>\n" ) );
-
 		return( $f1, $f2 );
 	}
-	return $session->make_text( "eh?:".ref($tree1) );
+		
+	
+	$f1->appendChild( $session->make_text( "  "x$indent ) );
+	$f1->appendChild( $session->make_text( "<$name1>\n" ) );
+	$f2->appendChild( $session->make_text( "  "x$indent ) );
+	$f2->appendChild( $session->make_text( "<$name2>\n" ) );
+	my $c1 = 0;
+	my $c2 = 0;
+	my( $r1, $r2 );
+	while( $c1<scalar @list1 && $c2<scalar @list2 )
+	{
+		if( diff( $list1[$c1], $list2[$c2] ) )
+		{
+			if( $c1+1<scalar @list1 )
+			{
+				my $removedto = 0;
+				for(my $i=$c1+1;$i<scalar @list1;++$i)
+				{
+					if( !diff( $list1[$i], $list2[$c2] ) )
+					{
+						$removedto = $i;
+						last;
+					}
+				}
+				if( $removedto )
+				{
+					$r1 = $session->make_element( "span", style=>"background: #f88" );
+					for(my $i=$c1;$i<$removedto;++$i)
+					{
+						my( $rem, $pad ) = render_xml( $session, $list1[$i], $indent+1, 1, $width );
+						$r1->appendChild( $rem );
+						$f2->appendChild( $pad );
+					}
+					$f1->appendChild( $r1 );
+					$c1 = $removedto;
+					next;
+				}
+			} 
+
+			if( $c2+1<scalar @list2 )
+			{
+				my $addedto = 0;
+				for(my $i=$c2+1;$i<scalar @list2;++$i)
+				{
+					if( !diff( $list2[$i], $list1[$c1] ) )
+					{
+						$addedto = $i;
+						last;
+					}
+				}
+
+				if( $addedto )
+				{
+					$r2 = $session->make_element( "span", style=>"background: #8f8" );
+					for(my $i=$c2;$i<$addedto;++$i)
+					{
+						my( $add, $pad ) = render_xml( $session, $list2[$i], $indent+1, 1, $width );
+						$r2->appendChild( $add );
+						$f1->appendChild( $pad );
+					}
+					$f2->appendChild( $r2 );
+					$c2 = $addedto;
+					next;
+				}
+			}
+
+			( $r1, $r2 ) = render_xml_diffs( $session, $list1[$c1], $list2[$c2], $indent+1, $width );
+		}	
+		else
+		{
+			$r1 = $session->make_element( "span" );
+			$r1->appendChild( render_xml( $session, $list1[$c1], $indent+1, 0, $width ) );
+			$r2 = $session->make_element( "span" );
+			$r2->appendChild( render_xml( $session, $list2[$c2], $indent+1, 0, $width ) );
+		}
+		$f1->appendChild( $r1 );
+		$f2->appendChild( $r2 );
+		++$c1;
+		++$c2;
+	}
+
+	# print any straglers.
+
+	# any removed
+	if( $c1<scalar @list1 )
+	{
+		$r1 = $session->make_element( "span", style=>"background: #f88" );
+		for(my $i=$c1;$i<scalar @list1;++$i)
+		{
+			my( $rem, $pad ) = render_xml( $session, $list1[$i], $indent+1, 1, $width );
+			$r1->appendChild( $rem );
+			$f2->appendChild( $pad );
+		}
+		$f1->appendChild( $r1 );
+	}
+
+	# any added
+	if( $c2<scalar @list2 )
+	{
+		my $r2 = $session->make_element( "span", style=>"background: #8f8" );
+		for(my $i=$c2;$i<scalar @list2;++$i)
+		{
+			my( $add, $pad ) = render_xml( $session, $list2[$i], $indent+1, 1, $width );
+			$f1->appendChild( $pad );
+			$r2->appendChild( $add );
+		}
+		$f2->appendChild( $r2 );
+	}
+
+	$f1->appendChild( $session->make_text( "  "x$indent ) );
+	$f1->appendChild( $session->make_text( "</$name1>\n" ) );
+	$f2->appendChild( $session->make_text( "  "x$indent ) );
+	$f2->appendChild( $session->make_text( "</$name2>\n" ) );
+
+	return( $f1, $f2 );
 }
 
 	

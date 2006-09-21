@@ -4355,3 +4355,6 @@ PACKAGE: 2.2.99.2
  * Compound fields input/render has now been cleaned up.
  * Fixed a bug in the hyperlinking problems to the right edit scren code
  * Added file_perms and dir_perms to SystemSettings.tmpl
+
+2006-09-22 cjg
+ * Fixed rendering bugs in History
