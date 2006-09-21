@@ -4358,3 +4358,6 @@ PACKAGE: 2.2.99.2
 
 2006-09-22 cjg
  * Fixed rendering bugs in History
+
+2006-09-22 cjg
+ * Fixed citations-don't-link bug.
