@@ -1,21 +1,31 @@
 
 $c->{fields}->{eprint} = [
 
-#	{ name=>"authors", type=>"compound", multiple=>1, fields=>
-#		{ name=>"authors_name", type=>"name" },
-#		{ name=>"authors_email", type=>"email" },
-#	}},
-
-
-#	{ name => "creators", type => "name", multiple => 1, input_boxes => 4,
-#		hasid => 1, input_id_cols=>20, 
-#		family_first=>1, hide_honourific=>1, hide_lineage=>1 }, 
-
-	{ name => "creators", type => "name", multiple => 1, input_boxes => 4,
-		family_first=>1, hide_honourific=>1, hide_lineage=>1, allow_null=>1 }, 
-	{ name => "creators_id", type => "text", multiple=>1, allow_null=>1, input_cols=>20 },
-	{ name => "creators_list", type=>"compound",  multiple=>1,
-		fields=>{id=>"creators_id", main=>"creators"} },
+	{ 
+		name => "creators_list", 
+		type=>"compound",  
+		input_boxes => 4,
+		multiple=>1,
+		fields=>[
+			{ 
+				name => "creators", 
+				type => "name", 
+				multiple => 1, 
+				family_first => 1, 
+				hide_honourific => 1, 
+				hide_lineage => 1, 
+				allow_null => 1,
+			}, 
+			{ 
+				name => "creators_id", 
+				type => "text", 
+				multiple => 1, 
+				input_cols => 20, 
+				allow_null => 1, 
+			},
+		],
+		addressing=>{ id=>"creators_id", main=>"creators" },
+	},
 
 	{ name => "title", type => "longtext", multilang=>0, input_rows => 3 },
 
@@ -108,12 +118,31 @@ $c->{fields}->{eprint} = [
 
 	{ name => "book_title", type => "text" },
 	
-	{ name => "editors", type => "name", multiple => 1, 
-		input_boxes => 4, input_id_cols=>20, 
-		family_first=>1, hide_honourific=>1, hide_lineage=>1, allow_null=>1 }, 
-	{ name => "editors_id", type => "text", multiple=>1, allow_null=>1, input_cols=>20 },
-	{ name => "editors_list", type=>"compound",  multiple=>1,
-		fields=>{id=>"editors_id", main=>"editors"} },
+	{
+		name => "editors_list", 
+		type=>"compound",  
+		input_boxes => 4,
+		multiple=>1,
+		fields=>[
+			{ 
+				name => "editors", 
+				type => "name", 
+				multiple => 1, 
+				family_first => 1, 
+				hide_honourific => 1, 
+				hide_lineage => 1, 
+				allow_null => 1,
+			}, 
+			{ 
+				name => "editors_id", 
+				type => "text", 
+				multiple => 1, 
+				input_cols => 20, 
+				allow_null => 1, 
+			},
+		],
+		addressing=>{ id=>"editors_id", main=>"editors" },
+	},
 
 	{ name => "official_url", type => "url" },
 

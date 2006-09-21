@@ -4349,3 +4349,9 @@ PACKAGE: 2.2.99.2
     edit rather than the appropriate type of edit.
  * Convert was dieing if it could not work out the mime type of a file. Now
     it just returns undef.
+
+2006-09-21 cjg
+ * Compound fields now have the sub-field expressed withing them. 
+ * Compound fields input/render has now been cleaned up.
+ * Fixed a bug in the hyperlinking problems to the right edit scren code
+ * Added file_perms and dir_perms to SystemSettings.tmpl
