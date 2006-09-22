@@ -1281,11 +1281,11 @@ sub get_input_elements
 	}
 
 
-	my $imagesurl = $session->get_repository->get_conf( "base_url" )."/images";
+	my $imagesurl = $session->get_repository->get_conf( "base_url" )."/style/images";
 	my $esec = $session->get_request->dir_config( "EPrints_Secure" );
 	if( defined $esec && $esec eq "yes" )
 	{
-		$imagesurl = $session->get_repository->get_conf( "securepath" )."/images";
+		$imagesurl = $session->get_repository->get_conf( "securepath" )."/style/images";
 	}
 	
 	my $rows = [];
@@ -1339,7 +1339,7 @@ sub get_input_elements
 					$arrows->appendChild( $session->make_element(
 						"img",
 						alt=>"down",
-						src=> "/$imagesurl/multi_down_dim.png" ));
+						src=> "$imagesurl/multi_down_dim.png" ));
 				}
 				$lastcol = { el=>$arrows, valign=>"middle" };
 			}
