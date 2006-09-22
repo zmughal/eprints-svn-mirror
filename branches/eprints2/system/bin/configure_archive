@@ -501,7 +501,7 @@ open( CONF, ">$configfile" ) || die "can't open $configfile for writing";
 print CONF EPrints::XML::to_string( $doc );
 close CONF;
 # It's got a password in so 600 to be safe!
-chmod( $EPrints::SystemSettings::conf->{"file_perms"} ), $configfile );
+chmod( $EPrints::SystemSettings::conf->{"file_perms"}, $configfile );
 print <<END;
 
 Copy across initial config files? You have to do this for a new repository but
