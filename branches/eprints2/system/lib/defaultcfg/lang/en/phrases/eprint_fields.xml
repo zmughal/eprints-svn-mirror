@@ -197,7 +197,7 @@ Date of submission is required if the item has no date of issue. If the item has
 
     <ep:phrase id="eprint_fieldname_institution">Institution</ep:phrase>
     <ep:phrase id="eprint_fieldhelp_institution">Please enter the institution from which the item originated.
-<br />Example: <span class="ep_form_example">University of Whitezombia</span>
+<br />Example: <span class="ep_form_example">University of Southampton</span>
 </ep:phrase>
 
     <ep:phrase id="eprint_fieldname_thesis_type">Thesis Type</ep:phrase>
