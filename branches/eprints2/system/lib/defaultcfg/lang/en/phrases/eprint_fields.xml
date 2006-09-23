@@ -51,7 +51,7 @@
 
     <ep:phrase id="eprint_fieldname_series">Series Name</ep:phrase>
     <ep:phrase id="eprint_fieldhelp_series">The name of the series to which the document belongs. Enter without punctuation.
-<br />Example:  <span class="ep_form_example">Elseview Oceanography Series</span>
+<br />Example:  <span class="ep_form_example">Elsevier Oceanography Series</span>
 </ep:phrase>
 
     <ep:phrase id="eprint_fieldname_publication">Journal or Publication Title</ep:phrase>
