@@ -96,13 +96,13 @@
     <ep:phrase id="eprint_fieldopt_event_type_other">Other</ep:phrase>
     
     <ep:phrase id="eprint_fieldname_isbn">ISBN</ep:phrase>
-    <ep:phrase id="eprint_fieldhelp_isbn">Unique 10 digit code identifying a book.
+    <ep:phrase id="eprint_fieldhelp_isbn">Unique code identifying a book.
 <br />Example: <span class="ep_form_example">1 871438 57 8</span>
 <br />Example: <span class="ep_form_example">067157826X</span>
 </ep:phrase>
 
     <ep:phrase id="eprint_fieldname_issn">ISSN</ep:phrase>
-    <ep:phrase id="eprint_fieldhelp_issn">Unique 8 digit code identifying a serial.
+    <ep:phrase id="eprint_fieldhelp_issn">Unique code identifying a serial.
 <br />Example: <span class="ep_form_example">1055-0143</span>
 <br />Example: <span class="ep_form_example">0891-060X</span>
 </ep:phrase>
