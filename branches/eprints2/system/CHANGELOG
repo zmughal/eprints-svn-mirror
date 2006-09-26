@@ -4361,3 +4361,8 @@ PACKAGE: 2.2.99.2
 
 2006-09-22 cjg
  * Fixed citations-don't-link bug.
+
+2006-09-26 cjg
+ * Renamed some inner variables and method names in MetaField::Compound
+ * Fixed bug in Compound so that field id's are prefixed by their subfield
+    name too.

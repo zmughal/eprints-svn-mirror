@@ -61,8 +61,8 @@ sub render_value
 	my $f = $self->get_property( "fields" );
 	foreach my $field_conf ( @{$f} )
 	{
-		my $fn = $field_conf->{name};
-		my $field = $self->{dataset}->get_field( $fn );
+		my $fieldname = $field_conf->{name};
+		my $field = $self->{dataset}->get_field( $fieldname );
 		my $th = $session->make_element( "th" );
 		$tr->appendChild( $th );
 		$th->appendChild( $field->render_name( $session ) );
@@ -83,7 +83,7 @@ sub render_single_value_row
 
 	if( !defined $object ) { EPrints::abort( "Object not defined in Metafield Compound render_single_value_row!" ); }
 
-	my %fn_to_as = $self->get_fieldname_to_as;
+	my %fieldname_to_alias = $self->get_fieldname_to_alias;
 	my $tr = $session->make_element( "tr" );
 	foreach my $field_conf ( @{$f} )
 	{
@@ -94,7 +94,7 @@ sub render_single_value_row
 		$td->appendChild( 
 			$field->render_single_value( 
 				$session, 
-				$value->{$fn_to_as{$name}}, 
+				$value->{$fieldname_to_alias{$name}}, 
 				$object ) );
 	}
 
@@ -125,7 +125,7 @@ sub get_sql_type
 	return undef;
 }
 
-sub get_as_to_fieldname
+sub get_alias_to_fieldname
 {
 	my( $self ) = @_;
 
@@ -153,11 +153,11 @@ sub get_as_to_fieldname
 	return %addr;
 }
 
-sub get_fieldname_to_as
+sub get_fieldname_to_alias
 {
 	my( $self ) = @_;
 
-	my %addr = $self->get_as_to_fieldname;
+	my %addr = $self->get_alias_to_fieldname;
 	my %raddr = ();
 	foreach( keys %addr )
 	{
@@ -173,10 +173,10 @@ sub get_value
 	my( $self, $object ) = @_;
 
 	my $values = {};
-	my %as_to_fn = $self->get_as_to_fieldname;
-	foreach my $as ( keys %as_to_fn )
+	my %alias_to_fieldname = $self->get_alias_to_fieldname;
+	foreach my $as ( keys %alias_to_fieldname )
 	{
-		$values->{$as} = $object->get_value_raw( $as_to_fn{$as} );
+		$values->{$as} = $object->get_value_raw( $alias_to_fieldname{$as} );
 	}
 
 	if( !$self->get_property( "multiple" ) )
@@ -186,7 +186,7 @@ sub get_value
 
 	my $lists = {};
 	my $len = 0;
-	foreach my $as ( keys %as_to_fn )
+	foreach my $as ( keys %alias_to_fieldname )
 	{
 		$lists->{$as} = [];
 		next unless defined $values->{$as};
@@ -200,7 +200,7 @@ sub get_value
 	for( my $i=0; $i<$len; ++$i )
 	{
 		my $v = {};
-		foreach my $as ( keys %as_to_fn )
+		foreach my $as ( keys %alias_to_fieldname )
 		{
 			next if( !defined $values->{$as} );
 			next if( !defined $values->{$as}->[$i] );
@@ -217,25 +217,25 @@ sub set_value
 {
 	my( $self, $object, $value ) = @_;
 
-	my %as_to_fn = $self->get_as_to_fieldname;
-	my %fn_to_as = $self->get_fieldname_to_as;
+	my %alias_to_fieldname = $self->get_alias_to_fieldname;
+	my %fieldname_to_alias = $self->get_fieldname_to_alias;
 	my $f = $self->get_property( "fields" );
 	my $values = {};
-	foreach my $as ( keys %as_to_fn )
+	foreach my $as ( keys %alias_to_fieldname )
 	{
 		$values->{$as} = [];
 	}
 	foreach my $row ( @{$value} )
 	{
-		foreach my $as ( keys %as_to_fn )
+		foreach my $as ( keys %alias_to_fieldname )
 		{
-			push @{$values->{$as_to_fn{$as}}}, $row->{$as};
+			push @{$values->{$alias_to_fieldname{$as}}}, $row->{$as};
 		}
 	}
-	foreach my $fn ( keys %fn_to_as )
+	foreach my $fieldname ( keys %fieldname_to_alias )
 	{
-		my $field = $object->get_dataset->get_field( $fn );
-		$field->set_value( $object, $values->{$fn} );
+		my $field = $object->get_dataset->get_field( $fieldname );
+		$field->set_value( $object, $values->{$fieldname} );
 	}
 }
 
@@ -247,8 +247,8 @@ sub get_input_col_titles
 	my $f = $self->get_property( "fields" );
 	foreach my $field_conf ( @{$f} )
 	{
-		my $fn = $field_conf->{name};
-		my $field = $self->{dataset}->get_field( $fn );
+		my $fieldname = $field_conf->{name};
+		my $field = $self->{dataset}->get_field( $fieldname );
 		my $sub_r = $field->get_input_col_titles( $session, $staff );
 
 		if( !defined $sub_r )
@@ -272,15 +272,15 @@ sub get_basic_input_elements
 	my $f = $self->get_property( "fields" );
 	my $grid_row = [];
 
-	my %fn_to_as = $self->get_fieldname_to_as;
+	my %fieldname_to_alias = $self->get_fieldname_to_alias;
 	foreach my $field_conf ( @{$f} )
 	{
-		my $fn = $field_conf->{name};
-		my $field = $object->get_dataset->get_field( $fn );
+		my $fieldname = $field_conf->{name};
+		my $field = $object->get_dataset->get_field( $fieldname );
 		my $part_grid = $field->get_basic_input_elements( 
 					$session, 
-					$value->{$fn_to_as{$fn}}, 
-					$basename, 
+					$value->{$fieldname_to_alias{$fieldname}}, 
+					$basename."_".$fieldname, 
 					$staff, 
 					$object );
 		my $top_row = $part_grid->[0];
@@ -299,13 +299,13 @@ sub form_value_basic
 	my $value = {};
 
 	my $f = $self->get_property( "fields" );
-	my %fn_to_as = $self->get_fieldname_to_as;
+	my %fieldname_to_alias = $self->get_fieldname_to_alias;
 	foreach my $field_conf ( @{$f} )
 	{
-		my $fn = $field_conf->{name};
-		my $field = $object->get_dataset->get_field( $fn );
-		my $v = $field->form_value_basic( $session, $basename, $object );
-		$value->{$fn_to_as{$fn}} = $v;
+		my $fieldname = $field_conf->{name};
+		my $field = $object->get_dataset->get_field( $fieldname );
+		my $v = $field->form_value_basic( $session, $basename."_".$fieldname, $object );
+		$value->{$fieldname_to_alias{$fieldname}} = $v;
 	}
 
 	return undef if( !EPrints::Utils::is_set( $value ) );
