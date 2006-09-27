@@ -13,8 +13,6 @@ sub render
 
 	my $chunk = $self->{session}->make_doc_fragment;
 
-	$self->{processor}->{title} = $self->{session}->make_text("Error");
-
 	return $chunk;
 }
 

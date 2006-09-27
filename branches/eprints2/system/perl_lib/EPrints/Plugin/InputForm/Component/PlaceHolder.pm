@@ -24,21 +24,21 @@ sub render_content
 {
 	my( $self ) = @_;
 
-	return $self->{session}->make_text( "This is a placeholder for the ".$self->{placeholding}." component" );
+	return $self->html_phrase( "content", placeholding => $self->{placeholding} );
 }
 
 sub render_help
 {
 	my( $self, $surround ) = @_;
 	
-	return $self->{session}->make_text( "Help placeholder for ".$self->{placeholding}. " component" );
+	return $self->html_phrase( "help", placeholding => $self->{placeholding} );
 }
 
 sub render_title
 {
 	my( $self, $surround ) = @_;
 
-	return $self->{session}->make_text( "Problem loading component: ".$self->{placeholding} );
+	return $self->html_phrase( "title", placeholding => $self->{placeholding} );
 }
 	
 1;

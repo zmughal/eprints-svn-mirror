@@ -194,6 +194,7 @@ Returns DOM containing the help text for this component.
 sub render_help
 {
 	my( $self, $surround ) = @_;
+	return $self->html_phrase( "help" );
 }
 
 =pod
@@ -220,6 +221,7 @@ Returns the title of this component as a DOM object.
 sub render_title
 {
 	my( $self, $surround ) = @_;
+	return $self->html_phrase( "title" );
 }
 
 =pod

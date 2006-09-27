@@ -8,13 +8,6 @@ use EPrints::Plugin::Screen::EPrint::View;
 use strict;
 
 
-sub set_title
-{
-	my( $self ) = @_;
-
-	$self->{processor}->{title} = $self->{session}->make_text("Registered User View of Item");
-}
-
 sub who_filter { return 2; }
 
 sub render_status

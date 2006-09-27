@@ -64,9 +64,6 @@ sub render
 		return;
 	}
 
-	$self->{processor}->{title} = $self->{session}->html_phrase( 
-		"cgi/users/edit_eprint:title_bounce_form" );
-
 	my $page = $self->{session}->make_doc_fragment();
 
 	$page->appendChild( 
@@ -132,13 +129,13 @@ sub action_send
 	{
 		my $db_error = $self->{session}->get_database->error;
 		$self->{session}->get_repository->log( "DB error removing EPrint ".$self->{processor}->{eprint}->get_value( "eprintid" ).": $db_error" );
-		$self->{processor}->add_message( "message", $self->{session}->make_text( "Item could not be removed." ) ); #cjg lang
+		$self->{processor}->add_message( "message", $self->html_phrase( "item_not_removed" ) );
 		$self->{processor}->{screenid} = "FirstTool";
 		return;
 	}
 
-	$self->{processor}->add_message( "message", $self->{session}->make_text( "Item has been removed." ) ); #cjg lang
-
+	$self->{processor}->add_message( "message", $self->html_phrase( "item_removed" ) ); 
+	
 	# Successfully removed, mail the user with the reason
 
 	my $mail = $self->{session}->make_element( "mail" );

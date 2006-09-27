@@ -44,8 +44,6 @@ sub render
 {
 	my( $self ) = @_;
 
-	$self->{processor}->{title} = $self->{session}->make_text( "Deposit item" ); #cjg lang
-
 	my $problems = $self->{processor}->{eprint}->validate( $self->{processor}->{for_archive} );
 	if( scalar @{$problems} > 0 )
 	{
@@ -89,7 +87,7 @@ sub action_deposit
 	my $problems = $self->{processor}->{eprint}->validate( $self->{processor}->{for_archive} );
 	if( scalar @{$problems} > 0 )
 	{
-		$self->{processor}->add_message( "error", $self->{session}->make_text( "Could not deposit due to validation errors." ) ); #cjg lang
+		$self->{processor}->add_message( "error", $self->html_phrase( "validation_errors" ) ); 
 		my $warnings = $self->{session}->make_element( "ul" );
 		foreach my $problem_xhtml ( @{$problems} )
 		{
@@ -117,15 +115,15 @@ sub action_deposit
 
 	if( $ok )
 	{
-		$self->{processor}->add_message( "message", $self->{session}->make_text( "Item has been deposited." ) ); #cjg lang
+		$self->{processor}->add_message( "message", $self->html_phrase( "item_deposited" ) );
 		if( !$sb ) 
 		{
-			$self->{processor}->add_message( "warning", $self->{session}->make_text( "Your item will not appear on the public website until it has been checked by an editor." ) ); #cjg lang
+			$self->{processor}->add_message( "warning", $self->html_phrase( "in_buffer" ) );
 		}
 	}
 	else
 	{
-		$self->{processor}->add_message( "error", $self->{session}->make_text( "Could not deposit for some reason." ) ); #cjg lang
+		$self->{processor}->add_message( "error", $self->html_phrase( "item_not_deposited" ) );
 	}
 }
 

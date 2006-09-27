@@ -37,8 +37,6 @@ sub render
 
 	my $user = $self->{session}->current_user;
 
-	$self->{processor}->{title} = $self->{session}->html_phrase( "cgi/users/buffer:overview_title" ), 
-
 	my $page = $self->{session}->make_doc_fragment();
 
 	# Get EPrints in the submission buffer

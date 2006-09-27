@@ -9,13 +9,6 @@ use strict;
 
 
 
-sub set_title
-{
-	my( $self ) = @_;
-
-	$self->{processor}->{title} = $self->{session}->make_text("View Item");
-}
-
 sub who_filter { return 4; }
 
 sub render_status

@@ -77,7 +77,7 @@ sub update_from_form
 			my $document = $doc_ds->create_object( $self->{session}, $doc_data );
 			if( !defined $document )
 			{
-				return $self->{session}->make_text( "Create document failed." );
+				return $self->html_phrase( "create_failed" );
 			}
 			my $success = EPrints::Apache::AnApache::upload_doc_file( 
 				$self->{session},
@@ -86,7 +86,7 @@ sub update_from_form
 			if( !$success )
 			{
 				$document->remove();
-				return $self->{session}->make_text( "File upload failed." );
+				return $self->html_phrase( "upload_failed" );
 			}
 			return ();
 		}
@@ -98,16 +98,16 @@ sub update_from_form
 				$1 );
 			if( !defined $doc )
 			{
-				return $self->{session}->make_text( "Attempted action on non-existant document: $1." );
+				return $self->html_phrase( "no_document", docid => $1 );
 			}
 			if( $doc->get_value( "eprintid" ) != $self->{dataobj}->get_id )
 			{
-				return $self->{session}->make_text( "Specified document does not belong to current item." );
+				return $self->html_phrase( "bad_document" );
 			}
 			return $self->doc_update( $doc, $2 );
 		}
 
-		return $self->{session}->make_text( "Unknown internal button: $internal" );
+		return $self->html_phrase( "bad_button", button => $internal );
 	}
 
 	return ();
@@ -134,7 +134,7 @@ sub doc_update
 			$doc_prefix."_file" );
 		if( !$success )
 		{
-			return $self->{session}->make_text( "File upload failed." );
+			return $self->html_phrase( "upload_failed" );
 		}
 		return ();
 	}
@@ -148,7 +148,7 @@ sub doc_update
 
 		if( !defined $files[$fileid] )
 		{
-			return $self->{session}->make_text( "File does not exist." );
+			return $self->html_phrase( "no_file" );
 		}
 		
 		$doc->remove_file( $files[$fileid] );
@@ -164,7 +164,7 @@ sub doc_update
 
 		if( !defined $files[$fileid] )
 		{
-			return $self->{session}->make_text( "File does not exist." );
+			return $self->html_phrase( "no_file" );
 		}
 		
 		# Pressed "Show First" button for this file
@@ -173,19 +173,19 @@ sub doc_update
 		return ();
 	}
 			
-	return $self->{session}->make_text( "Unknown internal document button: $doc_internal" );
+	return $self->html_phrase( "bad_doc_button", button => $doc_internal );
 }
 	
 sub render_help
 {
 	my( $self, $surround ) = @_;
-	return $self->{session}->make_text( "Help goes here" );
+	return $self->html_phrase( "help" );
 }
 
 sub render_title
 {
 	my( $self, $surround ) = @_;
-	return $self->{session}->make_text( "Document upload" );
+	return $self->html_phrase( "title" );
 }
 
 # hmmm. May not be true!
@@ -233,8 +233,9 @@ sub render_content
 	my @docids  = ();
 	foreach my $doc ( @eprint_docs )
 	{	
-		push @docids, $doc->get_id;
-		my $doc_prefix = $self->{prefix}."_doc".$self->get_id;
+		my $docid = $doc->get_id;
+		push @docids, $docid;
+		my $doc_prefix = $self->{prefix}."_doc".$docid;
 		my $label = $session->make_doc_fragment;
 		$label->appendChild( $doc->render_description );
 		$label->appendChild( $session->make_text( " " ) );
@@ -242,8 +243,8 @@ sub render_content
 			type => "image", 
 			src => "/style/images/delete.png",
 			name => "_internal_".$doc_prefix."_delete_doc",
-			onClick => "if( !confirm( 'Delete entire document: are you sure?' ) ) { return false; }",
-			value => "Delete" );
+			onClick => "if( !confirm( '".$self->phrase( "delete_document_confirm" )."' ) ) { return false; }",
+			value => $self->phrase( "delete_document" ) );
 		$label->appendChild( $del_btn );
 		$labels->{$doc->get_id} = $label;
 	}
@@ -362,10 +363,10 @@ sub _render_doc
 	my $tool_div = $session->make_element( "div", class=>"ep_no_js" );
 	my $delete_fmt_button = $session->make_element( "input",
 		name => "_internal_".$doc_prefix."_delete_doc",
-		value => "Delete document",
+		value => $self->phrase( "delete_format" ), 
 		class => "ep_form_internal_button",
 		type => "submit",
-		onClick => "if( !confirm( 'Delete entire document: are you sure?' ) ) { return false; }",
+		onClick => "if( !confirm( '".$self->phrase( "delete_format_confirm" )."' ) ) { return false; }",
 		);
 
 	$tool_div->appendChild( $delete_fmt_button );
@@ -389,7 +390,7 @@ sub _render_add_document
 
 	my $session = $self->{session};
 	my $toolbar = $session->make_element( "div", class=>"ep_toolbox_content ep_upload_newdoc" );
-	$toolbar->appendChild( $session->make_text( "New document: " ) );
+	$toolbar->appendChild( $self->html_phrase( "new_document" ) );
 	
 	my $file_button = $session->make_element( "input",
 		name => $self->{prefix}."_first_file",
@@ -397,7 +398,7 @@ sub _render_add_document
 		);
 	my $add_format_button = $session->make_element( "input", 
 		type => "submit", 
-		value => "Add", 
+		value => $self->phrase( "add_format" ), 
 		class => "ep_form_internal_button",
 		name => "_internal_".$self->{prefix}."_add_format" );
 	$toolbar->appendChild( $file_button );
@@ -426,7 +427,7 @@ sub _render_add_file
 	my $upload_button = $session->make_element( "input",
 		name => "_internal_".$doc_prefix."_add_file",
 		class => "ep_form_internal_button",
-		value => "Add file",
+		value => $self->phrase( "add_file" ),
 		type => "submit",
 		);
 	
@@ -493,8 +494,8 @@ sub _render_filelist
 			type => "image", 
 			src => "/style/images/delete.png",
 			name => "_internal_".$doc_prefix."_delete_$i",
-			onClick => "if( !confirm( 'Delete file $filename: are you sure?' ) ) { return false; }",
-			value => "Delete" );
+			onClick => "if( !confirm( '".$self->phrase( "delete_file_confirm", filename => $filename )."' ) ) { return false; }",
+			value => $self->phrase( "delete_file" ) );
 			
 		$td_delete->appendChild( $del_btn );
 		$tr->appendChild( $td_delete );
@@ -517,7 +518,7 @@ sub _render_placeholder
 	my $session = $self->{session};
 	my $placeholder = $session->make_element( "tr", id => "placeholder" );
 	my $td = $session->make_element( "td", colspan => "3" );
-	$td->appendChild( $session->make_text( "Please upload a file." ) );
+	$td->appendChild( $self->html_phrase( "upload_blurb" ) );
 	$placeholder->appendChild( $td );
 	return $placeholder;
 }

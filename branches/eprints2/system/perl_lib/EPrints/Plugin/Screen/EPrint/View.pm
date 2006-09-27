@@ -10,13 +10,6 @@ use strict;
 
 
 
-sub set_title
-{
-	my( $self ) = @_;
-
-	$self->{processor}->{title} = $self->{session}->make_text( "View Item" );
-}
-
 sub render_status
 {
 	my( $self ) = @_;
@@ -57,8 +50,6 @@ sub about_to_render
 sub render
 {
 	my( $self ) = @_;
-
-	$self->set_title;
 
 	my $chunk = $self->{session}->make_doc_fragment;
 

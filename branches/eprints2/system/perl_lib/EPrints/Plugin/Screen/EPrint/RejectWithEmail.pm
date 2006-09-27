@@ -71,9 +71,6 @@ sub render
 		return;
 	}
 
-	$self->{processor}->{title} = $self->{session}->html_phrase( 
-		"cgi/users/edit_eprint:title_bounce_form" );
-
 	my $page = $self->{session}->make_doc_fragment();
 
 	$page->appendChild( 

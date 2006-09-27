@@ -4366,3 +4366,9 @@ PACKAGE: 2.2.99.2
  * Renamed some inner variables and method names in MetaField::Compound
  * Fixed bug in Compound so that field id's are prefixed by their subfield
     name too.
+
+2006-09-27 moj
+ * Added phrases for most plugins
+ * Component render_title/render_help using phrases by default
+ * Upload now uses correct document ID for format delete
+ * Removed Review component

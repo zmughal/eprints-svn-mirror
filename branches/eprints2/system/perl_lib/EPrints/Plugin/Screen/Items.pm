@@ -77,8 +77,6 @@ sub render
 
 	my $user = $self->{session}->current_user;
 
-	$self->{processor}->{title} = $self->{session}->make_text("Items");
-
 	my $sb = $self->{session}->get_repository->get_conf( "skip_buffer" );	
 
 	my $dt;

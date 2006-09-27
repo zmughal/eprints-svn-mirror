@@ -1081,12 +1081,23 @@ Titles and Help for the System Fields
 
     <ep:phrase id="Plugin/Screen/EPrint/Deposit:title">Deposit item</ep:phrase>
     <ep:phrase id="Plugin/Screen/EPrint/Deposit:description">Deposit item</ep:phrase>
-
+    <ep:phrase id="Plugin/Screen/EPrint/Deposit:validation_errors">Could not deposit due to validation errors.</ep:phrase>
+    <ep:phrase id="Plugin/Screen/EPrint/Deposit:item_deposited">Item has been deposited.</ep:phrase>
+    <ep:phrase id="Plugin/Screen/EPrint/Deposit:item_not_deposited">Could not deposit for some reason.</ep:phrase>
+    <ep:phrase id="Plugin/Screen/EPrint/Deposit:in_buffer">Your item will not appear on the public website until it has been checked by an editor.</ep:phrase>
+    
+	<ep:phrase id="Plugin/Screen/EPrint/Error:title">Error</ep:phrase>
+    <ep:phrase id="Plugin/Screen/EPrint/Error:description">Error</ep:phrase>
+    
     <ep:phrase id="Plugin/Screen/EPrint/RemoveWithEmail:title">Destroy item (with notification)</ep:phrase>
     <ep:phrase id="Plugin/Screen/EPrint/RemoveWithEmail:description">Remove this item from the system forever, but send an email to the user who deposited it to inform them why.</ep:phrase>
+    <ep:phrase id="Plugin/Screen/EPrint/RemoveWithEmail:item_removed">Item has been removed.</ep:phrase>
+    <ep:phrase id="Plugin/Screen/EPrint/RemoveWithEmail:item_not_removed">Item could not be removed.</ep:phrase>
 
     <ep:phrase id="Plugin/Screen/EPrint/RejectWithEmail:title">Return item (with notification)</ep:phrase>
     <ep:phrase id="Plugin/Screen/EPrint/RejectWithEmail:description">Return this item from to the user work area and send an email to the user who deposited it to explain why it cannot yet be accepted.</ep:phrase>
+    <ep:phrase id="Plugin/Screen/EPrint/RejectWithEmail:item_removed">Item has been removed.</ep:phrase>
+    <ep:phrase id="Plugin/Screen/EPrint/RejectWithEmail:item_not_removed">Item could not be removed.</ep:phrase>
 
     <ep:phrase id="Plugin/Screen/EPrint/Remove:title">Destroy item</ep:phrase>
     <ep:phrase id="Plugin/Screen/EPrint/Remove:description">Remove this item from the system forever.</ep:phrase>
@@ -1139,9 +1150,10 @@ Titles and Help for the System Fields
 
     <ep:phrase id="Plugin/Screen/EPrint/History:title">History</ep:phrase>
 
+    <ep:phrase id="Plugin/Screen/EPrint/View:title">View Item</ep:phrase>
     <ep:phrase id="Plugin/Screen/EPrint/View/Owner:title">View Item</ep:phrase>
-    <ep:phrase id="Plugin/Screen/EPrint/View/Editor:title">View Item</ep:phrase>
-    <ep:phrase id="Plugin/Screen/EPrint/View/Other:title">View Item</ep:phrase>
+    <ep:phrase id="Plugin/Screen/EPrint/View/Editor:title">Editor View of Item</ep:phrase>
+    <ep:phrase id="Plugin/Screen/EPrint/View/Other:title">Registered User View of Item</ep:phrase>
 
     <ep:phrase id="Plugin/Screen/EPrint/derive_version:title">New version</ep:phrase>
     <ep:phrase id="Plugin/Screen/EPrint/derive_version:description">Use this to submit a new version of this item. It will create an exact copy which you can then make changes to. This item and the new version will be linked.</ep:phrase>
@@ -1176,7 +1188,39 @@ Titles and Help for the System Fields
 
 
 
+	<!-- Upload component -->
+	
+	<ep:phrase id="Plugin/InputForm/Component/Upload:title">Document upload</ep:phrase>
+	<ep:phrase id="Plugin/InputForm/Component/Upload:help">todo: doc upload help</ep:phrase>
 
+	<!-- errors -->
+	<ep:phrase id="Plugin/InputForm/Component/Upload:create_failed">Document creation failed.</ep:phrase>
+	<ep:phrase id="Plugin/InputForm/Component/Upload:upload_failed">File upload failed.</ep:phrase>
+	<ep:phrase id="Plugin/InputForm/Component/Upload:no_document">Attempted action on non-existent document: <ep:pin name="docid" /></ep:phrase>
+	<ep:phrase id="Plugin/InputForm/Component/Upload:bad_document">Specified document does not belong to current item.</ep:phrase>
+	<ep:phrase id="Plugin/InputForm/Component/Upload:no_file">File does not exist.</ep:phrase>
+	<ep:phrase id="Plugin/InputForm/Component/Upload:bad_button">Unknown internal button: <ep:pin name="button" /></ep:phrase>
+	<ep:phrase id="Plugin/InputForm/Component/Upload:bad_doc_button">Unknown internal document button: <ep:pin name="button" /></ep:phrase>
+	
+	<!-- options -->
+	<ep:phrase id="Plugin/InputForm/Component/Upload:new_document">New document: </ep:phrase>
+	<ep:phrase id="Plugin/InputForm/Component/Upload:add_format">Add</ep:phrase>
+	<ep:phrase id="Plugin/InputForm/Component/Upload:delete_format">Delete document</ep:phrase>
+	<ep:phrase id="Plugin/InputForm/Component/Upload:delete_format_confirm">Delete entire document: are you sure?</ep:phrase>
+	<ep:phrase id="Plugin/InputForm/Component/Upload:add_file">Add file</ep:phrase>
+	<ep:phrase id="Plugin/InputForm/Component/Upload:delete_file">Delete</ep:phrase>
+	<ep:phrase id="Plugin/InputForm/Component/Upload:delete_file_confirm">Delete file <ep:pin name="filename" />: are you sure?</ep:phrase>
+	<ep:phrase id="Plugin/InputForm/Component/Upload:delete_document">Delete document</ep:phrase>
+	<ep:phrase id="Plugin/InputForm/Component/Upload:delete_document_confirm">Delete entire document: are you sure?</ep:phrase>
+	<ep:phrase id="Plugin/InputForm/Component/Upload:upload_blurb">Please upload a file.</ep:phrase>
+
+	<!-- PlaceHolder component -->
+	
+	<ep:phrase id="Plugin/InputForm/Component/PlaceHolder:title">Problem loading component: <ep:pin name="placeholding" /></ep:phrase>
+	<ep:phrase id="Plugin/InputForm/Component/PlaceHolder:help">Help placeholder for <ep:pin name="placeholding" /> component</ep:phrase>
+	<ep:phrase id="Plugin/InputForm/Component/PlaceHolder:content">This is a placeholder for the <ep:pin name="placeholding" /> component</ep:phrase>
+
+	<!-- Surround -->
 
     <ep:phrase id="Plugin/InputForm/Surround/Default:show_help"><ep:pin name="link">Help <img alt="+" src="/style/images/plus.png" border="0" /></ep:pin></ep:phrase>
     <ep:phrase id="Plugin/InputForm/Surround/Default:hide_help"><ep:pin name="link">Help <img alt="-" src="/style/images/minus.png" border="0" /></ep:pin></ep:phrase>
