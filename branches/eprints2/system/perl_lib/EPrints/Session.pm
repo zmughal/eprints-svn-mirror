@@ -1962,7 +1962,7 @@ sub render_toolbox
 
 ######################################################################
 # 
-# $xhtml = $session->render_tabs( $id_prefix, $current, $tabs, $labels, $links, [$slow_tabs] )
+# $xhtml = $session->render_tabs( $id_prefix, $current, $tabs, $labels, $links, [$icons], [$slow_tabs] )
 #
 # Render java script tabs to switch between views. The views must be
 # rendered sepearely. 
@@ -1971,6 +1971,7 @@ sub render_toolbox
 # $tabs is an array of tag ids (in order to display them)
 # $labels maps $tabs to DOM labels for each tab.
 # $links maps $tabs to the URL for each view if there is no javascript.
+# $icons maps $tabs to DOM containing a related icon (optional)
 # $slow_tabs is an optional array of tabs which must always be linked
 #  slowly rather than using javascript.
 #
@@ -1978,7 +1979,7 @@ sub render_toolbox
 
 sub render_tabs
 {
-	my( $self, $id_prefix, $current, $tabs, $labels, $links, $slow_tabs ) = @_;
+	my( $self, $id_prefix, $current, $tabs, $labels, $links, $icons, $slow_tabs ) = @_;
 
 	my $f = $self->make_doc_fragment;
 	my $st = {};
@@ -2013,6 +2014,13 @@ sub render_tabs
 
 		$a->appendChild( $labels->{$tab} );
 		$td->appendChild( $a );
+		if( defined $icons )
+		{
+			if( defined $icons->{$tab} )
+			{
+				$td->appendChild( $icons->{$tab} );
+			}
+		}
 
 		$tr->appendChild( $td );
 

@@ -230,6 +230,7 @@ sub render_content
 	my $tabs = [];
 	my $labels = {};
 	my $links = {};
+	my $icons = {};
 	my @docids  = ();
 	foreach my $doc ( @eprint_docs )
 	{	
@@ -245,8 +246,8 @@ sub render_content
 			name => "_internal_".$doc_prefix."_delete_doc",
 			onClick => "if( !confirm( '".$self->phrase( "delete_document_confirm" )."' ) ) { return false; }",
 			value => $self->phrase( "delete_document" ) );
-		$label->appendChild( $del_btn );
 		$labels->{$doc->get_id} = $label;
+		$icons->{$doc->get_id} = $del_btn;
 	}
 
 	@docids = sort @docids;
@@ -280,7 +281,8 @@ sub render_content
 			$view,
 			$tabs,
 			$labels,
-			$links ) );
+			$links,
+			$icons ) );
 
 	my $panel = $self->{session}->make_element( "div", id=>$self->{prefix}."_panels" );
 	$f->appendChild( $panel );

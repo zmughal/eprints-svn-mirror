@@ -73,6 +73,7 @@ sub render
 	my $tabs = [];
 	my $labels = {};
 	my $links = {};
+	my $icons = {};
 	my $slowlist = [];
 	my $position = {};
 	foreach my $item ( $self->list_items( "eprint_view_tabs" ) )
@@ -105,6 +106,7 @@ sub render
 			$tabs,
 			$labels,
 			$links,
+			$icons,
 			$slowlist ) );
 			
 	my $panel = $self->{session}->make_element( 

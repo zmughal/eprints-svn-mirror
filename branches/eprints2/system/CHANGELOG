@@ -4372,3 +4372,7 @@ PACKAGE: 2.2.99.2
  * Component render_title/render_help using phrases by default
  * Upload now uses correct document ID for format delete
  * Removed Review component
+
+2006-09-27 moj
+ * Added $icons param before slow_tabs in Session::render_tabs
+ * Modified EPrint View and Upload accordingly.
