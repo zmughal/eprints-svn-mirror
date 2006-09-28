@@ -387,7 +387,7 @@ sub new
 	unless( $rc ) 
 	{
 		$self->{visible} = "";
-		$self->{error} = "Failed to load required module Text::Refer";
+		$self->{error} = $self->html_phrase( "mod_load_failure" );
 	}
 
 	return $self;
@@ -449,7 +449,7 @@ sub convert_input
 	$epdata->{type} = "thesis" if $input_data_type eq "Thesis";
 	if( !defined $epdata->{type} ) 
 	{
-		$plugin->warning( "Skipping unsupported citation type $input_data_type" );
+		$plugin->warning( $plugin->phrase( "unsupported_cite_type", type => $input_data_type ) );
 		return undef;
 	}
 

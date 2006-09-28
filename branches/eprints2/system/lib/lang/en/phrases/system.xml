@@ -1245,7 +1245,24 @@ Titles and Help for the System Fields
     <ep:phrase id="Plugin/InputForm/Surround/Default:hide_help"><ep:pin name="link">Help <img alt="-" src="/style/images/minus.png" border="0" /></ep:pin></ep:phrase>
 
 
+	<!-- Import Plugins -->
 
+	<ep:phrase id="Plugin/Import/BibTeX:mod_load_failure">Failed to load required module Text::BibTeX</ep:phrase>
+	<ep:phrase id="Plugin/Import/BibTeX:unsupported_cite_type">Skipping unsupported citation type <ep:pin name="type" /></ep:phrase>
+	<ep:phrase id="Plugin/Import/BibTeX:skip_year">Skipping year '<ep:pin name="year" />'</ep:phrase>
+	<ep:phrase id="Plugin/Import/BibTeX:skip_month">Skipping month '<ep:pin name="month" />'</ep:phrase>
+	
+	<ep:phrase id="Plugin/Import/EndNote:mod_load_failure">Failed to load required module Text::Refer</ep:phrase>
+	<ep:phrase id="Plugin/Import/EndNote:unsupported_cite_type">Skipping unsupported citation type <ep:pin name="type" /></ep:phrase>
+	
+	<ep:phrase id="Plugin/Import/XML:unexpected_element">Unexpected element: &lt;<ep:pin name="name" />&gt;</ep:phrase>
+	<ep:phrase id="Plugin/Import/XML:unexpected_type">&lt;<ep:pin name="type" />&gt; where &lt;<ep:pin name="expected" />&gt; was expected inside &lt;<ep:pin name="fieldname" />&gt;</ep:phrase>
+	<ep:phrase id="Plugin/Import/XML:unknown_virtual">&lt;<ep:pin name="type" />&gt; is an unknown virtual field inside &lt;<ep:pin name="fieldname" />&gt;</ep:phrase>
+	<ep:phrase id="Plugin/Import/XML:dup_element">&lt;<ep:pin name="name" />&gt; appears twice in one parent.</ep:phrase>
+	<ep:phrase id="Plugin/Import/XML:expected_file">&lt;<ep:pin name="type" />&gt; where &lt;file&gt; was expected inside &lt;<ep:pin name="fieldname" />&gt;</ep:phrase>
+	<ep:phrase id="Plugin/Import/XML:expected_item">&lt;<ep:pin name="type" />&gt; where &lt;item&gt; was expected inside &lt;<ep:pin name="fieldname" />&gt;</ep:phrase>
+	<ep:phrase id="Plugin/Import/XML:expected">Expected <ep:pin name="elements" /></ep:phrase>
+	<ep:phrase id="Plugin/Import/DefaultXML:no_subclass">xml_to_epdata should be overridden.</ep:phrase>
 
 
 

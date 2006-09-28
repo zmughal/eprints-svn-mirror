@@ -232,7 +232,7 @@ sub new
 	unless( $rc ) 
 	{
 		$self->{visible} = "";
-		$self->{error} = "Failed to load required module Text::BibTeX";
+		$self->{error} = $self->html_phrase( "mod_load_failure" );
 	}
 
 	return $self;
@@ -323,7 +323,7 @@ sub convert_input
 	}
 	if( !defined $epdata->{type} )
 	{
-		$plugin->warning( "Skipping unsupported citation type $input_data_type" );
+		$plugin->warning( $plugin->phrase( "unsupported_cite_type", type => $input_data_type ) );
 		return undef;
 	}
 
@@ -432,7 +432,7 @@ sub convert_input
 		}
 		else
 		{
-			$plugin->warning( "Skipping year '$year'" );
+			$plugin->warning( $plugin->phrase( "skip_year", year => $year ) );
 		}
 	}
 	
@@ -460,7 +460,7 @@ sub convert_input
 		}
 		else
 		{
-			$plugin->warning( "Skipping month '$month'" );
+			$plugin->warning( $plugin->phrase( "skip_month", month => $month ) );
 		}
 	}
 
