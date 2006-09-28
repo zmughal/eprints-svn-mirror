@@ -4396,3 +4396,5 @@ PACKAGE: 2.2.99.2
 2006-09-28 cjg
  * Added user type to user render 
 
+2006-09-28 cjg
+ * In render eprint; changed hascontact to has_contact_email

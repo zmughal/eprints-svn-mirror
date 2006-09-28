@@ -51,12 +51,12 @@ sub eprint_render
 	}		
 
 	# Contact email address
-	my $hascontact = 0;
+	my $has_contact_email = 0;
 	if( $session->get_repository->can_call( "email_for_doc_request" ) )
 	{
 		if( defined( $session->get_repository->call( "email_for_doc_request", $session, $eprint ) ) )
 		{
-			$hascontact = 1;
+			$has_contact_email = 1;
 		}
 	}
 
@@ -85,7 +85,7 @@ sub eprint_render
 	if( $docs_to_show == 0 )
 	{
 		$p->appendChild( $session->html_phrase( "page:nofulltext" ) );
-		if( $hascontact && $eprint->get_value( "eprint_status" ) eq "archive"  )
+		if( $has_contact_email && $eprint->get_value( "eprint_status" ) eq "archive"  )
 		{
 			# "Request a copy" button
 			my $form = $session->render_form( "post", $session->get_repository->get_conf( "perl_url" ) . "/request_doc" );
@@ -128,7 +128,7 @@ sub eprint_render
 				$doctd->appendChild( $session->make_text( EPrints::Utils::human_filesize($size) ));
 			}
 
-			if( $hascontact && !$doc->is_public && $eprint->get_value( "eprint_status" ) eq "archive" )
+			if( $has_contact_email && !$doc->is_public && $eprint->get_value( "eprint_status" ) eq "archive" )
 			{
 				# "Request a copy" button
 				$doctd = $session->make_element( "td" );
