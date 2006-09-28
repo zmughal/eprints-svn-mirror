@@ -88,6 +88,14 @@ sub render_single_value
 }
 	
 
+sub get_basic_input_ids
+{
+	my( $self, $session, $basename, $staff, $obj ) = @_;
+
+	return( $basename."_second", $basename."_minute", $basename."_hour",
+		$basename."_day", $basename."_month", $basename."_year" );
+}
+
 sub get_basic_input_elements
 {
 	my( $self, $session, $value, $basename, $staff, $obj ) = @_;
@@ -131,8 +139,10 @@ sub get_basic_input_elements
 
 	$div->appendChild( $session->make_element(
 		"input",
+		class => "ep_form_text",
 		"accept-charset" => "utf-8",
 		name => $yearid,
+		id => $yearid,
 		value => $year,
 		size => 4,
 		maxlength => 4 ) );
@@ -146,6 +156,7 @@ sub get_basic_input_elements
 	$div->appendChild( $session->make_text(" ") );
 	$div->appendChild( $session->render_option_list(
 		name => $monthid,
+		id => $monthid,
 		values => \@EPrints::MetaField::Date::MONTHKEYS,
 		default => $month,
 		labels => $self->_month_names( $session ) ) );
@@ -168,6 +179,7 @@ sub get_basic_input_elements
 	}
 	$div->appendChild( $session->render_option_list(
 		name => $dayid,
+		id => $dayid,
 		values => \@daykeys,
 		default => $day,
 		labels => \%daylabels ) );
@@ -190,6 +202,7 @@ sub get_basic_input_elements
 	}
 	$div->appendChild( $session->render_option_list(
 		name => $hourid,
+		id => $hourid,
 		values => \@hourkeys,
 		default => $hour,
 		labels => \%hourlabels ) );
@@ -212,6 +225,7 @@ sub get_basic_input_elements
 	}
 	$div->appendChild( $session->render_option_list(
 		name => $minuteid,
+		id => $minuteid,
 		values => \@minutekeys,
 		default => $minute,
 		labels => \%minutelabels ) );
@@ -234,6 +248,7 @@ sub get_basic_input_elements
 	}
 	$div->appendChild( $session->render_option_list(
 		name => $secondid,
+		id => $secondid,
 		values => \@secondkeys,
 		default => $second,
 		labels => \%secondlabels ) );

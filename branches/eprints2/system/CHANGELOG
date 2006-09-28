@@ -4398,3 +4398,27 @@ PACKAGE: 2.2.99.2
 
 2006-09-28 cjg
  * In render eprint; changed hascontact to has_contact_email
+
+2006-09-28 cjg
+ * added new roles, edit-own-record and general (general needs to be removed
+    asap)
+ * Fixed urls of icons for file icons and arrows
+ * Added scriptlicious and prototypes.js
+ * Added id's to all metafield input and select
+ * Added id's to cells in metafield input grids
+ * Added hacky issn script - remove it again later (used for drop downs)
+ * Added example drop downs to issn and creators fields (tidy later)
+ * Removed underlines from all hide/show links and tabs and blister bar
+ * Made tabs and blister bar work when you click anywhere in them, not just 
+    the text.
+ * Made icons right align in tabs.
+ * Added class ep_form_text to all text <input> tags to allow them to be
+    styled without effecting buttons.
+ * Added get_basic_input_ids which lists the ids of the fields in a metafield
+ * cfg.d/ no only loads .pl files
+ * Added staff actions screen
+ * removed for_archive required restriction - we'll do it better another way
+ * Added user and userid as a property to all screens, not just user screens,
+    this is needed to make the toolbar understand if you can edit your record 
+    or not.
+

@@ -135,8 +135,10 @@ sub get_basic_input_elements
 
 	$div->appendChild( $session->make_element(
 		"input",
+		class=>"ep_form_text",
 		"accept-charset" => "utf-8",
 		name => $yearid,
+		id => $yearid,
 		value => $year,
 		size => 4,
 		maxlength => 4 ) );
@@ -148,6 +150,7 @@ sub get_basic_input_elements
 	$div->appendChild( $session->make_text(" ") );
 	$div->appendChild( $session->render_option_list(
 		name => $monthid,
+		id => $monthid,
 		values => \@EPrints::MetaField::Date::MONTHKEYS,
 		default => $month,
 		labels => $self->_month_names( $session ) ) );
@@ -159,6 +162,7 @@ sub get_basic_input_elements
 	$div->appendChild( $session->make_text(" ") );
 #	$div->appendChild( $session->make_element(
 #		"input",
+#		class=>"ep_form_text",
 #		"accept-charset" => "utf-8",
 #		name => $dayid,
 #		value => $day,
@@ -174,6 +178,7 @@ sub get_basic_input_elements
 	}
 	$div->appendChild( $session->render_option_list(
 		name => $dayid,
+		id => $dayid,
 		values => \@daykeys,
 		default => $day,
 		labels => \%daylabels ) );
@@ -181,6 +186,13 @@ sub get_basic_input_elements
 	$frag->appendChild( $div );
 	
 	return [ [ { el=>$frag } ] ];
+}
+
+sub get_basic_input_ids
+{
+	my( $self, $session, $basename, $staff, $obj ) = @_;
+
+	return( $basename."_day", $basename."_month", $basename."_year" );
 }
 
 sub form_value_basic
@@ -249,6 +261,7 @@ sub render_search_input
 	
 	return $session->make_element( "input",
 				"accept-charset" => "utf-8",
+				class => "ep_form_text",
 				type => "text",
 				name => $searchfield->get_form_prefix,
 				value => $searchfield->get_value,

@@ -28,7 +28,13 @@ sub properties_from
 {
 	my( $self ) = @_;
 
-	# no properties assumed at top levels
+	my $user = $self->{session}->current_user;
+	if( defined $user )
+	{
+		$self->{processor}->{user} = $user;
+		$self->{processor}->{userid} = $user->get_value( "userid" );
+	}
+
 }
 
 sub render

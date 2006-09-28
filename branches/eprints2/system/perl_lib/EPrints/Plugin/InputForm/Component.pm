@@ -294,27 +294,19 @@ sub xml_to_metafield
 
 	my $cloned = 0;
 
-	# attributes
-	my $required = $xml->getAttribute( "required" );
-
-	if( defined $required && $required eq "for_archive" )
+	foreach my $prop ( qw/ required input_lookup_url / )
 	{
-		if( !$cloned )
-		{
-			$field = $field->clone;
-			$cloned = 1;
-		}	
-		$field->set_property( "required", "for_archive" );
-	}
+		my $setting = $xml->getAttribute( $prop );
 
-	if( defined $required && $required eq "yes" )
-	{
-		if( !$cloned )
+		if( EPrints::Utils::is_set( $setting ) )
 		{
-			$field = $field->clone;
-			$cloned = 1;
-		}	
-		$field->set_property( "required", "yes" );
+			if( !$cloned )
+			{
+				$field = $field->clone;
+				$cloned = 1;
+			}	
+			$field->set_property( $prop, $setting );
+		}
 	}
 
 	return $field;

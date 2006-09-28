@@ -123,6 +123,7 @@ sub render_set_input
 		pairs => $pairs,
 		defaults_at_top => 1,
 		name => $basename,
+		id => $basename,
 		default => $default,
 		multiple => $self->{multiple},
 		height => $self->{input_rows}  );

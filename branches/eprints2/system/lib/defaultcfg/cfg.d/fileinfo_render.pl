@@ -40,7 +40,7 @@ sub _render_fileicon
 	my $a = $session->render_link( $url );
 	$a->appendChild( $session->make_element( 
 		"img", 
-		src=>$session->get_repository->get_conf("base_url")."/images/fileicons/$type.png",
+		src=>$session->get_repository->get_conf("base_url")."/style/images/fileicons/$type.png",
 		width=>48,
 		height=>48,
 		border=>0 ));

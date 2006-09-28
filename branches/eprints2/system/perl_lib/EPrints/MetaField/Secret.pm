@@ -91,9 +91,11 @@ sub get_basic_input_elements
 					$maxlength );
 	my $input = $session->make_element(
 		"input",
+		class => "ep_form_text",
 		"accept-charset" => "utf-8",
 		type => "password",
 		name => $basename,
+		id => $basename,
 		value => $value,
 		size => $size,
 		maxlength => $maxlength );

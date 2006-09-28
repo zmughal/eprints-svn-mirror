@@ -1126,46 +1126,50 @@ sub render_input_field_actual
 		return $elements->[0]->[0]->{el};
 	}
 
-	my $table = $session->make_element( "table", border=>0 );
+	my $table = $session->make_element( "table", border=>0, cellpadding=>0, cellspacing=>0 );
 
 	my $col_titles = $self->get_input_col_titles( $session, $staff );
 	if( defined $col_titles )
 	{
 		my $tr = $session->make_element( "tr" );
 		my $th;
+		my $x = 0;
 		if( $self->get_property( "multiple" ) )
 		{
-			$th = $session->make_element( "th", class=>"empty_heading" );
+			$th = $session->make_element( "th", class=>"empty_heading", id=>$basename."_th_".$x++ );
 			$tr->appendChild( $th );
 		}
+
 		if( !defined $col_titles )
 		{
-			$th = $session->make_element( "th", class=>"empty_heading" );
+			$th = $session->make_element( "th", class=>"empty_heading", id=>$basename."_th_".$x++ );
 			$tr->appendChild( $th );
 		}	
 		else
 		{
 			foreach my $col_title ( @{$col_titles} )
 			{
-				$th = $session->make_element( "th" );
+				$th = $session->make_element( "th", id=>$basename."_th_".$x++ );
 				$th->appendChild( $col_title );
 				$tr->appendChild( $th );
 			}
 		}
 		if( $self->get_property( "multilang" ) )
 		{
-			$th = $session->make_element( "th" );
+			$th = $session->make_element( "th", id=>$basename."_th_".$x++ );
 			$tr->appendChild( $th );
 		}
 		$table->appendChild( $tr );
 	}
 
+	my $y = 0;
 	foreach my $row ( @{$elements} )
 	{
+		my $x = 0;
 		my $tr = $session->make_element( "tr" );
 		foreach my $item ( @{$row} )
 		{
-			my %opts = ( valign=>"top" );
+			my %opts = ( valign=>"top", id=>$basename."_cell_".$x++."_".$y );
 			foreach my $prop ( keys %{$item} )
 			{
 				next if( $prop eq "el" );
@@ -1179,6 +1183,7 @@ sub render_input_field_actual
 			$tr->appendChild( $td );
 		}
 		$table->appendChild( $tr );
+		$y++;
 	}
 
 	return $table;
@@ -1206,7 +1211,7 @@ sub get_input_elements
 
 	unless( $self->get_property( "multiple" ) )
 	{
-		my $elements = $self->get_input_elements_single( 
+		my $rows = $self->get_input_elements_single( 
 				$session, 
 				$value,
 				$basename,
@@ -1215,22 +1220,43 @@ sub get_input_elements
 		if( defined $self->{input_advice_right} )
 		{
 			my $advice = $self->call_property( "input_advice_right", $session, $self, $value );
-			my $row = pop @{$elements};
+			my $row = pop @{$rows};
 			push @{$row}, { el=>$advice };
-			push @{$elements}, $row;
+			push @{$rows}, $row;
+		}
+
+
+		my $cols = scalar @{$rows->[0]};
+		if( defined $self->{input_lookup_url} )
+		{
+			my $n = length( $basename) - length( $self->{name}) - 1;
+			my $componentid = substr( $basename, 0, $n );
+			my $lookup = $session->make_doc_fragment;
+			my $drop_div = $session->make_element( "div", id=>$basename."_drop", class=>"ep_drop_target" );
+			$lookup->appendChild( $drop_div );
+
+			my @ids = $self->get_basic_input_ids($session, $basename, $staff, $obj );
+			my $script = $session->make_element( "script", type=>"text/javascript" );
+			$script->appendChild( $session->make_text( "\n" ) ); 
+			foreach my $id ( @ids )
+			{	
+				my @wcells = ( $id );
+				$script->appendChild( $session->make_text( 'ep_autocompleter( "'.$id.'", "'.$basename.'_drop", "'.$self->{input_lookup_url}.'", {relative: "'.$basename.'", component: "'.$componentid.'" }, [ $("'.join('"),$("',@wcells).'")]);'."\n" ) );
+			}
+			$lookup->appendChild( $script );
+			push @{$rows}, [ {el=>$lookup,colspan=>$cols} ];
 		}
 		if( defined $self->{input_advice_below} )
 		{
-			no strict "refs";
 			my $advice = $self->call_property( "input_advice_below", $session, $self, $value );
-			use strict "refs";
-			push @{$elements}, [ {el=>$advice,colspan=>3} ];
+			push @{$rows}, [ {el=>$advice,colspan=>$cols} ];
 		}
+
 		if( defined $assist )
 		{
-			push @{$elements}, [ {el=>$assist,colspan=>3} ];
+			push @{$rows}, [ {el=>$assist,colspan=>3} ];
 		}
-		return $elements;
+		return $rows;
 	}
 
 	# multiple field...
@@ -1339,7 +1365,7 @@ sub get_input_elements
 					$arrows->appendChild( $session->make_element(
 						"img",
 						alt=>"down",
-						src=> "$imagesurl/multi_down_dim.png" ));
+						src=> "/$imagesurl/multi_down_dim.png" ));
 				}
 				$lastcol = { el=>$arrows, valign=>"middle" };
 			}
@@ -1350,10 +1376,35 @@ sub get_input_elements
 				push @{$row}, { el=>$advice };
 			}
 			push @{$rows}, $row;
+
+			# additional rows
+			my $y = scalar @{$rows}-1;
+			my $cols = scalar @{$row};
+			if( defined $self->{input_lookup_url} )
+			{
+				my $n = length( $basename) - length( $self->{name}) - 1;
+				my $componentid = substr( $basename, 0, $n );
+				my $ibasename = $basename."_".$i;
+				my $lookup = $session->make_doc_fragment;
+				my $drop_div = $session->make_element( "div", id=>$ibasename."_drop", class=>"ep_drop_target" );
+				$lookup->appendChild( $drop_div );
+				my @ids = $self->get_basic_input_ids( $session, $ibasename, $staff, $obj );
+				my $script = $session->make_element( "script", type=>"text/javascript" );
+				$script->appendChild( $session->make_text( "\n" ) ); 
+				foreach my $id ( @ids )
+				{	
+					my @wcells = ();
+					for( 1..scalar(@{$row})-2 ) { push @wcells, $basename."_cell_".$_."_".$y; }
+					$script->appendChild( $session->make_text( 'ep_autocompleter( "'.$id.'", "'.$ibasename.'_drop", "'.$self->{input_lookup_url}.'", { relative: "'.$ibasename.'", component: "'.$componentid.'" }, [$("'.join('"),$("',@wcells).'")]); ' ) );
+				}
+				$lookup->appendChild( $script );
+				push @{$rows}, [ {},{el=>$lookup,colspan=>$cols-1} ];
+			#, {afterUpdateElement: updated}); " ));
+			}
 			if( defined $self->{input_advice_below} )
 			{
 				my $advice = $self->call_property( "input_advice_below", $session, $self, $value->[$i-1] );
-				push @{$rows}, [ {},{el=>$advice,colspan=>3} ];
+				push @{$rows}, [ {},{el=>$advice,colspan=>$cols-1} ];
 			}
 		}
 	}
@@ -1525,13 +1576,24 @@ sub get_basic_input_elements
 					$maxlength );
 	my $input = $session->make_element(
 		"input",
+		class=>"ep_form_text",
 		"accept-charset" => "utf-8",
 		name => $basename,
+		id => $basename,
 		value => $value,
 		size => $size,
 		maxlength => $maxlength );
 
 	return [ [ { el=>$input } ] ];
+}
+
+# array of all the ids of input fields
+
+sub get_basic_input_ids
+{
+	my( $self, $session, $basename, $staff, $obj ) = @_;
+
+	return( $basename );
 }
 
 sub get_max_input_size
@@ -2167,6 +2229,7 @@ sub get_property_defaults
 		input_boxes 	=> $EPrints::MetaField::FROM_CONFIG,
 		input_cols 	=> $EPrints::MetaField::FROM_CONFIG,
 		input_id_cols	=> $EPrints::MetaField::FROM_CONFIG,
+		input_lookup_url 	=> $EPrints::MetaField::UNDEF,
 		make_single_value_orderkey 	=> $EPrints::MetaField::UNDEF,
 		make_value_orderkey 		=> $EPrints::MetaField::UNDEF,
 		maxlength 	=> $EPrints::MetaField::VARCHAR_SIZE,

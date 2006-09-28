@@ -41,3 +41,6 @@ td.ep_tab_spacer {
 	clear: both;
 }
 
+table.ep_tab_bar a {
+	text-decoration: none;
+}

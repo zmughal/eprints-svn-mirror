@@ -83,6 +83,7 @@ sub get_basic_input_elements
 		"textarea",
 		"accept-charset" => "utf-8",
 		name => $basename,
+		id => $basename,
 		rows => $self->{input_rows},
 		cols => $self->{input_cols},
 		wrap => "virtual" );
@@ -90,6 +91,7 @@ sub get_basic_input_elements
 
 	return [ [ { el=>$textarea } ] ];
 }
+
 
 sub form_value_basic
 {

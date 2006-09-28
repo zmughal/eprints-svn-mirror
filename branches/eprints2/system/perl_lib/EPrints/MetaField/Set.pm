@@ -172,6 +172,7 @@ sub render_set_input
 				values => $tags,
 				labels => $labels,
 				name => $basename,
+				id => $basename,
 				default => $default,
 				multiple => $self->{multiple},
 				height => $self->{input_rows}  ) );

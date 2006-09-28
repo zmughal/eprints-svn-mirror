@@ -198,7 +198,7 @@ foreach my $langid ( @{$session->get_repository->get_conf( "languages" )} )
 	my $css = "";
 	my $fn;
 	my $base_url = $session->get_repository->get_conf( "base_url" );
-	foreach my $target ( keys %{$map} )
+	foreach my $target ( sort keys %{$map} )
 	{
 		if( $target =~ m/(\/style\/auto\/.*\.css$)/ )
 		{

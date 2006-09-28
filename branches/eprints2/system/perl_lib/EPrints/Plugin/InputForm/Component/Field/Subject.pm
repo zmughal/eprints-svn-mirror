@@ -167,7 +167,7 @@ sub _render_subnode
 		my $toggle;
 		if( $expanded )
 		{
-			$toggle = $self->{session}->make_element( "a", onClick => "EPJS_toggle('${prefix}_kids',true,'block');EPJS_toggle('${prefix}_hide',true,'inline');EPJS_toggle('${prefix}_show',false,'inline');return false", href=>"#", class=>"ep_only_js" );
+			$toggle = $self->{session}->make_element( "a", onClick => "EPJS_toggle('${prefix}_kids',true,'block');EPJS_toggle('${prefix}_hide',true,'inline');EPJS_toggle('${prefix}_show',false,'inline');return false", href=>"#", class=>"ep_only_js ep_subjectinput_toggle" );
 	
 			my $hide = $self->{session}->make_element( "span", id=>$prefix."_hide" );
 			$hide->appendChild( $self->{session}->make_element( "img", alt=>"-", src=>"/style/images/minus.png", border=>0 ) );
@@ -185,7 +185,7 @@ sub _render_subnode
 		}
 		else # not expanded
 		{
-			$toggle = $self->{session}->make_element( "a", onClick => "EPJS_toggle('${prefix}_kids',false,'block');EPJS_toggle('${prefix}_hide',false,'inline');EPJS_toggle('${prefix}_show',true,'inline');return false", href=>"#", class=>"ep_only_js" );
+			$toggle = $self->{session}->make_element( "a", onClick => "EPJS_toggle('${prefix}_kids',false,'block');EPJS_toggle('${prefix}_hide',false,'inline');EPJS_toggle('${prefix}_show',true,'inline');return false", href=>"#", class=>"ep_only_js ep_subjectinput_toggle" );
 	
 			my $hide = $self->{session}->make_element( "span", id=>$prefix."_hide", style=>"display:none" );
 			$hide->appendChild( $self->{session}->make_element( "img", alt=>"-", src=>"/style/images/minus.png", border=>0 ) );

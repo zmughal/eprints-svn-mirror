@@ -2008,27 +2008,39 @@ sub render_tabs
 		my %a_opts = ( 
 			href    => $links->{$tab},
 		);
+		my %td_opts = ( 
+			id => "${id_prefix}_tab_$tab", 
+			class=>"ep_tab" );
 		# if the current tab is slow, or the tab we're rendering is slow then
 		# don't make a javascript toggle for it.
 		if( !$st->{$current} && !$st->{$tab} )
 		{
 			$a_opts{onClick} = "return ep_showTab('${id_prefix}','$tab' );";
+			$td_opts{onClick} = "return ep_showTab('${id_prefix}','$tab' );";
 		}
-		my %td_opts = ( id => "${id_prefix}_tab_$tab", class=>"ep_tab" );
 		if( $current eq $tab ) { $td_opts{class} = "ep_tab_selected"; }
 
 		my $a = $self->make_element( "a", %a_opts );
 		my $td = $self->make_element( "td", %td_opts );
 
+		my $table2 = $self->make_element( "table", width=>"100%", cellpadding=>0, cellspacing=>0, border=>0 );
+		my $tr2 = $self->make_element( "tr" );
+		my $td2 = $self->make_element( "td", width=>"100%", style=>"text-align: center;" );
+		$table2->appendChild( $tr2 );
+		$tr2->appendChild( $td2 );
 		$a->appendChild( $labels->{$tab} );
-		$td->appendChild( $a );
+		$td2->appendChild( $a );
 		if( defined $params{icons} )
 		{
 			if( defined $params{icons}->{$tab} )
 			{
-				$td->appendChild( $params{icons}->{$tab} );
+				my $td3 = $self->make_element( "td", style=>"text-align: right; padding-right: 4px" );
+				$tr2->appendChild( $td3 );
+				$td3->appendChild( $params{icons}->{$tab} );
 			}
 		}
+
+		$td->appendChild( $table2 );
 
 		$tr->appendChild( $td );
 

@@ -276,11 +276,12 @@ sub get_basic_input_elements
 	foreach my $field_conf ( @{$f} )
 	{
 		my $fieldname = $field_conf->{name};
+		my $alias = $fieldname_to_alias{$fieldname};
 		my $field = $object->get_dataset->get_field( $fieldname );
 		my $part_grid = $field->get_basic_input_elements( 
 					$session, 
 					$value->{$fieldname_to_alias{$fieldname}}, 
-					$basename."_".$fieldname, 
+					$basename."_".$alias, 
 					$staff, 
 					$object );
 		my $top_row = $part_grid->[0];
@@ -289,6 +290,30 @@ sub get_basic_input_elements
 
 	return [ $grid_row ];
 }
+
+sub get_basic_input_ids
+{
+	my( $self, $session, $basename, $staff, $obj ) = @_;
+
+	my @ids = ();
+
+	my $f = $self->get_property( "fields" );
+	my %fieldname_to_alias = $self->get_fieldname_to_alias;
+	foreach my $field_conf ( @{$f} )
+	{
+		my $fieldname = $field_conf->{name};
+		my $alias = $fieldname_to_alias{$fieldname};
+		my $field = $obj->get_dataset->get_field( $fieldname );
+		push @ids, $field->get_basic_input_ids( 
+					$session, 
+					$basename."_".$alias, 
+					$staff, 
+					$obj );
+	}
+
+	return( @ids );
+}
+
 
 sub form_value_basic
 {
@@ -303,9 +328,10 @@ sub form_value_basic
 	foreach my $field_conf ( @{$f} )
 	{
 		my $fieldname = $field_conf->{name};
+		my $alias = $fieldname_to_alias{$fieldname};
 		my $field = $object->get_dataset->get_field( $fieldname );
-		my $v = $field->form_value_basic( $session, $basename."_".$fieldname, $object );
-		$value->{$fieldname_to_alias{$fieldname}} = $v;
+		my $v = $field->form_value_basic( $session, $basename."_".$alias, $object );
+		$value->{$alias} = $v;
 	}
 
 	return undef if( !EPrints::Utils::is_set( $value ) );

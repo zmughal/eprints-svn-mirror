@@ -317,6 +317,7 @@ sub load_repository_config_module
 	while( my $file = readdir( $dh ) )
 	{
 		next if $file =~ /^\./;
+		next unless $file =~ /\.pl$/;
 		push @files, $file;
 	}
 	closedir( $dh );

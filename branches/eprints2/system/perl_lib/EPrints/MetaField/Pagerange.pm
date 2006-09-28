@@ -91,8 +91,10 @@ sub get_basic_input_elements
 
 	$frag->appendChild( $session->make_element(
 		"input",
+		class => "ep_form_text",
 		"accept-charset" => "utf-8",
 		name => $fromid,
+		id => $fromid,
 		value => $pages[0],
 		size => 6,
 		maxlength => 120 ) );
@@ -104,13 +106,22 @@ sub get_basic_input_elements
 
 	$frag->appendChild( $session->make_element(
 		"input",
+		class => "ep_form_text",
 		"accept-charset" => "utf-8",
 		name => $toid,
+		id => $toid,
 		value => $pages[1],
 		size => 6,
 		maxlength => 120 ) );
 
 	return [ [ { el=>$frag } ] ];
+}
+
+sub get_basic_input_ids
+{
+	my( $self, $session, $basename, $staff, $obj ) = @_;
+
+	return( $basename."_from", $basename."_to" );
 }
 
 sub is_browsable

@@ -118,14 +118,29 @@ sub get_basic_input_elements
 		my $size = $self->{input_name_cols}->{$_};
 		push @{$parts}, {el=>$session->make_element(
 			"input",
+			class => "ep_form_text",
 			"accept-charset" => "utf-8",
 			name => $basename."_".$_,
+			id => $basename."_".$_,
 			value => $value->{$_},
 			size => $size,
 			maxlength => $self->{maxlength} ) };
 	}
 
 	return [ $parts ];
+}
+
+sub get_basic_input_ids
+{
+	my( $self, $session, $basename, $staff, $obj ) = @_;
+
+	my @ids = ();
+	foreach( $self->get_input_bits( $session ) )
+	{
+		push @ids, $basename."_".$_;
+	}
+
+	return @ids;
 }
 
 sub get_input_col_titles

@@ -133,8 +133,10 @@ sub render_blister
 		{
 			$a = $session->render_link( "?eprintid=".$self->{processor}->{eprintid}."&screen=EPrint::Staff::Edit&stage=$stage_id" );
 		}
+		my $div = $session->make_element( "div", class=>"ep_blister_node_inner" );
+		$div->appendChild( $session->html_phrase( "metapage_title_".$stage_id ) );
+		$a->appendChild( $div );
 		$td->appendChild( $a );
-		$a->appendChild( $session->html_phrase( "metapage_title_".$stage_id ) );
 		$tr->appendChild( $td );
 		$first = 0;
 	}

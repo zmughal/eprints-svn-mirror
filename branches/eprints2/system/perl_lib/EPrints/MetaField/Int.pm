@@ -83,6 +83,7 @@ sub render_search_input
 	
 	return $session->make_element( "input",
 				"accept-charset" => "utf-8",
+				class => "ep_form_text",
 				name=>$searchfield->get_form_prefix,
 				value=>$searchfield->get_value,
 				size=>9,

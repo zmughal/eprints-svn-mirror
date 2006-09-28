@@ -10,6 +10,8 @@
 
 	
 $c->{user_roles}->{user} = [qw/
+	general
+	edit-own-record
 	subscription
 	set-password
 	deposit
@@ -17,6 +19,8 @@ $c->{user_roles}->{user} = [qw/
 /],
 
 $c->{user_roles}->{editor} = [qw/
+	general
+	edit-own-record
 	subscription
 	set-password
 	deposit
@@ -27,6 +31,8 @@ $c->{user_roles}->{editor} = [qw/
 /],
 
 $c->{user_roles}->{admin} = [qw/
+	general
+	edit-own-record
 	subscription
 	set-password
 	deposit

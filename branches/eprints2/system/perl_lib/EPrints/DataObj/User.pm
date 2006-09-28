@@ -1013,6 +1013,11 @@ my $PRIVMAP =
 	{
 		"user/view" => 2,
 	},
+
+	"edit-own-record" => 
+	{
+		"user/edit" => 2,
+	},
 		
 	"set-password" => 
 	{
@@ -1244,7 +1249,6 @@ sub allow
 			$r-=8;
 		}
 	}
-
 
 	return $r;
 }

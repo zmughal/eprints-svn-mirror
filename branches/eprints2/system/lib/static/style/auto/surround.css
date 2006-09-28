@@ -30,6 +30,12 @@
 	border: solid 1px #d8dbef;
 	padding: 8px;
 }
+.ep_sr_collapse_bar a {
+	text-decoration: none;
+}
+.ep_sr_title a {
+	text-decoration: none;
+}
 
 /* help style - not primetime */
 
@@ -41,11 +47,17 @@
 	padding-bottom: 4px;
 	float: right;
 }
+.ep_sr_component .ep_sr_show_help a {
+	text-decoration: none;
+}	
 .ep_sr_component .ep_sr_hide_help {
 	white-space: nowrap;
 	padding-bottom: 4px;
 	float: right;
 }
+.ep_sr_component .ep_sr_hide_help a {
+	text-decoration: none;
+}	
 .ep_sr_component .ep_sr_title_bar {
 	width: 100%;
 }
