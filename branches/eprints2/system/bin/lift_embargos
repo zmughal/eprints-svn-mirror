@@ -107,7 +107,7 @@ $|=1;
 my $session = new EPrints::Session( 1 , $ARGV[0] , $noise );
 exit( 1 ) unless( defined $session );
 
-my $ds = $session->get_repository->get_dataset( "archive" );
+my $ds = $session->get_repository->get_dataset( "document" );
 
 # Search for expired embargos
 my $searchexp = new EPrints::Search( 
@@ -120,24 +120,24 @@ $searchexp->add_field( $ds->get_field( "date_embargo" ), $date );
 
 $searchexp->perform_search;
 
-# For matching eprints, remove embargo date value,
+# For matching documents, remove embargo date value,
 # make documents publically accessible, and
 # re-generate abstract page
 $searchexp->map( sub {
-	my( $session, $dataset, $eprint ) = @_;
+	my( $session, $dataset, $doc ) = @_;
+
+	my $eprint = $doc->get_eprint;
+
+	# only concerned with documents in main archive
+	return unless $eprint->get_value( "eprint_status" ) eq "archive";
+
 	if( $noise )
 	{
-		print "Lifting expired embargo on eprint #" . $eprint->get_id . " (" . $eprint->get_value("date_embargo") . ")\n";
+		print "Lifting expired embargo on document #" . $doc->get_id . " (" . $doc->get_value("date_embargo") . ")\n";
 	}
-	foreach my $doc ( $eprint->get_all_documents )
-	{
-		if( !$doc->is_public )
-		{
-			$doc->set_value( "security", "public" );
-			$doc->commit;
-		}	
-	}
-	$eprint->set_value( "date_embargo", "" );
+	$doc->set_value( "security", "public" );
+	$doc->set_value( "date_embargo", undef );
+	$doc->commit;
 	$eprint->commit;
 	$eprint->generate_static;
 } );

@@ -85,7 +85,7 @@ sub eprint_render
 	if( $docs_to_show == 0 )
 	{
 		$p->appendChild( $session->html_phrase( "page:nofulltext" ) );
-		if( $hascontact )
+		if( $hascontact && $eprint->get_value( "eprint_status" ) eq "archive"  )
 		{
 			# "Request a copy" button
 			my $form = $session->render_form( "post", $session->get_repository->get_conf( "perl_url" ) . "/request_doc" );
@@ -128,7 +128,7 @@ sub eprint_render
 				$doctd->appendChild( $session->make_text( EPrints::Utils::human_filesize($size) ));
 			}
 
-			if( $hascontact && !$doc->is_public )
+			if( $hascontact && !$doc->is_public && $eprint->get_value( "eprint_status" ) eq "archive" )
 			{
 				# "Request a copy" button
 				$doctd = $session->make_element( "td" );
@@ -145,14 +145,6 @@ sub eprint_render
 		}
 		$page->appendChild( $doctable );
 	}	
-
-	# Embargo date
-	if( $eprint->is_set( "date_embargo" ) && $eprint->get_value( "full_text_status") eq "restricted" )
-	{
-		$page->appendChild( $session->html_phrase( "page:embargo_status", 
-			date => EPrints::Utils::render_date( $session, $eprint->get_value( "date_embargo" ) ) ) );
-	}
-
 
 	# Alternative locations
 	if( $eprint->is_set( "official_url" ) )

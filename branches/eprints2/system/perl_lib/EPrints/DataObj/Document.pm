@@ -151,6 +151,10 @@ sub get_system_field_info
 		{ name=>"main", type=>"set", required=>1, options=>[], input_rows=>1,
 			input_tags=>\&main_input_tags,
 			render_option=>\&main_render_option },
+
+		{ name=>"date_embargo", type=>"date", required=>0,
+			min_resolution=>"year" },	
+
 	);
 
 }

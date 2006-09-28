@@ -472,11 +472,11 @@ $db->set_debug(1);
 	print "Adding the License field to the document object\n";
 	add_single_field_after( $db, "document","license","VARCHAR(255) DEFAULT NULL","security" );
 
-	print "Adding the embargo field to the eprint object.\n";
-	foreach( @epds ) { add_single_field_after( $db, $_,"date_embargo","DATE DEFAULT NULL","replacedby" ); }
+	print "Adding the embargo field to the document object.\n";
+	add_single_field_after( $db, "document","date_embargo","DATE DEFAULT NULL","license" );
 
 	print "Adding the embargo field to the eprint object.\n";
-	foreach( @epds ) { add_single_field_after( $db, $_,"metadata_visibility","VARCHAR(255) DEFAULT 'show'","date_embargo" ); }
+	foreach( @epds ) { add_single_field_after( $db, $_,"metadata_visibility","VARCHAR(255) DEFAULT 'show'","replacedby" ); }
 
 	print "Adding the contact_email field to the eprint object.\n";
 	foreach( @epds ) { add_single_field_after( $db, $_,"contact_email","VARCHAR(255) DEFAULT NULL","metadata_visibility" ); }

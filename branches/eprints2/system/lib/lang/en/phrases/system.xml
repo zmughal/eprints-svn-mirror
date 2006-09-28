@@ -1019,6 +1019,12 @@ Titles and Help for the System Fields
     <ep:phrase id="document_fieldhelp_security">Please indicate the required "security level" of this document. Who is allowed to download it?</ep:phrase>
     <ep:phrase id="document_fieldname_license">License</ep:phrase>
     <ep:phrase id="document_fieldhelp_license">Specify an explicit license for this document (does not effect the access rights you grant at the end of this deposit process).</ep:phrase>
+    <ep:phrase id="document_fieldname_date_embargo">Embargo expiry date</ep:phrase>
+    <ep:phrase id="document_fieldhelp_date_embargo">The date that a publisher- or sponsor-imposed embargo expires. On and after this date, this document will be made publically accessible.
+<br />Example: <span class="ep_form_example">2006 - all documents made publically accessible on 1st January 2006</span>
+<br />Example: <span class="ep_form_example">2006 June - all documents made publically accessible on 1st June 2006</span>
+</ep:phrase>
+
     <ep:phrase id="document_fieldname_main">Main file</ep:phrase>
     <ep:phrase id="document_fieldhelp_main">The file which is linked to.</ep:phrase>
 

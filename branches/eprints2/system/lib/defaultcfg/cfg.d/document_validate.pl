@@ -39,5 +39,32 @@ sub validate_document
 					fieldname=>$fieldname );
 	}
 
+	# security can't be "public" if date embargo set
+	if( $document->get_value( "security" ) eq "public" &&
+		EPrints::Utils::is_set( $document->get_value( "date_embargo" ) ) )
+	{
+		my $fieldname = $session->make_element( "span", class=>"ep_problem_field:documents" );
+		push @problems, $session->html_phrase( 
+					"validate:embargo_check_security" ,
+					fieldname=>$fieldname );
+	}
+
+	# embargo expiry date must be in the future
+	if( EPrints::Utils::is_set( $document->get_value( "date_embargo" ) ) )
+	{
+		my $value = $document->get_value( "date_embargo" );
+		my ($thisyear, $thismonth, $thisday) = EPrints::Utils::get_date_array();
+		my ($year, $month, $day) = split( '-', $value );
+		if( $year < $thisyear || ( $year == $thisyear && $month < $thismonth ) ||
+			( $year == $thisyear && $month == $thismonth && $day <= $thisday ) )
+		{
+			my $fieldname = $session->make_element( "span", class=>"ep_problem_field:documents" );
+			push @problems,
+				$session->html_phrase( "validate:embargo_invalid_date",
+				fieldname=>$fieldname );
+		}
+	}
+
+
 	return( @problems );
 }

@@ -31,20 +31,6 @@ sub validate_field
 
 	# CHECKS IN HERE
 
-	# Check that embargo expiry date is in the future
-	if( $field->get_name eq "date_embargo" && EPrints::Utils::is_set( $value ) )
-	{
-		my ($thisyear, $thismonth, $thisday) = EPrints::Utils::get_date_array();
-		my ($year, $month, $day) = split( '-', $value );
-		if( $year < $thisyear || ( $year == $thisyear && $month < $thismonth ) ||
-			( $year == $thisyear && $month == $thismonth && $day <= $thisday ) )
-		{
-			push @problems,
-				$session->html_phrase( "validate:embargo_invalid_date",
-				fieldname=>$field->render_name( $session ) );
-		}
-	}
-
 	# Loop over actual individual values to check URLs, names and emails
 
 	if( $field->is_type( "url", "name", "email" ) && EPrints::Utils::is_set( $value ) )

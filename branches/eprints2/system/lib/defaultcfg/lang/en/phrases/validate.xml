@@ -12,6 +12,7 @@
     <ep:phrase id="validate:need_sub_or_issue">An item must have at least one of a <ep:pin name="fieldname">submission date</ep:pin> and an issue date.</ep:phrase>
     <ep:phrase id="validate:need_creators_or_editors">If an item does not have any <ep:pin name="fieldname">creators</ep:pin> then it must have at least one editor.</ep:phrase>
 
-    <ep:phrase id="validate:embargo_invalid_date"><ep:pin name="fieldname" /> must be in the future.</ep:phrase>
+    <ep:phrase id="validate:embargo_invalid_date"><ep:pin name="fieldname">Embargo expiry date</ep:pin> must be in the future.</ep:phrase>
+    <ep:phrase id="validate:embargo_check_security">An embargo date has been specified, but the document is visible to anyone. Check the <ep:pin name="fieldname">document visiblity settings</ep:pin>.</ep:phrase>
 
 </ep:phrases>

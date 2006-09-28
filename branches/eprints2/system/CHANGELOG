@@ -4381,3 +4381,8 @@ PACKAGE: 2.2.99.2
  * render_tabs now takes a hash of parameters (updated View/Upload)
  * Removed extra space in document citations
  * Removed unnecessary space from upload component
+
+2006-09-28 tmb
+ * Made date_embargo a document field rather than an eprint field for finer-
+    grained control. This requirement arose out of a Services contract and
+    seemed like a good idea to make it a standard feature in EP itself.
