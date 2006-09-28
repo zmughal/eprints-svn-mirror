@@ -93,6 +93,15 @@ print <<END;
   </message>
 
 
+  <message name="addDocumentInput">
+    <part name="eprintID"                  type="xsd:string"/>
+    <part name="document"                  type="pm:Document"/>
+  </message>
+
+  <message name="addDocumentOutput">
+    <part name="documentID"                type="xsd:string"/>
+  </message>
+
   <message name="modifyDocumentInput">
     <part name="documentID"                  type="xsd:string"/>
     <part name="document"                    type="pm:Document"/>
