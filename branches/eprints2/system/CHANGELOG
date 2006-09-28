@@ -4376,3 +4376,8 @@ PACKAGE: 2.2.99.2
 2006-09-27 moj
  * Added $icons param before slow_tabs in Session::render_tabs
  * Modified EPrint View and Upload accordingly.
+
+2006-09-28 moj
+ * render_tabs now takes a hash of parameters (updated View/Upload)
+ * Removed extra space in document citations
+ * Removed unnecessary space from upload component

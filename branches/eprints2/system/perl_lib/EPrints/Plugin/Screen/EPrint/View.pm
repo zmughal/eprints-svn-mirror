@@ -73,7 +73,6 @@ sub render
 	my $tabs = [];
 	my $labels = {};
 	my $links = {};
-	my $icons = {};
 	my $slowlist = [];
 	my $position = {};
 	foreach my $item ( $self->list_items( "eprint_view_tabs" ) )
@@ -101,13 +100,12 @@ sub render
 
 	$chunk->appendChild( 
 		$self->{session}->render_tabs( 
-			$id_prefix,
-			$view,
-			$tabs,
-			$labels,
-			$links,
-			$icons,
-			$slowlist ) );
+			id_prefix => $id_prefix,
+			current => $view,
+			tabs => $tabs,
+			labels => $labels,
+			links => $links,
+			slow_tabs => $slowlist ) );
 			
 	my $panel = $self->{session}->make_element( 
 			"div", 

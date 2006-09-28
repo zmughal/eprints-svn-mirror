@@ -239,7 +239,6 @@ sub render_content
 		my $doc_prefix = $self->{prefix}."_doc".$docid;
 		my $label = $session->make_doc_fragment;
 		$label->appendChild( $doc->render_description );
-		$label->appendChild( $session->make_text( " " ) );
 		my $del_btn = $session->make_element( "input", 
 			type => "image", 
 			src => "/style/images/delete.png",
@@ -277,12 +276,12 @@ sub render_content
 	$f->appendChild( $tab_bar );
 	$tab_bar->appendChild( 
 		$self->{session}->render_tabs( 
-			$self->{prefix},
-			$view,
-			$tabs,
-			$labels,
-			$links,
-			$icons ) );
+			id_prefix => $self->{prefix},
+			current => $view,
+			tabs => $tabs,
+			labels => $labels,
+			links => $links,
+			icons => $icons ) );
 
 	my $panel = $self->{session}->make_element( "div", id=>$self->{prefix}."_panels" );
 	$f->appendChild( $panel );

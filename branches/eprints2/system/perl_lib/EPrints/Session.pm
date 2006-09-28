@@ -1962,30 +1962,38 @@ sub render_toolbox
 
 ######################################################################
 # 
-# $xhtml = $session->render_tabs( $id_prefix, $current, $tabs, $labels, $links, [$icons], [$slow_tabs] )
+# $xhtml = $session->render_tabs( %params )
 #
-# Render java script tabs to switch between views. The views must be
-# rendered sepearely. 
-# $id_prefix is the prefix of the id attributes.
-# $current is the id of the current tab
-# $tabs is an array of tag ids (in order to display them)
-# $labels maps $tabs to DOM labels for each tab.
-# $links maps $tabs to the URL for each view if there is no javascript.
-# $icons maps $tabs to DOM containing a related icon (optional)
-# $slow_tabs is an optional array of tabs which must always be linked
+# Render javascript tabs to switch between views. The views must be
+# rendered seperately. 
+
+# %params contains the following options:
+# id_prefix: the prefix of the id attributes.
+# current: the id of the current tab
+# tabs: array of tab ids (in order to display them)
+# labels: maps tab ids to DOM labels for each tab.
+# links: maps tab ids to the URL for each view if there is no javascript.
+# [icons]: maps tab ids to DOM containing a related icon
+# [slow_tabs]: optional array of tabs which must always be linked
 #  slowly rather than using javascript.
 #
 ######################################################################
 
 sub render_tabs
 {
-	my( $self, $id_prefix, $current, $tabs, $labels, $links, $icons, $slow_tabs ) = @_;
+	my( $self, %params ) = @_;
 
+	my $id_prefix = $params{id_prefix};
+	my $current = $params{current};
+	my $tabs = $params{tabs};
+	my $labels = $params{labels};
+	my $links = $params{links};
+	
 	my $f = $self->make_doc_fragment;
 	my $st = {};
-	if( defined $slow_tabs )
+	if( defined $params{slow_tabs} )
 	{
-		foreach( @{$slow_tabs} ) { $st->{$_} = 1; }
+		foreach( @{$params{slow_tabs}} ) { $st->{$_} = 1; }
 	}
 
 	my $table = $self->make_element( "table", class=>"ep_tab_bar", cellspacing=>0 );
@@ -2014,11 +2022,11 @@ sub render_tabs
 
 		$a->appendChild( $labels->{$tab} );
 		$td->appendChild( $a );
-		if( defined $icons )
+		if( defined $params{icons} )
 		{
-			if( defined $icons->{$tab} )
+			if( defined $params{icons}->{$tab} )
 			{
-				$td->appendChild( $icons->{$tab} );
+				$td->appendChild( $params{icons}->{$tab} );
 			}
 		}
 
