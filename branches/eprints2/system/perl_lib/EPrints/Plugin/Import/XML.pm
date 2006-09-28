@@ -81,10 +81,7 @@ sub xml_field_to_epdatafield
 			my $expect = $field->get_property( "datasetid" );
 			if( $type ne $expect )
 			{
-				$plugin->warning( $plugin->phrase( "unexpected_type", 
-					type => $type, 
-					expected => $expect, 
-					fieldname => $field->get_name ) );
+				$plugin->warning( "<$type> where <$expect> was expected inside <".$field->get_name.">" );
 				next;
 			}
 			my $sub_dataset = $plugin->{session}->get_repository->get_dataset( $expect );
@@ -96,9 +93,7 @@ sub xml_field_to_epdatafield
 		{
 			if( $type ne "file" )
 			{
-				$plugin->warning( $plugin->phrase( "expected_file", 
-					type => $type, 
-					fieldname => $field->get_name ) );
+				$plugin->warning( "<$type> where <file> was expected inside <".$field->get_name.">" );
 				next;
 			}
 			push @{$epdatafield}, $plugin->xml_to_file( $dataset,$el );
@@ -107,18 +102,14 @@ sub xml_field_to_epdatafield
 	
 		if( $field->is_virtual )
 		{
-			$plugin->warning( $plugin->phrase( "unknown_virtual", 
-				type => $type, 
-				fieldname => $field->get_name ) );
+			$plugin->warning( "<$type> is an unknown virtual field inside <".$field->get_name.">" );
 			next;
 		}
 	
 
 		if( $type ne "item" )
 		{
-			$plugin->warning( $plugin->phrase( "expected_item", 
-				type => $type, 
-				fieldname => $field->get_name ) );
+			$plugin->warning( "<$type> where <item> was expected inside <".$field->get_name.">" );
 			next;
 		}
 		push @{$epdatafield}, $plugin->xml_field_to_data_single( $dataset,$field,$el );
@@ -168,7 +159,7 @@ sub get_known_nodes
 		next unless EPrints::XML::is_dom( $el, "Element" );
 		if( defined $map{$el->getNodeName()} )
 		{
-			$plugin->warning( $plugin->phrase( "dup_element", name => $el ) );
+			$plugin->warning( "<$el> appears twice in one parent." );
 			next;
 		}
 		$map{$el->getNodeName()} = $el;
@@ -184,8 +175,8 @@ sub get_known_nodes
 
 	foreach my $name ( keys %map )
 	{
-		$plugin->warning( $plugin->phrase( "unexpected_element", name => $name ) );
-		$plugin->warning( $plugin->phrase( "expected", elements => "&lt;".join("&gt; &lt;",@whitelist)."&gt;" ) );
+		$plugin->warning( "Unexpected element: <$name>" );
+		$plugin->warning( "Expected <".join("> <",@whitelist).">" );
 	}
 	return %toreturn;
 }

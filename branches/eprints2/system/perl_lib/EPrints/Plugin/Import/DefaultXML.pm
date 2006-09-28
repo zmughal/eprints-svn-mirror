@@ -82,10 +82,10 @@ sub xml_to_epdata
 {
 	my( $plugin, $dataset, $xml ) = @_;
 
-	$plugin->error( $plugin->{session}->html_phrase( "Plugin/Import/DefaultXML:no_subclass" ) );
+	$plugin->error( "xml_to_epdata should be overridden." );
 }
 
-# takes a chunk of XML and returns it as a utf8 string.
+# takes a chunck of XML and returns it as a utf8 string.
 # If the text contains anything but elements then this gives 
 # a warning.
 
@@ -113,7 +113,7 @@ sub xml_to_text
 
 	unless( $ok )
 	{
-		$plugin->warning( "Expected only text, found: ".$xml->toString ); # ??? moj
+		$plugin->warning( "Expected only text, found: ".$xml->toString );
 	}
 	my $r = join( "", @v );
 
