@@ -1172,6 +1172,7 @@ Titles and Help for the System Fields
     <ep:phrase id="Plugin/Screen/EPrint/View/Editor:title">Editor View of Item</ep:phrase>
     <ep:phrase id="Plugin/Screen/EPrint/View/Other:title">Registered User View of Item</ep:phrase>
     <ep:phrase id="Plugin/Screen/EPrint/View:failed">Failed</ep:phrase>
+    <ep:phrase id="Plugin/Screen/EPrint/View:no_subclass">render_status should have been subclassed.</ep:phrase>
 
     <ep:phrase id="Plugin/Screen/EPrint/derive_version:title">New version</ep:phrase>
     <ep:phrase id="Plugin/Screen/EPrint/derive_version:description">Use this to submit a new version of this item. It will create an exact copy which you can then make changes to. This item and the new version will be linked.</ep:phrase>

@@ -14,7 +14,7 @@ sub render_status
 {
 	my( $self ) = @_;
 
-	return $self->{session}->make_text( "render_status should have been subclassed." );
+	return $self->{session}->html_phrase( "Plugin/Screen/EPrint/View:no_subclass" );
 }
 
 sub can_be_viewed
