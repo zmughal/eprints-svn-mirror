@@ -4392,3 +4392,7 @@ PACKAGE: 2.2.99.2
 
 2006-09-28 moj
  * Phrasing import plugins (unstable atm)
+
+2006-09-28 cjg
+ * Added user type to user render 
+

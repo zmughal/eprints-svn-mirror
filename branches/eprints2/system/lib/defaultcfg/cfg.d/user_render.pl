@@ -24,6 +24,7 @@ sub user_render
 	my( $info, $p, $a );
 	$info = $session->make_doc_fragment;
 
+
 	# Render the public information about this user.
 	$p = $session->make_element( "p" );
 	$p->appendChild( $user->render_description() );
@@ -50,6 +51,14 @@ sub user_render
 	}
 	$info->appendChild( $p );
 	
+	if( $user->is_set( "usertype" ) )
+	{
+		$p = $session->make_element( "p" );
+		$p->appendChild( $session->html_phrase( "user_fieldname_usertype" ) );
+		$p->appendChild( $session->make_text( ": " ) );
+		$p->appendChild( $user->render_value( "usertype" ) );
+		$info->appendChild( $p );
+	}
 
 	## E-mail and URL last, if available.
 	if( $user->get_value( "hideemail" ) ne "TRUE" )
