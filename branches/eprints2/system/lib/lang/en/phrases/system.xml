@@ -1065,7 +1065,7 @@ Titles and Help for the System Fields
     <ep:phrase id="tool:divide"> | </ep:phrase>
 -->
 <!-- Plugin phrases -->
-
+	
     <ep:phrase id="Plugin/Screen:tool_divide"> | </ep:phrase>
     <ep:phrase id="Plugin/Screen:more">more...</ep:phrase>
     <ep:phrase id="Plugin/Screen:unknown_action">This screen (<ep:pin name="screen" />) does not know how to process this action: <ep:pin name="action" />.</ep:phrase>
@@ -1074,6 +1074,7 @@ Titles and Help for the System Fields
     <ep:phrase id="Plugin/Screen:message_message">Message</ep:phrase>
     <ep:phrase id="Plugin/Screen:message_error">Error</ep:phrase>
     <ep:phrase id="Plugin/Screen:message_warning">Warning</ep:phrase>
+	<ep:phrase id="Plugin/Screen:no_render_subclass">Error. $screen->render should be sub-classed for <ep:pin name="screen" />.</ep:phrase>
    
     <ep:phrase id="Plugin/Screen/Items:title">Items</ep:phrase>
 
@@ -1082,6 +1083,15 @@ Titles and Help for the System Fields
     <ep:phrase id="Plugin/Screen/Status:title">Repository status</ep:phrase>
 
     <ep:phrase id="Plugin/Screen/Error:title">Error</ep:phrase>
+	
+	<ep:phrase id="Plugin/Screen/EPrint:deposit">Deposit</ep:phrase>
+	<ep:phrase id="Plugin/Screen/EPrint:deposit_progress">Deposit progress</ep:phrase>
+	
+	<ep:phrase id="Plugin/Screen/FirstTool:no_tools">Sorry, you are not able to use any tools</ep:phrase>
+
+	<ep:phrase id="Plugin/Screen/Items:db_error">Database Error</ep:phrase>
+
+
 
     <!-- eprint action screens -->
 
@@ -1158,8 +1168,10 @@ Titles and Help for the System Fields
 
     <ep:phrase id="Plugin/Screen/EPrint/View:title">View Item</ep:phrase>
     <ep:phrase id="Plugin/Screen/EPrint/View/Owner:title">View Item</ep:phrase>
+    <ep:phrase id="Plugin/Screen/EPrint/View/Owner:deposit">Deposit now!</ep:phrase>
     <ep:phrase id="Plugin/Screen/EPrint/View/Editor:title">Editor View of Item</ep:phrase>
     <ep:phrase id="Plugin/Screen/EPrint/View/Other:title">Registered User View of Item</ep:phrase>
+    <ep:phrase id="Plugin/Screen/EPrint/View:failed">Failed</ep:phrase>
 
     <ep:phrase id="Plugin/Screen/EPrint/derive_version:title">New version</ep:phrase>
     <ep:phrase id="Plugin/Screen/EPrint/derive_version:description">Use this to submit a new version of this item. It will create an exact copy which you can then make changes to. This item and the new version will be linked.</ep:phrase>

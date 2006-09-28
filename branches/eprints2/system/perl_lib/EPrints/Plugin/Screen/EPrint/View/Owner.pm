@@ -25,7 +25,7 @@ sub render_status
 		# clean up
 		my $deposit_div = $self->{session}->make_element( "div", id=>"controlpage_deposit_link" );
 		my $a = $self->{session}->make_element( "a", href=>"?screen=EPrint::Deposit&eprintid=".$self->{processor}->{eprintid} );
-		$a->appendChild( $self->{session}->make_text( "Deposit now!" ) );
+		$a->appendChild( $self->html_phrase( "deposit" ) );
 		$deposit_div->appendChild( $a );
 		$status_fragment->appendChild( $deposit_div );
 	}

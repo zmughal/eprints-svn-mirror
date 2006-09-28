@@ -35,7 +35,7 @@ sub render
 {
 	my( $self ) = @_;
 
-	return $self->{session}->make_text( "Error. \$screen->render should be sub-classed for $self." );
+	return $self->html_phrase( "no_render_subclass", screen => $self );
 }
 
 

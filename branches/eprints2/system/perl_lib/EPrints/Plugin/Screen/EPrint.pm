@@ -153,12 +153,12 @@ sub render_blister
 		}
 		my $a = $session->render_link( "?eprintid=".$self->{processor}->{eprintid}."&screen=EPrint::Deposit" );
 		$td->appendChild( $a );
-		$a->appendChild( $session->make_text( "Deposit" ) );
+		$a->appendChild( $self->{session}->html_phrase( "Plugin/Screen/EPrint:deposit" ) );
 		$tr->appendChild( $td );
 	}
 
 	return $self->{session}->render_toolbox( 
-			$self->{session}->make_text( "Deposit progress" ),
+			$self->{session}->html_phrase( "Plugin/Screen/EPrint:deposit_progress" ),
 			$table );
 }
 

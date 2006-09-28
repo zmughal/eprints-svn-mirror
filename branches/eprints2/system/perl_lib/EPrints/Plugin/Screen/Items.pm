@@ -56,7 +56,7 @@ sub action_create
 		$self->{processor}->{session}->get_repository->log( "Database Error: $db_error" );
 		$self->{processor}->add_message( 
 			"error",
-			$self->{processor}->{session}->make_text( "Database Error" ) );
+			$self->html_phrase( "db_error" ) );
 		return;
 	}
 

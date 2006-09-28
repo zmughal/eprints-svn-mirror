@@ -183,7 +183,7 @@ sub derive_version
 	if( !defined $new_eprint )
 	{
 		$self->{processor}->add_message( "error", 
-			$self->{session}->make_text( "Failed" ) );
+			$self->{session}->html_phrase( "Plugin/Screen/EPrint/View:failed" ) );
 		return;
 	}
 	
@@ -202,7 +202,7 @@ sub derive_clone
 	if( !defined $new_eprint )
 	{
 		$self->{processor}->add_message( "error", 
-			$self->{session}->make_text( "Failed" ) );
+			$self->{session}->html_phrase( "Plugin/Screen/EPrint/View:failed" ) );
 		return;
 	}
 	

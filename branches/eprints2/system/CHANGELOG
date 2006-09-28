@@ -4386,3 +4386,7 @@ PACKAGE: 2.2.99.2
  * Made date_embargo a document field rather than an eprint field for finer-
     grained control. This requirement arose out of a Services contract and
     seemed like a good idea to make it a standard feature in EP itself.
+
+2006-09-28 moj
+ * More plugin strings shifted to phrases
+

@@ -26,7 +26,7 @@ sub render
 
 	my $chunk = $self->{session}->make_doc_fragment;
 
-	$chunk->appendChild( $self->{session}->make_text( "Sorry, you are not able to use any tools" ) );
+	$chunk->appendChild( $self->html_phrase( "no_tools" ) );
 
 	return $chunk;
 }
