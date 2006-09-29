@@ -178,9 +178,7 @@ push @doomeddirs, $htdocs_path;
 foreach $dir (@doomeddirs)
 {
 	if( $noise>=2 ) { print "Removing stuff in: $dir\n"; }
-	my $cmd = "rm -rf $dir/*";
-	if( $noise>=2 ) { print "$cmd\n"; }
-	my $rc = CORE::system( $cmd ) & 0xffff;
+	my $rc = $repo->exec( "rmall", TARGET=>$dir );
 	print STDERR "Warning: Cleaning $dir didn't go smoothly\n" unless( $rc==0 );
 }
 

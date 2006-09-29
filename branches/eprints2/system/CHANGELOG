@@ -4435,3 +4435,7 @@ PACKAGE: 2.2.99.2
     and the latter to specify the invocation to copy all files from one directory to
 	another. Note the slightly magic quotes on the first arg: 'source'/* - this stops
 	spaces confusing things, while ensuring the * gets expanded.
+
+2006-09-29 moj
+ * Added 'rm' and 'rmall' to SystemSettings. Decided against 'rmdir' in case we want
+    to add a rmdir alternative later. Also updated erase_archive and erase_eprints.
