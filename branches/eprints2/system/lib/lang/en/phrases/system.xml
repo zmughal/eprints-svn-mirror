@@ -619,6 +619,7 @@ User Area CGI Scripts
     <ep:phrase id="cgi/login:forever">forever (until I log out)</ep:phrase>
     <ep:phrase id="cgi/login:bind">yes (more secure)</ep:phrase>
     <ep:phrase id="cgi/login:dont_bind">no (more convenient)</ep:phrase>
+	<ep:phrase id="cgi/login:failed">Incorrect username or password. If you have forgotten your password, you may <a href="/perl/reset_password">reset</a> it.</ep:phrase>
     <ep:phrase id="cgi/login:logged_in_as"><p>You are already logged in as <ep:pin name="name" />.</p> <p>If you wish to log in as a different user you must <a href="/perl/users/logout">Logout</a> first.</p></ep:phrase>
 
 <!--********************************************************************** 
