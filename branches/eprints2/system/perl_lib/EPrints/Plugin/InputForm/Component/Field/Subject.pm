@@ -101,6 +101,34 @@ sub render_content
 		}
 	}
 
+	my $selected = $session->make_element( "table", class=>"ep_subjectinput_selections" );
+	$selected->appendChild( $self->html_phrase( "selections" ) );
+	my $first = 1;
+	foreach my $sel ( sort keys %{$self->{selected}} )
+	{
+		my $tr = $session->make_element( "tr" );
+		my $td1 = $session->make_element( "td" );
+		$td1->appendChild( $self->{subject_map}->{$sel}->render_description );
+		my $td2 = $session->make_element( "td" );
+		my $prefix = $self->{prefix}."_".$sel;
+		my $rem_button = $session->make_element( "input", 
+			class=> "ep_form_action_button",
+			type => "submit",
+			name => "_internal_".$prefix."_remove",
+			value => "Remove" );
+			
+		$td2->appendChild( $rem_button ); 
+		if( $first )
+		{
+			$td1->setAttribute( "class", "ep_first" );
+			$td2->setAttribute( "class", "ep_first" );
+			$first = 0;
+		}
+		$tr->appendChild( $td1 );
+		$tr->appendChild( $td2 );
+		$selected->appendChild( $tr );
+	}
+	$out->appendChild( $selected );
 	# render the tree
 	
 	$out->appendChild( $self->_render_subnodes( $top_subj, 0 ) );
@@ -125,7 +153,7 @@ sub _render_subnodes
 
 	if( scalar @children == 0 ) { return $session->make_doc_fragment; }
 
-	my $ul = $session->make_element( "ul" );
+	my $ul = $session->make_element( "ul", class=>"ep_subjectinput_subjects" );
 	
 	foreach my $child ( @children )
 	{
@@ -209,13 +237,7 @@ sub _render_subnode
 	{
 		if( $self->{selected}->{$node_id} )
 		{
-			my $rem_button = $session->make_element( "input", 
-				class=> "ep_form_action_button",
-				type => "submit",
-				name => "_internal_".$prefix."_remove",
-				value => "Remove" );
-			$r_node->appendChild( $session->make_text( " " ) );
-			$r_node->appendChild( $rem_button ); 
+			$desc->setAttribute( "class", "ep_subjectinput_selected" );
 		}
 		else
 		{

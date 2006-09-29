@@ -4424,3 +4424,8 @@ PACKAGE: 2.2.99.2
 
 2006-09-29 moj
  * Added login failed phrase
+
+2006-09-29 moj
+ * Subject component now shows selections at top with remove buttons
+ * Removed list icons from subject tree
+ * Selected subjects are shown bold in tree (without remove buttons)

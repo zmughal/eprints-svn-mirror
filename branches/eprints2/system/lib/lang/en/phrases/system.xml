@@ -1234,6 +1234,10 @@ Titles and Help for the System Fields
 	<ep:phrase id="Plugin/InputForm/Component/Upload:delete_document_confirm">Delete entire document: are you sure?</ep:phrase>
 	<ep:phrase id="Plugin/InputForm/Component/Upload:upload_blurb">Please upload a file.</ep:phrase>
 
+	<!-- Subject component -->
+	<ep:phrase id="Plugin/InputForm/Component/Field/Subject:selections">Current selections:</ep:phrase>
+
+
 	<!-- PlaceHolder component -->
 	
 	<ep:phrase id="Plugin/InputForm/Component/PlaceHolder:title">Problem loading component: <ep:pin name="placeholding" /></ep:phrase>

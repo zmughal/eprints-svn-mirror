@@ -10,7 +10,28 @@
 	text-decoration: none;
 }
 
+.ep_subjectinput_selections {
+	border: dashed #c8cbdf 1px; 
+	margin-top: 0.5em; 
+	padding: 0.5em; 
+	background-color: white;
+	list-style: none;
+}
 
+.ep_subjectinput_selected {
+	font-weight: bold;
+}
 
+ul.ep_subjectinput_subjects {
+	list-style: none;
+}
+
+.ep_subjectinput_selections td.ep_first {
+	border-top: none;
+}
+
+.ep_subjectinput_selections td {
+	border-top: dashed #ccc 1px; 
+}
 
 /* End of subject component section */
