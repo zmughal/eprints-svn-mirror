@@ -574,12 +574,15 @@ sub clone
 	}
 	
 	# Copy files
-	my $rc = system( "/bin/cp -pR ".$self->local_path()."/* ".$new_doc->local_path() ) & 0xffff;
+	
+	my $repository = $self->{session}->get_repository;
+	
+	my $rc = $repository->exec( "cpall", SOURCE=>$self->local_path(), TARGET=>$new_doc->local_path() ); 
 
 	# If something's gone wrong...
 	if ( $rc!=0 )
 	{
-		$self->{session}->get_repository->log( "Error copying from ".$self->local_path()." to ".$new_doc->local_path().": $!" );
+		$repository->log( "Error copying from ".$self->local_path()." to ".$new_doc->local_path().": $!" );
 		return( undef );
 	}
 

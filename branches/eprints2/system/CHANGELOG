@@ -4429,3 +4429,9 @@ PACKAGE: 2.2.99.2
  * Subject component now shows selections at top with remove buttons
  * Removed list icons from subject tree
  * Selected subjects are shown bold in tree (without remove buttons)
+
+2006-09-29 moj
+ * Added 'cp' and 'cpall' to SystemSettings, the former just to contain the command
+    and the latter to specify the invocation to copy all files from one directory to
+	another. Note the slightly magic quotes on the first arg: 'source'/* - this stops
+	spaces confusing things, while ensuring the * gets expanded.

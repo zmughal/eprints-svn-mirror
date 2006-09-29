@@ -34,6 +34,7 @@ $EPrints::SystemSettings::conf =
 		dvips 	=> "/usr/bin/dvips",
 		convert	=> "/usr/bin/convert",
 		mimetex	=> "/export/0/home/cjg/Projects/eprints2_stable/eprints/system/mimetex.cgi",
+		cp		=> "/bin/cp",
 	},
 	invocation => {
 		zip 	=> '$(unzip) 1>/dev/null 2>&1 -qq -o -d \'$(DIR)\' \'$(ARC)\'',
@@ -43,6 +44,7 @@ $EPrints::SystemSettings::conf =
 		latex => '$(latex) \'$(SOURCE)\'',
 		dvips => '$(dvips) \'$(SOURCE)\' -o \'$(TARGET)\'',
 		convert_crop_white => '$(convert) -crop 0x0 -bordercolor white -border 4x4 \'$(SOURCE)\' \'$(TARGET)\'',
+		cpall => '$(cp) -pR \'$(SOURCE)\'/* \'$(TARGET)\'',
 	},
 	archive_extensions => {
 		"zip"    =>  ".zip",
