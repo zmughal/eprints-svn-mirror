@@ -4444,3 +4444,11 @@ PACKAGE: 2.2.99.2
  * Shifted InputForm::Phrase to XHTML - now takes in any XHTML (including phrase blocks)
      and inserts them into the page. Note that the surround should be set to None to stop
 	 help/titles being shown.
+
+2006-10-02 moj
+ * Added search to subject component + refactored some of the code to render the results/selections
+ * Refactored some of the duplicate code in the render. 
+ * Fixed bug that prevented emboldening selected subjects if they were parent nodes.
+ * Added 'searchstore' hidden field to store previous search.
+ * Added clear button to clear searchstore.
+ * Tweak to system.xml to add clear button.

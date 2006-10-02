@@ -22,6 +22,10 @@
 	font-weight: bold;
 }
 
+.ep_subjectinput_selected_subject {
+	font-weight: bold;
+}
+
 ul.ep_subjectinput_subjects {
 	list-style: none;
 }
@@ -31,6 +35,22 @@ ul.ep_subjectinput_subjects {
 }
 
 .ep_subjectinput_selections td {
+	border-top: dashed #ccc 1px; 
+}
+
+.ep_subjectinput_results {
+	border: dashed #c8cbdf 1px; 
+	margin-top: 0.5em; 
+	padding: 0.5em; 
+	background-color: white;
+	list-style: none;
+}
+
+.ep_subjectinput_results td.ep_first {
+	border-top: none;
+}
+
+.ep_subjectinput_results td {
 	border-top: dashed #ccc 1px; 
 }
 
