@@ -1,4 +1,4 @@
-package EPrints::Plugin::InputForm::Component::Phrase;
+package EPrints::Plugin::InputForm::Component::XHTML;
 
 use EPrints::Plugin::InputForm::Component;
 
@@ -14,7 +14,7 @@ sub new
 
 	my $self = $class->SUPER::new( %opts );
 
-	$self->{name} = "Phrase";
+	$self->{name} = "XHTML";
 	$self->{visible} = "all";
 
 	return $self;
@@ -32,8 +32,7 @@ sub parse_config
 {
 	my( $self, $dom ) = @_;
 
-
-	$self->{config}->{phraseid} = $dom->getAttribute("ref");
+	$self->{config}->{dom} = $dom;
 }
 
 =pod
@@ -49,9 +48,7 @@ sub render_content
 {
 	my( $self ) = @_;
 
-	my $phrase = $self->{session}->html_phrase( $self->{config}->{phraseid} );
-
-	return $phrase; 
+	return $self->{config}->{dom};
 }
 
 1;

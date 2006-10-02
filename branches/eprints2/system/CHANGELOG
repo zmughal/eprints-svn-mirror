@@ -4439,3 +4439,8 @@ PACKAGE: 2.2.99.2
 2006-09-29 moj
  * Added 'rm' and 'rmall' to SystemSettings. Decided against 'rmdir' in case we want
     to add a rmdir alternative later. Also updated erase_archive and erase_eprints.
+
+2006-10-02 moj
+ * Shifted InputForm::Phrase to XHTML - now takes in any XHTML (including phrase blocks)
+     and inserts them into the page. Note that the surround should be set to None to stop
+	 help/titles being shown.
