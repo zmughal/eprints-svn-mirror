@@ -15,6 +15,15 @@ print <<END;
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <ul>
+  <li class="ep_first">foo
+    <ul>
+      <li id="for:value:component:_issn">Hello this is fun</li>
+      <li id="for:value:component:_ispublished">pub</li>
+      <li id="for:value:component:_pagerange_from">hell</li>
+      <li id="for:value:component:_pagerange_to">highwater</li>
+      <li id="for:value:component:_volume">Loud</li>
+    </ul>
+  </li>
   <li class="ep_first">hello
     <ul>
       <li id="for:value:component:_issn">Hello this is fun</li>
