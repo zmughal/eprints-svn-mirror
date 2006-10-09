@@ -260,15 +260,6 @@ sub new
 			push @{$self->{system_fields}} , $field;
 			$self->{field_index}->{$field->get_name()} = $field;
 		}
-
-		if( $self->{confid} eq "eprint" )
-		{
-			if( $self->{repository}->get_conf( "submission_long_types" ) )
-			{
-				$self->{field_index}->{type}->set_property( 
-					"input_style", "long" );
-			}
-		}
 	}
 	my $repository_fields = $repository->get_conf( "fields", $self->{confid} );
 	if( $repository_fields )

@@ -4466,3 +4466,16 @@ PACKAGE: 2.2.99.2
 
 2006-10-09 cjg
  * Removed ruler.xml and hardwired it as an <hr>
+
+2006-10-09 cjg
+ * Split up Core.pl into more small config files. Some stray things are left
+    in misc.pl
+ * Remved unsused config options
+ * Renamed a number of config options
+ * Removed archivename from entities (it will become a phrase)
+ * Renamed s/brand.pl/branding.pl/
+ * Cookies now all use the same domain and have hard wired names.
+ * EPrint-type now always uses "long types"
+ * No longer loads archive/foo.xml at all!
+ * Added better warnings for Warnings and Errors in foo.pl files.
+ 

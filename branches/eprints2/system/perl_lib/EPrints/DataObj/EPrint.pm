@@ -139,7 +139,7 @@ sub get_system_field_info
 		render_res=>"minute", can_clone=>0 },
 
 	{ name=>"type", type=>"namedset", set_name=>"eprint", required=>1, 
-		input_rows=>"ALL" },
+		"input_style"=> "long" },
 
 	{ name=>"succeeds", type=>"itemref", required=>0,
 		datasetid=>"eprint", can_clone=>0 },

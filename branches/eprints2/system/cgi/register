@@ -43,8 +43,6 @@ sub make_page
 			"cgi/register:no_web_signup" );
 	}
 
-	my $mlangopt = $session->get_repository->get_conf("multi_language_options");
-
 	my $user_ds = $session->get_repository->get_dataset( "user" );
 
 	my $extrafields = $session->get_repository->get_conf( "extra_reg_fields" );
@@ -74,7 +72,6 @@ sub make_page
 	{
 		@sysfields = ( "email", "newpassword" );
 	}
-	if( $mlangopt ) { push @sysfields,'lang'; }
 
 	foreach my $fieldid ( @sysfields )
 	{

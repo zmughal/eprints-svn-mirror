@@ -995,6 +995,25 @@ sub call
 	my( $self, $cmd, @params ) = @_;
 
 	my $fn = \&{$self->{class}."::".$cmd};
+			
+	local $SIG{__WARN__} = sub {
+        	my( $msg ) = @_;
+        	my @a = split( " at ", $msg );
+        	pop @a;
+        	print STDERR join( " at ", @a );
+        	my @c = caller;
+        	print STDERR " in configuration subroutine $cmd at line ".($c[2]-10)." of the file.\n";
+	};
+	local $SIG{__DIE__} = sub {
+        	my( $msg ) = @_;
+        	my @a = split( " at ", $msg );
+        	pop @a;
+        	print STDERR join( " at ", @a );
+        	my @c = caller;
+        	print STDERR " in configuration subroutine $cmd at line ".($c[2]-10)." of the file.\n";
+		exit 1;
+	};
+
 	return &$fn( @params );
 }
 
@@ -1278,7 +1297,7 @@ sub generate_dtd
 {
 	my( $self ) = @_;
 
-	my $dtdfile = $self->get_conf( "lib_path")."/xhtml-entities.dtd";
+	my $dtdfile = $self->get_conf("lib_path")."/xhtml-entities.dtd";
 	open( XHTMLENTITIES, $dtdfile ) ||
 		die "Failed to open system DTD ($dtdfile) to include ".
 			"in repository DTD";

@@ -331,7 +331,7 @@ sub terminate
 Given an repository object and a Apache (mod_perl) request object, this
 method decides what language the session should be.
 
-First it looks at the HTTP cookie "lang_cookie_name", failing that it
+First it looks at the HTTP cookie "eprints_lang", failing that it
 looks at the prefered language of the request from the HTTP header,
 failing that it looks at the default language for the repository.
 
@@ -352,7 +352,7 @@ sub get_session_language
 
 	my $cookie = EPrints::Apache::AnApache::cookie( 
 		$request,
-		$repository->get_conf( "lang_cookie_name") );
+		"eprints_lang" );
 	push @prefs, $cookie if defined $cookie;
 
 	# then look at the accept language header
@@ -2501,9 +2501,10 @@ sub send_http_header
 	if( defined $code )
 	{
 		my $cookie = $self->{query}->cookie(
-			-name    => "eplogin",
+			-name    => "eprints_session",
 			-path    => "/",
 			-value   => $code,
+			-domain  => $self->{repository}->get_conf("cookie_domain"),
 			-expires => "+10y" );
 		EPrints::Apache::AnApache::header_out( 
 			$self->{"request"},
@@ -2513,11 +2514,11 @@ sub send_http_header
 	if( defined $opts{lang} )
 	{
 		my $cookie = $self->{query}->cookie(
-			-name    => $self->{repository}->get_conf("lang_cookie_name"),
+			-name    => "eprints_lang",
 			-path    => "/",
 			-value   => $opts{lang},
 			-expires => "+10y", # really long time
-			-domain  => $self->{repository}->get_conf("lang_cookie_domain") );
+			-domain  => $self->{repository}->get_conf("cookie_domain") );
 		EPrints::Apache::AnApache::header_out( 
 				$self->{"request"},
 				"Set-Cookie" => $cookie );
@@ -2720,7 +2721,7 @@ sub _current_user_auth_cookie
 		return $user;
 	}
 	
-	my $cookie = EPrints::Apache::AnApache::cookie( $self->get_request, "eplogin" );
+	my $cookie = EPrints::Apache::AnApache::cookie( $self->get_request, "eprints_session" );
 
 	return undef if( !defined $cookie );
 	return undef if( $cookie eq "" );

@@ -19,6 +19,7 @@
 #
 ######################################################################
 
+use Unicode::String qw(utf8);
 
 # Minimum size word to normally index.
 my $FREETEXT_MIN_WORD_SIZE = 3;

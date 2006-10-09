@@ -409,7 +409,7 @@ sub secure_doc_from_url
 	my $repository = $session->{repository};
 	my $uri = $r->uri;
 
-	my $secpath = $repository->get_conf( "secure_url_dir" );
+	my $secpath = $repository->get_conf( "secure_urlpath" );
 	my $esec = $r->dir_config( "EPrints_Secure" );
 	my $https = (defined $esec && $esec eq "yes" );
 	my $urlpath;

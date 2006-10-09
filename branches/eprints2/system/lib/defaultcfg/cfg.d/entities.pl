@@ -31,9 +31,9 @@
 sub get_entities
 {
 	my( $repository, $langid ) = @_;
-
 	my %entities = ();
-	$entities{archivename} = $repository->get_conf( "archivename", $langid );
+
+	$entities{archivename} = "Fix ticket 2406!";
 	$entities{adminemail} = $repository->get_conf( "adminemail" );
 	$entities{base_url} = $repository->get_conf( "base_url" );
 	$entities{perl_url} = $repository->get_conf( "perl_url" );

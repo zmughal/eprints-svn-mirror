@@ -117,121 +117,12 @@ sub init
 		
 		my $id = $1;
 	
-		$ARCHIVES{$id} = load_repository_config( $id );
+		$ARCHIVES{$id} = {};
 	}
 	closedir( CFG );
 }
 
 	
-######################################################################
-=pod
-
-=item $arc_config = EPrints::Config::load_repository_config( $arc_id )
-
-Load the configuration of the specified repository and return it as a 
-data structure.
-
-=cut
-######################################################################
-sub load_archive_config { return load_repository_config( @_ ); }
-
-sub load_repository_config
-{
-	my( $id ) = @_;
-
-	my $fpath = $SYSTEMCONF{arc_path}."/".$id.".xml";
-
-	my $conf_doc = EPrints::XML::parse_xml( $fpath );
-	if( !defined $conf_doc )
-	{
-		print STDERR "Error parsing file: $fpath\n";
-		next;
-	}
-	my $conf_tag = ($conf_doc->getElementsByTagName( "archive" ))[0];
-	if( !defined $conf_tag )
-	{
-		print STDERR "In file: $fpath there is no <archive> tag.\n";
-		EPrints::XML::dispose( $conf_doc );
-		next;
-	}
-	if( $id ne $conf_tag->getAttribute( "id" ) )
-	{
-		print STDERR "In file: $fpath id is not $id\n";
-		EPrints::XML::dispose( $conf_doc );
-		next;
-	}
-	my $ainfo = {};
-	foreach( keys %SYSTEMCONF ) { $ainfo->{$_} = $SYSTEMCONF{$_}; }
-	my $tagname;
-	foreach $tagname ( 
-			"host", "urlpath", "port", 
-			"archiveroot", "dbname", "dbhost", "dbport",
-			"dbsock", "dbuser", "dbpass", "defaultlanguage",
-			"adminemail", "securehost", "securepath", "index" )
-	{
-		my $tag = ($conf_tag->getElementsByTagName( $tagname ))[0];
-		if( !defined $tag )
-		{
-			next if(  $tagname eq "securehost" );
-			next if(  $tagname eq "securepath" );
-			next if(  $tagname eq "index" );
-
-			EPrints::Config::abort( "In file: $fpath the $tagname tag is missing." );
-		}
-		my $val = "";
-		foreach( $tag->getChildNodes ) { $val.=EPrints::XML::to_string( $_ ); }
-		$ainfo->{$tagname} = $val;
-	}
-	unless( $ainfo->{archiveroot}=~m#^/# )
-	{
-		$ainfo->{archiveroot}= $SYSTEMCONF{base_path}."/".$ainfo->{archiveroot};
-	}
-
-	# remove any trailing slash from the urlpath
-	$ainfo->{urlpath} =~ s#/$##;
-
-#cjg clean this out later
-#	$ARCHIVEMAP{$ainfo->{host}.$ainfo->{urlpath}} = $id;
-#	if( EPrints::Utils::is_set( $ainfo->{securehost} ) )
-#	{
-#		$ARCHIVEMAP{$ainfo->{securehost}.$ainfo->{securepath}} = $id;
-#	}
-	$ainfo->{aliases} = [];
-	foreach my $tag ( $conf_tag->getElementsByTagName( "alias" ) )
-	{
-		my $alias = {};
-		my $val = "";
-		foreach( $tag->getChildNodes ) { $val.=EPrints::XML::to_string( $_ ); }
-		$alias->{name} = $val; 
-		$alias->{redirect} = ( $tag->getAttribute( "redirect" ) eq "yes" );
-		push @{$ainfo->{aliases}},$alias;
-#		$ARCHIVEMAP{$alias->{name}.$ainfo->{urlpath}} = $id;
-	}
-	$ainfo->{languages} = [];
-	foreach my $tag ( $conf_tag->getElementsByTagName( "language" ) )
-	{
-		my $val = "";
-		foreach( $tag->getChildNodes ) { $val.=EPrints::XML::to_string( $_ ); }
-		push @{$ainfo->{languages}},$val;
-	}
-	foreach my $tag ( $conf_tag->getElementsByTagName( "archivename" ) )
-	{
-		my $val = "";
-		foreach( $tag->getChildNodes ) { $val.=EPrints::XML::to_string( $_ ); }
-		my $langid = $tag->getAttribute( "language" );
-		$ainfo->{archivename}->{$langid} = $val;
-	}
-
-	# clean up boolean "index" option
-	$ainfo->{index} = !( defined $ainfo->{index} && "\L$ainfo->{index}" eq "no" );
-
-	EPrints::XML::dispose( $conf_doc );
-
-	return $ainfo;
-}
-	
-
-
 
 ######################################################################
 =pod
@@ -298,19 +189,20 @@ sub load_repository_config_module
 
 	ensure_init();
 
-	my $info = $ARCHIVES{$id};
-	return unless( defined $info );
+	my $info = {};
+	no strict 'refs';
+	eval '$EPrints::Config::'.$id.'::config = $info';
+	use strict 'refs';
+	
+	foreach( keys %SYSTEMCONF ) { $info->{$_} = $SYSTEMCONF{$_}; }
+	$info->{archiveroot} = $info->{arc_path}."/".$id;
 
 	my @oldinc = @INC;
 	local @INC;
 	@INC = (@oldinc, $info->{archiveroot} );
 
-	#my $prev_dir =  EPrints::Utils::untaint_dir( getcwd );
-	#chdir EPrints::Utils::untaint_dir( $info->{archiveroot} );
-	#my $return = do $file;
-	#chdir $prev_dir;
-
 	my $dir = $info->{archiveroot}."/cfg/cfg.d";
+
 	my $dh;
 	opendir( $dh, $dir ) || EPrints::abort( "Can't read cfg.d config files: $!" );
 	my @files = ();
@@ -322,7 +214,10 @@ sub load_repository_config_module
 	}
 	closedir( $dh );
 
-	eval '$EPrints::Config::'.$id.'::config = $info';
+	$info->{set_in} = {};
+	my $set = {};
+	foreach( keys %$info ) { $set->{$_} = 1; }
+		
 	foreach my $file ( sort @files )
 	{
 		$@ = undef;
@@ -334,7 +229,20 @@ sub load_repository_config_module
 		}
 		my $cfgfile = join('',<CFGFILE>);
 		close CFGFILE;
-	 	my $todo = 'package EPrints::Config::'.$id.'; our $c = $EPrints::Config::'.$id.'::config; '.$cfgfile;
+	 	my $todo = <<END;
+package EPrints::Config::$id; 
+our \$c = \$EPrints::Config::${id}::config;
+local \$SIG{__WARN__} = sub { 
+	my( \$msg ) = \@_; 
+	my \@a = split( / at /, \$msg );
+	pop \@a;
+	print STDERR join( " at ", \@a );	
+	my \@c = caller;
+	print STDERR " at $filepath line ".(\$c[2]-10).".\\n";
+};
+$cfgfile
+END
+#print STDERR "$filepath...\n";
 		eval $todo;
 
 		if( $@ )
@@ -353,9 +261,15 @@ $errors
 END
 			return;
 		}
+		foreach( keys %$info )
+		{
+			next if defined $set->{$_};
+			$set->{$_} = 1;
+			$info->{set_in}->{$_} = \$filepath;
+		}
 	}
-	
-	return eval '$EPrints::Config::'.$id.'::config';
+
+	return $info;
 }
 
 
