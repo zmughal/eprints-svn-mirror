@@ -4452,3 +4452,7 @@ PACKAGE: 2.2.99.2
  * Added 'searchstore' hidden field to store previous search.
  * Added clear button to clear searchstore.
  * Tweak to system.xml to add clear button.
+
+2006-10-09 cjg
+ * Removed need for SOAP::Lite from soap code.
+

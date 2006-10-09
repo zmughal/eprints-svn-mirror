@@ -149,21 +149,6 @@ sub dataset_schema
 
 	$data.= "  <xsd:all>\n";
 
-	if( $dsid eq "eprint" )
-	{
-		$data.= "    <xsd:element minOccurs=\"0\" maxOccurs=\"1\" name=\"documents\" type=\"EprintDocuments\" />\n";
-
-		print <<END;
-<xsd:complexType name="EprintDocuments">
-  <xsd:complexContent>
-    <xsd:restriction base="soapenc:Array">
-      <xsd:attribute ref="soapenc:arrayType" wsdl:arrayType="Document[]" />
-    </xsd:restriction>
-  </xsd:complexContent>
-</xsd:complexType>
-END
-	}
-
 	if( $dsid eq "document" )
 	{
 		$data.= "    <xsd:element minOccurs=\"0\" maxOccurs=\"1\" name=\"files\" type=\"DocumentFiles\" />\n";
@@ -192,6 +177,7 @@ END
 
 	foreach my $field ( $ds->get_fields )
 	{
+		next if( $field->is_type( "file" ) ); # hack, for now.
 		my $fn = $field->get_name;
 		$fn =~ s/_([a-z])/\u$1/g;
 		my $type = &field_schema( $field, "\u$dsid\u$fn" );
@@ -230,30 +216,8 @@ END
 	return $name;
 }
 
+
 sub field_schema_single
-{
-	my( $field, $name ) = @_;
-
-	unless( $field->get_property( "hasid" ) )
-	{
-		return &field_schema_noid( $field, $name );
-	}
-
-	my $type = &field_schema_noid( $field, $name."Main" );
-
-	print <<END;
-  <xsd:complexType name="$name">
-    <xsd:all>
-      <xsd:element minOccurs="0" maxOccurs="1" name="id" type="xsd:string" />
-      <xsd:element minOccurs="0" maxOccurs="1" name="main" type="$type" />
-    </xsd:all>
-  </xsd:complexType>
-END
-
-	return $name;
-}
-
-sub field_schema_noid
 {
 	my( $field, $name ) = @_;
 
@@ -296,6 +260,11 @@ sub field_schema_basic
 	if( $field->get_search_group eq "name" )
 	{
 		return "NameValue";
+	}
+	if( $field->is_type( "subobject" ) )
+	{
+		my $datasetid = $field->get_property( "datasetid" );
+		return "\u$datasetid";
 	}
 
 	return( 'xsd:string' );
