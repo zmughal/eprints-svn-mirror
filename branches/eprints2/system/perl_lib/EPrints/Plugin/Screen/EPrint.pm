@@ -108,13 +108,17 @@ sub render_blister
 	my $staff = 0;
 
 	my $workflow = $self->workflow;
-	my $table = $session->make_element( "table", cellspacing=>0, class=>"ep_blister_bar" );
+	my $table = $session->make_element( "table", cellpadding=>0, cellspacing=>0, class=>"ep_blister_bar" );
 	my $tr = $session->make_element( "tr" );
 	$table->appendChild( $tr );
 	my $first = 1;
 	foreach my $stage_id ( $workflow->get_stage_ids )
 	{
-		if( !$first )  { $tr->appendChild( $session->make_element( "td", class=>"ep_blister_join" ) ); }
+		if( !$first )  
+		{ 
+			my $td = $session->make_element( "td", class=>"ep_blister_join" );
+			$tr->appendChild( $td );
+		}
 		my $td;
 		if( $stage_id eq $sel_stage_id )
 		{
@@ -133,9 +137,8 @@ sub render_blister
 		{
 			$a = $session->render_link( "?eprintid=".$self->{processor}->{eprintid}."&screen=EPrint::Staff::Edit&stage=$stage_id" );
 		}
-		my $div = $session->make_element( "div", class=>"ep_blister_node_inner" );
-		$div->appendChild( $session->html_phrase( "metapage_title_".$stage_id ) );
-		$a->appendChild( $div );
+		#my $div = $session->make_element( "div", class=>"ep_blister_node_inner" );
+		$a->appendChild( $session->html_phrase( "metapage_title_".$stage_id ) );
 		$td->appendChild( $a );
 		$tr->appendChild( $td );
 		$first = 0;

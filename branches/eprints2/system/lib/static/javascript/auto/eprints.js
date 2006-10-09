@@ -59,13 +59,10 @@ window.ep_showTab = function( baseid, tabid )
 	tab = document.getElementById( baseid+"_tab_"+tabid );
 	tab.style.font_size = "30px";
 	tab.className = "ep_tab_selected";
-	for( i=0; ep_lt(i,tab.childNodes.length); i++ )
+	anchors = tab.getElementsByTagName('a');
+	for( i=0; ep_lt(i,anchors.length); i++ )
 	{
-		child = tab.childNodes[i];
-		if( child.nodeName == "A" )
-		{
-			child.blur();
-		}
+		anchors[i].blur();
 	}
 
 /*

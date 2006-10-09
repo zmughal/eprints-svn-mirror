@@ -239,11 +239,12 @@ sub render_content
 		my $doc_prefix = $self->{prefix}."_doc".$docid;
 		my $label = $session->make_doc_fragment;
 		$label->appendChild( $doc->render_description );
+		my $msg = $self->phrase( "delete_document_confirm" );
 		my $del_btn = $session->make_element( "input", 
 			type => "image", 
 			src => "/style/images/delete.png",
 			name => "_internal_".$doc_prefix."_delete_doc",
-			onClick => "if( !confirm( '".$self->phrase( "delete_document_confirm" )."' ) ) { return false; }",
+			onclick => "if( window.event ) { window.event.cancelBubble = true; } return confirm( '$msg' );",
 			value => $self->phrase( "delete_document" ) );
 		$labels->{$doc->get_id} = $label;
 		$icons->{$doc->get_id} = $del_btn;
@@ -302,7 +303,7 @@ sub render_content
 
 		$doc_div->appendChild( $self->_render_doc( $doc ) );
 	}
-
+	
 	return $f;
 }
 
@@ -361,15 +362,14 @@ sub _render_doc
 		}
 	}
 
+	# in case javascript is not available...
 	my $tool_div = $session->make_element( "div", class=>"ep_no_js" );
 	my $delete_fmt_button = $session->make_element( "input",
 		name => "_internal_".$doc_prefix."_delete_doc",
 		value => $self->phrase( "delete_format" ), 
 		class => "ep_form_internal_button",
 		type => "submit",
-		onClick => "if( !confirm( '".$self->phrase( "delete_format_confirm" )."' ) ) { return false; }",
 		);
-
 	$tool_div->appendChild( $delete_fmt_button );
 
 	$doc_cont->appendChild( $tool_div );
@@ -495,7 +495,7 @@ sub _render_filelist
 			type => "image", 
 			src => "/style/images/delete.png",
 			name => "_internal_".$doc_prefix."_delete_$i",
-			onClick => "if( !confirm( '".$self->phrase( "delete_file_confirm", filename => $filename )."' ) ) { return false; }",
+			onClick => "return confirm( '".$self->phrase( "delete_file_confirm", filename => $filename )."' );",
 			value => $self->phrase( "delete_file" ) );
 			
 		$td_delete->appendChild( $del_btn );

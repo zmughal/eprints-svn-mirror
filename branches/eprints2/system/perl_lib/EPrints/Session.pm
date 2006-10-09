@@ -1996,7 +1996,8 @@ sub render_tabs
 		foreach( @{$params{slow_tabs}} ) { $st->{$_} = 1; }
 	}
 
-	my $table = $self->make_element( "table", class=>"ep_tab_bar", cellspacing=>0 );
+	my $table = $self->make_element( "table", class=>"ep_tab_bar", cellspacing=>0, cellpadding=>0 );
+	#my $script = $self->make_element( "script", type=>"text/javascript" );
 	my $tr = $self->make_element( "tr", id=>"${id_prefix}_tabs" );
 	$table->appendChild( $tr );
 
@@ -2009,14 +2010,20 @@ sub render_tabs
 			href    => $links->{$tab},
 		);
 		my %td_opts = ( 
+			class=>"ep_tab",
 			id => "${id_prefix}_tab_$tab", 
-			class=>"ep_tab" );
+		);
 		# if the current tab is slow, or the tab we're rendering is slow then
 		# don't make a javascript toggle for it.
+
 		if( !$st->{$current} && !$st->{$tab} )
 		{
-			$a_opts{onClick} = "return ep_showTab('${id_prefix}','$tab' );";
-			$td_opts{onClick} = "return ep_showTab('${id_prefix}','$tab' );";
+			# stop the actual link from causing a reload.
+			$a_opts{onclick} = "return ep_showTab('${id_prefix}','$tab' );",
+		}
+		elsif( $st->{$tab} )
+		{
+			$a_opts{onclick} = "ep_showTab('${id_prefix}','$tab' ); return true;",
 		}
 		if( $current eq $tab ) { $td_opts{class} = "ep_tab_selected"; }
 
@@ -2049,6 +2056,7 @@ sub render_tabs
 		$tr->appendChild( $spacer );
 	}
 	$f->appendChild( $table );
+	#$f->appendChild( $script );
 
 	return $f;
 }

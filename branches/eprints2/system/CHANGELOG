@@ -4456,3 +4456,10 @@ PACKAGE: 2.2.99.2
 2006-10-09 cjg
  * Removed need for SOAP::Lite from soap code.
 
+2006-10-09 cjg
+ * Made the A in tabs and blisters into a block element so clicking anywhere 
+    works.
+ * Fixed bug in bluring tabs after selection
+ * Fixed bug with the Loading... in the history tab
+ * Swapped order of Summary and Details tabs
+ * Fixed bug in delete-document tab X link. 

@@ -12,7 +12,12 @@
 	background-image: url(/style/images/gray_bar.png);
 	border: solid 1px #cccccc;
 	text-align: center;
+}
+.ep_blister_node a {
 	padding: 4px;
+	display: block;
+	text-decoration: none;
+	color: #000000;
 }
 .ep_blister_join {
 	background-image: url(/style/images/blackline.png);
@@ -22,11 +27,12 @@
 }
 .ep_blister_node_selected {
 	text-align: center;
-	padding: 4px;
 	border: solid 1px #204f76;
 	background-image: url(/style/images/blue_bar.png);
 }
 .ep_blister_node_selected a {
+	padding: 4px;
+	display: block;
 	text-decoration: none;
 	color: #ffffff;
 }
