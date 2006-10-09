@@ -4463,3 +4463,6 @@ PACKAGE: 2.2.99.2
  * Fixed bug with the Loading... in the history tab
  * Swapped order of Summary and Details tabs
  * Fixed bug in delete-document tab X link. 
+
+2006-10-09 cjg
+ * Removed ruler.xml and hardwired it as an <hr>

@@ -42,10 +42,6 @@ database and website.
 #  $self->{id}
 #     The id of this repository.
 #
-#  $self->{ruler}
-#     An XHTML tree describing the horizontal ruler for this repository
-#     website.
-#
 #  $self->{langs}
 #     A hash containing EPrints::Language objects for this repository,
 #     keyed by iso lang id.
@@ -160,7 +156,6 @@ sub new
 	unless( $noxml )
 	{
 		$self->generate_dtd() || return;
-		$self->get_ruler() || return;
 		$self->_load_workflows() || return;
 		$self->_load_namedsets() || return;
 		$self->_load_datasets() || return;
@@ -212,47 +207,6 @@ sub new_from_request
 }
 
 
-######################################################################
-=pod
-
-=item $xhtml = $repository->get_ruler
-
-Returns the ruler as specified in ruler.xml - it caches the result
-so the XML file only has to be loaded once.
-
-=cut
-######################################################################
-
-sub get_ruler
-{
-	my( $self ) = @_;
-
-	if( defined $self->{ruler} )
-	{
-		return $self->{ruler};
-	}
-
-	my $file = $self->get_conf( "config_path" )."/ruler.xml";
-	
-	my $doc = $self->parse_xml( $file );
-	if( !defined $doc )
-	{
-		$self->log( "Error loading: $file\n" );
-		return undef;
-	}
-	my $ruler = ($doc->getElementsByTagName( "ruler" ))[0];
-	return undef if( !defined $ruler );
-
-	$self->{ruler} = $self->{xmldoc}->createDocumentFragment();
-	foreach( $ruler->getChildNodes )
-	{
-		$self->{ruler}->appendChild( 
-			EPrints::XML::clone_and_own( $_, $self->{xmldoc} ) );
-	}
-	EPrints::XML::dispose( $doc );
-
-	return $self->{ruler};
-}	
  
 ######################################################################
 #=pod

@@ -963,7 +963,7 @@ These methods help build XHTML.
 
 =item $ruler = $session->render_ruler
 
-Return the XHTML which this repository uses as a page divider. Configured
+Return an HR.
 in ruler.xml
 
 =cut
@@ -973,9 +973,7 @@ sub render_ruler
 {
 	my( $self ) = @_;
 
-	my $ruler = $self->{repository}->get_ruler();
-	
-	return $self->clone_for_me( $ruler, 1 );
+	return $self->make_element( "hr", noshade=>"noshade", class=>"ep_ruler" );
 }
 
 ######################################################################
