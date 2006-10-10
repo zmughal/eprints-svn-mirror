@@ -292,6 +292,7 @@ sub terminate
 {
 	my( $self ) = @_;
 	
+	
 	$self->{database}->garbage_collect();
 	$self->{repository}->call( "session_close", $self );
 	$self->{database}->disconnect();
@@ -2496,9 +2497,13 @@ sub send_http_header
 		$self->{"request"},
 		"Cache-Control" => "no-store, no-cache, must-revalidate" );
 
-	my $c = $self->{request}->connection;
+	my $r = $self->{request};
+	my $c = $r->connection;
+	
 	my $code = $c->notes->get( "cookie_code" );
-	if( defined $code )
+	$c->notes->set( cookie_code=>'undef' );
+	
+	if( defined $code && $code ne 'undef')
 	{
 		my $cookie = $self->{query}->cookie(
 			-name    => "eprints_session",
@@ -2612,15 +2617,17 @@ sub read_params
 	my( $self ) = @_;
 
 	my $c = $self->{request}->connection;
-	my $code = $c->notes->get( "params" );
-	if( defined $code )
+	my $params = $c->notes->get( "params" );
+	if( defined $params && $params ne 'undef')
 	{
- 		$self->{query} = new CGI( $code ); 
+ 		$self->{query} = new CGI( $params ); 
 	}
 	else
 	{
  		$self->{query} = new CGI;
 	}
+
+	$c->notes->set( params=>'undef' );
 }
 
 
@@ -2647,6 +2654,13 @@ sub have_parameters
 
 
 
+sub logout
+{
+	my( $self ) = @_;
+
+	$self->{logged_out} = 1;
+}
+
 ######################################################################
 =pod
 
@@ -2662,6 +2676,11 @@ Return undef if there isn't one.
 sub current_user
 {
 	my( $self ) = @_;
+
+	if( $self->{logged_out} )
+	{	
+		return undef;
+	}
 
 	if( !defined $self->{current_user} )
 	{
@@ -2714,8 +2733,8 @@ sub _current_user_auth_cookie
 	# we won't have the cookie for the page after login.
 	my $c = $self->{request}->connection;
 	my $userid = $c->notes->get( "userid" );
-
-	if( EPrints::Utils::is_set( $userid ) )
+	$c->notes->set( "userid", 'undef' );
+	if( EPrints::Utils::is_set( $userid ) && $userid ne 'undef' )
 	{	
 		my $user = EPrints::DataObj::User->new( $self, $userid );
 		return $user;

@@ -31,9 +31,11 @@ sub handler
 
 			my $c = $r->connection;
 			$c->notes->set(userid=>$userid);
+
 			$c->notes->set(cookie_code=>$code);
 			my $params = $session->param("params");
 			$c->notes->set( params=>$params );
+
 
 			return DECLINED;
 		}
