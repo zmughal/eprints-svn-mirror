@@ -21,7 +21,7 @@ while( $file ne "" )
 		next;
 	}
 
-	if( $file =~ s/<(([^>'"]*|"[^"]*"|'[^']*)+)>//s )
+	if( $file =~ s/<(([^>'"]*|"[^"]*"|'[^']*')+)>//s )
 	{
 		tag( $1 );
 		next;
@@ -80,7 +80,7 @@ sub tag
 			print "/";
 			next;
 		}
-		print "DAMN! ($tag)\n";
+		print "DAMN! --($tag)--\n";
 		exit;
 	}
 	print ">";
