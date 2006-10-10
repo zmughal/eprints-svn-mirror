@@ -112,7 +112,7 @@ sub render_content
 			table_class => "ep_subjectinput_selections",
 			subject_class => "ep_subjectinput_selected_subject",
 			button_class => "ep_subjectinput_selected_remove",
-			button_text => "Remove",
+			button_text => $self->phrase( "remove" ),
 			button_id => "remove",
 			subjects => \@sels ) );
 	}
@@ -182,8 +182,8 @@ sub _do_search
 
 	if( !$self->{search} )
 	{
-		$self->{results} = $session->html_phrase(
-			"lib/extras:subject_browser_no_matches" );
+		$self->{results} = $self->html_phrase(
+			"search_no_matches" );
 		return 0;
 	}
 
@@ -209,8 +209,8 @@ sub _do_search
 	$searchexp->dispose();
 	if( !scalar @records )
 	{
-		$self->{results} = $session->html_phrase(
-			"lib/extras:subject_browser_no_matches" );
+		$self->{results} = $self->html_phrase(
+			"search_no_matches" );
 		return 0;
 	}
 
@@ -218,7 +218,7 @@ sub _do_search
 		table_class => "ep_subjectinput_results",
 		subject_class => "ep_subjectinput_results_subject",
 		button_class => "ep_subjectinput_results_add",
-		button_text => "Add",
+		button_text => $self->phrase( "add" ),
 		button_id => "add",
 		hide_selected => 1,
 		subjects => \@records );
@@ -287,8 +287,8 @@ sub _render_search
 	my( $self ) = @_;
 	my $prefix = $self->{prefix};
 	my $session = $self->{session};
-	my $bar = $session->html_phrase(
-		"lib/extras:subject_browser_search",
+	my $bar = $self->html_phrase(
+		"search_bar",
 		input=>$session->make_element( 
 			"input", 
 			name=>$prefix."_searchtext", 
@@ -298,12 +298,12 @@ sub _render_search
 			"input", 
 			type=>"submit", 
 			name=>"_internal_".$prefix."_search",
-			value=>$session->phrase( "lib/extras:subject_browser_search_button" ) ),
+			value=>$self->phrase( "search_search_button" ) ),
 		clear_button=>$session->make_element(
 			"input",
 			type=>"submit",
 			name=>"_internal_".$prefix."_clear",
-			value=>$session->phrase( "lib/extras:subject_browser_clear_button" ) ),
+			value=>$self->phrase( "search_clear_button" ) ),
 		);
 	return $bar;
 }
@@ -412,7 +412,7 @@ sub _render_subnode
 				class=> "ep_form_action_button",
 				type => "submit",
 				name => "_internal_".$prefix."_add",
-				value => "Add" );
+				value => $self->phrase( "add" ) );
 			$r_node->appendChild( $session->make_text( " " ) );
 			$r_node->appendChild( $add_button ); 
 		}

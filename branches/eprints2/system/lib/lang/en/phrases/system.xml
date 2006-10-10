@@ -149,20 +149,6 @@ EPrints Modules
     <ep:phrase id="lib/metafield/secret:show_value">[hidden]</ep:phrase>
 
 
-<!-- Extras -->
-
-    <ep:phrase id="lib/extras:subject_browser"><div class="subject_browser_selections"><table><tr><td valign="top">Selections:</td><td><ep:pin name="selections" /></td></tr></table></div><div class="subject_browser_search"><ep:pin name="search" /></div><div class="subject_browser_opts"><ep:pin name="opts" /></div></ep:phrase>
-    <ep:phrase id="lib/extras:subject_browser_none">none</ep:phrase>
-    <ep:phrase id="lib/extras:subject_browser_remove"> [<ep:pin name="link">remove</ep:pin>]</ep:phrase>
-    <ep:phrase id="lib/extras:subject_browser_add"> [<ep:pin name="link">add</ep:pin>]</ep:phrase>
-    <ep:phrase id="lib/extras:subject_browser_expandable">...</ep:phrase>
-    <ep:phrase id="lib/extras:subject_browser_search">Quick Search: <ep:pin name="input" /> <ep:pin name="search_button" /> <ep:pin name="clear_button" /></ep:phrase>
-    <ep:phrase id="lib/extras:subject_browser_search_button">Go!</ep:phrase>
-    <ep:phrase id="lib/extras:subject_browser_clear_button">Clear</ep:phrase>
-    <ep:phrase id="lib/extras:subject_browser_search_results"><p>Search Results:</p><ep:pin name="results" /><p><ep:pin name="browse">browse tree</ep:pin></p></ep:phrase>
-    <ep:phrase id="lib/extras:subject_browser_no_matches"><p>No matches</p></ep:phrase>
-
-
 <!-- List Pagination -->
 <ep:phrase id="lib/list:page">
 <ep:pin name="controls" />
@@ -1237,7 +1223,14 @@ Titles and Help for the System Fields
 
 	<!-- Subject component -->
 	<ep:phrase id="Plugin/InputForm/Component/Field/Subject:selections">Current selections:</ep:phrase>
-
+	
+    <ep:phrase id="Plugin/InputForm/Component/Field/Subject:search_no_matches"><p>No matches</p></ep:phrase>
+    <ep:phrase id="Plugin/InputForm/Component/Field/Subject:search_bar">Quick Search: <ep:pin name="input" /> <ep:pin name="search_button" /> <ep:pin name="clear_button" /></ep:phrase>
+    <ep:phrase id="Plugin/InputForm/Component/Field/Subject:search_search_button">Go!</ep:phrase>
+    <ep:phrase id="Plugin/InputForm/Component/Field/Subject:search_clear_button">Clear</ep:phrase>
+    <ep:phrase id="Plugin/InputForm/Component/Field/Subject:add">Add</ep:phrase>
+    <ep:phrase id="Plugin/InputForm/Component/Field/Subject:remove">Remove</ep:phrase>
+	
 
 	<!-- PlaceHolder component -->
 	

@@ -4478,4 +4478,7 @@ PACKAGE: 2.2.99.2
  * EPrint-type now always uses "long types"
  * No longer loads archive/foo.xml at all!
  * Added better warnings for Warnings and Errors in foo.pl files.
- 
+
+2006-10-10 moj
+ * Phrasing in subject component.
+

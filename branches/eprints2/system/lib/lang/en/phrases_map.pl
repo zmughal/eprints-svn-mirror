@@ -1,6 +1,15 @@
 #!/usr/bin/perl -w -I/opt/eprints3/perl_lib
 use EPrints;
 
+$delated = [
+	"lib/extras:subject_browser",
+	"lib/extras:subject_browser_none",
+	"lib/extras:subject_browser_expandable",
+	"lib/extras:subject_browser_search_results",
+	
+];
+
+
 $renamed = {
 	"cgi/users/edit_eprint:cant_find_it" 		=> "Screen/EPrint:cant_find_it", 
 	"cgi/users/edit_eprint:view_as_either" 		=> "Screen/EPrint:view_as_either",
@@ -33,7 +42,14 @@ $renamed = {
 	"cgi/users/status:subcount" 				=> "Screen/Status:subcount",
 	"cgi/users/status:subsent" 					=> "Screen/Status:subsent",
 	"cgi/users/status:title" 					=> "Screen/Status:title",
+
+	"lib/extras:subject_browser_search"			=> "Plugin/InputForm/Component/Field/Subject:search_bar",
+	"lib/extras:subject_browser_search_button"	=> "Plugin/InputForm/Component/Field/Subject:search_button",
+	"lib/extras:subject_browser_no_matches"		=> "Plugin/InputForm/Component/Field/Subject:search_no_matches",
+	"lib/extras:subject_browser_remove"			=> "Plugin/InputForm/Component/Field/Subject:remove",
+	"lib/extras:subject_browser_add"			=> "Plugin/InputForm/Component/Field/Subject:add",
 	
+
 #	"lib/submissionform:action_prev"			=> "Screen/EPrint/Edit:action_prev",
 #	"lib/submissionform:action_save"			=> "Screen/EPrint/Edit:action_save",
 #	"lib/submissionform:action_next"			=> "Screen/EPrint/Edit:action_next",
