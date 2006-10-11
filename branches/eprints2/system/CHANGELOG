@@ -4488,3 +4488,11 @@ PACKAGE: 2.2.99.2
 
 2006-10-11 moj
  * Added entity_convert tool
+
+2006-10-11 cjg
+ * Config values are now available from EPScript
+ * EPScript can now be embeded in attributes using {}
+ * archivename is now a phrase named archive_name
+ * Disabled localplugin feature
+ * EPScript phrase and print are now available to templates
+ * foo{bar} in eprscript now returns value bar of hash foo
