@@ -1,17 +1,19 @@
 #!/usr/bin/perl -w 
 
-%confs = (
+use strict;
+
+my %confs = (
 	adminemail => "adminemail",
 	userhome => "userhome",
 	base_url => "base_url",
 	version => "version", 
 	perl_url => "perl_url",
 	frontpage => "frontpage",
-	archivename => "archivename",
 	https_base_url => "https_base_url",
 );
 
-%phrases = (
+my %phrases = (
+	archivename => "archive_name",
 	ruler => "ruler",
 	logo => "logo",
 );
@@ -132,38 +134,27 @@ sub tag
 sub sattr
 {
 	my( $name, $val ) = @_;
-	if( $val =~ /&([^;]+);/ )
-	{
-		if( $confs{$1} )
-		{
-			my $id = $confs{$1};
-			$val =~ s/&$1;/{\$config{$id}}/;
-		}
-	#	elsif( $phrases{$1} )
-	#	{
-	#		my $id = $phrases{$1};
-	#		$val =~ s/&$1;/<ep:phrase ref="$id" \/>/;
-	#	}
-	}
+
+	$val =~ s/&([^;]+);/replace_attr_entity($1)/ge;
 
 	print " ".$name."='".$val."'";
 }
 sub dattr
 {
 	my( $name, $val ) = @_;
-	if( $val =~ /&([^;]+);/ )
-	{
-		if( $confs{$1} )
-		{
-			my $id = $confs{$1};
-			$val =~ s/&$1;/{\$config{$id}}/;
-		}
-	#	elsif( $phrases{$1} )
-	#	{
-	#		my $id = $phrases{$1};
-	#		$val =~ s/&$1;/<ep:phrase ref="$id" \/>/;
-	#	}
-	}
-
+	$val =~ s/&([^;]+);/replace_attr_entity($1)/ge;
 	print " ".$name.'="'.$val.'"';
 }
+
+sub replace_attr_entity
+{
+	my( $entid ) = @_;
+
+print "**$entid**\n";
+	return "&$entid;" unless( $confs{$entid} );
+
+	my $id = $confs{$1};
+	return "{\$config{$id}}";
+}
+
+

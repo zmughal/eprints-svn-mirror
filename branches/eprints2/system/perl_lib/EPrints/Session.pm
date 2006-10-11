@@ -2263,30 +2263,56 @@ sub prepare_page
 			next;
 		}
 
-		my( $pin_id, $modifier ) = split( ":", $bit );
-		
-		if( defined $modifier && $modifier eq "textonly" )
+		# either 
+		#  print:epscript-expr
+		#  pin:id-of-a-pin
+		#  pin:id-of-a-pin.textonly
+		#  phrase:id-of-a-phrase
+		my( @parts ) = split( ":", $bit );
+		my $type = shift @parts;
+
+		if( $type eq "print" )
 		{
-			if( defined $map->{"utf-8.".$pin_id.".textonly"} )
-			{
-				push @output, $map->{"utf-8.".$pin_id.".textonly"};
-			}
-			elsif( defined $map->{$pin_id} )
-			{
-				push @output, EPrints::Utils::tree_to_utf8( $map->{$pin_id} );
-			}
-			# else no title
-	
+			my $expr = join "", @parts;
+			my $result = EPrints::Script::print( $expr, { session=>$self } )->toString;
+			push @output, $result;
 			next;
 		}
 
-		if( defined $map->{"utf-8.".$pin_id} )
-		{
-			push @output, $map->{"utf-8.".$pin_id};
+		if( $type eq "phrase" )
+		{	
+			my $phraseid = join "", @parts;
+			push @output, $self->html_phrase( $phraseid )->toString;
+			next;
 		}
-		elsif( defined $map->{$bit} )
-		{
-			push @output, $map->{$bit}->toString;
+
+		if( $type eq "pin" )
+		{	
+			my $pinid = shift @parts;
+			my $modifier = shift @parts;
+			if( defined $modifier && $modifier eq "textonly" )
+			{
+				if( defined $map->{"utf-8.".$pinid.".textonly"} )
+				{
+					push @output, $map->{"utf-8.".$pinid.".textonly"};
+				}
+				elsif( defined $map->{$pinid} )
+				{
+					push @output, EPrints::Utils::tree_to_utf8( $map->{$pinid} );
+				}
+				# else no title
+		
+				next;
+			}
+	
+			if( defined $map->{"utf-8.".$pinid} )
+			{
+				push @output, $map->{"utf-8.".$pinid};
+			}
+			elsif( defined $map->{$pinid} )
+			{
+				push @output, $map->{$pinid}->toString;
+			}
 		}
 
 		# otherwise this element is missing. Leave it blank.

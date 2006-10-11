@@ -54,12 +54,52 @@ sub execute
 
 #print STDERR "Exec: $code\n";
 #foreach( keys %{$state} ) { print STDERR "$_: ".$state->{$_}."\n"; }
+	$state->{repository} = $state->{session}->get_repository;
+	$state->{config} = $state->{session}->get_repository->{config};
 
 	my $compiled = EPrints::Script::Compiler->new()->compile( $code, $state->{in} );
 
 #print STDERR $compiled->debug;
 
 	return $compiled->run( $state );
+}
+
+sub print
+{
+	my( $code, $state, $opts ) = @_;
+
+	my $result = execute( $code, $state );	
+#	print STDERR  "IFTEST:::".$expr." == $result\n";
+
+	if( $result->[1] eq "BOOLEAN"  )
+	{
+		return $state->{session}->make_text( $result->[0]?"TRUE":"FALSE" );
+	}
+	if( $result->[1] eq "STRING"  )
+	{
+		return $state->{session}->make_text( $result->[0] );
+	}
+	if( $result->[1] eq "INTEGER"  )
+	{
+		return $state->{session}->make_text( $result->[0] );
+	}
+
+	my $field = $result->[1];
+
+	# apply any render opts
+	if( defined $opts && $opts ne "" )
+	{
+		$field = $field->clone;
+		
+		foreach my $opt ( split( /;/, $opts ) )
+		{
+			my( $k, $v ) = split( /=/, $opt );
+			$v = 1 unless defined $v;
+			$field->set_property( "render_$k", $v );
+		}
+	}
+	
+	return $field->render_value( $state->{session}, $result->[0], 0, 0, $result->[2] );
 }
 
 sub error
@@ -213,9 +253,16 @@ sub run_PROPERTY
 		$self->runtime_error( "can't get a property from undef".$self->{value} );
 	}
 	my $ref = ref($objvar->[0]);
+	if( $ref eq "HASH" )
+	{
+		my $v = $objvar->[0]->{ $self->{value} };
+		my $type = ref( $v );
+		$type = "STRING" if( $type eq "" ); 	
+		return [ $v, $type ];
+	}
 	if( $ref !~ m/::/ )
 	{
-		$self->runtime_error( "can't get a property from a non-object: ".$self->{value} );
+		$self->runtime_error( "can't get a property from anything except a hash or object: ".$self->{value}." (it was '$ref')." );
 	}
 	if( !$objvar->[0]->isa( "EPrints::DataObj" ) )
 	{

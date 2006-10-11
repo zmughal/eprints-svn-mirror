@@ -449,6 +449,9 @@ sub _load_templates
 		}
 		closedir( $dh );
 
+		#my $tmp_session = EPrints::Session->new( 1, $self->{id} );
+		#$tmp_session->terminate;
+
 		foreach my $fn ( @template_files )
 		{
 			my $file = $self->get_conf( "config_path" ).
@@ -476,7 +479,6 @@ sub _template_to_text
 	my( $template ) = @_;
 
 	my $doc = $template->getOwnerDocument;
-	my @r = ( "fnord" );	
 
 	$template = EPrints::XML::clone_and_own( 
 			$template,
@@ -484,13 +486,14 @@ sub _template_to_text
 			1 );
 
 	my $divide = "61fbfe1a470b4799264feccbbeb7a5ef";
+
         my @pins = $template->getElementsByTagName("pin");
 	foreach my $pin ( @pins )
 	{
 		#$template
 		my $parent = $pin->getParentNode;
 		my $textonly = $pin->getAttribute( "textonly" );
-		my $ref = $pin->getAttribute( "ref" );
+		my $ref = "pin:".$pin->getAttribute( "ref" );
 		if( defined $textonly && $textonly eq "yes" )
 		{
 			$ref.=":textonly";
@@ -498,9 +501,76 @@ sub _template_to_text
 		my $textnode = $doc->createTextNode( $divide.$ref.$divide );
 		$parent->replaceChild( $textnode, $pin );
 	}
-	@r = split( "$divide", $template->toString );
+
+        my @prints = $template->getElementsByTagName("print");
+	foreach my $print ( @prints )
+	{
+		my $parent = $print->getParentNode;
+		my $ref = "print:".$print->getAttribute( "expr" );
+		my $textnode = $doc->createTextNode( $divide.$ref.$divide );
+		$parent->replaceChild( $textnode, $print );
+	}
+
+        my @phrases = $template->getElementsByTagName("phrase");
+	foreach my $phrase ( @phrases )
+	{
+		my $parent = $phrase->getParentNode;
+		my $ref = "phrase:".$phrase->getAttribute( "ref" );
+		my $textnode = $doc->createTextNode( $divide.$ref.$divide );
+		$parent->replaceChild( $textnode, $phrase );
+	}
+
+	_divide_attributes( $template, $doc, $divide );
+
+	my @r = split( "$divide", $template->toString );
 
 	return \@r;
+}
+
+sub _divide_attributes
+{
+	my( $node, $doc, $divide ) = @_;
+
+	return unless( EPrints::XML::is_dom( $node, "Element" ) );
+
+	foreach my $kid ( $node->getChildNodes )
+	{
+		_divide_attributes( $kid, $doc, $divide );
+	}
+	
+	my $attrs = $node->getAttributes;
+
+	return unless defined $attrs;
+	
+	for( my $i = 0; $i<$attrs->getLength; ++$i )
+	{
+		my $attr = $attrs->item( $i );
+		my $v = $attr->getValue;
+		next unless( $v =~ m/\{/ );
+		my $name = $attr->getName;
+		my @r = EPrints::XML::split_script_attribute( $v, $name );
+		my @r2 = ();
+		for( my $i = 0; $i<scalar @r; ++$i )
+		{
+			if( $i % 2 == 0 )
+			{
+				push @r2, $r[$i];
+			}
+			else
+			{
+				push @r2, "print:".$r[$i];
+			}
+		}
+		if( scalar @r % 2 == 0 )
+		{
+			push @r2, "";
+		}
+		
+		my $newv = join( $divide, @r2 );
+		$attr->setValue( $newv );
+	}
+
+	return;
 }
 
 sub _load_template
@@ -769,11 +839,11 @@ sub _load_plugins
 		return 1; # just a warning
 	}
 
-	my $tgt = $EPrints::SystemSettings::conf->{base_path}."/perl_lib/EPrints/LocalPlugin/".$self->{id};
 
-	$self->_plugin_dir_copy( $src, $tgt );
-
-	EPrints::Plugin::load_dir( $self->{plugins}, $tgt, "EPrints::LocalPlugin::".$self->{id} );
+	# Local plugins disabled for now.
+	#my $tgt = $EPrints::SystemSettings::conf->{base_path}."/perl_lib/EPrints/LocalPlugin/".$self->{id};
+	#$self->_plugin_dir_copy( $src, $tgt );
+	#EPrints::Plugin::load_dir( $self->{plugins}, $tgt, "EPrints::LocalPlugin::".$self->{id} );
 
 	return 1;
 }

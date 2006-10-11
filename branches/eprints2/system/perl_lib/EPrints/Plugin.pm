@@ -50,7 +50,7 @@ sub new
 
 	$self->{id} = $class;
 	$self->{id} =~ s/^EPrints::Plugin:://;
-	$self->{id} =~ s/^EPrints::LocalPlugin::([^:]*):://;
+	#$self->{id} =~ s/^EPrints::LocalPlugin::([^:]*):://;
 
 	return $self;
 }

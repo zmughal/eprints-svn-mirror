@@ -593,8 +593,6 @@ sub collapse_conditions
 # cjg - Potential bug if: <ifset a><ifset b></></> and ifset a is disposed
 # then ifset: b is processed it will crash.
 	
-	$params{repository} = $params{session}->get_repository;
-
 	if( EPrints::XML::is_dom( $node, "Element" ) )
 	{
 		my $name = $node->getTagName;
@@ -623,9 +621,37 @@ sub collapse_conditions
 		{
 			return _collapse_phrase( $node, %params );
 		}
+
 	}
 
+
 	my $collapsed = $params{session}->clone_for_me( $node );
+	my $attrs = $collapsed->getAttributes;
+	if( defined $attrs )
+	{
+		for( my $i = 0; $i<$attrs->getLength; ++$i )
+		{
+			my $attr = $attrs->item( $i );
+			my $v = $attr->getValue;
+			next unless( $v =~ m/\{/ );
+			my $name = $attr->getName;
+			my @r = EPrints::XML::split_script_attribute( $v, $name );
+			my $newv='';
+			for( my $i=0; $i<scalar @r; ++$i )
+			{
+				if( $i % 2 == 0 )
+				{
+					$newv.= $r[$i];
+				}
+				else
+				{
+					$newv.=EPrints::Script::print( $r[$i], \%params )->toString;
+				}
+			}
+			$attr->setValue( $newv );
+		}
+	}
+
 	$collapsed->appendChild( _collapse_kids( $node, %params ) );
 
 	return $collapsed;
@@ -693,42 +719,15 @@ sub _collapse_print
 		EPrints::abort( "In ".$params{in}.": print element with empty expr attribute.\n".substr( $node->toString, 0, 100 ) );
 	}
 
-	my $result = EPrints::Script::execute( $expr, \%params );
-	
-#	print STDERR  "IFTEST:::".$expr." == $result\n";
-
-	if( $result->[1] eq "BOOLEAN"  )
-	{
-		return $params{session}->make_text( $result->[0]?"TRUE":"FALSE" );
-	}
-	if( $result->[1] eq "STRING"  )
-	{
-		return $params{session}->make_text( $result->[0] );
-	}
-	if( $result->[1] eq "INTEGER"  )
-	{
-		return $params{session}->make_text( $result->[0] );
-	}
-
-	my $field = $result->[1];
-
+	my $opts = "";
 	# apply any render opts
 	if( $node->hasAttribute( "opts" ) )
 	{
-		$field = $field->clone;
-	
-		my $opts = $node->getAttribute( "opts" );
-		
-		foreach my $opt ( split( /;/, $opts ) )
-		{
-			my( $k, $v ) = split( /=/, $opt );
-			$v = 1 unless defined $v;
-			$field->set_property( "render_$k", $v );
-		}
+		$opts = $node->getAttribute( "opts" );
 	}
-	
-	return $field->render_value( $params{session}, $result->[0], 0, 0, $result->[2] );
-}
+
+	return EPrints::Script::print( $expr, \%params, $opts );
+}	
 
 sub _collapse_if
 {
@@ -901,6 +900,59 @@ sub _collapse_condition
 	}
 
 	return $params{session}->make_doc_fragment;
+}
+
+
+sub split_script_attribute
+{
+	my( $value, $what ) = @_;
+
+	my @r = ();
+
+	# outer loop when in text.
+	my $depth = 0;
+	OUTCODE: while( length( $value ) )
+	{
+		$value=~s/^([^{]*)//;
+		push @r, $1;
+		last unless $value=~s/^\{//;
+		$depth = 1;
+		my $c = ""; 
+		INCODE: while( $depth>0 && length( $value ) )
+		{
+			if( $value=~s/^\{// )
+			{
+				++$depth;
+				$c.="{";
+				next INCODE;
+			}
+			if( $value=~s/^\}// )
+			{
+				--$depth;
+				$c.="}" if( $depth>0 );
+				next INCODE;
+			}
+			if( $value=~s/^('[^']*')// )
+			{
+				$c.=$1;
+				next INCODE;
+			}
+			if( $value=~s/^("[^"]*")// )
+			{
+				$c.=$1;
+				next INCODE;
+			}
+			unless( $value=~s/^([^"'\{\}]+)// )
+			{
+				print STDERR "Error parsing attribute $what near: $value\n";
+				last OUTCODE;
+			}
+			$c.=$1;
+		}
+		push @r, $c;
+	}
+
+	return @r;
 }
 
 
