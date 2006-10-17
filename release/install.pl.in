@@ -32,6 +32,8 @@ $from_configure{"convert"}="@CONVERT_PATH@";
 $from_configure{"enable_gdome"}="@ENABLE_GDOME@";
 $from_configure{"apache"}="@APACHE@";
 
+$from_configure{"platform"}="@PLATFORM@";
+
 ######################################################################
 
 if( 
@@ -100,6 +102,8 @@ else
 }
 
 my $systemsettings = {};
+
+$systemsettings->{"platform"} = $from_configure{"platform"};
 
 $systemsettings->{"version_history"} = [ $version_id ];
 
@@ -406,8 +410,11 @@ SPIEL
 	print FILEOUT "\n1;";
 	close(FILEOUT);
 
-	chmod( 0644, $sysfile );
-	chown($uid, $gid, $sysfile );
+ 	if( $from_configure{"platform"} eq "unix" )
+	{
+		chmod( 0644, $sysfile );
+		chown($uid, $gid, $sysfile );
+	}
 }
 
 sub merge_fields
@@ -509,8 +516,11 @@ sub write_sigs
 		print SIGOUT $_;
 	}
 	close(SIGOUT);
-	chown($uid, $gid, $sigfile );
-	chmod( 0644, $sigfile );
+ 	if( $from_configure{"platform"} eq "unix" )
+	{
+		chown($uid, $gid, $sigfile );
+		chmod( 0644, $sigfile );
+	}
 }
 
 # Calculate the MD5 digest of a file.
@@ -594,16 +604,18 @@ sub install_file
 		print OUTFILE $_;
 	}	
 	close(OUTFILE);
-
-	unless( chmod($perms, "$dest/$dir/$file") )
+ 	if( $from_configure{"platform"} eq "unix" )
 	{
-		print "\nUnable to chmod $dest/$dir/$file : $!\n";
-		exit 1;
-	}
-	unless( chown($uid, $gid, "$dest/$dir/$file") )
-	{
-		print "\nUnable to chown $dest/$dir/$file : $!\n";
-		exit 1;
+		unless( chmod($perms, "$dest/$dir/$file") )
+		{
+			print "\nUnable to chmod $dest/$dir/$file : $!\n";
+			exit 1;
+		}
+		unless( chown($uid, $gid, "$dest/$dir/$file") )
+		{
+			print "\nUnable to chown $dest/$dir/$file : $!\n";
+			exit 1;
+		}
 	}
 }
 
@@ -619,10 +631,13 @@ sub install_dir
 	my @dirs = ();
 	my @files = ();
 	mkdir("$dest/$dir", 0755);
-	unless( chown($uid, $gid, "$dest/$dir") )
+ 	if( $from_configure{"platform"} eq "unix" )
 	{
-		print "\nUnable to chown $dest/$dir : $!\n"; 
-		exit 1;
+		unless( chown($uid, $gid, "$dest/$dir") )
+		{
+			print "\nUnable to chown $dest/$dir : $!\n"; 
+			exit 1;
+		}
 	}
 
 	while(my $item = readdir(INDIR))
