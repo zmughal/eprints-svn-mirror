@@ -41,7 +41,7 @@ chomp $date;
 
 if( $type eq "nightly" ) 
 { 
-	$version_path = "/branches/eprints2";
+	$version_path = "/trunk";
 	$package_file = "eprints-3-build-$date";
 }
 else
