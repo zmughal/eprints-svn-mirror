@@ -82,7 +82,6 @@ echo ''; # root pass?
 
 END
 
-run( "$bin/generate_apacheconf" );
 
 run( "$bin/generate_apacheconf" );
 run( "$bin/create_tables ep_auto_test" );
