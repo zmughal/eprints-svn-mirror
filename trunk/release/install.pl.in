@@ -268,7 +268,7 @@ ensure_dir( $to_path, $uid, $gid, 0755 );
 
 my $newhashes = [];
 
-my @normal_dirs = ( "defaultcfg", "cfg", "docs", "perl_lib", "lib", "testdata" );
+my @normal_dirs = ( "defaultcfg", "cfg", "docs", "perl_lib", "lib", "testdata", "var" );
 
 my @executable_dirs = ( "bin", "cgi", "testdata/bin" );
 
