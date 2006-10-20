@@ -58,8 +58,29 @@ test_chdir( "$base/install" );
 
 my $id = "ep_auto_test";
 my $bin = "$base/install/bin";
+run( "(".<<END.") | $bin/epadmin create" );
+echo ep_auto_test; 
+echo '';
+hostname;
+echo '';
+echo '';
+echo cjg\@ecs.soton.ac.uk;
+echo My Archive;
+echo '';
 
-run( "( echo ep_auto_test; hostname; echo ''; echo ''; echo cjg\@ecs.soton.ac.uk; echo My Archive; echo ''; echo ''; echo ''; echo ''; echo ''; echo Secret23; echo ''; echo ''; ) | $bin/configure_archive" );
+echo ''; # conf db?
+echo '';
+echo '';
+echo '';
+echo '';
+echo '';
+echo Secret23;
+echo '';
+
+echo ''; # create db?
+echo ''; # root pass?
+
+END
 
 run( "$bin/generate_apacheconf" );
 
