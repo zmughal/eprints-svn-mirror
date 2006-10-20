@@ -142,6 +142,9 @@ foreach(
 	$systemsettings->{"executables"}->{$_} = $from_configure{$_};
 }
 
+$systemsettings->{"file_perms"} => 0664 unless defined $systemsettings->{"file_perms"};
+$systemsettings->{"dir_perms"} => 02775 unless defined $systemsettings->{"dir_perms"};
+
 $systemsettings->{"disable_df"} = $from_configure{"disable_df"};
 $systemsettings->{"virtualhost"} = $from_configure{"virtualhost"};
 
