@@ -367,7 +367,7 @@ if test $PREFIX = "NONE" ; then
     PREFIX=/opt/eprints3
 fi
 
-PLATFORM = "unix";
+PLATFORM="unix";
 
 AC_SUBST(PERL_PATH)
 AC_SUBST(DIST_PATH)
