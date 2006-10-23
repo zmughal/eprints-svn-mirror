@@ -1,0 +1,14 @@
+<?xml version="1.0" ?>
+
+<!-- 
+	Citation Styles for user records.
+-->
+
+<cite:citation xmlns="http://www.w3.org/1999/xhtml" xmlns:cite="http://eprints.org/ep3/citation" xmlns:epc="http://eprints.org/ep3/control">
+
+<cite:linkhere><span class="ep_name_citation"><epc:choose>
+  <epc:when test="name"><epc:print expr="name"/></epc:when>
+  <epc:otherwise>No name, email=<epc:print expr="email"/></epc:otherwise>
+</epc:choose></span></cite:linkhere>
+
+</cite:citation>
