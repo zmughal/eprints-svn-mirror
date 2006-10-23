@@ -52,7 +52,7 @@ else
 		print "Available:\n".join("\n",sort keys %codenames)."\n\n";
 		exit;
 	}
-	$version_path = "/tags/".$ids{$type};
+	$version_path = "/tags/".$type;
 	$package_file = "eprints-".$ids{$type};
 	print "YAY - $ids{$type}\n";
 }
