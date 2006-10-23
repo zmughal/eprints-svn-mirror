@@ -117,8 +117,8 @@ copydir( "$from/system/testdata", "$to/eprints/testdata", \%r );
 cmd("rm $to/eprints/perl_lib/EPrints/SystemSettings.pm");
 
 # documentation
-cmd("cd $from/docs/; ./mkdocs.pl");
-cmd("mv $from/docs/docs $to/eprints/docs");
+#cmd("cd $from/docs/; ./mkdocs.pl");
+#cmd("mv $from/docs/docs $to/eprints/docs");
 
 # VERSION file.
 open(FILEOUT, ">$to/eprints/VERSION");
