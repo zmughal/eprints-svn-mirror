@@ -79,14 +79,19 @@ echo '';
 
 echo ''; # create db?
 echo ''; # root pass?
+echo ''; # create tables
+
+echo ''; # init user
+echo ''; 
+echo ''; 
+echo 'admin';  #password
+echo 'chris\@totl.net'; 
+
 
 END
 
-
 run( "$bin/generate_apacheconf" );
-run( "$bin/create_tables ep_auto_test" );
 run( "$bin/import_subjects --force ep_auto_test --verbose" );
-run( "$bin/create_user ep_auto_test admin cjg\@ecs.soton.ac.uk admin admin" );
 run( "$base/install/testdata/bin/import_test_data ep_auto_test" );
 run( "$bin/generate_static ep_auto_test --verbose" );
 run( "$bin/generate_views ep_auto_test --verbose" );
