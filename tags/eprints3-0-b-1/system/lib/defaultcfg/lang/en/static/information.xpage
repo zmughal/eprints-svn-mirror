@@ -1,0 +1,18 @@
+<?xml version="1.0" standalone="no" ?>
+<!DOCTYPE page SYSTEM "entities.dtd" >
+<xpage:page xmlns="http://www.w3.org/1999/xhtml" xmlns:xpage="http://eprints.org/ep3/xpage" xmlns:epc="http://eprints.org/ep3/control">
+<xpage:title>About the Repository</xpage:title>
+<xpage:body>
+
+<p>This site is running <a href="{$config{base_url}}/eprints/">GNU EPrints</a> / revision: <epc:print expr="$config{version}" />. <a href="{$config{base_url}}/eprints/">More Information</a></p>
+
+<ul>
+<li>More Information about EPrints</li></ul>
+
+<h2>Contact Information</h2>
+
+<p>Any correspondence concerning this specific repository should be sent to <a href="mailto:{$config{adminemail}}"><epc:print expr="$config{adminemail}" /></a>.</p>
+
+
+</xpage:body>
+</xpage:page>

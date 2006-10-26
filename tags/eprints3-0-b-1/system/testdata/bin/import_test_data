@@ -1,0 +1,49 @@
+#!/usr/bin/perl -w -I/opt/eprints3/perl_lib 
+
+#-d:DProf
+
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints;
+use strict;
+$|=1;
+
+# nb. This syntax is subject to change in future versions.
+my( $archiveid, $datasetid, $userid ) = @ARGV;
+
+my $session = new EPrints::Session( 1 , $archiveid );
+exit( 1 ) unless( defined $session );
+
+my $db = $session->get_database;
+#$db->set_timer( 1 );
+
+$userid = 1 unless defined $userid;
+$datasetid = "archive" unless defined $datasetid;
+
+my $datapath = $EPrints::SystemSettings::conf->{base_path}."/testdata/data";
+
+my $ds = $session->get_archive()->get_dataset( $datasetid );
+
+my $pluginid = "Import::XML";
+my $plugin = $session->plugin( $pluginid );
+
+my $infile = $datapath."/data.xml.gz";
+
+
+my $fh;
+open( $fh, "gunzip $infile -c |" ) || die "Can't gunzip file.";
+my $list = $plugin->input_list( dataset=>$ds, fh=>$fh, filename=>$infile );
+close $fh; 
+
+$session->terminate;
+
+exit;
+
