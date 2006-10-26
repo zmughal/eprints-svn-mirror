@@ -58,7 +58,7 @@ test_chdir( "$base/install" );
 
 my $id = "ep_auto_test";
 my $bin = "$base/install/bin";
-run( "(".<<END.") | $bin/epadmin create" );
+run( "(".<<END.") | $bin/epadmin create_repo" );
 echo ep_auto_test; 
 echo '';
 hostname;
