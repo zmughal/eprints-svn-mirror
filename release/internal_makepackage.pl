@@ -167,8 +167,7 @@ sub copyfile
 {
 	my( $from, $to, $r ) = @_;
 
-print $from."\n";
-	if( $from =~ /\/.gz$/ )
+	if( $from =~ /\.gz$/ )
 	{
 		my $cmd = "cp $from $to";
 		print $cmd."\n";
