@@ -167,6 +167,13 @@ sub copyfile
 {
 	my( $from, $to, $r ) = @_;
 
+	if( $from =~ /\/.gz$/ )
+	{
+		my $cmd = "cp $from $to";
+		print $cmd."\n";
+		`$cmd`;
+		return;
+	}	
 	my $data = readfile( $from );
 
 	insert_data( $data, "__GENERICPOD__", $r->{__GENERICPOD__}, 1 );
