@@ -264,7 +264,7 @@ if( $upgrade )
 #
 # Actual install starts here.
 #
-ensure_dir( $to_path, $uid, $gid, 0755 );
+ensure_dir( $to_path, $uid, $gid, 02775 );
 
 my $newhashes = [];
 
@@ -276,19 +276,19 @@ my @base_files = ( "VERSION", "CHANGELOG", "COPYING", "NEWS", "AUTHORS", "README
 
 foreach my $dir (@normal_dirs)
 {
-	install_dir($from_path, $dir, 0644, $uid, $gid, $to_path, \%oldhashes, $newhashes);
+	install_dir($from_path, $dir, 0664, $uid, $gid, $to_path, \%oldhashes, $newhashes);
 }
 foreach my $dir (@executable_dirs)
 {
-	install_dir($from_path, $dir, 0755, $uid, $gid, $to_path, \%oldhashes, $newhashes);
+	install_dir($from_path, $dir, 0775, $uid, $gid, $to_path, \%oldhashes, $newhashes);
 }
 foreach my $file (@base_files)
 {
-	install_file($from_path, $file, "", 0644, $uid, $gid, $to_path, \%oldhashes, $newhashes );
+	install_file($from_path, $file, undef, 0664, $uid, $gid, $to_path, \%oldhashes, $newhashes );
 }
 
-ensure_dir( "$to_path/archives", $uid, $gid, 0755 );
-ensure_dir( "$to_path/perl_lib/EPrints/LocalPlugin", $uid, $gid, 0755 );
+ensure_dir( "$to_path/archives", $uid, $gid, 02775 );
+ensure_dir( "$to_path/perl_lib/EPrints/LocalPlugin", $uid, $gid, 02775 );
 
 write_sigs( $to_path, $newhashes, $uid, $gid );
 
@@ -299,6 +299,23 @@ save_settings(
 	$systemsettings->{user}, 
 	$systemsettings->{group} );
 
+# Warnings!
+
+print $to_path."\n";
+my $soapdir = "$to_path/cgi/soap";
+if( -d $soapdir )
+{
+	print <<END;
+
+WARNING: 3.0-beta-1 soap directory detected!
+The files in this directory represent a security hole and therefore it
+is recommended that you remove this directory. The installer will not 
+do this automatically.
+Suggested action:
+ rm -rf $soapdir
+END
+}
+
 if( $systemsettings->{smtp_server} eq "" && !$upgrade )
 {
 	print <<END;
@@ -306,9 +323,10 @@ if( $systemsettings->{smtp_server} eq "" && !$upgrade )
 WARNING: You have not set a value for smtp_server. Edit the
 SystemSettings file and set the smtp_server option to be your local 
 SMTP server. If you don't then outgoing email won't work.
-
 END
 }
+
+
 
 print "\n";
 
@@ -415,7 +433,7 @@ SPIEL
 
  	if( $from_configure{"platform"} eq "unix" )
 	{
-		chmod( 0644, $sysfile );
+		chmod( 0664, $sysfile );
 		chown($uid, $gid, $sysfile );
 	}
 }
@@ -522,7 +540,7 @@ sub write_sigs
  	if( $from_configure{"platform"} eq "unix" )
 	{
 		chown($uid, $gid, $sigfile );
-		chmod( 0644, $sigfile );
+		chmod( 0664, $sigfile );
 	}
 }
 
@@ -555,68 +573,89 @@ sub install_file
 {
 	my($distdir, $file, $dir, $perms, $uid, $gid, $dest, $sighash, $newsigs ) = @_;
 
-	return unless (-e $distdir."/$dir/$file");
-	my $outdigest = Digest::MD5->new;
+	my $relpath = $file;
+	if( defined $dir ) { $relpath = "$dir/$file"; }
+	if( !defined $dir ) { $dir = ""; }
+
+	return unless (-e $distdir."/$relpath");
+
 	my @linesout = ();	
-	my $currline = "";
-	open(INFILE, $distdir."/$dir/$file");
-	binmode(INFILE);
-	if ($dir eq "bin" || $dir eq "testdata/bin")
+	my $linecopy = 0;
+	if($dir eq "bin" || $dir eq "testdata/bin")
 	{
+		$linecopy = 1;
+	}
+
+	if( $linecopy )
+	{
+		my $currline = "";
+		my $outdigest = Digest::MD5->new;
+		open(INFILE, $distdir."/$relpath");
+		binmode(INFILE);
 		if ($file eq "startup.pl")
 		{
 			$currline = "use lib '".$dest."/perl_lib';\n";
 			$outdigest->add($currline);
-			push @linesout, $currline;
 		}
 		else
 		{
 			$currline = "#!".$from_configure{perl}." -w -I".$dest."/perl_lib\n";
 			$outdigest->add($currline);
-			push @linesout, $currline;
 		}
-		my $skipme = <INFILE>;	
-	}
-	while(my $line=<INFILE>)
-	{
-		chomp $line; 
-		$currline = "$line\n";
-		$outdigest->add($currline);
 		push @linesout, $currline;
-	}		
-	close(INFILE);
-	push @{$newsigs}, "$dir/$file ".$outdigest->hexdigest."\n";
-
-	if ($sighash->{"$dir/$file"} && -e "$dest/$dir/$file")
-	{
-		my $repl_digest = get_digest("$dest/$dir/$file");
-		if ($repl_digest ne $sighash->{"$dir/$file"})
+		my $skipme = <INFILE>;	
+		while(my $line=<INFILE>)
 		{
-			move_out_of_harms_way( "$dest/$dir/$file" );
+			chomp $line; 
+			$currline = "$line\n";
+			$outdigest->add($currline);
+			push @linesout, $currline;
+		}		
+		close(INFILE);
+		push @{$newsigs}, "$relpath ".$outdigest->hexdigest."\n";
+	}
+	else
+	{
+		push @{$newsigs}, "$relpath ".get_digest("$distdir/$relpath")."\n";
+	}
+	
+	if ($sighash->{"$relpath"} && -e "$dest/$relpath")
+	{
+		my $repl_digest = get_digest("$dest/$relpath");
+		if ($repl_digest ne $sighash->{"$relpath"})
+		{
+			move_out_of_harms_way( "$dest/$relpath" );
 		}
 	}
 
-	unless( open(OUTFILE, ">$dest/$dir/$file") )
+
+	if( $linecopy )	
 	{
-		print "\nCan't write to $dest/$dir/$file : $!\n";
-		exit 1;
-	}
-	binmode(OUTFILE);
-	foreach(@linesout)
-	{
-		print OUTFILE $_;
-	}	
-	close(OUTFILE);
- 	if( $from_configure{"platform"} eq "unix" )
-	{
-		unless( chmod($perms, "$dest/$dir/$file") )
+		unless( open(OUTFILE, ">$dest/$relpath") )
 		{
-			print "\nUnable to chmod $dest/$dir/$file : $!\n";
+			print "\nCan't write to $dest/$relpath : $!\n";
 			exit 1;
 		}
-		unless( chown($uid, $gid, "$dest/$dir/$file") )
+		binmode(OUTFILE);
+		print OUTFILE join( "", @linesout );
+		close(OUTFILE);
+	}
+	else
+	{
+		my $cmd = "cp $distdir/$relpath $dest/$relpath ";
+		system( $cmd );
+	}
+
+ 	if( $from_configure{"platform"} eq "unix" )
+	{
+		unless( chmod($perms, "$dest/$relpath") )
 		{
-			print "\nUnable to chown $dest/$dir/$file : $!\n";
+			print "\nUnable to chmod $dest/$relpath : $!\n";
+			exit 1;
+		}
+		unless( chown($uid, $gid, "$dest/$relpath") )
+		{
+			print "\nUnable to chown $dest/$relpath : $!\n";
 			exit 1;
 		}
 	}
@@ -633,7 +672,7 @@ sub install_dir
 	}
 	my @dirs = ();
 	my @files = ();
-	mkdir("$dest/$dir", 0755);
+	ensure_dir("$dest/$dir", $uid, $gid, 02775);
  	if( $from_configure{"platform"} eq "unix" )
 	{
 		unless( chown($uid, $gid, "$dest/$dir") )
@@ -802,7 +841,7 @@ sub ensure_dir
 
 	if( !-d $dir ) 
 	{
-		if( !mkdir($dir, $mode) )
+		if( !mkdir($dir) )
 		{
 			print "Unable to make dir: $dir.\n";
 			print "Aborting!\n";
@@ -813,6 +852,13 @@ sub ensure_dir
 	unless( chown($uid, $gid, $dir) )
 	{
 		print "Unable to chown ".$dir." : $!\n"; 
+		print "Aborting!\n";
+		exit 1;
+	}
+
+	unless( chmod($mode, $dir) )
+	{
+		print "Unable to chmod ".$dir." : $!\n"; 
 		print "Aborting!\n";
 		exit 1;
 	}
