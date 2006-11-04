@@ -25,7 +25,7 @@ while(<VERSIONS>)
 }
 close VERSIONS;
 
-my( $type, $from, $to ) = @ARGV;
+my( $type, $install_from, $to ) = @ARGV;
 
 if( !defined $type || $type eq "" ) 
 { 
@@ -75,46 +75,49 @@ mkdir($to) or die "Couldn't create package directory\n";
 mkdir($to."/eprints") or die "Couldn't eprints directory\n";
 
 print "Building configure files\n";
-cmd("cd $from/release; ./autogen.sh" );
+cmd("cd $install_from/release; ./autogen.sh" );
 
-my $LICENSE_FILE = "$from/release/licenses/gpl.txt";
-my $LICENSE_INLINE_FILE = "$from/release/licenses/gplin.txt";
+my $LICENSE_FILE = "$install_from/release/licenses/gpl.txt";
+my $LICENSE_INLINE_FILE = "$install_from/release/licenses/gplin.txt";
 
 
 print "Inserting license...\n";
 cmd("cp $LICENSE_FILE $to/eprints/COPYING");
 
 print "Inserting configure and install scripts...\n";
-cmd("cp $from/release/configure $to/eprints/configure");
-cmd("cp $from/release/install.pl.in $to/eprints/install.pl.in");
-cmd("cp $from/release/df-check.pl $to/eprints/df-check.pl");
-cmd("cp $from/release/cgi-check.pl $to/eprints/cgi-check.pl");
-cmd("cp $from/release/perlmodules.pl $to/eprints/perlmodules.pl");
-cmd("cp $from/release/Makefile $to/eprints/Makefile");
+cmd("cp $install_from/release/configure $to/eprints/configure");
+cmd("cp $install_from/release/install.pl.in $to/eprints/install.pl.in");
+cmd("cp $install_from/release/df-check.pl $to/eprints/df-check.pl");
+cmd("cp $install_from/release/cgi-check.pl $to/eprints/cgi-check.pl");
+cmd("cp $install_from/release/perlmodules.pl $to/eprints/perlmodules.pl");
+cmd("cp $install_from/release/Makefile $to/eprints/Makefile");
 
 print "Inserting top level text files...\n";
-cmd("cp $from/system/CHANGELOG $to/eprints/CHANGELOG");
-cmd("cp $from/system/README $to/eprints/README");
-cmd("cp $from/system/AUTHORS $to/eprints/AUTHORS");
-cmd("cp $from/system/NEWS $to/eprints/NEWS");
+cmd("cp $install_from/system/CHANGELOG $to/eprints/CHANGELOG");
+cmd("cp $install_from/system/README $to/eprints/README");
+cmd("cp $install_from/system/AUTHORS $to/eprints/AUTHORS");
+cmd("cp $install_from/system/NEWS $to/eprints/NEWS");
 
 my %r = (
 	"__VERSION__"=>$package_version,
 	"__LICENSE__"=>readfile( $LICENSE_INLINE_FILE ),
-	"__GENERICPOD__"=>readfile( "$from/system/pod/generic.pod" ),
+	"__GENERICPOD__"=>readfile( "$install_from/system/pod/generic.pod" ),
 );
 
-copydir( "$from/system/bin", "$to/eprints/bin", \%r );
-copydir( "$from/system/cfg", "$to/eprints/cfg", \%r );
-copydir( "$from/system/lib", "$to/eprints/lib", \%r );
-copydir( "$from/system/cgi", "$to/eprints/cgi", \%r );
-copydir( "$from/system/lib", "$to/eprints/lib", \%r );
-copydir( "$from/system/var", "$to/eprints/var", \%r );
-copydir( "$from/system/defaultcfg", "$to/eprints/defaultcfg", \%r );
-copydir( "$from/system/perl_lib", "$to/eprints/perl_lib", \%r );
-copydir( "$from/system/testdata", "$to/eprints/testdata", \%r );
+copydir( "$install_from/system/bin", "$to/eprints/bin", \%r );
+copydir( "$install_from/system/cfg", "$to/eprints/cfg", \%r );
+copydir( "$install_from/system/lib", "$to/eprints/lib", \%r );
+copydir( "$install_from/system/cgi", "$to/eprints/cgi", \%r );
+copydir( "$install_from/system/lib", "$to/eprints/lib", \%r );
+copydir( "$install_from/system/var", "$to/eprints/var", \%r );
+copydir( "$install_from/system/defaultcfg", "$to/eprints/defaultcfg", \%r );
+copydir( "$install_from/system/perl_lib", "$to/eprints/perl_lib", \%r );
+copydir( "$install_from/system/testdata", "$to/eprints/testdata", \%r );
 
-cmd("rm $to/eprints/perl_lib/EPrints/SystemSettings.pm");
+if( -e "$to/eprints/perl_lib/EPrints/SystemSettings.pm" )
+{
+	cmd("rm $to/eprints/perl_lib/EPrints/SystemSettings.pm");
+}
 
 # documentation
 #cmd("cd $from/docs/; ./mkdocs.pl");
@@ -163,17 +166,35 @@ sub copydir
 	closedir( $dh );
 }
 
+copydir( "$install_from/system/bin", "$to/eprints/bin", \%r );
+copydir( "$install_from/system/cfg", "$to/eprints/cfg", \%r );
+copydir( "$install_from/system/lib", "$to/eprints/lib", \%r );
+copydir( "$install_from/system/cgi", "$to/eprints/cgi", \%r );
+copydir( "$install_from/system/lib", "$to/eprints/lib", \%r );
+copydir( "$install_from/system/var", "$to/eprints/var", \%r );
+copydir( "$install_from/system/defaultcfg", "$to/eprints/defaultcfg", \%r );
+copydir( "$install_from/system/perl_lib", "$to/eprints/perl_lib", \%r );
+copydir( "$install_from/system/testdata", "$to/eprints/testdata", \%r );
+
 sub copyfile
 {
 	my( $from, $to, $r ) = @_;
 
-	if( $from =~ /\.gz$/ )
+	my $textfile = 0;
+	my $f = substr($from, length($install_from));
+
+	if( $f =~ m/\/system\/cgi\// ) { $textfile = 1; }	
+	if( $f =~ m/\/system\/bin\// ) { $textfile = 1; }
+	if( $f =~ m/\.pl$/ ) { $textfile = 1; }
+	if( $f =~ m/\.pm$/ ) { $textfile = 1; }
+
+	if( !$textfile )
 	{
 		my $cmd = "cp $from $to";
-		print $cmd."\n";
 		`$cmd`;
 		return;
 	}	
+
 	my $data = readfile( $from );
 
 	insert_data( $data, "__GENERICPOD__", $r->{__GENERICPOD__}, 1 );
