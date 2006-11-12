@@ -34,6 +34,10 @@ $from_configure{"apache"}="@APACHE@";
 
 $from_configure{"platform"}="@PLATFORM@";
 
+# hard wired for now.
+$from_configure{"cp"}="/bin/cp";
+$from_configure{"rm"}="/bin/rm";
+
 ######################################################################
 
 if( 
@@ -117,7 +121,9 @@ $systemsettings->{"invocation"} = {
 	sendmail => '$(sendmail) -oi -t -odb --',
 	latex => '$(latex) \'$(SOURCE)\'',
 	dvips => '$(dvips) \'$(SOURCE)\' -o \'$(TARGET)\'',
-	convert_crop_white => '$(convert) -crop 0x0 -bordercolor white -border 4x4 \'$(SOURCE)\' \'$(TARGET)\'' 
+	convert_crop_white => '$(convert) -crop 0x0 -bordercolor white -border 4x4 \'$(SOURCE)\' \'$(TARGET)\'',
+	cpall => '$(cp) -pR \'$(SOURCE)\'/* \'$(TARGET)\'',
+	rmall => '$(rm) -rf \'$(TARGET)\'/*',
 };
 
 $systemsettings->{"archive_extensions"} = {};
@@ -135,8 +141,10 @@ if( $from_configure{"tar"} ne "" && $from_configure{"gunzip"} ne "" )
 
 $systemsettings->{"executables"} = {};
 foreach( 
-	"unzip", "tar", "gunzip", "wget", 
-	"sendmail", "latex", "dvips", "convert" )
+	"perl", "unzip", "tar", "gunzip", "wget", 
+	"sendmail", "latex", "dvips", "convert",
+	"cp", "rm", 
+)
 {
 	next unless( defined $from_configure{$_} );
 	$systemsettings->{"executables"}->{$_} = $from_configure{$_};
