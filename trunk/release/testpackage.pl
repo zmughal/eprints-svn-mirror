@@ -125,7 +125,7 @@ sub run
 	open( CMD, "$cmd|" ) || die "Couldn't run: $cmd";
 	while( <CMD> ) 
 	{ 
-#		print ": $_"; 
+		print ": $_"; 
 	}
 	close CMD;
 
