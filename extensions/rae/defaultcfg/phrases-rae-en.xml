@@ -300,6 +300,18 @@ No document (type=<ep:pin ref="type" />) <ep:pin ref="resolve_link">Edit Item</e
 No ISSN <ep:pin ref="resolve_link">Edit Item</ep:pin>
 </ep:phrase>
 
+<ep:phrase ref="rae/report:problem_no_ra2_map" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+No RA2 mapping for item of type <ep:pin ref="type"/>
+</ep:phrase>
+
+<ep:phrase ref="rae/report:problem_missing_required_fields" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Missing (RA2 required) fields: <ep:pin ref="fields"/> <ep:pin ref="resolve_link">Edit Item</ep:pin>
+</ep:phrase>
+
+<ep:phrase ref="rae/report:problem_missing_optional_fields" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
+Missing (RA2 "required if available") fields: <ep:pin ref="fields"/> <ep:pin ref="resolve_link">Edit Item</ep:pin>
+</ep:phrase>
+
 <!-- Page: qualify -->
 
 <ep:phrase ref="rae/qualify:page_title" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">
