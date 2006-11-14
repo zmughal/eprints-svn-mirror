@@ -1,0 +1,33 @@
+This file describes the major changes between versions. In addition you
+can assume every new version fixes minor bugs and typos. If you want to
+see the blow by blow account of every single change see the file called
+CHANGELOG.
+======================================================================
+
+=========================================================================
+EPRINTS 3.0-beta-2                                             2006-11-14
+=========================================================================
+
+ * Redesigned search forms.
+ * Added experimental support for XML::LibXML.
+ * Basic autocomplete now works on creators and journals
+ * Using the progress bar to jump stages now saves current changes.
+ * OpenURL resolver.
+ * Improved interface for file upload screen.
+ * Improved interface for subject stage.
+ * Added "Add User" administration screen.
+ * Redesigned user interface for Items and Review screens.
+ * Fixed bug which prevented EP3 working with Apache >= v2.2.2
+ * Added <link>'s to alternate versions in head of search results and
+    item summary pages.
+ * Redesigned document security configuration to be easier to understand.
+ * Improved the reject/remove notification screens and emails.
+ * Added staff search screens for eprints, users and history.
+ * Other bugfixes.
+ * Other user interface improvements.
+
+=========================================================================
+EPRINTS 3.0-beta-1                                             2006-10-27
+=========================================================================
+
+Too many changes from 2.3 to document. Major rewrite!
