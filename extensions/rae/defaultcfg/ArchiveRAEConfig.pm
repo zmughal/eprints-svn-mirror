@@ -55,61 +55,10 @@ $c->{fields}->{qualify} = [
 
 # The id of the search (as defined in ArchiveConfig.pm) used on
 # the item selection page
-$c->{selection_search} = "simple";
+$c->{selection_search} = "advanced";
 
 # The (user) field to group by on the reporting page
 $c->{group_reports_by} = "dept";
-
-# List of fields, in order, for each RA2 output type
-# See http://www.rae.ac.uk/datacoll/subs/RAE2008RA2DescriptionFieldsGuideV2.xls (August 2006)
-# Special tokens:
-#   opt_foo - field foo is "optional if available" (otherwise field will be treated as required by RA2)
-#   eprinturl - official URL or EPrint URL
-#   year - year part of date
-#   monthyear - month and year parts of date
-$c->{ra2_fields_for_type} =
-{
-	# Authored book
-	A => [ "year", "title", "", "pages", "publisher", "", "isbn", "", "", "eprinturl", "opt_id_number" ],
-	# Edited book
-	B => [ "year", "title", "", "pages", "publisher", "", "isbn", "", "", "eprinturl", "opt_id_number" ],
-	# Chapter in book
-	C => [ "year", "title", "book_title", "pagerange", "publisher", "editors", "isbn", "", "", "eprinturl", "opt_id_number" ],
-	# Journal article
-	D => [ "", "title", "volume", "pagerange", "publication", "", "issn", "monthyear", "", "eprinturl", "opt_id_number" ],
-	# Conference contribution
-	E => [ "", "title", "event_title", "opt_pages", "", "", "opt_issn", "monthyear", "", "eprinturl", "opt_id_number" ],
-	# Patent / published patent application
-	F => [ "", "title", "id_number", "", "", "", "", "date_effective", "", "eprinturl", "" ],
-	# Software
-	G => [ "", "title", "", "", "publisher", "", "", "date_effective", "", "eprinturl", "" ],
-	# Internet Publications
-	H => [ "", "title", "", "", "opt_publisher", "", "opt_issn", "date_effective", "", "eprinturl", "opt_id_number" ],
-	# Performance
-	I => [ "", "title", "event_location", "", "", "", "", "", "", "eprinturl", "" ],
-	# Composition
-	J => [ "", "title", "", "", "", "", "", "date_effective", "", "eprinturl", "" ],
-	# Design
-	K => [ "", "title", "", "", "", "", "", "date_effective", "", "eprinturl", "" ],
-	# Artefact
-	L => [ "", "title", "event_location", "", "", "", "", "date_effective", "", "eprinturl", "" ],
-	# Exhibition
-	M => [ "", "title", "event_location", "", "", "", "", "", "", "eprinturl", "" ],
-	# Research report for external body
-	N => [ "", "title", "", "pages", "opt_publisher", "", "", "date_effective", "", "eprinturl", "opt_id_number" ],
-	# Confidential report (for external body)
-	O => [ "", "title", "", "pages", "", "", "", "date_effective", "", "", "" ],
-	# Devices and products
-	P => [ "", "title", "", "", "", "", "", "date_effective", "", "eprinturl", "" ],
-	# Digital or visual media
-	Q => [ "", "title", "", "", "opt_publisher", "", "", "date_effective", "", "eprinturl", "" ],
-	# Scholarly edition
-	R => [ "year", "abstract", "title", "opt_pages", "opt_publisher", "editors", "opt_isbn", "date_effective", "", "eprinturl", "opt_id_number" ],
-	# Research datasets and databases
-	S => [ "", "title", "", "", "", "", "", "date_effective", "", "eprinturl", "opt_id_number" ],
-	# Other form of assessable output
-	T => [ "", "title", "", "", "", "", "", "date_effective", "", "eprinturl", "opt_id_number" ],
-};
 
 return $c;
 }
@@ -126,87 +75,14 @@ sub rae_default_selection_search {
 };
 
 # Return a list of problems with the given item as selected by the given user
-# $info is a hashref of qualifying metadata the user entered for this selection
+# $values is a hashref of qualifying metadata the user entered for this selection
 # $others is a reference to an array of all users who have selected this item
 sub rae_problems_with_selection { 
-	my ( $session, $user, $item, $info, $others ) = @_;
+	my ( $session, $user, $item, $values, $others ) = @_;
 
 	my @problems;	
 
-	# Check item exists
-	if( !defined $item )
-	{
-		push @problems, $session->html_phrase( "rae/report:problem_null_item" );
-		return \@problems;
-	}
-
-	# Check required RA2 fields are present
-	my $ra2_type = rae_get_ra2_type( $item );
-	if( !defined $ra2_type )
-	{
-		push @problems, $session->html_phrase( "rae/report:problem_no_ra2_map", type => $item->render_value( "type" ) );
-	}
-	else
-	{
-		my @missing_fields;
-		my @missing_opt_fields;
-		my $ra2_fields = $session->get_archive->get_conf( "rae", "ra2_fields_for_type", $ra2_type );
-		foreach my $f ( @$ra2_fields )
-		{
-			my $ra2_field = $f;
-
-			next if $ra2_field eq "";
-			next if $ra2_field eq "eprinturl"; # every item has a URL
-
-			my $target = \@missing_fields;
-			$target = \@missing_opt_fields if $ra2_field =~ s/^opt_//; # optional
-		
-			if( $ra2_field eq "year" )
-			{
-				push @$target, "date" if !$item->is_set( "date_effective" );
-			}
-			elsif( $ra2_field eq "monthyear" )
-			{
-				my $date = $item->get_value( "date_effective" );
-				push @$target, "month" if $date !~ /^[0-9]{4}-[0-9]{2}/;
-			}
-			elsif( $ra2_field eq "pages" ) # maybe derive pages from pagerange
-
-			{
-				if( !$item->is_set( "pages" ) && !$item->is_set( "pagerange" ) )
-				{
-					push @$target, "pages";
-				}
-			}
-			elsif( $ra2_field eq "volume" )
-			{
-				push @$target, "volume" if !$item->is_set( "volume" );
-				push @$target, "number" if !$item->is_set( "number" );
-			}
-			else
-			{
-				push @$target, $ra2_field if !$item->is_set( $ra2_field );
-			}
-		}
-		if( scalar( @missing_fields ) )
-		{
-			my $f = join ( ", ", @missing_fields );
-			push @problems, $session->html_phrase( 
-				"rae/report:problem_missing_required_fields",
-				fields => $session->make_text( $f ),
-				resolve_link => $session->render_link( $item->get_url( 1 ), target=>"_blank" ) ); 
-		}
-		if( scalar( @missing_opt_fields ) )
-		{
-			my $f = join ( ", ", @missing_opt_fields );
-			push @problems, $session->html_phrase( 
-				"rae/report:problem_missing_optional_fields",
-				fields => $session->make_text( $f ),
-				resolve_link => $session->render_link( $item->get_url( 1 ), target=>"_blank" ) ); 
-		}
-	}
-
-	# Check no other users have selected this item
+	# Example: check no other users have selected this item
 	my @names;
 	foreach my $otherid ( @$others )
         {
@@ -224,263 +100,106 @@ sub rae_problems_with_selection {
         if( scalar( @names ) > 0 )
         {
 		my $perl_url = $session->get_archive->get_conf("perl_url");
-		my $link = $session->render_link( $perl_url . "/users/rae/select?role=" . $user->get_id, target=>"_blank" );	
+		my $link = $session->render_link( $perl_url . "/users/rae/select?role=" . $user->get_id );	
 	
 		push @problems, $session->html_phrase( "rae/report:problem_multiple_users",
                         names => $session->make_text( join(", ", @names) ),
 			resolve_link => $link );
         }
 
-	# Check item has full text
+	# Check item exists
+	if( !defined $item )
+	{
+		push @problems, $session->html_phrase( "rae/report:problem_null_item" );
+		return \@problems;
+	}
+	
+	# Example: check item has full text
 	my @docs = $item->get_all_documents();
 	if( scalar( @docs ) == 0 )
 	{
 		push @problems, $session->html_phrase( "rae/report:problem_no_doc",
 			type => $session->make_text( $item->get_value( "type" ) ),
-			resolve_link => $session->render_link( $item->get_url( 1 ), target=>"_blank" ) ); 
+			resolve_link => $session->render_link( $item->get_url( 1 ) ) ); 
+	}
+
+	# Example: if this item is an article, check it has an ISSN
+	if( $item->get_type eq "article" )
+	{
+		if( !$item->is_set( "issn" ) )
+		{
+			push @problems, $session->html_phrase( "rae/report:problem_no_issn",
+				resolve_link => $session->render_link( $item->get_url( 1 ) ) ); 
+		}
 	}
 
 	return \@problems;
 };
 
 # Print CSV header row(s)
-# RA2 Output - see http://www.rae.ac.uk/datacoll/import/excel/RAE2008Data.xls (March 2006)
-# TODO PendingPublication should be before URL
-# TODO Year before OutputType
 sub rae_print_csv_header {
-	print _rae_escape_csv( qw(
-		Institution
-		UnitOfAssessment
-		MultipleSubmission
-		HESAStaffIdentifier
-		StaffIdentifier
-		OutputNumber
-		OutputId
-		OutputType
-		Year
-		LongTitle
-		ShortTitle
-		Pagination
-		Publisher
-		Editors
-		ISBN
-		PublicationDate
-		EndDate
-		URL
-		DOI
-		PendingPublication
-		OtherDetails
-		InterestConflicts
-		DatesConflictExplanation
-		EnglishAbstract
-		ResearchGroup
-		IsInterdisciplinary
-		IsSensitive
-		IsDuplicate
-		NumberOfAdditionalAuthors
-		CoAuthor1
-		CoAuthor1External
-		CoAuthor2
-		CoAuthor2External
-		CoAuthor3
-		CoAuthor3External
-	) );
+	print _rae_escape_csv( "Dept", "Username", "Surname", "First Name", "Score", "Publication", "Paper" );
 };
 
 
 # Print CSV row for item as selected by user
-# $info is a hashref of qualifying metadata the user entered for this selection
+# $values is a hashref of qualifying metadata the user entered for this selection
 sub rae_print_csv_row {
-	my ( $session, $user, $item, $info, $output_number ) = @_;
+	my ( $session, $user, $item, $values ) = @_;
 
-	my @row;
+	my $name = $user->get_value( "name" );
 
-	# Check for valid item
-	if( !defined( $item ) )
+	my $book = "";
+	my $citation;
+	if( defined $item )
 	{
-		print "Undefined item\n";
-		return;
-	} 
-
-	my $ra2_type = rae_get_ra2_type( $item );
-	if( !$ra2_type )
+		if( $item->get_type eq "article" )
+		{
+			$book = $item->get_value( "publication" );
+		}
+		elsif( $item->get_type eq "conference_item" )
+		{
+			$book = $item->get_value( "event_title" );
+		}
+		elsif( $item->get_type eq "book_section" )
+		{
+			$book = $item->get_value( "book_title" );
+		}
+		$citation = EPrints::Utils::tree_to_utf8( $item->render_citation );
+	}
+	else
 	{
-		print "Could not map type \"" . $item->get_type . "\" to RAE type\n";
-		return;
+		$citation = $session->phrase( "rae:unknown_item", id => $values->{eprintid} );
 	}
 
-	# Institution
-	push @row, ""; # Add Institution id here
-
-	# UnitOfAssessment
-	push @row, "";
-	# push @row, $user->get_value( "rae_unit" ); # Part of user metadata?
-
-	# MultipleSubmission
-	push @row, "";
-
-	# HESAStaffIdentifier
-	push @row, "";
 	
-	# StaffIdentifier
-	push @row, $user->get_value( "username" );
-
-	# OutputNumber - "for administrative convenience of referencing only"
-	push @row, $output_number;
-
-	# OutputId
-	push @row, $item->get_id;
-
-	# OutputType
-	push @row, $ra2_type;
-
-	# Year LongTitle ShortTitle Pagination Publisher Editors ISBN PublicationDate EndDate URL DOI
-	my $ra2_fields = $session->get_archive->get_conf( "rae", "ra2_fields_for_type", $ra2_type );
-	foreach my $f ( @$ra2_fields )
-	{
-		my $field = $f;
-		$field =~ s/^opt_//;
-
-		if( $field eq "year" )
-		{
-			my $date = $item->get_value( "date_effective" );
-			$date =~ /^([0-9]{4})/;
-			push @row, $1;
-			next;
-		}
-		elsif( $field eq "monthyear" )
-		{		
-			my $date = $item->get_value( "date_effective" );
-			$date =~ /^([0-9]{4})(\-([0-9]{2}))?/;
-			if ( $3 )
-			{
-				push @row, "$1-$3";
-			}
-			else
-			{
-				push @row, $1;
-			}
-			next;
-		}
-		elsif( $field eq "pages" )
-		{
-			my $pg = "";
-			if( $item->is_set( "pages" ) )
-			{
-				$pg = $item->get_value( "pages" );
-			}
-			elsif( $item->is_set( "pagerange" ) )
-			{
-				my $pr = $item->get_value( "pagerange" );
-				if( $pr =~ /^([0-9]+)\-([0-9]+)$/ )
-				{
-					$pg = ($2 - $1) + 1
-				}
-			}
-			push @row, $pg;
-		}
-		elsif( $field eq "eprinturl" )
-		{
-			if( $item->is_set( "official_url" ) )
-			{
-				push @row, $item->get_value( "official_url" );
-			}
-			else
-			{
-				push @row, $item->get_url;
-			}
-		}
-		elsif( $field eq "volume" )
-		{
-			my $vn = "";
-			if( $item->is_set( "volume" ) )
-			{
-				$vn = EPrints::Utils::tree_to_utf8( $item->render_value( "volume" ) );
-			}
-			if( $item->is_set( "number" ) )
-			{
-				$vn .= "(" . EPrints::Utils::tree_to_utf8( $item->render_value( "number" ) ) . ")";
-			}
-			push @row, $vn;
-			
-		}
-		elsif( $field eq "" )
-		{
-			push @row, "";
-		}
-		else
-		{
-			if( $item->is_set( $field ) )
-			{
-				push @row, EPrints::Utils::tree_to_utf8( $item->render_value( $field ) );
-			}
-			else
-			{
-				push @row, "";
-			}
-		}
-	}
-
-	# PendingPublication
-	$item->get_value( "ispublished" ) ne "pub" ? push @row, "false" : push @row, "true";
-
-	# OtherDetails
-	defined $info->{details} ? push @row, $info->{details} : push @row, "";
-
-	# InterestConflicts
-	push @row, "";
-
-	# DatesConflictExplanation
-	push @row, "";
-
-	# EnglishAbstract - only needed for non-english publications
-	push @row, "";
-
-	# ResearchGroup
-	push @row, "";
-
-	# IsInterdisciplinary
-	defined $info->{interdis} ? push @row, lc $info->{interdis} : push @row, "false";
-
-	# IsSensitive
-	defined $info->{confidential} ? push @row, lc $info->{confidential} : push @row, "false";
-
-	# IsDuplicate
-	push @row, "";
-
-	my @co_authors;
-	for( @{ $item->get_value( "creators" ) } )
-	{
-		my $co_author = $_;
-		# Skip author who selected publication
-		next if defined $co_author->{id} && $co_author->{id} eq $user->get_value( "email" );
-		push @co_authors, $co_author;
-	}
-
-	# NumberOfAdditionalAuthors
-	push @row, scalar @co_authors;
-
-	# CoAuthor1 CoAuthor1External CoAuthor2 CoAuthor2External CoAuthor3 CoAuthor3External
-	for( 0..2 )
-	{
-		if( defined $co_authors[$_] )
-		{
-			push @row, EPrints::Utils::make_name_string( $co_authors[$_]->{main}, 1 ), "";
-		}
-		else
-		{
-			push @row, "", "";
-		}
-	}
-
-	print _rae_escape_csv( @row );
-
+	
+	print _rae_escape_csv(
+		$user->get_value( "dept" ),
+		$user->get_value( "username" ),
+		$name->{family},
+		$name->{given},
+		"",
+		$book,
+		$citation
+	);
 }
 
 # Print CSV footer row(s)
 # $rows is the number of times rae_print_csv_row has been called
 sub rae_print_csv_footer {
 	my ( $rows ) = @_;
+
+	print _rae_escape_csv( "", "", "", "", "", "", "" );
+
+	my $range = "E2:E".($rows+1); # E1 is header row
+	print _rae_escape_csv( "Score", "Label", "Total Papers", "", "", "", "", "");
+
+	print _rae_escape_csv( "0", "Unclassified", "=".$rows."-INDEX(FREQUENCY($range,A".($rows+4).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+5).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+6).":A".($rows+8)."),2)-INDEX(FREQUENCY($range,A".($rows+7).":A".($rows+8)."),2)", "", "", "", "", "" );
+	print _rae_escape_csv( "1", "1*", "=INDEX(FREQUENCY($range,A".($rows+4).":A".($rows+8)."),2)", "", "", "", "", "" );
+	print _rae_escape_csv( "2", "2*", "=INDEX(FREQUENCY($range,A".($rows+5).":A".($rows+8)."),2)", "", "", "", "", "" );
+	print _rae_escape_csv( "3", "3*", "=INDEX(FREQUENCY($range,A".($rows+6).":A".($rows+8)."),2)", "", "", "", "", "" );
+	print _rae_escape_csv( "4", "4*", "=INDEX(FREQUENCY($range,A".($rows+7).":A".($rows+8)."),2)", "", "", "", "", "" );
 };
 
 # Helper function: format a list of values as CSV
@@ -512,26 +231,5 @@ sub rae_roles_for_user
 
 	return ();
 };
-
-# Given an eprint, work out corresponding RA2 type
-sub rae_get_ra2_type
-{
-	my( $item ) = @_;
-
-	my $type = $item->get_type;
-	my $ra2_type;
-
-	if( $type eq "book" )
-	{
-		$ra2_type = "A"; # Authored book
-		$ra2_type = "B" if !$item->is_set( "creators" ); # Edited book
-	}
-	$ra2_type = "C" if $type eq "book_section"; # Chapter in book
-	$ra2_type = "D" if $type eq "article"; # Journal article
-	$ra2_type = "E" if $type eq "conference_item"; # Conference contribution
-	$ra2_type = "F" if $type eq "patent"; # Patent / published patent application
-
-	return $ra2_type;
-}
 
 1;

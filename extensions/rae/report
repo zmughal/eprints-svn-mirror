@@ -201,13 +201,12 @@ sub do_user_csv
 	my ( $session, $dataset, $user, $info ) = @_;
 
 	my $selections = $info->{eprints_for_user}{$user->get_id};
-	my $output_number = 1;
 	for( @$selections )
 	{
 		my $item = EPrints::EPrint->new( $session, $_->{eprintid} );
 
 		# Add a row to the CSV file
-		$session->get_archive->call( "rae_print_csv_row", $session, $user, $item, $_, $output_number++ );
+		$session->get_archive->call( "rae_print_csv_row", $session, $user, $item, $_ );
 		$info->{csv_rows}++;
 	}
 }

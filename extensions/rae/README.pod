@@ -44,7 +44,7 @@ Identify and resolve problems with selections
 
 =item * 
 
-Produce reports in Word and Excel (RA2) format
+Produce reports in Word and Excel format
 
 =back
 
@@ -242,7 +242,7 @@ the selected item does not have a full text attached
 
 =item * 
 
-one or more fields required for the RA2 report are missing
+the selected item is a journal article, but the ISSN field is not filled in
 
 =back
 
@@ -260,7 +260,7 @@ Edit item: the unit manager can upload a full text or bounce the item back to th
 
 =item * 
 
-Edit item: the unit manager can enter the missing data or bounce the item back to the user who selected it requesting that they add the missing data
+Edit item: the unit manager can enter the ISSN or bounce the item back to the user who selected it requesting that they add the ISSN
 
 =back
 
@@ -274,9 +274,7 @@ The F<ArchiveRAEConfig.pm> file contains 3 hooks for producing CSV output:
 
 =item C<rae_print_csv_header>
 
-called once at the beginning of the output to produce the header row(s). 
-
-By default produces the RA2 header (see http://www.rae.ac.uk/datacoll/import/excel/RAE2008Data.xls - March 2006).
+called once at the beginning of the output to produce the header row(s)
 
 =item C<rae_print_csv_row>
 
@@ -288,41 +286,32 @@ called once at the end of the output to produce the footer row(s)
 
 =back
 
+The default configuration produces the following header row:
+
+ Dept, Username, Surname, First Name, Score, Publication, Paper
+
+And for each user selection produces a row, e.g.:
+
+ Maths, js, Smith, John, , Int. Journal of Statistics, [citation]
+
+The C<rae_print_csv_footer> receives the number of rows printed as its argument, making it possible to add formulas to cells.
+
+The default configuration produces:
+
+ Score	Label		Total Papers
+ 0	Unclassified	[formula: number of papers scored 0]
+ 1	1*		[formula: number of papers scored 1]
+ 2	2*		[formula: number of papers scored 2]
+ 3	3*		[formula: number of papers scored 3]
+ 4	4*		[formula: number of papers scored 4]
+
+This enables the unit manager to fill in the "Score" column for each paper and get an overview of that unit's performance.
+
 To change the way that the CSV output is produced, change these hooks.
 
 B<NOTE: use the _rae_escape_csv helper function to format a list of values as a CSV row.>
 
-=head2 8. Customising the RA2 output
-
-The default configuration produces RA2-compatible output, based on the default EPrints fields and RAE guidelines.
-
-=item C<ra2_fields_for_type>
-
-This setting defines how the default EPrints fields map to the RA2 output description fields.
-
-See: Guidance on the data requirements of the output description fields on form RA2 Research outputs
-http://www.rae.ac.uk/datacoll/subs/RAE2008RA2DescriptionFieldsGuideV2.xls (August 2006)
-
-Locally defined fields should be inserted as appropriate.
-
-=item C<rae_get_ra2_type>
-
-This hook determines the appropriate RA2 type for an EPrint record.
-
-The following mappings are available by default:
-
- EPrint Type					RA2 Type
-
- Book (where creators field is set)		A (Authored book)
- Book (where creators field is not set)		B (Edited book)
- Book Section					C (Chapter in book)
- Article					D (Journal article)
- Conference Item				E (Conference contribution)
- Patent						F (Patent/published patet application)
-
-Locally defined types should be mapped as appropriate.
-
-=head2 9. Allowing some users to enter data/make selections on behalf of others
+=head2 8. Allowing some users to enter data/make selections on behalf of others
 
 By default, anyone with the appropriate priviledges can edit another user's measures of esteem or selections.
 
@@ -374,7 +363,7 @@ Use the C<rae_can_user_assume_role> and C<rae_roles_for_user> hook to add this r
 
 Now when the secretary views the "Measures of Esteem" and "Select Items" pages, they will be presented a list of users on whose behalf they can enter data/make selections.
 
-=head2 10. Alternative to #9
+=head2 9. Alternative to #8
 
 Alternatively, the secretary could use the User Search facility to find specific users. Clicking on a search result page takes them to a View User page listing all the user details (so it can be verified that this is the right user).
 
