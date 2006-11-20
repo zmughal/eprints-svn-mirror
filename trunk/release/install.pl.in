@@ -448,43 +448,47 @@ SPIEL
 
 sub merge_fields
 {
-	my($hash1, $hash2) = @_;
-	my %outhash;
-	my $type = ref $hash1;
+	my($ref1, $ref2) = @_;
+	my %outref;
+	my $type = ref $ref1;
 	if($type eq "HASH")
 	{
-		# $hash1 takes precedence
-		foreach(keys %$hash1)
+		# $ref1 takes precedence
+		foreach(keys %$ref1)
 		{
-			$outhash{$_} = $hash1->{$_};
+			$outref{$_} = $ref1->{$_};
 		}
-		foreach(keys %$hash2)
+		foreach(keys %$ref2)
 		{
-			$outhash{$_} = $hash2->{$_} unless defined $outhash{$_};
+			$outref{$_} = $ref2->{$_} unless defined $outref{$_};
 		}
-		return \%outhash;
+		return \%outref;
 	}
 	elsif($type eq "ARRAY")
 	{
-		if (defined $hash1)
+		my $out = [];
+		my $done = {};
+		if (defined $ref1)
 		{
-			foreach(@$hash1)
+			foreach(@$ref1)
 			{
-				$outhash{$_} = 1 if defined $_;
+				$done->{$_} = 1;
+				push @{$out}, $_;
 			}
 		}
-		if (defined $hash2)
+		if (defined $ref2)
 		{
-			foreach(@$hash2)
+			foreach(@$ref2)
 			{
-				$outhash{$_} = 1 if defined $_;
+				next if( $done->{$_} );
+				push @{$out}, $_;
 			}
 		}
-		return [keys %outhash];
+		return $out;
 	}
 	else
 	{
-		return $hash1;
+		return $ref1;
 	}
 	
 }
