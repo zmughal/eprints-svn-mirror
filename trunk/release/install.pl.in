@@ -273,10 +273,11 @@ if( $upgrade )
 # Actual install starts here.
 #
 ensure_dir( $to_path, $uid, $gid, 02775 );
+ensure_dir( "$to_path/testdata", $uid, $gid, 02775 );
 
-my $newhashes = [];
+my $newsighash = {};
 
-my @normal_dirs = ( "defaultcfg", "cfg", "perl_lib", "lib", "testdata", "var" );
+my @normal_dirs = ( "defaultcfg", "cfg", "perl_lib", "lib", "testdata/data", "var" );
 
 my @executable_dirs = ( "bin", "cgi", "testdata/bin" );
 
@@ -284,21 +285,42 @@ my @base_files = ( "VERSION", "CHANGELOG", "COPYING", "NEWS", "AUTHORS", "README
 
 foreach my $dir (@normal_dirs)
 {
-	install_dir($from_path, $dir, 0664, $uid, $gid, $to_path, \%oldhashes, $newhashes);
+	install_dir($from_path, $dir, 0664, $uid, $gid, $to_path, \%oldhashes, $newsighash);
 }
 foreach my $dir (@executable_dirs)
 {
-	install_dir($from_path, $dir, 0775, $uid, $gid, $to_path, \%oldhashes, $newhashes);
+	install_dir($from_path, $dir, 0775, $uid, $gid, $to_path, \%oldhashes, $newsighash);
 }
 foreach my $file (@base_files)
 {
-	install_file($from_path, $file, undef, 0664, $uid, $gid, $to_path, \%oldhashes, $newhashes );
+	install_file($from_path, $file, undef, 0664, $uid, $gid, $to_path, \%oldhashes, $newsighash );
 }
 
 ensure_dir( "$to_path/archives", $uid, $gid, 02775 );
-ensure_dir( "$to_path/perl_lib/EPrints/LocalPlugin", $uid, $gid, 02775 );
 
-write_sigs( $to_path, $newhashes, $uid, $gid );
+foreach my $oldfile ( keys %oldhashes )
+{
+	next if defined $newsighash->{$oldfile};
+
+	my $filepath = "$to_path/$oldfile";
+
+	next if( !-e $filepath );
+
+	my $repl_digest = get_digest( $filepath );
+
+	if( $repl_digest ne $oldhashes{$oldfile} )
+	{
+		move_out_of_harms_way( $filepath );
+	}
+	else
+	{
+		print "Removing $filepath\n";
+		unlink( $filepath );
+	}
+}
+
+
+write_sigs( $to_path, $newsighash, $uid, $gid );
 
 
 save_settings( 
@@ -308,8 +330,14 @@ save_settings(
 	$systemsettings->{group} );
 
 # Warnings!
-
-print $to_path."\n";
+if( $upgrade )
+{
+	print "Upgraded eprints at: $to_path\n";
+}
+else
+{
+	print "Installed EPrints to: $to_path\n";
+}
 my $soapdir = "$to_path/cgi/soap";
 if( -d $soapdir )
 {
@@ -544,9 +572,9 @@ sub write_sigs
 	}
 	binmode(SIGOUT);
 		
-	foreach(@{$sigs})
+	foreach( sort keys %{$sigs} )
 	{
-		print SIGOUT $_;
+		print SIGOUT $_." ".$sigs->{$_}."\n";
 	}
 	close(SIGOUT);
  	if( $from_configure{"platform"} eq "unix" )
@@ -583,7 +611,7 @@ sub get_digest
 
 sub install_file
 {
-	my($distdir, $file, $dir, $perms, $uid, $gid, $dest, $sighash, $newsigs ) = @_;
+	my($distdir, $file, $dir, $perms, $uid, $gid, $dest, $sighash, $newsighash ) = @_;
 
 	my $relpath = $file;
 	if( defined $dir ) { $relpath = "$dir/$file"; }
@@ -624,11 +652,11 @@ sub install_file
 			push @linesout, $currline;
 		}		
 		close(INFILE);
-		push @{$newsigs}, "$relpath ".$outdigest->hexdigest."\n";
+		$newsighash->{$relpath} = $outdigest->hexdigest;
 	}
 	else
 	{
-		push @{$newsigs}, "$relpath ".get_digest("$distdir/$relpath")."\n";
+		$newsighash->{$relpath} = get_digest("$distdir/$relpath");
 	}
 	
 	if ($sighash->{"$relpath"} && -e "$dest/$relpath")
@@ -675,7 +703,7 @@ sub install_file
 
 sub install_dir
 {
-	my( $distdir, $dir, $perms, $uid, $gid, $dest, $sighash, $newsigs ) = @_;
+	my( $distdir, $dir, $perms, $uid, $gid, $dest, $sighash, $newsighash ) = @_;
 
 	unless( opendir(INDIR, $dir) )
 	{
@@ -709,11 +737,11 @@ sub install_dir
 	closedir(INDIR);
 	foreach(@files)
 	{
-		install_file($distdir, $_, $dir, $perms, $uid, $gid, $dest, $sighash, $newsigs );
+		install_file($distdir, $_, $dir, $perms, $uid, $gid, $dest, $sighash, $newsighash );
 	}
 	foreach(@dirs)
 	{
-		install_dir($distdir, "$dir/".$_, $perms, $uid, $gid, $dest, $sighash, $newsigs );
+		install_dir($distdir, "$dir/".$_, $perms, $uid, $gid, $dest, $sighash, $newsighash );
 	}
 }
 
