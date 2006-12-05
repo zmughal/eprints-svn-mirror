@@ -1,0 +1,23 @@
+License for EPrints version: __VERSION__
+
+Copyright (C) 2000, University of Southampton
+
+The University of Southampton retains the copyright of the core
+components of this system with the exception of the open archives
+component (in the openarchives/ directory), which is a modified
+version of code distributed by Cornell University Digital Library
+Research Group.
+
+This version of the software may be used only for testing and
+evaluation purposes. It may only be used by authorised parties, and
+may not be further distributed. It must not yet be used for a live
+service.
+
+Users of this beta are asked to provide bug reports, feedback and
+suggestions to the EPrints bug tracking system located at:
+
+  http://bugs.eprints.org/
+
+This software is provided with no guarantees of suitability for any
+intended purpose. Use of the software is entirely at the end user's
+risk.
