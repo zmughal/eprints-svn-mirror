@@ -64,7 +64,10 @@ erase_dir( "export" );
 print "Exporting from SVN...\n";
 my $originaldir = getcwd();
 
-cmd( "svn export http://mocha/svn/eprints/$version_path export/")==0 or die "Could not export system.\n";
+mkdir( "export" );
+
+cmd( "svn export http://mocha/svn/eprints$version_path/release/ export/release/")==0 or die "Could not export system.\n";
+cmd( "svn export http://mocha/svn/eprints$version_path/system/ export/system/")==0 or die "Could not export system.\n";
 
 cmd( "export/release/internal_makepackage.pl $type export package" );
 
