@@ -87,16 +87,16 @@ echo '';
 echo 'admin';  #password
 echo 'chris\@totl.net'; 
 
+echo ''; 
+echo ''; 
+echo ''; 
 
 END
 
-run( "$bin/generate_apacheconf" );
-run( "$bin/import_subjects --force ep_auto_test --verbose" );
 run( "$base/install/testdata/bin/import_test_data ep_auto_test" );
-run( "$bin/generate_static ep_auto_test --verbose" );
 run( "$bin/generate_views ep_auto_test --verbose" );
 run( "$bin/generate_abstracts ep_auto_test --verbose" );
-#
+
 run( "$bin/indexer start" );
 run( "$bin/indexer stop" );
 
