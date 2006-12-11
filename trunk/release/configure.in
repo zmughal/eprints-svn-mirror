@@ -235,7 +235,8 @@ fi
 AC_PATH_PROG(CONVERT_PATH, convert, "NOTFOUND", $TOOL_PATH)
 if test $CONVERT_PATH = "NOTFOUND"; then
     echo "*** 'convert' is only needed if you want to use the feature"
-    echo "*** which displays latex equations as inline graphics."
+    echo "*** which creates thumbnails and previews of images and PDFs"
+    echo "*** and/or displays latex equations as inline graphics."
 #    AC_MSG_WARN([Unable to find convert, the ImageMagick tool])
 fi
 
