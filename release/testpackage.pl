@@ -93,7 +93,7 @@ echo '';
 
 END
 
-run( "$base/install/testdata/bin/import_test_data ep_auto_test" );
+run( "$base/install/testdata/bin/import_test_data ep_auto_test --verbose" );
 run( "$bin/generate_views ep_auto_test --verbose" );
 run( "$bin/generate_abstracts ep_auto_test --verbose" );
 
