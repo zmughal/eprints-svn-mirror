@@ -109,6 +109,10 @@ AC_ARG_WITH(smtp-server,
     [
         SMTP_SERVER=$withval
     ])
+if test $SMTP_SERVER = "yes" ; then
+	echo "Please actually specify a STMP server."
+	exit 1;
+fi
 
 if test $DISABLE_DF = "0" ; then
     AC_MSG_CHECKING([what perl function to use for disk free])
