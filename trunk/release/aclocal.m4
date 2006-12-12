@@ -15,14 +15,13 @@ if test "x$RESULT" = "x1" ; then
 	AC_MSG_RESULT(yes)
 else
 	AC_MSG_RESULT(no)
-	AC_MSG_WARN(Perl module $1 not installed)
 	echo "***************************************************************"
 	echo "*** Please consult the eprints documentation on how to"
 	echo "*** install this missing module. Configuration will now"
 	echo "*** continue, but EPrints may not work until this module"
 	echo "*** had been installed."
 	echo "***************************************************************"
-	AC_MSG_ERROR(darn)
+	AC_MSG_ERROR(Perl module $1 not installed)
 fi
 ])
 
