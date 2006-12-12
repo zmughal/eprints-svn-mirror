@@ -273,6 +273,7 @@ if test "x$APACHE" = "x1" ; then
 			echo "*** for --with-apache=x"
 		fi
 		echo "***********************************************************"
+		AC_MSG_ERROR(No mod_perl 2!)
 	fi
 else
 	if test $HAS_MOD_PERL_2 = "1"; then
@@ -294,6 +295,7 @@ else
 			echo "*** for --with-apache=x"
 		fi
 		echo "***********************************************************"
+		AC_MSG_ERROR(No mod_perl!)
 	fi
 fi
 
