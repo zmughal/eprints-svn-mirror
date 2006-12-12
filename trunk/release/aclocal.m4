@@ -19,9 +19,10 @@ else
 	echo "***************************************************************"
 	echo "*** Please consult the eprints documentation on how to"
 	echo "*** install this missing module. Configuration will now"
-	echo "*** continue, but eprints should not work until this module"
+	echo "*** continue, but EPrints may not work until this module"
 	echo "*** had been installed."
 	echo "***************************************************************"
+	AC_MSG_ERROR(darn)
 fi
 ])
 
@@ -65,12 +66,12 @@ dnl Check perl's include path for it
 PERL_FOUND_MOD=`$PERL_PATH -e 'foreach (@INC) {print "1\n" if -e "$_/'$MOD_DIR_PATH'"}'`
 
 if test "x$PERL_FOUND_MOD" = "x" ; then
-	AC_MSG_RESULT(no)
+	ac_mSG_RESULT(no)
 	AC_MSG_WARN(Perl module $1 not installed)
 	echo "***************************************************************"
 	echo "*** Please consult the eprints documentation on how to"
 	echo "*** install this missing module. Configuration will now"
-	echo "*** continue, but eprints should not work until this module"
+	echo "*** continue, but EPrints may not work until this module"
 	echo "*** had been installed."
 	echo "***************************************************************"
 else
