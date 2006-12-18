@@ -86,3 +86,4 @@ eprints3-0-b-0		3.0-beta-0		Glimpse
 eprints3-0-b-1		3.0-beta-1		Pumpkin
 eprints3-0-b-2		3.0-beta-2		Trout
 eprints3-0-b-3		3.0-beta-3		Triangle
+eprints3-0-rc-1		3.0-rc-1		All the Trimmings
