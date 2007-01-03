@@ -6150,3 +6150,6 @@ PACKAGE: 2.2.99.2
  * Changed INSERT to REPLACE on login tickets - should fix bug with IP 
     changing on laptops.
 
+2007-01-03 tmb
+ * Added more examples for Request Copy configuration (eg. first author)
+
