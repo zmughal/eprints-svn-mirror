@@ -6153,3 +6153,6 @@ PACKAGE: 2.2.99.2
 2007-01-03 tmb
  * Added more examples for Request Copy configuration (eg. first author)
 
+2007-01-03 tmb
+ * Used File::Temp for temp files in Import screen
+
