@@ -6182,9 +6182,16 @@ PACKAGE: 2.2.99.2
  * Used TeX::Encode to provide some handling of accented characters in
     BibTeX import.
 
+2007-01-10 moj
+ * Added user/remove action
+ * Changed sure_delete to be a plugin phrase
+ * Added User::Remove screen (similar to EPrint::Remove)
+ * Added phrases for User::Remove
+
 2007-01-11 tmb
  * Added first cut of metadata fields, phrases and citations for new 
     eprint types.
 
 2007-01-11 tmb
  * Added necessary bits to make activating minimal users simple.
+
