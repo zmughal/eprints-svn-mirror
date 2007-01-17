@@ -6215,3 +6215,7 @@ PACKAGE: 2.2.99.2
  * Fixed issue with &<> in autocomplete.
  * Fixed up confusing help in import
  * Added --force option to import
+
+======================================================================
+17/01/2007 - EPRINTS-3.0-RC-2
+======================================================================
