@@ -74,6 +74,7 @@ sub export_subject
 	foreach my $field ( $dataset->get_fields )
 	{
 		my $name = $field->get_name;
+		next if $name eq "ancestors";
 		my $value = $item->get_value( $name );
 		next unless EPrints::Utils::is_set $value;
 		export_value( $field, $value );
@@ -116,8 +117,8 @@ sub export_value
 		foreach my $langid ( keys %{$value} )
 		{
 			print $fh "    <item>\n";
-			print $fh "      <id>".esc($langid)."</id>\n";
 			print $fh "      <name>".rv($field,$value->{$langid})."</name>\n";
+			print $fh "      <lang>".esc($langid)."</lang>\n";
 			print $fh "    </item>\n";
 		}
 		print $fh "  </$name>\n";
