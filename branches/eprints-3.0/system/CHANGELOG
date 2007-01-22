@@ -6222,3 +6222,15 @@ PACKAGE: 2.2.99.2
 ======================================================================
 17/01/2007 - EPRINTS-3.0-RC-2
 ======================================================================
+
+2007-01-20 tdb
+ * Fixed security holes in lookup scripts
+
+2007-01-22 cjg
+ * Removed SQL from lookup script.
+
+2007-01-22 cjg
+ * Fixed bug in Session which caused buttons to do odd things for
+    a few seconds after initial login. (due to failing to clear an
+    apache note).
+
