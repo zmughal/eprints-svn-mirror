@@ -6146,8 +6146,9 @@ PACKAGE: 2.2.99.2
 18/12/2006 - EPRINTS-3.0-RC-1
 ======================================================================
 
-2006-12-21 tdb
- * Added url_name_value lookup script
+2006-12-18 cjg
+ * Changed INSERT to REPLACE on login tickets - should fix bug with IP 
+    changing on laptops.
 
 2007-01-03 tmb
  * Added more examples for Request Copy configuration (eg. first author)
@@ -6167,7 +6168,7 @@ PACKAGE: 2.2.99.2
  * Previous commit: Changed userid to use user dataset rather than
     document.
 
-2007-01-08 tdb
+2007-01-08
  * Added ApacheLog import plugin for access log data
 
 2007-01-09 cjg 
@@ -6181,19 +6182,11 @@ PACKAGE: 2.2.99.2
  * Used TeX::Encode to provide some handling of accented characters in
     BibTeX import.
 
-2007-01-10 tdb
- * Made ApacheLog optional on Date::Parse dependency
- * Made commonlog regexp in ApacheLog more flexible
-
 2007-01-10 moj
  * Added user/remove action
  * Changed sure_delete to be a plugin phrase
  * Added User::Remove screen (similar to EPrint::Remove)
  * Added phrases for User::Remove
-
-2007-01-11 moj
- * Public::RequestCopy stores actor as user's name (if logged in)
-    or email address (if not).
 
 2007-01-11 tmb
  * Added first cut of metadata fields, phrases and citations for new 
@@ -6214,6 +6207,10 @@ PACKAGE: 2.2.99.2
 2007-01-16 cjg
  * Commented out autoloader in Tex::Encode to get rid of a warning.
 
+2007-01-11 moj
+ * Public::RequestCopy stores actor as user's name (if logged in)
+    or email address (if not).
+
 2007-01-17 cjg
  * Fixed issue with &<> in autocomplete.
  * Fixed up confusing help in import
@@ -6221,6 +6218,10 @@ PACKAGE: 2.2.99.2
 
 2007-01-17 cjg
  * fix rolllogs to EPrints::Index::rolllogs in indexer
+
+======================================================================
+17/01/2007 - EPRINTS-3.0-RC-2
+======================================================================
 
 2007-01-20 tdb
  * Fixed security holes in lookup scripts
@@ -6232,3 +6233,7 @@ PACKAGE: 2.2.99.2
  * Fixed bug in Session which caused buttons to do odd things for
     a few seconds after initial login. (due to failing to clear an
     apache note).
+
+======================================================================
+22/01/2007 - EPRINTS-3.0
+======================================================================

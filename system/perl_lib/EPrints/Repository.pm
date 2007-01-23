@@ -123,7 +123,7 @@ sub new
 		# it each time the main server forks.
 		if( defined $poketime && $poketime > $self->{loadtime} )
 		{
-			print STDERR "$file has been modified since the repository config was loaded: reloading!";
+			print STDERR "$file has been modified since the repository config was loaded: reloading!\n";
 		}
 		else
 		{
