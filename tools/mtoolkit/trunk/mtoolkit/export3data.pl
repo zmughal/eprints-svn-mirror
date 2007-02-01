@@ -143,7 +143,7 @@ sub export_value
 			{
 				print $fh "      <id>".esc($item->{id})."</id>\n";
 			}
-			if( EPrints::Utils::is_set($item->{name}) )
+			if( EPrints::Utils::is_set($item->{main}) )
 			{
 				print $fh "      <name>".rv($field,$item->{main})."</name>\n";
 			}
