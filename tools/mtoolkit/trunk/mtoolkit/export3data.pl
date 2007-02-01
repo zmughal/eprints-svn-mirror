@@ -201,7 +201,9 @@ sub export_eprint
 		print $fh "      <eprintid>".esc($doc->get_value( "eprintid" ))."</eprintid>\n";
 		print $fh "      <format>".esc($doc->get_value( "format" )||"")."</format>\n";
 		print $fh "      <language>".esc($doc->get_value( "language" )||"")."</language>\n";
-		print $fh "      <security>".esc($doc->get_value( "security" )||"")."</security>\n";
+		my $security = esc($doc->get_value( "security" )||"");
+		if( $security eq "" ) { $security = "public"; }
+		print $fh "      <security>$security</security>\n";
 		print $fh "      <main>".esc($doc->get_value( "main" )||"")."</main>\n";
 		print $fh "      <pos>$pos</pos>\n";
 

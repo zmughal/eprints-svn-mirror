@@ -41,7 +41,7 @@ mkdir( "$path/cfg/cfg.d" );
 mk_eprint_fields();
 mk_user_fields();
 
-open( NOTES, ">$path/notes.txt" );
+open( NOTES, ">$path/migration_notes.txt" );
 print NOTES $notes;
 close NOTES;
 
@@ -107,6 +107,7 @@ sub mk_eprint_fields
 {
 	my $archivefields = $archive->get_conf( "archivefields", "eprint" );
 	my $outfields = [];
+	my $ids = {};
 	foreach my $fdata ( @{$archivefields} )
 	{
 		if( $fdata->{name} eq "fileinfo" )
@@ -146,8 +147,8 @@ sub mk_eprint_fields
                          ],
             	'input_style' => 'medium',
           	};
-
-
+	
+			$ids->{'date_type'} = 1;
 			$fdata->{name} = "date";
 			$notes.= "changing date_issue to date\n";
 		}
@@ -160,7 +161,25 @@ sub mk_eprint_fields
 		}
 			
 		push @{$outfields}, $fdata;
+		$ids->{$fdata->{name}} = 1;
 	}
+
+	if( !defined $ids->{'full_text_status'} )
+	{
+		push @{$outfields}, 
+          {
+            'name' => 'full_text_status',
+            'type' => 'set',
+            'options' => [
+                           'public',
+                           'restricted',
+                           'none',
+                         ],
+            'input_style' => 'medium',
+          };
+		$notes.= "added field 'full_text_status'\n";
+	}
+
 	
 	my $file = "$path/cfg/cfg.d/eprint_fields.pl";
 	open( OUT, ">$file" ) || die "Can't write $file: $!";
@@ -453,24 +472,41 @@ sub write_phrases
 <epp:phrases xmlns="http://www.w3.org/1999/xhtml" xmlns:epp="http://eprints.org/ep3/phrase" xmlns:epc="http://eprints.org/ep3/control">
 
 END
+
+		my %extras = ();
 		if( $fileid eq "eprint_fields" )
 		{
-			print FILE <<END;
-    <epp:phrase id="eprint_fieldname_date">Date</epp:phrase>     
-    <epp:phrase id="eprint_fieldhelp_date">The date this EPrint was completed, submitted to a publisher, published or submitted for a Ph.D.</epp:phrase>
-    <epp:phrase id="eprint_fieldname_date_type">Date Type</epp:phrase>
-    <epp:phrase id="eprint_fieldhelp_date_type">The event to which the date applies.</epp:phrase> 
-END
+			$extras{eprint_fieldname_creators_name} = 'Creators Name';
+			$extras{eprint_fieldhelp_creators_name} = '';
+			$extras{eprint_fieldname_date} = 'Date';
+			$extras{eprint_fieldhelp_date} = 'The date this EPrint was completed, submitted to a publisher, published or submitted for a Ph.D.';
+			$extras{eprint_fieldname_date_type} = 'Date Type';
+			$extras{eprint_fieldhelp_date_type} = 'The event to which the date applies.';
+			$extras{eprint_fieldopt_date_type_published} = 'Published';
+			$extras{eprint_fieldopt_date_type_submitted} = 'Submitted';
+			$extras{eprint_fieldopt_date_type_completed} = 'Completed';
+			$extras{eprint_fieldname_full_text_status} = 'Full Text Status';
+			$extras{eprint_fieldhelp_full_text_status} = '';
+			$extras{eprint_fieldopt_full_text_status_public} = 'Public';
+			$extras{eprint_fieldopt_full_text_status_none} = 'None';
+			$extras{eprint_fieldopt_full_text_status_restricted} = 'Restricted';
 		}
+
+		if( $fileid eq "document_security" )
+		{
+			$extras{security_typename_public} = "Anyone";
+		}
+
 		if( $fileid eq "workflow" )
 		{
-			print FILE <<END;
-    <epp:phrase id="metapage_title_type">Type</epp:phrase>
-    <epp:phrase id="metapage_title_files">Upload</epp:phrase>
-END
+			$extras{metapage_title_type} = 'Type';
+			$extras{metapage_title_files} = 'Upload';
 		}
+
 		foreach my $phraseid ( sort @{$sets->{$fileid}} )
 		{
+			next if $phraseid eq "security_typename_";
+
 			my $phrase = $phrases->{$phraseid};
 			my $xml = $phrase->toString;
 			$xml =~ s/ep:phrase/epp:phrase/g;
@@ -478,7 +514,18 @@ END
 			$xml =~ s/pin ref="/pin name="/g;
 			$xml =~ s/phrase ref="/phrase id="/g;
 			print FILE "    $xml\n";
+			delete $extras{$phraseid};
 		}
+
+		if( scalar keys %extras )
+		{
+			print FILE "\n\n<!-- The following phrases were added automatically by migration script. -->\n\n";
+			foreach my $phraseid ( sort keys %extras )
+			{
+				print FILE "    <epp:phrase id=\"$phraseid\">".$extras{$phraseid}."</epp:phrase>\n";
+			}
+		}
+		
 
 		print FILE "\n</epp:phrases>\n";
 		close FILE;
