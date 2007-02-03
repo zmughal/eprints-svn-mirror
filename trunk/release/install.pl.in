@@ -30,6 +30,7 @@ $from_configure{"dvips"}="@DVIPS_PATH@";
 $from_configure{"convert"}="@CONVERT_PATH@";
 
 $from_configure{"enable_gdome"}="@ENABLE_GDOME@";
+$from_configure{"enable_libxml"}="@ENABLE_LIBXML@";
 $from_configure{"apache"}="@APACHE@";
 
 $from_configure{"platform"}="@PLATFORM@";
@@ -213,6 +214,7 @@ $systemsettings->{"version"} = $version;
 
 set( 'smtp_server', \%from_configure, $systemsettings, '' );
 set( 'enable_gdome', \%from_configure, $systemsettings, 0 );
+set( 'enable_libxml', \%from_configure, $systemsettings, 0 );
 set( 'show_ids_in_log', \%from_configure, $systemsettings, 0 );
 set( 'apache', \%from_configure, $systemsettings, "2" );
 
