@@ -19,6 +19,9 @@ BuildRequires: perl(DBI) perl(Data::ShowTable) perl(Unicode::String)
 BuildRequires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
 BuildRequires: perl(XML::Parser) perl(Time::HiRes) perl(CGI)
 BuildRequires: perl(XML::LibXML) >= 1.63
+Requires: sendmail
+Requires: httpd >= 2.0.52
+Requires: perl >= 2:5.8.0
 Requires: perl(DBI) perl(Data::ShowTable) perl(Unicode::String)
 Requires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
 Requires: perl(XML::Parser) perl(Time::HiRes) perl(CGI)
@@ -37,7 +40,7 @@ GNU EPrints primary goal is to be set up as an open archive for research papers,
 pushd %{source_name}-%{version}
 /usr/sbin/groupadd %{user_group} || /bin/true
 /usr/sbin/useradd -d %{install_path} -g %{user_group} -M %{user} -G apache || /bin/true
-./configure --prefix=${RPM_BUILD_ROOT}%{install_path} --with-user=%{user} --with-group=%{user_group} --with-apache=2
+./configure --prefix=${RPM_BUILD_ROOT}%{install_path} --with-user=%{user} --with-group=%{user_group} --with-apache=2 --with-smtp-server=localhost
 mkdir -p etc/httpd/conf.d
 echo "Include ${RPM_BUILD_ROOT}%{install_path}" > etc/httpd/conf.d/eprints3.conf
 pushd perl_lib
@@ -52,7 +55,7 @@ echo 'Installing into:'
 echo $RPM_BUILD_ROOT%{install_path}
 make install
 pushd ${RPM_BUILD_ROOT}%{install_path}
-./bin/generate_apacheconf
+sudo -u eprints ./bin/generate_apacheconf
 popd
 popd
 
