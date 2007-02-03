@@ -54,9 +54,6 @@ mkdir -p ${RPM_BUILD_ROOT}%{install_path}
 echo 'Installing into:'
 echo $RPM_BUILD_ROOT%{install_path}
 make install
-pushd ${RPM_BUILD_ROOT}%{install_path}
-sudo -u eprints ./bin/generate_apacheconf
-popd
 popd
 
 %clean
@@ -65,7 +62,7 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,%{user},%{user_group})
 /opt/eprints3
-%config /etc/httpd/conf.d/eprints.conf
+%config /etc/httpd/conf.d/eprints3.conf
 # %config /opt/eprints3/perl_lib/EPrints/SystemSettings.pm
 
 %post
