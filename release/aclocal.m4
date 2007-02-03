@@ -34,7 +34,7 @@ dnl **************************************************************
 AC_DEFUN(TEST_PERL_MOD,
 [
 AC_MSG_CHECKING(for Perl module: $2)
-RESULT=`$PERL_PATH -m"$2"  -e 'print "1\n";' 2>/dev/null`
+RESULT=`$PERL_PATH -e 'use $2 $3; print "1\n";' 2>/dev/null`
 
 if test "x$RESULT" = "x1" ; then
 	$1=1
