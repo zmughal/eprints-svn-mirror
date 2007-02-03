@@ -9,7 +9,7 @@ Version: 3.0.0
 Release: 1
 URL: http://software.eprints.org/
 Source0: %{source_name}-%{version}.tar.gz
-Patch0: %{source_name}-%{version}.patch
+# Patch0: %{source_name}-%{version}.patch
 License: GPL
 Group: Applications/Communications
 BuildRoot: %{_tmppath}/%{name}-%{version}-buildroot
