@@ -31,7 +31,7 @@ GNU EPrints primary goal is to be set up as an open archive for research papers,
 
 %prep
 %setup -q -c -n %{name}
-%patch 
+# %patch 
 
 %build
 pushd %{source_name}-%{version}
