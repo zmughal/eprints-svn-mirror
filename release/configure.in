@@ -97,7 +97,7 @@ AC_ARG_ENABLE(gdome,
 
 DISABLE_LIBXML="0"
 AC_ARG_ENABLE(libxml,
-    [  --disable-libxml         don't try to use the XML::LibXML module],
+    [  --disable-libxml        don't try to use the XML::LibXML module],
     [
         if test $enableval = no ; then
             DISABLE_LIBXML="1"

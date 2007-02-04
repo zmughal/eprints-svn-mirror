@@ -41,8 +41,6 @@ pushd %{source_name}-%{version}
 /usr/sbin/groupadd %{user_group} || /bin/true
 /usr/sbin/useradd -d %{install_path} -g %{user_group} -M %{user} -G apache || /bin/true
 ./configure --prefix=${RPM_BUILD_ROOT}%{install_path} --with-user=%{user} --with-group=%{user_group} --with-apache=2 --with-smtp-server=localhost
-mkdir -p etc/httpd/conf.d
-echo "Include ${RPM_BUILD_ROOT}%{install_path}" > etc/httpd/conf.d/eprints3.conf
 pushd perl_lib
 rm -rf URI.pm URI XML Unicode Proc
 popd
@@ -54,6 +52,7 @@ mkdir -p ${RPM_BUILD_ROOT}%{install_path}
 echo 'Installing into:'
 echo $RPM_BUILD_ROOT%{install_path}
 make install
+./rpmpatch.sh $RPM_BUILD_ROOT
 popd
 
 %clean
@@ -69,7 +68,7 @@ rm -rf $RPM_BUILD_ROOT
 pushd %{install_path}
 /usr/sbin/groupadd %{user_group} 2>/dev/null || /bin/true
 /usr/sbin/useradd -d %{install_path} -g %{user_group} -M %{user} -G apache 2>/dev/null || /bin/true
-sudo -u eprints bin/generate_apacheconf
+# sudo -u eprints bin/generate_apacheconf
 popd
 
 %preun
