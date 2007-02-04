@@ -92,6 +92,7 @@ cmd("cp $install_from/release/cgi-check.pl $to/eprints/cgi-check.pl");
 cmd("cp $install_from/release/perlmodules.pl $to/eprints/perlmodules.pl");
 cmd("cp $install_from/release/Makefile $to/eprints/Makefile");
 cmd("cp $install_from/release/eprints3.spec $to/eprints/eprints3.spec");
+cmd("cp $install_from/release/rpmpatch.sh $to/eprints/rpmpatch.sh");
 
 print "Inserting top level text files...\n";
 cmd("cp $install_from/system/CHANGELOG $to/eprints/CHANGELOG");
