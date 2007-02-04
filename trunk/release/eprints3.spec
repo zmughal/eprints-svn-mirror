@@ -64,14 +64,15 @@ rm -rf $RPM_BUILD_ROOT
 %config /etc/httpd/conf.d/eprints3.conf
 # %config /opt/eprints3/perl_lib/EPrints/SystemSettings.pm
 
-%post
-pushd %{install_path}
+%pre
 /usr/sbin/groupadd %{user_group} 2>/dev/null || /bin/true
 /usr/sbin/useradd -d %{install_path} -g %{user_group} -M %{user} -G apache 2>/dev/null || /bin/true
-# sudo -u eprints bin/generate_apacheconf
-popd
+
+%post
 
 %preun
+
+%postun
 
 %changelog
 * Tue Aug 15 2006 Tim Brody <tdb01r@ecs.soton.ac.uk>
