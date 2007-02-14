@@ -1,0 +1,98 @@
+rae_uoa:RAE Units of Assessment:ROOT:0
+
+A:Panel A:rae_uoa:0
+1:1 Cardiovascular Medicine:A:1
+2:2 Cancer Studies:A:1
+3:3 Infection and Immunology:A:1
+4:4 Other Hospital Based Clinical Subjects:A:1
+5:5 Other Laboratory Based Clinical Subjects:A:1
+
+B:Panel B:rae_uoa:0
+6:6 Epidemiology and Public Health:B:1
+7:7 Health Services Research:B:1
+8:8 Primary Care and Other Community Based Clinical Subjects:B:1
+9:9 Psychiatry, Neuroscience and Clinical Psychology:B:1
+
+C:Panel C:rae_uoa:0
+10:10 Dentistry:C:1
+11:11 Nursing and Midwifery:C:1
+12:12 Allied Health Professions and Studies:C:1
+13:13 Pharmacy:C:1
+
+D:Panel D:rae_uoa:0
+14:14 Biological Sciences:D:1
+15:15 Pre-clinical and Human Biological Sciences:D:1
+16:16 Agriculture, Veterinary and Food Science:D:1
+
+E:Panel E:rae_uoa:0
+17:17 Earth Systems and Environmental Sciences:E:1
+18:18 Chemistry:E:1
+19:19 Physics:E:1
+
+F:Panel F:rae_uoa:0
+20:20 Pure Mathematics:F:1
+21:21 Applied Mathematics:F:1
+22:22 Statistics and Operational Research:F:1
+23:23 Computer Science and Informatics:F:1
+
+G:Panel G:rae_uoa:0:G:1
+24:24 Electrical and Electronic Engineering:G:1
+25:25 General Engineering and Mineral & Mining Engineering:G:1
+26:26 Chemical Engineering:G:1
+27:27 Civil Engineering:G:1
+28:28 Mechanical, Aeronautical and Manufacturing Engineering:G:1
+29:29 Metallurgy and Materials:G:1
+
+H:Panel H:rae_uoa:0
+30:30 Architecture and the Built Environment:H:1
+31:31 Town and Country Planning:H:1
+32:32 Geography and Environmental Studies:H:1
+33:33 Archaeology:H:1
+
+I:Panel I:rae_uoa:0
+34:34 Economics and Econometrics:I:1
+35:35 Accounting and Finance:I:1
+36:36 Business and Management Studies:I:1
+37:37 Library and Information Management:I:1
+
+J:Panel J:rae_uoa:0
+38:38 Law:J:1
+39:39 Politics and International Studies:J:1
+40:40 Social Work and Social Policy & Administration:J:1
+41:41 Sociology:J:1
+42:42 Anthropology:J:1
+43:43 Development Studies:J:1
+
+K:Panel K:rae_uoa:0
+44:44 Psychology:K:1
+45:45 Education:K:1
+46:46 Sports-Related Studies:K:1
+
+L:Panel L:rae_uoa:0
+47:47 American Studies and Anglophone Area Studies:L:1
+48:48 Middle Eastern and African Studies:L:1
+49:49 Asian Studies:L:1
+50:50 European Studies:L:1
+
+M:Panel M:rae_uoa:0
+51:51 Russian, Slavonic and East European Languages:M:1
+52:52 French:M:1
+53:53 German, Dutch and Scandinavian Languages:M:1
+54:54 Italian:M:1
+55:55 Iberian and Latin American Languages:M:1
+56:56 Celtic Studies:M:1
+57:57 English Language and Literature:M:1
+58:58 Linguistics:M:1
+
+N:Panel N:rae_uoa:0
+59:59 Classics, Ancient History, Byzantine and Modern Greek Studies:N:1
+60:60 Philosophy:N:1
+61:61 Theology, Divinity and Religious Studies:N:1
+62:62 History:N:1
+
+O:Panel O:rae_uoa:0
+63:63 Art and Design:O:1
+64:64 History of Art, Architecture and Design:O:1
+65:65 Drama, Dance and Performing Arts:O:1
+66:66 Communication, Cultural and Media Studies:O:1
+67:67 Music:O:1
