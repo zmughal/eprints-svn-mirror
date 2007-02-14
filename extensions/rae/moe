@@ -35,11 +35,11 @@ exit( 0 ) unless( defined $session );
 my $archive = $session->get_archive;
 
 # Check user has appropriate privs
-if( !$session->auth_check( "deposit" ) )
-{
-	$session->terminate;
-	Apache::exit( 0 );
-}
+#if( !$session->auth_check( "deposit" ) )
+#{
+#	$session->terminate;
+#	Apache::exit( 0 );
+#}
 my $user = $session->current_user;
 
 # Check selected role
