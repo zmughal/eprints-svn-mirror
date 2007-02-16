@@ -5,10 +5,10 @@
 
 Summary: Open Access Repository Software
 Name: eprints3
-Version: 3.0.0
+Version: __VERSION__
 Release: 2
 URL: http://software.eprints.org/
-Source0: %{source_name}-%{version}.tar.gz
+Source0: __TARBALL__
 # Patch0: %{source_name}-%{version}.patch
 License: GPL
 Group: Applications/Communications
