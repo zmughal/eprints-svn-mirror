@@ -104,6 +104,7 @@ my %r = (
 	"__VERSION__"=>$package_version,
 	"__LICENSE__"=>readfile( $LICENSE_INLINE_FILE ),
 	"__GENERICPOD__"=>readfile( "$install_from/system/pod/generic.pod" ),
+	"__TARBALL__"=>$package_file,
 );
 
 copydir( "$install_from/system/bin", "$to/eprints/bin", \%r );
@@ -189,6 +190,7 @@ sub copyfile
 	if( $f =~ m/\/system\/bin\// ) { $textfile = 1; }
 	if( $f =~ m/\.pl$/ ) { $textfile = 1; }
 	if( $f =~ m/\.pm$/ ) { $textfile = 1; }
+	if( $f =~ m/\.spec$/ ) { $textfile = 1; }
 
 	if( !$textfile )
 	{
@@ -202,6 +204,7 @@ sub copyfile
 	insert_data( $data, "__GENERICPOD__", $r->{__GENERICPOD__}, 1 );
 	insert_data( $data, "__LICENSE__", $r->{__LICENSE__}, 1 );
 	insert_data( $data, "__VERSION__", $r->{__VERSION__}, 0 );
+	insert_data( $data, "__TARBALL__", $r->{__TARBALL__}, 0 );
 
 	open OUT, ">$to" or die "Unable to open output file.\n";
 	print OUT join( "", @{$data} );
