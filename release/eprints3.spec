@@ -6,7 +6,7 @@
 Summary: Open Access Repository Software
 Name: eprints3
 Version: 3.0.0
-Release: 1
+Release: 2
 URL: http://software.eprints.org/
 Source0: %{source_name}-%{version}.tar.gz
 # Patch0: %{source_name}-%{version}.patch
@@ -18,14 +18,16 @@ BuildRequires: perl >= 2:5.8.0
 BuildRequires: perl(DBI) perl(Data::ShowTable) perl(Unicode::String)
 BuildRequires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
 BuildRequires: perl(XML::Parser) perl(Time::HiRes) perl(CGI)
+BuildRequires: perl(MIME::Lite) perl(Readonly)
 BuildRequires: perl(XML::LibXML) >= 1.63
-Requires: sendmail
 Requires: httpd >= 2.0.52
 Requires: perl >= 2:5.8.0
 Requires: perl(DBI) perl(Data::ShowTable) perl(Unicode::String)
 Requires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
 Requires: perl(XML::Parser) perl(Time::HiRes) perl(CGI)
+Requires: perl(MIME::Lite) perl(Readonly)
 Requires: perl(XML::LibXML) >= 1.63
+Requires: sendmail xpdf antiword
 BuildArch: noarch
 provides: perl(EPrints::BackCompatibility)
 
@@ -42,7 +44,7 @@ pushd %{source_name}-%{version}
 /usr/sbin/useradd -d %{install_path} -g %{user_group} -M %{user} -G apache || /bin/true
 ./configure --prefix=${RPM_BUILD_ROOT}%{install_path} --with-user=%{user} --with-group=%{user_group} --with-apache=2 --with-smtp-server=localhost
 pushd perl_lib
-rm -rf URI.pm URI XML Unicode Proc
+rm -rf URI.pm URI XML Unicode Proc MIME Readonly
 popd
 popd
 
@@ -66,7 +68,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %pre
 /usr/sbin/groupadd %{user_group} 2>/dev/null || /bin/true
-/usr/sbin/useradd -d %{install_path} -g %{user_group} -M %{user} -G apache 2>/dev/null || /bin/true
+/usr/sbin/useradd -d %{install_path} -g %{user_group} -M %{user} -G apache -s /sbin/nologin 2>/dev/null || /bin/true
 
 %post
 
@@ -75,5 +77,10 @@ rm -rf $RPM_BUILD_ROOT
 %postun
 
 %changelog
+* Fri Feb 16 2007 Tim Brody <tdb01r@ecs.soton.ac.uk>
+ - Added pdftotext and antiword dependencies
+ - Set /sbin/nologin for eprints user
+ - Remove a bunch more bundled modules in favour of RPM versions
+
 * Tue Aug 15 2006 Tim Brody <tdb01r@ecs.soton.ac.uk>
-- Initial release
+ - Initial release
