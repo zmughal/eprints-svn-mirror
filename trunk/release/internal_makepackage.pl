@@ -84,6 +84,13 @@ my $LICENSE_INLINE_FILE = "$install_from/release/licenses/gplin.txt";
 print "Inserting license...\n";
 cmd("cp $LICENSE_FILE $to/eprints/COPYING");
 
+my %r = (
+	"__VERSION__"=>$package_version,
+	"__LICENSE__"=>readfile( $LICENSE_INLINE_FILE ),
+	"__GENERICPOD__"=>readfile( "$install_from/system/pod/generic.pod" ),
+	"__TARBALL__"=>$package_file,
+);
+
 print "Inserting configure and install scripts...\n";
 cmd("cp $install_from/release/configure $to/eprints/configure");
 cmd("cp $install_from/release/install.pl.in $to/eprints/install.pl.in");
@@ -91,7 +98,7 @@ cmd("cp $install_from/release/df-check.pl $to/eprints/df-check.pl");
 cmd("cp $install_from/release/cgi-check.pl $to/eprints/cgi-check.pl");
 cmd("cp $install_from/release/perlmodules.pl $to/eprints/perlmodules.pl");
 cmd("cp $install_from/release/Makefile $to/eprints/Makefile");
-copyfile("$install_from/release/eprints3.spec","$to/eprints/eprints3.spec");
+copyfile("$install_from/release/eprints3.spec","$to/eprints/eprints3.spec", \%r);
 cmd("cp $install_from/release/rpmpatch.sh $to/eprints/rpmpatch.sh");
 
 print "Inserting top level text files...\n";
@@ -99,13 +106,6 @@ cmd("cp $install_from/system/CHANGELOG $to/eprints/CHANGELOG");
 cmd("cp $install_from/system/README $to/eprints/README");
 cmd("cp $install_from/system/AUTHORS $to/eprints/AUTHORS");
 cmd("cp $install_from/system/NEWS $to/eprints/NEWS");
-
-my %r = (
-	"__VERSION__"=>$package_version,
-	"__LICENSE__"=>readfile( $LICENSE_INLINE_FILE ),
-	"__GENERICPOD__"=>readfile( "$install_from/system/pod/generic.pod" ),
-	"__TARBALL__"=>$package_file,
-);
 
 copydir( "$install_from/system/bin", "$to/eprints/bin", \%r );
 copydir( "$install_from/system/cfg", "$to/eprints/cfg", \%r );
