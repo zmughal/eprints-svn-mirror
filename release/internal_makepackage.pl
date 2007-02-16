@@ -88,7 +88,7 @@ my %r = (
 	"__VERSION__"=>$package_version,
 	"__LICENSE__"=>readfile( $LICENSE_INLINE_FILE ),
 	"__GENERICPOD__"=>readfile( "$install_from/system/pod/generic.pod" ),
-	"__TARBALL__"=>$package_file,
+	"__TARBALL__"=>$package_file.".tar.gz",
 );
 
 print "Inserting configure and install scripts...\n";
