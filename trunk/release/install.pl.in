@@ -148,7 +148,7 @@ $systemsettings->{"executables"} = {};
 foreach( 
 	"perl", "unzip", "tar", "gunzip", "wget", 
 	"sendmail", "latex", "dvips", "convert",
-	"cp", "rm", 
+	"cp", "rm", "antiword", "pdftotext",
 )
 {
 	next unless( defined $from_configure{$_} );
