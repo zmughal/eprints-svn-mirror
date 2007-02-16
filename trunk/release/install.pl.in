@@ -28,6 +28,8 @@ $from_configure{"smtp_server"}="@SMTP_SERVER@";
 $from_configure{"latex"}="@LATEX_PATH@";
 $from_configure{"dvips"}="@DVIPS_PATH@";
 $from_configure{"convert"}="@CONVERT_PATH@";
+$from_configure{"pdftotext"}="@PDFTOTEXT_PATH@";
+$from_configure{"antiword"}="@ANTIWORD_PATH@";
 
 $from_configure{"enable_gdome"}="@ENABLE_GDOME@";
 $from_configure{"enable_libxml"}="@ENABLE_LIBXML@";
@@ -125,6 +127,8 @@ $systemsettings->{"invocation"} = {
 	convert_crop_white => '$(convert) -crop 0x0 -bordercolor white -border 4x4 \'$(SOURCE)\' \'$(TARGET)\'',
 	cpall => '$(cp) -pR \'$(SOURCE)\'/* \'$(TARGET)\'',
 	rmall => '$(rm) -rf \'$(TARGET)\'/*',
+	pdftotext => '$(pdftotext) -enc UTF-8 -layout $(SOURCE) $(TARGET)',
+	antiword => '$(antiword) -t -f -m UTF-8 $(SOURCE) > $(TARGET)',
 };
 
 $systemsettings->{"archive_extensions"} = {};
