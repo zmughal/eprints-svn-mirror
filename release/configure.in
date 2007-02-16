@@ -254,6 +254,20 @@ if test $CONVERT_PATH = "NOTFOUND"; then
 fi
 
 
+# tools to extract full-text for indexing
+
+AC_PATH_PROG(PDFTOTEXT_PATH, pdftotext, "NOTFOUND", $TOOL_PATH)
+if test $PDFTOTEXT_PATH = "NOTFOUND"; then
+    echo "*** 'pdftotext' is needed to index PDF documents"
+    AC_MSG_WARN([Unable to find pdftotext])
+fi
+
+AC_PATH_PROG(ANTIWORD_PATH, antiword, "NOTFOUND", $TOOL_PATH)
+if test $ANTIWORD_PATH = "NOTFOUND"; then
+    echo "*** 'antiword' is needed to index Microsoft Word documents"
+    AC_MSG_WARN([Unable to find antiword])
+fi
+
 
 TEST_PERL_MOD(HAS_MOD_PERL_1,Apache)
 TEST_PERL_MOD(HAS_MOD_PERL_2A,Apache2)
