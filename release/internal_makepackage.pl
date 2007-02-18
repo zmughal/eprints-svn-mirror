@@ -210,6 +210,7 @@ sub copyfile
 	insert_data( $data, "__GENERICPOD__", $r->{__GENERICPOD__}, 1 );
 	insert_data( $data, "__LICENSE__", $r->{__LICENSE__}, 1 );
 	insert_data( $data, "__VERSION__", $r->{__VERSION__}, 0 );
+	insert_data( $data, "__RPMVERSION__", $r->{__RPMVERSION__}, 0 );
 	insert_data( $data, "__TARBALL__", $r->{__TARBALL__}, 0 );
 
 	open OUT, ">$to" or die "Unable to open output file.\n";
