@@ -42,9 +42,9 @@ chomp $date;
 
 if( $type eq "nightly" ) 
 { 
-	$package_version = "eprints-3-build-".$date;
+	$package_version = "nightly-".$date;
 	$package_desc = "EPrints Nightly Build - $package_version";
-	$package_file = "eprints-3-build-$date";
+	$package_file = "eprints-$package_version";
 }
 else
 {
@@ -56,7 +56,7 @@ else
 	}
 	$package_version = $ids{$type};
 	$package_desc = "EPrints ".$ids{$type}." (".$codenames{$type}.") [Born on $date]";
-	$package_file = "eprints-".$ids{$type};
+	$package_file = "eprints-$package_version";
 	print "YAY - $ids{$type}\n";
 }
 
