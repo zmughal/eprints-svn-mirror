@@ -42,7 +42,7 @@ chomp $date;
 if( $type eq "nightly" ) 
 { 
 	$version_path = "/trunk";
-	$package_file = "eprints-3-build-$date";
+	$package_file = "eprints-build-$date";
 }
 else
 {
@@ -71,6 +71,10 @@ cmd( "svn export http://mocha/svn/eprints$version_path/system/ export/system/")=
 
 my $revision = `svn info http://mocha/svn/eprints$version_path/system/ | grep 'Revision'`;
 $revision =~ s/^.*:\s*(\d+).*$/$1/;
+if( $type eq 'nightly' )
+{
+	$package_file .= "-r$revision";
+}
 
 cmd( "export/release/internal_makepackage.pl $type export package $revision" );
 
