@@ -94,7 +94,7 @@ my %r = (
 	"__LICENSE__"=>readfile( $LICENSE_INLINE_FILE ),
 	"__GENERICPOD__"=>readfile( "$install_from/system/pod/generic.pod" ),
 	"__RPMVERSION__"=>$rpm_version,
-	"__PACKAGE__"=>$package_file,
+	"__TARBALL__"=>$package_file,
 );
 
 print "Inserting configure and install scripts...\n";
