@@ -25,7 +25,7 @@ while(<VERSIONS>)
 }
 close VERSIONS;
 
-my( $type, $install_from, $to ) = @ARGV;
+my( $type, $install_from, $to, $revision ) = @ARGV;
 
 if( !defined $type || $type eq "" ) 
 { 
@@ -36,15 +36,17 @@ if( !defined $type || $type eq "" )
 my $package_version;
 my $package_desc;
 my $package_file;
+my $rpm_version;
 
 my $date = `date +%Y-%m-%d`;
 chomp $date;
 
 if( $type eq "nightly" ) 
 { 
-	$package_version = "nightly-".$date;
+	$package_version = "build-$date-r$revision";
 	$package_desc = "EPrints Nightly Build - $package_version";
 	$package_file = "eprints-$package_version";
+	$rpm_version = "0"; # Nightly RPM isn't supported
 }
 else
 {
@@ -57,6 +59,9 @@ else
 	$package_version = $ids{$type};
 	$package_desc = "EPrints ".$ids{$type}." (".$codenames{$type}.") [Born on $date]";
 	$package_file = "eprints-$package_version";
+	$rpm_version = $package_version;
+	$rpm_version =~ s/-.*//; # Exclude beta/alpha/RC versioning
+
 	print "YAY - $ids{$type}\n";
 }
 
@@ -88,6 +93,7 @@ my %r = (
 	"__VERSION__"=>$package_version,
 	"__LICENSE__"=>readfile( $LICENSE_INLINE_FILE ),
 	"__GENERICPOD__"=>readfile( "$install_from/system/pod/generic.pod" ),
+	"__RPMVERSION__"=>$rpm_version,
 	"__TARBALL__"=>$package_file.".tar.gz",
 );
 

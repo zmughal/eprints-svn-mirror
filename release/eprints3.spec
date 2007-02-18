@@ -5,7 +5,7 @@
 
 Summary: Open Access Repository Software
 Name: eprints3
-Version: __VERSION__
+Version: __RPMVERSION__
 Release: 2
 URL: http://software.eprints.org/
 Source0: __TARBALL__
