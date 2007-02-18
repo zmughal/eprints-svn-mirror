@@ -94,7 +94,7 @@ my %r = (
 	"__LICENSE__"=>readfile( $LICENSE_INLINE_FILE ),
 	"__GENERICPOD__"=>readfile( "$install_from/system/pod/generic.pod" ),
 	"__RPMVERSION__"=>$rpm_version,
-	"__TARBALL__"=>$package_file.".tar.gz",
+	"__PACKAGE__"=>$package_file,
 );
 
 print "Inserting configure and install scripts...\n";
@@ -207,11 +207,10 @@ sub copyfile
 
 	my $data = readfile( $from );
 
-	insert_data( $data, "__GENERICPOD__", $r->{__GENERICPOD__}, 1 );
-	insert_data( $data, "__LICENSE__", $r->{__LICENSE__}, 1 );
-	insert_data( $data, "__VERSION__", $r->{__VERSION__}, 0 );
-	insert_data( $data, "__RPMVERSION__", $r->{__RPMVERSION__}, 0 );
-	insert_data( $data, "__TARBALL__", $r->{__TARBALL__}, 0 );
+	foreach my $name (keys %$r)
+	{
+		insert_data( $data, $name, $r->{$name}, ref($r->{$name}) eq 'ARRAY' );
+	}
 
 	open OUT, ">$to" or die "Unable to open output file.\n";
 	print OUT join( "", @{$data} );

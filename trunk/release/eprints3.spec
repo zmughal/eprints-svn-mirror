@@ -2,13 +2,14 @@
 %define user eprints
 %define user_group eprints
 %define install_path /opt/eprints3
+%define package __PACKAGE__
 
 Summary: Open Access Repository Software
 Name: eprints3
 Version: __RPMVERSION__
 Release: 2
 URL: http://software.eprints.org/
-Source0: __TARBALL__
+Source0: %{package}.tar.gz
 # Patch0: %{source_name}-%{version}.patch
 License: GPL
 Group: Applications/Communications
@@ -39,7 +40,7 @@ GNU EPrints primary goal is to be set up as an open archive for research papers,
 # %patch 
 
 %build
-pushd %{source_name}-%{version}
+pushd %{package}
 /usr/sbin/groupadd %{user_group} || /bin/true
 /usr/sbin/useradd -d %{install_path} -g %{user_group} -M %{user} -G apache || /bin/true
 ./configure --prefix=${RPM_BUILD_ROOT}%{install_path} --with-user=%{user} --with-group=%{user_group} --with-apache=2 --with-smtp-server=localhost
@@ -49,7 +50,7 @@ popd
 popd
 
 %install
-pushd %{source_name}-%{version}
+pushd %{package}
 mkdir -p ${RPM_BUILD_ROOT}%{install_path}
 echo 'Installing into:'
 echo $RPM_BUILD_ROOT%{install_path}

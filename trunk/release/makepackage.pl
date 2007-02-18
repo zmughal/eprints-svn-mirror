@@ -70,7 +70,7 @@ cmd( "svn export http://mocha/svn/eprints$version_path/release/ export/release/"
 cmd( "svn export http://mocha/svn/eprints$version_path/system/ export/system/")==0 or die "Could not export system.\n";
 
 my $revision = `svn info http://mocha/svn/eprints$version_path/system/ | grep 'Revision'`;
-$revision =~ s/^.*:\s*(\d+).*$/$1/;
+$revision =~ s/^.*:\s*(\d+).*$/$1/s;
 if( $type eq 'nightly' )
 {
 	$package_file .= "-r$revision";
