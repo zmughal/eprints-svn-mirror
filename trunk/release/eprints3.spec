@@ -2,7 +2,7 @@
 %define user eprints
 %define user_group eprints
 %define install_path /opt/eprints3
-%define package __PACKAGE__
+%define package __TARBALL__
 
 Summary: Open Access Repository Software
 Name: eprints3
