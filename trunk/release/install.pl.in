@@ -225,7 +225,7 @@ set( 'apache', \%from_configure, $systemsettings, "2" );
 
 # Check the user exists
 
-unless( getpwnam($systemsettings->{"user"}) )
+unless( defined getpwnam($systemsettings->{"user"}) )
 {
 	print "User ".$from_configure{"user"}." does not exist. Aborting.\n";
 	exit 1;
@@ -234,7 +234,7 @@ unless( getpwnam($systemsettings->{"user"}) )
 
 # Check the group exists
 
-unless( getgrnam($systemsettings->{"group"}) )
+unless( defined getgrnam($systemsettings->{"group"}) )
 {
 	print "Group ".$from_configure{"group"}." does not exist. Aborting.\n";
 	exit 1;
