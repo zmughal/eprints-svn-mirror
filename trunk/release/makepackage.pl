@@ -69,7 +69,10 @@ mkdir( "export" );
 cmd( "svn export http://mocha/svn/eprints$version_path/release/ export/release/")==0 or die "Could not export system.\n";
 cmd( "svn export http://mocha/svn/eprints$version_path/system/ export/system/")==0 or die "Could not export system.\n";
 
-cmd( "export/release/internal_makepackage.pl $type export package" );
+my $revision = `svn info http://mocha/svn/eprints$version_path/system/ | grep 'Revision'`;
+$revision =~ s/^.*:\s*(\d+).*$/$1/;
+
+cmd( "export/release/internal_makepackage.pl $type export package $revision" );
 
 # stuff
 
