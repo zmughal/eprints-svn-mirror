@@ -7,7 +7,7 @@
 Summary: Open Access Repository Software
 Name: eprints3
 Version: __RPMVERSION__
-Release: 2
+Release: 3
 URL: http://software.eprints.org/
 Source0: %{package}.tar.gz
 # Patch0: %{source_name}-%{version}.patch
@@ -15,6 +15,7 @@ License: GPL
 Group: Applications/Communications
 BuildRoot: %{_tmppath}/%{name}-%{version}-buildroot
 BuildRequires: httpd >= 2.0.52
+BuildRequires: mod_perl
 BuildRequires: perl >= 2:5.8.0
 BuildRequires: perl(DBI) perl(Data::ShowTable) perl(Unicode::String)
 BuildRequires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
@@ -23,6 +24,7 @@ BuildRequires: perl(MIME::Lite) perl(Readonly)
 BuildRequires: perl(XML::LibXML) >= 1.63
 BuildRequires: xpdf antiword tetex-latex wget gzip tar ImageMagick unzip
 Requires: httpd >= 2.0.52
+Requires: mod_perl
 Requires: perl >= 2:5.8.0
 Requires: perl(DBI) perl(Data::ShowTable) perl(Unicode::String)
 Requires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
@@ -34,7 +36,7 @@ BuildArch: noarch
 provides: perl(EPrints::BackCompatibility)
 
 %description
-GNU EPrints primary goal is to be set up as an open archive for research papers, and the default configuration reflects this, but it could be easily used for other things such as images, research data, audio archives - anything that can be stored digitally, but you'll have make more changes to the configuration.
+Eprints is an open source software package for building open access repositories that are compliant with the Open Archives Initiative Protocol for Metadata Harvesting. It shares many of the features commonly seen in Document Management systems, but is primarily used for institutional repositories and scientific journals.
 
 %prep
 %setup -q -c -n %{name}
@@ -71,14 +73,23 @@ rm -rf $RPM_BUILD_ROOT
 %pre
 /usr/sbin/groupadd %{user_group} 2>/dev/null || /bin/true
 /usr/sbin/useradd -d %{install_path} -g %{user_group} -M %{user} -G apache -s /sbin/nologin 2>/dev/null || /bin/true
+/usr/sbin/usermod -a -G eprints apache
 
 %post
 
 %preun
 
 %postun
+/usr/sbin/userdel eprints || /bin/true
+/usr/sbin/groupdel eprints || /bin/true
 
 %changelog
+* Sun Feb 18 2007 Tim Brody <tdb01r@ecs.soton.ac.uk>
+ - Added all shell dependencies
+ - Removed sendmail dependency (not sure about this one)
+ - Remove eprints user on uninstall
+ - Add apache to eprints group on install
+
 * Fri Feb 16 2007 Tim Brody <tdb01r@ecs.soton.ac.uk>
  - Added pdftotext and antiword dependencies
  - Set /sbin/nologin for eprints user
