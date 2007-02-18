@@ -21,6 +21,7 @@ BuildRequires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
 BuildRequires: perl(XML::Parser) perl(Time::HiRes) perl(CGI)
 BuildRequires: perl(MIME::Lite) perl(Readonly)
 BuildRequires: perl(XML::LibXML) >= 1.63
+BuildRequires: sendmail xpdf antiword tetex-latex wget gzip tar ImageMagick
 Requires: httpd >= 2.0.52
 Requires: perl >= 2:5.8.0
 Requires: perl(DBI) perl(Data::ShowTable) perl(Unicode::String)
@@ -28,7 +29,7 @@ Requires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
 Requires: perl(XML::Parser) perl(Time::HiRes) perl(CGI)
 Requires: perl(MIME::Lite) perl(Readonly)
 Requires: perl(XML::LibXML) >= 1.63
-Requires: sendmail xpdf antiword
+Requires: xpdf antiword tetex-latex wget gzip tar ImageMagick
 BuildArch: noarch
 provides: perl(EPrints::BackCompatibility)
 
