@@ -83,8 +83,42 @@ cmd( "export/release/internal_makepackage.pl $type export package $revision" );
 print "Removing temporary directories...\n";
 erase_dir( "export" );
 
+my( $rpm_file, $srpm_file);
+
+if( $< != 0 )
+{
+	print "Not running as root, won't build RPM!\n";
+}
+elsif( system('which rpmbuild') != 0 )
+{
+	print "Couldn't find rpmbuild in path, won't build RPM!\n";
+}
+else
+{
+	open(my $fh, "rpmbuild -ta $package_file.tar.gz|")
+		or die "Error executing rpmbuild: $!";
+	while(<$fh>) {
+		print $_;
+		if( /^Wrote:\s+(\S+.src.rpm)/ )
+		{
+			$srpm_file = $1;
+		}
+		elsif( /^Wrote:\s+(\S+.rpm)/ )
+		{
+			$rpm_file = $1;
+		}
+	}
+	close $fh;
+}
+
 print "Done.\n";
 print "./upload.pl $package_file.tar.gz\n";
+if( $rpm_file )
+{
+	print "rpm --addsign $rpm_file $srpm_file\n";
+	print "$rpm_file\n";
+	print "$srpm_file\n";
+}
 
 exit;
 
