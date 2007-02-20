@@ -11,9 +11,7 @@
 .ep_sr_component .ep_sr_title_bar {
 	background: url(/style/images/gray_bar.png) repeat-x top left;
 	padding: 2px 6px 2px 6px; 
-	border-left: solid 1px #c0c0c0;
 	border-top: solid 1px #c0c0c0;
-	border-right: solid 1px #c0c0c0;
 }
 
 .ep_sr_component .ep_sr_title_bar table {
@@ -26,8 +24,6 @@
 .ep_sr_component .ep_sr_content {
 	clear: both;
 	background: #eee url(/style/images/toolbox.png);
-	border-left: 1px solid #c0c0c0;
-	border-right: 1px solid #c0c0c0;
 	border-bottom: 1px solid #c0c0c0;
 	padding: 6px;
 }

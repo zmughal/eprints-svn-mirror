@@ -23,21 +23,20 @@
 .ep_upload_doc
 {
 	margin-bottom: 0.5em;
-	background: #e7e9f5 url(/style/images/toolbox.png) repeat-x;
+	background: #fff url(/style/images/toolbox.png);
+	border: 1px solid #c0c0c0;
 }
 
 .ep_upload_doc .ep_upload_doc_title_bar {
 	padding: 0px 6px 0px 6px; 
-	border-left: solid 1px #d8dbef;
-	border-top: solid 1px #d8dbef;
-	border-right: solid 1px #d8dbef;
+	background: #fff;
+	border-bottom: 1px dashed #c0c0c0;
 }
 .ep_upload_doc .ep_upload_doc_title {
 	color: #444;
 }
 .ep_upload_doc .ep_upload_doc_content {
 	clear: both;
-	border: solid 1px #d8dbef;
 	padding: 6px;
 }
 
