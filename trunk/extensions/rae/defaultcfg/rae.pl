@@ -51,7 +51,7 @@ $c->{rae}->{fields}->{qualify} = [
 
 # The id of the search (as defined in ArchiveConfig.pm) used on
 # the item selection page
-$c->{rae}->{selection_search} = "simple";
+$c->{rae}->{selection_search} = "advanced";
 
 # The (user) field to group by on the reporting page
 $c->{rae}->{group_reports_by} = "dept";
