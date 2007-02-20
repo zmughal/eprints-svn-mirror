@@ -40,11 +40,8 @@ Not currently using titles
 	border-bottom: #a33 1px solid;
 }
 
-.ep_msg_message_content {
-}
-.ep_msg_warning_content {
-}
-.ep_msg_error_content {
+.ep_msg_message_content, .ep_msg_warning_content, .ep_msg_error_content {
+	padding-right: 10px;
 }
 
 .ep_msg_message table {
