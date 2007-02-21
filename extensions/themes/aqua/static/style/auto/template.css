@@ -81,12 +81,11 @@ ul.ep_tm_menu li a:visited {
 }
 
 .ep_tm_searchbarbutton {
-	background: url(/style/images/search_button_back.png) top left no-repeat;
+	background: url(/style/images/search_button_back.png);
+	width: 72px;
 	height: 20px;
-	line-height: 18px;
+	padding-bottom: 4px;
 	margin: 0;
-	padding: 0 0 4px 0;
-	width: 74px;
 	text-align: center;
 	color: #fff;
 	border: none;

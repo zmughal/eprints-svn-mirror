@@ -29,10 +29,8 @@ select, input.ep_form_text, textarea {
 
 .ep_form_action_button, .ep_form_internal_button {
 	text-align: center;
-/*	border: 1px #444 solid;
- 	background: #fff url(/style/images/blue_button.png) top left repeat-x; */
 	border: none;
-	background: #fff url(/style/images/blue_button_fixed.png);
+	background: url(/style/images/blue_button_fixed.png);
 	color: #000;
 	font-weight: normal;
 	width: 140px;
