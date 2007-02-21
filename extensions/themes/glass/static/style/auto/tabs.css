@@ -35,9 +35,11 @@ td.ep_tab a, td.ep_tab_selected a {
 
 td.ep_tab a {
 	background: url(/style/images/grey_tab_left.png) no-repeat top left;
+	border-bottom: 1px #979797 solid;
 }
 td.ep_tab_selected a {
 	background: url(/style/images/blue_tab_left.png) no-repeat top left;
+	padding-bottom: 1px;
 }
 
 td.ep_tab_spacer {
