@@ -83,7 +83,7 @@ pod2usage( 2 ) if( scalar @ARGV != 3 );
 
 my( $type, $install_from, $to ) = @ARGV;
 
-my $revision = "-r$opt_revision" || '';
+my $revision = $opt_revision ? "-r$opt_revision" : '';
 
 my $LICENSE_FILE = $opt_license || "$install_from/release/licenses/gpl.txt";
 my $LICENSE_INLINE_FILE = $opt_license_summary || "$install_from/release/licenses/gplin.txt";
