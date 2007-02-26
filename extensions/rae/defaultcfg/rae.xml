@@ -3,6 +3,15 @@
 
 <epp:phrases xmlns="http://www.w3.org/1999/xhtml" xmlns:epp="http://eprints.org/ep3/phrase" xmlns:epc="http://eprints.org/ep3/control">
 
+<!-- Show links to RAE scripts in user tools -->
+<epp:phrase id="dynamic:logged_in">Logged in as <epc:pin name="user"/> | 
+<epc:pin name="tools" /> 
+| <a href="{$config{perl_url}}/users/rae/moe">RAE Measures of Esteem</a> 
+| <a href="{$config{perl_url}}/users/rae/select">RAE Selections</a> 
+| <a href="{$config{perl_url}}/users/rae/report">RAE Report</a> 
+| <a href="{$config{perl_url}}/logout">Logout</a> 
+</epp:phrase>
+
 <!-- User Area -->
 
 <epp:phrase id="cgi/users/home:rae_moe_link" xmlns="http://www.w3.org/1999/xhtml" xmlns:ep="http://eprints.org/ep2/phrases">

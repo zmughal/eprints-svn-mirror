@@ -184,9 +184,9 @@ Default english language phrases for these links are defined in F<phrases-rae-en
 
 =head2 1. Install scripts
 
- $ mkdir /opt/eprints2/cgi/users/rae/
- $ cp moe qualify report select /opt/eprints2/cgi/users/rae/
- $ cp create_rae_tables /opt/eprints2/bin/
+ $ mkdir /opt/eprints3/cgi/users/rae/
+ $ cp moe qualify report select /opt/eprints3/cgi/users/rae/
+ $ cp create_rae_tables /opt/eprints3/bin/
 
 =head2 2. Configuration files
 
