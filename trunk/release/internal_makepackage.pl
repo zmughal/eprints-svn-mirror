@@ -1,8 +1,5 @@
 #!/usr/bin/perl -w
 
-use Cwd;
-use strict;
-
 # nb.
 #
 # cvs tag eprints2-2-99-0 system docs_ep2
@@ -10,6 +7,86 @@ use strict;
 # ./makepackage.pl  eprints2-2-99-0
 #
 # scp eprints-2.2.99.0-alpha.tar.gz webmaster@www:/home/www.eprints/software/files/eprints2/
+
+=head1 NAME
+
+B<internal_makepackage.pl> - Make an EPrints tarball
+
+=head1 SYNOPSIS
+
+B<internal_makepackage.pl> <version OR nightly> <from> <to>
+
+=head1 ARGUMENTS
+
+=over 4
+
+=item I<version>
+
+EPrints version to build or 'nightly' to build nightly version (current trunk HEAD).
+
+=item I<from>
+
+Directory to read the EPrints source from.
+
+=item I<to>
+
+Directory to write the EPrints distribution to.
+
+=back
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--help>
+
+Print a brief help message and exit.
+
+=item B<--man>
+
+Print the full manual page and then exit.
+
+=item B<--revision>
+
+Append a revision to the end of the output name.
+
+=item B<--license>
+
+Filename to read license from (defaults to licenses/gpl.txt)
+
+=item B<--license-summary>
+
+Filename to read license summary from (defaults to licenses/gplin.txt) - gets embedded wherever _B<>_LICENSE__ pragma occurs.
+
+=back
+
+=cut
+
+use Cwd;
+use Getopt::Long;
+use Pod::Usage;
+use strict;
+
+my( $opt_revision, $opt_license, $opt_license_summary, $opt_help, $opt_man );
+
+GetOptions(
+	'help' => \$opt_help,
+	'man' => \$opt_man,
+	'revision=s' => \$opt_revision,
+	'license=s' => \$opt_license,
+	'license-summary=s' => \$opt_license_summary,
+) || pod2usage( 2 );
+
+pod2usage( 1 ) if $opt_help;
+pod2usage( -exitstatus => 0, -verbose => 2 ) if $opt_man;
+pod2usage( 2 ) if( scalar @ARGV != 3 );
+
+my( $type, $install_from, $to ) = @ARGV;
+
+my $revision = "-r$opt_revision" || '';
+
+my $LICENSE_FILE = $opt_license || "$install_from/release/licenses/gpl.txt";
+my $LICENSE_INLINE_FILE = $opt_license_summary || "$install_from/release/licenses/gplin.txt";
 
 my %codenames= ();
 my %ids = ();
@@ -24,8 +101,6 @@ while(<VERSIONS>)
 	$codenames{$1} = $3;
 }
 close VERSIONS;
-
-my( $type, $install_from, $to, $revision ) = @ARGV;
 
 if( !defined $type || $type eq "" ) 
 { 
@@ -43,7 +118,7 @@ chomp $date;
 
 if( $type eq "nightly" ) 
 { 
-	$package_version = "build-$date-r$revision";
+	$package_version = "build-$date$revision";
 	$package_desc = "EPrints Nightly Build - $package_version";
 	$package_file = "eprints-$package_version";
 	$rpm_version = "0"; # Nightly RPM isn't supported
@@ -81,10 +156,6 @@ mkdir($to."/eprints") or die "Couldn't eprints directory\n";
 
 print "Building configure files\n";
 cmd("cd $install_from/release; ./autogen.sh" );
-
-my $LICENSE_FILE = "$install_from/release/licenses/gpl.txt";
-my $LICENSE_INLINE_FILE = "$install_from/release/licenses/gplin.txt";
-
 
 print "Inserting license...\n";
 cmd("cp $LICENSE_FILE $to/eprints/COPYING");
