@@ -121,7 +121,7 @@ if( !defined $type || $type eq "" )
 my $package_version;
 my $package_desc;
 my $package_file;
-my $package_ext = 'tar.gz';
+my $package_ext = '.tar.gz';
 $package_ext = '.zip' if $opt_zip;
 $package_ext = '.tar.bz2' if $opt_bzip;
 my $rpm_version;
