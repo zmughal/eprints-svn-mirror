@@ -1,8 +1,5 @@
 #!/usr/bin/perl -w
 
-use Cwd;
-use strict;
-
 # nb.
 #
 # cvs tag eprints2-2-99-0 system docs_ep2
@@ -10,6 +7,78 @@ use strict;
 # ./makepackage.pl  eprints2-2-99-0
 #
 # scp eprints-2.2.99.0-alpha.tar.gz webmaster@www:/home/www.eprints/software/files/eprints2/
+
+=head1 NAME
+
+B<makepackage.pl> - Make an EPrints tarball
+
+=head1 SYNOPSIS
+
+B<makepackage.pl> <version OR nightly>
+
+=head1 ARGUMENTS
+
+=over 4
+
+=item I<version>
+
+EPrints version to build or 'nightly' to build nightly version (current trunk HEAD).
+
+=back
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--help>
+
+Print a brief help message and exit.
+
+=item B<--man>
+
+Print the full manual page and then exit.
+
+=item B<--list>
+
+List all available versions.
+
+=item B<--revision>
+
+Append a revision to the end of the output name.
+
+=item B<--license>
+
+Filename to read license from (defaults to licenses/gpl.txt)
+
+=item B<--license-summary>
+
+Filename to read license summary from (defaults to licenses/gplin.txt) - gets embedded wherever _B<>_LICENSE__ pragma occurs.
+
+=back
+
+=cut
+
+use Cwd;
+use Getopt::Long;
+use Pod::Usage;
+use strict;
+use warnings;
+
+my( $opt_revision, $opt_license, $opt_license_summary, $opt_list, $opt_help, $opt_man );
+
+my @raw_args = @ARGV;
+
+GetOptions(
+	'help' => \$opt_help,
+	'man' => \$opt_man,
+	'revision' => \$opt_revision,
+	'license=s' => \$opt_license,
+	'license-summary=s' => \$opt_license_summary,
+	'list' => \$opt_list,
+) || pod2usage( 2 );
+
+pod2usage( 1 ) if $opt_help;
+pod2usage( -exitstatus => 0, -verbose => 2 ) if $opt_man;
 
 my %codenames= ();
 my %ids = ();
@@ -25,16 +94,19 @@ while(<VERSIONS>)
 }
 close VERSIONS;
 
-my( $type ) = @ARGV;
-
-if( !defined $type || $type eq "" ) 
-{ 
-	print "NO TYPE!\n"; 
-	exit 1; 
+if( $opt_list )
+{
+	print "I can build the following versions:\n".join("\n",sort keys %codenames)."\n\n";
+	print "To add a version edit 'versions.txt'\n";
+	exit;
 }
 
 my $version_path;
 my $package_file;
+
+pod2usage( 2 ) if( scalar @ARGV != 1 );
+
+my( $type ) = @ARGV;
 
 my $date = `date +%Y-%m-%d`;
 chomp $date;
@@ -57,8 +129,6 @@ else
 	print "YAY - $ids{$type}\n";
 }
 
-my $license_file = "licenses/gplin.txt";
-
 erase_dir( "export" );
 
 print "Exporting from SVN...\n";
@@ -71,12 +141,16 @@ cmd( "svn export http://mocha/svn/eprints$version_path/system/ export/system/")=
 
 my $revision = `svn info http://mocha/svn/eprints$version_path/system/ | grep 'Revision'`;
 $revision =~ s/^.*:\s*(\d+).*$/$1/s;
-if( $type eq 'nightly' )
+if( $type eq 'nightly' and $opt_revision )
 {
 	$package_file .= "-r$revision";
 }
 
-cmd( "export/release/internal_makepackage.pl $type export package $revision" );
+push @raw_args, 'export'; # The source
+push @raw_args, 'package'; # The target
+push @raw_args, $revision if $opt_revision; # Optional revision
+
+cmd( "export/release/internal_makepackage.pl", @raw_args );
 
 # stuff
 
@@ -137,10 +211,8 @@ sub erase_dir
 
 sub cmd
 {
-	my( $cmd ) = @_;
+	print join(' ', $_[0], map { quotemeta($_) } @_[1..$#_])."\n";
 
-	print "$cmd\n";
-
-	return system( $cmd );
+	return system( @_ );
 }
 
