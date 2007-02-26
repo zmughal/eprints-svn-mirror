@@ -113,7 +113,7 @@ if( $opt_list )
 
 my $version_path;
 my $package_file;
-my $package_ext = 'tar.gz';
+my $package_ext = '.tar.gz';
 $package_ext = '.zip' if $opt_zip;
 $package_ext = '.tar.bz2' if $opt_bzip;
 
@@ -154,14 +154,38 @@ cmd( "svn export http://mocha/svn/eprints$version_path/system/ export/system/")=
 
 my $revision = `svn info http://mocha/svn/eprints$version_path/system/ | grep 'Revision'`;
 $revision =~ s/^.*:\s*(\d+).*$/$1/s;
-if( $type eq 'nightly' and $opt_revision )
+if( $opt_revision )
 {
 	$package_file .= "-r$revision";
 }
 
 push @raw_args, 'export'; # The source
 push @raw_args, 'package'; # The target
-push @raw_args, $revision if $opt_revision; # Optional revision
+# Optional revision number (which is a pain because we *add* a value)
+if( $opt_revision )
+{
+	for(my $i = 0; $i < @raw_args; $i++)
+	{
+		if( $raw_args[$i] eq '--revision' )
+		{
+			splice(@raw_args, $i+1, 0, $revision);
+		}
+		elsif( $raw_args[$i] eq '-r' )
+		{
+			splice(@raw_args, $i, 1, '--revision', $revision);
+		}
+		elsif( $raw_args[$i] =~ s/^-([a-z]*)r([a-z]*)$/-$1$2/i )
+		{
+			splice(@raw_args,$i,1) unless length($1) or length($2);
+			unshift @raw_args, '--revision', $revision;
+		}
+		else
+		{
+			next;
+		}
+		last;
+	}
+}
 
 cmd( "export/release/internal_makepackage.pl", @raw_args );
 
