@@ -229,7 +229,7 @@ my $tarfile = $package_file.$package_ext;
 if( -e $tarfile ) { cmd( "rm $tarfile" ); }
 if( $opt_zip )
 {
-	0 == cmd("cd $to; zip ../$tarfile $package_file")
+	0 == cmd("cd $to; zip -q -9 -r ../$tarfile $package_file")
 		or die("Couldn't zip up $to/$package_file");
 }
 elsif( $opt_bzip )
