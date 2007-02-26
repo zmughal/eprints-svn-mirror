@@ -211,7 +211,7 @@ sub erase_dir
 
 sub cmd
 {
-	print join(' ', $_[0], map { quotemeta($_) } @_[1..$#_])."\n";
+	print join(' ', @_)."\n";
 
 	return system( @_ );
 }
