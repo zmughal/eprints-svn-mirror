@@ -58,6 +58,14 @@ Filename to read license from (defaults to licenses/gpl.txt)
 
 Filename to read license summary from (defaults to licenses/gplin.txt) - gets embedded wherever _B<>_LICENSE__ pragma occurs.
 
+=item B<--zip>
+
+Use Zip as the packager (produces a .zip file).
+
+=item B<--bzip>
+
+Use Tar-Bzip as the packager (produces a tar.bz2 file).
+
 =back
 
 =cut
@@ -67,7 +75,7 @@ use Getopt::Long;
 use Pod::Usage;
 use strict;
 
-my( $opt_revision, $opt_license, $opt_license_summary, $opt_help, $opt_man );
+my( $opt_revision, $opt_license, $opt_license_summary, $opt_zip, $opt_bzip, $opt_help, $opt_man );
 
 GetOptions(
 	'help' => \$opt_help,
@@ -75,6 +83,8 @@ GetOptions(
 	'revision=s' => \$opt_revision,
 	'license=s' => \$opt_license,
 	'license-summary=s' => \$opt_license_summary,
+	'zip' => \$opt_zip,
+	'bzip' => \$opt_bzip,
 ) || pod2usage( 2 );
 
 pod2usage( 1 ) if $opt_help;
@@ -111,6 +121,9 @@ if( !defined $type || $type eq "" )
 my $package_version;
 my $package_desc;
 my $package_file;
+my $package_ext = 'tar.gz';
+$package_ext = '.zip' if $opt_zip;
+$package_ext = '.tar.bz2' if $opt_bzip;
 my $rpm_version;
 
 my $date = `date +%Y-%m-%d`;
@@ -212,9 +225,23 @@ close(FILEOUT);
 cmd("chmod -R g-w $to/eprints")==0 or die("Couldn't change permissions on eprints dir.\n");
 
 cmd("mv $to/eprints $to/$package_file")==0 or die("Couldn't move eprints dir to $to/$package_file.\n");
-my $tarfile = $package_file.".tar.gz";
+my $tarfile = $package_file.$package_ext;
 if( -e $tarfile ) { cmd( "rm $tarfile" ); }
-cmd("cd $to; tar czf ../$tarfile $package_file")==0 or die("Couldn't tar up $to/$package_file");
+if( $opt_zip )
+{
+	0 == cmd("cd $to; zip ../$tarfile $package_file")
+		or die("Couldn't zip up $to/$package_file");
+}
+elsif( $opt_bzip )
+{
+	0 == cmd("cd $to; tar cjf ../$tarfile $package_file")
+		or die("Couldn't zip up $to/$package_file");
+}
+else
+{
+	0 == cmd("cd $to; tar czf ../$tarfile $package_file")
+		or die("Couldn't tar up $to/$package_file");
+}
 
 
 print "Removing: $to\n";

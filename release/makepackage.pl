@@ -54,6 +54,14 @@ Filename to read license from (defaults to licenses/gpl.txt)
 
 Filename to read license summary from (defaults to licenses/gplin.txt) - gets embedded wherever _B<>_LICENSE__ pragma occurs.
 
+=item B<--zip>
+
+Use Zip as the packager (produces a .zip file).
+
+=item B<--bzip>
+
+Use Tar-Bzip as the packager (produces a tar.bz2 file).
+
 =back
 
 =cut
@@ -64,7 +72,7 @@ use Pod::Usage;
 use strict;
 use warnings;
 
-my( $opt_revision, $opt_license, $opt_license_summary, $opt_list, $opt_help, $opt_man );
+my( $opt_revision, $opt_license, $opt_license_summary, $opt_list, $opt_zip, $opt_bzip, $opt_help, $opt_man );
 
 my @raw_args = @ARGV;
 
@@ -75,6 +83,8 @@ GetOptions(
 	'license=s' => \$opt_license,
 	'license-summary=s' => \$opt_license_summary,
 	'list' => \$opt_list,
+	'zip' => \$opt_zip,
+	'bzip' => \$opt_bzip,
 ) || pod2usage( 2 );
 
 pod2usage( 1 ) if $opt_help;
@@ -103,6 +113,9 @@ if( $opt_list )
 
 my $version_path;
 my $package_file;
+my $package_ext = 'tar.gz';
+$package_ext = '.zip' if $opt_zip;
+$package_ext = '.tar.bz2' if $opt_bzip;
 
 pod2usage( 2 ) if( scalar @ARGV != 1 );
 
@@ -169,7 +182,7 @@ elsif( system('which rpmbuild') != 0 )
 }
 else
 {
-	open(my $fh, "rpmbuild -ta $package_file.tar.gz|")
+	open(my $fh, "rpmbuild -ta $package_file$package_ext|")
 		or die "Error executing rpmbuild: $!";
 	while(<$fh>) {
 		print $_;
@@ -186,7 +199,7 @@ else
 }
 
 print "Done.\n";
-print "./upload.pl $package_file.tar.gz\n";
+print "./upload.pl $package_file$package_ext\n";
 if( $rpm_file )
 {
 	print "rpm --addsign $rpm_file $srpm_file\n";
