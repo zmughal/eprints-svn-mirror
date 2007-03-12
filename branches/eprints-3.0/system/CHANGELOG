@@ -6300,3 +6300,6 @@ PACKAGE: 2.2.99.2
 2007-03-09 cjg
  * Fixed issue in autocompleter file and simple_file which didn't lowercase 
     keys.
+
+2007-03-12 cjg
+ * Added missing phrases mentioned in #2873
