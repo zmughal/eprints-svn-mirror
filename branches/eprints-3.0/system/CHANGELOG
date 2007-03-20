@@ -6307,3 +6307,13 @@ PACKAGE: 2.2.99.2
 2007-03-12 cjg
  * Fixed spelling mistake in DOI import plugin volunme / volume.
 
+2007-03-22 cjg
+ * Fixed bug in epadmin that didn't use the groupid set in SystemSettings for
+    making new repository files.
+
+2007-03-22 cjg
+ * Change to make the document roll-up always open if there's but one 
+    document.
+
+2007-03-22 cjg
+ * Caused only .xml files to be loaded in phrase directories.
