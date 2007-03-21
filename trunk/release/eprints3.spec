@@ -57,9 +57,10 @@ pushd %{package}
 mkdir -p ${RPM_BUILD_ROOT}%{install_path}
 echo 'Installing into:'
 echo $RPM_BUILD_ROOT%{install_path}
-#export PREFIX=$RPM_BUILD_ROOT
-make DESTDIR=$RPM_BUILD_ROOT install
-# ./rpmpatch.sh $RPM_BUILD_ROOT
+# Maybe this will work one day, but at the moment eprints modifies files
+# on install, rather than at make
+make DESTDIR=$RPM_BUILD_ROOT%{install_path} install
+./rpmpatch.sh $RPM_BUILD_ROOT
 popd
 
 %clean
