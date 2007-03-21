@@ -57,8 +57,8 @@ pushd %{package}
 mkdir -p ${RPM_BUILD_ROOT}%{install_path}
 echo 'Installing into:'
 echo $RPM_BUILD_ROOT%{install_path}
-PREFIX=$RPM_BUILD_ROOT
-%makeinstall
+#export PREFIX=$RPM_BUILD_ROOT
+make DESTDIR=$RPM_BUILD_ROOT install
 # ./rpmpatch.sh $RPM_BUILD_ROOT
 popd
 
