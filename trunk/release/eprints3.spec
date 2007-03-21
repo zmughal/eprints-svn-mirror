@@ -46,7 +46,7 @@ Eprints is an open source software package for building open access repositories
 pushd %{package}
 /usr/sbin/groupadd %{user_group} || /bin/true
 /usr/sbin/useradd -d %{install_path} -g %{user_group} -M %{user} -G apache || /bin/true
-./configure --prefix=${RPM_BUILD_ROOT}%{install_path} --with-user=%{user} --with-group=%{user_group} --with-apache=2 --with-smtp-server=localhost
+./configure --prefix=%{install_path} --with-user=%{user} --with-group=%{user_group} --with-apache=2 --with-smtp-server=localhost
 pushd perl_lib
 rm -rf URI.pm URI XML Unicode Proc MIME Readonly
 popd
@@ -57,8 +57,8 @@ pushd %{package}
 mkdir -p ${RPM_BUILD_ROOT}%{install_path}
 echo 'Installing into:'
 echo $RPM_BUILD_ROOT%{install_path}
-make install
-./rpmpatch.sh $RPM_BUILD_ROOT
+%makeinstall
+# ./rpmpatch.sh $RPM_BUILD_ROOT
 popd
 
 %clean
