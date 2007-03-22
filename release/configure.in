@@ -104,14 +104,15 @@ AC_ARG_ENABLE(libxml,
         fi
     ])
 
-APACHE=""
-AC_ARG_WITH(apache,
-    [  --with-apache=[VERSION]   version of apache to work with: 1 or 2],
-    [
-        APACHE=$withval
-    ])
+APACHE="2"
+# Support for Apache 1 removed in EPrints 3
+# AC_ARG_WITH(apache,
+#    [  --with-apache=[VERSION]   version of apache to work with: 1 or 2],
+#    [
+#        APACHE=$withval
+#    ])
 
-SMTP=""
+SMTP_SERVER=""
 AC_ARG_WITH(smtp-server,
     [  --with-smtp-server=[HOSTNAME]  
                           SMTP server to use for outgoing email],
