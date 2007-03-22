@@ -118,7 +118,7 @@ AC_ARG_WITH(smtp-server,
     [
         SMTP_SERVER=$withval
     ])
-if test $SMTP_SERVER = "yes" ; then
+if test "$SMTP_SERVER" = "yes" ; then
 	echo "Please actually specify a STMP server."
 	exit 1;
 fi
