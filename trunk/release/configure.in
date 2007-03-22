@@ -269,6 +269,12 @@ if test $ANTIWORD_PATH = "NOTFOUND"; then
     AC_MSG_WARN([Unable to find antiword])
 fi
 
+AC_PATH_PROG(ELINKS_PATH, elinks, "NOTFOUND", $TOOL_PATH)
+if test $ELINKS_PATH = "NOTFOUND"; then
+    echo "*** 'elinks' is needed to index HTML documents"
+    AC_MSG_WARN([Unable to find elinks])
+fi
+
 
 TEST_PERL_MOD(HAS_MOD_PERL_1,Apache)
 TEST_PERL_MOD(HAS_MOD_PERL_2A,Apache2)
