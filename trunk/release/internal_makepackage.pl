@@ -153,6 +153,10 @@ if( $type eq "nightly" )
 }
 else
 {
+	if( $opt_force and !defined $codenames{$type} )
+	{
+		$codenames{$type} = $ids{$type} = $type;
+	}
 	if( !defined $codenames{$type} )
 	{
 		print "Unknown codename\n";

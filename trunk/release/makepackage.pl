@@ -141,7 +141,7 @@ if( $type eq "nightly" )
 }
 else
 {
-	if( $opt_force and !$codenames{$type} )
+	if( $opt_force and !defined $codenames{$type} )
 	{
 		$codenames{$type} = $ids{$type} = $type;
 	}
