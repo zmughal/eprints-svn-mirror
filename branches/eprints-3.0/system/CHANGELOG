@@ -6334,3 +6334,10 @@ PACKAGE: 2.2.99.2
 
 2007-03-22 cjg
  * Commented out heavy regexps in indexer.pl
+
+2007-03-27 tdb
+ * Fixes to conversion plugins (tested using new Convert interface in 3.1)
+ * If a document contains no files (shouldn't happen) don't throw lots of
+	undef warnings
+ * Added html_phrase_id method to Plugin.pm that returns the id of a plugin
+	phrase (avoids getting phrases a lot when querying conversion plugins)

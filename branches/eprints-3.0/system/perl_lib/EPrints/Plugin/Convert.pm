@@ -157,8 +157,8 @@ sub convert
 
 	my $dir = EPrints::TempDir->new( "ep-convertXXXXX", UNLINK => 1);
 
-	my @files;
-	unless( @files = $plugin->export( $dir, $doc, $type ) ) {
+	my @files = $plugin->export( $dir, $doc, $type );
+	unless( @files ) {
 		return undef;
 	}
 
@@ -167,9 +167,15 @@ sub convert
 	my $doc_ds = $session->get_repository->get_dataset( "document" );
 	my $new_doc = $doc_ds->create_object( $session, { 
 		eprintid => $eprint->get_id,
-		type => $type,
-		format_desc => $plugin->{name} . ' conversion from ' . $doc->get_type . ' to ' . $type } );
-	$new_doc->add_file( $_ ) for map { "$dir/$_" } @files;
+		format => $type,
+		formatdesc => $plugin->{name} . ' conversion from ' . $doc->get_type . ' to ' . $type } );
+	for(@files)
+	{
+		unless( $new_doc->add_file( "$dir/$_", $_ ) )
+		{
+			EPrints::abort( "Error adding $dir/$_ to document" );
+		}
+	}
 	$new_doc->commit; # can this be done without a commit at all?
 
 	return $new_doc;

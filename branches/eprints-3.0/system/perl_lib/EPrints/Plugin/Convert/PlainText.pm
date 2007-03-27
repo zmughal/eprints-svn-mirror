@@ -23,7 +23,7 @@ use EPrints::Plugin::Convert;
 our @ISA = qw/ EPrints::Plugin::Convert /;
 
 # xml = ?
-our %APPS = qw(
+%EPrints::Plugin::Convert::PlainText::APPS = qw(
 pdf		pdftotext
 doc		antiword
 htm		elinks
@@ -50,12 +50,14 @@ sub can_convert
 	my ($plugin, $doc) = @_;
 
 	# Get the main file name
-	my $fn = $doc->get_main();
+	my $fn = $doc->get_main() or return ();
 
-	my @type = ('text/plain' => {
+	my $mimetype = 'text/plain';
+
+	my @type = ($mimetype => {
 		plugin => $plugin,
 		encoding => 'utf-8',
-		phraseid => 'plaintext',
+		phraseid => $plugin->html_phrase_id( $mimetype ),
 	});
 
 	if( $fn =~ /\.txt$/ )
@@ -63,11 +65,16 @@ sub can_convert
 		return @type;
 	}
 
-	keys(%APPS);
-	while( my( $ext, $app ) = each %APPS )
+	foreach my $ext ( keys %EPrints::Plugin::Convert::PlainText::APPS )
 	{
-		if( $fn =~ /\.$ext$/ and defined($plugin->get_repository->get_conf( "executables", $app )) ) {
-			return @type;
+		my $cmd_id = $EPrints::Plugin::Convert::PlainText::APPS{$ext};
+
+		if( $fn =~ /\.$ext$/ )
+		{
+			if( defined($plugin->get_repository->get_conf( "executables", $cmd_id )) ) 
+			{
+				return @type;
+			}
 		}
 	}
 	
@@ -81,32 +88,34 @@ sub export
 	# What to call the temporary file
 	my $main = $doc->get_main;
 	
-	my( $bin, $ext, $app );
+	my( $file_extension, $cmd_id );
 	
-	keys(%APPS);
+	my $repository = $plugin->get_repository();
+
 	# Find the app to use
-	while( ( $ext, $app ) = each %APPS )
+	foreach my $ext ( keys %EPrints::Plugin::Convert::PlainText::APPS )
 	{
-		if( $main =~ /\.$ext$/ and defined($plugin->get_repository->get_conf( "executables", $app )) ) {
-			$bin = $plugin->get_repository->get_conf( "executables", $app );
-			last if defined($bin);
+		$file_extension = $ext;
+		if( $main =~ /\.$ext$/i )
+		{
+			$cmd_id = $EPrints::Plugin::Convert::PlainText::APPS{$ext};
+			last if defined $repository->get_conf( "executables", $cmd_id );
 		}
+
+		undef $cmd_id;
 	}
-	return () unless defined($bin);
-	
-	my $invo = $plugin->get_repository->get_conf( "invocation", $app );
-	$invo ||= "\$($app) \$(SOURCE) \$(TARGET)";
+	return () unless defined $cmd_id;
 	
 	my %files = $doc->files;
 	my @txt_files;
-	foreach my $fn ( keys %files )
+	foreach my $filename ( keys %files )
 	{
-		my $tgt = $fn;
-		next unless $tgt =~ s/\.$ext$/\.txt/;
-		my $infile = EPrints::Utils::join_path( $doc->local_path, $fn );
+		my $tgt = $filename;
+		next unless $tgt =~ s/\.$file_extension$/\.txt/;
+		my $infile = EPrints::Utils::join_path( $doc->local_path, $filename );
 		my $outfile = EPrints::Utils::join_path( $dir, $tgt );
 		
-		if( $ext eq 'txt' )
+		if( $file_extension eq 'txt' )
 		{
 			# PerlIO
 			if( $PERL_VERSION gt v5.8.0 )
@@ -127,25 +136,34 @@ sub export
 		}
 		else
 		{
-			my $cmd = EPrints::Utils::prepare_cmd( $invo,
-				$app => $bin,
+			$repository->exec( $cmd_id,
 				SOURCE_DIR => $doc->local_path,
 				SOURCE => $infile,
 				TARGET_DIR => $dir,
 				TARGET => $outfile,
 			);
-			system( $cmd );
 		}
 		EPrints::Utils::chown_for_eprints( $outfile );
-		
-		if( -s EPrints::Utils::join_path( $dir, $tgt ) > 0 ) {
-			if( $fn eq $doc->get_main ) {
-				unshift @txt_files, $tgt;
-			} else {
-				push @txt_files, $tgt;
+	
+		if( !-e $outfile || -z $outfile )
+		{		
+			if( $filename eq $doc->get_main )
+			{
+				return ();
 			}
-		} elsif( $fn eq $doc->get_main ) {
-			return ();
+			else
+			{
+				next;
+			}
+		}
+
+		if( $filename eq $doc->get_main ) 
+		{
+			unshift @txt_files, $tgt;
+		} 
+		else 
+		{
+			push @txt_files, $tgt;
 		}
 	}
 
