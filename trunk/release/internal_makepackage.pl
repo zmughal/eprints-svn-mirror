@@ -42,13 +42,17 @@ Directory to write the EPrints distribution to.
 
 Print a brief help message and exit.
 
-=item B<--man>
+=item B<--branch>
 
-Print the full manual page and then exit.
+Export from the branch version rather than tag (branches are major-version only).
 
-=item B<--revision>
+=item B<--bzip>
 
-Append a revision to the end of the output name.
+Use Tar-Bzip as the packager (produces a tar.bz2 file).
+
+=item B<--force>
+
+Force a package build, even if it doesn't exist in versions.txt.
 
 =item B<--license>
 
@@ -58,13 +62,21 @@ Filename to read license from (defaults to licenses/gpl.txt)
 
 Filename to read license summary from (defaults to licenses/gplin.txt) - gets embedded wherever _B<>_LICENSE__ pragma occurs.
 
+=item B<--list>
+
+List all available versions.
+
+=item B<--man>
+
+Print the full manual page and then exit.
+
+=item B<--revision>
+
+Append a revision to the end of the output name.
+
 =item B<--zip>
 
 Use Zip as the packager (produces a .zip file).
-
-=item B<--bzip>
-
-Use Tar-Bzip as the packager (produces a tar.bz2 file).
 
 =back
 
@@ -75,16 +87,19 @@ use Getopt::Long;
 use Pod::Usage;
 use strict;
 
-my( $opt_revision, $opt_license, $opt_license_summary, $opt_zip, $opt_bzip, $opt_help, $opt_man );
+my( $opt_revision, $opt_license, $opt_license_summary, $opt_list, $opt_zip, $opt_bzip, $opt_help, $opt_man, $opt_branch, $opt_force );
 
 GetOptions(
 	'help' => \$opt_help,
 	'man' => \$opt_man,
-	'revision=s' => \$opt_revision,
+	'revision' => \$opt_revision,
+	'branch' => \$opt_branch,
 	'license=s' => \$opt_license,
 	'license-summary=s' => \$opt_license_summary,
+	'list' => \$opt_list,
 	'zip' => \$opt_zip,
 	'bzip' => \$opt_bzip,
+	'force' => \$opt_force,
 ) || pod2usage( 2 );
 
 pod2usage( 1 ) if $opt_help;
