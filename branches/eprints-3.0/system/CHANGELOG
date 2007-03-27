@@ -6341,3 +6341,7 @@ PACKAGE: 2.2.99.2
 	undef warnings
  * Added html_phrase_id method to Plugin.pm that returns the id of a plugin
 	phrase (avoids getting phrases a lot when querying conversion plugins)
+
+2007-03-27 tdb
+ * file_perms and dir_perms can now be strings in SystemSettings
+

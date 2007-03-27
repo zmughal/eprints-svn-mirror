@@ -70,7 +70,7 @@ sub mkdir
 	my( $full_path, $perms ) = @_;
 
 	# Default to "dir_perms"
-	$perms = $EPrints::SystemSettings::conf->{"dir_perms"}
+	$perms = eval($EPrints::SystemSettings::conf->{"dir_perms"})
 		if @_ < 2;
 	if( !defined( $perms ))
 	{
