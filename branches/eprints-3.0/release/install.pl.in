@@ -28,8 +28,12 @@ $from_configure{"smtp_server"}="@SMTP_SERVER@";
 $from_configure{"latex"}="@LATEX_PATH@";
 $from_configure{"dvips"}="@DVIPS_PATH@";
 $from_configure{"convert"}="@CONVERT_PATH@";
+$from_configure{"pdftotext"}="@PDFTOTEXT_PATH@";
+$from_configure{"antiword"}="@ANTIWORD_PATH@";
+$from_configure{"elinks"}="@ELINKS_PATH@";
 
 $from_configure{"enable_gdome"}="@ENABLE_GDOME@";
+$from_configure{"enable_libxml"}="@ENABLE_LIBXML@";
 $from_configure{"apache"}="@APACHE@";
 
 $from_configure{"platform"}="@PLATFORM@";
@@ -53,6 +57,7 @@ if(
 ######################################################################
 
 if( defined $ARGV[0] ) { print "Destination directory overridden to: $ARGV[0]\n"; }
+elsif( defined $ENV{'PREFIX'} ) { print "Destination directory overridden to: $ENV{PREFIX}\n"; }
 
 use strict;
 use Cwd;
@@ -87,6 +92,7 @@ my $to_path = $from_configure{prefix};
 # Implement DESTDIR support for GNU compatibility.
 # If an argument is specified install there instead.
 if( defined $ARGV[0] ) { $to_path = $ARGV[0]; }
+elsif( defined $ENV{'PREFIX'} ) { $to_path = $ENV{'PREFIX'}; }
 
 print "Installing from: $from_path\n";
 
@@ -119,11 +125,14 @@ $systemsettings->{"invocation"} = {
 	targz   => '$(gunzip) -c < $(ARC) 2>/dev/null | $(tar) xf - -C $(DIR) >/dev/null 2>&1',
 	wget    => '$(wget)  -r -L -q -m -nH -np --execute="robots=off" --cut-dirs=$(CUTDIRS) $(URL)',
 	sendmail => '$(sendmail) -oi -t -odb --',
-	latex => '$(latex) \'$(SOURCE)\'',
-	dvips => '$(dvips) \'$(SOURCE)\' -o \'$(TARGET)\'',
-	convert_crop_white => '$(convert) -crop 0x0 -bordercolor white -border 4x4 \'$(SOURCE)\' \'$(TARGET)\'',
-	cpall => '$(cp) -pR \'$(SOURCE)\'/* \'$(TARGET)\'',
-	rmall => '$(rm) -rf \'$(TARGET)\'/*',
+	latex => '$(latex) $(SOURCE)',
+	dvips => '$(dvips) $(SOURCE) -o $(TARGET)',
+	convert_crop_white => '$(convert) -crop 0x0 -bordercolor white -border 4x4 $(SOURCE) $(TARGET)',
+	cpall => '$(cp) -pR $(SOURCE)/* $(TARGET)',
+	rmall => '$(rm) -rf $(TARGET)/*',
+	pdftotext => '$(pdftotext) -enc UTF-8 -layout $(SOURCE) $(TARGET)',
+	antiword => '$(antiword) -t -f -m UTF-8 $(SOURCE) > $(TARGET)',
+	elinks => '$(elinks) -dump 1 -dump-charset UTF-8 $(SOURCE) > $(TARGET)',
 };
 
 $systemsettings->{"archive_extensions"} = {};
@@ -143,15 +152,15 @@ $systemsettings->{"executables"} = {};
 foreach( 
 	"perl", "unzip", "tar", "gunzip", "wget", 
 	"sendmail", "latex", "dvips", "convert",
-	"cp", "rm", 
+	"cp", "rm", "antiword", "pdftotext", "elinks",
 )
 {
 	next unless( defined $from_configure{$_} );
 	$systemsettings->{"executables"}->{$_} = $from_configure{$_};
 }
 
-$systemsettings->{"file_perms"} = 0664 unless defined $systemsettings->{"file_perms"};
-$systemsettings->{"dir_perms"} = 02775 unless defined $systemsettings->{"dir_perms"};
+$systemsettings->{"file_perms"} = "0664" unless defined $systemsettings->{"file_perms"};
+$systemsettings->{"dir_perms"} = "02775" unless defined $systemsettings->{"dir_perms"};
 
 $systemsettings->{"disable_df"} = $from_configure{"disable_df"};
 $systemsettings->{"virtualhost"} = $from_configure{"virtualhost"};
@@ -213,13 +222,14 @@ $systemsettings->{"version"} = $version;
 
 set( 'smtp_server', \%from_configure, $systemsettings, '' );
 set( 'enable_gdome', \%from_configure, $systemsettings, 0 );
+set( 'enable_libxml', \%from_configure, $systemsettings, 0 );
 set( 'show_ids_in_log', \%from_configure, $systemsettings, 0 );
 set( 'apache', \%from_configure, $systemsettings, "2" );
 
 
 # Check the user exists
 
-unless( getpwnam($systemsettings->{"user"}) )
+unless( defined getpwnam($systemsettings->{"user"}) )
 {
 	print "User ".$from_configure{"user"}." does not exist. Aborting.\n";
 	exit 1;
@@ -228,7 +238,7 @@ unless( getpwnam($systemsettings->{"user"}) )
 
 # Check the group exists
 
-unless( getgrnam($systemsettings->{"group"}) )
+unless( defined getgrnam($systemsettings->{"group"}) )
 {
 	print "Group ".$from_configure{"group"}." does not exist. Aborting.\n";
 	exit 1;

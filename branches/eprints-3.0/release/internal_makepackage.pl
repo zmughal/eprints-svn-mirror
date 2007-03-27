@@ -1,8 +1,5 @@
 #!/usr/bin/perl -w
 
-use Cwd;
-use strict;
-
 # nb.
 #
 # cvs tag eprints2-2-99-0 system docs_ep2
@@ -10,6 +7,96 @@ use strict;
 # ./makepackage.pl  eprints2-2-99-0
 #
 # scp eprints-2.2.99.0-alpha.tar.gz webmaster@www:/home/www.eprints/software/files/eprints2/
+
+=head1 NAME
+
+B<internal_makepackage.pl> - Make an EPrints tarball
+
+=head1 SYNOPSIS
+
+B<internal_makepackage.pl> <version OR nightly> <from> <to>
+
+=head1 ARGUMENTS
+
+=over 4
+
+=item I<version>
+
+EPrints version to build or 'nightly' to build nightly version (current trunk HEAD).
+
+=item I<from>
+
+Directory to read the EPrints source from.
+
+=item I<to>
+
+Directory to write the EPrints distribution to.
+
+=back
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--help>
+
+Print a brief help message and exit.
+
+=item B<--man>
+
+Print the full manual page and then exit.
+
+=item B<--revision>
+
+Append a revision to the end of the output name.
+
+=item B<--license>
+
+Filename to read license from (defaults to licenses/gpl.txt)
+
+=item B<--license-summary>
+
+Filename to read license summary from (defaults to licenses/gplin.txt) - gets embedded wherever _B<>_LICENSE__ pragma occurs.
+
+=item B<--zip>
+
+Use Zip as the packager (produces a .zip file).
+
+=item B<--bzip>
+
+Use Tar-Bzip as the packager (produces a tar.bz2 file).
+
+=back
+
+=cut
+
+use Cwd;
+use Getopt::Long;
+use Pod::Usage;
+use strict;
+
+my( $opt_revision, $opt_license, $opt_license_summary, $opt_zip, $opt_bzip, $opt_help, $opt_man );
+
+GetOptions(
+	'help' => \$opt_help,
+	'man' => \$opt_man,
+	'revision=s' => \$opt_revision,
+	'license=s' => \$opt_license,
+	'license-summary=s' => \$opt_license_summary,
+	'zip' => \$opt_zip,
+	'bzip' => \$opt_bzip,
+) || pod2usage( 2 );
+
+pod2usage( 1 ) if $opt_help;
+pod2usage( -exitstatus => 0, -verbose => 2 ) if $opt_man;
+pod2usage( 2 ) if( scalar @ARGV != 3 );
+
+my( $type, $install_from, $to ) = @ARGV;
+
+my $revision = $opt_revision ? "-r$opt_revision" : '';
+
+my $LICENSE_FILE = $opt_license || "$install_from/release/licenses/gpl.txt";
+my $LICENSE_INLINE_FILE = $opt_license_summary || "$install_from/release/licenses/gplin.txt";
 
 my %codenames= ();
 my %ids = ();
@@ -25,8 +112,6 @@ while(<VERSIONS>)
 }
 close VERSIONS;
 
-my( $type, $install_from, $to ) = @ARGV;
-
 if( !defined $type || $type eq "" ) 
 { 
 	print "NO TYPE!\n"; 
@@ -36,15 +121,20 @@ if( !defined $type || $type eq "" )
 my $package_version;
 my $package_desc;
 my $package_file;
+my $package_ext = '.tar.gz';
+$package_ext = '.zip' if $opt_zip;
+$package_ext = '.tar.bz2' if $opt_bzip;
+my $rpm_version;
 
 my $date = `date +%Y-%m-%d`;
 chomp $date;
 
 if( $type eq "nightly" ) 
 { 
-	$package_version = "eprints-3-build-".$date;
+	$package_version = "build-$date$revision";
 	$package_desc = "EPrints Nightly Build - $package_version";
-	$package_file = "eprints-3-build-$date";
+	$package_file = "eprints-$package_version";
+	$rpm_version = "0"; # Nightly RPM isn't supported
 }
 else
 {
@@ -56,7 +146,10 @@ else
 	}
 	$package_version = $ids{$type};
 	$package_desc = "EPrints ".$ids{$type}." (".$codenames{$type}.") [Born on $date]";
-	$package_file = "eprints-".$ids{$type};
+	$package_file = "eprints-$package_version";
+	$rpm_version = $package_version;
+	$rpm_version =~ s/-.*//; # Exclude beta/alpha/RC versioning
+
 	print "YAY - $ids{$type}\n";
 }
 
@@ -77,12 +170,16 @@ mkdir($to."/eprints") or die "Couldn't eprints directory\n";
 print "Building configure files\n";
 cmd("cd $install_from/release; ./autogen.sh" );
 
-my $LICENSE_FILE = "$install_from/release/licenses/gpl.txt";
-my $LICENSE_INLINE_FILE = "$install_from/release/licenses/gplin.txt";
-
-
 print "Inserting license...\n";
 cmd("cp $LICENSE_FILE $to/eprints/COPYING");
+
+my %r = (
+	"__VERSION__"=>$package_version,
+	"__LICENSE__"=>readfile( $LICENSE_INLINE_FILE ),
+	"__GENERICPOD__"=>readfile( "$install_from/system/pod/generic.pod" ),
+	"__RPMVERSION__"=>$rpm_version,
+	"__TARBALL__"=>$package_file,
+);
 
 print "Inserting configure and install scripts...\n";
 cmd("cp $install_from/release/configure $to/eprints/configure");
@@ -91,18 +188,14 @@ cmd("cp $install_from/release/df-check.pl $to/eprints/df-check.pl");
 cmd("cp $install_from/release/cgi-check.pl $to/eprints/cgi-check.pl");
 cmd("cp $install_from/release/perlmodules.pl $to/eprints/perlmodules.pl");
 cmd("cp $install_from/release/Makefile $to/eprints/Makefile");
+copyfile("$install_from/release/eprints3.spec","$to/eprints/eprints3.spec", \%r);
+cmd("cp $install_from/release/rpmpatch.sh $to/eprints/rpmpatch.sh");
 
 print "Inserting top level text files...\n";
 cmd("cp $install_from/system/CHANGELOG $to/eprints/CHANGELOG");
 cmd("cp $install_from/system/README $to/eprints/README");
 cmd("cp $install_from/system/AUTHORS $to/eprints/AUTHORS");
 cmd("cp $install_from/system/NEWS $to/eprints/NEWS");
-
-my %r = (
-	"__VERSION__"=>$package_version,
-	"__LICENSE__"=>readfile( $LICENSE_INLINE_FILE ),
-	"__GENERICPOD__"=>readfile( "$install_from/system/pod/generic.pod" ),
-);
 
 copydir( "$install_from/system/bin", "$to/eprints/bin", \%r );
 copydir( "$install_from/system/cfg", "$to/eprints/cfg", \%r );
@@ -132,9 +225,23 @@ close(FILEOUT);
 cmd("chmod -R g-w $to/eprints")==0 or die("Couldn't change permissions on eprints dir.\n");
 
 cmd("mv $to/eprints $to/$package_file")==0 or die("Couldn't move eprints dir to $to/$package_file.\n");
-my $tarfile = $package_file.".tar.gz";
+my $tarfile = $package_file.$package_ext;
 if( -e $tarfile ) { cmd( "rm $tarfile" ); }
-cmd("cd $to; tar czf ../$tarfile $package_file")==0 or die("Couldn't tar up $to/$package_file");
+if( $opt_zip )
+{
+	0 == cmd("cd $to; zip -q -9 -r ../$tarfile $package_file")
+		or die("Couldn't zip up $to/$package_file");
+}
+elsif( $opt_bzip )
+{
+	0 == cmd("cd $to; tar cjf ../$tarfile $package_file")
+		or die("Couldn't zip up $to/$package_file");
+}
+else
+{
+	0 == cmd("cd $to; tar czf ../$tarfile $package_file")
+		or die("Couldn't tar up $to/$package_file");
+}
 
 
 print "Removing: $to\n";
@@ -187,6 +294,7 @@ sub copyfile
 	if( $f =~ m/\/system\/bin\// ) { $textfile = 1; }
 	if( $f =~ m/\.pl$/ ) { $textfile = 1; }
 	if( $f =~ m/\.pm$/ ) { $textfile = 1; }
+	if( $f =~ m/\.spec$/ ) { $textfile = 1; }
 
 	if( !$textfile )
 	{
@@ -197,9 +305,10 @@ sub copyfile
 
 	my $data = readfile( $from );
 
-	insert_data( $data, "__GENERICPOD__", $r->{__GENERICPOD__}, 1 );
-	insert_data( $data, "__LICENSE__", $r->{__LICENSE__}, 1 );
-	insert_data( $data, "__VERSION__", $r->{__VERSION__}, 0 );
+	foreach my $name (keys %$r)
+	{
+		insert_data( $data, $name, $r->{$name}, ref($r->{$name}) eq 'ARRAY' );
+	}
 
 	open OUT, ">$to" or die "Unable to open output file.\n";
 	print OUT join( "", @{$data} );
