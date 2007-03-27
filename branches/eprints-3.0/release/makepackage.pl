@@ -34,17 +34,17 @@ EPrints version to build or 'nightly' to build nightly version (current trunk HE
 
 Print a brief help message and exit.
 
-=item B<--man>
+=item B<--branch>
 
-Print the full manual page and then exit.
+Export from the branch version rather than tag (branches are major-version only).
 
-=item B<--list>
+=item B<--bzip>
 
-List all available versions.
+Use Tar-Bzip as the packager (produces a tar.bz2 file).
 
-=item B<--revision>
+=item B<--force>
 
-Append a revision to the end of the output name.
+Force a package build, even if it doesn't exist in versions.txt.
 
 =item B<--license>
 
@@ -54,13 +54,21 @@ Filename to read license from (defaults to licenses/gpl.txt)
 
 Filename to read license summary from (defaults to licenses/gplin.txt) - gets embedded wherever _B<>_LICENSE__ pragma occurs.
 
+=item B<--list>
+
+List all available versions.
+
+=item B<--man>
+
+Print the full manual page and then exit.
+
+=item B<--revision>
+
+Append a revision to the end of the output name.
+
 =item B<--zip>
 
 Use Zip as the packager (produces a .zip file).
-
-=item B<--bzip>
-
-Use Tar-Bzip as the packager (produces a tar.bz2 file).
 
 =back
 
@@ -72,7 +80,7 @@ use Pod::Usage;
 use strict;
 use warnings;
 
-my( $opt_revision, $opt_license, $opt_license_summary, $opt_list, $opt_zip, $opt_bzip, $opt_help, $opt_man );
+my( $opt_revision, $opt_license, $opt_license_summary, $opt_list, $opt_zip, $opt_bzip, $opt_help, $opt_man, $opt_branch, $opt_force );
 
 my @raw_args = @ARGV;
 
@@ -80,11 +88,13 @@ GetOptions(
 	'help' => \$opt_help,
 	'man' => \$opt_man,
 	'revision' => \$opt_revision,
+	'branch' => \$opt_branch,
 	'license=s' => \$opt_license,
 	'license-summary=s' => \$opt_license_summary,
 	'list' => \$opt_list,
 	'zip' => \$opt_zip,
 	'bzip' => \$opt_bzip,
+	'force' => \$opt_force,
 ) || pod2usage( 2 );
 
 pod2usage( 1 ) if $opt_help;
@@ -131,13 +141,24 @@ if( $type eq "nightly" )
 }
 else
 {
+	if( $opt_force and !$codenames{$type} )
+	{
+		$codenames{$type} = $ids{$type} = $type;
+	}
 	if( !defined $codenames{$type} )
 	{
 		print "Unknown codename\n";
 		print "Available:\n".join("\n",sort keys %codenames)."\n\n";
 		exit;
 	}
-	$version_path = "/tags/".$type;
+	if( $opt_branch )
+	{
+		$version_path = "/branches/".$type;
+	}
+	else
+	{
+		$version_path = "/tags/".$type;
+	}
 	$package_file = "eprints-".$ids{$type};
 	print "YAY - $ids{$type}\n";
 }
