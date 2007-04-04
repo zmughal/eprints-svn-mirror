@@ -89,3 +89,4 @@ eprints3-0-b-3		3.0-beta-3		Triangle
 eprints3-0-rc-1		3.0-rc-1		All the Trimmings
 eprints3-0-rc-2		3.0-rc-2		Resolutions
 eprints3-0		3.0			Beetroot
+

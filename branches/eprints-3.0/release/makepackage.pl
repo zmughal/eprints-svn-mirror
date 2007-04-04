@@ -244,7 +244,7 @@ else
 }
 
 print "Done.\n";
-print "./upload.pl $package_file$package_ext\n";
+print "$package_file$package_ext\n";
 if( $rpm_file )
 {
 	print "rpm --addsign $rpm_file $srpm_file\n";
