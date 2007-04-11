@@ -106,79 +106,12 @@ pod2usage( 1 ) if $opt_help;
 pod2usage( -exitstatus => 0, -verbose => 2 ) if $opt_man;
 pod2usage( 2 ) if( scalar @ARGV != 3 );
 
-my( $type, $install_from, $to ) = @ARGV;
+my( $install_from, $to, $package_version, $package_desc, $package_file, $package_ext, $rpm_version ) = @ARGV;
 
 my $revision = $opt_revision ? "-r$opt_revision" : '';
 
 my $LICENSE_FILE = $opt_license || "$install_from/release/licenses/gpl.txt";
 my $LICENSE_INLINE_FILE = $opt_license_summary || "$install_from/release/licenses/gplin.txt";
-
-my %codenames= ();
-my %ids = ();
-open( VERSIONS, "versions.txt" ) || die "can't open versions.txt: $!";
-while(<VERSIONS>)
-{
-	chomp;
-	$_ =~ s/\s*#.*$//;
-	next if( $_ eq "" );
-	$_ =~ m/^\s*([^\s]*)\s*([^\s]*)\s*(.*)\s*$/;
-	$ids{$1} = $2;
-	$codenames{$1} = $3;
-}
-close VERSIONS;
-
-if( !defined $type || $type eq "" ) 
-{ 
-	print "NO TYPE!\n"; 
-	exit 1; 
-}
-
-my $package_version;
-my $package_desc;
-my $package_file;
-my $package_ext = '.tar.gz';
-$package_ext = '.zip' if $opt_zip;
-$package_ext = '.tar.bz2' if $opt_bzip;
-my $rpm_version;
-
-my $date = `date +%Y-%m-%d`;
-chomp $date;
-
-if( $type eq "nightly" ) 
-{ 
-	$package_version = "build-$date$revision";
-	$package_desc = "EPrints Nightly Build - $package_version";
-	$package_file = "eprints-$package_version";
-	$rpm_version = "0"; # Nightly RPM isn't supported
-}
-else
-{
-	if( $opt_force and !defined $codenames{$type} )
-	{
-		$codenames{$type} = $ids{$type} = $type;
-	}
-	if( !defined $codenames{$type} )
-	{
-		print "Unknown codename\n";
-		print "Available:\n".join("\n",sort keys %codenames)."\n\n";
-		exit;
-	}
-	$package_version = $ids{$type};
-	$package_desc = "EPrints ".$ids{$type}." (".$codenames{$type}.") [Born on $date]";
-	$package_file = "eprints-$package_version";
-	$rpm_version = $package_version;
-	$rpm_version =~ s/-.*//; # Exclude beta/alpha/RC versioning
-
-	print "YAY - $ids{$type}\n";
-}
-
-#my $whoami = `whoami`;
-#chomp $whoami;
-#$ENV{"CVSROOT"} = ":pserver:$whoami\@cvs.iam.ecs.soton.ac.uk:/home/iamcvs/CVS";
-
-
-
-
 
 erase_dir( $to ) if -d $to;
 
