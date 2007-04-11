@@ -6356,3 +6356,6 @@ PACKAGE: 2.2.99.2
 
 2007-04-11 cjg
  * Fixed ordering of subjects in view. (sort by name_name rather than name)
+
+2007-04-11 cjg
+ * changed "authors" to "creators" in export/endnote
