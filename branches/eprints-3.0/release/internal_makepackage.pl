@@ -156,12 +156,12 @@ if( $package_ext eq ".zip" )
 }
 elsif( $package_ext eq ".tar.bz2" )
 {
-	0 == cmd("cd $to; packaged cjf ../$packagedfile $package_file")
+	0 == cmd("cd $to; tar cjf ../$packagedfile $package_file")
 		or die("Couldn't tar.bzip up $to/$package_file");
 }
 elsif( $package_ext eq ".tar.gz" )
 {
-	0 == cmd("cd $to; packaged czf ../$packagedfile $package_file")
+	0 == cmd("cd $to; tar czf ../$packagedfile $package_file")
 		or die("Couldn't tar.gz up $to/$package_file");
 }
 else
