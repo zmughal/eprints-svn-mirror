@@ -104,7 +104,10 @@ GetOptions(
 
 pod2usage( 1 ) if $opt_help;
 pod2usage( -exitstatus => 0, -verbose => 2 ) if $opt_man;
+print ":".( scalar @ARGV)."\n";
+print ":".join(":\n:",@ARGV).":\n";
 pod2usage( 2 ) if( scalar @ARGV != 7 );
+
 
 my( $install_from, $to, $package_version, $package_desc, $package_file, $package_ext, $rpm_version ) = @ARGV;
 
