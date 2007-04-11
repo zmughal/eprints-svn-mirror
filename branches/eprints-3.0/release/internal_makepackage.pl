@@ -14,7 +14,7 @@ B<internal_makepackage.pl> - Make an EPrints tarball
 
 =head1 SYNOPSIS
 
-B<internal_makepackage.pl> <version OR nightly> <from> <to>
+B<internal_makepackage.pl> <from> <to> <version> <description> <filename> <extension> <rpm_vesrion>
 
 =head1 ARGUMENTS
 
@@ -104,7 +104,7 @@ GetOptions(
 
 pod2usage( 1 ) if $opt_help;
 pod2usage( -exitstatus => 0, -verbose => 2 ) if $opt_man;
-pod2usage( 2 ) if( scalar @ARGV != 3 );
+pod2usage( 2 ) if( scalar @ARGV != 7 );
 
 my( $install_from, $to, $package_version, $package_desc, $package_file, $package_ext, $rpm_version ) = @ARGV;
 
