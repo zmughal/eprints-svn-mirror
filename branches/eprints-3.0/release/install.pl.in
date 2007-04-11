@@ -209,7 +209,7 @@ END
 	{
 		my $value = $systemsettings->{invocation}->{$_};
 		my $newvalue = $value;
-		$newvalue =~ s/'(\$\([A-Z+]\))'/$1/g;
+		$newvalue =~ s/'(\$\([A-Z]+\))'/$1/g;
 		if( $value ne $newvalue )
 		{
 			print "removing quotes from SystemSettings::conf->{invocation}->{$_}\n";
