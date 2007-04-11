@@ -205,6 +205,19 @@ END
 	}
 	$systemsettings->{"user"} = $EPrints::SystemSettings::conf->{"user"};
 	$systemsettings->{"group"} = $EPrints::SystemSettings::conf->{"group"};
+	foreach( keys %{$systemsettings->{invocation}} )
+	{
+		my $value = $systemsettings->{invocation}->{$_};
+		my $newvalue = $value;
+		$newvalue =~ s/'(\$\([A-Z]+\))'/$1/g;
+		if( $value ne $newvalue )
+		{
+			print "removing quotes from SystemSettings::conf->{invocation}->{$_}\n";
+			print "was: $value\n";
+			print "now: $newvalue\n";
+		}
+		$systemsettings->{invocation}->{$_} = $newvalue;
+	}
 
 	print "Upgrading as user: ".$systemsettings->{"user"}."\n";
 	print "Upgrading as group: ".$systemsettings->{"group"}."\n";
