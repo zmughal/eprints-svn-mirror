@@ -6359,3 +6359,7 @@ PACKAGE: 2.2.99.2
 
 2007-04-11 cjg
  * changed "authors" to "creators" in export/endnote
+
+2007-04-11 cjg
+ * Removed custom_order from lift_embargos which should fix a bug.
+
