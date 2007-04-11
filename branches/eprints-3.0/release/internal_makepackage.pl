@@ -42,18 +42,6 @@ Directory to write the EPrints distribution to.
 
 Print a brief help message and exit.
 
-=item B<--branch>
-
-Export from the branch version rather than tag (branches are major-version only).
-
-=item B<--bzip>
-
-Use Tar-Bzip as the packager (produces a tar.bz2 file).
-
-=item B<--force>
-
-Force a package build, even if it doesn't exist in versions.txt.
-
 =item B<--license>
 
 Filename to read license from (defaults to licenses/gpl.txt)
@@ -62,21 +50,9 @@ Filename to read license from (defaults to licenses/gpl.txt)
 
 Filename to read license summary from (defaults to licenses/gplin.txt) - gets embedded wherever _B<>_LICENSE__ pragma occurs.
 
-=item B<--list>
-
-List all available versions.
-
 =item B<--man>
 
 Print the full manual page and then exit.
-
-=item B<--revision>
-
-Append a revision to the end of the output name.
-
-=item B<--zip>
-
-Use Zip as the packager (produces a .zip file).
 
 =back
 
@@ -87,31 +63,21 @@ use Getopt::Long;
 use Pod::Usage;
 use strict;
 
-my( $opt_revision, $opt_license, $opt_license_summary, $opt_list, $opt_zip, $opt_bzip, $opt_help, $opt_man, $opt_branch, $opt_force );
+my( $opt_license, $opt_license_summary, $opt_help, $opt_man );
 
 GetOptions(
 	'help' => \$opt_help,
 	'man' => \$opt_man,
-	'revision' => \$opt_revision,
-	'branch' => \$opt_branch,
 	'license=s' => \$opt_license,
 	'license-summary=s' => \$opt_license_summary,
-	'list' => \$opt_list,
-	'zip' => \$opt_zip,
-	'bzip' => \$opt_bzip,
-	'force' => \$opt_force,
 ) || pod2usage( 2 );
 
 pod2usage( 1 ) if $opt_help;
 pod2usage( -exitstatus => 0, -verbose => 2 ) if $opt_man;
-print ":".( scalar @ARGV)."\n";
-print ":".join(":\n:",@ARGV).":\n";
 pod2usage( 2 ) if( scalar @ARGV != 7 );
 
 
 my( $install_from, $to, $package_version, $package_desc, $package_file, $package_ext, $rpm_version ) = @ARGV;
-
-my $revision = $opt_revision ? "-r$opt_revision" : '';
 
 my $LICENSE_FILE = $opt_license || "$install_from/release/licenses/gpl.txt";
 my $LICENSE_INLINE_FILE = $opt_license_summary || "$install_from/release/licenses/gplin.txt";
@@ -180,22 +146,27 @@ close(FILEOUT);
 cmd("chmod -R g-w $to/eprints")==0 or die("Couldn't change permissions on eprints dir.\n");
 
 cmd("mv $to/eprints $to/$package_file")==0 or die("Couldn't move eprints dir to $to/$package_file.\n");
-my $tarfile = $package_file.$package_ext;
-if( -e $tarfile ) { cmd( "rm $tarfile" ); }
-if( $opt_zip )
+
+my $packagedfile = $package_file.$package_ext;
+if( -e $packagedfile ) { cmd( "rm $packagedfile" ); }
+if( $package_ext eq ".zip" )
 {
-	0 == cmd("cd $to; zip -q -9 -r ../$tarfile $package_file")
+	0 == cmd("cd $to; zip -q -9 -r ../$packagedfile $package_file")
 		or die("Couldn't zip up $to/$package_file");
 }
-elsif( $opt_bzip )
+elsif( $package_ext eq ".tar.bz2" )
 {
-	0 == cmd("cd $to; tar cjf ../$tarfile $package_file")
-		or die("Couldn't zip up $to/$package_file");
+	0 == cmd("cd $to; packaged cjf ../$packagedfile $package_file")
+		or die("Couldn't tar.bzip up $to/$package_file");
+}
+elsif( $package_ext eq ".tar.gz" )
+{
+	0 == cmd("cd $to; packaged czf ../$packagedfile $package_file")
+		or die("Couldn't tar.gz up $to/$package_file");
 }
 else
 {
-	0 == cmd("cd $to; tar czf ../$tarfile $package_file")
-		or die("Couldn't tar up $to/$package_file");
+	die "Dunno what to do with file extension $package_ext";
 }
 
 
