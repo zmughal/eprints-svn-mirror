@@ -5,7 +5,31 @@ CHANGELOG.
 =========================================================================
 
 =========================================================================
-EPRINTS 3.0                                                    2006-01-22
+EPRINTS 3.0.1                                                  2007-04-13
+=========================================================================
+ 
+ * Fixed slow rendering of "profile" page.
+ * Fixed bugs with editorial restrictions.
+ * Cookie values are now randomised when you logout/login again. 
+ * Fixed bugs with full-text indexing.
+ * Fixed speed problems in indexer.
+ * Fixed incorrectly ordered subjects.
+ * Improved some help text.
+ * Added a few missing phrases.
+ * Fixed some spelling mistakes.
+ * epadmin now obeys groupid from SystemSettings
+ * Upload component: if there is only one document, then it is "unrolled"
+    in the interface - saves a click.
+ * Only .xml files are now parsed in phrases directories.
+ * Fixed bug with 404 pages coming back blank, some of the time.
+ * Fixed bug where after removing a user you got taken to an undefined 
+    screen.
+ * Added some better error reporting to XML import. Now spots and warns
+    if you pass v2 XML to a v3 importer.
+ * Improved invocation of external programs.
+
+=========================================================================
+EPRINTS 3.0                                                    2007-01-22
 =========================================================================
 
  * Security fix to autocomplete scripts.
