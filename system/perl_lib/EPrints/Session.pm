@@ -1464,7 +1464,7 @@ sub render_single_option
 Return the XHTML DOM describing an <input> element of type "hidden"
 and name and value as specified. eg.
 
-<input type="hidden" name="foo" value="bar" />
+<input type="hidden" accept-charset="utf-8" name="foo" value="bar" />
 
 =cut
 ######################################################################
@@ -1488,6 +1488,7 @@ sub render_input_field
 {
 	my( $self, %opts ) = @_;
 
+	$opts{'accept-charset'} = "utf-8" unless defined $opts{'accept-charset'};
 	return $self->make_element( "input",%opts );
 }
 
@@ -1681,7 +1682,7 @@ sub render_form
 	my( $self, $method, $dest ) = @_;
 	
 	my $form = $self->{doc}->createElement( "form" );
-	$form->setAttribute( "method", "\L$method" );
+	$form->setAttribute( "method", $method );
 	$form->setAttribute( "accept-charset", "utf-8" );
 	if( !defined $dest )
 	{

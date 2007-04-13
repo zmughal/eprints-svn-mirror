@@ -123,7 +123,7 @@ sub new
 		# it each time the main server forks.
 		if( defined $poketime && $poketime > $self->{loadtime} )
 		{
-			print STDERR "$file has been modified since the repository config was loaded: reloading!";
+			print STDERR "$file has been modified since the repository config was loaded: reloading!\n";
 		}
 		else
 		{
@@ -1118,7 +1118,9 @@ sub get_store_dir_size
 		return undef;
 	}
 
-	return EPrints::Platform::free_space( $filepath );
+	my @retval = EPrints::Utils::df_dir $filepath;
+	return undef unless @retval;
+	return (@retval)[3];
 } 
 
 
