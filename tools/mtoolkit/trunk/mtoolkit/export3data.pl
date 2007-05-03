@@ -1,21 +1,140 @@
 #!/usr/bin/perl -w -I/opt/eprints2/perl_lib
 
+# map eprints 2 formats to proper mime-types
+# these will need configuring in eprints 3
+our %FORMAT_MAPPING = qw(
+	html	text/html
+	pdf	application/pdf
+	ps	application/postscript
+	ascii	text/plain
+	msword	application/mssword
+	image	image
+	latex	latex
+	powerpoint	application/vnd.ms-powerpoint
+	coverimage	coverimage
+	other	other
+);
+
+=pod
+
+=head1 NAME
+
+B<export3data.pl> - export data from an eprints 2 repository in eprints 3 xml format
+
+=head1 SYNOPSIS
+
+B<export3data.pl> [B<options>] I<archive> I<eprints|users|subjects> [B<list of ids>]
+
+=head1 DESCRIPTION
+
+This tool will attempt to export data from an eprints 2 repository in a format suitable for import into an appropriately configured eprints 3 repository. This is probably a good place to make alterations to your metadata layout (but you will have to customise this script).
+
+This script will not allow you to export records that contain badly encoded records (because they'd just fail on import anyway).
+
+This script requires Perl IO, which is only in Perl 5.8 onwards. It is anticipated that you would copy your existing eprints 2 installation to a new server, parallel to your eprints 3 installation, before executing this script.
+
+=head1 ARGUMENTS
+
+=over 8
+
+=item I<archive>
+
+The ID of the EPrint archive to export from.
+
+=item I<eprints|users|subjects>
+
+The dataset to export.
+
+=back
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--inline>
+
+Base-64 encode documents and include them in the XML output.
+
+=item B<--verbose>
+
+Be more verbose about what's going on (repeat for more verbosity).
+
+=item B<--skiplog>
+
+Specify a file to write eprint ids to that are in badly encoded UTF8. You will need to fix these eprints by hand.
+
+=back
+
+=cut
+
+use Carp;
+use Encode;
+use Pod::Usage;
+
+# $SIG{__DIE__} = $SIG{__WARN__} = sub { Carp::confess(@_) };
+
 use EPrints::EPrint;
 use EPrints::Session;
 use EPrints::Subject;
 
-use Data::Dumper;
-use MIME::Base64 ();
-use Unicode::String qw(utf8 latin1 utf16);
+use Getopt::Long;
 
 use strict;
+use warnings;
 
+our( $opt_help, $opt_skiplog, $opt_inline );
+our $opt_verbose = 0;
+
+GetOptions(
+	'help' => \$opt_help,
+	'verbose+' => \$opt_verbose,
+	'skiplog=s' => \$opt_skiplog,
+	'inline' => \$opt_inline,
+) or pod2usage( 2 );
+pod2usage( 1 ) if $opt_help;
+pod2usage( 2 ) if scalar @ARGV < 2;
+
+if( $opt_inline )
+{
+	eval "use PerlIO::via::Base64;";
+	if( $@ )
+	{
+		die "Inlining files requires PerlIO::via::Base64.\n";
+	}
+}
+
+my $SKIPLOG;
+if( $opt_skiplog )
+{
+	open($SKIPLOG, ">", $opt_skiplog)
+		or die "Unable to open $opt_skiplog for writing: $!";
+}
+
+# We can optionally only export a given set of items (very useful for
+# debugging)
+our @IDS = splice(@ARGV,2);
+
+##############################################################################
+# End of Command-Line Arguments
+##############################################################################
+
+# Global variables/constants
+our $TOTAL = -1;
+our $DONE = 0;
+our $XMLNS = 'http://eprints.org/ep3/data/3.0';
+our $UTF8_QUOTE = pack('U',0x201d); # Opening quote
+Encode::_utf8_off($UTF8_QUOTE);
+
+# Lets connect to eprints
 my $session = new EPrints::Session( 1 , $ARGV[0] );
 exit( 1 ) unless( defined $session );
 
 my $archive = $session->get_archive;
 
 my $fh = *STDOUT;
+binmode($fh, ":utf8");
+
+
 if( $ARGV[1] eq "subjects" )
 {
 	export_subjects();
@@ -33,17 +152,45 @@ else
 	print "Unknown dataset: $ARGV[1]. (users/eprints/subjects)\n";
 }
 
+
 $session->terminate();
 exit;
+
 
 sub export_eprints
 {
 	print $fh "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n";
 	print $fh "<eprints>\n\n";
-	foreach my $dsid ( qw/ inbox buffer archive deletion / )
+	if( @IDS )
 	{
-		my $dataset = $archive->get_dataset( $dsid );
-		$dataset->map( $session, \&export_eprint );
+		$TOTAL = @IDS;
+		foreach my $id (@IDS)
+		{
+			my $item = EPrints::EPrint->new( $session, $id );
+			if( !$item )
+			{
+				die "$id does not exist\n";
+			}
+			my $dataset = $item->get_dataset();
+			print STDERR "Reading eprint $id from dataset ".$dataset->{id}."\n" if $opt_verbose > 1;
+			export_eprint( $session, $dataset, $item );
+		}
+	}
+	else
+	{
+		my @datasets = qw( inbox buffer archive deletion );
+		$TOTAL = 0;
+		foreach my $dsid ( @datasets )
+		{
+			my $dataset = $archive->get_dataset( $dsid );
+			$TOTAL += $dataset->count( $session );
+		}
+		foreach my $dsid ( @datasets )
+		{
+			print STDERR "Dataset: $dsid\n" if $opt_verbose;
+			my $dataset = $archive->get_dataset( $dsid );
+			$dataset->map( $session, \&export_eprint );
+		}
 	}
 	print $fh "</eprints>\n";
 }
@@ -53,7 +200,24 @@ sub export_users
 	print $fh "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n";
 	print $fh "<users>\n\n";
 	my $dataset = $archive->get_dataset( 'user' );
-	$dataset->map( $session, \&export_user );
+	if( @IDS )
+	{
+		$TOTAL = @IDS;
+		foreach my $id (@IDS)
+		{
+			my $item = EPrints::User->new( $session, $id );
+			if( !$item )
+			{
+				die "$id does not exist\n";
+			}
+			print STDERR "Reading user $id from dataset ".$dataset->{id}."\n" if $opt_verbose > 1;
+			export_user( $session, $dataset, $item );
+		}
+	}
+	else
+	{
+		$dataset->map( $session, \&export_user );
+	}
 	print $fh "</users>\n";
 }
 
@@ -66,20 +230,22 @@ sub export_subjects
 	print $fh "</subjects>\n";
 }
 
+
 sub export_subject
 {
 	my( $session, $dataset, $item ) = @_;
 
-	print $fh "<subject xmlns=\"http://eprints.org/ep3/data/3.0\">\n";
+	my $subject = $session->make_element( 'subject', xmlns => $XMLNS );
+
 	foreach my $field ( $dataset->get_fields )
 	{
 		my $name = $field->get_name;
 		next if $name eq "ancestors";
 		my $value = $item->get_value( $name );
 		next unless EPrints::Utils::is_set $value;
-		export_value( $field, $value );
+		$subject->appendChild(export_value( $session, $field, $value ));
 	}
-	print $fh "</subject>\n\n";
+	print $fh $subject->toString . "\n\n";
 }
 
 
@@ -87,24 +253,28 @@ sub export_user
 {
 	my( $session, $dataset, $item ) = @_;
 
-	print $fh "<user xmlns=\"http://eprints.org/ep3/data/3.0\">\n";
-	my $sql = "SELECT password FROM users WHERE userid=".$item->get_id;
+	my $user = $session->make_element( 'user', xmlns => $XMLNS );
+
+	my $sql = "SELECT `password` FROM `users` WHERE `userid`=".$item->get_id;
 	( $item->{data}->{password} ) = $session->get_db->{dbh}->selectrow_array( $sql );
 	foreach my $field ( $dataset->get_fields )
 	{
 		my $name = $field->get_name;
 		my $value = $item->get_value( $name );
 		next unless EPrints::Utils::is_set $value;
-		export_value( $field, $value );
+		$user->appendChild( export_value( $session, $field, $value ) );
 	}
-	print $fh "</user>\n\n";
+
+	print $fh $user->toString . "\n\n";
 }
 
 sub export_value
 {
-	my( $field, $value ) = @_;
+	my( $session, $field, $value ) = @_;
 
 	my $name = $field->get_name;
+
+	my $dom = $session->make_element( $name );
 
 	if( $field->get_property( "multilang" ) )
 	{
@@ -113,68 +283,134 @@ sub export_value
 			die "multiple+multilang fields not currently supported.";
 		}
 
-		print $fh "  <$name>\n";
 		foreach my $langid ( keys %{$value} )
 		{
-			print $fh "    <item>\n";
-			print $fh "      <name>".rv($field,$value->{$langid})."</name>\n";
-			print $fh "      <lang>".esc($langid)."</lang>\n";
-			print $fh "    </item>\n";
+			$dom->appendChild( my $item = $session->make_element( 'item' ) );
+			$item->appendChild( $session->make_element( 'name' ) )
+				->appendChild( rv($session, $field, $value->{$langid}) );
+			$item->appendChild( $session->make_element( 'lang' ) )
+				->appendChild( $session->make_text( $langid ) );
 		}
-		print $fh "  </$name>\n";
-		return;
+		return $dom;
 	}
 
 
 	if( !$field->get_property( "multiple" ) )
 	{
-		print $fh "  <$name>".rv($field,$value)."</$name>\n";
-		return;
+		$dom->appendChild( rv($session, $field, $value) );
+		return $dom;
 	}
 
-	print $fh "  <$name>\n";
-	foreach my $item ( @{$value} )
+	foreach my $v ( @{$value} )
 	{
-		next unless EPrints::Utils::is_set($item);
+		next unless EPrints::Utils::is_set($v);
+		$dom->appendChild( my $item = $session->make_element( 'item' ) );
 		if( $field->get_property( "hasid" ) )
 		{
-			print $fh "    <item>\n";
-			if( EPrints::Utils::is_set($item->{id}) )
+			if( EPrints::Utils::is_set($v->{id}) )
 			{
-				print $fh "      <id>".esc($item->{id})."</id>\n";
+				$item->appendChild( $session->make_element( 'id' ) )
+					->appendChild( $session->make_text( $v->{id} ) );
 			}
-			if( EPrints::Utils::is_set($item->{main}) )
+			if( EPrints::Utils::is_set($v->{main}) )
 			{
-				print $fh "      <name>".rv($field,$item->{main})."</name>\n";
+				$item->appendChild( $session->make_element( 'name' ) )
+					->appendChild( rv( $session, $field, $v->{main} ) );
 			}
-			print $fh "    </item>\n";
 		}
 		else
 		{
-			print $fh "    <item>".rv($field,$item)."</item>\n";
+			$item->appendChild( rv( $session, $field, $v ) );
 		}
 	}
-	print $fh "  </$name>\n";
+	return $dom;
+}
+
+sub export_hashref
+{
+	my( $session, $value ) = @_;
+
+	my $dom = $session->make_doc_fragment();
+
+	if( ref($value) eq 'HASH' )
+	{
+		foreach my $key (keys %$value)
+		{
+			if( defined($value->{$key}) and $value->{$key} ne '' )
+			{
+				$dom->appendChild( $session->make_element( $key ) )
+					->appendChild( export_hashref( $session, $value->{$key} ) );
+			}
+		}
+	}
+	elsif( defined($value) )
+	{
+		$dom->appendChild( $session->make_text( $value ) );
+	}
+
+	return $dom;
+}
+
+sub export_dataobj
+{
+	my( $session, $name, $value ) = @_;
+
+	my $dom = $session->make_element( $name );
+
+	if( ref($value) eq 'ARRAY' )
+	{
+		foreach my $v ( @$value )
+		{
+			$dom->appendChild( my $item = $session->make_element( 'item' ) );
+			if( ref($v) eq 'HASH' )
+			{
+				foreach my $key (keys %$v)
+				{
+					$item->appendChild( $session->make_element( $key ) )
+						->appendChild( export_hashref($session, $v->{$key}) );
+				}
+			}
+			else
+			{
+				$item->appendChild( $session->make_text( $v ) );
+			}
+		}
+	}
+	elsif( defined( $value ) )
+	{
+		$dom->appendChild( $session->make_text( $value ) );
+	}
+
+	return $dom;
 }
 
 sub export_eprint
 {
 	my( $session, $dataset, $item ) = @_;
 
-	print $fh "<eprint xmlns=\"http://eprints.org/ep3/data/3.0\">\n";
-	print $fh "  <eprint_status>".$dataset->id."</eprint_status>\n";
+	$DONE++;
+
+	print STDERR int(100*$DONE/$TOTAL) . " \%    " . $item->get_id() . "  \r" if $opt_verbose;
+
+	my $eprint = $session->make_element( 'eprint', xmlns => $XMLNS );
+
+	$eprint->appendChild( $session->make_element( 'eprint_status' ))
+		->appendChild( $session->make_text( $dataset->id ));
+
 	foreach my $field ( $dataset->get_fields )
 	{
 		my $name = $field->get_name;
-		next if $name eq "fileinfo";
-		next if $name eq "date_issue";
-		next if $name eq "date_effective";
-		next if $name eq "date_sub";
-		next if $name eq "dir";
+		next if $name =~ /^fileinfo|date_issue|date_effective|date_sub|dir$/;
 		my $value = $item->get_value( $name );
 		next unless EPrints::Utils::is_set $value;
-		export_value( $field, $value );
+
+		print STDERR "Adding field: $name\n" if $opt_verbose > 1;
+
+		$eprint->appendChild( export_value( $session, $field, $value ) );
 	}
+
+	print STDERR "Processing date fields\n" if $opt_verbose > 1;
+	
 	my $date = "";
 	my $date_type = "";
 	if( $dataset->has_field( "date_sub" ) && $item->is_set( "date_sub" ) )
@@ -187,80 +423,294 @@ sub export_eprint
 		$date = $item->get_value( "date_issue" );
 		$date_type = "published";
 	}
-	print $fh "  <date>".esc($date)."</date>\n";
-	print $fh "  <date_type>".esc($date_type)."</date_type>\n";
+	$eprint->appendChild( $session->make_element( 'date' ) )
+		->appendChild( $session->make_text( $date ) );
+	$eprint->appendChild( $session->make_element( 'date_type' ) )
+		->appendChild( $session->make_text( $date_type ) );
+
+	print STDERR "Processing documents\n" if $opt_verbose > 1;
+
+	my $documents = $eprint->appendChild( $session->make_element( 'documents' ) );
 
 	my @docs = $item->get_all_documents;
-	print $fh "  <documents>\n";
+	
+	print STDERR "Got ".@docs." documents\n" if $opt_verbose > 2;
+
 	foreach my $doc ( @docs )
 	{
-		print $fh "    <document>\n";
+		my $document = $documents->appendChild( $session->make_element( 'document' ) );
 		my $docid = $doc->get_id;
 		$docid=~m/^(\d+)-(\d+)$/;
 		my $pos = $2+0;
-		print $fh "      <eprintid>".esc($doc->get_value( "eprintid" ))."</eprintid>\n";
-		print $fh "      <format>".esc($doc->get_value( "format" )||"")."</format>\n";
-		print $fh "      <language>".esc($doc->get_value( "language" )||"")."</language>\n";
-		my $security = esc($doc->get_value( "security" )||"");
-		if( $security eq "" ) { $security = "public"; }
-		print $fh "      <security>$security</security>\n";
-		print $fh "      <main>".esc($doc->get_value( "main" )||"")."</main>\n";
-		print $fh "      <pos>$pos</pos>\n";
 
-		print $fh "      <files>\n";
+		print STDERR "Processing document $pos\n" if $opt_verbose > 2;
+		
+		$document->appendChild( $session->make_element( 'eprintid' ) )
+			->appendChild($session->make_text($doc->get_value( 'eprintid' )));
 
-		my %files = $doc->files;
-		foreach my $filename ( keys %files )
+		my $format = $doc->get_value( 'format' ) || 'other';
+		if( exists $FORMAT_MAPPING{$format} )
 		{
-			print $fh "        <file>\n";
-			print $fh "          <filename>".latin1($filename)."</filename>\n";
-			print $fh "          <data encoding=\"base64\">\n";
-			my $fullpath = $doc->local_path."/".$filename;
-			open( FH, $fullpath ) || die "fullpath '$fullpath' read error: $!";
-			my $data = join( "", <FH> );
-			close FH;
-			print $fh MIME::Base64::encode($data);
-			print $fh "          </data>\n";
-			print $fh "        </file>\n";
+			$format = $FORMAT_MAPPING{$format};
 		}
+		$document->appendChild( $session->make_element( 'format' ) )
+			->appendChild($session->make_text($format));
 
-		print $fh "      </files>\n";
+		$document->appendChild( $session->make_element( 'language' ) )
+			->appendChild($session->make_text($doc->get_value( 'language' )||''));
+		my $security = $doc->get_value( "security" ) || "public";
+		$document->appendChild( $session->make_element( 'security' ) )
+			->appendChild($session->make_text($security));
+		$document->appendChild( $session->make_element( 'main' ) )
+			->appendChild($session->make_text($doc->get_value( 'main' )||''));
+		$document->appendChild( $session->make_element( 'pos' ) )
+			->appendChild($session->make_text($pos));
 
-		print $fh "    </document>\n";
+		my $files = $document->appendChild( $session->make_element( 'files' ) );
+
+		my %filenames = $doc->files;
+		print STDERR "Contains ".scalar(keys(%filenames))." files\n" if $opt_verbose > 2;
+
+		# No files in this document, destroy it (something odd happened)
+		if( scalar(keys %filenames) == 0 )
+		{
+			$documents->removeChild( $document );
+		}
+		else
+		{
+			foreach my $filename ( keys %filenames )
+			{
+				my $file = $files->appendChild( $session->make_element( 'file' ) );
+
+				$file->appendChild($session->make_element( 'filename' ))
+					->appendChild($session->make_text( $filename ));
+				my $fullpath = $doc->local_path."/".$filename;
+				$file->appendChild($session->make_element( 'data',
+							'href' => "file://" . $fullpath ));
+			}
+		}
 	}
 
-	print $fh "  </documents>\n";
+	# In eprints.soton we have multiple isbns, which are a compound of isbn and
+	# cover. There are some legacy records with a single isbn which we'll
+	# resurrect if isbns isn't set
 
-	print $fh "</eprint>\n\n";
+#	print STDERR "Processing ISBNs\n" if $opt_verbose > 1;
+
+#	if( $dataset->has_field( "isbns" ) and $item->is_set( "isbns" ) )
+#	{
+#		my $values = $item->get_value( "isbns" );
+#		if( defined $values )
+#		{
+#			for( @$values )
+#			{
+#				$_ = {
+#					isbn => $_->{main},
+#					cover => ((defined($_->{id}) and $_->{id} ne '') ? $_->{id} : 'unspecified'),
+#				};
+#			}
+#			$eprint->appendChild( export_dataobj( $session, "isbns" , $values ) );
+#		}
+#	}
+#	elsif( $item->is_set( "isbn" ) )
+#	{
+#		my $value = $item->get_value( "isbn" );
+#		$value = {
+#			isbn => $value,
+#			cover => 'unspecified'
+#		};
+#		$eprint->appendChild( export_dataobj( $session, "isbns", [$value] ));
+#	}
+
+	# In eprints 3 issns will be flagged as electronic or paper (another
+	# compound field)
+
+#	print STDERR "Processing ISSN\n" if $opt_verbose > 1;
+
+#	if( $dataset->has_field( "issn" ) and $item->is_set( "issn" ) )
+#	{
+#		my $value = $item->get_value( "issn" );
+#		$eprint->appendChild( export_dataobj( $session, "issns" , [ { issn => $value, cover => 'unspecified' } ] ) );
+#	}
+	
+	# More fields being turned into compounds
+
+#	print STDERR "Processing exhibition_eventlocdate\n" if $opt_verbose > 1;
+
+#	if( $dataset->has_field( "exhibition_eventlocdate" ) and $item->is_set( "exhibition_eventlocdate" ) )
+#	{
+#		my $values = $item->get_value( "exhibition_eventlocdate" );
+#		if( defined $values )
+#		{
+#			for(@$values)
+#			{
+#				my( $date, $venue ) = split /\|/, $_, 2;
+#				$_ = {
+#					venue => $venue,
+#					date => $date,
+#				};
+#			}
+
+#			$eprint->appendChild( export_dataobj( $session, "venue_date", $values ) );
+#		}
+#	}
+
+	# In eprints.soton we store the staff id for all RAE-returnable fields (or,
+	# if not a member of staff, 'internal', 'external' or 'unknown'). In
+	# eprints 3 this is obviously a compound field, whereas in 2 it was two
+	# fields that were kept synchronised.
+	# (We didn't use the id part in eprints 2, because we don't want users to be
+	# able to directly edit the staff id bit)
+
+#	foreach my $namefield (qw( creators editors exhibitors ))
+#	{
+#		print STDERR "Processing $namefield\n" if $opt_verbose > 1;
+
+#		if( $dataset->has_field( $namefield ) and $item->is_set( $namefield ) )
+#		{
+#			my $names = $item->get_value( $namefield );
+#			my $staffids = $item->get_value( $namefield."_empid" ) || [];
+
+# Ignore the id
+#			for(@$names)
+#			{
+#				$_ = {
+#					name => $_->{main},
+#					staffid => 'unknown',
+#				};
+#			}
+
+#			for(my $i = 0; $i < @$staffids; $i++)
+#			{
+#				if( $staffids->[$i] ne '' )
+#				{
+#					$names->[$i]->{staffid} = $staffids->[$i];
+#				}
+#			}
+
+#			$eprint->appendChild( export_dataobj( $session, $namefield, $names ));
+#		}
+#	}
+
+	# Check that our output is valid utf8, otherwise we'll have trouble parsing
+	# it (and import is much, much slower than export)
+	# You might want to modify this to automatically replace bad chars with a
+	# '?' or similar, but it's probably better to manually inspect and fix
+	# problems.
+
+	my $xml = $eprint->toString();
+	$xml =~ s/\xe2\x80\x3f/$UTF8_QUOTE/sg; # Fix word's bespoke quote for Unicode
+#	$xml =~ s/[\x00-\x08\x0B\x0C\x0E-\x1F]//g;
+	my $error;
+	unless( check_utf8($xml, \$error) )
+	{
+		if( defined($SKIPLOG) )
+		{
+			print $SKIPLOG $item->{dataset}->{id} . "\t" . $item->get_id . "\t$error\n";
+		}
+		else
+		{
+			print STDERR "Fix invalid utf8 in eprint " . $item->get_id . " (or use the skiplog argument to log all unexportable eprints): $error\n";
+			exit;
+		}
+		return;
+	}
+
+	# inject the base64-encoded files
+	if( $opt_inline )
+	{
+		print STDERR "Injecting base64 encoded files\n" if $opt_verbose > 1;
+		# locate the <data></data> fields
+		my( $pre, @files ) = split /(<data[^>]+(?:>\s*<\/\s*data\s*>|\/>))/, $xml;
+		@files = grep { length($_) } @files; # remove the tween bits
+		my $post = pop @files;
+
+		print $fh $pre;
+		foreach my $data (@files)
+		{
+			($data) = EPrints::XML::parse_xml_string( $data )->getElementsByTagName( 'data' );
+			print $fh "<data encoding=\"base64\">";
+			my $url = $data->getAttribute( 'href' );
+			$url =~ s/^file:\/\///;
+			write_base64_file( $fh, $url );
+			print $fh "</data>\n";
+		}
+		print $fh $post if defined $post;
+	}
+	else
+	{
+		print $fh $xml . "\n";
+	}
+	
+	print STDERR "Done Processing Eprint: " . $item->get_id . "\n" if $opt_verbose > 1;
 }
+
+# Handle name fields correctly (should this include id???)
 
 sub rv 
 {
-	my( $field, $value ) = @_;
+	my( $session, $field, $value ) = @_;
+
+	my $dom = $session->make_doc_fragment;
 
 	if( $field->is_type( "name" ) )
 	{
-		my $r = "";
 		foreach my $p ( qw/ family given lineage honourific / )
 		{
 			next if !EPrints::Utils::is_set( $value->{$p} );
-			$r.="<$p>".esc($value->{$p})."</$p>";
+			$dom->appendChild( $session->make_element( $p ) )
+				->appendChild( $session->make_text( $value->{$p} ) );
 		}
-		return $r;
 	}
-	
-	return esc($value);
+	else
+	{
+		$dom->appendChild( $session->make_text( $value ) );
+	}
+
+	return $dom;
 }
 
-sub esc
+# write a $filename to $out in base64 encoding
+
+sub write_base64_file
 {
-	my( $text ) = @_;
+	my( $out, $filename ) = @_;
 
-	$text =~ s/&/&amp;/g;
-	$text =~ s/</&lt;/g;
-	$text =~ s/>/&gt;/g;
+	binmode($out, ":via(Base64)");
+	open(my $fh, "<", $filename) or die "Unable to open $filename: $!\n";
+	binmode($fh);
+	while(read($fh, my $buffer, 4096))
+	{
+		print $out $buffer;
+	}
+	close($fh);
+	binmode($out, ":pop");
+}
 
-	return utf8($text);
+# fill $error with the locations of bad chars in $bytes
+# returns true if the string is ok
+
+sub check_utf8
+{
+	my( $bytes, $error ) = @_;
+
+	my $max_errors = 10;
+	$$error = '';
+
+	do {
+		my $str = Encode::decode("utf8", $bytes, Encode::FB_QUIET);
+		if( length($bytes) )
+		{
+			$str =~ s/^.+(.{40})$/... $1/s;
+			$$error .= "Bad char '$str'<--HERE!!! ";
+			while( length($bytes) and ord(substr($bytes, 0, 1)) > 0x80 )
+			{
+				substr($bytes, 0, 1) = '';
+			}
+		}
+	} while( length($bytes) and $max_errors-- );
+
+	return length($$error) == 0;
 }
 
 __DATA__
