@@ -31,7 +31,7 @@ Requires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
 Requires: perl(XML::Parser) perl(Time::HiRes) perl(CGI)
 Requires: perl(MIME::Lite) perl(Readonly)
 Requires: perl(XML::LibXML) >= 1.63
-Requires: xpdf antiword tetex-latex wget gzip tar ImageMagick unzip
+Requires: xpdf antiword tetex-latex wget gzip tar ImageMagick unzip elinks
 BuildArch: noarch
 provides: perl(EPrints::BackCompatibility)
 
