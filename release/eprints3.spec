@@ -22,7 +22,7 @@ BuildRequires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
 BuildRequires: perl(XML::Parser) perl(Time::HiRes) perl(CGI)
 BuildRequires: perl(MIME::Lite) perl(Readonly)
 BuildRequires: perl(XML::LibXML) >= 1.63
-BuildRequires: xpdf antiword tetex-latex wget gzip tar ImageMagick unzip
+BuildRequires: xpdf antiword tetex-latex wget gzip tar ImageMagick unzip elinks
 Requires: httpd >= 2.0.52
 Requires: mod_perl
 Requires: perl >= 2:5.8.0
