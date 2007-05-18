@@ -79,7 +79,7 @@ fi
 find $RPM_BUILD_ROOT%{install_path} -type d -print |
 	grep -v "^%{install_path}/var" |
 	grep -v "^%{install_path}/archives" |
-	sed "s/^/\%dir /" >> %{name}-%{version}-dirlist
+	sed "s/^/\%dir /" >> %{name}-%{version}-filelist
 
 %clean
 rm -rf $RPM_BUILD_ROOT
