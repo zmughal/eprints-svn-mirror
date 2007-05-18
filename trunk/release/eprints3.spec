@@ -87,13 +87,12 @@ rm -rf $RPM_BUILD_ROOT
 %files -f %{name}-%{version}-filelist
 %defattr(-,root,root)
 %config /etc/httpd/conf.d/eprints3.conf
-%config %{install_path}/var/auto-apache.conf
-%config %{install_path}/var/auto-apache-includes.conf
 %config %{install_path}/perl_lib/EPrints/SystemSettings.pm
 # these two directories need to be writable by epadmin and generate_apacheconf
 # as user eprints
 %attr(02775,%{user},%{user_group}) %{install_path}/archives
-%attr(02774,%{user},%{user_group}) %{install_path}/var
+%dir %attr(02775,%{user},%{user_group}) %{install_path}/var
+%config %attr(02775,%{user},%{user_group}) %{install_path}/var/auto-apache*.conf
 %ghost %{install_path}/var/indexer.log*
 
 %pre
