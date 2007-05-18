@@ -5,7 +5,7 @@
 
 ROOT=$1
 
-APACHE_CONF=<<EOF
+CFG_APACHE_CONF=<<EOF
 #
 # apache.conf include file for EPrints
 #
@@ -22,6 +22,39 @@ Include /opt/eprints3/var/auto-apache-includes.conf
 
 # Include autogenerate apache.conf elements
 Include /opt/eprints3/var/auto-apache.conf
+EOF
+
+VAR_AUTO_APACHE_CONF=<<EOF
+#
+# auto-apache.conf include file for EPrints
+#
+# DO NOT EDIT, this file is created by bin/generate_apacheconf
+# and may be overwritten. To modify, change the repository configuration
+# and re-run: bin/generate_apacheconf
+#
+
+# Load the perl modules & repository configurations
+PerlSetEnv EPRINTS_APACHE 2
+PerlRequire /opt/eprints3/bin/startup.pl
+
+NameVirtualHost *:80
+
+# Makes the request object accessable for other objects
+# (apache 2.0 only)
+PerlOptions +GlobalRequest
+EOF
+VAR_AUTO_APACHE_INCLUDES_CONF=<<EOF
+#
+# auto-apache-includes.conf include file for EPrints
+#
+# DO NOT EDIT, this file is created by bin/generate_apacheconf
+# and may be overwritten. To modify, change the repository configuration
+# and re-run: bin/generate_apacheconf
+#
+# List of files to include for repository specific config...
+
+# preserv
+Include /opt/eprints3/archives/preserv/cfg/apache.conf
 EOF
 
 pushd $ROOT
@@ -49,7 +82,7 @@ popd
 pushd ${ROOT}/opt/eprints3
 mkdir cfg
 pushd cfg
-echo $APACHE_CONF > apache.conf
+echo $CFG_APACHE_CONF > apache.conf
 popd
 popd
 
