@@ -703,7 +703,7 @@ sub check_utf8
 	$$error = '';
 
 	do {
-		my $str = Encode::decode("utf8", $bytes, Encode::FB_QUIET);
+		my $str = Encode::decode("utf8", $bytes, Encode::FB_QUIET());
 		if( length($bytes) )
 		{
 			$str =~ s/^.+(.{40})$/... $1/s;
