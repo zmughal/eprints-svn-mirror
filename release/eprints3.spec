@@ -92,7 +92,7 @@ rm -rf $RPM_BUILD_ROOT
 # as user eprints
 %attr(02775,%{user},%{user_group}) %{install_path}/archives
 %dir %attr(02775,%{user},%{user_group}) %{install_path}/var
-%config %attr(02775,%{user},%{user_group}) %{install_path}/var/auto-apache*.conf
+%config %attr(-,%{user},%{user_group}) %{install_path}/var/auto-apache*.conf
 %ghost %{install_path}/var/indexer.log*
 
 %pre
