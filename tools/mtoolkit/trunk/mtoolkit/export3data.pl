@@ -68,8 +68,16 @@ Specify a file to write eprint ids to that are in badly encoded UTF8. You will n
 =cut
 
 use Carp;
-use Encode;
 use Pod::Usage;
+
+our %AVAILABLE;
+
+if( $^V lt v5.8.0 )
+{
+	print STDERR "Warning! You are using a Perl older than 5.8. The unicode-checking features of this utility require 5.8. You can continue, but you may have trouble importing the resulting XML file.\n";
+}
+
+use_module( "Encode", "Encode module is not available - this is required to check output is correctly formatted UTF-8" );
 
 # $SIG{__DIE__} = $SIG{__WARN__} = sub { Carp::confess(@_) };
 
@@ -94,13 +102,9 @@ GetOptions(
 pod2usage( 1 ) if $opt_help;
 pod2usage( 2 ) if scalar @ARGV < 2;
 
-if( $opt_inline )
+if( $opt_inline and !use_module( "PerlIO::via::Base64", "PerlIO::via::Base64 is required to inline file content" ) )
 {
-	eval "use PerlIO::via::Base64;";
-	if( $@ )
-	{
-		die "Inlining files requires PerlIO::via::Base64.\n";
-	}
+	exit -1;
 }
 
 my $SKIPLOG;
@@ -123,7 +127,7 @@ our $TOTAL = -1;
 our $DONE = 0;
 our $XMLNS = 'http://eprints.org/ep3/data/3.0';
 our $UTF8_QUOTE = pack('U',0x201d); # Opening quote
-Encode::_utf8_off($UTF8_QUOTE);
+Encode::_utf8_off($UTF8_QUOTE) if $AVAILABLE{ Encode };
 
 # Lets connect to eprints
 my $session = new EPrints::Session( 1 , $ARGV[0] );
@@ -132,8 +136,7 @@ exit( 1 ) unless( defined $session );
 my $archive = $session->get_archive;
 
 my $fh = *STDOUT;
-binmode($fh, ":utf8");
-
+binmode($fh, ":utf8") if $^V gt v5.7.0;
 
 if( $ARGV[1] eq "subjects" )
 {
@@ -694,6 +697,8 @@ sub check_utf8
 {
 	my( $bytes, $error ) = @_;
 
+	return 1 unless $AVAILABLE{ Encode };
+
 	my $max_errors = 10;
 	$$error = '';
 
@@ -711,6 +716,23 @@ sub check_utf8
 	} while( length($bytes) and $max_errors-- );
 
 	return length($$error) == 0;
+}
+
+sub use_module
+{
+	my( $name, $msg ) = @_;
+
+	eval "use $name;";
+
+	if( $@ )
+	{
+		print STDERR "$msg\n";
+		return $AVAILABLE{$name} = 0;
+	}
+	else
+	{
+		return $AVAILABLE{$name} = 1;
+	}
 }
 
 __DATA__
