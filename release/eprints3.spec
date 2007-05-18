@@ -68,6 +68,7 @@ find $RPM_BUILD_ROOT%{install_path} -type f -print |
 	sed "s@^$RPM_BUILD_ROOT@@g" |
 	grep -v "SystemSettings.pm$" |
 	grep -v "/etc/httpd/conf.d/eprints3.conf" |
+	grep -v "^%{install_path}/var" |
 	grep -v "^%{install_path}/archives" > %{name}-%{version}-filelist
 if [ "$(cat %{name}-%{version}-filelist)X" = "X" ] ; then
 	echo "ERROR: EMPTY FILE LIST"
@@ -84,6 +85,8 @@ rm -rf $RPM_BUILD_ROOT
 %files -f %{name}-%{version}-filelist
 %defattr(-,root,root)
 %config /etc/httpd/conf.d/eprints3.conf
+%config %{install_path}/var/auto-apache.conf
+%config %{install_path}/var/auto-apache-includes.conf
 %config %{install_path}/perl_lib/EPrints/SystemSettings.pm
 # archives has to be writable by the epadmin tool as the eprints user
 # (NB executed code will reside in archives/*/cfg/cfg.d/)
