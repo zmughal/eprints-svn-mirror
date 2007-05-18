@@ -77,11 +77,10 @@ fi
 
 # Otherwise directories get left behind on erase
 find $RPM_BUILD_ROOT%{install_path} -type d -print |
+	sed "s@^$RPM_BUILD_ROOT@@g" |
 	grep -v "^%{install_path}/var" |
 	grep -v "^%{install_path}/archives" |
 	sed "s/^/\%dir /" >> %{name}-%{version}-filelist
-
-cp %{name}-%{version}-filelist /tmp/filelist
 
 %clean
 rm -rf $RPM_BUILD_ROOT
