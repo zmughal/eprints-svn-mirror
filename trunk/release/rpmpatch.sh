@@ -53,8 +53,6 @@ VAR_AUTO_APACHE_INCLUDES_CONF=<<EOF
 #
 # List of files to include for repository specific config...
 
-# preserv
-Include /opt/eprints3/archives/preserv/cfg/apache.conf
 EOF
 
 pushd $ROOT
@@ -83,6 +81,10 @@ pushd ${ROOT}/opt/eprints3
 mkdir cfg
 pushd cfg
 echo $CFG_APACHE_CONF > apache.conf
+popd
+pushd var
+echo $VAR_AUTO_APACHE_CONF > auto-apache.conf
+echo $VAR_AUTO_APACHE_INCLUDES_CONF > auto-apache-includes.conf
 popd
 popd
 
