@@ -85,6 +85,8 @@ popd
 pushd var
 echo $VAR_AUTO_APACHE_CONF > auto-apache.conf
 echo $VAR_AUTO_APACHE_INCLUDES_CONF > auto-apache-includes.conf
+touch indexer.log
+perl -e "for(1..5) { system('touch','indexer.log.'.\$_) }";
 popd
 popd
 
