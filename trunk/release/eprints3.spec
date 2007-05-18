@@ -77,6 +77,8 @@ fi
 
 # Otherwise directories get left behind on erase
 find $RPM_BUILD_ROOT%{install_path} -type d -print |
+	grep -v "^%{install_path}/archives" |
+	grep -v "^%{install_path}/var" |
 	sed "s/^/\%dir /" >> %{name}-%{version}-dirlist
 
 %clean
@@ -90,7 +92,8 @@ rm -rf $RPM_BUILD_ROOT
 %config %{install_path}/perl_lib/EPrints/SystemSettings.pm
 # archives has to be writable by the epadmin tool as the eprints user
 # (NB executed code will reside in archives/*/cfg/cfg.d/)
-%attr(02775,%{user},%{user_group}) %{install_path}/archives
+# indexer writes log files to var
+%dir %attr(02775,%{user},%{user_group}) %{install_path}/archives %{install_path}/var
 %ghost %{install_path}/var/indexer.log*
 
 %pre
