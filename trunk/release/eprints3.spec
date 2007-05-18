@@ -62,15 +62,27 @@ echo $RPM_BUILD_ROOT%{install_path}
 make DESTDIR=$RPM_BUILD_ROOT%{install_path} install
 ./rpmpatch.sh $RPM_BUILD_ROOT
 popd
+find $RPM_BUILD_ROOT%{install_path} -type f -print |
+	sed "s@^$RPM_BUILD_ROOT@@g" |
+	grep -v "SystemSettings.pm$" |
+	grep -v "/etc/httpd/conf.d/eprints3.conf" |
+	grep -v "^%{install_path}/archives"
+	> %{name}-%{version}-filelist
+if [ "$(cat %{name}-%{version}-filelist)X" = "X" ] ; then
+	echo "ERROR: EMPTY FILE LIST"
+	exit -1
+fi
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%files
-%defattr(-,%{user},%{user_group})
-/opt/eprints3
+%files -f %{name}-%{version}-filelist
+%defattr(-,root,root)
 %config /etc/httpd/conf.d/eprints3.conf
-# %config /opt/eprints3/perl_lib/EPrints/SystemSettings.pm
+%config %{install_path}/perl_lib/EPrints/SystemSettings.pm
+# archives has to be writable by the epadmin tool as the eprints user
+# (NB executed code will reside in archives/*/cfg/cfg.d/)
+%attr(02775,%{user},%{user_group}) %{install_path}/archives
 
 %pre
 /usr/sbin/groupadd %{user_group} 2>/dev/null || /bin/true
@@ -86,6 +98,10 @@ rm -rf $RPM_BUILD_ROOT
 /usr/sbin/groupdel eprints || /bin/true
 
 %changelog
+* Fri May 18 2007 Tim Brody <tdb01r@ecs.soton.ac.uk>
+ - Changed most files to be owned by root
+ - Made SystemSettings a config file
+
 * Sun Feb 18 2007 Tim Brody <tdb01r@ecs.soton.ac.uk>
  - Added all shell dependencies
  - Removed sendmail dependency (not sure about this one)
