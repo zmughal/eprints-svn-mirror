@@ -10,7 +10,8 @@ use strict;
 
 my $notes = "";
 
-my $session = new EPrints::Session( 1 , $ARGV[0] );
+my $archiveid = $ARGV[0];
+my $session = new EPrints::Session( 1 , $archiveid );
 exit( 1 ) unless( defined $session );
 
 my $path = $ARGV[0]."_ep3cfg";
@@ -38,8 +39,10 @@ write_namedsets();
 
 mkdir( "$path/cfg/cfg.d" );
 
-mk_eprint_fields();
-mk_user_fields();
+$INC{"EPrints::Config::$archiveid"} = 1;
+my $codemap = scan_namespaces();
+mk_eprint_fields($codemap);
+mk_user_fields($codemap);
 
 open( NOTES, ">$path/migration_notes.txt" );
 print NOTES $notes;
@@ -48,50 +51,64 @@ close NOTES;
 $session->terminate();
 exit;
 
+sub logprint
+{
+	my( $msg ) = @_;
+
+	$notes.=$msg;
+	print STDERR $msg;
+}
+
+## scan namespaces
+
+sub scan_namespaces
+{
+	my $map = {};
+	foreach my $package ( keys %INC )
+	{
+		next if $package =~ m!^/!;
+		next if $package !~ m!^EPrints!;
+		$package =~ s!/!::!g;
+		$package =~ s/\.pm//;
+		my %pack = eval '%'.$package.'::';
+		
+		foreach my $k ( keys %pack )
+		{
+			my $v = $pack{$k};
+			my $g = eval ''.$pack{$k}.'{CODE}';
+			next unless defined $g;
+			$map->{$g} = $package."::".$k;
+		}
+	}
+	
+	return $map;
+}
+
 ## FIELDS ##
 
-sub namemunge
+sub hasid_munge
 {
 	my( $fdata ) = @_;
 
 	my $name = "eprint.".$fdata->{name};
 
-	if( !$fdata->{hasid} ) 
-	{
-		$notes.= "$name has no hasid, skipping cleverness\n";
-		return;
-	}
-
 	if( !$fdata->{multiple} )
 	{
-		$notes.= "$name is not multiple, skipping cleverness\n";
+		logprint( "$name is not multiple, skipping cleverness\n" );
 		return;
 	}
 
-	if( $fdata->{type} ne "name" )
-	{
-		$notes.= "$name is not type=name, skipping cleverness\n";
-		return;
-	}
-
-
+	$fdata->{fields} = [ {}, {} ];
+	$fdata->{fields}->[0]->{sub_name} = "name";
+	$fdata->{fields}->[0]->{type} = $fdata->{type};
+	if( defined $fdata->{hide_honourific} ) { $fdata->{fields}->[0]->{hide_honourific} = $fdata->{hide_honourific}; }
+	if( defined $fdata->{hide_lineage} ) { $fdata->{fields}->[0]->{hide_lineage} = $fdata->{hide_lineage}; }
+	if( defined $fdata->{family_first} ) { $fdata->{fields}->[0]->{family_first} = $fdata->{family_first}; }
+	$fdata->{fields}->[1]->{sub_name} = "id";
+	$fdata->{fields}->[1]->{type} = "text";
+	$fdata->{fields}->[1]->{allow_null} = 1;
+	if( defined $fdata->{input_cols} ) { $fdata->{fields}->[1]->{input_cols} = $fdata->{input_cols}; }
 	$fdata->{type} = "compound";
-
-	$fdata->{fields} = [
-		{
-			sub_name => "name",
-			type     => "name",
-			hide_honourific => $fdata->{hide_honourific},
-			hide_lineage => $fdata->{hide_lineage},
-			family_first => $fdata->{family_first},
-		},
-		{
-			sub_name => "id",
-			type     => "text",
-			allow_null => 1,
-			input_cols => $fdata->{input_id_cols},
-        },
-	];
 
 	delete $fdata->{hasid};
 	delete $fdata->{hide_honourific};
@@ -99,12 +116,14 @@ sub namemunge
 	delete $fdata->{family_first};
 	delete $fdata->{input_id_cols};
 
-	$notes.= "Made $name into a compound field\n";          
+	logprint( "Made $name into a compound field\n" ); 
 }
 
 
 sub mk_eprint_fields 
 {
+	my( $codemap ) = @_;
+
 	my $archivefields = $archive->get_conf( "archivefields", "eprint" );
 	my $outfields = [];
 	my $ids = {};
@@ -112,31 +131,43 @@ sub mk_eprint_fields
 	{
 		if( $fdata->{name} eq "fileinfo" )
 		{
-			$notes.= "removing eprint.fileinfo field.\n";
+			logprint( "removing eprint.fileinfo field.\n" );
 			next;
 		}
 
 		if( $fdata->{name} eq "authors" )
 		{
-			$notes.= "altering eprint.authors to be called creators\n";
+			logprint( "altering eprint.authors to be called creators\n" );
 			$fdata->{name} = "creators";
 		}
 
 		if( $fdata->{name} eq "date_effective" )
 		{
-			$notes.= "removing eprint.date_effective\n";
+			logprint( "removing eprint.date_effective\n" );
 			next;
 		}
 
 		if( $fdata->{name} eq "date_sub" )
 		{
-			$notes.= "removing eprint.date_sub\n";
+			logprint( "removing eprint.date_sub\n" );
 			next;
 		}
 
-		if( $fdata->{name} eq "date_issue" )
+		if( $fdata->{name} eq "year" )
 		{
-			$notes.= "adding date_type\n";
+			logprint( "removing eprint.year\n" );
+			next;
+		}
+
+		if( $fdata->{name} eq "month" )
+		{
+			logprint( "removing eprint.month\n" );
+			next;
+		}
+
+		if( $fdata->{name} eq "date_issue" ||  $fdata->{name} eq "year" )
+		{
+			logprint( "adding date_type\n" );
 			push @{$outfields}, {
             	'name' => 'date_type',
             	'type' => 'set',
@@ -150,14 +181,14 @@ sub mk_eprint_fields
 	
 			$ids->{'date_type'} = 1;
 			$fdata->{name} = "date";
-			$notes.= "changing date_issue to date\n";
+			logprint( "changing date_issue to date\n" );
 		}
 
 		field_munge( $fdata );
 
-		if( $fdata->{name} eq "creators" || $fdata->{name} eq "editors" )
+		if( $fdata->{hasid} )
 		{
-			namemunge( $fdata );
+			hasid_munge( $fdata );
 		}
 			
 		push @{$outfields}, $fdata;
@@ -177,9 +208,10 @@ sub mk_eprint_fields
                          ],
             'input_style' => 'medium',
           };
-		$notes.= "added field 'full_text_status'\n";
+		logprint( "added field 'full_text_status'\n" );
 	}
 
+	clean_code_refs( '$config->{archivefields}->{eprint}',$outfields, $codemap );
 	
 	my $file = "$path/cfg/cfg.d/eprint_fields.pl";
 	open( OUT, ">$file" ) || die "Can't write $file: $!";
@@ -192,13 +224,21 @@ sub mk_eprint_fields
 
 sub mk_user_fields 
 {
+	my( $codemap ) = @_;
+
 	my $archivefields = $archive->get_conf( "archivefields", "user" );
 	my $outfields = [];
 	foreach my $fdata ( @{$archivefields} )
 	{
 		field_munge( $fdata );
+		if( $fdata->{hasid} )
+		{
+			hasid_munge( $fdata );
+		}
 		push @{$outfields}, $fdata;
 	}
+
+	clean_code_refs( '$config->{archivefields}->{user}',$outfields, $codemap );
 	
 	my $file = "$path/cfg/cfg.d/user_fields.pl";
 	open( OUT, ">$file" ) || die "Can't write $file: $!";
@@ -206,6 +246,70 @@ sub mk_user_fields
 				[$outfields],
 				['$c->{fields}->{user}'] );
 	close OUT;
+}
+
+sub clean_code_refs
+{
+	my( $confpath, $data, $codemap ) = @_;
+
+	return unless defined $data;
+
+	if( ref( $data ) eq "CODE" )
+	{
+		print "Encountered subroutine reference at $confpath\n";
+		my $guess = $codemap->{$data};
+		print "Best guess: $guess\n";
+		if( $guess =~ s/^EPrints::Config::[^:]+::// )
+		{
+	
+			print "Creating localfn_$guess.pl in cfg.d (You'll need to add the actual code)\n";
+			my $file = "$path/cfg/cfg.d/localfn_$guess.pl";
+			open( OUT, ">$file" ) || die "Can't write $file: $!";
+			print OUT <<END;
+
+# This file was created automatically by the migration toolkit. 
+
+# It's only a stub.
+
+# You need to provide the body of the function before it will work.
+
+\$c->{localfn_$guess} = sub {
+	my( \$some, \$vars, \$go, \$here ) = \@_;
+
+	# do some stuff
+
+	# return something;
+};
+
+END
+			close OUT;
+			$data = "localfn_$guess";
+		}
+		else
+		{
+			$data = $guess;
+		}
+	}
+
+	if( ref( $data ) eq "HASH" )
+	{
+		foreach my $key ( keys %{$data} )
+		{
+			$data->{$key} = clean_code_refs( $confpath.'->{'.$key.'}', $data->{$key}, $codemap );
+		}
+	}
+
+	if( ref( $data ) eq "ARRAY" )
+	{
+		my $c = 0;
+		foreach my $value ( @{$data} )
+		{
+			$data->[$c] = clean_code_refs( $confpath.'->[]', $value, $codemap );
+			++$c;
+		}
+	}
+
+	return $data;
 }
 
 sub field_munge
@@ -311,7 +415,7 @@ sub write_workflow
 		foreach my $type ( @$types )
 		{
 			my @fields = skooge( "workflow $dsid, stage $page, type $type", $dataset->get_type_fields( $type ) );
-			my @stafffields = skooge( "workflow $dsid, stage $page, type $type", $dataset->get_type_fields( $type, 1 ) );
+			my @stafffields = skooge( "workflow $dsid, stage $page, type $type (editor view)", $dataset->get_type_fields( $type, 1 ) );
 			
 			my $smap = {};
 			foreach( @stafffields ) { $smap->{$_->get_name} = $_; }
@@ -319,7 +423,9 @@ sub write_workflow
 			$xml .= "    <epc:if test=\"$dstype = '$type'\">\n";
 			foreach my $field ( @fields )
 			{
-				$xml .= "      <component><field ref=\"".$field->get_name."\" ";
+				$xml .= "      <component";
+				if( $field->is_type( "subject" ) ) { $xml.= " type='Field::Subject'"; }
+				$xml .= "><field ref=\"".$field->get_name."\" ";
 				if( $field->get_property( "required" ) )
 				{
 					$xml .= "required=\"yes\" ";
@@ -332,7 +438,9 @@ sub write_workflow
 				$xml.= "      <epc:if test=\"\$STAFF_ONLY = 'TRUE'\">\n";
 				foreach my $field ( values %{$smap} )
 				{
-					$xml .= "        <component><field ref=\"".$field->get_name."\" ";
+					$xml .= "        <component";
+					if( $field->is_type( "subject" ) ) { $xml.= " type='Field::Subject'"; }
+					$xml .= "><field ref=\"".$field->get_name."\" ";
 					if( $field->get_property( "required" ) )
 					{
 						$xml .= "required=\"yes\" ";
@@ -390,25 +498,54 @@ sub skooge
 	foreach my $field ( @fields )
 	{
 		my $name =$field->get_name;
+
 		if( $name eq "date_sub" )
 		{
-			$notes.= "Removing date_sub from $place\n";
+			logprint( "Removing date_sub from $place\n" );
 			next;
 		}
 		if( $name eq "date_effective" )
 		{
-			$notes.= "Removing date_effective from $place\n";
+			logprint( "Removing date_effective from $place\n" );
 			next;
 		}
-		if( $name eq "date_issue" )
+		if( $name eq "year" )
 		{
-			$notes.= "Renaming date_issue to date in $place\n";
+			logprint( "Removing date_effective from $place\n" );
+			next;
+		}
+		if( $name eq "date_issue" || $name eq "year" )
+		{
+			logprint( "Renaming $name to date in $place\n" );
 			my %data = %{$field};
 			$data{name} = "date";
 			$field = EPrints::MetaField->new(%data);
 			push @out, $field;
 	
-			$notes.= "Adding date_type\n";
+			logprint( "Adding date_type\n" );
+			push @out, EPrints::MetaField->new(            
+				'name' => 'date_type',
+            	'type' => 'set',
+            	'options' => [
+                           'published',
+                           'submitted',
+                           'completed',
+                         ],
+            	'input_style' => 'medium',
+				dataset=>$field->get_dataset,
+            );
+
+			next;
+		}
+		if( $name eq "date_issue" )
+		{
+			logprint( "Renaming date_issue to date in $place\n" );
+			my %data = %{$field};
+			$data{name} = "date";
+			$field = EPrints::MetaField->new(%data);
+			push @out, $field;
+	
+			logprint( "Adding date_type\n" );
 			push @out, EPrints::MetaField->new(            
 				'name' => 'date_type',
             	'type' => 'set',

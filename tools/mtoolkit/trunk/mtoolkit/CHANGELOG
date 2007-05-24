@@ -1,0 +1,24 @@
+
+Migration toolkit Changelog...
+
+2007-02-01 cjg
+ * when adding fields, fields are now not added if they already existed.
+ * now adds the full_text_status field (if it does not exist already)
+ * additional phrases now only get added if their id did not already
+    exist.
+ * added some missing phrases.
+ * mapped security of "" to be "public" instead.
+
+2007-02-01 cjg
+ * Fixed bug in exporting names
+
+2007-05-17 cjg
+ * Now removes year and month fields
+ * In the workflow, subject fields now use the subject input component
+ * Now handles mapping "year" field to "date"
+ * If only date_effective is set then uses that as the issue date.
+ * "month" field now maps mar,jun etc into the 'date' field.
+ * Improved conditional-ness of Encode support
+ * export now renames authors to creators
+ * Jiggled the DOM code to be less complex in export
+ 

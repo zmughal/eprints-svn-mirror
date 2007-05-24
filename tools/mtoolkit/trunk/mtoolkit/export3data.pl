@@ -68,6 +68,7 @@ Specify a file to write eprint ids to that are in badly encoded UTF8. You will n
 =cut
 
 use Carp;
+
 use Pod::Usage;
 
 our %AVAILABLE;
@@ -127,7 +128,10 @@ our $TOTAL = -1;
 our $DONE = 0;
 our $XMLNS = 'http://eprints.org/ep3/data/3.0';
 our $UTF8_QUOTE = pack('U',0x201d); # Opening quote
-Encode::_utf8_off($UTF8_QUOTE) if $AVAILABLE{ Encode };
+if( $AVAILABLE{ Encode } )
+{
+	Encode::_utf8_off($UTF8_QUOTE);
+}
 
 # Lets connect to eprints
 my $session = new EPrints::Session( 1 , $ARGV[0] );
@@ -136,6 +140,7 @@ exit( 1 ) unless( defined $session );
 my $archive = $session->get_archive;
 
 my $fh = *STDOUT;
+
 binmode($fh, ":utf8") if $^V gt v5.7.0;
 
 if( $ARGV[1] eq "subjects" )
@@ -277,6 +282,8 @@ sub export_value
 
 	my $name = $field->get_name;
 
+	$name = 'creators' if $name = 'authors';
+	
 	my $dom = $session->make_element( $name );
 
 	if( $field->get_property( "multilang" ) )
@@ -288,11 +295,16 @@ sub export_value
 
 		foreach my $langid ( keys %{$value} )
 		{
-			$dom->appendChild( my $item = $session->make_element( 'item' ) );
-			$item->appendChild( $session->make_element( 'name' ) )
-				->appendChild( rv($session, $field, $value->{$langid}) );
-			$item->appendChild( $session->make_element( 'lang' ) )
-				->appendChild( $session->make_text( $langid ) );
+			my $item = $session->make_element( 'item' );
+			$dom->appendChild( $item );
+
+			my $el_name = $session->make_element( 'name' );
+			$item->appendChild( $el_name );
+			$el_name->appendChild( rv($session, $field, $value->{$langid}) );
+
+			my $el_lang = $session->make_element( 'lang' );
+			$item->appendChild( $el_lang );
+			$el_lang->appendChild( $session->make_text( $langid ) );
 		}
 		return $dom;
 	}
@@ -312,13 +324,15 @@ sub export_value
 		{
 			if( EPrints::Utils::is_set($v->{id}) )
 			{
-				$item->appendChild( $session->make_element( 'id' ) )
-					->appendChild( $session->make_text( $v->{id} ) );
+				my $tag = $session->make_element( 'id' );
+				$item->appendChild( $tag );
+				$tag->appendChild( $session->make_text( $v->{id} ) );
 			}
 			if( EPrints::Utils::is_set($v->{main}) )
 			{
-				$item->appendChild( $session->make_element( 'name' ) )
-					->appendChild( rv( $session, $field, $v->{main} ) );
+				my $tag = $session->make_element( 'main' );
+				$item->appendChild( $tag );
+				$tag->appendChild( rv( $session, $field, $v->{main} ) );
 			}
 		}
 		else
@@ -341,8 +355,9 @@ sub export_hashref
 		{
 			if( defined($value->{$key}) and $value->{$key} ne '' )
 			{
-				$dom->appendChild( $session->make_element( $key ) )
-					->appendChild( export_hashref( $session, $value->{$key} ) );
+				my $el = $session->make_element( $key );
+				$dom->appendChild( $el );
+				$el->appendChild( export_hashref( $session, $value->{$key} ) );
 			}
 		}
 	}
@@ -364,13 +379,15 @@ sub export_dataobj
 	{
 		foreach my $v ( @$value )
 		{
-			$dom->appendChild( my $item = $session->make_element( 'item' ) );
+			my $item = $session->make_element( 'item' );
+			$dom->appendChild( $item );
 			if( ref($v) eq 'HASH' )
 			{
 				foreach my $key (keys %$v)
 				{
-					$item->appendChild( $session->make_element( $key ) )
-						->appendChild( export_hashref($session, $v->{$key}) );
+					my $el = $session->make_element( $key );
+					$item->appendChild( $el );
+					$el->appendChild( export_hashref($session, $v->{$key}) );
 				}
 			}
 			else
@@ -403,7 +420,13 @@ sub export_eprint
 	foreach my $field ( $dataset->get_fields )
 	{
 		my $name = $field->get_name;
-		next if $name =~ /^fileinfo|date_issue|date_effective|date_sub|dir$/;
+		next if $name eq "fileinfo";
+		next if $name eq "date_issue";
+		next if $name eq "date_effective";
+		next if $name eq "date_sub";
+		next if $name eq "dir";
+		next if $name eq "month";
+		next if $name eq "year";
 		my $value = $item->get_value( $name );
 		next unless EPrints::Utils::is_set $value;
 
@@ -416,6 +439,36 @@ sub export_eprint
 	
 	my $date = "";
 	my $date_type = "";
+	if( $dataset->has_field( "year" ) && $item->is_set( "year" ) )
+	{
+		$date = $item->get_value( "year" );
+		if( $dataset->has_field( "month" ) && $item->is_set( "month" ) )
+		{
+			my $month_num = {
+				jan=>"01", feb=>"02", mar=>"03", apr=>"04",
+				may=>"05", jun=>"06", jul=>"07", aug=>"08",
+				sep=>"09", "oct"=>"10", nov=>"11", dec=>"12",
+				january=>"01",
+				february=>"02",
+				march=>"03",
+				april=>"04",
+				may=>"05",
+				june=>"06",
+				july=>"07",
+				august=>"08",
+				september=>"09",
+				october=>"10",
+				november=>"11",
+				december=>"12",
+			}->{$item->get_value( "month" )};
+			if( !defined $month_num )
+			{
+				print STDERR "Warning: unknown month code: '".$item->get_value( "month" )."'\n";
+			}
+			$date .= "-".$month_num;
+		}
+		$date_type = "published";
+	}
 	if( $dataset->has_field( "date_sub" ) && $item->is_set( "date_sub" ) )
 	{
 		$date = $item->get_value( "date_sub" );
@@ -426,6 +479,11 @@ sub export_eprint
 		$date = $item->get_value( "date_issue" );
 		$date_type = "published";
 	}
+	if( $date eq "" && $dataset->has_field( "date_effective" ) && $item->is_set( "date_effective" ) )
+	{
+		$date = $item->get_value( "date_effective" );
+		$date_type = "published";
+	} 
 	$eprint->appendChild( $session->make_element( 'date' ) )
 		->appendChild( $session->make_text( $date ) );
 	$eprint->appendChild( $session->make_element( 'date_type' ) )
@@ -661,8 +719,9 @@ sub rv
 		foreach my $p ( qw/ family given lineage honourific / )
 		{
 			next if !EPrints::Utils::is_set( $value->{$p} );
-			$dom->appendChild( $session->make_element( $p ) )
-				->appendChild( $session->make_text( $value->{$p} ) );
+			my $tag = $session->make_element( $p );
+			$dom->appendChild( $tag );
+			$tag->appendChild( $session->make_text( $value->{$p} ) );
 		}
 	}
 	else
@@ -703,7 +762,7 @@ sub check_utf8
 	$$error = '';
 
 	do {
-		my $str = Encode::decode("utf8", $bytes, Encode::FB_QUIET());
+		my $str = Encode::decode("utf8", $bytes, eval 'Encode::FB_QUIET');
 		if( length($bytes) )
 		{
 			$str =~ s/^.+(.{40})$/... $1/s;
