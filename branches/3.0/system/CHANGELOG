@@ -6382,3 +6382,7 @@ PACKAGE: 2.2.99.2
 2007-04-13 cjg
  * Fixed issue with database which meant that zero rows affected was 
     treated as an unsuccessful operation. Which it isn't.
+
+======================================================================
+25/05/2007 - EPRINTS-3.0.1
+======================================================================
