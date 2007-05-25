@@ -6393,3 +6393,5 @@ PACKAGE: 2.2.99.2
 2007-05-25 cjg 
  * Added tdb code for allowing XML import via href="file://"
 
+2007-05-25 cjg 
+ * Fixed conf_id/confid typo in Backcompatability
