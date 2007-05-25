@@ -148,7 +148,7 @@ my $info = {
 if ( $csv )
 {
 	$session->send_http_header( 'content_type' => 'text/plain' );
-	$archive->call( "rae_print_csv_header", $session );
+	$archive->call( "rae_print_csv_header" );
 	$searchexp->map( \&do_user_csv, $info );
 	$archive->call( "rae_print_csv_footer", $info->{csv_rows} );
 }
