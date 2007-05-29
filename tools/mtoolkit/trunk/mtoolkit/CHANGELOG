@@ -36,3 +36,7 @@ Migration toolkit Changelog...
  * Now converts security "" to "public"
  * Added some missing phrase
  * Where document format has changed, modifies phrase too.
+
+2007-05-29 cjg
+ * Fixed bug in workflow generation.
+

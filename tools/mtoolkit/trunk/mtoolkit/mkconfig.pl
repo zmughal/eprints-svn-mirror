@@ -439,8 +439,13 @@ sub write_workflow
 
 		foreach my $type ( @$types )
 		{
-			my @fields = skooge( "workflow $dsid, stage $page, type $type", $dataset->get_type_fields( $type ) );
-			my @stafffields = skooge( "workflow $dsid, stage $page, type $type (editor view)", $dataset->get_type_fields( $type, 1 ) );
+			if( !defined $dataset->{"staff_pages"}->{$type}->{$page} )
+			{
+				print "skipping empty type/page $page,$type\n";
+				next;
+			}
+			my @fields = skooge( "workflow $dsid, stage $page, type $type", $dataset->get_page_fields( $type, $page ) );
+			my @stafffields = skooge( "workflow $dsid, stage $page, type $type (editor view)", $dataset->get_page_fields( $type, $page, 1 ) );
 			
 			my $smap = {};
 			foreach( @stafffields ) { $smap->{$_->get_name} = $_; }
