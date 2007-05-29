@@ -282,7 +282,8 @@ sub export_value
 
 	my $name = $field->get_name;
 
-	$name = 'creators' if $name = 'authors';
+	$name = 'creators' if $name eq 'authors';
+	$name = 'pagerange' if $name eq 'pages' && $field->get_type eq "pagerange";
 	
 	my $dom = $session->make_element( $name );
 
@@ -330,7 +331,7 @@ sub export_value
 			}
 			if( EPrints::Utils::is_set($v->{main}) )
 			{
-				my $tag = $session->make_element( 'main' );
+				my $tag = $session->make_element( 'name' );
 				$item->appendChild( $tag );
 				$tag->appendChild( rv( $session, $field, $v->{main} ) );
 			}

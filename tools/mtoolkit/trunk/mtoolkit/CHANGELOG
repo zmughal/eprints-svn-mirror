@@ -22,3 +22,6 @@ Migration toolkit Changelog...
  * export now renames authors to creators
  * Jiggled the DOM code to be less complex in export
  
+2007-05-29 cjg
+ * Corrected typo in export3data s/=/eq/
+ * Renamed "main" element in hasid XML export to "name"
