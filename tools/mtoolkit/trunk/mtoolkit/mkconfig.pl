@@ -1,5 +1,20 @@
 #!/usr/bin/perl -w -I/opt/eprints2/perl_lib
 
+# map eprints 2 formats to proper mime-types
+# these will need configuring in eprints 3
+our %FORMAT_MAPPING = qw(
+	html	text/html
+	pdf	application/pdf
+	ps	application/postscript
+	ascii	text/plain
+	msword	application/mssword
+	image	image
+	latex	latex
+	powerpoint	application/vnd.ms-powerpoint
+	coverimage	coverimage
+	other	other
+);
+
 use EPrints::EPrint;
 use EPrints::Session;
 use EPrints::Subject;
@@ -107,6 +122,7 @@ sub hasid_munge
 	$fdata->{fields}->[1]->{sub_name} = "id";
 	$fdata->{fields}->[1]->{type} = "text";
 	$fdata->{fields}->[1]->{allow_null} = 1;
+	$fdata->{fields}->[1]->{input_cols} = 20;
 	if( defined $fdata->{input_cols} ) { $fdata->{fields}->[1]->{input_cols} = $fdata->{input_cols}; }
 	$fdata->{type} = "compound";
 
@@ -141,6 +157,12 @@ sub mk_eprint_fields
 			$fdata->{name} = "creators";
 		}
 
+		if( $fdata->{name} eq "pages" && $fdata->{type} eq "pagerange" )
+		{
+			logprint( "altering eprint.pages to be called pagerange\n" );
+			$fdata->{name} = "pagerange";
+		}
+
 		if( $fdata->{name} eq "date_effective" )
 		{
 			logprint( "removing eprint.date_effective\n" );
@@ -150,12 +172,6 @@ sub mk_eprint_fields
 		if( $fdata->{name} eq "date_sub" )
 		{
 			logprint( "removing eprint.date_sub\n" );
-			next;
-		}
-
-		if( $fdata->{name} eq "year" )
-		{
-			logprint( "removing eprint.year\n" );
 			next;
 		}
 
@@ -180,8 +196,9 @@ sub mk_eprint_fields
           	};
 	
 			$ids->{'date_type'} = 1;
+			logprint( "changing ".$fdata->{name}." to date\n" );
 			$fdata->{name} = "date";
-			logprint( "changing date_issue to date\n" );
+			$fdata->{type} = "date";
 		}
 
 		field_munge( $fdata );
@@ -361,7 +378,15 @@ sub write_namedsets
 		my $file = "$path/cfg/namedsets/$dsid";
 		open( FILE, ">$file" ) || die "can't write $file: $!";
 		print FILE "# Imported via migration-tool from EPrints 2\n\n";
-		foreach( @{$types} ) { print FILE "$_\n"; }
+		foreach( @{$types} ) 
+		{ 
+			if( $_ eq "" && $dsid eq 'security' )
+			{
+				print FILE "public\n";
+				next;
+			}
+			print FILE "$_\n"; 
+		}
 		close FILE;
 	}
 }
@@ -615,6 +640,8 @@ END
 		{
 			$extras{eprint_fieldname_creators_name} = 'Creators Name';
 			$extras{eprint_fieldhelp_creators_name} = '';
+			$extras{eprint_fieldname_editors_name} = 'Editors Name';
+			$extras{eprint_fieldhelp_editors_name} = '';
 			$extras{eprint_fieldname_date} = 'Date';
 			$extras{eprint_fieldhelp_date} = 'The date this EPrint was completed, submitted to a publisher, published or submitted for a Ph.D.';
 			$extras{eprint_fieldname_date_type} = 'Date Type';
@@ -643,9 +670,17 @@ END
 		foreach my $phraseid ( sort @{$sets->{$fileid}} )
 		{
 			next if $phraseid eq "security_typename_";
-
 			my $phrase = $phrases->{$phraseid};
 			my $xml = $phrase->toString;
+
+			if( $phraseid =~ m/^document_typename_(.*)$/ )
+			{
+				if( defined $FORMAT_MAPPING{$1} )
+				{
+					my $outid = "document_typename_".$FORMAT_MAPPING{$1};
+					$xml =~ s/"$phraseid"/"$outid"/;
+				}	
+			}
 			$xml =~ s/ep:phrase/epp:phrase/g;
 			$xml =~ s/ep:pin/epc:pin/g;
 			$xml =~ s/pin ref="/pin name="/g;

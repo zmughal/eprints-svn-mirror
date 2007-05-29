@@ -25,3 +25,14 @@ Migration toolkit Changelog...
 2007-05-29 cjg
  * Corrected typo in export3data s/=/eq/
  * Renamed "main" element in hasid XML export to "name"
+
+2007-05-29 cjg
+ * Moved format mapping table to top of file
+ * Made input_cols on "id" parts to be 20
+ * if fieldname is "pages" but type is pagerange then field is renamed to
+    pagerange.
+ * Now removes 'year' field.
+ * Fixed minor issue with date fields.
+ * Now converts security "" to "public"
+ * Added some missing phrase
+ * Where document format has changed, modifies phrase too.
