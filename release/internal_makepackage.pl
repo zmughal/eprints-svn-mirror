@@ -198,15 +198,6 @@ sub copydir
 	closedir( $dh );
 }
 
-copydir( "$install_from/system/bin", "$to/eprints/bin", \%r );
-copydir( "$install_from/system/cfg", "$to/eprints/cfg", \%r );
-copydir( "$install_from/system/lib", "$to/eprints/lib", \%r );
-copydir( "$install_from/system/cgi", "$to/eprints/cgi", \%r );
-copydir( "$install_from/system/lib", "$to/eprints/lib", \%r );
-copydir( "$install_from/system/var", "$to/eprints/var", \%r );
-copydir( "$install_from/system/defaultcfg", "$to/eprints/defaultcfg", \%r );
-copydir( "$install_from/system/perl_lib", "$to/eprints/perl_lib", \%r );
-copydir( "$install_from/system/testdata", "$to/eprints/testdata", \%r );
 
 sub copyfile
 {
