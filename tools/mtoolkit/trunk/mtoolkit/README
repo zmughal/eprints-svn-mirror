@@ -1,0 +1,12 @@
+
+Please see the release notes on the wiki for more information about this 
+tool.
+
+http://wiki.eprints.org/w/Migration
+
+The EPrints Migration Toolkit is distributed under the GPL.
+
+If your data is valuable then make sure it's backed up before starting 
+migration. Migration should not cause any changes to your EPrints 2 
+repository, but it's always best to be careful.
+
