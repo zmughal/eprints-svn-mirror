@@ -300,7 +300,7 @@ ensure_dir( "$to_path/testdata", $uid, $gid, 02775 );
 
 my $newsighash = {};
 
-my @normal_dirs = ( "defaultcfg", "cfg", "perl_lib", "lib", "testdata/data", "var" );
+my @normal_dirs = ( "cfg", "perl_lib", "lib", "testdata/data", "var" );
 
 my @executable_dirs = ( "bin", "cgi", "testdata/bin" );
 
