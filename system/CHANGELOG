@@ -6146,8 +6146,9 @@ PACKAGE: 2.2.99.2
 18/12/2006 - EPRINTS-3.0-RC-1
 ======================================================================
 
-2006-12-21 tdb
- * Added url_name_value lookup script
+2006-12-18 cjg
+ * Changed INSERT to REPLACE on login tickets - should fix bug with IP 
+    changing on laptops.
 
 2007-01-03 tmb
  * Added more examples for Request Copy configuration (eg. first author)
@@ -6167,7 +6168,7 @@ PACKAGE: 2.2.99.2
  * Previous commit: Changed userid to use user dataset rather than
     document.
 
-2007-01-08 tdb
+2007-01-08
  * Added ApacheLog import plugin for access log data
 
 2007-01-09 cjg 
@@ -6181,19 +6182,11 @@ PACKAGE: 2.2.99.2
  * Used TeX::Encode to provide some handling of accented characters in
     BibTeX import.
 
-2007-01-10 tdb
- * Made ApacheLog optional on Date::Parse dependency
- * Made commonlog regexp in ApacheLog more flexible
-
 2007-01-10 moj
  * Added user/remove action
  * Changed sure_delete to be a plugin phrase
  * Added User::Remove screen (similar to EPrint::Remove)
  * Added phrases for User::Remove
-
-2007-01-11 moj
- * Public::RequestCopy stores actor as user's name (if logged in)
-    or email address (if not).
 
 2007-01-11 tmb
  * Added first cut of metadata fields, phrases and citations for new 
@@ -6214,6 +6207,10 @@ PACKAGE: 2.2.99.2
 2007-01-16 cjg
  * Commented out autoloader in Tex::Encode to get rid of a warning.
 
+2007-01-11 moj
+ * Public::RequestCopy stores actor as user's name (if logged in)
+    or email address (if not).
+
 2007-01-17 cjg
  * Fixed issue with &<> in autocomplete.
  * Fixed up confusing help in import
@@ -6221,6 +6218,10 @@ PACKAGE: 2.2.99.2
 
 2007-01-17 cjg
  * fix rolllogs to EPrints::Index::rolllogs in indexer
+
+======================================================================
+17/01/2007 - EPRINTS-3.0-RC-2
+======================================================================
 
 2007-01-20 tdb
  * Fixed security holes in lookup scripts
@@ -6232,6 +6233,10 @@ PACKAGE: 2.2.99.2
  * Fixed bug in Session which caused buttons to do odd things for
     a few seconds after initial login. (due to failing to clear an
     apache note).
+
+======================================================================
+22/01/2007 - EPRINTS-3.0
+======================================================================
 
 2007-01-29 tdb
  * Initial version of an 'aqua' theme
@@ -6262,14 +6267,6 @@ PACKAGE: 2.2.99.2
 
 2007-02-19 cjg
  * It is now possible to search for a null date using "","EX"
-
-2007-02-19 cjg
- * Rewrite now automatically updates static pages where possible. This code
-    has duplicates of stuff in generate_static and isn't smart about the auto
-    javascript and css or themes (yet).
-
-2007-02-19 cjg
- * Changed Convert::PlainText into house code style.
 
 2007-02-19 cjg
  * Added has_role method to User.pm
@@ -6304,23 +6301,11 @@ PACKAGE: 2.2.99.2
  * Fixed issue in autocompleter file and simple_file which didn't lowercase 
     keys.
 
-2007-03-11 tdb
- * Fix typo in Platform::get_hash_name
-
-2007-03-12 tdb
- * Moved df_dir into Platform
- * Added support for Filesys::Df, Filesys::DfPortable and df (support for more
-    file system types than Filesys::DiskSpace)
-
 2007-03-12 cjg
  * Added missing phrases mentioned in #2873
 
 2007-03-12 cjg
  * Fixed spelling mistake in DOI import plugin volunme / volume.
-
-2007-03-22 cjg
- * Added Comment to the Platform file
- * Added warning if exec() is not passed a repository parameter
 
 2007-03-22 cjg
  * Fixed bug in epadmin that didn't use the groupid set in SystemSettings for
@@ -6332,22 +6317,14 @@ PACKAGE: 2.2.99.2
 
 2007-03-22 cjg
  * Caused only .xml files to be loaded in phrase directories.
-	
-2007-03-22 cjg
- * Removed debug code from Rewrite
-
-2007-03-22 cjg
- * Sorted out XHTML validation. Involved removing some accept-charset 
-    attributes, changing forms from GET to get, changing the way css 
-    works with/without javascript and adding an alt="" tag.
 
 2007-03-22 cjg
  * Fixed bug which meant two subsequent 404's on one apache connection would
     blank the 2nd one.
 
 2007-03-22 cjg
- * Fixed an issue which meant that after removing a user the system went to 
-    an undefined screen. Now goes to the front which isn't ideal, but is 
+ * Fixed an issue which meant that after removing a user the system went to
+    an undefined screen. Now goes to the front which isn't ideal, but is
     better.
 
 2007-03-22 cjg
@@ -6356,43 +6333,20 @@ PACKAGE: 2.2.99.2
     gives some advice about v2 and v3 XML files.
 
 2007-03-22 cjg
- * Changed "authors" to "creators" in endnote plugin.
-
-2007-03-22 cjg
- * Used the tool divide phrase instead of hardwiring "|"
-
-2007-03-22 cjg
  * Commented out heavy regexps in indexer.pl
 
-2007-03-22 tdb
- * Removed executable properties
- * Added license statement to ScreenProcessor
+2007-03-27 tdb
+ * Fixes to conversion plugins (tested using new Convert interface in 3.1)
+ * If a document contains no files (shouldn't happen) don't throw lots of
+	undef warnings
+ * Added html_phrase_id method to Plugin.pm that returns the id of a plugin
+	phrase (avoids getting phrases a lot when querying conversion plugins)
 
-2007-03-22 tdb
- * Missed size adjustment from modified df_free
-
-2007-03-22 tdb
- * Removed use of prepare_cmd from Convert plugins (now uses $repository->exec)
-
-2007-03-23 tdb
- * Fix Convert plugins that I broke yesterday
- * Add 'html_phrase_id' method to Plugin, to get the phrase id (used by
-    Convert)
-
-2007-03-23 tdb
- * Added draft conversion option to document upload page
- * Made Unpack work
- * Few robustness changes to Convert plugins
-
-2007-03-23 tdb
- * Only list conversions TO formats listed in document formats
- * Use document format phrases in ImageMagick/Images
+2007-03-27 tdb
+ * file_perms and dir_perms can now be strings in SystemSettings
 
 2007-03-30 tdb
  * quote command line arguments in invocation, using quotemeta
-
-2007-04-11 cjg
- * Added a new loglevel which tells when (de)indexing a field is finished.
 
 2007-04-11 cjg
  * Bail out of an unpack if there is no mimetype, avoiding an undef warning.
@@ -6401,10 +6355,10 @@ PACKAGE: 2.2.99.2
  * Don't index fileinfo field!
 
 2007-04-11 cjg
- * Changed views to index subjects first, and to order subject pages by title.
+ * Fixed ordering of subjects in view. (sort by name_name rather than name)
 
 2007-04-11 cjg
- * Fixed ordering of subjects in view. (sort by name_name rather than name)
+ * changed "authors" to "creators" in export/endnote
 
 2007-04-11 cjg
  * Removed custom_order from lift_embargos which should fix a bug.
@@ -6429,23 +6383,22 @@ PACKAGE: 2.2.99.2
  * Fixed issue with database which meant that zero rows affected was 
     treated as an unsuccessful operation. Which it isn't.
 
-2007-05-24 tdb
- * Added support for exporting partial data in Eprints Application Profile
-    format
+======================================================================
+25/05/2007 - EPRINTS-3.0.1
+======================================================================
 
 2007-05-25 cjg
- * Corrected the way the security.pl config file gets the remote IP.
+ * Fixed incorrect way of getting IP in security.pl
 
-2007-05-25 cjg
+2007-05-25 cjg 
+ * Added tdb code for allowing XML import via href="file://"
+
+2007-05-25 cjg 
  * Fixed conf_id/confid typo in Backcompatability
 
 2007-05-25 cjg
  * Textonly pins now don't expand. Fixing a bug that {} in titles caused
     an error.
-
-2007-05-25 tdb
- * Pretty-printing from POD tester
- * Strip prefixes from noxmlns to_string output (bug fix for XML::LibXML)
 
 2007-05-25 cjg
  * Fixed typo in the textonly pins change
@@ -6469,6 +6422,3 @@ PACKAGE: 2.2.99.2
  * import-from-file no longer deletes first file.
  * Added new options to import to allow correct importing of migration data.
   
-2007-05-29 cjg
- * Added an example to security.pl
-
