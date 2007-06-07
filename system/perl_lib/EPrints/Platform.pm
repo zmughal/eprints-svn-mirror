@@ -135,31 +135,6 @@ task. (example is unpacking a .tar.gz file).
  
 sub exec { return &{$real_module."::exec"}( @_ ); }
 
-#####################################################################
-
-=item get_hash_name()
-
-Returns the last part of the filename of the hashfile for a document.
-(yes, it's a bad function name.)
-
-=cut
-
-#####################################################################
- 
-sub get_hash_name { return &{$real_module."::get_hash_name"}( @_ ); }
-
-#####################################################################
-
-=item free_space( $dir )
-
-Return the amount of free space (in bytes) available at $dir. $dir may contain a drive (C:) on Windows platforms.
-
-=cut
-
-#####################################################################
-
-sub free_space { return &{$real_module."::free_space"}( @_ ); }
-
 1;
 
 =back

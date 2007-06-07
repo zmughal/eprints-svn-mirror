@@ -1,0 +1,307 @@
+EPrints RAE Module - SILVER RELEASE
+
+OVERVIEW
+
+What can the RAE plugin do for your repository?
+
+1. Provide a base for customising to your repository's specific RAE requirements
+
+2. Facilitate the gathering of evidence for RAE returns by allowing users to:
+
+ * Record measures of esteem
+ * Select items from the repository
+ * Qualify each selected item for RAE return 
+
+   And allowing unit managers/administrators to:
+
+ * Carry out each of the above on behalf of a user (e.g. to adjudicate between two users selecting the same item)
+ * Identify and resolve problems with selections
+ * Produce reports in Word and Excel format
+
+INSTALLATION
+
+1. Install scripts
+
+$ mkdir /opt/eprints2/cgi/users/rae/
+$ cp moe qualify report select /opt/eprints2/cgi/users/rae/
+$ cp create_rae_tables /opt/eprints2/bin/
+
+2. Configuration files
+
+The RAE module has 2 configuration files:
+
+ArchiveRAEConfig.pm 	- configuration options and hooks
+phrases-rae-en.xml 	- english language phrases used in UI
+
+This provides a clean separation between RAE and normal EPrints configuration, but requires a little extra work to get the RAE configuration loaded.
+
+For each archive:
+
+$ cp defaultcfg/ArchiveRAEConfig.pm defaultcfg/phrases-en.xml /opt/eprints2/archives/ARCHIVEID/cfg/
+
+To get the configuration loaded, edit /opt/eprints2/archives/ARCHIVEID/cfg/ArchiveConfig.pm*
+
+Add ArchiveRAEConfig.pm to the list of configuration files loaded:
+
+32	foreach my $file (
+	        "cfg/ArchiveOAIConfig.pm",
+		"cfg/ArchiveRenderConfig.pm",
+		"cfg/ArchiveValidateConfig.pm",
+		"cfg/ArchiveTextIndexingConfig.pm",
+		"cfg/ArchiveMetadataFieldsConfig.pm",
+		"cfg/ArchiveRAEConfig.pm" )
+
+741	$c->{oai} = get_oai_conf( $c->{perl_url} );
+	$c->{archivefields} = get_metadata_conf();
+	$c->{rae} = get_rae_conf();
+
+823	$entities{version} = EPrints::Config::get( "version" );
+	$entities{ruler} = EPrints::XML::to_string( $archive->get_ruler() );
+	$entities{"raephrases SYSTEM"} = "phrases-rae-" . $langid . ".xml";
+
+	return %entities;
+
+Edit phrases-en.xml* and add the raephrases entity:
+
+1	<?xml version="1.0" encoding="iso-8859-1" standalone="no" ?>
+	<!DOCTYPE phrases SYSTEM "entities-en.dtd">
+
+	<ep:phrases xmlns="http://www.w3.org/1999/xhtml"
+		xmlns:ep="http://eprints.org/ep2/phrases">
+
+	&raephrases;
+
+Restart apache to load in the new RAE configuration:
+
+$ service httpd restart
+
+* line numbers based on 2.3.13.1
+
+3. Create database tables
+
+The database tables used by the RAE module in this release are dependant on configuration settings, rather like EPrints datasets.
+
+The structure of the tables depend on which fields are needed in the "Measures of Esteem" and "Qualify Selection" forms.
+
+A command line script has been provided to generate these tables:
+
+$ /opt/eprints2/bin/create_rae_tables ARCHIVEID
+
+4. Add links to User Area page
+
+Edit /opt/eprints2/cgi/users/home
+
+The $tools array (line 96) allows you to describe links that should appear in the User Area.
+
+Each link has 4 properties:
+
+location	- the location on the page. The User Area is split into four areas: create (top left), user (top right), review (middle), staff (bottom)
+code		- the id of the phrase to use in rendering the link
+page		- the URL
+priv		- the link will only be shown if the user has this priviledge
+
+The following links are a suggested starting point:
+
+{
+	location=>"user",
+	code=>"rae_moe",
+	page=>"rae/moe",
+	priv=>"deposit"
+},
+{
+	location=>"user",
+	code=>"rae_select",
+	page=>"rae/select",
+	priv=>"deposit"
+},
+{
+	location=>"user",
+	code=>"rae_report",
+	page=>"rae/report",
+	priv=>"editor"
+},
+
+Default english language phrases for these links are defined in phrases-rae-en.xml
+
+CONFIGURATION
+
+The ArchiveRAEConfig.pm and phrases-rae-en.xml files provide a general configuration. It is likely that these files will need fine tuning to meet the specific requirements of your institution.
+
+NOTE: After making changes to a configuration file, you must reload the configuration via force_config_reload or by restarting apache.
+
+1. Changing the text that appears one or more of the RAE module pages
+
+Locate the phrase in phrases-rae-*.xml and make required changes.
+
+2. Changing the fields that are displayed on the measures of esteem or qualify selection forms
+
+Locate the $c->{fields}->{moe} (measures of esteem fields) or $c->{fields}->{qualify} (qualify fields) structure in ArchiveRAEConfig.pm.
+
+Add or remove fields as required. The addition of new fields requires the phrases rae_fieldname_FIELDNAME and rae_fieldhelp_FIELDNAME to be defined in phrases-rae-*.xml. See http://www.eprints.org/documentation/tech/php/metadata.php for available types, although note that only single-value, single-part fields are currently supported.
+
+If new fields have been added, the RAE module database tables must be regenerated. If the tables contain no valuable data, drop them and rerun create_rae_tables. Otherwise, the additional fields need to be added manually; see http://wiki.eprints.org/w/Adding_a_Field_to_a_Live_Repository.
+
+3. Changing the search form on the select items page
+
+By default, the RAE plugin uses the "advanced" search, as specified in ArchiveConfig.pm.
+
+To use a different search instead, change the "selection_search" option in ArchiveRAEConfig.pm, e.g.:
+
+$c->{selection_search} = "simple";
+
+$c->{selection_search} = "rae"; # if you want to design a search specifically for the RAE plugin
+
+4. Changing the way the default search is populated
+
+When users visit the "Select Items" page, the "Available items" that they see are the results of a search. By default, this search looks for items whose creators include the user (or at least have a matching surname) and which were effective from 2001.
+
+To use different search parameters instead, change the "rae_default_selection_search" hook.
+
+5. Changing the way that users are grouped on the "Reports" page
+
+By default, users are grouped according to the value of the "dept" (department) field.
+
+To use a different field, change the "group_reports_by" value in ArchiveRAEConfig.pm, e.g.:
+
+$c->{group_reports_by} = "rae_unit"; # if you've added unit of assessment info to the user records
+
+6. Changing the way that problems are identified and reported on the "Reports" page
+
+By default, a problem is recognised when:
+
+* one or more users have selected the same item
+* the selected item does not have a full text attached
+* the selected item is a journal article, but the ISSN field is not filled in
+
+In each case a link is provided to help unit managers resolve the problem:
+
+* Edit selection: the unit manager can edit the user's selection
+* Edit item: the unit manager can upload a full text or bounce the item back to the user who selected it requesting that they upload the full text
+* Edit item: the unit manager can enter the ISSN or bounce the item back to the user who selected it requesting that they add the ISSN
+
+To add a new problem definition, edit the "rae_problems_with_selection" hook in ArchiveRAEConfig.pm.
+
+7. Changing the way that the CSV output is produced
+
+The ArchiveRAEConfig.pm file contains 3 hooks for producing CSV output:
+
+rae_print_csv_header 	- called once at the beginning of the output to produce the header row(s)
+rae_print_csv_row 	- called for every item selected by a user
+rae_print_csv_footer 	- called once at the end of the output to produce the footer row(s)
+
+The default configuration produces the following header row:
+
+Dept, Username, Surname, First Name, Score, Publication, Paper
+
+And for each user selection produces a row, e.g.:
+
+Maths, js, Smith, John, , Int. Journal of Statistics, [citation]
+
+The rae_print_csv_footer receives the number of rows printed as its argument, making it possible to add formulas to cells.
+
+The default configuration produces:
+
+Score	Label		Total Papers
+0	Unclassified	[formula: number of papers scored 0]
+1	1*		[formula: number of papers scored 1]
+2	2*		[formula: number of papers scored 2]
+3	3*		[formula: number of papers scored 3]
+4	4*		[formula: number of papers scored 4]
+
+This enables the unit manager to fill in the "Score" column for each paper and get an overview of that unit's performance.
+
+To change the way that the CSV output is produced, change these hooks.
+
+NOTE: use the _rae_escape_csv helper function to format a list of values as a CSV row.
+
+8. Allowing some users to enter data/make selections on behalf of others
+
+By default, anyone with the appropriate priviledges can edit another user's measures of esteem or selections.
+
+Example: A secretary needs to enter measures of esteem/selections on behalf of academics in the Maths department.
+
+Use the rae_can_user_assume_role and rae_roles_for_user hook to add this rule:
+
+sub can_user_assume_role {
+	       
+	my ( $session, $user, $role ) = @_;
+
+        return 1 if $user->has_priv( "staff-view" );
+	
+	return 0 if !defined $role;
+
+	# Secretary is user 123
+	return 1 if $user->get_id eq "123" && $role->get_value( "dept" ) eq "maths";
+
+	return 0;
+};
+
+sub roles_for_user {
+
+	my ( $session, $user ) = @_;
+
+	if( $user->get_id eq "123" )
+	{
+		my @roles;
+
+		# Search for all the users in the maths department
+		my $searchexp = new EPrints::SearchExpression(
+			session => $session,
+			custom_order => "name",
+			dataset => $session->get_archive->get_dataset( "user" ),
+		);
+		$searchexp->add_field( $session->get_archive->get_dataset( "user" )->get_field( "dept" ) , "maths" );
+		$searchexp->perform_search;
+		foreach ( $searchexp->get_records ) {
+			push @roles, [ $_->get_id, EPrints::Utils::tree_to_utf8( $_->render_description ) ];
+		}
+		return @roles;
+	}
+
+	return ();
+}
+
+Now when the secretary views the "Measures of Esteem" and "Select Items" pages, they will be presented a list of users on whose behalf they can enter data/make selections.
+
+9. Alternative to #8
+
+Alternatively, the secretary could use the "User Search" facility to find specific users. Clicking on a search result page takes them to a "View User" page listing all the user details (so it can be verified that this is the right user).
+
+Create a new user type called "raeuser" which is based on the normal "user" type but has one extra priviledge ("staff-view") by editing ArchiveConfig.pm.
+
+637	$c->{userauth} = {
+		user => {
+			auth  => $CRYPTED_DBI,
+			priv  =>  [ "subscription", "set-password", "deposit", "change-email", "change-user" ] },
+		raeuser => {
+			auth  => $CRYPTED_DBI,
+			priv  =>  [ "subscription", "set-password", "deposit", "change-email", "change-user", "staff-view" ] },
+
+An administrator then needs to edit the secretary's user record to make them an "raeuser" by using the User Search and then Edit User.
+
+When the secretary logs in, the "User Search" option will now be available from their User Area page. The secretary can now search for and view the user records for the academics; add links to the "View User" page to also allow the secretary to edit their measures of esteem and selections.
+
+Edit /opt/eprints2/archives/ARCHIVEID/cfg/ArchiveRenderConfig.pm and add change the user_render_full subroutine:
+
+577	sub user_render_full
+	{
+		...
+
+635		$info->appendChild( $table );
+
+		my $perl_url = $session->get_archive->get_conf( "perl_url" );
+
+		my $moe_link = $session->render_link( "$perl_url/users/rae/moe?role=" . $user->get_id );
+		$moe_link->appendChild( $session->html_phrase(  "cgi/users/staff/view_user:rae_moe_link" ) );
+		$info->appendChild( $moe_link );
+
+		$info->appendChild( $session->make_element( "br" ) );
+
+		my $select_link = $session->render_link( "$perl_url/users/rae/select?role=" . $user->get_id );
+		$select_link->appendChild( $session->html_phrase( "cgi/users/staff/view_user:rae_select_link" ) );
+		$info->appendChild( $select_link );
+
+		return $info;
+	}
+
+Default english language phrases for these links are defined in phrases-rae-en.xml
