@@ -1,0 +1,83 @@
+#!/usr/bin/perl -w -I/opt/eprints3/perl_lib
+######################################################################
+#
+# Create database tables for RAE module 
+#
+######################################################################
+#
+# This file is part of the EPrints RAE module developed by the 
+# Institutional Repositories and Research Assessment (IRRA) project,
+# funded by JISC within the Digital Repositories programme.
+#
+# http://irra.eprints.org/
+#
+# The EPrints RAE module is free software; you can redistributet 
+# and/or modify it under the terms of the GNU General Public License 
+# as published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+#
+# The EPrints RAE module is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+# of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+######################################################################
+
+use EPrints::Session;
+use strict;
+
+my $session = new EPrints::Session( 1, $ARGV[0] );
+exit( 1 ) unless defined $session;
+
+if( !$session->get_db->has_table( "rae_moe" ) )
+{
+	my $sql = "CREATE TABLE rae_moe (userid INT(11) PRIMARY KEY, userid_actual INT(11)";
+	foreach my $field ( @{ $session->get_archive->get_conf( "rae", "fields", "moe" ) } )
+	{
+		my $metafield = EPrints::MetaField->new( 
+			archive => $session->get_archive(),
+			confid => "rae",
+			%$field,
+		);
+		$sql .= ", " . $metafield->get_sql_type;
+	}
+	$sql .= ")";
+	if( !$session->get_db->do( $sql ) )
+	{
+		my $error = $session->get_db()->error();
+		print STDERR "Database error: $error\n";
+	}
+}
+else
+{
+	print STDERR "Skipping table rae_moe: already exists.\n";
+}
+
+if( !$session->get_db->has_table( "rae_selections" ) )
+{
+	my $sql = "CREATE TABLE rae_selections (userid INT(11), eprintid INT(11), userid_actual INT(11), PRIMARY KEY (userid, eprintid)";
+	foreach my $field ( @{ $session->get_archive->get_conf( "rae", "fields", "qualify" ) } )
+	{
+		my $metafield = EPrints::MetaField->new( 
+			archive => $session->get_archive(),
+			confid => "rae",
+			%$field,
+		);
+		$sql .= ", " . $metafield->get_sql_type;
+	}
+	$sql .= ")";
+	if( !$session->get_db->do( $sql ) )
+	{
+		my $error = $session->get_db()->error();
+		print STDERR "Database error: $error\n";
+	}
+}
+else
+{
+	print STDERR "Skipping table rae_selections: already exists\n";
+}
+
+$session->terminate();
+exit;
+
+
