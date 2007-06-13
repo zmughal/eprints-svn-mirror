@@ -188,7 +188,6 @@ sub render_fileinfo
 		$a->appendChild( $session->make_element( 
 			"img", 
 			class=>"ep_doc_icon",
-			alt=>"file",
 			src=>$imgurl,
 			border=>0 ));
 		$f->appendChild( $a );
