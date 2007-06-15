@@ -29,7 +29,6 @@ use LWP::Simple;
 use Unicode::String qw(latin1);
 
 use strict;
-my $google_key = "";
 
 sub new
 {
@@ -54,6 +53,7 @@ sub output_list
 
 	my $session = $plugin->{session};
 
+	my $google_key = $session->get_repository->get_conf("mapplot","google_key");
 	my $html = $session->make_element( "html",
 		"xmlns"=>"http://www.w3.org/1999/xhtml" );
 
