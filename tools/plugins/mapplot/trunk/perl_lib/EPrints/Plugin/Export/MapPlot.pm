@@ -112,6 +112,8 @@ sub output_list
 	my %coordinates;
 	my $countryData = {};
 	my $locationData = {};
+	my $cityData = {};
+	my $pos = {};
 
 	foreach my $eprint ( $list->get_records ) {
 		if ($eprint->is_set( "latitude" )) {
@@ -127,6 +129,7 @@ sub output_list
 			my $cite = EPrints::XML::to_string($eprint->render_citation( "brief" ));
 			my $link = $eprint->get_url;
 			$cite = "lt()+\"a href='$link'\"+gt()+\"$cite\"+lt()+\"/a\"+gt()";
+			
 			push(@{$coordinates{"$latitude:$longitude"}},$cite);
 			#push(@{$coordinates{"$latitude:$longitude"}},EPrints::XML::to_string($eprint->render_citation( "brief" )));
 		}
@@ -138,14 +141,19 @@ sub output_list
 		
 		my $result = join ("+br()+", @$values);
 		
-		my $xml = get("http://ws.geonames.org/findNearbyPlaceName?lat=$lat&lng=$long");
-		print STDERR "http://ws.geonames.org/findNearbyPlaceName?lat=$lat&lng=$long\n\n\n";
+		#my $xml = get("http://ws.geonames.org/findNearbyPlaceName?lat=$lat&lng=$long");
+		#print STDERR "http://ws.geonames.org/findNearbyPlaceName?lat=$lat&lng=$long\n\n\n";
+		my $xml = get("http://ws.geonames.org/findNearbyPostalCodes?lat=$lat&lng=$long");
+		print STDERR "http://ws.geonames.org/findNearbyPostalCodes?lat=$lat&lng=$long";
 		my $dom = EPrints::XML::parse_xml_string( $xml );
 
 		my @country = $dom->getElementsByTagName( "countryCode" );
 		my @location = $dom->getElementsByTagName( "name" );
+		my @location_higher = $dom->getElementsByTagName( "adminName2");
 		my $countryString = $country[0]->getFirstChild->getNodeValue;
 		my $locationString = $location[0]->getFirstChild->getNodeValue;	
+		my $cityString = $location_higher[0]->getFirstChild->getNodeValue;
+		$pos->{"$lat"+","+"$long"} = $locationString;
 
 		if (!defined $countryData->{"$countryString"}) {
 			$countryData->{"$countryString"} = {};
@@ -167,11 +175,28 @@ sub output_list
 	                }		
 			push(@{$countryData->{"$countryString"}->{info}},$result);
 		}
+		
+		if (!defined $cityData->{"$cityString"}) {
+                        $cityData->{"$cityString"} = {};
+                        $cityData->{"$cityString"}->{minlat} = $lat;
+                        $cityData->{"$cityString"}->{maxlat} = $lat;
+                        $cityData->{"$cityString"}->{minlong} = $long;
+                        $cityData->{"$cityString"}->{maxlong} = $long;
+                        push(@{$cityData->{"$cityString"}->{info}},$result);
+                } else {
+                        if (($cityData->{"$cityString"}->{minlat})>$lat) {
+                                ($cityData->{"$cityString"}->{minlat})=$lat;
+                        } elsif (($cityData->{"$cityString"}->{maxlat})<$lat) {
+                                ($cityData->{"$cityString"}->{maxlat})=$lat;
+                        }
+                        if (($cityData->{"$cityString"}->{minlong})>$long) {
+                                ($cityData->{"$cityString"}->{minlong})=$long;
+                        } elsif (($cityData->{"$cityString"}->{maxlong})<$long) {
+                                ($cityData->{"$cityString"}->{maxlong})=$long;
+                        }
+                        push(@{$cityData->{"$cityString"}->{info}},$result);
+                }
 	
-		if ($locationString eq "Bassett") {$locationString="Southampton";}
-		if ($locationString eq "Paddington") {$locationString="London";}
-		if ($locationString eq "Saint Pancras") {$locationString="London";}
-		if ($locationString eq "Bloomsbury") {$locationString="London";}
 		if (!defined $locationData->{"$locationString"}) {
                         $locationData->{"$locationString"} = {};
                         $locationData->{"$locationString"}->{minlat} = $lat;
@@ -232,11 +257,11 @@ sub output_list
 	$script2_var .= "\t\t\t{\n";
         $script2_var .= "\t\t\t\t\"zoom\": [4,8],\n";
         $script2_var .= "\t\t\t\t\"places\": [\n";
-	foreach my $key (keys %$locationData) {
-                my $minlat = $locationData->{$key}->{minlat};
-                my $maxlat = $locationData->{$key}->{maxlat};
-                my $minlong = $locationData->{$key}->{minlong};
-                my $maxlong = $locationData->{$key}->{maxlong};
+	foreach my $key (keys %$cityData) {
+                my $minlat = $cityData->{$key}->{minlat};
+                my $maxlat = $cityData->{$key}->{maxlat};
+                my $minlong = $cityData->{$key}->{minlong};
+                my $maxlong = $cityData->{$key}->{maxlong};
                 #ARG FIX AS LAT * LONG GO FROM -180 to 180 so your screwed if a country is on the border.
                 my $avelat = $minlat + (($maxlat-$minlat)/2);
                 my $avelong = $minlong + (($maxlong-$minlong)/2);
@@ -246,7 +271,7 @@ sub output_list
 
                 #LIMIT AND COUNT HERE;
 
-                my @values = @{$locationData->{$key}->{info}};
+                my @values = @{$cityData->{$key}->{info}};
 
                 my $result = join ("+br()+", @values);
                 $script2_var .= "\t\t\t\t\t\t\"info\": lt()+\"div align='left'\"+gt()+b()+\"Location: $key \"+closeb()+br()+$result+lt()+\"div\"+gt(),\n";
@@ -263,10 +288,10 @@ sub output_list
 		my ($lat, $long) = split(/:/, $key);
                 my $values = $coordinates{$key};
                 my $result = join ("+br()+", @$values);
-
+		my $local = $pos->{"$lat"+","+"$long"};
 		$script2_var .= "\t\t\t\t\t{\n";
                 $script2_var .= "\t\t\t\t\t\t\"posn\": [$lat,$long],\n";
-		$script2_var .= "\t\t\t\t\t\t\"info\": lt()+\"div align='left'\"+gt()+$result+lt()+\"div\"+gt(),\n";
+		$script2_var .= "\t\t\t\t\t\t\"info\": lt()+\"div align='left'\"+gt()+b()+\"Location: $local \"+closeb()+br()+$result+lt()+\"div\"+gt(),\n";
 		$script2_var .= "\t\t\t\t\t},\n";
 	}
 	$script2_var .= "\t\t\t\t]\n";
