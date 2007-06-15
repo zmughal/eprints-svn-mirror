@@ -98,7 +98,7 @@ sub output_list
 		"Eprints Google Maps JavaScript API Exporter") );
 
 	my $script1 = $session->make_element("script",
-		"src"=>"http://maps.google.com/maps?file=api&v=2.67&key=$google_key",
+		"src"=>"http://maps.google.com/maps?file=api&v=2.x&key=$google_key",
 		"type"=>"text/javascript");
 
 
