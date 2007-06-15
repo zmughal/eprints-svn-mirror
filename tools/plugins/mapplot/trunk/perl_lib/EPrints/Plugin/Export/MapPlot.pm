@@ -12,8 +12,8 @@
 #
 #    To do this put enter the base URL of your repository into the registration page at http://www.google.com/apis/maps/signup.html
 #
-#    Enter your key below at the line which currently reads:
-#    my $google_key = "";  
+#    Enter your key in a file within your archives config directory archives/FOO/cfg/cfg.d/ in the as the following line:
+#    $c={mapplot}->{google_key}="AA...";
 #
 
 
@@ -141,10 +141,7 @@ sub output_list
 		
 		my $result = join ("+br()+", @$values);
 		
-		#my $xml = get("http://ws.geonames.org/findNearbyPlaceName?lat=$lat&lng=$long");
-		#print STDERR "http://ws.geonames.org/findNearbyPlaceName?lat=$lat&lng=$long\n\n\n";
 		my $xml = get("http://ws.geonames.org/findNearbyPostalCodes?lat=$lat&lng=$long");
-		print STDERR "http://ws.geonames.org/findNearbyPostalCodes?lat=$lat&lng=$long";
 		my $dom = EPrints::XML::parse_xml_string( $xml );
 
 		my @country = $dom->getElementsByTagName( "countryCode" );
@@ -242,8 +239,6 @@ sub output_list
 		$script2_var .= "\t\t\t\t\t\t\"name\": \"$key\",\n";
 		$script2_var .= "\t\t\t\t\t\t\"posn\": [$avelat,$avelong],\n";
 
-		#LIMIT AND COUNT HERE;		
-		
 		my @values = @{$countryData->{$key}->{info}};
         	
 		my $result = join ('+br()+', @values);
