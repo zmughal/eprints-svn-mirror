@@ -2,7 +2,7 @@
 # Part of EPrints3 
 # Distributed under GPL Licience
 #
-# Package Written by David Tarrant (dct05r@ecs.soton.ac.uk) & Mike Jewell (moj@ecs.soton.ac.uk)
+# Package Written by David Tarrant (dct05r@ecs.soton.ac.uk) & Mike Jewell (moj@ecs.soton.ac.uk) & Adam Field (af05v@ecs.soton.ac.uk)
 #
 # IMPORTANT INFORMATION
 #  Installation Instructions
@@ -23,6 +23,8 @@ use EPrints::Plugin::Export;
 use HTML::Entities ();
 use XML::Parser;
 use LWP::Simple;
+use Data::Dumper;
+
 
 @ISA = ( "EPrints::Plugin::Export" );
 
@@ -109,6 +111,8 @@ sub output_list
 	my $script2_varAll = $session->make_element("script",
                 "type"=>"text/javascript");
 
+	my $eprint_data = {};
+
 	my %coordinates;
 	my $countryData = {};
 	my $locationData = {};
@@ -128,92 +132,40 @@ sub output_list
 			#push(@{$coordinates{"$latitude:$longitude"}},$ecite);
 			my $cite = EPrints::XML::to_string($eprint->render_citation( "brief" ));
 			my $link = $eprint->get_url;
+			my $eprint_id = $eprint->get_id;
 			$cite = "lt()+\"a href='$link'\"+gt()+\"$cite\"+lt()+\"/a\"+gt()";
+			$eprint_data->{$eprint_id} =
+			{
+				latitude=> $latitude,
+				longitude=> $longitude,
+				citation=>$cite, 
+			}
 			
-			push(@{$coordinates{"$latitude:$longitude"}},$cite);
+			#push(@{$coordinates{"$latitude:$longitude"}},$cite);
 			#push(@{$coordinates{"$latitude:$longitude"}},EPrints::XML::to_string($eprint->render_citation( "brief" )));
 		}
 	}
 
-	foreach my $key ( keys %coordinates ) {
-		my ($lat, $long) = split(/:/, $key);
-		my $values = $coordinates{$key};
+	foreach my $eprint_id (keys %{$eprint_data}) 
+	{
 		
-		my $result = join ("+br()+", @$values);
-		
+		my $lat = $eprint_data->{$eprint_id}->{latitude};
+		my $long = $eprint_data->{$eprint_id}->{longitude};
+		my $citation = $eprint_data->{$eprint_id}->{citation};
 		my $xml = get("http://ws.geonames.org/findNearbyPostalCodes?lat=$lat&lng=$long");
 		my $dom = EPrints::XML::parse_xml_string( $xml );
-
 		my @country = $dom->getElementsByTagName( "countryCode" );
-		my @location = $dom->getElementsByTagName( "name" );
-		my @location_higher = $dom->getElementsByTagName( "adminName2");
-		my $countryString = $country[0]->getFirstChild->getNodeValue;
-		my $locationString = $location[0]->getFirstChild->getNodeValue;	
-		my $cityString = $location_higher[0]->getFirstChild->getNodeValue;
-		$pos->{"$lat"+","+"$long"} = $locationString;
+                my @location = $dom->getElementsByTagName( "name" );
+                my @location_higher = $dom->getElementsByTagName( "adminName2");
+                my $countryString = $country[0]->getFirstChild->getNodeValue;
+                my $locationString = $location[0]->getFirstChild->getNodeValue;
+                my $cityString = $location_higher[0]->getFirstChild->getNodeValue;
 
-		if (!defined $countryData->{"$countryString"}) {
-			$countryData->{"$countryString"} = {};
-			$countryData->{"$countryString"}->{minlat} = $lat;
-			$countryData->{"$countryString"}->{maxlat} = $lat;
-			$countryData->{"$countryString"}->{minlong} = $long;
-			$countryData->{"$countryString"}->{maxlong} = $long;
-			push(@{$countryData->{"$countryString"}->{info}},$result);
-		} else {
-			if (($countryData->{"$countryString"}->{minlat})>$lat) {
-				($countryData->{"$countryString"}->{minlat})=$lat;
-			} elsif (($countryData->{"$countryString"}->{maxlat})<$lat) {
-                        	($countryData->{"$countryString"}->{maxlat})=$lat;
-			}
-			if (($countryData->{"$countryString"}->{minlong})>$long) {
-                	        ($countryData->{"$countryString"}->{minlong})=$long;
-	                } elsif (($countryData->{"$countryString"}->{maxlong})<$long) {
-        	                ($countryData->{"$countryString"}->{maxlong})=$long;
-	                }		
-			push(@{$countryData->{"$countryString"}->{info}},$result);
-		}
+		$pos->{"$lat,$long"} = $locationString;
 		
-		if (!defined $cityData->{"$cityString"}) {
-                        $cityData->{"$cityString"} = {};
-                        $cityData->{"$cityString"}->{minlat} = $lat;
-                        $cityData->{"$cityString"}->{maxlat} = $lat;
-                        $cityData->{"$cityString"}->{minlong} = $long;
-                        $cityData->{"$cityString"}->{maxlong} = $long;
-                        push(@{$cityData->{"$cityString"}->{info}},$result);
-                } else {
-                        if (($cityData->{"$cityString"}->{minlat})>$lat) {
-                                ($cityData->{"$cityString"}->{minlat})=$lat;
-                        } elsif (($cityData->{"$cityString"}->{maxlat})<$lat) {
-                                ($cityData->{"$cityString"}->{maxlat})=$lat;
-                        }
-                        if (($cityData->{"$cityString"}->{minlong})>$long) {
-                                ($cityData->{"$cityString"}->{minlong})=$long;
-                        } elsif (($cityData->{"$cityString"}->{maxlong})<$long) {
-                                ($cityData->{"$cityString"}->{maxlong})=$long;
-                        }
-                        push(@{$cityData->{"$cityString"}->{info}},$result);
-                }
-	
-		if (!defined $locationData->{"$locationString"}) {
-                        $locationData->{"$locationString"} = {};
-                        $locationData->{"$locationString"}->{minlat} = $lat;
-                        $locationData->{"$locationString"}->{maxlat} = $lat;
-                        $locationData->{"$locationString"}->{minlong} = $long;
-                        $locationData->{"$locationString"}->{maxlong} = $long;
-                        push(@{$locationData->{"$locationString"}->{info}},$result);
-                } else {
-                        if (($locationData->{"$locationString"}->{minlat})>$lat) {
-                                ($locationData->{"$locationString"}->{minlat})=$lat;
-                        } elsif (($locationData->{"$locationString"}->{maxlat})<$lat) {
-                                ($locationData->{"$locationString"}->{maxlat})=$lat;
-                        }
-                        if (($locationData->{"$locationString"}->{minlong})>$long) {
-                                ($locationData->{"$locationString"}->{minlong})=$long;
-                        } elsif (($locationData->{"$locationString"}->{maxlong})<$long) {
-                                ($locationData->{"$locationString"}->{maxlong})=$long;
-                        }
-                        push(@{$locationData->{"$locationString"}->{info}},$result);
-                }
+		populate_scope_hash ($countryData, $countryString, $lat, $long, $citation, $eprint_id) ;
+		populate_scope_hash ($cityData, $cityString, $lat, $long, $citation, $eprint_id) ;
+		populate_scope_hash ($locationData, $locationString, $lat, $long, $citation, $eprint_id) ;	
 
 	}
 
@@ -224,73 +176,11 @@ sub output_list
 	$script2_var .= "function gt() { return String.fromCharCode(62) };\n\n";
 
 	$script2_var .= "\t\tvar eprintsLayer = [\n";
-	$script2_var .= "\t\t\t{\n";
-	$script2_var .= "\t\t\t\t\"zoom\": [0,3],\n";
-	$script2_var .= "\t\t\t\t\"places\": [\n";	
-	foreach my $key (keys %$countryData) {
-                my $minlat = $countryData->{$key}->{minlat};
-		my $maxlat = $countryData->{$key}->{maxlat};
-		my $minlong = $countryData->{$key}->{minlong};
-		my $maxlong = $countryData->{$key}->{maxlong};
-		#ARG FIX AS LAT * LONG GO FROM -180 to 180 so your screwed if a country is on the border.
-		my $avelat = $minlat + (($maxlat-$minlat)/2);
-		my $avelong = $minlong + (($maxlong-$minlong)/2);
-		$script2_var .= "\t\t\t\t\t{\n";
-		$script2_var .= "\t\t\t\t\t\t\"name\": \"$key\",\n";
-		$script2_var .= "\t\t\t\t\t\t\"posn\": [$avelat,$avelong],\n";
-
-		my @values = @{$countryData->{$key}->{info}};
-        	
-		my $result = join ('+br()+', @values);
-		$script2_var .= "\t\t\t\t\t\t\"info\": lt()+\"div align='left'\"+gt()+b()+\"Country Code: $key \"+closeb()+br()+$result+lt()+\"div\"+gt(),\n";
-
-		$script2_var .= "\t\t\t\t\t},\n";
-        }
-	$script2_var .= "\t\t\t\t]\n";
-	$script2_var .= "\t\t\t},\n";
 	
-	$script2_var .= "\t\t\t{\n";
-        $script2_var .= "\t\t\t\t\"zoom\": [4,8],\n";
-        $script2_var .= "\t\t\t\t\"places\": [\n";
-	foreach my $key (keys %$cityData) {
-                my $minlat = $cityData->{$key}->{minlat};
-                my $maxlat = $cityData->{$key}->{maxlat};
-                my $minlong = $cityData->{$key}->{minlong};
-                my $maxlong = $cityData->{$key}->{maxlong};
-                #ARG FIX AS LAT * LONG GO FROM -180 to 180 so your screwed if a country is on the border.
-                my $avelat = $minlat + (($maxlat-$minlat)/2);
-                my $avelong = $minlong + (($maxlong-$minlong)/2);
-                $script2_var .= "\t\t\t\t\t{\n";
-                $script2_var .= "\t\t\t\t\t\t\"name\": \"$key\",\n";
-                $script2_var .= "\t\t\t\t\t\t\"posn\": [$avelat,$avelong],\n";
+	$script2_var .= create_layer($countryData,0,3);
+	$script2_var .= create_layer($cityData,4,8);	
+	$script2_var .= create_layer($locationData,9,17);
 
-                #LIMIT AND COUNT HERE;
-
-                my @values = @{$cityData->{$key}->{info}};
-
-                my $result = join ("+br()+", @values);
-                $script2_var .= "\t\t\t\t\t\t\"info\": lt()+\"div align='left'\"+gt()+b()+\"Location: $key \"+closeb()+br()+$result+lt()+\"div\"+gt(),\n";
-
-                $script2_var .= "\t\t\t\t\t},\n";
-        }
-	$script2_var .= "\t\t\t\t]\n";
-        $script2_var .= "\t\t\t},\n";
-
-	$script2_var .= "\t\t\t{\n";
-	$script2_var .= "\t\t\t\t\"zoom\": [9,17],\n";
-        $script2_var .= "\t\t\t\t\"places\": [\n";
-	foreach my $key ( keys %coordinates ) {
-		my ($lat, $long) = split(/:/, $key);
-                my $values = $coordinates{$key};
-                my $result = join ("+br()+", @$values);
-		my $local = $pos->{"$lat"+","+"$long"};
-		$script2_var .= "\t\t\t\t\t{\n";
-                $script2_var .= "\t\t\t\t\t\t\"posn\": [$lat,$long],\n";
-		$script2_var .= "\t\t\t\t\t\t\"info\": lt()+\"div align='left'\"+gt()+b()+\"Location: $local \"+closeb()+br()+$result+lt()+\"div\"+gt(),\n";
-		$script2_var .= "\t\t\t\t\t},\n";
-	}
-	$script2_var .= "\t\t\t\t]\n";
-        $script2_var .= "\t\t\t}\n";
 	$script2_var .= "\t\t];\n";
 
 	$script2_varAll->appendChild( $session->make_text( $script2_var ) );
@@ -305,10 +195,10 @@ sub output_list
 	#my $script2_text = "alert (window.location.protocol + window.location.host + window.location.pathname);";
 	my $script2_text .= "\n\t//CDATA[\n\t\tvar map=null;\n\t\tvar batch = [];\n";
 	$script2_text .= "\n\n";
-	$script2_text .= "\t\tfunction EPrintMarker( lat, lon, info ) {\n";
+	$script2_text .= "\t\tfunction EPrintMarker( lat, lon, info, ids ) {\n";
 	$script2_text .= "\t\t\tvar currmarker = new GMarker(new GLatLng( lat,lon ) );\n";
 	$script2_text .= "\t\t\tGEvent.addListener(currmarker, \"click\", function() {\n";
-	$script2_text .= "\t\t\t\tcurrmarker.openInfoWindowHtml(info);\n";
+	$script2_text .= "\t\t\t\tcurrmarker.openInfoWindowHtml(info, {maxUrl:\"/cgi/map_results?eprint_ids=\" + ids});\n";
 	$script2_text .= "\t\t\t});\n";
 	$script2_text .= "\t\t\treturn currmarker;\n";
 	$script2_text .= "\t\t}\n";
@@ -332,7 +222,7 @@ sub output_list
 	$script2_text .= "\t\t\t\tvar markers = []\n";
 	$script2_text .= "\t\t\t\tfor (var j in layer[\"places\"]) {\n";
 	$script2_text .= "\t\t\t\t\tvar place = layer[\"places\"][j];\n";
-	$script2_text .= "\t\t\t\t\tmarkers.push(EPrintMarker(place[\"posn\"][0], place[\"posn\"][1],place[\"info\"]));\n";
+	$script2_text .= "\t\t\t\t\tmarkers.push(EPrintMarker(place[\"posn\"][0], place[\"posn\"][1],place[\"info\"],place[\"eprint_ids\"]));\n";
 	$script2_text .= "\t\t\t\t}\n";
 	$script2_text .= "\t\t\t\tmgr.addMarkers(markers, layer[\"zoom\"][0], layer[\"zoom\"][1]);\n";
 	$script2_text .= "\t\t\t}";
@@ -381,5 +271,64 @@ END
 	return $flightplan;
 }
 
-1;
+sub create_layer
+{
+	my ($hash, $zoom_min, $zoom_max) = @_;
 
+	my $jstring;
+
+	$jstring = "\t\t\t{\n";
+	$jstring .= "\t\t\t\t\"zoom\": [$zoom_min,$zoom_max],\n";
+	$jstring .= "\t\t\t\t\"places\": [\n";
+	foreach my $key (keys %$hash) {
+		my $minlat = $hash->{$key}->{minlat};
+		my $maxlat = $hash->{$key}->{maxlat};
+		my $minlong = $hash->{$key}->{minlong};
+		my $maxlong = $hash->{$key}->{maxlong};
+		#The issue still exists which will land you in problems if the average lat long puts you in a different country, unlikely in most countries.
+		my $avelat = $minlat + (($maxlat-$minlat)/2);
+		my $avelong = $minlong + (($maxlong-$minlong)/2);
+		$jstring .= "\t\t\t\t\t{\n";
+		$jstring .= "\t\t\t\t\t\t\"name\": \"$key\",\n";
+		$jstring .= "\t\t\t\t\t\t\"posn\": [$avelat,$avelong],\n";
+		my $result = join ('+br()+', @{$hash->{$key}->{info}});
+		$jstring .= "\t\t\t\t\t\t\"info\": lt()+\"div align='left'\"+gt()+b()+\"Country Code: $key \"+closeb()+br()+$result+lt()+\"div\"+gt(),\n";
+		$jstring .= "\t\t\t\t\t\t\"eprint_ids\": [" . join (',',@{$hash->{$key}->{ids}}) . "],\n";
+		$jstring .= "\t\t\t\t\t},\n";
+	}
+	$jstring .= "\t\t\t\t],\n";
+	$jstring .= "\t\t\t},\n";
+	return $jstring;
+}
+
+sub populate_scope_hash
+{
+	my ($hash, $key, $lat, $long, $citation, $eprint_id) = @_;
+
+	if (!defined $hash->{$key}) {
+		$hash->{$key} = {
+			minlat => $lat,
+			maxlat => $lat,
+			minlong => $long,
+			maxlong => $long,
+			info => [$citation],
+			ids => [$eprint_id],
+		};
+	} else {
+		if (($hash->{$key}->{minlat})>$lat) {
+			($hash->{$key}->{minlat})=$lat;
+		} elsif (($hash->{$key}->{maxlat})<$lat) {
+			($hash->{$key}->{maxlat})=$lat;
+		}
+		if (($hash->{$key}->{minlong})>$long) {
+			($hash->{$key}->{minlong})=$long;
+		} elsif (($hash->{$key}->{maxlong})<$long) {
+			($hash->{$key}->{maxlong})=$long;
+		}
+		push(@{$hash->{$key}->{info}},$citation);
+		push(@{$hash->{$key}->{ids}},$eprint_id);
+	}
+
+}
+
+1;

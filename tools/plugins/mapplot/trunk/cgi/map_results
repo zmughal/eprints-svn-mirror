@@ -1,0 +1,29 @@
+#!/usr/bin/perl -w -I/home/dct05r/eprints/perl_lib
+
+use strict;
+use warnings;
+
+use CGI qw(:standard);
+use CGI::Carp qw(warningsToBrowser fatalsToBrowser);
+
+
+use Data::Dumper;
+use EPrints::Session;
+
+# Start session
+my $session = new EPrints::Session( 1, 'pawprints' );
+exit( 0 ) unless( defined $session );
+
+my $cgi = new CGI;
+my @eprint_ids = split (/,/,$cgi->param('eprint_ids'));
+
+print "Content-type: text/html; charset=utf-8\n\n";
+
+foreach my $eprint_id (@eprint_ids)
+{
+	my $eprint = EPrints::EPrint->new( $session, $eprint_id );
+	print EPrints::XML::to_string( $eprint->render_citation_link(), "utf-8" );
+}
+
+
+
