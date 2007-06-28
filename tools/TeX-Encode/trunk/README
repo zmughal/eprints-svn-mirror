@@ -1,0 +1,37 @@
+Encode-LaTeX version 0.1
+========================
+
+This module provides encoding to LaTeX escapes from utf8 using mapping tables
+in L<Pod::LaTeX> and L<HTML::Entities>. This covers only a subset of the
+Unicode character table (undef warnings will occur for non-mapped chars).
+
+Mileage will vary when decoding (converting LaTeX to utf8), as LaTeX is in
+essence a programming language, and this module does not implement LaTeX.
+
+INSTALLATION
+
+To install this module type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+DEPENDENCIES
+
+This module requires these other modules and libraries:
+
+	Pod::LaTeX
+	HTML::Entities
+
+COPYRIGHT AND LICENCE
+
+Put the correct copyright and licence information here.
+
+Copyright (C) 2005 by Timothy D Brody
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.8.7 or,
+at your option, any later version of Perl 5 you may have available.
+
+
