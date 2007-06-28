@@ -104,22 +104,35 @@ $c->{extract_words} = sub
 
 	# Process string. 
 	# First we apply the char_mappings.
-	my( $i, $len ),
-	my $utext = utf8( "$text" ); # just in case it wasn't already.
-	$len = $utext->length;
-	my $buffer = utf8( "" );
-	for($i = 0; $i<$len; ++$i )
+	my @words;
+	if( $^V gt v5.8.0 )
 	{
-		my $s = $utext->substr( $i, 1 );
-		# $s is now char number $i
-		if( defined $EPrints::Index::FREETEXT_CHAR_MAPPING->{$s} )
-		{
-			$s = $EPrints::Index::FREETEXT_CHAR_MAPPING->{$s};
-		} 
-		$buffer.=$s;
-	}
+		$text =~ s/(.)/
+			exists($EPrints::Index::FREETEXT_CHAR_MAPPING->{$1}) ?
+			$EPrints::Index::FREETEXT_CHAR_MAPPING->{$1} :
+			$1 /eg;
 
-	my @words =EPrints::Index::split_words( $session, $buffer );
+		@words = EPrints::Index::split_words( $session, $text );
+	}
+	else
+	{
+		my( $i, $len ),
+		my $utext = utf8( "$text" ); # just in case it wasn't already.
+		$len = $utext->length;
+		my $buffer = utf8( "" );
+		for($i = 0; $i<$len; ++$i )
+		{
+			my $s = $utext->substr( $i, 1 );
+			# $s is now char number $i
+			if( defined $EPrints::Index::FREETEXT_CHAR_MAPPING->{$s} )
+			{
+				$s = $EPrints::Index::FREETEXT_CHAR_MAPPING->{$s};
+			}
+			$buffer.=$s;
+		}
+
+		@words = EPrints::Index::split_words( $session, $buffer );
+	}
 
 	# Iterate over every word (bits divided by seperator chars)
 	# We use hashes rather than arrays at this point to make

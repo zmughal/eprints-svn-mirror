@@ -6512,3 +6512,5 @@ PACKAGE: 2.2.99.2
     (can be called with an undef value from Compound)
  * Added an action to reindex an eprint (available to staff-role users only)
  * Fixed bug where .txt files would never be indexed
+ * Make indexing much, much faster by using regexps instead of Unicode::String
+    iterations

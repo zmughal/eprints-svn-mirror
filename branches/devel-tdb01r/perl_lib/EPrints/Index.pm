@@ -353,26 +353,7 @@ sub split_words
 {
 	my( $session, $utext ) = @_;
 
-	my $len = $utext->length;
-        my @words = ();
-        my $cword = utf8( "" );
-        for(my $i = 0; $i<$len; ++$i )
-        {
-                my $s = $utext->substr( $i, 1 );
-                # $s is now char number $i
-                if( defined $EPrints::Index::FREETEXT_SEPERATOR_CHARS->{$s} || ord($s)<32 )
-                {
-                        push @words, $cword unless( $cword eq "" ); 
-                        $cword = utf8( "" );
-                }
-                else
-                {
-                        $cword .= $s;
-                }
-        }
-	push @words, $cword unless( $cword eq "" ); 
-
-	return @words;
+	return split /[$EPrints::Index::FREETEXT_SEPERATOR_REGEXP]+/o, $utext;
 }
 
 
@@ -839,7 +820,25 @@ $EPrints::Index::FREETEXT_SEPERATOR_CHARS = {
 	'}' => 1, 	'>' => 1, 	'~' => 1, 	'?' => 1
 };
 
-	
+$EPrints::Index::FREETEXT_SEPERATOR_REGEXP = '';
+for(keys(%$EPrints::Index::FREETEXT_SEPERATOR_CHARS))
+{
+	$EPrints::Index::FREETEXT_SEPERATOR_REGEXP .= "\\$_";
+}
+$EPrints::Index::FREETEXT_SEPERATOR_REGEXP .= "\\x00-\\x20"; # Control chars
+
+if( $^V gt v5.8.0 )
+{
+	eval "use Encode";
+	# We need to add the unicode mappings (not latin1 objects!)
+	foreach my $c (keys %$EPrints::Index::FREETEXT_CHAR_MAPPING)
+	{
+		my $u = Encode::decode("utf8",$c);
+		$EPrints::Index::FREETEXT_CHAR_MAPPING->{$u} =
+			$EPrints::Index::FREETEXT_CHAR_MAPPING->{$c};
+	}
+}
+
 1;
 
 ######################################################################
