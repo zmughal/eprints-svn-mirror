@@ -1,0 +1,12 @@
+GNU EPrints README
+
+For more information see: http://eprints.org/software/
+
+To get started run:
+
+ ./configure --help
+ ./configure (with some sensible options)
+ ./install.pl
+
+WARNING: This is not an upgrade for EPrints 2!
+
