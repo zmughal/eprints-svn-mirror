@@ -98,9 +98,16 @@ sub render_option
 		return $self->call_property( "render_option", $session, $option );
 	}
 
-	my $phrasename = $self->{confid}."_fieldopt_".$self->{name}."_".$option;
+	if( EPrints::Utils::is_set($option) )
+	{
+		my $phrasename = $self->{confid}."_fieldopt_".$self->{name}."_".$option;
 
-	return $session->html_phrase( $phrasename );
+		return $session->html_phrase( $phrasename );
+	}
+	else
+	{
+		return $session->html_phrase( "lib/metafield:unspecified" );
+	}
 }
 
 

@@ -6508,3 +6508,5 @@ PACKAGE: 2.2.99.2
  * #3050 - only attempt to generate a thumbnail if the main file exists
  * #3049 - don't remove content from hidden directories in /documents (i.e. be
     svn friendly)
+ * #3037 - handle rendering an undefined value in Set by showing UNSPECIFIED
+    (can be called with an undef value from Compound)
