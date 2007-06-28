@@ -6501,3 +6501,8 @@ PACKAGE: 2.2.99.2
 
 2007-06-15 tmb
  * Fixed bug which caused URLs not to be included in text version of emails
+
+2007-06-28 tdb
+ * #3061 - define STAFF_ONLY as FALSE as well as TRUE, otherwise we can never
+    test its falseness
+
