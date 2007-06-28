@@ -6505,4 +6505,5 @@ PACKAGE: 2.2.99.2
 2007-06-28 tdb
  * #3061 - define STAFF_ONLY as FALSE as well as TRUE, otherwise we can never
     test its falseness
+ * #3050 - only attempt to generate a thumbnail if the main file exists
 
