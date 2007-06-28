@@ -6511,3 +6511,4 @@ PACKAGE: 2.2.99.2
  * #3037 - handle rendering an undefined value in Set by showing UNSPECIFIED
     (can be called with an undef value from Compound)
  * Added an action to reindex an eprint (available to staff-role users only)
+ * Fixed bug where .txt files would never be indexed

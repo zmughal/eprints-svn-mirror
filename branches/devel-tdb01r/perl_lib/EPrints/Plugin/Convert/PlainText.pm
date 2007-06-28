@@ -99,7 +99,7 @@ sub export
 		if( $main =~ /\.$ext$/i )
 		{
 			$cmd_id = $EPrints::Plugin::Convert::PlainText::APPS{$ext};
-			last if defined $repository->get_conf( "executables", $cmd_id );
+			last if defined $repository->get_conf( "executables", $cmd_id ) || $cmd_id eq '_special';
 		}
 
 		undef $cmd_id;
