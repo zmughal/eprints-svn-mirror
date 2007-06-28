@@ -6506,4 +6506,5 @@ PACKAGE: 2.2.99.2
  * #3061 - define STAFF_ONLY as FALSE as well as TRUE, otherwise we can never
     test its falseness
  * #3050 - only attempt to generate a thumbnail if the main file exists
-
+ * #3049 - don't remove content from hidden directories in /documents (i.e. be
+    svn friendly)
