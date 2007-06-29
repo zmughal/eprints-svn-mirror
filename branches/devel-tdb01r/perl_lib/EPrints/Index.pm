@@ -733,7 +733,7 @@ $EPrints::Index::FREETEXT_CHAR_MAPPING = {
 	latin1("­") => "-",	latin1("®") => "(R)",	
 	latin1("¯") => "-",	latin1("°") => "o",	
 	latin1("±") => "+-",	latin1("²") => "2",	
-	latin1("³") => "3",	latin1("´") => "'",	
+	latin1("³") => "3",	# latin1("´") => "'",	
 	latin1("µ") => "u",	latin1("¶") => "q",	
 	latin1("·") => ".",	latin1("¸") => ",",	
 	latin1("¹") => "1",	latin1("º") => "o",	
@@ -817,27 +817,38 @@ $EPrints::Index::FREETEXT_SEPERATOR_CHARS = {
 	'*' => 1, 	'+' => 1, 	',' => 1, 	'-' => 1,
 	'.' => 1, 	'/' => 1, 	':' => 1, 	';' => 1,
 	'{' => 1, 	'<' => 1, 	'|' => 1, 	'=' => 1,
-	'}' => 1, 	'>' => 1, 	'~' => 1, 	'?' => 1
+	'}' => 1, 	'>' => 1, 	'~' => 1, 	'?' => 1,
+	latin1("´") => 1,
 };
-
-$EPrints::Index::FREETEXT_SEPERATOR_REGEXP = '';
-for(keys(%$EPrints::Index::FREETEXT_SEPERATOR_CHARS))
-{
-	$EPrints::Index::FREETEXT_SEPERATOR_REGEXP .= "\\$_";
-}
-$EPrints::Index::FREETEXT_SEPERATOR_REGEXP .= "\\x00-\\x20"; # Control chars
 
 if( $^V gt v5.8.0 )
 {
 	eval "use Encode";
-	# We need to add the unicode mappings (not latin1 objects!)
+	# Add utf8-flagged strings (we can't replace due to indexing.pl relying on
+	# Unicode::String octet-strings)
 	foreach my $c (keys %$EPrints::Index::FREETEXT_CHAR_MAPPING)
 	{
 		my $u = Encode::decode("utf8",$c);
 		$EPrints::Index::FREETEXT_CHAR_MAPPING->{$u} =
 			$EPrints::Index::FREETEXT_CHAR_MAPPING->{$c};
 	}
+	# This is only used by us, so we can merrily replace the existing octet-
+	# strings
+	foreach my $c (keys %$EPrints::Index::FREETEXT_SEPERATOR_CHARS)
+	{
+		my $u = Encode::decode("utf8",$c);
+		$EPrints::Index::FREETEXT_SEPERATOR_CHARS->{$u} =
+			delete $EPrints::Index::FREETEXT_SEPERATOR_CHARS->{$c};
+	}
 }
+
+# Build a regular expression to split on
+$EPrints::Index::FREETEXT_SEPERATOR_REGEXP = '';
+for(keys(%$EPrints::Index::FREETEXT_SEPERATOR_CHARS))
+{
+	$EPrints::Index::FREETEXT_SEPERATOR_REGEXP .= "\\$_";
+}
+$EPrints::Index::FREETEXT_SEPERATOR_REGEXP .= "\\x00-\\x20"; # Control chars
 
 1;
 
