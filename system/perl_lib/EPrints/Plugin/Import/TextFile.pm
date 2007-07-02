@@ -6,10 +6,7 @@ our @ISA = qw/ EPrints::Plugin::Import /;
 
 $EPrints::Plugin::Import::DISABLE = 1;
 
-if( $^V gt v5.8.0 )
-{
-	eval "use File::BOM";
-}
+use File::BOM;
 
 sub new
 {

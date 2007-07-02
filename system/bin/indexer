@@ -72,7 +72,7 @@ Log to I<filename> rather than default indexer log.
 
 =item B<--loglevel> I<level>
 
-Set the level of detail to log. Level may be 0-6.
+Set the level of detail to log. Level may be 0-5.
 
 =item B<--rollcount> I<number>
 
@@ -370,7 +370,7 @@ while( 1 )
 			EPrints::Index::indexlog( "** Wake up... time to die: $$" ) if( $p->{loglevel} > 2 );
 			EPrints::Index::indexlog( "** Worker process restarting: $$" ) if( $p->{loglevel} > 2 );
 			foreach( @sessions ) { $_->terminate; }
-			EPrints::Index::rolllogs( $p );
+			EPrints::Index::rolllogs($p);
 			exit;
 		};
 		# restart once a day in case of memory leaks
@@ -406,8 +406,6 @@ while( 1 )
 				foreach( @sessions ) { $_->terminate; }
 				exit;
 			}
-
-			# wait 30 seconds. Check suicide requests every 5 seconds.
 			for( my $i=0; $i<6; $i++ )
 			{
 				if( EPrints::Index::suicidal )
