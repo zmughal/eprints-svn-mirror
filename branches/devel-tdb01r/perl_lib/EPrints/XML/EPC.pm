@@ -256,7 +256,7 @@ sub _process_if
 
 	my $collapsed = $params{session}->make_doc_fragment;
 
-	if( $result->[0] )
+	if( EPrints::Utils::is_set($result->[0]) )
 	{
 		$collapsed->appendChild( process_child_nodes( $node, %params ) );
 	}
