@@ -240,8 +240,6 @@ $c->{rae_problems_with_selection} = sub {
 
 # Print CSV header row(s)
 # RA2 Output - see http://www.rae.ac.uk/datacoll/import/excel/RAE2008Data.xls (March 2006)
-# TODO PendingPublication should be before URL
-# TODO Year before OutputType
 $c->{rae_print_csv_header} = sub {
 	my ( $session ) = @_;
 	print $session->get_archive->call( "_rae_escape_csv", qw(
@@ -252,8 +250,8 @@ $c->{rae_print_csv_header} = sub {
 		StaffIdentifier
 		OutputNumber
 		OutputId
-		OutputType
 		Year
+		OutputType
 		LongTitle
 		ShortTitle
 		Pagination
@@ -262,9 +260,9 @@ $c->{rae_print_csv_header} = sub {
 		ISBN
 		PublicationDate
 		EndDate
+		PendingPublication
 		URL
 		DOI
-		PendingPublication
 		OtherDetails
 		InterestConflicts
 		DatesConflictExplanation
@@ -287,9 +285,6 @@ $c->{rae_print_csv_header} = sub {
 # Print CSV row for item as selected by user
 # $info is a hashref of qualifying metadata the user entered for this selection
 $c->{rae_print_csv_row} = sub {
-
-	print STDERR "PRINTING CSV ROW\n\n";
-
 	my ( $session, $user, $item, $info, $output_number ) = @_;
 
 	my @row;
@@ -330,13 +325,23 @@ $c->{rae_print_csv_row} = sub {
 	# OutputId
 	push @row, $item->get_id;
 
-	# OutputType
-	push @row, $ra2_type;
-
-	# Year LongTitle ShortTitle Pagination Publisher Editors ISBN PublicationDate EndDate URL DOI
+	# Year OutputType LongTitle ShortTitle Pagination Publisher Editors ISBN PublicationDate EndDate PendingPublication URL DOI
 	my $ra2_fields = $session->get_archive->get_conf( "rae", "ra2_fields_for_type", $ra2_type );
-	foreach my $f ( @$ra2_fields )
+	for( my $i = 0; $i < scalar @$ra2_fields; $i++ )
 	{
+		my $f = $ra2_fields->[$i];
+		
+		# OutputType
+		if( $i == 1 )
+		{
+			push @row, $ra2_type;
+		}
+		# PendingPublication
+		if( $i == 8)
+		{
+			$item->get_value( "ispublished" ) ne "pub" ? push @row, "false" : push @row, "true";
+		}
+
 		my $field = $f;
 		$field =~ s/^opt_//;
 
@@ -419,9 +424,6 @@ $c->{rae_print_csv_row} = sub {
 			}
 		}
 	}
-
-	# PendingPublication
-	$item->get_value( "ispublished" ) ne "pub" ? push @row, "false" : push @row, "true";
 
 	# OtherDetails
 	defined $info->{details} ? push @row, $info->{details} : push @row, "";
