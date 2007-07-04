@@ -31,7 +31,7 @@ use EPrints::XML;
 use strict;
 
 use EPrints::SystemSettings;
-if( $EPrints::SystemSettings::conf->{version_id} =~ m/^3\./ ) { &backcomp; }
+if( $EPrints::SystemSettings::conf->{version_id} =~ m/^(eprints-)?3\./ ) { &backcomp; }
 
 # Enclosing the main part in {..} prevents accidental
 # (and *dangerous*) use of 'global' vars inside subroutines
@@ -43,11 +43,11 @@ exit( 0 ) unless( defined $session );
 my $archive = $session->get_archive;
 
 # Check user has appropriate privs
-#if( !$session->auth_check( "deposit" ) )
-#{
-#    $session->terminate;
-#    Apache::exit( 0 );
-#}
+if( !$session->auth_check( "deposit" ) )
+{
+    $session->terminate;
+    Apache::exit( 0 );
+}
 my $user = $session->current_user;
 
 # Check selected role
@@ -486,5 +486,36 @@ sub backcomp
 			
 			return $problems;
 		}
+		
+		1;
+
+		package EPrints::Session;
+
+		sub auth_check
+		{
+			my( $self , $resource ) = @_;
+
+			my $user = $self->current_user;
+
+			if( !defined $user )
+			{
+				$self->render_error( $self->html_phrase( "lib/session:no_login" ) );
+				return 0;
+			}
+
+			if( !defined $resource )
+			{
+				return 1;
+			}
+
+			unless( $user->has_role( $resource ) )
+			{
+				$self->render_error( $self->html_phrase( "lib/session:no_priv" ) );
+				return 0;
+			}
+			return 1;
+		}
+
+		1;
 	';
 }
