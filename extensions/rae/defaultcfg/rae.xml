@@ -4,6 +4,7 @@
 <epp:phrases xmlns="http://www.w3.org/1999/xhtml" xmlns:epp="http://eprints.org/ep3/phrase" xmlns:epc="http://eprints.org/ep3/control">
 
 <!-- Show links to RAE scripts in user tools -->
+<!--
 <epp:phrase id="dynamic:logged_in">Logged in as <epc:pin name="user"/> | 
 <epc:pin name="tools" /> 
 | <a href="{$config{perl_url}}/users/rae/moe">RAE Measures of Esteem</a> 
@@ -11,6 +12,14 @@
 | <a href="{$config{perl_url}}/users/rae/report">RAE Report</a> 
 | <a href="{$config{perl_url}}/logout">Logout</a> 
 </epp:phrase>
+-->
+
+<epp:phrase id="Plugin/Screen/User/RAE/Esteem:title">RAE Esteem Measures</epp:phrase>
+<epp:phrase id="Plugin/Screen/User/RAE/Esteem:description">View/edit RAE measures of esteem for this user.</epp:phrase>
+<epp:phrase id="Plugin/Screen/User/RAE/Select:title">RAE Selections</epp:phrase>
+<epp:phrase id="Plugin/Screen/User/RAE/Select:description">View/edit RAE selections for this user.</epp:phrase>
+<epp:phrase id="Plugin/Screen/Admin/RAEReport:title">RAE Report</epp:phrase>
+<epp:phrase id="Plugin/Screen/Admin/RAEReport:description">View/export RAE report for this repository.</epp:phrase>
 
 <!-- User Area -->
 

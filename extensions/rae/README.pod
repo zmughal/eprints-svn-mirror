@@ -187,6 +187,9 @@ Default english language phrases for these links are defined in F<phrases-rae-en
  $ mkdir /opt/eprints3/cgi/users/rae/
  $ cp moe qualify report select /opt/eprints3/cgi/users/rae/
  $ cp create_rae_tables /opt/eprints3/bin/
+ $ mkdir /opt/eprints3/perl_lib/EPrints/Plugin/Screen/User/RAE/
+ $ cp plugins/User/RAE/* /opt/eprints3/perl_lib/EPrints/Plugin/Screen/User/RAE/
+ $ cp plugins/Admin/RAEReport.pm /opt/eprints3/perl_lib/EPrints/Plugin/Screen/Admin/
 
 =head2 2. Configuration files
 
