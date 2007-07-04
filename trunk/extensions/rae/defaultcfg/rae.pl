@@ -112,8 +112,6 @@ $c->{rae_default_selection_search} = sub {
 
 	my ( $session, $searchexp, $user ) = @_;
 
-	print STDERR "in default search setup\n";
-
 	my $dataset = $session->get_archive->get_dataset( "archive" );
 
 	$searchexp->add_field( $dataset->get_field( "creators_name" ), $user->get_value( "name" )->{family}, "IN", "ALL" );
@@ -491,8 +489,21 @@ $c->{_rae_escape_csv} = sub
 
 	foreach( @values )
 	{
-		s/([\\\"])/\\$1/g;
+		# escape "smart" quote characters - method 1
+		#use utf8;
+		#utf8::decode( $_ );
+		#s/\x{201c}/"/g;
+		#s/\x{201d}/"/g;
+
+		# escape "smart" quote characters - method 2
+		#s/\xe2\x80\x9c/\"/gs;
+		#s/\xe2\x80\x9d/\"/gs;
+
+		# escape double-quote characters - see http://en.wikipedia.org/wiki/Comma-separated_values
+		s/"/""/g;
+
 	}
+	# delimit every field with double-quote characters - see http://en.wikipedia.org/wiki/Comma-separated_values
 	return '"' . join( '","', @values ) . '"' ."\n";
 };
 
