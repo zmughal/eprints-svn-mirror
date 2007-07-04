@@ -245,8 +245,6 @@ sub rae_problems_with_selection {
 
 # Print CSV header row(s)
 # RA2 Output - see http://www.rae.ac.uk/datacoll/import/excel/RAE2008Data.xls (March 2006)
-# TODO PendingPublication should be before URL
-# TODO Year before OutputType
 sub rae_print_csv_header {
 	print _rae_escape_csv( qw(
 		Institution
@@ -256,8 +254,8 @@ sub rae_print_csv_header {
 		StaffIdentifier
 		OutputNumber
 		OutputId
-		OutputType
 		Year
+		OutputType
 		LongTitle
 		ShortTitle
 		Pagination
@@ -266,9 +264,9 @@ sub rae_print_csv_header {
 		ISBN
 		PublicationDate
 		EndDate
+		PendingPublication
 		URL
 		DOI
-		PendingPublication
 		OtherDetails
 		InterestConflicts
 		DatesConflictExplanation
@@ -331,13 +329,23 @@ sub rae_print_csv_row {
 	# OutputId
 	push @row, $item->get_id;
 
-	# OutputType
-	push @row, $ra2_type;
-
-	# Year LongTitle ShortTitle Pagination Publisher Editors ISBN PublicationDate EndDate URL DOI
+	# Year OutputType LongTitle ShortTitle Pagination Publisher Editors ISBN PublicationDate EndDate PendingPublication URL DOI
 	my $ra2_fields = $session->get_archive->get_conf( "rae", "ra2_fields_for_type", $ra2_type );
-	foreach my $f ( @$ra2_fields )
+	for( my $i = 0; $i < scalar @$ra2_fields; $i++ )
 	{
+		my $f = $ra2_fields->[$i];
+		
+		# OutputType
+		if( $i == 1 )
+		{
+			push @row, $ra2_type;
+		}
+		# PendingPublication
+		if( $i == 8)
+		{
+			$item->get_value( "ispublished" ) ne "pub" ? push @row, "false" : push @row, "true";
+		}
+
 		my $field = $f;
 		$field =~ s/^opt_//;
 
@@ -421,9 +429,6 @@ sub rae_print_csv_row {
 		}
 	}
 
-	# PendingPublication
-	$item->get_value( "ispublished" ) ne "pub" ? push @row, "false" : push @row, "true";
-
 	# OtherDetails
 	defined $info->{details} ? push @row, $info->{details} : push @row, "";
 
@@ -490,8 +495,21 @@ sub _rae_escape_csv
 
 	foreach( @values )
 	{
-		s/([\\\"])/\\$1/g;
+		# escape "smart" quote characters - method 1
+		#use utf8;
+		#utf8::decode( $_ );
+		#s/\x{201c}/"/g;
+		#s/\x{201d}/"/g;
+
+		# escape "smart" quote characters - method 2
+		#s/\xe2\x80\x9c/\"/gs;
+		#s/\xe2\x80\x9d/\"/gs;
+
+		# escape double-quote characters - see http://en.wikipedia.org/wiki/Comma-separated_values
+		s/"/""/g;
+
 	}
+	# delimit every field with double-quote characters - see http://en.wikipedia.org/wiki/Comma-separated_values
 	return '"' . join( '","', @values ) . '"' ."\n";
 }
 
