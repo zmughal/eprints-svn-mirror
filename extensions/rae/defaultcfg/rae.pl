@@ -512,7 +512,8 @@ $c->{rae_can_user_assume_role} = sub
 {	
 	my ( $session, $user, $role ) = @_;
 
-	return 1 if $user->has_priv( "staff-view" );
+	return 1 if $user->allow( "user/staff/edit", $role );
+	#return 1 if $user->has_priv( "staff-view" );
 	return 0;
 };
 
