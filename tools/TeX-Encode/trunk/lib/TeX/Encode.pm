@@ -266,6 +266,24 @@ I use this module to encode author names in BibTeX and to do a rough job at pres
 
 The next logical step for this module is to integrate some level of TeX grammar to improve the decoding, in particular to handle fractions and font changes (which should probably be dropped).
 
+=head1 METHODS
+
+=over 4
+
+=item TeX::Encode::encode STRING [, CHECK]
+
+Encodes a utf8 string into TeX. CHECK isn't implemented.
+
+=item TeX::Encode::decode STRING [, CHECK]
+
+Decodes a TeX string into utf8. CHECK isn't implemented.
+
+=item TeX::Encode::perlio_ok
+
+Returns 0. PerlIO isn't implemented.
+
+=back
+
 =head1 CAVEATS
 
 Proper Encode checking is not implemented.
@@ -282,7 +300,7 @@ Attempts to convert TeX symbols (e.g. \ae) to Unicode characters. As an experime
 
 =head1 SEE ALSO
 
-L<Pod::LaTeX>
+L<Encode::Encoding>, L<Pod::LaTeX>, L<Encode>
 
 =head1 AUTHOR
 

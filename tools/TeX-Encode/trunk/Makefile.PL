@@ -10,6 +10,7 @@ WriteMakefile(
 		HTML::Parser => 3.35,
 		HTML::Entities => 1.27,
 		Test::More => 0.1,
+		Encode::Encoding => 0.1,
 	}, # e.g., Module::Name => 1.1
     ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM  => 'lib/TeX/Encode.pm', # retrieve abstract from module
