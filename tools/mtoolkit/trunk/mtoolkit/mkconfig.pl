@@ -15,6 +15,8 @@ our %FORMAT_MAPPING = qw(
 	other	other
 );
 
+our $FIDDLE_FIELDS_MAP = {};
+
 use EPrints::EPrint;
 use EPrints::Session;
 use EPrints::Subject;
@@ -444,9 +446,9 @@ sub write_workflow
 				print "skipping empty type/page $page,$type\n";
 				next;
 			}
-			my @fields = skooge( "workflow $dsid, stage $page, type $type", $dataset->get_page_fields( $type, $page ) );
-			my @stafffields = skooge( "workflow $dsid, stage $page, type $type (editor view)", $dataset->get_page_fields( $type, $page, 1 ) );
-			
+			my @fields = fiddle_workflow_fields( "workflow $dsid, stage $page, type $type", $dataset->get_page_fields( $type, $page ) );
+			my @stafffields = fiddle_workflow_fields( "workflow $dsid, stage $page, type $type (editor view)", $dataset->get_page_fields( $type, $page, 1 ) );
+
 			my $smap = {};
 			foreach( @stafffields ) { $smap->{$_->get_name} = $_; }
 			next unless( scalar @fields || scalar @stafffields );
@@ -456,7 +458,7 @@ sub write_workflow
 				$xml .= "      <component";
 				if( $field->is_type( "subject" ) ) { $xml.= " type='Field::Subject'"; }
 				$xml .= "><field ref=\"".$field->get_name."\" ";
-				if( $field->get_property( "required" ) )
+				if( field_required_in_type( $dataset, $field, $type ) )
 				{
 					$xml .= "required=\"yes\" ";
 				}
@@ -471,7 +473,7 @@ sub write_workflow
 					$xml .= "        <component";
 					if( $field->is_type( "subject" ) ) { $xml.= " type='Field::Subject'"; }
 					$xml .= "><field ref=\"".$field->get_name."\" ";
-					if( $field->get_property( "required" ) )
+					if( field_required_in_type( $dataset, $field, $type ) )
 					{
 						$xml .= "required=\"yes\" ";
 					}
@@ -519,7 +521,7 @@ sub write_workflow
 }
 
 
-sub skooge 
+sub fiddle_workflow_fields 
 {
 	my( $place, @fields ) = @_;
 
@@ -527,7 +529,7 @@ sub skooge
 
 	foreach my $field ( @fields )
 	{
-		my $name =$field->get_name;
+		my $name = $field->get_name;
 
 		if( $name eq "date_sub" )
 		{
@@ -539,9 +541,29 @@ sub skooge
 			logprint( "Removing date_effective from $place\n" );
 			next;
 		}
-		if( $name eq "year" )
+		if( $name eq "month" )
 		{
-			logprint( "Removing date_effective from $place\n" );
+			logprint( "Removing month from $place\n" );
+			next;
+		}
+		if( $name eq "authors" )
+		{
+			logprint( "altering eprint.authors to be called creators\n" );
+			$FIDDLE_FIELDS_MAP->{creators} = $name;
+			my %data = %{$field};
+			$data{name} = "creators";
+			$field = EPrints::MetaField->new(%data);
+			push @out, $field;
+			next;
+		}
+		if( $name eq "pages" && $field->{type} eq "pagerange" )
+		{
+			logprint( "altering eprint.pages to be called pagerange\n" );
+			$FIDDLE_FIELDS_MAP->{pagerange} = $name;
+			my %data = %{$field};
+			$data{name} = "pagerange";
+			$field = EPrints::MetaField->new(%data);
+			push @out, $field;
 			next;
 		}
 		if( $name eq "date_issue" || $name eq "year" )
@@ -551,9 +573,10 @@ sub skooge
 			$data{name} = "date";
 			$field = EPrints::MetaField->new(%data);
 			push @out, $field;
+			$FIDDLE_FIELDS_MAP->{date} = $name;
 	
 			logprint( "Adding date_type\n" );
-			push @out, EPrints::MetaField->new(            
+			push @out, EPrints::MetaField->new(
 				'name' => 'date_type',
             	'type' => 'set',
             	'options' => [
@@ -563,7 +586,9 @@ sub skooge
                          ],
             	'input_style' => 'medium',
 				dataset=>$field->get_dataset,
+				required => $field->{required},
             );
+			$FIDDLE_FIELDS_MAP->{date_type} = $name;
 
 			next;
 		}
@@ -574,6 +599,7 @@ sub skooge
 			$data{name} = "date";
 			$field = EPrints::MetaField->new(%data);
 			push @out, $field;
+			$FIDDLE_FIELDS_MAP->{date} = $name;
 	
 			logprint( "Adding date_type\n" );
 			push @out, EPrints::MetaField->new(            
@@ -586,12 +612,12 @@ sub skooge
                          ],
             	'input_style' => 'medium',
 				dataset=>$field->get_dataset,
+				required => $field->{required},
             );
+			$FIDDLE_FIELDS_MAP->{date_type} = $name;
 
 			next;
 		}
-
-
 
 		push @out, $field;
 	}
@@ -708,5 +734,28 @@ END
 		close FILE;
 	}
 }
+
+sub field_required_in_type
+{
+	my( $dataset, $field, $type ) = @_;
+
+	if( $field->get_property( "required" ) eq "yes" )
+	{
+		return 1;
+	}
+
+	my $name = $field->get_name;
+	$name = $FIDDLE_FIELDS_MAP->{$name} if( defined $FIDDLE_FIELDS_MAP->{$name} );
+	foreach( @{$dataset->{typesreq}->{$type}} )
+	{
+		if( $_->get_name eq $name )
+		{
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 
 

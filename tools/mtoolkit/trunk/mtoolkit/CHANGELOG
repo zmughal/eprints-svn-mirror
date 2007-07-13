@@ -40,3 +40,5 @@ Migration toolkit Changelog...
 2007-05-29 cjg
  * Fixed bug in workflow generation.
 
+2007-07-13 cjg
+ * Fixed "required" information in workflow generation.
