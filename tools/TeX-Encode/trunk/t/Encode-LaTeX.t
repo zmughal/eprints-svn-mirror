@@ -5,7 +5,7 @@
 
 # change 'tests => 1' to 'tests => last_test_to_print';
 
-use Test::More tests => 21;
+use Test::More tests => 22;
 use Encode;
 BEGIN { use_ok('TeX::Encode') };
 
@@ -32,6 +32,8 @@ my %DECODE_TESTS = (
 	'\\oe' => chr(0x153), # French oe
 	'\\OE' => chr(0x152), # French OE
 	'\\ae' => chr(0xe6), # Scandinavian ligature ae
+"consist of \$\\sim{}260,000\$ of subprobes \$\\sim{}4\%\$ of in \$2.92\\cdot{}10^{8}\$ years. to \$1.52\\cdot{}10^{7}\$ years." =>
+"consist of <span class='mathrm'>".chr(0x223c)."260,000</span> of subprobes <span class='mathrm'>".chr(0x223c)."4%</span> of in <span class='mathrm'>2.92".chr(0x22c5)."10<sup>8</sup></span> years. to <span class='mathrm'>1.52".chr(0x22c5)."10<sup>7</sup></span> years.", # Should remove empty braces too
 );
 
 # General encode tests

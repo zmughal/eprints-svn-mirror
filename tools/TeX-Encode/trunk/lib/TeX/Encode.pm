@@ -13,7 +13,7 @@ use Carp;
 
 our @ISA = qw(Encode::Encoding);
 
-our $VERSION = '0.9';
+our $VERSION = '0.10';
 
 use constant ENCODE_CHRS => '<>&"';
 
@@ -211,7 +211,7 @@ sub _atom
 		return "<br />";
 	} elsif( $$str =~ s/^\\(.)// ) { # Escaped character
 		return $1;
-	} elsif( $$str =~ s/^\{([^\{\}]+)\}// ) {
+	} elsif( $$str =~ s/^\{([^\{\}]*)\}// ) {
 		my $sstr = $1;
 		return _htmlise(\$sstr);
 	} elsif( $$str =~ s/^\{// ) {

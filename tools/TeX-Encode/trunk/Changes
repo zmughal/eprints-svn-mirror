@@ -1,5 +1,8 @@
 Revision history for Perl extension Encode::LaTeX.
 
+0.10
+	- Remove empty braces e.g. $\sim{}200$
+
 0.9
 	- Removed autoloader: this isn't an xs module
 	- Added LaTeX 'special characters'
