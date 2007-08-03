@@ -1,0 +1,15 @@
+#!
+
+rm -rf hcbuild/
+mkdir hcbuild/
+cd hcbuild
+h2xs -Afn Honeycomb -L/home/cjg/Projects/honey/sdk/c/Linux/lib -lhoneycomb -ldl 
+cp ../h/* Honeycomb
+
+cp ../Honeycomb.xs Honeycomb/
+cp ../Makefile.PL Honeycomb/
+
+cd Honeycomb
+perl Makefile.PL
+make test
+
