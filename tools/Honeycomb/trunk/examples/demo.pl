@@ -1,10 +1,12 @@
 #!/usr/bin/perl -w
 
 use Data::Dumper;
-use Honey;
+use Honeycomb;
+
+Honeycomb::init();
 
 my $oid;
-my $honey = Honey->new( "hc-data", 8080 );
+my $honey = Honeycomb->new( "hc-data", 8080 );
 print Dumper($honey);
 
 $oid = "0100012cad1008407611dc890600e081731991000023a80200000000";
@@ -22,4 +24,5 @@ $honey->print_error if( $honey->error );
 #print "".$honey->error."\n" if( $honey->error );
 
 
-
+$honey->free();
+Honeycomb::cleanup();

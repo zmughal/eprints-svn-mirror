@@ -35,7 +35,7 @@ long append_to_string( void* string, char* buff, long n )
 
 long print_stuff(void* stream, char* buff, long n)
 {
-      	return fwrite(buff, 1, n, stdout );
+		return fwrite(buff, 1, n, stdout );
 }
 long write_to_file(void* stream, char* buff, long n)
 {
@@ -75,8 +75,18 @@ void honey_init()
 
 MODULE = Honeycomb		PACKAGE = Honeycomb		
 
-BOOT:
-	honey_init();
+
+void 
+init()
+	CODE:
+		honey_init();
+
+
+void 
+cleanup()
+	CODE:
+		hc_cleanup();
+
 
 	
 SV *
@@ -121,7 +131,7 @@ string_oid( this, oid )
 		RETVAL = newSVpv( "", 0 );
 		store_honey_errcode( 
 			this,
-                	hc_retrieve_ez(
+			hc_retrieve_ez(
 				session,
 				&append_to_string,
 				(void *)RETVAL,
@@ -139,11 +149,15 @@ print_oid( this, oid )
 		session = this_session(this);
 		store_honey_errcode( 
 			this,
-                	hc_retrieve_ez(
+			hc_retrieve_ez(
 				session,
 				&print_stuff,
 				(void *)stdout,
 				(hc_oid *)oid ) );
+
+
+
+
 
 char* 
 store_file( this, filename )
@@ -155,21 +169,14 @@ store_file( this, filename )
 		hcerr_t	res;
 		hc_system_record_t system_record;
 		int fileToStore = -1;
-	        struct MetadataMap storeMetadata;
 	CODE:
 		session = this_session(this);
-		initMetadataMap(&storeMetadata);
-		res = hc_nvr_create_from_string_arrays(session, &nvr, 
-						       storeMetadata.namePointerArray, 
-						       storeMetadata.valuePointerArray, 
-						       storeMetadata.mapSize);
-		if (res != HCERR_OK)
-		{
-			store_honey_errcode( this, res );
-			XSRETURN_UNDEF; 
-		}
+		res = hc_nvr_create( session, 1, &nvr );
+		store_honey_errcode( this, res );
+		if( res ) { XSRETURN_UNDEF; }
 		if(!(fileToStore = open(filename, O_RDONLY | FLAG_BINARY | FLAG_LARGEFILE)) == -1)
 		{
+			hc_nvr_free( nvr );
 			store_honey_errcode( this, -1 );
 			XSRETURN_UNDEF; 
 		}
@@ -180,6 +187,7 @@ store_file( this, filename )
 					&system_record);
 		store_honey_errcode( this, res );
 		close(fileToStore);
+		hc_nvr_free( nvr );
 		if (res != HCERR_OK)
 		{
 			XSRETURN_UNDEF; 
@@ -206,19 +214,80 @@ print_error( this )
 	PREINIT:
 		hc_session_t *session = NULL;
 		hcerr_t res;
-        	int32_t response_code = -1;
-        	char* errstr = "";
-        	hcerr_t err = -1;
+		int32_t response_code = -1;
+		char* errstr = "";
+		hcerr_t err = -1;
 	CODE:
 		session = this_session(this);
 		res = SvIV( *(hv_fetch( (HV*)SvRV(this), "ERRCODE", 7, 0 ) ));
 		fprintf(stderr,"\nThe server returned error code %d = %s\n", res, hc_decode_hcerr(res));
-                err = hc_session_get_status(session, &response_code, &errstr);
-                if (err == HCERR_OK) 
-                {
+		err = hc_session_get_status(session, &response_code, &errstr);
+		if (err == HCERR_OK) 
+		{
 			fprintf(stderr,"HTTP Response_code: %d\n",response_code);
 			if (errstr[0] != 0) {
-	                        fprintf(stderr,"Server Error String: %s\n", errstr);
+				fprintf(stderr,"Server Error String: %s\n", errstr);
 			}
-                }
+		}
 
+SV *
+get_metadata( this, oid )
+	SV *this;
+	char* oid;
+	PREINIT:
+		hc_session_t *session = NULL;
+		hc_nvr_t *nvr;
+		hcerr_t res;
+		int i = 0;
+		char **names;
+		char **values;
+		int count;
+		HV* metahash;
+	CODE:
+		session = this_session(this);
+		res = hc_retrieve_metadata_ez (session,(hc_oid*)oid,&nvr );
+		store_honey_errcode( this, res );
+		if( res ) { XSRETURN_UNDEF; }
+		res = hc_nvr_convert_to_string_arrays(nvr, &names, &values, &count);
+		store_honey_errcode( this, res );
+		if( res ) { XSRETURN_UNDEF; }
+
+		metahash = newHV();
+		RETVAL = newRV_inc( (SV*)metahash );
+		for (i = 0; i < count; i++)
+		{
+			hv_store( metahash, names[i], strlen( names[i]) , newSVpv( values[i], 0 ), 0 );
+		}
+	OUTPUT:
+		RETVAL
+
+char* 
+set_metadata( this, oid, key, value )
+	SV *this;
+	char* oid;
+	char* key;
+	char* value;
+	PREINIT:
+		hc_session_t *session = NULL;
+		hc_nvr_t *nvr=NULL;
+		hcerr_t res;
+		hc_system_record_t system_record;
+	CODE:
+		session = this_session(this);
+		res = hc_nvr_create( session, 2, &nvr );
+		store_honey_errcode( this, res );
+		if( res ) { XSRETURN_UNDEF; }
+		res = hc_nvr_add_from_string( nvr, key, value );
+		store_honey_errcode( this, res );
+		if( res ) { hc_nvr_free( nvr ); XSRETURN_UNDEF; }
+		res = hc_store_metadata_ez( session, (hc_oid*)oid, nvr, &system_record );
+		store_honey_errcode( this, res );
+		res = hc_nvr_free( nvr );
+		store_honey_errcode( this, res );
+		RETVAL = system_record.oid;
+	OUTPUT:
+		RETVAL
+		
+
+
+	
