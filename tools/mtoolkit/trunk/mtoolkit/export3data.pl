@@ -87,6 +87,7 @@ use EPrints::Session;
 use EPrints::Subject;
 
 use Getopt::Long;
+use Unicode::String qw(utf8 latin1);
 
 use strict;
 use warnings;
@@ -305,7 +306,7 @@ sub export_value
 
 			my $el_lang = $session->make_element( 'lang' );
 			$item->appendChild( $el_lang );
-			$el_lang->appendChild( $session->make_text( $langid ) );
+			$el_lang->appendChild( $session->make_text( utf8($langid) ) );
 		}
 		return $dom;
 	}
@@ -327,7 +328,7 @@ sub export_value
 			{
 				my $tag = $session->make_element( 'id' );
 				$item->appendChild( $tag );
-				$tag->appendChild( $session->make_text( $v->{id} ) );
+				$tag->appendChild( $session->make_text( utf8($v->{id}) ) );
 			}
 			if( EPrints::Utils::is_set($v->{main}) )
 			{
@@ -364,7 +365,7 @@ sub export_hashref
 	}
 	elsif( defined($value) )
 	{
-		$dom->appendChild( $session->make_text( $value ) );
+		$dom->appendChild( $session->make_text( utf8($value) ) );
 	}
 
 	return $dom;
@@ -393,13 +394,13 @@ sub export_dataobj
 			}
 			else
 			{
-				$item->appendChild( $session->make_text( $v ) );
+				$item->appendChild( $session->make_text( utf8($v) ) );
 			}
 		}
 	}
 	elsif( defined( $value ) )
 	{
-		$dom->appendChild( $session->make_text( $value ) );
+		$dom->appendChild( $session->make_text( utf8($value) ) );
 	}
 
 	return $dom;
@@ -416,7 +417,7 @@ sub export_eprint
 	my $eprint = $session->make_element( 'eprint', xmlns => $XMLNS );
 
 	$eprint->appendChild( $session->make_element( 'eprint_status' ))
-		->appendChild( $session->make_text( $dataset->id ));
+		->appendChild( $session->make_text( utf8($dataset->id) ));
 
 	foreach my $field ( $dataset->get_fields )
 	{
@@ -486,9 +487,9 @@ sub export_eprint
 		$date_type = "published";
 	} 
 	$eprint->appendChild( $session->make_element( 'date' ) )
-		->appendChild( $session->make_text( $date ) );
+		->appendChild( $session->make_text( utf8($date) ) );
 	$eprint->appendChild( $session->make_element( 'date_type' ) )
-		->appendChild( $session->make_text( $date_type ) );
+		->appendChild( $session->make_text( utf8($date_type) ) );
 
 	print STDERR "Processing documents\n" if $opt_verbose > 1;
 
@@ -508,7 +509,7 @@ sub export_eprint
 		print STDERR "Processing document $pos\n" if $opt_verbose > 2;
 		
 		$document->appendChild( $session->make_element( 'eprintid' ) )
-			->appendChild($session->make_text($doc->get_value( 'eprintid' )));
+			->appendChild($session->make_text(utf8($doc->get_value( 'eprintid' ))));
 
 		my $format = $doc->get_value( 'format' ) || 'other';
 		if( exists $FORMAT_MAPPING{$format} )
@@ -516,17 +517,17 @@ sub export_eprint
 			$format = $FORMAT_MAPPING{$format};
 		}
 		$document->appendChild( $session->make_element( 'format' ) )
-			->appendChild($session->make_text($format));
+			->appendChild($session->make_text(utf8($format)));
 
 		$document->appendChild( $session->make_element( 'language' ) )
-			->appendChild($session->make_text($doc->get_value( 'language' )||''));
+			->appendChild($session->make_text(utf8($doc->get_value( 'language' )||'')));
 		my $security = $doc->get_value( "security" ) || "public";
 		$document->appendChild( $session->make_element( 'security' ) )
-			->appendChild($session->make_text($security));
+			->appendChild($session->make_text(utf8($security)));
 		$document->appendChild( $session->make_element( 'main' ) )
-			->appendChild($session->make_text($doc->get_value( 'main' )||''));
+			->appendChild($session->make_text(utf8($doc->get_value( 'main' )||'')));
 		$document->appendChild( $session->make_element( 'pos' ) )
-			->appendChild($session->make_text($pos));
+			->appendChild($session->make_text(utf8($pos)));
 
 		my $files = $document->appendChild( $session->make_element( 'files' ) );
 
@@ -543,10 +544,10 @@ sub export_eprint
 			foreach my $filename ( keys %filenames )
 			{
 				my $file = $files->appendChild( $session->make_element( 'file' ) );
-
+print STDERR "($filename)\n";
 				$file->appendChild($session->make_element( 'filename' ))
-					->appendChild($session->make_text( $filename ));
-				my $fullpath = $doc->local_path."/".$filename;
+					->appendChild($session->make_text( latin1($filename) ));
+				my $fullpath = $doc->local_path."/".latin1($filename);
 				$file->appendChild($session->make_element( 'data',
 							'href' => "file://" . $fullpath ));
 			}
@@ -659,7 +660,6 @@ sub export_eprint
 	# You might want to modify this to automatically replace bad chars with a
 	# '?' or similar, but it's probably better to manually inspect and fix
 	# problems.
-
 	my $xml = $eprint->toString();
 	$xml =~ s/\xe2\x80\x3f/$UTF8_QUOTE/sg; # Fix word's bespoke quote for Unicode
 #	$xml =~ s/[\x00-\x08\x0B\x0C\x0E-\x1F]//g;
@@ -722,12 +722,12 @@ sub rv
 			next if !EPrints::Utils::is_set( $value->{$p} );
 			my $tag = $session->make_element( $p );
 			$dom->appendChild( $tag );
-			$tag->appendChild( $session->make_text( $value->{$p} ) );
+			$tag->appendChild( $session->make_text( utf8($value->{$p}) ) );
 		}
 	}
 	else
 	{
-		$dom->appendChild( $session->make_text( $value ) );
+		$dom->appendChild( $session->make_text( utf8($value) ) );
 	}
 
 	return $dom;

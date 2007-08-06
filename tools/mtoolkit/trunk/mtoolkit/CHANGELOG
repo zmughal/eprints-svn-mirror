@@ -42,3 +42,8 @@ Migration toolkit Changelog...
 
 2007-07-13 cjg
  * Fixed "required" information in workflow generation.
+
+2007-08-06 cjg
+ * All exported make_text's are now wrapped in a utf8() method, which can't
+    fix errors, but at least reports them.
+ * Actually, files are latin1(), not utf8
