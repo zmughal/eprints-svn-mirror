@@ -261,6 +261,8 @@ get_metadata( this, oid )
 	OUTPUT:
 		RETVAL
 
+
+
 char* 
 set_metadata( this, oid, key, value )
 	SV *this;
@@ -289,5 +291,35 @@ set_metadata( this, oid, key, value )
 		RETVAL
 		
 
+AV* 
+query( this, qstr )
+	SV *this;
+	char* qstr;
+	PREINIT:
+		hc_session_t *session = NULL;
+		hc_oid returnedOid;
+		hc_long_t count = 0;
+		int finished = 0;
+		hc_query_result_set_t *rset = NULL;
+		hcerr_t	res;
+	CODE:
+		session = this_session(this);
+		res = hc_query_ez(session,qstr,&rset);
+		store_honey_errcode( this, res );
+		if( res ) { XSRETURN_UNDEF; }
+		RETVAL = newAV();
+		/* Loop up until the maximum result size */
+		for (count = 0; count < 99999; count++) 
+		{
+    			res = hc_qrs_next_ez(rset, &returnedOid, &finished);
+			store_honey_errcode( this, res );
+			if( res ) { XSRETURN_UNDEF; }
+                	if (finished) break;
+			av_push( RETVAL, newSVpv( returnedOid, 0 ) );
+		}	/* loop through results */
+        	res = hc_qrs_free(rset);
+		store_honey_errcode( this, res );
+	OUTPUT:
+		RETVAL
 
-	
+
