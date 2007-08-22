@@ -6473,3 +6473,5 @@ PACKAGE: 2.2.99.2
  * Fixed weird sort of error which didn't fail but should in xhtml_help.
  * Added support for <title> override in workflow.
 
+2007-08-22 tmb
+ * Fixed "action" parameter not being included in redirect_to_me_url
