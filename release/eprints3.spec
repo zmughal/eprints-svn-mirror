@@ -15,23 +15,23 @@ License: GPL
 Group: Applications/Communications
 BuildRoot: %{_tmppath}/%{name}-%{version}-buildroot
 BuildRequires: httpd >= 2.0.52
-BuildRequires: mod_perl >= 2.0.0
+BuildRequires: mod_perl
 BuildRequires: perl >= 2:5.8.0
 BuildRequires: perl(DBI) perl(Data::ShowTable) perl(Unicode::String)
 BuildRequires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
 BuildRequires: perl(XML::Parser) perl(Time::HiRes) perl(CGI)
 BuildRequires: perl(MIME::Lite) perl(Readonly)
 BuildRequires: perl(XML::LibXML) >= 1.63
-BuildRequires: xpdf antiword tetex-latex wget gzip tar ImageMagick unzip elinks
+BuildRequires: xpdf antiword tetex-latex wget gzip tar ImageMagick unzip
 Requires: httpd >= 2.0.52
-Requires: mod_perl >= 2.0.0
+Requires: mod_perl
 Requires: perl >= 2:5.8.0
 Requires: perl(DBI) perl(Data::ShowTable) perl(Unicode::String)
 Requires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
 Requires: perl(XML::Parser) perl(Time::HiRes) perl(CGI)
 Requires: perl(MIME::Lite) perl(Readonly)
 Requires: perl(XML::LibXML) >= 1.63
-Requires: xpdf antiword tetex-latex wget gzip tar ImageMagick unzip elinks
+Requires: xpdf antiword tetex-latex wget gzip tar ImageMagick unzip
 BuildArch: noarch
 provides: perl(EPrints::BackCompatibility)
 
@@ -63,38 +63,14 @@ make DESTDIR=$RPM_BUILD_ROOT%{install_path} install
 ./rpmpatch.sh $RPM_BUILD_ROOT
 popd
 
-# We have to do some trickery to make SystemSettings.pm a config file
-find $RPM_BUILD_ROOT%{install_path} -type f -print |
-	sed "s@^$RPM_BUILD_ROOT@@g" |
-	grep -v "SystemSettings.pm$" |
-	grep -v "/etc/httpd/conf.d/eprints3.conf" |
-	grep -v "^%{install_path}/var" |
-	grep -v "^%{install_path}/archives" > %{name}-%{version}-filelist
-if [ "$(cat %{name}-%{version}-filelist)X" = "X" ] ; then
-	echo "ERROR: EMPTY FILE LIST"
-	exit -1
-fi
-
-# Otherwise directories get left behind on erase
-find $RPM_BUILD_ROOT%{install_path} -type d -print |
-	sed "s@^$RPM_BUILD_ROOT@@g" |
-	grep -v "^%{install_path}/var" |
-	grep -v "^%{install_path}/archives" |
-	sed "s/^/\%dir /" >> %{name}-%{version}-filelist
-
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%files -f %{name}-%{version}-filelist
-%defattr(-,root,root)
+%files
+%defattr(-,%{user},%{user_group})
+/opt/eprints3
 %config /etc/httpd/conf.d/eprints3.conf
-%config %{install_path}/perl_lib/EPrints/SystemSettings.pm
-# these two directories need to be writable by epadmin and generate_apacheconf
-# as user eprints
-%attr(02775,%{user},%{user_group}) %{install_path}/archives
-%dir %attr(02775,%{user},%{user_group}) %{install_path}/var
-%config %attr(-,%{user},%{user_group}) %{install_path}/var/auto-apache*.conf
-%ghost %{install_path}/var/indexer.log*
+# %config /opt/eprints3/perl_lib/EPrints/SystemSettings.pm
 
 %pre
 /usr/sbin/groupadd %{user_group} 2>/dev/null || /bin/true
@@ -110,10 +86,6 @@ rm -rf $RPM_BUILD_ROOT
 /usr/sbin/groupdel eprints || /bin/true
 
 %changelog
-* Fri May 18 2007 Tim Brody <tdb01r@ecs.soton.ac.uk>
- - Changed most files to be owned by root
- - Made SystemSettings a config file
-
 * Sun Feb 18 2007 Tim Brody <tdb01r@ecs.soton.ac.uk>
  - Added all shell dependencies
  - Removed sendmail dependency (not sure about this one)
