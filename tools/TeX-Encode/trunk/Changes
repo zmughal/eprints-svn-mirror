@@ -1,5 +1,8 @@
 Revision history for Perl extension Encode::LaTeX.
 
+1.0
+	- CPAN thinks 0.10 is less than 0.9
+
 0.10
 	- Remove empty braces e.g. $\sim{}200$
 

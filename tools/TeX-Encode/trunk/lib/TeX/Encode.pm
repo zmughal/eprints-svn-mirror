@@ -13,7 +13,7 @@ use Carp;
 
 our @ISA = qw(Encode::Encoding);
 
-our $VERSION = '0.10';
+our $VERSION = '1.0';
 
 use constant ENCODE_CHRS => '<>&"';
 
