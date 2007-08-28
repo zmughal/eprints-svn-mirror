@@ -139,8 +139,9 @@ sub render
 
 			my $status = $e->get_value( "eprint_status" );
 
+			my $cols = $session->current_user->get_value( "items_fields" );
 			my $first = 1;
-			for( @$columns )
+			for( @$cols )
 			{
 				my $td = $session->make_element( "td", class=>"ep_columns_cell_$status".($first?" ep_columns_cell_first":"") );
 				$first = 0;

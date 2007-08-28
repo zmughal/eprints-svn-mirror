@@ -29,18 +29,75 @@ This package contains functions which don't belong anywhere else.
 
 package EPrints::Utils;
 
+use Filesys::DiskSpace;
 use Unicode::String qw(utf8 latin1 utf16);
 use File::Copy qw();
 use Text::Wrap qw();
+use MIME::Lite;
+use LWP::MediaTypes qw( guess_media_type );
 use URI;
 
 use strict;
 
 $EPrints::Utils::FULLTEXT = "_fulltext_";
 
+my $DF_AVAILABLE;
+
 BEGIN {
 	eval "use Term::ReadKey";
 	eval "use Compat::Term::ReadKey" if $@;
+
+	$DF_AVAILABLE = 0;
+
+	sub detect_df 
+	{
+		my $dir = "/";
+		my ($fmt, $res);
+	
+		# try with statvfs..
+		eval 
+		{  
+			{
+				package main;
+				require "sys/syscall.ph";
+			}
+			$fmt = "\0" x 512;
+			$res = syscall (&main::SYS_statvfs, $dir, $fmt) ;
+			$res == 0;
+		}
+		# try with statfs..
+		|| eval 
+		{ 
+			{
+				package main;
+				require "sys/syscall.ph";
+			}	
+			$fmt = "\0" x 512;
+			$res = syscall (&main::SYS_statfs, $dir, $fmt);
+			$res == 0;
+		}
+	}
+	unless( $EPrints::SystemSettings::conf->{disable_df} )
+	{
+		$DF_AVAILABLE = detect_df();
+		if( !$DF_AVAILABLE )
+		{
+			print STDERR <<END;
+---------------------------------------------------------------------------
+df ("Disk Free" system call) appears to be unavailable on your server. To 
+enable it, you should run 'h2ph * */*' (as root) in your /usr/include 
+directory. See the EPrints manual for more information.
+
+If you can't get df working on your system, you can work around it by
+adding 
+  disable_df => 1
+to .../eprints2/perl_lib/EPrints/SystemSettings.pm
+but you should read the manual about the implications of doing this.
+---------------------------------------------------------------------------
+END
+			exit;
+		}
+	}
 }
 
 
@@ -53,8 +110,6 @@ BEGIN {
 Return the number of bytes of disk space available in the directory
 $dir or undef if we can't find out.
 
-DEPRECATED - use EPrints::Platform::free_space instead.
-
 =cut
 ######################################################################
 
@@ -62,9 +117,8 @@ sub df_dir
 {
 	my( $dir ) = @_;
 
-	EPrints::deprecated;
-
-	return EPrints::Platform::free_space( $dir );
+	return df $dir if( $DF_AVAILABLE );
+	die( "Attempt to call df when df function is not available." );
 }
 
 

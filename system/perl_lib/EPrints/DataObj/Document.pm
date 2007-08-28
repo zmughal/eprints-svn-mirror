@@ -913,7 +913,6 @@ sub upload
 	my $size = 0;
 	my $buffer;	
 	open OUT, ">$out_file" or return( 0 );
-	binmode( OUT );
 	while( my $bytes = read( $filehandle, $buffer, 1024 ) )
 	{
 		$size += $bytes;
@@ -952,7 +951,6 @@ sub add_file
 
 	my $fh;
 	open( $fh, $file ) or return( 0 );
-	binmode( $fh );
 	my $rc = $self->upload( $fh, $filename, $preserve_path );
 	close $fh;
 
@@ -1384,7 +1382,7 @@ sub rehash
 
 	my $hashfile = $self->get_eprint->local_path."/".
 		$self->get_value( "docid" ).".".
-		EPrints::Platform::get_hash_name();
+		EPrints::Time::get_iso_timestamp().".xsh";
 
 	EPrints::Probity::create_log( 
 		$self->{session}, 
@@ -1427,8 +1425,7 @@ sub get_text
 	for( @files )
 	{
 		open my $fi, "<:utf8", "$tempdir/$_" or next;
-		while( $fi->read($buffer,4096,length($buffer)) ) 
-		{
+		while( $fi->read($buffer,4096,length($buffer)) ) {
 			last if length($buffer) > 4 * 1024 * 1024;
 		}
 		close $fi;
@@ -1712,13 +1709,13 @@ sub mime_type
 	return undef unless -r $path;
 	return undef if -d $path;
 
-	my $repository = $self->{session}->get_repository;
+	my $repos = $self->{session}->get_repository;
 
 	my %params = ( SOURCE => $path );
 
-	return undef if( !$repository->can_invoke( "file", %params ) );
+	return undef if( !$repos->can_invoke( "file", %params ) );
 
-	my $command = $repository->invocation( "file", %params );
+	my $command = $repos->invocation( "file", %params );
 	my $mime_type = `$command`;
 	$mime_type =~ s/\015?\012?$//s;
 	($mime_type) = split /,/, $mime_type, 2; # file can return a 'sub-type'
