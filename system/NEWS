@@ -5,6 +5,36 @@ CHANGELOG.
 =========================================================================
 
 =========================================================================
+EPRINTS 3.0.3 (RC1)                                            2007-08-28
+=========================================================================
+
+ * Added Latidude+Longitude to the example data. 
+ * Fixed bug with URLs in text (not HTML) emails.
+ * You can now test STAFF_ONLY is false in workflows.
+ * .txt files should now be indexed.
+ * Fixed the bug with the subject-search in input forms.
+ * You can now put a <title> inside a <field> in workflow. This will 
+    override the normal title for that field. And you can put the 
+    contents in a "if" or "choose".
+ * generate_views now caches the subjects, speeding up the generation
+    of subject field views quite a bit.
+ * New options to help EPrints work with single sign-on systems:
+   * New configuration option, on_logout. This option is a function 
+      pointer. The sub is passed ( $session ) and is called when the 
+      /cgi/logout page is viewed. Handy for removing cookies.
+   * New configuration option: get_login_url. Function. If this exists, 
+      it is called when a secure page is requested and no user is 
+      authenticated it takes ( $session, $url ) as parameters. $url is 
+      the URL of the page the user wants to view. It returns the URL of 
+      a page to redirect them to log in (ideally this page will end up 
+      sending them back to $url when they have logged in.
+   * New configuration option: get_current_user. Passed ( $session ).
+      If this function exists it should return the user object of the
+      user currently logged in. This can be obtained from a cookie or
+      something more clever. 
+ * Fixed an issue with memory leaks when importing XML using XML::DOM.
+
+=========================================================================
 EPRINTS 3.0.2                                                  2007-05-30
 =========================================================================
 

@@ -6446,6 +6446,10 @@ PACKAGE: 2.2.99.2
  * Set all primary key fields to be can_clone=>0 (fixing bug introduced in 
     new-version by the wrong dir fix earlier)
 
+======================================================================
+13/06/2007 - EPRINTS-3.0.2
+======================================================================
+
 2007-06-13 tmb
  * Added some latitude + longitude values to example data
 
@@ -6486,3 +6490,6 @@ PACKAGE: 2.2.99.2
  * Added on_logout hook which is called when the login page is accessed
     which allows non-eprints login cookies to be hosed.
  
+======================================================================
+28/08/2007 - EPRINTS-3.0.3 (rc1)
+======================================================================
