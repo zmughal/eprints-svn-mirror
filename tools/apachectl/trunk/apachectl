@@ -40,7 +40,10 @@ ARGV="$@"
 # --------------------                              --------------------
 # 
 # the path to your httpd binary, including options if necessary
-HTTPD='/usr/sbin/httpd -d /opt/eprints3/apache'
+HTTPD='/usr/sbin/httpd -d ./apache'
+
+PERL5LIB=`pwd`/perl_lib
+export PERL5LIB
 
 #
 # a command that outputs a formatted text version of the HTML at the
