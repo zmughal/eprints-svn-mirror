@@ -8,8 +8,10 @@ cp ../h/* Honeycomb
 
 cp ../Honeycomb.xs Honeycomb/
 cp ../Makefile.PL Honeycomb/
+cp ../Honeycomb.pm Honeycomb/lib
 
 cd Honeycomb
 perl Makefile.PL
 make test
+make install
 

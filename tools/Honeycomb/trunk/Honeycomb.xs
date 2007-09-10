@@ -16,8 +16,8 @@
 #define FLAG_BINARY 0
 #endif
 
-#ifdef    O_LARGEFILE
-#define    FLAG_LARGEFILE  O_LARGEFILE
+#ifdef O_LARGEFILE
+#define FLAG_LARGEFILE  O_LARGEFILE
 #else
 #define FLAG_LARGEFILE 0
 #endif
@@ -27,35 +27,72 @@
 #define this_session(this) (hc_session_t*) SvIV(*(hv_fetch( (HV*)SvRV(this), "SESSION", 7, 0 )));
 typedef int foo;
 
-long append_to_string( void* string, char* buff, long n )
-{
-	sv_catpvn( string, buff, n );
+long read_from_perl_fh( void* perlfh, char* buff, long n )
+{	
+	int count;
+	SV *read_wrapper;
+	SV *buffer;
+	char* outbuffer;
+	long nbytes;
+	STRLEN nbytes_sl;
+	dSP;
+
+	ENTER;
+	SAVETMPS;
+
+	read_wrapper = eval_pv( "sub { my( $fh ) = @_; my $buffer; my $c = read( $fh, $buffer, 17 ); return( $buffer, $c ); }" , TRUE );
+
+	PUSHMARK(SP);
+	XPUSHs(perlfh);
+	PUTBACK;
+
+	count = call_sv( read_wrapper, G_ARRAY );
+
+	SPAGAIN;
+
+	if( count != 2 ) 
+	{
+		croak( "WTF?\n" );
+	}
+
+	nbytes = POPi;
+	buffer = POPs;
+	nbytes_sl = (STRLEN)nbytes;
+	outbuffer = SvPV( buffer, nbytes_sl );
+	strncpy( buff, outbuffer, nbytes );
+
+	PUTBACK;
+	FREETMPS;
+	LEAVE;
+
+	return nbytes;
+}
+
+long handle_chunk( void* fnSV, char* buff, long n )
+{	
+	dSP;
+
+	ENTER;
+	SAVETMPS;
+
+	PUSHMARK(SP);
+	XPUSHs(sv_2mortal(newSVpv(buff,n)));
+	PUTBACK;
+
+	call_sv( fnSV, G_DISCARD );
+
+	FREETMPS;
+	LEAVE;
+
 	return n;
 }
 
-long print_stuff(void* stream, char* buff, long n)
-{
-		return fwrite(buff, 1, n, stdout );
-}
-long write_to_file(void* stream, char* buff, long n)
-{
-	int pos = 0;
-	while (pos < n)
-	{
-		int i = write ((int) stream, buff + pos, n - pos);
-		if (i < 0) return i;
-		if (i == 0) break;
-		pos += i;
-	}
-
-	return pos;
-}
 long read_from_file(void* stream, char* buff, long n)
 {
-    long nbytes;
+	long nbytes;
 
-    nbytes = read((int) stream, buff, n);
-    return nbytes;
+	nbytes = read((int) stream, buff, n);
+	return nbytes;
 }	/* read_from_file */
 
 
@@ -67,7 +104,6 @@ void honey_init()
 	{
 		fprintf(stderr,"Error %d occurred while initializing StorageTek 5800.\n", rc);
 	}
-	printf("Honeycomb AOK\n" );
 }
 
 
@@ -120,29 +156,11 @@ free( this )
 		session = this_session(this);
 		store_honey_errcode( this, hc_session_free(session) );
 
-SV *
-string_oid( this, oid )
-	SV *this;
-	char *oid;
-	PREINIT:
-		hc_session_t *session = NULL;
-	CODE:
-		session = this_session(this);
-		RETVAL = newSVpv( "", 0 );
-		store_honey_errcode( 
-			this,
-			hc_retrieve_ez(
-				session,
-				&append_to_string,
-				(void *)RETVAL,
-				(hc_oid *)oid ) );
-	OUTPUT:
-		RETVAL
-
 void
-print_oid( this, oid )
+get_oid( this, oid, callback )
 	SV *this;
 	char *oid;
+	SV *callback;
 	PREINIT:
 		hc_session_t *session = NULL;
 	CODE:
@@ -151,8 +169,8 @@ print_oid( this, oid )
 			this,
 			hc_retrieve_ez(
 				session,
-				&print_stuff,
-				(void *)stdout,
+				&handle_chunk,
+				callback,
 				(hc_oid *)oid ) );
 
 
@@ -160,33 +178,41 @@ print_oid( this, oid )
 
 
 char* 
-store_file( this, filename )
+store( this, fh, metadata )
 	SV *this;
-	char *filename;
+	SV *fh;
+	HV *metadata;
 	PREINIT:
 		hc_session_t *session;
 		hc_nvr_t *nvr = NULL;
 		hcerr_t	res;
 		hc_system_record_t system_record;
-		int fileToStore = -1;
+		HE* md_pair;
+		char* value;
+		char* key;
+		SV* value_sv;
+		I32 retlen;
 	CODE:
 		session = this_session(this);
 		res = hc_nvr_create( session, 1, &nvr );
 		store_honey_errcode( this, res );
 		if( res ) { XSRETURN_UNDEF; }
-		if(!(fileToStore = open(filename, O_RDONLY | FLAG_BINARY | FLAG_LARGEFILE)) == -1)
+		hv_iterinit( metadata );
+		while( (md_pair = hv_iternext( metadata )) )	
 		{
-			hc_nvr_free( nvr );
-			store_honey_errcode( this, -1 );
-			XSRETURN_UNDEF; 
+			value_sv = hv_iterval( metadata, md_pair );
+			value = SvPV_nolen(value_sv);
+			key = hv_iterkey( md_pair, &retlen );
+			res = hc_nvr_add_from_string( nvr, key, value );
+			store_honey_errcode( this, res );
+			if( res ) { hc_nvr_free( nvr ); XSRETURN_UNDEF; }
 		}
 		res = hc_store_both_ez (session, 
-					&read_from_file, 
-					(void *)fileToStore, 
+					&read_from_perl_fh, 
+					(void *)fh, 
 					nvr,
 					&system_record);
 		store_honey_errcode( this, res );
-		close(fileToStore);
 		hc_nvr_free( nvr );
 		if (res != HCERR_OK)
 		{
@@ -195,6 +221,8 @@ store_file( this, filename )
 		RETVAL = system_record.oid;
 	OUTPUT:
 		RETVAL
+
+
 
 int
 error( this )
@@ -208,8 +236,8 @@ error( this )
 		RETVAL
 
 
-void
-print_error( this )
+SV*
+error_string( this )
 	SV *this;
 	PREINIT:
 		hc_session_t *session = NULL;
@@ -217,18 +245,26 @@ print_error( this )
 		int32_t response_code = -1;
 		char* errstr = "";
 		hcerr_t err = -1;
+		char buffer[1023];
 	CODE:
+		RETVAL = newSVpv( "", 0 );
 		session = this_session(this);
 		res = SvIV( *(hv_fetch( (HV*)SvRV(this), "ERRCODE", 7, 0 ) ));
-		fprintf(stderr,"\nThe server returned error code %d = %s\n", res, hc_decode_hcerr(res));
+		sprintf(buffer,"\nThe server returned error code %d = %s\n", res, hc_decode_hcerr(res));
+		sv_catpv( RETVAL, buffer );
 		err = hc_session_get_status(session, &response_code, &errstr);
 		if (err == HCERR_OK) 
 		{
-			fprintf(stderr,"HTTP Response_code: %d\n",response_code);
+			sprintf(buffer,"HTTP Response_code: %d\n",response_code);
+			sv_catpv( RETVAL, buffer );
 			if (errstr[0] != 0) {
-				fprintf(stderr,"Server Error String: %s\n", errstr);
+				sprintf(buffer,"Server Error String: %s\n", errstr);
+				sv_catpv( RETVAL, buffer );
 			}
 		}
+	OUTPUT:
+		RETVAL
+
 
 SV *
 get_metadata( this, oid )
@@ -264,24 +300,35 @@ get_metadata( this, oid )
 
 
 char* 
-set_metadata( this, oid, key, value )
+set_metadata( this, oid, metadata )
 	SV *this;
 	char* oid;
-	char* key;
-	char* value;
+	HV* metadata;
 	PREINIT:
 		hc_session_t *session = NULL;
 		hc_nvr_t *nvr=NULL;
 		hcerr_t res;
 		hc_system_record_t system_record;
+		char* key;
+		char* value;
+		SV* value_sv;
+		HE* md_pair;
+		I32 retlen;
 	CODE:
 		session = this_session(this);
 		res = hc_nvr_create( session, 2, &nvr );
 		store_honey_errcode( this, res );
 		if( res ) { XSRETURN_UNDEF; }
-		res = hc_nvr_add_from_string( nvr, key, value );
-		store_honey_errcode( this, res );
-		if( res ) { hc_nvr_free( nvr ); XSRETURN_UNDEF; }
+		hv_iterinit( metadata );
+		while( (md_pair = hv_iternext( metadata )) )	
+		{
+			value_sv = hv_iterval( metadata, md_pair );
+			value = SvPV_nolen(value_sv);
+			key = hv_iterkey( md_pair, &retlen );
+			res = hc_nvr_add_from_string( nvr, key, value );
+			store_honey_errcode( this, res );
+			if( res ) { hc_nvr_free( nvr ); XSRETURN_UNDEF; }
+		}
 		res = hc_store_metadata_ez( session, (hc_oid*)oid, nvr, &system_record );
 		store_honey_errcode( this, res );
 		res = hc_nvr_free( nvr );
@@ -308,16 +355,17 @@ query( this, qstr )
 		store_honey_errcode( this, res );
 		if( res ) { XSRETURN_UNDEF; }
 		RETVAL = newAV();
+		sv_2mortal((SV*)RETVAL);
 		/* Loop up until the maximum result size */
 		for (count = 0; count < 99999; count++) 
 		{
-    			res = hc_qrs_next_ez(rset, &returnedOid, &finished);
+			res = hc_qrs_next_ez(rset, &returnedOid, &finished);
 			store_honey_errcode( this, res );
 			if( res ) { XSRETURN_UNDEF; }
-                	if (finished) break;
+			if (finished) break;
 			av_push( RETVAL, newSVpv( returnedOid, 0 ) );
 		}	/* loop through results */
-        	res = hc_qrs_free(rset);
+		hc_qrs_free(rset);
 		store_honey_errcode( this, res );
 	OUTPUT:
 		RETVAL
