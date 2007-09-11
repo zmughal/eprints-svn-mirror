@@ -79,6 +79,7 @@ find $RPM_BUILD_ROOT%{install_path} -type f -print |
 	grep -v "SystemSettings.pm$" |
 	grep -v "/etc/httpd/conf.d/eprints3.conf" |
 	grep -v "^%{install_path}/var" |
+	grep -v "^%{install_path}/cfg" |
 	grep -v "^%{install_path}/archives" > %{name}-%{version}-filelist
 if [ "$(cat %{name}-%{version}-filelist)X" = "X" ] ; then
 	echo "ERROR: EMPTY FILE LIST"
@@ -89,6 +90,7 @@ fi
 find $RPM_BUILD_ROOT%{install_path} -type d -print |
 	sed "s@^$RPM_BUILD_ROOT@@g" |
 	grep -v "^%{install_path}/var" |
+	grep -v "^%{install_path}/cfg" |
 	grep -v "^%{install_path}/archives" |
 	sed "s/^/\%dir /" >> %{name}-%{version}-filelist
 
