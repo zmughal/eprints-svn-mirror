@@ -88,6 +88,7 @@ if( $from_configure{"prefix"} =~ s#/$## )
 
 # shorter variables for clarity later
 my $from_path = $from_configure{dist_path};
+my $prefix = $from_configure{prefix};
 my $to_path = $from_configure{prefix};
 # Implement DESTDIR support for GNU compatibility.
 # If an argument is specified install there instead.
@@ -308,15 +309,15 @@ my @base_files = ( "VERSION", "CHANGELOG", "COPYING", "NEWS", "AUTHORS", "README
 
 foreach my $dir (@normal_dirs)
 {
-	install_dir($from_path, $dir, 0664, $uid, $gid, $to_path, \%oldhashes, $newsighash);
+	install_dir($from_path, $dir, 0664, $uid, $gid, $to_path, \%oldhashes, $newsighash, $prefix);
 }
 foreach my $dir (@executable_dirs)
 {
-	install_dir($from_path, $dir, 0775, $uid, $gid, $to_path, \%oldhashes, $newsighash);
+	install_dir($from_path, $dir, 0775, $uid, $gid, $to_path, \%oldhashes, $newsighash, $prefix);
 }
 foreach my $file (@base_files)
 {
-	install_file($from_path, $file, undef, 0664, $uid, $gid, $to_path, \%oldhashes, $newsighash );
+	install_file($from_path, $file, undef, 0664, $uid, $gid, $to_path, \%oldhashes, $newsighash, $prefix );
 }
 
 ensure_dir( "$to_path/archives", $uid, $gid, 02775 );
@@ -634,7 +635,7 @@ sub get_digest
 
 sub install_file
 {
-	my($distdir, $file, $dir, $perms, $uid, $gid, $dest, $sighash, $newsighash ) = @_;
+	my($distdir, $file, $dir, $perms, $uid, $gid, $dest, $sighash, $newsighash, $prefix ) = @_;
 
 	my $relpath = $file;
 	if( defined $dir ) { $relpath = "$dir/$file"; }
@@ -657,12 +658,12 @@ sub install_file
 		binmode(INFILE);
 		if ($file eq "startup.pl")
 		{
-			$currline = "use lib '".$dest."/perl_lib';\n";
+			$currline = "use lib '".$prefix."/perl_lib';\n";
 			$outdigest->add($currline);
 		}
 		else
 		{
-			$currline = "#!".$from_configure{perl}." -w -I".$dest."/perl_lib\n";
+			$currline = "#!".$from_configure{perl}." -w -I".$prefix."/perl_lib\n";
 			$outdigest->add($currline);
 		}
 		push @linesout, $currline;
@@ -726,7 +727,7 @@ sub install_file
 
 sub install_dir
 {
-	my( $distdir, $dir, $perms, $uid, $gid, $dest, $sighash, $newsighash ) = @_;
+	my( $distdir, $dir, $perms, $uid, $gid, $dest, $sighash, $newsighash, $prefix ) = @_;
 
 	unless( opendir(INDIR, $dir) )
 	{
@@ -760,11 +761,11 @@ sub install_dir
 	closedir(INDIR);
 	foreach(@files)
 	{
-		install_file($distdir, $_, $dir, $perms, $uid, $gid, $dest, $sighash, $newsighash );
+		install_file($distdir, $_, $dir, $perms, $uid, $gid, $dest, $sighash, $newsighash, $prefix );
 	}
 	foreach(@dirs)
 	{
-		install_dir($distdir, "$dir/".$_, $perms, $uid, $gid, $dest, $sighash, $newsighash );
+		install_dir($distdir, "$dir/".$_, $perms, $uid, $gid, $dest, $sighash, $newsighash, $prefix );
 	}
 }
 
