@@ -241,25 +241,28 @@ set( 'show_ids_in_log', \%from_configure, $systemsettings, 0 );
 set( 'apache', \%from_configure, $systemsettings, "2" );
 
 
-# Check the user exists
-
-unless( defined getpwnam($systemsettings->{"user"}) )
-{
-	print "User ".$from_configure{"user"}." does not exist. Aborting.\n";
-	exit 1;
-}
-
-
-# Check the group exists
-
-unless( defined getgrnam($systemsettings->{"group"}) )
-{
-	print "Group ".$from_configure{"group"}." does not exist. Aborting.\n";
-	exit 1;
-}
-
 my(undef,undef,$uid) = getpwnam($systemsettings->{"user"});
 my(undef,undef,$gid) = getgrnam($systemsettings->{"group"});
+
+# Warn if we can't install as the requested user/group
+
+unless( $uid )
+{
+	warn("Warning! User $systemsettings->{user} doesn't exist. You probably need to do: useradd $systemsettings->{user}\n");
+}
+
+unless( $gid )
+{
+	warn("Warning! Group $systemsettings->{group} doesn't exist. You probably need to do: groupadd $systemsettings->{group}\n");
+}
+
+unless( $< == 0 or (defined $uid and $uid == $<) )
+{
+	warn("Warning! It looks like you're trying to install as user $systemsettings->{user} without root. You probably need to do: sudo $0\n");
+}
+
+$uid = $< || 0 unless defined $uid;
+$gid = $( || 0 unless defined $gid;
 
 my %oldhashes = ();
 
@@ -350,8 +353,8 @@ write_sigs( $to_path, $newsighash, $uid, $gid );
 save_settings( 
 	$system_settings_file, 
 	$systemsettings, 
-	$systemsettings->{user}, 
-	$systemsettings->{group} );
+	$uid, 
+	$gid );
 
 # Warnings!
 if( $upgrade )
@@ -440,9 +443,7 @@ sub set
 
 sub save_settings
 {
-	my( $sysfile, $syshash, $user, $group ) = @_;
-
-	my(undef,undef,$uid,$gid) = getpwnam($user);
+	my( $sysfile, $syshash, $uid, $gid ) = @_;
 
 	my $dumper = Data::Dumper->new( 
 		[ $syshash ] , 
@@ -464,7 +465,7 @@ sub save_settings
 # 
 ######################################################################
 #
-# This file is part of EPrints 2.
+# This file is part of EPrints 3.
 #
 # EPrints 2 is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -717,11 +718,7 @@ sub install_file
 			print "\nUnable to chmod $dest/$relpath : $!\n";
 			exit 1;
 		}
-		unless( chown($uid, $gid, "$dest/$relpath") )
-		{
-			print "\nUnable to chown $dest/$relpath : $!\n";
-			exit 1;
-		}
+		chown($uid, $gid, "$dest/$relpath");
 	}
 }
 
@@ -739,11 +736,7 @@ sub install_dir
 	ensure_dir("$dest/$dir", $uid, $gid, 02775);
  	if( $from_configure{"platform"} eq "unix" )
 	{
-		unless( chown($uid, $gid, "$dest/$dir") )
-		{
-			print "\nUnable to chown $dest/$dir : $!\n"; 
-			exit 1;
-		}
+		chown($uid, $gid, "$dest/$dir");
 	}
 
 	while(my $item = readdir(INDIR))
@@ -913,12 +906,7 @@ sub ensure_dir
 		}
 	}		
 	
-	unless( chown($uid, $gid, $dir) )
-	{
-		print "Unable to chown ".$dir." : $!\n"; 
-		print "Aborting!\n";
-		exit 1;
-	}
+	chown($uid, $gid, $dir);
 
 	unless( chmod($mode, $dir) )
 	{
