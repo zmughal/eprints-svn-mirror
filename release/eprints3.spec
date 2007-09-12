@@ -4,20 +4,15 @@
 %define install_path /opt/eprints3
 %define package __TARBALL__
 
-# Honey/GDOME/LibXML are dynamically loaded, which breaks Requires
-AutoReq: 0
-# All eprint's perl modules are private, which breaks Provides
-AutoProv: 0
-
-Summary: Open Access Repository Software
 Name: eprints3
 Version: __RPMVERSION__
-Release: 1
+Release: 1%{?dist}
+Summary: Open Access Repository Software
+License: GPL
+Group: Applications/Communications
 URL: http://software.eprints.org/
 Source0: %{package}.tar.gz
 # Patch0: %{source_name}-%{version}.patch
-License: GPL
-Group: Applications/Communications
 BuildRoot: %{_tmppath}/%{name}-%{version}-buildroot
 BuildRequires: httpd >= 2.0.52
 BuildRequires: mod_perl >= 2.0.0
@@ -39,6 +34,10 @@ Requires: perl(XML::LibXML) >= 1.63
 Requires: xpdf antiword tetex-latex wget gzip tar ImageMagick unzip elinks
 BuildArch: noarch
 Provides: eprints3
+# Honey/GDOME/LibXML are dynamically loaded and don't need to be Required
+AutoReq: 0
+# All eprint's perl modules are private and shouldn't be Provided
+AutoProv: 0
 
 %description
 EPrints is a web-based content management system for information archiving. It
@@ -59,7 +58,7 @@ integration with other systems.
 pushd %{package}
 ./configure --prefix=%{install_path} --with-user=%{user} --with-group=%{user_group} --with-apache=2 --with-smtp-server=localhost --disable-user-check --disable-group-check
 pushd perl_lib
-rm -rf URI.pm URI XML Unicode Proc MIME Readonly
+rm -rf URI.pm URI Unicode Proc MIME Readonly
 popd
 popd
 
@@ -132,6 +131,9 @@ popd > /dev/null
 /usr/sbin/groupdel eprints || /bin/true
 
 %changelog
+* Wed Sep 12 2007 Tim Brody <tdb01r@ecs.soton.ac.uk>
+ - Fedora Linux style
+
 * Tue Sep 11 2007 Tim Brody <tdb01r@ecs.soton.ac.uk>
  - ShowTable is just an old dependency in DBD::mysql?
  - Removed rpmpatch.sh
