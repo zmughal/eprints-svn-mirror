@@ -1,6 +1,7 @@
 %define source_name eprints3
 %define user eprints
 %define user_group eprints
+# This is the standard path used by the upstream
 %define install_path /opt/eprints3
 %define package __TARBALL__
 
@@ -12,6 +13,7 @@ License: GPL
 Group: Applications/Communications
 URL: http://software.eprints.org/
 Source0: %{package}.tar.gz
+BuildArch: noarch
 # Patch0: %{source_name}-%{version}.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-buildroot
 BuildRequires: httpd >= 2.0.52
@@ -32,11 +34,11 @@ Requires: perl(XML::Parser) perl(Time::HiRes) perl(CGI)
 Requires: perl(MIME::Lite) perl(Readonly)
 Requires: perl(XML::LibXML) >= 1.63
 Requires: xpdf antiword tetex-latex wget gzip tar ImageMagick unzip elinks
-BuildArch: noarch
+Requires: chkconfig
 Provides: eprints3
-# Honey/GDOME/LibXML are dynamically loaded and don't need to be Required
+# Some modules are dynamically loaded by eprints, which confuses AutoReq
 AutoReq: 0
-# All eprint's perl modules are private and shouldn't be Provided
+# All eprint's perl modules are private and shouldn't be AutoProvided
 AutoProv: 0
 
 %description
@@ -58,11 +60,14 @@ integration with other systems.
 pushd %{package}
 ./configure --prefix=%{install_path} --with-user=%{user} --with-group=%{user_group} --with-apache=2 --with-smtp-server=localhost --disable-user-check --disable-group-check
 pushd perl_lib
+# We ought to use the system libraries
 rm -rf URI.pm URI Unicode Proc MIME Readonly
 popd
 popd
 
 %install
+rm -rf $RPM_BUILD_ROOT
+
 pushd %{package}
 mkdir -p ${RPM_BUILD_ROOT}%{install_path}
 echo 'Installing into:'
@@ -72,7 +77,23 @@ export DESTDIR
 make install
 popd
 
-# We have to do some trickery to make SystemSettings.pm a config file
+mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
+install -m755 $RPM_BUILD_ROOT%{install_path}/bin/epindexer $RPM_BUILD_ROOT/etc/rc.d/init.d/epindexer
+
+APACHE_CONF=%{install_path}/cfg/apache.conf
+mkdir -p $RPM_BUILD_ROOT/etc/httpd/conf.d
+cat > $RPM_BUILD_ROOT/etc/httpd/conf.d/eprints3.conf << "EOF"
+# This includes the eprints Apache configuration which enables virtual hosts on
+# port 80 and creates a virtual host for each configured archive.
+
+EOF
+echo "Include $APACHE_CONF" >> $RPM_BUILD_ROOT/etc/httpd/conf.d/eprints3.conf
+chmod 644 $RPM_BUILD_ROOT/etc/httpd/conf.d/eprints3.conf
+
+# We have to build a custom list of files to make SystemSettings.pm a config
+# file in the same directory as normal packaged files
+# We also take the opportunity to make only those directories that need
+# be writable by the eprints user
 find $RPM_BUILD_ROOT%{install_path} -type f -print |
 	sed "s@^$RPM_BUILD_ROOT@@g" |
 	grep -v "SystemSettings.pm$" |
@@ -85,7 +106,8 @@ if [ "$(cat %{name}-%{version}-filelist)X" = "X" ] ; then
 	exit -1
 fi
 
-# Otherwise directories get left behind on erase
+# Strip directories from the file list (otherwise they get left behind on
+# erase)
 find $RPM_BUILD_ROOT%{install_path} -type d -print |
 	sed "s@^$RPM_BUILD_ROOT@@g" |
 	grep -v "^%{install_path}/var" |
@@ -98,9 +120,9 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -f %{name}-%{version}-filelist
 %defattr(-,root,root)
-# %config /etc/httpd/conf.d/eprints3.conf
-# %config %attr(-,%{user},%{user_group}) %{install_path}/var/auto-apache*.conf
-# %ghost %{install_path}/var/indexer.log*
+%doc %{package}/AUTHORS %{package}/CHANGELOG %{package}/COPYING %{package}/NEWS %{package}/README %{package}/VERSION
+%attr(0644,root,root) /etc/httpd/conf.d/eprints3.conf
+%attr(0755,root,root) /etc/rc.d/init.d/epindexer
 %config %{install_path}/perl_lib/EPrints/SystemSettings.pm
 # archives, needs to persist permissions to sub-directories
 %dir %attr(02775,%{user},%{user_group}) %{install_path}/archives
@@ -108,6 +130,8 @@ rm -rf $RPM_BUILD_ROOT
 %dir %attr(0775,%{user},%{user_group}) %{install_path}/var
 # cfg needs to be writable by generate_apacheconf
 %dir %attr(0755,%{user},%{user_group}) %{install_path}/cfg
+# %config %attr(-,%{user},%{user_group}) %{install_path}/var/auto-apache*.conf
+# %ghost %{install_path}/var/indexer.log*
 
 %pre
 /usr/sbin/groupadd %{user_group} 2>/dev/null || /bin/true
@@ -117,14 +141,11 @@ rm -rf $RPM_BUILD_ROOT
 %post
 pushd %{install_path} > /dev/null
 /bin/su -c ./bin/generate_apacheconf %{user}
-APACHE_CONF=%{install_path}/var/apache.conf
-echo "You will need to add the following line to the end of your Apache
-configuration:
-
-Include $APACHE_CONF"
 popd > /dev/null
+/sbin/chkconfig --add epindexer
 
 %preun
+/sbin/chkconfig --del epindexer
 
 %postun
 /usr/sbin/userdel eprints || /bin/true
@@ -133,6 +154,8 @@ popd > /dev/null
 %changelog
 * Wed Sep 12 2007 Tim Brody <tdb01r@ecs.soton.ac.uk>
  - Fedora Linux style
+ - Added Apache conf.d file
+ - Added epindexer init.d file
 
 * Tue Sep 11 2007 Tim Brody <tdb01r@ecs.soton.ac.uk>
  - ShowTable is just an old dependency in DBD::mysql?
