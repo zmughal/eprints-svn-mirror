@@ -88,6 +88,7 @@ if( $from_configure{"prefix"} =~ s#/$## )
 
 # shorter variables for clarity later
 my $from_path = $from_configure{dist_path};
+my $prefix = $from_configure{prefix};
 my $to_path = $from_configure{prefix};
 # Implement DESTDIR support for GNU compatibility.
 # If an argument is specified install there instead.
@@ -240,25 +241,28 @@ set( 'show_ids_in_log', \%from_configure, $systemsettings, 0 );
 set( 'apache', \%from_configure, $systemsettings, "2" );
 
 
-# Check the user exists
-
-unless( defined getpwnam($systemsettings->{"user"}) )
-{
-	print "User ".$from_configure{"user"}." does not exist. Aborting.\n";
-	exit 1;
-}
-
-
-# Check the group exists
-
-unless( defined getgrnam($systemsettings->{"group"}) )
-{
-	print "Group ".$from_configure{"group"}." does not exist. Aborting.\n";
-	exit 1;
-}
-
 my(undef,undef,$uid) = getpwnam($systemsettings->{"user"});
 my(undef,undef,$gid) = getgrnam($systemsettings->{"group"});
+
+# Warn if we can't install as the requested user/group
+
+unless( $uid )
+{
+	warn("Warning! User $systemsettings->{user} doesn't exist. You probably need to do: useradd $systemsettings->{user}\n");
+}
+
+unless( $gid )
+{
+	warn("Warning! Group $systemsettings->{group} doesn't exist. You probably need to do: groupadd $systemsettings->{group}\n");
+}
+
+unless( $< == 0 or (defined $uid and $uid == $<) )
+{
+	warn("Warning! It looks like you're trying to install as user $systemsettings->{user} without root. You probably need to do: sudo $0\n");
+}
+
+$uid = $< || 0 unless defined $uid;
+$gid = $( || 0 unless defined $gid;
 
 my %oldhashes = ();
 
@@ -308,15 +312,15 @@ my @base_files = ( "VERSION", "CHANGELOG", "COPYING", "NEWS", "AUTHORS", "README
 
 foreach my $dir (@normal_dirs)
 {
-	install_dir($from_path, $dir, 0664, $uid, $gid, $to_path, \%oldhashes, $newsighash);
+	install_dir($from_path, $dir, 0664, $uid, $gid, $to_path, \%oldhashes, $newsighash, $prefix);
 }
 foreach my $dir (@executable_dirs)
 {
-	install_dir($from_path, $dir, 0775, $uid, $gid, $to_path, \%oldhashes, $newsighash);
+	install_dir($from_path, $dir, 0775, $uid, $gid, $to_path, \%oldhashes, $newsighash, $prefix);
 }
 foreach my $file (@base_files)
 {
-	install_file($from_path, $file, undef, 0664, $uid, $gid, $to_path, \%oldhashes, $newsighash );
+	install_file($from_path, $file, undef, 0664, $uid, $gid, $to_path, \%oldhashes, $newsighash, $prefix );
 }
 
 ensure_dir( "$to_path/archives", $uid, $gid, 02775 );
@@ -349,8 +353,8 @@ write_sigs( $to_path, $newsighash, $uid, $gid );
 save_settings( 
 	$system_settings_file, 
 	$systemsettings, 
-	$systemsettings->{user}, 
-	$systemsettings->{group} );
+	$uid, 
+	$gid );
 
 # Warnings!
 if( $upgrade )
@@ -439,9 +443,7 @@ sub set
 
 sub save_settings
 {
-	my( $sysfile, $syshash, $user, $group ) = @_;
-
-	my(undef,undef,$uid,$gid) = getpwnam($user);
+	my( $sysfile, $syshash, $uid, $gid ) = @_;
 
 	my $dumper = Data::Dumper->new( 
 		[ $syshash ] , 
@@ -463,7 +465,7 @@ sub save_settings
 # 
 ######################################################################
 #
-# This file is part of EPrints 2.
+# This file is part of EPrints 3.
 #
 # EPrints 2 is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -634,7 +636,7 @@ sub get_digest
 
 sub install_file
 {
-	my($distdir, $file, $dir, $perms, $uid, $gid, $dest, $sighash, $newsighash ) = @_;
+	my($distdir, $file, $dir, $perms, $uid, $gid, $dest, $sighash, $newsighash, $prefix ) = @_;
 
 	my $relpath = $file;
 	if( defined $dir ) { $relpath = "$dir/$file"; }
@@ -657,12 +659,12 @@ sub install_file
 		binmode(INFILE);
 		if ($file eq "startup.pl")
 		{
-			$currline = "use lib '".$dest."/perl_lib';\n";
+			$currline = "use lib '".$prefix."/perl_lib';\n";
 			$outdigest->add($currline);
 		}
 		else
 		{
-			$currline = "#!".$from_configure{perl}." -w -I".$dest."/perl_lib\n";
+			$currline = "#!".$from_configure{perl}." -w -I".$prefix."/perl_lib\n";
 			$outdigest->add($currline);
 		}
 		push @linesout, $currline;
@@ -716,17 +718,13 @@ sub install_file
 			print "\nUnable to chmod $dest/$relpath : $!\n";
 			exit 1;
 		}
-		unless( chown($uid, $gid, "$dest/$relpath") )
-		{
-			print "\nUnable to chown $dest/$relpath : $!\n";
-			exit 1;
-		}
+		chown($uid, $gid, "$dest/$relpath");
 	}
 }
 
 sub install_dir
 {
-	my( $distdir, $dir, $perms, $uid, $gid, $dest, $sighash, $newsighash ) = @_;
+	my( $distdir, $dir, $perms, $uid, $gid, $dest, $sighash, $newsighash, $prefix ) = @_;
 
 	unless( opendir(INDIR, $dir) )
 	{
@@ -738,11 +736,7 @@ sub install_dir
 	ensure_dir("$dest/$dir", $uid, $gid, 02775);
  	if( $from_configure{"platform"} eq "unix" )
 	{
-		unless( chown($uid, $gid, "$dest/$dir") )
-		{
-			print "\nUnable to chown $dest/$dir : $!\n"; 
-			exit 1;
-		}
+		chown($uid, $gid, "$dest/$dir");
 	}
 
 	while(my $item = readdir(INDIR))
@@ -760,11 +754,11 @@ sub install_dir
 	closedir(INDIR);
 	foreach(@files)
 	{
-		install_file($distdir, $_, $dir, $perms, $uid, $gid, $dest, $sighash, $newsighash );
+		install_file($distdir, $_, $dir, $perms, $uid, $gid, $dest, $sighash, $newsighash, $prefix );
 	}
 	foreach(@dirs)
 	{
-		install_dir($distdir, "$dir/".$_, $perms, $uid, $gid, $dest, $sighash, $newsighash );
+		install_dir($distdir, "$dir/".$_, $perms, $uid, $gid, $dest, $sighash, $newsighash, $prefix );
 	}
 }
 
@@ -912,12 +906,7 @@ sub ensure_dir
 		}
 	}		
 	
-	unless( chown($uid, $gid, $dir) )
-	{
-		print "Unable to chown ".$dir." : $!\n"; 
-		print "Aborting!\n";
-		exit 1;
-	}
+	chown($uid, $gid, $dir);
 
 	unless( chmod($mode, $dir) )
 	{
