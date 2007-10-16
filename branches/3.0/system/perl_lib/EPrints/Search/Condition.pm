@@ -739,23 +739,51 @@ END
 	if( $self->is_comparison )
 	{
 		my $where;
-		if( $self->{field}->is_type( "date" ) )
+		if( $self->{field}->is_type( "date", "time" ) )
 		{
-			my @parts = split( "-", $self->{params}->[0] );
-			$where = "M.${sql_col}_year ".$self->{op}." "."'".EPrints::Database::prep_value( $parts[0] )."'";
-			if( $parts[1] && $parts[1]+0 ) { $where.= " AND M.${sql_col}_month ".$self->{op}." "."'".EPrints::Database::prep_value( $parts[1] )."'"; }
-			if( $parts[2] && $parts[2]+0 ) { $where.= " AND M.${sql_col}_day ".$self->{op}." "."'".EPrints::Database::prep_value( $parts[2] )."'"; }
-		}
-		elsif( $self->{field}->is_type( "time" ) )
-		{
-			# time searching needs more testing. Esp. boundary conditions.
+			my( $cmp, $eq ) = @{ { 
+				'>=', [ '>', 1 ],
+				'<=', [ '<', 1 ],
+				'>', [ '>', 0 ],
+				'<', [ '<', 0 ],
+				'=', [ undef, 1 ] }->{$self->{op}} };
+			my $timemap = [ 'year','month','day','hour','minute','second' ];
+
 			my @parts = split( /[-: ]/, $self->{params}->[0] );
-			$where = "M.${sql_col}_year ".$self->{op}." "."'".EPrints::Database::prep_value( $parts[0] )."'";
-			if( $parts[1] ) { $where.= " AND M.${sql_col}_month ".$self->{op}." "."'".EPrints::Database::prep_value( $parts[1] )."'"; }
-			if( $parts[2] ) { $where.= " AND M.${sql_col}_day ".$self->{op}." "."'".EPrints::Database::prep_value( $parts[2] )."'"; }
-			if( $parts[3] ) { $where.= " AND M.${sql_col}_hour ".$self->{op}." "."'".EPrints::Database::prep_value( $parts[3] )."'"; }
-			if( $parts[4] ) { $where.= " AND M.${sql_col}_minute ".$self->{op}." "."'".EPrints::Database::prep_value( $parts[4] )."'"; }
-			if( $parts[5] ) { $where.= " AND M.${sql_col}_second ".$self->{op}." "."'".EPrints::Database::prep_value( $parts[5] )."'"; }
+			my $nparts = scalar @parts;
+			if( $self->{field}->is_type( "date" ) && $nparts > 3 )
+			{
+				$nparts = 3;
+			}
+
+			my @or = ();
+			if( defined $cmp )
+			{
+				for( my $i=0;$i<$nparts;++$i )
+				{
+					my @and = ();
+					for( my $j=0;$j<=$i;++$j )
+					{	
+						my $o = "=";
+						if( $j==$i ) { $o = $cmp; }
+						push @and, $TABLEALIAS.".".$sql_col."_".$timemap->[$j]." ".$o.
+							" '".EPrints::Database::prep_value( $parts[$j] )."'"; 
+					}
+					push @or, "( ".join( " AND ", @and )." )";
+				}
+			}
+			if( $eq )
+			{
+				my @and = ();
+				for( my $i=0;$i<$nparts;++$i )
+				{
+					push @and, $TABLEALIAS.".".$sql_col."_".$timemap->[$i]." =".
+							" '".EPrints::Database::prep_value( $parts[$i] )."'"; 
+				}
+				push @or, "( ".join( " AND ", @and )." )";
+			}
+
+			$where = "(".join( " OR ", @or ).")";
 		}
 		elsif( $self->{field}->is_type( "pagerange","int","year" ) )
 		{
