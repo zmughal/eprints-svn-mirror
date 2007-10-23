@@ -1,10 +1,17 @@
-view:MonthlyDownloadsGraph:title Monthly Downloads
+view:MonthlyDownloadsGraph:title	Monthly Downloads
 view:DailyDownloadsGraph:title	Daily Downloads
-view:MonthlyUniqueVisitorsGraph:title Unique Visitors per Month
+view:MonthlyUniqueVisitorsGraph:title	Unique Visitors per Month
 view:AllMonthlyDownloadsGraph:title	Complete Monthly Downloads
-view:DownloadCountHTML:title Total Downloads Count in HTML
+view:DownloadCountHTML:title	Total Downloads Count in HTML
+
+view:TopTenTable:title	Top Ten Eprints
 view:ReferrerGraph:title	Referrer Types
-view:TopTenAcademies:title	Top University Visitors
+view:SearchEngineGraph:title	Referrers by Search Engine
+view:TopCountriesTable:title	Top Visiting Countries
+view:TopTenAcademics:title	Top Visiting Institutions
+view:TopTenSearchTermsTable:title	Top Ten Search Terms
+view:RawDataTableHTML:title	Raw Data as HTML Table
+view:RawDataTableCSV:title	Raw Data as CSV
+
 view:TopTenNonSearchReferrers:title	Top Referrers (Non-Search)
-view:TopTenSearchTermsTable:title	Top Search Terms
 view:TopTenTable:title	Top Articles
