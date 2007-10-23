@@ -1,5 +1,8 @@
-view:AllMonthlyDownloadsGraph:title	Monthly Downloads
+view:MonthlyDownloadsGraph:title Monthly Downloads
 view:DailyDownloadsGraph:title	Daily Downloads
+view:MonthlyUniqueVisitorsGraph:title Unique Visitors per Month
+view:AllMonthlyDownloadsGraph:title	Complete Monthly Downloads
+view:DownloadCountHTML:title Total Downloads Count in HTML
 view:ReferrerGraph:title	Referrer Types
 view:TopTenAcademies:title	Top University Visitors
 view:TopTenNonSearchReferrers:title	Top Referrers (Non-Search)
