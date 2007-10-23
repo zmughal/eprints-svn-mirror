@@ -1,0 +1,7 @@
+
+all:
+	@echo "IRStats doesn't not need to be compiled."
+	@echo "To install, use: make install"
+
+install:
+	@echo "Er, do some installation."

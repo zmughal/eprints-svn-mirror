@@ -1,0 +1,20 @@
+Timothy D Brody <tdb01r@ecs.soton.ac.uk>, University of Southampton, UK
+
+ - Configuration file sanitisation
+ - Added support for session tracking and unknown-robot removal
+ - CGI and BIN script rationalisation
+ - Debugging support
+ - Multi-site support
+ 
+Christopher Gutteridge <cjg@ecs.soton.ac.uk>, University of Southampton, UK
+
+ - Bug fix for insert_values call from import_metadata
+ - Trend line addition to Chart::Bar
+
+Adam Field <af05v@ecs.soton.ac.uk>, University of Southampton, UK
+
+ - Initial design and implementation
+
+Leslie Carr <lac@ecs.soton.ac.uk>, University of Southampton, UK
+
+ - Project lead

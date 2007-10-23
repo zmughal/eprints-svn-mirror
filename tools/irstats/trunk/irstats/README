@@ -1,0 +1,26 @@
+IRStats
+-------
+
+IRStats is a Web log analysis tool aimed at Institutional Repositories.
+
+Features:
+
+ - Process logs from Eprints versions 2 and 3
+ - Process logs from DSpace (work in progress)
+ - Multiple robots filtering techniques
+ - Analyse usage of eprints or sets of eprints
+ - Analyse logs by author, subject etc.
+ - Many different graphing outputs
+
+
+Requirements:
+
+ - awstats
+ - MySQL
+ - Maxmind Organisation Database (www.maxmind.com) *
+ - ChartDirector (www.advsofteng.com) *
+
+ * These are commercial products.
+
+
+See INSTALL for installation instructions.

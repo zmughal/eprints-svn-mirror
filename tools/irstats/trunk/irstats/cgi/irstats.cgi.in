@@ -1,0 +1,92 @@
+#!@PERL_PATH@ -w
+
+##############################################################################
+### Configuration ###
+##############################################################################
+
+# IRStat's perl modules
+use lib "@IRSTATS_LIB@";
+
+# awstats modules
+use lib "@AWSTATS_LIB@";
+
+# ChartDirector
+use lib "@CHARTDIRECTOR_LIB@";
+
+# EPrints (if using EPrints)
+use lib "@EPRINTS_LIB@";
+
+use IRStats;
+
+# The path to IRStat's configuration file
+$IRStats::Configuration::FILE = "@CONF_FILE@";
+
+##############################################################################
+### End of Configuration ###
+##############################################################################
+
+IRStats::handler();
+
+1;
+
+__END__
+
+=head1 SYNOPSIS
+
+B<irstats.pl> [OPTIONS] <ARGUMENTS>
+
+=head1 OPTIONS
+
+=over 8
+
+=item --help
+
+Print the help.
+
+=item --man
+
+Print the man page.
+
+=item --config <config file>
+
+Specify an alternate configuration file.
+
+=item --verbose
+
+Be more verbose (repeatable).
+
+=back
+
+=head1 ARGUMENTS
+
+=over 4
+
+=item COMMAND
+
+The command to execute, see man page for details.
+
+=back
+
+=head1 COMMANDS
+
+The following commands are available:
+
+=over 4
+
+=item import_metadata
+
+Import metadata from source CSV files.
+
+=item update_date
+
+Update the access log table from the database.
+
+=item convert_ip_to_host
+
+Convert IP addresses to hostnames in the database.
+
+=item extract_metadata_from_archive
+
+Extract metadata from an eprints 2 archive.
+
+=back

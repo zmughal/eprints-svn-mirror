@@ -1,0 +1,7 @@
+view:AllMonthlyDownloadsGraph:title	Monthly Downloads
+view:DailyDownloadsGraph:title	Daily Downloads
+view:ReferrerGraph:title	Referrer Types
+view:TopTenAcademies:title	Top University Visitors
+view:TopTenNonSearchReferrers:title	Top Referrers (Non-Search)
+view:TopTenSearchTermsTable:title	Top Search Terms
+view:TopTenTable:title	Top Articles
