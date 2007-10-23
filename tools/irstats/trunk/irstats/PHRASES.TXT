@@ -13,5 +13,11 @@ view:TopTenSearchTermsTable:title	Top Ten Search Terms
 view:RawDataTableHTML:title	Raw Data as HTML Table
 view:RawDataTableCSV:title	Raw Data as CSV
 
+view:TopTenMonthlyDownloadsGraph:title	Top Ten Eprints Downloads over Time
+view:TopTenAuthorsTable:title	Top Ten Downloaded Authors
+view:TopTenTableDashLinked:title	Top Ten Eprints with Dashboard Links
+view:HighestClimbersTable:title	Top Ten Most Improved Eprints
+view:MonthlyDownloadsByGroupGraph:title	Top Ten Eprints per Group
 view:TopTenNonSearchReferrers:title	Top Referrers (Non-Search)
-view:TopTenTable:title	Top Articles
+view:RandomFromTopTenHTML:title	Random Eprint from the Top Ten
+view:TopItemHTML:title	The Top Eprint
