@@ -1,0 +1,13 @@
+This file is part of GNU EPrints 3.
+
+Copyright (c) 2000-2007 University of Southampton, UK. SO17 1BJ.
+
+You can redistribute EPrints 3 and/or modify it under the terms of the
+Microsoft Reciprocal License (Ms-RL), as published October 12, 2006.
+
+EPrints 3 is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+You should have received a copy of the Microsoft Reciprocal License
+along with EPrints 3.
