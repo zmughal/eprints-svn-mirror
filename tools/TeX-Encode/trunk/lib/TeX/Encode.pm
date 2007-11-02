@@ -13,7 +13,7 @@ use Carp;
 
 our @ISA = qw(Encode::Encoding);
 
-our $VERSION = '1.0';
+our $VERSION = '1.1';
 
 use constant ENCODE_CHRS => '<>&"';
 
@@ -52,8 +52,8 @@ while( my ($entity,$tex) = each %Pod::LaTeX::HTML_Escapes ) {
 	# Greek letters
 	my $i = 0;
 	for(qw( alpha beta gamma delta epsilon zeta eta theta iota kappa lamda mu nu xi omicron pi rho final_sigma sigma tau upsilon phi chi psi omega )) {
-		$LATEX_Escapes{$LATEX_Escapes_inv{$_} = chr(0x3b1+$i)} = "\\$_";
-		$LATEX_Escapes{$LATEX_Escapes_inv{"\u$_"} = chr(0x391+$i)} = "\\\u$_";
+		$LATEX_Escapes{$LATEX_Escapes_inv{$_} = chr(0x3b1+$i)} = "\\ensuremath{\\$_}";
+		$LATEX_Escapes{$LATEX_Escapes_inv{"\u$_"} = chr(0x391+$i)} = "\\ensuremath{\\\u$_}";
 		$i++;
 	}
 	# Spelling mistake in LaTeX/charmap?
@@ -191,6 +191,8 @@ sub _htmlise
 			$out .= "<span style='text-decoration: overline'>" . _atom($str) . "</span>";
 		} elsif( $$str =~ s/^\\((?:math|text)\w{2,3})\s*// ) {
 			$out .= "<span class='$1'>" . _atom($str) . "</span>";
+		} elsif( $$str =~ s/^\\ensuremath// ) {
+			$out .= "<span class='mathrm'>" . _atom($str) . "</span>";
 		} elsif( $$str =~ s/^LaTeX// ) {
 			$out .= "L<sup>A<\/sup>T<small>E<\/small>X";
 		} elsif( $$str =~ s/^([^\^_\\\{\$]+)// ) {

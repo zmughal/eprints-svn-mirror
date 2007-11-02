@@ -1,5 +1,10 @@
 Revision history for Perl extension Encode::LaTeX.
 
+1.1
+	- Added support for \ensuremath{}
+	- Wrap greek letters in \ensuremath{} to fix a typesetting problem
+	  (reported by Mark Muldoon)
+
 1.0
 	- CPAN thinks 0.10 is less than 0.9
 

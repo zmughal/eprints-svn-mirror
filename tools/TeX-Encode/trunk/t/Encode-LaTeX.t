@@ -5,7 +5,7 @@
 
 # change 'tests => 1' to 'tests => last_test_to_print';
 
-use Test::More tests => 22;
+use Test::More tests => 24;
 use Encode;
 BEGIN { use_ok('TeX::Encode') };
 
@@ -34,6 +34,7 @@ my %DECODE_TESTS = (
 	'\\ae' => chr(0xe6), # Scandinavian ligature ae
 "consist of \$\\sim{}260,000\$ of subprobes \$\\sim{}4\%\$ of in \$2.92\\cdot{}10^{8}\$ years. to \$1.52\\cdot{}10^{7}\$ years." =>
 "consist of <span class='mathrm'>".chr(0x223c)."260,000</span> of subprobes <span class='mathrm'>".chr(0x223c)."4%</span> of in <span class='mathrm'>2.92".chr(0x22c5)."10<sup>8</sup></span> years. to <span class='mathrm'>1.52".chr(0x22c5)."10<sup>7</sup></span> years.", # Should remove empty braces too
+	'\\ensuremath{\\alpha}' => ('<span class=\'mathrm\'>'.chr(0x3b1).'</span>'), # Math mode by ensuremath
 );
 
 # General encode tests
@@ -42,6 +43,7 @@ my %ENCODE_TESTS = (
 	'#$%&~_^{}><\\' => '\\#\\$\\%\\&\\~\\_\\^\\{\\}$>$$<$\\\\',
 	chr(0xe6) => '\\ae',
 	chr(0xe6).'foo' => '\\ae{}foo',
+	chr(0x3b1) => '\\ensuremath{\\alpha}',
 );
 
 while( my( $in, $out ) = each %DECODE_TESTS ) {
