@@ -33,6 +33,7 @@ long read_from_perl_fh( void* perlfh, char* buff, long n )
 	SV *read_wrapper;
 	SV *buffer;
 	char* outbuffer;
+	int i;
 	long nbytes;
 	STRLEN nbytes_sl;
 	dSP;
@@ -59,7 +60,10 @@ long read_from_perl_fh( void* perlfh, char* buff, long n )
 	buffer = POPs;
 	nbytes_sl = (STRLEN)nbytes;
 	outbuffer = SvPV( buffer, nbytes_sl );
-	strncpy( buff, outbuffer, nbytes );
+	for( i = 0; i<nbytes; ++i )
+	{
+		buff[i] = outbuffer[i];
+	}	
 
 	PUTBACK;
 	FREETMPS;
