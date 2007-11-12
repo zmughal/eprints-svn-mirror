@@ -3,14 +3,14 @@
 rm -rf hcbuild/
 mkdir hcbuild/
 cd hcbuild
-h2xs -Afn Honeycomb -L/home/cjg/Projects/honey/sdk/c/Linux/lib -lhoneycomb -ldl 
-cp ../h/* Honeycomb
+h2xs -Afn Net::Honeycomb -L/home/cjg/Projects/honey/sdk/c/Linux/lib -lhoneycomb -ldl 
+cp ../h/* Net-Honeycomb
 
-cp ../Honeycomb.xs Honeycomb/
-cp ../Makefile.PL Honeycomb/
-cp ../Honeycomb.pm Honeycomb/lib
+cp ../Honeycomb.xs Net-Honeycomb/
+cp ../Makefile.PL Net-Honeycomb/
+cp ../Honeycomb.pm Net-Honeycomb/lib/Net
 
-cd Honeycomb
+cd Net-Honeycomb
 perl Makefile.PL
 make test
 make install

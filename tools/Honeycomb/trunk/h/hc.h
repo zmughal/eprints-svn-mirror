@@ -1,7 +1,7 @@
 /*
- * $Id$
+ * $Id: hc.h 11389 2007-08-22 01:11:35Z pc198268 $
  *
- * Copyright 2006 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2007 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  *
  *
@@ -27,11 +27,19 @@ extern "C"
 /* Data types for storing and retrieving metadata from the
    repository. */
    typedef int64_t hc_long_t;
+   typedef int64_t hc_date_t;
+   typedef uint64_t hc_time_t;
+   typedef int64_t hc_timestamp_t;
    typedef double hc_double_t;
    typedef char *hc_string_t;
    typedef short hc_byte_t;
 
-#define OID_HEX_CHRSTR_LENGTH 56+1
+   typedef struct hc_bytearray_ {
+     int           len;
+     unsigned char *bytes;
+   } hc_bytearray_t;
+
+#define OID_HEX_CHRSTR_LENGTH 60+1
 #define DIGEST_ALGO_CHRSTR_LENGTH 10+1
 #define DIGEST_HEX_CHRSTR_LENGTH 40+1
 #define COMMIT_ACK_HEX_CHRSTR_LENGTH 1060	/* 64-bit long as a hex str */
@@ -72,6 +80,8 @@ extern "C"
       HCERR_COULD_NOT_OPEN_FILE,
       HCERR_FAILED_TO_WRITE_TO_FILE,
       HCERR_NULL_SESSION,
+      HCERR_NULL_ARCHIVE,
+      HCERR_INVALID_ARCHIVE,
       HCERR_INVALID_SESSION,
       HCERR_INVALID_OID,
       HCERR_NULL_HANDLE,
@@ -92,6 +102,7 @@ extern "C"
       HCERR_XML_BAD_ATTRIBUTE_NAME,
       HCERR_XML_BUFFER_OVERFLOW,
       HCERR_BUFFER_OVERFLOW,
+      HCERR_OUT_OF_MEMORY,
 
       HCERR_NO_SUCH_TYPE,
       HCERR_ILLEGAL_VALUE_FOR_METADATA,
@@ -128,6 +139,7 @@ extern "C"
       hc_long_t creation_time;
       hc_long_t deleted_time;
       char shredMode;
+      char is_indexed;	
    } hc_system_record_t;
 
 #define RANGE_RETRIEVE_UNKNOWN_SIZE -1
@@ -172,7 +184,7 @@ HONEYCOMB_EXTERN hcerr_t hc_set_debug_flags(hc_long_t debug);
 
 HONEYCOMB_EXTERN hcerr_t hcoa_get_platform_name(char *name, int len);
 
-HONEYCOMB_EXTERN char* hc_decode_hcerr(hcerr_t res);
+HONEYCOMB_EXTERN char *hc_decode_hcerr(hcerr_t res);
 
 
   /* Definitions for hc_session_set_parameter and

@@ -1,18 +1,18 @@
 /*
- * $Id: example_common.h 8089 2006-04-26 22:27:42Z sp198635 $
+ * $Id: example_common.h 10856 2007-05-19 02:58:52Z bberndt $
  *
- * Copyright 2006 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2007 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
-/* Common definitions for the StorageTek 5800 C API examples */
+/* Common definitions for the 5800 system C API examples */
 
 #ifndef _EXAMPLE_COMMON
 #define _EXAMPLE_COMMON
 
 #include <stdio.h>
 
-/* StorageTek 5800 header files */
+/* 5800 system header files */
 #include "hc.h"
 #include "hcclient.h"
 

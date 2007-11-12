@@ -1,7 +1,7 @@
 /*
- * $Id: example_commandline.c 8046 2006-04-25 00:36:28Z sp198635 $
+ * $Id: example_commandline.c 10856 2007-05-19 02:58:52Z bberndt $
  *
- * Copyright 2006 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2007 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
@@ -17,7 +17,7 @@ static char METADATA_SEPERATOR_CHARACTERS[] = "=";
 
 /* Commandline switches */
 static const char *PARAMETERLESS_SWITCHES = "hv";
-static const char *PARAMETER_SWITCHES = "fmrsd";
+static const char *PARAMETER_SWITCHES = "fmrsdp";
 
 int verifyCommandline(int acceptedParameters);
 int parseCommandlineParameter(	int onSwitch,
@@ -226,6 +226,18 @@ int parseCommandlineParameter(  int onSwitch,
 				if (currentArgument != NULL)
 				{
 					cmdLine.debug_flags = atoi(currentArgument);
+				}
+				else
+				{
+					return 0;
+				}
+				break;
+
+			/* p switch is for "storagetek port" */
+			case 'p':
+				if (currentArgument != NULL)
+				{
+					cmdLine.storagetekPort = atoi(currentArgument);
 				}
 				else
 				{

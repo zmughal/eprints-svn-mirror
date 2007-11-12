@@ -1,12 +1,12 @@
 #!/usr/bin/perl -w
 
 use Data::Dumper;
-use Honeycomb;
+use Net::Honeycomb;
 
-Honeycomb::init();
+Net::Honeycomb::init();
 
 my $oid;
-my $honey = Honeycomb->new( "hc-data", 8080 );
+my $honey = Net::Honeycomb->new( "hc-data", 8080 );
 
 $oid = "010001237ff443418b11dcb2ec00e081731b57000020ce0200000000";
 $oid = "010001b5d0d9fa421211dc890600e08173199100000eef0200000000";
@@ -16,4 +16,4 @@ $honey->set_metadata( $oid, "filesystem.mimetype", "test/groovy" );
 $honey->print_error if( $honey->error );
 
 $honey->free();
-Honeycomb::cleanup();
+Net::Honeycomb::cleanup();

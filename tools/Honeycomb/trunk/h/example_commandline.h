@@ -1,11 +1,11 @@
 /*
- * $Id: example_commandline.h 8089 2006-04-26 22:27:42Z sp198635 $
+ * $Id: example_commandline.h 10856 2007-05-19 02:58:52Z bberndt $
  *
- * Copyright 2006 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2007 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
-/* parseCommandline handles commandline parsing for the StorageTek 5800 C */
+/* parseCommandline handles commandline parsing for the 5800 system C */
 /* API examples. */
 
 #ifndef _EXAMPLE_COMMANDLINE
@@ -28,10 +28,11 @@ static const int USES_CMDLINE_METADATA = 256;
 struct Commandline
 {
         char *storagetekServerAddress;
+	int  storagetekPort;
         char *metadataFilename;
         char *query;
         char *localFilename;
-        char oid[57];
+        char oid[61];
         int verbose;
         int maxResults;
         int outputMetadata;

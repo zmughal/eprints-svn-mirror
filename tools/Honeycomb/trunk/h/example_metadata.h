@@ -1,16 +1,16 @@
 /*
- * $Id: example_metadata.h 8089 2006-04-26 22:27:42Z sp198635 $
+ * $Id: example_metadata.h 11211 2007-07-13 14:36:09Z bberndt $
  *
- * Copyright 2006 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2007 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
 /* example_metadata contains a group of helper functions for the */
-/* StorageTek 5800 C API examples.  These functions work with a */
+/* 5800 system C API examples. These functions work with a */
 /* metadata memory map that dynamically allocates memory for the */
-/* name/value pairs of metadata.  They also keep pointer arrays	*/
-/* that point to all the metadata names and metadata values.  These */
-/* pointer arrays are passed in to the StorageTek 5800 API calls that */
+/* name/value pairs of metadata. They also keep pointer arrays	*/
+/* that point to all the metadata names and metadata values. These */
+/* pointer arrays are passed in to the 5800 system API calls that */
 /* take metadata. */
 
 #ifndef _EXAMPLE_METADATA

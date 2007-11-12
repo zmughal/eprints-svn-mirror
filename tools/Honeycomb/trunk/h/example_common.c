@@ -1,7 +1,7 @@
 /*
- * $Id: example_common.c 8089 2006-04-26 22:27:42Z sp198635 $
+ * $Id: example_common.c 10856 2007-05-19 02:58:52Z bberndt $
  *
- * Copyright 2006 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2007 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
 
@@ -14,9 +14,9 @@ void HandleError(hc_session_t *session, hcerr_t res)
         hcerr_t err = -1;
 
 	/* Print error message associated with error code */
-	printf("\nThe server returned error code %d = %s\n", res, hc_decode_hcerr(res));
+	printf("\nThe client library returned error code %d = %s\n", res, hc_decode_hcerr(res));
 
-	/* Print error status message from the StorageTek 5800 session */ 
+	/* Print error status message from the 5800 system session */ 
         if (session)
         {
                 err = hc_session_get_status(session, &response_code, &errstr);

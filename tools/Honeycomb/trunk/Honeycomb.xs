@@ -113,7 +113,9 @@ void honey_init()
 
 
 
-MODULE = Honeycomb		PACKAGE = Honeycomb		
+MODULE = Net::Honeycomb		PACKAGE = Net::Honeycomb		
+
+PROTOTYPES: ENABLE
 
 
 void 
@@ -353,9 +355,11 @@ query( this, qstr )
 		int finished = 0;
 		hc_query_result_set_t *rset = NULL;
 		hcerr_t	res;
+		hc_nvr_t *nvr = NULL;
+		int results_per_fetch = 1000;
 	CODE:
 		session = this_session(this);
-		res = hc_query_ez(session,qstr,&rset);
+		res = hc_query_ez(session,qstr,NULL,0,results_per_fetch,&rset);
 		store_honey_errcode( this, res );
 		if( res ) { XSRETURN_UNDEF; }
 		RETVAL = newAV();
@@ -363,7 +367,11 @@ query( this, qstr )
 		/* Loop up until the maximum result size */
 		for (count = 0; count < 99999; count++) 
 		{
-			res = hc_qrs_next_ez(rset, &returnedOid, &finished);
+			res = hc_qrs_next_ez(
+					rset, 
+					&returnedOid, 
+					&nvr,
+					&finished);
 			store_honey_errcode( this, res );
 			if( res ) { XSRETURN_UNDEF; }
 			if (finished) break;
