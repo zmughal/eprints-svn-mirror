@@ -7,7 +7,7 @@ our %FORMAT_MAPPING = qw(
 	pdf	application/pdf
 	ps	application/postscript
 	ascii	text/plain
-	msword	application/mssword
+	msword	application/msword
 	image	image
 	latex	latex
 	powerpoint	application/vnd.ms-powerpoint
