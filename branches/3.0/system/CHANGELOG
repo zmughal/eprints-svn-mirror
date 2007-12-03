@@ -6509,3 +6509,10 @@ PACKAGE: 2.2.99.2
  * Missing phrases from Admin -> Search Items -> Depositing User:
     lib/searchfield:desc_itemref_between, lib/searchfield:desc_itemref_orless
     and lib/searchfield:desc_itemref_ormore, fixing #3042
+ * Use lastmod in OAI, allowing changes to live eprints to be propagated to
+    harvesters (#3149)
+ * Fixed bug with Simple Search not working in IE6/7 (#2975)
+ * Will now use document directories from the last to the first (same behaviour
+    as if disable_df is true) (#3142)
+ * When logging in to access documents redirection now works as intended
+    (#3140)
