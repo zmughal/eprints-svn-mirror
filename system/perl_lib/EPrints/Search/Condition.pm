@@ -766,7 +766,7 @@ END
 					{	
 						my $o = "=";
 						if( $j==$i ) { $o = $cmp; }
-						push @and, $TABLEALIAS.".".$sql_col."_".$timemap->[$j]." ".$o.
+						push @and, "M.".$sql_col."_".$timemap->[$j]." ".$o.
 							" '".EPrints::Database::prep_value( $parts[$j] )."'"; 
 					}
 					push @or, "( ".join( " AND ", @and )." )";
@@ -777,7 +777,7 @@ END
 				my @and = ();
 				for( my $i=0;$i<$nparts;++$i )
 				{
-					push @and, $TABLEALIAS.".".$sql_col."_".$timemap->[$i]." =".
+					push @and, "M.".$sql_col."_".$timemap->[$i]." =".
 							" '".EPrints::Database::prep_value( $parts[$i] )."'"; 
 				}
 				push @or, "( ".join( " AND ", @and )." )";
