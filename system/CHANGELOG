@@ -6516,3 +6516,6 @@ PACKAGE: 2.2.99.2
     as if disable_df is true) (#3142)
  * When logging in to access documents redirection now works as intended
     (#3140)
+
+2007-12-03 cjg
+ * Import IDs are removed unless import_ids is enabled.
