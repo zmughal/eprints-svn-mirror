@@ -6530,3 +6530,5 @@ PACKAGE: 2.2.99.2
  * Added missing EPrints_Dir_SecuredCGI and EPrints_Dir_Documents variables,
     fixing #2973
 
+2007-12-05 cjg
+ * Fixed some bugs in the VLit code.

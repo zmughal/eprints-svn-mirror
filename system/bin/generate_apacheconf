@@ -499,16 +499,12 @@ my @langs = @{$repository->get_conf( "languages" )};
 
 if( $repository->get_conf( "vlit" )->{enable} )
 {
-	foreach my $langid ( @langs )
-	{
-		print CONF <<END;
-  <Directory "$htdocs_path/$langid/archive">
+  <Directory "$documents_path">
     SetHandler perl-script
     PerlHandler EPrints::Apache::VLit::handler
   </Directory>
 
 END
-	}
 }
 
 if( $repository->get_conf( "dynamic_template","enable" ) )
