@@ -6532,3 +6532,7 @@ PACKAGE: 2.2.99.2
 
 2007-12-05 cjg
  * Fixed some bugs in the VLit code.
+
+2007-12-05 tdb
+ * Cap the maximum message size at 40,000 bytes from Import, fixing #3067
+
