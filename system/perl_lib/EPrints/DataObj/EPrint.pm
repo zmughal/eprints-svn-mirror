@@ -188,7 +188,6 @@ sub render_fileinfo
 		$a->appendChild( $session->make_element( 
 			"img", 
 			class=>"ep_doc_icon",
-			alt=>"file",
 			src=>$imgurl,
 			border=>0 ));
 		$f->appendChild( $a );
@@ -467,7 +466,7 @@ sub _create_directory
 
 		my $best_free_space = 0;
 		my $dir;	
-		foreach $dir (reverse sort @dirs)
+		foreach $dir (sort @dirs)
 		{
 			my $free_space = $session->get_repository->
 						get_store_dir_size( $dir );

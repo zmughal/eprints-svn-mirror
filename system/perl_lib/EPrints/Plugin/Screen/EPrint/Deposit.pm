@@ -10,8 +10,6 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 
-	$self->{icon} = "/style/images/action_deposit.png";
-
 	$self->{appears} = [
 		{
 			place => "eprint_actions",
@@ -20,10 +18,6 @@ sub new
 		{ 
 			place => "eprint_actions_owner_inbox", 
 			position => 100, 
-		},
-		{
-			place => "eprint_item_actions",
-			position => 300,
 		},
 	];
 

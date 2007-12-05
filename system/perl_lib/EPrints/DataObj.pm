@@ -20,11 +20,11 @@ B<EPrints::DataObj> - Base class for records in EPrints.
 
 =head1 DESCRIPTION
 
-This module is a base class which is inherited by L<EPrints::DataObj::EPrint>,
-L<EPrints::User>, L<EPrints::DataObj::Subject> and
-L<EPrints::DataObj::Document> and several other classes.
+This module is a base class which is inherited by EPrints::DataObj::EPrint, 
+EPrints::User, EPrints::DataObj::Subject and EPrints::DataObj::Document and several
+other classes.
 
-It is ABSTRACT - its methods should not be called directly.
+It is ABSTRACT, its methods should not be called directly.
 
 =over 4
 
@@ -202,9 +202,10 @@ sub create_from_data
 		# assigned one. 
 		if( $session->get_repository->get_conf('enable_import_ids') )
 		{
-			if( $dataset->confid eq "eprint" )
+			if( $dataset->id eq "eprint" )
 			{
 				next if( $field->get_name eq "eprintid" );
+				next if( $field->get_name eq "dir" );
 			}
 			if( $dataset->id eq "user" )
 			{
@@ -215,7 +216,7 @@ sub create_from_data
 		if( $session->get_repository->get_conf(
 						'enable_import_datestamps') )
 		{
-			if( $dataset->confid eq "eprint" )
+			if( $dataset->id eq "eprint" )
 			{
 				next if( $field->get_name eq "datestamp" );
 			}
