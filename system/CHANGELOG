@@ -6529,10 +6529,14 @@ PACKAGE: 2.2.99.2
     #3133
  * Added missing EPrints_Dir_SecuredCGI and EPrints_Dir_Documents variables,
     fixing #2973
+ * Quote names in emails if they contain a comma, fixing #3112
 
 2007-12-05 cjg
  * Fixed some bugs in the VLit code.
 
 2007-12-05 tdb
  * Cap the maximum message size at 40,000 bytes from Import, fixing #3067
+
+2007-12-07 tdb
+ * Quote names in emails if they contain a comma, fixing #3112
 
