@@ -2125,6 +2125,7 @@ sub _get
 	foreach( @data )
 	{
 		$_ = $dataset->make_object( $self->{session} ,  $_);
+		$_->clear_changed();
 	}
 
 	return @data;
