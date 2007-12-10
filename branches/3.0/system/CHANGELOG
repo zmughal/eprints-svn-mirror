@@ -6549,4 +6549,6 @@ PACKAGE: 2.2.99.2
  * Objects read from the database will no longer always be committed, fixing
     #3156
  * Don't substr an undefined value in Time fields, fixing #3111
+ * Moved page range rendering into 4 phrases, dependent on the pagerange value,
+    fixing #2987
 
