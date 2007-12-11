@@ -6569,4 +6569,6 @@ PACKAGE: 2.2.99.2
     Search, fixing #2999
  * Strip namespacing from HTML exports (fixes <emph> in citations) under
     LibXML, fixing #3085
+ * Strip prefixes from noxmlns to_string output (bug fix for XML::LibXML),
+    fixing #3007
 
