@@ -6572,3 +6572,7 @@ PACKAGE: 2.2.99.2
  * Strip prefixes from noxmlns to_string output (bug fix for XML::LibXML),
     fixing #3007
 
+2007-12-12 tdb
+ * 'x' and 'y' values will now sort correctly (along with ~n, 'e etc.), fixing
+    #2944
+
