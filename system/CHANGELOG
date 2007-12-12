@@ -6576,3 +6576,7 @@ PACKAGE: 2.2.99.2
  * 'x' and 'y' values will now sort correctly (along with ~n, 'e etc.), fixing
     #2944
 
+2007-12-12 cjg
+ * generate_static now compiles the contents of files into auto.css, rather 
+    than it just containing @import lines. This improves the load time of 
+    page.
