@@ -6588,4 +6588,5 @@ PACKAGE: 2.2.99.2
     to be linked itself, fixing #3189
  * The main repository hostname can now be unqualified (to allow 'localhost'),
     fixing #3184
+ * Fixed double-escaping of URLs in document citations, fixing #3113
 
