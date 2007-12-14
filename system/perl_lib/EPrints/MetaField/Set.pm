@@ -446,11 +446,8 @@ sub from_search_form
 	# ANY or ALL?
 	my $merge = $session->param( $prefix."_merge" );
 	$merge = "ANY" unless( defined $merge );
-
-        my $match = $session->param( $prefix."_match" );
-        $match = "EQ" unless defined( $match );
 	
-	return( $val, $merge, $match );
+	return( $val, $merge );
 }
 
 	

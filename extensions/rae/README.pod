@@ -50,7 +50,7 @@ Produce reports in Word and Excel (RA2) format
 
 =back
 
-=head1 INSTALLATION (EPrints 2)
+=head1 INSTALLATION
 
 =head2 1. Install scripts
 
@@ -179,65 +179,6 @@ The following links are a suggested starting point:
  },
 
 Default english language phrases for these links are defined in F<phrases-rae-en.xml>
-
-=head1 INSTALLATION (EPrints 3)
-
-=head2 1. Install scripts
-
- $ mkdir /opt/eprints3/cgi/users/rae/
- $ cp moe qualify report select /opt/eprints3/cgi/users/rae/
- $ cp create_rae_tables /opt/eprints3/bin/
- $ mkdir /opt/eprints3/perl_lib/EPrints/Plugin/Screen/User/RAE/
- $ cp plugins/User/RAE/* /opt/eprints3/perl_lib/EPrints/Plugin/Screen/User/RAE/
- $ cp plugins/Admin/RAEReport.pm /opt/eprints3/perl_lib/EPrints/Plugin/Screen/Admin/
-
-=head2 2. Configuration files
-
-The RAE module has 2 configuration files:
-
-=over 4
-
-=item F<rae.pl>
-
-configuration options and hooks
-
-=item F<rae.xml>
-
-english language phrases used in UI
-
-=back
-
-For each archive:
-
- $ cp defaultcfg/rae.pl /opt/eprints3/archives/ARCHIVEID/cfg/cfg.d/
-
- $ cp defaultcfg/rae.xml /opt/eprints3/archives/ARCHIVEID/cfg/lang/en/phrases/
-
-Restart apache to load in the new RAE configuration:
-
- $ service httpd restart
-
-=head2 3. Create database tables
-
-The database tables used by the RAE module in this release are dependant on configuration settings, rather like EPrints datasets.
-
-The structure of the tables depend on which fields are needed in the Measures of Esteem and Qualify Selection forms.
-
-A command line script has been provided to generate these tables.
-
-Edit /opt/eprints3/bin/create_rae_tables and change the first line from:
-
- #!/usr/bin/perl -w -I/opt/eprints2/perl_lib
-
-to
-
- #!/usr/bin/perl -w -I/opt/eprints3/perl_lib
-
-To generate the tables, run:
-
- $ /opt/eprints3/bin/create_rae_tables ARCHIVEID
-
-Ignore error messages.
 
 =head1 CONFIGURATION
 

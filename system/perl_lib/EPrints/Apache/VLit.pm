@@ -156,13 +156,12 @@ sub send_http_header
 {
 	my( $type ) = @_;
 
-	my $r = Apache->request;
+	my $r = EPrints::Apache::AnApache::get_request();
 	if( defined $type )
 	{
 		$r->content_type( $type );
 	}
 	EPrints::Apache::AnApache::send_status_line( $r, 200, "YAY"); 
-	$r->send_http_header;
 }
 
 

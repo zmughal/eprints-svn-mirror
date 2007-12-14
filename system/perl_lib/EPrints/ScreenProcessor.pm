@@ -1,17 +1,3 @@
-######################################################################
-#
-# EPrints::Script
-#
-######################################################################
-#
-#  __COPYRIGHT__
-#
-# Copyright 2000-2008 University of Southampton. All Rights Reserved.
-# 
-#  __LICENSE__
-#
-######################################################################
-
 package EPrints::ScreenProcessor;
 
 use strict;
@@ -139,9 +125,7 @@ sub process
 			page => $page,
 			head => $links,
 #			toolbar => $toolbar,
-		},
-		template_id => $self->{template_id},
- 	);
+		} );
 	$self->{session}->send_page();
 }
 

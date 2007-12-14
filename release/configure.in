@@ -439,8 +439,10 @@ ENABLE_GDOME="0"
 if test $DISABLE_GDOME = "0"; then
    TEST_PERL_MOD(GDOME_AVAILABLE, XML::GDOME)
    if test $GDOME_AVAILABLE = "1"; then
+       echo "Found XML::GDOME module. Lovely. We'll use that then!"
        ENABLE_GDOME="1"
    else
+       echo "Didn't find XML::GDOME module. We'll make do with XML::DOM then."
        ENABLE_GDOME="0"
    fi
 fi
@@ -449,20 +451,12 @@ ENABLE_LIBXML="0"
 if test $DISABLE_LIBXML = "0"; then
    TEST_PERL_MOD(LIBXML_AVAILABLE, XML::LibXML, 1.63)
    if test $LIBXML_AVAILABLE = "1"; then
+       echo "Found XML::LibXML module. Lovely. We'll use that then!"
        ENABLE_LIBXML="1"
    else
+       echo "Didn't find XML::LibXML module. We'll make do with XML::DOM then."
        ENABLE_LIBXML="0"
    fi
-fi
-
-if test $ENABLE_LIBXML = "1"; then
-	echo "Using XML::LibXML."
-else
-	if test $ENABLE_GDOME = "1"; then
-		echo "Using XML::GDOME."
-	else
-		echo "Defaulting to using XML::DOM (not recommended - install XML::GDOME or XML::LibXML)."
-	fi
 fi
 
 AC_PREFIX_DEFAULT(/opt/eprints3)

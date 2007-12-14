@@ -123,7 +123,7 @@ sub new
 		# it each time the main server forks.
 		if( defined $poketime && $poketime > $self->{loadtime} )
 		{
-			print STDERR "$file has been modified since the repository config was loaded: reloading!";
+			print STDERR "$file has been modified since the repository config was loaded: reloading!\n";
 		}
 		else
 		{
@@ -533,9 +533,16 @@ sub _load_templates
 
 		foreach my $fn ( @template_files )
 		{
+			my $file = $self->get_conf( "config_path" ).
+				"/lang/$langid/templates/$fn";
 			my $id = $fn;
 			$id=~s/\.xml$//;
-			$self->freshen_template( $langid, $id );
+
+			my $template = $self->_load_template( $file );
+			if( !defined $template ) { return 0; }
+
+			$self->{html_templates}->{$id}->{$langid} = $template;
+			$self->{text_templates}->{$id}->{$langid} = _template_to_text( $template );
 		}
 
 		if( !defined $self->{html_templates}->{default}->{$langid} )
@@ -544,29 +551,6 @@ sub _load_templates
 		}
 	}
 	return 1;
-}
-
-sub freshen_template
-{
-	my( $self, $langid, $id ) = @_;
-
-	my $file = $self->get_conf( "config_path" ).
-			"/lang/$langid/templates/$id.xml";
-	my @filestat = stat( $file );
-	my $mtime = $filestat[9];
-
-	my $old_mtime = $self->{template_mtime}->{$id}->{$langid};
-	if( defined $old_mtime && $old_mtime == $mtime )
-	{
-		return;
-	}
-
-	my $template = $self->_load_template( $file );
-	if( !defined $template ) { return 0; }
-
-	$self->{html_templates}->{$id}->{$langid} = $template;
-	$self->{text_templates}->{$id}->{$langid} = _template_to_text( $template );
-	$self->{template_mtime}->{$id}->{$langid} = $mtime;
 }
 
 sub _template_to_text
@@ -707,7 +691,6 @@ sub get_template_parts
 	my( $self, $langid, $tempid ) = @_;
   
 	if( !defined $tempid ) { $tempid = 'default'; }
-	$self->freshen_template( $langid, $tempid );
 	my $t = $self->{text_templates}->{$tempid}->{$langid};
 	if( !defined $t ) 
 	{
@@ -736,7 +719,6 @@ sub get_template
 	my( $self, $langid, $tempid ) = @_;
   
 	if( !defined $tempid ) { $tempid = 'default'; }
-	$self->freshen_template( $langid, $tempid );
 	my $t = $self->{html_templates}->{$tempid}->{$langid};
 	if( !defined $t ) 
 	{
@@ -1136,7 +1118,9 @@ sub get_store_dir_size
 		return undef;
 	}
 
-	return EPrints::Platform::free_space( $filepath );
+	my @retval = EPrints::Utils::df_dir $filepath;
+	return undef unless @retval;
+	return (@retval)[3];
 } 
 
 

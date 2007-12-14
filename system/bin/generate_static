@@ -210,7 +210,6 @@ foreach my $langid ( @{$session->get_repository->get_conf( "languages" )} )
 	{
 		if( $target =~ m/(\/style\/auto\/.*\.css$)/ )
 		{
-			# $css .= "\@import url($base_url$1);\n";
 			$fn = $map->{$target};
 			open( CSS, $fn ) || EPrints::abort( "Can't read $fn: $!" );
 			$css .= "\n\n\n/* From: $fn */\n\n";

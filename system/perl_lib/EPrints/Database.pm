@@ -1625,26 +1625,23 @@ sub get_index_ids
 ######################################################################
 =pod
 
-=item $ids = $db->search( $keyfield, $tables, $conditions, [$main_table_alias] )
+=item $ids = $db->search( $keyfield, $tables, $conditions )
 
 Return a reference to an array of ids - the results of the search
 specified by $conditions accross the tables specified in the $tables
-hash where keys are tables aliases and values are table names. 
-
-If no table alias is passed then M is assumed. 
+hash where keys are tables aliases and values are table names. One
+of the keys MUST be "M".
 
 =cut
 ######################################################################
 
 sub search
 {
-	my( $self, $keyfield, $tables, $conditions, $main_table_alias ) = @_;
+	my( $self, $keyfield, $tables, $conditions) = @_;
 
 	EPrints::abort "No SQL tables passed to search()" if( scalar keys %{$tables} == 0 );
-
-	$main_table_alias = "M" unless defined $main_table_alias;
-
-	my $sql = "SELECT DISTINCT $main_table_alias.".$keyfield->get_sql_name()." FROM ";
+	
+	my $sql = "SELECT DISTINCT M.".$keyfield->get_sql_name()." FROM ";
 	my $first = 1;
 	foreach( keys %{$tables} )
 	{
@@ -2391,230 +2388,6 @@ sub execute
 }
 
 
-######################################################################
-=pod
-
-=item $db->add_field( $dataset, $field )
-
-Add $field to $dataset's tables.
-
-=cut
-######################################################################
-
-sub add_field
-{
-	my( $self, $dataset, $field ) = @_;
-
-	# If this field is virtual and has sub-fields, add them
-	if( $field->is_virtual )
-	{
-		my $sub_fields = $field->get_property( "fields_cache" );
-		foreach my $sub_field (@$sub_fields)
-		{
-			$self->add_field( $dataset, $sub_field );
-		}
-	}
-	else # Add the field itself to the metadata table
-	{
-		$self->_add_field( $dataset, $field );
-	}
-
-	# Add the field to order values (used to order search results)
-	$self->_add_field_ordervalues( $dataset, $field );
-}
-
-# Convert sql returned by $field->get_sql_type or $field->get_sql_index into something we can give to ALTER TABLE:
-sub _sql_type_to_alter_add
-{
-	my( $sql ) = @_;
-	$sql =~ s/,/, ADD /g;
-	$sql = "ADD $sql";
-	return $sql;
-}
-sub _sql_type_to_alter_drop
-{
-	my( $sql ) = @_;
-	my @fields = split /\s*,\s*/, $sql;
-	$_ =~ s/(\S+)\s.*/$1/ for @fields;
-	return join(', ', map { "DROP $_" } @fields);
-}
-sub _sql_index_to_alter_add
-{
-	my( $sql ) = @_;
-	$sql =~ s/(PRIMARY\s+KEY|INDEX|KEY|UNIQUE)/ADD $1/ig;
-	return $sql;
-}
-
-# Add the field to the ordervalues tables
-sub _add_field_ordervalues
-{
-	my( $self, $dataset, $field ) = @_;
-
-	foreach my $langid ( @{$self->{ session }->get_repository->get_conf( "languages" )} )
-	{
-		$self->_add_field_ordervalues_lang( $dataset, $field, $langid );
-	}
-}
-
-# Add the field to the ordervalues table for $langid
-sub _add_field_ordervalues_lang
-{
-	my( $self, $dataset, $field, $langid ) = @_;
-
-	my $order_table = $dataset->get_ordervalues_table_name( $langid );
-
-	my $sql_field = EPrints::MetaField->new(
-		repository => $self->{ session }->get_repository,
-		name => $field->get_name,
-		type => "longtext" );
-
-	my $sql = $sql_field->get_sql_type( 0 ); # only first field can not be null
-	$sql = _sql_type_to_alter_add( $sql );
-
-	return $self->do( "ALTER TABLE `$order_table` $sql" );
-}
-
-# Add the field to the main tables
-sub _add_field
-{
-	my( $self, $dataset, $field ) = @_;
-
-	return if $field->is_virtual; # Virtual fields are still added to ordervalues???
-
-	if( $field->get_property( "multiple" ) )
-	{
-		return $self->_add_multiple_field( $dataset, $field );
-	}
-
-	my $table = $dataset->get_sql_table_name;
-
-	my $column_sql = $field->get_sql_type( 0 ); # only first field can be not null
-	$column_sql = _sql_type_to_alter_add( $column_sql );
-	my $key_sql = $field->get_sql_index;
-	if( $key_sql )
-	{
-		$key_sql = _sql_index_to_alter_add( $key_sql );
-		$column_sql .= ', ' . $key_sql;
-	}
-
-	return $self->do( "ALTER TABLE `$table` $column_sql" );
-}
-
-# Add a multiple field to the main tables
-sub _add_multiple_field
-{
-	my( $self, $dataset, $field ) = @_;
-
-	my $key_field = $dataset->get_key_field();
-
-	# $database->create_table spots multiples and attempts to create auxillary tables, which we don't want to do
-	my $aux_field = $field->clone;
-	$aux_field->set_property( "multiple", 0 );
-
-	my $pos_field = EPrints::MetaField->new(
-		repository => $self->{ session }->get_repository,
-		name => "pos",
-		type => "int" );
-
-	my $table = $dataset->get_sql_sub_table_name( $field );
-	
-	return $self->create_table(
-		$table,
-		$dataset,
-		0,
-		( $key_field, $pos_field, $aux_field ) );
-}
-
-######################################################################
-=pod
-
-=item $db->remove_field( $dataset, $field )
-
-Remove $field from $dataset's tables.
-
-=cut
-######################################################################
-
-sub remove_field
-{
-	my( $self, $dataset, $field ) = @_;
-
-	# If this field is virtual and has sub-fields, remove them
-	if( $field->is_virtual )
-	{
-		my $sub_fields = $field->get_property( "fields_cache" );
-		foreach my $sub_field (@$sub_fields)
-		{
-			$self->remove_field( $dataset, $sub_field );
-		}
-	}
-	else # Remove the field itself from the metadata table
-	{
-		$self->_remove_field( $dataset, $field );
-	}
-
-	# Remove the field from order values (used to order search results)
-	$self->_remove_field_ordervalues( $dataset, $field );
-}
-
-# Remove the field from the ordervalues tables
-sub _remove_field_ordervalues
-{
-	my( $self, $dataset, $field ) = @_;
-
-	foreach my $langid ( @{$self->{ session }->get_repository->get_conf( "languages" )} )
-	{
-		$self->_remove_field_ordervalues_lang( $dataset, $field, $langid );
-	}
-}
-
-# Remove the field from the ordervalues table for $langid
-sub _remove_field_ordervalues_lang
-{
-	my( $self, $dataset, $field, $langid ) = @_;
-
-	my $order_table = $dataset->get_ordervalues_table_name( $langid );
-
-	my $sql_field = EPrints::MetaField->new(
-		repository => $self->{ session }->get_repository,
-		name => $field->get_name,
-		type => "longtext" );
-
-	my $sql = $sql_field->get_sql_type( 0 ); # only first field can not be null
-	$sql = _sql_type_to_alter_drop( $sql );
-
-	return $self->do( "ALTER TABLE `$order_table` $sql" );
-}
-
-# Remove the field from the main tables
-sub _remove_field
-{
-	my( $self, $dataset, $field ) = @_;
-
-	return if $field->is_virtual; # Virtual fields are still removed from ordervalues???
-
-	if( $field->get_property( "multiple" ) )
-	{
-		return $self->_remove_multiple_field( $dataset, $field );
-	}
-
-	my $table = $dataset->get_sql_table_name;
-
-	my $column_sql = $field->get_sql_type( 0 ); # only first field can be not null
-	$column_sql = _sql_type_to_alter_drop( $column_sql );
-
-	return $self->do( "ALTER TABLE `$table` $column_sql" );
-}
-
-# Remove a multiple field from the main tables
-sub _remove_multiple_field
-{
-	my( $self, $dataset, $field ) = @_;
-
-	my $table = $dataset->get_sql_sub_table_name( $field );
-
-	$self->do( "DROP TABLE `$table`" );
-}
 
 ######################################################################
 =pod
