@@ -6586,4 +6586,6 @@ PACKAGE: 2.2.99.2
 2007-12-14 tdb
  * Don't render an Itemref field link inside a link, because it's always going
     to be linked itself, fixing #3189
+ * The main repository hostname can now be unqualified (to allow 'localhost'),
+    fixing #3184
 
