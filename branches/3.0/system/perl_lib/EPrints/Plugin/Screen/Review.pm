@@ -95,9 +95,17 @@ sub render
 				my $td = $session->make_element( "td", class=>"ep_columns_cell".($first?" ep_columns_cell_first":"") );
 				$first = 0;
 				$tr->appendChild( $td );
-				my $a = $session->render_link( "?eprintid=".$e->get_id."&screen=EPrint::View::Editor" );
-				$td->appendChild( $a );
-				$a->appendChild( $e->render_value( $_ ) );
+				my $field = $e->{dataset}->get_field( $_ );
+				if( $field->is_type( 'Itemref' ) )
+				{
+					$td->appendChild( $e->render_value( $_ ) );
+				}
+				else
+				{
+					my $a = $session->render_link( "?eprintid=".$e->get_id."&screen=EPrint::View::Editor" );
+					$td->appendChild( $a );
+					$a->appendChild( $e->render_value( $_ ) );
+				}
 			}
 
 			++$info->{row};

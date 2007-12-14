@@ -6582,3 +6582,8 @@ PACKAGE: 2.2.99.2
  * generate_static now compiles the contents of files into auto.css, rather 
     than it just containing @import lines. This improves the load time of 
     page.
+
+2007-12-14 tdb
+ * Don't render an Itemref field link inside a link, because it's always going
+    to be linked itself, fixing #3189
+
