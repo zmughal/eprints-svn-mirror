@@ -6728,3 +6728,9 @@ PACKAGE: 2.2.99.2
 2007-12-18 cjg
  * Added Export/IDs which is a very simple (and fast) export that just 
     outputs a \n separated list of IDs of the items.
+
+2007-12-18 tdb
+ * Added quote_value and quote_identifier methods to Database.pm
+ * Replaced all occurences of prep_value with quote_value
+ * Replaced all (?) occurences of \" in database values with quote_value
+
