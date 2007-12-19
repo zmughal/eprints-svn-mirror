@@ -6590,3 +6590,6 @@ PACKAGE: 2.2.99.2
     fixing #3184
  * Fixed double-escaping of URLs in document citations, fixing #3113
 
+2007-12-19 tdb
+ * Session::render_link shouldn't URI escape (should be HTML escaping, which the
+    DOM library will do for us), fixing #3197
