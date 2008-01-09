@@ -6600,3 +6600,6 @@ PACKAGE: 2.2.99.2
 2007-12-20 tdb
  * Removed temporary file usage from PubMedID import script, fixing #2820
 
+2008-01-09 tdb
+ * Changed name of ordervalue_single to ordervalue_basic, fixing #3201
+
