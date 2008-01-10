@@ -1701,7 +1701,7 @@ sub ordervalue_single
 			$dataset ); 
 	}
 
-	return $self->ordervalue_basic( $value );
+	return $self->ordervalue_basic( $value, $session, $langid );
 }
 
 
