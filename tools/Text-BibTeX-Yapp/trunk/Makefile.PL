@@ -10,4 +10,5 @@ WriteMakefile(
     ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM  => 'lib/Text/BibTeX/Yapp.pm', # retrieve abstract from module
        AUTHOR         => 'Tim D Brody <tdb2@localdomain>') : ()),
+	dist              => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
 );
