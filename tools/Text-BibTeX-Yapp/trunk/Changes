@@ -1,0 +1,6 @@
+Revision history for Perl extension Text::BibTeX::Yapp.
+
+0.01  Thu Jan 10 14:45:06 2008
+	- original version; created by h2xs 1.23 with options
+		-X -n Text::BibTeX::Yapp
+

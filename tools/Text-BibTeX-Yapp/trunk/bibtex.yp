@@ -1,0 +1,481 @@
+# BibTeX yapp grammar version 1.00
+# Copyright 2008 Tim Brody <tdb01r@ecs.soton.ac.uk>
+
+# header
+%{
+
+{
+# Utility classes
+package Text::BibTeX::Yapp::Value;
+
+use overload '"' => \&value;
+
+sub new
+{
+	my( $class, $value ) = @_;
+
+	bless \$value, $class;
+}
+
+sub value
+{
+	${$_[0]};
+}
+
+sub type
+{
+	my( $self ) = @_;
+
+	my $type = ref( $self );
+	$type =~ s/^.*:://;
+
+	return uc($type);
+}
+
+package Text::BibTeX::Yapp::String;
+our @ISA = qw( Text::BibTeX::Yapp::Value );
+
+package Text::BibTeX::Yapp::Number;
+our @ISA = qw( Text::BibTeX::Yapp::Value );
+
+package Text::BibTeX::Yapp::Name;
+our @ISA = qw( Text::BibTeX::Yapp::Value );
+
+}
+
+=pod
+
+=head1 NAME
+
+Text::BibTeX::Yapp - Pure-perl BibTeX parser
+
+=head1 SYNOPSIS
+
+	use Text::BibTeX::Yapp;
+
+	my $p = Text::BibTeX::Yapp->new;
+
+	open(my $fh, "<", "my.bib");
+	my $entries = $p->parse_file($fh);
+	close($fh);
+
+=head1 DESCRIPTION
+
+This module provides only the bare-bones necessary to read a BibTeX file.
+BibTeX entries are read sequentially from a file (ignoring any comments) and
+stored in a simple perl data structure.
+
+It doesn't perform any macro expansion or placeholder replacement.
+
+=head1 DATA FORMAT
+
+The parse methods return an array reference to a list of bib entries.
+
+=head2 BibTeX Entry
+
+A normal BibTeX entry (note IDENTIFIER may be undefined):
+
+ [
+  TYPE,
+  [
+   IDENTIFIER,
+   {
+	FIELD => [ VALUE ],
+	FIELD => [ VALUE, VALUE, ... ],
+	...
+   }
+  ]
+ ]
+
+=head2 @PREAMBLE
+
+A preamble (i.e. TYPE = 'preamble'):
+
+ [
+  TYPE,
+  [
+   undef,
+   [ VALUE, VALUE, ... ]
+  ]
+ ]
+
+=head2 @STRING
+
+A placeholder (i.e. TYPE = 'string'):
+
+ [
+  TYPE,
+  [
+   undef,
+   {
+	NAME => [ VALUE ]
+   }
+  ]
+ ]
+
+=head2 Values
+
+Values are represented as objects in one of three types: NAME, STRING or NUMBER. To get the actual value stringify the object.
+
+This is to allow you to perform the appropriate replacement of NAME values that
+may have been defined using the @STRING pragma, see
+http://artis.imag.fr/~Xavier.Decoret/resources/xdkbibtex/bibtex_summary.html
+
+=head1 METHODS
+
+=over 4
+
+=item $parser = Text::BibTeX::Yapp->new
+
+Create and return a new parser object.
+
+=item $bibs = $parser->parse_file( HANDLE )
+
+Parse bib entries from the file IO handle HANDLE and return them.
+
+=item $bibs = $parser->parse_string( $string )
+
+Parse bib entries from $string and return them.
+
+=back
+
+=head1 NAME
+
+Text::BibTeX::Yapp::Value - Utility class for representing values
+
+=head1 SYNOPSIS
+
+	my $bib = $bibs->[0];
+	my( $type, $content ) = @$bib;
+	my( $identifier, $fields ) = @$content;
+
+	my( $key, $value ) = each %$fields;
+
+	print "$key is '$value' [".$value->type."]\n";
+	print "$key is '".$value->value."'\n";
+
+=head1 METHODS
+
+=over 4
+
+=item $type = $value->type
+
+Returns the type of the value (NAME, STRING or NUMBER).
+
+=item $value = $value->value
+
+Returns the value of the value.
+
+=back
+
+=head1 SEE ALSO
+
+For a complete BibTeX experience use L<Text::BibTeX>.
+
+This parser was generated using L<Parse::Yapp>.
+
+
+The BibTeX grammar described here is based on btparse:
+
+http://search.cpan.org/~gward/btparse-0.34/doc/bt_language.pod
+
+And from testing against the xampl.bib file:
+
+http://www.ctan.org/tex-archive/biblio/bibtex/distribs/doc/xampl.bib
+
+More info on BibTeX:
+
+http://www.ecst.csuchico.edu/~jacobsd/bib/formats/bibtex.html
+
+=head1 AUTHOR
+
+Copyright 2008 Tim Brody <tdb01r@ecs.soton.ac.uk>
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.8.8 or,
+at your option, any later version of Perl 5 you may have available.
+
+=cut
+
+use Carp;
+
+our $REGEXP_NAME = qr/[a-zA-Z0-9\!\$\&\*\+\-\.\/\:\;\<\>\?\[\]\^\_\`\|]+/;
+
+%}
+
+%token NUM
+%token STRING
+%token NAME
+%token AT				/* '@' */
+%token LBRACE			/* '{' */
+%token RBRACE			/* '}' */
+%token LPAREN			/* '(' */
+%token RPAREN			/* ')' */
+%token EQUALS			/* '=' */
+%token HASH				/* '#' */
+%token COMMA			/* ',' */
+%%
+# rules
+
+bibfile: #empty
+	| bibfile entry { return [ @{$_[1]||[]}, @{$_[2]} ] }
+;
+
+entry: AT { _level($_[0],2) } NAME body { _level($_[0],1); return [ $_[3], $_[4] ] };
+
+body: STRING
+	| LBRACE contents RBRACE { $_[2] }
+	| LPAREN contents RPAREN { $_[2] }
+;
+
+contents: NAME COMMA fields { return [ $_[1], $_[3] ] }
+	| NUM COMMA fields { return [ $_[1], $_[3] ] }
+	| fields { return [ undef, $_[1] ] }
+	| value { return [ undef, $_[1] ] }
+;
+
+fields: field
+	| field COMMA
+	| field COMMA fields { return { %{$_[1]}, %{$_[3]} } }
+;
+
+field: NAME EQUALS { _level($_[0],3) } value { _level($_[0],2); return { $_[1] => $_[4] } };
+
+value: simple_value { [ $_[1] ] }
+	| simple_value HASH value { return [ $_[1], @{$_[3]} ] }
+;
+
+simple_value: STRING { Text::BibTeX::Yapp::String->new( $_[1] ) }
+	| NUM { Text::BibTeX::Yapp::Number->new( $_[1] ) }
+	| NAME { Text::BibTeX::Yapp::Name->new( $_[1] ) }
+;
+
+%%
+# footer
+
+sub _Error
+{
+	my( $self ) = @_;
+
+	$self->YYData->{ERR} = 1;
+	$self->YYData->{ERRMSG} = "Unrecognised input near line " . $self->YYData->{LINE};
+}
+
+sub _Lexer
+{
+	my( $self ) = @_;
+
+#warn "$LEVEL<<< ".$self->YYData->{INPUT}." >>>\n";
+
+	my( $token, $value ) = _Lexer_real( @_ );
+
+#warn(("\t" x $LEVEL) . "$token [$value]\n");
+
+	return( $token, $value );
+}
+
+sub _level
+{
+	my( $self, $level ) = @_;
+
+	$self->YYData->{LEVEL} = $level;
+}
+
+sub _Lexer_real
+{
+	my( $self ) = @_;
+
+	my $level = $self->YYData->{LEVEL};
+
+	REREAD:
+
+	$self->_read_input or return( "", undef );
+
+	$self->YYData->{INPUT} =~ s/^[ \r\t]+//;
+	$self->YYData->{INPUT} =~ s/[ \r\n\t]+$//;
+
+# top-level
+	if( $level == 1 )
+	{
+	for( $self->YYData->{INPUT} )
+	{
+		s/^(\@)//
+			and return( 'AT', $1 );
+		s/^%([^\n]*)\n?//
+			and goto REREAD;
+		s/^([^\@]+)\n?//
+			and goto REREAD;
+		length($_) == 0
+			and goto REREAD;
+	}
+	}
+
+# in-entry
+	if( $level == 2 )
+	{
+	for( $self->YYData->{INPUT} )
+	{
+		s/^(\d+)//
+			and return( 'NUM', $1 );
+		s/^(\{)//
+			and return( 'LBRACE', $1 );
+		s/^(\})//
+			and return( 'RBRACE', $1 );
+		s/^(\()//
+			and return( 'LPAREN', $1 );
+		s/^(\))//
+			and return( 'RPAREN', $1 );
+		s/^(#)//
+			and return( 'HASH', $1 );
+		s/^(=)//
+			and return( 'EQUALS', $1 );
+		s/^(,)//
+			and return( 'COMMA', $1 );
+		s/^($REGEXP_NAME)//o
+			and return( 'NAME', $1 );
+		s/^"//
+			and return( 'STRING', _Lexer_string_quote( $self ));
+	}
+	}
+
+# strings
+	if( $level == 3 )
+	{
+	for( $self->YYData->{INPUT} )
+	{
+		s/^(\d+)//
+			and return( 'NUM', $1 );
+		s/^(#)//
+			and return( 'HASH', $1 );
+		s/^"//
+			and return( 'STRING', _Lexer_string_quote( $self ));
+		s/^($REGEXP_NAME)//o
+			and return( 'NAME', $1 );
+		s/^{//
+			and return( 'STRING', _Lexer_string_brace( $self ));
+	}
+	}
+
+	return ();
+}
+
+sub _Lexer_string_brace
+{
+	my( $self ) = @_;
+
+	my $level = 1;
+	my $buffer = "";
+
+	while($level > 0)
+	{
+		$self->_read_input or last;
+
+		for( $self->YYData->{INPUT} )
+		{
+			s/^(\{)// and ++$level and $buffer .= "{";
+			s/^([^\{\}]+)// and $buffer .= $1;
+			s/^(\})// and --$level and $buffer .= "}";
+		}
+	}
+
+	return $buffer;
+}
+
+sub _Lexer_string_quote
+{
+	my( $self ) = @_;
+
+	my $buffer = "";
+
+	while(1)
+	{
+		$self->_read_input or last;
+
+		for( $self->YYData->{INPUT} )
+		{
+			s/^(\\.)// and $buffer .= $1;
+			s/^([^\\"]+)// and $buffer .= $1;
+			s/^"// and return $buffer;
+		}
+	}
+
+	return $buffer;
+}
+
+sub _read_input
+{
+	my( $self ) = @_;
+
+	my $r = 0;
+
+	$r ||= length($self->YYData->{INPUT});
+
+	if( !$r and defined $self->YYData->{FH})
+	{
+		my $fh = $self->YYData->{FH};
+		$r ||= defined($self->YYData->{INPUT} = <$fh>);
+		++$self->YYData->{LINE};
+	}
+
+	return $r;
+}
+
+sub _parse
+{
+	my( $self ) = @_;
+
+	my $r;
+
+	$self->_level( 1 );
+	$self->YYData->{LINE} = 0;
+	$self->YYData->{ERR} = 0;
+	$self->YYData->{ERRMSG} = "";
+
+	$r = $self->YYParse( yylex => \&_Lexer, yyerror => \&_Error );
+
+	return $r;
+}
+
+sub parse_file
+{
+	my( $self, $file ) = @_;
+
+	my $r;
+
+	$self->YYData->{INPUT} = "";
+
+	if( ref( $file ) )
+	{
+		$self->YYData->{FH} = $file;
+		$r = $self->_parse;
+	}
+	else
+	{
+		open(my $fh, "<", $file)
+			or Carp::croak "Unable to open $file for reading: $!";
+		$self->YYData->{FH} = $fh;
+		$r = $self->_parse;
+		close($fh);
+	}
+
+	if( $self->YYData->{ERR} )
+	{
+		Carp::croak "An error occurred while parsing BibTeX: " . ($self->YYData->{ERRMSG} || 'Unknown error?');
+	}
+
+	return $r;
+}
+
+sub parse_string
+{
+	my( $self, $data ) = @_;
+
+	my $r;
+
+	$self->YYData->{INPUT} = $data;
+	$r = $self->_parse;
+
+	return $r;
+}
+
+# End of the grammar

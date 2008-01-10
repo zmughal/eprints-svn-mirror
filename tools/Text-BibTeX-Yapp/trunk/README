@@ -1,0 +1,37 @@
+Text-BibTeX-Yapp version 1.00
+=============================
+
+This module provides a pure-perl BibTeX parser, based on a Parse::Yapp grammar
+(you don't require Parse::Yapp though).
+
+If you want a complete BibTeX solution you probably want to look at
+Text::BibTeX.
+
+INSTALLATION
+
+To install this module type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+REBUILDING FROM THE GRAMMAR
+
+Install Parse::Yapp and run:
+
+ yapp -m Text::BibTeX::Yapp -s -n -o lib/Text/BibTeX/Yapp.pm bibtex.yp
+
+DEPENDENCIES
+
+This module requires these other modules and libraries:
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2008 by Tim D Brody
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.8.8 or,
+at your option, any later version of Perl 5 you may have available.
+
+

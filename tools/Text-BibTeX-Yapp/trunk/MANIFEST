@@ -1,0 +1,8 @@
+Changes
+Makefile.PL
+MANIFEST
+README
+t/Text-BibTeX-Yapp.t
+lib/Text/BibTeX/Yapp.pm
+bibtex.yp
+META.yml                                 Module meta-data (added by MakeMaker)
