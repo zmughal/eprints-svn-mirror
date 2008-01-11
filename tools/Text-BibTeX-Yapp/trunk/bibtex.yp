@@ -8,7 +8,7 @@
 # Utility classes
 package Text::BibTeX::Yapp::Value;
 
-use overload '"' => \&value;
+use overload '""' => \&value;
 
 sub new
 {
@@ -218,7 +218,7 @@ our $REGEXP_NAME = qr/[a-zA-Z0-9\!\$\&\*\+\-\.\/\:\;\<\>\?\[\]\^\_\`\|]+/;
 # rules
 
 bibfile: #empty
-	| bibfile entry { return [ @{$_[1]||[]}, @{$_[2]} ] }
+	| bibfile entry { return [ @{$_[1]||[]}, $_[2] ] }
 ;
 
 entry: AT { _level($_[0],2) } NAME body { _level($_[0],1); return [ $_[3], $_[4] ] };
@@ -294,6 +294,9 @@ sub _Lexer_real
 	$self->YYData->{INPUT} =~ s/^[ \r\t]+//;
 	$self->YYData->{INPUT} =~ s/[ \r\n\t]+$//;
 
+	length($self->YYData->{INPUT}) == 0
+		and goto REREAD;
+
 # top-level
 	if( $level == 1 )
 	{
@@ -305,9 +308,8 @@ sub _Lexer_real
 			and goto REREAD;
 		s/^([^\@]+)\n?//
 			and goto REREAD;
-		length($_) == 0
-			and goto REREAD;
 	}
+	die "Lexer failure in level $level: '".$self->YYData->{INPUT}."'\n";
 	}
 
 # in-entry
@@ -336,6 +338,7 @@ sub _Lexer_real
 		s/^"//
 			and return( 'STRING', _Lexer_string_quote( $self ));
 	}
+	die "Lexer failure in level $level: '".$self->YYData->{INPUT}."'\n";
 	}
 
 # strings
@@ -343,10 +346,10 @@ sub _Lexer_real
 	{
 	for( $self->YYData->{INPUT} )
 	{
-		s/^(\d+)//
-			and return( 'NUM', $1 );
 		s/^(#)//
 			and return( 'HASH', $1 );
+		s/^(\d+)//
+			and return( 'NUM', $1 );
 		s/^"//
 			and return( 'STRING', _Lexer_string_quote( $self ));
 		s/^($REGEXP_NAME)//o
@@ -354,9 +357,11 @@ sub _Lexer_real
 		s/^{//
 			and return( 'STRING', _Lexer_string_brace( $self ));
 	}
+		$level = 2;
+		goto REREAD;
 	}
 
-	return ();
+	die "Lexer failure, unknown level '$level'\n";
 }
 
 sub _Lexer_string_brace
@@ -432,6 +437,25 @@ sub _parse
 	$self->YYData->{ERRMSG} = "";
 
 	$r = $self->YYParse( yylex => \&_Lexer, yyerror => \&_Error );
+
+	return $r;
+}
+
+sub parse_fh
+{
+	my( $self, $file ) = @_;
+
+	my $r;
+
+	$self->YYData->{INPUT} = "";
+
+	$self->YYData->{FH} = $file;
+	$r = $self->_parse;
+
+	if( $self->YYData->{ERR} )
+	{
+		Carp::croak "An error occurred while parsing BibTeX: " . ($self->YYData->{ERRMSG} || 'Unknown error?');
+	}
 
 	return $r;
 }

@@ -30,7 +30,7 @@ L<Text::BibTeX::Yapp>
 {
 package Text::BibTeX::Name;
 
-use overload '"' => \&to_string;
+use overload '""' => \&to_string;
 
 sub new
 {

@@ -20,8 +20,8 @@ REBUILDING FROM THE GRAMMAR
 
 Install Parse::Yapp and run:
 
- yapp -m Text::BibTeX::Yapp -s -n -o lib/Text/BibTeX/Yapp.pm bibtex.yp
- yapp -m Text::BibTeX::YappName -s -n -o lib/Text/BibTeX/YappName.pm bibtex_names.yp
+ yapp -m Text::BibTeX::Yapp -n -o lib/Text/BibTeX/Yapp.pm bibtex.yp
+ yapp -m Text::BibTeX::YappName -n -o lib/Text/BibTeX/YappName.pm bibtex_names.yp
 
 DEPENDENCIES
 

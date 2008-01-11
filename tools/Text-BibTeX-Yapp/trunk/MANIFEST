@@ -4,5 +4,8 @@ MANIFEST
 README
 t/Text-BibTeX-Yapp.t
 lib/Text/BibTeX/Yapp.pm
+lib/Text/BibTeX/YappName.pm
 bibtex.yp
+bibtex_names.yp
 META.yml                                 Module meta-data (added by MakeMaker)
+examples/xampl.bib
