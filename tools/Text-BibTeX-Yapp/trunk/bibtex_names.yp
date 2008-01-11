@@ -1,0 +1,168 @@
+# header
+
+# According to http://nwalsh.com/tex/texhelp/bibtx-23.html
+
+%{
+
+=head1 NAME
+
+Text::BibTeX::YappName - Parse BibTeX names
+
+=head1 SYNOPSIS
+
+	use Text::BibTeX::YappName;
+
+	my $parser = Text::BibTeX::YappName->new;
+
+	my $names = $parser->parse_string( "John Smith" );
+
+	my $name = $names->[0];
+
+	printf("%s, %s\n", $name->last, $name->first);
+	# $name->von, $name->jr
+
+=head1 SEE ALSO
+
+L<Text::BibTeX::Yapp>
+
+=cut
+
+{
+package Text::BibTeX::Name;
+
+use overload '"' => \&to_string;
+
+sub new
+{
+	my( $class, @parts ) = @_;
+
+	(ref($_) and ($_ = join(' ', @$_))) for @parts;
+
+	bless \@parts, $class;
+}
+
+sub first { $_[0]->[0] }
+sub von { $_[0]->[1] }
+sub last { $_[0]->[2] }
+sub jr { $_[0]->[3] }
+
+sub to_string
+{
+	join ' ', map { defined $_ ? $_ : () } @{$_[0]};
+}
+}
+
+our $REGEXP_VON = qr/[a-z][^ ,]*/;
+
+%}
+
+%token AND                    # " and "
+%token COMMA                  # ","
+%token VON                    # $REGEXP_VON
+%token PART
+
+%%
+#rules
+
+names: #empty
+	| name { [ $_[1] ] }
+	| name AND names { [ $_[1], @{$_[3]} ] }
+;
+
+name:
+# John Jack Smith
+	parts { Text::BibTeX::Name->new( $_[1], undef, pop @{$_[1]} ) }
+# Smith, John Jack
+	| parts COMMA parts { Text::BibTeX::Name->new( $_[3], undef, $_[1] ) }
+# Ludwig von Beethoven
+	| parts vons parts { Text::BibTeX::Name->new( $_[1], $_[2], $_[3] ) }
+# von Beethoven, Ludwig
+	| vons parts COMMA parts { Text::BibTeX::Name->new( $_[4], $_[1], $_[2] ) }
+# Ford, Jr., Henry
+	| parts COMMA parts COMMA parts { Text::BibTeX::Name->new( $_[5], undef, $_[1], $_[3] ) }
+# von Ford, Jr., Henry
+	| vons parts COMMA parts COMMA parts { Text::BibTeX::Name->new( $_[6], $_[1], $_[2], $_[4] ) }
+;
+
+parts: PART { [ $_[1] ] }
+	| PART parts { [ $_[1], @{$_[2]} ] }
+;
+
+vons: VON { [ $_[1] ] }
+	| VON vons { [ $_[1], @{$_[2]} ] }
+;
+
+%%
+#footer
+
+sub _Lexer_debug
+{
+	my( $self ) = @_;
+
+	my( $token, $value ) = _Lexer( $self );
+
+	print "$token => [".($value||'')."]\n";
+
+	return( $token, $value );
+}
+
+sub _Lexer
+{
+	my( $self ) = @_;
+
+	length($self->YYData->{INPUT})
+	or return ('', undef);
+
+	$self->YYData->{INPUT} =~ s/\n/ /g;
+	$self->YYData->{INPUT} =~ s/^[ \t\r]+//;
+
+	for($self->YYData->{INPUT})
+	{
+		s/^and //
+			and return( "AND" );
+		s/^\{//
+			and return( "PART", _Lexer_brace( $self ));
+		s/^,//
+			and return( "COMMA" );
+		s/^($REGEXP_VON)//
+			and return( "VON", $1 );
+		s/^([^ ,]+)//
+			and return( "PART", $1 );
+	}
+}
+
+sub _Lexer_brace
+{
+	my( $self ) = @_;
+
+	my $buffer = "{";
+	my $level = 1;
+
+	while($level > 0)
+	{
+		length($self->YYData->{INPUT})
+		or last;
+
+		for($self->YYData->{INPUT})
+		{
+			s/^([^\{\}]+)// and $buffer .= $1;
+			s/^(\{)// and ++$level and $buffer .= $1;
+			s/^(\})// and $level-- and $buffer .= $1;
+		}
+	}
+
+	return $buffer;
+}
+
+sub parse_string
+{
+	my( $self, $data ) = @_;
+
+	$self->YYData->{INPUT} = $data;
+
+	my $r = $self->YYParse( yylex => \&_Lexer );
+
+	return $r;
+}
+
+# End of Grammar

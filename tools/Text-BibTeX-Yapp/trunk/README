@@ -21,6 +21,7 @@ REBUILDING FROM THE GRAMMAR
 Install Parse::Yapp and run:
 
  yapp -m Text::BibTeX::Yapp -s -n -o lib/Text/BibTeX/Yapp.pm bibtex.yp
+ yapp -m Text::BibTeX::YappName -s -n -o lib/Text/BibTeX/YappName.pm bibtex_names.yp
 
 DEPENDENCIES
 
