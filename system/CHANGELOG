@@ -6612,4 +6612,6 @@ PACKAGE: 2.2.99.2
 
 2008-01-14 tdb
  * Use Text::Unidecode to create sort values, fixing #3200
+ * EPrints::Metafield::render_value_withopts now checks definedness by using
+    EPrints::Utils::is_set, fixing #2923
 
