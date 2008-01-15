@@ -1194,6 +1194,14 @@ sub exec
 	return EPrints::Platform::exec( $self, $cmd_id, %map );
 }
 
+sub can_execute
+{
+	my( $self, $cmd_id ) = @_;
+
+	my $cmd = $self->get_conf( "executables", $cmd_id );
+
+	return ($cmd and $cmd ne "NOTFOUND") ? 1 : 0;
+}
 
 sub can_invoke
 {
@@ -1203,7 +1211,7 @@ sub can_invoke
 
 	foreach( keys %{$execs} )
 	{
-		$map{$_} = $execs->{$_};
+		$map{$_} = $execs->{$_} unless $execs->{$_} eq "NOTFOUND";
 	}
 
 	my $command = $self->get_conf( "invocation" )->{ $cmd_id };
@@ -1212,7 +1220,7 @@ sub can_invoke
 
 	$command =~ s/\$\(([a-z]*)\)/quotemeta($map{$1})/gei;
 
-	return 0 if( $command =~ /\$\([a-z]*\)/ );
+	return 0 if( $command =~ /\$\([a-z]*\)/i );
 
 	return 1;
 }
