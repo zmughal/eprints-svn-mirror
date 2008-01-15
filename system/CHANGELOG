@@ -6622,4 +6622,6 @@ PACKAGE: 2.2.99.2
  * Added a space between 'von' and 'family' parts in BibTeX import
  * Merged r2676 from trunk, which fixes unicode problems in title_duplicates,
     fixing #2815
+ * Replaced $session->html_phrase with $self->html_phrase in Screen::Import,
+    fixing #3203
 
