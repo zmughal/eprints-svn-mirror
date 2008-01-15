@@ -370,7 +370,7 @@ sub convert_input
 	{
 		my $a_name;
 		$a_name->{given} = join( " ", $_->part( "first" ) ) if scalar $_->part( "first" );
-		$a_name->{family} = join( " ", $_->part( "von" ) ) if scalar $_->part( "von" );
+		$a_name->{family} = join( " ", $_->part( "von" ), " " ) if scalar $_->part( "von" );
 		$a_name->{family} .= join( " ", $_->part( "last" ) ) if scalar $_->part( "last" );
 		$a_name->{lineage} = join( " ", $_->part( "jr" ) ) if scalar $_->part( "jr" );
 		push @{ $epdata->{creators_name} }, $a_name;
@@ -391,7 +391,7 @@ sub convert_input
 	{
 		my $e_name;
 		$e_name->{given} = join( " ", $_->part( "first" ) ) if scalar $_->part( "first" );
-		$e_name->{family} = join( " ", $_->part( "von" ) ) if scalar $_->part( "von" );
+		$e_name->{family} = join( " ", $_->part( "von" ), " " ) if scalar $_->part( "von" );
 		$e_name->{family} .= join( " ", $_->part( "last" ) ) if scalar $_->part( "last" );
 		$e_name->{lineage} = join( " ", $_->part( "jr" ) ) if scalar $_->part( "jr" );
 		push @{ $epdata->{editors_name} }, $e_name;
