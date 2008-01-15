@@ -6624,4 +6624,5 @@ PACKAGE: 2.2.99.2
     fixing #2815
  * Replaced $session->html_phrase with $self->html_phrase in Screen::Import,
     fixing #3203
+ * Now checks for visibility all in Screen::Import, fixing #3207
 
