@@ -19,3 +19,16 @@ my $r = $p->parse_file( "examples/xampl.bib" );
 
 use Data::Dumper;
 #warn Data::Dumper::Dumper($r);
+
+use Text::BibTeX::YappName;
+$p = Text::BibTeX::YappName->new;
+
+if( open(my $fh, "<", "names.txt") )
+{
+	while(<$fh>)
+	{
+		my $names = $p->parse_string( $_ );
+		print STDERR "$_:\n" . Data::Dumper::Dumper($names);
+	}
+	close($fh);
+}
