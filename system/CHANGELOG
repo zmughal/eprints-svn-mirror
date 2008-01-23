@@ -6639,6 +6639,10 @@ PACKAGE: 2.2.99.2
  * Added Microsoft Excel document format, fixing #3217
  * Using a pin with content twice will no longer repeat content, fixing #3027
 
+2008-01-18 cjg
+ * Multiple field tables now get a primary key, although this isn't created
+    if you upgrade (yet).
+
 2008-01-22 tdb
  * Added handler to test data import tool, fixing #3241
  * Added handler to subject data import tool
@@ -6647,6 +6651,7 @@ PACKAGE: 2.2.99.2
  * Modified oai interface to support seconds granularity, fixing #3227 in a
     different way
 
-2008-01-18 cjg
- * Multiple field tables now get a primary key, although this isn't created
-    if you upgrade (yet).
+2008-01-23 tdb
+ * Load the EPrints::Plugin module last to avoid dependency issues in
+    dynamically loaded plugins
+
