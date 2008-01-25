@@ -6655,3 +6655,6 @@ PACKAGE: 2.2.99.2
  * Added EPrints::CLIProcessor module for handling CLI messages
  * If the time part of the lastmod is null default to 00:00:00, fixing #3243
 
+2008-01-25 tdb
+ * Added URI::OpenURL module, to enable the openurl resolver by default
+
