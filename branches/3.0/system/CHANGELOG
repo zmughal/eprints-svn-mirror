@@ -6676,4 +6676,6 @@ PACKAGE: 2.2.99.2
  * Removed debug log message in Platform::exec
  * Added EPrints namespace to <eprints> in XML export
  * Only match whole words as logical operators, fixing #3252
+ * Added an "id" attribute to <select> fields, which means that they can be 
+   	found with prototype $F() method -- fixing some issues with autocomplete.
 
