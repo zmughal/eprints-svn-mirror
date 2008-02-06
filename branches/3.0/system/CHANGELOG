@@ -6678,4 +6678,6 @@ PACKAGE: 2.2.99.2
  * Only match whole words as logical operators, fixing #3252
  * Added an "id" attribute to <select> fields, which means that they can be 
    	found with prototype $F() method -- fixing some issues with autocomplete.
+ * Updated to scriptaculous 1.8.1
+ * Work-around for autocompletion not working in Opera, fixing #3041
 
