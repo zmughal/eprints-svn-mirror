@@ -6672,3 +6672,7 @@ PACKAGE: 2.2.99.2
  * Added support for 'contributors' in DOI import
  * Added export plugin for OpenURL COinS, hidden ContextObject dependencies
 
+2008-02-06 tdb
+ * Removed debug log message in Platform::exec
+ * Added EPrints namespace to <eprints> in XML export
+

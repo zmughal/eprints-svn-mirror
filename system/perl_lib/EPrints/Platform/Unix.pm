@@ -106,8 +106,6 @@ sub exec
 
 	my $command = $repository->invocation( $cmd_id, %map );
 
-	$repository->log( "Executing command: $command" );	
-
 	my $rc = 0xffff & system $command;
 
 	return $rc;
