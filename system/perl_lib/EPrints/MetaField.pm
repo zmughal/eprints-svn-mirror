@@ -834,6 +834,9 @@ sub _normalize
 {
 	my( $in ) = @_;
   	
+	$in = "$in";
+	utf8::decode($in);
+
 	$in =~ s/^\s+//;
 
 	# lowercase after unidecode, so we "lowercase" i18n.
@@ -1696,7 +1699,7 @@ sub ordervalue_single
 
 sub ordervalue_basic
 {
-	my( $self , $value ) = @_;
+	my( $self, $value, $session, $langid ) = @_;
 
 	return $value;
 }
