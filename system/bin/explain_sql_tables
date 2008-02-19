@@ -113,12 +113,17 @@ my $info = {
 	deletion=>"Deletion table, used to store eprints which have been deleted",
 	buffer=>"Buffer table, used to store eprints awaiting approval by editor",
 	eprint=>"EPrint table, used to store eprints records",
+	history=>"History table, used to track changes to any objects that have revisions",
+	access=>"Access log table, used to store Web usage data",
+	request=>"Request table, records requests for full-texts by email",
  };
 
 foreach my $datasetid ( &EPrints::DataSet::get_sql_dataset_ids )
 {
 	my $dataset = $session->get_repository->get_dataset( $datasetid);
 	my $tn = $dataset->get_sql_table_name;
+	die $dataset->get_sql_table_name . " undefined"
+		unless exists $info->{$dataset->get_sql_table_name};
 	print row( $tn, $info->{ $dataset->get_sql_table_name} );
 	my @fields = $dataset->get_fields( 1 );
 	foreach my  $field (@fields)
