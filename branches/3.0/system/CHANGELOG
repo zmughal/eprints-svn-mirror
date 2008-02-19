@@ -6685,3 +6685,6 @@ PACKAGE: 2.2.99.2
  * Don't roll indexer logs on start/stop, only every 24 hours, fixing #2855
  * Make sure we actually remove index_queue entries, fixing #3256
 
+2008-02-19 tdb
+ * Updated explain_tables, fixing #3248
+
