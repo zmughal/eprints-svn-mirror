@@ -6688,4 +6688,5 @@ PACKAGE: 2.2.99.2
 2008-02-19 tdb
  * Updated explain_tables, fixing #3248
  * strip spaces and lowercase when normalising for comparison, fixing #3263
+ * utf8 decode values before passing to Unidecode, fixing #3270
 
