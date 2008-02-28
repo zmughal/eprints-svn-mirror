@@ -6694,3 +6694,7 @@ PACKAGE: 2.2.99.2
  * Request-a-copy email now goes to the correct person, fixing #3260
  * Emailed HTML now rendered with EPrints::XML::to_string
 
+2008-02-28 tdb
+ * Corrected link in editor alert email, fixing #3286
+ * Fixed an undef warning in EPrints::Email
+
