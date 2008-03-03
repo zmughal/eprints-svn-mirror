@@ -57,13 +57,16 @@ sub handler
 	my $esec = $r->dir_config( "EPrints_Secure" );
 	my $secure = (defined $esec && $esec eq "yes" );
 	my $urlpath;
+	my $cgipath;
 	if( $secure ) 
 	{ 
-		$urlpath = $repository->get_conf( "securepath" );
+		$urlpath = $repository->get_conf( "https_root" );
+		$cgipath = $repository->get_conf( "https_cgiroot" );
 	}
 	else
 	{ 
-		$urlpath = $repository->get_conf( "urlpath" );
+		$urlpath = $repository->get_conf( "http_root" );
+		$cgipath = $repository->get_conf( "http_cgiroot" );
 	}
 
 	my $uri = $r->uri;
@@ -71,18 +74,14 @@ sub handler
 	my $args = $r->args;
 	if( $args ne "" ) { $args = '?'.$args; }
 
-	# REMOVE the urlpath if any!
-	unless( $uri =~ s#^$urlpath## )
-	{
-		return DECLINED;
-	}
-
 	# Skip rewriting the /cgi/ path and any other specified in
 	# the config file.
 	my $econf = $repository->get_conf('rewrite_exceptions');
 	my @exceptions = ();
 	if( defined $econf ) { @exceptions = @{$econf}; }
-	push @exceptions, '/cgi/', '/thumbnails/';
+	push @exceptions,
+		$cgipath,
+		"$urlpath/thumbnails/";
 
 	my $securehost = $repository->get_conf( "securehost" );
 	if( EPrints::Utils::is_set( $securehost ) && !$secure )
@@ -90,7 +89,9 @@ sub handler
 		# If this repository has secure mode but we're not
 		# on the https site then skip /secure/ to let
 		# it just get rediected to the secure site.
-		push @exceptions, '/secure/';
+		push @exceptions,
+			$repository->get_conf( "https_cgiroot" ),
+			$repository->get_conf( "https_root" );
 	}
 	
 
@@ -100,6 +101,12 @@ sub handler
 		return DECLINED if( $uri =~ m/^$exppath/ );
 	}
 	
+	# if we're not in an EPrints path return
+	unless( $uri =~ s/^$urlpath// || $uri =~ s/^$cgipath// )
+	{
+		return DECLINED;
+	}
+
 	if( $uri =~ m#^/([0-9]+)(.*)$# )
 	{
 		# It's an eprint...
