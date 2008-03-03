@@ -389,7 +389,7 @@ sub send_out_alert
 	}
 
 	my $url = $self->{session}->get_repository->get_conf( "perl_url" ).
-		"/users/home?screenid=SavedSearh::View";
+		"/users/home?screenid=SavedSearch::View";
 	my $freqphrase = $self->{session}->html_phrase(
 		"lib/saved_search:".$freq );
 

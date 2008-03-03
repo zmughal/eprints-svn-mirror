@@ -6698,3 +6698,6 @@ PACKAGE: 2.2.99.2
  * Corrected link in editor alert email, fixing #3286
  * Fixed an undef warning in EPrints::Email
 
+2008-03-04 tdb
+ * Corrected typo in search alert email URL
+
