@@ -6702,3 +6702,6 @@ PACKAGE: 2.2.99.2
  * Corrected typo in search alert email URL
  * Fixed HTTPS support/sub-directory support simplified
 
+2008-03-07 tdb
+ * Put javascripts inside CDATA sections, fixing #3303
+
