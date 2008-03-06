@@ -431,8 +431,7 @@ sub _render_add_document
 	$toolbar->appendChild( $session->make_text( " " ) );
 	$toolbar->appendChild( $add_format_button );
 
-	my $script = $session->make_element( "script", type=>"text/javascript" );
-	$script->appendChild( $session->make_text( "EPJS_register_button_code( '_action_next', function() { el = \$('$ffname'); if( el.value != '' ) { return confirm( '".$self->phrase("really_next")."' ); } return true; } );" ));
+	my $script = $session->make_javascript( "EPJS_register_button_code( '_action_next', function() { el = \$('$ffname'); if( el.value != '' ) { return confirm( '".$self->phrase("really_next")."' ); } return true; } );" );
 	$toolbar->appendChild( $script);
 
 	

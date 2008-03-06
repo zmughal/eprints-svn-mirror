@@ -1143,8 +1143,6 @@ sub get_input_elements
 			$lookup->appendChild( $drop_div );
 
 			my @ids = $self->get_basic_input_ids($session, $basename, $staff, $obj );
-			my $script = $session->make_element( "script", type=>"text/javascript" );
-			$script->appendChild( $session->make_text( "\n" ) ); 
 			my $extra_params = $self->{input_lookup_params};
 			if( defined $extra_params ) 
 			{
@@ -1154,11 +1152,13 @@ sub get_input_elements
 			{
 				$extra_params = "";
 			}
+			my @code;
 			foreach my $id ( @ids )
 			{	
 				my @wcells = ( $id );
-				$script->appendChild( $session->make_text( 'ep_autocompleter( "'.$id.'", "'.$basename.'_drop", "'.$self->{input_lookup_url}.'", {relative: "'.$basename.'", component: "'.$componentid.'" }, [ $("'.join('"),$("',@wcells).'")], [], "'.$extra_params.'" );'."\n" ) );
+				push @code, 'ep_autocompleter( "'.$id.'", "'.$basename.'_drop", "'.$self->{input_lookup_url}.'", {relative: "'.$basename.'", component: "'.$componentid.'" }, [ $("'.join('"),$("',@wcells).'")], [], "'.$extra_params.'" );'."\n";
 			}
+			my $script = $session->make_javascript( join "", @code );
 			$lookup->appendChild( $script );
 			push @{$rows}, [ {el=>$lookup,colspan=>$cols,class=>"ep_form_input_grid_wide"} ];
 		}
@@ -1270,8 +1270,6 @@ sub get_input_elements
 				my $drop_div = $session->make_element( "div", id=>$ibasename."_drop", class=>"ep_drop_target" );
 				$lookup->appendChild( $drop_div );
 				my @ids = $self->get_basic_input_ids( $session, $ibasename, $staff, $obj );
-				my $script = $session->make_element( "script", type=>"text/javascript" );
-				$script->appendChild( $session->make_text( "\n" ) ); 
 				my $extra_params = $self->{input_lookup_params};
 				if( defined $extra_params ) 
 				{
@@ -1281,6 +1279,7 @@ sub get_input_elements
 				{
 					$extra_params = "";
 				}
+				my @code;
 				foreach my $id ( @ids )
 				{	
 					my @wcells = ();
@@ -1292,8 +1291,9 @@ sub get_input_elements
 						$id2=~s/^$ibasename//;
 						push @relfields, $id2;
 					}
-					$script->appendChild( $session->make_text( 'ep_autocompleter( "'.$id.'", "'.$ibasename.'_drop", "'.$self->{input_lookup_url}.'", { relative: "'.$ibasename.'", component: "'.$componentid.'" }, [$("'.join('"),$("',@wcells).'")], [ "'.join('","',@relfields).'"],"'.$extra_params.'" );' ) );
+					push @code, 'ep_autocompleter( "'.$id.'", "'.$ibasename.'_drop", "'.$self->{input_lookup_url}.'", { relative: "'.$ibasename.'", component: "'.$componentid.'" }, [$("'.join('"),$("',@wcells).'")], [ "'.join('","',@relfields).'"],"'.$extra_params.'" );'."\n";
 				}
+				my $script = $session->make_javascript( join "", @code );
 				$lookup->appendChild( $script );
 				my @row = ();
 				push @row, {} if( $self->{input_ordered} );
