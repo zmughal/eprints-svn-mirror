@@ -41,55 +41,28 @@ BEGIN
 
 use EPrints::MetaField;
 
-sub get_sql_names
-{
-	my( $self ) = @_;
-
-	return map { $self->get_name . "_" . $_ } qw( year month day );
-}
-
-sub value_from_sql_row
-{
-	my( $self, $session, $row ) = @_;
-
-	my @parts = splice(@$row,0,3);
-
-	my $value = "";
-	$value.= sprintf("%04d",$parts[0]) if( defined $parts[0] );
-	$value.= sprintf("-%02d",$parts[1]) if( defined $parts[1] );
-	$value.= sprintf("-%02d",$parts[2]) if( defined $parts[2] );
-
-	return $value;
-}
-
-sub sql_row_from_value
-{
-	my( $self, $session, $value ) = @_;
-
-	my @parts;
-	@parts = split /[-]/, $value if defined $value;
-	push @parts, undef while scalar(@parts) < 3;
-
-	return @parts;
-}
-
 sub get_sql_type
 {
-	my( $self, $session, $notnull ) = @_;
+	my( $self, $notnull ) = @_;
 
 	# ignoring notnull.
 
-	my @parts = $self->get_sql_names;
+	return 
+		$self->get_sql_name()."_year SMALLINT, ".
+		$self->get_sql_name()."_month SMALLINT, ".
+		$self->get_sql_name()."_day SMALLINT";
+}
 
-	for(@parts)
-	{
-		$_ = $session->get_database->get_column_type(
-			$_,
-			EPrints::Database::SQL_SMALLINT
-		);
-	}
+sub get_sql_index
+{
+	my( $self ) = @_;
 
-	return join ", ", @parts;
+	return undef unless( $self->get_property( "sql_index" ) );
+
+	return "INDEX( ".
+		$self->get_sql_name()."_year, ".
+		$self->get_sql_name()."_month, ".
+		$self->get_sql_name()."_day )";
 }
 
 sub render_single_value
@@ -267,46 +240,6 @@ sub get_unsorted_values
 	}
 	my @outvalues = keys %ov;
 	return \@outvalues;
-}
-
-sub get_ids_by_value
-{
-	my( $self, $session, $dataset, %opts ) = @_;
-
-	my $in_ids = $session->get_database->get_ids_by_field_values( $self, $dataset, %opts );
-
-	my $res = $self->{render_res};
-
-	if( $res eq "day" )
-	{
-		return $in_ids;
-	}
-
-	my $l = 10;
-	if( $res eq "month" ) { $l = 7; }
-	if( $res eq "year" ) { $l = 4; }
-
-	my $id_map = {};
-	foreach my $value ( keys %{$in_ids} )
-	{
-		my $proc_v = "undef";
-		if( defined $value )
-		{
-			$proc_v = substr($value,0,$l);
-		}
-
-		foreach my $id ( @{$in_ids->{$value}} )
-		{
-			$id_map->{$proc_v}->{$id} = 1;
-		}
-	}
-	my $out_ids = {};
-	foreach my $value ( keys %{$id_map} )
-	{
-		$out_ids->{$value} = [ keys %{$id_map->{$value}} ];
-	}
-
-	return $out_ids;
 }
 
 sub get_value_label

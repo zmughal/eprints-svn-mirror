@@ -30,9 +30,6 @@ use EPrints::Session;
 use EPrints::User;
 use strict;
 
-use EPrints::SystemSettings;
-if( $EPrints::SystemSettings::conf->{version_id} =~ m/^(eprints-)?3\./ ) { &backcomp; }
-
 # Create session
 my $session = new EPrints::Session;
 exit( 0 ) unless( defined $session );
@@ -164,38 +161,3 @@ $session->build_page( $title, $page );
 $session->send_page();
 $session->terminate();
 exit;
-
-# Backcompatibility for EPrints 3
-sub backcomp
-{
-	eval '
-		package EPrints::Session;
-
-		sub auth_check
-		{
-			my( $self , $resource ) = @_;
-
-			my $user = $self->current_user;
-
-			if( !defined $user )
-			{
-				$self->render_error( $self->html_phrase( "lib/session:no_login" ) );
-				return 0;
-			}
-
-			if( !defined $resource )
-			{
-				return 1;
-			}
-
-			unless( $user->has_role( $resource ) )
-			{
-				$self->render_error( $self->html_phrase( "lib/session:no_priv" ) );
-				return 0;
-			}
-			return 1;
-		}
-
-		1;
-	';
-}

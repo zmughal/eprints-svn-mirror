@@ -92,20 +92,21 @@ sub render
 			my $first = 1;
 			for( @$cols )
 			{
-				my $td = $session->make_element( "td", class=>"ep_columns_cell".($first?" ep_columns_cell_first":"")." ep_columns_cell_$_"  );
+				my $td = $session->make_element( "td", class=>"ep_columns_cell".($first?" ep_columns_cell_first":"") );
 				$first = 0;
 				$tr->appendChild( $td );
-				$td->appendChild( $e->render_value( $_ ) );
+				my $field = $e->{dataset}->get_field( $_ );
+				if( $field->is_type( 'Itemref' ) )
+				{
+					$td->appendChild( $e->render_value( $_ ) );
+				}
+				else
+				{
+					my $a = $session->render_link( "?eprintid=".$e->get_id."&screen=EPrint::View::Editor" );
+					$td->appendChild( $a );
+					$a->appendChild( $e->render_value( $_ ) );
+				}
 			}
-
-			$self->{processor}->{eprint} = $e;
-			$self->{processor}->{eprintid} = $e->get_id;
-			my $td = $session->make_element( "td", class=>"ep_columns_cell", align=>"left" );
-			$tr->appendChild( $td );
-			$td->appendChild( 
-				$self->render_action_list_icons( "eprint_review_actions", ['eprintid'] ) );
-			delete $self->{processor}->{eprint};
-
 
 			++$info->{row};
 

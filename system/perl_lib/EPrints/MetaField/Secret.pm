@@ -44,7 +44,7 @@ sub get_sql_index
 {
 	my( $self ) = @_;
 
-	return ();
+	return undef;
 }
 
 sub render_value

@@ -12,17 +12,11 @@ sub new
 
 	$self->{actions} = [qw/ stop save next prev /];
 
-	$self->{icon} = "/style/images/action_edit.png";
-
 	$self->{appears} = [
 		{
 			place => "eprint_actions",
 			position => 1500,
-		},
-		{
-			place => "eprint_item_actions",
-			position => 200,
-		},
+		}
 	];
 
 	$self->{staff} = 0;
@@ -166,16 +160,7 @@ sub screen_after_flow
 {
 	my( $self ) = @_;
 
-	my $eprint = $self->{processor}->{eprint};
-
-	if( $eprint->get_value( "eprint_status" ) eq "inbox" )
-	{
-		return "EPrint::Deposit";
-	}
-	else
-	{
-		return "EPrint::View";
-	}
+	return "EPrint::Deposit";
 }
 
 

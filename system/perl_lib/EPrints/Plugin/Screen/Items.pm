@@ -103,7 +103,7 @@ sub render
 			$url.= "&show_$inner_f=".$f2{$inner_f};
 		}
 		my $a = $self->{session}->render_link( $url,  );
-		my $imagesurl = $self->{session}->get_repository->get_conf( "base_url" )."/style/images";
+		my $imagesurl = $self->{session}->get_repository->get_conf( "rel_path" )."/style/images";
 		if( $filters{$f} )
 		{
 			$a->appendChild( $self->{session}->make_element(
@@ -148,22 +148,17 @@ sub render
 
 			my $status = $e->get_value( "eprint_status" );
 
+			my $cols = $session->current_user->get_value( "items_fields" );
 			my $first = 1;
-			for( @$columns )
+			for( @$cols )
 			{
-				my $td = $session->make_element( "td", class=>"ep_columns_cell_$status".($first?" ep_columns_cell_first":"")." ep_columns_cell_$_"  );
+				my $td = $session->make_element( "td", class=>"ep_columns_cell_$status".($first?" ep_columns_cell_first":"") );
 				$first = 0;
 				$tr->appendChild( $td );
-				$td->appendChild( $e->render_value( $_ ) );
+				my $a = $session->render_link( "?eprintid=".$e->get_id."&screen=EPrint::View::Owner" );
+				$td->appendChild( $a );
+				$a->appendChild( $e->render_value( $_ ) );
 			}
-
-			$self->{processor}->{eprint} = $e;
-			$self->{processor}->{eprintid} = $e->get_id;
-			my $td = $session->make_element( "td", class=>"ep_columns_cell", align=>"left" );
-			$tr->appendChild( $td );
-			$td->appendChild( 
-				$self->render_action_list_icons( "eprint_item_actions", ['eprintid'] ) );
-			delete $self->{processor}->{eprint};
 
 			return $tr;
 		},

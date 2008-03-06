@@ -464,10 +464,7 @@ sub commit
 		# don't do anything if there isn't anything to do
 		return( 1 ) unless $force;
 	}
-	if( $self->{non_volatile_change} )
-	{
-		$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
-	}
+	$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 
 	my $user_ds = $self->{session}->get_repository->get_dataset( "user" );
 	$self->tidy;
@@ -823,14 +820,14 @@ sub get_url
 {
 	my( $self ) = @_;
 
-	return $self->{session}->get_repository->get_conf( "perl_url" )."/users/home?screen=User::View&userid=".$self->get_value( "userid" );
+	return $self->{session}->get_repository->get_conf( "http_cgiurl" )."/users/home?screen=User::View&userid=".$self->get_value( "userid" );
 }
 
 sub get_control_url
 {
 	my( $self ) = @_;
 
-	return $self->{session}->get_repository->get_conf( "perl_url" )."/users/home?screen=User::View&userid=".$self->get_value( "userid" );
+	return $self->{session}->get_repository->get_conf( "http_cgiurl" )."/users/home?screen=User::View&userid=".$self->get_value( "userid" );
 }
 	
 
@@ -933,7 +930,7 @@ sub send_out_editor_alert
 
 	if( $list->count > 0 || $self->get_value( "mailempty" ) eq 'TRUE' )
 	{
-		my $url = URI->new($self->{session}->get_repository->get_conf( "perl_url" )."/users/home");
+		my $url = URI->new($self->{session}->get_repository->get_conf( "http_cgiurl" )."/users/home");
 		$url->query_form(
 			screen => "User::Edit",
 			userid => $self->get_id
@@ -1098,6 +1095,7 @@ my $PRIVMAP =
 
 	"admin" =>
 	{
+		"config/reload" => 2,
 		"indexer/stop" => 2,
 		"indexer/start" => 2,
 		"indexer/force_start" => 2,
@@ -1109,35 +1107,7 @@ my $PRIVMAP =
 		"subject/edit" => 8,
 		"staff/user_search" => 2,
 		"staff/history_search" => 2,
-		"config/view" => 2,
-		"config/view/workflow" => 2,
-		"config/view/citation" => 2,
-		"config/view/phrase" => 2,
-		"config/view/namedset" => 2,
-		"config/view/template" => 2,
-		"config/view/static" => 2,
-		"config/view/autocomplete" => 2,
-		"config/view/apache" => 2,
-		"config/view/perl" => 2,
 		"config/test_email" => 2,
-		"config/add_field" => 2,
-		"config/remove_field" => 2,
-		"metafield/view" => 2,
-		"metafield/edit" => 2,
-	},
-
-	"edit-config" => 
-	{
-		"config/edit" => 2,
-		"config/edit/workflow" => 2,
-		"config/edit/citation" => 2,
-		"config/edit/phrase" => 2,
-		"config/edit/namedset" => 2,
-		"config/edit/template" => 2,
-		"config/edit/static" => 2,
-		"config/edit/autocomplete" => 2,
-		# not editing perl files or apache files!
-		"config/reload" => 2,
 	},
 
 	"saved-searches" => 
@@ -1348,45 +1318,11 @@ sub get_privs
 	return $self->{".privs"} if( defined $self->{".privs"} ) ;
 
 	$self->{".privs"} = {};
-	my $rep = $self->{session}->get_repository;
-	my $role_config = $rep->get_conf( "user_roles", $self->get_value( "usertype" ) );
-	foreach my $role ( @{$role_config} )
+	foreach my $role ( $self->get_roles )
 	{
-		next if( $role =~ m/^[+-]/ );
 		foreach my $priv ( keys %{$PRIVMAP->{$role}} ) 
 		{ 
 			$self->{".privs"}->{$priv} = ($self->{".privs"}->{$priv}||0) + $PRIVMAP->{$role}->{$priv}; 
-		}
-	}
-	foreach my $role ( @{$role_config} )
-	{
-		if( $role =~ m/^([-+])([^[]+)(\[([^]]+)\])?$/ )
-		{
-			my $action = $1;
-			my $priv = $2;
-			my $relations = $4;
-			my $mode = 15;
-			if( defined $relations )
-			{
-				$mode = 0;
-				foreach my $relation ( split( ",", $relations ) )
-				{
-					if( $relation eq "public" ) { $mode |= 1; next; }
-					if( $relation eq "user" ) { $mode |= 2; next; }
-					if( $relation eq "owner" ) { $mode |= 4; next; }
-					if( $relation eq "editor" ) { $mode |= 8; next; }
-					EPrints::abort( "Unkown relation ($relation) in priv ($role)" );
-				}
-			}
-			if( $action eq "+" )
-			{
-				$self->{".privs"}->{$priv} |= $mode;
-			}
-
-			if( $action eq "-" )
-			{
-				$self->{".privs"}->{$priv} &= (~$mode);
-			}
 		}
 	}
 
@@ -1407,15 +1343,9 @@ sub get_roles
 	my( $self ) = @_;
 
 	my $rep = $self->{session}->get_repository;
-	my $role_config = $rep->get_conf( "user_roles", $self->get_value( "usertype" ) );
-	my @roles = ();
-	foreach my $role ( @{$role_config} )
-	{
-		next if( $role =~ m/^[+-]/ );
-		push @roles, $role;
-	}
+	my $roles = $rep->get_conf( "user_roles", $self->get_value( "usertype" ) );
 
-	return @roles;
+	return @{$roles};
 }
 
 sub has_role

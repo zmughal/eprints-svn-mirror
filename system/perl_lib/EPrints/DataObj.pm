@@ -20,11 +20,11 @@ B<EPrints::DataObj> - Base class for records in EPrints.
 
 =head1 DESCRIPTION
 
-This module is a base class which is inherited by L<EPrints::DataObj::EPrint>,
-L<EPrints::User>, L<EPrints::DataObj::Subject> and
-L<EPrints::DataObj::Document> and several other classes.
+This module is a base class which is inherited by EPrints::DataObj::EPrint, 
+EPrints::User, EPrints::DataObj::Subject and EPrints::DataObj::Document and several
+other classes.
 
-It is ABSTRACT - its methods should not be called directly.
+It is ABSTRACT, its methods should not be called directly.
 
 =over 4
 
@@ -333,7 +333,6 @@ sub clear_changed
 {
 	my( $self ) = @_;
 	
-	$self->{non_volatile_change} = 0;
 	$self->{changed} = {};
 }
 
@@ -453,11 +452,6 @@ sub set_value_raw
 		if( !_equal( $self->{data}->{$fieldname}, $value ) )
 		{
 			$self->{changed}->{$fieldname} = $self->{data}->{$fieldname};
-			my $field = $self->{dataset}->get_field( $fieldname );
-			if( $field->get_property( "volatile" ) == 0 )
-			{
-				$self->{non_volatile_change} = 1;
-			}
 		}
 	}
 
@@ -912,32 +906,6 @@ sub render_full
 ######################################################################
 =pod
 
-=item $url = $dataobj->uri
-
-Returns a unique URI for this object. Not certain to resolve as a 
-URL.
-
-If $c->{dataobj_uri}->{eprint} is a function, call that to work it out.
-
-=cut
-######################################################################
-
-sub uri
-{
-	my( $self ) = @_;
-
-	my $ds_id = $self->get_dataset->confid;
-	if( $self->get_session->get_repository->can_call( "dataobj_uri", $ds_id ) )
-	{
-		return $self->get_session->get_repository->call( [ "dataobj_uri", $ds_id ], $self );
-	}
-			
-	return $self->get_session->get_repository->get_conf( "base_url" )."/id/".$ds_id."/".$self->get_id;
-}
-
-######################################################################
-=pod
-
 =item $url = $dataobj->get_url
 
 Returns the URL for this record, for example the URL of the abstract page
@@ -1029,10 +997,7 @@ sub to_xml
 
 	$attrs{'xmlns'}=$ns unless( $opts{no_xmlns} );
 	my $tl = "record";
-	if( $opts{version} == 2 ) { 
-		$tl = $self->{dataset}->confid; 
-		$attrs{'id'} = $self->uri;
-	}	
+	if( $opts{version} == 2 ) { $tl = $self->{dataset}->confid; }	
 	my $r = $self->{session}->make_element( $tl, %attrs );
 	$r->appendChild( $self->{session}->make_text( "\n" ) );
 #$r->appendChild( $self->{session}->make_text( "x\nx" ) );
@@ -1181,8 +1146,6 @@ sub queue_changes
 {
 	my( $self ) = @_;
 
-	return unless $self->{dataset}->indexable;
-
 	foreach my $fieldname ( keys %{$self->{changed}} )
 	{
 		my $field = $self->{dataset}->get_field( $fieldname );
@@ -1209,8 +1172,6 @@ Add all the fields into the indexers todo queue.
 sub queue_all
 {
 	my( $self ) = @_;
-
-	return unless $self->{dataset}->indexable;
 
 	my @fields = $self->{dataset}->get_fields;
 	foreach my $field ( @fields )

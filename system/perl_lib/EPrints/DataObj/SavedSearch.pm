@@ -235,10 +235,7 @@ sub commit
 		# don't do anything if there isn't anything to do
 		return( 1 ) unless $force;
 	}
-	if( $self->{non_volatile_change} )
-	{
-		$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
-	}
+	$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 
 	my $subs_ds = $self->{session}->get_repository->get_dataset( 
 		"saved_search" );
@@ -391,8 +388,8 @@ sub send_out_alert
 			$last_month."-" );
 	}
 
-	my $url = $self->{session}->get_repository->get_conf( "perl_url" ).
-		"/users/home?screenid=SavedSearh::View";
+	my $url = $self->{session}->get_repository->get_conf( "http_cgiurl" ).
+		"/users/home?screenid=SavedSearch::View";
 	my $freqphrase = $self->{session}->html_phrase(
 		"lib/saved_search:".$freq );
 
@@ -580,7 +577,7 @@ sub get_url
 
 	return undef if( $self->get_value("public") ne "TRUE" );
 
-	return $self->{session}->get_repository->get_conf( "perl_url" )."/saved_search?savedsearchid=".$self->get_id;
+	return $self->{session}->get_repository->get_conf( "http_cgiurl" )."/saved_search?savedsearchid=".$self->get_id;
 }
 
 =pod

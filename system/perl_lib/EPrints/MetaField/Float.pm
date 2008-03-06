@@ -44,13 +44,9 @@ use EPrints::MetaField;
 
 sub get_sql_type
 {
-	my( $self, $session, $notnull ) = @_;
+	my( $self, $notnull ) = @_;
 
-	return $session->get_database->get_column_type(
-		$self->get_sql_name(),
-		EPrints::Database::SQL_REAL,
-		$notnull
-	);
+	return $self->get_sql_name()." FLOAT".($notnull?" NOT NULL":"");
 }
 
 sub ordervalue_basic

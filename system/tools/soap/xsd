@@ -19,6 +19,7 @@ print <<END;
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
             targetNamespace="$host/EPrints/WebServices"
             xmlns="$host/EPrints/WebServices"
+            xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
             xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
             elementFormDefault="qualified" >
 
@@ -30,15 +31,19 @@ print <<END;
 </xsd:complexType>
 
 <xsd:complexType name="ListParam">
-  <xsd:sequence>
-    <xsd:element minOccurs="0" maxOccurs="unbounded" name="name" type="Param" />
-  </xsd:sequence>
+  <xsd:complexContent>
+    <xsd:restriction base='soapenc:Array'>
+      <xsd:attribute ref='soapenc:arrayType' wsdl:arrayType='Param[]' />
+    </xsd:restriction>
+  </xsd:complexContent>
 </xsd:complexType>
 
 <xsd:complexType name="ListSearchField">
-  <xsd:sequence>
-    <xsd:element minOccurs="0" maxOccurs="unbounded" name="name" type="SearchField" />
-  </xsd:sequence>
+  <xsd:complexContent>
+    <xsd:restriction base='soapenc:Array'>
+      <xsd:attribute ref='soapenc:arrayType' wsdl:arrayType='SearchField[]' />
+    </xsd:restriction>
+  </xsd:complexContent>
 </xsd:complexType>
 
 <xsd:complexType name="SearchField">
@@ -51,9 +56,11 @@ print <<END;
 </xsd:complexType>
 
 <xsd:complexType name="ListField">
-  <xsd:sequence>
-    <xsd:element minOccurs="0" maxOccurs="unbounded" name="name" type="xsd:string" />
-  </xsd:sequence>
+  <xsd:complexContent>
+    <xsd:restriction base='soapenc:Array'>
+      <xsd:attribute ref='soapenc:arrayType' wsdl:arrayType='xsd:string[]' />
+    </xsd:restriction>
+  </xsd:complexContent>
 </xsd:complexType>
 
 END
@@ -131,9 +138,11 @@ sub dataset_schema
 	my $ds = $session->get_repository->get_dataset( $dsid );
 
 	$data.= "<xsd:complexType name=\"List\u$dsid\">\n";
-	$data.= "  <xsd:sequence>\n";
-	$data.= "    <xsd:element minOccurs=\"0\" maxOccurs=\"unbounded\" name=\"name\" type=\"\u${dsid}\" />\n";
-	$data.= "  </xsd:sequence>\n";
+	$data.="  <xsd:complexContent>\n";
+	$data.="    <xsd:restriction base='soapenc:Array'>\n";
+	$data.="      <xsd:attribute ref='soapenc:arrayType' wsdl:arrayType='\u${dsid}[]' />\n";
+	$data.="    </xsd:restriction>\n";
+	$data.="  </xsd:complexContent>\n";
 	$data.= "</xsd:complexType>\n";
 
 	$data.= "<xsd:complexType name=\"\u$dsid\">\n";
@@ -146,9 +155,11 @@ sub dataset_schema
 
 		print <<END;
 <xsd:complexType name="DocumentFiles">
-  <xsd:sequence>
-    <xsd:element minOccurs="0" maxOccurs="unbounded" name="name" type="DocumentFilesItem" />
-  </xsd:sequence>
+  <xsd:complexContent>
+    <xsd:restriction base="soapenc:Array">
+      <xsd:attribute ref="soapenc:arrayType" wsdl:arrayType="DocumentFilesItem[]" />
+    </xsd:restriction>
+  </xsd:complexContent>
 </xsd:complexType>
 
 <xsd:complexType name="DocumentFilesItem">
@@ -190,13 +201,15 @@ sub field_schema
 		return &field_schema_single( $field, $name );
 	}
 
-	my $type = &field_schema_single( $field, $name."Item" );
+	my $type = &field_schema_single( $field, $name."Item" )."[]";
 
 	print <<END;
 <xsd:complexType name="$name">
-  <xsd:sequence>
-    <xsd:element minOccurs="0" maxOccurs="unbounded" name="name" type="$type" />
-  </xsd:sequence>
+  <xsd:complexContent>
+    <xsd:restriction base="soapenc:Array">
+      <xsd:attribute ref="soapenc:arrayType" wsdl:arrayType="$type" />
+    </xsd:restriction>
+  </xsd:complexContent>
 </xsd:complexType>
 END
 
@@ -204,9 +217,39 @@ END
 }
 
 
-
-
 sub field_schema_single
+{
+	my( $field, $name ) = @_;
+
+	unless( $field->get_property( "multilang" ) )
+	{
+		return &field_schema_basic( $field, $name );
+	}
+
+	my $type = &field_schema_basic( $field, $name."Value" );
+
+	print <<END;
+<xsd:complexType name="$name">
+  <xsd:sequence>
+    <xsd:element minOccurs="0" maxOccurs="unbounded" name="langvar" type="${name}LangVar" />
+  </xsd:sequence>
+</xsd:complexType>
+END
+
+	print <<END;
+<xsd:complexType name="${name}LangVar">
+  <xsd:all>
+    <xsd:element minOccurs="0" maxOccurs="1" name="lang" type="xsd:string" />
+    <xsd:element minOccurs="0" maxOccurs="1" name="value" type="$type" />
+  </xsd:all>
+</xsd:complexType>
+END
+
+	return $name;
+}
+
+
+sub field_schema_basic
 {
 	my( $field, $name ) = @_;
 

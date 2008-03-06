@@ -25,26 +25,6 @@ This module handles loading the main configuration for an instance
 of the eprints software - such as the list of language id's and 
 the top level configurations for repositories - the XML files in /archives/
 
-=head1 METHODS
-
-=head2 Deprecated Methods
-
-=over 4
-
-=item EPrints::Config::abort
-
-Deprecated, use L<EPrints>::abort.
-
-=item EPrints::Config::get_archive_config
-=item EPrints::Config::get_archive_ids
-=item EPrints::Config::load_archive_config_module
-
-Deprecated, use *_repository_*.
-
-=back
-
-=head2 Normal Methods
-
 =over 4
 
 =cut
@@ -234,23 +214,18 @@ sub load_repository_config_module
 	{
 		next if $file =~ /^\./;
 		next unless $file =~ /\.pl$/;
-		push @files, "$dir/$file";
+		push @files, $file;
 	}
 	closedir( $dh );
-
-	my $metafield_pl = $info->{archiveroot}."/var/metafield.pl";
-	if( -e $metafield_pl )
-	{
-		push @files, $metafield_pl;
-	}
 
 	$info->{set_in} = {};
 	my $set = {};
 	foreach( keys %$info ) { $set->{$_} = 1; }
 		
-	foreach my $filepath ( sort @files )
+	foreach my $file ( sort @files )
 	{
 		$@ = undef;
+		my $filepath = "$dir/$file";
 		my $err;
 		unless( open( CFGFILE, $filepath ) )
 		{

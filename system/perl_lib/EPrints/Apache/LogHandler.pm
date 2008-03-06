@@ -66,12 +66,6 @@ use EPrints::Apache::AnApache;
 
 use constant NOT_MODIFIED => 304;
 
-=item handler REQUEST
-
-Called by mod_perl whenever a request is made to the web server where REQUEST is an Apache Request object.
-
-=cut
-
 sub handler
 {
 	my( $r ) = @_;
@@ -92,7 +86,7 @@ sub handler
 
 	my $access = {};
 	$access->{datestamp} = EPrints::Time::get_iso_timestamp( $r->request_time );
-	$access->{requester_id} = $ip;
+	$access->{requester_id} = 'urn:ip:' . $ip;
 	$access->{referent_id} = $r->uri;
 	$access->{referent_docid} = undef;
 	$access->{referring_entity_id} = $r->headers_in->{ "Referer" };
@@ -172,7 +166,7 @@ sub uri_to_eprintid
 	# uri is something like /xxxxxx/?
 	if( $uri->path =~ m#^(?:/archive)?/(\d+)/# )
 	{
-		return $1;
+		return 'info:' . EPrints::OpenArchives::to_oai_identifier( $session->get_repository->get_conf( "oai" )->{v2}->{ "archive_id" }, $1 );
 	}
 	
 	return undef;
@@ -190,7 +184,7 @@ sub uri_to_docid
 
 	if( $uri->path =~ m#^(?:/archive)?/(\d+)/(\d+)/# )
 	{
-		return $2;
+		return '#' . 1 * $2;
 	}
 
 	return undef;

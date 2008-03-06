@@ -44,50 +44,19 @@ use EPrints::MetaField::Text;
 
 my $VARCHAR_SIZE = 255;
 
-# database order
-my @PARTS = qw( honourific given family lineage );
-
-sub get_sql_names
-{
-	my( $self ) = @_;
-
-	return map { $self->get_name() . "_" . $_ } @PARTS;
-}
-
-sub value_from_sql_row
-{
-	my( $self, $session, $row ) = @_;
-
-	my %value;
-	@value{@PARTS} = splice(@$row,0,4);
-
-	return \%value;
-}
-
-sub sql_row_from_value
-{
-	my( $self, $session, $value ) = @_;
-
-	return @$value{@PARTS};
-}
-
 sub get_sql_type
 {
-	my( $self, $session, $notnull ) = @_;
+	my( $self, $notnull ) = @_;
 
-	my @parts = $self->get_sql_names;
+	my $sqlname = $self->get_sql_name();
+	my $param = ($notnull?" NOT NULL":"");
+	my $vc = 'VARCHAR('.$VARCHAR_SIZE.')';
 
-	for(@parts)
-	{
-		$_ = $session->get_database->get_column_type(
-			$_,
-			EPrints::Database::SQL_VARCHAR,
-			$notnull,
-			$VARCHAR_SIZE
-		);
-	}
-
-	return join ", ", @parts;
+	return
+		$sqlname.'_honourific '.$vc.' '.$param.', '.
+		$sqlname.'_given '.$vc.' '.$param.', '.
+		$sqlname.'_family '.$vc.' '.$param.', '.
+		$sqlname.'_lineage '.$vc.' '.$param;
 }
 
 # index the family part only...
@@ -95,9 +64,9 @@ sub get_sql_index
 {
 	my( $self ) = @_;
 
-	return () unless( $self->get_property( "sql_index" ) );
+	return undef unless( $self->get_property( "sql_index" ) );
 
-	return ($self->get_name()."_family");
+	return "INDEX( ".$self->get_sql_name."_family)";
 }
 	
 sub render_single_value
@@ -147,16 +116,13 @@ sub get_basic_input_elements
 	foreach( $self->get_input_bits( $session ) )
 	{
 		my $size = $self->{input_name_cols}->{$_};
-		my $f = $session->make_element( "div" );
-		push @{$parts}, {el=>$f};
-		$f->appendChild( $session->render_noenter_input_field(
+		push @{$parts}, {el=>$session->render_noenter_input_field(
 			class => "ep_form_text",
 			name => $basename."_".$_,
 			id => $basename."_".$_,
 			value => $value->{$_},
 			size => $size,
-			maxlength => $self->{maxlength} ) );
-		$f->appendChild( $session->make_element( "div", id=>$basename."_".$_."_billboard" ));
+			maxlength => $self->{maxlength} ) };
 	}
 
 	return [ $parts ];

@@ -130,6 +130,7 @@ sub render
 		$session->make_element( 
 			"input",
 			"maxlength"=>"255",
+			"accept-charset"=>"utf-8",
 			"name"=>"username",
 			"id"=>"username",
 			"class"=>"ep_form_text",

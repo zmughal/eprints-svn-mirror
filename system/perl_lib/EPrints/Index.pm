@@ -57,22 +57,14 @@ sub remove
 
 	my $sql;
 
-	my $db = $session->get_database;
-
 	my $keyfield = $dataset->get_key_field();
-	my $Q_keyname = $db->quote_identifier( $keyfield->get_sql_name() );
-	my $Q_field = $db->quote_identifier( "field" );
-	my $Q_word = $db->quote_identifier( "word" );
-	my $Q_fieldword = $db->quote_identifier( "fieldword" );
-	my $Q_indextable = $db->quote_identifier($dataset->get_sql_index_table_name());
-	my $Q_rindextable = $db->quote_identifier($dataset->get_sql_rindex_table_name());
-	my $POS = $db->quote_identifier("pos");
-	my $Q_ids = $db->quote_identifier("ids");
+	my $where = $keyfield->get_sql_name()." = \"$objectid\" AND field=\"".EPrints::Database::prep_value($fieldid)."\"";
 
-	my $where = "$Q_keyname=".$db->quote_value($objectid)." AND $Q_field=".$db->quote_value($fieldid);
+	my $indextable = $dataset->get_sql_index_table_name();
+	my $rindextable = $dataset->get_sql_rindex_table_name();
 
-	$sql = "SELECT $Q_word FROM $Q_rindextable WHERE $where";
-	my $sth = $session->get_database->prepare( $sql );
+	$sql = "SELECT word FROM $rindextable WHERE $where";
+	my $sth=$session->get_database->prepare( $sql );
 	$rv = $rv && $session->get_database->execute( $sth, $sql );
 	my @codes = ();
 	while( my( $c ) = $sth->fetchrow_array )
@@ -83,11 +75,19 @@ sub remove
 
 	foreach my $code ( @codes )
 	{
-		my $fieldword = $session->{database}->quote_value( "$fieldid:$code" );
-		my $sql = "UPDATE $Q_indextable SET $Q_ids = REPLACE($Q_ids,':$objectid:',':') WHERE $Q_fieldword=$fieldword AND $Q_ids LIKE ".$session->{database}->quote_value("\%:$objectid:\%");
-		$rv &&= $session->{database}->do($sql);
+		my $fieldword = EPrints::Database::prep_value( "$fieldid:$code" );
+		$sql = "SELECT ids,pos FROM $indextable WHERE fieldword='$fieldword' AND ids LIKE '%:$objectid:%'";
+		$sth=$session->get_database->prepare( $sql );
+		$rv = $rv && $session->get_database->execute( $sth, $sql );
+		if( my($ids,$pos) = $sth->fetchrow_array )
+		{
+			$ids =~ s/:$objectid:/:/g;
+			$sql = "UPDATE $indextable SET ids = '$ids' WHERE fieldword='$fieldword' AND pos='$pos'";
+			$rv = $rv && $session->get_database->do( $sql );
+		}
+		$sth->finish;
 	}
-	$sql = "DELETE FROM $Q_rindextable WHERE $where";
+	$sql = "DELETE FROM $rindextable WHERE $where";
 	$rv = $rv && $session->get_database->do( $sql );
 
 	return $rv;
@@ -108,8 +108,12 @@ sub purge_index
 {
 	my( $session, $dataset ) = @_;
 
-	$session->clear_table( $dataset->get_sql_index_table_name() );
-	$session->clear_table( $dataset->get_sql_rindex_table_name() );
+	my $indextable = $dataset->get_sql_index_table_name();
+	my $rindextable = $dataset->get_sql_rindex_table_name();
+	my $sql;
+	$session->get_database->do( "DELETE FROM $indextable" );
+	$session->get_database->do( "DELETE FROM $rindextable" );
+	return;
 }
 
 
@@ -128,8 +132,6 @@ sub add
 {
 	my( $session, $dataset, $objectid, $fieldid, $value ) = @_;
 
-	my $database = $session->get_database;
-
 	my $field = $dataset->get_field( $fieldid );
 
 	my( $codes, $grepcodes, $ignored ) = $field->get_index_codes( $session, $value );
@@ -137,15 +139,6 @@ sub add
 	my %done = ();
 
 	my $keyfield = $dataset->get_key_field();
-	my $Q_keyname = $keyfield->get_sql_name();
-	my $Q_field = $database->quote_identifier( "field" );
-	my $Q_word = $database->quote_identifier( "word" );
-	my $Q_fieldword = $database->quote_identifier( "fieldword" );
-	my $Q_indextable = $database->quote_identifier($dataset->get_sql_index_table_name());
-	my $Q_rindextable = $database->quote_identifier($dataset->get_sql_rindex_table_name());
-	my $POS = $database->quote_identifier("pos");
-	my $Q_ids = $database->quote_identifier("ids");
-
 
 	my $indextable = $dataset->get_sql_index_table_name();
 	my $rindextable = $dataset->get_sql_rindex_table_name();
@@ -156,12 +149,11 @@ sub add
 	{
 		next if $done{$code};
 		$done{$code} = 1;
-
-		my $fieldword = $field->get_sql_name().":$code";
-		my $where = "$Q_fieldword=".$database->quote_value($fieldword);
-
-		my $sql = "SELECT MAX($POS) FROM $Q_indextable WHERE $where"; 
-		my $sth = $session->get_database->prepare( $sql );
+		my $sql;
+		my $fieldword = EPrints::Database::prep_value($field->get_sql_name().":$code");
+		my $sth;
+		$sql = "SELECT max(pos) FROM $indextable where fieldword='$fieldword'"; 
+		$sth=$session->get_database->prepare( $sql );
 		$rv = $rv && $session->get_database->execute( $sth, $sql );
 		return 0 unless $rv;
 		my ( $n ) = $sth->fetchrow_array;
@@ -174,7 +166,7 @@ sub add
 		}
 		else
 		{
-			$sql = "SELECT $Q_ids FROM $Q_indextable WHERE $where AND $POS=$n"; 
+			$sql = "SELECT ids FROM $indextable WHERE fieldword='$fieldword' AND pos=$n"; 
 			$sth=$session->get_database->prepare( $sql );
 			$rv = $rv && $session->get_database->execute( $sth, $sql );
 			my( $ids ) = $sth->fetchrow_array;
@@ -183,7 +175,7 @@ sub add
 			# don't forget the first and last are empty!
 			if( (scalar @list)-2 < 128 )
 			{
-				$sql = "UPDATE $Q_indextable SET $Q_ids='$ids$objectid:' WHERE $where AND $POS=$n";
+				$sql = "UPDATE $indextable SET ids='$ids$objectid:' WHERE fieldword='$fieldword' AND pos=$n";	
 				$rv = $rv && $session->get_database->do( $sql );
 				return 0 unless $rv;
 			}
@@ -195,18 +187,12 @@ sub add
 		}
 		if( $insert )
 		{
-			$rv &&= $session->get_database->insert( $indextable, ["fieldword","pos","ids"], [
-				$fieldword,
-				$n,
-				":$objectid:"
-			]);
+			$sql = "INSERT INTO $indextable (fieldword,pos,ids ) VALUES ('$fieldword',$n,':$objectid:')";
+			$rv = $rv && $session->get_database->do( $sql );
 			return 0 unless $rv;
 		}
-		$rv &&= $session->get_database->insert( $rindextable, ["field","word",$keyfield->get_sql_name()], [
-			$field->get_sql_name,
-			$code,
-			$objectid
-		]);
+		$sql = "INSERT INTO $rindextable (field,word,".$keyfield->get_sql_name()." ) VALUES ('".$field->get_sql_name."','$code','$objectid')";
+		$rv = $rv && $session->get_database->do( $sql );
 		return 0 unless $rv;
 
 	} 
@@ -215,15 +201,9 @@ sub add
 
 	foreach my $grepcode ( @{$grepcodes} )
 	{
-		$session->get_database->insert($dataset->get_sql_grep_table_name, [
-			$keyfield->get_sql_name(),
-			"fieldname",
-			"grepstring"
-		], [
-			$objectid,
-			$name,
-			$grepcode
-		]);
+		my $sql = "INSERT INTO ".$dataset->get_sql_grep_table_name." VALUES ('".
+EPrints::Database::prep_value($objectid)."','".EPrints::Database::prep_value($name)."','".EPrints::Database::prep_value($grepcode)."');";
+		$session->get_database->do( $sql ); 
 	}
 }
 
@@ -246,7 +226,7 @@ returned by $dataobj->get_data
 
 sub update_ordervalues
 {
-	my( $session, $dataset, $data, $tmp ) = @_;
+        my( $session, $dataset, $data, $tmp ) = @_;
 
 	&_do_ordervalues( $session, $dataset, $data, 0, $tmp );	
 }
@@ -254,7 +234,7 @@ sub update_ordervalues
 ######################################################################
 =pod
 
-=item EPrints::Index::insert_ordervalues( $session, $dataset, $data )
+=item EPrints::Index::update_ordervalues( $session, $dataset, $data )
 
 Create the order values for an object. $data is a structure
 returned by $dataobj->get_data
@@ -264,7 +244,7 @@ returned by $dataobj->get_data
 
 sub insert_ordervalues
 {
-	my( $session, $dataset, $data, $tmp ) = @_;
+        my( $session, $dataset, $data, $tmp ) = @_;
 
 	&_do_ordervalues( $session, $dataset, $data, 1, $tmp );	
 }
@@ -276,22 +256,22 @@ sub _do_ordervalues
 {
         my( $session, $dataset, $data, $insert, $tmp ) = @_;
 
-	# insert is ignored
 	# insert = 0 => update
 	# insert = 1 => insert
 	# tmp = 1 = use_tmp_table
 	# tmp = 0 = use normal table
 
-	my( $keyfield, @fields ) = $dataset->get_fields( 1 );
-	my $keyname = $keyfield->get_sql_name;
-	my $keyvalue = $data->{$keyfield->get_name()};
+	my @fields = $dataset->get_fields( 1 );
+
+	# remove the key field
+	splice( @fields, 0, 1 ); 
+	my $keyfield = $dataset->get_key_field();
+	my $keyvalue = EPrints::Database::prep_value( $data->{$keyfield->get_sql_name()} );
+	my @orderfields = ( $keyfield );
 
 	foreach my $langid ( @{$session->get_repository->get_conf( "languages" )} )
 	{
-		my $ovt = $dataset->get_ordervalues_table_name( $langid );
-		if( $tmp ) { $ovt .= "_tmp"; }
-
-		my @fnames = ( $keyname );
+		my @fnames = ( $keyfield->get_sql_name() );
 		my @fvals = ( $keyvalue );
 		foreach my $field ( @fields )
 		{
@@ -302,13 +282,27 @@ sub _do_ordervalues
 					$dataset );
 			
 			push @fnames, $field->get_sql_name();
-			push @fvals, defined $ov ?
-				substr($ov,0,$EPrints::MetaField::VARCHAR_SIZE) :
-				$ov;
+			push @fvals, EPrints::Database::prep_value( $ov );
 		}
 
-		$session->get_database->delete_from( $ovt, [$keyname], [$keyvalue] );
-		$session->get_database->insert( $ovt, \@fnames, \@fvals );
+		# cjg raw SQL!
+		my $ovt = $dataset->get_ordervalues_table_name( $langid );
+		if( $tmp ) { $ovt .= "_tmp"; }
+		my $sql;
+		if( $insert )
+		{
+			$sql = "INSERT INTO ".$ovt." (".join( ",", @fnames ).") VALUES (\"".join( "\",\"", @fvals )."\")";
+		}
+		else
+		{
+			my @l = ();
+			for( my $i=0; $i<scalar @fnames; ++$i )
+			{
+				push @l, $fnames[$i].'="'.$fvals[$i].'"';
+			}
+			$sql = "UPDATE ".$ovt." SET ".join( ",", @l )." WHERE ".$keyfield->get_sql_name().' = "'.EPrints::Database::prep_value( $keyvalue ).'"';
+		}
+		$session->get_database->do( $sql );
 	}
 }
 
@@ -325,16 +319,14 @@ $dataset.
 
 sub delete_ordervalues
 {
-	my( $session, $dataset, $id, $tmp ) = @_;
-
-	my $db = $session->get_database;
+        my( $session, $dataset, $id, $tmp ) = @_;
 
 	my @fields = $dataset->get_fields( 1 );
 
 	# remove the key field
 	splice( @fields, 0, 1 ); 
 	my $keyfield = $dataset->get_key_field();
-	my $keyvalue = $id;
+	my $keyvalue = EPrints::Database::prep_value( $id );
 
 	foreach my $langid ( @{$session->get_repository->get_conf( "languages" )} )
 	{
@@ -342,8 +334,8 @@ sub delete_ordervalues
 		my $ovt = $dataset->get_ordervalues_table_name( $langid );
 		if( $tmp ) { $ovt .= "_tmp"; }
 		my $sql;
-		$sql = "DELETE FROM ".$db->quote_identifier($ovt)." WHERE ".$db->quote_identifier($keyfield->get_sql_name())."=".$db->quote_value( $keyvalue );
-		$db->do( $sql );
+		$sql = "DELETE FROM ".$ovt." WHERE ".$keyfield->get_sql_name().' = "'.EPrints::Database::prep_value( $keyvalue ).'"';
+		$session->get_database->do( $sql );
 	}
 }
 
@@ -573,16 +565,26 @@ sub do_index
 {
 	my( $session, $p ) = @_;
 
-	my $seen_action = 0; # have we done anything
-	my $loop_max = 10; # max times to loop
+	my $seen_action = 0;
 
-	while(
-		$loop_max-- and
-		my( $datasetid, $objectid, $fieldid ) = $session->get_database->index_dequeue()
-	)
-	{
+	# $session->get_database->set_debug( 1 );
+	my $sql = "SELECT UNIX_TIMESTAMP(NOW()), field FROM index_queue ORDER BY added LIMIT 10";
+	my $sth = $session->get_database->prepare( $sql );
+	$session->get_database->execute( $sth, $sql );
+	my $now;
+	my %todo = (); # use a hash so we only do each field in the set once.
+	while( my @info = $sth->fetchrow_array ) {
+		$todo{$info[1]} = 1;
 		$seen_action = 1;
-		my $fieldcode = "$datasetid.$objectid.$fieldid"; # for debug messages
+		$now = $info[0] unless defined $now;
+	}
+	$sth->finish;
+	foreach my $fieldcode ( keys %todo )
+	{
+		# always remove them, even if they didn't index right.
+		my $sql = "DELETE FROM index_queue where field=\"$fieldcode\" AND added<FROM_UNIXTIME($now-1)";
+		$session->get_database->do( $sql );
+		my( $datasetid, $objectid, $fieldid ) = split( /\./, $fieldcode );
 	
 		my $dataset = $session->get_repository->get_dataset( $datasetid );
 		if( !defined $dataset )
@@ -599,7 +601,6 @@ sub do_index
 	
 		EPrints::Index::indexlog( "* de-indexing: $fieldcode" ) if( $p->{loglevel} > 4 );
 		EPrints::Index::remove( $session, $dataset, $objectid, $fieldid );
-		EPrints::Index::indexlog( "* done-de-indexing: $fieldcode" ) if( $p->{loglevel} > 5 );
 	
 		next unless( $field->get_property( "text_index" ) );
 	
@@ -612,9 +613,7 @@ sub do_index
 	
 		EPrints::Index::indexlog( "* indexing: $fieldcode" ) if( $p->{loglevel} > 4 );
 		EPrints::Index::add( $session, $dataset, $objectid, $fieldid, $value );
-		EPrints::Index::indexlog( "* done-indexing: $fieldcode" ) if( $p->{loglevel} > 5 );
 	}
-
 	return $seen_action;
 }	
 

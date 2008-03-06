@@ -33,8 +33,6 @@ and so forth.
 
 This should only ever be called from within the mod_perl system.
 
-This also causes some pages to be regenerated on demand, if they are stale.
-
 =over 4
 
 =cut
@@ -42,8 +40,6 @@ This also causes some pages to be regenerated on demand, if they are stale.
 package EPrints::Apache::Rewrite;
 
 use EPrints::Apache::AnApache; # exports apache constants
-
-use Data::Dumper;
 
 use strict;
   
@@ -61,33 +57,31 @@ sub handler
 	my $esec = $r->dir_config( "EPrints_Secure" );
 	my $secure = (defined $esec && $esec eq "yes" );
 	my $urlpath;
+	my $cgipath;
 	if( $secure ) 
 	{ 
-		$urlpath = $repository->get_conf( "securepath" );
+		$urlpath = $repository->get_conf( "https_root" );
+		$cgipath = $repository->get_conf( "https_cgiroot" );
 	}
 	else
 	{ 
-		$urlpath = $repository->get_conf( "urlpath" );
+		$urlpath = $repository->get_conf( "http_root" );
+		$cgipath = $repository->get_conf( "http_cgiroot" );
 	}
 
 	my $uri = $r->uri;
-
 	my $lang = EPrints::Session::get_session_language( $repository, $r );
 	my $args = $r->args;
 	if( $args ne "" ) { $args = '?'.$args; }
-
-	# REMOVE the urlpath if any!
-	unless( $uri =~ s#^$urlpath## )
-	{
-		return DECLINED;
-	}
 
 	# Skip rewriting the /cgi/ path and any other specified in
 	# the config file.
 	my $econf = $repository->get_conf('rewrite_exceptions');
 	my @exceptions = ();
 	if( defined $econf ) { @exceptions = @{$econf}; }
-	push @exceptions, '/cgi/', '/thumbnails/';
+	push @exceptions,
+		$cgipath,
+		"$urlpath/thumbnails/";
 
 	my $securehost = $repository->get_conf( "securehost" );
 	if( EPrints::Utils::is_set( $securehost ) && !$secure )
@@ -95,7 +89,9 @@ sub handler
 		# If this repository has secure mode but we're not
 		# on the https site then skip /secure/ to let
 		# it just get rediected to the secure site.
-		push @exceptions, '/secure/';
+		push @exceptions,
+			$repository->get_conf( "https_cgiroot" ),
+			$repository->get_conf( "https_root" );
 	}
 	
 
@@ -103,6 +99,12 @@ sub handler
 	foreach my $exppath ( @exceptions )
 	{
 		return DECLINED if( $uri =~ m/^$exppath/ );
+	}
+	
+	# if we're not in an EPrints path return
+	unless( $uri =~ s/^$urlpath// || $uri =~ s/^$cgipath// )
+	{
+		return DECLINED;
 	}
 
 	if( $uri =~ m#^/([0-9]+)(.*)$# )
@@ -148,7 +150,6 @@ sub handler
 			# let it fail if this isn't a real eprint	
 			if( !defined $eprint )
 			{
-				$session->terminate;
 				return OK;
 			}
 	
@@ -160,58 +161,22 @@ sub handler
 			
 			return OK;
 		}
-		
-		my $file = $repository->get_conf( "variables_path" )."/abstracts.timestamp";	
-		if( -e $file )
-		{
-			my $poketime = (stat( $file ))[9];
-			my $localpath = $uri;
-			$localpath.="index.html" if( $uri =~ m#/$# );
-			my $targetfile = $repository->get_conf( "htdocs_path" )."/".$lang.$localpath;
-			if( -e $targetfile )
-			{
-				my $targettime = (stat( $targetfile ))[9];
-				if( $targettime < $poketime )
-				{
-					# There is an abstracts file, AND we're looking
-					# at serving an abstract page, AND the abstracts timestamp
-					# file is newer than the abstracts page...
-					# so try and regenerate the abstracts page.
-					my $session = new EPrints::Session(2); # don't open the CGI info
-					my $eprint = EPrints::DataObj::EPrint->new( $session, $eprintid );
-					if( defined $eprint )
-					{
-						$eprint->generate_static;
-					}
-					$session->terminate;
-				}
-			}
-		}
 	}
 
 	# apache 2 does not automatically look for index.html so we have to do it ourselves
-	my $localpath = $uri;
 	if( $uri =~ m#/$# )
 	{
-		$localpath.="index.html";
-	}
-	$r->filename( $repository->get_conf( "htdocs_path" )."/".$lang.$localpath );
-
-	if( $uri =~ m#^/view(.*)# )
-	{
-		my $session = new EPrints::Session(2); # don't open the CGI info
-		EPrints::Update::Views::update_view_file( $session, $lang, $localpath, $uri );
-		$session->terminate;
+		$r->filename( $repository->get_conf( "htdocs_path" )."/".$lang.$uri."index.html" );
 	}
 	else
 	{
-		EPrints::Update::Static::update_static_file( $repository, $lang, $localpath );
+		$r->filename( $repository->get_conf( "htdocs_path" )."/".$lang.$uri );
 	}
-
 	$r->set_handlers(PerlResponseHandler =>[ 'EPrints::Apache::Template' ] );
 
 	return OK;
 }
+
 
 sub redir
 {

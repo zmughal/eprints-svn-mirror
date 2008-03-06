@@ -256,16 +256,13 @@ sub render
 
 sub _get_export_plugins
 {
-	my( $self, $include_not_advertised ) = @_;
+	my( $self ) = @_;
 
-	my $is_advertised = 1;
-	my %opts =  (
+	return $self->{session}->plugin_list( 
 			type=>"Export",
 			can_accept=>"list/".$self->{processor}->{search}->{dataset}->confid, 
-			is_visible=>$self->_vis_level,
-	);
-	unless( $include_not_advertised ) { $is_advertised = 1; }
-	return $self->{session}->plugin_list( %opts );
+			is_advertised=>1,
+			is_visible=>$self->_vis_level );
 }
 
 sub _vis_level
@@ -358,7 +355,8 @@ sub render_export_bar
 			my $span = $session->make_element( "span", class=>"ep_search_feed" );
 			my $url = $self->export_url( $id );
 			my $a1 = $session->render_link( $url );
-			my $icon = $session->make_element( "img", src=>"/style/images/feed-icon-14x14.png", alt=>"[feed]", border=>0 );
+			my $imagesurl = $session->get_repository->get_conf( "rel_path" );
+			my $icon = $session->make_element( "img", src=>"$imagesurl/style/images/feed-icon-14x14.png", alt=>"[feed]", border=>0 );
 			$a1->appendChild( $icon );
 			my $a2 = $session->render_link( $url );
 			$a2->appendChild( $dom_name );
@@ -701,7 +699,10 @@ sub wishes_to_export
 
 	my $format = $self->{session}->param( "output" );
 
-	my @plugins = $self->_get_export_plugins( 1 );
+	my @plugins = $self->{session}->plugin_list(
+		type=>"Export",
+		can_accept=>"list/eprint",
+		is_visible=>$self->_vis_level );
 		
 	my $ok = 0;
 	foreach( @plugins ) { if( $_ eq "Export::$format" ) { $ok = 1; last; } }

@@ -44,8 +44,8 @@ sub unknown_start_element
 {
 	my( $self, $found, $expected ) = @_;
 
-	$self->error("Unexpected tag: expected <$expected> found <$found>\n");
-	die "\n"; # Break out of the parsing
+	$self->error( "Unexpected tag: expected <$expected> found <$found>\n" );
+	die "\n"; # Break out of parsing
 }
 
 
@@ -183,30 +183,27 @@ sub end_element
 
 			$self->{xmlcurrent}->appendChild( 
 				$self->{plugin}->{session}->make_text( $tmpfile ) );
-			delete $self->{base64data};
+			delete $self->{basedata};
 		}
 		elsif( $self->{href} )
 		{
-			if( $self->{href} =~ m/^file:\/\// )
+			if( $self->{plugin}->{session}->get_repository->get_conf( "enable_file_imports" ) )
 			{
-				if( $self->{plugin}->{session}->get_repository->get_conf( "enable_file_imports" ) )
+				my $href = $self->{href};
+				$href =~ s/^file:\/\///;
+				if( -e $href )
 				{
-					my $href = $self->{href};
-					$href =~ s/^file:\/\///;
-					if( -e $href )
-					{
-						$self->{xmlcurrent}->appendChild( 
-							$self->{plugin}->{session}->make_text( $href ) );
-					}
-					else
-					{
-						$self->{plugin}->warning( "Could not see import file: ".$self->{href} );
-					}
-				}	
+					$self->{xmlcurrent}->appendChild( 
+						$self->{plugin}->{session}->make_text( $href ) );
+				}
 				else
 				{
-					$self->{plugin}->warning( $self->{plugin}->{session}->phrase( "Plugin/Import/DefaultXML:file_imports_disabled" ) );
+					$self->{plugin}->warning( "Could not see import file: ".$self->{href} );
 				}
+			}	
+			else
+			{
+				$self->{plugin}->warning( $self->{plugin}->{session}->phrase( "Plugin/Import/DefaultXML:file_imports_disabled" ) );
 			}
 			delete $self->{href};
 		}
@@ -238,14 +235,14 @@ sub start_element
 
 	if( $self->{depth} == 1 )
 	{
-		$self->{xml} = $self->{plugin}->{session}->make_element( $node_info->{Name}, %params );
+		$self->{xml} = $self->{plugin}->{session}->make_element( $node_info->{Name} );
 		$self->{xmlstack} = [$self->{xml}];
 		$self->{xmlcurrent} = $self->{xml};
 	}
 
 	if( $self->{depth} > 1 )
 	{
-		my $new = $self->{plugin}->{session}->make_element( $node_info->{Name}, %params );
+		my $new = $self->{plugin}->{session}->make_element( $node_info->{Name} );
 		$self->{xmlcurrent}->appendChild( $new );
 		push @{$self->{xmlstack}}, $new;
 		$self->{xmlcurrent} = $new;

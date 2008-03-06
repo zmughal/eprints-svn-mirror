@@ -707,7 +707,7 @@ sub render_value_no_multiple
 	}
 
 	my $url = $session->get_repository->get_conf(
-			"base_url" );
+			"http_url" );
 	my $views = $session->get_repository->get_conf( "browse_views" );
 	my $linkview;
 	foreach my $view ( @{$views} )
@@ -942,44 +942,12 @@ sub call_property
 	return $self->{repository}->call( $v, @args );
 }
 
-######################################################################
-=pod
 
-=item $val = $field->value_from_sql_row( $session, $row )
-
-Shift and return the value of this field from the database input $row.
-
-=cut
-######################################################################
-
-sub value_from_sql_row
-{
-	my( $self, $session, $row ) = @_;
-
-	return shift @$row;
-}
 
 ######################################################################
 =pod
 
-=item @row = $field->sql_row_from_value( $session, $value )
-
-Return a list of values to insert into the database based on $value.
-
-=cut
-######################################################################
-
-sub sql_row_from_value
-{
-	my( $self, $session, $value ) = @_;
-
-	return( $value );
-}
-
-######################################################################
-=pod
-
-=item $sql = $field->get_sql_type( $session, $notnull )
+=item $sql = $field->get_sql_type( $notnull )
 
 Return the SQL type of this field, used for creating tables. $notnull
 being true indicates that this column may not be null.
@@ -989,16 +957,9 @@ being true indicates that this column may not be null.
 
 sub get_sql_type
 {
-	my( $self, $session, $notnull ) = @_;
+	my( $self, $notnull ) = @_;
 
-	my $database = $session->get_database;
-
-	return $database->get_column_type(
-		$self->get_sql_name,
-		EPrints::Database::SQL_VARCHAR,
-		$notnull,
-		$EPrints::MetaField::VARCHAR_SIZE
-	);
+	return $self->get_sql_name()." VARCHAR($EPrints::MetaField::VARCHAR_SIZE)".($notnull?" NOT NULL":"");
 }
 
 ######################################################################
@@ -1006,7 +967,8 @@ sub get_sql_type
 
 =item $sql = $field->get_sql_index
 
-Return the columns that an index should be created over.
+Return the SQL definition of the index/indexes required for this field 
+or an empty string if no index is required.
 
 =cut
 ######################################################################
@@ -1015,9 +977,9 @@ sub get_sql_index
 {
 	my( $self ) = @_;
 	
-	return () unless( $self->get_property( "sql_index" ) );
+	return undef unless( $self->get_property( "sql_index" ) );
 
-	return $self->get_sql_names;
+	return "INDEX( ".$self->get_sql_name.")";
 }
 
 
@@ -1245,12 +1207,7 @@ sub get_input_elements
 	}
 
 
-	my $imagesurl = $session->get_repository->get_conf( "base_url" )."/style/images";
-	my $esec = $session->get_request->dir_config( "EPrints_Secure" );
-	if( defined $esec && $esec eq "yes" )
-	{
-		$imagesurl = $session->get_repository->get_conf( "securepath" )."/style/images";
-	}
+	my $imagesurl = $session->get_repository->get_conf( "rel_path" )."/style/images";
 	
 	my $rows = [];
 	for( my $i=1 ; $i<=$boxcount ; ++$i )
@@ -1433,8 +1390,6 @@ sub get_basic_input_elements
 					$self->{input_cols} : 
 					$maxlength );
 
-
-	my $f = $session->make_element( "div" );
 	my $input = $session->render_noenter_input_field(
 		class=>"ep_form_text",
 		name => $basename,
@@ -1442,10 +1397,8 @@ sub get_basic_input_elements
 		value => $value,
 		size => $size,
 		maxlength => $maxlength );
-	$f->appendChild( $input );
-	$f->appendChild( $session->make_element( "div", id=>$basename."_".$_."_billboard" ));
 
-	return [ [ { el=>$f } ] ];
+	return [ [ { el=>$input } ] ];
 }
 
 # array of all the ids of input fields
@@ -1538,30 +1491,26 @@ sub form_value_basic
 	return $value;
 }
 
+
+
+
 ######################################################################
 =pod
 
-=item @sqlnames = $field->get_sql_names
+=item $sqlname = $field->get_sql_name
 
-Return the names of this field's columns as they appear in a SQL table.
+Return the name of this field as it appears in an SQL table.
 
 =cut
 ######################################################################
 
-sub get_sql_names
-{
-	my( $self ) = @_;
-
-	return( $self->{name} );
-}
-
-# Utility/backwards compatibility
 sub get_sql_name
 {
 	my( $self ) = @_;
 
-	return $self->{ name };
+	return $self->{name};
 }
+
 
 ######################################################################
 =pod
@@ -1633,13 +1582,6 @@ sub get_unsorted_values
 	my( $self, $session, $dataset, %opts ) = @_;
 
 	return $session->get_database->get_values( $self, $dataset );
-}
-
-sub get_ids_by_value
-{
-	my( $self, $session, $dataset, %opts ) = @_;
-
-	return $session->get_database->get_ids_by_field_values( $self, $dataset, %opts );
 }
 
 ######################################################################
@@ -2000,7 +1942,6 @@ sub get_search_group { return 'basic'; }
 sub get_property_defaults
 {
 	return (
-		providence => $EPrints::MetaField::FROM_CONFIG,
 		allow_null 	=> 0,
 		browse_link 	=> $EPrints::MetaField::UNDEF,
 		can_clone 	=> 1,
@@ -2040,11 +1981,8 @@ sub get_property_defaults
 		type 		=> $EPrints::MetaField::REQUIRED,
 		sub_name	=> $EPrints::MetaField::UNDEF,
 		parent_name	=> $EPrints::MetaField::UNDEF,
-		volatile	=> 0,
-
 		help_xhtml	=> $EPrints::MetaField::UNDEF,
 		title_xhtml	=> $EPrints::MetaField::UNDEF,
-		join_path	=> $EPrints::MetaField::UNDEF,
 );
 }
 		

@@ -339,31 +339,17 @@ END
 		return undef;
 	}
 
-
 	if( defined $data->{files} )
 	{
 		foreach my $filedata ( @{$data->{files}} )
 		{
-			if( defined $filedata->{data} )
-			{
-				my $srcfile = $filedata->{data};		
-				$srcfile =~ s/^\s+//;
-				$srcfile =~ s/\s+$//;
-				$document->add_file( $srcfile, $filedata->{filename}, 1 );	
-				next;
-			}
-		
-			next unless defined $filedata->{url};
-			next unless defined $eprint->get_session()->get_repository->get_conf( "enable_web_imports" );
+			next unless defined $filedata->{data};
 
-			my $url = $filedata->{url};
-			$url =~ s/'/\\'/g;
-			my $tf = $eprint->get_session()->get_next_id;
-			my $tmpfile = "/tmp/epimport.$$.".time.".$tf.data";
-			my $cmd = "wget -O $tmpfile  '$url' -q ";
-			`$cmd`;
-			$document->add_file( $tmpfile, $filedata->{filename}, 1 );	
-			unlink( $tmpfile );
+			my $srcfile = $filedata->{data};		
+			$srcfile =~ s/^\s+//;
+			$srcfile =~ s/\s+$//;
+
+			$document->add_file( $srcfile, $filedata->{filename}, 1 );	
 		}
 	}
 
@@ -927,7 +913,6 @@ sub upload
 	my $size = 0;
 	my $buffer;	
 	open OUT, ">$out_file" or return( 0 );
-	binmode( OUT );
 	while( my $bytes = read( $filehandle, $buffer, 1024 ) )
 	{
 		$size += $bytes;
@@ -966,7 +951,6 @@ sub add_file
 
 	my $fh;
 	open( $fh, $file ) or return( 0 );
-	binmode( $fh );
 	my $rc = $self->upload( $fh, $filename, $preserve_path );
 	close $fh;
 
@@ -1174,10 +1158,7 @@ sub commit
 		# don't do anything if there isn't anything to do
 		return( 1 ) unless $force;
 	}
-	if( $self->{non_volatile_change} )
-	{
-		$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
-	}
+	$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 
 	$self->tidy;
 	my $success = $self->{session}->get_database->update(
@@ -1401,7 +1382,7 @@ sub rehash
 
 	my $hashfile = $self->get_eprint->local_path."/".
 		$self->get_value( "docid" ).".".
-		EPrints::Platform::get_hash_name();
+		EPrints::Time::get_iso_timestamp().".xsh";
 
 	EPrints::Probity::create_log( 
 		$self->{session}, 
@@ -1444,8 +1425,7 @@ sub get_text
 	for( @files )
 	{
 		open my $fi, "<:utf8", "$tempdir/$_" or next;
-		while( $fi->read($buffer,4096,length($buffer)) ) 
-		{
+		while( $fi->read($buffer,4096,length($buffer)) ) {
 			last if length($buffer) > 4 * 1024 * 1024;
 		}
 		close $fi;
@@ -1570,7 +1550,7 @@ sub icon_url
 	my $type = $self->get_value( "format" );
 	$type =~ s/\//_/g;
 
-	return $self->{session}->get_repository->get_conf( "base_url" ).
+	return $self->{session}->get_repository->get_conf( "http_url" ).
 			"/style/images/fileicons/$type.png";
 }
 
@@ -1729,13 +1709,13 @@ sub mime_type
 	return undef unless -r $path;
 	return undef if -d $path;
 
-	my $repository = $self->{session}->get_repository;
+	my $repos = $self->{session}->get_repository;
 
 	my %params = ( SOURCE => $path );
 
-	return undef if( !$repository->can_invoke( "file", %params ) );
+	return undef if( !$repos->can_invoke( "file", %params ) );
 
-	my $command = $repository->invocation( "file", %params );
+	my $command = $repos->invocation( "file", %params );
 	my $mime_type = `$command`;
 	$mime_type =~ s/\015?\012?$//s;
 	($mime_type) = split /,/, $mime_type, 2; # file can return a 'sub-type'

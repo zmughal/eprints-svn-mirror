@@ -147,7 +147,6 @@ sub new
 	$mode = 0 unless defined( $mode );
 	$noise = 0 unless defined( $noise );
 	$self->{noise} = $noise;
-	$self->{used_phrases} = {};
 
 	if( $mode == 0 || $mode == 2 || !defined $mode )
 	{
@@ -180,6 +179,8 @@ sub new
 	#### Got Repository Config Module ###
 
 	if( $self->{noise} >= 2 ) { print "\nStarting EPrints Session.\n"; }
+
+	$self->_add_http_paths;
 
 	if( $self->{offline} )
 	{
@@ -219,11 +220,10 @@ sub new
 		# if it's not there is a show stopper.
 		unless( $self->{database}->is_latest_version )
 		{ 
-			my $cur_version = $self->{database}->get_version || "unknown";
 			if( $self->{database}->has_table( "eprint" ) )
 			{	
 				EPrints::abort(
-	"Database tables are in old configuration (version $cur_version). Please run:\nepadmin upgrade ".$self->get_repository->get_id );
+	"Database tables are in old configuration. Please run:\nepadmin upgrade ".$self->get_repository->get_id );
 			}
 			else
 			{
@@ -240,6 +240,41 @@ sub new
 	$self->{repository}->call( "session_init", $self, $self->{offline} );
 
 	return( $self );
+}
+
+# add the relative paths + http_* config if not set already by cfg.d
+sub _add_http_paths
+{
+	my( $self ) = @_;
+
+	my $config = $self->{repository}->{config};
+
+	$config->{"rel_path"} = $self->get_url(
+		path => "static",
+	);
+	$config->{"rel_cgipath"} = $self->get_url(
+		path => "cgi",
+	);
+	$config->{"http_url"} ||= $self->get_url(
+		scheme => "http",
+		host => 1,
+		path => "static",
+	);
+	$config->{"http_cgiurl"} ||= $self->get_url(
+		scheme => "http",
+		host => 1,
+		path => "cgi",
+	);
+	$config->{"https_url"} ||= $self->get_url(
+		scheme => "https",
+		host => 1,
+		path => "static",
+	);
+	$config->{"https_cgiurl"} ||= $self->get_url(
+		scheme => "https",
+		host => 1,
+		path => "cgi",
+	);
 }
 
 ######################################################################
@@ -463,8 +498,6 @@ sub html_phrase
 	#
 	# returns [DOM]	
         
-	$self->{used_phrases}->{$phraseid} = 1;
-
 	my $r = $self->{lang}->phrase( $phraseid , \%inserts , $self );
 	#my $s = $self->make_element( "span", title=>$phraseid );
 	#$s->appendChild( $r );
@@ -492,7 +525,6 @@ sub phrase
 {
 	my( $self, $phraseid, %inserts ) = @_;
 
-	$self->{used_phrases}->{$phraseid} = 1;
 	foreach( keys %inserts )
 	{
 		$inserts{$_} = $self->make_text( $inserts{$_} );
@@ -670,6 +702,33 @@ sub get_repository
 	return $self->{repository};
 }
 
+######################################################################
+=pod
+
+=item $url = $session->get_url( [ %OPTS ] )
+
+Utility method to get various URLs. See L<EPrints::URL>. With no arguments returns the same as get_uri().
+
+	# Return the current static path
+	$session->get_url( path => "static" );
+	# Return the current cgi path
+	$session->get_url( path => "cgi" );
+	# Return a full URL to the current cgi path
+	$session->get_url( host => 1, path => "cgi" );
+	# Return a full URL to the static path under HTTP
+	$session->get_url( scheme => "http", host => 1, path => "static" );
+
+=cut
+######################################################################
+
+sub get_url
+{
+	my( $self, %opts ) = @_;
+
+	my $url = EPrints::URL->new( session => $self );
+
+	return $url->get( %opts );
+}
 
 ######################################################################
 =pod
@@ -728,7 +787,6 @@ sub get_full_url
 }
 
 
-
 ######################################################################
 =pod
 
@@ -763,9 +821,28 @@ sub get_online
 {
 	my( $self ) = @_;
 	
-	return( $self->{online} );
+	return( !$self->{offline} );
 }
 
+######################################################################
+=pod
+
+=item $secure = $session->get_secure
+
+Returns true if we're using HTTPS/SSL (checks get_online first).
+
+=cut
+######################################################################
+
+sub get_secure
+{
+	my( $self ) = @_;
+
+	return $self->get_online && $ENV{"HTTPS"};
+# There's also this variable defined by EPrints, but the HTTPS environment
+# variable is the official way to know if we're running secure.
+#	my $esec = $self->get_request->dir_config( "EPrints_Secure" );
+}
 
 
 
@@ -1196,7 +1273,7 @@ sub render_toolbar
 
 	my @core = $screen->list_items( "key_tools" );
 	my @other = $screen->list_items( "other_tools" );
-	my $url = $self->get_repository->get_conf( "perl_url" )."/users/home";
+	my $url = $self->get_repository->get_conf( "http_cgiurl" )."/users/home";
 
 	my $first = 1;
 	foreach my $tool ( @core )
@@ -1505,7 +1582,7 @@ sub render_single_option
 Return the XHTML DOM describing an <input> element of type "hidden"
 and name and value as specified. eg.
 
-<input type="hidden" name="foo" value="bar" />
+<input type="hidden" accept-charset="utf-8" name="foo" value="bar" />
 
 =cut
 ######################################################################
@@ -1521,7 +1598,6 @@ sub render_hidden_field
 
 	return $self->render_input_field( 
 		name => $name,
-		id => $name,
 		value => $value,
 		type => "hidden" );
 }
@@ -1530,6 +1606,7 @@ sub render_input_field
 {
 	my( $self, %opts ) = @_;
 
+	$opts{'accept-charset'} = "utf-8" unless defined $opts{'accept-charset'};
 	return $self->make_element( "input",%opts );
 }
 
@@ -1723,7 +1800,7 @@ sub render_form
 	my( $self, $method, $dest ) = @_;
 	
 	my $form = $self->{doc}->createElement( "form" );
-	$form->setAttribute( "method", "\L$method" );
+	$form->setAttribute( "method", $method );
 	$form->setAttribute( "accept-charset", "utf-8" );
 	if( !defined $dest )
 	{
@@ -1830,8 +1907,16 @@ sub _render_subjects_aux
 		}
 		elsif( $linkmode == 3 )
 		{
-			$elementx = $self->render_link( 
-				EPrints::Utils::escape_filename( $id )."/" ); 
+			if( defined $sizes && defined $sizes->{$id} && $sizes->{$id} > 0 )
+			{
+				$elementx = $self->render_link( 
+					EPrints::Utils::escape_filename( $id ).
+						"/" ); 
+			}
+			else
+			{
+				$elementx = $self->make_element( "span" );
+			}
 		}
 		else
 		{
@@ -1840,7 +1925,7 @@ sub _render_subjects_aux
 	}
 	$li->appendChild( $elementx );
 	$elementx->appendChild( $subjects->{$id}->render_description() );
-	if( defined $sizes && defined $sizes->{$id} && $sizes->{$id} > 0 )
+	if( defined $sizes && $sizes->{$id} > 0 )
 	{
 		$li->appendChild( $self->make_text( " (".$sizes->{$id}.")" ) );
 	}
@@ -2005,12 +2090,7 @@ sub render_input_form
 	$form =	$self->render_form( "post", $p{dest} );
 	if( defined $p{default_action} && $self->client() ne "LYNX" )
 	{
-		my $imagesurl = $self->get_repository->get_conf( "base_url" )."/images";
-		my $esec = $self->get_request->dir_config( "EPrints_Secure" );
-		if( defined $esec && $esec eq "yes" )
-		{
-			$imagesurl = $self->get_repository->get_conf( "securepath" )."/images";
-		}
+		my $imagesurl = $self->get_repository->get_conf( "rel_path" )."/images";
 		# This button will be the first on the page, so
 		# if a user hits return and the browser auto-
 		# submits then it will be this image button, not
@@ -2186,7 +2266,8 @@ sub render_message
 	my $tr = $self->make_element( "tr" );
 	$table->appendChild( $tr );
 	my $td1 = $self->make_element( "td" );
-	$td1->appendChild( $self->make_element( "img", class=>"ep_msg_".$type."_icon", src=>"/style/images/".$type.".png", alt=>$self->phrase( "Plugin/Screen:message_".$type ) ) );
+	my $imagesurl = $self->get_repository->get_conf( "rel_path" );
+	$td1->appendChild( $self->make_element( "img", class=>"ep_msg_".$type."_icon", src=>"$imagesurl/style/images/".$type.".png", alt=>$self->phrase( "Plugin/Screen:message_".$type ) ) );
 	$tr->appendChild( $td1 );
 	my $td2 = $self->make_element( "td" );
 	$tr->appendChild( $td2 );
@@ -2371,11 +2452,7 @@ sub write_static_page
 	my( $self, $filebase, $parts, $page_id, $wrote_files ) = @_;
 
 	print "Writing: $filebase\n" if( $self->{noise} > 1 );
-	
-	my $dir = $filebase;
-	$dir =~ s/\/[^\/]*$//;
 
-	if( !-d $dir ) { EPrints::Platform::mkdir( $dir ); }
 
 	foreach my $part_id ( keys %{$parts} )
 	{
@@ -2426,7 +2503,7 @@ Create an XHTML page for this session.
 $parts is a hash of XHTML elements to insert into the pins in the
 template. Usually: title, page. Maybe pagetop and head.
 
-If template is set then an alternate template file is used.
+If template_id is set then an alternate template file is used.
 
 This function only builds the page it does not output it any way, see
 the methods below for that.
@@ -2434,15 +2511,15 @@ the methods below for that.
 Options include:
 
 page_id=>"id to put in body tag"
-template=>"The template to use instead of default."
+template_id=>"The template to use instead of default."
 
 =cut
 ######################################################################
 # move to compat module?
 sub build_page
 {
-	my( $self, $title, $mainbit, $page_id, $links, $template ) = @_;
-	$self->prepare_page( { title=>$title, page=>$mainbit, pagetop=>undef,head=>$links}, page_id=>$page_id, template=>$template );
+	my( $self, $title, $mainbit, $page_id, $links, $template_id ) = @_;
+	$self->prepare_page( { title=>$title, page=>$mainbit, pagetop=>undef,head=>$links}, page_id=>$page_id, template_id=>$template_id );
 }
 
 
@@ -2458,48 +2535,6 @@ sub prepare_page
 			$self->{page} = $map->{page};
 			return;
 		}
-
-		my $dp = $self->param( "debug_phrases" );
-		# phrase debugging code.
-		# disabled until we have a permission system planned.
-		if( 0 && defined $dp && $dp eq "yes" )
-		{
-			my $table = $self->make_element( "table" );
-			my $arc_langs = $self->{repository}->get_conf( "languages" );	
-			foreach my $phraseid ( sort keys %{$self->{used_phrases}} )
-			{
-				my $tr = $self->make_element( "tr" );
-				$table->appendChild( $tr );
-				my $th = $self->make_element( "th" );
-				my $td = $self->make_element( "td" );
-				$tr->appendChild( $th );
-				$th->appendChild( $self->make_text( $phraseid ) );
-				$tr->appendChild( $td );
-
-				my $t2 = $self->make_element( "table", border=>1, cellpadding=>4 );
-				foreach my $langid ( @{$arc_langs} )
-				{
-					my $lang = $self->{repository}->get_language( $langid );
-        				my( $phrase , $fb ) = $lang->_get_phrase( $phraseid, $self );
-					my $tr2 = $self->make_element( "tr" );
-					my $th2 = $self->make_element( "th" );
-					my $td2 = $self->make_element( "td" );
-					$t2->appendChild( $tr2 );
-					$tr2->appendChild( $th2 );
-					$tr2->appendChild( $td2 );
-					$th2->appendChild( $self->make_text( "$langid" ) );
-					if( defined $phrase )
-					{
-						$td2->appendChild( $self->make_text( EPrints::XML::contents_of( $phrase )->toString ) );
-					}
-				}
-				$td->appendChild( $t2 );
-
-			}
-			$self->{page} = $table;
-			return;
-		}
-		
 	}
 	
 	if( $self->get_repository->get_conf( "dynamic_template","enable" ) )
@@ -2537,21 +2572,21 @@ sub prepare_page
 		$map->{$_} = $pt;
 	}
 
-	if( !defined $options{template} )
+	if( !defined $options{template_id} )
 	{
-		my $secure = 0;
-		unless( $self->{offline} )
+		if( $self->get_secure )
 		{
-			my $esec = $self->{request}->dir_config( "EPrints_Secure" );
-			$secure = (defined $esec && $esec eq "yes" );
-		}	
-		$options{template} = "default";
-		if( $secure ) { $options{template} = 'secure'; }
+			$options{template_id} = "secure";
+		}
+		else
+		{
+			$options{template_id} = "default";
+		}
 	}
 
 	my $parts = $self->get_repository->get_template_parts( 
 				$self->get_langid, 
-				$options{template} );
+				$options{template_id} );
 	my @output = ();
 	my $is_html = 0;
 
@@ -3633,7 +3668,8 @@ sub login
 	return unless EPrints::Utils::is_set( $code );
 
 	my $userid = $user->get_id;
-	$self->{database}->update_ticket_userid( $code, $userid, $ip );
+	my $sql = "REPLACE INTO login_tickets VALUES( '".EPrints::Database::prep_value($code)."', $userid, '".EPrints::Database::prep_value($ip)."', ".(time+60*60*24*7)." )";
+	my $sth = $self->{database}->do( $sql );
 
 #	my $c = $self->{request}->connection;
 #	$c->notes->set(userid=>$userid);

@@ -152,6 +152,8 @@ sub new
 	$self->{id} = $id;
 	$self->{xmldoc} = EPrints::XML::make_document();
 
+	$self->_add_http_paths;
+
 	# If loading any of the XML config files then 
 	# abort loading the config for this repository.
 	unless( $noxml )
@@ -243,6 +245,28 @@ END
 	}
 }
 
+sub _add_http_paths
+{
+	my( $self ) = @_;
+
+	my $config = $self->{config};
+
+	# Backwards-compatibility: http is fairly simple, https may go wrong
+	if( !$config->{"http_root"} )
+	{
+		my $u = URI->new( $config->{"base_url"} );
+		$config->{"http_root"} = $u->path;
+		$u = URI->new( $config->{"perl_url"} );
+		$config->{"http_cgiroot"} = $u->path;
+		if( $config->{"securehost"} )
+		{
+			$config->{"secureport"} ||= 443;
+			$config->{"https_root"} ||= $config->{"securepath"};
+			$config->{"https_cgiroot"} ||= $config->{"https_root"} . $config->{"http_cgiroot"};
+		}
+	}
+
+}
  
 ######################################################################
 #=pod
@@ -286,9 +310,7 @@ sub get_workflow_config
 {
 	my( $self, $datasetid, $workflowid ) = @_;
 
-	my $r = EPrints::Workflow::get_workflow_config( 
-		$workflowid,
-		$self->{workflows}->{$datasetid} );
+	my $r = $self->{workflows}->{$datasetid}->{$workflowid};
 
 	return $r;
 }
@@ -456,29 +478,6 @@ sub _load_citation_file
 	EPrints::XML::dispose( $doc );
 
 	$self->{citation_style}->{$dsid}->{$fileid} = $frag;
-
-	$self->{citation_sourcefile}->{$dsid}->{$fileid} = $file;
-	$self->{citation_mtime}->{$dsid}->{$fileid} = EPrints::Utils::mtime( $file );
-
-}
-
-sub freshen_citation
-{
-	my( $self, $dsid, $fileid ) = @_;
-
-	# this only really needs to be done once per file per session, but we
-	# don't have a handle on the current session
-
-	my $file = $self->{citation_sourcefile}->{$dsid}->{$fileid};
-	my $mtime = EPrints::Utils::mtime( $file );
-
-	my $old_mtime = $self->{citation_mtime}->{$dsid}->{$fileid};
-	if( defined $old_mtime && $old_mtime == $mtime )
-	{
-		return;
-	}
-
-	$self->_load_citation_file( $file, $dsid, $fileid );
 }
 
 ######################################################################
@@ -503,8 +502,6 @@ sub get_citation_spec
 
 	$style = "default" unless defined $style;
 
-	$self->freshen_citation( $dsid, $style );
-
 	my $spec = $self->{citation_style}->{$dsid}->{$style};
 	if( !defined $spec )
 	{
@@ -520,8 +517,6 @@ sub get_citation_type
 	my( $self, $dsid, $style  ) = @_;
 
 	$style = "default" unless defined $style;
-
-	$self->freshen_citation( $dsid, $style );
 
 	my $type = $self->{citation_type}->{$dsid}->{$style};
 	if( !defined $type )
@@ -562,9 +557,16 @@ sub _load_templates
 
 		foreach my $fn ( @template_files )
 		{
+			my $file = $self->get_conf( "config_path" ).
+				"/lang/$langid/templates/$fn";
 			my $id = $fn;
 			$id=~s/\.xml$//;
-			$self->freshen_template( $langid, $id );
+
+			my $template = $self->_load_template( $file );
+			if( !defined $template ) { return 0; }
+
+			$self->{html_templates}->{$id}->{$langid} = $template;
+			$self->{text_templates}->{$id}->{$langid} = _template_to_text( $template );
 		}
 
 		if( !defined $self->{html_templates}->{default}->{$langid} )
@@ -573,29 +575,6 @@ sub _load_templates
 		}
 	}
 	return 1;
-}
-
-sub freshen_template
-{
-	my( $self, $langid, $id ) = @_;
-
-	my $file = $self->get_conf( "config_path" ).
-			"/lang/$langid/templates/$id.xml";
-	my @filestat = stat( $file );
-	my $mtime = $filestat[9];
-
-	my $old_mtime = $self->{template_mtime}->{$id}->{$langid};
-	if( defined $old_mtime && $old_mtime == $mtime )
-	{
-		return;
-	}
-
-	my $template = $self->_load_template( $file );
-	if( !defined $template ) { return 0; }
-
-	$self->{html_templates}->{$id}->{$langid} = $template;
-	$self->{text_templates}->{$id}->{$langid} = _template_to_text( $template );
-	$self->{template_mtime}->{$id}->{$langid} = $mtime;
 }
 
 sub _template_to_text
@@ -736,7 +715,6 @@ sub get_template_parts
 	my( $self, $langid, $tempid ) = @_;
   
 	if( !defined $tempid ) { $tempid = 'default'; }
-	$self->freshen_template( $langid, $tempid );
 	my $t = $self->{text_templates}->{$tempid}->{$langid};
 	if( !defined $t ) 
 	{
@@ -765,7 +743,6 @@ sub get_template
 	my( $self, $langid, $tempid ) = @_;
   
 	if( !defined $tempid ) { $tempid = 'default'; }
-	$self->freshen_template( $langid, $tempid );
 	my $t = $self->{html_templates}->{$tempid}->{$langid};
 	if( !defined $t ) 
 	{
@@ -1165,7 +1142,9 @@ sub get_store_dir_size
 		return undef;
 	}
 
-	return EPrints::Platform::free_space( $filepath );
+	my @retval = EPrints::Utils::df_dir $filepath;
+	return undef unless @retval;
+	return (@retval)[3];
 } 
 
 
@@ -1392,40 +1371,7 @@ END
 
 
 
-######################################################################
-=pod
 
-=item ( $returncode, $output) = $repository->test_config
-
-This runs "epadmin test" as an external script to test if the current
-configuraion on disk loads OK. This can be used by the web interface
-to test if changes to config. files may be saved, or not.
-
-$returncode will be zero if everything seems OK.
-
-If not, then $output will contain the output of epadmin test 
-
-=cut
-######################################################################
-
-sub test_config
-{
-	my( $self ) = @_;
-
-	my $rc = 0;
-	my $output = "";
-
-	my $tmp = File::Temp->new;
-
-	$rc = EPrints::Platform::read_perl_script( $self, $tmp, "-e", "use EPrints qw( no_check_user );" );
-
-	while(<$tmp>)
-	{
-		$output .= $_;
-	}
-
-	return ($rc/256, $output);
-}
 
 
 
