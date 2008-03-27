@@ -6705,3 +6705,6 @@ PACKAGE: 2.2.99.2
 2008-03-07 tdb
  * Put javascripts inside CDATA sections, fixing #3303
 
+2008-03-27 tdb
+ * Allow values to be used in views containing ':' or '.', fixing #3316
+
