@@ -6708,3 +6708,6 @@ PACKAGE: 2.2.99.2
 2008-03-27 tdb
  * Allow values to be used in views containing ':' or '.', fixing #3316
 
+2008-04-02 tdb
+ * Don't set the port if it's the default for the URI, fixing #3325
+
