@@ -133,6 +133,7 @@ $systemsettings->{"invocation"} = {
 	rmall => '$(rm) -rf $(TARGET)/*',
 	pdftotext => '$(pdftotext) -enc UTF-8 -layout $(SOURCE) $(TARGET)',
 	antiword => '$(antiword) -t -f -m UTF-8 $(SOURCE) > $(TARGET)',
+	antiwordpdf => '$(antiword) -a a4 -m 8859-1 $(SOURCE) > $(TARGET)',
 	elinks => '$(elinks) -dump 1 -dump-charset UTF-8 $(SOURCE) > $(TARGET)',
 };
 
