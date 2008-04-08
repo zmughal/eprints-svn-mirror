@@ -6716,3 +6716,7 @@ PACKAGE: 2.2.99.2
  * Quick search entry now points at http_cgiurl, fixing #3312
  * Changed workflow autocomplete URLs to use http_cgiurl, fixing #3327
 
+2008-04-08 cjg
+ * Change to DefaultXML import plugin to pass through attributes to the 
+    subclassing import plugin, fixing #3315.
+
