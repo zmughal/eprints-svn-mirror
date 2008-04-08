@@ -6715,6 +6715,7 @@ PACKAGE: 2.2.99.2
  * Added Apache rewrite rule for /archive/* to /*, fixing #3328
  * Quick search entry now points at http_cgiurl, fixing #3312
  * Changed workflow autocomplete URLs to use http_cgiurl, fixing #3327
+ * Allow "http(s)_root" to be empty, fixing #3319
 
 2008-04-08 cjg
  * Change to DefaultXML import plugin to pass through attributes to the 
