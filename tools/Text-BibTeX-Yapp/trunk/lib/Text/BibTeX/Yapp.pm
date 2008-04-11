@@ -34,6 +34,16 @@ sub value
 	${$_[0]};
 }
 
+sub lc_value
+{
+	lc(${$_[0]});
+}
+
+sub uc_value
+{
+	uc(${$_[0]});
+}
+
 sub type
 {
 	my( $self ) = @_;
@@ -804,6 +814,24 @@ sub parse_string
 	return $r;
 }
 
+sub _expand_names
+{
+	my( $values, $lookup ) = @_;
+
+	for(my $i = 0; $i < @$values; ++$i)
+	{
+		if( $values->[$i]->type eq "NAME" )
+		{
+			my $name = $values->[$i]->lc_value;
+			if( exists($lookup->{$name}) )
+			{
+				splice(@$values,$i,1,@{$lookup->{$name}});
+				$i += $#{$lookup->{$name}};
+			}
+		}
+	}
+}
+
 sub expand_names
 {
 	my( $entries, $lookup ) = @_;
@@ -813,7 +841,7 @@ sub expand_names
 	{
 		while(my( $name, $value ) = each %$lookup)
 		{
-			$strings{lc($name)} = $value;
+			$strings{lc($name)} = ref($value) eq "ARRAY" ? $value : [$value];
 		}
 	}
 
@@ -823,25 +851,13 @@ sub expand_names
 		my( $identifier, $content ) = @$struct;
 		if( ref($content) eq "ARRAY" )
 		{
-			for(@$content)
-			{
-				if( $_->type eq "NAME" and exists($strings{lc($_->value)}) )
-				{
-					$_ = $strings{lc($_->value)};
-				}
-			}
+			_expand_names( $content, \%strings );
 		}
 		else
 		{
-			foreach my $name (keys %$content)
+			for(values %$content)
 			{
-				for(@{$content->{$name}})
-				{
-					if( $_->type eq "NAME" and exists($strings{lc($_->value)}) )
-					{
-						$_ = $strings{lc($_->value)};
-					}
-				}
+				_expand_names( $_, \%strings );
 			}
 		}
 		if( uc($type) eq "STRING" )
@@ -849,7 +865,6 @@ sub expand_names
 			while(my( $name, $value ) = each %$content)
 			{
 				$strings{lc($name)} = $value;
-				print STDERR "\L$name = ".$value->[0]->value."\n";
 			}
 		}
 	}
