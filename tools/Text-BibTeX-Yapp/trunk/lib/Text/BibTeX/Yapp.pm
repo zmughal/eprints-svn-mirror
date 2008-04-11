@@ -71,6 +71,15 @@ Text::BibTeX::Yapp - Pure-perl BibTeX parser
 	my $entries = $p->parse_file($fh);
 	close($fh);
 
+	# Expand names defined within $entries
+	$entries = Text::BibTeX::Yapp::expand_names( $entries );
+
+	# Expand names defined externally
+	$hash{"STOC"} = Text::BibTeX::Yapp::String->new(
+		"Symposium on the Theory of Computing"
+	);
+	$entries = Text::BibTeX::Yapp::expand_names( $entries, \%hash );
+
 =head1 DESCRIPTION
 
 This module provides only the bare-bones necessary to read a BibTeX file.
@@ -140,6 +149,12 @@ http://artis.imag.fr/~Xavier.Decoret/resources/xdkbibtex/bibtex_summary.html
 =item $parser = Text::BibTeX::Yapp->new
 
 Create and return a new parser object.
+
+=item $entries = Text::BibTeX::Yapp::expand_names( $entries [, LOOKUP ] )
+
+Expand NAMEd values in $entries that are defined by @STRING objects (@STRING
+definition must occur before the use) and/or in LOOKUP which is a reference to
+a hash table of NAME identifiers and VALUE objects.
 
 =item $bibs = $parser->parse_file( HANDLE )
 
@@ -212,6 +227,21 @@ at your option, any later version of Perl 5 you may have available.
 use Carp;
 
 our $REGEXP_NAME = qr/[a-zA-Z0-9\!\$\&\*\+\-\.\/\:\;\<\>\?\[\]\^\_\`\|]+/;
+
+our %_BIBTEX_MONTHS = qw(
+	jan January
+	feb February
+	mar March
+	apr April
+	may May
+	jun June
+	jul July
+	aug August
+	sep September
+	oct October
+	nov November
+	dec December
+);
 
 
 
@@ -772,6 +802,59 @@ sub parse_string
 	$r = $self->_parse;
 
 	return $r;
+}
+
+sub expand_names
+{
+	my( $entries, $lookup ) = @_;
+
+	my %strings;
+	if( 2 == @_ )
+	{
+		while(my( $name, $value ) = each %$lookup)
+		{
+			$strings{lc($name)} = $value;
+		}
+	}
+
+	foreach my $entry (@$entries)
+	{
+		my( $type, $struct ) = @$entry;
+		my( $identifier, $content ) = @$struct;
+		if( ref($content) eq "ARRAY" )
+		{
+			for(@$content)
+			{
+				if( $_->type eq "NAME" and exists($strings{lc($_->value)}) )
+				{
+					$_ = $strings{lc($_->value)};
+				}
+			}
+		}
+		else
+		{
+			foreach my $name (keys %$content)
+			{
+				for(@{$content->{$name}})
+				{
+					if( $_->type eq "NAME" and exists($strings{lc($_->value)}) )
+					{
+						$_ = $strings{lc($_->value)};
+					}
+				}
+			}
+		}
+		if( uc($type) eq "STRING" )
+		{
+			while(my( $name, $value ) = each %$content)
+			{
+				$strings{lc($name)} = $value;
+				print STDERR "\L$name = ".$value->[0]->value."\n";
+			}
+		}
+	}
+
+	return $entries;
 }
 
 # End of the grammar
