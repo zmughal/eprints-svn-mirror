@@ -6721,3 +6721,7 @@ PACKAGE: 2.2.99.2
  * Change to DefaultXML import plugin to pass through attributes to the 
     subclassing import plugin, fixing #3315.
 
+2008-04-14
+ * Use relative path to autocomplete scripts (seems autocomplete won't follow a
+    secure redirect), fixing #3327
+
