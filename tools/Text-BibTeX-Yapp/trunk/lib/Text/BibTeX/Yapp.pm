@@ -236,6 +236,7 @@ at your option, any later version of Perl 5 you may have available.
 
 use Carp;
 
+our $REGEXP_NUM = qw/[0-9]+(?=[,\{\(\)\}\s#])/;
 our $REGEXP_NAME = qr/[a-zA-Z0-9\!\$\&\*\+\-\.\/\:\;\<\>\?\[\]\^\_\`\|]+/;
 
 our %_BIBTEX_MONTHS = qw(
@@ -629,7 +630,7 @@ sub _Lexer_real
 	{
 	for( $self->YYData->{INPUT} )
 	{
-		s/^(\d+)//
+		s/^($REGEXP_NUM)//
 			and return( 'NUM', $1 );
 		s/^(\{)//
 			and return( 'LBRACE', $1 );
@@ -660,7 +661,7 @@ sub _Lexer_real
 	{
 		s/^(#)//
 			and return( 'HASH', $1 );
-		s/^(\d+)//
+		s/^($REGEXP_NUM)//
 			and return( 'NUM', $1 );
 		s/^"//
 			and return( 'STRING', _Lexer_string_quote( $self ));
