@@ -919,14 +919,38 @@ sub upload
 		$repository->log( "Bad filename for file '$filename' in document: starts with slash (will not add)\n" );
 		return 0;
 	}
+	my $out_file = $self->local_path() . "/" . sanitise( $filename );
+	if( $preserve_path )
+	{
+		if( $filename=~m/^(.*)\/([^\/]+)$/ )
+		{
+			EPrints::Platform::mkdir( $self->local_path()."/".$1 );
+		}
+		$out_file = $self->local_path() . "/" . $filename;
+	}
 
-	my $uri = $self->get_storage_uri( "bitstream", sanitise( $filename ));
+	seek( $filehandle, 0, SEEK_SET );
 
-	my $rc = $self->store( $uri, $filehandle );
+	my $size = 0;
+	my $buffer;	
+	open OUT, ">$out_file" or return( 0 );
+	binmode( OUT );
+	while( my $bytes = read( $filehandle, $buffer, 1024 ) )
+	{
+		$size += $bytes;
+		print OUT $buffer;
+	}
+	close OUT;
 
-	$rc &&= $self->files_modified;
+	if( $size == 0 )
+	{
+		unlink( $out_file );
+		return 0;
+	}
+
+	$self->files_modified;
 	
-	return $rc;
+	return( 1 );
 }
 
 ######################################################################

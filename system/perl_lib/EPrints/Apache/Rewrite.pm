@@ -166,10 +166,28 @@ sub handler
 				$tail = "/" if $tail eq "";
 				return redir( $r, sprintf( "%s/%d/%d%s",$urlpath, $eprintid, $pos, $tail ).$args );
 			}
+			my $session = new EPrints::Session(2); # don't open the CGI info
+			my $ds = $repository->get_dataset("eprint") ;
+			my $searchexp = new EPrints::Search( session=>$session, dataset=>$ds );
+			$searchexp->add_field( $ds->get_field( "eprintid" ), $eprintid );
+			my $results = $searchexp->perform_search;
+			my( $eprint ) = $results->get_records(0,1);
+			$searchexp->dispose;
+		
+			# let it fail if this isn't a real eprint	
+			if( !defined $eprint )
+			{
+				$session->terminate;
+				return OK;
+			}
+	
+			my $filename = sprintf( '%s/%02d%s',$eprint->local_path.($thumbnails?"/thumbnails":""), $pos, $tail );
 
-		 	$r->set_handlers(PerlResponseHandler => \&EPrints::Apache::Storage::handler );
+			$r->filename( $filename );
 
-			return DECLINED;
+			$session->terminate;
+			
+			return OK;
 		}
 	
 		# OK, It's the EPrints abstract page (or something whacky like /23/fish)
