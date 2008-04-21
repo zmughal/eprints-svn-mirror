@@ -1,6 +1,6 @@
 package EPrints::Plugin::Screen::Admin::Reload;
 
-@ISA = ( 'EPrints::Plugin::Screen' );
+@ISA = ( 'EPrints::Plugin::Screen::Status' );
 
 use strict;
 
@@ -14,9 +14,9 @@ sub new
 		
 	$self->{appears} = [
 		{ 
-			place => "admin_actions", 
-			position => 1250, 
+			place => "config_actions", 	
 			action => "reload_config",
+			position => 1200, 
 		},
 	];
 
@@ -26,45 +26,13 @@ sub new
 sub allow_reload_config
 {
 	my( $self ) = @_;
-
-	return $self->allow( "config/reload" );
+	return 1;
 }
 
 sub action_reload_config
 {
 	my( $self ) = @_;
-
-	my $session = $self->{session};
-
-	my( $result, $msg ) = $session->get_repository->test_config;
-
-	if( $result != 0 )
-	{
-		$self->{processor}->add_message( "error",
-			$self->html_phrase( 
-				"reload_bad_config",
-				output=>$self->{session}->make_text( $msg ) ) );
-		$self->{processor}->{screenid} = "Admin";
-		return;
-	}
-
-	my $file = $session->get_repository->get_conf( "variables_path" )."/last_changed.timestamp";
-	unless( open( CHANGEDFILE, ">$file" ) )
-	{
-		$self->{processor}->add_message( "error",
-			$self->html_phrase( "reload_write_failed" ) );
-		$self->{processor}->{screenid} = "Admin";
-		return;
-	}
-	print CHANGEDFILE "This file last poked at: ".EPrints::Time::human_time()."\n";
-	close CHANGEDFILE;
-
-	$self->{processor}->add_message( "message",
-		$self->html_phrase( "reloaded" ) );
-	$self->{processor}->{screenid} = "Admin";
-}	
-
-
+}
 
 
 1;

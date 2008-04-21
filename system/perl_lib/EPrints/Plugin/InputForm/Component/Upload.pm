@@ -77,83 +77,6 @@ sub update_from_form
 			return;
 		}
 
-		if( $internal eq "add_format_zip" )
-		{
-			my $doc_data = { eprintid => $self->{dataobj}->get_id, format=>"other" };
-
-			my $repository = $self->{session}->get_repository;
-
-			my $doc_ds = $self->{session}->get_repository->get_dataset( 'document' );
-			my $document = $doc_ds->create_object( $self->{session}, $doc_data );
-			if( !defined $document )
-			{
-				$processor->add_message( "error", $self->html_phrase( "create_failed" ) );
-				return;
-			}
-			my $success = EPrints::Apache::AnApache::upload_doc_archive( 
-				$self->{session},
-				$document,
-				$self->{prefix}."_first_file_zip",
-				"zip" );
-			if( !$success )
-			{
-				$document->remove();
-				$processor->add_message( "error", $self->html_phrase( "upload_failed" ) );
-				return;
-			}
-			return;
-		}
-
-		if( $internal eq "add_format_targz" )
-		{
-			my $doc_data = { eprintid => $self->{dataobj}->get_id, format=>"other" };
-
-			my $repository = $self->{session}->get_repository;
-
-			my $doc_ds = $self->{session}->get_repository->get_dataset( 'document' );
-			my $document = $doc_ds->create_object( $self->{session}, $doc_data );
-			if( !defined $document )
-			{
-				$processor->add_message( "error", $self->html_phrase( "create_failed" ) );
-				return;
-			}
-			my $success = EPrints::Apache::AnApache::upload_doc_archive( 
-				$self->{session},
-				$document,
-				$self->{prefix}."_first_file_targz",
-				"targz" );
-			if( !$success )
-			{
-				$document->remove();
-				$processor->add_message( "error", $self->html_phrase( "upload_failed" ) );
-				return;
-			}
-			return;
-		}
-
-		if( $internal eq "add_format_fromurl" )
-		{
-			my $doc_data = { eprintid => $self->{dataobj}->get_id, format=>"other" };
-
-			my $repository = $self->{session}->get_repository;
-
-			my $doc_ds = $self->{session}->get_repository->get_dataset( 'document' );
-			my $document = $doc_ds->create_object( $self->{session}, $doc_data );
-			if( !defined $document )
-			{
-				$processor->add_message( "error", $self->html_phrase( "create_failed" ) );
-				return;
-			}
-			my $success = $document->upload_url( $self->{session}->param( $self->{prefix}."_first_file_fromurl" ) );
-			if( !$success )
-			{
-				$document->remove();
-				$processor->add_message( "error", $self->html_phrase( "upload_failed" ) );
-				return;
-			}
-			return;
-		}
-
 		if( $internal =~ m/^doc(\d+)_(.*)$/ )
 		{
 			my $doc = EPrints::DataObj::Document->new(
@@ -226,27 +149,6 @@ sub doc_update
 		}
 		
 		$doc->remove_file( $files[$fileid] );
-		return;
-	}
-
-	if( $doc_internal eq "convert_document" )
-	{
-		my $eprint = $self->{workflow}->{item};
-		my $target = $self->{session}->param( $doc_prefix . "_convert_to" );
-		$target ||= '-';
-		my( $plugin_id, $type ) = split /-/, $target, 2;
-		my $plugin = $self->{session}->plugin( $plugin_id );
-		if( !$plugin )
-		{
-			$processor->add_message( "error", $self->html_phrase( "plugin_error" ) );
-			return;
-		}
-		my $new_doc = $plugin->convert( $eprint, $doc, $type );
-		if( !$new_doc )
-		{
-			$processor->add_message( "error", $self->html_phrase( "conversion_failed" ) );
-			return;
-		}
 		return;
 	}
 
@@ -502,9 +404,6 @@ sub _render_doc
 	my $block = $session->make_element( "div", class=>"ep_block" );
 	$block->appendChild( $self->_render_add_file( $doc ) );
 	$doc_cont->appendChild( $block );
-	$block = $session->make_element( "div", class=>"ep_block" );
-	$block->appendChild( $self->_render_convert_document( $doc ) );
-	$doc_cont->appendChild( $block );
 
 	return $doc_cont;
 }
@@ -515,47 +414,8 @@ sub _render_add_document
 	my( $self ) = @_;
 
 	my $session = $self->{session};
-
-	my $add = $session->make_doc_fragment;
-
-	my $tabs = [qw/ file zip targz fromurl /];	
-	my $links = { file=>"", zip=>"", targz=>"", fromurl=>"" };
-	my $labels = {
-		file=>$session->make_text( "File" ), 
-		zip=>$session->make_text( "Zip File" ), 
-		targz=>$session->make_text( ".tar.gz File" ), 
-		fromurl=>$session->make_text( "From URL" ), 
-	};
-	
-	my $newdoc = $self->{session}->make_element( 
-			"div", 
-			class => "ep_upload_newdoc" );
-	$add->appendChild( $newdoc );
-	my $tab_block = $session->make_element( "div", class=>"ep_only_js" );	
-	$tab_block->appendChild( 
-		$self->{session}->render_tabs( 
-			id_prefix => $self->{prefix}."_upload",
-			current => "file",
-			tabs => $tabs,
-			labels => $labels,
-			links => $links,
-		));
-	$newdoc->appendChild( $tab_block );
-		
-	my $panel = $self->{session}->make_element( 
-			"div", 
-			id => $self->{prefix}."_upload_panels", 
-			class => "ep_tab_panel" );
-	$newdoc->appendChild( $panel );
-
-##############
-{
-	my $inner_panel = $self->{session}->make_element( 
-			"div", 
-			id => $self->{prefix}."_upload_panel_file" );
-	$panel->appendChild( $inner_panel );
-
-	$inner_panel->appendChild( $self->html_phrase( "new_document" ) );
+	my $toolbar = $session->make_element( "div", class=>"ep_toolbox_content ep_upload_newdoc" );
+	$toolbar->appendChild( $self->html_phrase( "new_document" ) );
 
 	my $ffname = $self->{prefix}."_first_file";	
 	my $file_button = $session->make_element( "input",
@@ -567,101 +427,15 @@ sub _render_add_document
 		value => $self->phrase( "add_format" ), 
 		class => "ep_form_internal_button",
 		name => "_internal_".$self->{prefix}."_add_format" );
-	$inner_panel->appendChild( $file_button );
-	$inner_panel->appendChild( $session->make_text( " " ) );
-	$inner_panel->appendChild( $add_format_button );
+	$toolbar->appendChild( $file_button );
+	$toolbar->appendChild( $session->make_text( " " ) );
+	$toolbar->appendChild( $add_format_button );
 
 	my $script = $session->make_javascript( "EPJS_register_button_code( '_action_next', function() { el = \$('$ffname'); if( el.value != '' ) { return confirm( '".$self->phrase("really_next")."' ); } return true; } );" );
-	$inner_panel->appendChild( $script);
-}
-
-$panel->appendChild( $session->make_element( "div", style=>"height: 1em", class=>"ep_no_js" ) );
-
-{
-	my $inner_panel = $self->{session}->make_element( 
-			"div", 
-			class => "ep_no_js",
-			id => $self->{prefix}."_upload_panel_zip" );
-	$panel->appendChild( $inner_panel );
-
-	$inner_panel->appendChild( $session->make_text( "New document (from ZIP file): " ) );
-
-	my $ffname = $self->{prefix}."_first_file_zip";	
-	my $file_button = $session->make_element( "input",
-		name => $ffname,
-		id => $ffname,
-		type => "file",
-		);
-	my $add_format_button = $session->render_button(
-		value => $self->phrase( "add_format" ), 
-		class => "ep_form_internal_button",
-		name => "_internal_".$self->{prefix}."_add_format_zip" );
-	$inner_panel->appendChild( $file_button );
-	$inner_panel->appendChild( $session->make_text( " " ) );
-	$inner_panel->appendChild( $add_format_button );
-
-	my $script = $session->make_javascript( "EPJS_register_button_code( '_action_next', function() { el = \$('$ffname'); if( el.value != '' ) { return confirm( '".$self->phrase("really_next")."' ); } return true; } );" );
-	$inner_panel->appendChild( $script);
-}
-
-$panel->appendChild( $session->make_element( "div", style=>"height: 1em", class=>"ep_no_js" ) );
-
-{
-	my $inner_panel = $self->{session}->make_element( 
-			"div", 
-			class => "ep_no_js",
-			id => $self->{prefix}."_upload_panel_targz" );
-	$panel->appendChild( $inner_panel );
-
-	$inner_panel->appendChild( $session->make_text( "New document (from .tar.gz file): " ));
-
-	my $ffname = $self->{prefix}."_first_file_targz";	
-	my $file_button = $session->make_element( "input",
-		name => $ffname,
-		id => $ffname,
-		type => "file",
-		);
-	my $add_format_button = $session->render_button(
-		value => $self->phrase( "add_format" ), 
-		class => "ep_form_internal_button",
-		name => "_internal_".$self->{prefix}."_add_format_targz" );
-	$inner_panel->appendChild( $file_button );
-	$inner_panel->appendChild( $session->make_text( " " ) );
-	$inner_panel->appendChild( $add_format_button );
-
-	my $script = $session->make_javascript( "EPJS_register_button_code( '_action_next', function() { el = \$('$ffname'); if( el.value != '' ) { return confirm( '".$self->phrase("really_next")."' ); } return true; } );" );
-	$inner_panel->appendChild( $script);
-}
-
-$panel->appendChild( $session->make_element( "div", style=>"height: 1em", class=>"ep_no_js" ) );
-
-{
-	my $inner_panel = $self->{session}->make_element( 
-			"div", 
-			class => "ep_no_js",
-			id => $self->{prefix}."_upload_panel_fromurl" );
-	$panel->appendChild( $inner_panel );
-
-	$inner_panel->appendChild( $session->make_text( "Capture from URL: " ));
-
-	my $ffname = $self->{prefix}."_first_file_fromurl";	
-	my $file_button = $session->make_element( "input",
-		name => $ffname,
-		size => "30",
-		id => $ffname,
-		);
-	my $add_format_button = $session->render_button(
-		value => $self->phrase( "add_format" ), 
-		class => "ep_form_internal_button",
-		name => "_internal_".$self->{prefix}."_add_format_fromurl" );
-	$inner_panel->appendChild( $file_button );
-	$inner_panel->appendChild( $session->make_text( " " ) );
-	$inner_panel->appendChild( $add_format_button );
-}
-##############
+	$toolbar->appendChild( $script);
 
 	
-	return $add; 
+	return $toolbar; 
 }
 
 sub _render_add_file
@@ -709,87 +483,6 @@ sub _render_add_file
 
 	return $f; 
 }
-
-sub _render_convert_document
-{
-	my( $self, $document ) = @_;
-
-	my $session = $self->{session};
-	
-	# Create a document-specific prefix
-	my $docid = $document->get_id;
-	my $doc_prefix = $self->{prefix}."_doc".$docid;
-
-	my $convert_plugin = $session->plugin( 'Convert' );
-
-	my $dataset = $document->get_dataset();
-	my $field = $dataset->get_field( 'format' );
-	my %document_formats = map { ($_ => 1) } $field->tags( $session );
-
-	my %available = $convert_plugin->can_convert( $document );
-
-	# Only provide conversion for plugins that
-	#  1) Provide a phrase (i.e. are public-facing)
-	#  2) Provide a conversion to a format in document_types
-	foreach my $type (keys %available)
-	{
-		unless( exists($available{$type}->{'phraseid'}) and
-				exists($document_formats{$type}) )
-		{
-			delete $available{$type}
-		}
-	}
-
-	my $f = $session->make_doc_fragment;	
-
-	unless( scalar(%available) )
-	{
-		return $f;
-	}
-
-	my $select_button = $session->make_element( "select",
-		name => $doc_prefix."_convert_to",
-		id => "format",
-		);
-	my $option = $session->make_element( "option" );
-	$select_button->appendChild( $option );
-	# Use $available{$a}->{preference} for ordering?
-	foreach my $type (keys %available)
-	{
-		my $plugin_id = $available{$type}->{ "plugin" }->get_id();
-		my $phrase_id = $available{$type}->{ "phraseid" };
-		my $option = $session->make_element( "option",
-			value => $plugin_id . '-' . $type
-		);
-		$option->appendChild( $session->html_phrase( $phrase_id ));
-		$select_button->appendChild( $option );
-	}
-	my $upload_button = $session->render_button(
-		name => "_internal_".$doc_prefix."_convert_document",
-		class => "ep_form_internal_button",
-		value => $self->phrase( "convert_document_button" ),
-		);
-
-	my $table = $session->make_element( "table", class=>"ep_multi" );
-	$f->appendChild( $table );
-
-	my %l = ( id=>$doc_prefix."_af2", class=>"ep_convert_document_toolbar" );
-	my $toolbar = $session->make_element( "div", %l );
-
-	$toolbar->appendChild( $select_button );
-	$toolbar->appendChild( $session->make_text( " " ) );
-	$toolbar->appendChild( $upload_button );
-
-	$table->appendChild( $session->render_row_with_help(
-				label=>$self->html_phrase( "convert_document" ),
-				field=>$toolbar,
-				help=>$self->html_phrase( "convert_document_help" ),
-				help_prefix=>$doc_prefix."_convert_document_help",
-				));
-
-	return $f; 
-}
-
 
 
 sub _render_filelist

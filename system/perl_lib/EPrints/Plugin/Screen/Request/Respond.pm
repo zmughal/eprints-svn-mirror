@@ -224,6 +224,7 @@ sub render
 	{
 		my $textarea = $session->make_element( "textarea", 
 			name => "reason",
+			"accept-charset" => "utf-8",
 			rows => 5,
 			cols => 60,
 			wrap => "virtual",
@@ -235,13 +236,10 @@ sub render
 	{
 		my $p = $session->make_element( "p" );
 		$form->appendChild( $p );
-		my $label = $session->make_element( "label" );
 		my $cb = $session->make_element( "input", type => "checkbox", name => "oa" );
-		$label->appendChild( $cb );
-		$label->appendChild( $session->make_text( " " ));
-		$label->appendChild( $session->html_phrase(
+		$cb->appendChild( $session->html_phrase(
 			"request/respond_page:fieldname_oa" ) );
-		$p->appendChild( $label );
+		$p->appendChild( $cb );
 	}
 
 	$form->appendChild( $session->render_hidden_field( "screen", $self->{processor}->{screenid} ) );

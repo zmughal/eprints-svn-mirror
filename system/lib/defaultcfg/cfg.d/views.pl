@@ -4,40 +4,21 @@
 # Multiple fields may be specified for one view, but avoid
 # subject or allowing null in this case.
 $c->{browse_views} = [
-        {
-                id => "year",
-                allow_null => 1,
-                fields => "-date;res=year",
-                order => "creators_name/title",
-                subheadings => "type",
-		variations => [
-			"creators_name;first_letter",
-			"type",
-			"DEFAULT" ],
-        },
-        {
-                id => "subjects",
-                allow_null => 0,
-                fields => "subjects,-date;res=year",
-                order => "creators_name/title",
-                include => 1,
-                hideempty => 1,
-		variations => [
-			"creators_name;first_letter",
-			"type",
-		],
-        },
-        {
-                id => "person",
-                allow_null => 0,
-                fields => "creators_id/editors_id",
-                order => "-date/title",
-                noindex => 1,
-                nolink => 1,
-                nocount => 0,
-                include => 1,
-                subheadings => "type",
-        },
+        { 
+		id => "year", 
+		allow_null => 1, 
+		fields => "-date;res=year", 
+		subheadings => "-date;res=month",
+		#subheadings => "type", 
+		order => "title", 
+		heading_level => 2,
+	},
+        { 
+		id => "subjects", 
+		fields => "subjects", 
+		order => "-date/title", 
+		hideempty => 1, 
+	},
 ];
 
 # examples of some other useful views you might want to add

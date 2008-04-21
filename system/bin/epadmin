@@ -62,10 +62,6 @@ Recommit all the records in the given dataset. What this does is cause the autom
 
 Schedule the dataset for reindexing. The indexer will do the actual indexing and it may take some time. This only schedules the reindexing.
 
-=item B<epadmin> reorder I<repository_id> I<dataset_id>
-
-Regenerate the order values for the dataset.
-
 =item B<epadmin> rehash I<repository_id> [I<document_id>]
 
 Recalculate the hashes of the files in this document and write it to a probity log file. If a document id is given then just generate the hash for that document.
@@ -74,17 +70,9 @@ Recalculate the hashes of the files in this document and write it to a probity l
 
 Cause the web server to reload the repository configuration.
 
-=item B<epadmin> refresh_views I<repository_id>
-
-Tell the webserver that all views pages must be regenerated. The webserver will update them next time they are requested. Also causes config to be reloaded.
-
-=item B<epadmin> refresh_abstracts I<repository_id>
-
-Tell the webserver that all abstract summary pages must be regenerated. The webserver will update them next , but won't update them again unless something on the EPrint changes or you re-run refresh abstracts. Also causes config to be reloaded.
-
 =item B<epadmin> redo_thumbnails I<repository_id> 
 
-Regenerate all the thumbnail and image-preview files and any other things which are triggered if the document file changed.
+Regenerate all the thumbnail and image-preview files.
 
 =item B<epadmin> erase_data I<repository_id>
 
@@ -180,7 +168,6 @@ my $REGEXP_VARNAME = '^[a-zA-Z][_A-Za-z0-9]*$';
 my $REGEXP_NUMBER = '^[0-9]+$';
 my $REGEXP_YESNO = '^(yes|no)$';
 my $REGEXP_ANY = '^.*$';
-my @PASSWORD_CHARS = ( 'a'..'z','A'..'Z','0'..'9' );
 
 my $action = $ARGV[0];
 if( $action eq "create" ) { create(); }
@@ -197,11 +184,8 @@ else
 	elsif( $action eq "erase_eprints" ) { erase_eprints( $repoid ); }
 	elsif( $action eq "erase_fulltext_index" ) { erase_fulltext_index( $repoid ); }
 	elsif( $action eq "reload" ) { reload( $repoid ); }
-	elsif( $action eq "refresh_abstracts" ) { refresh_abstracts( $repoid ); }
-	elsif( $action eq "refresh_views" ) { refresh_views( $repoid ); }
 	elsif( $action eq "redo_thumbnails" ) { redo_thumbnails( $repoid ); }
 	elsif( $action eq "upgrade" ) { upgrade( $repoid ); }
-	elsif( $action eq "update_database_structure" ) { update_database_structure( $repoid ); }
 	elsif( $action eq "test" ) { test( $repoid ); }
 	elsif( $action eq "recommit" ) 
 	{
@@ -214,12 +198,6 @@ else
 		my $datasetid = $ARGV[2];
 		pod2usage(1) unless defined $datasetid;
 		reindex( $repoid, $datasetid ); 
-	}
-	elsif( $action eq "reorder" )
-	{
-		my $datasetid = $ARGV[2];
-		pod2usage(1) unless defined $datasetid;
-		reorder( $repoid, $datasetid ); 
 	}
 	elsif( $action eq "rehash" ) { rehash( $repoid ); }
 	else { pod2usage( 1 ); }
@@ -708,18 +686,8 @@ sub config_db
 	$config{dbsock} = EPrints::Utils::get_input( '^.*$', 'MySQL Socket (# for no setting)',  $config{dbsock} );
 	$config{dbsock} = undef if( $config{dbsock} eq "#" );
 
-	my $defaultpass = $config{dbpass};
-	if( !defined $config{dbpass} || $config{dbpass} eq "" )
-	{
-		$defaultpass = "";
-		srand;
-		for( 1..8 )
-		{
-			$defaultpass .= $PASSWORD_CHARS[int rand scalar @PASSWORD_CHARS];
-		}
-	}
 	$config{dbuser} = EPrints::Utils::get_input( $REGEXP_VARNAME, 'Database User',  $config{dbuser} );
-	$config{dbpass} = EPrints::Utils::get_input_hidden( $REGEXP_VARNAME, 'Database Password',  $defaultpass );
+	$config{dbpass} = EPrints::Utils::get_input_hidden( $REGEXP_VARNAME, 'Database Password',  $config{dbpass} );
 
 	print "\n";
 	my $config_db = EPrints::Utils::get_input( $REGEXP_YESNO, "Write these database settings?", "yes" );
@@ -796,33 +764,16 @@ sub root_dbh
 
 	$dbname = $config->{dbname} unless defined $dbname;
 
-	my $dbh;
-	
-	while( !defined $dbh )
-	{
-		my $password = get_mysql_root_password();
-		print "Connecting to the database...\n";
-		$dbh = DBI->connect(
-			EPrints::Database::build_connection_string(
-				dbname=>$dbname,
-				dbsock=>$config->{dbsock},
-				dbport=>$config->{dbport},
-				dbhost=>$config->{dbhost} ),
-			"root",
-			$password );
-
-		if( !defined $dbh )
-		{
-			$mysql_root_password = undef;
-			print "\nCould not connect to database: $DBI::errstr\n\n";
-			my $try_again = EPrints::Utils::get_input( $REGEXP_YESNO, "Try again?", "yes" );
-			if( $try_again eq "no" )
-			{
-				exit( 1 );
-			}
-		}
-	}
-
+	my $mysqlrootpassword = get_mysql_root_password();
+	print "Connecting to the database...\n";
+	my $dbh = DBI->connect(
+		EPrints::Database::build_connection_string(
+			dbname=>$dbname,
+			dbsock=>$config->{dbsock},
+			dbport=>$config->{dbport},
+			dbhost=>$config->{dbhost} ),
+		"root",
+		$mysqlrootpassword );
 	return $dbh;
 }
 
@@ -843,8 +794,7 @@ END
 		exit 1;
 	}
 
-	use EPrints::Database::mysql;
-	my $mversion = EPrints::Database::mysql::mysql_version_from_dbh( $dbh );
+	my $mversion = EPrints::Database::mysql_version_from_dbh( $dbh );
 	my $oldpasswords = 0;
 	if( $mversion >= 40100 ) 
 	{
@@ -968,7 +918,7 @@ sub redo_thumbnails
 
 			if( $noise >= 2 )
 			{
-				print "Attempting to build thumbnails (and other auto-conversions) for document #".$doc->get_id."\n";
+				print "Attempting to build thumbnails for document #".$doc->get_id."\n";
 			}
 
 			$doc->remove_thumbnails; #ouch!
@@ -979,62 +929,6 @@ sub redo_thumbnails
 }	
 
 
-sub refresh_views
-{
-	my( $repoid ) = @_;
-
-	my $session = new EPrints::Session( 1 , $repoid , $noise );
-	exit( 1 ) unless( defined $session );
-	
-	my $file = $session->get_repository->get_conf( "variables_path" )."/views.timestamp";
-	unless( open( CHANGEDFILE, ">$file" ) )
-	{
-		EPrints::abort( "Cannot write to file $file" );
-	}
-	print CHANGEDFILE "This file last poked at: ".EPrints::Time::human_time()."\n";
-	close CHANGEDFILE;
-	if( $noise > 0 )
-	{
-		print <<END;
-View (Browse) pages will be updated when they are requested. The 
-webserver will now be told to reload the apache configuration, although 
-restarting the server at this point is slightly more efficient.
-
-END
-	}
-	$session->terminate;
-
-	reload( $repoid );
-}	
-
-
-sub refresh_abstracts
-{
-	my( $repoid ) = @_;
-
-	my $session = new EPrints::Session( 1 , $repoid , $noise );
-	exit( 1 ) unless( defined $session );
-	
-	my $file = $session->get_repository->get_conf( "variables_path" )."/abstracts.timestamp";
-	unless( open( CHANGEDFILE, ">$file" ) )
-	{
-		EPrints::abort( "Cannot write to file $file" );
-	}
-	print CHANGEDFILE "This file last poked at: ".EPrints::Time::human_time()."\n";
-	close CHANGEDFILE;
-	if( $noise > 0 )
-	{
-		print <<END;
-Abstract (Summary) pages will be updated when they are requested. The 
-webserver will now be told to reload the apache configuration, although 
-restarting the server at this point is slightly more efficient.
-
-END
-	}
-	$session->terminate;
-
-	reload( $repoid );
-}	
 
 sub reload
 {
@@ -1124,7 +1018,7 @@ END
 	}
 
 	erase_eprint_files( $repoid );
-	drop_tables_and_recreate_db( $repoid );
+	drop_and_recreate_db( $repoid );
 }
 
 sub erase_eprints
@@ -1178,64 +1072,18 @@ sub reset_dataset
 	{
 		next unless( $table =~ m/^$datasetid/ );
 		print "Erasing table $table\n" if( $noise >= 2 );
-		$db->clear_table($table);
+		my $sql = "DROP TABLE ".$table;
+		$db->do( $sql );
 	}
+
+	print "Creating dataset $datasetid\n";
+	$db->create_dataset_tables( 
+			$session->get_repository->get_dataset( $datasetid ) );
 
 	if( $datasetid ne "subject" )
 	{
 		print "Resetting counter ${datasetid}id\n";
 		$db->counter_reset( $datasetid."id" );
-	}
-
-	$session->terminate;
-}
-
-sub drop_tables_and_recreate_db
-{
-	my( $repoid ) = @_;
-
-	my $session = new EPrints::Session( 1 , $repoid , $noise, 1 );
-	exit( 1 ) unless( defined $session );
-
-	my $db = $session->get_database;
-
-	my @tables = $db->get_tables;
-
-	foreach my $datasetid (EPrints::DataSet::get_sql_dataset_ids())
-	{
-		my $dataset = $session->get_repository->get_dataset( $datasetid );
-		my $sql_name = $dataset->get_sql_table_name;
-		if( $noise>=2 ) { print "Removing dataset $datasetid [$sql_name]\n"; }
-		foreach my $table (@tables)
-		{
-			$db->drop_table( $table )
-				if $table eq $sql_name or $table =~ /^$sql_name\_/i;
-		}
-	}
-
-	if( $noise>=2 ) { print "Cleaning up cache tables\n"; }
-	foreach my $table (@tables)
-	{
-		if( $table =~ /^cache\d+$/i )
-		{
-			if( $noise>=3 ) { print "Dropping $table\n"; }
-			$db->drop_table( $table );
-		}
-	}
-
-	if( $noise>=2 ) { print "Removing counters\n"; }
-	$db->remove_counters();
-
-	for(qw( index_queue version ))
-	{
-		if( $noise>=2 ) { print "Removing support table $_\n"; }
-		$db->drop_table( $_ ) if $db->has_table( $_ );
-	}
-
-	my $mktables = EPrints::Utils::get_input( $REGEXP_YESNO, "Create database tables?", "yes" );
-	if( $mktables eq "yes" )
-	{
-		create_tables( $repoid );
 	}
 
 	$session->terminate;
@@ -1250,8 +1098,15 @@ sub drop_and_recreate_db
 	my $database = $repo->get_conf( "dbname" );
 	
 	if( $noise>=1 ) { print "Connecting to mysql...\n"; }
-
-	my $dbh = root_dbh( $repoid, "mysql" );
+	
+	my $dbh = DBI->connect(
+		EPrints::Database::build_connection_string(
+			dbname=>"mysql",
+			dbsock=>$repo->get_conf( "dbsock" ),
+			dbport=>$repo->get_conf( "dbport" ),
+			dbhost=>$repo->get_conf( "dbhost" ) ),
+		"root",
+		get_mysql_root_password() );
 
 	if( !defined $dbh )
 	{
@@ -1485,37 +1340,6 @@ sub recommit
 	$session->terminate;
 }
 
-sub reorder
-{
-	my( $repoid, $datasetid ) = @_;
-
-	my $session = new EPrints::Session( 1 , $repoid , $noise );
-	exit( 1 ) unless( defined $session );
-
-	my $dataset = $session->get_repository->get_dataset( $datasetid );
-	if( !defined $dataset )
-	{
-		print "Exiting due to unknown dataset.\n" if( $noise >= 1 );
-		$session->terminate();
-		exit( 1 );
-	}
-
-	my $fn = sub {
-		my( $session, $dataset, $item ) = @_;
-	
-		EPrints::Index::update_ordervalues( $session, $dataset, $item->{data} );
-
-		if( $session->get_noise() >= 2 )
-		{
-			print STDERR "Re-ordered item: ".$dataset->id()."/".$item->get_id()."\n";
-		}
-	};
-
-	$dataset->map( $session, $fn );
-
-	$session->terminate;
-}
-
 sub reindex
 {
 	my( $repoid, $datasetid ) = @_;
@@ -1626,92 +1450,9 @@ sub upgrade
 		$dbversion="3.0.7";
 		$db->set_version( $dbversion );
 	}
-	if( $dbversion eq "3.0.7" )
-	{
-		upgrade_3_0_7_to_3_1_0( $repoid, $db );
-		$dbversion="3.1.0";
-		$db->set_version( $dbversion );
-	}
-	if( $dbversion eq "3.1.0" )
-	{
-		upgrade_3_1_0_to_3_1_1( $repoid, $db );
-		$dbversion="3.1.1";
-		$db->set_version( $dbversion );
-	}
-
 
 	print $dbversion."\n";
 	$session->terminate;
-}
-
-# This will check for any missing datasets or fields and add them
-sub update_datasets
-{
-	my( $repo, $db ) = @_;
-
-	my $success = 1;
-
-	foreach( &EPrints::DataSet::get_sql_dataset_ids )
-	{
-		my $dataset = $repo->get_dataset( $_ );
-		if( !$db->has_dataset( $dataset ) )
-		{
-			if( $db->create_dataset_tables( $dataset ) )
-			{
-				print "Added dataset $_\n" if $noise;
-			}
-			else
-			{
-				$success = 0;
-				print STDERR "Failed adding dataset $_\n";
-			}
-			next;
-		}
-		foreach my $field ($dataset->get_fields)
-		{
-			next if defined $field->{"sub_name"};
-			if( !$db->has_field( $dataset, $field ) )
-			{
-				if( $db->add_field( $dataset, $field ) )
-				{
-					print "Added ".$field->get_name." to dataset $_\n" if $noise;
-				}
-				else
-				{
-					$success = 0;
-					print STDERR "Failed adding ".$field->get_name." to dataset $_\n";
-				}
-			}
-		}
-	}
-
-	return $success;
-}
-
-# This will check for any missing counters and add them
-sub update_counters
-{
-	my( $repo, $db ) = @_;
-
-	my $success = 1;
-
-	foreach( @EPrints::Database::counters )
-	{
-		if( !$db->has_counter( $_ ) )
-		{
-			if( $db->create_counter( $_ ) )
-			{
-				print "Added counter $_\n" if $noise;
-			}
-			else
-			{
-				$success = 0;
-				print STDERR "Failed adding counter $_\n";
-			}
-		}
-	}
-
-	return $success;
 }
 
 sub upgrade_3_0_to_3_0_1
@@ -1883,91 +1624,12 @@ sub upgrade_3_0_6_to_3_0_7
 
 }
 
-sub upgrade_3_0_7_to_3_1_0
-{
-	my( $repoid, $db ) = @_;
-
-	my $repo = EPrints::Repository->new( $repoid );
-
-	# Expand id primary keys to id-pos on multiple fields
-	foreach my $datasetid ( qw/
-			access document eprint history
-			request saved_search subject user /)
-	{
-		my $dataset = $repo->get_dataset( $datasetid );
-		foreach my $field ($dataset->get_fields)
-		{
-			next unless $field->get_property( "multiple" );
-			next if $field->is_virtual;
-			my $table = $dataset->get_sql_sub_table_name( $field );
-			my $keyfield = $dataset->get_key_field;
-			$db->do("ALTER TABLE $table DROP PRIMARY KEY");
-			$db->do("ALTER TABLE $table ADD PRIMARY KEY(".$keyfield->get_sql_name.",pos)");
-		}
-	}
-
-	# access dataset changes
-	my $dataset = $repo->get_dataset( "access" );
-	my $table = $dataset->get_sql_table_name;
-
-	# remove the 'urn:ip:' and 'info:oai:...:' bits
-	$db->do("UPDATE $table SET
-		referent_id=SUBSTRING_INDEX(referent_id,':',-1),
-		referent_docid=SUBSTRING_INDEX(referent_docid,'-',-1),
-		requester_id=SUBSTRING_INDEX(requester_id,'urn:ip:',-1)
-	");
-	my $changes_sql = '';
-	$changes_sql .= "MODIFY referring_entity_id LONG,";
-	$changes_sql .= "MODIFY referent_id INT,";
-	$changes_sql .= "MODIFY referent_docid INT,";
-	chop($changes_sql);
-	$db->do("ALTER TABLE $table $changes_sql");
-
-	# remove the index and order tables
-	for(qw(__index __index_grep __rindex))
-	{
-		$db->drop_table("$table$_");
-	}
-
-	for($db->get_tables)
-	{
-		$db->drop_table($_) if /^cache(\d+)$/;
-	}
-
-	$db->drop_table( "messages" );
-	$db->drop_table( "login_tickets" );
-	$db->drop_table( "cachemap" );
-
-	update_datasets( $repo, $db );
-	update_counters( $repo, $db );
-}
 
 
-# undocumented option - use with caution!
-sub update_database_structure
-{
-	my( $repoid ) = @_;
 
-	my $session = new EPrints::Session( 1 , $repoid , $noise );
-	exit( 1 ) unless( defined $session );
-	my $db = $session->get_db();
-	
-	my $repo = EPrints::Repository->new( $repoid );
 
-	update_datasets( $repo, $db );
-	update_counters( $repo, $db );
 
-	$session->terminate;
-}
 
-sub upgrade_3_1_0_to_3_1_1
-{
-	my( $repoid, $db ) = @_;
-
-	my $repo = EPrints::Repository->new( $repoid );
-
-	update_datasets( $repo, $db );
-}
 
 
 

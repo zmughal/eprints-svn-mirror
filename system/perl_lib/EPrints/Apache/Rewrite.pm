@@ -33,8 +33,6 @@ and so forth.
 
 This should only ever be called from within the mod_perl system.
 
-This also causes some pages to be regenerated on demand, if they are stale.
-
 =over 4
 
 =cut
@@ -42,8 +40,6 @@ This also causes some pages to be regenerated on demand, if they are stale.
 package EPrints::Apache::Rewrite;
 
 use EPrints::Apache::AnApache; # exports apache constants
-
-use Data::Dumper;
 
 use strict;
   
@@ -74,7 +70,6 @@ sub handler
 	}
 
 	my $uri = $r->uri;
-
 	my $lang = EPrints::Session::get_session_language( $repository, $r );
 	my $args = $r->args;
 	if( $args ne "" ) { $args = '?'.$args; }
@@ -99,39 +94,17 @@ sub handler
 			$repository->get_conf( "https_root" );
 	}
 	
+
+
 	foreach my $exppath ( @exceptions )
 	{
 		return DECLINED if( $uri =~ m/^$exppath/ );
 	}
-
+	
 	# if we're not in an EPrints path return
 	unless( $uri =~ s/^$urlpath// || $uri =~ s/^$cgipath// )
 	{
 		return DECLINED;
-	}
-
-	# URI redirection
-	if( $uri =~ m!^$urlpath/id/([^/]+)/(.*)$! )
-	{
-		my( $datasetid, $id ) = ( $1, $2 );
-
-		my $dataset = $repository->get_dataset( $datasetid );
-		my $item;
-		my $session = new EPrints::Session(2); # don't open the CGI info
-		if( defined $dataset )
-		{
-			$item = $dataset->get_object( $session, $id );
-		}
-		my $url;
-		if( defined $item )
-		{
-			$url = $item->get_url;
-		}
-		$session->terminate;
-		if( defined $url )
-		{
-			return redir( $r, $url );
-		}
 	}
 
 	if( $uri =~ m#^/([0-9]+)(.*)$# )
@@ -166,39 +139,44 @@ sub handler
 				$tail = "/" if $tail eq "";
 				return redir( $r, sprintf( "%s/%d/%d%s",$urlpath, $eprintid, $pos, $tail ).$args );
 			}
-
-		 	$r->set_handlers(PerlResponseHandler => \&EPrints::Apache::Storage::handler );
-
-			return DECLINED;
-		}
+			my $session = new EPrints::Session(2); # don't open the CGI info
+			my $ds = $repository->get_dataset("eprint") ;
+			my $searchexp = new EPrints::Search( session=>$session, dataset=>$ds );
+			$searchexp->add_field( $ds->get_field( "eprintid" ), $eprintid );
+			my $results = $searchexp->perform_search;
+			my( $eprint ) = $results->get_records(0,1);
+			$searchexp->dispose;
+		
+			# let it fail if this isn't a real eprint	
+			if( !defined $eprint )
+			{
+				return OK;
+			}
 	
-		# OK, It's the EPrints abstract page (or something whacky like /23/fish)
-		EPrints::Update::Abstract::update( $repository, $lang, $eprintid, $uri );
+			my $filename = sprintf( '%s/%02d%s',$eprint->local_path.($thumbnails?"/thumbnails":""), $pos, $tail );
+
+			$r->filename( $filename );
+
+			$session->terminate;
+			
+			return OK;
+		}
 	}
 
 	# apache 2 does not automatically look for index.html so we have to do it ourselves
-	my $localpath = $uri;
 	if( $uri =~ m#/$# )
 	{
-		$localpath.="index.html";
-	}
-	$r->filename( $repository->get_conf( "htdocs_path" )."/".$lang.$localpath );
-
-	if( $uri =~ m#^/view(.*)# )
-	{
-		my $session = new EPrints::Session(2); # don't open the CGI info
-		EPrints::Update::Views::update_view_file( $session, $lang, $localpath, $uri );
-		$session->terminate;
+		$r->filename( $repository->get_conf( "htdocs_path" )."/".$lang.$uri."index.html" );
 	}
 	else
 	{
-		EPrints::Update::Static::update_static_file( $repository, $lang, $localpath );
+		$r->filename( $repository->get_conf( "htdocs_path" )."/".$lang.$uri );
 	}
-
 	$r->set_handlers(PerlResponseHandler =>[ 'EPrints::Apache::Template' ] );
 
 	return OK;
 }
+
 
 sub redir
 {

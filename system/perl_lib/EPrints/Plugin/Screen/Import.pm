@@ -38,26 +38,10 @@ sub properties_from
 	$self->SUPER::properties_from;
 
 	my $pluginid = $self->{session}->param( "pluginid" );
-
-	my $import_documents = $self->{session}->param( "import_documents" );
-	if( defined($import_documents) && $import_documents eq "yes" )
-	{
-		$import_documents = 1;
-	}
-	else
-	{
-		$import_documents = 0;
-	}
 	
 	if( defined $pluginid )
 	{
-		my $plugin = $self->{session}->plugin(
-			$pluginid,
-			session => $self->{session},
-			dataset => $self->{session}->get_repository->get_dataset( "inbox" ),
-			processor => $self->{processor},
-			import_documents => $import_documents,
-		);
+		my $plugin = $self->{session}->plugin( $pluginid, session=>$self->{session}, dataset=>$self->{session}->get_repository->get_dataset( "inbox" ), processor=>$self->{processor} );
 		if( !defined $plugin || $plugin->broken )
 		{
 			$self->{processor}->add_message( "error", $self->{session}->html_phrase( "general:bad_param" ) );
@@ -291,6 +275,7 @@ sub render
 	my $frag = $session->make_doc_fragment;
 	my $textarea = $frag->appendChild( $session->make_element(
 		"textarea",
+		"accept-charset" => "utf-8",
 		name => "import_data",
 		rows => 10,
 		cols => 50,
@@ -333,16 +318,6 @@ sub render
 		$opt->setAttribute( "selected", "selected" ) if $self->{processor}->{plugin} && $_ eq $self->{processor}->{plugin}->get_id;
 		$opt->appendChild( $plugin->render_name );
 		$select->appendChild( $opt );
-	}
-
-	if( $session->get_repository->get_conf( "enable_web_imports" ) )
-	{
-		my $checkbox = $session->render_input_field( type=>"checkbox", name=>"import_documents", value=>"yes", class=>"ep_form_checkbox" );
-		$table->appendChild( $session->render_row_with_help(
-			help => $session->make_doc_fragment,
-			label => $self->html_phrase( "import_documents" ),
-			field => $checkbox,
-		));
 	}
 
 	$form->appendChild( $session->render_toolbox( undef, $table ) );

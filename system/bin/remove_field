@@ -60,10 +60,6 @@ Explain in detail what is going on. May be repeated for greater effect.
 
 Output version information and exit.
 
-=item B<--remove-dataset>
-
-Remove all the fields for a dataset.
-
 =back
 
 =cut
@@ -82,7 +78,6 @@ my $help = 0;
 my $man = 0;
 my $dryrun = 0;
 my $force = 0;
-my $remove_dataset = 0;
 
 GetOptions( 
 	'help|?' => \$help,
@@ -92,13 +87,12 @@ GetOptions(
 	'silent' => \$quiet,
 	'quiet' => \$quiet,
 	'force' => \$force,
-	'remove-dataset' => \$remove_dataset,
 	'dry-run' => \$dryrun
 ) || pod2usage( 2 );
 EPrints::Utils::cmd_version( "lift_embargos" ) if $version;
 pod2usage( 1 ) if $help;
 pod2usage( -exitstatus => 0, -verbose => 2 ) if $man;
-pod2usage( 2 ) unless( scalar @ARGV == 3 or ($remove_dataset and scalar @ARGV == 2) ); 
+pod2usage( 2 ) if( scalar @ARGV != 3 ); 
 
 our $noise = 1;
 $noise = 0 if( $quiet );
@@ -116,58 +110,41 @@ my $database = $session->{ database };
 
 my $fields = $session->get_repository->get_conf( "fields" );
 
-if( !$force && !exists( $fields->{ $datasetid } ) )
+if( !exists( $fields->{ $datasetid } ) )
 {
-	pod2usage( "$datasetid is not a valid dataset id or has no user-configured fields, should be one of: " . join(',', keys %$fields) );
+	pod2usage( "$datasetid is not a valid dataset id, should be one of: " . join(',', keys %$fields) );
 }
 
 my $dataset = $session->get_repository->get_dataset( $datasetid );
 
-if( $remove_dataset )
+if( !$dataset->has_field( $fieldid ) )
 {
-	remove_dataset( $dataset );
+	pod2usage( "$fieldid is not a configured field in the $datasetid dataset - you need to execute this script *before* removing it from your configuration" );
 }
-else
+
+my $system_field = 1;
+for(@{$fields->{ $datasetid }})
 {
-	remove_field( $dataset, $fieldid );
+	if( $_->{ name } eq $fieldid )
+	{
+		$system_field = 0;
+	}
 }
+
+if( $system_field )
+{
+	print "$fieldid is a system field. You should hide this field in the workflow, rather than try to remove it.\n";
+	exit(1);
+}
+
+my $field = $dataset->get_field( $fieldid );
+
+unless( $force )
+{
+	my $confirm = EPrints::Utils::get_input_confirm( "Are you sure you want to remove the database tables for " . $field->get_name . " (this can NOT be undone!)?" );
+	exit(0) unless $confirm;
+}
+
+$database->remove_field( $dataset, $field );
 
 $session->terminate();
-
-sub remove_dataset
-{
-	$database->drop_dataset_tables( $dataset );
-}
-
-sub remove_field
-{
-	if( !$dataset->has_field( $fieldid ) )
-	{
-		pod2usage( "$fieldid is not a configured field in the $datasetid dataset - you need to execute this script *before* removing it from your configuration" );
-	}
-
-	my $system_field = 1;
-	for(@{$fields->{ $datasetid }})
-	{
-		if( $_->{ name } eq $fieldid )
-		{
-			$system_field = 0;
-		}
-	}
-
-	if( !$force && $system_field )
-	{
-		print "$fieldid is a system field. You should hide this field in the workflow, rather than try to remove it.\n";
-		exit(1);
-	}
-
-	my $field = $dataset->get_field( $fieldid );
-
-	unless( $force )
-	{
-		my $confirm = EPrints::Utils::get_input_confirm( "Are you sure you want to remove the database tables for " . $field->get_name . " (this can NOT be undone!)?" );
-		exit(0) unless $confirm;
-	}
-
-	$database->remove_field( $dataset, $field );
-}

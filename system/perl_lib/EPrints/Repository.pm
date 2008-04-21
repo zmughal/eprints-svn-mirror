@@ -167,8 +167,6 @@ sub new
 		$self->_load_citation_specs() || return;
 	}
 
-	$self->_load_plugins() || return;
-
 	# Map OAI plugins to functions, namespaces etc.
 	$self->_map_oai_plugins() || return;
 
@@ -314,9 +312,7 @@ sub get_workflow_config
 {
 	my( $self, $datasetid, $workflowid ) = @_;
 
-	my $r = EPrints::Workflow::get_workflow_config( 
-		$workflowid,
-		$self->{workflows}->{$datasetid} );
+	my $r = $self->{workflows}->{$datasetid}->{$workflowid};
 
 	return $r;
 }
@@ -484,29 +480,6 @@ sub _load_citation_file
 	EPrints::XML::dispose( $doc );
 
 	$self->{citation_style}->{$dsid}->{$fileid} = $frag;
-
-	$self->{citation_sourcefile}->{$dsid}->{$fileid} = $file;
-	$self->{citation_mtime}->{$dsid}->{$fileid} = EPrints::Utils::mtime( $file );
-
-}
-
-sub freshen_citation
-{
-	my( $self, $dsid, $fileid ) = @_;
-
-	# this only really needs to be done once per file per session, but we
-	# don't have a handle on the current session
-
-	my $file = $self->{citation_sourcefile}->{$dsid}->{$fileid};
-	my $mtime = EPrints::Utils::mtime( $file );
-
-	my $old_mtime = $self->{citation_mtime}->{$dsid}->{$fileid};
-	if( defined $old_mtime && $old_mtime == $mtime )
-	{
-		return;
-	}
-
-	$self->_load_citation_file( $file, $dsid, $fileid );
 }
 
 ######################################################################
@@ -531,8 +504,6 @@ sub get_citation_spec
 
 	$style = "default" unless defined $style;
 
-	$self->freshen_citation( $dsid, $style );
-
 	my $spec = $self->{citation_style}->{$dsid}->{$style};
 	if( !defined $spec )
 	{
@@ -548,8 +519,6 @@ sub get_citation_type
 	my( $self, $dsid, $style  ) = @_;
 
 	$style = "default" unless defined $style;
-
-	$self->freshen_citation( $dsid, $style );
 
 	my $type = $self->{citation_type}->{$dsid}->{$style};
 	if( !defined $type )
@@ -590,9 +559,16 @@ sub _load_templates
 
 		foreach my $fn ( @template_files )
 		{
+			my $file = $self->get_conf( "config_path" ).
+				"/lang/$langid/templates/$fn";
 			my $id = $fn;
 			$id=~s/\.xml$//;
-			$self->freshen_template( $langid, $id );
+
+			my $template = $self->_load_template( $file );
+			if( !defined $template ) { return 0; }
+
+			$self->{html_templates}->{$id}->{$langid} = $template;
+			$self->{text_templates}->{$id}->{$langid} = _template_to_text( $template );
 		}
 
 		if( !defined $self->{html_templates}->{default}->{$langid} )
@@ -601,29 +577,6 @@ sub _load_templates
 		}
 	}
 	return 1;
-}
-
-sub freshen_template
-{
-	my( $self, $langid, $id ) = @_;
-
-	my $file = $self->get_conf( "config_path" ).
-			"/lang/$langid/templates/$id.xml";
-	my @filestat = stat( $file );
-	my $mtime = $filestat[9];
-
-	my $old_mtime = $self->{template_mtime}->{$id}->{$langid};
-	if( defined $old_mtime && $old_mtime == $mtime )
-	{
-		return;
-	}
-
-	my $template = $self->_load_template( $file );
-	if( !defined $template ) { return 0; }
-
-	$self->{html_templates}->{$id}->{$langid} = $template;
-	$self->{text_templates}->{$id}->{$langid} = _template_to_text( $template );
-	$self->{template_mtime}->{$id}->{$langid} = $mtime;
 }
 
 sub _template_to_text
@@ -764,7 +717,6 @@ sub get_template_parts
 	my( $self, $langid, $tempid ) = @_;
   
 	if( !defined $tempid ) { $tempid = 'default'; }
-	$self->freshen_template( $langid, $tempid );
 	my $t = $self->{text_templates}->{$tempid}->{$langid};
 	if( !defined $t ) 
 	{
@@ -793,7 +745,6 @@ sub get_template
 	my( $self, $langid, $tempid ) = @_;
   
 	if( !defined $tempid ) { $tempid = 'default'; }
-	$self->freshen_template( $langid, $tempid );
 	my $t = $self->{html_templates}->{$tempid}->{$langid};
 	if( !defined $t ) 
 	{
@@ -926,69 +877,6 @@ sub get_dataset
 	}
 
 	return $ds;
-}
-
-
-######################################################################
-# 
-# $success = $repository->_load_plugins
-#
-# Load any plugins distinct to this repository.
-#
-######################################################################
-
-sub _load_plugins
-{
-	my( $self ) = @_;
-
-	my $dir = $self->get_conf( "config_path" )."/plugins";
-	my $pdir ="$dir/EPrints/Plugin";
-	return 1 unless -d $pdir;
-
-$self->{local_plugins} = {};
-	local @INC = ($dir, @INC);
-	EPrints::Plugin::load_dir( $self->{local_plugins}, $pdir, "EPrints::Plugin" );
-
-	return 1;
-}
-
-######################################################################
-# 
-# $classname = $repository->get_plugin_class
-#
-# Returns the perl module for a plugin with this id, using global
-# and repository-sepcific plugins.
-#
-######################################################################
-
-sub get_plugin_class
-{
-	my( $self, $pluginid ) = @_;
-
-	if( defined $self->{local_plugins}->{$pluginid} )
-	{
-		return $self->{local_plugins}->{$pluginid};
-	}
-
-	return $EPrints::Plugin::REGISTRY->{$pluginid};
-}
-
-######################################################################
-# 
-# @list = $repository->get_plugin_ids
-#
-# Returns a list of plugin ids available to this repository.
-#
-######################################################################
-
-sub get_plugin_ids
-{
-	my( $self, $pluginid ) = @_;
-
-	my %pids = ();
-	foreach( EPrints::Plugin::plugin_list() ) { $pids{$_}=1; }
-	foreach( keys %{$self->{local_plugins}} ) { $pids{$_}=1; }
-	return keys %pids;
 }
 
 ######################################################################
@@ -1139,21 +1027,17 @@ sub call
 		return;
 	}
 
-	my( $r, @r );
-	if( wantarray )
-	{
-		@r = eval { return &$fn( @params ) };
-	}
-	else
-	{
-		$r = eval { return &$fn( @params ) };
-	}
-	if( $@ )
-	{
-		print "$@\n";
+	local $SIG{__WARN__} = sub {
+        	my( $msg ) = @_;
+        	print STDERR " (while in configuration subroutine $cmd) $msg\n";
+	};
+	local $SIG{__DIE__} = sub {
+        	my( $msg ) = @_;
+        	print STDERR " (while in configuration subroutine $cmd) $msg\n";
 		exit 1;
-	}
-	return wantarray ? @r : $r;
+	};
+
+	return &$fn( @params );
 }
 
 ######################################################################
@@ -1260,7 +1144,9 @@ sub get_store_dir_size
 		return undef;
 	}
 
-	return EPrints::Platform::free_space( $filepath );
+	my @retval = EPrints::Utils::df_dir $filepath;
+	return undef unless @retval;
+	return (@retval)[3];
 } 
 
 
@@ -1487,40 +1373,7 @@ END
 
 
 
-######################################################################
-=pod
 
-=item ( $returncode, $output) = $repository->test_config
-
-This runs "epadmin test" as an external script to test if the current
-configuraion on disk loads OK. This can be used by the web interface
-to test if changes to config. files may be saved, or not.
-
-$returncode will be zero if everything seems OK.
-
-If not, then $output will contain the output of epadmin test 
-
-=cut
-######################################################################
-
-sub test_config
-{
-	my( $self ) = @_;
-
-	my $rc = 0;
-	my $output = "";
-
-	my $tmp = File::Temp->new;
-
-	$rc = EPrints::Platform::read_perl_script( $self, $tmp, "-e", "use EPrints qw( no_check_user );" );
-
-	while(<$tmp>)
-	{
-		$output .= $_;
-	}
-
-	return ($rc/256, $output);
-}
 
 
 

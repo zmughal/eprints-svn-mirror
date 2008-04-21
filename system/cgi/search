@@ -58,7 +58,6 @@ EPrints::ScreenProcessor->process(
 	session => $session, 
 	url => $session->get_repository->get_conf( "perl_url" )."/search/$searchid",
 	sconf => $sconf,
-	template => $sconf->{template},
 	screenid => "Public::EPrintSearch",
 );
 $session->terminate;

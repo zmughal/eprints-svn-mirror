@@ -43,15 +43,9 @@ use EPrints::MetaField;
 
 sub get_sql_type
 {
-	my( $self, $session, $notnull ) = @_;
+	my( $self, $notnull ) = @_;
 
-	# Could be a 'SET' on MySQL/Postgres
-	return $session->get_database->get_column_type(
-		$self->get_sql_name(),
-		EPrints::Database::SQL_VARCHAR,
-		$notnull,
-		5 # 'TRUE' or 'FALSE'
-	);
+	return $self->get_sql_name()." SET('TRUE','FALSE')".($notnull?" NOT NULL":"");
 }
 
 sub get_index_codes
@@ -88,10 +82,6 @@ FALSE=> $session->phrase( $self->{confid}."_fieldopt_".$self->{name}."_FALSE"),
 			push @values, "";
 			$labels{""} = $session->phrase( "lib/metafield:unspecified_selection" );
 			$height++;
-		}
-		if( $self->get_property( "input_rows" ) )
-		{
-			$height = $self->get_property( "input_rows" );
 		}
 		my %settings = (
 			height=>$height,
@@ -246,25 +236,7 @@ sub get_property_defaults
 	my %defaults = $self->SUPER::get_property_defaults;
 	$defaults{input_style} = 0;
 	$defaults{text_index} = 0;
-	$defaults{input_rows} = $EPrints::MetaField::FROM_CONFIG;
 	return %defaults;
-}
-
-sub render_xml_schema_type
-{
-	my( $self, $session ) = @_;
-
-	my $type = $session->make_element( "xs:simpleType", name => $self->get_xml_schema_type );
-
-	my $restriction = $session->make_element( "xs:restriction", base => "xs:string" );
-	$type->appendChild( $restriction );
-	foreach my $value (@{$self->get_unsorted_values})
-	{
-		my $enumeration = $session->make_element( "xs:enumeration", value => $value );
-		$restriction->appendChild( $enumeration );
-	}
-
-	return $type;
 }
 
 ######################################################################

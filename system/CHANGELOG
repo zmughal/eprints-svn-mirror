@@ -6146,8 +6146,9 @@ PACKAGE: 2.2.99.2
 18/12/2006 - EPRINTS-3.0-RC-1
 ======================================================================
 
-2006-12-21 tdb
- * Added url_name_value lookup script
+2006-12-18 cjg
+ * Changed INSERT to REPLACE on login tickets - should fix bug with IP 
+    changing on laptops.
 
 2007-01-03 tmb
  * Added more examples for Request Copy configuration (eg. first author)
@@ -6167,7 +6168,7 @@ PACKAGE: 2.2.99.2
  * Previous commit: Changed userid to use user dataset rather than
     document.
 
-2007-01-08 tdb
+2007-01-08
  * Added ApacheLog import plugin for access log data
 
 2007-01-09 cjg 
@@ -6181,19 +6182,11 @@ PACKAGE: 2.2.99.2
  * Used TeX::Encode to provide some handling of accented characters in
     BibTeX import.
 
-2007-01-10 tdb
- * Made ApacheLog optional on Date::Parse dependency
- * Made commonlog regexp in ApacheLog more flexible
-
 2007-01-10 moj
  * Added user/remove action
  * Changed sure_delete to be a plugin phrase
  * Added User::Remove screen (similar to EPrint::Remove)
  * Added phrases for User::Remove
-
-2007-01-11 moj
- * Public::RequestCopy stores actor as user's name (if logged in)
-    or email address (if not).
 
 2007-01-11 tmb
  * Added first cut of metadata fields, phrases and citations for new 
@@ -6214,6 +6207,10 @@ PACKAGE: 2.2.99.2
 2007-01-16 cjg
  * Commented out autoloader in Tex::Encode to get rid of a warning.
 
+2007-01-11 moj
+ * Public::RequestCopy stores actor as user's name (if logged in)
+    or email address (if not).
+
 2007-01-17 cjg
  * Fixed issue with &<> in autocomplete.
  * Fixed up confusing help in import
@@ -6221,6 +6218,10 @@ PACKAGE: 2.2.99.2
 
 2007-01-17 cjg
  * fix rolllogs to EPrints::Index::rolllogs in indexer
+
+======================================================================
+17/01/2007 - EPRINTS-3.0-RC-2
+======================================================================
 
 2007-01-20 tdb
  * Fixed security holes in lookup scripts
@@ -6232,6 +6233,10 @@ PACKAGE: 2.2.99.2
  * Fixed bug in Session which caused buttons to do odd things for
     a few seconds after initial login. (due to failing to clear an
     apache note).
+
+======================================================================
+22/01/2007 - EPRINTS-3.0
+======================================================================
 
 2007-01-29 tdb
  * Initial version of an 'aqua' theme
@@ -6262,14 +6267,6 @@ PACKAGE: 2.2.99.2
 
 2007-02-19 cjg
  * It is now possible to search for a null date using "","EX"
-
-2007-02-19 cjg
- * Rewrite now automatically updates static pages where possible. This code
-    has duplicates of stuff in generate_static and isn't smart about the auto
-    javascript and css or themes (yet).
-
-2007-02-19 cjg
- * Changed Convert::PlainText into house code style.
 
 2007-02-19 cjg
  * Added has_role method to User.pm
@@ -6304,23 +6301,11 @@ PACKAGE: 2.2.99.2
  * Fixed issue in autocompleter file and simple_file which didn't lowercase 
     keys.
 
-2007-03-11 tdb
- * Fix typo in Platform::get_hash_name
-
-2007-03-12 tdb
- * Moved df_dir into Platform
- * Added support for Filesys::Df, Filesys::DfPortable and df (support for more
-    file system types than Filesys::DiskSpace)
-
 2007-03-12 cjg
  * Added missing phrases mentioned in #2873
 
 2007-03-12 cjg
  * Fixed spelling mistake in DOI import plugin volunme / volume.
-
-2007-03-22 cjg
- * Added Comment to the Platform file
- * Added warning if exec() is not passed a repository parameter
 
 2007-03-22 cjg
  * Fixed bug in epadmin that didn't use the groupid set in SystemSettings for
@@ -6332,22 +6317,14 @@ PACKAGE: 2.2.99.2
 
 2007-03-22 cjg
  * Caused only .xml files to be loaded in phrase directories.
-	
-2007-03-22 cjg
- * Removed debug code from Rewrite
-
-2007-03-22 cjg
- * Sorted out XHTML validation. Involved removing some accept-charset 
-    attributes, changing forms from GET to get, changing the way css 
-    works with/without javascript and adding an alt="" tag.
 
 2007-03-22 cjg
  * Fixed bug which meant two subsequent 404's on one apache connection would
     blank the 2nd one.
 
 2007-03-22 cjg
- * Fixed an issue which meant that after removing a user the system went to 
-    an undefined screen. Now goes to the front which isn't ideal, but is 
+ * Fixed an issue which meant that after removing a user the system went to
+    an undefined screen. Now goes to the front which isn't ideal, but is
     better.
 
 2007-03-22 cjg
@@ -6356,43 +6333,20 @@ PACKAGE: 2.2.99.2
     gives some advice about v2 and v3 XML files.
 
 2007-03-22 cjg
- * Changed "authors" to "creators" in endnote plugin.
-
-2007-03-22 cjg
- * Used the tool divide phrase instead of hardwiring "|"
-
-2007-03-22 cjg
  * Commented out heavy regexps in indexer.pl
 
-2007-03-22 tdb
- * Removed executable properties
- * Added license statement to ScreenProcessor
+2007-03-27 tdb
+ * Fixes to conversion plugins (tested using new Convert interface in 3.1)
+ * If a document contains no files (shouldn't happen) don't throw lots of
+	undef warnings
+ * Added html_phrase_id method to Plugin.pm that returns the id of a plugin
+	phrase (avoids getting phrases a lot when querying conversion plugins)
 
-2007-03-22 tdb
- * Missed size adjustment from modified df_free
-
-2007-03-22 tdb
- * Removed use of prepare_cmd from Convert plugins (now uses $repository->exec)
-
-2007-03-23 tdb
- * Fix Convert plugins that I broke yesterday
- * Add 'html_phrase_id' method to Plugin, to get the phrase id (used by
-    Convert)
-
-2007-03-23 tdb
- * Added draft conversion option to document upload page
- * Made Unpack work
- * Few robustness changes to Convert plugins
-
-2007-03-23 tdb
- * Only list conversions TO formats listed in document formats
- * Use document format phrases in ImageMagick/Images
+2007-03-27 tdb
+ * file_perms and dir_perms can now be strings in SystemSettings
 
 2007-03-30 tdb
  * quote command line arguments in invocation, using quotemeta
-
-2007-04-11 cjg
- * Added a new loglevel which tells when (de)indexing a field is finished.
 
 2007-04-11 cjg
  * Bail out of an unpack if there is no mimetype, avoiding an undef warning.
@@ -6401,10 +6355,10 @@ PACKAGE: 2.2.99.2
  * Don't index fileinfo field!
 
 2007-04-11 cjg
- * Changed views to index subjects first, and to order subject pages by title.
+ * Fixed ordering of subjects in view. (sort by name_name rather than name)
 
 2007-04-11 cjg
- * Fixed ordering of subjects in view. (sort by name_name rather than name)
+ * changed "authors" to "creators" in export/endnote
 
 2007-04-11 cjg
  * Removed custom_order from lift_embargos which should fix a bug.
@@ -6429,23 +6383,22 @@ PACKAGE: 2.2.99.2
  * Fixed issue with database which meant that zero rows affected was 
     treated as an unsuccessful operation. Which it isn't.
 
-2007-05-24 tdb
- * Added support for exporting partial data in Eprints Application Profile
-    format
+======================================================================
+25/05/2007 - EPRINTS-3.0.1
+======================================================================
 
 2007-05-25 cjg
- * Corrected the way the security.pl config file gets the remote IP.
+ * Fixed incorrect way of getting IP in security.pl
 
-2007-05-25 cjg
+2007-05-25 cjg 
+ * Added tdb code for allowing XML import via href="file://"
+
+2007-05-25 cjg 
  * Fixed conf_id/confid typo in Backcompatability
 
 2007-05-25 cjg
  * Textonly pins now don't expand. Fixing a bug that {} in titles caused
     an error.
-
-2007-05-25 tdb
- * Pretty-printing from POD tester
- * Strip prefixes from noxmlns to_string output (bug fix for XML::LibXML)
 
 2007-05-25 cjg
  * Fixed typo in the textonly pins change
@@ -6469,9 +6422,6 @@ PACKAGE: 2.2.99.2
  * import-from-file no longer deletes first file.
  * Added new options to import to allow correct importing of migration data.
   
-2007-05-29 cjg
- * Added an example to security.pl
-
 2007-05-30 cjg
  * Fixed warning when pagerange met non digit data.
 
@@ -6496,6 +6446,10 @@ PACKAGE: 2.2.99.2
  * Set all primary key fields to be can_clone=>0 (fixing bug introduced in 
     new-version by the wrong dir fix earlier)
 
+======================================================================
+13/06/2007 - EPRINTS-3.0.2
+======================================================================
+
 2007-06-13 tmb
  * Added some latitude + longitude values to example data
 
@@ -6519,18 +6473,6 @@ PACKAGE: 2.2.99.2
 2007-07-02 cjg
  * Fixed problem with searching subjects in input forms. #2962
 
-2007-07-20 cjg
- * Added "binmode" to some file opens for Harry.
-
-2007-08-13 cjg
- * Removed unneeded "use" from Utils.pm
-
-2007-08-13 cjg
- * Added experimental (not yet used) method for reading from the beast.
-
-2007-08-13 cjg
- * Tidied Abstract search to be easier to subclass export plugin list.
-
 2007-08-15 cjg
  * Fixed weird sort of error which didn't fail but should in xhtml_help.
  * Added support for <title> override in workflow.
@@ -6548,45 +6490,32 @@ PACKAGE: 2.2.99.2
  * Added on_logout hook which is called when the login page is accessed
     which allows non-eprints login cookies to be hosed.
  
+======================================================================
+28/08/2007 - EPRINTS-3.0.3 (rc1)
+======================================================================
+
 2007-08-31 tmb
  * Fixed "for:value:relative:" autocomplete IDs not working under IE
 
 2007-09-03 cjg
  * current_user now returns undef if working offline. Fixing #3091
 
-2007-10-19 cjg
- * Prevented warning in case of undefined subject-name-language.
-
-2007-10-19 cjg
- * Added basic changes for searching chained fields eg. documents.format
- * Fixed bug is date/time searches
- * Fixed issue with double escaping in citations.
-
-2007-10-19 cjg
- * Added tabs for zip and wget upload of documents.
-
-2007-10-19 cjg
- * Added "on_logout" hook.
-
-2007-10-19 cjg
- * Change to DefaultXML import plugin to pass through attributes to the 
-    subclassing import plugin.
-
-2007-10-19 cjg
- * Added code for icons to appear in items and review pages.
-
-2007-10-19 cjg
- * Added Screen.pm (part of previous change)
-
-2007-10-19 cjg
- * Added new icons (part of previous change)
+2007-10-16 cjg
+ * Fixed bug in date/time search.
 
 2007-12-03 tdb
  * #3139, show deleted records in OAI output instead of just repeating the
-    current data set
-
-2007-12-03 cjg
- * Added code to Document to allow importing from URLS
+    current data set 
+ * Missing phrases from Admin -> Search Items -> Depositing User:
+    lib/searchfield:desc_itemref_between, lib/searchfield:desc_itemref_orless
+    and lib/searchfield:desc_itemref_ormore, fixing #3042
+ * Use lastmod in OAI, allowing changes to live eprints to be propagated to
+    harvesters (#3149)
+ * Fixed bug with Simple Search not working in IE6/7 (#2975)
+ * Will now use document directories from the last to the first (same behaviour
+    as if disable_df is true) (#3142)
+ * When logging in to access documents redirection now works as intended
+    (#3140)
 
 2007-12-03 cjg
  * Import IDs are removed unless import_ids is enabled.
@@ -6601,6 +6530,12 @@ PACKAGE: 2.2.99.2
  * Added missing EPrints_Dir_SecuredCGI and EPrints_Dir_Documents variables,
     fixing #2973
 
+2007-12-05 cjg
+ * Fixed some bugs in the VLit code.
+
+2007-12-05 tdb
+ * Cap the maximum message size at 40,000 bytes from Import, fixing #3067
+
 2007-12-07 tdb
  * Quote names in emails if they contain a comma, fixing #3112
  * "If there are no items under review" phrase correction, fixing #2998
@@ -6609,6 +6544,10 @@ PACKAGE: 2.2.99.2
  * 'minuser' type users can no longer view Screen::Import, fixing #3108
 
 2007-12-10 tdb
+ * Added method 'clear_changed' to DataObj
+ * Removed redundant and broken fileinfo setting in eprint_fields_automatic
+ * Objects read from the database will no longer always be committed, fixing
+    #3156
  * Don't substr an undefined value in Time fields, fixing #3111
  * Moved page range rendering into 4 phrases, dependent on the pagerange value,
     fixing #2987
@@ -6630,49 +6569,8 @@ PACKAGE: 2.2.99.2
     Search, fixing #2999
  * Strip namespacing from HTML exports (fixes <emph> in citations) under
     LibXML, fixing #3085
-
-2007-12-11 cjg
- * Added first cut of toolbox code. Still needs security before release.
-
-2007-12-11 cjg
- * Fixed an issue with some indexer related subroutines being called with 
-    neither &foo or foo() which caused issues in some perl setups.
-
-2007-12-11 cjg
- * Fixed a trivial case - a session wasn't terminated when exiting Rewrite
-    in a certain way.
-
-2007-12-11 cjg
- * Added method of setting alternate template for a static file (using 
-    foo.template file in same dir as foo.title etc.)
- * Added config option to searches to pick alternate template.
- * Added additional option to ScreenProcessor to allow custom template.
-
-2007-12-11 cjg
- * Added code to pull an optional "match" value from the search form
-    on set and subject fields. This allows you to specifiy an exact
-    search, although there's no option in the form for this, it will
-    be understood if part of the GET request.
-
-2007-12-11 cjg
- * In default XML importer; fixed very minor bug that a field was not 
-    cleared after use. Also rearranged code to be more suitable for 
-    allowing URL formats other than file://
-
-2007-12-11 cjg 
- * epadmin has new option "refresh_abstracts" which causes the webserver
-    to regenerate abstract pages when they are requested. Closes ticket
-    #3162 and probably deprcates generate_abstracts.
-
-2007-12-11 cjg 
- * Rewrite now tests and recreates auto.js and auto.css if any of the 
-    source files have changed.
- * There's now a configuration option to disable the test on auto.js and
-    auto.css as they stat quite a lot of files. It seems faster.
- * auto.css now actually includes all the other .css files, rather than 
-    using @import. This appears to significantly improve the time taken
-    to load a page!
- * This all-but deprecates generate_static!
+ * Strip prefixes from noxmlns to_string output (bug fix for XML::LibXML),
+    fixing #3007
 
 2007-12-12 tdb
  * 'x' and 'y' values will now sort correctly (along with ~n, 'e etc.), fixing
@@ -6680,54 +6578,17 @@ PACKAGE: 2.2.99.2
  * Changed is_dom back to not use ->isa, due to inheritance problems in
     trim_whitespace under LibXML, fixing #3159
 
-2007-12-13 cjg
- * Added first cut of AjaxSubject which dynamically loads subsections when
-    selecting subjects in the deposit workflow. Comes with a cjg script to
-    provide the subsections. Still needs some work. for #2857
-
-2007-12-13 cjg
- * Templates are now reloaded if they have been modified since they were
-    loaded. Closes #3163
-
-2007-12-13 cjg
- * Added QA Screen. This will show the planned QA plugins. Closes #3167
+2007-12-12 cjg
+ * generate_static now compiles the contents of files into auto.css, rather 
+    than it just containing @import lines. This improves the load time of 
+    page.
 
 2007-12-14 tdb
+ * Don't render an Itemref field link inside a link, because it's always going
+    to be linked itself, fixing #3189
  * The main repository hostname can now be unqualified (to allow 'localhost'),
     fixing #3184
- * Added action for staff to eprint actions menu to reindex an eprint
-
-2007-12-17 cjg
- * Changed Items and Review screens to use an icon to view the eprint rather
-    than hyperlinking the text.
- * Fixed bug introduced in r3149 which lost the colour on rows in Items.
-
-2007-12-17 tdb
- * Removed backwards compatibility stuff from LibXML - we need 1.63 which has
-    all the fixes in anyway.
- * Fixed compatibility problem with IE in jscss.js, fixing #3164
-
-2007-12-17 cjg
- * Phrase files now dynamically reload if they have changed, but this won't
-    handle phrases being moved between phrase files. eg. from system.xml
-    to repository specific.
-	
-2007-12-17 cjg
- * Small change to previous commit to make it use a more generic name for
-    the hash which tracks which config file mtimes have been checked.
-
-2007-12-17 cjg
- * If root database connect fails, in epadmin, it offers you the option to
-    try again, rather than instantly exiting. Closes #2807
-
-2007-12-17 cjg
- * epadmin now generates a random 8 character database password as the 
-    default value when configuring the database for a repository, although
-    this may still be over-ridden.
-
-2007-12-18 cjg
- * Added Export/IDs which is a very simple (and fast) export that just 
-    outputs a \n separated list of IDs of the items.
+ * Fixed double-escaping of URLs in document citations, fixing #3113
 
 2007-12-19 tdb
  * Session::render_link shouldn't URI escape (should be HTML escaping, which
@@ -6739,23 +6600,6 @@ PACKAGE: 2.2.99.2
 2007-12-20 tdb
  * Removed temporary file usage from PubMedID import script, fixing #2820
 
-2007-12-24 cjg
- * Removed bin/list_user_emails, replacing it with an export plugin to 
-    perform the same action.
-
-2008-01-04 cjg
- * Added mtime function to EPrints::Utils
- * Moved update routines for static and view pages into their own modules.
- * views now use a "variations" config option
- * New function to get all eprints ids from a dataset, grouped by a certain 
-    field. Used to show how many in a section in views.
- * Writing pages now creates any needed directories.
- * Tweaked the way session renders a subject tree.
- * nb. Some debug code left in this commit
-
-2008-01-09 cjg
- * Added EPrints::Bench -- used for testing speed of sections of code.
-
 2008-01-09 tdb
  * Changed name of ordervalue_single to ordervalue_basic, fixing #3201
  * Added $session and $langid to call to ordervalue_basic, really fixing #3201
@@ -6764,60 +6608,28 @@ PACKAGE: 2.2.99.2
  * import_subjects should use the import ids, fixing #3209
 
 2008-01-14 tdb
+ * fixed typo in [3070], fixing #3210
+
+2008-01-14 tdb
  * Use Text::Unidecode to create sort values, fixing #3200
- * Removed Text::BibTeX dependency, fixing #3202
  * EPrints::Metafield::render_value_withopts now checks definedness by using
     EPrints::Utils::is_set, fixing #2923
- * Added quote_value and quote_identifier methods to Database.pm
- * Replaced all occurences of prep_value with quote_value
- * Replaced all (?) occurences of \" in database values with quote_value
  * Added check for whether the subjects field is configured in MODS (METS)
     export
 
 2008-01-15 tdb
  * Check whether an executable is set as "NOTFOUND", fixing #2874
+ * Added a space between 'von' and 'family' parts in BibTeX import
+ * Merged r2676 from trunk, which fixes unicode problems in title_duplicates,
+    fixing #2815
  * Replaced $session->html_phrase with $self->html_phrase in Screen::Import,
     fixing #3203
  * Now checks for visibility all in Screen::Import, fixing #3207
-
-2008-01-15 cjg
- * Added code to keep track of which phrases were used during a $session
- * Added code to report on this, but currently disabled the report.
-
-2008-01-15 cjg
- * Added template option to views.
- * Changed "template_id" option in page generation to "template"
-
-2008-01-16 cjg
- * Added admin screen to reload config. Same as epadmin reload.
- * Added method to Repository to test if the current configuration is valid.
- * Added a missing \n to a errror message in Repository.pm
-
-2008-01-16 cjg
- * Minor tweak to supress undef warning in Language.pm. Fixes #3199
 
 2008-01-16 tdb
  * Overhauled Import plugins to use a Handler mechanism to output errors,
     warnings and object parse/creation events (should be transparent to the
 	actual plugins), fixing #3206, #2812, #3205
-
-2008-01-16 cjg
- * Added riched syntax to user role specification
- * Added web-based configuration editing (needs to have "config" option added
-    to a role to activate it)
-
-2008-01-16 cjg
- * Added "volatile" flag to fields to indicate that the last modified should
-    not be reset, the revision number increased nor the XML file snapshotted
-    on account of a change to this field. It still causes the abstract page
-    to be updated and the field to be indexed. Closes #3221
-
-2008-01-16 cjg
- * Can now do sub-object searches on indexed fields. Fixing #3188
-
-2008-01-16 cjg
- * Workflows now assign ID's to component level elements when the file is
-    loaded rather than ad-hoc. This fixes #3216.
 
 2008-01-17 tdb
  * Fixed a problem with parsing BibTeX names that contained braces
@@ -6827,30 +6639,9 @@ PACKAGE: 2.2.99.2
  * Added Microsoft Excel document format, fixing #3217
  * Using a pin with content twice will no longer repeat content, fixing #3027
 
-2008-01-17 cjg
- * Fixed a small bug in the Update::Static code which didn't work for .html
-    files. or index.html files being called "/"
- 
-2008-01-17 cjg
- * Added an "id" attribute to <select> fields, which means that they can be
-    found with prototype $F() method -- fixing some issues with autocomplete.
-
-2008-01-18 cjg
- * Added missing phrase for reload-config screen.
- * Added Links to documentation from config editor.
- * Improved layout of config browse.
-
 2008-01-18 cjg
  * Multiple field tables now get a primary key, although this isn't created
     if you upgrade (yet).
-	
-2008-01-18 cjg
- * User "admin" role now can view config, but requires a edit-config role to
-    be allowed to change it via CGI.
-
-2008-01-18 cjg
- * Workflow config reloads if changed on disk. Closes #3182
- * Citation config reloads if changed on disk. Closes #3181 
 
 2008-01-22 tdb
  * When finding the parts of a date/time allow splitting on 'T' and 'Z' (time)
@@ -6863,14 +6654,6 @@ PACKAGE: 2.2.99.2
     dynamically loaded plugins
  * Added EPrints::CLIProcessor module for handling CLI messages
  * If the time part of the lastmod is null default to 00:00:00, fixing #3243
-
-2008-01-24 tdb
- * Upgrade multiple tables by extending the PRIMARY KEY over the pos field,
-    fixing #3235
- * Changed eprint & doc ids in access to INT, changed referring_entity_id to
-    LONG, fixing #3128
- * oai_accesslogs script is now *enabled*, but requires that the user be logged
-    in and have the 'access-view' role
 
 2008-01-25 tdb
  * Added URI::OpenURL module, to enable the openurl resolver by default
@@ -6888,505 +6671,57 @@ PACKAGE: 2.2.99.2
 2008-02-05 tdb
  * Added support for 'contributors' in DOI import
  * Added export plugin for OpenURL COinS, hidden ContextObject dependencies
- * Added an XSLT processor export plugin and example XSLT
 
 2008-02-06 tdb
- * Only show a "deposit" button for eprints in the inbox
  * Removed debug log message in Platform::exec
  * Added EPrints namespace to <eprints> in XML export
- * Added import/export plugins for XSL transforms
  * Only match whole words as logical operators, fixing #3252
+ * Added an "id" attribute to <select> fields, which means that they can be 
+   	found with prototype $F() method -- fixing some issues with autocomplete.
  * Updated to scriptaculous 1.8.1
  * Work-around for autocompletion not working in Opera, fixing #3041
 
 2008-02-07 tdb
  * Don't roll indexer logs on start/stop, only every 24 hours, fixing #2855
- * Fixed doubly-quoted database values
  * Make sure we actually remove index_queue entries, fixing #3256
- * Separated indexer daemon code into a new module, now checks and warns if key
-    files aren't writable, fixing #3242
-
-2008-02-11 tdb
- * Fixed indexed field codes not containing stops
-
-2008-02-13 tdb
- * Modified creation of database indices to use SQL standard CREATE [ UNIQUE ]
-    INDEX, see #3261
- * Added get_column_type method to Database, which returns a column
-    specification for the local database: modified most table creation to use
-	it, see #3262
- * Added data set "cachemap" that is now used to manage cache ids/creating the
-    cachemap table
-
-2008-02-14 cjg
- * Added "billboard" div to input forms. Useful as a target for javascript.
-
-2008-02-14 cjg
- * Added getEprintField to toolbox. 
-
-2008-02-15 cjg
- * Added new message to default homepage.
-
-2008-02-18 tdb
- * erase_data now recreates all eprints tables rather than destroying the
-    database outright
- * Added migration code for cachemap
- * Allow --force to add/remove system fields
- * Support for Oracle DB! (10g)
- * Modified all use of SQL to quote database identifiers (tables, columns)
- * Added value_from_sql_row and sql_row_from_value methods to metafields to
-    replace bespoke Name/Date/Time cases in Database.pm 
- * Added "dbdriver" database option to specific different database driver
- * Added create_sequence, create_index methods for creating sequences and
-    indexes
- * Changed messages and login_tickets tables to be DataSets
- * Added "index" option to DataSets to control index and order sub-tables
-    creation/use
- * Modified table creation to use _create_table
- * Replaced direct INSERT SQL with insert/insert_quoted methods
- * Added index_dequeue method to dequeue items from index_queue
- * Added get_sql_names method to fields, to get database column names
- * Added the current DB version to the "in old configuration" error
- * Added update_ticket_userid method to update user tickets
- * Added database driver information to Status screen
- * Added create_counters method to create database counters
- * Database upgrade steps from 3.0.7 to 3.0.8
 
 2008-02-19 tdb
- * Changed 3.1 database to version 3.1.0
- * Added upgrading of cachemap dataset tables + counters, fixing #3272 and
-    #3273
- * Replaced explain_tables with a GUI version in admin-Status, fixing #3276
- * Don't show deleted *eprints* in the access log OAI interface
- * Moved a SELECT from List to Database (SELECT 'ALL')
- * Remove stale sequences in create_sequence if they already exist
+ * Updated explain_tables, fixing #3248
  * strip spaces and lowercase when normalising for comparison, fixing #3263
- * added delete_from() method to Database, tidied up _do_ordervalues
  * utf8 decode values before passing to Unidecode, fixing #3270
- * added "reorder" command to epadmin to re-write ordering codes
 
 2008-02-20 tdb
  * Request-a-copy email now goes to the correct person, fixing #3260
  * Emailed HTML now rendered with EPrints::XML::to_string
- * Added a plugin to send a test email
- * Ignore non-PID things in the indexer pid file
- * Fixed erase_eprints epadmin command for Oracle
- * Added create_counter/drop_counter methods, fixed currval unavailable error
- * Fixed adding/removing fields for Oracle
-
-2008-02-20 cjg
- * Fixed typo in suffix of Export::Simple s/text/txt/
-
-2008-02-20 cjg
- * Added documents.format to default adv. search
-
-2008-02-20 cjg
- * Cleaned up mixed indentation in 70_autocomplete.js
- * Added "row" prefix for autocompletion to target cells in the row
- * Added "hide" and "show" actions to autocomplete processor.
-
-2008-02-21 tdb
- * Added has_field/has_column methods to database to determine whether a
-    dataset/table has the field/column configured
- * An admin plugin to add/remove fields from the database
- * Added options to add/remove fields scripts to add/remove a dataset
-
-2008-02-21 cjg
- * generate_views now works with the new Update::Views module. Closes #3264
- * Added --view --lang and --generate options to generate_views
-
-2008-02-21 cjg
- * Added a "uri" method to dataobj which returns a currently unresolveable URI
-    for any dataobject. We might make themresolvable later.
- * Added this URI as an "id" attribute when XML exporting data.
-
-2008-02-23 tdb
- * Changed user check to be overridable by a use() pragma: "no_check_user"
- * Made test_config cross-platform with a new Platform call: "read_perl_script"
-
-2008-02-25 tdb
- * Don't squash ordervalues where a dataset is !indexable
- * Truncate ordervalues values before insertion
- * The "no_check_user" pragma from r3357
-
-2008-02-27 tdb
- * Made Boolean respect "input_rows"
- * add/remove field plugin now does the whole process using a workflow
- * Tool for boot-strapping the metafield dataset
 
 2008-02-28 tdb
  * Corrected link in editor alert email, fixing #3286
  * Fixed an undef warning in EPrints::Email
 
 2008-03-04 tdb
- * Added missing Perl export plugin
- * Now adds default phrases for sub-fields/set options
+ * Corrected typo in search alert email URL
  * Fixed HTTPS support/sub-directory support simplified
 
-2008-03-05 tdb
- * Added missing mysql_version_from_dbh method, fixing #3301
-
 2008-03-07 tdb
- * Revised lookup scripts to work with Oracle/abstracted results rendering into
-    an Extras method
  * Put javascripts inside CDATA sections, fixing #3303
- * Added childNodes and firstChild to XML::DOM
- * Don't use a SIG handler when making calls - breaks eval() wrappers in
-    libraries
- * Tool to create unlimited number of randomly-generated eprints
-
-2008-03-11 tdb
- * Modified oai_accesslog to export all datasets
- * Fixed bug in Repository::call always returning an array
-
-2008-03-12 tdb
- * Added datestamp to metafields
- * Merged r3371 and r3368 - support for http_* config variables
- * More database quoting fixes: added _update and _update_quoted methods to
-    Database.pm, don't INSERT-UPDATE for INSERT (for performance)
- * index_queue can now take multiple field name values
- * Oracle doesn't support multiple VALUES inserts
- * Make more use of multi-value insert calls to insert()
-
-2008-03-14 tdb
- * Added --enable-web-imports option to bin/import
- * Added a "wget" method to EPrints::Utils to retrieve items from the Web
- * Only create one revision when creating new eprint objects
-
-2008-03-14 cjg
- * Fixed a couple of http_url items in the template which needed to be 
-    perl_url
- * (Re-fixed above to http_cgiurl)
-
-2008-03-14 cjg
- * Added show_zero_results option to search config. which if true still
-    shows the search results even if there is zero results. Closing #3278
-    although it might want a nicer message later.
-
-2008-03-17 tdb
- * Use syswrite to avoid buffered IO problems with file writing
-
-2008-03-18 tdb
- * Don't return utf8 objects from tree_to_utf8 (much faster)
- * Performance tweaks: pass arrays rather than building hashes if not needed,
-    $field_conf is always an object in MetaField::Compound
- * Fixed get_ids_by_field_values for cross-database, removed mk_time & mk_date
-    and added "get_id_from_value" method to MetaFields
- * Alpha batch-editing plug-in
- * Allow UNSPECIFIED to be overridden in Compound fields
-
-2008-03-19 tdb
- * Added XML Schema export for the EPrints database schema
-
-2008-03-19 cjg
- * Added strlen method to EPrints Script
- * Added <epc:foreach> tool to EPC
-
-2008-03-19 cjg
- * Added tool plugin feature (like feeds)
- * Made batch-edit a tool.
-
-2008-03-19 cjg
- * Fixed bug in Database.pm caused by re-use of variable name in a loop.
-
-2008-03-19 cjg
- * Cleanup of new view code, now titles in views look OK and everything is
-    phrased and css'ed etc. Fixing #3266, #3267, #3268
- * Views regenerate if they are older than a set age. Fixing #3265
- * Fixed typo in generate_views.
- * Removed debug code.
-
-2008-03-26 cjg
- * Moved auto-regeneration of abstract pages to its own new module.
- * Abstract pages now regenerate if they don't exist OR are older than
-    the regen file.
- * Creating and importing eprints now does not generate abstracts at that 
-    time.
- * Commiting an eprint just removes the current abstract page (if any) but 
-    does not bother to generate a new one.
-
-2008-03-26 cjg
- * Added edit-config to admin role.
-
-2008-03-26 cjg 
- * Added new hooks: on_generate_thumbnails and thumbnail_types to allow a
-    trigger when thumbnails are generated and to add (or remove) thumbnail
-    types. Closing #3283 and #3284
- * Corrected text in epadmin to remind people that thumbnails can be other 
-    stuff too.
-
-2008-03-26 cjg 
- * Added a missing phrase for the mf dataset.
- * Shifted some phrase files to the system phrase dir from the repository
-    phrase dir.
-
-2008-03-26 cjg
- * Added feature to allow one plugin to mask another. Fixing #3196.
-
-2008-03-26 cjg
- * Float now subclasses int and both are of search group "number"
- * Int will accept numbers with a decimal point, so that floats and ints
-    can be mixed. 
- * Floats can now be searched. Closing #3314.
-
-2008-03-27 cjg
- * Added new Extras render functions to truncate URLs at the end and in the
-    middle. Closes #3245.
- * Added an Extras render funcion to render the related URL field. Closes
-    #3246.
 
 2008-03-27 tdb
- * Added importid and source_id fields to eprint for the import set and 
-    source object identifier respectively
- * Added import dataset for storing imported collections (alpha)
- * Moved database schema into a separate Admin screen "Database Schema"
- * Added has_dataset and has_counter methods to Database
- * Fixed has_table and has_column for MySQL
- * Added generic upgrading of datasets/fields/counters to epadmin
  * Allow values to be used in views containing ':' or '.', fixing #3316
-
-2008-03-27 cjg
- * Commented-out scroll-to code as it appears to be breaking in my 
-    firefox (and scrolling to the top of the page) and that's worst than
-    doing nothing.
-
-2008-03-27 cjg
- * Added new document formats: RTF plus several for audio and archive 
-    formats (zip, tgz etc.) Closes #3106, #2919
- * Added revised icons for all formats.
- * Added new content field to documents core fields. Closes #3281
- * Added new relation field to documents core fields.
- * Added new relation field to eprint core fields.
- * Added new contributors field to eprint config fields.
- * Modified workflow to have place holders for new fields, and to actually
-    include document.content.
- * Added named sets to support these new fields.
- * Tweaked config so that thesis is now only defaulted to unpub, not forced.
-    Closes #3234
-
-2008-03-28 tdb
- * Added "Import full text" option to Import screen (if enable_web_imports is
-    true)
-
-2008-03-28 cjg
- * Added update_database_structure option to epadmin (but not shown in the
-    --help yet.)
-
-2008-03-28 cjg
- * Added proper audio icon. Closing #3317.
-
-2008-03-30 cjg
- * Renamed update_database_structure to update_database_structure
-
-2008-03-31 cjg
- * Fixed bug in rendering input for MetaField::Fields
-
-2008-03-31
- * Stopped update_database_structure checking sub-fields, fixing #3323
- * langid now uses UNDEFINED phrase for blanks
-
-2008-03-31 cjg
- * Added new basic variable type "DATE" to EP Script.
- * Supressed some perl warnings in EPScript, where undefs were compared.
- * Added today() method to EPScript which returns todays date. 
- * Added datemath() method to EPScript which modifies a date by days,
-    months or years.
- * Negative integers are now parsed by EPScript
- * When rendering a big set of checkboxes (more then 5), they are now
-    displayed in two columns.
- * Added "required" to item_fields and review_fields as these should
-    never be null.
- * Added fields to eprint for storing issues.
- * Added Issues finding plugin system.
- * Added Issues audit script.
- * Added Issues search plugin.
- * Added EPrint Issues tab.
- * Added issues related privs.
- * Added orderkey method to EPrint::Extras to strip an/a/the for ordering.
- * Made title use this method, by default.
- * Added initial issues plugin for XML config (with config file), exact
-    titles and similar titles.
- * Added issues citation (to lib not defaultcfg) to show results of issues
-    search.
-
-2008-03-31 cjg
- * Added role and priv restrictions for cgi toolbox. Closing #3165
-
-2008-03-31 cjg
- * Moved export plugins to use map rather than get_records.
-
-2008-03-31 cjg
- * Added a bunch of obscure missing phrases.
-
-2008-04-01 cjg
- * Added column add/delete/rearrange options to Item and Review.
- * Made user.items_fields and user.review_fields volatile.
- * Removed those fields from the default user workflow.
-
-2008-04-01 cjg
- * Fixed function which stopped the review form reading params.
 
 2008-04-02 tdb
  * Don't set the port if it's the default for the URI, fixing #3325
- * Weaken circular references to prevent memory leaks under unusual conditions
-    (e.g. EPrints::abort)
-
-2008-04-03 cjg
- * Added option to use a custom citation file in saved search emails.
-
-2008-04-03 cjg
- * Renamed issues to item_issues as a precaution against namespace clashes.
- * Renamed issues_first_seen to item_issues_timestamp as it's more correctly
-    descriptive.
- * Added a bunch of fields to item_issues: reported_by, resolved_by, comments
-    and status.
- * Renamed issues_count to item_issues_count.
- * Made related changes to issues search and citation.
- * Rendering issues only shows open issues.
- 
-======================================================================
-2008-04-03 - EPRINTS-3.1-beta-1
-======================================================================
-
-2008-04-03 cjg
- * EPrint & Document URI's now correctly redirect to the appropriate URL.
-
-2008-04-03 cjg
- * Added user.username and user.name to the staff eprint serach. Closing
-    #3236
-
-2008-04-03 cjg
- * Added "views.timestamp" to work like abstracts.timestamp
- * Added regenerate views and regenerate abstracts buttons.
-
-2008-04-03 cjg
- * Added renderer to extras to link DOI's if spotted in value.
-
-2008-04-05 cjg
- * Added a plugin to export history as ical. 
- * Added a history citation to fix a bug that appears to have been 
-    introduced by the citation auto-reloader.
-
-2008-04-05 cjg
- * Made a <label> tag surround the checkbox and label in the respond 
-    to request screen.
-
-2008-04-05 cjg
- * In History search, now searches username not userid.
-
-2008-04-05 cjg
- * Added (slightly shonky) plugin to convert .doc to .pdf
-
-2008-04-05 cjg
- * Added an optional /plugins/ directory to the repository cfg directory.
-
-2008-04-05 cjg 
- * Some minor bugfixes to remove newlines from abstracts in some export
-    formats.
-
-2008-04-05 cjg
- * Added a new field to user: roles, which assigns new roles or privs to
-    individual users.
- * Added a config option for creating new roles, or overriding existing
-    ones. This can be used to create "hats" to assign to people.
-
-2008-04-06 cjg
- * Changed view-eprint icon to a magnifying glass.
-
-2008-04-06 cjg
- * Made an improvement to warnings and errors so it now shows file and
-    line number.
-
-2008-04-06 cjg
- * Added 'refresh views' option to epadmin. Exactly like refresh abstracts.
-
-2008-04-07 cjg
- * Changed priv config format to be an array of values. With :editor and
-    :owner indicatng editor or owner only privs. This gets rid of the 2,4,8
-    stuff. The revision makes it easier to understand.
-
-2008-04-07 cjg
- * Added importid counter for generating new ids
- * Added user.roles to staff-edit-user workflow
- * Added phrases for user.roles
- 
-======================================================================
-EPRINTS-3.1-beta-2
-======================================================================
 
 2008-04-08 tdb
  * Added Apache rewrite rule for /archive/* to /*, fixing #3328
+ * Quick search entry now points at http_cgiurl, fixing #3312
  * Changed workflow autocomplete URLs to use http_cgiurl, fixing #3327
  * Allow "http(s)_root" to be empty, fixing #3319
 
-2008-04-11 tdb
- * Make use of @STRING in BibTeX parsing to expand pre-defined NAMEs, fixing
-    #3307
+2008-04-08 cjg
+ * Change to DefaultXML import plugin to pass through attributes to the 
+    subclassing import plugin, fixing #3315.
 
-2008-04-14 tdb
- * Added get_ids_by_value method to EPrints::Search, to get summary data for
-    search results
- * Fixed cellpading => cellpadding typo, seems to fix IE layout for #3332
+2008-04-14
  * Use relative path to autocomplete scripts (seems autocomplete won't follow a
     secure redirect), fixing #3327
-
-2008-04-16 cjg
- * Added support for serialising/unserialising subfield searches. Fixes a bug
-    with batch-edit.
- * Fixed a typo in the relation renderer in Extras
- * Auto phrase reloading now only happens if there is a current session, 
-    fixing an obscure sitatuation when a phrase is extracted without a session
-    being open.
- * Slightly changed layout of the config-file tree view to be nicer.
- * Fixed typo in default_search_config in issues search
- * Added "tidy" to the end of the EPrints App Profile export. Makes it easier
-    to understand.
- * Fixed an error in a regexp in Issues::SimilarTitles
- * Added new bit to view.css to make columns use 100% of available width.
-    (columns to be added to views in coming commit)
-
-2008-04-16 cjg
- * Fixed a problem with SQL generation for "grep" conditions. Fixed by #3335
-
-2008-04-16 cjg
- Fixes and improvements to views:
- * Added an optional phrase to replace "please select..." on a per-page basis.
- * .include files are now always generated, fixing #3336
- * Addded a new option "new_column_at" to make view menus able to be multi
-    column.
- * Added an optional phrase to name groupings. Fixing #3341.
- * Added count to views pages, fixing #3337
- * Added "last updated" message, fixing #3338
- * Added a no_seperator option to groups, to hide the " | "
- * Option to groups "cloud" to cause the links to render as a tag cloud.
- * Added a cloud_max and cloud_min option to groups, the max and min % in a 
-    cloud at the top of the groups page.
- * Changed the "#foo" links in groups to be "#group_foo" to avoid clashing
-    if imported into an external site.
- * Another option, jump=plain, will supress the phrase around the group jump
-    links, just showing the links themselves.
- * The option "tags" causes the fields values to be broken up on ";" and ","
-    before being grouped. This works well on the keywords field. Fixing #3340
- * New option "truncate=XXX" to truncate values to "n" chars. Handy on dates
-    to truncate to year only. Fixing #3343.
- * New option "string", mostly used internally, which indicates to use the 
-    string value as is, rather than call the renderer function for the  
-    field.
- * New option on groups: first_initial, which only works on names, but
-    causes them to be grouped by surname and only the first letter of the 
-    given name.
-
-2008-04-17 tdb
- * Removed redundant, unused "tags_and_labels" from DataObjs
- * BibTeX import
- 	- fixed numeric ids not being parsed correctly
-	- ignore the case of NAMES
-	- don't decode_latex URLs or URIs
-
-2008-04-21 tdb,dct05r
- * Added store/retrieval methods to DataObj
- * Modified Document to store and retrieve files via Storage layer
- * Added Storage abstraction layer EPrints::Storage that uses Storage plugins
- * Added Storage::Local plugin for legacy EPrints file system
- * Added security checks to Storage layer-based document retrieval
 

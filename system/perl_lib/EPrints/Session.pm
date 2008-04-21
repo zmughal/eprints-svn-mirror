@@ -147,7 +147,6 @@ sub new
 	$mode = 0 unless defined( $mode );
 	$noise = 0 unless defined( $noise );
 	$self->{noise} = $noise;
-	$self->{used_phrases} = {};
 
 	if( $mode == 0 || $mode == 2 || !defined $mode )
 	{
@@ -221,11 +220,10 @@ sub new
 		# if it's not there is a show stopper.
 		unless( $self->{database}->is_latest_version )
 		{ 
-			my $cur_version = $self->{database}->get_version || "unknown";
 			if( $self->{database}->has_table( "eprint" ) )
 			{	
 				EPrints::abort(
-	"Database tables are in old configuration (version $cur_version). Please run:\nepadmin upgrade ".$self->get_repository->get_id );
+	"Database tables are in old configuration. Please run:\nepadmin upgrade ".$self->get_repository->get_id );
 			}
 			else
 			{
@@ -237,9 +235,6 @@ sub new
 			return undef;
 		}
 	}
-
-	$self->{storage} = EPrints::Storage->new( $self );
-
 	if( $self->{noise} >= 2 ) { print "done.\n"; }
 	
 	$self->{repository}->call( "session_init", $self, $self->{offline} );
@@ -503,8 +498,6 @@ sub html_phrase
 	#
 	# returns [DOM]	
         
-	$self->{used_phrases}->{$phraseid} = 1;
-
 	my $r = $self->{lang}->phrase( $phraseid , \%inserts , $self );
 	#my $s = $self->make_element( "span", title=>$phraseid );
 	#$s->appendChild( $r );
@@ -532,7 +525,6 @@ sub phrase
 {
 	my( $self, $phraseid, %inserts ) = @_;
 
-	$self->{used_phrases}->{$phraseid} = 1;
 	foreach( keys %inserts )
 	{
 		$inserts{$_} = $self->make_text( $inserts{$_} );
@@ -689,18 +681,6 @@ sub get_database
 {
 	my( $self ) = @_;
 	return $self->{database};
-}
-
-=item $store = $session->get_storage
-
-Return the storage control object.
-
-=cut
-
-sub get_storage
-{
-	my( $self ) = @_;
-	return $self->{storage};
 }
 
 
@@ -1518,13 +1498,7 @@ sub render_option_list
 
 	if( $params{checkbox} )
 	{
-		my $table = $self->make_element( "table", cellspacing=>"10", border=>"0", cellpadding=>"0" );
-		my $tr = $self->make_element( "tr" );
-		$table->appendChild( $tr );	
-		my $td = $self->make_element( "td", valign=>"top" );
-		$tr->appendChild( $td );	
-		my $i = 0;
-		my $len = scalar @$pairs;
+		my $f = $self->make_doc_fragment;
 		foreach my $pair ( @{$pairs} )
 		{
 			my $div = $self->make_element( "div" );
@@ -1537,15 +1511,9 @@ sub render_option_list
 			{
 				$box->setAttribute( "checked" , "checked" );
 			}
-			$td->appendChild( $div );
-			++$i;
-			if( $len > 5 && int($len / 2)==$i )
-			{
-				$td = $self->make_element( "td", valign=>"top" );
-				$tr->appendChild( $td );	
-			}
+			$f->appendChild( $div );
 		}
-		return $table;
+		return $f;
 	}
 		
 
@@ -1614,7 +1582,7 @@ sub render_single_option
 Return the XHTML DOM describing an <input> element of type "hidden"
 and name and value as specified. eg.
 
-<input type="hidden" name="foo" value="bar" />
+<input type="hidden" accept-charset="utf-8" name="foo" value="bar" />
 
 =cut
 ######################################################################
@@ -1630,26 +1598,24 @@ sub render_hidden_field
 
 	return $self->render_input_field( 
 		name => $name,
-		id => $name,
 		value => $value,
 		type => "hidden" );
 }
 
 sub render_input_field
 {
-	my( $self, @opts ) = @_;
+	my( $self, %opts ) = @_;
 
-	return $self->make_element( "input", @opts );
+	$opts{'accept-charset'} = "utf-8" unless defined $opts{'accept-charset'};
+	return $self->make_element( "input",%opts );
 }
 
 sub render_noenter_input_field
 {
-	my( $self, @opts ) = @_;
+	my( $self, %opts ) = @_;
 
-	return $self->make_element( "input",
-		onKeyPress => "return EPJS_block_enter( event )",
-		@opts,
-	);
+	$opts{'onKeyPress'} = "return EPJS_block_enter( event )" unless defined $opts{'onKeyPress'};
+	return $self->render_input_field( %opts );
 }
 
 
@@ -1834,7 +1800,7 @@ sub render_form
 	my( $self, $method, $dest ) = @_;
 	
 	my $form = $self->{doc}->createElement( "form" );
-	$form->setAttribute( "method", "\L$method" );
+	$form->setAttribute( "method", $method );
 	$form->setAttribute( "accept-charset", "utf-8" );
 	if( !defined $dest )
 	{
@@ -1941,8 +1907,16 @@ sub _render_subjects_aux
 		}
 		elsif( $linkmode == 3 )
 		{
-			$elementx = $self->render_link( 
-				EPrints::Utils::escape_filename( $id )."/" ); 
+			if( defined $sizes && defined $sizes->{$id} && $sizes->{$id} > 0 )
+			{
+				$elementx = $self->render_link( 
+					EPrints::Utils::escape_filename( $id ).
+						"/" ); 
+			}
+			else
+			{
+				$elementx = $self->make_element( "span" );
+			}
 		}
 		else
 		{
@@ -1951,7 +1925,7 @@ sub _render_subjects_aux
 	}
 	$li->appendChild( $elementx );
 	$elementx->appendChild( $subjects->{$id}->render_description() );
-	if( defined $sizes && defined $sizes->{$id} && $sizes->{$id} > 0 )
+	if( defined $sizes && $sizes->{$id} > 0 )
 	{
 		$li->appendChild( $self->make_text( " (".$sizes->{$id}.")" ) );
 	}
@@ -2478,11 +2452,7 @@ sub write_static_page
 	my( $self, $filebase, $parts, $page_id, $wrote_files ) = @_;
 
 	print "Writing: $filebase\n" if( $self->{noise} > 1 );
-	
-	my $dir = $filebase;
-	$dir =~ s/\/[^\/]*$//;
 
-	if( !-d $dir ) { EPrints::Platform::mkdir( $dir ); }
 
 	foreach my $part_id ( keys %{$parts} )
 	{
@@ -2533,7 +2503,7 @@ Create an XHTML page for this session.
 $parts is a hash of XHTML elements to insert into the pins in the
 template. Usually: title, page. Maybe pagetop and head.
 
-If template is set then an alternate template file is used.
+If template_id is set then an alternate template file is used.
 
 This function only builds the page it does not output it any way, see
 the methods below for that.
@@ -2541,15 +2511,15 @@ the methods below for that.
 Options include:
 
 page_id=>"id to put in body tag"
-template=>"The template to use instead of default."
+template_id=>"The template to use instead of default."
 
 =cut
 ######################################################################
 # move to compat module?
 sub build_page
 {
-	my( $self, $title, $mainbit, $page_id, $links, $template ) = @_;
-	$self->prepare_page( { title=>$title, page=>$mainbit, pagetop=>undef,head=>$links}, page_id=>$page_id, template=>$template );
+	my( $self, $title, $mainbit, $page_id, $links, $template_id ) = @_;
+	$self->prepare_page( { title=>$title, page=>$mainbit, pagetop=>undef,head=>$links}, page_id=>$page_id, template_id=>$template_id );
 }
 
 
@@ -2565,48 +2535,6 @@ sub prepare_page
 			$self->{page} = $map->{page};
 			return;
 		}
-
-		my $dp = $self->param( "debug_phrases" );
-		# phrase debugging code.
-		# disabled until we have a permission system planned.
-		if( 0 && defined $dp && $dp eq "yes" )
-		{
-			my $table = $self->make_element( "table" );
-			my $arc_langs = $self->{repository}->get_conf( "languages" );	
-			foreach my $phraseid ( sort keys %{$self->{used_phrases}} )
-			{
-				my $tr = $self->make_element( "tr" );
-				$table->appendChild( $tr );
-				my $th = $self->make_element( "th" );
-				my $td = $self->make_element( "td" );
-				$tr->appendChild( $th );
-				$th->appendChild( $self->make_text( $phraseid ) );
-				$tr->appendChild( $td );
-
-				my $t2 = $self->make_element( "table", border=>1, cellpadding=>4 );
-				foreach my $langid ( @{$arc_langs} )
-				{
-					my $lang = $self->{repository}->get_language( $langid );
-        				my( $phrase , $fb ) = $lang->_get_phrase( $phraseid, $self );
-					my $tr2 = $self->make_element( "tr" );
-					my $th2 = $self->make_element( "th" );
-					my $td2 = $self->make_element( "td" );
-					$t2->appendChild( $tr2 );
-					$tr2->appendChild( $th2 );
-					$tr2->appendChild( $td2 );
-					$th2->appendChild( $self->make_text( "$langid" ) );
-					if( defined $phrase )
-					{
-						$td2->appendChild( $self->make_text( EPrints::XML::contents_of( $phrase )->toString ) );
-					}
-				}
-				$td->appendChild( $t2 );
-
-			}
-			$self->{page} = $table;
-			return;
-		}
-		
 	}
 	
 	if( $self->get_repository->get_conf( "dynamic_template","enable" ) )
@@ -2644,7 +2572,7 @@ sub prepare_page
 		$map->{$_} = $pt;
 	}
 
-	if( !defined $options{template} )
+	if( !defined $options{template_id} )
 	{
 		if( $self->get_secure )
 		{
@@ -2658,7 +2586,7 @@ sub prepare_page
 
 	my $parts = $self->get_repository->get_template_parts( 
 				$self->get_langid, 
-				$options{template} );
+				$options{template_id} );
 	my @output = ();
 	my $is_html = 0;
 
@@ -3183,9 +3111,6 @@ sub current_user
 
 	if( !defined $self->{current_user} )
 	{
-		return undef if( $self->{already_in_current_user} );
-		$self->{already_in_current_user} = 1;
-
 		if( $self->get_repository->can_call( 'get_current_user' ) )
 		{
 			$self->{current_user} = $self->get_repository->call( 'get_current_user', $self );
@@ -3198,7 +3123,6 @@ sub current_user
 		{
 			$self->{current_user} = $self->_current_user_auth_basic;
 		}
-		$self->{already_in_current_user} = 0;
 	}
 	return $self->{current_user};
 }
@@ -3509,15 +3433,7 @@ sub plugin
 {
 	my( $self, $pluginid, %params ) = @_;
 
-	my $map = $self->get_repository->get_conf( "plugin_alias_map" );
-	if( defined $map && exists $map->{$pluginid} )
-	{
-		$params{id} = $pluginid;
-		$pluginid = $map->{$pluginid};
-	}
-	return if !defined $pluginid;
-
-	my $class = $self->get_repository->get_plugin_class( $pluginid );
+	my $class = $EPrints::Plugin::REGISTRY->{$pluginid};
 
 	if( !defined $class )
 	{
@@ -3556,11 +3472,12 @@ sub plugin_list
 {
 	my( $self, %restrictions ) = @_;
 
-	my @plugin_ids = $self->get_repository->get_plugin_ids();
+	my %pids = ();
+	foreach( EPrints::Plugin::plugin_list() ) { $pids{$_}=1; }
 
-	return @plugin_ids if( !scalar %restrictions );
+	return sort keys %pids if( !scalar %restrictions );
 	my @out = ();
-	foreach my $plugin_id ( @plugin_ids )
+	foreach my $plugin_id ( sort keys %pids ) 
 	{
 		my $plugin = $self->plugin( $plugin_id );
 
@@ -3751,7 +3668,8 @@ sub login
 	return unless EPrints::Utils::is_set( $code );
 
 	my $userid = $user->get_id;
-	$self->{database}->update_ticket_userid( $code, $userid, $ip );
+	my $sql = "REPLACE INTO login_tickets VALUES( '".EPrints::Database::prep_value($code)."', $userid, '".EPrints::Database::prep_value($ip)."', ".(time+60*60*24*7)." )";
+	my $sth = $self->{database}->do( $sql );
 
 #	my $c = $self->{request}->connection;
 #	$c->notes->set(userid=>$userid);

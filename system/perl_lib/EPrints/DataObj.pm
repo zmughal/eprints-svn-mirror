@@ -20,11 +20,11 @@ B<EPrints::DataObj> - Base class for records in EPrints.
 
 =head1 DESCRIPTION
 
-This module is a base class which is inherited by L<EPrints::DataObj::EPrint>,
-L<EPrints::User>, L<EPrints::DataObj::Subject> and
-L<EPrints::DataObj::Document> and several other classes.
+This module is a base class which is inherited by EPrints::DataObj::EPrint, 
+EPrints::User, EPrints::DataObj::Subject and EPrints::DataObj::Document and several
+other classes.
 
-It is ABSTRACT - its methods should not be called directly.
+It is ABSTRACT, its methods should not be called directly.
 
 =over 4
 
@@ -188,7 +188,8 @@ sub create_from_data
 	}
 
 	# get defaults modifies the hash so we must copy it.
-	my $defaults = EPrints::Utils::clone( $data );
+	my $defaults = {};
+	foreach( keys %{$data} ) { $defaults->{$_} = $data->{$_}; }
 	$defaults = $class->get_defaults( $session, $defaults );
 	
 	foreach my $field ( $dataset->get_fields )
@@ -238,14 +239,14 @@ sub create_from_data
 	my $keyfield = $dataset->get_key_field;
 	my $kfname = $keyfield->get_name;
 	my $id = $data->{$kfname};
-
-	my $obj = $temp_item; # $dataset->get_object( $session, $id );
-
+                                                                                                                  
+	my $obj = $dataset->get_object( $session, $id );
+                                                                                                                  
 	return undef unless( defined $obj );
 
-	# queue all the fields for indexing.
+	# queue all the fields for indexing.                                                          
 	$obj->queue_all;
-
+                                                                                                                  
 	return $obj;
 }
                                                                                                                   
@@ -332,7 +333,6 @@ sub clear_changed
 {
 	my( $self ) = @_;
 	
-	$self->{non_volatile_change} = 0;
 	$self->{changed} = {};
 }
 
@@ -452,11 +452,6 @@ sub set_value_raw
 		if( !_equal( $self->{data}->{$fieldname}, $value ) )
 		{
 			$self->{changed}->{$fieldname} = $self->{data}->{$fieldname};
-			my $field = $self->{dataset}->get_field( $fieldname );
-			if( $field->get_property( "volatile" ) == 0 )
-			{
-				$self->{non_volatile_change} = 1;
-			}
 		}
 	}
 
@@ -911,32 +906,6 @@ sub render_full
 ######################################################################
 =pod
 
-=item $url = $dataobj->uri
-
-Returns a unique URI for this object. Not certain to resolve as a 
-URL.
-
-If $c->{dataobj_uri}->{eprint} is a function, call that to work it out.
-
-=cut
-######################################################################
-
-sub uri
-{
-	my( $self ) = @_;
-
-	my $ds_id = $self->get_dataset->confid;
-	if( $self->get_session->get_repository->can_call( "dataobj_uri", $ds_id ) )
-	{
-		return $self->get_session->get_repository->call( [ "dataobj_uri", $ds_id ], $self );
-	}
-			
-	return $self->get_session->get_repository->get_conf( "base_url" )."/id/".$ds_id."/".$self->get_id;
-}
-
-######################################################################
-=pod
-
 =item $url = $dataobj->get_url
 
 Returns the URL for this record, for example the URL of the abstract page
@@ -949,7 +918,7 @@ sub get_url
 {
 	my( $self ) = @_;
 
-	return;
+	return "EPrints::DataObj::get_url should have been over-ridden.";
 }
 
 ######################################################################
@@ -1028,10 +997,7 @@ sub to_xml
 
 	$attrs{'xmlns'}=$ns unless( $opts{no_xmlns} );
 	my $tl = "record";
-	if( $opts{version} == 2 ) { 
-		$tl = $self->{dataset}->confid; 
-		$attrs{'id'} = $self->uri;
-	}	
+	if( $opts{version} == 2 ) { $tl = $self->{dataset}->confid; }	
 	my $r = $self->{session}->make_element( $tl, %attrs );
 	$r->appendChild( $self->{session}->make_text( "\n" ) );
 #$r->appendChild( $self->{session}->make_text( "x\nx" ) );
@@ -1180,22 +1146,17 @@ sub queue_changes
 {
 	my( $self ) = @_;
 
-	return unless $self->{dataset}->indexable;
-
-	my @names;
 	foreach my $fieldname ( keys %{$self->{changed}} )
 	{
 		my $field = $self->{dataset}->get_field( $fieldname );
 
 		next unless( $field->get_property( "text_index" ) );
 
-		push @names, $fieldname;
+		$self->{session}->get_database->index_queue( 
+			$self->{dataset}->id,
+			$self->get_id,
+			$fieldname );
 	}	
-
-	$self->{session}->get_database->index_queue( 
-		$self->{dataset}->id,
-		$self->get_id,
-		@names );
 }
 
 ######################################################################
@@ -1212,22 +1173,16 @@ sub queue_all
 {
 	my( $self ) = @_;
 
-	return unless $self->{dataset}->indexable;
-
-	my @names;
-
 	my @fields = $self->{dataset}->get_fields;
 	foreach my $field ( @fields )
 	{
 		next unless( $field->get_property( "text_index" ) );
 
-		push @names, $field->get_name;
+		$self->{session}->get_database->index_queue( 
+			$self->{dataset}->id,
+			$self->get_id,
+			$field->get_name );
 	}	
-
-	$self->{session}->get_database->index_queue( 
-		$self->{dataset}->id,
-		$self->get_id,
-		@names );
 }
 
 ######################################################################
@@ -1323,65 +1278,10 @@ sub tidy
 		}
 	}
 }
+	
 
 ######################################################################
 =pod
-
-=item $dataobj->get_storage_uri( $bucket, $filename )
-
-Return the URI to store the $filename at in the $bucket of files.
-
-=cut
-######################################################################
-
-sub get_storage_uri
-{
-	my( $self, $bucket, $filename ) = @_;
-
-	my $stored_uri = $self->{session}->get_repository->get_conf( "http_url" );
-
-	$stored_uri .= "/id";
-	$stored_uri .= "/" . $self->get_dataset->confid;
-	$stored_uri .= "/" . $self->get_id;
-	$stored_uri .= "/" . $bucket;
-	$stored_uri .= "/" . URI::Escape::uri_escape( $filename );
-
-	return $stored_uri;
-}
-
-######################################################################
-=pod
-
-=item $dataobj->store( $uri, $filehandle )
-
-Read and store binary data from $filehandle into $uri.
-
-=cut
-######################################################################
-
-sub store
-{
-	my( $self, $uri, $fh ) = @_;
-
-	$self->{session}->get_storage->store( $self, $uri, $fh );
-}
-
-######################################################################
-=pod
-
-=item $filehandle = $dataobj->retrieve( $uri )
-
-Return a $filehandle to the object stored at $uri.
-
-=cut
-######################################################################
-
-sub retrieve
-{
-	my( $self, $uri ) = @_;
-
-	return $self->{session}->get_storage->retrieve( $self, $uri );
-}
 
 ######################################################################
 =pod

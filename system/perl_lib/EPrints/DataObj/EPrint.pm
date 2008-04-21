@@ -133,10 +133,6 @@ sub get_system_field_info
 	{ name=>"userid", type=>"itemref", 
 		datasetid=>"user", required=>0 },
 
-	{ name=>"importid", type=>"itemref", required=>0, datasetid=>"import" },
-
-	{ name=>"source", type=>"text", required=>0, },
-
 	{ name=>"dir", type=>"text", required=>0, can_clone=>0,
 		text_index=>0, import=>0, show_in_fieldlist=>0 },
 
@@ -156,7 +152,7 @@ sub get_system_field_info
 		datasetid=>"eprint", can_clone=>0 },
 
 	{ name=>"commentary", type=>"itemref", required=>0,
-		datasetid=>"eprint", can_clone=>0, sql_index=>0 },
+		datasetid=>"eprint", can_clone=>0 },
 
 	{ name=>"replacedby", type=>"itemref", required=>0,
 		datasetid=>"eprint", can_clone=>0 },
@@ -178,124 +174,8 @@ sub get_system_field_info
 
 	{ name=>"longitude", type=>"float", required=>0 },
 
-	{ name=>"relation", type=>"compound", multiple=>1,
-		fields => [
-			{
-				sub_name => "type",
-				type => "namedset",
-				set_name => "document_relation",
-			},
-			{
-				sub_name => "uri",
-				type => "text",
-			},
-		],
-	},
-
-	{ name=>"item_issues", type=>"compound", multiple=>1,
-		fields => [
-			{
-				sub_name => "id",
-				type => "text",
-				text_index => 0,
-			},
-			{
-				sub_name => "type",
-				type => "text",
-				text_index => 0,
-			},
-			{
-				sub_name => "description",
-				type => "longtext",
-				text_index => 0,
-				render_single_value => "EPrints::Extras::render_xhtml_field",
-			},
-			{
-				sub_name => "timestamp",
-				type => "time",
-			},
-			{
-				sub_name => "status",
-				type => "set",
-				text_index => 0,
-				options=> [qw/ discovered ignored reported autoresolved resolved /],
-			},
-			{
-				sub_name => "reported_by",
-				type => "itemref",
-				datasetid => "user",
-			},
-			{
-				sub_name => "resolved_by",
-				type => "itemref",
-				datasetid => "user",
-			},
-			{
-				sub_name => "comment",
-				type => "longtext",
-				text_index => 0,
-				render_single_value => "EPrints::Extras::render_xhtml_field",
-			},
-		],
-		make_value_orderkey => "EPrints::DataObj::EPrint::order_issues_newest_open_timestamp",
-		render_value=>"EPrints::DataObj::EPrint::render_issues",
-		volatile => 1,
-	},
-
-	{ name=>"item_issues_count", type=>"int",  volatile=>1 },
-
 	);
 }
-
-
-
-
-sub render_issues
-{
-	my( $session, $field, $value ) = @_;
-
-	# Default rendering only shows discovered and reported issues (not resolved or ignored ones)
-
-	my $f = $field->get_property( "fields_cache" );
-	my $fmap = {};	
-	foreach my $field_conf ( @{$f} )
-	{
-		my $fieldname = $field_conf->{name};
-		my $field = $field->{dataset}->get_field( $fieldname );
-		$fmap->{$field_conf->{sub_name}} = $field;
-	}
-
-	my $ol = $session->make_element( "ol" );
-	foreach my $issue ( @{$value} )
-	{
-		next if( $issue->{status} ne "reported" && $issue->{status} ne "discovered" ); 
-		my $li = $session->make_element( "li" );
-		$li->appendChild( EPrints::Extras::render_xhtml_field( $session, $fmap->{description}, $issue->{description} ) );
-		$li->appendChild( $session->make_text( " - " ) );
-		$li->appendChild( $fmap->{timestamp}->render_single_value( $session, $issue->{timestamp} ) );
-		$ol->appendChild( $li );
-	}
-
-	return $ol;
-}
-
-
-sub order_issues_newest_open_timestamp
-{
-	my( $field, $value, $session, $langid, $dataset ) = @_;
-
-	return "" if !defined $value;
-
-	my $v = "";
-	foreach my $issue ( sort { $b->{timestamp} cmp $a->{timestamp} } @{$value} )
-	{
-		next if( $issue->{status} ne "reported" && $issue->{status} ne "discovered" );
-		$v.=$issue->{timestamp};
-	}
-
-	return $v;	
-}
-
 sub render_fileinfo
 {
 	my( $session, $field, $value ) = @_;
@@ -308,7 +188,6 @@ sub render_fileinfo
 		$a->appendChild( $session->make_element( 
 			"img", 
 			class=>"ep_doc_icon",
-			alt=>"file",
 			src=>$imgurl,
 			border=>0 ));
 		$f->appendChild( $a );
@@ -412,8 +291,6 @@ sub create_from_data
 {
 	my( $class, $session, $data, $dataset ) = @_;
 
-	my $documents = delete $data->{documents};
-
 	my $new_eprint = $class->SUPER::create_from_data( $session, $data, $dataset );
 	
 	return undef unless defined $new_eprint;
@@ -423,37 +300,18 @@ sub create_from_data
 	$new_eprint->set_under_construction( 1 );
 
 	return unless defined $new_eprint;
-
-	if( defined $documents )
+	if( defined $data->{documents} )
 	{
-		my @docs;
-		foreach my $docdata_orig ( @{$documents} )
+		foreach my $docdata_orig ( @{$data->{documents}} )
 		{
 			my %docdata = %{$docdata_orig};
 			$docdata{eprintid} = $new_eprint->get_id;
-			$docdata{eprint} = $new_eprint;
 			my $docds = $session->get_repository->get_dataset( "document" );
-			push @docs, EPrints::DataObj::Document->create_from_data( $session,\%docdata,$docds );
+			EPrints::DataObj::Document->create_from_data( $session,\%docdata,$docds );
 		}
-		my @finfo = ();
-		foreach my $doc ( @docs )
-		{
-			push @finfo, $doc->icon_url.";".$doc->get_url;
-		}
-		$new_eprint->set_value( "fileinfo", join( "|", @finfo ) );
 	}
 
 	$new_eprint->set_under_construction( 0 );
-
-	$session->get_repository->call( 
-		"set_eprint_automatic_fields", 
-		$new_eprint );
-
-	$session->get_database->update(
-		$dataset,
-		$new_eprint->{data} );
-
-	$new_eprint->queue_changes;
 
 	my $user = $session->current_user;
 	my $userid = undef;
@@ -473,8 +331,8 @@ sub create_from_data
 	);
 	$new_eprint->write_revision;
 
-	# No longer needed - generates on demand.
-	# $new_eprint->generate_static;
+	# write revision, generate static and set auto fields
+	$new_eprint->commit;
 
 	return $new_eprint;
 }
@@ -981,16 +839,6 @@ sub commit
 		$new_succ->succeed_thread_modified if( defined $new_succ );
 	}
 
-	# recalculate issues number
-	my $issues = $self->get_value( "item_issues" ) || [];
-	my $c = 0;
-	foreach my $issue ( @{$issues} )
-	{
-		$c+=1 if( $issue->{status} eq "discovered" );
-		$c+=1 if( $issue->{status} eq "reported" );
-	}
-	$self->set_value( "item_issues_count", $c );
-
 	$self->{session}->get_repository->call( 
 		"set_eprint_automatic_fields", 
 		$self );
@@ -1016,17 +864,14 @@ sub commit
 		return( 1 ) unless $force;
 	}
 
-	if( $self->{non_volatile_change} )
-	{
-		my $rev_number = $self->get_value( "rev_number" ) || 0;
-		$rev_number += 1;
+	my $rev_number = $self->get_value( "rev_number" ) || 0;
+	$rev_number += 1;
 	
-		$self->set_value( "rev_number", $rev_number );
+	$self->set_value( "rev_number", $rev_number );
 
-		$self->set_value( 
-			"lastmod" , 
-			EPrints::Time::get_iso_timestamp() );
-	}
+	$self->set_value( 
+		"lastmod" , 
+		EPrints::Time::get_iso_timestamp() );
 
 	$self->tidy;
 	my $success = $self->{session}->get_database->update(
@@ -1044,34 +889,28 @@ sub commit
 
 	unless( $self->under_construction )
 	{
-		if( $self->{non_volatile_change} )
-		{
-			$self->write_revision;
-		}
-		$self->remove_static;
+		$self->write_revision;
+		$self->generate_static;
 	}
 
 	$self->queue_changes;
 	
-	if( $self->{non_volatile_change} )
-	{
-		my $user = $self->{session}->current_user;
-		my $userid = undef;
-		$userid = $user->get_id if defined $user;
-	
-		my $history_ds = $self->{session}->get_repository->get_dataset( "history" );
-		$history_ds->create_object( 
-			$self->{session},
-			{
-				userid=>$userid,
-				datasetid=>"eprint",
-				objectid=>$self->get_id,
-				revision=>$self->get_value( "rev_number" ),
-				action=>"modify",
-				details=>undef
-			}
-		);
-	}
+	my $user = $self->{session}->current_user;
+	my $userid = undef;
+	$userid = $user->get_id if defined $user;
+
+	my $history_ds = $self->{session}->get_repository->get_dataset( "history" );
+	$history_ds->create_object( 
+		$self->{session},
+		{
+			userid=>$userid,
+			datasetid=>"eprint",
+			objectid=>$self->get_id,
+			revision=>$self->get_value( "rev_number" ),
+			action=>"modify",
+			details=>undef
+		}
+	);
 
 	return( $success );
 }

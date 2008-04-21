@@ -42,13 +42,9 @@ use EPrints::MetaField::Text;
 
 sub get_sql_type
 {
-	my( $self, $session, $notnull ) = @_;
+	my( $self, $notnull ) = @_;
 
-	return $session->get_database->get_column_type(
-		$self->get_sql_name(),
-		EPrints::Database::SQL_LONGVARCHAR,
-		$notnull
-	);
+	return $self->get_sql_name()." TEXT".($notnull?" NOT NULL":"");
 }
 
 # never SQL index this type
@@ -56,7 +52,7 @@ sub get_sql_index
 {
 	my( $self ) = @_;
 
-	return ();
+	return undef;
 }
 
 
@@ -85,6 +81,7 @@ sub get_basic_input_elements
 
 	my $textarea = $session->make_element(
 		"textarea",
+		"accept-charset" => "utf-8",
 		name => $basename,
 		id => $basename,
 		rows => $self->{input_rows},
@@ -123,17 +120,6 @@ sub get_property_defaults
 	return %defaults;
 }
 
-sub get_xml_schema_type
-{
-	return "xs:string";
-}
-
-sub render_xml_schema_type
-{
-	my( $self, $session ) = @_;
-
-	return $session->make_doc_fragment;
-}
 
 ######################################################################
 1;

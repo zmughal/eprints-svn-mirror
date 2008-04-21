@@ -184,18 +184,14 @@ sub get_system_field_info
 		{ name => "permission_group", multiple => 1, type => "namedset", 
 			set_name => "permission_group", },
 
-		{ name => "roles", multiple => 1, type => "text", text_index=>0 },
-
 		{ name=>"frequency", type=>"set", input_style=>"medium",
 			options=>["never","daily","weekly","monthly"] },
 
 		{ name=>"mailempty", type=>"boolean", input_style=>"radio" },
 
-		{ name=>"items_fields", type=>"fields", datasetid=>"eprint", 
-			multiple=>1, input_ordered=>1, required=>1, volatile=>1 },
+		{ name=>"items_fields", type=>"fields", datasetid=>"eprint", multiple=>1, input_ordered=>1 },
 
-		{ name=>"review_fields", type=>"fields", datasetid=>"eprint", 
-			multiple=>1, input_ordered=>1, required=>1, volatile=>1 },
+		{ name=>"review_fields", type=>"fields", datasetid=>"eprint", multiple=>1, input_ordered=>1 },
 
 		{ name=>"latitude", type=>"float", required=>0 },
 
@@ -468,10 +464,7 @@ sub commit
 		# don't do anything if there isn't anything to do
 		return( 1 ) unless $force;
 	}
-	if( $self->{non_volatile_change} )
-	{
-		$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
-	}
+	$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 
 	my $user_ds = $self->{session}->get_repository->get_dataset( "user" );
 	$self->tidy;
@@ -1040,248 +1033,211 @@ my $PRIVMAP =
 {
 
 	general => 
-	[
-		"user/view",
-	],
+	{
+		"user/view" => 2,
+	},
 
 	"edit-own-record" => 
-	[
-		"user/edit:owner",
-	],
+	{
+		"user/edit" => 4,
+	},
 		
 	"set-password" => 
-	[
-		"set-password",
-	],
+	{
+		"set-password" => 2,
+	},
 
 	"change-email" => 
-	[
+	{
 		# not done
-	],
+	},
 
 	"change-user" => 
-	[
+	{
 		# not done
-	],
+	},
 
 	"staff-view" => 
-	[
+	{
 		# still needs search tools
 
-		"eprint/inbox/view",
-		"eprint/inbox/summary",
-		"eprint/inbox/staff/export",
-		"eprint/inbox/staff/details",
-		"eprint/inbox/history",
+		"eprint/inbox/view" => 2,
+		"eprint/inbox/summary" => 2,
+		"eprint/inbox/staff/export" => 2,
+		"eprint/inbox/staff/details" => 2,
+		"eprint/inbox/history" => 2,
 
-		"eprint/buffer/view",
-		"eprint/buffer/summary",
-		"eprint/buffer/staff/export",
-		"eprint/buffer/staff/details",
-		"eprint/buffer/history",
+		"eprint/buffer/view" => 2,
+		"eprint/buffer/summary" => 2,
+		"eprint/buffer/staff/export" => 2,
+		"eprint/buffer/staff/details" => 2,
+		"eprint/buffer/history" => 2,
 
-		"eprint/archive/view",
-		"eprint/archive/summary",
-		"eprint/archive/staff/export",
-		"eprint/archive/staff/details",
-		"eprint/archive/history",
+		"eprint/archive/view" => 2,
+		"eprint/archive/summary" => 2,
+		"eprint/archive/staff/export" => 2,
+		"eprint/archive/staff/details" => 2,
+		"eprint/archive/history" => 2,
 
-		"eprint/deletion/view",
-		"eprint/deletion/summary",
-		"eprint/deletion/staff/export",
-		"eprint/deletion/staff/details",
-		"eprint/deletion/history",
+		"eprint/deletion/view" => 2,
+		"eprint/deletion/summary" => 2,
+		"eprint/deletion/staff/export" => 2,
+		"eprint/deletion/staff/details" => 2,
+		"eprint/deletion/history" => 2,
 
-		"staff/eprint_search",
-	],
+		"staff/eprint_search" => 2,
+	},
 	
 	"view-status" => 
-	[
-		"status"
-	],
+	{
+		"status" => 1,
+	},
 
 	"admin" =>
-	[
-		"indexer/stop",
-		"indexer/start",
-		"indexer/force_start",
-		"user/remove:editor",
-		"user/view:editor",
-		"user/history:editor",
-		"user/staff/edit:editor",
-		"create_user",
-		"subject/edit:editor",
-		"staff/user_search",
-		"staff/history_search",
-		"staff/issue_search",
-		"config/view",
-		"config/view/workflow",
-		"config/view/citation",
-		"config/view/phrase",
-		"config/view/namedset",
-		"config/view/template",
-		"config/view/static",
-		"config/view/autocomplete",
-		"config/view/apache",
-		"config/view/perl",
-		"config/test_email",
-		"config/add_field",
-		"config/remove_field",
-		"config/regen_abstracts",
-		"config/regen_views",
-		"metafield/view",
-		"metafield/edit",
-	],
-
-	"toolbox" => 
-	[
-		"toolbox",
-	],
-
-	"edit-config" => 
-	[
-		"config/edit",
-		"config/edit/workflow",
-		"config/edit/citation",
-		"config/edit/phrase",
-		"config/edit/namedset",
-		"config/edit/template",
-		"config/edit/static",
-		"config/edit/autocomplete",
-		# not editing perl files or apache files!
-		"config/reload",
-	],
+	{
+		"config/reload" => 2,
+		"indexer/stop" => 2,
+		"indexer/start" => 2,
+		"indexer/force_start" => 2,
+		"user/remove" => 8,
+		"user/view" => 8,
+		"user/history" => 8,
+		"user/staff/edit" => 8,
+		"create_user" => 2,
+		"subject/edit" => 8,
+		"staff/user_search" => 2,
+		"staff/history_search" => 2,
+		"config/test_email" => 2,
+	},
 
 	"saved-searches" => 
-	[
-		"saved_search",
-		"create_saved_search",
-		"saved_search/view:owner",
-		"saved_search/perform:owner",
-		"saved_search/edit:owner",
-		"saved_search/remove:owner",
-	],
+	{
+		"saved_search" => 2,
+		"create_saved_search" => 2,
+		"saved_search/view" => 4,
+		"saved_search/perform" => 4,
+		"saved_search/edit" => 4,
+		"saved_search/remove" => 4,
+	},
 
 	deposit => 
-	[
-		"items",
-		"create_eprint",
-		"user/history:owner",
+	{
+		"items" => 2,
+		"create_eprint" => 2,
+		"user/history" => 4,
 	
-		"eprint/inbox/view:owner",
-		"eprint/inbox/summary:owner",
-		"eprint/inbox/deposit:owner",
-		"eprint/inbox/edit:owner",
-		"eprint/inbox/remove:owner",
-		"eprint/inbox/export:owner",
-		"eprint/inbox/details:owner",
-		"eprint/inbox/history:owner",
-		"eprint/inbox/messages:owner",
-		"eprint/inbox/issues:owner",
+		"eprint/inbox/view" => 4,
+		"eprint/inbox/summary" => 4,
+		"eprint/inbox/deposit" => 4,
+		"eprint/inbox/edit" => 4,
+		"eprint/inbox/remove" => 4,
+		"eprint/inbox/export" => 4,
+		"eprint/inbox/details" => 4,
+		"eprint/inbox/history" => 4,
+		"eprint/inbox/messages" => 4,
 	
-		"eprint/inbox/deposit:owner",
-		"eprint/inbox/use_as_template:owner",
-		"eprint/inbox/derive_version:owner",
-	
-	
-		"eprint/buffer/view:owner",
-		"eprint/buffer/summary:owner",
-		"eprint/buffer/move_inbox:owner",
-		"eprint/buffer/export:owner",
-		"eprint/buffer/details:owner",
-		"eprint/buffer/history:owner",
-		"eprint/buffer/messages:owner",
-	
-		"eprint/buffer/request_removal:owner",
-		"eprint/buffer/use_as_template:owner",
-		"eprint/buffer/derive_version:owner",
+		"eprint/inbox/deposit" => 4,
+		"eprint/inbox/use_as_template" => 4,
+		"eprint/inbox/derive_version" => 4,
 	
 	
-		"eprint/archive/view:owner",
-		"eprint/archive/summary:owner",
-		"eprint/archive/export:owner",
-		"eprint/archive/details:owner",
-		"eprint/archive/history:owner",
-		"eprint/archive/messages:owner",
+		"eprint/buffer/view" => 4,
+		"eprint/buffer/summary" => 4,
+		"eprint/buffer/move_inbox" => 4,
+		"eprint/buffer/export" => 4,
+		"eprint/buffer/details" => 4,
+		"eprint/buffer/history" => 4,
+		"eprint/buffer/messages" => 4,
 	
-		"eprint/archive/request_removal:owner",
-		"eprint/archive/use_as_template:owner",
-		"eprint/archive/derive_version:owner",
+		"eprint/buffer/request_removal" => 4,
+		"eprint/buffer/use_as_template" => 4,
+		"eprint/buffer/derive_version" => 4,
+	
+	
+		"eprint/archive/view" => 4,
+		"eprint/archive/summary" => 4,
+		"eprint/archive/export" => 4,
+		"eprint/archive/details" => 4,
+		"eprint/archive/history" => 4,
+		"eprint/archive/messages" => 4,
+	
+		"eprint/archive/request_removal" => 4,
+		"eprint/archive/use_as_template" => 4,
+		"eprint/archive/derive_version" => 4,
 	
 
-		"eprint/deletion/view:owner",
-		"eprint/deletion/summary:owner",
-		"eprint/deletion/export:owner",
-		"eprint/deletion/details:owner",
-		"eprint/deletion/history:owner",
-		"eprint/deletion/messages:owner",
+		"eprint/deletion/view" => 4,
+		"eprint/deletion/summary" => 4,
+		"eprint/deletion/export" => 4,
+		"eprint/deletion/details" => 4,
+		"eprint/deletion/history" => 4,
+		"eprint/deletion/messages" => 4,
 	
-		"eprint/deletion/use_as_template:owner",
-		"eprint/deletion/derive_version:owner",
-	],
+		"eprint/deletion/use_as_template" => 4,
+		"eprint/deletion/derive_version" => 4,
+	},
 
 	editor => 
-	[
-		"editorial_review",
+	{
+		"editorial_review" => 2,
 
-		"eprint/inbox/view:editor",
-		"eprint/inbox/summary:editor",
-		"eprint/inbox/staff/export:editor",
-		"eprint/inbox/staff/details:editor",
-		"eprint/inbox/history:editor",
-		"eprint/inbox/messages:editor",
+		"eprint/inbox/view" => 8,
+		"eprint/inbox/summary" => 8,
+		"eprint/inbox/staff/export" => 8,
+		"eprint/inbox/staff/details" => 8,
+		"eprint/inbox/history" => 8,
+		"eprint/inbox/messages" => 8,
 
-		"eprint/inbox/remove_with_email:editor",
-		"eprint/inbox/move_archive:editor",
-		"eprint/inbox/move_buffer:editor",
-		"eprint/inbox/use_as_template:editor",
-		"eprint/inbox/derive_version:editor",
-		"eprint/inbox/staff/edit:editor",
-
-
-		"eprint/buffer/view:editor",
-		"eprint/buffer/summary:editor",
-		"eprint/buffer/staff/export:editor",
-		"eprint/buffer/staff/details:editor",
-		"eprint/buffer/history:editor",
-		"eprint/buffer/messages:editor",
-		"eprint/buffer/issues:editor",
-
-		"eprint/buffer/remove_with_email:editor",
-		"eprint/buffer/reject_with_email:editor",
-		"eprint/buffer/move_inbox:editor",
-		"eprint/buffer/move_archive:editor",
-		"eprint/buffer/use_as_template:editor",
-		"eprint/buffer/derive_version:editor",
-		"eprint/buffer/staff/edit:editor",
+		"eprint/inbox/remove_with_email" => 8,
+		"eprint/inbox/move_archive" => 8,
+		"eprint/inbox/move_buffer" => 8,
+		"eprint/inbox/use_as_template" => 8,
+		"eprint/inbox/derive_version" => 8,
+		"eprint/inbox/staff/edit" => 8,
 
 
-		"eprint/archive/view:editor",
-		"eprint/archive/summary:editor",
-		"eprint/archive/staff/export:editor",
-		"eprint/archive/staff/details:editor",
-		"eprint/archive/history:editor",
-		"eprint/archive/messages:editor",
-		"eprint/archive/issues:editor",
+		"eprint/buffer/view" => 8,
+		"eprint/buffer/summary" => 8,
+		"eprint/buffer/staff/export" => 8,
+		"eprint/buffer/staff/details" => 8,
+		"eprint/buffer/history" => 8,
+		"eprint/buffer/messages" => 8,
 
-		"eprint/archive/move_buffer:editor",
-		"eprint/archive/move_deletion:editor",
-		"eprint/archive/use_as_template:editor",
-		"eprint/archive/derive_version:editor",
-		"eprint/archive/staff/edit:editor",
+		"eprint/buffer/remove_with_email" => 8,
+		"eprint/buffer/reject_with_email" => 8,
+		"eprint/buffer/move_inbox" => 8,
+		"eprint/buffer/move_archive" => 8,
+		"eprint/buffer/use_as_template" => 8,
+		"eprint/buffer/derive_version" => 8,
+		"eprint/buffer/staff/edit" => 8,
 
 
-		"eprint/deletion/view:editor",
-		"eprint/deletion/summary:editor",
-		"eprint/deletion/staff/export:editor",
-		"eprint/deletion/staff/details:editor",
-		"eprint/deletion/history:editor",
-		"eprint/deletion/messages:editor",
+		"eprint/archive/view" => 8,
+		"eprint/archive/summary" => 8,
+		"eprint/archive/staff/export" => 8,
+		"eprint/archive/staff/details" => 8,
+		"eprint/archive/history" => 8,
+		"eprint/archive/messages" => 8,
 
-		"eprint/deletion/move_archive:editor",
-		"eprint/deletion/use_as_template:editor",
-		"eprint/deletion/derive_version:editor",
-	],
+		"eprint/archive/move_buffer" => 8,
+		"eprint/archive/move_deletion" => 8,
+		"eprint/archive/use_as_template" => 8,
+		"eprint/archive/derive_version" => 8,
+		"eprint/archive/staff/edit" => 8,
+
+
+		"eprint/deletion/view" => 8,
+		"eprint/deletion/summary" => 8,
+		"eprint/deletion/staff/export" => 8,
+		"eprint/deletion/staff/details" => 8,
+		"eprint/deletion/history" => 8,
+		"eprint/deletion/messages" => 8,
+
+		"eprint/deletion/move_archive" => 8,
+		"eprint/deletion/use_as_template" => 8,
+		"eprint/deletion/derive_version" => 8,
+		#"eprint/archive/staff/edit" => 8,
+	},
 	
 };
 
@@ -1317,26 +1273,30 @@ sub allow
 
 	return 1 if( $self->{session}->allow_anybody( $priv ) );
 
-	my $privs = $self->get_privs;
+	my $r = $self->get_privs->{$priv} || 0;
 
-	my $if_logged_in = $privs->{$priv} || 0;
-	my $if_editor = $privs->{"$priv:editor"} || 0;
-	my $if_owner = $privs->{"$priv:owner"} || 0;
-
-	if( !$if_logged_in && ( $if_editor || $if_owner ) && !defined $item )
+	if( !($r & 3 ) && ( $r & 4 || $r & 8 ) && !defined $item )
 	{
 		$self->{session}->get_repository->log(
-"\$user->allow( $priv ) called. It needed an item to resolve the permission, but none was passed. Assuming false, but this may indicate a bug." );
+"\$user->allow( $priv ) called. It returned a value of $r which meant it needed an item to resolve the permission, but none was passed. Assuming false, but this may indicate a bug." );
 		return 0;
 	}
 
-	my $r = 0;
+	if( $r & 4 )
+	{
+		if( !defined $item || !$item->has_owner( $self ) )
+		{
+			$r-=4;
+		}
+	}
 
-	$r += 2 if( $if_logged_in  );
-
-	$r += 4 if( $if_owner && defined $item && $item->has_owner( $self ) );
-
-	$r += 8 if( $if_editor && defined $item && $item->in_editorial_scope_of( $self ) );
+	if( $r & 8 )
+	{
+		if( !defined $item || !$item->in_editorial_scope_of( $self ) )
+		{
+			$r-=8;
+		}
+	}
 
 	return $r;
 }
@@ -1357,37 +1317,12 @@ sub get_privs
 
 	return $self->{".privs"} if( defined $self->{".privs"} ) ;
 
-	my $rep = $self->{session}->get_repository;
-	my $role_config = $rep->get_conf( "user_roles", $self->get_value( "usertype" ) );
-	my $extra_roles = $self->get_value( "roles" ) || [];
-
-	my %privmap = %{$PRIVMAP};
-
-	# extra hats defined in this repository	
-	my %override_roles = %{$rep->get_conf( "roles" )||{}};
-	foreach my $role_id ( keys %override_roles )
-	{
-		$privmap{$role_id} = $override_roles{$role_id};
-	}
-
 	$self->{".privs"} = {};
-	foreach my $role ( @{$role_config}, @{$extra_roles} )
+	foreach my $role ( $self->get_roles )
 	{
-		if( $role =~ m/^\+(.*)$/ )
-		{
-			$self->{".privs"}->{$1} = 1;
-			next;
-		}
-
-		if( $role =~ m/^-(.*)$/ )
-		{
-			delete $self->{".privs"}->{$1};
-			next;
-		}
-
-		foreach my $priv ( @{$privmap{$role}} ) 
+		foreach my $priv ( keys %{$PRIVMAP->{$role}} ) 
 		{ 
-			$self->{".privs"}->{$priv} = 1;
+			$self->{".privs"}->{$priv} = ($self->{".privs"}->{$priv}||0) + $PRIVMAP->{$role}->{$priv}; 
 		}
 	}
 
@@ -1408,16 +1343,9 @@ sub get_roles
 	my( $self ) = @_;
 
 	my $rep = $self->{session}->get_repository;
-	my $role_config = $rep->get_conf( "user_roles", $self->get_value( "usertype" ) );
-	my $extra_roles = $self->get_value( "roles" ) || [];
-	my @roles = ();
-	foreach my $role ( @{$role_config}, @{$extra_roles} )
-	{
-		next if( $role =~ m/^[+-]/ );
-		push @roles, $role;
-	}
+	my $roles = $rep->get_conf( "user_roles", $self->get_value( "usertype" ) );
 
-	return @roles;
+	return @{$roles};
 }
 
 sub has_role

@@ -66,11 +66,6 @@ sub render_option
 		return $self->call_property( "render_option", $session, $option );
 	}
 
-	if( !defined $option )
-	{
-		return $self->SUPER::render_option( $session, $option );
-	}
-
 	my $subject = new EPrints::DataObj::Subject( $session, $option );
 
 	return $subject->render_description;

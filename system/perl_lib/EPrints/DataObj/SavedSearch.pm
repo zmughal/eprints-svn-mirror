@@ -235,10 +235,7 @@ sub commit
 		# don't do anything if there isn't anything to do
 		return( 1 ) unless $force;
 	}
-	if( $self->{non_volatile_change} )
-	{
-		$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
-	}
+	$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 
 	my $subs_ds = $self->{session}->get_repository->get_dataset( 
 		"saved_search" );
@@ -392,7 +389,7 @@ sub send_out_alert
 	}
 
 	my $url = $self->{session}->get_repository->get_conf( "http_cgiurl" ).
-		"/users/home?screenid=SavedSearh::View";
+		"/users/home?screenid=SavedSearch::View";
 	my $freqphrase = $self->{session}->html_phrase(
 		"lib/saved_search:".$freq );
 
@@ -400,7 +397,7 @@ sub send_out_alert
 		my( $session, $dataset, $item, $info ) = @_;
 
 		my $p = $session->make_element( "p" );
-		$p->appendChild( $item->render_citation_link( $session->get_repository->get_conf( "saved_search_citation" )));
+		$p->appendChild( $item->render_citation_link );
 		$info->{matches}->appendChild( $p );
 #		$info->{matches}->appendChild( $session->make_text( $item->get_url ) );
 	};

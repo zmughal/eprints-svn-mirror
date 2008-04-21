@@ -22,6 +22,5 @@ sub new
 
 sub is_feed { return 1; }
 
-sub icon { return "feed-icon-14x14.png"; }
 
 1;

@@ -2,14 +2,22 @@ package EPrints;
 
 use EPrints::SystemSettings;
 
-use Scalar::Util;
-
 BEGIN {
 	use Carp qw(cluck);
 
 	use EPrints::Platform;
 
 	umask( 0002 );
+
+	# mod_perl will probably be running as root for the main httpd.
+	# The sub processes should run as the same user as the one specified
+	# in $EPrints::SystemSettings
+	# An exception to this is running as root (uid==0) in which case
+	# we can become the required user.
+	if( !$ENV{MOD_PERL} && !$ENV{EPRINTS_NO_CHECK_USER}) 
+	{
+		EPrints::Platform::test_uid();
+	}
 
 	if( $ENV{MOD_PERL} )
 	{
@@ -22,7 +30,6 @@ use EPrints::Apache::Auth;
 use EPrints::Apache::Rewrite;
 use EPrints::Apache::VLit;
 use EPrints::Apache::Template;
-use EPrints::Apache::Storage;
 1;';
 		if( $@ ) { abort( $@ ); }
 	}
@@ -117,17 +124,11 @@ use EPrints::Utils;
 use EPrints::Time;
 use EPrints::Config;
 use EPrints::Database;
-use EPrints::Storage;
 use EPrints::DataObj;
 use EPrints::DataObj::Access;
-use EPrints::DataObj::Cachemap;
 use EPrints::DataObj::Document;
 use EPrints::DataObj::EPrint;
 use EPrints::DataObj::History;
-use EPrints::DataObj::Import;
-use EPrints::DataObj::LoginTicket;
-use EPrints::DataObj::Message;
-use EPrints::DataObj::MetaField;
 use EPrints::DataObj::Request;
 use EPrints::DataObj::Subject;
 use EPrints::DataObj::SavedSearch;
@@ -136,7 +137,6 @@ use EPrints::DataSet;
 use EPrints::Email;
 use EPrints::Extras;
 use EPrints::Index;
-use EPrints::Index::Daemon;
 use EPrints::Language;
 use EPrints::Latex;
 use EPrints::List;
@@ -155,9 +155,6 @@ use EPrints::Session;
 use EPrints::Script;
 use EPrints::URL;
 use EPrints::Paracite;
-use EPrints::Update::Static;
-use EPrints::Update::Views;
-use EPrints::Update::Abstract;
 use EPrints::Workflow;
 use EPrints::Workflow::Stage;
 use EPrints::Workflow::Processor;
@@ -166,22 +163,5 @@ use EPrints::XML::EPC;
 # Load EPrints::Plugin last, because dynamically loaded plugins may have
 # EPrints dependencies
 use EPrints::Plugin;
-
-sub import
-{
-	my( $class, @args ) = @_;
-
-	my %opts = map { $_ => 1 } @args;
-
-	# mod_perl will probably be running as root for the main httpd.
-	# The sub processes should run as the same user as the one specified
-	# in $EPrints::SystemSettings
-	# An exception to this is running as root (uid==0) in which case
-	# we can become the required user.
-	if( !$opts{"no_check_user"} && !$ENV{MOD_PERL} && !$ENV{EPRINTS_NO_CHECK_USER} )
-	{
-		EPrints::Platform::test_uid();
-	}
-}
 
 1;

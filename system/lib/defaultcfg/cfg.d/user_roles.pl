@@ -30,7 +30,7 @@ $c->{user_roles}->{editor} = [qw/
 	staff-view
 /],
 
-$c->{user_roles}->{admin} = [qw{
+$c->{user_roles}->{admin} = [qw/
 	general
 	edit-own-record
 	saved-searches
@@ -41,9 +41,7 @@ $c->{user_roles}->{admin} = [qw{
 	view-status
 	staff-view
 	admin
-	edit-config
-}],
-# Note -- nobody has the very powerful "toolbox" role by default!
+/],
 
 $c->{user_roles}->{minuser} = [qw/
 	general
@@ -52,16 +50,3 @@ $c->{user_roles}->{minuser} = [qw/
 	set-password
 	lock-username-to-email
 /];
-
-# If you want to add additional roles to the system, you can do it here.
-# These can be useful to create "hats" which can be given to a user via
-# the roles field. You can also override the default roles.
-#
-#$c->{roles}->{"approve-hat"} = [
-#	"eprint/buffer/view:editor",
-#	"eprint/buffer/summary:editor",
-#	"eprint/buffer/details:editor",
-#	"eprint/buffer/move_archive:editor",
-#];
-
-

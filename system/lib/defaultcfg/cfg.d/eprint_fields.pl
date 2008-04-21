@@ -24,33 +24,6 @@ $c->{fields}->{eprint} = [
           },
 
           {
-            'name' => 'contributors',
-            'type' => 'compound',
-            'multiple' => 1,
-            'fields' => [
-                          {
-                            'sub_name' => 'type',
-                            'type' => 'namedset',
-                            set_name => "contributor_type",
-                          },
-                          {
-                            'sub_name' => 'name',
-                            'type' => 'name',
-                            'hide_honourific' => 1,
-                            'hide_lineage' => 1,
-                            'family_first' => 1,
-                          },
-                          {
-                            'sub_name' => 'id',
-                            'type' => 'text',
-                            'input_cols' => 20,
-                            'allow_null' => 1,
-                          },
-                        ],
-            'input_boxes' => 4,
-          },
-
-          {
             'name' => 'corp_creators',
             'type' => 'text',
             'multiple' => 1,
@@ -60,7 +33,6 @@ $c->{fields}->{eprint} = [
             'name' => 'title',
             'type' => 'longtext',
             'input_rows' => 3,
-            'make_single_value_orderkey' => 'EPrints::Extras::english_title_orderkey',
           },
 
           {
@@ -80,6 +52,7 @@ $c->{fields}->{eprint} = [
             'type' => 'subject',
             'multiple' => 1,
             'top' => 'subjects',
+            'render_input' => 'EPrints::Extras::subject_browser_input',
             'browse_link' => 'subjects',
           },
 
@@ -244,7 +217,6 @@ $c->{fields}->{eprint} = [
           {
             'name' => 'id_number',
             'type' => 'text',
-            'render_value' => 'EPrints::Extras::render_possible_doi',
           },
 
           {
@@ -320,14 +292,12 @@ $c->{fields}->{eprint} = [
           {
             'name' => 'official_url',
             'type' => 'url',
-            'render_value' => 'EPrints::Extras::render_url_truncate_end',
           },
 
           {
             'name' => 'related_url',
             'type' => 'compound',
             'multiple' => 1,
-            'render_value' => 'EPrints::Extras::render_related_url',
             'fields' => [
                           {
                             'sub_name' => 'url',

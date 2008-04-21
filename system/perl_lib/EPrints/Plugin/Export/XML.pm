@@ -24,7 +24,6 @@ sub new
 	$self->{visible} = "all";
 	$self->{suffix} = ".xml";
 	$self->{mimetype} = "text/xml";
-	$self->{xmlns} = "http://eprints.org/ep2/data/2.0";
 
 	return $self;
 }
@@ -53,10 +52,9 @@ sub output_list
 		push @{$r}, $part;
 	}
 
-	$opts{list}->map( sub {
-		my( $session, $dataset, $item ) = @_;
-
-		my $part = $plugin->output_dataobj( $item, %opts );
+	foreach my $dataobj ( $opts{list}->get_records )
+	{
+		$part = $plugin->output_dataobj( $dataobj, %opts );
 		if( defined $opts{fh} )
 		{
 			print {$opts{fh}} $part;
@@ -65,7 +63,7 @@ sub output_list
 		{
 			push @{$r}, $part;
 		}
-	} );
+	}	
 
 	$part= "</$toplevel>\n";
 	if( defined $opts{fh} )

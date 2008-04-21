@@ -157,22 +157,6 @@ sub get_system_field_info
 		{ name=>"date_embargo", type=>"date", required=>0,
 			min_resolution=>"year" },	
 
-		{ name=>"content", type=>"namedset", required=>0, input_rows=>1,
-			set_name=>"content" },
-
-		{ name=>"relation", type=>"compound", multiple=>1,
-			fields => [
-				{
-					sub_name => "type",
-					type => "namedset",
-					set_name => "document_relation",
-				},
-				{
-					sub_name => "uri",
-					type => "text",
-				},
-			],
-		},
 	);
 
 }
@@ -320,14 +304,25 @@ sub create_from_data
 {
 	my( $class, $session, $data, $dataset ) = @_;
        
+	EPrints::abort "session not defined" unless defined $session;
+	EPrints::abort "data not defined" unless defined $data;
+                   
 	my $eprintid = $data->{eprintid}; 
-	my $eprint = delete $data->{eprint};
 
+	my $eprint = EPrints::DataObj::EPrint->new( $session, $eprintid );
+
+	unless( defined $eprint )
+	{
+		EPrints::abort( <<END );
+Error. Can't create new document. 
+There is no eprint with id '$eprintid'.
+END
+	}
+	
 	my $document = $class->SUPER::create_from_data( $session, $data, $dataset );
 
 	return unless defined $document;
 
-	# Hint for get_eprint()
 	$document->{eprint} = $eprint;
 
 	$document->set_under_construction( 1 );
@@ -336,41 +331,25 @@ sub create_from_data
 
 	if( -d $dir )
 	{
-		$session->get_repository->log( "Dir $dir already exists!" );
+		$eprint->get_session()->get_repository->log( "Dir $dir already exists!" );
 	}
 	elsif(!EPrints::Platform::mkdir($dir))
 	{
-		$session->get_repository->log( "Error creating directory for EPrint $eprintid, docid=".$document->get_value( "docid" )." ($dir): ".$! );
+		$eprint->get_session()->get_repository->log( "Error creating directory for EPrint ".$eprint->get_value( "eprintid" ).", docid=".$document->get_value( "docid" )." ($dir): ".$! );
 		return undef;
 	}
-
 
 	if( defined $data->{files} )
 	{
 		foreach my $filedata ( @{$data->{files}} )
 		{
-			if( defined $filedata->{data} )
-			{
-				my $srcfile = $filedata->{data};		
-				$srcfile =~ s/^\s+//;
-				$srcfile =~ s/\s+$//;
-				$document->add_file( $srcfile, $filedata->{filename}, 1 );	
-			}
-			elsif( defined $filedata->{url} )
-			{
-				my $tmpfile = File::Temp->new;
+			next unless defined $filedata->{data};
 
-				my $r = EPrints::Utils::wget( $session, $filedata->{url}, $tmpfile );
-				if( $r->is_success )
-				{
-					# upload fseeks to zero
-					$document->upload( $tmpfile, $filedata->{filename}, 1 );	
-				}
-				else
-				{
-					$session->get_repository->log( "Failed to retrieve $filedata->{url}: " . $r->code . " " . $r->message );
-				}
-			}
+			my $srcfile = $filedata->{data};		
+			$srcfile =~ s/^\s+//;
+			$srcfile =~ s/\s+$//;
+
+			$document->add_file( $srcfile, $filedata->{filename}, 1 );	
 		}
 	}
 
@@ -405,7 +384,7 @@ sub get_defaults
 			"set_document_defaults", 
 			$data,
  			$session,
-			$eprint );
+ 			$eprint );
 
 	return $data;
 }
@@ -919,14 +898,37 @@ sub upload
 		$repository->log( "Bad filename for file '$filename' in document: starts with slash (will not add)\n" );
 		return 0;
 	}
+	my $out_file = $self->local_path() . "/" . sanitise( $filename );
+	if( $preserve_path )
+	{
+		if( $filename=~m/^(.*)\/([^\/]+)$/ )
+		{
+			EPrints::Platform::mkdir( $self->local_path()."/".$1 );
+		}
+		$out_file = $self->local_path() . "/" . $filename;
+	}
 
-	my $uri = $self->get_storage_uri( "bitstream", sanitise( $filename ));
+	seek( $filehandle, 0, SEEK_SET );
 
-	my $rc = $self->store( $uri, $filehandle );
+	my $size = 0;
+	my $buffer;	
+	open OUT, ">$out_file" or return( 0 );
+	while( my $bytes = read( $filehandle, $buffer, 1024 ) )
+	{
+		$size += $bytes;
+		print OUT $buffer;
+	}
+	close OUT;
 
-	$rc &&= $self->files_modified;
+	if( $size == 0 )
+	{
+		unlink( $out_file );
+		return 0;
+	}
+
+	$self->files_modified;
 	
-	return $rc;
+	return( 1 );
 }
 
 ######################################################################
@@ -949,7 +951,6 @@ sub add_file
 
 	my $fh;
 	open( $fh, $file ) or return( 0 );
-	binmode( $fh );
 	my $rc = $self->upload( $fh, $filename, $preserve_path );
 	close $fh;
 
@@ -1157,10 +1158,7 @@ sub commit
 		# don't do anything if there isn't anything to do
 		return( 1 ) unless $force;
 	}
-	if( $self->{non_volatile_change} )
-	{
-		$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
-	}
+	$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 
 	$self->tidy;
 	my $success = $self->{session}->get_database->update(
@@ -1384,7 +1382,7 @@ sub rehash
 
 	my $hashfile = $self->get_eprint->local_path."/".
 		$self->get_value( "docid" ).".".
-		EPrints::Platform::get_hash_name();
+		EPrints::Time::get_iso_timestamp().".xsh";
 
 	EPrints::Probity::create_log( 
 		$self->{session}, 
@@ -1427,8 +1425,7 @@ sub get_text
 	for( @files )
 	{
 		open my $fi, "<:utf8", "$tempdir/$_" or next;
-		while( $fi->read($buffer,4096,length($buffer)) ) 
-		{
+		while( $fi->read($buffer,4096,length($buffer)) ) {
 			last if length($buffer) > 4 * 1024 * 1024;
 		}
 		close $fi;
@@ -1675,14 +1672,7 @@ sub make_thumbnails
 	
 	my $tgtdir = $self->thumbnail_path;
 
-	my @list = qw/ small medium preview /;
-
-	if( $self->{session}->get_repository->can_call( "thumbnail_types" ) )
-	{
-		$self->{session}->get_repository->call( "thumbnail_types", \@list, $self->{session}, $self );
-	}
-
-	foreach my $size ( @list )
+	foreach my $size ( qw/ small medium preview / )
 	{
 		my $tgt = "$tgtdir/".$self->get_id.".".$size.".png";
 
@@ -1704,11 +1694,6 @@ sub make_thumbnails
 		# make a thumbnail
 		$plugin->export( $tgtdir, $self, 'thumbnail_'.$size );
 	}
-
-	if( $self->{session}->get_repository->can_call( "on_generate_thumbnails" ) )
-	{
-		$self->{session}->get_repository->call( "on_generate_thumbnails", $self->{session}, $self );
-	}
 }
 
 sub mime_type
@@ -1724,13 +1709,13 @@ sub mime_type
 	return undef unless -r $path;
 	return undef if -d $path;
 
-	my $repository = $self->{session}->get_repository;
+	my $repos = $self->{session}->get_repository;
 
 	my %params = ( SOURCE => $path );
 
-	return undef if( !$repository->can_invoke( "file", %params ) );
+	return undef if( !$repos->can_invoke( "file", %params ) );
 
-	my $command = $repository->invocation( "file", %params );
+	my $command = $repos->invocation( "file", %params );
 	my $mime_type = `$command`;
 	$mime_type =~ s/\015?\012?$//s;
 	($mime_type) = split /,/, $mime_type, 2; # file can return a 'sub-type'

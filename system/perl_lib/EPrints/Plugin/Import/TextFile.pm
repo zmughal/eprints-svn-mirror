@@ -6,10 +6,7 @@ our @ISA = qw/ EPrints::Plugin::Import /;
 
 $EPrints::Plugin::Import::DISABLE = 1;
 
-if( $^V gt v5.8.0 )
-{
-	eval "use File::BOM";
-}
+use File::BOM;
 
 sub new
 {
@@ -36,7 +33,7 @@ sub input_file
 	{
 		unless( open($fh, "<", $opts{filename}) )
 		{
-			$plugin->error( "Could not open file $opts{filename}: $!\n" );
+			print STDERR "Could not open file $opts{filename}: $!\n";
 			return undef;
 		}
 	}

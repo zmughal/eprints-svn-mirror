@@ -44,13 +44,9 @@ use EPrints::MetaField;
 
 sub get_sql_type
 {
-	my( $self, $session, $notnull ) = @_;
+	my( $self, $notnull ) = @_;
 
-	return $session->get_database->get_column_type(
-		$self->get_sql_name(),
-		EPrints::Database::SQL_INTEGER,
-		$notnull
-	);
+	return $self->get_sql_name()." INTEGER".($notnull?" NOT NULL":"");
 }
 
 sub get_max_input_size
@@ -100,9 +96,7 @@ sub from_search_form
 	my $val = $session->param( $prefix );
 	return unless defined $val;
 
-	my $number = '[0-9]+\.?[0-9]*';
-
-	if( $val =~ m/^($number)?\-?($number)?/ )
+	if( $val =~ m/^(\d+)?\-?(\d+)?/ )
 	{
 		return( $val );
 	}
@@ -116,9 +110,7 @@ sub render_search_value
 
 	my $type = $self->get_type;
 
-	my $number = '[0-9]+\.?[0-9]*';
-
-	if( $value =~ m/^($number)-($number)$/ )
+	if( $value =~ m/^([0-9]+)-([0-9]+)$/ )
 	{
 		return $session->html_phrase(
 			"lib/searchfield:desc_".$type."_between",
@@ -126,14 +118,14 @@ sub render_search_value
 			to => $session->make_text( $2 ) );
 	}
 
-	if( $value =~ m/^-($number)$/ )
+	if( $value =~ m/^-([0-9]+)$/ )
 	{
 		return $session->html_phrase(
 			"lib/searchfield:desc_".$type."_orless",
 			to => $session->make_text( $1 ) );
 	}
 
-	if( $value =~ m/^($number)-$/ )
+	if( $value =~ m/^([0-9]+)-$/ )
 	{
 		return $session->html_phrase(
 			"lib/searchfield:desc_".$type."_ormore",
@@ -153,9 +145,7 @@ sub get_search_conditions_not_ex
 	# -N
 	# N-N
 
-	my $number = '[0-9]+\.?[0-9]*';
-
-	if( $search_value =~ m/^$number$/ )
+	if( $search_value =~ m/^\d+$/ )
 	{
 		return EPrints::Search::Condition->new( 
 			'=', 
@@ -164,7 +154,7 @@ sub get_search_conditions_not_ex
 			$search_value );
 	}
 
-	unless( $search_value=~ m/^($number)?\-($number)?$/ )
+	unless( $search_value=~ m/^(\d+)?\-(\d+)?$/ )
 	{
 		return EPrints::Search::Condition->new( 'FALSE' );
 	}
@@ -197,7 +187,7 @@ sub get_search_conditions_not_ex
 	return EPrints::Search::Condition->new( "AND", @r );
 }
 
-sub get_search_group { return 'number'; } 
+sub get_search_group { return 'int'; } 
 
 sub get_property_defaults
 {
@@ -206,18 +196,6 @@ sub get_property_defaults
 	$defaults{digits} = $EPrints::MetaField::FROM_CONFIG;
 	$defaults{text_index} = 0;
 	return %defaults;
-}
-
-sub get_xml_schema_type
-{
-	return "xs:integer";
-}
-
-sub render_xml_schema_type
-{
-	my( $self, $session ) = @_;
-
-	return $session->make_doc_fragment;
 }
 
 ######################################################################

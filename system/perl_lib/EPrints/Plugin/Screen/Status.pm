@@ -34,7 +34,7 @@ sub indexer_warnings
 {
 	my( $self ) = @_;
 
-	if( EPrints::Index::has_stalled() )
+	if( EPrints::Index::has_stalled )
 	{
 		my $index_screen = $self->{session}->plugin( "Screen::Admin::IndexerControl", processor => $self->{processor} );
 		my $force_start_button = $self->render_action_button_if_allowed( 
@@ -49,7 +49,7 @@ sub indexer_warnings
 			$self->html_phrase( "indexer_stalled", force_start_button => $force_start_button ) 
 		);
 	}
-	elsif( !EPrints::Index::is_running() )
+	elsif( !EPrints::Index::is_running )
 	{
 		my $index_screen = $self->{session}->plugin( "Screen::Admin::IndexerControl", processor => $self->{processor} );
 		my $start_button = $self->render_action_button_if_allowed( 
@@ -113,11 +113,11 @@ sub render
 
 	my $indexer_status;
 
-	if( !EPrints::Index::is_running() )
+	if( !EPrints::Index::is_running )
 	{
 		$indexer_status = "stopped";
 	}
-	elsif( EPrints::Index::has_stalled() )
+	elsif( EPrints::Index::has_stalled )
 	{
 		$indexer_status = "stalled";
 	}
@@ -144,16 +144,6 @@ sub render
 			$session->make_text( 
 				EPrints::Config::get( "version" ) ) ) );
 
-	$table->appendChild(
-		$session->render_row( 
-			$session->html_phrase( "cgi/users/status:database_driver" ),
-			$session->make_text( $session->get_database()->get_driver_name ) ) );
-	
-	$table->appendChild(
-		$session->render_row( 
-			$session->html_phrase( "cgi/users/status:database_version" ),
-			$session->make_text( $session->get_database()->get_server_version ) ) );
-	
 	$table->appendChild(
 		$session->render_row( 
 			$session->html_phrase( "cgi/users/status:database" ),
@@ -222,7 +212,7 @@ sub render
 					$session->html_phrase( 
 						"cgi/users/status:mbfree",
 						mb=>$session->make_text( 
-							int($size/1024/1024) ) ) ) );
+							int($size/1024) ) ) ) );
 		
 			$best_size = $size if( $size > $best_size );
 		}

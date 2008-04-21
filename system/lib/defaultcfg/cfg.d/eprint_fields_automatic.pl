@@ -21,12 +21,11 @@ $c->{set_eprint_automatic_fields} = sub
 		# patents are always published!
 	}
 
-	if( $type eq "thesis" && !$eprint->is_set( "ispublished" ) )
+	if( $type eq "thesis" )
 	{
 		$eprint->set_value( "ispublished", "unpub" );
-		# thesis are usually unpublished.
+		# thesis are always unpublished.
 	}
-
 
 
 	my @docs = $eprint->get_all_documents();

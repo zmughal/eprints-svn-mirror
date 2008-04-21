@@ -214,15 +214,12 @@ sub output_dataobj
 	{
 		if( ref( $data->{$k} ) eq "ARRAY" )
 		{
-			foreach my $v ( @{ $data->{$k} } )
+			foreach( @{ $data->{$k} } )
 			{
-				$v=~s/[\r\n]/ /g;
-				$out .= "\%$k $v\n";
+				$out .= "\%$k " . $_ . "\n";
 			}
 		} else {
-			my $v = $data->{$k};
-			$v=~s/[\r\n]/ /g;
-			$out .= "\%$k $v\n";
+			$out .= "\%$k " . $data->{$k} . "\n";
 		}
 	}
 	$out .= "\n";

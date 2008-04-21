@@ -188,10 +188,7 @@ sub commit
 		# don't do anything if there isn't anything to do
 		return( 1 ) unless $force;
 	}
-	if( $self->{non_volatile_change} )
-	{
-		$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
-	}
+	$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 
 	$self->tidy;
 	my $rv = $self->{session}->get_database->update(
@@ -828,7 +825,7 @@ sub local_name
 	my $value = $self->get_value( "name" );
 	foreach ( @{$value} )
 	{
-		$lang_hash->{$_->{lang}||""} = $_->{name};
+		$lang_hash->{$_->{lang}} = $_->{name};
 	}
 	my $namefield = $self->{dataset}->get_field( "name" );
 

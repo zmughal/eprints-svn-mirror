@@ -62,14 +62,13 @@ current language.
 sub tags_and_labels
 {
 	my( $self , $session ) = @_;
-	my @tags = $self->tags( $session );
 	my %labels = ();
-	foreach( @tags )
+	foreach( $self->tags( $session ) )
 	{
 		$labels{$_} = EPrints::Utils::tree_to_utf8( 
 			$self->render_option( $session, $_ ) );
 	}
-	return (\@tags, \%labels);
+	return ([$self->tags( $session )], \%labels);
 }
 
 sub tags
@@ -173,7 +172,8 @@ sub get_basic_input_elements
 	# If it's not multiple and not required there 
 	# must be a way to unselect it.
 	$tags = [ "", @{$tags} ];
-	my $unspec = EPrints::Utils::tree_to_utf8( $self->render_option( $session, undef ) );
+	my $unspec = $session->phrase( 
+		"lib/metafield:unspecified_selection" );
 	$labels = { ""=>$unspec, %{$labels} };
 
 	return( [ [ { el=>$session->render_option_list(
@@ -202,7 +202,8 @@ sub render_set_input
 		# If it's not multiple and not required there 
 		# must be a way to unselect it.
 		$tags = [ "", @{$tags} ];
-		my $unspec = EPrints::Utils::tree_to_utf8( $self->render_option( $session, undef ) );
+		my $unspec = $session->phrase( 
+			"lib/metafield:unspecified_selection" );
 		$labels = { ""=>$unspec, %{$labels} };
 	}
 
@@ -445,11 +446,8 @@ sub from_search_form
 	# ANY or ALL?
 	my $merge = $session->param( $prefix."_merge" );
 	$merge = "ANY" unless( defined $merge );
-
-        my $match = $session->param( $prefix."_match" );
-        $match = "EQ" unless defined( $match );
 	
-	return( $val, $merge, $match );
+	return( $val, $merge );
 }
 
 	
@@ -515,42 +513,6 @@ sub get_property_defaults
 	$defaults{render_option} = $EPrints::MetaField::UNDEF;
 	$defaults{text_index} = 0;
 	return %defaults;
-}
-
-sub get_xml_schema_type
-{
-	my( $self ) = @_;
-
-	if( scalar @{$self->{options}||[]} )
-	{
-		return $self->get_property( "type" ) . "_" . $self->{dataset}->confid . "_" . $self->get_name;
-	}
-	else
-	{
-		return "xs:string";
-	}
-}
-
-sub render_xml_schema_type
-{
-	my( $self, $session ) = @_;
-
-	if( !scalar @{$self->{options}||[]} )
-	{
-		return $session->make_doc_fragment;
-	}
-
-	my $type = $session->make_element( "xs:simpleType", name => $self->get_xml_schema_type );
-
-	my $restriction = $session->make_element( "xs:restriction", base => "xs:string" );
-	$type->appendChild( $restriction );
-	foreach my $value (@{$self->{options}})
-	{
-		my $enumeration = $session->make_element( "xs:enumeration", value => $value );
-		$restriction->appendChild( $enumeration );
-	}
-
-	return $type;
 }
 
 ######################################################################

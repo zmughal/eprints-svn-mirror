@@ -37,12 +37,11 @@ sub output_list
 	}
 
 	my @files = ();
-	$opts{list}->map( sub {
-		my( $session, $dataset, $item ) = @_;
-
-		my $file = find_latest_doc_hash( $session, $item );
+	foreach my $doc ( $opts{list}->get_records )
+	{
+		my $file = find_latest_doc_hash( $session, $doc );
 		push @files, $file if defined $file;
-	} );
+	}
 
 	EPrints::Probity::create_log_fh(
 		$session,

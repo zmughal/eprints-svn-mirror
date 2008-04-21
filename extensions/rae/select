@@ -30,9 +30,6 @@ use EPrints::Utils;
 use EPrints::XML;
 use strict;
 
-use EPrints::SystemSettings;
-if( $EPrints::SystemSettings::conf->{version_id} =~ m/^(eprints-)?3\./ ) { &backcomp; }
-
 # Enclosing the main part in {..} prevents accidental
 # (and *dangerous*) use of 'global' vars inside subroutines
 {
@@ -89,7 +86,6 @@ my $searchexp = new EPrints::SearchExpression(
 	session => $session,
 	dataset => $archive->get_dataset("archive"),
 	%$search_conf,
-	allow_blank => 0,
 );
 
 # Switch on user input
@@ -215,8 +211,7 @@ sub dopage_results
 	my $n_results = $searchexp->count();
 	my $offset = 0;
 	$offset += $session->param("_offset") if $session->param( "_offset" );
-	#my $pagesize = $searchexp->{page_size};
-	my $pagesize = $session->get_archive->get_conf( "search", $session->get_archive->get_conf( "rae", "selection_search" ) )->{page_size};
+	my $pagesize = $searchexp->{page_size};
 
 	# Get results slice
 	my @results = $searchexp->get_records( $offset , $pagesize );
@@ -438,84 +433,4 @@ sub render_item_row {
 	$tr->appendChild( $td_act );
 
 	return $tr;
-}
-
-# Backcompatibility for EPrints 3
-sub backcomp
-{
-	eval '
-		package EPrints::SearchExpression;
-
-		sub render_search_form
-		{
-			my( $self ) = @_;
-
-			my $session = $self->{session};	
-			my $form = $session->render_form( "get" );
-		
-			foreach my $sf ( $self->get_non_filter_searchfields )
-			{
-				my $sfdiv = $session->make_element( 
-						"div" , 
-						class => "ep_search_field_name" );
-				$sfdiv->appendChild( $sf->render_name );
-				$form->appendChild( $sfdiv );
-				$form->appendChild( $sf->render() );
-			}
-			$form->appendChild( $session->render_action_buttons(search => "Search" ) );
-		
-			return $form;
-		}
-		
-		sub from_form
-		{
-			my( $self ) = @_;
-		
-			my $exp = $self->{session}->param( "_exp" );
-			if( defined $exp )
-			{
-				$self->from_string( $exp );
-				return;
-			}
-			my $problems = [];
-			foreach my $sf ( $self->get_non_filter_searchfields )
-			{
-				my $problem = $sf->from_form;
-				push @{$problems},$problem if defined $problem;
-			}
-			
-			return $problems;
-		}
-		
-		1;
-
-		package EPrints::Session;
-
-		sub auth_check
-		{
-			my( $self , $resource ) = @_;
-
-			my $user = $self->current_user;
-
-			if( !defined $user )
-			{
-				$self->render_error( $self->html_phrase( "lib/session:no_login" ) );
-				return 0;
-			}
-
-			if( !defined $resource )
-			{
-				return 1;
-			}
-
-			unless( $user->has_role( $resource ) )
-			{
-				$self->render_error( $self->html_phrase( "lib/session:no_priv" ) );
-				return 0;
-			}
-			return 1;
-		}
-
-		1;
-	';
 }

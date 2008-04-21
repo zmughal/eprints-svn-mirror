@@ -67,8 +67,6 @@ use strict;
 
 # current conditional operators:
 
-my $TABLEALIAS = "d41d8cd98f00b204e9800998ecf8427e";
-
 $EPrints::Search::Condition::operators = {
 	'CANPASS'=>0,		#	should only be used in optimisation
 	'PASS'=>0,		#	should only be used in optimisation
@@ -111,7 +109,7 @@ sub new
 
 	my $self = {};
 	bless $self, $class;
-	$op = "" unless defined $op;	
+
 	$self->{op} = $op;
 	if( $op eq "AND" || $op eq "OR" || $op eq "CANPASS" )
 	{
@@ -213,23 +211,20 @@ sub describe
 ######################################################################
 =pod
 
-=item $sql_table = $scond->get_table( [ $dataset, $field ] );
+=item $sql_table = $scond->get_table
 
 Return the name of the actual SQL table which this condition is
 concerned with.
-
-If dataset and field is defined then uses these rather than the 
-current value for the condition.
 
 =cut
 ######################################################################
 
 sub get_table
 {
-	my( $self, $dataset, $field ) = @_;
+	my( $self ) = @_;
 
-	$field = $self->{field} if !defined $field;
-	$dataset = $self->{dataset} if !defined $dataset;
+	my $field = $self->{field};
+	my $dataset = $self->{dataset};
 
 	if( !defined $field )
 	{
@@ -246,52 +241,6 @@ sub get_table
 		return $dataset->get_sql_sub_table_name( $field );
 	}	
 	return $dataset->get_sql_table_name();
-}
-
-sub get_tables
-{
-	my( $self, $session ) = @_;
-
-	my $field = $self->{field};
-	my $dataset = $self->{dataset};
-
-	my $jp = $field->get_property( "join_path" );
-	my @f = ();
-	if( $jp )
-	{
-		foreach my $join ( @{$jp} )
-		{
-			my( $j_field, $j_dataset ) = @{$join};
-			my $join_data = {};
-			if( $j_field->is_type( "subobject" ) )
-			{
-				my $right_ds = $session->get_repository->get_dataset( 
-					$j_field->get_property('datasetid') );
-				$join_data->{table} = $right_ds->get_sql_table_name();
-				$join_data->{left} = $j_dataset->get_key_field->get_name();
-				$join_data->{right} = $right_ds->get_key_field->get_name();
-			}
-			else
-			{
-				# itemid
-				if( $j_field->get_property( "multiple" ) )
-				{
-					$join_data->{table} = $j_dataset->get_sql_sub_table_name( $j_field );
-					$join_data->{left} = $j_dataset->get_key_field->get_name();
-					$join_data->{right} = $j_field->get_name();
-				}
-				else
-				{
-					$join_data->{table} = $j_dataset->get_sql_table_name();
-					$join_data->{left} = $j_dataset->get_key_field->get_name();
-					$join_data->{right} = $j_field->get_name();
-				}
-			}
-			push @f, $join_data;
-		}
-	}
-
-	return \@f;	
 }
 
 ######################################################################
@@ -424,7 +373,7 @@ END
 		return( 0 );
 	}
 
- 	my $keyfield = $self->{dataset}->get_key_field();
+       	my $keyfield = $self->{dataset}->get_key_field();
 	my $sql_col = $self->{field}->get_sql_name;
 
 	if( $self->{op} eq "grep" )
@@ -628,8 +577,6 @@ sub process
 {
 	my( $self, $session, $i, $filter ) = @_;
 
-	my $database = $session->get_database;
-
 	$i = 0 unless( defined $i );
 
 	if( $self->{op} eq "TRUE" )
@@ -693,46 +640,20 @@ END
 	my $r = [];
 #print STDERR "PROCESS: ".("  "x$i).$self->describe;
 
-	my $tables = $self->get_tables( $session );
-
-	if( scalar @{$tables} == 0 )
+	if( $self->{op} eq "index" )
 	{
-		if( $self->{op} eq "index" )
-		{
-			my $where = $database->quote_identifier("fieldword")." = ".$database->quote_value( 
-				$self->{field}->get_sql_name.":".$self->{params}->[0] );
-			$r = $session->get_database->get_index_ids( $self->get_table, $where );
-		}
-
-		if( $self->{op} eq "indexstart" )
-		{
-			my $where = $database->quote_identifier("fieldword")." LIKE ".$database->quote_value( 
-				EPrints::Database::prep_like_value($self->{field}->get_sql_name.":".$self->{params}->[0]) . "\%");
-			$r = $session->get_database->get_index_ids( $self->get_table, $where );
-		}
+		my $where = "fieldword = '".EPrints::Database::prep_value( 
+			$self->{field}->get_sql_name.":".$self->{params}->[0] )."'";
+		$r = $session->get_database->get_index_ids( $self->get_table, $where );
 	}
-	elsif( $self->{op} eq "index" || $self->{op} eq "index_start" )
+	if( $self->{op} eq "index_start" )
 	{
-		# joined tables on an index -- not efficient but this will work...
-
-		my $where = $database->quote_identifier($TABLEALIAS,"field")." = ".$database->quote_value( $self->{field}->get_sql_name );
-		if( $self->{op} eq "index" )
-		{
-			$where .= " AND ".$database->quote_identifier($TABLEALIAS,"word")." = ".$database->quote_value( $self->{params}->[0] ); 
-		}
-		else
-		{
-			$where .= " AND ".$database->quote_identifier($TABLEALIAS,"word")." LIKE '".EPrints::Database::prep_like_value( $self->{params}->[0] )."\%'";
-		}	
-		push @{$tables}, {
-			left => $self->{field}->get_dataset->get_key_field->get_name, 
-			where => $where,
-			table => $self->{field}->get_dataset->get_sql_rindex_table_name,
-		};
-		$r = $self->run_tables( $session, $tables );
+		my $where = "fieldword LIKE '".EPrints::Database::prep_value( 
+			$self->{field}->get_sql_name.":".$self->{params}->[0] )."%'";
+		$r = $session->get_database->get_index_ids( $self->get_table, $where );
 	}
 
-	my $keyfield = $self->{dataset}->get_key_field();
+       	my $keyfield = $self->{dataset}->get_key_field();
 	my $sql_col = $self->{field}->get_sql_name;
 
 	if( $self->{op} eq "grep" )
@@ -743,54 +664,47 @@ END
 			# cjg better logging?
 		}
 
-		my $where = "( ".$database->quote_identifier($TABLEALIAS,"fieldname")." = '$sql_col' AND (";
+		my $where = "( M.fieldname = '$sql_col' AND (";
 		my $first = 1;
 		foreach my $cond (@{$self->{params}})
 		{
 			$where.=" OR " unless( $first );
 			$first = 0;
 			# not prepping like values...
-			$where .= $database->quote_identifier($TABLEALIAS,"grepstring")." LIKE '$cond'";
+			$where .= "M.grepstring LIKE '$cond'";
 		}
 		$where.="))";
 
  		my $gtable = $self->{dataset}->get_sql_grep_table_name;
 		my $SSIZE = 50;
 		my $total = scalar @{$filter};
-		my $kfn = $database->quote_identifier($TABLEALIAS,$keyfield->get_sql_name); # key field name and table
+		my $kfn = $keyfield->get_sql_name; # key field name
 		for( my $i = 0; $i<$total; $i+=$SSIZE )
 		{
 			my $max = $i+$SSIZE;
 			$max = $total-1 if( $max > $total - 1 );
 			my @fset = @{$filter}[$i..$max];
-
-			push @{$tables}, {
-				left => $self->{field}->get_dataset->get_key_field->get_name, 
-				where => '('.$where.' AND ('.$kfn.'='.join(' OR '.$kfn.'=', @fset ).' ))',
-				table => $gtable,
-			};
-			my $set = $self->run_tables( $session, $tables );
-			$r = _merge( $r , $set, 0 );
+			
+			my $set = $session->get_database->search( 
+				$keyfield, 
+				{ M=>$gtable },
+				$where.' AND ('.$kfn.'='.join(' OR '.$kfn.'=', @fset ).' )' );
+                        $r = _merge( $r , $set, 0 );
 		}
+	
 	}
 
 
 	if( $self->{op} eq "in_subject" )
 	{
-		push @{$tables}, {
-			left => $self->{field}->get_dataset->get_key_field->get_name, 
-			right => $self->{field}->get_name,
-			table => $self->{field}->get_property( "multiple" ) 
-				? $self->{field}->get_dataset->get_sql_sub_table_name( $self->{field} )
-				: $self->{field}->get_dataset->get_sql_table_name() 
-		};
-		push @{$tables}, {
-			left => "subjectid",
-			where => $database->quote_identifier($TABLEALIAS,"ancestors")."=".$database->quote_value( $self->{params}->[0] ),
-			table => 'subject_ancestors',
-		};
-		
-		$r = $self->run_tables( $session, $tables );
+		my $where = "( M.$sql_col = S.subjectid AND  S.ancestors='".EPrints::Database::prep_value( $self->{params}->[0] )."' )";
+		$r = $session->get_database->search( 
+			$keyfield, 
+			{	
+				S=>"subject_ancestors",
+				M=>$self->get_table
+			},
+			$where );
 	}
 
 
@@ -799,36 +713,26 @@ END
 		my $where;
 		if( $self->{field}->is_type( "date", "time" ) )
 		{
-			$where = "(".$database->quote_identifier($TABLEALIAS,"${sql_col}_year")." IS NULL)";
+			$where = "(M.${sql_col}_year IS NULL)";
 		}
 		else
 		{
-			$where = "(".$database->quote_identifier($TABLEALIAS,$sql_col)." IS NULL OR ";
-			$where .= $database->quote_identifier($TABLEALIAS,$sql_col)." = '')";
+			$where = "(M.$sql_col IS NULL OR ";
+			$where .= "M.$sql_col = '')";
 		}
-		push @{$tables}, {
-			left => $self->{field}->get_dataset->get_key_field->get_name, 
-			where => $where,
-			table => $self->{field}->get_property( "multiple" ) 
-				? $self->{field}->get_dataset->get_sql_sub_table_name( $self->{field} )
-				: $self->{field}->get_dataset->get_sql_table_name() 
-		};
-		$r = $self->run_tables( $session, $tables );
+		$r = $session->get_database->search( 
+			$keyfield, 
+			{ M=>$self->get_table },
+			$where );
 	}
 
 	if( $self->{op} eq 'name_match' )
 	{
-		my $where = "(".join(") AND (", map {
-			$database->quote_identifier($TABLEALIAS,"$sql_col\_$_")."=".$database->quote_value($self->{params}->[0]->{$_})
-		} qw( given family )).")";
-		push @{$tables}, {
-			left => $self->{field}->get_dataset->get_key_field->get_name, 
-			where => $where,
-			table => $self->{field}->get_property( "multiple" ) 
-				? $self->{field}->get_dataset->get_sql_sub_table_name( $self->{field} ) 
-				: $self->{field}->get_dataset->get_sql_table_name() 
-		};
-		$r = $self->run_tables( $session, $tables );
+		my $where = "(M.".$sql_col."_given = '".EPrints::Database::prep_value( $self->{params}->[0]->{given} )."' AND M.".$sql_col."_family = '".EPrints::Database::prep_value( $self->{params}->[0]->{family} )."')";
+		$r = $session->get_database->search( 
+			$keyfield, 
+			{ M=>$self->get_table },
+			$where );
 	}
 
 
@@ -862,7 +766,8 @@ END
 					{	
 						my $o = "=";
 						if( $j==$i ) { $o = $cmp; }
-						push @and, $database->quote_identifier($TABLEALIAS,$sql_col."_".$timemap->[$j])." ".$o." ".$database->quote_value( $parts[$j] ); 
+						push @and, "M.".$sql_col."_".$timemap->[$j]." ".$o.
+							" '".EPrints::Database::prep_value( $parts[$j] )."'"; 
 					}
 					push @or, "( ".join( " AND ", @and )." )";
 				}
@@ -872,7 +777,8 @@ END
 				my @and = ();
 				for( my $i=0;$i<$nparts;++$i )
 				{
-					push @and, $database->quote_identifier($TABLEALIAS,$sql_col."_".$timemap->[$i])." = ".$database->quote_value( $parts[$i] ); 
+					push @and, "M.".$sql_col."_".$timemap->[$i]." =".
+							" '".EPrints::Database::prep_value( $parts[$i] )."'"; 
 				}
 				push @or, "( ".join( " AND ", @and )." )";
 			}
@@ -881,85 +787,26 @@ END
 		}
 		elsif( $self->{field}->is_type( "pagerange","int","year" ) )
 		{
-			$where = $database->quote_identifier($TABLEALIAS,$sql_col)." ".$self->{op}." ".EPrints::Database::prep_int( $self->{params}->[0] );
+			$where = "M.$sql_col ".$self->{op}." ".EPrints::Database::prep_int( $self->{params}->[0] );
 		}
 		else
 		{
-			$where = $database->quote_identifier($TABLEALIAS,$sql_col)." ".$self->{op}." ".$database->quote_value( $self->{params}->[0] );
+			$where = "M.$sql_col ".$self->{op}." "."'".EPrints::Database::prep_value( $self->{params}->[0] )."'";
 		}
-		push @{$tables}, {
-			left => $self->{field}->get_dataset->get_key_field->get_name, 
-			where => $where,
-			table => $self->{field}->get_property( "multiple" ) 
-				? $self->{field}->get_dataset->get_sql_sub_table_name( $self->{field} )
-				: $self->{field}->get_dataset->get_sql_table_name() 
-		};
-		$r = $self->run_tables( $session, $tables );
+		$r = $session->get_database->search( 
+			$keyfield, 
+			{ M=>$self->get_table },
+			$where );
 	}
+#$session->get_database->set_debug( 1 ); print STDERR "\n";
+#$session->get_database->set_debug( 0 );
+
+#	print STDERR " [".join(",",@{$r})."]";
+#	print STDERR "\n";
 
 	return $r;
 }
 
-sub run_tables
-{
-	my( $self, $session, $tables ) = @_;
-
-	my $db = $session->get_database;
-
-	my @opt_tables;
-	while( scalar @{$tables} )
-	{
-		my $head = shift @$tables;
-		while( scalar @$tables && $head->{right} eq $tables->[0]->{left} && $head->{table} eq $tables->[0]->{table} )
-		{
-			my $head2 = shift @$tables;
-			$head->{right} = $head2->{right};
-			if( defined $head2->{where} )
-			{
-				if( defined $head->{where} )
-				{
-					$head->{where} = "(".$head->{where}.") AND (".$head2->{where}.")";
-				}
-				else
-				{
-					$head->{where} = $head2->{where};
-				}
-			}
-		}
-		push @opt_tables, $head;
-	}
-
-	my @sql_wheres = ();
-	my @sql_tables = ();
-	for( my $tn=0; $tn<scalar @opt_tables; $tn++ )
-	{
-		my $tabinfo = $opt_tables[$tn];
-		push @sql_tables, $db->quote_identifier($tabinfo->{table})." ".$db->quote_identifier("T$tn");
-		if( defined $tabinfo->{right} )
-		{
-			push @sql_wheres, $db->quote_identifier("T$tn", $tabinfo->{right})."=".$db->quote_identifier("T".($tn+1), $opt_tables[$tn+1]->{left});
-		}
-		if( defined $tabinfo->{where} )
-		{
-			my $where = $tabinfo->{where};
-			$where =~ s/$TABLEALIAS/T$tn/g;
-			push @sql_wheres, $where;
-		}
-	}
-
-	my $sql = "SELECT DISTINCT ".$db->quote_identifier("T0",$opt_tables[0]->{left})." FROM ".join( ", ", @sql_tables )." WHERE (".join(") AND (", @sql_wheres ).")";
-#print "$sql\n";
-	my $results = [];
-	my $sth = $session->get_database->prepare( $sql );
-	$session->get_database->execute( $sth, $sql );
-	while( my @info = $sth->fetchrow_array ) 
-	{
-		push @{$results}, $info[0];
-	}
-	$sth->finish;
-
-	return( $results );
-}
 
 ######################################################################
 =pod

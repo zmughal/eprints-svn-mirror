@@ -189,10 +189,9 @@ EOX
 		push @{$r}, $part;
 	}
 
-	$opts{list}->map( sub {
-		my( $session, $dataset, $item ) = @_;
-
-		my $part = $plugin->output_dataobj( $item, %opts );
+	foreach my $dataobj ( $opts{list}->get_records )
+	{
+		$part = $plugin->output_dataobj( $dataobj, %opts );
 		if( defined $opts{fh} )
 		{
 			print {$opts{fh}} $part;
@@ -201,7 +200,7 @@ EOX
 		{
 			push @{$r}, $part;
 		}
-	} );
+	}	
 
 	$part= "</$toplevel>\n";
 	if( defined $opts{fh} )
@@ -241,27 +240,13 @@ sub xml_dataobj
 
 	my $session = $plugin->{ "session" };
 
-	my $timestamp_field;
-	if( $itemtype eq "eprint" )
-	{
-		$timestamp_field = "lastmod";
-	}
-	elsif( $itemtype eq "access" )
-	{
-		$timestamp_field = "datestamp";
-	}
-
-	my $timestamp = $dataobj->get_value( $timestamp_field );
-	my( $date, $time ) = split / /, $timestamp;
-	$timestamp = "${date}T${time}Z";
-
 	# TODO: fix timestamp format
 	my $co = $session->make_element(
 		"ctx:context-object",
 		"xmlns:ctx" => "info:ofi/fmt:xml:xsd:ctx",
 		"xmlns:xsi" => "http://www.w3.org/2001/XML",
 		"xsi:schemaLocation" => "info:ofi/fmt:xml:xsd:ctx http://www.openurl.info/registry/docs/info:ofi/fmt:xml:xsd:ctx",
-		"timestamp" => $timestamp,
+		"timestamp" => $dataobj->get_value( "datestamp" ),
 	);
 
 	if( $itemtype eq "eprint" )
@@ -318,12 +303,11 @@ sub xml_access
 	my $r = $session->make_doc_fragment;
 
 	my $rft = $session->make_element( "ctx:referent" );
-	$r->appendChild( $rft );
 	
 	$rft->appendChild( 
 		$session->make_element( "ctx:identifier" )
 	)->appendChild(
-		$session->make_text( $access->get_referent_id )
+		$session->make_text( $access->get_value( "referent_id" ) )
 	);
 
 	# referring-entity
@@ -346,7 +330,7 @@ sub xml_access
 	$req->appendChild(
 		$session->make_element( "ctx:identifier" )
 	)->appendChild(
-		$session->make_text( $access->get_requester_id )
+		$session->make_text( $access->get_value( "requester_id" ))
 	);
 	
 	if( $access->exists_and_set( "requester_user_agent" ) )

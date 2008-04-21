@@ -56,10 +56,9 @@ sub output_list
 		push @{$r}, $part;
 	}
 
-	$opts{list}->map( sub {
-		my( $session, $dataset, $item ) = @_;
-
-		my $part = $plugin->output_dataobj( $item, %opts );
+	foreach my $dataobj ( $opts{list}->get_records )
+	{
+		$part = $plugin->output_dataobj( $dataobj, %opts );
 		if( defined $opts{fh} )
 		{
 			print {$opts{fh}} $part;
@@ -68,7 +67,7 @@ sub output_list
 		{
 			push @{$r}, $part;
 		}
-	} );
+	}	
 
 	$part= "</eprintsdata>\n";
 	if( defined $opts{fh} )

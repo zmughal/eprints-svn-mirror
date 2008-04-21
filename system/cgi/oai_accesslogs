@@ -1,5 +1,3 @@
-#!/usr/bin/perl
-
 ######################################################################
 #
 #  EPrints OAI 2.0 Handler
@@ -16,7 +14,19 @@
 #
 ######################################################################
 
+#cjg need to recomment all subs
+
 use EPrints;
+
+EPrints::abort( "OAI access to access logs is currently disabled" );
+
+# use FileHandle;
+# use IO::File;
+# use POSIX;
+# use XML::Writer;
+
+use URI::Escape;
+# use Time::Local;
 
 use strict;
 
@@ -24,17 +34,19 @@ use strict;
 my $session = new EPrints::Session();
 exit( 0 ) unless( defined $session );
 
-# Check the user is allowed to view the access logs
-if( 0 && !can_view_access( $session ) )
-{
-	$session->terminate;
-	exit 0;
-}
-
 # Allowed exports (OAI restricts the prefixes that can be used)
 our %FORMATS = ();
-# Allow datasets
-our %DATASETS = ();
+
+my @plugin_ids = $session->plugin_list(
+	has_xmlns => 1,
+	can_accept => "list/access"
+);
+foreach ( @plugin_ids )
+{
+	my $mdp = $_;
+	$mdp =~ s/.*:://;
+	$FORMATS{ $mdp } = $_;
+}
 
 # What are we begin asked?
 my $verb = $session->param( "verb" );
@@ -108,12 +120,8 @@ $request_desc->appendChild( $session->make_text( $url ) );
 $response->appendChild( $session->make_indent( 2 ) );
 $response->appendChild( $request_desc );
 
-for(get_datasets( $session ))
-{
-	$DATASETS{ $_->id } = $_;
-}
-
-$response->appendChild( render_verb( $session, $verb ) );
+$response->appendChild(
+	render_verb( $session, $session->param( "verb" ) ) );
 
 my $content = "text/xml";
 if( $session->param( "debug" ) eq "yes" )
@@ -378,36 +386,43 @@ sub GetRecord
 
 	return join_errors( $session, $errors ) if( scalar @{$errors} > 0 );
 		
-	my $dataobj = get_object_from_identifier( $session, $args->{identifier} );
-
-	unless( $dataobj )
-	{
-		return render_oai_error(
-				$session,
-				"idDoesNotExist",
-				"$args->{identifier} is not a valid identifier in this repository" );
-	}
-
-	my %formats = get_export_plugins( $session, $dataobj->{dataset} );
-	my $plugin_id = $formats{ $args->{metadataPrefix} };
-
-	unless( defined $plugin_id )
+	if( !defined $session->get_repository->get_conf( "oai", "v2", "metadata_namespaces" )->{$args->{metadataPrefix}} )
 	{
 		return render_oai_error(
 				$session,
 				"cannotDisseminateFormat",
 				"Record not available as metadata type: ".$args->{metadataPrefix} );
+
 	}
+
+	my $id = EPrints::OpenArchives::from_oai_identifier(
+			$session,
+			$args->{identifier} );
+
+	my $eprint = new EPrints::DataObj::Access(
+		$session,
+		$id,
+		$session->get_repository->get_dataset( "access" ) );
 
 	my $response = $session->make_element( "GetRecord" );
 
+	# The eprint exists, so write the record
+	# if the metadataFormat isn't available for
+	# this record, only the header will be output.
+
+	my $plugin_id = $FORMATS{ $args->{metadataPrefix} };
 	my $plugin = $session->plugin( $plugin_id );
+
+	unless( defined $plugin_id and defined $plugin )
+	{
+		EPrints::abort( "Could not find plugin $plugin_id" );
+	}
 
 	$response->appendChild( $session->make_indent( 2 ) );
 	$response->appendChild( 
 		make_record(
 			$session,
-			$dataobj,
+			$eprint,
 			$plugin,
 			1 ) );
 
@@ -455,16 +470,7 @@ sub _list
 	# different params depending if we have a resumptionToken
 	# or not
 
-	my @datasetids = sort keys %DATASETS;
-	my @datasets = map { $DATASETS{$_} } @datasetids;
-
-	my %formats;
-	foreach my $dataset (@datasets)
-	{
-		%formats = (%formats, get_export_plugins( $session, $dataset ));
-	}
-
-	my( $searchexp, $dataset, $datasetid, $offset, $cacheid, $metadata_format, $date_range, $set );
+	my( $searchexp, $offset, $metadata_format );
 
 	if( defined $session->param( "resumptionToken" ) )
 	{
@@ -472,29 +478,33 @@ sub _list
 
 		return join_errors( $session, $errors ) if( scalar @{$errors} > 0 );
 
-		my %opts = parse_token( $args->{"resumptionToken"} );
-
-		unless( %opts )
+		unless( $args->{"resumptionToken"} =~ 
+				m#^(archive|deletion)/(\d+)/(\d+)(/(.*))?$# )
 		{
 			return render_oai_error(
 				$session,
 				"badResumptionToken",
 				"Token is invalid (does not match regexp)" );
 		}
-		$datasetid = $opts{"datasetid"};
-		$offset = $opts{"offset"};
-		$cacheid = $opts{"cacheid"};
-		$metadata_format = $opts{"mdp"};
-		$date_range = $opts{"date"};
-		$set = $opts{"set"};
+		my $filters => $session->get_repository->get_conf( "oai", "filters" );
+		$filters = [] unless defined $filters;
+		my $cache_id;
+		( $offset, $cache_id, $metadata_format ) = ( $2, $3, $5 );
+		$searchexp = EPrints::Search->new( 
+			dataset => $session->get_repository->get_dataset( "$1" ),
+			session => $session,
+			keep_cache => 1,
+			filters => [
+				@{$filters},
+			],
+			cache_id => $cache_id );
 
-		$dataset = $DATASETS{ $datasetid };
-		unless( $dataset )
+		unless( defined $searchexp )
 		{
 			return render_oai_error(
 				$session,
 				"badResumptionToken",
-				"Token is invalid (bad dataset component)" );
+				"Token has expired" );
 		}
 	}
 	else
@@ -511,7 +521,16 @@ sub _list
 
 		$metadata_format = $args->{metadataPrefix};
 
-		my( $date, $errors, $g1, $g2, $e );
+		if( !defined($FORMATS{ $metadata_format }) )
+		{
+			return render_oai_error(
+				$session,
+				"cannotDisseminateFormat",
+				"Record not available as metadata type: ".$args->{metadataPrefix} );
+		}
+
+		my $date_range;
+		my( $date, $date, $errors, $g1, $g2, $e );
 		$errors = [];
 		if( defined $args->{from} )
 		{
@@ -537,89 +556,67 @@ sub _list
 				"from and until dates have different granularity ($g1 and $g2)" );
 		}
 
-		$set = $args->{set};
-
-		$offset = 0;
-
-		$datasetid = $datasetids[0];
-		$dataset = $DATASETS{ $datasetid };
-	}
-
-	# setSpec specified a dataset
-	if( defined $set && $set =~ /^_datasetid_(\w+)$/ )
-	{
-		$datasetid = $1;
-		$dataset = $DATASETS{ $datasetid };
-		@datasetids = grep { $_ eq $datasetid } @datasetids;
-
-		if( !@datasetids )
-		{
-			return render_oai_error(
-					$session,
-					"badArgument",
-					"invalid set spec: $set" );
-		}
-	}
-
-	# Remove datasets we've done already
-	while( @datasetids and $datasetids[0] ne $datasetid )
-	{
-		shift @datasetids
-	}
-
-	# Remove any datasets that can't process records in $metadata_format
-	@datasetids = grep {
-		$dataset = $DATASETS{ $_ };
-		my %formats = get_export_plugins( $session, $dataset );
-		exists $formats{ $metadata_format };
-	} @datasetids;
-
-	# Hmm, nothing available in $metadata_format
-	if( !@datasetids )
-	{
-		return render_oai_error(
-			$session,
-			"noRecordsMatch",
-			"no records matched the combination of arguments given" );
-	}
-
-	$datasetid = $datasetids[0];
-	$dataset = $DATASETS{ $datasetid };
-
-	my $filters => $session->get_repository->get_conf( "oai", "filters" );
-	$filters = [] unless defined $filters;
-
-	if( defined $session->param( "resumptionToken" ) )
-	{
-		$searchexp = EPrints::Search->new( 
-			dataset => $dataset,
-			session => $session,
-			keep_cache => 1,
-			filters => [
-				@{$filters},
-			],
-			cache_id => $cacheid,
-			custom_order => $dataset->get_datestamp_field->get_name );
-
-		unless( defined $searchexp )
-		{
-			return render_oai_error(
-				$session,
-				"badResumptionToken",
-				"Token has expired" );
-		}
-	}
-	else
-	{
+		my $ds = $session->get_repository->get_dataset( "access" );
+		my $filters => $session->get_repository->get_conf( "oai", "filters" );
+		$filters = [] unless defined $filters;
 		$searchexp = new EPrints::Search(
-			dataset => $dataset,
 			session => $session,
 			keep_cache => 1,
 			allow_blank => 1,
 			filters => [
 				@{$filters},
 			],
-			custom_order => $dataset->get_datestamp_field->get_name );
+			dataset => $ds );
+
+		if( defined $args->{set} )
+		{
+			my( $head , @tail ) = EPrints::OpenArchives::decode_setspec( $args->{set} );
+			my( $key , $value ) = split( /=/ , $head );
+			$value = pop @tail if( scalar @tail > 0 );
+			my $views = $session->get_repository->get_conf( "oai","sets" ); #cjg
+			my $info;
+			foreach( @{$views} )
+			{
+				$info = $_ if( $_->{id} eq $key );
+			}
+			if( !defined $info )
+			{
+				return render_oai_error(
+					$session,
+					"badArgument",
+					"Invalid set parameter; unknown key ( $key )" );
+			}
+			my @fields;
+			my $match = "EX";
+ 			foreach( split( "/", $info->{fields} ) )
+			{
+				my $field = EPrints::Utils::field_from_config_string( $ds, $_ );
+				unless( $field->is_browsable() )
+				{
+					# Eeep. This is really bad. Just die now.
+					my $type = $field->get_type();
+					EPrints::abort( <<END );
+Cannot generate OAI set for field "$_"
+- Type "$type" cannot be browsed.
+END
+				}
+				push @fields, $field;
+				if( $field->is_type( "subject" ) )
+				{
+					$match = "EQ";
+				}
+			}
+			$searchexp->add_field( \@fields, $value, $match );
+		}
+		
+		if( defined $date_range )
+		{
+			$searchexp->add_field( 
+					$ds->get_field( "datestamp" ), 
+					$date_range );
+		}
+
+		$offset = 0;
 
 		if( !defined $searchexp )
 		{
@@ -630,27 +627,40 @@ sub _list
 				"Could not make Search (system error)." );
 		}
 	}
-
-	if( defined $set )
-	{
-		if( !add_set_filter( $session, $searchexp, $set ) )
-		{
-			return render_oai_error(
-				$session,
-				"badArgument",
-				"Invalid set parameter; unknown key ( $set )" );
-		}
-	}
-
-	if( defined $date_range )
-	{
-		add_date_range( $session, $searchexp, $date_range );
-	}
-
+	
 	$searchexp->perform_search();
 	my $count = $searchexp->count();
 
+	if( $count == 0 )
+	{	
+		## End of archive items, time to do deleted ones.
+		my $delsearchexp = $searchexp->clone;
+		$delsearchexp->set_dataset(
+			$session->get_repository->get_dataset( "deletion" ) );
+		$delsearchexp->perform_search();
+		$searchexp->dispose();
+		$searchexp = $delsearchexp;
+		
+		$count = $searchexp->count();
+	}
+
+	if( $count == 0 )
+	{
+		# no items at all
+
+		return render_oai_error(
+			$session,
+			"noRecordsMatch",
+			"No items match. None. None at all. Not even deleted ones." );
+	}	
+
+	my $cache = $searchexp->get_cache_id();
 	my $searchdsid = $searchexp->get_dataset()->id();
+	my %opts = ();
+	$opts{status}="deleted" if( $searchdsid eq "deletion" );
+
+	my $response;
+	my $mdtoken = "";
 
 	my $response;
 
@@ -659,22 +669,24 @@ sub _list
 		$response = $session->make_element( "ListIdentifiers" );
 
 		my @records = $searchexp->get_records( $offset, $PAGESIZE );
-		my $eprint;
-		foreach $eprint ( @records )
-		{
+               	my $eprint;
+               	foreach $eprint ( @records )
+               	{
 			$response->appendChild( $session->make_indent( 2 ) );
 			$response->appendChild(
-					make_header(
-						$session,
-						$eprint,
-						1 ) );
+				 EPrints::OpenArchives::make_header(
+					$session,
+					$eprint,
+					1 ) );
+					
 		}
 	}
-	elsif( $mode == 2 )
+
+	if( $mode == 2 )
 	{
 		$response = $session->make_element( "ListRecords" );
 
-		my $plugin_id = $formats{ $metadata_format };
+		my $plugin_id = $FORMATS{ $metadata_format };
 		my $plugin = $session->plugin( $plugin_id );
 
 		unless( defined $plugin )
@@ -682,108 +694,49 @@ sub _list
 			EPrints::abort( "Could not find plugin $plugin_id" );
 		}
 
+
 		my @records = $searchexp->get_records( $offset, $PAGESIZE );
-		my $eprint;
-		foreach $eprint ( @records )
-		{
+               	my $eprint;
+               	foreach $eprint ( @records )
+               	{
 			$response->appendChild( $session->make_indent( 2 ) );
 			$response->appendChild( 
-					make_record(
-						$session,
-						$eprint,
-						$plugin,
-						1 ) );
+				make_record(
+					$session,
+					$eprint,
+					$plugin,
+					1 ) );
 		}	
+
+		$mdtoken = "/".$metadata_format;
 	}
 
-	my $nextsearchexp;
-
-# find the next dataset to harvest
-	if( $count <= $offset+$PAGESIZE )
-	{
-		shift @datasetids; # pop $datasetid
-
-		while( @datasetids )
-		{	
-			my $nextdatasetid = shift(@datasetids);
-			my $dataset = $DATASETS{ $nextdatasetid };
-			my $filters => $session->get_repository->get_conf( "oai", "filters" );
-			$filters = [] unless defined $filters;
-			$nextsearchexp = new EPrints::Search(
-					session => $session,
-					keep_cache => 1,
-					allow_blank => 1,
-					filters => [
-						@$filters
-					],
-					dataset => $dataset,
-					custom_order => $dataset->get_datestamp_field->get_name );
-
-			if( defined $set )
-			{
-				if( !add_set_filter( $session, $nextsearchexp, $set ) )
-				{
-					return render_oai_error(
-							$session,
-							"badArgument",
-							"Invalid set parameter; unknown key ( $set )" );
-				}
-			}
-
-			if( defined $date_range )
-			{
-				add_date_range( $session, $nextsearchexp, $date_range );
-			}
-
-			$nextsearchexp->set_dataset( $dataset );
-			$nextsearchexp->perform_search();
-
-			if( $nextsearchexp->count > 0 )
-			{
-				last;
-			}
-			else
-			{
-				$nextsearchexp->dispose;
-				$nextsearchexp = undef;
-			}
-		}
-	}
+	$searchexp->dispose();
 
 	my $tokenvalue = "";
 	if( $count > $offset+$PAGESIZE )
 	{
-		$tokenvalue = build_token(
-			datasetid => $searchexp->get_dataset->id,
-			offset => $offset+$PAGESIZE,
-			cacheid => $searchexp->get_cache_id,
-			mdp => $metadata_format,
-			date => $date_range,
-			set => $set
-		);
+		$tokenvalue =  $searchdsid."/".
+				($offset+$PAGESIZE)."/".
+				$cache.$mdtoken;
 	}
-	elsif( defined($nextsearchexp) )
+	elsif( $searchdsid eq "archive" )
 	{
-		$tokenvalue = build_token(
-			datasetid => $nextsearchexp->get_dataset->id,
-			offset => 0,
-			cacheid => $nextsearchexp->get_cache_id,
-			mdp => $metadata_format,
-			date => $date_range,
-			set => $set
-		);
-		$nextsearchexp->dispose();
+		## End of archive items, time to do deleted ones.
+		my $delsearchexp = $searchexp->clone;
+		$delsearchexp->set_dataset(
+			$session->get_repository->get_dataset( "deletion" ) );
+		$delsearchexp->perform_search();
+		my $cache = $delsearchexp->get_cache_id();
+		my $count = $delsearchexp->count();
+		$delsearchexp->dispose();
+		# no point giving a token if we have no
+		# deleted items.
+		if( $count > 0 )
+		{
+			$tokenvalue = "deletion/0/$cache".$mdtoken;
+		}
 	}
-	elsif( $count == 0 )
-	{
-		EPrints::XML::dispose( $response );
-		# no items at all
-
-		return render_oai_error(
-			$session,
-			"noRecordsMatch",
-			"No items match. None. None at all. Not even deleted ones. (Internal query=" . $searchexp->serialise . ")" );
-	}	
 
 	if( EPrints::Utils::is_set( $tokenvalue ) )
 	{
@@ -793,8 +746,6 @@ sub _list
 			$tokenvalue ) );
 	}
 	
-	$searchexp->dispose();
-
 	my $f = $session->make_doc_fragment();
 	$f->appendChild( $session->make_indent( 2 ) );
 	$f->appendChild( $response );
@@ -816,42 +767,33 @@ sub ListMetadataFormats
 
 	return join_errors( $session, $errors ) if( scalar @{$errors} > 0 );
 
-	my %formats;
-
-	my $dataobj;
+	my $eprint;
 	if( defined $args->{identifier} )
 	{
-		my( $datasetid, $id ) = parse_identifier( $session, $args->{identifier} );
-		my $dataset = $DATASETS{ $datasetid };
-#		my $class = $dataset->get_object_class;
-#		$dataobj = $class->new(
-#			$session,
-#			$id,
-#			$dataset);
-		%formats = get_export_plugins( $session, $dataset );
-	}
-	else
-	{
-		foreach my $dataset (values %DATASETS)
-		{
-			%formats = (%formats, get_export_plugins( $session, $dataset ));
-		}
+		$eprint = new EPrints::DataObj::Access(
+			$session,
+			EPrints::OpenArchives::from_oai_identifier(
+				$session,
+				$args->{identifier} ),
+			$session->get_repository->get_dataset( "access" ) );
+
 	}
 	
 	my $response = $session->make_element( "ListMetadataFormats" );
 
-	foreach my $mdp (sort keys %formats)
+	foreach ( values %FORMATS )
 	{
-		my $plugin_id = $formats{ $mdp };
-		my $plugin = $session->plugin( $plugin_id ) or next;
-		if( defined($dataobj) )
+		my $plugin = $session->plugin( $_ ) or next;
+		if( defined($eprint) )
 		{
-			$plugin_id =~ s/^Export:://;
-			my $md = $dataobj->export( $plugin_id ) or next;
+			my $md = $eprint->export( $plugin ) or next;
 			EPrints::XML::dispose( $md );
 		}
 		
 		my $mdf = $session->make_element( "metadataFormat" );
+
+		my $mdp = $_;
+		$mdp =~ s/.*:://;
 
 		$mdf->appendChild( $session->render_data_element(
 			4,
@@ -905,31 +847,6 @@ sub ListSets
 	}
 
 	my $response = $session->make_element( "ListSets" );
-
-	my %sets;
-	foreach my $dataset (values %DATASETS)
-	{
-		my $id = $dataset->id;
-		my $confid = $dataset->confid;
-		$sets{ "_datasetid_$id" } = {
-			name => $session->phrase( "general:dataset_object_$confid" ),
-		};
-	}
-
-	foreach my $setspec (sort { $sets{$a}->{name} cmp $sets{$b}->{name} } keys %sets )
-	{
-		my $set = $session->make_element( "set" );
-		$response->appendChild( $session->make_indent( 2 ) );
-		$response->appendChild( $set );
-		$set->appendChild( $session->render_data_element(
-					4,
-					"setSpec",
-					$setspec ) );
-		$set->appendChild( $session->render_data_element(
-					4,
-					"setName",
-					$sets{$setspec}->{"name"} ) );
-	}
 
 	my $f = $session->make_doc_fragment();
 	$f->appendChild( $session->make_indent( 2 ) );
@@ -1022,16 +939,13 @@ sub get_oai_args
 				"Missing required argument: $_" );
 	}
 
-	if( defined $args{identifier} )
+	if( defined $args{identifier} && 
+		$args{identifier} !~ m/^oai:[a-zA-Z][a-zA-Z0-9\-]*(\.[a-zA-Z][a-zA-Z0-9\-]+)+:[a-zA-Z0-9\-_\.!~\*'\(\);\/\?:\@\&=\+\$,\%]+$/ )
 	{
-		my( $datasetid, $id ) = parse_identifier( $session, $args{identifier} );
-		if( !$datasetid || !exists($DATASETS{$datasetid}) || !$id )
-		{
-			push @errors, render_oai_error(
+		push @errors, render_oai_error(
 				$session,
 				"badArgument",
-				"identifier does not match system identifiers: $args{identifier}" );
-		}
+				"identifier does not match regexp: $args{identifier}" );
 	}
 		
 		
@@ -1062,19 +976,43 @@ sub munge_date
 	}
 	my( $year, $month, $day, $hour, $min, $sec ) = ( $1 , $2 , $3 , $5, $6 , $7 );
 
-	my( $granularity, $date );
-
 	if( defined $hour )
-	{	
-		$date = sprintf( "%04d-%02d-%02dT%02d:%02d:%02dZ",$year,$month,$day,$hour,$min,$sec );
-		$granularity = "YYYY-MM-DDThh:mm:ssZ";
-	}
-	else
 	{
-		$date = sprintf( "%04d-%02d-%02d",$year,$month,$day );
-		$granularity = "YYYY-MM-DD";
+		return( "", "", [render_oai_error(
+				$session,
+				"badArgument",
+				"Max granularity is YYYY-MM-DD: $string" )] );
 	}
 
+	my $granularity = "YYYY-MM-DD";
+
+	# $granularity = "YYYY-MM" unless( defined $day );
+	# $granularity = "YYYY" unless( defined $month );
+
+	# YYYY and YYYY-MM granularities disappeard between OAI2.0alpha3
+	# and OAI2.0 but I'll keep the code around just in case.
+
+#	if( !defined $month )
+#	{
+#		$month = ( $roundup ? 12 : 1 );
+#	}
+#	if( !defined $day )
+#	{
+#		$day = 1;
+#		if( $roundup )
+#		{
+#			$month+=1;
+#			if( $month == 13 ) { $month = 1; $year+=1; }
+#			my $gt = timegm(0,0,0,$day,$month-1,$year);
+#			# $gt is one month too far so we want one day less.
+#			my @bits = gmtime( $gt - 24*60*60 );
+#			$day = $bits[3];
+#			$month = $bits[4]+1;
+#			$year = $bits[5]+1900;
+#		}
+#	}
+
+	my $date = sprintf( "%04d-%02d-%02d",$year,$month,$day );
 
 	return( $date, $granularity, []);
 }
@@ -1083,17 +1021,32 @@ sub make_header
 {
 	    my ( $session, $eprint, $oai2 ) = @_;
 
-	my $dataset = $eprint->{dataset};
-
     my $header = $session->make_element( "header" );
-    my $oai_id = build_identifier( $session, $eprint->{dataset}, $eprint->get_id );
+    my $oai_id;
+    if( $oai2 )
+    {
+        $oai_id = $session->get_repository->get_conf(
+            "oai",
+            "v2",
+            "archive_id" );
+    }
+    else
+    {
+        $oai_id = $session->get_repository->get_conf(
+            "oai",
+            "archive_id" );
+    }
+
+	$oai_id .= ":access";
 
     $header->appendChild( $session->render_data_element(
         6,
         "identifier",
-        $oai_id ) );
+        EPrints::OpenArchives::to_oai_identifier(
+            $oai_id,
+            $eprint->get_id ) ) );
 
-    my $datestamp = $eprint->get_value( $dataset->get_datestamp_field->get_name );
+    my $datestamp = $eprint->get_value( "datestamp" );
     unless( EPrints::Utils::is_set( $datestamp ) )
     {
         # is this a good default?
@@ -1151,263 +1104,4 @@ sub make_record
     }
 
     return $record;
-}
-
-sub get_view_priv
-{
-	my( $dataset ) = @_;
-
-	if( $dataset->confid eq "eprint" )
-	{
-		return $dataset->confid . "/" . $dataset->id . "/view";
-	}
-	else
-	{
-		return $dataset->confid . "/view";
-	}
-}
-
-sub can_view
-{
-	my( $session, $dataset ) = @_;
-
-return 1;
-
-	my $rc = 0;
-
-	my $priv = get_view_priv( $dataset );
-
-	my $user = $session->current_user;
-
-	if( defined $user )
-	{
-		if( $user->has_role( $priv ) )
-		{
-			$rc = 1;
-		}
-	}
-
-	return $rc;
-}
-
-sub can_view_access
-{
-	my( $session ) = @_;
-
-	my $rc = 0;
-
-	my $user = $session->current_user;
-
-	if( !defined $user )
-	{
-		EPrints::Apache::AnApache::send_status_line( $session->{request}, 401, "Access denied" );
-	}
-	elsif( !$user->has_role( "access-view" ) )
-	{
-		EPrints::Apache::AnApache::send_status_line( $session->{request}, 401, "Access denied" );
-	}
-	else
-	{
-		$rc = 1;
-	}
-
-	return $rc;
-}
-
-sub get_datasets
-{
-	my( $session ) = @_;
-
-	my @datasets;
-
-	my @datasetids = EPrints::DataSet::get_dataset_ids();
-	foreach my $datasetid (@datasetids)
-	{
-		next if $datasetid eq "eprint";
-		my $dataset = $session->get_repository->get_dataset( $datasetid );
-		if( can_view( $session, $dataset ) &&
-			defined($dataset->get_datestamp_field) )
-		{
-			push @datasets, $dataset;
-		}
-	}
-
-	return @datasets;
-}
-
-sub get_export_plugins
-{
-	my( $session, $dataset ) = @_;
-
-	my %formats;
-
-	my $match = "dataobj/" . $dataset->confid;
-
-	my %seen;
-
-	my $oai = $session->get_repository->get_conf( "oai", "v2", "output_plugins");
-	while(my( $mdp, $plugin_id ) = each %$oai)
-	{
-		$plugin_id = "Export::$plugin_id";
-		my( $ok ) = $session->plugin_list(
-			can_accept => $match,
-			type => $plugin_id,
-		);
-		if( $ok )
-		{
-			$formats{ $mdp } = $plugin_id;
-			$seen{ $plugin_id } = 1;
-		}
-	}
-
-	my @plugin_ids = $session->plugin_list(
-		has_xmlns => 1,
-		can_accept => $match,
-		is_visible => "staff",
-	);
-
-	foreach my $plugin_id (@plugin_ids)
-	{
-		my $mdp = $plugin_id;
-		$mdp =~ s/^Export:://;
-		$mdp =~ s/::/_/g;
-		next if $seen{ $plugin_id };
-		$formats{ $mdp } = $plugin_id;
-	}
-
-	return %formats;
-}
-
-sub parse_identifier
-{
-	my( $session, $identifier ) = @_;
-
-	my $base = $session->get_repository->get_conf( "oai","v2","archive_id" );
-	$base = "oai:$base:";
-	$identifier =~ s/^$base//;
-
-	my( $datasetid, $id ) = split /:/, $identifier, 2;
-
-	if( !$id )
-	{
-		$id = $datasetid;
-		$datasetid = "archive";
-	}
-
-	return( $datasetid, $id );
-}
-
-sub build_identifier
-{
-	my( $session, $dataset, $identifier ) = @_;
-
-	my $base = $session->get_repository->get_conf( "oai","v2","archive_id" );
-	$identifier = "oai:" . $base . ":" . $dataset->id . ":" . $identifier;
-
-	return $identifier;
-}
-
-sub get_object_from_identifier
-{
-	my( $session, $identifier ) = @_;
-
-	my( $datasetid, $id ) = parse_identifier( $session, $identifier );
-
-	my $dataset = $DATASETS{ $datasetid };
-	my $class = $dataset->get_object_class;
-
-	my $dataobj = $class->new(
-		$session,
-		$id,
-	);
-
-	return $dataobj;
-}
-
-sub build_token
-{
-	my( %opts ) = @_;
-
-	my $token = join "/", map { defined($_) ? $_ : "" }
-		@opts{qw(
-			datasetid
-			offset
-			cacheid
-			mdp
-			date
-			set
-		)};
-	
-	return $token;
-}
-
-sub parse_token
-{
-	my( $token ) = @_;
-
-	my %opts;
-	@opts{qw(
-			datasetid
-			offset
-			cacheid
-			mdp
-			date
-			set
-	)} = split /\//, $token;
-
-	return exists($opts{set}) ? %opts : ();
-}
-
-sub add_date_range
-{
-	my( $session, $searchexp, $value ) = @_;
-
-	$searchexp->add_field(
-		$searchexp->get_dataset->get_datestamp_field,
-		$value,
-		"EX"
-	);
-}
-
-sub add_set_filter
-{
-	my( $session, $searchexp, $set ) = @_;
-
-	return 1 if $set =~ /^_datasetid_/;
-
-	my $dataset = $searchexp->get_dataset;
-
-	my( $head , @tail ) = EPrints::OpenArchives::decode_setspec( $set );
-	my( $key , $value ) = split( /=/ , $head );
-	$value = pop @tail if( scalar @tail > 0 );
-	my $views = $session->get_repository->get_conf( "oai","sets" ); #cjg
-		my $info;
-	foreach( @{$views} )
-	{
-		$info = $_ if( $_->{id} eq $key );
-	}
-	return 0 unless defined $info;
-	my @fields;
-	my $match = "EX";
-	foreach( split( "/", $info->{fields} ) )
-	{
-		my $field = EPrints::Utils::field_from_config_string( $dataset, $_ );
-		unless( $field->is_browsable() )
-		{
-# Eeep. This is really bad. Just die now.
-			my $type = $field->get_type();
-			EPrints::abort( <<END );
-Cannot generate OAI set for field "$_"
- - Type "$type" cannot be browsed.
-END
-		}
-		push @fields, $field;
-		if( $field->is_type( "subject" ) )
-		{
-			$match = "EQ";
-		}
-	}
-	$searchexp->add_field( \@fields, $value, $match );
-
-	return 1;
 }

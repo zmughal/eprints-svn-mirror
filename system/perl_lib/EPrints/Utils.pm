@@ -29,19 +29,75 @@ This package contains functions which don't belong anywhere else.
 
 package EPrints::Utils;
 
+use Filesys::DiskSpace;
 use Unicode::String qw(utf8 latin1 utf16);
 use File::Copy qw();
 use Text::Wrap qw();
-use LWP::UserAgent;
+use MIME::Lite;
+use LWP::MediaTypes qw( guess_media_type );
 use URI;
 
 use strict;
 
 $EPrints::Utils::FULLTEXT = "_fulltext_";
 
+my $DF_AVAILABLE;
+
 BEGIN {
 	eval "use Term::ReadKey";
 	eval "use Compat::Term::ReadKey" if $@;
+
+	$DF_AVAILABLE = 0;
+
+	sub detect_df 
+	{
+		my $dir = "/";
+		my ($fmt, $res);
+	
+		# try with statvfs..
+		eval 
+		{  
+			{
+				package main;
+				require "sys/syscall.ph";
+			}
+			$fmt = "\0" x 512;
+			$res = syscall (&main::SYS_statvfs, $dir, $fmt) ;
+			$res == 0;
+		}
+		# try with statfs..
+		|| eval 
+		{ 
+			{
+				package main;
+				require "sys/syscall.ph";
+			}	
+			$fmt = "\0" x 512;
+			$res = syscall (&main::SYS_statfs, $dir, $fmt);
+			$res == 0;
+		}
+	}
+	unless( $EPrints::SystemSettings::conf->{disable_df} )
+	{
+		$DF_AVAILABLE = detect_df();
+		if( !$DF_AVAILABLE )
+		{
+			print STDERR <<END;
+---------------------------------------------------------------------------
+df ("Disk Free" system call) appears to be unavailable on your server. To 
+enable it, you should run 'h2ph * */*' (as root) in your /usr/include 
+directory. See the EPrints manual for more information.
+
+If you can't get df working on your system, you can work around it by
+adding 
+  disable_df => 1
+to .../eprints2/perl_lib/EPrints/SystemSettings.pm
+but you should read the manual about the implications of doing this.
+---------------------------------------------------------------------------
+END
+			exit;
+		}
+	}
 }
 
 
@@ -54,8 +110,6 @@ BEGIN {
 Return the number of bytes of disk space available in the directory
 $dir or undef if we can't find out.
 
-DEPRECATED - use EPrints::Platform::free_space instead.
-
 =cut
 ######################################################################
 
@@ -63,9 +117,8 @@ sub df_dir
 {
 	my( $dir ) = @_;
 
-	EPrints::deprecated;
-
-	return EPrints::Platform::free_space( $dir );
+	return df $dir if( $DF_AVAILABLE );
+	die( "Attempt to call df when df function is not available." );
 }
 
 
@@ -296,7 +349,7 @@ sub tree_to_utf8
 	if( EPrints::XML::is_dom( $node, "NodeList" ) )
 	{
 # Hmm, a node list, not a node.
-		my $string = "";
+		my $string = utf8("");
 		my $ws = $whitespace_before;
 		for( my $i=0 ; $i<$node->length ; ++$i )
 		{
@@ -320,7 +373,7 @@ sub tree_to_utf8
 	}
 	my $name = $node->nodeName();
 
-	my $string = "";
+	my $string = utf8("");
 	my $ws = $whitespace_before;
 	foreach( $node->getChildNodes )
 	{
@@ -339,15 +392,15 @@ sub tree_to_utf8
 	}
 
 	# <hr /> only makes sense if we are generating a known width.
-	if( defined $width && $name eq "hr" )
+	if( $name eq "hr" && defined $width )
 	{
-		$string = "\n"."-"x$width."\n";
+		$string = latin1("\n"."-"x$width."\n");
 	}
 
 	# Handle wrapping block elements if a width was set.
-	if( defined $width && ( $name eq "p" || $name eq "mail" ) )
+	if( ( $name eq "p" || $name eq "mail" ) && defined $width)
 	{
-		$string = wrap_text( $string, $width );
+		$string = utf8( wrap_text( $string, $width ) );
 	}
 	$ws = $whitespace_before;
 	if( $name eq "p" )
@@ -406,54 +459,6 @@ sub copy
 	my( $source, $target ) = @_;
 	
 	return File::Copy::copy( $source, $target );
-}
-
-######################################################################
-=pod
-
-=item $response = EPrints::Utils::wget( $session, $source, $target )
-
-Copy $source file or URL to $target file without alteration.
-
-Will fail if $source is a "file:" and "enable_file_imports" is false or if $source is any other scheme and "enable_web_imports" is false.
-
-Returns the HTTP response object: use $response->is_success to check whether the copy succeeded.
-
-=cut
-######################################################################
-
-sub wget
-{
-	my( $session, $url, $target ) = @_;
-
-	$target = "$target";
-
-	$url = URI->new( $url );
-
-	if( !defined($url->scheme) )
-	{
-		$url->scheme( "file" );
-	}
-
-	if( $url->scheme eq "file" )
-	{
-		if( !$session->get_repository->get_conf( "enable_file_imports" ) )
-		{
-			return HTTP::Response->new( 403, "Access denied by configuration: file imports disabled" );
-		}
-	}
-	elsif( !$session->get_repository->get_conf( "enable_web_imports" ) )
-	{
-		return HTTP::Response->new( 403, "Access denied by configuration: web imports disabled" );
-	}
-
-	my $ua = LWP::UserAgent->new();
-
-	my $r = $ua->get( $url,
-		":content_file" => $target
-	);
-
-	return $r;
 }
 
 ######################################################################
@@ -628,7 +633,7 @@ sub _render_citation_aux
 				$rendered = $params{session}->make_element( 
 					"a",
 					target=>$params{target},
-					href=> $params{url} );
+					href=>$params{url} );
 			}
 			else
 			{
@@ -664,6 +669,9 @@ sub _render_citation_aux
 
 Return the EPrint::MetaField from $dataset with the given name.
 
+If fieldname ends in ".id" then return a metafield representing the
+ID part only.
+
 If fieldname has a semicolon followed by render options then these
 are passed as render options to the new EPrints::MetaField object.
 
@@ -674,63 +682,44 @@ sub field_from_config_string
 {
 	my( $dataset, $fieldname ) = @_;
 
+	my $modifiers = 0;
+
 	my %q = ();
-	if( $fieldname =~ s/^([^;]*)(;(.*))?$/$1/ )
+	if( $fieldname =~ s/^([^;\.]*)(\.id)?(;(.*))?$/$1/ )
 	{
-		if( defined $3 )
+		if( defined $4 )
 		{
-			foreach my $render_pair ( split( /;/, $3 ) )
+			foreach( split( /;/, $4 ) )
 			{
-				my( $k, $v ) = split( /=/, $render_pair );
-				$v = 1 unless defined $v;
-				$q{"render_$k"} = $v;
+				$q{$_}=1;
+				$modifiers = 1;
 			}
+		}
+		if( defined $2 ) 
+		{ 
+			$q{id} = 1; 
+			$modifiers = 1;
 		}
 	}
 
-	my $field;
-	my @join = ();
-	
-	my @fnames = split /\./, $fieldname;
-	foreach my $fname ( @fnames )
-	{
-		if( !defined $dataset )
-		{
-			EPrints::abort( "Attempt to get a field or subfield from a non existant dataset. Could be due to a sub field of a inappropriate field type." );
-		}
-		$field = $dataset->get_field( $fname );
-		push @join, [ $field, $dataset ];
-		if( defined $field->{"datasetid"} )
-		{
-			my $datasetid = $field->get_property( "datasetid" );
-			$dataset = $dataset->get_repository->get_dataset( $datasetid );
-		}
-		else
-		{
-			# for now, force an error if an attempt is made
-			# to get a sub-field from a field other than
-			# subobject or itemid.
-			$dataset = undef;
-		}
-	}
+	my $field = $dataset->get_field( $fieldname );
 
 	if( !defined $field )
 	{
 		EPrints::abort( "Can't make field from config_string: $fieldname" );
 	}
-	pop @join;
-	if( scalar @join )
-	{
-		$q{"join_path"} = \@join;
-	}
 
-	if( scalar keys %q  )
+	unless( $modifiers ) { return $field; }
+
+	if( scalar keys %q )
 	{
 		$field = $field->clone;
 	
-		foreach my $k ( keys %q )
+		foreach( keys %q )
 		{
-			$field->set_property( $k, $q{$k} );
+			my( $k, $v ) = split( /=/, $_ );
+			$v = 1 unless defined $v;
+			$field->set_property( "render_$k", $v );
 		}
 	}
 	
@@ -1254,19 +1243,6 @@ sub chown_for_eprints
 
 	EPrints::Platform::chown( $uid, $gid, $file );
 }
-
-
-# Return the last modification time of a file.
-
-sub mtime
-{
-	my( $file ) = @_;
-
-	my @filestat = stat( $file );
-
-	return $filestat[9];
-}
-
 
 ######################################################################
 # Redirect as this function has been moved.

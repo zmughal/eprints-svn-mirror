@@ -42,7 +42,6 @@ $c->{search}->{simple} =
 		"bytitle" 	 => "title/creators_name/-date"
 	},
 	default_order => "byyear",
-	show_zero_results => 1,
 };
 		
 
@@ -53,7 +52,6 @@ $c->{search}->{advanced} =
 		{ meta_fields => [ "title" ] },
 		{ meta_fields => [ "creators_name" ] },
 		{ meta_fields => [ "abstract" ] },
-		{ meta_fields => [ "date" ] },
 		{ meta_fields => [ "keywords" ] },
 		{ meta_fields => [ "subjects" ] },
 		{ meta_fields => [ "type" ] },
@@ -62,7 +60,7 @@ $c->{search}->{advanced} =
 		{ meta_fields => [ "ispublished" ] },
 		{ meta_fields => [ "refereed" ] },
 		{ meta_fields => [ "publication" ] },
-		{ meta_fields => [ "documents.format" ] },
+		{ meta_fields => [ "date" ] }
 	],
 	preamble_phrase => "cgi/advsearch:preamble",
 	title_phrase => "cgi/advsearch:adv_search",
@@ -75,36 +73,6 @@ $c->{search}->{advanced} =
 		"bytitle" 	 => "title/creators_name/-date"
 	},
 	default_order => "byyear",
-	show_zero_results => 1,
-};
-
-$c->{issues_search} =
-{
-	search_fields => [
-		{ meta_fields => [ "item_issues_type" ] },
-		{ meta_fields => [ "item_issues_timestamp" ] },
-		{ meta_fields => [ "userid.username" ] },
-		{ meta_fields => [ "eprint_status" ], default=>'archive' },
-		{ meta_fields => [ "creators_name" ] },
-		{ meta_fields => [ "date" ] },
-		{ meta_fields => [ "subjects" ] },
-		{ meta_fields => [ "type" ] },
-	],
-	preamble_phrase => "search/issues:preamble",
-	title_phrase => "search/issues:title",
-	citation => "issue",
-	page_size => 100,
-	staff => 1,
-	order_methods => {
-		"byyear" 	 => "-date/creators_name/title",
-		"byyearoldest"	 => "date/creators_name/title",
-		"bydatestamp"	 => "-datestamp",
-		"bydatestampoldest" => "datestamp",
-		"byfirstseen" => "item_issues",
-		"bynissues" => "-item_issues_count",
-	},
-	default_order => "byfirstseen",
-	show_zero_results => 0,
 };
 
 
@@ -128,7 +96,6 @@ $c->{search}->{user} =
 		"bytype" 	 =>  "usertype/name",
 	},
 	default_order => "byname",
-	show_zero_results => 1,
 };
 
 # If set to true, this option causes name searches to match the

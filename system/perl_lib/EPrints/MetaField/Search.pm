@@ -44,13 +44,9 @@ use EPrints::MetaField;
 
 sub get_sql_type
 {
-	my( $self, $session, $notnull ) = @_;
+	my( $self, $notnull ) = @_;
 
-	return $session->get_database->get_column_type(
-		$self->get_sql_name(),
-		EPrints::Database::SQL_LONGVARCHAR,
-		$notnull
-	);
+	return $self->get_sql_name()." TEXT".($notnull?" NOT NULL":"");
 }
 
 # never SQL index this type
@@ -58,7 +54,7 @@ sub get_sql_index
 {
 	my( $self ) = @_;
 
-	return ();
+	return undef;
 }
 
 

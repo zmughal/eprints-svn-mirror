@@ -44,8 +44,8 @@ sub unknown_start_element
 {
 	my( $self, $found, $expected ) = @_;
 
-	$self->error("Unexpected tag: expected <$expected> found <$found>\n");
-	die "\n"; # Break out of the parsing
+	$self->error( "Unexpected tag: expected <$expected> found <$found>\n" );
+	die "\n"; # Break out of parsing
 }
 
 
@@ -162,7 +162,10 @@ sub end_element
 		}
 
 		# don't keep tmpfiles between items...
-		@{$self->{tmpfiles}} = ();
+		foreach( @{$self->{tmpfiles}} )
+		{
+			unlink( $_ );
+		}
 	}
 
 	if( $self->{depth} > 1 )
@@ -170,22 +173,39 @@ sub end_element
 		if( $self->{base64} )
 		{
 			$self->{base64} = 0;
-			my $tmpfile = File::Temp->new;
-			push @{$self->{tmpfiles}}, $tmpfile;
-			syswrite($tmpfile, MIME::Base64::decode( join('',@{$self->{base64data}}) ));
+			my $tf = $self->{tmpfilecount}++;
+			my $tmpfile = "/tmp/epimport.$$.".time.".$tf.data";
+			$self->{tmpfile} = $tmpfile;
+			push @{$self->{tmpfiles}},$tmpfile;
+			open( TMP, ">$tmpfile" );
+			print TMP MIME::Base64::decode( join('',@{$self->{base64data}}) );
+			close TMP;
 
 			$self->{xmlcurrent}->appendChild( 
-				$self->{plugin}->{session}->make_text( "$tmpfile" ) );
-			delete $self->{base64data};
+				$self->{plugin}->{session}->make_text( $tmpfile ) );
+			delete $self->{basedata};
 		}
 		elsif( $self->{href} )
 		{
-			my $href = delete $self->{href};
-			my $file = $self->{xmlcurrent}->parentNode;
-			$file->removeChild( $self->{xmlcurrent} );
-			my $url = $self->{plugin}->{session}->make_element( "url" );
-			$file->insertBefore( $url, $file->firstChild() );
-			$url->appendChild( $self->{plugin}->{session}->make_text( $href ) );
+			if( $self->{plugin}->{session}->get_repository->get_conf( "enable_file_imports" ) )
+			{
+				my $href = $self->{href};
+				$href =~ s/^file:\/\///;
+				if( -e $href )
+				{
+					$self->{xmlcurrent}->appendChild( 
+						$self->{plugin}->{session}->make_text( $href ) );
+				}
+				else
+				{
+					$self->{plugin}->warning( "Could not see import file: ".$self->{href} );
+				}
+			}	
+			else
+			{
+				$self->{plugin}->warning( $self->{plugin}->{session}->phrase( "Plugin/Import/DefaultXML:file_imports_disabled" ) );
+			}
+			delete $self->{href};
 		}
 		pop @{$self->{xmlstack}};
 		
@@ -238,6 +258,16 @@ sub start_element
 	}
 
 	$self->{depth}++;
+}
+
+sub DESTROY
+{
+	my( $self ) = @_;
+
+	foreach( @{$self->{tmpfiles}} )
+	{
+		unlink( $_ );
+	}
 }
 
 1;

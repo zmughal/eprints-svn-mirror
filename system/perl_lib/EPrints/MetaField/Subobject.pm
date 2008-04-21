@@ -46,7 +46,7 @@ use EPrints::MetaField;
 
 sub get_sql_type
 {
-	my( $self, $session, $notnull ) = @_;
+	my( $self, $notnull ) = @_;
 
 	return undef;
 }
@@ -71,45 +71,6 @@ sub get_property_defaults
 	$defaults{show_in_fieldlist} = 0;
 
 	return %defaults;
-}
-
-sub render_xml_schema
-{
-	my( $self, $session ) = @_;
-
-	my $datasetid = $self->get_property( "datasetid" );
-
-	my $element = $session->make_element( "xs:element", name => $self->get_name );
-
-	if( $self->get_property( "multiple" ) )
-	{
-		my $complexType = $session->make_element( "xs:complexType" );
-		$element->appendChild( $complexType );
-		my $sequence = $session->make_element( "xs:sequence" );
-		$complexType->appendChild( $sequence );
-		my $item = $session->make_element( "xs:element", name => $datasetid, maxOccurs => "unbounded", type => $self->get_xml_schema_type() );
-		$sequence->appendChild( $item );
-	}
-	else
-	{
-		$element->setAttribute( type => $self->get_xml_schema_type() );
-	}
-
-	return $element;
-}
-
-sub get_xml_schema_type
-{
-	my( $self ) = @_;
-
-	return "dataset_".$self->get_property( "datasetid" );
-}
-
-sub render_xml_schema_type
-{
-	my( $self, $session ) = @_;
-
-	return $session->make_doc_fragment;
 }
 
 ######################################################################
