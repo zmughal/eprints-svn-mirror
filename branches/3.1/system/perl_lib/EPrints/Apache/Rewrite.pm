@@ -183,6 +183,17 @@ sub handler
 	
 			my $filename = sprintf( '%s/%02d%s',$eprint->local_path.($thumbnails?"/thumbnails":""), $pos, $tail );
 
+			# This will stop the default extension-based Apache handlers
+			if( $filename =~ /\.(php|shtml)$/i )
+			{
+				$r->content_type( "text/plain" );
+				$r->set_handlers( PerlFixupHandler => sub {
+					$_[0]->content_type( "text/plain" );
+					$_[0]->handler('default-handler');
+					return OK;
+				} );
+			}
+
 			$r->filename( $filename );
 
 			$session->terminate;
