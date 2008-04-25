@@ -6729,4 +6729,5 @@ PACKAGE: 2.2.99.2
  * Use the EPrint object to render fileinfo
  * Don't DECLINE requests to "/" when https_root is set to "", fixing #3361
  * Use relative path for icons and thumbnails, fixing #3360
+ * Prevent uploaded PHP scripts from being executed
 
