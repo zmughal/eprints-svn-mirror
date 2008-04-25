@@ -6725,3 +6725,8 @@ PACKAGE: 2.2.99.2
  * Use relative path to autocomplete scripts (seems autocomplete won't follow a
     secure redirect), fixing #3327
 
+2008-04-25 tdb
+ * Use the EPrint object to render fileinfo
+ * Don't DECLINE requests to "/" when https_root is set to "", fixing #3361
+ * Use relative path for icons and thumbnails, fixing #3360
+
