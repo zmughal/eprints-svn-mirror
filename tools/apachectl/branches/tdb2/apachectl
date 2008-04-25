@@ -40,7 +40,13 @@ ARGV="$@"
 # --------------------                              --------------------
 # 
 # the path to your httpd binary, including options if necessary
-HTTPD='/usr/sbin/httpd -d ./apache'
+
+ORACLE_SID=XE
+ORACLE_HOME=/usr/lib/oracle/xe/app/oracle/product/10.2.0/server
+
+PWD=`pwd`
+
+HTTPD="/usr/sbin/httpd -d $PWD/apache"
 
 PERL5LIB=`pwd`/perl_lib
 export PERL5LIB
