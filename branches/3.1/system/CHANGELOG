@@ -7386,3 +7386,6 @@ EPRINTS-3.1-beta-2
 2008-04-25 tdb
  * Prevent uploaded PHP scripts from being executed
 
+2008-04-29 cjg
+ * Added "schema" option to epadmin
+ * Added XML::tidy to schema exporter
