@@ -63,13 +63,14 @@ use Getopt::Long;
 use Pod::Usage;
 use strict;
 
-my( $opt_license, $opt_license_summary, $opt_help, $opt_man );
+my( $opt_license, $opt_license_summary, $opt_copyright_summary, $opt_help, $opt_man );
 
 GetOptions(
 	'help' => \$opt_help,
 	'man' => \$opt_man,
 	'license=s' => \$opt_license,
 	'license-summary=s' => \$opt_license_summary,
+	'copyright-summary=s' => \$opt_copyright_summary,
 ) || pod2usage( 2 );
 
 pod2usage( 1 ) if $opt_help;
@@ -81,6 +82,7 @@ my( $install_from, $to, $package_version, $package_desc, $package_file, $package
 
 my $LICENSE_FILE = $opt_license || "$install_from/release/licenses/gpl.txt";
 my $LICENSE_INLINE_FILE = $opt_license_summary || "$install_from/release/licenses/gplin.txt";
+my $COPYRIGHT_INLINE_FILE = $opt_copyright_summary || "$install_from/release/licenses/copyright.txt";
 
 erase_dir( $to ) if -d $to;
 
@@ -96,6 +98,7 @@ cmd("cp $LICENSE_FILE $to/eprints/COPYING");
 
 my %r = (
 	"__VERSION__"=>$package_version,
+	"__COPYRIGHT__"=>readfile( $COPYRIGHT_INLINE_FILE ),
 	"__LICENSE__"=>readfile( $LICENSE_INLINE_FILE ),
 	"__GENERICPOD__"=>readfile( "$install_from/system/pod/generic.pod" ),
 	"__RPMVERSION__"=>$rpm_version,
@@ -207,9 +210,7 @@ sub copyfile
 
 	if( $f =~ m/\/system\/cgi\// ) { $textfile = 1; }	
 	if( $f =~ m/\/system\/bin\// ) { $textfile = 1; }
-	if( $f =~ m/\.pl$/ ) { $textfile = 1; }
-	if( $f =~ m/\.pm$/ ) { $textfile = 1; }
-	if( $f =~ m/\.spec$/ ) { $textfile = 1; }
+	if( $f =~ m/\.(pl|pm|spec|js|css|xml)$/ ) { $textfile = 1; }
 
 	if( !$textfile )
 	{
@@ -220,9 +221,11 @@ sub copyfile
 
 	my $data = readfile( $from );
 
+	strip_copyright( $data );
+
 	foreach my $name (keys %$r)
 	{
-		insert_data( $data, $name, $r->{$name}, ref($r->{$name}) eq 'ARRAY' );
+		insert_data( $data, $name, $r->{$name} );
 	}
 
 	open OUT, ">$to" or die "Unable to open output file.\n";
@@ -230,38 +233,62 @@ sub copyfile
 	close OUT;
 }
 
+# If __COPYRIGHT__ and __LICENSE__ exist in a file strip everything between
+# the two, which will be some kind of default copyright/license statement
+sub strip_copyright
+{
+	my( $data ) = @_;
+
+	my $start;
+	my $end;
+
+	for(my $i = 0; $i < @$data; ++$i)
+	{
+		$start = $i if $data->[$i] =~ /__COPYRIGHT__/;
+		$end = $i if defined($start) && $data->[$i] =~ /__LICENSE__/;
+	}
+
+	if( defined($start) && defined($end) )
+	{
+		splice(@$data,$start+1,$end-$start-1);
+	}
+}
+
+# Replace macro-like commands with their expanded values. The values may be
+# multiline e.g. __LICENSE__
 sub insert_data
 {
-	my( $data, $key, $value, $multiline ) = @_;
+	my( $data, $key, $value ) = @_;
 
-	unless( $multiline )
+	if( ref($value) eq "ARRAY" )
 	{
+		my @new;
 		foreach( @{$data} )
 		{
-			s/$key/$value/g;
+			if( $_ =~ /$key/ )
+			{
+				my $prefix = $`;
+				my $postfix = $';
+				foreach my $v (@$value)
+				{
+					chomp($v);
+					push @new, $prefix . $v . $postfix;
+				}
+			}
+			else
+			{
+				push @new, $_;
+			}
 		}
-		return;
+		@$data = @new;
 	}
-
-	my @new = ();
-	foreach( @{$data} )
+	else
 	{
-		unless( m/$key/ )
+		foreach( @$data )
 		{
-			push @new, $_;
-			next;
-		}
-
-		foreach my $rline ( @{$value} )
-		{
-			chomp $rline;
-			my $l2 = $_;
-			$l2=~s/$key/$rline/;
-			push @new, $l2;
+			s/$key/$value/;
 		}
 	}
-
-	@{$data} = @new;
 }
 
 sub readfile
