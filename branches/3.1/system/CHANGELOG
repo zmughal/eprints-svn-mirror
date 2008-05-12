@@ -7394,3 +7394,6 @@ EPRINTS-3.1-beta-2
  * Output a short list of commands with no arguments to epadmin
  * Clean up the list object in epadmin schema
 
+2008-05-12 tdb
+ * Changed ordervalues columns to LONGTEXT from TEXT, fixing #3369
+
