@@ -7399,3 +7399,6 @@ EPRINTS-3.1-beta-2
  * Check current_user exists before accessing it in Subject plugin
  * UTF8 => utf-8 in email charset, fixing #3370
 
+2008-05-13 tdb
+ * Check tables exist before attempting to create them when creating dataset tables (allows update_database_structure to "fill in the gaps")
+
