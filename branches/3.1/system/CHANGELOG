@@ -7402,3 +7402,14 @@ EPRINTS-3.1-beta-2
 2008-05-13 tdb
  * Check tables exist before attempting to create them when creating dataset tables (allows update_database_structure to "fill in the gaps")
 
+2008-05-16 cjg 
+ * Fixed bug in toolbox which prevented searching sub-objects and linked items.
+
+2008-05-16 cjg 
+ * Added boxes plugin system for EPrint summary pages.
+
+2008-05-16 cjg 
+ * Improved text-browsing for Items and Review screen-- use of alt tags on icons.
+
+2008-05-16 cjg 
+ * Added AJAX Phrase editor!
