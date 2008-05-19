@@ -7413,3 +7413,7 @@ EPRINTS-3.1-beta-2
 
 2008-05-16 cjg 
  * Added AJAX Phrase editor!
+
+2008-05-19 tdb
+ * Secured oai_accesslogs script
+
