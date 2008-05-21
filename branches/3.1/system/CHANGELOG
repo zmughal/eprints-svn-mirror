@@ -7383,6 +7383,10 @@ EPRINTS-3.1-beta-2
 	- ignore the case of NAMES
 	- don't decode_latex URLs or URIs
 
+2008-04-24 tdb 
+ * Added a simple default citation style for imports 
+ * import->run() now replaces existing records and pulls in full-texts 
+
 2008-04-25 tdb
  * Prevent uploaded PHP scripts from being executed
 
