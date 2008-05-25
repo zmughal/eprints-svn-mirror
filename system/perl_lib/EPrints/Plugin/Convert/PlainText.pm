@@ -107,36 +107,38 @@ sub export
 	}
 	return () unless defined $cmd_id;
 	
+	my %files = $doc->files;
 	my @txt_files;
-	foreach my $file ( $doc->get_stored_files( "data" ) )
+	foreach my $filename ( keys %files )
 	{
-		my $filename = $file->get_value( "filename" );
 		my $tgt = $filename;
 		next unless $tgt =~ s/\.$file_extension$/\.txt/;
+		my $infile = EPrints::Utils::join_path( $doc->local_path, $filename );
 		my $outfile = EPrints::Utils::join_path( $dir, $tgt );
 		
-		if( $file->get_value( "mime_type" ) eq "text/plain" )
+		if( $file_extension eq 'txt' )
 		{
-			my $fh = $file->get_fh;
-			open( my $fo, ">", $outfile );
 			# PerlIO
 			if( $PERL_VERSION gt v5.8.0 )
 			{
-				binmode($fh, ":encoding(iso-8859-1)");
-				binmode($fo, ":utf8");
+				open( my $fh, "<:encoding(iso-8859-1)", $infile );
+				open( my $fo, ">:utf8", $outfile );
 				while(<$fh>) { print $fo $_ }
+				close( $fh ); close( $fo );
 			}
 			# Unicode::String
 			else
 			{
+				open( my $fh, "<", $infile );
+				open( my $fo, ">", $outfile );
 				while(<$fh>) { print $fo Unicode::String::latin1($_)->utf8; }
+				close( $fh ); close( $fo );
 			}
-			close( $fh ); close( $fo );
 		}
 		else
 		{
-			my $infile = $file->get_local_copy;
 			$repository->exec( $cmd_id,
+				SOURCE_DIR => $doc->local_path,
 				SOURCE => $infile,
 				TARGET_DIR => $dir,
 				TARGET => $outfile,

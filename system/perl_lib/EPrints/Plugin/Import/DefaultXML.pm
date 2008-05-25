@@ -134,7 +134,14 @@ sub characters
 
 	if( $self->{depth} > 1 )
 	{
-		$self->{xmlcurrent}->appendChild( $self->{plugin}->{session}->make_text( $node_info->{Data} ) );
+		if( $self->{base64} )
+		{
+			push @{$self->{base64data}}, $node_info->{Data};
+		}
+		else
+		{
+			$self->{xmlcurrent}->appendChild( $self->{plugin}->{session}->make_text( $node_info->{Data} ) );
+		}
 	}
 }
 
@@ -160,7 +167,18 @@ sub end_element
 
 	if( $self->{depth} > 1 )
 	{
-		if( $self->{href} )
+		if( $self->{base64} )
+		{
+			$self->{base64} = 0;
+			my $tmpfile = File::Temp->new;
+			push @{$self->{tmpfiles}}, $tmpfile;
+			syswrite($tmpfile, MIME::Base64::decode( join('',@{$self->{base64data}}) ));
+
+			$self->{xmlcurrent}->appendChild( 
+				$self->{plugin}->{session}->make_text( "$tmpfile" ) );
+			delete $self->{base64data};
+		}
+		elsif( $self->{href} )
 		{
 			my $href = delete $self->{href};
 			my $file = $self->{xmlcurrent}->parentNode;
@@ -208,7 +226,12 @@ sub start_element
 		$self->{xmlcurrent}->appendChild( $new );
 		push @{$self->{xmlstack}}, $new;
 		$self->{xmlcurrent} = $new;
-		if( $params{href} )
+		if( $params{encoding} && $params{encoding} eq "base64" )
+		{
+			$self->{base64} = 1;
+			$self->{base64data} = [];
+		}
+		elsif( $params{href} )
 		{
 			$self->{href} = $params{href};
 		}

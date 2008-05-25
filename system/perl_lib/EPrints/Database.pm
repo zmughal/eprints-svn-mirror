@@ -122,7 +122,6 @@ $EPrints::Database::DBVersion = "3.1.1";
 	"savedsearchid",	"historyid",
 	"accessid",		"requestid",
 	"documentid",		"importid",
-	"fileid",
 );
 
 
@@ -599,14 +598,18 @@ sub create_dataset_ordervalues_tables
 	my @fields = $dataset->get_fields( 1 );
 	# remove the key field
 	splice( @fields, 0, 1 ); 
+	my @orderfields = ( $keyfield );
+	foreach my $field ( @fields )
+	{
+		my $fname = $field->get_sql_name();
+		push @orderfields, EPrints::MetaField->new( 
+					repository=> $self->{session}->get_repository,
+					name => $fname,
+					type => "longtext" );
+	}
 	foreach my $langid ( @{$self->{session}->get_repository->get_conf( "languages" )} )
 	{
 		my $order_table = $dataset->get_ordervalues_table_name( $langid );
-		my @orderfields = ( $keyfield );
-		foreach my $field ( @fields )
-		{
-			push @orderfields, $field->create_ordervalues_field( $self->{session}, $langid );
-		}
 
 		if( !$self->has_table( $order_table ) )
 		{
@@ -691,22 +694,9 @@ sub update_ticket_userid
 ######################################################################
 =pod
 
-=item $real_type = $db->get_column_type( NAME, TYPE, NOT_NULL, [ LENGTH/PRECISION ], [ SCALE ], %opts )
+=item $real_type = $db->get_column_type( NAME, TYPE, NOT_NULL, [, LENGTH ] )
 
-Returns a SQL column definition for NAME of type TYPE, usually something like:
-
-	$name $type($length,$scale) [ NOT NULL ]
-
-If NOT_NULL is true column will be set "not null".
-
-LENGTH/PRECISION and SCALE control the maximum lengths of character or decimal types (see below).
-
-Other options available to refine the column definition:
-
-	langid - character set/collation to use
-	sorted - whether this column will be used to order by
-
-B<langid> is mapped to real database values by the "dblanguages" configuration option. The database may not be able to order the request column type in which case, if B<sorted> is true, the database may use a substitute column type.
+Returns a column definition for NAME of type TYPE. If NOT_NULL is true the column will be created NOT NULL. For column types that require a length use LENGTH.
 
 TYPE is the SQL type. The types are constants defined by this module, to import them use:
 
@@ -724,17 +714,12 @@ Floating-point data: SQL_REAL, SQL_DOUBLE.
 
 Time data: SQL_DATE, SQL_TIME.
 
-The actual column types used will be database-specific.
-
 =cut
 ######################################################################
 
 sub get_column_type
 {
-	my( $self, $name, $data_type, $not_null, $length, $scale, %opts ) = @_;
-
-	my $session = $self->{session};
-	my $repository = $session->get_repository;
+	my( $self, $name, $data_type, $not_null, $length, $scale ) = @_;
 
 	my $type_info = $self->{dbh}->type_info( $data_type );
 
@@ -755,20 +740,6 @@ sub get_column_type
 		EPrints::abort( "get_sql_type expected PRECISION and SCALE arguments for $data_type [$type]" )
 			unless defined $scale;
 		$type .= "($length,$scale)";
-	}
-
-	if( $opts{langid} )
-	{
-		my $conf = $repository->get_conf( "dblanguages", $opts{langid} );
-
-		if( defined( $conf ) && defined( $conf->{charset} ) )
-		{
-			$type .= " CHARACTER SET ".$conf->{charset};
-			if( defined( $conf->{collate} ) )
-			{
-				$type .= " COLLATE ".$conf->{collate};
-			}
-		}
 	}
 
 	if( $not_null )
@@ -1034,7 +1005,7 @@ sub create_unique_index
 
 =item  $success = $db->_update( $tablename, $keycols, $keyvals, $columns, @values )
 
-UPDATES $tablename where $keycols equals $keyvals.
+UDATES $tablename where $keycols equals $keyvals.
 
 This method is internal.
 
@@ -1088,9 +1059,9 @@ sub _update
 ######################################################################
 =pod
 
-=item  $success = $db->_update_quoted( $tablename, $keycols, $keyvals, $columns, @qvalues )
+=item  $success = $db->_update_quoted( $tablename, $keycols, $keyvals, $columns, @values )
 
-UPDATES $tablename where $keycols equals $keyvals. Won't quote $keyvals or @qvalues before use - use this method with care!
+UDATES $tablename where $keycols equals $keyvals. Won't quote @keyvals or @values before use - use this method with care!
 
 This method is internal.
 
@@ -1177,10 +1148,10 @@ sub insert
 ######################################################################
 =pod
 
-=item $success = $db->insert_quoted( $table, $columns, @qvalues )
+=item $success = $db->insert_quoted( $table, $columns, @values )
 
 Inserts values into the table $table. If $columns is defined it will be used as
-a list of columns to insert into. @qvalues is a list of arrays containing values
+a list of columns to insert into. @values is a list of arrays containing values
 to insert.
 
 Values will NOT be quoted before insertion - care must be exercised!
@@ -1342,7 +1313,7 @@ sub prep_like_value
 ######################################################################
 =pod
 
-=item $str = $db->quote_value( $value )
+=item $str = EPrints::Database::quote_value( $value )
 
 Return a quoted value. To quote a 'like' value you should do:
 
@@ -1361,7 +1332,7 @@ sub quote_value
 ######################################################################
 =pod
 
-=item $str = $db->quote_int( $value )
+=item $str = EPrints::Database::quote_int( $value )
 
 Return a quoted integer value
 
@@ -1380,7 +1351,7 @@ sub quote_int
 ######################################################################
 =pod
 
-=item $str = $db->quote_identifier( @parts )
+=item $str = EPrints::Database::quote_identifier( @parts )
 
 Quote a database identifier (e.g. table names). Multiple @parts will be joined
 by dot.
@@ -1966,13 +1937,6 @@ sub counter_reset
 	return $curval + 0;
 }
 
-# Internal method to get a cache object
-sub get_cachemap
-{
-	my( $self, $id ) = @_;
-
-	return $self->{session}->get_repository->get_dataset( "cachemap" )->get_object( $self->{session}, $id );
-}
 
 ######################################################################
 =pod
@@ -1990,8 +1954,9 @@ sub cache_exp
 	my( $self , $id ) = @_;
 
 	my $a = $self->{session}->get_repository;
-	my $cache = $self->get_cachemap( $id );
+	my $ds = $a->get_dataset( "cachemap" );
 
+	my $cache = $ds->get_object( $self->{session}, $id );
 	return unless $cache;
 
 	my $created = $cache->get_value( "created" );
@@ -2007,15 +1972,23 @@ sub cache_userid
 {
 	my( $self , $id ) = @_;
 
-	my $cache = $self->get_cachemap( $id );
+	my $ds = $self->{session}->get_repository->get_dataset( "cachemap" );
 
-	return defined( $cache ) ? $cache->get_value( "userid" ) : undef;
+	my $cache = $ds->get_object( $self->{session}, $id );
+	return unless $cache;
+
+	return $cache->get_value( "userid" );
 }
+
+
+
+
 
 ######################################################################
 =pod
 
-=item $cacheid = $db->cache( $searchexp, $dataset, $srctable, [$order], [$list] )
+=item $cacheid = $db->cache( $searchexp, $dataset, $srctable, 
+[$order], [$list] )
 
 Create a cache of the specified search expression from the SQL table
 $srctable.
@@ -2183,6 +2156,123 @@ sub cache_table
 	return "cache".$id;
 }
 
+
+######################################################################
+=pod
+
+=item $tablename = $db->create_buffer( $keyname )
+
+Create a temporary table with the given keyname. This table will not
+be available to other processes and should be disposed of when you've
+finished with them - MySQL only allows so many temporary tables.
+
+=cut
+######################################################################
+
+sub create_buffer
+{
+	my ( $self , $keyname ) = @_;
+
+	my $tmptable = "searchbuffer".($NEXTBUFFER++);
+	$TEMPTABLES{$tmptable} = 1;
+	#print STDERR "Pushed $tmptable onto temporary table list\n";
+#cjg VARCHAR!! Should this not be whatever type is bestest?
+
+	my $rc = 1;
+
+	$rc &&= $self->do( "CREATE TEMPORARY TABLE $tmptable (".
+		$self->get_column_type($keyname, SQL_VARCHAR, SQL_NOT_NULL, 255).
+	")");
+	$rc &&= $self->create_index( $tmptable, $keyname );
+	
+	EPrints::abort( "Error creating temporary table $tmptable" )
+		unless $rc;
+
+	return $tmptable;
+}
+
+
+######################################################################
+=pod
+
+=item $id = $db->make_buffer( $keyname, $data )
+
+Create a temporary table and dump the values from the array reference
+$data into it. 
+
+Even in debugging mode it does not mention this SQL as it's very
+dull.
+
+=cut
+######################################################################
+
+sub make_buffer
+{
+	my( $self, $keyname, $data ) = @_;
+
+	my $id = $self->create_buffer( $keyname );
+
+	my $sth = $self->prepare( "INSERT INTO ".$self->quote_identifier($id)." VALUES (?)" );
+	foreach( @{$data} )
+	{
+		$sth->execute( $_ );
+	}
+
+	return $id;
+}
+
+
+######################################################################
+=pod
+
+=item $foo = $db->garbage_collect
+
+Loop through known temporary tables, and remove them.
+
+=cut
+######################################################################
+
+sub garbage_collect
+{
+	my( $self ) = @_;
+
+	foreach( keys %TEMPTABLES )
+	{
+		$self->dispose_buffer( $_ );
+	}
+}
+
+
+######################################################################
+=pod
+
+=item $db->dispose_buffer( $id )
+
+Remove temporary table with given id. Won't just remove any
+old table.
+
+=cut
+######################################################################
+
+sub dispose_buffer
+{
+	my( $self, $id ) = @_;
+	
+	unless( defined $TEMPTABLES{$id} )
+	{
+		$self->{session}->get_repository->log( <<END );
+Called dispose_buffer on non-buffer table "$id"
+END
+		return;
+	}
+	$self->drop_table( $id );
+	delete $TEMPTABLES{$id};
+
+}
+	
+
+
+
 ######################################################################
 =pod
 
@@ -2281,10 +2371,17 @@ sub drop_cache
 {
 	my ( $self , $id ) = @_;
 
-	if( defined( my $cache = $self->get_cachemap( $id ) ) )
-	{
-		$cache->remove;
-	}
+	# $id MUST be an integer.
+	$id += 0;
+
+	my $tmptable = $self->cache_table( $id );
+
+	my $ds = $self->{session}->get_repository->get_dataset( "cachemap" );
+	# We drop the table before removing the entry from the cachemap
+
+	$self->drop_table( $tmptable );
+
+	$self->remove( $ds, $id );
 }
 
 
@@ -2311,6 +2408,25 @@ sub count_table
 
 	return $count;
 }
+
+######################################################################
+=pod
+
+=item $items = $db->from_buffer( $dataset, $buffer, [$offset], [$count], [$justids] )
+
+Return a reference to an array containing all the items from the
+given dataset that have id's in the specified buffer.
+
+=cut
+######################################################################
+
+sub from_buffer 
+{
+	my ( $self , $dataset , $buffer , $offset, $count, $justids ) = @_;
+	return $self->_get( $dataset, 1 , $buffer, $offset, $count );
+}
+
+
 
 ######################################################################
 =pod
@@ -2368,11 +2484,15 @@ sub from_cache
 		@results = $self->_get( $dataset, 3, $self->cache_table($cacheid), $offset , $count );
 	}
 
-	if( defined( my $cache = $self->get_cachemap( $cacheid ) ) )
-	{
-		$cache->set_value( "lastused", time() );
-		$cache->commit();
-	}
+	my $ds = $self->{session}->get_repository->get_dataset( "cachemap" );
+
+	$self->_update(
+		$ds->get_sql_table_name,
+		["cachemapid"],
+		[$cacheid],
+		["lastused"],
+		[time()],
+	);
 
 	$self->drop_old_caches();
 
@@ -3466,7 +3586,7 @@ sub set_version
 
 =item $boolean = $db->has_table( $tablename )
 
-Return true if a table of the given name exists in the database.
+Return true if the a table of the given name exists in the database.
 
 =cut
 ######################################################################
@@ -3509,6 +3629,35 @@ sub has_column
 	return $rc;
 }
 
+######################################################################
+=pod
+
+=item $db->install_table( $tablename, $newtablename )
+
+Move table $tablename to $newtablename. Erase $newtablename if it
+exists.
+
+=cut
+######################################################################
+
+sub install_table
+{
+	my( $self, $current_pos, $target_pos ) = @_;
+
+	if( $self->has_table( $target_pos ) )
+	{
+		$self->swap_tables( 
+			$current_pos,
+			$target_pos );
+		$self->drop_table( $current_pos );
+		return;
+	}
+
+	$self->rename_table( 
+		$current_pos,
+		$target_pos );
+}
+		
 ######################################################################
 =pod
 
