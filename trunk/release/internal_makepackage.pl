@@ -242,17 +242,18 @@ sub strip_copyright
 	my $start;
 	my $end;
 
-	for(my $i = 0; $i < @$data; ++$i)
+	my @output_data = ();
+	my $trimming = 0;
+	foreach my $line ( @{$data} )
 	{
-		$start = $i if $data->[$i] =~ /__COPYRIGHT__/;
-		$end = $i if defined($start) && $data->[$i] =~ /__LICENSE__/;
+		$trimming = 0 if( $line =~ /__LICENSE__/ );
+		push @output_data, $line unless $trimming;
+		$trimming = 1 if( $line =~ /__COPYRIGHT__/ );
 	}
 
-	if( defined($start) && defined($end) )
-	{
-		splice(@$data,$start+1,$end-$start-1);
-	}
+	return \@output_data;
 }
+
 
 # Replace macro-like commands with their expanded values. The values may be
 # multiline e.g. __LICENSE__
