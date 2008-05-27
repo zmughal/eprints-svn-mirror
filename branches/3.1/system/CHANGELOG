@@ -7442,3 +7442,7 @@ EPRINTS-3.1-beta-2
 
 2008-05-24 cjg
  * Added SWORD support.
+
+2008-05-27 tdb
+ * Added --description and --source-repository options to bin/import
+
