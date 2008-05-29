@@ -7383,41 +7383,12 @@ EPRINTS-3.1-beta-2
 	- ignore the case of NAMES
 	- don't decode_latex URLs or URIs
 
-2008-04-21 tdb,dct05r
- * Added store/retrieval methods to DataObj
- * Modified Document to store and retrieve files via Storage layer
- * Added Storage abstraction layer EPrints::Storage that uses Storage plugins
- * Added Storage::Local plugin for legacy EPrints file system
- * Added security checks to Storage layer-based document retrieval
-
-2008-04-22 tdb
- * Added more POD for Storage layer changes
- * Added $bucket argument to Storage layer API
- * Added get_mime_type() method to DataObj
- * Replaced duplicated URL parsing in Apache::Storage with passed pnotes
-
-2008-04-24 tdb
- * Added a simple default citation style for imports
- * import->run() now replaces existing records and pulls in full-texts
- * Fixed <img> link to EPrints logo for default template
+2008-04-24 tdb 
+ * Added a simple default citation style for imports 
+ * import->run() now replaces existing records and pulls in full-texts 
 
 2008-04-25 tdb
- * Use the EPrint object to render fileinfo
- * Don't DECLINE requests to "/" when https_root is set to "", fixing #3361
- * Use relative path for icons and thumbnails, fixing #3360
- * Tidy-up of Data Objects:
-  - removed deprecated remove_all class-method
-  - added get_dataset_id class method to return dataset id
-  - shared super-class new, new_from_data, remove for most classes
-
-2008-04-28 tdb
- * Removed store/retrieve methods from DataObj, just wrapper methods anyway
- * Call storage layer with filename rather than uri
- * Added "DataObj::SubObject" to add parent methods to sub-objects
- * Added "file" dataset to store file metadata
- * Example adaption of a Convert plugin for storage layer use
- * Added utility storage methods to DataObj
- * Added database update to DataObj::commit superclass
+ * Prevent uploaded PHP scripts from being executed
 
 2008-04-29 cjg
  * Added "schema" option to epadmin
@@ -7427,34 +7398,13 @@ EPRINTS-3.1-beta-2
  * Output a short list of commands with no arguments to epadmin
  * Clean up the list object in epadmin schema
 
-2008-05-02 tdb
- * Added Import plugin for ORE resource maps
-
-2008-05-07 tdb
- * Export Subjects in the same format as plain text
- * Added admin tool to check the subject tree for orphaned elements or circular
-    references
-
-2008-05-09 tdb
- * OREResource tests for MIME::Types
-
 2008-05-12 tdb
  * Changed ordervalues columns to LONGTEXT from TEXT, fixing #3369
  * Check current_user exists before accessing it in Subject plugin
  * UTF8 => utf-8 in email charset, fixing #3370
 
-2008-05-12 dct05r
- * ORE Resource Map Export Plugin
-
 2008-05-13 tdb
- * Removed deprecated methods: make_buffer, garbage_collect, dispose_buffer, from_buffer, install_table
  * Check tables exist before attempting to create them when creating dataset tables (allows update_database_structure to "fill in the gaps")
-
-2008-05-15 tdb
- * Reduced background images to 1px wide, reducing file size
-
-2008-05-16 tdb
- * Added "dblanguages" config option to control the database encoding
 
 2008-05-16 cjg 
  * Fixed bug in toolbox which prevented searching sub-objects and linked items.
@@ -7468,15 +7418,9 @@ EPRINTS-3.1-beta-2
 2008-05-16 cjg 
  * Added AJAX Phrase editor!
 
-2008-05-16 tdb
- * Removed redundant add_field script (use update_database_structure)
-
 2008-05-19 tdb
+ * Secured oai_accesslogs script
  * Fixed bug in Session::get_secure that returned false in Auth stage
- * Added support for an "auth_basic" config to use basic authentication on specific URLs
-
-2008-05-20 tdb
- * Render sub-object XML using MetaField::Subobject on XML export
 
 2008-05-20 cjg
  * new Script option: as_string, which converts a typed value to a plain string. Useful for inserting a value into an attribute.
@@ -7496,28 +7440,12 @@ EPRINTS-3.1-beta-2
  * Added policies page with a link to OpenDOAR.
  * Linked to policies page from default homepage.
 
-2008-05-22 tdb
- * Moved XML::tidy from DataObjs into export plugins
- * Removed getElementsByTagName in DataObj::File, fixing #3376
-
-2008-05-22 tdb
- * Added "url" and "data" virtual fields to DataObj::File
- * Simplified and made Import::XMLFiles inherit from Import::XML (moved
-    file-specific code into DataObj::File)
- * MetaField::is_virtual now looks at a "virtual" property, allowing any field
-    type to be defined as virtual
- * Pass opts into MetaField from DataObj::to_xml
- * Added "Base64" field type, that just adds "encoding" attribute to_xml
- * Adding a file to a document that has main set incorrectly now overwrites the
-    main value with the first file (as if it was unset)
- * Added file dataset to erase_eprints epadmin command
- * XMLFiles export now embeds all files, not just data files, and includes the
-    EP data namespace
- * Fixed DataObj::File::get_defaults not overwriting fileid values
- * Fixed removing files
-
 2008-05-24 cjg
  * Added SWORD support.
+
+======================================================================
+EPRINTS-3.1-beta-3
+======================================================================
 
 2008-05-27 tdb
  * Added --description and --source-repository options to bin/import
@@ -7528,3 +7456,6 @@ EPRINTS-3.1-beta-2
  * Fixed a typo in the toolbox code s/AND/ANY/
  * Fixed missing / with redirecting /perl/ to /cgi/
 
+======================================================================
+EPRINTS-3.1-rc-1
+======================================================================

@@ -302,17 +302,18 @@ sub order_issues_newest_open_timestamp
 
 sub render_fileinfo
 {
-	my( $session, $field, $value, $alllangs, $nolink, $eprint ) = @_;
+	my( $session, $field, $value ) = @_;
 
 	my $f = $session->make_doc_fragment;
-	foreach my $doc ($eprint->get_all_documents)
+	foreach my $icon ( split /\|/ , $value )
 	{
-		my $a = $session->render_link( $doc->get_url );
+		my( $imgurl, $url ) = split( /;/, $icon );
+		my $a = $session->render_link( $url );
 		$a->appendChild( $session->make_element( 
 			"img", 
 			class=>"ep_doc_icon",
 			alt=>"file",
-			src=>$doc->icon_url,
+			src=>$imgurl,
 			border=>0 ));
 		$f->appendChild( $a );
 	}
@@ -321,6 +322,51 @@ sub render_fileinfo
 };
 
 
+######################################################################
+=pod
+
+=item $eprint = EPrints::DataObj::EPrint->new( $session, $eprint_id )
+
+Return the eprint with the given eprint_id, or undef if it does not exist.
+
+=cut
+######################################################################
+
+sub new
+{
+	my( $class, $session, $eprint_id ) = @_;
+
+	EPrints::abort "session not defined in EPrint->new" unless defined $session;
+	#EPrints::abort "eprint_id not defined in EPrint->new" unless defined $eprint_id;
+
+	my $dataset = $session->get_repository->get_dataset( "eprint" );
+
+	return $session->get_database->get_single( $dataset , $eprint_id );
+}
+
+
+######################################################################
+=pod
+
+=item $eprint = EPrints::DataObj::EPrint->new_from_data( $session, $data, $dataset )
+
+Construct a new EPrints::DataObj::EPrint object based on the $data hash 
+reference of metadata.
+
+=cut
+######################################################################
+
+sub new_from_data
+{
+	my( $class, $session, $known, $dataset ) = @_;
+
+	return $class->SUPER::new_from_data(
+			$session,
+			$known,
+			$dataset );
+}
+
+	
 
 ######################################################################
 # =pod
@@ -344,7 +390,7 @@ sub create
 {
 	my( $session, $dataset, $data ) = @_;
 
-	return EPrints::DataObj::EPrint->create_from_data( 
+	return EPrints::EPrint->create_from_data( 
 		$session, 
 		$data, 
 		$dataset );
@@ -435,21 +481,6 @@ sub create_from_data
 	# $new_eprint->generate_static;
 
 	return $new_eprint;
-}
-
-######################################################################
-=pod
-
-=item $dataset = EPrints::DataObj::EPrint->get_dataset_id
-
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
-
-=cut
-######################################################################
-
-sub get_dataset_id
-{
-	return "eprint";
 }
 
 ######################################################################
@@ -1064,27 +1095,26 @@ sub write_revision
 {
 	my( $self ) = @_;
 
-	my $tmpfile = File::Temp->new;
-	my $filename = "eprint.xml";
+	my $dir = $self->local_path."/revisions";
 
-	print $tmpfile '<?xml version="1.0" encoding="utf-8" ?>'."\n";
-	print $tmpfile $self->export( "XML" );
-
-	seek($tmpfile,0,0);
-
-	# Bit more complex, because we want to use our revision for controlling
-	# the file revision numbers
-	my $file = $self->get_stored_files( "revision", $filename );
-	unless( $file )
+	if( !-d $dir )
 	{
-		$file = EPrints::DataObj::File->create_from_data( $self->get_session, {
-			_parent => $self,
-			bucket => "revision",
-			filename => $filename,
-		} );
+		if(!EPrints::Platform::mkdir($dir))
+		{
+			$self->{session}->get_repository->log( "Error creating revision directory for EPrint ".$self->get_value( "eprintid" ).", ($dir): ".$! );
+			return;
+		}
 	}
-	$file->set_value( "rev_number", $self->get_value( "rev_number" )-1 );
-	$file->upload( $tmpfile, "eprint.xml", -s "$tmpfile" );
+
+	my $rev_file = $dir."/".$self->get_value("rev_number").".xml";
+	unless( open( REVFILE, ">$rev_file" ) )
+	{
+		$self->{session}->get_repository->log( "Error writing file: $!" );
+		return;
+	}
+	print REVFILE '<?xml version="1.0" encoding="utf-8" ?>'."\n";
+	print REVFILE $self->export( "XML", fh=>*REVFILE );
+	close REVFILE;
 }
 
 
@@ -1229,9 +1259,25 @@ sub get_all_documents
 {
 	my( $self ) = @_;
 
-	my $docs = $self->get_value( "documents" );
+	my $doc_ds = $self->{session}->get_repository->get_dataset( "document" );
 
-	return @$docs;
+	my $searchexp = EPrints::Search->new(
+		session=>$self->{session},
+		dataset=>$doc_ds );
+
+	$searchexp->add_field(
+		$doc_ds->get_field( "eprintid" ),
+		$self->get_value( "eprintid" ) );
+
+	my $searchid = $searchexp->perform_search;
+	my @documents = $searchexp->get_records;
+	$searchexp->dispose;
+	foreach my $doc ( @documents )
+	{
+		$doc->register_parent( $self );
+	}
+
+	return( @documents );
 }
 
 
@@ -1790,7 +1836,6 @@ sub render_history
 	$results->map( sub {
 		my( $session, $dataset, $item ) = @_;
 	
-		$item->set_parent( $self );
 		$page->appendChild( $item->render );
 	} );
 

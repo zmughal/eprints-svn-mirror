@@ -978,27 +978,6 @@ sub sql_row_from_value
 ######################################################################
 =pod
 
-=item %opts = $field->get_sql_properties( $session )
-
-Map the relevant SQL properties for this field to options passed to L<EPrints::Database>::get_column_type().
-
-=cut
-######################################################################
-
-sub get_sql_properties
-{
-	my( $self, $session ) = @_;
-
-	return (
-		index => $self->{ "sql_index" },
-		langid => $self->{ "sql_langid" },
-		sorted => $self->{ "sql_sorted" },
-	);
-}
-
-######################################################################
-=pod
-
 =item $sql = $field->get_sql_type( $session, $notnull )
 
 Return the SQL type of this field, used for creating tables. $notnull
@@ -1017,32 +996,7 @@ sub get_sql_type
 		$self->get_sql_name,
 		EPrints::Database::SQL_VARCHAR,
 		$notnull,
-		$self->get_property( "maxlength" ),
-		undef, # precision
-		$self->get_sql_properties,
-	);
-}
-
-######################################################################
-=pod
-
-=item $field = $field->create_ordervalues_field( $session [, $langid ] )
-
-Return a new field object that this field can use to store order values, optionally for language $langid.
-
-=cut
-######################################################################
-
-sub create_ordervalues_field
-{
-	my( $self, $session, $langid ) = @_;
-
-	return EPrints::MetaField->new(
-		repository => $session->get_repository,
-		type => "longtext",
-		name => $self->get_name,
-		sql_sorted => 1,
-		sql_langid => $langid,
+		$EPrints::MetaField::VARCHAR_SIZE
 	);
 }
 
@@ -1825,7 +1779,7 @@ sub ordervalue_basic
 
 sub to_xml
 {
-	my( $self, $session, $value, $dataset, %opts ) = @_;
+	my( $self, $session, $value, $dataset ) = @_;
 
 	if( defined $self->{parent_name} )
 	{
@@ -1838,13 +1792,13 @@ sub to_xml
 		foreach my $single ( @{$value} )
 		{
 			my $item = $session->make_element( "item" );
-			$item->appendChild( $self->to_xml_basic( $session, $single, $dataset, %opts ) );
+			$item->appendChild( $self->to_xml_basic( $session, $single, $dataset ) );
 			$tag->appendChild( $item );
 		}
 	}
 	else
 	{
-		$tag->appendChild( $self->to_xml_basic( $session, $value, $dataset, %opts ) );
+		$tag->appendChild( $self->to_xml_basic( $session, $value, $dataset ) );
 	}
 
 	return $tag;
@@ -1852,7 +1806,7 @@ sub to_xml
 
 sub to_xml_basic
 {
-	my( $self, $session, $value, $dataset, %opts ) = @_;
+	my( $self, $session, $value, $dataset ) = @_;
 
 	if( !defined $value ) 
 	{
@@ -2153,15 +2107,12 @@ sub get_property_defaults
 		requiredlangs 	=> [],
 		search_cols 	=> $EPrints::MetaField::FROM_CONFIG,
 		sql_index 	=> 1,
-		sql_langid 	=> $EPrints::MetaField::UNDEF,
-		sql_sorted	=> 0,
 		text_index 	=> 0,
 		toform 		=> $EPrints::MetaField::UNDEF,
 		type 		=> $EPrints::MetaField::REQUIRED,
 		sub_name	=> $EPrints::MetaField::UNDEF,
 		parent_name	=> $EPrints::MetaField::UNDEF,
 		volatile	=> 0,
-		virtual		=> 0,
 
 		help_xhtml	=> $EPrints::MetaField::UNDEF,
 		title_xhtml	=> $EPrints::MetaField::UNDEF,
@@ -2196,7 +2147,7 @@ sub is_virtual
 {
 	my( $self ) = @_;
 
-	return $self->get_property( "virtual" );
+	return 0;
 }
 
 # if ordering by this field, should we sort highest first?

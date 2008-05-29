@@ -22,7 +22,6 @@ use EPrints::Apache::Auth;
 use EPrints::Apache::Rewrite;
 use EPrints::Apache::VLit;
 use EPrints::Apache::Template;
-use EPrints::Apache::Storage;
 1;';
 		if( $@ ) { abort( $@ ); }
 	}
@@ -117,14 +116,11 @@ use EPrints::Utils;
 use EPrints::Time;
 use EPrints::Config;
 use EPrints::Database;
-use EPrints::Storage;
 use EPrints::DataObj;
-use EPrints::DataObj::SubObject;
 use EPrints::DataObj::Access;
 use EPrints::DataObj::Cachemap;
 use EPrints::DataObj::Document;
 use EPrints::DataObj::EPrint;
-use EPrints::DataObj::File;
 use EPrints::DataObj::History;
 use EPrints::DataObj::Import;
 use EPrints::DataObj::LoginTicket;
