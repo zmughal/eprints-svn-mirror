@@ -7470,3 +7470,21 @@ EPRINTS-3.1-rc-1
 2008-06-05 tdb
  * Trap die()s in Repository::parse_xml(), fixing #3220
 
+2008-06-09 cjg
+ * Added a test for illegal searching of a compound field with a useful 
+    error rather than a crash. Fixies #3329 (still aborts, but is no longer
+    confusing)
+
+2008-06-09 cjg
+ * Added missing phrase Plugin/InputForm/Component/Upload:conversion_failed
+
+2008-06-09 cjg
+ * Removed unused "subheadings" property from views.pl
+ * Made the encode/decode utils have a one-to-one mapping so it can be 
+    correctly reversed. Fixed issues with view values containing whitespace.
+
+2008-06-09 cjg
+ * If a config file ends with .xml and does not match one of the config file
+    formats, it's just set as "XML".
+ * XML files may be viewed and edited by people with the other permissions
+    to view/edit config files. Fixing #3339
