@@ -151,6 +151,12 @@ sub update_from_form
 				$processor->add_message( "error", $self->html_phrase( "upload_failed" ) );
 				return;
 			}
+
+			$document->set_value( "format", $repository->call( 'guess_doc_type', 
+				$self->{session},
+				$document->get_value( "main" ) ) );
+			$document->commit;
+
 			return;
 		}
 
@@ -488,7 +494,7 @@ sub _render_doc
 		name => "_internal_".$doc_prefix."_delete_doc",
 		value => $self->phrase( "delete_document" ), 
 		class => "ep_form_internal_button",
-		onclick => "if( window.event ) { window.event.cancelBubble = true; } return confirm( '$msg' );",
+		onclick => "if( window.event ) { window.event.cancelBubble = true; } return confirm(".EPrints::Utils::js_string($msg).");",
 		);
 	$tool_div->appendChild( $delete_fmt_button );
 
@@ -571,7 +577,7 @@ sub _render_add_document
 	$inner_panel->appendChild( $session->make_text( " " ) );
 	$inner_panel->appendChild( $add_format_button );
 
-	my $script = $session->make_javascript( "EPJS_register_button_code( '_action_next', function() { el = \$('$ffname'); if( el.value != '' ) { return confirm( '".$self->phrase("really_next")."' ); } return true; } );" );
+	my $script = $session->make_javascript( "EPJS_register_button_code( '_action_next', function() { el = \$('$ffname'); if( el.value != '' ) { return confirm( ".EPrints::Utils::js_string($self->phrase("really_next"))." ); } return true; } );" );
 	$inner_panel->appendChild( $script);
 }
 
@@ -600,7 +606,7 @@ $panel->appendChild( $session->make_element( "div", style=>"height: 1em", class=
 	$inner_panel->appendChild( $session->make_text( " " ) );
 	$inner_panel->appendChild( $add_format_button );
 
-	my $script = $session->make_javascript( "EPJS_register_button_code( '_action_next', function() { el = \$('$ffname'); if( el.value != '' ) { return confirm( '".$self->phrase("really_next")."' ); } return true; } );" );
+	my $script = $session->make_javascript( "EPJS_register_button_code( '_action_next', function() { el = \$('$ffname'); if( el.value != '' ) { return confirm( ".EPrints::Utils::js_string($self->phrase("really_next"))." ); } return true; } );" );
 	$inner_panel->appendChild( $script);
 }
 
@@ -629,7 +635,7 @@ $panel->appendChild( $session->make_element( "div", style=>"height: 1em", class=
 	$inner_panel->appendChild( $session->make_text( " " ) );
 	$inner_panel->appendChild( $add_format_button );
 
-	my $script = $session->make_javascript( "EPJS_register_button_code( '_action_next', function() { el = \$('$ffname'); if( el.value != '' ) { return confirm( '".$self->phrase("really_next")."' ); } return true; } );" );
+	my $script = $session->make_javascript( "EPJS_register_button_code( '_action_next', function() { el = \$('$ffname'); if( el.value != '' ) { return confirm( ".EPrints::Utils::js_string($self->phrase("really_next"))." ); } return true; } );" );
 	$inner_panel->appendChild( $script);
 }
 
@@ -682,7 +688,7 @@ sub _render_add_file
 	if( $hide )
 	{
 		my $hide_add_files = $session->make_element( "div", id=>$doc_prefix."_af1" );
-		my $show = $self->{session}->make_element( "a", class=>"ep_only_js", href=>"#", onclick => "EPJS_blur(event); if(!confirm('".$self->phrase("really_add")."')) { return false; } EPJS_toggle('${doc_prefix}_af1',true);EPJS_toggle('${doc_prefix}_af2',false);return false", );
+		my $show = $self->{session}->make_element( "a", class=>"ep_only_js", href=>"#", onclick => "EPJS_blur(event); if(!confirm(".EPrints::Utils::js_string($self->phrase("really_add")).")) { return false; } EPJS_toggle('${doc_prefix}_af1',true);EPJS_toggle('${doc_prefix}_af2',false);return false", );
 		$hide_add_files->appendChild( $self->html_phrase( 
 			"add_files",
 			link=>$show ));
@@ -848,7 +854,7 @@ sub _render_filelist
 			type => "image", 
 			src => "$imagesurl/style/images/delete.png",
 			name => "_internal_".$doc_prefix."_delete_$i",
-			onclick => "EPJS_blur(event); return confirm( '".$self->phrase( "delete_file_confirm", filename => $filename )."' );",
+			onclick => "EPJS_blur(event); return confirm( ".EPrints::Utils::js_string($self->phrase( "delete_file_confirm", filename => $filename ))." );",
 			value => $self->phrase( "delete_file" ) );
 			
 		$td_delete->appendChild( $del_btn );
