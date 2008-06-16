@@ -182,10 +182,6 @@ This option does not do anything.
 
 Explain in detail what is going on. May be repeated for greater effect.
 
-=item B<--force>
-
-Be more forceful (don't ask for confirmation).
-
 =item B<--version>
 
 Output version information and exit.
@@ -203,6 +199,7 @@ use EPrints;
 
 use Sys::Hostname;
 use DBI;
+use Unicode::String qw(utf8 latin1);
 use Data::Dumper;
 
 use strict;
@@ -214,7 +211,6 @@ my $quiet = 0;
 my $help = 0;
 my $man = 0;
 my $version = 0;
-my $force = 0;
 
 GetOptions( 
 	'help|?' => \$help,
@@ -222,8 +218,7 @@ GetOptions(
 	'version' => \$version,
 	'verbose+' => \$verbose,
 	'silent' => \$quiet,
-	'quiet' => \$quiet,
-	'force' => \$force,
+	'quiet' => \$quiet
 ) || pod2usage( 2 );
 EPrints::Utils::cmd_version( "epadmin" ) if $version;
 pod2usage( 1 ) if $help;
@@ -978,30 +973,18 @@ sub create_user
 	exit unless( defined $session );
 
 	my $user_info = {};
-	@{$user_info}{qw( username usertype password email )} = @ARGV[2..$#ARGV];
-	if( defined($user_info->{username}) &&
-		$user_info->{username} eq "_" )
-	{
-		@{$user_info}{qw( username usertype password email )} = (
-			"admin",
-			"admin",
-			"admin",
-			"admin\@localhost",
-		);
-	}
-
 	print "Creating a new user in $repoid\n\n";
-	$user_info->{username} ||= EPrints::Utils::get_input( $REGEXP_VARNAME, 'Enter a username', 'admin' );
+	$user_info->{username} = EPrints::Utils::get_input( $REGEXP_VARNAME, 'Enter a username', 'admin' );
 	while( defined EPrints::DataObj::User::user_with_username( $session, $user_info->{username} ) )
 	{
 		print STDERR "User with username '".$user_info->{username}."' already exists.\n";
 		$user_info->{username} = EPrints::Utils::get_input( $REGEXP_VARNAME, 'Enter a username', 'admin' );
 	}
 	my @utypes = $session->get_repository->get_types( "user" );
-	$user_info->{usertype} ||= EPrints::Utils::get_input( '^('.join( '|', @utypes ).')$', 'Select a user type ('.join( "|",@utypes).')', 'admin' );
-	$user_info->{password} ||= EPrints::Utils::get_input_hidden( $REGEXP_VARNAME, 'Enter Password' );
-	$user_info->{password} = EPrints::Utils::crypt_password( $user_info->{password}, $session );
-	$user_info->{email} ||= EPrints::Utils::get_input( $REGEXP_EMAIL, 'Email' );
+	$user_info->{usertype} = EPrints::Utils::get_input( '^('.join( '|', @utypes ).')$', 'Select a user type ('.join( "|",@utypes).')', 'admin' );
+	my $rawpassword = EPrints::Utils::get_input_hidden( $REGEXP_VARNAME, 'Enter Password' );
+	$user_info->{password} = EPrints::Utils::crypt_password( $rawpassword, $session );
+	$user_info->{email} = EPrints::Utils::get_input( $REGEXP_EMAIL, 'Email' );
 	
 	my $user_ds = $session->get_repository->get_dataset( "user" );
 	my $new_user = $user_ds->create_object( $session, $user_info );
@@ -1194,7 +1177,7 @@ but NOT the configuration files.
 
 END
 	
-	my $sure = $force || EPrints::Utils::get_input_confirm( "Are you sure you want this to happen" );
+	my $sure = EPrints::Utils::get_input_confirm( "Are you sure you want this to happen" );
 	unless( $sure )
 	{
 		print "Aborting then.\n";
@@ -1229,7 +1212,7 @@ END
 	}
 
 	erase_eprint_files( $repoid );
-	foreach( "eprint", "history","access","request","document","file" )
+	foreach( "eprint", "history","access","request","document" )
 	{
 		reset_dataset( $repoid, $_ );
 	}		
@@ -1310,8 +1293,8 @@ sub drop_tables_and_recreate_db
 		$db->drop_table( $_ ) if $db->has_table( $_ );
 	}
 
-	my $mktables = $force || EPrints::Utils::get_input_confirm( "Create database tables?", 0, 1 ); # not quick, default to "yes"
-	if( $mktables )
+	my $mktables = EPrints::Utils::get_input( $REGEXP_YESNO, "Create database tables?", "yes" );
+	if( $mktables eq "yes" )
 	{
 		create_tables( $repoid );
 	}

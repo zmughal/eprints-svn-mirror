@@ -50,9 +50,7 @@ sub get_sql_type
 		$self->get_sql_name(),
 		EPrints::Database::SQL_VARCHAR,
 		$notnull,
-		5, # 'TRUE' or 'FALSE'
-		undef,
-		$self->get_sql_properties,
+		5 # 'TRUE' or 'FALSE'
 	);
 }
 

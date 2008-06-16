@@ -17,6 +17,7 @@ use warnings;
 
 use Carp;
 use English;
+use Unicode::String;
 
 use EPrints::Plugin::Convert;
 our @ISA = qw/ EPrints::Plugin::Convert /;
@@ -68,15 +69,16 @@ sub export
 	
 	my $repository = $plugin->get_repository();
 
+	my %files = $doc->files;
 	my @txt_files;
-	foreach my $file ( $doc->get_stored_files( "data" ) )
+	foreach my $filename ( keys %files )
 	{
-		my $filename = $file->get_value( "filename" );
 		my $tgt = $filename;
 		$tgt=~s/\.doc$/\.pdf/;
-		my $infile = $file->get_local_copy();
+		my $infile = EPrints::Utils::join_path( $doc->local_path, $filename );
 		my $outfile = EPrints::Utils::join_path( $dir, $tgt );
 		$repository->exec( "antiwordpdf",
+			SOURCE_DIR => $doc->local_path,
 			SOURCE => $infile,
 			TARGET_DIR => $dir,
 			TARGET => $outfile,

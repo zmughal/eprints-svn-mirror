@@ -12,6 +12,8 @@ use EPrints::Plugin::Export;
 
 @ISA = ( "EPrints::Plugin::Export" );
 
+use Unicode::String qw(latin1);
+
 use strict;
 
 sub new
@@ -206,9 +208,23 @@ sub remove_utf8
 
 	$text = "" unless( defined $text );
 
-	$text =~ s/[^\x00-\x80]/$char/g;
+	my $stringobj = Unicode::String->new();
+	$stringobj->utf8( $text );
+	my $escstr = "";
 
-	return $text;
+	foreach($stringobj->unpack())
+	{
+		if( $_ < 128)
+		{
+			$escstr .= chr( $_ );
+		}
+		else
+		{
+			$escstr .= $char;
+		}
+	}
+
+	return $escstr;
 }
 
 
@@ -218,14 +234,26 @@ sub utf8_to_tex
 	my( $text ) = @_;
 
 	$text = "" unless( defined $text );
+	
+	my $stringobj = Unicode::String->new();
+	$stringobj->utf8( $text );
+	my $bibstr = "";
 
-	return join("",
-		map { 
-			exists($EPrints::unimap->{ord($_)}) ?
-			$EPrints::unimap->{ord($_)} :
-			'?';
+	foreach($stringobj->unpack())
+	{
+		#       print "$_: ".$EPrints::unimap->{$_}."\n";
+		my $char_in_tex = $EPrints::unimap->{$_};
+		if( defined $char_in_tex )
+		{
+			$bibstr .= $EPrints::unimap->{$_};
 		}
-		split(//, $text));
+		else
+		{
+			$bibstr .= '?';
+		}
+	}
+
+	return $bibstr;
 }
 
 

@@ -58,11 +58,9 @@ sub action_reindex
 	# Remove all document index files to force re-texting them
 	foreach my $doc ($eprint->get_all_documents)
 	{
-		my $indexcodes_file = $doc->get_stored_files( "cache", "indexcodes" );
-		if( defined( $indexcodes_file ) )
-		{
-			$indexcodes_file->remove;
-		}
+		unlink( $doc->words_file );
+		unlink( $doc->indexcodes_file );
+
 	}
 
 	# Redo the fulltext-index
