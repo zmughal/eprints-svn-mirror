@@ -181,7 +181,7 @@ sub end_element
 		elsif( $self->{href} )
 		{
 			my $href = delete $self->{href};
-			my $file = $self->{xmlcurrent}->parentNode;
+			my $file = $self->{xmlcurrent}->getParentNode;
 			$file->removeChild( $self->{xmlcurrent} );
 			my $url = $self->{plugin}->{session}->make_element( "url" );
 			$file->insertBefore( $url, $file->firstChild() );
