@@ -7523,3 +7523,6 @@ EPRINTS-3.1.0-rc-2
 2008-06-26 tdb
  * Only allow batch editing of eprint objects, fixing #3388
 
+2008-07-07 tdb
+ * If phrases or workflow aren't writable don't abort when writing new fields
+
