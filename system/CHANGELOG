@@ -7526,3 +7526,6 @@ EPRINTS-3.1.0-rc-2
 2008-07-07 tdb
  * If phrases or workflow aren't writable don't abort when writing new fields
 
+2008-07-10 tdb
+ * Added default account for CrossRef imports, fixing #3397
+
