@@ -7540,3 +7540,6 @@ EPRINTS-3.1.0-rc-2
 2008-07-17 tdb
  * When importing BibTeX can now specify email addresses
 
+2008-07-23 tdb
+ * Indexer daemon checking now looks at /proc/$pid, fixing #3311
+
