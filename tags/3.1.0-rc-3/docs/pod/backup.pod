@@ -1,0 +1,35 @@
+
+Although the Eprints software has been designed to be robust (not a guarantee of suitability for any intended purpose!), it does not provide an integrated backup mechanism. You should add your Eprints server to your organisation's normal backup policy.
+
+=head2 Why Backup?
+
+It is almost certain that you will be storing valuable information in your Eprints server. Even assuming that the eprints code is 100% bug free and that you will never delete 8000 records when you run the wrong script at 3am, you I<still> need to back up! Drives and fans break. Computers get stolen. Server rooms get flooded (that happened to us!). Without proper backups this could be a disaster.
+
+=head2 What to Backup
+
+You need to backup two things.
+
+The C</opt/eprints2/> directory (or whatever you called it). Not all the subdirectories I<have> to be backed up, but it is much easier to backup the whole thing. Make sure that you back up any symbolicly linked directories too.
+
+Each MySQL database which your archives use. See the MySQL manual for more information on backing up MySQL databases. The C<mysqldump> command will dump the whole of a database as a big list of SQL commands to re-create it.
+
+=head2 Best Practice
+
+We strongly recommend that you:
+
+* Regularly backup your EPrints archive and database.
+
+* Keep mulitple sets of backups.
+
+* Keep a recent backup physically sepearate from the archive - either in another room or ideally another site.
+
+* Regularly check that you can actually restore from your backup. It's not uncommon for people to produce a daily backup for years without checking it. When they come to need it, they discover that something has gone wrong and the backup is useless.
+
+* Assume that you will be restoring to different hardware - the tape drive may be stolen or melted too, and you'll be unabled to get one just the same 'cus they stopped making them! Check that your backups work on hardware other than that used to create them.
+
+* Decide who is responsible for backups. Their responsibilities should include making sure that the above policies are implemented even if they are ill or unavailable and making sure that someone else knows how to take over making and restoring the backups if they leave or are hit by a bus.
+
+If you can't do all of these, which is admittedly a lot of extra work, then do as many as you can.
+
+Fortune favours the backed-up. It always seems to be the un-backed-up systems that have disk crashes. Life's like that...
+
