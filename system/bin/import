@@ -159,6 +159,8 @@ my $migration = 0;
 my $description = undef
 my $source_repository = undef;
 
+Getopt::Long::Configure("permute");
+
 GetOptions( 
 	'help|?' => \$help,
 	'man' => \$man,

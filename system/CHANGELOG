@@ -7547,7 +7547,7 @@ EPRINTS-3.1.0-rc-2
  * Chown entities.dtd for eprints and use File::Temp, fixes #3419
  * Allow archive file names to contain spaces etc. fixing #3409
 
-2008-08-01 cjg
+2008-08-06 cjg
  * Fixed typo in User.pm s/merge/union/ resolving #3413
  * Fixed most issues in render views resolving #3416, #3417
  * Added the 'local tree' view back into subject browsing.
@@ -7577,3 +7577,13 @@ EPRINTS-3.1.0-rc-3
  * Don't dispose scalars returned by Export->export, fixing #3420
  * Escape arguments in Repository::invocation
 
+2008-08-06 cjg
+ * Added "permute" option to all bin scripts to allow --verbose etc. to be
+    added on the end.
+ * Changed -c in gunzip to the first argument in import test data -- this 
+    stops a bug which shows up in POSIX compliant mode.
+
+======================================================================
+EPRINTS-3.1.0-rc-4
+======================================================================
+ 
