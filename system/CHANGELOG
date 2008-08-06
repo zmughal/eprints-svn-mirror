@@ -7544,6 +7544,6 @@ EPRINTS-3.1.0-rc-2
  * Indexer daemon checking now looks at /proc/$pid, fixing #3311
 
 2008-08-06 tdb
- * Chown entities.dtd for eprints and use File::Temp
- * Fixes #3419
+ * Chown entities.dtd for eprints and use File::Temp, fixes #3419
+ * Allow archive file names to contain spaces etc. fixing #3409
 
