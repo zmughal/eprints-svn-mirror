@@ -29,6 +29,7 @@ This package handles sending emails.
 
 package EPrints::Email;
 
+use Unicode::String qw(utf8 latin1 utf16);
 use MIME::Lite;
 use LWP::MediaTypes qw( guess_media_type );
 
