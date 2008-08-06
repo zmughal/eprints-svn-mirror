@@ -68,8 +68,7 @@ sub export
 
 	my $convert = $plugin->get_repository->get_conf( 'executables', 'convert' );
 
-	my $src = $doc->get_stored_files( "data", $doc->get_main );
-	$src = $src->get_local_copy();
+	my $src = $doc->local_path . '/' . $doc->get_main;
 	
 	my $fn = "preview.png";
 

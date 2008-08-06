@@ -37,6 +37,7 @@ package EPrints::Probity;
 use strict;
 
 use URI;
+use Digest::MD5;
 
 
 ######################################################################
@@ -62,14 +63,21 @@ If there is a problem return a empty XML document fragment.
 
 sub process_file
 {
-	my( $session, $file ) = @_;
+	my( $session, $filename, $name ) = @_;
 
-	my $filename = $file->get_value( "filename" );
-	my $value = $file->get_value( "hash" );
-	my $alg = $file->get_value( "hash_type" );
+	$name = $filename unless defined $name;
+
+	my( $value, $alg ) = _md5( $session, $filename );
+
+	unless( defined $alg )
+	{
+		$session->get_repository->log( 
+"EPrints::Probity: Failed to create hash for '$filename'" );
+		return $session->make_doc_fragment;
+	}
 
 	my $hash = $session->make_element( "hash" );
-	$hash->appendChild( $session->render_data_element( 6, "name", $filename ) );
+	$hash->appendChild( $session->render_data_element( 6, "name", $name ) );
 	$hash->appendChild( $session->render_data_element( 6, "algorithm", $alg ) );
 	$hash->appendChild( $session->render_data_element( 6, "value", $value ) );
 	$hash->appendChild( $session->render_data_element( 6, "date", EPrints::Time::get_iso_timestamp() ));
@@ -77,10 +85,33 @@ sub process_file
 	return $hash;
 }
 
+sub _md5
+{
+	my( $session, $filename ) = @_;
+
+	my $md5 = Digest::MD5->new;
+	if( open( FILE, $filename ) )
+	{
+		binmode FILE;
+		$md5->addfile( *FILE );
+		close FILE;
+	}
+	else
+	{
+		$session->get_repository->log(
+"Error opening '$filename' to create hash: $!" );
+		return undef;
+	}
+	my $value = $md5->hexdigest;
+
+	return( $value, "MD5" );
+}
+
+
 ######################################################################
 =pod
 
-=item $xml = EPrints::Probity::create_log( $session, $files, [$outfile] )
+=item $xml = EPrints::Probity::create_log( $session, $filenames, [$outfile] )
 
 Create an XML file $outfile of the format:
 
@@ -96,7 +127,7 @@ Create an XML file $outfile of the format:
     .
     .
 
-From the files in array ref $filenames.
+From the filenames in array ref $filenames.
 
 If $outfile is not specified then the XML is sent to STDOUT.
 
@@ -105,7 +136,7 @@ If $outfile is not specified then the XML is sent to STDOUT.
 
 sub create_log
 {
-	my( $session, $files, $outfile ) = @_;
+	my( $session, $filenames, $outfile ) = @_;
 
 	my $fh;
 	unless( open( $fh, ">$outfile" ) )
@@ -113,21 +144,23 @@ sub create_log
 		$session->get_repository->log( "Error pening '$outfile' to write log: $!" );
 		return;
 	}
-	create_log_fh( $session, $files, $fh );
+	create_log_fh( $session, $filenames, $fh );
 	close $fh;
 }
 
 sub create_log_fh
 {
-	my( $session, $files, $fh ) = @_;
+	my( $session, $filenames, $fh ) = @_;
 
 	my $hashlist = $session->make_element( 
 		"hashlist", 
 		xmlns=>"http://probity.org/XMLprobity" );
-	foreach my $file ( @{$files} )
+	foreach my $filename ( @{$filenames} )
 	{
-		$hashlist->appendChild( $session->make_indent( 3 ) );
-		$hashlist->appendChild( process_file( $session, $file ) );
+		$hashlist->appendChild( 
+			$session->make_indent( 3 ) );
+		$hashlist->appendChild( 
+			process_file( $session, $filename ) );
 	}
 
 	$fh = *STDOUT unless defined $fh;
