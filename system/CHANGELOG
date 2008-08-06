@@ -7571,3 +7571,7 @@ EPRINTS-3.1.0-rc-2
 EPRINTS-3.1.0-rc-3
 ======================================================================
  
+2008-08-06 tdb
+ * Removing all Admin-configured fields will also remove the 'Misc.' stage,
+    fixing 3415
+
