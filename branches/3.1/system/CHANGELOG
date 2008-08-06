@@ -7543,3 +7543,7 @@ EPRINTS-3.1.0-rc-2
 2008-07-23 tdb
  * Indexer daemon checking now looks at /proc/$pid, fixing #3311
 
+2008-08-06 tdb
+ * Chown entities.dtd for eprints and use File::Temp
+ * Fixes #3419
+
