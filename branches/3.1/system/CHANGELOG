@@ -7596,3 +7596,6 @@ EPRINTS-3.1.0-rc-4
  * OAI now searches for the eprint in archive or deletion, fixing #3424
  * OAI GetRecord no longer errors on an invalid identifier, fixing #3423
 
+======================================================================
+EPRINTS-3.1.0-rc-5
+======================================================================
