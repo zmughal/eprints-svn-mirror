@@ -1,5 +1,7 @@
 package EPrints::Plugin::Issues::SimilarTitles;
 
+use Unicode::String qw( utf8 );
+
 use EPrints::Plugin::Export;
 
 @ISA = ( "EPrints::Plugin::Issues" );

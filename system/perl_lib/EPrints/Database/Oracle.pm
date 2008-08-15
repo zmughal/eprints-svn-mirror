@@ -62,8 +62,6 @@ use EPrints;
 use EPrints::Database qw( :sql_types );
 @ISA = qw( EPrints::Database );
 
-our $I18L = {};
-
 # DBD::Oracle seems to not be very good on type_info
 our %ORACLE_TYPES = (
 	SQL_VARCHAR() => {
@@ -184,25 +182,9 @@ Time data: SQL_DATE, SQL_TIME.
 
 sub get_column_type
 {
-	my( $self, $name, $data_type, $not_null, $length, $scale, %opts ) = @_;
+	my( $self, $name, $data_type, $not_null, $length, $scale ) = @_;
 
 	my( $db_type, $params ) = (undef, "");
-
-	# Oracle can't order a LONG column, so we'll switch to the best we can
-	# do instead, which is a 4000 byte VARCHAR
-	if( $opts{sorted} )
-	{
-		if( $data_type eq SQL_LONGVARCHAR() )
-		{
-			$data_type = SQL_VARCHAR();
-		}
-		elsif( $data_type eq SQL_LONGVARBINARY() )
-		{
-			$data_type = SQL_VARBINARY();
-		}
-		# Longest VARCHAR supported by Oracle is 4096 bytes (4000 in practise?)
-		$length = 4000 if !defined($length) || $length > 4000;
-	}
 
 	$db_type = $ORACLE_TYPES{$data_type}->{TYPE_NAME};
 	$params = $ORACLE_TYPES{$data_type}->{CREATE_PARAMS};

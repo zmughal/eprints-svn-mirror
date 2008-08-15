@@ -79,9 +79,11 @@ to the user.
 
 package EPrints::DataObj::History;
 
-@ISA = ( 'EPrints::DataObj::SubObject' );
+@ISA = ( 'EPrints::DataObj' );
 
 use EPrints;
+
+use Unicode::String qw(utf8 latin1);
 
 use strict;
 
@@ -150,17 +152,48 @@ render_single_value => \&EPrints::Extras::render_preformatted_field },
 ######################################################################
 =pod
 
-=item $dataset = EPrints::DataObj::History->get_dataset_id
+=item $history = EPrints::DataObj::History->new( $session, $historyid )
 
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
+Return a history object with id $historyid, from the database.
+
+Return undef if no such object extists.
 
 =cut
 ######################################################################
 
-sub get_dataset_id
+sub new
 {
-	return "history";
+	my( $class, $session, $historyid ) = @_;
+
+	return $session->get_database->get_single( 
+			$session->get_repository->get_dataset( "history" ), 
+			$historyid );
+
 }
+
+
+
+######################################################################
+=pod
+
+=item undef = EPrints::DataObj::History->new_from_data( $session, $data )
+
+Create a new History object from the given $data. Used to turn items
+from the database into objects.
+
+=cut
+######################################################################
+
+sub new_from_data
+{
+	my( $class, $session, $known ) = @_;
+
+	return $class->SUPER::new_from_data(
+			$session,
+			$known,
+			$session->get_repository->get_dataset( "history" ) );
+}
+
 
 
 
@@ -445,28 +478,22 @@ sub render_create
 
 	my $width = $self->{session}->get_repository->get_conf( "max_history_width" ) || $DEFAULT_MAX_WIDTH;
 
-	my $eprint = $self->get_parent();
+	my $eprint = EPrints::DataObj::EPrint->new( $self->{session}, $self->get_value( "objectid" ) );
 	if( !defined $eprint )
 	{
 		return $self->{session}->render_nbsp;
 	}
-	my $r_file = $eprint->get_stored_files( "revision", "eprint.xml" );
-
 	my $r_new = $self->get_value( "revision" );
-	my $r_file_new = File::Temp->new;
+	my $r_file_new =  $eprint->local_path."/revisions/$r_new.xml";
 
-	unless(
-		defined( $r_file ) &&
-		$r_file->write_copy_fh( $r_file_new, $r_new )
-	)
+	unless( -e $r_file_new )
 	{
 		my $div = $self->{session}->make_element( "div" );
 		$div->appendChild( $self->{session}->html_phrase( "lib/history:no_file" ) );
 		return $div;
 	}
 
-	my $file_new = EPrints::XML::parse_xml( "$r_file_new" );
-
+	my $file_new = EPrints::XML::parse_xml( $r_file_new );
 	my $dom_new = $file_new->getFirstChild;
 
 	my $div = $self->{session}->make_element( "div" );
@@ -486,7 +513,8 @@ sub render_modify
 {
 	my( $self ) = @_;
 
-	my $eprint = $self->get_parent();
+	my $eprint = EPrints::DataObj::EPrint->new( $self->{session}, $self->get_value( "objectid" ) );
+
 	if( !defined $eprint )
 	{
 		return $self->{session}->render_nbsp;
@@ -494,29 +522,22 @@ sub render_modify
 
 	my $width = $self->{session}->get_repository->get_conf( "max_history_width" ) || $DEFAULT_MAX_WIDTH;
 
-	my $r_file = $eprint->get_stored_files( "revision", "eprint.xml" );
-
 	my $r_new = $self->get_value( "revision" );
 	my $r_old = $r_new-1;
 
-	my $r_file_new = File::Temp->new;
-
-	unless(
-		defined( $r_file ) &&
-		$r_file->write_copy_fh( $r_file_new, $r_new )
-	)
+	my $r_file_old =  $eprint->local_path."/revisions/$r_old.xml";
+	my $r_file_new =  $eprint->local_path."/revisions/$r_new.xml";
+	unless( -e $r_file_new )
 	{
 		my $div = $self->{session}->make_element( "div" );
 		$div->appendChild( $self->{session}->html_phrase( "lib/history:no_file" ) );
 		return $div;
 	}
 
-	my $file_new = EPrints::XML::parse_xml( "$r_file_new" );
+	my $file_new = EPrints::XML::parse_xml( $r_file_new );
 	my $dom_new = $file_new->getFirstChild;
 
-	my $r_file_old = File::Temp->new;
-
-	unless( $r_file->write_copy_fh( $r_file_old, $r_old ) )
+	unless( -e $r_file_old )
 	{
 		my $div = $self->{session}->make_element( "div" );
 		$div->appendChild( $self->{session}->html_phrase( "lib/history:no_earlier" ) );
@@ -524,7 +545,7 @@ sub render_modify
 		return $div;
 	}
 
-	my $file_old = EPrints::XML::parse_xml( "$r_file_old" );
+	my $file_old = EPrints::XML::parse_xml( $r_file_old );
 	my $dom_old = $file_old->getFirstChild;
 
 	my %fieldnames = ();
@@ -1064,12 +1085,14 @@ sub _mktext
 
 	return () unless length( $text );
 
-	my $lb = chr(8626);
+	my $lb = utf8("");
+	$lb->pack( 8626 );
 	my @bits = split(/[\r\n]/, $text );
 	my @b2 = ();
 	
-	foreach my $t2 ( @bits )
+	foreach( @bits )
 	{
+		my $t2 = utf8($_);
 		while( $offset+length( $t2 ) > $width )
 		{
 			my $cut = $width-1-$offset;

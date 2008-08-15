@@ -76,33 +76,30 @@ sub get_system_field_info
 ######################################################################
 =pod
 
-=item $dataobj = EPrints::DataObj->new( $session, $id [, $dataset] )
+=item $dataobj = EPrints::DataObj->new( $session, $id, [$dataset] )
+
+ABSTRACT.
 
 Return new data object, created by loading it from the database.
 
-If $dataset is not defined uses the default dataset for this object.
+$dataset is used by EPrint->new to save searching through all four
+tables that it could be in.
 
 =cut
 ######################################################################
 
 sub new
 {
-	my( $class, $session, $id, $dataset ) = @_;
+	my( $class, $session, $id ) = @_;
 
-	if( !defined($dataset) )
-	{
-		$dataset = $session->get_repository->get_dataset( $class->get_dataset_id );
-	}
-
-	return $session->get_database->get_single( 
-			$dataset,
-			$id );
 }
 
 ######################################################################
 =pod
 
-=item $dataobj = EPrints::DataObj->new_from_data( $session, $data [, $dataset ] )
+=item $dataobj = EPrints::DataObj->new_from_data( $session, $data, $dataset )
+
+ABSTRACT.
 
 Construct a new EPrints::DataObj object based on the $data hash 
 reference of metadata.
@@ -117,22 +114,13 @@ sub new_from_data
 	my( $class, $session, $data, $dataset ) = @_;
 
 	my $self = { data=>{} };
+	$self->{dataset} = $dataset;
 	$self->{session} = $session;
-	Scalar::Util::weaken($self->{session})
-		if defined &Scalar::Util::weaken;
-	if( defined( $dataset ) )
-	{
-		$self->{dataset} = $dataset;
-	}
-	else
-	{
-		$self->{dataset} = $session->get_repository->get_dataset( $class->get_dataset_id );
-	}
 	bless( $self, $class );
 
 	if( defined $data )
 	{
-		if( $self->{dataset}->confid eq "eprint" )
+		if( $dataset->confid eq "eprint" )
 		{
 			$self->set_value( "eprint_status", $data->{"eprint_status"} );
 		}
@@ -149,7 +137,7 @@ sub new_from_data
 ######################################################################
 #=pod
 #
-#=item $dataobj = EPrints::DataObj::create( $session, @default_data )
+#=item $dataobj = EPrints::DataObj->create( $session, @default_data )
 #
 #ABSTRACT.
 #
@@ -162,9 +150,8 @@ sub new_from_data
 
 sub create
 {
-	my( $session, @default_data ) = @_;
+	my( $class, $session, @defaunt_data ) = @_;
 
-	Carp::croak( "EPrints::DataObj::create must be overridden" );
 }
 
 
@@ -191,7 +178,6 @@ sub create_from_data
 	my( $class, $session, $data, $dataset ) = @_;
 
 	$data = EPrints::Utils::clone( $data );
-	$dataset ||= $session->get_repository->get_dataset( $class->get_dataset_id );
 
 	# If there is a field which indicates the virtual dataset,
 	# set that now, so it's visible to get_defaults.
@@ -288,7 +274,11 @@ sub get_defaults
 
 =item $success = $dataobj->remove
 
-Remove this data object from the database and any sub-objects or related files. 
+ABSTRACT
+
+Remove this data object from the database. 
+
+Also removes any sub-objects or related files.
 
 Return true if successful.
 
@@ -299,9 +289,6 @@ sub remove
 {
 	my( $self ) = @_;
 
-	return $self->{session}->get_database->remove(
-		$self->{dataset},
-		$self->get_id );
 }
 
 # $dataobj->set_under_construction( $boolean )
@@ -371,13 +358,6 @@ sub commit
 {
 	my( $self, $force ) = @_;
 	
-	my $rc = 1;
-
-	$rc &&= $self->{session}->get_database->update(
-		$self->get_dataset,
-		$self->{data} );
-
-	return $rc;
 }
 
 
@@ -631,30 +611,13 @@ sub get_data
 	return $self->{data};
 }
 
-######################################################################
-=pod
-
-=item $dataset = EPrints::DataObj->get_dataset_id
-
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
-
-=cut
-######################################################################
-
-sub get_dataset_id
-{
-	my( $class ) = @_;
-
-	Carp::croak( "get_dataset_id must be overridden by $class" );
-}
-
 
 ######################################################################
 =pod
 
 =item $dataset = $dataobj->get_dataset
 
-Returns the L<EPrints::DataSet> object to which this record belongs.
+Returns the EPrints::DataSet object to which this record belongs.
 
 =cut
 ######################################################################
@@ -757,24 +720,6 @@ sub get_gid
 	my( $self ) = @_;
 
 	return undef;
-}
-
-=item $datestamp = $dataobj->get_datestamp
-
-Returns the datestamp of this object in "YYYY-MM-DD hh:mm:ss" format.
-
-=cut
-
-sub get_datestamp
-{
-	my( $self ) = @_;
-
-	my $dataset = $self->get_dataset;
-
-	my $field = $dataset->get_datestamp_field;
-	return unless $field;
-
-	return $field->get_value( $self );
 }
 
 ######################################################################
@@ -1081,12 +1026,7 @@ sub to_xml
 		return;
 	}
 
-	if( !$opts{no_xmlns} )
-	{
-		$attrs{'xmlns'} = $ns;
-	}
-	$opts{no_xmlns} = 1;
-
+	$attrs{'xmlns'}=$ns unless( $opts{no_xmlns} );
 	my $tl = "record";
 	if( $opts{version} == 2 ) { 
 		$tl = $self->{dataset}->confid; 
@@ -1094,6 +1034,7 @@ sub to_xml
 	}	
 	my $r = $self->{session}->make_element( $tl, %attrs );
 	$r->appendChild( $self->{session}->make_text( "\n" ) );
+#$r->appendChild( $self->{session}->make_text( "x\nx" ) );
 	foreach my $field ( $self->{dataset}->get_fields() )
 	{
 		next unless( $field->get_property( "export_as_xml" ) );
@@ -1108,8 +1049,7 @@ sub to_xml
 			$r->appendChild( $field->to_xml( 
 				$self->{session}, 
 				$self->get_value( $field->get_name() ),
-				$self->{dataset},
-				%opts ) );
+				$self->{dataset} ) ); # no xmlns on inner elements
 		}
 		if( $opts{version} eq "1" )
 		{
@@ -1120,7 +1060,76 @@ sub to_xml
 		}
 	}
 
-	return $r;
+	if( $opts{version} eq "2" )
+	{
+		if( $self->{dataset}->confid eq "user" )
+		{
+			my $saved_searches = $self->{session}->make_element( "saved_searches" );
+			foreach my $saved_search ( $self->get_saved_searches )
+			{
+				$saved_searches->appendChild( $saved_search->to_xml( %opts ) );
+			}	
+			$r->appendChild( $saved_searches );
+		}
+
+		if( $self->{dataset}->confid eq "eprint" )
+		{
+			my $docs = $self->{session}->make_element( "documents" );
+			foreach my $doc ( $self->get_all_documents )
+			{
+				$docs->appendChild( $doc->to_xml( %opts ) );
+			}	
+			$r->appendChild( $docs );
+		}
+
+		if( $self->{dataset}->confid eq "document" )
+		{
+			my $files = $self->{session}->make_element( "files" );
+			$files->appendChild( $self->{session}->make_text( "\n" ) );
+			my %files = $self->files;
+			foreach my $filename ( keys %files )
+			{
+				my $file = $self->{session}->make_element( "file" );
+
+				$file->appendChild( 
+					$self->{session}->render_data_element( 
+						6, 
+						'filename',
+						$filename ) );
+				$file->appendChild( 
+					$self->{session}->render_data_element( 
+						6, 
+						'filesize',
+						$files{$filename} ) );
+				$file->appendChild( 
+					$self->{session}->render_data_element( 
+						6, 
+						'url',
+						$self->get_url($filename) ) );
+				if( $opts{embed} )
+				{
+					my $fullpath = $self->local_path."/".$filename;
+					open( FH, $fullpath ) || die "fullpath '$fullpath' read error: $!";
+					my $data = join( "", <FH> );
+					close FH;
+					my $data_el = $self->{session}->make_element( 'data', encoding=>"base64" );
+					$data_el->appendChild( $self->{session}->make_text( MIME::Base64::encode($data) ) );
+					$file->appendChild( $data_el );
+				}
+				$files->appendChild( $file );
+			}
+			$r->appendChild( $files );
+		}	
+	}
+
+	EPrints::XML::tidy( $r, {}, 1 );
+
+	my $frag = $self->{session}->make_doc_fragment;
+	$frag->appendChild( $self->{session}->make_text( "  " ) );
+	$frag->appendChild( $r );
+	$frag->appendChild( $self->{session}->make_text( "\n" ) );
+
+	return $frag;
 }
 
 ######################################################################
@@ -1314,172 +1323,10 @@ sub tidy
 		}
 	}
 }
+	
 
 ######################################################################
 =pod
-
-=item $uri = $dataobj->get_storage_uri( $bucket, $filename )
-
-Return the URI to store the $filename at in the $bucket of files.
-
-=cut
-######################################################################
-
-sub get_storage_uri
-{
-	my( $self, $bucket, $filename ) = @_;
-
-	my $stored_uri = $self->{session}->get_repository->get_conf( "http_url" );
-
-	$stored_uri .= "/id";
-	$stored_uri .= "/" . $self->get_dataset->confid;
-	$stored_uri .= "/" . $self->get_id;
-	$stored_uri .= "/" . $bucket;
-	$stored_uri .= "/" . URI::Escape::uri_escape( $filename );
-
-	return $stored_uri;
-}
-
-######################################################################
-=pod
-
-=item $mime_type = $dataobj->get_mime_type( $bucket, $filename )
-
-Return the $mime_type of $filename contained in $bucket.
-
-=cut
-######################################################################
-
-sub get_mime_type
-{
-	my( $self, $bucket, $filename ) = @_;
-
-	return "application/octet-stream";
-}
-
-######################################################################
-=pod
-
-=item $file = $dataobj->add_stored_file( $bucket, $filename, $filehandle [, $filesize ] )
-
-Convenience method to add the file record for $filename in $bucket to this object. If $filehandle is defined will read and store data from it. If $filesize is undefined will use the number of bytes actually read from $filehandle as the file size.
-
-Returns the storaged file or undef if the storage failed.
-
-=cut
-######################################################################
-
-sub add_stored_file
-{
-	my( $self, $bucket, $filename, $filehandle, $filesize ) = @_;
-
-	my $file = $self->get_stored_files( $bucket, $filename );
-
-	if( defined( $file ) )
-	{
-		$file->upload( $filehandle, $filename, $filesize );
-	}
-	else
-	{
-		$file = EPrints::DataObj::File->create_from_data( $self->get_session, {
-			_parent => $self,
-			_filehandle => $filehandle,
-			bucket => $bucket,
-			filename => $filename,
-			filesize => $filesize,
-		} );
-	}
-
-	return $file;
-}
-
-######################################################################
-=pod
-
-=item @files = $dataobj->get_stored_files( [ $bucket [, $filename ] ] )
-
-Returns a list of all the files stored for this object. If $bucket is specified returns only files in that bucket. If $filename is specified returns only files matching $filename.
-
-=cut
-######################################################################
-
-sub get_stored_files
-{
-	my( $self, $bucket, $filename ) = @_;
-
-	my $ds = $self->get_session->get_repository->get_dataset( "file" );
-
-	my $searchexp = EPrints::Search->new(
-		session => $self->get_session,
-		dataset => $ds,
-	);
-
-	$searchexp->add_field(
-		$ds->get_field( "datasetid" ),
-		$self->get_dataset->confid
-	);
-	$searchexp->add_field(
-		$ds->get_field( "objectid" ),
-		$self->get_id
-	);
-	if( defined( $bucket ) )
-	{
-		$searchexp->add_field(
-			$ds->get_field( "bucket" ),
-			$bucket
-		);
-		if( defined( $filename ) )
-		{
-			$searchexp->add_field(
-					$ds->get_field( "filename" ),
-					$filename
-					);
-		}
-	}
-
-	my $list = $searchexp->perform_search;
-
-	my @files = $list->get_records();
-
-	$searchexp->dispose;
-
-	foreach my $file (@files)
-	{
-		$file->set_parent( $self );
-	}
-
-	return wantarray ? @files : $files[0];
-}
-
-######################################################################
-=pod
-
-=item $success = $dataobj->remove_stored_files( [ $bucket [, $filename] ] )
-
-Delete all the files stored for this object. If $bucket is specified deletes only those files in that bucket. If $filename is specified deletes only that filename.
-
-=cut
-######################################################################
-
-sub remove_stored_files
-{
-	my( $self, $bucket, $filename ) = @_;
-
-	# Sanity check, otherwise could accidentally delete everything!
-	if( scalar(@_) == 2 && !defined($bucket) )
-	{
-		EPrints::abort( "bucket argument is undefined" );
-	}
-	if( scalar(@_) == 3 && !defined($filename) )
-	{
-		EPrints::abort( "filename argument is undefined" );
-	}
-
-	foreach my $file ($self->get_stored_files( $bucket, $filename ))
-	{
-		$file->remove;
-	}
-}
 
 ######################################################################
 =pod

@@ -65,25 +65,69 @@ sub get_system_field_info
 
 =back
 
+=head2 Constructor Methods
+
+=over 4
+
+=cut
+
+######################################################################
+
+=item $thing = EPrints::DataObj::Cachemap->new( $session, $cachemapid )
+
+The data object identified by $cachemapid.
+
+=cut
+
+sub new
+{
+	my( $class, $session, $cachemapid ) = @_;
+
+	return $session->get_database->get_single( 
+			$session->get_repository->get_dataset( "cachemap" ), 
+			$cachemapid );
+}
+
+=item $thing = EPrints::DataObj::Cachemap->new_from_data( $session, $known )
+
+A new C<EPrints::DataObj::Cachemap> object containing data $known (a hash reference).
+
+=cut
+
+sub new_from_data
+{
+	my( $class, $session, $known ) = @_;
+
+	return $class->SUPER::new_from_data(
+			$session,
+			$known,
+			$session->get_repository->get_dataset( "cachemap" ) );
+}
+
+######################################################################
+
 =head2 Class Methods
 
 =cut
 
 ######################################################################
 
-######################################################################
-=pod
+=item EPrints::DataObj::Cachemap::remove_all( $session )
 
-=item $dataset = EPrints::DataObj::Cachemap->get_dataset_id
-
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
+Remove all records from the cachemap dataset.
 
 =cut
-######################################################################
 
-sub get_dataset_id
+sub remove_all
 {
-	return "cachemap";
+	my( $class, $session ) = @_;
+
+	my $ds = $session->get_repository->get_dataset( "cachemap" );
+	foreach my $obj ( $session->get_database->get_all( $ds ) )
+	{
+		$obj->remove();
+	}
+	return;
 }
 
 ######################################################################
