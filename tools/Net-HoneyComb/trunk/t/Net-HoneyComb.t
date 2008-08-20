@@ -5,7 +5,7 @@
 
 # change 'tests => 2' to 'tests => last_test_to_print';
 
-use Test::More tests => 3;
+use Test::More tests => 5;
 BEGIN { use_ok('Net::HoneyComb') };
 
 
@@ -32,7 +32,7 @@ ok( $fail == 0 , 'Constants' );
 
 my $honey = Net::HoneyComb->new( "hc-data", 8080 );
 
-my $test_data = "Hello, World!\n";
+my $test_data = "Perl Net::HoneyComb Binding Test\n";
 
 my $data = $test_data;
 
@@ -46,4 +46,25 @@ $honey->retrieve( $oid, sub { my( $context, $buffer ) = @_; $data .= $buffer }, 
 
 ok( $data eq $test_data );
 
+my %metadata = $honey->retrieve_metadata( $oid );
+
+ok( exists($metadata{"system.object_size"}) && $metadata{"system.object_size"} == length($test_data) );
+
+use Data::Dumper;
+#warn Data::Dumper::Dumper( \%metadata );
+
+my %results = $honey->query( "system.object_size='".length($test_data)."'", 50, "system.object_size" );
+
+warn Data::Dumper::Dumper( \%results );
+
+ok( exists($results{$oid}) );
+
 $honey->delete( $oid );
+
+foreach my $o_oid (keys %results)
+{
+	if( $o_oid ne $oid )
+	{
+		$honey->delete( $oid );
+	}
+}
