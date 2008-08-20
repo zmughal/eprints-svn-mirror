@@ -1,0 +1,6 @@
+Revision history for Perl extension Net::HoneyComb.
+
+0.01  Wed Aug 20 12:44:45 2008
+	- original version; created by h2xs 1.23 with options
+		-n Net::HoneyComb include/hcclient.h
+
