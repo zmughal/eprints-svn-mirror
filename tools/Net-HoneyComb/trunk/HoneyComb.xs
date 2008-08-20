@@ -4,7 +4,7 @@
 
 #include "ppport.h"
 
-#include <include/hcclient.h>
+#include <hcclient.h>
 
 #include "const-c.inc"
 
