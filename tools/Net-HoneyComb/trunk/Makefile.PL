@@ -21,7 +21,7 @@ if  (eval {require ExtUtils::Constant; 1}) {
   # files to replace their "fallback" counterparts before distributing your
   # changes.
   my @names = (qw(HC_BINARY_TYPE HC_BOGUS_TYPE HC_BYTE_TYPE HC_CHAR_TYPE
-		 HC_DATE_TYPE HC_DOUBLE_TYPE HC_EMPTY_VALUE_INIT HC_LONG_TYPE
+		 HC_DATE_TYPE HC_DOUBLE_TYPE HC_LONG_TYPE
 		 HC_OBJECTID_TYPE HC_STRING_TYPE HC_TIMESTAMP_TYPE HC_TIME_TYPE
 		 HC_UNKNOWN_TYPE));
   ExtUtils::Constant::WriteConstants(
