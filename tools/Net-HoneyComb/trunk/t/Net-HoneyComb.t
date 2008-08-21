@@ -5,7 +5,7 @@
 
 # change 'tests => 2' to 'tests => last_test_to_print';
 
-use Test::More tests => 6;
+use Test::More tests => 7;
 BEGIN { use_ok('Net::HoneyComb') };
 
 
@@ -40,7 +40,13 @@ my $test_data = "Perl Net::HoneyComb Binding Test\n";
 
 my $data = $test_data;
 
-my $oid = $honey->store_both( sub { my( $context, $len ) = @_; my $r = substr($data,0,$len); substr($data,0,$len) = ""; return $r }, undef, {} );
+my( $oid, $metadata );
+
+$metadata = $honey->retrieve_metadata( "XXX" );
+
+ok( !defined( $metadata ) );
+
+$oid = $honey->store_both( sub { my( $context, $len ) = @_; my $r = substr($data,0,$len); substr($data,0,$len) = ""; return $r }, undef, {} );
 
 $data = "";
 
@@ -48,7 +54,7 @@ $honey->retrieve( $oid, sub { my( $context, $buffer ) = @_; $data .= $buffer }, 
 
 ok( $data eq $test_data );
 
-my $metadata = $honey->retrieve_metadata( $oid );
+$metadata = $honey->retrieve_metadata( $oid );
 
 ok( exists($metadata->{"system.object_size"}) && $metadata->{"system.object_size"} == length($test_data) );
 

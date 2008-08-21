@@ -126,7 +126,7 @@ net_honeycomb_hash_from_nvr(HV * metadata, hc_nvr_t * nvr)
 				metadata,
 				names[i],
 				strlen(names[i]),
-				newSVpv(values[i], strlen(values[i])),
+				newSVpvn(values[i], strlen(values[i])),
 				0
 			);
 	}
@@ -250,7 +250,9 @@ retrieve_metadata(session, oid)
 				(hc_oid *) oid,
 				&nvr
 			);
-		if (rc != HCERR_OK)
+		if( rc == HCERR_INVALID_OID )
+			XSRETURN_UNDEF;
+		if( rc != HCERR_OK )
 			net_honeycomb_error( rc );
 		metadata = newHV();
 		net_honeycomb_hash_from_nvr( metadata, nvr );
@@ -276,7 +278,11 @@ retrieve(session, oid, callback, context)
 				&cookie,
 				(hc_oid *)oid
 			);
-		RETVAL = net_honeycomb_ok( rc ) ? &PL_sv_yes : &PL_sv_no;
+		if( rc == HCERR_INVALID_OID )
+			XSRETURN_NO;
+		if( rc != HCERR_OK )
+			net_honeycomb_error( rc );
+		RETVAL = &PL_sv_yes;
 	OUTPUT:
 		RETVAL
 
@@ -323,7 +329,11 @@ delete(session, oid)
 		hcerr_t rc;
 	CODE:
 		rc = hc_delete_ez( session, (hc_oid *) oid );
-		RETVAL = net_honeycomb_ok( rc ) ? &PL_sv_yes : &PL_sv_no;
+		if( rc == HCERR_INVALID_OID )
+			XSRETURN_NO;
+		if( rc != HCERR_OK )
+			net_honeycomb_error( rc );
+		RETVAL = &PL_sv_yes;
 	OUTPUT:
 		RETVAL
 
@@ -369,6 +379,5 @@ next(rset)
 		{
 			metadata = newHV();
 			net_honeycomb_hash_from_nvr( metadata, nvr );
-			//hc_nvr_free(nvr);
 			PUSHs(newRV_noinc((SV *) metadata));
 		}

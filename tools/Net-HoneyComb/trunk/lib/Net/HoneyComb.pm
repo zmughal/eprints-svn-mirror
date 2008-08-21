@@ -89,20 +89,47 @@ __END__
 
 =head1 NAME
 
-Net::HoneyComb - Perl extension for blah blah blah
+Net::HoneyComb - Perl extension for the Sun StorageTek 5800
 
 =head1 SYNOPSIS
 
   use Net::HoneyComb;
-  blah blah blah
+
+  my $honey = Net::HoneyComb->new(
+  	"hc-data",
+	8080
+  );
+
+  sub reader {
+	  my( $ctx, $nbytes ) = @_;
+	  sysread($ctx, my $buffer, $nbytes);
+	  return $buffer;
+  }
+
+  my $oid = $honey->store_both( \&reader, \*STDIN, {
+	  "dc.creator" => "Tim Brody",
+  });
+
+  sub writer {
+	  my( $ctx, $buffer ) = @_;
+	  print $buffer;
+  }
+
+  $honey->retrieve( $oid, \&writer, undef );
+
+  my $metadata = $honey->retrieve_metadata( $oid );
+
+  my $rset = $honey->query(
+  	"'dc.creator'='Tim Brody'",
+	100,
+	"dcq.abstract"
+  );
+  my( $oid, $metadata ) = $rset->next;
+  print $metadata->{"dcq.abstract"};
+
+  $honey->delete( $oid );
 
 =head1 DESCRIPTION
-
-Stub documentation for Net::HoneyComb, created by h2xs. It looks like the
-author of the extension was negligent enough to leave the stub
-unedited.
-
-Blah blah blah.
 
 =head2 EXPORT
 
@@ -125,21 +152,72 @@ None by default.
   HC_UNKNOWN_TYPE
 
 
+=head1 METHODS
+
+=over 4
+
+=item $honey = Net::HoneyComb->new( HOST, PORT )
+
+Create a new connection to the HoneyComb server on HOST:PORT. croaks() on error.
+
+=item $oid = $honey->store_both( CALLBACK, CONTEXT, METADATA )
+
+Store a file and metadata. METADATA is a reference to a hash. Returns the new object id.
+
+The CALLBACK takes two arguments: CONTEXT and NBYTES. NBYTES is the maxmimum number of bytes to return. When the number of actual bytes returned is less than NBYTES reading finishes. E.g.
+
+	sub {
+		my( $context, $nbytes ) = @_;
+
+		my $buffer;
+		sysread($context, $buffer, $nbytes);
+
+		return $buffer;
+	}
+
+=item $oid = $honey->store_metadata( OID, METADATA )
+
+Store additional METADATA for OID. METADATA is a reference to a hash. Returns the new object id.
+
+=item $hash_ref = $honey->retrieve_metadata( OID )
+
+Retrieve the metadata stored for OID. Returns undef if OID doesn't exist.
+
+=item $ok = $honey->retrieve( OID, CALLBACK, CONTEXT )
+
+Retrieve the content stored for OID. Returns false if OID doesn't exist.
+
+The CALLBACK takes two arguments: CONTEXT and BUFFER. E.g.
+
+	sub {
+		my( $context, $buffer ) = @_;
+
+		syswrite($context, $buffer);
+	}
+
+=item $rset = $honey->query( QUERY, MAX_RECORDS [, SELECT1, SELECT2, ... ] )
+
+Query the HoneyComb using QUERY. Returns a L<Net::HoneyComb::ResultSet>.
+
+If you wish to retrieve metadata you must specify the fields as SELECT1, SELECT2 etc.
+
+=item $ok = $honey->delete( OID )
+
+Deletes the metadata stored for OID. Returns false if OID doesn't exist.
+
+=item ( $code, $errstr ) = $honey->get_status()
+
+Get the status of the most recent request to the HoneyComb.
+
+=back
 
 =head1 SEE ALSO
 
-Mention other useful documentation such as the documentation of
-related modules or operating system documentation (such as man pages
-in UNIX), or any relevant external documentation such as RFCs or
-standards.
-
-If you have a mailing list set up for your module, mention it here.
-
-If you have a web site set up for your module, mention it here.
+L<Net::Amazon::S3>
 
 =head1 AUTHOR
 
-Tim D Brody, E<lt>tdb2@localdomainE<gt>
+Tim D Brody, E<lt>tdb2@ecs.soton.ac.uk<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -149,5 +227,18 @@ This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.8 or,
 at your option, any later version of Perl 5 you may have available.
 
+=head1 NAME
+
+Net::HoneyComb::ResultSet - Result set
+
+=head1 METHODS
+
+=over 4
+
+=item ( $oid, $metadata ) = $rset->next()
+
+Fetch the next match from the result set. Returns empty list when the query has finished.
+
+=back
 
 =cut
