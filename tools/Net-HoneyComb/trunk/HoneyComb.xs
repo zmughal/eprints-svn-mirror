@@ -9,6 +9,7 @@
 #include "const-c.inc"
 
 typedef struct hc_session_t * Net_HoneyComb;
+typedef struct hc_query_result_set_t * Net_HoneyComb_ResultSet;
 
 typedef struct {
 	SV * callback;
@@ -131,32 +132,26 @@ net_honeycomb_hash_from_nvr(HV * metadata, hc_nvr_t * nvr)
 	}
 }
 
-void
-net_honeycomb_error( hc_session_t * session, hcerr_t err )
+bool
+net_honeycomb_ok( hcerr_t err )
 {
-	int32_t response_code = -1;
-	char * errstr = "";
-
-	if( session == NULL )
-		croak("The client library returned error code %d = %s\n", err, hc_decode_hcerr(err));
-
-	hcerr_t rc = hc_session_get_status( session, &response_code, &errstr );
-	if( rc == HCERR_OK )
-		croak("Client library error code: %d = %s\nHTTP Response Code: %d %s\n", err, hc_decode_hcerr(err), response_code, errstr);
+	return err == HCERR_OK;
 }
 
-MODULE = Net::HoneyComb		PACKAGE = Net::HoneyComb		
+void
+net_honeycomb_error( hcerr_t err )
+{
+	croak("The client library returned error code %d = %s\n", err, hc_decode_hcerr(err));
+}
+
+MODULE = Net::HoneyComb		PACKAGE = Net::HoneyComb
 
 INCLUDE: const-xs.inc
 
-void
-init()
-	PREINIT:
-		hcerr_t rc;
-	CODE:
-		rc = hc_init(malloc,free,realloc);
-		if( rc != HCERR_OK )
-			croak("Error %d occurred while initializing HoneyComb", rc);
+PROTOTYPES: ENABLE
+
+BOOT:
+	hc_init(malloc,free,realloc);
 
 Net_HoneyComb
 new( class, host, port )
@@ -169,9 +164,8 @@ new( class, host, port )
 	CODE:
 		rc = hc_session_create_ez( host, port, &session );
 		if( rc != HCERR_OK )
-			croak("Error %d while connecting to %s:%d", rc, host, port);
-		else
-			RETVAL = session;
+			net_honeycomb_error( rc );
+		RETVAL = session;
 	OUTPUT:
 		RETVAL
 
@@ -197,7 +191,7 @@ store_both(session, callback, context, metadata)
 		cookie.context = context;
 		rc = hc_nvr_create( session, 1, &nvr );
 		if( rc != HCERR_OK )
-			croak("Error %d occurred while initializing hc_nvr_t", rc);
+			net_honeycomb_error( rc );
 		net_honeycomb_nvr_from_hash( nvr, metadata );
 		rc = hc_store_both_ez(
 				session,
@@ -207,9 +201,10 @@ store_both(session, callback, context, metadata)
 				&system_record
 			);
 		hc_nvr_free( nvr );
-		if (rc != HCERR_OK)
-			croak("Error %d occurred while storing object", rc);
-		RETVAL = system_record.oid;
+		if( rc == HCERR_OK )
+			RETVAL = system_record.oid;
+		else
+			RETVAL = NULL;
 	OUTPUT:
 		RETVAL
 
@@ -225,7 +220,7 @@ store_metadata(session, oid, metadata)
 	CODE:
 		rc = hc_nvr_create( session, 1, &nvr );
 		if( rc != HCERR_OK )
-			croak("Error %d occurred while initializing hc_nvr_t", rc);
+			net_honeycomb_error( rc );
 		net_honeycomb_nvr_from_hash( nvr, metadata );
 		rc = hc_store_metadata_ez(
 				session,
@@ -234,46 +229,36 @@ store_metadata(session, oid, metadata)
 				&system_record
 			);
 		hc_nvr_free(nvr);
-		if( rc != HCERR_OK )
-			croak("Error %d occurred while storing metadata", rc);
-		RETVAL = system_record.oid;
+		if( rc == HCERR_OK )
+			RETVAL = system_record.oid;
+		else
+			RETVAL = NULL;
 	OUTPUT:
 		RETVAL
 
-void
+SV *
 retrieve_metadata(session, oid)
 	Net_HoneyComb session;
 	char * oid;
 	PREINIT:
 		hcerr_t rc;
 		hc_nvr_t *nvr = NULL;
-		char **names = NULL;
-		char **values = NULL;
-		int count = 0;
-		int i = 0;
-	PPCODE:
+		HV * metadata = NULL;
+	CODE:
 		rc = hc_retrieve_metadata_ez(
 				session,
 				(hc_oid *) oid,
 				&nvr
 			);
 		if (rc != HCERR_OK)
-			croak("Error %d occurred while retrieving metadata", rc);
-		rc = hc_nvr_convert_to_string_arrays(
-				nvr,
-				&names,
-				&values,
-				&count
-			);
-		if (rc != HCERR_OK)
-			croak("Error %d occurred while extracting metadata from nvr", rc);
-		for(i = 0; i < count; ++i)
-		{
-			PUSHs(sv_2mortal(newSVpv( names[i], strlen(names[i]) )));
-			PUSHs(sv_2mortal(newSVpv( values[i], strlen(values[i]) )));
-		}
+			net_honeycomb_error( rc );
+		metadata = newHV();
+		net_honeycomb_hash_from_nvr( metadata, nvr );
+		RETVAL = newRV_noinc((SV *) metadata);
+	OUTPUT:
+		RETVAL
 
-void
+SV *
 retrieve(session, oid, callback, context)
 	Net_HoneyComb session;
 	char *oid;
@@ -291,10 +276,11 @@ retrieve(session, oid, callback, context)
 				&cookie,
 				(hc_oid *)oid
 			);
-		if (rc != HCERR_OK)
-			croak("Error %d occurred while retrieving object", rc);
+		RETVAL = net_honeycomb_ok( rc ) ? &PL_sv_yes : &PL_sv_no;
+	OUTPUT:
+		RETVAL
 
-void
+Net_HoneyComb_ResultSet
 query(session, query, max_records, ...)
 	Net_HoneyComb session;
 	char * query;
@@ -305,11 +291,7 @@ query(session, query, max_records, ...)
 		char **selects = NULL;
 		int i;
 		int n = 0;
-		hc_nvr_t *nvr = NULL;
-		int finished = 0;
-		hc_oid oid;
-		HV * metadata = NULL;
-	PPCODE:
+	CODE:
 		n = items - 3;
 		if( n > 0 )
 		{
@@ -328,23 +310,12 @@ query(session, query, max_records, ...)
 		if( selects != NULL )
 			Safefree(selects);
 		if (rc != HCERR_OK)
-			croak("Error %d occurred while performing query", rc);
-		for(i = 0; i < max_records; ++i)
-		{
-			rc = hc_qrs_next_ez(rset, &oid, &nvr, &finished);
-			if (rc != HCERR_OK)
-				croak("Error %d occurred while retrieving query", rc);
-			if( finished )
-				break;
-			metadata = newHV();
-			// nvr will be non-NULL if selects were specified
-			if( nvr != NULL )
-				net_honeycomb_hash_from_nvr( metadata, nvr );
-			PUSHs(sv_2mortal(newSVpv((char *) oid, strlen((char *) oid))));
-			PUSHs(sv_2mortal(newRV_noinc((SV *) metadata)));
-		}
+			net_honeycomb_error( rc );
+		RETVAL = rset;
+	OUTPUT:
+		RETVAL
 
-void
+SV *
 delete(session, oid)
 	Net_HoneyComb session;
 	char * oid;
@@ -352,6 +323,52 @@ delete(session, oid)
 		hcerr_t rc;
 	CODE:
 		rc = hc_delete_ez( session, (hc_oid *) oid );
-		if (rc != HCERR_OK)
-			net_honeycomb_error(session, rc);
+		RETVAL = net_honeycomb_ok( rc ) ? &PL_sv_yes : &PL_sv_no;
+	OUTPUT:
+		RETVAL
 
+void
+get_status(session)
+	Net_HoneyComb session;
+	PREINIT:
+		int32_t response_code = -1;
+		char * errstr = "";
+		hcerr_t rc;
+	PPCODE:
+		rc = hc_session_get_status( session, &response_code, &errstr );
+		if( rc != HCERR_OK )
+			net_honeycomb_error( rc );
+		PUSHs(sv_2mortal(newSViv(response_code)));
+		PUSHs(sv_2mortal(newSVpv(errstr, strlen(errstr))));
+
+MODULE = Net::HoneyComb		PACKAGE = Net::HoneyComb::ResultSet
+
+void
+DESTROY(rset)
+	Net_HoneyComb_ResultSet rset;
+	CODE:
+		hc_qrs_free(rset);
+
+void
+next(rset)
+	Net_HoneyComb_ResultSet rset;
+	PREINIT:
+		hcerr_t rc;
+		hc_oid oid;
+		hc_nvr_t *nvr = NULL;
+		int finished = 0;
+		HV * metadata;
+	PPCODE:
+		rc = hc_qrs_next_ez(rset, &oid, &nvr, &finished);
+		if (rc != HCERR_OK)
+			net_honeycomb_error( rc );
+		if( finished )
+			XSRETURN_EMPTY;
+		PUSHs(newSVpv((char *) oid, strlen((char *) oid)));
+		if( nvr != NULL )
+		{
+			metadata = newHV();
+			net_honeycomb_hash_from_nvr( metadata, nvr );
+			//hc_nvr_free(nvr);
+			PUSHs(newRV_noinc((SV *) metadata));
+		}

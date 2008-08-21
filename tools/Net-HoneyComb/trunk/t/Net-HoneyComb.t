@@ -5,7 +5,7 @@
 
 # change 'tests => 2' to 'tests => last_test_to_print';
 
-use Test::More tests => 5;
+use Test::More tests => 6;
 BEGIN { use_ok('Net::HoneyComb') };
 
 
@@ -30,6 +30,10 @@ ok( $fail == 0 , 'Constants' );
 # Insert your test code below, the Test::More module is use()ed here so read
 # its man page ( perldoc Test::More ) for help writing this test script.
 
+eval { my $honey = Net::HoneyComb->new( "localhost", "59382" ) };
+
+ok( $@ );
+
 my $honey = Net::HoneyComb->new( "hc-data", 8080 );
 
 my $test_data = "Perl Net::HoneyComb Binding Test\n";
@@ -38,33 +42,27 @@ my $data = $test_data;
 
 my $oid = $honey->store_both( sub { my( $context, $len ) = @_; my $r = substr($data,0,$len); substr($data,0,$len) = ""; return $r }, undef, {} );
 
-warn "Got oid=$oid\n";
-
 $data = "";
 
 $honey->retrieve( $oid, sub { my( $context, $buffer ) = @_; $data .= $buffer }, undef );
 
 ok( $data eq $test_data );
 
-my %metadata = $honey->retrieve_metadata( $oid );
+my $metadata = $honey->retrieve_metadata( $oid );
 
-ok( exists($metadata{"system.object_size"}) && $metadata{"system.object_size"} == length($test_data) );
+ok( exists($metadata->{"system.object_size"}) && $metadata->{"system.object_size"} == length($test_data) );
 
-use Data::Dumper;
+#use Data::Dumper;
 #warn Data::Dumper::Dumper( \%metadata );
 
-my %results = $honey->query( "system.object_size='".length($test_data)."'", 50, "system.object_size" );
+my $rset = $honey->query( "system.object_size='".length($test_data)."'", 50, "system.object_size" );
 
-warn Data::Dumper::Dumper( \%results );
+my $oid_exists = 0;
 
-ok( exists($results{$oid}) );
-
-$honey->delete( $oid );
-
-foreach my $o_oid (keys %results)
+while(my( $qoid, $metadata ) = $rset->next)
 {
-	if( $o_oid ne $oid )
-	{
-		$honey->delete( $oid );
-	}
+	$oid_exists = 1 if $qoid eq $oid;
+	$honey->delete( $qoid );
 }
+
+ok( $oid_exists );
