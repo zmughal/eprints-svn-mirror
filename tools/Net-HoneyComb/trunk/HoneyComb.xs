@@ -8,8 +8,8 @@
 
 #include "const-c.inc"
 
-typedef struct hc_session_t * Net_HoneyComb;
-typedef struct hc_query_result_set_t * Net_HoneyComb_ResultSet;
+typedef struct hc_session_t * Net_Sun_HoneyComb;
+typedef struct hc_query_result_set_t * Net_Sun_HoneyComb_ResultSet;
 
 typedef struct {
 	SV * callback;
@@ -144,7 +144,7 @@ net_honeycomb_error( hcerr_t err )
 	croak("The client library returned error code %d = %s\n", err, hc_decode_hcerr(err));
 }
 
-MODULE = Net::HoneyComb		PACKAGE = Net::HoneyComb
+MODULE = Net::Sun::HoneyComb		PACKAGE = Net::Sun::HoneyComb
 
 INCLUDE: const-xs.inc
 
@@ -153,7 +153,7 @@ PROTOTYPES: ENABLE
 BOOT:
 	hc_init(malloc,free,realloc);
 
-Net_HoneyComb
+Net_Sun_HoneyComb
 new( class, host, port )
 	char *class;
 	char *host;
@@ -171,13 +171,13 @@ new( class, host, port )
 
 void
 DESTROY(session)
-	Net_HoneyComb session
+	Net_Sun_HoneyComb session
 	CODE:
 		hc_session_free( session );
 
 char *
 store_both(session, callback, context, metadata)
-	Net_HoneyComb session;
+	Net_Sun_HoneyComb session;
 	SV *callback;
 	SV *context;
 	HV *metadata;
@@ -210,7 +210,7 @@ store_both(session, callback, context, metadata)
 
 char *
 store_metadata(session, oid, metadata)
-	Net_HoneyComb session;
+	Net_Sun_HoneyComb session;
 	char * oid;
 	HV * metadata;
 	PREINIT:
@@ -238,7 +238,7 @@ store_metadata(session, oid, metadata)
 
 SV *
 retrieve_metadata(session, oid)
-	Net_HoneyComb session;
+	Net_Sun_HoneyComb session;
 	char * oid;
 	PREINIT:
 		hcerr_t rc;
@@ -262,7 +262,7 @@ retrieve_metadata(session, oid)
 
 SV *
 retrieve(session, oid, callback, context)
-	Net_HoneyComb session;
+	Net_Sun_HoneyComb session;
 	char *oid;
 	SV *callback;
 	SV *context;
@@ -286,9 +286,9 @@ retrieve(session, oid, callback, context)
 	OUTPUT:
 		RETVAL
 
-Net_HoneyComb_ResultSet
+Net_Sun_HoneyComb_ResultSet
 query(session, query, max_records, ...)
-	Net_HoneyComb session;
+	Net_Sun_HoneyComb session;
 	char * query;
 	int max_records;
 	PREINIT:
@@ -323,7 +323,7 @@ query(session, query, max_records, ...)
 
 SV *
 delete(session, oid)
-	Net_HoneyComb session;
+	Net_Sun_HoneyComb session;
 	char * oid;
 	PREINIT:
 		hcerr_t rc;
@@ -339,7 +339,7 @@ delete(session, oid)
 
 void
 get_status(session)
-	Net_HoneyComb session;
+	Net_Sun_HoneyComb session;
 	PREINIT:
 		int32_t response_code = -1;
 		char * errstr = "";
@@ -351,17 +351,17 @@ get_status(session)
 		PUSHs(sv_2mortal(newSViv(response_code)));
 		PUSHs(sv_2mortal(newSVpv(errstr, strlen(errstr))));
 
-MODULE = Net::HoneyComb		PACKAGE = Net::HoneyComb::ResultSet
+MODULE = Net::Sun::HoneyComb		PACKAGE = Net::Sun::HoneyComb::ResultSet
 
 void
 DESTROY(rset)
-	Net_HoneyComb_ResultSet rset;
+	Net_Sun_HoneyComb_ResultSet rset;
 	CODE:
 		hc_qrs_free(rset);
 
 void
 next(rset)
-	Net_HoneyComb_ResultSet rset;
+	Net_Sun_HoneyComb_ResultSet rset;
 	PREINIT:
 		hcerr_t rc;
 		hc_oid oid;

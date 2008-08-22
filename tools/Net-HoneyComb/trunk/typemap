@@ -1,6 +1,6 @@
 TYPEMAP
-Net_HoneyComb                  T_HONEYCOMB
-Net_HoneyComb_ResultSet        T_RESULTSET
+Net_Sun_HoneyComb                  T_HONEYCOMB
+Net_Sun_HoneyComb_ResultSet        T_RESULTSET
 
 INPUT
 T_HONEYCOMB
