@@ -23,11 +23,24 @@ sub new
 	return $self;
 }
 
-sub input_fh
+sub input_file
 {
-	my( $self, %opts ) = @_;
+	my( $plugin, %opts ) = @_;
 
-	my $fh = $opts{fh};
+	my $fh;
+	if( $opts{filename} eq '-' )
+	{
+		$fh = *STDIN;
+	}
+	else
+	{
+		unless( open($fh, "<", $opts{filename}) )
+		{
+			$plugin->error( "Could not open file $opts{filename}: $!\n" );
+			return undef;
+		}
+	}
+	$opts{fh} = $fh;
 
 	if( $^V gt v5.8.0 and seek( $fh, 0, 1 ) )
 	{
@@ -48,14 +61,14 @@ sub input_fh
 		}	
 	}
 
-	return $self->input_text_fh( %opts );
-}
+	my $list = $plugin->input_fh( %opts );
 
-sub input_text_fh
-{
-	my( $self, %opts ) = @_;
+	unless( $opts{filename} eq '-' )
+	{
+		close($fh);
+	}
 
-	return undef;
+	return $list;
 }
 
 1;

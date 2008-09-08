@@ -89,6 +89,17 @@ sub handler
 		"$urlpath/sword-app/",
 		"$urlpath/thumbnails/";
 
+	my $securehost = $repository->get_conf( "securehost" );
+	if( EPrints::Utils::is_set( $securehost ) && !$secure )
+	{
+		# If this repository has secure mode but we're not
+		# on the https site then skip /secure/ to let
+		# it just get rediected to the secure site.
+		push @exceptions,
+			$repository->get_conf( "https_cgiroot" ),
+			$repository->get_conf( "https_root" );
+	}
+	
 	foreach my $exppath ( @exceptions )
 	{
 		return DECLINED if( $uri =~ m/^$exppath/ );
@@ -156,19 +167,39 @@ sub handler
 				$tail = "/" if $tail eq "";
 				return redir( $r, sprintf( "%s/%d/%d%s",$urlpath, $eprintid, $pos, $tail ).$args );
 			}
+			my $session = new EPrints::Session(2); # don't open the CGI info
+			my $ds = $repository->get_dataset("eprint") ;
+			my $searchexp = new EPrints::Search( session=>$session, dataset=>$ds );
+			$searchexp->add_field( $ds->get_field( "eprintid" ), $eprintid );
+			my $results = $searchexp->perform_search;
+			my( $eprint ) = $results->get_records(0,1);
+			$searchexp->dispose;
+		
+			# let it fail if this isn't a real eprint	
+			if( !defined $eprint )
+			{
+				$session->terminate;
+				return OK;
+			}
+	
+			my $filename = sprintf( '%s/%02d%s',$eprint->local_path.($thumbnails?"/thumbnails":""), $pos, $tail );
 
-			my $filename = $tail;
-			$filename =~ s/^\/+//;
+			# This will stop the default extension-based Apache handlers
+			if( $filename =~ /\.(php|shtml)$/i )
+			{
+				$r->content_type( "text/plain" );
+				$r->set_handlers( PerlFixupHandler => sub {
+					$_[0]->content_type( "text/plain" );
+					$_[0]->handler('default-handler');
+					return OK;
+				} );
+			}
 
-			$r->pnotes( datasetid => "document" );
-			$r->pnotes( eprintid => $eprintid );
-			$r->pnotes( pos => $pos );
-			$r->pnotes( bucket => ($thumbnails ? "thumbnail" : "data" ) );
-			$r->pnotes( filename => $filename );
+			$r->filename( $filename );
 
-		 	$r->set_handlers(PerlResponseHandler => \&EPrints::Apache::Storage::handler );
-
-			return DECLINED;
+			$session->terminate;
+			
+			return OK;
 		}
 	
 		# OK, It's the EPrints abstract page (or something whacky like /23/fish)

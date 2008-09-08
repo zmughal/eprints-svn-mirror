@@ -81,8 +81,7 @@ sub export
 
 	my $convert = $plugin->get_repository->get_conf( 'executables', 'convert' );
 
-	my $src = $doc->get_stored_files( "data", $doc->get_main );
-	$src = $src->get_local_copy();
+	my $src = $doc->local_path . '/' . $doc->get_main;
 
 	$type =~ m/^thumbnail_(.*)$/;
 	my $size = $1;
@@ -90,9 +89,9 @@ sub export
 	my $geom = { small=>"66x50", medium=>"200x150",preview=>"400x300" }->{$1};
 	return () unless defined $geom;
 	
-	my $fn = "$size.jpg";
+	my $fn = "$size.png";
 
-	system($convert, "-strip", "-colorspace", "RGB", "-thumbnail","$geom>", $src."[$geom]", $dir . '/' . $fn);
+	system($convert, "-thumbnail","$geom>", $src."[$geom]", $dir . '/' . $fn);
 
 	unless( -e "$dir/$fn" ) {
 		return ();

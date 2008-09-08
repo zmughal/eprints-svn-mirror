@@ -68,12 +68,11 @@ sub export
 
 	my $convert = $plugin->get_repository->get_conf( 'executables', 'convert' );
 
-	my $src = $doc->get_stored_files( "data", $doc->get_main );
-	$src = $src->get_local_copy();
+	my $src = $doc->local_path . '/' . $doc->get_main;
 	
-	my $fn = "preview.jpg";
+	my $fn = "preview.png";
 
-	system($convert, "-strip", "-colorspace", "RGB", "-thumbnail","400x300>", '-bordercolor', 'rgb(128,128,128)', '-border', '1', $src.'[0]', $dir . '/' . $fn);
+	system($convert, "-thumbnail","400x300>", '-bordercolor', 'rgb(128,128,128)', '-border', '1', $src.'[0]', $dir . '/' . $fn);
 
 	unless( -e "$dir/$fn" ) {
 		return ();
