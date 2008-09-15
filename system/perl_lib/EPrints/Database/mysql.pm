@@ -370,6 +370,23 @@ sub index_queue
 	}
 }
 
+# Not supported by DBD::mysql?
+sub get_primary_key
+{
+	my( $self, $table ) = @_;
+
+	my $sth = $self->prepare( "DESCRIBE ".$self->quote_identifier($table) );
+	$sth->execute;
+
+	my @COLS;
+	while(my $row = $sth->fetch)
+	{
+		push @COLS, $row->[0] if $row->[3] eq 'PRI';
+	}
+
+	return @COLS;
+}
+
 1; # For use/require success
 
 ######################################################################

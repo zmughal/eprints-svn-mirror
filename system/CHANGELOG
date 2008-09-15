@@ -7627,3 +7627,6 @@ EPRINTS-3.1.0
     menu page. This was due to it ending up looking up HASH(0x£@*&£$) in 
     the sizes hash.
 
+2008-09-15 tdb
+ * Added get_primary_key() for MySQL by using DESCRIBE
+
