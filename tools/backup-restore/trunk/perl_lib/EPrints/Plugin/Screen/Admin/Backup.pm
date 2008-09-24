@@ -44,7 +44,7 @@ sub action_backup_repository
 
 	`$mysqldump_executable -u $database_user -p$database_password $database_name > $sqlfile`;
 
-	`$tar_executable -czf $tmpfile $sqlfile -C $eprints_base_path . `; 
+	`$tar_executable -czf $tmpfile $sqlfile -C $eprints_base_path/archives/$repository_id . `; 
 
 	my $result = 1;
 	if( !-s "$tmpfile" )

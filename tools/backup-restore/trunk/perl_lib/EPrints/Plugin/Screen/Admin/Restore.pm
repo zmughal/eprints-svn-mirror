@@ -73,50 +73,32 @@ sub action_restore_repository
 	
 		`$tar_executable -zxf $tmpfile -C $check_path --same-owner`; 
 
-		my $import_base_path;
-
-		{
-		local $EPrints::SystemSettings::conf;
-
-		do "$check_path/perl_lib/EPrints/SystemSettings.pm";
-
-		$import_base_path = $EPrints::SystemSettings::conf->{"base_path"};
+		## Stage 1
+		# Replace all config files in the untar'd backup with those specific to the local install.
+		# Can't see a reason for this failing.
+		##
+		`cp -pf $eprints_base_path/archives/$repository_id/cfg/apapche.conf $check_path/cfg/`;
+		`cp -pf $eprints_base_path/archives/$repository_id/var/auto-apapche.conf $check_path/var/`;
+		`cp -pf $eprints_base_path/archives/$repository_id/cfg/cfg.d/10_core.pl $check_path/cfg/cfg.d/`;
+		`cp -pf $eprints_base_path/archives/$repository_id/cfg/cfg.d/database.pl $check_path/cfg/cfg.d/`;
+		#End
 		
-		}
+		## Insert the database
+		# This could fail so needs some check code at some point 
+		`echo "drop database $database_name" | mysql -u $database_user -p$database_password -h $database_host`; 
+		`echo "create database $database_name" | mysql -u $database_user -p$database_password -h $database_host`; 
+		my $local_database_file = `ls $check_path/tmp/`;
+		`mysql -u $database_user -p$database_password -h $database_host $database_name < $check_path/tmp/$local_database_file`;
+		`rm -fR $check_path/tmp/`;
 
-		my $import_archive_id = trim(`ls $check_path/archives/`);
-
-		if ($import_base_path eq $eprints_base_path) {
-			if ($import_archive_id eq $repository_id) {
-			
-				my $ret = `diff $eprints_base_path/archives/$repository_id/cfg/cfg.d/database.pl $check_path/archives/$repository_id/cfg/cfg.d/database.pl`;
-				if ($ret eq "") {	
-					my $archive_dir = EPrints::TempDir->new();
-					`cp -pR $eprints_base_path/archives/* $archive_dir`;
-					`rm -fR $archive_dir/$repository_id`; 
-
-					`echo "drop database $database_name" | mysql -u $database_user -p$database_password -h $database_host`; 
-					`echo "create database $database_name" | mysql -u $database_user -p$database_password -h $database_host`; 
-					my $local_database_file = `ls $check_path/tmp/`;
-					`mysql -u $database_user -p$database_password -h $database_host $database_name < $check_path/tmp/$local_database_file`;
-					`rm -fR $eprints_base_path/*`;
-					`rm -fR $check_path/tmp/`;
-					`cp -pR $check_path/* $eprints_base_path/`;
-					`rm -fR $check_path`;
-					`cp -pR $archive_dir/* $eprints_base_path/archives/`;
-					$self->{processor}->add_message( "message", $session->make_text( "Repsotory Restored" ) );
+		##Restore the archive
+		# Again probably could go wrong
+		`rm -fR $eprints_base_path/archives/$repository_id/*`;
+		`cp -pR $check_path/* $eprints_base_path/archives/$repository_id/`;
+		`rm -fR $check_path`;
+		
+		$self->{processor}->add_message( "message", $session->make_text( "Repsotory Restored" ) );
 					
-				} else {
-					$self->{processor}->add_message( "error", $session->make_text( "Unable to import this archive: Database configuration mismatch, will probably fix this is a later version." ) );
-				}
-				
-			} else {
-				$self->{processor}->add_message( "error", $session->make_text( "Unable to import this archive as it's ID does not match the one you are currently logged into. <$import_archive_id> != <$repository_id> $check_path" ) );
-			}
-		} else {
-			$self->{processor}->add_message( "error", $session->make_text( "EPrints base paths did not match...this next version of this script will correct this for you...see how nice we are as everything could have broken!" ) );
-		}
-
 	}
 	else
 	{
