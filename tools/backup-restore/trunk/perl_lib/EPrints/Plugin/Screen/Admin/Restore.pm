@@ -77,10 +77,11 @@ sub action_restore_repository
 		# Replace all config files in the untar'd backup with those specific to the local install.
 		# Can't see a reason for this failing.
 		##
-		`cp -pf $eprints_base_path/archives/$repository_id/cfg/apapche.conf $check_path/cfg/`;
-		`cp -pf $eprints_base_path/archives/$repository_id/var/auto-apapche.conf $check_path/var/`;
-		`cp -pf $eprints_base_path/archives/$repository_id/cfg/cfg.d/10_core.pl $check_path/cfg/cfg.d/`;
-		`cp -pf $eprints_base_path/archives/$repository_id/cfg/cfg.d/database.pl $check_path/cfg/cfg.d/`;
+		`cp $eprints_base_path/archives/$repository_id/cfg/apache.conf $check_path/cfg/`;
+		`cp $eprints_base_path/archives/$repository_id/var/auto-apache.conf $check_path/var/`;
+		`cp $eprints_base_path/archives/$repository_id/cfg/cfg.d/10_core.pl $check_path/cfg/cfg.d/`;
+		`cp $eprints_base_path/archives/$repository_id/cfg/cfg.d/database.pl $check_path/cfg/cfg.d/`;
+		`cp $eprints_base_path/archives/$repository_id/cfg/lang/en/phrases/archive_name.xml $check_path/cfg/lang/en/phrases/`;
 		#End
 		
 		## Insert the database
@@ -94,11 +95,11 @@ sub action_restore_repository
 		##Restore the archive
 		# Again probably could go wrong
 		`rm -fR $eprints_base_path/archives/$repository_id/*`;
-		`cp -pR $check_path/* $eprints_base_path/archives/$repository_id/`;
+		`cp -R $check_path/* $eprints_base_path/archives/$repository_id/`;
+		`chmod g+w $eprints_base_path/archives/$repository_id/* -R`;
 		`rm -fR $check_path`;
 		
-		$self->{processor}->add_message( "message", $session->make_text( "Repsotory Restored" ) );
-					
+		$self->{processor}->add_message( "message", $session->make_text( "Repository Restored" ) );					
 	}
 	else
 	{
