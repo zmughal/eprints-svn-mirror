@@ -1,0 +1,8 @@
+ep_build.sh
+
+You need a full unstable debian build environment and a previous source of eprints with the debian tree in it.
+This is not really a stand-alone script, more a backup just in case I loose my box.
+
+One way of setting up an environment is to install a box then apt-get source eprints and use this as the previous version from which the new one can be built. The previous versino should be as up to date as possible as there are some changes in the debian build scripts at times.
+
+dct05r@ecs.soton.ac.uk
