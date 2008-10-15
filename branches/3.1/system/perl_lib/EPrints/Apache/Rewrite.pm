@@ -89,17 +89,6 @@ sub handler
 		"$urlpath/sword-app/",
 		"$urlpath/thumbnails/";
 
-	my $securehost = $repository->get_conf( "securehost" );
-	if( EPrints::Utils::is_set( $securehost ) && !$secure )
-	{
-		# If this repository has secure mode but we're not
-		# on the https site then skip /secure/ to let
-		# it just get rediected to the secure site.
-		push @exceptions,
-			$repository->get_conf( "https_cgiroot" ),
-			$repository->get_conf( "https_root" );
-	}
-	
 	foreach my $exppath ( @exceptions )
 	{
 		return DECLINED if( $uri =~ m/^$exppath/ );
