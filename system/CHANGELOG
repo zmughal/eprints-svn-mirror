@@ -7654,3 +7654,10 @@ EPRINTS-3.1.0
 ======================================================================
 EPRINTS-3.1.1
 ======================================================================
+
+2008-10-15 tdb
+ * Merged [3541]
+ * Use the EPrint object to render fileinfo
+ * Don't DECLINE requests to "/" when https_root is set to "", fixing #3361
+ * Use relative path for icons and thumbnails, fixing #3360 
+
