@@ -7651,13 +7651,21 @@ EPRINTS-3.1.0
  * Fixed minor bug in Component::Upload which prevented it working with zero
     fields from the document.
 
-======================================================================
-EPRINTS-3.1.1
-======================================================================
-
 2008-10-15 tdb
  * Merged [3541]
  * Use the EPrint object to render fileinfo
  * Don't DECLINE requests to "/" when https_root is set to "", fixing #3361
  * Use relative path for icons and thumbnails, fixing #3360 
+
+2008-10-15 cjg
+ * Added dates to UKETD export plugin. Resolving #3445.
+
+2008-10-15 cjg
+ * Changed URL fields to be TEXT not VARCHAR(255). These are *not* a subclass
+    of "Longtext", the only change is to storage. This will only impact newly
+    created fields. Resolving #3436.
+
+2008-10-15 cjg
+ * Fixed "up a level" to link correctly.
+ * Removed the "navigation aids" from the .include files.
 
