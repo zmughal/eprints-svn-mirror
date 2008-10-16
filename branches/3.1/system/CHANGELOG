@@ -7669,5 +7669,8 @@ EPRINTS-3.1.0
  * Fixed "up a level" to link correctly.
  * Removed the "navigation aids" from the .include files.
 
-2008-10-15 cjg
- * Fixed minor mug in change to Url.pm
+2008-10-16 cjg
+ * Fixed minor bug introduced in previous change to Url.pm
+
+2008-10-16 cjg
+ * Removed stray Dumper() debug line from Update::Views
