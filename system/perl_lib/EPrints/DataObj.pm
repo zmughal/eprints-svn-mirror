@@ -76,33 +76,30 @@ sub get_system_field_info
 ######################################################################
 =pod
 
-=item $dataobj = EPrints::DataObj->new( $session, $id [, $dataset] )
+=item $dataobj = EPrints::DataObj->new( $session, $id, [$dataset] )
+
+ABSTRACT.
 
 Return new data object, created by loading it from the database.
 
-If $dataset is not defined uses the default dataset for this object.
+$dataset is used by EPrint->new to save searching through all four
+tables that it could be in.
 
 =cut
 ######################################################################
 
 sub new
 {
-	my( $class, $session, $id, $dataset ) = @_;
+	my( $class, $session, $id ) = @_;
 
-	if( !defined($dataset) )
-	{
-		$dataset = $session->get_repository->get_dataset( $class->get_dataset_id );
-	}
-
-	return $session->get_database->get_single( 
-			$dataset,
-			$id );
 }
 
 ######################################################################
 =pod
 
-=item $dataobj = EPrints::DataObj->new_from_data( $session, $data [, $dataset ] )
+=item $dataobj = EPrints::DataObj->new_from_data( $session, $data, $dataset )
+
+ABSTRACT.
 
 Construct a new EPrints::DataObj object based on the $data hash 
 reference of metadata.
@@ -117,22 +114,13 @@ sub new_from_data
 	my( $class, $session, $data, $dataset ) = @_;
 
 	my $self = { data=>{} };
+	$self->{dataset} = $dataset;
 	$self->{session} = $session;
-	Scalar::Util::weaken($self->{session})
-		if defined &Scalar::Util::weaken;
-	if( defined( $dataset ) )
-	{
-		$self->{dataset} = $dataset;
-	}
-	else
-	{
-		$self->{dataset} = $session->get_repository->get_dataset( $class->get_dataset_id );
-	}
-	bless( $self, ref($class) || $class );
+	bless( $self, $class );
 
 	if( defined $data )
 	{
-		if( $self->{dataset}->confid eq "eprint" )
+		if( $dataset->confid eq "eprint" )
 		{
 			$self->set_value( "eprint_status", $data->{"eprint_status"} );
 		}
@@ -146,21 +134,10 @@ sub new_from_data
 	return( $self );
 }
 
-sub clone
-{
-	my( $self ) = @_;
-
-	my $session = $self->{session};
-
-	my $clone = $self->create_from_data( $session, $self->get_data, $self->get_dataset );
-
-	return $clone;
-}
-
 ######################################################################
 #=pod
 #
-#=item $dataobj = EPrints::DataObj::create( $session, @default_data )
+#=item $dataobj = EPrints::DataObj->create( $session, @default_data )
 #
 #ABSTRACT.
 #
@@ -173,9 +150,8 @@ sub clone
 
 sub create
 {
-	my( $session, @default_data ) = @_;
+	my( $class, $session, @defaunt_data ) = @_;
 
-	Carp::croak( "EPrints::DataObj::create must be overridden" );
 }
 
 
@@ -202,7 +178,6 @@ sub create_from_data
 	my( $class, $session, $data, $dataset ) = @_;
 
 	$data = EPrints::Utils::clone( $data );
-	$dataset ||= $session->get_repository->get_dataset( $class->get_dataset_id );
 
 	# If there is a field which indicates the virtual dataset,
 	# set that now, so it's visible to get_defaults.
@@ -299,7 +274,11 @@ sub get_defaults
 
 =item $success = $dataobj->remove
 
-Remove this data object from the database and any sub-objects or related files. 
+ABSTRACT
+
+Remove this data object from the database. 
+
+Also removes any sub-objects or related files.
 
 Return true if successful.
 
@@ -310,9 +289,6 @@ sub remove
 {
 	my( $self ) = @_;
 
-	return $self->{session}->get_database->remove(
-		$self->{dataset},
-		$self->get_id );
 }
 
 # $dataobj->set_under_construction( $boolean )
@@ -365,12 +341,15 @@ sub clear_changed
 
 =item $success = $dataobj->commit( [$force] )
 
+ABSTRACT.
+
 Write this object to the database.
 
 If $force isn't true then it only actually modifies the database
 if one or more fields have been changed.
 
-Commit may also queue indexer jobs or log changes, depending on the object.
+Commit may also log the changes, depending on the type of data 
+object.
 
 =cut
 ######################################################################
@@ -379,33 +358,6 @@ sub commit
 {
 	my( $self, $force ) = @_;
 	
-	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
-	{
-		# don't do anything if there isn't anything to do
-		return( 1 ) unless $force;
-	}
-
-	# Remove empty slots in multiple fields
-	$self->tidy;
-
-	# Write the data to the database
-	my $success = $self->{session}->get_database->update(
-		$self->{dataset},
-		$self->{data} );
-
-	if( !$success )
-	{
-		my $db_error = $self->{session}->get_database->error;
-		$self->{session}->get_repository->log( 
-			"Error committing ".$self->get_dataset_id.".".
-			$self->get_id.": ".$db_error );
-		return 0;
-	}
-
-	# Queue changes for the indexer (if indexable)
-	$self->queue_changes();
-
-	return $success;
 }
 
 
@@ -659,30 +611,13 @@ sub get_data
 	return $self->{data};
 }
 
-######################################################################
-=pod
-
-=item $dataset = EPrints::DataObj->get_dataset_id
-
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
-
-=cut
-######################################################################
-
-sub get_dataset_id
-{
-	my( $class ) = @_;
-
-	Carp::croak( "get_dataset_id must be overridden by $class" );
-}
-
 
 ######################################################################
 =pod
 
 =item $dataset = $dataobj->get_dataset
 
-Returns the L<EPrints::DataSet> object to which this record belongs.
+Returns the EPrints::DataSet object to which this record belongs.
 
 =cut
 ######################################################################
@@ -774,8 +709,6 @@ sub get_id
 
 =item $id = $dataobj->get_gid
 
-DEPRECATED (see uri())
-
 Returns the globally referential fully-qualified identifier for this object or
 undef if this object can not be externally referenced.
 
@@ -786,25 +719,7 @@ sub get_gid
 {
 	my( $self ) = @_;
 
-	return $self->uri;
-}
-
-=item $datestamp = $dataobj->get_datestamp
-
-Returns the datestamp of this object in "YYYY-MM-DD hh:mm:ss" format.
-
-=cut
-
-sub get_datestamp
-{
-	my( $self ) = @_;
-
-	my $dataset = $self->get_dataset;
-
-	my $field = $dataset->get_datestamp_field;
-	return unless $field;
-
-	return $field->get_value( $self );
+	return undef;
 }
 
 ######################################################################
@@ -1019,19 +934,6 @@ sub uri
 	return $self->get_session->get_repository->get_conf( "base_url" )."/id/".$ds_id."/".$self->get_id;
 }
 
-=item $uri = $dataobj->internal_uri()
-
-Return an internal URI for this object (independent of repository hostname).
-
-=cut
-
-sub internal_uri
-{
-	my( $self ) = @_;
-
-	return sprintf("_internal:%s.%s", $self->get_dataset->confid, $self->get_id);
-}
-
 ######################################################################
 =pod
 
@@ -1124,12 +1026,7 @@ sub to_xml
 		return;
 	}
 
-	if( !$opts{no_xmlns} )
-	{
-		$attrs{'xmlns'} = $ns;
-	}
-	$opts{no_xmlns} = 1;
-
+	$attrs{'xmlns'}=$ns unless( $opts{no_xmlns} );
 	my $tl = "record";
 	if( $opts{version} == 2 ) { 
 		$tl = $self->{dataset}->confid; 
@@ -1137,6 +1034,7 @@ sub to_xml
 	}	
 	my $r = $self->{session}->make_element( $tl, %attrs );
 	$r->appendChild( $self->{session}->make_text( "\n" ) );
+#$r->appendChild( $self->{session}->make_text( "x\nx" ) );
 	foreach my $field ( $self->{dataset}->get_fields() )
 	{
 		next unless( $field->get_property( "export_as_xml" ) );
@@ -1151,8 +1049,7 @@ sub to_xml
 			$r->appendChild( $field->to_xml( 
 				$self->{session}, 
 				$self->get_value( $field->get_name() ),
-				$self->{dataset},
-				%opts ) );
+				$self->{dataset} ) ); # no xmlns on inner elements
 		}
 		if( $opts{version} eq "1" )
 		{
@@ -1163,7 +1060,76 @@ sub to_xml
 		}
 	}
 
-	return $r;
+	if( $opts{version} eq "2" )
+	{
+		if( $self->{dataset}->confid eq "user" )
+		{
+			my $saved_searches = $self->{session}->make_element( "saved_searches" );
+			foreach my $saved_search ( $self->get_saved_searches )
+			{
+				$saved_searches->appendChild( $saved_search->to_xml( %opts ) );
+			}	
+			$r->appendChild( $saved_searches );
+		}
+
+		if( $self->{dataset}->confid eq "eprint" )
+		{
+			my $docs = $self->{session}->make_element( "documents" );
+			foreach my $doc ( $self->get_all_documents )
+			{
+				$docs->appendChild( $doc->to_xml( %opts ) );
+			}	
+			$r->appendChild( $docs );
+		}
+
+		if( $self->{dataset}->confid eq "document" )
+		{
+			my $files = $self->{session}->make_element( "files" );
+			$files->appendChild( $self->{session}->make_text( "\n" ) );
+			my %files = $self->files;
+			foreach my $filename ( keys %files )
+			{
+				my $file = $self->{session}->make_element( "file" );
+
+				$file->appendChild( 
+					$self->{session}->render_data_element( 
+						6, 
+						'filename',
+						$filename ) );
+				$file->appendChild( 
+					$self->{session}->render_data_element( 
+						6, 
+						'filesize',
+						$files{$filename} ) );
+				$file->appendChild( 
+					$self->{session}->render_data_element( 
+						6, 
+						'url',
+						$self->get_url($filename) ) );
+				if( $opts{embed} )
+				{
+					my $fullpath = $self->local_path."/".$filename;
+					open( FH, $fullpath ) || die "fullpath '$fullpath' read error: $!";
+					my $data = join( "", <FH> );
+					close FH;
+					my $data_el = $self->{session}->make_element( 'data', encoding=>"base64" );
+					$data_el->appendChild( $self->{session}->make_text( MIME::Base64::encode($data) ) );
+					$file->appendChild( $data_el );
+				}
+				$files->appendChild( $file );
+			}
+			$r->appendChild( $files );
+		}	
+	}
+
+	EPrints::XML::tidy( $r, {}, 1 );
+
+	my $frag = $self->{session}->make_doc_fragment;
+	$frag->appendChild( $self->{session}->make_text( "  " ) );
+	$frag->appendChild( $r );
+	$frag->appendChild( $self->{session}->make_text( "\n" ) );
+
+	return $frag;
 }
 
 ######################################################################
@@ -1357,237 +1323,10 @@ sub tidy
 		}
 	}
 }
+	
 
 ######################################################################
 =pod
-
-=item $file = $dataobj->add_stored_file( $filename, $filehandle [, $filesize ] )
-
-Convenience method to add the file record for $filename to this object. Reads data from $filehandle. If $filesize is defined it may used to determine where the file should be stored.
-
-Returns the file object or undef if the storage failed.
-
-=cut
-######################################################################
-
-sub add_stored_file
-{
-	my( $self, $filename, $filehandle, $filesize ) = @_;
-
-	my $file = $self->get_stored_file( $filename );
-
-	if( defined($file) )
-	{
-		$file->remove();
-	}
-
-	$file = EPrints::DataObj::File->create_from_data( $self->get_session, {
-		_parent => $self,
-		_filehandle => $filehandle,
-		filename => $filename,
-		filesize => $filesize,
-	} );
-
-	return $file;
-}
-
-######################################################################
-=pod
-
-=item $file = $dataobj->get_stored_file( $filename )
-
-Get the file object for $filename.
-
-Returns the file object or undef if the file doesn't exist.
-
-=cut
-######################################################################
-
-sub get_stored_file
-{
-	my( $self, $filename ) = @_;
-
-	my $file = EPrints::DataObj::File->new_from_filename(
-		$self->{session},
-		$self,
-		$filename
-	);
-
-	return $file;
-}
-
-=head2 Related Objects
-
-=item $dataobj->add_object_relations( $target, $has => $is [, $has => $is ] )
-
-Add a relation between this object and $target of type $has. If $is is defined will also add the reciprocal relationship $is from $target to this object. May be repeated to add multiple relationships.
-
-You must commit $target after calling this method.
-
-=cut
-
-sub add_object_relations
-{
-	my( $self, $target, %relations ) = @_;
-
-	my $uri = $target->internal_uri;
-
-	my @types = grep { defined $_ } keys %relations;
-
-	my $relations = $self->get_value( "relation" );
-	push @$relations, map { {
-		type => $_,
-		uri => $uri,
-	} } @types;
-	$self->set_value( "relation", $relations );
-
-	my @reciprocal = grep { defined $_ } values %relations;
-	if( scalar @reciprocal )
-	{
-		$target->add_object_relations( $self, map { $_ => undef } @reciprocal );
-	}
-}
-
-sub _get_related_uris
-{
-	my( $self, @required ) = @_;
-
-	my $relations = $self->get_value( "relation" );
-
-	# create a look-up table
-	my %haystack;
-	foreach my $relation (@$relations)
-	{
-		$haystack{$relation->{"uri"}}->{$relation->{"type"}} = undef;
-	}
-
-	# remove any relations that don't satisfy our @required types
-	foreach my $type (@required)
-	{
-		foreach my $uri (keys %haystack)
-		{
-			if( !exists( $haystack{$uri}->{$type} ) )
-			{
-				delete $haystack{$uri};
-			}
-		}
-	}
-
-	return keys %haystack;
-}
-
-=item $bool = $dataobj->has_object_relations( $target, @types )
-
-Returns true if this object is related to $target by all @types.
-
-If @types is empty will return true if any relationships exist.
-
-=cut
-
-sub has_object_relations
-{
-	my( $self, $target, @required ) = @_;
-
-	my $match = $target->internal_uri;
-
-	my @uris = $self->_get_related_uris( @required );
-
-	foreach my $uri (@uris)
-	{
-		if( $uri eq $match )
-		{
-			return 1;
-		}
-	}
-
-	return 0;
-}
-
-=item $bool = $dataobj->has_related_objects( @types )
-
-Returns true if get_related_objects() would return some objects, but without actually retrieving the related objects from the database.
-
-=cut
-
-sub has_related_objects
-{
-	my( $self, @required ) = @_;
-
-	my @uris = $self->_get_related_uris( @required );
-
-	return scalar @uris > 0;
-}
-
-=item $dataobjs = $dataobj->get_related_objects( @types )
-
-Returns a list of objects related to this object by @types.
-
-=cut
-
-sub get_related_objects
-{
-	my( $self, @required ) = @_;
-
-	my @uris = $self->_get_related_uris( @required );
-
-	# Translate matching uris into real objects
-	my @matches;
-	foreach my $uri (@uris)
-	{
-		my( $ds_id, $id ) = $uri =~ m/^_internal:([^.]+)\.(.+)/;
-		if( !defined $id )
-		{
-			next;
-		}
-
-		my $dataset = $self->get_session->get_repository->get_dataset( $ds_id );
-		if( !defined( $dataset ) )
-		{
-			next;
-		}
-
-		push @matches, $dataset->get_object( $self->get_session, $id );
-	}
-
-	return \@matches;
-}
-
-=item $dataobj->remove_object_relations( $target [, $has => $is [, $has => $is ] )
-
-Remove relations between this object and $target. If $has => $is pairs are defined will only remove those relationships given.
-
-You must commit $target after calling this method.
-
-=cut
-
-sub remove_object_relations
-{
-	my( $self, $target, %relations ) = @_;
-
-	my $uri = $target->internal_uri;
-
-	my @relations;
-	foreach my $relation (@{($self->get_value( "relation" ))})
-	{
-		# doesn't match $target
-		if( $relation->{"uri"} ne $uri )
-		{
-			push @relations, $relation;
-		}
-		# we're removing specific relations, and this one isn't given
-		elsif( scalar(%relations) && !exists($relations{$relation->{"type"}}) )
-		{
-			push @relations, $relation;
-		}
-	}
-	$self->set_value( "relation", \@relations );
-
-	my @reciprocal = grep { defined $_ } values %relations;
-	if( scalar @reciprocal )
-	{
-		$target->remove_object_relations( $self, map { $_ => undef } @reciprocal );
-	}
-}
 
 ######################################################################
 =pod

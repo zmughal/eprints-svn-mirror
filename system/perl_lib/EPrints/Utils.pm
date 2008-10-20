@@ -29,6 +29,7 @@ This package contains functions which don't belong anywhere else.
 
 package EPrints::Utils;
 
+use Unicode::String qw(utf8 latin1 utf16);
 use File::Copy qw();
 use Text::Wrap qw();
 use LWP::UserAgent;
@@ -314,7 +315,6 @@ sub tree_to_utf8
 		EPrints::XML::is_dom( $node, "CDataSection" ) )
 	{
 		my $v = $node->nodeValue();
-		utf8::decode($v);
 		$v =~ s/[\s\r\n\t]+/ /g unless( $pre );
 		return $v;
 	}
@@ -835,12 +835,10 @@ sub get_input_hidden
 ######################################################################
 =pod
 
-=item EPrints::Utils::get_input_confirm( [$prompt], [$quick], [$default] )
+=item EPrints::Utils::get_input_confirm( [$prompt], [$quick] )
 
 Asks the user for confirmation (yes/no). If $quick is true only checks for a
 single-character input ('y' or 'n').
-
-If $default is '1' defaults to yes, if '0' defaults to no.
 
 Returns true if the user answers 'yes' or false for any other value.
 
@@ -849,17 +847,12 @@ Returns true if the user answers 'yes' or false for any other value.
 
 sub get_input_confirm
 {
-	my( $prompt, $quick, $default ) = @_;
+	my( $prompt, $quick ) = @_;
 
 	$prompt = "" if( !defined $prompt );
-	if( defined($default) )
-	{
-		$default = $default ? "yes" : "no";
-	}
 
 	if( $quick )
 	{
-		$default = substr($default,0,1) if defined $default;
 		$prompt .= " [y/n] ? ";
 		print wrap_text( $prompt, 'console' );
 
@@ -869,24 +862,22 @@ sub get_input_confirm
 			Term::ReadKey::ReadMode( 'raw' );
 			$in = lc(Term::ReadKey::ReadKey( 0 ));
 			Term::ReadKey::ReadMode( 'normal' );
-			$in = $default if ord($in) == 10 && defined $default;
 		}
-		if( $in eq "y" ) { print wrap_text( "es" ); }
-		if( $in eq "n" ) { print wrap_text( "o" ); }
+		if( $in eq "y" ) { print wrap_text( "yes" ); }
+		if( $in eq "n" ) { print wrap_text( "no" ); }
 		print "\n";
 		return( $in eq "y" );
 	}
 	else
 	{
-		$prompt .= defined($default) ? " [$default] ? " : " [yes/no] ? ";
+		$prompt .= " [yes/no] ? ";
 		my $in="";
-		while($in ne "no" && $in ne "yes")
+		while( $in ne "no" && $in ne "yes" )
 		{
 			print wrap_text( $prompt, 'console' );
 
 			$in = lc(Term::ReadKey::ReadLine( 0 ));
 			$in =~ s/\015?\012?$//s;
-			$in = $default if length($in) == 0 && defined $default;
 		}
 		return( $in eq "yes" );
 	}
@@ -1294,11 +1285,6 @@ sub js_string
 # Redirect as this function has been moved.
 ######################################################################
 sub render_xhtml_field { return EPrints::Extras::render_xhtml_field( @_ ); }
-
-sub make_relation
-{
-	return "http://eprints.org/relation/" . $_[0];
-}
 
 1;
 

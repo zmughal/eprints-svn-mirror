@@ -308,12 +308,7 @@ sub render
 	$f->appendChild( $add_div );
 	$add_div->appendChild( $form );
 
-	my @ids = keys %{$map};	
-	if( $self->{override_ids} )
-	{
-		@ids = @{$self->{override_ids}};
-	}
-	@ids = sort @ids;
+	my @ids = sort keys %{$map};	
 
 	my $script = $session->make_element( "script", type=>"text/javascript" );
 	$script->appendChild( $session->make_text( "window.first_row = 'ep_phrase_row_$ids[0]'" ) );

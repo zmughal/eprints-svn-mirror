@@ -301,21 +301,6 @@ sub create_from_data
 ######################################################################
 =pod
 
-=item $dataset = EPrints::DataObj::User->get_dataset_id
-
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
-
-=cut
-######################################################################
-
-sub get_dataset_id
-{
-	return "user";
-}
-
-######################################################################
-=pod
-
 =item $defaults = EPrints::DataObj::User->get_defaults( $session, $data )
 
 Return default values for this object based on the starting data.
@@ -488,8 +473,14 @@ sub commit
 		$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 	}
 
-	my $success = $self->SUPER::commit( $force );
+	my $user_ds = $self->{session}->get_repository->get_dataset( "user" );
+	$self->tidy;
+	my $success = $self->{session}->get_database->update(
+		$user_ds,
+		$self->{data} );
 	
+	$self->queue_changes;
+
 	return( $success );
 }
 

@@ -150,7 +150,7 @@ A value between 0 and 1 representing the 'quality' or confidence in this convers
 
 sub can_convert
 {
-	my ($plugin, $doc, $type) = @_;
+	my ($plugin, $doc) = @_;
 	
 	my $session = $plugin->{ "session" };
 	my @ids = $session->plugin_list( type => 'Convert' );
@@ -159,10 +159,9 @@ sub can_convert
 	for(@ids)
 	{
 		next if $_ eq $plugin->get_id;
-		my %avail = $session->plugin( $_ )->can_convert( $doc, $type );
+		my %avail = $session->plugin( $_ )->can_convert( $doc );
 		while( my( $mt, $def ) = each %avail )
 		{
-			next if defined( $type ) && $mt ne $type;
 			if(
 				!exists($types{$mt}) ||
 				!$types{$mt}->{ "preference" } ||
@@ -216,14 +215,7 @@ sub convert
 	my $new_doc = $doc_ds->create_object( $session, { 
 		eprintid => $eprint->get_id,
 		format => $type,
-		formatdesc => $plugin->{name} . ' conversion from ' . $doc->get_type . ' to ' . $type,
-		relation => [{
-			type => EPrints::Utils::make_relation( "isVersionOf" ),
-			uri => $doc->internal_uri(),
-		},{
-			type => EPrints::Utils::make_relation( "isVolatileVersionOf" ),
-			uri => $doc->internal_uri(),
-		}] } );
+		formatdesc => $plugin->{name} . ' conversion from ' . $doc->get_type . ' to ' . $type } );
 	for(@files)
 	{
 		unless( $new_doc->add_file( "$dir/$_", $_ ) )
@@ -231,16 +223,9 @@ sub convert
 			EPrints::abort( "Error adding $dir/$_ to document" );
 		}
 	}
-	$new_doc->set_value( "security", $doc->get_value( "security" ) );
 	$new_doc->commit; # can this be done without a commit at all?
 
-	$doc->add_object_relations(
-			$new_doc,
-			EPrints::Utils::make_relation( "hasVersion" ) => undef,
-			EPrints::Utils::make_relation( "hasVolatileVersion" => undef )
-		);
-
-	return wantarray ? ($new_doc) : $new_doc;
+	return $new_doc;
 }
 
 1;
