@@ -7683,3 +7683,14 @@ EPRINTS-3.1.1
  * Fixed utf-8 problems in views by removing binmode(FH,":utf8")
  * Replaced all uses of toString with EPrints::XML::to_string in views
 
+2008-10-29 cjg
+ * Added :utf8 back in! 
+ * Fixed issue in Utils which decoded when it should have encoded.
+
+2008-10-29 cjg
+ * Fixed typo in prepare_page. template_id should have been template. Closes
+    #3457.
+
+2008-10-29 cjg
+ * Added <template> option to .xpage files.
+
