@@ -7702,3 +7702,6 @@ EPRINTS-3.1.1
 2008-10-29 tdb
  * Added copy of File::Temp 0.20, fixing #3447
 
+2008-11-10 cjg + dct05r
+ * Added a hook into the tool bar to link to the edit page admin tool if
+    appropriate (page is editable, and user can edit it).
