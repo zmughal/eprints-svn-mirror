@@ -200,7 +200,7 @@ sub render_doc_media_content
 	if( $thumbnail )
 	{
 		$frag->appendChild( $session->make_element( "media:thumbnail", 
-			url => $thumbnail,
+			url => $session->get_repository->get_conf( "base_url" ).$thumbnail,
 			type => "image/png",
 		) );
 	}
@@ -209,7 +209,7 @@ sub render_doc_media_content
 	if( $preview )
 	{
 		$frag->appendChild( $session->make_element( "media:content", 
-			url => $preview,
+			url => $session->get_repository->get_conf( "base_url" ).$preview,
 			type => "image/png",
 		) );
 	}
