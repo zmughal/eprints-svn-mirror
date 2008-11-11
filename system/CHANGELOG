@@ -7708,4 +7708,5 @@ EPRINTS-3.1.1
 
 2008-11-11 tdb
  * Correctly escape search export URLs (lac request)
+ * Added thumbnail and content media tags to RSS2 export
 
