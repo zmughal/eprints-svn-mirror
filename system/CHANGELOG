@@ -7728,3 +7728,7 @@ EPRINTS-3.1.1
     with an illegal option.
  * Fixed a bug in the Grid abstract export module that meant that headers did
     not align with the columns. (skipping subobjects in one but not the other)
+
+2008-11-26 cjg
+ * Added fix to Utils::filename_decode to correctly unset the utf-8 flag on 
+    strings containing long ==XXXX style chars. Not to be merged into 3.2
