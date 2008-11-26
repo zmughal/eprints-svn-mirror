@@ -1173,9 +1173,15 @@ sub unescape_filename
 {
 	my( $fileid ) = @_;
 
+	# prep this string to hold long chars
+	utf8::decode( $fileid );
+
 	$fileid =~ s/_/ /g;
 	$fileid =~ s/==(....)/chr(hex($1))/eg;
 	$fileid =~ s/=(..)/chr(hex($1))/eg;
+
+	# turn long chars back into bytes
+	utf8::encode( $fileid );
 
 	return $fileid;
 }
