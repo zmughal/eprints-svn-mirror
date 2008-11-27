@@ -7732,3 +7732,7 @@ EPRINTS-3.1.1
 2008-11-26 cjg
  * Added fix to Utils::filename_decode to correctly unset the utf-8 flag on 
     strings containing long ==XXXX style chars. Not to be merged into 3.2
+
+2008-11-27 cjg
+ * Split search.pl into a bunch of smaller files to make it less daunting.
+ * Standardised use of qw{} in user_roles.pl resolving #3458
