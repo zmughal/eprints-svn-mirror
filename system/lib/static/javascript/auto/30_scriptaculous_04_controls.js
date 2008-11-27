@@ -213,13 +213,13 @@ Autocompleter.Base = Class.create({
   markPrevious: function() {
     if(this.index > 0) this.index--;
       else this.index = this.entryCount-1;
-    this.getEntry(this.index).scrollIntoView(true);
+//    this.getEntry(this.index).scrollIntoView(false); // eprints/cjg disabled this buggy feature
   },
 
   markNext: function() {
     if(this.index < this.entryCount-1) this.index++;
       else this.index = 0;
-    this.getEntry(this.index).scrollIntoView(false);
+ //   this.getEntry(this.index).scrollIntoView(false);  // eprints/cjg disabled this buggy feature
   },
 
   getEntry: function(index) {
