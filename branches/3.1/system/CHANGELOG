@@ -7748,3 +7748,6 @@ EPRINTS-3.1.1
 
 2008-11-27 cjg
  * Fixed typo in EPrints::Apache::Template. Fixing #3441.
+
+2008-11-27 cjg
+ * Upgraded prototype and scriptaculous to the newest version.
