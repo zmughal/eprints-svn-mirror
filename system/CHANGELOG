@@ -7736,3 +7736,7 @@ EPRINTS-3.1.1
 2008-11-27 cjg
  * Split search.pl into a bunch of smaller files to make it less daunting.
  * Standardised use of qw{} in user_roles.pl resolving #3458
+
+2008-11-27 cjg
+ * Fixed typo in phrases, resolving #3473
+
