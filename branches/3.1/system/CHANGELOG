@@ -7759,3 +7759,12 @@ EPRINTS-3.1.1
 2008-11-27 cjg
  * Fixed bug in export which meant it exported items from 'buffer' when
     you asked for 'archive' etc. Closes #3474
+
+2008-11-27 cjg
+ * Improved a saved search error message
+ * Made saved searches use new style search API
+ * Fixed broken links in saved searches, resolving #3470
+ * Fixed incorrect links in review alerts.
+ * Improved saved search and review emails to look smarter in HTML
+    email readers. (still work in plain text)
+ * Improved default repository mail .sig to look nicer in HTML.
