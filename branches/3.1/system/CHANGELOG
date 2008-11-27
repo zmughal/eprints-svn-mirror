@@ -7755,3 +7755,7 @@ EPRINTS-3.1.1
 2008-11-27 cjg
  * Tweak to controls.js file in scriptaculous to fix "jump around" 
     issue when arrows are pressed.
+
+2008-11-27 cjg
+ * Fixed bug in export which meant it exported items from 'buffer' when
+    you asked for 'archive' etc. Closes #3474
