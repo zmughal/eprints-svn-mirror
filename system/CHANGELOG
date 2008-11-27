@@ -7742,3 +7742,7 @@ EPRINTS-3.1.1
 
 2008-11-27 cjg
  * MODS plugin now only handles eprints, not lists of eprints. Fixes #3472
+
+2008-11-27 cjg
+ * Fixed the problems with rendering issues. Fixing #3427.
+
