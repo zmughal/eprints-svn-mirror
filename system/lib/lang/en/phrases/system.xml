@@ -304,6 +304,7 @@ EPrints Modules
     <epp:phrase id="lib/session:hide_help"><epc:pin name="link"><img alt="-" title="Hide help" src="{$config{rel_path}}/style/images/minus.png" border="0"/></epc:pin></epp:phrase>
 
     <epp:phrase id="lib/session:edit_page">Edit page</epp:phrase>
+    <epp:phrase id="lib/session:edit_phrases">Edit Phrases</epp:phrase>
 	
 
 <!-- Subject -->

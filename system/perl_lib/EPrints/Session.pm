@@ -1303,6 +1303,7 @@ sub render_toolbar
 
 
 	my $current_user = $self->current_user;
+
 	if( defined $current_user && $current_user->allow( "config/edit/static" ) )
 	{
 		my $conffile = $self->get_static_page_conf_file;
@@ -1321,6 +1322,32 @@ sub render_toolbar
 		}
 	}
 
+	if( defined $current_user && $current_user->allow( "config/edit/phrase" ) )
+	{
+		if( !$self->{preparing_static_page} )
+		{
+			if( !$first )
+			{
+				$core->appendChild( $self->html_phrase( "Plugin/Screen:tool_divide" ) );
+			}
+			$first = 0;
+
+			my $editurl = $self->get_full_url;
+			if( $editurl =~ m/\?/ )
+			{
+				$editurl .= "&edit_phrases=yes";
+			}
+			else	
+			{
+				$editurl .= "?edit_phrases=yes";
+			}
+
+			# Will do odd things for non xpages
+			my $a = $self->render_link( $editurl );
+			$a->appendChild( $self->html_phrase( "lib/session:edit_phrases" ) );
+			$core->appendChild( $a );
+		}
+	}
 
 	if( scalar @other == 1 )
 	{
@@ -2588,47 +2615,19 @@ sub prepare_page
 			return;
 		}
 
-		my $dp = $self->param( "debug_phrases" );
+		my $dp = $self->param( "edit_phrases" );
 		# phrase debugging code.
-		# disabled until we have a permission system planned.
-		if( 0 && defined $dp && $dp eq "yes" )
+
+		if( defined $dp && $dp eq "yes" )
 		{
-			my $table = $self->make_element( "table" );
-			my $arc_langs = $self->{repository}->get_conf( "languages" );	
-			foreach my $phraseid ( sort keys %{$self->{used_phrases}} )
+			my $current_user = $self->current_user;	
+			if( defined $current_user && $current_user->allow( "config/edit/phrase" ) )
 			{
-				my $tr = $self->make_element( "tr" );
-				$table->appendChild( $tr );
-				my $th = $self->make_element( "th" );
-				my $td = $self->make_element( "td" );
-				$tr->appendChild( $th );
-				$th->appendChild( $self->make_text( $phraseid ) );
-				$tr->appendChild( $td );
-
-				my $t2 = $self->make_element( "table", border=>1, cellpadding=>4 );
-				foreach my $langid ( @{$arc_langs} )
-				{
-					my $lang = $self->{repository}->get_language( $langid );
-        				my( $phrase , $fb ) = $lang->_get_phrase( $phraseid, $self );
-					my $tr2 = $self->make_element( "tr" );
-					my $th2 = $self->make_element( "th" );
-					my $td2 = $self->make_element( "td" );
-					$t2->appendChild( $tr2 );
-					$tr2->appendChild( $th2 );
-					$tr2->appendChild( $td2 );
-					$th2->appendChild( $self->make_text( "$langid" ) );
-					if( defined $phrase )
-					{
-						$td2->appendChild( $self->make_text( EPrints::XML::contents_of( $phrase )->toString ) );
-					}
-				}
-				$td->appendChild( $t2 );
-
+				my $phrase_screen = $self->plugin( "Screen::Admin::Phrases",
+		  			phrase_ids => [ sort keys %{$self->{used_phrases}} ] );
+				$map->{page} = $phrase_screen->render;
 			}
-			$self->{page} = $table;
-			return;
 		}
-		
 	}
 	
 	if( $self->get_repository->get_conf( "dynamic_template","enable" ) )
