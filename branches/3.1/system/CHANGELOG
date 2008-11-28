@@ -7768,3 +7768,6 @@ EPRINTS-3.1.1
  * Improved saved search and review emails to look smarter in HTML
     email readers. (still work in plain text)
  * Improved default repository mail .sig to look nicer in HTML.
+
+2008-11-27 cjg
+ * Added contextual phrase editor.

@@ -308,7 +308,15 @@ sub render
 	$f->appendChild( $add_div );
 	$add_div->appendChild( $form );
 
-	my @ids = sort keys %{$map};	
+	my @ids;
+	if( defined $self->{phrase_ids} )
+	{
+		@ids = @{$self->{phrase_ids}};
+	}
+	else
+	{
+		@ids = sort keys %{$map};	
+	}
 
 	my $script = $session->make_element( "script", type=>"text/javascript" );
 	$script->appendChild( $session->make_text( "window.first_row = 'ep_phrase_row_$ids[0]'" ) );
