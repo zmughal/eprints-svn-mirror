@@ -7771,3 +7771,13 @@ EPRINTS-3.1.1
 
 2008-11-27 cjg
  * Added contextual phrase editor.
+
+2008-11-27 cjg
+ * Many improvements to phrase editing, including nicer css and textareas
+    which start the right size and grow as you type, handling for missing
+    phrases, and now properly i18l itself.
+ * Added option to $session->render_message which allows the icon to be 
+    not rendered.
+ * Fixed minor issue in EPrints::XML::to_string which didn't escape <> 
+    inside attributes.
+
