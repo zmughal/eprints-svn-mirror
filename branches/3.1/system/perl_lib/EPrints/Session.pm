@@ -2329,7 +2329,9 @@ sub render_toolbox
 
 sub render_message
 {
-	my( $self, $type, $content ) = @_;
+	my( $self, $type, $content, $show_icon ) = @_;
+	
+	$show_icon = 1 unless defined $show_icon;
 
 	my $id = "m".$self->get_next_id;
 	my $div = $self->make_element( "div", class=>"ep_msg_".$type, id=>$id );
@@ -2337,10 +2339,13 @@ sub render_message
 	my $table = $self->make_element( "table" );
 	my $tr = $self->make_element( "tr" );
 	$table->appendChild( $tr );
-	my $td1 = $self->make_element( "td" );
-	my $imagesurl = $self->get_repository->get_conf( "rel_path" );
-	$td1->appendChild( $self->make_element( "img", class=>"ep_msg_".$type."_icon", src=>"$imagesurl/style/images/".$type.".png", alt=>$self->phrase( "Plugin/Screen:message_".$type ) ) );
-	$tr->appendChild( $td1 );
+	if( $show_icon )
+	{
+		my $td1 = $self->make_element( "td" );
+		my $imagesurl = $self->get_repository->get_conf( "rel_path" );
+		$td1->appendChild( $self->make_element( "img", class=>"ep_msg_".$type."_icon", src=>"$imagesurl/style/images/".$type.".png", alt=>$self->phrase( "Plugin/Screen:message_".$type ) ) );
+		$tr->appendChild( $td1 );
+	}
 	my $td2 = $self->make_element( "td" );
 	$tr->appendChild( $td2 );
 	$td2->appendChild( $content );
@@ -2625,7 +2630,24 @@ sub prepare_page
 			{
 				my $phrase_screen = $self->plugin( "Screen::Admin::Phrases",
 		  			phrase_ids => [ sort keys %{$self->{used_phrases}} ] );
-				$map->{page} = $phrase_screen->render;
+				$map->{page} = $self->make_doc_fragment;
+				my $url = $self->get_full_url;
+				my( $a, $b ) = split( /\?/, $url );
+				my @parts = ();
+				foreach my $part ( split( "&", $b ) )	
+				{
+					next if( $part =~ m/^edit(_|\%5F)phrases=yes$/ );
+					push @parts, $part;
+				}
+				$url = $a."?".join( "&", @parts );
+				my $div = $self->make_element( "div", style=>"margin-bottom: 1em" );
+				$map->{page}->appendChild( $div );
+				$div->appendChild( $self->html_phrase( "lib/session:phrase_edit_back",
+					link => $self->render_link( $url ),
+					page_title => $self->clone_for_me( $map->{title},1 ) ) );
+				$map->{page}->appendChild( $phrase_screen->render );
+				$map->{title} = $self->html_phrase( "lib/session:phrase_edit_title",
+					page_title => $map->{title} );
 			}
 		}
 	}

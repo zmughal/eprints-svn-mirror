@@ -245,6 +245,8 @@ sub to_string
 			# cjg Should probably escape these values.
 			my $value = $attr->nodeValue;
 			$value =~ s/&/&amp;/g;
+			$value =~ s/</&lt;/g;
+			$value =~ s/>/&gt;/g;
 			$value =~ s/"/&quot;/g;
 			push @n, " ", $name."=\"".$value."\"";
 		}
