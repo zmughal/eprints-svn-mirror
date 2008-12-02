@@ -7788,3 +7788,6 @@ EPRINTS-3.1.1
 2008-12-02 tdb
  * Modified Upload component to use phrases for file upload tabs
 
+2008-11-27 cjg
+ * Set/unset flag to stop the edit-phrases option appearing in views or
+    abstract pages.
