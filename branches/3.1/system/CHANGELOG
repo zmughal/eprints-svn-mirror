@@ -7781,3 +7781,6 @@ EPRINTS-3.1.1
  * Fixed minor issue in EPrints::XML::to_string which didn't escape <> 
     inside attributes.
 
+2008-11-27 cjg
+ * Fixed minor css issue in views which meanth that multi column wasn't
+    consistant with single column.
