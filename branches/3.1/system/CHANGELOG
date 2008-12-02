@@ -7797,3 +7797,7 @@ EPRINTS-3.1.1
     to people can #include it with the .include file if wanted.
  * Some slightly hacky fixes to fix how name values are rendered in view
     page titles and search descriptions. Fixes #3459
+
+2008-11-27 cjg
+ * entities.dtd no longer needs to be updated each time a repository 
+    config is loaded.
