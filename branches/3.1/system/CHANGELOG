@@ -7791,3 +7791,9 @@ EPRINTS-3.1.1
 2008-11-27 cjg
  * Set/unset flag to stop the edit-phrases option appearing in views or
     abstract pages.
+
+2008-11-27 cjg
+ * Added .export file to the clutch of files created for view list pages
+    to people can #include it with the .include file if wanted.
+ * Some slightly hacky fixes to fix how name values are rendered in view
+    page titles and search descriptions. Fixes #3459
