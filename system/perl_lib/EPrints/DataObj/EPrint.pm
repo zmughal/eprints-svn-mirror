@@ -1527,6 +1527,8 @@ sub generate_static
 
 	my $status = $self->get_value( "eprint_status" );
 
+	$self->{session}->{preparing_static_page} = 1; 
+
 	$self->remove_static;
 
 	# We is going to temporarily change the language of our session to
@@ -1574,6 +1576,7 @@ sub generate_static
 			"default" );
 	}
 	$self->{session}->change_lang( $real_langid );
+	delete $self->{session}->{preparing_static_page};
 }
 
 ######################################################################
