@@ -7784,3 +7784,7 @@ EPRINTS-3.1.1
 2008-11-27 cjg
  * Fixed minor css issue in views which meanth that multi column wasn't
     consistant with single column.
+
+2008-12-02 tdb
+ * Modified Upload component to use phrases for file upload tabs
+
