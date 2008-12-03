@@ -1461,13 +1461,17 @@ sub generate_dtd
 	my( $self ) = @_;
 
 	my $dtdfile = $self->get_conf("lib_path")."/xhtml-entities.dtd";
+	my $file = $self->get_conf( "variables_path" )."/entities.dtd";
+
+	# entities file is up to date
+	return 1 if -e $file && (stat($dtdfile))[9] <= (stat($file))[9];
+
 	open( XHTMLENTITIES, "<", $dtdfile ) ||
 		die "Failed to open system DTD ($dtdfile) to include ".
 			"in repository DTD";
 	my $xhtmlentities = join( "", <XHTMLENTITIES> );
 	close XHTMLENTITIES;
 
-	my $file = $self->get_conf( "variables_path" )."/entities.dtd";
 	my $tmpfile = File::Temp->new;
 
 	print $tmpfile <<END;

@@ -7809,3 +7809,6 @@ EPRINTS-3.1.1
  * Added css for table cells which are dependant on javascript being 
     available. (using display: block caused render errors)
 
+2008-12-03 tdb
+ * Only update entities.dtd if it is out of date
+
