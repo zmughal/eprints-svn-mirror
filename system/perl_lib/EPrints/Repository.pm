@@ -1464,7 +1464,7 @@ sub generate_dtd
 	my $file = $self->get_conf( "variables_path" )."/entities.dtd";
 
 	# entities file is up to date
-	return 1 if -e $file && (stat($dtdfile))[9] <= (stat($file))[9];
+	return 1 if( -e $file && (EPrints::Utils::mtime($dtdfile) <= EPrints::Utils::mtime( $file )) );
 
 	open( XHTMLENTITIES, "<", $dtdfile ) ||
 		die "Failed to open system DTD ($dtdfile) to include ".
