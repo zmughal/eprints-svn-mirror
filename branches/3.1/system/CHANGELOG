@@ -7801,3 +7801,11 @@ EPRINTS-3.1.1
 2008-11-27 cjg
  * entities.dtd no longer needs to be updated each time a repository 
     config is loaded.
+
+2008-12-03 cjg
+ * Some clean up to the way search forms are rendered. Fixes #3433 and #2777.
+ * Added show_help option to search configuration to allow help to be hidden
+    or always shown (rather than toggled.)
+ * Added css for table cells which are dependant on javascript being 
+    available. (using display: block caused render errors)
+
