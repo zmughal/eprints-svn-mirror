@@ -7836,3 +7836,8 @@ EPRINTS-3.1.1
 
 2008-12-05 cjg
  * Fixed issue with level one menu title phrases. This appears to fix #3466.
+
+2008-12-05 tdb
+ * Always test "index.html" when deciding whether to update abstract page,
+    fixing #3479
+
