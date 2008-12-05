@@ -368,13 +368,16 @@ sub update_view_menu
 	my $title;
 	my $title_phrase_id = "viewtitle_".$ds->confid()."_".$view->{id}."_menu_".( $menu_level + 1 );
 
-	if( $session->get_lang()->has_phrase( $title_phrase_id ) && defined $esc_path_values )
+	if( $session->get_lang()->has_phrase( $title_phrase_id ) )
 	{
 		my %o = ();
-		for( my $i = 0; $i < scalar( @{$esc_path_values} ); ++$i )
+		if( defined $esc_path_values )
 		{
-			my @menu_fields = @{$fields[$i]};
-			$o{"value".($i+1)} = $menu_fields[0]->render_single_value( $session, $path_values->[$i]);
+			for( my $i = 0; $i < scalar( @{$esc_path_values} ); ++$i )
+			{
+				my @menu_fields = @{$fields[$i]};
+				$o{"value".($i+1)} = $menu_fields[0]->render_single_value( $session, $path_values->[$i]);
+			}
 		}
 		$title = $session->html_phrase( $title_phrase_id, %o );
 	}
