@@ -7833,3 +7833,6 @@ EPRINTS-3.1.1
  
 2008-12-04 cjg
  * Fixed oddity that toolbox.pm defined toolkit.pm. Closes #3464
+
+2008-12-05 cjg
+ * Fixed issue with level one menu title phrases. This appears to fix #3466.
