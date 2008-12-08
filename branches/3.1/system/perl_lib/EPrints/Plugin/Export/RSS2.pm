@@ -196,11 +196,14 @@ sub render_doc_media_content
 
 	my $frag = $session->make_doc_fragment;
 
+	my $base_url = $session->get_repository->get_conf( "base_url" );
+
 	my $thumbnail = $dataobj->thumbnail_url( "small" );
 	if( $thumbnail )
 	{
+		$thumbnail = URI->new_abs( $thumbnail, $base_url );
 		$frag->appendChild( $session->make_element( "media:thumbnail", 
-			url => $session->get_repository->get_conf( "base_url" ).$thumbnail,
+			url => "$thumbnail",
 			type => "image/png",
 		) );
 	}
@@ -208,8 +211,9 @@ sub render_doc_media_content
 	my $preview = $dataobj->thumbnail_url( "preview" );
 	if( $preview )
 	{
+		$preview = URI->new_abs( $preview, $base_url );
 		$frag->appendChild( $session->make_element( "media:content", 
-			url => $session->get_repository->get_conf( "base_url" ).$preview,
+			url => "$preview",
 			type => "image/png",
 		) );
 	}

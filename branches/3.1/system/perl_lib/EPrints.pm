@@ -167,6 +167,8 @@ use EPrints::XML::EPC;
 # EPrints dependencies
 use EPrints::Plugin;
 
+our $__loaded;
+
 sub import
 {
 	my( $class, @args ) = @_;
@@ -178,10 +180,12 @@ sub import
 	# in $EPrints::SystemSettings
 	# An exception to this is running as root (uid==0) in which case
 	# we can become the required user.
-	if( !$opts{"no_check_user"} && !$ENV{MOD_PERL} && !$ENV{EPRINTS_NO_CHECK_USER} )
+	if( !$__loaded && !$opts{"no_check_user"} && !$ENV{MOD_PERL} && !$ENV{EPRINTS_NO_CHECK_USER} )
 	{
 		EPrints::Platform::test_uid();
 	}
+
+	$__loaded = 1;
 }
 
 1;
