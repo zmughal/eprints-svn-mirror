@@ -5,6 +5,59 @@ CHANGELOG.
 ======================================================================
 
 =========================================================================
+EPRINTS 3.1.2
+=========================================================================
+
+Admin Tools
+ * "Edit phrases" tool appears in toolbar for admins, on pages that are
+    generated "on the fly". It allows web-based editing of the phrases
+    used to generate the page, including missing phrases.
+ * Improvements to web based phrase editor.
+ * "Edit page" option now appears if a static page is viewed by an
+    admin, making it easy to get to the right edit screen.
+
+Views
+ * In views, links to empty pages are now rendered as text, not links.
+ * /view/ pages may now be exported in the same way as searches.
+
+Search
+ * search.pl is now split into one file per search.
+ * Search forms now have a show_help option to allow the help to be
+    always hidden or always shown. The default is the toggle button.
+
+Submission
+ * Can now use <upload-methods> option in upload component 
+    configuration, in a workflow, to set which methods are available 
+    to upload files (or set to an empty list to stop new documents being 
+    created). Zip, from url etc.
+ * Document fields can now be marked as required, and will have the star
+    appear and report problems if not set. 
+ * Now when you add a document or modify one, it's always unrolled when 
+    the page upload form is rendered.
+
+Import & Export
+ * RSS2 now has thumbnail and media data, this allows some new fun 
+    mash-up.
+ * New Excel and CSV import and export plugins.
+
+Saved Search and Review emails
+ * Improved style of HTML format emails.
+ * Fixed broken links in emails.
+
+Other
+ * .xpage files can now have a <template> to override the use of the 
+    default template.
+ * Many bugfixes. Notably in emails, views and unicode handling. See 
+    CHANGELOG for details.
+
+=========================================================================
+EPRINTS 3.1.1
+=========================================================================
+
+ * Added "up" link in views to go one level up.
+ * Many bugfixes. See CHANGELOG for full details.
+ 
+=========================================================================
 EPRINTS 3.1.0
 =========================================================================
 
