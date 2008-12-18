@@ -42,15 +42,12 @@ use EPrints::MetaField::Text;
 
 sub get_sql_type
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $notnull ) = @_;
 
 	return $session->get_database->get_column_type(
 		$self->get_sql_name(),
 		EPrints::Database::SQL_LONGVARCHAR,
-		!$self->get_property( "allow_null" ),
-		undef,
-		undef,
-		$self->get_sql_properties
+		$notnull,
 	);
 }
 

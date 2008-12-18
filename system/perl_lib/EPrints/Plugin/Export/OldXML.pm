@@ -4,11 +4,18 @@ package EPrints::Plugin::Export::OldXML;
 
 # documents needs magic files field
 
+use Unicode::String qw( utf8 );
+
 use EPrints::Plugin::Export;
 
 @ISA = ( "EPrints::Plugin::Export" );
 
 use strict;
+
+# The utf8() method is called to ensure that
+# any broken characters are removed. There should
+# not be any broken characters, but better to be
+# sure.
 
 sub new
 {
@@ -90,9 +97,7 @@ sub output_dataobj
 
 	my $xml = $plugin->xml_dataobj( $dataobj );
 
-	EPrints::XML::tidy( $xml, {}, 1 );
-
-	return "  " . EPrints::XML::to_string( $xml ) . "\n";
+	return EPrints::XML::to_string( $xml );
 }
 
 sub xml_dataobj

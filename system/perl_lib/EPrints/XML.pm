@@ -34,6 +34,7 @@ package EPrints::XML;
 
 #use EPrints::SystemSettings;
 
+use Unicode::String qw(utf8 latin1);
 use Carp;
 
 @EPrints::XML::COMPRESS_TAGS = qw/br hr img link input meta/;
@@ -52,6 +53,7 @@ else
 }
 
 use strict;
+use bytes;
 
 
 ######################################################################
@@ -242,7 +244,6 @@ sub to_string
 			$done->{$attr->nodeName} = 1;
 			# cjg Should probably escape these values.
 			my $value = $attr->nodeValue;
-			utf8::decode($value);
 			$value =~ s/&/&amp;/g;
 			$value =~ s/</&lt;/g;
 			$value =~ s/>/&gt;/g;
@@ -297,8 +298,7 @@ sub to_string
 			"ProcessingInstruction",
 			"EntityReference" ) )
 	{
-		push @n, $node->toString; 
-		utf8::decode($n[$#n]);
+		push @n, utf8($node->toString); 
 	}
 	elsif( EPrints::XML::is_dom( $node, "Comment" ) )
 	{

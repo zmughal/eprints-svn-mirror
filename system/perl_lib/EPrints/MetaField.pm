@@ -63,6 +63,7 @@ package EPrints::MetaField;
 
 use strict;
 
+use Unicode::String qw( utf8 );
 use Text::Unidecode qw();
 
 $EPrints::MetaField::VARCHAR_SIZE 	= 255;
@@ -820,8 +821,41 @@ sub sort_values
 {
 	my( $self, $session, $in_list ) = @_;
 
-	return $session->get_database->sort_values( $self, $in_list );
+	my $o_keys = {};
+	my $langid = $session->get_langid;
+	foreach my $value ( @{$in_list} )
+	{
+		$o_keys->{$value} = $self->ordervalue_basic( 
+						$value,
+						$session,
+						$langid );
+	}
+	my @out_list = sort { _normalcmp($o_keys->{$a}, $o_keys->{$b}) } @{$in_list};
+
+	return \@out_list;
 }
+
+
+sub _normalize 
+{
+	my( $in ) = @_;
+  	
+	$in = "$in";
+	utf8::decode($in);
+
+	$in =~ s/^\s+//;
+
+	# lowercase after unidecode, so we "lowercase" i18n.
+	return lc(Text::Unidecode::unidecode( $in ));
+}
+
+sub _normalcmp
+{
+	my( $i, $j ) = @_;
+
+	return( (_normalize($i) cmp _normalize($j)) or ($i cmp $j ) );
+}
+
 
 
 ######################################################################
@@ -951,70 +985,25 @@ sub sql_row_from_value
 ######################################################################
 =pod
 
-=item %opts = $field->get_sql_properties( $session )
+=item $sql = $field->get_sql_type( $session, $notnull )
 
-Map the relevant SQL properties for this field to options passed to L<EPrints::Database>::get_column_type().
-
-=cut
-######################################################################
-
-sub get_sql_properties
-{
-	my( $self, $session ) = @_;
-
-	return (
-		index => $self->{ "sql_index" },
-		langid => $self->{ "sql_langid" },
-		sorted => $self->{ "sql_sorted" },
-	);
-}
-
-######################################################################
-=pod
-
-=item @types = $field->get_sql_type( $session )
-
-Return the SQL column types of this field, used for creating tables.
+Return the SQL type of this field, used for creating tables. $notnull
+being true indicates that this column may not be null.
 
 =cut
 ######################################################################
 
 sub get_sql_type
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $notnull ) = @_;
 
 	my $database = $session->get_database;
 
 	return $database->get_column_type(
 		$self->get_sql_name,
 		EPrints::Database::SQL_VARCHAR,
-		!$self->get_property( "allow_null" ),
-		$self->get_property( "maxlength" ),
-		undef, # precision
-		$self->get_sql_properties,
-	);
-}
-
-######################################################################
-=pod
-
-=item $field = $field->create_ordervalues_field( $session [, $langid ] )
-
-Return a new field object that this field can use to store order values, optionally for language $langid.
-
-=cut
-######################################################################
-
-sub create_ordervalues_field
-{
-	my( $self, $session, $langid ) = @_;
-
-	return EPrints::MetaField->new(
-		repository => $session->get_repository,
-		type => "longtext",
-		name => $self->get_name,
-		sql_sorted => 1,
-		sql_langid => $langid,
+		$notnull,
+		$EPrints::MetaField::VARCHAR_SIZE
 	);
 }
 
@@ -1797,7 +1786,7 @@ sub ordervalue_basic
 
 sub to_xml
 {
-	my( $self, $session, $value, $dataset, %opts ) = @_;
+	my( $self, $session, $value, $dataset ) = @_;
 
 	if( defined $self->{parent_name} )
 	{
@@ -1810,13 +1799,13 @@ sub to_xml
 		foreach my $single ( @{$value} )
 		{
 			my $item = $session->make_element( "item" );
-			$item->appendChild( $self->to_xml_basic( $session, $single, $dataset, %opts ) );
+			$item->appendChild( $self->to_xml_basic( $session, $single, $dataset ) );
 			$tag->appendChild( $item );
 		}
 	}
 	else
 	{
-		$tag->appendChild( $self->to_xml_basic( $session, $value, $dataset, %opts ) );
+		$tag->appendChild( $self->to_xml_basic( $session, $value, $dataset ) );
 	}
 
 	return $tag;
@@ -1824,7 +1813,7 @@ sub to_xml
 
 sub to_xml_basic
 {
-	my( $self, $session, $value, $dataset, %opts ) = @_;
+	my( $self, $session, $value, $dataset ) = @_;
 
 	if( !defined $value ) 
 	{
@@ -2041,6 +2030,48 @@ sub render_search_value
 	return $session->make_text( '"'.$value.'"' );
 }	
 
+sub split_search_value
+{
+	my( $self, $session, $value ) = @_;
+
+#	return EPrints::Index::split_words( 
+#			$session,
+#			EPrints::Index::apply_mapping( $session, $value ) );
+
+	return split /\s+/, $value;
+}
+
+sub get_search_conditions
+{
+	my( $self, $session, $dataset, $search_value, $match, $merge,
+		$search_mode ) = @_;
+
+	if( $match eq "EX" )
+	{
+		if( $search_value eq "" )
+		{	
+			return EPrints::Search::Condition->new( 
+					'is_null', 
+					$dataset, 
+					$self );
+		}
+
+		return EPrints::Search::Condition->new( 
+				'=', 
+				$dataset, 
+				$self, 
+				$search_value );
+	}
+
+	return $self->get_search_conditions_not_ex(
+			$session, 
+			$dataset, 
+			$search_value, 
+			$match, 
+			$merge, 
+			$search_mode );
+}
+
 sub get_search_group { return 'basic'; } 
 
 
@@ -2083,126 +2114,25 @@ sub get_property_defaults
 		requiredlangs 	=> [],
 		search_cols 	=> $EPrints::MetaField::FROM_CONFIG,
 		sql_index 	=> 1,
-		sql_langid 	=> $EPrints::MetaField::UNDEF,
-		sql_sorted	=> 0,
 		text_index 	=> 0,
 		toform 		=> $EPrints::MetaField::UNDEF,
 		type 		=> $EPrints::MetaField::REQUIRED,
 		sub_name	=> $EPrints::MetaField::UNDEF,
 		parent_name	=> $EPrints::MetaField::UNDEF,
 		volatile	=> 0,
-		virtual		=> 0,
 
 		help_xhtml	=> $EPrints::MetaField::UNDEF,
 		title_xhtml	=> $EPrints::MetaField::UNDEF,
 		join_path	=> $EPrints::MetaField::UNDEF,
 );
 }
-
-=item ( $terms, $grep_terms, $ignored ) = $field->get_index_codes( $session, $value )
-
-Get indexable terms from $value. $terms is a reference to an array of strings to index. $grep_terms is a reference to an array of terms to add to the grep index. $ignored is a reference to an array of terms that should be ignored (e.g. stop words in a free-text field).
-
-=cut
-
+		
 # Most types are not indexed		
 sub get_index_codes
 {
 	my( $self, $session, $value ) = @_;
 
 	return( [], [], [] );
-}
-
-=item @terms = $field->split_search_value( $session, $value )
-
-Split $value into terms that can be used to search against this field.
-
-=cut
-
-sub split_search_value
-{
-	my( $self, $session, $value ) = @_;
-
-#	return EPrints::Index::split_words( 
-#			$session,
-#			EPrints::Index::apply_mapping( $session, $value ) );
-
-	return split /\s+/, $value;
-}
-
-=item $cond = $field->get_search_conditions( $session, $dataset, $value, $match, $merge, $mode )
-
-Return a L<Search::Condition> for $value based on this field.
-
-=cut
-
-sub get_search_conditions
-{
-	my( $self, $session, $dataset, $search_value, $match, $merge,
-		$search_mode ) = @_;
-
-	if( $match eq "EX" )
-	{
-		if( $search_value eq "" )
-		{	
-			return EPrints::Search::Condition->new( 
-					'is_null', 
-					$dataset, 
-					$self );
-		}
-
-		return EPrints::Search::Condition->new( 
-				'=', 
-				$dataset, 
-				$self, 
-				$search_value );
-	}
-
-	return $self->get_search_conditions_not_ex(
-			$session, 
-			$dataset, 
-			$search_value, 
-			$match, 
-			$merge, 
-			$search_mode );
-}
-
-=item $cond = $field->get_search_conditions_not_ex( $session, $dataset, $value, $match, $merge, $mode )
-
-Return the search condition for a search which is not-exact ($match ne "EX").
-
-=cut
-
-sub get_search_conditions_not_ex
-{
-	my( $self, $session, $dataset, $search_value, $match, $merge,
-		$search_mode ) = @_;
-	
-	if( $match eq "EQ" )
-	{
-		return EPrints::Search::Condition->new( 
-			'=', 
-			$dataset,
-			$self, 
-			$search_value );
-	}
-
-	# free text!
-
-	# apply stemming and stuff
-	my( $codes, $grep_codes, $bad ) = $self->get_index_codes( $session, $search_value );
-
-	# Just go "yeah" if stemming removed the word
-	if( !EPrints::Utils::is_set( $codes->[0] ) )
-	{
-		return EPrints::Search::Condition->new( "PASS" );
-	}
-
-	return EPrints::Search::Condition->new( 
-			'index',
- 			$dataset,
-			$self, 
-			$codes->[0] );
 }
 
 sub get_value
@@ -2224,7 +2154,7 @@ sub is_virtual
 {
 	my( $self ) = @_;
 
-	return $self->get_property( "virtual" );
+	return 0;
 }
 
 # if ordering by this field, should we sort highest first?

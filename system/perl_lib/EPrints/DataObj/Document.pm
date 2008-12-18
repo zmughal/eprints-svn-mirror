@@ -73,7 +73,7 @@ part of this record.
 
 =back
 
-=head1 METHODS
+Document has all the methods of dataobj with the addition of the following.
 
 =over 4
 
@@ -89,14 +89,13 @@ part of this record.
 
 package EPrints::DataObj::Document;
 
-@ISA = ( 'EPrints::DataObj::SubObject' );
+@ISA = ( 'EPrints::DataObj' );
 
 use EPrints;
 use EPrints::Search;
 
 use File::Basename;
 use File::Copy;
-use File::Find;
 use Cwd;
 use Fcntl qw(:DEFAULT :seek);
 
@@ -127,7 +126,7 @@ sub get_system_field_info
 
 		{ name=>"rev_number", type=>"int", required=>1, can_clone=>0, show_in_html=>0 },
 
-		{ name=>"files", type=>"subobject", datasetid=>"file", multiple=>1 },
+		{ name=>"files", type=>"file", multiple=>1 },
 
 		{ name=>"eprintid", type=>"itemref",
 			datasetid=>"eprint", required=>1, show_in_html=>0 },
@@ -199,6 +198,26 @@ sub main_render_option
 
 
 
+######################################################################
+=pod
+
+=item $thing = EPrints::DataObj::Document->new( $session, $docid )
+
+Return the document with the given $docid, or undef if it does not
+exist.
+
+=cut
+######################################################################
+
+sub new
+{
+	my( $class, $session, $docid ) = @_;
+
+	return $session->get_database->get_single( 
+		$session->get_repository->get_dataset( "document" ),
+		$docid );
+}
+
 sub doc_with_eprintid_and_pos
 {
 	my( $session, $eprintid, $pos ) = @_;
@@ -226,17 +245,24 @@ sub doc_with_eprintid_and_pos
 ######################################################################
 =pod
 
-=item $dataset = EPrints::DataObj::Document->get_dataset_id
+=item $doc = EPrints::DataObj::Document->new_from_data( $session, $data )
 
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
+Construct a new EPrints::DataObj::Document based on the ref to a hash of metadata.
 
 =cut
 ######################################################################
 
-sub get_dataset_id
+sub new_from_data
 {
-	return "document";
+	my( $class, $session, $known ) = @_;
+
+	return $class->SUPER::new_from_data(
+			$session,
+			$known,
+			$session->get_repository->get_dataset( "document" ) );
 }
+
+
 
 ######################################################################
 # =pod
@@ -263,6 +289,22 @@ sub create
 }
 
 ######################################################################
+# 
+# $eprintid = EPrints::DataObj::Document::_create_id( $session )
+#
+#  Create a new Document ID code. 
+#
+######################################################################
+
+sub _create_id
+{
+	my( $session ) = @_;
+	
+	return $session->get_database->counter_next( "documentid" );
+
+}
+
+######################################################################
 # =pod
 # 
 # =item $dataobj = EPrints::DataObj::Document->create_from_data( $session, $data, $dataset )
@@ -279,41 +321,58 @@ sub create_from_data
 	my( $class, $session, $data, $dataset ) = @_;
        
 	my $eprintid = $data->{eprintid}; 
-	my $eprint = delete $data->{_parent} || delete $data->{eprint};
-
-	my $files = delete $data->{files};
+	my $eprint = delete $data->{eprint};
 
 	my $document = $class->SUPER::create_from_data( $session, $data, $dataset );
 
 	return unless defined $document;
 
 	# Hint for get_eprint()
-	$document->set_parent( $eprint );
+	$document->{eprint} = $eprint;
 
 	$document->set_under_construction( 1 );
 
-	foreach my $filedata ( @{$files||[]} )
+	my $dir = $document->local_path();
+
+	if( -d $dir )
 	{
-		# Don't try to add empty file objects
-		if( !defined($filedata->{data}) && !defined($filedata->{url}) )
-		{
-			next;
-		}
-		$filedata->{_parent} = $document;
-		$filedata->{datasetid} = $document->get_dataset->confid;
-		$filedata->{objectid} = $document->get_id;
-		my $fileobj = EPrints::DataObj::File->create_from_data(
-				$session,
-				$filedata
-			);
-		if( defined( $fileobj ) )
-		{
-			# Calculate and store the MD5 checksum
-			$fileobj->update_md5();
-		}
+		$session->get_repository->log( "Dir $dir already exists!" );
+	}
+	elsif(!EPrints::Platform::mkdir($dir))
+	{
+		$session->get_repository->log( "Error creating directory for EPrint $eprintid, docid=".$document->get_value( "docid" )." ($dir): ".$! );
+		return undef;
 	}
 
-	$document->files_modified;
+
+	if( defined $data->{files} )
+	{
+		foreach my $filedata ( @{$data->{files}} )
+		{
+			if( defined $filedata->{data} )
+			{
+				my $srcfile = $filedata->{data};		
+				$srcfile =~ s/^\s+//;
+				$srcfile =~ s/\s+$//;
+				$document->add_file( $srcfile, $filedata->{filename}, 1 );	
+			}
+			elsif( defined $filedata->{url} )
+			{
+				my $tmpfile = File::Temp->new;
+
+				my $r = EPrints::Utils::wget( $session, $filedata->{url}, $tmpfile );
+				if( $r->is_success )
+				{
+					# upload fseeks to zero
+					$document->upload( $tmpfile, $filedata->{filename}, 1 );	
+				}
+				else
+				{
+					$session->get_repository->log( "Failed to retrieve $filedata->{url}: " . $r->code . " " . $r->message );
+				}
+			}
+		}
+	}
 
 	$document->set_under_construction( 0 );
 
@@ -350,6 +409,14 @@ sub get_defaults
 
 	return $data;
 }
+
+
+
+
+
+
+
+
 
 ######################################################################
 =pod
@@ -418,27 +485,13 @@ sub remove
 {
 	my( $self ) = @_;
 
-	# remove dependent objects
-
-	foreach my $dataobj (@{($self->get_related_objects( EPrints::Utils::make_relation( "hasVolatileVersion" ) ))})
-	{
-		$dataobj->remove();
-	}
-
-	foreach my $file (@{($self->get_value( "files" ))})
-	{
-		$file->remove();
-	}
-
-	# remove relations to us
-	foreach my $dataobj (@{($self->get_related_objects())})
-	{
-		$dataobj->remove_object_relations( $self );
-		$dataobj->commit();
-	}
+	my $eprint = $self->get_eprint();
 
 	# Remove database entry
-	my $success = $self->SUPER::remove();
+	my $success = $self->{session}->get_database->remove(
+		$self->{session}->get_repository->get_dataset( "document" ),
+		$self->get_value( "docid" ) );
+	
 
 	if( !$success )
 	{
@@ -457,6 +510,8 @@ sub remove
 		$success = 0;
 	}
 
+	$self->remove_thumbnails;
+
 	return( $success );
 }
 
@@ -468,20 +523,22 @@ sub remove
 
 Return the EPrint this document is associated with.
 
-This is a synonym for get_parent().
-
 =cut
 ######################################################################
 
-sub get_eprint { &get_parent }
-sub get_parent
+sub get_eprint
 {
-	my( $self, $datasetid, $objectid ) = @_;
+	my( $self ) = @_;
+	
+	# If we have it already just pass it on
+	return( $self->{eprint} ) if( defined $self->{eprint} );
 
-	$datasetid = "eprint";
-	$objectid = $self->get_value( "eprintid" );
-
-	return $self->SUPER::get_parent( $datasetid, $objectid );
+	# Otherwise, create object and return
+	$self->{eprint} = new EPrints::DataObj::EPrint( 
+		$self->{session},
+		$self->get_value( "eprintid" ) );
+	
+	return( $self->{eprint} );
 }
 
 
@@ -558,7 +615,7 @@ sub get_url
 	return $self->get_baseurl unless( defined $file );
 
 	# unreserved characters according to RFC 2396
-	$file =~ s/([^\/-_\.!~\*'\(\)A-Za-z0-9])/sprintf('%%%02X',ord($1))/ge;
+	$file =~ s/([^-_\.!~\*'\(\)A-Za-z0-9])/sprintf('%%%02X',ord($1))/ge;
 	
 	return $self->get_baseurl.$file;
 }
@@ -610,9 +667,10 @@ sub files
 	
 	my %files;
 
-	foreach my $file (@{($self->get_value( "files" ))})
+	my $root = $self->local_path();
+	if( defined $root )
 	{
-		$files{$file->get_value( "filename" )} = $file->get_value( "filesize" );
+		_get_files( \%files, $root, "" );
 	}
 
 	return( %files );
@@ -680,20 +738,16 @@ sub remove_file
 	# If it's the main file, unset it
 	$self->set_value( "main" , undef ) if( $filename eq $self->get_main() );
 
-	my $fileobj = $self->get_stored_file( $filename );
-
-	if( defined( $fileobj ) )
-	{
-		$fileobj->remove();
-
-		$self->files_modified;
-	}
-	else
+	my $count = unlink $self->local_path()."/".$filename;
+	
+	if( $count != 1 )
 	{
 		$self->{session}->get_repository->log( "Error removing file $filename for doc ".$self->get_value( "docid" ).": $!" );
 	}
 
-	return defined $fileobj;
+	$self->files_modified;
+
+	return( $count==1 );
 }
 
 
@@ -748,10 +802,10 @@ sub set_main
 	if( defined $main_file )
 	{
 		# Ensure that the file exists
-		my $fileobj = $self->get_stored_file( $main_file );
+		my %all_files = $self->files();
 
 		# Set the main file if it does
-		$self->set_value( "main", $main_file ) if( defined $fileobj );
+		$self->set_value( "main", $main_file ) if( defined $all_files{$main_file} );
 	}
 	else
 	{
@@ -821,12 +875,12 @@ sub set_format_desc
 ######################################################################
 =pod
 
-=item $success = $doc->upload( $filehandle, $filename [, $preserve_path [, $filesize ] ] )
+=item $success = $doc->upload( $filehandle, $filename, [$preserve_path] )
 
 Upload the contents of the given file handle into this document as
 the given filename.
 
-If $preserve_path then make any subdirectories needed, otherwise place
+if $preserve_path then make any subdirectories needed, otherwise place
 this in the top level.
 
 =cut
@@ -834,9 +888,7 @@ this in the top level.
 
 sub upload
 {
-	my( $self, $filehandle, $filename, $preserve_path, $filesize ) = @_;
-
-	my $rc = 1;
+	my( $self, $filehandle, $filename, $preserve_path ) = @_;
 
 	# Get the filename. File::Basename isn't flexible enough (setting 
 	# internal globals in reentrant code very dodgy.)
@@ -867,31 +919,38 @@ sub upload
 		$repository->log( "Bad filename for file '$filename' in document: starts with slash (will not add)\n" );
 		return 0;
 	}
-
-	$filename = sanitise( $filename );
-
-	if( !$filename )
+	my $out_file = $self->local_path() . "/" . sanitise( $filename );
+	if( $preserve_path )
 	{
-		$repository->log( "Bad filename in document: no valid characters in file name\n" );
+		if( $filename=~m/^(.*)\/([^\/]+)$/ )
+		{
+			EPrints::Platform::mkdir( $self->local_path()."/".$1 );
+		}
+		$out_file = $self->local_path() . "/" . $filename;
+	}
+
+	seek( $filehandle, 0, SEEK_SET );
+
+	my $size = 0;
+	my $buffer;	
+	open OUT, ">$out_file" or return( 0 );
+	binmode( OUT );
+	while( my $bytes = read( $filehandle, $buffer, 1024 ) )
+	{
+		$size += $bytes;
+		print OUT $buffer;
+	}
+	close OUT;
+
+	if( $size == 0 )
+	{
+		unlink( $out_file );
 		return 0;
 	}
 
-	my $stored = $self->add_stored_file(
-		$filename,
-		$filehandle,
-		$filesize
-	);
-
-	$rc = defined($stored);
-
-	if( $rc )
-	{
-		$stored->update_sha();
-	}
-
-	$rc &&= $self->files_modified;
+	$self->files_modified;
 	
-	return $rc;
+	return( 1 );
 }
 
 ######################################################################
@@ -913,9 +972,9 @@ sub add_file
 	my( $self, $file, $filename, $preserve_path ) = @_;
 
 	my $fh;
-	open( $fh, "<", $file ) or return( 0 );
+	open( $fh, $file ) or return( 0 );
 	binmode( $fh );
-	my $rc = $self->upload( $fh, $filename, $preserve_path, -s $file );
+	my $rc = $self->upload( $fh, $filename, $preserve_path );
 	close $fh;
 
 	return $rc;
@@ -996,75 +1055,15 @@ sub add_archive
 {
 	my( $self, $file, $archive_format ) = @_;
 
-	my $tmpdir = EPrints::TempDir->new( CLEANUP => 1 );
-
 	# Do the extraction
 	my $rc = $self->{session}->get_repository->exec( 
 			$archive_format, 
-			DIR => $tmpdir,
+			DIR => $self->local_path,
 			ARC => $file );
 	
-	$self->add_directory( "$tmpdir" );
-
 	$self->files_modified;
 
 	return( $rc==0 );
-}
-
-######################################################################
-=pod
-
-=item $success = $doc->add_directory( $directory )
-
-Upload the contents of $directory to this document. This will not set the main file.
-
-This method expects $directory to have a trailing slash (/).
-
-=cut
-######################################################################
-
-sub add_directory
-{
-	my( $self, $directory ) = @_;
-
-	$directory =~ s/[\/\\]?$/\//;
-
-	my $rc = 1;
-
-	if( !-d $directory )
-	{
-		EPrints::abort( "Attempt to call upload_dir on a non-directory: $directory" );
-	}
-
-	File::Find::find( {
-		no_chdir => 1,
-		wanted => sub {
-			return unless $rc and !-d $File::Find::name;
-			my $filepath = $File::Find::name;
-			my $filename = substr($filepath, length($directory));
-			open(my $filehandle, "<", $filepath);
-			unless( defined( $filehandle ) )
-			{
-				$rc = 0;
-				return;
-			}
-			my $stored = $self->add_stored_file(
-				$filename,
-				$filehandle,
-				-s $filepath
-			);
-			if( defined($stored) )
-			{
-				$stored->update_sha();
-			}
-			else
-			{
-				$rc = 0;
-			}
-		},
-	}, $directory );
-
-	return $rc;
 }
 
 
@@ -1090,20 +1089,14 @@ sub upload_url
 	
 	# Use the URI heuristic module to attempt to get a valid URL, in case
 	# users haven't entered the initial http://.
-	my $url = URI::Heuristic::uf_uri( $url_in );
-	if( !$url->path )
-	{
-		$url->path( "/" );
-	}
-
-	my $tmpdir = EPrints::TempDir->new( CLEANUP => 1 );
+	my $url = URI::Heuristic::uf_uristr( $url_in );
 
 	# save previous dir
 	my $prev_dir = getcwd();
 
 	# Change directory to destination dir., return with failure if this 
 	# fails.
-	unless( chdir "$tmpdir" )
+	unless( chdir $self->local_path() )
 	{
 		chdir $prev_dir;
 		return( 0 );
@@ -1113,7 +1106,23 @@ sub upload_url
 	# at the top level in the destination dir.
 	
 	# Count slashes
-	my $cut_dirs = substr($url->path,1) =~ tr"/""; # ignore leading /
+	my $pos = -1;
+	my $count = -1;
+	
+	do
+	{
+		$pos = index $url, "/", $pos+1;
+		$count++;
+	}
+	while( $pos >= 0 );
+	
+	# Assuming http://server/dir/dir/filename, number of dirs to cut is
+	# $count - 3.
+	my $cut_dirs = $count - 3;
+	
+	# If the result is less than zero, assume no cut dirs (probably have URL
+	# with no trailing slash, an INCORRECT result from URI::Heuristic
+	$cut_dirs = 0 if( $cut_dirs < 0 );
 
 	my $rc = $self->{session}->get_repository->exec( 
 			"wget",
@@ -1125,8 +1134,6 @@ sub upload_url
 	# If something's gone wrong...
 
 	return( 0 ) if ( $rc!=0 );
-
-	$self->add_directory( "$tmpdir" );
 
 	# Otherwise set the main file if appropriate
 	if( !defined $self->get_main() || $self->get_main() eq "" )
@@ -1181,9 +1188,20 @@ sub commit
 		$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 	}
 
-	my $success = $self->SUPER::commit( $force );
+	$self->tidy;
+	my $success = $self->{session}->get_database->update(
+		$dataset,
+		$self->{data} );
 	
-	unless( !defined $self->{_parent} || $self->{_parent}->under_construction )
+	if( !$success )
+	{
+		my $db_error = $self->{session}->get_database->error;
+		$self->{session}->get_repository->log( "Error committing Document ".$self->get_value( "docid" ).": $db_error" );
+	}
+
+	$self->queue_changes;
+
+	unless( !defined $self->{eprint} || $self->{eprint}->under_construction )
 	{
 		# cause a new new revision of the parent eprint.
 		$self->get_eprint->commit( 1 );
@@ -1321,32 +1339,28 @@ sub files_modified
 {
 	my( $self ) = @_;
 
-#	$self->rehash;
-
-	# remove the now invalid cache of words from this document
-	# (see also EPrints::MetaField::Fulltext::get_index_codes_basic)
-	my $indexcodes  = $self->get_related_objects(
-			EPrints::Utils::make_relation( "hasIndexCodesVersion" )
-		);
-	$_->remove for @$indexcodes;
+	$self->rehash;
 
 	$self->{session}->get_database->index_queue( 
 		$self->get_eprint->get_dataset->id,
 		$self->get_eprint->get_id,
 		$EPrints::Utils::FULLTEXT );
 
+	# remove the now invalid cache of words from this document
+	unlink $self->words_file if( -e $self->words_file );
+
 	# nb. The "main" part is not automatically calculated when
 	# the item is under contruction. This means bulk imports 
 	# will have to set the name themselves.
 	unless( $self->under_construction )
 	{
-		my %files = $self->files;
 
 		# Pick a file to be the one that gets linked. There will 
 		# usually only be one, if there's more than one then this
 		# uses the first alphabetically.
-		if( !$self->get_value( "main" ) || !$files{$self->get_value( "main" )} )
+		if( !$self->get_value( "main" ) )
 		{
+			my %files = $self->files;
 			my @filenames = sort keys %files;
 			if( scalar @filenames ) 
 			{
@@ -1379,73 +1393,74 @@ sub rehash
 {
 	my( $self ) = @_;
 
-	my $files = $self->get_value( "files" );
+	my %f = $self->files;
+	my @filelist = ();
+	foreach my $file ( keys %f )
+	{
+		push @filelist, $self->local_path."/".$file;
+	}
 
-	my $tmpfile = File::Temp->new;
-	my $hashfile = $self->get_value( "docid" ).".".
+	my $eprint = $self->get_eprint;
+	unless( defined $eprint )
+	{
+		$self->{session}->get_repository->log(
+"rehash: skipped document with no associated eprint (".$self->get_id.")." );
+		return;
+	}
+
+	my $hashfile = $self->get_eprint->local_path."/".
+		$self->get_value( "docid" ).".".
 		EPrints::Platform::get_hash_name();
 
-	EPrints::Probity::create_log_fh( 
+	EPrints::Probity::create_log( 
 		$self->{session}, 
-		$files,
-		$tmpfile );
-
-	seek($tmpfile, 0, 0);
-
-	# Probity files must not be deleted when the document is deleted, therefore
-	# we store them in the parent Eprint
-	$self->get_parent->add_stored_file( $hashfile, $tmpfile, -s "$tmpfile" );
+		\@filelist,
+		$hashfile );
 }
 
 ######################################################################
 =pod
 
-=item $doc = $doc->make_indexcodes()
+=item $text = $doc->get_text
 
-Make the indexcodes document for this document. Returns the generated document or undef on failure.
+Get the text of the document as a UTF-8 encoded string, if possible.
+
+This is used for full-text indexing. The text will probably not
+be well formated.
 
 =cut
 ######################################################################
 
-sub make_indexcodes
+sub get_text
 {
 	my( $self ) = @_;
 
-	# if we're a volatile version of another document, don't make indexcodes 
-	if( $self->has_related_objects( EPrints::Utils::make_relation( "isVolatileVersionOf" ) ) )
+	# Get the main conversion plugin
+	my $session = $self->{ "session" };
+	my $convert = $session->plugin( "Convert" );
+
+	# Find a 'text/plain' converter
+	my $type = "text/plain";
+	my %types = $convert->can_convert( $self );
+	my $def = $types{$type} or return '';
+
+	# Convert the document
+	my $tempdir = EPrints::TempDir->new( UNLINK => 1 );
+	my @files = $def->{ "plugin" }->export( $tempdir, $self, $type );
+	
+	# Read all the outputted files
+	my $buffer = '';
+	for( @files )
 	{
-		return undef;
+		open my $fi, "<:utf8", "$tempdir/$_" or next;
+		while( $fi->read($buffer,4096,length($buffer)) ) 
+		{
+			last if length($buffer) > 4 * 1024 * 1024;
+		}
+		close $fi;
 	}
 
-	# remove any existing indexcodes documents
-	my $docs = $self->get_related_objects(
-			EPrints::Utils::make_relation( "hasIndexCodesVersion" )
-		);
-	$_->remove() for @$docs;
-	
-	# find a conversion plugin to convert us to indexcodes
-	my $type = "indexcodes";
-	my %types = $self->{session}->plugin( "Convert" )->can_convert( $self, $type );
-	return undef unless exists($types{$type});
-	my $plugin = $types{$type}->{"plugin"};
-
-	# convert us to indexcodes
-	my $doc = $plugin->convert(
-			$self->get_parent,
-			$self,
-			$type
-		);
-	return undef unless defined $doc;
-
-	# relate the new document to us
-	$self->add_object_relations( $doc,
-			EPrints::Utils::make_relation( "hasIndexCodesVersion" ) =>
-			EPrints::Utils::make_relation( "isIndexCodesVersionOf" ),
-		);
-	$self->commit();
-	$doc->commit();
-
-	return $doc;
+	return $buffer;
 }
 
 ######################################################################
@@ -1518,7 +1533,7 @@ sub register_parent
 {
 	my( $self, $parent ) = @_;
 
-	$self->set_parent( $parent );
+	$self->{eprint} = $parent;
 }
 
 
@@ -1528,11 +1543,20 @@ sub thumbnail_url
 
 	$size = "small" unless defined $size;
 
-	my( $thumbnail ) = @{($self->get_related_objects( EPrints::Utils::make_relation( "has${size}ThumbnailVersion" ) ))};
+	if( ! -e $self->thumbnail_path."/".$size.".png" )	
+	{
+		return;
+	}
 
-	return undef if !defined $thumbnail;
+	my $eprint = $self->get_eprint();
 
-	return $thumbnail->get_url;
+	return( undef ) if( !defined $eprint );
+
+	my $repository = $self->{session}->get_repository;
+
+	my $docpath = $self->get_value( "pos" );
+
+	return $repository->get_conf( "rel_path" )."/".($eprint->get_id+0)."/thumbnails/$docpath/$size.png";
 }
 
 # size => "small","medium","preview" (small is default)
@@ -1552,56 +1576,20 @@ sub icon_url
 		return $thumbnail_url if defined $thumbnail_url;
 	}
 
-	my $icon = "unknown.png";
-	my $rel_path = "style/images/fileicons";
-	my $local_path = $self->{session}->get_repository->get_conf( "htdocs_path" )."/".$self->{session}->get_langid;
+	my $type = $self->get_value( "format" );
+	$type =~ s/\//_/g;
 
-	# e.g. audio/mp3 will look for "audio_mp3.png" then "audio.png" then
-	# "unknown.png"
-	my( $major, $minor ) = split /\//, $self->get_value( "format" ), 2;
-	$minor = "" if !defined $minor;
-	$minor =~ s/\//_/g;
-
-	if( -e "$local_path/$rel_path/$major\_$minor.png" )
-	{
-		$icon = "$major\_$minor.png";
-	}
-	elsif( -e "$local_path/$rel_path/$major.png" )
-	{
-		$icon = "$major.png";
-	}
-
-	return $self->{session}->get_repository->get_conf( "http_url" )."/$rel_path/$icon";
+	return $self->{session}->get_repository->get_conf( "rel_path" ).
+			"/style/images/fileicons/$type.png";
 }
 
-=item $frag = $doc->render_icon_link( %opts )
-
-Render a link to the icon for this document.
-
-Options:
-
-=over 4
-
-=item new_window => 1
-
-Make link go to _blank not current window.
-
-=item preview => 1
-
-If possible, provide a preview pop-up.
-
-=item public => 0
-
-Show thumbnail/preview only on public docs.
-
-=item public => 1
-
-Show thumbnail/preview on all docs if poss.
-
-=back
-
-=cut
-
+# options:
+#
+# new_window => 1 : make link go to _blank not current window
+# preview => 1 : if possible, provide a preview pop-up
+# public => 0 : show thumbnail/preview only on public docs
+# public => 1 : show thumbnail/preview on all docs if poss.
+# 
 sub render_icon_link
 {
 	my( $self, %opts ) = @_;
@@ -1662,60 +1650,6 @@ sub render_icon_link
 	return $f;
 }
 
-=item $frag = $doc->render_preview_link( %opts )
-
-Render a link to the preview for this document (if available) using a lightbox.
-
-Options:
-
-=over 4
-
-=item caption => $frag
-
-XHTML fragment to use as the caption, defaults to empty.
-
-=item set => "foo"
-
-The name of the set this document belongs to, defaults to none (preview won't be shown as part of a set).
-
-=back
-
-=cut
-
-sub render_preview_link
-{
-	my( $self, %opts ) = @_;
-
-	my $f = $self->{session}->make_doc_fragment;
-
-	my $caption = $opts{caption} || $self->{session}->make_doc_fragment;
-	my $set = $opts{set};
-	if( EPrints::Utils::is_set($set) )
-	{
-		$set = "[$set]";
-	}
-	else
-	{
-		$set = "";
-	}
-
-	my $url = $self->thumbnail_url( "preview" );
-	if( defined( $url ) )
-	{
-		my $link = $self->{session}->make_element( "a",
-				href=>$url,
-				rel=>"lightbox$set",
-				title=>EPrints::XML::to_string($caption),
-			);
-		$link->appendChild( $self->{session}->html_phrase( "lib/document:preview" ) );
-		$f->appendChild( $link );
-	}
-
-	EPrints::XML::dispose($caption);
-
-	return $f;
-}
-
 sub thumbnail_plugin
 {
 	my( $self, $size ) = @_;
@@ -1758,16 +1692,14 @@ sub make_thumbnails
 {
 	my( $self ) = @_;
 
-	# If we're a volatile version of another document, don't make thumbnails 
-	# otherwise we'll cause a recursive loop
-	if( $self->has_related_objects( EPrints::Utils::make_relation( "isVolatileVersionOf" ) ) )
+	my $src = $self->local_path."/".$self->get_value( "main" );
+	
+	if( !-e $src || !-r $src )
 	{
-		return;
+		return undef;
 	}
-
-	my $src = $self->get_stored_file( $self->get_main() );
-
-	return unless defined $src;
+	
+	my $tgtdir = $self->thumbnail_path;
 
 	my @list = qw/ small medium preview /;
 
@@ -1778,44 +1710,31 @@ sub make_thumbnails
 
 	foreach my $size ( @list )
 	{
-		my @relations = ( "has${size}ThumbnailVersion", "hasVolatileVersion" );
+		my $tgt = "$tgtdir/".$self->get_id.".".$size.".png";
 
-		my( $tgt ) = @{($self->get_related_objects( @relations ))};
-
-		# remove the existing thumbnail
-   		if( defined($tgt) )
+		# check mtime
+		my @s1 = stat( $src );
+		my @s2 = stat( $tgt );
+    		if( defined $s1[9] && defined $s2[9] && $s2[9] > $s1[9] )
 		{
-			if( $tgt->get_datestamp gt $src->get_datestamp )
-			{
-				next;
-				# src file is older than thumbnail
-			}
-			$self->remove_object_relations( $tgt );
-			$tgt->remove;
+			next;
+			# src file is older than thumbnail
 		}
 
+		EPrints::Platform::mkdir( $tgtdir );
+	
 		my $plugin = $self->thumbnail_plugin( $size );
 
 		next if !defined $plugin;
 
-		my $doc = $plugin->convert( $self->get_parent, $self, 'thumbnail_'.$size );
-		next if !defined $doc;
-
-		$self->add_object_relations(
-				$doc,
-				EPrints::Utils::make_relation( "has${size}ThumbnailVersion" ) =>
-				EPrints::Utils::make_relation( "is${size}ThumbnailVersionOf" )
-			);
-
-		$doc->commit();
+		# make a thumbnail
+		$plugin->export( $tgtdir, $self, 'thumbnail_'.$size );
 	}
 
 	if( $self->{session}->get_repository->can_call( "on_generate_thumbnails" ) )
 	{
 		$self->{session}->get_repository->call( "on_generate_thumbnails", $self->{session}, $self );
 	}
-
-	$self->commit();
 }
 
 sub mime_type
@@ -1825,12 +1744,31 @@ sub mime_type
 	# Primary doc if no filename
 	$file = $self->get_main unless( defined $file );
 
-	my $fileobj = $self->get_stored_file( $file );
+	my $path = $self->local_path . "/" . $file;
 
-	return undef unless defined $fileobj;
+	return undef unless -e $path;
+	return undef unless -r $path;
+	return undef if -d $path;
 
-	return $fileobj->get_value( "mime_type" );
+	my $repository = $self->{session}->get_repository;
+
+	my %params = ( SOURCE => $path );
+
+	return undef if( !$repository->can_invoke( "file", %params ) );
+
+	my $command = $repository->invocation( "file", %params );
+	my $mime_type = `$command`;
+	$mime_type =~ s/\015?\012?$//s;
+	($mime_type) = split /,/, $mime_type, 2; # file can return a 'sub-type'
+
+	return undef if !defined $mime_type;
+
+	return length($mime_type) > 0 ? $mime_type : undef;
+
+	return undef;
 }
+
+
 
 1;
 

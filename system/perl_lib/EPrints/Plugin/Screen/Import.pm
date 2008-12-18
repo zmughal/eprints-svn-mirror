@@ -4,7 +4,7 @@ package EPrints::Plugin::Screen::Import;
 use EPrints::Plugin::Screen;
 
 use Fcntl qw(:DEFAULT :seek);
-use File::Temp;
+use File::Temp qw/ tempfile /;
 
 our $MAX_ERR_LEN = 1024;
 
@@ -126,30 +126,32 @@ sub make_tmp_file
 {
 	my ( $self ) = @_;
 
-	my $tmp_file;
+	# Write import records to temp file
+	my $tmp_file = new File::Temp;
+	$tmp_file->autoflush;
 
 	my $import_fh = $self->{session}->{query}->upload( "import_filename" );
 	my $import_data = $self->{session}->param( "import_data" );
 
+	unless( defined $import_fh || ( defined $import_data && $import_data ne "" ) )
+	{
+		$self->{processor}->add_message( "error", $self->html_phrase( "nothing_to_import" ) );
+		return undef;
+	}
+
 	if( defined $import_fh )
 	{
-		$tmp_file = $import_fh;
-	}
-	elsif( defined $import_data && length($import_data) )
-	{
-		# Write import records to temp file
-		$tmp_file = File::Temp->new;
-		$tmp_file->autoflush;
+		seek( $import_fh, 0, SEEK_SET );
 
-		# Write a Byte Order Mark for utf-8
-		# (the form is set to utf-8)
-		binmode($tmp_file);
-		print $tmp_file pack("CCC", 0xef, 0xbb, 0xbf);
-		print $tmp_file $import_data;
+		my( $buffer );
+		while( read( $import_fh, $buffer, 1024 ) )
+		{
+			print $tmp_file $buffer;
+		}
 	}
 	else
 	{
-		$self->{processor}->add_message( "error", $self->html_phrase( "nothing_to_import" ) );
+		print $tmp_file $import_data;
 	}
 
 	return $tmp_file;
@@ -158,8 +160,6 @@ sub make_tmp_file
 sub _import
 {
 	my( $self, $dryrun, $quiet, $tmp_file ) = @_;
-
-	seek($tmp_file, 0, SEEK_SET);
 
 	my $session = $self->{session};
 	my $ds = $session->get_repository->get_dataset( "inbox" );
@@ -193,9 +193,9 @@ sub _import
 
 	# Don't let an import plugin die() on us
 	eval {
-		$plugin->input_fh(
+		$plugin->input_file(
 			dataset=>$ds,
-			fh=>$tmp_file,
+			filename=>"$tmp_file",
 			user=>$user,
 		);
 	};

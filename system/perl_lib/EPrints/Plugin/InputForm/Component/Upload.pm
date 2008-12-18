@@ -4,6 +4,8 @@ use EPrints;
 use EPrints::Plugin::InputForm::Component;
 @ISA = ( "EPrints::Plugin::InputForm::Component" );
 
+use Unicode::String qw(latin1);
+
 use strict;
 
 # this feels like these could become plugins at some later date.
@@ -293,14 +295,6 @@ sub doc_update
 			$processor->add_message( "error", $self->html_phrase( "conversion_failed" ) );
 			return;
 		}
-		$doc->remove_object_relations(
-				$new_doc,
-				EPrints::Utils::make_relation( "hasVolatileVersion" ) =>
-				EPrints::Utils::make_relation( "isVolatileVersionOf" )
-			);
-		$new_doc->make_thumbnails();
-		$doc->commit();
-		$new_doc->commit();
 		return;
 	}
 
@@ -653,8 +647,6 @@ sub _render_add_document_file
 {
 	my( $self ) = @_;
 
-	my $session = $self->{session};
-
 	my $f = $self->{session}->make_doc_fragment;
 
 	$f->appendChild( $self->html_phrase( "new_document" ) );
@@ -665,19 +657,13 @@ sub _render_add_document_file
 		id => $ffname,
 		type => "file",
 		);
-	my $upload_progress_url = $session->get_url( path => "cgi" ) . "/users/ajax/upload_progress";
-	my $onclick = "return startEmbeddedProgressBar(this.form,{'url':".EPrints::Utils::js_string( $upload_progress_url )."});";
 	my $add_format_button = $self->{session}->render_button(
 		value => $self->phrase( "add_format" ), 
 		class => "ep_form_internal_button",
-		name => "_internal_".$self->{prefix}."_add_format",
-		onclick => $onclick );
+		name => "_internal_".$self->{prefix}."_add_format_file" );
 	$f->appendChild( $file_button );
-	$f->appendChild( $session->make_text( " " ) );
 	$f->appendChild( $self->{session}->make_text( " " ) );
 	$f->appendChild( $add_format_button );
-	my $progress_bar = $session->make_element( "div", id => "progress" );
-	$f->appendChild( $progress_bar );
 
 	my $script = $self->{session}->make_javascript( "EPJS_register_button_code( '_action_next', function() { el = \$('$ffname'); if( el.value != '' ) { return confirm( ".EPrints::Utils::js_string($self->phrase("really_next"))." ); } return true; } );" );
 	$f->appendChild( $script);

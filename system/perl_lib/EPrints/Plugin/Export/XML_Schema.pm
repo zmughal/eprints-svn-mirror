@@ -1,5 +1,7 @@
 package EPrints::Plugin::Export::XML_Schema;
 
+use Unicode::String qw( utf8 );
+
 use EPrints::Plugin::Export;
 
 @ISA = ( "EPrints::Plugin::Export" );
