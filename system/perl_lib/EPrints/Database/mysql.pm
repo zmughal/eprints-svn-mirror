@@ -58,15 +58,6 @@ use EPrints;
 use EPrints::Database qw( :sql_types );
 @ISA = qw( EPrints::Database );
 
-our $I18L = {
-	en => {
-		collate => "utf8_general_ci",
-	},
-	de => {
-		collate => "utf8_unicode_ci",
-	},
-};
-
 use strict;
 
 ######################################################################
@@ -377,15 +368,6 @@ sub index_queue
 			"SYSDATE()"
 		]);
 	}
-}
-
-sub get_default_charset { "utf8" }
-
-sub get_default_collation
-{
-	my( $self, $langid ) = @_;
-
-	return exists($I18L->{$langid}) ? $I18L->{$langid}->{collate} : undef;
 }
 
 # Not supported by DBD::mysql?

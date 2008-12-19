@@ -46,7 +46,7 @@ use EPrints::MetaField;
 
 sub get_sql_type
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $notnull ) = @_;
 
 	return undef;
 }
@@ -110,89 +110,6 @@ sub render_xml_schema_type
 	my( $self, $session ) = @_;
 
 	return $session->make_doc_fragment;
-}
-
-sub get_value
-{
-	my( $self, $parent ) = @_;
-
-	my $ds = $parent->get_session->get_repository->get_dataset( $self->get_property( "datasetid" ) );
-
-	my( $keyfield ) = $ds->get_fields;
-	my $keyname = $keyfield->get_name;
-
-	my $searchexp = EPrints::Search->new(
-		session => $parent->get_session,
-		dataset => $ds,
-		custom_order => "-$keyname",
-	);
-
-	if( $ds->confid eq "document" )
-	{
-		$searchexp->add_field(
-			$ds->get_field( "eprintid" ),
-			$parent->get_id
-		);
-	}
-	elsif( $ds->confid eq "saved_search" )
-	{
-		$searchexp->add_field(
-			$ds->get_field( "userid" ),
-			$parent->get_id
-		);
-	}
-	else
-	{
-		$searchexp->add_field(
-			$ds->get_field( "datasetid" ),
-			$parent->get_dataset->confid
-		);
-		$searchexp->add_field(
-			$ds->get_field( "objectid" ),
-			$parent->get_id
-		);
-	}
-
-	my $list = $searchexp->perform_search;
-	my @records = $list->get_records;
-	$searchexp->dispose;
-
-	foreach my $record (@records)
-	{
-		$record->set_parent( $parent );
-	}
-
-	if( $self->get_property( "multiple" ) )
-	{
-		return \@records;
-	}
-	else
-	{
-		return $records[0];
-	}
-}
-
-sub to_xml
-{
-	my( $self, $session, $value, $dataset, %opts ) = @_;
-
-	if( $self->get_property( "multiple" ) )
-	{
-		my $tag = $session->make_element( $self->get_name() );
-		foreach my $dataobj ( @{$value||[]} )
-		{
-			$tag->appendChild( $dataobj->to_xml( %opts ) );
-		}
-		return $tag;
-	}
-	elsif( defined $value )
-	{
-		return $value->to_xml( %opts );
-	}
-	else
-	{
-		return $session->make_doc_fragment;
-	}
 }
 
 ######################################################################

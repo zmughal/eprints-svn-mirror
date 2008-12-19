@@ -1,5 +1,5 @@
 
-package EPrints::Plugin::Screen::Workflow;
+package EPrints::Plugin::Screen::MetaField;
 
 use EPrints::Plugin::Screen;
 
@@ -7,83 +7,23 @@ use EPrints::Plugin::Screen;
 
 use strict;
 
-sub get_view_screen
-{
-	my( $self ) = @_;
-
-	my $screenid = $self->{id};
-	$screenid =~ s/^Screen:://;
-	$screenid =~ s/::[^:]+$/::View/;
-
-	return $screenid;
-}
-
-sub get_edit_screen
-{
-	my( $self ) = @_;
-
-	my $screenid = $self->{id};
-	$screenid =~ s/^Screen:://;
-	$screenid =~ s/::[^:]+$/::Edit/;
-
-	return $screenid;
-}
-
-sub get_commit_screen
-{
-	my( $self ) = @_;
-
-	my $screenid = $self->{id};
-	$screenid =~ s/^Screen:://;
-	$screenid =~ s/::[^:]+$/::Commit/;
-
-	return $screenid;
-}
-
-sub get_save_screen
-{
-	my( $self ) = @_;
-
-	my $screenid = $self->{id};
-	$screenid =~ s/^Screen:://;
-	$screenid =~ s/::[^:]+$/::Save/;
-
-	return $screenid;
-}
-
-sub get_dataset_id
-{
-	my( $class ) = @_;
-
-	Carp::croak( "get_dataset_id must be overriden by $class" );
-}
-
 sub properties_from
 {
 	my( $self ) = @_;
 
-	my $processor = $self->{processor};
+	$self->{processor}->{metafieldid} = $self->{session}->param( "metafieldid" );
+	$self->{processor}->{metafield} = new EPrints::DataObj::MetaField( $self->{session}, $self->{processor}->{metafieldid} );
 
-	my $dataset = $self->{session}->get_repository->get_dataset(
-			$self->get_dataset_id()
-		);
-	my $key_field = $dataset->get_key_field();
-
-	my $id = $self->{session}->param( "dataobj_id" );
-
-	$processor->{"dataset"} = $dataset;
-	$processor->{"dataobj_id"} = $id;
-	$processor->{"dataobj"} = $dataset->get_object( $self->{session}, $id );
-
-	if( !defined $processor->{"dataobj"} )
+	if( !defined $self->{processor}->{metafield} )
 	{
-		$processor->{screenid} = "Error";
-		$processor->add_message( "error", $self->{session}->html_phrase(
-			"Plugin/Screen/Workflow:cant_find_it",
-			dataset=>$self->{session}->make_text( $dataset->confid ),
-			id=>$self->{session}->make_text( $id ) ) );
+		$self->{processor}->{screenid} = "Error";
+		$self->{processor}->add_message( "error", $self->{session}->html_phrase(
+			"cgi/users/edit_metafield:cant_find_it",
+			id=>$self->{session}->make_text( $self->{processor}->{metafieldid} ) ) );
 		return;
 	}
+
+	$self->{processor}->{dataset} = $self->{processor}->{metafield}->get_dataset;
 
 	$self->SUPER::properties_from;
 }
@@ -92,32 +32,11 @@ sub allow
 {
 	my( $self, $priv ) = @_;
 
-	return 0 unless defined $self->{processor}->{"dataobj"};
+	return 0 unless defined $self->{processor}->{metafield};
 
 	return 1 if( $self->{session}->allow_anybody( $priv ) );
 	return 0 if( !defined $self->{session}->current_user );
-	return $self->{session}->current_user->allow( $priv, $self->{processor}->{"dataobj"} );
-}
-
-sub can_be_viewed
-{
-	my( $self ) = @_;
-
-	return $self->allow( $self->get_dataset_id()."/edit" );
-}
-
-sub allow_commit
-{
-	my( $self ) = @_;
-
-	return $self->can_be_viewed;
-}
-
-sub allow_save
-{
-	my( $self ) = @_;
-
-	return $self->can_be_viewed;
+	return $self->{session}->current_user->allow( $priv, $self->{processor}->{metafield} );
 }
 
 sub render_tab_title
@@ -131,16 +50,14 @@ sub render_title
 {
 	my( $self ) = @_;
 
-	my $priv = $self->allow( $self->get_dataset_id()."/view" );
+	my $priv = $self->allow( "metafield/view" );
 
 	my $f = $self->{session}->make_doc_fragment;
 	$f->appendChild( $self->html_phrase( "title" ) );
 	$f->appendChild( $self->{session}->make_text( ": " ) );
 
-	my $screen = $self->get_view_screen();
-
-	my $title = $self->{session}->make_text( $self->{processor}->{"dataobj_id"} );
-	my $a = $self->{session}->render_link( "?screen=$screen&dataobj_id=".$self->{processor}->{"dataobj_id"} );
+	my $title = $self->{session}->make_text( $self->{processor}->{metafieldid} );
+	my $a = $self->{session}->render_link( "?screen=MetaField::View&metafieldid=".$self->{processor}->{metafieldid} );
 	$a->appendChild( $title );
 	$f->appendChild( $a );
 	return $f;
@@ -150,7 +67,7 @@ sub redirect_to_me_url
 {
 	my( $self ) = @_;
 
-	return $self->SUPER::redirect_to_me_url."&dataobj_id=".$self->{processor}->{dataobj_id};
+	return $self->SUPER::redirect_to_me_url."&metafieldid=".$self->{processor}->{metafieldid};
 }
 
 sub workflow
@@ -161,7 +78,7 @@ sub workflow
 
 	if( !defined $self->{processor}->{$cache_id} )
 	{
-		my %opts = ( item=> $self->{processor}->{"dataobj"}, session=>$self->{session} );
+		my %opts = ( item=> $self->{processor}->{metafield}, session=>$self->{session} );
  		$self->{processor}->{$cache_id} = EPrints::Workflow->new( $self->{session}, "default", %opts );
 	}
 
@@ -181,6 +98,7 @@ sub render_blister
 {
 	my( $self, $sel_stage_id, $staff_mode ) = @_;
 
+	my $metafield = $self->{processor}->{metafield};
 	my $session = $self->{session};
 	my $staff = 0;
 
@@ -234,7 +152,7 @@ sub render_hidden_bits
 
 	my $chunk = $self->{session}->make_doc_fragment;
 
-	$chunk->appendChild( $self->{session}->render_hidden_field( "dataobj_id", $self->{processor}->{"dataobj_id"} ) );
+	$chunk->appendChild( $self->{session}->render_hidden_field( "metafieldid", $self->{processor}->{metafieldid} ) );
 	$chunk->appendChild( $self->SUPER::render_hidden_bits );
 
 	return $chunk;

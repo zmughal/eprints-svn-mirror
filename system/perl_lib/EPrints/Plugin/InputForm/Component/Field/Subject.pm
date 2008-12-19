@@ -4,6 +4,8 @@ use EPrints;
 use EPrints::Plugin::InputForm::Component::Field;
 @ISA = ( "EPrints::Plugin::InputForm::Component::Field" );
 
+use Unicode::String qw(latin1);
+
 use strict;
 
 sub new
@@ -125,16 +127,18 @@ sub render_content
 		$self->{search} = $session->param( $self->{prefix}."_searchstore" );
 	}
 
-	my $ibutton = $session->param( $self->{prefix}."_action" );
-	$ibutton = "" unless defined $ibutton;
-
-	if( $ibutton eq "search" )
+	if( $session->internal_button_pressed )
 	{
-		$self->{search} = $session->param( $self->{prefix}."_searchtext" );
-	}
-	if( $ibutton eq "clear" )
-	{
-		delete $self->{search};
+		my $ibutton = $self->get_internal_button;
+	
+		if( $ibutton eq "clear" )
+		{
+			delete $self->{search};
+		}
+		if( $ibutton eq "search" )
+		{
+			$self->{search} = $session->param( $self->{prefix}."_searchtext" );
+		}
 	}
 
 	if( $self->{search} eq "" )
@@ -446,6 +450,8 @@ sub get_state_params
 
 	my $params = "";
 	foreach my $id ( 
+ 		"_internal_".$self->{prefix}."_search",
+ 		"_internal_".$self->{prefix}."_clear",
  		$self->{prefix}."_searchstore",
 		$self->{prefix}."_searchtext",
 	)
@@ -454,16 +460,6 @@ sub get_state_params
 		next unless defined $v;
 		$params.= "&$id=$v";
 	}
-
-	if( defined $self->{session}->param( "_internal_".$self->{prefix}."_search" ) )
-	{
-		$params .= "&".$self->{prefix}."_action=search";
-	}
-	elsif( defined $self->{session}->param( "_internal_".$self->{prefix}."_clear" ) )
-	{
-		$params .= "&".$self->{prefix}."_action=clear";
-	}
-
 	return $params;	
 }
 

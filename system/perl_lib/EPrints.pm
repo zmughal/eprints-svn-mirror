@@ -1,68 +1,3 @@
-######################################################################
-#
-# EPrints
-#
-######################################################################
-#
-#  __COPYRIGHT__
-#
-# Copyright 2000-2008 University of Southampton. All Rights Reserved.
-# 
-#  __LICENSE__
-#
-######################################################################
-
-
-=pod
-
-=head1 NAME
-
-B<EPrints> - Institutional Repository software
-
-=head1 SYNOPSIS
-
-	use EPrints qw();
-
-	my $session = EPrints::Session->new( 1, "demoprints" );
-
-	...
-
-	$session->terminate;
-
-=head1 DESCRIPTION
-
-See http://www.eprints.org/.
-
-=head2 Available Symbols
-
-You can pass options to the EPrints package that effect the EPrints initialisation e.g.
-
-	use EPrints qw( no_check_user );
-
-=over 4
-
-=item no_check_user
-
-Do not check the current user/group is the same as the user/group in Systemsettings.
-
-=back
-
-=head2 Debugging Slow Processes
-
-This module installs a signal handler that will print a stack trace if given a USR2 signal (if your system supports this signal). To print a stack trace to the error log execute:
-
- $ kill -USR2 PID
-
-Where PID is the id number of the stalled process.
-
-A shell script will print the stack trace to the console.
-
-=head1 METHODS
-
-=over 4
-
-=cut
-
 package EPrints;
 
 use EPrints::SystemSettings;
@@ -87,7 +22,6 @@ use EPrints::Apache::Auth;
 use EPrints::Apache::Rewrite;
 use EPrints::Apache::VLit;
 use EPrints::Apache::Template;
-use EPrints::Apache::Storage;
 1;';
 		if( $@ ) { abort( $@ ); }
 	}
@@ -184,14 +118,11 @@ use EPrints::Time;
 use EPrints::Box;
 use EPrints::Config;
 use EPrints::Database;
-use EPrints::Storage;
 use EPrints::DataObj;
-use EPrints::DataObj::SubObject;
 use EPrints::DataObj::Access;
 use EPrints::DataObj::Cachemap;
 use EPrints::DataObj::Document;
 use EPrints::DataObj::EPrint;
-use EPrints::DataObj::File;
 use EPrints::DataObj::History;
 use EPrints::DataObj::Import;
 use EPrints::DataObj::LoginTicket;
@@ -200,7 +131,6 @@ use EPrints::DataObj::MetaField;
 use EPrints::DataObj::Request;
 use EPrints::DataObj::Subject;
 use EPrints::DataObj::SavedSearch;
-use EPrints::DataObj::UploadProgress;
 use EPrints::DataObj::User;
 use EPrints::DataSet;
 use EPrints::Email;
@@ -230,6 +160,7 @@ use EPrints::Update::Views;
 use EPrints::Update::Abstract;
 use EPrints::Workflow;
 use EPrints::Workflow::Stage;
+use EPrints::Workflow::Processor;
 use EPrints::XML::EPC;
 
 # Load EPrints::Plugin last, because dynamically loaded plugins may have
@@ -257,28 +188,4 @@ sub import
 	$__loaded = 1;
 }
 
-sub sigusr2_cluck
-{
-	Carp::cluck( "caught SIGUSR2" );
-	$SIG{'USR2'} = \&sigusr2_cluck;
-}
-
-$SIG{'USR2'} = \&sigusr2_cluck;
-
 1;
-
-__END__
-
-=back
-
-=head1 SEE ALSO
-
-L<EPrints::Session>
-
-=head1 COPYRIGHT
-
-__COPYRIGHT__
-
-Copyright 2000-2008 University of Southampton. All Rights Reserved.
-
-__LICENSE__

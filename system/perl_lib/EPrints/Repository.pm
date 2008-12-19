@@ -158,8 +158,7 @@ sub new
 	# abort loading the config for this repository.
 	unless( $noxml )
 	{
-		# $self->generate_dtd() || return;
-		$self->_load_storage() || return;
+		$self->generate_dtd() || return;
 		$self->_load_workflows() || return;
 		$self->_load_namedsets() || return;
 		$self->_load_datasets() || return;
@@ -273,34 +272,6 @@ sub _add_http_paths
 
 }
  
-sub _load_storage
-{
-	my( $self ) = @_;
-
-	$self->{storage} = {};
-
-	EPrints::Storage::load_all( 
-		$self->get_conf( "lib_path" )."/storage",
-		$self->{storage} );
-
-	EPrints::Storage::load_all( 
-		$self->get_conf( "config_path" )."/storage",
-		$self->{storage} );
-
-	return 1;
-}
-
-sub get_storage_config
-{
-	my( $self, $storageid ) = @_;
-
-	my $r = EPrints::Storage::get_storage_config( 
-		$storageid,
-		$self->{storage} );
-
-	return $r;
-}
-
 ######################################################################
 #=pod
 #
@@ -570,16 +541,15 @@ sub get_citation_spec
 
 	$style = "default" unless defined $style;
 
+	$self->freshen_citation( $dsid, $style );
+
 	my $spec = $self->{citation_style}->{$dsid}->{$style};
 	if( !defined $spec )
 	{
 		$self->log( "Could not find citation style $dsid.$style. Using default instead." );
-		$style = "default";
-		$spec = $self->{citation_style}->{$dsid}->{$style};
+		$spec = $self->{citation_style}->{$dsid}->{default};
 	}
 	
-	$self->freshen_citation( $dsid, $style );
-
 	return $spec;
 }
 
@@ -589,15 +559,14 @@ sub get_citation_type
 
 	$style = "default" unless defined $style;
 
+	$self->freshen_citation( $dsid, $style );
+
 	my $type = $self->{citation_type}->{$dsid}->{$style};
 	if( !defined $type )
 	{
-		$style = "default";
-		$type = $self->{citation_type}->{$dsid}->{$style};
+		return "default";
 	}
 	
-	$self->freshen_citation( $dsid, $style );
-
 	return $type;
 }
 
@@ -1332,7 +1301,7 @@ sub parse_xml
 	eval {
 		$doc = EPrints::XML::parse_xml( 
 			$file, 
-			$self->get_conf( "lib_path" ) . "/",
+			$self->get_conf( "variables_path" )."/",
 			$no_expand );
 	};
 	if( !defined $doc )
@@ -1485,7 +1454,14 @@ sub set_field_defaults
 
 =item $success = $repository->generate_dtd
 
-DEPRECATED
+Regenerate the DTD file for each language. This file is used when
+loading some of the XML files. It contains entities such as &ruler;
+and &adminemail; which make maintaining the XML files easier.
+
+The entites in the DTD file are configured by get_entities in the
+ArchiveConfig.pm module.
+
+Returns true. Might return false on error (not checking yet).
 
 =cut
 ######################################################################
@@ -1494,21 +1470,14 @@ sub generate_dtd
 {
 	my( $self ) = @_;
 
-	my $src_dtdfile = $self->get_conf("lib_path")."/xhtml-entities.dtd";
-	my $tgt_dtdfile = $self->get_conf( "variables_path" )."/entities.dtd";
+	my $dtdfile = $self->get_conf("lib_path")."/xhtml-entities.dtd";
+	my $file = $self->get_conf( "variables_path" )."/entities.dtd";
 
-	my $src_mtime = EPrints::Utils::mtime( $src_dtdfile );
-	my $tgt_mtime = EPrints::Utils::mtime( $tgt_dtdfile );
-	if( $tgt_mtime > $src_mtime )
-	{
-		# as this file doesn't change anymore, except possibly after an
-		# upgrade, only update the var/entities.dtd file if the one in
-		# the lib directory is newer.
-		return 1;
-	}
+	# entities file is up to date
+	return 1 if( -e $file && (EPrints::Utils::mtime($dtdfile) <= EPrints::Utils::mtime( $file )) );
 
-	open( XHTMLENTITIES, "<", $src_dtdfile ) ||
-		die "Failed to open system DTD ($src_dtdfile) to include ".
+	open( XHTMLENTITIES, "<", $dtdfile ) ||
+		die "Failed to open system DTD ($dtdfile) to include ".
 			"in repository DTD";
 	my $xhtmlentities = join( "", <XHTMLENTITIES> );
 	close XHTMLENTITIES;
@@ -1529,9 +1498,9 @@ END
 	print $tmpfile $xhtmlentities;
 	close $tmpfile;
 
-	copy( "$tmpfile", $tgt_dtdfile );
+	copy( "$tmpfile", $file );
 
-	EPrints::Utils::chown_for_eprints( $tgt_dtdfile );
+	EPrints::Utils::chown_for_eprints( $file );
 
 	return 1;
 }
