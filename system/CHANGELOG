@@ -7865,7 +7865,7 @@ EPRINTS-3.1.2
  * Fixed incorrect "use" line in MultilineCSV export plugin.
 
 ======================================================================
-EPRINTS-3.1.3
+EPRINTS-3.1.2.1
 ======================================================================
 
 2009-01-16 tdb
@@ -7873,4 +7873,9 @@ EPRINTS-3.1.3
 
 2009-01-27 tdb
  * Don't encode pathing in files, fixing #3393
+
+2009-01-29 cjg
+ * Added ranges for views.
+ * Introduced new view configuration format.
+ * Updated defaults views.pl to show current config.
 
