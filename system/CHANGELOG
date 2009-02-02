@@ -7879,3 +7879,5 @@ EPRINTS-3.1.2.1
  * Introduced new view configuration format.
  * Updated defaults views.pl to show current config.
 
+2009-02-02 tdb
+ * Allow https access to anything under /cgi/, fixing autocomplete scripts
