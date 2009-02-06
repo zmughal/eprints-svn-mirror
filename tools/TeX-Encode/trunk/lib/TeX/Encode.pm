@@ -13,7 +13,7 @@ use Carp;
 
 our @ISA = qw(Encode::Encoding);
 
-our $VERSION = '1.1';
+our $VERSION = '1.2';
 
 use constant ENCODE_CHRS => '<>&"';
 
@@ -133,12 +133,69 @@ $LATEX_Reserved = quotemeta('#$%&~_^{}\\');
 sub encode
 {
 	use utf8;
-	my ($self,$str,$check) = @_;
-	$str =~ s/([$LATEX_Reserved])/\\$1/sog;
-	$str =~ s/([<>])/\$$1\$/sog;
-	$str =~ s/([^\x00-\x80])(?![A-Za-z0-9])/$LATEX_Escapes{$1}/sg;
-	$str =~ s/([^\x00-\x80])/$LATEX_Escapes{$1}\{\}/sg;
-	return $str;
+	my $tex = "";
+	my $texc;
+
+	my $mapc;
+	$_[2] ||= Encode::FB_DEFAULT; # default is 0, so this won't clobber
+	if( ref($_[2]) eq "CODE" )
+	{
+		$mapc = sub { $LATEX_Escapes{$_[0]} || &{$_[2]}($_[0]) };
+	}
+	elsif( $_[2] == Encode::FB_CROAK )
+	{
+		$mapc = sub { $LATEX_Escapes{$_[0]} or die sprintf("Unsupported unicode codepoint U+%04x\n", ord($_[0])) };
+	}
+	elsif( $_[2] == Encode::FB_QUIET )
+	{
+		$mapc = sub { undef };
+	}
+	elsif( $_[2] == Encode::FB_WARN )
+	{
+		$mapc = sub { warn sprintf("Unsupported unicode codepoint U+%04x\n", ord($_[0])); undef };
+	}
+	else
+	{
+		$mapc = sub { $LATEX_Escapes{$_[0]} || '?' };
+	}
+
+	for(pos($_[1]) = 0; pos($_[1]) < length($_[1]); pos($_[1])++)
+	{
+		if( $_[1] =~ m/\G([$LATEX_Reserved])/o )
+		{
+			$tex .= "\\$1";
+		}
+		elsif( $_[1] =~ m/\G([<>])/o )
+		{
+			$tex .= "\$$1\$";
+		}
+		elsif( $_[1] =~ m/\G([^\x00-\x80])/o )
+		{
+			$texc = &$mapc( $1 );
+			if( !defined $texc )
+			{
+				substr($_[1],0,pos($_[1])) = "";
+				last;
+			}
+			# we're inserting a macro that would get confused with the
+			# following character
+			elsif( $texc =~ /^\\[a-zA-Z]+$/ && $_[1] =~ m/\G.([a-zA-Z\s])/o )
+			{
+				$tex .= $texc . "{}$1";
+				pos($_[1])++;
+			}
+			else
+			{
+				$tex .= $texc;
+			}
+		}
+		elsif( $_[1] =~ m/\G(.)/o )
+		{
+			$tex .= $1;
+		}
+	}
+
+	return $tex;
 }
 
 # decode($octets [,$check])

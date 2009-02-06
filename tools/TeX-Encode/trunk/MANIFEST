@@ -7,4 +7,7 @@ MANIFEST.SKIP
 META.yml			Module meta-data (added by MakeMaker)
 README
 t/01ltgt.t
+t/02check.t
+t/98coverage.t
+t/99pod.t
 t/Encode-LaTeX.t

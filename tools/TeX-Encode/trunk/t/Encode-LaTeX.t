@@ -5,7 +5,7 @@
 
 # change 'tests => 1' to 'tests => last_test_to_print';
 
-use Test::More tests => 24;
+use Test::More tests => 25;
 use Encode;
 BEGIN { use_ok('TeX::Encode') };
 
@@ -44,6 +44,7 @@ my %ENCODE_TESTS = (
 	chr(0xe6) => '\\ae',
 	chr(0xe6).'foo' => '\\ae{}foo',
 	chr(0x3b1) => '\\ensuremath{\\alpha}',
+	chr(0xe6).' foo' => '\\ae{} foo',
 );
 
 while( my( $in, $out ) = each %DECODE_TESTS ) {
