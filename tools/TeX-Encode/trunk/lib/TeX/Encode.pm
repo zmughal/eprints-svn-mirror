@@ -11,6 +11,8 @@ use Pod::LaTeX;
 use HTML::Entities;
 use Carp;
 
+use TeX::Encode::charmap;
+
 our @ISA = qw(Encode::Encoding);
 
 our $VERSION = '1.2';
@@ -19,10 +21,49 @@ use constant ENCODE_CHRS => '<>&"';
 
 __PACKAGE__->Define(qw(LaTeX BibTeX latex bibtex));
 
-use vars qw( %LATEX_Escapes %LATEX_Escapes_inv $LATEX_Escapes_inv_re %LATEX_Math_mode $LATEX_Math_mode_re $LATEX_Reserved );
+use vars qw( %LATEX_Escapes %LATEX_Escapes_inv $LATEX_Escapes_inv_re %LATEX_Math_mode $LATEX_Math_mode_re $LATEX_Reserved_re $LATEX_Accent_re );
 
 # Missing entities in HTML::Entities?
 @HTML::Entities::entity2char{qw(sol verbar)} = qw(\textfractionsolidus{} |);
+
+# Load the LaTeX macros
+while(my( $tex, $char ) = each %{$TeX::Encode::charmap::LATEX_MACROS})
+{
+	# The below relies on LaTeX defines, rather than pure-TeX?
+	$LATEX_Escapes{$char} = $tex;
+	if( $tex =~ /^\$\\(.+)\$/ )
+	{
+		$LATEX_Math_mode{$1} = $char;
+	}
+	elsif( $tex =~ /^\\(.+)/ )
+	{
+		$LATEX_Escapes_inv{$1} = $char;
+	}
+}
+
+# Load the character mappings
+%LATEX_Escapes = (
+	%LATEX_Escapes,
+	%{$TeX::Encode::charmap::RESERVED},
+	%{$TeX::Encode::charmap::CHARS},
+	%{$TeX::Encode::charmap::ACCENTED_CHARS},
+);
+
+# we can safely use these without clobbering
+for($TeX::Encode::charmap::CHARS, $TeX::Encode::charmap::ACCENTED_CHARS)
+{
+	while(my( $char, $tex ) = each %$_)
+	{
+		if( $tex =~ /^\$\\(.+)\$/ )
+		{
+			$LATEX_Math_mode{$1} = $char;
+		}
+		elsif( $tex =~ /^\\(.+)$/ )
+		{
+			$LATEX_Escapes_inv{$1} = $char;
+		}
+	}
+}
 
 # Use the mapping from Pod::LaTeX, but we use HTML::Entities
 # to get the Unicode character
@@ -36,7 +77,6 @@ while( my ($entity,$tex) = each %Pod::LaTeX::HTML_Escapes ) {
 	utf8::decode($c) if $HTML::Entities::VERSION < 1.35;
 	
 	$tex =~ s/\{\}$//; # Strip the trailing {}
-	$LATEX_Escapes{$c} = $tex;
 	if( $tex =~ s/^\$\\(.+)\$/$1/ ) {
 		$LATEX_Math_mode{$tex} = $c;
 #		warn "MM: ", quotemeta($tex), " => ", $c, "\n";
@@ -51,18 +91,20 @@ while( my ($entity,$tex) = each %Pod::LaTeX::HTML_Escapes ) {
 {
 	# Greek letters
 	my $i = 0;
-	for(qw( alpha beta gamma delta epsilon zeta eta theta iota kappa lamda mu nu xi omicron pi rho final_sigma sigma tau upsilon phi chi psi omega )) {
+	for(qw( alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho varsigma sigma tau upsilon phi chi psi omega )) {
 		$LATEX_Escapes{$LATEX_Escapes_inv{$_} = chr(0x3b1+$i)} = "\\ensuremath{\\$_}";
 		$LATEX_Escapes{$LATEX_Escapes_inv{"\u$_"} = chr(0x391+$i)} = "\\ensuremath{\\\u$_}";
 		$i++;
 	}
 	# Spelling mistake in LaTeX/charmap?
-	$LATEX_Escapes{
-		$LATEX_Escapes_inv{'lambda'} = $LATEX_Escapes_inv{'lamda'}
-	} = "\\lambda";	
-	$LATEX_Escapes{
-		$LATEX_Escapes_inv{'Lambda'} = $LATEX_Escapes_inv{'Lamda'}
-	} = "\\Lambda";
+	$LATEX_Escapes_inv{'lamda'} = $LATEX_Escapes_inv{'lambda'};
+	$LATEX_Escapes_inv{'Lamda'} = $LATEX_Escapes_inv{'Lambda'};
+	# Remove Greek letters that aren't explicit in TeX
+	# http://www.artofproblemsolving.com/Wiki/index.php/LaTeX:Symbols
+	for(qw( omicron Alpha Beta Epsilon Zeta Eta Iota Kappa Mu Nu Omicron Rho Varsigma Tau Chi Omega ))
+	{
+		delete $LATEX_Escapes{delete $LATEX_Escapes_inv{$_}};
+	}
 	# Special Characters from
 	# http://www.cs.wm.edu/~mliskov/texsymbols.pdf
 	my %euro = (
@@ -127,7 +169,10 @@ $LATEX_Math_mode_re =
 # Math-mode accents: hat, acute, bar, dot, breve, check, grave, vec, ddot, tilde
 
 # Based on http://www.aps.org/meet/abstracts/latex.cfm
-$LATEX_Reserved = quotemeta('#$%&~_^{}\\');
+$LATEX_Reserved_re = qr([#\$\%&_{}\\\^~<>\x00-\x08\x0b\x0e\x0f\x10-\x19\x1a-\x1f]);
+
+# These chars add accents, based on Tralics source
+$LATEX_Accent_re = qr(['`\^"~kHvuc.=rbdCfTVDh]);
 
 # encode($string [,$check])
 sub encode
@@ -136,7 +181,7 @@ sub encode
 	my $tex = "";
 	my $texc;
 
-	my $mapc;
+	my( $mapc, $subst );
 	$_[2] ||= Encode::FB_DEFAULT; # default is 0, so this won't clobber
 	if( ref($_[2]) eq "CODE" )
 	{
@@ -156,42 +201,47 @@ sub encode
 	}
 	else
 	{
-		$mapc = sub { $LATEX_Escapes{$_[0]} || '?' };
+		$subst = '?';
+		$mapc = sub { $LATEX_Escapes{$_[0]} };
 	}
 
-	for(pos($_[1]) = 0; pos($_[1]) < length($_[1]); pos($_[1])++)
+	my( $chr );
+	for(pos($_[1]) = 0; pos($_[1]) < length($_[1]); ++pos($_[1]))
 	{
-		if( $_[1] =~ m/\G([$LATEX_Reserved])/o )
+		$chr = substr($_[1], pos($_[1]), 1);
+		if( $chr =~ m/^$LATEX_Reserved_re$/os or ord($chr) >= 0x7f )
 		{
-			$tex .= "\\$1";
-		}
-		elsif( $_[1] =~ m/\G([<>])/o )
-		{
-			$tex .= "\$$1\$";
-		}
-		elsif( $_[1] =~ m/\G([^\x00-\x80])/o )
-		{
-			$texc = &$mapc( $1 );
-			if( !defined $texc )
+			unless( defined( $texc = &$mapc( $chr ) ) )
 			{
-				substr($_[1],0,pos($_[1])) = "";
-				last;
+				if( defined $subst )
+				{
+					# default mode
+					$tex .= $subst;
+					next;
+				}
+				else
+				{
+					# quiet or warn mode
+					substr($_[1], 0, pos($_[1])) = "";
+					last;
+				}
 			}
-			# we're inserting a macro that would get confused with the
-			# following character
-			elsif( $texc =~ /^\\[a-zA-Z]+$/ && $_[1] =~ m/\G.([a-zA-Z\s])/o )
-			{
-				$tex .= $texc . "{}$1";
-				pos($_[1])++;
-			}
-			else
+
+			# don't need braces for accented chars: fe\'eble
+			# or mathmode: $N>R$
+			# or if it already is a macro: \ensuremath{\sigma}
+			if( $texc =~ /^(?:^\\$LATEX_Accent_re.$)|(?:^\$.+\$$)|(?:^\\.+[^\\]\}$)$/os )
 			{
 				$tex .= $texc;
 			}
+			else
+			{
+				$tex .= $texc . '{}';
+			}
 		}
-		elsif( $_[1] =~ m/\G(.)/o )
+		else
 		{
-			$tex .= $1;
+			$tex .= $chr;
 		}
 	}
 
