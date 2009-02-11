@@ -63,6 +63,12 @@ $EPrints::XML::PREFIX = "XML::LibXML::";
 			XML::LibXML::Node::appendChild( @_ );
 	};
 
+# GDOME nodeValue() returns bytes
+*XML::LibXML::Text::nodeValue = 
+*XML::LibXML::Comment::CDataSection = sub {
+		Encode::encode_utf8( XML::LibXML::Node::nodeValue(@_) )
+	};
+
 ##############################################################################
 # Bug work-arounds
 ##############################################################################

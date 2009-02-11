@@ -7881,3 +7881,11 @@ EPRINTS-3.1.2.1
 
 2009-02-02 tdb
  * Allow https access to anything under /cgi/, fixing autocomplete scripts
+
+2009-02-11 tdb
+ * Unicode Fixes:
+ 	- Return bytes from LibXML & DOM nodeValue() calls
+	- Send bytes via Net::Cmd (fixes wide-character warning)
+	- Added utf-8 support to email headers (subject + names)
+ * Changed string style to be consistent in Email.pm 
+
