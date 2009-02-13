@@ -7889,3 +7889,6 @@ EPRINTS-3.1.2.1
 	- Added utf-8 support to email headers (subject + names)
  * Changed string style to be consistent in Email.pm 
 
+2009-02-13 tdb
+ * Added support for custom OAI sets, see #3271
+
