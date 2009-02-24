@@ -725,7 +725,9 @@ sub default_sort
 
 	my $Collator = Unicode::Collate->new();
 
-	return [ $Collator->sort( @{$values} ) ];
+	my @sorted_values =  $Collator->sort( map { Encode::decode_utf8( $_ ) } @{$values} );
+
+	return [ map { Encode::encode_utf8( $_ ); } @sorted_values ];
 }
 
 # this should probably be a tweak to the repository call function to make
