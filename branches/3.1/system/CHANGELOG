@@ -7897,3 +7897,7 @@ EPRINTS-3.1.2.1
 
 2009-02-24 cjg
  * Fixed view group sort unicode issue.
+
+2009-02-26 tdb
+ * Fixed OAI GetRecord always returning a record, fixing #3498
+
