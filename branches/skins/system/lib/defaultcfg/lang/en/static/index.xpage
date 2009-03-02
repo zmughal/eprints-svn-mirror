@@ -4,15 +4,15 @@
 <xpage:title>Welcome to <epc:phrase ref="archive_name" /></xpage:title>
 <xpage:body>
 
-<div class="ep_msg_message"><div class="ep_msg_message_content"><table><tbody><tr><td>
-<img alt="Message" src="{$config{rel_path}}/style/images/message.png" /></td><td>
-Welcome to <epc:phrase ref="archive_name" />. <a href="http://www.eprints.org/d/?keyword=NewRepository&amp;version={$config{version_id}}">Click here to start customising this repository</a>.
-</td></tr></tbody></table></div></div>
+<div class="ep_msg_message"><div class="ep_msg_message_content">
+<img alt="Message" src="{$config{rel_path}}/style/images/message.png" />
+<span>Welcome to <epc:phrase ref="archive_name" />. <a href="http://www.eprints.org/d/?keyword=NewRepository&amp;version={$config{version_id}}">Click here to start customising this repository</a>.</span>
+</div></div>
 
 <div style="text-align: right">
-<span class="ep_search_feed"><a href="/cgi/latest_tool?output=Atom"><img alt="[feed]" src="/style/images/feed-icon-14x14.png" border="0" /></a> <a href="/cgi/latest_tool?output=Atom">Atom</a></span>
-<span class="ep_search_feed"><a href="/cgi/latest_tool?output=RSS"><img alt="[feed]" src="/style/images/feed-icon-14x14.png" border="0" /></a> <a href="/cgi/latest_tool?output=RSS">RSS 1.0</a></span>
-<span class="ep_search_feed"><a href="/cgi/latest_tool?output=RSS2"><img alt="[feed]" src="/style/images/feed-icon-14x14.png" border="0" /></a> <a href="/cgi/latest_tool?output=RSS2">RSS 2.0</a></span>
+<span class="ep_search_feed"><a href="/cgi/latest_tool?output=Atom"><img alt="[feed]" src="/style/images/feed-icon-14x14.png" /></a> <a href="/cgi/latest_tool?output=Atom">Atom</a></span>
+<span class="ep_search_feed"><a href="/cgi/latest_tool?output=RSS"><img alt="[feed]" src="/style/images/feed-icon-14x14.png" /></a> <a href="/cgi/latest_tool?output=RSS">RSS 1.0</a></span>
+<span class="ep_search_feed"><a href="/cgi/latest_tool?output=RSS2"><img alt="[feed]" src="/style/images/feed-icon-14x14.png" /></a> <a href="/cgi/latest_tool?output=RSS2">RSS 2.0</a></span>
 </div>
 
 
@@ -27,7 +27,7 @@ Welcome to <epc:phrase ref="archive_name" />. <a href="http://www.eprints.org/d/
 </div></div>
 
 <div class="ep_toolbox"><div class="ep_toolbox_content" >
- <a href="{$config{base_url}}/view/subjects/">Browse Repository</a><br /><br />
+	<a href="{$config{base_url}}/view/subjects/">Browse Repository</a><br /><br />
  Browse the items in the repository by subject.
 </div></div>
 
