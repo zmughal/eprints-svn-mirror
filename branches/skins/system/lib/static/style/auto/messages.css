@@ -1,7 +1,7 @@
 
 /* Message styles - used to provide alerts and errors */
 
-.ep_msg_message, .ep_msg_warning, .ep_msg_error, .ep_msg_other {
+.ep_msg_message, .ep_msg_warning, .ep_msg_error .ep_msg_other {
 	margin-top: 10px;
 	margin-bottom: 10px;
 }
@@ -32,8 +32,12 @@ Not currently using titles
 	background-image: url(images/green_back.png);
 	background-color: #c0ffc0;
 	border: solid 1px #80ff80;
+	padding: 5px;
 }
 
+.ep_msg_message_content > * {
+	vertical-align: middle;
+}
 .ep_msg_error_content {
 	background-image: url(images/red_back.png);
 	background-color: #ffe0e0;
