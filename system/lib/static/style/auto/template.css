@@ -2,10 +2,41 @@
 /* EPrints 3 template styles */
 /* prefix all styles with ep_tm */
 
-.ep_tm_logo img {
+body{
+	background: white;
+	color: black;
+}
+
+.ep_tm_menubar{
+	margin-top: 4px;
+	background: #ccc;
+	background-image: url(images/gray_bar.png);
+	overflow:auto;
+	padding: 4px 10px 4px 10px;
+}
+
+.ep_tm_useractions{
+        text-align: left;
+	color: #606060;
+	float: left;
+}
+
+.ep_tm_searchpanel{
+	float: right;
+	text-align:right;
+	white-space: nowrap;
+}
+
+.ep_tm_pagecontainer{
+	margin: auto;
+        padding: 1em;
+	width: 720px;
+}
+
+.ep_tm_logo{
 	float: right;
 	padding-bottom: 4px;
-	border-style: none;
+	border: none;
 }
 
 .ep_tm_archivetitle {
@@ -14,8 +45,14 @@
 	text-decoration: none;
 }
 
-.ep_tm_main {
-        margin: 1em;
+.ep_tm_eplogo{
+	float: right; 
+	margin-left: 1em;
+	border: none;
+}
+
+.ep_tm_copyright{
+	font-size: 80%;
 }
 
 hr.ep_tm_last {
@@ -63,19 +100,7 @@ ul.ep_tm_menu li a:visited {
 
 /* Search bar */
 
-.ep_tm_searchbar {
-	color: #606060;
-	padding-left: 10px;
-	padding-right: 10px;
-	padding-top: 4px;
-	padding-bottom: 4px;
-	border-top: solid 4px white;
-	background: #ccc;
-	background-image: url(images/gray_bar.png);
-}
-
 .ep_tm_searchbarbutton {
-	text-align: center;
 	background-image: url(images/blue_bar.png);
 	background-color: #1f4f76;
 	color: white;

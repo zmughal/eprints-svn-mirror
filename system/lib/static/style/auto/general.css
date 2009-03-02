@@ -5,6 +5,10 @@ body {
 	font-size: 80%;
 }
 
+img {
+    border: none;
+}
+
 .ep_no_js { 
 	display: none; 
 }
@@ -13,9 +17,9 @@ body {
 	display: none; 
 }
 
-.ep_no_js_table_cell { 
-	display: none; 
-}
+.ep_no_js_table_cell {
+	display: none;
+}   
 
 .ep_hide { 
 	display: none; 
