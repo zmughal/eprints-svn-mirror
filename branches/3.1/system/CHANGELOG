@@ -7906,3 +7906,7 @@ EPRINTS-3.1.2.1
  * Fixed bug in Field::Multi which didn't allow <help> in both the component
     and inside the field.
  * Added temporary conf settings to bin/toolbox to allow file & web import.
+
+2008-03-24 tdb
+ * Can now use Subject input component with other fields in a workflow
+
