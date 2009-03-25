@@ -246,7 +246,6 @@ sub to_string
 			next if( $done->{$attr->nodeName} );
 			$done->{$attr->nodeName} = 1;
 			# cjg Should probably escape these values.
-			my $value = $attr->nodeValue;
 			utf8::decode($value);
 			$value =~ s/&/&amp;/g;
 			$value =~ s/</&lt;/g;
