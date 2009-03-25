@@ -237,7 +237,12 @@ sub to_string
 		{
 			my $attr = $nnm->item($i);
 			my $name = $attr->nodeName;
-			next if( $noxmlns && $name =~ m/^xmlns/ );
+			my $value = $attr->nodeValue;
+			if($tagname eq "html" ){
+			    next if( $noxmlns && $name =~ m/^xmlns/ && $value !~ m/http:\/\/www.w3.org\/1999\/xhtml/ );
+			}else{
+			    next if( $noxmlns && $name =~ m/^xmlns/ );
+			}
 			next if( $done->{$attr->nodeName} );
 			$done->{$attr->nodeName} = 1;
 			# cjg Should probably escape these values.
