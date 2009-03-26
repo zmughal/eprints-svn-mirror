@@ -1212,7 +1212,7 @@ sub render_export_bar
 			my $url = $export_url."/".$view->{id}."/$values/$id/$fn".$plugin->param("suffix");
 
 			my $a1 = $session->render_link( $url );
-			my $icon = $session->make_element( "img", src=>$plugin->icon_url(), alt=>"[$type]", border=>0 );
+			my $icon = $session->make_element( "img", src=>$plugin->icon_url(), alt=>"[$type]" );
 			$a1->appendChild( $icon );
 			my $a2 = $session->render_link( $url );
 			$a2->appendChild( $dom_name );
