@@ -7916,3 +7916,6 @@ EPRINTS-3.1.2.1
 2009-03-30 tdb
  * If a name is defined all parts must be defined (""), fixing #3483
  * Added upgrade to DB schema 3.1.2 - fix null parts of names
+
+2009-03-30 cjg
+ * Fixed some trivial warnings getting ready for a release.
