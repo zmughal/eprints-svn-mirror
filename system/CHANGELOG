@@ -7913,3 +7913,6 @@ EPRINTS-3.1.2.1
 2009-03-27 tdb
  * Fixed to_string() calls not specifying noxmlns in Views (McSweeney)
 
+2009-03-30 tdb
+ * If a name is defined all parts must be defined (""), fixing #3483
+ * Added upgrade to DB schema 3.1.2 - fix null parts of names
