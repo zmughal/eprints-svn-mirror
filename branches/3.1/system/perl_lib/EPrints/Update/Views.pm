@@ -377,14 +377,16 @@ sub update_view_menu
 	my $target = $session->get_repository->get_conf( "htdocs_path" )."/".$langid."/view/".$view->{id};
 	if( defined $esc_path_values && scalar @{$esc_path_values} ) { $target .= "/".join( "/", @{$esc_path_values} ); }
 	my $dh;
-	opendir( $dh, $target );
 	my @indexes = ();
-	while( my $fn = readdir( $dh ) )
+	if( opendir( $dh, $target ) )
 	{
-		next unless( $fn =~ m/^index\./ );
-		push @indexes, "$target/$fn";
+		while( my $fn = readdir( $dh ) )
+		{
+			next unless( $fn =~ m/^index\./ );
+			push @indexes, "$target/$fn";
+		}
+		closedir( $dh );
 	}
-	closedir( $dh );
 
 	my @wrote_files = &{$fn}( $session, $path_values, $esc_path_values, $menus_fields, $view, $sizes, \@values, $menu_fields, $has_submenu, $menu_level, $langid );
 	
