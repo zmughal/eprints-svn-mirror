@@ -40,6 +40,17 @@ td.ep_columns_alter_last {
 	border-right: solid 1px #888;
 }
 
+.ep_columns_controls_left{
+	float:left;
+}
+.ep_columns_controls_right{
+    float:right;
+}
+.ep_columns_controls_remove{
+    margin: 0 15px;
+    text-align: center;
+}
+
 td.ep_columns_no_items {
 	border-bottom: 1px solid #ccc;
 	border-left: 1px solid #ccc;
