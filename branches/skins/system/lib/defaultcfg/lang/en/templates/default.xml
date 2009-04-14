@@ -24,7 +24,6 @@
 
 	  <ul class="ep_tm_menu"><li><a href="{$config{http_url}}">Home</a></li><li><a href="{$config{http_url}}/information.html">About</a></li><li><a href="{$config{http_url}}/view/year">Browse by Year</a></li><li><a href="{$config{http_url}}/view/subjects">Browse by Subject</a></li><li><a href="{$config{http_url}}/view/divisions">Browse by Division</a></li></ul>
 	  <div class="ep_tm_menubar">
-	      <div class="ep_tm_useractions"><epc:pin ref="login_status"/></div>
 	      <form method="get" accept-charset="utf-8" action="{$config{http_cgiurl}}/search">
 		  <div class="ep_tm_searchpanel">
 		      <input class="ep_tm_searchbarbox" size="20" type="text" name="q"/>
@@ -35,6 +34,7 @@
 		      <input type="hidden" name="_satisfyall" value="ALL"/>
 		  </div>
 	      </form>
+	      <div class="ep_tm_useractions"><epc:pin ref="login_status"/></div>
 	  </div>
       
       </div>
