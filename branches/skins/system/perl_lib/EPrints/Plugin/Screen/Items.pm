@@ -227,17 +227,6 @@ sub render
 			my $td = $session->make_element( "td", class=>"ep_columns_alter" );
 			$final_row->appendChild( $td );
 	
-			my $acts_table = $session->make_element( "table", cellpadding=>0, cellspacing=>0, border=>0, width=>"100%" );
-			my $acts_row = $session->make_element( "tr" );
-			my $acts_td1 = $session->make_element( "td", align=>"left", width=>"14" );
-			my $acts_td2 = $session->make_element( "td", align=>"center", width=>"100%");
-			my $acts_td3 = $session->make_element( "td", align=>"right", width=>"14" );
-			$acts_table->appendChild( $acts_row );
-			$acts_row->appendChild( $acts_td1 );
-			$acts_row->appendChild( $acts_td2 );
-			$acts_row->appendChild( $acts_td3 );
-			$td->appendChild( $acts_table );
-
 			if( $i!=0 )
 			{
 				my $form_l = $session->render_form( "post" );
@@ -247,17 +236,41 @@ sub render
 					$session->render_hidden_field( "colid", $i ) );
 				$form_l->appendChild( $session->make_element( 
 					"input",
+					class=>"ep_columns_controls_left",
 					type=>"image",
 					value=>"Move Left",
 					title=>"Move Left",
 					src => "$imagesurl/left.png",
 					alt => "<",
 					name => "_action_col_left" ) );
-				$acts_td1->appendChild( $form_l );
+				$td->appendChild( $form_l );
 			}
 			else
 			{
-				$acts_td1->appendChild( $session->make_element("img",src=>"$imagesurl/noicon.png",alt=>"") );
+				$td->appendChild( $session->make_element("img",src=>"$imagesurl/noicon.png",class=>"ep_columns_controls_left", alt=>"") );
+			}
+			
+			if( $i!=$len-1 )
+			{
+				my $form_r = $session->render_form( "post" );
+				$form_r->appendChild( 
+					$session->render_hidden_field( "screen", "Items" ) );
+				$form_r->appendChild( 
+					$session->render_hidden_field( "colid", $i ) );
+				$form_r->appendChild( $session->make_element( 
+					"input",
+					class=>"ep_columns_controls_right",
+					type=>"image",
+					value=>"Move Right",
+					title=>"Move Right",
+					src => "$imagesurl/right.png",
+					alt => ">",
+					name => "_action_col_right" ) );
+				$td->appendChild( $form_r );
+			}
+			else
+			{
+				$td->appendChild( $session->make_element("img",src=>"$imagesurl/noicon.png",class=>"ep_columns_controls_right", alt=>"")  );
 			}
 
 			my $msg = $self->phrase( "remove_column_confirm" );
@@ -275,29 +288,10 @@ sub render
 				alt => "X",
 				onclick => "if( window.event ) { window.event.cancelBubble = true; } return confirm( ".EPrints::Utils::js_string($msg).");",
 				name => "_action_remove_col" ) );
-			$acts_td2->appendChild( $form_rm );
+			my $remove_div = $session->make_element("div", class=>"ep_columns_controls_remove");
+			$remove_div->appendChild($form_rm);
+			$td->appendChild( $remove_div );
 
-			if( $i!=$len-1 )
-			{
-				my $form_r = $session->render_form( "post" );
-				$form_r->appendChild( 
-					$session->render_hidden_field( "screen", "Items" ) );
-				$form_r->appendChild( 
-					$session->render_hidden_field( "colid", $i ) );
-				$form_r->appendChild( $session->make_element( 
-					"input",
-					type=>"image",
-					value=>"Move Right",
-					title=>"Move Right",
-					src => "$imagesurl/right.png",
-					alt => ">",
-					name => "_action_col_right" ) );
-				$acts_td3->appendChild( $form_r );
-			}
-			else
-			{
-				$acts_td3->appendChild( $session->make_element("img",src=>"$imagesurl/noicon.png",alt=>"")  );
-			}
 		}
 		my $td = $session->make_element( "td", class=>"ep_columns_alter ep_columns_alter_last" );
 		$final_row->appendChild( $td );
