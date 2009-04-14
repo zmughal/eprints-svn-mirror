@@ -114,19 +114,11 @@ sub paginate_list
 				$linkurl = "$url&$basename\_order=$col";
 			}
 		}
-		my $itable = $session->make_element( "table", cellpadding=>0, border=>0, cellspacing=>0, width=>"100%" );
-		my $itr = $session->make_element( "tr" );
-		$itable->appendChild( $itr );
-		my $itd1 = $session->make_element( "td" );
-		$itr->appendChild( $itd1 );
-		my $itd2 = $session->make_element( "td", style=>"padding-left: 1em; text-align: right" );
-		$itr->appendChild( $itd2 );
-		my $link = $session->render_link( $linkurl );
+		my $link = $session->make_element( "a", href=>$linkurl, class=>"ep_columns_title_reorder_link");
 		$link->appendChild( $list->get_dataset->get_field( $col )->render_name( $session ) );
-		$itd1->appendChild( $link );
-		my $link2 = $session->render_link( $linkurl );
-		$itd2->appendChild( $link2 );
-		$th->appendChild( $itable );
+		my $link2 = $session->make_element( "a", href=>$linkurl, class=>"ep_columns_icon_reorder_link");
+		$th->appendChild( $link2 );
+		$th->appendChild( $link );
 		# Sort controls
 
 		if( $sort_order eq $col )

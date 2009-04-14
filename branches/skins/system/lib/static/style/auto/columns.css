@@ -30,6 +30,15 @@ th.ep_columns_title_last {
 	border-right: solid 1px #888;	
 }
 
+a.ep_columns_title_reorder_link{
+	margin: 0 20px 0 0;
+}
+
+a.ep_columns_icon_reorder_link{
+	vertical-align: middle;
+	float:right;
+}
+
 
 td.ep_columns_alter {
 	background: url(images/gray_bar.png) repeat-x;
