@@ -126,7 +126,6 @@ sub paginate_list
 			$link2->appendChild( $session->make_element(
 				"img",
 				alt=>"Up",
-				border=>0,
 				src=> "$imagesurl/sorting_up_arrow.gif" ));
 		}
 		if( $sort_order eq "-$col" )
@@ -134,7 +133,6 @@ sub paginate_list
 			$link2->appendChild( $session->make_element(
 				"img",
 				alt=>"Down",
-				border=>0,
 				src=> "$imagesurl/sorting_down_arrow.gif" ));
 		}
 			
