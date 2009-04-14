@@ -151,9 +151,7 @@ sub render
 	$options{content} = $session->html_phrase( "Plugin/Screen/Items:help" );
 	$options{collapsed} = 1;
 	$options{show_icon_url} = "$imagesurl/help.gif";
-	my $box = $session->make_element( "div", style=>"text-align: left" );
-	$box->appendChild( EPrints::Box::render( %options ) );
-	$chunk->appendChild( $box );
+	$chunk->appendChild(  EPrints::Box::render( %options ));
 
 	$chunk->appendChild( $self->render_action_list_bar( "item_tools" ) );
 
