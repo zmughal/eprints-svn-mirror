@@ -1,11 +1,11 @@
 
 .ep_act_bar {
-	margin-top: 4px;
-	margin-bottom: 4px;
+    margin: 4px auto;
+    text-align: center;
 }
 
-.ep_act_bar table {
-	margin: auto;
+.ep_act_bar .ep_form_action_button {
+	margin: 0.25em;
 }
 
 .ep_act_list {
