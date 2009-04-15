@@ -346,7 +346,8 @@ sub render
 	# Add form
 	my $div = $session->make_element( "div", class=>"ep_columns_add" );
 	my $form_add = $session->render_form( "post" );
-	$form_add->appendChild( $session->render_hidden_field( "screen", "Items" ) );
+	$form_add->appendChild( $div );
+	$div->appendChild( $session->render_hidden_field( "screen", "Items" ) );
 
 	my $colcurr = {};
 	foreach( @$columns ) { $colcurr->{$_} = 1; }
@@ -367,19 +368,18 @@ sub render
 
 	my @tags = sort { $fieldnames->{$a} cmp $fieldnames->{$b} } keys %$fieldnames;
 
-	$form_add->appendChild( $session->render_option_list( 
+	$div->appendChild( $session->render_option_list( 
 		name => 'col',
 		height => 1,
 		multiple => 0,
 		'values' => \@tags,
 		labels => $fieldnames ) );
 		
-	$form_add->appendChild( 
+	$div->appendChild( 
 			$session->render_button(
 				class=>"ep_form_action_button",
 				name=>"_action_add_col", 
 				value => $self->phrase( "add" ) ) );
-	$div->appendChild( $form_add );
 	$chunk->appendChild( $div );
 	# End of Add form
 
