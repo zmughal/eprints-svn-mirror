@@ -230,11 +230,13 @@ sub render
 			if( $i!=0 )
 			{
 				my $form_l = $session->render_form( "post" );
-				$form_l->appendChild( 
+				my $form_l_div = $session->make_element("div", class=>"ep_form_inner");
+				$form_l->appendChild($form_l_div); 
+				$form_l_div->appendChild( 
 					$session->render_hidden_field( "screen", "Items" ) );
-				$form_l->appendChild( 
+				$form_l_div->appendChild( 
 					$session->render_hidden_field( "colid", $i ) );
-				$form_l->appendChild( $session->make_element( 
+				$form_l_div->appendChild( $session->make_element( 
 					"input",
 					class=>"ep_columns_controls_left",
 					type=>"image",
@@ -253,11 +255,13 @@ sub render
 			if( $i!=$len-1 )
 			{
 				my $form_r = $session->render_form( "post" );
-				$form_r->appendChild( 
+				my $form_r_div = $session->make_element("div", class=>"ep_form_inner");
+				$form_r->appendChild($form_r_div); 
+				$form_r_div->appendChild( 
 					$session->render_hidden_field( "screen", "Items" ) );
-				$form_r->appendChild( 
+				$form_r_div->appendChild( 
 					$session->render_hidden_field( "colid", $i ) );
-				$form_r->appendChild( $session->make_element( 
+				$form_r_div->appendChild( $session->make_element( 
 					"input",
 					class=>"ep_columns_controls_right",
 					type=>"image",
@@ -275,11 +279,13 @@ sub render
 
 			my $msg = $self->phrase( "remove_column_confirm" );
 			my $form_rm = $session->render_form( "post" );
-			$form_rm->appendChild( 
+			my $form_rm_div = $session->make_element("div", class=>"ep_columns_controls_remove");
+			$form_rm->appendChild($form_rm_div); 
+			$form_rm_div->appendChild( 
 				$session->render_hidden_field( "screen", "Items" ) );
-			$form_rm->appendChild( 
+			$form_rm_div->appendChild( 
 				$session->render_hidden_field( "colid", $i ) );
-			$form_rm->appendChild( $session->make_element( 
+			$form_rm_div->appendChild( $session->make_element( 
 				"input",
 				type=>"image",
 				value=>"Remove Column",
@@ -288,9 +294,7 @@ sub render
 				alt => "X",
 				onclick => "if( window.event ) { window.event.cancelBubble = true; } return confirm( ".EPrints::Utils::js_string($msg).");",
 				name => "_action_remove_col" ) );
-			my $remove_div = $session->make_element("div", class=>"ep_columns_controls_remove");
-			$remove_div->appendChild($form_rm);
-			$td->appendChild( $remove_div );
+			$td->appendChild( $form_rm );
 
 		}
 		my $td = $session->make_element( "td", class=>"ep_columns_alter ep_columns_alter_last" );
