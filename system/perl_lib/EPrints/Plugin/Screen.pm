@@ -432,14 +432,16 @@ sub _render_action_aux
 	}
 
 	my $form = $session->render_form( $method );
+	my $form_div = $session->make_element('div', class=>"ep_form_inner");
+	$form->appendChild($form_div); 
 
-	$form->appendChild( 
+	$form_div->appendChild( 
 		$session->render_hidden_field( 
 			"screen", 
 			substr( $params->{screen_id}, 8 ) ) );
 	foreach my $id ( @{$params->{hidden}} )
 	{
-		$form->appendChild( 
+		$form_div->appendChild( 
 			$session->render_hidden_field( 
 				$id, 
 				$self->{processor}->{$id} ) );
@@ -459,7 +461,7 @@ sub _render_action_aux
 	}
 	if( defined $icon && $asicon )
 	{
-		$form->appendChild( 
+		$form_div->appendChild( 
 			$session->make_element(
 				"input",
 				type=>"image",
@@ -472,7 +474,7 @@ sub _render_action_aux
 	}
 	else
 	{
-		$form->appendChild( 
+		$form_div->appendChild( 
 			$session->render_button(
 				class=>"ep_form_action_button",
 				name=>"_action_$action", 

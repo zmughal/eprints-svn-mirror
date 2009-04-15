@@ -24,7 +24,9 @@ img {
 .ep_hide { 
 	display: none; 
 }
-
+.ep_form_inner{
+	display:inline;
+}
 h1 {
 	margin: 0px 0px 10px 0px;
         font: bold 130% Arial,Sans-serif;
