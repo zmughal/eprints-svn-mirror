@@ -8054,3 +8054,6 @@ EPRINTS-3.1-beta-2
  * Added an epadmin command to drop unused cache tables
  * Alpha FTP daemon - provides FTP access to the user's inbox
 
+2009-04-15 tdb
+ * Removed <div> wrapper from message contents
+
