@@ -199,7 +199,7 @@ sub render_content
 
 		$parts{help_prefix} = $self->{prefix}."_help_".$field->get_name;
 
-		$table->appendChild( $self->{session}->render_row_with_help( %parts ) );
+		$tbody->appendChild( $self->{session}->render_row_with_help( %parts ) );
 	}
 	return $table;
 }
