@@ -549,15 +549,9 @@ sub render_action_list_icons
 	my $session = $self->{session};
 
 	my $div = $self->{session}->make_element( "div", class=>"ep_act_icons" );
-	my $table = $session->make_element( "table" );
-	$div->appendChild( $table );
-	my $tr = $session->make_element( "tr" );
-	$table->appendChild( $tr );
 	foreach my $params ( $self->action_list( $list_id ) )
 	{
-		my $td = $session->make_element( "td" );
-		$tr->appendChild( $td );
-		$td->appendChild( $self->render_action_icon( { %$params, hidden => $hidden } ) );
+		$div->appendChild( $self->render_action_icon( { %$params, hidden => $hidden } ) );
 	}
 
 	return $div;
