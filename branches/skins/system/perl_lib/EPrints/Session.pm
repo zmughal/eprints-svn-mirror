@@ -1706,7 +1706,6 @@ sub render_hidden_field
 
 	return $self->render_input_field( 
 		name => $name,
-		id => $name,
 		value => $value,
 		type => "hidden" );
 }
