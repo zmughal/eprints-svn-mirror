@@ -7923,3 +7923,6 @@ EPRINTS-3.1.2.1
 2009-04-07 tdb
  * Ignore blank lines in DOI import and check for "malformed" response
 
+2009-04-15 cjg
+ * Fixed issue in update views which would cause a huge memory spike if an
+    illegal view value was requested, rather than just 404.
