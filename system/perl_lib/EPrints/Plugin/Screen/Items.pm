@@ -326,7 +326,7 @@ sub render
 
 			$self->{processor}->{eprint} = $e;
 			$self->{processor}->{eprintid} = $e->get_id;
-			my $td = $session->make_element( "td", class=>"ep_columns_cell ep_columns_cell_last", align=>"left" );
+			my $td = $session->make_element( "td", class=>"ep_columns_cell ep_columns_cell_last" );
 			$tr->appendChild( $td );
 			$td->appendChild( 
 				$self->render_action_list_icons( "eprint_item_actions", ['eprintid'] ) );
