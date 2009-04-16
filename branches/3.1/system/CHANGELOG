@@ -7935,3 +7935,6 @@ EPRINTS-3.1.2.1
 
 2009-04-16 cjg
  * Fixed issue with 403 in JSON, and when eprint not found.
+
+2009-04-16 cjg
+ * Fixed issue with non standard DOM in Export::JSON
