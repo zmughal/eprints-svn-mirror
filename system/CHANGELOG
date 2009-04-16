@@ -7938,3 +7938,6 @@ EPRINTS-3.1.2.1
 
 2009-04-16 cjg
  * Fixed issue with non standard DOM in Export::JSON
+
+2009-04-16 cjg+tmb
+ * Fix for generate-on-demand of /view/foo/index.html URLs
