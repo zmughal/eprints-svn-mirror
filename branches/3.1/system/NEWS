@@ -16,7 +16,8 @@ In brief:
 
 Views
  * New config. style for views (old style still works too)
- * Views "menu" pages can now be split up, eg. A-C, D-F, G-I etc.
+ * Views "menu" pages can now be split up, eg. A-C, D-F, G-I etc. (new 
+    default Author view uses this option)
  * Fixed a bug where bad view URLs created huge pages and ate memory.
  * Removed bogus xmlns attributes.
 
