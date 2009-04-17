@@ -1,3 +1,7 @@
+David C Tarrant <davetaz@ecs.soton.ac.uk>, University of Southampton, UK
+
+ - Finised the EPrints3 revision and packaged first tagged version.
+
 Timothy D Brody <tdb01r@ecs.soton.ac.uk>, University of Southampton, UK
 
  - Configuration file sanitisation
@@ -14,6 +18,7 @@ Christopher Gutteridge <cjg@ecs.soton.ac.uk>, University of Southampton, UK
 Adam Field <af05v@ecs.soton.ac.uk>, University of Southampton, UK
 
  - Initial design and implementation
+ - Updates to support EPrints3
 
 Leslie Carr <lac@ecs.soton.ac.uk>, University of Southampton, UK
 

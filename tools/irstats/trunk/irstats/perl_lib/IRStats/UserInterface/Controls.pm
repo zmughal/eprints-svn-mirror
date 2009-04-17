@@ -81,13 +81,14 @@ sub view_control
 		"Unknown",
 	);
 	my $unknown = [];
-	my %known;
+	my( %available, %known );
 	foreach my $column (@$columns)
 	{
 		$known{$_} = 1 for(@$column);
 	}
 	foreach my $view_name ($self->{session}->get_views)
 	{
+		$available{$view_name} = 1;
 		if( !exists($known{$view_name}) )
 		{
 			push @$unknown, $view_name;
@@ -113,6 +114,8 @@ EOH
 		$r .= "<ul>";
 		foreach my $view_name (@{$columns->[$column]})
 		{
+			next unless $available{$view_name};
+
 			my $view_label = $self->{session}->get_phrase( "view:$view_name:title" ) || $view_name;
 			$r .= "<li><input type='radio' name='view' value='$view_name' id='$view_name' ";
 			if( $first_view )
@@ -149,7 +152,7 @@ sub eprints_control
 	my( $set_ids, $set_drop_box_values ) = ({},{});
 	for(@sets)
 	{
-		my $set_name = $database->phrase( "set_$_" ) || $_;
+		my $set_name = $self->{session}->get_phrase( "set_$_" ) || $_;
 		$set_ids->{$_} = [];
 		$set_drop_box_values->{$_} = [{
 			value => 'dummy',
@@ -188,7 +191,7 @@ EOH
 	
 	for(@sets)
 	{
-		my $set_name = $database->phrase( "set_$_" ) || $_;
+		my $set_name = $self->{session}->get_phrase( "set_$_" ) || $_;
 		$r .= "<input type='radio' id='IRS_epchoice_$_' name='IRS_epchoice' value='$_' /> $set_name \n";
 		$r .= $self->drop_box({name => "${_}s", onchange => "document.getElementById('IRS_epchoice_$_').click()"}, $set_drop_box_values->{$_}); 
 		$r .= '</br> ' . "\n";

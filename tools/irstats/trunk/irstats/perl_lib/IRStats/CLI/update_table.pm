@@ -8,22 +8,16 @@ our @ISA = qw( IRStats::CLI );
 use POSIX qw/strftime/;
 
 use Logfile::EPrints;
-use Logfile::EPrints::RobotsFilter;
+use Logfile::EPrints::Filter::Robots;
+use Logfile::EPrints::Filter::Repeated;
 
 use IRStats::Update::Handler::MyHandler;
 use IRStats::Update::Filter::FulltextOnly;
-use IRStats::Update::Filter::Institution;
 use IRStats::Update::Filter::NegateHandler;
 use IRStats::Update::Filter::SelfReferrerFilter;
 use IRStats::Update::Filter::SearchParser;
-use IRStats::Update::Filter::RepeatsFilter;
 
-our %PARSERS = (
-	eprints2 => 'Accesslog',
-	eprints3 => 'Access',
-	dspace => 'ApacheDSpace',
-	apacheeprints => 'ApacheEPrints',
-);
+use constant LOCK_NAME => __PACKAGE__;
 
 sub execute
 {
@@ -34,41 +28,33 @@ sub execute
 	my $conf = $session->get_conf;
 	my $database = $session->get_database;
 
-	my $lock_file_name =  $conf->get_path('update_lock_filename');
-
 	my $sql;
 	my $query;
-
-	my $repository_type = $conf->repository_type;
-
-	unless( exists $PARSERS{$repository_type} )
-	{
-		die "I don't know how to harvest from a repository of type '$repository_type' (did you set repository_type correctly?): must be one of ".join(', ', keys %PARSERS)."\n";
-	}
-
-	if (-e $lock_file_name) {
-		die "$lock_file_name exists.  Perhaps the database is currently being updated. If you're sure it isn't, feel free to delete it.\n";
-	}
-
-	open LOCKFILE, ">$lock_file_name" or die "Error writing Lock File $lock_file_name: $!\n";
-
-	$session->log("Using repository type [$repository_type]", 2);
 
 	#Check existance of source tables (create if non-existant)
 	$database->check_tables();
 
+	if( $session->force )
+	{
+		$database->unlock_variable(LOCK_NAME);
+	}
+	unless( $database->lock_variable(LOCK_NAME) )
+	{
+		die "Can't get the exclusive update lock: perhaps the database is already being updated?\n";
+	}
+
 	# Check existant of set tables (not actually used here, but the user might forget to run import_metadata and wonder why it doesn't work)
 	$database->check_set_tables();
 
-	my $parser_class = "IRStats::Update::Parser::".$PARSERS{$repository_type};
-	eval "use $parser_class"; Carp::confess $@ if $@;
+	use IRStats::Update::Parser::Access;
 
-	my $parser = $parser_class->new(
+#disabled for now
+#	Logfile::EPrints::Hit::load_country_db( $conf->geo_ip_country_file );
+
+	my $parser = IRStats::Update::Parser::Access->new(
 				session => $session,
 			handler=>Logfile::EPrints::Filter::Session->new(
 			handler=>IRStats::Update::Filter::FulltextOnly->new(
-				session => $session,
-			handler=>IRStats::Update::Filter::Institution->new(
 				session => $session,
 			handler=>IRStats::Update::Filter::NegateHandler->new(
 				session => $session,
@@ -76,24 +62,23 @@ sub execute
 				session => $session,
 			handler=>Logfile::EPrints::Filter::MaxPerSession->new(
 				fulltext => 20,
-			handler=>Logfile::EPrints::RobotsFilter->new(
-			handler=>IRStats::Update::Filter::RepeatsFilter->new(
-				session => $session,
+			handler=>Logfile::EPrints::Filter::Robots->new(
+			handler=>Logfile::EPrints::Filter::Repeated->new(
+				file => $conf->get_path( 'repeats_filter_file' ),
 #			handler=>Logfile::EPrints::Filter::Debug->new(
 			handler=>IRStats::Update::Filter::SearchParser->new(
 				session => $session,
 			handler=>IRStats::Update::Handler::MyHandler->new(
 				session => $session,
-	)))))))))));
+	))))))))));
 
 	$parser->parse;
 
 	$session->log("Successfully Updated the Database");
 
-	IRStats::Cache::cleanup( $session );
+	$database->unlock_variable(LOCK_NAME);
 
-	close LOCKFILE;
-	unlink $lock_file_name;
+	IRStats::Cache::cleanup( $session );
 }
 
 sub utime_to_date

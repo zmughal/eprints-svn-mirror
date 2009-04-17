@@ -130,6 +130,11 @@ sub get_parameters
 		}
 	}
 
+	if( defined $parameters and !utf8::is_utf8( $parameters ) )
+	{
+		$parameters = Encode::decode("latin1", $parameters);
+	}
+
 	return $parameters;
 }
 
@@ -165,8 +170,12 @@ sub AUTOLOAD {
 		}
 		else
 		{
-			$hit->{referrer} = 'Abstract Page (No referrer given)';
+			$hit->{referrer} = 'Abstract Page (No prior referrer given)';
 		}
+	}
+	elsif( $hit->referrer eq $hit->identifier )
+	{
+		$hit->{referrer} = 'Abstract Page (Claimed by browser)';
 	}
 	
 	# scholar seems to accept %3F (?) as well?

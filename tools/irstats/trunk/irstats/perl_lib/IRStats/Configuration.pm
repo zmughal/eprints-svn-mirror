@@ -1,10 +1,16 @@
 package IRStats::Configuration;
 
-our $FILE = '/opt/irstats/cfg/irstats.cfg';
 
 use strict;
+use warnings;
 
 use vars qw( $AUTOLOAD );
+
+our %DEFAULTS = (
+	data_path => '/tmp',
+	geo_ip_country_file => '/usr/local/share/GeoIP/GeoIP.dat',
+	geo_ip_org_file => '/usr/local/share/GeoIP/GeoIPOrg.dat',
+);
 
 =head1 NAME
 
@@ -43,7 +49,7 @@ sub AUTOLOAD
 	return if $AUTOLOAD =~ /[A-Z]$/;
 	$AUTOLOAD =~ s/^.*:://;
 	my $value = $_[0]->{$AUTOLOAD};
-	Carp::croak "You need to define '$AUTOLOAD' in the configuration file $FILE"
+	Carp::croak "You need to define '$AUTOLOAD' in the configuration file"
 		unless defined $value;
 	my @values = ref($value) eq 'ARRAY' ? @$value : ($value);
 	if( wantarray )
@@ -63,7 +69,7 @@ sub AUTOLOAD
 	}
 }
 
-=item $conf = IRStats::Configuration->new( [ file => FILE_NAME ] )
+=item $conf = IRStats::Configuration->new($session, [ file => FILE_NAME ] )
 
 Create a new configuration object. If file is specified will attempt to read from FILE_NAME otherwise reads from $IRStats::Configuration::FILE.
 
@@ -71,19 +77,28 @@ Create a new configuration object. If file is specified will attempt to read fro
 
 sub new
 {
-	my ($class, %self) = @_;
+	my ($class, $session, %self) = @_;
 
-	my $conf_file = $self{file} || $FILE;
+	%self = (%DEFAULTS, %self);
+
+
+	my $conf_file = $session->get_eprints_session->get_repository->get_conf('archiveroot') . '/cfg/irstats.conf';
 
 	open my $fh, $conf_file or
 		die "Couldn't open $conf_file: $!\n";
+
+	#BAD , THIS LINE SHOULD NOT BE NEEDED, BUT IT IS SINCE SOMETHING SETS THE RS TO undef.
+	local $/ = "\n";
 
 	my $lineno = 0;
 	while (defined(my $config_line = <$fh>))
 	{
 		$lineno++;
 		chomp $config_line;
-		next if $config_line =~ /^\s*(?:#|$)/s;
+		$config_line =~ s/^\s+//;
+		next if length($config_line) == 0;
+		next if $config_line =~ /^#/;
+#		next if $config_line =~ /^\s*(?:#|$)/s;
 
 		my( $variable, $value ) = split(/\s*=\s*/,$config_line,2);
 
@@ -96,6 +111,28 @@ sub new
 
 		$self{$variable} = scalar(@values) > 1 ? \@values : $value;
 	}
+
+#Override values from configuration with values from EPrints configuration - use the same database :)
+
+	$self{database_server} = $session->get_eprints_session->get_repository->get_conf('dbhost');
+	$self{database_name} = $session->get_eprints_session->get_repository->get_conf('dbname');
+	$self{database_user} = $session->get_eprints_session->get_repository->get_conf('dbuser');
+	$self{database_password} = $session->get_eprints_session->get_repository->get_conf('dbpass');
+	$self{repository_type} = 'eprints3';
+	$self{repository} = $session->get_eprints_session->get_repository->get_id;
+
+	$self{root} = $session->get_eprints_session->get_repository->get_conf('archiveroot') . '/var/irstats';
+	$self{cache_path} = $session->get_eprints_session->get_repository->get_conf('archiveroot') . '/var/irstats/cache';
+	$self{static_path} = $session->get_eprints_session->get_repository->get_conf('archiveroot') . '/cfg/static/irstats';
+	$self{view_path} = $session->get_eprints_session->get_repository->get_conf('base_path') . '/perl_lib/IRStats/View/';
+	$self{data_path} = $session->get_eprints_session->get_repository->get_conf('archiveroot') . '/var/irstats/data';
+	$self{static_url} = '/irstats';
+
+	$self{dns_cache_file} = $session->get_eprints_session->get_repository->get_conf('archiveroot') . '/var/irstats/cache/dns_cache';
+	$self{repeats_filter_file} = $session->get_eprints_session->get_repository->get_conf('archiveroot') . '/var/irstats/cache/repeatscache';
+
+	$self{repository_url} = $session->get_eprints_session->get_repository->get_conf('base_url');
+
 
 	close($fh);
 

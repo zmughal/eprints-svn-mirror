@@ -64,20 +64,19 @@ sub body
 		{
 			die "$set_member_code is not a member of the $set set. This may be because you entered your query data incorrectly or because $set_member_code has not yet been imported into irstats.";
 		}
-		elsif( not $conf->is_set( $set_views_dashboard ) )
+		if( $conf->is_set( $set_views_dashboard ) )
 		{
-			die "$set has no views configured. You need to add a list of views to the ${set}_dashboard setting in the configuration file.";
+			@set_views = $conf->$set_views_dashboard;
 		}
 		$short_citation = $database->get_citation($set_member_id, $set, 'short');
 		$full_citation = $database->get_citation($set_member_id, $set, 'full');
 		$url = $database->get_url($set_member_id, $set);
-		@set_views = $conf->$set_views_dashboard;
 	}
 
-	my %views = map { $_ => 1 } $session->get_views;
+	my %available = map { $_ => 1 } $session->get_views;
 	foreach my $view (@set_views)
 	{
-		unless( $views{$view} )
+		unless( $available{$view} )
 		{
 			die "$view is not a valid view, check the configuration file setting for ${set}_dashboard";
 		}
@@ -109,13 +108,16 @@ sub body
 	print "<div style='clear: left'></div>\n";
 	print "</div>";
 
-	print "<h2>Download Raw Data For:</h2>\n<table><tr><td>";
-	print '<a href="' . $raw_data_links->[0] . '">One Week</a>';
-	print '</td><td>';
-	print '<a href="' . $raw_data_links->[1] . '">One Month</a>';
-	print '</td><td>';
-	print '<a href="' . $raw_data_links->[2] . '">One Year</a>';
-	print '</td></table>';
+	if( $available{RawDataTableCSV} )
+	{
+		print "<h2>Download Raw Data For:</h2>\n<table><tr><td>";
+		print '<a href="' . $raw_data_links->[0] . '">One Week</a>';
+		print '</td><td>';
+		print '<a href="' . $raw_data_links->[1] . '">One Month</a>';
+		print '</td><td>';
+		print '<a href="' . $raw_data_links->[2] . '">One Year</a>';
+		print '</td></table>';
+	}
 }
 
 sub view

@@ -17,7 +17,6 @@ use vars qw( @ISA $AUTOLOAD );
 sub new
 {
 	my( $class, %self ) = @_;
-	$self{destination_table} = $self{session}->get_conf->database_main_stats_table;
 	bless \%self, $class;
 }
 
@@ -33,7 +32,7 @@ sub AUTOLOAD
 		my $conf = $self->{session}->get_conf;
 		my $address = $r->address;
 		my $from = utime_to_date($r->start_utime);
-		my $to = utime_to_date($r->end_utime);
+		my $to = utime_to_date($r->end_utime + 86400);
 		$self->{session}->log("Removing session for $address ($from-$to)",2);
 
 # We need the requester_host and not the address
@@ -41,7 +40,7 @@ sub AUTOLOAD
 			$conf->get_value('database_column_table_prefix') . 'requester_host',
 			$address
 		);
-		$database->do("DELETE FROM `".$self->{destination_table}."` WHERE `requester_host`=? AND `datestamp` BETWEEN ? AND ? + INTERVAL 1 DAY",{},$requester_host,$from,$to);
+		$database->remove_session( $requester_host, $from, $to );
 	}
 	return $r;
 }

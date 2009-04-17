@@ -1,7 +1,6 @@
 package IRStats::Visualisation::Graph::GraphLegend;
 
 use strict;
-use warnings;
 
 sub new
 {

@@ -7,7 +7,6 @@ use IRStats::DatabaseInterface;
 use IRStats::Cache;
 use IRStats::Visualisation::HTML;
 use IRStats::View;
-use perlchartdir;
 use Data::Dumper;
 
 our @ISA = qw/ IRStats::View /;

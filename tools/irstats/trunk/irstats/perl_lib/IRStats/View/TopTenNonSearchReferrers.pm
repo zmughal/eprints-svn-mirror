@@ -60,7 +60,17 @@ sub populate
 
 	while ( my @row = $query->fetchrow_array() )
 	{
-		push @{$rows}, ['<a href="'.$row[0].'">'.abbr_url($row[0]).'</a>' , $row[1]] if ($row[0]);
+		if( !$row[0] )
+		{
+		}
+		elsif( $row[0] =~ /^https?:/ )
+		{
+			push @{$rows}, ['<a href="'.$row[0].'">'.abbr_url($row[0]).'</a>' , $row[1]];
+		}
+		else
+		{
+			push @{$rows}, [@row[0..1]];
+		}
 	}
 	$query->finish(); 
 

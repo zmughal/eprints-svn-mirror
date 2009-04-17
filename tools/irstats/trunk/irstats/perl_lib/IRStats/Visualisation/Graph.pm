@@ -4,9 +4,14 @@ use strict;
 use warnings;
 
 use IRStats::Visualisation;
-use perlchartdir;
 use List::Util 'shuffle';
 use Data::Dumper;
+
+BEGIN
+{
+	eval "use perlchartdir";
+	$IRStats::Visualisation::Graph::CHART_DIRECTOR = $@ ? 0 : 1;
+}
 
 our @ISA = qw/ IRStats::Visualisation /;
 
@@ -31,6 +36,9 @@ sub new
 	my $conf = $self->{params}->get('conf');
 	$self->set('colours', $self->initialise_colours());
 	$self->set('path', $conf->get_path('static_path') . '/graphs/' );
+	my $repository_name = $conf->repository;
+	$repository_name =~ s/\W/_/g;
+	$self->{'filename'} = $repository_name . "_" . $self->{'filename'};
 	$self->set('url_relative', $conf->static_url . '/graphs/' . $self->{'filename'});
 
 	return $self;
@@ -59,10 +67,18 @@ sub initialise_colours
 	return $colours;
 }
 
+sub render
+{
+	my( $self ) = @_;
 
-
-
-
+	if( $IRStats::Visualisation::Graph::CHART_DIRECTOR )
+	{
+		return $self->chartdirector_render;
+	}
+	else
+	{
+		return $self->plotkit_render;
+	}
+}
 
 1;
-

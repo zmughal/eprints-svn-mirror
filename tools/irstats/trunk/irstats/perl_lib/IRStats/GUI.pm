@@ -5,8 +5,10 @@ use strict;
 sub handler
 {
 	my( $r ) = @_;
-
-	my $session = IRStats->new( request => $r );
+	my $eprints_session = EPrints::Session->new();
+	my $session = IRStats->new(
+		eprints_session => $eprints_session, request => $r
+	);
 
 	my %self = (
 		session => $session,
@@ -24,6 +26,8 @@ sub handler
 	{
 		Carp::confess "No such page [$page]: $@\n";
 	}
+
+	binmode(STDOUT,":utf8");
 
 	my $self = bless \%self, $class;
 	$self->generate;

@@ -1,8 +1,8 @@
-package IRStats::CLI::extract_metadata_from_archive;
+package IRStats::CLI::update_metadata;
 
 =head1 NAME
 
-IRStats::CLI::extract_metadata_from_archive - extract metadata from an eprints 2 archive
+IRStats::CLI::extract_metadata_from_archive - extract metadata from an eprints 3 archive
 
 =cut
 
@@ -10,7 +10,7 @@ our @ISA = qw( IRStats::CLI );
 
 # Iterate over fields in a dataset
 
-use EPrints::Session;
+use EPrints;
 use Data::Dumper;
 
 use strict;
@@ -20,9 +20,6 @@ sub execute
 {
 	my( $self ) = @_;
 
-	eval "use EPrints";
-	$self->{eprints_version} = $@ ? 2 : 3;
-
 	my $session = $self->{session};
 
 	my $conf = $session->get_conf;
@@ -30,40 +27,33 @@ sub execute
 
 	my $repository = $conf->repository;
 
-	# Start session
-	my $eprints = new EPrints::Session( 1, $repository );
-	die "Unable to connect to $repository" unless( defined $eprints );
-
 	my $data = {};
 	my $phrases = {};
-	$self->populate($data, $phrases, $eprints);
-	$eprints->terminate();
-	$self->write_to_files($data, $phrases);
+	$self->populate($data, $phrases);
+
+	$database->check_tables;
+
+	$self->write_to_database($data);
+	$self->write_phrases( $phrases );
 }
 
 sub populate
 {
-	my ($self, $data, $phrases, $session) = @_;
+	my ($self, $data, $phrases) = @_;
 
-	my $s = $self->{session};
+	my $eprints_session = $self->{session}->get_eprints_session;
+	my $session = $self->{session};
 
-	my $conf = $s->get_conf;
+	my $conf = $session->get_conf;
 
-	$s->log("Reading eprint ids");
+	$session->log("Reading eprint ids");
 
 	my @eprintIDs;
 	# get a list of all the eprints in the repository
-	for(qw( archive buffer inbox deletion ))
-	{
-		my $dataset = $session->get_archive->get_dataset( $_ );
-		push @eprintIDs, @{$dataset->get_item_ids( $session )};
-	}
+	my $dataset = $eprints_session->get_archive->get_dataset( 'eprint' );
+	push @eprintIDs, @{$dataset->get_item_ids( $eprints_session )};
 
-#	splice @eprintIDs, 100;
-
-	$s->log("Reading eprint citations and groups");
-
-	my $dataset = $session->get_archive->get_dataset( 'archive' );
+	$session->log("Reading eprint citations and groups");
 
 	my %field_sets; # the sets to export
 	my %field_ids; # the id to use if we need to hide the code
@@ -75,16 +65,18 @@ sub populate
 		}
 		my $field = $field_sets{$field_name} = $dataset->get_field( $field_name );
 		$field_ids{$field_name} = 0;
-		$phrases->{"set_$field_name"} = EPrints::XML::to_string($field->render_name($session),"utf-8");
-		$s->log("Adding field '".$phrases->{"set_$field_name"}."' as set");
+		$phrases->{"set_$field_name"} = EPrints::XML::to_string($field->render_name($eprints_session),"utf-8");
+		$session->log("Adding field '".$phrases->{"set_$field_name"}."' as set");
 	}
 
 	my $i = 0;
 	foreach my $eprintID (@eprintIDs)
 	{
-		print STDERR "[".$i++."/".@eprintIDs."]\r" if $s->verbose > 1;
+		print STDERR "[".$i++."/".@eprintIDs."]\r" if $session->verbose > 1;
+#		last if $i > 200; $i++;
 
-		my $eprint = $dataset->get_object( $session, $eprintID );
+
+		my $eprint = $dataset->get_object( $eprints_session, $eprintID );
 		next if( !defined $eprint );
 		$data->{eprint}->{$eprintID} = {
 			full_citation => EPrints::XML::to_string( $eprint->render_citation_link(), "utf-8" ),
@@ -133,7 +125,7 @@ sub populate
 				my $code = $codes->[$i];
 				if( not defined $code )
 				{
-					$s->log( "Warning! Ignoring set member due to missing code for '$value' (offset $i) in eprint $eprintID while processing $field_name set.", 2 );
+					$session->log( "Warning! Ignoring set member due to missing code for '$value' (offset $i) in eprint $eprintID while processing $field_name set.", 2 );
 					next;
 				}
 				# eprints-2 style identity (e.g. email address)
@@ -144,11 +136,11 @@ sub populate
 				# The code is complex, so lets render it to get the 'code'
 				elsif( ref($code) eq 'HASH' )
 				{
-					$code = EPrints::XML::to_string( $code_field->render_value( $session, $multiple ? [$code] : $value ));
+					$code = EPrints::XML::to_string( $code_field->render_value( $eprints_session, $multiple ? [$code] : $value ));
 				}
 				if( not exists $data->{$field_name}->{$code} )
 				{
-					my $full_citation = EPrints::XML::to_string( $field->render_value( $session, $multiple ? [$value] : $value ), "utf-8");
+					my $full_citation = EPrints::XML::to_string( $field->render_value( $eprints_session, $multiple ? [$value] : $value ), "utf-8");
 					my $short_citation = ref($value) eq 'HASH' ?
 						$full_citation :
 						uc($value);
@@ -172,57 +164,70 @@ sub populate
 	}
 }
 
-sub write_to_files
+
+sub write_phrases
 {
-	my ($self, $data, $phrases) = @_;
+	my( $self, $phrases ) = @_;
 ##Now write to the database
 
 	my $session = $self->{session};
+
 	my $conf = $session->get_conf;
+	my $database = $session->get_database;
 
-	$session->log("Writing IRStats import files");
+	$session->log("IMPORTING PHRASES");
 
-	my %files = (
-		full_citation => 'set_member_full_citations_file',
-		short_citation => 'set_member_short_citations_file',
-		membership => 'set_membership_file',
-		code => 'set_member_codes_file',
-		url => 'set_member_urls_file',
-		phrases => 'set_phrases_file',
-	);
+	my $table_name = $conf->database_table_prefix . "phrases";
 
-	foreach my $id (keys %files)
+	while(my($id,$phrase) = each %$phrases)
 	{
-		my $file = $files{$id};
-		my $filename = $conf->get_path($file);
-		open my $fh, ">", $filename or die "Error writing to $filename: $!";
-		$files{$id} = $fh;
+		$database->do("DELETE FROM $table_name WHERE phrase_id=?", $id);
+		$database->insert_row( $table_name, {
+			phrase_id => $id,
+			phrase => $phrase,
+		});
 	}
+}
 
-	while(my( $name, $phrase ) = each %$phrases)
-	{
-		$phrase =~ s/[\r\n]+//g;
-		print {$files{phrases}} "$name\t$phrase\n";
-	}
+sub write_to_database
+{
+	my( $self, $data ) = @_;
+##Now write to the database
+
+	my $session = $self->{session};
+
+	my $conf = $session->get_conf;
+	my $database = $session->get_database;
+
+	$session->log("IMPORTING GROUPS: " . join(', ',keys %{$data}));
 
 	while(my( $set_id, $dataset ) = each %$data)
 	{
 		$session->log("--$set_id--");
-		my $i = 0;
-		while(my( $key, $datamember ) = each %$dataset)
+
+		my $table = $conf->database_set_table_prefix . $set_id;
+		my $citation_table = $conf->database_set_table_prefix . $set_id . $conf->database_set_table_citation_suffix;
+		my $code_table = $conf->database_set_table_prefix . $set_id .  $conf->database_set_table_code_suffix;
+
+		my $new_table = $table . "_new";
+		my $new_citation_table = $citation_table . "_new";
+		my $new_code_table = $code_table . "_new";
+
+		$database->check_set_table( $set_id );
+		$database->drop_tables( $new_table, $new_citation_table, $new_code_table );
+		$database->check_set_table( $set_id, "_new" );
+
+		my $i = 0; #internal ID
+
+		while(my( $set_member_id, $datamember ) = each %$dataset)
 		{
-			next unless defined $datamember->{'code'}; #don't write corrupt data
 			$i++;
 
-			my $code = "ERROR - $i";
+			my $code = "ERROR";
 			my $short_citation = "Missing Short Citation";
 			my $full_citation = "Missing Full Citation";
 			my $url = "";
-			my $id = $i;
-			my $eprint_ids = [];
-			
-			#keep the eprint id, make the others numeric
-			
+
 			if( defined $datamember->{'code'} )
 			{
 				$code = $datamember->{'code'};
@@ -239,30 +244,39 @@ sub write_to_files
 			{
 				$url = $datamember->{'url'};
 			}
-			if( $set_id eq 'eprint' )
-			{
-				$id = $code;
+			#Make sure we remove duplicate ID numbers
+			my %seen = ();
+			foreach my $item (@{$datamember->{'eprint_ids'}}) {
+				    $seen{$item}++;
 			}
-			if( defined $datamember->{'eprint_ids'} )
+			$set_member_id = $i unless ($set_id eq 'eprint'); #swap to numeric ID unless it's an eprint
+
+			foreach (keys %seen)
 			{
-				$eprint_ids = $datamember->{'eprint_ids'};
+				$database->insert_row($new_table, {
+					set_member_id => $set_member_id,
+					eprint_id => $_
+				});
 			}
+			$database->insert_row($new_citation_table, {
+				set_member_id => $set_member_id,
+				short_citation => $short_citation,
+				full_citation => $full_citation,
+				url => $url
+			});
+			$database->insert_row($new_code_table, {
+				set_member_id => $set_member_id,
+				set_member_code => $code
+			});
 
-			#make sure the citations don't have line breaks in them.....
-			$full_citation =~ s/[\n\r]/ /g;
-			$short_citation =~ s/[\n\r]/ /g;
-
-			print { $files{full_citation} } $set_id, "\t", $id, "\t", $full_citation, "\n";
-			print { $files{short_citation} } $set_id, "\t", $id, "\t", $short_citation, "\n";
-			print { $files{membership} } $set_id, "\t", $id, "\t", join(',',@{$eprint_ids}), "\n";
-			print { $files{code} } $set_id, "\t", $id, "\t", $code, "\n";
-			print { $files{url} } $set_id, "\t", $id, "\t", $url, "\n";
 		}
-	}
 
-	foreach(values %files)
-	{
-		close($_);
+		for($table, $citation_table, $code_table)
+		{
+			$database->drop_tables( $_."_old" ); # interupted previous run
+			$database->rename_tables( $_ => $_."_old", $_."_new" => $_ );
+			$database->drop_tables( $_."_old" );
+		}
 	}
 }
 

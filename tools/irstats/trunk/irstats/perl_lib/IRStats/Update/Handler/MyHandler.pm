@@ -22,6 +22,8 @@ sub new
 	return bless \%self, $class;
 }
 
+sub AUTOLOAD {}
+
 sub abstract
 {
 	my( $self, $hit ) = @_;
@@ -54,20 +56,23 @@ sub hit
 	} else {
 		$referrer = $conf->get_value('referrer_scope_no_referrer');
 	}
-	my $requester_inst = $hit->institution;
+#	my $requester_inst = $hit->organisation;
 #	my $requester_host = $hit->hostname ? $hit->hostname : $hit->address; #handled by convert_ip_to_host.pl for performance
 	my $requester_host = $hit->address;
 
 	my $referrer_url = $hit->referrer;
 
+	my $datetime = $hit->datetime;
+	my $date = substr($datetime, 0, 8);
+
 	my $hit_arr = {
 			'accessid' => $hit->accessid,
-			'datestamp' => $hit->datetime,
+			'datestamp' => $date,
 			'eprint' => $hit->eprint,
 			'fulltext' => $hit->fulltext,
-			'requester_organisation' => $requester_inst,
+			'requester_organisation' => undef,
 			'requester_host' => $requester_host,
-			'requester_country' => $hit->country,
+			'requester_country' => '', #$hit->country,
 			'referrer_scope' => $referrer,
 			'search_engine' => $hit->searchengine,
 			'search_terms' => $hit->searchterms,

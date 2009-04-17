@@ -1,5 +1,5 @@
-IRStats Installation Notes
---------------------------
+IRStats
+-------
 
 IRStats is a Web log analysis tool aimed at Institutional Repositories.
 
@@ -16,16 +16,15 @@ Features:
 Requirements:
 
  - awstats
- - MySQL
- - Maxmind Organisation Database (www.maxmind.com) *
+ - Geo::IP perl library
+ - Date::Calc perl library
+ - Logfile::EPrints perl library
  - ChartDirector (www.advsofteng.com) *
-
- * These are commercial products.
-
+ 
+ * Commercial products.
 
 Installation
 ------------
-
 
 Install the following modules from CPAN:
 
@@ -40,94 +39,45 @@ Install the following modules from CPAN:
 
 CPAN may require configuring and/or install further dependencies.
 
-
-Unpack the IRStats tarball to a convenient location (e.g. /opt/irstats).
+Unpack the IRStats tarball to a convenient location (e.g. /tmp).
 
  $ tar xzf irstats-*.tar.gz
- $ mv irstats /opt
- $ cd /opt/irstats
 
-Make the cache directories globally writable:
+Configure irstats.cgi to reflect your local pathing
 
- $ chmod a+w var/cache/irstats/stats htdocs/graphs
+The following lines need to be changed.
+Line 1: 
+	#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+Line 11:
+	use lib "/opt/eprints/perl_lib/ChartDirector";
 
-If using eprints you will need to make the data/ directory writable by the eprints user:
+Change the paths to those of your perl and eprints installs (e.g. on debian systems eprints may be contained in the /usr/share directory)
 
- $ chmod a+w data
+Line 8:
+	use lib "/usr/local/awstats/wwwroot/cgi-bin/lib";
 
+This library path also needs to be change to that of your awstats lib directory (on linux - 'locate awstats | grep lib' will help)
 
-IRStats requires a number of Perl modules (including its own) that need to be added to the Perl library path. To do this edit the IRStats script:
+Installing IRStats into EPrints Path
+------------------------------------
+Copy the contents of the perl_lib directory into the  eprints3/perl_lib directory
 
- $ gedit cgi/irstats.cgi
+Copy the contents of the cgi directory into the eprints3/cgi directory
 
-And modify the paths to reflect your system installation.
+Copy local_cfg/irstats.cfg to each repository's cfg directory
 
-You should now be able to execute the irstats script (will show the command line help):
+Copy the local_cfg/static/irstats directory and contents into each repository's cfg/static directory
 
- $ . cgi/irstats.cgi --help
+Initilising IRStats
+-------------------
+As eprints, run (for each repository)
 
+  $ eprints3/cgi/irstats.cgi <repositoryid> setup
+  $ eprints3/cgi/irstats.cgi <repositoryid> update_metadata (cron this to run nightly)
+  $ eprints3/cgi/irstats.cgi <repositoryid> update_table (cron this to run nightly too)
 
-You need to configure IRStats using its configuration file:
+DONE
+----
 
- $ gedit etc/irstats.conf
-
-The default configuration file contains some explanation of the available options.
-
-
-Configuring the web server:
-
-Add cgi/ to your Apache configuration as a CGI directory:
-
-ScriptAlias /irstats/cgi/ /opt/irstats/cgi/
-<Directory /opt/irstats/cgi>
-AllowOverride None
-Options None
-Order allow,deny
-Allow from all
-</Directory>
-
-OR for mod_perl:
-
-PerlRequire /opt/irstats/cgi/irstats.cgi
-<Location /irstats>
-SetHandler perl-script
-PerlSetVar IRStats_Config_File /opt/irstats/etc/irstats.conf
-PerlHandler IRStats::GUI
-</Location>
-
-The IRStats_Config_File allows you to use a single CGI script for multiple installations because the IRStats_Config_File option will override the default configuration file location set in irstats.cgi.
-
-Add htdocs/ to your Apache configuration as a static directory:
-
-Alias /irstats/ /opt/irstats/htdocs/
-<Directory /opt/irstats/htdocs>
-AllowOverride None
-Options Indexes FollowSymLinks
-Order allow,deny
-Allow from all
-</Directory>
-
-
-Running IRStats
----------------
-
-For eprints 2 + accesslog do:
-
- # Build the CSV data files for your repository
- sudo su -c './cgi/irstats.cgi extract_metadata_from_archive' eprints
- # Import the CSV files into IRStats
- . /cgi/irstats.cgi import_metadata
- # Update the access log table
- . /cgi/irstats.cgi update_table
- # Lookup IP addresses (required for the TopTenAcademic view)
- . /cgi/irstats.cgi convert_ip_to_host
-
-Add '--verbose --verbose' to the arguments to get feedback on what IRStats is doing. Before running convert_ip_to_host you may want to check with your network administrator - it performs 5 simultaneous DNS lookups.
-
-
-Once you have imported your meta and access log data into IRStats you can access the generic interface by pointing your Web browser at the IRStats script.
-
-IRStats caches results. To clear the cache files (hence force the stats to be recalculated) do:
-
- $ rm -f var/cache/irstats/stats/* htdocs/graphs/*
+The interface will be available at <repositoryurl>/cgi/irstats.cgi
 

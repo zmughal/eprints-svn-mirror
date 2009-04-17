@@ -62,6 +62,11 @@ sub populate
 	}
 	$query->finish(); 
 
+	for(@$rows)
+	{
+		$_->[0] = 'Unknown' if not defined $_->[0] or $_->[0] eq '';
+	}
+
 	$self->{'visualisation'}->set('rows',$rows);
 
 	##write to cache

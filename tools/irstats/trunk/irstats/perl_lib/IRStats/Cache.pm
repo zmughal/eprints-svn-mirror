@@ -8,7 +8,9 @@ use warnings;
 sub new
 {
 	my ($class, $params) = @_;
-	return bless { filename => $params->{conf}->get_path('cache_path') . "/" . $params->get('id') }, $class;
+	my $repository_name = $params->{conf}->repository;
+	$repository_name =~ s/\W/_/g;
+	return bless { filename => $params->{conf}->get_path('cache_path') . "/" . $repository_name . "_" . $params->get('id') }, $class;
 }
 
 sub cleanup

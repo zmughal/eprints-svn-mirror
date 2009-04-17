@@ -29,7 +29,7 @@ sub execute
 	my $main_table = $conf->database_main_stats_table;
 	my $hosts_table = $conf->database_column_table_prefix . 'requester_host';
 
-	$self->check_table( $hosts_table );
+	$database->check_requester_host_table;
 
 	tie my %dns_cache, 'DB_File', $dns_cache_file
 		or die "Error opening DNS cache file $dns_cache_file: $!";
@@ -79,7 +79,7 @@ sub execute
 
 	$session->log("Finding all values to lookup");
 
-	my $query = $database->do_sql("SELECT `id`,`value` FROM $hosts_table WHERE `ip` IS NULL");
+	my $query = $database->do_sql("SELECT id,value FROM $hosts_table WHERE ip IS NULL");
 	my $i = 0;
 	while(1)
 	{
@@ -146,33 +146,6 @@ sub execute
 #	unlink($dns_cache_file); # Keep the cache for now
 }
 
-=item $cli->check_table( TABLE_NAME )
-
-Check the hosts table has a hostname column.
-
-=cut
-
-sub check_table
-{
-	my( $self, $table ) = @_;
-
-	my $database = $self->{session}->get_database;
-
-	my $sth = $database->prepare( "DESCRIBE `$table`" );
-	$database->execute( $sth );
-
-	while(defined(my $row = $sth->fetch))
-	{
-		if( $row->[$sth->{NAME_lc_hash}->{field}] eq 'ip' )
-		{
-			$sth->finish;
-			return 1;
-		}
-	}
-
-	$database->do( "ALTER TABLE `$table` ADD `ip` CHAR(255), ADD KEY(`ip`,`id`)" );
-}
-
 sub lookup_host
 {
 	return gethostbyaddr(inet_aton($_[0]), AF_INET);
@@ -213,8 +186,7 @@ sub get_existing_match
 {
 	my( $self, $table, $ip ) = @_;
 
-	my $sth = $self->{session}->get_database->prepare( "SELECT `id`,`value` FROM `$table` WHERE `ip`=?" );
-	$sth->execute( $ip );
+	my $sth = $self->{session}->get_database->do_sql( "SELECT id,value FROM $table WHERE ip=?", $ip );
 	my $row = $sth->fetch or return ();
 	return @$row;
 }
@@ -235,6 +207,8 @@ sub replace_ip
 		if( $host eq $ip )
 		{
 			$session->log( "No host for $ip", 3 );
+			# We must change the existing IP, otherwise we'll never check this IP again (because column lookups will just match the existing entries)
+			$host = "?$ip";
 		}
 		else
 		{
@@ -245,13 +219,13 @@ sub replace_ip
 		if( defined $oldid and $host eq $oldhost )
 		{
 			my $main_table = $session->get_conf->irstats_main_stats_table;
-			$database->do("UPDATE `$main_table` SET `requester_host`=$oldid WHERE `requester_host`=$id");
-			$database->do("DELETE FROM `$table` WHERE `id`=$id");
+			$database->do("UPDATE $main_table SET requester_host=$oldid WHERE requester_host=$id");
+			$database->do("DELETE FROM $table WHERE id=$id");
 		}
 		# Got a different hostname or this is a new entry
 		else
 		{
-			$database->do("UPDATE `$table` SET `value`=?,`ip`=? WHERE `value`=? AND `ip` IS NULL",{},$host,$ip,$ip);
+			$database->do("UPDATE $table SET value=?,ip=? WHERE value=? AND ip IS NULL",$host,$ip,$ip);
 		}
 	}
 }
@@ -273,6 +247,7 @@ sub next_ip
 			$self->{session}->log( "Finished reading from database" );
 			return ();
 		}
+		$ip =~ s/\s+$//g;
 	}
 	while(
 			$ip !~ /^(?:[0-9]+\.){3}[0-9]+$/ # not an ip address

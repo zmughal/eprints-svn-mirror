@@ -67,7 +67,7 @@ sub populate
 	my $author_totals;
 	foreach my $eprint_id ( keys %{$eprint_totals} )
 	{
-		my $authors = $self->{'database'}->get_membership($eprint_id, 'author');
+		my $authors = $self->{'database'}->get_membership($eprint_id, 'creators_name');
 		foreach my $author (@{$authors})
 		{
 			$author_totals->{$author} += ($eprint_totals->{$eprint_id} / scalar @{$authors});
@@ -77,7 +77,7 @@ sub populate
 	foreach my $author (reverse sort { $author_totals->{$a} <=> $author_totals->{$b} } keys %{$author_totals})
 	{
 		push @{$rows}, [
-			$self->{'database'}->get_citation($author, 'author'),
+			$self->{'database'}->get_citation($author, 'creators_name'),
 			sprintf("%.0f",$author_totals->{$author})
 		];
 		$i ++;

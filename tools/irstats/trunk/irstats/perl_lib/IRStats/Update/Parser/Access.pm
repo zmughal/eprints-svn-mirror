@@ -77,6 +77,9 @@ sub update
 			$hit{agent} = $hit{requester_user_agent};
 			# e.g. info:oai:generic.eprints.org:48
 			$hit{referent_id} =~ s/^.*://;
+			$hit{referring_entity_id} =~ s/^info:.*://
+				if defined $hit{referring_entity_id};
+
 			$hit{identifier} = $hit{eprint} = $hit{referent_id};
 
 			$hit{referrer} = $hit{referring_entity_id};

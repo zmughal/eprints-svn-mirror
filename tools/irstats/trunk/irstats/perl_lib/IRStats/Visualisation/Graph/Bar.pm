@@ -1,12 +1,9 @@
 package IRStats::Visualisation::Graph::Bar;
 
 use strict;
-use warnings;
 
 use IRStats::Visualisation::Graph::GraphLegend;
 use IRStats::Visualisation::Graph;
-use perlchartdir;
-use Data::Dumper;
 
 our @ISA = qw(IRStats::Visualisation::Graph);
 
@@ -17,9 +14,107 @@ sub new
 	return $self;
 }
 
-sub render
+sub quote_javascript
+{
+	my( $value ) = @_;
+	$value =~ s/'/\\'/g;
+	return "'$value'";
+}
+
+sub plotkit_render
 {
 	my ($self) = @_;
+
+	my $base_url = $self->{params}->get('conf')->static_url;
+
+	my $width = 490;
+	my $height = 290;
+
+	# Quick hack to get a unique id
+	my $canvas_id = $self->{filename};
+	$canvas_id =~ s/\.png$//;
+
+	my @x_labels = @{$self->{x_labels}};
+	my @data = @{$self->{data_series}->[0]->{data}};
+	my $label = quote_javascript($self->{data_series}->[0]->{citation} || '(null)');
+
+	my @series;
+	my @labels;
+
+	my $tick_every = int(scalar(@x_labels)/10);
+
+	for(my $i = 0; $i < @x_labels; $i++)
+	{
+		push @series, "[".$i.",".$data[$i]."]";
+		push @labels, "{v:".$i.", label:".quote_javascript($x_labels[$i])."}" if ($i % $tick_every) == 0;
+	}
+
+	my $data_array = join(',', @series);
+	my $labels_array = join(',', @labels);
+
+	my $html = <<EOH;
+<script type="text/javascript" src="$base_url/mochikit/MochiKit.js"></script>
+<script type="text/javascript" src="$base_url/plotkit/Base.js"></script>
+<script type="text/javascript" src="$base_url/plotkit/Layout.js"></script>
+<script type="text/javascript" src="$base_url/plotkit/Canvas.js"></script>
+<script type="text/javascript" src="$base_url/plotkit/SweetCanvas.js"></script>
+<div class='bar_graph'>
+<div><canvas id='$canvas_id' width='$width' height='$height'></canvas></div><br />
+</div>
+EOH
+
+	my $options = <<EOH;
+	'yTickPrecision': 0,
+//	'xNumberOfTicks': 10, // Doesn't appear to do anything
+	'axisLabelColor': Color.blackColor(),
+	'xTicks': [$labels_array]
+EOH
+
+	# Approximately!
+	if( scalar(@series)*2 > $width )
+	{
+		$html .= <<EOH;
+<script type="text/javascript">
+var options = {
+	$options,
+	'barWidthFillFraction': 2,
+	'shouldStroke': false,
+	'shouldFill': true
+};
+var layout = new PlotKit.Layout('bar',options);
+	layout.addDataset($label,[$data_array]);
+	layout.evaluate();
+var canvas = MochiKit.DOM.getElement('$canvas_id');
+var plotter = new PlotKit.CanvasRenderer(canvas,layout,options);
+
+plotter.render();
+</script>
+EOH
+	}
+	else
+	{
+		$html .= <<EOH;
+<script type="text/javascript">
+var options = {
+	$options
+};
+var layout = new PlotKit.Layout('bar',options);
+	layout.addDataset($label,[$data_array]);
+	layout.evaluate();
+var canvas = MochiKit.DOM.getElement('$canvas_id');
+var plotter = new PlotKit.SweetCanvasRenderer(canvas,layout,options);
+
+plotter.render();
+</script>
+EOH
+	}
+
+	return $html;
+}
+
+sub chartdirector_render
+{
+	my( $self ) = @_;
 
 	my $c = new XYChart(500, 300, 0xeeeeff, 0x000000, 1);
 	$c->setRoundedFrame();

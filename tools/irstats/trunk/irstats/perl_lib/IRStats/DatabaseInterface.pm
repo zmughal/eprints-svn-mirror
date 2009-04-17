@@ -3,11 +3,12 @@ package IRStats::DatabaseInterface;
 use strict;
 
 use DBI;
-use Data::Dumper;
 
 =head1 NAME
 
 IRStats::DatabaseInterface - Interface to the IRstats database
+
+=head1 DESCRIPTION
 
 =head1 METHODS
 
@@ -27,32 +28,61 @@ sub new
 	Carp::croak "Requires session argument" unless $self{session};
 	my $conf = $self{conf} = $self{session}->get_conf;
 
-	my $driver   = $conf->database_driver;
-	my $server   = $conf->get_value('database_server');
-	my $database = $conf->get_value('database_name');
-	my $url      = "DBI:$driver:$database:$server";
-	my $user     = $conf->get_value('database_user');
-	my $password = $conf->get_value('database_password');
-	my $source_table = $conf->get_value('database_main_stats_table');
-	my $dbh = DBI->connect( $url, $user, $password ) or Carp::confess "Could not connect to database $url!\n";
-	my $id_columns =  $conf->get_value('database_id_columns');
+	my $self = bless \%self, $class;
 
-	@self{qw(
+	my $dsn          = $self->dsn;
+	my $user         = $conf->get_value('database_user');
+	my $password     = $conf->get_value('database_password');
+	my $database     = DBI->connect( $dsn, $user, $password ) or Carp::confess "Could not connect to database $dsn!\n";
+
+	my $main_table = $database->quote_identifier( $conf->get_value('database_main_stats_table') );
+	my $id_column    = { map { $_ => 1 } $conf->database_id_columns };
+
+	@$self{qw(
 		database
-		source_table
-		id_columns
+		main_table
+		id_column
 	)} = (
-		$dbh,
-		$source_table,
-		$id_columns,
+		$database,
+		$main_table,
+		$id_column,
 	);
 
-	my $self = bless \%self, $class;
-	@{$self->{sets}} = $conf->set_ids;
-	unshift @{$self->{sets}}, 'eprint'; # fake set?
+	@{$self->{sets}} = ('eprint',$conf->set_ids);
 
 	return $self;
 }
+
+=item $d->quote( ARGS )
+
+See L<DBI>'s quote.
+
+=item $d->quote_identifier( ARGS )
+
+See L<DBI>'s quote_identifier.
+
+=item $d->quote_date( COLUMN )
+
+Format COLUMN as YYYYMMDD.
+
+=cut
+
+sub quote { shift->{database}->quote( @_ ) }
+sub quote_identifier { shift->{database}->quote_identifier( @_ ) }
+
+=item $d->get_conf
+
+Return the configuration object.
+
+=cut
+
+sub get_conf { $_[0]->{conf} }
+
+=item $d->dsn
+
+The database connection string.
+
+=cut
 
 =item $d->get_max_accessid
 
@@ -63,11 +93,12 @@ Returns the highest accessid currently set, or undef if there are no records.
 sub get_max_accessid
 {
 	my( $self ) = @_;
-	my $table = $self->{conf}->database_main_stats_table;
 
-	my $sql = "SELECT MAX(`accessid`) FROM `$table`";
-	my $query = $self->do_sql($sql);
-	my( $max ) = $query->fetchrow_array;
+	my $sql = "SELECT MAX(".$self->quote_identifier("accessid").") FROM ".$self->{main_table};
+	my $sth = $self->do_sql( $sql );
+
+	my( $max ) = $sth->fetchrow_array;
+
 	return $max;
 }
 
@@ -79,13 +110,14 @@ Returns the id of a code for a given set.
 
 sub get_id
 {
-	my ($self, $code, $set_id) = @_;
-	my $code_table = $self->{conf}->get_value('database_set_table_prefix') . $set_id .  $self->{conf}->get_value('database_set_table_code_suffix');
+	my( $self, $code, $set_id ) = @_;
 
-	my $query = $self->do_sql("SELECT set_member_id FROM $code_table WHERE set_member_code = '$code'");
-	if (not $query->rows()) { return "ERR"; }
+	my $code_table = $self->get_conf->database_set_table_prefix . $set_id . $self->get_conf->database_set_table_code_suffix;
 
-	my $row = $query->fetchrow_arrayref();
+	my $sql = "SELECT ".$self->quote_identifier("set_member_id")." FROM ".$self->quote_identifier($code_table)." WHERE ".$self->quote_identifier("set_member_code")." = ?";
+	my $sth = $self->do_sql($sql, $code);
+
+	my $row = $sth->fetch or return "ERR";
 	return $row->[0];
 }
 
@@ -97,13 +129,14 @@ Returns the code for an ID in a given set.
 
 sub get_code
 {
-	my ($self, $id, $set_id) = @_;
-	my $code_table = $self->{conf}->get_value('database_set_table_prefix') . $set_id .  $self->{conf}->get_value('database_set_table_code_suffix');
+	my( $self, $id, $set_id ) = @_;
 
-	my $query = $self->do_sql("SELECT set_member_code FROM $code_table WHERE set_member_id = $id");
-	if (not $query->rows()) { return "ERR"; }
+	my $code_table = $self->get_conf->database_set_table_prefix . $set_id . $self->get_conf->database_set_table_code_suffix;
 
-	my $row = $query->fetchrow_arrayref();
+	my $sql = "SELECT ".$self->quote_identifier("set_member_code")." FROM ".$self->quote_identifier($code_table)." WHERE ".$self->quote_identifier("set_member_id")." = ?";
+	my $sth = $self->do_sql($sql, $id);
+
+	my $row = $sth->fetch or return "ERR";
 	return $row->[0];
 }
 
@@ -113,15 +146,20 @@ sub get_code
 
 sub get_all_sets_ids_in_class
 {
-	my ($self, $set_class) = @_;
-	my $table = $self->{conf}->get_value('database_set_table_prefix') . $set_class;
-	my $query = $self->do_sql("SELECT DISTINCT set_member_id FROM $table");
-	my $results = [];
-	while (my @row = $query->fetchrow_array() )
+	my( $self, $set_class ) = @_;
+
+	my $table = $self->get_conf->database_set_table_prefix . $set_class;
+
+	my $sql = "SELECT ".$self->quote_identifier("set_member_id")." FROM ".$self->quote_identifier($table)." GROUP BY ".$self->quote_identifier("set_member_id");
+	my $sth = $self->do_sql($sql);
+
+	my @results;
+	while(my $row = $sth->fetch)
 	{
-		push @{$results}, $row[0];
+		push @results, $row->[0];
 	}
-	return $results;
+
+	return \@results;
 }
 
 =item $d->get_membership( ID, SET )
@@ -130,15 +168,20 @@ sub get_all_sets_ids_in_class
 
 sub get_membership
 {
-	my ($self, $id, $set) = @_;
-	my $table = $self->{conf}->get_value('database_set_table_prefix') . $set;
-	my $query = $self->do_sql("SELECT set_member_id FROM $table WHERE eprint_id = $id");
-	my $results = [];
-	while (my @row = $query->fetchrow_array() )
+	my( $self, $id, $set_id ) = @_;
+
+	my $table = $self->get_conf->database_set_table_prefix . $set_id;
+
+	my $sql = "SELECT ".$self->quote_identifier("set_member_id")." FROM ".$self->quote_identifier($table)." WHERE ".$self->quote_identifier("eprint_id")." = ?";
+	my $sth = $self->do_sql($sql, $id);
+
+	my @results;
+	while(my $row = $sth->fetch)
 	{
-		push @{$results}, $row[0];
+		push @results, $row->[0];
 	}
-	return $results;
+
+	return \@results;
 }
 
 =item $d->get_citation( ID, SET [, LENGTH] )
@@ -147,24 +190,24 @@ sub get_membership
 
 sub get_citation
 {
-	my ($self, $id, $set, $length) = @_;
+	my( $self, $id, $set_id, $length ) = @_;
 
-        my $table =  $self->{conf}->get_value('database_set_table_prefix') . $set . $self->{conf}->get_value('database_set_table_citation_suffix');
-	my $citation = 'full_citation';
-	if ( (defined $length) and ($length eq 'short') )
+	my $table = $self->get_conf->database_set_table_prefix . $set_id . $self->get_conf->database_set_table_citation_suffix;
+
+	my $column = (4 == @_ and $_[3] eq 'short') ?
+		'short_citation' :
+		'full_citation';
+
+	my $sql = "SELECT ".$self->quote_identifier($column)." FROM ".$self->quote_identifier($table)." WHERE ".$self->quote_identifier("set_member_id")." = ?";
+	my $sth = $self->do_sql($sql,$id);
+	my ($citation) = $sth->fetchrow_array;
+
+	unless( defined($citation) and $citation =~ /\w/ )
 	{
-		$citation = 'short_citation';
+		$citation = "OOPS: $set_id $id missing $column!";
 	}
 
-       	my $query = $self->do_sql("SELECT `$citation` FROM `$table` WHERE set_member_id = $id");
-        
-	my @row = $query->fetchrow_array();
-	my $citation_text = $row[0];
-	if ($citation_text !~ /[a-zA-Z0-9]/)
-	{
-		$citation_text = "OOPS: $set $id missing citation!";
-	}
-	return $citation_text;
+	return $citation;
 }
 
 =item $d->get_url( ID, SET )
@@ -173,191 +216,177 @@ sub get_citation
 
 sub get_url
 {
-	my ($self, $id, $set) = @_;
-	my $table =  $self->{conf}->get_value('database_set_table_prefix') . $set . $self->{conf}->get_value('database_set_table_citation_suffix');
+	my( $self, $id, $set_id ) = @_;
 
-	my $query = $self->do_sql("SELECT `url` FROM `$table` WHERE set_member_id = $id");
+	my $table = $self->get_conf->database_set_table_prefix . $set_id . $self->get_conf->database_set_table_citation_suffix;
 
-	my @row = $query->fetchrow_array();
-	my $citation_text = $row[0];
-	if ($citation_text !~ /[a-zA-Z0-9]/)
+	my $sql = "SELECT ".$self->quote_identifier("url")." FROM ".$self->quote_identifier($table)." WHERE ".$self->quote_identifier("set_member_id")." = ?";
+	my $sth = $self->do_sql($sql,$id);
+	my ($url) = $sth->fetchrow_array;
+
+	unless( defined($url) and $url =~ /\w/ )
 	{
-		$citation_text = "OOPS: $set $id missing citation!";
+		$url = "OOPS: $set_id $id missing url!";
 	}
-	return $citation_text;
+
+	return $url;
 }
 
-=item $d->get_stats( PARAMS, QUERY_PARAMS [, DEBUG] )
+=item $d->get_stats( PARAMS, QUERY_PARAMS )
+
+takes in a set of params and an arrayref of column names.
+returns a reference to a database object 
+options is a hashref containing
+
+ query params contains
+	columns - an array of column names (perhaps with COUNT as a column name) 
+	where - an array of where hashes
+		where hash - a hash containing a column, an operator and a value
+	order - hash with column name and direction (DESC or ASC)
+	limit - an integer
+	group - a column name to agregate on.
 
 =cut
 
-sub get_stats 
-{
-#takes in a set of params and an arrayref of column names.
-#returns a reference to a database object 
-#options is a hashref containing
-#
-# query params contains
-#	columns - an array of column names (perhaps with COUNT as a column name) 
-#	where - an array of where hashes
-#		where hash - a hash containing a column, an operator and a value
-#	order - hash with column name and direction (DESC or ASC)
-#	limit - an integer
-#	group - a column name to agregate on.
-
-
-	my ($self, $params, $query_params, $debug) = @_;
-
-	my $conf = $self->{session}->get_conf;
-
-	my $sql_query_parts = {
-		columns => [],
-		tables => [],
-		logic => [],
-		etc => []
-	};
-
-	#Columns
-	foreach my $column (@{$query_params->{columns}})
-	{
-		if (uc($column) eq 'COUNT')
-		{
-			push @{$sql_query_parts->{columns}}, 'COUNT(*) AS c';
-		}
-		else
-		{
-			push @{$sql_query_parts->{columns}}, $self->_generate_column_id($column);
-		}
-
-	}
-	#Inner Joins
-	foreach my $set_name (@{$self->{sets}})
-	{
-		if ($params->{'eprints'} =~ /^$set_name/)
-		{
-			my $set_member_code = substr($params->{'eprints'},length($set_name)+1);
-			my $set_table = $conf->database_set_table_prefix . $set_name;
-			my $set_code_table = $conf->database_set_table_prefix . $set_name . $conf->database_set_table_code_suffix;
-			push @{$sql_query_parts->{tables}}, ' INNER JOIN `' . $set_table .  
-			'` ON `' . $self->{source_table} . '`.`eprint` = `' . $set_table  . '`.`eprint_id`' .
-			" INNER JOIN  `".$set_code_table."` ON `".$set_table."`.`set_member_id` = `$set_code_table`.`set_member_id`";
-
-			push @{$sql_query_parts->{where}}, " `$set_code_table`.`set_member_code` = '$set_member_code'"
-		}
-	}
-	foreach my $column (@{$query_params->{columns}})
-	{
-		my $flag;
-		foreach (@{$self->{id_columns}})
-		{
-			if ($_ eq $column)
-			{
-				$flag = 1;
-				last;
-			}
-		}
-		if ($flag)
-		{
-			if (not (uc($column) eq 'COUNT') )
-			{
-				push @{$sql_query_parts->{tables}}, ' LEFT JOIN `' . $self->{conf}->get_value('database_column_table_prefix') . $column . 
-					'` ON `' . $self->{source_table} . '`.`' . $column . '`=`' .
-					$self->{conf}->get_value('database_column_table_prefix') . $column . '`.`id`'  ;
-			}
-		}
-	}
-	#Wheres
-	if ($params->get("eprints") =~ /^[0-9]*$/)
-	{
-		push @{$sql_query_parts->{where}},'`'.$self->{source_table} . '`.`eprint` = ' . $params->get("eprints");
-	}
-	if ($params->get("start_date")->equal_to($params->get("end_date")))
-	{
-		push @{$sql_query_parts->{where}}, '`' . $self->{source_table} . '`.`datestamp` = ' . $params->get("start_date")->render('numerical');
-	}
-	else
-	{
-		push  @{$sql_query_parts->{where}}, '`' . $self->{source_table} . '`.`datestamp` BETWEEN ' . $params->get("start_date")->render('numerical') . ' AND ' . $params->get("end_date")->render('numerical');
-	}
-
-	foreach my $where (@{$query_params->{where}})
-	{
-		if ( uc($where->{column}) eq 'COUNT')
-		{
-			push @{$sql_query_parts->{where}}, 'c' . $where->{operator} . "'" . $where->{value} . "'";
-		}
-		else
-		{
-			push @{$sql_query_parts->{where}}, $self->_generate_column_id($where->{column}) . $where->{operator} . "'" . $where->{value} . "'";
-		}
-	}
-	#group by, order and limit
-	if ( (defined $query_params->{group}) )
-	{
-		if ( uc($query_params->{group}) eq 'COUNT')
-		{
-			push  @{$sql_query_parts->{etc}}, ' GROUP BY c ';
-		}
-		else
-		{
-			push  @{$sql_query_parts->{etc}}, ' GROUP BY `' . $self->{source_table} . '`.`' . $query_params->{group} . '`';
-		}
-	}
-	if ( (defined $query_params->{order}) )
-	{
-		my $r;
-		if ( uc($query_params->{order}->{column}) eq 'COUNT' )
-		{
-			$r = ' ORDER BY c ';
-		}
-		else
-		{
-			$r = ' ORDER BY ' . $self->_generate_column_id( $query_params->{order}->{column} );
-		}
-		if (defined $query_params->{order}->{direction})
-		{
-			$r .= ' ' . $query_params->{order}->{direction};
-		}
-		push @{$sql_query_parts->{etc}}, $r;
-	}
-	if ( (defined $query_params->{limit}) )
-	{
-		push  @{$sql_query_parts->{etc}}, ' LIMIT ' . $query_params->{limit};
-	}
-
-	my $sql = 'SELECT ';
-	$sql .= join(', ',@{$sql_query_parts->{columns}});
-	$sql .= ' FROM `' . $self->{source_table}. '`';
-	$sql .= join(' ',@{$sql_query_parts->{tables}});
-	$sql .= ' WHERE ';
-	$sql .= join(' AND ',@{$sql_query_parts->{where}});
-	$sql .= join(' ',@{$sql_query_parts->{etc}});
-	
-	return $self->do_sql($sql, $debug);
-}
-
+#if it's a column containing an ID, make sure we get the value from the correct table
 sub _generate_column_id
 {
-#if it's a column containing an ID, make sure we get the value from the correct table
-	my ($self, $column_name) = @_;
-	my $flag = 0;
-	foreach (@{$self->{id_columns}})
-	{
-		if ($_ eq $column_name)
-		{
-			$flag = 1;
-			last;
-		}
-	}
-	if ($flag)
-	{
-		return '`' . $self->{conf}->get_value("database_column_table_prefix") . $column_name . '`.`value`';
-	}
+    my ($self, $column_name) = @_;
+
+    if( $self->{id_column}->{$column_name} )
+    {
+		my $table = $self->get_conf->database_column_table_prefix . $column_name;
+		return $self->quote_identifier( $table ) . "." . $self->quote_identifier( "value" );
+    }
 	else
 	{
-		return '`' . $self->{source_table} . '`.`' . $column_name . '`';
+		return $self->{main_table} . "." . $self->quote_identifier( $column_name );
 	}
+}
 
+sub get_stats
+{
+    my ($self, $params, $query_params) = @_;
+
+    my $conf = $self->get_conf;
+
+	my( @columns, @tables, @logic, @etc );
+
+    #Columns
+    foreach my $column (@{$query_params->{columns}})
+    {
+        if (uc($column) eq 'COUNT')
+        {
+            push @columns, "COUNT(*) AS c";
+        }
+		else
+		{
+			if( $column eq 'datestamp' )
+			{
+				push @columns, $self->quote_date($self->_generate_column_id($column));
+			}
+			else
+			{
+				push @columns, $self->_generate_column_id($column);
+			}
+    		if( defined $query_params->{group} )
+			{
+				$columns[$#columns] = "MIN(".$columns[$#columns].")";
+			}
+		}
+
+    }
+    #Inner Joins
+    foreach my $set_name (@{$self->{sets}})
+    {
+        if ($params->{'eprints'} =~ /^$set_name/)
+        {
+            my $set_member_code = substr($params->{'eprints'},length($set_name)+1);
+            my $set_table = $self->quote_identifier( $conf->database_set_table_prefix . $set_name );
+            push @tables, " INNER JOIN $set_table ON " . $self->{main_table} . ".".$self->quote_identifier("eprint")." = $set_table.".$self->quote_identifier("eprint_id");
+
+            my $set_code_table = $self->quote_identifier( $conf->database_set_table_prefix . $set_name . $conf->database_set_table_code_suffix );
+			push @tables, " INNER JOIN $set_code_table ON $set_table.".$self->quote_identifier("set_member_id")." = $set_code_table.".$self->quote_identifier("set_member_id");
+
+			push @logic, " $set_code_table.".$self->quote_identifier("set_member_code")." = ".$self->quote($set_member_code);
+        }
+    }
+    foreach my $column (@{$query_params->{columns}})
+    {
+        if( $self->{id_column}->{$column} and uc($column) ne 'COUNT' )
+        {
+			my $table = $self->quote_identifier( $conf->database_column_table_prefix . $column );
+			push @tables, " LEFT JOIN $table ON " . $self->{main_table} . "." . $self->quote_identifier($column) . " = $table." . $self->quote_identifier("id");
+        }
+    }
+    #Wheres
+    if ($params->get("eprints") =~ /^[0-9]*$/)
+    {
+        push @logic, $self->{main_table} . ".".$self->quote_identifier("eprint")." = " . $params->get("eprints");
+    }
+    if ($params->get("start_date")->equal_to($params->get("end_date")))
+    {
+        push @logic, $self->{main_table} . "." . $self->quote_identifier("datestamp"). " = " . $self->quote($params->get("start_date")->render('numerical'));
+    }
+    else
+    {
+        push  @logic, $self->{main_table} . "." . $self->quote_identifier("datestamp") . " BETWEEN " . $self->quote($params->get("start_date")->render("numerical")) . " AND " . $self->quote($params->get("end_date")->render("numerical"));
+    }
+
+    foreach my $comp (@{$query_params->{where}})
+    {
+        if ( uc($comp->{column}) eq 'COUNT')
+        {
+            push @logic, " c " . $comp->{operator} . " " . $self->quote( $comp->{value} );
+        }
+        else
+        {
+            push @logic, $self->_generate_column_id($comp->{column}) . " " . $comp->{operator} . " " . $self->quote( $comp->{value} );
+        }
+    }
+    #group by, order and limit
+    if ( (defined $query_params->{group}) )
+    {
+        if ( uc($query_params->{group}) eq 'COUNT')
+        {
+            push  @etc, ' GROUP BY c ';
+        }
+        else
+        {
+			push  @etc, ' GROUP BY ' . $self->{main_table} . '.' . $self->quote_identifier($query_params->{group});
+        }
+    }
+    if ( (defined $query_params->{order}) )
+    {
+        my $r;
+        if ( uc($query_params->{order}->{column}) eq 'COUNT' )
+        {
+            $r = ' ORDER BY c ';
+        }
+        else
+        {
+            $r = ' ORDER BY ' . $self->_generate_column_id( $query_params->{order}->{column} );
+        }
+        if (defined $query_params->{order}->{direction})
+        {
+            $r .= ' ' . $query_params->{order}->{direction};
+        }
+        push @etc, $r;
+    }
+    if ( (defined $query_params->{limit}) )
+    {
+        push  @etc, ' LIMIT ' . $query_params->{limit};
+    }
+
+    my $sql = 'SELECT ';
+    $sql .= join(', ',@columns);
+    $sql .= ' FROM ' . $self->{main_table};
+    $sql .= join(' ',@tables);
+    $sql .= ' WHERE ';
+    $sql .= join(' AND ',@logic);
+    $sql .= join(' ',@etc);
+
+    return $self->do_sql($sql);
 }
 
 =item $d->has_table( TABLE )
@@ -369,30 +398,10 @@ Returns true if TABLE exists.
 sub has_table
 {
 	my( $self, $table ) = @_;
-	$table =~ s/[\%]//g;
-	my $sql = "SHOW TABLES LIKE ?";
-	my $query = $self->prepare( $sql );
-	$self->execute( $query, $table );
-	return defined $query->fetch;
-}
 
-=item $d->get_tables
+	my @names = $self->{database}->tables( undef, undef, $table );
 
-Returns all tables matching the irstats prefix.
-
-=cut
-
-sub get_tables
-{
-	my( $self ) = @_;
-	my $sql =  "SHOW TABLES LIKE '".$self->{session}->get_conf->database_table_prefix."\%'";
-	my $query = $self->do_sql($sql);
-	my %tables;
-	while(my( $name ) = $query->fetchrow_array)
-	{
-		$tables{$name} = 1;
-	}
-	return \%tables;
+	return 1 == scalar @names;
 }
 
 =item $d->check_tables
@@ -401,78 +410,21 @@ Checks the main IRStats tables exist and creates them if they don't.
 
 =cut
 
-sub check_tables
-{
-#checks all irstats tables exists (not set tables)
-#creates them if they don't
-	my ($self) = @_;
+=item $d->check_set_tables( [ SUFFIX ] )
 
-	my $session = $self->{session};
-
-	my $conf = $session->get_conf;
-
-	my $main_table = $session->get_conf->database_main_stats_table;
-	my $column_table_prefix = $session->get_conf->database_column_table_prefix;
-	my @column_table_ids = $session->get_conf->database_id_columns;
-
-	$session->log( "Checking following tables exist: $main_table, ".join(', ',map{"$column_table_prefix$_"}@column_table_ids), 3 );
-
-	my $sql = "CREATE TABLE IF NOT EXISTS `$main_table` (
-				`accessid` int UNSIGNED NOT NULL,
-				`datestamp` date NOT NULL,
-				`eprint` int UNSIGNED NOT NULL,
-				`fulltext` char(1) NOT NULL,
-				`requester_organisation` INT UNSIGNED default NULL,
-				`requester_host` INT UNSIGNED default NULL,
-				`requester_country` CHAR(3) default NULL,
-				`referrer_scope` INT UNSIGNED default NULL,
-				`search_engine` INT UNSIGNED default NULL,
-				`search_terms` INT UNSIGNED default NULL,
-				`referring_entity_id` INT UNSIGNED default NULL,
-				 PRIMARY KEY (accessid),
-				 KEY (datestamp),
-				 KEY (eprint,datestamp),
-				 KEY (datestamp,search_terms),
-				 KEY (datestamp,requester_organisation),
-				 KEY (datestamp,requester_host),
-				 KEY (requester_host),
-				 KEY (datestamp,requester_country),
-				 KEY (datestamp,referrer_scope),
-				 KEY (datestamp,search_engine),
-				 KEY (datestamp,referring_entity_id)
-					 )";
-	$self->do($sql);
-
-	foreach my $column_table_id (@column_table_ids)
-	{
-		my $column_table_name = $column_table_prefix . $column_table_id;
-		my $sql = "CREATE TABLE IF NOT EXISTS `$column_table_name` (
-				`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-				`value` CHAR(255),
-				PRIMARY KEY (`id`),
-				UNIQUE KEY (`value`,`id`)
-					)";
-		$self->do($sql);
-	}
-}
-
-=item $d->check_set_tables
-
-Check that the auxillary tables exist for the sets (members, citations and urls).
+Check that the auxillary tables exist for the sets (members, citations and urls). If SUFFIX is specified adds an additional suffix onto the table name to test.
 
 =cut
 
 sub check_set_tables
 {
-	my( $self ) = @_;
+	my( $self, $suffix ) = @_;
 
-	my $conf = $self->{session}->get_conf;
-	
-	my @set_ids = $conf->set_ids;
+	my @set_ids = $self->get_conf->set_ids;
 
-	foreach my $set_id ('eprint', @set_ids)
+	for('eprint',@set_ids)
 	{
-		$self->check_set_table( $set_id );
+		$self->check_set_table( $_, $suffix );
 	}
 }
 
@@ -482,22 +434,35 @@ Check the tables exist for SET_ID and create them if they don't.
 
 =cut
 
-sub check_set_table
+=item $d->has_table_column( TABLE, COLUMN )
+
+Returns true if TABLE has a column called COLUMN.
+
+=cut
+
+sub has_table_column
 {
-	my( $self, $set_id ) = @_;
-	
-	my $conf = $self->{session}->get_conf;
-	
-	my $table = $conf->database_set_table_prefix . $set_id;
-	my $citation_table = $conf->database_set_table_prefix . $set_id . $conf->database_set_table_citation_suffix;
-	my $code_table = $conf->database_set_table_prefix . $set_id .  $conf->database_set_table_code_suffix;
+	my( $self, $table, $column ) = @_;
 
-	$self->{session}->log("Checking following tables exist: $table, $citation_table, $code_table", 2);
+	my $sth = $self->{database}->column_info( undef, undef, $table, '%' );
 
-	$self->do("CREATE TABLE IF NOT EXISTS `$table` (`set_member_id` INT, `eprint_id` INT, PRIMARY KEY (`set_member_id`,`eprint_id`))");
-	$self->do("CREATE TABLE IF NOT EXISTS `$citation_table` (`set_member_id` INT, `short_citation` TINYTEXT, `full_citation` TEXT, `url` TEXT, PRIMARY KEY (`set_member_id`))");
-	$self->do("CREATE TABLE IF NOT EXISTS `$code_table` (`set_member_code` VARCHAR(128), `set_member_id` INT, PRIMARY KEY (`set_member_code`(128)))");
+	while(my $row = $sth->fetchrow_hashref)
+	{
+		if( $row->{COLUMN_NAME} eq $column )
+		{
+			$sth->finish;
+			return 1;
+		}
+	}
+
+	return 0;
 }
+
+=item $d->check_requester_host_table
+
+Utility method to check the requester_host table has the additional IP column (used by convert_ip_to_host).
+
+=cut
 
 =item $d->insert_main_table_row( ROW )
 
@@ -507,32 +472,29 @@ Inserts a row into the main table, substituting column ids where appropriate. RO
 
 sub insert_main_table_row
 {
-	my ($self, $row) = @_;
-	
-	# id_columns are lookup tables intended to make the database more efficient
-	my %id_columns = map { $_ => 1 } $self->{conf}->database_id_columns;
-	
-	foreach my $column (keys %$row)
-	{
-		if ($id_columns{$column})
-		{
-			$row->{$column} = $self->column_table_id(
-					$self->{conf}->get_value('database_column_table_prefix') . $column,
-					$row->{$column}
-				);
-		}
-		elsif ($column eq 'datestamp')
-		{
-			#remove time, we aren't interested.
-			my @timestamp_parts = split (/ /,$row->{$column});
-			$row->{$column} = $timestamp_parts[0];
-		}
-	}
+    my ($self, $row) = @_;
 
-	$self->insert_row(
-		$self->{conf}->get_value('database_main_stats_table'),
-		$row
-	);
+    foreach my $column (keys %$row)
+    {
+        if ($self->{id_column}->{$column})
+        {
+            $row->{$column} = $self->column_table_id(
+                    $self->get_conf->database_column_table_prefix . $column,
+                    $row->{$column}
+                );
+        }
+        elsif ($column eq 'datestamp')
+        {
+            #remove time, we aren't interested.
+            my @timestamp_parts = split (/ /,$row->{$column});
+            $row->{$column} = $timestamp_parts[0];
+        }
+    }
+
+    $self->insert_row(
+        $self->get_conf->database_main_stats_table,
+        $row
+    );
 }
 
 =item $d->column_table_id( TABLE, VALUE )
@@ -545,36 +507,39 @@ Inserts the value into the appropriate support table if necesssary.
 
 sub column_table_id
 {
-	my ($self, $table, $value) = @_;
+	my( $self, $table, $value ) = @_;
 
-	return undef if not defined $value or $value !~ /\S/;
+	return undef unless defined $value and $value =~ /\S/;
 
-	my $sql = "SELECT `id` FROM $table WHERE `value` = ? LIMIT 1";
-	my $query = $self->prepare($sql);
-	$self->execute( $query, $value );
-
-	my ($id) = $query->fetchrow_array;
-	if( not defined $id )
+	if( length($value) > 255 )
 	{
-		$sql = "INSERT INTO $table (`value`) VALUES (?)";
-		$self->do($sql, {}, $value);
+		$value = substr($value,0,255);
+	}
 
-		$id = $self->get_insertid;
+	my $sql = "SELECT ".$self->quote_identifier("id")." FROM ".$self->quote_identifier($table)." WHERE ".$self->quote_identifier("value")." = ? LIMIT 1";
+	my $sth = $self->do_sql( $sql, $value );
+
+	my( $id ) = $sth->fetchrow_array;
+	unless( defined $id )
+	{
+		$sql = "INSERT INTO ".$self->quote_identifier($table)." (".$self->quote_identifier("value").") VALUES (?)";
+		$self->do($sql, $value);
+
+		$id = $self->get_insertid( $table, "id" );
 	}
 	return $id;
 }
 
-
-### The following two function are the only ones that actually operate on the database
-sub _insert_values
+# utility method for insert_row/replace_row
+sub _insert_replace_row
 {
-	my ($self, $table, $value_list) = @_;
+	my( $self, $table, $row, $type ) = @_;
 
-	my $sql = "INSERT INTO `$table` VALUES (" . join(',', map { '?' } @$value_list) . ")";
+	my @columns = keys %$row;
 
-	$self->{'database'}->do($sql, {}, @$value_list)
-		or Carp::confess( "\nExecution of [$sql] failed: ( values: " . join(', ',@$value_list) . ' )' . $self->{'database'}->errstr . 
-		"\n\n" . Dumper($value_list));
+	my $sql = "$type ".$self->quote_identifier($table)." (".join(',',map { $self->quote_identifier($_) } @columns).") VALUES (".join(',',map { '?' } @columns).")";
+
+	return $self->do($sql,@{$row}{@columns});
 }
 
 =item $database->insert_row( TABLE, ROW_HASH )
@@ -585,33 +550,24 @@ Insert a ROW_HASH into TABLE where ROW_HASH is a reference to a hash that contai
 
 sub insert_row
 {
-	my( $self, $table, $hash ) = @_;
-
-	my @columns = keys %$hash;
-
-	my $sql = "INSERT INTO `$table` (".join(',',map { "`$_`" } @columns).") VALUES (".join(',',map { '?' } @columns).")";
-
-	$self->do($sql, {}, @{$hash}{@columns});
+	_insert_replace_row( @_, "INSERT INTO" );
 }
 
-=item $d->replace_row( TABLE, ROW_HASH )
+=item $d->remove_session( REQUEST_HOST, FROM, TO )
 
-Same as insert_row but REPLACE.
+Remove hits for REQUEST_HOST between FROM and TO.
 
 =cut
 
-sub replace_row
+sub remove_session
 {
-	my( $self, $table, $hash ) = @_;
+	my( $self, $requester_host, $from, $to ) = @_;
 
-	my @columns = keys %$hash;
-
-	my $sql = "REPLACE `$table` (".join(',',map { "`$_`" } @columns).") VALUES (".join(',',map { '?' } @columns).")";
-
-	$self->do($sql, {}, @{$hash}{@columns});
+    my $main_table = $self->{main_table};
+    $self->do("DELETE FROM $main_table WHERE ".$self->quote_identifier("requester_host")." = ? AND ".$self->quote_identifier("datestamp")." BETWEEN ? AND ?",$requester_host,$from,$to);
 }
 
-=item $d->do_sql( SQL [, DEBUG ] )
+=item $d->do_sql( SQL [, VALUES ] )
 
 Prepare and execute SQL and return the resulting statement handle.
 
@@ -619,20 +575,17 @@ Prepare and execute SQL and return the resulting statement handle.
 
 sub do_sql
 {
-	my ($self, $sql, $debug) = @_;
+	my( $self, $sql, @vals ) = @_;
 
-	if ($debug) {print " SQL => ",$sql," END SQL <br/>\n";};
+	my $sth = $self->prepare($sql);
+	$self->execute($sth,@vals);
 
-	my $query = $self->{'database'}->prepare($sql);
-	$query->execute()
-		or Carp::confess "Execution of -- " . $sql . " -- failed: ".$self->{'database'}->errstr."\n"; 
-
-	return $query;
+	return $sth;
 }
 
-=item $d->do( SQL [, ARGS ] )
+=item $d->do( SQL [, VALUES ] )
 
-=item $d->prepare( SQL [, ARGS ] )
+=item $d->prepare( SQL )
 
 =item $d->execute( STH [, VALUES ] )
 
@@ -642,73 +595,117 @@ These statements mirror the DBI equivalents.
 
 sub do
 {
-	my( $self, $sql, @args ) = @_;
+	my( $self, $sql, @vals ) = @_;
 
-	return $self->{database}->do( $sql, @args )
-		or Carp::confess "Execution of -- " . $sql . " -- failed: ".$self->{database}->errstr."\n";
+	$self->{session}->log("\tEXECUTE($sql) (".join(',',map{$self->quote($_)}@vals).")",4);
+
+	my $r = $self->{database}->do($sql,{},@vals)
+		or Carp::confess "Execution of -- $sql (".join(',',map{$self->quote($_)}@vals).") -- failed: ".$self->{database}->errstr."\n";
+
+	return $r;
 }
 
 sub prepare
 {
-	my( $self, $sql, @args ) = @_;
+	my( $self, $sql ) = @_;
 
-	return $self->{database}->prepare( $sql, @args )
-		or Carp::confess "Execution of -- " . $sql . " -- failed: ".$self->{database}->errstr."\n";;
+	my $sth = $self->{database}->prepare($sql)
+		or Carp::confess "Execution of -- $sql -- failed: ".$self->{database}->errstr."\n";
+
+	return $sth;
 }
 
 sub execute
 {
-	my( $self, $sth, @values ) = @_;
+	my( $self, $sth, @vals ) = @_;
 
-	return $sth->execute( @values )
-		or Carp::confess "Execution of -- " . $sth->{Statement} . " (" . join(',',map { "'".$self->{database}->quote($_)."'" } @values) . ") -- failed: ".$self->{database}->errstr."\n";;
+	$self->{session}->log("\tEXECUTE(".$sth->{Statement}.") (".join(',',map{$self->quote($_)}@vals).")",4);
+
+	my $r = $sth->execute(@vals)
+		or Carp::confess "Execution of -- ".$sth->{Statement}." (".join(',',map{$self->quote($_)}@vals).") -- failed: ".$self->{database}->errstr."\n";
+
+	return $r;
 }
 
-=item $d->lock( TABLE )
+=item $d->rename_tables( OLD_NAME => NEW_NAME [, OLD_NAME => NEW_NAME ] )
 
-Lock TABLE for writing.
+Rename tables.
 
 =cut
 
-sub lock
+=item $d->drop_tables( TABLES )
+
+Drop tables TABLES, if they exist.
+
+=cut
+
+sub drop_tables
 {
-	$_[0]->do( "LOCK TABLES `$_[1]` WRITE" );
+	my( $self, @names ) = @_;
+
+	my @dropped;
+
+	for(@names)
+	{
+		if( $self->has_table( $_ ) )
+		{
+			$self->do("DROP TABLE ".$self->quote_identifier( $_ ));
+			push @dropped, $_;
+		}
+	}
+
+	return @dropped;
 }
 
-=item $d->phrase( PHRASE_ID )
+=item $d->get_phrase( PHRASE_ID )
 
 Return the phrase identified by PHRASE_ID.
 
-Use $session->get_phrase( PHRASE_ID ) instead.
+Use $session->get_phrase( PHRASE_ID ) instead - this method may change in future.
 
 =cut
 
-sub phrase
+sub get_phrase
 {
-	my( $self, $phrase_id ) = @_;
+    my( $self, $phrase_id ) = @_;
 
-	my $table_name = $self->{session}->get_conf->database_table_prefix . "phrases";
-	my $query = $self->prepare("SELECT `phrase` FROM `$table_name` WHERE `phrase_id`=?");
-	$self->execute( $query, $phrase_id );
+    my $table = $self->get_conf->database_table_prefix . "phrases";
 
-	my( $phrase ) = $query->fetchrow_array;
+    my $sth = $self->do_sql("SELECT ".$self->quote_identifier("phrase")." FROM ".$self->quote_identifier($table)." WHERE ".$self->quote_identifier("phrase_id")." = ?", $phrase_id);
 
-	return $phrase;
+    my( $phrase ) = $sth->fetchrow_array;
+
+    return $phrase;
 }
 
-=item $d->get_insertid
+=item $d->get_insertid( TABLE, COLUMN )
 
-Return the last MySQL auto_incremented number.
+Return the last auto incremented value for COLUMN in TABLE.
 
 =cut
 
 sub get_insertid
 {
-	my( $self ) = @_;
+	my( $self, $table, $column ) = @_;
 
-	return $self->{dbh}->{mysql_insertid}
-		or die "Hmm, expected mysql_insertid but didn't get one";
+	# $catalog, $schema, $table, $field, \%attr
+	return $self->{database}->last_insert_id( undef, undef, $table, $column );
 }
+
+=item $d->lock_variable( VARNAME )
+
+Get an exclusive lock on VARNAME, return 0 if VARNAME is already locked by someone else.
+
+Returns undef if locking is unsupported.
+
+=item $d->unlock_variable( VARNAME )
+
+Release the lock on VARNAME, if we have it.
+
+=cut
+
+sub lock_variable { undef }
+sub unlock_variable { undef }
 
 1;
 

@@ -1,30 +1,25 @@
-#!@PERL_PATH@ -w
+#!/usr/bin/perl -w -I/opt/eprints3/perl_lib
 
 ##############################################################################
 ### Configuration ###
 ##############################################################################
 
-# IRStat's perl modules
-use lib "@IRSTATS_LIB@";
-
 # awstats modules
-use lib "@AWSTATS_LIB@";
+use lib "/var/www/awstats/lib";
 
 # ChartDirector
-use lib "@CHARTDIRECTOR_LIB@";
-
-# EPrints (if using EPrints)
-use lib "@EPRINTS_LIB@";
+use lib "/opt/eprints3/perl_lib/ChartDirector";
 
 use IRStats;
+use EPrints;
 
 # The path to IRStat's configuration file
-$IRStats::Configuration::FILE = "@CONF_FILE@";
 
 ##############################################################################
 ### End of Configuration ###
 ##############################################################################
 
+use encoding 'utf8';
 IRStats::handler();
 
 1;
@@ -77,7 +72,7 @@ The following commands are available:
 
 Import metadata from source CSV files.
 
-=item update_date
+=item update_table
 
 Update the access log table from the database.
 
@@ -88,5 +83,11 @@ Convert IP addresses to hostnames in the database.
 =item extract_metadata_from_archive
 
 Extract metadata from an eprints 2 archive.
+
+=item extract_generic_eprints
+
+=item extract_generic_dspace
+
+Extract some basic citation/eprints data for GNU EPrints and DSpace respectively. These mechanisms don't support sets at all.
 
 =back

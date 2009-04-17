@@ -28,13 +28,15 @@ sub new
 
 sub DESTROY
 {
-	my $self = shift;
+	my( $self ) = @_;
 
 #remove all but period of $cache_timeout from latest time stored.
 	my $latestTime = 0;
 
-	while( my ($key, $value) = each %{$self->{cache}} ) {
-		if ($value > $latestTime) {$latestTime = $value}
+	foreach my $key (keys %{$self->{cache}})
+	{
+		$latestTime = $self->{cache}->{$key}
+			if $self->{cache}->{$key} > $latestTime;
 	}
 
 	my @KEYS;

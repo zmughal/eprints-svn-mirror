@@ -16,11 +16,10 @@ Features:
 Requirements:
 
  - awstats
- - MySQL
- - Maxmind Organisation Database (www.maxmind.com) *
+ - Date::Calc perl library
+ - Logfile::EPrints perl library
  - ChartDirector (www.advsofteng.com) *
-
- * These are commercial products.
-
+ 
+ * Commercial products.
 
 See INSTALL for installation instructions.
