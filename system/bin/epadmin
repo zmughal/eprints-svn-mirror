@@ -2072,7 +2072,7 @@ sub upgrade_3_1_1_to_3_1_2
 	update_datasets( $repo, $db );
 	update_counters( $repo, $db );
 
-	foreach( $repo->get_sql_dataset_ids() )
+	foreach( &EPrints::DataSet::get_sql_dataset_ids )
 	{
 		my $dataset = $repo->get_dataset( $_ );
 
