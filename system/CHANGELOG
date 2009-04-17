@@ -7941,3 +7941,9 @@ EPRINTS-3.1.2.1
 
 2009-04-16 cjg+tmb
  * Fix for generate-on-demand of /view/foo/index.html URLs
+
+2009-04-17 tmb
+ * Added default creators_name view using new A-Z pages option
+ * Bundled Unicode::Collate
+ * Fixed issues with subject navigation aids on view menus
+ * Fixed issues with default division and subject views config
