@@ -1,0 +1,93 @@
+AC_INIT()
+AC_PREREQ(2.13)
+AC_PROG_MAKE_SET
+
+dnl Checks for programs
+
+PERL_SEARCH_PATH="$PATH:/usr/local/bin:/opt/perl/bin:/opt/PERL/bin"
+AC_ARG_WITH(perl,
+	[  --with-perl=[PATH]        path of perl interpreter ],
+	[
+		AC_MSG_CHECKING([perl interpreter])
+		PERL_PATH=$withval
+		if test -x $PERL_PATH ; then
+			AC_MSG_RESULT($PERL_PATH)
+		else
+			AC_MSG_ERROR(Perl interpreter specified does not appear to exist)
+		fi
+	],
+	[
+		AC_PATH_PROG(PERL_PATH, perl, "NOTFOUND", $PERL_SEARCH_PATH)
+		if test $PERL_PATH = NOTFOUND ; then
+			AC_MSG_ERROR(Unable to find perl interpreter)
+		fi
+	]
+)
+
+AC_MSG_CHECKING([whether the perl interpreter ($PERL_PATH ) runs])
+if $PERL_PATH -e "" > /dev/null 2>&1 ; then
+	AC_MSG_RESULT(yes)
+else
+	AC_MSG_RESULT(no)
+	AC_MSG_ERROR(Perl interpreter does not appear to run)
+fi
+
+AC_MSG_CHECKING([whether the perl interpreter ($PERL_PATH ) works])
+if $PERL_PATH -e " print(\"INSERT PERL TEST HERE\")" > /dev/null 2>&1 ; then
+	AC_MSG_RESULT(yes)
+else
+	AC_MSG_RESULT(no)
+	AC_MSG_ERROR(Perl interpreter does not appear to work)
+fi
+
+AC_PREFIX_DEFAULT(/usr/local/irstats)
+
+PREFIX=$prefix
+if test $PREFIX = "NONE" ; then
+	PREFIX=/usr/local/irstats
+fi
+
+IRSTATS_LIB="$PREFIX/perl_lib"
+AC_ARG_WITH(irstats-libdir,
+	[AS_HELP_STRING([--with-irstats-libdir=[PATH]],[path to install the IRStats modules [PREFIX/perl_lib]])],
+	[
+		IRSTATS_LIB=$withval
+	])
+
+AWSTATS_LIB="/var/www/awstats/lib"
+AC_ARG_WITH(awstats-libdir,
+	[AS_HELP_STRING([--with-awstats-libdir=[PATH]],[path to AWStats library [/var/www/awstats/lib]])],
+	[
+		AWSTATS_LIB=$withval
+	])
+
+CHARTDIRECTOR_LIB="$PREFIX/perl_lib/ChartDirector"
+AC_ARG_WITH(chartdirector-libdir,
+	[AS_HELP_STRING([--with-chartdirector-libdir=[PATH]],[path to ChartDirector library [PREFIX/perl_lib/ChartDirector]])],
+	[
+		CHARTDIRECTOR_LIB=$withval
+	])
+
+EPRINTS_LIB="/opt/eprints2/perl_lib"
+AC_ARG_WITH(eprints-libdir,
+	[AS_HELP_STRING([--with-eprints-libdir=[PATH]],[path to EPrints library [/opt/eprints2/perl_lib]])],
+	[
+		EPRINTS_LIB=$withval
+	])
+
+CONF_FILE=${sysconfdir}/irstats.conf
+prefix=$PREFIX
+dnl Trickery to get ${prefix} expanded inside ${sysconfdir}
+CONF_FILE=`eval "echo $CONF_FILE"`
+
+AC_SUBST(PREFIX)
+AC_SUBST(PERL_PATH)
+AC_SUBST(IRSTATS_LIB)
+AC_SUBST(AWSTATS_LIB)
+AC_SUBST(CHARTDIRECTOR_LIB)
+AC_SUBST(EPRINTS_LIB)
+AC_SUBST(CONF_FILE)
+
+AC_OUTPUT(Makefile)
+AC_OUTPUT(cgi/irstats.cgi)
+AC_OUTPUT(etc/irstats.conf)

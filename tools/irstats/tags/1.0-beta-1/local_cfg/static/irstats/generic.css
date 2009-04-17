@@ -1,0 +1,79 @@
+html, body {
+	font-family: sans-serif;
+	background-color: #fff;
+	color: #000;
+}
+
+h1 {
+	font-size: 120%;
+}
+h2 {
+	font-size: 100%;
+}
+
+.view_choice td {
+	vertical-align: top;
+}
+
+.view_choice ul {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.view_choice ul div {
+	float: left;
+	margin-right: 1em;
+}
+
+.view_choice ul>li {
+	font-weight: bold;
+}
+
+.view_choice ul>ul li {
+	font-weight: normal;
+}
+.view_choice ul ul li label:hover {
+	background-color: #fed;
+}
+
+.view_choice img {
+	vertical-align: middle;
+	margin: 1px .5em;
+	border: thin gray solid;
+}
+
+div.help {
+	width: 40em;
+	padding: 5px;
+	margin: 5px;
+	border: thin green solid;
+	background-color: #cfc;
+}
+
+#irstats_dashboard_views div.irstats_view {
+	float: left;
+	margin: 3px;
+}
+
+.irstats_view {
+	width: 510px;
+	overflow: auto;
+	text-align: center;
+}
+
+.irstats_view h2 {
+	border-bottom: 1px #888 solid;
+	background-color: #ccc;
+	margin: 0px;
+	height: 30px;
+	line-height: 30px;
+	font-size: 100%;
+}
+
+.irstats_view_inner {
+	border-bottom: 1px #888 solid;
+	border-top: 1px #ddd solid;
+	background-color: #ddd;
+	height: 310px;
+}

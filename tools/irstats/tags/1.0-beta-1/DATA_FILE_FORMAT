@@ -1,0 +1,88 @@
+IRStats Metadata Input Files
+
+The IRStats import_metadata command imports metadata for use in the irstats environment. This is separate to the usage data import.
+
+There are 6 input data files:
+
+irstats_set_member_codes.txt, irstats_set_member_full_citations.txt, irstats_set_membership.txt, irstats_set_member_short_citations.txt, irstats_set_member_urls.txt and irstats_set_phrases.txt.
+
+All files are tab-separated format with one record per line (line returns must be removed). Lines starting hash (#) or blank are ignored.
+
+
+set_member_codes
+
+<set> <internal id> <external id>
+
+Where:
+ set - the set type
+ internal id - a unique positive integer for the set
+ external id - a unique identifier for the set
+
+Description:
+
+Codes define a 'set'. Every eprint is a single set. Other sets may contain lists of eprints (defined in set_membership) e.g. eprints by an author. It's strongly recommended that you restrict set type names to [a-z_].
+
+Example:
+
+eprint	1032	1032
+subjects	52	DAW
+
+
+set_membership
+
+<set> <internal id> <eprint id list>
+
+Where:
+ set - the set type
+ internal id - the internal id of the set
+ eprint id list - list of eprint internal ids in the set
+
+Description:
+
+Memberships allow eprints to be aggregated for the purposes of generating statistics. An eprint id list is a list of internal eprint ids (i.e. positive integers) separated by spaces. Every eprint must at least be a member of its own eprint set.
+
+Example:
+
+eprint	1032	1032
+subjects	52	1032 5032 5033
+
+
+set_member_{full_citations,short_citations,urls}
+
+<set> <internal id> <value>
+
+Where:
+ set - the set type
+ internal id - the internal id of the set
+ value - the citation/url to render for this set (HTML)
+
+Description:
+
+These three files provide human-readable text to be rendered when viewing the given set in lists or on the dashboard. Each set should have at least a short_citation (typically the external code or identifier).
+
+Example (short_citation):
+
+eprint	1032	Light-induced metallization at the gallium-silica interface
+subjects	1032	LOC-DAW
+
+
+set_phrases
+
+<phrase id> <phrase>
+
+Where:
+ phrase id - the phrase identifier
+ phrase - the phrase (HTML)
+
+Description:
+
+Phrases are human-readable terms used in the irstats system. You should at least define a phrase for each set type - where the phrase id is the set type name prepended with 'set_'.
+
+Example:
+
+set_eprint	Eprint
+set_subjects	Subjects
+view:TopTenTable:title	Top Ten Eprints by Downloads
+
+
+2007-10-17 tdb

@@ -1,0 +1,582 @@
+------------------------------------------------------------------------
+r2971 | tdb01r | 2007-10-12 15:45:25 +0100 (Fri, 12 Oct 2007) | 2 lines
+
+ * Removed ChartDirector from main trunk (avoid accidentally including the license in a distributed version ...)
+
+------------------------------------------------------------------------
+r2970 | tdb01r | 2007-10-12 15:36:34 +0100 (Fri, 12 Oct 2007) | 2 lines
+
+ * Removed ChartDirector note
+
+------------------------------------------------------------------------
+r2969 | tdb01r | 2007-10-12 15:22:43 +0100 (Fri, 12 Oct 2007) | 2 lines
+
+ * We need to sort out how the license works with ChartDirector?
+
+------------------------------------------------------------------------
+r2968 | tdb01r | 2007-10-12 15:18:14 +0100 (Fri, 12 Oct 2007) | 2 lines
+
+ * Description of data input format
+
+------------------------------------------------------------------------
+r2967 | tdb01r | 2007-10-12 15:00:31 +0100 (Fri, 12 Oct 2007) | 2 lines
+
+ * More installation instructions
+
+------------------------------------------------------------------------
+r2966 | tdb01r | 2007-10-12 14:53:04 +0100 (Fri, 12 Oct 2007) | 2 lines
+
+ * Use phrases on the stats page
+
+------------------------------------------------------------------------
+r2965 | tdb01r | 2007-10-12 14:47:48 +0100 (Fri, 12 Oct 2007) | 2 lines
+
+ * Moved dashboard view configuration into the configuration file
+
+------------------------------------------------------------------------
+r2964 | tdb01r | 2007-10-12 14:45:12 +0100 (Fri, 12 Oct 2007) | 2 lines
+
+ * Added get_phrase method to get phrases from the database
+
+------------------------------------------------------------------------
+r2963 | tdb01r | 2007-10-12 13:55:11 +0100 (Fri, 12 Oct 2007) | 2 lines
+
+ * Standard locations/names for paths
+
+------------------------------------------------------------------------
+r2962 | tdb01r | 2007-10-12 13:54:14 +0100 (Fri, 12 Oct 2007) | 9 lines
+
+ * Changes suggested by CJG:
+ * Reduced graph size to 500px by 300px
+ * get_view bug fix to Database handle creation
+ * Better layout in dashboard
+ * Changed dashboard style to be 'irstats_*' class names
+ * Added trend line capability to bar charts
+ * Removed titles from charts
+ * If an 'id' is available in a complex eprints field (HASHREF) use it as the code
+
+------------------------------------------------------------------------
+r2961 | tdb01r | 2007-10-11 14:01:23 +0100 (Thu, 11 Oct 2007) | 2 lines
+
+ * Date is expected to be in a parseable format rather than yyyymmddhhmmss
+
+------------------------------------------------------------------------
+r2960 | tdb01r | 2007-10-11 13:59:43 +0100 (Thu, 11 Oct 2007) | 3 lines
+
+ * Get rid of a warning in get_view2
+ * Strip the info: bit from the front of referent_id in eprints 3
+
+------------------------------------------------------------------------
+r2959 | tdb01r | 2007-10-11 13:52:24 +0100 (Thu, 11 Oct 2007) | 2 lines
+
+ * Forgot to TO_STRING the citation
+
+------------------------------------------------------------------------
+r2958 | tdb01r | 2007-10-11 13:51:07 +0100 (Thu, 11 Oct 2007) | 2 lines
+
+ * Render the code if its complex
+
+------------------------------------------------------------------------
+r2957 | tdb01r | 2007-10-11 13:47:09 +0100 (Thu, 11 Oct 2007) | 2 lines
+
+ * Use the value if the code field is a hash (e.g. for Creators)
+
+------------------------------------------------------------------------
+r2956 | tdb01r | 2007-10-11 13:09:38 +0100 (Thu, 11 Oct 2007) | 2 lines
+
+ * Should be *database id columns* and not sets that are created by check_table
+
+------------------------------------------------------------------------
+r2955 | tdb01r | 2007-10-11 12:58:42 +0100 (Thu, 11 Oct 2007) | 2 lines
+
+ * Requires Geo::IP
+
+------------------------------------------------------------------------
+r2954 | tdb01r | 2007-10-11 12:06:01 +0100 (Thu, 11 Oct 2007) | 2 lines
+
+ * Needs Date::Calc too
+
+------------------------------------------------------------------------
+r2953 | tdb01r | 2007-10-11 11:47:15 +0100 (Thu, 11 Oct 2007) | 2 lines
+
+ * Distribution blurb
+
+------------------------------------------------------------------------
+r2952 | tdb01r | 2007-10-10 16:53:12 +0100 (Wed, 10 Oct 2007) | 2 lines
+
+ * Changed layout to be a table, which needs to be aligned top
+
+------------------------------------------------------------------------
+r2951 | tdb01r | 2007-10-10 15:06:36 +0100 (Wed, 10 Oct 2007) | 2 lines
+
+ * More informative errors on parsing input metadata files
+
+------------------------------------------------------------------------
+r2950 | tdb01r | 2007-10-10 15:00:32 +0100 (Wed, 10 Oct 2007) | 3 lines
+
+ * Warn if attempting to add a line to a non-configured set
+ * Added a space between the dashboard link and citation
+
+------------------------------------------------------------------------
+r2949 | tdb01r | 2007-10-10 14:39:15 +0100 (Wed, 10 Oct 2007) | 3 lines
+
+ * Removed a already-declared warning frmo HighestClimbersTable
+ * 
+
+------------------------------------------------------------------------
+r2948 | tdb01r | 2007-10-10 12:19:29 +0100 (Wed, 10 Oct 2007) | 3 lines
+
+ * Give a better error if a field doesn't exist
+ * Use the full_citation if the value is a hash (i.e. complex)
+
+------------------------------------------------------------------------
+r2947 | tdb01r | 2007-10-10 11:59:26 +0100 (Wed, 10 Oct 2007) | 2 lines
+
+ * Allow an 'id' field to be specified for sets so creators can be mapped using a different field
+
+------------------------------------------------------------------------
+r2946 | tdb01r | 2007-10-09 14:57:16 +0100 (Tue, 09 Oct 2007) | 2 lines
+
+ * Eprints 3 compatibility additions
+
+------------------------------------------------------------------------
+r2945 | tdb01r | 2007-10-08 16:59:27 +0100 (Mon, 08 Oct 2007) | 2 lines
+
+ * Datestamps in ep3 are atomised
+
+------------------------------------------------------------------------
+r2944 | tdb01r | 2007-10-08 16:54:40 +0100 (Mon, 08 Oct 2007) | 2 lines
+
+ * eprints3 access log (copied from AccessLog)
+
+------------------------------------------------------------------------
+r2943 | tdb01r | 2007-10-08 16:49:18 +0100 (Mon, 08 Oct 2007) | 2 lines
+
+ * Forgot to remove commented out cache
+
+------------------------------------------------------------------------
+r2942 | tdb01r | 2007-10-08 16:48:47 +0100 (Mon, 08 Oct 2007) | 4 lines
+
+ * Added a return to Table::HTML output to make neater HTML
+ * Now adds a dashboard icon after the citation rather than having a column of
+    'D's
+
+------------------------------------------------------------------------
+r2941 | tdb01r | 2007-10-08 16:35:38 +0100 (Mon, 08 Oct 2007) | 2 lines
+
+ * Icon for links to dashboard
+
+------------------------------------------------------------------------
+r2940 | tdb01r | 2007-10-08 16:22:14 +0100 (Mon, 08 Oct 2007) | 2 lines
+
+ * Missed DashLinked view off
+
+------------------------------------------------------------------------
+r2939 | tdb01r | 2007-10-08 16:20:33 +0100 (Mon, 08 Oct 2007) | 2 lines
+
+ * Show views in a predefined order
+
+------------------------------------------------------------------------
+r2938 | tdb01r | 2007-10-08 13:55:52 +0100 (Mon, 08 Oct 2007) | 2 lines
+
+ * Some installation notes
+
+------------------------------------------------------------------------
+r2937 | tdb01r | 2007-10-03 18:17:55 +0100 (Wed, 03 Oct 2007) | 3 lines
+
+ * Another bad database invocation
+ * Made Database croak if it's called without Session (shouldn't ever occur now)
+
+------------------------------------------------------------------------
+r2936 | tdb01r | 2007-10-03 18:13:15 +0100 (Wed, 03 Oct 2007) | 2 lines
+
+ * Missing thumbnail
+
+------------------------------------------------------------------------
+r2935 | tdb01r | 2007-10-03 17:57:15 +0100 (Wed, 03 Oct 2007) | 2 lines
+
+ * Should be using utime, not yyyymmddhhmmss
+
+------------------------------------------------------------------------
+r2934 | tdb01r | 2007-10-03 16:32:17 +0100 (Wed, 03 Oct 2007) | 3 lines
+
+ * Need datetime for DSpace logs
+ * Limit to 20 fulltext requests maximum (no longer based on 'hit' event!)
+
+------------------------------------------------------------------------
+r2933 | tdb01r | 2007-10-03 16:25:07 +0100 (Wed, 03 Oct 2007) | 2 lines
+
+ * Bug fixes for Logfile::EPrints compatibility changes
+
+------------------------------------------------------------------------
+r2932 | tdb01r | 2007-10-03 14:48:09 +0100 (Wed, 03 Oct 2007) | 2 lines
+
+ * Better error message
+
+------------------------------------------------------------------------
+r2931 | tdb01r | 2007-10-03 14:46:47 +0100 (Wed, 03 Oct 2007) | 3 lines
+
+ * Allow empty configuration options
+ * Missed a bad Database constructor
+
+------------------------------------------------------------------------
+r2930 | tdb01r | 2007-10-03 14:37:57 +0100 (Wed, 03 Oct 2007) | 2 lines
+
+ * CSS
+
+------------------------------------------------------------------------
+r2929 | tdb01r | 2007-10-03 14:27:53 +0100 (Wed, 03 Oct 2007) | 2 lines
+
+ * Added alpha support for DSpace apache logs
+
+------------------------------------------------------------------------
+r2928 | tdb01r | 2007-10-03 13:53:19 +0100 (Wed, 03 Oct 2007) | 2 lines
+
+ * Don't set executable on modules
+
+------------------------------------------------------------------------
+r2927 | tdb01r | 2007-10-03 13:51:50 +0100 (Wed, 03 Oct 2007) | 2 lines
+
+ * Made irstats work like Logfile::EPrints
+
+------------------------------------------------------------------------
+r2926 | tdb01r | 2007-10-03 13:04:59 +0100 (Wed, 03 Oct 2007) | 2 lines
+
+ * Get a lock *after* checking the config setting
+
+------------------------------------------------------------------------
+r2925 | tdb01r | 2007-10-03 12:51:40 +0100 (Wed, 03 Oct 2007) | 2 lines
+
+ * Soton configuration
+
+------------------------------------------------------------------------
+r2924 | tdb01r | 2007-10-03 12:49:51 +0100 (Wed, 03 Oct 2007) | 2 lines
+
+ * cgi script to call GUI modules
+
+------------------------------------------------------------------------
+r2923 | tdb01r | 2007-10-03 12:47:01 +0100 (Wed, 03 Oct 2007) | 2 lines
+
+ * Migrated remaining scripts from /cgi except for d2 that I think is redundant
+
+------------------------------------------------------------------------
+r2922 | tdb01r | 2007-10-03 12:46:30 +0100 (Wed, 03 Oct 2007) | 2 lines
+
+ * All moved to GUI/* modules
+
+------------------------------------------------------------------------
+r2921 | tdb01r | 2007-10-03 12:01:12 +0100 (Wed, 03 Oct 2007) | 2 lines
+
+ * These two are now in GUI/ modules
+
+------------------------------------------------------------------------
+r2920 | tdb01r | 2007-10-03 12:00:02 +0100 (Wed, 03 Oct 2007) | 2 lines
+
+ * Static content
+
+------------------------------------------------------------------------
+r2919 | tdb01r | 2007-10-01 17:03:40 +0100 (Mon, 01 Oct 2007) | 3 lines
+
+ * Path configuration changes
+ * Data directory for metadata output/input
+
+------------------------------------------------------------------------
+r2918 | tdb01r | 2007-10-01 17:02:28 +0100 (Mon, 01 Oct 2007) | 2 lines
+
+ * Standard name for a static directory
+
+------------------------------------------------------------------------
+r2917 | tdb01r | 2007-10-01 17:01:54 +0100 (Mon, 01 Oct 2007) | 2 lines
+
+ * Moved to /var
+
+------------------------------------------------------------------------
+r2916 | tdb01r | 2007-10-01 17:01:38 +0100 (Mon, 01 Oct 2007) | 2 lines
+
+ * Removed non-standard config directory
+
+------------------------------------------------------------------------
+r2915 | tdb01r | 2007-10-01 17:01:31 +0100 (Mon, 01 Oct 2007) | 2 lines
+
+ * Added version number
+
+------------------------------------------------------------------------
+r2914 | tdb01r | 2007-10-01 17:01:04 +0100 (Mon, 01 Oct 2007) | 2 lines
+
+ * Bug fixes for searchengine not being assigned and repository_type
+
+------------------------------------------------------------------------
+r2913 | tdb01r | 2007-10-01 17:00:20 +0100 (Mon, 01 Oct 2007) | 2 lines
+
+ * Standard config naming
+
+------------------------------------------------------------------------
+r2912 | tdb01r | 2007-10-01 16:56:40 +0100 (Mon, 01 Oct 2007) | 2 lines
+
+ * var tree structure
+
+------------------------------------------------------------------------
+r2911 | tdb01r | 2007-10-01 16:54:05 +0100 (Mon, 01 Oct 2007) | 2 lines
+
+ * Moved shell scripts into modules called by irstats.pl
+
+------------------------------------------------------------------------
+r2910 | tdb01r | 2007-10-01 14:34:36 +0100 (Mon, 01 Oct 2007) | 2 lines
+
+ * Missed from r2908
+
+------------------------------------------------------------------------
+r2909 | tdb01r | 2007-10-01 14:32:48 +0100 (Mon, 01 Oct 2007) | 2 lines
+
+ * Forgot to actually return the id created for column_id
+
+------------------------------------------------------------------------
+r2908 | tdb01r | 2007-10-01 14:30:36 +0100 (Mon, 01 Oct 2007) | 8 lines
+
+ * Fixed wrong name in SearchParser awstats do()
+ * Made MyHit use config option for hostname
+ * Removed value quoting in MyHit
+ * Tidied up column id creation in DatabaseInterface
+ * Moved Negation handling into a filter
+ * Moved Institution lookup into a filter
+ * Added a 'parser' for accesslog tables
+
+------------------------------------------------------------------------
+r2907 | tdb01r | 2007-09-28 17:22:14 +0100 (Fri, 28 Sep 2007) | 2 lines
+
+ * Now use set_ids for most set definitions
+
+------------------------------------------------------------------------
+r2906 | tdb01r | 2007-09-28 14:39:33 +0100 (Fri, 28 Sep 2007) | 2 lines
+
+ * Don't go into a busy loop when waiting for workers to finish
+
+------------------------------------------------------------------------
+r2905 | tdb01r | 2007-09-28 14:28:31 +0100 (Fri, 28 Sep 2007) | 2 lines
+
+ * More tidying and code documentation
+
+------------------------------------------------------------------------
+r2904 | tdb01r | 2007-09-28 14:14:42 +0100 (Fri, 28 Sep 2007) | 2 lines
+
+ * Reduced the size of the main loop a bit
+
+------------------------------------------------------------------------
+r2903 | tdb01r | 2007-09-28 14:00:09 +0100 (Fri, 28 Sep 2007) | 6 lines
+
+ * Added CLI modules for all the 'daily' process things
+ * Made Configuration complain if a non-existant config option is asked for
+ * Changed pathing to use $conf->path
+ * Changed pathing in config to be relative to root=
+ * Hopefully made convert_ip easier to follow/neater
+
+------------------------------------------------------------------------
+r2902 | tdb01r | 2007-09-27 13:37:21 +0100 (Thu, 27 Sep 2007) | 3 lines
+
+ * Tidying up code layout
+ * Added support for 'Sessions' - now ignores any agent that makes more than 20 fulltext requests in a session
+
+------------------------------------------------------------------------
+r2901 | tdb01r | 2007-09-26 12:55:27 +0100 (Wed, 26 Sep 2007) | 6 lines
+
+ * Moved update_table into a generic module
+ * Made MyHit a bit more efficient/cleaner
+ * Made SelfReferrerFilter check whether the repository URL has a trailing slash
+ * Tidy up to DatabaseInterface (added prepare/execute/do/lock methods)
+ * Added DBI to IRStats
+
+------------------------------------------------------------------------
+r2900 | tdb01r | 2007-09-26 10:04:04 +0100 (Wed, 26 Sep 2007) | 4 lines
+
+ * Added missing Update modules
+ * Moved CGI functionality into GUI/* modules
+ * Removed inconsistent centering from Graphing modules
+
+------------------------------------------------------------------------
+r2899 | tdb01r | 2007-09-25 13:04:32 +0100 (Tue, 25 Sep 2007) | 2 lines
+
+ * Only click selection onchange
+
+------------------------------------------------------------------------
+r2898 | tdb01r | 2007-09-25 12:52:26 +0100 (Tue, 25 Sep 2007) | 2 lines
+
+ * Added image_url config option to specify path to images
+
+------------------------------------------------------------------------
+r2897 | tdb01r | 2007-09-25 12:47:14 +0100 (Tue, 25 Sep 2007) | 2 lines
+
+ * Get set ids from config option 'set_ids'
+
+------------------------------------------------------------------------
+r2896 | tdb01r | 2007-09-25 12:26:31 +0100 (Tue, 25 Sep 2007) | 2 lines
+
+ * Replaced die() with Carp::confess() for easier debugging
+
+------------------------------------------------------------------------
+r2895 | af05v@ecs.soton.ac.uk | 2007-09-24 11:15:00 +0100 (Mon, 24 Sep 2007) | 2 lines
+
+changed drop table to drop table if exists.  This means it will run OK on the first update
+
+------------------------------------------------------------------------
+r2894 | af05v@ecs.soton.ac.uk | 2007-09-24 11:07:43 +0100 (Mon, 24 Sep 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r2800 | cjg | 2007-06-14 15:08:00 +0100 (Thu, 14 Jun 2007) | 3 lines
+
+updated to use dashboard linke top ten list
+
+
+------------------------------------------------------------------------
+r2799 | cjg | 2007-06-14 15:07:19 +0100 (Thu, 14 Jun 2007) | 3 lines
+
+new view
+
+
+------------------------------------------------------------------------
+r2798 | af05v@ecs.soton.ac.uk | 2007-06-14 14:30:02 +0100 (Thu, 14 Jun 2007) | 3 lines
+
+new report for les
+
+
+------------------------------------------------------------------------
+r2772 | af05v@ecs.soton.ac.uk | 2007-06-12 13:47:26 +0100 (Tue, 12 Jun 2007) | 3 lines
+
+added sexy interface
+
+
+------------------------------------------------------------------------
+r2771 | af05v@ecs.soton.ac.uk | 2007-06-12 13:44:10 +0100 (Tue, 12 Jun 2007) | 3 lines
+
+Made it sexy
+
+
+------------------------------------------------------------------------
+r2766 | af05v@ecs.soton.ac.uk | 2007-06-06 13:16:51 +0100 (Wed, 06 Jun 2007) | 2 lines
+
+Gets eprint full citation with link
+
+------------------------------------------------------------------------
+r2763 | cjg | 2007-06-05 11:49:56 +0100 (Tue, 05 Jun 2007) | 2 lines
+
+Updated name of insert_rows
+
+------------------------------------------------------------------------
+r2762 | af05v@ecs.soton.ac.uk | 2007-06-05 11:12:43 +0100 (Tue, 05 Jun 2007) | 2 lines
+
+typo
+
+------------------------------------------------------------------------
+r2761 | af05v@ecs.soton.ac.uk | 2007-06-05 11:11:42 +0100 (Tue, 05 Jun 2007) | 2 lines
+
+Put insert_row back as _insert_row
+
+------------------------------------------------------------------------
+r2760 | af05v@ecs.soton.ac.uk | 2007-06-04 15:57:51 +0100 (Mon, 04 Jun 2007) | 2 lines
+
+added script to do update.
+
+------------------------------------------------------------------------
+r2759 | cjg | 2007-06-04 15:54:21 +0100 (Mon, 04 Jun 2007) | 2 lines
+
+added get function
+
+------------------------------------------------------------------------
+r2758 | cjg | 2007-06-04 15:54:08 +0100 (Mon, 04 Jun 2007) | 3 lines
+
+added get function
+
+
+------------------------------------------------------------------------
+r2757 | af05v@ecs.soton.ac.uk | 2007-06-04 15:18:32 +0100 (Mon, 04 Jun 2007) | 3 lines
+
+Added get_id function to retrieve the id of a set code
+
+
+------------------------------------------------------------------------
+r2756 | af05v@ecs.soton.ac.uk | 2007-06-04 14:29:15 +0100 (Mon, 04 Jun 2007) | 4 lines
+
+New Views
+Debug flag added to get_stats in DatabaseInterface
+
+
+------------------------------------------------------------------------
+r2755 | af05v@ecs.soton.ac.uk | 2007-06-01 17:47:18 +0100 (Fri, 01 Jun 2007) | 3 lines
+
+Adjusted name and limited to 10
+
+
+------------------------------------------------------------------------
+r2754 | af05v@ecs.soton.ac.uk | 2007-06-01 11:17:54 +0100 (Fri, 01 Jun 2007) | 3 lines
+
+New View
+
+
+------------------------------------------------------------------------
+r2753 | af05v@ecs.soton.ac.uk | 2007-06-01 10:19:57 +0100 (Fri, 01 Jun 2007) | 3 lines
+
+Bugfixes.
+
+
+------------------------------------------------------------------------
+r2752 | af05v@ecs.soton.ac.uk | 2007-05-31 22:03:24 +0100 (Thu, 31 May 2007) | 3 lines
+
+Bugfix: Will check that there is a value for hostname before looking it up.
+
+
+------------------------------------------------------------------------
+r2751 | af05v@ecs.soton.ac.uk | 2007-05-31 21:56:12 +0100 (Thu, 31 May 2007) | 2 lines
+
+Bugfix: if the number of records is divisible by 1000, it will now not say there is nothing to update.
+
+------------------------------------------------------------------------
+r2750 | af05v@ecs.soton.ac.uk | 2007-05-31 21:50:33 +0100 (Thu, 31 May 2007) | 4 lines
+
+Changed epstats to irstats.
+
+rolled back name change of function in DatabaseInterface (it *was* called externally).
+
+------------------------------------------------------------------------
+r2744 | af05v@ecs.soton.ac.uk | 2007-05-30 20:59:58 +0100 (Wed, 30 May 2007) | 3 lines
+
+A little tidying up
+
+
+------------------------------------------------------------------------
+r2735 | af05v@ecs.soton.ac.uk | 2007-05-30 16:44:44 +0100 (Wed, 30 May 2007) | 3 lines
+
+Renamed all from epstats to irstats
+
+
+------------------------------------------------------------------------
+r2734 | af05v@ecs.soton.ac.uk | 2007-05-30 16:41:05 +0100 (Wed, 30 May 2007) | 3 lines
+
+More likely to return a result (if there was no download today, will look backwards in time)
+
+
+------------------------------------------------------------------------
+r2706 | cjg | 2007-05-24 16:51:25 +0100 (Thu, 24 May 2007) | 3 lines
+
+added line which ensures the left axis is always a whole number.
+
+
+------------------------------------------------------------------------
+r2705 | cjg | 2007-05-24 16:50:38 +0100 (Thu, 24 May 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r2704 | af05v@ecs.soton.ac.uk | 2007-05-23 15:30:11 +0100 (Wed, 23 May 2007) | 2 lines
+
+first cut of 1.0
+
+------------------------------------------------------------------------
+r2703 | cjg | 2007-05-23 15:24:27 +0100 (Wed, 23 May 2007) | 2 lines
+
+rename
+
+------------------------------------------------------------------------
+r2702 | cjg | 2007-05-23 15:23:17 +0100 (Wed, 23 May 2007) | 2 lines
+
+1.0 
+
+------------------------------------------------------------------------

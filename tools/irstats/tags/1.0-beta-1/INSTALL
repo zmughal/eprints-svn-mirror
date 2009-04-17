@@ -1,0 +1,83 @@
+IRStats
+-------
+
+IRStats is a Web log analysis tool aimed at Institutional Repositories.
+
+Features:
+
+ - Process logs from Eprints versions 2 and 3
+ - Process logs from DSpace (work in progress)
+ - Multiple robots filtering techniques
+ - Analyse usage of eprints or sets of eprints
+ - Analyse logs by author, subject etc.
+ - Many different graphing outputs
+
+
+Requirements:
+
+ - awstats
+ - Geo::IP perl library
+ - Date::Calc perl library
+ - Logfile::EPrints perl library
+ - ChartDirector (www.advsofteng.com) *
+ 
+ * Commercial products.
+
+Installation
+------------
+
+Install the following modules from CPAN:
+
+ Geo::IP - required for Organisation database (PurePerl won't work)
+ Date::Calc
+ Logfile::EPrints
+
+ $ cpan
+ > install Geo::IP
+ > install Date::Calc
+ > install Logfile::EPrints
+
+CPAN may require configuring and/or install further dependencies.
+
+Unpack the IRStats tarball to a convenient location (e.g. /tmp).
+
+ $ tar xzf irstats-*.tar.gz
+
+Configure irstats.cgi to reflect your local pathing
+
+The following lines need to be changed.
+Line 1: 
+	#!/usr/bin/perl -w -I/opt/eprints/perl_lib
+Line 11:
+	use lib "/opt/eprints/perl_lib/ChartDirector";
+
+Change the paths to those of your perl and eprints installs (e.g. on debian systems eprints may be contained in the /usr/share directory)
+
+Line 8:
+	use lib "/usr/local/awstats/wwwroot/cgi-bin/lib";
+
+This library path also needs to be change to that of your awstats lib directory (on linux - 'locate awstats | grep lib' will help)
+
+Installing IRStats into EPrints Path
+------------------------------------
+Copy the contents of the perl_lib directory into the  eprints3/perl_lib directory
+
+Copy the contents of the cgi directory into the eprints3/cgi directory
+
+Copy local_cfg/irstats.cfg to each repository's cfg directory
+
+Copy the local_cfg/static/irstats directory and contents into each repository's cfg/static directory
+
+Initilising IRStats
+-------------------
+As eprints, run (for each repository)
+
+  $ eprints3/cgi/irstats.cgi <repositoryid> setup
+  $ eprints3/cgi/irstats.cgi <repositoryid> update_metadata (cron this to run nightly)
+  $ eprints3/cgi/irstats.cgi <repositoryid> update_table (cron this to run nightly too)
+
+DONE
+----
+
+The interface will be available at <repositoryurl>/cgi/irstats.cgi
+
