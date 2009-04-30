@@ -7950,3 +7950,8 @@ EPRINTS-3.1.2.1
 
 2009-04-22 tmb
  * Made OAI DRIVER set available by default
+
+2009-04-30 tdb
+ * Fixed use of substr() on byte-strings in Update::View
+ * Use Unicode::Collate to order grouped sections in views
+
