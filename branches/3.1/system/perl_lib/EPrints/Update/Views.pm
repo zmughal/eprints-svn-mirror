@@ -1044,8 +1044,6 @@ sub update_view_list
 {
 	my( $session, $view, $langid, $esc_path_values ) = @_;
 
-print STDERR "update_view_list\n";
-
 	modernise_view( $view );
 
 	my $repository = $session->get_repository;
