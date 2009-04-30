@@ -30,6 +30,7 @@ package EPrints::Update::Views;
 
 use Data::Dumper;
 use Unicode::Collate;
+use Unicode::String qw( utf8 ); # required for substr
 
 use strict;
   
@@ -1043,6 +1044,8 @@ sub update_view_list
 {
 	my( $session, $view, $langid, $esc_path_values ) = @_;
 
+print STDERR "update_view_list\n";
+
 	modernise_view( $view );
 
 	my $repository = $session->get_repository;
@@ -1679,7 +1682,7 @@ sub group_items
 						$code .= ", ";
 						if( $opts->{first_initial} )
 						{
-							$code .= substr( $value->{given},0,1);
+							$code .= utf8($value->{given})->substr( 0, 1 );
 						}
 						else
 						{
@@ -1689,7 +1692,8 @@ sub group_items
 				}
 				if( $opts->{"truncate"} )
 				{
-					$code = substr( "\u$code", 0, $opts->{"truncate"} );
+					$code = utf8($code)->substr( 0, $opts->{"truncate"} );
+					$code = "\u$code";
 				}
 				push @{$code_to_list->{$code}}, $item;
 
@@ -1724,7 +1728,7 @@ sub group_items
 
 	if( $opts->{"string"} )
 	{
-		@codes = sort keys %{$code_to_list};
+		@codes = @{default_sort( $session, undef, [keys %{$code_to_list}] )};
 	}
 	else
 	{
