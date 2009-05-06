@@ -7955,3 +7955,6 @@ EPRINTS-3.1.2.1
  * Fixed use of substr() on byte-strings in Update::View
  * Use Unicode::Collate to order grouped sections in views
 
+2009-05-06 tdb
+ * Merged [4108], removing extraneous <components>
+
