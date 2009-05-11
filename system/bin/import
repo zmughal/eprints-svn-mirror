@@ -100,6 +100,11 @@ and will be ignored if --migration is set.
 URL of the source repository this import came from. Only applicable to eprints
 and will be ignored if --migration is set.
 
+=item B<--update>
+
+Normally you can not import a new item with the same id as an existing item.
+With this option enabled existing items will be updated with the new item (implies --enable-import-ids).
+
 =item B<--force>
 
 Don't ask any questions, just do it!
@@ -156,6 +161,7 @@ my $enable_web_imports = 0;
 my $enable_import_ids = 0;
 my $enable_import_datestamps = 0;
 my $migration = 0;
+my $update = 0;
 my $description = undef
 my $source_repository = undef;
 
@@ -178,6 +184,7 @@ GetOptions(
 	'enable-import-ids' => \$enable_import_ids,
 	'enable-import-datestamps' => \$enable_import_datestamps,
 	'migration' => \$migration,
+	'update' => \$update,
 	'description=s' => \$description,
 	'source-repository=s' => \$source_repository,
 ) || pod2usage( 2 );
@@ -198,6 +205,10 @@ if( $migration )
 	$enable_import_datestamps = 1;
 	$description = undef;
 	$source_repository = undef;
+}
+if( $update )
+{
+	$enable_import_ids = 1;
 }
 
 if( $scripted ) { $noise = 0; }
@@ -346,7 +357,7 @@ my $handler = EPrints::CLIProcessor->new(
 );
 
 my $pluginid = "Import::".$ipluginid;
-my $plugin = $session->plugin( $pluginid, parse_only=>$parse_only, Handler=>$handler );
+my $plugin = $session->plugin( $pluginid, parse_only=>$parse_only, update=>$update, Handler=>$handler );
 
 if( !defined $plugin )
 {

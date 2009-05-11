@@ -189,13 +189,19 @@ sub epdata_to_dataobj
 {
 	my( $plugin, $dataset, $epdata ) = @_;
 
+	my $item;
+
 	if( $plugin->{session}->get_repository->get_conf('enable_import_ids') )
 	{
 		my $ds_id = $dataset->id;
 		if( $dataset->confid eq "eprint" || $ds_id eq "user" )
 		{
 			my $id = $epdata->{$dataset->get_key_field->get_name};
-			if( $plugin->{session}->get_database->exists( $dataset, $id ) )
+			if( $plugin->{update} )
+			{
+				$item = $dataset->get_object( $session, $id );
+			}
+			elsif( $plugin->{session}->get_database->exists( $dataset, $id ) )
 			{
 				$plugin->error("Failed attampt to import existing $ds_id.$id");
 				return;
@@ -221,7 +227,26 @@ sub epdata_to_dataobj
 		$epdata->{eprint_status} = "buffer";
 	}
 
-	my $item = $dataset->create_object( $plugin->{session}, $epdata );
+	# Update an existing item
+	if( defined( $item ) )
+	{
+		foreach my $fieldname (keys %$epdata)
+		{
+			if( $dataset->has_field( $fieldname ) )
+			{
+				# Can't currently set_value on subobjects
+				my $field = $dataset->get_field( $fieldname );
+				next if $field->is_type( "subobject" );
+				$item->set_value( $fieldname, $epdata->{$fieldname} );
+			}
+		}
+		$item->commit();
+	}
+	# Create a new item
+	else
+	{
+		$item = $dataset->create_object( $plugin->{session}, $epdata );
+	}
 
 	$plugin->handler->object( $dataset, $item );
 
