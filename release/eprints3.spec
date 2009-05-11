@@ -22,7 +22,7 @@ BuildRequires: perl >= 2:5.8.0
 BuildRequires: perl(DBI) perl(Unicode::String)
 BuildRequires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
 BuildRequires: perl(XML::Parser) perl(Time::HiRes) perl(CGI)
-BuildRequires: perl(MIME::Lite) perl(Readonly)
+BuildRequires: perl(MIME::Lite)
 BuildRequires: perl(XML::LibXML) >= 1.63
 BuildRequires: antiword tetex-latex wget gzip tar ImageMagick unzip elinks
 BuildRequires: /usr/bin/pdftotext
@@ -32,7 +32,8 @@ Requires: perl >= 2:5.8.0
 Requires: perl(DBI) perl(Unicode::String)
 Requires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
 Requires: perl(XML::Parser) perl(Time::HiRes) perl(CGI)
-Requires: perl(MIME::Lite) perl(Readonly)
+Requires: perl(MIME::Lite)
+# Requires: perl(Readonly) # Not found???
 Requires: perl(XML::LibXML) >= 1.63
 Requires: antiword tetex-latex wget gzip tar ImageMagick unzip elinks
 Requires: /usr/bin/pdftotext
@@ -63,7 +64,10 @@ pushd %{package}
 ./configure --prefix=%{install_path} --with-user=%{user} --with-group=%{user_group} --with-apache=2 --with-smtp-server=localhost --disable-user-check --disable-group-check
 pushd perl_lib
 # We ought to use the system libraries
-rm -rf URI.pm URI Unicode Proc MIME Readonly
+mv URI/OpenURL.pm OpenURL.pm
+rm -rf URI.pm URI Unicode Proc MIME
+mkdir URI
+mv OpenURL.pm URI/
 popd
 popd
 
