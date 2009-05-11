@@ -24,7 +24,8 @@ BuildRequires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
 BuildRequires: perl(XML::Parser) perl(Time::HiRes) perl(CGI)
 BuildRequires: perl(MIME::Lite) perl(Readonly)
 BuildRequires: perl(XML::LibXML) >= 1.63
-BuildRequires: xpdf antiword tetex-latex wget gzip tar ImageMagick unzip elinks
+BuildRequires: antiword tetex-latex wget gzip tar ImageMagick unzip elinks
+BuildRequires: /usr/bin/pdftotext
 Requires: httpd >= 2.0.52
 Requires: mod_perl >= 2.0.0
 Requires: perl >= 2:5.8.0
@@ -33,7 +34,8 @@ Requires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
 Requires: perl(XML::Parser) perl(Time::HiRes) perl(CGI)
 Requires: perl(MIME::Lite) perl(Readonly)
 Requires: perl(XML::LibXML) >= 1.63
-Requires: xpdf antiword tetex-latex wget gzip tar ImageMagick unzip elinks
+Requires: antiword tetex-latex wget gzip tar ImageMagick unzip elinks
+Requires: /usr/bin/pdftotext
 Requires: chkconfig
 Provides: eprints3
 # Some modules are dynamically loaded by eprints, which confuses AutoReq
@@ -148,10 +150,17 @@ popd > /dev/null
 /sbin/chkconfig --del epindexer
 
 %postun
-/usr/sbin/userdel eprints || /bin/true
-/usr/sbin/groupdel eprints || /bin/true
+if [ "$1" eq "0" ]; then
+	/usr/sbin/userdel eprints || :
+	/usr/sbin/groupdel eprints || :
+fi
 
 %changelog
+* Mon May 11 2009 Tim Brody <tdb01r@ecs.soton.ac.uk>
+ - Changes submitted by Alexander Bergolth <leo AT strike.wu-wien.ac.at>
+ - Changed xpdf dependency to /usr/bin/pdftotext
+ - Only remove eprints user on uninstall
+
 * Wed Sep 12 2007 Tim Brody <tdb01r@ecs.soton.ac.uk>
  - Fedora Linux style
  - Added Apache conf.d file
