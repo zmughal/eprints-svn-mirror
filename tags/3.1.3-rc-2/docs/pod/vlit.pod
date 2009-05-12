@@ -1,0 +1,62 @@
+=head1 What is VLit?
+
+** This feature is still experimental **
+
+VLit is a method for quoting a part of a document directly. It is available on any file in the public documents area of a text mime-type (C<text/plain>, C<text/html> etc). It allows a range of characters to be extracted rather than the entire document. This allows external systems, rather than quote by cut-and-paste, to quote in context of the original.
+
+If you use it, please edit the vlit page in C</opt/eprints2/archives/I<foo>/cfg/static/en/vlit.xpage> to indicate under what terms the feature may be used. When using "human" mode, described below, this page is what the (c) copyright symbol links to, by default.
+
+Don't forget to re-run B<generate_static>.
+
+=head1 But I don't want this Feature...
+
+If for some reason you want to disable VLit, you may do so in ArchiveConfig.pm - you will then need to re-run C<generate_apacheconf> and restart the web server.
+
+Edit the vlit page (as described above) to indicate that the feature is not available on your archive.
+
+=head1 Invoking VLit
+
+=head2 Simple Parameters
+
+A simple I<transclusion> is achieved by adding the following to the end of the URL of a text/* document:
+
+ ?xuversion=1.0&locspec=charrange:offset/length
+
+Replacing "offset" and "length" with an integer. An offset of 0 and a length of 1 will return the first character. eg.
+
+ http://www.weebleprints.co.uk/archive/00000543/01/notfalldown.txt
+ ?xuversion=1.0&locspec=charrange:1403/130
+
+(All one URL, only split to fit on the page) This will return characters from offset 1403 to 1533.
+
+=head2 Human Mode
+
+An optional "mode" parameter may by used. The "human" mode returns the character range as HTML with characters like & properly escaped and new line characters turned into HTML "br" break tags. It will place two links before the text: a (c) link which will link to an explanation of transcopyright - If you want to change this URL you'll have to hack VLit.pm - and a TRANS link which will take you to the context of the quote - 1024 extra characters before and after but with the quote highlighted in red. Clicking TRANS on the context view will take you to the full raw document.
+
+=head2 XML-Entity Mode
+
+You may also set mode to be xml-entity, eg:
+
+ http://lemur1.ecs.soton.ac.uk/archive/00000134/01/xuDation-d18.txt?
+ locspec=charrange:10429/488&xuversion=1.0&mode=xml-entity
+
+This returns the transclusion as a piece of XML which can be included as an external entity by other XML documents.
+
+eg:
+
+ <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+ <transclusion xlmns="http://xanadu.net/transclusion/xu/1.0" 
+ href="http://lemur1.ecs.soton.ac.uk/archive/00000134/01/xuDation-d18.txt" 
+ offset="10429" length="488">A more recent interactive screen 
+ implementation of transpointing windows (screen shot fig. 5) was created 
+ by Ka-Ping Yee in 1999.  This was served, like Walker's, from our xu88 
+ server (rechristened as Udanax Green).  Yee's PYXI is a skeleton front 
+ end that shows and edits text, links and transclusions, and may be 
+ extended to reach more of the server's functionality.  Both Udanax Green 
+ and PYXI were released under an open source license in 1999 (120), and are 
+ available at udanax.com. </transclusion>
+
+
+=head1 Area locspec
+
+There is an 'area' locspec which requires the 'convert' unix command. It returns an area of an image specified as C<locspec=area:page=n/hrange=startx,endx/vrange=starty,endy> where startx,endx,starty,endy and n are all positive integers. Any parts may be omitted: To specify the first 50 rows of page 3 C<locspec=area:page=3/vrange=,50>.
