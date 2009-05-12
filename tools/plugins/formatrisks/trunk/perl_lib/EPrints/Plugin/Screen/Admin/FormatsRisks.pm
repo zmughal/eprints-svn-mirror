@@ -64,16 +64,13 @@ sub fetch_data
 	my $format_files = {};
 
 	$dataset->map( $session, sub {
-		my( $session, $dataset, $pronom_formats ) = @_;
+		my( $session, $dataset, $pronom_format ) = @_;
 		
-		foreach my $pronom_format ($pronom_formats)
+		my $puid = $pronom_format->get_value( "pronomid" );
+		$puid = "" unless defined $puid;
+		if ($pronom_format->get_value("file_count") > 0) 
 		{
-			my $puid = $pronom_format->get_value( "pronomid" );
-			$puid = "" unless defined $puid;
-			if ($pronom_format->get_value("file_count") > 0) 
-			{
-				$format_files->{$puid} = $pronom_format->get_value("file_count");
-			}
+		$format_files->{$puid} = $pronom_format->get_value("file_count");
 		}
 	} );
 
