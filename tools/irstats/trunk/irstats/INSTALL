@@ -79,5 +79,9 @@ As eprints, run (for each repository)
 DONE
 ----
 
+Also available in local_cfg/cfg/cfg.d is an example eprint_render.pl script which includes 2 download graphs (Monthly and Daily) on each eprint abstract page. Simply copy this over your eprint_render.pl in archive_name/cfg/cfg.d to make use of this.
+
 The interface will be available at <repositoryurl>/cgi/irstats.cgi
+
+
 
