@@ -199,7 +199,7 @@ sub epdata_to_dataobj
 			my $id = $epdata->{$dataset->get_key_field->get_name};
 			if( $plugin->{update} )
 			{
-				$item = $dataset->get_object( $session, $id );
+				$item = $dataset->get_object( $plugin->{session}, $id );
 			}
 			elsif( $plugin->{session}->get_database->exists( $dataset, $id ) )
 			{
