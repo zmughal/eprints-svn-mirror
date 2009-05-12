@@ -7961,3 +7961,6 @@ EPRINTS-3.1.2.1
 2009-05-11 cjg
  * Added --update option to imports. This is already in trunk but needed
     on 3.1 too.
+
+2009-05-12 cjg
+ * Bugfix typo on --update change.
