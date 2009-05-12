@@ -39,7 +39,7 @@ multiple saved searches.
 
 package EPrints::DataObj::SavedSearch;
 
-@ISA = ( 'EPrints::DataObj::SubObject' );
+@ISA = ( 'EPrints::DataObj' );
 
 use EPrints;
 
@@ -63,8 +63,7 @@ sub get_system_field_info
 
 	return 
 	( 
-		{ name=>"id", type=>"int", required=>1, import=>0, can_clone=>1,
-			sql_counter=>"savedsearchid" },
+		{ name=>"id", type=>"int", required=>1, import=>0, can_clone=>1, },
 
 		{ name=>"rev_number", type=>"int", required=>1, can_clone=>0 },
 
@@ -93,17 +92,44 @@ sub get_system_field_info
 ######################################################################
 =pod
 
-=item $dataset = EPrints::DataObj::SavedSearch->get_dataset_id
+=item $saved_search = EPrints::DataObj::SavedSearch->new( $session, $id )
 
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
+Return new Saved Search object, created by loading the Saved Search
+with id $id from the database.
 
 =cut
 ######################################################################
 
-sub get_dataset_id
+sub new
 {
-	return "saved_search";
+	my( $class, $session, $id ) = @_;
+
+	return $session->get_database->get_single( 	
+		$session->get_repository->get_dataset( "saved_search" ),
+		$id );
 }
+
+######################################################################
+=pod
+
+=item $saved_search = EPrints::DataObj::SavedSearch->new_from_data( $session, $data )
+
+Construct a new EPrints::DataObj::SavedSearch object based on the $data hash 
+reference of metadata.
+
+=cut
+######################################################################
+
+sub new_from_data
+{
+	my( $class, $session, $known ) = @_;
+
+	return $class->SUPER::new_from_data(
+			$session,
+			$known,
+			$session->get_repository->get_dataset( "saved_search" ) );
+}
+
 
 ######################################################################
 # =pod
@@ -161,6 +187,31 @@ sub get_defaults
 ######################################################################
 =pod
 
+=item $success = $saved_search->remove
+
+Remove the saved search.
+
+=cut
+######################################################################
+
+sub remove
+{
+	my( $self ) = @_;
+
+	my $subs_ds = $self->{session}->get_repository->get_dataset( 
+		"saved_search" );
+	
+	my $success = $self->{session}->get_database->remove(
+		$subs_ds,
+		$self->get_value( "id" ) );
+
+	return $success;
+}
+
+
+######################################################################
+=pod
+
 =item $success = $saved_search->commit( [$force] )
 
 Write this object to the database.
@@ -189,7 +240,14 @@ sub commit
 		$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 	}
 
-	my $success = $self->SUPER::commit( $force );
+	my $subs_ds = $self->{session}->get_repository->get_dataset( 
+		"saved_search" );
+	$self->tidy;
+	my $success = $self->{session}->get_database->update(
+		$subs_ds,
+		$self->{data} );
+
+	$self->queue_changes;
 
 	return $success;
 }
@@ -209,23 +267,11 @@ sub get_user
 {
 	my( $self ) = @_;
 
-	return undef unless $self->is_set( "userid" );
-
-	if( defined($self->{user}) )
-	{
-		# check we still have the same owner
-		if( $self->{user}->get_id eq $self->get_value( "userid" ) )
-		{
-			return $self->{user};
-		}
-	}
-
-	$self->{user} = EPrints::User->new( 
-		$self->{session}, 
+	return EPrints::User->new( 
+		$self->{session},
 		$self->get_value( "userid" ) );
-
-	return $self->{user};
 }
+
 
 ######################################################################
 =pod

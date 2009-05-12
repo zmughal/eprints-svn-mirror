@@ -90,6 +90,8 @@ package EPrints::Session;
 
 use EPrints;
 
+use Unicode::String qw(utf8 latin1);
+
 #use URI::Escape;
 use CGI qw(-compile);
 
@@ -150,6 +152,7 @@ sub new
 	if( $mode == 0 || $mode == 2 || !defined $mode )
 	{
 		$self->{request} = EPrints::Apache::AnApache::get_request();
+		if( $mode == 0 ) { $self->read_params; }
 		$self->{offline} = 0;
 		$self->{repository} = EPrints::Repository->new_from_request( $self->{request} );
 	}
@@ -234,13 +237,8 @@ sub new
 			return undef;
 		}
 	}
-
-	$self->{storage} = EPrints::Storage->new( $self );
-
 	if( $self->{noise} >= 2 ) { print "done.\n"; }
 	
-	if( $mode == 0 ) { $self->read_params; }
-
 	$self->{repository}->call( "session_init", $self, $self->{offline} );
 
 	return( $self );
@@ -334,6 +332,7 @@ sub terminate
 	my( $self ) = @_;
 	
 	
+	$self->{database}->garbage_collect();
 	$self->{repository}->call( "session_close", $self );
 	$self->{database}->disconnect();
 
@@ -689,18 +688,6 @@ sub get_database
 	return $self->{database};
 }
 
-=item $store = $session->get_storage
-
-Return the storage control object.
-
-=cut
-
-sub get_storage
-{
-	my( $self ) = @_;
-	return $self->{storage};
-}
-
 
 
 ######################################################################
@@ -789,20 +776,25 @@ sub get_full_url
 
 	return undef unless defined $self->{request};
 
-	# we need to add parameters manually to avoid semi-colons
-	my $url = URI->new( $self->get_url( host => 1 ) );
-	$url->path( $self->{request}->uri );
 
 	my @params = $self->param;
-	my @form;
-	foreach my $param (@params)
+	my $host = $self->{repository}->get_conf( "host" );
+	my $port = $self->{repository}->get_conf( "port" );
+	my $url = "http://$host".($port!=80?":$port":"").$self->{"request"}->uri;
+	if( scalar @params == 0 )
 	{
-		push @form, map { $param => $_ } $self->param( $param );
+		return $url;
 	}
-	utf8::encode($_) for @form; # utf-8 encoded URL
-	$url->query_form( @form );
+	my @param_list = ();
+	foreach my $param ( @params )
+	{
+		my $value = $self->param( $param );
+		$param =~ s/([^a-zA-Z0-9])/sprintf( "%%%02X", ord( $1 ) )/eg;
+		$value =~ s/([^a-zA-Z0-9])/sprintf( "%%%02X", ord( $1 ) )/eg;
+		push @param_list, $param."=".$value;
+	}
 
-	return $url;
+	return $url."?".join( "&", @param_list );
 }
 
 
@@ -901,13 +893,14 @@ Note that in the call we use "=>" not "=".
 
 sub make_element
 {
-	my( $self , $ename , @opts ) = @_;
+	my( $self , $ename , %attribs ) = @_;
 
 	my $element = $self->{doc}->createElement( $ename );
-	for(my $i = 0; $i < @opts; $i += 2)
+	foreach my $attr_name ( keys %attribs )
 	{
-		$element->setAttribute( $opts[$i], $opts[$i+1] )
-			if defined( $opts[$i+1] );
+		next unless( defined $attribs{$attr_name} );
+		my $value = "$attribs{$attr_name}"; # ensure it's just a string
+		$element->setAttribute( $attr_name , $value );
 	}
 
 	return $element;
@@ -1109,7 +1102,7 @@ sub render_nbsp
 {
 	my( $self ) = @_;
 
-	my $string = pack("U",160);
+	my $string = latin1(chr(160));
 
 	return $self->make_text( $string );
 }
@@ -1549,7 +1542,7 @@ sub render_option_list
 			$defaults{$_} = 1;
 		}
 	}
-	elsif( defined $params{default} )
+	else
 	{
 		$defaults{$params{default}} = 1;
 	}
@@ -2576,7 +2569,6 @@ sub write_static_page
 		my $file = $filebase.".".$part_id;
 		if( open( CACHE, ">$file" ) )
 		{
-			binmode(CACHE,":utf8");
 			print CACHE EPrints::XML::to_string( $parts->{$part_id}, undef, 1 );
 			close CACHE;
 			if( defined $wrote_files )
@@ -2594,7 +2586,6 @@ sub write_static_page
 	my $title_textonly_file = $filebase.".title.textonly";
 	if( open( CACHE, ">$title_textonly_file" ) )
 	{
-		binmode(CACHE,":utf8");
 		print CACHE EPrints::Utils::tree_to_utf8( $parts->{title}, undef, undef, undef, 1 ); # don't convert href's to <http://...>'s
 		close CACHE;
 		if( defined $wrote_files )
@@ -2838,12 +2829,10 @@ sub send_page
 END
 	if( defined $self->{text_page} )
 	{
-		binmode(STDOUT,":utf8");
 		print $self->{text_page};
 	}
 	else
 	{
-		binmode(STDOUT,":utf8");
 		print EPrints::XML::to_string( $self->{page}, undef, 1 );
 		EPrints::XML::dispose( $self->{page} );
 		delete $self->{page};
@@ -2885,7 +2874,6 @@ END
 		{
 			$wrote_files->{$filename} = 1;
 		}
-		binmode(XMLFILE,":utf8");
 		print XMLFILE $self->{text_page};
 		close XMLFILE;
 	}
@@ -3153,7 +3141,6 @@ sub param
 	if( !wantarray )
 	{
 		my $value = ( $self->{query}->param( $name ) );
-		utf8::decode($value);
 		return $value;
 	}
 	
@@ -3168,8 +3155,6 @@ sub param
 	{
 		@result = $self->{query}->param;
 	}
-
-	utf8::decode($_) for @result;
 
 	return( @result );
 
@@ -3187,50 +3172,20 @@ sub read_params
 {
 	my( $self ) = @_;
 
-	my $r = $self->{request};
-	my $uri = $r->unparsed_uri;
-	my $progressid = ($uri =~ /progress_id=([a-fA-F0-9]{32})/)[0];
-
-	my $c = $r->connection;
+	my $c = $self->{request}->connection;
 	my $params = $c->notes->get( "loginparams" );
 	if( defined $params && $params ne 'undef')
 	{
  		$self->{query} = new CGI( $params ); 
 	}
-	elsif( defined( $progressid ) && $r->method eq "POST" )
-	{
-		EPrints::DataObj::UploadProgress->remove_expired( $self );
-
-		my $size = $r->headers_in->get('Content-Length') || 0;
-
-		my $progress = EPrints::DataObj::UploadProgress->create_from_data( $self, {
-			progressid => $progressid,
-			size => $size,
-			received => 0,
-		});
-
-		# Something odd happened (user may have stopped/retried)
-		if( !defined $progress )
-		{
-			$self->{query} = new CGI();
-		}
-		else
-		{
-			$self->{query} = new CGI( \&EPrints::DataObj::UploadProgress::update_cb, $progress );
-
-			# The CGI callback doesn't include the rest of the POST that
-			# Content-Length includes
-			$progress->set_value( "received", $size );
-			$progress->commit;
-		}
-	}
 	else
 	{
- 		$self->{query} = new CGI();
+ 		$self->{query} = new CGI;
 	}
 
 	$c->notes->set( loginparams=>'undef' );
 }
+
 
 ######################################################################
 =pod
@@ -3485,10 +3440,7 @@ sub get_action_button
 	}
 
 	# undef if _default is not set.
-	$p = $self->param("_default_action");
-	return $p if defined $p;
-
-	return "";
+	return $self->param("_default_action");
 }
 
 
@@ -3626,10 +3578,30 @@ sub plugin
 {
 	my( $self, $pluginid, %params ) = @_;
 
-	return $self->get_repository->get_plugin_factory->get_plugin( $pluginid,
-		%params,
-		session => $self,
-		);
+	my $map = $self->get_repository->get_conf( "plugin_alias_map" );
+	if( defined $map && exists $map->{$pluginid} )
+	{
+		$params{id} = $pluginid;
+		$pluginid = $map->{$pluginid};
+	}
+	return if !defined $pluginid;
+
+	my $class = $self->get_repository->get_plugin_class( $pluginid );
+
+	if( !defined $class )
+	{
+		$self->{repository}->log( "Plugin '$pluginid' not found." );
+		return undef;
+	}
+
+	my $plugin = $class->new( session=>$self, %params );	
+
+	if( $plugin->param( "disable" ) )
+	{
+		return undef;
+	}
+
+	return $plugin;
 }
 
 
@@ -3653,34 +3625,33 @@ sub plugin_list
 {
 	my( $self, %restrictions ) = @_;
 
-	return
-		map { $_->get_id() }
-		$self->{repository}->get_plugin_factory->get_plugins(
-			{ session => $self },
-			%restrictions,
-		);
+	my @plugin_ids = $self->get_repository->get_plugin_ids();
+
+	return @plugin_ids if( !scalar %restrictions );
+	my @out = ();
+	foreach my $plugin_id ( @plugin_ids )
+	{
+		my $plugin = $self->plugin( $plugin_id );
+
+		next if( !defined $plugin );
+
+		# should we add this one to the list?
+		my $add = 1;	
+		foreach my $k ( keys %restrictions )
+		{
+			my $v = $restrictions{$k};
+			next if( $plugin->matches( $k, $v ) );
+			$add = 0;
+		}
+		
+		next unless $add;	
+
+		push @out, $plugin_id;
+	}
+
+	return @out;
 }
 
-=item @plugins = $session->get_plugins( [ $params, ] %restrictions )
-
-Returns a list of plugin objects that conform to %restrictions (may be empty).
-
-If $params is given uses that hash reference to initialise the plugins. Always passes this session to the plugin constructor method.
-
-=cut
-
-sub get_plugins
-{
-	my( $self, @opts ) = @_;
-
-	my $params = scalar(@opts) % 2 ?
-		shift(@opts) :
-		{};
-
-	$params->{session} = $self;
-
-	return $self->{repository}->get_plugin_factory->get_plugins( $params, @opts );
-}
 
 
 

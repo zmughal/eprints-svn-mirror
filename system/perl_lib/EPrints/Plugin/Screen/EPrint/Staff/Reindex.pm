@@ -23,13 +23,6 @@ sub new
 	return $self;
 }
 
-sub obtain_lock
-{
-	my( $self ) = @_;
-
-	return $self->obtain_eprint_lock;
-}
-
 sub about_to_render 
 {
 	my( $self ) = @_;
@@ -41,7 +34,6 @@ sub allow_reindex
 {
 	my( $self ) = @_;
 
-	return 0 unless $self->could_obtain_eprint_lock;
 	return $self->allow( "eprint/staff/edit" );
 }
 sub action_reindex
@@ -50,17 +42,33 @@ sub action_reindex
 
 	my $session = $self->{session};
 	my $eprint = $self->{processor}->{eprint};
+	my $dataset = $eprint->{dataset};
 
-	$eprint->queue_all();
+	my $database = $session->get_database;
+
+	foreach my $field ( $dataset->get_fields )
+	{
+		next unless $field->get_property( "text_index" );
+		$database->index_queue(
+			'eprint',
+			$eprint->get_id,
+			$field->get_name );
+	}
 
 	# Remove all document index files to force re-texting them
-	foreach my $doc ($eprint->get_all_documents())
+	foreach my $doc ($eprint->get_all_documents)
 	{
-		$doc->remove_indexcodes();
+		unlink( $doc->words_file );
+		unlink( $doc->indexcodes_file );
+
 	}
 
 	# Redo the fulltext-index
-	$eprint->queue_fulltext();
+	$database->index_queue(
+		'eprint',
+		$eprint->get_id,
+		$EPrints::Utils::FULLTEXT
+	);
 
 	$self->add_result_message( 1 );
 }

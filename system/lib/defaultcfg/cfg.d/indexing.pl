@@ -22,6 +22,8 @@
 #
 ######################################################################
 
+use Unicode::String qw(utf8);
+
 $c->{index} = 1;
 
 # Minimum size word to normally index.
@@ -102,7 +104,20 @@ $c->{extract_words} = sub
 
 	# Process string. 
 	# First we apply the char_mappings.
-	my $buffer = EPrints::Index::apply_mapping( $session, $text );
+	my( $i, $len ),
+	my $utext = utf8( "$text" ); # just in case it wasn't already.
+	$len = $utext->length;
+	my $buffer = utf8( "" );
+	for($i = 0; $i<$len; ++$i )
+	{
+		my $s = $utext->substr( $i, 1 );
+		# $s is now char number $i
+		if( defined $EPrints::Index::FREETEXT_CHAR_MAPPING->{$s} )
+		{
+			$s = $EPrints::Index::FREETEXT_CHAR_MAPPING->{$s};
+		} 
+		$buffer.=$s;
+	}
 
 	my @words =EPrints::Index::split_words( $session, $buffer );
 

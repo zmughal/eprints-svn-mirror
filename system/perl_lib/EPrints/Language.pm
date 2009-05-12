@@ -71,8 +71,6 @@ undef or a reference to the main language object for the repository.
 =cut
 ######################################################################
 
-my %SYSTEM_PHRASES;
-
 sub new
 {
 	my( $class , $langid , $repository , $fallback ) = @_;
@@ -86,107 +84,55 @@ sub new
 	
 	$self->{fallback} = $fallback;
 
-	$self->{repository_data} = { docs => {} };
-
-	$self->{data} = $SYSTEM_PHRASES{$langid} ||= { docs => {} };
-
-	$self->_read_phrases_dir(
-		$self->{repository_data},
+	$self->{repository_data} = $self->_read_phrases_dir(
 		$repository,
 		$repository->get_conf( "config_path" ).
 			"/lang/".$self->{id}."/phrases" );
 
-	$self->_read_phrases_dir(
-		$self->{data},
+	if( !defined $self->{repository_data} )
+	{
+		return( undef );
+	}
+
+	$self->{data} = $self->_read_phrases_dir(
 		$repository,
 		$repository->get_conf( "lib_path" ).
 			"/lang/".$self->{id}."/phrases" );
 
+	if( !defined $self->{data} )
+	{
+		return( undef );
+	}
+	
 	return( $self );
 }
 
 sub _read_phrases_dir
 {
-	my( $self, $data, $repository, $dir ) = @_;
+	my( $self, $repository, $dir ) = @_;
 
 	my $dh;
 	opendir( $dh, $dir ) || EPrints::abort( "Failed to read: $dir: $!" );
+	my @phrase_files = ();
 	while( my $fn = readdir( $dh ) )
 	{
 		next if $fn =~ m/^\./;
 		next unless $fn =~ m/\.xml$/;
-		my $file = "$dir/$fn";
-		if( !exists $data->{docs}->{$file} )
-		{
-			$self->_read_phrases( $data, $file, $repository );
-		}
+		push @phrase_files,$fn;
 	}
 	close $dh;
-}
 
-=item $info = $lang->get_phrase_info( $phraseid, $session )
-
-Returns a hash describing the phrase $phraseid. Contains:
-
-	langid - the language the phrase is from
-	phraseid - the phrase id
-	xml - the raw XML fragment
-	fallback - whether the phrase was from the fallback language
-	system - whether the phrase was from the system files
-	filename - the file the phrase came from
-
-If $phraseid doesn't exist returns undef.
-
-=cut
-
-sub get_phrase_info
-{
-	my( $self, $phraseid, $session ) = @_;
-
-	my( $xml, $fb, $src, $file ) = $self->_get_phrase( $phraseid, $session );
-	return undef unless defined $xml;
-
-	return {
-		langid => ($fb ? $self->{fallback}->{id} : $self->{id}),
-		phraseid => $phraseid,
-		xml => $xml,
-		filename => $file,
-		fallback => $fb,
-		system => ($src eq "data" ? 1 : 0),
-	};
-}
-
-=item $phraseids = $language->get_phrase_ids( $fallback )
-
-Return a reference to an array of all phrase ids that are defined in this language (repository and system).
-
-If $fallback is true returns any additional phrase ids defined in the fallback language.
-
-=cut
-
-sub get_phrase_ids
-{
-	my( $self, $fallback ) = @_;
-
-	my %phrase_ids;
-
-	foreach my $src (qw( data repository_data ))
+	my %phrases = ();
+	foreach my $fn ( sort @phrase_files )
 	{
-		for(keys %{$self->{$src}->{xml}})
-		{
-			$phrase_ids{$_} = undef;
-		}
-		if( $fallback && defined $self->{fallback} )
-		{
-			for(keys %{$self->{fallback}->{$src}->{xml}})
-			{
-				$phrase_ids{$_} = undef;
-			}
-		}
-	}
+		my $new = $self->_read_phrases( $dir."/".$fn, $repository );
 
-	return keys %phrase_ids;
+		foreach( keys %{$new} ) { $phrases{$_} = $new->{$_}; }
+	}
+	return \%phrases;
 }
+	
+
 
 ######################################################################
 =pod
@@ -227,31 +173,14 @@ sub phrase
 	# not using fb 
 	my( $phrase , $fb ) = $self->_get_phrase( $phraseid, $session );
 
-	$inserts = {} if( !defined $inserts );
 	if( !defined $phrase )
 	{
 		$session->get_repository->log( 
 			'Undefined phrase: "'.$phraseid.'" ('.$self->{id}.')' );
-		my $frag = $session->make_doc_fragment;
-		$frag->appendChild( $session->make_text( '["'.$phraseid.'" not defined' ) );
-		if( scalar(keys %$inserts) )
-		{
-			my $dl = $session->make_element( "dl", class => "ep_undefined_phrase"  );
-			$frag->appendChild( $dl );
-			while(my( $key, $insert ) = each %$inserts)
-			{
-				my $dt = $session->make_element( "dt" );
-				$dl->appendChild( $dt );
-				$dt->appendChild( $session->make_text( $key ) );
-				my $dd = $session->make_element( "dd" );
-				$dl->appendChild( $dd );
-				$dd->appendChild( $insert );
-			}
-		}
-		$frag->appendChild( $session->make_text( ']' ) );
-		return $frag;
+		return $session->make_text( '["'.$phraseid.'" not defined]' );
 	}
 
+	$inserts = {} if( !defined $inserts );
 #print STDERR "---\nN:$phrase\nNO:".$phrase->getOwnerDocument."\n";
 	my $used = {};
 	my $result = EPrints::XML::EPC::process_child_nodes( 
@@ -289,46 +218,72 @@ sub _get_phrase
 {
 	my( $self, $phraseid, $session ) = @_;
 
-	# Look for the phrase in this order:
-	# $self->{repository_data}, $fallback->{$repository_data},
-	# $self->{data}, $fallback->{$data}
-	foreach my $src (qw( repository_data data ))
-	{
-		my( $xml, $file ) = $self->_get_src_phrase( $src, $phraseid, $session );
-		return( $xml, 0, $src, $file ) if defined $xml;
+	my( $phraseinfo, $srchash, $is_fallback ) = $self->_get_phraseinfo_in_memory( $phraseid, $session );
 
-		next unless defined $self->{fallback};
-		($xml, $file ) = $self->{fallback}->_get_src_phrase( $src, $phraseid, $session );
-		return( $xml, 1, $src, $file ) if defined $xml;
+	if( !defined $phraseinfo )
+	{
+		return undef;
 	}
 
-	return ();
+	if( defined $session && !defined $session->{config_file_mtime_checked}->{$phraseinfo->{file}} )
+	{
+		my @filestat = stat( $phraseinfo->{file} );
+		my $mtime = $filestat[9];
+		if( $mtime ne $phraseinfo->{mtime} )
+		{
+			my $new = $self->_read_phrases( $phraseinfo->{file}, $session->get_repository );
+			foreach( keys %{$new} ) { $srchash->{$_} = $new->{$_}; }
+			$phraseinfo = $srchash->{$phraseid};
+		}
+		$session->{config_file_mtime_checked}->{$phraseinfo->{file}} = 1;
+	}
+
+	return $phraseinfo->{xml};
 }
 
-sub _get_src_phrase
+######################################################################
+# 
+# ( $phraseinfo, $srchash, $is_fallback ) = $language->_get_phraseinfo_in_memory( $phraseid, $session )
+#
+# Return the phrase details for the given id or undef if no phrase is 
+# defined. Details include the xml, source file and last modification
+# time.
+# $srchash is the hash where the phrase came from, and is_fallback is
+# true if it's not the users language of preference.
+#
+######################################################################
+
+sub _get_phraseinfo_in_memory
 {
-	my( $self, $src, $phraseid, $session ) = @_;
+	my( $self, $phraseid ) = @_;
 
-	my $data = $self->{$src};
+	my $res = undef;
+	my $src = undef;
 
-	my $xml = $data->{xml}->{$phraseid};
-	return undef unless defined $xml;
+	# repository specific, correct language
+	$src = $self->{repository_data};
+	return( $src->{$phraseid}, $src , 0 ) if( defined $src->{$phraseid} );
 
-	# Check the file modification time, reload it if it's changed
-	my $file = ${$data->{file}->{$phraseid}};
-	if( !defined( $session->{config_file_mtime_checked}->{$file} ) )
+	# repository specific, fallback language
+	if( defined $self->{fallback} )
 	{
-		my $mtime = $data->{docs}->{$file}->{mtime};
-		my $c_mtime = (stat( $file ))[9];
-		if( $mtime ne $c_mtime )
-		{
-			$self->_reload_phrases( $data, $file, $session->get_repository );
-			$xml = $data->{xml}->{$phraseid};
-		}
-		$session->{config_file_mtime_checked}->{$file} = 1;
+		$src = $self->{fallback}->_get_repositorydata;
+		return( $src->{$phraseid}, $src , 1 ) if( defined $src->{$phraseid} );
 	}
 
-	return ($xml, $file);
+	# system phrases, correct language
+	$src = $self->{data};
+	return( $src->{$phraseid}, $src , 0 ) if( defined $src->{$phraseid} );
+
+	# system phrases, fallback language
+	if( defined $self->{fallback} )
+	{
+		$src = $self->{fallback}->_get_data;
+		return( $src->{$phraseid}, $src , 1 ) if( defined $src->{$phraseid} );
+	}
+
+	# no phrase found at all.
+	return undef;
 }
 
 ######################################################################
@@ -383,7 +338,7 @@ sub _get_repositorydata
 
 ######################################################################
 # 
-#  $phrases = $language->_read_phrases( $data, $file, $repository )
+#  $phrases = $language->_read_phrases( $file, $repository )
 # 
 # Return a reference to a hash of DOM objects describing the phrases
 # from the XML phrase file $file.
@@ -392,104 +347,67 @@ sub _get_repositorydata
 
 sub _read_phrases
 {
-	my( $self, $data, $file, $repository ) = @_;
+	my( $self, $file, $repository ) = @_;
 
-	my $doc = $repository->parse_xml( $file );	
+	my $doc=$repository->parse_xml( $file );	
 	if( !defined $doc )
 	{
 		print STDERR "Error loading $file\n";
 		return;
 	}
+	my @filestat = stat( $file );
+	my $mtime = $filestat[9];
 	my $phrases = ($doc->getElementsByTagName( "phrases" ))[0];
 
 	if( !defined $phrases ) 
 	{
-		print STDERR "Error parsing $file\nCan't find top level element.\n";
+		print STDERR "Error parsing $file\nCan't find top level element.";
 		EPrints::XML::dispose( $doc );
 		return;
 	}
+	my $data = {};
 
-	# Keep the document in scope and record its mtime	
-	my $mtime = (stat( $file ))[9];
-	$data->{docs}->{$file} = {
-		doc => $doc,
-		mtime => $mtime,
-	};
-
+	my $element;
 	my $warned = 1; # set to zero if we want to warn about name="" vs id=""
 	my $near;
-	foreach my $element ( $phrases->getChildNodes )
+	foreach $element ( $phrases->getChildNodes )
 	{
 		my $name = $element->nodeName;
-		if( $name ne "phrase" and $name ne "epp:phrase" )
+		if( $name eq "phrase" or $name eq "epp:phrase" )
 		{
-			next;
-		}
-		my $key = $element->getAttribute( "id" );
-		if( !defined $key || $key eq "")
-		{
-			$key = $element->getAttribute( "name" );
-			if(  !$key || $key eq "" || !$warned )
+			my $key = $element->getAttribute( "id" );
+			if( !defined $key || $key eq "")
 			{
-				my $warning = "Warning: in $file";
-				if( defined $near ) 
+				$key = $element->getAttribute( "name" );
+				if(  !$key || $key eq "" || !$warned )
 				{
-					$warning.=", near '$near'";
+					my $warning = "Warning: in $file";
+					if( defined $near ) 
+					{
+						$warning.=", near '$near'";
+					}
+					$warning.= " found phrase without 'id' attribute.";
+					if( !$key || $key eq "")
+					{
+						$repository->log( $warning );
+						next;
+					}
+					$repository->log( 
+"$warning The phrase did have a 'name' attribute so this probably means it's an EPrints v2 phrase file." );
+					$warned = 1;
 				}
-				$warning.= " found phrase without 'id' attribute.";
-				if( !$key || $key eq "")
-				{
-					$repository->log( $warning );
-					next;
-				}
-				$repository->log( 
-						"$warning The phrase did have a 'name' attribute so this probably means it's an EPrints v2 phrase file." );
-				$warned = 1;
 			}
+			$near = $key;
+			$data->{$key} = { xml=>$element, file=>$file, mtime=>$mtime };
 		}
-		$near = $key;
-		$data->{xml}->{$key} = $element;
-		$data->{file}->{$key} = \$file; # save some memory
 	}
+
+	# Keep the document in scope...	
+	$self->{docs}->{$file} = $doc;
 
 	return $data;
 }
 
-######################################################################
-# 
-#  $phrases = $language->_reload_phrases( $data, $file, $repository )
-# 
-# Reload the phrases file $file (otherwise same as _read_phrases).
-# 
-######################################################################
-
-sub _reload_phrases
-{
-	my( $self, $data, $file, $repository ) = @_;
-
-	# Find and remove all phrases read from this file
-	foreach my $phraseid (keys %{$data->{xml}})
-	{
-		if( ${$data->{file}->{$phraseid}} eq $file )
-		{
-			delete $data->{xml}->{$phraseid};
-			delete $data->{file}->{$phraseid};
-		}
-	}
-
-	# Dispose of the old document
-	my $doc = delete $data->{docs}->{$file};
-	if( defined $doc )
-	{
-		EPrints::XML::dispose( $doc->{doc} );
-	}
-	else
-	{
-		$repository->log( "Asked to reload phrases file '$file', but it wasn't loaded already?" );
-	}
-
-	return $self->_read_phrases( $data, $file, $repository );
-}
 
 ######################################################################
 =pod
@@ -507,62 +425,7 @@ sub get_id
 	return $self->{id};
 }
 
-=item $lang = $language->get_fallback()
 
-Return the fallback language for this language. Returns undef if there is no fallback.
-
-=cut
-
-sub get_fallback
-{
-	my( $self ) = @_;
-	return $self->{fallback};
-}
-
-=item $ok = $language->load_phrases( $session, $file )
-
-Load phrases from $file into the current language (use with care!).
-
-=cut
-
-sub load_phrases
-{
-	my( $self, $session, $file ) = @_;
-
-	return unless -r $file;
-
-	return $self->_reload_phrases( $self->{repository_data}, $file, $session->get_repository );
-}
-
-=item $doc = EPrints::Language->create_phrase_doc( $session, [ $comment ] )
-
-Create and return a new, empty, phrases document. Optionally put $comment at the top.
-
-=cut
-
-sub create_phrase_doc
-{
-	my( $class, $session, $comment ) = @_;
-
-	my $xml = <<END;
-<?xml version="1.0" encoding="utf-8" standalone="no" ?>
-<!DOCTYPE phrases SYSTEM "entities.dtd">
-<epp:phrases xmlns="http://www.w3.org/1999/xhtml" xmlns:epp="http://eprints.org/ep3/phrase" xmlns:epc='http://eprints.org/ep3/control'>
-
-</epp:phrases>
-END
-
-	my $doc = EPrints::XML::parse_xml_string( $xml );
-
-	if( defined $comment )
-	{
-		my $phrases = $doc->documentElement;
-		$phrases->appendChild( $doc->createComment( $comment ) );
-		$phrases->appendChild( $doc->createTextNode( "\n\n" ) );
-	}
-
-	return $doc;
-}
 
 1;
 

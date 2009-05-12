@@ -1,10 +1,17 @@
 package EPrints::Plugin::Export::ContextObject;
 
-use EPrints::Plugin::Export::XMLFile;
+use Unicode::String qw( utf8 );
 
-@ISA = ( "EPrints::Plugin::Export::XMLFile" );
+use EPrints::Plugin::Export;
+
+@ISA = ( "EPrints::Plugin::Export" );
 
 use strict;
+
+# The utf8() method is called to ensure that
+# any broken characters are removed. There should
+# not be any broken characters, but better to be
+# sure.
 
 our %TYPES = (
 	article => {
@@ -42,6 +49,8 @@ sub new
 	$self->{name} = "OpenURL ContextObject";
 	$self->{accept} = [ 'list/eprint', 'list/access', 'dataobj/eprint', 'dataobj/access' ];
 	$self->{visible} = "all";
+	$self->{suffix} = ".xml";
+	$self->{mimetype} = "text/xml";
 
 	$self->{xmlns} = "info:ofi/fmt:xml:xsd:ctx";
 	$self->{schemaLocation} = "http://www.openurl.info/registry/docs/info:ofi/fmt:xml:xsd:ctx";

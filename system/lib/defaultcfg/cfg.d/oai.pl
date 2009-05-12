@@ -13,6 +13,7 @@
 ######################################################################
 
 use EPrints::OpenArchives;
+use Unicode::String qw(latin1 utf8);
 
 my $oai = {};
 $c->{oai} = $oai;
@@ -38,8 +39,7 @@ $oai->{v2}->{archive_id} = "generic.eprints.org";
 # The keys of this hash are the OAI metadataPrefix to use, and the values
 # are the ID of the output plugin to use for that prefix.
 $oai->{v2}->{output_plugins} = { 
-	"oai_dc" => "OAI_DC",
-	"rem_atom" => "REM_Atom_via_PMH", 
+	"oai_dc" => "OAI_DC", 
 	"didl" => "DIDL", 
 	"uketd_dc" =>"OAI_UKETD_DC",
 	"context_object" => "ContextObject",
@@ -110,7 +110,7 @@ $oai->{mime_types} = {};
 # of the repository.  It would be appropriate to indicate the language(s)
 # of the metadata/data in the repository.
 
-$oai->{content}->{"text"} = <<END;
+$oai->{content}->{"text"} = latin1( <<END );
 OAI Site description has not been configured.
 END
 $oai->{content}->{"url"} = undef;
@@ -121,7 +121,7 @@ $oai->{content}->{"url"} = undef;
 # metadataPolicy{"text"} and/or metadataPolicy{"url"} 
 # MUST be defined to comply to OAI.
 
-$oai->{metadata_policy}->{"text"} = <<END;
+$oai->{metadata_policy}->{"text"} = latin1( <<END );
 No metadata policy defined. 
 This server has not yet been fully configured.
 Please contact the admin for more information, but if in doubt assume that
@@ -136,7 +136,7 @@ $oai->{metadata_policy}->{"url"} = undef;
 # dataPolicy{"text"} and/or dataPolicy{"url"} 
 # MUST be defined to comply to OAI.
 
-$oai->{data_policy}->{"text"} = <<END;
+$oai->{data_policy}->{"text"} = latin1( <<END );
 No data policy defined. 
 This server has not yet been fully configured.
 Please contact the admin for more information, but if in doubt assume that
@@ -148,7 +148,7 @@ $oai->{data_policy}->{"url"} = undef;
 # policies relating to the submission of content to the repository (or
 # other accession mechanisms).
 
-$oai->{submission_policy}->{"text"} = <<END;
+$oai->{submission_policy}->{"text"} = latin1( <<END );
 No submission-data policy defined. 
 This server has not yet been fully configured.
 END
@@ -162,10 +162,10 @@ $oai->{submission_policy}->{"url"} = undef;
 # An array of comments to be returned. May be empty.
 
 $oai->{comments} = [ 
-	"This system is running eprints server software (".
+	latin1( "This system is running eprints server software (".
 		EPrints::Config::get( "version" ).") developed at the ".
 		"University of Southampton. For more information see ".
-		"http://www.eprints.org/"
+		"http://www.eprints.org/" ) 
 ];
 
 ########################################################################

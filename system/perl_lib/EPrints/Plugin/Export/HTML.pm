@@ -4,6 +4,8 @@ package EPrints::Plugin::Export::HTML;
 
 # documents needs magic files field
 
+use Unicode::String qw( utf8 );
+
 use EPrints::Plugin::Export;
 
 @ISA = ( "EPrints::Plugin::Export" );

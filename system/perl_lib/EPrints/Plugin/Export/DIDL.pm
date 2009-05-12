@@ -4,11 +4,18 @@ package EPrints::Plugin::Export::DIDL;
 
 # documents needs magic files field
 
-use EPrints::Plugin::Export::XMLFile;
+use Unicode::String qw( utf8 );
 
-@ISA = ( "EPrints::Plugin::Export::XMLFile" );
+use EPrints::Plugin::Export;
+
+@ISA = ( "EPrints::Plugin::Export" );
 
 use strict;
+
+# The utf8() method is called to ensure that
+# any broken characters are removed. There should
+# not be any broken characters, but better to be
+# sure.
 
 sub new
 {
@@ -19,6 +26,8 @@ sub new
 	$self->{name} = "DIDL";
 	$self->{accept} = [ 'dataobj/eprint' ];
 	$self->{visible} = "all";
+	$self->{suffix} = ".xml";
+	$self->{mimetype} = "text/xml";
 
 	$self->{xmlns} = "urn:mpeg:mpeg21:2002:02-DIDL-NS",
 	$self->{schemaLocation} = "http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-21_schema_files/did/didmodel.xsd";

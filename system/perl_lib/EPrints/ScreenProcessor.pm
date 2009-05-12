@@ -16,39 +16,26 @@ package EPrints::ScreenProcessor;
 
 use strict;
 
-=item $processor = EPrints::ScreenProcessor->new( %opts )
-
-=cut
-
-sub new
-{
-	my( $class, %self ) = @_;
-
-	$self{messages} = [];
-	$self{after_messages} = [];
-	$self{before_messages} = [];
-
-	if( !defined $self{session} ) 
-	{
-		EPrints::abort( "session not passed to EPrints::ScreenProcessor->process" );
-	}
-
-	my $self = bless \%self, $class;
-
-	return $self;
-}
-
-=item EPrints::ScreenProcessor->process( %opts )
-
-Process and send a response to a Web request.
-
-=cut
-
 sub process
 {
 	my( $class, %opts ) = @_;
 
-	my $self = $class->new( %opts );
+	my $self = {};
+	bless $self, $class;
+
+	$self->{messages} = [];
+	$self->{after_messages} = [];
+	$self->{before_messages} = [];
+
+	if( !defined $opts{session} ) 
+	{
+		EPrints::abort( "session not passed to EPrints::ScreenProcessor->process" );
+	}
+
+	foreach my $k ( keys %opts )
+	{
+		$self->{$k} = $opts{$k};
+	}
 
 	if( !defined $self->{screenid} ) 
 	{
@@ -71,12 +58,6 @@ sub process
 	if( !$self->screen->can_be_viewed )
 	{
 		$self->screen->register_error;
-		$self->{screenid} = "Error";
-	}
-	elsif( !$self->screen->obtain_edit_lock )
-	{
-		$self->add_message( "error", $self->{session}->html_phrase( 
-			"Plugin/Screen:item_locked" ) );
 		$self->{screenid} = "Error";
 	}
 	else
@@ -119,12 +100,6 @@ sub process
 		$self->add_message( "error", $self->{session}->html_phrase( 
 			"Plugin/Screen:screen_not_allowed",
 			screen=>$self->{session}->make_text( $self->{screenid} ) ) );
-		$self->{screenid} = "Error";
-	}
-	elsif( !$self->screen->obtain_view_lock )
-	{
-		$self->add_message( "error", $self->{session}->html_phrase( 
-			"Plugin/Screen:item_locked" ) );
 		$self->{screenid} = "Error";
 	}
 

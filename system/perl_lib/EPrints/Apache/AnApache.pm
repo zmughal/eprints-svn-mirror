@@ -274,10 +274,7 @@ sub upload_doc_file
 
 	return $document->upload( 
 		$cgi->upload( $paramid ), 
-		$cgi->param( $paramid ),
-		0, # preserve_path
-		-s $cgi->upload( $paramid )
-	);	
+		$cgi->param( $paramid ) );	
 }
 
 sub upload_doc_archive

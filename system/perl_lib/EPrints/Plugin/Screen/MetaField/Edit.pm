@@ -1,10 +1,8 @@
 package EPrints::Plugin::Screen::MetaField::Edit;
 
-@ISA = ( 'EPrints::Plugin::Screen::Workflow' );
+@ISA = ( 'EPrints::Plugin::Screen::MetaField' );
 
 use strict;
-
-sub get_dataset_id { "metafield" }
 
 sub new
 {
@@ -33,15 +31,6 @@ sub can_be_viewed
 	my( $self ) = @_;
 
 	return $self->allow( "metafield/edit" );
-}
-
-sub properties_from
-{
-	my( $self ) = @_;
-
-	$self->SUPER::properties_from;
-
-	$self->{processor}->{dataset} = $self->{processor}->{dataobj}->get_dataset;
 }
 
 sub from
@@ -93,7 +82,7 @@ sub action_stop
 {
 	my( $self ) = @_;
 
-	$self->{processor}->{datasetid} = $self->{processor}->{dataobj}->get_value( "mfdatasetid" )
+	$self->{processor}->{datasetid} = $self->{processor}->{metafield}->get_value( "mfdatasetid" )
 		or EPrints::abort( "Internal error: mfdatasetid undefined" );
 	$self->{processor}->{screenid} = "MetaField::View";
 }	
@@ -113,7 +102,7 @@ sub action_save
 	$self->workflow->update_from_form( $self->{processor} );
 	$self->uncache_workflow;
 
-	$self->{processor}->{datasetid} = $self->{processor}->{dataobj}->get_value( "mfdatasetid" )
+	$self->{processor}->{datasetid} = $self->{processor}->{metafield}->get_value( "mfdatasetid" )
 		or EPrints::abort( "Internal error: mfdatasetid undefined" );
 	$self->{processor}->{screenid} = "MetaField::View";
 }
@@ -167,7 +156,7 @@ sub redirect_to_me_url
 {
 	my( $self ) = @_;
 
-	return $self->SUPER::redirect_to_me_url.$self->workflow->get_state_params( $self->{processor} );
+	return $self->SUPER::redirect_to_me_url.$self->workflow->get_state_params;
 }
 	
 
@@ -175,6 +164,8 @@ sub redirect_to_me_url
 sub screen_after_flow
 {
 	my( $self ) = @_;
+
+	my $eprint = $self->{processor}->{eprint};
 
 	return "MetaField::Commit";
 }

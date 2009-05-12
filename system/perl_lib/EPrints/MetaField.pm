@@ -63,6 +63,7 @@ package EPrints::MetaField;
 
 use strict;
 
+use Unicode::String qw( utf8 );
 use Text::Unidecode qw();
 
 $EPrints::MetaField::VARCHAR_SIZE 	= 255;
@@ -95,13 +96,9 @@ sub new
 {
 	my( $class, %properties ) = @_;
 
-	# We'll inherit these from clone()
-	delete $properties{".final"};
-	delete $properties{"field_defaults"};
-
 	my $realclass = "EPrints::MetaField::\u$properties{type}";
 	eval 'use '.$realclass.';';
-	EPrints::abort "couldn't parse $realclass: $@" if $@;
+	warn "couldn't parse $realclass: $@" if $@;
 
 	###########################################
 	#
@@ -111,46 +108,39 @@ sub new
 	# for when repository was called archive.
 	if( defined $properties{archive} )
 	{
-		$properties{repository} = delete $properties{archive};
+		$properties{repository} = $properties{archive};
 	}
 
 	# end of 2.4
 	###########################################
 
-	# allow metafields to override new()
-	if( $class ne $realclass )
-	{
-		return $realclass->new( %properties );
-	}
-
 	my $self = {};
 	bless $self, $realclass;
 
-	$self->{confid} = delete $properties{confid};
-	$self->{repository} = delete $properties{repository};
+	$self->{confid} = $properties{confid};
 
 	if( defined $properties{dataset} ) 
 	{ 
 		$self->{confid} = $properties{dataset}->confid(); 
+		$self->{dataset} = $properties{dataset};
 		$self->{repository} = $properties{dataset}->get_repository;
-		$self->{dataset} = delete $properties{dataset};
 		if( defined( &Scalar::Util::weaken ) )
 		{
 			Scalar::Util::weaken( $self->{dataset} );
+			Scalar::Util::weaken( $self->{repository} );
 		}
 	}
-
-	if( !defined $self->{repository} )
+	else
 	{
-		EPrints::abort( 
-			"Tried to create a metafield without a ".
-			"dataset or an repository." );
+		if( !defined $properties{repository} )
+		{
+			EPrints::abort( 
+				"Tried to create a metafield without a ".
+				"dataset or an repository." );
+		}
+		$self->{repository} = $properties{repository};
 	}
 
-	if( defined &Scalar::Util::weaken )
-	{
-		Scalar::Util::weaken( $self->{repository} );
-	}
 
 	if( !defined $properties{name} )
 	{
@@ -189,33 +179,26 @@ sub new
 		$self->{repository}->set_field_defaults( $properties{type}, $self->{field_defaults} );
 	}
 
-	keys %{$self->{field_defaults}}; # Reset each position
-	while(my( $p_id, $p_default ) = each %{$self->{field_defaults}})
+	foreach my $p_id ( keys %{$self->{field_defaults}} )
 	{
-		my $p_value = delete $properties{$p_id};
-		if( defined $p_value )
-		{
-			$self->{$p_id} = $p_value;
-		}
-		elsif( $p_default eq $EPrints::MetaField::REQUIRED )
-		{
-			EPrints::abort( "Error in field property for ".$self->{dataset}->id.".".$self->{name}.": $p_id on a ".$self->{type}." metafield can't be undefined" );
-		}
-		elsif
-		  (
-			$p_default ne $EPrints::MetaField::UNDEF &&
-			$p_default ne $EPrints::MetaField::NO_CHANGE
-		  )
-		{
-			$self->{$p_id} = $p_default;
-		}
+		$self->set_property( $p_id, $properties{$p_id} );
 	}
 
-	foreach my $p_id (keys %properties)
+	# warn of non-applicable parameters; handy for spotting
+	# typos in the config file.
+	foreach my $p_id ( keys %properties )
 	{
-		# warn of non-applicable parameters; handy for spotting
-		# typos in the config file.
-		$self->{repository}->log( "Field '".$self->{dataset}->id.".".$self->{name}."' has invalid parameter:\n$p_id => $properties{$p_id}" );
+		# skip warning on ID fields, it's not relevant
+		last if( $self->{type} eq "id" );
+		# no warning if it's a valid param
+		next if( defined $self->{field_defaults}->{$p_id} );
+		# these params are always valid but have no defaults
+		next if( $p_id eq "field_defaults" );
+		next if( $p_id eq "repository" );
+		next if( $p_id eq "dataset" );
+		# internal values ignored. They start with .
+		next if( $p_id =~ m/^\./ );
+		$self->{repository}->log( "Field '".$self->{name}."' has invalid parameter:\n$p_id => $properties{$p_id}" );
 	}
 
 	return $self;
@@ -747,7 +730,7 @@ sub render_value_no_multiple
 
 	my $link_id = $self->get_id_from_value( $session, $value );
 
-	if( $linkview->{fields} =~ m/,/ )
+	if( defined $linkview->{fields} && $linkview->{fields} =~ m/,/ )
 	{
 		# has sub pages
 		$url .= "/view/".$self->{browse_link}."/".
@@ -838,8 +821,41 @@ sub sort_values
 {
 	my( $self, $session, $in_list ) = @_;
 
-	return $session->get_database->sort_values( $self, $in_list );
+	my $o_keys = {};
+	my $langid = $session->get_langid;
+	foreach my $value ( @{$in_list} )
+	{
+		$o_keys->{$value} = $self->ordervalue_basic( 
+						$value,
+						$session,
+						$langid );
+	}
+	my @out_list = sort { _normalcmp($o_keys->{$a}, $o_keys->{$b}) } @{$in_list};
+
+	return \@out_list;
 }
+
+
+sub _normalize 
+{
+	my( $in ) = @_;
+  	
+	$in = "$in";
+	utf8::decode($in);
+
+	$in =~ s/^\s+//;
+
+	# lowercase after unidecode, so we "lowercase" i18n.
+	return lc(Text::Unidecode::unidecode( $in ));
+}
+
+sub _normalcmp
+{
+	my( $i, $j ) = @_;
+
+	return( (_normalize($i) cmp _normalize($j)) or ($i cmp $j ) );
+}
+
 
 
 ######################################################################
@@ -969,70 +985,25 @@ sub sql_row_from_value
 ######################################################################
 =pod
 
-=item %opts = $field->get_sql_properties( $session )
+=item $sql = $field->get_sql_type( $session, $notnull )
 
-Map the relevant SQL properties for this field to options passed to L<EPrints::Database>::get_column_type().
-
-=cut
-######################################################################
-
-sub get_sql_properties
-{
-	my( $self, $session ) = @_;
-
-	return (
-		index => $self->{ "sql_index" },
-		langid => $self->{ "sql_langid" },
-		sorted => $self->{ "sql_sorted" },
-	);
-}
-
-######################################################################
-=pod
-
-=item @types = $field->get_sql_type( $session )
-
-Return the SQL column types of this field, used for creating tables.
+Return the SQL type of this field, used for creating tables. $notnull
+being true indicates that this column may not be null.
 
 =cut
 ######################################################################
 
 sub get_sql_type
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $notnull ) = @_;
 
 	my $database = $session->get_database;
 
 	return $database->get_column_type(
 		$self->get_sql_name,
 		EPrints::Database::SQL_VARCHAR,
-		!$self->get_property( "allow_null" ),
-		$self->get_property( "maxlength" ),
-		undef, # precision
-		$self->get_sql_properties,
-	);
-}
-
-######################################################################
-=pod
-
-=item $field = $field->create_ordervalues_field( $session [, $langid ] )
-
-Return a new field object that this field can use to store order values, optionally for language $langid.
-
-=cut
-######################################################################
-
-sub create_ordervalues_field
-{
-	my( $self, $session, $langid ) = @_;
-
-	return EPrints::MetaField->new(
-		repository => $session->get_repository,
-		type => "longtext",
-		name => $self->get_name,
-		sql_sorted => 1,
-		sql_langid => $langid,
+		$notnull,
+		$EPrints::MetaField::VARCHAR_SIZE
 	);
 }
 
@@ -1214,9 +1185,6 @@ sub get_input_elements
 			my $lookup = $session->make_doc_fragment;
 			my $drop_div = $session->make_element( "div", id=>$basename."_drop", class=>"ep_drop_target" );
 			$lookup->appendChild( $drop_div );
-			my $drop_loading_div = $session->make_element( "div", id=>$basename."_drop_loading", class=>"ep_drop_loading", style=>"display: none" );
-			$drop_loading_div->appendChild( $session->html_phrase( "lib/metafield:drop_loading" ) );
-			$lookup->appendChild( $drop_loading_div );
 
 			my @ids = $self->get_basic_input_ids($session, $basename, $staff, $obj );
 			my $extra_params = $self->{input_lookup_params};
@@ -1345,9 +1313,6 @@ sub get_input_elements
 				my $lookup = $session->make_doc_fragment;
 				my $drop_div = $session->make_element( "div", id=>$ibasename."_drop", class=>"ep_drop_target" );
 				$lookup->appendChild( $drop_div );
-				my $drop_loading_div = $session->make_element( "div", id=>$ibasename."_drop_loading", class=>"ep_drop_loading", style=>"display: none" );
-				$drop_loading_div->appendChild( $session->html_phrase( "lib/metafield:drop_loading" ) );
-				$lookup->appendChild( $drop_loading_div );
 				my @ids = $self->get_basic_input_ids( $session, $ibasename, $staff, $obj );
 				my $extra_params = $self->{input_lookup_params};
 				if( defined $extra_params ) 
@@ -1683,7 +1648,7 @@ sub get_ids_by_value
 
 =item $id = $field->get_id_from_value( $session, $value )
 
-Returns a unique id for $value or "NULL" if $value is undefined.
+Returns a unique id for $value.
 
 =cut
 ######################################################################
@@ -1692,24 +1657,7 @@ sub get_id_from_value
 {
 	my( $self, $session, $value ) = @_;
 
-	return defined($value) ? $value : "NULL";
-}
-
-######################################################################
-=pod
-
-=item $value = $field->get_value_from_id( $session, $id )
-
-Returns the value from $id or undef if $id is "NULL".
-
-=cut
-######################################################################
-
-sub get_value_from_id
-{
-	my( $self, $session, $id ) = @_;
-
-	return $id eq "NULL" ? undef : $id;
+	return $value;
 }
 
 ######################################################################
@@ -1838,16 +1786,9 @@ sub ordervalue_basic
 
 sub to_xml
 {
-	my( $self, $session, $value, $dataset, %opts ) = @_;
+	my( $self, $session, $value, $dataset ) = @_;
 
-	# we're part of a compound field that will include our value
 	if( defined $self->{parent_name} )
-	{
-		return $session->make_doc_fragment;
-	}
-
-	# don't show empty fields
-	if( !$opts{show_empty} && !EPrints::Utils::is_set( $value ) )
 	{
 		return $session->make_doc_fragment;
 	}
@@ -1858,13 +1799,13 @@ sub to_xml
 		foreach my $single ( @{$value} )
 		{
 			my $item = $session->make_element( "item" );
-			$item->appendChild( $self->to_xml_basic( $session, $single, $dataset, %opts ) );
+			$item->appendChild( $self->to_xml_basic( $session, $single, $dataset ) );
 			$tag->appendChild( $item );
 		}
 	}
 	else
 	{
-		$tag->appendChild( $self->to_xml_basic( $session, $value, $dataset, %opts ) );
+		$tag->appendChild( $self->to_xml_basic( $session, $value, $dataset ) );
 	}
 
 	return $tag;
@@ -1872,7 +1813,7 @@ sub to_xml
 
 sub to_xml_basic
 {
-	my( $self, $session, $value, $dataset, %opts ) = @_;
+	my( $self, $session, $value, $dataset ) = @_;
 
 	if( !defined $value ) 
 	{
@@ -1970,17 +1911,12 @@ sub render_xml_schema
 		$element->appendChild( $complexType );
 		my $sequence = $session->make_element( "xs:sequence" );
 		$complexType->appendChild( $sequence );
-		my $item = $session->make_element( "xs:element", name => "item", type => $self->get_xml_schema_type(), minOccurs => "0", maxOccurs => "unbounded" );
+		my $item = $session->make_element( "xs:element", name => "item", maxOccurs => "unbounded", type => $self->get_xml_schema_type() );
 		$sequence->appendChild( $item );
 	}
 	else
 	{
 		$element->setAttribute( type => $self->get_xml_schema_type() );
-	}
-
-	if( !$self->get_property( "required" ) )
-	{
-		$element->setAttribute( minOccurs => 0 );
 	}
 
 	return $element;
@@ -2094,6 +2030,48 @@ sub render_search_value
 	return $session->make_text( '"'.$value.'"' );
 }	
 
+sub split_search_value
+{
+	my( $self, $session, $value ) = @_;
+
+#	return EPrints::Index::split_words( 
+#			$session,
+#			EPrints::Index::apply_mapping( $session, $value ) );
+
+	return split /\s+/, $value;
+}
+
+sub get_search_conditions
+{
+	my( $self, $session, $dataset, $search_value, $match, $merge,
+		$search_mode ) = @_;
+
+	if( $match eq "EX" )
+	{
+		if( $search_value eq "" )
+		{	
+			return EPrints::Search::Condition->new( 
+					'is_null', 
+					$dataset, 
+					$self );
+		}
+
+		return EPrints::Search::Condition->new( 
+				'=', 
+				$dataset, 
+				$self, 
+				$search_value );
+	}
+
+	return $self->get_search_conditions_not_ex(
+			$session, 
+			$dataset, 
+			$search_value, 
+			$match, 
+			$merge, 
+			$search_mode );
+}
+
 sub get_search_group { return 'basic'; } 
 
 
@@ -2102,7 +2080,7 @@ sub get_property_defaults
 {
 	return (
 		providence => $EPrints::MetaField::FROM_CONFIG,
-		allow_null 	=> 1,
+		allow_null 	=> 0,
 		browse_link 	=> $EPrints::MetaField::UNDEF,
 		can_clone 	=> 1,
 		confid 		=> $EPrints::MetaField::NO_CHANGE,
@@ -2136,127 +2114,25 @@ sub get_property_defaults
 		requiredlangs 	=> [],
 		search_cols 	=> $EPrints::MetaField::FROM_CONFIG,
 		sql_index 	=> 1,
-		sql_langid 	=> $EPrints::MetaField::UNDEF,
-		sql_sorted	=> 0,
-		sql_counter => $EPrints::MetaField::UNDEF,
 		text_index 	=> 0,
 		toform 		=> $EPrints::MetaField::UNDEF,
 		type 		=> $EPrints::MetaField::REQUIRED,
 		sub_name	=> $EPrints::MetaField::UNDEF,
 		parent_name	=> $EPrints::MetaField::UNDEF,
 		volatile	=> 0,
-		virtual		=> 0,
 
 		help_xhtml	=> $EPrints::MetaField::UNDEF,
 		title_xhtml	=> $EPrints::MetaField::UNDEF,
 		join_path	=> $EPrints::MetaField::UNDEF,
 );
 }
-
-=item ( $terms, $grep_terms, $ignored ) = $field->get_index_codes( $session, $value )
-
-Get indexable terms from $value. $terms is a reference to an array of strings to index. $grep_terms is a reference to an array of terms to add to the grep index. $ignored is a reference to an array of terms that should be ignored (e.g. stop words in a free-text field).
-
-=cut
-
+		
 # Most types are not indexed		
 sub get_index_codes
 {
 	my( $self, $session, $value ) = @_;
 
 	return( [], [], [] );
-}
-
-=item @terms = $field->split_search_value( $session, $value )
-
-Split $value into terms that can be used to search against this field.
-
-=cut
-
-sub split_search_value
-{
-	my( $self, $session, $value ) = @_;
-
-#	return EPrints::Index::split_words( 
-#			$session,
-#			EPrints::Index::apply_mapping( $session, $value ) );
-
-	return split /\s+/, $value;
-}
-
-=item $cond = $field->get_search_conditions( $session, $dataset, $value, $match, $merge, $mode )
-
-Return a L<Search::Condition> for $value based on this field.
-
-=cut
-
-sub get_search_conditions
-{
-	my( $self, $session, $dataset, $search_value, $match, $merge,
-		$search_mode ) = @_;
-
-	if( $match eq "EX" )
-	{
-		if( $search_value eq "" )
-		{	
-			return EPrints::Search::Condition->new( 
-					'is_null', 
-					$dataset, 
-					$self );
-		}
-
-		return EPrints::Search::Condition->new( 
-				'=', 
-				$dataset, 
-				$self, 
-				$search_value );
-	}
-
-	return $self->get_search_conditions_not_ex(
-			$session, 
-			$dataset, 
-			$search_value, 
-			$match, 
-			$merge, 
-			$search_mode );
-}
-
-=item $cond = $field->get_search_conditions_not_ex( $session, $dataset, $value, $match, $merge, $mode )
-
-Return the search condition for a search which is not-exact ($match ne "EX").
-
-=cut
-
-sub get_search_conditions_not_ex
-{
-	my( $self, $session, $dataset, $search_value, $match, $merge,
-		$search_mode ) = @_;
-	
-	if( $match eq "EQ" )
-	{
-		return EPrints::Search::Condition->new( 
-			'=', 
-			$dataset,
-			$self, 
-			$search_value );
-	}
-
-	# free text!
-
-	# apply stemming and stuff
-	my( $codes, $grep_codes, $bad ) = $self->get_index_codes( $session, $search_value );
-
-	# Just go "yeah" if stemming removed the word
-	if( !EPrints::Utils::is_set( $codes->[0] ) )
-	{
-		return EPrints::Search::Condition->new( "PASS" );
-	}
-
-	return EPrints::Search::Condition->new( 
-			'index',
- 			$dataset,
-			$self, 
-			$codes->[0] );
 }
 
 sub get_value
@@ -2277,7 +2153,8 @@ sub set_value
 sub is_virtual
 {
 	my( $self ) = @_;
-	return $self->{virtual};
+
+	return 0;
 }
 
 # if ordering by this field, should we sort highest first?

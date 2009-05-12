@@ -62,6 +62,7 @@ sub Text::Lorem::name {
 # generate standard lorems, then add some exotic UTF-8 stuff
 $lorem->{wordlist} = $lorem->generate_wordlist();
 push @{$lorem->{wordlist}}, map { split /\s+/, $_ } <DATA>;
+print "word list=@{$lorem->{wordlist}}\n";
 
 # nb. This syntax is subject to change in future versions.
 my( $archiveid, $datasetid, $total ) = @ARGV;
@@ -70,6 +71,7 @@ my $session = new EPrints::Session( 1 , $archiveid, $noise );
 exit( 1 ) unless( defined $session );
 
 my $db = $session->get_database;
+#$db->set_timer( 1 );
 
 $datasetid = "archive" unless defined $datasetid;
 $total ||= 1000;
