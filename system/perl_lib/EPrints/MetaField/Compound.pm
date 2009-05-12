@@ -41,28 +41,6 @@ BEGIN
 
 use EPrints::MetaField::Text;
 
-sub new
-{
-	my( $class, %properties ) = @_;
-
-	$properties{fields_cache} = [];
-
-	my $self = $class->SUPER::new( %properties );
-
-	foreach my $inner_field ( @{$properties{fields}} )
-	{
-		my $field = EPrints::MetaField->new( 
-			parent_name => $self->get_name(),
-			show_in_html => 0,
-			dataset => $self->get_dataset(), 
-			multiple => $self->get_property( "multiple" ),
-			providence => $self->get_property( "providence" ),
-			%{$inner_field} );	
-		push @{$self->{fields_cache}}, $field;
-	}
-
-	return $self;
-}
 
 sub render_value
 {
@@ -152,7 +130,6 @@ sub to_xml_basic
 	{
 		my $name = $field_conf->{name};
 		my $field = $dataset->get_field( $name );
-		next unless $field->get_property( "export_as_xml" );
 		my $alias = $fieldname_to_alias{$name};
 		my $v = $value->{$alias};
 		my $tag = $session->make_element( $alias );
@@ -172,7 +149,7 @@ sub is_virtual
 
 sub get_sql_type
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $notnull ) = @_;
 
 	return undef;
 }

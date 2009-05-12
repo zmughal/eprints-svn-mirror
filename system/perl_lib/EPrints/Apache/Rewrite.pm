@@ -51,9 +51,6 @@ sub handler
 {
 	my( $r ) = @_;
 
-	# don't attempt to rewrite the URI of an internal request
-	return DECLINED unless $r->is_initial_req();
-
 	my $repository_id = $r->dir_config( "EPrints_ArchiveID" );
 	if( !defined $repository_id )
 	{
@@ -80,7 +77,7 @@ sub handler
 
 	my $lang = EPrints::Session::get_session_language( $repository, $r );
 	my $args = $r->args;
-	if( defined $args && $args ne "" ) { $args = '?'.$args; }
+	if( $args ne "" ) { $args = '?'.$args; }
 
 	# Skip rewriting the /cgi/ path and any other specified in
 	# the config file.
@@ -89,7 +86,8 @@ sub handler
 	if( defined $econf ) { @exceptions = @{$econf}; }
 	push @exceptions,
 		$cgipath,
-		"$urlpath/sword-app/";
+		"$urlpath/sword-app/",
+		"$urlpath/thumbnails/";
 
 	foreach my $exppath ( @exceptions )
 	{
@@ -103,7 +101,7 @@ sub handler
 	}
 
 	# URI redirection
-	if( $uri =~ m! ^$urlpath/id/([^/]+)/(.*)$ !x )
+	if( $uri =~ m!^$urlpath/id/([^/]+)/(.*)$! )
 	{
 		my( $datasetid, $id ) = ( $1, $2 );
 
@@ -126,7 +124,7 @@ sub handler
 		}
 	}
 
-	if( $uri =~ m! ^/([0-9]+)(.*)$ !x )
+	if( $uri =~ m#^/([0-9]+)(.*)$# )
 	{
 		# It's an eprint...
 	
@@ -145,7 +143,10 @@ sub handler
 		my $splitpath = "$1/$2/$3/$4";
 		$uri = "/archive/$splitpath$tail";
 
-		if( $tail =~ s! ^/([0-9]+) !!x )
+		my $thumbnails = 0;
+		$thumbnails = 1 if( $tail =~ s/^\/thumbnails// );
+
+		if( $tail =~ s/^\/(\d+)// )
 		{
 			# it's a document....			
 
@@ -155,53 +156,65 @@ sub handler
 				$tail = "/" if $tail eq "";
 				return redir( $r, sprintf( "%s/%d/%d%s",$urlpath, $eprintid, $pos, $tail ).$args );
 			}
+			my $session = new EPrints::Session(2); # don't open the CGI info
+			my $ds = $repository->get_dataset("eprint") ;
+			my $searchexp = new EPrints::Search( session=>$session, dataset=>$ds );
+			$searchexp->add_field( $ds->get_field( "eprintid" ), $eprintid );
+			my $results = $searchexp->perform_search;
+			my( $eprint ) = $results->get_records(0,1);
+			$searchexp->dispose;
+		
+			# let it fail if this isn't a real eprint	
+			if( !defined $eprint )
+			{
+				$session->terminate;
+				return OK;
+			}
+	
+			my $filename = sprintf( '%s/%02d%s',$eprint->local_path.($thumbnails?"/thumbnails":""), $pos, $tail );
 
-			$tail =~ s! ^([^/]*)/ !!x;
-			my @relations = grep { length($_) } split /\./, $1;
+			# This will stop the default extension-based Apache handlers
+			if( $filename =~ /\.(php|shtml)$/i )
+			{
+				$r->content_type( "text/plain" );
+				$r->set_handlers( PerlFixupHandler => sub {
+					$_[0]->content_type( "text/plain" );
+					$_[0]->handler('default-handler');
+					return OK;
+				} );
+			}
 
-			my $filename = $tail;
+			$r->filename( $filename );
 
-			$r->pnotes( datasetid => "document" );
-			$r->pnotes( eprintid => $eprintid );
-			$r->pnotes( pos => $pos );
-			$r->pnotes( relations => \@relations );
-			$r->pnotes( filename => $filename );
-
-			$r->pnotes( loghandler => "?fulltext=yes" );
-
-		 	$r->set_handlers(PerlResponseHandler => \&EPrints::Apache::Storage::handler );
-
-			return DECLINED;
+			$session->terminate;
+			
+			return OK;
 		}
 	
-		$r->pnotes( eprintid => $eprintid );
-
-		$r->pnotes( loghandler => "?abstract=yes" );
-
 		# OK, It's the EPrints abstract page (or something whacky like /23/fish)
 		EPrints::Update::Abstract::update( $repository, $lang, $eprintid, $uri );
 	}
 
 	# apache 2 does not automatically look for index.html so we have to do it ourselves
 	my $localpath = $uri;
-	if( $uri =~ m! /$ !x )
+	if( $uri =~ m#/$# )
 	{
 		$localpath.="index.html";
 	}
 	$r->filename( $repository->get_conf( "htdocs_path" )."/".$lang.$localpath );
 
-	my $session = new EPrints::Session(2); # don't open the CGI info
-	$session->{preparing_static_page} = 1; 
-	if( $uri =~ m! ^/view(.*) !x )
+	if( $uri =~ m#^/view(.*)# )
 	{
+		my $session = new EPrints::Session(2); # don't open the CGI info
+		$session->{preparing_static_page} = 1; 
 		EPrints::Update::Views::update_view_file( $session, $lang, $localpath, $uri );
+		delete $session->{preparing_static_page};
+		$session->terminate;
 	}
 	else
 	{
-		EPrints::Update::Static::update_static_file( $session, $lang, $localpath );
+		EPrints::Update::Static::update_static_file( $repository, $lang, $localpath );
 	}
-	delete $session->{preparing_static_page};
-	$session->terminate;
 
 	$r->set_handlers(PerlResponseHandler =>[ 'EPrints::Apache::Template' ] );
 

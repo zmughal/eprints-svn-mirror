@@ -31,7 +31,7 @@ as easily as possible.
 The database object is created automatically when you start a new
 eprints session. To get a handle on it use:
 
-$db = $session->get_database
+$db = $session->get_repository
 
 =head2 Cross-database Support
 
@@ -78,7 +78,6 @@ use constant {
 	SQL_TINYINT => DBI::SQL_TINYINT,
 	SQL_SMALLINT => DBI::SQL_SMALLINT,
 	SQL_INTEGER => DBI::SQL_INTEGER,
-	SQL_BIGINT => DBI::SQL_BIGINT,
 	SQL_REAL => DBI::SQL_REAL,
 	SQL_DOUBLE => DBI::SQL_DOUBLE,
 	SQL_DATE => DBI::SQL_DATE,
@@ -96,7 +95,6 @@ use constant {
 		SQL_TINYINT
 		SQL_SMALLINT
 		SQL_INTEGER
-		SQL_BIGINT
 		SQL_REAL
 		SQL_DOUBLE
 		SQL_DATE
@@ -110,7 +108,21 @@ my $DEBUG_SQL = 0;
 
 # this may not be the current version of eprints, it's the version
 # of eprints where the current desired db configuration became standard.
-$EPrints::Database::DBVersion = "3.2.0";
+$EPrints::Database::DBVersion = "3.1.2";
+
+# cjg not using transactions so there is a (very small) chance of
+# dupping on a counter. 
+
+#
+# Counters
+#
+@EPrints::Database::counters = ( 
+	"cachemapid", 		"messageid", 
+	"eprintid", 		"userid", 
+	"savedsearchid",	"historyid",
+	"accessid",		"requestid",
+	"documentid",		"importid",
+);
 
 
 # ID of next buffer table. This can safely reset to zero each time
@@ -357,13 +369,15 @@ sub create_archive_tables
 	
 	my $success = 1;
 
-	foreach( $self->{session}->get_repository->get_sql_dataset_ids )
+	foreach( &EPrints::DataSet::get_sql_dataset_ids )
 	{
 		$success = $success && $self->create_dataset_tables( 
 			$self->{session}->get_repository->get_dataset( $_ ) );
 	}
 
 	$success = $success && $self->create_counters();
+
+	$success = $success && $self->_create_index_queue_table();
 
 	#$success = $success && $self->_create_permission_table();
 
@@ -586,14 +600,18 @@ sub create_dataset_ordervalues_tables
 	my @fields = $dataset->get_fields( 1 );
 	# remove the key field
 	splice( @fields, 0, 1 ); 
+	my @orderfields = ( $keyfield );
+	foreach my $field ( @fields )
+	{
+		my $fname = $field->get_sql_name();
+		push @orderfields, EPrints::MetaField->new( 
+					repository=> $self->{session}->get_repository,
+					name => $fname,
+					type => "longtext" );
+	}
 	foreach my $langid ( @{$self->{session}->get_repository->get_conf( "languages" )} )
 	{
 		my $order_table = $dataset->get_ordervalues_table_name( $langid );
-		my @orderfields = ( $keyfield );
-		foreach my $field ( @fields )
-		{
-			push @orderfields, $field->create_ordervalues_field( $self->{session}, $langid );
-		}
 
 		if( !$self->has_table( $order_table ) )
 		{
@@ -608,6 +626,22 @@ sub create_dataset_ordervalues_tables
 	return $rv;
 }
 
+
+# $db->create_login_tickets_table()
+# 
+# create the login_tickets table.
+
+sub create_login_tickets_table
+{
+	my( $self ) = @_;
+
+	return $self->_create_table("login_tickets", ["code"], [
+		$self->get_column_type( "code", SQL_VARCHAR, SQL_NOT_NULL, 32 ),
+		$self->get_column_type( "userid", SQL_INTEGER ),
+		$self->get_column_type( "ip", SQL_VARCHAR, SQL_NULL, 64),
+		$self->get_column_type( "expires", SQL_INTEGER ),
+	]);
+}
 
 # $db->get_ticket_userid( $code, $ip )
 # 
@@ -662,22 +696,9 @@ sub update_ticket_userid
 ######################################################################
 =pod
 
-=item $real_type = $db->get_column_type( NAME, TYPE, NOT_NULL, [ LENGTH/PRECISION ], [ SCALE ], %opts )
+=item $real_type = $db->get_column_type( NAME, TYPE, NOT_NULL, [, LENGTH ] )
 
-Returns a SQL column definition for NAME of type TYPE, usually something like:
-
-	$name $type($length,$scale) [ NOT NULL ]
-
-If NOT_NULL is true column will be set "not null".
-
-LENGTH/PRECISION and SCALE control the maximum lengths of character or decimal types (see below).
-
-Other options available to refine the column definition:
-
-	langid - character set/collation to use
-	sorted - whether this column will be used to order by
-
-B<langid> is mapped to real database values by the "dblanguages" configuration option. The database may not be able to order the request column type in which case, if B<sorted> is true, the database may use a substitute column type.
+Returns a column definition for NAME of type TYPE. If NOT_NULL is true the column will be created NOT NULL. For column types that require a length use LENGTH.
 
 TYPE is the SQL type. The types are constants defined by this module, to import them use:
 
@@ -689,38 +710,23 @@ Character data: SQL_VARCHAR(n), SQL_LONGVARCHAR.
 
 Binary data: SQL_VARBINARY(n), SQL_LONGVARBINARY.
 
-Integer data: SQL_TINYINT, SQL_SMALLINT, SQL_INTEGER, SQL_BIGINT.
+Integer data: SQL_TINYINT, SQL_SMALLINT, SQL_INTEGER.
 
 Floating-point data: SQL_REAL, SQL_DOUBLE.
 
 Time data: SQL_DATE, SQL_TIME.
-
-The actual column types used will be database-specific.
 
 =cut
 ######################################################################
 
 sub get_column_type
 {
-	my( $self, $name, $data_type, $not_null, $length, $scale, %opts ) = @_;
+	my( $self, $name, $data_type, $not_null, $length, $scale ) = @_;
 
-	my $session = $self->{session};
-	my $repository = $session->get_repository;
+	my $type_info = $self->{dbh}->type_info( $data_type );
 
-	my( $db_type, $params );
-
-	if( $data_type ne SQL_BIGINT )
-	{
-		my $type_info = $self->{dbh}->type_info( $data_type );
-
-		$db_type = $type_info->{TYPE_NAME};
-		$params = $type_info->{CREATE_PARAMS};
-	}
-	else
-	{
-		$db_type = "bigint";
-		$params = "";
-	}
+	my $db_type = $type_info->{TYPE_NAME};
+	my $params = $type_info->{CREATE_PARAMS};
 
 	my $type = $self->quote_identifier($name) . " " . $db_type;
 
@@ -736,29 +742,6 @@ sub get_column_type
 		EPrints::abort( "get_sql_type expected PRECISION and SCALE arguments for $data_type [$type]" )
 			unless defined $scale;
 		$type .= "($length,$scale)";
-	}
-
-	if( $data_type eq SQL_VARCHAR() or $data_type eq SQL_LONGVARCHAR() )
-	{
-		my $langid = $opts{langid};
-		if( !defined $langid )
-		{
-			$langid = "en";
-		}
-
-		my $charset = $self->get_default_charset( $langid );
-		if( !defined $charset )
-		{
-			$charset = "UTF8";
-		}
-
-		$type .= " CHARACTER SET ".$charset;
-
-		my $collate = $self->get_default_collation( $langid );
-		if( defined( $collate ) )
-		{
-			$type .= " COLLATE ".$collate;
-		}
 	}
 
 	if( $not_null )
@@ -841,10 +824,13 @@ sub create_table
 		next if( $field->get_property( "multiple" ) );
 		next if( $field->is_virtual );
 
+		my $notnull = 0;
+			
 		# First field is primary key.
 		if( !defined $key && $setkey)
 		{
 			$key = $field;
+			$notnull = 1;
 		}
 		else
 		{
@@ -854,7 +840,7 @@ sub create_table
 				push @indices, \@index_columns;
 			}
 		}
-		push @columns, $field->get_sql_type( $self->{session} );
+		push @columns, $field->get_sql_type( $self->{session}, $notnull );
 
 	}
 	my @primary_key;
@@ -1040,7 +1026,7 @@ sub create_unique_index
 
 =item  $success = $db->_update( $tablename, $keycols, $keyvals, $columns, @values )
 
-UPDATES $tablename where $keycols equals $keyvals.
+UDATES $tablename where $keycols equals $keyvals.
 
 This method is internal.
 
@@ -1094,9 +1080,9 @@ sub _update
 ######################################################################
 =pod
 
-=item  $success = $db->_update_quoted( $tablename, $keycols, $keyvals, $columns, @qvalues )
+=item  $success = $db->_update_quoted( $tablename, $keycols, $keyvals, $columns, @values )
 
-UPDATES $tablename where $keycols equals $keyvals. Won't quote $keyvals or @qvalues before use - use this method with care!
+UDATES $tablename where $keycols equals $keyvals. Won't quote @keyvals or @values before use - use this method with care!
 
 This method is internal.
 
@@ -1183,10 +1169,10 @@ sub insert
 ######################################################################
 =pod
 
-=item $success = $db->insert_quoted( $table, $columns, @qvalues )
+=item $success = $db->insert_quoted( $table, $columns, @values )
 
 Inserts values into the table $table. If $columns is defined it will be used as
-a list of columns to insert into. @qvalues is a list of arrays containing values
+a list of columns to insert into. @values is a list of arrays containing values
 to insert.
 
 Values will NOT be quoted before insertion - care must be exercised!
@@ -1348,7 +1334,7 @@ sub prep_like_value
 ######################################################################
 =pod
 
-=item $str = $db->quote_value( $value )
+=item $str = EPrints::Database::quote_value( $value )
 
 Return a quoted value. To quote a 'like' value you should do:
 
@@ -1367,7 +1353,7 @@ sub quote_value
 ######################################################################
 =pod
 
-=item $str = $db->quote_int( $value )
+=item $str = EPrints::Database::quote_int( $value )
 
 Return a quoted integer value
 
@@ -1386,7 +1372,7 @@ sub quote_int
 ######################################################################
 =pod
 
-=item $str = $db->quote_identifier( @parts )
+=item $str = EPrints::Database::quote_identifier( @parts )
 
 Quote a database identifier (e.g. table names). Multiple @parts will be joined
 by dot.
@@ -1599,12 +1585,10 @@ sub create_counters
 {
 	my( $self ) = @_;
 
-	my $repository = $self->{session}->get_repository;
-
 	my $rc = 1;
 
 	# Create the counters 
-	foreach my $counter ($repository->get_sql_counter_ids)
+	foreach my $counter (@EPrints::Database::counters)
 	{
 		$rc &&= $self->create_counter( $counter );
 	}
@@ -1660,9 +1644,7 @@ sub remove_counters
 {
 	my( $self ) = @_;
 
-	my $repository = $self->{session}->get_repository;
-
-	foreach my $counter ($repository->get_sql_counter_ids)
+	foreach my $counter (@EPrints::Database::counters)
 	{
 		$self->drop_counter( $counter );
 	}
@@ -1724,21 +1706,20 @@ sub get_user_messages
 		my $msg = $message->get_value( "message" );
 		my $content;
 		eval {
-			my $doc = EPrints::XML::parse_xml_string( "<xml>$msg</xml>" );
-			if( !EPrints::XML::is_dom( $doc, "Document" ) )
+			my $doc = EPrints::XML::parse_xml_string( "<div>$msg</div>" );
+			if( EPrints::XML::is_dom( $doc, "Document" ) )
 			{
-				EPrints::abort "Expected Document node from parse_xml_string(), got '$doc' instead";
-			}
-			$content = $session->make_doc_fragment();
-			foreach my $node ($doc->documentElement->childNodes)
+				$content = $session->clone_for_me($doc->getDocumentElement,1);
+			}	
+			else
 			{
-				$content->appendChild( $session->clone_for_me( $node, 1 ) );
-			}
+				$content = $session->clone_for_me($doc,1);
+			}	
 			EPrints::XML::dispose($doc);
 		};
-		if( !defined( $content ) )
+		if( !$content )
 		{
-			$content = $session->make_doc_fragment();
+			$content = $session->make_element( "div" );
 			$content->appendChild( $session->make_text( "Internal error while parsing: $msg" ));
 		}
 		push @$messages, {
@@ -1772,6 +1753,32 @@ sub clear_user_messages
 		$message->remove;
 	};
 	$results->map( $fn, undef );
+}
+
+######################################################################
+# 
+# $success = $db->_create_index_queue_table
+#
+# create the table used to keep track of what needs to be indexed in
+# this repository.
+#
+######################################################################
+
+sub _create_index_queue_table
+{
+	my( $self ) = @_;
+
+	my $rc = 1;
+
+	# The table creation SQL
+	$rc &&= $self->_create_table("index_queue", [], [
+		$self->get_column_type( "field", SQL_VARCHAR, SQL_NULL, 128 ),
+		$self->get_column_type( "added", SQL_TIME ),
+	]);
+	$rc &&= $self->create_index( "index_queue", "field" );
+	$rc &&= $self->create_index( "index_queue", "added" );
+
+	return $rc;
 }
 
 ######################################################################
@@ -1951,13 +1958,6 @@ sub counter_reset
 	return $curval + 0;
 }
 
-# Internal method to get a cache object
-sub get_cachemap
-{
-	my( $self, $id ) = @_;
-
-	return $self->{session}->get_repository->get_dataset( "cachemap" )->get_object( $self->{session}, $id );
-}
 
 ######################################################################
 =pod
@@ -1975,8 +1975,9 @@ sub cache_exp
 	my( $self , $id ) = @_;
 
 	my $a = $self->{session}->get_repository;
-	my $cache = $self->get_cachemap( $id );
+	my $ds = $a->get_dataset( "cachemap" );
 
+	my $cache = $ds->get_object( $self->{session}, $id );
 	return unless $cache;
 
 	my $created = $cache->get_value( "created" );
@@ -1992,15 +1993,23 @@ sub cache_userid
 {
 	my( $self , $id ) = @_;
 
-	my $cache = $self->get_cachemap( $id );
+	my $ds = $self->{session}->get_repository->get_dataset( "cachemap" );
 
-	return defined( $cache ) ? $cache->get_value( "userid" ) : undef;
+	my $cache = $ds->get_object( $self->{session}, $id );
+	return unless $cache;
+
+	return $cache->get_value( "userid" );
 }
+
+
+
+
 
 ######################################################################
 =pod
 
-=item $cacheid = $db->cache( $searchexp, $dataset, $srctable, [$order], [$list] )
+=item $cacheid = $db->cache( $searchexp, $dataset, $srctable, 
+[$order], [$list] )
 
 Create a cache of the specified search expression from the SQL table
 $srctable.
@@ -2043,7 +2052,7 @@ sub cache
 
 	$self->_create_table( $cache_table, ["pos"], [
 			$self->get_column_type( "pos", SQL_INTEGER, SQL_NOT_NULL ),
-			$keyfield->get_sql_type( $self->{session} ),
+			$keyfield->get_sql_type( $self->{session}, 1 ),
 			]);
 
 	if( $srctable eq "NONE" )
@@ -2168,6 +2177,123 @@ sub cache_table
 	return "cache".$id;
 }
 
+
+######################################################################
+=pod
+
+=item $tablename = $db->create_buffer( $keyname )
+
+Create a temporary table with the given keyname. This table will not
+be available to other processes and should be disposed of when you've
+finished with them - MySQL only allows so many temporary tables.
+
+=cut
+######################################################################
+
+sub create_buffer
+{
+	my ( $self , $keyname ) = @_;
+
+	my $tmptable = "searchbuffer".($NEXTBUFFER++);
+	$TEMPTABLES{$tmptable} = 1;
+	#print STDERR "Pushed $tmptable onto temporary table list\n";
+#cjg VARCHAR!! Should this not be whatever type is bestest?
+
+	my $rc = 1;
+
+	$rc &&= $self->do( "CREATE TEMPORARY TABLE $tmptable (".
+		$self->get_column_type($keyname, SQL_VARCHAR, SQL_NOT_NULL, 255).
+	")");
+	$rc &&= $self->create_index( $tmptable, $keyname );
+	
+	EPrints::abort( "Error creating temporary table $tmptable" )
+		unless $rc;
+
+	return $tmptable;
+}
+
+
+######################################################################
+=pod
+
+=item $id = $db->make_buffer( $keyname, $data )
+
+Create a temporary table and dump the values from the array reference
+$data into it. 
+
+Even in debugging mode it does not mention this SQL as it's very
+dull.
+
+=cut
+######################################################################
+
+sub make_buffer
+{
+	my( $self, $keyname, $data ) = @_;
+
+	my $id = $self->create_buffer( $keyname );
+
+	my $sth = $self->prepare( "INSERT INTO ".$self->quote_identifier($id)." VALUES (?)" );
+	foreach( @{$data} )
+	{
+		$sth->execute( $_ );
+	}
+
+	return $id;
+}
+
+
+######################################################################
+=pod
+
+=item $foo = $db->garbage_collect
+
+Loop through known temporary tables, and remove them.
+
+=cut
+######################################################################
+
+sub garbage_collect
+{
+	my( $self ) = @_;
+
+	foreach( keys %TEMPTABLES )
+	{
+		$self->dispose_buffer( $_ );
+	}
+}
+
+
+######################################################################
+=pod
+
+=item $db->dispose_buffer( $id )
+
+Remove temporary table with given id. Won't just remove any
+old table.
+
+=cut
+######################################################################
+
+sub dispose_buffer
+{
+	my( $self, $id ) = @_;
+	
+	unless( defined $TEMPTABLES{$id} )
+	{
+		$self->{session}->get_repository->log( <<END );
+Called dispose_buffer on non-buffer table "$id"
+END
+		return;
+	}
+	$self->drop_table( $id );
+	delete $TEMPTABLES{$id};
+
+}
+	
+
+
+
 ######################################################################
 =pod
 
@@ -2266,10 +2392,17 @@ sub drop_cache
 {
 	my ( $self , $id ) = @_;
 
-	if( defined( my $cache = $self->get_cachemap( $id ) ) )
-	{
-		$cache->remove;
-	}
+	# $id MUST be an integer.
+	$id += 0;
+
+	my $tmptable = $self->cache_table( $id );
+
+	my $ds = $self->{session}->get_repository->get_dataset( "cachemap" );
+	# We drop the table before removing the entry from the cachemap
+
+	$self->drop_table( $tmptable );
+
+	$self->remove( $ds, $id );
 }
 
 
@@ -2296,6 +2429,25 @@ sub count_table
 
 	return $count;
 }
+
+######################################################################
+=pod
+
+=item $items = $db->from_buffer( $dataset, $buffer, [$offset], [$count], [$justids] )
+
+Return a reference to an array containing all the items from the
+given dataset that have id's in the specified buffer.
+
+=cut
+######################################################################
+
+sub from_buffer 
+{
+	my ( $self , $dataset , $buffer , $offset, $count, $justids ) = @_;
+	return $self->_get( $dataset, 1 , $buffer, $offset, $count );
+}
+
+
 
 ######################################################################
 =pod
@@ -2353,11 +2505,15 @@ sub from_cache
 		@results = $self->_get( $dataset, 3, $self->cache_table($cacheid), $offset , $count );
 	}
 
-	if( defined( my $cache = $self->get_cachemap( $cacheid ) ) )
-	{
-		$cache->set_value( "lastused", time() );
-		$cache->commit();
-	}
+	my $ds = $self->{session}->get_repository->get_dataset( "cachemap" );
+
+	$self->_update(
+		$ds->get_sql_table_name,
+		["cachemapid"],
+		[$cacheid],
+		["lastused"],
+		[time()],
+	);
 
 	$self->drop_old_caches();
 
@@ -2401,33 +2557,6 @@ sub drop_old_caches
 	$sth->finish;
 }
 
-######################################################################
-=pod
-
-=item $c = $db->drop_orphan_cache_tables
-
-Drop tables called "cacheXXX" where XXX is an integer. Returns the number of tables dropped.
-
-=cut
-######################################################################
-
-sub drop_orphan_cache_tables
-{
-	my( $self ) = @_;
-
-	my $rc = 0;
-
-	foreach my $name ($self->get_tables)
-	{
-		next unless $name =~ /^cache(\d+)$/;
-		next if defined $self->get_cachemap( $1 );
-		$self->{session}->get_repository->log( "Dropping orphaned cache table [$name]" );
-		$self->drop_table( $name );
-		++$rc;
-	}
-
-	return $rc;
-}
 
 
 ######################################################################
@@ -2491,24 +2620,14 @@ sub _get
 	my $keyfield = $fields[0];
 	my $Q_keyname = $self->quote_identifier($keyfield->get_sql_name());
 
+	my $cols = "";
 	my @aux = ();
+	my $first = 1;
 
 	my $Q_table = $self->quote_identifier($dataset->get_sql_table_name());
-	my $M = $self->quote_identifier("M"); # main table
-	my $C = $self->quote_identifier("C"); # cache table
-	my $A = $self->quote_identifier("A"); # aux table
+	my $M = $self->quote_identifier("M");
+	my $C = $self->quote_identifier("C");
 	my $Q_pos = $self->quote_identifier("pos");
-
-	my( @cols, @tables, @logic, @order );
-	push @tables, "$Q_table $M";
-
-	# inbox,buffer,archive etc.
-	if( $dataset->id ne $dataset->confid )
-	{
-		my $ds_field = $dataset->get_field( $dataset->get_dataset_id_field() );
-		my $Q_ds_field = $self->quote_identifier($ds_field->get_sql_name());
-		push @logic, "$M.$Q_ds_field = ".$self->quote_value($dataset->id);
-	}
 
 	foreach $field ( @fields ) 
 	{
@@ -2528,43 +2647,44 @@ sub _get
 			next;
 		}
 
-		push @cols, map {
+		if ($first)
+		{
+			$first = 0;
+		}
+		else
+		{
+			$cols .= ", ";
+		}
+		$cols .= join(", ", map {
 			"$M.".$self->quote_identifier($_)
-		} $field->get_sql_names;
+		} $field->get_sql_names);
 	}
 
+	my $sql;
 	if ( $mode == 0 )
 	{
-		push @logic, "$M.$Q_keyname = ".$self->quote_value( $param );
+		$sql = "SELECT $cols FROM $Q_table $M ".
+		       "WHERE $M.$Q_keyname = ".$self->quote_value( $param );
 	}
 	elsif ( $mode == 1 )	
 	{
-		push @tables, $self->quote_identifier($param)." $C";
-		push @logic, "$M.$Q_keyname = $C.$Q_keyname";
+		$sql = "SELECT $cols FROM ".$self->quote_identifier($param)." $C, $Q_table $M ".
+		       "WHERE $M.$Q_keyname = $C.$Q_keyname";
 	}
 	elsif ( $mode == 2 )	
 	{
+		$sql = "SELECT $cols FROM $Q_table $M";
 	}
 	elsif ( $mode == 3 )	
 	{
-		push @tables, $self->quote_identifier($param)." $C";
-		push @logic,
-			"$M.$Q_keyname = $C.$Q_keyname",
-			"$C.$Q_pos > ".$offset;
+		$sql = "SELECT $cols, $C.$Q_pos FROM ".$self->quote_identifier($param)." $C, $Q_table $M ";
+		$sql.= "WHERE $M.$Q_keyname = $C.$Q_keyname AND $C.$Q_pos>".$offset." ";
 		if( $ntoreturn > 0 )
 		{
-			push @logic, "$C.$Q_pos <= ".($offset+$ntoreturn);
+			$sql.="AND $C.$Q_pos<=".($offset+$ntoreturn)." ";
 		}
-		push @order, "$C.$Q_pos";
-	}
-	my $sql = "SELECT ".join(",",@cols)." FROM ".join(",",@tables);
-	if( scalar(@logic) )
-	{
-		$sql .= " WHERE ".join(" AND ",@logic);
-	}
-	if( scalar(@order) )
-	{
-		$sql .= " ORDER BY ".join(",",@order);
+		$sql .= "ORDER BY $C.$Q_pos";
+		#print STDERR "$sql\n";
 	}
 	my $sth = $self->prepare( $sql );
 	$self->execute( $sth, $sql );
@@ -2599,70 +2719,50 @@ sub _get
 	foreach my $multifield ( @aux )
 	{
 		my $fn = $multifield->get_name();
-		my( $sql, @cols, @tables, @logic, @order );
-
-		my $Q_subtable = $self->quote_identifier($dataset->get_sql_sub_table_name( $multifield ));
-		push @tables, "$Q_subtable $A";
-
-		# inbox,buffer,archive etc.
-		if( $dataset->id ne $dataset->confid )
+		my $cols = "$M.$Q_keyname, ";
+		if( $multifield->get_property( "multiple" ) )
 		{
-			my $ds_field = $dataset->get_field( $dataset->get_dataset_id_field() );
-			my $Q_ds_field = $self->quote_identifier($ds_field->get_sql_name());
-			push @tables, "$Q_table $M";
-			push @logic,
-				"$M.$Q_keyname = $A.$Q_keyname",
-				"$M.$Q_ds_field = ".$self->quote_value($dataset->id);
+			$cols .= "$M.$Q_pos, "
 		}
-
-		push @cols,
-			"$A.$Q_keyname",
-			"$A.$Q_pos",
-			map {
-				"$A.".$self->quote_identifier($_)
-			} $multifield->get_sql_names;
+		$cols .= join(", ", map {
+			"$M.".$self->quote_identifier($_)
+		} $multifield->get_sql_names);
+		my $Q_subtable = $self->quote_identifier($dataset->get_sql_sub_table_name( $multifield ));
 		if( $mode == 0 )	
 		{
-			push @logic, "$A.$Q_keyname = ".$self->quote_value( $param );
+			$sql = "SELECT $cols FROM $Q_subtable $M ";
+			$sql.= "WHERE $M.$Q_keyname=".$self->quote_value( $param );
 		}
 		elsif( $mode == 1)
 		{
-			push @tables, $self->quote_identifier( $param )." $C";
-			push @logic, "$A.$Q_keyname = $C.$Q_keyname";
+			$sql = "SELECT $cols FROM $param $C, $Q_subtable $M ";
+			$sql.= "WHERE $M.$Q_keyname=$C.$Q_keyname";
 		}	
 		elsif( $mode == 2)
 		{
+			$sql = "SELECT $cols FROM $Q_subtable $M ";
 		}
 		elsif ( $mode == 3 )	
 		{
-			push @tables, $self->quote_identifier( $param )." $C";
-			push @logic,
-				 "$A.$Q_keyname = $C.$Q_keyname",
-				 "$C.$Q_pos > ".$offset;
+			$sql = "SELECT $cols, $C.$Q_pos FROM ".$self->quote_identifier($param)." $C, $Q_subtable $M ";
+			$sql.= "WHERE $M.$Q_keyname = $C.$Q_keyname AND $C.$Q_pos>".$offset." ";
 			if( $ntoreturn > 0 )
 			{
-				push @logic, "$C.$Q_pos <= ".($offset+$ntoreturn);
+				$sql.="AND $C.$Q_pos<=".($offset+$ntoreturn)." ";
 			}
-			push @order, "$C.$Q_pos";
-		}
-		$sql = "SELECT ".join(",",@cols)." FROM ".join(",",@tables);
-		if( scalar(@logic) )
-		{
-			$sql .= " WHERE ".join(" AND ",@logic);
-		}
-		if( scalar(@order) )
-		{
-			$sql .= " ORDER BY ".join(",",@order);
+			$sql .= "ORDER BY $C.$Q_pos";
 		}
 		$sth = $self->prepare( $sql );
 		$self->execute( $sth, $sql );
 		while( my @values = $sth->fetchrow_array ) 
 		{
-			my( $id, $pos ) = splice(@values,0,2);
+			my $id = shift( @values );
+			my( $pos, $lang );
+			$pos = shift( @values ) if( $multifield->get_property( "multiple" ) );
 			my $n = $lookup{ $id };
-			next unless defined $n; # junk data in auxillary tables?
-			$data[$n]->{$fn}->[$pos] = 
-				$multifield->value_from_sql_row( $self->{session}, \@values );
+			my $value = $multifield->value_from_sql_row( $self->{session}, \@values );
+
+			$data[$n]->{$fn}->[$pos] = $value;
 		}
 		$sth->finish;
 	}	
@@ -2741,79 +2841,6 @@ sub get_values
 		push @values, $field->value_from_sql_row( $self->{session}, \@row );
 	}
 	$sth->finish;
-	return \@values;
-}
-
-######################################################################
-=pod
-
-=item $values = $db->sort_values( $field, $values [, $langid ] )
-
-ALPHA!!! Liable to API change!!!
-
-Sorts and returns the list of $values using the database.
-
-$field is used to get the order value for each value. $langid (or $session->get_langid if unset) is used to determine the database collation to use when sorting the resulting order values.
-
-=cut
-######################################################################
-
-sub sort_values
-{
-	my( $self, $field, $values, $langid ) = @_;
-
-	my $session = $self->{session};
-
-	$langid ||= $session->get_langid;
-
-	# we'll use a cachemap but inverted (order by the key and use the pos)
-	my $cachemap = EPrints::DataObj::Cachemap->create_from_data( $session, {
-		lastused => time(),
-		oneshot => "TRUE",
-	});
-	my $table  = $cachemap->get_sql_table_name;
-
-	# collation-aware field to use to order by
-	my $ofield = $field->create_ordervalues_field(
-		$session,
-		$langid
-	);
-
-	# create a table to sort the values in
-	$self->_create_table( $table, [ "pos" ], [
-		$self->get_column_type( "pos", SQL_INTEGER, SQL_NOT_NULL ),
-		$ofield->get_sql_type( $session ),
-	]);
-
-	# insert all the order values with their index in $values
-	my @pairs;
-	my $i = 0;
-	foreach(@$values)
-	{
-		push @pairs, [
-			$i++,
-			$field->ordervalue_single( $_, $session, $langid )
-		];
-	}
-	$self->insert( $table, [ "pos", $ofield->get_sql_names ], @pairs );
-
-	# retrieve the order the values should be in
-	my $Q_table = $self->quote_identifier( $table );
-	my $Q_index = $self->quote_identifier( "pos" );
-	my $Q_ovalue = $self->quote_identifier( $ofield->get_sql_names );
-	my $sth = $self->prepare( "SELECT $Q_index FROM $Q_table ORDER BY $Q_ovalue ASC" );
-	$sth->execute;
-	my @values;
-	my $row;
-	while( $row = $sth->fetch ) 
-	{
-		push @values, $values->[$row->[0]];
-	}
-	$sth->finish;
-
-	# clean up
-	$cachemap->remove();
-
 	return \@values;
 }
 
@@ -2960,9 +2987,14 @@ sub do
 		$sql = $self->{session}->get_repository->call( 'sql_adjust', $sql );
 	}
 	
+	my( $secs, $micro );
 	if( $self->{debug} )
 	{
 		$self->{session}->get_repository->log( "Database execute debug: $sql" );
+	}
+	if( $self->{timer} )
+	{
+		($secs,$micro) = gettimeofday();
 	}
 	my $result = $self->{dbh}->do( $sql );
 
@@ -2989,6 +3021,12 @@ sub do
 		}
 		$self->{session}->get_repository->log( "Giving up after 10 tries" );
 		return undef;
+	}
+	if( $self->{timer} )
+	{
+		my($secs2,$micro2) = gettimeofday();
+		my $s = ($secs2-$secs)+($micro2-$micro)/1000000;
+		$self->{session}->get_repository->log( "$s : $sql" );
 	}
 
 	if( defined $result )
@@ -3024,18 +3062,15 @@ sub prepare
 #		$self->{session}->get_repository->log( "Database prepare debug: $sql" );
 #	}
 
-	my $result = $self->{dbh}->prepare( $sql );
+	my $result = $self->{dbh}->prepare( $sql )
+		or Carp::confess $self->{dbh}->errstr;
 	my $ccount = 0;
 	if( !$result )
 	{
 		$self->{session}->get_repository->log( "SQL ERROR (prepare): $sql" );
 		$self->{session}->get_repository->log( "SQL ERROR (prepare): ".$self->{dbh}->errstr.' (#'.$self->{dbh}->err.')' );
 
-		# MySQL disconnect?
-		if( $self->{dbh}->err == 2006 )
-		{
-			EPrints::abort( $self->{dbh}->{errstr} );
-		}
+		return undef unless( $self->{dbh}->err == 2006 );
 
 		my $ccount = 0;
 		while( $ccount < 10 )
@@ -3052,8 +3087,7 @@ sub prepare
 			}
 		}
 		$self->{session}->get_repository->log( "Giving up after 10 tries" );
-
-		EPrints::abort( $self->{dbh}->{errstr} );
+		return undef;
 	}
 
 	return $result;
@@ -3187,18 +3221,16 @@ sub _has_field
 ######################################################################
 =pod
 
-=item $db->add_field( $dataset, $field [, $force ] )
+=item $db->add_field( $dataset, $field )
 
 Add $field to $dataset's tables.
-
-If $force is true will modify/replace an existing column (use with care!).
 
 =cut
 ######################################################################
 
 sub add_field
 {
-	my( $self, $dataset, $field, $force ) = @_;
+	my( $self, $dataset, $field ) = @_;
 
 	my $rc = 1;
 
@@ -3208,12 +3240,12 @@ sub add_field
 		my $sub_fields = $field->get_property( "fields_cache" );
 		foreach my $sub_field (@$sub_fields)
 		{
-			$rc &&= $self->add_field( $dataset, $sub_field, $force );
+			$rc &&= $self->add_field( $dataset, $sub_field );
 		}
 	}
 	else # Add the field itself to the metadata table
 	{
-		$rc &&= $self->_add_field( $dataset, $field, $force );
+		$rc &&= $self->_add_field( $dataset, $field );
 	}
 
 	# Add the field to order values (used to order search results)
@@ -3304,10 +3336,9 @@ sub _add_field_ordervalues_lang
 	my $sql_field = EPrints::MetaField->new(
 		repository => $self->{ session }->get_repository,
 		name => $field->get_sql_name(),
-		type => "longtext",
-		allow_null => 1 );
+		type => "longtext" );
 
-	my( $col ) = $sql_field->get_sql_type( $self->{session} );
+	my $col = $sql_field->get_sql_type( $self->{session}, 0 ); # only first field can not be null
 
 	return $self->do( "ALTER TABLE ".$self->quote_identifier($order_table)." ADD $col" );
 }
@@ -3315,7 +3346,7 @@ sub _add_field_ordervalues_lang
 # Add the field to the main tables
 sub _add_field
 {
-	my( $self, $dataset, $field, $force ) = @_;
+	my( $self, $dataset, $field ) = @_;
 
 	my $rc = 1;
 
@@ -3323,29 +3354,18 @@ sub _add_field
 
 	if( $field->get_property( "multiple" ) )
 	{
-		return $self->_add_multiple_field( $dataset, $field, $force );
+		return $self->_add_multiple_field( $dataset, $field );
 	}
 
 	my $table = $dataset->get_sql_table_name;
-	my @names = $field->get_sql_names;
-	my @types = $field->get_sql_type( $self->{session} );
 
-	return $rc if $self->has_column( $table, $names[0] ) && !$force;
+	return $rc if $self->has_column( $table, $field->get_sql_name() );
 
-	for(my $i = 0; $i < @names; ++$i)
+	my $cols = $field->get_sql_type( $self->{session}, 0 );
+	for(_split_sql_type($cols))
 	{
-		if( $self->has_column( $table, $names[$i] ) )
-		{
-			$types[$i] = "MODIFY $types[$i]";
-		}
-		else
-		{
-			$types[$i] = "ADD $types[$i]";
-		}
+		$rc &&= $self->do( "ALTER TABLE ".$self->quote_identifier($table)." ADD $_" );
 	}
-	
-	$rc &&= $self->do( "ALTER TABLE ".$self->quote_identifier($table)." ".join(",", @types));
-
 	if( my @columns = $field->get_sql_index )
 	{
 		$rc &&= $self->create_index( $table, @columns );
@@ -3357,49 +3377,28 @@ sub _add_field
 # Add a multiple field to the main tables
 sub _add_multiple_field
 {
-	my( $self, $dataset, $field, $force ) = @_;
+	my( $self, $dataset, $field ) = @_;
 
 	my $table = $dataset->get_sql_sub_table_name( $field );
 	
-	# modify the existing table
-	if( $self->has_table( $table ) )
-	{
-		return 1 unless $force;
-
-		my @names = $field->get_sql_names;
-		my @types = $field->get_sql_type( $self->{session} );
-		for(my $i = 0; $i < @names; ++$i)
-		{
-			if( $self->has_column( $table, $names[$i] ) )
-			{
-				$types[$i] = "MODIFY $types[$i]";
-			}
-			else
-			{
-				$types[$i] = "ADD $types[$i]";
-			}
-		}
-		return $self->do( "ALTER TABLE ".$self->quote_identifier( $table )." ".join(",", @types) );
-	}
+	return 1 if $self->has_table( $table );
 
 	my $key_field = $dataset->get_key_field();
+
+	# $database->create_table spots multiples and attempts to create auxillary tables, which we don't want to do
+	my $aux_field = $field->clone;
+	$aux_field->set_property( "multiple", 0 );
 
 	my $pos_field = EPrints::MetaField->new(
 		repository => $self->{ session }->get_repository,
 		name => "pos",
 		type => "int" );
 
-	return $self->_create_table(
+	return $self->create_table(
 		$table,
-		[ # primary key
-			$key_field->get_sql_name,
-			$pos_field->get_sql_name
-		],
-		[ # columns
-			$key_field->get_sql_type( $self->{session} ),
-			$pos_field->get_sql_type( $self->{session} ),
-			$field->get_sql_type( $self->{session} )
-		] );
+		$dataset,
+		0,
+		( $key_field, $pos_field, $aux_field ) );
 }
 
 ######################################################################
@@ -3432,8 +3431,6 @@ sub remove_field
 
 	# Remove the field from order values (used to order search results)
 	$self->_remove_field_ordervalues( $dataset, $field );
-
-	return 1; # if we failed the field probably isn't there anyway
 }
 
 # Remove the field from the ordervalues tables
@@ -3496,150 +3493,6 @@ sub _remove_multiple_field
 ######################################################################
 =pod
 
-=item $ok = $db->rename_field( $dataset, $field, $old_name )
-
-Rename a $field in the database from it's old name $old_name.
-
-Returns true if the field was successfully renamed.
-
-=cut
-######################################################################
-
-sub rename_field
-{
-	my( $self, $dataset, $field, $old_name ) = @_;
-
-	my $rc = 1;
-
-	# If this field is virtual and has sub-fields, rename them
-	if( $field->is_virtual )
-	{
-		my $sub_fields = $field->get_property( "fields_cache" );
-		foreach my $sub_field (@$sub_fields)
-		{
-			my $sub_name = $sub_field->get_property( "sub_name" );
-			$sub_field->{parent_name} = $field->get_name;
-			$sub_field->{name} = $field->get_name . "_" . $sub_name;
-			$rc &&= $self->rename_field( $dataset, $sub_field, $old_name . "_" . $sub_name );
-		}
-	}
-	else # rename the field itself from the metadata table
-	{
-		$rc &&= $self->_rename_field( $dataset, $field, $old_name );
-	}
-
-	# rename the field from order values (used to order search results)
-	$rc &&= $self->_rename_field_ordervalues( $dataset, $field, $old_name );
-
-	return $rc;
-}
-
-# rename the ordervalues table column
-sub _rename_field_ordervalues
-{
-	my( $self, $dataset, $field, $old_name ) = @_;
-
-	my $rc = 1;
-
-	foreach my $langid ( @{$self->{ session }->get_repository->get_conf( "languages" )} )
-	{
-		$rc &&= $self->_rename_field_ordervalues_lang( $dataset, $field, $old_name, $langid );
-	}
-
-	return $rc;
-}
-
-sub _rename_field_ordervalues_lang
-{
-	my( $self, $dataset, $field, $old_name, $langid ) = @_;
-
-	my $order_table = $dataset->get_ordervalues_table_name( $langid );
-
-	my $sql = sprintf("ALTER TABLE %s RENAME COLUMN %s TO %s",
-			$self->quote_identifier($order_table),
-			$self->quote_identifier($old_name),
-			$self->quote_identifier($field->get_sql_name)
-		);
-
-	return $self->do( $sql );
-}
-
-# rename a field
-sub _rename_field
-{
-	my( $self, $dataset, $field, $old_name ) = @_;
-
-	my $rc = 1;
-
-	return $rc if $field->is_virtual; # Virtual fields are still added to ordervalues
-
-	if( $field->get_property( "multiple" ) )
-	{
-		return $self->_rename_multiple_field( $dataset, $field, $old_name );
-	}
-
-	my $table = $dataset->get_sql_table_name;
-	$rc &&= $self->_rename_table_field( $table, $field, $old_name );
-
-	return $rc;
-}
-
-# rename a multiple field (i.e. rename the table & column)
-sub _rename_multiple_field
-{
-	my( $self, $dataset, $field, $old_name ) = @_;
-
-	my $rc = 1;
-
-	my $table = $dataset->get_sql_sub_table_name( $field );
-
-	# work out what the old table is called
-	my $old_table;
-	{
-		local $field->{name} = $old_name;
-		$old_table = $dataset->get_sql_sub_table_name( $field );
-	}
-
-	$rc &&= $self->_rename_table_field( $old_table, $field, $old_name );
-
-	# rename the table
-	$rc &&= $self->do( "ALTER TABLE ".$self->quote_identifier($old_table)." RENAME TO ".$self->quote_identifier($table) );
-}
-
-# utility method to rename a field column in a given table
-sub _rename_table_field
-{
-	my( $self, $table, $field, $old_name ) = @_;
-
-	my $rc = 1;
-
-	my @names = $field->get_sql_names;
-
-	# work out what the old columns are called
-	my @old_names;
-	{
-		local $field->{name} = $old_name;
-		@old_names = $field->get_sql_names;
-	}
-
-	my @column_sql;
-	for(my $i = 0; $i < @names; ++$i)
-	{
-		push @column_sql, sprintf("RENAME COLUMN %s TO %s",
-				$self->quote_identifier($old_names[$i]),
-				$self->quote_identifier($names[$i])
-			);
-	}
-	
-	$rc &&= $self->do( "ALTER TABLE ".$self->quote_identifier($table)." ".join(",", @column_sql));
-
-	return $rc;
-}
-
-
-######################################################################
-=pod
-
 =item $boolean = $db->exists( $dataset, $id )
 
 Return true if a record with the given primary key exists in the
@@ -3672,6 +3525,26 @@ sub exists
 }
 
 
+
+######################################################################
+=pod
+
+=item $db->set_timer( $boolean )
+
+Set the detailed timing option.
+
+=cut
+######################################################################
+
+sub set_timer
+{
+	my( $self, $boolean ) = @_;
+
+	$self->{timer} = $boolean;
+	eval 'use Time::HiRes qw( gettimeofday );';
+
+	if( $@ ne "" ) { EPrints::abort $@; }
+}
 
 ######################################################################
 =pod
@@ -3748,7 +3621,7 @@ sub set_version
 
 =item $boolean = $db->has_table( $tablename )
 
-Return true if a table of the given name exists in the database.
+Return true if the a table of the given name exists in the database.
 
 =cut
 ######################################################################
@@ -3791,6 +3664,35 @@ sub has_column
 	return $rc;
 }
 
+######################################################################
+=pod
+
+=item $db->install_table( $tablename, $newtablename )
+
+Move table $tablename to $newtablename. Erase $newtablename if it
+exists.
+
+=cut
+######################################################################
+
+sub install_table
+{
+	my( $self, $current_pos, $target_pos ) = @_;
+
+	if( $self->has_table( $target_pos ) )
+	{
+		$self->swap_tables( 
+			$current_pos,
+			$target_pos );
+		$self->drop_table( $current_pos );
+		return;
+	}
+
+	$self->rename_table( 
+		$current_pos,
+		$target_pos );
+}
+		
 ######################################################################
 =pod
 
@@ -3977,6 +3879,304 @@ sub valid_login
 ######################################################################
 =pod
 
+=item $db->index_queue( $datasetid, $objectid, $fieldname [, $fieldname ] );
+
+Queues the field of the specified object to be reindexed.
+
+=cut
+######################################################################
+
+sub index_queue
+{
+	my( $self, $datasetid, $objectid, @fieldnames ) = @_; 
+
+	my $rc = 1;
+
+	return $rc unless @fieldnames;
+
+	my $table = "index_queue";
+
+	# SYSDATE is the date/time at the point of insertion, but is supported
+	# by most databases unlike NOW(), which is only in MySQL
+	my $sql = "INSERT INTO ".$self->quote_identifier($table)." (".
+		join(',',map { $self->quote_identifier($_) } qw( field added )).
+		") VALUES (?, SYSDATE)";
+	my $sth = $self->prepare($sql);
+	for(@fieldnames)
+	{
+		$rc &&= $sth->execute( "$datasetid.$objectid.$_" );
+	}
+
+	return $rc;
+}
+
+######################################################################
+=pod
+
+=item ($datasetid, $objectid, $field) = $db->index_dequeue();
+
+Pops an item off the queue. Returns empty list if nothing left.
+
+=cut
+######################################################################
+
+sub index_dequeue
+{
+	my( $self ) = @_;
+
+	my $Q_field = $self->quote_identifier( "field" );
+	my $Q_table = $self->quote_identifier( "index_queue" );
+	my $Q_added = $self->quote_identifier( "added" );
+
+	my $sql = "SELECT $Q_field FROM $Q_table ORDER BY $Q_added ASC LIMIT 1";
+	my $sth = $self->prepare( $sql );
+	$self->execute( $sth, $sql );
+	my( $field ) = $sth->fetchrow_array;
+	$sth->finish;
+
+	return () unless defined $field;
+
+	$sql = "DELETE FROM $Q_table WHERE $Q_field=".$self->quote_value($field);
+	$self->do( $sql );
+
+	return split(/\./, $field);
+}
+
+######################################################################
+=pod
+
+=back
+
+=head2 Permissions
+
+=over 4
+
+=item $db->add_roles( $privilege, $ip_from, $ip_to, @roles )
+
+Add $privilege to @roles, optionally in net space $ip_from to $ip_to.
+
+If $privilege begins with '@' adds @roles to that group.
+
+=cut
+######################################################################
+
+sub add_roles
+{
+	my( $self, $priv, $ip_f, $ip_t, @roles ) = @_;
+	my $sql;
+
+	# Adding users to groups
+	if( $priv =~ /^\@/ ) {
+		foreach my $role (@roles)
+		{
+			$self->do(
+				"REPLACE permission_group (user,role) VALUES (" .
+					$self->quote_value( $role ) . "," .
+					$self->quote_value( $priv ) . ")"
+			);
+		}
+	}
+	# Adding privileges to roles
+	else
+	{
+		# Convert quad-dotted to long to allow easy lookup
+		$ip_f = $ip_f ? EPrints::Utils::ip2long( $ip_f ) : "null";
+		$ip_t = $ip_t ? EPrints::Utils::ip2long( $ip_t ) : "null";
+
+		foreach my $role (@roles)
+		{
+			$self->do(
+				"REPLACE permission (role,privilege,net_from,net_to) VALUES (" .
+					$self->quote_value( $role ) . "," .
+					$self->quote_value( $priv ) . "," .
+					$ip_f . "," .
+					$ip_t . ")"
+			);
+		}
+	}
+
+	return scalar(@roles);
+}
+
+######################################################################
+=pod
+
+=item $db->remove_roles( $privilege, $ip_from, $ip_to, @roles )
+
+Remove $privilege from @roles, $ip_from and $ip_to are currently ignored, but this behaviour may change in future.
+
+If $privilege beings with '@' removes @roles from that group instead.
+
+=cut
+######################################################################
+
+sub remove_roles
+{
+	my( $self, $priv, $ip_f, $ip_t, @roles ) = @_;
+	my $sql;
+
+	if( $priv =~ /^\@/ )
+	{
+		foreach my $role (@roles)
+		{
+			$self->do(
+				"DELETE FROM permission_group WHERE " .
+					"user=" . $self->quote_value( $role ) . " AND ".
+					"role=" . $self->quote_value( $priv ) . ""
+			);
+		}
+	}
+	else
+	{
+		foreach my $role (@roles)
+		{
+			$self->do(
+				"DELETE FROM permission WHERE " .
+					"role=" . $self->quote_value( $role ) . " AND ".
+					"privilege=" . $self->quote_value( $priv )
+			);
+		}
+	}
+
+	return scalar( @roles );
+}
+
+######################################################################
+=pod
+
+=item %privs = $db->get_privileges( [$role] )
+
+Return the privileges granted for $role. If $role is undefined returns all set privileges.
+
+Returns a hash:
+
+	role => {
+		priv1 => [ ip_from, ip_to ],
+		priv2 => [ ip_from, ip_to ],
+	}
+
+=cut
+######################################################################
+
+sub get_privileges
+{
+	my( $self, $role ) = @_;
+	my( %privs, $sth, $sql );
+
+	$sql = "SELECT role,privilege,net_from,net_to FROM permission";
+	if( defined( $role ) ) {
+		$sql .= " WHERE role=" . $self->quote_value( $role );
+	}
+	$sth = $self->prepare( $sql );
+	$self->execute( $sth, $sql ) or return;
+	while( my ($r,$priv,$ip_from,$ip_to) = $sth->fetchrow_array )
+	{
+		$ip_from = EPrints::Utils::long2ip( $ip_from ) if defined($ip_from);
+		$ip_to = EPrints::Utils::long2ip( $ip_to ) if defined($ip_to);
+		$privs{$r}->{$priv} = [$ip_from, $ip_to];
+	}
+
+	return %privs;
+}
+
+######################################################################
+=pod
+
+=item %groups = $db->get_groups( [$role] )
+
+Returns a list of groups that $role belongs to, or all groups if $role is undefined.
+
+Returns a hash:
+
+	role => [ group1, group2, group3 ]
+
+=cut
+######################################################################
+
+sub get_groups
+{
+	my( $self, $role ) = @_;
+	my( %groups, $sth, $sql );
+
+	$sql = "SELECT user,role FROM permission_group";
+	if( defined( $role ) ) {
+		$sql .= " WHERE user=" . $self->quote_value( $role );
+	}
+	$sth = $self->prepare( $sql );
+	$self->execute( $sth, $sql ) or return;
+	while( my ($user,$r) = $sth->fetchrow_array )
+	{
+		push @{$groups{$user}}, $r;
+	}
+
+	return %groups;
+}
+
+######################################################################
+=pod
+
+=item @roles = $db->get_roles( $privilege, $remote_ip, @roles )
+
+Get the matching roles for @roles that have $privilege, optionally restricted to $remote_ip.
+
+=cut
+######################################################################
+
+sub get_roles
+{
+	my ( $self, $priv, $ip, @roles ) = @_;
+	my ( @permitted_roles, $sth, $sql, @clauses );
+
+	# Standard WHERE clauses
+	if( $priv =~ s/\.\*$// ) {
+		push @clauses, "privilege LIKE " . $self->quote_value( prep_like_value($priv)."\%" );
+	} else {
+		push @clauses, "privilege = " . $self->quote_value( $priv );
+	}
+	if( defined( $ip ) )
+	{
+		my $longip = EPrints::Util::ip2long( $ip );
+		push @clauses, "(net_from IS NULL OR ($longip >= net_from AND $longip <= net_to))";
+	}
+
+	# Get roles from the permissions table
+	$sql = "SELECT role FROM permission WHERE ";
+	$sql .= join(
+		" AND ",
+		@clauses,
+		"(" . join(' OR ', map { "role = " . $self->quote_value( $_ ) } @roles) . ")"
+	);
+	
+	# Provide a generic privilege query
+	$sth = $self->prepare( $sql );
+	$self->execute( $sth, $sql ) or return;
+	while( my ($role) = $sth->fetchrow_array )
+	{
+		push @permitted_roles, $role;
+	}
+
+	# Get roles inherited from group membership
+	$sql = "SELECT G.role FROM permission_group AS G, permission AS P WHERE ";
+	$sql .= join(
+		 " AND ",
+		 "G.role=P.role",
+		@clauses,
+		"(" . join(' OR ', map { "G.role = " . $self->quote_value( $_ ) } @roles) . ")"
+	);
+	
+	$sth = $self->prepare( $sql );
+	$self->execute( $sth, $sql ) or return;
+	while( my ($role) = $sth->fetchrow_array )
+	{
+		push @permitted_roles, $role;
+	}
+
+	return @permitted_roles;
+}
+
+######################################################################
+=pod
+
 =item $version = $db->get_server_version
 
 Return the database server version.
@@ -3984,35 +4184,12 @@ Return the database server version.
 =cut
 ######################################################################
 
-sub get_server_version;
+sub get_server_version
+{
+	my( $self ) = @_;
 
-######################################################################
-=pod
-
-=item $charset = $db->get_default_charset( LANGUAGE )
-
-Return the character set to use for LANGUAGE.
-
-Returns undef if character sets are unsupported.
-
-=cut
-######################################################################
-
-sub get_default_charset {}
-
-######################################################################
-=pod
-
-=item $collation = $db->get_default_collation( LANGUAGE )
-
-Return the collation to use for LANGUAGE.
-
-Returns undef if collation is unsupported.
-
-=cut
-######################################################################
-
-sub get_default_collation {}
+	return undef;
+}
 
 ######################################################################
 =pod

@@ -58,15 +58,6 @@ use EPrints;
 use EPrints::Database qw( :sql_types );
 @ISA = qw( EPrints::Database );
 
-our $I18L = {
-	en => {
-		collate => "utf8_general_ci",
-	},
-	de => {
-		collate => "utf8_unicode_ci",
-	},
-};
-
 use strict;
 
 ######################################################################
@@ -172,20 +163,6 @@ sub has_column
 		$rc = 1 if $column_name eq $column;
 	}
 	$sth->finish;
-
-	return $rc;
-}
-
-sub connect
-{
-	my( $self ) = @_;
-
-	my $rc = $self->SUPER::connect();
-
-	if( $rc )
-	{
-		$self->do("SET NAMES 'utf8'");
-	}
 
 	return $rc;
 }
@@ -393,15 +370,6 @@ sub index_queue
 	}
 }
 
-sub get_default_charset { "utf8" }
-
-sub get_default_collation
-{
-	my( $self, $langid ) = @_;
-
-	return exists($I18L->{$langid}) ? $I18L->{$langid}->{collate} : undef;
-}
-
 # Not supported by DBD::mysql?
 sub get_primary_key
 {
@@ -417,88 +385,6 @@ sub get_primary_key
 	}
 
 	return @COLS;
-}
-
-sub get_column_collation
-{
-	my( $self, $table, $column ) = @_;
-
-	my $sth = $self->prepare( "SHOW FULL COLUMNS FROM ".$self->quote_identifier($table)." LIKE ".$self->quote_value($column) );
-	$sth->execute;
-
-	my $collation;
-	while(my $row = $sth->fetch)
-	{
-		$collation = $row->[$sth->{NAME_lc_hash}{"collation"}];
-	}
-
-	return $collation;
-}
-
-# We'll do quote here, because DBD::mysql::quote_identifier is really slow
-sub quote_identifier
-{
-	my( $self, @parts ) = @_;
-
-	# we shouldn't get identifiers with '`' in
-	return join(".", map {
-		$_ =~ m/`/ ?
-			EPrints::abort "Bad character in database identifier: $_" :
-			"`$_`"
-		} @parts);
-}
-
-sub _rename_table_field
-{
-	my( $self, $table, $field, $old_name ) = @_;
-
-	my $rc = 1;
-
-	my @names = $field->get_sql_names;
-	my @types = $field->get_sql_type( $self->{session} );
-
-	# work out what the old columns are called
-	my @old_names;
-	{
-		local $field->{name} = $old_name;
-		@old_names = $field->get_sql_names;
-	}
-
-	my @column_sql;
-	for(my $i = 0; $i < @names; ++$i)
-	{
-		push @column_sql, sprintf("CHANGE %s %s",
-				$self->quote_identifier($old_names[$i]),
-				$types[$i]
-			);
-	}
-	
-	$rc &&= $self->do( "ALTER TABLE ".$self->quote_identifier($table)." ".join(",", @column_sql));
-
-	return $rc;
-}
-
-sub _rename_field_ordervalues_lang
-{
-	my( $self, $dataset, $field, $old_name, $langid ) = @_;
-
-	my $order_table = $dataset->get_ordervalues_table_name( $langid );
-
-	my $sql_field = EPrints::MetaField->new(
-		repository => $self->{ session }->get_repository,
-		name => $field->get_sql_name(),
-		type => "longtext",
-		allow_null => 1 );
-
-	my( $col ) = $sql_field->get_sql_type( $self->{session} );
-
-	my $sql = sprintf("ALTER TABLE %s CHANGE %s %s",
-			$self->quote_identifier($order_table),
-			$self->quote_identifier($old_name),
-			$col
-		);
-
-	return $self->do( $sql );
 }
 
 1; # For use/require success

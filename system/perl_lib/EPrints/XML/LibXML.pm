@@ -63,6 +63,12 @@ $EPrints::XML::PREFIX = "XML::LibXML::";
 			XML::LibXML::Node::appendChild( @_ );
 	};
 
+# GDOME nodeValue() returns bytes
+*XML::LibXML::Text::nodeValue = 
+*XML::LibXML::Comment::CDataSection = sub {
+		Encode::encode_utf8( XML::LibXML::Node::nodeValue(@_) )
+	};
+
 ##############################################################################
 # Bug work-arounds
 ##############################################################################
@@ -228,10 +234,7 @@ sub document_to_string
 
 	$doc->setEncoding( $enc );
 
-	my $xml = $doc->toString();
-	utf8::decode($xml);
-
-	return $xml;
+	return $doc->toString();
 }
 
 =item $doc = make_document()
@@ -260,11 +263,6 @@ sub make_document_fragment
 	my( $session ) = @_;
 	
 	return $session->{doc}->createDocumentFragment();
-}
-
-sub version
-{
-	"XML::LibXML $XML::LibXML::VERSION ".$INC{'XML/LibXML.pm'};
 }
 
 __END__

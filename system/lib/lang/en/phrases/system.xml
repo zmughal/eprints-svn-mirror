@@ -31,8 +31,6 @@ EPrints Modules
     <epp:phrase id="lib/document:no_type">You haven't <epc:pin name="fieldname">specified a document type</epc:pin>!</epp:phrase>
     <epp:phrase id="lib/document:no_first">You need to <epc:pin name="fieldname">select a file to be shown first</epc:pin>.</epp:phrase>
     <epp:phrase id="lib/document:preview">Preview</epp:phrase>
-    <epp:phrase id="lib/document:download">Download (<epc:pin name="size"/>)</epp:phrase>
-    <epp:phrase id="lib/document:action_separator"> | </epp:phrase>
 
 <!-- EPrint -->
 
@@ -52,8 +50,6 @@ EPrints Modules
     <epp:phrase id="lib/eprint:eprint_gone"><p>You seem to be attempting to access an item that has been removed from the repository.</p></epp:phrase>
     <epp:phrase id="lib/eprint:later_version"><p>There is a later version of the item you are trying to access:<br/><epc:pin name="citation"/></p></epp:phrase>
     <epp:phrase id="lib/eprint:curr_disp"><strong>[Currently Displayed]</strong></epp:phrase>
-    <epp:phrase id="lib/eprint:not_locked">Not currently locked.</epp:phrase>
-    <epp:phrase id="lib/eprint:locked">Locked by <epc:pin name='locked_by' /> until <epc:pin name='locked_until' /></epp:phrase>
 
 <!-- History -->
 
@@ -105,7 +101,6 @@ EPrints Modules
 
 <!-- MetaField -->
 
-    <epp:phrase id="lib/metafield:drop_loading"><img alt="" src="{$config{rel_path}}/style/images/loading.gif" border="0" /></epp:phrase>
     <epp:phrase id="lib/metafield:year">Year:</epp:phrase>
     <epp:phrase id="lib/metafield:month">Month:</epp:phrase>
     <epp:phrase id="lib/metafield:day">Day:</epp:phrase>
@@ -166,18 +161,6 @@ EPrints Modules
     <epp:phrase id="lib/metafield/itemref:lookup">Lookup</epp:phrase>
     <epp:phrase id="lib/metafield/itemref:not_found"><i><epc:pin name="objtype"/> <epc:pin name="id"/> not found.</i></epp:phrase>
     <epp:phrase id="lib/metafield/secret:show_value">[hidden]</epp:phrase>
-
-<!-- File -->
-	<epp:phrase id="file_fieldname_fileid">Unique file id</epp:phrase>
-	<epp:phrase id="file_fieldname_datasetid">Object dataset id</epp:phrase>
-	<epp:phrase id="file_fieldname_objectid">Object id</epp:phrase>
-	<epp:phrase id="file_fieldname_bucket">File bucket</epp:phrase>
-	<epp:phrase id="file_fieldname_filename">File name</epp:phrase>
-	<epp:phrase id="file_fieldname_filesize">File size</epp:phrase>
-	<epp:phrase id="file_fieldname_hash">File checksum</epp:phrase>
-	<epp:phrase id="file_fieldname_hash_type">Checksum type</epp:phrase>
-	<epp:phrase id="file_fieldname_mtime">File modification time</epp:phrase>
-	<epp:phrase id="file_fieldname_pronom_uid">Pronom Format Identifier</epp:phrase>
 
 <!-- Page ranges -->
 	<!-- 123-123 -->
@@ -525,7 +508,6 @@ User Area CGI Scripts
     <epp:phrase id="cgi/users/status:indexer_stalled">Stalled</epp:phrase>
     <epp:phrase id="cgi/users/status:indexer_queue">Size of Index Queue</epp:phrase>
     <epp:phrase id="cgi/users/status:indexer_queue_size"><pin name="size" /> Field(s)</epp:phrase>
-	<epp:phrase id="cgi/users/status:xml_version">XML Library</epp:phrase>
     <epp:phrase id="cgi/users/status:database_ok">OK</epp:phrase>
     <epp:phrase id="cgi/users/status:database_down">DOWN</epp:phrase>
     <epp:phrase id="cgi/users/status:database_link">View database schema</epp:phrase>
@@ -571,16 +553,7 @@ User Area CGI Scripts
     <epp:phrase id="Plugin/Screen/Admin/IndexerControl:indexer_stopped">Indexer stopped successfully.</epp:phrase>
     <epp:phrase id="Plugin/Screen/Admin/IndexerControl:cant_start_indexer">Unable to start indexer. You should check the log file in <epc:pin name="logpath" /> for more information.</epp:phrase>
     <epp:phrase id="Plugin/Screen/Admin/IndexerControl:cant_stop_indexer">Unable to stop indexer. You should check the log file in <epc:pin name="logpath" /> for more information.</epp:phrase>
-    
-<epp:phrase id="Plugin/Screen/Admin/Backup:action:backup_repository:title">Backup Repository</epp:phrase>
 
-    <epp:phrase id="Plugin/Screen/Admin/Backup:action:backup_repository:description">Exports a single compressed file of EPrints system, archive data and database files for this repository.</epp:phrase>
-    <epp:phrase id="Plugin/Screen/Admin/Restore:title">Restore Repository</epp:phrase>
-
-    <epp:phrase id="Plugin/Screen/Admin/Restore:description">Restores a complete repository, including all eprints system files..</epp:phrase>
-    <epp:phrase id="Plugin/Screen/Admin/Restore:backup_archive">Backup archive file:</epp:phrase>
-    <epp:phrase id="Plugin/Screen/Admin/Restore:upload">Upload</epp:phrase>
-    
     <epp:phrase id="Plugin/Screen/Admin/RegenViews:title">Regenerate Views</epp:phrase>
     <epp:phrase id="Plugin/Screen/Admin/RegenViews:action:regen_views:title">Regenerate Views</epp:phrase>
     <epp:phrase id="Plugin/Screen/Admin/RegenViews:action:regen_views:description">Cause views pages to be regenerated when they are next requested.</epp:phrase>
@@ -889,8 +862,7 @@ Public CGI Scripts
     <epp:phrase id="cgi/register:title">Register</epp:phrase>
     <epp:phrase id="cgi/register:missing_field"><p>You have not filled in the &quot;<epc:pin name="fieldname"/>&quot; field.</p></epp:phrase>
     <epp:phrase id="cgi/register:email_exists"><p>A user with the email address <tt><epc:pin name="email"/></tt> already exists.</p><p>Rather than register, you should just <a href="reset_password">reset your password</a>.</p></epp:phrase>
-    <epp:phrase id="cgi/register:email_denied"><p>Registration not allowed from this email address: <tt><epc:pin name="email"/></tt>.</p></epp:phrase>
-    <epp:phrase id="cgi/register:username_exists"><p>Another user already has the username <tt><epc:pin name="username"/></tt>.</p></epp:phrase>
+    <epp:phrase id="cgi/register:username_exists"><p>Another user already has the username <tt><epc:pin name="username"/></tt> already exists.</p></epp:phrase>
     <epp:phrase id="cgi/register:created_new_user"><p>You have registered with username <big><strong><tt><epc:pin name="username"/></tt></strong></big>.</p><p>This registration <em>will not</em> be activated until you visit the confirmation URL which has been emailed to <tt><epc:pin name="email"/></tt></p>
 </epp:phrase>
     <epp:phrase id="cgi/register:account">Registration</epp:phrase>
@@ -1087,11 +1059,6 @@ Titles and Help for the System Fields
     <epp:phrase id="eprint_fieldopt_item_issues_status_reported">Reported</epp:phrase>
     <epp:phrase id="eprint_fieldopt_item_issues_status_resolved">Resolved</epp:phrase>
 
-    <epp:phrase id="eprint_fieldname_edit_lock">Lock</epp:phrase>
-    <epp:phrase id="eprint_fieldname_edit_lock_user">Locked by</epp:phrase>
-    <epp:phrase id="eprint_fieldname_edit_lock_since">Locked since</epp:phrase>
-    <epp:phrase id="eprint_fieldname_edit_lock_until">Locked until</epp:phrase>
-
     <epp:phrase id="eprint_fieldname_item_issues_count">Number of issues</epp:phrase>
 
     <epp:phrase id="eprint_fieldname__fulltext_">Full Text</epp:phrase>
@@ -1207,8 +1174,7 @@ Titles and Help for the System Fields
     <epp:phrase id="Plugin/Screen:message_message">Message</epp:phrase>
     <epp:phrase id="Plugin/Screen:message_error">Error</epp:phrase>
     <epp:phrase id="Plugin/Screen:message_warning">Warning</epp:phrase>
-    <epp:phrase id="Plugin/Screen:no_render_subclass">Error. $screen->render should be sub-classed for <epc:pin name="screen"/>.</epp:phrase>
-    <epp:phrase id="Plugin/Screen:item_locked">This item is temporarily locked. Please go back and try again in a few minutes.</epp:phrase>
+	<epp:phrase id="Plugin/Screen:no_render_subclass">Error. $screen->render should be sub-classed for <epc:pin name="screen"/>.</epp:phrase>
    
     <epp:phrase id="Plugin/Screen/Items:title">Manage deposits</epp:phrase>
     <epp:phrase id="Plugin/Screen/Items:remove_column_confirm">Really remove this column from the display?</epp:phrase>
@@ -1307,26 +1273,6 @@ Titles and Help for the System Fields
 	<epp:phrase id="Plugin/Screen/EPrint:deposit">Deposit</epp:phrase>
     	<epp:phrase id="Plugin/Screen/EPrint:owner_denied">Although you are the owner of this item you may not view this screen: <epc:pin name="screen"/>. This may be because you have deposited the item and you may no longer make changes to it.</epp:phrase>
 
-    <epp:phrase id="Plugin/Screen/EPrint:locked_to_you"><div class='ep_toolbox'><div class='ep_toolbox_content' style='padding:4px'>This item is temporarily locked to allow your modifications only.</div></div></epp:phrase>
-    <epp:phrase id="Plugin/Screen/EPrint:locked_to_other"><div class='ep_msg_warning'><div class='ep_msg_warning_content' style='padding:4px'>This item is temporarily locked to allow modifications by <epc:pin name='name' /> only.</div></div></epp:phrase>
-
-    <epp:phrase id="Plugin/Screen/EPrint/TakeLock:action:take:title">Take Edit Lock</epp:phrase>
-    <epp:phrase id="Plugin/Screen/EPrint/TakeLock:action:take:description">Take the edit lock from the user currently editing this record.</epp:phrase>
-    <epp:phrase id="Plugin/Screen/EPrint/TakeLock:lock_taken">Sorry, but your edit lock on <epc:pin name='item' /> has been overridden by an editor. Try editing this record again later.</epp:phrase>
-    <epp:phrase id="Plugin/Screen/EPrint/TakeLock:item_taken">You have taken over the edit lock for this item.</epp:phrase>
-
-    <epp:phrase id="Plugin/Screen/EPrint/ReleaseLock:action:release:title">Release Edit Lock</epp:phrase>
-    <epp:phrase id="Plugin/Screen/EPrint/ReleaseLock:action:release:description">Release your lock on this item.</epp:phrase>
-    <epp:phrase id="Plugin/Screen/EPrint/ReleaseLock:item_released">You have released your lock on this item.</epp:phrase>
-
-    <epp:phrase id="Plugin/Screen/EPrint/ShowLock:title">Item Locked</epp:phrase>
-    <epp:phrase id="Plugin/Screen/EPrint/ShowLock:item_locked">
-      <p>This item is currently being modified by another user, and will remain locked for a few minutes after they stop editing, unless they choose to release it sooner.</p>
-      <p>This item has been locked since <epc:pin name='locked_since' />.</p>
-      <p>This item will be locked until at least <epc:pin name='locked_until' /> (<epc:pin name='locked_remaining' /> seconds)</p>
-      <p>Locked by: <epc:pin name='locked_by' /></p>
-    </epp:phrase>
-
 	<epp:phrase id="Plugin/Screen/FirstTool:no_tools">Sorry, you are not able to use any tools</epp:phrase>
 
 	<epp:phrase id="Plugin/Screen/Items:db_error">Database Error</epp:phrase>
@@ -1384,14 +1330,6 @@ Titles and Help for the System Fields
 
     <epp:phrase id="Plugin/Screen/EPrint/Staff/Edit:title">Edit item</epp:phrase>
     <epp:phrase id="Plugin/Screen/EPrint/Staff/Edit:description">Edit item (as an editor)</epp:phrase>
-
-	<epp:phrase id="Plugin/Screen/EPrint/Staff/ChangeOwner:action:changeowner:title">Change Owner</epp:phrase>
-	<epp:phrase id="Plugin/Screen/EPrint/Staff/ChangeOwner:action:changeowner:description">Change the owner of this eprint</epp:phrase>
-	<epp:phrase id="Plugin/Screen/EPrint/Staff/ChangeOwner:title">Change Eprint Owner</epp:phrase>
-	<epp:phrase id="Plugin/Screen/EPrint/Staff/ChangeOwner:changeowner">Change</epp:phrase>
-	<epp:phrase id="Plugin/Screen/EPrint/Staff/ChangeOwner:cancel">Cancel</epp:phrase>
-	<epp:phrase id="Plugin/Screen/EPrint/Staff/ChangeOwner:invaliduser">The username given was not a valid user account</epp:phrase>
-	<epp:phrase id="Plugin/Screen/EPrint/Staff/ChangeOwner:changedowner">Transferred ownership of this eprint to "<epc:pin name="user"/>".</epp:phrase>
 
     <epp:phrase id="Plugin/Screen/EPrint/Move:status_changed">Status of item changed to "<epc:pin name="status"/>".</epp:phrase>
     <epp:phrase id="Plugin/Screen/EPrint/Move:cant_move">Problem changing status of item with the ID "<epc:pin name="id"/>".</epp:phrase>
@@ -1979,9 +1917,6 @@ Titles and Help for the System Fields
 <epp:phrase id="Plugin/Screen/Admin/Phrases:reload_required">Full configuration reload required for this phrase to change will appear. You don't have rights to do that.</epp:phrase>
 <epp:phrase id="Plugin/Screen/Admin/Phrases:will_reload">Configuration will be automatically reloaded.</epp:phrase>
 <epp:phrase id="Plugin/Screen/Admin/Phrases:reloaded">Repository configuration reloaded!</epp:phrase>
-<epp:phrase id="Plugin/Screen/Admin/Phrases:table_header_src">Source</epp:phrase>
-<epp:phrase id="Plugin/Screen/Admin/Phrases:table_header_id">Identifier</epp:phrase>
-<epp:phrase id="Plugin/Screen/Admin/Phrases:table_header_phrase">Content</epp:phrase>
 
 <epp:phrase id="request/respond_page:action_respond">Confirm</epp:phrase>
 <epp:phrase id="request/respond_page:accept"><p>You have chosen to <strong>accept</strong> the request for the following item:</p><p><epc:pin name="eprint"/><br/><epc:pin name="document"/></p><p>An acceptance notice will be emailed to the requester with the requested document attached.</p></epp:phrase>

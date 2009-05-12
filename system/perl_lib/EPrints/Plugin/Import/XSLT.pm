@@ -83,7 +83,7 @@ EOC
 		$EPrints::Plugin::Import::XSLT::SETTINGS{$plugin->{id}} = {
 			stylesheet => $stylesheet,
 		};
-		EPrints::PluginFactory->register_plugin( $plugin );
+		$EPrints::Plugin::REGISTRY->{$plugin->{id}} = $class;
 	}
 }
 

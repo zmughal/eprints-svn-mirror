@@ -30,18 +30,9 @@ sub new
 	return $self;
 }
 
-sub obtain_lock
-{
-	my( $self ) = @_;
-
-	return $self->obtain_eprint_lock;
-}
-
 sub can_be_viewed
 {
 	my( $self ) = @_;
-
-	return 0 unless $self->could_obtain_eprint_lock;
 
 	return $self->allow( "eprint/edit" );
 }
@@ -166,7 +157,7 @@ sub redirect_to_me_url
 {
 	my( $self ) = @_;
 
-	return $self->SUPER::redirect_to_me_url.$self->workflow->get_state_params( $self->{processor} );
+	return $self->SUPER::redirect_to_me_url.$self->workflow->get_state_params;
 }
 	
 

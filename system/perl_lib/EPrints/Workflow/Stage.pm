@@ -71,7 +71,7 @@ sub _read_components
 			if( !defined $class )
 			{
 				print STDERR "Using placeholder for $type\n";
-				$class = $self->{session}->get_repository->get_plugin_class( "InputForm::Component::PlaceHolder" );
+				$class = $EPrints::Plugin::REGISTRY->{"InputForm::Component::PlaceHolder"};
 				$params{placeholding}=$type;
 			}
 			if( defined $class )
@@ -156,12 +156,12 @@ sub update_from_form
 
 sub get_state_params
 {
-	my( $self, $processor ) = @_;
+	my( $self ) = @_;
 
 	my $params = "";
 	foreach my $component (@{$self->{components}})
 	{
-		$params.= $component->get_state_params( $processor );
+		$params.= $component->get_state_params;
 	}
 	return $params;
 }

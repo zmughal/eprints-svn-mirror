@@ -116,16 +116,11 @@ sub get_system_field_info
 	my( $class ) = @_;
 
 	return ( 
-	{ name=>"eprintid", type=>"int", required=>1, import=>0, can_clone=>0,
-		sql_counter=>"eprintid" },
+	{ name=>"eprintid", type=>"int", required=>1, import=>0, can_clone=>0 },
 
-	{ name=>"rev_number", type=>"int", required=>1, can_clone=>0,
-		sql_index=>0 },
+	{ name=>"rev_number", type=>"int", required=>1, can_clone=>0 },
 
 	{ name=>"documents", type=>"subobject", datasetid=>'document',
-		multiple=>1 },
-
-	{ name=>"files", type=>"subobject", datasetid=>"file",
 		multiple=>1 },
 
 	{ name=>"eprint_status", type=>"set", required=>1,
@@ -249,19 +244,9 @@ sub get_system_field_info
 
 	{ name=>"item_issues_count", type=>"int",  volatile=>1 },
 
-	{ 'name' => 'sword_depositor', 'type' => 'int' },
+        { 'name' => 'sword_depositor', 'type' => 'int' },
 
-	{ 'name' => 'sword_slug', 'type' => 'text' },
-
-	{ 'name' => 'edit_lock', 'type' => 'compound', volatile => 1,
-		'fields' => [
-			{ 'sub_name' => 'user',  'type' => 'itemref', 'datasetid' => 'user', sql_index=>0 },
-			{ 'sub_name' => 'since', 'type' => 'int', sql_index=>0 },
-			{ 'sub_name' => 'until', 'type' => 'int', sql_index=>0 },
-		],
-		render_value=>"EPrints::DataObj::EPrint::render_edit_lock",
- 	},
-
+        { 'name' => 'sword_slug', 'type' => 'text' },
 
 	);
 }
@@ -336,6 +321,51 @@ sub render_fileinfo
 };
 
 
+######################################################################
+=pod
+
+=item $eprint = EPrints::DataObj::EPrint->new( $session, $eprint_id )
+
+Return the eprint with the given eprint_id, or undef if it does not exist.
+
+=cut
+######################################################################
+
+sub new
+{
+	my( $class, $session, $eprint_id ) = @_;
+
+	EPrints::abort "session not defined in EPrint->new" unless defined $session;
+	#EPrints::abort "eprint_id not defined in EPrint->new" unless defined $eprint_id;
+
+	my $dataset = $session->get_repository->get_dataset( "eprint" );
+
+	return $session->get_database->get_single( $dataset , $eprint_id );
+}
+
+
+######################################################################
+=pod
+
+=item $eprint = EPrints::DataObj::EPrint->new_from_data( $session, $data, $dataset )
+
+Construct a new EPrints::DataObj::EPrint object based on the $data hash 
+reference of metadata.
+
+=cut
+######################################################################
+
+sub new_from_data
+{
+	my( $class, $session, $known, $dataset ) = @_;
+
+	return $class->SUPER::new_from_data(
+			$session,
+			$known,
+			$dataset );
+}
+
+	
 
 ######################################################################
 # =pod
@@ -359,7 +389,7 @@ sub create
 {
 	my( $session, $dataset, $data ) = @_;
 
-	return EPrints::DataObj::EPrint->create_from_data( 
+	return EPrints::EPrint->create_from_data( 
 		$session, 
 		$data, 
 		$dataset );
@@ -400,12 +430,13 @@ sub create_from_data
 	if( defined $documents )
 	{
 		my @docs;
-		my $docds = $session->get_repository->get_dataset( "document" );
-		foreach my $docdata ( @{$documents} )
+		foreach my $docdata_orig ( @{$documents} )
 		{
-			$docdata->{eprintid} = $new_eprint->get_id;
-			$docdata->{_parent} = $new_eprint;
-			push @docs, EPrints::DataObj::Document->create_from_data( $session,$docdata,$docds );
+			my %docdata = %{$docdata_orig};
+			$docdata{eprintid} = $new_eprint->get_id;
+			$docdata{eprint} = $new_eprint;
+			my $docds = $session->get_repository->get_dataset( "document" );
+			push @docs, EPrints::DataObj::Document->create_from_data( $session,\%docdata,$docds );
 		}
 		my @finfo = ();
 		foreach my $doc ( @docs )
@@ -432,7 +463,7 @@ sub create_from_data
 	$userid = $user->get_id if defined $user;
 
 	my $history_ds = $session->get_repository->get_dataset( "history" );
-	my $event = $history_ds->create_object( 
+	$history_ds->create_object( 
 		$session,
 		{
 			userid=>$userid,
@@ -443,7 +474,7 @@ sub create_from_data
 			details=>undef,
 		}
 	);
-	$event->set_dataobj_xml( $new_eprint );
+	$new_eprint->write_revision;
 
 	# No longer needed - generates on demand.
 	# $new_eprint->generate_static;
@@ -454,16 +485,27 @@ sub create_from_data
 ######################################################################
 =pod
 
-=item $dataset = EPrints::DataObj::EPrint->get_dataset_id
+=item $dataset = $eprint->get_gid
 
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
+Returns the OAI identifier for this eprint.
 
 =cut
 ######################################################################
 
-sub get_dataset_id
+sub get_gid
 {
-	return "eprint";
+	my( $self ) = @_;
+
+	my $session = $self->get_session;
+
+	return EPrints::OpenArchives::to_oai_identifier(
+		$session->get_repository->get_conf(
+			"oai",
+			"v2",
+			"archive_id",
+		),
+		$self->get_id,
+	);
 }
 
 ######################################################################
@@ -898,19 +940,16 @@ sub remove
 		}
 	);
 
-	foreach my $doc ( @{($self->get_value( "documents" ))} )
+	foreach my $doc ( $self->get_all_documents )
 	{
 		$doc->remove;
 	}
 
-	foreach my $file (@{($self->get_value( "files" ))} )
-	{
-		$file->remove;
-	}
+	my $success = $self->{session}->get_database->remove(
+		$self->{dataset},
+		$self->get_value( "eprintid" ) );
 
-	my $success = $self->SUPER::remove();
-
-	# remove the webpages associated with this record.
+	# remove the webpages assocaited with this record.
 	$self->remove_static;
 
 	return $success;
@@ -992,14 +1031,31 @@ sub commit
 			EPrints::Time::get_iso_timestamp() );
 	}
 
-	my $success = $self->SUPER::commit( $force );
-	return( 0 ) unless $success;
+	$self->tidy;
+	my $success = $self->{session}->get_database->update(
+		$self->{dataset},
+		$self->{data} );
+
+	if( !$success )
+	{
+		my $db_error = $self->{session}->get_database->error;
+		$self->{session}->get_repository->log( 
+			"Error committing EPrint ".
+			$self->get_value( "eprintid" ).": ".$db_error );
+		return $success;
+	}
 
 	unless( $self->under_construction )
 	{
+		if( $self->{non_volatile_change} )
+		{
+			$self->write_revision;
+		}
 		$self->remove_static;
 	}
 
+	$self->queue_changes;
+	
 	if( $self->{non_volatile_change} )
 	{
 		my $user = $self->{session}->current_user;
@@ -1007,7 +1063,7 @@ sub commit
 		$userid = $user->get_id if defined $user;
 	
 		my $history_ds = $self->{session}->get_repository->get_dataset( "history" );
-		my $event = $history_ds->create_object( 
+		$history_ds->create_object( 
 			$self->{session},
 			{
 				userid=>$userid,
@@ -1018,7 +1074,6 @@ sub commit
 				details=>undef
 			}
 		);
-		$event->set_dataobj_xml( $self );
 	}
 
 	return( $success );
@@ -1039,17 +1094,26 @@ sub write_revision
 {
 	my( $self ) = @_;
 
-	my $tmpfile = File::Temp->new;
-	my $filename = "eprint.xml";
+	my $dir = $self->local_path."/revisions";
 
-	binmode($tmpfile, ":utf8");
+	if( !-d $dir )
+	{
+		if(!EPrints::Platform::mkdir($dir))
+		{
+			$self->{session}->get_repository->log( "Error creating revision directory for EPrint ".$self->get_value( "eprintid" ).", ($dir): ".$! );
+			return;
+		}
+	}
 
-	print $tmpfile '<?xml version="1.0" encoding="utf-8" ?>'."\n";
-	print $tmpfile $self->export( "XML" );
-
-	seek($tmpfile,0,0);
-
-	$self->add_stored_file( $filename, $tmpfile, -s "$tmpfile" );
+	my $rev_file = $dir."/".$self->get_value("rev_number").".xml";
+	unless( open( REVFILE, ">$rev_file" ) )
+	{
+		$self->{session}->get_repository->log( "Error writing file: $!" );
+		return;
+	}
+	print REVFILE '<?xml version="1.0" encoding="utf-8" ?>'."\n";
+	print REVFILE $self->export( "XML", fh=>*REVFILE );
+	close REVFILE;
 }
 
 
@@ -1194,20 +1258,25 @@ sub get_all_documents
 {
 	my( $self ) = @_;
 
-	my @docs;
+	my $doc_ds = $self->{session}->get_repository->get_dataset( "document" );
 
-	my $relation = EPrints::Utils::make_relation( "isVolatileVersionOf" );
+	my $searchexp = EPrints::Search->new(
+		session=>$self->{session},
+		dataset=>$doc_ds );
 
-	# Filter out any documents that are volatile versions
-	foreach my $doc (@{($self->get_value( "documents" ))})
+	$searchexp->add_field(
+		$doc_ds->get_field( "eprintid" ),
+		$self->get_value( "eprintid" ) );
+
+	my $searchid = $searchexp->perform_search;
+	my @documents = $searchexp->get_records;
+	$searchexp->dispose;
+	foreach my $doc ( @documents )
 	{
-		if( ! $doc->has_related_objects( $relation ) )
-		{
-			push @docs, $doc;
-		}
+		$doc->register_parent( $self );
 	}
 
-	return @docs;
+	return( @documents );
 }
 
 
@@ -1725,7 +1794,6 @@ sub render_history
 	$results->map( sub {
 		my( $session, $dataset, $item ) = @_;
 	
-		$item->set_parent( $self );
 		$page->appendChild( $item->render );
 	} );
 
@@ -1783,22 +1851,11 @@ sub get_user
 {
 	my( $self ) = @_;
 
-	return undef unless $self->is_set( "userid" );
-
-	if( defined($self->{user}) )
-	{
-		# check we still have the same owner
-		if( $self->{user}->get_id eq $self->get_value( "userid" ) )
-		{
-			return $self->{user};
-		}
-	}
-
-	$self->{user} = EPrints::User->new( 
+	my $user = EPrints::User->new( 
 		$self->{session}, 
 		$self->get_value( "userid" ) );
 
-	return $self->{user};
+	return $user;
 }
 
 
@@ -2458,126 +2515,6 @@ sub has_owner
 	return &$fn( $self->{session}, $possible_owner, $self );
 }
 
-
-######################################################################
-=pod
-
-=item $boolean = $eprint->obtain_lock( $user )
-
-=cut
-######################################################################
-
-sub obtain_lock
-{
-	my( $self, $user ) = @_;
-
-	if( ! $self->{session}->get_repository->get_conf( "locking", "eprint", "enable" ) )
-	{
-		# locking not enabled
-		return 1;
-	}
-
-	my $my_lock = ( $self->get_value( "edit_lock_user" ) == $user->get_id );
-	if( $self->is_locked() && !$my_lock )
-	{
-		return 0;
-	}
-	
-	if( !$my_lock )
-	{
-		$self->set_value( "edit_lock_since", time );
-		$self->set_value( "edit_lock_user", $user->get_id );
-	}
-
-	my $timeout = $self->{session}->get_repository->get_conf( "locking", "eprint", "timeout" );
-	$timeout = 600 unless defined $timeout;
-	$self->set_value( "edit_lock_until", time + $timeout );
-
-	$self->commit;
-
-	return 1;
-}
-
-######################################################################
-=pod
-
-=item $boolean = $eprint->could_obtain_lock( $user )
-
-=cut
-######################################################################
-
-sub could_obtain_lock
-{
-	my( $self, $user ) = @_;
-
-	if( ! $self->{session}->get_repository->get_conf( "locking", "eprint", "enable" ) )
-	{
-		# locking not enabled
-		return 1;
-	}
-
-	my $my_lock = ( $self->get_value( "edit_lock_user" ) == $user->get_id );
-	if( $self->is_locked() && !$my_lock )
-	{
-		return 0;
-	}
-	
-	return 1;
-}
-
-######################################################################
-=pod
-
-=item $boolean = $eprint->is_locked()
-
-=cut
-######################################################################
-
-sub is_locked
-{
-	my( $self ) = @_;
-
-	if( ! $self->{session}->get_repository->get_conf( "locking", "eprint", "enable" ) )
-	{
-		# locking not enabled
-		return 0;
-	}
-
-	my $lock_until = $self->get_value( "edit_lock_until" );
-
-	return 0 unless $lock_until;
-
-	return( $lock_until > time );
-}
-
-######################################################################
-=pod
-
-=item $xhtml = render_edit_lock( $session, $value )
-
-=cut
-######################################################################
-
-sub render_edit_lock
-{
-	my( $session, $field, $value, $alllangs, $nolink, $eprint ) = @_;
-
-	if( $value->{"until"} < time ) 
-	{
-		return $session->html_phrase( "lib/eprint:not_locked" );
-	}
-
-	my $f = $field->get_property( "fields_cache" );
-	return $session->html_phrase( "lib/eprint:locked", 
-		locked_by => $f->[0]->render_single_value( $session, $value->{user}, $eprint ),
-		locked_until => $session->make_text( EPrints::Time::human_time( $value->{"until"} ) ) );
-
-	return $f;
-};
-
-
-
-
 ######################################################################
 =pod
 
@@ -2619,6 +2556,3 @@ Callbacks may optionally be defined in the ArchiveConfig.
 See L<ArchiveRenderConfig/eprint_render>.
 
 =back
-
-
-

@@ -24,8 +24,6 @@ Where I<command> is one of:
 
 =over 4
 
-=item cleanup_cachemaps
-
 =item config_core
 
 =item config_db
@@ -46,8 +44,6 @@ Where I<command> is one of:
 
 =item help
 
-=item profile
-
 =item recommit
 
 =item reorder
@@ -64,13 +60,9 @@ Where I<command> is one of:
 
 =item reload
 
-=item reload_metafields
-
 =item schema
 
 =item test
-
-=item unit_tests
 
 =item update_database_structure
 
@@ -90,11 +82,7 @@ START HERE! This option will walk you through the tasks needed to create your re
 
 =item B<epadmin> test I<repository_id>
 
-A null operation which just checks your configuration files are OK and that you can connect to the database. If no I<repository_id> is specified loads each repository in turn.
-
-=item B<epadmin> cleanup_cachemaps I<repository_id>
-
-Drop any orphaned cache tables.
+A null operation which just checks your configuration files are OK and that you can connect to the database.
 
 =item B<epadmin> config_core I<repository_id>
 
@@ -158,10 +146,6 @@ Tell the webserver that all abstract summary pages must be regenerated. The webs
 
 Regenerate all the thumbnail and image-preview files and any other things which are triggered if the document file changed.
 
-=item B<epadmin> reload_metafields I<repository_id>
-
-Reload the metafields dataset, based on the current configuration.
-
 =item B<epadmin> erase_data I<repository_id>
 
 Erases and recreates the database. Removes all documents and files. Does not touch the configuration files.
@@ -169,15 +153,6 @@ Erases and recreates the database. Removes all documents and files. Does not tou
 =item B<epadmin> erase_eprints I<repository_id>
 
 Erases all the documents and eprints (including their files). Recreates the eprint and document tables. Leaves configuration files and the users and subjects tables alone.
-
-=item B<epadmin> unit_tests
-
-Run unit tests, printing the results to STDOUT. If everything passed will exit
-with a return code of 0.
-
-=item B<epadmin> profile I<test>
-
-Run a performance profile of I<test> using L<Devel::NYTProf>.
 
 =item B<epadmin> upgrade I<repository_id>
 
@@ -207,10 +182,6 @@ This option does not do anything.
 
 Explain in detail what is going on. May be repeated for greater effect.
 
-=item B<--force>
-
-Be more forceful (don't ask for confirmation).
-
 =item B<--version>
 
 Output version information and exit.
@@ -228,6 +199,7 @@ use EPrints;
 
 use Sys::Hostname;
 use DBI;
+use Unicode::String qw(utf8 latin1);
 use Data::Dumper;
 
 use strict;
@@ -239,7 +211,6 @@ my $quiet = 0;
 my $help = 0;
 my $man = 0;
 my $version = 0;
-my $force = 0;
 
 Getopt::Long::Configure("permute");
 
@@ -249,8 +220,7 @@ GetOptions(
 	'version' => \$version,
 	'verbose+' => \$verbose,
 	'silent' => \$quiet,
-	'quiet' => \$quiet,
-	'force' => \$force,
+	'quiet' => \$quiet
 ) || pod2usage( 2 );
 EPrints::Utils::cmd_version( "epadmin" ) if $version;
 pod2usage( 1 ) if $help;
@@ -276,15 +246,11 @@ my @PASSWORD_CHARS = ( 'a'..'z','A'..'Z','0'..'9' );
 
 my $action = $ARGV[0];
 if( $action eq "create" ) { create(); }
-elsif( $action eq "test" ) { test( $ARGV[1] ); }
-elsif( $action eq "unit_tests" ) { unit_tests( @ARGV[1..$#ARGV] ); }
-elsif( $action eq "profile" ) { profile( $ARGV[1] ); }
 else
 {
 	my $repoid = $ARGV[1];
 	pod2usage(1) unless defined $repoid;
-	if( $action eq "cleanup_cachemaps" ) { cleanup_cachemaps( $repoid ); }
-	elsif( $action eq "config_core" ) { config_core( $repoid ); }
+	if( $action eq "config_core" ) { config_core( $repoid ); }
 	elsif( $action eq "config_db" ) { config_db( $repoid ); }
 	elsif( $action eq "create_db" ) { create_db( $repoid ); }
 	elsif( $action eq "create_user" ) { create_user( $repoid ); }
@@ -293,13 +259,13 @@ else
 	elsif( $action eq "erase_eprints" ) { erase_eprints( $repoid ); }
 	elsif( $action eq "erase_fulltext_index" ) { erase_fulltext_index( $repoid ); }
 	elsif( $action eq "reload" ) { reload( $repoid ); }
-	elsif( $action eq "reload_metafields" ) { reload_metafields( $repoid ); }
 	elsif( $action eq "refresh_abstracts" ) { refresh_abstracts( $repoid ); }
 	elsif( $action eq "refresh_views" ) { refresh_views( $repoid ); }
 	elsif( $action eq "redo_thumbnails" ) { redo_thumbnails( $repoid ); }
 	elsif( $action eq "upgrade" ) { upgrade( $repoid ); }
 	elsif( $action eq "schema" ) { schema( $repoid ); }
 	elsif( $action eq "update_database_structure" ) { update_database_structure( $repoid ); }
+	elsif( $action eq "test" ) { test( $repoid ); }
 	elsif( $action eq "recommit" ) 
 	{
 		my $datasetid = $ARGV[2];
@@ -555,23 +521,6 @@ sub run_script
 	my $bin = $repo->get_conf( "bin_path" );
 
 	system( "$bin/$script", @opts );
-}
-
-sub cleanup_cachemaps
-{
-	my( $repoid ) = @_;
-
-	my $session = EPrints::Session->new( 1 , $repoid, $noise );
-	exit unless( defined $session );
-
-	my $c = $session->get_database->drop_orphan_cache_tables;
-
-	if( $c == 0 )
-	{
-		$session->get_repository->log( "No orphaned cache tables found" );
-	}
-
-	$session->terminate;
 }
 
 sub config_core
@@ -1026,30 +975,18 @@ sub create_user
 	exit unless( defined $session );
 
 	my $user_info = {};
-	@{$user_info}{qw( username usertype password email )} = @ARGV[2..$#ARGV];
-	if( defined($user_info->{username}) &&
-		$user_info->{username} eq "_" )
-	{
-		@{$user_info}{qw( username usertype password email )} = (
-			"admin",
-			"admin",
-			"admin",
-			"admin\@localhost",
-		);
-	}
-
 	print "Creating a new user in $repoid\n\n";
-	$user_info->{username} ||= EPrints::Utils::get_input( $REGEXP_VARNAME, 'Enter a username', 'admin' );
+	$user_info->{username} = EPrints::Utils::get_input( $REGEXP_VARNAME, 'Enter a username', 'admin' );
 	while( defined EPrints::DataObj::User::user_with_username( $session, $user_info->{username} ) )
 	{
 		print STDERR "User with username '".$user_info->{username}."' already exists.\n";
 		$user_info->{username} = EPrints::Utils::get_input( $REGEXP_VARNAME, 'Enter a username', 'admin' );
 	}
 	my @utypes = $session->get_repository->get_types( "user" );
-	$user_info->{usertype} ||= EPrints::Utils::get_input( '^('.join( '|', @utypes ).')$', 'Select a user type ('.join( "|",@utypes).')', 'admin' );
-	$user_info->{password} ||= EPrints::Utils::get_input_hidden( $REGEXP_VARNAME, 'Enter Password' );
-	$user_info->{password} = EPrints::Utils::crypt_password( $user_info->{password}, $session );
-	$user_info->{email} ||= EPrints::Utils::get_input( $REGEXP_EMAIL, 'Email' );
+	$user_info->{usertype} = EPrints::Utils::get_input( '^('.join( '|', @utypes ).')$', 'Select a user type ('.join( "|",@utypes).')', 'admin' );
+	my $rawpassword = EPrints::Utils::get_input_hidden( $REGEXP_VARNAME, 'Enter Password' );
+	$user_info->{password} = EPrints::Utils::crypt_password( $rawpassword, $session );
+	$user_info->{email} = EPrints::Utils::get_input( $REGEXP_EMAIL, 'Email' );
 	
 	my $user_ds = $session->get_repository->get_dataset( "user" );
 	my $new_user = $user_ds->create_object( $session, $user_info );
@@ -1187,22 +1124,6 @@ END
 	$session->terminate;
 }	
 
-sub reload_metafields
-{
-	my( $repoid ) = @_;
-
-	my $session = new EPrints::Session( 1 , $repoid , $noise );
-	exit( 1 ) unless( defined $session );
-
-	my $dataset = $session->get_repository->get_dataset( "metafield" );
-	$dataset->map( $session, sub {
-		my( undef, undef, $mf ) = @_;
-		$mf->remove();
-	});
-
-	my $list = EPrints::DataObj::MetaField::load_all( $session );
-	print "Loaded ".$list->count." metafields\n";
-}	
 
 sub create_tables
 {
@@ -1219,7 +1140,7 @@ sub create_tables
 		exit 1;
 	}
 
-	foreach my $dsid ( $session->get_repository->get_sql_dataset_ids )
+	foreach my $dsid ( &EPrints::DataSet::get_sql_dataset_ids )
 	{
 		my $ds = $session->get_repository->get_dataset( $dsid );
 		my $indexes = $ds->count_indexes;
@@ -1258,7 +1179,7 @@ but NOT the configuration files.
 
 END
 	
-	my $sure = $force || EPrints::Utils::get_input_confirm( "Are you sure you want this to happen" );
+	my $sure = EPrints::Utils::get_input_confirm( "Are you sure you want this to happen" );
 	unless( $sure )
 	{
 		print "Aborting then.\n";
@@ -1293,7 +1214,7 @@ END
 	}
 
 	erase_eprint_files( $repoid );
-	foreach( "eprint", "history","access","request","document","file" )
+	foreach( "eprint", "history","access","request","document" )
 	{
 		reset_dataset( $repoid, $_ );
 	}		
@@ -1343,7 +1264,7 @@ sub drop_tables_and_recreate_db
 
 	my @tables = $db->get_tables;
 
-	foreach my $datasetid ($session->get_repository->get_sql_dataset_ids())
+	foreach my $datasetid (EPrints::DataSet::get_sql_dataset_ids())
 	{
 		my $dataset = $session->get_repository->get_dataset( $datasetid );
 		my $sql_name = $dataset->get_sql_table_name;
@@ -1374,8 +1295,8 @@ sub drop_tables_and_recreate_db
 		$db->drop_table( $_ ) if $db->has_table( $_ );
 	}
 
-	my $mktables = $force || EPrints::Utils::get_input_confirm( "Create database tables?", 0, 1 ); # not quick, default to "yes"
-	if( $mktables )
+	my $mktables = EPrints::Utils::get_input( $REGEXP_YESNO, "Create database tables?", "yes" );
+	if( $mktables eq "yes" )
 	{
 		create_tables( $repoid );
 	}
@@ -1462,27 +1383,40 @@ sub erase_fulltext_index
 	my $ds = $session->get_repository->get_dataset( "document" );
 	print "Stating to erase caches\n" if( $noise >= 1 );
 
-	$ds->map( $session, sub {
-			my( undef, undef, $doc ) = @_;
+	$ds->map( 
+		$session,
+		sub 
+		{
+			my( $session , $dataset , $doc ) = @_;
 
 			if( $noise >= 2 )
 			{
 				print "Removing fulltext index for: ".$doc->get_id."\n";
 			}
 			
-			$doc->remove_indexcodes();
+			my @files = ( $doc->words_file, $doc->indexcodes_file );
+			foreach my $file ( @files )
+			{
+				next unless( -e $file );
+				if( $noise >= 2 )
+				{
+					print "Erasing: $file\n";
+				}
+				unlink( $file );
+			}
 		} );
 
 	print "Done erasing\n" if( $noise >= 1 );
 	print "Queuing records for re-indexing\n" if( $noise >= 1 );
 
-	my $index_queue = $session->get_repository->get_dataset( "index_queue" );
-
 	my $fn = sub {
 		my( $session, $dataset, $item ) = @_;
 	
-		$item->queue_fulltext();
-
+		$session->get_database->index_queue( 
+			'eprint',
+			$item->get_id,
+			$EPrints::Utils::FULLTEXT );
+	
 		if( $session->get_noise() >= 2 )
 		{
 			print STDERR "Queued item: ".$dataset->id()."/".$item->get_id()."\n";
@@ -1501,96 +1435,11 @@ sub test
 {
 	my( $repoid ) = @_;
 
-	if( !defined $repoid )
-	{
-		foreach( EPrints::Config::get_repository_ids() )
-		{
-			print "REPOID: $_\n" if $noise > 1;
-			test( $_ );
-		}
-		return;
-	}
-
 	my $session = new EPrints::Session( 1 , $repoid , $noise );
 	exit( 1 ) unless( defined $session );
-	if( $noise > 1 )
-	{
-		print "PID: $$\n";
-		eval "use GTop";
-		if( !$@ )
-		{
-			my $size = GTop->new->proc_mem( $$ )->resident;
-			print "SIZE: $size\n";
-		}
-	}
 	$session->terminate;
 
 	print "Everything seems OK.\n";
-}
-
-sub profile
-{
-	my( $test ) = @_;
-
-	unless( defined $test )
-	{
-		die "Requires test argument\n";
-	}
-
-	eval "use Test::Harness";
-	if( $@ )
-	{
-		die "Can't do profiling without Test::Harness: $@";
-	}
-
-	eval "use Devel::NYTProf";
-	if( $@ )
-	{
-		die "Can't do profiling without Devel::NYTProf: $@";
-	}
-
-	my $base_path = $EPrints::SystemSettings::conf->{base_path};
-	my $test_path = "$base_path/tests";
-
-	my $test_file = "$test_path/$test";
-	$test_file =~ s/(\.pl)?$/.pl/;
-
-	unless( -f $test_file )
-	{
-		die "Test '$test' not found in $test_path/\n";
-	}
-
-	$ENV{HARNESS_PERL_SWITCHES} = "-d:NYTProf";
-
-	exit(0) if runtests($test_file);
-}
-
-sub unit_tests
-{
-	my( @todo ) = @_;
-
-	my %todo = map { $_ => 1 } @todo;
-
-	eval "use Test::Harness";
-	if( $@ )
-	{
-		die "Can't do unit tests without Test::Harness: $@";
-	}
-
-	my $base_path = $EPrints::SystemSettings::conf->{base_path};
-	my $test_path = "$base_path/tests";
-
-	opendir( DIR, $test_path ) or die "Unable to open unit test path $test_path: $!";
-	my @test_files = grep { -f "$test_path/$_" && $_ !~ /^\./ && $_ =~ /\.pl$/ } readdir( DIR );
-	closedir( DIR );
-
-	@test_files = sort { $a cmp $b } @test_files;
-	if( scalar(@todo) )
-	{
-		@test_files = grep { $todo{$_} or $todo{substr($_,0,-3)} } @test_files;
-	}
-
-	exit(0) if runtests(map { "$test_path/$_" } @test_files);
 }
 
 sub rehash
@@ -1745,14 +1594,26 @@ sub reindex
 		exit( 1 );
 	}
 
-	my $index_queue = $session->get_repository->get_dataset( "index_queue" );
-
 	my $fn = sub {
 		my( $session, $dataset, $item ) = @_;
 	
-		$item->queue_all();
-		$item->queue_fulltext();
-
+		foreach my $field ( $dataset->get_fields() )
+		{
+			next unless( $field->get_property( "text_index" ) );
+	
+			$session->get_database->index_queue( 
+				$dataset->id,
+				$item->get_id,
+				$field->get_name );
+		}	
+		if( $dataset->confid eq "eprint" )
+		{
+			$session->get_database->index_queue( 
+				$dataset->id,
+				$item->get_id,
+				$EPrints::Utils::FULLTEXT );
+		}
+	
 		if( $session->get_noise() >= 2 )
 		{
 			print STDERR "Queued item: ".$dataset->id()."/".$item->get_id()."\n";
@@ -1867,12 +1728,6 @@ sub upgrade
 		$dbversion="3.1.2";
 		$db->set_version( $dbversion );
 	}
-	if( $dbversion eq "3.1.2" )
-	{
-		upgrade_3_1_2_to_3_2_0( $repoid, $db );
-		$dbversion="3.2.0";
-		$db->set_version( $dbversion );
-	}
 
 
 	print $dbversion."\n";
@@ -1885,17 +1740,14 @@ sub update_datasets
 	my( $repo, $db ) = @_;
 
 	my $success = 1;
-	my $count = 0;
-	my $field_count = 0;
 
-	foreach( $repo->get_sql_dataset_ids() )
+	foreach( &EPrints::DataSet::get_sql_dataset_ids )
 	{
 		my $dataset = $repo->get_dataset( $_ );
 		if( !$db->has_dataset( $dataset ) )
 		{
 			if( $db->create_dataset_tables( $dataset ) )
 			{
-				++$count;
 				print "Added dataset $_\n" if $noise;
 			}
 			else
@@ -1903,15 +1755,15 @@ sub update_datasets
 				$success = 0;
 				print STDERR "Failed adding dataset $_\n";
 			}
+			next;
 		}
 		foreach my $field ($dataset->get_fields)
 		{
-			next if defined $field->get_property( "sub_name" );
+			next if defined $field->{"sub_name"};
 			if( !$db->has_field( $dataset, $field ) )
 			{
 				if( $db->add_field( $dataset, $field ) )
 				{
-					++$field_count;
 					print "Added ".$field->get_name." to dataset $_\n" if $noise;
 				}
 				else
@@ -1923,9 +1775,6 @@ sub update_datasets
 		}
 	}
 
-	print "$count datasets added\n" if $noise;
-	print "$field_count fields added\n" if $noise;
-
 	return $success;
 }
 
@@ -1935,15 +1784,13 @@ sub update_counters
 	my( $repo, $db ) = @_;
 
 	my $success = 1;
-	my $count = 0;
 
-	foreach( $repo->get_sql_counter_ids )
+	foreach( @EPrints::Database::counters )
 	{
 		if( !$db->has_counter( $_ ) )
 		{
 			if( $db->create_counter( $_ ) )
 			{
-				++$count;
 				print "Added counter $_\n" if $noise;
 			}
 			else
@@ -1953,8 +1800,6 @@ sub update_counters
 			}
 		}
 	}
-
-	print "$count counters were added\n" if $noise;
 
 	return $success;
 }
@@ -2227,7 +2072,7 @@ sub upgrade_3_1_1_to_3_1_2
 	update_datasets( $repo, $db );
 	update_counters( $repo, $db );
 
-	foreach( $repo->get_sql_dataset_ids() )
+	foreach( &EPrints::DataSet::get_sql_dataset_ids )
 	{
 		my $dataset = $repo->get_dataset( $_ );
 
@@ -2259,209 +2104,5 @@ sub upgrade_3_1_1_to_3_1_2
 	}
 }
 
-sub upgrade_3_1_2_to_3_2_0
-{
-	my( $repoid, $db ) = @_;
 
-	my $repo = EPrints::Repository->new( $repoid );
 
-	# We can do this now, because we only ever add columns
-	update_datasets( $repo, $db );
-	update_counters( $repo, $db );
-
-	if( ref($db) eq "EPrints::Database::mysql" )
-	{
-		upgrade_mysql_charset( $repoid, $db );
-	}
-}
-
-sub upgrade_mysql_charset
-{
-	my( $repoid, $db ) = @_;
-
-	my $session = EPrints::Session->new( 1, $repoid, 0, 1 );
-	EPrints::abort "Error getting session" unless $session;
-	my $repo = $session->get_repository;
-
-#	$db->do("LOCK TABLES version WRITE");
-
-	print "CREATE(_utf8_test): ";
-	$db->do("CREATE TEMPORARY TABLE _utf8_test LIKE version");
-
-	my $collation = $db->get_column_collation( "_utf8_test", "version" );
-	if( !defined $collation )
-	{
-		EPrints::abort "Error interogating current collation";
-	}
-
-	print " collation is $collation: ";
-	if( 0 && $collation =~ /^utf8_/ )
-	{
-		print " [ Failed ]\n";
-		print STDERR <<EOW;
-Warning! It looks like your database tables are already set to use
-UTF-8. If this is unexpected then any non-English characters in
-your database may be double-encoded. You would see this as corrupt
-characters when viewed from EPrints or a MySQL client. This
-situation is recoverable but can not be identified or fixed by
-this upgrade.
-
-The upgrade will continue.
-
-EOW
-		return;
-	}
-	elsif( 0 && $collation !~ /^latin1_/ )
-	{
-		print " [ Failed ]\n";
-		EPrints::abort <<EOW;
-I don't understand the '$collation' collation. Your MySQL server
-is configured in a way that this upgrade script doesn't support.
-You need to manually correct this problem before an upgrade can
-succeed.
-
-EOW
-		return;
-	}
-
-	print " [ OK ]\n";
-
-	my $rc = $db->do("ALTER TABLE _utf8_test MODIFY version BINARY(255)");
-	$rc &&= $db->do("ALTER TABLE _utf8_test MODIFY version VARCHAR(255) CHARACTER SET utf8");
-
-	if( !$rc )
-	{
-		EPrints::abort <<EOW;
-An unexpected error occurred while attempting to convert tables to UTF-8.
-EOW
-	}
-
-	# convert all textual columns
-	foreach( $repo->get_sql_dataset_ids() )
-	{
-		my $dataset = $repo->get_dataset( $_ );
-		my $key_field = $dataset->get_key_field();
-		my %colspecs;
-		if( $key_field->isa( "EPrints::MetaField::Text" ) ||
-			$key_field->isa( "EPrints::MetaField::Set" ) )
-		{
-			upgrade_mysql_charset_ordervalues( \%colspecs, $session, $db, $dataset, $key_field, 1 );
-		}
-		if( $dataset->indexable )
-		{
-			my $Q_table = $dataset->get_sql_index_table_name;
-			$colspecs{$Q_table} = { binary => [], char => [] };
-			push @{$colspecs{$Q_table}->{binary}},
-				"`fieldword` BINARY(255)",
-				"`ids` BLOB";
-			push @{$colspecs{$Q_table}->{char}},
-				"`fieldword` VARCHAR(255) CHARACTER SET utf8",
-				"`ids` TEXT CHARACTER SET utf8";
-		}
-		foreach my $field ($dataset->get_fields)
-		{
-#print STDERR $dataset->confid.".".$field->get_name."[".$field->get_type."]\n";
-			# upgrade main table
-			if( !$field->is_virtual() &&
-				($field->isa( "EPrints::MetaField::Text" ) ||
-				$field->isa( "EPrints::MetaField::Set" )) )
-			{
-				upgrade_mysql_charset_field( \%colspecs, $session, $db, $dataset, $field );
-			}
-			# upgrade ordervalues table
-			if( $field->get_name ne $key_field->get_name )
-			{
-				upgrade_mysql_charset_ordervalues( \%colspecs, $session, $db, $dataset, $field );
-			}
-		}
-		while(my( $Q_table, $specs ) = each %colspecs)
-		{
-			my $binary_sql = "ALTER TABLE $Q_table ".
-				join(", ", map { "MODIFY $_" } @{$specs->{binary}});
-			my $sql = "ALTER TABLE $Q_table ".
-				join(", ", map { "MODIFY $_" } @{$specs->{char}});
-			$rc &&= $db->do($binary_sql);
-			$rc &&= $db->do($sql);
-		}
-	}
-
-	# don't need to go via binary because these should only contain US-ASCII
-	$rc &&= $db->do("ALTER TABLE `version` MODIFY `version` VARCHAR(255) CHARACTER SET utf8");
-	$rc &&= $db->do("ALTER TABLE `counters` MODIFY `countername` VARCHAR(255) CHARACTER SET utf8");
-
-	if( !$rc )
-	{
-		EPrints::abort <<EOW;
-An unexpected error occurred while attempting to convert tables to UTF-8.
-EOW
-	}
-
-	$session->terminate;
-}
-
-sub upgrade_mysql_charset_field
-{
-	my( $colspecs, $session, $db, $dataset, $field ) = @_;
-
-	my $Q_table;
-	if( $field->get_property( "multiple" ) )
-	{
-		$Q_table = $db->quote_identifier($dataset->get_sql_sub_table_name( $field ));
-	}
-	else
-	{
-		$Q_table = $db->quote_identifier($dataset->get_sql_table_name);
-	}
-
-	$colspecs->{$Q_table} ||= { binary => [], char => [] };
-
-	foreach my $sql ($field->get_sql_type( $session ))
-	{
-		push @{$colspecs->{$Q_table}->{binary}},
-			upgrade_mysql_charset_binary( $db, $Q_table, $sql );
-		push @{$colspecs->{$Q_table}->{char}}, $sql;
-	}
-}
-
-sub upgrade_mysql_charset_ordervalues
-{
-	my( $colspecs, $session, $db, $dataset, $field, $key_field ) = @_;
-
-	my $sql_field;
-	if( $key_field )
-	{
-		$sql_field = $field;
-	}
-	else
-	{
-		$sql_field = EPrints::MetaField->new(
-			repository => $session->get_repository,
-			name => $field->get_sql_name(),
-			type => "longtext",
-			allow_null => 1 );
-	}
-
-	foreach my $langid ( @{$session->get_repository->get_conf( "languages" )} )
-	{
-		my $Q_table = $db->quote_identifier($dataset->get_ordervalues_table_name( $langid ));
-		$colspecs->{$Q_table} ||= { binary => [], char => [] };
-
-		my $sql = $sql_field->get_sql_type( $session );
-		push @{$colspecs->{$Q_table}->{binary}},
-			upgrade_mysql_charset_binary( $db, $Q_table, $sql );
-		push @{$colspecs->{$Q_table}->{char}}, $sql;
-	}
-}
-
-sub upgrade_mysql_charset_binary
-{
-	my( $db, $Q_table, $sql ) = @_;
-
-	my $binary_sql = $sql;
-	$binary_sql =~ s/\btext\b/blob/i;
-	$binary_sql =~ s/\bvarchar\b/varbinary/i;
-	$binary_sql =~ s/\bchar\b/varbinary/i; # otherwise we'll get null padding
-	$binary_sql =~ s/\bcharacter set [\w_]+\b//i;
-	$binary_sql =~ s/\bcollate [\w_]+\b//i;
-	return $binary_sql;
-}
