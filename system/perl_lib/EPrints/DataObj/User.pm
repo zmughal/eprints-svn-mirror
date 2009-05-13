@@ -140,8 +140,7 @@ sub get_system_field_info
 
 	return 
 	( 
-		{ name=>"userid", type=>"int", required=>1, import=>0, can_clone=>1,
-			sql_counter=>"userid" },
+		{ name=>"userid", type=>"int", required=>1, import=>0, can_clone=>1, },
 
 		{ name=>"rev_number", type=>"int", required=>1, can_clone=>0 },
 
@@ -302,21 +301,6 @@ sub create_from_data
 ######################################################################
 =pod
 
-=item $dataset = EPrints::DataObj::User->get_dataset_id
-
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
-
-=cut
-######################################################################
-
-sub get_dataset_id
-{
-	return "user";
-}
-
-######################################################################
-=pod
-
 =item $defaults = EPrints::DataObj::User->get_defaults( $session, $data )
 
 Return default values for this object based on the starting data.
@@ -378,9 +362,9 @@ sub user_with_email
 		$user_ds->get_field( "email" ),
 		$email );
 
-	my $list = $searchexp->perform_search;
-	my @records = $list->get_records(0,1);
-	$list->dispose();
+	my $searchid = $searchexp->perform_search;
+	my @records = $searchexp->get_records(0,1);
+	$searchexp->dispose();
 	
 	return $records[0];
 }
@@ -489,8 +473,14 @@ sub commit
 		$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 	}
 
-	my $success = $self->SUPER::commit( $force );
+	my $user_ds = $self->{session}->get_repository->get_dataset( "user" );
+	$self->tidy;
+	my $success = $self->{session}->get_database->update(
+		$user_ds,
+		$self->{data} );
 	
+	$self->queue_changes;
+
 	return( $success );
 }
 
@@ -1134,15 +1124,12 @@ my $PRIVMAP =
 		"config/view/apache",
 		"config/view/perl",
 		"config/test_email",
-		"config/imports",
 		"config/add_field",
 		"config/remove_field",
 		"config/regen_abstracts",
 		"config/regen_views",
 		"metafield/view",
 		"metafield/edit",
-		"import/view",
-		"import/edit",
 	],
 
 	"toolbox" => 
@@ -1250,7 +1237,6 @@ my $PRIVMAP =
 		"eprint/inbox/use_as_template:editor",
 		"eprint/inbox/derive_version:editor",
 		"eprint/inbox/staff/edit:editor",
-		"eprint/inbox/takelock:editor",
 
 
 		"eprint/buffer/view:editor",
@@ -1268,7 +1254,6 @@ my $PRIVMAP =
 		"eprint/buffer/use_as_template:editor",
 		"eprint/buffer/derive_version:editor",
 		"eprint/buffer/staff/edit:editor",
-		"eprint/buffer/takelock:editor",
 
 
 		"eprint/archive/view:editor",
@@ -1284,7 +1269,6 @@ my $PRIVMAP =
 		"eprint/archive/use_as_template:editor",
 		"eprint/archive/derive_version:editor",
 		"eprint/archive/staff/edit:editor",
-		"eprint/archive/takelock:editor",
 
 
 		"eprint/deletion/view:editor",
@@ -1297,7 +1281,6 @@ my $PRIVMAP =
 		"eprint/deletion/move_archive:editor",
 		"eprint/deletion/use_as_template:editor",
 		"eprint/deletion/derive_version:editor",
-		"eprint/deletion/takelock:editor",
 	],
 	
 };

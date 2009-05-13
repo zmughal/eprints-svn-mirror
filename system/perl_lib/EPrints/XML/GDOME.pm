@@ -228,10 +228,7 @@ sub document_to_string
 {
 	my( $doc, $enc ) = @_;
 
-	my $xml = $doc->toStringEnc( $enc );
-	utf8::decode($xml);
-
-	return $xml;
+	return $doc->toStringEnc( $enc );
 }
 
 sub make_document
@@ -250,9 +247,3 @@ sub make_document_fragment
 	
 	return $session->{doc}->createDocumentFragment;
 }
-
-sub version
-{
-	"XML::GDOME $XML::GDOME::VERSION ".$INC{'XML/GDOME.pm'};
-}
-

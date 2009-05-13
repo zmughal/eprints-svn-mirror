@@ -4,6 +4,7 @@ use EPrints::Plugin::Export::Feed;
 
 @ISA = ( "EPrints::Plugin::Export::Feed" );
 
+use Unicode::String qw(latin1);
 use Time::Local;
 
 use strict;
@@ -195,21 +196,25 @@ sub render_doc_media_content
 
 	my $frag = $session->make_doc_fragment;
 
-	my( $thumbnail ) = @{($dataobj->get_related_objects( EPrints::Utils::make_relation( "hassmallThumbnailVersion" ) ))};
+	my $base_url = $session->get_repository->get_conf( "base_url" );
+
+	my $thumbnail = $dataobj->thumbnail_url( "small" );
 	if( $thumbnail )
 	{
+		$thumbnail = URI->new_abs( $thumbnail, $base_url );
 		$frag->appendChild( $session->make_element( "media:thumbnail", 
-			url => $thumbnail->get_url,
-			type => $thumbnail->mime_type,
+			url => "$thumbnail",
+			type => "image/png",
 		) );
 	}
 
-	my( $preview ) = @{($dataobj->get_related_objects( EPrints::Utils::make_relation( "haspreviewThumbnailVersion" ) ))};
+	my $preview = $dataobj->thumbnail_url( "preview" );
 	if( $preview )
 	{
+		$preview = URI->new_abs( $preview, $base_url );
 		$frag->appendChild( $session->make_element( "media:content", 
-			url => $preview->get_url,
-			type => $thumbnail->mime_type,
+			url => "$preview",
+			type => "image/png",
 		) );
 	}
 

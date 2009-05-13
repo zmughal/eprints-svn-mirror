@@ -65,42 +65,50 @@ sub get_index_codes_basic
 	{
 		return $self->SUPER::get_index_codes_basic( $session, $value );
 	}
-
 	my $doc = EPrints::DataObj::Document->new( $session, $value );
-	return( [], [], [] ) unless defined $doc->get_main;
 
-	my $main_file = $doc->get_stored_file( $doc->get_main );
-	return( [], [], [] ) unless defined $main_file;
+	my $eprint =  $doc->get_eprint;
+	return( [], [], [] ) unless( defined $eprint );
 
-	my( $indexcodes_doc ) = @{($doc->get_related_objects(
-			EPrints::Utils::make_relation( "hasIndexCodesVersion" )
-		))};
-	my $indexcodes_file;
-	if( defined $indexcodes_doc )
+	my $words_file = $doc->words_file;
+	my $indexcodes_file = $doc->indexcodes_file;
+	my @s1 = stat( $words_file );
+	my @s2 = stat( $indexcodes_file );
+    	if( defined $s1[9] && defined $s2[9] && $s2[9] > $s1[9] )
 	{
-		$indexcodes_file = $indexcodes_doc->get_stored_file( "indexcodes.txt" );
-	}
-
-	# (re)generate indexcodes if it doesn't exist or is out of date
-	if( !defined( $indexcodes_doc ) ||
-		$main_file->get_datestamp() gt $indexcodes_file->get_datestamp() )
-	{
-		$indexcodes_doc = $doc->make_indexcodes();
-		if( defined( $indexcodes_doc ) )
+		my $codes = [];
+		unless( open( CODELOG, $indexcodes_file ) )
 		{
-			$indexcodes_file = $indexcodes_doc->get_stored_file( "indexcodes.txt" );
+			$session->get_repository->log( "Failed to open $indexcodes_file: $!" );
 		}
+		else
+		{
+			@$codes = <CODELOG>;
+			s/\015?\012?$//s for @$codes;
+			close CODELOG;
+		}
+		return( $codes, [], [] );
 	}
 
-	return( [], [], [] ) unless defined $indexcodes_doc;
-
-	my $data = "";
-	$indexcodes_file->get_file(sub {
-		$data .= $_[0];
-	});
-	my @codes = split /\n/, $data;
-
-	return( \@codes, [], [] );
+	$value = $doc->get_text;
+	my( $codes, $badwords ) = ( [], [] );
+	if( EPrints::Utils::is_set( $value ) )
+	{
+		( $codes, $badwords ) = EPrints::MetaField::Text::_extract_words( $session, $value );
+	}
+	
+	unless( open( CODELOG, ">".$indexcodes_file ) )
+	{
+		$session->get_repository->log( "Failed to write to $indexcodes_file: $!" );
+	}
+	else
+	{
+		print CODELOG join( "\n", @$codes );
+		close CODELOG;
+	}
+		
+	# does not return badwords
+	return( $codes, [], [] );
 }
 
 

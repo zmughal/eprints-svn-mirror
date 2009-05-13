@@ -193,7 +193,12 @@ sub commit
 		$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 	}
 
-	my $rv = $self->SUPER::commit( $force );
+	$self->tidy;
+	my $rv = $self->{session}->get_database->update(
+			$self->{dataset},
+			$self->{data} );
+	
+	$self->queue_changes;
 
 	# Need to update all children in case ancesors have changed.
 	# This is pretty slow esp. For a top level subject, but subject
@@ -232,21 +237,6 @@ sub remove
 	return $self->{session}->get_database->remove(
 		$self->{dataset},
 		$self->{data}->{subjectid} );
-}
-
-######################################################################
-=pod
-
-=item $dataset = EPrints::DataObj::Subject->get_dataset_id
-
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
-
-=cut
-######################################################################
-
-sub get_dataset_id
-{
-	return "subject";
 }
 
 

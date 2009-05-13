@@ -521,31 +521,33 @@ sub get_xml_schema_type
 {
 	my( $self ) = @_;
 
-	return $self->get_property( "type" ) . "_" . $self->{dataset}->confid . "_" . $self->get_name;
+	if( scalar @{$self->{options}||[]} )
+	{
+		return $self->get_property( "type" ) . "_" . $self->{dataset}->confid . "_" . $self->get_name;
+	}
+	else
+	{
+		return "xs:string";
+	}
 }
 
 sub render_xml_schema_type
 {
 	my( $self, $session ) = @_;
 
-	my $type = $session->make_element( "xs:simpleType", name => $self->get_xml_schema_type );
+	if( !scalar @{$self->{options}||[]} )
+	{
+		return $session->make_doc_fragment;
+	}
 
-	my( $tags, $labels ) = $self->tags_and_labels( $session );
+	my $type = $session->make_element( "xs:simpleType", name => $self->get_xml_schema_type );
 
 	my $restriction = $session->make_element( "xs:restriction", base => "xs:string" );
 	$type->appendChild( $restriction );
-	foreach my $value (@$tags)
+	foreach my $value (@{$self->{options}})
 	{
 		my $enumeration = $session->make_element( "xs:enumeration", value => $value );
 		$restriction->appendChild( $enumeration );
-		if( defined $labels->{$value} )
-		{
-			my $annotation = $session->make_element( "xs:annotation" );
-			$enumeration->appendChild( $annotation );
-			my $documentation = $session->make_element( "xs:documentation" );
-			$annotation->appendChild( $documentation );
-			$documentation->appendChild( $session->make_text( $labels->{$value} ) );
-		}
 	}
 
 	return $type;

@@ -300,8 +300,8 @@ END
 		my $sf = $self->add_field( 
 			\@meta_fields, 
 			$fielddata->{default},
-			$fielddata->{match},
-			$fielddata->{merge},
+			undef,
+			undef,
 			$fielddata->{id},
 			0,
 			$show_help );
@@ -788,7 +788,9 @@ sub get_conditions
 	}
 	
 		
-	return $cond->optimise;
+	$cond->optimise;
+
+	return $cond;
 }
 
 
@@ -1124,7 +1126,8 @@ sub perform_search
 	}
 
 
-	# print STDERR $self->get_conditions->describe."\n\n";
+	#my $conditions = $self->get_conditions;
+	#print STDERR $conditions->describe."\n\n";
 
 	my $unsorted_matches = $self->get_conditions->process( 
 						$self->{session} );

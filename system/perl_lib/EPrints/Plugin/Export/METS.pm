@@ -15,8 +15,8 @@ This plugin is based on work by Jon Bell, UWA.
 use strict;
 use warnings;
 
-use EPrints::Plugin::Export::XMLFile;
-our @ISA = qw( EPrints::Plugin::Export::XMLFile );
+use EPrints::Plugin::Export;
+our @ISA = qw( EPrints::Plugin::Export );
 
 our $PREFIX = "mets:";
 our $MODS_PREFIX = "mods:";
@@ -30,6 +30,8 @@ sub new
 	$self->{name} = "METS";
 	$self->{accept} = [ 'dataobj/eprint', 'list/eprint' ];
 	$self->{visible} = "all";
+	$self->{suffix} = ".xml";
+	$self->{mimetype} = "text/xml";
 	
 	$self->{xmlns} = "http://www.loc.gov/METS/";
 	$self->{schemaLocation} = "http://www.loc.gov/standards/mets/mets.xsd";
@@ -110,7 +112,7 @@ sub xml_dataobj
 
 	my $session = $plugin->{ session };
 
-	my $id = $dataobj->uri;
+	my $id = $dataobj->get_gid;
 
 	my $mods_plugin = $session->plugin( "Export::MODS" )
 		or die "Couldn't get Export::MODS plugin";

@@ -207,9 +207,6 @@ if( $plugin->broken )
 	exit 1;
 }
 
-$plugin->initialise_fh( \*STDOUT );
-print $plugin->byte_order_mark;
-
 if( $single )
 {
 	my $objectid = $objectids[0];
@@ -230,6 +227,7 @@ if( $single )
 		exit 1;
 	}
 
+	print $plugin->byte_order_mark;
 	print $dataobj->export( $opluginid );
 }
 else
@@ -262,6 +260,7 @@ else
 		$list = $searchexp->perform_search;
 	}
 
+	print $plugin->byte_order_mark;
 	$plugin->output_list( list=>$list, fh=>*STDOUT );
 }
 

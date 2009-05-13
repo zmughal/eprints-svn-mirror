@@ -5,6 +5,119 @@ CHANGELOG.
 ======================================================================
 
 =========================================================================
+EPRINTS 3.1.3
+=========================================================================
+
+In brief:
+ * You will need to upgrade the database structure using epadmin upgrade,
+    see below for more details.
+ * The new JSON export plugin exposes all the metadata from on EPrint, if
+    you disabled the XML export you may wish to disable this too.
+
+Views
+ * New config. style for views (old style still works too)
+ * Views "menu" pages can now be split up, eg. A-C, D-F, G-I etc. (new 
+    default Author view uses this option)
+ * Fixed a bug where bad view URLs created huge pages and ate memory.
+ * Removed bogus xmlns attributes.
+
+JSON
+ * Added both an export plugin, plus a CGI script to allow javascript 
+    callbacks (which allows mashups to work on your data).
+ * To turn on the callback script to allow mashups etc. set 
+    $c->{json}->{enable} = 1; 
+    in the config. This is set by default on new repositories.
+ * The syntax of the callback script is 
+    /cgi/json?callback=my_function&eprintid=23
+ * The data exposed by the JSON export plugin is the same as for EP3XML
+    so if you have sensitive data in your records, you may wish to 
+    disable it, and not enable the callback script.
+
+Unicode
+ * Several fixes to issues with encoding.
+
+OAI
+ * Added support for custom OAI sets, which helps us meet the DRIVER spec.
+ * Fixed a bug where GetRecord returned records it shouldn't.
+
+FTP
+ * This is an experiemental tool. It is not recommended you run this on a 
+    production server without chatting with us first. However it is pretty 
+    cool.
+
+Toolbox
+ * addDocument now returns the numerical ID of the document rather than "OK".
+
+Input Workflow
+ * Multiple fields can now contain <help> and <name> in their sub fields.
+ * Can now use Subject input component with other fields in a workflow
+
+Database
+ * The schema ID has been increased as we have standardised that all parts
+    of a name field will be NULL or set, not a mixture. Upgrading the DB
+    using epadmin will fix this scruffy data, but the resulting database 
+    structure will be still compatible with earlier 3.1.* releases, but if
+    you downgrade you'll need to modify the "version" table back to 3.1.1
+
+Other
+ * Whitespace now auto-stripped from DOIs & Pubmed IDs.
+ * Fixed issue in encoding paths for documents with subdirectories.
+ * Fixed autocomplete javascript under HTTPS.
+
+=========================================================================
+EPRINTS 3.1.2
+=========================================================================
+
+Admin Tools
+ * "Edit phrases" tool appears in toolbar for admins, on pages that are
+    generated "on the fly". It allows web-based editing of the phrases
+    used to generate the page, including missing phrases.
+ * Improvements to web based phrase editor.
+ * "Edit page" option now appears if a static page is viewed by an
+    admin, making it easy to get to the right edit screen.
+
+Views
+ * In views, links to empty pages are now rendered as text, not links.
+ * /view/ pages may now be exported in the same way as searches.
+
+Search
+ * search.pl is now split into one file per search.
+ * Search forms now have a show_help option to allow the help to be
+    always hidden or always shown. The default is the toggle button.
+
+Submission
+ * Can now use <upload-methods> option in upload component 
+    configuration, in a workflow, to set which methods are available 
+    to upload files (or set to an empty list to stop new documents being 
+    created). Zip, from url etc.
+ * Document fields can now be marked as required, and will have the star
+    appear and report problems if not set. 
+ * Now when you add a document or modify one, it's always unrolled when 
+    the page upload form is rendered.
+
+Import & Export
+ * RSS2 now has thumbnail and media data, this allows some new fun 
+    mash-up.
+ * New Excel and CSV import and export plugins.
+
+Saved Search and Review emails
+ * Improved style of HTML format emails.
+ * Fixed broken links in emails.
+
+Other
+ * .xpage files can now have a <template> to override the use of the 
+    default template.
+ * Many bugfixes. Notably in emails, views and unicode handling. See 
+    CHANGELOG for details.
+
+=========================================================================
+EPRINTS 3.1.1
+=========================================================================
+
+ * Added "up" link in views to go one level up.
+ * Many bugfixes. See CHANGELOG for full details.
+ 
+=========================================================================
 EPRINTS 3.1.0
 =========================================================================
 

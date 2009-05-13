@@ -1,8 +1,10 @@
 package EPrints::Plugin::Export::Simple;
 
-use EPrints::Plugin::Export::TextFile;
+use Unicode::String qw( utf8 );
 
-@ISA = ( "EPrints::Plugin::Export::TextFile" );
+use EPrints::Plugin::Export;
+
+@ISA = ( "EPrints::Plugin::Export" );
 
 use strict;
 
@@ -15,6 +17,8 @@ sub new
 	$self->{name} = "Simple Metadata";
 	$self->{accept} = [ 'dataobj/eprint' ];
 	$self->{visible} = "all";
+	$self->{suffix} = ".txt";
+	$self->{mimetype} = "text/plain";
 
 	return $self;
 }
@@ -39,6 +43,8 @@ sub output_dataobj
 sub dataobj_to_html_header
 {
 	my( $plugin, $dataobj ) = @_;
+
+	my $data = $plugin->convert_dataobj( $dataobj );
 
 	my $links = $plugin->{session}->make_doc_fragment;
 

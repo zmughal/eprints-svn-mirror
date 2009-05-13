@@ -31,13 +31,6 @@ sub new
 	return $self;
 }
 
-sub obtain_lock
-{
-	my( $self ) = @_;
-
-	return $self->obtain_eprint_lock;
-}
-
 sub about_to_render 
 {
 	my( $self ) = @_;
@@ -49,7 +42,6 @@ sub allow_move_buffer
 {
 	my( $self ) = @_;
 
-	return 0 unless $self->could_obtain_eprint_lock;
 	return $self->allow( "eprint/move_buffer" );
 }
 
@@ -66,7 +58,6 @@ sub allow_move_inbox
 {
 	my( $self ) = @_;
 
-	return 0 unless $self->could_obtain_eprint_lock;
 	return $self->allow( "eprint/move_inbox" );
 }
 sub action_move_inbox
@@ -95,7 +86,6 @@ sub allow_move_archive
 {
 	my( $self ) = @_;
 
-	return 0 unless $self->could_obtain_eprint_lock;
 	return $self->allow( "eprint/move_archive" );
 }
 sub action_move_archive
@@ -112,7 +102,6 @@ sub allow_move_deletion
 {
 	my( $self ) = @_;
 
-	return 0 unless $self->could_obtain_eprint_lock;
 	return $self->allow( "eprint/move_deletion" );
 }
 sub action_move_deletion

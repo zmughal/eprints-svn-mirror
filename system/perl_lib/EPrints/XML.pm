@@ -34,6 +34,7 @@ package EPrints::XML;
 
 #use EPrints::SystemSettings;
 
+use Unicode::String qw(utf8 latin1);
 use Carp;
 
 @EPrints::XML::COMPRESS_TAGS = qw/br hr img link input meta/;
@@ -52,6 +53,7 @@ else
 }
 
 use strict;
+use bytes;
 
 
 ######################################################################
@@ -237,16 +239,11 @@ sub to_string
 		{
 			my $attr = $nnm->item($i);
 			my $name = $attr->nodeName;
+			next if( $noxmlns && $name =~ m/^xmlns/ );
 			next if( $done->{$attr->nodeName} );
 			$done->{$attr->nodeName} = 1;
 			# cjg Should probably escape these values.
 			my $value = $attr->nodeValue;
-			# strip namespaces, unless it's the XHTML namespace on <html>
-			if( $noxmlns && $name =~ m/^xmlns/ )
-			{
-				next unless $tagname eq "html" && $value =~ m#http://www\.w3\.org/1999/xhtml#;
-			}
-			utf8::decode($value) unless utf8::is_utf8($value);
 			$value =~ s/&/&amp;/g;
 			$value =~ s/</&lt;/g;
 			$value =~ s/>/&gt;/g;
@@ -301,8 +298,7 @@ sub to_string
 			"ProcessingInstruction",
 			"EntityReference" ) )
 	{
-		push @n, $node->toString; 
-		utf8::decode($n[$#n]) unless utf8::is_utf8($n[$#n]);
+		push @n, utf8($node->toString); 
 	}
 	elsif( EPrints::XML::is_dom( $node, "Comment" ) )
 	{
@@ -513,12 +509,6 @@ sub namespace
 
 	return undef;
 }
-
-=item $v = EPrints::XML::version()
-
-Returns a string description of the current XML library and version.
-
-=cut
 
 ######################################################################
 # Debug code, don't use!

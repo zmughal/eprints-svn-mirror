@@ -128,27 +128,6 @@ sub about_to_render
 	my( $self ) = @_;
 }
 
-sub obtain_edit_lock
-{
-	my( $self ) = @_;
-
-	return $self->obtain_lock;
-}
-
-sub obtain_view_lock
-{
-	my( $self ) = @_;
-
-	return $self->obtain_lock;
-}
-
-sub obtain_lock
-{
-	my( $self ) = @_;
-	
-	return 1;
-}
-
 sub can_be_viewed
 {
 	my( $self ) = @_;
@@ -188,7 +167,7 @@ sub from
 
 	my $action_id = $self->{processor}->{action};
 
-	return if( !defined $action_id || $action_id eq "" );
+	return if( $action_id eq "" );
 
 	return if( $action_id eq "null" );
 
@@ -255,31 +234,17 @@ sub render_title
 	return $self->html_phrase( "title" );
 }
 
-=item @screen_opts = $screen->list_items( $list_id )
-
-Returns a list of screens that appear in list $list_id ordered by their position.
-
-Each screen opt is a hash ref of:
-
-	screen - screen plugin
-	screen_id - screen id
-	position - position (positive integer)
-	action - the action, if this plugin is for an action list
-
-=cut
-
 sub list_items
 {
 	my( $self, $list_id ) = @_;
 
-	my @screens = $self->{session}->get_plugins( {
-			processor => $self->{processor},
-		},
-		type => "Screen" );
+	my @screens = $self->{session}->plugin_list( type => "Screen" );
 	my @list_items = ();
-	foreach my $screen ( @screens )
+	foreach my $screen_id ( @screens )
 	{	
-		my $screen_id = $screen->get_id;
+		my $screen = $self->{session}->plugin( 
+			$screen_id, 
+			processor => $self->{processor} );
 		my $p_conf = $self->{session}->get_repository->get_conf( 
 				"plugins", $screen_id );
 

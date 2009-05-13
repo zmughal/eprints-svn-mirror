@@ -12,9 +12,6 @@ my $family = $session->param( "_name_family" );
 my $given = $session->param( "_name_given" );
 my $id = $session->param( "_id" );
 
-my $driver = $session->get_repository->get_conf( "dbdriver" );
-$driver ||= "mysql";
-
 my $database = $session->get_database;
 my $dataset = $session->get_repository->get_dataset( "eprint" );
 my $name_field = $dataset->get_field( "creators_name" );
@@ -55,61 +52,42 @@ if( EPrints::Utils::is_set( $id ) )
 $sql .= "GROUP BY ".join(",",map { $database->quote_identifier($_) } @fields) .
 	" ORDER BY $Q_num_matches DESC," .
 	$database->quote_identifier("creators_name_family").",".
-	$database->quote_identifier("creators_name_given");
-
-my $max = 40; # Show a maximum of 40 matches
-
-if( $driver eq "mysql" )
-{
-	$sql .= " LIMIT $max";
-}
+	$database->quote_identifier("creators_name_given") .
+	" LIMIT 40";
 
 my @rows;
 
-my $count = 0;
-
 my $sth = $session->get_database->prepare( $sql );
 $session->get_database->execute( $sth , $sql );
-while( my @row = $sth->fetchrow_array )
+while( my( $cnt,$h,$g,$f,$l,$id ) = $sth->fetchrow_array )
 {
-	my $cnt = shift @row;
-	my $name = $name_field->value_from_sql_row( $session, \@row );
-	my $id = $id_field->value_from_sql_row( $session, \@row );
-
-	my $item = {};
-	push @rows, $item;
+	my $row = {};
+	push @rows, $row;
 
 	my $frag = $session->make_doc_fragment;
 
-	$frag->appendChild( $name_field->render_single_value( $session, $name ) );
-	if( EPrints::Utils::is_set( $id ) )
-	{
-		$frag->appendChild( $session->make_text( " " ) );
-		$frag->appendChild( $id_field->render_single_value( $session, $id ) );
-	}
+	my $desc = "$h $g $f $l"; 
+	$desc .= " ($id)" if defined $id;
+	$desc .= " ";
+	$frag->appendChild( $session->make_text( $desc ) );
 	my $small = $session->make_element( "small" );
 	$frag->appendChild( $small );
-	$small->appendChild( $session->make_text( " (author of ".$cnt." item".($cnt>1?"s":"")." in this repository)" ) );
+	$small->appendChild( $session->make_text( "(author of ".$cnt." item".($cnt>1?"s":"")." in this repository)" ) );
 
-	$item->{xhtml} = $frag;
-	$item->{values} = [
-		"for:value:relative:_name_family" => $name->{family},
-		"for:value:relative:_name_given" => $name->{given},
-		"for:value:relative:_name_honourific" => $name->{honourific},
-		"for:value:relative:_name_lineage" => $name->{lineage},
+	$row->{xhtml} = $frag;
+	$row->{values} = [
+		"for:value:relative:_name_family" => $f,
+		"for:value:relative:_name_given" => $g,
+		"for:value:relative:_name_honourific" => $h,
+		"for:value:relative:_name_lineage" => $l,
 		"for:value:relative:_id" => $id,
 	];
-
-	last if ++$count == $max;
 }
-
-$sth->finish();
 
 my $ul = EPrints::Extras::render_lookup_list( $session, \@rows );
 
 $session->send_http_header( content_type => "text/xml; charset=UTF-8" );
 
-binmode(STDOUT,":utf8");
 print <<END;
 <?xml version="1.0" encoding="UTF-8" ?>
 

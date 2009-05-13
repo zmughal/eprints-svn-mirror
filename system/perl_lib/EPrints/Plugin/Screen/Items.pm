@@ -317,24 +317,9 @@ sub render
 		columns => [@{$columns}, undef ],
 		above_results => $filter_div,
 		render_result => sub {
-			my( $session, $e, $info ) = @_;
+			my( $session, $e ) = @_;
 
-			my $class = "row_".($info->{row}%2?"b":"a");
-			if( $e->is_locked )
-			{
-				$class .= " ep_columns_row_locked";
-				my $my_lock = ( $e->get_value( "edit_lock_user" ) == $session->current_user->get_id );
-				if( $my_lock )
-				{
-					$class .= " ep_columns_row_locked_mine";
-				}
-				else
-				{
-					$class .= " ep_columns_row_locked_other";
-				}
-			}
-
-			my $tr = $session->make_element( "tr", class=>$class );
+			my $tr = $session->make_element( "tr" );
 
 			my $status = $e->get_value( "eprint_status" );
 
@@ -354,8 +339,6 @@ sub render
 			$td->appendChild( 
 				$self->render_action_list_icons( "eprint_item_actions", ['eprintid'] ) );
 			delete $self->{processor}->{eprint};
-
-			++$info->{row};
 
 			return $tr;
 		},

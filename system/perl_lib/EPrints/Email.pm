@@ -29,6 +29,7 @@ This package handles sending emails.
 
 package EPrints::Email;
 
+use Unicode::String qw(utf8 latin1 utf16);
 use MIME::Lite;
 use LWP::MediaTypes qw( guess_media_type );
 use Encode; # required for MIME-Header support
@@ -260,6 +261,8 @@ sub build_email
 
 	my $xml_mail = $p{message};
 	my $data = EPrints::Utils::tree_to_utf8( $xml_mail , $MAILWIDTH, 0, 0, 0 );
+	# MIME::Lite expects utf-8
+	utf8::decode($data);
 
 	my $text = MIME::Lite->new( 
 		Type  => "TEXT",
@@ -270,6 +273,8 @@ sub build_email
 	$mimemsg->attach( $text );
 
 	$data = EPrints::XML::to_string( $xml_mail, undef, 1 );
+	# MIME::Lite expects utf-8
+	utf8::decode($data);
 
 	my $html = MIME::Lite->new( 
 		Type  => "text/html",
@@ -299,7 +304,7 @@ sub build_email
 
 sub encode_mime_header
 {
-	Encode::encode("MIME-Header", $_[0] );
+	Encode::encode("MIME-Header", Encode::decode_utf8( $_[0] ));
 }
 
 

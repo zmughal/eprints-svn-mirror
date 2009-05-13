@@ -1,12 +1,11 @@
 #!/usr/bin/perl
 
-use Test::More tests => 5;
+use Test::More tests => 3;
 
-BEGIN { use_ok( "EPrints" ); }
-BEGIN { use_ok( "EPrints::Test" ); }
+use EPrints;
 
-my $repository = EPrints::Test::get_test_repository();
-my $session = EPrints::Test::get_test_session();
+my $repository = [EPrints::Config::get_repository_ids()]->[0];
+my $session = EPrints::Session->new( 1, $repository, 2, 1 );
 my $dataset = $session->get_repository->get_dataset( "archive" );
 
 my $eprint = EPrints::DataObj::EPrint->new_from_data( $session, {

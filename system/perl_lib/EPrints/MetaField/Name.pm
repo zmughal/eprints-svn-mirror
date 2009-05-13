@@ -31,6 +31,8 @@ package EPrints::MetaField::Name;
 use strict;
 use warnings;
 
+use Unicode::String qw( latin1 utf8 );
+
 BEGIN
 {
 	our( @ISA );
@@ -43,7 +45,7 @@ use EPrints::MetaField::Text;
 my $VARCHAR_SIZE = 255;
 
 # database order
-my @PARTS = qw( family lineage given honourific );
+my @PARTS = qw( honourific given family lineage );
 
 sub get_sql_names
 {
@@ -58,8 +60,6 @@ sub value_from_sql_row
 
 	my %value;
 	@value{@PARTS} = splice(@$row,0,4);
-
-	utf8::decode($_) for values %value;
 
 	return \%value;
 }
@@ -79,7 +79,7 @@ sub sql_row_from_value
 
 sub get_sql_type
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $notnull ) = @_;
 
 	my @parts = $self->get_sql_names;
 
@@ -88,14 +88,12 @@ sub get_sql_type
 		$_ = $session->get_database->get_column_type(
 			$_,
 			EPrints::Database::SQL_VARCHAR,
-			!$self->get_property( "allow_null" ),
-			$self->get_property( "maxlength" ),
-			undef,
-			$self->get_sql_properties,
+			$notnull,
+			$VARCHAR_SIZE
 		);
 	}
 
-	return @parts;
+	return join ", ", @parts;
 }
 
 # index the family part only...
@@ -203,7 +201,7 @@ sub form_value_basic
 	my( $self, $session, $basename ) = @_;
 	
 	my $data = {};
-	foreach( @PARTS )
+	foreach( "honourific", "given", "family", "lineage" )
 	{
 		$data->{$_} = 
 			$session->param( $basename."_".$_ );
@@ -233,7 +231,7 @@ sub ordervalue_basic
 	}
 
 	my @a;
-	foreach( @PARTS )
+	foreach( "family", "lineage", "given", "honourific" )
 	{
 		if( defined $value->{$_} )
 		{
@@ -549,7 +547,17 @@ sub get_index_codes_basic
 	# up initials. Will screw up names with capital
 	# letters in the middle of words. But that's
 	# pretty rare.
-	$g =~ s/([[:upper:]])/ $1/g;
+	my $len_g = $g->length;
+        my $new_g = utf8( "" );
+        for(my $i = 0; $i<$len_g; ++$i )
+        {
+                my $s = $g->substr( $i, 1 );
+                if( $s eq "\U$s" )
+                {
+			$new_g .= ' ';
+                }
+		$new_g .= $s;
+	}
 
 	my $code = '';
 	my @r = ();
@@ -560,7 +568,7 @@ sub get_index_codes_basic
 		$code.= "[\L$_]";
 	}
 	$code.= "-";
-	foreach( EPrints::Index::split_words( $session, $g ) )
+	foreach( EPrints::Index::split_words( $session, $new_g ) )
 	{
 		next if( $_ eq "" );
 #		push @r, "given:\L$_";
@@ -605,27 +613,9 @@ sub get_id_from_value
 {
 	my( $self, $session, $name ) = @_;
 
-	return "NULL" if !defined $name;
+	no warnings;
 
-	return join(":",
-		map { URI::Escape::uri_escape($_, ":%") }
-		map { defined($_) ? $_ : "NULL" }
-		@{$name}{qw( family given lineage honourific )});
-}
-
-sub get_value_from_id
-{
-	my( $self, $session, $id ) = @_;
-
-	return undef if $id eq "NULL";
-
-	my $name = {};
-	@{$name}{qw( family given lineage honourific )} =
-		map { $_ ne "NULL" ? $_ : undef }
-		map { URI::Escape::uri_unescape($_) }
-		split /:/, $id;
-
-	return $name;
+	return $name->{family}.':'.$name->{given}.':'.$name->{lineage}.':'.$name->{honourific};
 }
 
 sub to_xml_basic
@@ -634,7 +624,7 @@ sub to_xml_basic
 
 	my $r = $session->make_doc_fragment;	
 
-	foreach my $part ( @PARTS )
+	foreach my $part ( qw/ family given honourific lineage / )
 	{
 		my $nv = $value->{$part};
 		next unless defined $nv;
@@ -653,11 +643,11 @@ sub render_xml_schema_type
 
 	my $type = $session->make_element( "xs:complexType", name => $self->get_xml_schema_type );
 
-	my $all = $session->make_element( "xs:all" );
+	my $all = $session->make_element( "xs:all", minOccurs => "0" );
 	$type->appendChild( $all );
-	foreach my $part ( @PARTS )
+	foreach my $part ( qw/ family given honourific lineage / )
 	{
-		my $element = $session->make_element( "xs:element", name => $part, type => "xs:string", minOccurs => "0" );
+		my $element = $session->make_element( "xs:element", name => $part, type => "xs:string" );
 		$all->appendChild( $element );
 	}
 

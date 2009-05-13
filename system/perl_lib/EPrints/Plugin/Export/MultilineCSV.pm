@@ -1,5 +1,7 @@
 package EPrints::Plugin::Export::MultilineCSV;
 
+use Unicode::String qw( utf8 );
+
 use EPrints::Plugin::Export;
 use EPrints::Plugin::Export::Grid;
 

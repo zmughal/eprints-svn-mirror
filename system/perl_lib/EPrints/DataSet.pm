@@ -20,20 +20,14 @@
 B<EPrints::DataSet> - a dataset is a set of records in the eprints system with
 the same metadata.
 
-=head1 SYNOPSIS
-
-	my $dataset = $repository->get_dataset( "inbox" );
-
-	print sprintf("There are %d records in the inbox\n",
-		$dataset->count);
-
 =head1 DESCRIPTION
 
 This module describes an EPrint dataset.
 
-A repository has several datasets that make up the repository's database.
-The list of dataset ids can be obtained from the repository object
-(see L<EPrints::Repository>).
+An repository has one of each type of dataset:
+
+cachemap, counter, user, archive, buffer, inbox, document, subject,
+saved_search, deletion, eprint, access.
 
 A normal dataset (eg. "user") has a package associated with it 
 (eg. EPrints::DataObj::User) which must be a subclass of EPrints::DataObj 
@@ -42,9 +36,10 @@ Most datasets also have a set of associated EPrints::MetaField's which
 may be optional or compulsary depending on the type eg. books have editors
 but posters don't but they are both EPrints.
 
-The fields contained in a dataset are defined by the data object and by
-any additional fields defined in cfg.d. Some datasets don't have any
-fields while others may just be "virtual" datasets made from others.
+Datasets have some default fields plus additional ones configured
+in Fields.pm.
+
+But there are some exceptions:
 
 =over 4
 
@@ -54,8 +49,8 @@ Don't have a package or metadata fields associated.
 
 =item archive, buffer, inbox, deletion
 
-All have the same package and metadata fields as B<eprints>, but
-are filtered by B<eprint_status>.
+All have the same package and metadata fields as eprints, but
+are filtered by eprint_status.
 
 =back
 
@@ -63,10 +58,6 @@ EPrints::DataSet objects are cached by the related EPrints::Repository
 object and usually obtained by calling.
 
 $ds = $repository->get_dataset( "inbox" );
-
-=head1 METHODS
-
-=head2 Class Methods
 
 =over 4
 
@@ -117,20 +108,6 @@ use strict;
 # These are both used by the virtual datasets inbox, buffer etc.
 
 my $INFO = {
-	index_queue => {
-		sqlname => "index_queue",
-		class => "EPrints::DataObj::IndexQueue",
-		datestamp => "datestamp",
-	},
-	upload_progress => {
-		sqlname => "upload_progress",
-		class => "EPrints::DataObj::UploadProgress",
-	},
-	file => {
-		sqlname => "file",
-		class => "EPrints::DataObj::File",
-		datestamp => "mtime",
-	},
 	import => {
 		sqlname => "import",
 		class => "EPrints::DataObj::Import",
@@ -155,8 +132,7 @@ my $INFO = {
 		class => "EPrints::DataObj::LoginTicket",
 	},
 	counter => {
-		sqlname => "counters",
-		virtual => 1,
+		sqlname => "counters"
 	},
 	user => {
 		sqlname => "user",
@@ -167,7 +143,6 @@ my $INFO = {
 	},
 	archive => {
 		sqlname => "eprint",
-		virtual => 1,
 		class => "EPrints::DataObj::EPrint",
 		confid => "eprint",
 		import => 1,
@@ -178,7 +153,6 @@ my $INFO = {
 	},
 	buffer => {
 		sqlname => "eprint",
-		virtual => 1,
 		class => "EPrints::DataObj::EPrint",
 		confid => "eprint",
 		import => 1,
@@ -189,7 +163,6 @@ my $INFO = {
 	},
 	inbox => {
 		sqlname => "eprint",
-		virtual => 1,
 		class => "EPrints::DataObj::EPrint",
 		confid => "eprint",
 		import => 1,
@@ -200,7 +173,6 @@ my $INFO = {
 	},
 	deletion => {
 		sqlname => "eprint",
-		virtual => 1,
 		class => "EPrints::DataObj::EPrint",
 		confid => "eprint",
 		import => 1,
@@ -255,105 +227,61 @@ my $INFO = {
 	},
 };
 
+
 ######################################################################
 =pod
 
-=item $ds = EPrints::DataSet->new( %properties )
+=item $ds = EPrints::DataSet->new_stub( $id )
 
-Creates and returns a new dataset based on %properties.
+Creates a dataset object without any fields. Useful to
+avoid problems with something a dataset does depending on loading
+the dataset. It can still be queried about other things, such as
+SQL table names. 
 
-Requires at least B<repository> and B<name> properties.
+=cut
+######################################################################
 
-Available properties:
+sub new_stub
+{
+	my( $class , $id ) = @_;
 
-=over 4
+	if( !defined $INFO->{$id} )
+	{
+		# no repository info, so can't log.
+		EPrints::abort( "Unknown dataset name: $id" );
+	}
+	my $self = {};
+	bless $self, $class;
 
-=item repository OBJ
+	$self->{id} = $id;
+	$self->{confid} = $INFO->{$id}->{confid};
+	$self->{confid} = $id unless( defined $self->{confid} );
 
-Reference to the repository object.
+	return $self;
+}
 
-=item name STRING
 
-Name of the dataset.
 
-=item confid STRING
+######################################################################
+=pod
 
-Name of the dataset this dataset is a subset of (e.g. 'archive' is a subset of 'eprint'). If defined requires dataset_id_field.
+=item $ds = EPrints::DataSet->new( $repository, $id )
 
-=item dataset_id_field
+Return the dataset specified by $id.
 
-Name of the text field that contains the subset dataset id.
-
-=item sql_name STRING
-
-Name of the primary database table.
-
-=item virtual BOOL
-
-Set to 1 if this dataset doesn't require it's own database tables.
-
-=item type STRING
-
-Type of data object the dataset contains e.g. for L<EPrints::DataObj::EPrint>
-specify "EPrint".
-
-=item class STRING
-
-Explicit class to use for data objects. To use the default object specify L<EPrints::DataObj>.
-
-=item filters ARRAYREF
-
-Filters to apply to this dataset before searching (see L<EPrints::Search>).
-
-=item datestamp STRING
-
-The field name that contains a datestamp to order this dataset by.
-
-=item index BOOL
-
-Whether this dataset should be indexed.
-
-=item import BOOL
-
-Whether you can import into this dataset.
-
-=back
+Note that dataset know $repository and vice versa - which means they
+will not get garbage collected.
 
 =cut
 ######################################################################
 
 sub new
 {
-	my( $class, %properties ) = @_;
+	my( $class , $repository , $id ) = @_;
 	
-	if( !defined $properties{repository} )
-	{
-		EPrints::abort( "Requires repository property" );
-	}
-	if( !defined $properties{name} )
-	{
-		EPrints::abort( "Requires name property" );
-	}
+	my $self = EPrints::DataSet->new_stub( $id );
 
-	# We support the field properties of "name" and "type"
-
-	# datasets are identified by "id", not "name"
-	$properties{id} ||= delete $properties{name};
-
-	# type is a short-cut for specifying the object class
-	# (We have to maintain case though, because DataObj classes are
-	# camelcased)
-	my $type = delete $properties{type};
-	if( defined $type )
-	{
-		$properties{class} = "EPrints::DataObj::$type";
-	}
-
-	my $self = bless \%properties, $class;
-
-	$self->{confid} = $self->{id} unless defined $self->{confid};
-
-	my $repository = $self->{repository};
+	$self->{repository} = $repository;
 	Scalar::Util::weaken($self->{repository})
 		if defined &Scalar::Util::weaken;
 
@@ -361,74 +289,34 @@ sub new
 	$self->{system_fields} = [];
 	$self->{field_index} = {};
 
-	$self->{default_order} = $repository->
-			get_conf( "default_order", $self->{confid} );
+	$self->{default_order} = $self->{repository}->
+			get_conf( "default_order" , $self->{confid} );
 
-	# copy fields from the real dataset
-	if(
-		$self->{id} ne $self->{confid} &&
-		defined(my $cdataset = $repository->get_dataset( $self->{confid} ))
-	  )
+	my $oclass = $self->get_object_class;
+	if( defined $oclass )
 	{
-		for(qw( fields system_fields field_index ))
+		foreach my $fielddata ( $oclass->get_system_field_info() )
 		{
-			$self->{$_} = $cdataset->{$_};
+			$self->process_field( $fielddata, 1 );
 		}
 	}
-	else
+	my $repository_fields = $repository->get_conf( "fields", $self->{confid} );
+	if( $repository_fields )
 	{
-		my $oclass = $self->get_object_class;
-		if( defined $oclass )
+		foreach my $fielddata ( @{$repository_fields} )
 		{
-			foreach my $fielddata ( $oclass->get_system_field_info() )
-			{
-				$self->process_field( $fielddata, 1 );
-			}
+			$self->process_field( $fielddata, 0 );
 		}
-		my $repository_fields = $repository->get_conf( "fields", $self->{confid} );
-		if( $repository_fields )
-		{
-			foreach my $fielddata ( @{$repository_fields} )
-			{
-				$self->process_field( $fielddata, 0 );
-			}
-		}
+	}
 
-		# lock these metadata fields against being modified again.
-		foreach my $field ( @{$self->{fields}} )
-		{
-			$field->final;
-		}
+	# lock these metadata fields against being modified again.
+	foreach my $field ( @{$self->{fields}} )
+	{
+		$field->final;
 	}
 
 	return $self;
 }
-
-=item $info = EPrints::DataSet::get_system_dataset_info()
-
-Returns a hash reference of core system datasets.
-
-=cut
-
-sub get_system_dataset_info
-{
-	return $INFO;
-}
-
-=back
-
-=head2 Object Methods
-
-=over 4
-
-=cut
-
-=item $field = $ds->process_field( $data [, $system ] )
-
-Creates a new field in this dataset based on $data. If $system is true defines
-the new field as a "core" field.
-
-=cut
 
 sub process_field
 {
@@ -439,56 +327,63 @@ sub process_field
 		$fielddata->{providence} = $system ? "core" : "config";
 	}
 
-	my $field = EPrints::MetaField->new( 
-		dataset => $self, 
-		%{$fielddata} );
-
-	$self->register_field( $field, $system );
-	if( $field->isa( "EPrints::MetaField::Compound" ) )
-	{
-		foreach my $inner_field (@{$field->{fields_cache}})
+	my @cfields;
+	if( $fielddata->{type} eq "compound" )
+	{	
+		@cfields = @{$fielddata->{fields}};
+	}
+	if( $fielddata->{type} eq "multilang" )
+	{	
+		my $langs = $self->{repository}->get_conf('languages');
+		if( defined $fielddata->{languages} )
 		{
-			$self->register_field( $inner_field, $system );
+			$langs = $fielddata->{languages};
+		}
+		@cfields = (
+			@{$fielddata->{fields}},
+			{ 
+				sub_name=>"lang",
+				type=>"langid",
+				options => $langs,
+			}, 
+		);
+	}
+		
+	if( scalar @cfields )
+	{	
+		$fielddata->{fields_cache} = [];
+		foreach my $inner_field ( @cfields )
+		{
+			my $field = EPrints::MetaField->new( 
+				parent_name => $fielddata->{name},
+				show_in_html => 0,
+				dataset => $self, 
+				multiple => $fielddata->{multiple},
+				%{$inner_field} );	
+			push @{$self->{fields}}	, $field;
+			if( $system )
+			{
+				push @{$self->{system_fields}} , $field;
+			}
+			$self->{field_index}->{$field->get_name()} = 
+				$field;
+			push @{$fielddata->{fields_cache}}, $field;
 		}
 	}
 
-	return $field;
-}
-
-=item $ds->register_field( $field [, $system ] )
-
-Register a new field with this dataset.
-
-=cut
-
-sub register_field
-{
-	my( $self, $field, $system ) = @_;
-
-	push @{$self->{fields}}, $field;
-	$self->{field_index}->{$field->get_name()} = $field;
+	my $field = EPrints::MetaField->new( 
+		dataset => $self, 
+		%{$fielddata} );	
+	push @{$self->{fields}}	, $field;
 	if( $system )
 	{
 		push @{$self->{system_fields}} , $field;
 	}
+
+	$self->{field_index}->{$field->get_name()} = $field;
 }
 
-=item $ds->unregister_field( $field )
 
-Unregister a field from this dataset.
-
-=cut
-
-sub unregister_field
-{
-	my( $self, $field ) = @_;
-
-	my $name = $field->get_name();
-
-	delete $self->{field_index}->{$name};
-	@{$self->{fields}} = grep { $_->get_name() ne $name } @{$self->{fields}};
-	@{$self->{system_fields}} = grep { $_->get_name() ne $name } @{$self->{system_fields}};
-}
 
 ######################################################################
 =pod
@@ -648,9 +543,7 @@ sub count
 			dataset => $self,
 			session => $session );
 		my $list = $searchexp->perform_search;
-		my $c = $list->count;
-		$list->dispose;
-		return $c;
+		return $list->count;
 	}
 
 	return $session->get_database->count_table( $self->get_sql_table_name() );
@@ -672,7 +565,7 @@ sub get_sql_table_name
 {
 	my( $self ) = @_;
 
-	my $table = $self->{sqlname};
+	my $table = $INFO->{$self->{id}}->{sqlname};
 
 	return $table if defined $table;
 
@@ -880,7 +773,7 @@ sub get_object_class
 {
 	my( $self, $session ) = @_;
 
-	return $self->{class};
+	return $INFO->{$self->{id}}->{class};
 }
 
 ######################################################################
@@ -1004,35 +897,33 @@ sub reindex
 ######################################################################
 =pod
 
-=item @ids = EPrints::DataSet::get_dataset_ids()
+=item @ids = EPrints::DataSet::get_dataset_ids( get_dataset_ids )
 
-Deprecated, use $repository->get_dataset_ids().
+Return a list of all dataset ids.
 
 =cut
 ######################################################################
 
 sub get_dataset_ids
 {
-	&EPrints::deprecated;
-
 	return keys %{$INFO};
 }
+
 
 ######################################################################
 =pod
 
-=item @ids = EPrints::DataSet::get_sql_dataset_ids()
+=item @ids = EPrints::DataSet::get_sql_dataset_ids
 
-Deprecated, use $repository->get_sql_dataset_ids().
+Return a list of all dataset ids of datasets which are directly mapped
+into SQL (not counters or cache which work a bit differently).
 
 =cut
 ######################################################################
 
 sub get_sql_dataset_ids
 {
-	&EPrints::deprecated;
-
-	return grep { !$INFO->{$_}->{"virtual"} } keys %{$INFO};
+	return( qw/ import metafield cachemap message loginticket eprint user document saved_search subject history access request / );
 }
 
 ######################################################################
@@ -1057,8 +948,7 @@ sub count_indexes
 	my $n = 0;
 	foreach my $field ( $self->get_fields( 1 ) )
 	{
-		next if $field->get_property( "multiple" );
-		next if $field->isa( "EPrints::MetaField::Compound" );
+		next if( $field->get_property( "multiple" ) );
 		next unless( defined $field->get_sql_index );
 		$n++;
 	}
@@ -1108,7 +998,9 @@ sub get_dataset_id_field
 {
 	my( $self ) = @_;
 
-	return $self->{dataset_id_field};
+	my $f = $INFO->{$self->{id}}->{dataset_id_field};
+
+	return $f;
 }
 
 ######################################################################
@@ -1124,33 +1016,18 @@ sub get_filters
 {
 	my( $self ) = @_;
 
-	my $f = $self->{filters};
+	my $f = $INFO->{$self->{id}}->{filters};
 
-	return defined $f ? @{$f} : undef;
+	return () unless defined $f;
+
+	return @{$f};
 }
 
 sub indexable
 {
 	my( $self ) = @_;
 
-	return $self->{index};
-}
-
-######################################################################
-=pod
-
-=item $bool = $dataset->is_virtual()
-
-Returns whether this dataset is virtual (i.e. has no database tables).
-
-=cut
-######################################################################
-
-sub is_virtual
-{
-	my( $self ) = @_;
-
-	return $self->{virtual};
+	return $INFO->{$self->{id}}->{index};
 }
 
 ######################################################################
@@ -1168,7 +1045,7 @@ sub get_datestamp_field
 {
 	my( $self ) = @_;
 
-	my $datestamp = $self->{datestamp};
+	my $datestamp = $INFO->{$self->{id}}->{datestamp};
 
 	return defined $datestamp ? $self->get_field( $datestamp ) : undef;
 }
