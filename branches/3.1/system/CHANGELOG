@@ -7968,3 +7968,6 @@ EPRINTS-3.1.2.1
 2009-05-26 tdb
  * Fixed MySQL-quoted commands in epadmin upgrade [Alexander Bergolth]
 
+2009-05-27 tdb
+ * Fixed login page not using phrase for title
+
