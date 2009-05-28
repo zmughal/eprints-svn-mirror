@@ -7971,3 +7971,6 @@ EPRINTS-3.1.2.1
 2009-05-27 tdb
  * Fixed login page not using phrase for title
 
+2009-05-28 tdb
+ * Fixed an HTML insertion bug in the <title> element [Brian D. Gregg]
+
