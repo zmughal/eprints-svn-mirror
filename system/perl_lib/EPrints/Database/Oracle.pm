@@ -315,6 +315,62 @@ sub has_column
 	return $rc;
 }
 
+sub create_dataset_ordervalues_tables
+{
+	my( $self, $dataset ) = @_;
+	
+	my $rv = 1;
+
+	my $keyfield = $dataset->get_key_field()->clone;
+	# Create sort values table. These will be used when ordering search
+	# results.
+	my @fields = $dataset->get_fields( 1 );
+	# remove the key field
+	splice( @fields, 0, 1 ); 
+	my @orderfields = ( $keyfield );
+	foreach my $field ( @fields )
+	{
+		my $fname = $field->get_sql_name();
+		push @orderfields, EPrints::MetaField->new( 
+					repository=> $self->{session}->get_repository,
+					name => $fname,
+					type => "text",
+					maxlength => 4000 );
+	}
+	foreach my $langid ( @{$self->{session}->get_repository->get_conf( "languages" )} )
+	{
+		my $order_table = $dataset->get_ordervalues_table_name( $langid );
+
+		if( !$self->has_table( $order_table ) )
+		{
+			$rv &&= $self->create_table( 
+				$order_table,
+				$dataset, 
+				1, 
+				@orderfields );
+		}
+	}
+
+	return $rv;
+}
+
+sub _add_field_ordervalues_lang
+{
+	my( $self, $dataset, $field, $langid ) = @_;
+
+	my $order_table = $dataset->get_ordervalues_table_name( $langid );
+
+	my $sql_field = EPrints::MetaField->new(
+		repository => $self->{ session }->get_repository,
+		name => $field->get_sql_name(),
+		type => "text",
+		maxlength => 4000 );
+
+	my $col = $sql_field->get_sql_type( $self->{session}, 0 ); # only first field can not be null
+
+	return $self->do( "ALTER TABLE ".$self->quote_identifier($order_table)." ADD $col" );
+}
+
 1; # For use/require success
 
 ######################################################################
