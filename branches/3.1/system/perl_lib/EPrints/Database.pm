@@ -3093,6 +3093,49 @@ sub prepare
 	return $result;
 }
 
+######################################################################
+=pod
+
+=item $sth = $db->prepare_select( $sql [, %options ] )
+
+Prepare a SELECT statement $sql and return a handle to it. After preparing a
+statement use execute() to execute it.
+
+The LIMIT SQL keyword is not universally supported, to specify a LIMIT you must
+use the B<limit> option.
+
+Options:
+
+	limit - limit the number of rows returned
+	offset - return B<limit> number of rows after offset
+
+=cut
+######################################################################
+
+sub prepare_select
+{
+	my( $self, $sql, %options ) = @_;
+
+	if( defined $options{limit} && length($options{limit}) )
+	{
+		if( defined $options{offset} && length($options{offset}) )
+		{
+			$sql .= sprintf(" LIMIT %d OFFSET %d",
+				$options{offset},
+				$options{limit} );
+		}
+		else
+		{
+			$sql .= sprintf(" LIMIT %d", $options{limit} );
+		}
+	}
+
+	return $self->prepare( $sql );
+}
+
+
+
+
 
 ######################################################################
 =pod
@@ -3928,8 +3971,8 @@ sub index_dequeue
 	my $Q_table = $self->quote_identifier( "index_queue" );
 	my $Q_added = $self->quote_identifier( "added" );
 
-	my $sql = "SELECT $Q_field FROM $Q_table ORDER BY $Q_added ASC LIMIT 1";
-	my $sth = $self->prepare( $sql );
+	my $sql = "SELECT $Q_field FROM $Q_table ORDER BY $Q_added ASC";
+	my $sth = $self->prepare_select( $sql, 'limit' => 1 );
 	$self->execute( $sth, $sql );
 	my( $field ) = $sth->fetchrow_array;
 	$sth->finish;
