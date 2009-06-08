@@ -7977,3 +7977,7 @@ EPRINTS-3.1.2.1
 2009-06-04 tdb
  * Oracle needs VARCHAR2 ordervalues columns
 
+2009-06-08 tdb
+ * Added a prepare_select() method that allows x-database LIMITS
+    [Alexander Bergolth]
+
