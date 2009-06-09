@@ -7981,3 +7981,6 @@ EPRINTS-3.1.2.1
  * Added a prepare_select() method that allows x-database LIMITS
     [Alexander Bergolth]
 
+2009-06-09 tdb
+ * Fixed schema errors in uketd_dc and METS/MODS export plugins
+
