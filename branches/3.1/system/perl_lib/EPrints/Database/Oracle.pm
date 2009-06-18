@@ -137,7 +137,7 @@ sub prepare_select
 				.     $sql ."\n"
 				.  "  ) query__\n"
 				.  "  WHERE ROWNUM <= $upper)\n"
-				.  "WHERE rnum__  > $offset";
+				.  "WHERE rnum__  > $options{offset}";
 		}
 		else
 		{
