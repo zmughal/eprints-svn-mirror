@@ -2,6 +2,10 @@ package IRStats::Visualisation::Graph::Bar;
 
 use strict;
 
+use Chart::Bars;
+use Chart::Lines;
+use Chart::Composite;
+
 use IRStats::Visualisation::Graph::GraphLegend;
 use IRStats::Visualisation::Graph;
 
@@ -19,6 +23,83 @@ sub quote_javascript
 	my( $value ) = @_;
 	$value =~ s/'/\\'/g;
 	return "'$value'";
+}
+
+sub chart_render
+{
+	my( $self ) = @_;
+
+	my @data;
+
+	push @data, $self->{'x_labels'};
+
+	foreach my $i (0 .. $#{$self->{'data_series'}})
+	{
+		push @data, $self->{'data_series'}->[$i]->{'data'};
+		if( $self->{'trend'} )
+		{
+			my $src = $self->{'data_series'}->[$i]->{'data'};
+			my $mean = [];
+			my $len = scalar @$src;
+			my $range = 7;
+			for( my $i = 0; $i < $len; ++$i )
+			{
+				my $c = 0;
+				my $t = 0;
+				for(my $j = $i-$range; $j <= $i+$range; ++$j)
+				{
+					next if $j < 0;
+					next if $j > $len-1;
+					++$c;
+					$t += $src->[$j];
+				}
+				push @$mean, $t / $c;
+			}
+			push @data, $mean;
+#			$slayer->addDataSet( $mean, 0x00c0c0, "Averaged Trend Line" );
+		}
+	}
+
+	my $c;
+	
+	if( $self->{'trend'} )
+	{
+		$c = new Chart::Composite(500, 300);
+
+		$c->set( composite_info => [ [Bars => [1]], [Lines => [2]] ] );
+		$c->set( same_y_axes => 1 );
+	}
+	else
+	{
+		$c = new Chart::Bars(500, 300);
+	}
+
+	$c->set( y_label => $self->{'y_title'});
+	$c->set( x_label => $self->{'x_title'});
+	$c->set( skip_x_ticks => int(@{$data[0]}/10) );
+	$c->set( spaced_bars => 0 );
+	$c->set( legend => 'none' );
+	$c->set( grid_lines => 1 );
+	my @colors = $self->chart_colours;
+	$c->set( colors => { dataset0 => $colors[0], dataset1 => [80,80,80] } );
+
+	$c->png( $self->{'path'} . $self->{'filename'}, \@data );
+
+	my $r = "<div id=\"bar_graph\">
+		<table><tr>
+		<td>
+		<img class=\"chart\" src = \"$self->{'url_relative'}\">
+		</td>
+		";
+
+	if ($self->{data_series}->[0]->{citation})
+	{
+		my $legend = IRStats::Visualisation::Graph::GraphLegend->new($self->{'data_series'}, $self->{'colours'});
+		$r .= "<td>" . $legend->render() . "</td>";
+	}
+	$r .= "</tr></table>
+		</div>";
+	return $r;
 }
 
 sub plotkit_render

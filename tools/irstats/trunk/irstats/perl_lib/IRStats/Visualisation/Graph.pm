@@ -1,19 +1,29 @@
 package IRStats::Visualisation::Graph;
 
-use strict;
-use warnings;
-
 use IRStats::Visualisation;
 use List::Util 'shuffle';
 use Data::Dumper;
 
+use vars qw( @ISA $RENDER_METHOD );
+
+@ISA = qw/ IRStats::Visualisation /;
+
+use strict;
+
 BEGIN
 {
+	$RENDER_METHOD = "plotkit_render";
 	eval "use perlchartdir";
-	$IRStats::Visualisation::Graph::CHART_DIRECTOR = $@ ? 0 : 1;
+	if( !$@ )
+	{
+		$RENDER_METHOD = "chartdirector_render";
+	}
+	eval "use Chart::Base";
+	if( !$@ )
+	{
+		$RENDER_METHOD = "chart_render";
+	}
 }
-
-our @ISA = qw/ IRStats::Visualisation /;
 
 # A graph object expects the following in the data hash:
 #
@@ -44,6 +54,13 @@ sub new
 	return $self;
 }
 
+sub render
+{
+	my( $self ) = @_;
+
+	$self->$RENDER_METHOD();
+}
+
 sub initialise_colours
 {
 	my ($self) = @_;
@@ -67,18 +84,18 @@ sub initialise_colours
 	return $colours;
 }
 
-sub render
+sub colour_to_rgb
+{
+	my( $c ) = @_;
+
+	return [ ($c & 0xff0000)/0x10000, ($c & 0x00ff00)/0x100, $c & 0x0000ff ];
+}
+
+sub chart_colours
 {
 	my( $self ) = @_;
 
-	if( $IRStats::Visualisation::Graph::CHART_DIRECTOR )
-	{
-		return $self->chartdirector_render;
-	}
-	else
-	{
-		return $self->plotkit_render;
-	}
+	return map { colour_to_rgb( $_ ) } @{$self->{colours}};
 }
 
 1;

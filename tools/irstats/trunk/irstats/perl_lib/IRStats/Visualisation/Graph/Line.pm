@@ -2,6 +2,8 @@ package IRStats::Visualisation::Graph::Line;
 
 use strict;
 
+use Chart::Lines;
+
 use IRStats::Visualisation::Graph::GraphLegend;
 use IRStats::Visualisation::Graph;
 
@@ -38,6 +40,44 @@ sub quote_javascript
 	return "'$value'";
 }
 
+sub chart_render
+{
+	my ($self) = @_;
+
+	my @data;
+	
+	push @data, $self->{'x_labels'};
+	foreach my $i (0 .. $#{$self->{'data_series'}})
+	{
+		push @data, $self->{'data_series'}->[$i]->{'data'};
+	}
+
+	my $c = Chart::Lines->new( 500, 300 );
+
+	$c->set( title => $self->{'title'} );
+	$c->set( y_label => $self->{'y_title'} );
+	$c->set( x_label => $self->{'x_title'} );
+
+	my @colors = $self->chart_colours;
+	my $i = 0;
+	$c->set( colors => { map { "dataset".($i++) => $_ } @colors } );
+	
+	$c->set( legend => 'none' );
+
+	$c->png( $self->{'path'} . $self->{'filename'}, \@data );
+
+	my $legend = IRStats::Visualisation::Graph::GraphLegend->new($self->{'data_series'}, $self->{'colours'});
+	return "<div id=\"line_graph\">
+		<table><tr>
+		<td>
+		<img class=\"chart\" src = \"$self->{'url_relative'}\" />
+		</td>
+		<td>" .
+		$legend->render() .
+		"</td>
+		</tr></table>
+		</div>";
+}
 
 sub chartdirector_render
 {

@@ -2,6 +2,8 @@ package IRStats::Visualisation::Graph::Pie;
 
 use strict;
 
+use Chart::Pie;
+
 use IRStats::Visualisation::Graph;
 
 our @ISA = qw/ IRStats::Visualisation::Graph /;
@@ -19,6 +21,27 @@ sub quote_javascript
 	my( $value ) = @_;
 	$value =~ s/'/\\'/g;
 	return "'$value'";
+}
+
+sub chart_render
+{
+	my ($self) = @_;
+
+	my $c = Chart::Pie->new( 500, 300 );
+
+	my $data = [];
+	my $labels = [];
+	foreach (@{$self->{'data_series'}})
+	{
+		push @{$data}, $_->{'data'};
+		push @{$labels}, $_->{'citation'};
+	}
+	$c->png( $self->{'path'} . $self->{'filename'}, [$labels, $data] );
+
+	return "<div class=\"pie_graph\">
+		<img class=\"chart\" src = \"$self->{'url_relative'}\">
+		</div>";
+
 }
 
 sub chartdirector_render
