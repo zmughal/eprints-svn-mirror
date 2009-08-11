@@ -7989,4 +7989,5 @@ EPRINTS-3.1.2.1
 
 2009-08-11 tdb
  * Return NOT_FOUND if a request for a secure document doesn't exist
+ * Added tool for exporting Perl POD to MediaWiki
 
