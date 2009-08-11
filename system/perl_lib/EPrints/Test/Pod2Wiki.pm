@@ -531,6 +531,10 @@ sub interior_sequence
 					return "{{API:PodLink|file=$file|package_name=$module|section=|text=$text}}";
 				}
 			}
+			elsif( defined $sec )
+			{
+				return "[[#$sec|$text]]";
+			}
 		}
 	}
 	return "$seq_cmd!$seq_arg!";
@@ -552,6 +556,7 @@ sub _p2w_split_pod_link
 	{
 		$sec =~ s/^"(.+)"$/$1/;
 	}
+	$module = undef if $module eq "";
 
 	return( $text, $module, $sec );
 }
