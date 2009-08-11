@@ -7987,3 +7987,6 @@ EPRINTS-3.1.2.1
 2009-06-10 tdb
  * Removed has_table from version checks and drop_table
 
+2009-08-11 tdb
+ * Return NOT_FOUND if a request for a secure document doesn't exist
+
