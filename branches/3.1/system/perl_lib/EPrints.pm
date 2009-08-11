@@ -1,8 +1,44 @@
+######################################################################
+#
+# EPrints
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2009 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
 package EPrints;
 
 use EPrints::SystemSettings;
 
 use Scalar::Util;
+
+=head1 NAME
+
+B<EPrints> - EPrints Software
+
+=head1 SYNOPSIS
+
+  use EPrints;
+
+  my $session = EPrints::Session->new( 1, "xxx" );
+
+  $session->terminate;
+
+=head1 DESCRIPTION
+
+EPrints is generic repository building software developed by the University of Southampton. It is intended to create a highly configurable web-based repository.
+
+For more information on EPrints see L<http://www.eprints.org/software/>.
+
+=head1 METHODS
+
+=cut
 
 BEGIN {
 	use Carp qw(cluck);
@@ -92,11 +128,23 @@ END
 		exit( 1 );
 	}
 
+=item EPrints::deprecated()
+
+Prints a deprecated warning for the calling sub.
+
+=cut
+
 	sub deprecated
 	{
 		my @c = caller(1);
 		print STDERR "Called deprecated function $c[3] from $c[1] line $c[2]\n";
 	}
+
+=item EPrints::try( CODE_REF )
+
+Attempts to call CODE_REF and if an error occurs calls L</abort> with the error message.
+
+=cut
 
 	sub try
 	{
@@ -187,5 +235,15 @@ sub import
 
 	$__loaded = 1;
 }
+
+=head1 SEE ALSO
+
+L<EPrints::Session>, L<EPrints::Repository>.
+
+=head1 AUTHOR
+
+Copyright 2000-2009 University of Southampton, UK.
+
+=cut
 
 1;
