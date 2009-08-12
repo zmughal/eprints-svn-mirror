@@ -118,7 +118,7 @@ sub connect
 
 	return unless $self->SUPER::connect();
 
-	$self->{dbh}->{LongReadLen} = 2048;
+	$self->{dbh}->{LongReadLen} = 128*1024;
 }
 
 sub prepare_select
