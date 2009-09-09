@@ -2961,6 +2961,7 @@ sub get_ids_by_field_values
 	{
 		my $value = $field->value_from_sql_row( $session, \@row );
 		my $id = $field->get_id_from_value( $session, $value );
+		$id = "" if !defined $id; # avoid undef warnings
 		push @{$ids->{$id}}, $eprintid;
 	}
 	$sth->finish;

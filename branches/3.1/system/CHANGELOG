@@ -7994,3 +7994,6 @@ EPRINTS-3.1.2.1
 2009-08-12 tdb
  * Use "brief" citation to render title duplicate matches >5
 
+2009-09-09 tdb
+ * Avoid an undef warning on NULL value ids, fixing #3537
+
