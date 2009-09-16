@@ -380,6 +380,14 @@ sub _add_field_ordervalues_lang
 	return $self->do( "ALTER TABLE ".$self->quote_identifier($order_table)." ADD $col" );
 }
 
+# Oracle doesn't support getting the "current" value of a sequence
+sub counter_current
+{
+	my( $self, $counter ) = @_;
+
+	return undef;
+}
+
 1; # For use/require success
 
 ######################################################################
