@@ -1,0 +1,28 @@
+######################################################################
+#
+#  Request a copy - respond to request
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints;
+use strict;
+
+my $handle = new EPrints::Handle();
+exit( 1 ) unless( defined $handle );
+
+EPrints::ScreenProcessor->process( 
+	handle => $handle, 
+	url => $handle->get_repository->get_conf( "perl_url" )."/respond_doc",
+	screenid => "Request::Respond",
+);
+$handle->terminate;
+
+exit;

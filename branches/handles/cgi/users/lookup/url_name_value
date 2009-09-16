@@ -1,0 +1,55 @@
+use EPrints;
+
+use strict;
+use warnings;
+
+my $handle = EPrints::Handle->new();
+
+my $string_frag = lc $handle->param( "q" );
+my $table = $handle->param( "table" );
+$table = $handle->get_database->quote_identifier("ac_".$table);
+my $sql;
+my $term = EPrints::Database::prep_like_value( $string_frag );
+$sql = "SELECT url,name,value from $table WHERE name LIKE '%$term%' OR value LIKE '%$term%'";
+
+my $doc = $handle->make_element( 'ul' );
+
+print <<END;
+<?xml version="1.0" encoding="UTF-8" ?>
+
+END
+my $sth = $handle->get_database->prepare_select( $sql, 'limit' => 10 );
+$handle->get_database->execute( $sth , $sql );
+my $first = 1;
+while( my( $url,$name,$value ) = $sth->fetchrow_array )
+{
+	$doc->appendChild( my $li = $handle->make_element( 'li' ) );
+	if( $first )
+	{
+		$li->setAttribute( 'class', 'ep_first' );
+	}
+	$first= 0;
+	$li->appendChild( $handle->make_text( $name . ' ' ) );
+	if( $value ne $name )
+	{
+		$li->appendChild( $handle->make_text( sprintf('(%s) ', $value )));
+	}
+	if( defined( $url ) )
+	{
+		$li->appendChild( my $a = $handle->make_element( 'a',
+			href => $url,
+			target => '_new',
+		));
+		$a->appendChild( $handle->make_text( 'More Info' ) );
+	}
+	$li->appendChild( my $data = $handle->make_element( 'ul' ) );
+	$data->appendChild( $handle->make_element( 'li',
+		id => 'for:value:relative:'
+	) )->appendChild( $handle->make_text( $value ) );
+}
+
+print EPrints::XML::to_string( $doc );
+
+EPrints::XML::dispose( $doc );
+
+$handle->terminate;

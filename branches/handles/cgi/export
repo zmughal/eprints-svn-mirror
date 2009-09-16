@@ -1,0 +1,108 @@
+######################################################################
+#
+#  EPrints Object Exporter
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints;
+
+use strict;
+my $handle = new EPrints::Handle;
+exit( 0 ) unless( defined $handle );
+# $handle->get_database->set_debug( 1 );
+
+my $path_info = $handle->get_request->path_info;
+
+unless( $path_info =~ m!^/([0-9]+)(/([^/]*)?)?! ) 
+{
+	error( $handle, $handle->html_phrase( "cgi/export:no_id" ) );
+	$handle->terminate;
+	exit;
+}
+
+my $id = $1;
+my $afterid = $2;
+my $format = $3;
+my $export_url = $handle->get_repository->get_conf( "perl_url" )."/export";
+
+if( !defined $id ) 
+{
+	error( $handle, $handle->html_phrase( "cgi/export:no_id" ) );
+	$handle->terminate;
+	exit;
+}
+
+if( !defined $afterid ) 
+{
+	$handle->redirect( $export_url."/".$id."/" );
+	$handle->terminate;
+	exit;
+}
+
+my $eprint = EPrints::DataObj::EPrint->new( 
+			$handle, 
+			$id, 
+			$handle->get_repository->get_dataset( "archive" ) );
+
+if( !defined $eprint )
+{
+	error( 
+		$handle, 
+		$handle->html_phrase( 
+			"cgi/export:eprint_not_fount",
+			eprintid => $handle->make_text( $id ) ) );
+	$handle->terminate;
+	exit;
+}
+
+if( !defined $format || $format eq "" ) 
+{
+	my $title = $handle->html_phrase( "cgi/export:title",
+			shortname=>$eprint->render_description );
+	my $page = $handle->html_phrase( "cgi/export:page",
+		citation => $eprint->render_citation_link,
+		formats => $eprint->render_export_links ); 
+	$handle->prepare_page( title=>$title, page=>$page, page_id=>"export" );
+	$handle->send_page;
+	$handle->terminate;
+	exit;
+}
+
+my @plugins = $handle->plugin_list( 
+				type=>"Export", 
+				can_accept=>"dataobj/eprint", 
+				is_visible=>"all" );
+my $ok = 0;
+foreach( @plugins ) { if( $_ eq "Export::$format" ) { $ok = 1; last; } }
+unless( $ok ) 
+{
+	error( $handle, $handle->html_phrase( "cgi/export:not_available",
+				format => $handle->make_text( $format ) ) );
+	$handle->terminate;
+	exit;
+}
+
+my $plugin = $handle->plugin( "Export::$format" );
+$handle->send_http_header( "content_type"=>$plugin->param("mimetype") );
+$plugin->initialise_fh( \*STDOUT );
+print $eprint->export( $format );	
+	
+$handle->terminate;
+exit;
+
+sub error
+{
+	my( $handle, $msg ) = @_;
+
+	$handle->prepare_page( title=>$handle->html_phrase( "cgi/export:error_title" ), page=>$msg, page_id=>"export_error" );
+	$handle->send_page;
+}
+
