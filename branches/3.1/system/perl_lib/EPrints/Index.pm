@@ -568,56 +568,78 @@ sub cleanup_indexer
 	EPrints::Index::indexlog() if( $p->{loglevel} > 0 );
 }
 
+# dequeue all of the field ids that are queued for indexing for this object
+sub _dequeue_all
+{
+	my( $session, $datasetid, $objectid ) = @_;
 
+	my $db = $session->get_database;
+
+	my $Q_field = $db->quote_identifier( "field" );
+	my $Q_table = $db->quote_identifier( "index_queue" );
+
+	my $sql = "SELECT $Q_field FROM $Q_table WHERE $Q_field LIKE '".EPrints::Database::prep_like_value( "$datasetid.$objectid." )."%'";
+	my $sth = $db->prepare( $sql );
+	$db->execute( $sth, $sql );
+
+	my %fields;
+	while(my( $field ) = $sth->fetchrow_array)
+	{
+		my( undef, undef, $fieldid ) = split /\./, $field;
+		$fields{$fieldid} = 1;
+	}
+
+	$sql = "DELETE FROM $Q_table WHERE $Q_field LIKE '".EPrints::Database::prep_like_value( "$datasetid.$objectid" )."%'";
+	$db->do( $sql );
+
+	return keys %fields;
+}
 
 sub do_index
 {
 	my( $session, $p ) = @_;
 
-	my $seen_action = 0; # have we done anything
-	my $loop_max = 10; # max times to loop
+	my( $datasetid, $objectid, $fieldid ) = $session->get_database->index_dequeue;
+	return 0 unless defined $datasetid; # nothing queued
 
-	while(
-		$loop_max-- and
-		my( $datasetid, $objectid, $fieldid ) = $session->get_database->index_dequeue()
-	)
+	my @fields = ($fieldid, _dequeue_all( $session, $datasetid, $objectid ));
+
+	my $dataset = $session->get_repository->get_dataset( $datasetid );
+	if( !defined $dataset )
 	{
-		$seen_action = 1;
-		my $fieldcode = "$datasetid.$objectid.$fieldid"; # for debug messages
-	
-		my $dataset = $session->get_repository->get_dataset( $datasetid );
-		if( !defined $dataset )
+		indexlog( "Could not make dataset: $datasetid ($datasetid.$objectid.$fieldid)" );
+		return;
+	}
+
+	my $item = $dataset->get_object( $session, $objectid );
+	return unless defined $item;
+
+	foreach $fieldid (@fields)
+	{
+		my $fieldcode = "$datasetid.$objectid.$fieldid"; # debug
+
+		if( !$dataset->has_field( $fieldid ) )
 		{
-			EPrints::Index::indexlog( "Could not make dataset: $datasetid ($fieldcode)" );
+			indexlog( "No such field: $fieldid (found on index queue).. skipping.\n" );
 			next;
 		}
 		my $field = $dataset->get_field( $fieldid );
-		if( !defined $field )
-		{
-			EPrints::Index::indexlog( "No such field: $fieldid (found on index queue).. skipping.\n" );
-			next;
-		}
+		next unless $field->get_property( "text_index" );
 	
-		EPrints::Index::indexlog( "* de-indexing: $fieldcode" ) if( $p->{loglevel} > 4 );
-		EPrints::Index::remove( $session, $dataset, $objectid, $fieldid );
-		EPrints::Index::indexlog( "* done-de-indexing: $fieldcode" ) if( $p->{loglevel} > 5 );
-	
-		next unless( $field->get_property( "text_index" ) );
-	
-		my $item = $dataset->get_object( $session, $objectid );
-		next unless ( defined $item );
+		indexlog( "* de-indexing: $fieldcode" ) if( $p->{loglevel} > 4 );
+		remove( $session, $dataset, $objectid, $fieldid );
+		indexlog( "* done-de-indexing: $fieldcode" ) if( $p->{loglevel} > 5 );
 	
 		my $value = $item->get_value( $fieldid );
-		
 		next unless EPrints::Utils::is_set( $value );	
 	
-		EPrints::Index::indexlog( "* indexing: $fieldcode" ) if( $p->{loglevel} > 4 );
-		EPrints::Index::add( $session, $dataset, $objectid, $fieldid, $value );
-		EPrints::Index::indexlog( "* done-indexing: $fieldcode" ) if( $p->{loglevel} > 5 );
+		indexlog( "* indexing: $fieldcode" ) if( $p->{loglevel} > 4 );
+		add( $session, $dataset, $objectid, $fieldid, $value );
+		indexlog( "* done-indexing: $fieldcode" ) if( $p->{loglevel} > 5 );
 	}
 
-	return $seen_action;
-}	
+	return 1;
+}
 
 sub is_running
 {
