@@ -3938,6 +3938,8 @@ sub index_queue
 
 	my $table = "index_queue";
 
+	local $self->{dbh}->{PrintError} = 0;
+
 	# SYSDATE is the date/time at the point of insertion, but is supported
 	# by most databases unlike NOW(), which is only in MySQL
 	my $sql = "INSERT INTO ".$self->quote_identifier($table)." (".
