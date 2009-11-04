@@ -1,0 +1,109 @@
+
+=head1 Multi Page Metadata Input (v2.3.0)
+
+If you want to split the metadata input into more than one page, you can, by adding E<lt>page name="foo" /E<gt> elements in between E<lt>fieldE<gt> elements in metadata-types.xml.
+
+The "name" attribute is used so that EPrints knows which page it's currently on. It can also be used to define a custom title for a page of fields, and to specify validation requirements for that page.
+
+=head2 Metafield input page name
+
+Eg. The title of a metadata input page is taken from the phrase "metapage_title_I<pagename>". It may have any of the following pins:
+
+=over 4
+
+=item type
+
+The type of the current submission. Article, Book, or whatever.
+
+=item eprintid
+
+The ID number of the current submission.
+
+=item desc
+
+The short description of the item. Usually the title.
+
+=back
+
+=head2 Per-page Validation
+
+The simple validation will be checked for each field on the sub page. This means that an invalid URL will raise a problem and not let the submitter continue. However if you have a more complex validation issue, such as an exclusion or a co-dependancy, you will need to edit the B<ArchiveValidateConfig.pm> config file, and edit this subroutine:
+
+ sub validate_eprint_meta_page
+ {
+        my( $eprint, $session, $page, $for_archive ) = @_;
+
+	my @problems = ();
+
+	return @problems
+ }
+
+The options are as for validate_eprint_meta except that $page is the sub-page to validate. @problems should be an array of XHTML objects describing any problems with the data submitted for that page.
+
+
+
+=head1 Submission Customisation XX
+
+=head1 Filters XX
+
+=head1 Searches XX
+
+=head1 OAI XX
+
+=head1 Latest Tool XX
+
+=head1 Metadata Field Render Options (v2.3.0)
+
+Render options are settings for a metadata field which control how it is rendered (but nothing else). Some render options are only meaningful for certain types. 
+
+=head2 Setting in Metadata Fields Configuration
+
+Render options can be specified as properties of a metadata field in ArchiveMetadataFieldsConfig.pm in which case they apply to that field (unless over ridden). In this case they are a hash reference, for example:
+
+ { name => "creators", type => "name", render_opts=>{ order=>"gf" } },
+
+This sets the "order" render option of the creators field to be "gf".
+
+=head2 Setting in views and citations
+
+Render options can also be specified in views and citations. If you don't want them to apply except in the given view or citation. For example, in citations:
+
+ @title;magicstop@
+
+Magicstop is a boolean option so this is the same as saying: 
+
+ @title;magicstop=1@
+
+In views you can use
+
+ "some_date_field;res=year"
+
+To make a view that browses by the values of a date field as if it were a "year" field. 
+
+=head2 Available options
+
+Boolean options with no value default to true (1).
+
+=over 4
+
+=item magicstop
+
+Boolean. Applies to text and longtext fields. If true then render the value with a full stop on the end unless the value already ends with "." "!" or "?". Handy for getting citations right. 
+
+=item noreturn
+
+Boolean. Applies to text and longtext fields. Turns all Carriage Return and Line Feed characters into whitespace. Handy when you have authors entering titles with linebreaks in which should only be displayed under some circumstances.
+
+=item order
+
+"gf" or "fg". Applies to name fields. Override how this name field will be rendered. Either "given-name family-name" or "family-name, given-name".
+
+=item quiet
+
+Boolean. If true then and the value is not set, don't print the ugly "UNSPECIFIED" just print an empty string.
+
+=item res
+
+"day", "month" or "year". Default is "day". Applies to date fields only. Resolution at which to deal with the dates. @foo;res=year@ will always render just the year part of the "foo" field.
+
+=back
