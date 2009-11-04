@@ -2048,8 +2048,12 @@ sub update_database_structure
 	
 	my $repo = EPrints::Repository->new( $repoid );
 
+	$session->get_database->begin;
+
 	update_datasets( $repo, $db );
 	update_counters( $repo, $db );
+
+	$session->get_database->commit;
 
 	$session->terminate;
 }

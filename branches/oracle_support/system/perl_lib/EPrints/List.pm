@@ -212,7 +212,6 @@ sub union
 	my %newids = ();
 	foreach( @{$ids1}, @{$ids2} ) { $newids{$_}=1; }
 	my @objectids = keys %newids;
-
 	# losing desc, although could be added later.
 	return EPrints::List->new(
 		dataset => $self->{dataset},
@@ -527,73 +526,20 @@ sub _get_records
 	# $count = $count || 1; # unspec. means ALL not 1.
 	$justids = $justids || 0;
 
+	my @ids;
 	if( defined $self->{ids} )
 	{
-		if( $self->_matches_none )
-		{
-			if( $justids )
-			{
-				return [];
-			}
-			else
-			{
-				return ();
-			}
-		}
-
-		# quick solutions if we don't need to order anything...
-		if( !defined $offset && !defined $count && !defined $self->{order} )
-		{
-			if( $justids )
-			{
-				if( $self->_matches_all )
-				{
-					return $self->{dataset}->get_item_ids( $self->{session} );
-				}
-				else
-				{
-					return $self->{ids};
-				}
-			}
-	
-			if( $self->_matches_all )
-			{
-				return $self->{session}->get_database->get_all(
-					$self->{dataset} );
-			}
-		}
-
-		# If the above tests failed then	
-		# we are returning all matches, but there's no
-		# easy shortcut.
-
-		if( !$self->_matches_all && !$justids && scalar @{$self->{ids}} <= 1 )
-		{
-			my @ids = @{$self->{ids}};
-			my $from = $offset;
-			if( !defined $count ) { $count = (scalar @ids)-$offset; }
-			my $to = $offset+$count-1;
-			my @range = @ids[($from..$to)];
-		
-			return $self->{session}->get_database->get_single( $self->{dataset}, $range[0] );
-		}	
+		$count = scalar @{$self->{ids}} if !defined $count;
+		@ids = grep { defined $_ } @{$self->{ids}}[$offset..$offset+$count-1];
 	}
-
-	if( !defined $self->{cache_id} )
+	else
 	{
-		$self->cache;
+		my $cachemap = EPrints::DataObj::Cachemap->new( $self->{session}, $self->{cache_id} );
+		@ids = $self->{session}->get_database->get_cache_ids( $self->{dataset}, $cachemap, $offset, $count );
 	}
 
-	my $r = $self->{session}->get_database->from_cache( 
-			$self->{dataset}, 
-			$self->{cache_id},
-			$offset,
-			$count,	
-			$justids );
-
-	return $r if( $justids );
-		
-	return @{$r};
+	return \@ids if $justids;
+	return $self->{session}->get_database->get_dataobjs( $self->{dataset}, @ids );
 }
 
 

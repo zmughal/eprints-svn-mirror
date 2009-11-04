@@ -387,6 +387,13 @@ sub get_primary_key
 	return @COLS;
 }
 
+sub prepare_regexp
+{
+	my( $self, $col, $value ) = @_;
+ 
+	return "$col REGEXP $value";
+}
+
 1; # For use/require success
 
 ######################################################################

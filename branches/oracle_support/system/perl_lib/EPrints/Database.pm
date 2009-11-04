@@ -502,23 +502,27 @@ sub create_dataset_index_tables
 	my $field_fieldword = EPrints::MetaField->new( 
 		repository=> $self->{session}->get_repository,
 		name => "fieldword", 
-		type => "text");
+		type => "text",
+		maxlength => 128,
+		allow_null => 0);
 	my $field_pos = EPrints::MetaField->new( 
 		repository=> $self->{session}->get_repository,
 		name => "pos", 
-		type => "int" );
+		type => "int",
+		sql_index => 0,
+		allow_null => 0);
 	my $field_ids = EPrints::MetaField->new( 
 		repository=> $self->{session}->get_repository,
 		name => "ids", 
-		type => "longtext");
+		type => "longtext",
+		allow_null => 0);
 	if( !$self->has_table( $dataset->get_sql_index_table_name ) )
 	{
 		$rv &= $self->create_table(
 			$dataset->get_sql_index_table_name,
 			$dataset,
-			0, # no primary key
+			2, # primary key over field-pos
 			( $field_fieldword, $field_pos, $field_ids ) );
-		$rv &= $self->add_index_to_indextable( $dataset );
 	}
 
 	#######################
@@ -527,19 +531,23 @@ sub create_dataset_index_tables
 	my $field_fieldname = EPrints::MetaField->new( 
 		repository=> $self->{session}->get_repository,
 		name => "fieldname", 
-		type => "text" );
+		type => "text",
+		maxlength => 64,
+		allow_null => 0);
 	my $field_grepstring = EPrints::MetaField->new( 
 		repository=> $self->{session}->get_repository,
 		name => "grepstring", 
-		type => "text");
+		type => "text",
+		maxlength => 128,
+		allow_null => 0);
 
 	if( !$self->has_table( $dataset->get_sql_grep_table_name ) )
 	{
 		$rv = $rv & $self->create_table(
 			$dataset->get_sql_grep_table_name,
 			$dataset,
-			0, # no primary key
-			( $keyfield, $field_fieldname, $field_grepstring ) );
+			3, # no primary key
+			( $field_fieldname, $field_grepstring, $keyfield ) );
 	}
 
 
@@ -549,19 +557,23 @@ sub create_dataset_index_tables
 	my $field_field = EPrints::MetaField->new( 
 		repository=> $self->{session}->get_repository,
 		name => "field", 
-		type => "text" );
+		type => "text",
+		maxlength => 64,
+		allow_null => 0 );
 	my $field_word = EPrints::MetaField->new( 
 		repository=> $self->{session}->get_repository,
 		name => "word", 
-		type => "text");
+		type => "text",
+		maxlength => 128,
+		allow_null => 0 );
 
 	if( !$self->has_table( $dataset->get_sql_rindex_table_name ) )
 	{
 		$rv = $rv & $self->create_table(
 			$dataset->get_sql_rindex_table_name,
 			$dataset,
-			0, # no primary key
-			( $keyfield, $field_field, $field_word ) );
+			3, # no primary key
+			( $field_field, $field_word, $keyfield ) );
 	}
 
 
@@ -569,15 +581,6 @@ sub create_dataset_index_tables
 	return $rv;
 }
 
-sub add_index_to_indextable
-{
-	my( $self, $dataset ) = @_;
-
-	my $table_name = $dataset->get_sql_index_table_name;
-
-	return $self->create_index( $table_name, "fieldword", "pos" ) ? 1 : 0;
-}
- 
 ######################################################################
 =pod
 
@@ -816,7 +819,7 @@ sub create_table
 	}
 
 	# Construct the SQL statement
-	my $key = undef;
+	my @primary_key;
 	my @indices;
 	my @columns;
 	foreach $field (@fields)
@@ -824,15 +827,12 @@ sub create_table
 		next if( $field->get_property( "multiple" ) );
 		next if( $field->is_virtual );
 
-		my $notnull = 0;
-			
-		# First field is primary key.
-		if( !defined $key && $setkey)
+		# Set a primary key over $setkey columns
+		if( $setkey > @primary_key )
 		{
-			$key = $field;
-			$notnull = 1;
+			push @primary_key, $field;
 		}
-		else
+		if( !$setkey || @primary_key > 1 )
 		{
 			my @index_columns = $field->get_sql_index();
 			if( scalar @index_columns )
@@ -840,23 +840,15 @@ sub create_table
 				push @indices, \@index_columns;
 			}
 		}
-		push @columns, $field->get_sql_type( $self->{session}, $notnull );
-
+		push @columns, $field->get_sql_type( $self->{session} );
 	}
-	my @primary_key;
-	if( $setkey )	
-	{
-		if( $setkey == 2 )	
-		{
-			push @primary_key, $key->get_sql_name(), "pos";
-		}
-		else
-		{
-			push @primary_key, $key->get_sql_name();
-		}
-	}
-
 	
+	@primary_key = map {
+		my $cfield = $_->clone;
+		$cfield->set_property( sql_index => 1 );
+		$cfield->get_sql_index;
+	} @primary_key;
+
 	# Send to the database
 	$rv = $rv && $self->_create_table( $tablename, \@primary_key, \@columns );
 	
@@ -1771,11 +1763,10 @@ sub _create_index_queue_table
 	my $rc = 1;
 
 	# The table creation SQL
-	$rc &&= $self->_create_table("index_queue", [], [
+	$rc &&= $self->_create_table("index_queue", ["field"], [
 		$self->get_column_type( "field", SQL_VARCHAR, SQL_NULL, 128 ),
 		$self->get_column_type( "added", SQL_TIME ),
 	]);
-	$rc &&= $self->create_index( "index_queue", "field" );
 	$rc &&= $self->create_index( "index_queue", "added" );
 
 	return $rc;
@@ -2116,6 +2107,7 @@ sub _cache_from_TABLE
 	my $B = $self->quote_identifier("B");
 	my $O = $self->quote_identifier("O");
 	my $Q_srctable = $self->quote_identifier($srctable);
+	my $Q_pos = $self->quote_identifier( "pos" );
 
 	$self->create_sequence( $cache_seq );
 
@@ -2124,7 +2116,7 @@ CREATE OR REPLACE TRIGGER $Q_trigger
   BEFORE INSERT ON $Q_cache_table
   FOR EACH ROW
 BEGIN
-  SELECT $NEXTVAL INTO :new."pos" FROM dual;
+  SELECT $NEXTVAL INTO :new.$Q_pos FROM dual;
 END;
 EOT
 	$self->do($sql);
@@ -2577,7 +2569,7 @@ id.
 sub get_single
 {
 	my ( $self , $dataset , $value ) = @_;
-	return ($self->_get( $dataset, 0 , $value ))[0];
+	return ($self->get_dataobjs( $dataset, $value ))[0];
 }
 
 
@@ -4259,6 +4251,222 @@ sub get_driver_name
 	my $dbd_version = eval "return \$DBD::${dbd}::VERSION";
 
 	return ref($self)." [DBI $DBI::VERSION, DBD::$dbd $dbd_version]";
+}
+
+### tdb: Custom methods imported from 3.2
+
+=item @ids = $db->get_cache_ids( $dataset, $cachemap, $offset, $count )
+
+Returns a list of $count ids from $cache_id starting at $offset and in the order in the cachemap.
+
+=cut
+
+sub get_cache_ids
+{
+	my( $self, $dataset, $cachemap, $offset, $count ) = @_;
+
+	my @ids;
+
+	my $Q_pos = $self->quote_identifier( "pos" );
+
+	my $sql = "SELECT ".$self->quote_identifier( $dataset->get_key_field->get_sql_name );
+	$sql .= " FROM ".$self->quote_identifier( $cachemap->get_sql_table_name );
+	$sql .= " WHERE $Q_pos >= $offset";
+	if( defined $count )
+	{
+		$sql .= " AND $Q_pos < ".($offset+$count);
+	}
+	$sql .= " ORDER BY ".$self->quote_identifier( "pos" )." ASC";
+
+	my $sth = $self->prepare( $sql );
+	$self->execute( $sth, $sql );
+
+	while(my $row = $sth->fetch)
+	{
+		push @ids, $row->[0];
+	}
+
+	return @ids;
+}
+
+=item @dataobjs = $db->get_dataobjs( $dataset [, $id [, $id ] ] )
+
+Retrieves the records in $dataset with the given $id(s). If an $id doesn't exist in the database it will be ignored.
+
+=cut
+
+sub get_dataobjs
+{
+	my( $self, $dataset, @ids ) = @_;
+
+	@ids = grep { defined $_ } @ids; # triggered by get_single(undef)!
+	return () unless scalar @ids;
+
+	my @data = map { {} } @ids;
+
+	my $session = $self->{session};
+
+	my $key_field = $dataset->get_key_field;
+	my $key_name = $key_field->get_name;
+
+	# we build a list of OR statements to retrieve records
+	my $Q_key_name = $self->quote_identifier( $key_name );
+	my $logic = join(' OR ',map { "$Q_key_name=".$self->quote_value($_) } @ids);
+
+	# we need to map the returned rows back to the input order
+	my $i = 0;
+	my %lookup = map { $_ => $i++ } @ids;
+
+	# work out which fields we need to retrieve
+	my @fields;
+	my @aux_fields;
+	foreach my $field ($dataset->get_fields)
+	{
+		next if $field->is_virtual;
+		# never retrieve secrets
+		next if $field->isa( "EPrints::Metafield::Secret" );
+
+		if( $field->get_property( "multiple" ) )
+		{
+			push @aux_fields, $field;
+		}
+		else
+		{
+			push @fields, $field;
+		}
+	}
+
+	# retrieve the data from the main dataset table
+	my $sql = "SELECT ".join(',',map {
+			$self->quote_identifier($_)
+		} map {
+			$_->get_sql_names
+		} @fields);
+	$sql .= " FROM ".$self->quote_identifier($dataset->get_sql_table_name);
+	$sql .= " WHERE $logic";
+
+	my $sth = $self->prepare( $sql );
+	$self->execute( $sth, $sql );
+
+	while(my @row = $sth->fetchrow_array)
+	{
+		my $epdata = {};
+		foreach my $field (@fields)
+		{
+			$epdata->{$field->get_name} = $field->value_from_sql_row( $session, \@row );
+		}
+		next if !defined $epdata->{$key_name};
+		$data[$lookup{$epdata->{$key_name}}] = $epdata;
+	}
+
+	# retrieve the data from multiple fields
+	my $pos_field = EPrints::MetaField->new(
+		repository => $session->get_repository,
+		name => "pos",
+		type => "int" );
+	foreach my $field (@aux_fields)
+	{
+		my @fields = ($key_field, $pos_field, $field);
+		my $sql = "SELECT ".join(',',map {
+				$self->quote_identifier($_)
+			} map {
+				$_->get_sql_names
+			} @fields);
+		$sql .= " FROM ".$self->quote_identifier($dataset->get_sql_sub_table_name( $field ));
+		$sql .= " WHERE $logic";
+
+		# multiple values are always at least empty list
+		foreach my $epdata (@data)
+		{
+			$epdata->{$field->get_name} = [];
+		}
+
+		my $sth = $self->prepare( $sql );
+		$self->execute( $sth, $sql );
+		while(my @row = $sth->fetchrow_array)
+		{
+			my( $id, $pos ) = splice(@row,0,2);
+			my $value = $field->value_from_sql_row( $session, \@row );
+			$data[$lookup{$id}]->{$field->get_name}->[$pos] = $value;
+		}
+	}
+
+	# convert the epdata into objects
+	foreach my $epdata (@data)
+	{
+		if( !defined $epdata->{$key_name} )
+		{
+			$epdata = undef;
+		}
+		$epdata = $dataset->make_object( $session,  $epdata);
+		$epdata->clear_changed();
+	}
+
+	# remove any objects that couldn't be retrieved
+	@data = grep { defined $_ } @data;
+
+	return @data;
+}
+
+sub begin_cache_table
+{
+	my( $self, $cachemap, $keyfield ) = @_;
+
+	my $cache_table  = $cachemap->get_sql_table_name;
+	my $cache_seq = $cache_table . "_seq";
+	my $cache_trigger = $cache_table . "_trig";
+
+	$self->_create_table( $cache_table, ["pos"], [
+			$self->get_column_type( "pos", SQL_INTEGER, SQL_NOT_NULL ),
+			$keyfield->get_sql_type( $self->{session} ),
+			]);
+
+	$self->create_sequence( $cache_seq );
+
+	my $Q_cache_table = $self->quote_identifier( $cache_table );
+	my $Q_trigger = $self->quote_identifier( $cache_trigger );
+	my $Q_pos = $self->quote_identifier( "pos" );
+	my $NEXTVAL = $self->quote_identifier($cache_seq).".nextval";
+
+	my $sql = <<EOT;
+CREATE OR REPLACE TRIGGER $Q_trigger
+  BEFORE INSERT ON $Q_cache_table
+  FOR EACH ROW
+BEGIN
+  SELECT $NEXTVAL INTO :new.$Q_pos FROM dual;
+END;
+EOT
+	$self->do($sql);
+
+	return $cache_table;
+}
+
+sub finish_cache_table
+{
+	my( $self, $cachemap, $keyfield ) = @_;
+
+	my $cache_table  = $cachemap->get_sql_table_name;
+	my $cache_seq = $cache_table . "_seq";
+	my $cache_trigger = $cache_table . "_trig";
+
+	$self->drop_sequence( $cache_seq );
+
+	$self->do("DROP TRIGGER ".$self->quote_identifier( $cache_trigger ));
+
+	return $cache_table;
+}
+
+=item $sql = $db->prepare_regexp( $quoted_column, $quoted_value )
+
+The syntax used for regular expressions varies across databases. This method takes two B<quoted> values and returns a SQL expression that will apply the regexp ($quoted_value) to the column ($quoted_column).
+
+=cut
+
+sub prepare_regexp
+{
+	my( $self, $col, $value ) = @_;
+
+	return "REGEXP_LIKE($col,$value,'i')"; # Ignore case
 }
 
 1; # For use/require success

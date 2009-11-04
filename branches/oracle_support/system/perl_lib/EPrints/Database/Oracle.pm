@@ -58,6 +58,7 @@ Oracle won't ORDER BY LOBS.
 package EPrints::Database::Oracle;
 
 use EPrints;
+use EPrints::Profiler ;
 
 use EPrints::Database qw( :sql_types );
 @ISA = qw( EPrints::Database );
@@ -118,7 +119,7 @@ sub connect
 
 	return unless $self->SUPER::connect();
 
-	$self->{dbh}->{LongReadLen} = 128*1024;
+	$self->{dbh}->{LongReadLen} = 512*1024;
 }
 
 sub prepare_select
@@ -291,7 +292,7 @@ sub has_sequence
 
 	my $sql = "SELECT 1 FROM ALL_SEQUENCES WHERE SEQUENCE_NAME=?";
 	my $sth = $self->prepare($sql);
-	$sth->execute( $name );
+	$sth->execute( uc($name) );
 
 	return $sth->fetch ? 1 : 0;
 }
@@ -311,15 +312,18 @@ sub has_column
 {
 	my( $self, $table, $column ) = @_;
 
-	my $rc = 1;
+	my $rc = 0;
 
-	my $sql = "SELECT 1 FROM USER_TAB_COLUMNS WHERE ".
-		"TABLE_NAME=".$self->quote_value( $table )." AND ".
-		"COLUMN_NAME=".$self->quote_value( $column );
-	my $sth = $self->prepare( $sql );
-	$sth->execute;
-	$rc = $sth->fetch ? 1 : 0;
-	$sth->finish;
+	local $self->{dbh}->{RaiseError} = 0;
+	local $self->{dbh}->{PrintError} = 0;
+
+	my $sql = "SELECT 1 FROM ".$self->quote_identifier($table)." WHERE ".$self->quote_identifier($column)." is Null";
+	my $sth = eval { $self->prepare( $sql ) };
+	if( defined $sth )
+	{
+		$rc = 1;
+		$sth->finish;
+	}
 
 	return $rc;
 }
@@ -386,6 +390,26 @@ sub counter_current
 	my( $self, $counter ) = @_;
 
 	return undef;
+}
+
+sub drop_table
+{
+	my( $self, $name ) = @_;
+
+	local $self->{dbh}->{PrintError} = 0;
+	local $self->{dbh}->{RaiseError} = 0;
+
+	my $sql = "DROP TABLE ".$self->quote_identifier($name);
+	$self->{dbh}->do( $sql );
+	$sql = "PURGE TABLE ".$self->quote_identifier($name);
+	$self->{dbh}->do( $sql );
+}
+
+# Oracle uppercases all non-quoted identifiers so if we want users to be able
+# to use unquoted queries we'll have to make all our identifiers uppercase
+sub quote_identifier
+{
+	return shift->SUPER::quote_identifier(map(uc,@_));
 }
 
 1; # For use/require success

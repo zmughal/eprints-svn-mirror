@@ -578,7 +578,9 @@ sub _dequeue_all
 	my $Q_field = $db->quote_identifier( "field" );
 	my $Q_table = $db->quote_identifier( "index_queue" );
 
-	my $sql = "SELECT $Q_field FROM $Q_table WHERE $Q_field LIKE '".EPrints::Database::prep_like_value( "$datasetid.$objectid." )."%'";
+	my $logic = "$Q_field LIKE '".EPrints::Database::prep_like_value( "$datasetid.$objectid." )."%'";
+
+	my $sql = "SELECT $Q_field FROM $Q_table WHERE $logic";
 	my $sth = $db->prepare( $sql );
 	$db->execute( $sth, $sql );
 
@@ -589,7 +591,7 @@ sub _dequeue_all
 		$fields{$fieldid} = 1;
 	}
 
-	$sql = "DELETE FROM $Q_table WHERE $Q_field LIKE '".EPrints::Database::prep_like_value( "$datasetid.$objectid" )."%'";
+	$sql = "DELETE FROM $Q_table WHERE $logic";
 	$db->do( $sql );
 
 	return keys %fields;
@@ -614,6 +616,7 @@ sub do_index
 	my $item = $dataset->get_object( $session, $objectid );
 	return unless defined $item;
 
+$session->get_database->begin;
 	foreach $fieldid (@fields)
 	{
 		my $fieldcode = "$datasetid.$objectid.$fieldid"; # debug
@@ -637,6 +640,7 @@ sub do_index
 		add( $session, $dataset, $objectid, $fieldid, $value );
 		indexlog( "* done-indexing: $fieldcode" ) if( $p->{loglevel} > 5 );
 	}
+$session->get_database->commit;
 
 	return 1;
 }
@@ -812,7 +816,7 @@ $EPrints::Index::FREETEXT_CHAR_MAPPING = {
 	latin1("ÿ") => "y",	latin1("'") => "",
 
 	# Hungarian characters. 
-	'Å' => "o",	
+#	'Å' => "o",	
 	'Å' => "o",  
 	'Å±' => "u",  
 	'Å°' => "u",
