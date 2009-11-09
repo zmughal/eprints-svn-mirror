@@ -8005,3 +8005,6 @@ EPRINTS-3.1.2.1
  * Hack to make the indexer only get an object once per iteration (not per
     field)
 
+2009-11-9 tdb
+ * Subject children cache is now initialised for all subjects, fixing #3451
+
