@@ -4399,6 +4399,7 @@ sub get_dataobjs
 		if( !defined $epdata->{$key_name} )
 		{
 			$epdata = undef;
+			next;
 		}
 		$epdata = $dataset->make_object( $session,  $epdata);
 		$epdata->clear_changed();
