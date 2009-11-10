@@ -16,6 +16,6 @@ BEGIN { use_ok('TeX::Encode') };
 
 my $str = "begin \$d_<=x/2\$ between \$d_>=3x/2\$ end";
 
-is(decode('latex', $str), "begin <span class='mathrm'>d<sub>&lt;</sub>=x/2</span> between <span class='mathrm'>d<sub>&gt;</sub>=3x/2</span> end");
+is(decode('latex', $str), "begin d<=x/2 between d>=3x/2 end");
 
 ok(1);

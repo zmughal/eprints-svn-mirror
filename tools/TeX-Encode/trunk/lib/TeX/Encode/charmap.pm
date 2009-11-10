@@ -10,10 +10,10 @@ This mapping was built from Tralics, see http://www-sop.inria.fr/apics/tralics/
 
 =cut
 
-use vars qw( $RESERVED $CHARS $ACCENTED_CHARS $LATEX_MACROS );
+use vars qw( %RESERVED %BIBTEX_RESERVED %CHARS %ACCENTED_CHARS %LATEX_MACROS %GREEK %TEX_GREEK %MATH %MATH_CHARS );
 
 # reserved latex characters
-$RESERVED = {
+%RESERVED = (
 '#' => '\\#',
 '$' => '\\$',
 '%' => '\\%',
@@ -22,17 +22,32 @@ $RESERVED = {
 '{' => '\\{',
 '}' => '\\}',
 '\\' => '\\texttt{\\char92}',
-'^' => '\\texttt{\\char94}',
+'^' => '\^{ }', # '\\texttt{\\char94}',
 '~' => '\\texttt{\\char126}',
-};
+);
+
+%BIBTEX_RESERVED = (
+'#' => '\\#',
+'$' => '\\$',
+'%' => '\\%',
+'&' => '\\&',
+'_' => '\\_',
+'{' => '\\{',
+'}' => '\\}',
+'\\' => '{$\\backslash$}',
+'^' => '{\^{ }}',
+'~' => '{\\texttt{\\char126}}',
+);
 
 # single, non-ligature characters
-$CHARS = {
+%CHARS = (
 
-'<' => '$<$',
-'>' => '$>$',
-'|' => '$|$',
+# ASCII characters
+'<' => "\\ensuremath{<}",
+'>' => "\\ensuremath{>}",
+'|' => "\\ensuremath{|}",
 
+# non-accented
 chr(0x00a3) => "\\pounds", # £
 chr(0x00a7) => "\\S", # §
 chr(0x00a9) => "\\copyright",
@@ -42,6 +57,7 @@ chr(0x00c6) => "\\AE", # Æ
 chr(0x00d0) => "\\DH", # Ð
 chr(0x00d8) => "\\O", # Ø
 chr(0x00de) => "\\TH", # Þ
+chr(0x00df) => "\\ss", # ß
 chr(0x00e5) => "\\aa", # å
 chr(0x00e6) => "\\ae", # æ
 chr(0x00f0) => "\\dh", # ð
@@ -58,10 +74,41 @@ chr(0x014b) => "\\ng", # ŋ
 chr(0x0152) => "\\OE", # Œ
 chr(0x0153) => "\\oe", # œ
 
-};
+# superscript/subscript (maths)
+chr(0x2070) => '$^0$',
+chr(0x2071) => '$^i$',
+chr(0x2074) => '$^4$',
+chr(0x2075) => '$^5$',
+chr(0x2076) => '$^6$',
+chr(0x2077) => '$^7$',
+chr(0x2078) => '$^8$',
+chr(0x2079) => '$^9$',
+chr(0x207A) => '$^+$',
+chr(0x207B) => '$^-$',
+chr(0x207C) => '$^=$',
+chr(0x207D) => '$^($',
+chr(0x207E) => '$^)$',
+chr(0x207F) => '$^n$',
+chr(0x2080) => '$_0$',
+chr(0x2081) => '$_1$',
+chr(0x2082) => '$_2$',
+chr(0x2083) => '$_3$',
+chr(0x2084) => '$_4$',
+chr(0x2085) => '$_5$',
+chr(0x2086) => '$_6$',
+chr(0x2087) => '$_7$',
+chr(0x2088) => '$_8$',
+chr(0x2089) => '$_9$',
+chr(0x208A) => '$_+$',
+chr(0x208B) => '$_-$',
+chr(0x208C) => '$_=$',
+chr(0x208D) => '$_($',
+chr(0x208E) => '$_)$',
+
+);
 
 # accented characters
-our $ACCENTED_CHARS = {
+%ACCENTED_CHARS = (
 
 ### Æ
 
@@ -637,15 +684,18 @@ chr(0x017c) => "\\\.z", # ż
 chr(0x1e95) => "\\bz", # ẕ
 chr(0x1e93) => "\\dz", # ẓ
 
-};
+);
 
 # latex character references
-$LATEX_MACROS = {
+%LATEX_MACROS = (
+
+"\\\\" => "\n",
 
 "\\char92" => '\\',
 "\\char94" => '^',
 "\\char126" => '~',
 
+"\\acute{e}" => chr(0x00e9), # é
 "\\textunderscore" => chr(0x005f), # _
 "\\textbraceleft" => chr(0x007b), # {
 "\\textbraceright" => chr(0x007d), # }
@@ -743,6 +793,87 @@ $LATEX_MACROS = {
 "\\textlangle" => chr(0x3008), # 〈
 "\\textrangle" => chr(0x3009), # 〉
 
-};
+);
+
+%GREEK = %TEX_GREEK = ();
+{
+	my $i = 0;
+	for(qw( alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho varsigma sigma tau upsilon phi chi psi omega )) {
+		# lowercase
+		$GREEK{$TEX_GREEK{"\\$_"} = chr(0x3b1+$i)} = "\\ensuremath{\\$_}";
+		# uppercase
+		$GREEK{$TEX_GREEK{"\\\u$_"} = chr(0x391+$i)} = "\\ensuremath{\\\u$_}";
+		$i++;
+	}
+	# lamda/lambda
+	$TEX_GREEK{"\\lamda"} = $LATEX_Escapes_inv{"\\lambda"};
+	$TEX_GREEK{"\\Lamda"} = $LATEX_Escapes_inv{"\\Lambda"};
+	# Remove Greek letters that aren't available in TeX
+	# http://www.artofproblemsolving.com/Wiki/index.php/LaTeX:Symbols
+	for(qw( omicron Alpha Beta Epsilon Zeta Eta Iota Kappa Mu Nu Omicron Rho Varsigma Tau Chi Omega ))
+	{
+		delete $GREEK{delete $TEX_GREEK{"\\$_"}};
+	}
+}
+ 
+%MATH_CHARS = (
+	# Sets, http://www.unicode.org/charts/PDF/Unicode-4.1/U41-2100.pdf
+	'N' => chr(0x2115),
+	'R' => chr(0x211d),
+	'Z' => chr(0x2124),
+);
+
+%MATH = (
+	# 'sin' => 'sin', # sin (should be romanised), other trigonometric functions???
+	chr(0x2192) => '\\to', # -->
+	chr(0x2190) => '\\leftarrow', # <--
+	chr(0x2192) => '\\rightarrow', # -->
+	chr(0x2248) => '\\approx', # &asymp; Approximately equal to
+	chr(0x2272) => '\\lesssim', # May not exist!
+	chr(0x2273) => '\\gtrsim', # May not exist!
+	chr(0x2243) => '\\simeq',
+	chr(0x2264) => '\\leq',
+	chr(0x00b1) => '\\pm', # &plusmn; Plus-minus
+	chr(0x00d7) => '\\times', # &times; Times
+	chr(0x2299) => '\\odot', # odot
+	chr(0x222b) => '\\int', # integral
+	chr(0x221a) => '\\sqrt', # square root
+	chr(0x223c) => '\\sim', # tilda/mathematical similar
+	chr(0x22c5) => '\\cdot', # dot
+	reverse(%MATH_CHARS),
+);
+
+# derived mappings
+use vars qw( %CHAR_MAP $CHAR_MAP_RE );
+
+%CHAR_MAP = (%CHARS, %ACCENTED_CHARS, %GREEK);
+for(keys %MATH)
+{
+	$CHAR_MAP{$_} ||= '$' . $MATH{$_} . '$';
+}
+
+$CHAR_MAP_RE = '[' . join('', map { quotemeta($_) } sort { length($b) <=> length($a) } keys %CHAR_MAP) . ']';
+
+use vars qw( $RESERVED_RE $BIBTEX_RESERVED_RE );
+
+$RESERVED_RE = '[' . join('', map { quotemeta($_) } sort { length($b) <=> length($a) } keys %RESERVED) . ']';
+$BIBTEX_RESERVED_RE = '[' . join('', map { quotemeta($_) } sort { length($b) <=> length($a) } keys %BIBTEX_RESERVED) . ']';
+
+use vars qw( %MACROS $MACROS_RE );
+
+%MACROS = (
+	reverse(%RESERVED),
+	reverse(%CHARS),
+	reverse(%ACCENTED_CHARS),
+	reverse(%MATH),
+	%TEX_GREEK,
+	%LATEX_MACROS
+);
+
+$MACROS_RE = join('|', map { "(?:$_)" } map { quotemeta($_) } sort { length($b) <=> length($a) } keys %MACROS);
+
+use vars qw( $MATH_CHARS_RE );
+
+$MATH_CHARS_RE = '[' . join('', map { quotemeta($_) } sort { length($b) <=> length($a) } keys %MATH_CHARS) . ']';
 
 1;

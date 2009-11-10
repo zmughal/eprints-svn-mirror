@@ -5,7 +5,7 @@
 
 # change 'tests => 1' to 'tests => last_test_to_print';
 
-use Test::More tests => 4;
+use Test::More tests => 6;
 use Encode;
 BEGIN { use_ok('TeX::Encode') };
 
@@ -19,7 +19,17 @@ my $str = "start ".$chr." end";
 
 my $left = encode('latex', $str, Encode::FB_QUIET);
 
-is( $left, "start " );
-is( $str, $chr." end" );
+is( $left, "start ", "FB_QUIET" );
+is( $str, $chr." end", "FB_QUIET" );
+
+$str = "start ".$chr." end";
+$left = encode('latex', $str, Encode::FB_DEFAULT);
+
+is( $left, "start ? end", "FB_DEFAULT" );
+
+$left = eval { encode('latex', $str, Encode::FB_CROAK) };
+
+my $err = "Unsupported character code point 0x0036";
+is( substr($@,0,length($err)), $err, "FB_CROAK" );
 
 ok(1);

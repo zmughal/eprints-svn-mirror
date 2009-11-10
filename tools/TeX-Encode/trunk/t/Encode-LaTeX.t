@@ -20,7 +20,8 @@ is(encode('LaTeX', $str), "eacute = '\\'e'", "eacute => '\\'e'");
 is(decode('latex', "eacute = '\\'e'"), $str, $str);
 
 # General decode tests
-my %DECODE_TESTS = (
+my @DECODE_TESTS = (
+	'foo x^2 bar' => 'foo x'.chr(0xb2).' bar',
 	'xxx \\texttt{\char92} yyy' => 'xxx <span class=\'texttt\'>\\</span> yyy',
 	'\\sqrt{2}' => (chr(0x221a) . "<span style='text-decoration: overline'>2<\/span>"),
 	'hyper-K\\"ahler background' => ('hyper-K'.chr(0xe4).'hler background'),
@@ -32,49 +33,45 @@ my %DECODE_TESTS = (
 	'\\ss' => chr(0xdf), # German sharp S
 	'\\oe' => chr(0x153), # French oe
 	'\\OE' => chr(0x152), # French OE
-	'\\ae{}' => chr(0xe6), # Scandinavian ligature ae
+	'\\ae' => chr(0xe6), # Scandinavian ligature ae
 "consist of \$\\sim{}260,000\$ of subprobes \$\\sim{}4\%\$ of in \$2.92\\cdot{}10^{8}\$ years. to \$1.52\\cdot{}10^{7}\$ years." =>
 "consist of <span class='mathrm'>".chr(0x223c)."260,000</span> of subprobes <span class='mathrm'>".chr(0x223c)."4%</span> of in <span class='mathrm'>2.92".chr(0x22c5)."10<sup>8</sup></span> years. to <span class='mathrm'>1.52".chr(0x22c5)."10<sup>7</sup></span> years.", # Should remove empty braces too
 	'\\ensuremath{\\alpha}' => ('<span class=\'mathrm\'>'.chr(0x3b1).'</span>'), # Math mode by ensuremath
 );
 
 # General encode tests
-my %ENCODE_TESTS = (
-	'underscores _ should be escaped' => "underscores \\_{} should be escaped",
-	'#$%&_' => '\\#{}\\${}\\%{}\\&{}\\_{}',
+my @ENCODE_TESTS = (
+	'underscores _ should be escaped' => "underscores \\_ should be escaped",
+	'#$%&_' => '\\#\\$\\%\\&\\_',
 	'\\' => '\\texttt{\\char92}',
-	'^' => '\\texttt{\\char94}',
+	'^' => '\\^{ }',
 	'~' => '\\texttt{\\char126}',
-	'<>' => '$<$$>$',
-	chr(0xe6) => '\\ae{}',
+	'<>' => '\ensuremath{<}\ensuremath{>}',
+	chr(0xe6) => '\\ae',
 	chr(0xe6).'foo' => '\\ae{}foo',
 	chr(0x3b1) => '\\ensuremath{\\alpha}',
-	chr(0xe6).' foo' => '\\ae{} foo',
-	'abcd'.chr(0xe9).'fg' => 'abcd\\\'efg',
+	chr(0xe6).' foo' => '\\ae foo',
+	'abcd'.chr(0xe9).'fg' => 'abcd\\\'e{}fg',
 );
 
-while( my( $in, $out ) = each %DECODE_TESTS ) {
+while( my( $in, $out ) = splice(@DECODE_TESTS,0,2) ) {
 	is( decode('latex', $in), $out );
 }
 
-while( my( $in, $out ) = each %ENCODE_TESTS ) {
+while( my( $in, $out ) = splice(@ENCODE_TESTS,0,2) ) {
 	is( encode('latex', $in), $out );
 }
 
 # Check misquoting of tex strings ({})
-SKIP: {
-	skip "Pod::LaTeX::HTML_Escapes doesn't have mathrm{E}", 1 unless exists($TeX::Encode::LATEX_Math_mode{'mathrm{E}'});
-	
-	$str = 'mathrm $\\mathrm{E}$';
-	is(decode('latex', $str), 'mathrm <span class=\'mathrm\'>'.chr(917).'</span>');
-};
+$str = 'mathrm $\\mathrm{E}$';
+is(decode('latex', $str), 'mathrm <span class=\'mathrm\'>'.chr(917).'</span>');
 
 # Unsupported
 TODO: {
 	local $TODO = "No support yet for macro-based text twiddles";
 
 	my $str = "blah \$\\acute{e}\$ blah";
-	is(decode('latex',$str), "blah <i>".chr(0xe9)."</i> blah", $str);
+	is(decode('latex',$str), "blah ".chr(0xe9)." blah", $str);
 }
 
 ok(1);
