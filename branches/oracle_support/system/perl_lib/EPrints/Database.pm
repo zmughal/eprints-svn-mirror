@@ -696,6 +696,29 @@ sub update_ticket_userid
 	]);
 }
 
+=item $type_info = $db->type_info( DATA_TYPE )
+
+See L<DBI/type_info>.
+
+=cut
+
+sub type_info
+{
+	my( $self, $data_type ) = @_;
+
+	if( $data_type eq SQL_BIGINT )
+	{
+		return {
+			TYPE_NAME => "bigint",
+			CREATE_PARAMS => "",
+		};
+	}
+	else
+	{
+		return $self->{dbh}->type_info( $data_type );
+	}
+}
+
 ######################################################################
 =pod
 
@@ -726,10 +749,23 @@ sub get_column_type
 {
 	my( $self, $name, $data_type, $not_null, $length, $scale ) = @_;
 
-	my $type_info = $self->{dbh}->type_info( $data_type );
+	my $type_info = $self->type_info( $data_type );
+	my( $db_type, $params ) = @$type_info{
+		qw( TYPE_NAME CREATE_PARAMS )
+	};
 
-	my $db_type = $type_info->{TYPE_NAME};
-	my $params = $type_info->{CREATE_PARAMS};
+	if( !defined $db_type )
+	{
+		no strict "refs";
+		foreach my $type (@{$EPrints::Database::EXPORT_TAGS{sql_types}})
+		{
+			if( $data_type == &$type )
+			{
+				EPrints::abort( "DBI driver does not appear to support $type" );
+			}
+		}
+		EPrints::abort( "Unknown SQL data type, must be one of: ".join(', ', @{$EPrints::Database::EXPORT_TAGS{sql_types}}) );
+	}
 
 	my $type = $self->quote_identifier($name) . " " . $db_type;
 
@@ -917,7 +953,8 @@ sub create_sequence
 	my $sql = "CREATE SEQUENCE ".$self->quote_identifier($name)." " .
 		"INCREMENT BY 1 " .
 		"MINVALUE 0 " .
-		"MAXVALUE 999999999999999999999999999 " .
+		"MAXVALUE 9223372036854775807 " . # 2^63 - 1
+#		"MAXVALUE 999999999999999999999999999 " . # Oracle
 		"START WITH 1 ";
 
 	$rc &&= $self->do($sql);
@@ -1356,7 +1393,7 @@ sub quote_int
 {
 	my( $self, $value ) = @_;
 
-	return "NULL" unless( defined $value );
+	return "NULL" if !defined $value || $value =~ /\D/;
 
 	return $value+0;
 }
@@ -2095,37 +2132,21 @@ sub _cache_from_TABLE
 	my( $self, $cachemap, $dataset, $srctable, $order, $logic ) = @_;
 
 	my $cache_table  = $cachemap->get_sql_table_name;
-	my $cache_seq = $cache_table . "_seq";
-	my $cache_trigger = $cache_table . "_trig";
 	my $keyfield = $dataset->get_key_field();
 	$logic ||= [];
 
 	my $Q_cache_table = $self->quote_identifier( $cache_table );
-	my $Q_trigger = $self->quote_identifier( $cache_trigger );
-	my $NEXTVAL = $self->quote_identifier($cache_seq).".nextval";
 	my $Q_keyname = $self->quote_identifier($keyfield->get_name());
-	my $B = $self->quote_identifier("B");
 	my $O = $self->quote_identifier("O");
 	my $Q_srctable = $self->quote_identifier($srctable);
-	my $Q_pos = $self->quote_identifier( "pos" );
+	my $Q_pos = $self->quote_identifier("pos");
 
-	$self->create_sequence( $cache_seq );
-
-	my $sql = <<EOT;
-CREATE OR REPLACE TRIGGER $Q_trigger
-  BEFORE INSERT ON $Q_cache_table
-  FOR EACH ROW
-BEGIN
-  SELECT $NEXTVAL INTO :new.$Q_pos FROM dual;
-END;
-EOT
-	$self->do($sql);
-
-	$sql = "INSERT INTO $Q_cache_table ($Q_keyname) SELECT $B.$Q_keyname FROM $Q_srctable $B";
+	my $sql;
+	$sql .= "SELECT $Q_srctable.$Q_keyname FROM $Q_srctable";
 	if( defined $order )
 	{
 		$sql .= " LEFT JOIN ".$self->quote_identifier($dataset->get_ordervalues_table_name($self->{session}->get_langid()))." $O";
-		$sql .= " ON $B.$Q_keyname = $O.$Q_keyname";
+		$sql .= " ON $Q_srctable.$Q_keyname=$O.$Q_keyname";
 	}
 	if( scalar @$logic )
 	{
@@ -2148,11 +2169,26 @@ EOT
 			$first = 0;
 		}
 	}
+
+	return $self->_cache_from_SELECT( $cachemap, $dataset, $sql );
+}
+
+sub _cache_from_SELECT
+{
+	my( $self, $cachemap, $dataset, $select_sql ) = @_;
+
+	my $cache_table  = $cachemap->get_sql_table_name;
+	my $Q_pos = $self->quote_identifier( "pos" );
+	my $key_field = $dataset->get_key_field();
+	my $Q_keyname = $self->quote_identifier($key_field->get_sql_name);
+
+	my $sql = "";
+	$sql .= "INSERT INTO ".$self->quote_identifier( $cache_table );
+	$sql .= "($Q_pos, $Q_keyname)";
+	$sql .= " SELECT ROWNUM, $Q_keyname";
+	$sql .= " FROM ($select_sql) ".$self->quote_identifier( "S" );
+
 	$self->do( $sql );
-
-	$self->drop_sequence( $cache_seq );
-
-	$self->do("DROP TRIGGER $Q_trigger");
 }
 
 
@@ -4313,7 +4349,15 @@ sub get_dataobjs
 
 	# we build a list of OR statements to retrieve records
 	my $Q_key_name = $self->quote_identifier( $key_name );
-	my $logic = join(' OR ',map { "$Q_key_name=".$self->quote_value($_) } @ids);
+	my $logic = "";
+	if( $key_field->isa( "EPrints::MetaField::Int" ) )
+	{
+		$logic = join(' OR ',map { "$Q_key_name=".$self->quote_int($_) } @ids);
+	}
+	else
+	{
+		$logic = join(' OR ',map { "$Q_key_name=".$self->quote_value($_) } @ids);
+	}
 
 	# we need to map the returned rows back to the input order
 	my $i = 0;
@@ -4409,54 +4453,6 @@ sub get_dataobjs
 	@data = grep { defined $_ } @data;
 
 	return @data;
-}
-
-sub begin_cache_table
-{
-	my( $self, $cachemap, $keyfield ) = @_;
-
-	my $cache_table  = $cachemap->get_sql_table_name;
-	my $cache_seq = $cache_table . "_seq";
-	my $cache_trigger = $cache_table . "_trig";
-
-	$self->_create_table( $cache_table, ["pos"], [
-			$self->get_column_type( "pos", SQL_INTEGER, SQL_NOT_NULL ),
-			$keyfield->get_sql_type( $self->{session} ),
-			]);
-
-	$self->create_sequence( $cache_seq );
-
-	my $Q_cache_table = $self->quote_identifier( $cache_table );
-	my $Q_trigger = $self->quote_identifier( $cache_trigger );
-	my $Q_pos = $self->quote_identifier( "pos" );
-	my $NEXTVAL = $self->quote_identifier($cache_seq).".nextval";
-
-	my $sql = <<EOT;
-CREATE OR REPLACE TRIGGER $Q_trigger
-  BEFORE INSERT ON $Q_cache_table
-  FOR EACH ROW
-BEGIN
-  SELECT $NEXTVAL INTO :new.$Q_pos FROM dual;
-END;
-EOT
-	$self->do($sql);
-
-	return $cache_table;
-}
-
-sub finish_cache_table
-{
-	my( $self, $cachemap, $keyfield ) = @_;
-
-	my $cache_table  = $cachemap->get_sql_table_name;
-	my $cache_seq = $cache_table . "_seq";
-	my $cache_trigger = $cache_table . "_trig";
-
-	$self->drop_sequence( $cache_seq );
-
-	$self->do("DROP TRIGGER ".$self->quote_identifier( $cache_trigger ));
-
-	return $cache_table;
 }
 
 =item $sql = $db->prepare_regexp( $quoted_column, $quoted_value )

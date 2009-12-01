@@ -387,6 +387,26 @@ sub get_primary_key
 	return @COLS;
 }
 
+sub _cache_from_SELECT
+{
+	my( $self, $cachemap, $dataset, $select_sql ) = @_;
+
+	my $cache_table  = $cachemap->get_sql_table_name;
+	my $Q_pos = $self->quote_identifier( "pos" );
+	my $key_field = $dataset->get_key_field();
+	my $Q_keyname = $self->quote_identifier($key_field->get_sql_name);
+
+	$self->do("SET \@i=0");
+
+	my $sql = "";
+	$sql .= "INSERT INTO ".$self->quote_identifier( $cache_table );
+	$sql .= "($Q_pos, $Q_keyname)";
+	$sql .= " SELECT \@i:=\@i+1, $Q_keyname";
+	$sql .= " FROM ($select_sql) ".$self->quote_identifier( "S" );
+
+	$self->do( $sql );
+}
+
 sub prepare_regexp
 {
 	my( $self, $col, $value ) = @_;
