@@ -30,10 +30,7 @@ package EPrints::Search::Condition::IndexStart;
 
 use EPrints::Search::Condition::Index;
 
-BEGIN
-{
-	our @ISA = qw( EPrints::Search::Condition::Index );
-}
+@ISA = qw( EPrints::Search::Condition::Index );
 
 use strict;
 
@@ -50,55 +47,22 @@ sub new
 	return bless $self, $class;
 }
 
-sub get_table
-{
-	my( $self ) = @_;
-
-	return undef if( !defined $self->{field} );
-
-	return $self->{dataset}->get_sql_index_table_name;
-}
-
-
-
-sub item_matches
-{
-	my( $self, $item ) = @_;
-
-	my( $codes, $grepcodes, $badwords ) =
-		$self->{field}->get_index_codes(
-			$item->get_session,
-			$item->get_value( $self->{field}->get_name ) );
-
-	my $p = $self->{params}->[0];
-	foreach my $code ( @{$codes} )
-	{
-		return( 1 ) if( substr( $code, 0, length $p ) eq $p );
-	}
-
-	return( 0 );
-}
-
-sub get_op_val
-{
-	return 1;
-}
-
-sub get_query_logic
+sub logic
 {
 	my( $self, %opts ) = @_;
 
+	my $prefix = $opts{prefix};
+	$prefix = "" if !defined $prefix;
+
 	my $db = $opts{session}->get_database;
-	my $field = $self->{field};
-	my $dataset = $field->{dataset};
+	my $table = $prefix . $self->table;
+	my $sql_name = $self->{field}->get_sql_name;
 
-	my $q_table = $db->quote_identifier($self->{join}->{alias});
-	my $q_fieldname = $db->quote_identifier("field");
-	my $q_fieldvalue = $db->quote_value($field->get_sql_name);
-	my $q_word = $db->quote_identifier("word");
-	my $q_value = EPrints::Database::prep_like_value( $self->{params}->[0] );
-
-	return "($q_table.$q_fieldname = $q_fieldvalue AND $q_table.$q_word LIKE '$q_value\%')";
+	return sprintf( "%s=%s AND %s LIKE '%s%%'",
+		$db->quote_identifier( $table, "field" ),
+		$db->quote_value( $sql_name ),
+		$db->quote_identifier( $table, "word" ),
+		EPrints::Database::prep_like_value( $self->{params}->[0] ) );
 }
 
 1;

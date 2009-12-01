@@ -26,12 +26,9 @@ Exists only during optimisation and is removed again.
 
 package EPrints::Search::Condition::Pass;
 
-use EPrints::Search::Condition;
+use EPrints::Search::Condition::True;
 
-BEGIN
-{
-	our @ISA = qw( EPrints::Search::Condition );
-}
+@ISA = qw( EPrints::Search::Condition::True );
 
 use strict;
 
@@ -40,18 +37,6 @@ sub new
 	my( $class, @params ) = @_;
 
 	return bless { op=>"PASS" }, $class;
-}
-
-sub item_matches
-{
-	my( $self, $item ) = @_;
-
-	EPrints::abort( "item_matches called on Pass condition.");
-}
-
-sub get_op_val
-{
-	return 0;
 }
 
 1;

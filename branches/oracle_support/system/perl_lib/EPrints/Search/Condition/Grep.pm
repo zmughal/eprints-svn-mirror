@@ -26,12 +26,9 @@ Filter using a grep table
 
 package EPrints::Search::Condition::Grep;
 
-use EPrints::Search::Condition;
+use EPrints::Search::Condition::Index;
 
-BEGIN
-{
-	our @ISA = qw( EPrints::Search::Condition );
-}
+@ISA = qw( EPrints::Search::Condition::Index );
 
 use strict;
 
@@ -48,83 +45,43 @@ sub new
 	return bless $self, $class;
 }
 
-
-sub item_matches
+sub table
 {
-	my( $self, $item ) = @_;
+	my( $self ) = @_;
 
- 	my $keyfield = $self->{dataset}->get_key_field();
-	my $sql_col = $self->{field}->get_sql_name;
+	return undef if( !defined $self->{field} );
 
-	my( $codes, $grepcodes, $badwords ) =
-		$self->{field}->get_index_codes(
-			$item->get_session,
-			$item->get_value( $self->{field}->get_name ) );
-
-	my @re = ();
-	foreach( @{$self->{params}} )
-	{
-		my $r = $_;
-		$r =~ s/([^a-z0-9%?])/\\$1/gi;
-		$r =~ s/\%/.*/g;
-		$r =~ s/\?/./g;
-		push @re, $r;
-	}
-		
-	my $regexp = '^('.join( '|', @re ).')$';
-
-	foreach my $grepcode ( @{$grepcodes} )
-	{
-		return( 1 ) if( $grepcode =~ m/$regexp/ );
-	}
-
-	return( 0 );
+	return $self->{field}->{dataset}->get_sql_grep_table_name;
 }
 
-sub get_op_val
-{
-	return 4;
-}
-
-sub get_query_joins
-{
-	my( $self, $joins, %opts ) = @_;
-
-	my $field = $self->{field};
-	my $dataset = $field->{dataset};
-
-	$joins->{$dataset->confid} ||= { dataset => $dataset };
-	$joins->{$dataset->confid}->{'multiple'} ||= [];
-
-	my $alias = $dataset->get_sql_grep_table_name( $field );
-	push @{$joins->{$dataset->confid}->{'multiple'}}, $self->{join} = {
-		table => $alias,
-		alias => $alias,
-		key => $dataset->get_key_field->get_sql_name,
-	};
-}
-
-sub get_query_logic
+sub logic
 {
 	my( $self, %opts ) = @_;
 
-	my $db = $opts{session}->get_database;
-	my $field = $self->{field};
-	my $dataset = $field->{dataset};
+	my $prefix = $opts{prefix};
+	$prefix = "" if !defined $prefix;
+	if( !$self->{field}->get_property( "multiple" ) )
+	{
+		$prefix = "";
+	}
 
-	my $q_table = $db->quote_identifier($self->{join}->{alias});
-	my $q_grepstring = $db->quote_identifier("grepstring");
-	my $q_fieldname = $db->quote_identifier("fieldname");
-	my $q_fieldvalue = $db->quote_value($field->get_sql_name);
+	my $db = $opts{session}->get_database;
+	my $table = $prefix . $self->table;
+	my $sql_name = $self->{field}->get_sql_name;
 
 	my @logic;
 	foreach my $cond (@{$self->{params}})
 	{
 		# escape $cond value in any way?
-		push @logic, "$q_table.$q_grepstring LIKE '$cond'";
+		push @logic, sprintf("%s LIKE '%s'",
+			$db->quote_identifier( $table, "grepstring" ),
+			$cond );
 	}
 
-	return "(($q_table.$q_fieldname = $q_fieldvalue) AND (".join( " OR ", @logic )."))";
+	return sprintf( "%s=%s AND (%s)",
+		$db->quote_identifier( $table, "fieldname" ),
+		$db->quote_value( $sql_name ),
+		join(" OR ", @logic));
 }
 
 1;

@@ -44,26 +44,24 @@ sub new
 	return bless $self, $class;
 }
 
-sub item_matches
-{
-	my( $self, $item ) = @_;
-
-	# TODO
-
-	return( 0 );
-}
-
-sub get_query_logic
+sub logic
 {
 	my( $self, %opts ) = @_;
 
+	my $prefix = $opts{prefix};
+	$prefix = "" if !defined $prefix;
+	if( !$self->{field}->get_property( "multiple" ) )
+	{
+		$prefix = "";
+	}
+
 	my $db = $opts{session}->get_database;
-	my $field = $self->{field};
-	my $table = $self->{join}->{alias};
+	my $table = $prefix . $self->table;
+	my $sql_name = $self->{field}->get_sql_name;
 
 	# "REGEXP ($q_table.$q_name, $q_value)"
 	return $db->prepare_regexp(
-		$db->quote_identifier( $table, $field->get_sql_name ),
+		$db->quote_identifier( $table, $sql_name ),
 		$db->quote_value( $self->{params}->[0] ) );
 }
 

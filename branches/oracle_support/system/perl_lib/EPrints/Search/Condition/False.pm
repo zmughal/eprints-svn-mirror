@@ -28,10 +28,7 @@ package EPrints::Search::Condition::False;
 
 use EPrints::Search::Condition;
 
-BEGIN
-{
-	our @ISA = qw( EPrints::Search::Condition );
-}
+@ISA = qw( EPrints::Search::Condition );
 
 use strict;
 
@@ -42,20 +39,7 @@ sub new
 	return bless { op=>"FALSE" }, $class;
 }
 
-sub item_matches
-{
-	my( $self, $item ) = @_;
-
-	return 0;
-}
-
-sub get_op_val
-{
-	return 0;
-}
-
-# always FALSE
-sub get_query_logic
+sub logic
 {
 	return "1=0";
 }

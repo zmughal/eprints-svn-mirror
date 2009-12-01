@@ -28,10 +28,7 @@ package EPrints::Search::Condition::Or;
 
 use EPrints::Search::Condition::Control;
 
-BEGIN
-{
-	our @ISA = qw( EPrints::Search::Condition::Control );
-}
+@ISA = qw( EPrints::Search::Condition::Control );
 
 use strict;
 
@@ -49,90 +46,79 @@ sub new
 
 sub optimise_specific
 {
-	my( $self ) = @_;
-
-	my $tree = $self;
+	my( $self, %opts ) = @_;
 
 	my $keep_ops = [];
-	foreach my $sub_op ( @{$tree->{sub_ops}} )
+	foreach my $sub_op ( @{$self->{sub_ops}} )
 	{
-		# if an OR contains TRUE or an
-		# AND contains FALSE then we can
-		# cancel it all out.
-		return $sub_op if( $sub_op->{op} eq "TRUE" );
+		# {ANY} OR TRUE is always TRUE
+		return $sub_op if $sub_op->{op} eq "TRUE";
 
-		# just filter these out
-		next if( $sub_op->{op} eq "FALSE" );
+		# {ANY} OR FALSE is always {ANY}
+		next if @{$keep_ops} > 0 && $sub_op->{op} eq "FALSE";
 		
 		push @{$keep_ops}, $sub_op;
 	}
-	$tree->{sub_ops} = $keep_ops;
+	$self->{sub_ops} = $keep_ops;
 
-	return $tree;
-}
+	return $self if @{$self->{sub_ops}} == 1;
 
-sub item_matches
-{
-	my( $self, $item ) = @_;
-
-	foreach my $sub_op ( $self->ordered_ops )
-	{
-		my $r = $sub_op->item_matches( $item );
-		return( 1 ) if( $r == 1 );
-	}
-
-	return( 0 );
-}
-
-sub get_query_joins
-{
-	my( $self, $joins, %opts ) = @_;
+	my $dataset = $opts{dataset};
 
 	my %tables;
-
-	foreach my $sub_op ( $self->ordered_ops )
+	$keep_ops = [];
+	foreach my $sub_op ( @{$self->{sub_ops}} )
 	{
-		$sub_op->get_query_joins( $joins, %opts );
-		# note the tables used by this sub-op (if any)
-		if( defined $sub_op->{join} && defined $sub_op->{join}->{table} )
+		my $inner_dataset = $sub_op->dataset;
+		my $table = $sub_op->table;
+		# either don't need a LEFT JOIN (e.g. TRUE) or is on the main table
+		if( !defined $inner_dataset || $table eq $dataset->get_sql_table_name )
 		{
-			push @{$tables{$sub_op->{join}->{table}}||=[]}, $sub_op;
+			push @$keep_ops, $sub_op;
+		}
+		else
+		{
+			push @{$tables{$table}||=[]}, $sub_op;
 		}
 	}
 
-	# performing an OR using table joins is very inefficient compared to
-	# table.column = 'foo' OR table.column = 'bar'
-	# The following code collapses table join ORs into a logical OR
-
-	my %remove;
-	while(my( $table, $sub_ops ) = each %tables)
+	foreach my $table (keys %tables)
 	{
-		for(my $i = 1; $i < @$sub_ops; ++$i)
-		{
-			$remove{$sub_ops->[$i]->{join}->{alias}} = 1;
-			$sub_ops->[$i]->{join} = $sub_ops->[0]->{join};
-		}
+		push @$keep_ops, EPrints::Search::Condition::SubQuery->new(
+				$tables{$table}->[0]->dataset,
+				@{$tables{$table}}
+			);
 	}
+	$self->{sub_ops} = $keep_ops;
 
-	foreach my $datasetid (keys %$joins)
-	{
-		my $multiple = $joins->{$datasetid}->{multiple} || [];
-		@$multiple = grep { !exists( $remove{$_->{alias}} ) } @$multiple;
-	}
+	return $self;
 }
 
-sub get_query_logic
+sub joins
 {
 	my( $self, %opts ) = @_;
 
-	my @logic;
-	foreach my $sub_op ( $self->ordered_ops )
+	my $db = $opts{session}->get_database;
+	my $dataset = $opts{dataset};
+
+	my %joins;
+	foreach my $sub_op ( @{$self->{sub_ops}} )
 	{
-		push @logic, $sub_op->get_query_logic( %opts );
+		foreach my $join ( $sub_op->joins( %opts ) )
+		{
+			$join->{type} = "left";
+			$joins{$join->{alias}} = $join;
+		}
 	}
 
-	return "(" . join(") OR (", @logic) . ")";
+	return values %joins;
 }
 
+sub logic
+{
+	my( $self, %opts ) = @_;
+
+	return "(" . join(" OR ", map { $_->logic( %opts ) } @{$self->{sub_ops}}) . ")";
+}
 
 1;

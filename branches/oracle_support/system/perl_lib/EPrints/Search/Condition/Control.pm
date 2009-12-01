@@ -28,10 +28,7 @@ package EPrints::Search::Condition::Control;
 
 use EPrints::Search::Condition;
 
-BEGIN
-{
-	our @ISA = qw( EPrints::Search::Condition );
-}
+@ISA = qw( EPrints::Search::Condition );
 
 use strict;
 
@@ -46,28 +43,16 @@ sub new
 # nb. this is only good for AND and OR. Not would need a custom version of this.
 sub optimise
 {
-	my( $self, $internal ) = @_;
+	my( $self, %opts ) = @_;
 
 	my $tree = $self;
 
 	my @new_sub_ops = ();
 	foreach my $sub_op ( @{$tree->{sub_ops}} )
 	{
-		push @new_sub_ops, $sub_op->optimise( 1 );
+		push @new_sub_ops, $sub_op->optimise( %opts );
 	}
 	$tree->{sub_ops} = \@new_sub_ops;
-
-
-
-	# strip passes 
-	my @sureops = ();
-	foreach my $sub_op ( @{$tree->{sub_ops}} )
-	{
-		next if( $sub_op->{op} eq "PASS" );
-		push @sureops, $sub_op;
-	}
-
-	$tree->{sub_ops} = \@sureops;
 
 	# flatten sub opts with the same type
 	# so OR( A, OR( B, C ) ) becomes OR(A,B,C)
@@ -76,24 +61,23 @@ sub optimise
 	{
 		if( $sub_op->{op} eq $tree->{op} )
 		{
-			push @{$flat_ops}, 
-				@{$sub_op->{sub_ops}};
-			next;
+			push @{$flat_ops}, @{$sub_op->{sub_ops}};
 		}
-		
-		push @{$flat_ops}, $sub_op;
+		else
+		{
+			push @{$flat_ops}, $sub_op;
+		}
 	}
 	$tree->{sub_ops} = $flat_ops;
 
-
 	# control-specific condition stuff
-	$tree = $tree->optimise_specific();
+	$tree = $tree->optimise_specific( %opts );
 
 
 	# no items, match nothing.
 	if( !defined $tree->{sub_ops} || scalar @{$tree->{sub_ops}} == 0 )
 	{
-		return EPrints::Search::Condition::Pass->new();
+		return EPrints::Search::Condition::True->new();
 	}
 
 	# only one sub option, just return it.
@@ -103,50 +87,6 @@ sub optimise
 	}
 
 	return $tree;
-}
-
-######################################################################
-=pod
-
-=item @ops = $scond->ordered_ops
-
-AND or OR conditions only. Return the sub conditions ordered by 
-approximate ease. This is used to make sure a TRUE or FALSE is
-prcessed before an index-lookup, and that everthing else is is tried 
-before a grep OP (which uses LIKE). This means that it can often
-give up before the expensive operation is needed.
-
-=cut
-######################################################################
-
-sub ordered_ops
-{
-	my( $self ) = @_;
-
-	return sort { $a->get_op_val <=> $b->get_op_val } @{$self->{sub_ops}};
-}
-
-# special handling if first item in the list is
-sub item_matches
-{
-	my( $self, $item ) = @_;
-
-	EPrints::abort( "item_matches called on abstract Control condition.");
-}
-
-sub get_op_val
-{
-	return 3;
-}
-
-sub get_query_joins
-{
-	my( $self, $joins, %opts ) = @_;
-
-	foreach my $sub_op ( $self->ordered_ops )
-	{
-		$sub_op->get_query_joins( $joins, %opts );
-	}
 }
 
 1;

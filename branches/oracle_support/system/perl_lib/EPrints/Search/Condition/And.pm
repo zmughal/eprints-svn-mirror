@@ -28,10 +28,7 @@ package EPrints::Search::Condition::And;
 
 use EPrints::Search::Condition::Control;
 
-BEGIN
-{
-	our @ISA = qw( EPrints::Search::Condition::Control );
-}
+@ISA = qw( EPrints::Search::Condition::Control );
 
 use strict;
 
@@ -48,52 +45,52 @@ sub new
 
 sub optimise_specific
 {
-	my( $self ) = @_;
-
-	my $tree = $self;
+	my( $self, %opts ) = @_;
 
 	my $keep_ops = [];
-	foreach my $sub_op ( @{$tree->{sub_ops}} )
+	foreach my $sub_op ( @{$self->{sub_ops}} )
 	{
 		# if an OR contains TRUE or an
 		# AND contains FALSE then we can
 		# cancel it all out.
-		return $sub_op if( $sub_op->{op} eq "FALSE" );
+		return $sub_op if $sub_op->{op} eq "FALSE";
 
 		# just filter these out
-		next if( $sub_op->{op} eq "TRUE" );
+		next if @$keep_ops > 0 && $sub_op->{op} eq "TRUE";
 		
 		push @{$keep_ops}, $sub_op;
 	}
-	$tree->{sub_ops} = $keep_ops;
+	$self->{sub_ops} = $keep_ops;
 
-	return $tree;
+	return $self;
 }
 
-sub item_matches
-{
-	my( $self, $item ) = @_;
-
-	foreach my $sub_op ( $self->ordered_ops )
-	{
-		my $r = $sub_op->item_matches( $item );
-		return( 0 ) if( $r == 0 );
-	}
-
-	return( 1 );
-}
-
-sub get_query_logic
+sub joins
 {
 	my( $self, %opts ) = @_;
 
-	my @logic;
-	foreach my $sub_op ( $self->ordered_ops )
+	my $i = 0;
+	my %seen;
+	my @joins;
+	foreach my $sub_op ( @{$self->{sub_ops}} )
 	{
-		push @logic, $sub_op->get_query_logic( %opts );
+		foreach my $join ( $sub_op->joins( %opts, prefix => "and_".$i++."_" ) )
+		{
+			next if $seen{$join->{alias}};
+			$seen{$join->{alias}} = 1;
+			push @joins, $join;
+		}
 	}
 
-	return "(" . join(") AND (", @logic) . ")";
+	return @joins;
+}
+
+sub logic
+{
+	my( $self, %opts ) = @_;
+
+	my $i = 0;
+	return join(" AND ", map { $_->logic( %opts, prefix => "and_".$i++."_" ) } @{$self->{sub_ops}});
 }
 
 1;
