@@ -706,17 +706,7 @@ sub type_info
 {
 	my( $self, $data_type ) = @_;
 
-	if( $data_type eq SQL_BIGINT )
-	{
-		return {
-			TYPE_NAME => "bigint",
-			CREATE_PARAMS => "",
-		};
-	}
-	else
-	{
-		return $self->{dbh}->type_info( $data_type );
-	}
+	return $self->{dbh}->type_info( $data_type );
 }
 
 ######################################################################
