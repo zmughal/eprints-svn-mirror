@@ -313,20 +313,20 @@ sub has_column
 {
 	my( $self, $table, $column ) = @_;
 
-	my $rc = 0;
+	my $sql = "SELECT 1 FROM USER_TAB_COLUMNS WHERE TABLE_NAME=".$self->quote_value( uc($table) )." AND COLUMN_NAME=".$self->quote_value( uc($column) );
+	my $rows = $self->{dbh}->selectall_arrayref( $sql );
 
-	local $self->{dbh}->{RaiseError} = 0;
-	local $self->{dbh}->{PrintError} = 0;
+	return scalar @$rows;
+}
 
-	my $sql = "SELECT 1 FROM ".$self->quote_identifier($table)." WHERE ".$self->quote_identifier($column)." is Null";
-	my $sth = eval { $self->prepare( $sql ) };
-	if( defined $sth )
-	{
-		$rc = 1;
-		$sth->finish;
-	}
+sub has_table
+{
+	my( $self, $table ) = @_;
 
-	return $rc;
+	my $sql = "SELECT 1 FROM USER_TABLES WHERE TABLE_NAME=".$self->quote_value( uc($table) );
+	my $rows = $self->{dbh}->selectall_arrayref( $sql );
+
+	return scalar @$rows;
 }
 
 sub create_dataset_ordervalues_tables
