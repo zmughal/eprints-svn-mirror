@@ -526,6 +526,11 @@ sub process
 		my $key_field = $dataset->get_key_field;
 		my $cache_table = $cachemap->get_sql_table_name;
 
+		$db->_create_table( $cache_table, ["pos"], [
+				$db->get_column_type( "pos", SQL_INTEGER, SQL_NOT_NULL ),
+				$key_field->get_sql_type( $session, 1 ),
+				]);
+
 #print STDERR "EXECUTING: $sql\n";
 		$db->_cache_from_SELECT( $cachemap, $dataset, $sql );
 
