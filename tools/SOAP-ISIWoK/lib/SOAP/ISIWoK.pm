@@ -2,33 +2,116 @@ package SOAP::ISIWoK;
 
 use 5.008;
 use strict;
-use warnings;
 
-require Exporter;
+use SOAP::Lite
+#	+trace => "all"
+;
+use XML::Simple;
 
-our @ISA = qw(Exporter);
+our $VERSION = '1.00';
 
-# Items to export into callers namespace by default. Note: do not export
-# names by default without a very good reason. Use EXPORT_OK instead.
-# Do not simply export all your public functions/methods/constants.
+our $ISI_ENDPOINT = "http://wok-ws.isiknowledge.com/esti/soap/SearchRetrieve";
+our $ISI_NS = "http://esti.isinet.com/soap/search";
 
-# This allows declaration	use SOAP::ISIWoK ':all';
-# If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
-# will save memory.
-our %EXPORT_TAGS = ( 'all' => [ qw(
-	
-) ] );
+sub new
+{
+	my( $class, %self ) = @_;
 
-our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
+	my $self = bless \%self, ref($class) || $class;
 
-our @EXPORT = qw(
-	
-);
+	return $self;
+}
 
-our $VERSION = '0.01';
+sub _soap
+{
+	my( $self ) = @_;
 
+	my $soap = SOAP::Lite->new();
+	$soap->proxy( $ISI_ENDPOINT );
 
-# Preloaded methods go here.
+# don't include namespace in actions
+	$soap->on_action(sub { qq("$_[1]") });
+#$soap->on_fault(sub { print STDERR "Error: $_[1]" });
+
+# don't guess auto types
+	$soap->autotype(0);
+# send pretty-printed XML
+	$soap->readable(1);
+# put everything in the ISI namespace
+	$soap->default_ns($ISI_NS);
+
+	return $soap;
+}
+
+sub search
+{
+	my( $self, $query, %opts ) = @_;
+
+	my $offset = exists $opts{offset} ? $opts{offset} : 1;
+	my $max = exists $opts{max} ? $opts{max} : 10;
+	my $database = exists $opts{database} ? $opts{database} : "WOS";
+	my $fields = exists $opts{fields} ? $opts{fields} : [qw( times_cited )];
+
+	my $soap = $self->_soap();
+
+	# ISI requires every argument be included, even if it's blank
+	my $som = $soap->call("searchRetrieve",
+			SOAP::Data->name("databaseID")->value($database),
+			SOAP::Data->name("query")->value($query),
+			# depth is the time period
+			SOAP::Data->name("depth")->value(""),
+			# editions is SCI, SSCI etc.
+			SOAP::Data->name("editions")->value(""),
+			# sort by descending relevance
+			SOAP::Data->name("sort")->value("Relevance"),
+			# start returning records at 1
+			SOAP::Data->name("firstRec")->value("$offset"),
+			# return upto 10 records
+			SOAP::Data->name("numRecs")->value("$max"),
+			# NOTE: if no fields are specified all are returned, times_cited is
+			# an option
+			SOAP::Data->name("fields")->value(join(" ", @$fields)),
+		);
+	# something went wrong
+	die $som->fault->{ faultstring } if $som->fault;
+
+	my $result = $som->result;
+
+	my $total = $result->{"recordsFound"};
+
+	my $xml = XML::Simple::XMLin( $result->{records}, ForceArray => 1 );
+	return $xml->{REC} || [];
+
+=pod
+
+=for LibXML
+
+	my @records;
+
+	my $parser = XML::LibXML->new;
+	my $doc = $parser->parse_string( $result->{records} );
+print STDERR $doc->toString( 1 );
+	foreach my $node ($doc->documentElement->childNodes)
+	{
+		next unless $node->isa( "XML::LibXML::Element" );
+		my $record = {
+			timescited => $node->getAttribute( "timescited" ),
+		};
+		my( $item ) = $node->getElementsByTagName( "item" );
+		$record->{"year"} = $item->getAttribute( "coverdate" );
+		$record->{"year"} =~ s/^(\d{4}).+/$1/; # yyyymm
+		my( $ut ) = $item->getElementsByTagName( "ut" );
+		$record->{"primarykey"} = $ut->textContent;
+		my( $item_title ) = $item->getElementsByTagName( "item_title" );
+		$record->{"title"} = $item_title->textContent;
+		push @records, $record;
+	}
+
+	return @records;
+
+=cut
+
+}
 
 1;
 __END__
@@ -36,20 +119,22 @@ __END__
 
 =head1 NAME
 
-SOAP::ISIWoK - Perl extension for blah blah blah
+SOAP::ISIWoK - search and query the ISI Web of Knowledge
 
 =head1 SYNOPSIS
 
   use SOAP::ISIWoK;
-  blah blah blah
+
+  my $wok = SOAP::ISIWoK->new();
+
+  my $results = $wok->search( "AU = (Brody)" );
+  my $results = $wok->search( "AU = (Brody)", offset => 10, max => 20 );
+
+  print $results->[0]->{title};
 
 =head1 DESCRIPTION
 
-Stub documentation for SOAP::ISIWoK, created by h2xs. It looks like the
-author of the extension was negligent enough to leave the stub
-unedited.
-
-Blah blah blah.
+This module is a thin wrapper for the ISI Web of Knowledge SOAP interface.
 
 =head2 EXPORT
 
@@ -80,18 +165,11 @@ Original version; created by h2xs 1.23 with options
 
 =head1 SEE ALSO
 
-Mention other useful documentation such as the documentation of
-related modules or operating system documentation (such as man pages
-in UNIX), or any relevant external documentation such as RFCs or
-standards.
-
-If you have a mailing list set up for your module, mention it here.
-
-If you have a web site set up for your module, mention it here.
+L<SOAP::Lite>, http://www.isiknowledge.com/
 
 =head1 AUTHOR
 
-Tim D Brody, E<lt>tdb2@localdomainE<gt>
+Timothy D Brody, E<lt>tdb2@ecs.soton.ac.uk<gt>
 
 =head1 COPYRIGHT AND LICENSE
 

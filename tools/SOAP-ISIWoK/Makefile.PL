@@ -5,8 +5,11 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     NAME              => 'SOAP::ISIWoK',
     VERSION_FROM      => 'lib/SOAP/ISIWoK.pm', # finds $VERSION
-    PREREQ_PM         => {}, # e.g., Module::Name => 1.1
+    PREREQ_PM         => {
+		"SOAP::Lite" => 0.01,
+		"XML::Simple" => 0.01,
+		}, # e.g., Module::Name => 1.1
     ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM  => 'lib/SOAP/ISIWoK.pm', # retrieve abstract from module
-       AUTHOR         => 'Tim D Brody <tdb2@localdomain>') : ()),
+       AUTHOR         => 'Timothy D Brody <tdb2@ecs.soton.ac.uk>') : ()),
 );
