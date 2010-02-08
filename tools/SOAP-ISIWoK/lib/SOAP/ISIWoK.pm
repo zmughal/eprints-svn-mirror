@@ -1,12 +1,12 @@
 package SOAP::ISIWoK;
 
-use 5.008;
-use strict;
-
 use SOAP::Lite
 #	+trace => "all"
 ;
 use XML::Simple;
+
+use 5.008;
+use strict;
 
 our $VERSION = '1.00';
 
