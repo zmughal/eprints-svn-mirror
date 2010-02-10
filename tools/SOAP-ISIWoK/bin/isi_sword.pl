@@ -79,8 +79,6 @@ use constant {
 	NS_ATOM     => 'http://www.w3.org/2005/Atom',
 };
 
-our $VERSION = "1.00";
-
 use XML::LibXML;
 use XML::LibXML::XPathContext;
 use XML::LibXSLT;
@@ -88,6 +86,8 @@ use SOAP::ISIWoK;
 use Getopt::Long;
 use Pod::Usage;
 use LWP::UserAgent;
+
+our $VERSION = $SOAP::ISIWoK::VERSION;
 
 my $opt_version;
 my $opt_help = 0;
