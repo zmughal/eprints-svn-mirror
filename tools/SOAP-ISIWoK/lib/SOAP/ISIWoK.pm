@@ -1,14 +1,15 @@
 package SOAP::ISIWoK;
 
+use Carp;
 use SOAP::Lite
 #	+trace => "all"
 ;
-use XML::Simple;
+use XML::LibXML;
 
 use 5.008;
 use strict;
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 our $ISI_ENDPOINT = "http://wok-ws.isiknowledge.com/esti/soap/SearchRetrieve";
 our $ISI_NS = "http://esti.isinet.com/soap/search";
@@ -73,14 +74,20 @@ sub search
 			SOAP::Data->name("fields")->value(join(" ", @$fields)),
 		);
 	# something went wrong
-	die $som->fault->{ faultstring } if $som->fault;
+	if( $som->fault )
+	{
+		Carp::croak "ISI responded with error: " . $som->fault->{ faultstring };
+	}
 
 	my $result = $som->result;
 
 	my $total = $result->{"recordsFound"};
 
-	my $xml = XML::Simple::XMLin( $result->{records}, ForceArray => 1 );
-	return $xml->{REC} || [];
+	my $doc = XML::LibXML->new->parse_string( $result->{records} );
+	my $records = $doc->documentElement;
+	$records->setAttribute( recordsFound => $total );
+
+	return $doc;
 
 =pod
 

@@ -1,6 +1,10 @@
+bin/ep3.xsl
+bin/isi_sword.pl
+examples/isi_carr.xml
+lib/SOAP/ISIWoK.pm
 Makefile.PL
 MANIFEST
+MANIFEST.SKIP
 README
-t/SOAP-ISIWoK.t
 t/01_live.t
-lib/SOAP/ISIWoK.pm
+t/SOAP-ISIWoK.t

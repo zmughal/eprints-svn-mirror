@@ -12,4 +12,5 @@ WriteMakefile(
     ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM  => 'lib/SOAP/ISIWoK.pm', # retrieve abstract from module
        AUTHOR         => 'Timothy D Brody <tdb2@ecs.soton.ac.uk>') : ()),
+	dist              => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
 );

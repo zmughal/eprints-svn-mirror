@@ -20,7 +20,6 @@ SKIP: {
 
 	my $results = $wok->search( "OG = (Southampton)", max => 2 );
 
-	use Data::Dumper;
-	diag( Data::Dumper::Dumper( $results ) );
+	diag( $results->toString( 1 ) );
 	ok(1);
 };
