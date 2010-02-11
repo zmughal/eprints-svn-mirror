@@ -201,6 +201,9 @@ sub get_system_field_info
 
 		{ name=>"longitude", type=>"float", required=>0 },
 
+                { name=>"shelves_fields", type=>"fields", datasetid=>"shelf",
+                        multiple=>1, input_ordered=>1, required=>1, volatile=>1 },
+
 	)
 };
 
