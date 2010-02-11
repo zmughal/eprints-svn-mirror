@@ -1,0 +1,749 @@
+#!/usr/bin/perl -w -I/opt/eprints3/perl_lib
+
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+=pod
+
+=head1 NAME
+
+B<generate_apacheconf> - Create the apache config files needed for EPrints
+
+=head1 SYNOPSIS
+
+B<generate_apacheconf> [B<options>] 
+
+=head1 DESCRIPTION
+
+This script generates the apache config files which will be used by EPrints. In the simple case all you need to do is run this script then add a line to your main apache configuration file - often, but not always, B</usr/local/apache/conf/httpd.conf>
+
+ Include /opt/eprints3/cfg/apache.conf
+
+Or elsewhere if you installed EPrints somewhere other than /opt/eprints3. This file then uses the "Include" directive to include all relevant apache config files from this EPrints installation.
+
+By default the virtualhost directives are
+
+ VirtualHost *
+
+But the * can be changed to something different by editing the C<virtualhost> option in SystemSettings.pm
+
+=head1 ARGUMENTS
+
+=over 8
+
+=back
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--help>
+
+Print a brief help message and exit.
+
+=item B<--man>
+
+Print the full manual page and then exit.
+
+=item B<--quiet>
+
+Be vewwy vewwy quiet. This option will supress all output unless an error occurs.
+
+=item B<--verbose>
+
+Explain in detail what is going on.
+May be repeated for greater effect.
+
+=item B<--version>
+
+Output version information and exit.
+
+=back   
+
+=head1 FILES
+
+=over 4
+
+=item B<EPRINTS/cfg/apache.conf>
+
+This file is not updated if it already exists, so you can add system-wide
+apache configuration directives here. By default it just includes the two other system wide files: auto-apache-includes.conf and auto-apache.conf
+
+=item B<EPRINTS/cfg/auto-apache-includes.conf>
+
+This file is updated with Include lines to each of the repository specific apache config files. This file should not be edited by hand,
+
+=item B<EPRINTS/cfg/auto-apache.conf>
+
+This file contains the system wide apache directives required by EPrints. This file should not be edited by hand.
+
+=item B<EPRINTS/archives/ARCHIVEDIR/cfg/apache.conf>
+
+This file is not updated if it already exists, so you can add repository-specific
+apache configuration directives here. By default it just includes the automatically generated repository specific file: auto-apache.conf
+
+=item B<EPRINTS/archives/ARCHIVEDIR/var/auto-apache.conf>
+
+This file contains all the configuration directives needed for an repository. This is where the bulk of the configuration appears, the clever stuff, if you will. This file should not be edited by hand.
+
+=item B<EPRINTS/archives/ARCHIVEDIR/var/auto-secure.conf>
+
+Only created if the repository has a securehost configured. This file contains all the configuration options that need to be included into the secure server virtualhost.
+
+=item B<EPRINTS/archives/ARCHIVEDIR/cfg/apachevhost.conf>
+
+This file is not updated if it already exists, it is included into the virutalhost in auto-apache.conf so that you can a couple of additional directives if you need to. For example, redirects or additional log directives.
+
+=back
+
+__GENERICPOD__
+
+=cut
+
+
+use EPrints;
+
+use strict;
+use Getopt::Long;
+use Pod::Usage;
+
+my $version = 0;
+my $verbose = 0;
+my $quiet = 0;
+my $help = 0;
+my $man = 0;
+
+Getopt::Long::Configure("permute");
+
+GetOptions( 
+	'help|?' => \$help,
+	'man' => \$man,
+	'version' => \$version,
+	'verbose+' => \$verbose,
+	'silent' => \$quiet,
+	'quiet' => \$quiet
+) || pod2usage( 2 );
+EPrints::Utils::cmd_version( "generate_apacheconf" ) if $version;
+pod2usage( 1 ) if $help;
+pod2usage( -exitstatus => 0, -verbose => 2 ) if $man;
+pod2usage( 2 ) if( scalar @ARGV != 0 ); 
+
+our $noise = 1;
+$noise = 0 if( $quiet );
+$noise = 1+$verbose if( $verbose );
+
+#cjg Write a more simple conf if only one language involved?
+
+# Set STDOUT to auto flush (without needing a \n)
+$|=1;
+
+# Load up the repositories
+my %reps = ();
+foreach my $repository_id ( EPrints::Config::get_repository_ids() )
+{
+	$reps{$repository_id} = new EPrints::Repository( $repository_id, 1 ); 
+	exit( 1 ) unless( defined $reps{$repository_id} );
+}
+
+my $av =  $EPrints::SystemSettings::conf->{apache};
+$av = "1" unless defined $av;
+
+my $site_sysfile = EPrints::Config::get( "var_path" )."/auto-apache.conf";
+my $site_incfile = EPrints::Config::get( "var_path" )."/auto-apache-includes.conf";
+my $site_userfile = EPrints::Config::get( "cfg_path" )."/apache.conf";
+
+print "Creating system wide apache conf files.\n" if( $noise >= 1 );
+
+# Clean up old auto files. Especially old secure ones
+opendir( my $dir, EPrints::Config::get( "var_path" ) );
+while( my $file = readdir( $dir ) )
+{
+	if( $file =~ m/^auto-.*\.conf$/ )
+	{
+		my $fn = EPrints::Config::get( "var_path" ).'/'.$file;
+		unlink( $fn );
+	}
+}
+
+unless( -e $site_userfile )
+{
+	print "Creating $site_userfile\n" if( $noise >= 2 );
+	open( CONF, ">$site_userfile" ) || die "Can't write to $site_userfile";
+	print CONF <<END;
+#
+# apache.conf include file for EPrints
+#
+# If this file exists then it will not be over written by
+#
+# Put your own extra directives for this site here
+#
+# Comment out the "Include" lines if you don't want to use the
+# autogenerated config for this repository.
+#
+
+# Include list of 'Include's for each repository
+Include $site_incfile
+
+# Include autogenerate apache.conf elements
+Include $site_sysfile
+
+
+
+
+END
+	close CONF;
+}
+else
+{
+	print "$site_userfile already exists.\n" if( $noise >= 2 );
+}
+
+my $virtualhost = EPrints::Config::get( "virtualhost" );
+if( !EPrints::Utils::is_set( $virtualhost ) )
+{
+	$virtualhost = '*';
+}
+
+print "Creating $site_sysfile\n" if( $noise >= 2 );
+my $startupfile = EPrints::Config::get( "bin_path" )."/startup.pl";
+open( CONF, ">$site_sysfile" ) || die "Can't write to $site_sysfile";
+print CONF <<END;
+#
+# auto-apache.conf include file for EPrints
+#
+# DO NOT EDIT, this file is created by bin/generate_apacheconf
+# and may be overwritten. To modify, change the repository configuration
+# and re-run: bin/generate_apacheconf
+#
+
+# Load the perl modules & repository configurations
+PerlSetEnv EPRINTS_APACHE $av
+PerlRequire $startupfile
+
+END
+my %portlist = ();
+foreach my $repository_id ( keys %reps ) 
+{
+	$portlist{$reps{$repository_id}->get_conf( 'port' )} = 1;
+}
+foreach my $port ( keys %portlist )
+{
+	print CONF "NameVirtualHost $virtualhost:$port\n";
+}
+print CONF "\n";
+
+if( $av eq "2" )
+{
+	# apache 2
+	print CONF <<END;
+# Makes the request object accessable for other objects
+# (apache 2.0 only)
+PerlOptions +GlobalRequest
+
+END
+}
+close CONF;
+
+########################################
+
+print "Creating $site_incfile\n" if( $noise >= 2 );
+open( CONF, ">$site_incfile" ) || die "Can't write to $site_incfile";
+print CONF <<END;
+#
+# auto-apache-includes.conf include file for EPrints
+#
+# DO NOT EDIT, this file is created by bin/generate_apacheconf
+# and may be overwritten. To modify, change the repository configuration
+# and re-run: bin/generate_apacheconf
+#
+# List of files to include for repository specific config...
+
+END
+foreach my $repository_id ( keys %reps ) 
+{
+	my $repository_inc = 
+		$reps{$repository_id}->get_conf( "archiveroot" )."/cfg/apache.conf";
+	print CONF <<END;
+# $repository_id
+Include $repository_inc
+
+END
+}
+close CONF;
+
+
+
+
+
+
+
+
+########################################F#N#O#R#D########
+# 
+#   Write apache conf files for each repository
+#
+########################################F#N#O#R#D########
+
+my $secureconfigs = {};
+foreach my $repository_id ( keys %reps ) 
+{
+my $repository = $reps{$repository_id}; 
+exit( 1 ) unless( defined $repository );
+
+my $sysfile = $repository->get_conf( "variables_path" )."/auto-apache.conf";
+my $userfile = $repository->get_conf( "config_path" )."/apache.conf";
+my $vhostfile = $repository->get_conf( "config_path" )."/apachevhost.conf";
+my $securefile = $repository->get_conf( "variables_path" )."/auto-secure.conf";
+
+my $id = $repository->get_id();
+
+print "Creating apache conf files for repository $repository_id\n" if( $noise >= 1 );
+unless( -e $userfile )
+{
+	print "Creating $userfile\n" if( $noise >= 2 );
+	open( CONF, ">$userfile" ) || die "Can't write to $userfile";
+	print CONF <<END;
+#
+# apache.conf include file for $id
+#
+# If this file exists then it will not be over written by
+# the generate_apacheconf command.
+#
+# Put your own extra directives for this site here
+#
+# Comment out the "Include" line if you don't want to use the
+# autogenerated config for this repository.
+#
+
+Include $sysfile
+END
+}
+else
+{
+	print "$userfile already exists.\n" if( $noise >= 2 );
+}
+
+
+unless( -e $vhostfile )
+{
+	print "Creating $vhostfile\n" if( $noise >= 2 );
+	open( CONF, ">$vhostfile" ) || die "Can't write to $vhostfile";
+	print CONF <<END;
+#
+# apachevhost.conf include file for $id
+#
+# If this file exists then it will not be over written by
+# the generate_apacheconf command.
+#
+# Directives in this file are interpreted inside the virtualhost 
+# configuration for this repository.
+#
+
+
+END
+}
+else
+{
+	print "$vhostfile already exists.\n" if( $noise >= 2 );
+}
+
+
+my $cgidir = EPrints::Config::get( "cgi_path" );
+my $adminemail = $repository->get_conf( "adminemail" );
+my $htdocs_path = $repository->get_conf( "htdocs_path" );
+my $documents_path = $repository->get_conf( "documents_path" );
+my $host = $repository->get_conf( "host" );
+my $port = $repository->get_conf( "port" );
+my $hostport = $host;
+if( $port != 80 ) { $hostport.=":$port"; }
+my $userhome = $repository->get_conf( "userhome" );
+my $securehost = $repository->get_conf( "securehost" );
+my $secureport = $repository->get_conf( "secureport" ) || 443;
+my $securehostport = $securehost;
+my $archiveroot = $repository->get_conf( "archiveroot" );
+if( EPrints::Utils::is_set( $securehost ) && $secureport != 443 )
+{
+		$securehostport .= ":$secureport";
+}
+my $http_root = $repository->get_conf( "http_root" );
+my $http_cgiroot = $repository->get_conf( "http_cgiroot" );
+my $https_root = $repository->get_conf( "https_root" );
+my $https_cgiroot = $repository->get_conf( "https_cgiroot" );
+
+
+print "Creating $sysfile\n" if( $noise >= 2 );
+open( CONF, ">$sysfile" ) || die "Can't write to $sysfile";
+print CONF <<END;
+#
+# auto-apache.conf include file for $id
+#
+# DO NOT EDIT, this file is created by bin/generate_apacheconf
+# and may be overwritten. To modify, change the repository configuration
+# and re-run: bin/generate_apacheconf $id
+#
+
+END
+my $aliasinfo;
+my $aliases = "";
+foreach $aliasinfo ( @{$repository->get_conf( "aliases" )} )
+{
+	if( $aliasinfo->{redirect} )
+	{
+		my $vname = $aliasinfo->{name};
+		print CONF <<END;
+
+# Redirect to the correct hostname
+<VirtualHost $virtualhost:$port>
+  ServerName $vname
+  Redirect / http://$hostport/
+</VirtualHost>
+END
+	}
+	else
+	{
+		$aliases.="  ServerAlias ".$aliasinfo->{name}."\n";
+	}
+}
+print CONF <<END;
+
+# The main virtual host for this repository
+<VirtualHost $virtualhost:$port>
+  ServerName $host
+$aliases
+  ServerAdmin $adminemail
+
+  # Include this here, so that it's rules come first.
+  Include $vhostfile
+
+END
+
+# If we want to use the non-perl CGI script mimetex.cgi we need to 
+# insert the script alias here.
+if( $repository->get_conf( "use_mimetex" ) ) 
+{
+	if( !defined $EPrints::SystemSettings::conf->{executables}->{mimetex} )
+	{
+		EPrints::abort( "use_mimetex is set to true but\n\$EPrints::SystemSettings::conf->{executables}->{mimetex}\nis not set." );
+	}
+	if( !-e $EPrints::SystemSettings::conf->{executables}->{mimetex} )
+	{
+		EPrints::abort( "use_mimetex is set to true but\n\$EPrints::SystemSettings::conf->{executables}->{mimetex}\nis set to a non existant file." );
+	}
+	     
+	print CONF '  ScriptAlias '.$http_root.'/cgi/mimetex.cgi '.$EPrints::SystemSettings::conf->{executables}->{mimetex}."\n\n";
+}
+
+print CONF <<END;
+  # You must add $http_root/archive/ to rewrite_exceptions in cfg.d/urls.pl
+  Redirect $http_root/archive/ http://$hostport$http_root/
+
+  <Location "$http_root/sword-app/deposit">
+    SetHandler perl-script
+    PerlResponseHandler EPrints::Sword::DepositHandler
+  </Location>
+
+  <Location "$http_root/sword-app/servicedocument">
+    SetHandler perl-script
+    PerlResponseHandler EPrints::Sword::ServiceDocument
+  </Location>
+
+  Alias $http_root/thumbnails/ $archiveroot/thumbnails/
+  Alias $http_cgiroot $cgidir
+  Alias $http_root/ $htdocs_path/
+
+  <Location "$http_root">
+    ErrorDocument 401 $http_root/error401.html
+    ErrorDocument 404 $http_cgiroot/handle_404
+    PerlSetVar EPrints_ArchiveID $repository_id
+    Redirect $http_root/perl/ http://$hostport$http_cgiroot/
+
+    PerlSetVar EPrints_Dir_SecuredCGI $cgidir/users
+    PerlSetVar EPrints_Dir_Documents $documents_path
+
+    Order allow,deny 
+    Allow from all
+END
+# EPrints log handler (this gets called for all requests, not just
+# mod_perl)
+if(
+	$av == 2 &&
+	$repository->get_conf( "loghandler" ) &&
+	$repository->get_conf( "loghandler" )->{ "enable" }
+  )
+{
+	# apache 2
+	print CONF <<END;
+    PerlLogHandler EPrints::Apache::LogHandler
+END
+}
+
+print CONF <<END;
+  </Location>
+
+  # Note that PerlTransHandler can't go inside
+  # a "Location" block as it occurs before the
+  # Location is known.
+  PerlTransHandler EPrints::Apache::Rewrite
+  
+END
+
+my @langs = @{$repository->get_conf( "languages" )};
+
+#my $defaultlang = $repository->get_conf( "defaultlanguage" );
+# cjg remove this stuff later.
+#
+#foreach my $langid ( @langs )
+#{
+	#next if( $langid eq $defaultlang );
+		#print CONF <<END;
+  #RewriteCond %{HTTP_COOKIE}   lang=$langid
+  #RewriteRule ^/(.*)\$         /$langid/\$1   [L]
+#
+#END
+#}
+#
+#print CONF <<END;
+  ## Default Language
+  #RewriteRule ^/(.*)\$         /$defaultlang/\$1   [L]
+#
+#END
+
+
+if( $repository->get_conf( "vlit" )->{enable} )
+{
+	foreach my $langid ( @langs )
+	{
+		print CONF <<END;
+  <Directory "$htdocs_path/$langid/archive">
+    SetHandler perl-script
+    PerlHandler EPrints::Apache::VLit::handler
+  </Directory>
+
+END
+	}
+}
+
+if( $repository->get_conf( "dynamic_template","enable" ) )
+{
+	foreach my $langid ( @langs )
+	{
+		print CONF <<END;
+  <Directory "$htdocs_path">
+    SetHandler perl-script
+    PerlResponseHandler EPrints::Apache::Template::handler
+  </Directory>
+
+END
+	}
+}
+
+my $registry_module;
+if( $av eq "1" ) 
+{
+	$registry_module = "Apache::Registry";
+}
+else # apache 2
+{
+	$registry_module = "ModPerl::Registry";
+}
+
+print CONF <<END;
+  <Directory "$htdocs_path">
+    Order deny,allow
+    Allow from all
+    AddType 'text/html; charset=UTF-8' .html
+  </Directory>
+
+  <Directory "$documents_path">
+    AuthName "Documents Area"
+    AuthType "Basic"
+    PerlAuthenHandler EPrints::Apache::Auth::authen_doc
+    PerlAuthzHandler EPrints::Apache::Auth::authz_doc
+    require valid-user
+  </Directory>
+
+  <Directory "$cgidir">
+    SetHandler perl-script
+    PerlHandler $registry_module
+    PerlSendHeader Off
+    Options ExecCGI FollowSymLinks
+  </Directory>
+
+END
+
+my $secureconfig = <<END;
+  <Directory "$cgidir/users">
+    AuthName "User Area"
+    AuthType "Basic"
+    PerlAuthenHandler EPrints::Apache::Auth::authen
+    PerlAuthzHandler EPrints::Apache::Auth::authz
+    require valid-user
+
+    SetHandler perl-script
+    PerlHandler $registry_module
+    PerlSendHeader Off
+    Options ExecCGI FollowSymLinks
+  </Directory>
+  <Directory "$cgidir/users/awstats">
+    PerlSendHeader On
+  </Directory>
+
+END
+
+unless( EPrints::Utils::is_set( $securehostport ) )
+{
+	print CONF <<END;
+$secureconfig
+
+</VirtualHost>
+
+END
+	close CONF;
+	next;
+}
+
+# This site has an HTTPS component. Redirect sceure stuff there...
+
+my $https_cgi = "https://".$securehostport.$https_cgiroot;
+my $https = "https://".$securehostport.$https_root;
+
+print CONF <<END;
+
+  Redirect $http_cgiroot/users/ $https_cgi/users/
+  Redirect $http_root/change_user $https/change_user
+  Redirect $http_cgiroot/confirm $https_cgi/accounts/confirm
+  Redirect $http_cgiroot/register $https_cgi/accounts/register
+  Redirect $http_cgiroot/reset_password $https_cgi/accounts/reset_password
+  Redirect $http_cgiroot/set_password $https_cgi/accounts/set_password
+
+</VirtualHost>
+
+END
+close CONF;
+
+# Create secure include file
+
+
+# error documents can't change server
+# need to make secure 401 and 404 pages, I guess.
+    #ErrorDocument 401 $baseurl/error401.html
+    #ErrorDocument 404 $baseurl/cgi/handle_404
+open( CONF, ">$securefile" ) || die "Can't write to $securefile";
+print CONF <<END;
+#
+# auto-secure.conf include file for $id
+#
+# DO NOT EDIT, this file is created by bin/generate_apacheconf
+# and may be overwritten. To modify, change the repository configuration
+# and re-run: bin/generate_apacheconf $id
+
+# This file is intended to be included inside your HTTPS virtualhost
+# You have to do that yourself.
+
+$secureconfig
+
+  <Location "$https_root">
+    PerlSetVar EPrints_ArchiveID $repository_id
+    PerlSetVar EPrints_Secure yes
+
+    PerlSetVar EPrints_Dir_SecuredCGI $cgidir/users
+    PerlSetVar EPrints_Dir_Documents $documents_path
+
+    Order allow,deny 
+    Allow from all
+END
+# EPrints log handler (this gets called for all requests, not just
+# mod_perl)
+if(
+	$av == 2 &&
+	$repository->get_conf( "loghandler" ) &&
+	$repository->get_conf( "loghandler" )->{ "enable" }
+  )
+{
+	# apache 2
+	print CONF <<END;
+	PerlLogHandler EPrints::Apache::LogHandler
+END
+}
+print CONF <<END;
+  </Location>
+  <Directory "$htdocs_path">
+    Order deny,allow
+    Allow from all
+    AddType 'text/html; charset=UTF-8' .html
+  </Directory>
+
+  <Directory "$documents_path">
+    AuthName "Documents Area"
+    AuthType "Basic"
+    PerlAuthenHandler EPrints::Apache::Auth::authen_doc
+    PerlAuthzHandler EPrints::Apache::Auth::authz_doc
+    require valid-user
+  </Directory>
+
+  <Directory "$cgidir">
+    SetHandler perl-script
+    PerlHandler $registry_module
+    PerlSendHeader Off
+    Options ExecCGI FollowSymLinks
+  </Directory>
+
+END
+if( $repository->get_conf( "dynamic_template","enable" ) )
+{
+	foreach my $langid ( @langs )
+	{
+		print CONF <<END;
+  <Directory "$htdocs_path">
+    SetHandler perl-script
+    PerlResponseHandler EPrints::Apache::Template::handler
+  </Directory>
+
+END
+	}
+}
+
+print CONF <<END;
+  PerlTransHandler EPrints::Apache::Rewrite
+
+  Alias $https_cgiroot/accounts/confirm $cgidir/confirm
+  Alias $https_cgiroot/accounts/register $cgidir/register
+  Alias $https_cgiroot/accounts/reset_password $cgidir/reset_password
+  Alias $https_cgiroot/accounts/set_password $cgidir/set_password
+  Alias $https_cgiroot/ $cgidir/
+  Alias $https_root/ $htdocs_path/
+
+##### END OF CONFIG FOR $id
+END
+close CONF;
+
+my $cfg_path = $repository->get_conf( "config_path" );
+my $secure_template = "$cfg_path/lang/en/templates/secure.xml";
+my $default_template = "$cfg_path/lang/en/templates/default.xml";
+
+if( !-e $secure_template and -e $default_template )
+{
+	EPrints::Utils::copy( $default_template, $secure_template );
+	print "Copied default template to secure template, you will probably need to edit the secure template:\n$secure_template\n";
+}
+
+}
+
+
+
+
+
+print "\nDo not forget to stop and restart apache to cause changes to take effect!\n" if( $noise >= 1 );
+
+print "Exiting normally.\n" if( $noise >= 2 );
+exit;
+
+
+
