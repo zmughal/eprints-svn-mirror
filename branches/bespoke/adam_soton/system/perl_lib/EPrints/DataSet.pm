@@ -225,6 +225,15 @@ my $INFO = {
 		index => 1,
 		datestamp => "datestamp",
 	},
+	shelf => {
+		sqlname => "shelf",
+		class => "EPrints::DataObj::Shelf",
+		import => 1,
+		index => 1,
+		datestamp => "datestamp",
+	},
+
+
 };
 
 
@@ -923,7 +932,7 @@ into SQL (not counters or cache which work a bit differently).
 
 sub get_sql_dataset_ids
 {
-	return( qw/ import metafield cachemap message loginticket eprint user document saved_search subject history access request / );
+	return( qw/ import metafield cachemap message loginticket eprint user document saved_search subject history access request shelf / );
 }
 
 ######################################################################
