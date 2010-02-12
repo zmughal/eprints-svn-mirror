@@ -459,7 +459,7 @@ sub _render_doc_icon_info
 	$tr->appendChild( $td_left );
 	$tr->appendChild( $td_right );
 
-	$td_left->appendChild( $doc->render_icon_link( new_window=>1, preview=>1, public=>0 ) );
+	$td_left->appendChild( $doc->render_icon_link( new_window=>1, preview=>1, public=>0, relative=>1 ) );
 
 	$td_right->appendChild( $doc->render_citation );
 	my $size = 0;
