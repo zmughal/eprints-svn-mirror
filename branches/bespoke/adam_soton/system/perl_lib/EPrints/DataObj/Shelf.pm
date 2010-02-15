@@ -154,8 +154,33 @@ sub create
 
 	return EPrints::DataObj::Shelf->create_from_data( 
 		$session, 
-		{ userid=>$userid, adminids=>[$userid], editorids=>[$userid], readerids=>[$userid]}, #creator has all permissions
+		{userid => $userid},
 		$session->get_repository->get_dataset( "shelf" ) );
+}
+
+######################################################################
+# =pod
+#
+# =item $dataobj = EPrints::DataObj->create_from_data( $session, $data, $dataset )
+#
+# Create a new object of this type in the database.
+#
+# $dataset is the dataset it will belong to.
+#
+# $data is the data structured as with new_from_data.
+#
+# =cut
+######################################################################
+
+sub create_from_data
+{
+        my( $class, $session, $data, $dataset ) = @_;
+
+        my $new_shelf = $class->SUPER::create_from_data( $session, $data, $dataset );
+
+        $session->get_database->counter_minimum( "shelfid", $new_shelf->get_id );
+
+        return $new_shelf;
 }
 
 ######################################################################
@@ -177,6 +202,17 @@ sub get_defaults
 	$data->{shelfid} = $id;
 	$data->{rev_number} = 1;
 	$data->{public} = "FALSE";
+
+	if (not defined $data->{userid})
+	{
+		$data->{userid} = $session->current_user->get_id;
+	}
+
+	#add the ownder of the shelf to all three permission lists.
+	$data->{adminids} = [$data->{userid}];
+	$data->{editorids} = [$data->{userid}];
+	$data->{readerids} = [$data->{userid}];
+
 
 #	$session->get_repository->call(
 #		"set_shelf_defaults",
