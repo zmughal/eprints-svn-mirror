@@ -70,6 +70,12 @@ sub get_system_field_info
 		{ name=>"userid", type=>"itemref", 
 			datasetid=>"user", required=>1 },
 
+		{ name=>"adminids", type=>"username", required=>1, multiple=>1 },
+
+		{ name=>"editorids", type=>"username", required=>1, multiple =>1 },
+
+		{ name=>"readerids", type=>"username", required=>1, multiple =>1 },
+
 		{ name=>"title", type=>"text" },
 
 		{ name=>"description", type=>"text" },
@@ -148,7 +154,7 @@ sub create
 
 	return EPrints::DataObj::Shelf->create_from_data( 
 		$session, 
-		{ userid=>$userid },
+		{ userid=>$userid, adminids=>[$userid], editorids=>[$userid], readerids=>[$userid]}, #creator has all permissions
 		$session->get_repository->get_dataset( "shelf" ) );
 }
 
@@ -212,6 +218,48 @@ sub has_owner
 	return 0;
 }
 
+sub has_admin
+{
+	my( $self, $possible_admin ) = @_;
+
+	my $possible_adminid = $possible_admin->get_value('userid');
+
+	foreach my $adminid (@{$self->{adminids}})
+	{
+		return 1 if $possible_adminid == $adminid;
+	}
+
+	return 0;
+}
+
+sub has_editor
+{
+	my( $self, $possible_editor ) = @_;
+
+	my $possible_editorid = $possible_editor->get_value('userid');
+
+	foreach my $editorid (@{$self->{editorids}})
+	{
+		return 1 if $possible_editorid == $editorid;
+	}
+
+	return 0;
+}
+
+sub has_reader
+{
+	my( $self, $possible_reader ) = @_;
+
+	my $possible_readerid = $possible_reader->get_value('userid');
+
+	foreach my $readerid (@{$self->{readerids}})
+	{
+		return 1 if $possible_readerid == $readerid;
+	}
+
+	return 0;
+}
+
 sub get_url
 {
 	my( $self , $staff ) = @_;
@@ -248,6 +296,53 @@ sub get_items
 
         return $items;
 }
+
+######################################################################
+=pod
+
+=item $success = $saved_search->commit( [$force] )
+
+Write this object to the database.
+
+If $force isn't true then it only actually modifies the database
+if one or more fields have been changed.
+
+=cut
+######################################################################
+
+sub commit
+{
+	my( $self, $force ) = @_;
+
+	if( !$self->is_set( "datestamp" ) )
+	{
+		$self->set_value(
+				"datestamp" ,
+				EPrints::Time::get_iso_timestamp() );
+	}
+
+	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
+	{
+		# don't do anything if there isn't anything to do
+		return( 1 ) unless $force;
+	}
+	if( $self->{non_volatile_change} )
+	{
+		$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );
+		$self->set_value ("lastmod", EPrints::Time::get_iso_timestamp ());
+	}
+
+	my $shelf_ds = $self->{session}->get_repository->get_dataset( "shelf" );
+	$self->tidy;
+	my $success = $self->{session}->get_database->update(
+		$shelf_ds,
+		$self->{data} );
+
+	$self->queue_changes;
+
+	return( $success );
+}
+
 
 
 =pod
