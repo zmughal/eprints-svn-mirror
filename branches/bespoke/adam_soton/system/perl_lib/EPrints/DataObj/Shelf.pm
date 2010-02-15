@@ -344,6 +344,33 @@ sub commit
 }
 
 
+######################################################################
+=pod
+
+=item $success = $shelf->remove
+
+Remove this shelf from the database. 
+
+=cut
+######################################################################
+
+sub remove
+{
+        my( $self ) = @_;
+
+        my $success = 1;
+
+        # remove user record
+        my $shelf_ds = $self->{session}->get_repository->get_dataset( "shelf" );
+        $success = $success && $self->{session}->get_database->remove(
+                $shelf_ds,
+                $self->get_value( "shelfid" ) );
+
+        return( $success );
+}
+
+
+
 
 =pod
 
