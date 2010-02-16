@@ -70,11 +70,14 @@ sub get_system_field_info
 		{ name=>"userid", type=>"itemref", 
 			datasetid=>"user", required=>1 },
 
-		{ name=>"adminids", type=>"username", required=>1, multiple=>1 },
+		{ name=>"adminids", type=>"username",
+			required=>1, multiple=>1, input_cols => 20 },
 
-		{ name=>"editorids", type=>"username", required=>1, multiple =>1 },
+		{ name=>"editorids", type=>"username",
+			required=>1, multiple =>1, input_cols => 20 },
 
-		{ name=>"readerids", type=>"username", required=>1, multiple =>1 },
+		{ name=>"readerids", type=>"username",
+			required=>1, multiple =>1, input_cols => 20 },
 
 		{ name=>"title", type=>"text" },
 
@@ -208,10 +211,8 @@ sub get_defaults
 		$data->{userid} = $session->current_user->get_id;
 	}
 
-	#add the ownder of the shelf to all three permission lists.
+	#administrator gets defaulted to creators
 	$data->{adminids} = [$data->{userid}];
-	$data->{editorids} = [$data->{userid}];
-	$data->{readerids} = [$data->{userid}];
 
 
 #	$session->get_repository->call(

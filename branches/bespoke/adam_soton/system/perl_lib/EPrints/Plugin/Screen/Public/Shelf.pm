@@ -98,17 +98,18 @@ sub render
 	{
 		my $p = $session->make_element('p');
 		$p->appendChild($shelf->render_value('description'));
-		$chunk->appendChild('p');
+		$chunk->appendChild($p);
 	}
 
 	my $table = $session->make_element('table');
 	$chunk->appendChild($table);
 
+	my $n = 1;
 	foreach my $item (@{$shelf->get_items})
 	{
 		my $tr = $session->make_element('tr');
 		my $td = $session->make_element('td');
-		$td->appendChild($item->render_citation_link);
+		$td->appendChild($item->render_citation_link('result', n => [$n++, "INTEGER"]));
 		$tr->appendChild($td);
 		$table->appendChild($tr);
 	} 
