@@ -18,10 +18,6 @@ sub new
 
 	$self->{appears} = [
 		{
-			place => "shelf_actions",
-			position => 1500,
-		},
-		{
 			place => "shelf_item_actions",
 			position => 200,
 		},
@@ -90,7 +86,7 @@ sub action_stop
 {
 	my( $self ) = @_;
 
-	$self->{processor}->{screenid} = "Shelf::View";
+	$self->{processor}->{screenid} = "Shelves";
 }	
 
 
@@ -108,7 +104,7 @@ sub action_save
 	$self->workflow->update_from_form( $self->{processor} );
 	$self->uncache_workflow;
 
-	$self->{processor}->{screenid} = "Shelf::View";
+	$self->{processor}->{screenid} = "Shelves";
 
 }
 
@@ -170,7 +166,7 @@ sub screen_after_flow
 {
 	my( $self ) = @_;
 
-	return "Shelf::View";
+	return "Shelves";
 }
 
 

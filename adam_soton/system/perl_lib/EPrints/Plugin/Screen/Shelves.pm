@@ -96,6 +96,23 @@ sub action_remove_col
 	$self->{session}->current_user->set_value( "shelves_fields", \@newlist );
 	$self->{session}->current_user->commit();
 }
+
+sub get_filters
+{
+	my( $self ) = @_;
+
+	my %f = ( adminids=>1, editorids=>1, readerids=>1 );
+
+	foreach my $filter ( keys %f )
+	{
+		my $v = $self->{session}->param( "show_$filter" );
+		$f{$filter} = $v if defined $v;
+	}
+
+	return %f;
+}
+
+
 	
 sub render
 {
@@ -131,14 +148,20 @@ sub render
 
 	$chunk->appendChild( $self->render_action_list_bar( "shelf_tools" ) );
 
+	my %filters = $self->get_filters;
+
 	### Get the items owned by the current user
 	my $ds = $session->get_repository->get_dataset( "shelf" );
 
         my $searchexp = EPrints::Search->new(
                 session => $self->{session},
                 dataset => $ds,
-                %options );
-	$searchexp->add_field ($ds->get_field ("userid"), $session->current_user->get_id);
+		satisfy_all => 0, );
+
+	foreach my $accesslevelfield (keys %filters)
+	{
+		$searchexp->add_field ($ds->get_field ($accesslevelfield), $session->current_user->get_id) if $filters{$accesslevelfield};
+	}
 
 	my $list = $searchexp->perform_search;
 
@@ -149,6 +172,38 @@ sub render
 		$session->current_user->set_value( "shelves_fields", $columns );
 		$session->current_user->commit;
 	}
+
+	my $filter_div = $session->make_element( "div", class=>"ep_items_filters" );
+	foreach my $f ( qw/ adminids editorids readerids / )
+	{
+		my %f2 = %filters;
+		$f2{$f} = 1-$f2{$f};
+		my $url = "?screen=Shelves";
+		foreach my $inner_f ( qw/ adminids editorids readerids / )
+		{
+			$url.= "&show_$inner_f=".$f2{$inner_f};
+		}
+		my $a = $session->render_link( $url,  );
+		if( $filters{$f} )
+		{
+			$a->appendChild( $session->make_element(
+						"img",
+						src=> "$imagesurl/checkbox_tick.png",
+						alt=>"Showing" ) );
+		}
+		else
+		{
+			$a->appendChild( $session->make_element(
+						"img",
+						src=> "$imagesurl/checkbox_empty.png",
+						alt=>"Not showing" ) );
+		}
+		$a->appendChild( $session->make_text( " " ) );
+		$a->appendChild( $session->html_phrase( "eprint_fieldopt_eprint_status_$f" ) );
+		$filter_div->appendChild( $a );
+		$filter_div->appendChild( $session->make_text( ". " ) );
+	}
+
 
 
 	my $len = scalar @{$columns};
@@ -247,6 +302,7 @@ sub render
 			screen => "Shelves",
 		},
 		columns => [@{$columns}, undef ],
+		above_results => $filter_div,
 		render_result => sub {
 			my( $session, $s, $info ) = @_;
 
