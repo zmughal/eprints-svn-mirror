@@ -1,4 +1,4 @@
-package EPrints::Plugin::Screen::Shelf::Edit;
+package EPrints::Plugin::Screen::Shelf::EditMetadata;
 
 use EPrints::Plugin::Screen::Shelf;
 
@@ -21,6 +21,10 @@ sub new
 			place => "shelf_item_actions",
 			position => 200,
 		},
+		{
+			place => "shelf_view_actions",
+			position => 200,
+		},
 	];
 
 	$self->{staff} = 0;
@@ -32,9 +36,9 @@ sub can_be_viewed
 {
 	my( $self ) = @_;
 
-return 1;
-
-	return $self->allow( "shelf/edit" );
+        return (
+		$self->{processor}->{shelf}->has_editor($self->{processor}->{user})
+	);
 }
 
 sub from
