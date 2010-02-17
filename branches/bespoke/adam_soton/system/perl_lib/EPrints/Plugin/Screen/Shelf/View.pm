@@ -29,7 +29,10 @@ sub can_be_viewed
 {
 	my( $self ) = @_;
 
-	return 1;
+	return (
+		$self->{processor}->{shelf}->has_reader($self->{processor}->{user}) or
+		( $self->{processor}->{shelf}->get_value( "public" ) eq "TRUE" )
+	);
 }
 
 sub render
@@ -40,6 +43,8 @@ sub render
 	my $session = $self->{session};
 
 	my $chunk = $session->make_doc_fragment;
+
+	$chunk->appendChild( $self->render_action_list_bar( "shelf_view_actions", ['shelfid'] ) );
 
 	if ($shelf->is_set('description'))
 	{
