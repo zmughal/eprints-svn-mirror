@@ -17,6 +17,10 @@ sub new
 			place => "shelf_item_actions",
 			position => 100,
 		},
+		{
+			place => "shelf_view_actions",
+			position => 100,
+		},
 	];
 	
 	$self->{actions} = [qw/ remove cancel /];
@@ -29,7 +33,7 @@ sub can_be_viewed
 {
 	my( $self ) = @_;
 
-	return 1;
+	return $self->{processor}->{shelf}->has_admin($self->{processor}->{user});
 }
 
 sub render
