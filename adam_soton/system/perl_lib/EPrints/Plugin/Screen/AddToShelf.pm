@@ -235,17 +235,17 @@ sub render_shelf_choice_form
         ### Get the items the current user has rights to
         my $ds = $session->get_repository->get_dataset( "shelf" );
 
-        my $searchexp = EPrints::Search->new(
+        my $shelf_searchexp = EPrints::Search->new(
                 session => $self->{session},
                 dataset => $ds,
                 satisfy_all => 0, );
 
         foreach my $accesslevelfield (qw/ editorids adminids /)
         {
-                $searchexp->add_field ($ds->get_field ($accesslevelfield), $session->current_user->get_id);
+                $shelf_searchexp->add_field ($ds->get_field ($accesslevelfield), $session->current_user->get_id);
         }
 
-        my $list = $searchexp->perform_search;
+        my $list = $shelf_searchexp->perform_search;
 
 	#initial assumption - a user won't have a huge number of shelves, so get_records may be sufficient.
 	my @shelves = $list->get_records;

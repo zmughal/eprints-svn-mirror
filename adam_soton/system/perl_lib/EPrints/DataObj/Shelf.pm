@@ -261,9 +261,14 @@ sub has_admin
 
 	my $possible_adminid = $possible_admin->get_value('userid');
 
-	foreach my $adminid (@{$self->{adminids}})
+	foreach my $adminid (@{$self->get_value('adminids')})
 	{
 		return 1 if $possible_adminid == $adminid;
+	}
+
+	if ($self->{session}->get_repository->can_call('is_shelf_administrator'))
+	{
+		return $self->{session}->get_repository->call('is_shelf_administrator', $self, $possible_admin);
 	}
 
 	return 0;
@@ -275,12 +280,12 @@ sub has_editor
 
 	my $possible_editorid = $possible_editor->get_value('userid');
 
-	foreach my $editorid (@{$self->{editorids}})
+	foreach my $editorid (@{$self->get_value('editorids')})
 	{
 		return 1 if $possible_editorid == $editorid;
 	}
 
-	return 0;
+	return $self->has_admin($possible_editor); #admins are always editors 
 }
 
 sub has_reader
@@ -294,7 +299,7 @@ sub has_reader
 		return 1 if $possible_readerid == $readerid;
 	}
 
-	return 0;
+	return $self->has_editor($possible_reader); #editors are always readers
 }
 
 sub get_url
@@ -313,6 +318,28 @@ sub get_item_ids
 	return $self->get_value('items');
 }
 
+sub remove_items
+{
+	my ($self, @items_to_delete) = @_;
+
+	my $items = $self->get_value('items');
+
+	my $items_to_delete;
+	foreach my $item_to_delete (@items_to_delete)
+	{
+		$items_to_delete->{$item_to_delete} = 1;
+	}
+
+	my $new_items = [];
+	foreach my $item (@{$items})
+	{
+		next if $items_to_delete->{$item};
+		push @{$new_items}, $item;
+	} 
+
+	$self->set_value('items', $new_items);
+	$self->commit;
+}
 
 sub get_items
 {

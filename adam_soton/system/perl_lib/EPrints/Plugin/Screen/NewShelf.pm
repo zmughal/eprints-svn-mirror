@@ -57,7 +57,7 @@ sub action_create
 	}
 
 	$self->{processor}->{shelfid} = $self->{processor}->{shelf}->get_id;
-	$self->{processor}->{screenid} = "Shelf::Edit";
+	$self->{processor}->{screenid} = "Shelf::Admin";
 
 }
 
