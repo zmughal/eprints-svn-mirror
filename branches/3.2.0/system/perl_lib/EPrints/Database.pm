@@ -4406,6 +4406,19 @@ sub prepare_regexp
 	return "$col REGEXP $value";
 }
 
+=item $glue = $db->alias_glue()
+
+Returns the syntactic glue to use when aliasing. SQL 92 DBs will happilly use " AS " but some DBs (Oracle!) won't accept it.
+
+=cut
+
+sub alias_glue
+{
+	my( $self ) = @_;
+
+	return " AS ";
+}
+
 1; # For use/require success
 
 ######################################################################

@@ -59,6 +59,8 @@ Oracle won't ORDER BY LOBS.
 
 Oracle requires special means to insert values into CLOB/BLOB.
 
+Oracle doesn't support "AS" when aliasing.
+
 =head1 METHODS
 
 =over 4
@@ -438,6 +440,13 @@ sub quote_binary
 	use bytes;
 
 	return join('', map { sprintf("%02x",ord($_)) } split //, $value);
+}
+
+sub alias_glue
+{
+	my( $self ) = @_;
+
+	return " ";
 }
 
 1; # For use/require success
