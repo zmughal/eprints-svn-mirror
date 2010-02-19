@@ -27,6 +27,26 @@ sub new
 	return $self;
 }
 
+sub properties_from
+{
+        my( $self ) = @_;
+
+        $self->{processor}->{_buffer_order} = $self->{session}->param( '_buffer_order' ) if $self->{session}->param( '_buffer_order' );
+        $self->{processor}->{_buffer_offset} = $self->{session}->param( '_buffer_offset' ) if $self->{session}->param( '_buffer_offset' );
+
+        $self->SUPER::properties_from;
+}
+
+
+sub redirect_to_me_url
+{
+        my( $self ) = @_;
+
+        return $self->SUPER::redirect_to_me_url .
+	"&_buffer_order=" . $self->{session}->param( '_buffer_order' ) . 
+	"&_buffer_offset=" . $self->{session}->param( '_buffer_offset' );
+}
+
 sub can_be_viewed
 {
 	my( $self ) = @_;
@@ -35,6 +55,20 @@ sub can_be_viewed
                 $self->{processor}->{shelf}->has_editor($self->{processor}->{user})
         );
 }
+
+sub allow_reorder
+{
+	my ($self) = @_;
+
+	return $self->can_be_viewed;
+}
+
+sub action_reorder
+{
+
+	
+}
+
 
 sub render
 {
@@ -86,43 +120,57 @@ sub render
 			screen => "Shelf::EditItems",
 			shelfid => $self->{processor}->{shelfid},
 		},
-		columns => [@{$columns}, undef ],
+		columns => [ undef, @{$columns}, undef ],
 		render_result => sub {
 			my( $session, $e ) = @_;
 
 			my $tr = $session->make_element( "tr" );
 
-                        my $first = 1;
+			my $td = $session->make_element( 'td', class=>"ep_columns_cell ep_columns_cell_first" );
+			$td->appendChild(
+				$session->render_noenter_input_field(
+				type => "checkbox",
+				name => "shelf_eprint_selection",
+				value => $e->get_id )
+			);
+
+			$tr->addChild($td); #table cell for tickbox
+
                         for( @$columns )
                         {
-                                my $td = $session->make_element( "td", class=>"ep_columns_cell ".($first?" ep_columns_cell_first":"")." ep_columns_cell_$_"  );
-                                $first = 0;
+                                my $td = $session->make_element( "td", class=>"ep_columns_cell ep_columns_cell_$_"  );
                                 $tr->appendChild( $td );
                                 $td->appendChild( $e->render_value( $_ ) );
                         }
 
-			$self->{processor}->{eprint} = $e;
-			$self->{processor}->{eprintid} = $e->get_id;
-			my $td = $session->make_element( "td", class=>"ep_columns_cell ep_columns_cell_last", align=>"left" );
-			$tr->appendChild( $td );
-			$td->appendChild( 
-				$self->render_action_list_icons( "shelf_eprint_actions", ['shelfid','eprintid'] ) );
-#can we have our own actions appear here?
-
-
-			delete $self->{processor}->{eprint};
+                        $self->{processor}->{eprint} = $e;
+                        $self->{processor}->{eprintid} = $e->get_id;
+                        $td = $session->make_element( "td", class=>"ep_columns_cell ep_columns_cell_last", align=>"left" );
+                        $tr->appendChild( $td );
+                        $td->appendChild(
+				$self->render_action_list_icons( "shelf_items_eprint_actions", ['shelfid','eprintid','_buffer_order','_buffer_offset'] ) );
+                        delete $self->{processor}->{eprint};
 
 			return $tr;
 		},
 	);
-	$chunk->appendChild( EPrints::Paginate::Columns->paginate_list( $session, "_buffer", $list, %opts ) );
 
 
-#	# Add form
-#	my $div = $session->make_element( "div", class=>"ep_shelf_actions" );
-#	my $form_add = $session->render_form( "post" );
-#	$form_add->appendChild( $session->render_hidden_field( "screen", "Shelf::EditItems" ) );
-#
+	# Add form
+	my $div = $session->make_element( "div", class=>"ep_shelf_actions" );
+	my $form = $session->render_form( "post" );
+	$form->appendChild( $session->render_hidden_field( "screen", "Shelf::RemoveSelected" ) );
+	$form->appendChild($self->render_hidden_bits); 
+
+	$form->appendChild(EPrints::Paginate::UnsortedColumns->paginate_list( $session, "_buffer", $list, %opts ));
+	$chunk->appendChild($form);
+
+	$form->appendChild(
+		$session->render_button(
+			class=>"ep_form_action_button",
+			name=>"_action_remove_selected",
+			value => $session->phrase( 'Plugin/Screen/Shelf/RemoveSelected:title' ) ) );
+
 #	my $colcurr = {};
 #	foreach( @$columns ) { $colcurr->{$_} = 1; }
 #	my $fieldnames = {};
@@ -142,19 +190,19 @@ sub render
 #
 #	my @tags = sort { $fieldnames->{$a} cmp $fieldnames->{$b} } keys %$fieldnames;
 #
-#	$form_add->appendChild( $session->render_option_list( 
+#	$form->appendChild( $session->render_option_list( 
 #		name => 'col',
 #		height => 1,
 #		multiple => 0,
 #		'values' => \@tags,
 #		labels => $fieldnames ) );
 #		
-#	$form_add->appendChild( 
+#	$form->appendChild( 
 #			$session->render_button(
 #				class=>"ep_form_action_button",
 #				name=>"_action_add_col", 
 #				value => $self->phrase( "add" ) ) );
-#	$div->appendChild( $form_add );
+#	$div->appendChild( $form );
 #	$chunk->appendChild( $div );
 #	# End of Add form
 

@@ -150,7 +150,7 @@ sub render
 
 	my %filters = $self->get_filters;
 
-	### Get the items owned by the current user
+	### Get the items the current user has rights to
 	my $ds = $session->get_repository->get_dataset( "shelf" );
 
         my $searchexp = EPrints::Search->new(

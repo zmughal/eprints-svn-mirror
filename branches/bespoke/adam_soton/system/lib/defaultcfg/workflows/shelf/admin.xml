@@ -7,11 +7,12 @@
   </flow>
    
   <stage name="default">
+
     <component type="Field::Multi">
-      <title>Details</title>
-      <field ref="title"/>
-      <field ref="description"/>
-      <field ref="public" required="yes"/>
+      <title>Access</title>
+      <field ref="adminids"/>
+      <field ref="editorids"/>
+      <field ref="readerids"/>
     </component>
 
   </stage>
