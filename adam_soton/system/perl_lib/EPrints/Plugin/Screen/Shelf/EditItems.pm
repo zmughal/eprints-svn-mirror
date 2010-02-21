@@ -110,17 +110,13 @@ sub render
 		ids => $shelf->get_value('items'),
 	);
 
-        my $columns = [ 'title', 'creators_name', 'date' ];
-
-        my $len = scalar @{$columns};
-
 	# Paginate list
 	my %opts = (
 		params => {
 			screen => "Shelf::EditItems",
 			shelfid => $self->{processor}->{shelfid},
 		},
-		columns => [ undef, @{$columns}, undef ],
+		columns => [ undef, undef, undef ],
 		render_result => sub {
 			my( $session, $e ) = @_;
 
@@ -136,12 +132,12 @@ sub render
 
 			$tr->addChild($td); #table cell for tickbox
 
-                        for( @$columns )
-                        {
+#                        for( @$columns )
+#                        {
                                 my $td = $session->make_element( "td", class=>"ep_columns_cell ep_columns_cell_$_"  );
                                 $tr->appendChild( $td );
-                                $td->appendChild( $e->render_value( $_ ) );
-                        }
+                                $td->appendChild( $e->render_citation_link );
+#                        }
 
                         $self->{processor}->{eprint} = $e;
                         $self->{processor}->{eprintid} = $e->get_id;
