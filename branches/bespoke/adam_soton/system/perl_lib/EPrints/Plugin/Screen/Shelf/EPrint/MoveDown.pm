@@ -10,7 +10,7 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 
-	$self->{action_icon} = { move_down => "multi_down.png" };
+	$self->{action_icon} = { move_down => "multi_down.png", spacer => "noicon.png" };
 
 	$self->{appears} = [
 		{
@@ -18,15 +18,32 @@ sub new
 			position => 100,
 			action => 'move_down',
 		},
+		{
+			place => "shelf_items_eprint_actions",
+			position => 100,
+			action => 'spacer',
+		},
 	];
 	
-	$self->{actions} = [qw/ move_down /];
+	$self->{actions} = [qw/ move_down spacer /];
 
 	return $self;
 }
 
+sub allow_spacer
+{
+        my ( $self ) = @_;
 
-sub can_be_viewed
+        return !$self->allow_move_down;
+}
+
+sub action_spacer
+{
+        my ($self) = @_;
+        $self->{processor}->{screenid} =  "Shelf::EditItems";
+}
+
+sub allow_move_down
 {
 	my( $self ) = @_;
 
@@ -36,14 +53,6 @@ sub can_be_viewed
 	return 0 if ($items->[$#{$items}] == $self->{processor}->{eprintid}); #we don't want to see it if it's the bottom
 
 	return $shelf->has_editor($self->{processor}->{user});
-}
-
-
-sub allow_move_down
-{
-	my( $self ) = @_;
-
-	return $self->can_be_viewed;
 }
 
 sub action_move_down
