@@ -130,7 +130,7 @@ sub render
 			$td->appendChild(
 				$session->render_noenter_input_field(
 				type => "checkbox",
-				name => "shelf_eprint_selection",
+				name => "eprintids",
 				value => $e->get_id )
 			);
 
@@ -159,7 +159,7 @@ sub render
 	# Add form
 	my $div = $session->make_element( "div", class=>"ep_shelf_actions" );
 	my $form = $session->render_form( "post" );
-	$form->appendChild( $session->render_hidden_field( "screen", "Shelf::RemoveSelected" ) );
+	$form->appendChild( $session->render_hidden_field( "screen", "Shelf::RemoveSelectedItems" ) );
 	$form->appendChild($self->render_hidden_bits); 
 
 	$form->appendChild(EPrints::Paginate::UnsortedColumns->paginate_list( $session, "_buffer", $list, %opts ));
@@ -168,8 +168,15 @@ sub render
 	$form->appendChild(
 		$session->render_button(
 			class=>"ep_form_action_button",
-			name=>"_action_remove_selected",
-			value => $session->phrase( 'Plugin/Screen/Shelf/RemoveSelected:title' ) ) );
+			name=>"_action_null",
+			value => $session->phrase( 'Plugin/Screen/Shelf/RemoveSelectedItems:title' ) ) );
+
+
+	#reorder by anything in $columns
+
+	#remove all items
+
+
 
 #	my $colcurr = {};
 #	foreach( @$columns ) { $colcurr->{$_} = 1; }
@@ -207,6 +214,105 @@ sub render
 #	# End of Add form
 
 	return $chunk;
+}
+
+#overridden to show buttons as images rather than forms as the whole table will be a form.
+sub render_action_list_icons
+{
+        my( $self, $list_id, $hidden ) = @_;
+
+        my $session = $self->{session};
+
+        my $div = $self->{session}->make_element( "div", class=>"ep_act_icons" );
+        my $table = $session->make_element( "table" );
+        $div->appendChild( $table );
+        my $tr = $session->make_element( "tr" );
+        $table->appendChild( $tr );
+        foreach my $params ( $self->action_list( $list_id ) )
+        {
+                my $td = $session->make_element( "td" );
+                $tr->appendChild( $td );
+                $td->appendChild( $self->render_action_icon_as_img( { %$params, hidden => $hidden } ) );
+        }
+
+        return $div;
+}
+
+
+sub render_action_icon_as_img
+{
+        my( $self, $params ) = @_;
+
+        my $session = $self->{session};
+
+        my( $action, $title, $icon );
+        if( defined $params->{action} )
+        {
+                $action = $params->{action};
+                $title = $params->{screen}->phrase( "action:$action:title" );
+                $icon = $params->{screen}->action_icon_url( $action );
+        }
+        else
+        {
+                $action = "null";
+                $title = $params->{screen}->phrase( "title" );
+                $icon = $params->{screen}->icon_url();
+        }
+
+	if ($action eq 'spacer')
+	{
+		return $session->make_element('img', src => $icon, alt => 'spacer');
+	}
+
+
+	my $control_params = { screen =>  substr( $params->{screen_id}, 8 ) };
+	foreach my $id ( @{$params->{hidden}} )
+	{
+		$control_params->{$id} = $self->{processor}->{$id};
+	}
+	$control_params->{'_action_' . $action} = $action;
+
+	my $control_url = $self->generate_control_url($control_params);
+
+	my $a = $session->render_link( $control_url );
+	$a->appendChild($session->make_element('img', src => $icon, alt => $title, title => $title, style => "border: none"));
+
+
+	return $a;
+}
+
+
+
+
+sub generate_control_url
+{
+	my ($self, $params) = @_;
+
+	my $url = $self->{session}->get_repository->get_conf('userhome') . '?';
+
+	my $paramstrings;
+	foreach my $paramid (keys %{$params})
+	{
+		push @{$paramstrings}, $paramid . '=' . $params->{$paramid};
+	}
+	$url .= join('&',@{$paramstrings});
+
+	return $url;
+}
+
+
+sub render_hidden_bits
+{
+        my( $self ) = @_;
+
+        my $chunk = $self->{session}->make_doc_fragment;
+
+        $chunk->appendChild( $self->{session}->render_hidden_field( "_buffer_order", $self->{processor}->{_buffer_order} ) );
+        $chunk->appendChild( $self->{session}->render_hidden_field( "_buffer_offset", $self->{processor}->{_buffer_offset} ) );
+
+        $chunk->appendChild( $self->SUPER::render_hidden_bits );
+
+        return $chunk;
 }
 
 
