@@ -53,6 +53,8 @@ sub render
 		$chunk->appendChild($p);
 	}
 
+        $chunk->appendChild($shelf->render_export_bar);
+
 	my $table = $session->make_element('table');
 	$chunk->appendChild($table);
 
