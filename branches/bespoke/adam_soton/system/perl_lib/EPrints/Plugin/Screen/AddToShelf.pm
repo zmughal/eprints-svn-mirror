@@ -126,7 +126,17 @@ sub action_add
 		return;
 	}
 
-	my $eprintids = $list->get_ids;
+	my $number_to_add = $session->param('number_to_add');
+
+	my $eprintids;
+	if ($number_to_add =~ m/[0-9]+/)
+	{
+		$eprintids = $list->get_ids(0,$number_to_add);
+	}
+	else
+	{
+		$eprintids = $list->get_ids; 
+	}
 
 	if ($shelf->is_set('items'))
 	{
