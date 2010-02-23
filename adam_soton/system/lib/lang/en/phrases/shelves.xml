@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE phrases SYSTEM "entities.dtd">
+<epp:phrases xmlns="http://www.w3.org/1999/xhtml" xmlns:epp="http://eprints.org/ep3/phrase" xmlns:epc="http://eprints.org/ep3/control">
+
+  <!-- This file is used to add phrases from the phrase editor screen -->
+
+    <epp:phrase id="Plugin/Screen/Shelves:remove_column_confirm">Really remove this column from the display?</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelves:help_title">Help Title</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelves:title">Manage shelves</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelves:help">Some Help Text</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelves:add">Add Column</epp:phrase>
+
+    <epp:phrase id="shelf_fieldname_datestamp">Date Created</epp:phrase>
+
+    <epp:phrase id="shelf_fieldname_description">Description</epp:phrase>
+
+    <epp:phrase id="shelf_fieldname_items">Items</epp:phrase>
+
+    <epp:phrase id="shelf_fieldname_lastmod">Last Modified</epp:phrase>
+
+    <epp:phrase id="shelf_fieldname_name">Name</epp:phrase>
+
+    <epp:phrase id="shelf_fieldname_public">Publicly Visible</epp:phrase>
+
+    <epp:phrase id="shelf_fieldname_rev_number">Revision</epp:phrase>
+
+    <epp:phrase id="shelf_fieldname_shelfid">ID</epp:phrase>
+
+    <epp:phrase id="shelf_fieldname_userid">Owner</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/NewShelf:action:create:title">New Shelf</epp:phrase>
+
+    <epp:phrase id="shelf_fieldname_title">Title</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf:owner_denied">Although you are the owner of this item you may not view this screen: <epc:pin name="screen"/>. This may be because you have deposited the item and you may no longer make changes to it.</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/Edit:title">Edit Shelf</epp:phrase>
+
+    <epp:phrase id="shelf_fieldhelp_description">A brief description of the shelf.</epp:phrase>
+
+    <epp:phrase id="shelf_fieldhelp_items">Items in the shelf.</epp:phrase>
+
+    <epp:phrase id="shelf_fieldhelp_public">Can this shelf be viewed publicly?</epp:phrase>
+
+    <epp:phrase id="shelf_fieldhelp_title">The title of the shelf.</epp:phrase>
+
+    <epp:phrase id="shelf_radio_public"><label><epc:pin name="true"/>Yes, this may be viewed by anyone.</label><br/><label><epc:pin name="false"/>No, this may not be viewed by anyone.</label></epp:phrase>
+
+    <epp:phrase id="metapage_title_default">Details</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/Edit:action_save">Save</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Public/Shelf:not_public">This shelf is not publicly visible.</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Public/Shelf:title">View Shelf</epp:phrase>
+
+    <epp:phrase id="lib/metafield/username:not_found"><epp:phrase id="lib/metafield/itemref:not_found"><i><epc:pin name="objtype"/> <epc:pin name="id"/> not found.</i></epp:phrase>
+</epp:phrase>
+
+    <epp:phrase id="shelf_fieldhelp_adminids">Enter the usernames of shelf administrators.</epp:phrase>
+
+    <epp:phrase id="shelf_fieldhelp_readerids">Enter the usernames of shelf readers.</epp:phrase>
+
+    <epp:phrase id="shelf_fieldhelp_editorids">Enter the usernames of shelf editors.</epp:phrase>
+
+    <epp:phrase id="shelf_fieldname_adminids">Shelf Administrators</epp:phrase>
+
+    <epp:phrase id="shelf_fieldname_editorids">Shelf Editors</epp:phrase>
+
+    <epp:phrase id="shelf_fieldname_readerids">Shelf Readers</epp:phrase>
+
+    <epp:phrase id="lib/metafield/username:lookup">Lookup</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/Remove:sure_delete"><p>Are you absolutely sure you want to delete this Shelf: <epc:pin name="title"/>?</p></epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/Remove:title">Destroy Shelf</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/AddToShelf:action:create:title"/>
+
+    <epp:phrase id="Plugin/Screen/Shelf/Remove:item_removed">Shelf successfully removed</epp:phrase>
+
+    <epp:phrase id="eprint_fieldopt_eprint_status_readerids">Read Access</epp:phrase>
+
+    <epp:phrase id="eprint_fieldopt_eprint_status_editorids">Editorial Access</epp:phrase>
+
+    <epp:phrase id="eprint_fieldopt_eprint_status_adminids">Admin Access</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/View:title">View Shelf</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/AddToShelf:add">Add</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/AddToShelf:title">Add items to a Shelf</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/Admin:action_save">Save</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/Admin:title">Edit access lists</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/EPrint/MoveUp:action:move_up:title">Move Up</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/EPrint/MoveDown:action:move_up:title">Move Up</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/EPrint/MoveDown:action:move_down:title">Move Down</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/RemoveSelectedItems:sure_delete">Are you sure you want to remove the following items from the shelf?</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/RemoveSelectedItems:title">Remove Items</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/EPrint/RemoveSingle:title">Remove from</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/EditItems:title">Edit Shelf Items</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/EditItems:help_title">Help Title</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/EditItemsItems:help">Some Help Text</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/EPrint/RemoveSingle:sure_delete"><p>Are you sure you wish to remove <em><epc:pin name="title"/></em> from this shelf?</p>
+</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/EPrint/MoveDown:action:spacer:title">Spacer</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/EPrint/RemoveSingle:item_removed">Item successfully removed</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/RemoveSelectedItems:item_removed">Items successfully removed.</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/AccessRights:title">Manage Access</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/EditMetadata:title">Modify Metadata</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/EditItems:reorder">Reorder by...</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/EPrint/MoveUp:action:spacer:title">Spacer</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/EditItemsActions:delete_all_warning">You are about to delete all the items on this shelf.  This is not undoable.</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/EditItemsActions:sure_delete">Are you sure you want to delete these items?</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/EditItemsActions:title">Delete Items</epp:phrase>
+
+    <epp:phrase id="lib/submissionform:action_remove_all">Remove ALL</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/EditMetadata:action_save">Save</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/EditItemsActions:item_removed">Items successfully removed.</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/AccessRights:action_save">Save</epp:phrase>
+
+
+    <epp:phrase id="Public/Shelf:export_section">
+<table width="100%"><tr>
+  <td align="left">Export as <epc:pin name="menu"/><epc:pin name="button"/></td>
+  <td align="right"><epc:pin name="feeds"/></td>
+</tr>
+<tr>
+  <td align="left" colspan="2">
+    <epc:pin name="tools"/>
+  </td>
+</tr>
+</table>
+
+</epp:phrase>
+
+
+    <epp:phrase id="Plugin/Screen/Shelf/EditItemsActions:all_items_removed">All Items Removed!</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/EditItems:shelf_empty">This shelf is currently empty.  Consider adding some content or deleting it to tidy things up.</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/AddToShelf:add_word">Add </epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/AddToShelf:to_word"> to </epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Public/Shelf:no_such_shelf">This shelf does not exist!</epp:phrase>
+
+</epp:phrases>
