@@ -53,6 +53,8 @@ sub export_url
 		EPrints::abort( "No such plugin: $format\n" );	
 	}
 
+#add order to the below so that ordering is passed through and preserved.
+
 	my $url = URI->new( $self->{session}->get_uri() . "/export_" . $self->{session}->get_repository->get_id . "_" . $format . $plugin->param( "suffix" ) );
 
 	$url->query_form(

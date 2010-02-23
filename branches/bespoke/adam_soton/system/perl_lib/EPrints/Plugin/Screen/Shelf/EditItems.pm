@@ -13,14 +13,16 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 
+	$self->{icon} = "action_shelf_contents.png";
+
 	$self->{appears} = [
                 {
                         place => "shelf_item_actions",
-                        position => 200,
+                        position => 300,
                 },
                 {
                         place => "shelf_view_actions",
-                        position => 200,
+                        position => 300,
                 },
 	];
 
@@ -110,13 +112,63 @@ sub render
 		ids => $shelf->get_value('items'),
 	);
 
+	if ($list->count < 1)
+	{
+		$chunk->appendChild($session->render_message('warning', $self->html_phrase('shelf_empty')));
+		return $chunk;
+	}
+
+	#controls
+	my $controls = $session->make_element('table');
+	my $tr = $session->make_element('tr');
+	$controls->appendChild($tr);
+
+	my $td = $session->make_element('td');
+	$tr->appendChild($td);
+	$td->appendChild(
+		$session->render_button(
+			class=>"ep_form_action_button",
+			name=>"_action_null",
+			value => $session->phrase( 'Plugin/Screen/Shelf/RemoveSelectedItems:title' ) ) );
+
+	$td =  $session->make_element('td');
+	$tr->appendChild($td);
+
+        $td->appendChild( $session->render_button(
+		class=>"ep_form_action_button",
+		name=>"_action_reorder",
+		value => $self->phrase( "reorder" ) 
+	) );
+
+	my $eprint_ds = $session->get_repository->get_dataset('eprint');
+	my ( $sortids, $sort_labels );
+	foreach my $fieldid (@{$session->get_repository->get_conf('shelf_order_fields')})
+	{
+		push @{$sortids}, $fieldid;
+		push @{$sortids}, '-' . $fieldid;
+
+		my $fieldname = EPrints::Utils::tree_to_utf8($eprint_ds->get_field($fieldid)->render_name($session));
+
+		$sort_labels->{$fieldid} = $fieldname;
+		$sort_labels->{'-'.$fieldid} = "$fieldname (desc)";
+
+	}
+
+        $td->appendChild( $session->render_option_list(
+                name => 'order',
+                height => 1,
+                multiple => 0,
+                'values' => $sortids,
+                labels => $sort_labels ) );
+
+
 	# Paginate list
 	my %opts = (
 		params => {
 			screen => "Shelf::EditItems",
 			shelfid => $self->{processor}->{shelfid},
 		},
-		columns => [ undef, undef, undef ],
+		below_results => $controls,
 		render_result => sub {
 			my( $session, $e ) = @_;
 
@@ -132,12 +184,9 @@ sub render
 
 			$tr->addChild($td); #table cell for tickbox
 
-#                        for( @$columns )
-#                        {
-                                my $td = $session->make_element( "td", class=>"ep_columns_cell ep_columns_cell_$_"  );
-                                $tr->appendChild( $td );
-                                $td->appendChild( $e->render_citation_link );
-#                        }
+			my $td = $session->make_element( "td", class=>"ep_columns_cell ep_columns_cell_$_"  );
+			$tr->appendChild( $td );
+			$td->appendChild( $e->render_citation_link );
 
                         $self->{processor}->{eprint} = $e;
                         $self->{processor}->{eprintid} = $e->get_id;
@@ -155,59 +204,17 @@ sub render
 	# Add form
 	my $div = $session->make_element( "div", class=>"ep_shelf_actions" );
 	my $form = $session->render_form( "post" );
-	$form->appendChild( $session->render_hidden_field( "screen", "Shelf::RemoveSelectedItems" ) );
+	$form->appendChild( $session->render_hidden_field( "screen", "Shelf::EditItemsActions" ) );
 	$form->appendChild($self->render_hidden_bits); 
 
-	$form->appendChild(EPrints::Paginate::UnsortedColumns->paginate_list( $session, "_buffer", $list, %opts ));
+	my $table = $session->make_element('table');
+
+	$table->appendChild(EPrints::Paginate->paginate_list( $session, "_buffer", $list, %opts ));
+	$form->appendChild($table);
+
 	$chunk->appendChild($form);
 
-	$form->appendChild(
-		$session->render_button(
-			class=>"ep_form_action_button",
-			name=>"_action_null",
-			value => $session->phrase( 'Plugin/Screen/Shelf/RemoveSelectedItems:title' ) ) );
 
-
-	#reorder by anything in $columns
-
-	#remove all items
-
-
-
-#	my $colcurr = {};
-#	foreach( @$columns ) { $colcurr->{$_} = 1; }
-#	my $fieldnames = {};
-#        foreach my $field ( $ds->get_fields )
-#        {
-#                next unless $field->get_property( "show_in_fieldlist" );
-#		next if $colcurr->{$field->get_name};
-#		my $name = EPrints::Utils::tree_to_utf8( $field->render_name( $session ) );
-#		my $parent = $field->get_property( "parent_name" );
-#		if( defined $parent ) 
-#		{
-#			my $pfield = $ds->get_field( $parent );
-#			$name = EPrints::Utils::tree_to_utf8( $pfield->render_name( $session )).": $name";
-#		}
-#		$fieldnames->{$field->get_name} = $name;
-#        }
-#
-#	my @tags = sort { $fieldnames->{$a} cmp $fieldnames->{$b} } keys %$fieldnames;
-#
-#	$form->appendChild( $session->render_option_list( 
-#		name => 'col',
-#		height => 1,
-#		multiple => 0,
-#		'values' => \@tags,
-#		labels => $fieldnames ) );
-#		
-#	$form->appendChild( 
-#			$session->render_button(
-#				class=>"ep_form_action_button",
-#				name=>"_action_add_col", 
-#				value => $self->phrase( "add" ) ) );
-#	$div->appendChild( $form );
-#	$chunk->appendChild( $div );
-#	# End of Add form
 
 	return $chunk;
 }

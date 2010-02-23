@@ -79,8 +79,12 @@ sub action_move_down
 	$shelf->set_value('items', $items);
 	$shelf->commit();
 
-	$self->{processor}->{screenid} = "Shelf::EditItems";
-	$self->{processor}->add_message( "message", $self->html_phrase( "item_moved" ) );
+#redirect so that refresh won't keep moving things.
+        my $plugin_for_redirect = $self->{session}->plugin( 'Screen::Shelf::EditItems', processor=>$self->{processor} );
+        $self->{processor}->{screenid} = "Shelf::EditItems";
+        $self->{session}->redirect($plugin_for_redirect->redirect_to_me_url);
+
+#	$self->{processor}->add_message( "message", $self->html_phrase( "item_moved" ) );
 }
 
 

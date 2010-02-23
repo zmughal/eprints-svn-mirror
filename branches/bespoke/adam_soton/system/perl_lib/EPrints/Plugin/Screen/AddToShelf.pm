@@ -154,7 +154,15 @@ sub action_add
 
         $self->{processor}->{shelf} = $shelf;
         $self->{processor}->{shelfid} = $shelf->get_id;
-        $self->{processor}->{screenid} = "Shelf::Edit";
+
+	if ($shelfid eq '__new_shelf')
+	{
+        	$self->{processor}->{screenid} = "Shelf::EditMetadata";
+	}
+	else
+	{
+        	$self->{processor}->{screenid} = "Shelf::EditItems";
+	}
 }
 
 sub render
@@ -188,24 +196,25 @@ sub render
 	$page->appendChild( $p );
 	$p->appendChild( $searchexp->render_description );
 
-	$p = $session->make_element( "p" );
-	$page->appendChild( $p );
-	$p->appendChild( $session->make_text(
-		"Add " . $list->count . " items to a shelf (first 5 shown):"
-	) );
 
-	my $ul = $session->make_element( "ul" );
-	$p->appendChild( $ul );
 
-	my @eprints = $list->get_records( 0, 5 );
-	foreach my $eprint (@eprints)
-	{
-		my $li = $session->make_element( "li" );
-		$ul->appendChild( $li );
-		$li->appendChild( $eprint->render_citation_link( ) );
-	}
+        my %opts = (
+                params => {
+                        screen => "AddToShelf",
+			cache => $session->param( "cache" ),
+                },
+                render_result => sub {
+                        my( $session, $e ) = @_;
+			my $p = $session->make_element('p');
+			$p->appendChild($e->render_citation_link);
+			return $p;
+                },
+        );
 
-	$page->appendChild( $self->render_shelf_choice_form($searchexp) );
+        $page->appendChild(EPrints::Paginate->paginate_list( $session, "_buffer", $list, %opts ));
+
+
+	$page->appendChild( $self->render_shelf_choice_form($searchexp, $list->count ));
 
 
 	return $page;
@@ -213,7 +222,7 @@ sub render
 
 sub render_shelf_choice_form
 {
-	my( $self, $searchexp ) = @_;
+	my( $self, $searchexp, $itemcount ) = @_;
 
 	my $processor = $self->{processor};
 	my $session = $processor->{session};
@@ -247,6 +256,28 @@ sub render_shelf_choice_form
 
         my $list = $shelf_searchexp->perform_search;
 
+	$form->appendChild($self->html_phrase('add_word'));
+	if ($itemcount > 10)
+	{
+		my $values = ['__all'];
+		my $labels = {'__all' => 'All'};
+		for (my $i = 10; $i < $itemcount; $i+=10)
+		{
+			push @{$values}, $i;
+			$labels->{$i} = "First $i";
+		}
+
+
+		$form->appendChild( $session->render_option_list(
+			name => 'number_to_add',
+			height => 1,
+			multiple => 0,
+			'values' => $values,
+			'labels' => $labels ) );
+	}
+
+	$form->appendChild($self->html_phrase('to_word'));
+	
 	#initial assumption - a user won't have a huge number of shelves, so get_records may be sufficient.
 	my @shelves = $list->get_records;
 	foreach my $shelf (@shelves)
@@ -255,7 +286,6 @@ sub render_shelf_choice_form
 		$shelf_labels->{$shelf->get_id} =  EPrints::Utils::tree_to_utf8($shelf->render_description);
 	}
 
-	
         $form->appendChild( $session->render_option_list(
                 name => 'shelfid',
                 height => 1,

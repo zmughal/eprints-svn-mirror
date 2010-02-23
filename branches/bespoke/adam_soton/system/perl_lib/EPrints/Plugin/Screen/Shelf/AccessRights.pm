@@ -14,16 +14,16 @@ sub new
 
 	$self->{actions} = [qw/ stop save next prev /];
 
-	$self->{icon} = "action_edit.png";
+	$self->{icon} = "action_shelf_rights.png";
 
 	$self->{appears} = [
 		{
 			place => "shelf_item_actions",
-			position => 150,
+			position => 400,
 		},
 		{
 			place => "shelf_view_actions",
-			position => 150,
+			position => 400,
 		},
 	];
 
