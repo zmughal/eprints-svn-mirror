@@ -2,11 +2,11 @@
 
 =head1 NAME
 
-B<isi_citations.pl> - ISI Web of Science citations tool
+B<isi_sword.pl> - ISI Web of Science citations tool
 
 =head1 SYNOPSIS
 
-B<isi_citations.pl> [B<options>] I<sword> I<query>
+B<isi_sword.pl> [B<options>] I<sword> I<query>
 
 =head1 ARGUMENTS
 
@@ -429,7 +429,7 @@ sub input
 	my( $msg ) = @_;
 
 	print STDERR "$msg: ";
-	my $r = <>;
+	my $r = <STDIN>;
 	chomp($r);
 
 	return $r;

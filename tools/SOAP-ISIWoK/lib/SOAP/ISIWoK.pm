@@ -9,7 +9,7 @@ use XML::LibXML;
 use 5.008;
 use strict;
 
-our $VERSION = '1.01';
+our $VERSION = '1.02';
 
 our $ISI_ENDPOINT = "http://wok-ws.isiknowledge.com/esti/soap/SearchRetrieve";
 our $ISI_NS = "http://esti.isinet.com/soap/search";
@@ -88,36 +88,6 @@ sub search
 	$records->setAttribute( recordsFound => $total );
 
 	return $doc;
-
-=pod
-
-=for LibXML
-
-	my @records;
-
-	my $parser = XML::LibXML->new;
-	my $doc = $parser->parse_string( $result->{records} );
-print STDERR $doc->toString( 1 );
-	foreach my $node ($doc->documentElement->childNodes)
-	{
-		next unless $node->isa( "XML::LibXML::Element" );
-		my $record = {
-			timescited => $node->getAttribute( "timescited" ),
-		};
-		my( $item ) = $node->getElementsByTagName( "item" );
-		$record->{"year"} = $item->getAttribute( "coverdate" );
-		$record->{"year"} =~ s/^(\d{4}).+/$1/; # yyyymm
-		my( $ut ) = $item->getElementsByTagName( "ut" );
-		$record->{"primarykey"} = $ut->textContent;
-		my( $item_title ) = $item->getElementsByTagName( "item_title" );
-		$record->{"title"} = $item_title->textContent;
-		push @records, $record;
-	}
-
-	return @records;
-
-=cut
-
 }
 
 1;
@@ -142,6 +112,58 @@ SOAP::ISIWoK - search and query the ISI Web of Knowledge
 =head1 DESCRIPTION
 
 This module is a thin wrapper for the ISI Web of Knowledge SOAP interface.
+
+=head1 ISI QUERY FORMAT
+
+	AU = (Brody) and TI = (citation impact)
+
+A search query consists of I<index> = I<terms> where I<index> is one of the indexes listed below. I<terms> is one or more terms in double quotes (") or parentheses ('(' and ')').
+
+Multiple operands can be joined using logical operators:
+
+=over 4
+
+=item same
+
+Results in all records in which both operands are found together in the same sentence. A sentence is a period delimited string. A field that does not contain period delimited strings is treated as a single sentence. If a 'same' operator joins two query expressions, then both query expressions must have the same index.
+
+=item not
+
+Results in all records represented in the left operand but not the right operand.
+
+=item and
+
+Results in all records represented in the both the left operand and the right operand.
+
+=item or
+
+Results in all records represented in either or both the left operand and the right operand.
+
+=back
+
+=head2 Search Indexes
+
+	AD	Address
+	AU	Author
+	CA	Cited Author
+	CI	City
+	CT	Conference
+	CU	Country
+	CW	Cited Work
+	CY	Cited Year
+	DT	Document Type
+	GP	Group Author
+	LA	Language
+	OG	Organization
+	PS	Province/State
+	PY	Pub Year
+	SA	Street Address
+	SG	Sub-organization
+	SO	Source
+	TI	Title
+	TS	Topic
+	UT	ut
+	ZP	Zip/Postal Code
 
 =head2 EXPORT
 
