@@ -682,7 +682,6 @@ sub export
 "Plugin $plugin_id can't process $req_plugin_type data." );
 	}
 	
-	
 	return $plugin->output_list( list=>$self, %params );
 }
 

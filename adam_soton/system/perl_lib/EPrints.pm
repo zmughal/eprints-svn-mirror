@@ -193,7 +193,6 @@ use EPrints::MetaField;
 use EPrints::OpenArchives;
 use EPrints::Paginate;
 use EPrints::Paginate::Columns;
-use EPrints::Paginate::UnsortedColumns;
 use EPrints::Probity;
 use EPrints::Repository;
 use EPrints::Search;
