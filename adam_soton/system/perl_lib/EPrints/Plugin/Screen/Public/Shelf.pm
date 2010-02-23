@@ -39,13 +39,19 @@ sub from
 {
 	my( $self ) = @_;
 
-        my $public = $self->{processor}->{shelf}->get_value( "public" );
+	my $shelf =  $self->{processor}->{shelf};
+
+        my $public = $shelf->get_value( "public" );
 	if( $public ne "TRUE" )
 	{
-		$self->{processor}->{screenid} = "Error";
-		$self->{processor}->add_message( "error",
-			$self->html_phrase( "not_public" ) );
-		return;
+		my $user = $self->{session}->current_user;
+		unless (defined $user and $shelf->has_reader($user))
+		{
+			$self->{processor}->{screenid} = "Error";
+			$self->{processor}->add_message( "error",
+				$self->html_phrase( "not_public" ) );
+			return;
+		}
 	}
 
 	$self->SUPER::from;
@@ -112,7 +118,7 @@ sub render
 		$chunk->appendChild($p);
 	}
 
-	$chunk->appendChild($self->render_export_bar);
+	$chunk->appendChild($shelf->render_export_bar);
 
 	my $table = $session->make_element('table');
 	$chunk->appendChild($table);

@@ -1,0 +1,150 @@
+######################################################################
+#
+#  EPrints Object Exporter
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints;
+
+use strict;
+use Data::Dumper;
+
+my $session = new EPrints::Session;
+exit( 0 ) unless( defined $session );
+# $session->get_database->set_debug( 1 );
+
+if( defined $session->param( "shelfid" ) )
+{
+	my $shelfid = $session->param( "shelfid" );
+        my $format = $session->param( "format" );
+
+	my $plugin = get_plugin( $session, $format );
+	if( !defined $plugin )
+	{
+		error( $session, $session->html_phrase( "cgi/export:not_available",
+					format => $session->make_text( $format ) ) );
+		$session->terminate;
+		exit;
+	}
+
+	my $export_url = $session->get_repository->get_conf( "perl_url" )."/exportshelf";
+	my $fn = "shelf_$shelfid"; #perhaps process the shelf title?
+	$export_url .= "/$shelfid/$format/$fn".$plugin->param("suffix");
+	$session->redirect( $export_url );
+	exit;
+}
+
+
+my $path_info = $session->get_request->path_info;
+
+#http://myrepository.com/cgi/exportshelf/21/Text/shelf_21.txt
+
+#http://devel.eprints.org/cgi/exportview/person/Nittrouer=3AX=2E=3A=3A/HTML/Nittrouer=3AX=2E=3A=3A.html
+unless( $path_info =~ m!^/([0-9]+)/([^/]+)/[^/]+$! )
+{
+	error( $session, $session->html_phrase( "cgi/export:no_id" ) );
+	$session->terminate;
+	exit;
+}
+my $shelfid = $1;
+my $format = $2;
+
+my $shelf = new EPrints::DataObj::Shelf( $session, $shelfid );
+
+if( !defined $shelf )
+{
+	EPrints::abort( "shelf with ID '$shelfid' is not available." );
+}
+
+my $ids_to_export = [];
+
+my $user = $session->current_user;
+if (defined $user)
+{
+	foreach my $eprintid (@{$shelf->get_item_ids})
+	{
+		my $eprint = EPrints::DataObj::EPrint->new($session, $eprintid);
+		next unless $eprint;
+		if (
+			$eprint->get_value('eprint_status') eq 'archive' or
+			$eprint->in_editorial_scope_of($user) or
+			$eprint->has_ownder($user)
+		)
+		{
+			push @{$ids_to_export}, $eprintid;
+		}
+	}
+}
+else
+{
+	foreach my $eprintid (@{$shelf->get_item_ids})
+	{
+		my $eprint = EPrints::DataObj::EPrint->new($session, $eprintid);
+		next unless $eprint;
+		push @{$ids_to_export}, $eprintid if $eprint->get_value('eprint_status') eq 'archive';
+	}
+}
+
+my $list = EPrints::List->new(
+	session => $session,
+	dataset => $session->get_repository->get_dataset('eprint'),
+	ids => $ids_to_export
+);
+
+
+my $plugin = get_plugin( $session, $format );
+if( !defined $plugin )
+{
+	error( $session, $session->html_phrase( "cgi/export:not_available",
+				format => $session->make_text( $format ) ) );
+	$session->terminate;
+	exit;
+}
+
+$session->send_http_header( "content_type"=>$plugin->param("mimetype") );
+
+print $list->export( $format );	
+	
+$list->dispose;
+
+$session->terminate;
+exit;
+
+sub error
+{
+	my( $session, $msg ) = @_;
+
+	$session->build_page( 
+		$session->html_phrase( "cgi/export:error_title" ),
+		$msg,
+		"export_error" );
+	$session->send_page;
+}
+
+sub get_plugin
+{
+	my( $session, $format ) = @_;
+
+	my @plugins = $session->plugin_list( 
+				type=>"Export", 
+				can_accept=>"list/eprint", 
+				is_visible=>"all" );
+	my $ok = 0;
+	foreach( @plugins ) 
+	{ 
+		if( $_ eq "Export::$format" ) 
+		{
+			return $session->plugin( "Export::$format" );
+		}
+	}
+	return;
+}
+
