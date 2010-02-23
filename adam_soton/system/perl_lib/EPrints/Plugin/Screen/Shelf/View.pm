@@ -13,12 +13,12 @@ sub new
 
         my $self = $class->SUPER::new(%params);
 
-        $self->{icon} = "action_view.png";
+        $self->{icon} = "action_shelf_view.png";
 
         $self->{appears} = [
                 {
                         place => "shelf_item_actions",
-                        position => 50,
+                        position => 100,
                 },
         ];
 
