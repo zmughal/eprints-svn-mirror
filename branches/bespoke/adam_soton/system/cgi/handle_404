@@ -52,6 +52,10 @@ elsif( $url =~ m#^$urlpath/view/# )
 {
 	&noview_404( $session );
 }
+elsif( $url =~ m#shelf# ) #will depend on apache rewrites
+{
+	&noshelf_404( $session );
+}
 else
 {
 	&plain_404( $session );
@@ -178,3 +182,17 @@ sub noview_404
 }
 
 
+sub noshelf_404
+{
+	my( $session ) = @_;
+
+	my $error = "The requested shelf does not exist.";
+
+	$session->build_page( 
+		$session->html_phrase( "cgi/handle_http_error:404_title" ),
+		$session->make_text( $error ),
+		"noview_404" );
+	$session->get_repository->log( $error );
+
+        $session->send_page();
+}

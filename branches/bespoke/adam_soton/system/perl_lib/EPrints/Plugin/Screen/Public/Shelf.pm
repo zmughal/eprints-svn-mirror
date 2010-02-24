@@ -41,16 +41,19 @@ sub from
 
 	my $shelf =  $self->{processor}->{shelf};
 
-        my $public = $shelf->get_value( "public" );
-	if( $public ne "TRUE" )
+	if ($shelf)
 	{
-		my $user = $self->{session}->current_user;
-		unless (defined $user and $shelf->has_reader($user))
+		my $public = $shelf->get_value( "public" );
+		if( $public ne "TRUE" )
 		{
-			$self->{processor}->{screenid} = "Error";
-			$self->{processor}->add_message( "error",
-				$self->html_phrase( "not_public" ) );
-			return;
+			my $user = $self->{session}->current_user;
+			unless (defined $user and $shelf->has_reader($user))
+			{
+				$self->{processor}->{screenid} = "Error";
+				$self->{processor}->add_message( "error",
+					$self->html_phrase( "not_public" ) );
+				return;
+			}
 		}
 	}
 
@@ -76,13 +79,10 @@ sub properties_from
 
 	if( !defined $self->{processor}->{shelf} )
 	{
-		$self->{processor}->{screenid} = "Error";
-		$self->{processor}->add_message( "error", 
-			$self->html_phrase(
-				"no_such_shelf",
-				id => $self->{session}->make_text( 
-						$self->{processor}->{shelfid} ) ) );
-		return;
+
+		$self->{session}->not_found;
+		$self->{session}->terminate;
+		exit;
 	}
 
 }
