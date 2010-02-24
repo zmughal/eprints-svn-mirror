@@ -6,11 +6,9 @@
 
     <epp:phrase id="Plugin/Screen/Shelves:remove_column_confirm">Really remove this column from the display?</epp:phrase>
 
-    <epp:phrase id="Plugin/Screen/Shelves:help_title">Help Title</epp:phrase>
 
     <epp:phrase id="Plugin/Screen/Shelves:title">Manage shelves</epp:phrase>
 
-    <epp:phrase id="Plugin/Screen/Shelves:help">Some Help Text</epp:phrase>
 
     <epp:phrase id="Plugin/Screen/Shelves:add">Add Column</epp:phrase>
 
@@ -173,5 +171,29 @@
     <epp:phrase id="Plugin/Screen/AddToShelf:to_word"> to </epp:phrase>
 
     <epp:phrase id="Plugin/Screen/Public/Shelf:no_such_shelf">This shelf does not exist!</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelves:help_title">Help</epp:phrase>
+    <epp:phrase id="Plugin/Screen/Shelves:help">
+<p>This page shows all shelves which you have permission to administer, edit or view.</p>
+<p>If you stop before completing the deposit, or a deposit is returned for corrections, it will appear in the list as in the "User Workarea".</p>
+
+<p style="margin-bottom: 1px;">Click on an icon to the right of an item to:</p>
+<table class="ep_icontable">
+  <tr><th><img src="{$config{rel_path}}/style/images/action_shelf_view.png" border="0" align="absmiddle" alt=""/></th><td>View the contents of the shelf.</td></tr>
+  <tr><th><img src="{$config{rel_path}}/style/images/action_shelf_metadata.png" border="0" align="absmiddle" alt=""/></th><td>Edit the Title and Description of the shelf.</td></tr>
+  <tr><th><img src="{$config{rel_path}}/style/images/action_shelf_contents.png" border="0" align="absmiddle" alt=""/></th><td>Reorder the shelf or remove items from it.</td></tr>
+  <tr><th><img src="{$config{rel_path}}/style/images/action_shelf_rights.png" border="0" align="absmiddle" alt=""/></th><td>Modify who can view this shelf.</td></tr>
+  <tr><th><img src="{$config{rel_path}}/style/images/action_shelf_destroy.png" border="0" align="absmiddle" alt=""/></th><td>Delete the shelf.</td></tr>
+</table>
+</epp:phrase>
+
+
+    <epp:phrase id="ordername_shelf_bytitle">By title</epp:phrase>
+
+    <epp:phrase id="ordername_shelf_byrevdate">By creation date (desc)</epp:phrase>
+
+    <epp:phrase id="ordername_shelf_bydate">By creation date</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Staff/ShelfSearch:title">Search shelves</epp:phrase>
 
 </epp:phrases>

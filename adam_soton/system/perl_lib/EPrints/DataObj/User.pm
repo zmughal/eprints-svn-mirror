@@ -1115,6 +1115,7 @@ my $PRIVMAP =
 		"create_user",
 		"subject/edit:editor",
 		"staff/user_search",
+                "staff/shelf_search",
 		"staff/history_search",
 		"staff/issue_search",
 		"config/view",

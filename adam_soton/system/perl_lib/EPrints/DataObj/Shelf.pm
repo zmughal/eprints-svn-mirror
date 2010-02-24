@@ -67,21 +67,17 @@ sub get_system_field_info
 
 		{ name=>"rev_number", type=>"int", required=>1, can_clone=>0 },
 
-		{ name=>"userid", type=>"itemref", 
-			datasetid=>"user", required=>1 },
+		{ name=>"userid", type=>"itemref", datasetid=>"user", required=>1 },
 
-		{ name=>"adminids", type=>"username",
-			required=>1, multiple=>1, input_cols => 20 },
+		{ name=>"adminids", type=>"username", multiple=>1, input_cols => 20 },
 
-		{ name=>"editorids", type=>"username",
-			required=>1, multiple =>1, input_cols => 20 },
+		{ name=>"editorids", type=>"username", multiple =>1, input_cols => 20 },
 
-		{ name=>"readerids", type=>"username",
-			required=>1, multiple =>1, input_cols => 20 },
+		{ name=>"readerids", type=>"username", multiple =>1, input_cols => 20 },
 
 		{ name=>"title", type=>"text" },
 
-		{ name=>"description", type=>"text" },
+		{ name=>"description", type=>"longtext" },
 
 		{ name=>"public", type=>"boolean", input_style=>"radio" },
 
@@ -538,6 +534,12 @@ sub render_export_bar
 }
 
 
+sub get_control_url
+{
+        my( $self ) = @_;
+
+        return $self->{session}->get_repository->get_conf( "http_cgiurl" )."/users/home?screen=Shelf::View&shelfid=".$self->get_value( "userid" );
+}
 
 
 =pod
