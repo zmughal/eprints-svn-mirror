@@ -111,10 +111,6 @@
 
     <epp:phrase id="Plugin/Screen/Shelf/EditItems:title">Edit Shelf Items</epp:phrase>
 
-    <epp:phrase id="Plugin/Screen/Shelf/EditItems:help_title">Help Title</epp:phrase>
-
-    <epp:phrase id="Plugin/Screen/Shelf/EditItemsItems:help">Some Help Text</epp:phrase>
-
     <epp:phrase id="Plugin/Screen/Shelf/EPrint/RemoveSingle:sure_delete"><p>Are you sure you wish to remove <em><epc:pin name="title"/></em> from this shelf?</p>
 </epp:phrase>
 
@@ -185,6 +181,24 @@
   <tr><th><img src="{$config{rel_path}}/style/images/action_shelf_rights.png" border="0" align="absmiddle" alt=""/></th><td>Modify who can view this shelf.</td></tr>
   <tr><th><img src="{$config{rel_path}}/style/images/action_shelf_destroy.png" border="0" align="absmiddle" alt=""/></th><td>Delete the shelf.</td></tr>
 </table>
+</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/Shelf/EditItems:help_title">Help</epp:phrase>
+    <epp:phrase id="Plugin/Screen/Shelf/EditItemsItems:help">
+
+<p>This page shows all items contained in this shelf.</p>
+
+<p style="margin-bottom: 1px;">Click on an icon to the right of an item to:</p>
+<table class="ep_icontable">
+  <tr><th><img src="{$config{rel_path}}/style/images/multi_down.png" border="0" align="absmiddle" alt=""/></th><td>Move an item down in the list.</td></tr>
+  <tr><th><img src="{$config{rel_path}}/style/images/multi_up.png" border="0" align="absmiddle" alt=""/></th><td>Move an item up in the list.</td></tr>
+  <tr><th><img src="{$config{rel_path}}/style/images/delete.png" border="0" align="absmiddle" alt=""/></th><td>Remove an item from the shelf.</td></tr>
+</table>
+
+<p>To remove multiple items, select with the check boxes, then click 'Remove Items'.  Clicking 'Remove Items' without selecting any check boxes will delete all items.  You will be asked for confirmation before any items are deleted.</p>
+
+<p>To reorder the list, select an item metadata field to order on and then click the 'Reorder by...' button.</p>
+
 </epp:phrase>
 
 
