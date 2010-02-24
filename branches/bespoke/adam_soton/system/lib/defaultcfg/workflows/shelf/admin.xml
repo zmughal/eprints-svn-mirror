@@ -13,6 +13,7 @@
       <field ref="adminids"/>
       <field ref="editorids"/>
       <field ref="readerids"/>
+      <field ref="public" required="yes"/>
     </component>
 
   </stage>
