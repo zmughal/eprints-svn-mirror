@@ -212,4 +212,12 @@
 
     <epp:phrase id="Plugin/Screen/Staff/ShelfSearch:description">Search for a shelf.</epp:phrase>
 
+    <epp:phrase id="Plugin/Screen/AddToShelfPrototype:add_word">Add </epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/AddToShelfPrototype:add">Add</epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/AddToShelfPrototype:to_word"> to </epp:phrase>
+
+    <epp:phrase id="Plugin/Screen/AddToShelfPrototype:title">Add Items to Shelf</epp:phrase>
+
 </epp:phrases>

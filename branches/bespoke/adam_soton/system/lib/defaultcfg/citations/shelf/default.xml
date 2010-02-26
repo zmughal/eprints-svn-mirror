@@ -8,7 +8,7 @@
 
 <cite:linkhere><span class="ep_name_citation"><epc:choose>
   <epc:when test="title"><epc:print expr="title"/></epc:when>
-  <epc:otherwise>Untitled Shelf with id <epc:print expr="shelfid"/></epc:otherwise>
+  <epc:otherwise>Untitled (id <epc:print expr="shelfid"/>)</epc:otherwise>
 </epc:choose></span></cite:linkhere>
 
 </cite:citation>

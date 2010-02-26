@@ -538,7 +538,7 @@ sub get_control_url
 {
         my( $self ) = @_;
 
-        return $self->{session}->get_repository->get_conf( "http_cgiurl" )."/users/home?screen=Shelf::View&shelfid=".$self->get_value( "userid" );
+        return $self->{session}->get_repository->get_conf( "http_cgiurl" )."/users/home?screen=Shelf::View&shelfid=".$self->get_value( "shelfid" );
 }
 
 
