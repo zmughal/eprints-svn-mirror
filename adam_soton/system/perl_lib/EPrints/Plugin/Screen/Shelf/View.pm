@@ -63,7 +63,16 @@ sub render
 	{
 		my $tr = $session->make_element('tr');
 		my $td = $session->make_element('td');
-		$td->appendChild($item->render_citation_link('result', n => [$n++, "INTEGER"]));
+
+		my $status = $item->get_value('eprint_status');
+		if ($status eq 'archive')
+		{
+			$td->appendChild($item->render_citation_link('result', n => [$n++, "INTEGER"]));
+		}
+		else
+		{
+			$td->appendChild($item->render_citation_link_staff('result_with_status', n => [$n++, "INTEGER"]));
+		}
 
 		$tr->appendChild($td);
 		$table->appendChild($tr);

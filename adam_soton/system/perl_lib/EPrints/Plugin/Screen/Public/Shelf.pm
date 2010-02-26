@@ -80,7 +80,7 @@ sub properties_from
 	if( !defined $self->{processor}->{shelf} )
 	{
 
-		$self->{session}->not_found;
+		$self->{session}->not_found("Shelf doesn't exist");
 		$self->{session}->terminate;
 		exit;
 	}
@@ -126,6 +126,7 @@ sub render
 	my $n = 1;
 	foreach my $item (@{$shelf->get_items})
 	{
+		next unless ($item->get_value('eprint_status') eq 'archive'); #only show live items in the public view
 		my $tr = $session->make_element('tr');
 		my $td = $session->make_element('td');
 		$td->appendChild($item->render_citation_link('result', n => [$n++, "INTEGER"]));

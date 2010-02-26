@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+
+<!-- 
+	Neat citation for eprints used in search results.
+-->
+
+<cite:citation xmlns="http://www.w3.org/1999/xhtml" xmlns:cite="http://eprints.org/ep3/citation" xmlns:epc="http://eprints.org/ep3/control" type="table_row">
+  <tr class="ep_search_result">
+    <td style="padding-left: 0.5em"><epc:print expr="$n" />.</td>
+    <td style="padding-left: 0.5em">
+      <epc:print expr="$item.citation('default')" />
+      <epc:if test="full_text_status = 'none'"> Item not available online.</epc:if>
+      <epc:if test="full_text_status = 'restricted'"> Item availablity restricted.</epc:if>
+      [<epc:print expr="eprint_status"/>]
+    </td>
+    <td style="padding-right: 0.5em" align="right"><epc:print expr="fileinfo"/></td>
+  </tr>
+</cite:citation>
