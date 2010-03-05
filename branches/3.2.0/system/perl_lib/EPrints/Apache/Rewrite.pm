@@ -116,51 +116,6 @@ sub handler
 
 	# URI redirection
 
-	if( $uri =~ m! ^$urlpath/id/repository$ !x )
-	{
-		my $accept = EPrints::Apache::AnApache::header_in( $r, "Accept" );
-		$accept = "application/rdf+xml" unless defined $accept;
-
-		my $plugin = content_negotiate_best_plugin( 
-			$repository, 
-			accept_header => $accept,
-			consider_summary_page => 0,
-			plugins => [$repository->plugin_list(
-				type => "Export",
-				is_visible => "all",
-				handles_rdf => 1 )]
-		);
-
-		my $url = $repository->config( "http_cgiurl" )."/repositoryinfo/".
-			$plugin->get_subtype."/".$repository->get_id.$plugin->param("suffix");
-
-		return redir_see_other( $r, $url );
-	}
-
-	if( $uri =~ m! ^$urlpath/id/x-(.*)$ !x )
-	{
-		my $id = $1;
-		my $accept = EPrints::Apache::AnApache::header_in( $r, "Accept" );
-		$accept = "application/rdf+xml" unless defined $accept;
-
-		my $plugin = content_negotiate_best_plugin( 
-			$repository, 
-			accept_header => $accept,
-			consider_summary_page => 0,
-			plugins => [$repository->plugin_list(
-				type => "Export",
-				is_visible => "all",
-				handles_rdf => 1 )]
-		);
-
-		my $fn = $id;
-		$fn=~s/\//_/g;
-		my $url = $repository->config( "http_cgiurl" )."/exportresource/".
-			$id."/".$plugin->get_subtype."/$fn".$plugin->param("suffix");
-
-		return redir_see_other( $r, $url );
-	}
-
 	if( $uri =~ m! ^$urlpath/id/([^/]+)/(.*)$ !x )
 	{
 		my( $datasetid, $id ) = ( $1, $2 );
