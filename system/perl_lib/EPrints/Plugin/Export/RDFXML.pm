@@ -23,6 +23,9 @@ sub new
 	$self->{mimetype} = "application/rdf+xml";
 	$self->{qs} = 0.85;
 
+	$self->{xmlns} = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+	$self->{schemaLocation} = "http://www.openarchives.org/OAI/2.0/rdf.xsd";
+
 	return $self;
 }
 
@@ -92,6 +95,18 @@ sub output_triple_cache
 		push @{$r}, rdf_footer( $repository );
 		return join( '', @{$r} );
 	}
+}
+
+sub xml_dataobj
+{
+	my( $plugin, $dataobj ) = @_;
+
+	my $xml = $plugin->{session}->xml;
+
+	my $string = $plugin->output_dataobj( $dataobj );
+	my $doc = $xml->parse_string( $string );
+
+	return $xml->clone( $doc->getDocumentElement() );
 }
 
 sub cache_to_rdfxml
@@ -215,9 +230,8 @@ sub output_dataobj
 	my $cache = {};
 	$plugin->cache_general_triples( $cache );
 	$plugin->cache_dataobj_triples( $dataobj, $cache );
-	my $namespaces = $plugin->get_namespaces();
 
-	return $plugin->output_triple_cache( $cache, $namespaces );
+	return $plugin->output_triple_cache( $cache );
 }
 
 1;

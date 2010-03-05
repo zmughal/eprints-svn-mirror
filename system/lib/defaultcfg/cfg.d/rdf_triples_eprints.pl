@@ -10,7 +10,9 @@ $c->{rdf}->{license_uri}->{cc_by_nc_sa}	= "http://creativecommons.org/licenses/b
 $c->{rdf}->{license_uri}->{cc_by_sa}	= "http://creativecommons.org/licenses/by-sa/3.0/";
 $c->{rdf}->{license_uri}->{cc_gnu_gpl}	= "http://creativecommons.org/licenses/GPL/2.0/";
 $c->{rdf}->{license_uri}->{cc_gnu_lgpl}	= "http://creativecommons.org/licenses/LGPL/2.1/";
-$c->{rdf}->{license_uri}->{cc_public_domain}= "http://creativecommons.org/licenses/publicdomain/";
+$c->{rdf}->{license_uri}->{cc_public_domain} = "http://creativecommons.org/licenses/publicdomain/";
+$c->{rdf}->{license_uri}->{odc_odbl}    = "http://www.opendatacommons.org/licenses/odbl/";
+$c->{rdf}->{license_uri}->{odc_by}      = "http://www.opendatacommons.org/licenses/by/";
 
 $c->{rdf}->{content_rel_dc}->{draft} = "dc:hasVersion";
 $c->{rdf}->{content_rel_dc}->{submitted} = "dc:hasVersion";
@@ -58,6 +60,13 @@ $c->add_trigger( "rdf_triples_eprint", sub {
 		}
 	}
 	push @triples, [ $eprint_uri, "rdf:type", "ep:EPrint" ];
+	if( $eprint->dataset->has_field( "type" ) && $eprint->is_set( "type" ) )
+	{
+		my $type = $eprint->get_value( "type" );
+		$type = "\u$type";
+		$type=~s/_([a-z])/\u$1/g;
+		push @triples, [ $eprint_uri, "rdf:type", "ep:${type}EPrint" ];
+	}
 	push @triples, [ $eprint_uri, "dct:isPartOf", "<".$c->{base_url}."/id/repository>" ];
 		
 	DOC: foreach my $doc ( @{$eprint->get_value( "documents" )} )
