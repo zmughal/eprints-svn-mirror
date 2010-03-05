@@ -12,8 +12,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<epadmin> - EPrints repository admin tool
@@ -416,7 +414,7 @@ END
 		$repodir."/cfg",
 		$repoid );
 
-	foreach( "cgi", "var", "html", "documents", "documents/disk0" )
+	foreach( "var", "html", "documents", "documents/disk0" )
 	{
 		my $dir = $repodir."/".$_;
 		EPrints::Platform::mkdir( $dir );
@@ -2176,12 +2174,6 @@ sub upgrade_3_1_2_to_3_2_0
 
 	upgrade_cfg_files( $repo, [qw(
 	 	indexing.pl
-		rdf.pl
-		rdf_triples_sameas.pl
-		rdf_triples_bibo.pl
-		rdf_uri_event_location.pl
-		rdf_uri_event.pl
-		rdf_uri_person.pl
 	)]);
 
 	# We can do this now, because we only ever add columns

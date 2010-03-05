@@ -15,8 +15,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints::Database::Oracle> - custom database methods for Oracle DB
@@ -62,16 +60,6 @@ Oracle won't ORDER BY LOBS.
 Oracle requires special means to insert values into CLOB/BLOB.
 
 Oracle doesn't support "AS" when aliasing.
-
-=head2 TODO
-
-=over 4
-
-=item epadmin create
-
-=item $name = $db->index_name( $table, @columns )
-
-=back
 
 =head1 METHODS
 
@@ -452,14 +440,6 @@ sub quote_binary
 	use bytes;
 
 	return join('', map { sprintf("%02x",ord($_)) } split //, $value);
-}
-
-# unsupported
-sub index_name
-{
-	my( $self, $table, @cols ) = @_;
-
-	return 1;
 }
 
 sub alias_glue

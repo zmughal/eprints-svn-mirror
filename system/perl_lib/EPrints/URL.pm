@@ -14,8 +14,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints::URL> - URL utility methods

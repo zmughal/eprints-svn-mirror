@@ -15,8 +15,6 @@
 
 =pod
 
-=for Pod2Wiki {{API:Unstable}}
-
 =head1 NAME
 
 B<EPrints::Storage> - store and retrieve objects in the storage engine

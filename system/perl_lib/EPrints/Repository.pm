@@ -15,8 +15,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints::Repository> - Single connection to the EPrints system
@@ -44,8 +42,6 @@ causing this request.
 
 The session object also provides many methods for creating XHTML 
 results which can be returned via the web interface. 
-
-=head1 METHODS
 
 =over 4
 
@@ -236,6 +232,8 @@ sub new
 		}
 	}
 
+	$self->{storage} = EPrints::Storage->new( $self );
+
 	if( $self->{noise} >= 2 ) { print "done.\n"; }
 	
 	if( !$self->{offline} && (!defined $opts{consume_post} || $opts{consume_post}) )
@@ -248,31 +246,6 @@ sub new
 	$self->{loadtime} = time();
 	
 	return( $self );
-}
-
-=item $repo->init_from_thread()
-
-Do whatever needs to be done to reinstate the repository after a new thread is spawned.
-
-This is called during the CLONE() stage.
-
-=cut
-
-sub init_from_thread
-{
-	my( $self ) = @_;
-
-	# force recreation of XML object
-	delete $self->{xml};
-
-	# force reload
-#	$self->{loadtime} = 0;
-
-	$self->_load_workflows();
-	$self->_load_languages();
-	$self->_load_templates();
-	$self->_load_citation_specs();
-	$self->_load_storage();
 }
 
 # add the relative paths + http_* config if not set already by cfg.d
@@ -420,7 +393,6 @@ sub load_config
 		$self->_load_languages() || return;
 		$self->_load_templates() || return;
 		$self->_load_citation_specs() || return;
-		$self->_load_storage() || return;
 	}
 
 	$self->_load_plugins() || return;
@@ -567,8 +539,47 @@ sub new_from_request
 	{
 		EPrints::abort( "Can't load EPrints repository: $repoid" );
 	}
+	$repository->check_secure_dirs( $request );
 
 	return $repository;
+}
+
+######################################################################
+#
+# $repository->check_secure_dirs( $request );
+#
+# This method triggers an abort if the secure dirs specified in 
+# the apache conf don't match those EPrints is using. This prevents
+# the risk of a security breach after moving directories.
+#
+######################################################################
+
+sub check_secure_dirs
+{
+	my( $self, $request ) = @_;
+
+	my $real_secured_cgi = EPrints::Config::get( "cgi_path" )."/users";
+	my $real_documents_path = $self->config( "documents_path" );
+
+	my $apacheconf_secured_cgi = $request->dir_config( "EPrints_Dir_SecuredCGI" );
+	my $apacheconf_documents_path = $request->dir_config( "EPrints_Dir_Documents" );
+
+	if( $real_secured_cgi ne $apacheconf_secured_cgi )
+	{
+		EPrints::abort( <<END );
+Document path is: $real_secured_cgi 
+but apache conf is securiing: $apacheconf_secured_cgi
+You probably need to run generate_apacheconf!
+END
+	}
+	if( $real_documents_path ne $apacheconf_documents_path )
+	{
+		EPrints::abort( <<END );
+Document path is: $real_documents_path 
+but apache conf is securiing: $apacheconf_documents_path
+You probably need to run generate_apacheconf!
+END
+	}
 }
 
 sub _add_http_paths
@@ -589,12 +600,11 @@ sub _add_http_paths
 			$config->{"secureport"} ||= 443;
 			$config->{"https_root"} = $config->{"securepath"}
 				if !defined($config->{"https_root"});
-			$config->{"https_root"} = $config->{"http_root"}
-				if !defined($config->{"https_root"});
-			$config->{"https_cgiroot"} = $config->{"http_cgiroot"}
+			$config->{"https_cgiroot"} = $config->{"https_root"} . $config->{"http_cgiroot"}
 				if !defined($config->{"https_cgiroot"});
 		}
 	}
+
 }
  
 ######################################################################
@@ -626,25 +636,7 @@ sub _load_workflows
 	return 1;
 }
 
-=begin InternalDoc
-
-=item $repo->_load_storage()
-
-Loads the storage layer which includes a XML workflow for storing items.
-
-=end
-
-=cut
-
-sub _load_storage
-{
-	my( $self ) = @_;
-
-	$self->{storage} = EPrints::Storage->new( $self );
-
-	return defined $self->{storage};
-}
-
+	
 ######################################################################
 # 
 # $workflow_xml = $repository->get_workflow_config( $datasetid, $workflowid )
@@ -758,7 +750,7 @@ sub _load_citation_dir
 		next if $fn =~ m/^\./;
 		push @dirs,$fn if( -d "$dir/$fn" );
 	}
-	closedir $dh;
+	close $dh;
 
 	# for each dataset dir
 	foreach my $dsid ( @dirs )
@@ -771,7 +763,7 @@ sub _load_citation_dir
 			next unless $fn =~ s/\.xml$//;
 			push @files,$fn;
 		}
-		closedir $dh;
+		close $dh;
 		if( !defined $self->{citation_style}->{$dsid} )
 		{
 			$self->{citation_style}->{$dsid} = {};
@@ -1612,18 +1604,18 @@ sub get_store_dirs
 
 	my $docroot = $self->config( "documents_path" );
 
-	opendir( my $dh, $docroot )
+	opendir( DOCSTORE, $docroot )
 		or EPrints->abort( "Error opening document directory $docroot: $!" );
 
 	my( @dirs, $dir );
-	foreach my $dir (sort readdir( $dh ))
+	foreach my $dir (sort readdir( DOCSTORE ))
 	{
 		next if( $dir =~ m/^\./ );
 		next unless( -d $docroot."/".$dir );
 		push @dirs, $dir;	
 	}
 
-	closedir( $dh );
+	closedir( DOCSTORE );
 
 	return @dirs;
 }
@@ -5398,6 +5390,7 @@ sub get_static_page_conf_file
 	my( $repository ) = @_;
 
 	my $r = $repository->get_request;
+	$repository->check_secure_dirs( $r );
 	my $esec = $r->dir_config( "EPrints_Secure" );
 	my $secure = (defined $esec && $esec eq "yes" );
 	my $urlpath;
@@ -5485,6 +5478,9 @@ sub init_from_request
 	# go online
 	$self->{request} = $request;
 	$self->{offline} = 0;
+
+	# check secured directories
+	$self->check_secure_dirs( $request );
 
 	# register a cleanup call for us
 	$request->pool->cleanup_register( \&cleanup, $self );

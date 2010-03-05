@@ -314,8 +314,7 @@ sub _process_foreach
 		EPrints::abort( "In ".$params{in}.": foreach element with non alphanumeric iterator.\n".substr( $node->toString, 0, 100 ) );
 	}
 	my $limit = $node->getAttribute( "limit" );
-	$limit = "" if !defined $limit;
-	if( $limit ne "" && $limit !~ m/^\d+$/i )
+	if( defined $limit && $limit !~ m/^\d+$/i )
 	{
 		EPrints::abort( "In ".$params{in}.": foreach element with non integer limit.\n".substr( $node->toString, 0, 100 ) );
 	}
@@ -357,7 +356,7 @@ sub _process_foreach
 		$newparams{$iterator} = [ $item, $thistype ];
 		$output->appendChild( process_child_nodes( $node, %newparams ) );
 		$index++;
-		last if( $limit ne "" && $index >= $limit );
+		last if( defined $limit && $index >= $limit );
 	}
 
 	return $output;
