@@ -15,8 +15,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 
 =head1 NAME
 
@@ -55,8 +53,6 @@ use Time::Local 'timegm_nocheck';
 
 ######################################################################
 =pod
-
-=head1 METHODS
 
 =over 4
 

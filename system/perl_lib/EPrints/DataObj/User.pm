@@ -15,8 +15,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints::DataObj::User> - Class representing a single user.
@@ -188,6 +186,9 @@ sub get_system_field_info
 			datasetid => "eprint",
 			fieldnames_config => "editor_limit_fields",
 		},
+
+		{ name => "permission_group", multiple => 1, type => "namedset", 
+			set_name => "permission_group", },
 
 		{ name => "roles", multiple => 1, type => "text", text_index=>0 },
 
@@ -519,22 +520,6 @@ sub remove
 		$self->get_value( "userid" ) );
 	
 	return( $success );
-}
-
-=item $lang = $user->langauge()
-
-Get the preferred language of the user.
-
-=cut
-
-sub language
-{
-	my( $self ) = @_;
-
-	my $langid = $self->value( "lang" );
-	my $lang = $self->{session}->get_repository->get_language( $langid );
-
-	return $lang;
 }
 
 =item $list = $user->owned_eprints_list( %opts )

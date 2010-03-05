@@ -100,9 +100,9 @@ sub init
 
 	load_system_config();
 
-	opendir( my $dh, $SYSTEMCONF->{arc_path} );
+	opendir( CFG, $SYSTEMCONF->{arc_path} );
 	my $id;
-	while( $id = readdir( $dh ) )
+	while( $id = readdir( CFG ) )
 	{
 		next if( $id =~ m/^\./ );
 		next if( !-d $SYSTEMCONF->{arc_path}."/".$id );
@@ -110,7 +110,7 @@ sub init
 		
 		$ARCHIVES{$id} = {};
 	}
-	closedir( $dh );
+	closedir( CFG );
 }
 
 =item EPrints::Config::load_system_config()
@@ -234,12 +234,7 @@ sub load_repository_config_module
 	my $info = {};
 	
 	%$info = %$SYSTEMCONF;
-
 	$info->{archiveroot} = $info->{arc_path}."/".$id;
-	$info->{documents_path} = $info->{archiveroot}."/documents";
-	$info->{config_path} = $info->{archiveroot}."/cfg";
-	$info->{htdocs_path} = $info->{archiveroot}."/html";
-	$info->{cgi_path} = $info->{archiveroot}."/cgi";
 
 	if( !-d $info->{archiveroot} )
 	{

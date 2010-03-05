@@ -14,8 +14,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints::Language> - A Single Language supported by a repository.
@@ -25,8 +23,6 @@ B<EPrints::Language> - A Single Language supported by a repository.
 The language class handles loading the "phrase" files for a single
 language. See the mail documentation for a full explanation of the
 format of phrase files.
-
-=head1 METHODS
 
 =over 4
 
@@ -109,13 +105,6 @@ sub new
 	return( $self );
 }
 
-sub CLONE
-{
-	my( $class ) = @_;
-
-	%SYSTEM_PHRASES = ();
-}
-
 sub _read_phrases_dir
 {
 	my( $self, $data, $repository, $dir ) = @_;
@@ -132,7 +121,7 @@ sub _read_phrases_dir
 			$self->_read_phrases( $data, $file, $repository );
 		}
 	}
-	closedir $dh;
+	close $dh;
 }
 
 =item $info = $lang->get_phrase_info( $phraseid, $session )
@@ -310,17 +299,16 @@ sub _get_phrase
 	my( $self, $phraseid, $session ) = @_;
 
 	# Look for the phrase in this order:
-	# $self->{repository_data}, $self->{$data},
-	# $fallback->{repository_data}, $fallback->{$data}
-	foreach my $lang ($self, $self->{fallback})
+	# $self->{repository_data}, $fallback->{$repository_data},
+	# $self->{data}, $fallback->{$data}
+	foreach my $src (qw( repository_data data ))
 	{
-		next if !defined $lang;
-		foreach my $src (qw( repository_data data ))
-		{
-			my( $xml, $file ) = $lang->_get_src_phrase( $src, $phraseid, $session );
-			# phrase, fallback?, source, XML file
-			return( $xml, $lang ne $self, $src, $file ) if defined $xml;
-		}
+		my( $xml, $file ) = $self->_get_src_phrase( $src, $phraseid, $session );
+		return( $xml, 0, $src, $file ) if defined $xml;
+
+		next unless defined $self->{fallback};
+		($xml, $file ) = $self->{fallback}->_get_src_phrase( $src, $phraseid, $session );
+		return( $xml, 1, $src, $file ) if defined $xml;
 	}
 
 	return ();

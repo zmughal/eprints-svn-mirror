@@ -13,8 +13,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<indexer> - Indexing daemon for EPrints

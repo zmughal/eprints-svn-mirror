@@ -12,8 +12,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<epadmin> - EPrints repository admin tool
@@ -416,7 +414,7 @@ END
 		$repodir."/cfg",
 		$repoid );
 
-	foreach( "cgi", "var", "html", "documents", "documents/disk0" )
+	foreach( "var", "html", "documents", "documents/disk0" )
 	{
 		my $dir = $repodir."/".$_;
 		EPrints::Platform::mkdir( $dir );

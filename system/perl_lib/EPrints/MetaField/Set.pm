@@ -47,23 +47,6 @@ sub render_single_value
 	return $self->render_option( $session , $value );
 }
 
-sub set_value
-{
-	my( $self, $object, $value ) = @_;
-
-	if( $self->get_property( "multiple" ) )
-	{
-		$value = [] if !defined $value;
-		my %seen;
-		@$value = grep {
-			EPrints::Utils::is_set( $_ ) # multiple values must be defined
-			&& !$seen{$_}++ # set values must be unique
-		} @$value;
-	}
-
-	return $object->set_value_raw( $self->{name}, $value );
-}
-
 ######################################################################
 =pod
 
@@ -306,11 +289,26 @@ sub form_value_actual
 		return $self->SUPER::form_value_actual( $session, $obj, $basename );
 	}
 
-	my @values = grep {
-		$_ ne "-" # for the  ------- in defaults at top
-	} $session->param( $basename );
+	my @values = $session->param( $basename );
+	
+	if( scalar( @values ) == 0 )
+	{
+		return undef;
+	}
 
-	return $self->get_property( "multiple" ) ? \@values : $values[0];
+	if( $self->get_property( "multiple" ) )
+	{
+		# Make sure all fields are unique
+		# There could be two options with the same id,
+		# especially in "subject"
+		my %v;
+		foreach( @values ) { $v{$_}=1; }
+		delete $v{"-"}; # for the  ------- in defaults at top
+		@values = keys %v;
+		return \@values;
+	}
+
+	return $values[0];
 }
 
 # the ordering for set is NOT the same as for normal

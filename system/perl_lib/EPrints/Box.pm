@@ -12,10 +12,6 @@
 #
 ######################################################################
 
-=pod
-
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints::Box> - Class to render cute little collapsable/expandable Web 2.0ish boxes.

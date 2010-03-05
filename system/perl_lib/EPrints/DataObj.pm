@@ -14,8 +14,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints::DataObj> - Base class for records in EPrints.
@@ -336,7 +334,7 @@ sub create_subdataobj
 	my $field = $self->dataset->field( $fieldname );
 	if( !defined $field )
 	{
-		EPrints::abort( "Cannot create sub-object on non-existent field $fieldname" );
+		EPrints::abort( "Cannot create sub-object on non-existant field $fieldname" );
 	}
 	if( !$field->isa( "EPrints::MetaField::Subobject" ) )
 	{
@@ -561,7 +559,7 @@ sub get_value
 
 	if( !defined $field )
 	{
-		EPrints::abort( "Attempt to get value from not existent field: ".$self->{dataset}->id()."/$fieldname" );
+		EPrints::abort( "Attempt to get value from not existant field: ".$self->{dataset}->id()."/$fieldname" );
 	}
 
 	my $r = $field->get_value( $self );
@@ -608,7 +606,7 @@ sub set_value
 	{
 		if( $self->{session}->get_noise > 0 )
 		{
-			$self->{session}->get_repository->log( "Attempt to set value on not existent field: ".$self->{dataset}->id()."/$fieldname" );
+			$self->{session}->get_repository->log( "Attempt to set value on not existant field: ".$self->{dataset}->id()."/$fieldname" );
 		}
 		return;
 	}

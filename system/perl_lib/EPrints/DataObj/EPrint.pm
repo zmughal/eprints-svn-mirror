@@ -12,10 +12,6 @@
 #
 ######################################################################
 
-=pod
-
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints::DataObj::EPrint> - Class representing an actual EPrint
