@@ -1,0 +1,280 @@
+#!/usr/bin/perl -w -I/opt/eprints3/perl_lib
+
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+=pod
+
+=for Pod2Wiki
+
+=head1 NAME
+
+B<generate_apacheconf> - Create the apache config files needed for EPrints
+
+=head1 SYNOPSIS
+
+B<generate_apacheconf> [B<options>] [I<repository_id>]
+
+=head1 DESCRIPTION
+
+This script generates the apache config files which will be used by EPrints. In the simple case all you need to do is run this script then add a line to your main apache configuration file - often, but not always, B</etc/httpd/conf/httpd.conf>
+
+ Include /opt/eprints3/cfg/apache.conf
+
+Or elsewhere if you installed EPrints somewhere other than /opt/eprints3. This file then uses the "Include" directive to include all relevant apache config files from this EPrints installation.
+
+By default the virtualhost directives are
+
+ VirtualHost *
+
+But the * can be changed to something different by editing the C<virtualhost> option in SystemSettings.pm
+
+=head1 ARGUMENTS
+
+=over 8
+
+=item repository_id
+
+Update the given repository's apache configuration. Leave blank to update all
+repositories.
+
+=back
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--replace>
+
+Replace existing configuration files.
+
+=item B<--system>
+
+Update the system configuration file.
+
+=item B<--help>
+
+Print a brief help message and exit.
+
+=item B<--man>
+
+Print the full manual page and then exit.
+
+=item B<--quiet>
+
+Be vewwy vewwy quiet. This option will supress all output unless an error occurs.
+
+=item B<--verbose>
+
+Explain in detail what is going on.
+May be repeated for greater effect.
+
+=item B<--version>
+
+Output version information and exit.
+
+=back   
+
+=head1 FILES
+
+=over 4
+
+=item B<EPRINTS/cfg/apache.conf>
+
+This file is not updated if it already exists, so you can add system-wide
+apache configuration directives here. By default it just includes the two other system wide files: auto-apache-includes.conf and auto-apache.conf
+
+=item B<EPRINTS/archives/ARCHIVEDIR/cfg/apache.conf>
+
+This file is not updated if it already exists, so you can add repository-specific
+apache configuration directives here. By default it just includes the automatically generated repository specific file: auto-apache.conf
+
+=item B<EPRINTS/archives/ARCHIVEDIR/cfg/secure.conf>
+
+Only created if the repository has a securehost configured. This file contains all the configuration options that need to be included into the secure server virtualhost.
+
+=back
+
+__GENERICPOD__
+
+=cut
+
+
+use EPrints;
+
+use strict;
+use Getopt::Long;
+use Pod::Usage;
+
+my $version = 0;
+my $verbose = 0;
+my $quiet = 0;
+my $help = 0;
+my $man = 0;
+my $replace = 0;
+my $system = 0;
+
+Getopt::Long::Configure("permute");
+
+GetOptions( 
+	'help|?' => \$help,
+	'man' => \$man,
+	'version' => \$version,
+	'verbose+' => \$verbose,
+	'silent' => \$quiet,
+	'quiet' => \$quiet,
+	'replace' => \$replace,
+	'system' => \$system,
+) || pod2usage( 2 );
+EPrints::Utils::cmd_version( "generate_apacheconf" ) if $version;
+pod2usage( 1 ) if $help;
+pod2usage( -exitstatus => 0, -verbose => 2 ) if $man;
+pod2usage( 2 ) if( scalar @ARGV > 1 );
+
+our( $repository_id ) = @ARGV;
+
+our $noise = 1;
+$noise = 0 if( $quiet );
+$noise = 1+$verbose if( $verbose );
+
+#cjg Write a more simple conf if only one language involved?
+
+# Set STDOUT to auto flush (without needing a \n)
+$|=1;
+
+my $eprints = EPrints->new;
+
+# Load up the repositories
+my %reps = ();
+foreach my $id ( $eprints->repository_ids() )
+{
+	$reps{$id} = $eprints->repository( $id, db_connect => 0); 
+	EPrints->abort( "Error loading $id" ) if !defined $reps{$id};
+}
+
+my $base_path = EPrints::Config::get( "base_path" );
+my $archives_path = "$base_path/archives";
+my $perl_lib = "$base_path/perl_lib";
+my $site_userfile = EPrints::Config::get( "cfg_path" )."/apache.conf";
+
+my $first_run = !-e $site_userfile;
+
+if( ($system && $replace) || !-e $site_userfile )
+{
+	open( CONF, ">$site_userfile" ) || die "Can't write to $site_userfile";
+	print CONF <<END;
+#
+# apache.conf include file for EPrints
+#
+# Any changes made here will be lost if you run generate_apacheconf
+# with the --replace option
+#
+
+# Makes the request object accessible for other objects
+PerlOptions +GlobalRequest
+
+# Load the perl modules & repository configurations
+PerlSwitches -I$perl_lib
+PerlModule EPrints
+PerlPostConfigHandler +EPrints::post_config_handler
+
+# Load the per-repository apache.confs
+<Perl>
+foreach my \$path (<$archives_path/*/cfg/apache.conf>)
+{
+	Apache2::ServerUtil->server->add_config( ["Include \$path"] );
+}
+</Perl>
+
+END
+	close CONF;
+	print "Wrote $site_userfile\n" if( $noise >= 1 );
+}
+else
+{
+	if( $system )
+	{
+		print "Skipping $site_userfile (use --replace).\n" if( $noise >= 1 );
+	}
+	else
+	{
+		print "Skipping $site_userfile (use --replace --system).\n" if( $noise >= 1 );
+	}
+}
+
+####################################################
+# 
+#   Write apache conf files for each repository
+#
+####################################################
+
+foreach my $repository ( values %reps ) 
+{
+	my $id = $repository->get_id();
+
+	next if $repository_id && $repository_id ne $id;
+
+	my $cfg_path = $repository->get_conf( "config_path" );
+
+	my $userfile = $repository->get_conf( "config_path" )."/apache.conf";
+	my $securefile = $repository->get_conf( "config_path" )."/secure.conf";
+
+	my $securehost = $repository->get_conf( "securehost" );
+
+	if( $replace || !-e $userfile )
+	{
+		open( CONF, ">$userfile" ) || die "Can't write to $userfile";
+		print CONF EPrints::Apache::apache_conf( $repository );
+		close CONF;
+		print "Wrote $userfile\n" if( $noise >= 1 );
+	}
+	else
+	{
+		print "Skipping $userfile (use --replace).\n" if( $noise >= 1 );
+	}
+
+# Create secure include file
+	if( $securehost )
+	{
+		if( $replace || !-e $securefile )
+		{
+			open( CONF, ">$securefile" ) || die "Can't write to $securefile";
+			print CONF EPrints::Apache::apache_secure_conf( $repository );
+			close CONF;
+			print "Wrote $securefile\n" if( $noise >= 1 );
+		}
+		else
+		{
+			print "Skipping $securefile (use --replace).\n" if( $noise >= 1 );
+		}
+	}
+
+	foreach my $langid (@{$repository->config( "languages" )})
+	{
+		my $secure_template = "$cfg_path/lang/$langid/templates/secure.xml";
+		my $default_template = "$cfg_path/lang/$langid/templates/default.xml";
+
+		if( !-e $secure_template && -e $default_template )
+		{
+			EPrints::Utils::copy( $default_template, $secure_template );
+			print "Copied default template to secure template, you will probably need to edit the secure template:\n$secure_template\n";
+		}
+	}
+}
+
+
+
+if( $first_run )
+{
+	print "\nAdd the following line to your apache configuration:\nInclude $site_userfile\n";
+}
+
+
+print "\nYou must restart apache for any changes to take effect!\n" if( $noise >= 1 );
