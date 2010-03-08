@@ -1,0 +1,321 @@
+#!perl
+
+=head1 NAME
+
+isi_to_sword - simple CGI script for submitting ISI records via SWORD
+
+=head1 DESCRIPTION
+
+B<Warning!> make sure you secure this script otherwise you risk opening your
+ISI subscription to the world.
+
+You will need to modify this script to set the location of the XSL(s).
+
+=cut
+
+use SOAP::ISIWoK qw( :wos );
+use SOAP::ISIWoK::Sword;
+use CGI;
+use CGI::Carp qw( fatalsToBrowser );
+use XML::LibXML;
+use XML::LibXML::XPathContext;
+
+use strict;
+
+my $q = CGI->new();
+my $isi = SOAP::ISIWoK->new();
+my $ua = SOAP::ISIWoK::Sword->new();
+my $messages = [];
+my $collection = undef;
+my $query = undef;
+my $recs = [];
+
+$ua->parse_stylesheet( "/tmp/ep3.xsl" );
+
+binmode(STDOUT, ":utf8");
+
+my $jscript = <<EOJ;
+
+EOJ
+
+my $css = <<EOC;
+html, body { font-family: sans-serif; }
+label { width: 15em; display: block; float: left; }
+select, input { display: block; }
+input.submit { display: inline; }
+div.message { width: 60em; margin-top: 10px; }
+.citation .title { font-style: italic; }
+.citation .year { font-weight: bold; }
+EOC
+
+my $xsl_citation = <<EOX;
+<?xml version='1.0'?>
+
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns="http://www.w3.org/1999/xhtml">
+
+<xsl:output method="xml" indent="yes" />
+
+<xsl:template match="text()" />
+<xsl:template match="@*" />
+
+<xsl:template match="/">
+<div class='citation'>
+<xsl:apply-templates select="RECORDS/REC" />
+</div>
+</xsl:template>
+
+<!--
+<xsl:template match="REC">
+<xsl:apply-templates select="item/*|item/*/@*" />
+</xsl:template>
+-->
+
+<xsl:template match="REC">
+<xsl:apply-templates select="item/authors" />
+<xsl:apply-templates select="item/bib_issue/\@year" />
+<xsl:apply-templates select="item/item_title" />
+</xsl:template>
+
+<xsl:template match="item/item_title">
+<span class='title'><xsl:value-of select="."/></span>
+</xsl:template>
+
+<xsl:template match="item/bib_issue/\@year">
+(<span class='year'><xsl:value-of select="."/></span>)
+</xsl:template>
+
+<xsl:template match="item/authors">
+<span class='authors'>
+<xsl:choose>
+<xsl:when test="fullauthorname">
+<xsl:apply-templates select="fullauthorname" />
+</xsl:when>
+<xsl:otherwise>
+<xsl:apply-templates select="primaryauthor | author" />
+</xsl:otherwise>
+</xsl:choose>
+</span>
+</xsl:template>
+
+<xsl:template match="item/authors/primaryauthor|item/authors/author">
+<span class='name'>
+<span class='family'><xsl:value-of select="substring-before(.,',')" /></span>
+<xsl:text>, </xsl:text><span class='given'><xsl:value-of select="substring-after(.,', ')" /></span>
+</span>
+<xsl:if test="position()!=last()"><xsl:text> and </xsl:text></xsl:if>
+</xsl:template>
+
+<xsl:template match="item/authors/fullauthorname">
+<span class='name'>
+<span class='family'><xsl:value-of select="AuLastName" /></span>
+<xsl:text>, </xsl:text><span class='given'><xsl:value-of select="AuFirstName" /></span>
+</span>
+<xsl:if test="position()!=last()"><xsl:text> and </xsl:text></xsl:if>
+</xsl:template>
+
+</xsl:stylesheet>
+EOX
+
+$q->charset( 'utf-8' );
+
+print
+	$q->header(
+		-type => "text/html; charset=utf-8",
+		-charset => 'utf-8',
+	),
+	$q->start_html(
+		-title => "ISI to SWORD",
+		-script => $jscript,
+		-encoding => 'utf-8',
+		-style => { -code => $css }),
+	$q->h1( "ISI to SWORD" ),
+	$q->start_form( -method => "post" ),
+	stage1(),
+	stage2(),
+	stage3(),
+	stage4(),
+	stage5(),
+	$q->submit( -name => 'action', -value => "Query", -class => "submit" ),
+	$q->submit( -name => 'action', -value => "Submit", -class => "submit" ),
+	$q->end_form(),
+	messages(),
+	$q->end_html;
+
+sub stage1
+{
+	$ua->sword( $q->param( "sword" ) );
+	$ua->sword_auth( $q->param( "username" ), $q->param( "password" ) );
+
+	return
+		$q->fieldset(
+		$q->legend( "Repository" ),
+		$q->label( { -for => "sword" }, "SWORD App URL:" ),
+		$q->textfield( -name => "sword", -id => "sword", -size => 60 ),
+		$q->label( { -for => "username" }, "Username:" ),
+		$q->textfield( -name => "username", -id => "username", -size => 20 ),
+		$q->label( { -for => "password" }, "Password:" ),
+		$q->password_field( -name => "password", -id => "password", -size => 20, -value => scalar($q->param( "password" )) ) );
+}
+
+sub stage2
+{
+	return if !$ua->sword;
+
+	my $r = $ua->request_collections();
+	if( !$r->is_success )
+	{
+		push @$messages,
+			join('',
+				"Error requesting collections from ",
+				$q->a( { -href => $ua->sword }, $ua->sword ),
+				": ",
+				$r->status_line);
+		return ();
+	}
+
+	if( my $href = $q->param( "collection" ) )
+	{
+		for(@{$ua->collections||[]})
+		{
+			$collection = $_ if $_->href eq $href;
+		}
+	}
+
+	return
+		$q->fieldset(
+		$q->legend( "Collection" ),
+		$q->label( { -for => "collection" }, "Collection:" ),
+		$q->scrolling_list(
+			-name => "collection",
+			-id => "collection",
+			-values => [map { $_->href } @{$ua->collections}],
+			-default => [$q->param( "collection" )],
+		),
+		);
+}
+
+sub stage3
+{
+	return () if !$collection;
+
+	my @html;
+	my @parts;
+
+	foreach my $i (0..$#WOS_INDEXES)
+	{
+		next if $i % 2;
+		my $id = "query_".$WOS_INDEXES[$i];
+		if( my @values = grep { length($_) } $q->param( $id ) )
+		{
+			push @parts, sprintf("%s = (%s)",
+				$WOS_INDEXES[$i],
+				join(' or ', @values) );
+		}
+		push @html,
+			$q->label( { -for => $id }, $WOS_INDEXES[$i+1] . ':' );
+		if( $WOS_INDEXES[$i] eq "DT" )
+		{
+			push @html, $q->scrolling_list(
+				-name => $id,
+				-id => $id,
+				-values => ['', map { $_ % 2 ? () : $WOS_DOCUMENT_TYPES[$_] } 0..$#WOS_DOCUMENT_TYPES ],
+				-labels => {@WOS_DOCUMENT_TYPES},
+				-default => [$q->param( $id )],
+				-size => 6,
+				-multiple => 'true',
+			);
+		}
+		elsif( $WOS_INDEXES[$i] eq "LA" )
+		{
+			push @html, $q->scrolling_list(
+				-name => $id,
+				-id => $id,
+				-values => ['', map { $_ % 2 ? () : $WOS_LANGUAGES[$_] } 0..$#WOS_LANGUAGES ],
+				-labels => {@WOS_LANGUAGES},
+				-default => [$q->param( $id )],
+				-size => 6,
+				-multiple => 'true',
+			);
+		}
+		else
+		{
+			push @html,
+				$q->textfield( -name => $id, -id => $id, -default => scalar($q->param( $id )), -size => 50 );
+		}
+	}
+
+	$query = join(' and ', @parts);
+
+	return
+		$q->fieldset(
+		$q->legend( "ISI Query" ),
+		@html,
+		);
+}
+
+sub stage4
+{
+	return () if !$collection;
+	return () if !$query;
+
+	my $xml = $isi->search( $query );
+	$recs = $collection->transform( $xml );
+	push @$messages, "Found ".@$recs." matching records for '$query'";
+
+	my $source_document = XML::LibXML->new->parse_string( $xsl_citation );
+	my $stylesheet = XML::LibXSLT->new()->parse_stylesheet( $source_document );
+
+	foreach my $rec ($xml->getElementsByTagName( "REC" ))
+	{
+		my $source = XML::LibXML::Document->new;
+		$source->setDocumentElement( my $records = $source->createElement( "RECORDS" ) );
+		my $rec_copy = $rec->cloneNode( 1 );
+		$rec_copy->setOwnerDocument( $source );
+		$records->appendChild( $rec_copy );
+		push @$messages, $stylesheet->transform( $source )->toString( 1 );
+	}
+
+	return ();
+}
+
+sub stage5
+{
+	return () if !@$recs;
+	return if !$q->param( "action" ) || $q->param( "action" ) ne "Submit";
+
+	foreach my $rec (@$recs)
+	{
+		my $r = $collection->submit( $rec );
+		if( !$r->is_success )
+		{
+			push @$messages, join('',
+				"Error submitting record to SWORD APP: ",
+				$r->status_line);
+		}
+		else
+		{
+			my $atom = XML::LibXML->new->parse_string( $r->content );
+			my $xpc = XML::LibXML::XPathContext->new( $atom->documentElement );
+			$xpc->registerNs( 'atom', SOAP::ISIWoK::Sword::NS_ATOM );
+			my( $title ) = $xpc->findnodes( "atom:title" );
+			my( $id ) = $xpc->findnodes( "atom:id" );
+			push @$messages, join('',
+				"Submitted '",
+				$title->textContent,
+				"' [id: ",
+				$id->textContent,
+				"] as ",
+				$collection->namespaceURI);
+		}
+		last;
+	}
+
+	return ();
+}
+
+sub messages
+{
+	return map {
+		$q->div( { -class => "message" }, $_ )
+	} @$messages;
+}
