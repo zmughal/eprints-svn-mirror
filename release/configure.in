@@ -429,6 +429,7 @@ CHECK_PERL_MOD(DBD::mysql)
 CHECK_PERL_MOD(Pod::Usage)
 #CHECK_PERL_MOD(Proc::Reliable)
 CHECK_PERL_MOD(Sys::Hostname)
+CHECK_PERL_MOD(Unicode::String)
 CHECK_PERL_MOD(XML::Parser)
 
 

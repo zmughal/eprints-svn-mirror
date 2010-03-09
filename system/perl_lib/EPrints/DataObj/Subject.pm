@@ -15,8 +15,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints::DataObj::Subject> - Class and methods relating to the subejcts tree.
@@ -59,10 +57,9 @@ sub get_system_field_info
 
 	return 
 	( 
-		{ name=>"subjectid", type=>"text", required=>1, text_index=>0, can_clone=>1, maxlength=>128 },
+		{ name=>"subjectid", type=>"text", required=>1, text_index=>0, can_clone=>1, },
 
-		{ name=>"rev_number", type=>"int", required=>1, can_clone=>0,
-			default_value=>1 },
+		{ name=>"rev_number", type=>"int", required=>1, can_clone=>0 },
 
 		{ name=>"name", type=>"multilang", required=>1,	multiple=>1,
 			fields=>[ 
@@ -196,7 +193,12 @@ sub commit
 		$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 	}
 
-	my $rv = $self->SUPER::commit( $force );
+	$self->tidy;
+	my $rv = $self->{session}->get_database->update(
+			$self->{dataset},
+			$self->{data} );
+	
+	$self->queue_changes;
 
 	# Need to update all children in case ancesors have changed.
 	# This is pretty slow esp. For a top level subject, but subject
@@ -235,21 +237,6 @@ sub remove
 	return $self->{session}->get_database->remove(
 		$self->{dataset},
 		$self->{data}->{subjectid} );
-}
-
-######################################################################
-=pod
-
-=item $dataset = EPrints::DataObj::Subject->get_dataset_id
-
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
-
-=cut
-######################################################################
-
-sub get_dataset_id
-{
-	return "subject";
 }
 
 
@@ -353,6 +340,23 @@ END
 
 ######################################################################
 # 
+# $defaults = EPrints::DataObj::Subject->get_defaults( $session, $data )
+#
+# Return default values for this object based on the starting data.
+# 
+######################################################################
+
+sub get_defaults
+{
+	my( $class, $session, $data ) = @_;
+
+	$data->{"rev_number"} = 1;
+
+	return $data;
+}
+
+######################################################################
+# 
 # @subject_ids = $subject->_get_ancestors
 #
 # Get the ancestors of a given subject.
@@ -363,20 +367,18 @@ sub _get_ancestors
 {
 	my( $self ) = @_;
 
-	my @ancestors = ($self->{data}->{subjectid});
-	my %seen = ($self->{data}->{subjectid} => undef);
+	my %ancestors;
+	$ancestors{$self->{data}->{subjectid}} = 1;
 
 	foreach my $parent ( $self->get_parents() )
 	{
 		foreach( $parent->_get_ancestors() )
 		{
-			next if exists $seen{$_};
-			push @ancestors, $_;
-			$seen{$_} = undef;
+			$ancestors{$_} = 1;
 		}
 	}
 
-	return @ancestors;
+	return keys %ancestors;
 }
 
 
@@ -419,25 +421,28 @@ sub get_children
 {
 	my( $self ) = @_;
 
-	my $subjectid = $self->id;
-
 	if( $self->{session}->{subjects_cached} )
 	{
-		return @{$self->{session}->{subject_child_map}->{$subjectid} || []};
+		my $subjectid = $self->get_value( "subjectid" );
+		return @{$self->{session}->{subject_child_map}->{$subjectid}};
 	}
 
-	my $dataset = $self->get_dataset;
-
-	my $results = $dataset->search(
-		filters => [
-			{
-				meta_fields => [qw( parents )],
-				value => $subjectid
-			}
-		],
+	my $searchexp = EPrints::Search->new(
+		session=>$self->{session},
+		dataset=>$self->{dataset},
 		custom_order=>"name/name_name" );
+	# nb. name_name is a hack for 3.0.0 repositories which can't sort
+	# on compound fields.
 
-	return $results->slice;
+	$searchexp->add_field(
+		$self->{dataset}->get_field( "parents" ),
+		$self->get_value( "subjectid" ) );
+
+	my $searchid = $searchexp->perform_search();
+	my @children = $searchexp->get_records();
+	$searchexp->dispose();
+
+	return( @children );
 }
 
 
@@ -578,8 +583,7 @@ sub get_paths
 		my $subj = new EPrints::DataObj::Subject( $session, $subjectid );
 		if( !defined $subj )
 		{
-			$session->get_repository->log( "Non-existent subjectid: $subjectid in parents of ".$self->get_value( "subjectid" ) );
-			next;
+			$session->get_repository->log( "Non existant subjectid: $subjectid in parents of ".$self->get_value( "subjectid" ) );
 		}
 		push @paths, $subj->get_paths( $session, $topsubjid );
 	}
@@ -792,29 +796,30 @@ sub get_all
 		$session->get_repository->get_dataset( "subject" ) );
 	push @subjects, EPrints::DataObj::Subject->new( $session, $EPrints::DataObj::Subject::root_subject );
 
-	return( {}, {} ) if( scalar @subjects == 0 );
+	return( undef ) if( scalar @subjects == 0 );
 
-	my( %subjectmap ); # map subject ids to subject objects
-	my( %rmap ); # map parents to children
-	foreach my $subject (@subjects)
+	my( %subjectmap );
+	my( %rmap );
+	my $subject;
+	foreach $subject (@subjects)
 	{
-		my $subjectid = $subject->get_id;
-		$subjectmap{$subjectid} = $subject;
-		# this should probably use value() instead of talking direct to data
-		foreach my $parentid ( @{$subject->{data}->{parents}} )
+		$subjectmap{$subject->get_value("subjectid")} = $subject;
+		# iffy non oo bit here.
+		# guess it's ok within the same class... (maybe)
+		# works fine, just a bit naughty
+		foreach( @{$subject->{data}->{parents}} )
 		{
-			$rmap{$parentid} = [] if( !defined $rmap{$parentid} );
-			push @{$rmap{$parentid}}, $subject;
+			$rmap{$_} = [] if( !defined $rmap{$_} );
+			push @{$rmap{$_}}, $subject;
 		}
 	}
-	# sort and fill in the gaps for the child map
-	foreach my $subject (@subjects)
+	my $namefield = $session->get_repository->get_dataset(
+		"subject" )->get_field( "name" );
+	foreach( keys %rmap )
 	{
-		my $subjectid = $subject->get_id;
-		$rmap{$subjectid} = [] if !defined $rmap{$subjectid};
-		@{$rmap{$subjectid}} = sort {   
+		@{$rmap{$_}} = sort {   
 			$a->local_name cmp $b->local_name
-			} @{$rmap{$subjectid}};
+			} @{$rmap{$_}};
 	}
 	
 	return( \%subjectmap, \%rmap );
@@ -860,8 +865,6 @@ sub posted_eprints
 {
 	my( $self, $dataset ) = @_;
 
-	EPrints->deprecated();
-
 	my $searchexp = new EPrints::Search(
 		session => $self->{session},
 		dataset => $dataset,
@@ -884,8 +887,9 @@ sub posted_eprints
 		return();
 	}
 
-	my $list = $searchexp->perform_search;
-	my @data = $list->get_records;
+	my $searchid = $searchexp->perform_search;
+	my @data = $searchexp->get_records;
+	$searchexp->dispose();
 
 	return @data;
 }
@@ -928,8 +932,9 @@ sub count_eprints
 		return( 0 );
 	}
 
-	my $list = $searchexp->perform_search;
-	my $count = $list->count;
+	my $searchid = $searchexp->perform_search;
+	my $count = $searchexp->count;
+	$searchexp->dispose();
 
 	return $count;
 

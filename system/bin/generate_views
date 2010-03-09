@@ -12,8 +12,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<generate_views> - Generate static browse pages for an EPrint repository
@@ -154,14 +152,8 @@ $|=1;
 
 binmode( STDOUT, ":utf8" );
 
-my $repoid = $ARGV[0];
-
-my $session = new EPrints::Session( 1 , $repoid , $noise );
-if( !defined $session )
-{
-	print STDERR "Failed to load repository: $repoid\n";
-	exit 1;
-}
+my $session = new EPrints::Session( 1 , $ARGV[0] , $noise );
+exit( 1 ) unless( defined $session );
 
 $session->cache_subjects;
 

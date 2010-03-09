@@ -52,10 +52,11 @@ web page.
 
 	$results = $searchexp->perform_search;
 
+	my $count = $searchexp->count;
 	my $count = $results->count;
 
-	my $ids = $results->ids( 0, 10 );
-	my $ids = $results->ids; # Get all matching ids
+	my $ids = $results->get_ids( 0, 10 );
+	my $ids = $results->get_ids; # Get all matching ids
 
 	my $info = { matches => 0 };
 	sub fn {
@@ -64,7 +65,7 @@ web page.
 	};
 	$results->map( \&fn, $info );
 
-	$results->dispose;
+	$searchexp->dispose;
 
 See L<EPrints::List> for more.
 
@@ -73,6 +74,15 @@ See L<EPrints::List> for more.
 =over 4
 
 =cut
+
+######################################################################
+#
+# INSTANCE VARIABLES:
+#
+#  $self->{foo}
+#     undefined
+#
+######################################################################
 
 package EPrints::Search;
 
@@ -152,10 +162,6 @@ If the cache still exists, it will set the default values of the
 search fields, and when the search is performed it will skip the 
 search and build a search results object directly from the cache.
 
-=item limit
-
-Limit the number of matching records to limit.
-
 =back
 
 WEB PAGE RELATED PARAMETERS
@@ -194,11 +200,10 @@ being mentioned in the description of the search.
 
 @EPrints::Search::OPTS = (
 	"session", 	"dataset", 	"allow_blank", 	
-	"satisfy_all", 	"staff", 	
+	"satisfy_all", 	"fieldnames", 	"staff", 	
 	"custom_order", "keep_cache", 	"cache_id", 	
 	"prefix", 	"defaults", 	"filters", 
 	"search_fields","show_zero_results", "show_help",
-	"limit",
 );
 
 sub new
@@ -211,6 +216,7 @@ sub new
 	# setup defaults for the others:
 	$data{allow_blank} = 0 if ( !defined $data{allow_blank} );
 	$data{satisfy_all} = 1 if ( !defined $data{satisfy_all} );
+	$data{fieldnames} = [] if ( !defined $data{fieldnames} );
 	$data{prefix} = "" if ( !defined $data{prefix} );
 
 	if( 
@@ -257,6 +263,15 @@ END
 	# Map for MetaField names -> corresponding EPrints::Search::Field objects
 	$self->{searchfieldmap} = {};
 
+	if( $self->{fieldnames} eq "editpermfields" )
+	{
+		$self->{search_fields}= [];
+		foreach( @{ $self->{session}->get_repository->get_conf( "editor_limit_fields" )} )
+		{
+			push @{$self->{search_fields}}, { meta_fields=>[$_] };	
+		}
+	}
+
 	foreach my $fielddata (@{$self->{search_fields}})
 	{
 		my @meta_fields;
@@ -285,8 +300,8 @@ END
 		my $sf = $self->add_field( 
 			\@meta_fields, 
 			$fielddata->{default},
-			$fielddata->{match},
-			$fielddata->{merge},
+			undef,
+			undef,
 			$fielddata->{id},
 			0,
 			$show_help );
@@ -328,7 +343,7 @@ END
 
 
 ######################################################################
-=for InternalDoc
+=pod
 
 =item $ok = $thing->from_cache( $id )
 
@@ -404,7 +419,7 @@ sub add_field
 
 
 ######################################################################
-=for InternalDoc
+=pod
 
 =item $searchfield = $searchexp->get_searchfield( $sf_id )
 
@@ -451,7 +466,7 @@ sub clear
 
 
 ######################################################################
-=for InternalDoc
+=pod
 
 =item $bool = $searchexp->get_satisfy_all
 
@@ -472,7 +487,7 @@ sub get_satisfy_all
 
 
 ######################################################################
-=for InternalDoc
+=pod
 
 =item $boolean = $searchexp->is_blank
 
@@ -499,7 +514,7 @@ sub is_blank
 
 
 ######################################################################
-=for InternalDoc
+=pod
 
 =item $string = $searchexp->serialise
 
@@ -561,7 +576,7 @@ sub serialise
 
 
 ######################################################################
-=for InternalDoc
+=pod
 
 =item $searchexp->from_string( $string )
 
@@ -702,7 +717,7 @@ sub clone
 
 
 ######################################################################
-=for InternalDoc
+=pod
 
 =item $conditions = $searchexp->get_conditons
 
@@ -796,7 +811,7 @@ sub get_conditions
 
 
 ######################################################################
-=for InternalDoc
+=pod
 
 =item $dataset = $searchexp->get_dataset
 
@@ -814,7 +829,7 @@ sub get_dataset
 
 
 ######################################################################
-=for InternalDoc
+=pod
 
 =item $searchexp->set_dataset( $dataset )
 
@@ -973,7 +988,7 @@ sub set_property
 
 
 ######################################################################
-=for InternalDoc
+=pod
 
 =item @search_fields = $searchexp->get_searchfields()
 
@@ -996,7 +1011,7 @@ sub get_searchfields
 }
 
 ######################################################################
-=for InternalDoc
+=pod
 
 =item @search_fields = $searchexp->get_non_filter_searchfields();
 
@@ -1025,7 +1040,7 @@ sub get_non_filter_searchfields
 
 
 ######################################################################
-=for InternalDoc
+=pod
 
 =item @search_fields = $searchexp->get_set_searchfields
 
@@ -1048,8 +1063,32 @@ sub get_set_searchfields
 	return @set_fields;
 }
 
+
+
+
+ ######################################################################
+ ##
+ ##
+ ##  SEARCH THE DATABASE AND CACHE CODE
+ ##
+ ##
+ ######################################################################
+
+
+#
+# Search related instance variables
+#   {cache_id}  - the ID of the table the results are cached & 
+#			ordered in.
+#
+#   {results}  - the EPrints::List object which describes the results.
+#	
+
+
+
+
+
 ######################################################################
-=for InternalDoc
+=pod
 
 =item $cache_id = $searchexp->get_cache_id
 
@@ -1080,23 +1119,30 @@ representing the results.
 sub perform_search
 {
 	my( $self ) = @_;
-
 	$self->{error} = undef;
+
+	if( defined $self->{results} )
+	{
+		return $self->{results};
+	}
 
 	# cjg hmmm check cache still exists?
 	if( defined $self->{cache_id} )
 	{
-		return EPrints::List->new( 
+		$self->{results} = EPrints::List->new( 
 			session => $self->{session},
 			dataset => $self->{dataset},
 			encoded => $self->serialise,
 			cache_id => $self->{cache_id}, 
-			searchexp => $self,
+			desc => $self->render_conditions_description,
+			desc_order => $self->render_order_description,
 		);
+		return $self->{results};
 	}
 
 
-	# print STDERR $self->get_conditions->describe."\n\n";
+	#my $conditions = $self->get_conditions;
+	#print STDERR $conditions->describe."\n\n";
 
 	my $cachemap;
 
@@ -1111,117 +1157,86 @@ sub perform_search
 			searchexp => $self->serialise,
 			oneshot => "TRUE",
 		} );
-		$cachemap->create_sql_table( $self->{dataset} );
 	}
 
-	my $unsorted_matches = $self->get_conditions->process( 
+	my $unsorted_matches = $self->get_conditions->process(
 		session => $self->{session},
 		cachemap => $cachemap,
 		order => $self->{custom_order},
-		dataset => $self->{dataset},
-		limit => $self->{limit},
-	);
+		dataset => $self->{dataset} );
 
-	my $results = EPrints::List->new( 
+	$self->{results} = EPrints::List->new( 
 		session => $self->{session},
 		dataset => $self->{dataset},
+		order => $self->{custom_order},
 		encoded => $self->serialise,
 		keep_cache => $self->{keep_cache},
 		ids => $unsorted_matches, 
-		cache_id => (defined $cachemap ? $cachemap->get_id : undef ),
-		searchexp => $self,
+		cache_id => (defined $cachemap ? $cachemap->get_id : undef),
+		desc => $self->render_conditions_description,
+		desc_order => $self->render_order_description,
 	);
 
-	$self->{cache_id} = $results->get_cache_id;
+	$self->{cache_id} = $self->{results}->get_cache_id;
 
-	return $results;
-}
-
-
-=item ($values, $counts) = $searchexp->perform_groupby( $field )
-
-Perform a SQL GROUP BY on $field based on the current search parameters.
-
-Returns two array references, one containing a list of unique values and one a list of counts for each value.
-
-=cut
-
-sub perform_groupby
-{
-	my( $self, $field ) = @_;
-
-	# we don't do any caching of GROUP BY
-	return $self->get_conditions->process_groupby( 
-			session => $self->{session},
-			dataset => $self->{dataset},
-			field => $field,
-		);
+	return $self->{results};
 }
 
 
 
+ ######################################################################
+ # Legacy functions which daisy chain to the results object
+ # All deprecated.
+ ######################################################################
 
-
-######################################################################
-# Legacy functions which daisy chain to the results object
-# All deprecated.
-######################################################################
 
 sub cache_results
 {
 	my( $self ) = @_;
 
-	EPrints->deprecated();
+	if( !defined $self->{result} )
+	{
+		$self->{session}->get_repository->log( "\$searchexp->cache_results() : Search has not been performed" );
+		return;
+	}
+
+	$self->{results}->cache;
 }
 
 sub dispose
 {
 	my( $self ) = @_;
 
-	EPrints->deprecated();
+	return unless defined $self->{results};
+
+	$self->{results}->dispose;
 }
 
 sub count
 {
 	my( $self ) = @_;
 
-	EPrints->deprecated();
+	return unless defined $self->{results};
 
-	# don't create a cachemap object
-	local $self->{keep_cache} = 0;
-
-	return $self->perform_search->count;
+	$self->{results}->count;
 }
 
 sub get_records
 {
 	my( $self , $offset , $count ) = @_;
 	
-	EPrints->deprecated();
-
-	return $self->perform_search->slice( $offset, $count );
+	return $self->{results}->get_records( $offset , $count );
 }
 
 sub get_ids
 {
 	my( $self , $offset , $count ) = @_;
 	
-	EPrints->deprecated();
-
-	return $self->perform_search->ids( $offset, $count );
-}
-
-sub map
-{
-	my( $self, $function, $info ) = @_;	
-
-	EPrints->deprecated();
-
-	return $self->perform_search->map( $function, $info );
+	return $self->{results}->get_ids( $offset , $count );
 }
 
 ######################################################################
-=for InternalDoc
+=pod
 
 =item $hash = $searchexp->get_ids_by_field_values( $field )
 
@@ -1252,6 +1267,13 @@ sub get_ids_by_field_values
 	);
 
 	return $counts;
+}
+
+sub map
+{
+	my( $self, $function, $info ) = @_;	
+
+	return $self->{results}->map( $function, $info );
 }
 
 

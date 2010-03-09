@@ -105,10 +105,9 @@ sub get_system_field_info
 
 	return
 	( 
-		{ name=>"accessid", type=>"counter", required=>1, can_clone=>0,
-			sql_counter=>"accessid" },
+		{ name=>"accessid", type=>"int", required=>1, can_clone=>0 },
 
-		{ name=>"datestamp", type=>"timestamp", required=>1, },
+		{ name=>"datestamp", type=>"time", required=>1, },
 
 		{ name=>"requester_id", type=>"text", required=>1, text_index=>0, },
 
@@ -132,7 +131,7 @@ sub get_system_field_info
 
 =back
 
-=head2 Class Methods
+=head2 Constructor Methods
 
 =over 4
 
@@ -140,19 +139,108 @@ sub get_system_field_info
 
 ######################################################################
 
+=item $thing = EPrints::DataObj::Access->new( $session, $accessid )
+
+The data object identified by $accessid.
+
+=cut
+
+sub new
+{
+	my( $class, $session, $accessid ) = @_;
+
+	return $session->get_database->get_single( 
+			$session->get_repository->get_dataset( "access" ), 
+			$accessid );
+}
+
+=item $thing = EPrints::DataObj::Access->new_from_data( $session, $known )
+
+A new C<EPrints::DataObj::Access> object containing data $known (a hash reference).
+
+=cut
+
+sub new_from_data
+{
+	my( $class, $session, $known ) = @_;
+
+	return $class->SUPER::new_from_data(
+			$session,
+			$known,
+			$session->get_repository->get_dataset( "access" ) );
+}
+
+######################################################################
+
+=head2 Class Methods
+
+=cut
+
+######################################################################
+
+=item EPrints::DataObj::Access::remove_all( $session )
+
+Remove all records from the license dataset.
+
+=cut
+
+sub remove_all
+{
+	my( $class, $session ) = @_;
+
+	my $ds = $session->get_repository->get_dataset( "access" );
+	foreach my $obj ( $session->get_database->get_all( $ds ) )
+	{
+		$obj->remove();
+	}
+	return;
+}
+
 ######################################################################
 =pod
 
-=item $dataset = EPrints::DataObj::Access->get_dataset_id
+=item $dataset = $eprint->get_gid
 
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
+Returns the OAI identifier for this access.
 
 =cut
 ######################################################################
 
-sub get_dataset_id
+sub get_gid
 {
-	return "access";
+	my( $self ) = @_;
+
+	my $session = $self->{ "session" };
+
+	return EPrints::OpenArchives::to_oai_identifier(
+		$session->get_repository->get_conf(
+			"oai",
+			"v2",
+			"archive_id",
+		),
+		"access:" . $self->get_id,
+	);
+}
+
+######################################################################
+
+=item $defaults = EPrints::DataObj::Access->get_defaults( $session, $data )
+
+Return default values for this object based on the starting data.
+
+=cut
+
+######################################################################
+
+sub get_defaults
+{
+	my( $class, $session, $data ) = @_;
+	
+	$data->{accessid} = $session->get_database->counter_next( "accessid" );
+
+	$data->{datestamp} = EPrints::Time::get_iso_timestamp();
+
+	return $data;
 }
 
 ######################################################################
@@ -162,6 +250,21 @@ sub get_dataset_id
 =cut
 
 ######################################################################
+
+=item $foo = $thing->remove()
+
+Remove this record from the data set (see L<EPrints::Database>).
+
+=cut
+
+sub remove
+{
+	my( $self ) = @_;
+	
+	return $self->{session}->get_database->remove(
+		$self->{dataset},
+		$self->get_id );
+}
 
 =item $dataobj->get_referent_id()
 

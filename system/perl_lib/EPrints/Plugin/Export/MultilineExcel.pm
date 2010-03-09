@@ -1,5 +1,7 @@
 package EPrints::Plugin::Export::MultilineExcel;
 
+use Unicode::String qw( utf8 );
+
 use EPrints::Plugin::Export;
 use EPrints::Plugin::Export::Grid;
 
@@ -15,7 +17,7 @@ sub new
 
 	my $self = $class->SUPER::new( %opts );
 
-	$self->{name} = "Multiline Excel";
+	$self->{name} = "Multiline Execl";
 	$self->{accept} = [ 'list/eprint' ];
 	$self->{visible} = "staff";
 	$self->{suffix} = ".xls";

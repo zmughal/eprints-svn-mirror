@@ -51,14 +51,14 @@ sub get_system_field_info
 	( 
 		{ name=>"metafieldid", type=>"text", required=>1, },
 
-		{ name=>"mfdatestamp", type=>"timestamp", required=>1, },
+		{ name=>"mfdatestamp", type=>"time", required=>1, },
 
 		{ name=>"mfstatus", type=>"set", required=>1,
 			options => [qw( inbox archive deletion )],
 		},
 
-		{ name=>"mfdatasetid", type=>"namedset", required=>1, input_rows=>1,
-			set_name => "datasets",
+		{ name=>"mfdatasetid", type=>"set", required=>1, input_rows=>1,
+			options => [&get_valid_datasets],
 		},
 
 		{ name=>"phrase_name", type=>"multilang", multiple=> 1, required=>0,
@@ -87,8 +87,6 @@ sub get_system_field_info
 			type => "compound",
 			multiple => 1,
 			fields => [
-				{ sub_name=>"mfremoved", type=>"boolean", },
-
 				{ sub_name=>"sub_name", type=>"text", required=>1, input_cols=>10 },
 
 				{ sub_name=>"type", type=>"set", required=>1,
@@ -155,9 +153,6 @@ sub _get_property_fields
 		{ name=>"input_rows", type=>"int", input_cols=>3, },
 		{ name=>"input_cols", type=>"int", input_cols=>3, },
 		{ name=>"input_boxes", type=>"int", input_cols=>3, },
-
-		{ name=>"sql_counter", type=>"text", sql_index=>0 },
-		{ name=>"default_value", type=>"text", sql_index=>0 },
 	);
 }
 
@@ -178,7 +173,6 @@ sub _get_field_types
 			arclanguage
 			boolean
 			compound
-			counter
 			date
 			email
 			float
@@ -195,9 +189,26 @@ sub _get_field_types
 			subject
 			text
 			time
-			timestamp
 			url
 	);
+
+	my $base_path = $EPrints::SystemSettings::conf->{base_path};
+	my $path = "$base_path/perl_lib/EPrints/MetaField";
+
+	opendir(DIR, $path) or die "$path: $!";
+	my @modules = grep { /^[^\.]/ and /\.pm$/ } readdir(DIR);
+	closedir(DIR);
+
+	for(@modules)
+	{
+		$_ = lc($_);
+		$_ =~ s/\.pm$//;
+		push @types, $_;
+	}
+
+	@types = sort { $a cmp $b } @types;
+
+	return @types;
 }
 
 ######################################################################
@@ -214,18 +225,50 @@ sub _get_field_types
 
 =item $thing = EPrints::DataObj::MetaField->new( $session, $metafieldid )
 
-Return the data object identified by $metafieldid.
+The data object identified by $metafieldid.
 
 =cut
+
+sub new
+{
+	my( $class, $session, $metafieldid ) = @_;
+
+	return $session->get_database->get_single( 
+			$session->get_repository->get_dataset( "metafield" ), 
+			$metafieldid );
+
+	my( $datasetid, $name ) = split /\./, $metafieldid, 2;
+
+	unless( $datasetid =~ /^document|eprint|user$/ )
+	{
+		return undef;
+	}
+
+	my $eprint_fields = $session->get_repository->get_conf( "fields", $datasetid );
+	$eprint_fields ||= [];
+
+	for(@{$eprint_fields})
+	{
+		if( $_->{name} eq $name )
+		{
+			my $data = EPrints::Utils::clone( $_ );
+			$data->{metafieldid} = $metafieldid;
+			return $class->new_from_data(
+				$session,
+				$data,
+			);
+		}
+	}
+
+	return undef;
+}
 
 =item $thing = EPrints::DataObj::MetaField->new_from_data( $session, $known )
 
-Create a new C<EPrints::DataObj::MetaField> object containing data $known (a hash reference).
+A new C<EPrints::DataObj::MetaField> object containing data $known (a hash reference).
 
 =cut
 
-# The configuration uses "1" and "0" but the database uses "TRUE" and "FALSE"
-# This papers over the cracks
 our %BOOLEAN = (
 	1 => 1,
 	0 => 0,
@@ -259,25 +302,14 @@ sub new_from_data
 	}
 
 	# 1/0 => TRUE/FALSE
-	foreach my $epdata ($known,@{$known->{fields}||[]})
+	for($known,@{$known->{fields}||[]})
 	{
-		while(my( $name, $value ) = each %$epdata)
+		while(my( $name, $value ) = each %$_)
 		{
-			# can't get_field() on inner-field specific entries
-			next if $name eq "sub_name";
-			# mfremoved should never appear in configuration
-			next if $name eq "mfremoved";
-			next unless EPrints::Utils::is_set($value); # nothing to do
+			next if $name eq "sub_name"; # only field specific to sub-fields
 			my $field = $dataset->get_field( $name );
-			next unless $field->isa( "EPrints::MetaField::Boolean" );
-			if( $field->get_property( "multiple" ) )
-			{
-				($_ = defined($_) ? $RBOOLEAN{$_} : $_) for @$value;
-			}
-			else
-			{
-				$epdata->{$name} = $RBOOLEAN{$value};
-			}
+			next if !$field->is_type( "boolean" ) or !defined($value);
+			$_->{$name} = $RBOOLEAN{$value};
 		}
 	}
 
@@ -294,6 +326,66 @@ sub new_from_data
 			$dataset );
 }
 
+=item $data = EPrints::DataObj::MetaField->get_perl_struct
+
+Returns the Perl data structure representation of this field, as you would find defined in the configuration or DataObj classes.
+
+=cut
+
+sub get_perl_struct
+{
+	my( $self ) = @_;
+
+	my $dataset = $self->{dataset};
+
+	my $data = {};
+
+	foreach my $field ($dataset->get_fields)
+	{
+		next if defined $field->get_property( "sub_name" );
+		next if
+			$field->get_name eq "metafieldid" or
+			$field->get_name eq "mfdatasetid" or
+			$field->get_name eq "mfdatestamp" or
+			$field->get_name eq "mfstatus" or
+			$field->get_name eq "phrase_name" or
+			$field->get_name eq "phrase_help"
+			;
+		my $value = $field->get_value( $self );
+		if( EPrints::Utils::is_set( $value ) )
+		{
+			$data->{$field->get_name} = $value;
+		}
+	}
+
+	# TRUE/FALSE => 1/0
+	for($data,@{$data->{fields}||[]})
+	{
+		while(my( $name, $value ) = each %$_)
+		{
+			next if $name eq "sub_name"; # only field specific to sub-fields
+			my $field = $dataset->get_field( $name );
+			next if !$field->is_type( "boolean" ) or !defined $value;
+			$_->{$name} = $BOOLEAN{$value};
+		}
+	}
+
+	# Fix for document.main (options => [])
+	if( $data->{type} eq "set" && !defined $data->{options} )
+	{
+		$data->{options} = "";
+	}
+
+	# Split options text
+	for($data,@{$data->{fields}||[]})
+	{
+		next if !defined $_->{options};
+		$_->{options} = [split /\s*,\s*/, $_->{options}];
+	}
+
+	return $data;
+}
+
 ######################################################################
 
 =head2 Class Methods
@@ -302,32 +394,22 @@ sub new_from_data
 
 ######################################################################
 
-=item $path = EPrints::DataObj::MetaField->get_config_path( $session )
+=item EPrints::DataObj::MetaField::remove_all( $session )
 
-Returns the root directory of the repository configuration path.
+Remove all records from the metafield dataset.
 
 =cut
 
-sub get_config_path
+sub remove_all
 {
 	my( $class, $session ) = @_;
 
-	return $session->get_repository->get_conf("config_path");
-}
-
-######################################################################
-=pod
-
-=item $dataset = EPrints::DataObj::MetaField->get_dataset_id
-
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
-
-=cut
-######################################################################
-
-sub get_dataset_id()
-{
-	return "metafield";
+	my $ds = $session->get_repository->get_dataset( "metafield" );
+	foreach my $obj ( $session->get_database->get_all( $ds ) )
+	{
+		$obj->remove();
+	}
+	return;
 }
 
 ######################################################################
@@ -342,10 +424,8 @@ Return default values for this object based on the starting data.
 
 sub get_defaults
 {
-	my( $class, $session, $data, $dataset ) = @_;
+	my( $class, $session, $data ) = @_;
 	
-	$class->SUPER::get_defaults( $session, $data, $dataset );
-
 	if( $data->{name} and $data->{mfdatasetid} )
 	{
 		$data->{metafieldid} ||= "$data->{mfdatasetid}.$data->{name}";
@@ -353,201 +433,12 @@ sub get_defaults
 
 	$data->{"mfstatus"} = "inbox";
 
+	$data->{"mfdatestamp"} = EPrints::Time::get_iso_timestamp();
+
 	# This is set by DataSet for core and config fields
 	$data->{"providence"} = "user";
 
 	return $data;
-}
-
-=item $filename = EPrints::DataObj::MetaField->get_perl_file_config( $session )
-
-Returns the location of the Perl configuration file.
-
-=cut
-
-sub get_perl_file_config
-{
-	my( $class, $session ) = @_;
-
-	return $session->get_repository->get_conf( "variables_path" )."/metafield.pl";
-}
-
-=item $filename = EPrints::DataObj::MetaField->get_phrases_filename( $session, $langid )
-
-Returns the location of the XML phrases file for $lang.
-
-=cut
-
-sub get_phrases_filename
-{
-	my( $class, $session, $langid ) = @_;
-
-	return $session->get_repository->get_conf( "config_path" )."/lang/$langid/phrases/zz_webcfg.xml";
-}
-
-=item $defaults = EPrints::DataObj::MetaField->get_property_defaults( $session, $type )
-
-Gets the property defaults for metafield $type.
-
-=cut
-
-sub get_property_defaults
-{
-	my( $self, $session, $type ) = @_;
-
-	my $field_defaults = $session->get_repository->get_field_defaults( $type );
-	return $field_defaults if defined $field_defaults;
-
-	my $class = $type;
-	$class =~ s/[^a-zA-Z0-9_]//g; # don't let badness into eval()
-	$class = "EPrints::MetaField::\u$class";
-	eval "use $class;";
-	if( $@ )
-	{
-		return undef;
-	}
-
-	my $prototype = bless {
-			repository => $session->get_repository
-		}, $class;
-
-	return { $prototype->get_property_defaults };
-}
-
-=item $filename = EPrints::DataObj::MetaField->get_workflow_filename( $session, $datasetid )
-
-Returns the location of the workflow file for $datasetid.
-
-=cut
-
-sub get_workflow_filename
-{
-	my( $self, $session, $datasetid ) = @_;
-
-	return $session->get_repository->get_conf( "config_path" )."/workflows/$datasetid/default.xml";
-}
-
-=item $filename = EPrints::DataObj::MetaField->get_xml_file_config( $session )
-
-Returns the location of the XML configuration file.
-
-=cut
-
-sub get_xml_file_config
-{
-	my( $class, $session ) = @_;
-
-	return $session->get_repository->get_conf( "variables_path" )."/metafield.xml";
-}
-
-=item $list = EPrints::DataObj::MetaField::load_all( $session )
-
-Populate the metafield dataset using the currently configured fields. Returns a L<EPrints::List> of the loaded meta fields.
-
-=cut
-
-sub load_all
-{
-	my( $session ) = @_;
-
-	my $ds = $session->get_repository->get_dataset( "metafield" );
-	my @datasetids = $session->get_repository->get_types( "datasets" );
-	my $fields = $session->get_repository->get_conf( "fields" );
-
-	my @ids;
-
-	foreach my $datasetid (@datasetids)
-	{
-		my $dataset = $session->get_repository->get_dataset( $datasetid );
-
-		my @field_data;
-
-		push @field_data, $dataset->get_object_class->get_system_field_info;
-		for(@field_data)
-		{
-			$_->{providence} = "core"; # must be core
-		}
-
-		push @field_data, @{$fields->{$datasetid}||[]};
-		for(@field_data)
-		{
-			$_->{providence} ||= "config"; # may be config or user
-		}
-
-		foreach my $data (@field_data)
-		{
-			my $metafieldid = $dataset->confid.".".$data->{"name"};
-			my $dataobj = $ds->get_object(
-					$session,
-					$metafieldid
-					);
-			if( defined($dataobj) )
-			{
-				$dataobj->remove;
-			}
-			$data = EPrints::Utils::clone( $data );
-			$data->{mfstatus} = "archive";
-			$data->{mfdatasetid} = $datasetid;
-			$dataobj = $ds->create_object( $session, $data );
-			push @ids, $dataobj->get_id;
-		}
-	}
-
-	return EPrints::List->new(
-		session => $session,
-		dataset => $ds,
-		ids => \@ids,
-	);
-}
-
-=item EPrints::DataObj::MetaField::save_all( $session )
-
-Save the user-configured fields.
-
-=cut
-
-sub save_all
-{
-	my( $session ) = @_;
-
-	my $dataset = $session->get_repository->get_dataset( "metafield" );
-
-	my $searchexp = EPrints::Search->new(
-		session => $session,
-		dataset => $dataset,
-	);
-
-	$searchexp->add_field( $dataset->get_field( "mfstatus" ), "archive" );
-	$searchexp->add_field( $dataset->get_field( "providence" ), "user" );
-
-	my $list = $searchexp->perform_search;
-
-	my $xml_plugin = $session->plugin( "Export::XML" );
-
-	my $file_name;
-	my $fh;
-
-	$file_name = __PACKAGE__->get_xml_file_config( $session );
-
-	open($fh, ">", $file_name)
-		or EPrints::abort "Can't write to $file_name: $!";
-	$xml_plugin->output_list(
-		list => $list,
-		fh => $fh
-	);
-	close($fh);
-
-	my $perl_plugin = $session->plugin( "Export::Perl" );
-
-	$file_name = __PACKAGE__->get_perl_file_config( $session );
-
-	open($fh, ">", $file_name)
-		or EPrints::abort "Can't write to $file_name: $!";
-	$perl_plugin->output_list(
-		list => $list,
-		fh => $fh
-	);
-	close($fh);
 }
 
 ######################################################################
@@ -558,11 +449,177 @@ sub save_all
 
 ######################################################################
 
-=item $ok = $mf->add_to_phrases()
+=item $foo = $thing->remove()
 
-Add the phrases defined by this field to the system.
+Remove this record from the data set (see L<EPrints::Database>).
 
 =cut
+
+sub remove
+{
+	my( $self ) = @_;
+	
+	my $rc = 1;
+	
+	my $database = $self->{session}->get_database;
+
+	$rc &&= $database->remove(
+		$self->{dataset},
+		$self->get_id );
+
+	return $rc;
+}
+
+sub commit
+{
+	my( $self, $force ) = @_;
+
+	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
+	{
+		# don't do anything if there isn't anything to do
+		return( 1 ) unless $force;
+	}
+
+	$self->tidy;
+	my $success = $self->{session}->get_database->update(
+		$self->{dataset},
+		$self->{data} );
+	
+	return( $success );
+}
+
+sub validate
+{
+	my( $self, $repository ) = @_;
+
+	return [];
+}
+
+sub get_warnings
+{
+	my( $self ) = @_;
+
+	return [];
+}
+
+sub get_valid_datasets
+{
+	qw( document eprint user saved_search import );
+}
+
+sub get_config_path
+{
+	my( $session ) = @_;
+
+	return $session->get_repository->get_conf("config_path");
+}
+
+sub get_config_file
+{
+	my( $session ) = @_;
+
+	return $session->get_repository->get_conf("config_path")."/cfg.d/zzz_fields.pl";
+}
+
+sub _add_config
+{
+	my( $self ) = @_;
+
+	my $session = $self->{session};
+
+	my $datasetid = $self->get_value( "mfdatasetid" );
+	my $dataset = $session->get_repository->get_dataset( $datasetid );
+	my $metafieldid = $self->get_value( "metafieldid" );
+	my $name = $self->get_value( "name" );
+
+	my $file_name = get_config_file( $session );
+
+	my $plugin = $session->plugin( "Export::Perl" );
+	my $perl = "### !!!".$self->get_value( "metafieldid" )."!!! Do not edit\n" .
+		$plugin->output_dataobj( $self ).",\n" .
+		"### !!!".$self->get_value( "metafieldid" ) . "!!!\n\n";
+
+	if( not -s $file_name )
+	{
+		open(my $fh, ">", $file_name)
+			or EPrints::abort "Error writing to $file_name: $!";
+
+		print $fh "# ".localtime(time)."\n\n";
+		print $fh <<EOC;
+# This file is automatically generated by the Web fields configuration
+# You must leave the positional comments in place, or Web configuration will
+# fail
+
+EOC
+		for(get_valid_datasets())
+		{
+			print $fh <<EOC;
+\$c->{fields}->{$_} ||= [];
+push \@{\$c->{fields}->{$_}}, (
+### !!!insertion.$_!!!
+);
+
+
+EOC
+		}
+
+		close($fh);
+	}
+
+	open(my $fh, "<", $file_name)
+		or EPrints::abort "Error reading from $file_name: $!";
+	my $cfg_file = join '', <$fh>;
+	close($fh);
+
+	my $ok = $cfg_file =~ s/^### !!!insertion\.$datasetid!!!/$&\n$perl/m;
+
+	if( $ok )
+	{
+		my $c;
+		eval $cfg_file;
+		$ok &&= $@ ? 0 : 1;
+	}
+
+	if( $ok )
+	{
+		open($fh, ">", $file_name)
+			or EPrints::abort "Error writing to $file_name: $!";
+		print $fh $cfg_file;
+		close($fh);
+	}
+
+	return $ok;
+}
+
+sub _phrases_empty
+{
+	my( $self ) = @_;
+
+	my $session = $self->{session};
+
+	my $phrases = $session->make_element( "epp:phrases" );
+	$phrases->setAttribute( "xmlns", "http://www.w3.org/1999/xhtml" );
+	$phrases->setAttribute( "xmlns:epp", "http://eprints.org/ep3/phrase" );
+	$phrases->setAttribute( "xmlns:epc", "http://eprints.org/ep3/control" );
+
+	my $phrase = $session->make_element( "epp:phrase",
+		id=>"metapage_title_local"
+	);
+	$phrases->appendChild( $phrase );
+	$phrase->appendChild( $session->make_text( "Misc." ) );
+
+	return $phrases;
+}
+
+sub _opt_to_phrase
+{
+	my( $name ) = @_;
+
+	$name =~ s/_/ /g;
+	$name =~ s/\b(\w)/\u$1/g;
+
+	return $name;
+}
 
 sub add_to_phrases
 {
@@ -574,7 +631,7 @@ sub add_to_phrases
 
 	my $name = $self->get_value( "name" );
 	my $datasetid = $self->get_value( "mfdatasetid" );
-	my $path = $self->get_config_path( $session ) . "/lang";
+	my $path = get_config_path( $session ) . "/lang";
 
 	my %phrases;
 
@@ -622,58 +679,73 @@ sub add_to_phrases
 
 	foreach my $langid (keys %phrases)
 	{
-		my $file_name = $self->get_phrases_filename( $session, $langid );
-		my $doc;
+		my $lang_path = "$path/$langid";
+		if( !-e $lang_path )
+		{
+			mkdir( $lang_path );
+		}
+		my $phrases_path = "$lang_path/phrases";
+		if( !-e $lang_path )
+		{
+			mkdir( $phrases_path );
+		}
+		my $file_name = "$phrases_path/fields.xml";
+		my( $doc, $xml );
+		local $session->{doc};
 		if( !-e $file_name )
 		{
-			$doc = $self->_phrases_empty();
+			$doc = $session->{doc} = EPrints::XML::make_document;
+			$xml = $self->_phrases_empty();
+			$doc->appendChild( $xml );
 		}
 		else
 		{
-			$doc = $session->xml->parse_file( $file_name );
+			$doc = $session->{doc} = EPrints::XML::parse_xml( $file_name );
+			$xml = $doc->documentElement;
 		}
-		my $xml = EPrints::XML->new( $session, doc => $doc );
-		my $phrases = $doc->documentElement;
 
 		while(my( $name, $text ) = each %{$phrases{$langid}})
 		{
-			my $phrase = $xml->create_element( "epp:phrase", id => $name );
-			my $html = eval { $xml->parse_xml_string( $text ) };
-			if( defined $html )
+			my $phrase;
+			foreach my $node ($xml->childNodes)
 			{
-				$phrase->appendChild( $xml->clone( $html->documentElement ) );
-				$xml->dispose( $html );
-			}
-			else
-			{
-				$phrase->appendChild( $xml->create_text_node( $text ) );
-			}
-			my $old_phrase;
-			foreach my $node ($phrases->childNodes)
-			{
-				if( $xml->is( $node, "Element" ) &&
-					$node->hasAttribute("id") &&
+				if( EPrints::XML::is_dom( $node, "Element" ) and
+					$node->hasAttribute("id") and
 					$node->getAttribute("id") eq $name )
 				{
-					$old_phrase = $node;
+					$phrase = $node;
 					last;
 				}
 			}
-			if( defined $old_phrase )
+			if( defined($phrase) )
 			{
-				$phrases->replaceChild( $phrase, $old_phrase );
+				my @children = $phrase->childNodes;
+				EPrints::XML::dispose($phrase->removeChild( $_ )) for @children;
 			}
 			else
 			{
-				$phrases->appendChild( $xml->create_text_node( "\n\t" ) );
-				$phrases->appendChild( $phrase );
+				$phrase = $session->make_element( "epp:phrase",
+						id => $name
+					);
+				$xml->appendChild( $session->make_text( "\n\t" ) );
+				$xml->appendChild( $phrase );
+			}
+			my $html;
+			eval { $html = EPrints::XML::parse_xml_string( $text ) };
+			if( $@ || !defined $html )
+			{
+				$phrase->appendChild( $session->make_text( $text ) );
+			}
+			else
+			{
+				$phrase->appendChild( $session->clone_for_me( $html->documentElement, 1 ) );
+				EPrints::XML::dispose( $html );
 			}
 		}
 
 		if( open(my $fh, ">", $file_name) )
 		{
-			binmode($fh, ":utf8");
-			print $fh $xml->to_string( $doc );
+			print $fh $doc->toString;
 			close($fh);
 		}
 		else
@@ -682,17 +754,11 @@ sub add_to_phrases
 			$ok = 0;
 		}
 
-		$xml->dispose( $doc );
+		EPrints::XML::dispose( $doc );
 	}
 
 	return $ok;
 }
-
-=item $ok = $mf->add_to_workflow()
-
-Add this field to the workflow in the "Misc." section.
-
-=cut
 
 sub add_to_workflow
 {
@@ -703,32 +769,27 @@ sub add_to_workflow
 	my $ok = 1;
 
 	my $datasetid = $self->get_value( "mfdatasetid" );
+	my $path = get_config_path( $session );
 
-	my $file_name = $self->get_workflow_filename( $session, $datasetid );
+	return $ok unless $datasetid eq "eprint";
+
+	my $file_name = "$path/workflows/$datasetid/default.xml";
 
 	return $ok unless -e $file_name;
 
-	my $doc = $session->xml->parse_file( $file_name );
+	local $session->{doc};
 
-	my $xml = EPrints::XML->new( $session, doc => $doc );
+	my $doc = $session->{doc} = EPrints::XML::parse_xml( $file_name );
+
 	my $workflow = $doc->documentElement;
-
-	# return if this field is already referred to in the workflow
-	foreach my $field ($workflow->getElementsByTagName( "field" ) )
-	{
-		if( $field->getAttribute( "ref" ) eq $self->get_value( "name" ) )
-		{
-			return $ok;
-		}
-	}
 
 	my( $flow ) = $workflow->getElementsByTagName( "flow" );
 
 	my $stage_ref;
 	for($flow->childNodes)
 	{
-		if( $xml->is( $_, "Element" ) &&
-			$_->hasAttribute( "ref" ) &&
+		if( EPrints::XML::is_dom( $_, "Element" ) and
+			$_->hasAttribute( "ref" ) and
 			$_->getAttribute( "ref" ) eq "local"
 		)
 		{
@@ -738,18 +799,17 @@ sub add_to_workflow
 	}
 	if( !defined( $stage_ref ) )
 	{
-		$stage_ref = $xml->create_element( "stage",
+		$stage_ref = $session->make_element( "stage",
 			ref => "local"
 		);
 		$flow->appendChild( $stage_ref );
-		$flow->appendChild( $xml->create_text_node( "\n\t" ) );
 	}
 
 	my $stage;
 	for($workflow->childNodes)
 	{
-		if( $xml->is( $_, "Element" ) &&
-			$_->hasAttribute( "name" ) &&
+		if( EPrints::XML::is_dom( $_, "Element" ) and
+			$_->hasAttribute( "name" ) and
 			$_->getAttribute( "name" ) eq "local"
 		)
 		{
@@ -760,28 +820,27 @@ sub add_to_workflow
 
 	if( !defined( $stage ) )
 	{
-		$stage = $xml->create_element( "stage",
+		$stage = $session->make_element( "stage",
 			name => "local"
 		);
-		$stage->appendChild( $xml->create_text_node( "\n\t" ) );
-		$workflow->appendChild( $xml->create_text_node( "\t" ) );
+		$workflow->appendChild( $session->make_text( "\t" ) );
 		$workflow->appendChild( $stage );
-		$workflow->appendChild( $xml->create_text_node( "\n\n" ) );
+		$workflow->appendChild( $session->make_text( "\n\n" ) );
+		$stage->appendChild( $session->make_text( "\n\t" ) );
 	}
 
-	my $component = $xml->create_element( "component" );
-	my $field = $xml->create_element( "field",
+	my $component = $session->make_element( "component" );
+	my $field = $session->make_element( "field",
 		ref => $self->get_value( "name" )
 	);
-	$stage->appendChild( $xml->create_text_node( "\t" ) );
+	$stage->appendChild( $session->make_text( "\t" ) );
 	$stage->appendChild( $component );
-	$stage->appendChild( $xml->create_text_node( "\n\t" ) );
+	$stage->appendChild( $session->make_text( "\n\t" ) );
 	$component->appendChild( $field );
 
 	if( open(my $fh, ">", $file_name) )
 	{
-		binmode($fh, ":utf8");
-		print $fh $xml->to_string($doc);
+		print $fh $doc->toString;
 		close($fh);
 	}
 	else
@@ -790,205 +849,20 @@ sub add_to_workflow
 		$ok = 0;
 	}
 
+	EPrints::XML::dispose( $doc );
+
 	return $ok;
 }
 
-=item $data = $field->get_perl_struct
-
-Returns the Perl data structure representation of this field, as you would find defined in the configuration or DataObj classes.
-
-=cut
-
-sub get_perl_struct
-{
-	my( $self ) = @_;
-
-	my $dataset = $self->{dataset};
-
-	my $data = {};
-
-	foreach my $field ($dataset->get_fields)
-	{
-		next if defined $field->get_property( "sub_name" );
-		next if
-			$field->get_name eq "metafieldid" or
-			$field->get_name eq "mfdatasetid" or
-			$field->get_name eq "mfdatestamp" or
-			$field->get_name eq "mfstatus" or
-			$field->get_name eq "phrase_name" or
-			$field->get_name eq "phrase_help"
-			;
-		my $value = $field->get_value( $self );
-		if( EPrints::Utils::is_set( $value ) )
-		{
-			$data->{$field->get_name} = $value;
-		}
-	}
-
-	# TRUE/FALSE => 1/0
-	foreach my $epdata ($data,@{$data->{fields}||[]})
-	{
-		while(my( $name, $value ) = each %$epdata)
-		{
-			# can't get_field() on inner-field specific entries
-			next if $name eq "sub_name";
-			# mfremoved should never appear in configuration
-			next if $name eq "mfremoved";
-			next unless EPrints::Utils::is_set($value); # nothing to do
-			my $field = $dataset->get_field( $name );
-			next unless $field->isa( "EPrints::MetaField::Boolean" );
-			if( $field->get_property( "multiple" ) )
-			{
-				($_ = defined($_) ? $BOOLEAN{$_} : $_) for @$value;
-			}
-			else
-			{
-				$epdata->{$name} = $BOOLEAN{$value};
-			}
-		}
-	}
-
-	# Fix for document.main (options => [])
-	if( $data->{type} eq "set" && !defined $data->{options} )
-	{
-		$data->{options} = "";
-	}
-
-	foreach my $field_data ($data,@{$data->{fields}||[]})
-	{
-		# Remove unused properties (avoid warnings)
-		my $defaults = $self->get_property_defaults( $self->{session}, $field_data->{type} );
-		foreach my $property (keys %$field_data)
-		{
-			if( !defined $defaults->{$property} )
-			{
-				delete $field_data->{$property};
-			}
-		}
-
-		# Split options text
-		if( defined( $field_data->{options} ) )
-		{
-			$field_data->{options} = [split /\s*,\s*/, $field_data->{options}];
-		}
-	}
-
-	return $data;
-}
-
-# The initial phrases file (sorry, English only)
-sub _phrases_empty
-{
-	my( $self ) = @_;
-
-	my $session = $self->{session};
-
-	my $doc = $session->get_lang->create_phrase_doc( $session );
-	my $phrases = $doc->documentElement;
-
-	my $phrase = $doc->createElement( "epp:phrase" );
-	$phrase->setAttribute( id=>"metapage_title_local" );
-	$phrase->appendChild( $doc->createTextNode( "Misc." ) );
-
-	$phrases->appendChild( $phrase );
-
-	return $doc;
-}
-
-# convert an option to a phrase - this is just for convenience
-sub _opt_to_phrase
-{
-	my( $name ) = @_;
-
-	$name =~ s/_/ /g;
-	$name =~ s/\b(\w)/\u$1/g;
-
-	return $name;
-}
-
-=item $field = $mf->make_field_object();
-
-Make and return a new field object based on this metafield.
-
-=cut
-
-sub make_field_object
-{
-	my( $self ) = @_;
-
-	my $session = $self->{session};
-
-	my $datasetid = $self->get_value( "mfdatasetid" );
-	my $dataset = $session->get_repository->get_dataset( $datasetid );
-
-	my $fielddata = $self->get_perl_struct();
-
-	if( !defined $fielddata->{type} )
-	{
-		$session->get_repository->log( "Error in metafield entry ".$self->get_id.": no type defined" );
-		return undef;
-	}
-
-	my @cfields;
-	if( $fielddata->{type} eq "compound" )
-	{	
-		@cfields = @{$fielddata->{fields}};
-	}
-	if( $fielddata->{type} eq "multilang" )
-	{	
-		my $langs = $self->{repository}->get_conf('languages');
-		if( defined $fielddata->{languages} )
-		{
-			$langs = $fielddata->{languages};
-		}
-		@cfields = (
-			@{$fielddata->{fields}},
-			{ 
-				sub_name=>"lang",
-				type=>"langid",
-				options => $langs,
-			}, 
-		);
-	}
-		
-	if( scalar @cfields )
-	{	
-		$fielddata->{fields_cache} = [];
-		foreach my $inner_field ( @cfields )
-		{
-			my $field = EPrints::MetaField->new( 
-				parent_name => $fielddata->{name},
-				show_in_html => 0,
-				dataset => $dataset, 
-				multiple => $fielddata->{multiple},
-				%{$inner_field} );	
-			push @{$fielddata->{fields_cache}}, $field;
-		}
-	}
-
-	my $field = EPrints::MetaField->new( 
-		dataset => $dataset, 
-		%{$fielddata} );	
-
-	return $field;
-}
-
-# unsupported
 sub move_to_inbox
 {
 	my( $self ) = @_;
 
-	$self->set_value( "mfstatus", "inbox" );
+	$self->set_value( "mfstatus", "archive" );
 	$self->commit( 1 );
 
 	return 1;
 }
-
-=item $mf->move_to_archive()
-
-Adds this field to the target dataset and adds the necessary database bits.
-
-=cut
 
 sub move_to_archive
 {
@@ -996,87 +870,25 @@ sub move_to_archive
 
 	my $session = $self->{session};
 
-	my $ds = $self->get_dataset;
-
 	my $datasetid = $self->get_value( "mfdatasetid" );
 	my $dataset = $session->get_repository->get_dataset( $datasetid );
-
-	my $field = $self->make_field_object();
-
-	# sort out the inner fields in compound fields
-	if( $field->isa( "EPrints::MetaField::Compound" ) )
-	{
-		my $prefix = $field->get_name . "_";
-		my $inner_fields = $self->get_value( "fields" );
-		my( @removed, @current );
-		foreach my $inner_field (@$inner_fields)
-		{
-			if( $inner_field->{"mfremoved"} ne "TRUE" )
-			{
-				push @current, $inner_field;
-			}
-			else
-			{
-				push @removed, $inner_field;
-			}
-		}
-		$self->set_value( "fields", \@current );
-		# remove any instances of fields we're about consume
-		foreach my $inner_field (@current)
-		{
-			my $name = $prefix . $inner_field->{sub_name};
-			if( $dataset->has_field( $name ) )
-			{
-				$dataset->unregister_field( $dataset->get_field( $name ) );
-			}
-
-			my $inner_metafield = $ds->get_object( $session, "$datasetid.$name" );
-			if( defined $inner_metafield )
-			{
-				$inner_metafield->remove;
-			}
-		}
-		# spin-off any fields that we're no longer using
-		foreach my $inner_field (@removed)
-		{
-			my $name = $prefix . $inner_field->{sub_name};
-			$inner_field->{name} = $name;
-			delete $inner_field->{sub_name};
-			delete $inner_field->{mfremoved};
-
-			if( !$dataset->has_field( $name ) )
-			{
-				$dataset->process_field( $inner_field );
-			}
-
-			my $inner_metafield = $ds->get_object( $session, "$datasetid.$name" );
-			if( !defined $inner_metafield )
-			{
-				$inner_field->{"mfstatus"} = $self->get_value( "mfstatus" );
-				$inner_field->{"mfdatasetid"} = $self->get_value( "mfdatasetid" );
-				$ds->create_object( $session, $inner_field );
-			}
-		}
-		if( scalar(@current) == 0 )
-		{
-			$self->commit( 1 );
-			return 0;
-		}
-	}
-
-	my $conf = $self->get_perl_struct;
-
-	$field = $dataset->process_field( $conf, 0 );
-
-	# add to the user configuration
-	my $fields = $session->get_repository->get_conf( "fields" );
-	push @{$fields->{$datasetid}||=[]}, $conf;
-
-	# add to the database (force changes)
-	$session->get_database->add_field( $dataset, $field, 1 );
+	my $name = $self->get_value( "name" );
 
 	$self->set_value( "mfstatus", "archive" );
 	$self->commit( 1 );
+
+	my $conf = $self->get_perl_struct;
+
+# add to the current session
+	my $fields = $session->get_repository->get_conf( "fields" );
+	push @{$fields->{$datasetid}||=[]}, $conf;
+
+# add to the dataset
+	$dataset->process_field( $conf, 0 );
+	my $field = $dataset->get_field( $name );
+
+# add to the database
+	$session->get_database->add_field( $dataset, $field );
 
 	return 1;
 }
@@ -1090,24 +902,133 @@ sub move_to_deletion
 	my $datasetid = $self->get_value( "mfdatasetid" );
 	my $dataset = $session->get_repository->get_dataset( $datasetid );
 	my $name = $self->get_value( "name" );
-
 	my $field = $dataset->get_field( $name );
 
-	# remove the field from the dataset
-	$dataset->unregister_field( $field );
-
-	# remove the field from the current session
-	my $fieldconf = $session->get_repository->get_conf( "fields", $datasetid );
-	if( defined $fieldconf )
-	{
-		@{$fieldconf} = grep { $_->{name} ne $name } @{$fieldconf};
-	}
-
+# remove from the database
 	$session->get_database->remove_field( $dataset, $field );
+
+# remove from the dataset
+	@{$dataset->{fields}} = grep { $_->{name} ne $name } @{$dataset->{fields}};
+
+# remove from the current session
+	my $fields = $session->get_repository->get_conf( "fields" );
+	@{$fields->{$datasetid}} = grep { $_->{name} ne $name } @{$fields->{$datasetid}||[]};
 
 	$self->remove();
 
 	return 1;
+}
+
+sub get_xml_file_config
+{
+	my( $class, $session ) = @_;
+
+	return $session->get_repository->get_conf( "variables_path" )."/metafield.xml";
+}
+
+sub get_perl_file_config
+{
+	my( $class, $session ) = @_;
+
+	return $session->get_repository->get_conf( "variables_path" )."/metafield.pl";
+}
+
+sub save_all
+{
+	my( $session ) = @_;
+
+	my $dataset = $session->get_repository->get_dataset( "metafield" );
+
+	my $searchexp = EPrints::Search->new(
+		session => $session,
+		dataset => $dataset,
+	);
+
+	$searchexp->add_field( $dataset->get_field( "mfstatus" ), "archive" );
+	$searchexp->add_field( $dataset->get_field( "providence" ), "user" );
+
+	my $list = $searchexp->perform_search;
+
+	my $xml_plugin = $session->plugin( "Export::XML" );
+
+	my $file_name;
+	my $fh;
+
+	$file_name = __PACKAGE__->get_xml_file_config( $session );
+
+	open($fh, ">", $file_name)
+		or EPrints::abort "Can't write to $file_name: $!";
+	$xml_plugin->output_list(
+		list => $list,
+		fh => $fh
+	);
+	close($fh);
+
+	my $perl_plugin = $session->plugin( "Export::Perl" );
+
+	$file_name = __PACKAGE__->get_perl_file_config( $session );
+
+	open($fh, ">", $file_name)
+		or EPrints::abort "Can't write to $file_name: $!";
+	$perl_plugin->output_list(
+		list => $list,
+		fh => $fh
+	);
+	close($fh);
+}
+
+sub load_all
+{
+	my( $session ) = @_;
+
+	my $ds = $session->get_repository->get_dataset( "metafield" );
+
+	my $fields = $session->get_repository->get_conf( "fields" );
+
+	my @ids;
+
+	foreach my $datasetid (get_valid_datasets())
+	{
+		my $dataset = $session->get_repository->get_dataset( $datasetid );
+
+		my @field_data;
+
+		push @field_data, $dataset->get_object_class->get_system_field_info;
+		for(@field_data)
+		{
+			$_->{providence} = "core"; # must be core
+		}
+
+		push @field_data, @{$fields->{$datasetid}||[]};
+		for(@field_data)
+		{
+			$_->{providence} ||= "config"; # may be config or user
+		}
+
+		foreach my $data (@field_data)
+		{
+			my $metafieldid = $dataset->confid.".".$data->{"name"};
+			my $dataobj = $ds->get_object(
+					$session,
+					$metafieldid
+					);
+			if( $dataobj )
+			{
+				$dataobj->remove if $dataobj;
+			}
+			$data = EPrints::Utils::clone( $data );
+			$data->{mfstatus} = "archive";
+			$data->{mfdatasetid} = $datasetid;
+			$dataobj = $ds->create_object( $session, $data );
+			push @ids, $dataobj->get_id;
+		}
+	}
+
+	return EPrints::List->new(
+		session => $session,
+		dataset => $ds,
+		ids => \@ids,
+	);
 }
 
 =item $ok = $mf->remove_from_workflow()
@@ -1126,12 +1047,15 @@ sub remove_from_workflow
 
 	my $datasetid = $self->get_value( "mfdatasetid" );
 	my $name = $self->get_value( "name" );
+	my $path = get_config_path( $session );
 
-	my $file_name = $self->get_workflow_filename( $session, $datasetid );
+	my $file_name = "$path/workflows/$datasetid/default.xml";
 
 	return $ok unless -e $file_name;
 
-	my $doc = $session->xml->parse_file( $file_name );
+	local $session->{doc};
+
+	my $doc = $session->{doc} = EPrints::XML::parse_xml( $file_name );
 
 	my $workflow = $doc->documentElement;
 
@@ -1194,100 +1118,121 @@ sub remove_from_workflow
 	}
 
 	open(my $fh, ">", $file_name) or EPrints::abort "Failed to open $file_name for writing: $!";
-	binmode($fh, ":utf8");
-	print $fh $session->xml->to_string( $doc );
+	print $fh $doc->toString;
 	close($fh);
 
-	$session->xml->dispose( $doc );
+	EPrints::XML::dispose( $doc );
 
 	return $ok;
 }
 
-=item $problems = $mf->validate( $repository )
-
-Return any problems associated with this metafield.
-
-=cut
-
-sub validate
+sub destroy_field
 {
-	my( $self, $repository ) = @_;
+	my( $session, $dataset, $field ) = @_;
 
-	my @problems;
+	my $file_name = get_config_file( $session );
 
-	for($self->{data}, @{$self->{data}->{fields}||[]})
+	my $datasetid = $dataset->confid;
+	my $name = $field->get_name;
+	my $metafieldid = "$datasetid.$name";
+
+	if( !-e $file_name )
 	{
-		push @problems, $self->_validate_epdata( $_ );
+		return 0;
 	}
 
-	return \@problems;
+	open(my $fh, "<", $file_name)
+		or EPrints::abort "Error reading from $file_name: $!";
+	my $cfg_file = join "", <$fh>;
+	close($fh);
+
+	my $marker = "### !!!$metafieldid!!!";
+	my $ok = $cfg_file =~ s/^$marker.*?^$marker\s+//sm;
+
+	if( $ok )
+	{
+		my $c;
+		eval $cfg_file;
+		$ok &&= $@ ? 0 : 1;
+	}
+
+	if( $ok )
+	{
+		open($fh, ">", $file_name)
+			or EPrints::abort "Error writing to $file_name: $!";
+		print $fh $cfg_file;
+		close($fh);
+
+# remove from the workflow
+		_remove_workflow( $session, $dataset, $field );
+
+# remove from the database
+		$session->get_database->remove_field( $dataset, $field );
+
+# remove from the dataset
+		delete $dataset->{fields}->{$name};
+		delete $dataset->{system_fields}->{$name};
+
+# remove from the configuration
+		my $fields = $session->get_repository->get_conf( "fields", $datasetid );
+		@$fields = grep { $_->{name} ne $field->get_name} @$fields;
+
+	}
+
+	return $ok;
 }
 
-sub _validate_epdata
+sub get_field
 {
-	my( $self, $epdata ) = @_;
+	my( $self, $session ) = @_;
 
-	my $session = $self->get_session;
+	my $datasetid = $self->get_value( "mfdatasetid" );
+	my $dataset = $session->get_repository->get_dataset( $datasetid );
 
-	my @problems;
+	my $fielddata = $self->get_perl_struct();
 
-	if( !defined $epdata->{"type"} )
-	{
-		push @problems, $session->html_phrase(
-				"validate:missing_type",
-			);
-		return @problems;
+	my @cfields;
+	if( $fielddata->{type} eq "compound" )
+	{	
+		@cfields = @{$fielddata->{fields}};
 	}
-
-	my $field_defaults = $self->get_property_defaults( $session, $epdata->{type} );
-
-	if( !defined $field_defaults )
-	{
-		push @problems, $session->html_phrase(
-				"validate:bad_type",
-				type => $session->make_text( $epdata->{type} ),
-			);
-		return @problems;
-	}
-
-	foreach my $property (keys %$field_defaults)
-	{
-		next if $property eq "fields_cache";
-		next if $property eq "fields";
-		if( $field_defaults->{$property} eq $EPrints::MetaField::REQUIRED && !EPrints::Utils::is_set( $epdata->{$property} ) )
+	if( $fielddata->{type} eq "multilang" )
+	{	
+		my $langs = $self->{repository}->get_conf('languages');
+		if( defined $fielddata->{languages} )
 		{
-			push @problems, $session->html_phrase(
-					"validate:missing_property",
-					property => $session->make_text( $property )
-				);
+			$langs = $fielddata->{languages};
+		}
+		@cfields = (
+			@{$fielddata->{fields}},
+			{ 
+				sub_name=>"lang",
+				type=>"langid",
+				options => $langs,
+			}, 
+		);
+	}
+		
+	if( scalar @cfields )
+	{	
+		$fielddata->{fields_cache} = [];
+		foreach my $inner_field ( @cfields )
+		{
+			my $field = EPrints::MetaField->new( 
+				parent_name => $fielddata->{name},
+				show_in_html => 0,
+				dataset => $dataset, 
+				multiple => $fielddata->{multiple},
+				%{$inner_field} );	
+			push @{$fielddata->{fields_cache}}, $field;
 		}
 	}
 
-	# fields is expanded out in $epdata, so we need to actually look for
-	# fields_sub_name
-	if( exists $field_defaults->{"fields"} && $field_defaults->{"fields"} eq $EPrints::MetaField::REQUIRED && !EPrints::Utils::is_set( $epdata->{"fields_sub_name"} ) )
-	{
-		push @problems, $session->html_phrase(
-				"validate:missing_property",
-				property => $session->make_text( "fields" )
-			);
-	}
+	my $field = EPrints::MetaField->new( 
+		dataset => $dataset, 
+		%{$fielddata} );	
 
-	if( $epdata->{"type"} eq "itemref" )
-	{
-		my $datasetid = $epdata->{"datasetid"};
-		$datasetid = "" unless defined $datasetid;
-
-		unless( $session->get_repository->get_dataset( $datasetid ) )
-		{
-			push @problems, $session->html_phrase(
-					"validate:unknown_datasetid",
-					datasetid => $session->make_text( $datasetid ),
-				);
-		}
-	}
-
-	return @problems;
+	return $field;
 }
 
 1;

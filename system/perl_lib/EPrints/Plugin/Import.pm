@@ -6,24 +6,6 @@ our @ISA = qw/ EPrints::Plugin /;
 
 $EPrints::Plugin::Import::DISABLE = 1;
 
-=item $plugin = EPrints::Plugin::Import->new( %opts )
-
-Create a new Import plugin. Available options:
-
-=over 4
-
-=item import_documents
-
-If an eprint contains documents attempt to import them as well.
-
-=item update
-
-If the new item has the same identifier as an existing one, attempt to update the existing item.
-
-=back
-
-=cut
-
 sub new
 {
 	my( $class, %params ) = @_;
@@ -207,21 +189,19 @@ sub epdata_to_dataobj
 {
 	my( $plugin, $dataset, $epdata ) = @_;
 
-	my $session = $plugin->{session};
-
 	my $item;
 
-	if( $session->get_repository->get_conf('enable_import_ids') )
+	if( $plugin->{session}->get_repository->get_conf('enable_import_ids') )
 	{
-		my $ds_id = $dataset->confid;
-		if( $ds_id eq "eprint" || $ds_id eq "user" )
+		my $ds_id = $dataset->id;
+		if( $dataset->confid eq "eprint" || $ds_id eq "user" )
 		{
 			my $id = $epdata->{$dataset->get_key_field->get_name};
 			if( $plugin->{update} )
 			{
-				$item = $dataset->get_object( $session, $id );
+				$item = $dataset->get_object( $plugin->{session}, $id );
 			}
-			elsif( $session->get_database->exists( $dataset, $id ) )
+			elsif( $plugin->{session}->get_database->exists( $dataset, $id ) )
 			{
 				$plugin->error("Failed attampt to import existing $ds_id.$id");
 				return;
@@ -268,10 +248,7 @@ sub epdata_to_dataobj
 		$item = $dataset->create_object( $plugin->{session}, $epdata );
 	}
 
-	if( defined( $item ) )
-	{
-		$plugin->handler->object( $dataset, $item );
-	}
+	$plugin->handler->object( $dataset, $item );
 
 	return $item;
 }
@@ -288,11 +265,6 @@ sub error
 	my( $plugin, $msg ) = @_;
 
 	$plugin->handler->message( "error", $plugin->{session}->make_text( $msg ));
-}
-
-sub is_tool
-{
-	return 0;
 }
 
 1;

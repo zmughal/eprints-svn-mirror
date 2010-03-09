@@ -1,10 +1,17 @@
 package EPrints::Plugin::Export::JSON;
 
-use EPrints::Plugin::Export::TextFile;
+use Unicode::String qw( utf8 );
 
-@ISA = ( "EPrints::Plugin::Export::TextFile" );
+use EPrints::Plugin::Export;
+
+@ISA = ( "EPrints::Plugin::Export" );
 
 use strict;
+
+# The utf8() method is called to ensure that
+# any broken characters are removed. There should
+# not be any broken characters, but better to be
+# sure.
 
 sub new
 {
@@ -17,48 +24,20 @@ sub new
 	$self->{visible} = "all";
 	$self->{suffix} = ".js";
 	$self->{mimetype} = "text/javascript; charset=utf-8";
-	$self->{arguments}->{json} = undef;
-	$self->{arguments}->{jsonp} = undef;
-	$self->{arguments}->{callback} = undef;
-	$self->{arguments}->{hide_volatile} = 1;
 
 	return $self;
 }
 
 
-sub _header
-{
-	my( $self, %opts ) = @_;
-
-	my $jsonp = $opts{json} || $opts{jsonp} || $opts{callback};
-	if( EPrints::Utils::is_set( $jsonp ) )
-	{
-		$jsonp =~ s/[^=A-Za-z0-9_]//g;
-		return "$jsonp(";
-	}
-
-	return "";
-}
-
-sub _footer
-{
-	my( $self, %opts ) = @_;
-
-	my $jsonp = $opts{json} || $opts{jsonp} || $opts{callback};
-	if( EPrints::Utils::is_set( $jsonp ) )
-	{
-		return ");\n";
-	}
-	return "";
-}
 
 sub output_list
 {
-	my( $self, %opts ) = @_;
+	my( $plugin, %opts ) = @_;
 
 	my $r = [];
+
 	my $part;
-	$part = $self->_header(%opts)."[\n";
+	$part = "[\n\n";
 	if( defined $opts{fh} )
 	{
 		print {$opts{fh}} $part;
@@ -71,10 +50,10 @@ sub output_list
 	$opts{json_indent} = 1;
 	my $first = 1;
 	$opts{list}->map( sub {
-		my( $session, $dataset, $dataobj ) = @_;
+		my( $session, $dataset, $item ) = @_;
 		my $part = "";
-		if( $first ) { $first = 0; } else { $part = ",\n"; }
-		$part .= $self->_epdata_to_json( $dataobj, 1, 0, %opts );
+		if( $first ) { $part = "  "; $first = 0; } else { $part = ",\n  "; }
+		$part .= $plugin->output_dataobj( $item, %opts );
 		if( defined $opts{fh} )
 		{
 			print {$opts{fh}} $part;
@@ -85,7 +64,7 @@ sub output_list
 		}
 	} );
 
-	$part= "\n]\n\n".$self->_footer(%opts);
+	$part= "\n\n]\n\n";
 	if( defined $opts{fh} )
 	{
 		print {$opts{fh}} $part;
@@ -106,75 +85,85 @@ sub output_list
 
 sub output_dataobj
 {
-	my( $self, $dataobj, %opts ) = @_;
+	my( $plugin, $dataobj, %opts ) = @_;
 
-	return $self->_header( %opts ).$self->_epdata_to_json( $dataobj, 1, 0, %opts ).$self->_footer( %opts );
+	my $itemtype = $dataobj->get_dataset->confid;
+
+	my $xml = $dataobj->to_xml;
+	my $obj_node = $xml;
+	# pull the <eprint> out of the document fragment, if it is in one.
+	foreach my $node ( $xml->getChildNodes() )
+	{
+		if( $node->getName() eq $dataobj->get_dataset->confid )
+		{
+			$obj_node = $node;
+			last;
+		}
+	}
+
+	return $plugin->ep3xml_to_json( $obj_node, $opts{json_indent} );
 }
 
-sub _epdata_to_json
+sub ep3xml_to_json
 {
-	my( $self, $epdata, $depth, $in_hash, %opts ) = @_;
+	my( $plugin, $xml, $indent ) = @_;
 
-	my $pad = "  " x $depth;
-	my $pre_pad = $in_hash ? "" : $pad;
+	$indent = 0 if !defined $indent;
+
+	my $pad = "  "x$indent;
+	#$pad= "|$pad";
+
+	my $type = "text";
+	foreach my $node ( $xml->getChildNodes() )
+	{
+		if( EPrints::XML::is_dom( $node, "Element" ) )
+		{
+			if( $node->tagName eq "item" )
+			{
+				$type = "list";
+			}
+			else
+			{
+				$type = "hash";
+			}
+			last;
+		}
+	}
 	
+	my $name = $xml->tagName;
+	$type = "list" if( $name eq "documents" );
+	$type = "list" if( $name eq "files" );
 
-	if( !ref( $epdata ) )
+	if( $type eq "list" )
 	{
-		
-		if( !defined $epdata )
+		my @r = ();	
+		foreach my $node ( $xml->getChildNodes() )
 		{
-			return "null"; # part of a compound field
+			next unless( EPrints::XML::is_dom( $node, "Element" ) );
+			push @r, $plugin->ep3xml_to_json( $node, $indent+1 );
 		}
+		return "[\n$pad  ".join( ",\n$pad  ", @r )."\n$pad]";
+	}
+
+	if( $type eq "hash" )
+	{
+		my @r = ();	
+		foreach my $node ( $xml->getChildNodes() )
+		{
+			next unless( EPrints::XML::is_dom( $node, "Element" ) );
+			my $n = $node->getName();
+			$n =~ s/["\\]/\\$&/g;
+			push @r, '"'.$n.'": '.$plugin->ep3xml_to_json( $node, $indent+1 );
+		}
+		return "{\n$pad  ".join( ",\n$pad  ", @r )."\n$pad}";
+	}
+
+	# must be text
 	
-		$epdata =~ s/([\r\n])/ /g;
-		$epdata =~ s/ +/ /g;
-		$epdata =~ s/\s*$//;
-	
-		if( $epdata =~ /['\\]/ )
-		{
-			return $pre_pad . EPrints::Utils::js_string( $epdata );
-		}
-		else
-		{
-			return $pre_pad . "'$epdata'";
-		}
-	}
-	elsif( ref( $epdata ) eq "ARRAY" )
-	{
-		return "$pre_pad\[\n" . join(",\n", grep { length $_ } map {
-			$self->_epdata_to_json( $_, $depth + 1, 0, %opts )
-		} @$epdata ) . "\n$pad\]";
-	}
-	elsif( ref( $epdata ) eq "HASH" )
-	{
-		return "$pre_pad\{\n" . join(",\n", map {
-			$pad . "  " . $_ . ": " . $self->_epdata_to_json( $epdata->{$_}, $depth + 1, 1, %opts )
-		} keys %$epdata) . "\n$pad\}";
-	}
-	elsif( $epdata->isa( "EPrints::DataObj" ) )
-	{
-		my $subdata = {};
-
-		return "" if(
-			$opts{hide_volatile} &&
-			$epdata->isa( "EPrints::DataObj::Document" ) &&
-			$epdata->has_related_objects( EPrints::Utils::make_relation( "isVolatileVersionOf" ) )
-		  );
-
-		foreach my $field ($epdata->get_dataset->get_fields)
-		{
-			next if !$field->get_property( "export_as_xml" );
-			next if defined $field->{sub_name};
-			my $value = $field->get_value( $epdata );
-			next if !EPrints::Utils::is_set( $value );
-			$subdata->{$field->get_name} = $value;
-		}
-
-		$subdata->{uri} = $epdata->uri;
-
-		return $self->_epdata_to_json( $subdata, $depth + 1, 0, %opts );
-	}
+	my $v = EPrints::Utils::tree_to_utf8( EPrints::XML::contents_of( $xml ) );
+	$v =~ s/["\\]/\\$&/g;
+	$v =~ s/\n/\\n/g;
+	return '"'.$v.'"';
 }
 
 

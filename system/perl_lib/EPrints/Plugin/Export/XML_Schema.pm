@@ -1,8 +1,10 @@
 package EPrints::Plugin::Export::XML_Schema;
 
-use EPrints::Plugin::Export::XMLFile;
+use Unicode::String qw( utf8 );
 
-@ISA = ( "EPrints::Plugin::Export::XMLFile" );
+use EPrints::Plugin::Export;
+
+@ISA = ( "EPrints::Plugin::Export" );
 
 use strict;
 
@@ -34,7 +36,7 @@ sub output_list
 	$opts{list}->map( sub {
 		my( $session, $dataset, $item ) = @_;
 
-		my $field = $item->make_field_object;
+		my $field = $item->get_field( $session );
 
 		my $datasetid = $item->get_value( "mfdatasetid" );
 		my $element = $field->render_xml_schema( $session );
@@ -64,9 +66,9 @@ sub output_list
 		$schema->appendChild( $root );
 		my $complexType = $session->make_element( "xs:complexType" );
 		$root->appendChild( $complexType );
-		my $choice = $session->make_element( "xs:choice" );
+		my $choice = $session->make_element( "xs:choice", minOccurs => "0", maxOccurs => "unbounded" );
 		$complexType->appendChild( $choice );
-		my $element = $session->make_element( "xs:element", name => $datasetid, type => "dataset_$datasetid", minOccurs => "0", maxOccurs => "unbounded" );
+		my $element = $session->make_element( "xs:element", name => $datasetid, type => "dataset_$datasetid" );
 		$choice->appendChild( $element );
 
 		# dataset schema
@@ -74,8 +76,7 @@ sub output_list
 		$schema->appendChild( $complexType );
 
 		# dataset fields
-		# TODO: this should be xs:all, but the DTD won't accept minOccurs=0
-		my $datasetAll = $session->make_element( "xs:choice", minOccurs => 0, maxOccurs => "unbounded" );
+		my $datasetAll = $session->make_element( "xs:all", "minOccurs" => 0 );
 		$complexType->appendChild( $datasetAll );
 		foreach my $field_schemas (@{$elements{$datasetid}})
 		{

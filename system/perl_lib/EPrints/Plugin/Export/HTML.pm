@@ -4,9 +4,11 @@ package EPrints::Plugin::Export::HTML;
 
 # documents needs magic files field
 
-use EPrints::Plugin::Export::HTMLFile;
+use Unicode::String qw( utf8 );
 
-@ISA = ( "EPrints::Plugin::Export::HTMLFile" );
+use EPrints::Plugin::Export;
+
+@ISA = ( "EPrints::Plugin::Export" );
 
 use strict;
 

@@ -60,7 +60,6 @@ sub export_url
 		_action_export => 1,
 		output => $format,
 		exp => $self->{processor}->{search}->serialise,
-		n => $self->{session}->param( "n" ),
 	);
 
 	return $url;
@@ -221,11 +220,7 @@ sub from
 		$self->{processor}->{search}->{satisfy_all} = ( $anyall eq "ALL" );
 	}
 
-	my $order_opt = $self->{session}->param( "order" );
-	if( !defined $order_opt )
-	{
-		$order_opt = "";
-	}
+	my $order_opt = $self->{session}->param( $self->{prefix}."order" );
 
 	my $allowed_order = 0;
 	foreach my $order_key ( keys %{$self->{processor}->{sconf}->{order_methods}} )
@@ -292,7 +287,7 @@ sub _get_export_plugins
 			can_accept=>"list/".$self->{processor}->{search}->{dataset}->confid, 
 			is_visible=>$self->_vis_level,
 	);
-	unless( $include_not_advertised ) { $opts{is_advertised} = 1; }
+	unless( $include_not_advertised ) { $is_advertised = 1; }
 	return $self->{session}->plugin_list( %opts );
 }
 
@@ -339,20 +334,12 @@ sub render_links
 		$plugin_id =~ m/^[^:]+::(.*)$/;
 		my $id = $1;
 		my $plugin = $self->{session}->plugin( $plugin_id );
-		my $url = URI::http->new;
-		$url->query_form(
-			cache => $self->{cache_id},
-			exp => $escexp,
-			output => $id,
-			_action_export_redir => 1
-			);
 		my $link = $self->{session}->make_element( 
 			"link", 
 			rel=>"alternate",
-			href=>$url,
+			href=>"?cache=".$self->{cache_id}."&exp=".$escexp."&_action_export_redir=1&output=$id",
 			type=>$plugin->param("mimetype"),
 			title=>EPrints::XML::to_string( $plugin->render_name ), );
-		$links->appendChild( $self->{session}->make_text( "\n    " ) );
 		$links->appendChild( $link );
 	}
 
@@ -757,7 +744,6 @@ sub wishes_to_export
 	return 0 unless $self->{processor}->{search_subscreen} eq "export";
 
 	my $format = $self->{session}->param( "output" );
-	my $n = $self->{session}->param( "n" );
 
 	my @plugins = $self->_get_export_plugins( 1 );
 		
@@ -774,7 +760,6 @@ sub wishes_to_export
 	
 	$self->{processor}->{export_plugin} = $self->{session}->plugin( "Export::$format" );
 	$self->{processor}->{export_format} = $format;
-	$self->{processor}->{export_n} = $n;
 	
 	return 1;
 }
@@ -784,29 +769,7 @@ sub export
 {
 	my( $self ) = @_;
 
-	my $results = $self->{processor}->{results};
-	my $n = $self->{processor}->{export_n};
-	if( $n && $n > 0 )
-	{
-		my $ids = $results->get_ids( 0, $n );
-		$results = EPrints::List->new(
-			session => $self->{session},
-			dataset => $results->{dataset},
-			ids => $ids );
-	}
-
-	my $format = $self->{processor}->{export_format};
-	my $plugin = $self->{session}->plugin( "Export::" . $format );
-	$plugin->initialise_fh( *STDOUT );
-
-	my %opts = ( fh => *STDOUT );
-	foreach my $arg_id ( $plugin->arguments() )
-	{
-		my $v = $self->{session}->param( $arg_id );
-		if( $v ) { $opts{$arg_id} = $v; }
-	}
-	$results->export( $format, %opts );
-
+	print $self->{processor}->{results}->export( $self->{processor}->{export_format} );
 }
 
 sub export_mimetype

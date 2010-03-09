@@ -4,11 +4,18 @@ package EPrints::Plugin::Export::DIDL;
 
 # documents needs magic files field
 
-use EPrints::Plugin::Export::XMLFile;
+use Unicode::String qw( utf8 );
 
-@ISA = ( "EPrints::Plugin::Export::XMLFile" );
+use EPrints::Plugin::Export;
+
+@ISA = ( "EPrints::Plugin::Export" );
 
 use strict;
+
+# The utf8() method is called to ensure that
+# any broken characters are removed. There should
+# not be any broken characters, but better to be
+# sure.
 
 sub new
 {
@@ -19,6 +26,8 @@ sub new
 	$self->{name} = "DIDL";
 	$self->{accept} = [ 'dataobj/eprint' ];
 	$self->{visible} = "all";
+	$self->{suffix} = ".xml";
+	$self->{mimetype} = "text/xml";
 
 	$self->{xmlns} = "urn:mpeg:mpeg21:2002:02-DIDL-NS",
 	$self->{schemaLocation} = "http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-21_schema_files/did/didmodel.xsd";
@@ -42,7 +51,7 @@ sub xml_dataobj
 	$didl->appendChild( $item );
 
 
-	my $d1 = $plugin->{session}->make_element( "didl:Descriptor" );
+	my $d1 = $plugin->{session}->make_element( "didl:Descriptior" );
 	my $s1 = $plugin->{session}->make_element( "didl:Statement", mimeType=>"application/xml; charset=utf-8" );
 	my $ident = $plugin->{session}->make_element( 
 		"dii:Identifier",
@@ -56,7 +65,7 @@ sub xml_dataobj
 	$item->appendChild( $d1 );
 
 
-	my $d2 = $plugin->{session}->make_element( "didl:Descriptor" );
+	my $d2 = $plugin->{session}->make_element( "didl:Descriptior" );
 	my $s2 = $plugin->{session}->make_element( "didl:Statement", mimeType=>"application/xml; charset=utf-8" );
 	my $dc_plugin = $plugin->{session}->plugin( "Export::OAI_DC" );
 	$s2->appendChild( $dc_plugin->xml_dataobj( $eprint ) ); 
@@ -70,7 +79,7 @@ sub xml_dataobj
 		$item->appendChild( $comp );
 
 
-		my $d3 = $plugin->{session}->make_element( "didl:Descriptor" );
+		my $d3 = $plugin->{session}->make_element( "didl:Descriptior" );
 		my $s3 = $plugin->{session}->make_element( "didl:Statement", mimeType=>"application/xml; charset=utf-8" );
 		my $i3 = $plugin->{session}->make_element( 
 			"dii:Identifier",

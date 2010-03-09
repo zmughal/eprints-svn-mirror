@@ -357,7 +357,7 @@ sub sql
 		$sql .= "SELECT ".$db->quote_identifier( $dataset->get_sql_table_name, $key_field->get_sql_name );
 		if( defined $key_alias )
 		{
-			$sql .= $db->sql_AS.$db->quote_identifier( $key_alias );
+			$sql .= " ".$db->quote_identifier( $key_alias );
 		}
 	}
 	elsif( !$groupby->get_property( "multiple" ) )
@@ -409,7 +409,7 @@ sub sql
 			$sql .= defined $join->{subquery} ? $join->{subquery} : $db->quote_identifier( $join->{table} );
 			if( defined $join->{alias} )
 			{
-				$sql .= $db->sql_AS.$db->quote_identifier( $join->{alias} );
+				$sql .= " ".$db->quote_identifier( $join->{alias} );
 			}
 			push @tables, $sql;
 			if( defined $join->{logic} ) # overridden table join logic (used by subject ancestors)
@@ -525,6 +525,11 @@ sub process
 	{
 		my $key_field = $dataset->get_key_field;
 		my $cache_table = $cachemap->get_sql_table_name;
+
+		$db->_create_table( $cache_table, ["pos"], [
+				$db->get_column_type( "pos", EPrints::Database::SQL_INTEGER, EPrints::Database::SQL_NOT_NULL ),
+				$key_field->get_sql_type( $session, 1 ),
+				]);
 
 #print STDERR "EXECUTING: $sql\n";
 		$db->_cache_from_SELECT( $cachemap, $dataset, $sql );

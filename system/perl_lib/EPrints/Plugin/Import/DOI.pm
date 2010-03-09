@@ -17,12 +17,12 @@ sub new
 
 	$self->{name} = "DOI (via CrossRef)";
 	$self->{visible} = "all";
-	$self->{produce} = [ 'dataobj/eprint', 'list/eprint' ];
+	$self->{produce} = [ 'list/eprint' ];
 
 	return $self;
 }
 
-sub input_text_fh
+sub input_fh
 {
 	my( $plugin, %opts ) = @_;
 

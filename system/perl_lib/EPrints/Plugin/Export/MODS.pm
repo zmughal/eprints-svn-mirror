@@ -3,9 +3,8 @@ package EPrints::Plugin::Export::MODS;
 use strict;
 use warnings;
 
-use EPrints::Plugin::Export::XMLFile;
-
-our @ISA = qw( EPrints::Plugin::Export::XMLFile );
+use EPrints::Plugin::Export;
+our @ISA = qw( EPrints::Plugin::Export );
 
 our $PREFIX = "mods:";
 
@@ -18,6 +17,8 @@ sub new
 	$self->{name} = "MODS";
 	$self->{accept} = [ 'dataobj/eprint' ];
 	$self->{visible} = "all";
+	$self->{suffix} = ".xml";
+	$self->{mimetype} = "text/xml";
 	
 	$self->{xmlns} = "http://www.loc.gov/mods/v3";
 	$self->{schemaLocation} = "http://www.loc.gov/standards/mods/v3/mods-3-3.xsd";
@@ -86,7 +87,6 @@ sub _make_title
 {
 	my( $session, $dataset, $dataobj ) = @_;
 
-	return $session->make_doc_fragment unless $dataset->has_field( "title" );
 	my $val = $dataobj->get_value( "title" );
 	return $session->make_doc_fragment unless defined $val;
 	
@@ -140,7 +140,6 @@ sub _make_abstract
 {
 	my( $session, $dataset, $dataobj ) = @_;
 	
-	return $session->make_doc_fragment unless $dataset->has_field( "abstract" );
 	my $val = $dataobj->get_value( "abstract" );
 	return $session->make_doc_fragment unless defined $val;
 	
@@ -181,7 +180,6 @@ sub _make_issue_date
 {
 	my( $session, $dataset, $dataobj ) = @_;
 	
-	return $session->make_doc_fragment unless $dataset->has_field( "date" );
 	my $val = $dataobj->get_value( "date" );
 	return $session->make_doc_fragment unless defined $val;
 	
@@ -212,7 +210,7 @@ sub _make_publisher
 			$val .= ";" . $dataobj->get_value( "department" );
 		}
 	}
-	elsif( $dataset->has_field( "publisher" ) )
+	else
 	{
 		$val = $dataobj->get_value( "publisher" );		
 	}

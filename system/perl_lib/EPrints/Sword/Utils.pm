@@ -4,36 +4,95 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
 #
 # Copyright 2000-2008 University of Southampton. All Rights Reserved.
 # 
-#  This file is part of GNU EPrints 3.
-#  
-#  Copyright (c) 2000-2008 University of Southampton, UK. SO17 1BJ.
-#  
-#  EPrints 3 is free software; you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation; either version 2 of the License, or
-#  (at your option) any later version.
-#  
-#  EPrints 3 is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#  
-#  You should have received a copy of the GNU General Public License
-#  along with EPrints 3; if not, write to the Free Software
-#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#  __LICENSE__
 #
 ######################################################################
+
+######################################################################
+#
+# PURPOSE:
+#
+# 	This is the general API for the SWORD implementation on EPrints 3, as used by the other modules (mostly
+# 	ServiceDocument.pm and DepositHandler.pm).
+#
+#
+# METHODS:
+# 
+#
+# authenticate( $session, $request )
+#	Parameters: 	$session -> the current Session object
+#			$request -> the mod_perl object
+#	Returns:	in case of error: a hash with HTTP status code and related error codes set (eg. X-Error-Code in SWORD)			
+#			otherwise: a hash with the user and behalf user objects
+#	Notes:		This also tests whether the (optional) mediation is allowed or not			
+#
+# process_headers( $session, $request )
+# 	Parameters:	cf. above
+#	Returns:	in case of error: a hash with HTTP status code and related error codes set (eg. X-Error-Code in SWORD)
+#			otherwise: a hash with the options sent through HTTP headers
+#	Notes:		This will test if the options are valid (and set default options if not)
+#
+# can_user_behalf( $session, $username, $behalf_username )
+# 	Parameters:	$session -> the current Session object
+# 			$username -> the user currently logged in
+# 			$behalf_username -> the user one is depositing on behalf of
+# 	Returns:	1 if the user 'username' can deposit on behalf of 'behalf_username', 0 otherwise
+#
+# is_collection_valid( $collection )
+# 	Parameters:	$collection -> the name of the collection
+# 	Returns:	1 if the collection is valid (so either 'inbox', 'buffer' or 'archive'), 0 otherwise
+#
+# get_collections( $session )
+# 	Parameters:	$session -> the current Session object
+# 	Returns:	A hash with the configuration for each defined collections in sword.pl
+# 	Notes:		This will test if the options are valid (and set default options if not)
+#
+# get_files_mime( $session, $files )
+# 	Parameters:	$session
+# 			$files -> a reference to a hash of file names
+# 	Returns:	A hash: { filename => mime_type }
+# 	Notes:		the files should contain the full path.
+#
+# get_file_to_import( $session, $files, $mime_type, $return_all )
+# 	Parameters:	$session
+# 			$files	-> a reference to a hash of file names
+# 			$mime_type -> the MIME type used for filtering (eg. 'application/pdf')
+# 			$return_all -> (optional) a boolean value, cf Notes below.
+# 	Returns:	a scalar, an array or undef, cf Notes below.
+# 	Notes:		Used to filter out a set of files. The method tests the MIME type of each file, and keep only the one(s) 
+# 			which matches the provided 'mime_type' argument. If 'return_all' is set to 0 or 'undef', the method tries to find only 
+# 			ONE file which matches the 'mime_type' (and will return 'undef' if there are MORE than one file). If 'return_all'
+# 			is set to 1, the method returns ALL files matching the 'mime_type'.
+#
+# get_deposit_url( $session )
+# 	Parameters:	$session
+# 	Returns:	the URL for deposits.
+# 	Notes:		The name of each collection will be appended to the end of this URL. You may modify this method if you need
+# 			the deposit URLs to point to somewhere else than the default ones.
+# 			By default this points to "http://myserver.org/CGI/APP/DEPOSIT/{collection_name}"
+#
+## get_collections_url( $session )
+#	Parameters:	$session
+#	Returns:	the base URL of the available collections.
+#	Notes:		Again, the name of the collections will be appended to the end. You may also modify this method.
+#			By default this points to "http://myserver.org/CGI/APP/COLLECTIONS/{collection_name}"
+#			You may over-ride the default collection URLs by setting the 'href' variables in the collections definitions inside sword.pl
+#
+######################################################################
+
 
 package EPrints::Sword::Utils;
 
 use strict;
 use warnings;
 
-#use EPrints::Sword::FileType;
+use EPrints::Sword::FileType;
 use MIME::Base64;
+
 
 sub authenticate
 {
@@ -41,20 +100,40 @@ sub authenticate
 
 	my %response;
 
-	my $authen = EPrints::Apache::AnApache::header_in( $request, 'Authorization' );
+	my $disable_auth = $session->get_repository->get_conf( "sword", "disable_authentication" );
 
-	$response{verbose_desc} = "";
+	if( defined $disable_auth && $disable_auth eq "1")
+	{
+		# Sending on behalf of is disabled in this case.
+		my $ann_oneem = $session->get_repository->get_conf( "sword", "anonymous_user" );
+		if( !defined $ann_oneem )
+		{
+			print STDERR "\n[SWORD] [INTERNAL-ERROR] No anonymous user defined. You NEED to supply an anonymous user if you disable the authentication.";
+			$response{status_code} = 500;			
+			return \%response;
+		}
+
+		# check if user is valid?
+		my $anon_user = EPrints::DataObj::User::user_with_username( $session, $ann_oneem );
+
+                if(!defined $anon_user)
+                {
+			print STDERR "\n[SWORD] [INTERNAL-ERROR] The anonymous user does not exist on this repository.";
+        		$response{status_code} = 500;
+			return \%response;
+		}
+
+		$response{owner} = $anon_user;
+
+		return \%response;
+	}
+
+	my $authen = EPrints::Apache::AnApache::header_in( $request, 'Authorization' );
 
         if(!defined $authen)
         {
-		$response{error} = { 	
-					status_code => 401, 
-					x_error_code => "ErrorAuth",
-					error_href => "http://eprints.org/sword/error/ErrorAuth",
-					no_auth => 1, 
-				   };
-
-		$response{verbose_desc} .= "[ERROR] No authentication found in the headers.\n";
+		$response{status_code} = 401;
+		$response{x_error_code} = "ErrorAuth";
 		return \%response;
         }
 
@@ -66,12 +145,8 @@ sub authenticate
         my $decode_authen = MIME::Base64::decode_base64( $authen );
         if(!defined $decode_authen)
         {
-		$response{error} = { 	
-					status_code => 401, 
-					x_error_code => "ErrorAuth",
-					error_href => "http://eprints.org/sword/error/ErrorAuth",
-				   };
-		$response{verbose_desc} .= "[ERROR] Authentication failed (invalid base64 encoding).\n";
+                $response{status_code} = 401;
+		$response{x_error_code} = "ErrorAuth";
                 return \%response;
         }
 
@@ -85,23 +160,25 @@ sub authenticate
         }
         else
         {
-		$response{error} = { 	
-					status_code => 401, 
-					x_error_code => "ErrorAuth",
-					error_href => "http://eprints.org/sword/error/ErrorAuth",
-				   };
-		$response{verbose_desc} .= "[ERROR] Authentication failed (invalid base64 encoding).\n";
+                $response{status_code} = 401;
+		$response{x_error_code} = "ErrorAuth";
                 return \%response;
         }
 
-	unless( $session->valid_login( $username, $password ) )
+        my $db = EPrints::Database->new( $session );
+
+	if(!defined $db)
 	{
-		$response{error} = {
-					status_code => 401, 
-					x_error_code => "ErrorAuth",
-					error_href => "http://eprints.org/sword/error/ErrorAuth",
-				   };
-		$response{verbose_desc} .= "[ERROR] Authentication failed.\n";
+		print STDERR "\n[SWORD] [INTERNAL-ERROR] Failed to open database.";
+		$response{status_code} = 500;	#Internal Error
+		return \%response;
+	}
+
+	# Does user exist in EPrints?
+	if( ! $db->valid_login( $username, $password ) )
+	{
+                $response{status_code} = 401;
+		$response{x_error_code} = "TargetOwnerUnknown";
                 return \%response;
         }
 
@@ -110,12 +187,8 @@ sub authenticate
 	# This error could be a 500 Internal Error since the previous check ($db->valid_login) succeeded.
         if(!defined $user)
         {
-		$response{error} = {
-					status_code => 401, 
-					x_error_code => "ErrorAuth",
-					error_href => "http://eprints.org/sword/error/ErrorAuth",
-				   };
-		$response{verbose_desc} .= "[ERROR] Authentication failed.\n";
+                $response{status_code} = 401;
+		$response{x_error_code} = "TargetOwnerUnknown";
                 return \%response;
         }
 
@@ -127,24 +200,14 @@ sub authenticate
 
 	        if(!defined $behalf_user)
 		{
-			$response{error} = {
-					status_code => 401, 
-					x_error_code => "TargetOwnerUnknown",
-					error_href => "http://purl.org/net/sword/error/TargetOwnerUnknown",
-				   };
-
-			$response{verbose_desc} .= "[ERROR] Unknown user for mediation: '".$xbehalf."'\n";
+			$response{status_code} = 401;
+			$response{x_error_code} = "TargetOwnerUnknown";
 	                return \%response;
 		}
 
 		if(!can_user_behalf( $session, $user->get_value( "username" ), $behalf_user->get_value( "username" ) ))
 		{
-			$response{error} = {
-					status_code => 403, 
-					x_error_code => "TargetOwnerUnknown",
-					error_href => "http://eprints.org/sword/error/MediationForbidden",
-				   };
-			$response{verbose_desc} .= "[ERROR] The user '".$user->get_value( "username" )."' cannot deposit on behalf of user '".$behalf_user->get_value("username")."'\n";
+			$response{status_code} = 403;
 			return \%response;
 		}
 
@@ -156,10 +219,10 @@ sub authenticate
 		$response{owner} = $user;
 	}
 
-	$response{verbose_desc} .= "[OK] Authentication successful.\n";
-
 	return \%response;
 }
+
+
 
 
 sub process_headers
@@ -168,33 +231,19 @@ sub process_headers
 
 	my %response;
 
-	# X-Verbose
-        my $verbose = EPrints::Apache::AnApache::header_in( $request, 'X-Verbose' );
-	$response{x_verbose} = 0;
-	$response{verbose_desc} = "";
-
-        if(defined $verbose)
-        {
-		$response{x_verbose} = 1 if(lc $verbose eq 'true');
-	}
+# first let's check some mandatory fields:
 
 	# Content-Type	
 	my $content_type = EPrints::Apache::AnApache::header_in( $request, 'Content-Type' );
         if(!defined $content_type)
         {
-		$response{error} = {
-					status_code => 400,
-					error_href => "http://eprints.org/sword/error/ContentTypeNotSet"
-				   };
-
-		$response{verbose_desc} .= "[ERROR] Content-Type not set.\n";
+		$response{status_code} = 400;
 		return \%response;
 	}
 	if( $content_type eq 'application/xml' )
 	{
 		$content_type = 'text/xml';
 	}
-
         $response{content_type} = $content_type;
 
 	# Content-Length
@@ -202,12 +251,7 @@ sub process_headers
 	
         if(!defined $content_len)
         {
-		$response{error} = {
-					status_code => 400,
-					error_href => "http://eprints.org/sword/error/ContentLengthNotSet"
-				   };
-
-		$response{verbose_desc} .= "[ERROR] Content-Length not set.\n";
+		$response{status_code} = 400;
 		return \%response;
 	}
 
@@ -219,6 +263,8 @@ sub process_headers
         my $collection;
 	my $url;
 
+# TODO more checks on the URI part
+#	if( $uri =~ /^\/cgi\/app\/deposit\/(.*)$/ )       
 	if( $uri =~ /^.*\/(.*)$/ )	
         {
                 $collection = $1;
@@ -226,11 +272,7 @@ sub process_headers
 
 	if(!defined $collection)
 	{
-		$response{error} = {
-					status_code => 400,
-					error_href => "http://eprints.org/sword/error/TargetCollectionNotSet"
-				   };
-		$response{verbose_desc} .= "[ERROR] Collection not set.\n";
+		$response{status_code} = 400;	# Bad Request
 		return \%response;
 	}
 
@@ -266,58 +308,41 @@ sub process_headers
 		$response{filename} = "deposit";	# default value
 	}
 
+	# X-Verbose (NOT SUPPORTED)
+        my $verbose = EPrints::Apache::AnApache::header_in( $request, 'X-Verbose' );
 
-	# X-No-Op
+        if(defined $verbose)
+        {
+		$response{verbose} = 1 if(lc $verbose eq 'true');
+	}
+
+	# X-No-Op (NOT SUPPORTED)
 	my $no_op = EPrints::Apache::AnApache::header_in( $request, 'X-No-Op' );
-	$response{no_op} = 0;
 
         if(defined $no_op)
         {
-		$response{no_op} = 1 if((lc $no_op) eq 'true');
+		$response{no_op} = 1 if(lc $no_op eq 'true');
 	}
 
-
-	# X-Format-Namespace: obsolete field from SWORD 1.2
+	# X-Format-Namespace
         my $format_ns = EPrints::Apache::AnApache::header_in( $request, 'X-Format-Namespace' );
 
         if(defined $format_ns)
         {
 		$response{format_ns} = $format_ns;
-		$response{verbose_desc} .= "[WARNING] X-Format-Namespace is obsolete: X-Packaging should be used instead.";
-	}
-
-	my $xpackaging = EPrints::Apache::AnApache::header_in( $request, 'X-Packaging' );
-
-	if( defined $xpackaging)
-	{
-		$response{x_packaging} = $xpackaging;
 	}
 	else
 	{
-		if( defined $format_ns )
-		{
-			$response{x_packaging} = $format_ns;
-			$response{verbose_desc} .= "[WARNING] Using X-Format-Namespace instead of X-Packaging.";
-		}
-
+		$response{format_ns} = "http://eprints.org/ep2/data/2.0";	# eprints NS
 	}
 
 	# Slug
-	if( defined EPrints::Apache::AnApache::header_in( $request, 'Slug' ) )
-	{
-		$response{verbose_desc} .= "[WARNING] 'Slug' header is obsolete and will not be saved.";
-	}
+	my $slug = EPrints::Apache::AnApache::header_in( $request, 'Slug' );
 
-
-	# userAgent
-	my $user_agent = EPrints::Apache::AnApache::header_in( $request, 'User-Agent' );
-
-        if(defined $user_agent)
+        if(defined $slug)
         {
-		$response{user_agent} = $user_agent;
+		$response{slug} = $slug;
 	}
-
-	$response{verbose_desc} .= "[OK] HTTP Headers processed successfully.\n";
 
 	return \%response;
 }
@@ -329,7 +354,7 @@ sub can_user_behalf
 {
 	my ( $session, $username, $behalf_username ) = @_;
 
-	my $allowed = $session->get_repository->get_conf( "sword", "allowed_mediations" );
+	my $allowed = $session->get_repository->get_conf( "sword", "allowed_mediation" );
 
 	# test if ALL mediations are allowed
 	my $all_allowed = $allowed->{'*'};
@@ -358,7 +383,7 @@ sub can_user_behalf
 
 
 
-sub is_collection_valid_OBSOLETE_METHOD
+sub is_collection_valid
 {
 	my ( $collection ) = @_;
 
@@ -371,59 +396,72 @@ sub is_collection_valid_OBSOLETE_METHOD
 }
 
 
+
 sub get_collections
 {
 	my ( $session ) = @_;
 
-	my $coll_conf = $session->get_repository->get_conf( "sword","collections" );
-	return undef unless(defined $coll_conf);
+	my $coll_conf = $session->get_repository->get_conf( "sword","collections_conf" );
 	
-	my $mime_types = $session->get_repository->get_conf( "sword", "accept_mime_types" );
-	my $packages = $session->get_repository->get_conf( "sword", "supported_packages" );
+	my @mimes;
+	my $mime_types = $session->get_repository->get_conf( "sword", "mime_types" );
+	@mimes = keys %$mime_types if defined $mime_types;
 
-	my $coll_count = 0;
-	foreach my $c (keys %$coll_conf)
+	my @namespaces;
+	my $supported_ns = $session->get_repository->get_conf( "sword", "importers" );
+	@namespaces = keys %$supported_ns if defined $supported_ns;
+
+	if(!defined $coll_conf)
 	{
+		return undef;
+	}
 
-		my $conf = $coll_conf->{$c};
+	# parse the options
 	
-		$conf->{title} = $c unless(defined $conf->{title});
-		$conf->{sword_policy} = "" unless(defined $conf->{sword_policy});
-		$conf->{dcterms_abstract} = "" unless(defined $conf->{dcterms_abstract});
-		$conf->{treatment} = "" unless(defined $conf->{treatment});
-		$conf->{mediation} = "true" unless(defined $conf->{mediation});
-		$conf->{mediation} = "true" if(! ($conf->{mediation} eq "true" || $conf->{mediation} eq "false") );
+	my $c;
+	my $coll_count = 0;
+	foreach $c (keys %$coll_conf)
+	{
+		if( !is_collection_valid( $c ) )
+		{
+			delete $$coll_conf{$c};		# ignore this invalid collection...
+			next;
+		}
+	
+		my %conf = %{$$coll_conf{$c}};	
+	
+		$conf{title} = $c unless(defined $conf{title});
+		$conf{sword_policy} = "" unless(defined $conf{sword_policy});
+		$conf{dcterms_abstract} = "" unless(defined $conf{dcterms_abstract});
+		$conf{treatment} = "" unless(defined $conf{treatment});
+		$conf{mediation} = "true" unless(defined $conf{mediation});
+		$conf{mediation} = "true" if(! ($conf{mediation} eq "true" || $conf{mediation} eq "false") );
+	
+		if(!defined $conf{accept_mime})
+		{
+			$conf{accept_mime} = \@mimes;	# that could still be empty...
+		}
 
-		# mime types might be redefined locally for a specific collection:
-		$conf->{mime_types} = defined $conf->{accept_mime_types} ? $conf->{accept_mime_types} : $mime_types;
-		delete $conf->{accept_mime_types};
-		$conf->{packages} = $packages;
-	
-		$coll_conf->{$c} = $conf;
+		if(!defined $conf{format_ns})
+		{
+			$conf{format_ns} = \@namespaces; # could still be empty
+		}
+		
+		$$coll_conf{$c} = \%conf;
 		$coll_count++;
 	}
 
-	return undef unless( $coll_count );
+	if($coll_count == 0)
+	{
+                return undef;
+	}
 
 	return $coll_conf;
 }
 
 
-sub is_mime_allowed
-{
-	my ( $allowed, $mime ) = @_;
 
-	foreach( @$allowed )
-	{
-		return 1 if( $_ eq '*/*' );
-		return 1 if( $_ eq $mime );
-	}
-	
-	return 0;
-}
-
-
-sub get_files_mime_OBSOLETE_METHOD
+sub get_files_mime
 {
 	my ( $session, $f ) = @_;
 
@@ -443,13 +481,9 @@ sub get_files_mime_OBSOLETE_METHOD
 }
 
 
-sub get_file_to_import_OBSOLETE_METHOD
+sub get_file_to_import
 {
 	my ( $session, $files, $mime_type, $return_all ) = @_;
-
-
-print STDERR "\nWARNING Sword::FileType::get_file_to_import was called!!";
-
 
 	my $mimes = get_files_mime( $session, $files );
         my @candidates;
@@ -496,407 +530,27 @@ print STDERR "\nWARNING Sword::FileType::get_file_to_import was called!!";
 }
 
 
-sub get_atom_url
-{
-	my ( $session, $eprint ) = @_;
-	return $session->get_repository->get_conf( "base_url" )."/sword-app/atom/".$eprint->get_id.".atom";
-}
-
-
 
 sub get_deposit_url
 {
 	my ( $session ) = @_;
-	return $session->get_repository->get_conf( "base_url" )."/sword-app/deposit/"
+
+	my $base_url = $session->get_repository->get_conf( "base_url" );
+
+	return $base_url."/sword-app/deposit/";
 }
 
 sub get_collections_url
 {
         my ( $session ) = @_;
-        return $session->get_repository->get_conf( "base_url" )."/id/eprint/";
+
+        my $base_url = $session->get_repository->get_conf( "base_url" );
+
+#	should be /app/collections/
+        return $base_url."/sword-app/collections/";
 }
 
 
 
 
-# other helper functions:
-sub generate_error_document
-{
-        my ( $session, %opts ) = @_;
-
-        my $error = $session->make_element( "sword:error", "xmlns:atom" => "http://www.w3.org/2005/Atom",
-                                                           "xmlns:sword" => "http://purl.org/net/sword/" );
-
-	$opts{href} = "http://eprints.org/sword/error/UnknownError" unless( defined $opts{href} );
-	$error->setAttribute( "href", $opts{href} );
-
-        my $title = $session->make_element( "atom:title" );
-        $title->appendChild( $session->make_text( "ERROR" ) );
-        $error->appendChild( $title );
-
-        my $updated = $session->make_element( "atom:updated" );
-        $updated->appendChild( $session->make_text( EPrints::Time::get_iso_timestamp() ) );
-        $error->appendChild( $updated );
-
-        my $source_gen = $session->get_repository->get_conf( "sword", "service_conf" )->{generator};
-        unless( defined $source_gen )
-        {
-                $source_gen = $session->phrase( "archive_name" )." [".$session->get_repository->get_conf( "version_id" )."]";
-        }
-
-        my $generator = $session->make_element( "atom:generator" );
-        $generator->setAttribute( "uri", $session->get_repository->get_conf( "base_url" ) );
-        $generator->setAttribute( "version", "1.3" );
-        $generator->appendChild($session->make_text( $source_gen ) );
-        $error->appendChild( $generator );
-
-	my $summary = $session->make_element( "atom:summary" );
-	$error->appendChild( $summary );
-
-	if( defined $opts{summary} )
-        {
-                $summary->appendChild( $session->make_text( $opts{summary} ) );
-        }
-
-        if( defined $opts{verbose_desc} )
-        {
-                my $desc = $session->make_element( "sword:verboseDescription" );
-                $desc->appendChild( $session->make_text( $opts{verbose_desc} ) );
-                $error->appendChild( $desc );
-        }
-
-	if( defined $opts{user_agent} )
-	{
-                my $sword_agent = $session->make_element( "sword:userAgent" );
-                $sword_agent->appendChild( $session->make_text( $opts{user_agent} ) );
-                $error->appendChild( $sword_agent );
-        }
-
-        EPrints::XML::tidy( $error );
-
-        return '<?xml version="1.0" encoding="UTF-8"?>'.$error->toString();
-}
-
-
-sub create_xml
-{
-        my ( $session, %opts ) = @_;
-
-        my $eprint = $opts{eprint};
-        my $owner = $opts{owner};
-        my $depositor = $opts{depositor};
-	my $deposited_file_docid = $opts{deposited_file_docid};
-
-        # ENTRY
-        my $entry = $session->make_element( "atom:entry", "xmlns:atom" => "http://www.w3.org/2005/Atom",
-                                        "xmlns:sword" => "http://purl.org/net/sword/" );
-
-        # TITLE
-        my $eptitle = $eprint->get_value( "title" );
-        $eptitle = "UNSPECIFIED" unless defined( $eptitle );
-
-        my $title = $session->make_element( "atom:title" );
-        $title->appendChild( $session->make_text( $eptitle ) );
-        $entry->appendChild( $title );
-
-        # ID
-        my $uid = $session->make_element( "atom:id" );
-        $uid->appendChild( $session->make_text( $eprint->get_id ) );
-        $entry->appendChild( $uid );
-
-        # UPDATED
-	my $time_updated;
-        my $lastmod = $eprint->get_value( "lastmod" );
-        if( defined $lastmod && $lastmod =~ /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})$/ )
-        {
-                $time_updated = "$1T$2Z";
-        }
-        else
-        {
-                $time_updated =  EPrints::Time::get_iso_timestamp();
-        }
-
-        my $updated = $session->make_element( "atom:updated" );
-        $updated->appendChild( $session->make_text( $time_updated ) );
-        $entry->appendChild( $updated );
-        
-	my $time_pub;
-	my $datestamp = $eprint->get_value( "datestamp" );
-        if( defined $datestamp && $datestamp =~ /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})$/ )
-        {
-                $time_pub = "$1T$2Z";
-        }
-        else
-        {
-		$time_pub = $time_updated;
-        }
-        
-	my $published = $session->make_element( "atom:published" );
-        $published->appendChild( $session->make_text( $time_pub ) );
-        $entry->appendChild( $published );
-
-
-        # AUTHOR/CONTRIBUTOR
-	if( defined $depositor )
-        {
-                my $author = $session->make_element( "atom:author" );
-                my $name = $session->make_element( "atom:name" );
-                $name->appendChild( $session->make_text( $owner->get_value( "username" ) ) );
-                $author->appendChild( $name );
-                my $author_email = $owner->get_value( "email" );
-                my $email_tag;
-                if( defined $author_email )
-                {
-                        $email_tag = $session->make_element( "atom:email" );
-                        $email_tag->appendChild( $session->make_text( $author_email ) );
-                        $author->appendChild( $email_tag );
-                }
-                $entry->appendChild( $author );
-
-                my $contributor = $session->make_element( "atom:contributor" );
-                my $name2 = $session->make_element( "atom:name" );
-                $name2->appendChild( $session->make_text( $depositor->get_value( "username" ) ) );
-                $contributor->appendChild( $name2 );
-                my $contrib_email = $depositor->get_value( "email" );
-                if( defined $contrib_email )
-                {
-                        $email_tag = $session->make_element( "atom:email" );
-                        $email_tag->appendChild( $session->make_text( $contrib_email ) );
-                        $contributor->appendChild( $email_tag );
-                }
-                $entry->appendChild( $contributor );
-        }
-        else
-        {
-                my $author = $session->make_element( "atom:author" );
-                my $name = $session->make_element( "atom:name" );
-                $name->appendChild( $session->make_text( $owner->get_value( "username" ) ) );
-                $author->appendChild( $name );
-                my $author_email = $owner->get_value( "email" );
-                if( defined $author_email )
-                {
-                        my $email_tag = $session->make_element( "atom:email" );
-                        $email_tag->appendChild( $session->make_text( $author_email ) );
-                        $author->appendChild( $email_tag );
-                }
-                $entry->appendChild( $author );
-        }
-
-        # SUMMARY
-	my $summary = $session->make_element( "atom:summary", "type" => "text" );
-	$entry->appendChild( $summary );
-	my $abstract = $eprint->get_value( "abstract" );
-        if( defined $abstract && length $abstract > 100 )        # display 100 characters max for the abstract
-        {
-                $abstract = substr( $abstract, 0, 96 );
-                $abstract .= "...";
-                $summary->appendChild( $session->make_text( $abstract ) );
-        }
-
-	# if docid is defined, <content> should point to that document, otherwise point to the abstract page
-	my $content;
-	if( defined $deposited_file_docid )
-	{
-		my $doc = EPrints::DataObj::Document->new( $session, $deposited_file_docid );
-	
-		if( defined $doc )
-		{
-			$content = $session->make_element( "atom:content", 
-							"type" => $doc->get_value( "format" ),
-							"src" => $doc->uri );
-		}		
-	}
-
-	unless( defined $content )
-	{
-		$content = $session->make_element( "atom:content", "type" => "text/html", src=> $eprint->uri )
-	}
-        $entry->appendChild( $content );
-
-	my $edit_link = $session->make_element( "atom:link", 
-					"rel" => "edit",
-					"href" => EPrints::Sword::Utils::get_atom_url( $session, $eprint ) );
-
-	$entry->appendChild( $edit_link );
-
-
-        # SOURCE GENERATOR
-	my $source_gen = $session->get_repository->get_conf( "sword", "service_conf" )->{generator};
-	unless( defined $source_gen )
-	{
-	        $source_gen = $session->phrase( "archive_name" )." [".$session->get_repository->get_conf( "version_id" )."]";
-	}
-
-        my $generator = $session->make_element( "atom:generator" );
-        $generator->setAttribute( "uri", $session->get_repository->get_conf( "base_url" ) );
-	$generator->setAttribute( "version", "1.3" );
-        $generator->appendChild($session->make_text( $source_gen ) );
-        $entry->appendChild( $generator );
-
-
-        # VERBOSE
-        if(defined $opts{verbose_desc})
-        {
-                my $sword_verbose = $session->make_element( "sword:verboseDescription" );
-                $sword_verbose->appendChild( $session->make_text( $opts{verbose_desc} ) );
-                $entry->appendChild( $sword_verbose );
-        }
-
-
-        # SWORD TREATMEMT
-	my $sword_treat = $session->make_element( "sword:treatment" );
-        $sword_treat->appendChild( $session->make_text( $opts{sword_treatment} ) );
-        $entry->appendChild( $sword_treat );
-
-
-	if( defined $opts{x_packaging} )
-	{
-		my $sword_xpack = $session->make_element( "sword:packaging" );
-		$sword_xpack->appendChild( $session->make_text( $opts{x_packaging} ) );
-		$entry->appendChild( $sword_xpack );
-	}
-
-	if(defined $opts{user_agent})
-        {
-                my $sword_agent = $session->make_element( "sword:userAgent" );
-                $sword_agent->appendChild( $session->make_text( $opts{user_agent} ) );
-                $entry->appendChild( $sword_agent );
-        }
-	
-	my $sword_noop = $session->make_element( "sword:noOp" );
-	$sword_noop->appendChild( $session->make_text( "false" ) );
-	$entry->appendChild( $sword_noop );
-
-	EPrints::XML::tidy( $entry );
-	
-        return '<?xml version="1.0" encoding="UTF-8"?>'.$entry->toString;
-
-}
-
-
-# the XML sent when performing a No-Op operation
-sub create_noop_xml
-{
-        my ( $session, %opts ) = @_;
-
-        my $sword_treatment = $opts{sword_treatment};
-        my $owner = $opts{owner};
-        my $depositor = $opts{depositor};
-        my $verbose = $opts{verbose_desc};
-
-        # ENTRY
-        my $entry = $session->make_element( "atom:entry", "xmlns:atom" => "http://www.w3.org/2005/Atom",
-                                        "xmlns:sword" => "http://purl.org/net/sword/" );
-
-        # UPDATED
-        my $time_updated = EPrints::Time::get_iso_timestamp();
-        my $updated = $session->make_element( "atom:updated" );
-        $updated->appendChild( $session->make_text( $time_updated ) );
-        $entry->appendChild( $updated );
-
-        my $published = $session->make_element( "atom:published" );
-        $published->appendChild( $session->make_text( $time_updated ) );
-        $entry->appendChild( $published );
-
-        # AUTHOR/CONTRIBUTOR
-	if( defined $depositor )
-        {
-                my $author = $session->make_element( "atom:author" );
-                my $name = $session->make_element( "atom:name" );
-                $name->appendChild( $session->make_text( $owner->get_value( "username" ) ) );
-                $author->appendChild( $name );
-                my $author_email = $owner->get_value( "email" );
-                my $email_tag;
-                if( defined $author_email )
-                {
-                        $email_tag = $session->make_element( "atom:email" );
-                        $email_tag->appendChild( $session->make_text( $author_email ) );
-                        $author->appendChild( $email_tag );
-                }
-                $entry->appendChild( $author );
-
-                my $contributor = $session->make_element( "atom:contributor" );
-                my $name2 = $session->make_element( "atom:name" );
-                $name2->appendChild( $session->make_text( $depositor->get_value( "username" ) ) );
-                $contributor->appendChild( $name2 );
-                my $contrib_email = $depositor->get_value( "email" );
-                if( defined $contrib_email )
-                {
-                        $email_tag = $session->make_element( "atom:email" );
-                        $email_tag->appendChild( $session->make_text( $contrib_email ) );
-                        $contributor->appendChild( $email_tag );
-                }
-                $entry->appendChild( $contributor );
-        }
-        else
-        {
-                my $author = $session->make_element( "atom:author" );
-                my $name = $session->make_element( "atom:name" );
-                $name->appendChild( $session->make_text( $owner->get_value( "username" ) ) );
-                $author->appendChild( $name );
-                my $author_email = $owner->get_value( "email" );
-                if( defined $author_email )
-                {
-                        my $email_tag = $session->make_element( "atom:email" );
-                        $email_tag->appendChild( $session->make_text( $author_email ) );
-                        $author->appendChild( $email_tag );
-                }
-                $entry->appendChild( $author );
-        }
-
-        # SOURCE GENERATOR
-	my $source_gen = $session->get_repository->get_conf( "sword", "service_conf" )->{generator};
-        $source_gen = $session->phrase( "archive_name" ) unless(defined $source_gen);
-
-        my $source = $session->make_element( "atom:source" );
-        my $generator = $session->make_element( "atom:generator" );
-        $generator->setAttribute( "uri", $session->get_repository->get_conf( "base_url" ) );
-        $generator->appendChild($session->make_text( $source_gen ) );
-        $source->appendChild( $generator );
-        $entry->appendChild( $source );
-
-        #VERBOSE (if defined)
-       if(defined $verbose)
-        {
-                my $sword_verbose = $session->make_element( "sword:verboseDescription" );
-                $sword_verbose->appendChild( $session->make_text( $verbose ) );
-                $entry->appendChild( $sword_verbose );
-        }
-
-        # SWORD TREATMEMT
-	my $sword_treat = $session->make_element( "sword:treatment" );
-        $sword_treat->appendChild( $session->make_text( $sword_treatment ) );
-        $entry->appendChild( $sword_treat );
-
-
-	if( defined $opts{x_packaging} )
-	{
-		my $sword_xpack = $session->make_element( "sword:packaging" );
-		$sword_xpack->appendChild( $session->make_text( $opts{x_packaging} ) );
-		$entry->appendChild( $sword_xpack );
-	}
-
-        # USER AGENT (if set)
-	if(defined $opts{user_agent})
-        {
-                my $sword_agent = $session->make_element( "sword:userAgent" );
-                $sword_agent->appendChild( $session->make_text( $opts{user_agent} ) );
-                $entry->appendChild( $sword_agent );
-        }
-	
-	my $sword_noop = $session->make_element( "sword:noOp" );
-	$sword_noop->appendChild( $session->make_text( "true" ) );
-	$entry->appendChild( $sword_noop );
-
-	my $sword_summ = $session->make_element( "atom:summary" );
-	$entry->appendChild( $sword_summ );
-
-	EPrints::XML::tidy( $entry );
-
-        return '<?xml version="1.0" encoding="UTF-8"?>'.$entry->toString;
-
-}
-
-        
 1;
-

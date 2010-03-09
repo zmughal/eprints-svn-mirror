@@ -118,28 +118,24 @@ sub can_edit { EPrints::deprecated; return $_->in_editorial_scope_of( $_[0] ); }
 
 package EPrints::Utils;
 
-sub send_mail { EPrints::deprecated(); return EPrints::Email::send_mail( @_ ); }
-sub send_mail_via_smtp { EPrints::deprecated(); return EPrints::Email::send_mail_via_smtp( @_ ); }
-sub send_mail_via_sendmail { EPrints::deprecated(); return EPrints::Email::send_mail_via_sendmail( @_ ); }
-sub collapse_conditions { EPrints::deprecated(); return EPrints::XML::EPC::process( @_ ); }
-sub render_date { EPrints::deprecated(); return EPrints::Time::render_date( @_ ); }
-sub render_short_date { EPrints::deprecated(); return EPrints::Time::render_short_date( @_ ); }
-sub datestring_to_timet { EPrints::deprecated(); return EPrints::Time::datestring_to_timet( @_ ); }
-sub gmt_off { EPrints::deprecated(); return EPrints::Time::gmt_off( @_ ); }
-sub get_month_label { EPrints::deprecated(); return EPrints::Time::get_month_label( @_ ); }
-sub get_month_label_short { EPrints::deprecated(); return EPrints::Time::get_month_label_short( @_ ); }
-sub get_date { EPrints::deprecated(); return EPrints::Time::get_date( @_ ); }
-sub get_date_array { EPrints::deprecated(); return EPrints::Time::get_date_array( @_ ); }
-sub get_datestamp { EPrints::deprecated(); return EPrints::Time::get_iso_date( @_ ); }
-sub get_iso_date { EPrints::deprecated(); return EPrints::Time::get_iso_date( @_ ); }
-sub get_timestamp { EPrints::deprecated(); return EPrints::Time::human_time( @_ ); }
-sub human_time { EPrints::deprecated(); return EPrints::Time::human_time( @_ ); }
-sub human_delay { EPrints::deprecated(); return EPrints::Time::human_delay( @_ ); }
-sub get_iso_timestamp { EPrints::deprecated(); return EPrints::Time::get_iso_timestamp( @_ ); }
-sub df_dir{my( $dir ) = @_;EPrints::deprecated();return EPrints::Platform::free_space( $dir );}
-sub mkdir{my( $full_path, $perms ) = @_;EPrints::abort("EPrints::Utils::mkdir is deprecated: use EPrints::Platform::mkdir");	return 1;}
-sub join_path { EPrints::deprecated(); return EPrints::Platform::join_path(@_); }
-
+sub send_mail { EPrints::deprecated; return EPrints::Email::send_mail( @_ ); }
+sub send_mail_via_smtp { EPrints::deprecated; return EPrints::Email::send_mail_via_smtp( @_ ); }
+sub send_mail_via_sendmail { EPrints::deprecated; return EPrints::Email::send_mail_via_sendmail( @_ ); }
+sub collapse_conditions { EPrints::deprecated; return EPrints::XML::EPC::process( @_ ); }
+sub render_date { EPrints::deprecated; return EPrints::Time::render_date( @_ ); }
+sub render_short_date { EPrints::deprecated; return EPrints::Time::render_short_date( @_ ); }
+sub datestring_to_timet { EPrints::deprecated; return EPrints::Time::datestring_to_timet( @_ ); }
+sub gmt_off { EPrints::deprecated; return EPrints::Time::gmt_off( @_ ); }
+sub get_month_label { EPrints::deprecated; return EPrints::Time::get_month_label( @_ ); }
+sub get_month_label_short { EPrints::deprecated; return EPrints::Time::get_month_label_short( @_ ); }
+sub get_date { EPrints::deprecated; return EPrints::Time::get_date( @_ ); }
+sub get_date_array { EPrints::deprecated; return EPrints::Time::get_date_array( @_ ); }
+sub get_datestamp { EPrints::deprecated; return EPrints::Time::get_iso_date( @_ ); }
+sub get_iso_date { EPrints::deprecated; return EPrints::Time::get_iso_date( @_ ); }
+sub get_timestamp { EPrints::deprecated; return EPrints::Time::human_time( @_ ); }
+sub human_time { EPrints::deprecated; return EPrints::Time::human_time( @_ ); }
+sub human_delay { EPrints::deprecated; return EPrints::Time::human_delay( @_ ); }
+sub get_iso_timestamp { EPrints::deprecated; return EPrints::Time::get_iso_timestamp( @_ ); }
 
 
 ######################################################################
@@ -398,44 +394,6 @@ sub load_workflows
 	$self->{workflows_loaded} = 1;
 }
 
-######################################################################
 
-package EPrints::Index;
 
-sub split_words { &EPrints::Index::Tokenizer::split_words }
-sub apply_mapping { &EPrints::Index::Tokenizer::apply_mapping }
-
-######################################################################
-
-package EPrints::Session;
-
-use EPrints::Repository;
-our @ISA = qw( EPrints::Repository );
-
-sub get_session_language { EPrints::Repository::get_session_language( @_ ); }
-sub best_language { EPrints::Repository::best_language( @_ ); }
-
-sub EPrints::Session::new
-{
-	my( $class, $mode, $repository_id, $noise, $nocheckdb ) = @_;
-	my %opts = ( noise=>0, cgi=>1 );
-	if( $noise ) { $opts{noise} = $noise; }
-	if( defined $mode && $mode == 1 ) { $opts{cgi} = 0; }
-	if( defined $mode && $mode == 2 ) { $opts{cgi} = 1; $opts{consume_post} = 0; }
-	if( $nocheckdb ) { $opts{check_db} = 0; }
-
-	my $ep = EPrints->new( cleanup=>0 ); 
-	if( $opts{cgi} )
-	{
-		return $EPrints::HANDLE->current_repository;
-	}
-	else
-	{
-		$ep->repository( $repository_id, %opts );
-	}
-}
-
-$INC{"EPrints/Session.pm"} = "EPrints/BackCompatibility.pm";
-
-######################################################################
 1;

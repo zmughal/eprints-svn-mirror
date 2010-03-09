@@ -13,6 +13,7 @@ print "Attempting to install PERL modules required by GNU EPrints...\n";
 
 install( 'Data::ShowTable' ); # used by DBD::mysql
 install( 'DBI' ); # used by DBD::mysql
+install( 'Unicode::String' );
 install( 'DBD::mysql' );
 install( 'MIME::Base64' );
 install( 'XML::Parser' );

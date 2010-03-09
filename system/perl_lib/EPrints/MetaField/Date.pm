@@ -41,8 +41,6 @@ BEGIN
 
 use EPrints::MetaField;
 
-our $REGEXP_DATETIME = qr/\d\d\d\d(?:-\d\d(?:-\d\d(?:[ T]\d\d(?::\d\d(?::\d\dZ?)?)?)?)?)?/;
-
 sub get_sql_names
 {
 	my( $self ) = @_;
@@ -70,14 +68,16 @@ sub sql_row_from_value
 
 	my @parts;
 	@parts = split /[-]/, $value if defined $value;
-	@parts = @parts[0..2];
+	push @parts, undef while scalar(@parts) < 3;
 
 	return @parts;
 }
 
 sub get_sql_type
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $notnull ) = @_;
+
+	# ignoring notnull.
 
 	my @parts = $self->get_sql_names;
 
@@ -85,15 +85,11 @@ sub get_sql_type
 	{
 		$_ = $session->get_database->get_column_type(
 			$_,
-			EPrints::Database::SQL_SMALLINT,
-			0, # force notnull
-			undef,
-			undef,
-			$self->get_sql_properties,
+			EPrints::Database::SQL_SMALLINT
 		);
 	}
 
-	return @parts;
+	return join ", ", @parts;
 }
 
 sub render_single_value
@@ -362,11 +358,11 @@ sub render_search_value
 	my $drange = $value;
 	my $lastdate;
 	my $firstdate;
-	if( $drange =~ s/-($REGEXP_DATETIME)$/-/ )
+	if( $drange =~ s/-(\d\d\d\d(-\d\d(-\d\d)?)?)$/-/ )
 	{	
 		$lastdate = $1;
 	}
-	if( $drange =~ s/^($REGEXP_DATETIME)(-?)$/$2/ )
+	if( $drange =~ s/^(\d\d\d\d(-\d\d(-\d\d)?)?)(-?)$/$4/ )
 	{
 		$firstdate = $1;
 	}
@@ -374,7 +370,7 @@ sub render_search_value
 	if( defined $firstdate && defined $lastdate )
 	{
 		return $session->html_phrase(
-			"lib/searchfield:desc:date_between",
+			"lib/searchfield:desc_date_between",
 			from => EPrints::Time::render_date( 
 					$session, 
 					$firstdate ),
@@ -386,7 +382,7 @@ sub render_search_value
 	if( defined $lastdate )
 	{
 		return $session->html_phrase(
-			"lib/searchfield:desc:date_orless",
+			"lib/searchfield:desc_date_orless",
 			to => EPrints::Time::render_date( 
 					$session,
 					$lastdate ) );
@@ -395,7 +391,7 @@ sub render_search_value
 	if( defined $firstdate && $drange eq "-" )
 	{
 		return $session->html_phrase(
-			"lib/searchfield:desc:date_ormore",
+			"lib/searchfield:desc_date_ormore",
 			from => EPrints::Time::render_date( 
 					$session,
 					$firstdate ) );
@@ -430,6 +426,8 @@ sub get_search_conditions
 			$merge, 
 			$search_mode );
 }
+
+our $REGEXP_DATETIME = qr/\d\d\d\d(?:-\d\d(?:-\d\d(?:[ T]\d\d(?::\d\d(?::\d\dZ?)?)?)?)?)?/;
 
 sub get_search_conditions_not_ex
 {

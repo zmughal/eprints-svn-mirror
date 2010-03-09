@@ -1,8 +1,10 @@
 package EPrints::Plugin::Export::Feed;
 
-use EPrints::Plugin::Export::XMLFile;
+use Unicode::String qw( utf8 );
 
-@ISA = ( "EPrints::Plugin::Export::XMLFile" );
+use EPrints::Plugin::Export;
+
+@ISA = ( "EPrints::Plugin::Export" );
 
 use strict;
 

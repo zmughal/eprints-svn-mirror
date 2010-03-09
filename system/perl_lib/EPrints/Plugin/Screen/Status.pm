@@ -15,25 +15,12 @@ sub new
 	
 	$self->{appears} = [
 		{
-			place => "admin_actions_system",
+			place => "admin_actions",
 			position => 100,
 		},
 	];
 
-	$self->{daemon} = EPrints::Index::Daemon->new(
-		session => $self->{session},
-		Handler => $self->{processor},
-		logfile => EPrints::Index::logfile(),
-		noise => ($self->{session}->{noise}||1),
-	);
-
 	return $self;
-}
-
-sub get_daemon
-{
-	my( $self ) = @_;
-	return $self->{daemon};
 }
 
 sub can_be_viewed
@@ -47,7 +34,7 @@ sub indexer_warnings
 {
 	my( $self ) = @_;
 
-	if( $self->get_daemon->has_stalled() )
+	if( EPrints::Index::has_stalled() )
 	{
 		my $index_screen = $self->{session}->plugin( "Screen::Admin::IndexerControl", processor => $self->{processor} );
 		my $force_start_button = $self->render_action_button_if_allowed( 
@@ -62,7 +49,7 @@ sub indexer_warnings
 			$self->html_phrase( "indexer_stalled", force_start_button => $force_start_button ) 
 		);
 	}
-	elsif( !$self->get_daemon->is_running() )
+	elsif( !EPrints::Index::is_running() )
 	{
 		my $index_screen = $self->{session}->plugin( "Screen::Admin::IndexerControl", processor => $self->{processor} );
 		my $start_button = $self->render_action_button_if_allowed( 
@@ -107,8 +94,9 @@ sub render
 			$userds->get_field( "usertype" ),
 			$usertype );
 
-		my $result = $searchexp->perform_search();
-		$num_users{ $usertype } = $result->count();
+		$searchexp->perform_search();
+		$num_users{ $usertype } = $searchexp->count();
+		$searchexp->dispose();
 	}
 
 	my %num_eprints = ();
@@ -125,11 +113,11 @@ sub render
 
 	my $indexer_status;
 
-	if( !$self->get_daemon->is_running() )
+	if( !EPrints::Index::is_running() )
 	{
 		$indexer_status = "stopped";
 	}
-	elsif( $self->get_daemon->has_stalled() )
+	elsif( EPrints::Index::has_stalled() )
 	{
 		$indexer_status = "stalled";
 	}
@@ -138,6 +126,8 @@ sub render
 		$indexer_status = "running";
 	}
 
+	my $indexer_queue = $session->get_database->count_table( "index_queue" );
+	
 	my( $html , $table , $p , $span );
 	
 	# Write the results to a table
@@ -174,21 +164,11 @@ sub render
 			$session->html_phrase( "cgi/users/status:indexer" ),
 			$session->html_phrase( "cgi/users/status:indexer_".$indexer_status ) ) );
 	
-	{
-		my $dataset = $session->dataset( "event_queue" );
-		my $n = $session->get_database->count_table( $dataset->get_sql_table_name );
-		my $link = $session->render_link( "?screen=Listing&dataset=".$dataset->id );
-		$link->appendChild( $session->html_phrase( "cgi/users/status:indexer_queue_size", size => $session->make_text( $n ) ) );
-		$table->appendChild(
-			$session->render_row( 
-				$session->html_phrase( "cgi/users/status:indexer_queue" ),
-				$link ) );
-	}
-	
 	$table->appendChild(
 		$session->render_row( 
-			$session->html_phrase( "cgi/users/status:xml_version" ),
-			$session->make_text( EPrints::XML::version() ) ) );
+			$session->html_phrase( "cgi/users/status:indexer_queue" ),
+			$session->html_phrase( "cgi/users/status:indexer_queue_size", 
+				size => $session->make_text( $indexer_queue ) ) ) );
 	
 	$table = $session->make_element( "table", border=>"0" );
 	$html->appendChild( $session->html_phrase( "cgi/users/status:usertitle" ) );
@@ -298,8 +278,9 @@ sub render
 			$userds->get_field( "frequency" ),
 			$freq );
 
-		my $result = $searchexp->perform_search();
-		my $n = $result->count;
+		$searchexp->perform_search();
+		my $n = $searchexp->count;
+		$searchexp->dispose;
 
 		my $k = $session->make_doc_fragment;
 		$k->appendChild( $session->html_phrase( "saved_search_fieldopt_frequency_".$freq ) );

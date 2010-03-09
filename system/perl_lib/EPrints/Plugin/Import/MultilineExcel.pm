@@ -1,6 +1,7 @@
 package EPrints::Plugin::Import::MultilineExcel;
 
 use strict;
+use Data::Dumper;
 
 our @ISA = qw/ EPrints::Plugin::Import /;
 
@@ -28,8 +29,6 @@ sub input_file
 {
 	my( $plugin, %opts ) = @_;
 
-	my $session = $plugin->{session};
-
 	my $filename = $opts{filename};
 	if( $filename eq '-' )
 	{
@@ -38,18 +37,10 @@ sub input_file
 		print TMP <STDIN>;
 		close TMP;
 	}
-	elsif( !-r $opts{filename} )
-	{
-		$plugin->handler->message( "error", $session->make_text( "Cannot read from file: $opts{filename}" ));
-		return;
-	}
+
+	my $session = $plugin->{session};
 
 	my $excel = Spreadsheet::ParseExcel::Workbook->Parse( $filename );
-	if( !defined $excel )
-	{
-		$plugin->handler->message( "error", $session->make_text( "Error parsing input, check it's an Excel spreadsheet file" ));
-		return;
-	}
 
 	if( $opts{filename} eq "-" )
 	{
@@ -61,11 +52,6 @@ sub input_file
 	$sheet->{MaxRow} ||= $sheet->{MinRow};
 	$sheet->{MaxCol} ||= $sheet->{MinCol};
 	my $row_id = $sheet->{MinRow};
-	if( !defined($sheet->{MinRow}) )
-	{
-		$plugin->handler->message( "error", $session->make_text( "Error parsing input, empty or corrupted file" ));
-		return;
-	}
 
 	my $colmap = [];
 	if( $sheet->{Cells}[$sheet->{MinRow}][$sheet->{MinCol}]->{Val} ne "eprintid" )
@@ -132,6 +118,8 @@ sub input_file
 			}
 		}
 			
+		print Dumper( $epdata );
+
 		my $dataobj = $plugin->epdata_to_dataobj( $opts{dataset}, $epdata );
 	}
 

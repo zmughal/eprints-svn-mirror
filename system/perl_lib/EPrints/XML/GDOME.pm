@@ -31,31 +31,7 @@ loaded into EPrints::XML namespace if we're using XML::GDOME
 require XML::GDOME;
 use XML::Parser;
 
-$EPrints::XML::CLASS = "EPrints::XML::GDOME";
-
-$EPrints::XML::LIB_LEN = length("XML::GDOME::");
-
-# DOM spec fixes
-*XML::GDOME::Attr::localName = sub {
-		my $name = shift->getNodeName(@_);
-		$name =~ s/^.*://;
-		return $name;
-	};
-
-# Need to clone children for DocumentFragment::cloneNode 
-*XML::GDOME::DocumentFragment::cloneNode = sub {
-		my( $self, $deep ) = @_;
-
-		$deep = 0 if !defined $deep;
-
-		my $f = $self->ownerDocument->createDocumentFragment;
-		for($self->childNodes)
-		{
-			$f->appendChild( $_->cloneNode( $deep ) );
-		}
-
-		return $f;
-	};
+$EPrints::XML::PREFIX = "XML::GDOME::";
 
 sub parse_xml_string
 {
@@ -76,7 +52,7 @@ sub parse_xml_string
 	return $doc;
 }
 
-sub _parse_url
+sub parse_url
 {
 	my( $url, $no_expand ) = @_;
 
@@ -159,9 +135,44 @@ sub event_parse
 }
 
 
-sub _dispose
+sub dispose
 {
 	my( $node ) = @_;
+
+	if( !defined $node )
+	{
+		EPrints::abort( "attempt to dispose an undefined dom node" );
+	}
+}
+
+
+sub clone_node
+{
+	my( $node, $deep ) = @_;
+
+	if( !defined $node )
+	{
+		EPrints::abort( "no node passed to clone_node" );
+	}
+
+	if( is_dom( $node, "DocumentFragment" ) )
+	{
+		my $doc = $node->getOwnerDocument;
+		my $f = $doc->createDocumentFragment;
+		return $f unless $deep;
+		
+		foreach my $c ( $node->getChildNodes )
+		{
+			$f->appendChild( $c->cloneNode( 1 ) );
+		}
+		return $f;
+	}
+
+	my $doc = $node->getOwnerDocument;
+	my $newnode = $node->cloneNode( 1 );
+	$doc->importNode( $newnode, 1 );
+
+	return $newnode;
 }
 
 sub clone_and_own
@@ -217,10 +228,7 @@ sub document_to_string
 {
 	my( $doc, $enc ) = @_;
 
-	my $xml = $doc->toStringEnc( $enc );
-	utf8::decode($xml);
-
-	return $xml;
+	return $doc->toStringEnc( $enc );
 }
 
 sub make_document
@@ -233,46 +241,9 @@ sub make_document
 	return $doc;
 }
 
-sub version
+sub make_document_fragment
 {
-	"XML::GDOME $XML::GDOME::VERSION ".$INC{'XML/GDOME.pm'};
+	my( $session ) = @_;
+	
+	return $session->{doc}->createDocumentFragment;
 }
-
-package EPrints::XML::GDOME;
-
-our @ISA = qw( EPrints::XML );
-
-use strict;
-
-sub clone_node
-{
-	my( $self, $node ) = @_;
-
-	# backwards compatibility
-	if( !$self->isa( "EPrints::XML" ) )
-	{
-		my $deep = $node;
-		$node = $self;
-		return EPrints::XML::clone_and_own( $node, $node->ownerDocument, $deep );
-	}
-
-	return EPrints::XML::clone_and_own( $node, $self->{doc}, 0 );
-}
-
-sub to_string
-{
-	if( !$_[0]->isa( "EPrints::XML" ) )
-	{
-		return &_to_string;
-	}
-
-	my( $self, $node, %opts ) = @_;
-
-	# XML:GDOME::Node doesn't support indenting
-	my $string = $node->toString();
-	utf8::decode($string) unless utf8::is_utf8($string);
-
-	return $string;
-}
-
-1;

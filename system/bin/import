@@ -12,8 +12,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<import> - Import a file using an import plugin.
@@ -92,6 +90,16 @@ This sets the "enable_file_imports" configuration option for this session only.
 Allow the imported data to import files from the Web. This can obviously be seen as a security hole if you don't trust the data you are importing.
 This sets the "enable_web_imports" configuration option for this session only.
 
+=item B<--description>
+
+Create an import group with the given description. Only applicable to eprints
+and will be ignored if --migration is set.
+
+=item B<--source-repository>
+
+URL of the source repository this import came from. Only applicable to eprints
+and will be ignored if --migration is set.
+
 =item B<--update>
 
 Normally you can not import a new item with the same id as an existing item.
@@ -154,6 +162,8 @@ my $enable_import_ids = 0;
 my $enable_import_datestamps = 0;
 my $migration = 0;
 my $update = 0;
+my $description = undef
+my $source_repository = undef;
 
 Getopt::Long::Configure("permute");
 
@@ -175,6 +185,8 @@ GetOptions(
 	'enable-import-datestamps' => \$enable_import_datestamps,
 	'migration' => \$migration,
 	'update' => \$update,
+	'description=s' => \$description,
+	'source-repository=s' => \$source_repository,
 ) || pod2usage( 2 );
 EPrints::Utils::cmd_version( "export_xml" ) if $version;
 pod2usage( 1 ) if $help;
@@ -191,6 +203,8 @@ if( $migration )
 	$enable_web_imports = 1;
 	$enable_import_ids = 1;
 	$enable_import_datestamps = 1;
+	$description = undef;
+	$source_repository = undef;
 }
 if( $update )
 {
@@ -201,18 +215,13 @@ if( $scripted ) { $noise = 0; }
 # Set STDOUT to auto flush (without needing a \n)
 $|=1;
 
-my $repoid = shift @ARGV;
+my $repository_id = shift @ARGV;
 my $datasetid = shift @ARGV;
 my $ipluginid = shift @ARGV;
 my $filename = shift @ARGV;
 
-my $session = new EPrints::Session( 1, $repoid, $noise );
-if( !defined $session )
-{
-	print STDERR "Failed to load repository: $repoid\n";
-	exit 1;
-}
-
+my $session = new EPrints::Session( 1, $repository_id, $noise );
+exit( 1 ) unless defined $session;
 
 if( $enable_file_imports )
 {
@@ -314,6 +323,34 @@ END
 	}
 }
 
+my $import;
+
+if( defined( $description ) && $ds->confid eq "eprint" )
+{
+	my $uri = URI->new( $filename );
+	$uri->scheme( "file" ) unless $uri->scheme;
+
+	my $import_data = {
+		description => $description,
+		url => $uri,
+	};
+
+	if( defined( $userobj ) )
+	{
+		$import_data->{userid} = $userobj->get_id;
+	}
+	if( defined( $source_repository ) )
+	{
+		$import_data->{source_repository} = $source_repository;
+	}
+
+	$import = EPrints::DataObj::Import->create_from_data(
+		$session,
+		$import_data,
+		$session->get_repository->get_dataset( "import" ),
+	);
+}
+
 my $handler = EPrints::CLIProcessor->new(
 	session => $session,
 	scripted => $scripted,
@@ -353,9 +390,6 @@ if( $scripted )
 	print "EPRINTS_IMPORT: BEGIN\n";
 }
 
-# improve ordervalues insertion performance
-$session->cache_subjects;
-
 eval {
 $plugin->input_file(
 		dataset=>$ds,
@@ -392,9 +426,10 @@ if( $count > 0 )
 			}
 		}
 	}
-	if( @{$handler->{ids}} && defined $userobj && $ds->confid eq "eprint" )
+	if( @{$handler->{ids}} && $ds->confid eq "eprint" )
 	{
-		my $user_id = $userobj->get_id;
+		my $user_id = defined( $userobj ) ? $userobj->get_id : undef;
+		my $import_id = defined( $import ) ? $import->get_id : undef;
 
 		my $list = EPrints::List->new(
 			session => $session,
@@ -405,7 +440,14 @@ if( $count > 0 )
 		$list->map(
 			sub {
 				my( $session, $dataset, $eprint ) = @_;
-				$eprint->set_value( "userid", $user_id );
+				if( defined( $user_id ) )
+				{
+					$eprint->set_value( "userid", $user_id );
+				}
+				if( defined( $import_id ) )
+				{
+					$eprint->set_value( "importid", $import_id );
+				}
 				$eprint->commit;
 			} );
 

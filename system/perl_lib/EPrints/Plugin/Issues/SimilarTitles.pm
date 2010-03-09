@@ -1,5 +1,7 @@
 package EPrints::Plugin::Issues::SimilarTitles;
 
+use Unicode::String qw( utf8 );
+
 use EPrints::Plugin::Export;
 
 @ISA = ( "EPrints::Plugin::Issues" );
@@ -71,10 +73,10 @@ sub make_code
 	$string = "\L$string";
 
 	# remove one and two character words
-	$string =~ s/\b\w{1,2}\b//g; 
+	$string =~ s/\b[a-z][a-z]?\b//g; 
 
 	# turn one-or more non-alphanumerics into a single space.
-	$string =~ s/\W+/ /g;
+	$string =~ s/[^a-z0-9]+/ /g;
 
 	# remove leading and ending spaces
 	$string =~ s/^ //;

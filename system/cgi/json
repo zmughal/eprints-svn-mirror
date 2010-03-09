@@ -14,10 +14,8 @@ if( !$session->get_repository->get_conf( "json","enable" ) )
 	exit;
 }
 
-my $callback = $session->param( "callback" ) || $session->param( "fn" ) || "callback";
-
+my $callback = $session->param( "callback" ) || "callback";
 my $eprintid = $session->param( "eprintid" );
-
 my $eprint = EPrints::DataObj::EPrint->new( 
 			$session, 
 			$eprintid, 

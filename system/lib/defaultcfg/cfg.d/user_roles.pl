@@ -43,13 +43,7 @@ $c->{user_roles}->{admin} = [qw{
 	admin
 	edit-config
 }],
-# Note -- nobody has the very powerful "toolbox" or "rest" roles, by default!
-
-# Use this to set public privilages. 
-$c->{public_roles} = [qw{
-	+eprint/archive/rest/get
-	+subject/rest/get
-}];
+# Note -- nobody has the very powerful "toolbox" role by default!
 
 $c->{user_roles}->{minuser} = [qw{
 	general

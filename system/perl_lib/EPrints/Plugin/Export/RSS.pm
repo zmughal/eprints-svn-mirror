@@ -4,6 +4,8 @@ use EPrints::Plugin::Export::Feed;
 
 @ISA = ( "EPrints::Plugin::Export::Feed" );
 
+use Unicode::String qw(latin1);
+
 use strict;
 
 sub new
@@ -78,8 +80,7 @@ sub output_list
 		"copyright", 
 		"" ) );
 
-	$channel->appendChild( $session->make_text( "\n    " ) );
-	
+
 	my $items = $session->make_element( "items" );
 	$channel->appendChild( $items );
 	my $seq = $session->make_element( "rdf:Seq" );

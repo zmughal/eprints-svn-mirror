@@ -17,47 +17,9 @@ sub new
 	$self->{visible} = "all";
 	$self->{mimetype} = "text/plain";
 	$self->{advertise} = 1;
-	$self->{arguments} = {};
-
-	# q is used to describe quality. Use it to increase or decrease the 
-	# desirability of using this plugin during content negotiation.
-	$self->{qs} = 0.5; 
 
 	return $self;
 }
-
-# Return an array of the ID's of arguemnts this plugin accepts
-sub arguments
-{
-	my( $self ) = @_;
-
-	return keys %{$self->{arguments}};
-}
-
-# Return true if this plugin accepts the given argument ID
-sub has_argument
-{
-	my( $self, $arg ) = @_;
-
-	return exists $self->{arguments}->{$arg};
-}
-
-sub param 
-{
-	my( $self, $paramid ) = @_;
-
-	# Allow args to override mimetype
-	if( $self->{session}->get_online
-	 && $paramid eq "mimetype" 
-	 && defined $self->{session}->param( "mimetype" ) )
-	{
-		return $self->{session}->param( "mimetype" );
-	}
-	
-	return $self->SUPER::param( $paramid );
-}
-		
-
 
 sub render_name
 {
@@ -221,14 +183,14 @@ sub dataobj_export_url
 	my( $plugin, $dataobj, $staff ) = @_;
 
 	my $dataset = $dataobj->get_dataset;
-	if( $dataset->confid ne "eprint" && $dataset->confid ne "subject" ) {
+	if( $dataset->confid ne "eprint" ) {
 		# only know URLs for eprint objects
 		return undef;
 	}
 
 	my $pluginid = $plugin->{id};
 
-	unless( $pluginid =~ m# ^Export::(.*)$ #x )
+	unless( $pluginid =~ m#^Export::(.*)$# )
 	{
 		$plugin->{session}->get_repository->log( "Bad pluginid in dataobj_export_url: ".$pluginid );
 		return undef;
@@ -237,41 +199,17 @@ sub dataobj_export_url
 
 	my $url = $plugin->{session}->get_repository->get_conf( "http_cgiurl" );
 	$url .= "/users" if $staff;
-	$url .= "/export/" if $dataset->confid eq "eprint";
-	$url .= "/rdf/subject/" if $dataset->confid eq "subject";
-	$url .= $dataobj->get_id."/".$format;
+	$url .= "/export/".$dataobj->get_id."/".$format;
 	$url .= "/".$plugin->{session}->get_repository->get_id;
 	$url .= "-".$dataobj->get_dataset->confid."-".$dataobj->get_id.$plugin->param("suffix");
 
 	return $url;
 }
 
-=item $plugin->initialise_fh( FH )
-
-Initialise the file handle FH for writing. This may be used to manipulate the Perl IO layers in effect.
-
-Defaults to setting the file handle to binary semantics.
-
-=cut
-
-sub initialise_fh
-{
-	my( $plugin, $fh ) = @_;
-
-	binmode($fh);
-}
-
-=item $bom = $plugin->byte_order_mark
-
-If writing a file the byte order mark will be written before any other content. This may be necessary to write plain-text Unicode-encoded files.
-
-Defaults to empty string.
-
-=cut
-
 sub byte_order_mark
 {
 	"";
 }
+
 
 1;

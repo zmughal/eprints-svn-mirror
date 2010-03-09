@@ -12,8 +12,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<export> - export some or all items in a dataset using an output plugin.
@@ -60,10 +58,6 @@ If this is set then just output the single, specified item or items.
 
 =over 8
 
-=item B<--arg key=value>
-
-Add an argument to the export plugin. May be repeated. Effects depend on te export plugin.
-
 =item B<--help>
 
 Print a brief help message and exit.
@@ -108,7 +102,6 @@ my $purge = 1;
 my $help = 0;
 my $man = 0;
 my $single = 0;
-my %opt_args = ();
 
 Getopt::Long::Configure("permute");
 
@@ -120,7 +113,6 @@ GetOptions(
 	'silent' => \$quiet,
 	'quiet' => \$quiet,
 	'single' => \$single,
-	'arg=s' => \%opt_args,
 ) || pod2usage( 2 );
 EPrints::Utils::cmd_version( "export_xml" ) if $version;
 pod2usage( 1 ) if $help;
@@ -140,11 +132,7 @@ my $opluginid = shift @ARGV;
 my @objectids = @ARGV;
 
 my $session = new EPrints::Session( 1, $repoid, $noise );
-if( !defined $session )
-{
-	print STDERR "Failed to load repository: $repoid\n";
-	exit 1;
-}
+exit( 1 ) unless defined $session;
 
 my $ds = $session->get_repository->get_dataset( $datasetid ) ;
 if( !defined $ds )
@@ -219,21 +207,6 @@ if( $plugin->broken )
 	exit 1;
 }
 
-my %arguments = %{$plugin->param( "arguments" )};
-foreach my $argid ( keys %opt_args )
-{
-	if( !exists $arguments{$argid} )
-	{
-		print STDERR "Plugin $pluginid does not accept argument $argid\n";
-		$session->terminate();
-		exit 1;
-	}
-	$arguments{$argid} = $opt_args{$argid};
-}
-
-$plugin->initialise_fh( \*STDOUT );
-print $plugin->byte_order_mark;
-
 if( $single )
 {
 	my $objectid = $objectids[0];
@@ -254,7 +227,8 @@ if( $single )
 		exit 1;
 	}
 
-	print $dataobj->export( $opluginid, %arguments );
+	print $plugin->byte_order_mark;
+	print $dataobj->export( $opluginid );
 }
 else
 {
@@ -286,7 +260,8 @@ else
 		$list = $searchexp->perform_search;
 	}
 
-	$plugin->output_list( list=>$list, fh=>*STDOUT, %arguments );
+	print $plugin->byte_order_mark;
+	$plugin->output_list( list=>$list, fh=>*STDOUT );
 }
 
 $session->terminate();

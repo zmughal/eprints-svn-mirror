@@ -1,45 +1,3 @@
-######################################################################
-#
-# EPrints::Database::Pg
-#
-######################################################################
-#
-#  __COPYRIGHT__
-#
-# Copyright 2000-2008 University of Southampton. All Rights Reserved.
-# 
-#  __LICENSE__
-#
-######################################################################
-
-=pod
-
-=for Pod2Wiki
-
-=head1 NAME
-
-B<EPrints::Database::Pg> - custom database methods for PostgreSQL DB
-
-=head1 DESCRIPTION
-
-=head2 TODO
-
-=over 4
-
-=item epadmin create
-
-=item $name = $db->index_name( $table, @columns )
-
-=back
-
-=head2 PostgreSQL-specific Annoyances
-
-The L<DBD::Pg> SQL_VARCHAR type is mapped to text instead of varchar(n).
-
-=head1 METHODS
-
-=cut
-
 package EPrints::Database::Pg;
 
 use EPrints::Database qw( :sql_types );
@@ -65,8 +23,6 @@ sub connect
 
 	return unless defined $self->{dbh};	
 
-	$self->{dbh}->{pg_enable_utf8} = 1;
-
 	if( $self->{session}->{noise} >= 4 )
 	{
 		$self->{dbh}->trace( 2 );
@@ -91,14 +47,6 @@ sub type_info
 		return {
 			TYPE_NAME => "smallint",
 			CREATE_PARAMS => "",
-		};
-	}
-	# DBD::Pg maps SQL_VARCHAR to text rather than varchar(n)
-	elsif( $data_type eq SQL_VARCHAR )
-	{
-		return {
-			TYPE_NAME => "varchar",
-			CREATE_PARAMS => "max length",
 		};
 	}
 	elsif( $data_type eq SQL_LONGVARCHAR )
@@ -288,21 +236,6 @@ sub _cache_from_SELECT
 	$self->do( $sql );
 
 	$self->drop_sequence( $cache_seq );
-}
-
-# unsupported
-sub index_name
-{
-	my( $self, $table, @cols ) = @_;
-
-	return 1;
-}
-
-sub sql_LIKE
-{
-	my( $self ) = @_;
-
-	return " ILIKE ";
 }
 
 1;

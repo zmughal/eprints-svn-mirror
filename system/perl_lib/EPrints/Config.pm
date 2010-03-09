@@ -56,121 +56,91 @@ Deprecated, use *_repository_*.
 
 package EPrints::Config;
 
-use warnings;
+use EPrints;
+
+use Unicode::String qw(utf8 latin1);
+use Data::Dumper;
+use Cwd;
+
 use strict;
 
-my $SYSTEMCONF = $EPrints::SystemSettings::conf;
+BEGIN { sub abort { return EPrints::abort( @_ ); } }
+
+my %SYSTEMCONF;
 my @LANGLIST;
 my @SUPPORTEDLANGLIST;
 my %ARCHIVES;
 #my %ARCHIVEMAP;
+my $INIT = 0; 
 
-# deprecated support for abort()
-sub abort { &EPrints::abort( @_ ) }
 
-# deprecated
-sub ensure_init {}
+######################################################################
+=pod
+
+=item EPrints::Config::ensure_init()
+
+If the init() method has not yet been called then call it, otherwise
+do nothing.
+
+=cut
+######################################################################
+
+sub ensure_init
+{
+	return if( $INIT );
+	init();
+}
+
 
 ######################################################################
 =pod
 
 =item EPrints::Config::init()
 
-Load the EPrints configuration.
-
-Do not use this method directly, it will be automatically called
-when using EPrints.
+Load all the EPrints configuration files, first the general files
+such as SystemSettings and then the configurations
+for each repository.
 
 =cut
 ######################################################################
 
 sub init
 {
+	if( $INIT )
+	{
+		print STDERR "init() called after config already loaded\n";
+		return;
+	}
+
+	$INIT = 1;
+
+	foreach( keys %{$EPrints::SystemSettings::conf} )
+	{
+		$SYSTEMCONF{$_} = $EPrints::SystemSettings::conf->{$_};
+	}
 	# cjg Should these be hardwired? Probably they should.
-	$SYSTEMCONF->{cgi_path} = $SYSTEMCONF->{base_path}."/cgi";
-	$SYSTEMCONF->{cfg_path} = $SYSTEMCONF->{base_path}."/cfg";
-	$SYSTEMCONF->{lib_path} = $SYSTEMCONF->{base_path}."/lib";
-	$SYSTEMCONF->{arc_path} = $SYSTEMCONF->{base_path}."/archives";
-	$SYSTEMCONF->{bin_path} = $SYSTEMCONF->{base_path}."/bin";
-	$SYSTEMCONF->{var_path} = $SYSTEMCONF->{base_path}."/var";
+	$SYSTEMCONF{cgi_path} = $SYSTEMCONF{base_path}."/cgi";
+	$SYSTEMCONF{cfg_path} = $SYSTEMCONF{base_path}."/cfg";
+	$SYSTEMCONF{lib_path} = $SYSTEMCONF{base_path}."/lib";
+	$SYSTEMCONF{arc_path} = $SYSTEMCONF{base_path}."/archives";
+	$SYSTEMCONF{bin_path} = $SYSTEMCONF{base_path}."/bin";
+	$SYSTEMCONF{var_path} = $SYSTEMCONF{base_path}."/var";
 	
 	###############################################
 	
-	$SYSTEMCONF->{repository} = {};
-
-	load_system_config();
-
-	opendir( my $dh, $SYSTEMCONF->{arc_path} );
-	my $id;
-	while( $id = readdir( $dh ) )
+	opendir( CFG, $SYSTEMCONF{arc_path} );
+	my $file;
+	while( $file = readdir( CFG ) )
 	{
-		next if( $id =~ m/^\./ );
-		next if( !-d $SYSTEMCONF->{arc_path}."/".$id );
-		next if $SYSTEMCONF->{repository}->{$id} && $SYSTEMCONF->{repository}->{$id}->{disabled};
+		next if( $file =~ m/^\./ );
+		next if( !-d $SYSTEMCONF{arc_path}."/".$file );
 		
-		$ARCHIVES{$id} = {};
+		$ARCHIVES{$file} = {};
 	}
-	closedir( $dh );
+	closedir( CFG );
 }
 
-=item EPrints::Config::load_system_config()
-
-Load the system configuration files.
-
-=cut
-
-sub load_system_config
-{
-	my $dir = $SYSTEMCONF->{"cfg_path"}."/cfg.d";
-
-	$SYSTEMCONF->{set_in} = {};
-	$SYSTEMCONF->{set_in}->{$_} = "EPrints::SystemSettings"
-		for keys %$SYSTEMCONF;
-
-	opendir(my $dh, $dir) or EPrints::abort( "Error opening config directory $dir: $!" );
-	foreach my $file (sort readdir($dh))
-	{
-		next if $file =~ /^\./;
-		next unless $file =~ /\.pl$/;
-
-		my $filepath = "$dir/$file";
-
-		open(my $fh, "<", $filepath) or EPrints::abort( "Error reading from $filepath: $!" );
-
-		my $perl = <<EOP;
-package EPrints::SystemSettings;
-
-our \$c = \$EPrints::SystemSettings::conf;
-
-EOP
-		$perl .= join "", <$fh>;
-		close($fh);
-
-		eval $perl;
-		if( $@ )
-		{
-			my $errors = "error in $filepath:\n$@";
-			print STDERR <<END;
-------------------------------------------------------------------
----------------- EPrints System Error ----------------------------
-------------------------------------------------------------------
-Failed to load system config
-Errors follow:
-------------------------------------------------------------------
-$errors
-------------------------------------------------------------------
-END
-			exit(1);
-		}
-
-		for(keys %$SYSTEMCONF)
-		{
-			next if exists $SYSTEMCONF->{set_in}->{$_};
-			$SYSTEMCONF->{set_in}->{$_} = $filepath;
-		}
-	}
-	closedir($dh);
-}
+	
 
 ######################################################################
 =pod
@@ -187,6 +157,8 @@ sub get_archive_config { return get_repository_config( @_ ); }
 sub get_repository_config
 {
 	my( $id ) = @_;
+
+	ensure_init();
 
 	return $ARCHIVES{$id};
 }
@@ -208,6 +180,8 @@ sub get_archive_ids { return get_repository_ids(); }
 
 sub get_repository_ids
 {
+	ensure_init();
+
 	return keys %ARCHIVES;
 }
 
@@ -231,31 +205,21 @@ sub load_repository_config_module
 {
 	my( $id ) = @_;
 
-	my $info = {};
-	
-	%$info = %$SYSTEMCONF;
+	ensure_init();
 
+	my $info = {};
+	no strict 'refs';
+	eval '$EPrints::Config::'.$id.'::config = $info';
+	use strict 'refs';
+	
+	foreach( keys %SYSTEMCONF ) { $info->{$_} = $SYSTEMCONF{$_}; }
 	$info->{archiveroot} = $info->{arc_path}."/".$id;
-	$info->{documents_path} = $info->{archiveroot}."/documents";
-	$info->{config_path} = $info->{archiveroot}."/cfg";
-	$info->{htdocs_path} = $info->{archiveroot}."/html";
-	$info->{cgi_path} = $info->{archiveroot}."/cgi";
 
 	if( !-d $info->{archiveroot} )
 	{
 		print STDERR "No repository named '$id' found in ".$info->{arc_path}.".\n\n";
 		exit 1;
 	}
-
-	if( !exists $ARCHIVES{$id} )
-	{
-		print STDERR "Repository named '$id' disabled by configuration.\n";
-		exit 1;
-	}
-
-	no strict 'refs';
-	eval ' $EPrints::Config::'.$id.'::config = bless $info, "EPrints::RepositoryConfig"; ';
-	use strict 'refs';
 
 	my @oldinc = @INC;
 	local @INC;
@@ -311,6 +275,8 @@ END
 ---------------- EPrints System Warning --------------------------
 ------------------------------------------------------------------
 Failed to load config module for $id
+Main Config File: $info->{configmodule}
+Errors follow:
 ------------------------------------------------------------------
 $errors
 ------------------------------------------------------------------
@@ -347,7 +313,9 @@ sub get
 {
 	my( $confitem ) = @_;
 
-	return $SYSTEMCONF->{$confitem};
+	ensure_init();
+
+	return $SYSTEMCONF{$confitem};
 }
 
 1;

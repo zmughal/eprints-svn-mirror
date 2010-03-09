@@ -8,11 +8,11 @@ See L<EPrints::Plugin::Import::BibTeX>
 
 package EPrints::Plugin::Export::BibTeX;
 
-use Encode;
-use TeX::Encode;
 use EPrints::Plugin::Export;
 
 @ISA = ( "EPrints::Plugin::Export" );
+
+use Unicode::String qw(latin1);
 
 use strict;
 
@@ -186,20 +186,11 @@ sub output_dataobj
 	my @list = ();
 	foreach my $k ( keys %{$data->{bibtex}} )
 	{
-		push @list, sprintf( "%16s = {%s}", $k, encode('bibtex', $data->{bibtex}->{$k} ));
+		push @list, sprintf( "%16s = {%s}", $k, utf8_to_tex( $data->{bibtex}->{$k} ));
 	}
 	foreach my $k ( keys %{$data->{additional}} )
 	{
-		my $value = $data->{additional}->{$k};
-		if( $k eq "url" )
-		{
-			$value = TeX::Encode::BibTeX->encode_url( $value );
-		}
-		else
-		{
-			$value = encode('bibtex', $value );
-		}
-		push @list, sprintf( "%16s = {%s}", $k, $value );
+		push @list, sprintf( "%16s = {%s}", $k, remove_utf8( $data->{additional}->{$k} ));
 	}
 
 	my $out = '@' . $data->{type} . "{" . $data->{key} . ",\n";
@@ -218,9 +209,23 @@ sub remove_utf8
 
 	$text = "" unless( defined $text );
 
-	$text =~ s/[^\x00-\x80]/$char/g;
+	my $stringobj = Unicode::String->new();
+	$stringobj->utf8( $text );
+	my $escstr = "";
 
-	return $text;
+	foreach($stringobj->unpack())
+	{
+		if( $_ < 128)
+		{
+			$escstr .= chr( $_ );
+		}
+		else
+		{
+			$escstr .= $char;
+		}
+	}
+
+	return $escstr;
 }
 
 
@@ -230,14 +235,26 @@ sub utf8_to_tex
 	my( $text ) = @_;
 
 	$text = "" unless( defined $text );
+	
+	my $stringobj = Unicode::String->new();
+	$stringobj->utf8( $text );
+	my $bibstr = "";
 
-	return join("",
-		map { 
-			exists($EPrints::unimap->{ord($_)}) ?
-			$EPrints::unimap->{ord($_)} :
-			'?';
+	foreach($stringobj->unpack())
+	{
+		#       print "$_: ".$EPrints::unimap->{$_}."\n";
+		my $char_in_tex = $EPrints::unimap->{$_};
+		if( defined $char_in_tex )
+		{
+			$bibstr .= $EPrints::unimap->{$_};
 		}
-		split(//, $text));
+		else
+		{
+			$bibstr .= '?';
+		}
+	}
+
+	return $bibstr;
 }
 
 

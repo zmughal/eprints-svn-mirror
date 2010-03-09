@@ -22,6 +22,8 @@
 #
 ######################################################################
 
+use Unicode::String qw(utf8);
+
 $c->{index} = 1;
 
 # Minimum size word to normally index.
@@ -52,7 +54,8 @@ $c->{indexing}->{freetext_always_words} = {
 # A-Z a-z 0-9 and single quote '
 
 # If you want to add other seperator characters then they
-# should be encoded in utf8.
+# should be encoded in utf8. The Unicode::String man page
+# details some useful methods.
 
 $c->{indexing}->{freetext_seperator_chars} = {
 	'@' => 1, 	'[' => 1, 	'\\' => 1, 	']' => 1,
@@ -101,7 +104,20 @@ $c->{extract_words} = sub
 
 	# Process string. 
 	# First we apply the char_mappings.
-	my $buffer = EPrints::Index::apply_mapping( $session, $text );
+	my( $i, $len ),
+	my $utext = utf8( "$text" ); # just in case it wasn't already.
+	$len = $utext->length;
+	my $buffer = utf8( "" );
+	for($i = 0; $i<$len; ++$i )
+	{
+		my $s = $utext->substr( $i, 1 );
+		# $s is now char number $i
+		if( defined $EPrints::Index::FREETEXT_CHAR_MAPPING->{$s} )
+		{
+			$s = $EPrints::Index::FREETEXT_CHAR_MAPPING->{$s};
+		} 
+		$buffer.=$s;
+	}
 
 	my @words =EPrints::Index::split_words( $session, $buffer );
 

@@ -37,10 +37,29 @@ BEGIN
 {
 	our( @ISA );
 
-	@ISA = qw( EPrints::MetaField::Longtext );
+	@ISA = qw( EPrints::MetaField );
 }
 
-use EPrints::MetaField::Longtext;
+use EPrints::MetaField;
+
+sub get_sql_type
+{
+	my( $self, $session, $notnull ) = @_;
+
+	return $session->get_database->get_column_type(
+		$self->get_sql_name(),
+		EPrints::Database::SQL_LONGVARCHAR,
+		$notnull
+	);
+}
+
+# never SQL index this type
+sub get_sql_index
+{
+	my( $self ) = @_;
+
+	return ();
+}
 
 
 sub render_single_value
@@ -69,46 +88,25 @@ sub make_searchexp
 {
 	my( $self, $session, $value, $basename ) = @_;
 
-	my $dataset = $session->get_repository->get_dataset( $self->{datasetid} );
+	my $ds = $session->get_repository->get_dataset( 
+			$self->{datasetid} );	
+	my $fieldnames = $self->get_property( "fieldnames" );
 
 	my $searchexp = EPrints::Search->new(
 		session => $session,
-		dataset => $dataset,
-		prefix => $basename );
+		dataset => $ds,
+		prefix => $basename,
+		fieldnames => $fieldnames );
 
-	my $fields;
-	my $conf_key = $self->get_property( "fieldnames_config" );
-	if( defined($conf_key) )
+	# don't limit the deserialising unless there are fieldnames
+	# defined.	
+	if( defined $fieldnames )
 	{
-		$fields = $session->get_repository->get_conf( $conf_key );
+		$searchexp->from_string( $value );
 	}
 	else
 	{
-		$fields = $self->get_property( "fieldnames" );
-	}
-
-	$fields = [] if !defined $fields;
-
-	foreach my $fieldname (@$fields)
-	{
-		if( !$dataset->has_field( $fieldname ) )
-		{
-			$session->get_repository->log( "Field specified in search field configuration $conf_key does not exist in dataset ".$dataset->confid.": $fieldname" );
-			next;
-		}
-		$searchexp->add_field( $dataset->get_field( $fieldname ) );
-	}
-
-	if( defined $value )
-	{
-		if( scalar @$fields )
-		{
-			$searchexp->from_string( $value );
-		}
-		else
-		{
-			$searchexp->from_string_raw( $value );
-		}
+		$searchexp->from_string_raw( $value );
 	}
 
 	return $searchexp;
@@ -126,7 +124,10 @@ sub get_basic_input_elements
 
 	# cjg - make help an option?
 
-	my $searchexp = $self->make_searchexp( $session, $value, $basename."_" );
+	my $searchexp = $self->make_searchexp( 
+		$session,
+		$value,
+		$basename."_" );
 
 	foreach my $sf ( $searchexp->get_non_filter_searchfields )
 	{
@@ -148,7 +149,13 @@ sub form_value_basic
 {
 	my( $self, $session, $basename ) = @_;
 	
-	my $searchexp = $self->make_searchexp( $session, undef, $basename."_" );
+	my $ds = $session->get_repository->get_dataset( 
+			$self->{datasetid} );	
+	my $searchexp = EPrints::Search->new(
+		session => $session,
+		dataset => $ds,
+		prefix => $basename."_",
+		fieldnames => $self->get_property( "fieldnames" ) );
 
 	foreach my $sf ( $searchexp->get_non_filter_searchfields )
 	{
@@ -176,8 +183,7 @@ sub get_property_defaults
 	my( $self ) = @_;
 	my %defaults = $self->SUPER::get_property_defaults;
 	$defaults{datasetid} = $EPrints::MetaField::REQUIRED;
-	$defaults{fieldnames} = $EPrints::MetaField::UNDEF;
-	$defaults{fieldnames_config} = $EPrints::MetaField::UNDEF;
+	$defaults{fieldnames} = $EPrints::MetaField::UNDEF;;
 	return %defaults;
 }
 

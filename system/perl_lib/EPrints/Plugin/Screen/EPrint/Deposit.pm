@@ -27,7 +27,7 @@ sub new
 		},
 	];
 
-	$self->{actions} = [qw/ deposit move_buffer save /];
+	$self->{actions} = [qw/ deposit save /];
 
 	return $self;
 }
@@ -55,19 +55,11 @@ sub from
 	$self->EPrints::Plugin::Screen::from;
 }
 
-sub obtain_lock
-{
-	my( $self ) = @_;
-
-	return $self->obtain_eprint_lock;
-}
-
 sub can_be_viewed
 {
 	my( $self ) = @_;
 
 	return 0 unless defined $self->{processor}->{eprint};
-	return 0 unless $self->could_obtain_eprint_lock;
 	return 0 unless $self->{processor}->{eprint}->get_value( "eprint_status" ) eq "inbox";
 
 	return $self->allow( "eprint/deposit" );
@@ -111,11 +103,9 @@ sub render
 	$page->appendChild( $form );
 
 	my $blister = $self->render_blister( "deposit", 0 );
-	$form->appendChild( $blister );
+	my $toolbox = $self->{session}->render_toolbox( undef, $blister );
+	$form->appendChild( $toolbox );
 
-	my $priv = $self->allow( "eprint/view" );
-	my $owner  = $priv & 4;
-	my $editor = $priv & 8;
 
 	if( scalar @{$problems} == 0 )
 	{
@@ -127,27 +117,6 @@ sub render
 			_order => [qw( deposit save )],
 		) );
 	}
-	elsif( $editor )
-	{
-		my $plugin = $self->{session}->plugin( "Screen::EPrint::Move" );
-
-		$form->appendChild( $self->html_phrase( "action:move_buffer:description" ) );
-
-		$form->appendChild( $self->{session}->render_action_buttons(
-			move_buffer => $plugin->phrase( "action:move_buffer:title" ),
-			save => $self->{session}->phrase( "priv:action/eprint/deposit_later" ),
-			_order => [qw( move_buffer save )],
-		) );
-	}
-	else
-	{
-		$form->appendChild( $self->html_phrase( "action:save:description" ) );
-
-		$form->appendChild( $self->{session}->render_action_buttons(
-			save => $self->{session}->phrase( "priv:action/eprint/deposit_later" ),
-			_order => [qw( save )],
-		) );
-	}
 
 	return $page;
 }
@@ -157,13 +126,6 @@ sub allow_deposit
 	my( $self ) = @_;
 
 	return $self->can_be_viewed;
-}
-
-sub allow_move_buffer
-{
-	my( $self ) = @_;
-
-	return $self->allow( "eprint/move_buffer" );
 }
 
 sub allow_save
@@ -220,16 +182,6 @@ sub action_deposit
 	{
 		$self->{processor}->add_message( "error", $self->html_phrase( "item_not_deposited" ) );
 	}
-}
-
-sub action_move_buffer
-{
-	my( $self ) = @_;
-
-	$self->uncache_workflow;
-
-	$self->{processor}->{screenid} = "EPrint::Move";
-	$self->{processor}->{redirect} = $self->redirect_to_me_url() . "&_action_move_buffer=1";
 }
 
 sub action_save

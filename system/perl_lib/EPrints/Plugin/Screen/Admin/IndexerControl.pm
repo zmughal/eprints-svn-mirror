@@ -14,17 +14,17 @@ sub new
 
 	$self->{appears} = [
 		{ 
-			place => "admin_actions_system", 	
+			place => "admin_actions", 	
 			action => "start_indexer",
 			position => 1100, 
 		},
 		{ 
-			place => "admin_actions_system", 	
+			place => "admin_actions", 	
 			action => "force_start_indexer",
 			position => 1100, 
 		},
 		{ 
-			place => "admin_actions_system", 	
+			place => "admin_actions", 	
 			action => "stop_indexer",
 			position => 1100, 
 		},
@@ -120,17 +120,14 @@ sub action_start_indexer
 sub allow_force_start_indexer
 {
 	my( $self ) = @_;
-	return 0 if( !$self->get_daemon->is_running() );
+	return 0 if( !EPrints::Index::has_stalled() );
 	return $self->allow( "indexer/force_start" );
 }
 
 sub action_force_start_indexer
 {
 	my( $self ) = @_;
-
-	$self->get_daemon->stop(); # give the indexer a chance to stop
-	$self->get_daemon->cleanup(); # remove pid/tick file
-	my $result = $self->get_daemon->start( $self->{session} );
+	my $result = EPrints::Index::force_start( $self->{session} );
 
 	if( $result == 1 )
 	{

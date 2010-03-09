@@ -584,7 +584,7 @@ sub render_name
 	if( defined $self->{"id"} )
 	{
 		my $phraseid = "searchfield_name_".$self->{"id"};
-		if( $self->{"session"}->get_lang->has_phrase( $phraseid, $self->{"session"} ) )
+		if( $self->{"session"}->get_lang->has_phrase( $phraseid ) )
 		{
 			return $self->{"session"}->html_phrase( $phraseid );
 		}
@@ -625,7 +625,7 @@ sub render_help
 
 	my $custom_help = "searchfield_help_".$self->{"id"};
 	my $phrase_id = "lib/searchfield:help_".$self->{"field"}->get_type();
-	if( $self->{"session"}->get_lang->has_phrase( $custom_help, $self->{"session"} ) )
+	if( $self->{"session"}->get_lang->has_phrase( $custom_help ) )
 	{
 		$phrase_id = $custom_help;
 	}

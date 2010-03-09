@@ -127,7 +127,6 @@ copydir( "$install_from/system/lib", "$to/eprints/lib", \%r );
 copydir( "$install_from/system/cgi", "$to/eprints/cgi", \%r );
 copydir( "$install_from/system/lib", "$to/eprints/lib", \%r );
 copydir( "$install_from/system/var", "$to/eprints/var", \%r );
-copydir( "$install_from/system/tests", "$to/eprints/tests", \%r );
 copydir( "$install_from/system/perl_lib", "$to/eprints/perl_lib", \%r );
 copydir( "$install_from/system/testdata", "$to/eprints/testdata", \%r );
 

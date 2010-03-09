@@ -14,7 +14,7 @@ sub new
 	
 	$self->{appears} = [
 		{ 
-			place => "admin_actions_config", 
+			place => "admin_actions", 
 			position => 1350, 
 		},
 	];
@@ -33,8 +33,8 @@ sub wishes_to_export
 {
 	my( $self ) = @_;
 
-	my $phraseid = $self->{session}->param( "phraseid" );
-	return 0 unless defined $phraseid;
+	my $phrase_id = $self->{session}->param( "phrase_id" );
+	return 0 unless defined $phrase_id;
 	
 	return 1;
 }
@@ -43,43 +43,19 @@ sub export
 {
 	my( $self ) = @_;
 
-	my $session = $self->{session};
-
 	my( $message, $error_level ) = $self->write_phrase;
 
-	my $file = $session->get_repository->get_conf( "config_path" )."/lang/".$session->get_lang->{id}."/phrases/zz_webcfg.xml";
-
-	my $phraseid = $session->param( "phraseid" );
-	my $info = $session->get_lang->get_phrase_info( $phraseid, $session );
-	my $phrase;
-	my $src = "null";
-	if( defined $info )
+	my $map = $self->get_all_phrases;
+	my $phrase_id = $self->{session}->param( "phrase_id" );
+	my $phrase = $map->{$phrase_id};
+	if( !defined $phrase )
 	{
-		$src = $info->{system} ? "system" : "repo";
-		$src .= $info->{fallback} ? "fallback" : "";
-		$src = "webcfg" if $info->{filename} eq $file;
-		$phrase = {
-			phraseid => $phraseid,
-			langid  => $info->{langid},
-			src => $src,
-			xml => $info->{xml},
-		};
-	}
-	else
-	{
-		$phrase = {
-			phraseid => $phraseid,
-			src => $src,
-			xml => $session->make_doc_fragment
-		};
+		$phrase = { phrase_id=>$phrase_id, src=>"null", xml=>$self->{session}->make_doc_fragment };
 	}
 
-	my $row = $self->render_row( $phrase, $message, $error_level );
-
-	binmode(STDOUT, ":utf8");
-	print EPrints::XML::to_string( $row );
-
-	EPrints::XML::dispose( $row );
+	print EPrints::XML::to_string( 
+		EPrints::XML::contents_of(
+			$self->render_row( $phrase, $message, $error_level ) ) );
 }
 
 sub write_phrase
@@ -87,31 +63,15 @@ sub write_phrase
 	my( $self ) = @_;
 
 	my $session = $self->{session};
+	my $phrases = $self->get_all_phrases;
 	my $lang = $session->get_lang;
-
-	# get the phraseid to write
-	my $phraseid = $session->param( "phraseid" );
-	return unless defined $phraseid;
-	my $phrase = $session->param( "phrase" );
-	return unless defined $phrase;
-
 	my $file = $session->get_repository->get_conf( "config_path" )."/lang/".$lang->{id}."/phrases/zz_webcfg.xml";
 
-	my $info = $lang->get_phrase_info( $phraseid, $session );
-
-	# if the phrase comes from zz_webcfg we don't need to reload config
-	my $reload = 1;
-	if( defined $info && $info->{filename} eq $file )
-	{
-		$reload = 0;
-	}
-
+	my $phrase_id = $session->param( "phrase_id" );
 	my $lib_path = $session->get_repository->get_conf( "lib_path" );
-
-	# check the phrase is valid XML
 	my $phrase_xml_str = "<?xml version='1.0' encoding='utf-8' standalone='no' ?>
-<!DOCTYPE phrases SYSTEM '$lib_path/entities.dtd' >
-<epp:phrase id='$phraseid' xmlns='http://www.w3.org/1999/xhtml' xmlns:epp='http://eprints.org/ep3/phrase' xmlns:epc='http://eprints.org/ep3/control'>".$phrase."</epp:phrase>\n\n";
+<!DOCTYPE phrases SYSTEM '$lib_path/xhtml-entities.dtd' >
+<epp:phrase id='$phrase_id' xmlns='http://www.w3.org/1999/xhtml' xmlns:epp='http://eprints.org/ep3/phrase' xmlns:epc='http://eprints.org/ep3/control'>".$session->param( "phrase" )."</epp:phrase>\n\n";
 	my $phrase_xml = eval { 
 		my $doc = EPrints::XML::parse_xml_string( $phrase_xml_str );
 		if( !defined $doc )
@@ -132,11 +92,22 @@ sub write_phrase
 		return( $message_dom, "error" );
 	}
 
-	# create an empty webcfg phrases file, if it doesn't exist already
+	my $reload = 1;
+	if( defined $phrases->{$phrase_id} && $phrases->{$phrase_id}->{src} eq "webcfg" )
+	{
+		$reload = 0;
+	}
+
+	$phrases->{$phrase_id} = { 
+		xml => $session->clone_for_me( $phrase_xml, 1 ), 
+		src => "webcfg",
+		file => $file };
+
+	$lang->{repository_data}->{$phrase_id} = $phrases->{$phrase_id};
+
 	if( !-e $file )
 	{
-		my $fh;
-		unless( open( $fh, ">", $file ) )
+		unless( open( P, ">$file" ) )
 		{
 			my $message_dom = $session->make_element( "div" );
 			$message_dom->appendChild( $session->html_phrase( 
@@ -145,15 +116,14 @@ sub write_phrase
 				error => $session->make_text( $! ) ) );
 			return( $message_dom, "error" );
 		}
-		binmode($fh, ":utf8");
-		print $fh <<END;
+		print P <<END;
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <!DOCTYPE phrases SYSTEM "entities.dtd">
 <epp:phrases xmlns="http://www.w3.org/1999/xhtml" xmlns:epp="http://eprints.org/ep3/phrase" xmlns:epc='http://eprints.org/ep3/control'>
 
 </epp:phrases>
 END
-		close($fh);
+		close P;
 	}
 
 	my $doc = $session->get_repository->parse_xml( $file );
@@ -161,20 +131,20 @@ END
 	foreach my $phrase_el ( $doc->getElementsByTagNameNS("http://eprints.org/ep3/phrase","phrase" ) )
 	{
 		my $id = $phrase_el->getAttribute( "id" );
-		if( $id eq $phraseid )
+		if( $id eq $phrase_id )
 		{
 			$remove_el = $phrase_el;
-			last;
 		}	
 	}
 
 	my $phrase_el = $doc->createElement( "epp:phrase" );
-	$phrase_el->setAttribute( "id", $phraseid );
+	$phrase_el->setAttribute( "id", $phrase_id );
 	$phrase_el->appendChild( 
 		EPrints::XML::clone_and_own( $phrase_xml, $doc, 1 ) );
 	if( defined $remove_el )
 	{
-		$remove_el->parentNode->replaceChild( $phrase_el, $remove_el );
+		$remove_el->getParentNode->insertBefore($phrase_el,$remove_el);
+		$remove_el->getParentNode->removeChild( $remove_el );
 	}
 	else
 	{
@@ -183,8 +153,8 @@ END
 		$doc->documentElement->appendChild( $doc->createTextNode( "\n\n" ));
 	}
 
-	my $fh;
-	unless( open( $fh, ">", $file ) )
+
+	unless( open( P, ">$file" ) )
 	{
 		my $message_dom = $session->make_element( "div" );
 		$message_dom->appendChild( $session->html_phrase( 
@@ -193,16 +163,12 @@ END
 				error => $session->make_text( $! ) ) );
 		return( $message_dom, "error" );
 	}
-	binmode($fh, ":utf8");
-	print $fh EPrints::XML::to_string( $doc );
-	close $fh;
+	print P $doc->toString;
+	close P;
 
 	my $message_dom = $session->make_element( "div" );
 	$message_dom->appendChild( $self->html_phrase( "save_ok" ) );
 	$message_dom->appendChild( $session->make_text( " " ) );
-
-	# force a load of zz_webcfg.xml to get the new phrase
-	$session->get_lang->load_phrases( $session, $file );
 
 	if( !$reload )
 	{
@@ -230,52 +196,90 @@ sub export_mimetype
 }
 
 
+sub get_all_phrases
+{
+	my( $self ) = @_;
+
+	my $session = $self->{session};
+	my $lang = $session->get_lang;
+
+	my $map = {};
+	if( defined $lang->{fallback} )
+	{
+		$self->add_map( $map, "systemfallback", $lang->{fallback}->_get_data );
+	}
+	$self->add_map( $map, "system", $lang->{data} ); 
+	if( defined $lang->{fallback} )
+	{
+		$self->add_map( $map, "repofallback", $lang->{fallback}->_get_repositorydata );
+	}
+	$self->add_map( $map, "repo", $lang->{repository_data} ); 
+
+	return $map;
+}
+
+sub add_map
+{
+	my( $self, $map, $src, $phrases  ) = @_;
+
+	foreach my $phrase_id ( keys %{$phrases} )
+	{
+		$map->{$phrase_id} = $phrases->{$phrase_id};
+		$map->{$phrase_id}->{src} = $src;
+		$map->{$phrase_id}->{phrase_id} = $phrase_id;
+		if( $map->{$phrase_id}->{file} =~ m/zz_webcfg.xml$/ )
+		{
+			$map->{$phrase_id}->{src} = "webcfg";
+		}
+	}
+}
+
 sub render_style
 {
 	my( $self ) = @_;
 
 	my $style = $self->{session}->make_element( "style", type=>"text/css" );
-	my $base_url = $self->{session}->get_url( path => "static" );
+	my $base_url = $self->{session}->get_repository->get_conf('base_url');
 	$style->appendChild( $self->{session}->make_text( <<END ) );
-#ep_phraseedit_table {
+.ep_phraseedit_table {
 	width: 100%;
 	border-collapse: collapse;
 	margin-top: 1em;
 }
-#ep_phraseedit_table tr {
-/*	background-color: #ccf; */
-	border-bottom: dashed 1px #88f;
-}
-#ep_phraseedit_table tr td {
+.ep_phraseedit_cell {
+	border: solid 1px black;
 	padding: 3px;
+	background-color: #ccc;
 }
-.ep_phraseedit_widget {
-	cursor: text;
-	min-height: 1em;
-/*	overflow: auto; */
+th.ep_phraseedit_cell {
+	text-align: right;
 }
-#ep_phraseedit_table textarea {
-/*	overflow: hidden; */
+.ep_phraseedit_cell_null {
+	background-color: #ccf;
 }
-.ep_phraseedit_widget, #ep_phraseedit_table textarea {
-	font-family: monospace;
-	font-size: 9pt;
-	width: 98%;
+.ep_phraseedit_cell_webcfg {
+	background-color: #99f;
+}
+.ep_phraseedit_table td input {
+	font-size: 90%;
+}
+.ep_phraseedit_table td textarea {
 	display: block;
 	background-color: white;
 	border: solid 1px #66c;
-	padding: 3px;
+	width: 98%;
+	overflow: hidden;
 }
-.ep_phraseedit_null {
-	background-color: #ccf;
+.ep_phraseedit_view {
+	display: block;
+	padding: 2px;
+	border: solid 1px transparent;
 }
-.ep_phraseedit_webcfg {
-	background-color: #99f;
+.ep_phraseedit_view:hover {
+	background-color: white;
+	border: solid 1px #66c;
 }
-#ep_phraseedit_table td input {
-	font-size: 90%;
-}
-#ep_phraseedit_addbar
+.ep_phraseedit_addbar
 {
 	border: 1px solid #88c;
 	background: #e7e9f5 url($base_url/style/images/toolbox.png) repeat-x;
@@ -303,7 +307,7 @@ sub render
 
 	my $session = $self->{session};
 
-	my $file = $session->get_repository->get_conf( "config_path" )."/lang/".$session->get_lang->{id}."/phrases/zz_webcfg.xml";
+	my $map = $self->get_all_phrases;
 
 	my $f = $session->make_doc_fragment;
 	
@@ -314,99 +318,61 @@ sub render
 	if( !defined $self->{phrase_ids} )
 	{
 		# add new phrase only shown on actual plugin page.
-		$f->appendChild( $self->render_new_phrase() );
+		my $add_div = $session->make_element( "div", class=>"ep_phraseedit_addbar" );
+		my $form = $session->render_form( "get",
+			$session->get_repository->get_conf( "rel_cgipath" )."/users/home" );
+		$form->appendChild( $self->render_hidden_bits );
+		$form->appendChild(
+			$session->render_noenter_input_field( 
+				size => "50",
+				name => "ep_phraseedit_newid",
+				style => "border: solid 1px #88c",
+				id => "ep_phraseedit_newid" ));
+		$form->appendChild(
+			$session->make_text( " " ) );	
+		$form->appendChild(
+			$session->make_element( 
+				"input", 
+				class => "ep_form_action_button",
+				type => "submit", 
+				value => $self->phrase( "new_phrase" ),
+				id => "ep_phraseedit_add",
+				onclick => "return ep_phraseedit_addphrase(event,\$F('ep_phraseedit_newid'))" ));
+		$f->appendChild( $add_div );
+		$add_div->appendChild( $form );
 	}
 
 	my @ids;
 	if( defined $self->{phrase_ids} )
 	{
-		@ids = sort { lc($a) cmp lc($b) } @{$self->{phrase_ids}};
+		@ids = @{$self->{phrase_ids}};
 	}
 	else
 	{
-		# get all phrase ids, including fallbacks, and sort them
-		# alphabetically
-		@ids =
-			sort { lc($a) cmp lc($b) }
-			$session->get_lang->get_phrase_ids( 1 );
+		@ids = sort keys %{$map};	
 	}
 
 	my $script = $session->make_element( "script", type=>"text/javascript" );
-	my $ep_save_phrase = EPrints::Utils::js_string( $self->phrase( "save" ) );
-	my $ep_reset_phrase = EPrints::Utils::js_string( $self->phrase( "reset" ) );
-	my $ep_cancel_phrase = EPrints::Utils::js_string( $self->phrase( "cancel" ) );
-	$script->appendChild( $session->make_text( <<EOJ ) );
-var ep_phraseedit_phrases = {
-	save: $ep_save_phrase,
-	reset: $ep_reset_phrase,
-	cancel: $ep_cancel_phrase
-};
-EOJ
+	$script->appendChild( $session->make_text( "window.first_row = 'ep_phrase_row_$ids[0]'" ) );
 	$f->appendChild( $script );	
 
-	my $table = $session->make_element( "table", id=>"ep_phraseedit_table" );
-	my $tr = $session->make_element( "tr" );
-	$table->appendChild( $tr );
-	for(qw( id phrase src ))
+	my $table = $session->make_element( "table", width=>'100%', class=>'ep_phraseedit_table', id=>"ep_phraseedit_table" );
+	foreach my $phrase_id ( @ids )
 	{
-		my $th = $session->make_element( "th" );
-		$tr->appendChild( $th );
-		$th->appendChild( $self->html_phrase( "table_header_$_" ) );
-	}
-
-	my $defined_rows = $session->make_doc_fragment;
-	my $undefined_rows = $session->make_doc_fragment;
-	my $fallback_rows = $session->make_doc_fragment;
-	foreach my $phraseid ( @ids )
-	{
-		my $info = $session->get_lang->get_phrase_info( $phraseid, $session );
-		my $src = "null";
-		if( defined $info && $info->{fallback} )
-		{
-			$src = $info->{system} ? "system" : "repo";
-			$src .= "fallback";
-			$src = "webcfg" if $info->{filename} eq $file;
-			$fallback_rows->appendChild( $self->render_row(
-				{
-					phraseid => $phraseid,
-					xml => $info->{xml},
-					langid  => $info->{langid},
-					src => $src,
-				},
-				undef,
-				"message"
-			) );
-		}
-		elsif( defined $info )
-		{
-			$src = $info->{system} ? "system" : "repo";
-			$src = "webcfg" if $info->{filename} eq $file;
-			$defined_rows->appendChild( $self->render_row(
-				{
-					phraseid => $phraseid,
-					xml => $info->{xml},
-					langid  => $info->{langid},
-					src => $src,
-				},
-				undef,
-				"message"
-			) );
-		}
-		else
-		{
-			$undefined_rows->appendChild( $self->render_row( 
-				{
-					phraseid=>$phraseid,
-					xml=>$session->make_doc_fragment,
-					src => $src,
-				}, 
-				$self->html_phrase( "phrase_not_defined" ),
-				"warning" ) );
-		}
+		next if defined $map->{$phrase_id};
+		$table->appendChild( $self->render_row( 
+			{ phrase_id=>$phrase_id, src=>"null", xml=>$session->make_doc_fragment }, 
+			$self->html_phrase( "phrase_not_defined" ),
+			"warning" ) );
+		$table->appendChild( $session->make_text( "\n\n\n\n" ) );
 	}	
-	$table->appendChild( $undefined_rows );
-	$table->appendChild( $fallback_rows );
-	$table->appendChild( $defined_rows );
+	foreach my $phrase_id ( @ids )
+	{
+		my $phrase = $map->{$phrase_id};
+		next if !defined $phrase;
+		$table->appendChild( $self->render_row( $phrase ) );
+		$table->appendChild( $session->make_text( "\n\n\n\n" ) );
+	}
 	$f->appendChild( $table );	
 
 	return $f;
@@ -414,82 +380,97 @@ EOJ
 
 sub render_row
 {
-	my( $self, $phrase, $message, $error_level ) = @_;
+	my( $self , $phrase , $message, $error_level ) = @_;
+
+	$error_level = "message" unless defined $error_level;
 
 	my $session = $self->{session};
-	my $phraseid = $phrase->{phraseid};
-	my $src = $phrase->{src};
+	my $phrase_id = $phrase->{phrase_id};
 
-	my $string = "";
-	foreach my $node ($phrase->{xml}->childNodes)
-	{
-		$string .= EPrints::XML::to_string( $node );
-	}
+	my $tr = $session->make_element( "tr", id=>"ep_phrase_row_$phrase_id" );
 
-	my( $tr, $td, $div );
+	my $td1 = $session->make_element( "th", class=>"ep_phraseedit_cell ep_phraseedit_cell_".$phrase->{src} );
+	$td1->appendChild( $session->make_text( $phrase_id ));
+	$tr->appendChild( $td1 );
 
-	$tr = $session->make_element( "tr", class => "ep_phraseedit_$src" );
-
-	$td = $session->make_element( "td" );
-	$tr->appendChild( $td );
-	$td->appendChild( $session->make_text( $phraseid ) );
-
-	$td = $session->make_element( "td" );
-	$tr->appendChild( $td );
-	# any messages
+	my $string = EPrints::XML::to_string( 
+			EPrints::XML::contents_of( 
+				$session->clone_for_me( $phrase->{xml}, 1 )));
+	my $td3 = $session->make_element( "td", class=>"ep_phraseedit_cell ep_phraseedit_cell_".$phrase->{src}, id=>"ep_phrase_$phrase_id" );
 	if( defined $message )
 	{
-		$div = $session->make_element( "div" );
-		$td->appendChild( $div );
-		$div->appendChild( $session->render_message( $error_level, $message, 0 ));
+		my $mbox = $session->make_element( "div", id=>"ep_phrase_message_$phrase_id" );
+		$mbox->appendChild( $session->render_message( $error_level, $message, 0 ));
+		$td3->appendChild( $mbox );
+		my $script = $session->make_element( "script", type=>"text/javascript" );
+		$td3->appendChild( $script );
+		if( $error_level ne "message" && $string ne "" )
+		{
+			my $p = $session->param( "phrase" );
+			$p =~ s/([^a-z0-9 ])/'\\x'.sprintf( "%02X", ord( $1 ) )/egi;
+			$script->appendChild( $session->make_text( "ep_phraseedit_show_text( '$phrase_id', '$p' );"));
+		}
 	}
-
-	# phrase editing widget
-	$div = $session->make_element( "div", id => "ep_phraseedit_$phraseid", class => "ep_phraseedit_widget", onclick => "ep_phraseedit_edit(this, ep_phraseedit_phrases);" );
-	$td->appendChild( $div );
-	$div->appendChild( $session->make_text( $string ) );
-
-	$td = $session->make_element( "td" );
-	$tr->appendChild( $td );
-	if( defined $phrase->{langid} )
-	{
-		$td->appendChild( $session->make_text( $phrase->{langid} . "/" . $phrase->{src} ) );
-	}
-
-	return $tr;
-}
-
-sub render_new_phrase
-{
-	my( $self ) = @_;
-
-	my $session = $self->{session};
-
-	my $f = $session->make_doc_fragment;
-	
-	my $add_div = $session->make_element( "div", id=>"ep_phraseedit_addbar" );
+	my $view_div = $session->make_element( 
+		"a", 
+		class => "ep_phraseedit_view", 
+		style => "display: ".($error_level eq "message"?"block":"none"),
+		id => "ep_phrase_view_$phrase_id", 
+		onclick => "ep_phraseedit_show('$phrase_id')" );
+	$view_div->appendChild( $session->make_text( $string ) );
+	$td3->appendChild( $view_div );
+	my $edit_div = $session->make_element( 
+		"div", 
+		id => "ep_phrase_edit_$phrase_id", 
+		style => "display: ".($error_level eq "message"?"none":"block") );
 	my $form = $session->render_form( "get",
 		$session->get_repository->get_conf( "rel_cgipath" )."/users/home" );
 	$form->appendChild( $self->render_hidden_bits );
-	$form->appendChild(
-		$session->render_noenter_input_field( 
-			size => "50",
-			name => "ep_phraseedit_newid",
-			style => "border: solid 1px #88c",
-			id => "ep_phraseedit_newid" ));
-	$form->appendChild( $session->make_text( " " ) );	
-	$form->appendChild(
-		$session->make_element( 
-			"input", 
-			class => "ep_form_action_button",
-			type => "submit", 
-			value => $self->phrase( "new_phrase" ),
-			id => "ep_phraseedit_add",
-			onclick => "return ep_phraseedit_addphrase(event,\$F('ep_phraseedit_newid'))" ));
-	$f->appendChild( $add_div );
-	$add_div->appendChild( $form );
+	my $textarea = $session->make_element( 
+		"textarea", 
+		onkeyup => "ep_phraseedit_adjust_textarea( this )",
+		id => "ep_phrase_textarea_$phrase_id", 
+		name => "ep_phrase_textarea_$phrase_id" );
+#	$textarea->appendChild( $session->make_text( " " ) );
+	$form->appendChild( $textarea );
+	$edit_div->appendChild( $form );
+	my $ok_button = $session->make_element( 
+		"input", 
+		type => "submit", 
+		value => $self->phrase( "save" ),
+		id => "ep_phrase_save_$phrase_id", 
+		onclick => "return ep_phraseedit_save(event,'$phrase_id')" );
+	$form->appendChild( $ok_button );
+	$form->appendChild( $session->make_text( " " ) );
+	my $reset_button = $session->make_element( 
+		"input", 
+		type => "submit", 
+		value => $self->phrase( "reset" ),
+		id => "ep_phrase_reset_$phrase_id", 
+		onclick => "return ep_phraseedit_reset(event,'$phrase_id')" );
+	$form->appendChild( $session->make_text( " " ) );
+	$form->appendChild( $reset_button );
+	# hide this if cancel makes no sense, but keep it in the DOM so javascript
+	# doesn't get uppity.
+	my $style = "";
+	$style = "display: none" if( $error_level eq "warning" && $string eq "" );
+	$form->appendChild( $session->make_text( " " ) );
+	my $cancel_button = $session->make_element( 
+		"input", 
+		type => "submit", 
+		style => $style,
+		value => $self->phrase( "cancel" ),
+		id => "ep_phrase_cancel_$phrase_id", 
+		onclick => "return ep_phraseedit_cancel(event,'$phrase_id')" );
+	$form->appendChild( $cancel_button );
+	$td3->appendChild( $edit_div );
+	$tr->appendChild( $td3 );
 
-	return $f;
+	my $td2 = $session->make_element( "td",  class=>"ep_phraseedit_cell ep_phraseedit_cell_".$phrase->{src} );
+	$td2->appendChild( $session->make_text( $phrase->{src} ));
+	$tr->appendChild( $td2 );
+
+	return $tr;
 }
 
 ######################################################################

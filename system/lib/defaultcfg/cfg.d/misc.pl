@@ -82,6 +82,3 @@ $c->{cache_timeout} = 10;
 #   valid for ).
 $c->{cache_maxlife} = 12;
 
-# Maximum number of persistent cache tables to allow
-$c->{cache_max} = 100;
-

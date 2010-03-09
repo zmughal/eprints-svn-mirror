@@ -4,6 +4,8 @@ use EPrints;
 use EPrints::Plugin::InputForm::Component::Field;
 @ISA = ( "EPrints::Plugin::InputForm::Component::Field" );
 
+use Unicode::String qw(latin1);
+
 use strict;
 
 sub new
@@ -28,49 +30,35 @@ sub update_from_form
 	if( $ibutton =~ /^(.+)_add$/ )
 	{
 		my $subject = $1;
-		my $value;
-		if( $field->get_property( "multiple" ) )
-		{
-			my %vals = ();
-
-			my $values = $self->{dataobj}->get_value( $field->get_name );
-			foreach my $s ( @$values, $subject )
-			{
-				$vals{$s} = 1;
-			}
+		my %vals = ();
+		$vals{$subject} = 1;
 			
-			$value = [sort keys %vals];
-		}
-		else
+		my $values = $self->{dataobj}->get_value( $field->get_name );
+		foreach my $s ( @$values )
 		{
-			$value = $subject;
+			$vals{$s} = 1;
 		}
-		$self->{dataobj}->set_value( $field->get_name, $value );
+		
+		my @out = keys %vals;
+		$self->{dataobj}->set_value( $field->get_name, \@out );
 		$self->{dataobj}->commit;
 	}
 	
 	if( $ibutton =~ /^(.+)_remove$/ )
 	{
 		my $subject = $1;
-		my $value;
-		if( $field->get_property( "multiple" ) )
+		my %vals = ();
+		
+		my $values = $self->{dataobj}->get_value( $field->get_name );
+		foreach my $s ( @$values )
 		{
-			my %vals = ();
-			
-			my $values = $self->{dataobj}->get_value( $field->get_name );
-			foreach my $s ( @$values )
-			{
-				$vals{$s} = 1;
-			}
-			delete $vals{$subject};
-			
-			$value = [sort keys %vals];
+			$vals{$s} = 1;
 		}
-		else
-		{
-			$value = undef;
-		}
-		$self->{dataobj}->set_value( $field->get_name, $value );
+		delete $vals{$subject};
+		
+		my @out = keys %vals;
+		
+		$self->{dataobj}->set_value( $field->get_name, \@out );
 		$self->{dataobj}->commit;
 	}
 
@@ -97,15 +85,7 @@ sub render_content
 
 	$self->{expanded} = {};
 	$self->{selected} = {};
-	my @values;
-	if( $field->get_property( "multiple" ) )
-	{
-		@values = @{$field->get_value( $eprint )};
-	}
-	elsif( $eprint->is_set( $field->get_name ) )
-	{
-		push @values, $field->get_value( $eprint );
-	}
+	my @values = @{$field->get_value( $eprint )};
 	foreach my $subj_id ( @values )
 	{
 		$self->{selected}->{$subj_id} = 1;
@@ -320,7 +300,11 @@ sub _render_subnodes
 
 	my $node_id = $subject->get_value( "subjectid" );
 
-	my @children = @{$self->{reverse_map}->{$node_id}};
+	my @children = ();
+	if( defined $self->{reverse_map}->{$node_id} )
+	{
+		@children = @{$self->{reverse_map}->{$node_id}};
+	}
 
 	my @filteredchildren;
 	if( defined $whitelist )
@@ -364,7 +348,7 @@ sub _render_subnode
 #	}
 
 	my $has_kids = 0;
-	$has_kids = 1 if( scalar @{$self->{reverse_map}->{$node_id}} );
+	$has_kids = 1 if( defined $self->{reverse_map}->{$node_id} );
 
 	my $expanded = 0;
 	$expanded = 1 if( $depth < $self->{visdepth} );

@@ -1,112 +1,83 @@
+######################################################################
+#
+# EPrints::Plugin::Sword::Import::METS
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+######################################################################
+#
+# PURPOSE:
+#
+#	This will import XML files of MD type 'epdcx' (only). Some metadata
+#	is not currently parsed.
+#
+# METHODS:
+#
+# input_files( $plugin, %opts ):
+#       The method called by DepositHandler. The %opts hash contains
+#       information on which files to import.
+#
+######################################################################
+
+
 package EPrints::Plugin::Sword::Import::METS;
 
 use strict;
-use EPrints::Plugin::Sword::Import;
-our @ISA = qw/ EPrints::Plugin::Sword::Import /;
 
-our %SUPPORTED_MIME_TYPES =
-(
-        "application/zip" => 1,
-);
+use EPrints::Plugin::Import::TextFile;
 
-our %UNPACK_MIME_TYPES =
-(
-        "application/zip" => "Sword::Unpack::Zip",
-);
-
+our @ISA = qw/ EPrints::Plugin::Import::TextFile /;
 
 sub new
 {
 	my( $class, %params ) = @_;
+
 	my $self = $class->SUPER::new( %params );
-	$self->{name} = "SWORD Importer - METS/EPDCX (alpha)";
+
+	$self->{name} = "SWORD Importer - METS/EPDCX METS/MODS (alpha)";
+	$self->{visible} = "all";
+	$self->{accept} = "text/xml";
+
 	return $self;
 }
 
 
-###        $opts{file} = $file;
-###        $opts{mime_type} = $headers->{content_type};
-###        $opts{dataset_id} = $target_collection;
-###        $opts{owner_id} = $owner->get_id;
-###        $opts{depositor_id} = $depositor->get_id if(defined $depositor);
-###        $opts{no_op}   = is this a No-op?
-###        $opts{verbose} = is this verbosed?
 sub input_file
 {
         my ( $plugin, %opts ) = @_;
 
         my $session = $plugin->{session};
 
+        my $input_files = $opts{files};
         my $dir = $opts{dir};
-	my $mime = $opts{mime_type};
-	my $file = $opts{file};
-
-	my $NO_OP = $opts{no_op};
 
 	# Let's find the XML file to import:
-	unless( defined $SUPPORTED_MIME_TYPES{$mime} )
-        {
-                $plugin->add_verbose( "[ERROR] unknown MIME TYPE '$mime'." );
-		$plugin->set_status_code( 415 );
-                return undef;
-        }
-
-        my $unpacker = $UNPACK_MIME_TYPES{$mime};
-
-        my $tmp_dir;
-
-        if( defined $unpacker )
-        {
-                $tmp_dir = EPrints::TempDir->new( "swordXXX", UNLINK => 1 );
-
-                if( !defined $tmp_dir )
-                {
-                        print STDERR "\n[SWORD-DEPOSIT] [INTERNAL-ERROR] Failed to create the temp directory!";
-                        $plugin->add_verbose( "[ERROR] failed to create the temp directory." );
-			$plugin->set_status_code( 500 );
-                        return undef;
-                }
-
-                my $files = $plugin->unpack_files( $unpacker, $file, $tmp_dir );
-                unless(defined $files)
-                {
-                        $plugin->add_verbose( "[ERROR] failed to unpack the files" );
-                        return undef;
-                }
-
-                my $candidates = $plugin->get_files_to_import( $files, "text/xml" );
-
-                if(scalar(@$candidates) == 0)
-                {
-                        $plugin->add_verbose( "[ERROR] could not find the XML file" );
-			$plugin->set_status_code( 400 );
-                        return undef;
-                }
-                elsif(scalar(@$candidates) > 1)
-                {
-                        $plugin->add_verbose( "[WARNING] there were more than one XML file in this archive. I am using the first one" );
-                }
-
-                $file = $$candidates[0];
-        }
-
-       
+        my $infile = EPrints::Sword::Utils::get_file_to_import( $session, $input_files, "text/xml" );
+        
         my $dataset_id = $opts{dataset_id};
         my $owner_id = $opts{owner_id};
         my $depositor_id = $opts{depositor_id};
 
 	my $fh;
-	if( !open( $fh, $file ) )
+	if( !open( $fh, $infile ) )
 	{
-		$plugin->add_verbose( "[ERROR] couldnt open the file: '$file' because '$!'" );
-		$plugin->set_status_code( 500 );
+		print STDERR "\n[SWORD-METS] [ERROR] I couldnt open the file: $infile because $!";
 		return;
 	}
 
+	# Hack to find out in which directory the XML file is located (useful later when the documents are created)
 	my $unpack_dir;
 	my $fntmp;
 
-	$fntmp = $file;
+	$fntmp = $infile;
 
 	if( $fntmp =~ /^(.*)\/(.*)$/ )
 	{
@@ -122,15 +93,15 @@ sub input_file
 	}
 	close $fh;
 
+
 	my $dataset = $session->get_archive()->get_dataset( $dataset_id );
 
 	if(!defined $dataset)
 	{
 		print STDERR "\n[SWORD-METS] [INTERNAL-ERROR] Failed to open the dataset '$dataset_id'.";
-		$plugin->add_verbose( "[INTERNAL ERROR] failed to open the dataset '$dataset_id'" );
-		$plugin->set_status_code( 500 );
 		return;
 	}
+
 
         my $dom_doc;
         eval
@@ -140,76 +111,50 @@ sub input_file
 
         if($@ || !defined $dom_doc)
         {
-		$plugin->add_verbose( "[ERROR] failed to parse the xml: '$@'" );
-		$plugin->set_status_code( 400 );
+                print STDERR "\n[SWORD-METS] [ERROR] Couldnt parse the xml.";
                 return;
         }
 
-	if( !defined $dom_doc )
-	{
-		$plugin->{status_code} = 400;
-		$plugin->add_verbose( "[ERROR] failed to parse the xml." );
-		return;
-	}
+	return if( !defined $dom_doc );
 
         my $dom_top = $dom_doc->getDocumentElement;
 
-	if( lc $dom_top->tagName ne 'mets' )
-	{
-		$plugin->set_status_code( 400 );
-		$plugin->add_verbose( "[ERROR] failed to parse the xml: no <mets> tag found." );
-		return;
-	}
+	return if( lc $dom_top->tagName ne 'mets' );
 
 	# METS Headers (ignored)
 	my $mets_hdr = ($dom_top->getElementsByTagName( "metsHdr" ))[0];
 
 	# METS Descriptive Metadata (main section for us)
+	my $dmd_sec = ($dom_top->getElementsByTagName( "dmdSec" ))[0];
 
-	# need to loop on dmdSec:
-	my @dmd_sections = $dom_top->getElementsByTagName( "dmdSec" );
+	return if( !defined $dmd_sec );
 
-	my $md_wrap;
-	my $found_wrapper = 0;
-	foreach my $dmd_sec (@dmd_sections)
+	# need to extract xmlData from here
+	my $md_wrap = ($dmd_sec->getElementsByTagName( "mdWrap" ))[0];
+
+	return if( !defined $md_wrap );
+
+	if(!( lc $md_wrap->getAttribute( "MDTYPE" ) eq 'other' && defined $md_wrap->getAttribute( "OTHERMDTYPE" ) && lc $md_wrap->getAttribute( "OTHERMDTYPE" ) eq 'epdcx' ))
 	{
-		# need to extract xmlData from here
-		$md_wrap = ($dmd_sec->getElementsByTagName( "mdWrap" ))[0];
-
-		next if( !defined $md_wrap );
-
-		next if(!( lc $md_wrap->getAttribute( "MDTYPE" ) eq 'other' && defined $md_wrap->getAttribute( "OTHERMDTYPE" ) && lc $md_wrap->getAttribute( "OTHERMDTYPE" ) eq 'epdcx' ));
-	
-		$found_wrapper = 1;
-		
-		last;
-	}
-
-	unless( $found_wrapper )
-	{
-		$plugin->set_status_code( 400 );
-		$plugin->add_verbose( "[ERROR] failed to parse the xml: could not find epdcx <mdWrap> section." );
+		# Wrong type of METS document 
 		return;
 	}
 
 	my $xml_data = ($md_wrap->getElementsByTagName( "xmlData" ))[0];
 
-	if(!defined $xml_data)
-	{
-		$plugin->set_status_code( 400 );
-		$plugin->add_verbose( "[ERROR] failed to parse the xml: no <xmlData> tag found." );
-		return;
-	}
-	
-	my $epdata = $plugin->parse_epdcx_xml_data( $xml_data );
+	return if(!defined $xml_data);
 
-	return unless( defined $epdata );
+	my $epdata = parse_epdcx_xml_data( $xml_data );
+
+	return unless defined $epdata;
 
 	# File Section which will contain optional info about files to import:
+	my $file_sec = ($dom_top->getElementsByTagName( "fileSec" ))[0];
+
 	my @files;
-	foreach my $file_sec ( $dom_top->getElementsByTagName( "fileSec" ) )
+	if( defined $file_sec )
 	{
-	        my $file_grp = ($file_sec->getElementsByTagName( "fileGrp" ))[0];
+	        my $file_grp = ($dom_top->getElementsByTagName( "fileGrp" ))[0];
 
         	$file_sec = $file_grp if( defined $file_grp );	# this is because the <fileGrp> tag is optional
 
@@ -220,36 +165,15 @@ sub input_file
 			{		# yeepee we have a file (maybe)
 
 				my $fn = $file_loc->getAttribute( "href" );
-
-				unless( defined $fn )
-				{
-					# to accommodate the gdome XML library:
-					$fn = $file_loc->getAttribute( "xlink:href" );
-				}
-
-				next unless( defined $fn );
+				next unless defined($fn);
 
 				next if $fn =~ /^http/;	# wget those files?
 
 				push @files, $fn;				
-
 			}
 		}
-	}
 
-	unless( scalar(@files) )
-	{
-		$plugin->add_verbose( "[WARNING] no <fileSec> tag found: no files will be imported." );
 	}
-
-	if( $NO_OP )
-	{
-		# need to send 200 Successful (the deposit handler will generate the XML response)
-		$plugin->add_verbose( "[OK] Plugin - import successful (but in No-Op mode)." );
-		$plugin->set_status_code( 200 );
-		return;
-	}
-
 
 	if(defined $depositor_id)
 	{
@@ -265,28 +189,19 @@ sub input_file
 
 	my $eprint = $dataset->create_object( $plugin->{session}, $epdata );
 
-	unless(defined $eprint)
-	{
-		$plugin->set_status_code( 500 );
-		$plugin->add_verbose( "[ERROR] failed to create the EPrint object." );
-		return;
-	}
+	return unless(defined $eprint);
 
 	foreach my $file (@files)
 	{
 	        my %doc_data;
-		$doc_data{_parent} = $eprint;
 	        $doc_data{eprintid} = $eprint->get_id;
- 
-               $doc_data{format} = $session->get_repository->call( 'guess_doc_type',
-                                $session,
-				$unpack_dir."/".$file );
 
+		$doc_data{format} = EPrints::Sword::FileType::checktype_filename( $unpack_dir."/".$file );
 		$doc_data{main} = $file;
-		local $session->get_repository->{config}->{enable_file_imports} = 1;
+
 	        my %file_data;
 	       	$file_data{filename} = $file;
-		$file_data{url} = "file://$unpack_dir/$file";
+		$file_data{data} = $unpack_dir."/".$file;
 
         	$doc_data{files} = [ \%file_data ];
 
@@ -296,47 +211,22 @@ sub input_file
 
         	if(!defined $document)
                 {
-			$plugin->add_verbose( "[WARNING] Failed to create Document object." );
+                	print STDERR "\n[SWORD-METS] [ERROR] Failed to add the attached file to the eprint.";
                 }
 	}
 
-	if( $plugin->keep_deposited_file() )
-	{
-		if( $plugin->attach_deposited_file( $eprint, $opts{file}, $opts{mime_type} ) )
-		{
-			$plugin->add_verbose( "[OK] attached deposited file." );
-		}
-		else
-		{
-			$plugin->add_verbose( "[WARNING] failed to attach the deposited file." );
-		}
-	}
+	return $eprint->get_id;
 
-	$plugin->add_verbose( "[OK] EPrint object created." );
-
-	return $eprint;
-
-}
-
-
-sub keep_deposited_file
-{
-	return 1;
 }
 
 
 sub parse_epdcx_xml_data
 {
-	my ( $plugin, $xml ) = @_;
+	my ( $xml ) = @_;
 
 	my $set = ($xml->getElementsByTagName( "descriptionSet" ))[0];
 
-	unless( defined $set )
-	{
-		$plugin->set_status_code( 400 );
-		$plugin->add_verbose( "ERROR: no <descriptionSet> tag found." );
-		return;
-	}
+	return unless defined $set;
 
 	my $epdata = {};
 
@@ -345,7 +235,9 @@ sub parse_epdcx_xml_data
 
 		foreach my $stat ($desc->getElementsByTagName( "statement" ))
 		{
-			my ($field, $value) = _parse_statement( $stat );
+#			print STDERR "\nGot statement: ".$stat->getAttribute( "propertyURI" );
+	
+			my ($field, $value) = parse_statement( $stat );
 
 			if( defined $field )
 			{
@@ -378,16 +270,11 @@ sub parse_epdcx_xml_data
 
 
 
-sub _parse_statement
+sub parse_statement
 {
 	my ( $stat ) = @_;
 
 	my $property = $stat->getAttribute( "propertyURI" );
-
-	unless( defined $property )
-	{
-		$property = $stat->getAttribute( "epdcx:propertyURI" );
-	}
 
 	if( $property eq 'http://purl.org/dc/elements/1.1/type' )
 	{
@@ -521,11 +408,6 @@ sub clean_text
 
 	return join(" ", @lines);
 }
-
-
-
-
-        
 
 
 

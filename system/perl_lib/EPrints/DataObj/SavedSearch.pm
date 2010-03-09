@@ -39,7 +39,7 @@ multiple saved searches.
 
 package EPrints::DataObj::SavedSearch;
 
-@ISA = ( 'EPrints::DataObj::SubObject' );
+@ISA = ( 'EPrints::DataObj' );
 
 use EPrints;
 
@@ -63,11 +63,9 @@ sub get_system_field_info
 
 	return 
 	( 
-		{ name=>"id", type=>"counter", required=>1, import=>0, can_clone=>1,
-			sql_counter=>"savedsearchid" },
+		{ name=>"id", type=>"int", required=>1, import=>0, can_clone=>1, },
 
-		{ name=>"rev_number", type=>"int", required=>1, can_clone=>0,
-			default_value=>1 },
+		{ name=>"rev_number", type=>"int", required=>1, can_clone=>0 },
 
 		{ name=>"userid", type=>"itemref", 
 			datasetid=>"user", required=>1 },
@@ -76,35 +74,62 @@ sub get_system_field_info
 
 		{ name=>"name", type=>"text" },
 
-		{ name => "spec", type => "search", datasetid => "eprint",
-			default_value=>"" },
+		{ 
+			name => "spec",
+			type => "search",
+			datasetid => "eprint",
+		},
 
 		{ name=>"frequency", type=>"set", required=>1,
-			options=>["never","daily","weekly","monthly"],
-			default_value=>"never" },
+			options=>["never","daily","weekly","monthly"] },
 
-		{ name=>"mailempty", type=>"boolean", input_style=>"radio",
-			default_value=>"TRUE" },
+		{ name=>"mailempty", type=>"boolean", input_style=>"radio" },
 
-		{ name=>"public", type=>"boolean", input_style=>"radio",
-			default_value=>"FALSE" },
+		{ name=>"public", type=>"boolean", input_style=>"radio" },
 	);
 }
 
 ######################################################################
 =pod
 
-=item $dataset = EPrints::DataObj::SavedSearch->get_dataset_id
+=item $saved_search = EPrints::DataObj::SavedSearch->new( $session, $id )
 
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
+Return new Saved Search object, created by loading the Saved Search
+with id $id from the database.
 
 =cut
 ######################################################################
 
-sub get_dataset_id
+sub new
 {
-	return "saved_search";
+	my( $class, $session, $id ) = @_;
+
+	return $session->get_database->get_single( 	
+		$session->get_repository->get_dataset( "saved_search" ),
+		$id );
 }
+
+######################################################################
+=pod
+
+=item $saved_search = EPrints::DataObj::SavedSearch->new_from_data( $session, $data )
+
+Construct a new EPrints::DataObj::SavedSearch object based on the $data hash 
+reference of metadata.
+
+=cut
+######################################################################
+
+sub new_from_data
+{
+	my( $class, $session, $known ) = @_;
+
+	return $class->SUPER::new_from_data(
+			$session,
+			$known,
+			$session->get_repository->get_dataset( "saved_search" ) );
+}
+
 
 ######################################################################
 # =pod
@@ -130,6 +155,63 @@ sub create
 ######################################################################
 =pod
 
+=item $defaults = EPrints::DataObj::SavedSearch->get_defaults( $session, $data )
+
+Return default values for this object based on the starting data.
+
+=cut
+######################################################################
+
+sub get_defaults
+{
+	my( $class, $session, $data ) = @_;
+
+	my $id = $session->get_database->counter_next( "savedsearchid" );
+
+	$data->{id} = $id;
+	$data->{frequency} = 'never';
+	$data->{mailempty} = "TRUE";
+	$data->{spec} = '';
+	$data->{rev_number} = 1;
+	$data->{public} = "FALSE";
+
+#	$session->get_repository->call(
+#		"set_saved_search_defaults",
+#		$data,
+#		$session );
+
+	return $data;
+}	
+
+
+######################################################################
+=pod
+
+=item $success = $saved_search->remove
+
+Remove the saved search.
+
+=cut
+######################################################################
+
+sub remove
+{
+	my( $self ) = @_;
+
+	my $subs_ds = $self->{session}->get_repository->get_dataset( 
+		"saved_search" );
+	
+	my $success = $self->{session}->get_database->remove(
+		$subs_ds,
+		$self->get_value( "id" ) );
+
+	return $success;
+}
+
+
+######################################################################
+=pod
+
 =item $success = $saved_search->commit( [$force] )
 
 Write this object to the database.
@@ -144,7 +226,9 @@ sub commit
 {
 	my( $self, $force ) = @_;
 	
-	$self->update_triggers();
+#	$self->{session}->get_repository->call( 
+#		"set_saved_search_automatic_fields", 
+#		$self );
 
 	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
 	{
@@ -156,7 +240,14 @@ sub commit
 		$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 	}
 
-	my $success = $self->SUPER::commit( $force );
+	my $subs_ds = $self->{session}->get_repository->get_dataset( 
+		"saved_search" );
+	$self->tidy;
+	my $success = $self->{session}->get_database->update(
+		$subs_ds,
+		$self->{data} );
+
+	$self->queue_changes;
 
 	return $success;
 }
@@ -176,23 +267,11 @@ sub get_user
 {
 	my( $self ) = @_;
 
-	return undef unless $self->is_set( "userid" );
-
-	if( defined($self->{user}) )
-	{
-		# check we still have the same owner
-		if( $self->{user}->get_id eq $self->get_value( "userid" ) )
-		{
-			return $self->{user};
-		}
-	}
-
-	$self->{user} = EPrints::User->new( 
-		$self->{session}, 
+	return EPrints::User->new( 
+		$self->{session},
 		$self->get_value( "userid" ) );
-
-	return $self->{user};
 }
+
 
 ######################################################################
 =pod
@@ -250,12 +329,13 @@ sub send_out_alert
 	{
 		$self->{session}->get_repository->log( 
 			"Attempt to send out an alert for a\n".
-			"non-existent user. SavedSearch ID#".$self->get_id."\n" );
+			"non-existant user. SavedSearch ID#".$self->get_id."\n" );
 		return;
 	}
 
-	# change language temporarily to the user's language
-	local $self->{session}->{lang} = $user->language();
+	my $origlangid = $self->{session}->get_langid;
+	
+	$self->{session}->change_lang( $user->get_value( "lang" ) );
 
 	my $searchexp = $self->make_searchexp;
 	# get the description before we fiddle with searchexp
@@ -353,6 +433,8 @@ sub send_out_alert
 		EPrints::XML::dispose( $mail );
 	}
 	$list->dispose;
+
+	$self->{session}->change_lang( $origlangid );
 }
 
 
@@ -398,8 +480,9 @@ sub process_set
 		$item->send_out_alert;
 	};
 
-	my $list = $searchexp->perform_search;
-	$list->map( $fn, {} );
+	$searchexp->perform_search;
+	$searchexp->map( $fn, {} );
+	$searchexp->dispose;
 
 	my $statusfile = $session->get_repository->get_conf( "variables_path" ).
 		"/alert-".$frequency.".timestamp";

@@ -118,7 +118,7 @@ EOC
 			suffix => $suffix,
 			mimetype => $mimetype,
 		};
-		EPrints::PluginFactory->register_plugin( $plugin );
+		$EPrints::Plugin::REGISTRY->{$plugin->{id}} = $class;
 	}
 }
 

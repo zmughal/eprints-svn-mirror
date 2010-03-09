@@ -62,19 +62,32 @@ sub process
 		my $name = $node->tagName;
 		$name =~ s/^epc://;
 
-		if( $name=~m/^(if|comment|choose|print|debug|phrase|pin|foreach|set)$/ )
+		# new style
+		if( $name eq "if" )
 		{
-			my $fn = "_process_$name";
-			no strict "refs";
-			my $r = eval { &{$fn}( $node, %params ); };
-			use strict "refs";
-			if( $@ )
-			{
-				$params{session}->log( "EPScript error: $@" );
-				return $params{session}->html_phrase( "XML/EPC:script_error" );
-			}
-			return $r;
+			return _process_if( $node, %params );
 		}
+		if( $name eq "choose" )
+		{
+			return _process_choose( $node, %params );
+		}
+		if( $name eq "print" )
+		{
+			return _process_print( $node, %params );
+		}
+		if( $name eq "phrase" )
+		{
+			return _process_phrase( $node, %params );
+		}
+		if( $name eq "pin" )
+		{
+			return _process_pin( $node, %params );
+		}
+		if( $name eq "foreach" )
+		{
+			return _process_foreach( $node, %params );
+		}
+
 	}
 
 	my $collapsed = $params{session}->clone_for_me( $node );
@@ -86,12 +99,7 @@ sub process
 			my $attr = $attrs->item( $i );
 			my $v = $attr->nodeValue;
 			my $name = $attr->nodeName;
-			my $newv = eval { EPrints::XML::EPC::expand_attribute( $v, $name, \%params ); };
-			if( $@ )
-			{
-				$params{session}->log( "EPScript error: $@" );
-				$newv = $params{session}->phrase( "XML/EPC:script_error" );
-			}
+			my $newv = EPrints::XML::EPC::expand_attribute( $v, $name, \%params );
 			if( $v ne $newv ) { $attr->setValue( $newv ); }
 		}
 	}
@@ -119,7 +127,7 @@ sub expand_attribute
 		}
 		else
 		{
-			$newv.= EPrints::Utils::tree_to_utf8( EPrints::Script::print( $r[$i], $params ) );
+			$newv.=EPrints::Script::print( $r[$i], $params )->toString;
 		}
 	}
 	return $newv;
@@ -203,9 +211,7 @@ sub _process_phrase
 	my %pins = ();
 	foreach my $param ( $node->getChildNodes )
 	{
-		my $tagname = $param->tagName;
-		$tagname =~ s/^epc://;
-		next unless( $tagname eq "param" );
+		next unless( $param->tagName eq "param" );
 
 		if( !$param->hasAttribute( "name" ) )
 		{
@@ -247,49 +253,6 @@ sub _process_print
 	return EPrints::Script::print( $expr, \%params, $opts );
 }	
 
-sub _process_debug
-{
-	my( $node, %params ) = @_;
-	
-	my $result = _process_print( $node, %params );
-
-	print STDERR EPrints::XML::to_string( $result );
-
-	return $params{session}->make_doc_fragment;
-}
-
-sub _process_set
-{
-	my( $node, %params ) = @_;
-
-	if( !$node->hasAttribute( "expr" ) )
-	{
-		EPrints::abort( "In ".$params{in}.": set element with no expr attribute.\n".substr( $node->toString, 0, 100 ) );
-	}
-	my $expr = $node->getAttribute( "expr" );
-	if( $expr =~ m/^\s*$/ )
-	{
-		EPrints::abort( "In ".$params{in}.": set element with empty expr attribute.\n".substr( $node->toString, 0, 100 ) );
-	}
-
-	if( !$node->hasAttribute( "name" ) )
-	{
-		EPrints::abort( "In ".$params{in}.": set element with no name attribute.\n".substr( $node->toString, 0, 100 ) );
-	}
-	my $name = $node->getAttribute( "name" );
-	if( $name !~ m/^[a-z][a-z0-9_]*$/i )
-	{
-		EPrints::abort( "In ".$params{in}.": set element with non alphanumeric name attribute.\n".substr( $node->toString, 0, 100 ) );
-	}
-
-	my $result = EPrints::Script::execute( $expr, \%params );
-
-	my %newparams = %params;
-	$newparams{$name} = $result;
-
-	return process_child_nodes( $node, %newparams );
-}
-
 sub _process_foreach
 {
 	my( $node, %params ) = @_;
@@ -312,12 +275,6 @@ sub _process_foreach
 	if( $iterator !~ m/^[a-z][a-z0-9_]*$/i )
 	{
 		EPrints::abort( "In ".$params{in}.": foreach element with non alphanumeric iterator.\n".substr( $node->toString, 0, 100 ) );
-	}
-	my $limit = $node->getAttribute( "limit" );
-	$limit = "" if !defined $limit;
-	if( $limit ne "" && $limit !~ m/^\d+$/i )
-	{
-		EPrints::abort( "In ".$params{in}.": foreach element with non integer limit.\n".substr( $node->toString, 0, 100 ) );
 	}
 
 	my $result = EPrints::Script::execute( $expr, \%params );
@@ -342,22 +299,11 @@ sub _process_foreach
 		$type->set_property( "multiple", 0 );
 	}
 
-	my $index = 0;
 	foreach my $item ( @{$list} )
 	{
 		my %newparams = %params;
-		my $thistype = $type;
-		if( !defined $thistype || $thistype eq "ARRAY" )
-		{
-			$thistype = ref( $item );
-			$thistype = "STRING" if( $thistype eq "" ); 	
-			$thistype = "XHTML" if( $thistype =~ /^XML::/ );
-		}
-		$newparams{"index"} = [ $index, "INTEGER" ];
-		$newparams{$iterator} = [ $item, $thistype ];
+		$newparams{$iterator} = [ $item, $type ];
 		$output->appendChild( process_child_nodes( $node, %newparams ) );
-		$index++;
-		last if( $limit ne "" && $index >= $limit );
 	}
 
 	return $output;
@@ -388,13 +334,6 @@ sub _process_if
 	}
 
 	return $collapsed;
-}
-
-sub _process_comment
-{
-	my( $node, %params ) = @_;
-
-	return $params{session}->make_doc_fragment;
 }
 
 sub _process_choose

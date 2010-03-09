@@ -1,10 +1,17 @@
 package EPrints::Plugin::Export::ContextObject;
 
-use EPrints::Plugin::Export::XMLFile;
+use Unicode::String qw( utf8 );
 
-@ISA = ( "EPrints::Plugin::Export::XMLFile" );
+use EPrints::Plugin::Export;
+
+@ISA = ( "EPrints::Plugin::Export" );
 
 use strict;
+
+# The utf8() method is called to ensure that
+# any broken characters are removed. There should
+# not be any broken characters, but better to be
+# sure.
 
 our %TYPES = (
 	article => {
@@ -42,6 +49,8 @@ sub new
 	$self->{name} = "OpenURL ContextObject";
 	$self->{accept} = [ 'list/eprint', 'list/access', 'dataobj/eprint', 'dataobj/access' ];
 	$self->{visible} = "all";
+	$self->{suffix} = ".xml";
+	$self->{mimetype} = "text/xml";
 
 	$self->{xmlns} = "info:ofi/fmt:xml:xsd:ctx";
 	$self->{schemaLocation} = "http://www.openurl.info/registry/docs/info:ofi/fmt:xml:xsd:ctx";
@@ -242,16 +251,9 @@ sub xml_dataobj
 		$timestamp_field = "datestamp";
 	}
 
-	my $timestamp;
-	if( $dataobj->dataset->has_field( $timestamp_field ) )
-	{
-		$timestamp = $dataobj->get_value( $timestamp_field );
-		if( $timestamp !~ m/T/ )
-		{
-			my( $date, $time ) = split / /, $timestamp;
-			$timestamp = "${date}T${time}Z";
-		}
-	}
+	my $timestamp = $dataobj->get_value( $timestamp_field );
+	my( $date, $time ) = split / /, $timestamp;
+	$timestamp = "${date}T${time}Z";
 
 	# TODO: fix timestamp format
 	my $co = $session->make_element(

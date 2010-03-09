@@ -1,12 +1,11 @@
 #!/usr/bin/perl
 
-use Test::More tests => 11;
+use Test::More tests => 3;
 
-BEGIN { use_ok( "EPrints" ); }
-BEGIN { use_ok( "EPrints::Test" ); }
+use EPrints;
 
-my $repository = EPrints::Test::get_test_repository();
-my $session = EPrints::Test::get_test_session();
+my $repository = [EPrints::Config::get_repository_ids()]->[0];
+my $session = EPrints::Session->new( 1, $repository, 2, 1 );
 my $dataset = $session->get_repository->get_dataset( "archive" );
 
 my $eprint = EPrints::DataObj::EPrint->new_from_data( $session, {
@@ -31,36 +30,3 @@ $eprint->set_value( "corp_creators", [
 my $corp_creators = $eprint->get_value( "corp_creators" );
 
 is( $corp_creators->[1], "second" );
-
-my $field;
-for($dataset->fields)
-{
-	$field = $_, last if $_->get_property( "multiple" ) && $_->isa( "EPrints::MetaField::Set" );
-}
-
-SKIP: {
-	skip "Missing multiple MetaField::Set", 1 unless defined $field;
-
-	$field->set_value( $eprint, [qw( one two three two five)] );
-
-	is_deeply( $field->get_value( $eprint ), [qw( one two three five )], "set field removes duplicates");
-};
-
-my $tf = EPrints::MetaField->new(
-	type => "time",
-	name => "xxx_time",
-	repository => $repository );
-$dataset->register_field( $tf );
-
-$tf->set_value( $eprint, "1234-12-31 23:59:59" );
-is( $tf->get_value( $eprint ), "1234-12-31 23:59:59", "set time value default" );
-$tf->set_value( $eprint, "1234-12-31T23:59:59Z" );
-is( $tf->get_value( $eprint ), "1234-12-31 23:59:59", "set time value ISO" );
-$tf->set_value( $eprint, "1234-12-31 23" );
-is( $tf->get_value( $eprint ), "1234-12-31 23", "set partial time value" );
-$tf->set_value( $eprint, undef );
-is( $tf->get_value( $eprint ), undef, "set undef time value" );
-
-$tf->set_property( multiple => 1 );
-$tf->set_value( $eprint, ["1234-12-31 23:59:59"] );
-is( $tf->get_value( $eprint )->[0], "1234-12-31 23:59:59", "set multiple time value" );

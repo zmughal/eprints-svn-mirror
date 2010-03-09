@@ -47,23 +47,6 @@ sub render_single_value
 	return $self->render_option( $session , $value );
 }
 
-sub set_value
-{
-	my( $self, $object, $value ) = @_;
-
-	if( $self->get_property( "multiple" ) )
-	{
-		$value = [] if !defined $value;
-		my %seen;
-		@$value = grep {
-			EPrints::Utils::is_set( $_ ) # multiple values must be defined
-			&& !$seen{$_}++ # set values must be unique
-		} @$value;
-	}
-
-	return $object->set_value_raw( $self->{name}, $value );
-}
-
 ######################################################################
 =pod
 
@@ -122,7 +105,7 @@ sub render_option
 
 	# if the option is empty, and no explicit phrase is defined, print 
 	# UNDEFINED rather than an error phrase.
-	if( $option eq "" && !$session->get_lang->has_phrase( $phrasename, $session ) )
+	if( $option eq "" && !$session->get_lang->has_phrase( $phrasename ) )
 	{
 		$phrasename = "lib/metafield:unspecified";
 	}
@@ -306,11 +289,26 @@ sub form_value_actual
 		return $self->SUPER::form_value_actual( $session, $obj, $basename );
 	}
 
-	my @values = grep {
-		$_ ne "-" # for the  ------- in defaults at top
-	} $session->param( $basename );
+	my @values = $session->param( $basename );
+	
+	if( scalar( @values ) == 0 )
+	{
+		return undef;
+	}
 
-	return $self->get_property( "multiple" ) ? \@values : $values[0];
+	if( $self->get_property( "multiple" ) )
+	{
+		# Make sure all fields are unique
+		# There could be two options with the same id,
+		# especially in "subject"
+		my %v;
+		foreach( @values ) { $v{$_}=1; }
+		delete $v{"-"}; # for the  ------- in defaults at top
+		@values = keys %v;
+		return \@values;
+	}
+
+	return $values[0];
 }
 
 # the ordering for set is NOT the same as for normal
@@ -470,22 +468,13 @@ sub render_search_description
 	}
 
 	my $valuedesc = $session->make_doc_fragment;
-	my $max_to_show = $self->get_property( "render_max_search_values" );
 	my @list = split( ' ',  $value );
 	for( my $i=0; $i<scalar @list; ++$i )
 	{
-		if( $max_to_show && $i == $max_to_show )
-		{
-			$valuedesc->appendChild( $session->html_phrase( "lib/searchfield:n_more_values", 
-				n => $session->xml->create_text_node( scalar @list - $i ),
-				total => $session->xml->create_text_node( scalar @list ) ) );
-			last;
-		}
 		if( $i>0 )
 		{
 			$valuedesc->appendChild( $session->make_text( ", " ) );
 		}
-		
 		$valuedesc->appendChild( $session->make_text( '"' ) );
 		$valuedesc->appendChild(
 			$self->get_value_label( $session, $list[$i] ) );
@@ -524,7 +513,6 @@ sub get_property_defaults
 	$defaults{options} = $EPrints::MetaField::REQUIRED;
 	$defaults{input_tags} = $EPrints::MetaField::UNDEF;
 	$defaults{render_option} = $EPrints::MetaField::UNDEF;
-	$defaults{render_max_search_values} = 5;
 	$defaults{text_index} = 0;
 	return %defaults;
 }
@@ -533,31 +521,33 @@ sub get_xml_schema_type
 {
 	my( $self ) = @_;
 
-	return $self->get_property( "type" ) . "_" . $self->{dataset}->confid . "_" . $self->get_name;
+	if( scalar @{$self->{options}||[]} )
+	{
+		return $self->get_property( "type" ) . "_" . $self->{dataset}->confid . "_" . $self->get_name;
+	}
+	else
+	{
+		return "xs:string";
+	}
 }
 
 sub render_xml_schema_type
 {
 	my( $self, $session ) = @_;
 
-	my $type = $session->make_element( "xs:simpleType", name => $self->get_xml_schema_type );
+	if( !scalar @{$self->{options}||[]} )
+	{
+		return $session->make_doc_fragment;
+	}
 
-	my( $tags, $labels ) = $self->tags_and_labels( $session );
+	my $type = $session->make_element( "xs:simpleType", name => $self->get_xml_schema_type );
 
 	my $restriction = $session->make_element( "xs:restriction", base => "xs:string" );
 	$type->appendChild( $restriction );
-	foreach my $value (@$tags)
+	foreach my $value (@{$self->{options}})
 	{
 		my $enumeration = $session->make_element( "xs:enumeration", value => $value );
 		$restriction->appendChild( $enumeration );
-		if( defined $labels->{$value} )
-		{
-			my $annotation = $session->make_element( "xs:annotation" );
-			$enumeration->appendChild( $annotation );
-			my $documentation = $session->make_element( "xs:documentation" );
-			$annotation->appendChild( $documentation );
-			$documentation->appendChild( $session->make_text( $labels->{$value} ) );
-		}
 	}
 
 	return $type;

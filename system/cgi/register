@@ -119,24 +119,6 @@ sub make_page
 				$v,
 				{fieldname=>$field->render_name($session)} );
 		}
-
-		my @problems = $field->validate( $session, $v->{$field->get_name} );
-		if( scalar @problems )
-		{
-			my $ul = $session->make_element( "ul" );
-			for(@problems)
-			{
-				my $li = $session->make_element( "li" );
-				$ul->appendChild( $li );
-				$li->appendChild( $_ );
-			}
-			return mk_err_page( 
-				$session,
-				"cgi/register:field_error",
-				$fieldlist,
-				$v,
-				{fieldname=>$field->render_name($session), problems=>$ul} );
-		}
 	}
 
 	if( defined EPrints::DataObj::User::user_with_email( $session, $v->{email} ) )
@@ -148,19 +130,6 @@ sub make_page
 			$v,
 			{email=>$session->make_text( $v->{email} )} );
 	}
-
-	if( $session->get_repository->can_call( "check_registration_email" ) )
-	{
-		unless( $session->get_repository->call( "check_registration_email", $session, $v->{email} ) )
-		{
-			return mk_err_page(
-				$session,
-				"cgi/register:email_denied",
-				$fieldlist,
-				$v,
-				{email=>$session->make_text( $v->{email} )} );
-		}
-	} 
 
 	if( defined EPrints::DataObj::User::user_with_username( $session, $v->{username} ) )
 	{

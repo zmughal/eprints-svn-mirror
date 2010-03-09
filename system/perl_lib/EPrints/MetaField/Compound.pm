@@ -29,39 +29,18 @@ not done
 
 package EPrints::MetaField::Compound;
 
-use EPrints::MetaField;
-@ISA = qw( EPrints::MetaField );
-
 use strict;
+use warnings;
 
-sub new
+BEGIN
 {
-	my( $class, %properties ) = @_;
-
-	$properties{fields_cache} = [];
-
-	my $self = $class->SUPER::new( %properties );
-
-	foreach my $inner_field ( @{$properties{fields}} )
-	{
-		my $field = EPrints::MetaField->new( 
-			show_in_html => 0, # don't show the inner field separately
-		# these properties can be overriden
-			export_as_xml => $properties{ "export_as_xml" },
-			import => $properties{ "import" },
-		# inner field's properties
-			%{$inner_field},
-		# these properties must be the same as the compound
-			parent_name => $self->get_name(),
-			dataset => $self->get_dataset(), 
-			providence => $self->get_property( "providence" ),
-			multiple => $properties{ "multiple" },
-			volatile => $properties{ "volatile" } );
-		push @{$self->{fields_cache}}, $field;
-	}
-
-	return $self;
+	our( @ISA );
+	
+	@ISA = qw( EPrints::MetaField );
 }
+
+use EPrints::MetaField::Text;
+
 
 sub render_value
 {
@@ -151,7 +130,6 @@ sub to_xml_basic
 	{
 		my $name = $field_conf->{name};
 		my $field = $dataset->get_field( $name );
-		next unless $field->get_property( "export_as_xml" );
 		my $alias = $fieldname_to_alias{$name};
 		my $v = $value->{$alias};
 		my $tag = $session->make_element( $alias );
@@ -159,34 +137,6 @@ sub to_xml_basic
 		$r->appendChild( $tag );
 	}
 	return $r;
-}
-
-sub xml_to_epdata_basic
-{
-	my( $self, $session, $xml, %opts ) = @_;
-
-	my $value = {};
-
-	my %a_to_f = $self->get_alias_to_fieldname;
-	foreach my $node ($xml->childNodes)
-	{
-		next unless EPrints::XML::is_dom( $node, "Element" );
-		my $nodeName = $node->nodeName;
-		my $name = $a_to_f{$nodeName};
-		if( !defined $name )
-		{
-			if( defined $opts{Handler} )
-			{
-				$opts{Handler}->message( "warning", $session->html_phrase( "Plugin/Import/XML:unexpected_element", name => $session->make_text( $nodeName ) ) );
-				$opts{Handler}->message( "warning", $session->html_phrase( "Plugin/Import/XML:expected", elements => $session->make_text( "<".join("> <", sort { $a cmp $b } keys %a_to_f).">" ) ) );
-			}
-			next;
-		}
-		my $field = $self->get_dataset->get_field( $name );
-		$value->{$nodeName} = $field->xml_to_epdata_basic( $session, $node, %opts );
-	}
-
-	return $value;
 }
 
 # This type of field is virtual.
@@ -199,7 +149,7 @@ sub is_virtual
 
 sub get_sql_type
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $notnull ) = @_;
 
 	return undef;
 }
@@ -478,14 +428,6 @@ sub get_search_conditions_not_ex
 		$search_mode ) = @_;
 
 	EPrints::abort( "Attempt to search compound field. Repository ID=".$session->get_repository->get_id.", dataset=". $self->{dataset}->confid . ", field=" . $self->get_name );
-}
-
-# don't know how to turn a compound into a order value
-sub ordervalue_single
-{
-	my( $self, $value, $session, $langid, $dataset ) = @_;
-
-	return "";
 }
 
 ######################################################################

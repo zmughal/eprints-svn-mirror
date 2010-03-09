@@ -217,15 +217,19 @@ sub tool_getFile
 	my @problems = ensure( \%opts, 'session', 'document', 'filename' );
 	return( 1, \@problems ) if( @problems );
 
-	my $file = $opts{document}->get_stored_file( $opts{filename} );
+	my $fpath = $opts{document}->local_path."/".$opts{filename};
 
-	if( !defined $file )
+	if( !-e $fpath )
 	{
-		return( 1, [ "File $opts{filename} not found." ] );
+		return( 1, [ "File $fpath not found." ] );
 	}
 
-	my $data = "";
-	$file->get_file( sub { $data .= $_[0] } );
+	if( !open( EPFILE, $fpath ) ) 
+	{
+		return( 1, [ "Could not open $fpath: $!." ] );
+	}
+	my $data = join( "",<EPFILE> );
+	close EPFILE;
 
 	return( 0, $data );
 }
@@ -238,21 +242,24 @@ sub tool_addFile
 	my @problems = ensure( \%opts, 'session', 'document', 'filename' );
 	return( 1, \@problems ) if( @problems );
 
-	my $content = get_data( %opts );
+	my $fpath = $opts{document}->local_path."/".$opts{filename};
 
-	my $file = $opts{session}->dataset( "file" )->create_dataobj({
-		_parent => $opts{document},
-		filename => $opts{filename},
-		filesize => length($content),
-		_content => \$content,
-	});
-
-	if( !defined $file )
+	my $filename = $opts{filename};
+	if( $filename =~ m#[\?\*\ \t\/]# )
 	{
-		return( 1, [ "Could not write file $opts{filename}" ] );
+		return( 1, [ "'$filename' has some iffy characters." ] );
 	}
+ 
+	my $fullpath = $opts{document}->local_path."/".$filename;
+	unless( open( FH, ">$fullpath" ) )
+	{
+		return( 1, [ "Could not write to $fullpath" ] );
+	}
+	print FH get_data( %opts );
+	close FH;
 
 	$opts{document}->files_modified;
+	$opts{document}->get_eprint->generate_static;
 
 	return( 0, "OK\n" );
 }
@@ -264,16 +271,16 @@ sub tool_removeFile
 	my @problems = ensure( \%opts, 'session', 'document', 'filename' );
 	return( 1, \@problems ) if( @problems );
 
-	my $file = $opts{document}->get_stored_file( $opts{filename} );
+	my $fpath = $opts{document}->local_path."/".$opts{filename};
 
-	if( !defined $file )
+	if( !-e $fpath )
 	{
-		return( 1, [ "File $opts{filename} not found." ] );
+		return( 1, [ "File $fpath not found." ] );
 	}
 
-	if( !$file->remove() )
+	if( !$opts{document}->remove_file( $opts{filename} ) )
 	{
-		return( 1, [ "Could not remove $opts{filename}." ] );
+		return( 1, [ "Could not remove $fpath." ] );
 	}
 
 	return( 0, "OK" );

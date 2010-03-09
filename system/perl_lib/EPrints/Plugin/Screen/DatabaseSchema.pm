@@ -15,7 +15,7 @@ sub new
 	
 	$self->{appears} = [
 		{
-			place => "admin_actions_system",
+			place => "admin_actions",
 			position => 3000,
 		},
 	];
@@ -93,7 +93,7 @@ sub render
 	my $dataset_table = $session->make_element( "table", border=>"0" );
 	$html->appendChild( $dataset_table );
 
-	foreach my $datasetid (sort { $a cmp $b } $session->get_repository->get_sql_dataset_ids())
+	foreach my $datasetid (sort { $a cmp $b } EPrints::DataSet::get_sql_dataset_ids())
 	{
 		my $dataset = $session->get_repository->get_dataset( $datasetid );
 
@@ -160,7 +160,7 @@ sub render
 			my $name = $session->html_phrase( $nameid );
 
 			my $helpid = "${datasetid}_fieldhelp_$field_name";
-			my $help = $session->get_lang->has_phrase( $helpid, $session ) ?
+			my $help = $session->get_lang->has_phrase( $helpid ) ?
 				$session->html_phrase( $helpid ) :
 				$session->make_text( "" );
 
@@ -195,12 +195,12 @@ sub render
 		next if $table_name =~ /^cache(\d+)$/;
 
 		my $nameid = "database/name_$table_name";
-		my $name = $session->get_lang->has_phrase( $nameid, $session ) ?
+		my $name = $session->get_lang->has_phrase( $nameid ) ?
 			$session->html_phrase( $nameid ) :
 			$session->html_phrase( "database/name_" );
 
 		my $helpid = "database/help_$table_name";
-		my $help = $session->get_lang->has_phrase( $helpid, $session ) ?
+		my $help = $session->get_lang->has_phrase( $helpid ) ?
 			$session->html_phrase( $helpid ) :
 			$session->html_phrase( "database/help_" );
 

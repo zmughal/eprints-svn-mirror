@@ -4,6 +4,8 @@ use EPrints::Plugin::Export::Feed;
 
 @ISA = ( "EPrints::Plugin::Export::Feed" );
 
+use Unicode::String qw(latin1);
+
 use strict;
 
 sub new
@@ -38,7 +40,7 @@ sub output_list
 
 	$title.= ": ".EPrints::Utils::tree_to_utf8( $list->render_description );
 
-	my $host = $session->config( 'host' );
+	my $host = $session->{repository}->get_conf( 'host' );
 
 	$response->appendChild( $session->render_data_element(
 		4,
@@ -109,22 +111,19 @@ sub output_list
 		$item->appendChild( $session->render_data_element(
 			4,
 			"id", 
-			"tag:".$host.",".($eprint->get_value( "date" )||"").":item:/".$eprint->get_id ) );
+			"tag:".$host.",".$eprint->get_value( "date" ).":item:/".$eprint->get_id ) );
 
-		if( $eprint->exists_and_set( "creators" ) )
+		my $names = $eprint->get_value( "creators" );
+		foreach my $name ( @$names )
 		{
-			my $names = $eprint->get_value( "creators" );
-			foreach my $name ( @$names )
-			{
-				my $author = $session->make_element( "author" );
-				
-				my $name_str = EPrints::Utils::make_name_string( $name->{name}, 1 );
-				$author->appendChild( $session->render_data_element(
-					4,
-					"name",
-					$name_str ) );
-				$item->appendChild( $author );
-			}
+			my $author = $session->make_element( "author" );
+			
+			my $name_str = EPrints::Utils::make_name_string( $name->{name}, 1 );
+			$author->appendChild( $session->render_data_element(
+				4,
+				"name",
+				$name_str ) );
+			$item->appendChild( $author );
 		}
 
 		$response->appendChild( $item );		

@@ -35,26 +35,6 @@ use EPrints;
 
 use strict;
 
-sub create_from_data
-{
-	my( $class, $session, $data, $dataset ) = @_;
-
-	# if we're online delay clean-up until Apache cleanup, which will prevent
-	# the request blocking
-	if( $session->get_online )
-	{
-		$session->get_request->pool->cleanup_register(sub {
-				__PACKAGE__->cleanup( $session )
-			}, $session );
-	}
-	else
-	{
-		$class->cleanup( $session );
-	}
-
-	return $class->SUPER::create_from_data( $session, $data, $dataset );
-}
-
 =item $thing = EPrints::DataObj::Access->get_system_field_info
 
 Core fields.
@@ -67,8 +47,7 @@ sub get_system_field_info
 
 	return
 	( 
-		{ name=>"cachemapid", type=>"counter", required=>1, can_clone=>0,
-			sql_counter=>"cachemapid" },
+		{ name=>"cachemapid", type=>"int", required=>1, can_clone=>0 },
 
 		{ name=>"created", type=>"int", required=>1, text_index=>0 },
 
@@ -76,7 +55,7 @@ sub get_system_field_info
 
 		{ name=>"userid", type=>"itemref", datasetid=>"user", required=>0, text_index=>0 },
 
-		{ name=>"searchexp", type=>"longtext", required=>0, text_index=>0 },
+		{ name=>"searchexp", type=>"text", required=>0, text_index=>0 },
 
 		{ name=>"oneshot", type=>"boolean", required=>0, text_index=>0 },
 	);
@@ -86,25 +65,69 @@ sub get_system_field_info
 
 =back
 
+=head2 Constructor Methods
+
+=over 4
+
+=cut
+
+######################################################################
+
+=item $thing = EPrints::DataObj::Cachemap->new( $session, $cachemapid )
+
+The data object identified by $cachemapid.
+
+=cut
+
+sub new
+{
+	my( $class, $session, $cachemapid ) = @_;
+
+	return $session->get_database->get_single( 
+			$session->get_repository->get_dataset( "cachemap" ), 
+			$cachemapid );
+}
+
+=item $thing = EPrints::DataObj::Cachemap->new_from_data( $session, $known )
+
+A new C<EPrints::DataObj::Cachemap> object containing data $known (a hash reference).
+
+=cut
+
+sub new_from_data
+{
+	my( $class, $session, $known ) = @_;
+
+	return $class->SUPER::new_from_data(
+			$session,
+			$known,
+			$session->get_repository->get_dataset( "cachemap" ) );
+}
+
+######################################################################
+
 =head2 Class Methods
 
 =cut
 
 ######################################################################
 
-######################################################################
-=pod
+=item EPrints::DataObj::Cachemap::remove_all( $session )
 
-=item $dataset = EPrints::DataObj::Cachemap->get_dataset_id
-
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
+Remove all records from the cachemap dataset.
 
 =cut
-######################################################################
 
-sub get_dataset_id
+sub remove_all
 {
-	return "cachemap";
+	my( $class, $session ) = @_;
+
+	my $ds = $session->get_repository->get_dataset( "cachemap" );
+	foreach my $obj ( $session->get_database->get_all( $ds ) )
+	{
+		$obj->remove();
+	}
+	return;
 }
 
 ######################################################################
@@ -119,66 +142,17 @@ Return default values for this object based on the starting data.
 
 sub get_defaults
 {
-	my( $class, $session, $data, $dataset ) = @_;
+	my( $class, $session, $data ) = @_;
 	
-	$class->SUPER::get_defaults( $session, $data, $dataset );
+	if( !defined $data->{cachemapid} )
+	{ 
+		my $new_id = $session->get_database->counter_next( "cachemapid" );
+		$data->{cachemapid} = $new_id;
+	}
 
 	$data->{created} = time();
 
 	return $data;
-}
-
-=item $dropped = EPrints::DataObj::Cachemap->cleanup( $repository )
-
-Clean up old caches. Returns the number of caches dropped.
-
-=cut
-
-sub cleanup
-{
-	my( $class, $repo ) = @_;
-
-	my $dropped = 0;
-
-	my $dataset = $repo->dataset( $class->get_dataset_id );
-	my $cache_maxlife = $repo->config( "cache_maxlife" );
-	my $cache_max = $repo->config( "cache_max" );
-
-	my $expired_time = time() - $cache_maxlife * 3600;
-
-	# cleanup expired cachemaps
-	my $list = $dataset->search(
-		filters => [
-			{ meta_fields => [qw( created )], value => "-$expired_time" },
-		] );
-	$list->map( sub {
-		my( undef, undef, $cachemap ) = @_;
-
-		$dropped++ if $cachemap->remove();
-	} );
-
-	# enforce a limit on the maximum number of cachemaps to allow
-	if( defined $cache_max && $cache_max > 0)
-	{
-		my $count = $repo->database->count_table( $dataset->get_sql_table_name );
-		if( $count >= $cache_max )
-		{
-			my $list = $dataset->search(
-				custom_order => "created", # oldest first
-				limit => ($count - ($cache_max-1))
-			);
-			$list->map( sub {
-				my( undef, undef, $cachemap ) = @_;
-
-				if( $count-- >= $cache_max ) # LIMIT might fail!
-				{
-					$dropped++ if $cachemap->remove();
-				}
-			} );
-		}
-	}
-
-	return $dropped;
 }
 
 ######################################################################
@@ -207,10 +181,9 @@ sub remove
 		$self->{dataset},
 		$self->get_id );
 
-	my $table = $self->get_sql_table_name;
+	my $table = $database->cache_table( $self->get_id );
 
-	# cachemap table might not exist
-	$database->drop_table( $table );
+	$rc &&= $database->drop_table( $table );
 
 	return $rc;
 }
@@ -220,28 +193,6 @@ sub get_sql_table_name
 	my( $self ) = @_;
 
 	return "cache" . $self->get_id;
-}
-
-=item $ok = $cachemap->create_sql_table( $dataset )
-
-Create the cachemap database table that can store ids from $dataset.
-
-=cut
-
-sub create_sql_table
-{
-	my( $self, $dataset ) = @_;
-
-	my $cache_table = $self->get_sql_table_name;
-	my $key_field = $dataset->get_key_field;
-	my $database = $self->{session}->get_database;
-
-	my $rc = $database->_create_table( $cache_table, ["pos"], [
-			$database->get_column_type( "pos", EPrints::Database::SQL_INTEGER, EPrints::Database::SQL_NOT_NULL ),
-			$key_field->get_sql_type( $self->{session} ),
-			]);
-
-	return $rc;
 }
 
 1;

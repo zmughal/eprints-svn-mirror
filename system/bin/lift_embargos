@@ -106,13 +106,8 @@ $noise = 1+$verbose if( $verbose );
 # Set STDOUT to auto flush (without needing a \n)
 $|=1;
 
-my $repoid = $ARGV[0];
-my $session = new EPrints::Session( 1 , $repoid , $noise );
-if( !defined $session )
-{
-	print STDERR "Failed to load repository: $repoid\n";
-	exit 1;
-}
+my $session = new EPrints::Session( 1 , $ARGV[0] , $noise );
+exit( 1 ) unless( defined $session );
 
 my $ds = $session->get_repository->get_dataset( "document" );
 
@@ -124,12 +119,12 @@ my $searchexp = new EPrints::Search(
 my $date = sprintf("-%04d-%02d-%02d", EPrints::Time::get_date_array( time ) );
 $searchexp->add_field( $ds->get_field( "date_embargo" ), $date );
 
-my $list = $searchexp->perform_search;
+$searchexp->perform_search;
 
 # For matching documents, remove embargo date value,
 # make documents publically accessible, and
 # re-generate abstract page
-$list->map( sub {
+$searchexp->map( sub {
 	my( $session, $dataset, $doc ) = @_;
 
 	my $eprint = $doc->get_eprint;
@@ -148,5 +143,6 @@ $list->map( sub {
 	$eprint->generate_static;
 } );
 
+$searchexp->dispose();
 $session->terminate();
 

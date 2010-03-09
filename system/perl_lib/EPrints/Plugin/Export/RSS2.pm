@@ -4,6 +4,7 @@ use EPrints::Plugin::Export::Feed;
 
 @ISA = ( "EPrints::Plugin::Export::Feed" );
 
+use Unicode::String qw(latin1);
 use Time::Local;
 
 use strict;
@@ -37,7 +38,7 @@ sub output_list
 		"version" => "2.0",
 		"xmlns:content" => "http://purl.org/rss/1.0/modules/content/",
 		"xmlns:dc" => "http://purl.org/dc/elements/1.1/",
-		"xmlns:media" => "http://search.yahoo.com/mrss/" );
+		"xmlns:media" => "http://search.yahoo.com/mrss" );
 
 	my $channel = $session->make_element( "channel" );
 	$response->appendChild( $channel );
@@ -55,18 +56,6 @@ sub output_list
 		4,
 		"link",
 		$session->get_repository->get_conf( "frontpage" ) ) );
-
-	if( $session->get_online )
-	{
-		$channel->appendChild( $session->render_data_element(
-			4,
-			"atom:link",
-			"",
-			"xmlns:atom"=>"http://www.w3.org/2005/Atom",
-			"href" => $session->get_full_url,
-			"type" => "application/rss+xml",
-			"rel"  => "self" ) );
-	}
 
 	$channel->appendChild( $session->render_data_element(
 		4,
@@ -175,34 +164,28 @@ sub render_eprint_media_content
 
 	my $session = $self->{session};
 
+	my $doc;
+
 	if( $session->get_repository->can_call( "eprint_rss_media_doc" ) )
 	{
-		my $doc = $session->get_repository->call(
+		$doc = $session->get_repository->call(
 				"eprint_rss_media_doc",
 				$dataobj,
 				$self
 			);
-
-		if( !defined $doc )
-		{
-			return $session->make_doc_fragment;
-		}
-
-		return $self->render_doc_media_content( $doc );
 	}
 	else
 	{
 		my @docs = $dataobj->get_all_documents();
 
-		foreach my $doc (@docs)
-		{
-			next unless $doc->is_public();
-			my $media = $self->render_doc_media_content( $doc );
-			return $media if $media->hasChildNodes;
-		}
+		@docs = grep { $_->is_public() } @docs;
 
-		return $session->make_doc_fragment;
+		$doc = $docs[0];
 	}
+
+	return $session->make_doc_fragment unless defined $doc;
+
+	return $self->render_doc_media_content( $doc );
 }
 
 sub render_doc_media_content
@@ -213,21 +196,25 @@ sub render_doc_media_content
 
 	my $frag = $session->make_doc_fragment;
 
-	my( $thumbnail ) = @{($dataobj->get_related_objects( EPrints::Utils::make_relation( "hassmallThumbnailVersion" ) ))};
+	my $base_url = $session->get_repository->get_conf( "base_url" );
+
+	my $thumbnail = $dataobj->thumbnail_url( "small" );
 	if( $thumbnail )
 	{
+		$thumbnail = URI->new_abs( $thumbnail, $base_url );
 		$frag->appendChild( $session->make_element( "media:thumbnail", 
-			url => $thumbnail->get_url,
-			type => $thumbnail->mime_type,
+			url => "$thumbnail",
+			type => "image/png",
 		) );
 	}
 
-	my( $preview ) = @{($dataobj->get_related_objects( EPrints::Utils::make_relation( "haspreviewThumbnailVersion" ) ))};
+	my $preview = $dataobj->thumbnail_url( "preview" );
 	if( $preview )
 	{
+		$preview = URI->new_abs( $preview, $base_url );
 		$frag->appendChild( $session->make_element( "media:content", 
-			url => $preview->get_url,
-			type => $preview->mime_type,
+			url => "$preview",
+			type => "image/png",
 		) );
 	}
 

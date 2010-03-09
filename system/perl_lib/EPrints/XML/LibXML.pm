@@ -35,9 +35,7 @@ use XML::LibXML 1.63;
 use XML::LibXML::SAX::Parser;
 # $XML::LibXML::skipXMLDeclaration = 1; # Same behaviour as XML::DOM
 
-$EPrints::XML::CLASS = "EPrints::XML::LibXML";
-
-$EPrints::XML::LIB_LEN = length("XML::LibXML::");
+$EPrints::XML::PREFIX = "XML::LibXML::";
 
 ##############################################################################
 # DOM spec fixes
@@ -65,6 +63,12 @@ $EPrints::XML::LIB_LEN = length("XML::LibXML::");
 			XML::LibXML::Node::appendChild( @_ );
 	};
 
+# GDOME nodeValue() returns bytes
+*XML::LibXML::Text::nodeValue = 
+*XML::LibXML::Comment::CDataSection = sub {
+		Encode::encode_utf8( XML::LibXML::Node::nodeValue(@_) )
+	};
+
 ##############################################################################
 # Bug work-arounds
 ##############################################################################
@@ -72,11 +76,6 @@ $EPrints::XML::LIB_LEN = length("XML::LibXML::");
 ##############################################################################
 
 our $PARSER = XML::LibXML->new();
-
-sub CLONE
-{
-	$PARSER = XML::LibXML->new();
-}
 
 =item $doc = parse_xml_string( $string )
 
@@ -91,7 +90,7 @@ sub parse_xml_string
 	return $PARSER->parse_string( $string );
 }
 
-sub _parse_url
+sub parse_url
 {
 	my( $url, $no_expand ) = @_;
 
@@ -137,9 +136,55 @@ sub event_parse
 }
 
 
-sub _dispose
+=item dispose( $node )
+
+Unused
+
+=cut
+
+sub dispose
 {
 	my( $node ) = @_;
+
+	if( !defined $node )
+	{
+		EPrints::abort( "attempt to dispose an undefined dom node" );
+	}
+}
+
+=item $node = clone_node( $node [, $deep] )
+
+Clone $node and return it, optionally descending into child nodes ($deep).
+
+=cut
+
+sub clone_node
+{
+	my( $node, $deep ) = @_;
+
+	$deep ||= 0;
+
+	if( !defined $node )
+	{
+		EPrints::abort( "no node passed to clone_node" );
+	}
+
+	if( is_dom( $node, "DocumentFragment" ) )
+	{
+		my $doc = $node->getOwner;
+		my $f = $doc->createDocumentFragment;
+		return $f unless $deep;
+		
+		foreach my $c ( $node->getChildNodes )
+		{
+			$f->appendChild( $c->cloneNode( $deep ) );
+		}
+		return $f;
+	}
+
+	my $newnode = $node->cloneNode( $deep );
+
+	return $newnode;
 }
 
 =item $node = clone_and_own( $node, $doc [, $deep] )
@@ -189,10 +234,7 @@ sub document_to_string
 
 	$doc->setEncoding( $enc );
 
-	my $xml = $doc->toString();
-	utf8::decode($xml);
-
-	return $xml;
+	return $doc->toString();
 }
 
 =item $doc = make_document()
@@ -210,18 +252,18 @@ sub make_document
 	return XML::LibXML::Document->new();
 }
 
-sub version
+=item $doc = make_document_fragment( $session )
+
+Return a new, empty DOM document fragment.
+
+=cut
+
+sub make_document_fragment
 {
-	"XML::LibXML $XML::LibXML::VERSION ".$INC{'XML/LibXML.pm'};
+	my( $session ) = @_;
+	
+	return $session->{doc}->createDocumentFragment();
 }
-
-package EPrints::XML::LibXML;
-
-our @ISA = qw( EPrints::XML );
-
-use strict;
-
-1;
 
 __END__
 

@@ -1,8 +1,8 @@
 package EPrints::Plugin::Export::COinS;
 
-use EPrints::Plugin::Export::TextFile;
+use EPrints::Plugin::Export;
 
-@ISA = ( "EPrints::Plugin::Export::TextFile" );
+@ISA = ( "EPrints::Plugin::Export" );
 
 use URI::OpenURL;
 
@@ -44,6 +44,8 @@ sub new
 	$self->{name} = "OpenURL ContextObject in Span";
 	$self->{accept} = [ 'dataobj/eprint' ];
 	$self->{visible} = "all";
+	$self->{suffix} = ".txt";
+	$self->{mimetype} = "text/plain";
 
 	return $self;
 }

@@ -28,27 +28,6 @@ sub properties_from
 	$self->SUPER::properties_from;
 }
 
-sub could_obtain_eprint_lock
-{
-	my( $self ) = @_;
-
-	return 0 unless defined $self->{processor}->{eprint};
-
-	return $self->{processor}->{eprint}->could_obtain_lock( $self->{session}->current_user );
-}
-
-sub obtain_eprint_lock
-{
-	my( $self ) = @_;
-
-	my $eprint = $self->{processor}->{eprint};
-	return 0 unless defined $eprint;
-
-	return 1 if $self->{processor}->{locked}->{$eprint};
-
-	return $self->{processor}->{locked}->{$eprint} = $eprint->obtain_lock( $self->{session}->current_user );
-}
-
 sub allow
 {
 	my( $self, $priv ) = @_;
@@ -110,25 +89,41 @@ sub register_furniture
 
 	$self->SUPER::register_furniture;
 
-	my $eprint = $self->{processor}->{eprint};
-	my $user = $self->{session}->current_user;
-	if( $eprint->is_locked )
+
+	my $priv = $self->allow( "eprint/view" );
+	my $owner  = $priv & 4;
+	my $editor = $priv & 8;
+
+	unless( $owner && $editor )
 	{
-		my $my_lock = ( $eprint->get_value( "edit_lock_user" ) == $user->get_id );
-		if( $my_lock )
+		return $self->{session}->make_doc_fragment;
+	}
+
+	my $div = $self->{session}->make_element( "div",class=>"ep_block" );
+	my $a_owner = $self->{session}->render_link( "?screen=EPrint::View::Owner&eprintid=".$self->{processor}->{eprintid} );
+	my $a_editor = $self->{session}->render_link( "?screen=EPrint::View::Editor&eprintid=".$self->{processor}->{eprintid} );
+	$div->appendChild( $self->{session}->html_phrase(
+		"cgi/users/edit_eprint:view_as_either",
+		owner_link=>$a_owner,
+		editor_link=>$a_editor ) );
+
+	if( defined $self->{staff} )
+	{
+		$div->appendChild( $self->{session}->make_text( " " ) );
+		if( $self->{staff} == 0 )
 		{
-			#$self->{processor}->before_messages( $self->{session}->html_phrase( 
-			#	"Plugin/Screen/EPrint:locked_to_you" ) );
+			$div->appendChild( $self->{session}->html_phrase(
+				"cgi/users/edit_eprint:as_depositor" ));
 		}
 		else
 		{
-			$self->{processor}->add_message( "warning", $self->{session}->html_phrase( 
-				"Plugin/Screen/EPrint:locked_to_other", 
-				name => $eprint->render_value( "edit_lock_user" )) );
+			$div->appendChild( $self->{session}->html_phrase(
+				"cgi/users/edit_eprint:as_editor" ));
 		}
+		
 	}
 
-	return $self->{session}->make_doc_fragment;
+	$self->{processor}->before_messages( $div );
 }
 
 sub register_error

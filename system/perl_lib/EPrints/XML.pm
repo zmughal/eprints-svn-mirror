@@ -15,45 +15,16 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints::XML> - XML Abstraction Module
 
-=head1 SYNOPSIS
-
-	my $xml = $repository->xml;
-
-	$doc = $xml->parse_string( $string );
-	$doc = $xml->parse_file( $filename );
-	$doc = $xml->parse_url( $url );
-
-	$utf8_string = $xml->to_string( $dom_node, %opts );
-
-	$dom_node = $xml->clone( $dom_node ); # deep
-	$dom_node = $xml->clone_node( $dom_node ); # shallow
-
-	# clone and return child nodes
-	$dom_node = $xml->contents_of( $dom_node );
-	# Return text child nodes as a string
-	$utf8_string = $xml->text_contents_of( $dom_node );
-
-	$dom_node = $xml->create_element( $name, %attr );
-	$dom_node = $xml->create_text_node( $value );
-	$dom_node = $xml->create_comment( $value );
-	$dom_node = $xml->create_document_fragment;
-
-	$xml->dispose( $dom_node );
-
-head1 DESCRIPTION
+=head1 DESCRIPTION
 
 EPrints can use either XML::DOM, XML::LibXML or XML::GDOME modules to generate
 and process XML. Some of the functionality of these modules differs so this
 module abstracts such functionality so that all the module specific code is in
 one place. 
-
-=head1 METHODS
 
 =over 4
 
@@ -63,19 +34,18 @@ package EPrints::XML;
 
 #use EPrints::SystemSettings;
 
+use Unicode::String qw(utf8 latin1);
 use Carp;
-
-$EPrints::XML::CLASS = undef;
 
 @EPrints::XML::COMPRESS_TAGS = qw/br hr img link input meta/;
 
-if( $EPrints::SystemSettings::conf->{enable_libxml} )
-{
-	require EPrints::XML::LibXML;
-}
-elsif( $EPrints::SystemSettings::conf->{enable_gdome} )
+if( $EPrints::SystemSettings::conf->{enable_gdome} )
 {
 	require EPrints::XML::GDOME;
+}
+elsif( $EPrints::SystemSettings::conf->{enable_libxml} )
+{
+	require EPrints::XML::LibXML;
 }
 else
 {
@@ -83,437 +53,30 @@ else
 }
 
 use strict;
+use bytes;
 
-# $xml = new EPrints::XML( $repository )
-#
-# Contructor, should be called by Repository only.
-
-sub new($$)
-{
-	my( $class, $repository, %opts ) = @_;
-
-	$class = $EPrints::XML::CLASS;
-
-	my $self = bless { repository => $repository, %opts }, $class;
-
-	if( !defined $self->{doc} )
-	{
-		$self->{doc} = make_document();
-	}
-
-	return $self;
-}
-
-=back
-
-=head2 Parsing
-
-=over 4
-
-=cut
-
-
-=item $doc = $xml->parse_string( $string, %opts )
-
-Returns an XML document parsed from $string.
-
-=cut
-
-sub parse_string
-{
-	my( $self, $string ) = @_;
-	return parse_xml_string( $string );
-}
-
-=item $doc = $xml->parse_file( $filename, %opts )
-
-Returns an XML document parsed from the file called $filename.
-
-	base_path - base path to load DTD files from
-	no_expand - don't expand entities
-
-=cut
-
-sub parse_file
-{
-	my( $self, $filename, %opts ) = @_;
-	return parse_xml( $filename, $opts{base_path}, $opts{no_expand} );
-}
-
-=item $doc = $xml->parse_url( $url, %opts )
-
-Returns an XML document parsed from the content located at $url.
-
-=cut
-
-sub parse_url
-{
-	return _parse_url( pop(@_) );
-}
-
-=back
-
-=head2 Node Creation
-
-=over 4
-
-=cut
-
-
-=item $node = $xml->create_element( $name [, @attrs ] )
-
-Returns a new XML element named $name with optional attribute pairs @attrs.
-
-=cut
-
-sub create_element
-{
-	my( $self, $name, @attrs ) = @_;
-
-	my $node = $self->{doc}->createElement( $name );
-	while(my( $key, $value ) = splice(@attrs,0,2))
-	{
-		next if !defined $value;
-		$node->setAttribute( $key => $value );
-	}
-
-	return $node;
-}
-
-=item $node = $xml->create_cdata_section( $value )
-
-Returns a CDATA section containing $value.
-
-=cut
-
-sub create_cdata_section
-{
-	my( $self, $value ) = @_;
-	return $self->{doc}->createCDATASection( $value );
-}
-
-=item $node = $xml->create_text_node( $value )
-
-Returns a new XML text node containing $value.
-
-=cut
-
-sub create_text_node
-{
-	my( $self, $value ) = @_;
-	return $self->{doc}->createTextNode( $value );
-}
-
-=item $node = $xml->create_comment( $value )
-
-Returns a new XML comment containing $value.
-
-=cut
-
-sub create_comment
-{
-	my( $self, $value ) = @_;
-	return $self->{doc}->createComment( $value );
-}
-
-=item $node = $xml->create_document_fragment
-
-Returns a new XML document fragment.
-
-=cut
-
-sub create_document_fragment
-{
-	my( $self ) = @_;
-	return $self->{doc}->createDocumentFragment;
-}
-
-=back
-
-=head2 Other
-
-=over 4
-
-=cut
-
-
-=item $bool = $xml->is( $node, $type [, $type ... ] )
-
-Returns true if $node is one of the given node types: Document, DocumentFragment, Element, Comment, Text.
-
-=cut
-
-sub is
-{
-	my( $self, $node, @types ) = @_;
-
-	for(@types)
-	{
-		return 1 if substr(ref($node),-1*length($_)) eq $_;
-	}
-
-	return 0;
-}
-
-=item $node = $xml->clone( $node )
-
-Returns a deep clone of $node. The new node(s) will be owned by this object.
-
-=cut
-
-sub clone
-{
-	my( $self, $node ) = @_;
-
-	return $self->{doc}->importNode( $node, 1 );
-}
-
-=item $node = $xml->clone_node( $node )
-
-Returns a clone of $node only (no children). The new node will be owned by this object.
-
-=item $node = EPrints::XML::clone_node( $node [, $deep ] )
-
-DEPRECATED.
-
-=cut
-
-sub clone_node
-{
-	my( $self, $node ) = @_;
-
-	# backwards compatibility
-	if( !$self->isa( "EPrints::XML" ) )
-	{
-		my $deep = $node;
-		$node = $self;
-		return $node->cloneNode( $deep );
-	}
-
-	my $clone = $node->cloneNode( 0 );
-	$clone->setOwnerDocument( $self->{doc} );
-
-	return $clone;
-# Bug in XML::LibXML where it ignores $deep, can't easily override this
-#	return $self->{doc}->importNode( $node, 0 );
-}
-
-=item $node = $xml->contents_of( $node )
-
-Returns a document fragment containing a copy of all the children of $node.
-
-=cut
-
-sub contents_of
-{
-	my $node = pop @_;
-
-	my $f = $node->ownerDocument->createDocumentFragment;
-	foreach my $c ( $node->childNodes )
-	{
-		$f->appendChild( $c->cloneNode( 1 ) );
-	}
-
-	return $f;
-}
-
-=item $string = $xml->text_contents_of( $node )
-
-Returns the concantenated value of all text nodes in $node (or the value of $node if $node is a text node).
-
-=cut
-
-sub text_contents_of
-{
-	my( $self, $node ) = @_;
-
-	my $str = "";
-	if( $self->is( $node, "Text" ) )
-	{
-		$str = $node->toString;
-		utf8::decode($str) unless utf8::is_utf8($str);
-	}
-	elsif( $node->hasChildNodes )
-	{
-		for($node->childNodes)
-		{
-			$str .= text_contents_of( $_ );
-		}
-	}
-
-	return $str;
-}
-
-=item $utf8_string = $xml->to_string( $node, %opts )
-
-Serialises and returns the $node as a UTF-8 string.
-
-To generate an XHTML string see L<EPrints::XHTML>.
-
-Options:
-	indent - if true will indent the XML tree
-
-=cut
-
-sub to_string
-{
-	if( !$_[0]->isa( "EPrints::XML" ) )
-	{
-		return &_to_string;
-	}
-
-	my( $self, $node, %opts ) = @_;
-
-	my $string = $node->toString( defined $opts{indent} ? $opts{indent} : 0 );
-	utf8::decode($string) unless utf8::is_utf8($string);
-
-	return $string;
-}
 
 ######################################################################
 =pod
 
-=item $string = EPrints::XML::to_string( $node, [$enc], [$noxmlns] )
+=item $doc = EPrints::XML::parse_xml_string( $string );
 
-Return the given node (and its children) as a UTF8 encoded string.
+Return a DOM document describing the XML string %string.
 
-$enc is only used when $node is a document.
+If we are using GDOME then it will create an XML::GDOME document
+instead.
 
-If $stripxmlns is true then all xmlns attributes and namespace prefixes are
-removed. Handy for making legal XHTML.
-
-Papers over some cracks, specifically that XML::GDOME does not 
-support toString on a DocumentFragment, and that XML::GDOME does
-not insert a space before the / in tags with no children, which
-confuses some browsers. Eg. <br/> vs <br />
+In the event of an error in the XML file, report to STDERR and
+return undef.
 
 =cut
 ######################################################################
 
-sub _to_string
-{
-	my( $node, $enc, $noxmlns ) = @_;
-
-	if( !defined $node )
-	{
-		EPrints::abort( "no node passed to to_string" );
-	}
-
-	$enc = 'utf-8' unless defined $enc;
+# in DOM specific module
 	
-	my @n = ();
-	if( EPrints::XML::is_dom( $node, "Element" ) )
-	{
-		my $tagname = $node->nodeName;
 
-		if( $noxmlns )
-		{
-			$tagname =~ s/^.+://;
-		}
-
-		# lowercasing all tags screws up OAI.
-		#$tagname = "\L$tagname";
-
-		push @n, '<', $tagname;
-		my $nnm = $node->attributes;
-		my $done = {};
-		foreach my $i ( 0..$nnm->length-1 )
-		{
-			my $attr = $nnm->item($i);
-			my $name = $attr->nodeName;
-			next if( $done->{$attr->nodeName} );
-			$done->{$attr->nodeName} = 1;
-			# cjg Should probably escape these values.
-			my $value = $attr->nodeValue;
-			# strip namespaces, unless it's the XHTML namespace on <html>
-			if( $noxmlns && $name =~ m/^xmlns/ )
-			{
-				next unless $tagname eq "html" && $value =~ m#http://www\.w3\.org/1999/xhtml#;
-			}
-			utf8::decode($value) unless utf8::is_utf8($value);
-			$value =~ s/&/&amp;/g;
-			$value =~ s/</&lt;/g;
-			$value =~ s/>/&gt;/g;
-			$value =~ s/"/&quot;/g;
-			push @n, " ", $name."=\"".$value."\"";
-		}
-
-		#cjg This is bad. It makes nodes like <div /> if 
-		# they are empty. Should make <div></div> like XML::DOM
-		my $compress = 0;
-		foreach my $ctag ( @EPrints::XML::COMPRESS_TAGS )
-		{
-			$compress = 1 if( $ctag eq $tagname );
-		}
-		if( $node->hasChildNodes )
-		{
-			$compress = 0;
-		}
-
-		if( $compress )
-		{
-			push @n," />";
-		}
-		else
-		{
-			push @n,">";
-			foreach my $kid ( $node->getChildNodes )
-			{
-				push @n, _to_string( $kid, $enc, $noxmlns );
-			}
-			push @n,"</",$tagname,">";
-		}
-	}
-	elsif( EPrints::XML::is_dom( $node, "DocumentFragment" ) )
-	{
-		foreach my $kid ( $node->getChildNodes )
-		{
-			push @n, _to_string( $kid, $enc, $noxmlns );
-		}
-	}
-	elsif( EPrints::XML::is_dom( $node, "Document" ) )
-	{
-   		#my $docType  = $node->getDoctype();
-	 	#my $elem     = $node->documentElement();
-		#push @n, $docType->toString, "\n";, to_string( $elem , $enc, $noxmlns);
-		push @n, document_to_string( $node, $enc );
-	}
-	elsif( EPrints::XML::is_dom( 
-			$node, 
-			"Text", 
-			"CDATASection", 
-			"ProcessingInstruction",
-			"EntityReference" ) )
-	{
-		push @n, $node->toString; 
-		utf8::decode($n[$#n]) unless utf8::is_utf8($n[$#n]);
-	}
-	elsif( EPrints::XML::is_dom( $node, "Comment" ) )
-	{
-		push @n, "<!--",$node->getData, "-->"
-	}
-	else
-	{
-		print STDERR "EPrints::XML: Not sure how to turn node type ".$node->getNodeType."\ninto a string.\n";
-	}
-	return join '', @n;
-}
-
-=item $xml->dispose( $node )
-
-Dispose and free the memory used by $node.
-
-=cut
-
-sub dispose
-{
-	my $node = pop @_;
-	if( !defined $node )
-	{
-		EPrints::abort( "attempt to dispose an undefined dom node" );
-	}
-	_dispose( $node );
-}
+######################################################################
+=pod
 
 =item $doc = EPrints::XML::parse_xml( $file, $basepath, $no_expand )
 
@@ -576,8 +139,33 @@ sub is_dom
 }
 
 
+######################################################################
+=pod
+
+=item EPrints::XML::dispose( $node )
+
+Dispose of this node if needed. Only XML::DOM nodes need to be
+disposed as they have cyclic references. XML::GDOME nodes are C structs.
+
+=cut
+######################################################################
+
 # in required dom module
 
+
+######################################################################
+=pod
+
+=item $newnode = EPrints::XML::clone_node( $node, $deep )
+
+Clone the given DOM node and return the new node. Always does a deep
+copy.
+
+This function does different things for XML::DOM & XML::GDOME
+but the result should be the same.
+
+=cut
+######################################################################
 
 # in required dom module
 
@@ -599,6 +187,129 @@ to $node, recursively.
 ######################################################################
 
 # in required dom module
+
+######################################################################
+=pod
+
+=item $string = EPrints::XML::to_string( $node, [$enc], [$noxmlns] )
+
+Return the given node (and its children) as a UTF8 encoded string.
+
+$enc is only used when $node is a document.
+
+If $stripxmlns is true then all xmlns attributes and namespace prefixes are
+removed. Handy for making legal XHTML.
+
+Papers over some cracks, specifically that XML::GDOME does not 
+support toString on a DocumentFragment, and that XML::GDOME does
+not insert a space before the / in tags with no children, which
+confuses some browsers. Eg. <br/> vs <br />
+
+=cut
+######################################################################
+
+sub to_string
+{
+	my( $node, $enc, $noxmlns ) = @_;
+
+	if( !defined $node )
+	{
+		EPrints::abort( "no node passed to to_string" );
+	}
+
+	$enc = 'utf-8' unless defined $enc;
+	
+	my @n = ();
+	if( EPrints::XML::is_dom( $node, "Element" ) )
+	{
+		my $tagname = $node->nodeName;
+
+		if( $noxmlns )
+		{
+			$tagname =~ s/^.+://;
+		}
+
+		# lowercasing all tags screws up OAI.
+		#$tagname = "\L$tagname";
+
+		push @n, '<', $tagname;
+		my $nnm = $node->attributes;
+		my $done = {};
+		foreach my $i ( 0..$nnm->length-1 )
+		{
+			my $attr = $nnm->item($i);
+			my $name = $attr->nodeName;
+			next if( $noxmlns && $name =~ m/^xmlns/ );
+			next if( $done->{$attr->nodeName} );
+			$done->{$attr->nodeName} = 1;
+			# cjg Should probably escape these values.
+			my $value = $attr->nodeValue;
+			$value =~ s/&/&amp;/g;
+			$value =~ s/</&lt;/g;
+			$value =~ s/>/&gt;/g;
+			$value =~ s/"/&quot;/g;
+			push @n, " ", $name."=\"".$value."\"";
+		}
+
+		#cjg This is bad. It makes nodes like <div /> if 
+		# they are empty. Should make <div></div> like XML::DOM
+		my $compress = 0;
+		foreach my $ctag ( @EPrints::XML::COMPRESS_TAGS )
+		{
+			$compress = 1 if( $ctag eq $tagname );
+		}
+		if( $node->hasChildNodes )
+		{
+			$compress = 0;
+		}
+
+		if( $compress )
+		{
+			push @n," />";
+		}
+		else
+		{
+			push @n,">";
+			foreach my $kid ( $node->getChildNodes )
+			{
+				push @n, to_string( $kid, $enc, $noxmlns );
+			}
+			push @n,"</",$tagname,">";
+		}
+	}
+	elsif( EPrints::XML::is_dom( $node, "DocumentFragment" ) )
+	{
+		foreach my $kid ( $node->getChildNodes )
+		{
+			push @n, to_string( $kid, $enc, $noxmlns );
+		}
+	}
+	elsif( EPrints::XML::is_dom( $node, "Document" ) )
+	{
+   		#my $docType  = $node->getDoctype();
+	 	#my $elem     = $node->documentElement();
+		#push @n, $docType->toString, "\n";, to_string( $elem , $enc, $noxmlns);
+		push @n, document_to_string( $node, $enc );
+	}
+	elsif( EPrints::XML::is_dom( 
+			$node, 
+			"Text", 
+			"CDATASection", 
+			"ProcessingInstruction",
+			"EntityReference" ) )
+	{
+		push @n, utf8($node->toString); 
+	}
+	elsif( EPrints::XML::is_dom( $node, "Comment" ) )
+	{
+		push @n, "<!--",$node->getData, "-->"
+	}
+	else
+	{
+		print STDERR "EPrints::XML: Not sure how to turn node type ".$node->getNodeType."\ninto a string.\n";
+	}
+	return join '', @n;
+}
 
 
 ######################################################################
@@ -649,11 +360,7 @@ Write the given XML node $node to file $filename with an XHTML doctype.
 
 sub write_xhtml_file
 {
-	my( $node, $filename, %options ) = @_;
-
-	EPrints::Utils::process_parameters( \%options, {
-		   add_doctype => 1,
-	});
+	my( $node, $filename ) = @_;
 
 	unless( open( XMLFILE, ">$filename" ) )
 	{
@@ -662,16 +369,10 @@ Can't open to write to XHTML file: $filename
 END
 		return;
 	}
-
-	binmode( XMLFILE, ":utf8" );
-
-	if( $options{add_doctype} )
-	{
-		print XMLFILE <<END;
+	print XMLFILE <<END;
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 END
-	}
 
 	print XMLFILE EPrints::XML::to_string( $node, "utf-8", 1 );
 
@@ -809,12 +510,6 @@ sub namespace
 	return undef;
 }
 
-=item $v = EPrints::XML::version()
-
-Returns a string description of the current XML library and version.
-
-=cut
-
 ######################################################################
 # Debug code, don't use!
 ######################################################################
@@ -841,11 +536,30 @@ sub debug_xml
 	print STDERR "<\n";
 }
 
+
+
+
 sub is_empty
 {
 	my( $node ) = @_;
 	return !$node->hasChildNodes();
 }
+
+sub contents_of
+{
+	my( $node ) = @_;
+
+	my $doc = $node->ownerDocument;
+	my $f = $doc->createDocumentFragment;
+	foreach my $c ( $node->getChildNodes )
+	{
+		$node->removeChild( $c );
+		$f->appendChild( $c );
+	}
+
+	return $f;
+}
+
 
 sub trim_whitespace
 {
@@ -894,13 +608,6 @@ sub trim_whitespace
 		$node->appendChild( $doc->createTextNode( $text ));
 	}
 
-}
-
-# DEPRECATED
-sub make_document_fragment
-{
-	my( $session ) = @_;
-	return $session->xml->create_document_fragment;
 }
 
 1;

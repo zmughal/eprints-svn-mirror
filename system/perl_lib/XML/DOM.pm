@@ -4366,6 +4366,8 @@ sub Char
 {
     my $str = $_[1];
 
+    utf8::encode($str) if utf8::is_utf8($str);
+
     if ($_DP_in_CDATA && $_DP_keep_CDATA)
     {
 	undef $_DP_last_text;

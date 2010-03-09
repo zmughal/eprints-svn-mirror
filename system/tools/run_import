@@ -79,11 +79,6 @@ If this is an integer then it is assumed to be the userid of the user, otherwise
 
 You may wish to create one or more "bulk import" users and make imported eprint records belong to them.
 
-=item <--delete_missing>
-
-Delete any eprints that are already in this import but weren't (re)imported
-this time.
-
 =back   
 
 =cut
@@ -102,7 +97,6 @@ my $man = 0;
 my $list = 0;
 my $baseurl = 0;
 my $user = undef;
-my $delete_missing = 0;
 
 GetOptions( 
 	'help|?' => \$help,
@@ -114,7 +108,6 @@ GetOptions(
 	'list' => \$list,
 	'baseurl=s' => \$baseurl,
 	'user=s' => \$user,
-	'delete_missing' => \$delete_missing,
 ) || pod2usage( 2 );
 EPrints::Utils::cmd_version( "run_import" ) if $version;
 pod2usage( 1 ) if $help;
@@ -180,13 +173,6 @@ if( defined $user )
 	}
 }
 
-my $old_list;
-
-if( $delete_missing )
-{
-	$old_list = $import->get_list();
-}
-
 $list = $import->run( $processor );
 
 if( !defined($list) )
@@ -202,21 +188,11 @@ $list->map(sub {
 	{
 		my $uri = $baseurl . $eprint->get_value( "source" );
 		my $relations = $eprint->get_value( "relation" ) || [];
-		my $has_relation = 0;
-		for(@$relations)
-		{
-			$has_relation = 1 if
-				$_->{type} eq "http://purl.org/dc/terms/isVersionOf" &&
-				$_->{url} eq $uri;
-		}
-		if( !$has_relation )
-		{
-			push @$relations, {
-				type => "http://purl.org/dc/terms/isVersionOf",
-				uri => $uri,
-			};
-			$eprint->set_value( "relation", $relations );
-		}
+		push @$relations, {
+			type => "http://purl.org/dc/terms/isVersionOf",
+			uri => $uri,
+		};
+		$eprint->set_value( "relation", $relations );
 	}
 
 	if( defined($userobj) )
@@ -224,28 +200,12 @@ $list->map(sub {
 		$eprint->set_value( "userid", $userobj->get_id );
 	}
 
-	# remove empty documents
-	foreach my $doc ($eprint->get_all_documents)
-	{
-		my %files = $doc->files;
-		next if scalar keys %files;
-		$doc->remove();
-	}
-
 	$eprint->commit();
 
 	print $eprint->get_id() . "\n";
 });
 
-if( $delete_missing )
-{
-	my $deleted = $old_list->remainder( $list );
-	$deleted->map( sub { $_[2]->move_to_deletion() } );
-	$deleted->dispose;
-	$old_list->dispose;
-}
-
-$list->dispose;
+undef $list;
 
 $session->terminate();
 exit;

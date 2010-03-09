@@ -15,41 +15,15 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints::Database::Oracle> - custom database methods for Oracle DB
 
-=head1 SYNOPSIS
-
-These settings are the default settings for the free Oracle developer version:
-
-	# Oracle driver settings for database.pl
-	$c->{dbdriver} = "Oracle";
-	$c->{dbhost} = "localhost";
-	$c->{dbsid} = "XE;
-	$c->{dbuser} = "HR";
-	$c->{dbpass} = "HR";
-
 =head1 DESCRIPTION
 
-Oracle database wrapper for Oracle DB version 9+.
-
-=head2 Setting up Oracle
-
-Enable the HR user in Oracle XE.
-
-Set the ORACLE_HOME and ORACLE_SID environment variables. To add these globally edit /etc/profile.d/oracle.sh (for XE edition):
-
-	export ORACLE_HOME="/usr/lib/oracle/xe/app/oracle/product/10.2.0/server"
-	export ORACLE_SID="XE"
-
-(Will need to relog to take effect)
+Oracle database wrapper.
 
 =head2 Oracle-specific Annoyances
-
-Use the GQLPlus wrapper from http://gqlplus.sourceforge.net/ instead of sqlplus.
 
 Oracle will uppercase any identifiers that aren't quoted and is case sensitive, hence mixing quoted and unquoted identifiers will lead to problems.
 
@@ -58,22 +32,6 @@ Oracle does not support LIMIT().
 Oracle does not support AUTO_INCREMENT (MySQL) nor SERIAL (Postgres).
 
 Oracle won't ORDER BY LOBS.
-
-Oracle requires special means to insert values into CLOB/BLOB.
-
-Oracle doesn't support "AS" when aliasing.
-
-When specifying char column lengths use (n char) to define character semantics. Otherwise oracle uses the "nls_length_semantics" setting to determine whether you meant bytes or chars.
-
-=head2 TODO
-
-=over 4
-
-=item epadmin create
-
-=item $name = $db->index_name( $table, @columns )
-
-=back
 
 =head1 METHODS
 
@@ -99,15 +57,11 @@ When specifying char column lengths use (n char) to define character semantics. 
 
 package EPrints::Database::Oracle;
 
-$ENV{NLS_LANG} = ".AL32UTF8";
-$ENV{NLS_NCHAR} = "AL32UTF8";
-
 use EPrints;
+use EPrints::Profiler ;
 
 use EPrints::Database qw( :sql_types );
 @ISA = qw( EPrints::Database );
-
-our $I18L = {};
 
 # DBD::Oracle seems to not be very good on type_info
 our %ORACLE_TYPES = (
@@ -139,10 +93,6 @@ our %ORACLE_TYPES = (
 		CREATE_PARAMS => undef,
 		TYPE_NAME => "NUMBER(*,0)",
 	},
-	SQL_BIGINT() => {
-		CREATE_PARAMS => undef,
-		TYPE_NAME => "NUMBER(19,0)",
-	},
 	# NUMBER becomes FLOAT if not p,s is given
 	SQL_REAL() => {
 		CREATE_PARAMS => undef,
@@ -170,7 +120,7 @@ sub connect
 
 	return unless $self->SUPER::connect();
 
-	$self->{dbh}->{LongReadLen} = 128*1024;
+	$self->{dbh}->{LongReadLen} = 512*1024;
 }
 
 sub prepare_select
@@ -209,14 +159,11 @@ sub create_archive_tables
 {
 	my( $self ) = @_;
 
+	# dual is a 'dummy' table to allow SELECT <function> FROM dual
+	if( !$self->has_table( "dual" ) )
 	{
-		local $self->{dbh}->{RaiseError};
-		local $self->{dbh}->{PrintError};
-		my( $rc ) = $self->{dbh}->selectrow_array( "SELECT 1 FROM dual" );
-		if( $rc != 1 )
-		{
-			EPrints::abort( "It appears the magic 'dual' table isn't available in the database. Contact your Oracle admin." );
-		}
+		$self->_create_table( "dual", [], ["DUMMY VARCHAR2(1)"] );
+		$self->do("INSERT INTO \"dual\" VALUES ('X')");
 	}
 
 	return $self->SUPER::create_archive_tables();
@@ -269,26 +216,9 @@ Time data: SQL_DATE, SQL_TIME.
 
 sub get_column_type
 {
-	my( $self, $name, $data_type, $not_null, $length, $scale, %opts ) = @_;
+	my( $self, $name, $data_type, $not_null, $length, $scale ) = @_;
 
 	my( $db_type, $params ) = (undef, "");
-
-	# Oracle can't order a LONG column, so we'll switch to the best we can
-	# do instead, which is a 4000 byte VARCHAR
-	if( $opts{sorted} )
-	{
-		if( $data_type eq SQL_LONGVARCHAR() )
-		{
-			$data_type = SQL_VARCHAR();
-		}
-		elsif( $data_type eq SQL_LONGVARBINARY() )
-		{
-			$data_type = SQL_VARBINARY();
-		}
-		# Longest VARCHAR supported by Oracle is 4096 bytes (4000 in practise?)
-		# We then have to divide that by 4 to get the maximum UTF-8 length
-		$length = 1000 if !defined($length) || $length > 1000;
-	}
 
 	$db_type = $ORACLE_TYPES{$data_type}->{TYPE_NAME};
 	$params = $ORACLE_TYPES{$data_type}->{CREATE_PARAMS};
@@ -300,14 +230,7 @@ sub get_column_type
 	{
 		EPrints::abort( "get_sql_type expected LENGTH argument for $data_type [$type]" )
 			unless defined $length;
-		if( $data_type eq SQL_VARCHAR() )
-		{
-			if( $length*4 > 4000 )
-			{
-				EPrints->abort( "Oracle does not support SQL_VARCHAR($length): maximum length is 1000 characters (4000 bytes)" );
-			}
-		}
-		$type .= "($length char)";
+		$type .= "($length)";
 	}
 	elsif( $params eq "precision,scale" )
 	{
@@ -368,11 +291,9 @@ sub has_sequence
 {
 	my( $self, $name ) = @_;
 
-	$name = substr($self->quote_identifier( $name ),1,-1);
-
 	my $sql = "SELECT 1 FROM ALL_SEQUENCES WHERE SEQUENCE_NAME=?";
 	my $sth = $self->prepare($sql);
-	$sth->execute( $name );
+	$sth->execute( uc($name) );
 
 	return $sth->fetch ? 1 : 0;
 }
@@ -392,10 +313,7 @@ sub has_column
 {
 	my( $self, $table, $column ) = @_;
 
-	$table = substr($self->quote_identifier( $table ),1,-1);
-	$column = substr($self->quote_identifier( $column ),1,-1);
-
-	my $sql = "SELECT 1 FROM USER_TAB_COLUMNS WHERE TABLE_NAME=".$self->quote_value( $table )." AND COLUMN_NAME=".$self->quote_value( $column );
+	my $sql = "SELECT 1 FROM USER_TAB_COLUMNS WHERE TABLE_NAME=".$self->quote_value( uc($table) )." AND COLUMN_NAME=".$self->quote_value( uc($column) );
 	my $rows = $self->{dbh}->selectall_arrayref( $sql );
 
 	return scalar @$rows;
@@ -405,12 +323,66 @@ sub has_table
 {
 	my( $self, $table ) = @_;
 
-	$table = substr($self->quote_identifier( $table ),1,-1);
-
-	my $sql = "SELECT 1 FROM USER_TABLES WHERE TABLE_NAME=".$self->quote_value( $table );
+	my $sql = "SELECT 1 FROM USER_TABLES WHERE TABLE_NAME=".$self->quote_value( uc($table) );
 	my $rows = $self->{dbh}->selectall_arrayref( $sql );
 
 	return scalar @$rows;
+}
+
+sub create_dataset_ordervalues_tables
+{
+	my( $self, $dataset ) = @_;
+	
+	my $rv = 1;
+
+	my $keyfield = $dataset->get_key_field()->clone;
+	# Create sort values table. These will be used when ordering search
+	# results.
+	my @fields = $dataset->get_fields( 1 );
+	# remove the key field
+	splice( @fields, 0, 1 ); 
+	my @orderfields = ( $keyfield );
+	foreach my $field ( @fields )
+	{
+		my $fname = $field->get_sql_name();
+		push @orderfields, EPrints::MetaField->new( 
+					repository=> $self->{session}->get_repository,
+					name => $fname,
+					type => "text",
+					maxlength => 4000 );
+	}
+	foreach my $langid ( @{$self->{session}->get_repository->get_conf( "languages" )} )
+	{
+		my $order_table = $dataset->get_ordervalues_table_name( $langid );
+
+		if( !$self->has_table( $order_table ) )
+		{
+			$rv &&= $self->create_table( 
+				$order_table,
+				$dataset, 
+				1, 
+				@orderfields );
+		}
+	}
+
+	return $rv;
+}
+
+sub _add_field_ordervalues_lang
+{
+	my( $self, $dataset, $field, $langid ) = @_;
+
+	my $order_table = $dataset->get_ordervalues_table_name( $langid );
+
+	my $sql_field = EPrints::MetaField->new(
+		repository => $self->{ session }->get_repository,
+		name => $field->get_sql_name(),
+		type => "text",
+		maxlength => 4000 );
+
+	my $col = $sql_field->get_sql_type( $self->{session}, 0 ); # only first field can not be null
+
+	return $self->do( "ALTER TABLE ".$self->quote_identifier($order_table)." ADD $col" );
 }
 
 # Oracle doesn't support getting the "current" value of a sequence
@@ -421,70 +393,24 @@ sub counter_current
 	return undef;
 }
 
-=item $id = $db->quote_identifier( $col [, $col ] )
+sub drop_table
+{
+	my( $self, $name ) = @_;
 
-This method quotes and returns the given database identifier. If more than one name is supplied joins them using the correct database join character (typically '.').
+	local $self->{dbh}->{PrintError} = 0;
+	local $self->{dbh}->{RaiseError} = 0;
 
-Oracle restricts identifiers to:
+	my $sql = "DROP TABLE ".$self->quote_identifier($name);
+	$self->{dbh}->do( $sql );
+	$sql = "PURGE TABLE ".$self->quote_identifier($name);
+	$self->{dbh}->do( $sql );
+}
 
- 	30 chars long
- 	start with a letter [a-z]
- 	{ [a-z0-9], $, _, # }
- 	case insensitive
- 	not a reserved word (unless quoted?)
-
-Identifiers longer than 30 chars will be abbreviated to the first 5 chars of the identifier and 25 characters from an MD5 derived from the identifier. This should make name collisions unlikely.
-
-=cut
-
+# Oracle uppercases all non-quoted identifiers so if we want users to be able
+# to use unquoted queries we'll have to make all our identifiers uppercase
 sub quote_identifier
 {
-	return join(".", map {
-		'"'.uc($_).'"' # foo or FOO == "FOO"
-		} map {
-			length($_) <= 30 ?
-			$_ :
-			substr($_,0,5).substr(Digest::MD5::md5_hex( $_ ),0,25) # hex MD5 is 32 chars long
-		} @_[1..$#_]);
-}
-
-sub prepare_regexp
-{
-	my ($self, $col, $value) = @_;
-
-	return "REGEXP_LIKE ($col, $value)";
-}
-
-sub quote_binary
-{
-	my( $self, $value ) = @_;
-
-	use bytes;
-
-	return join('', map { sprintf("%02x",ord($_)) } split //, $value);
-}
-
-sub quote_ordervalue
-{
-	my( $self, $field, $value ) = @_;
-
-	# maximum length of ordervalues column in Oracle is 1000 chars (4000 bytes)
-	return defined $value ? substr($value,0,1000) : undef;
-}
-
-# unsupported
-sub index_name
-{
-	my( $self, $table, @cols ) = @_;
-
-	return 1;
-}
-
-sub sql_AS
-{
-	my( $self ) = @_;
-
-	return " ";
+	return shift->SUPER::quote_identifier(map(uc,@_));
 }
 
 1; # For use/require success

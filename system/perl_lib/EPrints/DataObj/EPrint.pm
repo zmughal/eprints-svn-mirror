@@ -12,10 +12,6 @@
 #
 ######################################################################
 
-=pod
-
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints::DataObj::EPrint> - Class representing an actual EPrint
@@ -120,16 +116,11 @@ sub get_system_field_info
 	my( $class ) = @_;
 
 	return ( 
-	{ name=>"eprintid", type=>"counter", required=>1, import=>0, can_clone=>0,
-		sql_counter=>"eprintid" },
+	{ name=>"eprintid", type=>"int", required=>1, import=>0, can_clone=>0 },
 
-	{ name=>"rev_number", type=>"int", required=>1, can_clone=>0,
-		sql_index=>0, default_value=>1 },
+	{ name=>"rev_number", type=>"int", required=>1, can_clone=>0 },
 
 	{ name=>"documents", type=>"subobject", datasetid=>'document',
-		multiple=>1 },
-
-	{ name=>"files", type=>"subobject", datasetid=>"file",
 		multiple=>1 },
 
 	{ name=>"eprint_status", type=>"set", required=>1,
@@ -152,7 +143,7 @@ sub get_system_field_info
 	{ name=>"datestamp", type=>"time", required=>0, import=>0,
 		render_res=>"minute", render_style=>"short", can_clone=>0 },
 
-	{ name=>"lastmod", type=>"timestamp", required=>0, import=>0,
+	{ name=>"lastmod", type=>"time", required=>0, import=>0,
 		render_res=>"minute", render_style=>"short", can_clone=>0 },
 
 	{ name=>"status_changed", type=>"time", required=>0, import=>0,
@@ -170,8 +161,10 @@ sub get_system_field_info
 	{ name=>"replacedby", type=>"itemref", required=>0,
 		datasetid=>"eprint", can_clone=>0 },
 
+	# empty string: normal visibility
+	# no_search: does not appear on search/view pages. 
+	# to hide... well, the dark dataset should appear in 3.1 or 3.2
 	{ name=>"metadata_visibility", type=>"set", required=>1,
-		default_value => "show",
 		options=>[ "show", "no_search" ] },
 
 	{ name=>"contact_email", type=>"email", required=>0, can_clone=>0 },
@@ -189,7 +182,8 @@ sub get_system_field_info
 		fields => [
 			{
 				sub_name => "type",
-				type => "text",
+				type => "namedset",
+				set_name => "document_relation",
 			},
 			{
 				sub_name => "uri",
@@ -202,14 +196,13 @@ sub get_system_field_info
 		fields => [
 			{
 				sub_name => "id",
-				type => "id",
+				type => "text",
 				text_index => 0,
 			},
 			{
 				sub_name => "type",
-				type => "id",
+				type => "text",
 				text_index => 0,
-				sql_index => 1,
 			},
 			{
 				sub_name => "description",
@@ -251,91 +244,15 @@ sub get_system_field_info
 
 	{ name=>"item_issues_count", type=>"int",  volatile=>1 },
 
-	{ 'name' => 'sword_depositor', 'type' => 'itemref', datasetid=>"user" },
+        { 'name' => 'sword_depositor', 'type' => 'int' },
 
-	{ 'name' => 'sword_slug', 'type' => 'text' },
-
-	{ 'name' => 'edit_lock', 'type' => 'compound', volatile => 1, export_as_xml=>0,
-		'fields' => [
-			{ 'sub_name' => 'user',  'type' => 'itemref', 'datasetid' => 'user', sql_index=>0 },
-			{ 'sub_name' => 'since', 'type' => 'int', sql_index=>0 },
-			{ 'sub_name' => 'until', 'type' => 'int', sql_index=>0 },
-		],
-		render_value=>"EPrints::DataObj::EPrint::render_edit_lock",
- 	},
+        { 'name' => 'sword_slug', 'type' => 'text' },
 
 	);
 }
 
-=item $eprint->set_item_issues( $new_issues )
 
-This method updates the issues attached to this eprint based on the new issues
-passed.
 
-If an existing issue is set as "discovered" and doesn't exist in $new_issues
-its status will be updated to "autoresolved", otherwise the old issue's status
-and description are updated.
-
-Any issues in $new_issues that don't already exist will be appended.
-
-=cut
-
-sub set_item_issues
-{
-	my( $self, $new_issues ) = @_;
-
-	$new_issues = [] if !defined $new_issues;
-
-	# tidy-up issues (should this be in the calling code?)
-	for(@$new_issues)
-	{
-		# default status to "discovered"
-		$_->{status} = "discovered"
-			if !EPrints::Utils::is_set( $_->{status} );
-		# default item_issue_id to item_issue_type
-		$_->{id} = $_->{type}
-			if !EPrints::Utils::is_set( $_->{id} );
-		# default timestamp to 'now'
-		$_->{timestamp} = EPrints::Time::get_iso_timestamp();
-		# backwards compatibility
-		if( ref( $_->{description} ) )
-		{
-			$_->{description} = $self->{session}->xhtml->to_xhtml( $_->{description} );
-		}
-	}
-
-	my %issues_map = map { $_->{id} => $_ } @$new_issues;
-
-	my $current_issues = $self->value( "item_issues" );
-	$current_issues = [] if !defined $current_issues;
-	# clone, otherwise we can't detect changes
-	$current_issues = EPrints::Utils::clone( $current_issues );
-
-	# update existing issues
-	foreach my $issue (@$current_issues)
-	{
-		my $new_issue = delete $issues_map{$issue->{id}};
-		if( defined $new_issue )
-		{
-			# update description (may have changed)
-			$issue->{description} = $new_issue->{description};
-			$issue->{status} = $new_issue->{status};
-		}
-		elsif( $issue->{status} eq "discovered" )
-		{
-			$issue->{status} = "autoresolved";
-		}
-	}
-
-	# append all other new issues
-	foreach my $new_issue (@$new_issues)
-	{
-		next if !exists $issues_map{$new_issue->{id}};
-		push @$current_issues, $new_issue;
-	}
-
-	$self->SUPER::set_value( "item_issues", $current_issues );
-}
 
 sub render_issues
 {
@@ -383,68 +300,72 @@ sub order_issues_newest_open_timestamp
 	return $v;	
 }
 
-=item $eprint->fileinfo()
-
-The special B<fileinfo> field contains the icon URL and main-file URL for each non-volatile document in the eprint. This is a performance tweak to avoid having to retrieve documents when rendering eprint citations.
-
-Example:
-
-	/style/images/fileicons/application_pdf.png;/20/1/paper.pdf|/20/4.hassmallThumbnailVersion/tdb_portrait.jpg;/20/4/tdb_portrait.jpg
-
-These URLs are relative to the current repository base path ('http_url').
-
-=cut
-
-sub fileinfo
-{
-	my( $self ) = @_;
-
-	my $base_url = $self->{session}->config( 'http_url' );
-
-	local $self->{session}->{preparing_static_page} = 1; # force full URLs
-
-	my @finfo = ();
-	foreach my $doc ( $self->get_all_documents )
-	{
-		my $icon = substr($doc->icon_url,length($base_url));
-		my $url = substr($doc->get_url,length($base_url));
-		push @finfo, "$icon;$url";
-	}
-
-	return join '|', @finfo;
-}
-
 sub render_fileinfo
 {
 	my( $session, $field, $value, $alllangs, $nolink, $eprint ) = @_;
 
-	my $baseurl = $session->config( 'rel_path' );
-	if( $session->{preparing_static_page} )
-	{
-		$baseurl = $session->config( 'http_url' );
-	}
-
 	my $f = $session->make_doc_fragment;
-	my @fileinfo = map { split /;/, $_ } split /\|/, $value;
-	for(my $i = 0; $i < @fileinfo; $i+=2)
+	foreach my $doc ($eprint->get_all_documents)
 	{
-		my( $icon, $url ) = @fileinfo[$i,$i+1];
-		$icon = $baseurl . $icon if $icon !~ /^https?:/;
-		$url = $baseurl . $url if $url !~ /^https?:/;
-		my $a = $session->render_link( $url );
+		my $a = $session->render_link( $doc->get_url );
 		$a->appendChild( $session->make_element( 
 			"img", 
 			class=>"ep_doc_icon",
 			alt=>"file",
-			src=>$icon,
+			src=>$doc->icon_url,
 			border=>0 ));
 		$f->appendChild( $a );
 	}
 
 	return $f;
+};
+
+
+######################################################################
+=pod
+
+=item $eprint = EPrints::DataObj::EPrint->new( $session, $eprint_id )
+
+Return the eprint with the given eprint_id, or undef if it does not exist.
+
+=cut
+######################################################################
+
+sub new
+{
+	my( $class, $session, $eprint_id ) = @_;
+
+	EPrints::abort "session not defined in EPrint->new" unless defined $session;
+	#EPrints::abort "eprint_id not defined in EPrint->new" unless defined $eprint_id;
+
+	my $dataset = $session->get_repository->get_dataset( "eprint" );
+
+	return $session->get_database->get_single( $dataset , $eprint_id );
 }
 
 
+######################################################################
+=pod
+
+=item $eprint = EPrints::DataObj::EPrint->new_from_data( $session, $data, $dataset )
+
+Construct a new EPrints::DataObj::EPrint object based on the $data hash 
+reference of metadata.
+
+=cut
+######################################################################
+
+sub new_from_data
+{
+	my( $class, $session, $known, $dataset ) = @_;
+
+	return $class->SUPER::new_from_data(
+			$session,
+			$known,
+			$dataset );
+}
+
+	
 
 ######################################################################
 # =pod
@@ -468,7 +389,7 @@ sub create
 {
 	my( $session, $dataset, $data ) = @_;
 
-	return EPrints::DataObj::EPrint->create_from_data( 
+	return EPrints::EPrint->create_from_data( 
 		$session, 
 		$data, 
 		$dataset );
@@ -494,35 +415,57 @@ sub create_from_data
 {
 	my( $class, $session, $data, $dataset ) = @_;
 
+	my $documents = delete $data->{documents};
+
 	my $new_eprint = $class->SUPER::create_from_data( $session, $data, $dataset );
 	
 	return undef unless defined $new_eprint;
 
 	$session->get_database->counter_minimum( "eprintid", $new_eprint->get_id );
 	
-	$new_eprint->set_value( "fileinfo", $new_eprint->fileinfo );
+	$new_eprint->set_under_construction( 1 );
+
+	return unless defined $new_eprint;
+
+	if( defined $documents )
+	{
+		my @docs;
+		foreach my $docdata_orig ( @{$documents} )
+		{
+			my %docdata = %{$docdata_orig};
+			$docdata{eprintid} = $new_eprint->get_id;
+			$docdata{eprint} = $new_eprint;
+			my $docds = $session->get_repository->get_dataset( "document" );
+			push @docs, EPrints::DataObj::Document->create_from_data( $session,\%docdata,$docds );
+		}
+		my @finfo = ();
+		foreach my $doc ( @docs )
+		{
+			push @finfo, $doc->icon_url.";".$doc->get_url;
+		}
+		$new_eprint->set_value( "fileinfo", join( "|", @finfo ) );
+	}
+
+	$new_eprint->set_under_construction( 0 );
+
+	$session->get_repository->call( 
+		"set_eprint_automatic_fields", 
+		$new_eprint );
 
 	$session->get_database->update(
-		$new_eprint->{dataset},
-		$new_eprint->{data},
-		$new_eprint->{changed} );
+		$dataset,
+		$new_eprint->{data} );
 
-	$new_eprint->clear_changed;
-
-	$new_eprint->update_triggers();
-
-	# we only need to update the DB and queue changes (if necessary)
-	$new_eprint->SUPER::commit();
+	$new_eprint->queue_changes;
 
 	my $user = $session->current_user;
 	my $userid = undef;
 	$userid = $user->get_id if defined $user;
 
 	my $history_ds = $session->get_repository->get_dataset( "history" );
-	my $event = $history_ds->create_object( 
+	$history_ds->create_object( 
 		$session,
 		{
-			_parent=>$new_eprint,
 			userid=>$userid,
 			datasetid=>"eprint",
 			objectid=>$new_eprint->get_id,
@@ -531,47 +474,38 @@ sub create_from_data
 			details=>undef,
 		}
 	);
-	$event->set_dataobj_xml( $new_eprint );
+	$new_eprint->write_revision;
+
+	# No longer needed - generates on demand.
+	# $new_eprint->generate_static;
 
 	return $new_eprint;
 }
 
-# Update all the stuff that needs updating before an eprint
-# is written to the database.
-
-sub update_triggers
-{
-	my( $self ) = @_;
-
-	$self->SUPER::update_triggers();
-
-	my $action = "clear_triples";
-	if( $self->get_value( "eprint_status" ) eq "archive" )
-	{
-		$action = "update_triples";
-	}
-	$self->{session}->dataset( "event_queue" )->create_dataobj({
-			pluginid => "Event::RDF",
-			action => $action,
-			params => [$self->internal_uri],
-		});
-	
-}
-
-
 ######################################################################
 =pod
 
-=item $dataset = EPrints::DataObj::EPrint->get_dataset_id
+=item $dataset = $eprint->get_gid
 
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
+Returns the OAI identifier for this eprint.
 
 =cut
 ######################################################################
 
-sub get_dataset_id
+sub get_gid
 {
-	return "eprint";
+	my( $self ) = @_;
+
+	my $session = $self->get_session;
+
+	return EPrints::OpenArchives::to_oai_identifier(
+		$session->get_repository->get_conf(
+			"oai",
+			"v2",
+			"archive_id",
+		),
+		$self->get_id,
+	);
 }
 
 ######################################################################
@@ -608,38 +542,155 @@ Return default values for this object based on the starting data.
 
 sub get_defaults
 {
-	my( $class, $session, $data, $dataset ) = @_;
+	my( $class, $session, $data ) = @_;
 
-	$class->SUPER::get_defaults( $session, $data, $dataset );
+	if( !defined $data->{eprintid} )
+	{ 
+		my $new_id = $session->get_database->counter_next( "eprintid" );
+		$data->{eprintid} = $new_id;
+	}
 
-	$data->{dir} = $session->get_store_dir . "/" . eprintid_to_path( $data->{eprintid} );
+	my $dir = _create_directory( $session, $data->{eprintid} );
 
+	$data->{dir} = $dir;
+	$data->{rev_number} = 1;
+	$data->{lastmod} = EPrints::Time::get_iso_timestamp();
 	$data->{status_changed} = $data->{lastmod};
 	if( $data->{eprint_status} eq "archive" )
 	{
 		$data->{datestamp} = $data->{lastmod};
 	}
-	
+	$data->{metadata_visibility} = "show";
+
+	$session->get_repository->call(
+		"set_eprint_defaults",
+		$data,
+		$session );
+
 	return $data;
 }
 
-sub store_path
-{
-	my( $self ) = @_;
 
-	return eprintid_to_path( $self->id );
+######################################################################
+# 
+# $directory =  EPrints::DataObj::EPrint::_create_directory( $session, $eprintid )
+#
+#  Create a directory on the local filesystem for the new document
+#  with the given ID. undef is returned if it couldn't be created
+#  for some reason.
+#
+#  If "df" is available then check for diskspace and mail a warning 
+#  to the admin if the threshold is passed.
+#
+######################################################################
+
+sub _create_directory
+{
+	my( $session, $eprintid ) = @_;
+	
+	# Get available directories
+	my @dirs = sort $session->get_repository->get_store_dirs;
+	my $storedir;
+
+	if( $EPrints::SystemSettings::conf->{disable_df} )
+	{
+		# df not available, use the LAST available directory, 
+		# sorting alphabetically.
+
+		$storedir = pop @dirs;
+	}
+	else
+	{
+		# Check amount of space free on each device. We'll use the 
+		# first one we find (alphabetically) that has enough space on 
+		# it.
+		my $warnsize = $session->get_repository->get_conf(
+						"diskspace_warn_threshold");
+		my $errorsize = $session->get_repository->get_conf(
+						"diskspace_error_threshold");
+
+		my $best_free_space = 0;
+		my $dir;	
+		foreach $dir (reverse sort @dirs)
+		{
+			my $free_space = $session->get_repository->
+						get_store_dir_size( $dir );
+			if( $free_space > $best_free_space )
+			{
+				$best_free_space = $free_space;
+			}
+	
+			unless( defined $storedir )
+			{
+				if( $free_space >= $errorsize )
+				{
+					# Enough space on this drive.
+					$storedir = $dir;
+				}
+			}
+		}
+
+		# Check that we do have a place for the new directory
+		if( !defined $storedir )
+		{
+			# Argh! Running low on disk space overall.
+			$session->get_repository->log(<<END);
+*** URGENT ERROR
+*** Out of disk space.
+*** All available drives have under $errorsize kilobytes remaining.
+*** No new eprints may be added until this is rectified.
+END
+			$session->mail_administrator(
+				"lib/eprint:diskout_sub" ,
+				"lib/eprint:diskout" );
+			return( undef );
+		}
+
+		# Warn the administrator if we're low on space
+		if( $best_free_space < $warnsize )
+		{
+			$session->get_repository->log(<<END);
+Running low on diskspace.
+All available drives have under $warnsize kilobytes remaining.
+END
+			$session->mail_administrator(
+				"lib/eprint:disklow_sub" ,
+				"lib/eprint:disklow" );
+		}
+	}
+
+	# Work out the directory path. It's worked out using the ID of the 
+	# EPrint.
+	my $idpath = eprintid_to_path( $eprintid );
+
+	if( !defined $idpath )
+	{
+		$session->get_repository->log(<<END);
+Failed to turn eprintid: "$eprintid" into a path.
+END
+		return( undef ) ;
+	}
+
+	my $docdir = $storedir."/".$idpath;
+
+	# Full path including doc store root
+	my $full_path = $session->get_repository->get_conf("documents_path").
+				"/".$docdir;
+	
+	if (!EPrints::Platform::mkdir( $full_path ))
+	{
+		$session->get_repository->log(<<END);
+Failed to create directory $full_path: $@
+END
+		return( undef );
+	}
+	else
+	{
+		# Return the path relative to the document store root
+		return( $docdir );
+	}
 }
 
-sub eprintid_to_path
-{
-	my( $id ) = @_;
-
-	my $path = sprintf("%08d", $id);
-	$path =~ s#(..)#/$1#g;
-	substr($path,0,1) = '';
-
-	return $path;
-}
 
 ######################################################################
 =pod
@@ -679,8 +730,6 @@ sub clone
 		return undef;
 	}
 
-	$new_eprint->{under_construction} = 1;
-
 	my $status = $self->get_value( "eprint_status" );
 	unless( $nolink )
 	{
@@ -700,33 +749,19 @@ sub clone
 
 	if( $copy_documents )
 	{
-		my %map;
-		my @clones;
-		foreach my $doc (@{$self->get_value( "documents" )})
+		my @docs = $self->get_all_documents;
+
+		foreach my $doc (@docs)
 		{
 			my $new_doc = $doc->clone( $new_eprint );
-			$ok = 0, last if !defined $new_doc;
-			push @clones, $new_doc;
-			$map{$doc->internal_uri} = $new_doc->internal_uri;
-		}
-		# fixup the relations
-		foreach my $clone (@clones)
-		{
-			last if !$ok;
-			my $relation = EPrints::Utils::clone( $clone->value( "relation" ) );
-			foreach my $r (@$relation)
-			{
-				if( exists $map{$r->{uri}} )
-				{
-					$r->{uri} = $map{$r->{uri}};
-				}
+			unless( $new_doc )
+			{	
+				$ok = 0;
+				next;
 			}
-			$clone->set_value( "relation", $relation );
-			$clone->commit();
+			$new_doc->register_parent( $new_eprint );
 		}
 	}
-
-	$new_eprint->{under_construction} = 0;
 
 	# Now write the new EPrint to the database
 	unless( $ok && $new_eprint->commit )
@@ -775,7 +810,6 @@ sub _transfer
 	$history_ds->create_object( 
 		$self->{session},
 		{
-			_parent=>$self,
 			userid=>$userid,
 			datasetid=>"eprint",
 			objectid=>$self->get_id,
@@ -839,7 +873,6 @@ sub log_mail_owner
 	$history_ds->create_object( 
 		$self->{session},
 		{
-			_parent=>$self,
 			userid=>$userid,
 			datasetid=>"eprint",
 			objectid=>$self->get_id,
@@ -898,7 +931,6 @@ sub remove
 	$history_ds->create_object( 
 		$self->{session},
 		{
-			_parent=>$self,
 			userid=>$userid,
 			datasetid=>"eprint",
 			objectid=>$self->get_id,
@@ -908,19 +940,16 @@ sub remove
 		}
 	);
 
-	foreach my $doc ( @{($self->get_value( "documents" ))} )
+	foreach my $doc ( $self->get_all_documents )
 	{
 		$doc->remove;
 	}
 
-	foreach my $file (@{($self->get_value( "files" ))} )
-	{
-		$file->remove;
-	}
+	my $success = $self->{session}->get_database->remove(
+		$self->{dataset},
+		$self->get_value( "eprintid" ) );
 
-	my $success = $self->SUPER::remove();
-
-	# remove the webpages associated with this record.
+	# remove the webpages assocaited with this record.
 	$self->remove_static;
 
 	return $success;
@@ -946,10 +975,6 @@ sub commit
 {
 	my( $self, $force ) = @_;
 
-	# get_all_documents() is called several times during commit
-	# setting _documents will cause it to be returned instead of searching
-	local $self->{_documents} = [$self->get_all_documents];
-
 	if( $self->{changed}->{succeeds} )
 	{
 		my $old_succ = EPrints::EPrint->new( $self->{session}, $self->{changed}->{succeeds} );
@@ -969,9 +994,17 @@ sub commit
 	}
 	$self->set_value( "item_issues_count", $c );
 
-	$self->update_triggers();
+	$self->{session}->get_repository->call( 
+		"set_eprint_automatic_fields", 
+		$self );
 
-	$self->set_value( "fileinfo", $self->fileinfo );
+	my @docs = $self->get_all_documents();
+	my @finfo = ();
+	foreach my $doc ( @docs )
+	{
+		push @finfo, $doc->icon_url.";".$doc->get_url;
+	}
+	$self->set_value( "fileinfo", join( "|", @finfo ) );
 
 	if( !$self->is_set( "datestamp" ) && $self->get_value( "eprint_status" ) eq "archive" )
 	{
@@ -996,16 +1029,43 @@ sub commit
 		$self->set_value( 
 			"lastmod" , 
 			EPrints::Time::get_iso_timestamp() );
+	}
 
+	$self->tidy;
+	my $success = $self->{session}->get_database->update(
+		$self->{dataset},
+		$self->{data} );
+
+	if( !$success )
+	{
+		my $db_error = $self->{session}->get_database->error;
+		$self->{session}->get_repository->log( 
+			"Error committing EPrint ".
+			$self->get_value( "eprintid" ).": ".$db_error );
+		return $success;
+	}
+
+	unless( $self->under_construction )
+	{
+		if( $self->{non_volatile_change} )
+		{
+			$self->write_revision;
+		}
+		$self->remove_static;
+	}
+
+	$self->queue_changes;
+	
+	if( $self->{non_volatile_change} )
+	{
 		my $user = $self->{session}->current_user;
 		my $userid = undef;
 		$userid = $user->get_id if defined $user;
 	
 		my $history_ds = $self->{session}->get_repository->get_dataset( "history" );
-		my $event = $history_ds->create_object( 
+		$history_ds->create_object( 
 			$self->{session},
 			{
-				_parent=>$self,
 				userid=>$userid,
 				datasetid=>"eprint",
 				objectid=>$self->get_id,
@@ -1014,16 +1074,7 @@ sub commit
 				details=>undef
 			}
 		);
-		$event->set_dataobj_xml( $self );
 	}
-
-	unless( $self->under_construction )
-	{
-		$self->remove_static;
-	}
-
-	# commit changes and clear changed fields
-	my $success = $self->SUPER::commit( $force );
 
 	return( $success );
 }
@@ -1043,17 +1094,26 @@ sub write_revision
 {
 	my( $self ) = @_;
 
-	my $tmpfile = File::Temp->new;
-	my $filename = "eprint.xml";
+	my $dir = $self->local_path."/revisions";
 
-	binmode($tmpfile, ":utf8");
+	if( !-d $dir )
+	{
+		if(!EPrints::Platform::mkdir($dir))
+		{
+			$self->{session}->get_repository->log( "Error creating revision directory for EPrint ".$self->get_value( "eprintid" ).", ($dir): ".$! );
+			return;
+		}
+	}
 
-	print $tmpfile '<?xml version="1.0" encoding="utf-8" ?>'."\n";
-	print $tmpfile $self->export( "XML" );
-
-	seek($tmpfile,0,0);
-
-	$self->add_stored_file( $filename, $tmpfile, -s "$tmpfile" );
+	my $rev_file = $dir."/".$self->get_value("rev_number").".xml";
+	unless( open( REVFILE, ">$rev_file" ) )
+	{
+		$self->{session}->get_repository->log( "Error writing file: $!" );
+		return;
+	}
+	print REVFILE '<?xml version="1.0" encoding="utf-8" ?>'."\n";
+	print REVFILE $self->export( "XML", fh=>*REVFILE );
+	close REVFILE;
 }
 
 
@@ -1092,12 +1152,42 @@ sub validate
 
 	push @problems, $workflow->validate;
 
-	my $super_v = $self->SUPER::validate( $for_archive );
-	push @problems, @{$super_v};
+	# Now give the site specific stuff one last chance to have a gander.
+	push @problems, $self->{session}->get_repository->call( 
+			"validate_eprint", 
+			$self,
+			$self->{session},
+			$for_archive );
 
 	return( \@problems );
 }
 
+######################################################################
+=pod
+
+=item $warnings = $eprint->get_warnings
+
+Return a reference to an array of XHTML DOM objects describing
+warnings about this eprint - that is things that are not quite 
+validation errors, but it'd be nice if they were fixed.
+
+Calls L</eprint_warnings> for the C<$eprint>.
+
+=cut
+######################################################################
+
+sub get_warnings
+{
+	my( $self , $for_archive ) = @_;
+
+	# Now give the site specific stuff one last chance to have a gander.
+	my @warnings = $self->{session}->get_repository->call( 
+			"eprint_warnings", 
+			$self,
+			$self->{session} );
+
+	return \@warnings;
+}
 
 
 ######################################################################
@@ -1171,20 +1261,25 @@ sub get_all_documents
 {
 	my( $self ) = @_;
 
-	my @docs;
+	my $doc_ds = $self->{session}->get_repository->get_dataset( "document" );
 
-	my $relation = EPrints::Utils::make_relation( "isVolatileVersionOf" );
+	my $searchexp = EPrints::Search->new(
+		session=>$self->{session},
+		dataset=>$doc_ds );
 
-	# Filter out any documents that are volatile versions
-	foreach my $doc (@{($self->get_value( "documents" ))})
+	$searchexp->add_field(
+		$doc_ds->get_field( "eprintid" ),
+		$self->get_value( "eprintid" ) );
+
+	my $searchid = $searchexp->perform_search;
+	my @documents = $searchexp->get_records;
+	$searchexp->dispose;
+	foreach my $doc ( @documents )
 	{
-		if( ! $doc->has_related_objects( $relation ) )
-		{
-			push @docs, $doc;
-		}
+		$doc->register_parent( $self );
 	}
 
-	return sort { ($a->get_value( "placement" )||0) <=> ($b->get_value( "placement" )||0) } @docs;
+	return( @documents );
 }
 
 
@@ -1454,7 +1549,8 @@ sub generate_static
 		# only deleted and live records have a web page.
 		next if( $status ne "archive" && $status ne "deletion" );
 
-		my( $page, $title, $links, $template ) = $self->render;
+		my( $page, $title, $links ) = $self->render;
+
 		my @plugins = $self->{session}->plugin_list( 
 					type=>"Export",
 					can_accept=>"dataobj/".$self->{dataset}->confid, 
@@ -1479,8 +1575,8 @@ sub generate_static
 		}
 		$self->{session}->write_static_page( 
 			$full_path . "/index",
-			{title=>$title, page=>$page, head=>$links, template=>$self->{session}->make_text($template) },
-			 );
+			{title=>$title, page=>$page, head=>$links },
+			"default" );
 	}
 	$self->{session}->change_lang( $real_langid );
 	delete $self->{session}->{preparing_static_page};
@@ -1507,7 +1603,7 @@ sub generate_static_all_related
 	# appropriate
 	my @to_update = $self->get_all_related;
 	
-	# Do the actual pdates
+	# Do the actual updates
 	foreach my $related (@to_update)
 	{
 		$related->generate_static;
@@ -1551,7 +1647,7 @@ sub _htmlpath
 
 	return $self->{session}->get_repository->get_conf( "htdocs_path" ).
 		"/".$langid."/archive/".
-		$self->store_path;
+		eprintid_to_path( $self->get_value( "eprintid" ) );
 }
 
 
@@ -1582,7 +1678,7 @@ sub render
 {
 	my( $self, $preview ) = @_;
 
-	my( $dom, $title, $links, $template );
+	my( $dom, $title, $links );
 
 	my $status = $self->get_value( "eprint_status" );
 	if( $status eq "deletion" )
@@ -1606,7 +1702,7 @@ sub render
 	}
 	else
 	{
-		( $dom, $title, $links, $template ) = 
+		( $dom, $title, $links ) = 
 			$self->{session}->get_repository->call( 
 				"eprint_render", 
 				$self, $self->{session}, $preview );
@@ -1638,18 +1734,14 @@ sub render
 		$links = $self->{session}->make_doc_fragment;
 	}
 	
-	return( $dom, $title, $links, $template );
+	return( $dom, $title, $links );
 }
 
 sub render_box_list
 {
 	my( $session, $eprint, $list ) = @_;
 
-	my $processor = EPrints::ScreenProcessor->new(
-		session => $session,
-		eprint => $eprint,
-		eprintid => $eprint->get_id,
-	);
+	my $processor = bless { session=>$session, eprint=>$eprint, eprintid=>$eprint->get_id }, "EPrints::ScreenProcessor";
 	my $some_plugin = $session->plugin( "Screen", processor=>$processor );
 
 	my $chunk = $session->make_doc_fragment;
@@ -1705,7 +1797,6 @@ sub render_history
 	$results->map( sub {
 		my( $session, $dataset, $item ) = @_;
 	
-		$item->set_parent( $self );
 		$page->appendChild( $item->render );
 	} );
 
@@ -1763,22 +1854,42 @@ sub get_user
 {
 	my( $self ) = @_;
 
-	return undef unless $self->is_set( "userid" );
-
-	if( defined($self->{user}) )
-	{
-		# check we still have the same owner
-		if( $self->{user}->get_id eq $self->get_value( "userid" ) )
-		{
-			return $self->{user};
-		}
-	}
-
-	$self->{user} = EPrints::User->new( 
+	my $user = EPrints::User->new( 
 		$self->{session}, 
 		$self->get_value( "userid" ) );
 
-	return $self->{user};
+	return $user;
+}
+
+
+######################################################################
+=pod
+
+=item $path = EPrints::DataObj::EPrint::eprintid_to_path( $eprintid )
+
+Return this eprints id converted into directories. Thousands of 
+files in one directory cause problems. For example, the eprint with the 
+id 50344 would have the path 00/05/03/44.
+
+=cut
+######################################################################
+
+sub eprintid_to_path
+{
+	my( $eprintid ) = @_;
+
+	return unless( $eprintid =~ m/^\d+$/ );
+
+	my( $a, $b, $c, $d );
+	$d = $eprintid % 100;
+	$eprintid = int( $eprintid / 100 );
+	$c = $eprintid % 100;
+	$eprintid = int( $eprintid / 100 );
+	$b = $eprintid % 100;
+	$eprintid = int( $eprintid / 100 );
+	$a = $eprintid % 100;
+	
+	return sprintf( "%02d/%02d/%02d/%02d", $a, $b, $c, $d );
 }
 
 
@@ -1908,18 +2019,21 @@ sub later_in_thread
 {
 	my( $self, $field ) = @_;
 
-	my $dataset = $self->{session}->dataset( "archive" );
+	my $searchexp = EPrints::Search->new(
+		session => $self->{session},
+		dataset => $self->{session}->get_repository->get_dataset( 
+			"archive" ) );
+#cjg		[ "datestamp DESC" ] ) ); sort by date!
 
-	my $results = $dataset->search(
-		filters => [
-			{
-				meta_fields => [$field->name],
-				value => $self->value( "eprintid" )
-			},
-		],
-		custom_order => "-datestamp" );
+	$searchexp->add_field( 
+		$field, 
+		$self->get_value( "eprintid" ) );
 
-	return $results->slice;
+	my $searchid = $searchexp->perform_search;
+	my @eprints = $searchexp->get_records;
+	$searchexp->dispose;
+
+	return @eprints;
 }
 
 
@@ -2404,128 +2518,6 @@ sub has_owner
 	return &$fn( $self->{session}, $possible_owner, $self );
 }
 
-
-######################################################################
-=pod
-
-=item $boolean = $eprint->obtain_lock( $user )
-
-=cut
-######################################################################
-
-sub obtain_lock
-{
-	my( $self, $user ) = @_;
-
-	if( ! $self->{session}->get_repository->get_conf( "locking", "eprint", "enable" ) )
-	{
-		# locking not enabled
-		return 1;
-	}
-
-	if( !$self->is_locked() )
-	{
-		# not currently locked, so lock.
-		$self->set_value( "edit_lock_since", time );
-		$self->set_value( "edit_lock_user", $user->get_id );
-	}
-	elsif( $self->get_value( "edit_lock_user" ) != $user->get_id )
-	{
-		# is locked, and not by $user, so fail to obtain lock.
-		return 0;
-	}
-	
-	my $timeout = $self->{session}->get_repository->get_conf( "locking", "eprint", "timeout" );
-	$timeout = 600 unless defined $timeout;
-	$self->set_value( "edit_lock_until", time + $timeout );
-
-	$self->commit;
-
-	return 1;
-}
-
-######################################################################
-=pod
-
-=item $boolean = $eprint->could_obtain_lock( $user )
-
-=cut
-######################################################################
-
-sub could_obtain_lock
-{
-	my( $self, $user ) = @_;
-
-	if( ! $self->{session}->get_repository->get_conf( "locking", "eprint", "enable" ) )
-	{
-		# locking not enabled
-		return 1;
-	}
-
-	if(
-		$self->is_locked() &&
-		$self->get_value( "edit_lock_user" ) ne $user->get_id
-	  )
-	{
-		return 0;
-	}
-
-	return 1;
-}
-
-######################################################################
-=pod
-
-=item $boolean = $eprint->is_locked()
-
-=cut
-######################################################################
-
-sub is_locked
-{
-	my( $self ) = @_;
-
-	if( ! $self->{session}->get_repository->get_conf( "locking", "eprint", "enable" ) )
-	{
-		# locking not enabled
-		return 0;
-	}
-
-	my $lock_until = $self->get_value( "edit_lock_until" );
-
-	return 0 unless $lock_until;
-
-	return( $lock_until > time );
-}
-
-######################################################################
-=pod
-
-=item $xhtml = render_edit_lock( $session, $value )
-
-=cut
-######################################################################
-
-sub render_edit_lock
-{
-	my( $session, $field, $value, $alllangs, $nolink, $eprint ) = @_;
-
-	if( $value->{"until"} < time ) 
-	{
-		return $session->html_phrase( "lib/eprint:not_locked" );
-	}
-
-	my $f = $field->get_property( "fields_cache" );
-	return $session->html_phrase( "lib/eprint:locked", 
-		locked_by => $f->[0]->render_single_value( $session, $value->{user}, $eprint ),
-		locked_until => $session->make_text( EPrints::Time::human_time( $value->{"until"} ) ) );
-
-	return $f;
-};
-
-
-
-
 ######################################################################
 =pod
 
@@ -2567,6 +2559,3 @@ Callbacks may optionally be defined in the ArchiveConfig.
 See L<ArchiveRenderConfig/eprint_render>.
 
 =back
-
-
-

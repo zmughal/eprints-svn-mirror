@@ -12,46 +12,16 @@
 #
 ######################################################################
 
-=pod
 
-=for Pod2Wiki
+=pod
 
 =head1 NAME
 
 B<EPrints::Utils> - Utility functions for EPrints.
 
-=head1 SYNOPSIS
-	
-	$boolean = EPrints::Utils::is_set( $object ) 
-	# return true if an object/scalar/array has any data in it
-
-	# copy the contents of the url to a file
-	$response = EPrints::Utils::wget( 
-		$handle, 
-		"http://www.eprints.org/index.php", 
-		"temp_dir/my_file" ) 
-	if($response->is_sucess()){ do something...}
-	
-	$name = { given=>"Wendy", family=>"Hall", honourific=>"Dame" };
-	# return Dame Wendy Hall
-	$string = EPrints::Utils::make_name_string( $name, 1 );
-	# return Dame Hall, Wendy
-	$string = EPrints::Utils::make_name_string( $name, 0 );
-	
-	# returns http://www.eprints.org?var=%3Cfoo%3E
-	$string = EPrints::Utils::url_escape( "http://www.eprints.org?var=<foo>" ); 
-	
-	$esc_string = EPrints::Utils::escape_filename( $string );
-	$string = EPrints::Utils::unescape_filename( $esc_string );
-	
-	$filesize_text = EPrints::Utils::human_filesize( 3300 ); 
-	# returns "3kb"
-
 =head1 DESCRIPTION
 
 This package contains functions which don't belong anywhere else.
-
-=head1 METHODS
 
 =over 4
 
@@ -59,6 +29,7 @@ This package contains functions which don't belong anywhere else.
 
 package EPrints::Utils;
 
+use Unicode::String qw(utf8 latin1 utf16);
 use File::Copy qw();
 use Text::Wrap qw();
 use LWP::UserAgent;
@@ -74,9 +45,32 @@ BEGIN {
 }
 
 
+
+######################################################################
+=pod
+
+=item $space =  EPrints::Utils::df_dir( $dir )
+
+Return the number of bytes of disk space available in the directory
+$dir or undef if we can't find out.
+
+DEPRECATED - use EPrints::Platform::free_space instead.
+
+=cut
 ######################################################################
 
-=begin InternalDoc
+sub df_dir
+{
+	my( $dir ) = @_;
+
+	EPrints::deprecated;
+
+	return EPrints::Platform::free_space( $dir );
+}
+
+
+######################################################################
+=pod
 
 =item $cmd = EPrints::Utils::prepare_cmd($cmd,%VARS)
 
@@ -86,13 +80,8 @@ quoted before replacement to make it shell-safe.
 
 If a variable is specified in $cmd, but not present in %VARS a die is thrown.
 
-=end
-
 =cut
-
 ######################################################################
-#TODO ask brody what the hell this is :-P pm5
-#DEPRECATED in favour of EPrints::Repository::invocation?
 
 sub prepare_cmd {
 	my ($cmd, %VARS) = @_;
@@ -101,7 +90,24 @@ sub prepare_cmd {
 }
 
 ######################################################################
+=pod
 
+=item $path = EPrints::Utils::join_path(@PARTS)
+
+Join a path together in an OS-safe manner. Currently this just joins using '/'.
+If EPrints is adapted to work under WinOS it will need to use '\' to join paths
+together.
+
+=cut
+######################################################################
+
+sub join_path
+{
+	return join('/', @_);
+}
+
+
+######################################################################
 =pod
 
 =item $string = EPrints::Utils::make_name_string( $name, [$familylast] )
@@ -121,7 +127,6 @@ but if $familylast is true then it will be:
 "honourific given family lineage"
 
 =cut
-
 ######################################################################
 
 sub make_name_string
@@ -164,7 +169,6 @@ sub make_name_string
 
 
 ######################################################################
-
 =pod
 
 =item $str = EPrints::Utils::wrap_text( $text, [$width], [$init_tab], [$sub_tab] )
@@ -177,7 +181,6 @@ $init_tab and $sub_tab allow indenting on the first and subsequent lines
 respectively (see L<Text::Wrap> for more information).
 
 =cut
-
 ######################################################################
 
 sub wrap_text
@@ -203,7 +206,6 @@ sub wrap_text
 
 
 ######################################################################
-
 =pod
 
 =item $boolean = EPrints::Utils::is_set( $r )
@@ -221,7 +223,6 @@ This is used to see if a complex data structure actually has any data
 in it.
 
 =cut
-
 ######################################################################
 
 sub is_set
@@ -259,7 +260,6 @@ sub is_set
 # a stupid thing to do, anyway.
 
 ######################################################################
-
 =pod
 
 =item $string = EPrints::Utils::tree_to_utf8( $tree, $width, [$pre], [$whitespace_before], [$ignore_a] )
@@ -281,7 +281,6 @@ XHTML elements are removed with the following exceptions:
 <a href="foo">bar</a> will be converted into "bar <foo>" unless ignore_a is set.
 
 =cut
-
 ######################################################################
 
 sub tree_to_utf8
@@ -316,7 +315,6 @@ sub tree_to_utf8
 		EPrints::XML::is_dom( $node, "CDataSection" ) )
 	{
 		my $v = $node->nodeValue();
-		utf8::decode($v) unless utf8::is_utf8($v);
 		$v =~ s/[\s\r\n\t]+/ /g unless( $pre );
 		return $v;
 	}
@@ -392,8 +390,7 @@ sub _blank_lines
 }
 
 ######################################################################
-
-=begin InternalDoc
+=pod
 
 =item $ok = EPrints::Utils::copy( $source, $target )
 
@@ -401,10 +398,7 @@ Copy $source file to $target file without alteration.
 
 Return true on success (sets $! on error).
 
-=end
-
 =cut
-
 ######################################################################
 
 sub copy
@@ -415,7 +409,6 @@ sub copy
 }
 
 ######################################################################
-
 =pod
 
 =item $response = EPrints::Utils::wget( $session, $source, $target )
@@ -427,7 +420,6 @@ Will fail if $source is a "file:" and "enable_file_imports" is false or if $sour
 Returns the HTTP response object: use $response->is_success to check whether the copy succeeded.
 
 =cut
-
 ######################################################################
 
 sub wget
@@ -465,8 +457,52 @@ sub wget
 }
 
 ######################################################################
+=pod
 
-=begin InternalDoc
+=item $ok = EPrints::Utils::mkdir( $full_path )
+
+Create the specified directory.
+
+Return true on success.
+
+=cut
+######################################################################
+
+sub mkdir
+{
+	my( $full_path, $perms ) = @_;
+
+	Carp::croak("EPrints::Utils::mkdir is deprecated: use EPrints::Platform::mkdir");
+
+	# Default to "dir_perms"
+	$perms = eval($EPrints::SystemSettings::conf->{"dir_perms"})
+		if @_ < 2;
+
+	# Make sure $dir is a plain old string (not unicode) as
+	# Unicode::String borks mkdir
+
+	my $dir="";
+	my @parts = split( "/", "$full_path" );
+	while( scalar @parts )
+	{
+		$dir .= "/".(shift @parts );
+		if( !-d $dir )
+		{
+			my $ok = mkdir( $dir, $perms );
+			if( !$ok )
+			{
+				print STDERR "Failed to mkdir $dir: $!\n";
+				return 0;
+			}
+		}
+	}		
+
+	return 1;	
+}
+
+
+######################################################################
+=pod
 
 =item $ok = EPrints::Utils::rmtree( $full_path )
 
@@ -474,10 +510,7 @@ Unlinks the path and everything in it.
 
 Return true on success.
 
-=end
-
 =cut
-
 ######################################################################
 
 sub rmtree
@@ -594,7 +627,6 @@ sub _render_citation_aux
 			{
 				$rendered = $params{session}->make_element( 
 					"a",
-					onclick=>$params{onclick},
 					target=>$params{target},
 					href=> $params{url} );
 			}
@@ -626,8 +658,7 @@ sub _render_citation_aux
 
 
 ######################################################################
-
-=begin InternalDoc
+=pod
 
 =item $metafield = EPrints::Utils::field_from_config_string( $dataset, $fieldname )
 
@@ -636,10 +667,7 @@ Return the EPrint::MetaField from $dataset with the given name.
 If fieldname has a semicolon followed by render options then these
 are passed as render options to the new EPrints::MetaField object.
 
-=end
-
 =cut
-
 ######################################################################
 
 sub field_from_config_string
@@ -668,15 +696,11 @@ sub field_from_config_string
 	{
 		if( !defined $dataset )
 		{
-			EPrints::abort( "Attempt to get a field or subfield from a non existent dataset. Could be due to a sub field of a inappropriate field type." );
+			EPrints::abort( "Attempt to get a field or subfield from a non existant dataset. Could be due to a sub field of a inappropriate field type." );
 		}
 		$field = $dataset->get_field( $fname );
-		if( !defined $field )
-		{
-			EPrints::abort( "Dataset ".$dataset->confid." does not have a field '$fname'" );
-		}
 		push @join, [ $field, $dataset ];
-		if( $field->is_type( "subobject", "itemref" ) )
+		if( defined $field->{"datasetid"} )
 		{
 			my $datasetid = $field->get_property( "datasetid" );
 			$dataset = $dataset->get_repository->get_dataset( $datasetid );
@@ -714,8 +738,7 @@ sub field_from_config_string
 }
 
 ######################################################################
-
-=begin InternalDoc
+=pod
 
 =item $string = EPrints::Utils::get_input( $regexp, [$prompt], [$default] )
 
@@ -732,10 +755,7 @@ and try again.
 If a default is set and the user just hits return then the default
 value is returned.
 
-=end
-
 =cut
-
 ######################################################################
 
 sub get_input
@@ -767,8 +787,7 @@ sub get_input
 }
 
 ######################################################################
-
-=for InteralDoc
+=pod
 
 =item EPrints::Utils::get_input_hidden( $regexp, [$prompt], [$default] )
 
@@ -778,7 +797,6 @@ Get input from the console without echoing the entered characters
 Identical to get_input except the characters don't appear.
 
 =cut
-
 ######################################################################
 
 sub get_input_hidden
@@ -815,37 +833,26 @@ sub get_input_hidden
 }
 
 ######################################################################
+=pod
 
-=begin InternalDoc
-
-=item EPrints::Utils::get_input_confirm( [$prompt], [$quick], [$default] )
+=item EPrints::Utils::get_input_confirm( [$prompt], [$quick] )
 
 Asks the user for confirmation (yes/no). If $quick is true only checks for a
 single-character input ('y' or 'n').
 
-If $default is '1' defaults to yes, if '0' defaults to no.
-
 Returns true if the user answers 'yes' or false for any other value.
 
-=end
-
 =cut
-
 ######################################################################
 
 sub get_input_confirm
 {
-	my( $prompt, $quick, $default ) = @_;
+	my( $prompt, $quick ) = @_;
 
 	$prompt = "" if( !defined $prompt );
-	if( defined($default) )
-	{
-		$default = $default ? "yes" : "no";
-	}
 
 	if( $quick )
 	{
-		$default = substr($default,0,1) if defined $default;
 		$prompt .= " [y/n] ? ";
 		print wrap_text( $prompt, 'console' );
 
@@ -855,24 +862,22 @@ sub get_input_confirm
 			Term::ReadKey::ReadMode( 'raw' );
 			$in = lc(Term::ReadKey::ReadKey( 0 ));
 			Term::ReadKey::ReadMode( 'normal' );
-			$in = $default if ord($in) == 10 && defined $default;
 		}
-		if( $in eq "y" ) { print wrap_text( "es" ); }
-		if( $in eq "n" ) { print wrap_text( "o" ); }
+		if( $in eq "y" ) { print wrap_text( "yes" ); }
+		if( $in eq "n" ) { print wrap_text( "no" ); }
 		print "\n";
 		return( $in eq "y" );
 	}
 	else
 	{
-		$prompt .= defined($default) ? " [$default] ? " : " [yes/no] ? ";
+		$prompt .= " [yes/no] ? ";
 		my $in="";
-		while($in ne "no" && $in ne "yes")
+		while( $in ne "no" && $in ne "yes" )
 		{
 			print wrap_text( $prompt, 'console' );
 
 			$in = lc(Term::ReadKey::ReadLine( 0 ));
 			$in =~ s/\015?\012?$//s;
-			$in = $default if length($in) == 0 && defined $default;
 		}
 		return( $in eq "yes" );
 	}
@@ -881,8 +886,7 @@ sub get_input_confirm
 }
 
 ######################################################################
-
-=begin InternalDoc
+=pod
 
 =item $clone_of_data = EPrints::Utils::clone( $data )
 
@@ -893,10 +897,7 @@ Does not handle blessed items.
 Useful when we want to modify a temporary copy of a data structure 
 that came from the configuration files.
 
-=end
-
 =cut
-
 ######################################################################
 
 sub clone
@@ -933,17 +934,13 @@ sub clone
 
 
 ######################################################################
-
-=begin InternalDoc
+=pod
 
 =item $crypted_value = EPrints::Utils::crypt_password( $value, $session )
 
 Apply the crypt encoding to the given $value.
 
-=end
-
 =cut
-
 ######################################################################
 
 sub crypt_password
@@ -962,7 +959,6 @@ sub crypt_password
 # Escape everything AFTER the last /
 
 ######################################################################
-
 =pod
 
 =item $string = EPrints::Utils::url_escape( $url )
@@ -970,7 +966,6 @@ sub crypt_password
 Escape the given $url, so that it can appear safely in HTML.
 
 =cut
-
 ######################################################################
 
 sub url_escape
@@ -984,8 +979,7 @@ sub url_escape
 
 
 ######################################################################
-
-=begin InternalDoc
+=pod
 
 =item $long = EPrints::Utils::ip2long( $ip )
 
@@ -995,10 +989,7 @@ Convert quad-dotted notation to long
 
 Convert long to quad-dotted notation
 
-=end
-
 =cut
-
 ######################################################################
 
 sub ip2long
@@ -1024,8 +1015,7 @@ sub long2ip
 }
 
 ######################################################################
-
-=begin InternalDoc
+=pod
 
 =item EPrints::Utils::cmd_version( $progname )
 
@@ -1033,10 +1023,7 @@ Print out a "--version" style message to STDOUT.
 
 $progname is the name of the current script.
 
-=end
-
 =cut
-
 ######################################################################
 
 sub cmd_version
@@ -1135,7 +1122,6 @@ sub destroy
 
 
 ######################################################################
-
 =pod
 
 =item $esc_string = EPrints::Utils::escape_filename( $string )
@@ -1144,7 +1130,6 @@ Take a value and escape it to be a legal filename to go in the /view/
 section of the site.
 
 =cut
-
 ######################################################################
 
 sub escape_filename
@@ -1175,7 +1160,6 @@ sub escape_filename
 }
 
 ######################################################################
-
 =pod
 
 =item $string = EPrints::Utils::unescape_filename( $esc_string )
@@ -1183,29 +1167,26 @@ sub escape_filename
 Unescape a string previously escaped with escape_filename().
 
 =cut
-
 ######################################################################
 
 sub unescape_filename
 {
 	my( $fileid ) = @_;
 
-	if( !utf8::is_utf8( $fileid ) )
-	{
-		# should be ASCII, but we're turning into something
-		# with unicode chars in.
-		utf8::upgrade( $fileid ) ;
-	}
+	# prep this string to hold long chars
+	utf8::decode( $fileid );
 
 	$fileid =~ s/_/ /g;
 	$fileid =~ s/==(....)/chr(hex($1))/eg;
 	$fileid =~ s/=(..)/chr(hex($1))/eg;
 
+	# turn long chars back into bytes
+	utf8::encode( $fileid );
+
 	return $fileid;
 }
 
 ######################################################################
-
 =pod
 
 =item $filesize_text = EPrints::Utils::human_filesize( $size_in_bytes )
@@ -1219,7 +1200,6 @@ This is not internationalised, I don't think it needs to be. Let me
 know if this is a problem. support@eprints.org
 
 =cut
-
 ######################################################################
 
 sub human_filesize
@@ -1240,56 +1220,43 @@ sub human_filesize
 
 	my $size_in_meg = int( $size_in_k / 1024 );
 
-	if ($size_in_meg < 4096)
-	{
-		return $size_in_meg.'Mb';
-	}
-
-	my $size_in_gig = int( $size_in_meg / 1024 );
-
-	if ($size_in_gig < 4096)
-	{
-		return $size_in_gig.'Gb';
-	}
-
-	my $size_in_tb = int( $size_in_gig / 1024 );
-
-	return $size_in_tb.'Tb';
+	return $size_in_meg.'Mb';
 }
 
-my %REQUIRED_CACHE;
+my $REQUIRED_CACHE = {};
 sub require_if_exists
 {
 	my( $module ) = @_;
 
-	# this is very slightly faster than just calling eval-require, because
-	# perl doesn't have to build the eval environment
-	if( !exists $REQUIRED_CACHE{$module} )
+	if( defined $REQUIRED_CACHE->{$module} )
 	{
-		$REQUIRED_CACHE{$module} = eval "require $module";
+		return $REQUIRED_CACHE->{$module};
 	}
 
-	return $REQUIRED_CACHE{$module};
+	$REQUIRED_CACHE->{$module} = 0;
+	my $fp = $module.".pm";
+	$fp =~ s/::/\//g;
+	foreach my $path ( @INC )
+	{
+		if( -e $path."/".$fp )
+		{
+ 			$REQUIRED_CACHE->{$module} = eval "require $module";
+			last;
+		}
+	}
+
+	return $REQUIRED_CACHE->{$module};
 }
 
 sub chown_for_eprints
 {
 	my( $file ) = @_;
 
-	my $uid = $EPrints::SystemSettings::conf->{group_uid};
-	my $gid = $EPrints::SystemSettings::conf->{group_gid};
+	my $group = $EPrints::SystemSettings::conf->{group};
+	my $username = $EPrints::SystemSettings::conf->{user};
 
-	if( !defined $uid || !defined $gid )
-	{
-		my $group = $EPrints::SystemSettings::conf->{group};
-		my $username = $EPrints::SystemSettings::conf->{user};
-
-		(undef,undef,$uid,undef) = EPrints::Platform::getpwnam( $username );
-		$gid = EPrints::Platform::getgrnam( $group );
-
-		$EPrints::SystemSettings::conf->{group_uid} = $uid;
-		$EPrints::SystemSettings::conf->{group_gid} = $gid;
-	}
+	my(undef,undef,$uid,undef) = EPrints::Platform::getpwnam( $username );
+	my $gid = EPrints::Platform::getgrnam( $group );
 
 	EPrints::Platform::chown( $uid, $gid, $file );
 }
@@ -1318,46 +1285,17 @@ sub js_string
 	return "unescape('$string')";
 }
 
-# EPrints::Utils::process_parameters( $params, $defaults );
-#  for each key in the hash ref $defaults, if $params->{$key} is not set
-#  then it's set to the default from the $defaults hash.
-#  Also warns if unknown paramters were passed.
-
-sub process_parameters($$)
-{
-	my( $params, $defaults ) = @_;
-
-	foreach my $k ( keys %{$defaults} )
-	{
-		if( !defined $params->{$k} ) 
-		{
-			if( $defaults->{$k} eq "*REQUIRED*" )
-			{
-				my @c = caller(1);
-				EPrints::abort( "Required parameter '$k' not passed to ".$c[3]." at ".$c[1]." line ".$c[2] );
-			}
-			$params->{$k} = $defaults->{$k}; 
-		}
-	}
-
-	foreach my $k ( keys %{$params} )
-	{
-		if( !defined $defaults->{$k} )
-		{
-			my @c = caller(1);
-			warn "Unexpected parameter '$k' passed to ".$c[3]." at ".$c[1]." line ".$c[2]."\n";
-		}
-	}
-}
 
 ######################################################################
 # Redirect as this function has been moved.
 ######################################################################
 sub render_xhtml_field { return EPrints::Extras::render_xhtml_field( @_ ); }
 
-sub make_relation
-{
-	return "http://eprints.org/relation/" . $_[0];
-}
-
 1;
+
+######################################################################
+=pod
+
+=back
+
+=cut

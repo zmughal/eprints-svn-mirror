@@ -18,16 +18,6 @@ sub new
 	{
 		EPrints::abort( "Workflow stage with no name attribute." );
 	}
-	$self->{action_buttons} = $stage->getAttribute( "action_buttons" );
-	if( !defined $self->{action_buttons} )
-	{
-		$self->{action_buttons} = "both";
-	}
-	elsif( $self->{action_buttons} !~ /^(top|bottom|both)$/ )
-	{
-		$self->{session}->get_repository->log( "Warning! Workflow <stage> action_buttons attribute expected one of 'top', 'bottom' or 'both' but instead got '$self->{action_buttons}'" );
-		$self->{action_buttons} = "both";
-	}
 
 	# Creating a new stage
 	$self->_read_components( $stage->getChildNodes );
@@ -67,17 +57,6 @@ sub _read_components
 			my $collapse_attr = $stage_node->getAttribute( "collapse" );
 			$params{collapse} = 1 if( defined $collapse_attr && $collapse_attr eq "yes" );
 
-			my $help_attr = $stage_node->getAttribute( "show_help" );
-			$help_attr ||= "toggle";
-			if( $help_attr eq "never" )
-			{
-				$params{no_help} = 1;
-			}
-			elsif( $help_attr eq "always" )
-			{
-				$params{no_toggle} = 1;
-			}
-
 			my $id = $stage_node->getAttribute( "id" );
 			if( !defined $id )
 			{
@@ -92,7 +71,7 @@ sub _read_components
 			if( !defined $class )
 			{
 				print STDERR "Using placeholder for $type\n";
-				$class = $self->{session}->get_repository->get_plugin_class( "InputForm::Component::PlaceHolder" );
+				$class = $EPrints::Plugin::REGISTRY->{"InputForm::Component::PlaceHolder"};
 				$params{placeholding}=$type;
 			}
 			if( defined $class )
@@ -177,12 +156,12 @@ sub update_from_form
 
 sub get_state_params
 {
-	my( $self, $processor ) = @_;
+	my( $self ) = @_;
 
 	my $params = "";
 	foreach my $component (@{$self->{components}})
 	{
-		$params.= $component->get_state_params( $processor );
+		$params.= $component->get_state_params;
 	}
 	return $params;
 }

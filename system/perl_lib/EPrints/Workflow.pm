@@ -419,11 +419,11 @@ sub _database_err
 
 sub get_state_params
 {
-	my( $self, $processor ) = @_;
+	my( $self ) = @_;
 
 	my $stage = $self->get_stage( $self->get_stage_id );
 
-	return "&stage=".$self->get_stage_id.$stage->get_state_params( $processor );
+	return "&stage=".$self->get_stage_id.$stage->get_state_params;
 }
 
 # add links to fields in problem-report xhtml chunks.
@@ -479,7 +479,6 @@ sub load_all
 	opendir( $dh, $path ) || die "Could not open $path";
 	# This sorts the directory such that directories are last
 	my @filenames = sort { -d "$path/$a" <=> -d "$path/$b" } readdir( $dh );
-	closedir( $dh );
 	foreach my $fn ( @filenames )
 	{
 		next if( $fn =~ m/^\./ );

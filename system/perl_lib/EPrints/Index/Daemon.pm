@@ -280,24 +280,23 @@ sub get_all_sessions
 {
 	my( $self ) = @_;
 
-	my @repos;
-
-	my $eprints = EPrints->new;
+	my @sessions;
 
 	my @arc_ids = EPrints::Config::get_repository_ids();
 	foreach my $arc_id (sort @arc_ids)
 	{
-		my $repository = $eprints->repository( $arc_id );
-		if( !defined $repository )
+		my $repository = EPrints::Repository->new( $arc_id );
+		next unless $repository->get_conf( "index" );
+		my $session = EPrints::Session->new( 1 , $arc_id );
+		if( !defined $session )
 		{
 			$self->log( 0, "!! Could not open session for $arc_id" );
 			next;
 		}
-		next unless $repository->config( "index" );
-		push @repos, $repository;
+		push @sessions, $session;
 	}
 
-	return @repos;
+	return @sessions;
 }
 
 =item $daemon->log( LEVEL, MESSAGE )
@@ -611,10 +610,9 @@ sub run_index
 			eval {
 				local $SIG{ALRM} = sub { die "alarm\n" };
 				alarm($self->get_timeout);
-				my $indexer_did_something = $self->_run_index( $session, {
+				$seen_action ||= EPrints::Index::do_index( $session, {
 					loglevel => $self->{noise},
 				});
-				$seen_action = 1 if $indexer_did_something;
 				alarm(0);
 			};
 			if( $@ )
@@ -664,40 +662,6 @@ sub run_index
 	}
 
 	$_->terminate for @sessions;
-}
-
-sub _run_index
-{
-	my( $self, $session ) = @_;
-
-	my $seen_action = 0;
-	my @events = $session->get_database->dequeue_events( 10 );
-	foreach my $event (@events)
-	{
-		if( $self->{noise} >= 5 )
-		{
-			my $pluginid = $event->value( "pluginid" );
-			my $action = $event->value( "action" );
-			my $params = $event->value( "params" );
-
-			my $citation = $event->render_citation();
-			$self->log( 5, $session->get_id.": ".EPrints::Utils::tree_to_utf8( $citation ) );
-			$session->xml->dispose( $citation );
-		}
-
-		my $rc = $event->execute;
-		if( $rc == 0 )
-		{
-			$self->log( 3, "** event ".$event->get_id." failed" );
-			$seen_action = 1;
-		}
-		elsif( $rc != 2 ) # eprint is locked
-		{
-			$seen_action = 1;
-		}
-	}
-
-	return $seen_action; # seen action, even if it is to fail
 }
 
 # is it time to respawn the indexer/roll the logs?

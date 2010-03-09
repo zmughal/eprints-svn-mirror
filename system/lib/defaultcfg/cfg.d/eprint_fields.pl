@@ -147,7 +147,6 @@ $c->{fields}->{eprint} = [
             'name' => 'suggestions',
             'type' => 'longtext',
             'render_value' => 'EPrints::Extras::render_highlighted_field',
-            'export_as_xml' => 0, 
           },
 
           {
@@ -528,15 +527,4 @@ $c->{fields}->{eprint} = [
             'type' => 'text',
           },
 
-	{
-		name => 'gscholar',
-		type => 'compound',
-		volatile => 1,
-		fields => [
-			{ sub_name => 'impact', type => 'int', },
-			{ sub_name => 'cluster', type => 'id', },
-			{ sub_name => 'datestamp', type => 'time', },
-		],
-		sql_index => 0,
-	},
 ];

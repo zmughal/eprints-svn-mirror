@@ -102,7 +102,7 @@ sub get_filters
 {
 	my( $self ) = @_;
 
-	my %f = ( inbox=>1, buffer=>1, archive=>1, deletion=>1 );
+	my %f = ( inbox=>1, buffer=>1, archive=>0, deletion=>0 );
 
 	foreach my $filter ( keys %f )
 	{
@@ -133,7 +133,7 @@ sub render
 
 	my $user = $session->current_user;
 
-	if( $session->get_lang->has_phrase( $self->html_phrase_id( "intro" ), $session ) )
+	if( $session->get_lang->has_phrase( $self->html_phrase_id( "intro" ) ) )
 	{
 		my $intro_div_outer = $session->make_element( "div", class => "ep_toolbox" );
 		my $intro_div = $session->make_element( "div", class => "ep_toolbox_content" );
@@ -156,9 +156,6 @@ sub render
 	$chunk->appendChild( $box );
 
 	$chunk->appendChild( $self->render_action_list_bar( "item_tools" ) );
-
-	my $import_screen = $session->plugin( "Screen::Import" );
-	$chunk->appendChild( $import_screen->render_import_bar() );
 
 	my %filters = $self->get_filters;
 	my @l = ();
@@ -312,24 +309,9 @@ sub render
 		columns => [@{$columns}, undef ],
 		above_results => $filter_div,
 		render_result => sub {
-			my( $session, $e, $info ) = @_;
+			my( $session, $e ) = @_;
 
-			my $class = "row_".($info->{row}%2?"b":"a");
-			if( $e->is_locked )
-			{
-				$class .= " ep_columns_row_locked";
-				my $my_lock = ( $e->get_value( "edit_lock_user" ) == $session->current_user->get_id );
-				if( $my_lock )
-				{
-					$class .= " ep_columns_row_locked_mine";
-				}
-				else
-				{
-					$class .= " ep_columns_row_locked_other";
-				}
-			}
-
-			my $tr = $session->make_element( "tr", class=>$class );
+			my $tr = $session->make_element( "tr" );
 
 			my $status = $e->get_value( "eprint_status" );
 
@@ -349,8 +331,6 @@ sub render
 			$td->appendChild( 
 				$self->render_action_list_icons( "eprint_item_actions", ['eprintid'] ) );
 			delete $self->{processor}->{eprint};
-
-			++$info->{row};
 
 			return $tr;
 		},

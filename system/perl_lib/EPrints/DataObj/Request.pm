@@ -43,15 +43,14 @@ sub get_system_field_info
 
 	return (
 
-		{ name=>"requestid", type=>"counter", required=>1, can_clone=>1,
-			sql_counter=>"requestid" },
+		{ name=>"requestid", type=>"int", required=>1, can_clone=>1, },
 
 		{ name=>"eprintid", type=>"itemref", 
 			datasetid=>"eprint", required=>1 },
 
 		{ name=>"docid", type=>"text", required=>0 },
 
-		{ name=>"datestamp", type=>"timestamp", required=>1, },
+		{ name=>"datestamp", type=>"time", required=>1, },
 
 		{ name=>"userid", type=>"itemref", 
 			datasetid=>"user", required=>0 },
@@ -69,25 +68,91 @@ sub get_system_field_info
 
 =back
 
+=head2 Constructor Methods
+
+=over 4
+
+=cut
+
+######################################################################
+
+=item $thing = EPrints::DataObj::Access->new( $session, $accessid )
+
+The data object identified by $accessid.
+
+=cut
+
+sub new
+{
+	my( $class, $session, $accessid ) = @_;
+
+	return $session->get_database->get_single( 
+			$session->get_repository->get_dataset( "request" ), 
+			$accessid );
+}
+
+=item $thing = EPrints::DataObj::Access->new_from_data( $session, $known )
+
+A new C<EPrints::DataObj::Access> object containing data $known (a hash reference).
+
+=cut
+
+sub new_from_data
+{
+	my( $class, $session, $known ) = @_;
+
+	return $class->SUPER::new_from_data(
+			$session,
+			$known,
+			$session->get_repository->get_dataset( "request" ) );
+}
+
+
+######################################################################
+
 =head2 Class Methods
 
 =cut
 
 ######################################################################
 
-######################################################################
-=pod
+=item EPrints::DataObj::Access::remove_all( $session )
 
-=item $dataset = EPrints::DataObj::Request->get_dataset_id
-
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
+Remove all records from the license dataset.
 
 =cut
+
+sub remove_all
+{
+	my( $class, $session ) = @_;
+
+	my $ds = $session->get_repository->get_dataset( "request" );
+	foreach my $obj ( $session->get_database->get_all( $ds ) )
+	{
+		$obj->remove();
+	}
+	return;
+}
+
 ######################################################################
 
-sub get_dataset_id
+=item $defaults = EPrints::DataObj::Access->get_defaults( $session, $data )
+
+Return default values for this object based on the starting data.
+
+=cut
+
+######################################################################
+
+sub get_defaults
 {
-	return "request";
+	my( $class, $session, $data ) = @_;
+	
+	$data->{requestid} = $session->get_database->counter_next( "requestid" );
+
+	$data->{datestamp} = EPrints::Time::get_iso_timestamp();
+
+	return $data;
 }
 
 ######################################################################
@@ -97,6 +162,21 @@ sub get_dataset_id
 =cut
 
 ######################################################################
+
+=item $foo = $thing->remove()
+
+Remove this record from the data set (see L<EPrints::Database>).
+
+=cut
+
+sub remove
+{
+	my( $self ) = @_;
+	
+	return $self->{session}->get_database->remove(
+		$self->{dataset},
+		$self->get_id );
+}
 
 1;
 

@@ -1,16 +1,3 @@
-######################################################################
-#
-# EPrints::Apache::Login
-#
-######################################################################
-#
-#  __COPYRIGHT__
-#
-# Copyright 2000-2009 University of Southampton. All Rights Reserved.
-# 
-#  __LICENSE__
-#
-######################################################################
 
 package EPrints::Apache::Login;
 
@@ -36,11 +23,15 @@ sub handler
 			my $user = EPrints::DataObj::User::user_with_username( $session, $username );
 			$session->login( $user );
 
-			my $url = $session->get_url( host=>1 );
 			my $loginparams = $session->param("loginparams");
-			if( EPrints::Utils::is_set( $loginparams ) ) { $url .= "?".$loginparams; }
-			$session->redirect( $url );
-			return DONE;
+
+			my $c = $r->connection;
+
+			$c->notes->set( loginparams=>$loginparams );
+
+			# Declined to render the HTML, not declined the
+			# request.
+			return DECLINED;
 		}
 
 		$problems = $session->html_phrase( "cgi/login:failed" );
@@ -58,15 +49,13 @@ sub handler
 	for(1..16) { push @a, sprintf( "%02X",int rand 256 ); }
 	$opts{code} = join( "", @a );
 
-	$r->status( 401 );
-	$r->custom_response( 401, '' ); # disable the normal error document
-
 	my $title = $session->html_phrase( "cgi/login:title" );
 	$session->build_page( $title, $page, "login" );
 	$session->send_page( %opts );
 	$session->terminate;
 
 	return DONE;
+
 }
 
 

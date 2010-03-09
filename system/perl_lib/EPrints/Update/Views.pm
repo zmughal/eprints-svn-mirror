@@ -30,6 +30,7 @@ package EPrints::Update::Views;
 
 use Data::Dumper;
 use Unicode::Collate;
+use Unicode::String qw( utf8 ); # required for substr
 
 use strict;
   
@@ -41,40 +42,14 @@ use strict;
 
 # Does not update the file if it's not needed.
 
-=item $path = abbr_path( $path )
-
-This internal method replaces any part of $path that is longer than 40 characters with the MD5 of that part. It ignores file extensions (dot followed by anything).
-
-=cut
-
-sub abbr_path
-{
-	my( $path ) = @_;
-
-	my @parts = split /\//, $path;
-	foreach my $part (@parts)
-	{
-		next if length($part) < 40;
-		my( $name, $ext ) = split /\./, $part, 2;
-		$part = Digest::MD5::md5_hex($name);
-		$part .= ".$ext" if defined $ext;
-	}
-
-	return join "/", @parts;
-}
-
 sub update_view_file
 {
 	my( $session, $langid, $localpath, $uri ) = @_;
 
 	my $repository = $session->get_repository;
 
-	$localpath = abbr_path( $localpath );
-
 	my $target = $repository->get_conf( "htdocs_path" )."/".$langid.$localpath;
-	my $ext = "";
-	# remove extension from target, if there is one
-	if( $target =~ s/(\..*)// ) { $ext = $1; }
+	$target =~ s/\.[^\.]*$//;
 	my $age;
 	if( -e "$target.page" ) 
 	{
@@ -98,11 +73,10 @@ sub update_view_file
 		# a day shouldn't hurt.
 		if( defined $age && $age < 24*60*60 )
 		{
-			return "$target$ext";
+			return;
 		}
-		my $file = update_browse_view_list( $session, $langid );
-		return undef if( !defined $file );
-		return $file.$ext;
+		update_browse_view_list( $session, $langid );
+		return;
 	}
 	
 	$uri =~ m/^\/view(\/(([^\/]+)(\/(.*))?)?)?$/;
@@ -126,40 +100,36 @@ sub update_view_file
 	{
 		if( defined $age && $age < $max_menu_age )
 		{
-			return "$target$ext";
+			return;
 		}
 
-		my $file = update_view_menu( $session, $view, $langid );
-		return undef if( !defined $file );
-		return $file.$ext;
+		update_view_menu( $session, $view, $langid );
+		return;
 	}
 
 	if( $viewinfo =~ s/\/$// || $viewinfo =~ s/\/index[^\/]+$// )
 	{
 		if( defined $age && $age < $max_menu_age )
 		{
-			return "$target$ext";
+			return;
 		}
 
 		# if it ends with "/" then it's a submenu
 		my @view_path = split( '/', $viewinfo );
 		
-		my $file = update_view_menu( $session, $view, $langid, \@view_path );
-		return undef if( !defined $file );
-		return $file.$ext;
+		update_view_menu( $session, $view, $langid, \@view_path );
+		return;
 	}
 
 	# Otherwise it's (probably) a view list
 
 	if( defined $age && $age < $max_list_age )
 	{
-		return "$target$ext";
+		return;
 	}
 
 	my @view_path = split( '/', $viewinfo );
-	my $file = update_view_list( $session, $view, $langid, \@view_path );
-	return undef if( !defined $file );
-	return $file.$ext;
+	update_view_list( $session, $view, $langid, \@view_path );
 }
 
 
@@ -205,7 +175,7 @@ sub update_browse_view_list
 			},
 			"browsemain" );
 
-	return $target;
+	return( $target );
 }
 
 # return an array of the filters required for the given path_values
@@ -322,15 +292,6 @@ sub update_view_menu
 	modernise_view( $view );
 
 	my $repository = $session->get_repository;
-	my $target = $repository->get_conf( "htdocs_path" )."/".$langid."/view/".$view->{id}."/";
-	if( defined $esc_path_values && scalar @$esc_path_values )
-	{
-		$target .= abbr_path(join( "/", @{$esc_path_values}, "index" ));
-	}
-	else
-	{
-		$target .= "index";
-	}
 
 	my $menu_level = 0;
 	my $path_values = [];
@@ -414,6 +375,8 @@ sub update_view_menu
 	}
 
 	# note existing indexes
+	my $target = $session->get_repository->get_conf( "htdocs_path" )."/".$langid."/view/".$view->{id};
+	if( defined $esc_path_values && scalar @{$esc_path_values} ) { $target .= "/".join( "/", @{$esc_path_values} ); }
 	my $dh;
 	my @indexes = ();
 	if( opendir( $dh, $target ) )
@@ -441,7 +404,7 @@ sub update_view_menu
 		unlink( $old_index_file );
 	}
 
-	return $target;
+	return @wrote_files;
 }
 
 # things we need to know to update a view menu
@@ -483,7 +446,7 @@ sub create_single_page_menu
 	{
 		$phrase_id.= "/".join( "/", @{$path_values} );
 	}
-	unless( $session->get_lang()->has_phrase( $phrase_id, $session ) )
+	unless( $session->get_lang()->has_phrase( $phrase_id ) )
 	{
 		$phrase_id = "bin/generate_views:intro";
 	}
@@ -568,10 +531,10 @@ sub create_single_page_menu
 	my $title;
 	my $title_phrase_id = "viewtitle_".$ds->confid()."_".$view->{id}."_menu_".( $menu_level + 1 );
 
-	if( $session->get_lang()->has_phrase( $title_phrase_id, $session ) && defined $esc_path_values )
+	if( $session->get_lang()->has_phrase( $title_phrase_id ) )
 	{
 		my %o = ();
-		for( my $i = 0; $i < scalar( @{$esc_path_values} ); ++$i )
+		if( defined $esc_path_values )
 		{
 			for( my $i = 0; $i < scalar( @{$esc_path_values} ); ++$i )
 			{
@@ -600,13 +563,11 @@ sub create_single_page_menu
 			},
 			"browseindex" );
 
-	open( INCLUDE, ">:utf8", "$target.include" ) || EPrints::abort( "Failed to write $target.include: $!" );
+	open( INCLUDE, ">:bytes", "$target.include" ) || EPrints::abort( "Failed to write $target.include: $!" );
 	print INCLUDE EPrints::XML::to_string( $page, undef, 1 );
 	close INCLUDE;
 
-	EPrints::XML::dispose( $page );
-
-	return $target;
+	return( $target );
 }
 
 sub get_fieldlist_sizes
@@ -767,7 +728,9 @@ sub default_sort
 
 	my $Collator = Unicode::Collate->new();
 
-	return [ $Collator->sort( @{$values} ) ];
+	my @sorted_values =  $Collator->sort( map { Encode::decode_utf8( $_ ) } @{$values} );
+
+	return [ map { Encode::encode_utf8( $_ ); } @sorted_values ];
 }
 
 # this should probably be a tweak to the repository call function to make
@@ -1088,8 +1051,10 @@ sub update_view_list
 	my $target = $repository->get_conf( "htdocs_path" )."/".$langid."/view/".$view->{id}."/";
 
 	my $filename = pop @{$esc_path_values};
+	foreach( @{$esc_path_values} ) { $target .= "$_/"; }
+
 	my( $value, $suffix ) = split( /\./, $filename );
-	$target .= abbr_path( join "/", @$esc_path_values, $value );
+	$target .= $value;
 
 	push @{$esc_path_values}, $value;
 
@@ -1164,18 +1129,30 @@ sub update_view_list
 		my $title;
 		my $phrase_id = "viewtitle_".$ds->confid()."_".$view->{id}."_list";
 	
-		if( $session->get_lang()->has_phrase( $phrase_id, $session ) )
+		if( $session->get_lang()->has_phrase( $phrase_id ) )
 		{
 			my %o = ();
 			for( my $i = 0; $i < scalar( @{$esc_path_values} ); ++$i )
 			{
 				my $menu_fields = $menus_fields->[$i];
 				my $value = EPrints::Utils::unescape_filename($esc_path_values->[$i]);
-				$value = $menu_fields->[0]->get_value_from_id( $session, $value );
+				# possibly this needs to be made more generic but this fixes 
+				# the short term problem.
+				if( $menu_fields->[0]->get_type eq "name" && $value ne "NULL" )
+				{
+					my @parts = split( /:/, $value );
+					$value = {
+					 	    family => $parts[0],
+						     given => $parts[1],
+						   lineage => $parts[2],
+						honourific => $parts[3],
+					};
+				}
+				$value = "" if $value eq "NULL";
 				$o{"value".($i+1)} = $menu_fields->[0]->render_single_value( $session, $value);
 			}		
 			my $grouping_phrase_id = "viewgroup_".$ds->confid()."_".$view->{id}."_".$opts->{filename};
-			if( $session->get_lang()->has_phrase( $grouping_phrase_id, $session ) )
+			if( $session->get_lang()->has_phrase( $grouping_phrase_id ) )
 			{
 				$o{"grouping"} = $session->html_phrase( $grouping_phrase_id );
 			}
@@ -1201,31 +1178,31 @@ sub update_view_list
 
 
 		# This writes the title including HTML tags
-		open( TITLE, ">:utf8", "$page_file_name.title" ) || EPrints::abort( "Failed to write $page_file_name.title: $!" );
+		open( TITLE, ">:bytes", "$page_file_name.title" ) || EPrints::abort( "Failed to write $page_file_name.title: $!" );
 		print TITLE EPrints::XML::to_string( $title, undef, 1 );
 		close TITLE;
 
 		# This writes the title with HTML tags stripped out.
-		open( TITLETXT, ">:utf8", "$page_file_name.title.textonly" ) || EPrints::abort( "Failed to write $page_file_name.title.textonly: $!" );
+		open( TITLETXT, ">:bytes", "$page_file_name.title.textonly" ) || EPrints::abort( "Failed to write $page_file_name.title.textonly: $!" );
 		print TITLETXT EPrints::Utils::tree_to_utf8( $title );
 		close TITLETXT;
 
 		if( defined $view->{template} )
 		{
-			open( TEMPLATE, ">:utf8", "$page_file_name.template" ) || EPrints::abort( "Failed to write $page_file_name.template: $!" );
+			open( TEMPLATE, ">:bytes", "$page_file_name.template" ) || EPrints::abort( "Failed to write $page_file_name.template: $!" );
 			print TEMPLATE $view->{template};
 			close TEMPLATE;
 		}
 
-		open( EXPORT , ">:utf8", "$page_file_name.export" )  || EPrints::abort( "Failed to write $page_file_name.export: $!" );
+		open( EXPORT , ">:bytes", "$page_file_name.export" )  || EPrints::abort( "Failed to write $page_file_name.export: $!" );
 		print EXPORT EPrints::XML::to_string( render_export_bar( $session, $esc_path_values, $view ) , undef, 1);
 		close EXPORT;
 
-		open( PAGE, ">:utf8", "$page_file_name.page" ) || EPrints::abort( "Failed to write $page_file_name.page: $!" );
-		open( INCLUDE, ">:utf8", "$page_file_name.include" ) || EPrints::abort( "Failed to write $page_file_name.include: $!" );
+		open( PAGE, ">:bytes", "$page_file_name.page" ) || EPrints::abort( "Failed to write $page_file_name.page: $!" );
+		open( INCLUDE, ">:bytes", "$page_file_name.include" ) || EPrints::abort( "Failed to write $page_file_name.include: $!" );
 
 		my $navigation_aids = EPrints::XML::to_string( 
-		render_navigation_aids( $session, $path_values, $esc_path_values, $view, $menus_fields, "list" ) );
+			render_navigation_aids( $session, $path_values, $esc_path_values, $view, $menus_fields, "list" ), undef, 1 );
 
 		print PAGE $navigation_aids;
 		
@@ -1252,7 +1229,7 @@ sub update_view_list
 
 				my $group;
 				my $phrase_id = "viewgroup_".$ds->confid()."_".$view->{id}."_".$opts2->{filename};
-				if( $session->get_lang()->has_phrase( $phrase_id, $session ) )
+				if( $session->get_lang()->has_phrase( $phrase_id ) )
 				{
 					$group = $session->html_phrase( $phrase_id );
 				}
@@ -1299,7 +1276,7 @@ sub update_view_list
 			$intro_phrase_id.= "/".join( "/", @{$esc_path_values} );
 		}
 		my $intro = "";
-		if( $session->get_lang()->has_phrase( $intro_phrase_id, $session ) )
+		if( $session->get_lang()->has_phrase( $intro_phrase_id ) )
 		{
 			$intro = EPrints::XML::to_string( $session->html_phrase( $intro_phrase_id ), undef, 1 );
 		}
@@ -1484,7 +1461,7 @@ sub update_view_list
 		$first_view = 0;
 	}
 
-	return $target;
+	return @files;
 }
 
 # pagetype is "menu" or "list"
@@ -1703,7 +1680,7 @@ sub group_items
 						$code .= ", ";
 						if( $opts->{first_initial} )
 						{
-							$code .= substr( $value->{given},0,1);
+							$code .= utf8($value->{given})->substr( 0, 1 );
 						}
 						else
 						{
@@ -1713,7 +1690,8 @@ sub group_items
 				}
 				if( $opts->{"truncate"} )
 				{
-					$code = substr( "\u$code", 0, $opts->{"truncate"} );
+					$code = utf8($code)->substr( 0, $opts->{"truncate"} );
+					$code = "\u$code";
 				}
 				push @{$code_to_list->{$code}}, $item;
 
@@ -1724,7 +1702,7 @@ sub group_items
 					{
 						if( $code eq "" )
 						{
-							$code_to_heading->{$code} = $session->html_phrase( "Update/Views:no_value" );
+							$code_to_heading->{$code} = $session->make_text( "NULL" );
 						}
 						else
 						{
@@ -1748,7 +1726,7 @@ sub group_items
 
 	if( $opts->{"string"} )
 	{
-		@codes = sort keys %{$code_to_list};
+		@codes = @{default_sort( $session, undef, [keys %{$code_to_list}] )};
 	}
 	else
 	{

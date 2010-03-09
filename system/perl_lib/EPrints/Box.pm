@@ -12,27 +12,9 @@
 #
 ######################################################################
 
-=pod
-
-=for Pod2Wiki
-
 =head1 NAME
 
-B<EPrints::Box> - Class to render cute little collapsable/expandable Web 2.0ish boxes.
-
-=head1 SYNOPSIS
-
-	use EPrints;
-
-	# an XHTML DOM box with a title and some content that starts rolled up.
-	EPrints::Box(
-		   handle => $handle,
-		       id => "my_box",
-		    title => $my_title_dom,
-		  content => $my_content_dom,
-		collapsed => 1,
-	); 
-
+B<EPrints::Box> - Class to render cute little Web 2.0ish boxes.
 
 =head1 DESCRIPTION
 
@@ -47,37 +29,27 @@ use strict;
 ######################################################################
 =pod
 
-=over 4
-
 =item $box_xhtmldom = EPrints::Box::render( %options )
 
-Render a collapsable/expandable box to which content can be added. The box is in keeping with the eprints style
+Render a cute box.
 
-Required Options:
-
-=over 4
-
-$options{handle} - Current $handle
-
-$options{id} - ID attibute of the box i.e. <div id="my_box">
-
-$options{title} - XHTML DOM of the title of the box. Note the exact object will be used not a clone of the object.
-
-$options{content} - XHTML DOM of the content of the box. Note the exact object will be used not a clone of the object.
-
-=back
-
-Optional Options:
+Options:
 
 =over 4
 
-%options{collapsed} - Should the box start rolled up. Default to false.
+=item session: Current $session (required)
 
-%options{content-style} - the css style to apply to the content box. For example; "overflow-y: auto; height: 300px;"
+=item id: XML ID of box (required)
 
-%options{show_icon_url} - the url of the icon to use instead of the [+]
+=item title: XHTML DOM of title (required). Nb. Will not be cloned.
 
-%options{hide_icon_url} - the url of the icon to use instead of the [-]
+=item content: XHTML DOM of content (required). Nb. Will not be cloned.
+
+=item collapsed: boolean. Default to false.
+
+=item content-style: the css style to apply to the content box. For example; "overflow-y: auto; height: 300px;"
+
+=item show_icon_url and hide_icon_url: the icons to show instead of the default [+] and [-]
 
 =back
 

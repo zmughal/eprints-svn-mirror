@@ -30,18 +30,9 @@ sub new
 	return $self;
 }
 
-sub obtain_lock
-{
-	my( $self ) = @_;
-
-	return $self->obtain_eprint_lock;
-}
-
 sub can_be_viewed
 {
 	my( $self ) = @_;
-
-	return 0 unless $self->could_obtain_eprint_lock;
 
 	return $self->allow( "eprint/edit" );
 }
@@ -59,7 +50,7 @@ sub from
 	}
 
 	my $action_id = $self->{processor}->{action};
-	if( defined $action_id && $action_id =~ m/^jump_(.*)$/ )
+	if( $action_id =~ m/^jump_(.*)$/ )
 	{
 		my $jump_to = $1;
 
@@ -166,7 +157,7 @@ sub redirect_to_me_url
 {
 	my( $self ) = @_;
 
-	return $self->SUPER::redirect_to_me_url.$self->workflow->get_state_params( $self->{processor} );
+	return $self->SUPER::redirect_to_me_url.$self->workflow->get_state_params;
 }
 	
 
@@ -190,29 +181,17 @@ sub screen_after_flow
 
 sub render
 {
-	my( $self, $staff_mode ) = @_;
-
-	$staff_mode = 0 if !defined $staff_mode;
-
-	my $cur_stage_id = $self->workflow->get_stage_id;
-	my $stage = $self->workflow->get_stage( $cur_stage_id );
+	my( $self ) = @_;
 
 	my $form = $self->render_form;
 
-	my $blister = $self->render_blister( $cur_stage_id, $staff_mode );
-	$form->appendChild( $blister );
+	my $blister = $self->render_blister( $self->workflow->get_stage_id, 0 );
+	my $toolbox = $self->{session}->render_toolbox( undef, $blister );
+	$form->appendChild( $toolbox );
 
-	my $action_buttons = $stage->{action_buttons};
-
-	if( $action_buttons eq "top" || $action_buttons eq "both" )
-	{
-		$form->appendChild( $self->render_buttons );
-	}
+	$form->appendChild( $self->render_buttons );
 	$form->appendChild( $self->workflow->render );
-	if( $action_buttons eq "bottom" || $action_buttons eq "both" )
-	{
-		$form->appendChild( $self->render_buttons );
-	}
+	$form->appendChild( $self->render_buttons );
 	
 	return $form;
 }

@@ -19,10 +19,6 @@
 
 B<EPrints::Plugin::InputForm::Component> - A single form component 
 
-=head1 METHODS
-
-=over 4
-
 =cut
 
 package EPrints::Plugin::InputForm::Component;
@@ -32,22 +28,6 @@ use strict;
 our @ISA = qw/ EPrints::Plugin /;
 
 $EPrints::Plugin::InputForm::Component::DISABLE = 1;
-
-=item $component = EPrints::Plugin::InputForm::Component->new( %opts )
-
-Create a new component object with following parameters:
-
-	session - session object
-	collapse - whether the component starts collapsed
-	no_help - hide field help
-	no_toggle - hide help toggle button
-	surround - surround class, defaults to 'Default'
-	prefix - prefix for the component id
-	dataobj - object the field is being rendered for
-
-See also L<EPrints::Plugin::InputForm::Surround::Default>.
-
-=cut
 
 sub new
 {
@@ -62,8 +42,6 @@ sub new
 	{
 		$self->{session} = $opts{session};
 		$self->{collapse} = $opts{collapse};
-		$self->{no_help} = $opts{no_help};
-		$self->{no_toggle} = $opts{no_toggle};
 		$self->{surround} = $opts{surround};
 		$self->{prefix} = $opts{prefix};
 		$self->{dataobj} = $opts{dataobj};
@@ -352,8 +330,7 @@ sub xml_to_metafield
 	}
 
 	my $cloned = 0;
-	foreach my $prop ( qw/ required input_lookup_url input_lookup_params top options
-                               input_boxes input_add_boxes input_ordered / )
+	foreach my $prop ( qw/ required input_lookup_url input_lookup_params top options / )
 	{
 		my $setting = $xml->getAttribute( $prop );
 		next unless EPrints::Utils::is_set( $setting );
@@ -391,10 +368,6 @@ sub get_state_params
 
 	return "";
 }
-
-=back
-
-=cut
 
 ######################################################################
 1;

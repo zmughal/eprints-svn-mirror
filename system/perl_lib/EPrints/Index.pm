@@ -33,7 +33,7 @@ the free-text search indexes.
 
 package EPrints::Index;
 
-use EPrints::Index::Tokenizer; # split_words,apply_mapping back-compatibility
+use Unicode::String qw( latin1 utf8 );
 use POSIX 'setsid';
 use EPrints;
 use strict;
@@ -59,17 +59,13 @@ sub remove
 
 	my $db = $session->get_database;
 
-	my $indextable = $dataset->get_sql_index_table_name();
-	my $rindextable = $dataset->get_sql_rindex_table_name();
-	my $grepindextable = $dataset->get_sql_grep_table_name();
-
 	my $keyfield = $dataset->get_key_field();
 	my $Q_keyname = $db->quote_identifier( $keyfield->get_sql_name() );
 	my $Q_field = $db->quote_identifier( "field" );
 	my $Q_word = $db->quote_identifier( "word" );
 	my $Q_fieldword = $db->quote_identifier( "fieldword" );
-	my $Q_indextable = $db->quote_identifier($indextable);
-	my $Q_rindextable = $db->quote_identifier($rindextable);
+	my $Q_indextable = $db->quote_identifier($dataset->get_sql_index_table_name());
+	my $Q_rindextable = $db->quote_identifier($dataset->get_sql_rindex_table_name());
 	my $POS = $db->quote_identifier("pos");
 	my $Q_ids = $db->quote_identifier("ids");
 
@@ -93,12 +89,6 @@ sub remove
 	}
 	$sql = "DELETE FROM $Q_rindextable WHERE $where";
 	$rv = $rv && $session->get_database->do( $sql );
-
-	# remove from grep table
-
-	$session->get_database->delete_from($grepindextable,
-		[ $keyfield->get_sql_name, "fieldname" ],
-		[ $objectid, $fieldid ] );
 
 	return $rv;
 }
@@ -159,7 +149,6 @@ sub add
 
 	my $indextable = $dataset->get_sql_index_table_name();
 	my $rindextable = $dataset->get_sql_rindex_table_name();
-	my $grepindextable = $dataset->get_sql_grep_table_name();
 
 	my $rv = 1;
 	
@@ -224,11 +213,18 @@ sub add
 
 	my $name = $field->get_name;
 
-	$session->get_database->insert($grepindextable, [
-		$keyfield->get_sql_name(),
-		"fieldname",
-		"grepstring"
-	], map { [ $objectid, $name, $_ ] } @$grepcodes );
+	foreach my $grepcode ( @{$grepcodes} )
+	{
+		$session->get_database->insert($dataset->get_sql_grep_table_name, [
+			$keyfield->get_sql_name(),
+			"fieldname",
+			"grepstring"
+		], [
+			$objectid,
+			$name,
+			$grepcode
+		]);
+	}
 }
 
 
@@ -238,19 +234,21 @@ sub add
 ######################################################################
 =pod
 
-=item EPrints::Index::update_ordervalues( $session, $dataset, $data, $changed )
+=item EPrints::Index::update_ordervalues( $session, $dataset, $data )
 
 Update the order values for an object. $data is a structure
-returned by $dataobj->get_data. $changed is a hash of changed fields.
+returned by $dataobj->get_data
 
 =cut
 ######################################################################
 
+# $tmp should not be used any more.
+
 sub update_ordervalues
 {
-	my( $session, $dataset, $data, $changed ) = @_;
+	my( $session, $dataset, $data, $tmp ) = @_;
 
-	&_do_ordervalues( $session, $dataset, $data, $changed, 0 );
+	&_do_ordervalues( $session, $dataset, $data, 0, $tmp );	
 }
 
 ######################################################################
@@ -266,9 +264,9 @@ returned by $dataobj->get_data
 
 sub insert_ordervalues
 {
-	my( $session, $dataset, $data ) = @_;
+	my( $session, $dataset, $data, $tmp ) = @_;
 
-	&_do_ordervalues( $session, $dataset, $data, $data, 1 );	
+	&_do_ordervalues( $session, $dataset, $data, 1, $tmp );	
 }
 
 # internal method to avoid code duplication. Update and insert are
@@ -276,33 +274,29 @@ sub insert_ordervalues
 
 sub _do_ordervalues
 {
-    my( $session, $dataset, $data, $changed, $insert ) = @_;
-
-	# nothing to do
-	return 1 if !keys %$changed;
+        my( $session, $dataset, $data, $insert, $tmp ) = @_;
 
 	# insert is ignored
 	# insert = 0 => update
 	# insert = 1 => insert
+	# tmp = 1 = use_tmp_table
+	# tmp = 0 = use normal table
 
-	my $keyfield = $dataset->get_key_field;
+	my( $keyfield, @fields ) = $dataset->get_fields( 1 );
 	my $keyname = $keyfield->get_sql_name;
 	my $keyvalue = $data->{$keyfield->get_name()};
 
 	foreach my $langid ( @{$session->get_repository->get_conf( "languages" )} )
 	{
 		my $ovt = $dataset->get_ordervalues_table_name( $langid );
+		if( $tmp ) { $ovt .= "_tmp"; }
 
-		my @fnames;
-		my @fvals;
-		foreach my $fieldname ( keys %$changed )
+		my @fnames = ( $keyname );
+		my @fvals = ( $keyvalue );
+		foreach my $field ( @fields )
 		{
-			next if $fieldname eq $keyname;
-			my $field = $dataset->field( $fieldname );
-			next if $field->is_virtual;
-
 			my $ov = $field->ordervalue( 
-					$data->{$fieldname},
+					$data->{$field->get_name()},
 					$session,
 					$langid,
 					$dataset );
@@ -311,20 +305,11 @@ sub _do_ordervalues
 			push @fvals, $ov;
 		}
 
-		if( $insert )
+		if( !$insert )
 		{
-			$session->get_database->insert( $ovt,
-				[$keyname, @fnames],
-				[$keyvalue, @fvals] );
+			$session->get_database->delete_from( $ovt, [$keyname], [$keyvalue] );
 		}
-		else
-		{
-			$session->get_database->_update( $ovt,
-				[$keyname],
-				[$keyvalue],
-				\@fnames,
-				\@fvals );
-		}
+		$session->get_database->insert( $ovt, \@fnames, \@fvals );
 	}
 }
 
@@ -363,6 +348,79 @@ sub delete_ordervalues
 	}
 }
 
+######################################################################
+=pod
+
+=item @words = EPrints::Index::split_words( $session, $utext )
+
+Splits a utf8 string into individual words. 
+
+=cut
+######################################################################
+
+sub split_words
+{
+	my( $session, $utext ) = @_;
+
+	my $len = $utext->length;
+        my @words = ();
+        my $cword = utf8( "" );
+        for(my $i = 0; $i<$len; ++$i )
+        {
+                my $s = $utext->substr( $i, 1 );
+                # $s is now char number $i
+                if( defined $EPrints::Index::FREETEXT_SEPERATOR_CHARS->{$s} || ord($s)<32 )
+                {
+                        push @words, $cword unless( $cword eq "" ); 
+                        $cword = utf8( "" );
+                }
+                else
+                {
+                        $cword .= $s;
+                }
+        }
+	push @words, $cword unless( $cword eq "" ); 
+
+	return @words;
+}
+
+
+######################################################################
+=pod
+
+=item $utext2 = EPrints::Index::apply_mapping( $session, $utext )
+
+Replaces certain unicode characters with ASCII equivalents and returns
+the new string.
+
+This is used before indexing words so that things like umlauts will
+be ignored when searching.
+
+=cut
+######################################################################
+
+sub apply_mapping
+{
+	my( $session, $text ) = @_;
+
+	$text = "" if( !defined $text );
+	my $utext = utf8( "$text" ); # just in case it wasn't already.
+	my $len = $utext->length;
+	my $buffer = utf8( "" );
+	for( my $i = 0; $i<$len; ++$i )
+	{
+		my $s = $utext->substr( $i, 1 );
+		# $s is now char number $i
+		if( defined $EPrints::Index::FREETEXT_CHAR_MAPPING->{$s} )
+		{
+			$s = $EPrints::Index::FREETEXT_CHAR_MAPPING->{$s};
+		} 
+		$buffer.=$s;
+	}
+
+	return $buffer;
+}
+
 sub pidfile
 {
 	return EPrints::Config::get("var_path")."/indexer.pid";
@@ -388,6 +446,68 @@ sub suicidefile
 	return EPrints::Config::get("var_path")."/indexer.suicide";
 }
 
+sub do_tick
+{
+	my $tickfile = EPrints::Index::tickfile();
+	open( TICK, ">$tickfile" );
+	print TICK <<END;
+# This file is recreated by the indexer to indicate
+# that the indexer is still running.
+END
+	close TICK;
+}
+
+sub write_pid
+{
+	my $pidfile = EPrints::Index::pidfile();
+	open( PID, ">$pidfile" ) || EPrints::abort( "Can't open $pidfile for writing: $!" );
+	print PID <<END;
+# This file is automatically generated to indicate what process ID
+# indexer is running as. If this file exists then indexer is assumed
+# to be running.
+END
+	print PID $$."\n";
+	print PID EPrints::Time::human_time()."\n";
+	close PID;
+}
+
+sub get_pid
+{
+	my $pidfile = EPrints::Index::pidfile();
+#	print "Reading $p->{pidfile}\n" if( $p->{noise} > 1 );
+	open( PID, $pidfile ) || EPrints::abort( "Could not open $pidfile: $!" );
+	my $pid;
+	while( <PID> )
+	{
+		s/\015?\012?$//s;
+		if( m/^\d+$/ )
+		{
+			$pid = $_;
+			last;
+		}
+	}
+	close PID;
+
+	return $pid;
+}
+
+sub has_stalled
+{
+	my $last_tick = EPrints::Index::get_last_tick();
+	return 1 if( $last_tick > 10*60 );
+	return 0;
+}
+
+sub get_last_tick
+{
+	my $tickfile = tickfile();
+	return undef unless( -e $tickfile );
+
+	# Comes back in fractions of days, so rescale	
+	my $age = ( -M $tickfile );
+	return $age*24*60*60;
+}
+
 sub indexlog
 {
 	my( $txt ) = @_;
@@ -401,92 +521,349 @@ sub indexlog
 	print STDERR "[".localtime()."] ".$txt."\n";
 }
 
+sub rolllogs
+{
+	my( $p ) = @_;
+
+	return if( $p->{loglevel} <= 0 );
+	return if( $p->{rollcount} <= 0 );
+
+	EPrints::Index::indexlog( "** End of log. Closing and rolling." ) if( $p->{loglevel} > 2 );
+	for( my $n = $p->{rollcount}; $n > 0; --$n )
+	{
+		my $src = $p->{logfile};	
+		if( $n > 1 ) { $src.='.'.($n-1); }
+		next unless( -f $src );
+		my $tgt = $p->{logfile}.'.'.$n;
+		rename( $src, $tgt ) || warn "Error renaming: $!";
+	}
+	close STDERR;
+	open( STDERR, ">>$p->{logfile}" ) || warn "Error opening: $p->{logfile}: $!";
+	select( STDERR );
+	$| = 1;
+}
+
+
+sub cleanup_indexer
+{
+	my( $p ) = @_;
+
+	EPrints::Index::indexlog( "** Control process $$ stopping..." ) if( $p->{loglevel} > 2 );
+	EPrints::Index::indexlog( "* Unlinking $p->{pidfile}" ) if( $p->{loglevel} > 3 );
+	unlink( $p->{pidfile} ) || die( "Can't unlink $p->{pidfile}" );
+	unlink( $p->{tickfile} ) || die( "Can't unlink $p->{tickfile}" );
+	if( defined $p->{kid} )
+	{
+		EPrints::Index::indexlog( "* Sending TERM signal to worker process: $p->{kid}" ) if( $p->{loglevel} > 2 );
+		kill 15, $p->{kid};
+	}
+
+	if( EPrints::Index::suicidal() ) 
+	{
+		unlink( EPrints::Index::suicidefile() );
+	}
+
+	EPrints::Index::indexlog( "** Control process $$ stopped", 1 ) if( $p->{loglevel} > 2 );
+	EPrints::Index::indexlog( "**** Indexer stopped" ) if( $p->{loglevel} > 0 );
+	EPrints::Index::indexlog() if( $p->{loglevel} > 0 );
+}
+
+# dequeue all of the field ids that are queued for indexing for this object
+sub _dequeue_all
+{
+	my( $session, $datasetid, $objectid ) = @_;
+
+	my $db = $session->get_database;
+
+	my $Q_field = $db->quote_identifier( "field" );
+	my $Q_table = $db->quote_identifier( "index_queue" );
+
+	my $logic = "$Q_field LIKE '".EPrints::Database::prep_like_value( "$datasetid.$objectid." )."%'";
+
+	my $sql = "SELECT $Q_field FROM $Q_table WHERE $logic";
+	my $sth = $db->prepare( $sql );
+	$db->execute( $sth, $sql );
+
+	my %fields;
+	while(my( $field ) = $sth->fetchrow_array)
+	{
+		my( undef, undef, $fieldid ) = split /\./, $field;
+		$fields{$fieldid} = 1;
+	}
+
+	$sql = "DELETE FROM $Q_table WHERE $logic";
+	$db->do( $sql );
+
+	return keys %fields;
+}
+
 sub do_index
 {
 	my( $session, $p ) = @_;
 
-	my $seen_action = 0; # have we done anything
-	my $loop_max = 10; # max times to loop
+	my( $datasetid, $objectid, $fieldid ) = $session->get_database->index_dequeue;
+	return 0 unless defined $datasetid; # nothing queued
 
-	my $index_queue = $session->get_repository->get_dataset( "index_queue" );
-	my $searchexp = EPrints::Search->new(
-		allow_blank => 1,
-		session => $session,
-		dataset => $index_queue,
-		);
-	my $list = $searchexp->perform_search();
+	my @fields = ($fieldid, _dequeue_all( $session, $datasetid, $objectid ));
 
-	foreach my $iq ($list->get_records(0,$loop_max))
+	my $dataset = $session->get_repository->get_dataset( $datasetid );
+	if( !defined $dataset )
 	{
-		$seen_action = 1;
+		indexlog( "Could not make dataset: $datasetid ($datasetid.$objectid.$fieldid)" );
+		return;
+	}
 
-		my $datasetid = $iq->get_value( "datasetid" );
-		my $objectid = $iq->get_value( "objectid" );
-		my $fieldid = $iq->get_value( "fieldid" );
-		my $fieldcode = "$datasetid.$objectid.$fieldid"; # for debug messages
+	my $item = $dataset->get_object( $session, $objectid );
+	return unless defined $item;
 
-		$iq->remove();
-	
-		my $dataset = $session->get_repository->get_dataset( $datasetid );
-		if( !defined $dataset )
+$session->get_database->begin;
+	foreach $fieldid (@fields)
+	{
+		my $fieldcode = "$datasetid.$objectid.$fieldid"; # debug
+
+		if( !$dataset->has_field( $fieldid ) )
 		{
-			EPrints::Index::indexlog( "Could not make dataset: $datasetid ($fieldcode)" );
+			indexlog( "No such field: $fieldid (found on index queue).. skipping.\n" );
 			next;
 		}
-
-		my $item = $dataset->get_object( $session, $objectid );
-		next unless ( defined $item );
-
-		my @fields;
-
-		if( $fieldid eq EPrints::DataObj::IndexQueue::ALL() )
-		{
-			push @fields, $dataset->get_fields();
-		}
-		elsif( $fieldid eq EPrints::DataObj::IndexQueue::FULLTEXT() )
-		{
-			push @fields, EPrints::MetaField->new( 
-				dataset => $dataset, 
-				name => $fieldid,
-				multiple => 1,
-				type => "fulltext" );
-		}
-		else
-		{
-			if( defined(my $field = $dataset->get_field( $fieldid )) )
-			{
-				push @fields, $field;
-			}
-		}
-		if( !scalar @fields )
-		{
-			EPrints::Index::indexlog( "No such field: $fieldid (found on index queue).. skipping.\n" );
-			next;
-		}
+		my $field = $dataset->get_field( $fieldid );
+		next unless $field->get_property( "text_index" );
 	
-		foreach my $field (@fields)
+		indexlog( "* de-indexing: $fieldcode" ) if( $p->{loglevel} > 4 );
+		remove( $session, $dataset, $objectid, $fieldid );
+		indexlog( "* done-de-indexing: $fieldcode" ) if( $p->{loglevel} > 5 );
+	
+		my $value = $item->get_value( $fieldid );
+		next unless EPrints::Utils::is_set( $value );	
+	
+		indexlog( "* indexing: $fieldcode" ) if( $p->{loglevel} > 4 );
+		add( $session, $dataset, $objectid, $fieldid, $value );
+		indexlog( "* done-indexing: $fieldcode" ) if( $p->{loglevel} > 5 );
+	}
+$session->get_database->commit;
+
+	return 1;
+}
+
+sub is_running
+{
+	my $pidfile = EPrints::Index::pidfile();
+	return 0 if( !-e $pidfile );
+	return 1;
+}
+
+sub suicidal
+{
+	return 1 if( -e EPrints::Index::suicidefile() );
+	return 0;
+}
+
+sub stop
+{
+	# no params
+	return -1 if( !EPrints::Index::is_running );
+
+	my $suicidefile = EPrints::Index::suicidefile();
+	open( SUICIDE, ">$suicidefile" );
+	print SUICIDE <<END;
+# This file is recreated by the indexer to indicate
+# that the indexer should exit. 
+END
+	close SUICIDE;
+	
+	# give it 8 seconds
+	my $counter = 8;
+	for( 1..$counter )
+	{
+		if( !EPrints::Index::is_running )
 		{
-			EPrints::Index::indexlog( "* de-indexing: $fieldcode" ) if( $p->{loglevel} > 4 );
-			EPrints::Index::remove( $session, $dataset, $objectid, $field->get_name() );
-			EPrints::Index::indexlog( "* done-de-indexing: $fieldcode" ) if( $p->{loglevel} > 5 );
-
-			next unless( $field->get_property( "text_index" ) );
-
-			my $value = $field->get_value( $item );
-		
-			next unless EPrints::Utils::is_set( $value );	
-
-			EPrints::Index::indexlog( "* indexing: $fieldcode" ) if( $p->{loglevel} > 4 );
-			EPrints::Index::add( $session, $dataset, $objectid, $field->get_name(), $value );
-			EPrints::Index::indexlog( "* done-indexing: $fieldcode" ) if( $p->{loglevel} > 5 );
+			return 1;
 		}
-	};
+		sleep 1;
+	}
+	
+	# That didn't work - try to stop it using the command-line
+	# approach.
 
-	$searchexp->dispose();
+	my $bin_path = EPrints::Index::binfile();
+	system( "$bin_path", "stop" );
+	# give it 10 seconds
+	$counter = 10;
+	for( 1..$counter )
+	{
+		if( !EPrints::Index::is_running )
+		{
+			return 1;
+		}
+		sleep 1;
+	}
+	return 0 if( EPrints::Index::is_running );
+	return 1;
+}
 
-	return $seen_action;
-}	
+sub start
+{
+	my( $session ) = @_;
 
+	return -1 if( EPrints::Index::is_running );
+
+	EPrints::Index::_run_indexer( $session, "start" );	
+
+	# give it 10 seconds
+	my $counter = 10;
+	for( 1..$counter )
+	{
+		if( EPrints::Index::is_running )
+		{
+			return 1;
+		}
+		sleep 1;
+	}
+	return 0 if( !EPrints::Index::is_running );
+	return 1;
+}
+
+sub force_start
+{
+	my( $session ) = @_;
+
+	EPrints::Index::stop( $session );
+
+	unlink( EPrints::Index::pidfile() );
+	unlink( EPrints::Index::tickfile() );
+
+	return EPrints::Index::start( $session );
+}
+
+sub _run_indexer
+{
+	my( $session, $action ) = @_;
+	my $bin_path = EPrints::Index::binfile();
+	my $prog = <<END;
+use strict;
+use warnings;
+use POSIX 'setsid';
+chdir '/' or die "Can't chdir to /: \$!";
+open STDIN, '/dev/null'  or die "Can't read /dev/null: \$!";
+open STDOUT, '+>>', '/tmp/error_log' or die "Can't write to /dev/null: \$!";
+open STDERR, '>&STDOUT'  or die "Can't dup stdout: \$!";
+setsid or die "Can't start a new session: \$!";
+\$ENV{EPRINTS_NO_CHECK_USER} = 1;
+exec( "$bin_path", "$action" );
+END
+	$session->get_request->spawn_proc_prog( $EPrints::SystemSettings::conf->{executables}->{perl},
+		["-e", $prog ] );
+
+}
+
+
+# This map is used to convert Unicode characters
+# to ASCII characters below 127, in the word index.
+# This means that the word Fête is indexed as 'fete' and
+# "fete" or "fête" will match it.
+# There's no reason mappings have to be a single character.
+
+$EPrints::Index::FREETEXT_CHAR_MAPPING = {
+
+	# Basic latin1 mappings
+	latin1("¡") => "!",	latin1("¢") => "c",	
+	latin1("£") => "L",	latin1("¤") => "o",	
+	latin1("¥") => "Y",	latin1("¦") => "|",	
+	latin1("§") => "S",	latin1("¨") => "\"",	
+	latin1("©") => "(c)",	latin1("ª") => "a",	
+	latin1("«") => "<<",	latin1("¬") => "-",	
+	latin1("­") => "-",	latin1("®") => "(R)",	
+	latin1("¯") => "-",	latin1("°") => "o",	
+	latin1("±") => "+-",	latin1("²") => "2",	
+	latin1("³") => "3",	
+	latin1("µ") => "u",	latin1("¶") => "q",	
+	latin1("·") => ".",	latin1("¸") => ",",	
+	latin1("¹") => "1",	latin1("º") => "o",	
+	latin1("»") => ">>",	latin1("¼") => "1/4",	
+	latin1("½") => "1/2",	latin1("¾") => "3/4",	
+	latin1("¿") => "?",	latin1("À") => "A",	
+	latin1("Á") => "A",	latin1("Â") => "A",	
+	latin1("Ã") => "A",	latin1("Ä") => "A",	
+	latin1("Å") => "A",	latin1("Æ") => "AE",	
+	latin1("Ç") => "C",	latin1("È") => "E",	
+	latin1("É") => "E",	latin1("Ê") => "E",	
+	latin1("Ë") => "E",	latin1("Ì") => "I",	
+	latin1("Í") => "I",	latin1("Î") => "I",	
+	latin1("Ï") => "I",	latin1("Ð") => "D",	
+	latin1("Ñ") => "N",	latin1("Ò") => "O",	
+	latin1("Ó") => "O",	latin1("Ô") => "O",	
+	latin1("Õ") => "O",	latin1("Ö") => "O",	
+	latin1("×") => "x",	latin1("Ø") => "O",	
+	latin1("Ù") => "U",	latin1("Ú") => "U",	
+	latin1("Û") => "U",	latin1("Ü") => "U",	
+	latin1("Ý") => "Y",	latin1("Þ") => "TH",	
+	latin1("ß") => "B",	latin1("à") => "a",	
+	latin1("á") => "a",	latin1("â") => "a",	
+	latin1("ã") => "a",	latin1("ä") => "a",	
+	latin1("å") => "a",	latin1("æ") => "ae",	
+	latin1("ç") => "c",	latin1("è") => "e",	
+	latin1("é") => "e",	latin1("ê") => "e",	
+	latin1("ë") => "e",	latin1("ì") => "i",	
+	latin1("í") => "i",	latin1("î") => "i",	
+	latin1("ï") => "i",	latin1("ð") => "d",	
+	latin1("ñ") => "n",	latin1("ò") => "o",	
+	latin1("ó") => "o",	latin1("ô") => "o",	
+	latin1("õ") => "o",	latin1("ö") => "o",	
+	latin1("÷") => "/",	latin1("ø") => "o",	
+	latin1("ù") => "u",	latin1("ú") => "u",	
+	latin1("û") => "u",	latin1("ü") => "u",	
+	latin1("ý") => "y",	latin1("þ") => "th",	
+	latin1("ÿ") => "y",	latin1("'") => "",
+
+	# Hungarian characters. 
+#	'Å' => "o",	
+	'Å' => "o",  
+	'Å±' => "u",  
+	'Å°' => "u",
+ };
+
+# Minimum size word to normally index.
+$EPrints::Index::FREETEXT_MIN_WORD_SIZE = 3;
+
+# We use a hash rather than an array for good and bad
+# words as we only use these to lookup if words are in
+# them or not. If we used arrays and we had lots of words
+# it might slow things down.
+
+# Words to never index, despite their length.
+$EPrints::Index::FREETEXT_STOP_WORDS = {
+	"this"=>1,	"are"=>1,	"which"=>1,	"with"=>1,
+	"that"=>1,	"can"=>1,	"from"=>1,	"these"=>1,
+	"those"=>1,	"the"=>1,	"you"=>1,	"for"=>1,
+	"been"=>1,	"have"=>1,	"were"=>1,	"what"=>1,
+	"where"=>1,	"is"=>1,	"and"=>1, 	"fnord"=>1
+};
+
+# Words to always index, despite their length.
+$EPrints::Index::FREETEXT_ALWAYS_WORDS = {
+		"ok" => 1 
+};
+
+# Chars which seperate words. Pretty much anything except
+# A-Z a-z 0-9 and single quote '
+
+# If you want to add other seperator characters then they
+# should be encoded in utf8. The Unicode::String man page
+# details some useful methods.
+
+$EPrints::Index::FREETEXT_SEPERATOR_CHARS = {
+	'@' => 1, 	'[' => 1, 	'\\' => 1, 	']' => 1,
+	'^' => 1, 	'_' => 1,	' ' => 1, 	'`' => 1,
+	'!' => 1, 	'"' => 1, 	'#' => 1, 	'$' => 1,
+	'%' => 1, 	'&' => 1, 	'(' => 1, 	')' => 1,
+	'*' => 1, 	'+' => 1, 	',' => 1, 	'-' => 1,
+	'.' => 1, 	'/' => 1, 	':' => 1, 	';' => 1,
+	'{' => 1, 	'<' => 1, 	'|' => 1, 	'=' => 1,
+	'}' => 1, 	'>' => 1, 	'~' => 1, 	'?' => 1,
+	latin1("´") => 1,
+};
+
+	
 1;
 
 ######################################################################

@@ -18,37 +18,15 @@
 
 B<EPrints::List> - List of data objects, usually a search result.
 
-=head1 SYNOPSIS
-
-	use EPrints::List;
-
-	$list = EPrints::List->new( session => $session, dataset => $dataset, ids => $ids); # ref to an array of ids to populate the list with
-
-	$new_list = $list->reorder( "-creation_date" ); # makes a new list ordered by reverse order creation_date
-
-	$new_list = $list->union( $list2, "creation_date" ) # makes a new list by adding the contents of $list to $list2. the resulting list is ordered by "creation_date"
-
-	$new_list = $list->remainder( $list2, "title" ); # makes a new list by removing the contents of $list2 from $list orders the resulting list by title
-
-	$n = $list->count() # returns the number of items in the list
-
-	@dataobjs = $list->slice( 0, 20 );  #get the first 20 DataObjs from the list in an array
-
-	$list->map( $function, $info ) # performs a function on every item in the list. This is very useful go and look at the detailed description.
-
-	$plugin_output = $list->export( "BibTeX" ); #calls Plugin::Export::BibTeX on the list.
-
-	$dataset = $list->get_dataset(); #returns the dataset in which the containing objects belong
-
 =head1 DESCRIPTION
 
 This class represents an ordered list of objects, all from the same
 dataset. Usually this is the results of a search. 
 
-=head1 SEE ALSO
-	L<EPrints::Search>
+=over 4
 
 =cut
+
 ######################################################################
 #
 # INSTANCE VARIABLES:
@@ -124,36 +102,7 @@ automatically true.
 
 =cut
 ######################################################################
-=pod
 
-=over 4
-
-=item $list = EPrints::List->new( 
-			session => $session,
-			dataset => $dataset,
-			ids => $ids, # a ref to the array of ids
-			[order => $order] ); # the field on which to order the list
-
-=item $list = EPrints::List->new( 
-			session => $session,
-			dataset => $dataset,
-			[desc => $desc],
-			[desc_order => $desc_order],
-			cache_id => $cache_id );
-
-Creates a new list object in memory only. Lists will be
-cached if any method requiring order is called, or an explicit 
-cache() method is called.
-
-encoded is the serialised version of the searchExpression which
-created this list, if there was one.
-
-If keep_cache is set then the cache will not be disposed of at the
-end of the current $session. If cache_id is set then keep_cache is
-automatically true.
-
-=cut
-######################################################################
 sub new
 {
 	my( $class, %opts ) = @_;
@@ -166,7 +115,8 @@ sub new
 	$self->{encoded} = $opts{encoded};
 	$self->{cache_id} = $opts{cache_id};
 	$self->{keep_cache} = $opts{keep_cache};
-	$self->{searchexp} = $opts{searchexp};
+	$self->{desc} = $opts{desc};
+	$self->{desc_order} = $opts{desc_order};
 
 	if( !defined $self->{cache_id} && !defined $self->{ids} ) 
 	{
@@ -203,8 +153,6 @@ sub new
 
 Create a new list from this one, but sorted in a new way.
 
-$new_list = $list->reorder( "-creation_date" ); # makes a new list ordered by reverse order creation_date
-
 =cut
 ######################################################################
 
@@ -226,9 +174,8 @@ sub reorder
 
 	my $srctable = $db->cache_table( $self->{cache_id} );
 
-	my $encoded = defined($self->{encoded}) ? $self->{encoded} : "";
 	my $new_cache_id  = $db->cache( 
-		"$encoded(reordered:$new_order)", # nb. not very neat. 
+		$self->{encoded}."(reordered:$new_order)", # nb. not very neat. 
 		$self->{dataset},
 		$srctable,
 		$new_order );
@@ -236,7 +183,7 @@ sub reorder
 	my $new_list = EPrints::List->new( 
 		session=>$self->{session},
 		dataset=>$self->{dataset},
-		searchexp=>$self->{searchexp},
+		desc=>$self->{desc}, # don't pass desc_order!
 		order=>$new_order,
 		keep_cache=>$self->{keep_cache},
 		cache_id => $new_cache_id );
@@ -252,10 +199,6 @@ sub reorder
 Create a new list from this one plus another one. If order is not set
 then this list will not be in any certain order.
 
-$list2 - the list which is to be combined to the calling list
-
-$order - a field which the the resulting list will be ordered on. (optional)
-
 =cut
 ######################################################################
 
@@ -269,7 +212,6 @@ sub union
 	my %newids = ();
 	foreach( @{$ids1}, @{$ids2} ) { $newids{$_}=1; }
 	my @objectids = keys %newids;
-
 	# losing desc, although could be added later.
 	return EPrints::List->new(
 		dataset => $self->{dataset},
@@ -289,12 +231,7 @@ then this list will not be in any certain order.
 Remove all items in $list2 from $list and return the result as a
 new EPrints::List.
 
-$list2 - the eprints you want to remove from the calling list
-
-$order - the field the remaining list is to be ordered by
-
 =cut
-
 ######################################################################
 
 sub remainder
@@ -325,10 +262,6 @@ sub remainder
 Create a new list containing only the items which are in both lists.
 If order is not set then this list will not be in any certain order.
 
-$list2 - a list to intersect with the calling list
-
-$order -  the field the resulting list will be ordered on
-
 =cut
 ######################################################################
 
@@ -353,7 +286,7 @@ sub intersect
 }
 
 ######################################################################
-=for InternalDoc
+=pod
 
 =item $list->cache
 
@@ -369,7 +302,6 @@ sub cache
 	return if( defined $self->{cache_id} );
 
 	if( $self->_matches_none && !$self->{keep_cache} )
-	
 	{
 		# not worth caching zero in a temp table!
 		return;
@@ -420,7 +352,7 @@ sub cache
 }
 
 ######################################################################
-=for InternalDoc
+=pod
 
 =item $cache_id = $list->get_cache_id
 
@@ -439,7 +371,7 @@ sub get_cache_id
 
 
 ######################################################################
-=for InternalDoc
+=pod
 
 =item $list->dispose
 
@@ -464,8 +396,6 @@ sub dispose
 			delete $self->{cache_id};
 		}
 	}
-
-	%$self = ();
 }
 
 
@@ -503,35 +433,19 @@ sub count
 	EPrints::abort( "Called \$list->count() where there was no cache or ids." );
 }
 
-=item $dataobj = $list->item( $offset )
-
-Returns the item at offset $offset.
-
-Returns undef if $offset is out of range of the current list of items.
-
-=cut
-
-sub item
-{
-	my( $self, $offset ) = @_;
-
-	return ($self->slice( $offset, 1 ))[0];
-}
 
 ######################################################################
 =pod
 
-=item @dataobjs = $list->slice( [$offset], [$count] )
+=item @dataobjs = $list->get_records( [$offset], [$count] )
 
-Returns the DataObjs in this list as an array. 
-$offset - what index through the list to start from.
-$count - the maximum to return.
+Return the objects described by this list. $count is the maximum
+to return. $offset is what index through the list to start from.
 
 =cut
 ######################################################################
 
-sub get_records { shift->slice( @_ ) }
-sub slice
+sub get_records
 {
 	my( $self , $offset , $count ) = @_;
 	
@@ -542,19 +456,15 @@ sub slice
 ######################################################################
 =pod
 
-=item $ids = $list->ids( [$offset], [$count] )
+=item $ids = $list->get_ids( [$offset], [$count] )
 
 Return a reference to an array containing the ids of the specified
 range from the list. This is more efficient if you just need the ids.
 
-$offset - what index through the list to start from.
-$count - the maximum to return.
-
 =cut
 ######################################################################
 
-sub get_ids { shift->ids( @_ ) }
-sub ids
+sub get_ids
 {
 	my( $self , $offset , $count ) = @_;
 	
@@ -604,7 +514,7 @@ sub _matches_all
 # 
 # $ids/@dataobjs = $list->_get_records ( $offset, $count, $justids )
 #
-# Method which sessions getting objects or just ids.
+# Method which handles getting objects or just ids.
 #
 ######################################################################
 
@@ -619,22 +529,12 @@ sub _get_records
 	my @ids;
 	if( defined $self->{ids} )
 	{
-		if( $offset > $#{$self->{ids}} )
-		{
-			@ids = ();
-		}
-		if( !defined $count || $offset+$count > @{$self->{ids}} )
-		{
-			@ids = @{$self->{ids}}[$offset..$#{$self->{ids}}];
-		}
-		else
-		{
-			@ids = @{$self->{ids}}[$offset..$offset+$count-1];
-		}
+		$count = scalar @{$self->{ids}} if !defined $count;
+		@ids = grep { defined $_ } @{$self->{ids}}[$offset..$offset+$count-1];
 	}
 	else
 	{
-		my $cachemap = $self->{session}->get_database->get_cachemap( $self->{cache_id} );
+		my $cachemap = EPrints::DataObj::Cachemap->new( $self->{session}, $self->{cache_id} );
 		@ids = $self->{session}->get_database->get_cache_ids( $self->{dataset}, $cachemap, $offset, $count );
 	}
 
@@ -684,7 +584,7 @@ sub map
 
 	for( my $offset = 0; $offset < $count; $offset+=$CHUNKSIZE )
 	{
-		my @records = $self->slice( $offset, $CHUNKSIZE );
+		my @records = $self->get_records( $offset, $CHUNKSIZE );
 		foreach my $item ( @records )
 		{
 			&{$function}( 
@@ -704,11 +604,6 @@ sub map
 Apply an output plugin to this list of items. If the param "fh"
 is set it will send the results to a filehandle rather than return
 them as a string. 
-
-$plugin_id - the ID of the Export plugin which is to be used to process the list. e.g. "BibTeX"
-
-$param{"fh"} = "temp_dir/my_file.txt"; - the file the results are to be output to, useful for output too large to fit into memory.
-
 
 =cut
 ######################################################################
@@ -732,7 +627,8 @@ sub export
 		EPrints::abort( 
 "Plugin $plugin_id can't process $req_plugin_type data." );
 	}
-
+	
+	
 	return $plugin->output_list( list=>$self, %params );
 }
 
@@ -770,14 +666,14 @@ sub render_description
 
 	my $frag = $self->{session}->make_doc_fragment;
 
-	if( defined $self->{searchexp} )
+	if( defined $self->{desc} )
 	{
-		$frag->appendChild( $self->{searchexp}->render_description );
-		if( !defined $self->{order} )
-		{
-			$frag->appendChild( $self->{session}->make_text( " " ) );
-			$frag->appendChild( $self->{searchexp}->render_order_description );
-		}
+		$frag->appendChild( $self->{session}->clone_for_me( $self->{desc}, 1 ) );
+		$frag->appendChild( $self->{session}->make_text( " " ) );
+	}
+	if( defined $self->{desc_order} )
+	{
+		$frag->appendChild( $self->{session}->clone_for_me( $self->{desc_order}, 1 ) );
 	}
 
 	return $frag;

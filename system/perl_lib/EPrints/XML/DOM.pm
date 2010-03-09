@@ -36,9 +36,7 @@ $XML::DOM::SafeMode = 0;
 
 XML::DOM::setTagCompression( \&_xmldom_tag_compression );
 
-$EPrints::XML::CLASS = "EPrints::XML::DOM";
-
-$EPrints::XML::LIB_LEN = length("XML::DOM::");
+$EPrints::XML::PREFIX = "XML::DOM::";
 
 # DOM spec fixes
 *XML::DOM::Document::documentElement = \&XML::DOM::Document::getDocumentElement;
@@ -47,11 +45,6 @@ $EPrints::XML::LIB_LEN = length("XML::DOM::");
 *XML::DOM::Node::nodeName = sub { shift->getNodeName(@_) };
 *XML::DOM::Node::nodeValue = sub { shift->getNodeValue(@_) };
 *XML::DOM::Node::nodeType = sub { shift->getNodeType(@_) };
-*XML::DOM::Node::localName = sub {
-		my $name = shift->getNodeName(@_);
-		$name =~ s/^.*://;
-		return $name;
-	};
 *XML::DOM::Attr::name = \&XML::DOM::Attr::getName;
 *XML::DOM::Attr::nodeName = \&XML::DOM::Attr::getName;
 *XML::DOM::Attr::value = \&XML::DOM::Attr::getValue;
@@ -62,14 +55,6 @@ $EPrints::XML::LIB_LEN = length("XML::DOM::");
 *XML::DOM::Element::hasAttribute = sub { defined(shift->getAttributeNode(@_)) };
 *XML::DOM::Node::childNodes = \&XML::DOM::Node::getChildNodes;
 *XML::DOM::Node::firstChild = \&XML::DOM::Node::getFirstChild;
-*XML::DOM::Document::importNode = sub {
-		my( $doc, $node, $deep ) = @_;
-
-		$node = $node->cloneNode( $deep );
-		$node->setOwnerDocument( $doc );
-
-		return $node;
-	};
 
 ######################################################################
 # 
@@ -118,7 +103,7 @@ sub parse_xml_string
 	return $doc;
 }
 
-sub _parse_url
+sub parse_url
 {
 	my( $url, $no_expand ) = @_;
 
@@ -213,18 +198,35 @@ sub event_parse
 }
 
 
-sub _dispose
+sub dispose
 {
 	my( $node ) = @_;
 
+	if( !defined $node )
+	{
+		EPrints::abort "attempt to dispose an undefined dom node";
+	}
 	if( !$node->isa( "XML::DOM::Node" ) )
 	{
 		EPrints::abort "attempt to dispose an dom node which isn't a dom node";
 	}
 	
+
 	$node->dispose;
 }
 
+
+sub clone_node
+{
+	my( $node, $deep ) = @_;
+
+	if( !defined $node )
+	{
+		EPrints::abort "no node passed to clone_node";
+	}
+
+	return $node->cloneNode( $deep );
+}
 
 sub clone_and_own
 {
@@ -245,10 +247,7 @@ sub document_to_string
 {
 	my( $doc, $enc ) = @_;
 
-	my $xml = $doc->toString;
-	utf8::decode($xml);
-
-	return $xml;
+	return $doc->toString;
 }
 
 sub make_document
@@ -260,15 +259,9 @@ sub make_document
 	return $doc;
 }
 
-sub version
+sub make_document_fragment
 {
-	"XML::DOM $XML::DOM::VERSION ".$INC{'XML/DOM.pm'};
+	my( $session ) = @_;
+	
+	return $session->{doc}->createDocumentFragment;
 }
-
-package EPrints::XML::DOM;
-
-our @ISA = qw( EPrints::XML );
-
-use strict;
-
-1;

@@ -32,18 +32,9 @@ sub new
 	return $self;
 }
 
-sub obtain_lock
-{
-	my( $self ) = @_;
-
-	return $self->obtain_eprint_lock;
-}
-
 sub can_be_viewed
 {
 	my( $self ) = @_;
-
-	return 0 unless $self->could_obtain_eprint_lock;
 
 	return $self->allow( "eprint/staff/edit" );
 }
@@ -59,7 +50,17 @@ sub render
 {
 	my( $self ) = @_;
 
-	$self->SUPER::render( 1 );
+	my $form = $self->render_form;
+
+	my $blister = $self->render_blister( $self->workflow->get_stage_id, 1 );
+	my $toolbox = $self->{session}->render_toolbox( undef, $blister );
+	$form->appendChild( $toolbox );
+
+	$form->appendChild( $self->render_buttons );
+	$form->appendChild( $self->workflow->render );
+	$form->appendChild( $self->render_buttons );
+	
+	return $form;
 }
 
 sub workflow

@@ -40,6 +40,13 @@ BEGIN
 
 use EPrints::MetaField::Int;
 
+
+
+sub get_digits
+{
+	return( 4 );
+}
+
 sub render_search_input
 {
 	my( $self, $session, $searchfield ) = @_;

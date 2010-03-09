@@ -26,6 +26,7 @@ sub render
 {
 	my( $self, $component ) = @_;
 
+	my $help = $component->render_help( $self );
 	my $comp_name = $component->get_name();
 	my @problems = @{$component->get_problems()};
 
@@ -57,12 +58,41 @@ sub render
 
 	$content->appendChild( $content_inner );
 
-	$title_bar->appendChild( $title_div );
-
 	# Help rendering
-	if( $component->has_help && !$component->{no_help} )
+	if( $component->has_help )
 	{
-		$self->_render_help( $component, $title_bar, $content_inner );
+		my $help_prefix = $component->{prefix}."_help";
+	
+		my $help_table = $self->{session}->make_element( "table",cellpadding=>"0",border=>"0",cellspacing=>"0", width=>"100%" );
+		my $help_table_tr = $self->{session}->make_element( "tr" );
+		my $help_table_td1 = $self->{session}->make_element( "td" );
+		my $help_table_td2 = $self->{session}->make_element( "td", align=>"right" );
+		$help_table->appendChild( $help_table_tr );
+		$help_table_tr->appendChild( $help_table_td1 );
+		$help_table_tr->appendChild( $help_table_td2 );
+		$help_table_td1->appendChild( $title_div );
+	
+		my $show_help = $self->{session}->make_element( "div", class=>"ep_sr_show_help ep_only_js ep_toggle", id=>$help_prefix."_show" );
+		my $helplink = $self->{session}->make_element( "a", onclick => "EPJS_blur(event); EPJS_toggleSlide('$help_prefix',false);EPJS_toggle('${help_prefix}_hide',false);EPJS_toggle('${help_prefix}_show',true);return false", href=>"#" );
+		$show_help->appendChild( $self->html_phrase( "show_help",link=>$helplink ) );
+		$help_table_td2->appendChild( $show_help );
+	
+		my $hide_help = $self->{session}->make_element( "div", class=>"ep_sr_hide_help ep_hide ep_toggle", id=>$help_prefix."_hide" );
+		my $helplink2 = $self->{session}->make_element( "a", onclick => "EPJS_blur(event); EPJS_toggleSlide('$help_prefix',false);EPJS_toggle('${help_prefix}_hide',false);EPJS_toggle('${help_prefix}_show',true);return false", href=>"#" );
+		$hide_help->appendChild( $self->html_phrase( "hide_help",link=>$helplink2 ) );
+		$help_table_td2->appendChild( $hide_help );
+		
+		my $help_div = $self->{session}->make_element( "div", class => "ep_sr_help ep_no_js", id => $help_prefix );
+		my $help_div_inner = $self->{session}->make_element( "div", id => $help_prefix."_inner" );
+		$help_div_inner->appendChild( $help );
+		$help_div->appendChild( $help_div_inner );
+		$content_inner->appendChild( $help_div );
+
+		$title_bar->appendChild( $help_table );
+	}
+	else
+	{
+		$title_bar->appendChild( $title_div );
 	}
 
 	# Problem rendering
@@ -116,71 +146,6 @@ sub render
 	
 	$surround->appendChild( $content );
 	return $surround;
-}
-
-# this adds an expand/hide icon to the title bar that enables showing/hiding
-# help and adds the help text to the content_inner
-sub _render_help
-{
-	my( $self, $component, $title_bar, $content_inner ) = @_;
-
-	my $session = $self->{session};
-
-	my $prefix = $component->{prefix}."_help";
-
-	my $help = $component->render_help( $self );
-
-	# add the help text to the main part of the component
-	my $hide_class = !$component->{no_toggle} ? "ep_no_js" : "";
-	my $div = $session->make_element( "div", class => "ep_sr_help $hide_class", id => $prefix );
-	$content_inner->appendChild( $div );
-	my $div_inner = $session->make_element( "div", id => $prefix."_inner" );
-	$div_inner->appendChild( $help );
-	$div->appendChild( $div_inner );
-
-	# don't render a toggle button
-	if( $component->{no_toggle} )
-	{
-		return;
-	}
-
-	# construct a table with left/right columns
-	my $table = $session->make_element( "table",
-		cellpadding=>"0",
-		border=>"0",
-		cellspacing=>"0",
-		width=>"100%" );
-	my $tr = $session->make_element( "tr" );
-	my $left = $session->make_element( "td" );
-	my $right = $session->make_element( "td", align=>"right" );
-	$table->appendChild( $tr );
-	$tr->appendChild( $left );
-	$tr->appendChild( $right );
-
-	# move the existing title_bar contents into the left help cell
-	for($title_bar->childNodes)
-	{
-		$left->appendChild( $title_bar->removeChild($_) );
-	}
-	$title_bar->appendChild( $table );
-
-	# add open/close icons to the right help cell
-	my $action_div = $session->make_element( "div", class => "ep_only_js" );
-	$right->appendChild( $action_div );
-
-	my $jscript = "EPJS_blur(event); EPJS_toggleSlide('$prefix',false);EPJS_toggle('${prefix}_hide',false);EPJS_toggle('${prefix}_show',true);return false";
-
-	foreach my $action (qw( show hide ))
-	{
-		my $hide_class = $action eq "hide" ? "ep_hide" : "";
-		my $div = $session->make_element( "div", class => "ep_sr_${action}_help ep_toggle ${hide_class}", id => "${prefix}_${action}" );
-		my $link = $session->make_element( "a",
-			onclick => $jscript,
-			href => '#' );
-		$div->appendChild( $self->html_phrase( "${action}_help", link => $link ) );
-
-		$action_div->appendChild( $div );
-	}
 }
 
 1;

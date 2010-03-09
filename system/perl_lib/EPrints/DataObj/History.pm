@@ -79,9 +79,11 @@ to the user.
 
 package EPrints::DataObj::History;
 
-@ISA = ( 'EPrints::DataObj::SubObject' );
+@ISA = ( 'EPrints::DataObj' );
 
 use EPrints;
+
+use Unicode::String qw(utf8 latin1);
 
 use strict;
 
@@ -104,8 +106,7 @@ sub get_system_field_info
 
 	return 
 	( 
-		{ name=>"historyid", type=>"counter", required=>1, can_clone=>0,
-			sql_counter=>"historyid" }, 
+		{ name=>"historyid", type=>"int", required=>1, can_clone=>0, }, 
 
 		{ name=>"userid", type=>"itemref", 
 			datasetid=>"user", required=>0 },
@@ -120,7 +121,7 @@ sub get_system_field_info
 
 		{ name=>"revision", type=>"int", },
 
-		{ name=>"timestamp", type=>"timestamp", }, 
+		{ name=>"timestamp", type=>"time", }, 
 
 		# TODO should be a set when I know what the actions will be
 		{ name=>"action", type=>"set", text_index=>0, options=>[qw/
@@ -151,17 +152,48 @@ render_single_value => \&EPrints::Extras::render_preformatted_field },
 ######################################################################
 =pod
 
-=item $dataset = EPrints::DataObj::History->get_dataset_id
+=item $history = EPrints::DataObj::History->new( $session, $historyid )
 
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
+Return a history object with id $historyid, from the database.
+
+Return undef if no such object extists.
 
 =cut
 ######################################################################
 
-sub get_dataset_id
+sub new
 {
-	return "history";
+	my( $class, $session, $historyid ) = @_;
+
+	return $session->get_database->get_single( 
+			$session->get_repository->get_dataset( "history" ), 
+			$historyid );
+
 }
+
+
+
+######################################################################
+=pod
+
+=item undef = EPrints::DataObj::History->new_from_data( $session, $data )
+
+Create a new History object from the given $data. Used to turn items
+from the database into objects.
+
+=cut
+######################################################################
+
+sub new_from_data
+{
+	my( $class, $session, $known ) = @_;
+
+	return $class->SUPER::new_from_data(
+			$session,
+			$known,
+			$session->get_repository->get_dataset( "history" ) );
+}
+
 
 
 
@@ -181,7 +213,6 @@ sub commit
 
 	$self->{session}->get_repository->log(
 		"WARNING: Called commit on a EPrints::DataObj::History object." );
-
 	return 0;
 }
 
@@ -241,14 +272,16 @@ Return default values for this object based on the starting data.
 
 sub get_defaults
 {
-	my( $class, $session, $data, $dataset ) = @_;
+	my( $class, $session, $data ) = @_;
 	
-	$class->SUPER::get_defaults( $session, $data, $dataset );
+	$data->{historyid} = $session->get_database->counter_next( "historyid" );
+
+	$data->{timestamp} = EPrints::Time::get_iso_timestamp();
 
 	my $user;
-	if( defined $data->{userid} )
+	if( $data->{userid} )
 	{
-		$user = EPrints::DataObj::User->new( $session, $data->{userid} );
+		$user = EPrints::User->new( $session, $data->{userid} );
 	}
 	if( defined $user ) 
 	{
@@ -381,59 +414,12 @@ sub get_user
 {
 	my( $self ) = @_;
 
-	return undef unless $self->is_set( "userid" );
-
-	if( defined($self->{user}) )
+	if( $self->is_set( "userid" ) )
 	{
-		# check we still have the same owner
-		if( $self->{user}->get_id eq $self->get_value( "userid" ) )
-		{
-			return $self->{user};
-		}
+		return EPrints::User->new( $self->{session}, $self->get_value( "userid" ) );
 	}
 
-	$self->{user} = EPrints::User->new( 
-		$self->{session}, 
-		$self->get_value( "userid" ) );
-
-	return $self->{user};
-}
-
-=item $history = $history->get_previous()
-
-Returns the previous event for the object parent of this event.
-
-Returns undef if no such event exists.
-
-=cut
-
-sub get_previous
-{
-	my( $self ) = @_;
-
-	return $self->{_previous} if exists( $self->{_previous} );
-
-	my $dataset = $self->get_dataset;
-
-	my $revision = $self->get_value( "revision" ) - 1;
-	
-	my $results = $dataset->search(
-		filters => [
-			{
-				meta_fields => [ "datasetid" ],
-				value => $self->value( "datasetid" ),
-			},
-			{
-				meta_fields => [ "objectid" ],
-				value => $self->value( "objectid" ),
-			},
-			{
-				meta_fields => [ "revision" ],
-				value => $revision,
-			}
-		]);
-
-	return $self->{_previous} = $results->item( 0 );
+	return undef;
 }
 
 ######################################################################
@@ -492,21 +478,26 @@ sub render_create
 
 	my $width = $self->{session}->get_repository->get_conf( "max_history_width" ) || $DEFAULT_MAX_WIDTH;
 
-	my $r_file = $self->get_stored_file( "dataobj.xml" );
-	unless( defined( $r_file ) )
+	my $eprint = EPrints::DataObj::EPrint->new( $self->{session}, $self->get_value( "objectid" ) );
+	if( !defined $eprint )
+	{
+		return $self->{session}->render_nbsp;
+	}
+	my $r_new = $self->get_value( "revision" );
+	my $r_file_new =  $eprint->local_path."/revisions/$r_new.xml";
+
+	unless( -e $r_file_new )
 	{
 		my $div = $self->{session}->make_element( "div" );
 		$div->appendChild( $self->{session}->html_phrase( "lib/history:no_file" ) );
 		return $div;
 	}
 
-	my $r_file_new = $r_file->get_local_copy();
-	my $file_new = EPrints::XML::parse_xml( "$r_file_new" );
+	my $file_new = EPrints::XML::parse_xml( $r_file_new );
 	my $dom_new = $file_new->getFirstChild;
 
 	my $div = $self->{session}->make_element( "div" );
 	$div->appendChild( $self->{session}->html_phrase( "lib/history:xmlblock", xml=>render_xml( $self->{session}, $dom_new, 0, 0, $width ) ) );
-
 	return $div;
 }
 
@@ -522,30 +513,31 @@ sub render_modify
 {
 	my( $self ) = @_;
 
+	my $eprint = EPrints::DataObj::EPrint->new( $self->{session}, $self->get_value( "objectid" ) );
+
+	if( !defined $eprint )
+	{
+		return $self->{session}->render_nbsp;
+	}
+
 	my $width = $self->{session}->get_repository->get_conf( "max_history_width" ) || $DEFAULT_MAX_WIDTH;
 
-	my $r_file = $self->get_stored_file( "dataobj.xml" );
+	my $r_new = $self->get_value( "revision" );
+	my $r_old = $r_new-1;
 
-	unless( defined( $r_file ) )
+	my $r_file_old =  $eprint->local_path."/revisions/$r_old.xml";
+	my $r_file_new =  $eprint->local_path."/revisions/$r_new.xml";
+	unless( -e $r_file_new )
 	{
 		my $div = $self->{session}->make_element( "div" );
 		$div->appendChild( $self->{session}->html_phrase( "lib/history:no_file" ) );
 		return $div;
 	}
 
-	my $r_file_new = $r_file->get_local_copy();
-	my $file_new = EPrints::XML::parse_xml( "$r_file_new" );
+	my $file_new = EPrints::XML::parse_xml( $r_file_new );
 	my $dom_new = $file_new->getFirstChild;
 
-	$r_file = undef;
-
-	my $previous = $self->get_previous();
-	if( defined( $previous ) )
-	{
-		$r_file = $previous->get_stored_file( "dataobj.xml" );
-	}
-
-	unless( defined( $r_file ) )
+	unless( -e $r_file_old )
 	{
 		my $div = $self->{session}->make_element( "div" );
 		$div->appendChild( $self->{session}->html_phrase( "lib/history:no_earlier" ) );
@@ -553,8 +545,7 @@ sub render_modify
 		return $div;
 	}
 
-	my $r_file_old = $r_file->get_local_copy();
-	my $file_old = EPrints::XML::parse_xml( "$r_file_old" );
+	my $file_old = EPrints::XML::parse_xml( $r_file_old );
 	my $dom_old = $file_old->getFirstChild;
 
 	my %fieldnames = ();
@@ -719,10 +710,7 @@ sub render_xml_diffs
 
 	unless( EPrints::XML::is_dom( $tree1, "Element" ) && EPrints::XML::is_dom( $tree2, "Element" ))
 	{
-		return(
-			$session->make_text( "schema changed?:".ref($tree1) ),
-			$session->make_text( "schema changed?:".ref($tree2) )
-			);
+		return $session->make_text( "eh?:".ref($tree1) );
 	}
 
 	my $f1 = $session->make_doc_fragment;
@@ -1097,12 +1085,14 @@ sub _mktext
 
 	return () unless length( $text );
 
-	my $lb = chr(8626);
+	my $lb = utf8("");
+	$lb->pack( 8626 );
 	my @bits = split(/[\r\n]/, $text );
 	my @b2 = ();
 	
-	foreach my $t2 ( @bits )
+	foreach( @bits )
 	{
+		my $t2 = utf8($_);
 		while( $offset+length( $t2 ) > $width )
 		{
 			my $cut = $width-1-$offset;
@@ -1160,22 +1150,6 @@ sub mkpad
 	return $session->make_text( "\n"x((scalar @bits)-1) );
 }
 
-sub set_dataobj_xml
-{
-	my( $self, $dataobj ) = @_;
-
-	use bytes;
-
-	my $xml = $dataobj->to_xml;
-
-	my $data = "<?xml version='1.0' encoding='utf-8' ?>\n";
-	$data .= $self->{session}->xml->to_string( $xml, indent => 1 );
-	# $data will be bytes due to "use bytes" above
-
-	$self->{session}->xml->dispose( $xml );
-
-	$self->add_stored_file( "dataobj.xml", \$data, length($data) );
-}
 
 ######################################################################
 1;

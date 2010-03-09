@@ -15,8 +15,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints::Platform> - handles platform specific code.
@@ -190,9 +188,6 @@ Returns undef if process identification is unsupported.
 #####################################################################
 
 sub proc_exists { &{$real_module."::proc_exists"} }
-
-# TODO: fixme!
-sub join_path { join('/', @_) }
 
 1;
 

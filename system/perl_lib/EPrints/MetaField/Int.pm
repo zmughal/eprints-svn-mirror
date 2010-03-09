@@ -44,15 +44,12 @@ use EPrints::MetaField;
 
 sub get_sql_type
 {
-	my( $self, $session ) = @_;
+	my( $self, $session, $notnull ) = @_;
 
 	return $session->get_database->get_column_type(
 		$self->get_sql_name(),
 		EPrints::Database::SQL_INTEGER,
-		!$self->get_property( "allow_null" ),
-		undef,
-		undef,
-		$self->get_sql_properties,
+		$notnull
 	);
 }
 
@@ -60,7 +57,14 @@ sub get_max_input_size
 {
 	my( $self ) = @_;
 
-	return $self->get_property( "digits" );
+	return $self->get_digits;
+}
+
+sub get_digits
+{
+	my( $self ) = @_;
+
+	return $self->{digits}
 }
 
 sub ordervalue_basic
@@ -73,7 +77,7 @@ sub ordervalue_basic
 	}
 
 	# just in case we still use eprints in year 200k 
-	my $pad = $self->get_property( "digits" );
+	my $pad = $self->get_digits;
 	return sprintf( "%0".$pad."d",$value );
 }
 
@@ -117,7 +121,7 @@ sub render_search_value
 	if( $value =~ m/^($number)-($number)$/ )
 	{
 		return $session->html_phrase(
-			"lib/searchfield:desc:".$type."_between",
+			"lib/searchfield:desc_".$type."_between",
 			from => $session->make_text( $1 ),
 			to => $session->make_text( $2 ) );
 	}
@@ -125,14 +129,14 @@ sub render_search_value
 	if( $value =~ m/^-($number)$/ )
 	{
 		return $session->html_phrase(
-			"lib/searchfield:desc:".$type."_orless",
+			"lib/searchfield:desc_".$type."_orless",
 			to => $session->make_text( $1 ) );
 	}
 
 	if( $value =~ m/^($number)-$/ )
 	{
 		return $session->html_phrase(
-			"lib/searchfield:desc:".$type."_ormore",
+			"lib/searchfield:desc_".$type."_ormore",
 			from => $session->make_text( $1 ) );
 	}
 

@@ -92,16 +92,11 @@ sub export
 	my $fn = $doc->get_main() or return ();
 	$fn =~ s/\.\w+$/\.$ext/;
 	
-	my $src = $doc->get_stored_file( $doc->get_main() );
-
 	# Call imagemagick to do the conversion
-	my $cmd = sprintf("%s - %s", quotemeta($convert), quotemeta("$dir/$fn"));
-	open( my $out, "|$cmd" ) or return;
-	binmode($out);
-
-	$src->write_copy_fh( $out );
-
-	close($out);
+	system($convert,
+		$doc->local_path . '/' . $doc->get_main(),
+		$dir . '/' . $fn
+	);
 
 	unless( -e "$dir/$fn" ) {
 		return ();

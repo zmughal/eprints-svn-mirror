@@ -60,19 +60,6 @@ sub can_convert
 	return %types;
 }
 
-sub convert
-{
-	my( $plugin, $eprint, $doc, $type ) = @_;
-
-	my $new_doc = $plugin->SUPER::convert( $eprint, $doc, $type );
-
-	return undef if !defined $new_doc;
-
-	$new_doc->set_value( "format", "image/jpeg" );
-
-	return $new_doc;
-}
-
 sub export
 {
 	my ( $plugin, $dir, $doc, $type ) = @_;
@@ -81,12 +68,11 @@ sub export
 
 	my $convert = $plugin->get_repository->get_conf( 'executables', 'convert' );
 
-	my $src = $doc->get_stored_file( $doc->get_main );
-	$src = $src->get_local_copy();
+	my $src = $doc->local_path . '/' . $doc->get_main;
 	
-	my $fn = "preview.jpg";
+	my $fn = "preview.png";
 
-	system($convert, "-strip", "-colorspace", "RGB", "-thumbnail","400x300>", '-bordercolor', 'rgb(128,128,128)', '-border', '1', $src.'[0]', $dir . '/' . $fn);
+	system($convert, "-thumbnail","400x300>", '-bordercolor', 'rgb(128,128,128)', '-border', '1', $src.'[0]', $dir . '/' . $fn);
 
 	unless( -e "$dir/$fn" ) {
 		return ();

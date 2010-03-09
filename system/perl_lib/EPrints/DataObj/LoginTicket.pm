@@ -62,25 +62,86 @@ sub get_system_field_info
 
 =back
 
+=head2 Constructor Methods
+
+=over 4
+
+=cut
+
+######################################################################
+
+=item $thing = EPrints::DataObj::LoginTicket->new( $session, $id )
+
+The data object identified by $id.
+
+=cut
+
+sub new
+{
+	my( $class, $session, $id ) = @_;
+
+	return $session->get_database->get_single( 
+			$session->get_repository->get_dataset( "loginticket" ),
+			$id );
+}
+
+=item $thing = EPrints::DataObj::LoginTicket->new_from_data( $session, $known )
+
+A new C<EPrints::DataObj::LoginTicket> object containing data $known (a hash reference).
+
+=cut
+
+sub new_from_data
+{
+	my( $class, $session, $known ) = @_;
+
+	return $class->SUPER::new_from_data(
+			$session,
+			$known,
+			$session->get_repository->get_dataset( "loginticket" ) );
+}
+
+######################################################################
+
 =head2 Class Methods
 
 =cut
 
 ######################################################################
 
-######################################################################
-=pod
+=item EPrints::DataObj::LoginTicket::remove_all( $session )
 
-=item $dataset = EPrints::DataObj::LoginTicket->get_dataset_id
-
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
+Remove all records from the loginticket dataset.
 
 =cut
+
+sub remove_all
+{
+	my( $class, $session ) = @_;
+
+	my $ds = $session->get_repository->get_dataset( "loginticket" );
+	foreach my $obj ( $session->get_database->get_all( $ds ) )
+	{
+		$obj->remove();
+	}
+	return;
+}
+
 ######################################################################
 
-sub get_dataset_id
+=item $defaults = EPrints::DataObj::LoginTicket->get_defaults( $session, $data )
+
+Return default values for this object based on the starting data.
+
+=cut
+
+######################################################################
+
+sub get_defaults
 {
-	return "loginticket";
+	my( $class, $session, $data ) = @_;
+	
+	return $data;
 }
 
 ######################################################################
@@ -90,6 +151,27 @@ sub get_dataset_id
 =cut
 
 ######################################################################
+
+=item $foo = $thing->remove()
+
+Remove this record from the data set (see L<EPrints::Database>).
+
+=cut
+
+sub remove
+{
+	my( $self ) = @_;
+	
+	my $rc = 1;
+	
+	my $database = $self->{session}->get_database;
+
+	$rc &&= $database->remove(
+		$self->{dataset},
+		$self->get_id );
+
+	return $rc;
+}
 
 1;
 

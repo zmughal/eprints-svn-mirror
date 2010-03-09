@@ -69,17 +69,15 @@ sub optimise
 	$self->{sub_ops} = $keep_ops;
 
 	# control-specific condition stuff
-	my $opt_condition = $self->optimise_specific( %opts );
+	$self = $self->optimise_specific( %opts );
 
 	# only one sub option, just return it.
-	# no sub_opts at all is a possibility if this optimised
-	# to a non-control condition
-	if( defined $opt_condition->{sub_ops} && scalar @{$opt_condition->{sub_ops}} == 1 )
+	if( scalar @{$self->{sub_ops}} == 1 )
 	{
-		return $opt_condition->{sub_ops}->[0];
+		return $self->{sub_ops}->[0];
 	}
 
-	return $opt_condition;
+	return $self;
 }
 
 sub is_empty

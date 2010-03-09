@@ -15,8 +15,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints::DataObj::User> - Class representing a single user.
@@ -107,10 +105,6 @@ daily, weekly or monthly.
 Only relevant to staff accounts. If set to true then emails are sent
 even if there are no items matching the scope.
 
-=item preference (compound)
-
-User preferences which need to be persistent (simple key-value pairs).
-
 =back
 
 =head1 METHODS
@@ -146,11 +140,9 @@ sub get_system_field_info
 
 	return 
 	( 
-		{ name=>"userid", type=>"counter", required=>1, import=>0, can_clone=>1,
-			sql_counter=>"userid" },
+		{ name=>"userid", type=>"int", required=>1, import=>0, can_clone=>1, },
 
-		{ name=>"rev_number", type=>"int", required=>1, can_clone=>0,
-			default_value=>1 },
+		{ name=>"rev_number", type=>"int", required=>1, can_clone=>0 },
 
 		{ name=>"saved_searches", type=>"subobject", datasetid=>'saved_search',
 			multiple=>1 },
@@ -172,7 +164,7 @@ sub get_system_field_info
 
 		{ name=>"pinsettime", type=>"int", show_in_html=>0 },
 
-		{ name=>"joined", type=>"timestamp", required=>1 },
+		{ name=>"joined", type=>"time", required=>1 },
 
 		{ name=>"email", type=>"email", required=>1 },
 
@@ -186,17 +178,18 @@ sub get_system_field_info
 			input_boxes => 1,
 			type => "search", 
 			datasetid => "eprint",
-			fieldnames_config => "editor_limit_fields",
+			fieldnames => "editpermfields",
 		},
+
+		{ name => "permission_group", multiple => 1, type => "namedset", 
+			set_name => "permission_group", },
 
 		{ name => "roles", multiple => 1, type => "text", text_index=>0 },
 
 		{ name=>"frequency", type=>"set", input_style=>"medium",
-			options=>["never","daily","weekly","monthly"],
-			default_value=>"never" },
+			options=>["never","daily","weekly","monthly"] },
 
-		{ name=>"mailempty", type=>"boolean", input_style=>"radio",
-			default_value=>"FALSE" },
+		{ name=>"mailempty", type=>"boolean", input_style=>"radio" },
 
 		{ name=>"items_fields", type=>"fields", datasetid=>"eprint", 
 			multiple=>1, input_ordered=>1, required=>1, volatile=>1 },
@@ -204,20 +197,10 @@ sub get_system_field_info
 		{ name=>"review_fields", type=>"fields", datasetid=>"eprint", 
 			multiple=>1, input_ordered=>1, required=>1, volatile=>1 },
 
-		{ name=>"review_filters", type=>"search", datasetid=>"eprint",
-			required=>0, volatile=>1 },
-
 		{ name=>"latitude", type=>"float", required=>0 },
 
 		{ name=>"longitude", type=>"float", required=>0 },
 
-		{
-			name => "preference",
-			type => "storable",
-			sql_index => 0,
-			text_index => 0,
-			volatile => 1,
-		},
 	)
 };
 
@@ -310,38 +293,9 @@ sub create_from_data
 
 	my $new_user = $class->SUPER::create_from_data( $session, $data, $dataset );
 
-	$new_user->update_triggers();
-	
-	if( scalar( keys %{$new_user->{changed}} ) > 0 )
-	{
-		# Remove empty slots in multiple fields
-		$new_user->tidy;
-
-		# Write the data to the database
-		$session->get_database->update(
-			$new_user->{dataset},
-			$new_user->{data},
-			$new_user->{changed} );
-	}
-
 	$session->get_database->counter_minimum( "userid", $new_user->get_id );
 
 	return $new_user;
-}
-
-######################################################################
-=pod
-
-=item $dataset = EPrints::DataObj::User->get_dataset_id
-
-Returns the id of the L<EPrints::DataSet> object to which this record belongs.
-
-=cut
-######################################################################
-
-sub get_dataset_id
-{
-	return "user";
 }
 
 ######################################################################
@@ -354,7 +308,33 @@ Return default values for this object based on the starting data.
 =cut
 ######################################################################
 
-# inherrits
+sub get_defaults
+{
+	my( $class, $session, $data ) = @_;
+
+	my $date_joined = EPrints::Time::get_iso_timestamp();
+
+	my $defaults = { 
+		"userid"=>$data->{userid},
+		"joined"=>$date_joined,
+		"frequency"=>'never',
+		"mailempty"=>"FALSE",
+		"rev_number"=>1,
+	};
+
+	if( !defined $data->{userid} )
+	{ 
+		$defaults->{userid} = _create_userid( $session );
+	}
+
+	$session->get_repository->call(
+		"set_user_defaults",
+		$defaults,
+		$session );
+
+	return $defaults;
+}
+
 
 
 ######################################################################
@@ -370,19 +350,23 @@ are not found.
 
 sub user_with_email
 {
-	my( $repo, $email ) = @_;
+	my( $session, $email ) = @_;
 	
-	my $dataset = $repo->dataset( "user" );
+	my $user_ds = $session->get_repository->get_dataset( "user" );
 
-	my $results = $dataset->search(
-		filters => [
-			{
-				meta_fields => [qw( email )],
-				value => $email, match => "EX"
-			}
-		]);
+	my $searchexp = new EPrints::Search(
+		session=>$session,
+		dataset=>$user_ds );
 
-	return $results->item( 0 );
+	$searchexp->add_field(
+		$user_ds->get_field( "email" ),
+		$email );
+
+	my $searchid = $searchexp->perform_search;
+	my @records = $searchexp->get_records(0,1);
+	$searchexp->dispose();
+	
+	return $records[0];
 }
 
 
@@ -399,20 +383,23 @@ they are not found.
 
 sub user_with_username
 {
-	my( $repo, $username ) = @_;
+	my( $session, $username ) = @_;
 	
-	my $dataset = $repo->dataset( "user" );
+	my $user_ds = $session->get_repository->get_dataset( "user" );
 
-	my $results = $dataset->search(
-		filters => [
-			{
-				meta_fields => [qw( username )],
-				value => $username,
-				match => "EX"
-			}
-		]);
+	my $searchexp = new EPrints::Search(
+		session=>$session,
+		dataset=>$user_ds );
 
-	return $results->item( 0 );
+	$searchexp->add_field(
+		$user_ds->get_field( "username" ),
+		$username,
+		"EX" );
+
+	my $results = $searchexp->perform_search;
+	my @records = $results->get_records(0,1);
+	
+	return $records[0];
 }
 
 
@@ -447,7 +434,10 @@ sub validate
 
 	push @problems, $workflow->validate;
 
-	push @problems, @{ $self->SUPER::validate( $for_archive ) };
+	push @problems, $self->{session}->get_repository->call(
+			"validate_user",
+			$self,
+			$self->{session} );
 
 	return( \@problems );
 }
@@ -471,7 +461,9 @@ sub commit
 {
 	my( $self, $force ) = @_;
 
-	$self->update_triggers();
+	$self->{session}->get_repository->call( 
+		"set_user_automatic_fields", 
+		$self );
 	
 	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
 	{
@@ -483,8 +475,14 @@ sub commit
 		$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
 	}
 
-	my $success = $self->SUPER::commit( $force );
+	my $user_ds = $self->{session}->get_repository->get_dataset( "user" );
+	$self->tidy;
+	my $success = $self->{session}->get_database->update(
+		$user_ds,
+		$self->{data} );
 	
+	$self->queue_changes;
+
 	return( $success );
 }
 
@@ -521,22 +519,6 @@ sub remove
 	return( $success );
 }
 
-=item $lang = $user->langauge()
-
-Get the preferred language of the user.
-
-=cut
-
-sub language
-{
-	my( $self ) = @_;
-
-	my $langid = $self->value( "lang" );
-	my $lang = $self->{session}->get_repository->get_language( $langid );
-
-	return $lang;
-}
-
 =item $list = $user->owned_eprints_list( %opts )
 
 Returns a L<EPrints::List> of all the L<EPrints::DataObj::EPrint>s owned by this user.
@@ -569,8 +551,8 @@ sub owned_eprints_list
 		return $searchexp->perform_search;
 	}
 	
-	my $list = &$fn( $self->{session}, $self, $dataset );
-	$list = $list->intersect( $searchexp->perform_search );
+	my $list = &$fn( $self->{session}, $self, $dataset, %opts );
+#	$list = $list->intersect( $searchexp->perform_search );
 
 	return $list;
 }
@@ -841,6 +823,24 @@ sub mail
 
 
 ######################################################################
+# 
+# $userid = EPrints::DataObj::User::_create_userid( $session )
+#
+# Get the next unused userid value.
+#
+######################################################################
+
+sub _create_userid
+{
+	my( $session ) = @_;
+	
+	my $new_id = $session->get_database->counter_next( "userid" );
+
+	return( $new_id );
+}
+
+
+######################################################################
 =pod
 
 =item ( $page, $title ) = $user->render
@@ -972,60 +972,25 @@ sub get_saved_searches
 {
 	my( $self ) = @_;
 
-	my $dataset = $self->{session}->dataset( "saved_search" );
+	my $ds = $self->{session}->get_repository->get_dataset( 
+		"saved_search" );
 
-	my $results = $dataset->search(
-		filters => [
-			{
-				meta_fields => [qw( userid )],
-				value => $self->value( "userid" ),
-			}
-		],
-		custom_order => $dataset->key_field->name );
+	my $searchexp = EPrints::Search->new(
+		session=>$self->{session},
+		dataset=>$ds,
+		custom_order=>"id" );
 
-	return $results->slice;
+	$searchexp->add_field(
+		$ds->get_field( "userid" ),
+		$self->get_value( "userid" ) );
+
+	my $searchid = $searchexp->perform_search;
+	my @results = $searchexp->get_records;
+	$searchexp->dispose;
+
+	return( @results );
 }
 
-=item $value = $user->preference( $key )
-
-Retrieve the preference $key.
-
-=cut
-
-sub preference
-{
-	my( $self, $key ) = @_;
-
-	my $prefs = $self->value( "preference" );
-	return undef if !defined $prefs;
-
-	return $prefs->{$key};
-}
-
-=item $user->set_preference( $key, $value )
-
-Set a preference $key for the user to $value.
-
-=cut
-
-sub set_preference
-{
-	my( $self, $key, $value ) = @_;
-
-	my $prefs = $self->value( "preference" );
-	$prefs = defined $prefs ? { %$prefs } : {};
-
-	if( EPrints::Utils::is_set( $value ) )
-	{
-		$prefs->{$key} = $value;
-	}
-	else
-	{
-		delete $prefs->{$key};
-	}
-
-	$self->set_value( "preference", $prefs );
-}
 
 ######################################################################
 =pod
@@ -1155,8 +1120,9 @@ sub process_editor_alerts
 		}
 	};
 
-	my $list = $searchexp->perform_search;
-	$list->map( $fn, {} );
+	$searchexp->perform_search;
+	$searchexp->map( $fn, {} );
+	$searchexp->dispose;
 
 	# currently no timestamp for editor alerts 
 }
@@ -1258,21 +1224,12 @@ my $PRIVMAP =
 		"config/view/apache",
 		"config/view/perl",
 		"config/test_email",
-		"config/imports",
 		"config/add_field",
 		"config/remove_field",
 		"config/regen_abstracts",
 		"config/regen_views",
 		"metafield/view",
 		"metafield/edit",
-		"import/view",
-		"import/edit",
-		"storage/manager",
-#		"event_queue/create", # create indexer events by-hand?
-		"event_queue/details",
-		"event_queue/edit",
-		"event_queue/view",
-		"event_queue/destroy",
 	],
 
 	"toolbox" => 
@@ -1380,7 +1337,6 @@ my $PRIVMAP =
 		"eprint/inbox/use_as_template:editor",
 		"eprint/inbox/derive_version:editor",
 		"eprint/inbox/staff/edit:editor",
-		"eprint/inbox/takelock:editor",
 
 
 		"eprint/buffer/view:editor",
@@ -1398,7 +1354,6 @@ my $PRIVMAP =
 		"eprint/buffer/use_as_template:editor",
 		"eprint/buffer/derive_version:editor",
 		"eprint/buffer/staff/edit:editor",
-		"eprint/buffer/takelock:editor",
 
 
 		"eprint/archive/view:editor",
@@ -1414,7 +1369,6 @@ my $PRIVMAP =
 		"eprint/archive/use_as_template:editor",
 		"eprint/archive/derive_version:editor",
 		"eprint/archive/staff/edit:editor",
-		"eprint/archive/takelock:editor",
 
 
 		"eprint/deletion/view:editor",
@@ -1427,28 +1381,6 @@ my $PRIVMAP =
 		"eprint/deletion/move_archive:editor",
 		"eprint/deletion/use_as_template:editor",
 		"eprint/deletion/derive_version:editor",
-		"eprint/deletion/takelock:editor",
-	],
-
-	rest => [
-		"eprint/archive/rest/get:editor",
-		"eprint/archive/rest/put:editor",
-		"eprint/buffer/rest/get:editor",
-		"eprint/buffer/rest/put:editor",
-		"eprint/inbox/rest/get:editor",
-		"eprint/inbox/rest/put:editor",
-		"eprint/deletion/rest/get:editor",
-		"eprint/deletion/rest/put:editor",
-
-		"eprint/inbox/rest/get:owner",
-		"eprint/inbox/rest/put:owner",
-		"eprint/buffer/rest/get:owner",
-		"eprint/archive/rest/get:owner",
-		"eprint/deletion/rest/get:owner",
-
-		"user/rest/get:owner",
-
-		"subject/rest/get",
 	],
 	
 };
@@ -1460,7 +1392,7 @@ my $PRIVMAP =
 
 =item $result = $user->allow( $priv, [$item] )
 
-Returns true if $user can perform this action/view this screen.
+Rleturns true if $user can perform this action/view this screen.
 
 A true result is 1..15 where the value indicates what about the user
 allowed the priv to be performed. This is used for filtering owner/

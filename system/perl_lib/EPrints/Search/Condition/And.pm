@@ -33,8 +33,6 @@ use Scalar::Util;
 
 use strict;
 
-my $MYSQL_MAX_SUBQUERIES = 10;
-
 sub new
 {
 	my( $class, @params ) = @_;
@@ -95,26 +93,10 @@ sub optimise_specific
 		}
 		else
 		{
-			# mysql's optimizer goes squirly if we throw too many sub-queries
-			# at it :-(
-			if( $opts{session}->get_database->isa( "EPrints::Database::mysql" ) && @{$tables{$table}} > $MYSQL_MAX_SUBQUERIES )
-			{
-				do
-				{
-					push @$keep_ops, EPrints::Search::Condition::Or->new( 
-						EPrints::Search::Condition::AndSubQuery->new(
-							$tables{$table}->[0]->dataset,
-							splice(@{$tables{$table}},0,$MYSQL_MAX_SUBQUERIES)
-						) );
-				} while( @{$tables{$table}} );
-			}
-			else
-			{
-				push @$keep_ops, EPrints::Search::Condition::AndSubQuery->new(
-						$tables{$table}->[0]->dataset,
-						@{$tables{$table}}
-					);
-			}
+			push @$keep_ops, EPrints::Search::Condition::AndSubQuery->new(
+					$tables{$table}->[0]->dataset,
+					@{$tables{$table}}
+				);
 		}
 	}
 	$self->{sub_ops} = $keep_ops;
