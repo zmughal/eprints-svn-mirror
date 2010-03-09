@@ -272,7 +272,8 @@ sub get_column_type
 			$data_type = SQL_VARBINARY();
 		}
 		# Longest VARCHAR supported by Oracle is 4096 bytes (4000 in practise?)
-		$length = 4000 if !defined($length) || $length > 4000;
+		# We then have to divide that by 4 to get the maximum UTF-8 length
+		$length = 1000 if !defined($length) || $length > 1000;
 	}
 
 	$db_type = $ORACLE_TYPES{$data_type}->{TYPE_NAME};
@@ -285,6 +286,14 @@ sub get_column_type
 	{
 		EPrints::abort( "get_sql_type expected LENGTH argument for $data_type [$type]" )
 			unless defined $length;
+		if( $data_type eq SQL_VARCHAR() )
+		{
+			if( $length*4 > 4000 )
+			{
+				EPrints->abort( "Oracle does not support SQL_VARCHAR($length): maximum length is 1000 characters (4000 bytes)" );
+			}
+			$length *= 4;
+		}
 		$type .= "($length)";
 	}
 	elsif( $params eq "precision,scale" )
@@ -440,6 +449,14 @@ sub quote_binary
 	use bytes;
 
 	return join('', map { sprintf("%02x",ord($_)) } split //, $value);
+}
+
+sub quote_ordervalue
+{
+	my( $self, $field, $value ) = @_;
+
+	# maximum length of ordervalues column in Oracle is 1000 chars (4000 bytes)
+	return defined $value ? substr($value,0,1000) : undef;
 }
 
 sub alias_glue
