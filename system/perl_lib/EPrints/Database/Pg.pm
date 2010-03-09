@@ -51,6 +51,14 @@ sub type_info
 			CREATE_PARAMS => "",
 		};
 	}
+	# DBD::Pg maps SQL_VARCHAR to text rather than varchar(n)
+	elsif( $data_type eq SQL_VARCHAR )
+	{
+		return {
+			TYPE_NAME => "varchar",
+			CREATE_PARAMS => "max length",
+		};
+	}
 	elsif( $data_type eq SQL_LONGVARCHAR )
 	{
 		return {

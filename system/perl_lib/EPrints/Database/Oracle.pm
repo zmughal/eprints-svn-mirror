@@ -292,9 +292,8 @@ sub get_column_type
 			{
 				EPrints->abort( "Oracle does not support SQL_VARCHAR($length): maximum length is 1000 characters (4000 bytes)" );
 			}
-			$length *= 4;
 		}
-		$type .= "($length)";
+		$type .= "($length char)";
 	}
 	elsif( $params eq "precision,scale" )
 	{
