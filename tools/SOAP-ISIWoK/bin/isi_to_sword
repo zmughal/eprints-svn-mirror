@@ -13,6 +13,11 @@ You will need to modify this script to set the location of the XSL(s).
 
 =cut
 
+use strict;
+
+{
+package CGI_ISI_TO_SWORD;
+
 use SOAP::ISIWoK qw( :wos );
 use SOAP::ISIWoK::Sword;
 use CGI;
@@ -20,19 +25,7 @@ use CGI::Carp qw( fatalsToBrowser );
 use XML::LibXML;
 use XML::LibXML::XPathContext;
 
-use strict;
-
-my $q = CGI->new();
-my $isi = SOAP::ISIWoK->new();
-my $ua = SOAP::ISIWoK::Sword->new();
-my $messages = [];
-my $collection = undef;
-my $query = undef;
-my $recs = [];
-
-$ua->parse_stylesheet( "/tmp/ep3.xsl" );
-
-binmode(STDOUT, ":utf8");
+use LWP::MemberMixin;
 
 my $jscript = <<EOJ;
 
@@ -116,35 +109,58 @@ my $xsl_citation = <<EOX;
 </xsl:stylesheet>
 EOX
 
-$q->charset( 'utf-8' );
+*_elem = \&LWP::MemberMixin::_elem;
+sub q { shift->_elem( "q", @_ ) }
+sub isi { shift->_elem( "isi", @_ ) }
+sub ua { shift->_elem( "ua", @_ ) }
+sub messages { shift->_elem( "messages", @_ ) }
+sub collection { shift->_elem( "collection", @_ ) }
+sub query { shift->_elem( "query", @_ ) }
+sub recs { shift->_elem( "recs", @_ ) }
 
-print
-	$q->header(
-		-type => "text/html; charset=utf-8",
-		-charset => 'utf-8',
-	),
-	$q->start_html(
-		-title => "ISI to SWORD",
-		-script => $jscript,
-		-encoding => 'utf-8',
-		-style => { -code => $css }),
-	$q->h1( "ISI to SWORD" ),
-	$q->start_form( -method => "post" ),
-	stage1(),
-	stage2(),
-	stage3(),
-	stage4(),
-	stage5(),
-	$q->submit( -name => 'action', -value => "Query", -class => "submit" ),
-	$q->submit( -name => 'action', -value => "Submit", -class => "submit" ),
-	$q->end_form(),
-	messages(),
-	$q->end_html;
+sub main
+{
+	my( $self ) = @_;
+
+	$self->ua->parse_stylesheet( "/tmp/ep3.xsl" );
+
+	binmode(STDOUT, ":utf8");
+
+	my $q = $self->q;
+	$q->charset( 'utf-8' );
+
+	print
+		$q->header(
+			-type => "text/html; charset=utf-8",
+			-charset => 'utf-8',
+		),
+		$q->start_html(
+			-title => "ISI to SWORD",
+			-script => $jscript,
+			-encoding => 'utf-8',
+			-style => { -code => $css }),
+		$q->h1( "ISI to SWORD" ),
+		$q->start_form( -method => "post" ),
+		$self->stage1(),
+		$self->stage2(),
+		$self->stage3(),
+		$self->stage4(),
+		$self->stage5(),
+		$q->submit( -name => 'action', -value => "Query", -class => "submit" ),
+		$q->submit( -name => 'action', -value => "Submit", -class => "submit" ),
+		$q->end_form(),
+		$self->dump_messages(),
+		$q->end_html;
+}
 
 sub stage1
 {
-	$ua->sword( $q->param( "sword" ) );
-	$ua->sword_auth( $q->param( "username" ), $q->param( "password" ) );
+	my( $self ) = @_;
+
+	my( $q, $collection, $query, $recs, $messages ) = @{$self}{qw( q collection query recs messages )};
+
+	$self->ua->sword( $q->param( "sword" ) );
+	$self->ua->sword_auth( $q->param( "username" ), $q->param( "password" ) );
 
 	return
 		$q->fieldset(
@@ -159,15 +175,20 @@ sub stage1
 
 sub stage2
 {
-	return if !$ua->sword;
+	my( $self ) = @_;
 
-	my $r = $ua->request_collections();
+	my( $q, $collection, $query, $recs, $messages ) = @{$self}{qw( q collection query recs messages )};
+
+	return if !$self->ua->sword;
+	$self->ua->sword_auth( $q->param( "username" ), $q->param( "password" ) );
+
+	my $r = $self->ua->request_collections();
 	if( !$r->is_success )
 	{
 		push @$messages,
 			join('',
 				"Error requesting collections from ",
-				$q->a( { -href => $ua->sword }, $ua->sword ),
+				$q->a( { -href => $self->ua->sword }, $self->ua->sword ),
 				": ",
 				$r->status_line);
 		return ();
@@ -175,9 +196,9 @@ sub stage2
 
 	if( my $href = $q->param( "collection" ) )
 	{
-		for(@{$ua->collections||[]})
+		for(@{$self->ua->collections||[]})
 		{
-			$collection = $_ if $_->href eq $href;
+			$self->{collection} = $_ if $_->href eq $href;
 		}
 	}
 
@@ -188,7 +209,7 @@ sub stage2
 		$q->scrolling_list(
 			-name => "collection",
 			-id => "collection",
-			-values => [map { $_->href } @{$ua->collections}],
+			-values => [map { $_->href } @{$self->ua->collections}],
 			-default => [$q->param( "collection" )],
 		),
 		);
@@ -196,6 +217,10 @@ sub stage2
 
 sub stage3
 {
+	my( $self ) = @_;
+
+	my( $q, $collection, $query, $recs, $messages ) = @{$self}{qw( q collection query recs messages )};
+
 	return () if !$collection;
 
 	my @html;
@@ -244,7 +269,7 @@ sub stage3
 		}
 	}
 
-	$query = join(' and ', @parts);
+	$self->query( join(' and ', @parts) );
 
 	return
 		$q->fieldset(
@@ -255,10 +280,14 @@ sub stage3
 
 sub stage4
 {
+	my( $self ) = @_;
+
+	my( $q, $collection, $query, $recs, $messages ) = @{$self}{qw( q collection query recs messages )};
+
 	return () if !$collection;
 	return () if !$query;
 
-	my $xml = $isi->search( $query );
+	my $xml = $self->isi->search( $query );
 	$recs = $collection->transform( $xml );
 	push @$messages, "Found ".@$recs." matching records for '$query'";
 
@@ -272,7 +301,7 @@ sub stage4
 		my $rec_copy = $rec->cloneNode( 1 );
 		$rec_copy->setOwnerDocument( $source );
 		$records->appendChild( $rec_copy );
-		push @$messages, $stylesheet->transform( $source )->toString( 1 );
+		push @{$self->{messages}}, $stylesheet->transform( $source )->toString( 1 );
 	}
 
 	return ();
@@ -280,6 +309,10 @@ sub stage4
 
 sub stage5
 {
+	my( $self ) = @_;
+
+	my( $q, $collection, $recs, $messages ) = @{$self}{qw( q collection recs messages )};
+
 	return () if !@$recs;
 	return if !$q->param( "action" ) || $q->param( "action" ) ne "Submit";
 
@@ -313,9 +346,25 @@ sub stage5
 	return ();
 }
 
-sub messages
+sub dump_messages
 {
+	my( $self ) = @_;
+
 	return map {
-		$q->div( { -class => "message" }, $_ )
-	} @$messages;
+		$self->q->div( { -class => "message" }, $_ )
+	} @{$self->messages};
 }
+
+1;
+}
+
+(bless {
+	q => CGI->new(),
+	isi => SOAP::ISIWoK->new(),
+	ua => SOAP::ISIWoK::Sword->new(),
+	messages => [],
+	collection => undef,
+	query => undef,
+	recs => [],
+}, "CGI_ISI_TO_SWORD")->main();
+
