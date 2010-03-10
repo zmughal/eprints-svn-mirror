@@ -1,0 +1,101 @@
+
+=head1 A Brief History of EPrints
+
+The EPrints project was created by Professor Stephen Harnad.
+
+=over 8
+
+=item B<April 2000>
+
+Rob Tansley begins work on EPrints
+
+=item B<June 2000>
+
+EPrints beta-1 released
+
+Cogprints archive created. http://cogprints.soton.ac.uk/
+
+=item B<September 2000>
+
+EPrints beta-2 released
+
+=item B<November 2000>
+
+EPrints 1.0 released, contains OAI 0.2 support
+
+Rob Tansley leaves the EPrints Project
+
+Christopher Gutteridge joins the EPrints Project
+
+=item B<January 2001>
+
+EPrints 1.1 released, contains OAI 1.0 support
+
+Work begins on EPrints 2
+
+=item B<June 2001>
+
+Mike Jewell joins EPrints, working primarily on installer software
+
+=item B<August 2001>
+
+EPrints 2 Alpha-1 (Anchovy) released.
+
+=item B<Jan 2002>
+
+EPrints 2 Alpha-2 (Pepperoni) released.
+
+=item B<Feb 14 2002>
+
+EPrints 2.0 (Olive) released.
+
+=item B<Apr 17 2002>
+
+EPrints 2.0.1 (Tuna) released. Mostly bugfixes.
+
+=item B<July 1 2002>
+
+EPrints offically joins GNU Project.
+
+=item B<July 4 2002>
+
+GNU EPrints 2.1 (Pineapple) released. Added subscriptions and OAI 2.0 support.
+
+=item B<October 31 2002>
+
+GNU EPrints 2.2 (Pumpkin) released. Added subject editors and GDOME support.
+
+=item B<January 12 2004>
+
+GNU EPrints 2.3.0 released.
+
+=item B<February 5 2004>
+
+GNU EPrints 2.3.1 released.
+
+=item B<February 25 2004>
+
+GNU EPrints 2.3.2 released.
+
+=item B<March 4 2004>
+
+GNU EPrints 2.3.3 released.
+
+=item B<July 6 2004>
+
+GNU EPrints 2.3.4 released.
+
+=item B<August 6 2004>
+
+GNU EPrints 2.3.5 released.
+
+=item B<August 9 2004>
+
+GNU EPrints 2.3.6 released.
+
+=item B<November 25 2004>
+
+GNU EPrints 2.3.7 released.
+
+=back
+
