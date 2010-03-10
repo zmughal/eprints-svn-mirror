@@ -23,8 +23,6 @@ our @ISA = qw( File::Temp );
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 EPrints::TempDir - Create temporary directories that can automatically be removed

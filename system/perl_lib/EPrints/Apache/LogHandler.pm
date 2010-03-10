@@ -58,136 +58,35 @@ package EPrints::Apache::LogHandler;
 
 use EPrints;
 
-our @RobotsSearchIDOrder_list1 = ();
-our @RobotsSearchIDOrder_list2 = ();
-our @RobotsSearchIDOrder_listgen = ();
-our %RobotsHashIDLib = ();
-our %RobotsAffiliateLib = ();
-
-eval "do 'robots.pm'"; # load robots.pm into our namespace
-
 use strict;
 
-use EPrints::Apache::AnApache;
-use Apache2::Connection;
+use constant {
+	DECLINED => -1,
+	OK => 0,
+	NOT_MODIFIED => 304
+};
 
-our @USERAGENT_ROBOTS = map { qr/$_/i } @RobotsSearchIDOrder_list1;
-our %ROBOTS_CACHE; # key=IP, value=time (or -time if not a robot)
-our $TIMEOUT = 3600; # 1 hour
+=item handler REQUEST
 
-sub handler {} # deprecated
-
-sub is_robot
-{
-	my( $r ) = @_;
-
-	my $ip = $r->connection->remote_ip;
-	my $time_t = time();
-
-	# cleanup then check the cache
-	for(keys %ROBOTS_CACHE)
-	{
-		delete $ROBOTS_CACHE{$_} if abs($ROBOTS_CACHE{$_}) < $time_t;
-	}
-
-	return $ROBOTS_CACHE{$ip} > 0 if exists $ROBOTS_CACHE{$ip};
-	$ROBOTS_CACHE{$ip} = $time_t + $TIMEOUT;
-
-	my $is_robot = 0;
-
-	my $ua = $r->headers_in->{ "User-Agent" };
-	if( $ua )
-	{
-		for(@USERAGENT_ROBOTS)
-		{
-			$is_robot = 1, last if $ua =~ $_;
-		}
-	}
-
-	$ROBOTS_CACHE{$ip} *= -1 if !$is_robot;
-
-	return $is_robot;
-}
-
-=item $handler->document( $r )
-
-A request on a document.
+Called by mod_perl whenever a request is made to the web server where REQUEST is an Apache Request object.
 
 =cut
 
-sub document
+sub handler
 {
 	my( $r ) = @_;
 
-	# e.g. ignore 304 NOT MODIFIED
-	if( $r->status != 200 )
+	# If you're confused its probably because your browser is issuing NOT
+	# MODIFIED SINCE (304 NOT MODIFIED)
+	unless( $r->status == 200 ) 
 	{
-		return DECLINED;
+		return DECLINED();
 	}
 
-	return if is_robot( $r );
+	my $pnotes = $r->pnotes;
 
-	my $doc = $r->pnotes( "document" );
-	my $filename = $r->pnotes->{ "filename" };
-
-	# only count hits to the main file
-	if( $filename ne $doc->get_main )
-	{
-		return DECLINED;
-	}
-
-	# ignore volatile version downloads (e.g. thumbnails)
-	if( $doc->has_related_objects( EPrints::Utils::make_relation( "isVolatileVersionOf" ) ) )
-	{
-		return DECLINED;
-	}
-
-	my $epdata = _generic( $r );
-
-	$epdata->{service_type_id} = "?fulltext=yes";
-	$epdata->{referent_id} = $doc->value( "eprintid" );
-	$epdata->{referent_docid} = $doc->id;
-
-	return _create_access( $r, $epdata );
-}
-
-=item $handler->eprint( $r )
-
-A request on an eprint abstract page.
-
-=cut
-
-sub eprint
-{
-	my( $r ) = @_;
-
-	# e.g. ignore 304 NOT MODIFIED
-	if( $r->status != 200 )
-	{
-		return DECLINED;
-	}
-
-	# only track hits on the full abstract page
-	if( $r->filename !~ /\bindex\.html$/ )
-	{
-		return DECLINED;
-	}
-
-	return if is_robot( $r );
-
-	my $eprint = $r->pnotes( "eprint" );
-
-	my $epdata = _generic( $r );
-
-	$epdata->{service_type_id} = "?abstract=yes";
-	$epdata->{referent_id} = $eprint->id;
-
-	return _create_access( $r, $epdata );
-}
-
-sub _generic
-{
-	my( $r ) = @_;
+	my $event_type = $pnotes->{ "loghandler" };
+	return DECLINED() unless defined $event_type;
 
 	my $c = $r->connection;
 	my $ip = $c->remote_ip;
@@ -196,31 +95,87 @@ sub _generic
 	$access->{datestamp} = EPrints::Time::get_iso_timestamp( $r->request_time );
 	$access->{requester_id} = $ip;
 	$access->{referring_entity_id} = $r->headers_in->{ "Referer" };
+	$access->{service_type_id} = $event_type;
 	$access->{requester_user_agent} = $r->headers_in->{ "User-Agent" };
 
+	if( $event_type eq "?abstract=yes" )
+	{
+		$access->{referent_id} = $pnotes->{ "eprintid" };
+	}
+	elsif( $event_type eq "?fulltext=yes" )
+	{
+		my $dataobj = $pnotes->{ "dataobj" };
+		my $filename = $pnotes->{ "filename" };
+		# only count hits to the main file
+		if( $filename ne $dataobj->get_main )
+		{
+			return DECLINED();
+		}
+		if( $dataobj->has_related_objects( EPrints::Utils::make_relation( "isVolatileVersionOf" ) ) )
+		{
+			return DECLINED();
+		}
+		$access->{referent_id} = $dataobj->get_value( "eprintid" );
+		$access->{referent_docid} = $dataobj->get_id;
+	}
+	else
+	{
+		return DECLINED();
+	}
+
 	# Sanity check referring URL (don't store non-HTTP referrals)
-	if( !$access->{referring_entity_id} || $access->{referring_entity_id} !~ /^https?:/ )
+	if( !$access->{referring_entity_id} or $access->{referring_entity_id} !~ /^https?:/ )
 	{
 		$access->{referring_entity_id} = '';
 	}
 
-	return $access;
+	my $session = new EPrints::Session(2);
+	$session->get_repository->get_dataset( "access" )->create_object(
+			$session,
+			$access
+		);
+	$session->terminate;
+
+	return OK();
 }
 
-sub _create_access
-{
-	my( $r, $epdata ) = @_;
+=item $id = EPrints::Apache::LogHandler::uri_to_eprintid( $session, $uri )
 
-	my $repository = $EPrints::HANDLE->current_repository;
-	if( !defined $repository )
+Returns the eprint id that $uri corresponds to, or undef.
+
+=cut
+
+sub uri_to_eprintid
+{
+	my( $session, $uri ) = @_;
+
+	# uri is something like /xxxxxx/?
+	if( $uri->path =~ m#^(?:/archive)?/(\d+)/# )
 	{
-		return DECLINED;
+		return $1;
+	}
+	
+	return undef;
+}
+
+=item $id = EPrints::Apache::LogHandler::uri_to_docid( $session, $eprintid, $uri )
+
+Returns the docid that $uri corresponds to (given the $eprintid), or undef.
+
+=cut
+
+sub uri_to_docid
+{
+	my( $session, $eprintid, $uri ) = @_;
+
+	if( $uri->path =~ m#^(?:/archive)?/(\d+)/(\d+)/# )
+	{
+		return $2;
 	}
 
-	$repository->dataset( "access" )->create_dataobj( $epdata );
-
-	return OK;
+	return undef;
 }
+
 
 1;
 

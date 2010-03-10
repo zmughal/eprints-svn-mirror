@@ -73,11 +73,6 @@ $EPrints::XML::LIB_LEN = length("XML::LibXML::");
 
 our $PARSER = XML::LibXML->new();
 
-sub CLONE
-{
-	$PARSER = XML::LibXML->new();
-}
-
 =item $doc = parse_xml_string( $string )
 
 Create a new DOM document from $string.

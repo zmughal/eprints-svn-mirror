@@ -1,5 +1,5 @@
 use strict;
-use Test::More tests => 10;
+use Test::More tests => 8;
 
 BEGIN { use_ok( "EPrints" ); }
 BEGIN { use_ok( "EPrints::Test" ); }
@@ -9,8 +9,6 @@ ok(defined $session, 'opened an EPrints::Session object');
 
 my $database = $session->get_database();
 ok( defined $database, "database defined" );
-
-my $dataset = $session->dataset( "eprint" );
 
 SKIP: {
 	skip "Only supports MySQL", 3 unless $database->isa( "EPrints::Database::mysql" );
@@ -60,31 +58,6 @@ SKIP: {
 	};
 
 	$database->do("DROP TABLE IF EXISTS $table");
-}
-
-{
-my $utf8_byte = "\x{024b62}";
-# mysql only supports 1-3 byte UTF-8
-$utf8_byte = "\x{20ac}" if $database->isa( "EPrints::Database::mysql" );
-
-# watch-out: side-effecting database!
-my $eprintid = $database->counter_next( "eprintid" );
-
-my $field = $dataset->field( "eprint_status" );
-my $maxlength = $field->get_property( "maxlength" );
-my $testdata = $utf8_byte x $maxlength;
-my $table = $dataset->get_sql_table_name;
-
-ok($database->insert($table,[$dataset->key_field->get_sql_name,$field->get_sql_name],[$eprintid,$testdata]), "insert maximum size multi-byte characters");
-
-my $sth = $database->prepare("SELECT ".$database->quote_identifier($field->get_sql_name)." FROM ".$database->quote_identifier($table)." WHERE ".$database->quote_identifier($dataset->key_field->get_sql_name)."=$eprintid");
-$sth->execute;
-my( $stored ) = $sth->fetchrow_array;
-utf8::decode($stored) if !utf8::is_utf8($stored);
-
-is($stored,$testdata,"stored maximum size multi-byte characters");
-
-$database->delete_from($table,[$dataset->key_field->get_sql_name],[$eprintid]);
 }
 
 $session->terminate;

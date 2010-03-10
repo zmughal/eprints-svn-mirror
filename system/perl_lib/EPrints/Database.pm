@@ -15,8 +15,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints::Database> - a connection to the SQL database for an eprints
@@ -40,8 +38,6 @@ $db = $session->get_database
 Any use of SQL must use quote_identifier to quote database tables and columns. The only exception to this are the Database::* modules which provide database-driver specific extensions.
 
 Variables that are database quoted are prefixed with 'Q_'.
-
-=head1 METHODS
 
 =over 4
 
@@ -388,6 +384,8 @@ sub create_archive_tables
 	}
 
 	$success = $success && $self->create_counters();
+
+	#$success = $success && $self->_create_permission_table();
 
 	$self->create_version_table;	
 	
@@ -901,7 +899,6 @@ sub create_table
 			type => "int",
 			sql_index => 1 );
 
-		next if $self->has_table( $dataset->get_sql_sub_table_name( $field ) );
 		$rv &&= $self->create_table(	
 			$dataset->get_sql_sub_table_name( $field ),
 			$dataset,
@@ -943,10 +940,7 @@ sub create_table
 	} @primary_key;
 
 	# Send to the database
-	if( !$self->has_table( $tablename ) )
-	{
-		$rv &&= $self->_create_table( $tablename, \@primary_key, \@columns );
-	}
+	$rv &&= $self->_create_table( $tablename, \@primary_key, \@columns );
 	
 	foreach (@indices)
 	{
@@ -1613,10 +1607,6 @@ sub update
 		{
 			next;
 		}
-		if( ref($values) ne "ARRAY" )
-		{
-			EPrints->abort( "Expected array reference for ".$multifield->get_name."\n".Data::Dumper::Dumper( $data ) );
-		}
 
 		my @names = ($keyname, "pos", $multifield->get_sql_names);
 		my @rows;
@@ -1899,6 +1889,38 @@ sub clear_user_messages
 	};
 	$results->map( $fn, undef );
 }
+
+######################################################################
+# 
+# $success = $db->_create_permission_table
+#
+# create the tables needed to store the permissions. 
+#
+######################################################################
+
+sub _create_permission_table
+{
+	my( $self ) = @_;
+
+	my $rc = 1;
+
+	$rc &&= $self->_create_table("permission", ["role","privilege"], [
+		$self->get_column_type( "role", SQL_VARCHAR, SQL_NOT_NULL, 64 ),
+		$self->get_column_type( "privilege", SQL_VARCHAR, SQL_NOT_NULL, 64),
+		$self->get_column_type( "net_from", SQL_INTEGER ),
+		$self->get_column_type( "net_to", SQL_INTEGER ),
+	]);
+	$rc &&= $self->create_unique_index( "permission", "privilege", "role" );
+
+	$rc &&= $self->_create_table("permission_group", ["user","role"], [
+		$self->get_column_type( "user", SQL_VARCHAR, SQL_NOT_NULL, 64),
+		$self->get_column_type( "role", SQL_VARCHAR, SQL_NOT_NULL, 64),
+	]);
+
+	return $rc;
+}
+
+#
 
 ######################################################################
 =pod
@@ -3411,9 +3433,6 @@ sub has_field
 	# Check the order values (used to order search results)
 	$rc &&= $self->_has_field_ordervalues( $dataset, $field );
 
-	# Check the field index
-	$rc &&= $self->_has_field_index( $dataset, $field );
-
 	return $rc;
 }
 
@@ -3476,9 +3495,6 @@ sub add_field
 
 	# Add the field to order values (used to order search results)
 	$rc &&= $self->_add_field_ordervalues( $dataset, $field );
-
-	# Add the index to the field
-	$rc &&= $self->_add_field_index( $dataset, $field );
 
 	return $rc;
 }
@@ -3567,64 +3583,6 @@ sub _add_field_ordervalues_lang
 	my( $col ) = $sql_field->get_sql_type( $self->{session} );
 
 	return $self->do( "ALTER TABLE ".$self->quote_identifier($order_table)." ADD $col" );
-}
-
-sub _has_field_index
-{
-	my( $self, $dataset, $field ) = @_;
-
-	return 1 if $field->is_virtual;
-
-	return 1 if !$field->get_property( "sql_index" );
-
-	my $table;
-	if( $field->get_property( "multiple" ) )
-	{
-		$table = $dataset->get_sql_sub_table_name( $field );
-	}
-	else
-	{
-		$table = $dataset->get_sql_table_name;
-	}
-
-	my @cols = $field->get_sql_names;
-
-	# see if it's already part of a PRIMARY KEY
-	my @primary_key = $self->get_primary_key( $table );
-	if( @primary_key && ($primary_key[0] eq $cols[0] || $primary_key[$#primary_key] eq $cols[0] ) )
-	{
-		return 1;
-	}
-
-	my $index_name = $self->index_name( $table, @cols );
-
-	return defined $index_name;
-}
-
-# Add the index to the field
-sub _add_field_index
-{
-	my( $self, $dataset, $field ) = @_;
-
-	return 1 if $field->is_virtual;
-
-	return 1 if !$field->get_property( "sql_index" );
-
-	return 1 if $self->_has_field_index( $dataset, $field );
-
-	my $table;
-	if( $field->get_property( "multiple" ) )
-	{
-		$table = $dataset->get_sql_sub_table_name( $field );
-	}
-	else
-	{
-		$table = $dataset->get_sql_table_name;
-	}
-
-	my @cols = $field->get_sql_names;
-
-	return $self->create_index( $table, @cols );
 }
 
 # Add the field to the main tables
@@ -4132,39 +4090,6 @@ sub has_column
 	return $rc;
 }
 
-=item $name = $db->index_name( $table, @columns )
-
-Returns the name of the first index that starts with @columns on the $table table.
-
-Returns undef if no index exists.
-
-=cut
-
-sub index_name
-{
-	my( $self, $table, @cols ) = @_;
-
-	my $sql = "SELECT S0.index_name FROM ";
-	my $t = "information_schema.statistics";
-	my @logic;
-	foreach my $i (0..$#cols)
-	{
-		$sql .= ", " if $i > 0;
-		$sql .= $t.$self->sql_AS."S$i";
-		push @logic,
-			"S0.index_name=S$i.index_name",
-			"S$i.table_schema=".$self->quote_value( $self->{session}->config( "dbname" ) ),
-			"S$i.table_name=".$self->quote_value( $table ),
-			"S$i.column_name=".$self->quote_value( $cols[$i] ),
-			"S$i.seq_in_index=".($i+1);
-	}
-	$sql .= " WHERE " . join ' AND ', @logic;
-
-	my( $index_name ) = $self->{dbh}->selectrow_array( $sql );
-
-	return $index_name;
-}
-
 ######################################################################
 =pod
 
@@ -4492,30 +4417,17 @@ sub prepare_regexp
 	return "$col REGEXP $value";
 }
 
-=item $sql = $db->sql_AS()
+=item $glue = $db->alias_glue()
 
 Returns the syntactic glue to use when aliasing. SQL 92 DBs will happilly use " AS " but some DBs (Oracle!) won't accept it.
 
 =cut
 
-sub sql_AS
+sub alias_glue
 {
 	my( $self ) = @_;
 
 	return " AS ";
-}
-
-=item $sql = $db->sql_LIKE()
-
-Returns the syntactic glue to use when making a case-insensitive LIKE. PostgreSQL requires "ILIKE" while everything else uses "LIKE" and the column collation.
-
-=cut
-
-sub sql_LIKE
-{
-	my( $self ) = @_;
-
-	return " LIKE ";
 }
 
 1; # For use/require success

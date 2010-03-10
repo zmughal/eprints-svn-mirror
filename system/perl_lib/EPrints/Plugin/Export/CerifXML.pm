@@ -31,9 +31,7 @@ The remainder of this section describes each of the output files.
 
 =head2 cfProj-CORE.xml
 
-	cfProjId -
-		project.projectid or
-		MD5 of 'eprint'+eprint.id+eprint.projects[i]{title}
+	cfProjId - project.projectid or MD5 of eprint.project[i]
 	cfAcro - project.acronym
 	cfURI - project.uri
 
@@ -61,7 +59,7 @@ The remainder of this section describes each of the output files.
 =head2 cfProjTitle-LANG.xml
 
 	cfProjId - (see cfProj-CORE)
-	cfTitle - project.title or eprint.projects[i]{title}
+	cfTitle - project.title or eprint.project[i]
 	cfLangCode - 'en'
 	cfTrans - '0'
 
@@ -110,10 +108,6 @@ If eprint.type is 'book' or ResPubl is a journal/publication link:
 	cfLangCode - 'en'
 	cfTrans - '0'
 
-=head1 METHODS
-
-=over 4
-
 =cut
 
 use Digest::MD5;
@@ -139,8 +133,6 @@ $GRAMMAR{eprint} = [
 	cfISBN => { depends => [qw( isbn )], value => sub { return $_[0]->value( 'type' ) eq 'book' ? $_[0]->value( 'isbn' ) : undef } },
 	cfISSN => { depends => [qw( issn )], value => sub { return $_[0]->value( 'type' ) eq 'book' ? $_[0]->value( 'issn' ) : undef } },
 	cfURI => { value => sub { $_[0]->uri } },
-];
-$GRAMMAR{project} = [
 ];
 
 our %cfPublicationTypes = (
@@ -418,9 +410,7 @@ sub output_eprint
 	{
 		foreach my $project (@{$dataobj->value( "projects" )})
 		{
-			my $fid_attr = $self->output_project( $dataobj, $project, %opts,
-					field => $dataobj->dataset->field( "projects" ),
-				);
+			my $fid_attr = $self->output_project( $dataobj, $project, %opts );
 			$self->output_relation( "cfProj_ResPubl",
 				from => $fid_attr,
 				to => $id_attr,
@@ -435,30 +425,20 @@ sub output_project
 	my( $self, $dataobj, $value, %opts ) = @_;
 
 	my $xml = $self->{session}->xml;
-	my $field = $opts{field};
-
-	my $id;
-	my $title;
-	my $project;
-	if( $field->isa( "EPrints::MetaField::Dataobjref" ) )
-	{
-		$id = $value->{id};
-		$title = $value->{title};
-		$project = $field->dataobj( $value );
-	}
-	else
-	{
-		$title = $value;
-	}
 
 	my $projectid;
+	my $project;
+	if( $value =~ /^\d+$/ )
+	{
+		$project = $self->{session}->dataset( "project" )->dataobj( $value );
+	}
 	if( defined $project )
 	{
-		$projectid = $project->uri;
+		$projectid = $project->id;
 	}
 	else
 	{
-		$projectid = join('_', $dataobj->dataset->base_id, $dataobj->id, $title);
+		$projectid = $value;
 		utf8::encode($projectid);
 		$projectid = Digest::MD5::md5_hex( $projectid );
 	}
@@ -514,7 +494,7 @@ sub output_project
 	print $fh $xml->to_string( $entity, indent => 1 );
 	$xml->dispose( $entity );
 
-	my $title = EPrints::Utils::is_set( $title ) ? $title : $project->value( "title" );
+	my $title = defined $project ? $project->value( "title" ) : $value;
 	$self->output_lang_attr( "cfProjTitle",
 		from => $id_attr,
 		name => "cfTitle",
@@ -695,13 +675,3 @@ sub expand_time
 }
 
 1;
-
-=back
-
-=head1 SEE ALSO
-
-CERIF 2008 http://www.eurocris.org/cerif/cerif-releases/cerif-2008/
-
-=head1 COPYRIGHT
-
-Copyright 2010 Tim Brody <tdb2@ecs.soton.ac.uk>, University of Southampton, UK.

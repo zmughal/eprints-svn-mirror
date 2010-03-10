@@ -15,8 +15,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints::Database::Oracle> - custom database methods for Oracle DB
@@ -62,18 +60,6 @@ Oracle won't ORDER BY LOBS.
 Oracle requires special means to insert values into CLOB/BLOB.
 
 Oracle doesn't support "AS" when aliasing.
-
-When specifying char column lengths use (n char) to define character semantics. Otherwise oracle uses the "nls_length_semantics" setting to determine whether you meant bytes or chars.
-
-=head2 TODO
-
-=over 4
-
-=item epadmin create
-
-=item $name = $db->index_name( $table, @columns )
-
-=back
 
 =head1 METHODS
 
@@ -472,15 +458,7 @@ sub quote_ordervalue
 	return defined $value ? substr($value,0,1000) : undef;
 }
 
-# unsupported
-sub index_name
-{
-	my( $self, $table, @cols ) = @_;
-
-	return 1;
-}
-
-sub sql_AS
+sub alias_glue
 {
 	my( $self ) = @_;
 

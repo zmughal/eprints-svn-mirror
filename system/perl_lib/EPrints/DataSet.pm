@@ -15,8 +15,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints::DataSet> - a dataset is a set of records in the eprints system with
@@ -248,11 +246,6 @@ my $INFO = {
 		class => "EPrints::DataObj::Access",
 		import => 1,
 		datestamp => "datestamp",
-	},
-	triple => {
-		sqlname => "triple",
-		class => "EPrints::DataObj::Triple",
-		import => 1,
 	},
 	request => {
 		sqlname => "request",	
@@ -1252,7 +1245,6 @@ sub list
 	my( $self, $ids ) = @_;
 
 	return EPrints::List->new(
-		session => $self->{repository},
 		dataset => $self,
 		ids => $ids,
 	);

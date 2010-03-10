@@ -12,8 +12,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<epadmin> - EPrints repository admin tool
@@ -128,17 +126,17 @@ This erases all the .words and .indexcodes cache files from your repository, for
 
 This is useful if you only setup the fulltext indexing after your repository is already live, or if you discover there has been a problem.
 
-=item B<epadmin> recommit I<repository_id> I<dataset_id> [I<eprint_id> I<eprint_id> ...]
+=item B<epadmin> recommit I<repository_id> I<dataset_id>
 
-Recommit all the records in the given dataset. What this does is cause the automatic values to be re-calculated. If a list of eprint_ids is given then just recommit those.
+Recommit all the records in the given dataset. What this does is cause the automatic values to be re-calculated.
 
-=item B<epadmin> reindex I<repository_id> I<dataset_id> [I<eprint_id> I<eprint_id> ...]
+=item B<epadmin> reindex I<repository_id> I<dataset_id>
 
-Schedule the dataset for reindexing. The indexer will do the actual indexing and it may take some time. This only schedules the reindexing. If a list of eprint_ids is given then just reindex those.
+Schedule the dataset for reindexing. The indexer will do the actual indexing and it may take some time. This only schedules the reindexing.
 
-=item B<epadmin> reorder I<repository_id> I<dataset_id> [I<eprint_id> I<eprint_id> ...]
+=item B<epadmin> reorder I<repository_id> I<dataset_id>
 
-Regenerate the order values for the dataset. If a list of eprint_ids is given then just recalculate ordervalues for those.
+Regenerate the order values for the dataset.
 
 =item B<epadmin> rehash I<repository_id> [I<document_id>]
 
@@ -316,19 +314,19 @@ else
 	{
 		my $datasetid = $ARGV[2];
 		pod2usage(1) unless defined $datasetid;
-		recommit( $repoid, $datasetid, @ARGV[3..(scalar @ARGV)-1] ); 
+		recommit( $repoid, $datasetid ); 
 	}
 	elsif( $action eq "reindex" ) 
 	{
 		my $datasetid = $ARGV[2];
 		pod2usage(1) unless defined $datasetid;
-		reindex( $repoid, $datasetid, @ARGV[3..(scalar @ARGV)-1] ); 
+		reindex( $repoid, $datasetid ); 
 	}
 	elsif( $action eq "reorder" )
 	{
 		my $datasetid = $ARGV[2];
 		pod2usage(1) unless defined $datasetid;
-		reorder( $repoid, $datasetid, @ARGV[3..(scalar @ARGV)-1] ); 
+		reorder( $repoid, $datasetid ); 
 	}
 	elsif( $action eq "rehash" ) { rehash( $repoid ); }
 	elsif( $action eq "upgrade_add_files" ) { upgrade_add_files( $repoid ) }
@@ -416,7 +414,7 @@ END
 		$repodir."/cfg",
 		$repoid );
 
-	foreach( "cgi", "var", "html", "documents", "documents/disk0" )
+	foreach( "var", "html", "documents", "documents/disk0" )
 	{
 		my $dir = $repodir."/".$_;
 		EPrints::Platform::mkdir( $dir );
@@ -1642,7 +1640,7 @@ sub update_database_structure
 
 sub recommit
 {
-	my( $repoid, $datasetid, @ids ) = @_;
+	my( $repoid, $datasetid ) = @_;
 
 	my $repo = &repository( $repoid );
 
@@ -1653,31 +1651,23 @@ sub recommit
 		exit( 1 );
 	}
 
-	
-	my $list;
-	if( @ids )
-	{ 
-		$list = $dataset->list( \@ids );
-	}
-	else
-	{
-		$list = $dataset->search;
+	my $list = $dataset->search;
 
-		if( $noise > 0 )
-		{
-			print "\n";
-			print "You are about to recommit \"$datasetid\" in the $repoid repository.\n";
-			print "This can take some time.\n\n";
-			print "Number of records in set: ".$list->count."\n";
-		}
-	
-		my $sure = EPrints::Utils::get_input_confirm( "Continue" );
-		unless( $sure )
-		{
-			print "Aborting then.\n\n";
-			exit( 1 );
-		}
+	if( $noise > 0 )
+	{
+		print "\n";
+		print "You are about to recommit \"$datasetid\" in the $repoid repository.\n";
+		print "This can take some time.\n\n";
+		print "Number of records in set: ".$list->count."\n";
 	}
+
+	my $sure = EPrints::Utils::get_input_confirm( "Continue" );
+	unless( $sure )
+	{
+		print "Aborting then.\n\n";
+		exit( 1 );
+	}
+
 
 	$list->map( sub {
         	my( $session, $dataset, $item ) = @_;
@@ -1689,15 +1679,12 @@ sub recommit
         	$item->commit();
 	} );
 
-	if( !scalar @ids )
-	{
-		print "All items in \"$datasetid\" have been re-commited.\n" if( $noise >= 1 );
-	}
+	print "All items in \"$datasetid\" have been re-commited.\n" if( $noise >= 1 );
 }
 
 sub reorder
 {
-	my( $repoid, $datasetid, @ids ) = @_;
+	my( $repoid, $datasetid ) = @_;
 
 	my $repo = &repository( $repoid );
 
@@ -1708,17 +1695,7 @@ sub reorder
 		exit( 1 );
 	}
 
-	my $list;
-	if( @ids )
-	{ 
-		$list = $dataset->list( \@ids );
-	}
-	else
-	{
-		$list = $dataset->search;
-	}
-
-	$list->map( sub {
+	$dataset->search->map( sub {
 		my( $session, $dataset, $item ) = @_;
 	
 		EPrints::Index::update_ordervalues( $session, $dataset, $item->{data}, $item->{data} );
@@ -1732,7 +1709,7 @@ sub reorder
 
 sub reindex
 {
-	my( $repoid, $datasetid, @ids ) = @_;
+	my( $repoid, $datasetid ) = @_;
 
 	my $repo = &repository( $repoid );
 
@@ -1743,17 +1720,7 @@ sub reindex
 		exit( 1 );
 	}
 
-	my $list;
-	if( @ids )
-	{ 
-		$list = $dataset->list( \@ids );
-	}
-	else
-	{
-		$list = $dataset->search;
-	}
-
-	$list->map( sub {
+	$dataset->search->map( sub {
 		my( $session, $dataset, $item ) = @_;
 	
 		$item->queue_all();
@@ -2207,12 +2174,6 @@ sub upgrade_3_1_2_to_3_2_0
 
 	upgrade_cfg_files( $repo, [qw(
 	 	indexing.pl
-		rdf.pl
-		rdf_triples_sameas.pl
-		rdf_triples_bibo.pl
-		rdf_uri_event_location.pl
-		rdf_uri_event.pl
-		rdf_uri_person.pl
 	)]);
 
 	# We can do this now, because we only ever add columns

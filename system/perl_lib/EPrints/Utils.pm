@@ -14,8 +14,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints::Utils> - Utility functions for EPrints.
@@ -51,10 +49,6 @@ B<EPrints::Utils> - Utility functions for EPrints.
 
 This package contains functions which don't belong anywhere else.
 
-=head1 METHODS
-
-=over 4
-
 =cut
 
 package EPrints::Utils;
@@ -76,7 +70,7 @@ BEGIN {
 
 ######################################################################
 
-=begin InternalDoc
+=for InternalDoc
 
 =item $cmd = EPrints::Utils::prepare_cmd($cmd,%VARS)
 
@@ -85,8 +79,6 @@ C<$(varname)>) with their value from %VARS (key is C<varname>). All %VARS are
 quoted before replacement to make it shell-safe.
 
 If a variable is specified in $cmd, but not present in %VARS a die is thrown.
-
-=end
 
 =cut
 
@@ -393,15 +385,13 @@ sub _blank_lines
 
 ######################################################################
 
-=begin InternalDoc
+=for InternalDoc
 
 =item $ok = EPrints::Utils::copy( $source, $target )
 
 Copy $source file to $target file without alteration.
 
 Return true on success (sets $! on error).
-
-=end
 
 =cut
 
@@ -466,15 +456,13 @@ sub wget
 
 ######################################################################
 
-=begin InternalDoc
+=for InternalDoc
 
 =item $ok = EPrints::Utils::rmtree( $full_path )
 
 Unlinks the path and everything in it.
 
 Return true on success.
-
-=end
 
 =cut
 
@@ -627,7 +615,7 @@ sub _render_citation_aux
 
 ######################################################################
 
-=begin InternalDoc
+=for InternalDoc
 
 =item $metafield = EPrints::Utils::field_from_config_string( $dataset, $fieldname )
 
@@ -635,8 +623,6 @@ Return the EPrint::MetaField from $dataset with the given name.
 
 If fieldname has a semicolon followed by render options then these
 are passed as render options to the new EPrints::MetaField object.
-
-=end
 
 =cut
 
@@ -668,7 +654,7 @@ sub field_from_config_string
 	{
 		if( !defined $dataset )
 		{
-			EPrints::abort( "Attempt to get a field or subfield from a non existent dataset. Could be due to a sub field of a inappropriate field type." );
+			EPrints::abort( "Attempt to get a field or subfield from a non existant dataset. Could be due to a sub field of a inappropriate field type." );
 		}
 		$field = $dataset->get_field( $fname );
 		if( !defined $field )
@@ -715,7 +701,7 @@ sub field_from_config_string
 
 ######################################################################
 
-=begin InternalDoc
+=for InternalDoc
 
 =item $string = EPrints::Utils::get_input( $regexp, [$prompt], [$default] )
 
@@ -731,8 +717,6 @@ and try again.
 
 If a default is set and the user just hits return then the default
 value is returned.
-
-=end
 
 =cut
 
@@ -816,7 +800,7 @@ sub get_input_hidden
 
 ######################################################################
 
-=begin InternalDoc
+=for InternalDoc
 
 =item EPrints::Utils::get_input_confirm( [$prompt], [$quick], [$default] )
 
@@ -826,8 +810,6 @@ single-character input ('y' or 'n').
 If $default is '1' defaults to yes, if '0' defaults to no.
 
 Returns true if the user answers 'yes' or false for any other value.
-
-=end
 
 =cut
 
@@ -882,7 +864,7 @@ sub get_input_confirm
 
 ######################################################################
 
-=begin InternalDoc
+=for InternalDoc
 
 =item $clone_of_data = EPrints::Utils::clone( $data )
 
@@ -892,8 +874,6 @@ Does not handle blessed items.
 
 Useful when we want to modify a temporary copy of a data structure 
 that came from the configuration files.
-
-=end
 
 =cut
 
@@ -934,13 +914,11 @@ sub clone
 
 ######################################################################
 
-=begin InternalDoc
+=for InternalDoc
 
 =item $crypted_value = EPrints::Utils::crypt_password( $value, $session )
 
 Apply the crypt encoding to the given $value.
-
-=end
 
 =cut
 
@@ -985,7 +963,7 @@ sub url_escape
 
 ######################################################################
 
-=begin InternalDoc
+=for InternalDoc
 
 =item $long = EPrints::Utils::ip2long( $ip )
 
@@ -994,8 +972,6 @@ Convert quad-dotted notation to long
 =item $ip = EPrints::Utils::long2ip( $ip )
 
 Convert long to quad-dotted notation
-
-=end
 
 =cut
 
@@ -1025,15 +1001,13 @@ sub long2ip
 
 ######################################################################
 
-=begin InternalDoc
+=for InternalDoc
 
 =item EPrints::Utils::cmd_version( $progname )
 
 Print out a "--version" style message to STDOUT.
 
 $progname is the name of the current script.
-
-=end
 
 =cut
 

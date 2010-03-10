@@ -250,12 +250,13 @@ sub send_out_alert
 	{
 		$self->{session}->get_repository->log( 
 			"Attempt to send out an alert for a\n".
-			"non-existent user. SavedSearch ID#".$self->get_id."\n" );
+			"non-existant user. SavedSearch ID#".$self->get_id."\n" );
 		return;
 	}
 
-	# change language temporarily to the user's language
-	local $self->{session}->{lang} = $user->language();
+	my $origlangid = $self->{session}->get_langid;
+	
+	$self->{session}->change_lang( $user->get_value( "lang" ) );
 
 	my $searchexp = $self->make_searchexp;
 	# get the description before we fiddle with searchexp
@@ -353,6 +354,8 @@ sub send_out_alert
 		EPrints::XML::dispose( $mail );
 	}
 	$list->dispose;
+
+	$self->{session}->change_lang( $origlangid );
 }
 
 

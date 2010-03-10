@@ -15,8 +15,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints> - Institutional Repository software
@@ -25,15 +23,11 @@ B<EPrints> - Institutional Repository software
 
 	use EPrints qw();
 
-	$eprints = EPrints->new;
-
-	# CLI
-	$repo = $eprints->repository( "demoprints" );
-
-	# CGI
-	$repo = $eprints->current_repository;
+	my $session = EPrints::Session->new( 1, "demoprints" );
 
 	...
+
+	$session->terminate;
 
 =head1 DESCRIPTION
 
@@ -49,7 +43,7 @@ You can pass options to the EPrints package that effect the EPrints initialisati
 
 =item no_check_user
 
-Do not check the current user/group is the same as the user/group in SystemSettings.
+Do not check the current user/group is the same as the user/group in Systemsettings.
 
 =back
 
@@ -78,13 +72,31 @@ use Data::Dumper;
 use Scalar::Util;
 
 BEGIN {
-	use Carp;
+	use Carp qw(cluck);
 
 	# load the configuration - required by EPrints::Platform et al
 	EPrints::Config::init();
 
 	umask( 0002 );
 
+	if( $ENV{MOD_PERL} )
+	{
+		eval '
+use Apache::DBI; # must be first! 	 	 
+#$Apache::DBI::DEBUG = 3;
+use EPrints::Apache::AnApache;
+use EPrints::Apache::Login;
+use EPrints::Apache::Auth;
+use EPrints::Apache::Rewrite;
+use EPrints::Apache::VLit;
+use EPrints::Apache::Template;
+use EPrints::Apache::Storage;
+use EPrints::Apache::REST;
+1;';
+		if( $@ ) { abort( $@ ); }
+	}
+
+	# abort($err) Defined here so modules can abort even at startup
 ######################################################################
 =pod
 
@@ -103,7 +115,11 @@ used to report errors when initialising modules.
 	{
 		my( $errmsg ) = pop @_; # last parameter
 
-		my $r = EPrints::Apache::AnApache::get_request();
+		my $r;
+		if( $ENV{MOD_PERL} && $EPrints::SystemSettings::loaded)
+		{
+			$r = EPrints::Apache::AnApache::get_request();
+		}
 		if( defined $r )
 		{
 			# If we are running under MOD_PERL
@@ -142,7 +158,7 @@ $errmsg
 ------------------------------------------------------------------
 END
 		$@="";
-		Carp::cluck( "EPrints System Error inducing stack dump\n" );
+		cluck( "EPrints System Error inducing stack dump\n" );
 		if( $EPrints::die_on_abort ) { die $errmsg; }
 		exit( 1 );
 	}
@@ -159,24 +175,11 @@ END
 
 		my $r = eval { &$code };
 
-		if( $@ ) { EPrints->abort( $@ ); }
+		if( $@ ) { EPrints::abort( $@ ); }
 
 		return $r;
 	}
 }
-
-use Apache::DBI; # must be first! 	 	 
-
-use EPrints::Apache;
-use EPrints::Apache::AnApache;
-use EPrints::Apache::LogHandler;
-use EPrints::Apache::Login;
-use EPrints::Apache::Auth;
-use EPrints::Apache::Rewrite;
-use EPrints::Apache::VLit;
-use EPrints::Apache::Template;
-use EPrints::Apache::Storage;
-use EPrints::Apache::REST;
 
 use EPrints::BackCompatibility;
 use EPrints::XML;
@@ -204,7 +207,6 @@ use EPrints::DataObj::MetaField;
 use EPrints::DataObj::Request;
 use EPrints::DataObj::Subject;
 use EPrints::DataObj::SavedSearch;
-use EPrints::DataObj::Triple;
 use EPrints::DataObj::UploadProgress;
 use EPrints::DataObj::User;
 use EPrints::DataSet;
@@ -226,7 +228,6 @@ use EPrints::Platform;
 use EPrints::Plugin;
 use EPrints::PluginFactory;
 use EPrints::Probity;
-use EPrints::RDFGraph;
 use EPrints::Repository;
 use EPrints::RepositoryConfig;
 use EPrints::Search;
@@ -247,7 +248,6 @@ use EPrints::Workflow::Stage;
 use EPrints::XML::EPC;
 
 our $__loaded;
-our $__cloned;
 
 =pod
 
@@ -268,42 +268,6 @@ sub new($%)
 	return $EPrints::HANDLE if defined $EPrints::HANDLE;
 
 	return bless { opts=>\%opts }, $class;
-}
-
-sub CLONE
-{
-	my( $class ) = @_;
-
-	$__cloned = 1;
-
-	# we can't re-init here because Perl segfaults if we attempt to opendir()
-	# during CLONE()
-}
-
-=item EPrints::post_config_handler(...)
-
-Initialise the EPrints mod_perl environment.
-
-=cut
-
-sub post_config_handler
-{
-	my( $conf_pool, $log_pool, $temp_pool, $s ) = @_;
-
-	# make carp verbose
-	$Carp::Verbose = 1;
-
-	if( Apache2::MPM->is_threaded )
-	{
-		print STDERR "Warning! Running EPrints under threads is experimental and liable to break\n";
-	}
-
-	$EPrints::HANDLE = __PACKAGE__->new;
-	my @ids = $EPrints::HANDLE->load_repositories();
-
-	print STDERR "EPrints archives loaded: ".join( ", ",  @ids )."\n";
-
-	return OK;
 }
 
 =pod
@@ -344,15 +308,6 @@ Return the repository based on the current web request, or undef.
 sub current_repository($%)
 {
 	my( $self, %options ) = @_;
-
-	if( $__cloned )
-	{
-		$__cloned = 0;
-		foreach my $repo (values %{$EPrints::HANDLE->{repository}})
-		{
-			$repo->init_from_thread();
-		}
-	}
 
 	my $request = EPrints::Apache::AnApache::get_request();
 	return undef if !defined $request;
@@ -418,6 +373,7 @@ sub load_repositories
 	return @ids;
 }
 
+
 sub sigusr2_cluck
 {
 	Carp::cluck( "caught SIGUSR2" );
@@ -438,7 +394,7 @@ __END__
 
 =head1 SEE ALSO
 
-L<EPrints::Repository>
+L<EPrints::Session>
 
 =head1 COPYRIGHT
 

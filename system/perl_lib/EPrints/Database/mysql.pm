@@ -15,8 +15,6 @@
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints::Database::mysql> - custom database methods for MySQL DB
@@ -490,13 +488,6 @@ sub prepare_regexp
 	my( $self, $col, $value ) = @_;
 
 	return "$col REGEXP $value";
-}
-
-sub sql_LIKE
-{
-	my( $self ) = @_;
-
-	return " COLLATE utf8_general_ci LIKE ";
 }
 
 1; # For use/require success

@@ -12,10 +12,6 @@
 #
 ######################################################################
 
-=pod
-
-=for Pod2Wiki
-
 =head1 NAME
 
 B<EPrints::DataObj::EPrint> - Class representing an actual EPrint
@@ -263,6 +259,7 @@ sub get_system_field_info
 		],
 		render_value=>"EPrints::DataObj::EPrint::render_edit_lock",
  	},
+
 
 	);
 }
@@ -538,24 +535,12 @@ sub create_from_data
 
 # Update all the stuff that needs updating before an eprint
 # is written to the database.
-
 sub update_triggers
 {
 	my( $self ) = @_;
 
 	$self->SUPER::update_triggers();
 
-	my $action = "clear_triples";
-	if( $self->get_value( "eprint_status" ) eq "archive" )
-	{
-		$action = "update_triples";
-	}
-	$self->{session}->dataset( "event_queue" )->create_dataobj({
-			pluginid => "Event::RDF",
-			action => $action,
-			params => [$self->internal_uri],
-		});
-	
 }
 
 
