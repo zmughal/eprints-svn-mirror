@@ -1,0 +1,24 @@
+=head1 The EPrints logo
+
+=begin latex
+
+\begin{figure}
+\centering
+\includegraphics[height=4in]{../lateximages/eprintslogo.eps}
+\caption{EPrints Logo}
+\end{figure}
+
+=end latex
+
+The Folder Jigsaw logo was created by Christopher Gutteridge. It was supposed to encompass "archives","documents", OAI, "skywriting", "modularity/extensibility" and the IAM research groups visual identity. 
+
+The base version is a 684x668 XCF file (For the B<GIMP Editor>. You are welcome use it and to modify it for your own (EPrints-related) use, maybe have your own logo in the jigsaw. 
+
+
+=for html <p><img src="eprintslogo.png" width="342" height="334" /></p>
+
+=for text We can't show it in text docs, so look at http://eprints.org/ 
+
+=for texinfo We can't show it in texinfo docs, so look at http://eprints.org/ 
+
+

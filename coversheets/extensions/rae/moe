@@ -1,0 +1,198 @@
+######################################################################
+#
+# Declare measures of esteem (possibly on behalf of someone else)
+#
+######################################################################
+#
+# This file is part of the EPrints RAE module developed by the 
+# Institutional Repositories and Research Assessment (IRRA) project,
+# funded by JISC within the Digital Repositories programme.
+#
+# http://irra.eprints.org/
+#
+# The EPrints RAE module is free software; you can redistributet 
+# and/or modify it under the terms of the GNU General Public License 
+# as published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+#
+# The EPrints RAE module is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+# of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+######################################################################
+
+use EPrints::Database;
+use EPrints::MetaField;
+use EPrints::Session;
+use EPrints::User;
+use EPrints::Utils;
+use strict;
+
+use EPrints::SystemSettings;
+if( $EPrints::SystemSettings::conf->{version_id} =~ m/^(eprints-)?3\./ ) { &backcomp; }
+
+# Create session
+my $session = new EPrints::Session;
+exit( 0 ) unless( defined $session );
+my $archive = $session->get_archive;
+
+# Check user has appropriate privs
+if( !$session->auth_check( "deposit" ) )
+{
+	$session->terminate;
+	Apache::exit( 0 );
+}
+my $user = $session->current_user;
+
+# Check selected role
+my $role = $user;
+if( defined( $session->param( "role" ) ) )
+{
+	my $selected_role = EPrints::User->new( $session, $session->param( "role" ) );
+	if( defined $selected_role )
+	{
+		if( $archive->call( "rae_can_user_assume_role", $session, $user, $selected_role ) ) {
+			$role = $selected_role;	
+		}
+	}
+}
+
+# Show available roles
+my $roles_frag = $session->make_doc_fragment;
+my @roles = $archive->call( "rae_roles_for_user", $session, $user );
+if( scalar @roles )
+{
+	my $form = $session->render_form( "post" );
+	$form->appendChild( $session->render_option_list(name => 'role', pairs => \@roles) );
+	# Renamed submit button to change to avoid confusion between changing roles and submitting
+	$form->appendChild( $session->render_action_buttons(change => $session->phrase( "rae:change_role" ) ) );
+	
+	$roles_frag = $session->html_phrase( "rae:roles", 
+		change_role => $form,
+		current_user => $user->render_description,
+	);
+}
+
+# Get measures of esteem from DB
+my %moe;
+my $sql = "SELECT * FROM rae_moe WHERE userid=" . $role->get_id;
+my $sth = $session->get_db->prepare( $sql );
+if( $session->get_db->execute( $sth, $sql ) )
+{
+	my $hashref = $sth->fetchrow_hashref;
+	if( defined $hashref )
+	{
+		%moe = %$hashref;
+	}
+	else
+	{
+		# Insert stub for this user
+		my $sql = "INSERT INTO rae_moe (userid) VALUES ( " . $role->get_id . ")";
+		if( !$session->get_db->do( $sql ) )
+		{
+			# Handle error
+		}
+	}
+}
+$sth->finish;
+
+my @metafields;
+my @updates;
+my $shortcuts_frag = $session->make_element( "ul" );
+foreach my $field ( @{ $archive->get_conf( "rae", "fields", "moe" ) } )
+{
+
+	# Create metafield	
+	my $metafield = EPrints::MetaField->new(
+		archive => $archive,
+		confid => "rae",
+		%$field,
+	);
+	push @metafields, $metafield;
+
+	# Get updated value
+	my $action_button = $session->get_action_button;
+	if( defined $action_button && $action_button eq "submit" )
+	{
+		my $value = $metafield->form_value( $session );
+		$moe{ $metafield->get_name } = $value;
+		push @updates, sprintf( '%s="%s"', $metafield->get_name, EPrints::Database::prep_value( $value ) );
+	}
+
+	# Create shortcut
+	my $li = $session->make_element( "li" );
+	$shortcuts_frag->appendChild( $li );
+	my $link = $session->render_link( "#" . $metafield->get_name );
+	$link->appendChild( $session->make_text( EPrints::Utils::tree_to_utf8( $metafield->render_name( $session ) ) ) );
+	$li->appendChild( $link );
+}
+
+# Update DB
+if( scalar @updates ) {
+	my $sql = "UPDATE rae_moe SET " . join( ", ", @updates ) . 
+		", userid_actual=" . $user->get_id . " WHERE userid=" . $role->get_id;
+	if( !$session->get_db->do( $sql ) ) 
+	{
+		# Handle error
+	}
+}
+
+# Render input form
+my $form_frag = $session->render_form( "post" );
+$form_frag = $session->render_input_form(
+	fields => \@metafields,
+	values => \%moe,
+	show_names => 1,
+	show_help => 1,
+	buttons => { submit => $session->phrase( "rae/moe:submit_button" ) },
+);
+$form_frag->appendChild( $session->render_hidden_field( "role", $role->get_id ) ) if $user->get_id != $role->get_id;
+
+# Build & Send page
+my $title = $session->html_phrase( "rae/moe:page_title", user => $role->render_description );
+my $page = $session->html_phrase( "rae/moe:page",
+	form => $form_frag,
+	roles => $roles_frag,
+	shortcuts => $shortcuts_frag,
+);
+
+$session->build_page( $title, $page );
+$session->send_page();
+$session->terminate();
+exit;
+
+# Backcompatibility for EPrints 3
+sub backcomp
+{
+	eval '
+		package EPrints::Session;
+
+		sub auth_check
+		{
+			my( $self , $resource ) = @_;
+
+			my $user = $self->current_user;
+
+			if( !defined $user )
+			{
+				$self->render_error( $self->html_phrase( "lib/session:no_login" ) );
+				return 0;
+			}
+
+			if( !defined $resource )
+			{
+				return 1;
+			}
+
+			unless( $user->has_role( $resource ) )
+			{
+				$self->render_error( $self->html_phrase( "lib/session:no_priv" ) );
+				return 0;
+			}
+			return 1;
+		}
+
+		1;
+	';
+}
