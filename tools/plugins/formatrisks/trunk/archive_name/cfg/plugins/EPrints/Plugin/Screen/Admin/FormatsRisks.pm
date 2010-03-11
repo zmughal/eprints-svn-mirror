@@ -30,8 +30,8 @@ sub new
 		
 	$self->{appears} = [
 		{ 
-			place => "admin_actions", 
-			position => 1245, 
+			place => "admin_actions_editorial", 
+			position => 3000, 
 		},
 	];
 
@@ -64,29 +64,46 @@ sub fetch_data
 	my $format_files = {};
 
 	$dataset->map( $session, sub {
-		my( $session, $dataset, $pronom_format ) = @_;
+		my( $session, $dataset, $pronom_formats ) = @_;
 		
-		my $puid = $pronom_format->get_value( "pronomid" );
-		$puid = "" unless defined $puid;
-		if ($pronom_format->get_value("file_count") > 0) 
+		foreach my $pronom_format ($pronom_formats)
 		{
-		$format_files->{$puid} = $pronom_format->get_value("file_count");
+			my $puid = $pronom_format->get_value( "pronomid" );
+			$puid = "" unless defined $puid;
+			if ($pronom_format->get_value("file_count") > 0) 
+			{
+				$format_files->{$puid} = $pronom_format->get_value("file_count");
+			}
 		}
 	} );
 
 	$dataset = $session->get_repository->get_dataset( "file" );
-	my $searchexp = EPrints::Search->new(
-                session => $session,
-                dataset => $dataset,
-                filters => [
-                        { meta_fields => [qw( datasetid )], value => "document" },
-                        { meta_fields => [qw( pronomid )], value => "", match => "EX" },
-                ],
-        );
-        my $list = $searchexp->perform_search;
-	my $count = $list->count;
+	my $count = 0;
+	$dataset->map( $session, sub {
+		my( $session, $dataset, $files ) = @_;
+		
+		foreach my $file ($files)
+		{
+			my $datasetid = $file->get_value( "datasetid" );
+			my $pronomid = $file->get_value( "pronomid" );
+			my $document = $file->get_parent();
+			if (($pronomid eq "") && ($datasetid eq "document") && ( !($document->has_related_objects( EPrints::Utils::make_relation( "isVolatileVersionOf" ) ) ) ) )	
+			{
+					$count++;	
+			}
+		}
+	} );
+#                session => $session,
+#                dataset => $dataset,
+#                filters => [
+#                       { meta_fields => [qw( datasetid )], value => "document" },
+#			{ meta_fields => [qw( pronomid )], value=>"" , match => "EX" },
+#                ],
+#        );
+#        my $list = $searchexp->perform_search;
+#	my $count = $list->count;
 	if ($count > 0) {
-		print STDERR "Unclassified : " . $count . "\n";
+		#print STDERR "Unclassified : " . $count . "\n";
 		$format_files->{"Unclassified"} = $count;
 	}
 	
@@ -207,6 +224,16 @@ sub get_format_risks_table {
 
 	my $files_by_format = $plugin->fetch_data();
 
+	if (%{$files_by_format} < 1) {
+		my $unclassified = $plugin->{session}->make_element(
+				"div",
+				align => "center"
+				);	
+		$unclassified->appendChild( $plugin->{session}->make_text( "No Objects Found in Repository" ));
+		my $warning = $plugin->{session}->render_message("warning", $unclassified);
+		$message_element->appendChild($warning);	
+	} 
+
 	my $classified = 1;
 	
 	my $green = $plugin->{session}->make_element( "div", class=>"ep_msg_message", id=>"green" );
@@ -258,14 +285,23 @@ sub get_format_risks_table {
 	foreach my $format (sort { $files_by_format->{$b} <=> $files_by_format->{$a} } keys %{$files_by_format})
 	{
 		my $color = "blue";
+		my $result;
+		my $format_name = "";
+		my $format_code = "";
+		my $format_version = "";
+		
 		my $pronom_data = $plugin->{session}->get_repository->get_dataset("pronom")->get_object($plugin->{session}, $format);
-		my $result = $pronom_data->get_value("risk_score");
-
+		
+		if (defined($pronom_data)) {
+			$result = $pronom_data->get_value("risk_score");
+			#print STDERR $format . " : ". $result . "\n";
+			$format_name = $pronom_data->get_value("name");
+			$format_version = $pronom_data->get_value("version");
+		}
 
 		my $high_risk_boundary = $plugin->{session}->get_repository->get_conf( "high_risk_boundary" );
 		my $medium_risk_boundary = $plugin->{session}->get_repository->get_conf( "medium_risk_boundary" );
 
-		print STDERR $format . " : ". $result . "\n";
 
 		if ($format eq "Unclassified" || $format eq "UNKNOWN" ) {
 			$format_table = $red_format_table;
@@ -297,16 +333,10 @@ sub get_format_risks_table {
 		if ($max_count < 1) {
 			$max_count = $count;
 		}
-		my $format_name = "";
-		my $format_code = "";
-		my $format_version = "";
 
 		if ($format eq "" || $format eq "NULL") {
 			$format_name = "Not Classified";
 			$classified = 0;
-		} else {
-			$format_name = $pronom_data->get_value("name");
-			$format_version = $pronom_data->get_value("version");
 		}
 
 		if ($format_name eq "") {
@@ -418,30 +448,57 @@ sub get_format_risks_table {
 			} else {
 				$search_format = $format;
 			}
-			my $searchexp = EPrints::Search->new(
-				session => $plugin->{session},
-				dataset => $dataset,
-				filters => [
-				{ meta_fields => [qw( datasetid )], value => "document" },
-				{ meta_fields => [qw( pronomid )], value => "$search_format", match => "EX" },
-				],
-				);
-			my $list = $searchexp->perform_search;
-			$list->map( sub { 
-					my $file = $_[2];	
-					my $fileid = $file->get_id;
-					my $document = $file->get_parent();
-					my $eprint = $document->get_parent();
-					my $eprint_id = $eprint->get_value( "eprintid" );
-					my $user = $eprint->get_user();
-					my $user_id = $eprint->get_value( "userid" );
-					push(@{$format_eprints->{$format}->{$eprint_id}},$fileid);
-					push(@{$format_users->{$format}->{$user_id}},$fileid);
-			} );
+			my $session = $plugin->{session};
+			if ($search_format eq "") {
+				my $count = 0;
+				$dataset->map( $session, sub {
+					my( $session, $dataset, $files ) = @_;
+
+					foreach my $file ($files)
+					{
+						my $datasetid = $file->get_value( "datasetid" );
+						my $pronomid = $file->get_value( "pronomid" );
+						my $fileid = $file->get_id;
+						my $document = $file->get_parent();
+						my $eprint = $document->get_parent();
+						if (($pronomid eq "") && ($datasetid eq "document") && ( !($document->has_related_objects( EPrints::Utils::make_relation( "isVolatileVersionOf" ) ) ) ) )
+						{	
+							my $eprint_id = $eprint->get_value( "eprintid" );
+							my $user = $eprint->get_user();
+							my $user_id = $eprint->get_value( "userid" );
+							push(@{$format_eprints->{$format}->{$eprint_id}},$fileid);
+							push(@{$format_users->{$format}->{$user_id}},$fileid);
+						}
+					}
+				} );	
+			} else {
+				my $searchexp = EPrints::Search->new(
+						session => $session,
+						dataset => $dataset,
+						filters => [
+						{ meta_fields => [qw( datasetid )], value => "document" },
+						{ meta_fields => [qw( pronomid )], value => "$search_format", match => "EX" },
+						],
+						);
+				my $list = $searchexp->perform_search;
+				$list->map( sub { 
+						my $file = $_[2];	
+						my $fileid = $file->get_id;
+						my $document = $file->get_parent();
+						my $eprint = $document->get_parent();
+						my $eprint_id = $eprint->get_value( "eprintid" );
+						my $user = $eprint->get_user();
+						my $user_id = $eprint->get_value( "userid" );
+						push(@{$format_eprints->{$format}->{$eprint_id}},$fileid);
+						push(@{$format_users->{$format}->{$user_id}},$fileid);
+						} );
+			} 
 			my $table = $plugin->get_user_files($format_users,$format);
 			my $eprints_table = $plugin->get_eprints_files($format_eprints,$format);
+			my $download_format_table = $plugin->get_download_table($format);
 			$inner_column1->appendChild ( $eprints_table );
 			$inner_column2->appendChild ( $table );
+			$inner_column2->appendChild ( $download_format_table );
 		}
 		$inner_row->appendChild( $inner_column1 );
 		$inner_row->appendChild( $inner_column2 );
@@ -645,6 +702,56 @@ sub get_eprints_files
 	}
 	
 	return $block;
+}
+
+sub get_download_table
+{
+	my ( $plugin, $format) = @_;
+	
+	my $table = $plugin->{session}->make_element(
+			"table",
+			cellpadding => 1,
+			cellspacing => 0
+			);
+	my $table_tr = $plugin->{session}->make_element(
+			"tr"
+			);
+	$table->appendChild($table_tr);
+	my $table_td = $plugin->{session}->make_element(
+			"td"
+			);
+	$table_tr->appendChild($table_td);
+
+	my $screen_id = "Screen::".$plugin->{processor}->{screenid} . "_download";
+	my $screen = $plugin->{session}->plugin( $screen_id, processor => $plugin->{processor} );
+	my $form = $screen->render_form;
+	my $download_button = $screen->render_action_button(
+			{
+			action => "get_files",
+			screen => $screen,
+			screen_id => $screen_id,
+			} );
+	my $buttons = $plugin->{session}->make_element( "div" );
+	$buttons->appendChild( $download_button );
+	my $format_field = $plugin->{session}->make_element( 
+			"input",
+			name=> "format",
+			value=> $format,
+			type=> "hidden"
+			);
+	#$format_field->appendText($format);
+	$form->appendChild($format_field);
+	$form->appendChild( $buttons );
+	my $count_field = $plugin->{session}->make_element(
+			"input",
+			name=> "count",
+			size=> 3,
+			value=> 5
+			);
+	$form->appendChild($count_field);
+	$table_td->appendChild($form);
+	return $table;
+	
 }
 
 sub get_user_files 
