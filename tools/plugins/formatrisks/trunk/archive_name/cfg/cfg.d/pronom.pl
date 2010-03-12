@@ -107,5 +107,38 @@ sub get_dataset_id
 
 }
 
+#Add the preservation_plan dataset.
+
+$c->{datasets}->{preservation_plan} = {
+ 	class => "EPrints::DataObj::Preservation_Plan",
+ 	sqlname => "preservation_plan",
+ 	datestamp => "datestamp",
+};
+
+$c->{fields}->{preservation_plan} = [
+		{ name=>"planid", type=>"counter", required=>1, can_clone=>0, sql_counter=>"planid" },
+		{ name=>"format", type=>"text", required=>0, },
+		{ name=>"plan_type", type=>"text", required=>0, },
+		{ name=>"migration_action", type=>"text", required=>0, },
+		{ name=>"file_path", type => "longtext", required=>0, },
+];
+
+{
+package EPrints::DataObj::Preservation_Plan;
+
+our @ISA = qw( EPrints::DataObj );
+
+sub new
+{
+        return shift->SUPER::new( @_ );
+}
+
+sub get_dataset_id
+{
+	my ($self) = @_;
+        return "preservation_plan";
+}
+
+}
 
 ### END ###
