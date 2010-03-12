@@ -122,6 +122,7 @@ $EPrints::Database::DBVersion = "3.1.2";
 	"savedsearchid",	"historyid",
 	"accessid",		"requestid",
 	"documentid",		"importid",
+	"coversheetid",
 );
 
 
