@@ -180,6 +180,7 @@ use EPrints::DataObj::Request;
 use EPrints::DataObj::Subject;
 use EPrints::DataObj::SavedSearch;
 use EPrints::DataObj::User;
+use EPrints::DataObj::Coversheet;
 use EPrints::DataSet;
 use EPrints::Email;
 use EPrints::Extras;
