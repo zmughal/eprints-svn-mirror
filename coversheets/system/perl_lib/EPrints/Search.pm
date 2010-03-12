@@ -263,10 +263,13 @@ END
 	# Map for MetaField names -> corresponding EPrints::Search::Field objects
 	$self->{searchfieldmap} = {};
 
-	if( $self->{fieldnames} eq "editpermfields" )
+#
+# Allow any search metafield to have an list of fields to run over.
+#Note that this is fixed in 3.2, so this code is unneeded on upgrade.
+	if ($self->{fieldnames} =~ m/fields$/)
 	{
 		$self->{search_fields}= [];
-		foreach( @{ $self->{session}->get_repository->get_conf( "editor_limit_fields" )} )
+		foreach( @{ $self->{session}->get_repository->get_conf( $self->{fieldnames} )} )
 		{
 			push @{$self->{search_fields}}, { meta_fields=>[$_] };	
 		}

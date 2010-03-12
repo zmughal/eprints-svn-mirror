@@ -170,6 +170,19 @@ sub handler
 				$session->terminate;
 				return OK;
 			}
+
+#added for coversheets 
+			if( !$thumbnails && $session->get_repository->can_call( "coversheet", "process_request" ) )
+			{
+#returns:
+# undef - pass on original document (for non-pdfs, docs that shouldn't be covered or admin requests for original docs)
+# OK - file was prepared ok
+# 500 - Couldn't prepare the document
+				my $ret = $session->get_repository->call( [ "coversheet", "process_request" ], $session, $r, $eprint, $pos, $tail );
+				return $ret if defined $ret;
+			}
+#end of added for coversheets docs
+
 	
 			my $filename = sprintf( '%s/%02d%s',$eprint->local_path.($thumbnails?"/thumbnails":""), $pos, $tail );
 

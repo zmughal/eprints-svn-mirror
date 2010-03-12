@@ -107,7 +107,7 @@ use strict;
 
 # These are both used by the virtual datasets inbox, buffer etc.
 
-my $INFO = {
+our $INFO = {
 	import => {
 		sqlname => "import",
 		class => "EPrints::DataObj::Import",
@@ -923,7 +923,7 @@ into SQL (not counters or cache which work a bit differently).
 
 sub get_sql_dataset_ids
 {
-	return( qw/ import metafield cachemap message loginticket eprint user document saved_search subject history access request / );
+	return( qw/ import metafield cachemap message loginticket eprint user document saved_search subject history access request coversheet / );
 }
 
 ######################################################################
