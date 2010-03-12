@@ -26,7 +26,7 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 	
-	$self->{actions} = [qw/ formats_risks /]; 
+	$self->{actions} = [qw/ formats_risks handle_upload get_plan/]; 
 		
 	$self->{appears} = [
 		{ 
@@ -495,11 +495,11 @@ sub get_format_risks_table {
 			} 
 			my $table = $plugin->get_user_files($format_users,$format);
 			my $eprints_table = $plugin->get_eprints_files($format_eprints,$format);
-			my $download_format_table = $plugin->get_download_table($format);
+			my $preservation_action_table = $plugin->get_preservation_action_table($format);
 			$inner_column1->appendChild ( $eprints_table );
 			$inner_column2->appendChild ( $table );
 			$inner_column2->appendChild ( $session->make_element("br") );
-			$inner_column2->appendChild ( $download_format_table );
+			$inner_column2->appendChild ( $preservation_action_table );
 		}
 		$inner_row->appendChild( $inner_column1 );
 		$inner_row->appendChild( $inner_column2 );
@@ -705,21 +705,22 @@ sub get_eprints_files
 	return $block;
 }
 
-sub get_download_table
+sub get_preservation_action_table
 {
 	my ( $plugin, $format) = @_;
 	
-	my $outer_div = $plugin->{session}->make_element(
+	my $session = $plugin->{session};
+	my $outer_div = $session->make_element(
 			"div",
 			class => "ep_toolbox"
 			);
-	my $inner_div = $plugin->{session}->make_element(
+	my $inner_div = $session->make_element(
 			"div",
 			class => "ep_toolbox_content"
 			);
 	$outer_div->appendChild($inner_div);
 
-	my $title_div = $plugin->{session}->make_element(
+	my $title_div = $session->make_element(
 			"div",
 			align => "center",
 			style=> "font-size: 1.2em; font-weight: bold;"
@@ -728,24 +729,26 @@ sub get_download_table
 	$inner_div->appendChild($title_div);
 	$inner_div->appendChild($plugin->{session}->make_element("hr"));
 
-	my $p = $plugin->{session}->make_element(
-			"p"
+	my $p = $session->make_element(
+			"p",
+			style => "font-weight: bold;"
 			);
-	$p->appendText("Download a seclection of files from this collection for 3rd party analysis, specify the number of files and then click the download button.");
+	$p->appendText("Download File Seclection");
 	$inner_div->appendChild($p);
 	
 	my $screen_id = "Screen::".$plugin->{processor}->{screenid} . "_download";
-	my $screen = $plugin->{session}->plugin( $screen_id, processor => $plugin->{processor} );
+	my $screen = $session->plugin( $screen_id, processor => $plugin->{processor} );
+	my $center_div = $session->make_element("div", align=>"center");
 	my $form = $screen->render_form;
 	$form->appendText("No. of Files:");
-	my $count_field = $plugin->{session}->make_element(
+	my $count_field = $session->make_element(
 			"input",
 			name=> "count",
 			size=> 3,
 			value=> 5
 			);
 	$form->appendChild($count_field);
-	my $format_field = $plugin->{session}->make_element( 
+	my $format_field = $session->make_element( 
 			"input",
 			name=> "format",
 			value=> $format,
@@ -761,9 +764,194 @@ sub get_download_table
 			} );
 	$form->appendText(" ");
 	$form->appendChild( $download_button );
-	$inner_div->appendChild($form);
+	$center_div->appendChild($form);
+	$inner_div->appendChild($center_div);
+	
+	$inner_div->appendChild($session->make_element("hr"));
+
+	my $dataset = $session->get_repository->get_dataset( "preservation_plan" );
+	
+	$format =~ s/\//_/;
+	$format =~ s/\\/_/;
+	my $searchexp = EPrints::Search->new(
+			session => $session,
+			dataset => $dataset,
+			filters => [
+			{ meta_fields => [qw( format )], value => "$format", match => "EX" },
+			],
+			);
+
+	my $list = $searchexp->perform_search;
+
+	if ($list->count > 0) {
+		my $file_path;
+		$list->map( sub {
+                        my $preservation_plan = $_[2];
+                        $file_path = $preservation_plan->get_value("file_path");
+                        });
+		$p = $session->make_element(
+				"p",
+				style => "font-weight: bold;"
+				);
+		$p->appendText("Download Preservation Plan");
+		$inner_div->appendChild($p);
+
+		my $download_div = $session->make_element("div", style=>"width: 250px;", align=>"center");
+		my $form = $session->render_form("POST");
+		$inner_div->appendChild($download_div);
+		$download_div->appendChild($form);
+		my $file_field = $session->make_element( 
+			"input",
+			name=> "file_path",
+			value=> $file_path,
+			type=> "hidden"
+			);
+		$form->appendChild($file_field);
+		
+		$screen_id = "Screen::".$plugin->{processor}->{screenid} . "_get_plan";
+		$screen = $session->plugin( $screen_id, processor => $plugin->{processor} );
+		$download_button = $screen->render_action_button(
+			{
+			action => "get_plan",
+			screen => $screen,
+			screen_id => $screen_id,
+			} );
+		$form->appendChild($download_button);
+		
+		$form = $session->render_form("POST");
+		$download_div->appendChild($form);
+		$form->appendChild($format_field);
+		$screen_id = "Screen::".$plugin->{processor}->{screenid} . "_delete_plan";
+		$screen = $session->plugin( $screen_id, processor => $plugin->{processor} );
+		my $msg = $plugin->phrase( "delete_plan_confirm" );
+		my $delete_button = $screen->render_action_button(
+			{
+			action => "delete_plan",
+			screen => $screen,
+			screen_id => $screen_id,
+	                #onclick => "if( window.event ) { window.event.cancelBubble = true; } return confirm(".EPrints::Utils::js_string($msg).");",
+			} );
+		$form->appendChild($delete_button);
+	} else {
+
+		$p = $session->make_element(
+				"p",
+				style => "font-weight: bold;"
+				);
+		$p->appendText("Upload Preservation Plan");
+		$inner_div->appendChild($p);
+
+		my $upload_form = $session->render_form("POST");
+		my $upload_div = $session->make_element("div", style=>"width: 250px;", align=>"center");
+		my $f = $session->make_doc_fragment;
+
+#$f->appendChild( $session->html_phrase( "Plugin/InputForm/Component/Upload:new_document" ) );
+
+		my $ffname = $plugin->{prefix}."_first_file";
+		my $file_button = $session->make_element( "input",
+				name => $ffname,
+				id => $ffname,
+				type => "file",
+				size=> 12,
+				maxlength=>12,
+				);
+		my $upload_progress_url = $session->get_url( path => "cgi" ) . "/users/ajax/upload_progress";
+		my $onclick = "return startEmbeddedProgressBar(this.form,{'url':".EPrints::Utils::js_string( $upload_progress_url )."});";
+		my $add_format_button = $session->render_button(
+				value => $session->phrase( "Plugin/InputForm/Component/Upload:add_format" ),
+				class => "ep_form_internal_button",
+				name => "_action_handle_upload",
+				onclick => $onclick );
+		$f->appendChild( $file_button );
+		$f->appendChild( $session->make_element( "br" ));
+		$f->appendChild( $add_format_button );
+		my $progress_bar = $session->make_element( "div", id => "progress" );
+		$f->appendChild( $progress_bar );
+
+		my $script = $session->make_javascript( "EPJS_register_button_code( '_action_next', function() { el = \$('$ffname'); if( el.value != '' ) { return confirm( ".EPrints::Utils::js_string($session->phrase("Plugin/InputForm/Component/Upload:really_next"))." ); } return true; } );" );
+		$f->appendChild( $script);
+		$f->appendChild( $session->render_hidden_field( "screen", $plugin->{processor}->{screenid} ) );
+		$f->appendChild( $session->render_hidden_field( "_action_handle_upload", "Upload" ) );
+		$upload_div->appendChild($f);
+		$upload_form->appendChild($upload_div);
+		$format_field = $session->make_element( 
+				"input",
+				name=> "format",
+				value=> $format,
+				type=> "hidden"
+				);
+		$upload_form->appendChild($format_field);
+		$inner_div->appendChild($upload_form);
+	}
 	return $outer_div;
 	
+}
+
+sub allow_handle_upload {
+	my ( $self ) = @_;
+	return 1;
+}
+
+sub action_handle_upload
+{
+	my ( $self ) = @_;
+	
+	my $session = $self->{session};
+
+	my $format = $self->{session}->param( "format" );
+	$format =~ s/\//_/;
+	$format =~ s/\\/_/;
+
+	my $fname = $self->{prefix}."_first_file";
+
+	my $fh = $session->get_query->upload( $fname );
+
+	my $doc_path = $session->get_conf( "arc_path" ) . "/" . $session->get_id . "/documents/preservation_plans/";
+	mkdir($doc_path);
+
+	if( defined( $fh ) )
+	{
+		binmode($fh);
+		my $tmpfile = File::Temp->new( SUFFIX => ".xml" );
+		use bytes;
+
+		while(sysread($fh,my $buffer, 4096)) {
+			syswrite($tmpfile,$buffer);
+		}
+
+		my $dataset = $session->get_repository->get_dataset( "preservation_plan" );
+
+		my $searchexp = EPrints::Search->new(
+				session => $session,
+				dataset => $dataset,
+				filters => [
+				{ meta_fields => [qw( format )], value => "$format", match => "EX" },
+			],
+		);
+	
+		my $list = $searchexp->perform_search;
+
+		if ($list->count < 1) {
+			my $output = $doc_path . $format . ".xml";
+			rename($tmpfile,$output);
+			my $plan_data = $session->get_repository->get_dataset("preservation_plan")->create_object($session,{plan_type=>"plato",file_path=>$output,format=>$format});
+			$plan_data->commit;
+			$self->{processor}->add_message(
+                                "message",
+                                $self->html_phrase( "success" )
+                                );
+	                $self->{processor}->{screenid} = "Admin::FormatsRisks";
+		} else {
+			$self->{processor}->add_message(
+                                "error",
+                                $self->html_phrase( "plan_exists" )
+                                );
+	                $self->{processor}->{screenid} = "Admin::FormatsRisks";
+		}
+		#print STDERR "XML = " . $xml . "\n\n\n";
+	
+	}
+
 }
 
 sub get_user_files 

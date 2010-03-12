@@ -11,14 +11,6 @@ sub new {
 
 	$self->{actions} = [qw/ get_files /];
 
-	$self->{appears} = [
-	{
-		place => "admin_actions",
-		      position => 1240,
-		      action => "get_files",
-	},
-		];
-
 	return $self;
 }
 
