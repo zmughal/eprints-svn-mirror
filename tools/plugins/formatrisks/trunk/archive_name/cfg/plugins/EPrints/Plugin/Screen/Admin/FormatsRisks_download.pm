@@ -24,7 +24,7 @@ sub new {
 
 sub action_get_files {
 	my ( $self ) = @_;
-	
+
 	my $format = $self->{session}->param( "format" );
 	my $count = $self->{session}->param( "count" );
 
@@ -69,17 +69,26 @@ sub action_get_files {
 		@files = push_top_to_array($session,\@files,$list);
 	}
 	
+	my @ids = List::Util::shuffle(@{$list->get_ids});
+	$list = EPrints::List->new(
+		session => $session,
+		dataset => $dataset,
+		ids => \@ids );
 	while ($done < $count) {
-		my $random = 0;
-		while ($random == 0) {
-			$random = int(rand($list->count));
-		}
-		@files = push_to_array($session,\@files,$list,$random);
+		my $runner = 1;
+		$list->map( sub {  
+			my $file = $_[2];        
+			my $local_copy = $file->get_local_copy();
+			$runner++;
+			});
+
+		@files = push_top_to_array($session,\@files,$list);
 		$done = @files;
 	}
 
 	my $zip_executable = $self->{session}->get_repository->get_conf('executables','zip');
-	my $tmpfile = "/tmp/foo.zip";
+	my $tmpfile = File::Temp->new( SUFFIX => ".zip" );
+	unlink($tmpfile);
 	my $cmd = "zip -j $tmpfile";
 	foreach my $file_path (@files) {
 		$cmd = $cmd . " " . $file_path;
@@ -111,36 +120,8 @@ sub push_top_to_array
 	my $running = 1;
 	$list->map( sub {  
 		my $file = $_[2];        
-		my $fileid = $file->get_id; 
-		my $filesize = $file->get_value( "filesize" );
-		my $filename = $file->get_value( "filename" );
-		my $date = $file->get_value("mtime");
 		my $local_copy = $file->get_local_copy();
 		if ($running == 1) {
-			if (!in_array($files,$local_copy)) {
-				push(@{$files},$local_copy);
-				$running++;
-			}
-		}
-	} );
-
-	return @{$files};
-	
-}
-
-sub push_to_array
-{
-	my( $session, $files, $list,$item) = @_;
-
-	my $running = 1;
-	$list->map( sub {  
-		my $file = $_[2];        
-		my $fileid = $file->get_id; 
-		my $filesize = $file->get_value( "filesize" );
-		my $filename = $file->get_value( "filename" );
-		my $date = $file->get_value("mtime");
-		my $local_copy = $file->get_local_copy();
-		if ($running == $item) {
 			if (!in_array($files,$local_copy)) {
 				push(@{$files},$local_copy);
 				$running++;
@@ -197,6 +178,7 @@ sub export
 	{
 		print $buffer;
 	}
+	unlink($file);
 }
 
 sub export_mimetype

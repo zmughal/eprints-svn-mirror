@@ -498,6 +498,7 @@ sub get_format_risks_table {
 			my $download_format_table = $plugin->get_download_table($format);
 			$inner_column1->appendChild ( $eprints_table );
 			$inner_column2->appendChild ( $table );
+			$inner_column2->appendChild ( $session->make_element("br") );
 			$inner_column2->appendChild ( $download_format_table );
 		}
 		$inner_row->appendChild( $inner_column1 );
@@ -708,31 +709,42 @@ sub get_download_table
 {
 	my ( $plugin, $format) = @_;
 	
-	my $table = $plugin->{session}->make_element(
-			"table",
-			cellpadding => 1,
-			cellspacing => 0
+	my $outer_div = $plugin->{session}->make_element(
+			"div",
+			class => "ep_toolbox"
 			);
-	my $table_tr = $plugin->{session}->make_element(
-			"tr"
+	my $inner_div = $plugin->{session}->make_element(
+			"div",
+			class => "ep_toolbox_content"
 			);
-	$table->appendChild($table_tr);
-	my $table_td = $plugin->{session}->make_element(
-			"td"
-			);
-	$table_tr->appendChild($table_td);
+	$outer_div->appendChild($inner_div);
 
+	my $title_div = $plugin->{session}->make_element(
+			"div",
+			align => "center",
+			style=> "font-size: 1.2em; font-weight: bold;"
+			);
+	$title_div->appendText("Preservation Actions");
+	$inner_div->appendChild($title_div);
+	$inner_div->appendChild($plugin->{session}->make_element("hr"));
+
+	my $p = $plugin->{session}->make_element(
+			"p"
+			);
+	$p->appendText("Download a seclection of files from this collection for 3rd party analysis, specify the number of files and then click the download button.");
+	$inner_div->appendChild($p);
+	
 	my $screen_id = "Screen::".$plugin->{processor}->{screenid} . "_download";
 	my $screen = $plugin->{session}->plugin( $screen_id, processor => $plugin->{processor} );
 	my $form = $screen->render_form;
-	my $download_button = $screen->render_action_button(
-			{
-			action => "get_files",
-			screen => $screen,
-			screen_id => $screen_id,
-			} );
-	my $buttons = $plugin->{session}->make_element( "div" );
-	$buttons->appendChild( $download_button );
+	$form->appendText("No. of Files:");
+	my $count_field = $plugin->{session}->make_element(
+			"input",
+			name=> "count",
+			size=> 3,
+			value=> 5
+			);
+	$form->appendChild($count_field);
 	my $format_field = $plugin->{session}->make_element( 
 			"input",
 			name=> "format",
@@ -741,16 +753,16 @@ sub get_download_table
 			);
 	#$format_field->appendText($format);
 	$form->appendChild($format_field);
-	$form->appendChild( $buttons );
-	my $count_field = $plugin->{session}->make_element(
-			"input",
-			name=> "count",
-			size=> 3,
-			value=> 5
-			);
-	$form->appendChild($count_field);
-	$table_td->appendChild($form);
-	return $table;
+	my $download_button = $screen->render_action_button(
+			{
+			action => "get_files",
+			screen => $screen,
+			screen_id => $screen_id,
+			} );
+	$form->appendText(" ");
+	$form->appendChild( $download_button );
+	$inner_div->appendChild($form);
+	return $outer_div;
 	
 }
 
