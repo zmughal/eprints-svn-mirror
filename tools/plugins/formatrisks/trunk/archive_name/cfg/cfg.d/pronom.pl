@@ -116,11 +116,23 @@ $c->{datasets}->{preservation_plan} = {
 };
 
 $c->{fields}->{preservation_plan} = [
-		{ name=>"planid", type=>"counter", required=>1, can_clone=>0, sql_counter=>"planid" },
-		{ name=>"format", type=>"text", required=>0, },
-		{ name=>"plan_type", type=>"text", required=>0, },
-		{ name=>"migration_action", type=>"text", required=>0, },
-		{ name=>"file_path", type => "longtext", required=>0, },
+	{ name=>"planid", type=>"counter", required=>1, can_clone=>0, sql_counter=>"planid" },
+	{ name=>"format", type=>"text", required=>0, },
+	{ name=>"plan_type", type=>"text", required=>0, },
+	{ name=>"migration_action", type=>"text", required=>0, },
+	{ name=>"file_path", type => "longtext", required=>0, },
+	{ name=>"relation", type=>"compound", multiple=>1,
+		fields => [
+		{
+			sub_name => "type",
+			type => "text",
+		},
+		{
+			sub_name => "uri",
+			type => "text",
+		},
+		],
+	},
 ];
 
 {

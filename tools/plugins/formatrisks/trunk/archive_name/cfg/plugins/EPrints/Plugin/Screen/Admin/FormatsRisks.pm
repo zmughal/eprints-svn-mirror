@@ -770,7 +770,7 @@ sub get_preservation_action_table
 	$inner_div->appendChild($session->make_element("hr"));
 
 	my $dataset = $session->get_repository->get_dataset( "preservation_plan" );
-	
+	my $orig_format = $format;
 	$format =~ s/\//_/;
 	$format =~ s/\\/_/;
 	my $searchexp = EPrints::Search->new(
@@ -817,21 +817,37 @@ sub get_preservation_action_table
 			screen_id => $screen_id,
 			} );
 		$form->appendChild($download_button);
-		
-		$form = $session->render_form("POST");
-		$download_div->appendChild($form);
-		$form->appendChild($format_field);
-		$screen_id = "Screen::".$plugin->{processor}->{screenid} . "_delete_plan";
-		$screen = $session->plugin( $screen_id, processor => $plugin->{processor} );
-		my $msg = $plugin->phrase( "delete_plan_confirm" );
-		my $delete_button = $screen->render_action_button(
-			{
-			action => "delete_plan",
-			screen => $screen,
-			screen_id => $screen_id,
+	
+		my $dataset = $session->get_repository->get_dataset( "preservation_plan" );			
+		my $searchexp = EPrints::Search->new(
+                                session => $session,
+                                dataset => $dataset,
+                                filters => [
+                                { meta_fields => [qw( format )], value => "$format", match => "EX" },
+                                ],
+                                );
+
+                my $list = $searchexp->perform_search;
+		my $preservation_plan;
+                $list->map( sub {
+                        $preservation_plan = $_[2];
+		});
+		if ($plugin->in_use($preservation_plan) < 1) {	
+			$form = $session->render_form("POST");
+			$download_div->appendChild($form);
+			$form->appendChild($format_field);
+			$screen_id = "Screen::".$plugin->{processor}->{screenid} . "_delete_plan";
+			$screen = $session->plugin( $screen_id, processor => $plugin->{processor} );
+			my $msg = $plugin->phrase( "delete_plan_confirm" );
+			my $delete_button = $screen->render_action_button(
+				{
+				action => "delete_plan",
+				screen => $screen,
+				screen_id => $screen_id,
 	                #onclick => "if( window.event ) { window.event.cancelBubble = true; } return confirm(".EPrints::Utils::js_string($msg).");",
 			} );
-		$form->appendChild($delete_button);
+			$form->appendChild($delete_button);
+		}
 	} else {
 
 		$p = $session->make_element(
@@ -877,7 +893,7 @@ sub get_preservation_action_table
 		$format_field = $session->make_element( 
 				"input",
 				name=> "format",
-				value=> $format,
+				value=> $orig_format,
 				type=> "hidden"
 				);
 		$upload_form->appendChild($format_field);
@@ -886,6 +902,33 @@ sub get_preservation_action_table
 	return $outer_div;
 	
 }
+
+sub in_use 
+{
+	my ( $self, $preservation_plan ) = @_;
+
+	my $session = $self->{session};
+
+	my $dataset = $session->get_repository->get_dataset( "document" );
+
+	my $pres_plan_uri = $preservation_plan->internal_uri();
+	my $searchexp = EPrints::Search->new(
+			session => $session,
+			dataset => $dataset,
+			filters => [
+			{ meta_fields => [qw( relation_uri )], value => "$pres_plan_uri", match => "EX" },
+			],
+			);
+
+	my $list = $searchexp->perform_search;
+	if ($list->count() > 0) {
+		return 1;
+	} else {
+		return 0;
+	}
+
+}
+
 
 sub allow_handle_upload {
 	my ( $self ) = @_;
@@ -899,6 +942,8 @@ sub action_handle_upload
 	my $session = $self->{session};
 
 	my $format = $self->{session}->param( "format" );
+	my $orig_format = $format;
+	print STDERR "FORMAT CHECK : " . $orig_format . "\n\n";
 	$format =~ s/\//_/;
 	$format =~ s/\\/_/;
 
@@ -935,7 +980,29 @@ sub action_handle_upload
 			my $output = $doc_path . $format . ".xml";
 			rename($tmpfile,$output);
 			my $plan_data = $session->get_repository->get_dataset("preservation_plan")->create_object($session,{plan_type=>"plato",file_path=>$output,format=>$format});
+			my $plan_id = $plan_data->get_id();
 			$plan_data->commit;
+				
+			use XML::Parser::PerlSAX;
+			my $handler = EPrints::Plugin::Screen::Admin::FormatsRisks::SaxPlanHandler->new();
+			my $parser = XML::Parser::PerlSAX->new(Handler => $handler);
+			
+			my %parser_args = (Source => {SystemId => $output});
+			$parser->parse(%parser_args);
+			my %migration_info = $handler->get_values();
+
+			foreach my $key (keys %migration_info) {
+				my $value = $migration_info{$key};
+				print STDERR " OUT: " . $key . " = " . $value . "\n\n";
+			}
+
+			$session->dataset( "event_queue" )->create_dataobj({
+				pluginid => "Event::Migration",
+				action => "migrate",
+				params => [$orig_format, $plan_id, %migration_info],
+				userid => $session->current_user(),
+			});
+
 			$self->{processor}->add_message(
                                 "message",
                                 $self->html_phrase( "success" )
@@ -1074,5 +1141,79 @@ sub redirect_to_me_url
 	return undef;
 }
 
+package EPrints::Plugin::Screen::Admin::FormatsRisks::SaxPlanHandler;
+use base qw(XML::SAX::Base);
+use strict;
+
+my (%args, $current_element);
+my $plan_open = 0;
+my $tool_open = 0;
+
+sub new {
+	my $type = shift;
+	return bless {}, $type;
+}
+
+sub start_element {
+	my ($self, $element) = @_;
+
+	if ($element->{Name} eq 'eprintsPlan') {
+		$plan_open = 1;
+	}
+	if ($element->{Name} eq 'tool' && $plan_open>0) {
+		$tool_open = 1;
+	}
+	
+	$current_element = $element->{Name};
+	
+	if ($plan_open>0 && $tool_open>0) {
+		if ($current_element eq "toolIdentifier") {
+			$args{$current_element} = $element->{Attributes}->{'uri'};
+			print STDERR "Committing2 " . $current_element . " : " . $element->{Attributes}->{'uri'} . "\n\n";
+		}
+		if ($current_element eq "parameters") {
+			$args{$current_element} = $element->{Attributes}->{'toolParameters'};
+			print STDERR "Committing2 " . $current_element . " : " . $element->{Attributes}->{'toolParameters'} . "\n\n";
+		}
+	}
+}
+
+sub characters {
+	my ($self, $characters) = @_;
+	my $text = $characters->{Data};
+	if ($plan_open>0 && $tool_open>0) {
+		$text =~ s/^\s*//;
+		$text =~ s/\s*$//;
+		$args{$current_element} .= $text if $text;
+		if ($text) {
+			print STDERR "Committing " . $current_element . " : " . $text . "\n\n";
+		}
+	}
+}
+
+sub end_element {
+	my ($self, $element) = @_;
+	if ($element->{Name} eq 'tool' && $plan_open>0) {
+		$tool_open = 0;
+	}
+	if ($element->{Name} eq 'eprintsPlan' && $tool_open<1) {
+		$plan_open = 0;
+	}
+	
+}
+
+sub start_document {
+	my ($self) = @_;
+	print STDERR "Starting SAX Parsing\n";
+}
+
+sub end_document {
+	my ($self) = @_;
+	print STDERR "SAX Parsing Finished\n";
+}
+
+sub get_values {
+	return %args;
+}
 
 1;
