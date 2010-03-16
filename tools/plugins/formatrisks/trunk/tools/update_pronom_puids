@@ -148,7 +148,7 @@ sub main
 	}
 	
 	open(MYFILE, ">>$output_file");
-	print MYFILE ("\nUpdating Risk Scores");
+	print MYFILE ("\nUpdating Risk Scores\n");
 	close(MYFILE);
 	update_risk_scores( $session );
 	

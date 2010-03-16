@@ -43,7 +43,7 @@ sub action_delete_plan {
 		my $msg = "success";
 		$list->map( sub {
 			my $preservation_plan = $_[2];
-			if ($session->in_use($preservation_plan)<1){		
+			if ($self->in_use($preservation_plan)<1){		
 				my $file_path = $preservation_plan->get_value("file_path");
 				unlink($file_path);
 				if (!-s "$file_path") {
@@ -80,8 +80,10 @@ sub action_delete_plan {
 
 sub in_use 
 {
-	my ( $session, $preservation_plan ) = @_;
+	my ( $self, $preservation_plan ) = @_;
 	
+	my $session = $self->{session};
+
 	my $dataset = $session->get_repository->get_dataset( "document" );
 	
 	my $pres_plan_uri = $preservation_plan->internal_uri();

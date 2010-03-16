@@ -6,7 +6,22 @@ use strict;
 
 sub migrate
 {
-	my( $self, $format, $plan_id, %migration_info) = @_;
+	my( $self, $format, $plan_id ) = @_;
+
+	my $plan = new EPrints::DataObj::Preservation_Plan( $self->{session}, $plan_id );
+	my $output = $plan->get_value('file_path');
+
+	use XML::Parser::PerlSAX;
+	my $handler = EPrints::Plugin::Event::Migration::SaxPlanHandler->new();
+	my $parser = XML::Parser::PerlSAX->new(Handler => $handler);
+
+	my %parser_args = (Source => {SystemId => $output});
+	$parser->parse(%parser_args);
+	my %migration_info = $handler->get_values();
+
+	foreach my $key (keys %migration_info) {
+		my $value = $migration_info{$key};
+	}	
 
 	if( !defined $format )
 	{
@@ -90,6 +105,13 @@ sub _migrate_file {
 
 	my $full_filename = $file->get_value("filename");
 	$full_filename =~ s/(\.[a-zA-Z0-9]+)?$/.$suffix/;
+	my $length = length($suffix);
+	my $sub = 2 * $length;
+	$sub = 0 - $sub;
+	if ((substr $full_filename,$sub) eq $suffix.$suffix) {
+		$sub = length($full_filename) - length($suffix);
+		$full_filename = substr $full_filename, 0, $sub;
+	}  
 #print STDERR "FILENAME " . $full_filename . "\n\n";
 #print STDERR "SUFFIX " . $suffix . "\n\n";
 
@@ -173,6 +195,75 @@ sub _lookup_tool {
 	
 	return "convert";
 
+}
+
+package EPrints::Plugin::Event::Migration::SaxPlanHandler;
+use base qw(XML::SAX::Base);
+use strict;
+
+my (%args, $current_element);
+my $plan_open = 0;
+my $tool_open = 0;
+
+sub new {
+        my $type = shift;
+        return bless {}, $type;
+}
+
+sub start_element {
+        my ($self, $element) = @_;
+
+        if ($element->{Name} eq 'eprintsPlan') {
+                $plan_open = 1;
+        }
+        if ($element->{Name} eq 'tool' && $plan_open>0) {
+                $tool_open = 1;
+        }
+
+        $current_element = $element->{Name};
+	        if ($plan_open>0 && $tool_open>0) {
+                if ($current_element eq "toolIdentifier") {
+                        $args{$current_element} = $element->{Attributes}->{'uri'};
+                }
+                if ($current_element eq "parameters") {
+                        $args{$current_element} = $element->{Attributes}->{'toolParameters'};
+                }
+        }
+}
+
+sub characters {
+        my ($self, $characters) = @_;
+        my $text = $characters->{Data};
+        if ($plan_open>0 && $tool_open>0) {
+                $text =~ s/^\s*//;
+                $text =~ s/\s*$//;
+                $args{$current_element} .= $text if $text;
+                if ($text) {
+                }
+        }
+}
+
+sub end_element {
+        my ($self, $element) = @_;
+        if ($element->{Name} eq 'tool' && $plan_open>0) {
+                $tool_open = 0;
+        }
+        if ($element->{Name} eq 'eprintsPlan' && $tool_open<1) {
+                $plan_open = 0;
+        }
+
+}
+
+sub start_document {
+        my ($self) = @_;
+}
+
+sub end_document {
+        my ($self) = @_;
+}
+
+sub get_values {
+        return %args;
 }
 
 1;

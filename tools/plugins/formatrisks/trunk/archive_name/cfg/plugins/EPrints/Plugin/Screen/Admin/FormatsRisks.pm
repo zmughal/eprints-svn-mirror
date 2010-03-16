@@ -103,7 +103,6 @@ sub fetch_data
 #        my $list = $searchexp->perform_search;
 #	my $count = $list->count;
 	if ($count > 0) {
-		#print STDERR "Unclassified : " . $count . "\n";
 		$format_files->{"Unclassified"} = $count;
 	}
 	
@@ -208,8 +207,10 @@ sub render_hide_script {
 
 		if ($result <= $medium_risk_boundary) 
 		{
-			push @hides, 'hide("'.$format.'_minus");';
-			push @hides, 'hide("'. $format.'_inner_row");';
+			push @hides, 'hide("'.$format.'_0_minus");';
+			push @hides, 'hide("'. $format.'_0_inner_row");';
+			push @hides, 'hide("'.$format.'_1_minus");';
+			push @hides, 'hide("'. $format.'_1_inner_row");';
 		}
 	} );
 
@@ -294,7 +295,6 @@ sub get_format_risks_table {
 		
 		if (defined($pronom_data)) {
 			$result = $pronom_data->get_value("risk_score");
-			#print STDERR $format . " : ". $result . "\n";
 			$format_name = $pronom_data->get_value("name");
 			$format_version = $pronom_data->get_value("version");
 		}
@@ -342,176 +342,51 @@ sub get_format_risks_table {
 		if ($format_name eq "") {
 			$format_name = $format;
 		}
-			
-		my $format_panel_tr = $plugin->{session}->make_element( 
-				"tr", 
-				id => $plugin->{prefix}."_".$format );
 
-		my $format_details_td = $plugin->{session}->make_element(
-				"td",
-				width => "50%",
-				align => "right"
-		);
-		my $format_count_td = $plugin->{session}->make_element(
-				"td",
-				width => "50%",
-				align => "left"
-		);
-		my $pronom_output = $format_name . " ";
-		if (trim($format_version) eq "") {
-		} else {	
-			$pronom_output .= "(Version " . $format_version . ") ";
+		my $search_format;	
+		if ($format eq "Unclassified") {
+			$classified = 0;
+			$search_format = "";
+		} else {
+			$search_format = $format;
 		}
-		my $format_bar_width = ($count / $max_count) * $max_width;
-		if ($format_bar_width < 10) {
-			$format_bar_width = 10;
-		}
-		my $format_count_bar = $plugin->{session}->make_element(
-				"table",
-				#type => "submit",
-				cellpadding => 0,
-				cellspacing => 0,
-				width => "100%",
-				style => "background-color=$color;"
-				#value => ""
-		);
-		my $format_count_bar_tr = $plugin->{session}->make_element(
-				"tr"
-		);
-		my $format_count_bar_td = $plugin->{session}->make_element(
-				"td",
-				width => $format_bar_width."px",
-				style => "background-color: $color;"
-		);
-		my $format_count_bar_td2 = $plugin->{session}->make_element(
-				"td",
-				style => "padding-left: 2px"
-				
-		);
-		
-		$format_count_bar_td->appendChild( $plugin->{session}->make_text( "  " ) );
-		$format_count_bar_td2->appendChild ( $plugin->{session}->make_text( " " .$count) );
-		$format_count_bar_tr->appendChild( $format_count_bar_td ); 
-		$format_count_bar_tr->appendChild( $format_count_bar_td2 ); 
-		$format_count_bar->appendChild( $format_count_bar_tr );
-		$format_details_td->appendChild ( $plugin->{session}->make_text( $pronom_output ) );
-		if ($result <= $medium_risk_boundary && !($color eq "blue")) 
-		{
-			$format_details_td->appendChild ( 
-				$plugin->render_plus_and_minus_buttons( $format ) );
-		}
-		$format_count_td->appendChild( $format_count_bar );
-		$format_panel_tr->appendChild( $format_details_td );
-		$format_panel_tr->appendChild( $format_count_td );
-		#if ($format_name eq "Not Classified") {
-		#	$unclassified_orange_format_table->appendChild ( $format_panel_tr );
-		#	$unclassified_count = $unclassified_count + 1;
-		#} else {
-			$format_table->appendChild( $format_panel_tr );
-		#}
-		
-		my $other_row = $plugin->{session}->make_element(
-			"tr"
-			);
-		my $other_column = $plugin->{session}->make_element(
-			"td",
-			colspan => 2
-			);
-		my $inner_table = $plugin->{session}->make_element(
-			"table",
-			width => "100%"
-			);
-		my $inner_row = $plugin->{session}->make_element(
-			"tr",
-			id => $format . "_inner_row"
-			);
-		my $inner_column1 = $plugin->{session}->make_element(
-			"td",
-			style => "width: 70%;",
-			valign => "top"
-			);
-		my $inner_column2 = $plugin->{session}->make_element(
-			"td",
-			style => "width: 30%;",
-			valign => "top"
-			);
 
-		my $format_users = {};
-		my $format_eprints = {};
+		my $other_row;
+		my $format_count = 1;
+		my $migrated_row;
+		my $migrated_count = 0;
+	
 		if ($result <= $medium_risk_boundary && !($color eq "blue"))
 		{
-			my $search_format;
-			my $dataset = $plugin->{session}->get_repository->get_dataset( "file" );
-			if ($format eq "Unclassified") {
-				$classified = 0;
-				$search_format = "";
-			} else {
-				$search_format = $format;
-			}
-			my $session = $plugin->{session};
-			if ($search_format eq "") {
-				my $count = 0;
-				$dataset->map( $session, sub {
-					my( $session, $dataset, $files ) = @_;
-
-					foreach my $file ($files)
-					{
-						my $datasetid = $file->get_value( "datasetid" );
-						my $pronomid = $file->get_value( "pronomid" );
-						my $fileid = $file->get_id;
-						my $document = $file->get_parent();
-						my $eprint = $document->get_parent();
-						if (($pronomid eq "") && ($datasetid eq "document") && ( !($document->has_related_objects( EPrints::Utils::make_relation( "isVolatileVersionOf" ) ) ) ) )
-						{	
-							my $eprint_id = $eprint->get_value( "eprintid" );
-							my $user = $eprint->get_user();
-							my $user_id = $eprint->get_value( "userid" );
-							push(@{$format_eprints->{$format}->{$eprint_id}},$fileid);
-							push(@{$format_users->{$format}->{$user_id}},$fileid);
-						}
-					}
-				} );	
-			} else {
-				my $searchexp = EPrints::Search->new(
-						session => $session,
-						dataset => $dataset,
-						filters => [
-						{ meta_fields => [qw( datasetid )], value => "document" },
-						{ meta_fields => [qw( pronomid )], value => "$search_format", match => "EX" },
-						],
-						);
-				my $list = $searchexp->perform_search;
-				$list->map( sub { 
-						my $file = $_[2];	
-						my $fileid = $file->get_id;
-						my $document = $file->get_parent();
-						my $eprint = $document->get_parent();
-						my $eprint_id = $eprint->get_value( "eprintid" );
-						my $user = $eprint->get_user();
-						my $user_id = $eprint->get_value( "userid" );
-						push(@{$format_eprints->{$format}->{$eprint_id}},$fileid);
-						push(@{$format_users->{$format}->{$user_id}},$fileid);
-						} );
-			} 
-			my $table = $plugin->get_user_files($format_users,$format);
-			my $eprints_table = $plugin->get_eprints_files($format_eprints,$format);
-			my $preservation_action_table = $plugin->get_preservation_action_table($format);
-			$inner_column1->appendChild ( $eprints_table );
-			$inner_column2->appendChild ( $table );
-			$inner_column2->appendChild ( $session->make_element("br") );
-			$inner_column2->appendChild ( $preservation_action_table );
+			($other_row,$format_count) = $plugin->get_detail_row($search_format,$format,0);
+			($migrated_row,$migrated_count) = $plugin->get_detail_row($search_format,$format,1);
+		} else {
+			$format_count = $count;
 		}
-		$inner_row->appendChild( $inner_column1 );
-		$inner_row->appendChild( $inner_column2 );
-		$inner_table->appendChild( $inner_row );
-		$other_column->appendChild( $inner_table );
-		$other_row->appendChild( $other_column );
-		#if ($format_name eq "Not Classified") {
-		#	$unclassified_orange_format_table->appendChild ( $other_row );
-		#} else {
-			$format_table->appendChild( $other_row );
-		#}
+		my $format_panel_tr = $plugin->get_format_panel($format_name,$format,$format_version,$format_count,$max_count,$max_width,$color,$result,$medium_risk_boundary,0);
+		if ($format_count > 0) {
+			$format_table->appendChild( $format_panel_tr );
+			if (defined $other_row) {
+				$format_table->appendChild( $other_row );
+			}
+		}
+
+		my $preservation_panel_tr;
+		if ($migrated_count > 0) {		
+			$format_table = $green_format_table;
+			$orange_count = $green_count + 1;
+			$preservation_panel_tr = $plugin->get_format_panel($format_name,$format,$format_version,$migrated_count,$max_count,$max_width,$color,$result,$medium_risk_boundary,1);
+		}
+
+		if ($migrated_count > 0) {
+			$format_table->appendChild( $preservation_panel_tr );
+			if (defined $migrated_row) {
+				$format_table->appendChild( $migrated_row );
+			}
+		}
+
 	}
+
 	my $ret = $plugin->{session}->make_doc_fragment;
 
 	if (!($pronom_error_message eq "")) {
@@ -564,22 +439,206 @@ sub get_format_risks_table {
 	return( $ret );
 }
 
+sub get_format_panel {
+	my ( $plugin, $format_name,$format,$format_version,$count,$max_count,$max_width,$color,$result,$medium_risk_boundary,$migrated) = @_;
+
+	my $format_panel_tr = $plugin->{session}->make_element( 
+			"tr", 
+			id => $plugin->{prefix}."_".$format );
+
+	my $format_details_td = $plugin->{session}->make_element(
+			"td",
+			width => "50%",
+			align => "right"
+			);
+	my $format_count_td = $plugin->{session}->make_element(
+			"td",
+			width => "50%",
+			align => "left"
+			);
+	my $pronom_output = $format_name . " ";
+	if (trim($format_version) eq "") {
+	} else {	
+		$pronom_output .= "(Version " . $format_version . ") ";
+	}
+	my $format_bar_width = ($count / $max_count) * $max_width;
+	if ($format_bar_width < 10) {
+		$format_bar_width = 10;
+	}
+	my $format_count_bar = $plugin->{session}->make_element(
+			"table",
+#type => "submit",
+			cellpadding => 0,
+			cellspacing => 0,
+			width => "100%",
+			style => "background-color=$color;"
+#value => ""
+			);
+	my $format_count_bar_tr = $plugin->{session}->make_element(
+			"tr"
+			);
+	my $format_count_bar_td = $plugin->{session}->make_element(
+			"td",
+			width => $format_bar_width."px",
+			style => "background-color: $color;"
+			);
+	my $format_count_bar_td2 = $plugin->{session}->make_element(
+			"td",
+			style => "padding-left: 2px"
+
+			);
+
+	$format_count_bar_td->appendChild( $plugin->{session}->make_text( "  " ) );
+	$format_count_bar_td2->appendChild ( $plugin->{session}->make_text( " " .$count) );
+	$format_count_bar_tr->appendChild( $format_count_bar_td ); 
+	$format_count_bar_tr->appendChild( $format_count_bar_td2 ); 
+	$format_count_bar->appendChild( $format_count_bar_tr );
+	$format_details_td->appendChild ( $plugin->{session}->make_text( $pronom_output ) );
+
+## PLUS MINUS
+
+	if ($result <= $medium_risk_boundary && !($color eq "blue")) 
+	{
+		$format_details_td->appendChild ( 
+				$plugin->render_plus_and_minus_buttons( $format,$migrated ) );
+	}
+
+##
+
+	$format_count_td->appendChild( $format_count_bar );
+	$format_panel_tr->appendChild( $format_details_td );
+	$format_panel_tr->appendChild( $format_count_td );
+	return $format_panel_tr;
+}
+
+sub get_detail_row {
+	
+	my ( $plugin, $search_format, $format, $migrated ) = @_;
+
+	my $other_row = $plugin->{session}->make_element(
+			"tr"
+			);
+	my $other_column = $plugin->{session}->make_element(
+			"td",
+			colspan => 2
+			);
+	my $inner_table = $plugin->{session}->make_element(
+			"table",
+			width => "100%"
+			);
+	my $inner_row = $plugin->{session}->make_element(
+			"tr",
+			id => $format . "_" . $migrated . "_inner_row"
+			);
+	my $inner_column1 = $plugin->{session}->make_element(
+			"td",
+			style => "width: 70%;",
+			valign => "top"
+			);
+	my $inner_column2 = $plugin->{session}->make_element(
+			"td",
+			style => "width: 30%;",
+			valign => "top"
+			);
+	
+	my $format_users = {};
+	my $format_eprints = {};
+	my $format_count = 0;
+	my $dataset = $plugin->{session}->get_repository->get_dataset( "file" );
+	my $session = $plugin->{session};
+	if ($search_format eq "") {
+		my $count = 0;
+		$dataset->map( $session, sub {
+				my( $session, $dataset, $files ) = @_;
+
+				foreach my $file ($files)
+				{
+				my $datasetid = $file->get_value( "datasetid" );
+				my $pronomid = $file->get_value( "pronomid" );
+				my $fileid = $file->get_id;
+				my $document = $file->get_parent();
+				my $eprint = $document->get_parent();
+				if (($pronomid eq "") && ($datasetid eq "document") && ( !($document->has_related_objects( EPrints::Utils::make_relation( "isVolatileVersionOf" ) ) ) ) )
+				{	
+				my $eprint_id = $eprint->get_value( "eprintid" );
+				my $user = $eprint->get_user();
+				my $user_id = $eprint->get_value( "userid" );
+				if ((!($document->has_related_objects( EPrints::Utils::make_relation( "hasMigratedVersion" )))) && $migrated < 1) {
+					push(@{$format_eprints->{$format}->{$eprint_id}},$fileid);
+					push(@{$format_users->{$format}->{$user_id}},$fileid);
+					$format_count++;
+				} elsif (($document->has_related_objects( EPrints::Utils::make_relation( "hasMigratedVersion" ))) && $migrated > 0) {
+					push(@{$format_eprints->{$format}->{$eprint_id}},$fileid);
+                                        push(@{$format_users->{$format}->{$user_id}},$fileid);
+                                        $format_count++;
+				}
+				}
+				}
+		} );	
+	} else {
+		my $searchexp = EPrints::Search->new(
+				session => $session,
+				dataset => $dataset,
+				filters => [
+				{ meta_fields => [qw( datasetid )], value => "document" },
+				{ meta_fields => [qw( pronomid )], value => "$search_format", match => "EX" },
+				],
+				);
+		my $list = $searchexp->perform_search;
+		$list->map( sub { 
+				my $file = $_[2];	
+				my $fileid = $file->get_id;
+				my $document = $file->get_parent();
+				my $eprint = $document->get_parent();
+				my $eprint_id = $eprint->get_value( "eprintid" );
+				my $user = $eprint->get_user();
+				my $user_id = $eprint->get_value( "userid" );
+				if ((!($document->has_related_objects( EPrints::Utils::make_relation( "hasMigratedVersion" )))) && $migrated < 1) {
+					push(@{$format_eprints->{$format}->{$eprint_id}},$fileid);
+					push(@{$format_users->{$format}->{$user_id}},$fileid);
+					$format_count++;
+				} elsif (($document->has_related_objects( EPrints::Utils::make_relation( "hasMigratedVersion" ))) && $migrated > 0) {
+					push(@{$format_eprints->{$format}->{$eprint_id}},$fileid);
+                                        push(@{$format_users->{$format}->{$user_id}},$fileid);
+                                        $format_count++;
+				}
+				} );
+	} 
+	my $table = $plugin->get_user_files($format_users,$format);
+	my $eprints_table = $plugin->get_eprints_files($format_eprints,$format);
+	my $preservation_action_table = $plugin->get_preservation_action_table($format,$migrated);
+	$inner_column1->appendChild ( $eprints_table );
+	$inner_column2->appendChild ( $table );
+	$inner_column2->appendChild ( $session->make_element("br") );
+	$inner_column2->appendChild ( $preservation_action_table );
+
+	$inner_row->appendChild( $inner_column1 );
+	$inner_row->appendChild( $inner_column2 );
+	$inner_table->appendChild( $inner_row );
+	$other_column->appendChild( $inner_table );
+	$other_row->appendChild( $other_column );
+
+
+return ($other_row, $format_count);
+
+}
+
 sub render_plus_and_minus_buttons {
-	my( $plugin, $format ) = @_;
+	my( $plugin, $format, $migrated ) = @_;
 
 	my $imagesurl = $plugin->{session}->get_repository->get_conf( "rel_path" );
 	my $plus_button = $plugin->{session}->make_element(
 		"img",
-		id => $format . "_plus",
-		onclick => 'plus("'.$format.'")',
+		id => $format . "_" . $migrated . "_plus",
+		onclick => 'plus("'.$format.'_'.$migrated.'")',
 		src => "$imagesurl/style/images/plus.png",
 		border => 0,
 		alt => "PLUS"
 	);
 	my $minus_button = $plugin->{session}->make_element(
 		"img",
-		id => $format . "_minus",
-		onclick => 'minus("'.$format.'")',
+		id => $format . "_" . $migrated . "_minus",
+		onclick => 'minus("'.$format.'_'.$migrated.'")',
 		src => "$imagesurl/style/images/minus.png",
 		border => 0,
 		alt => "MINUS"
@@ -707,7 +766,7 @@ sub get_eprints_files
 
 sub get_preservation_action_table
 {
-	my ( $plugin, $format) = @_;
+	my ( $plugin, $format, $migrated) = @_;
 	
 	my $session = $plugin->{session};
 	my $outer_div = $session->make_element(
@@ -739,7 +798,14 @@ sub get_preservation_action_table
 	my $screen_id = "Screen::".$plugin->{processor}->{screenid} . "_download";
 	my $screen = $session->plugin( $screen_id, processor => $plugin->{processor} );
 	my $center_div = $session->make_element("div", align=>"center");
-	my $form = $screen->render_form;
+	my $form = $screen->render_form("POST");
+	my $format_field = $session->make_element( 
+			"input",
+			name=> "format",
+			value=> $format,
+			type=> "hidden"
+			);
+	$form->appendChild($format_field);
 	$form->appendText("No. of Files:");
 	my $count_field = $session->make_element(
 			"input",
@@ -748,14 +814,6 @@ sub get_preservation_action_table
 			value=> 5
 			);
 	$form->appendChild($count_field);
-	my $format_field = $session->make_element( 
-			"input",
-			name=> "format",
-			value=> $format,
-			type=> "hidden"
-			);
-	#$format_field->appendText($format);
-	$form->appendChild($format_field);
 	my $download_button = $screen->render_action_button(
 			{
 			action => "get_files",
@@ -847,6 +905,34 @@ sub get_preservation_action_table
 	                #onclick => "if( window.event ) { window.event.cancelBubble = true; } return confirm(".EPrints::Utils::js_string($msg).");",
 			} );
 			$form->appendChild($delete_button);
+		} elsif ($migrated < 1) {
+			$form = $session->render_form("POST");
+			$download_div->appendChild($form);
+			## APPEND PLAN
+			my $plan_field = $session->make_element( 
+				"input",
+				name=> "plan_id",
+				value=> $preservation_plan->get_id(),
+				type=> "hidden"
+				);
+			$form->appendChild($plan_field);
+			my $format_field2 = $session->make_element( 
+				"input",
+				name=> "format",
+				value=> $orig_format,
+				type=> "hidden"
+			);
+			$form->appendChild($format_field2);
+			$screen_id = "Screen::".$plugin->{processor}->{screenid} . "_enact_plan";
+			$screen = $session->plugin( $screen_id, processor => $plugin->{processor} );
+			my $enact_button = $screen->render_action_button(
+				{
+				action => "enact_plan",
+				screen => $screen,
+				screen_id => $screen_id,
+			} );
+			$form->appendChild($enact_button);
+			
 		}
 	} else {
 
@@ -943,7 +1029,6 @@ sub action_handle_upload
 
 	my $format = $self->{session}->param( "format" );
 	my $orig_format = $format;
-	print STDERR "FORMAT CHECK : " . $orig_format . "\n\n";
 	$format =~ s/\//_/;
 	$format =~ s/\\/_/;
 
@@ -982,24 +1067,11 @@ sub action_handle_upload
 			my $plan_data = $session->get_repository->get_dataset("preservation_plan")->create_object($session,{plan_type=>"plato",file_path=>$output,format=>$format});
 			my $plan_id = $plan_data->get_id();
 			$plan_data->commit;
-				
-			use XML::Parser::PerlSAX;
-			my $handler = EPrints::Plugin::Screen::Admin::FormatsRisks::SaxPlanHandler->new();
-			my $parser = XML::Parser::PerlSAX->new(Handler => $handler);
-			
-			my %parser_args = (Source => {SystemId => $output});
-			$parser->parse(%parser_args);
-			my %migration_info = $handler->get_values();
-
-			foreach my $key (keys %migration_info) {
-				my $value = $migration_info{$key};
-				print STDERR " OUT: " . $key . " = " . $value . "\n\n";
-			}
 
 			$session->dataset( "event_queue" )->create_dataobj({
 				pluginid => "Event::Migration",
 				action => "migrate",
-				params => [$orig_format, $plan_id, %migration_info],
+				params => [$orig_format, $plan_id],
 				userid => $session->current_user(),
 			});
 
@@ -1015,7 +1087,6 @@ sub action_handle_upload
                                 );
 	                $self->{processor}->{screenid} = "Admin::FormatsRisks";
 		}
-		#print STDERR "XML = " . $xml . "\n\n\n";
 	
 	}
 
@@ -1139,81 +1210,6 @@ sub redirect_to_me_url
 	my( $plugin ) = @_;
 
 	return undef;
-}
-
-package EPrints::Plugin::Screen::Admin::FormatsRisks::SaxPlanHandler;
-use base qw(XML::SAX::Base);
-use strict;
-
-my (%args, $current_element);
-my $plan_open = 0;
-my $tool_open = 0;
-
-sub new {
-	my $type = shift;
-	return bless {}, $type;
-}
-
-sub start_element {
-	my ($self, $element) = @_;
-
-	if ($element->{Name} eq 'eprintsPlan') {
-		$plan_open = 1;
-	}
-	if ($element->{Name} eq 'tool' && $plan_open>0) {
-		$tool_open = 1;
-	}
-	
-	$current_element = $element->{Name};
-	
-	if ($plan_open>0 && $tool_open>0) {
-		if ($current_element eq "toolIdentifier") {
-			$args{$current_element} = $element->{Attributes}->{'uri'};
-			print STDERR "Committing2 " . $current_element . " : " . $element->{Attributes}->{'uri'} . "\n\n";
-		}
-		if ($current_element eq "parameters") {
-			$args{$current_element} = $element->{Attributes}->{'toolParameters'};
-			print STDERR "Committing2 " . $current_element . " : " . $element->{Attributes}->{'toolParameters'} . "\n\n";
-		}
-	}
-}
-
-sub characters {
-	my ($self, $characters) = @_;
-	my $text = $characters->{Data};
-	if ($plan_open>0 && $tool_open>0) {
-		$text =~ s/^\s*//;
-		$text =~ s/\s*$//;
-		$args{$current_element} .= $text if $text;
-		if ($text) {
-			print STDERR "Committing " . $current_element . " : " . $text . "\n\n";
-		}
-	}
-}
-
-sub end_element {
-	my ($self, $element) = @_;
-	if ($element->{Name} eq 'tool' && $plan_open>0) {
-		$tool_open = 0;
-	}
-	if ($element->{Name} eq 'eprintsPlan' && $tool_open<1) {
-		$plan_open = 0;
-	}
-	
-}
-
-sub start_document {
-	my ($self) = @_;
-	print STDERR "Starting SAX Parsing\n";
-}
-
-sub end_document {
-	my ($self) = @_;
-	print STDERR "SAX Parsing Finished\n";
-}
-
-sub get_values {
-	return %args;
 }
 
 1;

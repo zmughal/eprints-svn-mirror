@@ -20,6 +20,19 @@ sub action_get_files {
 	my $format = $self->{session}->param( "format" );
 	my $count = $self->{session}->param( "count" );
 
+#print STDERR "REQUESTED " . $format . " : " . $count . "\n\n";
+
+	if ($format eq "") {
+		$self->{processor}->add_message(
+				"error",
+				$self->html_phrase( "no_format" )
+				);
+
+		$self->{processor}->{screenid} = "Admin::FormatsRisks";
+		return 0;
+	}
+
+
 	my $session = $self->{session};
 	my $dataset = $session->get_repository->get_dataset( "file" );	
 
@@ -66,11 +79,12 @@ sub action_get_files {
 		session => $session,
 		dataset => $dataset,
 		ids => \@ids );
+	
+	$done = @files;
 	while ($done < $count) {
 		my $runner = 1;
 		$list->map( sub {  
 			my $file = $_[2];        
-			my $local_copy = $file->get_local_copy();
 			$runner++;
 			});
 
@@ -82,7 +96,8 @@ sub action_get_files {
 	my $tmpfile = File::Temp->new( SUFFIX => ".zip" );
 	unlink($tmpfile);
 	my $cmd = "zip -j $tmpfile";
-	foreach my $file_path (@files) {
+	foreach my $file (@files) {
+		my $file_path = $file->get_local_copy();
 		$cmd = $cmd . " " . $file_path;
 	}
 	system($cmd);
@@ -111,11 +126,10 @@ sub push_top_to_array
 
 	my $running = 1;
 	$list->map( sub {  
-		my $file = $_[2];        
-		my $local_copy = $file->get_local_copy();
+		my $file = $_[2];
 		if ($running == 1) {
-			if (!in_array($files,$local_copy)) {
-				push(@{$files},$local_copy);
+			if (!in_array($files,$file)) {
+				push(@{$files},$file);
 				$running++;
 			}
 		}
@@ -128,8 +142,17 @@ sub push_top_to_array
 sub in_array
 {
      my ($arr,$search_for) = @_;
-     my %items = map {$_ => 1} @{$arr}; # create a hash out of the array values
-     return (exists($items{$search_for}))?1:0;
+     my $hash = $search_for->get_value('hash'); 
+     my $filename = $search_for->get_value('filename'); 
+     foreach my $file (@{$arr}) {
+	if ($file->get_value('hash') eq $hash) {
+		return 1;
+	} elsif ($file->get_value('filename') eq $filename) {
+		return 1;
+	}
+     }
+     return 0;
+     
 }
 
 sub allow_get_files

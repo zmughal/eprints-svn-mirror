@@ -5,6 +5,10 @@
 
 	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:title">Formats/Risks</epp:phrase>
 	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:description">View data formats and related risks to documents in your repository.</epp:phrase>
-	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks_download:action:get_files:title">Get File Selection</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks_download:action:get_files:title">Download</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks_get_plan:action:get_plan:title">Download</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks_delete_plan:action:delete_plan:title">Delete Plan</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks_enact_plan:action:enact_plan:title">Enact Plan</epp:phrase>
+	
 
 </epp:phrases>
