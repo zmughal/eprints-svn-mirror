@@ -237,9 +237,7 @@ sub characters {
         if ($plan_open>0 && $tool_open>0) {
                 $text =~ s/^\s*//;
                 $text =~ s/\s*$//;
-                $args{$current_element} .= $text if $text;
-                if ($text) {
-                }
+                $args{$current_element} = $text if $text;
         }
 }
 

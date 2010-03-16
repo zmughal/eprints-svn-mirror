@@ -360,6 +360,13 @@ sub get_format_risks_table {
 		{
 			($other_row,$format_count) = $plugin->get_detail_row($search_format,$format,0);
 			($migrated_row,$migrated_count) = $plugin->get_detail_row($search_format,$format,1);
+			if ($format_count > 0) {
+				$red_count++;
+			}
+			if ($migrated_count > 0) {
+				$red_count--;
+				$green_count++;
+			}
 		} else {
 			$format_count = $count;
 		}
@@ -374,11 +381,7 @@ sub get_format_risks_table {
 		my $preservation_panel_tr;
 		if ($migrated_count > 0) {		
 			$format_table = $green_format_table;
-			$orange_count = $green_count + 1;
 			$preservation_panel_tr = $plugin->get_format_panel($format_name,$format,$format_version,$migrated_count,$max_count,$max_width,$color,$result,$medium_risk_boundary,1);
-		}
-
-		if ($migrated_count > 0) {
 			$format_table->appendChild( $preservation_panel_tr );
 			if (defined $migrated_row) {
 				$format_table->appendChild( $migrated_row );
@@ -412,14 +415,10 @@ sub get_format_risks_table {
 		$green->appendChild( $green_content_div );
 		$orange->appendChild( $orange_content_div );
 		$red->appendChild( $red_content_div );
-		$ret->appendChild($red);
-		$ret->appendChild($orange);
-		$ret->appendChild($green);
 	}
-	#if ($unclassified_count > 0) {
-	#	$unclassified_orange->appendChild( $unclassified_orange_content_div );
-	#	$ret->appendChild($unclassified_orange);
-	#}
+	if ($red_count > 0) { $ret->appendChild($red) };
+	if ($orange_count > 0) { $ret->appendChild($orange) };
+	if ($green_count > 0) { $ret->appendChild($green) };
 	if ($blue_count > 0) {
 		$blue->appendChild( $blue_content_div );
 		$ret->appendChild($blue);
