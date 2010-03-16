@@ -21,8 +21,6 @@ sub action_delete_plan {
 
 	my $format = $self->{session}->param( "format" );
 		
-	print STDERR "FORMAT : " . $format . "\n";
-
 	my $dataset = $session->get_repository->get_dataset( "preservation_plan" );
 
 	if (defined $format) 
@@ -71,7 +69,7 @@ sub action_delete_plan {
 	} else {
 		$self->{processor}->add_message(
 				"error",
-				$self->html_phrase( "Failed" )
+				$self->html_phrase( "no_format" )
 				);
 		$self->{processor}->{screenid} = "Admin::FormatsRisks";
 	}

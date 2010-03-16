@@ -32,7 +32,7 @@ sub action_get_plan {
 	} else {
 		$self->{processor}->add_message(
 				"error",
-				$self->html_phrase( "Failed" )
+				$self->html_phrase( "failed" )
 				);
 		$self->{processor}->{screenid} = "Admin::FormatsRisks";
 	}

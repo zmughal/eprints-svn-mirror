@@ -26,7 +26,7 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 	
-	$self->{actions} = [qw/ formats_risks handle_upload get_plan/]; 
+	$self->{actions} = [qw/ formats_risks handle_upload get_plan delete_plan_docs/]; 
 		
 	$self->{appears} = [
 		{ 
@@ -435,8 +435,193 @@ sub get_format_risks_table {
 		$message_element->appendChild($warning);
 	}
 
+	my $pres_plans = $plugin->get_pres_plans_table();
+
+	$ret->appendChild($pres_plans);
+
 	return( $ret );
 }
+
+sub get_human_format_name {
+	
+	my ( $plugin,$format ) = @_;
+
+	my $pronom_data = $plugin->{session}->get_repository->get_dataset("pronom")->get_object($plugin->{session}, $format);
+	my $format_name;
+
+	if (defined($pronom_data)) {
+		$format_name = $pronom_data->get_value("name");
+		my $format_version = $pronom_data->get_value("version");
+		$format_name .= "(Version " . $format_version . ") ";
+		return $format_name;
+	}
+	
+	if ($format eq "" || $format eq "NULL") {
+		$format_name = "Not Classified";
+	}
+
+	if ($format_name eq "") {
+		$format_name = $format;
+	}
+	return $format_name;
+
+}
+
+sub get_pres_plans_table {
+	
+	my ( $plugin ) = @_;
+
+	my $session = $plugin->{session};
+
+	my $ret = $session->make_element("div",id=>"plans",align=>"center");
+	
+	my $dataset = $session->get_repository->get_dataset( "preservation_plan" );
+	
+	my $plan_count = 0;
+
+	my $table = $session->make_element("table", width=>"100%");
+	$ret->appendChild($table);
+	my $table_th_row = $session->make_element("tr");
+	$table->appendChild($table_th_row);
+
+	my $table_header_1 = $session->make_element("th", width=>"10%");
+	my $table_header_2 = $session->make_element("th", width=>"20%");
+	my $table_header_3 = $session->make_element("th", width=>"50%");
+	my $table_header_4 = $session->make_element("th", width=>"10%");
+	my $table_header_5 = $session->make_element("th", width=>"10%");
+	$table_th_row->appendChild($table_header_1);
+	$table_th_row->appendChild($table_header_2);
+	$table_th_row->appendChild($table_header_3);
+	$table_th_row->appendChild($table_header_4);
+	$table_th_row->appendChild($table_header_5);
+
+	$table_header_1->appendChild($plugin->html_phrase("id"));
+	$table_header_2->appendChild($plugin->html_phrase("import_date"));
+	$table_header_3->appendChild($plugin->html_phrase("formats_affected"));
+	$table_header_4->appendChild($plugin->html_phrase("quantity"));
+	$table_header_5->appendChild($plugin->html_phrase("actions"));
+
+	$dataset->map( $session, sub {
+			my( $session, $dataset, $plans ) = @_;
+			foreach my $preservation_plan ($plans)
+			{
+				$plan_count++;
+				my $plan_id = $preservation_plan->get_id();
+				
+				my $table_row = $session->make_element("tr");
+				$table->appendChild($table_row);
+				my $table_td = $session->make_element("td", align=>"center");
+				$table_row->appendChild($table_td);
+				$table_td->appendChild($session->make_text($plan_id));	
+			
+				#my $plan_date = $preservation_plan->get_value('Imported');
+				$table_td = $session->make_element("td", align=>"center");
+				$table_row->appendChild($table_td);
+				$table_td->appendChild($session->make_text(""));	
+
+				my $format_key = $preservation_plan->get_value('format');
+				$format_key =~ s/_/\//;
+				my $format_name = $plugin->get_human_format_name($format_key);
+				
+				$table_td = $session->make_element("td", align=>"center");
+				$table_row->appendChild($table_td);
+				$table_td->appendChild($session->make_text($format_name));	
+				
+				my $usage_count = $plugin->in_use($preservation_plan);
+				my $b = $session->make_element("b");
+				$b->appendChild($session->make_text($usage_count));
+				
+				$table_td = $session->make_element("td", align=>"center");
+				$table_row->appendChild($table_td);
+				$table_td->appendChild($b);	
+				
+				my $form = $session->render_form("POST");
+				my $file_field = $session->make_element( 
+						"input",
+						name=> "file_path",
+						value=> $preservation_plan->get_value('file_path'),
+						type=> "hidden"
+						);
+				$form->appendChild($file_field);
+
+				my $screen_id = "Screen::".$plugin->{processor}->{screenid} . "_get_plan";
+				my $screen = $session->plugin( $screen_id, processor => $plugin->{processor} );
+				my $download_button = $screen->render_action_button(
+						{
+						action => "get_plan",
+						screen => $screen,
+						screen_id => $screen_id,
+						} );
+				$form->appendChild($download_button);
+
+				$table_td = $session->make_element("td", align=>"center");
+				$table_row->appendChild($table_td);
+				$table_td->appendChild($form);	
+			
+				if ($usage_count > 0) {
+					my $form2 = $session->render_form("POST");
+					my $format_field = $session->make_element( 
+							"input",
+							name=> "format",
+							value=> $format_key,
+							type=> "hidden"
+							);
+					$form2->appendChild($format_field);
+
+					$screen_id = "Screen::".$plugin->{processor}->{screenid};
+					$screen = $session->plugin( $screen_id, processor => $plugin->{processor} );
+					my $delete_files_button = $screen->render_action_button(
+							{
+							action => "delete_plan_docs",
+							screen => $screen,
+							screen_id => $screen_id,
+							} );
+					$form2->appendChild($delete_files_button);
+
+					$table_td->appendChild($form2);	
+				} else {
+					my $form2 = $session->render_form("POST");
+	
+					my $format_field = $session->make_element( 
+							"input",
+							name=> "format",
+							value=> $format_key,
+							type=> "hidden"
+							);
+					$form2->appendChild($format_field);
+
+					$screen_id = "Screen::".$plugin->{processor}->{screenid} . "_delete_plan";
+					$screen = $session->plugin( $screen_id, processor => $plugin->{processor} );
+					my $delete_button = $screen->render_action_button(
+							{
+							action => "delete_plan",
+							screen => $screen,
+							screen_id => $screen_id,
+							} );
+					$form2->appendChild($delete_button);
+					$table_td->appendChild($form2);	
+				}
+				
+			}
+			});
+	
+	my $box = EPrints::Box::render(
+			id => "preservation_plans_in_use",
+			session => $plugin->{session},
+			title => $plugin->html_phrase("preservation_plans_in_use"),
+			collapsed => "false",
+			content => $ret
+			);
+
+	if ($plan_count > 0) {
+		return $box;
+	} else {
+		return $session->make_doc_fragment();
+	}
+	
+
+}
+
 
 sub get_format_panel {
 	my ( $plugin, $format_name,$format,$format_version,$count,$max_count,$max_width,$color,$result,$medium_risk_boundary,$migrated) = @_;
@@ -904,35 +1089,34 @@ sub get_preservation_action_table
 	                #onclick => "if( window.event ) { window.event.cancelBubble = true; } return confirm(".EPrints::Utils::js_string($msg).");",
 			} );
 			$form->appendChild($delete_button);
-		} elsif ($migrated < 1) {
-			$form = $session->render_form("POST");
-			$download_div->appendChild($form);
-			## APPEND PLAN
-			my $plan_field = $session->make_element( 
+		}
+		$form = $session->render_form("POST");
+		$download_div->appendChild($form);
+## APPEND PLAN
+		my $plan_field = $session->make_element( 
 				"input",
 				name=> "plan_id",
 				value=> $preservation_plan->get_id(),
 				type=> "hidden"
 				);
-			$form->appendChild($plan_field);
-			my $format_field2 = $session->make_element( 
+		$form->appendChild($plan_field);
+		my $format_field2 = $session->make_element( 
 				"input",
 				name=> "format",
 				value=> $orig_format,
 				type=> "hidden"
-			);
-			$form->appendChild($format_field2);
-			$screen_id = "Screen::".$plugin->{processor}->{screenid} . "_enact_plan";
-			$screen = $session->plugin( $screen_id, processor => $plugin->{processor} );
-			my $enact_button = $screen->render_action_button(
+				);
+		$form->appendChild($format_field2);
+		$screen_id = "Screen::".$plugin->{processor}->{screenid} . "_enact_plan";
+		$screen = $session->plugin( $screen_id, processor => $plugin->{processor} );
+		my $enact_button = $screen->render_action_button(
 				{
 				action => "enact_plan",
 				screen => $screen,
 				screen_id => $screen_id,
-			} );
-			$form->appendChild($enact_button);
+				} );
+		$form->appendChild($enact_button);
 			
-		}
 	} else {
 
 		$p = $session->make_element(
@@ -966,7 +1150,7 @@ sub get_preservation_action_table
 		$f->appendChild( $file_button );
 		$f->appendChild( $session->make_element( "br" ));
 		$f->appendChild( $add_format_button );
-		my $progress_bar = $session->make_element( "div", id => "progress" );
+		my $progress_bar = $session->make_element( "div", id => "progress", style=>"width:220px;" );
 		$f->appendChild( $progress_bar );
 
 		my $script = $session->make_javascript( "EPJS_register_button_code( '_action_next', function() { el = \$('$ffname'); if( el.value != '' ) { return confirm( ".EPrints::Utils::js_string($session->phrase("Plugin/InputForm/Component/Upload:really_next"))." ); } return true; } );" );
@@ -1007,13 +1191,40 @@ sub in_use
 
 	my $list = $searchexp->perform_search;
 	if ($list->count() > 0) {
-		return 1;
+		return $list->count();
 	} else {
 		return 0;
 	}
 
 }
 
+sub allow_delete_plan_docs {
+	my ( $self ) = @_;
+	return 1;
+}
+
+sub action_delete_plan_docs {
+
+	my ( $self ) = @_;
+
+	my $session = $self->{session};
+	
+	my $format = $self->{session}->param( "format" );
+
+	$session->dataset( "event_queue" )->create_dataobj({
+			pluginid => "Event::Delete_Plan_Docs",
+			action => "delete_plan_docs",
+			params => [$format],
+			userid => $session->current_user(),
+			});
+
+	$self->{processor}->add_message(
+			"message",
+			$self->html_phrase( "delete_plan_docs_success" )
+			);
+	$self->{processor}->{screenid} = "Admin::FormatsRisks";
+
+}
 
 sub allow_handle_upload {
 	my ( $self ) = @_;
@@ -1076,7 +1287,7 @@ sub action_handle_upload
 
 			$self->{processor}->add_message(
                                 "message",
-                                $self->html_phrase( "success" )
+                                $self->html_phrase( "upload_success" )
                                 );
 	                $self->{processor}->{screenid} = "Admin::FormatsRisks";
 		} else {

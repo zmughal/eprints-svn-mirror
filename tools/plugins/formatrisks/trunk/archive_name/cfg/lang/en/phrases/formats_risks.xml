@@ -10,5 +10,27 @@
 	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks_delete_plan:action:delete_plan:title">Delete Plan</epp:phrase>
 	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks_enact_plan:action:enact_plan:title">Enact Plan</epp:phrase>
 	
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:preservation_plans_in_use">Preservation Plans</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:id">ID</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:import_date">Import Date</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:formats_affected">Related Formats</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:quantity">Quantity</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:actions">Actions</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:plan_exists">A Preservation Plan for this Format Already Exists</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:upload_success"><div><b>Preservation Plan Upload Successful</b></div><p>Actions have been queued to be executed shortly and changes will be reflected below once completed. In order to view these changes please revisit or refresh this page later.</p></epp:phrase>
 
+
+
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:action:delete_plan_docs:title">Delete Migrated Documents</epp:phrase>
+	
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks_enact_plan:success"><div><b>Plan Execution Successful</b></div><p>Actions have been queued to be executed shortly and changes will be reflected below once completed. In order to view these changes please revisit or refresh this page later.</p></epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:delete_plan_docs_success"><div><b>Document Deletion Request Successful</b></div><p>Actions have been queued to be executed shortly and changes will be reflected below once completed. In order to view these changes please revisit or refresh this page later.</p></epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks_get_plan:failed"><p>Failed to Retrieve Preservation Plan</p></epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks_download:no_format"><p>No Format Specified</p></epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks_delete_plan:no_format"><p>No Format Specified</p></epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks_delete_plan_docs:no_format"><p>No Format Specified</p></epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks_download:failed"><p>Failed to Create Requested File</p></epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks_delete_plan:failed_in_delete"><p>Failed to Delete Preservation Plan</p></epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks_delete_plan:success"><p>Preservation Plan Deleted</p></epp:phrase>
+	
 </epp:phrases>

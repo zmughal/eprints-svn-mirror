@@ -113,7 +113,7 @@ sub action_get_files {
 	} else {
 		$self->{processor}->add_message(
 				"error",
-				$self->html_phrase( "Failed" )
+				$self->html_phrase( "failed" )
 				);
 		$self->{processor}->{screenid} = "Admin::FormatsRisks";
 	}
