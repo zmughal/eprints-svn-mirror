@@ -1,4 +1,4 @@
-#!perl
+#!/usr/bin/perl
 
 =head1 NAME
 
@@ -117,6 +117,8 @@ sub messages { shift->_elem( "messages", @_ ) }
 sub collection { shift->_elem( "collection", @_ ) }
 sub query { shift->_elem( "query", @_ ) }
 sub recs { shift->_elem( "recs", @_ ) }
+sub max { shift->_elem( "max", @_ ) }
+sub offset { shift->_elem( "offset", @_ ) }
 
 sub main
 {
@@ -128,6 +130,17 @@ sub main
 
 	my $q = $self->q;
 	$q->charset( 'utf-8' );
+
+	# standard parameters
+	if( $q->param( "n" ) )
+	{
+		$self->max( $q->param( "n" ) );
+	}
+	if( $q->param( "offset" ) )
+	{
+		# ISI is 1-indexed
+		$self->offset( $q->param( "offset" ) + 1 );
+	}
 
 	print
 		$q->header(
@@ -146,8 +159,8 @@ sub main
 		$self->stage3(),
 		$self->stage4(),
 		$self->stage5(),
-		$q->submit( -name => 'action', -value => "Query", -class => "submit" ),
-		$q->submit( -name => 'action', -value => "Submit", -class => "submit" ),
+		$q->submit( -name => 'action_query', -value => "Query", -class => "submit" ),
+		$q->submit( -name => 'action_submit', -value => "Submit", -class => "submit" ),
 		$q->end_form(),
 		$self->dump_messages(),
 		$q->end_html;
@@ -268,6 +281,12 @@ sub stage3
 				$q->textfield( -name => $id, -id => $id, -default => scalar($q->param( $id )), -size => 50 );
 		}
 	}
+	push @html,
+		$q->label( { -for => "n" }, 'Maximum records:' ),
+		$q->textfield( -name => "n", -id => "n", -default => $self->max, -size => 10 ),
+		$q->label( { -for => "offset" }, 'Offset:' ),
+		$q->textfield( -name => "offset", -id => "offset", -default => $self->offset-1, -size => 10 ),
+		;
 
 	$self->query( join(' and ', @parts) );
 
@@ -287,8 +306,11 @@ sub stage4
 	return () if !$collection;
 	return () if !$query;
 
-	my $xml = $self->isi->search( $query );
-	$recs = $collection->transform( $xml );
+	my $xml = $self->isi->search( $query,
+		max => $self->max,
+		offset => $self->offset,
+	);
+	@$recs = @{$collection->transform( $xml )};
 	push @$messages, "Found ".@$recs." matching records for '$query'";
 
 	my $source_document = XML::LibXML->new->parse_string( $xsl_citation );
@@ -314,7 +336,7 @@ sub stage5
 	my( $q, $collection, $recs, $messages ) = @{$self}{qw( q collection recs messages )};
 
 	return () if !@$recs;
-	return if !$q->param( "action" ) || $q->param( "action" ) ne "Submit";
+	return if !$q->param( "action_submit" );
 
 	foreach my $rec (@$recs)
 	{
@@ -340,7 +362,6 @@ sub stage5
 				"] as ",
 				$collection->namespaceURI);
 		}
-		last;
 	}
 
 	return ();
@@ -366,5 +387,7 @@ sub dump_messages
 	collection => undef,
 	query => undef,
 	recs => [],
+	max => 10,
+	offset => 1,
 }, "CGI_ISI_TO_SWORD")->main();
 

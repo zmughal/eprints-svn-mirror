@@ -16,6 +16,7 @@
 <xsl:template match="REC">
 <eprint>
 <status>published</status>
+<note>Some of the information in this record was provided by Web of Science</note>
 <xsl:apply-templates select="item/*|item/*/@*" />
 </eprint>
 </xsl:template>
