@@ -514,10 +514,10 @@ sub get_pres_plans_table {
 				$table_row->appendChild($table_td);
 				$table_td->appendChild($session->make_text($plan_id));	
 			
-				#my $plan_date = $preservation_plan->get_value('Imported');
+				my $plan_date = $preservation_plan->get_value('import_date');
 				$table_td = $session->make_element("td", align=>"center");
 				$table_row->appendChild($table_td);
-				$table_td->appendChild($session->make_text(""));	
+				$table_td->appendChild(EPrints::Time::render_date( $session, $plan_date ));	
 
 				my $format_key = $preservation_plan->get_value('format');
 				$format_key =~ s/_/\//;
@@ -1150,7 +1150,7 @@ sub get_preservation_action_table
 		$f->appendChild( $file_button );
 		$f->appendChild( $session->make_element( "br" ));
 		$f->appendChild( $add_format_button );
-		my $progress_bar = $session->make_element( "div", id => "progress", style=>"width:220px;" );
+		my $progress_bar = $session->make_element( "div", id => "progress" );
 		$f->appendChild( $progress_bar );
 
 		my $script = $session->make_javascript( "EPJS_register_button_code( '_action_next', function() { el = \$('$ffname'); if( el.value != '' ) { return confirm( ".EPrints::Utils::js_string($session->phrase("Plugin/InputForm/Component/Upload:really_next"))." ); } return true; } );" );
@@ -1274,10 +1274,10 @@ sub action_handle_upload
 		if ($list->count < 1) {
 			my $output = $doc_path . $format . ".xml";
 			rename($tmpfile,$output);
-			my $plan_data = $session->get_repository->get_dataset("preservation_plan")->create_object($session,{plan_type=>"plato",file_path=>$output,format=>$format});
+			my $plan_data = $session->get_repository->get_dataset("preservation_plan")->create_object($session,{plan_type=>"plato",file_path=>$output,format=>$format,import_date=>EPrints::Time::get_iso_timestamp()});
 			my $plan_id = $plan_data->get_id();
 			$plan_data->commit;
-
+	
 			$session->dataset( "event_queue" )->create_dataobj({
 				pluginid => "Event::Migration",
 				action => "migrate",

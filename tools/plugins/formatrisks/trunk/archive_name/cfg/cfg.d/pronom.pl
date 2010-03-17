@@ -18,8 +18,8 @@
 # Any classifications that are older than this will be updated
 # To disable classification updates set max_age to 0
 
-$c->{pronom}->{max_age} = 30; # 30 seconds
-#$c->{pronom}->{max_age} = 30 * 86400; # 30 days
+#$c->{pronom}->{max_age} = 30; # 30 seconds
+$c->{pronom}->{max_age} = 30 * 86400; # 30 days
 
 # The location of Java
 $c->{"executables"}->{"java"} = 'java';
@@ -121,6 +121,7 @@ $c->{fields}->{preservation_plan} = [
 	{ name=>"plan_type", type=>"text", required=>0, },
 	{ name=>"migration_action", type=>"text", required=>0, },
 	{ name=>"file_path", type => "longtext", required=>0, },
+	{ name=>"import_date", type => "time", },
 	{ name=>"relation", type=>"compound", multiple=>1,
 		fields => [
 		{

@@ -21,7 +21,7 @@
 
 
 
-	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:action:delete_plan_docs:title">Delete Migrated Documents</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:action:delete_plan_docs:title">Delete Docs</epp:phrase>
 	
 	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks_enact_plan:success"><div><b>Plan Execution Successful</b></div><p>Actions have been queued to be executed shortly and changes will be reflected below once completed. In order to view these changes please revisit or refresh this page later.</p></epp:phrase>
 	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:delete_plan_docs_success"><div><b>Document Deletion Request Successful</b></div><p>Actions have been queued to be executed shortly and changes will be reflected below once completed. In order to view these changes please revisit or refresh this page later.</p></epp:phrase>
