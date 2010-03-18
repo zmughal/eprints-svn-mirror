@@ -200,7 +200,7 @@ sub export_mimetype
 {
 	my( $self ) = @_;
 
-	return "application/x-gzip";
+	return "application/zip";
 }
 
 sub render

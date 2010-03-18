@@ -2,10 +2,12 @@ Pre-Requisits
 
     * EPrints 3.2 or greater! You need the new File object which is a core part of >=3.2. 
 
-    * The EPrints 3.2 Preservation Tools (Available soon)
+    * The EPrints 3.2 Preservation Tools
           o Consists of 3 files to be installed in the following locations
           o archive_name/cfg/cfg.d/pronom.pl
-          o perl_lib/EPrints/Plugins/Screen/Admin/FormatsRisks.pm
+          o perl_lib/EPrints/Plugins/Screen/Admin/FormatsRisks.pm (and all related files)
+          o perl_lib/EPrints/Plugins/Event/Migration.pm
+          o perl_lib/EPrints/Plugins/Event/Delete_Plan_Docs.pm
           o tools/update_pronom_puids 
 
     * A copy of java 
@@ -16,7 +18,7 @@ Installing
 
 1) Install java and DROID
 
-2) edit archive_name/cfg/cfg.d/pronom.xml and fill in the locations to your DROID install, DROID signature file and JAVA. Changing other config values is optional but recommended to suit your repository and risk score boundaries.
+2) edit archive_name/cfg/cfg.d/pronom.pl and fill in the locations to your DROID install, DROID signature file and JAVA. Changing other config values is optional but recommended to suit your repository and risk score boundaries.
 
 3) Install the new database structure.
 
