@@ -15,7 +15,6 @@
 
 <xsl:template match="REC">
 <eprint>
-<status>published</status>
 <note>Some of the information in this record was provided by Web of Science</note>
 <xsl:apply-templates select="item/*|item/*/@*" />
 </eprint>
@@ -48,10 +47,11 @@
 <xsl:template match="item/doctype/@code">
 <xsl:choose>
 <xsl:when test=".='@'">
+<status>published</status>
 <type>article</type>
 </xsl:when>
 <xsl:otherwise>
-<type>article</type>
+<type>other</type>
 </xsl:otherwise>
 </xsl:choose>
 </xsl:template>
