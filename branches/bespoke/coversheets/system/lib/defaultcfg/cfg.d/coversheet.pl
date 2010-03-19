@@ -1,11 +1,11 @@
 
-$c->{office_path} = "/usr/lib/openoffice/";
+$c->{office_path} = "/opt/openoffice.org3/";
 $c->{office_program_path} = $c->{office_path}."program/";
 $c->{open_office_name} = "soffice.bin";
 $c->{open_office_exe} = $c->{office_program_path}.$c->{open_office_name};
 $c->{odt_converter_exe} = $c->{base_path}."/bin/DocumentConverter.py";
 
-$c->{executables}->{python} = "/usr/bin/python";
+$c->{executables}->{python} = $c->{office_program_path}.'python';
 $c->{executables}->{pdftk} = "/usr/bin/pdftk";
 
 $EPrints::DataSet::INFO->{coversheet} =
