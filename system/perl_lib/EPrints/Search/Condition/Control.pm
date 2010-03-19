@@ -71,6 +71,8 @@ sub optimise
 	# control-specific condition stuff
 	$self = $self->optimise_specific( %opts );
 
+	return $self if !$self->isa( "EPrints::Search::Condition::Control" );
+
 	# only one sub option, just return it.
 	if( scalar @{$self->{sub_ops}} == 1 )
 	{
