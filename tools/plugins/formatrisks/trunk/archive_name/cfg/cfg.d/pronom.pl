@@ -47,7 +47,7 @@ $c->{"medium_risk_boundary"} = 200;
 $c->{"enable_preservation_actions"} = 0;
 
 # Option to use unstable version of PRONOM registry or proxy. This is mainly used in pre-release testing, leave as 0 to use actual pronom release.
-$c->{"pronom_unstable"} = 1;
+$c->{"pronom_unstable"} = 0;
 
 ### END OF CONFIGURATION ###
 
