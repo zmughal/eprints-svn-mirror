@@ -1009,7 +1009,6 @@ sub get_preservation_action_table
 	$center_div->appendChild($form);
 	$inner_div->appendChild($center_div);
 	
-	$inner_div->appendChild($session->make_element("hr"));
 
 	my $dataset = $session->get_repository->get_dataset( "preservation_plan" );
 	my $orig_format = $format;
@@ -1025,151 +1024,152 @@ sub get_preservation_action_table
 
 	my $list = $searchexp->perform_search;
 
-	if ($list->count > 0) {
-		my $file_path;
-		$list->map( sub {
-                        my $preservation_plan = $_[2];
-                        $file_path = $preservation_plan->get_value("file_path");
-                        });
-		$p = $session->make_element(
-				"p",
-				style => "font-weight: bold;"
-				);
-		$p->appendText("Download Preservation Plan");
-		$inner_div->appendChild($p);
+	if ($session->get_repository->get_conf( "enable_preservation_actions" )) {
+		$inner_div->appendChild($session->make_element("hr"));
+		if ($list->count > 0) {
+			my $file_path;
+			$list->map( sub {
+					my $preservation_plan = $_[2];
+					$file_path = $preservation_plan->get_value("file_path");
+					});
+			$p = $session->make_element(
+					"p",
+					style => "font-weight: bold;"
+					);
+			$p->appendText("Download Preservation Plan");
+			$inner_div->appendChild($p);
 
-		my $download_div = $session->make_element("div", style=>"width: 250px;", align=>"center");
-		my $form = $session->render_form("POST");
-		$inner_div->appendChild($download_div);
-		$download_div->appendChild($form);
-		my $file_field = $session->make_element( 
-			"input",
-			name=> "file_path",
-			value=> $file_path,
-			type=> "hidden"
-			);
-		$form->appendChild($file_field);
-		
-		$screen_id = "Screen::".$plugin->{processor}->{screenid} . "_get_plan";
-		$screen = $session->plugin( $screen_id, processor => $plugin->{processor} );
-		$download_button = $screen->render_action_button(
-			{
-			action => "get_plan",
-			screen => $screen,
-			screen_id => $screen_id,
-			} );
-		$form->appendChild($download_button);
-	
-		my $dataset = $session->get_repository->get_dataset( "preservation_plan" );			
-		my $searchexp = EPrints::Search->new(
-                                session => $session,
-                                dataset => $dataset,
-                                filters => [
-                                { meta_fields => [qw( format )], value => "$format", match => "EX" },
-                                ],
-                                );
+			my $download_div = $session->make_element("div", style=>"width: 250px;", align=>"center");
+			my $form = $session->render_form("POST");
+			$inner_div->appendChild($download_div);
+			$download_div->appendChild($form);
+			my $file_field = $session->make_element( 
+					"input",
+					name=> "file_path",
+					value=> $file_path,
+					type=> "hidden"
+					);
+			$form->appendChild($file_field);
 
-                my $list = $searchexp->perform_search;
-		my $preservation_plan;
-                $list->map( sub {
-                        $preservation_plan = $_[2];
-		});
-		if ($plugin->in_use($preservation_plan) < 1) {	
+			$screen_id = "Screen::".$plugin->{processor}->{screenid} . "_get_plan";
+			$screen = $session->plugin( $screen_id, processor => $plugin->{processor} );
+			$download_button = $screen->render_action_button(
+					{
+					action => "get_plan",
+					screen => $screen,
+					screen_id => $screen_id,
+					} );
+			$form->appendChild($download_button);
+
+			my $dataset = $session->get_repository->get_dataset( "preservation_plan" );			
+			my $searchexp = EPrints::Search->new(
+					session => $session,
+					dataset => $dataset,
+					filters => [
+					{ meta_fields => [qw( format )], value => "$format", match => "EX" },
+					],
+					);
+
+			my $list = $searchexp->perform_search;
+			my $preservation_plan;
+			$list->map( sub {
+					$preservation_plan = $_[2];
+					});
+			if ($plugin->in_use($preservation_plan) < 1) {	
+				$form = $session->render_form("POST");
+				$download_div->appendChild($form);
+				$form->appendChild($format_field);
+				$screen_id = "Screen::".$plugin->{processor}->{screenid} . "_delete_plan";
+				$screen = $session->plugin( $screen_id, processor => $plugin->{processor} );
+				my $msg = $plugin->phrase( "delete_plan_confirm" );
+				my $delete_button = $screen->render_action_button(
+						{
+						action => "delete_plan",
+						screen => $screen,
+						screen_id => $screen_id,
+#onclick => "if( window.event ) { window.event.cancelBubble = true; } return confirm(".EPrints::Utils::js_string($msg).");",
+						} );
+				$form->appendChild($delete_button);
+			}
 			$form = $session->render_form("POST");
 			$download_div->appendChild($form);
-			$form->appendChild($format_field);
-			$screen_id = "Screen::".$plugin->{processor}->{screenid} . "_delete_plan";
-			$screen = $session->plugin( $screen_id, processor => $plugin->{processor} );
-			my $msg = $plugin->phrase( "delete_plan_confirm" );
-			my $delete_button = $screen->render_action_button(
-				{
-				action => "delete_plan",
-				screen => $screen,
-				screen_id => $screen_id,
-	                #onclick => "if( window.event ) { window.event.cancelBubble = true; } return confirm(".EPrints::Utils::js_string($msg).");",
-			} );
-			$form->appendChild($delete_button);
-		}
-		$form = $session->render_form("POST");
-		$download_div->appendChild($form);
 ## APPEND PLAN
-		my $plan_field = $session->make_element( 
-				"input",
-				name=> "plan_id",
-				value=> $preservation_plan->get_id(),
-				type=> "hidden"
-				);
-		$form->appendChild($plan_field);
-		my $format_field2 = $session->make_element( 
-				"input",
-				name=> "format",
-				value=> $orig_format,
-				type=> "hidden"
-				);
-		$form->appendChild($format_field2);
-		$screen_id = "Screen::".$plugin->{processor}->{screenid} . "_enact_plan";
-		$screen = $session->plugin( $screen_id, processor => $plugin->{processor} );
-		my $enact_button = $screen->render_action_button(
-				{
-				action => "enact_plan",
-				screen => $screen,
-				screen_id => $screen_id,
-				} );
-		$form->appendChild($enact_button);
-			
-	} else {
+			my $plan_field = $session->make_element( 
+					"input",
+					name=> "plan_id",
+					value=> $preservation_plan->get_id(),
+					type=> "hidden"
+					);
+			$form->appendChild($plan_field);
+			my $format_field2 = $session->make_element( 
+					"input",
+					name=> "format",
+					value=> $orig_format,
+					type=> "hidden"
+					);
+			$form->appendChild($format_field2);
+			$screen_id = "Screen::".$plugin->{processor}->{screenid} . "_enact_plan";
+			$screen = $session->plugin( $screen_id, processor => $plugin->{processor} );
+			my $enact_button = $screen->render_action_button(
+					{
+					action => "enact_plan",
+					screen => $screen,
+					screen_id => $screen_id,
+					} );
+			$form->appendChild($enact_button);
+		} else {
 
-		$p = $session->make_element(
-				"p",
-				style => "font-weight: bold;"
-				);
-		$p->appendText("Upload Preservation Plan");
-		$inner_div->appendChild($p);
+			$p = $session->make_element(
+					"p",
+					style => "font-weight: bold;"
+					);
+			$p->appendText("Upload Preservation Plan");
+			$inner_div->appendChild($p);
 
-		my $upload_form = $session->render_form("POST");
-		my $upload_div = $session->make_element("div", style=>"width: 250px;", align=>"center");
-		my $f = $session->make_doc_fragment;
+			my $upload_form = $session->render_form("POST");
+			my $upload_div = $session->make_element("div", style=>"width: 250px;", align=>"center");
+			my $f = $session->make_doc_fragment;
 
 #$f->appendChild( $session->html_phrase( "Plugin/InputForm/Component/Upload:new_document" ) );
 
-		my $ffname = $plugin->{prefix}."_first_file";
-		my $file_button = $session->make_element( "input",
-				name => $ffname,
-				id => $ffname,
-				type => "file",
-				size=> 12,
-				maxlength=>12,
-				);
-		my $upload_progress_url = $session->get_url( path => "cgi" ) . "/users/ajax/upload_progress";
-		my $onclick = "return startEmbeddedProgressBar(this.form,{'url':".EPrints::Utils::js_string( $upload_progress_url )."});";
-		my $add_format_button = $session->render_button(
-				value => $session->phrase( "Plugin/InputForm/Component/Upload:add_format" ),
-				class => "ep_form_internal_button",
-				name => "_action_handle_upload",
-				onclick => $onclick );
-		$f->appendChild( $file_button );
-		$f->appendChild( $session->make_element( "br" ));
-		$f->appendChild( $add_format_button );
-		my $progress_bar = $session->make_element( "div", id => "progress" );
-		$f->appendChild( $progress_bar );
+			my $ffname = $plugin->{prefix}."_first_file";
+			my $file_button = $session->make_element( "input",
+					name => $ffname,
+					id => $ffname,
+					type => "file",
+					size=> 12,
+					maxlength=>12,
+					);
+			my $upload_progress_url = $session->get_url( path => "cgi" ) . "/users/ajax/upload_progress";
+			my $onclick = "return startEmbeddedProgressBar(this.form,{'url':".EPrints::Utils::js_string( $upload_progress_url )."});";
+			my $add_format_button = $session->render_button(
+					value => $session->phrase( "Plugin/InputForm/Component/Upload:add_format" ),
+					class => "ep_form_internal_button",
+					name => "_action_handle_upload",
+					onclick => $onclick );
+			$f->appendChild( $file_button );
+			$f->appendChild( $session->make_element( "br" ));
+			$f->appendChild( $add_format_button );
+			my $progress_bar = $session->make_element( "div", id => "progress" );
+			$f->appendChild( $progress_bar );
 
-		my $script = $session->make_javascript( "EPJS_register_button_code( '_action_next', function() { el = \$('$ffname'); if( el.value != '' ) { return confirm( ".EPrints::Utils::js_string($session->phrase("Plugin/InputForm/Component/Upload:really_next"))." ); } return true; } );" );
-		$f->appendChild( $script);
-		$f->appendChild( $session->render_hidden_field( "screen", $plugin->{processor}->{screenid} ) );
-		$f->appendChild( $session->render_hidden_field( "_action_handle_upload", "Upload" ) );
-		$upload_div->appendChild($f);
-		$upload_form->appendChild($upload_div);
-		$format_field = $session->make_element( 
-				"input",
-				name=> "format",
-				value=> $orig_format,
-				type=> "hidden"
-				);
-		$upload_form->appendChild($format_field);
-		$inner_div->appendChild($upload_form);
-	}
+			my $script = $session->make_javascript( "EPJS_register_button_code( '_action_next', function() { el = \$('$ffname'); if( el.value != '' ) { return confirm( ".EPrints::Utils::js_string($session->phrase("Plugin/InputForm/Component/Upload:really_next"))." ); } return true; } );" );
+			$f->appendChild( $script);
+			$f->appendChild( $session->render_hidden_field( "screen", $plugin->{processor}->{screenid} ) );
+			$f->appendChild( $session->render_hidden_field( "_action_handle_upload", "Upload" ) );
+			$upload_div->appendChild($f);
+			$upload_form->appendChild($upload_div);
+			$format_field = $session->make_element( 
+					"input",
+					name=> "format",
+					value=> $orig_format,
+					type=> "hidden"
+					);
+			$upload_form->appendChild($format_field);
+			$inner_div->appendChild($upload_form);
+		}
+	}	
 	return $outer_div;
-	
 }
 
 sub in_use 

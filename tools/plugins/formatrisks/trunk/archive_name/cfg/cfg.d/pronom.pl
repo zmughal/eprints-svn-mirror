@@ -38,14 +38,16 @@ $c->{"invocation"}->{"droid"} = '$(java) -jar $(droid) -S$(SIGFILE) -FXML -A$(SO
 
 # High risk score boundary. Anything returning a risk score less than or equal to this will be classified as high risk.
 # Risk scores go from 0 - 3000;
-$c->{"high_risk_boundary"} = 1000;
+$c->{"high_risk_boundary"} = 100;
 
 # Medium risk score boundary. Anything returning a risk score less than or equal to this and greater than the high risk boundary will be classified as medium risk.
-$c->{"medium_risk_boundary"} = 2000;
+$c->{"medium_risk_boundary"} = 200;
 
+# Option to enable preservation plans to be executed on your repository by EPrints, this is off as there is some error handling missing.
+$c->{"enable_preservation_actions"} = 0;
 
 # Option to use unstable version of PRONOM registry or proxy. This is mainly used in pre-release testing, leave as 0 to use actual pronom release.
-$c->{"pronom_unstable"} = 0;
+$c->{"pronom_unstable"} = 1;
 
 ### END OF CONFIGURATION ###
 

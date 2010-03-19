@@ -12,7 +12,10 @@ Pre-Requisits
 
     * A copy of java 
 
-    * A copy of DROID from (http://droid.sf.net) 
+    * A copy of DROID from (http://droid.sf.net), we recommend version 3.0 with the latest signature file (version 16 at time of writing)
+
+    * The following perl modules
+          o XML::Parser::PerlSAX 
 
 Installing
 
@@ -31,3 +34,4 @@ To run simply execute the update_pronom_puids tool, this should be scheduled to 
  cd tools
  perl update_pronom_puids archive_name
 
+Alternatively there is a classify objects button available in the web interface which can be installed by copying the optional screen plugin from the optionals directory.
