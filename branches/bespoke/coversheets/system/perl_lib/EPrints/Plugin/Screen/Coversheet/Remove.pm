@@ -42,22 +42,22 @@ sub render
 	my $div = $self->{session}->make_element( "div", class=>"ep_block" );
 	my %buttons;
 
-	if ($self->{processor}->{coversheet}->is_in_use())
-	{
-		$div->appendChild( $self->html_phrase("coversheet_in_use",
-			title=>$self->{processor}->{coversheet}->get_value('name') ) );
-
-		%buttons = (
-			cancel => $self->{session}->phrase(
-					"lib/submissionform:action_cancel" ),
-			_order => [ "cancel" ]
-		);
-
-	}
-	else
-	{
+#	if ($self->{processor}->{coversheet}->is_in_use())
+#	{
+#		$div->appendChild( $self->html_phrase("coversheet_in_use",
+#			title=>$self->{processor}->{coversheet}->get_value('name') ) );
+#
+#		%buttons = (
+#			cancel => $self->{session}->phrase(
+#					"lib/submissionform:action_cancel" ),
+#			_order => [ "cancel" ]
+#		);
+#
+#	}
+#	else
+#	{
 		$div->appendChild( $self->html_phrase("sure_delete",
-			title=>$self->{processor}->{coversheet}->get_value('name') ) );
+			title=>$self->{processor}->{coversheet}->render_value('name') ) );
 
 		%buttons = (
 			cancel => $self->{session}->phrase(
@@ -67,7 +67,7 @@ sub render
 			_order => [ "remove", "cancel" ]
 		);
 
-	}
+#	}
 	my $form= $self->render_form;
 	$form->appendChild( 
 		$self->{session}->render_action_buttons( 

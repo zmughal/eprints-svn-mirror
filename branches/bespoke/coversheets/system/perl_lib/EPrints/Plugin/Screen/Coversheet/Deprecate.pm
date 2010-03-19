@@ -44,7 +44,7 @@ sub render
 	my $div = $self->{session}->make_element( "div", class=>"ep_block" );
 
 	$div->appendChild( $self->html_phrase("sure_deprecate",
-		title=>$self->{processor}->{coversheet}->get_value('name') ) );
+		title=>$self->{processor}->{coversheet}->render_value('name') ) );
 
 	my %buttons = (
 		cancel => $self->{session}->phrase(
