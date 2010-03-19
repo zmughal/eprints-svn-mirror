@@ -29,7 +29,8 @@ sub can_be_viewed
 {
 	my( $self ) = @_;
 
-	return 0 if $self->{processor}->{coversheet}->is_in_use();
+#difficult to tell if it's in use, and coversheet->is_in_use is depracated until we figure out how to tell
+#	return 0 if $self->{processor}->{coversheet}->is_in_use();
 
 	return $self->allow( "coversheet/write" );
 }
@@ -95,7 +96,8 @@ sub allow_remove
 {
 	my( $self ) = @_;
 
-	return 0 if $self->{processor}->{coversheet}->is_in_use();
+#depracated until an easy way to work it out can be found
+#	return 0 if $self->{processor}->{coversheet}->is_in_use();
 
 	return $self->can_be_viewed;
 }

@@ -465,24 +465,25 @@ sub valid_file
 	return 0;
 }
 
-#returns true if there is at least one document with this coversheet attached.
-sub is_in_use
-{
-	my ($self) = @_;
-
-        my $ds = $self->{session}->get_repository->get_dataset('document');
-        my $search = new EPrints::Search(
-                session=>$self->{session},
-                dataset=>$ds,
-        );
-        $search->add_field($ds->get_field('coversheet'), $self->get_id());
-        my $list = $search->perform_search;
-
-        my $div = $self->{session}->make_element( "div", class=>"ep_block" );
-
-	return 1 if $list->count > 0;
-	return 0;
-}
+#depricated as items no longer have a coversheet as a metadata field
+##returns true if there is at least one document with this coversheet attached.
+#sub is_in_use
+#{
+#	my ($self) = @_;
+#
+#        my $ds = $self->{session}->get_repository->get_dataset('document');
+#        my $search = new EPrints::Search(
+#                session=>$self->{session},
+#                dataset=>$ds,
+#        );
+#        $search->add_field($ds->get_field('coversheet'), $self->get_id());
+#        my $list = $search->perform_search;
+#
+#        my $div = $self->{session}->make_element( "div", class=>"ep_block" );
+#
+#	return 1 if $list->count > 0;
+#	return 0;
+#}
 
 #based on EPrints->in_edorial_scope_of
 sub applies_to_eprint
