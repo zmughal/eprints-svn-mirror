@@ -15,7 +15,7 @@ sub new
 	$self->{appears} = [
 		{
 			place => "coversheet_manager_actions",
-			position => 100,
+			position => 300,
 		},
 	];
 	
