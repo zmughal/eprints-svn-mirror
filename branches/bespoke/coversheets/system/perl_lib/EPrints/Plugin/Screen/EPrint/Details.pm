@@ -176,19 +176,6 @@ sub render
 				my $a = $session->render_link( $doc->get_url( $file ) );
 				$a->appendChild( $session->make_text( $file ) );
 				$li->appendChild( $a );
-
-				#link to document without license				
-				if (
-					$doc->get_value('format') eq 'application/pdf' and
-					$doc->get_value('coversheet')
-				)
-				{
-					$a = $session->render_link( $doc->get_url($file) . '?nocoversheet=1' );
-					$a->appendChild($session->html_phrase('download_uncovered'));
-					$li->appendChild($session->make_text(' '));
-					$li->appendChild($a);
-				}
-
 			}
 		}
 	}	
