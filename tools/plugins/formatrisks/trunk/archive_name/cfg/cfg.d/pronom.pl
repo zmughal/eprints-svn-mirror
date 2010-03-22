@@ -25,16 +25,16 @@ $c->{pronom}->{max_age} = 30 * 86400; # 30 days
 $c->{"executables"}->{"java"} = 'java';
 
 # The location of the DROID JAR file
-$c->{"executables"}->{"droid"} = '/usr/share/eprints3/tools/DROID/droid.jar';
+$c->{"executables"}->{"droid"} = '/usr/share/eprints3/tools/DROID_4/DROID/droid.jar';
 
 # The location of the DROID signature file
 $c->{"droid_sig_file"} = '/usr/share/eprints3/tools/DROID_SignatureFile_V16.xml';
 
 # DROID's invocation syntax
 # DROID 3
-$c->{"invocation"}->{"droid"} = '$(java) -jar $(droid) -S$(SIGFILE) -FXML -A$(SOURCE) -O$(TARGET) >/dev/null';
+#$c->{"invocation"}->{"droid"} = '$(java) -jar $(droid) -S$(SIGFILE) -FXML -A$(SOURCE) -O$(TARGET) >/dev/null';
 # DROID 4
-#$c->{"invocation"}->{"droid"} = '$(java) -jar $(droid) -s$(SIGFILE) -fXML -a$(SOURCE) -o$(TARGET) >/dev/null';
+$c->{"invocation"}->{"droid"} = '$(java) -jar $(droid) -s$(SIGFILE) -fXML -a$(SOURCE) -o$(TARGET) >/dev/null';
 
 # High risk score boundary. Anything returning a risk score less than or equal to this will be classified as high risk.
 # Risk scores go from 0 - 3000;
