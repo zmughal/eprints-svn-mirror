@@ -38,10 +38,10 @@ $c->{"invocation"}->{"droid"} = '$(java) -jar $(droid) -S$(SIGFILE) -FXML -A$(SO
 
 # High risk score boundary. Anything returning a risk score less than or equal to this will be classified as high risk.
 # Risk scores go from 0 - 3000;
-$c->{"high_risk_boundary"} = 100;
+$c->{"high_risk_boundary"} = 1000;
 
 # Medium risk score boundary. Anything returning a risk score less than or equal to this and greater than the high risk boundary will be classified as medium risk.
-$c->{"medium_risk_boundary"} = 200;
+$c->{"medium_risk_boundary"} = 2000;
 
 # Option to enable preservation plans to be executed on your repository by EPrints, this is off as there is some error handling missing.
 $c->{"enable_preservation_actions"} = 0;
