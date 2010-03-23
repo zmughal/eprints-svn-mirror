@@ -122,7 +122,7 @@
 
     <epp:phrase id="Plugin/Screen/Shelf/AccessRights:title">Manage Access</epp:phrase>
 
-    <epp:phrase id="Plugin/Screen/Shelf/EditMetadata:title">Modify Metadata</epp:phrase>
+    <epp:phrase id="Plugin/Screen/Shelf/EditMetadata:title">Shelf Description</epp:phrase>
 
     <epp:phrase id="Plugin/Screen/Shelf/EditItems:reorder">Reorder by...</epp:phrase>
 
