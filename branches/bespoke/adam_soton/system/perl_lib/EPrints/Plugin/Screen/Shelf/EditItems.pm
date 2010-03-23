@@ -182,7 +182,7 @@ sub render
 				value => $e->get_id )
 			);
 
-			$tr->addChild($td); #table cell for tickbox
+			$tr->appendChild($td); #table cell for tickbox
 
 			my $td = $session->make_element( "td", class=>"ep_columns_cell ep_columns_cell_$_"  );
 			$tr->appendChild( $td );
