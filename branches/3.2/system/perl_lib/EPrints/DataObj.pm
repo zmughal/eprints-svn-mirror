@@ -1411,8 +1411,9 @@ sub queue_changes
 
 	return unless scalar @fields;
 
-	my $userid = $self->{session}->current_user;
-	$userid = $userid->id if defined $userid;
+	my $user = $self->{session}->current_user;
+	my $userid;
+	$userid = $user->id if defined $user;
 
 	EPrints::DataObj::EventQueue->create_from_data( $self->{session}, {
 			pluginid => "Event::Indexer",
@@ -1438,8 +1439,9 @@ sub queue_all
 
 	return unless $self->{dataset}->indexable;
 
-	my $userid = $self->{session}->current_user;
-	$userid = $userid->id if defined $userid;
+	my $user = $self->{session}->current_user;
+	my $userid;
+	$userid = $user->id if defined $user;
 
 	EPrints::DataObj::EventQueue->create_from_data( $self->{session}, {
 			pluginid => "Event::Indexer",
@@ -1465,8 +1467,9 @@ sub queue_fulltext
 
 	return unless $self->{dataset}->indexable;
 
-	my $userid = $self->{session}->current_user;
-	$userid = $userid->id if defined $userid;
+	my $user = $self->{session}->current_user;
+	my $userid;
+	$userid = $user->id if defined $user;
 
 	EPrints::DataObj::EventQueue->create_unique( $self->{session}, {
 			unique => "TRUE",
