@@ -57,24 +57,6 @@ sub get_system_field_info
 			render_value=>"EPrints::DataObj::Coversheet::render_coversheet_file",
 			render_input => "EPrints::DataObj::Coversheet::render_coversheet_file_input"
 		},
-		{
-			name=>"proposed_frontfile",
-			type=>"file",
-			render_value=>"EPrints::DataObj::Coversheet::render_coversheet_file",
-		},
-		{
-			name=>"proposed_backfile",
-			type=>"file",
-			render_value=>"EPrints::DataObj::Coversheet::render_coversheet_file",
-		},
-		{
-			name=>"frontfile_proposer_id",
-			type=>"int",
-		},
-		{
-			name=>"backfile_proposer_id",
-			type=>"int",
-		},
 
 		{
 			name => "apply_priority",
@@ -380,14 +362,6 @@ sub render_coversheet_file_input
 
 	$f->appendChild($session->make_element('br'));
 #       <input name="c3_first_file" type="file" id="c3_first_file" />
-
-	if ($obj->get_file_path('proposed_' . $field->get_name))  #if a proposed file exists
-	{
-		$f->appendChild($session->html_phrase('proposed_new_file'));
-		$f->appendChild($session->get_repository->get_dataset('coversheet')->get_field('proposed_' . $field->get_name)->render_value($session, undef, undef, undef, $obj));
-		$f->appendChild($session->make_element('br'));
-
-	}
 
 	$f->appendChild($session->html_phrase('upload_file'));
         my $input = $session->make_element('input', type => 'file', id => $field->get_name . '_input', name => $field->get_name . '_input' );
