@@ -23,7 +23,7 @@ sub new
                 },
         ];
 
-	$self->{actions} = [qw/ update exit delete_frontfile delete_backfile approve_newpages /];
+	$self->{actions} = [qw/ update exit delete_frontfile delete_backfile /];
 
 	return $self;
 }
@@ -47,28 +47,6 @@ sub from
 	}
 
 	$self->EPrints::Plugin::Screen::from;
-}
-
-sub allow_approve_newpages
-{
-	my( $self ) = @_;
-
-        my $coversheet = $self->{processor}->{coversheet};
-        my $user = $self->{session}->current_user;
-        return 0 unless
-        (
-                $coversheet->can_approve($user, 'frontfile') and
-                $coversheet->can_approve($user, 'backfile')
-        );
-
-        return $self->allow( "coversheet/page/approve" );
-}
-
-sub action_approve_newpages
-{
-	my( $self ) = @_;
-
-	$self->{processor}->{screenid} = "Coversheet::ApproveNewPages";
 }
 
 sub allow_exit
@@ -180,13 +158,6 @@ sub save_file
 
 	my $session = $self->{session};
 	my $coversheet = $self->{processor}->{coversheet};
-
-	if ($coversheet->get_value('status') ne 'draft') #we don't just accept files in active or depricated items, they need to be approved by another person
-	{
-		$coversheet->set_value($fieldname . '_proposer_id', $session->current_user->get_id);
-		$coversheet->commit;
-		$fieldname = 'proposed_' . $fieldname;
-	}
 
 	my $fh = $session->get_query->upload( $cgi_param );
 	my $filename = $session->get_query->param( $cgi_param );
