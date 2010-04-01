@@ -68,7 +68,6 @@ sub allow_delete_frontfile
 	my( $self ) = @_;
 
 	if (
-		$self->{processor}->{coversheet}->get_value('status') eq 'draft' and
 		$self->{processor}->{coversheet}->get_page_type('frontfile') ne 'none'
 	)
 	{
@@ -89,7 +88,6 @@ sub allow_delete_backfile
 	my( $self ) = @_;
 
 	if (
-		$self->{processor}->{coversheet}->get_value('status') eq 'draft' and
 		$self->{processor}->{coversheet}->get_page_type('backfile') ne 'none'
 	)
 	{
@@ -247,40 +245,16 @@ sub render_file_buttons
 
 ##this could probably be done more cleverly...  We're replicating tests that we did in the allow_<func> subs.
 	my $button_count = 0;
-	if ($self->{processor}->{coversheet}->get_value('status') eq 'draft') #we can only delete pages in a draft coversheet
+	foreach my $fieldname (qw/ frontfile backfile /)
 	{
-		foreach my $fieldname (qw/ frontfile backfile /)
+		if ($self->{processor}->{coversheet}->get_page_type($fieldname) ne 'none')
 		{
-			if ($self->{processor}->{coversheet}->get_page_type($fieldname) ne 'none')
-			{
-				push @{$buttons{_order}}, "delete_$fieldname";
-				$buttons{"delete_$fieldname"} = $self->phrase( "delete_$fieldname" );
-				$button_count++;
-			}
-		}
-	}
-	else #otherwise we have to approve pages
-	{
-		my $new_page_exists = 0;
-		my $can_approve = 1;
-		foreach my $fieldname (qw/ frontfile backfile /)
-		{
-			if ($self->{processor}->{coversheet}->get_page_type('proposed_' . $fieldname) ne 'none')
-			{
-				$new_page_exists = 1;
-				unless ($self->{processor}->{coversheet}->can_approve($self->{session}->current_user, $fieldname))
-				{
-					$can_approve = 0;
-				}
-			}
-		}
-		if ($new_page_exists and $can_approve)
-		{
-			push @{$buttons{_order}}, "approve_newpages";
-			$buttons{"approve_newpages"} = $self->phrase( "approve_newpages" );
+			push @{$buttons{_order}}, "delete_$fieldname";
+			$buttons{"delete_$fieldname"} = $self->phrase( "delete_$fieldname" );
 			$button_count++;
 		}
 	}
+
 	$frag->appendChild($self->{session}->render_action_buttons( %buttons )) if $button_count;
 	return $frag;
 
