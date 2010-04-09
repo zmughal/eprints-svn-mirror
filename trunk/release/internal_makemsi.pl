@@ -28,7 +28,7 @@ use File::Copy qw( cp );
 my( $source_path, $to, $package_version, $package_desc, $package_file, $package_ext ) = @ARGV;
 
 my $build_path = "$to/$package_file";
-File::Path::mkdir( $build_path );
+File::Path::mkpath( $build_path );
 
 my $build_root = $build_path;
 $build_root =~ s/^.*\///;
