@@ -8,9 +8,12 @@ internal_makemsi.pl - build a Win32 MSI package
 
 =head1 SYNOPSIS
 
-internal_makemsi.pl
+internal_makemsi.pl <source_path> <build_path> <version>
 
 =head1 DESCRIPTION
+
+Building:
+
 
 =cut
 
@@ -22,14 +25,15 @@ use Data::Dumper;
 use File::Path;
 use File::Copy qw( cp );
 
-my( $source_path, $build_path, $version ) = @ARGV;
+my( $source_path, $build_path, $package_version, $package_desc, $package_file, $package_ext ) = @ARGV;
 
 my $build_root = $build_path;
 $build_root =~ s/^.*\///;
 
 our $VERSION = '1';
-our $PRODUCT_VERSION = $version;
-our $PRODUCT_NAME = "EPrints $PRODUCT_VERSION Win32";
+our $PRODUCT_TITLE = "EPrints";
+our $PRODUCT_VERSION = $package_version;
+our $PRODUCT_NAME = "$PRODUCT_TITLE $PRODUCT_VERSION Win32";
 # The UUID for EPrints
 our $PRODUCT_ID = 'a1818622-91d2-4b2d-bbee-df3c1910ae26';
 # The UUID for all EPrints versions that can be upgraded by this package
@@ -53,7 +57,7 @@ my %r = (
 	"__GENERICPOD__" => readfile( $GENERIC_POD ),
 );
 
-for(qw( cfg lib cgi var tests perl_lib testdata ))
+for(qw( archives cfg lib cgi var tests perl_lib testdata ))
 {
 	installdir( $build_path, "$source_path/system/$_", %r );
 }
@@ -82,6 +86,17 @@ our $LICENSE_FILE_RTF = $LICENSE_FILE;
 $LICENSE_FILE_RTF =~ s/\.txt$/.rtf/;
 cp($LICENSE_FILE_RTF, "$build_path/license.rtf");
 
+{
+open(my $fh, ">", "$build_path/BUILD.txt") or die "$build_path/BUILD.txt: $!";
+print $fh <<EOB;
+Copy srvany.exe to build directory then:
+
+> candle eprints.wsx
+> light -ext WixUIExtension eprints.wixobj
+EOB
+close($fh);
+}
+
 my $doc = XML::LibXML::Document->new( '1.0', 'utf-8' );
 
 my $Wix = $doc->createElementNS( 'http://schemas.microsoft.com/wix/2006/wi', 'Wix' );
@@ -104,10 +119,23 @@ $Package->setAttribute( Keywords => 'Installer' );
 $Package->setAttribute( Description => "$PRODUCT_NAME Installer" );
 $Package->setAttribute( Comments => "Copyright $CYEAR $PRODUCT_MANUFACTURER" );
 $Package->setAttribute( Manufacturer => $PRODUCT_MANUFACTURER );
-$Package->setAttribute( InstallerVersion => 100 );
+$Package->setAttribute( InstallerVersion => 301 );
 $Package->setAttribute( Languages => 1033 );
 $Package->setAttribute( Compressed => 'yes' );
 $Package->setAttribute( SummaryCodepage => 1252 );
+
+{
+my $Condition = $doc->createElement( 'Condition' );
+$Product->appendChild( $Condition );
+$Condition->setAttribute( Message => 'Requires Windows 2000 or later' );
+$Condition->appendChild( $doc->createTextNode( 'VersionNT >= 500' ) );
+}
+{
+my $Condition = $doc->createElement( 'Condition' );
+$Product->appendChild( $Condition );
+$Condition->setAttribute( Message => 'Requires administrator user' );
+$Condition->appendChild( $doc->createTextNode( 'Privileged' ) );
+}
 
 my $Media = $doc->createElement( 'Media' );
 $Product->appendChild( $Media );
@@ -137,7 +165,7 @@ my $Feature = $doc->createElement( 'Feature' );
 $Product->appendChild( $Feature );
 $Feature->setAttribute( Id => 'Complete' );
 $Feature->setAttribute( Level => 1 );
-$Feature->setAttribute( Title => 'EPrints' );
+$Feature->setAttribute( Title => $PRODUCT_TITLE );
 $Feature->setAttribute( Description => $PRODUCT_NAME );
 $Feature->setAttribute( Display => 'expand' );
 
@@ -157,18 +185,126 @@ $UIRef->setAttribute( Id => 'WixUI_ErrorProgressText' );
 my $WixVariable = $doc->createElement( 'WixVariable' );
 $Product->appendChild( $WixVariable );
 $WixVariable->setAttribute( Id => 'WixUILicenseRtf' );
-$WixVariable->setAttribute( Value => "$build_root\\license.rtf" );
+$WixVariable->setAttribute( Value => ".\\license.rtf" );
 }
 
-parse_path( $build_path, $build_root, $INSTALLDIR );
+{
+my $Component = $doc->createElement( 'Component' );
+$INSTALLDIR->appendChild( $Component );
+$Component->setAttribute( Id => 'PerlLibComponent' );
+$Component->setAttribute( Guid => &uuid );
+$Component->setAttribute( SharedDllRefCount => 'no' );
+$Component->setAttribute( KeyPath => 'yes' );
+my $ComponentRef = $doc->createElement( 'ComponentRef' );
+$Feature->appendChild( $ComponentRef );
+$ComponentRef->setAttribute( Id => 'PerlLibComponent' );
+my $Environment = $doc->createElement( 'Environment' );
+$Component->appendChild( $Environment );
+$Environment->setAttribute( Id => 'PerlLibPath' );
+$Environment->setAttribute( Name => 'PERL5LIB' );
+$Environment->setAttribute( Action => 'set' );
+$Environment->setAttribute( System => 'yes' );
+$Environment->setAttribute( Part => 'last' );
+$Environment->setAttribute( Separator => ':' );
+$Environment->setAttribute( Value => '[INSTALLDIR]\\perl_lib' );
+}
 
 {
-open(my $fh, ">", "eprints.wsx") or die "Error writing to eprints.wsx: $!";
+my $Component = $doc->createElement( 'Component' );
+$INSTALLDIR->appendChild( $Component );
+$Component->setAttribute( Id => 'IndexerComponent' );
+$Component->setAttribute( Guid => &uuid );
+$Component->setAttribute( SharedDllRefCount => 'no' );
+$Component->setAttribute( KeyPath => 'no' );
+$Component->setAttribute( NeverOverwrite => 'no' );
+$Component->setAttribute( Permanent => 'no' );
+$Component->setAttribute( Transitive => 'no' );
+$Component->setAttribute( Win64 => 'no' );
+$Component->setAttribute( Location => 'either' );
+my $ComponentRef = $doc->createElement( 'ComponentRef' );
+$Feature->appendChild( $ComponentRef );
+$ComponentRef->setAttribute( Id => 'IndexerComponent' );
+my $File = $doc->createElement( 'File' );
+$Component->appendChild( $File );
+$File->setAttribute( Id => 'SrvAnyExe' );
+$File->setAttribute( Name => 'srvany.exe' );
+$File->setAttribute( Source => 'srvany.exe' );
+$File->setAttribute( KeyPath => 'yes' );
+my $ServiceInstall = $doc->createElement( 'ServiceInstall' );
+$Component->appendChild( $ServiceInstall );
+$ServiceInstall->setAttribute( Id => 'IndexerInstall' );
+$ServiceInstall->setAttribute( DisplayName => "$PRODUCT_TITLE Indexer" );
+$ServiceInstall->setAttribute( Description => "Background processes including indexing and thumbnail generation." );
+$ServiceInstall->setAttribute( ErrorControl => 'normal' );
+$ServiceInstall->setAttribute( Interactive => 'no' );
+$ServiceInstall->setAttribute( Name => 'EPrintsIndexer' );
+$ServiceInstall->setAttribute( Start => 'auto' );
+$ServiceInstall->setAttribute( Type => 'ownProcess' );
+$ServiceInstall->setAttribute( Vital => 'yes' );
+my $ServiceControl = $doc->createElement( 'ServiceControl' );
+$Component->appendChild( $ServiceControl );
+$ServiceControl->setAttribute( Id => 'IndexerControl' );
+$ServiceControl->setAttribute( Name => 'EPrintsIndexer' );
+#$ServiceControl->setAttribute( Start => 'install' );
+$ServiceControl->setAttribute( Stop => 'uninstall' );
+$ServiceControl->setAttribute( Remove => 'uninstall' );
+my $RegistryKey = $doc->createElement( 'RegistryKey' );
+$Component->appendChild( $RegistryKey );
+$RegistryKey->setAttribute( Action => 'createAndRemoveOnUninstall' );
+$RegistryKey->setAttribute( Root => 'HKLM' );
+$RegistryKey->setAttribute( Key => 'SYSTEM\CurrentControlSet\services\EPrintsIndexer\Parameters' );
+{
+my $RegistryValue = $doc->createElement( 'RegistryValue' );
+$RegistryKey->appendChild( $RegistryValue );
+$RegistryValue->setAttribute( Name => 'AppDirectory' );
+$RegistryValue->setAttribute( Type => 'string' );
+$RegistryValue->setAttribute( Value => '[INSTALLDIR]' );
+}
+{
+my $RegistryValue = $doc->createElement( 'RegistryValue' );
+$RegistryKey->appendChild( $RegistryValue );
+$RegistryValue->setAttribute( Name => 'Application' );
+$RegistryValue->setAttribute( Type => 'string' );
+$RegistryValue->setAttribute( Value => 'C:\Perl\bin\perl.exe' );
+}
+{
+my $RegistryValue = $doc->createElement( 'RegistryValue' );
+$RegistryKey->appendChild( $RegistryValue );
+$RegistryValue->setAttribute( Name => 'AppParameters' );
+$RegistryValue->setAttribute( Type => 'string' );
+$RegistryValue->setAttribute( Value => '[INSTALLDIR]bin\indexer --notdaemon start' );
+}
+}
+
+parse_path( $build_path, ".", $INSTALLDIR );
+
+{
+open(my $fh, ">", "$build_path/eprints.wsx") or die "Error writing to eprints.wsx: $!";
 print $fh $doc->toString( 1 );
 close($fh);
 
-unlink("eprints-$PRODUCT_VERSION.zip");
-system("zip", "-9", "-q", "-r", "eprints-$PRODUCT_VERSION.zip", $build_path);
+my $package = "${package_file}${package_ext}";
+unlink($package);
+system("zip", "-9", "-q", "-r", $package, $build_path);
+if( $package_ext eq ".zip" )
+{
+	0 == system("zip", "-9", "-q", "-r", $package, $build_path)
+		or die("Couldn't zip up $package");
+}
+elsif( $package_ext eq ".tar.bz2" )
+{
+	0 == system("tar", "cjf", $package, $build_path)
+		or die("Couldn't tar.bzip up $package");
+}
+elsif( $package_ext eq ".tar.gz" )
+{
+	0 = system("tar", "czf", $package, $build_path)
+		or die("Couldn't tar.gz up $package");
+}
+else
+{
+	die "Dunno what to do with file extension $package_ext";
+}
 }
 
 sub uuid
@@ -223,7 +359,19 @@ sub parse_path
 		my $CreateFolder = $doc->createElement( 'CreateFolder' );
 		$Component->appendChild( $CreateFolder );
 		$Component->setAttribute( SharedDllRefCount => 'no' );
-		$Component->setAttribute( KeyPath => 'yes' );
+		if( @dirs )
+		{
+			$Component->setAttribute( KeyPath => 'yes' );
+		}
+		else
+		{
+			$Component->setAttribute( KeyPath => 'no' );
+			$Component->setAttribute( NeverOverwrite => 'no' );
+			$Component->setAttribute( Permanent => 'no' );
+			$Component->setAttribute( Transitive => 'no' );
+			$Component->setAttribute( Win64 => 'no' );
+			$Component->setAttribute( Location => 'either' );
+		}
 	}
 
 	for(@dirs)
