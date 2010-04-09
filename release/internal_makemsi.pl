@@ -89,22 +89,14 @@ print $fh Data::Dumper->Dump( [$SystemSettings], [qw( $EPrints::SystemSettings::
 close($fh);
 }
 
-cp($LICENSE_FILE, "$build_path/COPYING");
 our $LICENSE_FILE_RTF = $LICENSE_FILE;
 $LICENSE_FILE_RTF =~ s/\.txt$/.rtf/;
 cp($LICENSE_FILE_RTF, "$build_path/license.rtf");
-
+for(qw( AUTHORS ))
 {
-open(my $fh, ">", "$build_path/BUILD.txt") or die "$build_path/BUILD.txt: $!";
-binmode($fh, ":crlf");
-print $fh <<EOB;
-Copy srvany.exe to build directory then:
-
-> candle eprints.wsx
-> light -ext WixUIExtension eprints.wixobj
-EOB
-close($fh);
+	installfile("$source_path/system/$_", "$build_path/$_.txt");
 }
+installfile($LICENSE_FILE, "$build_path/COPYING.txt");
 
 my $doc = XML::LibXML::Document->new( '1.0', 'utf-8' );
 
@@ -291,7 +283,21 @@ parse_path( $build_path, ".", $INSTALLDIR );
 open(my $fh, ">", "$build_path/eprints.wsx") or die "Error writing to eprints.wsx: $!";
 print $fh $doc->toString( 1 );
 close($fh);
+}
 
+{
+open(my $fh, ">", "$build_path/BUILD.txt") or die "$build_path/BUILD.txt: $!";
+binmode($fh, ":crlf");
+print $fh <<EOB;
+Copy srvany.exe to build directory then:
+
+> candle eprints.wsx
+> light -ext WixUIExtension eprints.wixobj
+EOB
+close($fh);
+}
+
+{
 my $pwd = `pwd`;
 chomp($pwd);
 chdir($to);
