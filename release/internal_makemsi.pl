@@ -46,6 +46,11 @@ our $CYEAR = (gmtime())[5] + 1900;
 our $MEDIA_CAB = "eprints.cab";
 our $BASE_PATH = "C:/eprints";
 
+if( $PRODUCT_VERSION =~ /\-r(\d+)/ )
+{
+	$PRODUCT_VERSION = "1.0.$1";
+}
+
 # Construct the EPrints installation tree
 
 my $LICENSE_FILE = "$source_path/release/licenses/gpl.txt";
@@ -91,6 +96,7 @@ cp($LICENSE_FILE_RTF, "$build_path/license.rtf");
 
 {
 open(my $fh, ">", "$build_path/BUILD.txt") or die "$build_path/BUILD.txt: $!";
+binmode($fh, ":crlf");
 print $fh <<EOB;
 Copy srvany.exe to build directory then:
 
