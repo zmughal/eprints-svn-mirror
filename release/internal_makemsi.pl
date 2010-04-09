@@ -286,27 +286,34 @@ open(my $fh, ">", "$build_path/eprints.wsx") or die "Error writing to eprints.ws
 print $fh $doc->toString( 1 );
 close($fh);
 
+my $pwd = `pwd`;
+chomp($pwd);
+chdir($to);
+
 my $package = "${package_file}${package_ext}";
 unlink($package);
 if( $package_ext eq ".zip" )
 {
-	0 == system("zip", "-9", "-q", "-r", $package, $build_path)
+	0 == system("zip", "-9", "-q", "-r", $package, $package_file)
 		or die("Couldn't zip up $package");
 }
 elsif( $package_ext eq ".tar.bz2" )
 {
-	0 == system("tar", "cjf", $package, $build_path)
+	0 == system("tar", "cjf", $package, $package_file)
 		or die("Couldn't tar.bzip up $package");
 }
 elsif( $package_ext eq ".tar.gz" )
 {
-	0 == system("tar", "czf", $package, $build_path)
+	0 == system("tar", "czf", $package, $package_file)
 		or die("Couldn't tar.gz up $package");
 }
 else
 {
 	die "Dunno what to do with file extension $package_ext";
 }
+
+chdir($pwd);
+rename("$to/$package", $package);
 }
 
 File::Path::rmtree( $to );
