@@ -25,7 +25,10 @@ use Data::Dumper;
 use File::Path;
 use File::Copy qw( cp );
 
-my( $source_path, $build_path, $package_version, $package_desc, $package_file, $package_ext ) = @ARGV;
+my( $source_path, $to, $package_version, $package_desc, $package_file, $package_ext ) = @ARGV;
+
+my $build_path = "$to/$package_file";
+File::Path::mkdir( $build_path );
 
 my $build_root = $build_path;
 $build_root =~ s/^.*\///;
@@ -285,7 +288,6 @@ close($fh);
 
 my $package = "${package_file}${package_ext}";
 unlink($package);
-system("zip", "-9", "-q", "-r", $package, $build_path);
 if( $package_ext eq ".zip" )
 {
 	0 == system("zip", "-9", "-q", "-r", $package, $build_path)
@@ -306,6 +308,8 @@ else
 	die "Dunno what to do with file extension $package_ext";
 }
 }
+
+File::Path::rmtree( $to );
 
 sub uuid
 {
