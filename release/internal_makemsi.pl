@@ -300,7 +300,7 @@ elsif( $package_ext eq ".tar.bz2" )
 }
 elsif( $package_ext eq ".tar.gz" )
 {
-	0 = system("tar", "czf", $package, $build_path)
+	0 == system("tar", "czf", $package, $build_path)
 		or die("Couldn't tar.gz up $package");
 }
 else
