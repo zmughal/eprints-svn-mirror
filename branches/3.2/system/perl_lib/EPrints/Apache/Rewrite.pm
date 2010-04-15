@@ -255,6 +255,10 @@ sub handler
 	# REST
 	if( $uri =~ m! ^$urlpath/rest !x )
 	{
+		$r->handler( 'perl-script' );
+
+		$r->set_handlers( PerlMapToStorageHandler => sub { OK } );
+
 	 	$r->set_handlers(PerlResponseHandler => \&EPrints::Apache::REST::handler );
 		return OK;
 	}
@@ -444,7 +448,7 @@ sub handler
 		 	$r->set_handlers(PerlResponseHandler => \&EPrints::Apache::Storage::handler );
 
 			# log full-text hits
-			$r->push_handlers(PerlLogHandler => \&EPrints::Apache::LogHandler::document );
+			$r->push_handlers(PerlCleanupHandler => \&EPrints::Apache::LogHandler::document );
 		}
 		# OK, It's the EPrints abstract page (or something whacky like /23/fish)
 		else
@@ -466,7 +470,7 @@ sub handler
 				$r->set_handlers(PerlResponseHandler => [ 'EPrints::Apache::Template' ] );
 
 				# log abstract hits
-				$r->push_handlers(PerlLogHandler => \&EPrints::Apache::LogHandler::eprint );
+				$r->push_handlers(PerlCleanupHandler => \&EPrints::Apache::LogHandler::eprint );
 			}
 		}
 
@@ -475,14 +479,16 @@ sub handler
 
 	# apache 2 does not automatically look for index.html so we have to do it ourselves
 	my $localpath = $uri;
+	$localpath =~ s! ^$urlpath !!x;
 	if( $uri =~ m! /$ !x )
 	{
 		$localpath.="index.html";
 	}
 	$r->filename( $repository->get_conf( "htdocs_path" )."/".$lang.$localpath );
 
-	if( $uri =~ m! ^/view(.*) !x )
+	if( $uri =~ m! ^$urlpath/view(.*) !x )
 	{
+		$uri =~ s! ^$urlpath !!x;
 		# redirect /foo to /foo/ 
 		if( $uri eq "/view" || $uri =~ m! ^/view/[^/]+$ !x )
 		{

@@ -143,29 +143,25 @@ sub allow_action
 	return $self->can_be_viewed();
 }
 
+sub dataset
+{
+	my( $self ) = @_;
+
+	return $self->{processor}->{dataset};
+}
+
+sub dataobj
+{
+	my( $self ) = @_;
+
+	return $self->{processor}->{dataobj};
+}
+
 sub render_tab_title
 {
 	my( $self ) = @_;
 
 	return $self->html_phrase( "title" );
-}
-
-sub render_title
-{
-	my( $self ) = @_;
-
-	my $f = $self->{session}->make_doc_fragment;
-#	$f->appendChild( $self->html_phrase( "title" ) );
-#	$f->appendChild( $self->{session}->make_text( ": " ) );
-
-	my $screen = $self->get_view_screen();
-
-	my $title = $self->{processor}->{dataobj}->render_description();
-	my $link = $self->{session}->render_link( "?screen=$screen&dataset=".$self->{processor}->{dataset}->id."&dataobj=".$self->{processor}->{dataobj}->id );
-	$link->appendChild( $title );
-	$f->appendChild( $link );
-
-	return $f;
 }
 
 sub redirect_to_me_url
@@ -241,15 +237,7 @@ sub render_blister
 		{ 
 			$class="ep_blister_node_selected"; 
 		}
-		my $phrase;
-		if( $stage_id eq "commit" )
-		{
-			$phrase = $session->phrase( "Plugin/Screen/MetaField:commit" );
-		}
-		else
-		{
-			$phrase = $session->phrase( "metapage_title_".$stage_id );
-		}
+		my $phrase = $session->phrase( "Plugin/Screen/Workflow:" . $self->dataset->id . ":" . $stage_id ."_stage:title" );
 		my $button = $session->render_button(
 			name  => "_action_jump_$stage_id", 
 			value => $phrase,

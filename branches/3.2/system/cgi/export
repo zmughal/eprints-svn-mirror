@@ -54,6 +54,21 @@ if( !$plugin )
 	exit;
 }
 
+if( $plugin->param( "visible" ) eq "staff" )
+{
+	my $user = $repository->current_user;
+	if( !defined $user )
+	{
+		$repository->get_request->status( 403 );
+		exit;
+	}
+	if( $user->get_type ne "editor" && $user->get_type ne "admin" )
+	{
+		$repository->get_request->status( 403 );
+		exit;
+	}
+}
+
 my %arguments = %{$plugin->param( "arguments" )};
 # fetch the plugin arguments, if any
 foreach my $argname (keys %arguments)
@@ -66,7 +81,7 @@ foreach my $argname (keys %arguments)
 
 if( $path[0] =~ m/^\d+$/ && scalar @path == 1 )
 {
-	export_eprint( $repository, $plugin, \%arguments, $path[0] );
+	export_dataobj( $repository, $plugin, \%arguments, "eprint", $path[0] );
 }
 elsif( $path[0] eq "repository" && scalar @path == 1 )
 {
@@ -79,6 +94,10 @@ elsif( $path[0] eq "subject" && scalar @path == 2 )
 elsif( $path[0] =~ s/^x-// && scalar @path == 2 )
 {
 	export_rdf_resource( $repository, $plugin, \%arguments, $path[0], $path[1] );
+}
+elsif( scalar @path == 2 )
+{
+	export_dataobj( $repository, $plugin, \%arguments, @path[0,1] );
 }
 else
 {
@@ -107,34 +126,11 @@ sub export_rdf_repository
 		predicate => "foaf:primaryTopic",
 		   object => $repository_uri );
 	$graph->add_boilerplate_triples();	
-	$graph->add_trigger_triples( "repository" );
+	$graph->add_repository_triples();
 
 	$repository->send_http_header( "content_type"=>$plugin->param("mimetype") );
 	$plugin->initialise_fh( \*STDOUT );
 	print $plugin->output_graph( $graph );
-}
-
-sub export_eprint
-{
-	my( $repository, $plugin, $args, $eprint_id ) = @_;
-
-	if( !$plugin->can_accept( "dataobj/eprint" ) )
-	{
-		$repository->not_found;
-		exit;
-	}
-	$repository->send_http_header( "content_type"=>"text/plain" );
-	my $eprint = $repository->dataset( "archive" )->dataobj( $eprint_id );
-	if( !defined $eprint )
-	{
-		$repository->not_found;
-		return;
-	}
-
-	$repository->send_http_header( "content_type"=>$plugin->param("mimetype") );
-	$plugin->initialise_fh( \*STDOUT );
-
-	print $eprint->export( $plugin->get_subtype, %{$args} );
 }
 
 sub export_subject
@@ -211,6 +207,70 @@ sub export_rdf_resource
 	$plugin->initialise_fh( \*STDOUT );
 	
 	print $plugin->output_graph( $graph, %{$args} );
+}
+
+sub export_dataobj
+{
+	my( $repository, $plugin, $args, $datasetid, $id ) = @_;
+
+	my $dataset = $repository->dataset( $datasetid );
+	$repository->not_found( "No such dataset" ), exit if !defined $dataset;
+
+	if( !$plugin->can_accept( "dataobj/".$dataset->base_id ) )
+	{
+		$repository->not_found;
+		exit;
+	}
+
+	my $dataobj = $dataset->dataobj( $id );
+	$repository->not_found( "No such dataobj" ), exit if !defined $dataobj;
+
+	if( $dataobj->isa( "EPrints::DataObj::EPrint" ) )
+	{
+		$dataset = $dataobj->get_dataset;
+	}
+
+	my $user = $repository->current_user;
+
+	my $allowed = 0;
+
+	my $priv = "export";
+	if( $dataset->id ne $dataset->base_id )
+	{
+		$priv = join('/', $dataset->base_id, $dataset->id, $priv );
+	}
+	else
+	{
+		$priv = join('/', $dataset->base_id, $priv );
+	}
+
+	if( $repository->allow_anybody( $priv ) )
+	{
+		$allowed = 1;
+	}
+	elsif( defined $user )
+	{
+		if(
+			$user->allow( "$priv:owner", $dataobj ) ||
+			$user->allow( "$priv:editor", $dataobj )
+		  )
+		{
+			$allowed = 1;
+		}
+	}
+
+	if( !$allowed )
+	{
+		# 403 Forbidden
+		$repository->get_request->status( 403 );
+		exit;
+	}
+
+	$repository->not_found( "Can't export" ), exit if !$plugin->can_accept( "dataobj/".$dataset->base_id );
+
+	$repository->send_http_header( "content_type"=>$plugin->param("mimetype") );
+	$plugin->initialise_fh( \*STDOUT );
+	print $plugin->output_dataobj( $dataobj, %$args );
 }
 
 sub show_eprint_export_options

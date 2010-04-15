@@ -37,6 +37,15 @@ sub new
 
 	$self->cache_list_items();
 
+	if( !defined $self{screenid} )
+	{
+		$self{screenid} = "FirstTool";
+	}
+
+	# This loads the properties of what the screen is about,
+	# Rather than parameters for the action, if any.
+	$self->screen->properties_from;
+
 	return $self;
 }
 
@@ -97,9 +106,9 @@ sub cache_list_items
 		foreach my $action (keys %acc_conf)
 		{
 			next if $acc_conf{$action}->{disable};
-			foreach my $place (keys %{$acc_conf{appears}})
+			while(my( $place, $pos ) = each %{$acc_conf{$action}->{appears}})
 			{
-				$actions{$place}->{$action} = $acc_conf{appears}->{$place};
+				$actions{$place}->{$action} = $pos;
 			}
 		}
 		foreach my $place (keys %app_conf)
@@ -189,6 +198,55 @@ sub list_items
 	return @list;
 }
 
+=item $frag = $processor->render_item_list( $items, %opts )
+
+Renders a list of items as returned by L</list_items>.
+
+Options:
+
+	class - set the class used on the <ul>
+
+=cut
+
+sub render_item_list
+{
+	my( $self, $list, %opts ) = @_;
+
+	my $class = exists($opts{class}) ? $opts{class} : "ep_tm_key_tools";
+
+	my $xml = $self->{session}->xml;
+
+	my $ul = $xml->create_element( "ul", class => $class );
+
+	foreach my $opt (@$list)
+	{
+		my $screen = $opt->{screen};
+
+		my $li = $xml->create_element( "li" );
+		$ul->appendChild( $li );
+
+		my $link = $screen->render_action_link();
+		$li->appendChild( $link );
+	}
+
+	return $ul;
+}
+
+=item $frag = $processor->render_toolbar( %opts )
+
+Renders and returns a toolbar of any screens in the B<key_tools> or B<other_tools> action sets.
+
+=cut
+
+sub render_toolbar
+{
+	my( $self ) = @_;
+
+	return $self->render_item_list( [
+		$self->list_items( "key_tools" ),
+	] );
+}
+
 =item EPrints::ScreenProcessor->process( %opts )
 
 Process and send a response to a Web request.
@@ -199,21 +257,17 @@ sub process
 {
 	my( $class, %opts ) = @_;
 
+	if( !defined $opts{screenid} ) 
+	{
+		$opts{screenid} = $opts{session}->param( "screen" );
+	}
+	if( !defined $opts{screenid} ) 
+	{
+		$opts{screenid} = "FirstTool";
+	}
+
 	my $self = $class->new( %opts );
 
-	if( !defined $self->{screenid} ) 
-	{
-		$self->{screenid} = $self->{session}->param( "screen" );
-	}
-	if( !defined $self->{screenid} ) 
-	{
-		$self->{screenid} = "FirstTool";
-	}
-
-	# This loads the properties of what the screen is about,
-	# Rather than parameters for the action, if any.
-	$self->screen->properties_from; 
-	
 	$self->{action} = $self->{session}->get_action_button;
 	$self->{internal} = $self->{session}->get_internal_button;
 	delete $self->{action} if( $self->{action} eq "" );
@@ -314,6 +368,7 @@ sub process
 			title => $title, 
 			page => $page,
 			head => $links,
+			login_status => $self->render_toolbar,
 #			toolbar => $toolbar,
 		},
 		template => $self->{template},

@@ -29,8 +29,6 @@ sub can_be_viewed
 	return $self->who_filter;
 }
 
-sub who_filter { return 4; }
-
 sub render
 {
 	my( $self ) = @_;

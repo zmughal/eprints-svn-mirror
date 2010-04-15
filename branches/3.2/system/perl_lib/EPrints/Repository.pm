@@ -284,26 +284,6 @@ sub _add_live_http_paths
 	$config->{"rel_cgipath"} = $self->get_url(
 		path => "cgi",
 	);
-	$config->{"http_url"} ||= $self->get_url(
-		scheme => "http",
-		host => 1,
-		path => "static",
-	);
-	$config->{"http_cgiurl"} ||= $self->get_url(
-		scheme => "http",
-		host => 1,
-		path => "cgi",
-	);
-	$config->{"https_url"} ||= $self->get_url(
-		scheme => "https",
-		host => 1,
-		path => "static",
-	);
-	$config->{"https_cgiurl"} ||= $self->get_url(
-		scheme => "https",
-		host => 1,
-		path => "cgi",
-	);
 }
 
 ######################################################################
@@ -573,6 +553,11 @@ sub _add_http_paths
 
 	my $config = $self->{config};
 
+	if( $config->{securehost} )
+	{
+		$config->{secureport} ||= 443;
+	}
+
 	# Backwards-compatibility: http is fairly simple, https may go wrong
 	if( !defined($config->{"http_root"}) )
 	{
@@ -580,17 +565,47 @@ sub _add_http_paths
 		$config->{"http_root"} = $u->path;
 		$u = URI->new( $config->{"perl_url"} );
 		$config->{"http_cgiroot"} = $u->path;
-		if( $config->{"securehost"} )
-		{
-			$config->{"secureport"} ||= 443;
-			$config->{"https_root"} = $config->{"securepath"}
-				if !defined($config->{"https_root"});
-			$config->{"https_root"} = $config->{"http_root"}
-				if !defined($config->{"https_root"});
-			$config->{"https_cgiroot"} = $config->{"http_cgiroot"}
-				if !defined($config->{"https_cgiroot"});
-		}
 	}
+
+	$config->{"http_cgiroot"} ||= $config->{"http_root"}."/cgi";
+
+	if( $config->{"securehost"} )
+	{
+		$config->{"https_root"} = $config->{"securepath"}
+			if !defined($config->{"https_root"});
+		$config->{"https_root"} = $config->{"http_root"}
+			if !defined($config->{"https_root"});
+		$config->{"https_cgiroot"} = $config->{"http_cgiroot"}
+			if !defined($config->{"https_cgiroot"});
+	}
+
+	$config->{"http_url"} ||= $self->get_url(
+		scheme => ($config->{host} ? "http" : "https"),
+		host => 1,
+		path => "static",
+	);
+	$config->{"http_cgiurl"} ||= $self->get_url(
+		scheme => ($config->{host} ? "http" : "https"),
+		host => 1,
+		path => "cgi",
+	);
+	$config->{"https_url"} ||= $self->get_url(
+		scheme => "https",
+		host => 1,
+		path => "static",
+	);
+	$config->{"https_cgiurl"} ||= $self->get_url(
+		scheme => "https",
+		host => 1,
+		path => "cgi",
+	);
+
+	# old-style configuration names
+	$config->{"urlpath"} ||= $config->{"http_root"};
+	$config->{"base_url"} ||= $config->{"http_url"} . "/";
+	$config->{"perl_url"} ||= $config->{"http_cgiurl"};
+	$config->{"frontpage"} ||= $config->{"http_root"} . "/";
+	$config->{"userhome"} ||= $config->{"http_cgiroot"} . "/users/home";
 }
  
 ######################################################################
@@ -1448,28 +1463,31 @@ sub config($$@)
 	return $val;
 }
 
-######################################################################
-#
-# $repository->run_trigger( $event_id, %params )
-#
-# Run all the triggers with the given event id. Any return values are
-# set in the properties passed in in %params
-#
-######################################################################
+=begin InternalDoc
+
+=item $repository->run_trigger( TRIGGER_ID, %params )
+
+Run all the triggers with the given TRIGGER_ID. Any return values are
+set in the properties passed in in %params
+
+=end
+
+=cut
 
 sub run_trigger
 {
-	my( $self,$event_id, %params ) = @_;
+	my( $self, $type, %params ) = @_;
 
-	my $fns = $self->config( "triggers", $event_id );
+	my $fs = $self->config( "triggers", $type );
+	return if !defined $fs;
+
 	$params{repository} = $self;
 
-	return if !defined $fns;
-	foreach my $pri ( sort { $a <=> $b } keys %{$fns} )
+	foreach my $priority ( sort { $a <=> $b } keys %{$fs} )
 	{
-		foreach my $fn ( @{$fns->{$pri}} )
+		foreach my $f ( @{$fs->{$priority}} )
 		{
-			&{$fn}( %params );
+			&{$f}( %params );
 		}
 	}
 }
@@ -2090,14 +2108,6 @@ sub get_session_language
 		foreach my $browser_lang ( split( /, */, $accept_language ) )
 		{
 			$browser_lang =~ s/;.*$//;
-			push @prefs, $browser_lang;
-		}
-	
-		# Next choice is general browser setting (so fr-ca matches
-		#	'fr' rather than default to 'en')
-		foreach my $browser_lang ( split( /, */, $accept_language ) )
-		{
-			$browser_lang =~ s/-.*$//;
 			push @prefs, $browser_lang;
 		}
 	}
@@ -5300,6 +5310,7 @@ sub mail_administrator
 my $PUBLIC_PRIVS =
 {
 	"eprint_search" => 1,
+	"eprint/archive/export" => 1,
 };
 
 sub allow_anybody
