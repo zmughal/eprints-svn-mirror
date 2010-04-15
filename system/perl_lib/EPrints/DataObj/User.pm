@@ -1173,7 +1173,7 @@ my $PRIVMAP =
 
 	general => 
 	[
-		"user/view",
+		"user/view:owner",
 	],
 
 	"edit-own-record" => 
@@ -1202,26 +1202,25 @@ my $PRIVMAP =
 
 		"eprint/inbox/view",
 		"eprint/inbox/summary",
-		"eprint/inbox/staff/export",
-		"eprint/inbox/staff/details",
+		"eprint/inbox/export",
+		"eprint/inbox/details",
 		"eprint/inbox/history",
 
 		"eprint/buffer/view",
 		"eprint/buffer/summary",
-		"eprint/buffer/staff/export",
-		"eprint/buffer/staff/details",
+		"eprint/buffer/export",
+		"eprint/buffer/details",
 		"eprint/buffer/history",
 
 		"eprint/archive/view",
-		"eprint/archive/summary",
-		"eprint/archive/staff/export",
-		"eprint/archive/staff/details",
+		"eprint/archive/export",
+		"eprint/archive/details",
 		"eprint/archive/history",
 
 		"eprint/deletion/view",
 		"eprint/deletion/summary",
-		"eprint/deletion/staff/export",
-		"eprint/deletion/staff/details",
+		"eprint/deletion/export",
+		"eprint/deletion/details",
 		"eprint/deletion/history",
 
 		"staff/eprint_search",
@@ -1268,11 +1267,11 @@ my $PRIVMAP =
 		"import/view",
 		"import/edit",
 		"storage/manager",
-#		"event_queue/create", # create indexer events by-hand?
 		"event_queue/details",
 		"event_queue/edit",
 		"event_queue/view",
 		"event_queue/destroy",
+		"eprint/archive/edit", # BatchEdit
 	],
 
 	"toolbox" => 
@@ -1312,11 +1311,11 @@ my $PRIVMAP =
 		"user/history:owner",
 	
 		"eprint/inbox/view:owner",
+		"eprint/inbox/export:owner",
 		"eprint/inbox/summary:owner",
 		"eprint/inbox/deposit:owner",
 		"eprint/inbox/edit:owner",
 		"eprint/inbox/remove:owner",
-		"eprint/inbox/export:owner",
 		"eprint/inbox/details:owner",
 		"eprint/inbox/history:owner",
 		"eprint/inbox/messages:owner",
@@ -1328,9 +1327,9 @@ my $PRIVMAP =
 	
 	
 		"eprint/buffer/view:owner",
+		"eprint/buffer/export:owner",
 		"eprint/buffer/summary:owner",
 		"eprint/buffer/move_inbox:owner",
-		"eprint/buffer/export:owner",
 		"eprint/buffer/details:owner",
 		"eprint/buffer/history:owner",
 		"eprint/buffer/messages:owner",
@@ -1341,7 +1340,6 @@ my $PRIVMAP =
 	
 	
 		"eprint/archive/view:owner",
-		"eprint/archive/summary:owner",
 		"eprint/archive/export:owner",
 		"eprint/archive/details:owner",
 		"eprint/archive/history:owner",
@@ -1353,8 +1351,8 @@ my $PRIVMAP =
 	
 
 		"eprint/deletion/view:owner",
-		"eprint/deletion/summary:owner",
 		"eprint/deletion/export:owner",
+		"eprint/deletion/summary:owner",
 		"eprint/deletion/details:owner",
 		"eprint/deletion/history:owner",
 		"eprint/deletion/messages:owner",
@@ -1365,12 +1363,15 @@ my $PRIVMAP =
 
 	editor => 
 	[
+		"datasets",
+
 		"editorial_review",
 
 		"eprint/inbox/view:editor",
+		"eprint/inbox/export:editor",
 		"eprint/inbox/summary:editor",
-		"eprint/inbox/staff/export:editor",
-		"eprint/inbox/staff/details:editor",
+		"eprint/inbox/export:editor",
+		"eprint/inbox/details:editor",
 		"eprint/inbox/history:editor",
 		"eprint/inbox/messages:editor",
 
@@ -1379,14 +1380,15 @@ my $PRIVMAP =
 		"eprint/inbox/move_buffer:editor",
 		"eprint/inbox/use_as_template:editor",
 		"eprint/inbox/derive_version:editor",
-		"eprint/inbox/staff/edit:editor",
+		"eprint/inbox/edit:editor",
 		"eprint/inbox/takelock:editor",
 
 
 		"eprint/buffer/view:editor",
+		"eprint/buffer/export:editor",
 		"eprint/buffer/summary:editor",
-		"eprint/buffer/staff/export:editor",
-		"eprint/buffer/staff/details:editor",
+		"eprint/buffer/export:editor",
+		"eprint/buffer/details:editor",
 		"eprint/buffer/history:editor",
 		"eprint/buffer/messages:editor",
 		"eprint/buffer/issues:editor",
@@ -1397,14 +1399,13 @@ my $PRIVMAP =
 		"eprint/buffer/move_archive:editor",
 		"eprint/buffer/use_as_template:editor",
 		"eprint/buffer/derive_version:editor",
-		"eprint/buffer/staff/edit:editor",
+		"eprint/buffer/edit:editor",
 		"eprint/buffer/takelock:editor",
 
 
 		"eprint/archive/view:editor",
-		"eprint/archive/summary:editor",
-		"eprint/archive/staff/export:editor",
-		"eprint/archive/staff/details:editor",
+		"eprint/archive/export:editor",
+		"eprint/archive/details:editor",
 		"eprint/archive/history:editor",
 		"eprint/archive/messages:editor",
 		"eprint/archive/issues:editor",
@@ -1413,14 +1414,15 @@ my $PRIVMAP =
 		"eprint/archive/move_deletion:editor",
 		"eprint/archive/use_as_template:editor",
 		"eprint/archive/derive_version:editor",
-		"eprint/archive/staff/edit:editor",
+		"eprint/archive/edit:editor",
 		"eprint/archive/takelock:editor",
 
 
 		"eprint/deletion/view:editor",
+		"eprint/deletion/export:editor",
 		"eprint/deletion/summary:editor",
-		"eprint/deletion/staff/export:editor",
-		"eprint/deletion/staff/details:editor",
+		"eprint/deletion/export:editor",
+		"eprint/deletion/details:editor",
 		"eprint/deletion/history:editor",
 		"eprint/deletion/messages:editor",
 
@@ -1493,8 +1495,6 @@ sub allow
 
 	if( !$if_logged_in && ( $if_editor || $if_owner ) && !defined $item )
 	{
-		$self->{session}->get_repository->log(
-"\$user->allow( $priv ) called. It needed an item to resolve the permission, but none was passed. Assuming false, but this may indicate a bug." );
 		return 0;
 	}
 

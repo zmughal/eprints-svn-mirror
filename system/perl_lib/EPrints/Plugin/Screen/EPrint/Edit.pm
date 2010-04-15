@@ -23,9 +23,11 @@ sub new
 			place => "eprint_item_actions",
 			position => 200,
 		},
+		{
+			place => "eprint_review_actions",
+			position => 100,
+		},
 	];
-
-	$self->{staff} = 0;
 
 	return $self;
 }
@@ -190,16 +192,14 @@ sub screen_after_flow
 
 sub render
 {
-	my( $self, $staff_mode ) = @_;
-
-	$staff_mode = 0 if !defined $staff_mode;
+	my( $self ) = @_;
 
 	my $cur_stage_id = $self->workflow->get_stage_id;
 	my $stage = $self->workflow->get_stage( $cur_stage_id );
 
 	my $form = $self->render_form;
 
-	my $blister = $self->render_blister( $cur_stage_id, $staff_mode );
+	my $blister = $self->render_blister( $cur_stage_id );
 	$form->appendChild( $blister );
 
 	my $action_buttons = $stage->{action_buttons};
@@ -222,24 +222,35 @@ sub render_buttons
 {
 	my( $self ) = @_;
 
+	my $session = $self->{session};
+
 	my %buttons = ( _order=>[], _class=>"ep_form_button_bar" );
 
 	if( defined $self->workflow->get_prev_stage_id )
 	{
 		push @{$buttons{_order}}, "prev";
-		$buttons{prev} = 
-			$self->{session}->phrase( "lib/submissionform:action_prev" );
+		$buttons{prev} = $session->phrase( "lib/submissionform:action_prev" );
 	}
 
-	push @{$buttons{_order}}, "save";
-	$buttons{save} = 
-		$self->{session}->phrase( "lib/submissionform:action_save" );
+	my $eprint = $self->{processor}->{eprint};
+	if( $eprint->value( "eprint_status" ) eq "inbox" )
+	{
+		push @{$buttons{_order}}, "save";
+		$buttons{save} = $session->phrase( "lib/submissionform:action_save" );
+	}
+	else
+	{
+		push @{$buttons{_order}}, "save";
+		$buttons{save} = $session->phrase( "lib/submissionform:action_staff_save" );
+	}
+
+	push @{$buttons{_order}}, "stop";
+	$buttons{stop} = $session->phrase( "lib/submissionform:action_stop" );
 
 	push @{$buttons{_order}}, "next";
-	$buttons{next} = 
-		$self->{session}->phrase( "lib/submissionform:action_next" );
+	$buttons{next} = $session->phrase( "lib/submissionform:action_next" );
 
-	return $self->{session}->render_action_buttons( %buttons );
+	return $session->render_action_buttons( %buttons );
 }
 
 1;
