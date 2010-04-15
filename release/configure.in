@@ -136,15 +136,6 @@ AC_ARG_ENABLE(diskfree,
         fi
     ])
 
-DISABLE_GDOME="0"
-AC_ARG_ENABLE(gdome,
-    [  --disable-gdome         don't try to use the XML::GDOME module],
-    [
-        if test $enableval = no ; then
-            DISABLE_GDOME="1"
-        fi
-    ])
-
 DISABLE_LIBXML="0"
 AC_ARG_ENABLE(libxml,
     [  --disable-libxml        don't try to use the XML::LibXML module],
@@ -435,14 +426,6 @@ CHECK_PERL_MOD(XML::Parser)
 
 
 ENABLE_GDOME="0"
-if test $DISABLE_GDOME = "0"; then
-   TEST_PERL_MOD(GDOME_AVAILABLE, XML::GDOME)
-   if test $GDOME_AVAILABLE = "1"; then
-       ENABLE_GDOME="1"
-   else
-       ENABLE_GDOME="0"
-   fi
-fi
 
 ENABLE_LIBXML="0"
 if test $DISABLE_LIBXML = "0"; then
