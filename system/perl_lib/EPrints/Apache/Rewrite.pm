@@ -422,13 +422,6 @@ sub handler
 			my @relations = grep { length($_) } split /\./, $1;
 
 			my $filename = $uri;
-			foreach my $relation (@relations)
-			{
-				$relation = EPrints::Utils::make_relation( $relation );
-				$doc = $doc->get_related_objects( $relation )->[0];
-				return NOT_FOUND if !defined $doc;
-				$filename = $doc->get_main();
-			}
 
 			$r->pnotes( eprint => $eprint );
 			$r->pnotes( document => $doc );
@@ -447,8 +440,18 @@ sub handler
 
 		 	$r->set_handlers(PerlResponseHandler => \&EPrints::Apache::Storage::handler );
 
-			# log full-text hits
-			$r->push_handlers(PerlCleanupHandler => \&EPrints::Apache::LogHandler::document );
+			$r->push_handlers( PerlCleanupHandler => \&EPrints::Apache::LogHandler::document );
+
+			$repository->run_trigger( EPrints::Const::EP_TRIGGER_DOC_REWRITE,
+				request => $r,
+				eprint => $eprint,
+				document => $doc,
+				filename => $filename,
+				relations => \@relations,
+			);
+
+			# a trigger has set an error code
+			return $r->status if $r->status != 200;
 		}
 		# OK, It's the EPrints abstract page (or something whacky like /23/fish)
 		else
