@@ -48,6 +48,13 @@ $c->{coversheet}->{process_request} = sub
 		);
 	}
 
+	#if we can't get any pages, then there's no coversheet for this item.
+	my $pages;
+        if( $session->get_repository->can_call( "coversheet", "get_pages" ) )
+	{
+		$pages = $session->get_repository->call( [ "coversheet", "get_pages" ], $session, $eprint, $doc);
+	}
+	return unless defined $pages;
 
 	# check whether covered file exists
 	my $dir = $doc->coversheeted_docs_path();
@@ -96,12 +103,6 @@ $c->{coversheet}->{process_request} = sub
 
 
 	# generate covered file
-	my $pages;
-        if( $session->get_repository->can_call( "coversheet", "get_pages" ) )
-	{
-		$pages = $session->get_repository->call( [ "coversheet", "get_pages" ], $session, $eprint, $doc);
-	}
-	return unless defined $pages;
 
         my $plugin = $session->plugin( "Convert::AddCoversheet" );
         unless( defined $plugin )
@@ -139,6 +140,12 @@ $c->{coversheet}->{get_pages} = sub {
 			custom_order => "-apply_priority/-coversheetid",
 			dataset => $session->get_repository->get_dataset('coversheet'),
 			session => $session );
+#only use active coversheets
+	$searchexp->add_field(
+		$session->get_repository->get_dataset('coversheet')->get_field('status'),
+		'active',
+	);
+
 	my $list = $searchexp->perform_search;
 
 	my $coversheet;
