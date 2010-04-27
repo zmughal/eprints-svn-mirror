@@ -54,8 +54,7 @@ sub _read_components
 					xml_config=>$stage_node, 
 					dataobj=>$self->{item}, 
 					stage=>$self, 	
-					workflow=>$self->{workflow},
-					processor=>$self->{workflow}->{processor} ); 
+					workflow=>$self->{workflow} ); 
 
 			# Pull out the type
 
@@ -88,13 +87,19 @@ sub _read_components
 			
 			my $pluginid = "InputForm::Component::$type";
 
-			my $plugin = $self->{session}->plugin( $pluginid, %params );
-			if( !defined $plugin )
+			# Grab any values inside
+			my $class = $self->{session}->get_repository->get_plugin_class( $pluginid );
+			if( !defined $class )
 			{
-				$params{placeholding} = $type;
-				$plugin = $self->{session}->plugin( "InputForm::Component::PlaceHolder", %params );
+				print STDERR "Using placeholder for $type\n";
+				$class = $self->{session}->get_repository->get_plugin_class( "InputForm::Component::PlaceHolder" );
+				$params{placeholding}=$type;
 			}
-			push @{$self->{components}}, $plugin;
+			if( defined $class )
+			{
+				my $plugin = $class->new( %params );
+				push @{$self->{components}}, $plugin;
+			}
 		}
 		elsif( $name eq "title" )
 		{
