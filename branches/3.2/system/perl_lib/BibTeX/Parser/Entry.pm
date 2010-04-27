@@ -1,9 +1,8 @@
 package BibTeX::Parser::Entry;
+our $VERSION = '0.4';
 
 use warnings;
 use strict;
-
-our $VERSION = '0.3';
 
 use BibTeX::Parser::Author;
 
@@ -13,7 +12,7 @@ BibTeX::Entry - Contains a single entry of a BibTeX document.
 
 =head1 VERSION
 
-version 0.3.1
+version 0.4
 
 =cut
 
@@ -138,7 +137,7 @@ sub field {
 		return $self->{ lc( $field ) };
 	} else {
 		my ($self, $key, $value) = @_;
-		$self->{ lc( $key ) } = $value;
+		$self->{ lc( $key ) } = _sanitize_field($value);
 	}
 
 }
@@ -148,7 +147,8 @@ sub _handle_author_editor {
 	my $self = shift;
 	if (@_) {
 		if (@_ == 1) { #single string
-			my @names = split /\s+and\s+/i, $_[0];
+			# my @names = split /\s+and\s+/i, $_[0];
+			my @names = _split_author_field( $_[0] );
 			$self->{"_$type"} = [map {new BibTeX::Parser::Author $_} @names];
 			$self->field($type, join " and ", @{$self->{"_$type"}});
 		} else {
@@ -165,11 +165,47 @@ sub _handle_author_editor {
 		}
 	} else {
 		unless ( defined $self->{"_$type"} ) {
-			my @names = split /\s+and\s+/i, $self->{$type} || "";
+			#my @names = split /\s+and\s+/i, $self->{$type} || "";
+			my @names = _split_author_field( $self->{$type} || "" );
 			$self->{"_$type"} = [map {new BibTeX::Parser::Author $_} @names];
 		}
 		return @{$self->{"_$type"}};
 	}
+}
+
+# _split_author_field($field)
+#
+# Split an author field into different author names.
+# Handles quoted names ({name}).
+sub _split_author_field {
+    my $field = shift;
+
+    return () if !defined $field || $field eq '';
+
+    my @names;
+	my $name = '';
+	my $inbrace = 0;
+	for($field)
+	{
+		pos($_) = 0;
+		while(pos $_ < length $_)
+		{
+			/\G(\{)/cg && (($name .= $1), ++$inbrace, next);
+			/\G(\})/cg && (($name .= $1), --$inbrace, next);
+			$inbrace && /\G([^\{\}]+)/cg && (($name .= _nbsp($1)), next);
+			/\G([^\{\}]*?)\sand\s+/cig && (push(@names, $name.$1), $name='', next);
+			/\G([^\{\}]+)/cg && (($name .= $1), next); # last name
+		}
+	}
+	push @names, $name if length($name);
+	return @names;
+}
+
+sub _nbsp
+{
+	my( $str ) = @_;
+	$str =~ s/\s/\xa0/g;
+	return $str;
 }
 
 =head2 author([@authors])
@@ -225,6 +261,7 @@ sub has {
 }
 
 sub _sanitize_field {
+return shift;
 	my $value = shift;	
 	for ($value) {
 		tr/\{\}//d;
