@@ -225,6 +225,10 @@ our $INFO = {
 		index => 1,
 		datestamp => "datestamp",
 	},
+	coversheet => {
+                sqlname => "coversheet",
+                class => "EPrints::DataObj::Coversheet",
+        }
 };
 
 
