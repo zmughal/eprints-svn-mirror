@@ -8,13 +8,6 @@ $c->{odt_converter_exe} = $c->{base_path}."/bin/DocumentConverter.py";
 $c->{executables}->{python} = $c->{office_program_path}.'python';
 $c->{executables}->{pdftk} = "/usr/bin/pdftk";
 
-$EPrints::DataSet::INFO->{coversheet} =
-	{
-                sqlname => "coversheet",
-                class => "EPrints::DataObj::Coversheet",
-        };
-
-
 # Fields used for applying coversheets
 $c->{license_application_fields} = [ "type" ];
 
