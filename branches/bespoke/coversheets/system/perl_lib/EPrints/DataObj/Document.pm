@@ -511,7 +511,9 @@ sub remove
 	}
 
 	$self->remove_thumbnails;
+#Added by coversheet package
 	$self->remove_coversheeted_docs;
+#end of added by coversheet package
 
 	return( $success );
 }
@@ -1205,9 +1207,12 @@ sub commit
 	unless( !defined $self->{eprint} || $self->{eprint}->under_construction )
 	{
 		# cause a new new revision of the parent eprint.
+#modified by coversheet package
+#		$self->get_eprint->commit( 1 );
 		my $eprint = $self->get_eprint;
 		$eprint->{non_volatile_change} = 1; #force EPrint to update lastmod date
 		$eprint->commit( 1 );
+#end of modified by coversheet package
 	}
 	
 	return( $success );
@@ -1667,6 +1672,7 @@ sub thumbnail_plugin
 	return $def->{ "plugin" };
 }
 
+#Added by coversheet package
 sub coversheeted_docs_path
 {
 	my( $self ) = @_;
@@ -1690,8 +1696,7 @@ sub remove_coversheeted_docs
 
 	EPrints::Utils::rmtree( $self->coversheeted_docs_path );
 }
-
-
+#end of added by coversheet package
 
 sub thumbnail_path
 {

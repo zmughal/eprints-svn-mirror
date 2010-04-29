@@ -225,10 +225,12 @@ our $INFO = {
 		index => 1,
 		datestamp => "datestamp",
 	},
+#added by coversheet package
 	coversheet => {
                 sqlname => "coversheet",
                 class => "EPrints::DataObj::Coversheet",
-        }
+        },
+#end of added by coversheet package
 };
 
 
@@ -927,7 +929,10 @@ into SQL (not counters or cache which work a bit differently).
 
 sub get_sql_dataset_ids
 {
+#modified by coversheet package
+#	return( qw/ import metafield cachemap message loginticket eprint user document saved_search subject history access request / );
 	return( qw/ import metafield cachemap message loginticket eprint user document saved_search subject history access request coversheet / );
+#end of modified by coversheet package
 }
 
 ######################################################################
