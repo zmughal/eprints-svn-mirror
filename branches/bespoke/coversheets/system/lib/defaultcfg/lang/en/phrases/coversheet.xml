@@ -2,6 +2,9 @@
 <!DOCTYPE phrases SYSTEM "entities.dtd">
 <epp:phrases xmlns="http://www.w3.org/1999/xhtml" xmlns:epp="http://eprints.org/ep3/phrase" xmlns:epc="http://eprints.org/ep3/control">
 
+
+    <epp:phrase id="validate:encrypted_pdf">You have uploaded a PDF file that is encrypted.  Please consider uploading an unencrypted one.</epp:phrase>
+
 <epp:phrase id="Plugin/Screen/Coversheet/Deprecate:sure_deprecate">Are you sure you want to deprecate <epc:pin name="title"/>.  It will no longer be attached to items that are downloaded.</epp:phrase>
 <epp:phrase id="Plugin/Screen/Coversheet/Deprecate:title">Deprecate</epp:phrase>
 <epp:phrase id="lib/submissionform:action_deprecate">Deprecate</epp:phrase>
