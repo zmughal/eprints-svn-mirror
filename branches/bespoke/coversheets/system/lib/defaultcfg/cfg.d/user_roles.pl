@@ -63,4 +63,3 @@ $c->{user_roles}->{minuser} = [qw{
 #	"eprint/buffer/details:editor",
 #	"eprint/buffer/move_archive:editor",
 #];
-
