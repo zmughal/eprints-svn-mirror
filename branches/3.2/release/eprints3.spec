@@ -112,12 +112,14 @@ if [ "$(cat %{name}-%{version}-filelist)X" = "X" ] ; then
 	exit -1
 fi
 
+mkdir $RPM_BUILD_ROOT%{install_path}/cfg/{apache,apache_ssl}
+touch $RPM_BUILD_ROOT%{install_path}/cfg/{apache,apache_ssl}.conf
+
 # Strip directories from the file list (otherwise they get left behind on
 # erase)
 find $RPM_BUILD_ROOT%{install_path} -type d -print |
 	sed "s@^$RPM_BUILD_ROOT@@g" |
 	grep -v "^%{install_path}/var" |
-	grep -v "^%{install_path}/cfg" |
 	grep -v "^%{install_path}/archives" |
 	sed "s/^/\%dir /" >> %{name}-%{version}-filelist
 
@@ -135,9 +137,14 @@ rm -rf $RPM_BUILD_ROOT
 # var needs to be writable by eprints and apache
 %dir %attr(0775,%{user},%{user_group}) %{install_path}/var
 # cfg needs to be writable by generate_apacheconf
-%dir %attr(0755,%{user},%{user_group}) %{install_path}/cfg
+%attr(0755,%{user},%{user_group}) %{install_path}/cfg
+%attr(0755,%{user},%{user_group}) %{install_path}/cfg/cfg.d
 # %config %attr(-,%{user},%{user_group}) %{install_path}/var/auto-apache*.conf
 # %ghost %{install_path}/var/indexer.log*
+%ghost %{install_path}/cfg/apache.conf
+%ghost %{install_path}/cfg/apache_ssl.conf
+%ghost %{install_path}/cfg/apache
+%ghost %{install_path}/cfg/apache_ssl
 
 %pre
 /usr/sbin/groupadd %{user_group} 2>/dev/null || /bin/true
@@ -154,7 +161,7 @@ popd > /dev/null
 /sbin/chkconfig --del epindexer
 
 %postun
-if [ "$1" eq "0" ]; then
+if [ "$1" = 0 ]; then
 	/usr/sbin/userdel eprints || :
 	/usr/sbin/groupdel eprints || :
 fi
