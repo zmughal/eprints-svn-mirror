@@ -180,7 +180,9 @@ use EPrints::DataObj::Request;
 use EPrints::DataObj::Subject;
 use EPrints::DataObj::SavedSearch;
 use EPrints::DataObj::User;
+#Added by coversheet package
 use EPrints::DataObj::Coversheet;
+#End of added by conversheet package
 use EPrints::DataSet;
 use EPrints::Email;
 use EPrints::Extras;
