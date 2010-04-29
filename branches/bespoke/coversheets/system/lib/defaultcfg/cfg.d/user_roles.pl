@@ -64,15 +64,3 @@ $c->{user_roles}->{minuser} = [qw{
 #	"eprint/buffer/move_archive:editor",
 #];
 
-#new permissions for coversheet toolkit
-$c->{roles}->{"coversheet-editor"} = 
-[
-	"coversheet/write",
-	"coversheet/activate",
-	"coversheet/deprecate",
-	"coversheet/search",
-	"coversheet/view",
-	"coversheet/page/approve",
-];
-push @{$c->{user_roles}->{editor}}, 'coversheet-editor';
-push @{$c->{user_roles}->{admin}}, 'coversheet-editor';

@@ -1,4 +1,9 @@
 
+# Where the coversheets are stored:
+$c->{coversheets_path_suffix} = '/coversheets';
+$c->{coversheets_path} = $c->{archiveroot}."/cfg/static".$c->{coversheets_path_suffix};
+$c->{coversheets_url} = $c->{base_url}.$c->{coversheets_path_suffix};
+
 $c->{office_path} = "/opt/openoffice.org3/";
 $c->{office_program_path} = $c->{office_path}."program/";
 $c->{open_office_name} = "soffice.bin";
@@ -10,6 +15,19 @@ $c->{executables}->{pdftk} = "/usr/bin/pdftk";
 
 # Fields used for applying coversheets
 $c->{license_application_fields} = [ "type" ];
+
+
+#new permissions for coversheet toolkit
+$c->{roles}->{"coversheet-editor"} =
+[
+        "coversheet/write",
+        "coversheet/activate",
+        "coversheet/deprecate",
+        "coversheet/view",
+];
+push @{$c->{user_roles}->{editor}}, 'coversheet-editor';
+push @{$c->{user_roles}->{admin}}, 'coversheet-editor';
+
 
 
 
