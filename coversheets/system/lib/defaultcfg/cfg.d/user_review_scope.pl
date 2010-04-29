@@ -7,5 +7,3 @@ $c->{editor_limit_fields} =
 	"type",
 ];
 
-#backwards compatibility
-$c->{editpermfields} = $c->{editor_limit_fields};
