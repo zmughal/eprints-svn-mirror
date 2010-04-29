@@ -28,7 +28,8 @@ $c->{roles}->{"coversheet-editor"} =
 push @{$c->{user_roles}->{editor}}, 'coversheet-editor';
 push @{$c->{user_roles}->{admin}}, 'coversheet-editor';
 
-
+#backwards compatibility
+$c->{editpermfields} = $c->{editor_limit_fields};
 
 
 # called by Apache::Rewrite
