@@ -81,23 +81,20 @@ $c->{coversheet}->{process_request} = sub
 		$eprintmoddate =~ m/([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})/;
 		my $eprintmod = timelocal($6,$5,$4,$3,( $2 - 1 ),$1);
 
-#		my $coversheet = EPrints::DataObj::Coversheet->new($session, $doc->get_value('coversheet'));
-		#find the most recently modified coversheet (it may be the one that needs to be applied)
+		#find the most recently modified coversheet (it may be the one that needs to [or used to need to] be applied)
 		my $searchexp = EPrints::Search->new(
 			allow_blank => 1,
 			custom_order => "-lastmod",
 			dataset => $session->get_repository->get_dataset('coversheet'),
 			session => $session );
 		my $list = $searchexp->perform_search;
-###test this (most recent moddate will cause regenerations.
 
+		return unless $list->count > 0; #this should never happen, but belt and braces are always good. 
 
 		my $coversheet = EPrints::DataObj::Coversheet->new($session, $list->get_ids->[0]);
 		my $coversheetmoddate = $coversheet->get_value('lastmod');
 		$coversheetmoddate =~ m/([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})/;
 		my $coversheetmod = timelocal($6,$5,$4,$3,( $2 - 1 ),$1);
-
-		
 
 
 		#return the previously generated file if it's newer than both the eprint and the coversheet.
