@@ -1726,7 +1726,7 @@ sub add_stored_file
 ######################################################################
 =pod
 
-=item $file = $dataobj->get_stored_file( $filename )
+=item $file = $dataobj->stored_file( $filename )
 
 Get the file object for $filename.
 
@@ -1735,7 +1735,8 @@ Returns the file object or undef if the file doesn't exist.
 =cut
 ######################################################################
 
-sub get_stored_file
+sub get_stored_file { &stored_file }
+sub stored_file
 {
 	my( $self, $filename ) = @_;
 
@@ -1755,7 +1756,7 @@ sub get_stored_file
 
 =head2 Related Objects
 
-=item $dataobj->add_object_relations( $target, $has => $is [, $has => $is ] )
+=item $dataobj->add_dataobj_relations( $target, $has => $is [, $has => $is ] )
 
 Add a relation between this object and $target of type $has. If $is is defined will also add the reciprocal relationship $is from $target to this object. May be repeated to add multiple relationships.
 
@@ -1763,7 +1764,8 @@ You must commit $target after calling this method.
 
 =cut
 
-sub add_object_relations
+sub add_object_relations { &add_dataobj_relations }
+sub add_dataobj_relations
 {
 	my( $self, $target, %relations ) = @_;
 
@@ -1815,7 +1817,7 @@ sub _get_related_uris
 	return keys %haystack;
 }
 
-=item $bool = $dataobj->has_object_relations( $target, @types )
+=item $bool = $dataobj->has_dataobj_relations( $target, @types )
 
 Returns true if this object is related to $target by all @types.
 
@@ -1823,7 +1825,8 @@ If @types is empty will return true if any relationships exist.
 
 =cut
 
-sub has_object_relations
+sub has_object_relations { &has_dataobj_relations }
+sub has_dataobj_relations
 {
 	my( $self, $target, @required ) = @_;
 
@@ -1842,13 +1845,14 @@ sub has_object_relations
 	return 0;
 }
 
-=item $bool = $dataobj->has_related_objects( @types )
+=item $bool = $dataobj->has_related_dataobjs( @types )
 
-Returns true if get_related_objects() would return some objects, but without actually retrieving the related objects from the database.
+Returns true if related_dataobjs() would return some objects, but without actually retrieving the related objects from the database.
 
 =cut
 
-sub has_related_objects
+sub has_related_objects { &has_related_dataobjs }
+sub has_related_dataobjs
 {
 	my( $self, @required ) = @_;
 
@@ -1857,13 +1861,14 @@ sub has_related_objects
 	return scalar @uris > 0;
 }
 
-=item $dataobjs = $dataobj->get_related_objects( @types )
+=item $dataobjs = $dataobj->related_dataobjs( @types )
 
 Returns a list of objects related to this object by @types.
 
 =cut
 
-sub get_related_objects
+sub get_related_objects { &related_dataobjs }
+sub related_dataobjs
 {
 	my( $self, @required ) = @_;
 
@@ -1891,15 +1896,16 @@ sub get_related_objects
 	return \@matches;
 }
 
-=item $dataobj->remove_object_relations( $target [, $has => $is [, $has => $is ] )
+=item $dataobj->remove_dataobj_relations( $target [, $has => $is [, $has => $is ] )
 
 Remove relations between this object and $target. If $has => $is pairs are defined will only remove those relationships given.
 
-You must commit $target after calling this method.
+You must L</commit> this object and $target to write the changes.
 
 =cut
 
-sub remove_object_relations
+sub remove_object_relations { &remove_dataobj_relations }
+sub remove_dataobj_relations
 {
 	my( $self, $target, %relations ) = @_;
 
