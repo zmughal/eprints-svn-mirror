@@ -1,0 +1,52 @@
+######################################################################
+#
+#  Show the number of eprints currently in the repository
+#
+#  Used for remote monitoring of repository growth. eg. by 
+#  software.eprints.org
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints;
+
+
+use strict;
+
+my $eprints = EPrints->new;
+my $repo = $eprints->current_repository;
+exit( 0 ) unless( defined $repo );
+
+$repo->send_http_header( content_type=>"text/plain; charset=UTF-8" );
+
+my @ds_ids = $repo->get_sql_dataset_ids();
+push @ds_ids, qw/ inbox buffer deletion archive /;
+foreach my $ds_id ( sort @ds_ids )
+{
+	my $ds = $repo->dataset( $ds_id );
+	print $ds_id.": ".$ds->search->count()."\n";
+}
+print sprintf("version: %s (%s)\n",
+	$repo->config( "version_id" ),
+	$repo->config( "version" ) );
+
+# Indexer Status
+my $daemon = EPrints::Index::Daemon->new(
+		session => $repo,
+		logfile => EPrints::Index::logfile(),
+		noise => ($repo->{noise}||1),
+);
+
+my $status = "not-running";
+$status = "running" if $daemon->is_running();
+$status = "stalled" if $daemon->has_stalled();
+print "indexer: $status\n";
+
+exit;
