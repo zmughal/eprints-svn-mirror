@@ -110,6 +110,7 @@ my %r = (
 print "Inserting configure and install scripts...\n";
 move( "$install_from/release/configure", "$to/eprints/configure");
 chmod(0x755, "$to/eprints/configure");
+cp( "$install_from/release/Makefile", "$to/eprints/Makefile");
 cp( "$install_from/release/install.pl.in", "$to/eprints/install.pl.in");
 cp( "$install_from/release/df-check.pl", "$to/eprints/df-check.pl");
 cp( "$install_from/release/cgi-check.pl", "$to/eprints/cgi-check.pl");
