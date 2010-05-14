@@ -1,49 +1,40 @@
-package EPrints::Plugin::Screen::EPrint::UploadMethod::URL;
 
-use EPrints::Plugin::Screen::EPrint::UploadMethod;
+package EPrints::Plugin::InputForm::UploadMethod::fromurl;
 
-@ISA = qw( EPrints::Plugin::Screen::EPrint::UploadMethod );
+use EPrints;
+use EPrints::Plugin::InputForm::UploadMethod;
+
+@ISA = ( "EPrints::Plugin::InputForm::UploadMethod" );
 
 use strict;
 
-sub new
-{
-	my( $self, %params ) = @_;
-
-	return $self->SUPER::new(
-		appears => [
-			{ place => "upload_methods", position => 300 },
-		],
-		%params );
-}
-
-sub render_title
+sub render_tab_title
 {
 	my( $self ) = @_;
 
 	return $self->{session}->html_phrase( "Plugin/InputForm/Component/Upload:from_url" );
 }
 
-sub from
+sub update_from_form
 {
-	my( $self, $basename ) = @_;
+	my( $self, $processor ) = @_;
 
-	my $session = $self->{session};
-	my $processor = $self->{processor};
-	my $ffname = join('_', $basename, $self->get_id, "url");
-	my $eprint = $processor->{eprint};
+	my $doc_data = {
+		_parent => $self->{dataobj},
+		eprintid => $self->{dataobj}->get_id,
+		format=>"other"
+		};
 
-	my $url = Encode::decode_utf8( $session->param( $ffname ) );
+	my $repository = $self->{session}->get_repository;
 
-	my $document = $eprint->create_subdataobj( "documents", {
-		format => "other",
-	});
+	my $doc_ds = $self->{session}->get_repository->get_dataset( 'document' );
+	my $document = $doc_ds->create_object( $self->{session}, $doc_data );
 	if( !defined $document )
 	{
 		$processor->add_message( "error", $self->{session}->html_phrase( "Plugin/InputForm/Component/Upload:create_failed" ) );
 		return;
 	}
-	my $success = $document->upload_url( $url );
+	my $success = $document->upload_url( $self->{session}->param( $self->{prefix}."_first_file_fromurl" ) );
 	if( !$success )
 	{
 		$document->remove();
@@ -51,24 +42,24 @@ sub from
 		return;
 	}
 
-	$document->set_value( "format", $session->call( 'guess_doc_type', 
+	$document->set_value( "format", $repository->call( 'guess_doc_type', 
 		$self->{session},
-		$document->get_main ) );
+		$document->get_value( "main" ) ) );
 	$document->commit;
 
 	$processor->{notes}->{upload_plugin}->{to_unroll}->{$document->get_id} = 1;
 }
 
 
-sub render
+sub render_add_document
 {
-	my( $self, $basename ) = @_;
+	my( $self ) = @_;
 
 	my $f = $self->{session}->make_doc_fragment;
 
 	$f->appendChild( $self->{session}->html_phrase( "Plugin/InputForm/Component/Upload:new_from_url" ) );
 
-	my $ffname = join('_', $basename, $self->get_id, "url");
+	my $ffname = $self->{prefix}."_first_file_fromurl";	
 	my $file_button = $self->{session}->make_element( "input",
 		name => $ffname,
 		size => "30",
@@ -77,7 +68,7 @@ sub render
 	my $add_format_button = $self->{session}->render_button(
 		value => $self->{session}->phrase( "Plugin/InputForm/Component/Upload:add_format" ), 
 		class => "ep_form_internal_button",
-		name => "_internal_".$basename."_add_format_".$self->get_id );
+		name => "_internal_".$self->{prefix}."_add_format_".$self->get_id );
 	$f->appendChild( $file_button );
 	$f->appendChild( $self->{session}->make_text( " " ) );
 	$f->appendChild( $add_format_button );
@@ -85,4 +76,4 @@ sub render
 	return $f; 
 }
 
-1;
+	

@@ -16,6 +16,7 @@ package EPrints::Plugin::Storage::Local;
 
 use URI;
 use URI::Escape;
+use File::Basename;
 
 use EPrints::Plugin::Storage;
 
@@ -40,26 +41,23 @@ sub open_write
 {
 	my( $self, $fileobj ) = @_;
 
-	my( $path, $fn ) = $self->_filename( $fileobj );
+	my( $local_path, $out_file ) = $self->_filename( $fileobj );
 
-	# filename may contain directory components
-	my $filepath = "$path/$fn";
-	$filepath =~ s/[^\\\/]+$//;
+	my( $name, $path, $suffix ) = File::Basename::fileparse( $out_file );
 
-	EPrints::Platform::mkdir( $filepath );
+	EPrints::Platform::mkdir( $path );
 
-	my $fh;
-	unless( open($fh, ">", "$path/$fn") )
+	my $out_fh;
+	unless( open($out_fh, ">", $out_file) )
 	{
-		$self->{error} = "Unable to write to $path/$fn: $!";
+		$self->{error} = "Unable to write to $out_file: $!";
 		$self->{session}->get_repository->log( $self->{error} );
 		return 0;
 	}
-	binmode($fh);
+	binmode($out_fh);
 
-	$self->{_fh}->{$fileobj} = $fh;
-	$self->{_path}->{$fileobj} = $path;
-	$self->{_name}->{$fileobj} = $fn;
+	$self->{_fh}->{$fileobj} = $out_fh;
+	$self->{_name}->{$fileobj} = $out_file;
 
 	return 1;
 }
@@ -77,10 +75,9 @@ sub write
 	my $rc = syswrite($fh, $buffer);
 	if( !defined $rc || $rc != length($buffer) )
 	{
-		my $path = $self->{_path}->{$fileobj};
-		my $fn = $self->{_name}->{$fileobj};
-		unlink("$path/$fn");
-		$self->{error} = "Error writing to $path/$fn: $!";
+		my $out_file = $self->{_name}->{$fileobj};
+		unlink($out_file);
+		$self->{error} = "Error writing to $out_file: $!";
 		$self->{session}->get_repository->log( $self->{error} );
 		return 0;
 	}
@@ -92,85 +89,61 @@ sub close_write
 {
 	my( $self, $fileobj ) = @_;
 
-	delete $self->{_path}->{$fileobj};
+	delete $self->{_name}->{$fileobj};
 
 	my $fh = delete $self->{_fh}->{$fileobj};
 	close($fh);
 
-	return delete $self->{_name}->{$fileobj};
-}
-
-sub open_read
-{
-	my( $self, $fileobj, $sourceid, $f ) = @_;
-
-	my( $path, $fn ) = $self->_filename( $fileobj, $sourceid );
-
-	my $in_fh;
-	if( !open($in_fh, "<", "$path/$fn") )
-	{
-		$self->{error} = "Unable to read from $path/$fn: $!";
-		$self->{session}->get_repository->log( $self->{error} );
-		return undef;
-	}
-	binmode($in_fh);
-
-	$self->{_fh}->{$fileobj} = $in_fh;
-
-	return 1;
+	return $fileobj->get_value( "filename" );
 }
 
 sub retrieve
 {
 	my( $self, $fileobj, $sourceid, $f ) = @_;
 
-	return 0 if !$self->open_read( $fileobj, $sourceid, $f );
-	my( $path, $fn ) = $self->_filename( $fileobj, $sourceid );
+	my( $local_path, $in_file ) = $self->_filename( $fileobj );
 
-	my $fh = $self->{_fh}->{$fileobj};
+	my $in_fh;
+	unless( open($in_fh, "<", $in_file) )
+	{
+		$self->{error} = "Unable to read from $in_file: $!";
+		$self->{session}->get_repository->log( $self->{error} );
+		return undef;
+	}
 
 	my $rc = 1;
 
 	my $buffer;
-	while(sysread($fh,$buffer,65536))
+	while(sysread($in_fh,$buffer,4096))
 	{
 		$rc &&= &$f($buffer);
 		last unless $rc;
 	}
 
-	$self->close_read( $fileobj, $sourceid, $f );
+	close($in_fh);
 
 	return $rc;
-}
-
-sub close_read
-{
-	my( $self, $fileobj, $sourceid, $f ) = @_;
-
-	my $fh = delete $self->{_fh}->{$fileobj};
-	close($fh);
 }
 
 sub delete
 {
 	my( $self, $fileobj, $sourceid ) = @_;
 
-	my( $path, $fn ) = $self->_filename( $fileobj, $sourceid );
+	my( $local_path, $in_file ) = $self->_filename( $fileobj );
 
-	return 1 if !-e "$path/$fn";
+	return 1 unless -e $in_file;
 
-	return 0 if !unlink("$path/$fn");
-
-	my @parts = split /\//, $fn;
-	pop @parts;
+	return 0 unless unlink($in_file);
 
 	# remove empty leaf directories (e.g. document dir)
-	for(reverse 0..$#parts)
+	opendir(my $dh, $local_path) or return 1;
+	my @files = readdir($dh);
+	closedir($dh);
+
+	if( scalar( grep { !/^\.\.?$/ } @files) == 0 )
 	{
-		my $dir = join '/', $path, @parts[0..$_];
-		last if !rmdir($dir);
+		rmdir($local_path);
 	}
-	rmdir($path);
 
 	return 1;
 }
@@ -179,42 +152,37 @@ sub get_local_copy
 {
 	my( $self, $fileobj, $sourceid ) = @_;
 
-	my( $path, $fn ) = $self->_filename( $fileobj, $sourceid );
+	my( $local_path, $in_file ) = $self->_filename( $fileobj );
 
-	return -r "$path/$fn" ? "$path/$fn" : undef;
+	return -r $in_file ? $in_file : undef;
 }
 
 sub _filename
 {
-	my( $self, $fileobj, $filename ) = @_;
+	my( $self, $fileobj ) = @_;
 
 	my $parent = $fileobj->get_parent();
 	
 	my $local_path;
-
-	if( !defined $filename )
-	{
-		$filename = $fileobj->get_value( "filename" );
-		$filename = escape_filename( $filename );
-	}
+	my $filename = $fileobj->get_value( "filename" );
 
 	my $in_file;
 
 	if( $parent->isa( "EPrints::DataObj::Document" ) )
 	{
 		$local_path = $parent->local_path;
-		$in_file = $filename;
+		$in_file = "$local_path/$filename";
 	}
 	elsif( $parent->isa( "EPrints::DataObj::History" ) )
 	{
 		$local_path = $parent->get_parent->local_path."/revisions";
 		$filename = $parent->get_value( "revision" ) . ".xml";
-		$in_file = $filename;
+		$in_file = "$local_path/$filename";
 	}
 	elsif( $parent->isa( "EPrints::DataObj::EPrint" ) )
 	{
 		$local_path = $parent->local_path;
-		$in_file = $filename;
+		$in_file = "$local_path/$filename";
 	}
 	else
 	{
@@ -222,18 +190,6 @@ sub _filename
 	}
 
 	return( $local_path, $in_file );
-}
-
-sub escape_filename
-{
-	my( $filename ) = @_;
-
-	# $filename is UTF-8
-	$filename =~ s# /\.+ #/_#xg; # don't allow hiddens
-	$filename =~ s# //+ #/#xg;
-	$filename =~ s# ([:;'"\\=]) #sprintf("=%04x", ord($1))#xeg;
-
-	return $filename;
 }
 
 =back

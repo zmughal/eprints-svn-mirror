@@ -3035,21 +3035,12 @@ Each file inside this archive will be created as an <b>individual</b> document i
 	<epp:phrase id="Plugin/InputForm/Component/Upload:from_file">File</epp:phrase>
 	<epp:phrase id="Plugin/InputForm/Component/Upload:from_zip">Zip File</epp:phrase>
 	<epp:phrase id="Plugin/InputForm/Component/Upload:from_targz">.tar.gz File</epp:phrase>
-	<epp:phrase id="Plugin/InputForm/Component/Upload:from_compressed">Archive (e.g. zip)</epp:phrase>
 	<epp:phrase id="Plugin/InputForm/Component/Upload:from_url">From URL</epp:phrase>
 
 	<epp:phrase id="Plugin/InputForm/Component/Upload:new_document">New document: </epp:phrase>
 	<epp:phrase id="Plugin/InputForm/Component/Upload:new_from_zip">New document (from ZIP file): </epp:phrase>
-	<epp:phrase id="Plugin/InputForm/Component/Upload:new_from_compressed">New document(s) (from Archive): </epp:phrase>
 	<epp:phrase id="Plugin/InputForm/Component/Upload:new_from_targz">New document (from .tar.gz file): </epp:phrase>
 	<epp:phrase id="Plugin/InputForm/Component/Upload:new_from_url">Capture from URL: </epp:phrase>
-
-	<epp:phrase id="Plugin/InputForm/UploadMethod/xcompressed:extract_type">Extraction Result: </epp:phrase>
-	<epp:phrase id="Plugin/InputForm/UploadMethod/xcompressed:single">Single Document (e.g. a web page)</epp:phrase>
-	<epp:phrase id="Plugin/InputForm/UploadMethod/xcompressed:multiple">Multi-Document (e.g. a collection)</epp:phrase>
-	<epp:phrase id="Plugin/InputForm/UploadMethod/xcompressed:no_plugin">The uploaded file type is not supported by this repository.</epp:phrase>
-	<epp:phrase id="Plugin/InputForm/UploadMethod/xcompressed:failed">Upload Failed, could not uncompress uploaded file.</epp:phrase>
-	
 
 	<!-- errors -->
 	<epp:phrase id="Plugin/InputForm/Component/Upload:create_failed">Document creation failed.</epp:phrase>
@@ -3768,17 +3759,5 @@ Each file inside this archive will be created as an <b>individual</b> document i
 
 	<epp:phrase id="Plugin/Screen/Workflow:event_queue:core_stage:title" ref="metapage_title_core" />
 	<epp:phrase id="Plugin/Screen/Workflow:event_queue:commit_stage:title" ref="Plugin/Screen/Workflow/Commit:title" />
-
-	<epp:phrase id="Plugin/Screen/EPrint/UploadMethod/OpenXML:title">OpenXML</epp:phrase>
-	<epp:phrase id="Plugin/Screen/EPrint/UploadMethod/OpenXML:flag:metadata">Extract metadata</epp:phrase>
-	<epp:phrase id="Plugin/Screen/EPrint/UploadMethod/OpenXML:flag:media">Extract generated media (images etc.)</epp:phrase>
-	<epp:phrase id="Plugin/Screen/EPrint/UploadMethod/OpenXML:flag:bibliography">Extract bibliography</epp:phrase>
-	<epp:phrase id="Plugin/Screen/EPrint/UploadMethod/OpenXML:unsupported_format">The uploaded file was not recognised.</epp:phrase>
-
-	<epp:phrase id="Plugin/Screen/EPrint/UploadMethod/Tex:title">(La)TeX</epp:phrase>
-	<epp:phrase id="Plugin/Screen/EPrint/UploadMethod/Tex:flag:media">Extract generated PDF</epp:phrase>
-	<epp:phrase id="Plugin/Screen/EPrint/UploadMethod/Tex:flag:bibliography">Extract bibliography</epp:phrase>
-
-	<epp:phrase id="Plugin/Screen/EPrint/UploadMethod/Expand:flag:explode">Expand archive into multiple documents containing one file each</epp:phrase>
 
 </epp:phrases>
