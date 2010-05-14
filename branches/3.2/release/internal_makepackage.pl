@@ -61,6 +61,8 @@ Print the full manual page and then exit.
 use Cwd;
 use Getopt::Long;
 use Pod::Usage;
+use File::Path;
+use File::Copy qw( cp move );
 use strict;
 
 my( $opt_license, $opt_license_summary, $opt_copyright_summary, $opt_help, $opt_man );
@@ -94,7 +96,7 @@ print "Building configure files\n";
 cmd("cd $install_from/release; ./autogen.sh" );
 
 print "Inserting license...\n";
-cmd("cp $LICENSE_FILE $to/eprints/COPYING");
+cp( $LICENSE_FILE, "$to/eprints/COPYING" );
 
 my %r = (
 	"__VERSION__"=>$package_version,
@@ -106,20 +108,20 @@ my %r = (
 );
 
 print "Inserting configure and install scripts...\n";
-cmd("cp $install_from/release/configure $to/eprints/configure");
-cmd("cp $install_from/release/install.pl.in $to/eprints/install.pl.in");
-cmd("cp $install_from/release/df-check.pl $to/eprints/df-check.pl");
-cmd("cp $install_from/release/cgi-check.pl $to/eprints/cgi-check.pl");
-cmd("cp $install_from/release/perlmodules.pl $to/eprints/perlmodules.pl");
-cmd("cp $install_from/release/Makefile $to/eprints/Makefile");
+cp( "$install_from/release/configure", "$to/eprints/configure");
+cp( "$install_from/release/install.pl.in", "$to/eprints/install.pl.in");
+cp( "$install_from/release/df-check.pl", "$to/eprints/df-check.pl");
+cp( "$install_from/release/cgi-check.pl", "$to/eprints/cgi-check.pl");
+cp( "$install_from/release/perlmodules.pl", "$to/eprints/perlmodules.pl");
+cp( "$install_from/release/Makefile", "$to/eprints/Makefile");
 copyfile("$install_from/release/eprints3.spec","$to/eprints/eprints3.spec", \%r);
-cmd("cp $install_from/release/rpmpatch.sh $to/eprints/rpmpatch.sh");
+cp( "$install_from/release/rpmpatch.sh", "$to/eprints/rpmpatch.sh");
 
 print "Inserting top level text files...\n";
-cmd("cp $install_from/system/CHANGELOG $to/eprints/CHANGELOG");
-cmd("cp $install_from/system/README $to/eprints/README");
-cmd("cp $install_from/system/AUTHORS $to/eprints/AUTHORS");
-cmd("cp $install_from/system/NEWS $to/eprints/NEWS");
+cp( "$install_from/system/CHANGELOG", "$to/eprints/CHANGELOG");
+cp( "$install_from/system/README", "$to/eprints/README");
+cp( "$install_from/system/AUTHORS", "$to/eprints/AUTHORS");
+cp( "$install_from/system/NEWS", "$to/eprints/NEWS");
 
 copydir( "$install_from/system/bin", "$to/eprints/bin", \%r );
 copydir( "$install_from/system/cfg", "$to/eprints/cfg", \%r );
@@ -133,7 +135,7 @@ copydir( "$install_from/system/testdata", "$to/eprints/testdata", \%r );
 
 if( -e "$to/eprints/perl_lib/EPrints/SystemSettings.pm" )
 {
-	cmd("rm $to/eprints/perl_lib/EPrints/SystemSettings.pm");
+	unlink("$to/eprints/perl_lib/EPrints/SystemSettings.pm");
 }
 
 # documentation
@@ -146,31 +148,41 @@ print FILEOUT $package_version."\n";
 print FILEOUT $package_desc."\n";
 close(FILEOUT);
 
-cmd("chmod -R g-w $to/eprints")==0 or die("Couldn't change permissions on eprints dir.\n");
+if( $^O ne "MSWin32" )
+{
+	cmd("chmod -R g-w $to/eprints")==0 or die("Couldn't change permissions on eprints dir.\n");
+}
 
-cmd("mv $to/eprints $to/$package_file")==0 or die("Couldn't move eprints dir to $to/$package_file.\n");
+move( "$to/eprints", "$to/$package_file" ) or die("Couldn't move eprints dir to $to/$package_file.\n");
 
 my $packagedfile = $package_file.$package_ext;
-if( -e $packagedfile ) { cmd( "rm $packagedfile" ); }
+if( -e $packagedfile )
+{
+	unlink( $packagedfile );
+}
+
+my $cwd = getcwd();
+chdir($to);
 if( $package_ext eq ".zip" )
 {
-	0 == cmd("cd $to; zip -q -9 -r ../$packagedfile $package_file")
+	0 == cmd("zip -q -9 -r ../$packagedfile $package_file")
 		or die("Couldn't zip up $to/$package_file");
 }
 elsif( $package_ext eq ".tar.bz2" )
 {
-	0 == cmd("cd $to; tar cjf ../$packagedfile $package_file")
+	0 == cmd("tar cjf ../$packagedfile $package_file")
 		or die("Couldn't tar.bzip up $to/$package_file");
 }
 elsif( $package_ext eq ".tar.gz" )
 {
-	0 == cmd("cd $to; tar czf ../$packagedfile $package_file")
+	0 == cmd("tar czf ../$packagedfile $package_file")
 		or die("Couldn't tar.gz up $to/$package_file");
 }
 else
 {
 	die "Dunno what to do with file extension $package_ext";
 }
+chdir($cwd);
 
 
 print "Removing: $to\n";
@@ -215,8 +227,7 @@ sub copyfile
 
 	if( !$textfile )
 	{
-		my $cmd = "cp $from $to";
-		`$cmd`;
+		cp( $from, $to );
 		return;
 	}	
 
@@ -310,7 +321,7 @@ sub erase_dir
 
 	if (-d $dirname )
 	{
-		cmd( "/bin/rm -rf ".$dirname ) == 0 or 
+		rmtree( $dirname ) or
 			die "Couldn't remove ".$dirname." dir.\n";
 	}
 }
