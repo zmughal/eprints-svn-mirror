@@ -27,7 +27,7 @@ use File::Path;
 use File::Copy qw( cp );
 use Pod::Usage;
 
-pod2usage( 2 ) if @ARGV != 6;
+pod2usage( 2 ) if @ARGV < 6;
 
 my( $source_path, $to, $package_version, $package_desc, $package_file, $package_ext ) = @ARGV;
 
