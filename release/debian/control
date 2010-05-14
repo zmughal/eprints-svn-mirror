@@ -1,0 +1,18 @@
+Source: eprints
+Section: web
+Priority: extra
+Maintainer: David Tarrant <dct05r@ecs.soton.ac.uk>
+Build-Depends: debhelper (>= 5), autotools-dev, perl, libc6, libncurses5, libselinux1, libsepol1, apache2-mpm-prefork, libapache2-mod-perl2, libxml-libxml-perl, libunicode-string-perl, libterm-readkey-perl, libmime-lite-perl, libdbd-mysql-perl, libxml-parser-perl, libxml2-dev, gcc (>= 4), gzip (>= 1), tar (>=1), unzip, make (>= 2), lynx, wget, ncftp, ftp, gs, xpdf, antiword, elinks, pdftk, tetex-bin, psutils, imagemagick 
+Standards-Version: 3.7.2
+
+Package: eprints
+Architecture: all
+Depends: perl, libncurses5, libselinux1, libsepol1, apache2-mpm-prefork, libapache2-mod-perl2, libxml-libxml-perl, libunicode-string-perl, libterm-readkey-perl, libmime-lite-perl, libdbd-mysql-perl, libxml-parser-perl, libxml2-dev, lynx, wget, gs, xpdf, antiword, pdftk, tetex-bin, psutils, imagemagick, adduser, tar (>=1), gzip (>= 1), mysql-server, mysql-client
+Description: Content Management System for Information Archiving
+ EPrints is a web-based content management system. It allows a large
+ number of contributors to share their digital objects/documents with
+ others. Contributors provide descriptive data (metadata) which is
+ dependent on the type of object being deposited (presentations, articles, books etc.).
+ Before being published objects must be accepted by an editor. Users can
+ access published objects through web-page listings, searches, email
+ alerts or via integration with other systems.
