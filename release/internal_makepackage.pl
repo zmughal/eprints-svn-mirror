@@ -108,14 +108,12 @@ my %r = (
 );
 
 print "Inserting configure and install scripts...\n";
-cp( "$install_from/release/configure", "$to/eprints/configure");
+move( "$install_from/release/configure", "$to/eprints/configure");
+chmod(0x755, "$to/eprints/configure");
 cp( "$install_from/release/install.pl.in", "$to/eprints/install.pl.in");
 cp( "$install_from/release/df-check.pl", "$to/eprints/df-check.pl");
 cp( "$install_from/release/cgi-check.pl", "$to/eprints/cgi-check.pl");
-cp( "$install_from/release/perlmodules.pl", "$to/eprints/perlmodules.pl");
-cp( "$install_from/release/Makefile", "$to/eprints/Makefile");
 copyfile("$install_from/release/eprints3.spec","$to/eprints/eprints3.spec", \%r);
-cp( "$install_from/release/rpmpatch.sh", "$to/eprints/rpmpatch.sh");
 
 print "Inserting top level text files...\n";
 cp( "$install_from/system/CHANGELOG", "$to/eprints/CHANGELOG");
@@ -228,6 +226,7 @@ sub copyfile
 	if( !$textfile )
 	{
 		cp( $from, $to );
+		chmod(0x755, $to) if -x $from;
 		return;
 	}	
 
@@ -243,6 +242,8 @@ sub copyfile
 	open OUT, ">$to" or die "Unable to open output file.\n";
 	print OUT join( "", @{$data} );
 	close OUT;
+
+	chmod(0x755, $to) if -x $from;
 }
 
 # If __COPYRIGHT__ and __LICENSE__ exist in a file strip everything between
