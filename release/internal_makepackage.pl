@@ -62,7 +62,7 @@ use Cwd;
 use Getopt::Long;
 use Pod::Usage;
 use File::Path;
-use File::Copy qw( cp );
+use File::Copy qw( cp move );
 use strict;
 
 my( $opt_license, $opt_license_summary, $opt_copyright_summary, $opt_help, $opt_man );
