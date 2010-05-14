@@ -449,7 +449,7 @@ sub installfile
 	}
 	else
 	{
-		cp( $target, $source );
+		cp( $source, $target );
 	}
 }
 
