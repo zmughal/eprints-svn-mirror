@@ -8,7 +8,7 @@ internal_makemsi.pl - build a Win32 MSI package
 
 =head1 SYNOPSIS
 
-internal_makemsi.pl <source_path> <build_path> <version>
+internal_makemsi.pl source_path to package_version package_desc package_file package_ext
 
 =head1 DESCRIPTION
 
@@ -17,6 +17,7 @@ Building:
 
 =cut
 
+use Cwd;
 use XML::LibXML;
 use Getopt::Long;
 use APR::UUID;
@@ -24,6 +25,9 @@ use Digest::MD5;
 use Data::Dumper;
 use File::Path;
 use File::Copy qw( cp );
+use Pod::Usage;
+
+pod2usage( 2 ) if @ARGV != 6;
 
 my( $source_path, $to, $package_version, $package_desc, $package_file, $package_ext ) = @ARGV;
 
@@ -298,8 +302,7 @@ close($fh);
 }
 
 {
-my $pwd = `pwd`;
-chomp($pwd);
+my $cwd = getcwd();
 chdir($to);
 
 my $package = "${package_file}${package_ext}";
@@ -324,7 +327,7 @@ else
 	die "Dunno what to do with file extension $package_ext";
 }
 
-chdir($pwd);
+chdir($cwd);
 rename("$to/$package", $package);
 }
 
