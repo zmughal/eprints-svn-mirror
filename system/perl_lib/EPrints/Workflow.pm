@@ -68,7 +68,6 @@ sub new
 	$self->{dataset} = $params{item}->get_dataset;
 	$self->{item} = $params{item};
 	$self->{workflow_id} = $workflow_id;
-	$self->{processor} = $params{processor};
 
 	$params{session} = $session;
 	$params{current_user} = $session->current_user;
