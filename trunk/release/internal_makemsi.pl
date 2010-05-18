@@ -40,8 +40,8 @@ $build_root =~ s/^.*\///;
 our $VERSION = '1';
 our $PRODUCT_TITLE = "EPrints";
 our $PRODUCT_VERSION = $package_version;
-$PRODUCT_VERSION =~ s/^\D+//; # strip eprints3-
-$PRODUCT_VERSION =~ s/\D.*$//; # strip -rc etc.
+$PRODUCT_VERSION =~ s/^[^0-9\.]+//; # strip eprints3-
+$PRODUCT_VERSION =~ s/[^0-9\.].*$//; # strip -rc etc.
 our $PRODUCT_NAME = "$PRODUCT_TITLE $PRODUCT_VERSION Win32";
 # The UUID for EPrints
 our $PRODUCT_ID = 'a1818622-91d2-4b2d-bbee-df3c1910ae26';
