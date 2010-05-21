@@ -272,7 +272,15 @@ END
 	{
 		$self->{search_fields}= [];
 #		foreach( @{ $self->{session}->get_repository->get_conf( "editor_limit_fields" )} )
-		foreach( @{ $self->{session}->get_repository->get_conf( $self->{fieldnames} )} )
+
+		my $fields = $self->{session}->get_repository->get_conf( $self->{fieldnames});
+		if ($self->{fieldnames} eq "editpermfields" and not defined $fields)
+		{
+			#backwards compatibility
+			$fields = $self->{session}->get_repository->get_conf( "editor_limit_fields" );
+		}
+
+		foreach( @{$fields} )
 		{
 			push @{$self->{search_fields}}, { meta_fields=>[$_] };	
 		}
