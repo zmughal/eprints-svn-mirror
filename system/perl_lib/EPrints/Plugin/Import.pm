@@ -28,12 +28,25 @@ sub new
 {
 	my( $class, %params ) = @_;
 
-	$params{visible} = exists $params{visible} ? $params{visible} : "all";
-	$params{advertise} = exists $params{advertise} ? $params{advertise} : 1;
-	$params{session} = exists $params{session} ? $params{session} : $params{processor}->{session};
-	$params{Handler} = exists $params{Handler} ? $params{Handler} : EPrints::CLIProcessor->new( session => $params{session} );
+	my $self = $class->SUPER::new(%params);
 
-	return $class->SUPER::new(%params);
+	if( !$self->{session} )
+	{
+		$self->{session} = $self->{processor}->{session};
+	}
+
+	if( !$self->{Handler} )
+	{
+		$self->{Handler} = EPrints::CLIProcessor->new(
+			session => $self->{session}
+		);
+	}
+
+	$self->{name} = "Base input plugin: This should have been subclassed";
+	$self->{visible} = "all";
+	$self->{advertise} = 1;
+
+	return $self;
 }
 
 sub handler
@@ -73,10 +86,6 @@ sub matches
 	{
 		return( $self->param( "advertise" ) == $param );
 	}
-	if( $test eq "mime_type" )
-	{
-		return $self->can_accept( $param );
-	}
 
 	# didn't understand this match 
 	return $self->SUPER::matches( $test, $param );
@@ -102,18 +111,6 @@ sub is_visible
 	}
 
 	return 1;
-}
-
-sub can_accept
-{
-	my( $self, $format ) = @_;
-
-	for(@{$self->param( "mime_type" )||[]})
-	{
-		return 1 if $_ eq $format;
-	}
-
-	return 0;
 }
 
 sub can_produce

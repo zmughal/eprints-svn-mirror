@@ -499,12 +499,10 @@ sub convert_input
 	$epdata->{abstract} = $entry->field( "abstract" );
 	# keywords
 	$epdata->{keywords} = $entry->field( "keywords" );
+	# url
+	$epdata->{official_url} = $entry->field( "url" );
 
 	_decode_bibtex( $epdata );
-
-	# url (don't decode TeX)
-	$epdata->{official_url} = $entry->field( "url" );
-	$epdata->{official_url} =~ s/\\\%/%/g;
 
 	return $epdata;
 }
