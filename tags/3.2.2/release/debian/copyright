@@ -1,0 +1,40 @@
+This package was debianized by David Tarrant <dct05r@ecs.soton.ac.uk> on
+Tue, 21 Aug 2007 14:07:26 +0100.
+
+It was downloaded from http://www.eprints.org
+
+Upstream Author(s): 
+
+	Lead Developer + Software Architect
+	 Christopher Gutteridge - http://www.ecs.soton.ac.uk/people/cjg
+
+	Developers
+	 Dr Michael O. Jewell - http://www.ecs.soton.ac.uk/people/moj
+	 Dr Timothy Miles-Board - http://www.ecs.soton.ac.uk/people/tmb
+	 Dr Tim Brody - http://www.ecs.soton.ac.uk/people/tdb2
+	 Harry Mason - http://www.ecs.soton.ac.uk/people/hjm03r
+
+Copyright: 
+
+  Copyright (c) 2000-2007 University of Southampton, UK. SO17 1BJ.
+
+License:
+  
+  EPrints 3 is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+  
+  EPrints 3 is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU General Public License
+  along with EPrints 3; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+
+The Debian packaging is (C) 2007, David Tarrant <dct05r@ecs.soton.ac.uk> and
+is licensed under the GPL, see `/usr/share/common-licenses/GPL'.
+
