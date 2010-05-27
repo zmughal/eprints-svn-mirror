@@ -24,49 +24,34 @@ sub new
 	return $self;
 }
 
-sub allow_regen_views
-{
-	my( $self ) = @_;
-
-	return $self->allow( "config/edit" );
-}
-
 sub render
 {
+
 	my( $plugin ) = @_;
 
 	my $session = $plugin->{session};
 
-#	my $plugin_datasets = $plugin->fetch_data();
 	my $plugin_datasets = {};
 	
 	my( $html, $h1 );
 
-	my $foo;
-	
-	my $err_file = File::Temp->new(
-                UNLINK => 1
-        );
-
-        {
-        no warnings;
-        open(OLD_STDERR, ">&STDERR") or die "Failed to save STDERR";
-        }
-        open(STDERR, ">$err_file") or die "Failed to redirect STDERR";	
-
 	my $repo = $session->get_repository->get_id();
-
-	my $fred = async { system("/usr/share/eprints3/tools/update_pronom_puids $repo ") };
-
-	#open(STDERR,">&OLD_STDERR") or die "Failed to restore STDERR";
-
-        #seek( $err_file, 0, SEEK_SET );
-
-	#our $MAX_ERR_LEN = 1024;
 	
+	use Apache2::SubProcess();
+	my @args_out;
+	push @args_out, $repo;
+	$r = $session->get_request;
+
+	my $base_path = EPrints::Config::get( "base_path" );
+	push @args_out, $base_path;
+
+	my $command = $base_path . '/tools/update_pronom_puids_detached.pl';
+	$r->spawn_proc_prog($command, \@args_out);
+
 	$html = $session->make_doc_fragment;
 	
 	my $input_url = $session->get_repository->get_conf( "base_url" ) . "/droid_classification_ajax.xml";
+	
 
 	my $javascript = $session->make_javascript('
 	var ret;
@@ -96,16 +81,6 @@ sub render
 }
 setInterval("ajaxFunction()",3000);
 ');
-
-        #while(<$err_file>)
-        #{
-        #        $_ =~ s/\s+$//;
-        #        next unless length($_);
-##		$html->appendText("$_<br/>");
-#		$html->appendChild( $session->make_text("$_"));
-#		$html->appendChild( $session->make_element( "br" ));
-#                last if length($err) > $MAX_ERR_LEN;
-#        }
 
 	$html->appendChild($javascript);
 	my $div = $plugin->{session}->make_element(

@@ -20,7 +20,7 @@
 use strict;
 use warnings;
 
-use EPrints;
+use EPrints qw( no_check_user );
 
 my( $repoid ) = @ARGV;
 
@@ -48,18 +48,29 @@ $max_age = 0 unless defined $max_age;
 
 sub main
 {
+	my $output_file = $session->get_repository->get_conf( "htdocs_path" ) . "/en/droid_classification_ajax.xml";
+	my $complete = 1;
+	if (-e $output_file) {
+		$complete = 0;
+		open (MYFILE, $output_file);
+		while (<MYFILE>) {
+			my ($line) = $_;
+			chomp($line);
+			if ((substr $line, 0,8) eq "complete") {
+				$complete = 1;	
+			}
+		}
+	}
+	if ($complete > 0) {
+		unlink($output_file);
+	} else {
+		exit();
+	}
+	open(MYFILE, ">$output_file");
+	print MYFILE sprintf("Processing...");
+	close(MYFILE);
+	
 	reset_pronom_cache($session);
-
-
-#	my $searchexp = EPrints::Search->new(
-#		session => $session,
-#		dataset => $dataset,
-#		filters => [
-#			{ meta_fields => [qw( datasetid )], value => "document" },
-#			{ meta_fields => [qw( pronomid )], value => "", match => "EX" },
-#		],
-#	);
-#	my $list = $searchexp->perform_search;
 
 	my @new_objects;
 	my $file_ids = [];
@@ -83,8 +94,6 @@ sub main
 	my $list = EPrints::List->new( session => $session, dataset => $dataset, ids => $file_ids );
 
 	my @record = $list->get_records();
-
-#	my $list = $new_objects;
 
 	if( $max_age > 0 )
 	{
@@ -111,25 +120,6 @@ sub main
 	
 	my $count = 0;
 	
-	my $output_file = $session->get_repository->get_conf( "htdocs_path" ) . "/en/droid_classification_ajax.xml";
-	my $complete = 1;
-	if (-e $output_file) {
-		$complete = 0;
-		open (MYFILE, $output_file);
-		while (<MYFILE>) {
-			my ($line) = $_;
-			chomp($line);
-			if ((substr $line, 0,8) eq "complete") {
-				$complete = 1;	
-			}
-		}
-	}
-	if ($complete > 0) {
-		unlink($output_file);
-	} else {
-		exit();
-	}
-
 	$list->map( sub {
 		&update_pronom_identity( @_ );
 
@@ -140,7 +130,7 @@ sub main
 		close(MYFILE);
 		
 	} );
-	#print STDERR "\n";
+	
 	my $pronom_data = $session->get_repository->get_dataset("pronom")->get_object($session, "Unclassified");
 	if (!defined $pronom_data)
 	{
@@ -148,12 +138,12 @@ sub main
 	}
 	
 	open(MYFILE, ">>$output_file");
-	print MYFILE ("\nUpdating Risk Scores\n");
+	print MYFILE sprintf("\nUpdating Risk Scores\n");
 	close(MYFILE);
 	update_risk_scores( $session );
 	
 	open(MYFILE, ">>$output_file");
-	print MYFILE ("Updating File Counts\n");
+	print MYFILE sprintf("Updating File Counts\n");
 	close(MYFILE);
 	update_file_count( $session );
 	
@@ -180,7 +170,7 @@ sub update_pronom_identity
 		#print $file->get_value("pronomid")||"(null)";
 		#print "\n\n";
 		#print "FH:" .$fh ."\n";
-		my $droid_file_list = File::Temp->new( SUFFIX => ".xml" );
+		my $droid_file_list = File::Temp->new( SUFFIX => ".xml");
 		my $file_list_xml = $session->make_doc_fragment();
 		my $file_collection = $session->make_element("FileCollection", xmlns=>"http://www.nationalarchives.gov.uk/pronom/FileCollection");
 		my $identification_file = $session->make_element("IdentificationFile", IdentQuality=>"Not yet run");
@@ -188,17 +178,21 @@ sub update_pronom_identity
 		$file_collection->appendChild($identification_file);
 		$file_list_xml->appendChild($file_collection);
 		print $droid_file_list EPrints::XML::to_string($file_list_xml);
+		
 		#print STDERR EPrints::XML::to_string($file_list_xml);
-		my $droid_xml = File::Temp->new( SUFFIX => ".xml" );
+		
+		my $droid_xml = File::Temp->new( SUFFIX => ".xml");
 		my $sig = $session->get_repository->get_conf( "droid_sig_file" );
 		$session->get_repository->exec( "droid",
 				SOURCE => $droid_file_list,
 				TARGET => substr("$droid_xml",0,-4), # droid always adds .xml
 				SIGFILE => "$sig", 
 				);
+
 		#print STDERR "File List " . $droid_file_list . "\n\n";
 		my $doc = EPrints::XML::parse_xml("$droid_xml");
-		
+		#print STDERR "GOT HERE \n\n";
+
 		#print STDERR "\n\n\n" . EPrints::XML::to_string($doc) . "\n\n\n";
 		
 		my $PUID_node = ($doc->getElementsByTagName( "PUID" ))[0];
