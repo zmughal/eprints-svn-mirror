@@ -1,0 +1,21 @@
+#!/usr/bin/perl -w -I/opt/eprints3/perl_lib
+
+
+use EPrints;
+
+use strict;
+use warnings;
+
+my $eprints = EPrints->new;
+
+# Load up the repositories
+my $reps;
+foreach my $id ( $eprints->repository_ids() )
+{
+	$reps->{$id} = $eprints->repository( $id ); 
+	EPrints->abort( "Error loading $id" ) if !defined $reps->{$id};
+}
+
+EPrints::Feed::Twitter::update_all( $reps );
+
+

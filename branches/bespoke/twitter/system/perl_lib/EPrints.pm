@@ -183,6 +183,7 @@ use EPrints::DataObj::User;
 use EPrints::DataSet;
 use EPrints::Email;
 use EPrints::Extras;
+use EPrints::Feed::Twitter;
 use EPrints::Index;
 use EPrints::Index::Daemon;
 use EPrints::Language;
