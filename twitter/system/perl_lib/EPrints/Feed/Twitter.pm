@@ -1,7 +1,6 @@
 package EPrints::Feed::Twitter;
 
 use Net::Twitter;
-use XML::Simple;
 
 # Tweet data from service.
 # {
@@ -56,12 +55,26 @@ sub create_main_file
 		next unless ($file->get_value('filename') =~ m/^[0-9]*\.xml/); # quick check
 		#get tweets from update files and sore in human-readable one
 		my $filename = $file->get_local_copy;
-		my $tweets = XMLin($filename);
+		my $xml = $self->{document}->repository->xml;
+		my $tweets_dom = $xml->parse_file($filename);
 
-	foreach my $id (sort {$b <=> $a} keys %{$tweets->{tweet}})
+		my @ids;
+		foreach my $id_text_node ( $tweets_dom->findnodes('//tweets/tweet/id/text()') )
 		{
-			print FILE
-			$tweets->{tweet}->{$id}->{created_at}, ', ', $tweets->{tweet}->{$id}->{from_user}, ':  ', $tweets->{tweet}->{$id}->{text}, "\n";
+			push @ids, $xml->to_string($id_text_node);
+		}
+
+
+		foreach my $id (sort {$b <=> $a} @ids)
+		{
+			my $values;
+			foreach my $fieldname ( qw/ created_at from_user text / )
+			{
+				my @nodes = $tweets_dom->findnodes("//tweets/tweet[id/text()='$id']/$fieldname/text()");
+				$values->{$fieldname} = $xml->to_string($nodes[0]) if $nodes[0];
+			}
+
+			print FILE $values->{created_at}, ', ', $values->{from_user}, ':  ', $values->{text}, "\n";
 		}
 		
 	}
@@ -86,7 +99,7 @@ sub _most_recent_first
 	return $b_sortvalue <=> $a_sortvalue;
 }
 
-sub get_last
+sub highest_id
 {
 	my ($self) = @_;
 
@@ -98,13 +111,17 @@ sub get_last
 	if ($sorted_files[0] and $sorted_files[0]->get_value('filename') =~ m/^[0-9]*\.xml$/)
 	{
         	my $filename = $sorted_files[0]->get_local_copy;
-		my $tweets = XMLin($filename);
+		my $xml = $self->{document}->repository->xml;
+		my $tweets_dom = $xml->parse_file($filename);
 
-		my @ids = sort {$b <=> $a} keys %{$tweets->{tweet}};
+		my @ids;
+		foreach my $id_text_node ( $tweets_dom->findnodes('//tweets/tweet/id/text()') )
+		{
+			push @ids, $xml->to_string($id_text_node);
+		}
+		@ids = sort {$b <=> $a} @ids;
 
 		my $highest_id = $ids[0];
-		$last_tweet = $tweets->{tweet}->{$highest_id};
-		$last_tweet->{id} = $highest_id; #XML::Parser quirk
 	}
 
 	return $last_tweet;	
@@ -123,6 +140,28 @@ sub add_to_buffer
 	}
 
 	push @{$self->{write_buffer}}, $buffer;
+}
+
+#call if we didn't find the id we were looking for
+sub commit_incomplete
+{
+	my ($self) = @_;
+
+	if (scalar @{$self->{write_buffer}})
+	{
+		my $oldest = pop @{$self->{write_buffer}};
+		push @{$self->{write_buffer}}, $oldest;
+
+		my $warning = {
+			id => $oldest->{id} - 1,
+			from_user => 'EPRINTS',
+			text => 'WARNING: SOME TWEETS MAY NOT HAVE BEEN MISSED!',
+			created_at => $oldest->{created_at},
+		};
+		$self->add_to_buffer($warning);
+		$self->commit;
+	}
+
 }
 
 #writes back to file
@@ -145,7 +184,6 @@ sub commit
 				$tweet_dom->appendChild($self->_generate_dom($xml, $k, $tweet->{$k}));
 			}
 		}
-
 
 		my $filename = File::Temp->new;
 		open FILE,">$filename" or print STDERR "Couldn't open $filename\n";
@@ -218,9 +256,8 @@ sub update_all
 	{
 		my $feed_obj = EPrints::Feed::Twitter->new($doc);
 
-		my $newest_tweet = $feed_obj->get_last;
-		my $newest_id = $newest_tweet->{id} if defined $newest_tweet;
-		$newest_id = 0 unless $newest_id;
+		my $highest_id = $feed_obj->highest_id;
+		$highest_id = 0 unless $highest_id;
 
 		push @queue, {
 			search_params => {
@@ -228,8 +265,8 @@ sub update_all
 				rpp => 100,
 			},
 			feed_obj => $feed_obj,
-			since_id => $newest_id,
-			orderval => $newest_id,
+			since_id => $highest_id,
+			orderval => $highest_id,
 		}
 	}
 
@@ -252,7 +289,7 @@ sub update_all
 		my $tweets = eval { $nt->search($current_item->{search_params}); };
 		if ($@)
 		{
-			print STDERR "Exiting Early: @$\n";
+			print STDERR "Exiting Early: $@\n";
 			last;
 		}
 
@@ -295,14 +332,7 @@ sub update_all
 
 	foreach my $incomplete_item (@queue)
 	{
-		$next unless scalar @{$incomplete_item->{write_buffer}}; #don't do anything if we didn't process any items;
-		my $warning;
-		$warning->{id} = $incomplete_item->{write_buffer}->[$#{$incomplete_item->{write_buffer}}]->{id} - 1; #so warning is sorted to the right place
-		$warning->{from_user} = 'EPRINTS';
-		$warning->{text} = 'WARNING: SOME TWEETS MAY HAVE BEEN MISSED!';
-		$warning->{created_at} = $incomplete_item->{write_buffer}->[$#{$incomplete_item->{write_buffer}}]->{created_at}; #also for see sorting
-		$incomplete_item->{feed_obj}->add_to_buffer($warning);
-		$incomplete_item->{feed_obj}->commit;
+		$incomplete_item->commit_incomplete;
 	}
 
 
