@@ -58,14 +58,8 @@ sub from
 	}
 
 	#this probably isn't storage layer friendly.
-	my $filename = File::Temp->new;
-	my $twitter = EPrints::Feed::Twitter->new($filename);
-	
-	open FILE,">$filename" or print STDERR "Couldn't open $filename\n";
-	print FILE $twitter->file_header;
-	close FILE;
-
-	$document->add_file($filename,'twitter.txt');
+	my $twitter = EPrints::Feed::Twitter->new($document);
+	$twitter->create_main_file;
 
 	$document->commit;
 

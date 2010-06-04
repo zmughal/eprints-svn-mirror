@@ -1,8 +1,7 @@
 package EPrints::Feed::Twitter;
 
-use Text::CSV;
 use Net::Twitter;
-
+use XML::Simple;
 
 # Tweet data from service.
 # {
@@ -28,128 +27,164 @@ sub new
 
 	return bless { 
 		document => $document,
-		fields => [ 'id', 'from_user', 'from_user_id', 'created_at', 'iso_language_code', 'text' ],
-		write_bufer => [],
+		write_buffer => [],
+		feeds_in_parallel => 3,
 	}, $class;
 }
 
-sub get_local_filepath
+
+sub create_main_file
 {
 	my ($self) = @_;
 
-	my $fileobj = $self->{document}->get_stored_file( $self->{document}->get_main );
-	my $file = $fileobj->get_local_copy;
-	return $file;
+	my $file = $self->{document}->get_main;
+
+	if ( $file and  ($file =~ m/twiter\.txt$/) )
+	{
+		#remove previously generated file
+		$file->remove();
+	}
+
+
+	my $filename = File::Temp->new;
+	open FILE,">$filename" or print STDERR "Couldn't open $filename\n";
+	print FILE $self->file_header;
+
+	my $files = $self->{document}->get_value('files');
+	foreach my $file ( sort _most_recent_first @{$files})
+	{
+		next unless ($file->get_value('filename') =~ m/^[0-9]*\.xml/); # quick check
+		#get tweets from update files and sore in human-readable one
+		my $filename = $file->get_local_copy;
+		my $tweets = XMLin($filename);
+
+	foreach my $id (sort {$b <=> $a} keys %{$tweets->{tweet}})
+		{
+			print FILE
+			$tweets->{tweet}->{$id}->{created_at}, ', ', $tweets->{tweet}->{$id}->{from_user}, ':  ', $tweets->{tweet}->{$id}->{text}, "\n";
+		}
+		
+	}
+	close FILE;
+
+	$self->{document}->add_file($filename,'twitter.txt');
+	$self->{document}->set_main('twitter.txt');
+	$self->{document}->commit;
+
+}
+
+sub _most_recent_first
+{
+	my $a_filename = $a->get_value('filename');
+	$a_filename =~ m/^([0-9]*)\.xml/;
+	my $a_sortvalue = $1 ? $1 : 0;
+
+	my $b_filename = $b->get_value('filename');
+	$b_filename =~ m/^([0-9]*)\.xml/;
+	my $b_sortvalue = $1 ? $1 : 0;
+
+	return $b_sortvalue <=> $a_sortvalue;
 }
 
 sub get_last
 {
 	my ($self) = @_;
 
-	open FILE, $self->get_local_filepath or return;
-	my $last;
-	while (<FILE>)
+	#get all XML files and parse them.  Return highest ID
+        my $files = $self->{document}->get_value('files');
+        my @sorted_files = sort _most_recent_first @{$files};
+
+	my $last_tweet;
+	if ($sorted_files[0] and $sorted_files[0]->get_value('filename') =~ m/^[0-9]*\.xml$/)
 	{
-		$last = $_;
+        	my $filename = $sorted_files[0]->get_local_copy;
+		my $tweets = XMLin($filename);
+
+		my @ids = sort {$b <=> $a} keys %{$tweets->{tweet}};
+
+		my $highest_id = $ids[0];
+		$last_tweet = $tweets->{tweet}->{$highest_id};
+		$last_tweet->{id} = $highest_id; #XML::Parser quirk
 	}
 
-use Data::Dumper;
-print STDERR $last;
-
-	if ($last)
-	{
-		my $tweet = $self->_hashref_from_string($last);
-print STDERR Dumper $tweet;
-exit;
-		return $tweet if $tweet->{id} ne 'id'; #it's the heading
-	}
+	return $last_tweet;	
 }
 
-# my $tweet = EPrints::Feed:Twitter->new_from_service($data);
-# takes a hasref returned from the twitter api call
-sub add_from_service
+
+sub add_to_buffer
 {
-	my ($self, $data) = @_;
+	my ($self, $tweet) = @_;
 
-	my $tweet = {};
+	my $buffer;
 
-	foreach my $heading (@{$self->{fields}})
+	foreach my $k (keys %{$tweet})
 	{
-		$tweet->{$heading} =  $data->{$heading};
+		$buffer->{$k} = $tweet->{$k} if $tweet->{$k};
 	}
 
-	#important = prepend to array so most recent is at the end -- this makes writing to the file easier
-	unshift @{$self->{write_buffer}}, $tweet;
-
+	push @{$self->{write_buffer}}, $buffer;
 }
-
 
 #writes back to file
 sub commit
 {
 	my ($self) = @_;
-	open (FILE, '>>', $self->get_local_filepath);
-	foreach my $tweet (@{$self->{write_buffer}})
+
+	if (scalar @{$self->{write_buffer}})
 	{
-		print FILE $self->_string_from_hashref($tweet);
-	}
-	close FILE;
-}
 
-sub _string_from_hashref
-{
-	my ($self, $hashref) = @_;
+		my $xml = $self->{document}->repository->xml;
 
-	$self->_start_parser;
-
-	my @line;
-	foreach my $field (@{$self->{fields}})
-	{
-		push @line, $hashref->{$field};
-	}
-	if ($self->{csv}->combine(@line))
-	{
-		return $self->{csv}->string . "\n";
-	}
-	return "ERROR\n";
-}
-
-sub _hashref_from_string
-{
-	my ($self, $string) = @_;
-
-	chomp $string;
-
-	$self->_start_parser;
-
-	my @fields;
-	my $tweet;
-	if ($self->{csv}->parse($file_line))
-	{
-print 'HAHAHA';
-		@fields = $self->{csv}->fields;
-
-		for (my $i = 0; $i <= @{$self->{fields}}; $i++)
+		my $tweets_dom = $xml->create_element('tweets');
+		foreach my $tweet (@{$self->{write_buffer}})
 		{
-			$tweet->{$self->{fields}->[$i]} = $fields->[$i];
+			my $tweet_dom = $xml->create_element('tweet');
+			$tweets_dom->appendChild($tweet_dom);
+			foreach my $k (keys %{$tweet})
+			{
+				$tweet_dom->appendChild($self->_generate_dom($xml, $k, $tweet->{$k}));
+			}
 		}
-	}
-	else
-	{
-		print STDERR "CSV Parse Failed : " . $self->{csv}->error_input();
-	}
 
-	return $tweet;
+
+		my $filename = File::Temp->new;
+		open FILE,">$filename" or print STDERR "Couldn't open $filename\n";
+		print FILE $xml->to_string($tweets_dom);
+		close FILE;
+		$self->{document}->add_file($filename, time . '.xml');
+		$self->create_main_file;
+	}
 }
 
-
-
-sub _start_parser
+sub _generate_dom
 {
-	my ($self) = @_;
+	my ($self, $xml, $key, $value) = @_;
 
-	return if defined $self->{csv};
-	$self->{csv} = Text::CSV->new;
+	if ( ref($value) eq '' )
+	{
+		my $n = $xml->create_element($key);
+		$n->appendChild($xml->create_text_node($value));
+		return $n;
+	}
+        if( ref($value) eq "ARRAY" )
+        {
+		my $n = $xml->create_element($key);
+                foreach( @{$value} )
+                {
+			$n->appendChild($self->_generate_dom($xml,'item',$_));
+                }
+                return $n;
+        }
+        if( ref($value) eq "HASH" )
+        {
+		my $n = $xml->create_element($key);
+                foreach( keys %{$value} )
+                {
+			$n->appendChild($self->_generate_dom($xml,$_,$value->{$_}));
+                }
+                return $n;
+        }
+
 }
 
 
@@ -183,9 +218,9 @@ sub update_all
 	{
 		my $feed_obj = EPrints::Feed::Twitter->new($doc);
 
-		my $newest_id = 0;
 		my $newest_tweet = $feed_obj->get_last;
-		$newest_id = $newest_tweet->{id} if defined $newest_tweet;
+		my $newest_id = $newest_tweet->{id} if defined $newest_tweet;
+		$newest_id = 0 unless $newest_id;
 
 		push @queue, {
 			search_params => {
@@ -200,18 +235,37 @@ sub update_all
 
 	my $nt = Net::Twitter->new(traits => [qw/API::Search/]);
 
+	my $nosort = 0;
 	while ( scalar @queue ) #test API limits too
 	{
-		@queue = sort {$b->{orderval} <=> $a->{orderval}} @queue;
+		#prioritise by date, but have some parallelisation.  We'll only get nothing if we have feeds_in_parallel+1 trending topics.
+		if (!$nosort)
+		{
+			@queue = sort { ( $a->{orderval} ? $b->{orderval} : -1 ) <=> ( $b->{orderval} ? $a->{orderval} : -1) } @queue; #if there's no orderval, sort highest
+			$nosort = $self->{feeds_in_parallel};
+		}
+		$nosort--;
 
 		my $current_item = shift @queue;
 
-		my $tweets = $nt->search($current_item->{search_params});
+
+		my $tweets = eval { $nt->search($current_item->{search_params}); };
+		if ($@)
+		{
+			print STDERR "Exiting Early: @$\n";
+			last;
+		}
 
 		my $update_complete = 0;
 
 		foreach my $tweet (@{$tweets->{results}})
 		{
+			if (not $current_item->{search_params}->{max_id})
+			{
+				$current_item->{search_params}->{max_id} = $tweet->{id}; #highest ID, for paging
+			}
+			$current_item->{orderval} = $tweet->{id}; #lowest processed so far, for ordering
+
 			if ($tweet->{id} == $current_item->{since_id})
 			{
 				$update_complete = 1;
@@ -219,22 +273,38 @@ sub update_all
 			}
 			else
 			{
-				$current_item->{feed_obj}->add_from_service($tweet);
+				$current_item->{feed_obj}->add_to_buffer($tweet);
 			}
 		}
-		##!!!!!!
-		$update_complete = 1;
 
-		if ($update_complete)
+		if (
+			$update_complete or 
+			not scalar @{$tweets->{results}} or #empty page 
+			($tweets->{page} >= 15) #twitter limit 
+		)
 		{
 			$current_item->{feed_obj}->commit;
 		}
 		else
 		{
-			#add next page to queue
+			$current_item->{search_params}->{page} = $tweets->{page} + 1;
+			push @queue, $current_item;
 		}
 
 	}
+
+	foreach my $incomplete_item (@queue)
+	{
+		$next unless scalar @{$incomplete_item->{write_buffer}}; #don't do anything if we didn't process any items;
+		my $warning;
+		$warning->{id} = $incomplete_item->{write_buffer}->[$#{$incomplete_item->{write_buffer}}]->{id} - 1; #so warning is sorted to the right place
+		$warning->{from_user} = 'EPRINTS';
+		$warning->{text} = 'WARNING: SOME TWEETS MAY HAVE BEEN MISSED!';
+		$warning->{created_at} = $incomplete_item->{write_buffer}->[$#{$incomplete_item->{write_buffer}}]->{created_at}; #also for see sorting
+		$incomplete_item->{feed_obj}->add_to_buffer($warning);
+		$incomplete_item->{feed_obj}->commit;
+	}
+
 
 
 
@@ -246,12 +316,7 @@ sub file_header
 {
 	my ($self) = @_;
 
-	$self->_start_parser;
-	if ($self->{csv}->combine(@{$self->{fields}}))
-	{
-		return $self->{csv}->string;
-	}
-	return "ERROR\n";
+	return "Tweets Matching " . $self->{document}->get_value('twitter_hashtag') . "\n";
 }
 
 1;
