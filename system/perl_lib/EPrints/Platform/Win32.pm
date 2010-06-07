@@ -91,34 +91,47 @@ sub exec
 	return $rc;
 }	
 
+sub read_exec
+{
+	my( $repo, $tmp, $cmd_id, %map ) = @_;
+
+	my $cmd = $repo->invocation( $cmd_id, %map );
+
+	return _read_exec( $repo, $tmp, $cmd );
+}
+
 sub read_perl_script
 {
-	my( $repository, $tmp, @args ) = @_;
+	my( $repo, $tmp, @args ) = @_;
 
-	no warnings; # suppress "only used once" warnings
+	my $perl = $repo->config( "executables", "perl" );
 
-	my $perl = $repository->get_conf( "executables", "perl" );
+	my $perl_lib = $repo->config( "base_path" ) . "/perl_lib";
 
-	my $perl_lib = $repository->get_conf( "base_path" ) . "/perl_lib";
+	unshift @args, "-I$perl_lib";
 
-	open(OLDERR,">&STDERR");
-	open(OLDOUT,">&STDOUT");
+	return _read_exec( $repo, $tmp, $perl, @args );
+}
 
-	open(STDOUT,">","$tmp") or die "Can't redirect stdout to $tmp: $!";
-	open(STDERR,">&STDOUT") or die "Can't dup stdout: $!";
+sub _read_exec
+{
+	my( $repo, $tmp, $cmd, @args ) = @_;
 
-	select(STDERR); $| = 1;
-	select(STDOUT); $| = 1;
+	my $perl = $repo->config( "executables", "perl" );
 
-	unshift @args, $perl, "-I$perl_lib";
-	my $cmd = join " ", map { quotemeta($_) } @args;
-	my $rc = system($cmd);
+	my $fn = Data::Dumper->Dump( ["$tmp"], ['fn'] );
+	my $args = Data::Dumper->Dump( [[$cmd, @args]], ['args'] );
 
-	close(STDOUT);
-	close(STDERR);
+	my $script = <<EOP;
+$fn$args
+open(STDOUT,">>", \$fn);
+open(STDERR,">>", \$fn);
+exit(0xffff & system( \@\{\$args\} ));
+EOP
 
-	open(STDOUT, ">&OLDOUT");
-	open(STDERR, ">&OLDERR");
+	my $rc = system( $perl, "-e", $script );
+
+	seek($tmp,0,0); # reset the file handle
 
 	return 0xffff & $rc;
 }
