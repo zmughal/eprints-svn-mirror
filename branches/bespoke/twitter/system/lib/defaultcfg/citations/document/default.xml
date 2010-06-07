@@ -10,7 +10,7 @@
 
 
 <span class="ep_document_citation">
-<cite:linkhere><epc:print expr='format'/><epc:if test="formatdesc"> (<epc:print expr="formatdesc"/>)</epc:if></cite:linkhere>
+<cite:linkhere><epc:print expr='format'/><epc:if test="twitter_hashtag"> [<epc:print expr="twitter_hashtag"/>]</epc:if><epc:if test="formatdesc"> (<epc:print expr="formatdesc"/>)</epc:if></cite:linkhere>
 <epc:if test="content"> - <epc:print expr="content" /></epc:if>
 <epc:if test="security != 'public'">
   <br />Restricted to <epc:print expr="security"/><epc:if test="date_embargo"> until <epc:print expr="date_embargo"/>.</epc:if>

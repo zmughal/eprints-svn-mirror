@@ -72,11 +72,12 @@ sub create_main_file
 			{
 				my @nodes = $tweets_dom->findnodes("//tweets/tweet[id/text()='$id']/$fieldname/text()");
 				$values->{$fieldname} = $xml->to_string($nodes[0]) if $nodes[0];
+				$values->{$fieldname} =~ s/[\r\n]/ /g;
 			}
 
 			print FILE $values->{created_at}, ', ', $values->{from_user}, ':  ', $values->{text}, "\n";
 		}
-		
+		$xml->dispose($tweets_dom);
 	}
 	close FILE;
 
@@ -187,9 +188,11 @@ sub commit
 
 		my $filename = File::Temp->new;
 		open FILE,">$filename" or print STDERR "Couldn't open $filename\n";
+		print FILE '<?xml version="1.0" encoding="utf-8" ?>', "\n";
 		print FILE $xml->to_string($tweets_dom);
 		close FILE;
 		$self->{document}->add_file($filename, time . '.xml');
+		$xml->dispose($tweets_dom);
 		$self->create_main_file;
 	}
 }
