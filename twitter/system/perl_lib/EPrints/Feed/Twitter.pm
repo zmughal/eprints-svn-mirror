@@ -28,6 +28,7 @@ sub new
 		document => $document,
 		write_buffer => [],
 		feeds_in_parallel => 3,
+		tweets_in_main_file => 100,
 	}, $class;
 }
 
@@ -49,6 +50,8 @@ sub create_main_file
 	print FILE $self->file_header;
 	my $xml = $self->{document}->repository->xml;
 	my $files = $self->{document}->get_value('files');
+
+	my $i = 0;
 	foreach my $file ( sort _most_recent_first @{$files})
 	{
 		my $tweets_dom = $self->_xmlfile_to_dom($file);
@@ -63,17 +66,20 @@ sub create_main_file
 
 		foreach my $id (sort {$b <=> $a} @ids)
 		{
+			$i++;
+			last if $i <= $self->{tweets_in_main_file};
 			my $values;
 			foreach my $fieldname ( qw/ created_at from_user text / )
 			{
 				my @nodes = $tweets_dom->findnodes("//tweets/tweet[id/text()='$id']/$fieldname/text()");
 				$values->{$fieldname} = $xml->to_string($nodes[0]) if $nodes[0];
-				$values->{$fieldname} =~ s/[\r\n]/ /g;
+				$values->{$fieldname} =~ s/[\r\n\t]/ /g;
 			}
 
-			print FILE $values->{created_at}, ', ', $values->{from_user}, ':  ', $values->{text}, "\n";
+			print FILE $values->{created_at}, "\t", $values->{from_user}, "\t", $values->{text}, "\n";
 		}
 		$xml->dispose($tweets_dom);
+		last if $i <= $self->{tweets_in_main_file};
 	}
 	close FILE;
 
@@ -120,7 +126,7 @@ sub highest_id
 
         my $files = $self->{document}->get_value('files');
 	my $xml = $self->{document}->repository->xml;
-	my $last_tweet;
+	my $highest_id;
 	foreach my $file (sort _most_recent_first @{$files})
 	{
 		my $tweets_dom = $self->_xmlfile_to_dom($file);
@@ -133,12 +139,10 @@ sub highest_id
 		}
 		@ids = sort {$b <=> $a} @ids;
 
-		my $highest_id = $ids[0];
-
+		$highest_id = $ids[0];
 		last; #if we successfully got to here then we parsed an XML file, and we only need one.
 	}
-
-	return $last_tweet;	
+	return $highest_id;
 }
 
 
@@ -322,6 +326,8 @@ sub update_all
 				$current_item->{search_params}->{max_id} = $tweet->{id}; #highest ID, for paging
 			}
 			$current_item->{orderval} = $tweet->{id}; #lowest processed so far, for ordering
+
+print STDERR $tweet->{id}, ' -> ', $current_item->{since_id}, "\n";
 
 			if ($tweet->{id} == $current_item->{since_id})
 			{
