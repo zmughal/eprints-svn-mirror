@@ -31,7 +31,6 @@ sub new
 	}, $class;
 }
 
-
 sub create_main_file
 {
 	my ($self) = @_;
@@ -48,15 +47,12 @@ sub create_main_file
 	my $filename = File::Temp->new;
 	open FILE,">$filename" or print STDERR "Couldn't open $filename\n";
 	print FILE $self->file_header;
-
+	my $xml = $self->{document}->repository->xml;
 	my $files = $self->{document}->get_value('files');
 	foreach my $file ( sort _most_recent_first @{$files})
 	{
-		next unless ($file->get_value('filename') =~ m/^[0-9]*\.xml/); # quick check
-		#get tweets from update files and sore in human-readable one
-		my $filename = $file->get_local_copy;
-		my $xml = $self->{document}->repository->xml;
-		my $tweets_dom = $xml->parse_file($filename);
+		my $tweets_dom = $self->_xmlfile_to_dom($file);
+		next unless $tweets_dom;
 
 		my @ids;
 		foreach my $id_text_node ( $tweets_dom->findnodes('//tweets/tweet/id/text()') )
@@ -87,6 +83,23 @@ sub create_main_file
 
 }
 
+sub _xmlfile_to_dom
+{
+	my ($self, $file) = @_;
+
+	return undef unless ($file->get_value('filename') =~ m/^[0-9]*\.xml/); # quick check
+
+	my $filename = $file->get_local_copy;
+	my $xml = $self->{document}->repository->xml;
+	my $tweets_dom = eval { $xml->parse_file($filename); };
+	if ($@)
+	{
+		print STDERR "Couldn't parse $filename: $@\n";
+		return undef;
+	}
+	return $tweets_dom;
+}
+
 sub _most_recent_first
 {
 	my $a_filename = $a->get_value('filename');
@@ -100,20 +113,18 @@ sub _most_recent_first
 	return $b_sortvalue <=> $a_sortvalue;
 }
 
+#return the highest ID in the most recent parsable XML file
 sub highest_id
 {
 	my ($self) = @_;
 
-	#get all XML files and parse them.  Return highest ID
         my $files = $self->{document}->get_value('files');
-        my @sorted_files = sort _most_recent_first @{$files};
-
+	my $xml = $self->{document}->repository->xml;
 	my $last_tweet;
-	if ($sorted_files[0] and $sorted_files[0]->get_value('filename') =~ m/^[0-9]*\.xml$/)
+	foreach my $file (sort _most_recent_first @{$files})
 	{
-        	my $filename = $sorted_files[0]->get_local_copy;
-		my $xml = $self->{document}->repository->xml;
-		my $tweets_dom = $xml->parse_file($filename);
+		my $tweets_dom = $self->_xmlfile_to_dom($file);
+		next unless $tweets_dom;
 
 		my @ids;
 		foreach my $id_text_node ( $tweets_dom->findnodes('//tweets/tweet/id/text()') )
@@ -123,6 +134,8 @@ sub highest_id
 		@ids = sort {$b <=> $a} @ids;
 
 		my $highest_id = $ids[0];
+
+		last; #if we successfully got to here then we parsed an XML file, and we only need one.
 	}
 
 	return $last_tweet;	
@@ -156,7 +169,7 @@ sub commit_incomplete
 		my $warning = {
 			id => $oldest->{id} - 1,
 			from_user => 'EPRINTS',
-			text => 'WARNING: SOME TWEETS MAY NOT HAVE BEEN MISSED!',
+			text => 'WARNING: SOME TWEETS MAY HAVE BEEN MISSED!',
 			created_at => $oldest->{created_at},
 		};
 		$self->add_to_buffer($warning);
@@ -204,6 +217,10 @@ sub _generate_dom
 	if ( ref($value) eq '' )
 	{
 		my $n = $xml->create_element($key);
+
+		#strip out control chars (tdb's code from MetaField::ID)
+		$value =~ s/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]/\x{fffd}/g;
+
 		$n->appendChild($xml->create_text_node($value));
 		return $n;
 	}
@@ -317,13 +334,16 @@ sub update_all
 			}
 		}
 
-		if (
-			$update_complete or 
+		if ($update_complete)
+		{
+			$current_item->{feed_obj}->commit;
+		}
+		elsif (
 			not scalar @{$tweets->{results}} or #empty page 
 			($tweets->{page} >= 15) #twitter limit 
 		)
 		{
-			$current_item->{feed_obj}->commit;
+			$current_item->{feed_obj}->commit_incomplete;
 		}
 		else
 		{
