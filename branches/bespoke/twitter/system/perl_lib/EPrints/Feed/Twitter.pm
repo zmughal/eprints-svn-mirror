@@ -67,7 +67,7 @@ sub create_main_file
 		foreach my $id (sort {$b <=> $a} @ids)
 		{
 			$i++;
-			last if $i <= $self->{tweets_in_main_file};
+			last if $i >= $self->{tweets_in_main_file};
 			my $values;
 			foreach my $fieldname ( qw/ created_at from_user text / )
 			{
@@ -79,7 +79,7 @@ sub create_main_file
 			print FILE $values->{created_at}, "\t", $values->{from_user}, "\t", $values->{text}, "\n";
 		}
 		$xml->dispose($tweets_dom);
-		last if $i <= $self->{tweets_in_main_file};
+		last if $i >= $self->{tweets_in_main_file};
 	}
 	close FILE;
 
@@ -269,6 +269,12 @@ sub update_all
 				);
 
 		$searchexp->add_field( $ds->get_field( "content" ), 'feed/twitter' );
+                my $today = EPrints::Time::get_iso_date( time );
+                $searchexp->add_field(
+                        $ds->get_field( "twitter_expiry_date" ),
+                        $today."-" );
+
+		
 		my $results = $searchexp->perform_search;
 
 		my @docs = $results->get_records;
@@ -287,10 +293,13 @@ sub update_all
 			search_params => {
 				q => $doc->get_value('twitter_hashtag'),
 				rpp => 100,
+#				max_id => set to first ID we get
+#				page => set to current page + 1 when this item is requeued
 			},
 			feed_obj => $feed_obj,
 			since_id => $highest_id,
 			orderval => $highest_id,
+			first_update => $highest_id ? 1 : 0, #if we have no highest_id, then it's the first time we've searched on this item.
 		}
 	}
 
@@ -327,8 +336,6 @@ sub update_all
 			}
 			$current_item->{orderval} = $tweet->{id}; #lowest processed so far, for ordering
 
-print STDERR $tweet->{id}, ' -> ', $current_item->{since_id}, "\n";
-
 			if ($tweet->{id} == $current_item->{since_id})
 			{
 				$update_complete = 1;
@@ -340,18 +347,25 @@ print STDERR $tweet->{id}, ' -> ', $current_item->{since_id}, "\n";
 			}
 		}
 
-		if ($update_complete)
+		if ($update_complete) #we get all tweets up to the ones we previously stored
 		{
 			$current_item->{feed_obj}->commit;
 		}
-		elsif (
+		elsif ( #we didn't get all tweets upto the one we last stored, but we exhausted our search
 			not scalar @{$tweets->{results}} or #empty page 
 			($tweets->{page} >= 15) #twitter limit 
 		)
 		{
-			$current_item->{feed_obj}->commit_incomplete;
+			if ($current_item->{first_updtae})
+			{
+				$current_item->{feed_obj}->commit;
+			}
+			else
+			{
+				$current_item->{feed_obj}->commit_incomplete;
+			}
 		}
-		else
+		else #we still have search pages to look at.
 		{
 			$current_item->{search_params}->{page} = $tweets->{page} + 1;
 			push @queue, $current_item;
@@ -363,10 +377,6 @@ print STDERR $tweet->{id}, ' -> ', $current_item->{since_id}, "\n";
 	{
 		$incomplete_item->commit_incomplete;
 	}
-
-
-
-
 
 }
 
