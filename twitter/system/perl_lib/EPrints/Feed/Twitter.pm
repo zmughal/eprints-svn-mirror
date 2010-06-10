@@ -208,7 +208,11 @@ sub commit
 		print FILE '<?xml version="1.0" encoding="utf-8" ?>', "\n";
 		print FILE $xml->to_string($tweets_dom);
 		close FILE;
-		$self->{document}->add_file($filename, time . '.xml');
+
+		my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+		my $timestamp = sprintf("%04d%02d%02d%02d%02d%02d",$year+1900,$mon,$mday,$hour,$min,$sec);
+
+		$self->{document}->add_file($filename, $timestamp . '.xml');
 		$xml->dispose($tweets_dom);
 		$self->create_main_file;
 	}
