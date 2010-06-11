@@ -27,7 +27,7 @@ sub create_queue_item
 		retries => 5, #if there's a failure, we'll try again.
 		since_id => $highest_id,
 		orderval => $highest_id,
-		first_update => $highest_id ? 1 : 0, #if we have no highest_id, then it's the first time we've searched on this item.
+		first_update => $highest_id ? 0 : 1, #if we have no highest_id, then it's the first time we've searched on this item.
 		update_complete => 0,
 		no_more_tweets => 0,
 	};
