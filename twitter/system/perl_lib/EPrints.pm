@@ -184,6 +184,7 @@ use EPrints::DataSet;
 use EPrints::Email;
 use EPrints::Extras;
 use EPrints::Feed::Twitter;
+use EPrints::Feed::Twitter::Update;
 use EPrints::Index;
 use EPrints::Index::Daemon;
 use EPrints::Language;

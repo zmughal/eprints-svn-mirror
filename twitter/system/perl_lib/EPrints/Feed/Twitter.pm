@@ -1,24 +1,6 @@
 package EPrints::Feed::Twitter;
 
-use Net::Twitter;
-
-# Tweet data from service.
-# {
-# 	'source' => '&lt;a href=&quot;http://www.tweetdeck.com/&quot; rel=&quot;nofollow&quot;&gt;TweetDeck&lt;/a&gt;',
-# 	'to_user_id' => undef,
-# 	'geo' => undef,
-# 	'profile_image_url' => 'http://s.twimg.com/a/1274899949/images/default_profile_4_normal.png',
-# 	'from_user_id' => 114298298,
-# 	'iso_language_code' => 'en',
-# 	'created_at' => 'Mon, 31 May 2010 13:25:48 +0000',
-# 	'text' => 'RT @AmSciForum: Peer Review and Open Access http://bit.ly/OApeer-rev #amsci #oa #openaccess #repositories #universities #research',
-# 	'metadata' => {
-# 		'result_type' => 'recent'
-# 	},
-# 	'id' => '15107186072',
-# 	'from_user' => 'digiwis'
-# },
-
+my $MAINFILENAME = 'twitter.txt';
 
 sub new
 {
@@ -27,26 +9,43 @@ sub new
 	return bless { 
 		document => $document,
 		write_buffer => [],
-		feeds_in_parallel => 3,
-		tweets_in_main_file => 100,
+		tweets_in_main_file => 9999100,
 	}, $class;
 }
 
 sub create_main_file
 {
-	my ($self) = @_;
+	my ($self, $force) = @_;
 
-	my $file = $self->{document}->get_main;
+	my $mainfile = $self->{document}->get_stored_file($MAINFILENAME);
 
-	if ( $file and  ($file =~ m/twiter\.txt$/) )
+	if ( $mainfile and !$force) #don't bother checking the datestamps if we don't have a twitter.txt or we are doing a force create
 	{
-		#remove previously generated file
-		$file->remove();
+		my $mainfiletime = 0;
+		my $latestfiletime = 0;
+
+		foreach my $file (@{$self->{document}->get_value('files')})
+		{
+			my $time_int = EPrints::Time::datestring_to_timet($self->{document}->{session}, $file->get_value('mtime'));
+
+			if ($file->get_value('filename') eq $MAINFILENAME)
+			{
+				$mainfiletime = $time_int;
+			}
+			else
+			{
+				$latestfiletime = $time_int if $time_int > $latestfiletime;
+			}
+		}
+
+		return if ($mainfiletime > $latestfiletime);
 	}
 
+	$mainfile->remove if $mainfile; #we're going to regenerate it.
 
 	my $filename = File::Temp->new;
 	open FILE,">$filename" or print STDERR "Couldn't open $filename\n";
+	binmode FILE, ":utf8"; 
 	print FILE $self->file_header;
 	my $xml = $self->{document}->repository->xml;
 	my $files = $self->{document}->get_value('files');
@@ -83,8 +82,8 @@ sub create_main_file
 	}
 	close FILE;
 
-	$self->{document}->add_file($filename,'twitter.txt');
-	$self->{document}->set_main('twitter.txt');
+	$self->{document}->add_file($filename,$MAINFILENAME);
+	$self->{document}->set_main($MAINFILENAME);
 	$self->{document}->commit;
 
 }
@@ -205,6 +204,7 @@ sub commit
 
 		my $filename = File::Temp->new;
 		open FILE,">$filename" or print STDERR "Couldn't open $filename\n";
+		binmode FILE, ":utf8"; 
 		print FILE '<?xml version="1.0" encoding="utf-8" ?>', "\n";
 		print FILE $xml->to_string($tweets_dom);
 		close FILE;
@@ -214,7 +214,12 @@ sub commit
 
 		$self->{document}->add_file($filename, $timestamp . '.xml');
 		$xml->dispose($tweets_dom);
-		$self->create_main_file;
+
+#only create a main file if we don't have one -- it could be a fairly hefty piece of work.
+		if ($self->{document}->get_main ne $MAINFILENAME)
+		{
+			$self->create_main_file;
+		}
 	}
 }
 
@@ -252,138 +257,6 @@ sub _generate_dom
         }
 
 }
-
-
-#I'm not sure if this belongs in here
-# EPrints::Feed::Twitter::update_all($reps);
-# takes a hasref mapping repository ids to repository objects
-sub update_all
-{
-	my ($reps) = @_;
-
-	my @documents;
-
-	foreach my $repository (values %{$reps})
-	{
-		$ds = $repository->get_dataset( "document" );
-
-		$searchexp = EPrints::Search->new(
-				session => $repository,
-				dataset => $ds,
-				);
-
-		$searchexp->add_field( $ds->get_field( "content" ), 'feed/twitter' );
-                my $today = EPrints::Time::get_iso_date( time );
-                $searchexp->add_field(
-                        $ds->get_field( "twitter_expiry_date" ),
-                        $today."-" );
-
-		
-		my $results = $searchexp->perform_search;
-
-		my @docs = $results->get_records;
-		push @documents, @docs;
-	}
-
-	my @queue;
-	foreach my $doc (@documents)
-	{
-		my $feed_obj = EPrints::Feed::Twitter->new($doc);
-
-		my $highest_id = $feed_obj->highest_id;
-		$highest_id = 0 unless $highest_id;
-
-		push @queue, {
-			search_params => {
-				q => $doc->get_value('twitter_hashtag'),
-				rpp => 100,
-#				max_id => set to first ID we get
-#				page => set to current page + 1 when this item is requeued
-			},
-			feed_obj => $feed_obj,
-			since_id => $highest_id,
-			orderval => $highest_id,
-			first_update => $highest_id ? 1 : 0, #if we have no highest_id, then it's the first time we've searched on this item.
-		}
-	}
-
-	my $nt = Net::Twitter->new(traits => [qw/API::Search/]);
-
-	my $nosort = 0;
-	while ( scalar @queue ) #test API limits too
-	{
-		#prioritise by date, but have some parallelisation.  We'll only get nothing if we have feeds_in_parallel+1 trending topics.
-		if (!$nosort)
-		{
-			@queue = sort { ( $a->{orderval} ? $b->{orderval} : -1 ) <=> ( $b->{orderval} ? $a->{orderval} : -1) } @queue; #if there's no orderval, sort highest
-			$nosort = $self->{feeds_in_parallel};
-		}
-		$nosort--;
-
-		my $current_item = shift @queue;
-
-
-		my $tweets = eval { $nt->search($current_item->{search_params}); };
-		if ($@)
-		{
-			print STDERR "Exiting Early: $@\n";
-			last;
-		}
-
-		my $update_complete = 0;
-
-		foreach my $tweet (@{$tweets->{results}})
-		{
-			if (not $current_item->{search_params}->{max_id})
-			{
-				$current_item->{search_params}->{max_id} = $tweet->{id}; #highest ID, for paging
-			}
-			$current_item->{orderval} = $tweet->{id}; #lowest processed so far, for ordering
-
-			if ($tweet->{id} == $current_item->{since_id})
-			{
-				$update_complete = 1;
-				last;
-			}
-			else
-			{
-				$current_item->{feed_obj}->add_to_buffer($tweet);
-			}
-		}
-
-		if ($update_complete) #we get all tweets up to the ones we previously stored
-		{
-			$current_item->{feed_obj}->commit;
-		}
-		elsif ( #we didn't get all tweets upto the one we last stored, but we exhausted our search
-			not scalar @{$tweets->{results}} or #empty page 
-			($tweets->{page} >= 15) #twitter limit 
-		)
-		{
-			if ($current_item->{first_updtae})
-			{
-				$current_item->{feed_obj}->commit;
-			}
-			else
-			{
-				$current_item->{feed_obj}->commit_incomplete;
-			}
-		}
-		else #we still have search pages to look at.
-		{
-			$current_item->{search_params}->{page} = $tweets->{page} + 1;
-			push @queue, $current_item;
-		}
-
-	}
-
-	foreach my $incomplete_item (@queue)
-	{
-		$incomplete_item->commit_incomplete;
-	}
-
-}
-
 
 sub file_header
 {
