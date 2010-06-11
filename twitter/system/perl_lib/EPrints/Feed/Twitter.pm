@@ -2,6 +2,9 @@ package EPrints::Feed::Twitter;
 
 my $MAINFILENAME = 'twitter.txt';
 
+use LWP::UserAgent;
+use URI::Find;
+
 sub new
 {
 	my ($class, $document) = @_;
@@ -9,7 +12,8 @@ sub new
 	return bless { 
 		document => $document,
 		write_buffer => [],
-		tweets_in_main_file => 9999100,
+		tweets_in_main_file => 100,
+		uri_cache => {}, #for URL redirect lookups 
 	}, $class;
 }
 
@@ -181,6 +185,67 @@ sub commit_incomplete
 
 }
 
+sub expand_urls
+{
+	my ($self, $tweet) = @_;
+
+	my $message = $tweet->{text};
+	return unless $message;
+
+	my %URLs;
+	my $ua = LWP::UserAgent->new(timeout => 5); 
+
+	my $finder = URI::Find->new(sub{
+		my($uri, $orig_uri) = @_;
+
+		$URLs{$orig_uri}++;
+
+		if (not $uri_cache->{$orig_uri})
+		{
+			$uri_cache->{$orig_uri} = 1;
+			my $response = $ua->head($uri);
+
+			my @redirects = $response->redirects;
+			my @uri_chain;
+
+			if (scalar @redirects)
+			{
+				foreach my $redirect (@redirects)
+				{
+					push @uri_chain, $redirect->request->uri->as_string;
+				}
+				push @uri_chain, $response->request->uri->as_string;
+
+				foreach my $i (0 .. $#uri_chain-1)
+				{
+					$self->{uri_cache}->{$uri_chain[$i]} = $uri_chain[$i+1];
+				}
+			}
+		}
+	});
+        $finder->find(\$message);
+
+	my $redirects = [];
+	my $loop_detector;
+	URL: foreach my $url (keys %URLs)
+	{
+		my $url_tmp = $url;
+		my $chain = [ $url_tmp ];
+		my $loop_detector;
+		REDIRECT: while ($self->{uri_cache}->{$url_tmp})
+		{
+			push @{$chain}, $self->{uri_cache}->{$url_tmp};
+
+			last REDIRECT if ($loop_detector->{$url_tmp}); #should preserve the loop in the data
+			$loop_detector->{$url_tmp} = 1;
+
+			$url_tmp = $self->{uri_cache}->{$url_tmp};
+		}
+		push @{$redirects}, {redirect_chain =>$chain} if scalar @{$chain} >= 2; #a chain myst have at least two links
+	}
+	$tweet->{redirects} = $redirects if scalar @{$redirects} >= 1; #only add if there's at least one chain
+}
+
 #writes back to file
 sub commit
 {
@@ -194,6 +259,8 @@ sub commit
 		my $tweets_dom = $xml->create_element('tweets');
 		foreach my $tweet (@{$self->{write_buffer}})
 		{
+			$self->expand_urls($tweet);
+
 			my $tweet_dom = $xml->create_element('tweet');
 			$tweets_dom->appendChild($tweet_dom);
 			foreach my $k (keys %{$tweet})
