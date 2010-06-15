@@ -12,7 +12,7 @@ sub new
 	return bless { 
 		document => $document,
 		write_buffer => [],
-		tweets_in_main_file => 100,
+		tweets_in_main_file => 5000,
 		uri_cache => {}, #for URL redirect lookups 
 	}, $class;
 }
@@ -277,7 +277,7 @@ sub commit
 		close FILE;
 
 		my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
-		my $timestamp = sprintf("%04d%02d%02d%02d%02d%02d",$year+1900,$mon,$mday,$hour,$min,$sec);
+		my $timestamp = sprintf("%04d%02d%02d%02d%02d%02d",$year+1900,$mon+1,$mday,$hour,$min,$sec);
 
 		$self->{document}->add_file($filename, $timestamp . '.xml');
 		$xml->dispose($tweets_dom);
