@@ -10,4 +10,10 @@
 	<epp:phrase id="Plugin/Screen/Admin/TestDataImport:description">Import the 20 test data records (this process takes some time to return)</epp:phrase>
 	<epp:phrase id="Plugin/Screen/Admin/TestDataImport:failed">Failed: Your achive already contains data</epp:phrase>
 
+	<epp:phrase id="Plugin/Screen/Admin/PlanetsDataImport:title">Import Planets GIFs</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/PlanetsDataImport:description">Import the GIF collection as used in the PLANETS plato and EPrints/Plato combined training course.</epp:phrase>
+	
+	<epp:phrase id="Plugin/Screen/Admin/PlanetsDataImport:imported">The following EPrints were created:</epp:phrase>	
+	<epp:phrase id="Plugin/Screen/Admin/TestDataImport:imported">The following EPrints were created:</epp:phrase>	
+
 </epp:phrases>
