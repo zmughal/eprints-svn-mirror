@@ -3,16 +3,15 @@ Pre-Requisits
     * EPrints 3.2 or greater! You need the new File object which is a core part of >=3.2. 
 
     * The EPrints 3.2 Preservation Tools
-          o Consists of 3 files to be installed in the following locations
-          o archive_name/cfg/cfg.d/pronom.pl
-          o perl_lib/EPrints/Plugins/Screen/Admin/FormatsRisks.pm (and all related files)
-          o perl_lib/EPrints/Plugins/Event/Migration.pm
-          o perl_lib/EPrints/Plugins/Event/Delete_Plan_Docs.pm
-          o tools/update_pronom_puids 
+          o Consists of a bunch of files to be installed in the following locations under the archive_name directory
+          o These can be copied over in the following way
+	          o cd archive_name
+          	  o cp -r cfg /usr/share/eprints3/archives/myarchive/
+          o Finally make a tools directory in your eprints root and drop tools/update_pronom_puids in it.
 
     * A copy of java 
 
-    * A copy of DROID from (http://droid.sf.net), we recommend version 3.0 with the latest signature file (version 16 at time of writing)
+    * A copy of DROID from (http://droid.sf.net), we recommend version 3.0 or 4.0 with the latest signature file (version 36 at time of writing). Dropping this in the tools directory created earlier is probably a good idea. 
 
     * The following perl modules
           o XML::Parser::PerlSAX 
