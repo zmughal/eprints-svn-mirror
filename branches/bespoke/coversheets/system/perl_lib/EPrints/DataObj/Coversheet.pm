@@ -465,12 +465,12 @@ sub applies_to_eprint
 	my( $self, $eprint ) = @_;
 
 	return 0 unless $self->is_set('apply_to');
-print STDERR "Checking if this applies\n";
+#print STDERR "Checking if this applies\n";
 	my $search = $self->{dataset}->get_field('apply_to')->make_searchexp($self->{session}, $self->get_value('apply_to')); #it's not a multiple field
 	my $r = $search->get_conditions->item_matches( $eprint );
 	$search->dispose;
 
-print STDERR ($r ? '1' : '0'), "\n";
+#print STDERR ($r ? '1' : '0'), "\n";
 
 
 	return 1 if $r;
