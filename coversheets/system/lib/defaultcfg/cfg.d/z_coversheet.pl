@@ -75,7 +75,7 @@ $c->{coversheet}->{process_request} = sub
 		my $eprintmoddate = $eprint->get_value('lastmod');
 			#2009-08-21 13:05:22
 		$eprintmoddate =~ m/([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})/;
-		my $eprintmod = timelocal($6,$5,$4,$3,( $2 - 1 ),$1);
+		my $eprintmod = timegm($6,$5,$4,$3,( $2 - 1 ),$1);
 
 		#find the most recently modified coversheet (it may be the one that needs to [or used to need to] be applied)
 		my $searchexp = EPrints::Search->new(
@@ -90,7 +90,7 @@ $c->{coversheet}->{process_request} = sub
 		my $coversheet = EPrints::DataObj::Coversheet->new($session, $list->get_ids->[0]);
 		my $coversheetmoddate = $coversheet->get_value('lastmod');
 		$coversheetmoddate =~ m/([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})/;
-		my $coversheetmod = timelocal($6,$5,$4,$3,( $2 - 1 ),$1);
+		my $coversheetmod = timegm($6,$5,$4,$3,( $2 - 1 ),$1);
 
 
 		#return the previously generated file if it's newer than both the eprint and the coversheet.

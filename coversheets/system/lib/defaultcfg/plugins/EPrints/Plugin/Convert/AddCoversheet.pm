@@ -45,12 +45,41 @@ sub new
 	$self->{name} = "Coversheet Pages";
 	$self->{visible} = "all";
 
+
+#Future development - these functions should really be receiving the document.  We currently have no way to get document metadata.
 	$self->{tags} = 
 	{
 		'citation'      =>  sub { my ($eprint) = @_; return EPrints::Utils::tree_to_utf8($eprint->render_citation); },
 		'creators'      =>  sub { my ($eprint) = @_; return EPrints::Utils::tree_to_utf8($eprint->render_value('creators_name')); },
 		'title' 	=>  sub { my ($eprint) = @_; return EPrints::Utils::tree_to_utf8($eprint->render_value('title')); },
 		'url' 		=>  sub { my ($eprint) = @_; return $eprint->get_url; },
+		'official_url'  =>  sub {
+			my ($eprint) = @_;
+			my $r = '';
+			if ($eprint->is_set('official_url'))
+			{
+				$r = 'Published version at: ' . $eprint->get_value('official_url');
+			}
+			return $r;
+		},
+		'publisher'  =>  sub {
+			my ($eprint) = @_;
+			my $r = '';
+			if ($eprint->is_set('publisher'))
+			{
+				$r = 'Publisher: ' . EPrints::Utils::tree_to_utf8($eprint->render_value('publisher'));
+			}
+			return $r;
+		},
+		'publisher_statement'  =>  sub {
+			my ($eprint) = @_;
+			my $r = '';
+			if ($eprint->is_set('publisher_statement'))
+			{
+				$r = 'Publisher: ' . EPrints::Utils::tree_to_utf8($eprint->render_value('publisher_statement'));
+			}
+			return $r;
+		},
 	};
 
 	return $self;
