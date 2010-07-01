@@ -295,6 +295,12 @@ sub load_repository_config_module
 	my @files = ();
 	foreach my $file ( sort keys %files_map ) { push @files, $files_map{$file}; }
 
+	my $metafield_pl = $info->{archiveroot}."/var/metafield.pl";
+	if( -e $metafield_pl )
+	{
+		push @files, $metafield_pl;
+	}
+
 	$info->{set_in} = {};
 	my $set = {};
 	foreach( keys %$info ) { $set->{$_} = 1; }
@@ -321,7 +327,17 @@ END
 
 		if( $@ )
 		{
-			EPrints->abort( "error in $filepath:\n$@" );
+			my $errors = "error in $filepath:\n$@";
+			print STDERR <<END;
+------------------------------------------------------------------
+---------------- EPrints System Warning --------------------------
+------------------------------------------------------------------
+Failed to load config module for $id
+------------------------------------------------------------------
+$errors
+------------------------------------------------------------------
+END
+			return;
 		}
 		foreach( keys %$info )
 		{

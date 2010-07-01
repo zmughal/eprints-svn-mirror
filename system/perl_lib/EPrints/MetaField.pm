@@ -1812,7 +1812,7 @@ sub ordervalue
 	}
 
 	my $parent = $self->property( "parent" );
-	if( $self->property( "multiple" ) && defined $parent && $parent->isa( "EPrints::MetaField::Multilang" ) )
+	if( defined $parent && $parent->isa( "EPrints::MetaField::Multilang" ) )
 	{
 		my $langs = $parent->property( "languages" );
 
@@ -2196,7 +2196,7 @@ sub get_search_group { return 'basic'; }
 sub get_property_defaults
 {
 	return (
-		provenance => $EPrints::MetaField::FROM_CONFIG,
+		providence => $EPrints::MetaField::FROM_CONFIG,
 		allow_null 	=> 1,
 		browse_link 	=> $EPrints::MetaField::UNDEF,
 		can_clone 	=> 1,
@@ -2357,9 +2357,7 @@ sub get_search_conditions_not_ex
 	# free text!
 
 	# apply stemming and stuff
-	# codes, grep_terms, bad
-	my( $codes, undef, undef ) = $self->get_index_codes( $session,
-		$self->property( "multiple" ) ? [$search_value] : $search_value );
+	my( $codes, $grep_codes, $bad ) = $self->get_index_codes( $session, $search_value );
 
 	# Just go "yeah" if stemming removed the word
 	if( !EPrints::Utils::is_set( $codes->[0] ) )
@@ -2367,20 +2365,11 @@ sub get_search_conditions_not_ex
 		return EPrints::Search::Condition->new( "PASS" );
 	}
 
-	if( $search_value =~ s/\*$// )
-	{
-		return EPrints::Search::Condition::IndexStart->new( 
-				$dataset,
-				$self, 
-				$codes->[0] );
-	}
-	else
-	{
-		return EPrints::Search::Condition::Index->new( 
-				$dataset,
-				$self, 
-				$codes->[0] );
-	}
+	return EPrints::Search::Condition->new( 
+			'index',
+ 			$dataset,
+			$self, 
+			$codes->[0] );
 }
 
 sub get_value

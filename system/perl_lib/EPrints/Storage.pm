@@ -157,17 +157,13 @@ sub store
 	return $rlen;
 }
 
-=item $success = $store->retrieve( $fileobj, $offset, $n, CALLBACK )
-
-Retrieve the contents of the $fileobj starting at $offset for $n bytes.
-
-CALLBACK = $rc = &f( BUFFER )
+=item $success = $store->retrieve( $fileobj, CALLBACK )
 
 =cut
 
 sub retrieve
 {
-	my( $self, $fileobj, $offset, $n, $f ) = @_;
+	my( $self, $fileobj, $f ) = @_;
 
 	my $rc = 0;
 
@@ -175,7 +171,7 @@ sub retrieve
 	{
 		my $plugin = $self->{repository}->plugin( $copy->{pluginid} );
 		next unless defined $plugin;
-		$rc = $plugin->retrieve( $fileobj, $copy->{sourceid}, $offset, $n, $f );
+		$rc = $plugin->retrieve( $fileobj, $copy->{sourceid}, $f );
 		last if $rc;
 	}
 
@@ -261,11 +257,10 @@ sub get_local_copy
 		$filename = File::Temp->new;
 		binmode($filename);
 
-		my $rc = $self->retrieve( $fileobj, 0, $fileobj->value( "filesize" ),
-			sub {
-				return defined syswrite($filename,$_[0])
-			} );
-		sysseek($filename,0,0);
+		my $rc = $self->retrieve( $fileobj, sub {
+			return defined syswrite($filename,$_[0])
+		} );
+		seek($filename,0,0);
 
 		undef $filename unless $rc;
 	}
@@ -356,7 +351,7 @@ sub copy
 
 	return $ok unless $ok;
 	
-	$ok = $self->retrieve( $fileobj, 0, $fileobj->value( "filesize" ), sub {
+	$ok = $self->retrieve( $fileobj, sub {
 		$target->write( $fileobj, $_[0] );
 	} );
 

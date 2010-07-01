@@ -1262,7 +1262,8 @@ my $PRIVMAP =
 		"config/remove_field",
 		"config/regen_abstracts",
 		"config/regen_views",
-		"config/edit/perl",
+		"metafield/view",
+		"metafield/edit",
 		"import/view",
 		"import/edit",
 		"storage/manager",
@@ -1271,7 +1272,6 @@ my $PRIVMAP =
 		"event_queue/view",
 		"event_queue/destroy",
 		"eprint/archive/edit", # BatchEdit
-		"repository/epm", #EPrints Package Manager
 	],
 
 	"toolbox" => 

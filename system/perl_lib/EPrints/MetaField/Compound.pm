@@ -42,16 +42,11 @@ sub new
 
 	my $self = $class->SUPER::new( %properties );
 
-	my %seen;
 	foreach my $inner_field ( @{$properties{fields}}, $self->extra_subfields )
 	{
 		if( !EPrints::Utils::is_set( $inner_field->{sub_name} ) )
 		{
 			EPrints->abort( "Sub fields of ".$self->dataset->id.".".$self->name." need the sub_name property to be set." );
-		}
-		if( $seen{$inner_field->{sub_name}}++ )
-		{
-			EPrints->abort( $self->dataset->id.".".$self->name." already contains a sub-field called '$inner_field->{sub_name}'" );
 		}
 		my $field = EPrints::MetaField->new( 
 			show_in_html => 0, # don't show the inner field separately
@@ -65,7 +60,7 @@ sub new
 			parent => $self,
 			parent_name => $self->get_name(),
 			dataset => $self->get_dataset(), 
-			provenance => $self->get_property( "provenance" ),
+			providence => $self->get_property( "providence" ),
 			multiple => $properties{ "multiple" },
 			volatile => $properties{ "volatile" } );
 

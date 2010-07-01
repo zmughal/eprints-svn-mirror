@@ -72,60 +72,71 @@ A shell script will print the stack trace to the console.
 package EPrints;
 
 use EPrints::SystemSettings;
+use EPrints::Config;
 
 use Data::Dumper;
 use Scalar::Util;
 
-use Carp qw( verbose );
-
 use strict;
+
+BEGIN {
+	use Carp;
+
+	# load the configuration - required by EPrints::Platform et al
+	EPrints::Config::init();
+
+	umask( 0002 );
+
+######################################################################
+=pod
 
 =item EPrints->abort( $errmsg )
 
-This subroutine is loaded before other modules so that it may be used to report errors when initialising modules.
+This subroutine is loaded before other modules so that it may be
+used to report errors when initialising modules.
 
 When running under Mod_Perl this method is replaced.
 
 =cut
+######################################################################
 
-sub abort
-{
-	my( $errmsg ) = pop @_; # last parameter
+	sub abort
+	{
+		my( $errmsg ) = pop @_; # last parameter
 
-	print STDERR <<END;
-
+		print STDERR <<END;
+	
 ------------------------------------------------------------------
 ---------------- EPrints System Error ----------------------------
 ------------------------------------------------------------------
 $errmsg
 ------------------------------------------------------------------
 END
-	$@="";
-	Carp::cluck( "EPrints System Error inducing stack dump\n" );
-	if( $EPrints::die_on_abort ) { die $errmsg; }
-	exit( 1 );
-}
+		$@="";
+		Carp::cluck( "EPrints System Error inducing stack dump\n" );
+		if( $EPrints::die_on_abort ) { die $errmsg; }
+		exit( 1 );
+	}
 
-sub deprecated
-{
-	my @c = caller(1);
-	print STDERR "Called deprecated function $c[3] from $c[1] line $c[2]\n";
-}
+	sub deprecated
+	{
+		my @c = caller(1);
+		print STDERR "Called deprecated function $c[3] from $c[1] line $c[2]\n";
+	}
 
-sub try
-{
-	my( $code ) = @_;
+	sub try
+	{
+		my( $code ) = @_;
 
-	my $r = eval { &$code };
+		my $r = eval { &$code };
 
-	if( $@ ) { EPrints->abort( $@ ); }
+		if( $@ ) { EPrints->abort( $@ ); }
 
-	return $r;
+		return $r;
+	}
 }
 
 use Apache::DBI; # must be first! 	 	 
-
-use EPrints::Const; # must be before any use of constants
 
 use EPrints::Apache;
 use EPrints::Apache::AnApache;
@@ -141,10 +152,9 @@ use EPrints::Apache::RobotsTxt;
 use EPrints::Apache::SiteMap;
 
 use EPrints::BackCompatibility;
-
-use EPrints::Config;
-use EPrints::System;
 use EPrints::XML;
+use EPrints::XHTML;
+use EPrints::Utils;
 use EPrints::Time;
 
 use EPrints::Box;
@@ -156,7 +166,6 @@ use EPrints::DataObj::Access;
 use EPrints::DataObj::Cachemap;
 use EPrints::DataObj::Document;
 use EPrints::DataObj::EPrint;
-use EPrints::DataObj::EPM;
 use EPrints::DataObj::File;
 use EPrints::DataObj::History;
 use EPrints::DataObj::Import;
@@ -186,6 +195,7 @@ use EPrints::Page::Text;
 use EPrints::Page::DOM;
 use EPrints::Paginate;
 use EPrints::Paginate::Columns;
+use EPrints::Platform;
 use EPrints::Plugin;
 use EPrints::PluginFactory;
 use EPrints::Probity;
@@ -208,9 +218,6 @@ use EPrints::Update::Abstract;
 use EPrints::Workflow;
 use EPrints::Workflow::Stage;
 use EPrints::XML::EPC;
-use EPrints::XHTML;
-use EPrints::Utils;
-use EPrints::EPM;
 
 our $__loaded;
 our $__cloned;
@@ -461,7 +468,7 @@ sub import
 	# we can become the required user.
 	if( !$__loaded && !$opts{"no_check_user"} && !$ENV{MOD_PERL} && !$ENV{EPRINTS_NO_CHECK_USER} )
 	{
-		EPrints->system->test_uid();
+		EPrints::Platform::test_uid();
 	}
 
 	$__loaded = 1;
@@ -528,17 +535,6 @@ sub request
 	return $EPrints::HANDLE->{request};
 }
 
-=item $sys = $ep->system()
-
-Returns the L<EPrints::System> object.
-
-=cut
-
-sub system
-{
-	return $EPrints::SYSTEM;
-}
-
 sub sigusr2_cluck
 {
 	Carp::cluck( "caught SIGUSR2" );
@@ -549,19 +545,7 @@ sub sigusr2_cluck
 {
 	no warnings;
 	$SIG{'USR2'} = \&sigusr2_cluck;
-	#$SIG{__DIE__} = \&EPrints::abort; # uncomment this to help with debugging
 };
-
-umask( 0002 );
-
-# create a system object
-our $SYSTEM = EPrints::System->new();
-
-# load the real XML module
-EPrints::XML::init();
-
-# load the configuration
-EPrints::Config::init();
 
 1;
 

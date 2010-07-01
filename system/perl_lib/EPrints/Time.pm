@@ -12,12 +12,11 @@
 #
 ######################################################################
 
-package EPrints::Time;
 
-use POSIX qw( strftime );
-use Time::Local qw( timegm_nocheck timelocal_nocheck );
+=pod
 
 =for Pod2Wiki
+
 
 =head1 NAME
 
@@ -25,230 +24,376 @@ B<EPrints::Time> - Time and Date-related functions
 
 =head1 SYNOPSIS
 
-	($year) = EPrints::Time::utc_datetime()
-	# 2010
-
-	($year,$month) = EPrints::Time::local_datetime()
-	# 2010, 6
-
-	EPrints::Time::iso_datetime(); 
-	# 2008-05-15T14:40:24Z
-	
-	EPrints::Time::iso_date()
-	# 2010-06-23
-
-	EPrints::Time::month_label( $repo, 11 ) 
-	# returns "November"
-	
-	EPrints::Time::short_month_label( $repo, 11 ) 
-	# returns "Nov"
-
-	EPrints::Time::render_date( $repo, "2001-01-12T00:00:00Z" ) 
+	EPrints::Time::render_date( $handle, "2001-01-12T00:00:00Z" ) 
 	# returns XML containing 12 January 2001 00:00
 
-	EPrints::Time::render_short_date( $repo, "2001-01-12T00:00:00Z" ) 
+	EPrints::Time::render_short_date( $handle, "2001-01-12T00:00:00Z" ) 
 	# returns XML containing 12 Jan 2001 00:00
 	
+	EPrints::Time::get_iso_timestamp( ); 
+	# returns NOW in the form YYYY-MM-DDTHH:MM:SSZ
+	
+	EPrints::Time::human_delay( 28 ); 
+	# returns "1 day"
+	
+	EPrints::Time::get_month_label( $handle, 11 ) 
+	# returns November
+	
+	EPrints::Time::get_month_label_short( $handle, 11 ) 
+	# returns Nov
+
 =head1 DESCRIPTION
 
 This package contains functions related to time/date functionality. 
 
-=head1 FORMATS USED IN EPRINTS
+=cut
 
-=head2 Internal format
+package EPrints::Time;
 
-Time zone: UTC (database), server local time (embargoes)
+use POSIX qw(strftime);
+use Time::Local 'timegm_nocheck';
 
-Format: YYYY or YYYY-MM or YYYY-MM-DD or "YYYY-MM-DD hh" or "YYYY-MM-DD hh:mm" or "YYYY-MM-DD hh:mm:ss"
-
-These are used in the database and when setting and getting values. They can contain any fractional part of a date time.
-
-=head2 ISO 8601-style date/times
-
-Time zone: UTC
-
-Format: YYYY-MM-DD or YYYY-MM-DDThh:mm:ssZ
-
-These are primarily used in XML output where times that conform to the standard XSD date/time are required.
-
-=head2 Epoch time
-
-Time zone: UTC
-
-Format: integer
-
-Time in seconds since system epoch. Used in the login tickets table and when performing date calculations.
+######################################################################
+=pod
 
 =head1 METHODS
 
 =over 4
 
-=cut
+=item $xhtml = EPrints::Time::render_date( $handle, $datevalue )
 
-=back
+Render the given date or date and time as a chunk of XHTML.
 
-=head2 Parsing
+$datevalue is given in a UTC timestamp of the form YYYY-MM-DDTHH:MM:SSZ but it will be rendered in the local offset.
 
-=over 4
-
-=item @t = split_value( $value )
-
-Splits internal or ISO format $value into years, months, days, hours, minutes, seconds.
+e.g EPrints::Time::render_date( $handle, "2001-01-12T00:00:00Z" ) #returns XML containing 12 January 2001 00:00
 
 =cut
+######################################################################
 
-sub split_value
+sub render_date
 {
-	my( $value ) = @_;
-
-	my @t = $value =~ /([0-9]+)/g;
-
-	return @t;
+	my( $session, $datevalue) = @_;
+	return _render_date( $session, $datevalue, 0 );
 }
 
-=item $time = datetime_local( @t )
+######################################################################
+=pod
 
-Returns local time @t as the number of seconds since epoch, where @t is years, months etc.
+=item $xhtml = EPrints::Time::render_short_date( $handle, $datevalue )
 
-=cut
+Renders a short version of the given date or date and time as a chunk of XHTML.
 
-sub datetime_local
-{
-	my( $year, $mon, $day, $hour, $min, $sec ) = @_;
+$datevalue is given in UTC timestamp of the form YYYY-MM-DDTHH:MM:SSZ but it will be rendered in the local offset.
 
-	return timelocal_nocheck( $sec||0, $min||0, $hour||0, $day||1, ($mon||1)-1, ($year||1900)-1900 );
-}
-
-=item $time = datetime_utc( @t )
-
-Returns UTC time @t as the number of seconds since epoch, where @t is years, months etc.
+e.g EPrints::Time::render_short_date( $handle, "2001-01-12T00:00:00Z" ) #returns XML containing 12 Jan 2001 00:00
 
 =cut
+######################################################################
 
-sub datetime_utc
+sub render_short_date
 {
-	my( $year, $mon, $day, $hour, $min, $sec ) = @_;
-
-	return timegm_nocheck( $sec||0, $min||0, $hour||0, $day||1, ($mon||1)-1, ($year||1900)-1900 );
+	my( $session, $datevalue) = @_;
+	return _render_date( $session, $datevalue, 1 );
 }
 
-=back
+######################################################################
+=pod
 
-=head2 Formatting
+=item $xhtml = EPrints::Time::datestring_to_timet( $handle, $datevalue )
 
-=over 4
+Returns an interger number of seconds since 1970-01-01:00:00
 
-=item $datetime = EPrints::Time::join_value( @t )
-
-Return a time @t in internal format.
-
-Returns undef if no parts are defined.
+$datevalue - in the format YYYY-MM-DDTHH:MM:SSZ 
 
 =cut
+######################################################################
 
-sub join_value
+sub datestring_to_timet
 {
-	return if !defined $_[0];
+	my( $session, $datevalue, $short ) = @_;
 
-	my $r = sprintf('%04d', shift(@_));
-	$r .= "-".sprintf('%02d', shift(@_)) if defined $_[0];
-	$r .= "-".sprintf('%02d', shift(@_)) if defined $_[0];
-	$r .= " ".sprintf('%02d', shift(@_)) if defined $_[0];
-	$r .= ":".sprintf('%02d', shift(@_)) if defined $_[0];
-	$r .= ":".sprintf('%02d', shift(@_)) if defined $_[0];
+	my( $year,$mon,$day,$hour,$min,$sec ) = split /[- :TZ]/, $datevalue;
 
-	return $r;
+	my $t = timegm_nocheck $sec||0,$min||0,$hour,$day,$mon-1,$year-1900;
+
+	return $t;
 }
 
-=item ($year,$mon,$day,$hour,$min,$sec) = EPrints::Time::local_datetime( [ $seconds ] )
+sub _render_date
+{
+	my( $session, $datevalue, $short ) = @_;
 
-Returns the local date-time as an array, see L<perlfunc/localtime>.
+	if( !defined $datevalue )
+	{
+		return $session->html_phrase( "lib/utils:date_unspecified" );
+	}
 
-$seconds is seconds since epoch or now if not given.
+	# remove 0'd days and months
+	$datevalue =~ s/(-0+)+$//;
+
+	# the is the gmtime
+	my( $year,$mon,$day,$hour,$min,$sec ) = split /[- :TZ]/, $datevalue;
+
+	if( defined $hour )
+	{
+		# if we have a time as well as a date then shift it to
+		# localtime.
+		my $t = timegm_nocheck $sec||0,$min||0,$hour,$day,$mon-1,$year-1900;
+		my @l = localtime( $t );
+		$l[0] = undef unless defined $sec;
+		$l[1] = undef unless defined $min;
+		( $sec,$min,$hour,$day,$mon,$year ) = ( $l[0], $l[1], $l[2], $l[3], $l[4]+1, $l[5]+1900 );
+	}
+
+
+	if( !defined $year || $year eq "undef" || $year eq "" || $year == 0 ) 
+	{
+		return $session->html_phrase( "lib/utils:date_unspecified" );
+	}
+
+	# 1999
+	my $r = $year;
+
+	my $month_name;
+	if( defined $mon )
+	{
+		if( $short )	
+		{
+			$month_name = EPrints::Time::get_month_label_short( $session, $mon );
+		}
+		else
+		{
+			$month_name = EPrints::Time::get_month_label( $session, $mon );
+		}
+		$r = "$month_name $r";
+	}
+	if( $short ) 
+	{
+		$r = sprintf( "%02d",$day)." $r" if( defined $day );
+	}
+	else
+	{
+		$r = "$day $r" if( defined $day );
+	}
+
+	if( !defined $hour )
+	{
+		return $session->make_text( $r );
+	}
+
+	my $time;
+	if( defined $sec ) 
+	{
+		$time = sprintf( "%02d:%02d:%02d",$hour,$min,$sec );
+	}
+	elsif( defined $min )
+	{
+		$time = sprintf( "%02d:%02d",$hour,$min );
+	}
+	else
+	{
+		$time = sprintf( "%02d",$hour );
+	}
+	$r .= " ".$time;
+
+	my $gmt_off = gmt_off();
+	my $hour_diff = $gmt_off/60/60;
+	my $min_diff = ($gmt_off/60)%60;
+	my $c = "";
+	if( $hour_diff >= 0 ) { $c="+"; }
+	my $off = sprintf( ' %s%02d:%02d', $c, $hour_diff, $min_diff );
+
+	$r .= " ".$off if( !$short );
+
+	return $session->make_text( $r );
+}
+
+######################################################################
+=pod
+
+=item $xhtml = EPrints::Time::gmt_off()
+
+Render the current time offset in seconds. This just diffs gmtime
+and localtime.
 
 =cut
+######################################################################
 
-sub local_datetime
+sub gmt_off
 {
-	my @t = localtime(@_ ? @_ : time());
-	@t = reverse @t[0..5];
-	$t[0] += 1900;
-	$t[1] += 1;
+        my $time = time;
+        my( @local ) = localtime($time);
+        my( @gmt ) = gmtime($time);
+ 
+        my @diff;
+ 
+        for(0..2) { $diff[$_] = $local[$_] - $gmt[$_]; }
 
-	return @t;
+	my $local_cmp_code = $local[3]+$local[4]*100+$local[5]*10000; 
+	my $gmt_cmp_code = $gmt[3]+$gmt[4]*100+$gmt[5]*10000; 
+        if( $local_cmp_code > $gmt_cmp_code ) { $diff[2] += 24; }
+        if( $local_cmp_code < $gmt_cmp_code ) { $diff[2] -= 24; }
+ 
+        return $diff[2]*60*60 + $diff[1]*60 + $diff[0];
 }
 
-=item ($year,$mon,$day,$hour,$min,$sec) = EPrints::Time::utc_datetime( [ $seconds ] )
 
-Returns the UTC date-time as an array, see L<perlfunc/gmtime>.
+######################################################################
+=pod
 
-$seconds is seconds since epoch or now if not given.
+=item $label = EPrints::Time::get_month_label( $handle, $monthid )
+
+Return a UTF-8 string describing the month, in the current lanugage.
+
+$monthid is an integer from 1 to 12.
+
+e.g EPrints::Time::get_month_label( $handle, 11 ) # returns November
 
 =cut
+######################################################################
 
-sub utc_datetime
+sub get_month_label
 {
-	my @t = gmtime(@_ ? @_ : time());
-	@t = reverse(@t[0..5]);
-	$t[0] += 1900;
-	$t[1] += 1;
+	my( $session, $monthid ) = @_;
 
-	return @t;
+	my $code = sprintf( "lib/utils:month_%02d", $monthid );
+
+	return $session->phrase( $code );
 }
 
-=item $date = EPrints::Time::iso_date( [ $seconds ] )
+######################################################################
+=pod
 
-Return a UTC date of the form YYYY-MM-DD.
+=item $label = EPrints::Time::get_month_label_short( $handle, $monthid )
 
-$seconds is seconds since epoch or now if not given.
+Return a UTF-8 string of a short representation in  month, in the current lanugage.
+
+$monthid is an integer from 1 to 12.
+
+e.g EPrints::Time::get_month_label_short( $handle, 11 ) # returns Nov
 
 =cut
+######################################################################
 
-sub iso_date
+sub get_month_label_short
 {
-	return strftime( '%Y-%m-%d', gmtime(@_ ? @_ : time()));
+	my( $session, $monthid ) = @_;
+
+	my $code = sprintf( "lib/utils:month_short_%02d", $monthid );
+
+	return $session->phrase( $code );
 }
 
-=item $datetime = EPrints::Time::iso_datetime( [ $seconds ] );
+######################################################################
+=pod
 
-Return a UTC date-time of the form YYYY-MM-DDTHH:MM:SSZ
+=item ($year,$month,$day) = EPrints::Time::get_date_array( [$time] )
 
-$seconds is seconds since epoch or now if not given.
+Static method that returns the given time (in UNIX time, seconds 
+since 1.1.79) in an array.
+
+This is the local date not the UTC date.
 
 =cut
+######################################################################
+sub get_date { return get_date_array( @_ ); }
 
-sub iso_datetime
+sub get_date_array
 {
-	return strftime( '%Y-%m-%dT%H:%M:%SZ', gmtime(@_ ? @_ : time()));
+	my( $time ) = @_;
+
+	$time = time unless defined $time;
+
+	my @date = localtime( $time );
+
+	return( 
+		sprintf( "%02d", $date[5]+1900 ),
+		sprintf( "%02d", $date[4]+1 ),
+		sprintf( "%02d", $date[3] ) );
 }
 
-=item $datetime = EPrints::Time::rfc822_datetime( [ $seconds ] )
 
-Return the local date-time in RFC 822 format (used by e.g. RSS).
 
-$seconds is seconds since epoch or now if not given.
+######################################################################
+=pod
+
+=item  $datestamp = EPrints::Time::get_iso_date( [$time] )
+
+Method that returns the given time (in UNIX time, seconds 
+since 1.1.79) in the format used by EPrints and MySQL (YYYY-MM-DD).
+
+This is the localtime date, not UTC.
 
 =cut
+######################################################################
 
-sub rfc822_datetime
+sub get_iso_date
 {
-	return strftime( "%a, %d %b %Y %H:%M:%S %z", localtime(@_ ? @_ : time()));
+	my( $time ) = @_;
+
+	$time = time unless defined $time;
+
+	my( $year, $month, $day ) = EPrints::Time::get_date( $time );
+
+	return( $year."-".$month."-".$day );
 }
+
+
+######################################################################
+=pod
 
 =item $timestamp = EPrints::Time::human_time( [$time] )
 
 Return a string describing the current local date and time in the
-current locale's format, see L<perlfunc/localtime>.
+current locale's format (see Perl's 'localtime).
 
 =cut
+######################################################################
 
 sub human_time
 {
-	return sprintf("%s %s",
-		scalar(localtime(@_ ? @_ : time())),
-		strftime("%Z", localtime(@_ ? @_ : time()))
+	my( $time ) = @_;
+
+	$time = time unless defined $time;
+
+	my $stamp = sprintf("%s %s",
+		scalar(localtime($time)),
+		strftime("%Z", localtime($time))
 	);
+
+	return $stamp;
 }
+
+######################################################################
+=pod
+
+=item $timestamp = EPrints::Time::get_iso_timestamp( [$time] );
+
+Return a UTC timestamp of the form YYYY-MM-DDTHH:MM:SSZ
+
+e.g. 2005-02-12T09:23:33Z
+
+$time in seconds from 1970. If not defined then assume current time.
+
+=cut
+######################################################################
+
+sub get_iso_timestamp
+{
+	my( $time ) = @_;
+
+	$time = time unless defined $time;
+
+	my( $sec, $min, $hour, $mday, $mon, $year ) = gmtime($time);
+
+	return sprintf( "%04d-%02d-%02dT%02d:%02d:%02dZ", 
+			$year+1900, $mon+1, $mday, 
+			$hour, $min, $sec );
+}
+
+######################################################################
+=pod
 
 =item $timestamp = EPrints::Time::human_delay( $hours );
 
@@ -256,7 +401,13 @@ Returns a human readable amount of time.
 
 $hours the number of hours representing the time you want to be human readable.
 
+e.g. EPrints::Time::human_delay( 28 ); # returns "1 day"
+
+e.g. EPrints::Time::human_delay( 400 ); # returns "2 weeks"
+
 =cut
+######################################################################
+
 
 sub human_delay
 {
@@ -279,170 +430,11 @@ sub human_delay
 	return $weeks." week".($weeks>1?"s":"");
 }
 
-=back
-
-=head2 Phrases
-
-=over 4
-
-=item $label = EPrints::Time::month_label( $repo, $monthid )
-
-Return a UTF-8 string describing the month, in the current lanugage.
-
-$monthid is an integer from 1 to 12.
-
-=cut
-
-sub month_label
-{
-	my( $session, $monthid ) = @_;
-
-	my $code = sprintf( "lib/utils:month_%02d", $monthid );
-
-	return $session->phrase( $code );
-}
-
-=item $label = EPrints::Time::short_month_label( $repo, $monthid )
-
-Return a UTF-8 string of a short representation in month, in the current lanugage.
-
-$monthid is an integer from 1 to 12.
-
-=cut
-
-sub short_month_label
-{
-	my( $session, $monthid ) = @_;
-
-	my $code = sprintf( "lib/utils:month_short_%02d", $monthid );
-
-	return $session->phrase( $code );
-}
-
-=back
-
-=head2 Rendering
-
-=over 4
-
-=item $xhtml = EPrints::Time::render_date( $repo, $value )
-
-Renders a L<EPrints::MetaField::Date> or L<EPrints::MetaField::Time> value in a human-friendly form in the current locale's time zone.
-
-Month names are taken from the current repository language.
-
-E.g.
-
-	5 June 2010 10:35:12 +02:00
-	12 December 1912 # no time
-	1954 # no month/day
-
-=cut
-######################################################################
-
-sub render_date
-{
-	my( $session, $datevalue) = @_;
-	return _render_date( $session, $datevalue, 0 );
-}
+1;
 
 ######################################################################
 =pod
 
-=item $xhtml = EPrints::Time::render_short_date( $repo, $value )
-
-Render a shorter form of L</render_date>.
-
-E.g.
-
-	05 Jun 2010 10:35:12
-	12 Dec 1912 # no time
-	1954 # no month/day
+=back
 
 =cut
-######################################################################
-
-sub render_short_date
-{
-	my( $session, $datevalue) = @_;
-	return _render_date( $session, $datevalue, 1 );
-}
-
-sub _render_date
-{
-	my( $session, $datevalue, $short ) = @_;
-
-	if( !defined $datevalue )
-	{
-		return $session->html_phrase( "lib/utils:date_unspecified" );
-	}
-
-	my @l = split_value( $datevalue );
-
-	if( @l == 0 )
-	{
-		return $session->html_phrase( "lib/utils:date_unspecified" );
-	}
-
-	my $t = datetime_utc( @l );
-	my( $sec, $min, $hour, $day, $mon, $year ) = localtime( $t ); # switch to local time
-	$year += 1900;
-	$mon += 1;
-
-	# 1999
-	my $r = $year;
-
-	if( @l > 1 )
-	{
-		my $month_name;
-		if( $short )	
-		{
-			$month_name = short_month_label( $session, $mon );
-		}
-		else
-		{
-			$month_name = month_label( $session, $mon );
-		}
-		$r = "$month_name $r";
-	}
-	if( @l > 2 )
-	{
-		$r = $short ? sprintf( "%02d", $day ) . " $r" : "$day $r";
-	}
-
-	if( @l > 3 )
-	{
-		$r = "$r ".sprintf("%02d", $hour);
-	}
-	if( @l > 4 )
-	{
-		$r = "$r:".sprintf("%02d", $min);
-	}
-	if( @l > 5 )
-	{
-		$r = "$r:".sprintf("%02d", $sec);
-	}
-
-	if( @l > 3 && !$short )
-	{
-		my $diff = timegm_nocheck(localtime()) - timegm_nocheck(gmtime());
-		$r = "$r ".sprintf('%s%02d:%02d',
-			($diff >= 0 ? '+' : '-'),
-			$diff / 3600,
-			($diff % 3600) / 60
-		);
-	}
-
-	return $session->make_text( $r );
-}
-
-# BackCompatibility
-sub get_iso_date { &iso_date }
-sub get_iso_timestamp { &iso_datetime }
-sub get_month_label { &month_label }
-sub get_month_label_short { &short_month_label }
-sub datestring_to_timet { datetime_utc( split_value( $_[1] ) ) }
-sub get_date { &local_datetime }
-sub get_date_array { &local_datetime }
-
-1;

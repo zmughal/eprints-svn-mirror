@@ -76,12 +76,12 @@ sub output_list
 	$channel->appendChild( $session->render_data_element(
 		4,
 		"pubDate", 
-		EPrints::Time::rfc822_datetime() ) );
+		RFC822_time() ) );
 
 	$channel->appendChild( $session->render_data_element(
 		4,
 		"lastBuildDate", 
-		EPrints::Time::rfc822_datetime() ) );
+		RFC822_time() ) );
 
 	$channel->appendChild( $session->render_data_element(
 		4,
@@ -105,7 +105,7 @@ sub output_list
 			$item->appendChild( $session->render_data_element(
 				2,
 				"pubDate",
-				EPrints::Time::rfc822_datetime( $time ) ) );	
+				RFC822_time( $time ) ) );	
 			
 		}
 
@@ -143,6 +143,14 @@ END
 	} 
 
 	return $rssfeed;
+}
+
+use POSIX qw(strftime);
+sub RFC822_time
+{
+	my( $time ) = @_;
+	$time = time if( !defined $time );
+	return( strftime( "%a, %d %b %Y %H:%M:%S %z", localtime( $time ) ) );
 }
 
 sub render_media_content

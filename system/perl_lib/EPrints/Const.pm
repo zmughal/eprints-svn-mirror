@@ -26,20 +26,6 @@ This module contains EPrints constants and enumerations.
 
 =head1 CONSTANTS
 
-=head2 Namespaces
-
-=over 4
-
-=item EP_NS_DATA
-
-http://eprints.org/ep2/data/2.0
-
-=item EP_NS_XSLT
-
-http://eprints.org/ep2/xslt/1.0
-
-=back
-
 =head2 Trigger Result Codes
 
 =over 4
@@ -94,14 +80,6 @@ Continue normal processing.
 
 =item EP_TRIGGER_FILES_MODIFED
 
-=item EP_TRIGGER_MEDIA_INFO
-
-Populate a Document epdata structure with information about a file.
-
-	epdata
-	filename
-	filepath
-
 =back
 
 =cut
@@ -110,12 +88,6 @@ package EPrints::Const;
 
 use Exporter;
 @ISA = qw( Exporter );
-
-# Namespaces
-use constant {
-	EP_NS_XSLT => "http://eprints.org/ep2/xslt/1.0",
-	EP_NS_DATA => "http://eprints.org/ep2/data/2.0",
-};
 
 use constant {
 	EP_TRIGGER_DONE => -2,
@@ -133,7 +105,6 @@ use constant {
 	EP_TRIGGER_END_REQUEST => 7,
 	EP_TRIGGER_END => 8,
 	EP_TRIGGER_DOC_URL_REWRITE => 9,
-	EP_TRIGGER_MEDIA_INFO => 10,
 };
 
 # DataObj triggers
@@ -151,9 +122,6 @@ use constant {
 
 @EXPORT_OK = ();
 @EXPORT = qw(
-	EP_NS_XSLT
-	EP_NS_DATA
-
 	EP_TRIGGER_DONE
 	EP_TRIGGER_OK
 
@@ -166,7 +134,6 @@ use constant {
 	EP_TRIGGER_END_REQUEST
 	EP_TRIGGER_END
 	EP_TRIGGER_DOC_URL_REWRITE
-	EP_TRIGGER_MEDIA_INFO
 
 	EP_TRIGGER_CREATED
 	EP_TRIGGER_RDF

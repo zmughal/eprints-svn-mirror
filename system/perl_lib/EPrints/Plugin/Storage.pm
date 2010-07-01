@@ -6,6 +6,17 @@ our @ISA = qw/ EPrints::Plugin /;
 
 $EPrints::Plugin::Storage::DISABLE = 1;
 
+sub new
+{
+	my( $class, %params ) = @_;
+
+	my $self = $class->SUPER::new(%params);
+
+	$self->{name} = "Storage abstraction layer: this plugin should have been subclassed";
+
+	return $self;
+}
+
 sub matches 
 {
 	my( $self, $test, $param ) = @_;
@@ -40,8 +51,7 @@ sub store
 {
 	my( $self, $fileobj, $f, $croak ) = @_;
 
-	EPrints->abort( ref($self)." appears not to have subclassed store() or open_write() - at least one must be implemented" )
-		if $croak;
+	EPrints::abort ref($self)." appears not to have subclassed store() or open_write() - at least one must be implemented" if $croak;
 
 	return unless $self->open_write( $fileobj, 1 );
 
@@ -53,17 +63,15 @@ sub store
 	return $self->close_write( $fileobj );
 }
 
-=item $success = $store->retrieve( $fileobj, $sourceid, $offset, $len, CALLBACK )
+=item $success = $store->retrieve( $fileobj, $sourceid, CALLBACK )
 
-Retrieve $n bytes of data starting at $offset from the data stored for $fileobj identified by $sourceid.
-
-CALLBACK = $rc = &f( BYTES )
+Retrieve an object using CALLBACK.
 
 =cut
 
 sub retrieve
 {
-	my( $self, $fileobj, $sourceid, $offset, $n, $f ) = @_;
+	my( $self, $fileobj, $sourceid, $f ) = @_;
 
 	undef;
 }
@@ -121,8 +129,7 @@ sub open_write
 {
 	my( $self, $fileobj, $croak ) = @_;
 
-	EPrints->abort( ref($self)." appears not to have subclassed store() or open_write() - at least one must be implemented" )
-		if $croak;
+	EPrints::abort ref($self)." appears not to have subclassed store() or open_write() - at least one must be implemented" if $croak;
 
 	$self->{_fh}->{$fileobj} = File::Temp->new;
 

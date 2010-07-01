@@ -262,11 +262,6 @@ my $INFO = {
 		index => 1,
 		datestamp => "datestamp",
 	},
-	epm => {
-		sqlname => "epm",
-		class => "EPrints::DataObj::EPM",
-		virtual => 1,
-	},
 };
 
 ######################################################################
@@ -464,9 +459,9 @@ sub process_field
 {
 	my( $self, $fielddata, $system ) = @_;
 
-	if( !defined $fielddata->{provenance} )
+	if( !defined $fielddata->{providence} )
 	{
-		$fielddata->{provenance} = $system ? "core" : "config";
+		$fielddata->{providence} = $system ? "core" : "config";
 	}
 
 	my $field = EPrints::MetaField->new( 

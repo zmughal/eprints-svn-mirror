@@ -12,14 +12,19 @@ sub new
 {
 	my( $class, %params ) = @_;
 
-	$params{actions} = exists $params{actions} ? $params{actions} : [];
-	$params{session} = exists $params{session} ? $params{session} : $params{processor}->{session};
+	my $self = $class->SUPER::new(%params);
+
+	if( !defined $self->{session} ) 
+	{
+		$self->{session} = $self->{processor}->{session};
+	}
+	$self->{actions} = [];
 
 	# flag to indicate that it takes some effort to make this screen, so
 	# don't make it up as a tab. eg. EPrint::History.
-	$params{expensive} = exists $params{expensive} ? $params{expensive} : 0; 
+	$self->{expensive} = 0; 
 
-	return $class->SUPER::new(%params);
+	return $self;
 }
 
 sub properties_from
@@ -264,7 +269,6 @@ Each screen opt is a hash ref of:
 Incoming opts:
 
 	filter => 1 or 0 (default 1)
-	params => {}
 
 =cut
 
@@ -402,26 +406,12 @@ sub _render_action_aux
 		$session->render_hidden_field( 
 			"screen", 
 			substr( $params->{screen_id}, 8 ) ) );
-	my $hidden = $params->{hidden};
-	if( ref($hidden) eq "ARRAY" )
+	foreach my $id ( @{$params->{hidden}} )
 	{
-		foreach my $id ( @$hidden )
-		{
-			$form->appendChild( 
-				$session->render_hidden_field( 
-					$id, 
-					$self->{processor}->{$id} ) );
-		}
-	}
-	else
-	{
-		foreach my $id (keys %$hidden)
-		{
-			$form->appendChild(
-				$session->render_hidden_field(
-					$id,
-					$hidden->{$id} ) );
-		}
+		$form->appendChild( 
+			$session->render_hidden_field( 
+				$id, 
+				$self->{processor}->{$id} ) );
 	}
 	my( $action, $title, $icon );
 	if( defined $params->{action} )

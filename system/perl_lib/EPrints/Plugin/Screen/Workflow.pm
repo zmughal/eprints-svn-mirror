@@ -27,25 +27,48 @@ sub new
 	return $self;
 }
 
-sub view_screen
+sub get_view_screen
 {
 	my( $self ) = @_;
 
-	return "Workflow::View";
+	my $screenid = $self->{id};
+	$screenid =~ s/^Screen:://;
+	$screenid =~ s/::[^:]+$/::View/;
+
+	return $screenid;
 }
 
-sub edit_screen
+sub get_edit_screen
 {
 	my( $self ) = @_;
 
-	return "Workflow::Edit";
+	my $screenid = $self->{id};
+	$screenid =~ s/^Screen:://;
+	$screenid =~ s/::[^:]+$/::Edit/;
+
+	return $screenid;
 }
 
-sub listing_screen
+sub get_commit_screen
 {
 	my( $self ) = @_;
 
-	return "Listing";
+	my $screenid = $self->{id};
+	$screenid =~ s/^Screen:://;
+	$screenid =~ s/::[^:]+$/::Commit/;
+
+	return $screenid;
+}
+
+sub get_save_screen
+{
+	my( $self ) = @_;
+
+	my $screenid = $self->{id};
+	$screenid =~ s/^Screen:://;
+	$screenid =~ s/::[^:]+$/::Save/;
+
+	return $screenid;
 }
 
 sub properties_from
@@ -87,7 +110,7 @@ sub properties_from
 	$processor->{"dataobj"} = $dataset->dataobj( $id );
 
 	my $plugin = $self->{session}->plugin(
-		"Screen::" . $self->edit_screen,
+		"Screen::" . $self->get_edit_screen,
 		processor => $self->{processor},
 		);
 	$self->{processor}->{can_be_edited} = $plugin->can_be_viewed();
@@ -198,10 +221,9 @@ sub render_blister
 	$table->appendChild( $tr );
 	my $first = 1;
 	my @stages = $workflow->get_stage_ids;
+	push @stages, "commit";
 	foreach my $stage_id ( @stages )
 	{
-		my $stage = $workflow->get_stage( $stage_id );
-
 		if( !$first )  
 		{ 
 			my $td = $session->make_element( "td", class=>"ep_blister_join" );
@@ -215,12 +237,11 @@ sub render_blister
 		{ 
 			$class="ep_blister_node_selected"; 
 		}
-		my $title = $stage->render_title();
+		my $phrase = $session->phrase( "Plugin/Screen/Workflow:" . $self->dataset->id . ":" . $stage_id ."_stage:title" );
 		my $button = $session->render_button(
 			name  => "_action_jump_$stage_id", 
-			value => $session->xhtml->to_text_dump( $title ),
+			value => $phrase,
 			class => $class );
-		$session->xml->dispose( $title );
 
 		$td->appendChild( $button );
 		$tr->appendChild( $td );

@@ -36,6 +36,7 @@ To allow for simpler local configuration Convert plugins should use SystemSettin
 use strict;
 use warnings;
 
+use EPrints::TempDir;
 use EPrints::SystemSettings;
 use EPrints::Utils;
 
@@ -54,11 +55,14 @@ Create a new plugin object using OPTIONS (should only be called by L<EPrints::Se
 
 sub new
 {
-	my( $class, %params ) = @_;
+	my( $class, %opts ) = @_;
 
-	$params{visible} = exists $params{visible} ? $params{visible} : "all";
+	my $self = $class->SUPER::new( %opts );
 
-	return $class->SUPER::new( %params );
+	$self->{name} = "Base convert plugin";
+	$self->{visible} = "all";
+
+	return $self;
 }
 
 ######################################################################
@@ -199,7 +203,7 @@ sub convert
 {
 	my ($plugin, $eprint, $doc, $type) = @_;
 
-	my $dir = File::Temp->newdir( "ep-convertXXXXX" );
+	my $dir = EPrints::TempDir->new( "ep-convertXXXXX", UNLINK => 1);
 
 	my @files = $plugin->export( $dir, $doc, $type );
 	unless( @files ) {

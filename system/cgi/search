@@ -15,72 +15,55 @@
 use EPrints;
 
 use strict;
-use warnings;
-my $repo = EPrints->new->current_repository;
-exit( 0 ) unless( defined $repo );
+my $session = new EPrints::Session;
+exit( 0 ) unless( defined $session );
+# $session->get_database->set_debug( 1 );
 
-my $path_info = $repo->get_request->path_info;
+my $path_info = $session->get_request->path_info;
 # lose a leading slash
 $path_info =~ s#^/##;
+# we only want stuff up to the 2nd slash
+$path_info =~ s#/.*$##;
 
-my $args = $repo->get_request->args;
-$args = "?$args" if length($args);
-
-my( $datasetid, $searchid ) = split /\//, $path_info;
-
-if( !defined $datasetid )
+my $searchid = $path_info;
+if( $searchid eq "advsearch" )
 {
-	$repo->redirect( $repo->config( "http_cgiroot" )."/search/simple$args" );
+	# cover the old systems sins...
+	my $url = $session->get_repository->get_conf( "perl_url" ).
+			"/search/advanced";
+	if( defined $session->get_request->args )
+	{
+		$url .="?".$session->get_request->args;
+	}
+	$session->redirect( $url );
+	$session->terminate;
 	exit;
 }
-
-# cover the old systems sins...
-if( $datasetid eq "advsearch" )
-{
-	$repo->redirect( $repo->config( "http_cgiroot" )."/search/advanced$args" );
-	exit;
-}
-
-if( $datasetid =~ /^(advanced)|(simple)$/ )
-{
-	$searchid = $datasetid;
-	$datasetid = "archive";
-}
-elsif( !defined $searchid )
-{
-	$repo->redirect( $repo->config( "http_cgiroot" )."/search/$datasetid/simple$args" );
-	exit;
-}
-
-my $dataset = $repo->dataset( $datasetid );
-if( !defined $dataset )
-{
-	$repo->not_found;
-	exit;
-}
-
-my $sconf;
-if( $datasetid eq "archive" )
-{
-	$sconf = $repo->config( "search", $searchid );
-}
-else
-{
-	$sconf = $repo->config( "datasets", $datasetid, "search", $searchid );
-}
+my $sconf = $session->get_repository->get_conf( "search", $searchid );
 if( !defined $sconf )
 {
-	$repo->not_found;
+	my $url = $session->get_repository->get_conf( "perl_url" ).
+			"/search/simple";
+	if( defined $session->get_request->args )
+	{
+		$url .="?".$session->get_request->args;
+	}
+	$session->redirect( $url );
+	$session->terminate;
 	exit;
 }
 
+
 EPrints::ScreenProcessor->process( 
-	session => $repo, 
-	url => $repo->config( "http_cgiroot" )."/search/$searchid",
+	session => $session, 
+	url => $session->get_repository->get_conf( "perl_url" )."/search/$searchid",
 	sconf => $sconf,
 	template => $sconf->{template},
-	screenid => "Search",
-	dataset => $dataset,
+	screenid => "Public::EPrintSearch",
 );
+$session->terminate;
 
 exit;
+
+
+

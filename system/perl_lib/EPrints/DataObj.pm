@@ -217,79 +217,109 @@ sub create_from_data
 	$defaults = $class->get_defaults( $session, $defaults, $dataset );
 	
 	# cache the configuration options in variables
-	my $migration = $session->config( "enable_import_fields" );
+	my $enable_import_ids = $session->get_repository->get_conf(
+		"enable_import_ids"
+		);
+	my $enable_import_datestamps = $session->get_repository->get_conf(
+		"enable_import_datestamps"
+		);
 
-	my @create_subdataobjs;
+	my %subobjects;
 
-	FIELD: foreach my $field ( $dataset->fields )
+	foreach my $field ( $dataset->get_fields )
 	{
 		my $fieldname = $field->name;
+		next if !defined $data->{$fieldname};
 
 		# strip sub-objects and create them once we exist
 		if( $field->isa( "EPrints::MetaField::Subobject" ) )
 		{
-			push @create_subdataobjs, [ $field, delete $data->{$fieldname} ]
-				if defined $data->{$fieldname};
-			next FIELD;
+			$subobjects{$fieldname} = delete $data->{$fieldname};
+			next;
 		}
 
-		if( !$field->property( "import" ) && !$migration )
+		# strip non-importable values from $data
+		next if $field->get_property( "import" );
+
+		# This is a bit of a hack. The import script may set 
+		# "enable_import_ids" on session This will allow eprintids 
+		# and userids to be imported as-is rather than just being 
+		# assigned one. 
+		if( $enable_import_ids )
 		{
-			delete $data->{$fieldname};
+			if( $dataset->confid eq "eprint" )
+			{
+				next if( $fieldname eq "eprintid" );
+				next if( $fieldname eq "dir" ); # eprintid is in dir
+			}
+			if( $dataset->id eq "user" )
+			{
+				next if( $fieldname eq "userid" );
+			}
 		}
 
-		if( !EPrints::Utils::is_set( $data->{$fieldname} ) )
+		if( $enable_import_datestamps )
 		{
-			$data->{$fieldname} = $defaults->{$fieldname}
-				if exists $defaults->{$fieldname};
+			if( $dataset->confid eq "eprint" )
+			{
+				next if( $fieldname eq "datestamp" );
+			}
 		}
+
+		delete $data->{$fieldname};
 	}
 
-	my $self = $class->new_from_data( $session, $data, $dataset );
-	return undef unless defined $self;
+	foreach my $k ( keys %{$defaults} )
+	{
+		next if defined $data->{$k};
+		$data->{$k} = $defaults->{$k};
+	}
 
-	my $rc = $session->get_database->add_record( $dataset, $self->get_data );
+	my $dataobj = $class->new_from_data( $session, $data, $dataset );
+	return undef unless defined $dataobj;
+
+	my $rc = $session->get_database->add_record( $dataset, $dataobj->get_data );
 	return undef unless $rc;
 
-	$self->set_under_construction( 1 );
+	$dataobj->set_under_construction( 1 );
 
-	# create sub-dataobjs
-	for(@create_subdataobjs)
+	foreach my $fieldname (keys %subobjects)
 	{
-		my $field = $_->[0];
-		$_->[1] = [$_->[1]] if ref($_->[1]) ne 'ARRAY';
-
-		my @dataobjs;
-
-		foreach my $epdata (@{$_->[1]})
+		if( ref($subobjects{$fieldname}) eq 'ARRAY' )
 		{
-			my $dataobj = $self->create_subdataobj( $field->name, $epdata );
-			if( !defined $dataobj )
+			my @subobjects;
+			foreach my $epdata (@{$subobjects{$fieldname}})
 			{
-				$session->log( "Failed to create subdataobj on ".$dataset->id.".".$field->name );
-				$self->remove();
+				my $subobj = $dataobj->create_subdataobj( $fieldname, $epdata );
+				if( !defined $subobj )
+				{
+					$session->log( "Failed to create subdataobj on $fieldname" );
+					$dataobj->remove();
+					return undef;
+				}
+				push @subobjects, $subobj;
+			}
+			$dataobj->set_value( $fieldname, \@subobjects );
+		}
+		else
+		{
+			my $subobj = $dataobj->create_subdataobj( $fieldname, $subobjects{$fieldname} );
+			if( !defined $subobj )
+			{
+				$session->log( "Failed to create subdataobj on $fieldname" );
+				$dataobj->remove();
 				return undef;
 			}
-			push @dataobjs, $dataobj;
+			$dataobj->set_value( $fieldname, $subobj );
 		}
-
-		$self->set_value( $field->name, $field->property( "multiple" ) ? \@dataobjs : $dataobjs[0] );
 	}
 
-	if( $migration && $dataset->key_field->isa( "EPrints::MetaField::Counter" ) )
-	{
-		$session->get_database->counter_minimum(
-			$dataset->key_field->property( "sql_counter" ),
-			$self->id
-		);
-	}
-
-	$self->set_under_construction( 0 );
+	$dataobj->set_under_construction( 0 );
 
 	# queue all the fields for indexing.
-	$self->queue_all;
+	$dataobj->queue_all;
 
-	return $self;
+	return $dataobj;
 }
 
 =item $dataobj = $dataobj->create_subdataobj( $fieldname, $epdata )
@@ -353,17 +383,10 @@ sub get_defaults
 		$dataset = $session->get_repository->get_dataset( $class->get_dataset_id );
 	}
 
-	my $migration = $session->config( "enable_import_fields" );
-
 	# set any values that a field has a default for e.g. counters
 	foreach my $field ($dataset->get_fields)
 	{
 		next if defined $field->get_property( "sub_name" );
-
-		# avoid getting a default value if it's already set
-		next if
-			EPrints::Utils::is_set( $data->{$field->name} ) &&
-			($field->property( "import") || $migration);
 
 		my $value = $field->get_default_value( $session );
 		next unless EPrints::Utils::is_set( $value );
@@ -510,11 +533,6 @@ sub commit
 
 	# Queue changes for the indexer (if indexable)
 	$self->queue_changes();
-
-	$self->dataset->run_trigger( EPrints::Const::EP_TRIGGER_AFTER_COMMIT,
-		dataobj => $self,
-		changed => $self->{changed},
-	);
 
 	# clear changed fields
 	$self->clear_changed();
@@ -1426,21 +1444,29 @@ sub queue_changes
 
 	return unless $self->{dataset}->indexable;
 
+	my @fields;
+
+	foreach my $fieldname ( keys %{$self->{changed}} )
+	{
+		my $field = $self->{dataset}->get_field( $fieldname );
+
+		next unless( $field->get_property( "text_index" ) );
+
+		push @fields, $fieldname;
+	}	
+
+	return unless scalar @fields;
+
 	my $user = $self->{session}->current_user;
 	my $userid;
 	$userid = $user->id if defined $user;
 
-	for(keys %{$self->{changed}})
-	{
-		next if !$self->{dataset}->field( $_ )->property( "text_index" );
-		EPrints::DataObj::EventQueue->create_from_data( $self->{session}, {
-				pluginid => "Event::Indexer",
-				action => "index",
-				params => [$self->internal_uri, keys %{$self->{changed}}],
-				userid => $userid,
-			});
-		last;
-	}
+	EPrints::DataObj::EventQueue->create_from_data( $self->{session}, {
+			pluginid => "Event::Indexer",
+			action => "index",
+			params => [$self->internal_uri, @fields],
+			userid => $userid,
+		});
 }
 
 ######################################################################
@@ -1463,7 +1489,7 @@ sub queue_all
 	my $userid;
 	$userid = $user->id if defined $user;
 
-	EPrints::DataObj::EventQueue->create_unique( $self->{session}, {
+	EPrints::DataObj::EventQueue->create_from_data( $self->{session}, {
 			pluginid => "Event::Indexer",
 			action => "index_all",
 			params => [$self->internal_uri],

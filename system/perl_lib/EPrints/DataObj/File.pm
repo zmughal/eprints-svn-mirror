@@ -124,8 +124,6 @@ sub new_from_filename
 {
 	my( $class, $repo, $dataobj, $filename ) = @_;
 	
-	return undef if !EPrints::Utils::is_set( $filename );
-
 	my $dataset = $repo->dataset( $class->get_dataset_id );
 
 	my $results = $dataset->search(
@@ -629,24 +627,17 @@ sub remove_plugin_copy
 	$self->set_value( "copies", $copies );
 }
 
-=item $success = $stored->get_file( CALLBACK [, $offset, $n ] )
+=item $success = $stored->get_file( CALLBACK )
 
-Get the contents of the stored file - see L<EPrints::Storage/retrieve>.
-
-$offset is the position in bytes to start reading from, default 0.
-
-$n is the number of bytes to read, default C<filesize>.
+Get the contents of the stored file - see L<EPrints::Storage>::retrieve().
 
 =cut
 
 sub get_file
 {
-	my( $self, $f, $offset, $n ) = @_;
+	my( $self, $f ) = @_;
 
-	$offset = 0 if !defined $offset;
-	$n = $self->value( "filesize" ) if !defined $n;
-
-	return $self->{session}->get_storage->retrieve( $self, $offset, $n, $f );
+	return $self->{session}->get_storage->retrieve( $self, $f );
 }
 
 =item $content_length = $stored->set_file( CONTENT, $content_length )
@@ -731,31 +722,6 @@ sub set_file
 	$self->set_value( "hash_type", "MD5" );
 
 	return $rlen;
-}
-
-sub xml_to_epdata
-{
-	my( $class, $session, $xml, %opts ) = @_;
-
-	my $content;
-
-	my( $data ) = $xml->getElementsByTagName( "data" );
-	if( defined $data )
-	{
-		$xml->removeChild( $data );
-		
-		my $tmpfile = $data->firstChild->toString;
-		$content = $opts{tmpfiles}->{$tmpfile};
-	}
-
-	# ignore all other <data> fields
-	$xml->removeChild( $_ ) for $xml->getElementsByTagName( "data" );
-
-	my $epdata = $class->SUPER::xml_to_epdata( $session, $xml, %opts );
-
-	$epdata->{_content} = $content;
-
-	return $epdata;
 }
 
 1;
