@@ -288,10 +288,12 @@ sub send_out_alert
 	elsif( $freq eq "monthly" )
 	{
 		# Get today's date
-		my( $year, $month, $day ) = EPrints::Time::get_iso_date( time );
+
+		my( $year, $month, $day ) = EPrints::Time::get_date_array( time );
+#		my( $year, $month, $day ) = EPrints::Time::get_iso_date( time );
 		# Substract a month		
 		$month--;
-
+print STDERR "$year-$month-$day\n";
 		# Check for year "wrap"
 		if( $month==0 )
 		{
