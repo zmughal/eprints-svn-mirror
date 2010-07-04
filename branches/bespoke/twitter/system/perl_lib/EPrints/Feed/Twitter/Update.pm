@@ -12,8 +12,14 @@ sub create_queue_item
 
 	my $feed_obj = EPrints::Feed::Twitter->new($doc);
 
-	my $highest_id = $feed_obj->highest_id;
-	$highest_id = 0 unless $highest_id;
+	my $highest_id = 0;
+	my $highest_file = $feed_obj->most_recent_file('update');
+
+	if ($highest_file)
+	{
+		my ($l_id, $h_id) = $feed_obj->file_id_range($highest_file);
+		$highest_id = $h_id;
+	}
 
 	my $item = {
 		search_params => {
@@ -54,6 +60,7 @@ sub update_all
 	my @queue;
 	foreach my $doc (@{$documents})
 	{
+
 		push @queue, create_queue_item($doc);
 	}
 
@@ -71,7 +78,6 @@ sub update_all
 		$nosort--;
 
 		my $current_item = shift @queue;
-
 		my $url = URI->new( "http://search.twitter.com/search.json" );
 		$url->query_form( %{$current_item->{search_params}} );
 		my $response = $ua->get($url);
