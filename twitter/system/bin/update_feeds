@@ -16,7 +16,7 @@ foreach my $id ( $eprints->repository_ids() )
 	EPrints->abort( "Error loading $id" ) if !defined $reps->{$id};
 }
 
-elsif ($ARGV[0] and $ARGV[0] eq 'regenerate_mains')
+if ($ARGV[0] and $ARGV[0] eq 'regenerate_mains')
 {
 	EPrints::Feed::Twitter::Update::generate_mains( $reps, 1 );
 }

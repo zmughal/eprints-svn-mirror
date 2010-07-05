@@ -506,7 +506,7 @@ sub expand_urls
 				}
 				push @uri_chain, $response->request->uri->as_string;
 
-				my $target_uri = $response->request->uri->as_string;
+				$target_uri = $response->request->uri->as_string;
 
 				foreach my $i (0 .. $#uri_chain-1)
 				{
