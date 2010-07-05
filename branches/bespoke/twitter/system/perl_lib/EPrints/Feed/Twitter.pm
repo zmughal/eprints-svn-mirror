@@ -24,20 +24,26 @@ my $file_types =
 			my ($file) = @_; return 1 if $file->get_value('filename') eq $MAINFILENAME; return undef;
 		},
 		filename => sub { return $MAINFILENAME },
-		template => 'tweet_html',
+		template => 'default',
 		page => sub
 		{
 			my ($xml, $feed) = @_;
 
 			my $ol = $xml->create_element('ol');
 
-			foreach my $file ( reverse sort _most_recent_first @{$feed->{document}->get_value('files')})
+			my $i = 0;
+			foreach my $file ( sort { $feed->file_high_id($a) <=> $feed->file_high_id($b)} @{$feed->{document}->get_value('files')})
 			{
 				next unless $feed->is_file_a($file, 'rendered_html');
-				my $a = $xml->create_element('a', href => $file->get_value('filename'));
-				$a->appendChild($xml->create_text_node($file->get_value('filename')));
+
+				my ($low_id, $high_id) = $feed->file_id_range($file);
+				$i++;
+
 				my $li = $xml->create_element('li');
+				my $a = $xml->create_element('a', href => $file->get_value('filename'));
+				$a->appendChild($xml->create_text_node("Page $i"));
 				$li->appendChild($a);
+	 			$li->appendChild($xml->create_text_node(": Tweets $low_id to $high_id"));
 				$ol->appendChild($li);
 			}
 			return $ol;
@@ -59,27 +65,105 @@ my $file_types =
 		{
 			my ($low_id, $high_id) = @_; return 'rendered_' . $low_id . '_to_' . $high_id . '.html';
 		},
-		template => 'tweet_html',
+		template => 'default',
 		page => sub
 		{
-			my ($xml, $feed, $tweets_dom_arrayref) = @_; #tweets_dom contains tweets for this page
+#structure taken from Twitter:
+#
+#<ol id="timeline" class="statuses">
+#<li class="hentry status search_result u-roi_vargas" id="status_17813071298">
+#        <span class="status-body">
+#                <span class="thumb vcard author">
+#                        <a class="tweet-url profile-pic" href="http://twitter.com/roi_vargas"><img alt="Image_normal" src="http://a1.twimg.com/profile_images/969420202/image_normal.jpg"></a>
+#                </span>
+#                <a href="http://twitter.com/roi_vargas" class="username tweet-url screen-name">roi_vargas</a>
+#                <span id="msgtxt17813071298" class="msgtxt eo">
+#                        RT <a href="http://twitter.com/TAMY_69" class="username tweet-url">@TAMY_69</a>: LA MAMA DEL BABY DE <b>CRISTIANO</b> <b>RONALDO</b> <a class="tweet-url web" href="http://twitpic.com/22qp90">http://twitpic.com/22qp90</a>
+#                </span>
+#                <span class="meta entry-meta">
+#                        <a href="http://twitter.com/roi_vargas/statuses/17813071298"> less than 20 seconds ago </a>
+#                        <span class="source">
+#                                via <a href="http://twitpic.com" rel="nofollow">Twitpic</a>
+#                        </span>
+#                </span>
+#        </span>
+#</li>
 
-			my $ul = $xml->create_element('ul');
+			my ($xml, $feed, $tweets_dom_arrayref) = @_; #tweets_dom contains tweets for this page
+			my $frag = $xml->create_document_fragment();
+
+			my $ol = $xml->create_element('ol', class => 'tweets');
+			$frag->appendChild($ol);
 
 			#make sure they're written to the file oldest first
-			foreach my $tweet (sort 
-				{ $xml->to_string(@{$a->findnodes("id/text()")}[0]) <=> $xml->to_string(@{$b->findnodes("id/text()")}[0]) }
-				@{$tweets_dom_arrayref})
+			foreach my $tweet (@{$tweets_dom_arrayref})
 			{
 				my $bits = {};
+				foreach my $fieldname (qw/ text text_expanded profile_image_url from_user id iso_language_code source created_at /)
+				{
+					my $n = @{$tweet->findnodes("$fieldname/text()")}[0];
 
-				my $html_tweet = $xml->create_element('li');
-				$html_tweet->appendChild( @{$tweet->findnodes("text/text()")}[0] );
+					$bits->{$fieldname} = $xml->to_string( $n ) if $n;
+				}
 
-				$ul->appendChild($html_tweet);
+				my $html_tweet = $xml->create_element('li', class=>'tweet', id=>'tweet-'.$feed->value_or_filler($bits->{id}));
+				my $tweet_body = $xml->create_element('span', class=>'tweet-body');
+				$html_tweet->appendChild($tweet_body);
+
+				my $thumbnail = $xml->create_element('span', class=>'author-thumb');
+				my $a = $xml->create_element('a', href=>'http://twitter.com/' . $feed->value_or_filler($bits->{from_user}));
+				$a->appendChild($xml->create_element('img', class=>'author-thumb', src=>$bits->{'profile_image_url'}));
+				$thumbnail->appendChild($a);
+				$tweet_body->appendChild($thumbnail);
+
+				my $text_part = $xml->create_element('span', class=>'tweet-text-part');
+				$tweet_body->appendChild($text_part);
+
+				$a = $xml->create_element('a', href=>'http://twitter.com/' . $feed->value_or_filler($bits->{from_user}));
+				$a->appendChild($xml->create_text_node($feed->value_or_filler($bits->{from_user})));
+				$text_part->appendChild($a);
+
+				$text_part->appendChild($xml->create_text_node(' '));
+
+				my $text_span = $xml->create_element('span', class=>'text', id=>'tweet-'.$feed->value_or_filler($bits->{id}));
+				#I'm not sure I'm doing this right, but I've found a way that works.  What's the EPrints way of doing this?
+				use HTML::Entities;
+				my $doc = eval { EPrints::XML::parse_xml_string( "<fragment>".decode_entities($bits->{'text_expanded'})."</fragment>" ); };
+				if( $@ or not $bits->{'text_expanded'})
+				{
+					my $text = $xml->create_text_node($feed->value_or_filler($bits->{text}));
+					$text_span->appendChild($text) if $text;
+				}
+				else
+				{
+					my $top = ($doc->getElementsByTagName( "fragment" ))[0];
+					foreach my $node ( $top->getChildNodes )
+					{
+						$text_span->appendChild(
+								$feed->{document}->repository->clone_for_me( $node, 1 ) );
+					}
+					EPrints::XML::dispose( $doc );
+				}
+				$text_part->appendChild($text_span);
+
+				$text_part->appendChild($xml->create_text_node(' '));
+
+				my $meta_span = $xml->create_element('span', class=>'meta');
+				$meta_span->appendChild($xml->create_text_node($feed->value_or_filler($bits->{created_at})));
+				$text_part->appendChild($meta_span);
+
+				$ol->appendChild($html_tweet);
 				
 			}
-			return $ul;
+			my $p = $xml->create_element('p', class=>'tweet-count');
+			$p->appendChild($xml->create_text_node(scalar @{$tweets_dom_arrayref} . ' tweets'));
+			$frag->appendChild($p);
+
+			my $a = $xml->create_element('a', href => $MAINFILENAME );
+			$a->appendChild($xml->create_text_node('back'));
+			$frag->appendChild($a);
+
+			return $frag;
 		},
 		title => sub
 		{
@@ -89,10 +173,18 @@ my $file_types =
 				'Results for Twitter search for ' . $feed->{document}->get_value('twitter_hashtag')
 			);
 		},
-		max_per_file => 200,
+		max_per_file => 1000,
 	},
 
 };
+
+
+sub value_or_filler
+{
+	my ($self, $value) = @_;
+	return $value if defined $value;
+	return 'UNDEFINED';
+}
 
 sub is_file_a
 {
@@ -150,8 +242,6 @@ sub create_main_file
 {
 	my ($self, $force) = @_;
 
-return unless $self->{document}->get_parent->get_id == 3;
-
 	my $repository = $self->{document}->repository;
 	my $xml = $repository->xml;
 
@@ -191,17 +281,16 @@ return unless $self->{document}->get_parent->get_id == 3;
 
 	my $tweets_for_page = [];
 
-	foreach my $update_file (reverse sort _most_recent_first @{$self->{document}->get_value('files')})
+	foreach my $update_file (sort { $self->file_high_id($a) <=> $self->file_high_id($b) } @{$self->{document}->get_value('files')})
 	{
 		next unless $self->is_file_a($update_file, 'update'); #skip non-update_files
 
-		my ($low_id, $high_id) = $self->file_id_range($update_file);
-		next if ($high_id < $lowest_id_to_render);
+		next if ($self->file_high_id($update_file) < $lowest_id_to_render);
 
 		my $tweets_dom = $self->_updatefile_to_dom($update_file);
 		next unless $tweets_dom;
 
-		foreach my $tweet (reverse $tweets_dom->findnodes('//tweets/tweet'))
+		foreach my $tweet ($tweets_dom->findnodes('//tweets/tweet'))
 		{
 		        my $id = $xml->to_string(@{$tweet->findnodes('id/text()')}[0]);
 
@@ -220,14 +309,6 @@ return unless $self->{document}->get_parent->get_id == 3;
 	}
 	$self->write_rendered_html_page($tweets_for_page);
 
-
-	my $rendered_html_filenames;
-	foreach my $file ( reverse sort _most_recent_first @{$self->{document}->get_value('files')})
-	{
-		next unless $self->is_file_a($file,'rendered_html');
-		push @{$rendered_html_filenames},$file->get_value('filename');
-	}
-
 	my $page = $self->{document}->repository->xhtml->page(
 			{
 				title => &{$file_types->{rendered_html_index}->{title}}($xml,$self),
@@ -242,30 +323,36 @@ return unless $self->{document}->get_parent->get_id == 3;
 	$self->{document}->add_file($tmp,$filename); 
 
 	$self->{document}->set_main($filename);
+	$self->{document}->set_value('format', 'text/html');
 	$self->{document}->commit;
 
 }
 
 sub write_rendered_html_page
 {
-	my ($self, $tweets_for_page) = @_;
+	my ($self, $tweets) = @_;
 
-	return unless scalar @{$tweets_for_page}; #do nothing if we have no tweets.
+	return unless scalar @{$tweets}; #do nothing if we have no tweets.
 
 	my $xml = $self->{document}->repository->xml;
 
-	my $low_tweet = $tweets_for_page->[0];
-	my $high_tweet = $tweets_for_page->[$#{$tweets_for_page}];
-	my $low_id = $xml->to_string(@{$low_tweet->findnodes('id/text()')}[0]);
-	my $high_id = $xml->to_string(@{$high_tweet->findnodes('id/text()')}[0]);
+	#make sure they're lowest ID first
+	my @tweets_for_page = sort
+	{
+		$xml->to_string(@{$a->findnodes("id/text()")}[0]) <=> $xml->to_string(@{$b->findnodes("id/text()")}[0])
+	} @{$tweets};
 
 
-	my $page_content = &{$file_types->{rendered_html}->{page}}($xml, $self, $tweets_for_page);
+	my $low_id = $xml->to_string(@{$tweets_for_page[0]->findnodes('id/text()')}[0]);
+	my $high_id = $xml->to_string(@{$tweets_for_page[$#tweets_for_page]->findnodes('id/text()')}[0]);
+
+	my $page_content = &{$file_types->{rendered_html}->{page}}($xml, $self, \@tweets_for_page);
 	my $page_title = &{$file_types->{rendered_html}->{title}}($xml, $self);
 	my $page = $self->{document}->repository->xhtml->page(
 			{title => $page_title,page => $page_content},
 			template => $file_types->{rendered_html}->{template},
 			);
+
 	my $tmp = File::Temp->new;
 	$page->write_to_file($tmp);
 	my $filename = &{$file_types->{rendered_html}->{filename}}($low_id, $high_id);
@@ -292,20 +379,19 @@ sub _updatefile_to_dom
 }
 
 
-#used for sorting a list of files
-sub _most_recent_first
+sub file_high_id
 {
-	my $a_filename = $a->get_value('filename');
-	$a_filename =~ m/^_to_([0-9]+)\./;
-	my $a_sortvalue = $1 ? $1 : 0;
-
-	my $b_filename = $b->get_value('filename');
-	$b_filename =~ m/^_to_([0-9]+)\./;
-	my $b_sortvalue = $1 ? $1 : 0;
-
-	return $b_sortvalue <=> $a_sortvalue;
+	my ($self, $file) = @_;
+	my ($low_id, $high_id) = $self->file_id_range($file);
+	return $high_id;
 }
 
+sub file_low_id
+{
+	my ($self, $file) = @_;
+	my ($low_id, $high_id) = $self->file_id_range($file);
+	return $low_id;
+}
 
 sub file_id_range
 {
@@ -393,6 +479,8 @@ sub expand_urls
 	my $message = $tweet->{text};
 	return unless $message;
 
+	my $expanded_message = $message;
+
 	my %URLs;
 	my $ua = LWP::UserAgent->new(timeout => 5); 
 
@@ -401,6 +489,7 @@ sub expand_urls
 
 		$URLs{$orig_uri}++;
 
+		my $target_uri = $orig_uri;
 		if (not $self->{uri_cache}->{$orig_uri})
 		{
 			$self->{uri_cache}->{$orig_uri} = 1;
@@ -417,14 +506,35 @@ sub expand_urls
 				}
 				push @uri_chain, $response->request->uri->as_string;
 
+				my $target_uri = $response->request->uri->as_string;
+
 				foreach my $i (0 .. $#uri_chain-1)
 				{
 					$self->{uri_cache}->{$uri_chain[$i]} = $uri_chain[$i+1];
 				}
 			}
 		}
+
+		#escape HASH and AT symbols in the urls so that regexp for user and hashtag insertion don't change them
+		$target_uri =~ s/#/ESCAPED_HASH/g;
+		$target_uri =~ s/\@/ESCAPED_AT/g;
+		$orig_uri =~ s/#/ESCAPED_HASH/g;
+		$orig_uri =~ s/\@/ESCAPED_AT/g;
+
+
+		return '<a href="'.$target_uri.'">'.$orig_uri.'</a>';
 	});
-        $finder->find(\$message);
+        $finder->find(\$expanded_message);
+
+	#now insert links to hashtags and usernames - how do we stop this from modifying text inside a long URL
+	$expanded_message =~ s|\@([A-Za-z0-9-_]+)|<a href="http://twitter.com/$1">$&</a>|g;
+	$expanded_message =~ s|#([A-Za-z0-9-_]+)|<a href="http://search.twitter.com/search?q=$1">$&</a>|g;
+
+	#now unescape HASH and AT
+	$expanded_message =~ s/ESCAPED_HASH/#/g;
+	$expanded_message =~ s/ESCAPED_AT/\@/g;
+
+	$tweet->{text_expanded} = "$expanded_message"; #should have all the links expanded out now.
 
 	my $redirects = [];
 	my $loop_detector;
@@ -487,11 +597,7 @@ sub commit
 		$self->{document}->add_file($filename, &{$file_types->{update}->{filename}}($lowest_id, $highest_id) );
 		$xml->dispose($tweets_dom);
 
-#only create a main file if we don't have one -- it could be a fairly hefty piece of work.
-		if ($self->{document}->get_main ne &{$file_types->{rendered_html_index}->{filename}})
-		{
-			$self->create_main_file;
-		}
+		$self->create_main_file;
 	}
 }
 
