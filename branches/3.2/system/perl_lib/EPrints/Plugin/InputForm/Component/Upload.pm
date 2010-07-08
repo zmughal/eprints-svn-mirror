@@ -77,10 +77,6 @@ sub get_state_params
 			$tounroll->{$1} = 1;
 		}
 	}
-	if( scalar keys %{$tounroll} )
-	{
-		$params .= "&".$self->{prefix}."_view=".join( ",", keys %{$tounroll} );
-	}
 
 	return $params;
 }
