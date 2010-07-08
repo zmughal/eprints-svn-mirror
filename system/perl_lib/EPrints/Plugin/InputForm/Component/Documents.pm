@@ -34,11 +34,15 @@ sub update_from_form
 	my $eprint = $self->{workflow}->{item};
 	my @eprint_docs = $eprint->get_all_documents;
 
+	my %update = map { $_ => 1 } $session->param( $self->{prefix} . "_update_doc" );
+
 	# update the metadata for any documents that have metadata
 	foreach my $doc ( @eprint_docs )
 	{
+		# check the page we're coming from included this document
+		next if !$update{$doc->id};
+
 		my $doc_prefix = $self->{prefix}."_doc".$doc->id;
-		next if !$self->{session}->param( $doc_prefix );
 
 		my @fields = $self->doc_fields( $doc );
 		# "main" is pseudo-hidden on the files tab
@@ -84,12 +88,66 @@ sub get_state_params
 
 	my $to_unroll = $processor->{notes}->{upload_plugin}->{to_unroll};
 	$to_unroll = {} if !defined $to_unroll;
+
+	my %update = map { $_ => 1 } $self->{session}->param( $self->{prefix} . "_update_doc" );
+
+	my $eprint = $self->{workflow}->{item};
+	my @eprint_docs = $eprint->get_all_documents;
+	foreach my $doc ( @eprint_docs )
+	{
+		my $doc_prefix = $self->{prefix}."_doc".$doc->id;
+
+		# check the page we're coming from included this document
+		next if !$update{$doc->id};
+
+		my @fields = $self->doc_fields( $doc );
+		foreach my $field ( @fields )
+		{
+			$params .= $field->get_state_params( $self->{session}, $doc_prefix );
+			if( $field->has_internal_action( $doc_prefix ) )
+			{
+				$to_unroll->{$doc->id} = 1;
+			}
+		}
+	}
+
 	foreach my $docid (keys %$to_unroll)
 	{
 		$params .= "&$self->{prefix}_view=$docid";
 	}
 
 	return $params;
+}
+
+sub get_state_fragment
+{
+	my( $self, $processor ) = @_;
+
+	my $to_unroll = $processor->{notes}->{upload_plugin}->{to_unroll};
+	$to_unroll = {} if !defined $to_unroll;
+
+	my %update = map { $_ => 1 } $self->{session}->param( $self->{prefix} . "_update_doc" );
+
+	my $eprint = $self->{workflow}->{item};
+	foreach my $doc ( $eprint->get_all_documents )
+	{
+		my $doc_prefix = $self->{prefix}."_doc".$doc->id;
+		return $doc_prefix if $to_unroll->{$doc->id};
+
+		# check the page we're coming from included this document
+		next if !$update{$doc->id};
+
+		my @fields = $self->doc_fields( $doc );
+		foreach my $field ( @fields )
+		{
+			if( $field->has_internal_action( $doc_prefix ) )
+			{
+				return $doc_prefix;
+			}
+		}
+	}
+
+	return "";
 }
 
 sub _swap_placements
@@ -263,8 +321,6 @@ sub _doc_update
 
 		return;
 	}
-
-	$processor->add_message( "error", $self->html_phrase( "bad_doc_button", button => $self->{session}->make_text($doc_internal) ) );
 }
 
 sub has_help
@@ -354,6 +410,12 @@ sub _render_doc_div
 	};
 
 	my $doc_div = $self->{session}->make_element( "div", class=>"ep_upload_doc", id=>$doc_prefix."_block" );
+
+	# provide <a> link to this document
+	$doc_div->appendChild( $session->make_element( "a", name=>$doc_prefix ) );
+
+	# note which documents should be updated
+	$doc_div->appendChild( $session->render_hidden_field( $self->{prefix}."_update_doc", $docid ) );
 
 	my $doc_title_bar = $session->make_element( "div", class=>"ep_upload_doc_title_bar" );
 	$doc_div->appendChild( $doc_title_bar );
@@ -662,8 +724,6 @@ sub _render_doc_metadata
 	my $docid = $doc->get_id;
 	my $doc_prefix = $self->{prefix}."_doc".$docid;
 
-	my $update_doc = $session->render_hidden_field( $doc_prefix, "1" );
-	$doc_cont->appendChild( $update_doc );
 	my $table = $session->make_element( "table", class=>"ep_upload_fields ep_multi" );
 	$doc_cont->appendChild( $table );
 	my $first = 1;
