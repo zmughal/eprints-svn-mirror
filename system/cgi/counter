@@ -26,12 +26,32 @@ exit( 0 ) unless( defined $repo );
 
 $repo->send_http_header( content_type=>"text/plain; charset=UTF-8" );
 
-my @ds_ids = $repo->get_sql_dataset_ids();
-push @ds_ids, qw/ inbox buffer deletion archive /;
-foreach my $ds_id ( sort @ds_ids )
+my %counts;
+foreach my $ds_id ($repo->get_sql_dataset_ids)
 {
 	my $ds = $repo->dataset( $ds_id );
-	print $ds_id.": ".$ds->search->count()."\n";
+	my $table = $ds->get_sql_table_name;
+	$counts{$ds_id} = $repo->get_database->count_table( $table );
+}
+{
+	my $ds = $repo->dataset( "eprint" );
+	my $search = $ds->prepare_search;
+	my @counts = $search->perform_groupby( $ds->field( "eprint_status" ) );
+	foreach my $i (0..$#{$counts[0]})
+	{
+		$counts{$counts[0]->[$i]} = $counts[1]->[$i];
+	}
+	for(qw( inbox buffer archive deletion ))
+	{
+		$counts{$_} ||= 0;
+	}
+}
+foreach my $ds_id ( sort keys %counts )
+{
+	print sprintf("%s: %i\n",
+		$ds_id,
+		$counts{$ds_id}
+	);
 }
 print sprintf("version: %s (%s)\n",
 	$repo->config( "version_id" ),
