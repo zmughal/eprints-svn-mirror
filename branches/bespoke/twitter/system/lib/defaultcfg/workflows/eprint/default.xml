@@ -30,6 +30,10 @@ Action buttons (Previous/Save/Next) can be shown "top", "bottom" or "both":
       <field ref="security" />
       <field ref="license" />
       <field ref="date_embargo" />
+
+	<field ref="twitter_hashtag"/>
+	<field ref="twitter_expiry_date"/>
+
 <!--  <field ref="relation" /> -->
 <!--  <field ref="language" /> --> 
     </component>
