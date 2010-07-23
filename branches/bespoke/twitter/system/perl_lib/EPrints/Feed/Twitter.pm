@@ -110,6 +110,9 @@ my $file_types =
 				my $tweet_body = $xml->create_element('span', class=>'tweet-body');
 				$html_tweet->appendChild($tweet_body);
 
+				my $anchor = $xml->create_element('a', name => $bits->{id});
+				$html_tweet->appendChild($anchor);
+
 				my $thumbnail = $xml->create_element('span', class=>'author-thumb');
 				my $a = $xml->create_element('a', href=>'http://twitter.com/' . $feed->value_or_filler($bits->{from_user}));
 				$a->appendChild($xml->create_element('img', class=>'author-thumb', src=>$bits->{'profile_image_url'}));
@@ -150,6 +153,8 @@ my $file_types =
 
 				my $meta_span = $xml->create_element('span', class=>'meta');
 				$meta_span->appendChild($xml->create_text_node($feed->value_or_filler($bits->{created_at})));
+				$meta_span->appendChild($xml->create_element('br'));
+				$meta_span->appendChild( $xml->create_text_node('Tweet ID: ' . $feed->value_or_filler($bits->{id})));
 				$text_part->appendChild($meta_span);
 
 				$ol->appendChild($html_tweet);
