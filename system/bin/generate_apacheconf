@@ -129,6 +129,7 @@ use EPrints;
 use strict;
 use Getopt::Long;
 use Pod::Usage;
+use Digest::MD5;
 
 my $version = 0;
 my $verbose = 0;
@@ -194,8 +195,7 @@ EPrints::Platform::mkdir( $inc_ssl_path );
 
 if( ($system && $replace) || !-e $site_userfile )
 {
-	open( CONF, ">$site_userfile" ) || die "Can't write to $site_userfile";
-	print CONF <<END;
+	my $conf = <<END;
 #
 # apache.conf include file for EPrints
 #
@@ -212,15 +212,18 @@ PerlPostConfigHandler +EPrints::post_config_handler
 Include $inc_path/*.conf
 
 END
-	close CONF;
+	my $backup = write_config_file( $site_userfile, $conf, BACKUP => 1 );
+	if( $backup )
+	{
+		print "Wrote $backup\n" if $noise >= 1;
+	}
 	print "Wrote $site_userfile\n" if( $noise >= 1 );
 
 	$restart_required = 1;
 }
 if( ($system && $replace) || !-e $apache_ssl_conf )
 {
-	open( CONF, ">$apache_ssl_conf" ) || die "Can't write to $apache_ssl_conf";
-	print CONF <<END;
+	my $conf = <<END;
 #
 # apache_ssl.conf include file for EPrints
 #
@@ -237,7 +240,11 @@ PerlTransHandler +EPrints::Apache::Rewrite
 Include $inc_ssl_path/*.conf
 
 END
-	close CONF;
+	my $backup = write_config_file( $apache_ssl_conf, $conf, BACKUP => 1);
+	if( $backup )
+	{
+		print "Wrote $backup\n" if $noise >= 1;
+	}
 	print "Wrote $apache_ssl_conf\n" if( $noise >= 1 );
 
 	$restart_required = 1;
@@ -272,9 +279,12 @@ foreach my $repository ( values %reps )
 	}
 	elsif( $replace || !-e $apache_conf )
 	{
-		open( CONF, ">$apache_conf" ) || die "Can't write to $apache_conf: $!";
-		print CONF EPrints::Apache::apache_conf( $repository );
-		close CONF;
+		my $conf = EPrints::Apache::apache_conf( $repository );
+		my $backup = write_config_file( $apache_conf, $conf );
+		if( $backup )
+		{
+			print "Wrote $backup\n" if( $noise >= 1 );
+		}
 		print "Wrote $apache_conf\n" if( $noise >= 1 );
 
 		$restart_required = 1;
@@ -285,9 +295,12 @@ foreach my $repository ( values %reps )
 	{
 		if( $replace || !-e $apache_ssl_conf )
 		{
-			open( CONF, ">$apache_ssl_conf" ) || die "Can't write to $apache_ssl_conf";
-			print CONF EPrints::Apache::apache_secure_conf( $repository );
-			close CONF;
+			my $conf = EPrints::Apache::apache_secure_conf( $repository );
+			my $backup = write_config_file( $apache_ssl_conf, $conf );
+			if( $backup )
+			{
+				print "Wrote $backup\n" if( $noise >= 1 );
+			}
 			print "Wrote $apache_ssl_conf\n" if( $noise >= 1 );
 			$restart_required = 1;
 		}
@@ -319,3 +332,58 @@ else
 {
 	print "\nNo files were changed. For more information do ./generate_apacheconf --man\n";
 }
+
+sub write_config_file
+{
+	my( $self, $path, $content, %opts ) = @_;
+
+	my $rc;
+
+	EPrints->abort( "Can't backup hidden or relative-path files: $path" )
+		if $path =~ /\/\./;
+
+	return if !-e $path && !defined $content;
+	EPrints->abort( "Can't backup something that is not a file: $path" )
+		if !-f _;
+
+	my $new_md5 = defined $content ? Digest::MD5::md5( $content ) : "";
+
+	if( -e _ )
+	{
+		open(my $fh, "<", $path)
+			or EPrints->abort( "Error opening file $path: $!" );
+		my $md5 = Digest::MD5->new;
+		$md5->addfile( $fh );
+		$md5 = $md5->digest;
+		close($fh);
+
+		return if $new_md5 eq $md5;
+
+		my @now = localtime();
+
+		my $newpath = sprintf("%s.%04d%02d%02d",
+			$path,
+			$now[5]+1900,
+			$now[4]+1,
+			$now[3]
+		);
+		my $i = 1;
+		while(-e sprintf("%s%02d",$newpath,$i))
+		{
+			++$i;
+		}
+		$newpath = sprintf("%s%02d", $newpath, $i);
+
+		File::Copy::copy( $path, $newpath );
+
+		$rc = $newpath;
+	}
+
+	open(my $fh, ">", $path)
+		or EPrints->abort( "Error opening $path: $!" );
+	print $fh $content;
+	close($fh);
+
+	return $rc;
+}
+
