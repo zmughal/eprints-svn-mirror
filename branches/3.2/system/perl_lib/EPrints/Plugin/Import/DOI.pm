@@ -59,18 +59,20 @@ sub input_text_fh
 		eval {
 			$dom_doc = EPrints::XML::parse_url( $url );
 		};
-		if( $@ )
-		{
-			$plugin->handler->message( "warning", $plugin->html_phrase( "invalid_doi",
-				doi => $plugin->{session}->make_text( $doi ),
-				msg => $plugin->{session}->make_text( "No or unrecognised response" )
-			));
-			next;
-		}
 
 		my $dom_top = $dom_doc->getDocumentElement;
 
 		my $dom_query_result = ($dom_top->getElementsByTagName( "query_result" ))[0];
+
+                if( $@ || !defined $dom_query_result)
+                {
+                        $plugin->handler->message( "warning", $plugin->html_phrase( "invalid_doi",
+                                doi => $plugin->{session}->make_text( $doi ),
+                                msg => $plugin->{session}->make_text( "No or unrecognised response" )
+                        ));
+                        next;
+                }
+
 		my $dom_body = ($dom_query_result->getElementsByTagName( "body" ))[0];
 		my $dom_query = ($dom_body->getElementsByTagName( "query" ))[0];
 
