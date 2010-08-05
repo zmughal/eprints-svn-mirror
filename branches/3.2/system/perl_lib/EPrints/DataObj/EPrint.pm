@@ -1018,7 +1018,7 @@ sub commit
 				objectid=>$self->get_id,
 				revision=>$self->get_value( "rev_number" ),
 				action=>"modify",
-				details=>undef
+				details=>join('|', sort keys %{$self->{changed}}),
 			}
 		);
 		$event->set_dataobj_xml( $self );
@@ -1191,7 +1191,7 @@ sub get_all_documents
 		}
 	}
 
-	return sort { ($a->get_value( "placement" )||0) <=> ($b->get_value( "placement" )||0) } @docs;
+	return sort { ($a->get_value( "placement" )||0) <=> ($b->get_value( "placement" )||0) || $a->id <=> $b->id } @docs;
 }
 
 
