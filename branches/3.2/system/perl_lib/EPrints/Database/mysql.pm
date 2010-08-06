@@ -499,6 +499,30 @@ sub sql_LIKE
 	return " COLLATE utf8_general_ci LIKE ";
 }
 
+# This is a hacky method to support CI username/email lookups. Should be
+# implemented as an option on searching (bigger change of search mechanisms?).
+
+sub ci_lookup
+{
+	my( $self, $field, $value ) = @_;
+
+	my $table = $field->dataset->get_sql_table_name;
+	
+	my $sql =
+		"SELECT ".$self->quote_identifier( $field->get_sql_name ).
+		" FROM ".$self->quote_identifier( $table ).
+		" WHERE ".$self->quote_identifier( $field->get_sql_name )."=".$self->quote_value( $value )." COLLATE utf8_general_ci";
+
+	my $sth = $self->prepare( $sql );
+	$sth->execute;
+
+	my( $real_value ) = $sth->fetchrow_array;
+
+	$sth->finish;
+
+	return defined $real_value ? $real_value : $value;
+}
+
 sub retry_error
 {
 	my( $self ) = @_;
