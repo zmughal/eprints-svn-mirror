@@ -171,11 +171,11 @@ sub from
 
 	$self->{processor}->{search} = new EPrints::Search(
 		keep_cache => 1,
+		for_web => 1,
 		session => $self->{session},
 		filters => [$self->search_filters],
 		dataset => $self->search_dataset,
 		%{$self->{processor}->{sconf}} );
-
 
 	$self->{actions} = [qw/ update search newsearch export_redir export /]; 
 	if( 	$self->{processor}->{action} eq "search" || 

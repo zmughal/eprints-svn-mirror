@@ -980,7 +980,7 @@ sub render_menu
 
 		my $li = $session->make_element( "li" );
 
-		if( defined $sizes && $sizes->{$fileid} == 0 )
+		if( defined $sizes && (!defined $sizes->{$fileid} || $sizes->{$fileid} == 0 ))
 		{
 			$li->appendChild( $fields->[0]->get_value_label( $session, $value ) );
 		}
@@ -1678,7 +1678,6 @@ sub group_items
 		}
 		VALUE: foreach my $value ( @$values )
 		{
-			my $code = $value;
 			if( $opts->{tags} )
 			{
 				$value =~ s/\.$//;
@@ -1698,6 +1697,8 @@ sub group_items
 			}
 			else
 			{
+				my $code = $value;
+				if( ! defined $code ) { $code = ""; }
 				if( $field->get_type eq "name" )
 				{
 					$code = "";
