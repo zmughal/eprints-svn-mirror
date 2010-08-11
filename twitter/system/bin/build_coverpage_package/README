@@ -1,0 +1,94 @@
+This package will enable the twitter harvester extension on EPrints 3.2 repositories.  It will not work with EPrints 3.1
+
+Note that this is an early alpha.  Feedback to af05v@ecs.soton.ac.uk most welcome, but I can't promise responsive technical support.  For help, try the ep-tech mailing list.
+
+There has been a fair amount of testing on the machine it was developed on.  A test deployment of the package did run into some issues, which are described below.  Future development will address these.
+
+=========================
+Installation Instructions
+=========================
+
+-------------
+Prerequisites
+-------------
+
+URI::Find
+JSON
+URI (see issues below)
+URI::OpenURL (see issues below)
+
+-------------------
+Global Installation
+-------------------
+
+Untar the global.tar.gz file in the eprints root directory.  This will deploy all of the new global files and put a patch file into the right place.
+
+In the root directory, apply the patch file:
+
+	eprints> patch -p7 --dry-run < twitter.patch
+
+If the dry run is successful, run it for real
+
+Note -- Development was done on a nightly build of EPrints before 3.2.3 was released.  There are two global patches, but one is not required in 3.2.3 (though it may be in previous versions.  If you get the following output:
+
+	patching file perl_lib/EPrints/DataObj/SavedSearch.pm
+	Hunk #1 FAILED at 288.
+	1 out of 1 hunk FAILED -- saving rejects to file perl_lib/EPrints/DataObj/SavedSearch.pm.rej
+	patching file perl_lib/EPrints.pm
+	Hunk #1 succeeded at 198 (offset 15 lines).
+
+Simply remove the file perl_lib/EPrints/DataObj/SavedSearch.pm.rej
+
+
+Issue: Plugins have moved around between versions.  The inputform component for tweet input is now in the wrong place.  From the perl_lib directory:
+
+	perl_lib>  mv EPrints/Plugin/Screen/EPrints/UploadMethod/Twitter.pm EPrints/Plugin/InputForm/UploadMethod/twitter.pm
+
+Then edit EPrints/Plugin/InputForm/UploadMethod/twitter.pm and modify the top of the file to look like this
+
+	package EPrints::Plugin::InputForm::UploadMethod::twitter;
+	use EPrints::Plugin::InputForm::UploadMethod;
+	@ISA = qw( EPrints::Plugin::InputForm::UploadMethod );
+	
+Issue: The copy of URI that ships with EPrints doesn't like twitter.  Install URI with CPAN and remove the <eprints_root>/perl_lib/URI copy.
+
+Issue: The machine I developed on allowed me to call a 'redirects' method on an HTTP header to see redirects from shortened URLS.  The installation test machine didn't like it.  Check line 654 of perl_lib/EPrints/Feed/Twitter.pm if you are unable to run update_feeds.
+
+------------------
+Local Installation
+------------------
+
+FOR EACH REPOSITORY IN WHICH YOU WANT TO HAVE A TWITTER HARVESTER:
+
+Untar the local.tar.gz file in each repository's directory (e.g. /opt/eprints3/archives/foo) and run patch
+
+eprints> patch -p1 --dry-run < twitter.patch
+
+FOR EACH REPOSITORY (regardless of whether it should have coversheets or not):
+
+eprints> epadmin update_database_structure <repositoryid>
+
+
+-----
+Using
+-----
+
+Twitter feeds are stored as documents.  Each update will be stored as a separate file inside the document.  This may lead to lots of files!  See the document upload stage of an EPrint to create a feed.
+
+Stick the bin/update_feeds script in the crontab and run it hourly (or whatever).
+
+
+------------------
+Future Development
+------------------
+
+Our attempts to build a demo of this at OR2010 led to an understanding of some of the shortcomings of not creating a tweet dataset.  Re-engineering the architecture around a dataset, with XML files for preservation is the next step in development.
+
+
+
+
+
+
+
+
+
