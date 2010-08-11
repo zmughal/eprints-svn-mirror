@@ -151,7 +151,7 @@ sub _load_plugin
 	use strict "refs";
 	return if( $disable );
 
-	$self->register_plugin( $plugin );
+	$self->register_plugin( $plugin, $data );
 }
 
 =item $ok = EPrints::PluginFactory->register_plugin( $plugin )
@@ -298,13 +298,11 @@ Register a new plugin $plugin with just the current repository.
 
 sub register_plugin
 {
-	my( $self, $plugin ) = @_;
+	my( $self, $plugin, $data ) = @_;
 
 	my $id = $plugin->get_id;
 	my $type = $plugin->get_type;
 	my $class = ref($plugin);
-
-	my $data = ref($self) ? $self->{data} : \%SYSTEM_PLUGINS;
 
 	push @{$data->{$type}||=[]}, $id;
 	$data->{"_class_"}->{$id} = $class;
