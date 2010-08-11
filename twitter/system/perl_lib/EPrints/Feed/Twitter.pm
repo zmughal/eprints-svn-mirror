@@ -500,7 +500,10 @@ sub expand_urls
 			$self->{uri_cache}->{$orig_uri} = 1;
 			my $response = $ua->head($uri);
 
+#this line may not work.  If it doesn't, replace it with the line directly below.
 			my @redirects = $response->redirects;
+#			my @redirects;
+
 			my @uri_chain;
 
 			if (scalar @redirects)
