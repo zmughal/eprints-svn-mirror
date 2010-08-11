@@ -1,0 +1,6 @@
+lib/defaultcfg/cfg.d/document_fields.pl
+lib/defaultcfg/namedsets/content
+lib/defaultcfg/citations/document/default.xml
+lib/defaultcfg/workflows/eprint/default.xml
+perl_lib/EPrints/DataObj/SavedSearch.pm
+perl_lib/EPrints.pm

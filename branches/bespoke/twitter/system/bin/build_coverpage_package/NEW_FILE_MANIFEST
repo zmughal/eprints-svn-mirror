@@ -1,0 +1,6 @@
+lib/defaultcfg/lang/en/phrases/twitter.xml
+lib/defaultcfg/static/style/auto/twitter.css
+bin/update_feeds
+perl_lib/EPrints/Feed/Twitter/Update.pm
+perl_lib/EPrints/Feed/Twitter.pm
+perl_lib/EPrints/Plugin/Screen/EPrint/UploadMethod/Twitter.pm
