@@ -75,7 +75,7 @@ sub new
 	$dir = $repository->get_conf( "base_path" )."/perl_lib";
 	if( defined $dir && !scalar keys %SYSTEM_PLUGINS )
 	{
-		$self->_load_dir( $self->{data}, $repository, $dir );
+		$self->_load_dir( \%SYSTEM_PLUGINS, $repository, $dir );
 	}
 
 	# repository-specific plugins
@@ -151,14 +151,8 @@ sub _load_plugin
 	use strict "refs";
 	return if( $disable );
 
-	$self->register_plugin( $plugin, $data );
+	$self->register_plugin( $data, $plugin );
 }
-
-=item $ok = EPrints::PluginFactory->register_plugin( $plugin )
-
-Register a new plugin with all repositories.
-
-=cut
 
 =back
 
@@ -290,15 +284,15 @@ sub _list
 	}
 }
 
-=item $ok = $plugins->register_plugin( $plugin )
+=item $ok = $plugins->register_plugin( $data, $plugin )
 
-Register a new plugin $plugin with just the current repository.
+Register a new plugin $plugin.
 
 =cut
 
 sub register_plugin
 {
-	my( $self, $plugin, $data ) = @_;
+	my( $self, $data, $plugin ) = @_;
 
 	my $id = $plugin->get_id;
 	my $type = $plugin->get_type;
