@@ -497,7 +497,7 @@ sub register_field
 		my $old_field = $self->{field_index}->{$fieldname};
 		if(
 			$system ||
-			$old_field->property( "provenance" ) ne "core" ||
+			$old_field->property( "providence" ) ne "core" ||
 			!$field->property( "replace_core" )
 		  )
 		{
