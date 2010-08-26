@@ -376,7 +376,7 @@ sub handler
 			my $match = content_negotiate_best_plugin( 
 				$repository, 
 				accept_header => $accept,
-				consider_summary_page => ( $dataset->confid eq "eprint" ? 1 : 0 ),
+				consider_summary_page => ( $dataset->confid eq "eprint" || $dataset->confid eq "document" ? 1 : 0 ),
 				plugins => [$repository->plugin_list(
 					type => "Export",
 					is_visible => "all",
