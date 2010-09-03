@@ -1,0 +1,201 @@
+######################################################################
+#
+# Enter additional information about a selected item (possibly on 
+# behalf of someone else)
+#
+######################################################################
+#
+# This file is part of the EPrints RAE module developed by the 
+# Institutional Repositories and Research Assessment (IRRA) project,
+# funded by JISC within the Digital Repositories programme.
+#
+# http://irra.eprints.org/
+#
+# The EPrints RAE module is free software; you can redistributet 
+# and/or modify it under the terms of the GNU General Public License 
+# as published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+
+# The EPrints RAE module is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+# of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+######################################################################
+
+use EPrints::Database;
+use EPrints::EPrint;
+use EPrints::MetaField;
+use EPrints::Session;
+use EPrints::User;
+use strict;
+
+use EPrints::SystemSettings;
+if( $EPrints::SystemSettings::conf->{version_id} =~ m/^(eprints-)?3\./ ) { &backcomp; }
+
+# Create session
+my $session = new EPrints::Session;
+exit( 0 ) unless( defined $session );
+my $archive = $session->get_archive;
+
+# Check user has appropriate privs
+if( !$session->auth_check( "deposit" ) )
+{
+    $session->terminate;
+    exit( 0 );
+}
+my $user = $session->current_user;
+
+
+# Check selected role
+my $role = $user;
+if( defined( $session->param( "role" ) ) )
+{
+	my $selected_role = EPrints::User->new( $session, $session->param( "role" ) );
+	if( defined $selected_role )
+	{
+		if( $archive->call( "rae_can_user_assume_role", $session, $user, $selected_role ) )
+		{
+			$role = $selected_role;	
+		}
+	}
+}
+
+# Check eprint
+my $eprintid = $session->param("eprintid");
+if(!defined $eprintid)
+{
+	exit( 0 );
+}
+my $eprint = EPrints::EPrint->new( $session, $eprintid );
+#if(!defined $eprint)
+#{
+#	exit( 0 );
+#}
+
+# Get selection info from DB
+my %selection;
+my $sql = "SELECT * FROM rae_selections WHERE userid=" . $role->get_id . " AND eprintid=" . $eprintid;
+my $sth = $session->get_db->prepare( $sql );
+if( $session->get_db->execute( $sth, $sql ) )
+{
+	my $hashref = $sth->fetchrow_hashref;
+	if( defined $hashref )
+	{
+		%selection = %$hashref;
+	}
+	else
+	{
+		# Trying to add info to a non-existent selection
+		exit( 0 );
+	}
+}
+$sth->finish;
+
+my @metafields;
+my @updates;
+foreach my $field ( @{ $archive->get_conf( "rae", "fields", "qualify" ) } )
+{
+
+	# Create metafield	
+	my $metafield = EPrints::MetaField->new( 
+		archive => $archive,
+		confid => "rae",
+		%$field,
+	);
+	push @metafields, $metafield;
+
+	# Get updated value
+	my $action_button = $session->get_action_button;
+	if( defined $action_button && $action_button eq "submit" )
+	{
+		my $value = $metafield->form_value( $session );
+		$selection{ $metafield->get_name } = $value;
+		push @updates, sprintf( '%s="%s"', $metafield->get_name, EPrints::Database::prep_value( $value ) );
+	}
+}
+
+# Update DB
+if( scalar @updates ) {
+	my $sql = "UPDATE rae_selections SET " . join( ", ", @updates ) . 
+		", userid_actual=" . $user->get_id . " WHERE userid=" . 
+		$role->get_id . " AND eprintid=" . $eprintid;
+	if( !$session->get_db->do( $sql ) ) 
+	{
+		# Handle error
+	}
+}
+
+# Render input form
+my $form_frag = $session->render_form( "post" );
+$form_frag = $session->render_input_form(
+	fields => \@metafields,
+	values => \%selection,
+	show_names => 1,
+	show_help => 1,
+	buttons => { submit => $session->phrase( "rae/qualify:submit_button" ) },
+);
+$form_frag->appendChild( $session->render_hidden_field( "role", $role->get_id ) ) if $user->get_id != $role->get_id;
+$form_frag->appendChild( $session->render_hidden_field( "eprintid", $eprintid ) );
+
+# Build & Send page
+my $select_url = $archive->get_conf("perl_url") . "/users/rae/select";
+$select_url .= "?role=" . $role->get_id if $user->get_id != $role->get_id;
+my $title = $session->html_phrase( "rae/qualify:page_title", user => $role->render_description );
+
+my $citation;
+if( defined $eprint )
+{
+	$citation = $eprint->render_citation;
+}
+else
+{
+	$citation = $session->html_phrase( "rae:unknown_item",
+		id => $session->make_text( $eprintid ) );
+}
+
+my $page = $session->html_phrase( "rae/qualify:page",
+	form => $form_frag,
+	citation => $citation,
+	select_link => $session->render_link( $select_url ),
+);
+
+$session->build_page( $title, $page );
+$session->send_page();
+$session->terminate();
+exit;
+
+# Backcompatibility for EPrints 3
+sub backcomp
+{
+	eval '
+		package EPrints::Session;
+
+		sub auth_check
+		{
+			my( $self , $resource ) = @_;
+
+			my $user = $self->current_user;
+
+			if( !defined $user )
+			{
+				$self->render_error( $self->html_phrase( "lib/session:no_login" ) );
+				return 0;
+			}
+
+			if( !defined $resource )
+			{
+				return 1;
+			}
+
+			unless( $user->has_role( $resource ) )
+			{
+				$self->render_error( $self->html_phrase( "lib/session:no_priv" ) );
+				return 0;
+			}
+			return 1;
+		}
+
+		1;
+	';
+}
