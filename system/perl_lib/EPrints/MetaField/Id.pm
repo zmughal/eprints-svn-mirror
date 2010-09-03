@@ -62,7 +62,7 @@ sub value_from_sql_row
 {
 	my( $self, $session, $row ) = @_;
 
-	if( ref($session->{database}) eq "EPrints::Database::mysql" )
+	if( $session->{database}->isa( "EPrints::Database::mysql" ) )
 	{
 		utf8::decode( $row->[0] );
 	}

@@ -37,28 +37,18 @@ sub render_title
 
 	my $session = $self->{session};
 
-	my $screen = $self->view_screen();
+	my $screen = $self->get_view_screen();
 
 	my $dataset = $self->{processor}->{dataset};
 	my $dataobj = $self->{processor}->{dataobj};
 
-	my $url = URI->new( $session->current_url );
-	$url->query_form(
-		screen => $self->listing_screen,
-		dataset => $dataset->id
-	);
-	my $listing = $session->render_link( $url );
+	my $listing = $session->render_link( "?screen=Listing&dataset=".$dataset->id );
 	$listing->appendChild( $dataset->render_name( $session ) );
 
 	my $desc = $dataobj->render_description();
 	if( $self->{id} ne "Screen::$screen" )
 	{
-		$url->query_form(
-			screen => $screen,
-			dataset => $dataset->id,
-			dataobj => $dataobj->id
-		);
-		my $link = $session->render_link( $url );
+		my $link = $session->render_link( "?screen=$screen&dataset=".$dataset->id."&dataobj=".$dataobj->id );
 		$link->appendChild( $desc );
 	}
 
@@ -76,14 +66,12 @@ sub render
 
 	my $chunk = $self->{session}->make_doc_fragment;
 
-	$chunk->appendChild( $self->render_status );
-
+#	$chunk->appendChild( $self->render_status );
 	my $buttons = $self->render_common_action_buttons;
 	$chunk->appendChild( $buttons );
 
 	# if in archive and can request delete then do that here TODO
 
-	# current view to show
 	my $view = $self->{session}->param( "view" );
 	if( defined $view )
 	{
@@ -178,23 +166,6 @@ sub render
 
 #	$chunk->appendChild( $buttons->cloneNode(1) );
 	return $chunk;
-}
-
-sub render_status
-{
-	my( $self ) = @_;
-
-	my $dataobj = $self->{processor}->{dataobj};
-
-	my $url = $dataobj->uri;
-
-	my $div = $self->{session}->make_element( "div", class=>"ep_block" );
-
-	my $link = $self->{session}->render_link( $url );
-	$div->appendChild( $link );
-	$link->appendChild( $self->{session}->make_text( $url ) );
-
-	return $div;
 }
 
 sub render_common_action_buttons

@@ -68,7 +68,6 @@ sub new
 	$self->{dataset} = $params{item}->get_dataset;
 	$self->{item} = $params{item};
 	$self->{workflow_id} = $workflow_id;
-	$self->{processor} = $params{processor};
 
 	$params{session} = $session;
 	$params{current_user} = $session->current_user;
@@ -320,7 +319,7 @@ sub update_from_form
 	return if $quiet;
 
 	# Deposit performs a full validation, so don't repeat any warnings here
-	return if defined $new_stage && $new_stage eq 'deposit';
+	return if $new_stage eq 'deposit';
 
 	my @problems = $stage_obj->validate( $processor );
 
@@ -435,21 +434,13 @@ sub link_problem_xhtml
 	if( EPrints::XML::is_dom( $node, "Element" ) )
 	{
 		my $class = $node->getAttribute( "class" );
-		if( $class && $class=~m/^ep_problem_field:(.*)$/ )
+		if( $class=~m/^ep_problem_field:(.*)$/ )
 		{
 			my $stage = $self->{field_stages}->{$1};
 			return if( !defined $stage );
 			my $keyfield = $self->{dataset}->get_key_field();
 			my $kf_sql = $keyfield->get_sql_name;
-			my $url = URI->new( $self->{session}->current_url );
-			$url->query_form(
-				screen => $screenid,
-				dataset => $self->{dataset}->id,
-				dataobj => $self->{item}->id,
-				$kf_sql => $self->{item}->id,
-				stage => $stage
-			);
-			$url->fragment( $1 );
+			my $url = "?screen=$screenid&$kf_sql=".$self->{item}->get_id."&stage=$stage#$1";
 			if( defined $new_stage && $new_stage eq $stage )
 			{
 				$url = "#$1";

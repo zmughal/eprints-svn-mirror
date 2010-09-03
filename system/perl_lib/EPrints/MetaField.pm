@@ -847,7 +847,7 @@ sub render_value_withopts
 ######################################################################
 =pod
 
-=item $out_list = $field->sort_values( $in_list, $langid )
+=item $out_list = $field->sort_values( $session, $in_list )
 
 Sorts the in_list into order, based on the "order values" of the 
 values in the in_list. Assumes that the values are not a list of
@@ -858,21 +858,10 @@ multiple values. [ [], [], [] ], but rather a list of single values.
 
 sub sort_values
 {
-	my( $self, $session, $in_list, $langid ) = @_;
+	my( $self, $session, $in_list ) = @_;
+	$in_list = $session if !defined $in_list;
 
-	($in_list, $langid) = ($session, $in_list)
-		if !UNIVERSAL::isa( $session, "EPrints::Repository" );
-
-	my %ov;
-	VALUE: for(@$in_list)
-	{
-		next if !defined $_;
-		$ov{$_} = $self->ordervalue_single( $_, $self->{repository}, $langid );
-	}
-
-	my @out_list = sort { defined $a <=> defined $b || $ov{$a} cmp $ov{$b} } @$in_list;
-
-	return \@out_list;
+	return $self->repository->database->sort_values( $self, $in_list );
 }
 
 
@@ -1549,6 +1538,7 @@ sub get_basic_input_elements
 			maxlength => $maxlength );
 		$f->appendChild( $input );
 	}
+	$f->appendChild( $session->make_element( "div", id=>$basename."_".$_."_billboard" ));
 
 	return [ [ { el=>$f } ] ];
 }
@@ -1713,10 +1703,7 @@ Results are sorted according to the ordervalues of the current session.
 sub all_values
 {
 	my( $self, %opts ) = @_;
-
-	my $dataset = exists $opts{dataset} ? $opts{dataset} : $self->dataset;
-
-	return $self->get_values( $self->repository, $dataset, %opts );
+	return $self->get_values( $self->repository, $self->dataset, %opts );
 }
 sub get_values
 {
@@ -1730,7 +1717,25 @@ sub get_values
 		$dataset,	
 		%opts );
 
-	return $self->sort_values( $unsorted_values, $langid );
+	my %orderkeys = ();
+	my @values;
+	foreach my $value ( @{$unsorted_values} )
+	{
+		my $v2 = $value;
+		$v2 = "" unless( defined $value );
+		push @values, $v2;
+
+		# uses function _basic because value will NEVER be multiple
+		my $orderkey = $self->ordervalue_basic(
+			$value, 
+			$session, 
+			$langid );
+		$orderkeys{$v2} = $orderkey || "";
+	}
+
+	my @outvalues = sort {$orderkeys{$a} cmp $orderkeys{$b}} @values;
+
+	return \@outvalues;
 }
 
 sub get_unsorted_values
@@ -1752,11 +1757,7 @@ sub get_ids_by_value
 
 =item $id = $field->get_id_from_value( $session, $value )
 
-Returns a key based on $value that can be used in a view.
-
-E.g. if "render_res" is "year" then the key of "2005-03-02" would be "2005".
-
-Returns "NULL" if $value is undefined.
+Returns a unique id for $value or "NULL" if $value is undefined.
 
 =cut
 ######################################################################
@@ -1850,7 +1851,7 @@ sub ordervalue
 	}
 
 	my $parent = $self->property( "parent" );
-	if( $self->property( "multiple" ) && defined $parent && $parent->isa( "EPrints::MetaField::Multilang" ) )
+	if( defined $parent && $parent->isa( "EPrints::MetaField::Multilang" ) )
 	{
 		my $langs = $parent->property( "languages" );
 
@@ -1917,157 +1918,161 @@ sub ordervalue_basic
 	return $value;
 }
 
+
+
+
+
+
+
 # XML output methods
+
 
 sub to_xml
 {
-	my( $self, $value, %opts ) = @_;
+	my( $self, $session, $value, $dataset, %opts ) = @_;
 
-	my $builder = EPrints::XML::SAX::Builder->new(
-		repository => $self->{session}
-	);
-	$builder->start_document({});
-	$builder->xml_decl({
-		Version => '1.0',
-		Encoding => 'utf-8',
-	});
-	$builder->start_prefix_mapping({
-		Prefix => '',
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-	});
-	$self->to_sax( $value, %opts, Handler => $builder );
-
-	$builder->end_prefix_mapping({
-		Prefix => '',
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-	});
-	$builder->end_document({});
-
-	return $builder->result()->documentElement;
-}
-
-sub to_sax
-{
-	my( $self, $value, %opts ) = @_;
-
-	# MetaField::Compound relies on testing this specific attribute
-	return if defined $self->{parent_name};
-
-	return if !$opts{show_empty} && !EPrints::Utils::is_set( $value );
-
-	my $handler = $opts{Handler};
-	my $name = $self->name;
-
-	$handler->start_element( {
-		Prefix => '',
-		LocalName => $name,
-		Name => $name,
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-		Attributes => {},
-	});
-
-	if( ref($value) eq "ARRAY" )
+	# we're part of a compound field that will include our value
+	if( defined $self->{parent_name} )
 	{
-		foreach my $v (@$value)
+		return $session->make_doc_fragment;
+	}
+
+	# don't show empty fields
+	if( !$opts{show_empty} && !EPrints::Utils::is_set( $value ) )
+	{
+		return $session->make_doc_fragment;
+	}
+
+	my $tag = $session->make_element( $self->get_name );	
+	if( $self->get_property( "multiple" ) )
+	{
+		foreach my $single ( @{$value} )
 		{
-			$handler->start_element( {
-				Prefix => '',
-				LocalName => "item",
-				Name => "item",
-				NamespaceURI => EPrints::Const::EP_NS_DATA,
-				Attributes => {},
-			});
-			$self->to_sax_basic( $v, %opts );
-			$handler->end_element( {
-				Prefix => '',
-				LocalName => "item",
-				Name => "item",
-				NamespaceURI => EPrints::Const::EP_NS_DATA,
-			});
+			my $item = $session->make_element( "item" );
+			$item->appendChild( $self->to_xml_basic( $session, $single, $dataset, %opts ) );
+			$tag->appendChild( $item );
 		}
 	}
 	else
 	{
-		$self->to_sax_basic( $value, %opts );
+		$tag->appendChild( $self->to_xml_basic( $session, $value, $dataset, %opts ) );
 	}
 
-	$handler->end_element( {
-		Prefix => '',
-		LocalName => $name,
-		Name => $name,
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-	});
+	return $tag;
 }
 
-sub to_sax_basic
+sub to_xml_basic
 {
-	my( $self, $value, %opts ) = @_;
+	my( $self, $session, $value, $dataset, %opts ) = @_;
 
-	$opts{Handler}->characters( { Data => $value } );
-}
-
-sub empty_value
-{
-	return "";
-}
-
-sub start_element
-{
-	my( $self, $data, $epdata, $state ) = @_;
-
-	++$state->{depth};
-
-	if( $state->{depth} == 1 )
+	if( !defined $value ) 
 	{
-		$epdata->{$self->name} = $self->property( "multiple" ) ? [] : $self->empty_value;
-		$state->{in_value} = !$self->property( "multiple" );
+		return $session->make_text( "" );
 	}
-	elsif(
-		$state->{depth} == 2 &&
-		$self->property( "multiple" )
-	  )
+	return $session->make_text( $value );
+}
+
+=item $epdata = $field->xml_to_epdata( $session, $xml, %opts )
+
+Populates $epdata based on $xml.
+
+=cut
+
+sub xml_to_epdata
+{
+	my( $self, $session, $xml, %opts ) = @_;
+
+	my $value = undef;
+
+	if( $self->get_property( "multiple" ) )
 	{
-		if( $data->{LocalName} eq "item" )
+		$value = [];
+		foreach my $node ($xml->childNodes)
 		{
-			push @{$epdata->{$self->name}}, $self->empty_value;
-			$state->{in_value} = 0;
-		}
-		else
-		{
-			$state->{Handler}->message( "warning", $self->repository->xml->create_text_node( "Invalid XML element: $data->{LocalName}" ) )
-				if defined $state->{Handler};
+			next unless EPrints::XML::is_dom( $node, "Element" );
+			if( $node->nodeName ne "item" )
+			{
+				if( defined $opts{Handler} )
+				{
+					$opts{Handler}->message( "warning", $session->html_phrase( "Plugin/Import/XML:unexpected_element", name => $session->make_text( $node->nodeName ) ) );
+					$opts{Handler}->message( "warning", $session->html_phrase( "Plugin/Import/XML:expected", elements => $session->make_text( "<item>" ) ) );
+				}
+				next;
+			}
+			push @$value, $self->xml_to_epdata_basic( $session, $node, %opts );
 		}
 	}
+	else
+	{
+		$value = $self->xml_to_epdata_basic( $session, $xml, %opts );
+	}
+
+	return $value;
 }
 
-sub end_element
+# return epdata for a single value of this field
+sub xml_to_epdata_basic
 {
-	my( $self, $data, $epdata, $state ) = @_;
+	my( $self, $session, $xml, %opts ) = @_;
 
-	if( $state->{depth} == 1 || ($state->{depth} == 2 && $self->property( "multiple" )) )
-	{
-		$state->{in_value} = 0;
-	}
-
-	--$state->{depth};
+	return EPrints::Utils::tree_to_utf8( scalar $xml->childNodes );
 }
 
-sub characters
+
+
+
+#### old xml v1
+
+sub to_xml_old
 {
-	my( $self, $data, $epdata, $state ) = @_;
+	my( $self, $session, $v, $no_xmlns ) = @_;
 
-	return if !$state->{in_value};
+	my $r = $session->make_doc_fragment;
 
-	my $value = $epdata->{$self->name};
-	if( $state->{depth} == 2 ) # <foo><item>XXX
+	if( $self->is_virtual )
 	{
-		$value->[-1] .= $data->{Data};
+		return $r;
 	}
-	elsif( $state->{depth} == 1 ) # <foo>XXX
+
+	if( $self->get_property( "multiple" ) )
 	{
-		$epdata->{$self->name} = $value . $data->{Data};
+		my @list = @{$v};
+		# trim empty elements at end
+		while( scalar @list > 0 && !EPrints::Utils::is_set($list[(scalar @list)-1]) )
+		{
+			pop @list;
+		}
+		foreach my $item ( @list )
+		{
+			$r->appendChild( $session->make_text( "    " ) );
+			$r->appendChild( $self->to_xml_old_single( $session, $item, $no_xmlns ) );
+			$r->appendChild( $session->make_text( "\n" ) );
+		}
 	}
+	else
+	{
+		$r->appendChild( $session->make_text( "    " ) );
+		$r->appendChild( $self->to_xml_old_single( $session, $v, $no_xmlns ) );
+		$r->appendChild( $session->make_text( "\n" ) );
+	}
+	return $r;
 }
+
+sub to_xml_old_single
+{
+	my( $self, $session, $v, $no_xmlns ) = @_;
+
+	my %attrs = ( name=>$self->get_name() );
+	$attrs{'xmlns'}="http://eprints.org/ep2/data" unless( $no_xmlns );
+
+	my $r = $session->make_element( "field", %attrs );
+
+	$r->appendChild( $self->to_xml_basic( $session, $v ) );
+
+	return $r;
+}
+
+########## end of old XML
 
 sub render_xml_schema
 {
@@ -2241,7 +2246,7 @@ sub get_search_group { return 'basic'; }
 sub get_property_defaults
 {
 	return (
-		provenance => $EPrints::MetaField::FROM_CONFIG,
+		providence => $EPrints::MetaField::FROM_CONFIG,
 		replace_core => 0,
 		allow_null 	=> 1,
 		browse_link 	=> $EPrints::MetaField::UNDEF,
@@ -2318,29 +2323,8 @@ Get indexable terms from $value. $terms is a reference to an array of strings to
 
 =cut
 
+# Most types are not indexed		
 sub get_index_codes
-{
-	my( $self, $session, $value ) = @_;
-
-	return( [], [], [] ) unless( EPrints::Utils::is_set( $value ) );
-
-	if( !$self->get_property( "multiple" ) )
-	{
-		return $self->get_index_codes_basic( $session, $value );
-	}
-	my( $codes, $grepcodes, $ignored ) = ( [], [], [] );
-	foreach my $v (@{$value} )
-	{		
-		my( $c,$g,$i ) = $self->get_index_codes_basic( $session, $v );
-		push @{$codes},@{$c};
-		push @{$grepcodes},@{$g};
-		push @{$ignored},@{$i};
-	}
-
-	return( $codes, $grepcodes, $ignored );
-}
-
-sub get_index_codes_basic
 {
 	my( $self, $session, $value ) = @_;
 
@@ -2424,9 +2408,7 @@ sub get_search_conditions_not_ex
 	# free text!
 
 	# apply stemming and stuff
-	# codes, grep_terms, bad
-	my( $codes, undef, undef ) = $self->get_index_codes( $session,
-		$self->property( "multiple" ) ? [$search_value] : $search_value );
+	my( $codes, $grep_codes, $bad ) = $self->get_index_codes( $session, $search_value );
 
 	# Just go "yeah" if stemming removed the word
 	if( !EPrints::Utils::is_set( $codes->[0] ) )
@@ -2434,20 +2416,11 @@ sub get_search_conditions_not_ex
 		return EPrints::Search::Condition->new( "PASS" );
 	}
 
-	if( $search_value =~ s/\*$// )
-	{
-		return EPrints::Search::Condition::IndexStart->new( 
-				$dataset,
-				$self, 
-				$codes->[0] );
-	}
-	else
-	{
-		return EPrints::Search::Condition::Index->new( 
-				$dataset,
-				$self, 
-				$codes->[0] );
-	}
+	return EPrints::Search::Condition->new( 
+			'index',
+ 			$dataset,
+			$self, 
+			$codes->[0] );
 }
 
 sub get_value

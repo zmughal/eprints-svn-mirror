@@ -186,7 +186,7 @@ sub paginate_list
 		foreach my $key ( keys %$params )
 		{
 			my $value = $params->{$key};
-			push @param_list, "$key=$value" if defined $value;
+			push @param_list, "$key=$value";
 		}
 	}
 	$url .= join "&", @param_list;

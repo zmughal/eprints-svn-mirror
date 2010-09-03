@@ -1155,23 +1155,6 @@ sub perform_search
 	return $results;
 }
 
-=item $ids_map = $searchexp->perform_distinctby( $fields )
-
-Perform a DISTINCT on $fields to find all unique ids by value.
-
-=cut
-
-sub perform_distinctby
-{
-	my( $self, $fields ) = @_;
-
-	# we don't do any caching of DISTINCT BY
-	return $self->get_conditions->process_distinctby( 
-			session => $self->{session},
-			dataset => $self->{dataset},
-			fields => $fields,
-		);
-}
 
 =item ($values, $counts) = $searchexp->perform_groupby( $field )
 
@@ -1269,7 +1252,24 @@ sub get_ids_by_field_values
 {
 	my( $self, $field ) = @_;
 
-	return $self->process_distinctby( [$field] );
+	my @filters = @{$self->{filters}};
+
+	foreach my $sf_id ( keys %{$self->{searchfieldmap}} )
+	{
+		my $sf = $self->{searchfieldmap}->{$sf_id};
+		push @filters, {
+			fields => $sf->get_fields,
+			value => $sf->get_value,
+		};
+	}
+
+	my $counts = $field->get_ids_by_value(
+		$self->{session},
+		$self->{dataset},
+		filters => \@filters
+	);
+
+	return $counts;
 }
 
 

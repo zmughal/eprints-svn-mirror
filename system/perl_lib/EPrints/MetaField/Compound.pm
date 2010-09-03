@@ -42,16 +42,11 @@ sub new
 
 	my $self = $class->SUPER::new( %properties );
 
-	my %seen;
 	foreach my $inner_field ( @{$properties{fields}}, $self->extra_subfields )
 	{
 		if( !EPrints::Utils::is_set( $inner_field->{sub_name} ) )
 		{
 			EPrints->abort( "Sub fields of ".$self->dataset->id.".".$self->name." need the sub_name property to be set." );
-		}
-		if( $seen{$inner_field->{sub_name}}++ )
-		{
-			EPrints->abort( $self->dataset->id.".".$self->name." already contains a sub-field called '$inner_field->{sub_name}'" );
 		}
 		my $field = EPrints::MetaField->new( 
 			show_in_html => 0, # don't show the inner field separately
@@ -65,7 +60,7 @@ sub new
 			parent => $self,
 			parent_name => $self->get_name(),
 			dataset => $self->get_dataset(), 
-			provenance => $self->get_property( "provenance" ),
+			providence => $self->get_property( "providence" ),
 			multiple => $properties{ "multiple" },
 			volatile => $properties{ "volatile" } );
 
@@ -167,133 +162,57 @@ sub render_single_value
 	return $table;
 }
 
-sub to_sax_basic
+sub to_xml_basic
 {
-	my( $self, $value, %opts ) = @_;
+	my( $self, $session, $value, $dataset ) = @_;
 
-	return if !EPrints::Utils::is_set( $value );
-
-	my $f = $self->property( "fields_cache" );
-	my %fieldname_to_alias = $self->get_fieldname_to_alias;
-	foreach my $field ( @{$f} )
+	my $r = $session->make_doc_fragment;
+	if( !EPrints::Utils::is_set( $value )  )
 	{
-		next if !$field->property( "export_as_xml" );
-
-		my $alias = $fieldname_to_alias{$field->name};
-		my $v = $value->{$alias};
-		# cause the sub-field to behave like it's a normal field
-		local $field->{multiple} = 0;
-		local $field->{parent_name};
-		local $field->{name} = $field->{sub_name};
-		$field->to_sax( $v, %opts );
+		return $r;
 	}
+	my $f = $self->get_property( "fields_cache" );
+	my %fieldname_to_alias = $self->get_fieldname_to_alias;
+	foreach my $field_conf ( @{$f} )
+	{
+		my $name = $field_conf->{name};
+		my $field = $dataset->get_field( $name );
+		next unless $field->get_property( "export_as_xml" );
+		my $alias = $fieldname_to_alias{$name};
+		my $v = $value->{$alias};
+		my $tag = $session->make_element( $alias );
+		$tag->appendChild( $field->to_xml_basic( $session, $v, $dataset ) );
+		$r->appendChild( $tag );
+	}
+	return $r;
 }
 
-sub empty_value
+sub xml_to_epdata_basic
 {
-	return {};
-}
+	my( $self, $session, $xml, %opts ) = @_;
 
-sub start_element
-{
-	my( $self, $data, $epdata, $state ) = @_;
-
-	++$state->{depth};
+	my $value = {};
 
 	my %a_to_f = $self->get_alias_to_fieldname;
-
-	# if we're inside a sub-field just call it
-	if( defined(my $field = $state->{handler}) )
+	foreach my $node ($xml->childNodes)
 	{
-		$field->start_element( $data, $epdata, $state->{$field} );
-	}
-	# or initialise all fields at <creators>
-	elsif( $state->{depth} == 1 )
-	{
-		foreach my $field (@{$self->property( "fields_cache" )})
+		next unless EPrints::XML::is_dom( $node, "Element" );
+		my $nodeName = $node->nodeName;
+		my $name = $a_to_f{$nodeName};
+		if( !defined $name )
 		{
-			local $data->{LocalName} = $field->property( "sub_name" );
-			$state->{$field} = {%$state,
-				depth => 0,
-			};
-			$field->start_element( $data, $epdata, $state->{$field} );
-		}
-	}
-	# add a new empty value for each sub-field at <item>
-	elsif( $state->{depth} == 2 && $self->property( "multiple" ) )
-	{
-		foreach my $field (@{$self->property( "fields_cache" )})
-		{
-			$field->start_element( $data, $epdata, $state->{$field} );
-		}
-	}
-	# otherwise we must be starting a new sub-field value
-	else
-	{
-		$state->{handler} = $self->{dataset}->field( $a_to_f{$data->{LocalName}} );
-	}
-}
-
-sub end_element
-{
-	my( $self, $data, $epdata, $state ) = @_;
-
-	# finish all fields
-	if( $state->{depth} == 1 )
-	{
-		my $value = $epdata->{$self->name} = $self->property( "multiple" ) ? [] : $self->empty_value;
-
-		foreach my $field (@{$self->property( "fields_cache" )})
-		{
-			local $data->{LocalName} = $field->property( "sub_name" );
-			$field->end_element( $data, $epdata, $state->{$field} );
-
-			my $v = delete $epdata->{$field->name};
-			if( ref($value) eq "ARRAY" )
+			if( defined $opts{Handler} )
 			{
-				foreach my $i (0..$#$v)
-				{
-					$value->[$i]->{$field->property( "sub_name" )} = $v->[$i];
-				}
+				$opts{Handler}->message( "warning", $session->html_phrase( "Plugin/Import/XML:unexpected_element", name => $session->make_text( $nodeName ) ) );
+				$opts{Handler}->message( "warning", $session->html_phrase( "Plugin/Import/XML:expected", elements => $session->make_text( "<".join("> <", sort { $a cmp $b } keys %a_to_f).">" ) ) );
 			}
-			else
-			{
-				$value->{$field->property( "sub_name" )} = $v;
-			}
-
-			delete $state->{$field};
+			next;
 		}
-	}
-	# end a new <item> for every field
-	elsif( $state->{depth} == 2 && $self->property( "multiple" ) )
-	{
-		foreach my $field (@{$self->property( "fields_cache" )})
-		{
-			$field->end_element( $data, $epdata, $state->{$field} );
-		}
-	}
-	# end of a sub-field's content
-	elsif( $state->{depth} == 2 || ($state->{depth} == 3 && $self->property( "multiple" )) )
-	{
-		delete $state->{handler};
-	}
-	# otherwise call the sub-field
-	elsif( defined(my $field = $state->{handler}) )
-	{
-		$field->end_element( $data, $epdata, $state->{$field} );
+		my $field = $self->get_dataset->get_field( $name );
+		$value->{$nodeName} = $field->xml_to_epdata_basic( $session, $node, %opts );
 	}
 
-	--$state->{depth};
-}
-
-sub characters
-{
-	my( $self, $data, $epdata, $state ) = @_;
-
-	if( defined(my $field = $state->{handler}) )
-	{
-		$field->characters( $data, $epdata, $state->{$field} );
-	}
+	return $value;
 }
 
 # This type of field is virtual.

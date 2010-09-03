@@ -750,11 +750,12 @@ sub _load_citation_specs
 {
 	my( $self ) = @_;
 
-	$self->{citations} = {};
-	# load repository-specific citations
-	$self->_load_citation_dir( $self->config( "config_path" )."/citations" );
-	# load system-level citations (won't overwrite)
+	$self->{citation_style} = {};
+	$self->{citation_type} = {};
+	# load system-level citations
 	$self->_load_citation_dir( $self->config( "lib_path" )."/citations" );
+	# load repository-specific citations (may overwrite)
+	$self->_load_citation_dir( $self->config( "config_path" )."/citations" );
 }
 
 sub _load_citation_dir
@@ -775,21 +776,30 @@ sub _load_citation_dir
 	foreach my $dsid ( @dirs )
 	{
 		opendir( $dh, "$dir/$dsid" );
+		my @files = ();
 		while( my $fn = readdir( $dh ) )
 		{
 			next if $fn =~ m/^\./;
-			my $fileid = substr($fn,0,-4);
-			# prefer .xsl to .xml
-			next if $fn =~ /\.xml$/
-				&& $EPrints::Citation::XSL &&
-				-e "$dir/$dsid/$fileid.xsl";
-			$self->_load_citation_file( 
-				"$dir/$dsid/$fn",
-				$dsid,
-				$fileid
-			);
+			next unless $fn =~ s/\.xml$//;
+			push @files,$fn;
 		}
 		closedir $dh;
+		if( !defined $self->{citation_style}->{$dsid} )
+		{
+			$self->{citation_style}->{$dsid} = {};
+		}
+		if( !defined $self->{citation_type}->{$dsid} )
+		{
+			$self->{citation_type}->{$dsid} = {};
+		}
+		foreach my $file ( @files )
+		{
+			$self->_load_citation_file( 
+				"$dir/$dsid/$file.xml",
+				$dsid,
+				$file,
+			);
+		}
 	}
 
 	return 1;
@@ -798,8 +808,6 @@ sub _load_citation_dir
 sub _load_citation_file
 {
 	my( $self, $file, $dsid, $fileid ) = @_;
-
-	return if defined $self->{citations}->{$dsid}->{$fileid};
 
 	if( !-e $file )
 	{
@@ -811,27 +819,49 @@ sub _load_citation_file
 		return;
 	}
 
-	if( $file =~ /\.xml$/ )
+	my $doc = $self->parse_xml( $file , 1 );
+	if( !defined $doc )
 	{
-		$self->{citations}->{$dsid}->{$fileid} = EPrints::Citation::EPC->new(
-			$file,
-			dataset => $self->dataset( $dsid )
-		);
+		return;
 	}
 
-	if( $file =~ /\.xsl$/ && $EPrints::Citation::XSL )
+	my $citation = ($doc->getElementsByTagName( "citation" ))[0];
+	if( !defined $citation )
 	{
-		$self->{citations}->{$dsid}->{$fileid} = EPrints::Citation::XSL->new(
-			$file,
-			dataset => $self->dataset( $dsid )
-		);
+		$self->log(  "Missing <citations> tag in $file\n" );
+		$self->xml->dispose( $doc );
+		return;
 	}
+	my $type = $citation->getAttribute( "type" );
+	$type = "default" unless defined $type;
+
+	my $frag = $self->xml->contents_of( $citation );
+
+	$self->{citation_type}->{$dsid}->{$fileid} = $type;
+	$self->{citation_style}->{$dsid}->{$fileid} = $frag;
+	$self->{citation_sourcefile}->{$dsid}->{$fileid} = $file;
+	$self->{citation_mtime}->{$dsid}->{$fileid} = EPrints::Utils::mtime( $file );
+
+	$self->xml->dispose( $doc );
 }
 
-# DEPRECATED
 sub freshen_citation
 {
 	my( $self, $dsid, $fileid ) = @_;
+
+	# this only really needs to be done once per file per session, but we
+	# don't have a handle on the current session
+
+	my $file = $self->{citation_sourcefile}->{$dsid}->{$fileid};
+	my $mtime = EPrints::Utils::mtime( $file );
+
+	my $old_mtime = $self->{citation_mtime}->{$dsid}->{$fileid};
+	if( defined $old_mtime && $old_mtime == $mtime )
+	{
+		return;
+	}
+
+	$self->_load_citation_file( $file, $dsid, $fileid );
 }
 
 
@@ -847,29 +877,28 @@ sub _load_templates
 {
 	my( $self ) = @_;
 
-	$self->{html_templates} = {};
-	$self->{text_templates} = {};
-	$self->{template_mtime} = {};
-	$self->{template_path} = {};
-
 	foreach my $langid ( @{$self->config( "languages" )} )
 	{
-		foreach my $dir ($self->get_template_dirs( $langid ))
+		my $dir = $self->config( "config_path" )."/lang/$langid/templates";
+		my $dh;
+		opendir( $dh, $dir );
+		my @template_files = ();
+		while( my $fn = readdir( $dh ) )
 		{
-			opendir( my $dh, $dir ) or next;
-			while( my $fn = readdir( $dh ) )
-			{
-				next if $fn =~ m/^\./;
-				next if $fn !~ /\.xml$/;
-				my $id = $fn;
-				$id =~ s/\.xml$//;
-				next if
-					exists $self->{template_mtime}->{$id} &&
-					exists $self->{template_mtime}->{$id}->{$langid};
-				$self->{template_path}->{$id}->{$langid} = "$dir/$fn";
-				$self->freshen_template( $langid, $id );
-			}
-			closedir( $dh );
+			next if $fn=~m/^\./;
+			push @template_files, $fn if $fn=~m/\.xml$/;
+		}
+		closedir( $dh );
+
+		#my $tmp_session = EPrints::Session->new( 1, $self->{id} );
+		#$tmp_session->terminate;
+
+		foreach my $fn ( @template_files )
+		{
+			my $id = $fn;
+			$id=~s/\.xml$//;
+			delete $self->{template_mtime}->{$id}->{$langid}; # force reload
+			$self->freshen_template( $langid, $id );
 		}
 
 		if( !defined $self->{html_templates}->{default}->{$langid} )
@@ -877,7 +906,6 @@ sub _load_templates
 			EPrints::abort( "Failed to load default template for language $langid" );
 		}
 	}
-
 	return 1;
 }
 
@@ -888,9 +916,9 @@ sub freshen_template
 	my $curr_lang = $self->{lang};
 	$self->change_lang( $langid );
 
-	my $path = $self->{template_path}->{$id}->{$langid};
-
-	my @filestat = stat( $path );
+	my $file = $self->config( "config_path" ).
+			"/lang/$langid/templates/$id.xml";
+	my @filestat = stat( $file );
 	my $mtime = $filestat[9];
 
 	my $old_mtime = $self->{template_mtime}->{$id}->{$langid};
@@ -900,7 +928,7 @@ sub freshen_template
 		return;
 	}
 
-	my $template = $self->_load_template( $path );
+	my $template = $self->_load_template( $file );
 	if( !defined $template ) 
 	{ 
 		$self->{lang} = $curr_lang;
@@ -1688,42 +1716,6 @@ END
 	return $dirs[$#dirs];
 }
 
-=item @dirs = $repository->get_template_dirs( $langid )
-
-Returns a list of directories from which template files may be sourced.
-
-=cut
-
-sub get_template_dirs
-{
-	my( $self, $langid ) = @_;
-
-	my @dirs;
-
-	my $config_path = $self->config( "config_path" );
-	my $lib_path = $self->config( "lib_path" );
-
-	# themes path: /archives/[repoid]/cfg/lang/[langid]templates/
-	push @dirs, "$config_path/lang/$langid/templates";
-	# repository path: /archives/[repoid]/cfg/templates/
-	push @dirs, "$config_path/templates";
-
-	my $theme = $self->config( "theme" );
-	if( defined $theme )
-	{	
-		# themes path: /archives/[repoid]/cfg/themes/lang/[langid]templates/
-		push @dirs, "$config_path/themes/$theme/lang/$langid/templates";
-		# themes path: /archives/[repoid]/cfg/themes/lang/[langid]templates/
-		push @dirs, "$config_path/themes/$theme/templates";
-	}
-
-	# system path: /lib/templates/
-	push @dirs, "$lib_path/lang/$langid/templates";
-	push @dirs, "$lib_path/templates";
-
-	return @dirs;
-}
-
 ######################################################################
 =pod
 
@@ -1745,20 +1737,21 @@ sub get_static_dirs
 	my $config_path = $self->config( "config_path" );
 	my $lib_path = $self->config( "lib_path" );
 
-	# repository path: /archives/[repoid]/cfg/static/
-	push @dirs, "$config_path/lang/$langid/static";
+	# repository path: /archives/[repoid]/cfg/
 	push @dirs, "$config_path/static";
+	push @dirs, "$config_path/lang/$langid/static";
 
-	# themes path: /archives/[repoid]/cfg/themes/
+	# themes path: /lib/themes/
 	my $theme = $self->config( "theme" );
 	if( defined $theme )
 	{	
-		push @dirs, "$config_path/themes/$theme/static";
+		push @dirs, "$lib_path/themes/$theme/static";
+		push @dirs, "$lib_path/themes/$theme/lang/$langid/static";
 	}
 
 	# system path: /lib/static/
-	push @dirs, "$lib_path/lang/$langid/static";
 	push @dirs, "$lib_path/static";
+	push @dirs, "$lib_path/lang/$langid/static";
 
 	return @dirs;
 }
@@ -1865,19 +1858,6 @@ sub exec
 	return EPrints::Platform::exec( $self, $cmd_id, %map );
 }
 
-=item $returncode = $repository->read_exec( $fh, $cmd_id, %map )
-
-Executes a system command and captures the output, see L</exec>.
-
-=cut
-
-sub read_exec
-{
-	my( $self, $fh, $cmd_id, %map ) = @_;
-
-	return EPrints::Platform::read_exec( $self, $fh, $cmd_id, %map );
-}
-
 sub can_execute
 {
 	my( $self, $cmd_id ) = @_;
@@ -1936,7 +1916,7 @@ sub invocation
 
 	my $command = $self->config( "invocation" )->{ $cmd_id };
 
-	$command =~ s/\$\(([a-z_]*)\)/quotemeta($map{$1})/gei;
+	$command =~ s/\$\(([a-z]*)\)/quotemeta($map{$1})/gei;
 
 	return $command;
 }
@@ -5122,7 +5102,6 @@ sub plugin
 	return $self->get_repository->get_plugin_factory->get_plugin( $pluginid,
 		%params,
 		session => $self,
-		repository => $self,
 		);
 }
 
@@ -5171,7 +5150,7 @@ sub get_plugins
 		shift(@opts) :
 		{};
 
-	$params->{repository} = $params->{session} = $self;
+	$params->{session} = $self;
 
 	return $self->get_plugin_factory->get_plugins( $params, @opts );
 }
@@ -5241,14 +5220,20 @@ sub get_citation_type
 {
 	my( $self, $dataset, $style ) = @_;
 
+	my $ds_id = $dataset->confid();
+
 	$style = "default" unless defined $style;
 
-	my $citation = $dataset->citation( $style );
-	return undef if !defined $citation;
+	$self->freshen_citation( $ds_id, $style );
+	my $type = $self->{citation_type}->{$ds_id}->{$style};
+	if( !defined $type )
+	{
+		$style = "default";
+		$self->freshen_citation( $ds_id, $style );
+		$type = $self->{citation_type}->{$ds_id}->{$style};
+	}
 
-	$citation->freshen;
-
-	return $citation->{type};
+	return $type;
 }
 
 
@@ -5477,7 +5462,7 @@ sub get_static_page_conf_file
 
 	my $lang = EPrints::Repository::get_session_language( $repository, $r );
 	my $args = $r->args;
-	$args = "?$args" if defined $args;
+	if( $args ne "" ) { $args = '?'.$args; }
 
 	# Skip rewriting the /cgi/ path and any other specified in
 	# the config file.
@@ -5525,14 +5510,9 @@ sub check_last_changed
 	if( defined($poketime) && $poketime > $self->{loadtime} )
 	{
 		print STDERR "$file has been modified since the repository config was loaded: reloading!\n";
-		if( $self->load_config )
-		{
-			$self->{loadtime} = time();
-		}
-		else
-		{
-			warn( "Something went wrong while reloading configuration" );
-		}
+
+		$self->load_config;
+		$self->{loadtime} = time();
 	}
 }
 
@@ -5571,7 +5551,7 @@ sub init_from_request
 	return 1;
 }
 
-my @CACHE_KEYS = qw/ id citations class config datasets field_defaults html_templates template_path langs plugins storage template_mtime text_templates types workflows loadtime noise /;
+my @CACHE_KEYS = qw/ id citation_mtime citation_sourcefile citation_style citation_type class config datasets field_defaults html_templates langs plugins storage template_mtime text_templates types workflows loadtime /;
 my %CACHED = map { $_ => 1 } @CACHE_KEYS;
 
 sub cleanup

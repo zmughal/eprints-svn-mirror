@@ -167,7 +167,6 @@ my $INFO = {
 		class => "EPrints::DataObj::User",
 		import => 1,
 		index => 1,
-		order => 1,
 		datestamp => "joined",
 	},
 	archive => {
@@ -177,7 +176,6 @@ my $INFO = {
 		confid => "eprint",
 		import => 1,
 		index => 1,
-		order => 1,
 		filters => [ { meta_fields => [ 'eprint_status' ], value => 'archive', describe=>0 } ],
 		dataset_id_field => "eprint_status",
 		datestamp => "lastmod",
@@ -189,7 +187,6 @@ my $INFO = {
 		confid => "eprint",
 		import => 1,
 		index => 1,
-		order => 1,
 		filters => [ { meta_fields => [ 'eprint_status' ], value => 'buffer', describe=>0 } ],
 		dataset_id_field => "eprint_status",
 		datestamp => "lastmod",
@@ -201,7 +198,6 @@ my $INFO = {
 		confid => "eprint",
 		import => 1,
 		index => 1,
-		order => 1,
 		filters => [ { meta_fields => [ 'eprint_status' ], value => 'inbox', describe=>0 } ],
 		dataset_id_field => "eprint_status",
 		datestamp => "lastmod",
@@ -213,7 +209,6 @@ my $INFO = {
 		confid => "eprint",
 		import => 1,
 		index => 1,
-		order => 1,
 		filters => [ { meta_fields => [ 'eprint_status' ], value => 'deletion', describe=>0 } ],
 		dataset_id_field => "eprint_status",
 		datestamp => "lastmod",
@@ -222,14 +217,12 @@ my $INFO = {
 		sqlname => "eprint",
 		class => "EPrints::DataObj::EPrint",
 		index => 1,
-		order => 1,
 		datestamp => "lastmod",
 	},
 	document => {
 		sqlname => "document",
 		class => "EPrints::DataObj::Document",
 		import => 1,
-		order => 1,
 		index => 1,
 	},
 	subject => {
@@ -237,7 +230,6 @@ my $INFO = {
 		class => "EPrints::DataObj::Subject",
 		import => 1,
 		index => 1,
-		order => 1,
 	},
 	history => {
 		sqlname => "history",
@@ -269,11 +261,6 @@ my $INFO = {
 		import => 1,
 		index => 1,
 		datestamp => "datestamp",
-	},
-	epm => {
-		sqlname => "epm",
-		class => "EPrints::DataObj::EPM",
-		virtual => 1,
 	},
 };
 
@@ -472,9 +459,9 @@ sub process_field
 {
 	my( $self, $fielddata, $system ) = @_;
 
-	if( !defined $fielddata->{provenance} )
+	if( !defined $fielddata->{providence} )
 	{
-		$fielddata->{provenance} = $system ? "core" : "config";
+		$fielddata->{providence} = $system ? "core" : "config";
 	}
 
 	my $field = EPrints::MetaField->new( 
@@ -510,7 +497,7 @@ sub register_field
 		my $old_field = $self->{field_index}->{$fieldname};
 		if(
 			$system ||
-			$old_field->property( "provenance" ) ne "core" ||
+			$old_field->property( "providence" ) ne "core" ||
 			!$field->property( "replace_core" )
 		  )
 		{
@@ -561,6 +548,20 @@ sub field
 
 	# magic fields which can be searched but do
 	# not really exist.
+	if( $fieldname eq $EPrints::Utils::FULLTEXT )
+	{
+		if( !defined $self->{fulltext_field} )
+		{
+			$self->{fulltext_field} = EPrints::MetaField->new( 
+				dataset=>$self , 
+				name=>$fieldname,
+				multiple=>1,
+				type=>"fulltext" );
+			$self->{fulltext_field}->set_property( "multiple",1 );
+			$self->{fulltext_field}->final;
+		}
+		return $self->{fulltext_field};
+	}
 	if( $fieldname =~ m/^_/ )
 	{
 		my $field = EPrints::MetaField->new( 
@@ -818,29 +819,38 @@ sub key_field
 }
 
 
-=item $dataobj = $ds->make_dataobj( $epdata )
+######################################################################
+=pod
+
+=item $obj = $ds->make_object( $session, $data )
 
 Return an object of the class associated with this dataset, always
-a subclass of L<EPrints::DataObj>.
+a subclass of EPrints::DataObj.
 
-$epdata is a hash of values for fields in this dataset.
+$data is a hash of values for fields of a record in this dataset.
 
-Returns $epdata if no class is associated with this dataset.
+Return $data if no class associated with this dataset.
 
 =cut
+######################################################################
 
-sub make_object { $_[0]->make_dataobj( $_[2] ) }
-sub make_dataobj
+sub make_object
 {
-	my( $self, $epdata ) = @_;
+	my( $self , $session , $data ) = @_;
 
 	my $class = $self->get_object_class;
 
-	return $epdata if !defined $class;
+	# If this table dosn't have an associated class, just
+	# return the data.	
 
-	return $class->new_from_data(
-		$self->{repository},
-		$epdata,
+	if( !defined $class ) 
+	{
+		return $data;
+	}
+
+	return $class->new_from_data( 
+		$session,
+		$data,
 		$self );
 }
 
@@ -1191,13 +1201,6 @@ sub indexable
 	return $self->{index};
 }
 
-sub ordered
-{
-	my( $self ) = @_;
-
-	return $self->{order};
-}
-
 ######################################################################
 =pod
 
@@ -1333,81 +1336,6 @@ sub run_trigger
 			last TRIGGER if defined $rc && $rc eq EP_TRIGGER_DONE;
 		}
 	}
-}
-
-=item $sconf = $dataset->_simple_search_config()
-
-Returns a simple search configuration based on the dataset's fields.
-
-=cut
-
-sub _simple_search_config
-{
-	my( $self ) = @_;
-
-	return {
-		search_fields => [{
-			id => "q",
-			meta_fields => [
-				map { $_->name }
-				grep { !$_->is_virtual && $_->property( "text_index" ) }
-				$self->fields
-			],
-			match => "IN",
-		}],
-		show_zero_results => 1,
-		order_methods => {
-			byid => $self->key_field->name,
-		},
-		default_order => "byid",
-	};
-}
-
-=item $sconf = $dataset->_advanced_search_config()
-
-Returns an advanced search configuration based on the dataset's fields.
-
-=cut
-
-sub _advanced_search_config
-{
-	my( $self ) = @_;
-
-	return {
-		search_fields => [
-			map { { meta_fields => [$_->name] } }
-			grep { !$_->is_virtual && $_->property( "text_index" ) }
-			$self->fields
-		],
-		show_zero_results => 1,
-		order_methods => {
-			byid => $self->key_field->name,
-		},
-		default_order => "byid",
-	};
-}
-
-=item $citation = $dataset->citation( $style )
-
-Returns the citation object (if any) for $style.
-
-=cut
-
-sub citation
-{
-	my( $self, $id ) = @_;
-
-	my $repo = $self->repository;
-
-	my $citation = $repo->{citations}->{$self->base_id}->{$id};
-	if( !defined $citation )
-	{
-		# warn?
-		$repo->log( "Unknown citation style '$id' for ".$self->base_id." dataset: using default" );
-		$citation = $repo->{citations}->{$self->base_id}->{"default"};
-	}
-
-	return $citation;
 }
 
 ######################################################################

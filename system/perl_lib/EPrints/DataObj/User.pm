@@ -937,7 +937,7 @@ sub get_url
 {
 	my( $self ) = @_;
 
-	return $self->uri;
+	return $self->{session}->get_repository->get_conf( "http_cgiurl" )."/users/home?screen=User::View&userid=".$self->get_value( "userid" );
 }
 
 sub get_control_url
@@ -1272,7 +1272,8 @@ my $PRIVMAP =
 		"config/remove_field",
 		"config/regen_abstracts",
 		"config/regen_views",
-		"config/edit/perl",
+		"metafield/view",
+		"metafield/edit",
 		"import/view",
 		"import/edit",
 		"storage/manager",
@@ -1281,7 +1282,6 @@ my $PRIVMAP =
 		"event_queue/view",
 		"event_queue/destroy",
 		"eprint/archive/edit", # BatchEdit
-		"repository/epm", #EPrints Package Manager
 	],
 
 	"toolbox" => 

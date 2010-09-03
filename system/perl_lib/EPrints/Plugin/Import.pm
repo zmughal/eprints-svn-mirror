@@ -28,14 +28,25 @@ sub new
 {
 	my( $class, %params ) = @_;
 
-	$params{accept} = exists $params{accept} ? $params{accept} : [];
-	$params{produce} = exists $params{produce} ? $params{produce} : [];
-	$params{visible} = exists $params{visible} ? $params{visible} : "all";
-	$params{advertise} = exists $params{advertise} ? $params{advertise} : 1;
-	$params{session} = exists $params{session} ? $params{session} : $params{processor}->{session};
-	$params{Handler} = exists $params{Handler} ? $params{Handler} : EPrints::CLIProcessor->new( session => $params{session} );
+	my $self = $class->SUPER::new(%params);
 
-	return $class->SUPER::new(%params);
+	if( !$self->{session} )
+	{
+		$self->{session} = $self->{processor}->{session};
+	}
+
+	if( !$self->{Handler} )
+	{
+		$self->{Handler} = EPrints::CLIProcessor->new(
+			session => $self->{session}
+		);
+	}
+
+	$self->{name} = "Base input plugin: This should have been subclassed";
+	$self->{visible} = "all";
+	$self->{advertise} = 1;
+
+	return $self;
 }
 
 sub handler
@@ -75,10 +86,6 @@ sub matches
 	{
 		return( $self->param( "advertise" ) == $param );
 	}
-	if( $test eq "can_accept" )
-	{
-		return $self->can_accept( $param );
-	}
 
 	# didn't understand this match 
 	return $self->SUPER::matches( $test, $param );
@@ -104,18 +111,6 @@ sub is_visible
 	}
 
 	return 1;
-}
-
-sub can_accept
-{
-	my( $self, $format ) = @_;
-
-	for(@{$self->param( "accept" )})
-	{
-		return 1 if $_ eq $format;
-	}
-
-	return 0;
 }
 
 sub can_produce
@@ -216,7 +211,7 @@ sub epdata_to_dataobj
 
 	my $item;
 
-	if( $session->config( 'enable_import_fields' ) )
+	if( $session->get_repository->get_conf('enable_import_ids') )
 	{
 		my $ds_id = $dataset->confid;
 		if( $ds_id eq "eprint" || $ds_id eq "user" )
@@ -232,6 +227,10 @@ sub epdata_to_dataobj
 				return;
 			}
 		}
+	}
+	else
+	{
+		delete $epdata->{$dataset->get_key_field->get_name};
 	}
 
 	if( $dataset->confid eq "eprint" && exists($plugin->{import_documents}) && !$plugin->{import_documents} )

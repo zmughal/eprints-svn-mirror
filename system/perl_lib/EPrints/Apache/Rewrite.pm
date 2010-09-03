@@ -288,7 +288,7 @@ sub handler
 			$repository, 
 			accept_header => $accept,
 			consider_summary_page => 0,
-			plugins => [$repository->get_plugins(
+			plugins => [$repository->plugin_list(
 				type => "Export",
 				is_visible => "all",
 				can_accept => "list/triple" )]
@@ -313,7 +313,7 @@ sub handler
 			$repository, 
 			accept_header => $accept,
 			consider_summary_page => 0,
-			plugins => [$repository->get_plugins(
+			plugins => [$repository->plugin_list(
 				type => "Export",
 				is_visible => "all",
 				can_accept => "list/triple" )]
@@ -339,74 +339,63 @@ sub handler
 		{
 			$item = $dataset->dataobj( $id );
 		}
-		return NOT_FOUND if !defined $item;
 
-		# Subject URI's redirect to the top of that particular subject tree
-		# rather than the node in the tree. (the ancestor with "ROOT" as a parent).
-		if( $dataset->id eq "subject" )
+		if( defined $item )
 		{
-			ANCESTORS: foreach my $anc_subject_id ( @{$item->get_value( "ancestors" )} )
+			# Subject URI's redirect to the top of that particular subject tree
+			# rather than the node in the tree. (the ancestor with "ROOT" as a parent).
+			if( $item->dataset->id eq "subject" )
 			{
-				my $anc_subject = $dataset->dataobj($anc_subject_id);
-				next ANCESTORS if( !$anc_subject );
-				next ANCESTORS if( !$anc_subject->is_set( "parents" ) );
-				foreach my $anc_subject_parent_id ( @{$anc_subject->get_value( "parents" )} )
+				ANCESTORS: foreach my $anc_subject_id ( @{$item->get_value( "ancestors" )} )
 				{
-					if( $anc_subject_parent_id eq "ROOT" )
+					my $anc_subject = $repository->dataset("subject")->dataobj($anc_subject_id);
+					next ANCESTORS if( !$anc_subject );
+					next ANCESTORS if( !$anc_subject->is_set( "parents" ) );
+					foreach my $anc_subject_parent_id ( @{$anc_subject->get_value( "parents" )} )
 					{
-						$item = $anc_subject;
-						last ANCESTORS;
+						if( $anc_subject_parent_id eq "ROOT" )
+						{
+							$item = $anc_subject;
+							last ANCESTORS;
+						}
 					}
 				}
 			}
-		}
 
-		#Section moved down to cover only requests for the summary page.
-		#if( $item->dataset->confid eq "eprint" && $item->dataset->id ne "archive" )
-		#{
-		#	return redir_see_other( $r, $item->get_control_url );
-		#}
-
-		# content negotiation. Only worries about type, not charset
-		# or language etc. at this stage.
-		#
-		my $accept = EPrints::Apache::AnApache::header_in( $r, "Accept" );
-		$accept = "text/html" unless defined $accept;
-
-		#FORCE DEBUG
-		#$accept = "text/xml";
-		#print STDERR "ACCEPT: " . $accept;
-
-		my $consider_summary_page =
-			$dataset->base_id eq "eprint" ||
-			$dataset->base_id eq "document";
-
-		my $match = content_negotiate_best_plugin( 
-			$repository, 
-			accept_header => $accept,
-			consider_summary_page => $consider_summary_page,
-			plugins => [$repository->get_plugins(
-				type => "Export",
-				is_visible => "all",
-				can_accept => "dataobj/".$dataset->base_id )],
-		);
-		
-		if( $match eq "DEFAULT_SUMMARY_PAGE" )
-		{
-			if( $dataset->base_id eq "eprint" && $dataset->id ne "archive" )
+			if( $item->dataset->confid eq "eprint" && $item->dataset->id ne "archive" )
 			{
 				return redir_see_other( $r, $item->get_control_url );
 			}
-			return redir_see_other( $r, $item->get_url );
-		}
-		else 
-		{
-			my $url = $match->dataobj_export_url( $item );	
-			if( defined $url )
+
+			# content negotiation. Only worries about type, not charset
+			# or language etc. at this stage.
+			#
+			my $accept = EPrints::Apache::AnApache::header_in( $r, "Accept" );
+			$accept = "text/html" unless defined $accept;
+
+			my $match = content_negotiate_best_plugin( 
+				$repository, 
+				accept_header => $accept,
+				consider_summary_page => ( $dataset->confid eq "eprint" || $dataset->confid eq "document" ? 1 : 0 ),
+				plugins => [$repository->plugin_list(
+					type => "Export",
+					is_visible => "all",
+					can_accept => "dataobj/".$dataset->confid )],
+			);
+
+			if( $match eq "DEFAULT_SUMMARY_PAGE" )
 			{
-				return redir_see_other( $r, $url );
+				return redir_see_other( $r, $item->get_url );
 			}
-		}
+			else
+			{
+				my $url = $match->dataobj_export_url( $item );	
+				if( defined $url )
+				{
+					return redir_see_other( $r, $url );
+				}
+			}
+		}	
 
 		return NOT_FOUND;
 	}
@@ -590,12 +579,13 @@ sub content_negotiate_best_plugin
 		$pset->{"text/html"} = { qs=>0.99, DEFAULT_SUMMARY_PAGE=>1 };
 	}
 
-	foreach my $plugin ( @{$o{plugins}} )
+	foreach my $a_plugin_id ( @{$o{plugins}} )
 	{
-		my( $type, %params ) = split( /\s*[;=]\s*/, $plugin->{mimetype} );
+		my $a_plugin = $repository->plugin( $a_plugin_id );
+		my( $type, %params ) = split( /\s*[;=]\s*/, $a_plugin->{mimetype} );
 	
-		next if( defined $pset->{$type} && $pset->{$type}->{qs} >= $plugin->{qs} );
-		$pset->{$type} = $plugin;
+		next if( defined $pset->{$type} && $pset->{$type}->{qs} >= $a_plugin->{qs} );
+		$pset->{$type} = $a_plugin;
 	}
 	my @pset_order = sort { $pset->{$b}->{qs} <=> $pset->{$a}->{qs} } keys %{$pset};
 

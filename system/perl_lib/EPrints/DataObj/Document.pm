@@ -72,14 +72,10 @@ The file which we should link to. For something like a PDF file this is
 the only file. For an HTML document with images it would be the name of
 the actual HTML file.
 
-=item files (subobject, multiple)
+=item documents (subobject, multiple)
 
-A virtual field which represents the list of Files which are
+A virtual field which represents the list of Documents which are
 part of this record.
-
-=item media
-
-A compound field containing a description of the document media - dimensions, codec etc.
 
 =back
 
@@ -182,23 +178,6 @@ sub get_system_field_info
 					sub_name => "uri",
 					type => "text",
 				},
-			],
-		},
-
-		{
-			name => "media",
-			type => "compound",
-			multiple => 0,
-			fields => [
-				{ sub_name => "duration", type => "id", sql_index => 0},
-				{ sub_name => "audio_codec", type => "id", sql_index => 0},
-				{ sub_name => "video_codec", type => "id", sql_index => 0},
-				{ sub_name => "width", type => "int", sql_index => 0},
-				{ sub_name => "height", type => "int", sql_index => 0},
-				{ sub_name => "aspect_ratio", type => "id", sql_index => 0},
-
-				{ sub_name => "sample_start", type => "id", sql_index => 0},
-				{ sub_name => "sample_stop", type => "id", sql_index => 0},
 			],
 		},
 	);
@@ -1305,6 +1284,13 @@ sub files_modified
 {
 	my( $self ) = @_;
 
+	# remove the now invalid cache of words from this document
+	# (see also EPrints::MetaField::Fulltext::get_index_codes_basic)
+	my $indexcodes  = $self->get_related_objects(
+			EPrints::Utils::make_relation( "hasIndexCodesVersion" )
+		);
+	$_->remove for @$indexcodes;
+
 	my $rc = $self->make_thumbnails;
 
 	if( $self->{session}->can_call( "on_files_modified" ) )
@@ -1679,11 +1665,8 @@ sub render_preview_link
 		$set = "";
 	}
 
-	my $size = $opts{size};
-	$size = "lightbox" if !defined $size;
-
-	my $url = $self->thumbnail_url( $size );
-	if( defined $url )
+	my $url = $self->thumbnail_url( "preview" );
+	if( defined( $url ) )
 	{
 		my $link = $self->{session}->make_element( "a",
 				href=>$url,
@@ -1729,25 +1712,17 @@ sub thumbnail_path
 	return( $eprint->local_path()."/thumbnails/".sprintf("%02d",$self->get_value( "pos" )) );
 }
 
-sub thumbnail_types
-{
-	my( $self ) = @_;
-
-	my @list = qw/ small medium preview lightbox audio_ogg audio_mp4 video_ogg video_mp4 /;
-
-	if( $self->{session}->get_repository->can_call( "thumbnail_types" ) )
-	{
-		$self->{session}->get_repository->call( "thumbnail_types", \@list, $self->{session}, $self );
-	}
-
-	return reverse @list;
-}
 
 sub remove_thumbnails
 {
 	my( $self ) = @_;
 
-	my @list = $self->thumbnail_types;
+	my @list = qw/ small medium preview /;
+
+	if( $self->{session}->get_repository->can_call( "thumbnail_types" ) )
+	{
+		$self->{session}->get_repository->call( "thumbnail_types", \@list, $self->{session}, $self );
+	}
 
 	foreach my $size (@list)
 	{
@@ -1779,7 +1754,12 @@ sub make_thumbnails
 
 	return unless defined $src_main;
 
-	my @list = $self->thumbnail_types;
+	my @list = qw/ small medium preview /;
+
+	if( $self->{session}->get_repository->can_call( "thumbnail_types" ) )
+	{
+		$self->{session}->get_repository->call( "thumbnail_types", \@list, $self->{session}, $self );
+	}
 
 	SIZE: foreach my $size ( @list )
 	{

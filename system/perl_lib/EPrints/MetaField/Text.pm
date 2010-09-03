@@ -69,13 +69,70 @@ sub render_search_value
 }
 
 
-# don't inherit from Id
+#sub split_search_value
+#{
+#	my( $self, $session, $value ) = @_;
+#
+#	my( $codes, $bad ) = _extract_words( $session, $value );
+#
+#	return @{$codes};
+#}
+
 sub get_search_conditions_not_ex
 {
-	return shift->EPrints::MetaField::get_search_conditions_not_ex( @_ );
+	my( $self, $session, $dataset, $search_value, $match, $merge,
+		$search_mode ) = @_;
+	
+	if( $match eq "EQ" )
+	{
+		return EPrints::Search::Condition->new( 
+			'=', 
+			$dataset,
+			$self, 
+			$search_value );
+	}
+
+	# free text!
+
+	# apply stemming and stuff
+	my( $codes, $bad ) = _extract_words( $session, $search_value );
+
+	# Just go "yeah" if stemming removed the word
+	if( !EPrints::Utils::is_set( $codes->[0] ) )
+	{
+		return EPrints::Search::Condition->new( "PASS" );
+	}
+
+	return EPrints::Search::Condition->new( 
+			'index',
+ 			$dataset,
+			$self, 
+			$codes->[0] );
 }
 
 sub get_search_group { return 'text'; }
+
+sub get_index_codes
+{
+	my( $self, $session, $value ) = @_;
+
+	return( [], [], [] ) unless( EPrints::Utils::is_set( $value ) );
+
+	if( !$self->get_property( "multiple" ) )
+	{
+		return $self->get_index_codes_basic( $session, $value );
+	}
+	my( $codes, $grepcodes, $ignored ) = ( [], [], [] );
+	foreach my $v (@{$value} )
+	{		
+		my( $c,$g,$i ) = $self->get_index_codes_basic( $session, $v );
+		push @{$codes},@{$c};
+		push @{$grepcodes},@{$g};
+		push @{$ignored},@{$i};
+	}
+
+	return( $codes, $grepcodes, $ignored );
+}
 
 sub get_index_codes_basic
 {

@@ -217,79 +217,109 @@ sub create_from_data
 	$defaults = $class->get_defaults( $session, $defaults, $dataset );
 	
 	# cache the configuration options in variables
-	my $migration = $session->config( "enable_import_fields" );
+	my $enable_import_ids = $session->get_repository->get_conf(
+		"enable_import_ids"
+		);
+	my $enable_import_datestamps = $session->get_repository->get_conf(
+		"enable_import_datestamps"
+		);
 
-	my @create_subdataobjs;
+	my %subobjects;
 
-	FIELD: foreach my $field ( $dataset->fields )
+	foreach my $field ( $dataset->get_fields )
 	{
 		my $fieldname = $field->name;
+		next if !defined $data->{$fieldname};
 
 		# strip sub-objects and create them once we exist
 		if( $field->isa( "EPrints::MetaField::Subobject" ) )
 		{
-			push @create_subdataobjs, [ $field, delete $data->{$fieldname} ]
-				if defined $data->{$fieldname};
-			next FIELD;
+			$subobjects{$fieldname} = delete $data->{$fieldname};
+			next;
 		}
 
-		if( !$field->property( "import" ) && !$migration )
+		# strip non-importable values from $data
+		next if $field->get_property( "import" );
+
+		# This is a bit of a hack. The import script may set 
+		# "enable_import_ids" on session This will allow eprintids 
+		# and userids to be imported as-is rather than just being 
+		# assigned one. 
+		if( $enable_import_ids )
 		{
-			delete $data->{$fieldname};
+			if( $dataset->confid eq "eprint" )
+			{
+				next if( $fieldname eq "eprintid" );
+				next if( $fieldname eq "dir" ); # eprintid is in dir
+			}
+			if( $dataset->id eq "user" )
+			{
+				next if( $fieldname eq "userid" );
+			}
 		}
 
-		if( !EPrints::Utils::is_set( $data->{$fieldname} ) )
+		if( $enable_import_datestamps )
 		{
-			$data->{$fieldname} = $defaults->{$fieldname}
-				if exists $defaults->{$fieldname};
+			if( $dataset->confid eq "eprint" )
+			{
+				next if( $fieldname eq "datestamp" );
+			}
 		}
+
+		delete $data->{$fieldname};
 	}
 
-	my $self = $class->new_from_data( $session, $data, $dataset );
-	return undef unless defined $self;
+	foreach my $k ( keys %{$defaults} )
+	{
+		next if defined $data->{$k};
+		$data->{$k} = $defaults->{$k};
+	}
 
-	my $rc = $session->get_database->add_record( $dataset, $self->get_data );
+	my $dataobj = $class->new_from_data( $session, $data, $dataset );
+	return undef unless defined $dataobj;
+
+	my $rc = $session->get_database->add_record( $dataset, $dataobj->get_data );
 	return undef unless $rc;
 
-	$self->set_under_construction( 1 );
+	$dataobj->set_under_construction( 1 );
 
-	# create sub-dataobjs
-	for(@create_subdataobjs)
+	foreach my $fieldname (keys %subobjects)
 	{
-		my $field = $_->[0];
-		$_->[1] = [$_->[1]] if ref($_->[1]) ne 'ARRAY';
-
-		my @dataobjs;
-
-		foreach my $epdata (@{$_->[1]})
+		if( ref($subobjects{$fieldname}) eq 'ARRAY' )
 		{
-			my $dataobj = $self->create_subdataobj( $field->name, $epdata );
-			if( !defined $dataobj )
+			my @subobjects;
+			foreach my $epdata (@{$subobjects{$fieldname}})
 			{
-				$session->log( "Failed to create subdataobj on ".$dataset->id.".".$field->name );
-				$self->remove();
+				my $subobj = $dataobj->create_subdataobj( $fieldname, $epdata );
+				if( !defined $subobj )
+				{
+					$session->log( "Failed to create subdataobj on $fieldname" );
+					$dataobj->remove();
+					return undef;
+				}
+				push @subobjects, $subobj;
+			}
+			$dataobj->set_value( $fieldname, \@subobjects );
+		}
+		else
+		{
+			my $subobj = $dataobj->create_subdataobj( $fieldname, $subobjects{$fieldname} );
+			if( !defined $subobj )
+			{
+				$session->log( "Failed to create subdataobj on $fieldname" );
+				$dataobj->remove();
 				return undef;
 			}
-			push @dataobjs, $dataobj;
+			$dataobj->set_value( $fieldname, $subobj );
 		}
-
-		$self->set_value( $field->name, $field->property( "multiple" ) ? \@dataobjs : $dataobjs[0] );
 	}
 
-	if( $migration && $dataset->key_field->isa( "EPrints::MetaField::Counter" ) )
-	{
-		$session->get_database->counter_minimum(
-			$dataset->key_field->property( "sql_counter" ),
-			$self->id
-		);
-	}
-
-	$self->set_under_construction( 0 );
+	$dataobj->set_under_construction( 0 );
 
 	# queue all the fields for indexing.
-	$self->queue_all;
+	$dataobj->queue_all;
 
-	return $self;
+	return $dataobj;
 }
 
 =item $dataobj = $dataobj->create_subdataobj( $fieldname, $epdata )
@@ -353,17 +383,10 @@ sub get_defaults
 		$dataset = $session->get_repository->get_dataset( $class->get_dataset_id );
 	}
 
-	my $migration = $session->config( "enable_import_fields" );
-
 	# set any values that a field has a default for e.g. counters
 	foreach my $field ($dataset->get_fields)
 	{
 		next if defined $field->get_property( "sub_name" );
-
-		# avoid getting a default value if it's already set
-		next if
-			EPrints::Utils::is_set( $data->{$field->name} ) &&
-			($field->property( "import") || $migration);
 
 		my $value = $field->get_default_value( $session );
 		next unless EPrints::Utils::is_set( $value );
@@ -414,8 +437,6 @@ sub delete { shift->remove( @_ ) }
 sub remove
 {
 	my( $self ) = @_;
-
-	$self->queue_removed;
 
 	return $self->{session}->get_database->remove(
 		$self->{dataset},
@@ -512,11 +533,6 @@ sub commit
 
 	# Queue changes for the indexer (if indexable)
 	$self->queue_changes();
-
-	$self->dataset->run_trigger( EPrints::Const::EP_TRIGGER_AFTER_COMMIT,
-		dataobj => $self,
-		changed => $self->{changed},
-	);
 
 	# clear changed fields
 	$self->clear_changed();
@@ -962,11 +978,15 @@ sub render_citation
 		$style = 'default';
 	}
 
-	my $citation = $self->{dataset}->citation( $style );
+	my $stylespec = $self->{session}->get_citation_spec(
+					$self->{dataset},
+					$style );
 
-	return $citation->render( $self,
-		in=>"citation ".$self->{dataset}->confid."/".$style, 
-		%params );
+	return EPrints::Utils::render_citation( $stylespec, 
+			item=>$self, 
+			in=>"citation ".$self->{dataset}->confid."/".$style, 
+			session=>$self->{session},
+			%params );
 }
 
 
@@ -1256,6 +1276,9 @@ where the xmlns is already set correctly.
 
 showempty=>1 : fields with no value are shown.
 
+version=>"code" : pick what version of the EPrints XML format
+to use "1" or "2"
+
 embed=>1 : include the data of a file, not just it's URL.
 
 =cut
@@ -1265,26 +1288,58 @@ sub to_xml
 {
 	my( $self, %opts ) = @_;
 
-	my $builder = EPrints::XML::SAX::Builder->new(
-		repository => $self->{session}
-	);
-	$builder->start_document({});
-	$builder->xml_decl({
-		Version => '1.0',
-		Encoding => 'utf-8',
-	});
-	$builder->start_prefix_mapping({
-		Prefix => '',
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-	});
-	$self->to_sax( %opts, Handler => $builder );
-	$builder->end_prefix_mapping({
-		Prefix => '',
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-	});
-	$builder->end_document({});
+	$opts{version} = "2" unless defined $opts{version};
 
-	return $builder->result()->documentElement;
+	my %attrs = ();
+	my $ns = EPrints::XML::namespace( 'data', $opts{version} );
+	if( !defined $ns )
+	{
+		$self->{session}->get_repository->log(
+			 "to_xml: unknown version: ".$opts{version} );
+		#error
+		return;
+	}
+
+	if( !$opts{no_xmlns} )
+	{
+		$attrs{'xmlns'} = $ns;
+	}
+	$opts{no_xmlns} = 1;
+
+	my $tl = "record";
+	if( $opts{version} == 2 ) { 
+		$tl = $self->{dataset}->confid; 
+		$attrs{'id'} = $self->uri;
+	}	
+	my $r = $self->{session}->make_element( $tl, %attrs );
+	$r->appendChild( $self->{session}->make_text( "\n" ) );
+	foreach my $field ( $self->{dataset}->get_fields() )
+	{
+		next unless( $field->get_property( "export_as_xml" ) );
+
+		if( $opts{version} eq "2" )
+		{
+			$r->appendChild( $field->to_xml( 
+				$self->{session}, 
+				$field->get_value( $self ),
+				$self->{dataset},
+				%opts ) );
+		}
+		if( $opts{version} eq "1" )
+		{
+			unless( $opts{show_empty} )
+			{
+				next unless( $self->is_set( $field->get_name() ) );
+			}
+
+			$r->appendChild( $field->to_xml_old( 
+				$self->{session}, 
+				$self->get_value( $field->get_name() ),
+				2 ) ); # no xmlns on inner elements
+		}
+	}
+
+	return $r;
 }
 
 =item $epdata = EPrints::DataObj->xml_to_epdata( $session, $xml, %opts )
@@ -1299,144 +1354,44 @@ sub xml_to_epdata
 
 	my $epdata = {};
 
-	my $dataset = $session->dataset( $class->get_dataset_id );
+	my $dataset = $session->get_repository->get_dataset( $class->get_dataset_id );
 
-	my $handler = EPrints::DataObj::SAX::Handler->new(
-		$class, $epdata, {
-			%opts,
-			dataset => $dataset,
-		},
-	);
+	my @fields = $dataset->get_fields;
+	my @field_names = sort { $a cmp $b } map { $_->get_name } @fields;
+	my %fields_map = map { $_->get_name => $_ } @fields;
 
-	EPrints::XML::SAX::Generator->new(
-		Handler => $handler,
-	)->generate( $xml );
+	my %seen = ();
+	foreach my $node ($xml->childNodes)
+	{
+		next unless EPrints::XML::is_dom( $node, "Element" );
+		my $nodeName = $node->nodeName;
+		if( $seen{$nodeName} )
+		{
+			if( defined $opts{Handler} )
+			{
+				$opts{Handler}->message( "warning", $session->phrase( "Plugin/Import/XML:dup_element", name => $session->make_text( $nodeName ) ) );
+			}
+			next;
+		}
+		$seen{$nodeName} = 1;
+		my $field = $fields_map{$nodeName};
+		if( !defined $field )
+		{
+			if( defined $opts{Handler} )
+			{
+				$opts{Handler}->message( "warning", $session->html_phrase( "Plugin/Import/XML:unexpected_element", name => $session->make_text( $nodeName ) ) );
+				$opts{Handler}->message( "warning", $session->html_phrase( "Plugin/Import/XML:expected", elements => $session->make_text( "<".join("> <", @field_names).">" ) ) );
+			}
+			next;
+		}
+		my $value = $field->xml_to_epdata( $session, $node, %opts );
+		if( EPrints::Utils::is_set( $value ) )
+		{
+			$epdata->{$nodeName} = $value;
+		}
+	}
 
 	return $epdata;
-}
-
-=item $dataobj->to_sax( Handler => $handler, %opts )
-
-Stream this object to a SAX handler.
-
-This does not output any document-level events.
-
-=cut
-
-sub to_sax
-{
-	my( $self, %opts ) = @_;
-
-	my $handler = $opts{Handler};
-	my $dataset = $self->{dataset};
-	my $name = $dataset->base_id;
-
-	$handler->start_element({
-		Prefix => '',
-		LocalName => $name,
-		Name => $name,
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-		Attributes => {
-			('{}id') => {
-				Prefix => '',
-				LocalName => 'id',
-				Name => 'id',
-				NamespaceURI => '',
-				Value => $self->uri,
-			},
-		},
-	});
-
-	foreach my $field ($dataset->fields)
-	{
-		next if !$field->property( "export_as_xml" );
-
-		$field->to_sax(
-			$field->get_value( $self ),
-			%opts
-		);
-	}
-
-	$handler->end_element({
-		Prefix => '',
-		LocalName => $name,
-		Name => $name,
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-	});
-}
-
-=item EPrints::Dataobj->start_element( $data, $epdata, $state )
-
-Consumes a SAX event.
-
-$data is the SAX node data.
-
-$epdata is an EPrints data structure to write values to.
-
-$state maintains state between SAX calls but must contain at least:
-
-	dataset - the dataset the class belongs to
-
-=cut
-
-sub start_element
-{
-	my( $class, $data, $epdata, $state ) = @_;
-
-	$state->{depth}++;
-
-	if( $state->{depth} == 2 )
-	{
-		if( $state->{dataset}->has_field( $data->{LocalName} ) )
-		{
-			$state->{child} = {%$state, depth => 0};
-			$state->{handler} = $state->{dataset}->field( $data->{LocalName} );
-		}
-		else
-		{
-			$state->{Handler}->message( "warning", $state->{dataset}->repository->xml->create_text_node( "Invalid XML element: $data->{LocalName}" ) )
-				if defined $state->{Handler};
-		}
-	}
-
-	$state->{handler}->start_element( $data, $epdata, $state->{child} )
-		if defined $state->{handler};
-}
-
-=item EPrints::DataObj->end_element( $data, $epdata, $state )
-
-See L</start_element>.
-
-=cut
-
-sub end_element
-{
-	my( $class, $data, $epdata, $state ) = @_;
-
-	$state->{handler}->end_element( $data, $epdata, $state->{child} )
-		if defined $state->{handler};
-
-	if( $state->{depth} == 2 )
-	{
-		delete $state->{child};
-		delete $state->{handler};
-	}
-
-	$state->{depth}--;
-}
-
-=item EPrints::DataObj->characters( $data, $epdata, $state )
-
-See L</start_element>.
-
-=cut
-
-sub characters
-{
-	my( $class, $data, $epdata, $state ) = @_;
-
-	$state->{handler}->characters( $data, $epdata, $state->{child} )
-		if defined $state->{handler};
 }
 
 ######################################################################
@@ -1489,21 +1444,29 @@ sub queue_changes
 
 	return unless $self->{dataset}->indexable;
 
+	my @fields;
+
+	foreach my $fieldname ( keys %{$self->{changed}} )
+	{
+		my $field = $self->{dataset}->get_field( $fieldname );
+
+		next unless( $field->get_property( "text_index" ) );
+
+		push @fields, $fieldname;
+	}	
+
+	return unless scalar @fields;
+
 	my $user = $self->{session}->current_user;
 	my $userid;
 	$userid = $user->id if defined $user;
 
-	for(keys %{$self->{changed}})
-	{
-		next if !$self->{dataset}->field( $_ )->property( "text_index" );
-		EPrints::DataObj::EventQueue->create_from_data( $self->{session}, {
-				pluginid => "Event::Indexer",
-				action => "index",
-				params => [$self->internal_uri, keys %{$self->{changed}}],
-				userid => $userid,
-			});
-		last;
-	}
+	EPrints::DataObj::EventQueue->create_from_data( $self->{session}, {
+			pluginid => "Event::Indexer",
+			action => "index",
+			params => [$self->internal_uri, @fields],
+			userid => $userid,
+		});
 }
 
 ######################################################################
@@ -1526,7 +1489,7 @@ sub queue_all
 	my $userid;
 	$userid = $user->id if defined $user;
 
-	EPrints::DataObj::EventQueue->create_unique( $self->{session}, {
+	EPrints::DataObj::EventQueue->create_from_data( $self->{session}, {
 			pluginid => "Event::Indexer",
 			action => "index_all",
 			params => [$self->internal_uri],
@@ -1550,41 +1513,15 @@ sub queue_fulltext
 
 	return unless $self->{dataset}->indexable;
 
-	# don't know how to full-text index other datasets
-	return if $self->{dataset}->base_id ne "eprint";
-
-	my $user = $self->{session}->current_user;
-	my $userid;
-	$userid = $user->id if defined $user;
-
-	EPrints::DataObj::EventQueue->create_from_data( $self->{session}, {
-			pluginid => "Event::Indexer",
-			action => "index",
-			params => [$self->internal_uri, "documents"],
-			userid => $userid,
-		});
-}
-
-=item $dataobj->queue_removed()
-
-Add an index removed event to the indexer's queue.
-
-=cut
-
-sub queue_removed
-{
-	my( $self ) = @_;
-
-	return unless $self->{dataset}->indexable;
-
 	my $user = $self->{session}->current_user;
 	my $userid;
 	$userid = $user->id if defined $user;
 
 	EPrints::DataObj::EventQueue->create_unique( $self->{session}, {
+			unique => "TRUE",
 			pluginid => "Event::Indexer",
-			action => "removed",
-			params => [$self->{dataset}->base_id, $self->id],
+			action => "index_fulltext",
+			params => [$self->internal_uri],
 			userid => $userid,
 		});
 }
@@ -2007,36 +1944,5 @@ sub remove_dataobj_relations
 
 =cut
 ######################################################################
-
-package EPrints::DataObj::SAX::Handler;
-
-sub new
-{
-	my( $class, @self ) = @_;
-
-	return bless \@self, $class;
-}
-
-sub AUTOLOAD {}
-
-sub start_element
-{
-	my( $self, $data ) = @_;
-	$self->[0]->start_element( $data, @$self[1..$#$self] );
-}
-
-sub end_element
-{
-	my( $self, $data ) = @_;
-	$self->[0]->end_element( $data, @$self[1..$#$self] );
-}
-
-sub characters
-{
-	my( $self, $data ) = @_;
-	$self->[0]->characters( $data, @$self[1..$#$self] );
-}
-
-# END OF SAX::Handler
 
 1; # for use success

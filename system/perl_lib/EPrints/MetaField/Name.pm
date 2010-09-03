@@ -234,7 +234,7 @@ sub ordervalue_basic
 	my( $self , $value ) = @_;
 
 	unless( ref($value) =~ m/^HASH/ ) { 
-		EPrints::abort( "EPrints::MetaField::Name::ordervalue_basic called on something other than a hash: $value" );
+		EPrints::abort( "EPrints::MetaField::Name::ordervalue_basic called on something other than a hash." );
 	}
 
 	my @a;
@@ -568,7 +568,7 @@ sub get_index_codes_basic
 	foreach( EPrints::Index::split_words( $session, $g ) )
 	{
 		next if( $_ eq "" );
-		push @r, "\L$_";
+#		push @r, "given:\L$_";
 		$code.= "[\L$_]";
 	}
 	return( \@r, [$code], [] );
@@ -628,102 +628,53 @@ sub get_value_from_id
 	@{$name}{qw( family given lineage honourific )} =
 		map { $_ ne "NULL" ? $_ : undef }
 		map { URI::Escape::uri_unescape($_) }
-		split /:/, $id, 4; # if we don't specify 4 split truncates
+		split /:/, $id;
 
 	return $name;
 }
 
-sub to_sax_basic
+sub to_xml_basic
 {
-	my( $self, $value, %opts ) = @_;
+	my( $self, $session, $value ) = @_;
 
-	return if !$opts{show_empty} && !EPrints::Utils::is_set( $value );
-
-	my $handler = $opts{Handler};
-	my $dataset = $self->dataset;
-	my $name = $self->name;
+	my $r = $session->make_doc_fragment;	
 
 	foreach my $part ( @PARTS )
 	{
-		my $v = $value->{$part};
-		next unless EPrints::Utils::is_set( $v );
-		$handler->start_element( {
-			Prefix => '',
-			LocalName => $part,
-			Name => $part,
-			NamespaceURI => EPrints::Const::EP_NS_DATA,
-			Attributes => {},
-		});
-		$self->SUPER::to_sax_basic( $v, %opts );
-		$handler->end_element( {
-			Prefix => '',
-			LocalName => $part,
-			Name => $part,
-			NamespaceURI => EPrints::Const::EP_NS_DATA,
-		});
+		my $nv = $value->{$part};
+		next unless defined $nv;
+		next unless $nv ne "";
+		my $tag = $session->make_element( $part );
+		$tag->appendChild( $session->make_text( $nv ) );
+		$r->appendChild( $tag );
 	}
+	
+	return $r;
 }
 
-sub empty_value
+sub xml_to_epdata_basic
 {
-	return {};
-}
+	my( $self, $session, $xml, %opts ) = @_;
 
-sub start_element
-{
-	my( $self, $data, $epdata, $state ) = @_;
-
-	$self->SUPER::start_element( $data, $epdata, $state );
-
-	if(
-		($state->{depth} == 2 && !$self->property( "multiple" )) ||
-		($state->{depth} == 3 && $self->property( "multiple" ))
-	  )
+	my $value = {};
+	my %valid = map { $_ => 1 } @PARTS;
+	foreach my $node ($xml->childNodes)
 	{
-		if( grep { $_ eq $data->{LocalName} } @PARTS )
+		next unless EPrints::XML::is_dom( $node, "Element" );
+		my $nodeName = $node->nodeName;
+		if( !exists $valid{$nodeName} )
 		{
-			$state->{part} = $data->{LocalName};
+			if( defined $opts{Handler} )
+			{
+				$opts{Handler}->message( "warning", $session->html_phrase( "Plugin/Import/XML:unexpected_element", name => $session->make_text( $node->nodeName ) ) );
+				$opts{Handler}->message( "warning", $session->html_phrase( "Plugin/Import/XML:expected", elements => $session->make_text( "<".join("> <", @PARTS).">" ) ) );
+			}
+			next;
 		}
-		else
-		{
-			$state->{Handler}->message( "warning", $self->repository->xml->create_text_node( "Invalid XML element: $data->{LocalName}" ) )
-				if defined $state->{Handler};
-		}
-	}
-}
-
-sub end_element
-{
-	my( $self, $data, $epdata, $state ) = @_;
-
-	if(
-		($state->{depth} == 2 && !$self->property( "multiple" )) ||
-		($state->{depth} == 3 && $self->property( "multiple" ))
-	  )
-	{
-		delete $state->{part};
+		$value->{$nodeName} = EPrints::Utils::tree_to_utf8( scalar $node->childNodes );
 	}
 
-	$self->SUPER::end_element( $data, $epdata, $state );
-}
-
-sub characters
-{
-	my( $self, $data, $epdata, $state ) = @_;
-
-	my $part = $state->{part};
-	return if !defined $part;
-
-	my $value = $epdata->{$self->name};
-
-	if( $state->{depth} == 3 ) # <name><item><family>XXX
-	{
-		$value->[-1]->{$part} .= $data->{Data};
-	}
-	elsif( $state->{depth} == 2 ) # <name><family>XXX
-	{
-		$value->{$part} .= $data->{Data};
-	}
+	return $value;
 }
 
 sub render_xml_schema_type

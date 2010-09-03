@@ -48,32 +48,11 @@ sub properties_from
 
 	my $columns = $self->show_columns();
 	$processor->{"columns"} = $columns;
-	my %columns = map { $_->name => 1 } @$columns;
-
-	my $order = $session->param( "_listing_order" );
-	if( !EPrints::Utils::is_set( $order ) )
-	{
-		# default to ordering by the first column
-		$order = join '/', map {
-			($_->should_reverse_order ? '-' : '') . $_->name
-		} (@$columns)[0];
-	}
-	else
-	{
-		# remove any order-bys that aren't visible
-		$order = join '/', 
-			map { ($_->[0] ? '-' : '') . $_->[1] }
-			grep { $columns{$_->[1]} }
-			map { [ $_ =~ s/^-//, $_ ]}
-			split /\//, $order;
-	}
 
 	$self->{processor}->{search} = $dataset->prepare_search(
 		search_fields => [
 			(map { { meta_fields => [$_->name] } } @$columns)
-		],
-		custom_order => $order,
-	);
+	]);
 
 	$self->SUPER::properties_from;
 }
@@ -87,7 +66,7 @@ sub from
 	my $search = $self->{processor}->{search};
 	my $exp = $session->param( "exp" );
 
-	if( defined $self->{processor}->{action} && $self->{processor}->{action} eq "search" )
+	if( $self->{processor}->{action} eq "search" )
 	{
 		foreach my $sf ( $search->get_non_filter_searchfields )
 		{
@@ -291,12 +270,17 @@ sub render
 	### Get the items owned by the current user
 	my $ds = $self->{processor}->{dataset};
 
-	my $search = $self->{processor}->{search};
-	my $list = $search->perform_search;
 	my $exp;
-	if( !$search->is_blank )
+	my $list;
+	my $search = $self->{processor}->{search};
+	if( defined $search && !$search->is_blank )
 	{
+		$list = $search->perform_search;
 		$exp = $search->serialise;
+	}
+	else
+	{
+		$list = $ds->search;
 	}
 
 	my $columns = $self->{processor}->{columns};
@@ -387,7 +371,6 @@ sub render
 			dataset => $self->{processor}->{dataset}->id,
 			exp => $exp,
 		},
-		custom_order => $search->{custom_order},
 		columns => [(map{ $_->name } @{$columns}), undef ],
 		above_results => $session->make_doc_fragment,
 		render_result => sub {
@@ -421,7 +404,7 @@ sub render
 		},
 		rows_after => $final_row,
 	);
-	$chunk->appendChild( EPrints::Paginate::Columns->paginate_list( $session, "_listing", $list, %opts ) );
+	$chunk->appendChild( EPrints::Paginate::Columns->paginate_list( $session, "_buffer", $list, %opts ) );
 
 
 	# Add form

@@ -127,7 +127,7 @@ sub get_system_field_info
 		sql_index=>0, default_value=>1 },
 
 	{ name=>"documents", type=>"subobject", datasetid=>'document',
-		multiple=>1, text_index=>1 },
+		multiple=>1 },
 
 	{ name=>"files", type=>"subobject", datasetid=>"file",
 		multiple=>1 },
@@ -179,7 +179,6 @@ sub get_system_field_info
 	{ name=>"fileinfo", type=>"longtext", 
 		text_index=>0,
 		export_as_xml=>0,
-		volatile=>1,
 		render_value=>"EPrints::DataObj::EPrint::render_fileinfo" },
 
 	{ name=>"latitude", type=>"float", required=>0 },
@@ -499,6 +498,8 @@ sub create_from_data
 	
 	return undef unless defined $new_eprint;
 
+	$session->get_database->counter_minimum( "eprintid", $new_eprint->get_id );
+	
 	$new_eprint->set_value( "fileinfo", $new_eprint->fileinfo );
 
 	$session->get_database->update(
@@ -952,6 +953,10 @@ sub commit
 {
 	my( $self, $force ) = @_;
 
+	# get_all_documents() is called several times during commit
+	# setting _documents will cause it to be returned instead of searching
+	local $self->{_documents} = [$self->get_all_documents];
+
 	if( $self->{changed}->{succeeds} )
 	{
 		my $old_succ = EPrints::EPrint->new( $self->{session}, $self->{changed}->{succeeds} );
@@ -971,6 +976,10 @@ sub commit
 	}
 	$self->set_value( "item_issues_count", $c );
 
+	$self->update_triggers();
+
+	$self->set_value( "fileinfo", $self->fileinfo );
+
 	if( !$self->is_set( "datestamp" ) && $self->get_value( "eprint_status" ) eq "archive" )
 	{
 		$self->set_value( 
@@ -983,14 +992,6 @@ sub commit
 		# don't do anything if there isn't anything to do
 		return( 1 ) unless $force;
 	}
-
-	# get_all_documents() is called several times during commit
-	# setting _documents will cause it to be returned instead of searching
-	local $self->{_documents} = [$self->get_all_documents];
-
-	$self->update_triggers();
-
-	$self->set_value( "fileinfo", $self->fileinfo );
 
 	if( $self->{non_volatile_change} )
 	{
@@ -1170,8 +1171,6 @@ sub prune_documents
 Return an array of all EPrint::Document objects associated with this
 eprint.
 
-Documents that have a relation of "isVolatileVersionOf" will only be returned if there is no reciprocal document in this EPrint (i.e. orphaned).
-
 =cut
 ######################################################################
 
@@ -1182,19 +1181,11 @@ sub get_all_documents
 	my @docs;
 
 	my $relation = EPrints::Utils::make_relation( "isVolatileVersionOf" );
-	my $irelation = EPrints::Utils::make_relation( "hasVolatileVersion" );
 
 	# Filter out any documents that are volatile versions
 	foreach my $doc (@{($self->get_value( "documents" ))})
 	{
-		if( my @dataobjs = @{$doc->get_related_objects( $relation )} )
-		{
-			if( !$dataobjs[0]->has_object_relations( $doc, $irelation ) )
-			{
-				push @docs, $doc;
-			}
-		}
-		else
+		if( ! $doc->has_related_objects( $relation ) )
 		{
 			push @docs, $doc;
 		}

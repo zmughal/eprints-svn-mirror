@@ -357,9 +357,11 @@ sub get_conditions
 	my @parts;
 	if( $self->{"search_mode"} eq "simple" )
 	{
-		@parts = EPrints::Index::Tokenizer::split_search_value( 
-			$self->{"session"},
-			$self->{"value"} );
+		@parts = EPrints::Index::split_words( 
+			$self->{"session"},  # could be just archive?
+			EPrints::Index::apply_mapping( 
+				$self->{"session"}, 
+				$self->{"value"} ) );
 	}
 	else
 	{

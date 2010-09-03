@@ -310,9 +310,9 @@ sub run_citation
 {
 	my( $self, $state, $object, $citationid ) = @_;
 
-	my $citation = $object->[0]->render_citation( $citationid->[0],
-		finalize => 0
-	);
+	my $stylespec = $state->{session}->get_citation_spec( $object->[0]->get_dataset, $citationid->[0] );
+
+	my $citation = EPrints::XML::EPC::process( $stylespec, item=>$object->[0], session=>$state->{session}, in=>"Citation:".$object->[0]->get_dataset.".".$citationid->[0] );
 
 	return [ $citation, "XHTML" ];
 }
@@ -544,17 +544,15 @@ sub run_thumbnail_url
 
 sub run_preview_link
 {
-	my( $self, $state, $doc, $caption, $set, $size ) = @_;
-
-	$size = defined $size ? $size->[0] : 'preview';
+	my( $self, $state, $doc, $caption, $set ) = @_;
 
 	if( !defined $doc->[0] || ref($doc->[0]) ne "EPrints::DataObj::Document" )
 	{
-		$self->runtime_error( "Can only call preview_link() on document objects not ".
+		$self->runtime_error( "Can only call thumbnail_url() on document objects not ".
 			ref($doc->[0]) );
 	}
 
-	return [ $doc->[0]->render_preview_link( caption=>$caption->[0], set=>$set->[0], size=>$size ), "XHTML" ];
+	return [ $doc->[0]->render_preview_link( caption=>$caption->[0], set=>$set->[0] ), "XHTML" ];
 }
 
 sub run_icon

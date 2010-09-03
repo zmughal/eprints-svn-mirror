@@ -1,7 +1,7 @@
 package EPrints::Plugin::InputForm::Component::Field::SubFields;
 
 use EPrints::Plugin::InputForm::Component::Field;
-@ISA = qw( EPrints::Plugin::InputForm::Component::Field );
+@ISA = ( "EPrints::Plugin::InputForm::Component::Field" );
 
 use strict;
 
@@ -14,7 +14,6 @@ sub new
 	$self->{name} = "Subfields Selector";
 	$self->{visible} = "all";
 	$self->{visdepth} = 1;
-
 	return $self;
 }
 
@@ -23,33 +22,44 @@ sub update_from_form
 	my( $self, $processor ) = @_;
 
 	my $session = $self->{session};
+	my $field = $self->{config}->{field};
 	my $metafield = $self->{dataobj};
 	my $mfdatasetid = $metafield->get_value( "mfdatasetid" );
+	my $dataset = $session->get_repository->get_dataset( $mfdatasetid );
+	my $prefix = quotemeta( $metafield->get_value( "name" ) . "_" );
 
-	my $dataset = $session->dataset( $mfdatasetid );
+	my @fieldids = $session->param( $self->{prefix} );
 
-	my $potential = $self->potential_metafields;
+	my $value = $metafield->get_value( $field->get_name );
+	my @value = @$value;
 
-	foreach my $sub_name (keys %$potential)
+	my %checked = map { $_ => 1 } @fieldids;
+
+	# enable/disable existing entries
+	foreach my $fielddata (@value)
 	{
-		my $mf = $potential->{$sub_name};
-		my $selected = $mf->is_set( "parent" );
-		my $name = $mf->value( "name" );
-
-		my $id = $self->{prefix} . "_" . $name;
-
-		$selected = EPrints::Utils::is_set( $session->param( $id ) );
-
-		if( $selected )
-		{
-			$mf->set_value( "parent", $metafield->id );
-		}
-		else
-		{
-			$mf->set_value( "parent", undef );
-		}
-		$mf->commit;
+		my $name = $metafield->get_value( "name" )."_".$fielddata->{sub_name};
+		$fielddata->{mfremoved} = $checked{$name} ? "FALSE" : "TRUE";
+		delete $checked{$name};
 	}
+
+	my $potential = $self->get_potential_metafields;
+
+	# add any new entries
+	foreach my $fieldid (keys %checked)
+	{
+		my $sub_name = $fieldid;
+		next unless $sub_name =~ s/^$prefix//;
+
+		my $fielddata = $potential->{$sub_name};
+		next unless defined $fielddata;
+
+		$fielddata->{mfremoved} = "FALSE";
+
+		push @value, $fielddata;
+	}
+
+	$metafield->set_value( $field->{name}, \@value );
 }
 
 sub render_content
@@ -63,37 +73,46 @@ sub render_content
 	my $value = $metafield->get_value( $field->get_name );
 	my @value = @$value;
 
-	my $frag = $session->make_doc_fragment;
+	my $out = $session->make_element( "div" );
 
-	my $dataset = $session->dataset( $metafield->get_value( "mfdatasetid" ) );
+	my $dataset = $session->get_repository->get_dataset( $metafield->get_value( "mfdatasetid" ) );
 
-	my $potential = $self->potential_metafields;
+	my $prefix = $metafield->get_value( "name" ) . "_";
 
-	foreach my $sub_name (sort keys %$potential)
+	my $potential = $self->get_potential_metafields;
+	foreach my $sub_name (keys %$potential)
 	{
-		my $mf = $potential->{$sub_name};
-		my $selected = $mf->is_set( "parent" ) && $mf->value( "parent" ) == $metafield->id;
-		my $name = $mf->value( "name" );
+		my $is_new = 1;
+		for(@$value)
+		{
+			$is_new = 0, last if $_->{sub_name} eq $sub_name;
+		}
+		next unless $is_new;
 
-		my $id = $self->{prefix} . "_" . $name;
+		my $fielddata = $potential->{$sub_name};
 
-		my $label = $session->make_element( "label" );
-		my $input = $session->render_input_field(
+		push @value, $fielddata;
+	}
+
+	foreach my $fielddata (sort { $a->{sub_name} cmp $b->{sub_name} } @value)
+	{
+		my $name = $prefix . $fielddata->{"sub_name"};
+		my $selected = defined($fielddata->{mfremoved}) && $fielddata->{mfremoved} eq "FALSE";
+		my $option = $session->render_input_field(
 			type => "checkbox",
-			name => $id,
+			name => $self->{prefix},
 			value => $name,
 			($selected ? (checked => "checked") : ()),
 		);
-		$label->appendChild( $input );
-		$label->appendChild( $session->make_text( $name ) );
-		$frag->appendChild( $label );
-		$frag->appendChild( $session->make_element( "br" ) );
+		$option->appendChild( $session->make_text( $name ) );
+		$out->appendChild( $option );
+		$out->appendChild( $session->make_element( "br" ) );
 	}
 
-	return $frag;
+	return $out;
 }
 
-sub potential_metafields
+sub get_potential_metafields
 {
 	my( $self ) = @_;
 
@@ -104,25 +123,41 @@ sub potential_metafields
 
 	my $dataset = $metafield->get_dataset;
 
-	my $results = $dataset->search(
+	my $searchexp = EPrints::Search->new(
+		session => $session,
+		dataset => $dataset,
 		filters => [
-			{ meta_fields => ["provenance"], value => "user" },
-			{ meta_fields => ["mfdatasetid"], value => $metafield->value( "mfdatasetid" ) },
+			{ meta_fields => ["providence"], match => "EQ", value => "user" },
+			{ meta_fields => ["mfdatasetid"], match => "EQ", value => $metafield->get_value( "mfdatasetid" ) },
 		]);
 
+	my $list = $searchexp->perform_search;
+
 	my %potential;
-	$results->map( sub {
+	$list->map( sub {
 		my( undef, undef, $mf ) = @_;
 
 		my $name = $mf->get_value( "name" );
-		return unless $name =~ s/^$prefix//;
+		return unless $name =~ /^$prefix/;
 
 		my $field = $mf->make_field_object;
-		return if !defined $field;
+		return unless defined $field;
 		return if $field->isa( "EPrints::MetaField::Compound" );
 
-		$potential{$name} = $mf;
+		my $fielddata = $mf->get_perl_struct;
+
+		$fielddata->{sub_name} = delete $fielddata->{name};
+		$fielddata->{sub_name} =~ s/^$prefix//;
+
+		if( defined $fielddata->{options} )
+		{
+			$fielddata->{options} = join ",", @{$fielddata->{options}};
+		}
+
+		$potential{$fielddata->{sub_name}} = $fielddata;
 	} );
+
+	$list->dispose;
 
 	return \%potential;
 }
