@@ -335,7 +335,7 @@ else
 
 sub write_config_file
 {
-	my( $self, $path, $content, %opts ) = @_;
+	my( $path, $content, %opts ) = @_;
 
 	my $rc;
 
@@ -344,7 +344,7 @@ sub write_config_file
 
 	return if !-e $path && !defined $content;
 	EPrints->abort( "Can't backup something that is not a file: $path" )
-		if !-f _;
+		if -e _ && !-f _;
 
 	my $new_md5 = defined $content ? Digest::MD5::md5( $content ) : "";
 
