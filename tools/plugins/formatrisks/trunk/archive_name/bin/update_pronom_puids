@@ -1,4 +1,4 @@
-#!/usr/bin/perl -I/usr/share/eprints3/perl_lib
+#!/usr/bin/perl -I/opt/eprints3/perl_lib
 
 #######################################################
 ###                                                 ###
@@ -70,80 +70,75 @@ sub main
 	print MYFILE sprintf("Processing...");
 	close(MYFILE);
 	
-	reset_pronom_cache($session);
-
-	my @new_objects;
-	my $file_ids = [];
-	my $fn = sub {
-                my( $session, $dataset, $files, $file_ids ) = @_;
-
-                foreach my $file ($files)
-                {
-                        my $datasetid = $file->get_value( "datasetid" );
-                        my $pronomid = $file->get_value( "pronomid" );
-                        my $document = $file->get_parent();
-			if (((!defined $pronomid) || ($pronomid eq "")) && ($datasetid eq "document") && ( !($document->has_related_objects( EPrints::Utils::make_relation( "isVolatileVersionOf" ) ) ) ) )
-			{
-				push @$file_ids, $file->get_id;
-			}
-                }
-        };
-
-	$dataset->map( $session, $fn, $file_ids );
-
-	my $list = EPrints::List->new( session => $session, dataset => $dataset, ids => $file_ids );
-
-	my @record = $list->get_records();
-
-	if( $max_age > 0 )
-	{
-		my @date = gmtime(time() - $max_age);
-		my $expired_date = sprintf("%04d-%02d-%02dT%02d:%02d:%02d",
-			$date[5]+1900,
-			$date[4]+1,
-			@date[3,2,1,0],
-		);
-
-		my $searchexp = EPrints::Search->new(
-			session => $session,
-			dataset => $dataset,
-			filters => [
-				{ meta_fields => [qw( datasetid )], value => "document" },
-				{ meta_fields => [qw( classification_date )], value => "-$expired_date" },
-			],
-		);
-		$list = $list->union( $searchexp->perform_search );
+	my @date = gmtime(time() - $max_age);
+	my $expired_date = sprintf("%04d-%02d-%02dT%02d:%02d:%02d",
+		$date[5]+1900,
+		$date[4]+1,
+		@date[3,2,1,0],
+	);
+	
+	my $list = $dataset->search(
+		filters => [
+			{ meta_fields => [qw( datasetid )], value => "document" },
+			{ meta_fields => [qw( pronomid )], value => "" , match => "EX" },
+		],
+	);
+	my $list2 = $dataset->search(
+		filters => [
+			{ meta_fields => [qw( datasetid )], value => "document" },
+			{ meta_fields => [qw( classification_date )], value => "-$expired_date" },
+		],
+	);
+	if ($list->count gt 0 and $list2->count gt 0) {
+		$list->union($list2);
+	} elsif ($list->count eq 0 and $list2->count gt 0) {
+		$list = $list2;
+	} elsif ($list->count eq 0) {
+		finalise($session);
+		exit(1);
 	}
-	
-
-	my $total = $list->count;
-	
 	my $count = 0;
-	
+	my $total = $list->count;
 	$list->map( sub {
-		&update_pronom_identity( @_ );
-
 		++$count;
 		
 		open(MYFILE, ">$output_file");
-		print MYFILE sprintf("%d of %d done [file %8s]\r", $count, $total, $_[2]->get_id);
+		print MYFILE sprintf("Processing %d of %d [file %8s]\r", $count, $total, $_[2]->get_id);
 		close(MYFILE);
 		
-	} );
+		&update_pronom_identity( @_ );
 	
+		if ($count % 20 == 0) {
+			finalise($session);
+		}
+
+	} );
+
+	finalise($session);
+	
+}	
+	
+sub finalise 
+{
+	my ( $session ) = @_;
+	
+	my $output_file = $session->get_repository->get_conf( "htdocs_path" ) . "/en/droid_classification_ajax.xml";
+			
 	my $pronom_data = $session->get_repository->get_dataset("pronom")->get_object($session, "Unclassified");
 	if (!defined $pronom_data)
 	{
 		$pronom_data = $session->get_repository->get_dataset("pronom")->create_object($session,{pronomid=>"Unclassified",name=>"Unclassified Objects"});
 	}
 	
-	open(MYFILE, ">>$output_file");
-	print MYFILE sprintf("\nUpdating Risk Scores\n");
+	reset_pronom_cache($session);
+	
+	open(MYFILE, ">$output_file");
+	print MYFILE ("Updating Risk Scores");
 	close(MYFILE);
 	update_risk_scores( $session );
 	
-	open(MYFILE, ">>$output_file");
-	print MYFILE sprintf("Updating File Counts\n");
+	open(MYFILE, ">$output_file");
+	print MYFILE ("Updating File Counts");
 	close(MYFILE);
 	update_file_count( $session );
 	
@@ -155,21 +150,10 @@ sub main
 sub update_pronom_identity
 {
 		my( $session, $dataset, $file ) = @_;
-		
 
 		my $fh = $file->get_local_copy();
 		return unless defined $fh;
 
-		#my $todo = $list->count;
-
-		#print "\n\n";
-		#print $todo." unset files remaining.\n";
-		#print "============================\n";
-		#$todo--;
-		#print "Found file: ".$file->get_value( "filename" )."\n\n";
-		#print $file->get_value("pronomid")||"(null)";
-		#print "\n\n";
-		#print "FH:" .$fh ."\n";
 		my $droid_file_list = File::Temp->new( SUFFIX => ".xml");
 		my $file_list_xml = $session->make_doc_fragment();
 		my $file_collection = $session->make_element("FileCollection", xmlns=>"http://www.nationalarchives.gov.uk/pronom/FileCollection");
@@ -179,8 +163,6 @@ sub update_pronom_identity
 		$file_list_xml->appendChild($file_collection);
 		print $droid_file_list EPrints::XML::to_string($file_list_xml);
 		
-		#print STDERR EPrints::XML::to_string($file_list_xml);
-		
 		my $droid_xml = File::Temp->new( SUFFIX => ".xml");
 		my $sig = $session->get_repository->get_conf( "droid_sig_file" );
 		$session->get_repository->exec( "droid",
@@ -189,11 +171,7 @@ sub update_pronom_identity
 				SIGFILE => "$sig", 
 				);
 
-		#print STDERR "File List " . $droid_file_list . "\n\n";
 		my $doc = EPrints::XML::parse_xml("$droid_xml");
-		#print STDERR "GOT HERE \n\n";
-
-		#print STDERR "\n\n\n" . EPrints::XML::to_string($doc) . "\n\n\n";
 		
 		my $PUID_node = ($doc->getElementsByTagName( "PUID" ))[0];
 		my $PUID;
@@ -207,7 +185,6 @@ sub update_pronom_identity
 			my $classification_date = EPrints::Utils::tree_to_utf8($classification_date_node);
 			my $classification_status_node = ($doc->getElementsByTagName( "Status" ))[0];
 			my $classification_status = EPrints::Utils::tree_to_utf8($classification_status_node);
-			#print "Data Tuple: " . $PUID . " " . $classification_date . " " . $classification_status . "\n\n";
 			$file->set_value( "pronomid", $PUID );
 			$file->set_value( "classification_quality", $classification_status );
 			$file->set_value( "classification_date", $classification_date );
@@ -230,8 +207,6 @@ sub update_pronom_identity
 			$PUID = "UNKNOWN";
 			my $classification_date_node = ($doc->getElementsByTagName( "DateCreated" ))[0];
 			my $classification_date = EPrints::Utils::tree_to_utf8($classification_date_node);
-			#my $classification_status_node = ($doc->getElementsByTagName( "Status" ))[0];
-			#my $classification_status = EPrints::Utils::tree_to_utf8($classification_status_node);
 			my $classification_status = "No Match in Pronom";
 			$file->set_value( "pronomid", $PUID );
 			$file->set_value( "classification_quality", $classification_status );
@@ -367,7 +342,6 @@ sub update_risk_scores
 					if ($soap_error eq "") 
 					{
 						$record->set_value("risk_score",$result);
-						#print STDERR ("Format Risk for format ".$format.": " . $result . "\n");
 						$record->commit;
 					}
 					else 
@@ -407,6 +381,10 @@ sub update_file_count
 	{
 		my $count = $#{$format_files->{$format}}+1;
 		my $pronom_data = $session->get_repository->get_dataset("pronom")->get_object($session, $format);
+		if (!defined $pronom_data)
+		{
+			$pronom_data = $session->get_repository->get_dataset("pronom")->get_object($session, "Unclassified");
+		}
 		$pronom_data->set_value("file_count",$count);
 		$pronom_data->commit;
 	}

@@ -78,30 +78,13 @@ sub fetch_data
 	} );
 
 	$dataset = $session->get_repository->get_dataset( "file" );
-	my $count = 0;
-	$dataset->map( $session, sub {
-		my( $session, $dataset, $files ) = @_;
-		
-		foreach my $file ($files)
-		{
-			my $datasetid = $file->get_value( "datasetid" );
-			my $pronomid = $file->get_value( "pronomid" );
-			my $document = $file->get_parent();
-			if (($pronomid eq "") && ($datasetid eq "document") && ( !($document->has_related_objects( EPrints::Utils::make_relation( "isVolatileVersionOf" ) ) ) ) )	
-			{
-					$count++;	
-			}
-		}
-	} );
-#                session => $session,
-#                dataset => $dataset,
-#                filters => [
-#                       { meta_fields => [qw( datasetid )], value => "document" },
-#			{ meta_fields => [qw( pronomid )], value=>"" , match => "EX" },
-#                ],
-#        );
-#        my $list = $searchexp->perform_search;
-#	my $count = $list->count;
+	my $list = $dataset->search(
+                filters => [
+                        { meta_fields => [qw( datasetid )], value => "document" },
+                        { meta_fields => [qw( pronomid )], value => "" , match => "EX" },
+                ],
+        );
+	my $count = $list->count;
 	if ($count > 0) {
 		$format_files->{"Unclassified"} = $count;
 	}
@@ -115,11 +98,32 @@ sub render
 
 	my $session = $plugin->{session};
 
-	
 	my( $html , $table , $p , $span );
 
 	$html = $session->make_doc_fragment;
+
+	my $input_url = $session->get_repository->get_conf( "base_url" ) . "/droid_classification_ajax.xml";
 	
+	if ($ENV{'HTTPS'} eq "on") {
+		$input_url =~ s/http:\/\//https:\/\//;
+	}
+
+	my $file = $session->get_repository->get_conf( "archiveroot" ) . "/html/en/droid_classification_ajax.xml";
+	my $show_status;
+	my $line;
+	if ( -e $file ) {
+		open (FH, $file);
+		while (<FH>) {
+			chomp;
+			$line = $_;
+			if ($line eq "complete") {
+				$show_status = 0;
+			} else {
+				$show_status = 1;
+			}
+		}
+	}
+
 	my $script = $plugin->{session}->make_javascript('
 		function show(id) {
 			var canSee = "block";
@@ -145,7 +149,40 @@ sub render
 			hide(format + "_inner_row");
 		}
 	');
+
+	my $script2 = $plugin->{session}->make_javascript('
+		var ret;
+		function ajaxFunction()
+		{
+			var xmlhttp;
+			if (window.XMLHttpRequest)
+			{
+				// code for IE7+, Firefox, Chrome, Opera, Safari
+				xmlhttp=new XMLHttpRequest();
+			}
+			else
+			{
+				// code for IE6, IE5
+				xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+			}
+			xmlhttp.onreadystatechange=function()
+			{
+				if(xmlhttp.readyState == 4)
+				{
+					ret = xmlhttp.responseText;
+					document.getElementById("status").innerHTML=ret;
+				}
+			}
+			xmlhttp.open("GET","'.$input_url.'",true);
+			xmlhttp.send(null);
+		}
+		setInterval("ajaxFunction()",3000);
+	');
+	
 	$html->appendChild($script);
+	if ($show_status > 0) {
+		$html->appendChild($script2);
+	}
 	my $inner_panel = $plugin->{session}->make_element( 
 			"div", 
 			id => $plugin->{prefix}."_panel" );
@@ -173,13 +210,31 @@ sub render
 	my $wtr = $plugin->{session}->make_element( "tr" );
 	my $warning_width_limit = $plugin->{session}->make_element( "td", width => "620px", align=>"center" );
 	
+	if ($show_status > 0) 
+	{	
+		my $status_dom = $plugin->{session}->make_doc_fragment();
+		my $info_div = $plugin->{session}->make_element("div");
+		$info_div->appendText("Scan in progress...");
+		my $status_div = $plugin->{session}->make_element(
+	                        "div",
+	                        id => "status");
+	        $status_div->appendText( $line );
+		$status_dom->appendChild( $info_div );
+		$status_dom->appendChild( $status_div );
+		
+			my $status = $plugin->{session}->render_message("warning",
+				$status_dom
+				);
+		$warning_width_limit->appendChild($status);
+	}
+	
 	if( $session->get_repository->get_conf( "pronom_unstable" ) > 0) {
 		$warning = $plugin->{session}->render_message("warning",
 				$risks_unstable
 				);
 		$warning_width_limit->appendChild($warning);
 	}
-	$format_table = $plugin->get_format_risks_table( $warning_width_limit );
+	$format_table = $plugin->get_format_risks_table( $warning_width_limit, $show_status );
 
 	$wtr->appendChild($warning_width_limit);
 	$warning_width_table->appendChild($wtr);
@@ -221,7 +276,7 @@ sub render_hide_script {
 
 sub get_format_risks_table {
 	
-	my( $plugin, $message_element ) = @_;
+	my( $plugin, $message_element, $show_status ) = @_;
 
 	my $files_by_format = $plugin->fetch_data();
 
@@ -260,23 +315,17 @@ sub get_format_risks_table {
 	my $heading_blue = $plugin->{session}->make_element( "h1" );
 	$heading_blue->appendChild( $plugin->{session}->make_text( " No Risk Scores Available ") );
 	$blue_content_div->appendChild( $heading_blue );
-	#my $heading_unclassified_orange = $plugin->{session}->make_element( "h1" );
-	#$heading_unclassified_orange->appendChild( $plugin->{session}->make_text( " Unclassified Objects ") );
-	#$unclassified_orange_content_div->appendChild( $heading_unclassified_orange );
 	
-#	$div->appendChild( $title_div );
 	my $green_count = 0;
 	my $orange_count = 0;
 	my $red_count = 0;
 	my $blue_count = 0;
-	#my $unclassified_count = 0;
 
 	my $max_count = 0;	
 	my $max_width = 300;
 
 	my $green_format_table = $plugin->{session}->make_element( "table", width => "100%");
 	my $orange_format_table = $plugin->{session}->make_element( "table", width => "100%");
-	#my $unclassified_orange_format_table = $plugin->{session}->make_element( "table", width => "100%");
 	my $red_format_table = $plugin->{session}->make_element( "table", width => "100%");
 	my $blue_format_table = $plugin->{session}->make_element( "table", width => "100%");
 	
@@ -355,6 +404,7 @@ sub get_format_risks_table {
 		my $format_count = 1;
 		my $migrated_row;
 		my $migrated_count = 0;
+
 	
 		if ($result <= $medium_risk_boundary && !($color eq "blue"))
 		{
@@ -425,7 +475,7 @@ sub get_format_risks_table {
 	}
 
 
-	if (!$classified) {
+	if (!$classified && $show_status < 1) {
 		my $unclassified = $plugin->{session}->make_element(
 				"div",
 				align => "center"
@@ -681,7 +731,7 @@ sub get_format_panel {
 
 ## PLUS MINUS
 
-	if ($result <= $medium_risk_boundary && !($color eq "blue")) 
+	if ($result <= $medium_risk_boundary && !($color eq "blue") && !($format eq "Unclassified")) 
 	{
 		$format_details_td->appendChild ( 
 				$plugin->render_plus_and_minus_buttons( $format,$migrated ) );
@@ -698,6 +748,8 @@ sub get_format_panel {
 sub get_detail_row {
 	
 	my ( $plugin, $search_format, $format, $migrated ) = @_;
+
+	my $session = $plugin->{session};
 
 	my $other_row = $plugin->{session}->make_element(
 			"tr"
@@ -728,82 +780,64 @@ sub get_detail_row {
 	my $format_users = {};
 	my $format_eprints = {};
 	my $format_count = 0;
-	my $dataset = $plugin->{session}->get_repository->get_dataset( "file" );
-	my $session = $plugin->{session};
-	if ($search_format eq "") {
-		my $count = 0;
-		$dataset->map( $session, sub {
-				my( $session, $dataset, $files ) = @_;
+	
+	my $dataset = $session->get_repository->get_dataset( "file" );
 
-				foreach my $file ($files)
-				{
-				my $datasetid = $file->get_value( "datasetid" );
-				my $pronomid = $file->get_value( "pronomid" );
-				my $fileid = $file->get_id;
-				my $document = $file->get_parent();
-				my $eprint = $document->get_parent();
-				if (($pronomid eq "") && ($datasetid eq "document") && ( !($document->has_related_objects( EPrints::Utils::make_relation( "isVolatileVersionOf" ) ) ) ) )
-				{	
-				my $eprint_id = $eprint->get_value( "eprintid" );
-				my $user = $eprint->get_user();
-				my $user_id = $eprint->get_value( "userid" );
-				if ((!($document->has_related_objects( EPrints::Utils::make_relation( "hasMigratedVersion" )))) && $migrated < 1) {
-					push(@{$format_eprints->{$format}->{$eprint_id}},$fileid);
-					push(@{$format_users->{$format}->{$user_id}},$fileid);
-					$format_count++;
-				} elsif (($document->has_related_objects( EPrints::Utils::make_relation( "hasMigratedVersion" ))) && $migrated > 0) {
-					push(@{$format_eprints->{$format}->{$eprint_id}},$fileid);
-                                        push(@{$format_users->{$format}->{$user_id}},$fileid);
-                                        $format_count++;
-				}
-				}
-				}
-		} );	
-	} else {
-		my $searchexp = EPrints::Search->new(
-				session => $session,
-				dataset => $dataset,
-				filters => [
-				{ meta_fields => [qw( datasetid )], value => "document" },
-				{ meta_fields => [qw( pronomid )], value => "$search_format", match => "EX" },
-				],
-				);
-		my $list = $searchexp->perform_search;
+	my $search_format = $format;
+	if ($format eq "Unclassified") {
+		$search_format = "";
+	}
+
+	my $list;
+	$list = $dataset->search(
+		filters => [
+			{ meta_fields => [qw( datasetid )], value => "document" },
+			{ meta_fields => [qw( pronomid )], value => "$search_format", match => "EX" },
+		],
+	);
+
+	my $format_count;
+	if (!($search_format eq "")) {
 		$list->map( sub { 
-				my $file = $_[2];	
-				my $fileid = $file->get_id;
-				my $document = $file->get_parent();
-				my $eprint = $document->get_parent();
-				my $eprint_id = $eprint->get_value( "eprintid" );
-				my $user = $eprint->get_user();
-				my $user_id = $eprint->get_value( "userid" );
-				if ((!($document->has_related_objects( EPrints::Utils::make_relation( "hasMigratedVersion" )))) && $migrated < 1) {
-					push(@{$format_eprints->{$format}->{$eprint_id}},$fileid);
-					push(@{$format_users->{$format}->{$user_id}},$fileid);
-					$format_count++;
-				} elsif (($document->has_related_objects( EPrints::Utils::make_relation( "hasMigratedVersion" ))) && $migrated > 0) {
-					push(@{$format_eprints->{$format}->{$eprint_id}},$fileid);
-                                        push(@{$format_users->{$format}->{$user_id}},$fileid);
-                                        $format_count++;
-				}
-				} );
-	} 
-	my $table = $plugin->get_user_files($format_users,$format);
-	my $eprints_table = $plugin->get_eprints_files($format_eprints,$format);
-	my $preservation_action_table = $plugin->get_preservation_action_table($format,$migrated);
-	$inner_column1->appendChild ( $eprints_table );
-	$inner_column2->appendChild ( $table );
-	$inner_column2->appendChild ( $session->make_element("br") );
-	$inner_column2->appendChild ( $preservation_action_table );
+			my $file = $_[2];	
+			my $fileid = $file->get_id;
+			my $document = $file->get_parent();
+			my $eprint = $document->get_parent();
+			my $eprint_id = $eprint->get_value( "eprintid" );
+			my $user = $eprint->get_user();
+			my $user_id = $eprint->get_value( "userid" );
+			if ((!($document->has_related_objects( EPrints::Utils::make_relation( "hasMigratedVersion" )))) && $migrated < 1) {
+				push(@{$format_eprints->{$format}->{$eprint_id}},$fileid);
+				push(@{$format_users->{$format}->{$user_id}},$fileid);
+				$format_count++;
+			} elsif (($document->has_related_objects( EPrints::Utils::make_relation( "hasMigratedVersion" ))) && $migrated > 0) {
+				push(@{$format_eprints->{$format}->{$eprint_id}},$fileid);
+				push(@{$format_users->{$format}->{$user_id}},$fileid);
+				$format_count++;
+			}
+		} );
 
-	$inner_row->appendChild( $inner_column1 );
-	$inner_row->appendChild( $inner_column2 );
-	$inner_table->appendChild( $inner_row );
-	$other_column->appendChild( $inner_table );
-	$other_row->appendChild( $other_column );
+		my $table = $plugin->get_user_files($format_users,$format);
+		my $eprints_table = $plugin->get_eprints_files($format_eprints,$format);
+		my $preservation_action_table = $plugin->get_preservation_action_table($format,$migrated);
 
+		$inner_column1->appendChild ( $eprints_table );
+		$inner_column2->appendChild ( $table );
+		$inner_column2->appendChild ( $session->make_element("br") );
+		$inner_column2->appendChild ( $preservation_action_table );
 
-return ($other_row, $format_count);
+		$inner_row->appendChild( $inner_column1 );
+		$inner_row->appendChild( $inner_column2 );
+		$inner_table->appendChild( $inner_row );
+		$other_column->appendChild( $inner_table );
+		$other_row->appendChild( $other_column );
+	}
+
+	if (!defined $format_count && $migrated < 1) {
+		$format_count = $list->count;
+	}
+	
+	return ($other_row, $format_count);
 
 }
 

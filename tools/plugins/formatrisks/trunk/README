@@ -7,7 +7,7 @@ Pre-Requisits
           o These can be copied over in the following way
 	          o cd archive_name
           	  o cp -r cfg /usr/share/eprints3/archives/myarchive/
-          o Finally make a tools directory in your eprints root and drop tools/update_pronom_puids in it.
+          	  o cp -r bin /usr/share/eprints3/archives/myarchive/
 
     * A copy of java 
 
@@ -31,7 +31,5 @@ Running
 
 To run simply execute the update_pronom_puids tool, this should be scheduled to run regularly.
 
- cd tools
+ cd myarchive/bin
  perl update_pronom_puids archive_name
-
-Alternatively there is a classify objects button available in the web interface which can be installed by copying the optional screen plugin from the optionals directory.
