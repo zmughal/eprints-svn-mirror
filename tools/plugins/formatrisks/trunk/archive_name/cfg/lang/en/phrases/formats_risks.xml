@@ -5,7 +5,25 @@
 
 	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:title">Formats/Risks</epp:phrase>
 	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:description">View data formats and related risks to documents in your repository.</epp:phrase>
-	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks_download:action:get_files:title">Download</epp:phrase>
+	
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:inprogress">Scan in progress... (if this stalls you need to delete archive_name/html/en/droid_classification_ajax.xml and reload this page)</epp:phrase>
+
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:no_scores">Format Breakdown</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:high_risk">High Risk Objects</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:medium_risk">Medium Risk Objects</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:low_risk">Low Risk Objects</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:no_objects">No Objects Found in Repository</epp:phrase>
+
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:unclassified_warning">You have unclassified objects in your repository, to classify these you may want to run the tools/update_pronom_puids script. If not installed this tool is availale via http://files.eprints.org</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:risk_reg_unstable">This EPrints install may be referecing a trial version of the risk analysis service. If you feel this is incorrect please contact the system administrator.</epp:phrase>
+
+
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:preservation_actions">Preservation Actions</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:download_file_selection">Download File Selection</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:download_pres_plan">Download Preservation Plan</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks:upload_pres_plan">Upload Preservation Plan</epp:phrase>
+
+        <epp:phrase id="Plugin/Screen/Admin/FormatsRisks_download:action:get_files:title">Download</epp:phrase>
 	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks_get_plan:action:get_plan:title">Download</epp:phrase>
 	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks_delete_plan:action:delete_plan:title">Delete Plan</epp:phrase>
 	<epp:phrase id="Plugin/Screen/Admin/FormatsRisks_enact_plan:action:enact_plan:title">Enact Plan</epp:phrase>

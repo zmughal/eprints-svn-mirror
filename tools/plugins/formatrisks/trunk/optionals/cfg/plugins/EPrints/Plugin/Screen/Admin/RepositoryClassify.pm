@@ -56,7 +56,11 @@ sub render
 
 	my $repo = $session->get_repository->get_id();
 
-	my $fred = async { system("/usr/share/eprints3/tools/update_pronom_puids $repo ") };
+	my $archive_root = $session->get_repository->get_conf("archiveroot");
+
+        $cmd = $archive_root . "/bin/update_pronom_puids $repo ";
+
+        my $fred = async { system($cmd) };
 
 	#open(STDERR,">&OLD_STDERR") or die "Failed to restore STDERR";
 

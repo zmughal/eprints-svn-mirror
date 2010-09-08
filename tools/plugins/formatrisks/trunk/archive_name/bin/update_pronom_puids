@@ -1,4 +1,4 @@
-#!/usr/bin/perl -I/opt/eprints3/perl_lib
+#!/usr/bin/perl -I/usr/share/eprints3/perl_lib
 
 #######################################################
 ###                                                 ###
@@ -171,63 +171,65 @@ sub update_pronom_identity
 				SIGFILE => "$sig", 
 				);
 
-		my $doc = EPrints::XML::parse_xml("$droid_xml");
+		if ( -e $droid_xml ) {
+			my $doc = EPrints::XML::parse_xml("$droid_xml");
 		
-		my $PUID_node = ($doc->getElementsByTagName( "PUID" ))[0];
-		my $PUID;
-		my $name;
-		my $version;
-		my $mimetype;
-		if (defined $PUID_node)
-		{
-			$PUID = EPrints::Utils::tree_to_utf8($PUID_node);
-			my $classification_date_node = ($doc->getElementsByTagName( "DateCreated" ))[0];
-			my $classification_date = EPrints::Utils::tree_to_utf8($classification_date_node);
-			my $classification_status_node = ($doc->getElementsByTagName( "Status" ))[0];
-			my $classification_status = EPrints::Utils::tree_to_utf8($classification_status_node);
-			$file->set_value( "pronomid", $PUID );
-			$file->set_value( "classification_quality", $classification_status );
-			$file->set_value( "classification_date", $classification_date );
-			$file->commit;
-			my $name_node = ($doc->getElementsByTagName( "Name" ))[0];
-			$name = defined $name_node ?
-				EPrints::Utils::tree_to_utf8($name_node) :
-				"";
-			my $version_node = ($doc->getElementsByTagName( "Version" ))[0];
-			$version = defined $version_node ?
-				EPrints::Utils::tree_to_utf8($version_node) :
-				"";
-			my $mimetype_node = ($doc->getElementsByTagName( "MimeType" ))[0];
-			$mimetype = defined $mimetype_node ?
-				EPrints::Utils::tree_to_utf8($mimetype_node) :
-				"";
-		} 
-		else 
-		{
-			$PUID = "UNKNOWN";
-			my $classification_date_node = ($doc->getElementsByTagName( "DateCreated" ))[0];
-			my $classification_date = EPrints::Utils::tree_to_utf8($classification_date_node);
-			my $classification_status = "No Match in Pronom";
-			$file->set_value( "pronomid", $PUID );
-			$file->set_value( "classification_quality", $classification_status );
-			$file->set_value( "classification_date", $classification_date );
-			$file->commit;
-			$name = "UNKNWON (DROID found no classification match)";
-			$mimetype = "";
+			my $PUID_node = ($doc->getElementsByTagName( "PUID" ))[0];
+			my $PUID;
+			my $name;
+			my $version;
+			my $mimetype;
+			if (defined $PUID_node)
+			{
+				$PUID = EPrints::Utils::tree_to_utf8($PUID_node);
+				my $classification_date_node = ($doc->getElementsByTagName( "DateCreated" ))[0];
+				my $classification_date = EPrints::Utils::tree_to_utf8($classification_date_node);
+				my $classification_status_node = ($doc->getElementsByTagName( "Status" ))[0];
+				my $classification_status = EPrints::Utils::tree_to_utf8($classification_status_node);
+				$file->set_value( "pronomid", $PUID );
+				$file->set_value( "classification_quality", $classification_status );
+				$file->set_value( "classification_date", $classification_date );
+				$file->commit;
+				my $name_node = ($doc->getElementsByTagName( "Name" ))[0];
+				$name = defined $name_node ?
+					EPrints::Utils::tree_to_utf8($name_node) :
+					"";
+				my $version_node = ($doc->getElementsByTagName( "Version" ))[0];
+				$version = defined $version_node ?
+					EPrints::Utils::tree_to_utf8($version_node) :
+					"";
+				my $mimetype_node = ($doc->getElementsByTagName( "MimeType" ))[0];
+				$mimetype = defined $mimetype_node ?
+					EPrints::Utils::tree_to_utf8($mimetype_node) :
+					"";
+			} 
+			else 
+			{
+				$PUID = "UNKNOWN";
+				my $classification_date_node = ($doc->getElementsByTagName( "DateCreated" ))[0];
+				my $classification_date = EPrints::Utils::tree_to_utf8($classification_date_node);
+				my $classification_status = "No Match in Pronom";
+				$file->set_value( "pronomid", $PUID );
+				$file->set_value( "classification_quality", $classification_status );
+				$file->set_value( "classification_date", $classification_date );
+				$file->commit;
+				$name = "UNKNWON (DROID found no classification match)";
+				$mimetype = "";
+			}	
+			my $pronom_data = $session->get_repository->get_dataset("pronom")->get_object($session, $PUID);
+			if (defined $pronom_data)
+			{
+				$pronom_data->set_value("name", $name);
+				$pronom_data->set_value("version", $version);
+				$pronom_data->set_value("mime_type", $mimetype);
+				$pronom_data->commit;
+			}
+			else
+			{
+				$pronom_data = $session->get_repository->get_dataset("pronom")->create_object($session,{pronomid=>$PUID,name=>$name,version=>$version,mime_type=>$mimetype});
+			}
+			EPrints::XML::dispose($doc);
 		}
-		my $pronom_data = $session->get_repository->get_dataset("pronom")->get_object($session, $PUID);
-		if (defined $pronom_data)
-		{
-			$pronom_data->set_value("name", $name);
-			$pronom_data->set_value("version", $version);
-			$pronom_data->set_value("mime_type", $mimetype);
-			$pronom_data->commit;
-		}
-		else
-		{
-			$pronom_data = $session->get_repository->get_dataset("pronom")->create_object($session,{pronomid=>$PUID,name=>$name,version=>$version,mime_type=>$mimetype});
-		}
-		EPrints::XML::dispose($doc);
 }
 
 

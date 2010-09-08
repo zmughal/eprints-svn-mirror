@@ -191,7 +191,7 @@ sub render
 			"div",
 			align => "center"
 			);	
-	$risks_unstable->appendChild( $plugin->{session}->make_text("This EPrints install may be referecing a trial version of the risk analysis service. If you feel this is incorrect please contact the system administrator." ));
+	$risks_unstable->appendChild( $plugin->html_phrase("risk_reg_unstable") );
 
 	my $br = $plugin->{session}->make_element(
 			"br"
@@ -214,7 +214,7 @@ sub render
 	{	
 		my $status_dom = $plugin->{session}->make_doc_fragment();
 		my $info_div = $plugin->{session}->make_element("div");
-		$info_div->appendText("Scan in progress...");
+		$info_div->appendChild($plugin->html_phrase("inprogress"));
 		my $status_div = $plugin->{session}->make_element(
 	                        "div",
 	                        id => "status");
@@ -285,7 +285,7 @@ sub get_format_risks_table {
 				"div",
 				align => "center"
 				);	
-		$unclassified->appendChild( $plugin->{session}->make_text( "No Objects Found in Repository" ));
+		$unclassified->appendChild( $plugin->html_phrase("no_objects") );
 		my $warning = $plugin->{session}->render_message("warning", $unclassified);
 		$message_element->appendChild($warning);	
 	} 
@@ -304,16 +304,16 @@ sub get_format_risks_table {
 	my $blue_content_div = $plugin->{session}->make_element( "div", class=>"ep_msg_other_content" );
 
 	my $heading_red = $plugin->{session}->make_element( "h1" );
-	$heading_red->appendChild( $plugin->{session}->make_text( " High Risk Objects ") );
+	$heading_red->appendChild( $plugin->html_phrase("high_risk") );
 	$red_content_div->appendChild( $heading_red );
 	my $heading_orange = $plugin->{session}->make_element( "h1" );
-	$heading_orange->appendChild( $plugin->{session}->make_text( " Medium Risk Objects ") );
+	$heading_orange->appendChild( $plugin->html_phrase("medium_risk") );
 	$orange_content_div->appendChild( $heading_orange );
 	my $heading_green = $plugin->{session}->make_element( "h1" );
-	$heading_green->appendChild( $plugin->{session}->make_text( " Low Risk Objects ") );
+	$heading_green->appendChild( $plugin->html_phrase("low_risk") );
 	$green_content_div->appendChild( $heading_green );
 	my $heading_blue = $plugin->{session}->make_element( "h1" );
-	$heading_blue->appendChild( $plugin->{session}->make_text( " No Risk Scores Available ") );
+	$heading_blue->appendChild( $plugin->html_phrase("no_scores") );
 	$blue_content_div->appendChild( $heading_blue );
 	
 	my $green_count = 0;
@@ -480,7 +480,7 @@ sub get_format_risks_table {
 				"div",
 				align => "center"
 				);	
-		$unclassified->appendChild( $plugin->{session}->make_text( "You have unclassified objects in your repository, to classify these you may want to run the tools/update_pronom_puids script. If not installed this tool is availale via http://files.eprints.org" ));
+		$unclassified->appendChild( $plugin->html_phrase("unclassified_warning") );
 		my $warning = $plugin->{session}->render_message("warning", $unclassified);
 		$message_element->appendChild($warning);
 	}
@@ -779,11 +779,11 @@ sub get_detail_row {
 	
 	my $format_users = {};
 	my $format_eprints = {};
-	my $format_count = 0;
+	my $format_count;
 	
 	my $dataset = $session->get_repository->get_dataset( "file" );
 
-	my $search_format = $format;
+	$search_format = $format;
 	if ($format eq "Unclassified") {
 		$search_format = "";
 	}
@@ -796,7 +796,6 @@ sub get_detail_row {
 		],
 	);
 
-	my $format_count;
 	if (!($search_format eq "")) {
 		$list->map( sub { 
 			my $file = $_[2];	
@@ -1002,7 +1001,7 @@ sub get_preservation_action_table
 			align => "center",
 			style=> "font-size: 1.2em; font-weight: bold;"
 			);
-	$title_div->appendText("Preservation Actions");
+	$title_div->appendChild($plugin->html_phrase("preservation_actions"));
 	$inner_div->appendChild($title_div);
 	$inner_div->appendChild($plugin->{session}->make_element("hr"));
 
@@ -1010,7 +1009,7 @@ sub get_preservation_action_table
 			"p",
 			style => "font-weight: bold;"
 			);
-	$p->appendText("Download File Seclection");
+	$p->appendChild($plugin->html_phrase("download_file_selection"));
 	$inner_div->appendChild($p);
 	
 	my $screen_id = "Screen::".$plugin->{processor}->{screenid} . "_download";
@@ -1070,7 +1069,7 @@ sub get_preservation_action_table
 					"p",
 					style => "font-weight: bold;"
 					);
-			$p->appendText("Download Preservation Plan");
+			$p->appendChild($plugin->html_phrase("download_pres_plan"));
 			$inner_div->appendChild($p);
 
 			my $download_div = $session->make_element("div", style=>"width: 250px;", align=>"center");
@@ -1157,7 +1156,7 @@ sub get_preservation_action_table
 					"p",
 					style => "font-weight: bold;"
 					);
-			$p->appendText("Upload Preservation Plan");
+			$p->appendChild($plugin->html_phrase("upload_pres_plan"));
 			$inner_div->appendChild($p);
 
 			my $upload_form = $session->render_form("POST");
