@@ -213,7 +213,7 @@ sub update_pronom_identity
 				$file->set_value( "classification_quality", $classification_status );
 				$file->set_value( "classification_date", $classification_date );
 				$file->commit;
-				$name = "UNKNWON (DROID found no classification match)";
+				$name = "UNKNOWN (DROID found no classification match)";
 				$mimetype = "";
 			}	
 			my $pronom_data = $session->get_repository->get_dataset("pronom")->get_object($session, $PUID);
