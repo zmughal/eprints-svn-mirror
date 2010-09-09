@@ -900,7 +900,7 @@ sub get_eprints_files
 					style => "border: 1px dashed black; padding: 0.3em;",
 					colspan => 2
 			);
-			my $file_url = $file->get_parent()->get_url();			
+			my $file_url = $file->get_parent()->uri();			
 			my $file_href = $plugin->{session}->make_element(
 					"a",
 					href => $file_url
@@ -939,7 +939,7 @@ sub get_eprints_files
 			);
 			my $eprint_href = $plugin->{session}->make_element(
 					"a",
-					href => $file->get_parent()->get_parent()->get_url()
+					href => $file->get_parent()->get_parent()->uri()
 			);
 			$eprint_href->appendChild( $plugin->{session}->make_text($file->get_parent()->get_parent()->get_value( "eprintid" ) ));	
 			$bold = $plugin->{session}->make_element(
