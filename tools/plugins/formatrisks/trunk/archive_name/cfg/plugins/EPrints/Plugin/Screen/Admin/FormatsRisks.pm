@@ -768,7 +768,7 @@ sub get_detail_row {
 			);
 	my $inner_column1 = $plugin->{session}->make_element(
 			"td",
-			style => "width: 52%;",
+			style => "width: 62%;",
 			valign => "top"
 			);
 	my $inner_column2 = $plugin->{session}->make_element(
@@ -989,7 +989,7 @@ sub get_preservation_action_table
 	my $outer_div = $session->make_element(
 			"div",
 			class => "ep_toolbox",
-			style => "width: 250px;" 
+			style => "width: 300px;" 
 			);
 	my $inner_div = $session->make_element(
 			"div",
@@ -1073,7 +1073,7 @@ sub get_preservation_action_table
 			$p->appendChild($plugin->html_phrase("download_pres_plan"));
 			$inner_div->appendChild($p);
 
-			my $download_div = $session->make_element("div", style=>"width: 250px;", align=>"center");
+			my $download_div = $session->make_element("div", style=>"width: 300px;", align=>"center");
 			my $form = $session->render_form("POST");
 			$inner_div->appendChild($download_div);
 			$download_div->appendChild($form);
@@ -1161,7 +1161,7 @@ sub get_preservation_action_table
 			$inner_div->appendChild($p);
 
 			my $upload_form = $session->render_form("POST");
-			my $upload_div = $session->make_element("div", style=>"width: 250px;", align=>"center");
+			my $upload_div = $session->make_element("div", style=>"width: 300px;", align=>"center");
 			my $f = $session->make_doc_fragment;
 
 #$f->appendChild( $session->html_phrase( "Plugin/InputForm/Component/Upload:new_document" ) );
@@ -1344,7 +1344,7 @@ sub get_user_files
 	my $user_format_count_table = $plugin->{session}->make_element(
 			"table",
 			cellpadding => 1,
-			style => "border: 1px solid black; width: 250px;",
+			style => "border: 1px solid black; width: 300px;",
 			cellspacing => 0
 			);
 	my $user_format_count_tr = $plugin->{session}->make_element(
