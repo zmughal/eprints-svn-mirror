@@ -303,16 +303,16 @@ sub get_format_risks_table {
 	my $red_content_div = $plugin->{session}->make_element( "div", class=>"ep_msg_error_content" );
 	my $blue_content_div = $plugin->{session}->make_element( "div", class=>"ep_msg_other_content" );
 
-	my $heading_red = $plugin->{session}->make_element( "h1" );
+	my $heading_red = $plugin->{session}->make_element( "h1", style=> "text-align: center;");
 	$heading_red->appendChild( $plugin->html_phrase("high_risk") );
 	$red_content_div->appendChild( $heading_red );
-	my $heading_orange = $plugin->{session}->make_element( "h1" );
+	my $heading_orange = $plugin->{session}->make_element( "h1", style=> "text-align: center;");
 	$heading_orange->appendChild( $plugin->html_phrase("medium_risk") );
 	$orange_content_div->appendChild( $heading_orange );
-	my $heading_green = $plugin->{session}->make_element( "h1" );
+	my $heading_green = $plugin->{session}->make_element( "h1", style=> "text-align: center;");
 	$heading_green->appendChild( $plugin->html_phrase("low_risk") );
 	$green_content_div->appendChild( $heading_green );
-	my $heading_blue = $plugin->{session}->make_element( "h1" );
+	my $heading_blue = $plugin->{session}->make_element( "h1", style=> "text-align: center;");
 	$heading_blue->appendChild( $plugin->html_phrase("no_scores") );
 	$blue_content_div->appendChild( $heading_blue );
 	
@@ -683,12 +683,12 @@ sub get_format_panel {
 	my $format_details_td = $plugin->{session}->make_element(
 			"td",
 			width => "50%",
-			align => "right"
+			style => "text-align : right;"
 			);
 	my $format_count_td = $plugin->{session}->make_element(
 			"td",
 			width => "50%",
-			align => "left"
+			style => "text-align : left;"
 			);
 	my $pronom_output = $format_name . " ";
 	if (trim($format_version) eq "") {
@@ -760,7 +760,7 @@ sub get_detail_row {
 			);
 	my $inner_table = $plugin->{session}->make_element(
 			"table",
-			width => "100%"
+			style => "width: 100%;"
 			);
 	my $inner_row = $plugin->{session}->make_element(
 			"tr",
@@ -768,12 +768,12 @@ sub get_detail_row {
 			);
 	my $inner_column1 = $plugin->{session}->make_element(
 			"td",
-			style => "width: 70%;",
+			style => "width: 52%;",
 			valign => "top"
 			);
 	my $inner_column2 = $plugin->{session}->make_element(
 			"td",
-			style => "width: 30%;",
+			style => "align: center;",
 			valign => "top"
 			);
 	
@@ -988,7 +988,8 @@ sub get_preservation_action_table
 	my $session = $plugin->{session};
 	my $outer_div = $session->make_element(
 			"div",
-			class => "ep_toolbox"
+			class => "ep_toolbox",
+			style => "width: 250px;" 
 			);
 	my $inner_div = $session->make_element(
 			"div",
@@ -1342,9 +1343,8 @@ sub get_user_files
 	
 	my $user_format_count_table = $plugin->{session}->make_element(
 			"table",
-			width => "250px",
 			cellpadding => 1,
-			style => "border: 1px solid black;",
+			style => "border: 1px solid black; width: 250px;",
 			cellspacing => 0
 			);
 	my $user_format_count_tr = $plugin->{session}->make_element(
@@ -1390,8 +1390,7 @@ sub get_user_files
 		my $user_format_count_td1 = $plugin->{session}->make_element(
 				"td",
 				align => "right",
-				style => "font-size: 0.9em;",
-				width => "120px"
+				style => "font-size: 0.9em; width: 120px;"
 				);
 		my $user = EPrints::DataObj::User->new( $plugin->{session}, $user_id );
 		if( defined $user )
@@ -1404,7 +1403,7 @@ sub get_user_files
 		}
 		my $user_format_count_td2 = $plugin->{session}->make_element(
 				"td",
-				width => "130px"
+				style => "width: 130px;"
 				);
 		my $file_count_bar = $plugin->{session}->make_element(
 				"table",
@@ -1421,7 +1420,7 @@ sub get_user_files
 		}
 		my $file_count_bar_td1 = $plugin->{session}->make_element(
 				"td",
-				width => $file_bar_width . "px"
+				style => "width:".$file_bar_width."px;"
 				);
 		$file_bar_width = ($count / $max_count) * $max_width;
 		if ($file_bar_width < 10) {
