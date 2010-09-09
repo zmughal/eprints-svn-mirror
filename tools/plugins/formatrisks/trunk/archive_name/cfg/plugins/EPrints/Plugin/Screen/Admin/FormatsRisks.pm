@@ -26,7 +26,7 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 	
-	$self->{actions} = [qw/ formats_risks handle_upload get_plan delete_plan_docs/]; 
+	$self->{actions} = [qw/ formats_risks handle_upload get_plan delete_plan_docs classify_repo reset_scan/]; 
 		
 	$self->{appears} = [
 		{ 
@@ -40,9 +40,9 @@ sub new
 
 sub can_be_viewed
 {
-	my( $plugin ) = @_;
+	my( $self ) = @_;
 
-	return 1;
+	return $self->allow( "staff/eprint_search" );	
 }
 
 sub trim($)
@@ -51,6 +51,75 @@ sub trim($)
 	$string =~ s/^\s+//;
 	$string =~ s/\s+$//;
 	return $string;
+}
+
+sub allow_classify_repo
+{
+	my( $self ) = @_;
+	
+	return $self->allow( "config/view" );	
+
+}
+
+sub allow_reset_scan
+{
+	my( $self ) = @_;
+	
+	return $self->allow( "config/view" );	
+
+}
+
+sub action_reset_scan
+{
+	my ( $self ) = @_; 
+
+	my $session = $self->{session};
+
+	my $file = $session->get_repository->get_conf( "htdocs_path" ) . "/en/droid_classification_ajax.xml";
+
+	unlink($file);
+
+	sleep(2);
+	
+	my $url = $self->SUPER::redirect_to_me_url;
+	
+	$session->redirect($url);
+}
+
+sub action_classify_repo
+{
+	my ( $self ) = @_; 
+
+	my $session = $self->{session};
+
+	my $err_file = File::Temp->new(
+                UNLINK => 1
+        );
+
+	{
+		no warnings;
+		open(OLD_STDERR, ">&STDERR") or die "Failed to save STDERR";
+	}
+	open(STDERR, ">$err_file") or die "Failed to redirect STDERR";	
+
+	my $repo = $session->get_repository->get_id();
+
+	my $archive_root = $session->get_repository->get_conf("archiveroot");
+
+	my $cmd = $archive_root . "/bin/update_pronom_puids $repo ";
+
+	use Async;
+
+	my $proc = Async->new(sub { 
+		system($cmd);
+	});
+	sleep 2;
+
+	open(STDERR,">&OLD_STDERR") or die "Failed to restore STDERR";
+	
+	my $url = $self->SUPER::redirect_to_me_url;
+	
+	$self->{session}->redirect($url);
 }
 
 sub fetch_data
@@ -210,6 +279,9 @@ sub render
 	my $wtr = $plugin->{session}->make_element( "tr" );
 	my $warning_width_limit = $plugin->{session}->make_element( "td", width => "620px", align=>"center" );
 	
+	my $screen_id = "Screen::".$plugin->{processor}->{screenid};
+        my $screen = $plugin->{session}->plugin( $screen_id, processor => $plugin->{processor} );
+	
 	if ($show_status > 0) 
 	{	
 		my $status_dom = $plugin->{session}->make_doc_fragment();
@@ -218,11 +290,27 @@ sub render
 		my $status_div = $plugin->{session}->make_element(
 	                        "div",
 	                        id => "status");
-	        $status_div->appendText( $line );
+		
+		my $buttons_div = $plugin->{session}->make_element(
+                                "div",
+                                align => "left",
+				style => "padding-left: 1em;"
+                                );
+		my $reset_button = $screen->render_action_button({
+                        action => "reset_scan",
+                        screen => $screen,
+                        screen_id => $screen_id,
+                });
+
+		
+		$buttons_div->appendChild( $reset_button );
+		        
+		$status_div->appendText( $line );
 		$status_dom->appendChild( $info_div );
 		$status_dom->appendChild( $status_div );
-		
-			my $status = $plugin->{session}->render_message("warning",
+		$status_dom->appendChild( $buttons_div );
+
+		my $status = $plugin->{session}->render_message("warning",
 				$status_dom
 				);
 		$warning_width_limit->appendChild($status);
@@ -474,13 +562,35 @@ sub get_format_risks_table {
 		$ret->appendChild($blue);
 	}
 
+	my $screen_id = "Screen::".$plugin->{processor}->{screenid};
+        my $screen = $plugin->{session}->plugin( $screen_id, processor => $plugin->{processor} );
 
 	if (!$classified && $show_status < 1) {
-		my $unclassified = $plugin->{session}->make_element(
+		my $unclassified = $plugin->{session}->make_doc_fragment();
+		my $unclassified_div = $plugin->{session}->make_element(
 				"div",
 				align => "center"
 				);	
-		$unclassified->appendChild( $plugin->html_phrase("unclassified_warning") );
+		my $buttons_div = $plugin->{session}->make_element(
+                                "div",
+                                align => "left",
+				style => "padding-left: 1em;"
+                                );
+		my $classify_button = $screen->render_action_button({
+                        action => "classify_repo",
+                        screen => $screen,
+                        screen_id => $screen_id,
+                });
+		if( $plugin->{session}->get_repository->get_conf( "allow_droid_classification_control" ) > 0) {
+			$buttons_div->appendChild( $classify_button );
+			$unclassified_div->appendChild( $plugin->html_phrase("unclassified_warning_button") );
+		} else {
+			$unclassified_div->appendChild( $plugin->html_phrase("unclassified_warning_cron") );
+		}
+
+		$unclassified->appendChild($unclassified_div);
+		$unclassified->appendChild($buttons_div);
+		
 		my $warning = $plugin->{session}->render_message("warning", $unclassified);
 		$message_element->appendChild($warning);
 	}

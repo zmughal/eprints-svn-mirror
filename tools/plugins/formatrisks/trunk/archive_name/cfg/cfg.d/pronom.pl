@@ -25,10 +25,10 @@ $c->{pronom}->{max_age} = 30 * 86400; # 30 days
 $c->{"executables"}->{"java"} = 'java';
 
 # The location of the DROID JAR file
-$c->{"executables"}->{"droid"} = '/usr/share/eprints3/tools/DROID_4/DROID/droid.jar';
+$c->{"executables"}->{"droid"} = '/usr/share/eprints3/archives/preserv/tools/DROID/droid.jar';
 
 # The location of the DROID signature file
-$c->{"droid_sig_file"} = '/usr/share/eprints3/tools/DROID_SignatureFile_V16.xml';
+$c->{"droid_sig_file"} = '/usr/share/eprints3/archives/preserv/tools/DROID/DROID_SignatureFile_V39.xml';
 
 # DROID's invocation syntax
 # DROID 3
@@ -45,6 +45,9 @@ $c->{"medium_risk_boundary"} = 2000;
 
 # Option to enable preservation plans to be executed on your repository by EPrints, this is off as there is some error handling missing.
 $c->{"enable_preservation_actions"} = 0;
+
+# Option to enable interface buttons to manually start classification scans, normally this process would just be controlled by a cron job.
+$c->{"allow_droid_classification_control"} = 0;
 
 # Option to use unstable version of PRONOM registry or proxy. This is mainly used in pre-release testing, leave as 0 to use actual pronom release.
 $c->{"pronom_unstable"} = 0;
