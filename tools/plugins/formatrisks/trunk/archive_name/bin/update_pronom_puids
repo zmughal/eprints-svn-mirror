@@ -97,16 +97,26 @@ sub main
 		finalise($session);
 		exit(1);
 	}
-	my $count = 0;
-	my $total = $list->count;
+	my $total = 0;
 	$list->map( sub {
-		++$count;
-		
+		my( $session, $dataset, $file ) = @_;
+
+		my $document = $file->get_parent();
+		return unless valid_document($document);
+		++$total;	
+	});
+
+	my $count = 1;
+
+	$list->map( sub {
 		open(MYFILE, ">$output_file");
 		print MYFILE sprintf("Processing %d of %d [file %8s]\r", $count, $total, $_[2]->get_id);
 		close(MYFILE);
 		
-		&update_pronom_identity( @_ );
+		my $ret = &update_pronom_identity( @_ );
+		if (defined $ret) {
+			++$count;
+		}
 	
 		if ($count % 20 == 0) {
 			finalise($session);
@@ -117,6 +127,23 @@ sub main
 	finalise($session);
 	
 }	
+
+sub valid_document
+{
+	my ( $document ) = @_;
+
+	return undef unless $document;
+	my $eprint = $document->get_parent();
+	return undef unless $eprint;
+	my $eprint_status = $eprint->get_value('eprint_status');
+	return undef unless ($eprint_status eq "buffer" or $eprint_status eq "archive");
+	return undef if ($document->has_related_objects( EPrints::Utils::make_relation( "issmallThumbnailVersionOf" )));
+	return undef if ($document->has_related_objects( EPrints::Utils::make_relation( "ismediumThumbnailVersionOf" )));
+	return undef if ($document->has_related_objects( EPrints::Utils::make_relation( "ispreviewThumbnailVersionOf" )));
+	return undef if ($document->has_related_objects( EPrints::Utils::make_relation( "isIndexCodesVersionOf" )));
+	
+	return 1;
+}
 	
 sub finalise 
 {
@@ -150,6 +177,9 @@ sub finalise
 sub update_pronom_identity
 {
 		my( $session, $dataset, $file ) = @_;
+
+		my $document = $file->get_parent();
+		return unless valid_document($document);
 
 		my $fh = $file->get_local_copy();
 		return unless defined $fh;
@@ -213,7 +243,7 @@ sub update_pronom_identity
 				$file->set_value( "classification_quality", $classification_status );
 				$file->set_value( "classification_date", $classification_date );
 				$file->commit;
-				$name = "UNKNOWN (DROID found no classification match)";
+				$name = "UNKNWON (DROID found no classification match)";
 				$mimetype = "";
 			}	
 			my $pronom_data = $session->get_repository->get_dataset("pronom")->get_object($session, $PUID);
@@ -230,6 +260,7 @@ sub update_pronom_identity
 			}
 			EPrints::XML::dispose($doc);
 		}
+		return 1;
 }
 
 
@@ -295,65 +326,43 @@ sub update_risk_scores
 	
 	if (!($risks_url eq "")) 
 	{
-#		my $soap = SOAP::Lite
-#			-> uri('http://pp.pronom.nationalarchives.gov.uk/getFormatRiskIn')
-#			-> proxy($risks_url)
-#			-> method (SOAP::Data->name('PUID' => \SOAP::Data->value( SOAP::Data->name('Value' => "fmt/11") ))->attr({xmlns => 'http://pp.pronom.
-#						nationalarchives.gov.uk'}) );
-#
-#		my $result = $soap->result();
-#
-#		foreach my $error (@SOAP_ERRORS)
-#		{
-#			if ($soap_error eq "" && !($error eq ""))
-#			{
-#				$soap_error = $error;
-#			}
-#		}
-#		if (!$soap_error eq "") 
-#		{
-#			print STDERR ("Format Risk Analysis Failed: \n" . $soap_error . "\n\n");
-#		} 
-#		else 
-#		{
-			$soap_error = "";
-			my $dataset = $session->get_repository->get_dataset( "pronom" );
-			$dataset->map($session, sub 
-			{
+		$soap_error = "";
+		my $dataset = $session->get_repository->get_dataset( "pronom" );
+		$dataset->map($session, sub 
+				{
 				my $record = $_[2];
 				my $format = $record->get_value("pronomid");
 				unless ($format eq "UNKNOWN" || $format eq "Unclassified") 
 				{
-					my $soap_data = SOAP::Data->name( 'PUID' )->attr({xmlns => 'http://pp.pronom.nationalarchives.gov.uk'});
-					my $soap_value = SOAP::Data->value( SOAP::Data->name('Value' => $format) );
-					my $soap = SOAP::Lite 
-					-> on_action(sub { 'http://pp.pronom.nationalarchives.gov.uk/getFormatRiskIn' } )
-					-> proxy($risks_url)
-					-> call ($soap_data => $soap_value);
+				my $soap_data = SOAP::Data->name( 'PUID' )->attr({xmlns => 'http://pp.pronom.nationalarchives.gov.uk'});
+				my $soap_value = SOAP::Data->value( SOAP::Data->name('Value' => $format) );
+				my $soap = SOAP::Lite 
+				-> on_action(sub { 'http://pp.pronom.nationalarchives.gov.uk/getFormatRiskIn' } )
+				-> proxy($risks_url)
+				-> call ($soap_data => $soap_value);
 #					-> method (SOAP::Data->name('PUID' => \SOAP::Data->value( SOAP::Data->name('Value' => $format) ))->attr({xmlns => 'http://pp.pronom.nationalarchives.gov.uk'}) );
 
-					my $result = $soap->result();
+				my $result = $soap->result();
 
-					foreach my $error (@SOAP_ERRORS) 
-					{
-						if ($soap_error eq "" && !($error eq "")) 
-						{
-						$soap_error = $error;
-						}
-					}
-					if ($soap_error eq "") 
-					{
-						$record->set_value("risk_score",$result);
-						$record->commit;
-					}
-					else 
-					{
-						print STDERR ("Format Risk Analysis Failed for format ".$format.": \n" . $soap_error . "\n");
-					}
+				foreach my $error (@SOAP_ERRORS) 
+				{
+				if ($soap_error eq "" && !($error eq "")) 
+				{
+				$soap_error = $error;
+				}
+				}
+				if ($soap_error eq "") 
+				{
+					$record->set_value("risk_score",$result);
+					$record->commit;
+				}
+				else 
+				{
+					print STDERR ("Format Risk Analysis Failed for format ".$format.": \n" . $soap_error . "\n");
+				}
 				}
 
-			} );
-		#}
+				} );
 	}
 }
 

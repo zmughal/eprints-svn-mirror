@@ -25,10 +25,10 @@ $c->{pronom}->{max_age} = 30 * 86400; # 30 days
 $c->{"executables"}->{"java"} = 'java';
 
 # The location of the DROID JAR file
-$c->{"executables"}->{"droid"} = '/usr/share/eprints3/archives/preserv/tools/DROID/droid.jar';
+$c->{"executables"}->{"droid"} = $c->{archiveroot}.'/tools/DROID/droid.jar';
 
 # The location of the DROID signature file
-$c->{"droid_sig_file"} = '/usr/share/eprints3/archives/preserv/tools/DROID/DROID_SignatureFile_V39.xml';
+$c->{"droid_sig_file"} = $c->{archiveroot}.'/tools/DROID/DROID_SignatureFile_V39.xml';
 
 # DROID's invocation syntax
 # DROID 3
@@ -44,13 +44,13 @@ $c->{"high_risk_boundary"} = 1000;
 $c->{"medium_risk_boundary"} = 2000;
 
 # Option to enable preservation plans to be executed on your repository by EPrints, this is off as there is some error handling missing.
-$c->{"enable_preservation_actions"} = 0;
+$c->{"enable_preservation_actions"} = 1;
 
 # Option to enable interface buttons to manually start classification scans, normally this process would just be controlled by a cron job.
-$c->{"allow_droid_classification_control"} = 0;
+$c->{"allow_droid_classification_control"} = 1;
 
 # Option to use unstable version of PRONOM registry or proxy. This is mainly used in pre-release testing, leave as 0 to use actual pronom release.
-$c->{"pronom_unstable"} = 0;
+$c->{"pronom_unstable"} = 1;
 
 ### END OF CONFIGURATION ###
 
@@ -60,38 +60,38 @@ $c->{"pronom_unstable"} = 0;
 # add the necessary fields to the file dataset
 $c->{fields}->{file} ||= [];
 push @{$c->{fields}->{file}},
-	{
-		name => "in_pronom_uid",
-		type => "text",
-	},
-	{
-		name => "pronomid",
-		type => "text",
-	},
-	{
-		name => "classification_date",
-		type => "time",
-	},
-	{
-		name => "classification_quality",
-		type => "text",
-	};
+  {
+    name => "in_pronom_uid",
+    type => "text",
+  },
+  {
+    name => "pronomid",
+    type => "text",
+  },
+  {
+    name => "classification_date",
+    type => "time",
+  },
+  {
+    name => "classification_quality",
+    type => "text",
+  };
 
 #Add the pronom dataset.
 
 $c->{datasets}->{pronom} = {
- 	class => "EPrints::DataObj::Pronom",
- 	sqlname => "pronom",
- 	datestamp => "datestamp",
+   class => "EPrints::DataObj::Pronom",
+   sqlname => "pronom",
+   datestamp => "datestamp",
 };
 
 $c->{fields}->{pronom} = [
-		{ name=>"pronomid", type=>"text", required=>1, can_clone=>0 },
-		{ name=>"name", type=>"text", required=>0, },
-		{ name=>"version", type=>"text", required=>0, },
-		{ name=>"mime_type", type=>"text", required=>0, },
-		{ name=>"risk_score", type=>"int", required=>0, },
-		{ name=>"file_count", type=>"int", required=>0, },
+    { name=>"pronomid", type=>"text", required=>1, can_clone=>0 },
+    { name=>"name", type=>"text", required=>0, },
+    { name=>"version", type=>"text", required=>0, },
+    { name=>"mime_type", type=>"text", required=>0, },
+    { name=>"risk_score", type=>"int", required=>0, },
+    { name=>"file_count", type=>"int", required=>0, },
 ];
 
 {
@@ -106,7 +106,7 @@ sub new
 
 sub get_dataset_id
 {
-	my ($self) = @_;
+  my ($self) = @_;
         return "pronom";
 }
 
@@ -115,30 +115,30 @@ sub get_dataset_id
 #Add the preservation_plan dataset.
 
 $c->{datasets}->{preservation_plan} = {
- 	class => "EPrints::DataObj::Preservation_Plan",
- 	sqlname => "preservation_plan",
- 	datestamp => "datestamp",
+   class => "EPrints::DataObj::Preservation_Plan",
+   sqlname => "preservation_plan",
+   datestamp => "datestamp",
 };
 
 $c->{fields}->{preservation_plan} = [
-	{ name=>"planid", type=>"counter", required=>1, can_clone=>0, sql_counter=>"planid" },
-	{ name=>"format", type=>"text", required=>0, },
-	{ name=>"plan_type", type=>"text", required=>0, },
-	{ name=>"migration_action", type=>"text", required=>0, },
-	{ name=>"file_path", type => "longtext", required=>0, },
-	{ name=>"import_date", type => "time", },
-	{ name=>"relation", type=>"compound", multiple=>1,
-		fields => [
-		{
-			sub_name => "type",
-			type => "text",
-		},
-		{
-			sub_name => "uri",
-			type => "text",
-		},
-		],
-	},
+  { name=>"planid", type=>"counter", required=>1, can_clone=>0, sql_counter=>"planid" },
+  { name=>"format", type=>"text", required=>0, },
+  { name=>"plan_type", type=>"text", required=>0, },
+  { name=>"migration_action", type=>"text", required=>0, },
+  { name=>"file_path", type => "longtext", required=>0, },
+  { name=>"import_date", type => "time", },
+  { name=>"relation", type=>"compound", multiple=>1,
+    fields => [
+    {
+      sub_name => "type",
+      type => "text",
+    },
+    {
+      sub_name => "uri",
+      type => "text",
+    },
+    ],
+  },
 ];
 
 {
@@ -153,7 +153,7 @@ sub new
 
 sub get_dataset_id
 {
-	my ($self) = @_;
+  my ($self) = @_;
         return "preservation_plan";
 }
 

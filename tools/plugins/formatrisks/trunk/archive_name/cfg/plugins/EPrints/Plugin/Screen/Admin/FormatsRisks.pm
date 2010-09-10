@@ -26,7 +26,7 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 	
-	$self->{actions} = [qw/ formats_risks handle_upload get_plan delete_plan_docs classify_repo reset_scan/]; 
+	$self->{actions} = [qw/ formats_risks handle_upload get_plan delete_plan_docs classify_repo reset_scan recount/]; 
 		
 	$self->{appears} = [
 		{ 
@@ -178,6 +178,7 @@ sub render
 	}
 
 	my $file = $session->get_repository->get_conf( "archiveroot" ) . "/html/en/droid_classification_ajax.xml";
+	
 	my $show_status;
 	my $line;
 	if ( -e $file ) {
@@ -281,7 +282,20 @@ sub render
 	
 	my $screen_id = "Screen::".$plugin->{processor}->{screenid};
         my $screen = $plugin->{session}->plugin( $screen_id, processor => $plugin->{processor} );
-	
+
+		
+	my $buttons_div = $plugin->{session}->make_element(
+			"div",
+			align => "center",
+			);
+	my $recount_button = $screen->render_action_button({
+                        action => "recount",
+                        screen => $screen,
+                        screen_id => $screen_id,
+        });
+	$buttons_div->appendChild($recount_button);
+	$inner_panel->appendChild( $buttons_div );
+
 	if ($show_status > 0) 
 	{	
 		my $status_dom = $plugin->{session}->make_doc_fragment();
@@ -291,7 +305,7 @@ sub render
 	                        "div",
 	                        id => "status");
 		
-		my $buttons_div = $plugin->{session}->make_element(
+		$buttons_div = $plugin->{session}->make_element(
                                 "div",
                                 align => "left",
 				style => "padding-left: 1em;"
@@ -331,6 +345,20 @@ sub render
 	$html->appendChild( $inner_panel );
 	
 	$html->appendChild( $plugin->render_hide_script );
+	
+	if ( -e $file ) {
+		my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks) = stat($file);
+		use POSIX qw/strftime/;
+		#my $time = strftime("%a %d %b %Y %H:%M:%S %z",$ctime);
+		my $time = strftime "%a %b %e %H:%M:%S %Y", localtime($ctime);
+		my $changed_div = $plugin->{session}->make_element(
+                                "div",
+                                align => "right"
+                                );
+		$changed_div->appendChild($plugin->html_phrase("last_changed"));
+		$changed_div->appendChild($plugin->{session}->make_text($time));
+		$html->appendChild($changed_div);
+	}
 	
 	return $html;
 }
@@ -442,27 +470,26 @@ sub get_format_risks_table {
 
 		if ($format eq "Unclassified" || $format eq "UNKNOWN" ) {
 			$format_table = $red_format_table;
-			$red_count = $red_count + 1;
 			$color = "red";
 		} elsif ($result < 1) {
 			$format_table = $blue_format_table;
-			$blue_count = $blue_count + 1;
+			#$blue_count = $blue_count + 1;
 			$color = "blue";
 		} elsif ($result <= $high_risk_boundary) {
 			$format_table = $red_format_table;
-			$red_count = $red_count + 1;
+			#$red_count = $red_count + 1;
 			$color = "red";
 		} elsif ($result > $high_risk_boundary && $result <= $medium_risk_boundary) {
 			$format_table = $orange_format_table;
-			$orange_count = $orange_count + 1;
+			#$orange_count = $orange_count + 1;
 			$color = "orange";
 		} elsif ($result > $medium_risk_boundary) {
 			$format_table = $green_format_table;
-			$green_count = $green_count + 1;
+			#$green_count = $green_count + 1;
 			$color = "green";
 		} else {
 			$format_table = $blue_format_table;
-			$blue_count = $blue_count + 1;
+			#$blue_count = $blue_count + 1;
 			$color = "blue";
 		}
 	
@@ -482,7 +509,6 @@ sub get_format_risks_table {
 
 		my $search_format;	
 		if ($format eq "Unclassified") {
-			$classified = 0;
 			$search_format = "";
 		} else {
 			$search_format = $format;
@@ -498,16 +524,26 @@ sub get_format_risks_table {
 		{
 			($other_row,$format_count) = $plugin->get_detail_row($search_format,$format,0);
 			($migrated_row,$migrated_count) = $plugin->get_detail_row($search_format,$format,1);
-			if ($format_count > 0) {
+			if ($format eq "Unclassified" && $format_count > 0) {
+				$classified = 0;
+			}
+			if ($result <= $high_risk_boundary && $format_count > 0) {
 				$red_count++;
+			} elsif ($result <= $medium_risk_boundary && $format_count > 0) {
+				$orange_count++;
 			}
 			if ($migrated_count > 0) {
-				$red_count--;
 				$green_count++;
 			}
 		} else {
 			$format_count = $count;
+			if ($format_count > 0 && $color eq "blue") {
+				$blue_count++;
+			} elsif ($format_count > 0) {
+				$green_count++;
+			}
 		}
+		#print STDERR "COUNTS $green_count, $orange_count, $red_count, $blue_count\n\n";
 		my $format_panel_tr = $plugin->get_format_panel($format_name,$format,$format_version,$format_count,$max_count,$max_width,$color,$result,$medium_risk_boundary,0);
 		if ($format_count > 0) {
 			$format_table->appendChild( $format_panel_tr );
@@ -548,7 +584,6 @@ sub get_format_risks_table {
 	$orange_content_div->appendChild($orange_format_table);
 	$red_content_div->appendChild($red_format_table);
 	$blue_content_div->appendChild($blue_format_table);
-	#$unclassified_orange_content_div->appendChild($unclassified_orange_format_table);
 	if ($green_count > 0 || $orange_count > 0 || $red_count > 0) {
 		$green->appendChild( $green_content_div );
 		$orange->appendChild( $orange_content_div );
@@ -841,7 +876,7 @@ sub get_format_panel {
 
 ## PLUS MINUS
 
-	if ($result <= $medium_risk_boundary && !($color eq "blue") && !($format eq "Unclassified")) 
+	if ($result <= $medium_risk_boundary && !($color eq "blue") && !($format eq "Unclassified") && $migrated eq 0) 
 	{
 		$format_details_td->appendChild ( 
 				$plugin->render_plus_and_minus_buttons( $format,$migrated ) );
@@ -906,11 +941,12 @@ sub get_detail_row {
 		],
 	);
 
-	if (!($search_format eq "")) {
+	if (!($search_format eq "") && $migrated eq 0) {
 		$list->map( sub { 
 			my $file = $_[2];	
 			my $fileid = $file->get_id;
 			my $document = $file->get_parent();
+			return unless valid_document( $document );
 			my $eprint = $document->get_parent();
 			my $eprint_id = $eprint->get_value( "eprintid" );
 			my $user = $eprint->get_user();
@@ -940,14 +976,40 @@ sub get_detail_row {
 		$inner_table->appendChild( $inner_row );
 		$other_column->appendChild( $inner_table );
 		$other_row->appendChild( $other_column );
+	} else {
+		$list->map( sub { 
+			my $file = $_[2];	
+			my $fileid = $file->get_id;
+			my $document = $file->get_parent();
+			return unless valid_document( $document );
+			if ((!($document->has_related_objects( EPrints::Utils::make_relation( "hasMigratedVersion" )))) && $migrated < 1) {
+				$format_count++;
+			} elsif (($document->has_related_objects( EPrints::Utils::make_relation( "hasMigratedVersion" ))) && $migrated > 0) {
+				$format_count++;
+			}
+		});
 	}
 
-	if (!defined $format_count && $migrated < 1) {
-		$format_count = $list->count;
-	}
-	
 	return ($other_row, $format_count);
 
+}
+
+
+sub valid_document
+{
+	my ( $document ) = @_;
+
+	return undef unless $document;
+	my $eprint = $document->get_parent();
+	return undef unless $eprint;
+	my $eprint_status = $eprint->get_value('eprint_status');
+	return undef unless ($eprint_status eq "buffer" or $eprint_status eq "archive");
+	return undef if ($document->has_related_objects( EPrints::Utils::make_relation( "issmallThumbnailVersionOf" )));
+	return undef if ($document->has_related_objects( EPrints::Utils::make_relation( "ismediumThumbnailVersionOf" )));
+	return undef if ($document->has_related_objects( EPrints::Utils::make_relation( "ispreviewThumbnailVersionOf" )));
+	return undef if ($document->has_related_objects( EPrints::Utils::make_relation( "isIndexCodesVersionOf" )));
+	
+	return 1;
 }
 
 sub render_plus_and_minus_buttons {
@@ -1344,7 +1406,8 @@ sub in_use
 
 sub allow_delete_plan_docs {
 	my ( $self ) = @_;
-	return 1;
+
+	return $self->allow( "config/view" );	
 }
 
 sub action_delete_plan_docs {
@@ -1367,12 +1430,42 @@ sub action_delete_plan_docs {
 			$self->html_phrase( "delete_plan_docs_success" )
 			);
 	$self->{processor}->{screenid} = "Admin::FormatsRisks";
-
+	
 }
 
-sub allow_handle_upload {
+sub allow_recount 
+{
 	my ( $self ) = @_;
-	return 1;
+	
+	return $self->allow( "config/view" );	
+}
+
+sub action_recount 
+{
+	my ( $self ) = @_;
+	my $session = $self->{session};
+
+	$session->dataset( "event_queue" )->create_dataobj({
+			pluginid => "Event::Update_Pronom_PUIDS",
+			action => "finalise",
+			userid => $session->current_user(),
+			});
+
+	$self->{processor}->add_message(
+			"message",
+			$self->html_phrase( "recount_success" )
+			);
+	$self->{processor}->{screenid} = "Admin::FormatsRisks";
+
+		
+		
+}
+
+sub allow_handle_upload 
+{
+	my ( $self ) = @_;
+	
+	return $self->allow( "config/view" );	
 }
 
 sub action_handle_upload
@@ -1557,11 +1650,11 @@ sub get_user_files
 	return $user_format_count_table;	
 }
 
-sub redirect_to_me_url
-{
-	my( $plugin ) = @_;
-
-	return undef;
-}
+#sub redirect_to_me_url
+#{
+#	my( $plugin ) = @_;
+#
+#	return undef;
+#}
 
 1;
