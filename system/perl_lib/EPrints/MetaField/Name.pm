@@ -210,8 +210,8 @@ sub form_value_basic
 	my $data = {};
 	foreach( @PARTS )
 	{
-		$data->{$_} = 
-			$session->param( $basename."_".$_ );
+		$data->{$_} = $session->param( $basename."_".$_ );
+		$data->{$_} = '' if !defined $data->{$_};
 	}
 
 	unless( EPrints::Utils::is_set( $data ) )
