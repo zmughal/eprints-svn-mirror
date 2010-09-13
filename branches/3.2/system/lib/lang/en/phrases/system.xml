@@ -983,6 +983,10 @@ Phrases related to the Manage Metadata Fields tool.
 	<epp:phrase id="metapage_title_settings">Properties</epp:phrase>
 	<epp:phrase id="metapage_title_sub_fields">Sub-Fields</epp:phrase>
 	<epp:phrase id="metapage_title_phrases">Phrases</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Workflow:metafield:type_stage:title">Type</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Workflow:metafield:settings_stage:title">Settings</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Workflow:metafield:phrases_stage:title">Phrases</epp:phrase>
+	<epp:phrase id="Plugin/Screen/Workflow:metafield:commit_stage:title">Commit</epp:phrase>
     <epp:phrase id="Plugin/Screen/MetaField/Commit:commit_help">
 <p>Note: For this to work the web server must have write access to the var, phrases and workflow directories for this repository.</p>
 
@@ -1291,6 +1295,7 @@ For more information see <a href="http://eprints.org/d/?keyword=MetaFields">Meta
 <epp:phrase id="validate:unknown_datasetid">Unspecified or unknown dataset id "<epc:pin name="datasetid"/>" given</epp:phrase>
 <epp:phrase id="validate:missing_property">Missing required property "<epc:pin name="property"/>"</epp:phrase>
 <epp:phrase id="validate:secret_mismatch">Check that you have entered the same secret twice.</epp:phrase>
+<epp:phrase id="validate:missing_type">Missing required property: Type</epp:phrase>
 
 <epp:phrase id="metafield_fieldname_mfdatasetid">Parent Dataset</epp:phrase>
 <epp:phrase id="metafield_fieldname_mfstatus">Field Status</epp:phrase>
@@ -3718,6 +3723,7 @@ Each file inside this archive will be created as an <b>individual</b> document i
     <epp:phrase id="metapage_title_abstract">Abstract</epp:phrase>
     <epp:phrase id="metapage_title_subjects">Subjects</epp:phrase>
     <epp:phrase id="metapage_title_notes">Extras</epp:phrase>
+    <epp:phrase id="metapage_title_local">Custom</epp:phrase>
 
     <epp:phrase id="Plugin/Screen/Listing:title">View</epp:phrase>
     <epp:phrase id="Plugin/Screen/Listing:page_title">Manage <epc:pin name="dataset" /></epp:phrase>
