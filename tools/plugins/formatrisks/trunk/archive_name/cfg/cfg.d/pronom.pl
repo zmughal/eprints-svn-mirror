@@ -44,13 +44,13 @@ $c->{"high_risk_boundary"} = 1000;
 $c->{"medium_risk_boundary"} = 2000;
 
 # Option to enable preservation plans to be executed on your repository by EPrints, this is off as there is some error handling missing.
-$c->{"enable_preservation_actions"} = 1;
+$c->{"enable_preservation_actions"} = 0;
 
 # Option to enable interface buttons to manually start classification scans, normally this process would just be controlled by a cron job.
-$c->{"allow_droid_classification_control"} = 1;
+$c->{"allow_droid_classification_control"} = 0;
 
 # Option to use unstable version of PRONOM registry or proxy. This is mainly used in pre-release testing, leave as 0 to use actual pronom release.
-$c->{"pronom_unstable"} = 1;
+$c->{"pronom_unstable"} = 0;
 
 ### END OF CONFIGURATION ###
 
