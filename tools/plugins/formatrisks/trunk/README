@@ -1,4 +1,5 @@
 Pre-Requisits
+=============
 
     * EPrints 3.2 or greater! You need the new File object which is a core part of >=3.2. 
 
@@ -16,8 +17,10 @@ Pre-Requisits
     * The following perl modules
           o XML::Parser::PerlSAX 
           o SOAP::Lite 
+          o Async 
 
 Installing
+==========
 
 1) Install java and DROID
 
@@ -28,8 +31,22 @@ Installing
  bin/epadmin update_database_structure 
 
 Running
+=======
 
 To run simply execute the update_pronom_puids tool, this should be scheduled to run regularly.
 
  cd myarchive/bin
  perl update_pronom_puids archive_name
+
+Doing the Exercises
+===================
+
+In order to do the exercises the following three configuration values need to be set in archive_name/cfg/cfg.d/pronom.pl.
+These already exist however need to be set up as follows for the exercises to make sense. 
+
+$c->{"enable_preservation_actions"} = 1;
+
+$c->{"allow_droid_classification_control"} = 1;
+
+$c->{"pronom_unstable"} = 0;
+
