@@ -347,6 +347,8 @@ sub update_risk_scores
 				else 
 				{
 					print STDERR ("Format Risk Analysis Failed for format ".$format.": \n" . $soap_error . "\n");
+					$record->set_value("risk_score",0);
+					$record->commit;
 				}
 				}
 
