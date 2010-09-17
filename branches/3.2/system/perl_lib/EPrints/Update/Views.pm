@@ -956,7 +956,7 @@ sub render_menu
 		$f->appendChild( $add_ul );	
 	}
 
-	my $ds = $session->dataset( $view->{dataset} );
+	my $ds = $session->dataset( "archive" );
 
 	for( my $i=0; $i<@{$values}; ++$i )
 	{
