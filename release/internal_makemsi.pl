@@ -52,7 +52,7 @@ our $CYEAR = (gmtime())[5] + 1900;
 our $MEDIA_CAB = "eprints.cab";
 our $BASE_PATH = "C:/eprints";
 
-if( $PRODUCT_VERSION =~ /\-r(\d+)/ )
+if( $package_version =~ /\-r(\d+)/ )
 {
 	$PRODUCT_VERSION = "1.0.$1";
 }
