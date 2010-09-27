@@ -156,6 +156,12 @@ $Product->appendChild( $Property );
 $Property->setAttribute( Id => 'DiskPrompt' );
 $Property->setAttribute( Value => "$PRODUCT_NAME Installer [1]" );
 }
+{
+my $Property = $doc->createElement( 'Property' );
+$Product->appendChild( $Property );
+$Property->setAttribute( Id => 'WIXUI_INSTALLDIR' );
+$Property->setAttribute( Value => "INSTALLDIR" );
+}
 
 my $TARGETDIR = $doc->createElement( 'Directory' );
 $Product->appendChild( $TARGETDIR );
@@ -178,7 +184,7 @@ $Feature->setAttribute( Display => 'expand' );
 {
 my $UIRef = $doc->createElement( 'UIRef' );
 $Product->appendChild( $UIRef );
-$UIRef->setAttribute( Id => 'WixUI_Minimal' );
+$UIRef->setAttribute( Id => 'WixUI_InstallDir' );
 }
 
 {
