@@ -85,7 +85,6 @@ for(qw( bin ))
 
 {
 my $SystemSettings = {
-	base_path => $BASE_PATH,
 	version => $PRODUCT_NAME,
 };
 
