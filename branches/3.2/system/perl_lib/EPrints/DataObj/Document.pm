@@ -173,10 +173,12 @@ sub get_system_field_info
 				{
 					sub_name => "type",
 					type => "text",
+					text_index => 0,
 				},
 				{
 					sub_name => "uri",
 					type => "text",
+					text_index => 0,
 				},
 			],
 		},
