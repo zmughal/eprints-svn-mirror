@@ -2167,14 +2167,6 @@ sub render_search_input
 			value => $searchfield->get_value,
 			size => $self->get_property( "search_cols" ),
 			maxlength => 256 ) );
-	my $match = $searchfield->get_match;
-	if( defined $match && $match ne $self->default_web_search_match_code )
-	{
-		$frag->appendChild(
-			$session->xhtml->input_field( 
-				$searchfield->get_form_prefix."_match",
-				$match ) );
-	}
 	return $frag;
 }
 
