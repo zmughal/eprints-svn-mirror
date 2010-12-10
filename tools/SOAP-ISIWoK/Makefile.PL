@@ -7,7 +7,6 @@ WriteMakefile(
     VERSION_FROM      => 'lib/SOAP/ISIWoK.pm', # finds $VERSION
     PREREQ_PM         => {
 		"SOAP::Lite" => 0.01,
-		"XML::Simple" => 0.01,
 		"XML::LibXML" => 0.01,
 		}, # e.g., Module::Name => 1.1
     ($] >= 5.005 ?     ## Add these new keywords supported since 5.005

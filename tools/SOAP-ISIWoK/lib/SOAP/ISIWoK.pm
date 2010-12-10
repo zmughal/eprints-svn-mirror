@@ -276,7 +276,7 @@ use Exporter;
 use 5.008;
 use strict;
 
-our $VERSION = '1.02';
+our $VERSION = '1.03';
 
 our $ISI_ENDPOINT = "http://wok-ws.isiknowledge.com/esti/soap/SearchRetrieve";
 our $ISI_NS = "http://esti.isinet.com/soap/search";
@@ -374,11 +374,15 @@ SOAP::ISIWoK - search and query the ISI Web of Knowledge
   my $results = $wok->search( "AU = (Brody)" );
   my $results = $wok->search( "AU = (Brody)", offset => 10, max => 20 );
 
-  print $results->[0]->{title};
+  print $results->toString;
 
 =head1 DESCRIPTION
 
 This module is a thin wrapper for the ISI Web of Knowledge SOAP interface.
+
+It takes a search description and returns the resulting XML response from ISI as a L<XML::LibXML> document. Parsing the search result is outside of the scope of this module.
+
+To access the ISI WoK interface you will need a subscription to ISI WoK and arrange for access to their Web services server (you'll need to talk to your ISI representative).
 
 =head1 ISI QUERY FORMAT
 
@@ -441,6 +445,10 @@ None by default.
 
 =over 8
 
+=item 1.03
+
+Fixed some issues in the POD.
+
 =item 0.01
 
 Original version; created by h2xs 1.23 with options
@@ -465,11 +473,11 @@ L<SOAP::Lite>, http://www.isiknowledge.com/
 
 =head1 AUTHOR
 
-Timothy D Brody, E<lt>tdb2@ecs.soton.ac.uk<gt>
+Timothy D Brody, E<lt>tdb2@ecs.soton.ac.ukE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2010 by Tim D Brody
+Copyright (C) 2010 by Tim D Brody, University of Southampton, UK
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.8 or,

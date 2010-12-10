@@ -125,7 +125,7 @@ __END__
 
 =head1 NAME
 
-SOAP::ISIWoK - search and query the ISI Web of Knowledge
+SOAP::ISIWoK::Lite - search and query the ISI Web of Knowledge
 
 =head1 SYNOPSIS
 
@@ -150,7 +150,7 @@ L<SOAP::ISIWoK>, L<SOAP::Lite>, http://www.isiknowledge.com/
 
 =head1 AUTHOR
 
-Timothy D Brody, E<lt>tdb2@ecs.soton.ac.uk<gt>
+Timothy D Brody, E<lt>tdb2@ecs.soton.ac.ukE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 

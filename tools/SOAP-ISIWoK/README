@@ -17,7 +17,7 @@ DEPENDENCIES
 
 This module requires these other modules and libraries:
 
-  SOAP::Lite, XML::Simple
+  SOAP::Lite, XML::LibXML
 
 COPYRIGHT AND LICENCE
 
