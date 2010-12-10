@@ -276,7 +276,7 @@ use Exporter;
 use 5.008;
 use strict;
 
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 our $ISI_ENDPOINT = "http://wok-ws.isiknowledge.com/esti/soap/SearchRetrieve";
 our $ISI_NS = "http://esti.isinet.com/soap/search";
@@ -319,6 +319,7 @@ sub search
 	my $max = exists $opts{max} ? $opts{max} : 10;
 	my $database = exists $opts{database} ? $opts{database} : "WOS";
 	my $fields = exists $opts{fields} ? $opts{fields} : [qw( times_cited )];
+	my $sort = exists $opts{sort} ? $opts{sort} : "Relevance";
 
 	my $soap = $self->_soap();
 
@@ -331,7 +332,7 @@ sub search
 			# editions is SCI, SSCI etc.
 			SOAP::Data->name("editions")->value(""),
 			# sort by descending relevance
-			SOAP::Data->name("sort")->value("Relevance"),
+			SOAP::Data->name("sort")->value($sort),
 			# start returning records at 1
 			SOAP::Data->name("firstRec")->value("$offset"),
 			# return upto 10 records

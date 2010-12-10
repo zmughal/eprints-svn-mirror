@@ -69,13 +69,14 @@ sub search
 	my $max = exists $opts{max} ? $opts{max} : 10;
 	my $database = exists $opts{database} ? $opts{database} : "WOS";
 	my $fields = exists $opts{fields} ? $opts{fields} : [qw( times_cited )];
+	my $sort = exists $opts{sort} ? $opts{sort} : "Relevance";
 
 	my $doc = $self->_search_xml(
 		databaseID => $database,
 		query => $query,
 		depth => "",
 		editions => "",
-		'sort' => "Relevance",
+		'sort' => $sort,
 		firstRec => "$offset",
 		numRecs => "$max",
 		fields => "@$fields",
@@ -88,7 +89,7 @@ sub search
 	my $r = $self->{ua}->request( $req );
 	if( !$r->is_success )
 	{
-		Carp::croak( $r->status_line );
+		Carp::croak( soap_error( $r ) );
 	}
 
 	my %response;
@@ -117,6 +118,35 @@ sub search
 	}
 
 	return $rdoc;
+}
+
+sub soap_error
+{
+	my( $r ) = @_;
+
+	my $doc = eval { XML::LibXML->new->parse_string( $r->content ) };
+	if( $@ )
+	{
+		return $r->status_line . "\n" . $r->content;
+	}
+
+	my $response = XML::LibXML->new->parse_string( $r->content );
+	my $xpc = XML::LibXML::XPathContext->new( $response->documentElement );
+	$xpc->registerNs( soap => $SOAP_SCHEMA );
+	$xpc->registerNs( isi => $ISI_SCHEMA );
+
+	my( $faultcode ) = $xpc->findnodes('/soap:Envelope/soap:Body/soap:Fault/faultcode');
+	my( $faultstring ) = $xpc->findnodes('/soap:Envelope/soap:Body/soap:Fault/faultstring');
+
+	$faultcode = defined($faultcode) ? $faultcode->textContent : undef;
+	$faultstring = defined($faultstring) ? $faultstring->textContent : undef;
+
+	if( $faultcode )
+	{
+		return "Server reported $faultcode: $faultstring";
+	}
+
+	return $r->status_line . "\n" . $r->content;
 }
 
 1;
