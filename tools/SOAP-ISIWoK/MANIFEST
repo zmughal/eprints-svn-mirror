@@ -1,12 +1,14 @@
 bin/ep3.xsl
+bin/isi.pl
 bin/isi_sword.pl
 bin/isi_to_sword
+examples/dc.xsl
 examples/isi_carr.xml
 lib/SOAP/ISIWoK.pm
 lib/SOAP/ISIWoK/Lite.pm
 lib/SOAP/ISIWoK/Sword.pm
 Makefile.PL
-MANIFEST
+MANIFEST			This list of files
 MANIFEST.SKIP
 README
 t/01_live.t
