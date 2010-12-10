@@ -1,0 +1,1807 @@
+<?xml version="1.0"?>
+<RECORDS recordsFound="100">
+<REC inst_id="4" recid="150347485" hot="yes" sortkey="3119109852" timescited="8" sharedrefs="0" inpi="false">
+<item issue="150347426" recid="150347485" coverdate="200605" sortkey="3119109852" refkey="1349347" dbyear="2006">
+<ut>000237658400010</ut>
+<i_ckey>COLE1006060046JS</i_ckey>
+<i_cid>0110649447</i_cid>
+<source_title>JOURNAL OF CHEMICAL INFORMATION AND MODELING</source_title>
+<source_abbrev>J CHEM INF MODEL</source_abbrev>
+<item_title>An e-science environment for Service Crystallography - from submission to dissemination</item_title>
+<sq>C5742J0</sq>
+<bib_id>46 (3): 1006-1016 MAY 2006</bib_id>
+<article_nos count="1">
+<article_no>DOI 10.1021/ci050362w</article_no>
+</article_nos>
+<bib_pages begin="1006" end="1016" pages="11">1006-1016</bib_pages>
+<bib_issue year="2006" vol="46"/>
+<doctype code="@">Article</doctype>
+<editions full="SCI"/>
+<languages count="1">
+<primarylang code="EN">English</primarylang>
+</languages>
+<authors count="15">
+<primaryauthor>Coles, SJ</primaryauthor>
+<author key="2258463">Frey, JG</author>
+<author key="3196681">Hursthouse, MB</author>
+<author key="4177915">Light, ME</author>
+<author key="4758355">Milsted, AJ</author>
+<author key="1085713">Carr, LA</author>
+<author key="1670382">DeRoure, D</author>
+<author key="2718644">Gutteridge, CJ</author>
+<author key="4754361">Mills, HR</author>
+<author key="4639623">Meacham, KE</author>
+<author key="6781914">Surridge, M</author>
+<author key="4338643">Lyon, E</author>
+<author key="2913802">Heery, R</author>
+<author key="1838374">Duke, M</author>
+<author key="1580936">Day, M</author>
+</authors>
+<emails count="1">
+<email>
+<name>Coles, SJ</name>
+<email_addr>s.j.coles@soton.ac.uk</email_addr>
+</email>
+</emails>
+<keywords_plus count="2">
+<keyword>CRYSTAL-STRUCTURES</keyword>
+<keyword>DATABASE</keyword>
+</keywords_plus>
+<reprint>
+<rp_author>Coles, SJ</rp_author>
+<rp_address>Univ Southampton, Sch Chem, Southampton SO17 1BJ, Hants, England</rp_address>
+<rp_organization>Univ Southampton</rp_organization>
+<rp_suborganizations count="1">
+<rp_suborganization>Sch Chem</rp_suborganization>
+</rp_suborganizations>
+<rp_city>Southampton</rp_city>
+<rp_state>Hants</rp_state>
+<rp_country>England</rp_country>
+<rp_zips count="1">
+<rp_zip location="AC">SO17 1BJ</rp_zip>
+</rp_zips>
+</reprint>
+<research_addrs count="4">
+<research>
+<rs_address>Univ Southampton, Sch Chem, Southampton SO17 1BJ, Hants, England</rs_address>
+<rs_organization>Univ Southampton</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Sch Chem</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">SO17 1BJ</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address>Univ Southampton, Sch Elect &amp; Comp Sci, Southampton SO17 1BJ, Hants, England</rs_address>
+<rs_organization>Univ Southampton</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Sch Elect &amp; Comp Sci</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">SO17 1BJ</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address>Univ Southampton, IT Innovat Ctr, Southampton SO16 7NP, Hants, England</rs_address>
+<rs_organization>Univ Southampton</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>IT Innovat Ctr</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">SO16 7NP</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address>Univ Bath, UKOLN, Bath BA2 7AY, Avon, England</rs_address>
+<rs_organization>Univ Bath</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>UKOLN</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Bath</rs_city>
+<rs_state>Avon</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">BA2 7AY</rs_zip>
+</rs_zips>
+</research>
+</research_addrs>
+<abstract avail="Y" count="1">
+<p>The U. K. National Crystallography Service (NCS) has developed a prototype e-science infrastructure for the provision of a small molecule crystallography service from sample receipt to results dissemination. This paper outlines the two strands of this service, which ( a) enable a user to contribute in the conduction of an experiment and (b) provide an effective route for the archival and dissemination of the arising results. Access to use the NCS facilities and expertise and a mechanism to submit samples is granted through a secure Grid infrastructure, which seamlessly provides instantaneous feedback and the ability to remotely monitor and guide diffraction experiments and stage the diffraction data to a securely accessible location. Publication of all the data and results generated during the course of the experiment, from processed data to analyzed structures, is then enabled by means of an open access data repository. The repository publishes its content through established digital libraries' protocols, which enable harvester and aggregator services to make the data searchable and accessible.</p>
+</abstract>
+<refs count="31">
+<ref>150347486</ref>
+<ref>150347487</ref>
+<ref>150347488</ref>
+<ref>150347489</ref>
+<ref>150347490</ref>
+<ref>125223915</ref>
+<ref>136738866</ref>
+<ref>125223917</ref>
+<ref>150347491</ref>
+<ref>127958141</ref>
+<ref>150347492</ref>
+<ref>146784050</ref>
+<ref>125223913</ref>
+<ref>150347493</ref>
+<ref>146271792</ref>
+<ref>150347494</ref>
+<ref>150347495</ref>
+<ref>144188691</ref>
+<ref>136626502</ref>
+<ref>150347496</ref>
+<ref>150347497</ref>
+<ref>150347498</ref>
+<ref>150347499</ref>
+<ref>121068019</ref>
+<ref>130052591</ref>
+<ref>127716115</ref>
+<ref>150347500</ref>
+<ref>144410061</ref>
+<ref>144410062</ref>
+<ref>121666489</ref>
+<ref>125223930</ref>
+</refs>
+</item>
+</REC>
+
+<REC inst_id="1" recid="179660880" hot="yes" sortkey="3069115987" timescited="0" sharedrefs="0" inpi="false">
+<item issue="179660812" recid="179660880" coverdate="200905" sortkey="3069115987" refkey="7256192" dbyear="2009" dbweek="18">
+<ut>000265008400018</ut>
+<i_ckey>VERR0768090104AC</i_ckey>
+<i_cid>0127972157</i_cid>
+<source_title>ADDICTION</source_title>
+<source_abbrev>ADDICTION</source_abbrev>
+<item_title>Alcohol-related cirrhosis - early abstinence is a key factor in prognosis, even in the most severe cases</item_title>
+<sq>10115J0</sq>
+<bib_id>104 (5): 768-774 MAY 2009</bib_id>
+<article_nos count="1">
+<article_no>DOI 10.1111/j.1360-0443.2009.02521.x</article_no>
+</article_nos>
+<bib_pages begin="768" end="774" pages="7">768-774</bib_pages>
+<bib_issue year="2009" vol="104"/>
+<doctype code="@">Article</doctype>
+<editions full="SCI SSCI"/>
+<languages count="1">
+<primarylang code="EN">English</primarylang>
+</languages>
+<authors count="5">
+<primaryauthor>Verrill, C</primaryauthor>
+<fullauthorname>
+<AuRole>Author, Reprint Author</AuRole>
+<AuLastName>Verrill</AuLastName>
+<AuFirstName>Clare</AuFirstName>
+<address number="1">Univ Southampton, Dept Histopathol, Southampton Gen Hosp, Southampton SO16 6YD, Hants, England</address>
+<AuCollectiveName>Verrill, Clare</AuCollectiveName>
+</fullauthorname>
+<author key="4468908">Markham, H</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Markham</AuLastName>
+<AuFirstName>Hannah</AuFirstName>
+<address number="1">Univ Southampton, Dept Histopathol, Southampton Gen Hosp, Southampton SO16 6YD, Hants, England</address>
+<AuCollectiveName>Markham, Hannah</AuCollectiveName>
+</fullauthorname>
+<author key="6909532">Templeton, A</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Templeton</AuLastName>
+<AuFirstName>Alexa</AuFirstName>
+<address number="2">Univ Southampton, Liver Res Grp, Southampton Gen Hosp, Southampton SO16 6YD, Hants, England</address>
+<AuCollectiveName>Templeton, Alexa</AuCollectiveName>
+</fullauthorname>
+<author key="1085923">Carr, NJ</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Carr</AuLastName>
+<AuFirstName>Norman J.</AuFirstName>
+<address number="1">Univ Southampton, Dept Histopathol, Southampton Gen Hosp, Southampton SO16 6YD, Hants, England</address>
+<AuCollectiveName>Carr, Norman J.</AuCollectiveName>
+</fullauthorname>
+<author key="6377751">Sheron, N</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Sheron</AuLastName>
+<AuFirstName>Nick</AuFirstName>
+<address number="2">Univ Southampton, Liver Res Grp, Southampton Gen Hosp, Southampton SO16 6YD, Hants, England</address>
+<AuCollectiveName>Sheron, Nick</AuCollectiveName>
+</fullauthorname>
+</authors>
+<emails count="1">
+<email>
+<name>Verrill, C</name>
+<email_addr>clareverrill@hotmail.com</email_addr>
+</email>
+</emails>
+<keywords count="6">
+<keyword>Abstinence</keyword>
+<keyword>alcohol</keyword>
+<keyword>cirrhosis</keyword>
+<keyword>grading</keyword>
+<keyword>mortality</keyword>
+<keyword>pathology</keyword>
+</keywords>
+<keywords_plus count="10">
+<keyword>HISTOLOGICAL-HEMODYNAMIC CORRELATION</keyword>
+<keyword>NATURAL-HISTORY</keyword>
+<keyword>LIVER-CIRRHOSIS</keyword>
+<keyword>HEPATIC-FIBROSIS</keyword>
+<keyword>DECOMPENSATED CIRRHOSIS</keyword>
+<keyword>SURVIVAL</keyword>
+<keyword>DISEASE</keyword>
+<keyword>PREDNISOLONE</keyword>
+<keyword>VALIDATION</keyword>
+<keyword>CIRRHOTICS</keyword>
+</keywords_plus>
+<reprint>
+<rp_author>Verrill, C</rp_author>
+<rp_address>Univ Southampton, Dept Histopathol, Southampton Gen Hosp, Mailpoint 811,Tremona Rd, Southampton SO16 6YD, Hants, England</rp_address>
+<rp_organization>Univ Southampton</rp_organization>
+<rp_suborganizations count="2">
+<rp_suborganization>Dept Histopathol</rp_suborganization>
+<rp_suborganization>Southampton Gen Hosp</rp_suborganization>
+</rp_suborganizations>
+<rp_street>Mailpoint 811,Tremona Rd</rp_street>
+<rp_city>Southampton</rp_city>
+<rp_state>Hants</rp_state>
+<rp_country>England</rp_country>
+<rp_zips count="1">
+<rp_zip location="AC">SO16 6YD</rp_zip>
+</rp_zips>
+</reprint>
+<research_addrs count="2">
+<research>
+<rs_address number="1">Univ Southampton, Dept Histopathol, Southampton Gen Hosp, Southampton SO16 6YD, Hants, England</rs_address>
+<rs_organization>Univ Southampton</rs_organization>
+<rs_suborganizations count="2">
+<rs_suborganization>Dept Histopathol</rs_suborganization>
+<rs_suborganization>Southampton Gen Hosp</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">SO16 6YD</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address number="2">Univ Southampton, Liver Res Grp, Southampton Gen Hosp, Southampton SO16 6YD, Hants, England</rs_address>
+<rs_organization>Univ Southampton</rs_organization>
+<rs_suborganizations count="2">
+<rs_suborganization>Liver Res Grp</rs_suborganization>
+<rs_suborganization>Southampton Gen Hosp</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">SO16 6YD</rs_zip>
+</rs_zips>
+</research>
+</research_addrs>
+<abstract avail="Y" count="1">
+<p>Aims To determine the effect of pathological severity of cirrhosis on survival in patients with alcohol-related cirrhosis. Design Liver biopsies from 100 patients were scored for Laennec score of severity of cirrhosis, and medical notes were reviewed to determine various clinical factors, including drinking status. Up-to-date mortality data were obtained using the National Health Service Strategic Tracing Service. Setting Southampton General Hospital between 1 January 1995 and 31 December 2000. Participants A total of 100 consecutive patients with biopsy proven alcohol-induced liver cirrhosis. Measurements Laennec score of severity of cirrhosis and mortality. Findings Most surprisingly, the severity of cirrhosis on biopsy had little impact on survival; indeed, early death was more likely in patients with the least severe cirrhosis. Abstinence from alcohol at 1 month after diagnosis of cirrhosis was the more important factor determining survival with a 7-year survival of 72% for the abstinent patients versus 44% for the patients continuing to drink. Conclusions It is never too late to stop drinking, even with the most severe degrees of cirrhosis on biopsy. Early drinking status is the most important factor determining long-term survival in alcohol-related cirrhosis.</p>
+</abstract>
+<refs count="38">
+<ref>148135046</ref>
+<ref>133945918</ref>
+<ref>117939332</ref>
+<ref>126195047</ref>
+<ref>14992866</ref>
+<ref>148121349</ref>
+<ref>186258900</ref>
+<ref>186258901</ref>
+<ref>144584943</ref>
+<ref>65249891</ref>
+<ref>118450974</ref>
+<ref>78629561</ref>
+<ref>96081819</ref>
+<ref>148121313</ref>
+<ref>161614571</ref>
+<ref>72594210</ref>
+<ref>84043767</ref>
+<ref>134182458</ref>
+<ref>99739694</ref>
+<ref>128843762</ref>
+<ref>33006497</ref>
+<ref>128670355</ref>
+<ref>136427380</ref>
+<ref>59098597</ref>
+<ref>97358993</ref>
+<ref>42873999</ref>
+<ref>51048747</ref>
+<ref>83047160</ref>
+<ref>82758656</ref>
+<ref>88803294</ref>
+<ref>131548022</ref>
+<ref>50735028</ref>
+<ref>52579391</ref>
+<ref>61631072</ref>
+<ref>57022172</ref>
+<ref>97684366</ref>
+<ref>143572933</ref>
+<ref>146828433</ref>
+</refs>
+</item>
+</REC>
+
+<REC inst_id="22" recid="112710031" hot="yes" sortkey="3235202330" timescited="0" sharedrefs="0" inpi="false">
+<item issue="112709973" recid="112710031" coverdate="199910" sortkey="3235202330" refkey="1086231" dbyear="1999">
+<ut>000083920300025</ut>
+<i_ckey>CARR0161990044IT</i_ckey>
+<i_cid>0073595905</i_cid>
+<source_title>IMMUNOPHARMACOLOGY</source_title>
+<source_abbrev>IMMUNOPHARMACOLOGY</source_abbrev>
+<item_title>Culture of human renal tubular cells: positive selection of kallikrein-containing cells</item_title>
+<bib_id>44 (1-2): 161-167 OCT 15 1999</bib_id>
+<bib_pages begin="161" end="167" pages="7">161-167</bib_pages>
+<bib_issue year="1999" vol="44"/>
+<doctype code="P">Proceedings Paper</doctype>
+<editions full="ISTP SCI"/>
+<languages count="1">
+<primarylang code="EN">English</primarylang>
+</languages>
+<authors count="5">
+<primaryauthor>Carr, T</primaryauthor>
+<author key="2020280">Evans, P</author>
+<author key="1043548">Campbell, S</author>
+<author key="454664">Bass, P</author>
+<author key="92820">Albano, J</author>
+</authors>
+<keywords count="5">
+<keyword>human renal tubular cells</keyword>
+<keyword>tissue culture</keyword>
+<keyword>characterization</keyword>
+<keyword>kallikrein-kinin system</keyword>
+<keyword>magnetic activated cell sorting</keyword>
+</keywords>
+<keywords_plus count="7">
+<keyword>URINARY KALLIKREIN</keyword>
+<keyword>CYCLOSPORINE-A</keyword>
+<keyword>HUMAN NEPHRON</keyword>
+<keyword>HUMAN-KIDNEY</keyword>
+<keyword>HYPERTENSION</keyword>
+<keyword>EXPRESSION</keyword>
+<keyword>RAT</keyword>
+</keywords_plus>
+<reprint>
+<rp_author>Albano, J</rp_author>
+<rp_address>St Marys Hosp, Wessex Renal &amp; Transplant Unit, Portsmouth PO3 6AD, Hants, England</rp_address>
+<rp_organization>St Marys Hosp</rp_organization>
+<rp_suborganizations count="1">
+<rp_suborganization>Wessex Renal &amp; Transplant Unit</rp_suborganization>
+</rp_suborganizations>
+<rp_city>Portsmouth</rp_city>
+<rp_state>Hants</rp_state>
+<rp_country>England</rp_country>
+<rp_zips count="1">
+<rp_zip location="AC">PO3 6AD</rp_zip>
+</rp_zips>
+</reprint>
+<research_addrs count="4">
+<research>
+<rs_address>St Marys Hosp, Wessex Renal &amp; Transplant Unit, Portsmouth PO3 6AD, Hants, England</rs_address>
+<rs_organization>St Marys Hosp</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Wessex Renal &amp; Transplant Unit</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Portsmouth</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">PO3 6AD</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address>Univ Southampton, Southampton Gen Hosp, Dept Pathol, Southampton SO16 6YD, Hants, England</rs_address>
+<rs_organization>Univ Southampton</rs_organization>
+<rs_suborganizations count="2">
+<rs_suborganization>Southampton Gen Hosp</rs_suborganization>
+<rs_suborganization>Dept Pathol</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">SO16 6YD</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address>Southampton Gen Hosp, Reg Immunol Serv, Southampton SO16 6YD, Hants, England</rs_address>
+<rs_organization>Southampton Gen Hosp</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Reg Immunol Serv</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">SO16 6YD</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address>Univ Southampton, Southampton Gen Hosp, Dept Med, Southampton SO16 6YD, Hants, England</rs_address>
+<rs_organization>Univ Southampton</rs_organization>
+<rs_suborganizations count="2">
+<rs_suborganization>Southampton Gen Hosp</rs_suborganization>
+<rs_suborganization>Dept Med</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">SO16 6YD</rs_zip>
+</rs_zips>
+</research>
+</research_addrs>
+<abstract avail="Y" count="1">
+<p>Human renal tubular cells derived from nephrectomy specimens were maintained in culture and grown to confluence. Immunocytochemistry, using a panel of antibodies selected for their ability to bind to different cell types within the nephron, showed the cells to be predominantly of epithelial origin with no significant contamination by fibroblasts or cells of endothelial origin. Ten to thirty percent of the cells expressed the putative distal marker, epithelial membrane antigen (EMA), a finding confirmed by flow cytometry. Cells expressing EMA were positively selected from mixed cultures by magnetic activated cell sorting (MACS). Kallikrein activity, expressed as mU/10(6) cells, in the EMA +ve cells, was increased fourfold to sixfold when compared with that in the EMA -ve cells. Cultures of characterized human renal tubular cells and sub-populations enriched with distal cells should prove useful in studies of synthesis and release of parameters of the kallikrein kinin system (KKS) to physiological stimuli. Furthermore, a better understanding of the toxic effect on the KKS of clinically useful drugs, particularly those used for immunosuppression, may lead to therapeutic interventions to lessen unwanted effects. (C) 1999 Published by Elsevier Science B.V. All rights reserved.</p>
+</abstract>
+<conferences count="1">
+<conference>
+<conf_id>112916</conf_id>
+<conf_start>19981019</conf_start>
+<conf_end>19981024</conf_end>
+<conf_date>OCT 19-24, 1998</conf_date>
+<conf_title>15th International Conference on Kinins (Kinin 98)</conf_title>
+<conf_location>
+<conf_city>NARA</conf_city>
+<conf_state>JAPAN</conf_state>
+</conf_location>
+</conference>
+</conferences>
+<refs count="22">
+<ref>112710032</ref>
+<ref>79523988</ref>
+<ref>76035168</ref>
+<ref>61120811</ref>
+<ref>96315284</ref>
+<ref>76398456</ref>
+<ref>96315299</ref>
+<ref>60064737</ref>
+<ref>63105140</ref>
+<ref>66463535</ref>
+<ref>75544868</ref>
+<ref>49524568</ref>
+<ref>26342693</ref>
+<ref>80583221</ref>
+<ref>112710033</ref>
+<ref>112710034</ref>
+<ref>86390845</ref>
+<ref>112710035</ref>
+<ref>85935737</ref>
+<ref>112710036</ref>
+<ref>73338019</ref>
+<ref>66065973</ref>
+</refs>
+</item>
+</REC>
+
+<REC inst_id="22" recid="110634477" hot="yes" sortkey="3236277695" timescited="0" sharedrefs="0" inpi="false">
+<item issue="110634170" recid="110634477" coverdate="199906" sortkey="3236277695" refkey="1086233" dbyear="1999">
+<ut>000080500400201</ut>
+<i_ckey>CARR2590990055KT</i_ckey>
+<i_cid>0066044698</i_cid>
+<source_title>KIDNEY INTERNATIONAL</source_title>
+<source_abbrev>KIDNEY INT</source_abbrev>
+<item_title>Culture and characterisation of human renal distal tubular cells.</item_title>
+<bib_id>55 (6): 2590-2590 JUN 1999</bib_id>
+<bib_pages begin="2590" end="2590" pages="1">2590-2590</bib_pages>
+<bib_issue year="1999" vol="55"/>
+<doctype code="M">Meeting Abstract</doctype>
+<editions full="SCI"/>
+<languages count="1">
+<primarylang code="EN">English</primarylang>
+</languages>
+<authors count="6">
+<primaryauthor>Carr, T</primaryauthor>
+<author key="2020520">Evans, PR</author>
+<author key="92824">Albano, JDM</author>
+<author key="1043727">Campbell, SK</author>
+<author key="6920013">Terry, S</author>
+<author key="454668">Bass, P</author>
+</authors>
+<research_addrs count="4">
+<research>
+<rs_address>Univ Portsmouth, St Marys Hosp, Wessex Renal &amp; Transplant Unit, Portsmouth PO1 2UP, Hants, England</rs_address>
+<rs_organization>Univ Portsmouth</rs_organization>
+<rs_suborganizations count="2">
+<rs_suborganization>St Marys Hosp</rs_suborganization>
+<rs_suborganization>Wessex Renal &amp; Transplant Unit</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Portsmouth</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">PO1 2UP</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address>Southampton Gen Hosp, Dept Pathol, Southampton, Hants, England</rs_address>
+<rs_organization>Southampton Gen Hosp</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Dept Pathol</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+</research>
+<research>
+<rs_address>Southampton Gen Hosp, Dept Med, Southampton, Hants, England</rs_address>
+<rs_organization>Southampton Gen Hosp</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Dept Med</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+</research>
+<research>
+<rs_address>Southampton Gen Hosp, Reg Immunol Serv, Southampton, Hants, England</rs_address>
+<rs_organization>Southampton Gen Hosp</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Reg Immunol Serv</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+</research>
+</research_addrs>
+<abstract avail="N"/>
+<refs count="0"/>
+</item>
+</REC>
+
+<REC inst_id="23" recid="106750041" hot="yes" sortkey="3252822211" timescited="0" sharedrefs="0" inpi="false">
+<item issue="106749998" recid="106750041" coverdate="199800" sortkey="3252822211" refkey="1086233" dbyear="1998">
+<ut>000075727500043</ut>
+<i_ckey>CARRA 11980186JT</i_ckey>
+<i_cid>0060297728</i_cid>
+<source_title>JOURNAL OF PATHOLOGY</source_title>
+<source_abbrev>J PATHOL</source_abbrev>
+<item_title>Immuno-isolation and characterisation of cultured human renal tubular cells.</item_title>
+<bib_id>186: 11A-11A Suppl. S 1998</bib_id>
+<bib_pages begin="11A" end="11A" pages="1">11A-11A</bib_pages>
+<bib_issue year="1998" vol="186"/>
+<doctype code="M">Meeting Abstract</doctype>
+<editions full="SCI"/>
+<languages count="1">
+<primarylang code="EN">English</primarylang>
+</languages>
+<authors count="6">
+<primaryauthor>Carr, T</primaryauthor>
+<author key="2020518">Evans, PR</author>
+<author key="92824">Albano, JDM</author>
+<author key="1043727">Campbell, SK</author>
+<author key="6920013">Terry, S</author>
+<author key="454666">Bass, P</author>
+</authors>
+<research_addrs count="4">
+<research>
+<rs_address>St Marys Hosp, Wessex Renal &amp; Transplant Unit, Portsmouth PO3 6AQ, Hants, England</rs_address>
+<rs_organization>St Marys Hosp</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Wessex Renal &amp; Transplant Unit</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Portsmouth</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">PO3 6AQ</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address>Southampton Gen Hosp, Reg Immunol Serv, Southampton, Hants, England</rs_address>
+<rs_organization>Southampton Gen Hosp</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Reg Immunol Serv</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+</research>
+<research>
+<rs_address>Univ Southampton, Dept Pathol, Southampton SO9 5NH, Hants, England</rs_address>
+<rs_organization>Univ Southampton</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Dept Pathol</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">SO9 5NH</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address>Univ Southampton, Dept Med, Southampton SO9 5NH, Hants, England</rs_address>
+<rs_organization>Univ Southampton</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Dept Med</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">SO9 5NH</rs_zip>
+</rs_zips>
+</research>
+</research_addrs>
+<abstract avail="N"/>
+<refs count="0"/>
+</item>
+</REC>
+
+<REC inst_id="23" recid="106750129" hot="yes" sortkey="3252822299" timescited="0" sharedrefs="0" inpi="false">
+<item issue="106749998" recid="106750129" coverdate="199800" sortkey="3252822299" refkey="6920013" dbyear="1998">
+<ut>000075727500131</ut>
+<i_ckey>TERRA 33980186JS</i_ckey>
+<i_cid>0060297813</i_cid>
+<source_title>JOURNAL OF PATHOLOGY</source_title>
+<source_abbrev>J PATHOL</source_abbrev>
+<item_title>The presence and relevance of anti-endothelial cell antibodies (AECA) in adult and paediatric renal vasculitic diseases.</item_title>
+<bib_id>186: 33A-33A Suppl. S 1998</bib_id>
+<bib_pages begin="33A" end="33A" pages="1">33A-33A</bib_pages>
+<bib_issue year="1998" vol="186"/>
+<doctype code="M">Meeting Abstract</doctype>
+<editions full="SCI"/>
+<languages count="1">
+<primarylang code="EN">English</primarylang>
+</languages>
+<authors count="6">
+<primaryauthor>Terry, S</primaryauthor>
+<author key="2020518">Evans, PR</author>
+<author key="1086233">Carr, T</author>
+<author key="5921709">Rogerson, M</author>
+<author key="7345516">Waldron, M</author>
+<author key="454666">Bass, P</author>
+</authors>
+<research_addrs count="3">
+<research>
+<rs_address>Southampton Univ Hosp, Dept Pathol, Southampton, Hants, England</rs_address>
+<rs_organization>Southampton Univ Hosp</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Dept Pathol</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+</research>
+<research>
+<rs_address>Southampton Univ Hosp, Dept Immunol, Southampton, Hants, England</rs_address>
+<rs_organization>Southampton Univ Hosp</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Dept Immunol</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+</research>
+<research>
+<rs_address>Southampton Univ Hosp, Div Med &amp; Paediat Nephrol, Southampton, Hants, England</rs_address>
+<rs_organization>Southampton Univ Hosp</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Div Med &amp; Paediat Nephrol</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+</research>
+</research_addrs>
+<abstract avail="N"/>
+<refs count="0"/>
+</item>
+</REC>
+
+<REC inst_id="1" recid="185116915" hot="yes" sortkey="3067017503" timescited="0" sharedrefs="0" inpi="false">
+<item issue="185116877" recid="185116915" coverdate="200600" sortkey="3067017503" refkey="2986746" dbyear="2009">
+<ut>000272191900008</ut>
+<i_ckey>HEY 008906    EJ</i_ckey>
+<i_cid>0131606433</i_cid>
+<source_title>ENABLING INTERACTION AND QUALITY: BEYOND THE HANSEATIC LEAGUE</source_title>
+<item_title>Leveraging the Institutional Research Repository: harnessing the drive for quality assessment</item_title>
+<sq>D6747B0</sq>
+<bib_id>: 89-98 2006</bib_id>
+<bib_pages begin="89" end="98" pages="10">89-98</bib_pages>
+<bib_issue year="2006"/>
+<doctype code="P">Proceedings Paper</doctype>
+<editions full="ISTP"/>
+<languages count="1">
+<primarylang code="EN">English</primarylang>
+</languages>
+<authors count="3">
+<primaryauthor>Hey, JMN</primaryauthor>
+<fullauthorname>
+<AuRole>Author, Reprint Author</AuRole>
+<AuLastName>Hey</AuLastName>
+<AuFirstName>Jessie M. N.</AuFirstName>
+<address number="1">Univ Southampton, Sch Elect &amp; Comp Sci, Multimedia Grp, Southampton SO17 1BJ, Hants, England</address>
+<AuCollectiveName>Hey, Jessie M. N.</AuCollectiveName>
+</fullauthorname>
+<author key="1085711">Carr, LA</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Carr</AuLastName>
+<AuFirstName>Leslie A.</AuFirstName>
+<AuCollectiveName>Carr, Leslie A.</AuCollectiveName>
+</fullauthorname>
+<author key="6463035">Simpson, P</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Simpson</AuLastName>
+<AuFirstName>Pauline</AuFirstName>
+<AuCollectiveName>Simpson, Pauline</AuCollectiveName>
+</fullauthorname>
+</authors>
+<reprint>
+<rp_author>Hey, JMN</rp_author>
+<rp_address>Univ Southampton, Sch Elect &amp; Comp Sci, Multimedia Grp, Southampton SO17 1BJ, Hants, England</rp_address>
+<rp_organization>Univ Southampton</rp_organization>
+<rp_suborganizations count="2">
+<rp_suborganization>Sch Elect &amp; Comp Sci</rp_suborganization>
+<rp_suborganization>Multimedia Grp</rp_suborganization>
+</rp_suborganizations>
+<rp_city>Southampton</rp_city>
+<rp_state>Hants</rp_state>
+<rp_country>England</rp_country>
+<rp_zips count="1">
+<rp_zip location="AC">SO17 1BJ</rp_zip>
+</rp_zips>
+</reprint>
+<research_addrs count="1">
+<research>
+<rs_address number="1">Univ Southampton, Sch Elect &amp; Comp Sci, Multimedia Grp, Southampton SO17 1BJ, Hants, England</rs_address>
+<rs_organization>Univ Southampton</rs_organization>
+<rs_suborganizations count="2">
+<rs_suborganization>Sch Elect &amp; Comp Sci</rs_suborganization>
+<rs_suborganization>Multimedia Grp</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">SO17 1BJ</rs_zip>
+</rs_zips>
+</research>
+</research_addrs>
+<abstract avail="Y" count="1">
+<p>There is great momentum in the movement to build institutional repositories. The opportunity they give to showcase the outputs of the institution in exciting new ways is now being taken seriously in many countries. In the TARDis project at the University of Southampton in the UK we explored the complex intersection of the institutional repository and the Open Access movement as we developed the framework for a research repository grounded in the needs of the institution. This repository will grow to represent the diverse cultures of a large multidisciplinary university. We now examine the practical issues and preliminary steps taken, in conjunction with the EPrints software, as we add a new "quality" interaction with research assessment.</p>
+</abstract>
+<refs count="12">
+<ref>185116916</ref>
+<ref>185116917</ref>
+<ref>184813558</ref>
+<ref>185116918</ref>
+<ref>153851982</ref>
+<ref>185116919</ref>
+<ref>185116920</ref>
+<ref>153832562</ref>
+<ref>185116921</ref>
+<ref>185116922</ref>
+<ref>185116923</ref>
+<ref>153851985</ref>
+</refs>
+<book_pages>248</book_pages>
+<book_chapters>27</book_chapters>
+<book_notes count="2">
+<book_note>Figures</book_note>
+<book_note>Plates</book_note>
+</book_notes>
+<book_editors count="2">
+<book_editor>Asserson, AGS</book_editor>
+<book_editor>Simons, EJ</book_editor>
+</book_editors>
+<book_desc>
+<bk_binding>S</bk_binding>
+<isbn>978-90-5867-536-1</isbn>
+<bk_publisher>LEUVEN UNIV PRESS-PRESSES UNIV LOUVAIN, UNIV PERS LEUVEN BLIJDE-INKOMSTSTRAAT 5, LEUVEN, B-3000, BELGIUM</bk_publisher>
+<bk_prepay>N</bk_prepay>
+</book_desc>
+<conferences count="1">
+<conference>
+<conf_id>261881</conf_id>
+<conf_start>20060511</conf_start>
+<conf_end>20060513</conf_end>
+<conf_date>MAY 11-13, 2006</conf_date>
+<conf_title>8th International Conference on Current Reseach Information Systems</conf_title>
+<conf_location>
+<conf_city>Bergen</conf_city>
+<conf_state>NORWAY</conf_state>
+</conf_location>
+</conference>
+</conferences>
+</item>
+</REC>
+
+<REC inst_id="1" recid="184593129" hot="yes" sortkey="3067261601" timescited="0" sharedrefs="0" inpi="false">
+<item issue="184593111" recid="184593129" coverdate="200911" sortkey="3067261601" refkey="3936194" dbyear="2009">
+<ut>000271376300010</ut>
+<i_ckey>0000000002570233</i_ckey>
+<i_cid>0131167619</i_cid>
+<source_title>JOURNAL OF MEDICAL GENETICS</source_title>
+<source_abbrev>J MED GENET</source_abbrev>
+<item_title>Large scale calcium channel gene rearrangements in episodic ataxia and hemiplegic migraine: implications for diagnostic testing</item_title>
+<sq>57596J0</sq>
+<bib_id>46 (11): 786-791 NOV 2009</bib_id>
+<article_nos count="1">
+<article_no>DOI 10.1136/jmg.2009.067967</article_no>
+</article_nos>
+<bib_pages begin="786" end="791" pages="6">786-791</bib_pages>
+<bib_issue year="2009" vol="46"/>
+<doctype code="@">Article</doctype>
+<editions full="SCI"/>
+<languages count="1">
+<primarylang code="EN">English</primarylang>
+</languages>
+<authors count="18">
+<primaryauthor>Labrum, RW</primaryauthor>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Labrum</AuLastName>
+<AuFirstName>R. W.</AuFirstName>
+<address number="1">UCL, Inst Neurol, Ctr Neuromuscular Dis, MRC, London WC1N 3BG, England</address>
+<address number="2">UCL, Inst Neurol, Neurogenet Unit, London WC1N 3BG, England</address>
+<AuCollectiveName>Labrum, R. W.</AuCollectiveName>
+</fullauthorname>
+<author key="5709684">Rajakulendran, S</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Rajakulendran</AuLastName>
+<AuFirstName>S.</AuFirstName>
+<address number="1">UCL, Inst Neurol, Ctr Neuromuscular Dis, MRC, London WC1N 3BG, England</address>
+<address number="2">UCL, Inst Neurol, Neurogenet Unit, London WC1N 3BG, England</address>
+<AuCollectiveName>Rajakulendran, S.</AuCollectiveName>
+</fullauthorname>
+<author key="2604381">Graves, TD</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Graves</AuLastName>
+<AuFirstName>T. D.</AuFirstName>
+<address number="1">UCL, Inst Neurol, Ctr Neuromuscular Dis, MRC, London WC1N 3BG, England</address>
+<address number="2">UCL, Inst Neurol, Neurogenet Unit, London WC1N 3BG, England</address>
+<AuCollectiveName>Graves, T. D.</AuCollectiveName>
+</fullauthorname>
+<author key="2012676">Eunson, LH</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Eunson</AuLastName>
+<AuFirstName>L. H.</AuFirstName>
+<address number="3">Univ Essex, Dept Biol Sci, Colchester CO4 3SQ, Essex, England</address>
+<AuCollectiveName>Eunson, L. H.</AuCollectiveName>
+</fullauthorname>
+<author key="616997">Bevan, R</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Bevan</AuLastName>
+<AuFirstName>R.</AuFirstName>
+<address number="1">UCL, Inst Neurol, Ctr Neuromuscular Dis, MRC, London WC1N 3BG, England</address>
+<address number="2">UCL, Inst Neurol, Neurogenet Unit, London WC1N 3BG, England</address>
+<AuCollectiveName>Bevan, R.</AuCollectiveName>
+</fullauthorname>
+<author key="6804277">Sweeney, MG</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Sweeney</AuLastName>
+<AuFirstName>M. G.</AuFirstName>
+<address number="1">UCL, Inst Neurol, Ctr Neuromuscular Dis, MRC, London WC1N 3BG, England</address>
+<address number="2">UCL, Inst Neurol, Neurogenet Unit, London WC1N 3BG, England</address>
+<AuCollectiveName>Sweeney, M. G.</AuCollectiveName>
+</fullauthorname>
+<author key="2782464">Hammans, SR</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Hammans</AuLastName>
+<AuFirstName>S. R.</AuFirstName>
+<address number="4">Southampton Gen Hosp, Wessex Neurol Ctr, Southampton SO9 4XY, Hants, England</address>
+<AuCollectiveName>Hammans, S. R.</AuCollectiveName>
+</fullauthorname>
+<author key="7074979">Tubridy, N</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Tubridy</AuLastName>
+<AuFirstName>N.</AuFirstName>
+<address number="5">St Vincents Univ Hosp, Dept Neurol, Dublin 4, Ireland</address>
+<AuCollectiveName>Tubridy, N.</AuCollectiveName>
+</fullauthorname>
+<author key="875411">Britton, T</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Britton</AuLastName>
+<AuFirstName>T.</AuFirstName>
+<address number="6">Kings Coll London Hosp, Dept Neurol, London, England</address>
+<AuCollectiveName>Britton, T.</AuCollectiveName>
+</fullauthorname>
+<author key="1085748">Carr, LJ</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Carr</AuLastName>
+<AuFirstName>L. J.</AuFirstName>
+<address number="7">UCL, Inst Child Hlth, Great Ormond St Hosp, London WC1N 3BG, England</address>
+<AuCollectiveName>Carr, L. J.</AuCollectiveName>
+</fullauthorname>
+<author key="5286392">Ostergaard, JR</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Ostergaard</AuLastName>
+<AuFirstName>J. R.</AuFirstName>
+<address number="8">Aarhus Univ Hosp, Dept Pediat A, Skejby, Denmark</address>
+<AuCollectiveName>Ostergaard, J. R.</AuCollectiveName>
+</fullauthorname>
+<author key="3610704">Kennedy, CR</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Kennedy</AuLastName>
+<AuFirstName>C. R.</AuFirstName>
+<address number="9">Univ Southampton, Southampton SO9 5NH, Hants, England</address>
+<AuCollectiveName>Kennedy, C. R.</AuCollectiveName>
+</fullauthorname>
+<author key="88507">Al-Memar, A</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Al-Memar</AuLastName>
+<AuFirstName>A.</AuFirstName>
+<address number="10">St George Hosp, Dept Neurol, London, England</address>
+<AuCollectiveName>Al-Memar, A.</AuCollectiveName>
+</fullauthorname>
+<author key="3893727">Kullmann, DM</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Kullmann</AuLastName>
+<AuFirstName>D. M.</AuFirstName>
+<address number="1">UCL, Inst Neurol, Ctr Neuromuscular Dis, MRC, London WC1N 3BG, England</address>
+<address number="2">UCL, Inst Neurol, Neurogenet Unit, London WC1N 3BG, England</address>
+<AuCollectiveName>Kullmann, D. M.</AuCollectiveName>
+</fullauthorname>
+<author key="6227803">Schorge, S</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Schorge</AuLastName>
+<AuFirstName>S.</AuFirstName>
+<address number="1">UCL, Inst Neurol, Ctr Neuromuscular Dis, MRC, London WC1N 3BG, England</address>
+<address number="2">UCL, Inst Neurol, Neurogenet Unit, London WC1N 3BG, England</address>
+<AuCollectiveName>Schorge, S.</AuCollectiveName>
+</fullauthorname>
+<author key="6909235">Temple, K</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Temple</AuLastName>
+<AuFirstName>K.</AuFirstName>
+<address number="11">Princess Anne Hosp, Acad Unit Genet Med, Southampton, Hants, England</address>
+<AuCollectiveName>Temple, K.</AuCollectiveName>
+</fullauthorname>
+<author key="1571914">Davis, MB</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Davis</AuLastName>
+<AuFirstName>M. B.</AuFirstName>
+<address number="1">UCL, Inst Neurol, Ctr Neuromuscular Dis, MRC, London WC1N 3BG, England</address>
+<address number="2">UCL, Inst Neurol, Neurogenet Unit, London WC1N 3BG, England</address>
+<AuCollectiveName>Davis, M. B.</AuCollectiveName>
+</fullauthorname>
+<author key="2799760">Hanna, MG</author>
+<fullauthorname>
+<AuRole>Author, Reprint Author</AuRole>
+<AuLastName>Hanna</AuLastName>
+<AuFirstName>M. G.</AuFirstName>
+<address number="1">UCL, Inst Neurol, Ctr Neuromuscular Dis, MRC, London WC1N 3BG, England</address>
+<address number="2">UCL, Inst Neurol, Neurogenet Unit, London WC1N 3BG, England</address>
+<AuCollectiveName>Hanna, M. G.</AuCollectiveName>
+</fullauthorname>
+</authors>
+<emails count="1">
+<email>
+<name>Hanna, MG</name>
+<email_addr>mhanna@ion.ucl.ac.uk</email_addr>
+</email>
+</emails>
+<keywords_plus count="10">
+<keyword>CLINICAL SPECTRUM</keyword>
+<keyword>CHROMOSOME 19P</keyword>
+<keyword>MUTATIONS</keyword>
+<keyword>TYPE-2</keyword>
+<keyword>EPILEPSY</keyword>
+<keyword>HETEROGENEITY</keyword>
+<keyword>DYSFUNCTION</keyword>
+<keyword>CACNB4</keyword>
+<keyword>FAMILY</keyword>
+<keyword>SCN1A</keyword>
+</keywords_plus>
+<reprint>
+<rp_author>Hanna, MG</rp_author>
+<rp_address>UCL, Inst Neurol, Ctr Neuromuscular Dis, MRC, London WC1N 3BG, England</rp_address>
+<rp_organization>UCL</rp_organization>
+<rp_suborganizations count="3">
+<rp_suborganization>Inst Neurol</rp_suborganization>
+<rp_suborganization>Ctr Neuromuscular Dis</rp_suborganization>
+<rp_suborganization>MRC</rp_suborganization>
+</rp_suborganizations>
+<rp_city>London</rp_city>
+<rp_country>England</rp_country>
+<rp_zips count="1">
+<rp_zip location="AC">WC1N 3BG</rp_zip>
+</rp_zips>
+</reprint>
+<research_addrs count="11">
+<research>
+<rs_address number="1">UCL, Inst Neurol, Ctr Neuromuscular Dis, MRC, London WC1N 3BG, England</rs_address>
+<rs_organization>UCL</rs_organization>
+<rs_suborganizations count="3">
+<rs_suborganization>Inst Neurol</rs_suborganization>
+<rs_suborganization>Ctr Neuromuscular Dis</rs_suborganization>
+<rs_suborganization>MRC</rs_suborganization>
+</rs_suborganizations>
+<rs_city>London</rs_city>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">WC1N 3BG</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address number="2">UCL, Inst Neurol, Neurogenet Unit, London WC1N 3BG, England</rs_address>
+<rs_organization>UCL</rs_organization>
+<rs_suborganizations count="2">
+<rs_suborganization>Inst Neurol</rs_suborganization>
+<rs_suborganization>Neurogenet Unit</rs_suborganization>
+</rs_suborganizations>
+<rs_city>London</rs_city>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">WC1N 3BG</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address number="3">Univ Essex, Dept Biol Sci, Colchester CO4 3SQ, Essex, England</rs_address>
+<rs_organization>Univ Essex</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Dept Biol Sci</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Colchester</rs_city>
+<rs_state>Essex</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">CO4 3SQ</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address number="4">Southampton Gen Hosp, Wessex Neurol Ctr, Southampton SO9 4XY, Hants, England</rs_address>
+<rs_organization>Southampton Gen Hosp</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Wessex Neurol Ctr</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">SO9 4XY</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address number="5">St Vincents Univ Hosp, Dept Neurol, Dublin 4, Ireland</rs_address>
+<rs_organization>St Vincents Univ Hosp</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Dept Neurol</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Dublin</rs_city>
+<rs_country>Ireland</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">4</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address number="6">Kings Coll London Hosp, Dept Neurol, London, England</rs_address>
+<rs_organization>Kings Coll London Hosp</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Dept Neurol</rs_suborganization>
+</rs_suborganizations>
+<rs_city>London</rs_city>
+<rs_country>England</rs_country>
+</research>
+<research>
+<rs_address number="7">UCL, Inst Child Hlth, Great Ormond St Hosp, London WC1N 3BG, England</rs_address>
+<rs_organization>UCL</rs_organization>
+<rs_suborganizations count="2">
+<rs_suborganization>Inst Child Hlth</rs_suborganization>
+<rs_suborganization>Great Ormond St Hosp</rs_suborganization>
+</rs_suborganizations>
+<rs_city>London</rs_city>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">WC1N 3BG</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address number="8">Aarhus Univ Hosp, Dept Pediat A, Skejby, Denmark</rs_address>
+<rs_organization>Aarhus Univ Hosp</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Dept Pediat A</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Skejby</rs_city>
+<rs_country>Denmark</rs_country>
+</research>
+<research>
+<rs_address number="9">Univ Southampton, Southampton SO9 5NH, Hants, England</rs_address>
+<rs_organization>Univ Southampton</rs_organization>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">SO9 5NH</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address number="10">St George Hosp, Dept Neurol, London, England</rs_address>
+<rs_organization>St George Hosp</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Dept Neurol</rs_suborganization>
+</rs_suborganizations>
+<rs_city>London</rs_city>
+<rs_country>England</rs_country>
+</research>
+<research>
+<rs_address number="11">Princess Anne Hosp, Acad Unit Genet Med, Southampton, Hants, England</rs_address>
+<rs_organization>Princess Anne Hosp</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Acad Unit Genet Med</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+</research>
+</research_addrs>
+<fund_ack count="5">
+<fund_text>
+<p>SR holds a Clinical Training Fellowship from the Wellcome Trust. TDG was funded by an Action Medical Research Training Fellowship and the Guarantors of Brain. SR, TDG and MGH belong to the Consortium for Clinical Investigation of Neurological Channelopathies (CINCH) supported by NIH RU54 RR019482 (NINDS/ORD). The work of RWL, SR, MGS, MBD, LHE, TDG and MGH is undertaken at University College London Hospitals/University College London, which received a proportion of funding from the Department of Health's National Institute for Health Research Biomedical Research Centres funding scheme. MGH is supported by an MRC Centre grant (G0601943).</p>
+</fund_text>
+<grant>
+<fund_org>Wellcome Trust</fund_org>
+</grant>
+<grant>
+<fund_org>Action Medical Research Training Fellowship</fund_org>
+</grant>
+<grant>
+<fund_org>NIH</fund_org>
+<fund_grants count="1">
+<fund_grant>RU54 RR019482</fund_grant>
+</fund_grants>
+</grant>
+<grant>
+<fund_org>Department of Health's National Institute for Health Research Biomedical Research Centres</fund_org>
+</grant>
+<grant>
+<fund_org>MRC Centre</fund_org>
+<fund_grants count="1">
+<fund_grant>G0601943</fund_grant>
+</fund_grants>
+</grant>
+</fund_ack>
+<abstract avail="Y" count="4">
+<p>Background: Episodic ataxia type 2 (EA2) and familial hemiplegic migraine type 1 (FHM1) are autosomal dominant disorders characterised by paroxysmal ataxia and migraine, respectively. Point mutations in CACNA1A, which encodes the neuronal P/Q-type calcium channel, have been detected in many cases of EA2 and FHM1. The genetic basis of typical cases without CACNA1A point mutations is not fully known. Standard DNA sequencing methods may miss large scale genetic rearrangements such as deletions and duplications. The authors investigated whether large scale genetic rearrangements in CACNA1A can cause EA2 and FHM1.</p>
+<p>Methods: The authors used multiplex ligation dependent probe amplification (MLPA) to screen for intragenic CACNA1A rearrangements.</p>
+<p>Results: The authors identified five previously unreported large scale deletions in CACNA1A in seven families with episodic ataxia and in one case with hemiplegic migraine. One of the deletions (exon 6 of CACNA1A) segregated with episodic ataxia in a four generation family with eight affected individuals previously mapped to 19p13. In addition, the authors identified the first pathogenic duplication in CACNA1A in an index case with isolated episodic diplopia without ataxia and in a first degree relative with episodic ataxia.</p>
+<p>Conclusions: Large scale deletions and duplications can cause CACNA1A associated channelopathies. Direct DNA sequencing alone is not sufficient as a diagnostic screening test.</p>
+</abstract>
+<refs count="30">
+<ref>132640240</ref>
+<ref>99023002</ref>
+<ref>111374859</ref>
+<ref>135864670</ref>
+<ref>143107867</ref>
+<ref>128295790</ref>
+<ref>110446136</ref>
+<ref>175637790</ref>
+<ref>145392792</ref>
+<ref>103222076</ref>
+<ref>120487750</ref>
+<ref>115441173</ref>
+<ref>145509800</ref>
+<ref>172178669</ref>
+<ref>137322698</ref>
+<ref>127806042</ref>
+<ref>132835488</ref>
+<ref>184593130</ref>
+<ref>158313127</ref>
+<ref>121510549</ref>
+<ref>184593131</ref>
+<ref>75460142</ref>
+<ref>152367541</ref>
+<ref>97968280</ref>
+<ref>156984977</ref>
+<ref>149754223</ref>
+<ref>162906056</ref>
+<ref>90645435</ref>
+<ref>176286618</ref>
+<ref>174734625</ref>
+</refs>
+</item>
+</REC>
+
+<REC inst_id="1" recid="182502798" hot="yes" sortkey="3068247827" timescited="3" sharedrefs="0" inpi="false">
+<item issue="182502792" recid="182502798" coverdate="200907" sortkey="3068247827" refkey="5982003" dbyear="2009">
+<ut>000268355400004</ut>
+<i_ckey>0000000002660828</i_ckey>
+<i_cid>0129660946</i_cid>
+<source_title>JOURNAL OF GEOPHYSICAL RESEARCH-SPACE PHYSICS</source_title>
+<source_abbrev>J GEOPHYS RES-SPACE</source_abbrev>
+<item_title>A solar storm observed from the Sun to Venus using the STEREO, Venus Express, and MESSENGER spacecraft</item_title>
+<sq>55143J0</sq>
+<bib_id>114: - JUL 21 2009</bib_id>
+<article_nos count="2">
+<article_no>ARTN A07106</article_no>
+<article_no>DOI 10.1029/2008JA014034</article_no>
+</article_nos>
+<bib_pages begin="" end="" pages="16">-</bib_pages>
+<bib_issue year="2009" vol="114"/>
+<doctype code="@">Article</doctype>
+<editions full="SCI"/>
+<languages count="1">
+<primarylang code="EN">English</primarylang>
+</languages>
+<authors count="26">
+<primaryauthor>Rouillard, AP</primaryauthor>
+<fullauthorname>
+<AuRole>Author, Reprint Author</AuRole>
+<AuLastName>Rouillard</AuLastName>
+<AuFirstName>A. P.</AuFirstName>
+<address number="1">Univ Southampton, Space Environm Phys Grp, Sch Phys &amp; Astron, Southampton SO17 1BJ, Hants, England</address>
+<address number="3">Rutherford Appleton Lab, Space Sci &amp; Technol Dept, Didcot OX11 0QX, Oxon, England</address>
+<AuCollectiveName>Rouillard, A. P.</AuCollectiveName>
+</fullauthorname>
+<author key="1563279">Davies, JA</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Davies</AuLastName>
+<AuFirstName>J. A.</AuFirstName>
+<address number="3">Rutherford Appleton Lab, Space Sci &amp; Technol Dept, Didcot OX11 0QX, Oxon, England</address>
+<AuCollectiveName>Davies, J. A.</AuCollectiveName>
+</fullauthorname>
+<author key="2204825">Forsyth, RJ</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Forsyth</AuLastName>
+<AuFirstName>R. J.</AuFirstName>
+<address number="5">Univ London Imperial Coll Sci Technol &amp; Med, Blackett Lab, London SW7 2BW, England</address>
+<AuCollectiveName>Forsyth, R. J.</AuCollectiveName>
+</fullauthorname>
+<author key="6147289">Savani, NP</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Savani</AuLastName>
+<AuFirstName>N. P.</AuFirstName>
+<address number="5">Univ London Imperial Coll Sci Technol &amp; Med, Blackett Lab, London SW7 2BW, England</address>
+<AuCollectiveName>Savani, N. P.</AuCollectiveName>
+</fullauthorname>
+<author key="6362685">Sheeley, NR</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Sheeley</AuLastName>
+<AuFirstName>N. R.</AuFirstName>
+<address number="9">USN, Res Lab, Div Space Sci, Washington, DC 20375 USA</address>
+<AuCollectiveName>Sheeley, N. R.</AuCollectiveName>
+</fullauthorname>
+<author key="6933565">Thernisien, A</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Thernisien</AuLastName>
+<AuFirstName>A.</AuFirstName>
+<address number="9">USN, Res Lab, Div Space Sci, Washington, DC 20375 USA</address>
+<AuCollectiveName>Thernisien, A.</AuCollectiveName>
+</fullauthorname>
+<author key="7809858">Zhang, TL</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Zhang</AuLastName>
+<AuFirstName>T. -L.</AuFirstName>
+<address number="10">Austrian Acad Sci, Space Res Inst, A-8042 Graz, Austria</address>
+<AuCollectiveName>Zhang, T. -L.</AuCollectiveName>
+</fullauthorname>
+<author key="3133868">Howard, RA</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Howard</AuLastName>
+<AuFirstName>R. A.</AuFirstName>
+<address number="9">USN, Res Lab, Div Space Sci, Washington, DC 20375 USA</address>
+<AuCollectiveName>Howard, R. A.</AuCollectiveName>
+</fullauthorname>
+<author key="176070">Anderson, B</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Anderson</AuLastName>
+<AuFirstName>B.</AuFirstName>
+<address number="2">Johns Hopkins Univ, Appl Phys Lab, Laurel, MD 20723 USA</address>
+<AuCollectiveName>Anderson, B.</AuCollectiveName>
+</fullauthorname>
+<author key="1085031">Carr, CM</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Carr</AuLastName>
+<AuFirstName>C. M.</AuFirstName>
+<address number="5">Univ London Imperial Coll Sci Technol &amp; Med, Blackett Lab, London SW7 2BW, England</address>
+<AuCollectiveName>Carr, C. M.</AuCollectiveName>
+</fullauthorname>
+<author key="7060433">Tsang, S</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Tsang</AuLastName>
+<AuFirstName>S.</AuFirstName>
+<address number="6">Univ Coll London, Mullard Space Sci Lab, Dorking RH5 6NT, Surrey, England</address>
+<AuCollectiveName>Tsang, S.</AuCollectiveName>
+</fullauthorname>
+<author key="4248753">Lockwood, M</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Lockwood</AuLastName>
+<AuFirstName>M.</AuFirstName>
+<address number="1">Univ Southampton, Space Environm Phys Grp, Sch Phys &amp; Astron, Southampton SO17 1BJ, Hants, England</address>
+<address number="3">Rutherford Appleton Lab, Space Sci &amp; Technol Dept, Didcot OX11 0QX, Oxon, England</address>
+<AuCollectiveName>Lockwood, M.</AuCollectiveName>
+</fullauthorname>
+<author key="1567695">Davis, CJ</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Davis</AuLastName>
+<AuFirstName>C. J.</AuFirstName>
+<address number="3">Rutherford Appleton Lab, Space Sci &amp; Technol Dept, Didcot OX11 0QX, Oxon, England</address>
+<AuCollectiveName>Davis, C. J.</AuCollectiveName>
+</fullauthorname>
+<author key="2843173">Harrison, RA</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Harrison</AuLastName>
+<AuFirstName>R. A.</AuFirstName>
+<address number="3">Rutherford Appleton Lab, Space Sci &amp; Technol Dept, Didcot OX11 0QX, Oxon, England</address>
+<AuCollectiveName>Harrison, R. A.</AuCollectiveName>
+</fullauthorname>
+<author key="618380">Bewsher, D</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Bewsher</AuLastName>
+<AuFirstName>D.</AuFirstName>
+<address number="3">Rutherford Appleton Lab, Space Sci &amp; Technol Dept, Didcot OX11 0QX, Oxon, England</address>
+<address number="4">Aberystwyth Univ, Inst Math &amp; Phys, Aberystwyth SY23 3BZ, Dyfed, Wales</address>
+<AuCollectiveName>Bewsher, D.</AuCollectiveName>
+</fullauthorname>
+<author key="2236841">Franz, M</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Fraenz</AuLastName>
+<AuFirstName>M.</AuFirstName>
+<address number="8">Max Planck Inst Sonnensyst Forsch, D-37191 Katlenburg Lindau, Germany</address>
+<AuCollectiveName>Fraenz, M.</AuCollectiveName>
+</fullauthorname>
+<author key="1471063">Crothers, SR</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Crothers</AuLastName>
+<AuFirstName>S. R.</AuFirstName>
+<address number="3">Rutherford Appleton Lab, Space Sci &amp; Technol Dept, Didcot OX11 0QX, Oxon, England</address>
+<AuCollectiveName>Crothers, S. R.</AuCollectiveName>
+</fullauthorname>
+<author key="2029281">Eyles, CJ</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Eyles</AuLastName>
+<AuFirstName>C. J.</AuFirstName>
+<address number="3">Rutherford Appleton Lab, Space Sci &amp; Technol Dept, Didcot OX11 0QX, Oxon, England</address>
+<address number="11">Univ Valencia, Grp Astron &amp; Ciencias Espacio, Valencia, Spain</address>
+<AuCollectiveName>Eyles, C. J.</AuCollectiveName>
+</fullauthorname>
+<author key="899436">Brown, DS</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Brown</AuLastName>
+<AuFirstName>D. S.</AuFirstName>
+<address number="4">Aberystwyth Univ, Inst Math &amp; Phys, Aberystwyth SY23 3BZ, Dyfed, Wales</address>
+<AuCollectiveName>Brown, D. S.</AuCollectiveName>
+</fullauthorname>
+<author key="7513643">Whittaker, I</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Whittaker</AuLastName>
+<AuFirstName>I.</AuFirstName>
+<address number="4">Aberystwyth Univ, Inst Math &amp; Phys, Aberystwyth SY23 3BZ, Dyfed, Wales</address>
+<AuCollectiveName>Whittaker, I.</AuCollectiveName>
+</fullauthorname>
+<author key="2811334">Hapgood, M</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Hapgood</AuLastName>
+<AuFirstName>M.</AuFirstName>
+<address number="3">Rutherford Appleton Lab, Space Sci &amp; Technol Dept, Didcot OX11 0QX, Oxon, England</address>
+<AuCollectiveName>Hapgood, M.</AuCollectiveName>
+</fullauthorname>
+<author key="1321351">Coates, AJ</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Coates</AuLastName>
+<AuFirstName>A. J.</AuFirstName>
+<address number="6">Univ Coll London, Mullard Space Sci Lab, Dorking RH5 6NT, Surrey, England</address>
+<AuCollectiveName>Coates, A. J.</AuCollectiveName>
+</fullauthorname>
+<author key="3431748">Jones, GH</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Jones</AuLastName>
+<AuFirstName>G. H.</AuFirstName>
+<address number="6">Univ Coll London, Mullard Space Sci Lab, Dorking RH5 6NT, Surrey, England</address>
+<AuCollectiveName>Jones, G. H.</AuCollectiveName>
+</fullauthorname>
+<author key="2594188">Grande, M</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Grande</AuLastName>
+<AuFirstName>M.</AuFirstName>
+<address number="4">Aberystwyth Univ, Inst Math &amp; Phys, Aberystwyth SY23 3BZ, Dyfed, Wales</address>
+<AuCollectiveName>Grande, M.</AuCollectiveName>
+</fullauthorname>
+<author key="2222688">Frahm, RA</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Frahm</AuLastName>
+<AuFirstName>R. A.</AuFirstName>
+<address number="7">SW Res Inst, San Antonio, TX 78238 USA</address>
+<AuCollectiveName>Frahm, R. A.</AuCollectiveName>
+</fullauthorname>
+<author key="7583913">Winningham, JD</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Winningham</AuLastName>
+<AuFirstName>J. D.</AuFirstName>
+<address number="7">SW Res Inst, San Antonio, TX 78238 USA</address>
+<AuCollectiveName>Winningham, J. D.</AuCollectiveName>
+</fullauthorname>
+</authors>
+<emails count="1">
+<email>
+<name>Rouillard, AP</name>
+<email_addr>alexisrouillard@yahoo.co.uk</email_addr>
+</email>
+</emails>
+<keywords_plus count="10">
+<keyword>CORONAL MASS EJECTIONS</keyword>
+<keyword>PLANAR MAGNETIC-STRUCTURES</keyword>
+<keyword>1 AU</keyword>
+<keyword>CLOUDS</keyword>
+<keyword>WIND</keyword>
+<keyword>STREAMS</keyword>
+<keyword>ANGLE</keyword>
+<keyword>FIELD</keyword>
+<keyword>FLUX</keyword>
+<keyword>INSTRUMENT</keyword>
+</keywords_plus>
+<reprint>
+<rp_author>Rouillard, AP</rp_author>
+<rp_address>Univ Southampton, Space Environm Phys Grp, Sch Phys &amp; Astron, Southampton SO17 1BJ, Hants, England</rp_address>
+<rp_organization>Univ Southampton</rp_organization>
+<rp_suborganizations count="2">
+<rp_suborganization>Space Environm Phys Grp</rp_suborganization>
+<rp_suborganization>Sch Phys &amp; Astron</rp_suborganization>
+</rp_suborganizations>
+<rp_city>Southampton</rp_city>
+<rp_state>Hants</rp_state>
+<rp_country>England</rp_country>
+<rp_zips count="1">
+<rp_zip location="AC">SO17 1BJ</rp_zip>
+</rp_zips>
+</reprint>
+<research_addrs count="11">
+<research>
+<rs_address number="1">Univ Southampton, Space Environm Phys Grp, Sch Phys &amp; Astron, Southampton SO17 1BJ, Hants, England</rs_address>
+<rs_organization>Univ Southampton</rs_organization>
+<rs_suborganizations count="2">
+<rs_suborganization>Space Environm Phys Grp</rs_suborganization>
+<rs_suborganization>Sch Phys &amp; Astron</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">SO17 1BJ</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address number="2">Johns Hopkins Univ, Appl Phys Lab, Laurel, MD 20723 USA</rs_address>
+<rs_organization>Johns Hopkins Univ</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Appl Phys Lab</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Laurel</rs_city>
+<rs_state>MD</rs_state>
+<rs_country>USA</rs_country>
+<rs_zips count="1">
+<rs_zip location="AP">20723</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address number="3">Rutherford Appleton Lab, Space Sci &amp; Technol Dept, Didcot OX11 0QX, Oxon, England</rs_address>
+<rs_organization>Rutherford Appleton Lab</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Space Sci &amp; Technol Dept</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Didcot</rs_city>
+<rs_state>Oxon</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">OX11 0QX</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address number="4">Aberystwyth Univ, Inst Math &amp; Phys, Aberystwyth SY23 3BZ, Dyfed, Wales</rs_address>
+<rs_organization>Aberystwyth Univ</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Inst Math &amp; Phys</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Aberystwyth</rs_city>
+<rs_state>Dyfed</rs_state>
+<rs_country>Wales</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">SY23 3BZ</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address number="5">Univ London Imperial Coll Sci Technol &amp; Med, Blackett Lab, London SW7 2BW, England</rs_address>
+<rs_organization>Univ London Imperial Coll Sci Technol &amp; Med</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Blackett Lab</rs_suborganization>
+</rs_suborganizations>
+<rs_city>London</rs_city>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">SW7 2BW</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address number="6">Univ Coll London, Mullard Space Sci Lab, Dorking RH5 6NT, Surrey, England</rs_address>
+<rs_organization>Univ Coll London</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Mullard Space Sci Lab</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Dorking</rs_city>
+<rs_state>Surrey</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">RH5 6NT</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address number="7">SW Res Inst, San Antonio, TX 78238 USA</rs_address>
+<rs_organization>SW Res Inst</rs_organization>
+<rs_city>San Antonio</rs_city>
+<rs_state>TX</rs_state>
+<rs_country>USA</rs_country>
+<rs_zips count="1">
+<rs_zip location="AP">78238</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address number="8">Max Planck Inst Sonnensyst Forsch, D-37191 Katlenburg Lindau, Germany</rs_address>
+<rs_organization>Max Planck Inst Sonnensyst Forsch</rs_organization>
+<rs_city>Katlenburg Lindau</rs_city>
+<rs_country>Germany</rs_country>
+<rs_zips count="1">
+<rs_zip location="BC">D-37191</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address number="9">USN, Res Lab, Div Space Sci, Washington, DC 20375 USA</rs_address>
+<rs_organization>USN</rs_organization>
+<rs_suborganizations count="2">
+<rs_suborganization>Res Lab</rs_suborganization>
+<rs_suborganization>Div Space Sci</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Washington</rs_city>
+<rs_state>DC</rs_state>
+<rs_country>USA</rs_country>
+<rs_zips count="1">
+<rs_zip location="AP">20375</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address number="10">Austrian Acad Sci, Space Res Inst, A-8042 Graz, Austria</rs_address>
+<rs_organization>Austrian Acad Sci</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Space Res Inst</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Graz</rs_city>
+<rs_country>Austria</rs_country>
+<rs_zips count="1">
+<rs_zip location="BC">A-8042</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address number="11">Univ Valencia, Grp Astron &amp; Ciencias Espacio, Valencia, Spain</rs_address>
+<rs_organization>Univ Valencia</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Grp Astron &amp; Ciencias Espacio</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Valencia</rs_city>
+<rs_country>Spain</rs_country>
+</research>
+</research_addrs>
+<fund_ack count="1">
+<fund_text>
+<p>We thank Angelos Vourlidas and Len Burlaga for their comments on the original manuscript. This work was funded by STFC (UK). The STEREO/SECCHI data are produced by a consortium of RAL (UK), NRL (USA), LMSAL (USA), GSFC (USA), MPS (Germany), CSL (Belgium), IOTA (France), and IAS (France). The Venus Express and MESSENGER missions are ESA and NASA missions, respectively.</p>
+</fund_text>
+<grant>
+<fund_org>STFC (UK)</fund_org>
+</grant>
+</fund_ack>
+<abstract avail="Y" count="1">
+<p>The suite of SECCHI optical imaging instruments on the STEREO-A spacecraft is used to track a solar storm, consisting of several coronal mass ejections (CMEs) and other coronal loops, as it propagates from the Sun into the heliosphere during May 2007. The 3-D propagation path of the largest interplanetary CME (ICME) is determined from the observations made by the SECCHI Heliospheric Imager (HI) on STEREO-A (HI-1/2A). Two parts of the CME are tracked through the SECCHI images, a bright loop and a V-shaped feature located at the rear of the event. We show that these two structures could be the result of line-of-sight integration of the light scattered by electrons located on a single flux rope. In addition to being imaged by HI, the CME is observed simultaneously by the plasma and magnetic field experiments on the Venus Express and MESSENGER spacecraft. The imaged loop and V-shaped structure bound, as expected, the flux rope observed in situ. The SECCHI images reveal that the leading loop-like structure propagated faster than the V-shaped structure, and a decrease in in situ CME speed occurred during the passage of the flux rope. We interpret this as the result of the continuous radial expansion of the flux rope as it progressed outward through the interplanetary medium. An expansion speed in the radial direction of similar to 30 km s(-1) is obtained directly from the SECCHI-HI images and is in agreement with the difference in speed of the two structures observed in situ. This paper shows that the flux rope location can be determined from white light images, which could have important space weather applications.</p>
+</abstract>
+<refs count="56">
+<ref>159616411</ref>
+<ref>159616422</ref>
+<ref>158951746</ref>
+<ref>19963846</ref>
+<ref>151556363</ref>
+<ref>103521361</ref>
+<ref>94086045</ref>
+<ref>62597961</ref>
+<ref>127729690</ref>
+<ref>66252607</ref>
+<ref>48074434</ref>
+<ref>72037744</ref>
+<ref>43627849</ref>
+<ref>180235207</ref>
+<ref>99939233</ref>
+<ref>162865092</ref>
+<ref>153450876</ref>
+<ref>135892930</ref>
+<ref>83705873</ref>
+<ref>152003715</ref>
+<ref>176019531</ref>
+<ref>177084990</ref>
+<ref>73023470</ref>
+<ref>118620957</ref>
+<ref>171774171</ref>
+<ref>153431009</ref>
+<ref>171786240</ref>
+<ref>45058032</ref>
+<ref>152222749</ref>
+<ref>175539009</ref>
+<ref>172102937</ref>
+<ref>73229066</ref>
+<ref>113710205</ref>
+<ref>70209954</ref>
+<ref>83705880</ref>
+<ref>154180826</ref>
+<ref>131637498</ref>
+<ref>133907186</ref>
+<ref>162940796</ref>
+<ref>180235206</ref>
+<ref>153431066</ref>
+<ref>112394830</ref>
+<ref>162037173</ref>
+<ref>160837101</ref>
+<ref>55328876</ref>
+<ref>101478471</ref>
+<ref>116166958</ref>
+<ref>65953011</ref>
+<ref>133729180</ref>
+<ref>153249244</ref>
+<ref>150169761</ref>
+<ref>115067981</ref>
+<ref>128408850</ref>
+<ref>152765368</ref>
+<ref>86474994</ref>
+<ref>153657363</ref>
+</refs>
+</item>
+</REC>
+
+<REC inst_id="2" recid="162873652" hot="yes" sortkey="3085411737" timescited="2" sharedrefs="0" inpi="false">
+<item issue="162873588" recid="162873652" coverdate="200803" sortkey="3085411737" refkey="6799484" dbyear="2008">
+<ut>000256249900006</ut>
+<i_ckey>SWAN0031080034SA</i_ckey>
+<i_cid>0120766580</i_cid>
+<source_title>SERIALS REVIEW</source_title>
+<source_abbrev>SERIALS REV</source_abbrev>
+<item_title>Institutions, their repositories and the Web</item_title>
+<sq>87917J0</sq>
+<bib_id>34 (1): 31-35 MAR 2008</bib_id>
+<article_nos count="1">
+<article_no>DOI 10.1016/j.serrev.2007.12.006</article_no>
+</article_nos>
+<bib_pages begin="31" end="35" pages="5">31-35</bib_pages>
+<bib_issue year="2008" vol="34"/>
+<doctype code="@">Article</doctype>
+<editions full="SSCI"/>
+<languages count="1">
+<primarylang code="EN">English</primarylang>
+</languages>
+<authors count="2">
+<primaryauthor>Swan, A</primaryauthor>
+<fullauthorname>
+<AuRole>Author, Reprint Author</AuRole>
+<AuLastName>Swan</AuLastName>
+<AuFirstName>Alma</AuFirstName>
+<address number="1">Key Perspect Ltd, Truro TR3 6ET, England</address>
+<address number="2">Univ Southampton, Sch Elect &amp; Comp Sci, Southampton SO17 1BJ, Hants, England</address>
+<AuCollectiveName>Swan, Alma</AuCollectiveName>
+</fullauthorname>
+<author key="1085709">Carr, L</author>
+<fullauthorname>
+<AuRole>Author</AuRole>
+<AuLastName>Carr</AuLastName>
+<AuFirstName>Leslie</AuFirstName>
+<address number="2">Univ Southampton, Sch Elect &amp; Comp Sci, Southampton SO17 1BJ, Hants, England</address>
+<AuCollectiveName>Carr, Leslie</AuCollectiveName>
+</fullauthorname>
+</authors>
+<emails count="2">
+<email>
+<name>Swan, A</name>
+<email_addr>a.swan@talk21.com</email_addr>
+</email>
+<email>
+<name>Carr, L</name>
+<email_addr>lac@ecs.soton.ac.uk</email_addr>
+</email>
+</emails>
+<reprint>
+<rp_author>Swan, A</rp_author>
+<rp_address>Univ Southampton, Sch Elect &amp; Comp Sci, Southampton SO17 1BJ, Hants, England</rp_address>
+<rp_organization>Univ Southampton</rp_organization>
+<rp_suborganizations count="1">
+<rp_suborganization>Sch Elect &amp; Comp Sci</rp_suborganization>
+</rp_suborganizations>
+<rp_city>Southampton</rp_city>
+<rp_state>Hants</rp_state>
+<rp_country>England</rp_country>
+<rp_zips count="1">
+<rp_zip location="AC">SO17 1BJ</rp_zip>
+</rp_zips>
+</reprint>
+<research_addrs count="2">
+<research>
+<rs_address number="1">Key Perspect Ltd, Truro TR3 6ET, England</rs_address>
+<rs_organization>Key Perspect Ltd</rs_organization>
+<rs_city>Truro</rs_city>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">TR3 6ET</rs_zip>
+</rs_zips>
+</research>
+<research>
+<rs_address number="2">Univ Southampton, Sch Elect &amp; Comp Sci, Southampton SO17 1BJ, Hants, England</rs_address>
+<rs_organization>Univ Southampton</rs_organization>
+<rs_suborganizations count="1">
+<rs_suborganization>Sch Elect &amp; Comp Sci</rs_suborganization>
+</rs_suborganizations>
+<rs_city>Southampton</rs_city>
+<rs_state>Hants</rs_state>
+<rs_country>England</rs_country>
+<rs_zips count="1">
+<rs_zip location="AC">SO17 1BJ</rs_zip>
+</rs_zips>
+</research>
+</research_addrs>
+<abstract avail="Y" count="1">
+<p>It will soon be rare for research-based institutions not to have a digital repository. The main reason for a repository is to maximize the visibility of the institution's research outputs (provide Open Access), yet few contain a representative proportion of the research produced by their institutions. Repositories form one part of the institution's Web platform. An explicit, mandatory policy on the use of the repository for collecting outputs is needed in every institution so that the full research record is collected. Once full, a repository is a tool that enables senior management in research institutions to collate and assess research, to market their institution, to facilitate new forms of scholarship, and to enable the tools that will produce new knowledge.</p>
+</abstract>
+<refs count="11">
+<ref>162873653</ref>
+<ref>162873654</ref>
+<ref>162873655</ref>
+<ref>162873656</ref>
+<ref>162873657</ref>
+<ref>162873658</ref>
+<ref>162873659</ref>
+<ref>162873660</ref>
+<ref>162873661</ref>
+<ref>162873662</ref>
+<ref>162873663</ref>
+</refs>
+</item>
+</REC>
+
+</RECORDS>
