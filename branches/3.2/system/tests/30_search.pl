@@ -1,5 +1,5 @@
 use strict;
-use Test::More tests => 25;
+use Test::More tests => 26;
 
 BEGIN { use_ok( "EPrints" ); }
 BEGIN { use_ok( "EPrints::Test" ); }
@@ -301,5 +301,17 @@ $list = $searchexp->perform_search;
 
 ok($list->count > 0, "documents.file.mime_type/satisfy_all => 0");
 };
+
+$searchexp = EPrints::Search->new(
+	session => $session,
+	dataset => $dataset,
+	satisfy_all => 0 );
+
+$searchexp->add_field( $dataset->field( "title" ), "waxing monkey", "IN" );
+$searchexp->add_field( $dataset->field( "date" ), "2000" );
+
+$list = $searchexp->perform_search;
+
+ok($list->count > 0, "title OR date: ".$searchexp->get_conditions->describe);
 
 $session->terminate;
