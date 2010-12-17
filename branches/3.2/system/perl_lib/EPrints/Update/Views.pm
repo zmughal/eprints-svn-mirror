@@ -1804,12 +1804,13 @@ sub render_array_of_eprints
 	{
 
 		my $ctype = $view->{citation}||"default";
-		if( !defined $session->{citesdone}->{$ctype}->{$item->get_id} )
+		my $key = $ctype . ":" . $item->internal_uri;
+		if( !defined $session->{citesdone}->{$key} )
 		{
 			my $cite = EPrints::XML::to_string( $item->render_citation_link( $view->{citation} ), undef, 1 );
-			$session->{citesdone}->{$ctype}->{$item->get_id} = $cite;
+			$session->{citesdone}->{$key} = $cite;
 		}
-		my $cite = $session->{citesdone}->{$ctype}->{$item->get_id};
+		my $cite = $session->{citesdone}->{$key};
 
 		if( $view->{layout} eq "paragraph" )
 		{
