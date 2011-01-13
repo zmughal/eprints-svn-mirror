@@ -218,11 +218,11 @@ $Environment->setAttribute( Name => 'PERL5LIB' );
 $Environment->setAttribute( Action => 'set' );
 $Environment->setAttribute( System => 'yes' );
 $Environment->setAttribute( Part => 'last' );
-$Environment->setAttribute( Separator => ':' );
-$Environment->setAttribute( Value => '[INSTALLDIR]\\perl_lib' );
+$Environment->setAttribute( Separator => ';' );
+$Environment->setAttribute( Value => '[INSTALLDIR]perl_lib' );
 }
 
-if( 0 ) {
+{
 my $Component = $doc->createElement( 'Component' );
 $INSTALLDIR->appendChild( $Component );
 $Component->setAttribute( Id => 'IndexerComponent' );
@@ -237,12 +237,12 @@ $Component->setAttribute( Location => 'either' );
 my $ComponentRef = $doc->createElement( 'ComponentRef' );
 $Feature->appendChild( $ComponentRef );
 $ComponentRef->setAttribute( Id => 'IndexerComponent' );
-my $File = $doc->createElement( 'File' );
-$Component->appendChild( $File );
-$File->setAttribute( Id => 'SrvAnyExe' );
-$File->setAttribute( Name => 'srvany.exe' );
-$File->setAttribute( Source => 'srvany.exe' );
-$File->setAttribute( KeyPath => 'yes' );
+#my $File = $doc->createElement( 'File' );
+#$Component->appendChild( $File );
+#$File->setAttribute( Id => 'SrvAnyExe' );
+#$File->setAttribute( Name => 'srvany.exe' );
+#$File->setAttribute( Source => 'srvany.exe' );
+#$File->setAttribute( KeyPath => 'yes' );
 my $ServiceInstall = $doc->createElement( 'ServiceInstall' );
 $Component->appendChild( $ServiceInstall );
 $ServiceInstall->setAttribute( Id => 'IndexerInstall' );
@@ -285,7 +285,7 @@ my $RegistryValue = $doc->createElement( 'RegistryValue' );
 $RegistryKey->appendChild( $RegistryValue );
 $RegistryValue->setAttribute( Name => 'AppParameters' );
 $RegistryValue->setAttribute( Type => 'string' );
-$RegistryValue->setAttribute( Value => '[INSTALLDIR]bin\indexer --notdaemon start' );
+$RegistryValue->setAttribute( Value => '[INSTALLDIR]bin\indexer --master start' );
 }
 }
 
