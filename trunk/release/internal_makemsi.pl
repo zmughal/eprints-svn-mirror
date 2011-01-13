@@ -51,6 +51,7 @@ our $PRODUCT_MANUFACTURER = "University of Southampton";
 our $CYEAR = (gmtime())[5] + 1900;
 our $MEDIA_CAB = "eprints.cab";
 our $BASE_PATH = "C:/eprints";
+our $PERL_PATH = $^X;
 
 if( $package_version =~ /\-r(\d+)/ )
 {
@@ -221,7 +222,7 @@ $Environment->setAttribute( Separator => ':' );
 $Environment->setAttribute( Value => '[INSTALLDIR]\\perl_lib' );
 }
 
-{
+if( 0 ) {
 my $Component = $doc->createElement( 'Component' );
 $INSTALLDIR->appendChild( $Component );
 $Component->setAttribute( Id => 'IndexerComponent' );
@@ -277,7 +278,7 @@ my $RegistryValue = $doc->createElement( 'RegistryValue' );
 $RegistryKey->appendChild( $RegistryValue );
 $RegistryValue->setAttribute( Name => 'Application' );
 $RegistryValue->setAttribute( Type => 'string' );
-$RegistryValue->setAttribute( Value => 'C:\Perl\bin\perl.exe' );
+$RegistryValue->setAttribute( Value => $PERL_PATH );
 }
 {
 my $RegistryValue = $doc->createElement( 'RegistryValue' );
@@ -300,7 +301,7 @@ close($fh);
 open(my $fh, ">", "$build_path/BUILD.txt") or die "$build_path/BUILD.txt: $!";
 binmode($fh, ":crlf");
 print $fh <<EOB;
-Copy srvany.exe to build directory then:
+Do:
 
 > candle eprints.wsx
 > light -ext WixUIExtension eprints.wixobj
