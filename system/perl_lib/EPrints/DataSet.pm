@@ -235,7 +235,6 @@ my $INFO = {
 		sqlname => "history",
 		class => "EPrints::DataObj::History",
 		import => 1,
-		index => 1,
 		datestamp => "timestamp",
 	},
 	saved_search => {
