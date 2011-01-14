@@ -2783,9 +2783,6 @@ sub upgrade_3_2_2_to_3_2_3
 
 	my $repo = &repository( $repoid, check_db => 0 );
 
-	# add a key to id/field on __rindex tables
-	update_datasets( $repo, $db );
-
 	# file.hash.longtext => file.hash.id
 	my $table = $repo->dataset( "file" )->get_sql_table_name;
 	my $field = $repo->dataset( "file" )->field( "hash" );
@@ -2795,6 +2792,9 @@ sub upgrade_3_2_2_to_3_2_3
 		" CHANGE ".$db->quote_identifier($field->get_sql_name)." ".
 		$field->get_sql_type($repo)
 	);
+
+	# add a key to id/field on __rindex tables
+	update_datasets( $repo, $db );
 }
 
 # End of UPGRADE CODE
