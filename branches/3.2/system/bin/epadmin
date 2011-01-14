@@ -1869,6 +1869,7 @@ sub upgrade
 			3.2.0
 			3.2.1
 			3.2.2
+			3.2.3
 		);
 
 	for(my $i = 0; $i < $#versions; ++$i)
@@ -2776,5 +2777,21 @@ sub upgrade_3_2_1_to_3_2_2
 	} );
 }
 
+sub upgrade_3_2_2_to_3_2_3
+{
+	my( $repoid, $db ) = @_;
+
+	my $repo = &repository( $repoid, check_db => 0 );
+
+	# file.hash.longtext => file.hash.id
+	my $table = $repo->dataset( "file" )->get_sql_table_name;
+	my $field = $repo->dataset( "file" )->field( "hash" );
+	$db->do(
+		"ALTER TABLE ".
+		$db->quote_identifier($table).
+		" CHANGE ".$db->quote_identifier($field->get_sql_name)." ".
+		$field->get_sql_type($repo)
+	);
+}
 
 # End of UPGRADE CODE
