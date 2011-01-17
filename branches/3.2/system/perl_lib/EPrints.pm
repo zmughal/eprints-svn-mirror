@@ -89,6 +89,11 @@ BEGIN {
 
 	umask( 0002 );
 
+	sub human_version
+	{
+		return sprintf("%d.%d.%d", map { ord($_) } split(//, EPrints->VERSION));
+	}
+
 ######################################################################
 =pod
 
