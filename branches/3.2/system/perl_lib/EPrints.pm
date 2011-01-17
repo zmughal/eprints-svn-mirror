@@ -76,7 +76,6 @@ use EPrints::Config;
 
 use Data::Dumper;
 use Scalar::Util;
-use version 0.77;
 
 use strict;
 
@@ -92,7 +91,9 @@ BEGIN {
 
 	sub human_version
 	{
-		return substr(version->parse(EPrints->VERSION)->normal,1);
+		return EPrints->VERSION =~ /^v/ ?
+			substr(EPrints->VERSION,1) :
+			join('.', map { ord($_) } split(//, EPrints->VERSION));
 	}
 
 ######################################################################
