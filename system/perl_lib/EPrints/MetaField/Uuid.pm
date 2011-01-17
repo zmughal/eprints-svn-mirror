@@ -31,9 +31,9 @@ global system of UUID URIs.
 package EPrints::MetaField::Uuid;
 
 use APR::UUID;
-use EPrints::MetaField::Id;
+use EPrints::MetaField::Text;
 
-@ISA = qw( EPrints::MetaField::Id );
+@ISA = qw( EPrints::MetaField::Text );
 
 use strict;
 

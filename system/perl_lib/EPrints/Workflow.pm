@@ -68,7 +68,6 @@ sub new
 	$self->{dataset} = $params{item}->get_dataset;
 	$self->{item} = $params{item};
 	$self->{workflow_id} = $workflow_id;
-	$self->{processor} = $params{processor};
 
 	$params{session} = $session;
 	$params{current_user} = $session->current_user;
@@ -320,7 +319,7 @@ sub update_from_form
 	return if $quiet;
 
 	# Deposit performs a full validation, so don't repeat any warnings here
-	return if defined $new_stage && $new_stage eq 'deposit';
+	return if $new_stage eq 'deposit';
 
 	my @problems = $stage_obj->validate( $processor );
 
@@ -435,21 +434,13 @@ sub link_problem_xhtml
 	if( EPrints::XML::is_dom( $node, "Element" ) )
 	{
 		my $class = $node->getAttribute( "class" );
-		if( $class && $class=~m/^ep_problem_field:(.*)$/ )
+		if( $class=~m/^ep_problem_field:(.*)$/ )
 		{
 			my $stage = $self->{field_stages}->{$1};
 			return if( !defined $stage );
 			my $keyfield = $self->{dataset}->get_key_field();
 			my $kf_sql = $keyfield->get_sql_name;
-			my $url = URI->new( $self->{session}->current_url );
-			$url->query_form(
-				screen => $screenid,
-				dataset => $self->{dataset}->id,
-				dataobj => $self->{item}->id,
-				$kf_sql => $self->{item}->id,
-				stage => $stage
-			);
-			$url->fragment( $1 );
+			my $url = "?screen=$screenid&$kf_sql=".$self->{item}->get_id."&stage=$stage#$1";
 			if( defined $new_stage && $new_stage eq $stage )
 			{
 				$url = "#$1";
@@ -544,97 +535,6 @@ sub get_workflow_config
 	return $confhash->{$id}->{workflow};
 }
 
-=item $repository->add_workflow_flow( $workflowid, $id, $types, $stages )
-
-Add a flow to the workflow which is applicable for the types in types and contains the stages in stages. 
-
-The $id is used to remove everything relating to this is from the workflow. 
-
-=cut
-
-sub add_workflow_flow
-{
-	my( $repository, $filename, $id, $types, $stages ) = @_;
-
-	my $workflow = EPrints::XML::parse_xml( $filename );
-
-	my $flow = ($workflow->getElementsByTagName("flow"))[0];
-	if(!defined $flow)
-	{
-		return 1;
-	} 
-	
-        my $xml_handler = EPrints::XML->new(
-		$repository,
-		doc=>$workflow->ownerDocument()
-		);
-	
-	my $test = "type";
-	if (!(ref($types) eq 'ARRAY')) 
-	{
-		$test .= "='".$types."'";	
-	}
-	else
-	{
-		$test .= ".one_of(";
-		foreach my $type(@{$types}) 
-		{
-			$test .= "'$type',";
-		}
-		$test = substr $test, 0,-1;
-		$test .=')';
-	}
-	
-	my $stages_dom = $xml_handler->create_document_fragment;
-	if (!(ref($stages) eq 'ARRAY')) 
-	{
-		my $stage_node = $xml_handler->create_element("stage",ref=>"$stages");
-		$stages_dom->appendChild($stage_node);
-	}
-	else
-	{
-		foreach my $stage(@{$stages}) 
-		{
-			my $stage_node = $xml_handler->create_element("stage",ref=>"$stage");
-			$stages_dom->appendChild($stage_node);
-		}
-	}
-
-	my $count = 0;
-	my $replace = 0;
-	my $when_node = $xml_handler->create_element("epc:when",test=>$test,required_by=>$id);
-	$when_node->appendChild($stages_dom);
-	
-	my $choose_node = $xml_handler->create_element("epc:choose");
-	my $otherwise_node = $xml_handler->create_element("epc:otherwise");
-	
-	foreach my $element ( $flow->getChildNodes ) {
-		my $name = $element->nodeName;
-		if ($name eq "stage" && $count < 1) {
-			$flow->appendChild($choose_node);
-			$choose_node->appendChild($when_node);
-			$choose_node->appendChild($otherwise_node);
-			$replace = 1;
-			$count++;
-		} elsif ($name eq "epc:choose" && $count < 1) {
-			$count++;
-			my $blank_node = $xml_handler->create_document_fragment;
-			$blank_node->appendChild($when_node);
-			foreach my $sub_node ( $element->getChildNodes ) {
-				$blank_node->appendChild($sub_node);
-				$element->removeChild($sub_node);
-			}
-			$element->appendChild($blank_node);
-		}
-		if ($replace) {
-			$flow->removeChild($element);
-			$otherwise_node->appendChild($element);
-		}
-	}
-	
-	return EPrints::XML::_write_xml($workflow,$filename);
-
-}
 
 1;
 

@@ -164,10 +164,7 @@ sub convert_dataobj
 		EPrints::Utils::tree_to_utf8( $eprint->render_citation() ) ];
 
 	# The URL of the abstract page
-	if( $eprint->is_set( "eprintid" ) )
-	{
-		push @dcdata, [ "relation", $eprint->get_url() ];
-	}
+	push @dcdata, [ "relation", $eprint->get_url() ];
 
 	# dc.language not handled yet.
 	# dc.source not handled yet.

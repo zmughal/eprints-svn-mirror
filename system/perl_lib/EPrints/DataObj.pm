@@ -20,47 +20,15 @@
 
 B<EPrints::DataObj> - Base class for records in EPrints.
 
-=head1 SYNOPSIS
-
-$dataobj = $dataset->dataobj( $id );
-
-$dataobj->delete;
-
-$dataobj->commit( $force );
-
-$dataset = $dataobj->dataset;
-
-$repo = $dataobj->repository;
-
-$id = $dataobj->id;
-
-$dataobj->set_value( $fieldname, $value );
-
-$value = $dataobj->value( $fieldname );
-
-\@value = $dataobj->value( $fieldname ); # multiple
-
-$boolean = $dataobj->is_set( $fieldname );
-
-$xhtml = $dataobj->render_value( $fieldname );
-
-$xhtml = $dataobj->render_citation( $style, %opts );
-
-$uri = $dataobj->uri;
-
-$url = $dataobj->url;
-
-$string = $dataobj->export( $plugin_id, %opts );
-
-$dataobj = $dataobj->create_subobject( $fieldname, $epdata );
-
 =head1 DESCRIPTION
 
 This module is a base class which is inherited by L<EPrints::DataObj::EPrint>,
-L<EPrints::DataObj::User>, L<EPrints::DataObj::Subject> and
+L<EPrints::User>, L<EPrints::DataObj::Subject> and
 L<EPrints::DataObj::Document> and several other classes.
 
 It is ABSTRACT - its methods should not be called directly.
+
+=over 4
 
 =cut
 
@@ -90,14 +58,10 @@ use strict;
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $sys_fields = EPrints::DataObj->get_system_field_info
 
 Return an array describing the system metadata of the this 
 dataset.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -112,15 +76,11 @@ sub get_system_field_info
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $dataobj = EPrints::DataObj->new( $session, $id [, $dataset] )
 
 Return new data object, created by loading it from the database.
 
 If $dataset is not defined uses the default dataset for this object.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -142,16 +102,12 @@ sub new
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $dataobj = EPrints::DataObj->new_from_data( $session, $data [, $dataset ] )
 
 Construct a new EPrints::DataObj object based on the $data hash 
 reference of metadata.
 
 Used to create an object from the data retrieved from the database.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -261,82 +217,110 @@ sub create_from_data
 	$defaults = $class->get_defaults( $session, $defaults, $dataset );
 	
 	# cache the configuration options in variables
-	my $migration = $session->config( "enable_import_fields" );
+	my $enable_import_ids = $session->get_repository->get_conf(
+		"enable_import_ids"
+		);
+	my $enable_import_datestamps = $session->get_repository->get_conf(
+		"enable_import_datestamps"
+		);
 
-	my @create_subdataobjs;
+	my %subobjects;
 
-	FIELD: foreach my $field ( $dataset->fields )
+	foreach my $field ( $dataset->get_fields )
 	{
 		my $fieldname = $field->name;
+		next if !defined $data->{$fieldname};
 
 		# strip sub-objects and create them once we exist
 		if( $field->isa( "EPrints::MetaField::Subobject" ) )
 		{
-			push @create_subdataobjs, [ $field, delete $data->{$fieldname} ]
-				if defined $data->{$fieldname};
-			next FIELD;
+			$subobjects{$fieldname} = delete $data->{$fieldname};
+			next;
 		}
 
-		if( !$field->property( "import" ) && !$migration )
+		# strip non-importable values from $data
+		next if $field->get_property( "import" );
+
+		# This is a bit of a hack. The import script may set 
+		# "enable_import_ids" on session This will allow eprintids 
+		# and userids to be imported as-is rather than just being 
+		# assigned one. 
+		if( $enable_import_ids )
 		{
-			delete $data->{$fieldname};
+			if( $dataset->confid eq "eprint" )
+			{
+				next if( $fieldname eq "eprintid" );
+				next if( $fieldname eq "dir" ); # eprintid is in dir
+			}
+			if( $dataset->id eq "user" )
+			{
+				next if( $fieldname eq "userid" );
+			}
 		}
 
-		if( !EPrints::Utils::is_set( $data->{$fieldname} ) )
+		if( $enable_import_datestamps )
 		{
-			$data->{$fieldname} = $defaults->{$fieldname}
-				if exists $defaults->{$fieldname};
+			if( $dataset->confid eq "eprint" )
+			{
+				next if( $fieldname eq "datestamp" );
+			}
 		}
+
+		delete $data->{$fieldname};
 	}
 
-	my $self = $class->new_from_data( $session, $data, $dataset );
-	return undef unless defined $self;
+	foreach my $k ( keys %{$defaults} )
+	{
+		next if defined $data->{$k};
+		$data->{$k} = $defaults->{$k};
+	}
 
-	my $rc = $session->get_database->add_record( $dataset, $self->get_data );
+	my $dataobj = $class->new_from_data( $session, $data, $dataset );
+	return undef unless defined $dataobj;
+
+	my $rc = $session->get_database->add_record( $dataset, $dataobj->get_data );
 	return undef unless $rc;
 
-	$self->set_under_construction( 1 );
+	$dataobj->set_under_construction( 1 );
 
-	# create sub-dataobjs
-	for(@create_subdataobjs)
+	foreach my $fieldname (keys %subobjects)
 	{
-		my $field = $_->[0];
-		$_->[1] = [$_->[1]] if ref($_->[1]) ne 'ARRAY';
-
-		my @dataobjs;
-
-		foreach my $epdata (@{$_->[1]})
+		if( ref($subobjects{$fieldname}) eq 'ARRAY' )
 		{
-			my $dataobj = $self->create_subdataobj( $field->name, $epdata );
-			if( !defined $dataobj )
+			my @subobjects;
+			foreach my $epdata (@{$subobjects{$fieldname}})
 			{
-				$session->log( "Failed to create subdataobj on ".$dataset->id.".".$field->name );
-				$self->remove();
+				my $subobj = $dataobj->create_subdataobj( $fieldname, $epdata );
+				if( !defined $subobj )
+				{
+					$session->log( "Failed to create subdataobj on $fieldname" );
+					$dataobj->remove();
+					return undef;
+				}
+				push @subobjects, $subobj;
+			}
+			$dataobj->set_value( $fieldname, \@subobjects );
+		}
+		else
+		{
+			my $subobj = $dataobj->create_subdataobj( $fieldname, $subobjects{$fieldname} );
+			if( !defined $subobj )
+			{
+				$session->log( "Failed to create subdataobj on $fieldname" );
+				$dataobj->remove();
 				return undef;
 			}
-			push @dataobjs, $dataobj;
+			$dataobj->set_value( $fieldname, $subobj );
 		}
-
-		$self->set_value( $field->name, $field->property( "multiple" ) ? \@dataobjs : $dataobjs[0] );
 	}
 
-	if( $migration && $dataset->key_field->isa( "EPrints::MetaField::Counter" ) )
-	{
-		$session->get_database->counter_minimum(
-			$dataset->key_field->property( "sql_counter" ),
-			$self->id
-		);
-	}
-
-	$self->set_under_construction( 0 );
+	$dataobj->set_under_construction( 0 );
 
 	# queue all the fields for indexing.
-	$self->queue_all;
+	$dataobj->queue_all;
 
-	return $self;
+	return $dataobj;
 }
-
-=begin InternalDoc
 
 =item $dataobj = $dataobj->create_subdataobj( $fieldname, $epdata )
 
@@ -345,8 +329,6 @@ Creates and returns a new dataobj that is a sub-object of this object in field $
 Clears the sub-object cache for this $fieldname which is equivalent to:
 
 	$dataobj->set_value( $fieldname, undef );
-
-=end InternalDoc
 
 =cut
 
@@ -383,15 +365,11 @@ sub create_subdataobj
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $defaults = EPrints::User->get_defaults( $session, $data, $dataset )
 
 Return default values for this object based on the starting data.
 
 Should be subclassed.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -405,17 +383,10 @@ sub get_defaults
 		$dataset = $session->get_repository->get_dataset( $class->get_dataset_id );
 	}
 
-	my $migration = $session->config( "enable_import_fields" );
-
 	# set any values that a field has a default for e.g. counters
 	foreach my $field ($dataset->get_fields)
 	{
 		next if defined $field->get_property( "sub_name" );
-
-		# avoid getting a default value if it's already set
-		next if
-			EPrints::Utils::is_set( $data->{$field->name} ) &&
-			($field->property( "import") || $migration);
 
 		my $value = $field->get_default_value( $session );
 		next unless EPrints::Utils::is_set( $value );
@@ -453,11 +424,9 @@ sub update_triggers
 ######################################################################
 =pod
 
-=over 4
+=item $success = $dataobj->remove
 
-=item $success = $dataobj->delete
-
-Delete this data object from the database and any sub-objects or related files. 
+Remove this data object from the database and any sub-objects or related files. 
 
 Return true if successful.
 
@@ -468,8 +437,6 @@ sub delete { shift->remove( @_ ) }
 sub remove
 {
 	my( $self ) = @_;
-
-	$self->queue_removed;
 
 	return $self->{session}->get_database->remove(
 		$self->{dataset},
@@ -503,16 +470,12 @@ sub under_construction
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $dataobj->clear_changed( )
 
 Clear any changed fields, which will result in them not being committed unless
 force is used.
 
 This method is used by the Database to avoid unnecessary commits.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -571,11 +534,6 @@ sub commit
 	# Queue changes for the indexer (if indexable)
 	$self->queue_changes();
 
-	$self->dataset->run_trigger( EPrints::Const::EP_TRIGGER_AFTER_COMMIT,
-		dataobj => $self,
-		changed => $self->{changed},
-	);
-
 	# clear changed fields
 	$self->clear_changed();
 
@@ -588,7 +546,7 @@ sub commit
 ######################################################################
 =pod
 
-=item $value = $dataobj->value( $fieldname )
+=item $value = $dataobj->get_value( $fieldname )
 
 Get a the value of a metadata field. If the field is not set then it returns
 undef unless the field has the property multiple set, in which case it returns 
@@ -675,7 +633,7 @@ sub set_value_raw
 		{
 			$self->{changed}->{$fieldname} = $self->{data}->{$fieldname};
 			my $field = $self->{dataset}->get_field( $fieldname );
-			if( !$field->property( "volatile" ) )
+			if( $field->get_property( "volatile" ) == 0 )
 			{
 				$self->{non_volatile_change} = 1;
 			}
@@ -791,13 +749,9 @@ sub get_values
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $session = $dataobj->get_session
 
-Returns the EPrints::Repository object to which this record belongs.
-
-=end InternalDoc
+Returns the EPrints::Session object to which this record belongs.
 
 =cut
 ######################################################################
@@ -814,14 +768,10 @@ sub get_session
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $data = $dataobj->get_data
 
 Returns a reference to the hash table of all the metadata for this record keyed 
 by fieldname.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -836,13 +786,9 @@ sub get_data
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $dataset = EPrints::DataObj->get_dataset_id
 
 Returns the id of the L<EPrints::DataSet> object to which this record belongs.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -858,13 +804,9 @@ sub get_dataset_id
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $dataset = $dataobj->get_dataset
 
 Returns the L<EPrints::DataSet> object to which this record belongs.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -936,7 +878,7 @@ sub exists_and_set
 ######################################################################
 =pod
 
-=item $id = $dataobj->id
+=item $id = $dataobj->get_id
 
 Returns the value of the primary key of this record.
 
@@ -956,16 +898,12 @@ sub get_id
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $id = $dataobj->get_gid
 
 DEPRECATED (see uri())
 
 Returns the globally referential fully-qualified identifier for this object or
 undef if this object can not be externally referenced.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -977,13 +915,9 @@ sub get_gid
 	return $self->uri;
 }
 
-=begin InternalDoc
-
 =item $datestamp = $dataobj->get_datestamp
 
 Returns the datestamp of this object in "YYYY-MM-DD hh:mm:ss" format.
-
-=end InternalDoc
 
 =cut
 
@@ -1044,19 +978,15 @@ sub render_citation
 		$style = 'default';
 	}
 
-	my $citation = $self->{dataset}->citation( $style );
+	my $stylespec = $self->{session}->get_citation_spec(
+					$self->{dataset},
+					$style );
 
-	# no citation style available, not even "default"
-	if( !defined $citation )
-	{
-		return $self->{session}->html_phrase( "lib/citation:not_available",
-			dataset => $self->{dataset}->render_name( $self->{session} )
-		);
-	}
-
-	return $citation->render( $self,
-		in=>"citation ".$self->{dataset}->confid."/".$style, 
-		%params );
+	return EPrints::Utils::render_citation( $stylespec, 
+			item=>$self, 
+			in=>"citation ".$self->{dataset}->confid."/".$style, 
+			session=>$self->{session},
+			%params );
 }
 
 
@@ -1092,14 +1022,10 @@ sub render_citation_link_staff
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $xhtml = $dataobj->render_description
 
 Returns a short description of this object using the default citation style
 for this dataset.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1114,14 +1040,10 @@ sub render_description
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item ($xhtml, $title ) = $dataobj->render
 
 Return a chunk of XHTML DOM describing this object in the normal way.
 This is the public view of the record, not the staff view.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1136,14 +1058,10 @@ sub render
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item ($xhtml, $title ) = $dataobj->render_full
 
 Return an XHTML table in DOM describing this record. All values of
 all fields are listed. This is the staff view.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1202,8 +1120,6 @@ sub render_full
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $xhtml_ul_list = $dataobj->render_export_links( [$staff] )
 
 Return a <ul> list containing links to all the formats this eprint
@@ -1211,8 +1127,6 @@ is available in.
 
 If $staff is true then show all formats available to staff, and link
 to the staff export URL.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1273,15 +1187,11 @@ sub uri
 	return $self->get_session->get_repository->get_conf( "base_url" ).$self->internal_uri;
 }
 
-=begin InternalDoc
-
 =item $uri = $dataobj->internal_uri()
 
 Return an internal URI for this object (independent of repository hostname).
 
 To retrieve an object by internal URI use L<EPrints::DataSet>::get_object_from_uri().
-
-=end InternalDoc
 
 =cut
 
@@ -1300,7 +1210,7 @@ sub internal_uri
 ######################################################################
 =pod
 
-=item $url = $dataobj->url
+=item $url = $dataobj->get_url
 
 Returns the URL for this record, for example the URL of the abstract page
 of an eprint.
@@ -1319,13 +1229,9 @@ sub get_url
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $url = $dataobj->get_control_url
 
 Returns the URL for the control page for this object. 
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1341,13 +1247,9 @@ sub get_control_url
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $type = $dataobj->get_type
 
 Returns the type of this record - type of user, type of eprint etc.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1362,8 +1264,6 @@ sub get_type
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $xmlfragment = $dataobj->to_xml( %opts )
 
 Convert this object into an XML fragment. 
@@ -1376,9 +1276,10 @@ where the xmlns is already set correctly.
 
 showempty=>1 : fields with no value are shown.
 
-embed=>1 : include the data of a file, not just it's URL.
+version=>"code" : pick what version of the EPrints XML format
+to use "1" or "2"
 
-=end InternalDoc
+embed=>1 : include the data of a file, not just it's URL.
 
 =cut
 ######################################################################
@@ -1387,35 +1288,63 @@ sub to_xml
 {
 	my( $self, %opts ) = @_;
 
-	my $builder = EPrints::XML::SAX::Builder->new(
-		repository => $self->{session}
-	);
-	$builder->start_document({});
-	$builder->xml_decl({
-		Version => '1.0',
-		Encoding => 'utf-8',
-	});
-	$builder->start_prefix_mapping({
-		Prefix => '',
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-	});
-	$self->to_sax( %opts, Handler => $builder );
-	$builder->end_prefix_mapping({
-		Prefix => '',
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-	});
-	$builder->end_document({});
+	$opts{version} = "2" unless defined $opts{version};
 
-	return $builder->result()->documentElement;
+	my %attrs = ();
+	my $ns = EPrints::XML::namespace( 'data', $opts{version} );
+	if( !defined $ns )
+	{
+		$self->{session}->get_repository->log(
+			 "to_xml: unknown version: ".$opts{version} );
+		#error
+		return;
+	}
+
+	if( !$opts{no_xmlns} )
+	{
+		$attrs{'xmlns'} = $ns;
+	}
+	$opts{no_xmlns} = 1;
+
+	my $tl = "record";
+	if( $opts{version} == 2 ) { 
+		$tl = $self->{dataset}->confid; 
+		$attrs{'id'} = $self->uri;
+	}	
+	my $r = $self->{session}->make_element( $tl, %attrs );
+	$r->appendChild( $self->{session}->make_text( "\n" ) );
+	foreach my $field ( $self->{dataset}->get_fields() )
+	{
+		next unless( $field->get_property( "export_as_xml" ) );
+
+		if( $opts{version} eq "2" )
+		{
+			$r->appendChild( $field->to_xml( 
+				$self->{session}, 
+				$field->get_value( $self ),
+				$self->{dataset},
+				%opts ) );
+		}
+		if( $opts{version} eq "1" )
+		{
+			unless( $opts{show_empty} )
+			{
+				next unless( $self->is_set( $field->get_name() ) );
+			}
+
+			$r->appendChild( $field->to_xml_old( 
+				$self->{session}, 
+				$self->get_value( $field->get_name() ),
+				2 ) ); # no xmlns on inner elements
+		}
+	}
+
+	return $r;
 }
-
-=begin InternalDoc
 
 =item $epdata = EPrints::DataObj->xml_to_epdata( $session, $xml, %opts )
 
 Populates $epdata based on $xml. This is the inverse of to_xml() but doesn't create a new object.
-
-=end InternalDoc
 
 =cut
 
@@ -1425,166 +1354,50 @@ sub xml_to_epdata
 
 	my $epdata = {};
 
-	my $dataset = $session->dataset( $class->get_dataset_id );
+	my $dataset = $session->get_repository->get_dataset( $class->get_dataset_id );
 
-	my $handler = EPrints::DataObj::SAX::Handler->new(
-		$class, $epdata, {
-			%opts,
-			dataset => $dataset,
-		},
-	);
+	my @fields = $dataset->get_fields;
+	my @field_names = sort { $a cmp $b } map { $_->get_name } @fields;
+	my %fields_map = map { $_->get_name => $_ } @fields;
 
-	EPrints::XML::SAX::Generator->new(
-		Handler => $handler,
-	)->generate( $xml );
+	my %seen = ();
+	foreach my $node ($xml->childNodes)
+	{
+		next unless EPrints::XML::is_dom( $node, "Element" );
+		my $nodeName = $node->nodeName;
+		if( $seen{$nodeName} )
+		{
+			if( defined $opts{Handler} )
+			{
+				$opts{Handler}->message( "warning", $session->phrase( "Plugin/Import/XML:dup_element", name => $session->make_text( $nodeName ) ) );
+			}
+			next;
+		}
+		$seen{$nodeName} = 1;
+		my $field = $fields_map{$nodeName};
+		if( !defined $field )
+		{
+			if( defined $opts{Handler} )
+			{
+				$opts{Handler}->message( "warning", $session->html_phrase( "Plugin/Import/XML:unexpected_element", name => $session->make_text( $nodeName ) ) );
+				$opts{Handler}->message( "warning", $session->html_phrase( "Plugin/Import/XML:expected", elements => $session->make_text( "<".join("> <", @field_names).">" ) ) );
+			}
+			next;
+		}
+		my $value = $field->xml_to_epdata( $session, $node, %opts );
+		if( EPrints::Utils::is_set( $value ) )
+		{
+			$epdata->{$nodeName} = $value;
+		}
+	}
 
 	return $epdata;
-}
-
-=begin InternalDoc
-
-=item $dataobj->to_sax( Handler => $handler, %opts )
-
-Stream this object to a SAX handler.
-
-This does not output any document-level events.
-
-=end InternalDoc
-
-=cut
-
-sub to_sax
-{
-	my( $self, %opts ) = @_;
-
-	my $handler = $opts{Handler};
-	my $dataset = $self->{dataset};
-	my $name = $dataset->base_id;
-
-	$handler->start_element({
-		Prefix => '',
-		LocalName => $name,
-		Name => $name,
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-		Attributes => {
-			('{}id') => {
-				Prefix => '',
-				LocalName => 'id',
-				Name => 'id',
-				NamespaceURI => '',
-				Value => $self->uri,
-			},
-		},
-	});
-
-	foreach my $field ($dataset->fields)
-	{
-		next if !$field->property( "export_as_xml" );
-
-		$field->to_sax(
-			$field->get_value( $self ),
-			%opts
-		);
-	}
-
-	$handler->end_element({
-		Prefix => '',
-		LocalName => $name,
-		Name => $name,
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-	});
-}
-
-=begin InternalDoc
-
-=item EPrints::Dataobj->start_element( $data, $epdata, $state )
-
-Consumes a SAX event.
-
-$data is the SAX node data.
-
-$epdata is an EPrints data structure to write values to.
-
-$state maintains state between SAX calls but must contain at least:
-
-	dataset - the dataset the class belongs to
-
-=end InternalDoc
-
-=cut
-
-sub start_element
-{
-	my( $class, $data, $epdata, $state ) = @_;
-
-	$state->{depth}++;
-
-	if( $state->{depth} == 2 )
-	{
-		if( $state->{dataset}->has_field( $data->{LocalName} ) )
-		{
-			$state->{child} = {%$state, depth => 0};
-			$state->{handler} = $state->{dataset}->field( $data->{LocalName} );
-		}
-		else
-		{
-			$state->{Handler}->message( "warning", $state->{dataset}->repository->xml->create_text_node( "Invalid XML element: $data->{LocalName}" ) )
-				if defined $state->{Handler};
-		}
-	}
-
-	$state->{handler}->start_element( $data, $epdata, $state->{child} )
-		if defined $state->{handler};
-}
-
-=begin InternalDoc
-
-=item EPrints::DataObj->end_element( $data, $epdata, $state )
-
-See L</start_element>.
-
-=end InternalDoc
-
-=cut
-
-sub end_element
-{
-	my( $class, $data, $epdata, $state ) = @_;
-
-	$state->{handler}->end_element( $data, $epdata, $state->{child} )
-		if defined $state->{handler};
-
-	if( $state->{depth} == 2 )
-	{
-		delete $state->{child};
-		delete $state->{handler};
-	}
-
-	$state->{depth}--;
-}
-
-=begin InternalDoc
-
-=item EPrints::DataObj->characters( $data, $epdata, $state )
-
-See L</start_element>.
-
-=end InternalDoc
-
-=cut
-
-sub characters
-{
-	my( $class, $data, $epdata, $state ) = @_;
-
-	$state->{handler}->characters( $data, $epdata, $state->{child} )
-		if defined $state->{handler};
 }
 
 ######################################################################
 =pod
 
-=item $plugin_output = $dataobj->export( $plugin_id, %params )
+=item $plugin_output = $detaobj->export( $plugin_id, %params )
 
 Apply an output plugin to this items. Return the results.
 
@@ -1618,13 +1431,9 @@ sub export
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $dataobj->queue_changes
 
 Add all the changed fields into the indexers todo queue.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1635,33 +1444,37 @@ sub queue_changes
 
 	return unless $self->{dataset}->indexable;
 
+	my @fields;
+
+	foreach my $fieldname ( keys %{$self->{changed}} )
+	{
+		my $field = $self->{dataset}->get_field( $fieldname );
+
+		next unless( $field->get_property( "text_index" ) );
+
+		push @fields, $fieldname;
+	}	
+
+	return unless scalar @fields;
+
 	my $user = $self->{session}->current_user;
 	my $userid;
 	$userid = $user->id if defined $user;
 
-	for(keys %{$self->{changed}})
-	{
-		next if !$self->{dataset}->field( $_ )->property( "text_index" );
-		EPrints::DataObj::EventQueue->create_from_data( $self->{session}, {
-				pluginid => "Event::Indexer",
-				action => "index",
-				params => [$self->internal_uri, keys %{$self->{changed}}],
-				userid => $userid,
-			});
-		last;
-	}
+	EPrints::DataObj::EventQueue->create_from_data( $self->{session}, {
+			pluginid => "Event::Indexer",
+			action => "index",
+			params => [$self->internal_uri, @fields],
+			userid => $userid,
+		});
 }
 
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $dataobj->queue_all
 
 Add all the fields into the indexers todo queue.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1676,7 +1489,7 @@ sub queue_all
 	my $userid;
 	$userid = $user->id if defined $user;
 
-	EPrints::DataObj::EventQueue->create_unique( $self->{session}, {
+	EPrints::DataObj::EventQueue->create_from_data( $self->{session}, {
 			pluginid => "Event::Indexer",
 			action => "index_all",
 			params => [$self->internal_uri],
@@ -1687,13 +1500,9 @@ sub queue_all
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $dataobj->queue_fulltext
 
 Add a fulltext index into the indexers todo queue.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1704,53 +1513,21 @@ sub queue_fulltext
 
 	return unless $self->{dataset}->indexable;
 
-	# don't know how to full-text index other datasets
-	return if $self->{dataset}->base_id ne "eprint";
-
-	my $user = $self->{session}->current_user;
-	my $userid;
-	$userid = $user->id if defined $user;
-
-	EPrints::DataObj::EventQueue->create_from_data( $self->{session}, {
-			pluginid => "Event::Indexer",
-			action => "index",
-			params => [$self->internal_uri, "documents"],
-			userid => $userid,
-		});
-}
-
-=begin InternalDoc
-
-=item $dataobj->queue_removed()
-
-Add an index removed event to the indexer's queue.
-
-=end InternalDoc
-
-=cut
-
-sub queue_removed
-{
-	my( $self ) = @_;
-
-	return unless $self->{dataset}->indexable;
-
 	my $user = $self->{session}->current_user;
 	my $userid;
 	$userid = $user->id if defined $user;
 
 	EPrints::DataObj::EventQueue->create_unique( $self->{session}, {
+			unique => "TRUE",
 			pluginid => "Event::Indexer",
-			action => "removed",
-			params => [$self->{dataset}->base_id, $self->id],
+			action => "index_fulltext",
+			params => [$self->internal_uri],
 			userid => $userid,
 		});
 }
 
 ######################################################################
 =pod
-
-=begin InternalDoc
 
 =item $boolean = $dataobj->has_owner( $user )
 
@@ -1759,8 +1536,6 @@ created it, but a group of users could count as owners of the same
 record if you wanted.
 
 It's false on most dataobjs, except those which override this method.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1775,8 +1550,6 @@ sub has_owner
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $boolean = $dataobj->in_editorial_scope_of( $user )
 
 As for has_owner, but if the user is identified as someone with an
@@ -1786,8 +1559,6 @@ Defaults to true. Which doesn't mean that they have the right to
 edit it, just that their scope matches. You also need editor rights
 to use this. It's currently used just to filter eprint editors so
 that only ones with a scope AND a priv can edit.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1799,8 +1570,6 @@ sub in_editorial_scope_of
 	return 1;
 }
 
-=begin InternalDoc
-
 =item $problems = $dataobj->validate( [ $for_archive ], $workflow_id )
 
 Return a reference to an array of XHTML DOM objects describing
@@ -1809,8 +1578,6 @@ validation problems with the entire $dataobj based on $workflow_id.
 If $workflow_id is undefined defaults to "default".
 
 A reference to an empty array indicates no problems.
-
-=end InternalDoc
 
 =cut
 
@@ -1835,16 +1602,12 @@ sub validate
 	return \@problems;
 }
 
-=begin InternalDoc
-
 =item $warnings = $dataobj->get_warnings( )
 
 Return a reference to an array of XHTML DOM objects describing
 problems with the entire $dataobj.
 
 A reference to an empty array indicates no problems.
-
-=end InternalDoc
 
 =cut
 
@@ -1925,15 +1688,11 @@ sub tidy
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $file = $dataobj->add_stored_file( $filename, $filehandle, $filesize )
 
 Convenience method to add (or replace) the file record for $filename to this object. Reads $filesize bytes from $filehandle.
 
 Returns the file object or undef if the storage failed.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1970,15 +1729,11 @@ sub add_stored_file
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $file = $dataobj->stored_file( $filename )
 
 Get the file object for $filename.
 
 Returns the file object or undef if the file doesn't exist.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -2002,25 +1757,13 @@ sub stored_file
 	return $file;
 }
 
-=back
-
-=begin InternalDoc
-
 =head2 Related Objects
-
-=end InternalDoc
-
-=over
-
-=begin InternalDoc
 
 =item $dataobj->add_dataobj_relations( $target, $has => $is [, $has => $is ] )
 
 Add a relation between this object and $target of type $has. If $is is defined will also add the reciprocal relationship $is from $target to this object. May be repeated to add multiple relationships.
 
 You must commit $target after calling this method.
-
-=end InternalDoc
 
 =cut
 
@@ -2077,15 +1820,11 @@ sub _get_related_uris
 	return keys %haystack;
 }
 
-=begin InternalDoc
-
 =item $bool = $dataobj->has_dataobj_relations( $target, @types )
 
 Returns true if this object is related to $target by all @types.
 
 If @types is empty will return true if any relationships exist.
-
-=end InternalDoc
 
 =cut
 
@@ -2109,13 +1848,9 @@ sub has_dataobj_relations
 	return 0;
 }
 
-=begin InternalDoc
-
 =item $bool = $dataobj->has_related_dataobjs( @types )
 
 Returns true if related_dataobjs() would return some objects, but without actually retrieving the related objects from the database.
-
-=end InternalDoc
 
 =cut
 
@@ -2129,13 +1864,9 @@ sub has_related_dataobjs
 	return scalar @uris > 0;
 }
 
-=begin InternalDoc
-
 =item @dataobjs = $dataobj->related_dataobjs( @types )
 
 Returns a list of objects related to this object by @types.
-
-=end InternalDoc
 
 =cut
 
@@ -2168,15 +1899,11 @@ sub related_dataobjs
 	return wantarray ? @matches : \@matches;
 }
 
-=begin InternalDoc
-
 =item $dataobj->remove_dataobj_relations( $target [, $has => $is [, $has => $is ] )
 
 Remove relations between this object and $target. If $has => $is pairs are defined will only remove those relationships given.
 
 You must L</commit> this object and $target to write the changes.
-
-=end InternalDoc
 
 =cut
 
@@ -2217,36 +1944,5 @@ sub remove_dataobj_relations
 
 =cut
 ######################################################################
-
-package EPrints::DataObj::SAX::Handler;
-
-sub new
-{
-	my( $class, @self ) = @_;
-
-	return bless \@self, $class;
-}
-
-sub AUTOLOAD {}
-
-sub start_element
-{
-	my( $self, $data ) = @_;
-	$self->[0]->start_element( $data, @$self[1..$#$self] );
-}
-
-sub end_element
-{
-	my( $self, $data ) = @_;
-	$self->[0]->end_element( $data, @$self[1..$#$self] );
-}
-
-sub characters
-{
-	my( $self, $data ) = @_;
-	$self->[0]->characters( $data, @$self[1..$#$self] );
-}
-
-# END OF SAX::Handler
 
 1; # for use success

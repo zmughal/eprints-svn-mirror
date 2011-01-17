@@ -20,7 +20,6 @@ my %executables = (
 	  'wget' => '/usr/bin/wget',
 	  'antiword' => '/usr/bin/antiword',
 	  'ffmpeg' => '/usr/bin/ffmpeg',
-	  'file' => '/usr/bin/file',
 	);
 while(my( $name, $path ) = each %executables)
 {

@@ -39,8 +39,12 @@ sub validate
 	
 	foreach my $field ( @{$self->{config}->{fields}} )
 	{
-		my $for_archive = defined($field->{required}) &&
-			$field->{required} eq "for_archive";
+		my $for_archive = 0;
+		
+		if( $field->{required} eq "for_archive" )
+		{
+			$for_archive = 1;
+		}
 
 		# cjg bug - not handling for_archive here.
 		if( $field->{required} && !$self->{dataobj}->is_set( $field->{name} ) )

@@ -72,14 +72,10 @@ The file which we should link to. For something like a PDF file this is
 the only file. For an HTML document with images it would be the name of
 the actual HTML file.
 
-=item files (subobject, multiple)
+=item documents (subobject, multiple)
 
-A virtual field which represents the list of Files which are
+A virtual field which represents the list of Documents which are
 part of this record.
-
-=item media
-
-A compound field containing a description of the document media - dimensions, codec etc.
 
 =back
 
@@ -177,28 +173,13 @@ sub get_system_field_info
 				{
 					sub_name => "type",
 					type => "text",
+					text_index => 0,
 				},
 				{
 					sub_name => "uri",
 					type => "text",
+					text_index => 0,
 				},
-			],
-		},
-
-		{
-			name => "media",
-			type => "compound",
-			multiple => 0,
-			fields => [
-				{ sub_name => "duration", type => "id", sql_index => 0},
-				{ sub_name => "audio_codec", type => "id", sql_index => 0},
-				{ sub_name => "video_codec", type => "id", sql_index => 0},
-				{ sub_name => "width", type => "int", sql_index => 0},
-				{ sub_name => "height", type => "int", sql_index => 0},
-				{ sub_name => "aspect_ratio", type => "id", sql_index => 0},
-
-				{ sub_name => "sample_start", type => "id", sql_index => 0},
-				{ sub_name => "sample_stop", type => "id", sql_index => 0},
 			],
 		},
 	);
@@ -552,7 +533,7 @@ sub get_url
 {
 	my( $self, $file ) = @_;
 
-	$file = $self->value( "main" ) unless( defined $file );
+	$file = $self->get_main unless( defined $file );
 
 	# just in case we don't *have* a main part yet.
 	return $self->get_baseurl unless( defined $file );
@@ -1099,26 +1080,18 @@ sub upload_url
 	$self->add_directory( "$tmpdir" );
 
 	# Otherwise set the main file if appropriate
-	if( !$self->is_set( "main" ) )
+	if( !defined $self->get_main() || $self->get_main() eq "" )
 	{
 		my $endfile = $url;
-		$endfile =~ s/^.*\///;
+		$endfile =~ s/.*\///;
+		$self->set_main( $endfile );
 
-		# the URL itself, otherwise index.html?
-		for( $endfile, "index.html", "index.htm" )
-		{
-			$self->set_main( $_ ), last if -s "$tmpdir/$_";
-		}
+		# If it's still undefined, try setting it to index.html or index.htm
+		$self->set_main( "index.html" ) unless( defined $self->get_main() );
+		$self->set_main( "index.htm" ) unless( defined $self->get_main() );
 
-	}
-	if( !$self->is_set( "main" ) )
-	{
-		# only one file so main must be it
-		my $files = $self->value( "files" );
-		if( scalar @$files == 1 )
-		{
-			$self->set_main( $files->[0]->value( "filename" ) );
-		}
+		# Those are our best guesses, best leave it to the user if still don't
+		# have a main file.
 	}
 	
 	$self->queue_files_modified;
@@ -1223,7 +1196,7 @@ sub validate
 		my $fieldname = $self->{session}->make_element( "span", class=>"ep_problem_field:documents" );
 		push @problems, $self->{session}->html_phrase( "lib/document:no_files", fieldname=>$fieldname );
 	}
-	elsif( !$self->is_set( "main" ) )
+	elsif( !defined $self->get_main() || $self->get_main() eq "" )
 	{
 		# No file selected as main!
 		my $fieldname = $self->{session}->make_element( "span", class=>"ep_problem_field:documents" );
@@ -1312,6 +1285,13 @@ modified.
 sub files_modified
 {
 	my( $self ) = @_;
+
+	# remove the now invalid cache of words from this document
+	# (see also EPrints::MetaField::Fulltext::get_index_codes_basic)
+	my $indexcodes  = $self->get_related_objects(
+			EPrints::Utils::make_relation( "hasIndexCodesVersion" )
+		);
+	$_->remove for @$indexcodes;
 
 	my $rc = $self->make_thumbnails;
 
@@ -1492,9 +1472,8 @@ sub thumbnail_url
 
 	my $url = $self->get_baseurl();
 	$url =~ s! /$ !.$relation/!x;
-	if( $self->is_set( "main" ) )
+	if( defined(my $file = $self->get_main) )
 	{
-		my $file = $self->value( "main" );
 		utf8::encode($file);
 		$file =~ s/([^\/-_\.!~\*'\(\)A-Za-z0-9\/])/sprintf('%%%02X',ord($1))/ge;
 		$url .= $file;
@@ -1688,11 +1667,8 @@ sub render_preview_link
 		$set = "";
 	}
 
-	my $size = $opts{size};
-	$size = "lightbox" if !defined $size;
-
-	my $url = $self->thumbnail_url( $size );
-	if( defined $url )
+	my $url = $self->thumbnail_url( "preview" );
+	if( defined( $url ) )
 	{
 		my $link = $self->{session}->make_element( "a",
 				href=>$url,
@@ -1738,25 +1714,17 @@ sub thumbnail_path
 	return( $eprint->local_path()."/thumbnails/".sprintf("%02d",$self->get_value( "pos" )) );
 }
 
-sub thumbnail_types
-{
-	my( $self ) = @_;
-
-	my @list = qw/ small medium preview lightbox audio_ogg audio_mp4 video_ogg video_mp4 /;
-
-	if( $self->{session}->get_repository->can_call( "thumbnail_types" ) )
-	{
-		$self->{session}->get_repository->call( "thumbnail_types", \@list, $self->{session}, $self );
-	}
-
-	return reverse @list;
-}
 
 sub remove_thumbnails
 {
 	my( $self ) = @_;
 
-	my @list = $self->thumbnail_types;
+	my @list = qw/ small medium preview /;
+
+	if( $self->{session}->get_repository->can_call( "thumbnail_types" ) )
+	{
+		$self->{session}->get_repository->call( "thumbnail_types", \@list, $self->{session}, $self );
+	}
 
 	foreach my $size (@list)
 	{
@@ -1784,11 +1752,16 @@ sub make_thumbnails
 		return;
 	}
 
-	my $src_main = $self->get_stored_file( $self->value( "main" ) );
+	my $src_main = $self->get_stored_file( $self->get_main() );
 
 	return unless defined $src_main;
 
-	my @list = $self->thumbnail_types;
+	my @list = qw/ small medium preview /;
+
+	if( $self->{session}->get_repository->can_call( "thumbnail_types" ) )
+	{
+		$self->{session}->get_repository->call( "thumbnail_types", \@list, $self->{session}, $self );
+	}
 
 	SIZE: foreach my $size ( @list )
 	{
@@ -1799,7 +1772,7 @@ sub make_thumbnails
 		# remove the existing thumbnail
    		if( defined($tgt) )
 		{
-			my $tgt_main = $tgt->get_stored_file( $tgt->value( "main" ) );
+			my $tgt_main = $tgt->get_stored_file( $tgt->get_main() );
 			if( defined $tgt_main && $tgt_main->get_datestamp gt $src_main->get_datestamp )
 			{
 				# ignore if tgt's main file is newer than document's main file
@@ -1838,7 +1811,7 @@ sub mime_type
 	my( $self, $file ) = @_;
 
 	# Primary doc if no filename
-	$file = $self->value( "main" ) unless( defined $file );
+	$file = $self->get_main unless( defined $file );
 
 	my $fileobj = $self->get_stored_file( $file );
 

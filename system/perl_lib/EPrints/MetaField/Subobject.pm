@@ -183,204 +183,88 @@ sub get_value
 	}
 }
 
-sub render_single_value
+sub to_xml
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $session, $value, $dataset, %opts ) = @_;
 
-	return $value->render_citation_link( "default" );
-}
-
-sub get_search_conditions
-{
-	my( $self, $session, $dataset, $search_value, $match, $merge,
-		$search_mode ) = @_;
-
-	return EPrints::Search::Condition::False->new()
-		if $match ne "IN";
-
-	my( $codes ) = EPrints::MetaField::Text::get_index_codes_basic(
-		$self,
-		$session,
-		$search_value
-	);
-
-	if( $search_value =~ s/\*$// )
+	# don't show empty fields
+	if( !$opts{show_empty} && !EPrints::Utils::is_set( $value ) )
 	{
-		return EPrints::Search::Condition::IndexStart->new( 
-				$dataset,
-				$self, 
-				$codes->[0] );
+		return $session->make_doc_fragment;
+	}
+
+	if( $self->get_property( "multiple" ) )
+	{
+		my $tag = $session->make_element( $self->get_name() );
+		foreach my $dataobj ( @{$value||[]} )
+		{
+			next if( 
+				$opts{hide_volatile} &&
+				$dataobj->isa( "EPrints::DataObj::Document" ) &&
+				$dataobj->has_related_objects( EPrints::Utils::make_relation( "isVolatileVersionOf" ) )
+			  );
+			$tag->appendChild( $dataobj->to_xml( %opts ) );
+		}
+		return $tag;
+	}
+	elsif( defined $value )
+	{
+		return $value->to_xml( %opts );
 	}
 	else
 	{
-		return EPrints::Search::Condition::Index->new( 
-				$dataset,
-				$self, 
-				$codes->[0] );
+		return $session->make_doc_fragment;
 	}
 }
 
-sub get_index_codes_basic
+sub xml_to_epdata
 {
-	my( $self, $session, $doc ) = @_;
+	my( $self, $session, $xml, %opts ) = @_;
 
-	# only know how to get index codes out of documents
-	return( [], [], [] ) if !$doc->isa( "EPrints::DataObj::Document" );
+	my $value = undef;
 
-	# we only supply index codes for proper documents
-	return( [], [], [] ) if $doc->has_related_objects(
-		EPrints::Utils::make_relation( "isVolatileVersionOf" )
-	);
-
-	my $main_file = $doc->get_stored_file( $doc->get_main );
-	return( [], [], [] ) unless defined $main_file;
-
-	my( $indexcodes_doc ) = @{($doc->get_related_objects(
-			EPrints::Utils::make_relation( "hasIndexCodesVersion" )
-		))};
-	my $indexcodes_file;
-	if( defined $indexcodes_doc )
+	if( $self->get_property( "multiple" ) )
 	{
-		$indexcodes_file = $indexcodes_doc->get_stored_file( "indexcodes.txt" );
-	}
-
-	# (re)generate indexcodes if it doesn't exist or is out of date
-	if( !defined( $indexcodes_doc ) ||
-		$main_file->get_datestamp() gt $indexcodes_file->get_datestamp() )
-	{
-		$indexcodes_doc = $doc->make_indexcodes();
-		if( defined( $indexcodes_doc ) )
+		$value = [];
+		foreach my $node ($xml->childNodes)
 		{
-			$indexcodes_file = $indexcodes_doc->get_stored_file( "indexcodes.txt" );
-		}
-	}
-
-	return( [], [], [] ) unless defined $indexcodes_doc;
-
-	my $data = "";
-	$indexcodes_file->get_file(sub {
-		$data .= $_[0];
-	});
-	my @codes = split /\r?\n/, $data;
-
-	return( \@codes, [], [] );
-}
-
-sub to_sax
-{
-	my( $self, $value, %opts ) = @_;
-
-	return if !$opts{show_empty} && !EPrints::Utils::is_set( $value );
-
-	my $handler = $opts{Handler};
-	my $dataset = $self->dataset;
-	my $name = $self->name;
-
-	$handler->start_element( {
-		Prefix => '',
-		LocalName => $name,
-		Name => $name,
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-		Attributes => {},
-	});
-
-	for($self->property( "multiple" ) ? @$value : $value)
-	{
-		next if(
-			$opts{hide_volatile} &&
-			$_->isa( "EPrints::DataObj::Document" ) &&
-			$_->has_related_objects( EPrints::Utils::make_relation( "isVolatileVersionOf" ) )
-		);
-		$_->to_sax( %opts );
-	}
-
-	$handler->end_element( {
-		Prefix => '',
-		LocalName => $name,
-		Name => $name,
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-	});
-}
-
-sub empty_value
-{
-	return {};
-}
-
-sub start_element
-{
-	my( $self, $data, $epdata, $state ) = @_;
-
-	++$state->{depth};
-
-	if( defined(my $handler = $state->{handler}) )
-	{
-		$handler->start_element( $data, $state->{epdata}, $state->{child} );
-	}
-	elsif( $state->{depth} == 1 && $self->property( "multiple" ) )
-	{
-		$epdata->{$self->name} = [];
-	}
-	elsif( $state->{depth} == 2 )
-	{
-		my $ds = $self->{repository}->dataset( $self->property( "datasetid" ) );
-		my $class = $ds->get_object_class;
-
-		if( $data->{LocalName} ne $ds->base_id )
-		{
-			if( $state->{Handler} )
+			next unless EPrints::XML::is_dom( $node, "Element" );
+			my $epdata = $self->xml_to_epdata_basic( $session, $node, %opts );
+			if( defined $epdata )
 			{
-				$state->{Handler}->message( "warning", $self->{repository}->xml->create_text_node( "Invalid XML element: $data->{LocalName}" ) );
+				push @$value, $epdata;
 			}
-			undef $state->{handler};
-			return;
 		}
-
-		$state->{child} = {%$state,
-			dataset => $ds,
-			depth => 0,
-		};
-		$state->{epdata} = {};
-		$state->{handler} = $class;
-
-		$class->start_element( $data, $state->{epdata}, $state->{child} );
 	}
+	else
+	{
+		$value = $self->xml_to_epdata_basic( $session, $xml, %opts );
+	}
+
+	return $value;
 }
 
-sub end_element
+sub xml_to_epdata_basic
 {
-	my( $self, $data, $epdata, $state ) = @_;
+	my( $self, $session, $xml, %opts ) = @_;
 
-	if( defined(my $handler = $state->{handler}) )
-	{
-		$handler->end_element( $data, $state->{epdata}, $state->{child} );
-	}
+	my $datasetid = $self->get_property( "datasetid" );
 
-	if( $state->{depth} == 2 ) # single object is still: <foo><document>
+	my $ds = $session->get_repository->get_dataset( $datasetid );
+	my $class = $ds->get_object_class;
+
+	my $nodeName = $xml->nodeName;
+	if( $nodeName ne $datasetid )
 	{
-		if( $self->property( "multiple" ) )
+		if( defined $opts{Handler} )
 		{
-			push @{$epdata->{$self->name}}, delete $state->{epdata};
+			$opts{Handler}->message( "warning", $session->html_phrase( "Plugin/Import/XML:unexpected_element", name => $session->make_text( $nodeName ) ) );
+			$opts{Handler}->message( "warning", $session->html_phrase( "Plugin/Import/XML:expected", elements => $session->make_text( "<$datasetid>" ) ) );
 		}
-		else
-		{
-			$epdata->{$self->name} = delete $state->{epdata};
-		}
-		delete $state->{child};
-		delete $state->{handler};
+		return undef;
 	}
 
-	--$state->{depth};
-}
-
-sub characters
-{
-	my( $self, $data, $epdata, $state ) = @_;
-
-	if( defined(my $handler = $state->{handler}) )
-	{
-		$handler->characters( $data, $state->{epdata}, $state->{child} );
-	}
+	return $class->xml_to_epdata( $session, $xml, %opts );
 }
 
 ######################################################################

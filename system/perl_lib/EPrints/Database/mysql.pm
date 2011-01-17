@@ -231,10 +231,6 @@ sub connect
 	{
 		$self->do("SET NAMES 'utf8'");
 	}
-	elsif( $DBI::err == 1040 )
-	{
-		EPrints->abort( "Error connecting to MySQL server: $DBI::errstr. To fix this increase max_connections in my.cnf:\n\n[mysqld]\nmax_connections=300\n" );
-	}
 
 	return $rc;
 }
@@ -539,24 +535,6 @@ sub retry_error
 
 	my $err = $self->{'dbh'}->err;
 	return ($err == 2006);
-}
-
-sub type_info
-{
-	my( $self, $data_type ) = @_;
-
-	if( $data_type eq SQL_CLOB )
-	{
-		return {
-			TYPE_NAME => "longtext",
-			CREATE_PARAMS => "",
-			COLUMN_SIZE => 2 ** 31,
-		};
-	}
-	else
-	{
-		return $self->SUPER::type_info( $data_type );
-	}
 }
 
 1; # For use/require success

@@ -36,6 +36,18 @@ use EPrints::MetaField;
 
 use strict;
 
+sub get_search_conditions_not_ex
+{
+	my( $self, $session, $dataset, $search_value, $match, $merge,
+	$search_mode ) = @_;
+
+	return EPrints::Search::Condition->new(
+		'=',
+		$dataset,
+		$self,
+		$search_value );
+}
+
 ######################################################################
 =pod
 
@@ -50,7 +62,7 @@ sub value_from_sql_row
 {
 	my( $self, $session, $row ) = @_;
 
-	if( ref($session->{database}) eq "EPrints::Database::mysql" )
+	if( $session->{database}->isa( "EPrints::Database::mysql" ) )
 	{
 		utf8::decode( $row->[0] );
 	}
@@ -79,24 +91,6 @@ sub sql_row_from_value
 	$value = substr( $value, 0, $self->{ "maxlength" } );
 
 	return( $value );
-}
-
-sub get_property_defaults
-{
-	my( $self ) = @_;
-	return(
-		$self->SUPER::get_property_defaults,
-		match => "EX",
-		merge => "ALL",
-	);
-}
-
-# id fields are searched whole, whether against the main table or in the index
-sub get_index_codes_basic
-{
-       my( $self, $session, $value ) = @_;
-
-       return( [ $value ], [], [] );
 }
 
 ######################################################################

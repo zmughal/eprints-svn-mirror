@@ -141,8 +141,6 @@ sub xml_dataobj
 	$lastmod =~ s/ /T/;
 	$lastmod = $lastmod."Z";
 	my $eprint_id = $dataobj->get_value( "eprintid" );
-	my $eprint_uri = $dataobj->uri;
-	my $eprint_status = $dataobj->get_value ( "eprint_status" );
 	my $eprint_rev = $dataobj->get_value( "rev_number" );
 	my $eprint_url = $dataobj->get_url;
 	my $resmap_url = $plugin->dataobj_export_url( $dataobj );
@@ -155,7 +153,7 @@ sub xml_dataobj
 	my $topcontent = $session->render_data_element(
 		4,
 		"id",
-		"$eprint_uri"
+		"$resmap_url#aggregation"
 	);
 	$response->appendChild( $topcontent );
 	
@@ -196,13 +194,6 @@ sub xml_dataobj
 		4,
 		"title",
 		$title
-	);
-	$response->appendChild( $topcontent );
-
-	$topcontent = $session->render_data_element(
-		4,
-		"status",
-		$eprint_status
 	);
 	$response->appendChild( $topcontent );
 

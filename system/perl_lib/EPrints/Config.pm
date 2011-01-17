@@ -124,6 +124,12 @@ sub load_system_config
 	my $syslibcfgd = $SYSTEMCONF->{"lib_path"}."/syscfg.d";
 	my $syscfgd = $SYSTEMCONF->{"cfg_path"}."/cfg.d";
 
+	$SYSTEMCONF->{set_in} = {};
+	foreach my $conf_id ( keys %{$SYSTEMCONF} )
+	{
+		$SYSTEMCONF->{set_in}->{$conf_id} = "EPrints::SystemSettings";
+	}
+
 	my $files = {};
 
 	foreach my $dir ( $syslibcfgd, $syscfgd )
@@ -138,20 +144,46 @@ sub load_system_config
 		closedir($dh);
 	}
 
-	{
-		no strict 'refs';
-		${"EPrints::SystemSettings::config"} = $SYSTEMCONF;
-	}
-
-	eval &_bootstrap( "EPrints::SystemSettings" );
-
-	# we want to sort by filename because we interleave files from default and
-	# custom locations
-	foreach my $file (sort keys %$files)
-	{
+	foreach my $file ( sort keys %{$files} )
+	{	
 		my $filepath = $files->{$file};
-		my $err = EPrints::SystemSettings::load_config_file( $filepath );
-		EPrints->abort( "Error in configuration:\n$err\n" ) if $err;
+
+		open(my $fh, "<", $filepath) or EPrints::abort( "Error reading from $filepath: $!" );
+
+		$EPrints::SystemSettings::tmp = {};
+		my $perl = <<EOP;
+package EPrints::SystemSettings;
+
+use EPrints::Const;
+
+our \$c = \$EPrints::SystemSettings::tmp;
+
+EOP
+		$perl .= join "", <$fh>;
+		close($fh);
+
+		eval $perl;
+		if( $@ )
+		{
+			my $errors = "error in $filepath:\n$@";
+			print STDERR <<END;
+------------------------------------------------------------------
+---------------- EPrints System Error ----------------------------
+------------------------------------------------------------------
+Failed to load system config
+Errors follow:
+------------------------------------------------------------------
+$errors
+------------------------------------------------------------------
+END
+			exit(1);
+		}
+
+		foreach my $conf_id ( keys %{$EPrints::SystemSettings::tmp} )
+		{
+			$SYSTEMCONF->{$conf_id} = $EPrints::SystemSettings::tmp->{$conf_id};
+			$SYSTEMCONF->{set_in}->{$conf_id} = $filepath;
+		}
 	}
 }
 
@@ -214,7 +246,7 @@ sub load_repository_config_module
 {
 	my( $id ) = @_;
 
-	my $info = bless {}, "EPrints::RepositoryConfig";
+	my $info = {};
 	
 	%$info = %$SYSTEMCONF;
 
@@ -236,6 +268,14 @@ sub load_repository_config_module
 		exit 1;
 	}
 
+	no strict 'refs';
+	eval ' $EPrints::Config::'.$id.'::config = bless $info, "EPrints::RepositoryConfig"; ';
+	use strict 'refs';
+
+	my @oldinc = @INC;
+	local @INC;
+	@INC = (@oldinc, $info->{archiveroot} );
+
 	my $libcfgd = $SYSTEMCONF->{"lib_path"}."/cfg.d";
 	my $repcfgd = $info->{archiveroot}."/cfg/cfg.d";
 	my %files_map = ();
@@ -252,61 +292,65 @@ sub load_repository_config_module
 		closedir( $dh );
 	}
 
+	my @files = ();
+	foreach my $file ( sort keys %files_map ) { push @files, $files_map{$file}; }
+
+	my $metafield_pl = $info->{archiveroot}."/var/metafield.pl";
+	if( -e $metafield_pl )
 	{
-		no strict 'refs';
-		${"EPrints::Config::${id}::config"} = $info;
+		push @files, $metafield_pl;
 	}
 
-	eval &_bootstrap( "EPrints::Config::".$id );
-
-	# we want to sort by filename because we interleave files from default and
-	# custom locations
-	foreach my $file (sort keys %files_map)
+	$info->{set_in} = {};
+	my $set = {};
+	foreach( keys %$info ) { $set->{$_} = 1; }
+		
+	foreach my $filepath ( sort @files )
 	{
-		my $filepath = $files_map{$file};
-		no strict 'refs';
-		my $err = &{"EPrints::Config::${id}::load_config_file"}( $filepath );
-		EPrints->abort( "Error in configuration:\n$err\n" ) if $err;
+		$@ = undef;
+		my $err;
+		unless( open( CFGFILE, $filepath ) )
+		{
+			EPrints::abort( "Could not open $filepath: $!" );
+		}
+		my $cfgfile = join('',<CFGFILE>);
+		close CFGFILE;
+	 	my $todo = <<END;
+package EPrints::Config::$id; 
+use EPrints::Const;
+our \$c = \$EPrints::Config::${id}::config;
+#line 1 "$filepath"
+$cfgfile
+END
+#print STDERR "$filepath...\n";
+		eval $todo;
+
+		if( $@ )
+		{
+			my $errors = "error in $filepath:\n$@";
+			print STDERR <<END;
+------------------------------------------------------------------
+---------------- EPrints System Warning --------------------------
+------------------------------------------------------------------
+Failed to load config module for $id
+------------------------------------------------------------------
+$errors
+------------------------------------------------------------------
+END
+			return;
+		}
+		foreach( keys %$info )
+		{
+			next if defined $set->{$_};
+			$set->{$_} = 1;
+			$info->{set_in}->{$_} = \$filepath;
+		}
 	}
 
 	return $info;
 }
 
-sub _bootstrap
-{
-	my( $class ) = @_;
 
-	return <<EOP;
-package $class;
-use EPrints::Const qw( :trigger );
-use Time::HiRes;
-
-our \$c = \$${class}::config;
-
-{
-no warnings; # suppress redef warnings when re-loading
-sub load_config_file
-{
-	use warnings; # but still show warnings when loading files
-	my( \$filepath ) = \@_;
-
-	my \$cfgfile;
-	open(my \$fh, "<", \$filepath) or return "Error opening '\$filepath': \$!";
-	sysread(\$fh, \$cfgfile, -s \$fh);
-	close(\$fh);
-
-	eval "\$cfgfile";
-	return if !\$@;
-
-	my \$err = \$@;
-	\$err =~ s/,[^,]+\$//;
-	\$err =~ s/\\([^)]+\\)(.*?)\$/\$filepath\$1/;
-	return \$err;
-}
-}
-
-EOP
-}
 
 
 ######################################################################

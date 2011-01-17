@@ -155,8 +155,6 @@ sub cache_list_items
 
 Returns a list of screens that appear in list $list_id ordered by their position.
 
-If $list_id is an array ref returns all matching entries for each individual list.
-
 Each screen opt is a hash ref of:
 
 	screen - screen plugin
@@ -179,16 +177,10 @@ sub list_items
 
 	my $screen_lists = $self->{session}->{screen_lists};
 
-	my @opts;
-	for(ref($list_id) eq "ARRAY" ? @$list_id : $list_id)
-	{
-		push @opts, @{$screen_lists->{$_} || []};
-	}
-
 	my @list;
-	foreach my $opt (@opts)
+	foreach my $opt (@{$screen_lists->{$list_id} || []})
 	{
-		my $screen = $self->{session}->plugin( $opt->{screen_id}, processor=>$self, %{$opts{params}||{}} );
+		my $screen = $self->{session}->plugin( $opt->{screen_id}, processor=>$self );
 		if( $filter )
 		{
 			next if !$screen->can_be_viewed;
@@ -382,8 +374,6 @@ sub process
 		template => $self->{template},
  	);
 	$self->{session}->send_page();
-
-	return $self; # useful for unit-tests
 }
 
 

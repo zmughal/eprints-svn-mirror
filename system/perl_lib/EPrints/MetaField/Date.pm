@@ -275,20 +275,44 @@ sub get_unsorted_values
 	return \@outvalues;
 }
 
-sub get_id_from_value
+sub get_ids_by_value
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $session, $dataset, %opts ) = @_;
 
-	return 'NULL' if !EPrints::Utils::is_set( $value );
-	my $id = $self->SUPER::get_id_from_value( $session, $value );
+	my $in_ids = $session->get_database->get_ids_by_field_values( $self, $dataset, %opts );
 
 	my $res = $self->{render_res};
 
-	return substr($id,0,4) if $res eq "year";
-	return substr($id,0,7) if $res eq "month";
-	return substr($id,0,10) if $res eq "day";
+	if( $res eq "day" )
+	{
+		return $in_ids;
+	}
 
-	return $res;
+	my $l = 10;
+	if( $res eq "month" ) { $l = 7; }
+	if( $res eq "year" ) { $l = 4; }
+
+	my $id_map = {};
+	foreach my $value ( keys %{$in_ids} )
+	{
+		my $proc_v = "undef";
+		if( defined $value )
+		{
+			$proc_v = substr($value,0,$l);
+		}
+
+		foreach my $id ( @{$in_ids->{$value}} )
+		{
+			$id_map->{$proc_v}->{$id} = 1;
+		}
+	}
+	my $out_ids = {};
+	foreach my $value ( keys %{$id_map} )
+	{
+		$out_ids->{$value} = [ keys %{$id_map->{$value}} ];
+	}
+
+	return $out_ids;
 }
 
 sub get_value_label

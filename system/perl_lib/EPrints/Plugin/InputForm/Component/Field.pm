@@ -84,8 +84,12 @@ sub validate
 
 	my $field = $self->{config}->{field};
 	
-	my $for_archive = defined($field->{required}) &&
-		$field->{required} eq "for_archive";
+	my $for_archive = 0;
+	
+	if( $field->{required} eq "for_archive" )
+	{
+		$for_archive = 1;
+	}
 	
 	my @problems;
 
@@ -157,7 +161,7 @@ sub is_required
 	my $req = $self->{config}->{field}->{required};
 	# my $staff_mode = $self->{workflow}->get_parameter( "STAFF_MODE" );
 	
-	return( defined $req && $req == 1 );
+	return( $req == 1 );
 	
 	# || ( $req eq "for_archive" && $staff_mode ) );
 }

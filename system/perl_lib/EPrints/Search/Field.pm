@@ -168,29 +168,19 @@ sub new
 	my $self = {};
 	bless $self, $class;
 	
-	if( ref( $fields ) ne "ARRAY" )
-	{
-		$fields = [ $fields ];
-	}
-	$self->{"fieldlist"} = $fields;
-	$self->{"field"} = $fields->[0];
-
 	$self->{"session"} = $session;
 	$self->{"dataset"} = $dataset;
 
 	$self->{"value"} = $value;
-
-	# argument or field default or EQ/ALL
-	$self->{"match"} = $match ? $match : (defined $self->{field} ?
-				$self->{field}->property( "match" ) : "EQ");
-	$self->{"merge"} = $merge ? $merge : (defined $self->{field} ?
-				$self->{field}->property( "merge" ) : "ALL");
-
+	$self->{"match"} = "EQ";
+	$self->{"match"} = $match if( EPrints::Utils::is_set( $match ) );
+	$self->{"merge"} = "ALL";
+	$self->{"merge"} = $merge if( EPrints::Utils::is_set( $merge ) );
 	if( $self->{match} ne "EQ" && $self->{match} ne "IN" && $self->{match} ne "EX" )
 	{
 		$session->get_repository->log( 
 "search field match value was '".$self->{match}."'. Should be EQ, IN or EX." );
-		$self->{match} = "EQ";
+		$self->{merge} = "ALL";
 	}
 
 	if( $self->{merge} ne "ALL" && $self->{merge} ne "ANY" )
@@ -208,6 +198,13 @@ sub new
 "search field show_help value was '".$self->{"show_help"}."'. Should be toggle, always or never." );
 		$self->{"show_help"} = "toggle";
 	}
+
+	if( ref( $fields ) ne "ARRAY" )
+	{
+		$fields = [ $fields ];
+	}
+
+	$self->{"fieldlist"} = $fields;
 
 	$prefix = "" unless defined $prefix;
 		
@@ -236,6 +233,7 @@ sub new
 	$self->{"id"} = $id || $self->{rawid};
 
 	$self->{"form_name_prefix"} = $prefix.$self->{"id"};
+	$self->{"field"} = $fields->[0];
 
 	# a search is "simple" if it contains a mix of fields. 
 	# 'text indexable" fields (longtext,text,url & email) all count 
@@ -300,23 +298,26 @@ sub from_form
 {
 	my( $self ) = @_;
 
-	my( $value, $match, $merge, $problem) =
+	my $problem;
+
+	( $self->{"value"}, $self->{"merge"}, $self->{"match"}, $problem ) =
 		$self->{"field"}->from_search_form( 
 			$self->{"session"}, 
 			$self->{"form_name_prefix"} );
 
-	$self->{value} = defined $value ? $value : "";
-	$self->{match} = $match if $match && $match =~ /^EQ|IN|EX$/;
-	$self->{merge} = $merge if $merge && $merge =~ /^ANY|ALL$/;
+	$self->{"value"} = "" unless( defined $self->{"value"} );
+	$self->{"merge"} = "ALL" unless( defined $self->{"merge"} );
+	$self->{"match"} = "EQ" unless( defined $self->{"match"} );
 
 	# match = NO? if value==""
 
 	if( $problem )
 	{
 		$self->{"match"} = "NO";
+		return $problem;
 	}
 
-	return $problem;
+	return;
 }
 	
 	
@@ -356,9 +357,11 @@ sub get_conditions
 	my @parts;
 	if( $self->{"search_mode"} eq "simple" )
 	{
-		@parts = EPrints::Index::Tokenizer::split_search_value( 
-			$self->{"session"},
-			$self->{"value"} );
+		@parts = EPrints::Index::split_words( 
+			$self->{"session"},  # could be just archive?
+			EPrints::Index::apply_mapping( 
+				$self->{"session"}, 
+				$self->{"value"} ) );
 	}
 	else
 	{
@@ -686,9 +689,7 @@ sub is_set
 {
 	my( $self ) = @_;
 
-	return EPrints::Utils::is_set( $self->{"value"} ) || (
-		$self->{"match"} eq "EX" && $self->{"merge"} eq "ALL"
-	);
+	return EPrints::Utils::is_set( $self->{"value"} ) || $self->{"match"} eq "EX";
 }
 
 
@@ -715,7 +716,7 @@ sub serialise
 		$self->{"match"}, 
 		$self->{"value"} )
 	{
-		my $item = defined $_ ? $_ : "";
+		my $item = $_;
 		$item =~ s/[\\\:]/\\$&/g;
 		push @escapedparts, $item;
 	}

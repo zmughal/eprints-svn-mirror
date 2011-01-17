@@ -45,17 +45,21 @@ sub new
 {
 	my( $class, %params ) = @_;
 
-	$params{repository} = $params{session} ||= $params{repository};
+	my $self = bless \%params, $class;
 
-	if( !exists $params{id} )
+	if( !defined $self->{repository} )
+	{
+		$self->{repository} = $self->{session} 
+	}
+	$self->{session} = $self->{repository};
+
+	if( !defined $self->{id} )
 	{
 		$class =~ /^(?:EPrints::Plugin::)?(.*)$/;
-		$params{id} = $1;
+		$self->{id} = $1;
 	}
 
-	$params{name} = exists $params{name} ? $params{name} : $params{id} . " plugin is missing the name parameter";
-
-	return bless \%params, $class;
+	return $self;
 }
 
 ######################################################################

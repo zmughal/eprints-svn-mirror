@@ -29,42 +29,42 @@ hr.ep_tm_last {
 
 /* Menu Bar */
 
-.ep_tm_menu, .ep_tm_key_tools {
+ul.ep_tm_menu, ul.ep_tm_key_tools {
 	clear: both;
 	list-style: none;
 	margin: 0px;
 	padding: 0px;
 }
 
-.ep_tm_menu {
+ul.ep_tm_menu {
 	background: #204f76;
 	background-image: url(images/blue_bar.png);
 }
 
-.ep_tm_menu li, .ep_tm_key_tools li {
+ul.ep_tm_menu li, ul.ep_tm_key_tools li {
 	list-style: none;
 	display: inline;
 }
 
-.ep_tm_menu li {
+ul.ep_tm_menu li {
 	padding-left: 10px;
 	padding-right: 10px;
 	border-right: solid 2px white;
 	font-weight: bold;
 }
 
-.ep_tm_menu li:hover {
+ul.ep_tm_menu li:hover {
 	background: #279ae2;
 }
 
-.ep_tm_menu li a, .ep_tm_key_tools li a {
+ul.ep_tm_menu li a, ul.ep_tm_key_tools li a {
 }
 
-.ep_tm_menu li a {
+ul.ep_tm_menu li a {
 	text-decoration: none;
 	color: white;
 }
-.ep_tm_menu li a:visited {
+ul.ep_tm_menu li a:visited {
 	color: white;
 }
 
@@ -72,12 +72,12 @@ hr.ep_tm_last {
 
 /* Action Menu Bar */
 
-.ep_tm_key_tools li {
+ul.ep_tm_key_tools li {
 	padding: 0px .5em;
 	border-left: 1px solid #666;
 }
 
-.ep_tm_key_tools li:first-child {
+ul.ep_tm_key_tools li:first-child {
 	padding-left: 0px;
 	border-left: none;
 }
@@ -120,29 +120,4 @@ hr.ep_tm_last {
 }
 #ep_tm_languages a {
 	margin-left: 4px;
-}
-
-.ep_tm_searchbar {
-        border-width:0;
-        width:100%;
-}
-
-.ep_tm_searchbar td {
-        padding: 0;
-        margin: 0;
-}
-
-.ep_tm_page_content {
-        width:720px;
-        margin:auto;
-        margin-top:20px;
-}
-
-.ep_tm_eprints_logo {
-        float: right;
-        margin-left: 1em;
-}
-
-.ep_tm_footer {
-        font-size: 80%;
 }

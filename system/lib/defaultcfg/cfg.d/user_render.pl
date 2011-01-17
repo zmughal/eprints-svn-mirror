@@ -1,12 +1,12 @@
 
 ######################################################################
 
-=item $xhtmlfragment = user_render( $user, $repository )
+=item $xhtmlfragment = user_render( $user, $session )
 
 This subroutine takes a user object and renders the XHTML view
 of this user for public viewing.
 
-Takes the L<$user|EPrints::DataObj::User> to render and the current L<$repository|EPrints::Session>.
+Takes the L<$user|EPrints::DataObj::User> to render and the current L<$session|EPrints::Session>.
 
 Returns an $xhtmlfragment (see L<EPrints::XML>).
 
@@ -17,57 +17,55 @@ Returns an $xhtmlfragment (see L<EPrints::XML>).
 
 $c->{user_render} = sub
 {
-	my( $user, $repository ) = @_;
-	
-	my $xml = $repository->xml();
+	my( $user, $session ) = @_;
 
 	my $html;	
 
 	my( $info, $p, $a );
-	$info = $xml->create_document_fragment;
+	$info = $session->make_doc_fragment;
 
 
 	# Render the public information about this user.
-	$p = $xml->create_element( "p" );
-	$p->appendChild( $user->render_citation("brief") );
+	$p = $session->make_element( "p" );
+	$p->appendChild( $user->render_description() );
 	# Address, Starting with dept. and organisation...
 	if( $user->is_set( "dept" ) )
 	{
-		$p->appendChild( $xml->create_element( "br" ) );
+		$p->appendChild( $session->make_element( "br" ) );
 		$p->appendChild( $user->render_value( "dept" ) );
 	}
 	if( $user->is_set( "org" ) )
 	{
-		$p->appendChild( $xml->create_element( "br" ) );
+		$p->appendChild( $session->make_element( "br" ) );
 		$p->appendChild( $user->render_value( "org" ) );
 	}
 	if( $user->is_set( "address" ) )
 	{
-		$p->appendChild( $xml->create_element( "br" ) );
+		$p->appendChild( $session->make_element( "br" ) );
 		$p->appendChild( $user->render_value( "address" ) );
 	}
 	if( $user->is_set( "country" ) )
 	{
-		$p->appendChild( $xml->create_element( "br" ) );
+		$p->appendChild( $session->make_element( "br" ) );
 		$p->appendChild( $user->render_value( "country" ) );
 	}
 	$info->appendChild( $p );
 	
 	if( $user->is_set( "usertype" ) )
 	{
-		$p = $xml->create_element( "p" );
-		$p->appendChild( $repository->html_phrase( "user_fieldname_usertype" ) );
-		$p->appendChild( $xml->create_text( ": " ) );
+		$p = $session->make_element( "p" );
+		$p->appendChild( $session->html_phrase( "user_fieldname_usertype" ) );
+		$p->appendChild( $session->make_text( ": " ) );
 		$p->appendChild( $user->render_value( "usertype" ) );
 		$info->appendChild( $p );
 	}
 
 	## E-mail and URL last, if available.
-	if( $user->value( "hideemail" ) ne "TRUE" )
+	if( $user->get_value( "hideemail" ) ne "TRUE" )
 	{
 		if( $user->is_set( "email" ) )
 		{
-			$p = $xml->create_element( "p" );
+			$p = $session->make_element( "p" );
 			$p->appendChild( $user->render_value( "email" ) );
 			$info->appendChild( $p );
 		}
@@ -75,7 +73,7 @@ $c->{user_render} = sub
 
 	if( $user->is_set( "url" ) )
 	{
-		$p = $repository->create_element( "p" );
+		$p = $session->make_element( "p" );
 		$p->appendChild( $user->render_value( "url" ) );
 		$info->appendChild( $p );
 	}

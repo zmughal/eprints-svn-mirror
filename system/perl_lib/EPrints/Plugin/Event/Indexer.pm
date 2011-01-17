@@ -41,23 +41,25 @@ sub index_all
 	return $self->_index_fields( $dataobj, [$dataset->get_fields] );
 }
 
-sub removed
+sub index_fulltext 
 {
-	my( $self, $datasetid, $id ) = @_;
+	my( $self, $dataobj ) = @_;
 
-	my $dataset = $self->{session}->dataset( $datasetid );
-	return if !defined $dataset;
-
-	my $rc = $self->{session}->run_trigger( EPrints::Const::EP_TRIGGER_INDEX_REMOVED,
-		dataset => $dataset,
-		id => $id,
-	);
-	return 1 if defined $rc && $rc eq EPrints::Const::EP_TRIGGER_DONE;
-
-	foreach my $field ($dataset->fields)
+	if( !defined $dataobj )
 	{
-		EPrints::Index::remove( $self->{session}, $dataset, $id, $field->name );
+		Carp::carp "Expected dataobj argument";
+		return 0;
 	}
+
+	my $dataset = $dataobj->get_dataset;
+
+	my $field = EPrints::MetaField->new( 
+				dataset => $dataset, 
+				name => "_fulltext_",
+				multiple => 1,
+				type => "fulltext" );
+
+	return $self->_index_fields( $dataobj, [$field] );
 }
 
 sub _index_fields
@@ -66,12 +68,6 @@ sub _index_fields
 
 	my $session = $self->{session};
 	my $dataset = $dataobj->get_dataset;
-
-	my $rc = $session->run_trigger( EPrints::Const::EP_TRIGGER_INDEX_FIELDS,
-		dataobj => $dataobj,
-		fields => $fields,
-	);
-	return 1 if defined $rc && $rc eq EPrints::Const::EP_TRIGGER_DONE;
 
 	foreach my $field (@$fields)
 	{

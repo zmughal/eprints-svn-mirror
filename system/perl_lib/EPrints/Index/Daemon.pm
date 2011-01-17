@@ -56,11 +56,6 @@ sub new
 {
 	my( $class, %opts ) = @_;
 
-	if( $^O eq 'MSWin32' )
-	{
-		$class = "${class}::MSWin32";
-	}
-
 #	$opts{logfile} = EPrints::Index::logfile();
 	$opts{pidfile} ||= EPrints::Index::pidfile();
 	$opts{tickfile} ||= EPrints::Index::tickfile();
@@ -268,10 +263,8 @@ sub roll_logs
 			return;
 		}
 	}
-	close( STDOUT ) or die "Error closing STDOUT: $!";
-	close( STDERR ) or die "Error closing STDERR: $!";
+	close( STDERR ) or die; # oh dear
 	rename($self->{logfile}, $self->{logfile}.'.1');
-	open( STDOUT, ">>", $self->{logfile} ); # If this fails we're stuffed
 	open( STDERR, ">>", $self->{logfile} ); # If this fails we're stuffed
 }
 
@@ -616,9 +609,6 @@ sub run_index
 
 		foreach my $repo ( @repos )
 		{
-			# reload the config if requested to
-			$repo->check_last_changed;
-
 			# give the next code $timeout secs to complete
 			eval {
 				local $SIG{ALRM} = sub { die "alarm\n" };

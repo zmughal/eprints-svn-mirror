@@ -70,13 +70,13 @@ sub create_from_data
 	my $parent = $data->{_parent};
 	if( defined( $parent ) )
 	{
-		if( $dataset->has_field( "datasetid" ) ) 
+		if( $dataset->has_field( "datasetid" ) )
 		{
-			$data->{datasetid} = $parent->dataset->base_id;
+			$data->{datasetid} ||= $parent->get_dataset->confid;
 		}
 		if( $dataset->has_field( "objectid" ) )
 		{
-			$data->{objectid} = $parent->id;
+			$data->{objectid} ||= $parent->get_id;
 		}
 	}
 

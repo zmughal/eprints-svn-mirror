@@ -42,16 +42,11 @@ sub new
 
 	my $self = $class->SUPER::new( %properties );
 
-	my %seen;
 	foreach my $inner_field ( @{$properties{fields}}, $self->extra_subfields )
 	{
 		if( !EPrints::Utils::is_set( $inner_field->{sub_name} ) )
 		{
 			EPrints->abort( "Sub fields of ".$self->dataset->id.".".$self->name." need the sub_name property to be set." );
-		}
-		if( $seen{$inner_field->{sub_name}}++ )
-		{
-			EPrints->abort( $self->dataset->id.".".$self->name." already contains a sub-field called '$inner_field->{sub_name}'" );
 		}
 		my $field = EPrints::MetaField->new( 
 			show_in_html => 0, # don't show the inner field separately
@@ -65,7 +60,7 @@ sub new
 			parent => $self,
 			parent_name => $self->get_name(),
 			dataset => $self->get_dataset(), 
-			provenance => $self->get_property( "provenance" ),
+			providence => $self->get_property( "providence" ),
 			multiple => $properties{ "multiple" },
 			volatile => $properties{ "volatile" } );
 
@@ -139,17 +134,19 @@ sub render_single_value_row
 {
 	my( $self, $session, $value, $object ) = @_;
 
-	my $tr = $session->make_element( "tr" );
+	my $f = $self->get_property( "fields_cache" );
 
-	foreach my $field (@{$self->{fields_cache}})
+	my %fieldname_to_alias = $self->get_fieldname_to_alias;
+	my $tr = $session->make_element( "tr" );
+	foreach my $field ( @{$f} )
 	{
-		my $alias = $field->property( "sub_name" );
+		my $name = $field->get_name;
 		my $td = $session->make_element( "td" );
 		$tr->appendChild( $td );
 		$td->appendChild( 
 			$field->render_single_value( 
 				$session, 
-				$value->{$alias}, 
+				$value->{$fieldname_to_alias{$name}}, 
 				$object ) );
 	}
 
@@ -165,136 +162,57 @@ sub render_single_value
 	return $table;
 }
 
-sub to_sax_basic
+sub to_xml_basic
 {
-	my( $self, $value, %opts ) = @_;
+	my( $self, $session, $value, $dataset ) = @_;
 
-	return if !EPrints::Utils::is_set( $value );
-
-	foreach my $field (@{$self->{fields_cache}})
+	my $r = $session->make_doc_fragment;
+	if( !EPrints::Utils::is_set( $value )  )
 	{
-		next if !$field->property( "export_as_xml" );
-
-		my $alias = $field->property( "sub_name" );
+		return $r;
+	}
+	my $f = $self->get_property( "fields_cache" );
+	my %fieldname_to_alias = $self->get_fieldname_to_alias;
+	foreach my $field_conf ( @{$f} )
+	{
+		my $name = $field_conf->{name};
+		my $field = $dataset->get_field( $name );
+		next unless $field->get_property( "export_as_xml" );
+		my $alias = $fieldname_to_alias{$name};
 		my $v = $value->{$alias};
-		# cause the sub-field to behave like it's a normal field
-		local $field->{multiple} = 0;
-		local $field->{parent_name};
-		local $field->{name} = $field->{sub_name};
-		$field->to_sax( $v, %opts );
+		my $tag = $session->make_element( $alias );
+		$tag->appendChild( $field->to_xml_basic( $session, $v, $dataset ) );
+		$r->appendChild( $tag );
 	}
+	return $r;
 }
 
-sub empty_value
+sub xml_to_epdata_basic
 {
-	return {};
-}
+	my( $self, $session, $xml, %opts ) = @_;
 
-sub start_element
-{
-	my( $self, $data, $epdata, $state ) = @_;
+	my $value = {};
 
-	++$state->{depth};
-
-	# if we're inside a sub-field just call it
-	if( defined(my $field = $state->{handler}) )
+	my %a_to_f = $self->get_alias_to_fieldname;
+	foreach my $node ($xml->childNodes)
 	{
-		$field->start_element( $data, $epdata, $state->{$field} );
-	}
-	# or initialise all fields at <creators>
-	elsif( $state->{depth} == 1 )
-	{
-		foreach my $field (@{$self->property( "fields_cache" )})
+		next unless EPrints::XML::is_dom( $node, "Element" );
+		my $nodeName = $node->nodeName;
+		my $name = $a_to_f{$nodeName};
+		if( !defined $name )
 		{
-			local $data->{LocalName} = $field->property( "sub_name" );
-			$state->{$field} = {%$state,
-				depth => 0,
-			};
-			$field->start_element( $data, $epdata, $state->{$field} );
-		}
-	}
-	# add a new empty value for each sub-field at <item>
-	elsif( $state->{depth} == 2 && $self->property( "multiple" ) )
-	{
-		foreach my $field (@{$self->property( "fields_cache" )})
-		{
-			$field->start_element( $data, $epdata, $state->{$field} );
-		}
-	}
-	# otherwise we must be starting a new sub-field value
-	else
-	{
-		foreach my $field (@{$self->property( "fields_cache" )})
-		{
-			if( $field->property( "sub_name" ) eq $data->{LocalName} )
+			if( defined $opts{Handler} )
 			{
-				$state->{handler} = $field;
-				last;
+				$opts{Handler}->message( "warning", $session->html_phrase( "Plugin/Import/XML:unexpected_element", name => $session->make_text( $nodeName ) ) );
+				$opts{Handler}->message( "warning", $session->html_phrase( "Plugin/Import/XML:expected", elements => $session->make_text( "<".join("> <", sort { $a cmp $b } keys %a_to_f).">" ) ) );
 			}
+			next;
 		}
-	}
-}
-
-sub end_element
-{
-	my( $self, $data, $epdata, $state ) = @_;
-
-	# finish all fields
-	if( $state->{depth} == 1 )
-	{
-		my $value = $epdata->{$self->name} = $self->property( "multiple" ) ? [] : $self->empty_value;
-
-		foreach my $field (@{$self->property( "fields_cache" )})
-		{
-			local $data->{LocalName} = $field->property( "sub_name" );
-			$field->end_element( $data, $epdata, $state->{$field} );
-
-			my $v = delete $epdata->{$field->name};
-			if( ref($value) eq "ARRAY" )
-			{
-				foreach my $i (0..$#$v)
-				{
-					$value->[$i]->{$field->property( "sub_name" )} = $v->[$i];
-				}
-			}
-			else
-			{
-				$value->{$field->property( "sub_name" )} = $v;
-			}
-
-			delete $state->{$field};
-		}
-	}
-	# end a new <item> for every field
-	elsif( $state->{depth} == 2 && $self->property( "multiple" ) )
-	{
-		foreach my $field (@{$self->property( "fields_cache" )})
-		{
-			$field->end_element( $data, $epdata, $state->{$field} );
-		}
-	}
-	# end of a sub-field's content
-	elsif( $state->{depth} == 2 || ($state->{depth} == 3 && $self->property( "multiple" )) )
-	{
-		delete $state->{handler};
-	}
-	# otherwise call the sub-field
-	elsif( defined(my $field = $state->{handler}) )
-	{
-		$field->end_element( $data, $epdata, $state->{$field} );
+		my $field = $self->get_dataset->get_field( $name );
+		$value->{$nodeName} = $field->xml_to_epdata_basic( $session, $node, %opts );
 	}
 
-	--$state->{depth};
-}
-
-sub characters
-{
-	my( $self, $data, $epdata, $state ) = @_;
-
-	if( defined(my $field = $state->{handler}) )
-	{
-		$field->characters( $data, $epdata, $state->{$field} );
-	}
+	return $value;
 }
 
 # This type of field is virtual.
@@ -312,7 +230,6 @@ sub get_sql_type
 	return undef;
 }
 
-# UNUSED
 sub get_alias_to_fieldname
 {
 	my( $self ) = @_;
@@ -328,12 +245,17 @@ sub get_alias_to_fieldname
 	return %addr;
 }
 
-# UNUSED
 sub get_fieldname_to_alias
 {
 	my( $self ) = @_;
 
-	return reverse $self->get_alias_to_fieldname;
+	my %addr = $self->get_alias_to_fieldname;
+	my %raddr = ();
+	foreach( keys %addr )
+	{
+		$raddr{$addr{$_}} = $_;
+	}
+	return %raddr;
 }
 
 # Get the value of this field from the object. In this case this
@@ -342,32 +264,44 @@ sub get_value
 {
 	my( $self, $object ) = @_;
 
-	my $value;
-
-	if( $self->property( "multiple" ) )
+	my $values = {};
+	my %alias_to_fieldname = $self->get_alias_to_fieldname;
+	foreach my $as ( keys %alias_to_fieldname )
 	{
-		$value = [];
-		foreach my $field (@{$self->{fields_cache}})
-		{
-			my $alias = $field->property( "sub_name" );
-			my $v = $field->get_value( $object );
-			foreach my $i (0..$#$v)
-			{
-				$value->[$i]->{$alias} = $v->[$i];
-			}
-		}
-	}
-	else
-	{
-		$value = {};
-		foreach my $field (@{$self->{fields_cache}})
-		{
-			my $alias = $field->property( "sub_name" );
-			$value->{$alias} = $field->get_value( $object );
-		}
+		$values->{$as} = $object->get_value_raw( $alias_to_fieldname{$as} );
 	}
 
-	return $value;
+	if( !$self->get_property( "multiple" ) )
+	{
+		return $values;
+	}
+
+	my $lists = {};
+	my $len = 0;
+	foreach my $as ( keys %alias_to_fieldname )
+	{
+		$lists->{$as} = [];
+		next unless defined $values->{$as};
+		if( scalar @{$values->{$as}} > $len )
+		{
+			$len = scalar @{$values->{$as}};
+		}
+	}
+
+	my $list = [];
+	for( my $i=0; $i<$len; ++$i )
+	{
+		my $v = {};
+		foreach my $as ( keys %alias_to_fieldname )
+		{
+			next if( !defined $values->{$as} );
+			next if( !defined $values->{$as}->[$i] );
+			$v->{$as} = $values->{$as}->[$i];
+		}
+		push @{$list}, $v;
+	}
+
+	return $list;
 }
 
 
@@ -375,23 +309,35 @@ sub set_value
 {
 	my( $self, $object, $value ) = @_;
 
+	my %alias_to_fieldname = $self->get_alias_to_fieldname;
+	my %fieldname_to_alias = $self->get_fieldname_to_alias;
+	my $f = $self->get_property( "fields_cache" );
+	my $values = {};
 	if( $self->get_property( "multiple" ) )
 	{
-		foreach my $field (@{$self->{fields_cache}})
+		foreach my $as ( keys %alias_to_fieldname )
 		{
-			my $alias = $field->property( "sub_name" );
-			$field->set_value( $object, [
-				map { $_->{$alias} } @$value
-			] );
+			$values->{$as} = [];
+		}
+		foreach my $row ( @{$value} )
+		{
+			foreach my $as ( keys %alias_to_fieldname )
+			{
+				push @{$values->{$alias_to_fieldname{$as}}}, $row->{$as};
+			}
 		}
 	}
 	else
 	{
-		foreach my $field (@{$self->{fields_cache}})
+		foreach my $as ( keys %alias_to_fieldname )
 		{
-			my $alias = $field->property( "sub_name" );
-			$field->set_value( $object, $value->{$alias} );
+			$values->{$alias_to_fieldname{$as}} = $value->{$as};
 		}
+	}
+	foreach my $fieldname ( keys %fieldname_to_alias )
+	{
+		my $field = $object->get_dataset->get_field( $fieldname );
+		$field->set_value( $object, $values->{$fieldname} );
 	}
 }
 
@@ -422,14 +368,17 @@ sub get_basic_input_elements
 {
 	my( $self, $session, $value, $basename, $staff, $object ) = @_;
 
+	my $f = $self->get_property( "fields_cache" );
 	my $grid_row = [];
 
-	foreach my $field (@{$self->{fields_cache}})
+	my %fieldname_to_alias = $self->get_fieldname_to_alias;
+	foreach my $field ( @{$f} )
 	{
-		my $alias = $field->property( "sub_name" );
+		my $fieldname = $field->get_name;
+		my $alias = $fieldname_to_alias{$fieldname};
 		my $part_grid = $field->get_basic_input_elements( 
 					$session, 
-					$value->{$alias}, 
+					$value->{$fieldname_to_alias{$fieldname}}, 
 					$basename."_".$alias, 
 					$staff, 
 					$object );
@@ -446,9 +395,13 @@ sub get_basic_input_ids
 
 	my @ids = ();
 
-	foreach my $field (@{$self->{fields_cache}})
+	my $f = $self->get_property( "fields_cache" );
+	my %fieldname_to_alias = $self->get_fieldname_to_alias;
+	foreach my $field_conf ( @{$f} )
 	{
-		my $alias = $field->property( "sub_name" );
+		my $fieldname = $field_conf->{name};
+		my $alias = $fieldname_to_alias{$fieldname};
+		my $field = $obj->get_dataset->get_field( $fieldname );
 		push @ids, $field->get_basic_input_ids( 
 					$session, 
 					$basename."_".$alias, 
@@ -466,9 +419,12 @@ sub form_value_basic
 	
 	my $value = {};
 
-	foreach my $field (@{$self->{fields_cache}})
+	my $f = $self->get_property( "fields_cache" );
+	my %fieldname_to_alias = $self->get_fieldname_to_alias;
+	foreach my $field ( @{$f} )
 	{
-		my $alias = $field->property( "sub_name" );
+		my $fieldname = $field->get_name;
+		my $alias = $fieldname_to_alias{$fieldname};
 		my $v = $field->form_value_basic( $session, $basename."_".$alias, $object );
 		$value->{$alias} = $v;
 	}
@@ -542,30 +498,12 @@ sub render_xml_schema_type
 	return $type;
 }
 
-sub get_search_conditions
-{
-	my( $self, $session, $dataset, $search_value, $match, $merge,
-		$search_mode ) = @_;
-
-	if( $match eq "EX" )
-	{
-		return EPrints::Search::Condition->new(
-			'=',
-			$dataset,
-			$self,
-			$self->get_value_from_id( $session, $search_value )
-		);
-	}
-
-	return shift->get_search_conditions_not_ex( @_ );
-}
-
 sub get_search_conditions_not_ex
 {
 	my( $self, $session, $dataset, $search_value, $match, $merge,
 		$search_mode ) = @_;
 
-	EPrints::abort( "Unsupported attempt to search compound field on ".$session->get_id . "." . $self->{dataset}->confid . "." . $self->get_name );
+	EPrints::abort( "Attempt to search compound field. Repository ID=".$session->get_repository->get_id.", dataset=". $self->{dataset}->confid . ", field=" . $self->get_name );
 }
 
 # don't know how to turn a compound into a order value
@@ -574,47 +512,6 @@ sub ordervalue_single
 	my( $self, $value, $session, $langid, $dataset ) = @_;
 
 	return "";
-}
-
-sub get_value_from_id
-{
-	my( $self, $session, $id ) = @_;
-
-	return {} if $id eq "NULL";
-
-	my $value = {};
-
-	my @parts = 
-		map { URI::Escape::uri_unescape($_) }
-		split /:/, $id, scalar(@{$self->property( "fields_cache" )});
-
-	foreach my $field (@{$self->property( "fields_cache" )})
-	{
-		my $v = $field->get_value_from_id( $session, shift @parts );
-		$value->{$field->property( "sub_name" )} = $v;
-	}
-
-	return $value;
-}
-
-sub get_id_from_value
-{
-	my( $self, $session, $value ) = @_;
-
-	return "NULL" if !defined $value;
-
-	my @parts;
-	foreach my $field (@{$self->property( "fields_cache" )})
-	{
-		push @parts, $field->get_id_from_value(
-			$session,
-			$value->{$field->property( "sub_name" )}
-		);
-	}
-
-	return join(":",
-		map { URI::Escape::uri_escape($_, ":%") }
-		@parts);
 }
 
 ######################################################################

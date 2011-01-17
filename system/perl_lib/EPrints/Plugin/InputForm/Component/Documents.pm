@@ -738,6 +738,7 @@ sub _render_doc_metadata
 		}
 
 		$table->appendChild( $session->render_row_with_help(
+			class=>($first?"ep_first":""),
 			label=>$label,
 			field=>$field->render_input_field(
 								$session,
@@ -1076,8 +1077,12 @@ sub validate
 
 		foreach my $field ( @{$self->{config}->{doc_fields}} )
 		{
-			my $for_archive = defined($field->{required}) &&
-				$field->{required} eq "for_archive";
+			my $for_archive = 0;
+			
+			if( $field->{required} eq "for_archive" )
+			{
+				$for_archive = 1;
+			}
 
 			# cjg bug - not handling for_archive here.
 			if( $field->{required} && !$doc->is_set( $field->{name} ) )

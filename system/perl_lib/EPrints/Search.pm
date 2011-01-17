@@ -187,6 +187,10 @@ so force certain search parameters on the user.
 An optional parameter of describe=>0 can be set to supress the filter
 being mentioned in the description of the search.
 
+=item for_web
+
+Internal use. Indicates this search object is going to be used to build
+a webpage or read and process results via CGI.
 =back
 
 =cut
@@ -198,7 +202,7 @@ being mentioned in the description of the search.
 	"custom_order", "keep_cache", 	"cache_id", 	
 	"prefix", 	"defaults", 	"filters", 
 	"search_fields","show_zero_results", "show_help",
-	"limit",
+	"limit",	"for_web",
 );
 
 sub new
@@ -281,12 +285,26 @@ END
 			$show_help = $fielddata->{show_help};
 		}
 
+		my $match = $fielddata->{match};
+		my $merge = $fielddata->{merge};
+		if( $self->{for_web} )
+		{
+			if( !defined $match )
+			{
+				$match = $meta_fields[0]->default_web_search_match_code();
+			}
+			if( !defined $merge )
+			{
+				$merge = $meta_fields[0]->default_web_search_merge_code();
+			}
+		}
+
 		# Add a reference to the list
 		my $sf = $self->add_field( 
 			\@meta_fields, 
 			$fielddata->{default},
-			$fielddata->{match},
-			$fielddata->{merge},
+			$match,
+			$merge,
 			$fielddata->{id},
 			0,
 			$show_help );
@@ -1137,23 +1155,6 @@ sub perform_search
 	return $results;
 }
 
-=item $ids_map = $searchexp->perform_distinctby( $fields )
-
-Perform a DISTINCT on $fields to find all unique ids by value.
-
-=cut
-
-sub perform_distinctby
-{
-	my( $self, $fields ) = @_;
-
-	# we don't do any caching of DISTINCT BY
-	return $self->get_conditions->process_distinctby( 
-			session => $self->{session},
-			dataset => $self->{dataset},
-			fields => $fields,
-		);
-}
 
 =item ($values, $counts) = $searchexp->perform_groupby( $field )
 
@@ -1251,7 +1252,24 @@ sub get_ids_by_field_values
 {
 	my( $self, $field ) = @_;
 
-	return $self->process_distinctby( [$field] );
+	my @filters = @{$self->{filters}};
+
+	foreach my $sf_id ( keys %{$self->{searchfieldmap}} )
+	{
+		my $sf = $self->{searchfieldmap}->{$sf_id};
+		push @filters, {
+			fields => $sf->get_fields,
+			value => $sf->get_value,
+		};
+	}
+
+	my $counts = $field->get_ids_by_value(
+		$self->{session},
+		$self->{dataset},
+		filters => \@filters
+	);
+
+	return $counts;
 }
 
 

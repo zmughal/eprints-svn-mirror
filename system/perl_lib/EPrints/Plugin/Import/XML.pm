@@ -15,7 +15,6 @@ sub new
 	$self->{name} = "XML";
 	$self->{visible} = "all";
 	$self->{produce} = [ 'list/*', 'dataobj/*' ];
-	$self->{accept} = [qw( text/xml )];
 
 	return $self;
 }
@@ -40,12 +39,11 @@ sub unknown_start_element
 
 sub xml_to_epdata
 {
-	my( $plugin, $dataset, $xml, %opts ) = @_;
+	my( $plugin, $dataset, $xml ) = @_;
 
 	my $epdata = $dataset->get_object_class->xml_to_epdata(
 		$plugin->{session},
 		$xml,
-		%opts,
 		Handler => $plugin->{Handler} );
 
 	return $epdata;

@@ -87,7 +87,7 @@ if( defined $format )
 		$plugin->initialise_fh( \*STDOUT );
 		$session->send_http_header( 
 				"content_type" => $plugin->param( 'mimetype' ) );
-		$results->export( $format, fh => \*STDOUT );
+		print $results->export( $format );
 	}
 	else
 	{
@@ -139,3 +139,9 @@ $session->send_page();
 
 $session->terminate;
 exit;
+
+use POSIX qw(strftime);
+sub RFC822_time
+{
+	return( strftime( "%a,  %d  %b  %Y  %H:%M:%S  %z",localtime ) );
+}

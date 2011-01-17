@@ -77,10 +77,7 @@ sub datasets
 	{
 		my $dataset = $self->{session}->dataset( $datasetid );
 		push @datasets, $dataset
-			if
-				$self->allow( $dataset->id . "/view" ) ||
-				$self->allow( $dataset->id . "/view:owner" ) ||
-				$self->allow( $dataset->id . "/view:editor" );
+			if $self->allow( $dataset->id . "/view" );
 	}
 
 	@datasets = sort { $a->base_id cmp $b->base_id || $a->id cmp $b->id } @datasets;
