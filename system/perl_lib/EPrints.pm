@@ -92,7 +92,7 @@ BEGIN {
 
 	sub human_version
 	{
-		return version->parse(EPrints->VERSION)->normal;
+		return substr(version->parse(EPrints->VERSION)->normal,1);
 	}
 
 ######################################################################
