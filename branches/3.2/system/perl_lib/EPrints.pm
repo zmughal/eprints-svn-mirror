@@ -76,6 +76,7 @@ use EPrints::Config;
 
 use Data::Dumper;
 use Scalar::Util;
+use version 0.77;
 
 use strict;
 
@@ -91,7 +92,7 @@ BEGIN {
 
 	sub human_version
 	{
-		return sprintf("%d.%d.%d", map { ord($_) } split(//, EPrints->VERSION));
+		return version->parse(EPrints->VERSION)->normal;
 	}
 
 ######################################################################
