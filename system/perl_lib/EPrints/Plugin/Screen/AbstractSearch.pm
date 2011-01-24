@@ -497,6 +497,7 @@ sub paginate_opts
 
 	my $cacheid = $self->{processor}->{results}->{cache_id};
 	my $escexp = $self->{processor}->{search}->serialise;
+	my $order = $self->{processor}->{search}->{custom_order};
 
 	my @controls_before = $self->get_controls_before;
 	
@@ -545,6 +546,7 @@ sub paginate_opts
 			_action_search => 1,
 			cache => $cacheid,
 			exp => $escexp,
+			order => $order,
 		},
 		render_result => sub { return $self->render_result_row( @_ ); },
 		render_result_params => $self,
