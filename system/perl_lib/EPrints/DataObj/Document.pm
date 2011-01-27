@@ -1144,7 +1144,7 @@ sub commit
 		# if the eprint is under construction the changes will be committed
 		# after all the documents are complete
 		local $eprint->{non_volatile_change} = 1;
-		$eprint->commit( 1 );
+		$eprint->commit( $force );
 	}
 	
 	return( $success );
