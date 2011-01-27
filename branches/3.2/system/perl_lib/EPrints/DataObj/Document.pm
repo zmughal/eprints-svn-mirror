@@ -1726,19 +1726,27 @@ sub remove_thumbnails
 		$self->{session}->get_repository->call( "thumbnail_types", \@list, $self->{session}, $self );
 	}
 
-	foreach my $size (@list)
+	my %remove = map { EPrints::Utils::make_relation( "has${_}ThumbnailVersion" ) => 1 } @list;
+
+	my @relation;
+	foreach my $relation (@{$self->value( "relation" )})
 	{
-		my $relation = EPrints::Utils::make_relation( "has${size}ThumbnailVersion" );
-		foreach my $doc ($self->related_dataobjs( $relation ))
-		{
-			if( $doc->has_dataobj_relations( $self, EPrints::Utils::make_relation( "isVolatileVersionOf" ) ) )
-			{
-				$doc->remove;
-			}
-		}
+		next if !$remove{$relation->{type}};
+		my $dataobj = EPrints::DataSet->get_object_from_uri(
+			$self->{session},
+			$relation->{uri}
+		);
+		next if !defined $dataobj;
+		# avoid re-committing ourselves during removal
+		$self->remove_dataobj_relations( $dataobj );
+		$dataobj->remove;
 	}
 
-	$self->commit;
+	if( @relation != @{$self->value( "relation" )} )
+	{
+		$self->set_value( "relation", @relation );
+		$self->commit;
+	}
 }
 
 sub make_thumbnails
