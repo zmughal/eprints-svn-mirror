@@ -995,7 +995,7 @@ sub commit
 		return( 1 ) unless $force;
 	}
 
-	if( $self->{non_volatile_change} )
+	if( !$self->under_construction && $self->{non_volatile_change} )
 	{
 		my $rev_number = $self->get_value( "rev_number" ) || 0;
 		$rev_number += 1;
