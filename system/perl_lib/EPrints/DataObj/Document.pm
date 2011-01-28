@@ -1143,7 +1143,6 @@ sub commit
 		# cause a new new revision of the parent eprint.
 		# if the eprint is under construction the changes will be committed
 		# after all the documents are complete
-		local $eprint->{non_volatile_change} = 1;
 		$eprint->commit( $force );
 	}
 	
@@ -1360,6 +1359,9 @@ sub make_indexcodes
 		return undef;
 	}
 
+	my $eprint = $self->parent;
+	local $eprint->{under_construction} = 1;
+
 	$self->remove_indexcodes();
 	
 	# find a conversion plugin to convert us to indexcodes
@@ -1370,7 +1372,7 @@ sub make_indexcodes
 
 	# convert us to indexcodes
 	my $doc = $plugin->convert(
-			$self->get_parent,
+			$eprint,
 			$self,
 			$type
 		);
@@ -1408,11 +1410,14 @@ sub remove_indexcodes
 		return 0;
 	}
 
+	my $eprint = $self->parent;
+	local $eprint->{under_construction} = 1;
+
 	# remove any existing indexcodes documents
 	my $docs = $self->get_related_objects(
 			EPrints::Utils::make_relation( "hasIndexCodesVersion" )
 		);
-	$_->remove() for @$docs;
+	$_->set_parent( $eprint ), $_->remove() for @$docs;
 	$self->commit() if scalar @$docs; # Commit changes to relations
 	
 	return scalar (@$docs);
@@ -1719,6 +1724,17 @@ sub remove_thumbnails
 {
 	my( $self ) = @_;
 
+	# If we're a volatile version of another document, don't make thumbnails 
+	# otherwise we'll cause a recursive loop
+	if( $self->has_related_objects( EPrints::Utils::make_relation( "isVolatileVersionOf" ) ) )
+	{
+		return;
+	}
+
+	my $eprint = $self->parent;
+	my $under_construction = $eprint->{under_construction};
+	$eprint->{under_construction} = 1;
+
 	my @list = qw/ small medium preview /;
 
 	if( $self->{session}->get_repository->can_call( "thumbnail_types" ) )
@@ -1742,6 +1758,8 @@ sub remove_thumbnails
 		$dataobj->remove;
 	}
 
+	$eprint->{under_construction} = $under_construction;
+
 	if( @relation != @{$self->value( "relation" )} )
 	{
 		$self->set_value( "relation", @relation );
@@ -1759,6 +1777,10 @@ sub make_thumbnails
 	{
 		return;
 	}
+
+	my $eprint = $self->parent;
+	my $under_construction = $eprint->{under_construction};
+	$eprint->{under_construction} = 1;
 
 	my $src_main = $self->get_stored_file( $self->get_main() );
 
@@ -1817,6 +1839,8 @@ sub make_thumbnails
 	{
 		$self->{session}->get_repository->call( "on_generate_thumbnails", $self->{session}, $self );
 	}
+
+	$eprint->{under_construction} = $under_construction;
 
 	$self->commit();
 }
