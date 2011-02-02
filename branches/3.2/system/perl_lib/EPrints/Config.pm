@@ -156,7 +156,7 @@ package EPrints::SystemSettings;
 
 use EPrints::Const;
 
-our \$c = \$EPrints::SystemSettings::tmp;
+our \$c = \$EPrints::SystemSettings::conf;
 
 EOP
 		$perl .= join "", <$fh>;
@@ -181,8 +181,10 @@ END
 
 		foreach my $conf_id ( keys %{$EPrints::SystemSettings::tmp} )
 		{
-			$SYSTEMCONF->{$conf_id} = $EPrints::SystemSettings::tmp->{$conf_id};
-			$SYSTEMCONF->{set_in}->{$conf_id} = $filepath;
+			if( !exists( $SYSTEMCONF->{set_in}->{$conf_id} ) )
+			{
+				$SYSTEMCONF->{set_in}->{$conf_id} = $filepath;
+			}
 		}
 	}
 }
