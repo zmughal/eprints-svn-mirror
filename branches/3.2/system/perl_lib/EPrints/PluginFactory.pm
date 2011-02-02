@@ -283,15 +283,25 @@ sub _list
 	}
 }
 
+=item $ok = EPrints::PluginFactory->register_plugin( $plugin )
+
+Register a system-global plugin.
+
 =item $ok = $plugins->register_plugin( $data, $plugin )
 
-Register a new plugin $plugin.
+Register a new plugin $plugin into $data.
 
 =cut
 
 sub register_plugin
 {
 	my( $self, $data, $plugin ) = @_;
+
+	if( $self eq __PACKAGE__ )
+	{
+		$plugin = $data;
+		$data = \%SYSTEM_PLUGINS;
+	}
 
 	my $id = $plugin->get_id;
 	my $type = $plugin->get_type;
