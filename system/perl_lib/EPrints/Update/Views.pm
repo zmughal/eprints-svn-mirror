@@ -129,7 +129,7 @@ sub update_view_file
 			return "$target$ext";
 		}
 
-		my $file = update_view_menu( $session, $view, $langid );
+		my $file = update_view_menu( $session, $view, $langid, [] );
 		return undef if( !defined $file );
 		return $file.$ext;
 	}
@@ -244,6 +244,11 @@ sub get_filters
 		push @{$filters}, { fields=>$menu_fields, value=>$value };
 	}
 
+	push @$filters, {
+		fields => [ $repository->get_dataset( "eprint" )->get_field('metadata_visibility') ],
+		value => 'show'
+	};
+
 	return $filters;
 }
 
@@ -335,23 +340,14 @@ sub update_view_menu
 		$target .= "index";
 	}
 
-	my $menu_level = 0;
+	my $menu_level = scalar @{$esc_path_values};
+	my $filters = get_filters( $session, $view, $esc_path_values );
+	return if !defined $filters;
 	my $path_values = [];
-	my $filters;
-	if( defined $esc_path_values )
+	foreach my $esc_value (@{$esc_path_values})
 	{
-		$filters = [];
-		$menu_level = scalar @{$esc_path_values};
-
-		$filters = get_filters( $session, $view, $esc_path_values );
-	
-		return if !defined $filters;
-
-		foreach my $esc_value (@{$esc_path_values})
-		{
-			push @{$path_values}, EPrints::Utils::unescape_filename( $esc_value );
-		}
-	}	
+		push @{$path_values}, EPrints::Utils::unescape_filename( $esc_value );
+	}
 
 	my $menus_fields = get_fields_from_view( $repository, $view );
 
@@ -1105,6 +1101,9 @@ sub update_view_list
 
 	push @{$esc_path_values}, $value;
 
+	my $menu_level = scalar @{$esc_path_values};
+	my $filters = get_filters( $session, $view, $esc_path_values );
+	return if !defined $filters;
 	my $path_values = [];
 	foreach my $esc_value (@{$esc_path_values})
 	{
@@ -1114,15 +1113,6 @@ sub update_view_list
 	my $ds = $repository->get_dataset( "archive" );
 
 	my $menus_fields = get_fields_from_view( $repository, $view );
-
-	my $menu_level = 0;
-	my $filters;
-	if( defined $esc_path_values )
-	{
-		$filters = get_filters( $session, $view, $esc_path_values );
-		return if !defined $filters;
-		$menu_level = scalar @{$esc_path_values};
-	}
 
 	# if number of fields is 1 then menu_level must be 1
 	# if number of fields is 2 then menu_level must be 2
