@@ -19,6 +19,9 @@ sub new
 	$self->{mimetype} = "application/atom+xml";
 
 	$self->{number_to_show} = 10;
+	$self->{arguments} = {
+		indexOffset => 1,
+	};
 
 	return $self;
 }
@@ -32,7 +35,9 @@ sub output_list
 	my $session = $plugin->{session};
 
 	my $response = $session->make_element( "feed",
-		"xmlns"=>"http://www.w3.org/2005/Atom" );
+		"xmlns"=>"http://www.w3.org/2005/Atom",
+		"xmlns:opensearch" => "http://a9.com/-/spec/opensearch/1.1"
+	);
 
 	my $title = $session->phrase( "archive_name" );
 
@@ -70,8 +75,61 @@ sub output_list
 		"id", 
 		"tag:".$host.",".($year+1900).":feed:feed-title" ) );
 
+	my $totalResults = $list->count;
+	my $startIndex = ($opts{indexOffset} || 1) - 1;
+	$startIndex = 0 if $startIndex < 0;
+	my $itemsPerPage = 0;
+	if( $startIndex + $plugin->{number_to_show} < $totalResults )
+	{
+		$itemsPerPage = $plugin->{number_to_show};
+	}
+	elsif( $startIndex > $totalResults )
+	{
+		$itemsPerPage = 0;
+	}
+	else
+	{
+		$itemsPerPage = $totalResults - $startIndex;
+	}
 
-	foreach my $eprint ( $list->get_records( 0, $plugin->{number_to_show} ) )
+	$response->appendChild( $session->render_data_element(
+		4,
+		"opensearch:totalResults", 
+		$totalResults ) );
+
+	$response->appendChild( $session->render_data_element(
+		4,
+		"opensearch:itemsPerPage", 
+		$itemsPerPage ) );
+
+	$response->appendChild( $session->render_data_element(
+		4,
+		"opensearch:startIndex", 
+		$startIndex + 1 ) );
+
+	my %offsets = (
+		first => 1,
+		previous => $startIndex-9,
+		next => $startIndex+11,
+		last => $totalResults-($totalResults % $plugin->{number_to_show})
+	);
+	delete $offsets{'previous'}
+		if $startIndex == 0;
+	delete $offsets{'next'}
+		if ($startIndex+$plugin->{number_to_show}) > $totalResults;
+
+	foreach my $key (sort keys %offsets)
+	{
+		$response->appendChild( $session->render_data_element(
+			4,
+			"link", 
+			'',
+			rel => $key,
+			href => $session->current_url( host => 1, query => 1 )."&indexOffset=".$offsets{$key},
+			type => $plugin->param( "mimetype" ) ) );
+	}
+
+	foreach my $eprint ( $list->get_records( $startIndex, $plugin->{number_to_show} ) )
 	{
 		my $item = $session->make_element( "entry" );
 		
