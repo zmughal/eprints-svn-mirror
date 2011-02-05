@@ -1,0 +1,4 @@
+host: example.eprints.org:80
+sword_url: http://example.eprints.org/sword-app/deposit/inbox
+username: admin
+password: password

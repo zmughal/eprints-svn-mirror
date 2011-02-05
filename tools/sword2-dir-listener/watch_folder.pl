@@ -435,7 +435,7 @@ sub deposit_file {
 	# collection end point:
 	my $sword_url = $url;
 	if (!defined $url) {
-		$sword_url = "http://depositmo.eprints.org/sword-app/deposit/inbox";
+		$sword_url = $config->{sword_url};
 	}
 
 	# credentials:
