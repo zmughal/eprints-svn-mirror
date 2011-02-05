@@ -2,12 +2,44 @@
 
 use strict;
 use File::stat;
+use LWP::UserAgent;
 
 my $dir = $ARGV[0];
+
+our $config = load_config($dir);
+exit if (!defined $config);
 
 while (1) {
 	process_directory($dir,0);
 	sleep(10);
+}
+
+sub load_config {
+	my $dir = shift;
+
+	my $file = $dir . ".config";
+	
+	if ( -e $file ) {
+		
+		my $resources = {};
+		
+		open(HANDLE,$file);
+	
+		while (<HANDLE>) {
+			chomp;
+			next if ((substr $_,0,1) eq "#");
+			my @parts = split(/:/,$_,2);
+			my $key = trim(@parts[0]);
+			my $value = trim(@parts[1]);
+			$resources->{$key} = $value;
+		}
+
+		close(HANDLE);
+
+		return $resources;
+	} 
+
+	return undef;
 }
 
 sub get_resources {
@@ -59,6 +91,7 @@ sub process_directory {
 		my $file_name = $file;
 
 		next if ($file_name eq ".parent_uri");
+		next if ($file_name eq ".config");
 
 		# Delete files on server which have been removed locally
 		if ((substr $file_name,0,1) eq ".") {
@@ -95,15 +128,20 @@ sub process_directory {
 				}
 			}	
 			#See if file exists in eprints and is up to date.
-			my ($server_file_modified, $server_file_md5) = head_uri($uri);
-			my ($local_file_modified, $local_file_md5) = local_info($file,$dir . "." . $file_name);
-			if (defined $server_file_md5) {
-				if (!($local_file_md5 eq $server_file_md5) and ($local_file_modified > $server_file_modified)) {
-					put_file_to_uri($file,$file_name,$uri);
-				} elsif (!($local_file_md5 eq $server_file_md5) and ($local_file_modified > $server_file_modified)) {
-					print "Version of server is newer\n";
+			my ($server_file_modified, $server_file_md5, $status_code) = head_uri($uri);
+			if ($status_code == 404 or $status_code == 410) {
+				unlink($file);
+				unlink($dir . "." . $file_name);
+			} else {
+				my ($local_file_modified, $local_file_md5) = local_info($file,$dir . "." . $file_name);
+				if (defined $server_file_md5) {
+					if (!($local_file_md5 eq $server_file_md5) and ($local_file_modified > $server_file_modified)) {
+						put_file_to_uri($file,$file_name,$uri);
+					} elsif (!($local_file_md5 eq $server_file_md5) and ($local_file_modified < $server_file_modified)) {
+						get_file_from_uri($file,$file_name,$uri);
+					}
+					
 				}
-				
 			}
 			#If it is out of date or not uploaded, upload it. 
 			#print "Found the file\n";
@@ -204,25 +242,29 @@ sub local_info {
 
 }
 
+sub get_user_agent {
+
+	my $realm = shift;
+	
+	my $ua = LWP::UserAgent->new();
+
+	$ua->credentials(
+			$config->{host},
+			"$realm",
+			$config->{username} => $config->{password}
+			);
+
+	return $ua;
+
+}
+
 sub head_uri {
 	
 	my $uri = shift;
 
-	use LWP::UserAgent;
+	my $realm = "Authenticate";
 
-	# credentials:
-	my $username = 'admin';
-	my $password = 'depositmo';
-	my $realm = 'Authenticate';
-	my $host = 'depositmo.eprints.org:80';
-
-	my $ua = LWP::UserAgent->new();
-
-	$ua->credentials(
-			"$host",
-			"$realm",
-			"$username" => "$password"
-			);
+	my $ua = get_user_agent($realm);
 
 	my $req = HTTP::Request->new( HEAD => $uri );
 
@@ -230,18 +272,21 @@ sub head_uri {
 	
 	my $last_modified = undef;
 	my $content_md5 = undef;
+	my $status_code = undef;
 
+	$status_code = $res->code;
 	if ($res->is_success) {
 		$last_modified = $res->header("Last-Modified") . "\n";
 		$content_md5 = $res->header("ETag") . "\n";
 	}
 	chomp $last_modified;
-
-	$last_modified = utc_to_epoch($last_modified);
+	if (defined $last_modified) {
+		$last_modified = utc_to_epoch($last_modified);
+	}
 	
 	chomp $content_md5;	
 	
-	return($last_modified,$content_md5);
+	return($last_modified,$content_md5,$status_code);
 }
 
 sub utc_to_epoch {
@@ -279,27 +324,53 @@ sub delete_uri {
 	
 	my $uri = shift;
 
-	use LWP::UserAgent;
-
-	# credentials:
-	my $username = 'admin';
-	my $password = 'depositmo';
 	my $realm = 'SWORD';
-	my $host = 'depositmo.eprints.org:80';
+	
+	print "Attempting to delete $uri\n";
 
-	my $ua = LWP::UserAgent->new();
-
-	$ua->credentials(
-			"$host",
-			"$realm",
-			"$username" => "$password"
-			);
+	my $ua = get_user_agent($realm);
 
 	my $req = HTTP::Request->new( DELETE => $uri );
 
 	my $res = $ua->request($req);
-	
+
 	return 1 if ($res->is_success); 
+	
+	print $res->status_line;
+	print "\n";
+	print $res->content;
+
+}
+
+sub get_file_from_uri {
+	
+	my $file = shift;
+	my $filename = shift;
+	my $uri = shift;
+
+	print "Attempting to get $file to $uri\n";
+
+	my $realm = 'Authenticate';
+	
+	my $ua = get_user_agent($realm);
+
+	open(FILE, "$file" ) or die('cant open input file');
+	binmode FILE;
+
+	my $req = HTTP::Request->new( GET => $uri );
+
+	my $file_handle = "";
+
+	# Et Zzzzooo!
+	my $res = $ua->request($req);	
+	
+	
+	if ($res->is_success) {
+		open(FILE,">$file");
+		print FILE $res->content;
+		close(FILE);
+		return 1;
+	}
 	
 	print $res->status_line;
 	print "\n";
@@ -315,24 +386,11 @@ sub put_file_to_uri {
 
 	print "Attempting to put $file to $uri\n";
 
-	use LWP::UserAgent;
-
-	# credentials:
-	my $username = 'admin';
-	my $password = 'depositmo';
-	my $realm = 'SWORD';
-	my $host = 'depositmo.eprints.org:80';
-
 	open(FILE, "$file" ) or die('cant open input file');
 	binmode FILE;
 
-	my $ua = LWP::UserAgent->new();
-
-	$ua->credentials(
-			"$host",
-			"$realm",
-			"$username" => "$password"
-			);
+	my $realm = "SWORD";
+	my $ua = get_user_agent($realm);
 
 	my $req = HTTP::Request->new( PUT => $uri );
 
@@ -374,8 +432,6 @@ sub deposit_file {
 
 	print "Attempting to post $filepath to $url\n";
 
-	use LWP::UserAgent;
-
 	# collection end point:
 	my $sword_url = $url;
 	if (!defined $url) {
@@ -383,21 +439,12 @@ sub deposit_file {
 	}
 
 	# credentials:
-	my $username = 'admin';
-	my $password = 'depositmo';
 	my $realm = 'SWORD';
-	my $host = 'depositmo.eprints.org:80';
 
 	open(FILE, "$filepath" ) or die('cant open input file');
 	binmode FILE;
 
-	my $ua = LWP::UserAgent->new();
-
-	$ua->credentials(
-			"$host",
-			"$realm",
-			"$username" => "$password"
-			);
+	my $ua = get_user_agent($realm);
 
 	my $req = HTTP::Request->new( POST => $sword_url );
 
@@ -464,4 +511,12 @@ sub write_uris_to_file {
 	open(FILE,">$parent_file");
 	print FILE "$parent_mtime $parent_uri\n";
 	close(FILE);
+}
+
+sub trim($)
+{
+	my $string = shift;
+	$string =~ s/^\s+//;
+	$string =~ s/\s+$//;
+	return $string;
 }
