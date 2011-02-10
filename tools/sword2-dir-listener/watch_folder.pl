@@ -3,15 +3,24 @@
 use strict;
 use File::stat;
 use LWP::UserAgent;
+use XML::XPath;
 
 my $dir = $ARGV[0];
 
 our $config = load_config($dir);
 exit if (!defined $config);
+my $items = get_resource_list();
+
+my $update_counter = 0;
 
 while (1) {
-	process_directory($dir,0);
+	process_directory($dir,0,$items);
 	sleep(10);
+	$update_counter++;
+	if ($update_counter > 5) {
+		$items = get_resource_list();
+		$update_counter = 0;
+	}
 }
 
 sub load_config {
@@ -68,6 +77,9 @@ sub process_directory {
 
 	my $dir = shift;
 	my $depth = shift;
+	my $items = shift;
+
+	print "Help\n" if (!defined $items);
 	
 	my $parent_uri = undef;
 	my $resources = {};
@@ -83,6 +95,8 @@ sub process_directory {
 			$parent_uri = $key;
 		}
 	}
+
+	my $repo_docs = $items->{$parent_uri}->{"documents"};
 
 	#print "PARENT URI = " . $parent_uri;
 
@@ -106,6 +120,7 @@ sub process_directory {
 			}	
 			if (delete_uri($uri)) {
 				unlink($dir . $file_name);
+				$repo_docs->{$uri} = undef;
 			}
 		}
 		
@@ -118,7 +133,7 @@ sub process_directory {
 	
 		if ( -d $file ) {
 			$depth++;
-			process_directory($file.'/',$depth);	
+			process_directory($file.'/',$depth,$items);	
 		} elsif ( -e ($dir . "." . $file_name) ) {
 			my $uri;
 			my $resources = get_resources($dir . "." . $file_name);
@@ -127,6 +142,7 @@ sub process_directory {
 					$uri = $key;
 				}
 			}	
+			$repo_docs->{$uri} = undef;
 			#See if file exists in eprints and is up to date.
 			my ($server_file_modified, $server_file_md5, $status_code) = head_uri($uri);
 			if ($status_code == 404 or $status_code == 410) {
@@ -149,6 +165,16 @@ sub process_directory {
 			deposit_file($file,$file_name,$parent_uri);
 		}
 	}
+	foreach my $remainder(keys %$repo_docs) {
+		if (defined $repo_docs->{$remainder}) {
+			print $remainder . " is only in repo\n";
+			my $filename = $repo_docs->{$remainder}->{"filename"};
+			my $file = $dir . $filename;
+			get_file_from_uri($file,$filename,$remainder);
+			write_uris_to_file($filename,$file,$remainder,$parent_uri);
+		}
+	}
+
 
 	closedir(DIR);
 }
@@ -194,8 +220,6 @@ sub get_associations {
 
 sub get_uris_from_atom {
 	my $content = shift;
-	
-	use XML::XPath;
 	
 	my $eprint_uri; 
 	my $media_uri;
@@ -348,13 +372,13 @@ sub get_file_from_uri {
 	my $filename = shift;
 	my $uri = shift;
 
-	print "Attempting to get $file to $uri\n";
+	print "Attempting to get $file from $uri\n";
 
 	my $realm = 'Authenticate';
 	
 	my $ua = get_user_agent($realm);
 
-	open(FILE, "$file" ) or die('cant open input file');
+	open(FILE, ">", "$file" ) or die('cant open input file');
 	binmode FILE;
 
 	my $req = HTTP::Request->new( GET => $uri );
@@ -519,4 +543,109 @@ sub trim($)
 	$string =~ s/^\s+//;
 	$string =~ s/\s+$//;
 	return $string;
+}
+
+sub get_resource_list {
+	
+	my $uri = "http://" . $config->{host} . "/id/records";
+
+	print "Attempting to get $uri\n";
+
+	my $realm = 'Authenticate';
+	
+	my $ua = get_user_agent($realm);
+
+	my $h = HTTP::Headers->new(Accept => "application/atom+xml");
+	my $req = HTTP::Request->new( GET => $uri, $h );
+
+	my $items;
+
+	# Et Zzzzooo!
+	my $res = $ua->request($req);	
+	
+	if ($res->is_success) {
+		my $content = $res->content;
+		
+		my $xp = XML::XPath->new(xml=>$content);
+	
+		my $nodeset = $xp->find('/feed/entry'); 
+		foreach my $node ($nodeset->get_nodelist) {
+			my $eprint_id;	
+			my $sub_nodeset = $xp->find('id',$node);
+			foreach my $sub_node ($sub_nodeset->get_nodelist) {
+				$eprint_id = $sub_node->string_value;
+#print "FOUND: " . $sub_node->string_value . "\n";
+			}
+			my $sub_nodeset = $xp->find('title',$node);
+			foreach my $sub_node ($sub_nodeset->get_nodelist) {
+				$items->{$eprint_id}->{"title"} = $sub_node->string_value;
+#print "TITLE: " . $sub_node->string_value . "\n";
+			}
+			my $sub_nodeset = $xp->find('link',$node);
+			foreach my $sub_node ($sub_nodeset->get_nodelist) {
+				my $attr = $sub_node->getAttribute("rel");
+				if ($attr eq "contents") {
+					$items->{$eprint_id}->{"contents"} = $sub_node->getAttribute("href");
+#print $sub_node->getAttribute("href") . "\n";
+				}
+			}
+		}
+	}
+	
+	if (!defined $items) {
+		print $res->status_line;
+		print "\n";
+		print $res->content;
+		return undef;
+	}
+
+
+	foreach my $eprint_id(keys %$items) {
+		my $uri = $items->{$eprint_id}->{"contents"};
+		my $req = HTTP::Request->new( GET => $uri, $h );
+		# Et Zzzzooo!
+		my $res = $ua->request($req);	
+
+		next if (!($res->is_success));
+
+		my $documents;
+		
+		my $content = $res->content;
+		
+		my $xp = XML::XPath->new(xml=>$content);
+	
+		my $nodeset = $xp->find('/feed/entry'); 
+		foreach my $node ($nodeset->get_nodelist) {
+			my $doc_id;	
+			my $sub_nodeset = $xp->find('id',$node);
+			foreach my $sub_node ($sub_nodeset->get_nodelist) {
+				$doc_id = $sub_node->string_value;
+#print "FOUND: " . $sub_node->string_value . "\n";
+			}
+			my $sub_nodeset = $xp->find('title',$node);
+			foreach my $sub_node ($sub_nodeset->get_nodelist) {
+				$documents->{$doc_id}->{"title"} = $sub_node->string_value;
+#print "TITLE: " . $sub_node->string_value . "\n";
+			}
+			my $sub_nodeset = $xp->find('link',$node);
+			foreach my $sub_node ($sub_nodeset->get_nodelist) {
+				my $attr = $sub_node->getAttribute("rel");
+				if ($attr eq "alternate") {
+					my $filename = $sub_node->getAttribute("href");
+					$filename = substr $filename, rindex($filename,"/")+1,length($filename);
+					$documents->{$doc_id}->{"filename"} = $filename;
+#print "Adding doc $doc_id with filename $filename\n";
+				}
+			}
+		}
+		$items->{$eprint_id}->{"documents"} = $documents;
+	}
+		
+	my $documents = $items->{"http://yomiko.ecs.soton.ac.uk:8027/id/eprint/154"}->{"documents"};
+	return $items;
+	
+	print $res->status_line;
+	print "\n";
+	print $res->content;
+
 }
