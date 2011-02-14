@@ -1,4 +1,5 @@
 host: example.eprints.org:80
+realm: Repository Name
 sword_url: http://example.eprints.org/sword-app/deposit/inbox
 username: admin
 password: password

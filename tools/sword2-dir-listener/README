@@ -1,5 +1,5 @@
 1) Create a folder which represents your repository
-2) Copy .config_example to this folder and change each of the parameters outlined
+2) Copy CONFIG_EXAMPLE to this folder, name it CONFIG and change each of the parameters outlined
 3) run watch_folder.pl with the parameter being the absolute path to this folder.
 4) To create a new resource, create a new folder in the repository folder you have created and start dropping documents in it, these will then get uploaded to the repository. 
 
@@ -10,13 +10,10 @@ WHAT WORKS
 * Updating documents (you save locally, changes are reflected in the repository)
 * Updating documents (a change happends to the same document URI in the repository, the change will update locally)
 * Deleting documents (both local and remote)
-
-WHAT DOESN'T (YET)
-==================
 * Downloading of new documents only known to the repository.
 * Downloading of resources already in repository to repository folder. 
+* Editing of Metadata by directly editing the ATOM XML (this needs to be abstracted to be simpler and hide fields that users shouldn't be touching)
 
-CAVEATS
-=======
-* Authenticated HEAD requests don't work on EPrints.
-* Atom exporter on EPrints requires updating to make the thing which don't work... work.
+TODO
+====
+* Workflow integration (CLICK_TO_DEPOSIT.html link) which links to a very very simple eprints screen, no toolbars, just a button :)
