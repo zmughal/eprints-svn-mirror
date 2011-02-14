@@ -10,7 +10,7 @@ my $dir = $ARGV[0];
 our $config = load_config($dir);
 exit if (!defined $config);
 my $items = get_resource_list();
-
+my $items = undef;
 my $update_counter = 0;
 
 while (1) {
@@ -26,7 +26,7 @@ while (1) {
 sub load_config {
 	my $dir = shift;
 
-	my $file = $dir . ".config";
+	my $file = $dir . "CONFIG";
 	
 	if ( -e $file ) {
 		
@@ -58,15 +58,30 @@ sub get_resources {
 	if ( -e $content_file ) {
 
 		my $resources = {};
+	
+		my @lines;
+		
+		open(HANDLE,$content_file);
 
-		my @res_temp = get_associations($content_file);
-
-		foreach my $resource(@res_temp) {
-			my @parts = split(/ /,$resource);
-			$resources->{@parts[0]} = @parts[1];
-			$resources->{@parts[1]} = @parts[0];
+		while (<HANDLE>) {
+			chomp;
+			push @lines, $_;
 		}
 
+		close(HANDLE);
+
+		my $URI;
+		foreach my $line(@lines) {
+			my @parts = split(/:/,$line,2);
+			$URI = trim(@parts[1]) if (@parts[0] eq "URI");
+		}
+		
+		foreach my $line(@lines) {
+			my @parts = split(/:/,$line,2);
+			next if (@parts[0] eq "URI");
+			$resources->{$URI}->{trim(@parts[0])} = trim(@parts[1]);
+		}
+	
 		return $resources;
 	} 
 
@@ -79,7 +94,7 @@ sub process_directory {
 	my $depth = shift;
 	my $items = shift;
 
-	print "Help\n" if (!defined $items);
+	#print "No items defined in repo\n" if (!defined $items);
 	
 	my $parent_uri = undef;
 	my $resources = {};
@@ -96,16 +111,38 @@ sub process_directory {
 		}
 	}
 
-	my $repo_docs = $items->{$parent_uri}->{"documents"};
+	if (defined $parent_uri) {
+		my $edit_uri = $resources->{$parent_uri}->{"Edit-URI"};
+		my ($server_file_modified,$server_file_md5,$status_code) = head_uri($edit_uri,"application/atom+xml");
+		my $file = $dir . "METADATA.xml";
+		if ( -e $file ) {
+			my ($local_file_modified, $local_file_md5) = local_info($file);
+#print STDERR "local: $local_file_modified $local_file_md5 \n";
+#print STDERR "remote: $server_file_modified $server_file_md5 \n";
+			if (defined $server_file_md5) {
+				if (!($local_file_md5 eq $server_file_md5) and ($local_file_modified > $server_file_modified)) {
+					put_file_to_uri($file,"METADATA.xml",$edit_uri,"application/atom+xml");
+				} elsif (!($local_file_md5 eq $server_file_md5) and ($local_file_modified < $server_file_modified)) {
+					get_file_from_uri($file,$edit_uri,"application/atom+xml");
+				}
+			}
+		} elsif ($status_code == 200) {
+			get_file_from_uri($file,$edit_uri,"application/atom+xml");
+		}
+	}
 
-	#print "PARENT URI = " . $parent_uri;
+	my $repo_docs = $items->{$parent_uri}->{"documents"};
 
 	foreach my $file (readdir(DIR)) {
 
 		my $file_name = $file;
 
+
 		next if ($file_name eq ".parent_uri");
 		next if ($file_name eq ".config");
+		next if (substr($file_name,0,9) eq "VIEW_ITEM");
+		next if (substr($file_name,0,8) eq "METADATA");
+		next if ($file_name eq "CONFIG");
 
 		# Delete files on server which have been removed locally
 		if ((substr $file_name,0,1) eq ".") {
@@ -149,12 +186,12 @@ sub process_directory {
 				unlink($file);
 				unlink($dir . "." . $file_name);
 			} else {
-				my ($local_file_modified, $local_file_md5) = local_info($file,$dir . "." . $file_name);
+				my ($local_file_modified, $local_file_md5) = local_info($file);
 				if (defined $server_file_md5) {
 					if (!($local_file_md5 eq $server_file_md5) and ($local_file_modified > $server_file_modified)) {
-						put_file_to_uri($file,$file_name,$uri);
+						put_file_to_uri($file,$file_name,$uri,undef);
 					} elsif (!($local_file_md5 eq $server_file_md5) and ($local_file_modified < $server_file_modified)) {
-						get_file_from_uri($file,$file_name,$uri);
+						get_file_from_uri($file,$uri,undef);
 					}
 					
 				}
@@ -170,8 +207,8 @@ sub process_directory {
 			print $remainder . " is only in repo\n";
 			my $filename = $repo_docs->{$remainder}->{"filename"};
 			my $file = $dir . $filename;
-			get_file_from_uri($file,$filename,$remainder);
-			write_uris_to_file($filename,$file,$remainder,$parent_uri);
+			get_file_from_uri($file,$remainder,undef);
+			write_uris_to_file($filename,$file,$remainder,$parent_uri,undef);
 		}
 	}
 
@@ -198,31 +235,12 @@ sub md5sum {
 	return $digest;
 }
 
-
-sub get_associations {
-	
-	my $file = shift;
-
-	my @associations = ();
-
-	open(HANDLE,$file);
-
-	while (<HANDLE>) {
-		chomp;
-		push @associations, $_;
-	}
-
-	close(HANDLE);
-
-	return @associations;
-
-}
-
 sub get_uris_from_atom {
 	my $content = shift;
 	
 	my $eprint_uri; 
 	my $media_uri;
+	my $edit_uri;
 		
 	my $xp = XML::XPath->new(xml=>$content);
 	
@@ -238,6 +256,9 @@ sub get_uris_from_atom {
 		if ($attr eq "edit-media") {
 			$media_uri = $node->getAttribute("href");
 		}
+		if ($attr eq "edit") {
+			$edit_uri = $node->getAttribute("href");
+		}
 	}
 
 	# if $eprint_uri is not defined it's a feed!!!!
@@ -247,11 +268,10 @@ sub get_uris_from_atom {
 
 		foreach my $node ($nodeset->get_nodelist) {
 			$media_uri = $node->string_value;
-			#print "MEDIA: " . $media_uri;
 		}
 	}
 	
-	return ($eprint_uri,$media_uri);
+	return ($eprint_uri,$media_uri,$edit_uri);
 	
 }
 
@@ -269,6 +289,7 @@ sub local_info {
 sub get_user_agent {
 
 	my $realm = shift;
+	$realm = $config->{realm} if (!defined $realm);
 	
 	my $ua = LWP::UserAgent->new();
 
@@ -285,12 +306,19 @@ sub get_user_agent {
 sub head_uri {
 	
 	my $uri = shift;
+	my $content_type = shift;
 
-	my $realm = "Authenticate";
+	my $ua = get_user_agent(undef);
 
-	my $ua = get_user_agent($realm);
+	my $h;
+	my $req;
 
-	my $req = HTTP::Request->new( HEAD => $uri );
+	if (defined $content_type) {
+		$h = HTTP::Headers->new(Accept => "application/atom+xml");
+		$req = HTTP::Request->new( HEAD => $uri, $h );
+	} else {
+		$req = HTTP::Request->new( HEAD => $uri );
+	}
 
 	my $res = $ua->request($req);
 	
@@ -300,11 +328,11 @@ sub head_uri {
 
 	$status_code = $res->code;
 	if ($res->is_success) {
-		$last_modified = $res->header("Last-Modified") . "\n";
-		$content_md5 = $res->header("ETag") . "\n";
+		$last_modified = $res->header("Last-Modified");
+		$content_md5 = $res->header("ETag");
 	}
-	chomp $last_modified;
-	if (defined $last_modified) {
+	
+	if (defined $last_modified && $last_modified ne "") {
 		$last_modified = utc_to_epoch($last_modified);
 	}
 	
@@ -369,19 +397,25 @@ sub delete_uri {
 sub get_file_from_uri {
 	
 	my $file = shift;
-	my $filename = shift;
 	my $uri = shift;
+	my $accept_type = shift;
 
 	print "Attempting to get $file from $uri\n";
 
-	my $realm = 'Authenticate';
-	
-	my $ua = get_user_agent($realm);
+	my $ua = get_user_agent(undef);
 
 	open(FILE, ">", "$file" ) or die('cant open input file');
 	binmode FILE;
 
-	my $req = HTTP::Request->new( GET => $uri );
+	my $h;
+	my $req;
+
+	if (defined $accept_type) {
+		$h = HTTP::Headers->new(Accept => $accept_type);
+		$req = HTTP::Request->new( GET => $uri, $h );
+	} else {
+		$req = HTTP::Request->new( GET => $uri );
+	}
 
 	my $file_handle = "";
 
@@ -407,6 +441,7 @@ sub put_file_to_uri {
 	my $file = shift;
 	my $filename = shift;
 	my $uri = shift;
+	my $mime_type = shift;
 
 	print "Attempting to put $file to $uri\n";
 
@@ -427,7 +462,11 @@ sub put_file_to_uri {
 
 	use MIME::Types qw(by_suffix by_mediatype);
 
-	my ($mime_type,$encoding) = by_suffix($file);
+	my $encoding;
+	if (!defined $mime_type) {
+		($mime_type,$encoding) = by_suffix($file);
+	}
+
 	$req->content_type( $mime_type );
 
 	my $file_handle = "";
@@ -497,11 +536,11 @@ sub deposit_file {
 	if ($res->is_success) 
 	{
 		my $content = $res->content;
-		my ($eprint_uri,$media_uri) = get_uris_from_atom($content);
+		my ($eprint_uri,$media_uri,$edit_uri) = get_uris_from_atom($content);
 		if (!defined $eprint_uri) {
 			$eprint_uri = $url;
 		}
-		write_uris_to_file($filename,$filepath,$media_uri,$eprint_uri);
+		write_uris_to_file($filename,$filepath,$media_uri,$eprint_uri,$edit_uri);
 	}
 	else 
 	{
@@ -519,8 +558,9 @@ sub write_uris_to_file {
 	my $full_path = shift;
 	my $media_uri = shift;
 	my $parent_uri = shift;
+	my $edit_uri = shift;
 
-	#print $filename . " : " . $full_path . " : " . $media_uri . " : " . $parent_uri . "\n\n"; 
+#	print $filename . " : " . $full_path . " : " . $media_uri . " : " . $parent_uri . "\n\n"; 
 
 	my $file_last_modified = stat($full_path)->mtime;
 	my $path = substr($full_path,0, 0 - length($filename));
@@ -529,11 +569,26 @@ sub write_uris_to_file {
 	my $parent_mtime = stat($path)->mtime;
 
 	open (FILE,">$file_index");
-	print FILE "$file_last_modified $media_uri\n";
+	print FILE "URI: $media_uri\nLast-Modified: $file_last_modified\n";
 	close (FILE);
 	
 	open(FILE,">$parent_file");
-	print FILE "$parent_mtime $parent_uri\n";
+	print FILE "URI: $parent_uri\nLast-Modified: $parent_mtime\nEdit-URI: $edit_uri\n";
+	close(FILE);
+
+	my $html_file = $path . "VIEW_ITEM.HTML";
+	open(FILE,">$html_file");
+	print FILE '
+<html><head>
+<meta http-equiv="REFRESH" content="0;url='.$parent_uri.'"/>
+</head>
+<body style="margin: 7em;">
+<div align="center">
+<a href="'.$parent_uri.'">Click here if you are not automatically redirected</a>
+</div>
+</body>
+</html>
+';
 	close(FILE);
 }
 
@@ -551,9 +606,7 @@ sub get_resource_list {
 
 	print "Attempting to get $uri\n";
 
-	my $realm = 'Authenticate';
-	
-	my $ua = get_user_agent($realm);
+	my $ua = get_user_agent(undef);
 
 	my $h = HTTP::Headers->new(Accept => "application/atom+xml");
 	my $req = HTTP::Request->new( GET => $uri, $h );
