@@ -567,6 +567,13 @@ sub write_uris_to_file {
 	my $file_index = $path . "." . $filename;
 	my $parent_file = $path . ".parent_uri";
 	my $parent_mtime = stat($path)->mtime;
+	
+	if ( -e $parent_file ) {
+		my $resources = get_resources($parent_file);
+		if (!defined $edit_uri) {
+			$edit_uri = $resources->{$parent_uri}->{"Edit-URI"};
+		}
+	}
 
 	open (FILE,">$file_index");
 	print FILE "URI: $media_uri\nLast-Modified: $file_last_modified\n";
