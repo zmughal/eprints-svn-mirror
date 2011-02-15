@@ -50,7 +50,7 @@ sub joins
 	my( $self, %opts ) = @_;
 
 	my $prefix = $opts{prefix};
-	$prefix = "" if !defined $prefix;
+	$prefix = Scalar::Util::refaddr($self) if !defined $prefix;
 
 	my $db = $opts{session}->get_database;
 	my $sql_name = $self->{field}->get_sql_name;
@@ -70,11 +70,13 @@ sub joins
 	{
 		my $main_table = $opts{dataset}->get_sql_table_name;
 		my $alias = $main_table."_".Scalar::Util::refaddr($self);
+		my $ancestors_alias = "${prefix}subject_ancestors";
 		my $key_field = $opts{dataset}->get_key_field;
 		my $sql = "";
-		$sql = $db->quote_identifier( $main_table )." ".$db->quote_identifier( $alias );
+		$sql = $db->quote_identifier( $main_table ).$db->sql_AS.$db->quote_identifier( $alias );
 		$sql .= " INNER JOIN ".$db->quote_identifier( "subject_ancestors" );
-		$sql .= " ON ".$db->quote_identifier( $alias, $sql_name )."=".$db->quote_identifier( "subject_ancestors", "subjectid" );
+		$sql .= $db->sql_AS.$db->quote_identifier( $ancestors_alias );
+		$sql .= " ON ".$db->quote_identifier( $alias, $sql_name )."=".$db->quote_identifier( $ancestors_alias, "subjectid" );
 		return {
 			type => "inner",
 			subquery => $sql,
@@ -91,7 +93,7 @@ sub logic
 	my $db = $opts{session}->get_database;
 
 	my $prefix = $opts{prefix};
-	$prefix = "" if !defined $prefix;
+	$prefix = Scalar::Util::refaddr($self) if !defined $prefix;
 
 	return $db->quote_identifier( "${prefix}subject_ancestors", "ancestors" )." = ".$db->quote_value( $self->{params}->[0] );
 }
