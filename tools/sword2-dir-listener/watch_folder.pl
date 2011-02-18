@@ -244,12 +244,12 @@ sub get_uris_from_atom {
 		
 	my $xp = XML::XPath->new(xml=>$content);
 	
-	my $nodeset = $xp->find('/atom:entry/atom:id'); 
+	my $nodeset = $xp->find('/entry/id'); 
 	foreach my $node ($nodeset->get_nodelist) {
 		$eprint_uri = $node->string_value;
 	}
 	
-	$nodeset = $xp->find('/atom:entry/atom:link'); 
+	$nodeset = $xp->find('/entry/link'); 
 
 	foreach my $node ($nodeset->get_nodelist) {
 		my $attr = $node->getAttribute("rel");
@@ -288,14 +288,11 @@ sub local_info {
 
 sub get_user_agent {
 
-	my $realm = shift;
-	$realm = $config->{realm} if (!defined $realm);
-	
 	my $ua = LWP::UserAgent->new();
 
 	$ua->credentials(
 			$config->{host},
-			"$realm",
+			$config->{realm},
 			$config->{username} => $config->{password}
 			);
 
@@ -376,11 +373,9 @@ sub delete_uri {
 	
 	my $uri = shift;
 
-	my $realm = 'SWORD';
-	
 	print "Attempting to delete $uri\n";
 
-	my $ua = get_user_agent($realm);
+	my $ua = get_user_agent();
 
 	my $req = HTTP::Request->new( DELETE => $uri );
 
@@ -448,8 +443,7 @@ sub put_file_to_uri {
 	open(FILE, "$file" ) or die('cant open input file');
 	binmode FILE;
 
-	my $realm = "SWORD";
-	my $ua = get_user_agent($realm);
+	my $ua = get_user_agent();
 
 	my $req = HTTP::Request->new( PUT => $uri );
 
@@ -502,12 +496,10 @@ sub deposit_file {
 	}
 
 	# credentials:
-	my $realm = 'SWORD';
-
 	open(FILE, "$filepath" ) or die('cant open input file');
 	binmode FILE;
 
-	my $ua = get_user_agent($realm);
+	my $ua = get_user_agent();
 
 	my $req = HTTP::Request->new( POST => $sword_url );
 
@@ -532,13 +524,14 @@ sub deposit_file {
 	my $res = $ua->request($req);	
 	
 	close(FILE);
-
 	if ($res->is_success) 
 	{
+		my $location_url = $res->header("Location");
 		my $content = $res->content;
+		print $content . "\n\n";
 		my ($eprint_uri,$media_uri,$edit_uri) = get_uris_from_atom($content);
-		if (!defined $eprint_uri) {
-			$eprint_uri = $url;
+		if (defined $location_url) {
+			$eprint_uri = $location_url;
 		}
 		write_uris_to_file($filename,$filepath,$media_uri,$eprint_uri,$edit_uri);
 	}
