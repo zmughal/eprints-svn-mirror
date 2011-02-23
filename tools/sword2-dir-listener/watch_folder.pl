@@ -9,7 +9,10 @@ use XML::XPath;
 
 my $dir = $ARGV[0];
 
+our $debug = 0;
+
 our $config = load_config($dir);
+exit if (!check_config());
 exit if (!defined $config);
 my $items = get_resource_list();
 my $items = undef;
@@ -46,9 +49,60 @@ sub load_config {
 		}
 
 		close(HANDLE);
-
+		
 		return $resources;
 	} 
+
+	return undef;
+}
+
+sub check_config {
+	if (!defined $config->{host}) {	
+		print "[CRITICAL] No host defined in config, exiting!\n";
+		exit;
+	} 
+	if (!defined $config->{username}) {	
+		print "[CRITICAL] No username defined in config, exiting!\n";
+		exit;
+	} 
+	if (!defined $config->{password}) {	
+		print "[CRITICAL] No password defined in config, exiting!\n";
+		exit;
+	} 
+	
+	my $given_url = $config->{host};
+
+	my $host = $config->{host};
+
+	if ((substr $host,0,7) eq "http://") {
+		$host = substr $host, 7;
+	}
+
+	if ((index $host,"/") > 0) {
+		$host = substr $host,0,index($host,"/");
+	}
+
+	$config->{host} = $host;
+
+	$config->{sword_url} = $host;
+	
+	if (create_container(undef,undef,1)) {
+		return 1;
+	} 
+
+	use File::Temp;
+	my $fh = File::Temp->new();
+	my $stuff = get_file_from_uri($fh,$given_url,"text/html");	
+	my $uri = get_sword_uri_from_html($fh);
+	if (defined $uri) {
+		$config->{sword_url} = $uri;
+		if (create_container(undef,undef,1)) {
+			print "[STARTUP] Deposit Connection Established\n[STARTUP] Completed\n\n";
+			return 1;	
+		} 
+	}
+
+	print "[CRITICAL] Configuration Failed, no connection to the endpoint could be established, please check the Config file for errors.\n";
 
 	return undef;
 }
@@ -204,16 +258,16 @@ sub process_directory {
 			deposit_file($file,$file_name,$parent_uri);
 		}
 	}
+
 	foreach my $remainder(keys %$repo_docs) {
 		if (defined $repo_docs->{$remainder}) {
-			print $remainder . " is only in repo\n";
+			print "[MESSAGE] " . $remainder . " is only in repo, attempting to download\n";
 			my $filename = $repo_docs->{$remainder}->{"filename"};
 			my $file = $dir . $filename;
 			get_file_from_uri($file,$remainder,undef);
 			write_uris_to_file($filename,$file,$remainder,$parent_uri,undef);
 		}
 	}
-
 
 	closedir(DIR);
 }
@@ -235,6 +289,21 @@ sub md5sum {
 		return "";
 	}
 	return $digest;
+}
+
+sub get_sword_uri_from_html {
+	my $fh = shift;
+	my $p = XML::Parser->new( NoLWP => 1 );
+	my $xp = XML::XPath->new(parser => $p, filename=>$fh);
+	my $nodeset = $xp->find('/html/head/link'); 
+	
+	foreach my $node ($nodeset->get_nodelist) {
+		my $attr = $node->getAttribute("rel");
+		if ($attr eq "SwordDeposit") {
+			return $node->getAttribute("href");
+		}
+	}
+
 }
 
 sub get_uris_from_atom {
@@ -329,10 +398,12 @@ sub head_uri {
 			$config->{realm} = $realm;
 			return head_uri($uri,$content_type);
 		} else {
-			print "Operation Failed\n";
-			print $res->status_line;
-			print "\n";
-			print $res->content;
+			print "[CRITICAL] Operation Failed\n";
+			if ($debug) {
+				print $res->status_line;
+				print "\n";
+				print $res->content;
+			}
 			return undef;
 		}
 	}
@@ -391,7 +462,7 @@ sub delete_uri {
 	
 	my $uri = shift;
 
-	print "Attempting to delete $uri\n";
+	print "[MESSAGE] Attempting to delete $uri\n";
 
 	my $ua = get_user_agent();
 
@@ -407,10 +478,12 @@ sub delete_uri {
 			$config->{realm} = $realm;
 			return delete_uri($uri);
 		} else {
-			print "Operation Failed\n";
-			print $res->status_line;
-			print "\n";
-			print $res->content;
+			print "[CRITICAL] Operation Failed\n";
+			if ($debug) {
+				print $res->status_line;
+				print "\n";
+				print $res->content;
+			}
 			return undef;
 		}
 	}
@@ -425,7 +498,7 @@ sub get_file_from_uri {
 	my $uri = shift;
 	my $accept_type = shift;
 
-	print "Attempting to get $file from $uri\n";
+	print "[MESSAGE] Attempting to get $file from $uri\n";
 
 	my $ua = get_user_agent(undef);
 
@@ -455,10 +528,12 @@ sub get_file_from_uri {
 			$config->{realm} = $realm;
 			return get_file_from_uri($file,$uri,$accept_type);
 		} else {
-			print "Operation Failed\n";
-			print $res->status_line;
-			print "\n";
-			print $res->content;
+			print "[CRITICAL] Operation Failed\n";
+			if ($debug) {
+				print $res->status_line;
+				print "\n";
+				print $res->content;
+			}
 			return undef;
 		}
 	}
@@ -477,7 +552,7 @@ sub put_file_to_uri {
 	my $uri = shift;
 	my $mime_type = shift;
 
-	print "Attempting to put $file to $uri\n";
+	print "[MESSAGE] Attempting to put $file to $uri\n";
 
 	open(FILE, "$file" ) or die('cant open input file');
 	binmode FILE;
@@ -520,10 +595,12 @@ sub put_file_to_uri {
 			$config->{realm} = $realm;
 			return put_file_to_uri($file,$filename,$uri,$mime_type);
 		} else {
-			print "Operation Failed\n";
-			print $res->status_line;
-			print "\n";
-			print $res->content;
+			print "[CRITICAL] Operation Failed\n";
+			if ($debug) {
+				print $res->status_line;
+				print "\n";
+				print $res->content;
+			}
 			return undef;
 		}
 	}
@@ -536,6 +613,7 @@ sub create_container {
 
 	my $filename = shift;
 	my $filepath = shift; 
+	my $no_op = shift;
 
 	my $content = '<?xml version="1.0" encoding="utf-8" ?>
 <entry xmlns="http://www.w3.org/2005/Atom">
@@ -543,12 +621,22 @@ sub create_container {
 ';
 	
 	my $url = $config->{sword_url};
+
+	if ($no_op) {
+		print "[STARTUP] Attempting to establish deposit connection to server at $url\n";
+	} else {
+		print "[MESSAGE] Attempting to create resource container at $url\n";
+	}
 	
 	my $ua = get_user_agent();
 
 	my $req = HTTP::Request->new( POST => $url );
 	
 	$req->content_type( "application/atom+xml" );
+	if ($no_op) 
+	{
+		$req->header( 'X-No-Op' => 'true' );
+	}
 	
 	$req->content( $content );
 	
@@ -560,16 +648,26 @@ sub create_container {
         	$realm = substr $realm, 0, index($realm,'"');
 		if ($res->code == 401 && (!($config->{realm} eq $realm)) ) {
 			$config->{realm} = $realm;
-			return create_container($filename,$filepath);
+			return create_container($filename,$filepath,$no_op);
 		} else {
-			print "Failed to create the contatiner\n";
-			print $res->status_line;
-			print "\n";
-			print $res->content;
+			if ($no_op) {
+				print "[STARTUP] Failed to create the container, trying alternatives...\n";
+			} else {
+				print "[CRITICAL] Failed to create the contatiner\n";
+			}
+			if ($debug) {
+				print $res->status_line;
+				print "\n";
+				print $res->content;
+			}
 			return undef;
 		}
 	}
 	
+	if ($res->is_success && $no_op) {
+		return 1;
+	}
+
 	my $location_url = $res->header("Location");
 	my $content = $res->content;
 	my ($location_uri,$media_uri,$edit_uri) = get_uris_from_atom($content);
@@ -590,7 +688,7 @@ sub deposit_file {
 	my $url = shift;
 	
 
-	print "Attempting to post $filepath to $url\n";
+	print "[MESSAGE] Attempting to post $filepath to $url\n";
 
 	# Need to create a container to deposit into
 	if (!defined $url) {
@@ -637,11 +735,14 @@ sub deposit_file {
 			$config->{realm} = $realm;
 			return deposit_file($filepath,$filename,$url); 
 		} else {
-			print "Failed to POST the FILE\n";
-			print $res->status_line;
-			print "\n";
-			print $res->content;
+			print "[CRITICAL] Failed to POST the FILE\n";
+			if ($debug) {
+				print $res->status_line;
+				print "\n";
+				print $res->content;
+			}
 			return undef;
+			
 		}
 	}
 		
@@ -675,7 +776,7 @@ sub write_parent_uris {
 	}
 
 	open(FILE,">$parent_file");
-	#print FILE "URI: $parent_uri\nLast-Modified: $parent_mtime\nEdit-URI: $edit_uri\nEdit-Media-URI: $media_uri\n";
+	print FILE "URI: $parent_uri\nLast-Modified: $parent_mtime\nEdit-URI: $edit_uri\nEdit-Media-URI: $media_uri\n";
 	close(FILE);
 
 	my $html_file = $path . "VIEW_ITEM.HTML";
@@ -725,7 +826,7 @@ sub get_resource_list {
 	
 	my $uri = "http://" . $config->{host} . "/id/records";
 
-	print "Attempting to get $uri\n";
+	print "[MESSAGE] Starting sync of resources\n";
 
 	my $ua = get_user_agent(undef);
 
@@ -745,10 +846,12 @@ sub get_resource_list {
 			$config->{realm} = $realm;
 			return get_resource_list();
 		} else {
-			print "Operation Failed\n";
-			print $res->status_line;
-			print "\n";
-			print $res->content;
+			print "[CRITICAL] Operation Failed\n";
+			if ($debug) {
+				print $res->status_line;
+				print "\n";
+				print $res->content;
+			}
 			return undef;
 		}
 	}
@@ -773,23 +876,26 @@ sub get_resource_list {
 		my $sub_nodeset = $xp->find('link',$node);
 		foreach my $sub_node ($sub_nodeset->get_nodelist) {
 			my $attr = $sub_node->getAttribute("rel");
-			if ($attr eq "contents") {
-				$items->{$eprint_id}->{"contents"} = $sub_node->getAttribute("href");
+			if ($attr eq "edit-media") {
+				$items->{$eprint_id}->{"edit-media"} = $sub_node->getAttribute("href");
 #print $sub_node->getAttribute("href") . "\n";
 			}
 		}
 	}
 	
 	if (!defined $items) {
-		print $res->status_line;
-		print "\n";
-		print $res->content;
+		print "[WARNING] No items found on server\n";
+		if ($debug) {
+			print $res->status_line;
+			print "\n";
+			print $res->content;
+		}
 		return undef;
 	}
 
 
 	foreach my $eprint_id(keys %$items) {
-		my $uri = $items->{$eprint_id}->{"contents"};
+		my $uri = $items->{$eprint_id}->{"edit-media"};
 		my $req = HTTP::Request->new( GET => $uri, $h );
 		# Et Zzzzooo!
 		my $res = $ua->request($req);	
@@ -808,12 +914,10 @@ sub get_resource_list {
 			my $sub_nodeset = $xp->find('id',$node);
 			foreach my $sub_node ($sub_nodeset->get_nodelist) {
 				$doc_id = $sub_node->string_value;
-#print "FOUND: " . $sub_node->string_value . "\n";
 			}
 			my $sub_nodeset = $xp->find('title',$node);
 			foreach my $sub_node ($sub_nodeset->get_nodelist) {
 				$documents->{$doc_id}->{"title"} = $sub_node->string_value;
-#print "TITLE: " . $sub_node->string_value . "\n";
 			}
 			my $sub_nodeset = $xp->find('link',$node);
 			foreach my $sub_node ($sub_nodeset->get_nodelist) {
@@ -822,13 +926,13 @@ sub get_resource_list {
 					my $filename = $sub_node->getAttribute("href");
 					$filename = substr $filename, rindex($filename,"/")+1,length($filename);
 					$documents->{$doc_id}->{"filename"} = $filename;
-#print "Adding doc $doc_id with filename $filename\n";
 				}
 			}
 		}
 		$items->{$eprint_id}->{"documents"} = $documents;
 	}
 		
+	print "[MESSAGE] Sync Complete\n";
 	return $items;
 	
 }
