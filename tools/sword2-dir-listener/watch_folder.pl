@@ -9,7 +9,7 @@ use XML::XPath;
 
 my $dir = $ARGV[0];
 
-our $debug = 0;
+#our $debug = 0;
 
 our $config = load_config($dir);
 exit if (!check_config());
@@ -637,6 +637,7 @@ sub create_container {
 	{
 		$req->header( 'X-No-Op' => 'true' );
 	}
+#	$req->header( 'X-Packaging' => 'http://www.w3.org/2005/Atom' );
 	
 	$req->content( $content );
 	
