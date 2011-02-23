@@ -1,3 +1,5 @@
+#TODO Handle Sub Directories
+
 #!/bin/perl
 
 use strict;
@@ -94,7 +96,7 @@ sub process_directory {
 	my $depth = shift;
 	my $items = shift;
 
-	#print "No items defined in repo\n" if (!defined $items);
+#print "No items defined in repo\n" if (!defined $items);
 	
 	my $parent_uri = undef;
 	my $resources = {};
@@ -165,8 +167,8 @@ sub process_directory {
 	
 		$file = $dir . $file;	
 
-		#my $path = $dir . "." . $file_name . "\n";
-		#print "PROCESSING: $path \n";
+#my $path = $dir . "." . $file_name . "\n";
+#print "PROCESSING: $path \n";
 	
 		if ( -d $file ) {
 			$depth++;
@@ -197,7 +199,7 @@ sub process_directory {
 				}
 			}
 			#If it is out of date or not uploaded, upload it. 
-			#print "Found the file\n";
+#print "Found the file\n";
 		} else {
 			deposit_file($file,$file_name,$parent_uri);
 		}
@@ -481,6 +483,49 @@ sub put_file_to_uri {
 
 }
 
+sub create_container {
+
+	my $filename = shift;
+	my $filepath = shift; 
+	my $content = '<?xml version="1.0" encoding="utf-8" ?>
+<entry xmlns="http://www.w3.org/2005/Atom">
+</entry>
+';
+	
+	my $url = $config->{sword_url};
+	
+	my $ua = get_user_agent();
+
+	my $req = HTTP::Request->new( POST => $url );
+	
+	$req->content_type( "application/atom+xml" );
+	
+	$req->content( $content );
+	
+	my $res = $ua->request($req);	
+	
+	if ($res->is_success) 
+	{
+		my $location_url = $res->header("Location");
+		my $content = $res->content;
+		my ($location_uri,$media_uri,$edit_uri) = get_uris_from_atom($content);
+		if (defined $location_url) {
+			$location_uri = $location_url;
+		}
+		write_parent_uris($filename,$filepath,$media_uri,$location_uri,$edit_uri);
+		return $media_uri;
+	}
+	else 
+	{
+		print "Failed to create the Container\n";
+		print $res->status_line;
+		print "\n";
+		print $res->content;
+		return undef;
+	}
+
+}
+
 sub deposit_file {
 	
 	my $filepath = shift;
@@ -489,11 +534,12 @@ sub deposit_file {
 
 	print "Attempting to post $filepath to $url\n";
 
-	# collection end point:
-	my $sword_url = $url;
+	# Need to create a container to deposit into
 	if (!defined $url) {
-		$sword_url = $config->{sword_url};
+		$url = create_container($filename,$filepath);
 	}
+
+	return undef if (!defined $url);
 
 	# credentials:
 	open(FILE, "$filepath" ) or die('cant open input file');
@@ -501,7 +547,7 @@ sub deposit_file {
 
 	my $ua = get_user_agent();
 
-	my $req = HTTP::Request->new( POST => $sword_url );
+	my $req = HTTP::Request->new( POST => $url );
 
 	# Tell SWORD to process the XML file as EPrints XML
 	#$req->header( 'X-Packaging' => 'http://eprints.org/ep2/data/2.0' );
@@ -528,15 +574,15 @@ sub deposit_file {
 	{
 		my $location_url = $res->header("Location");
 		my $content = $res->content;
-		print $content . "\n\n";
-		my ($eprint_uri,$media_uri,$edit_uri) = get_uris_from_atom($content);
+		my ($location_uri,$media_uri,$edit_uri) = get_uris_from_atom($content);
 		if (defined $location_url) {
-			$eprint_uri = $location_url;
+			$location_uri = $location_url;
 		}
-		write_uris_to_file($filename,$filepath,$media_uri,$eprint_uri,$edit_uri);
+		write_uris_to_file($filename,$filepath,$media_uri,$location_uri);
 	}
 	else 
 	{
+		print "Failed to POST the FILE\n";
 		print $res->status_line;
 		print "\n";
 		print $res->content;
@@ -545,19 +591,15 @@ sub deposit_file {
 
 }
 
-sub write_uris_to_file {
-
+sub write_parent_uris {
 	my $filename = shift;
 	my $full_path = shift;
 	my $media_uri = shift;
 	my $parent_uri = shift;
 	my $edit_uri = shift;
 
-#	print $filename . " : " . $full_path . " : " . $media_uri . " : " . $parent_uri . "\n\n"; 
-
 	my $file_last_modified = stat($full_path)->mtime;
 	my $path = substr($full_path,0, 0 - length($filename));
-	my $file_index = $path . "." . $filename;
 	my $parent_file = $path . ".parent_uri";
 	my $parent_mtime = stat($path)->mtime;
 	
@@ -568,12 +610,8 @@ sub write_uris_to_file {
 		}
 	}
 
-	open (FILE,">$file_index");
-	print FILE "URI: $media_uri\nLast-Modified: $file_last_modified\n";
-	close (FILE);
-	
 	open(FILE,">$parent_file");
-	print FILE "URI: $parent_uri\nLast-Modified: $parent_mtime\nEdit-URI: $edit_uri\n";
+	#print FILE "URI: $parent_uri\nLast-Modified: $parent_mtime\nEdit-URI: $edit_uri\nEdit-Media-URI: $media_uri\n";
 	close(FILE);
 
 	my $html_file = $path . "VIEW_ITEM.HTML";
@@ -590,6 +628,25 @@ sub write_uris_to_file {
 </html>
 ';
 	close(FILE);
+}
+
+sub write_uris_to_file {
+
+	my $filename = shift;
+	my $full_path = shift;
+	my $location_uri = shift;
+	my $media_uri = shift;
+
+#	print $filename . " : " . $full_path . " : " . $media_uri . " : " . $parent_uri . "\n\n"; 
+
+	my $file_last_modified = stat($full_path)->mtime;
+	my $path = substr($full_path,0, 0 - length($filename));
+	my $file_index = $path . "." . $filename;
+	
+	open (FILE,">$file_index");
+	print FILE "URI: $location_uri\nLast-Modified: $file_last_modified\n";
+	close (FILE);
+	
 }
 
 sub trim($)
