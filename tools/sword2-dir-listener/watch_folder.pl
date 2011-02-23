@@ -214,7 +214,8 @@ sub process_directory {
 				if ((substr $key,0,4) eq "http") {
 					$uri = $key;
 				}
-			}	
+			}
+			next if (!defined $uri);	
 			if (delete_uri($uri)) {
 				unlink($dir . $file_name);
 				$repo_docs->{$uri} = undef;
@@ -229,8 +230,8 @@ sub process_directory {
 #print "PROCESSING: $path \n";
 	
 		if ( -d $file ) {
-			$depth++;
-			process_directory($file.'/',$depth,$items);	
+			my $next_depth = $depth + 1;
+			process_directory($file.'/',$next_depth,$items);	
 		} elsif ( -e ($dir . "." . $file_name) ) {
 			my $uri;
 			my $resources = get_resources($dir . "." . $file_name);
