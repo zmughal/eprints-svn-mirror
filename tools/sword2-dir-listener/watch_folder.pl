@@ -321,6 +321,22 @@ sub head_uri {
 
 	my $res = $ua->request($req);
 	
+	if (!($res->is_success)) {
+		my $realm = $res->header("WWW-Authenticate");
+	        $realm = substr $realm, index($realm,'"') +1;
+        	$realm = substr $realm, 0, index($realm,'"');
+		if ($res->code == 401 && (!($config->{realm} eq $realm)) ) {
+			$config->{realm} = $realm;
+			return head_uri($uri,$content_type);
+		} else {
+			print "Operation Failed\n";
+			print $res->status_line;
+			print "\n";
+			print $res->content;
+			return undef;
+		}
+	}
+	
 	my $last_modified = undef;
 	my $content_md5 = undef;
 	my $status_code = undef;
@@ -382,13 +398,25 @@ sub delete_uri {
 	my $req = HTTP::Request->new( DELETE => $uri );
 
 	my $res = $ua->request($req);
-
-	return 1 if ($res->is_success); 
 	
-	print $res->status_line;
-	print "\n";
-	print $res->content;
+	if (!($res->is_success)) {
+		my $realm = $res->header("WWW-Authenticate");
+	        $realm = substr $realm, index($realm,'"') +1;
+        	$realm = substr $realm, 0, index($realm,'"');
+		if ($res->code == 401 && (!($config->{realm} eq $realm)) ) {
+			$config->{realm} = $realm;
+			return delete_uri($uri);
+		} else {
+			print "Operation Failed\n";
+			print $res->status_line;
+			print "\n";
+			print $res->content;
+			return undef;
+		}
+	}
 
+	return 1; 
+	
 }
 
 sub get_file_from_uri {
@@ -418,19 +446,28 @@ sub get_file_from_uri {
 
 	# Et Zzzzooo!
 	my $res = $ua->request($req);	
-	
-	
-	if ($res->is_success) {
-		open(FILE,">$file");
-		print FILE $res->content;
-		close(FILE);
-		return 1;
+
+	if (!($res->is_success)) {
+		my $realm = $res->header("WWW-Authenticate");
+	        $realm = substr $realm, index($realm,'"') +1;
+        	$realm = substr $realm, 0, index($realm,'"');
+		if ($res->code == 401 && (!($config->{realm} eq $realm)) ) {
+			$config->{realm} = $realm;
+			return get_file_from_uri($file,$uri,$accept_type);
+		} else {
+			print "Operation Failed\n";
+			print $res->status_line;
+			print "\n";
+			print $res->content;
+			return undef;
+		}
 	}
 	
-	print $res->status_line;
-	print "\n";
-	print $res->content;
-
+	open(FILE,">$file");
+	print FILE $res->content;
+	close(FILE);
+	return 1;
+	
 }
 
 sub put_file_to_uri {
@@ -475,18 +512,31 @@ sub put_file_to_uri {
 	
 	close(FILE);
 	
-	return 1 if ($res->is_success);
+	if (!($res->is_success)) {
+		my $realm = $res->header("WWW-Authenticate");
+	        $realm = substr $realm, index($realm,'"') +1;
+        	$realm = substr $realm, 0, index($realm,'"');
+		if ($res->code == 401 && (!($config->{realm} eq $realm)) ) {
+			$config->{realm} = $realm;
+			return put_file_to_uri($file,$filename,$uri,$mime_type);
+		} else {
+			print "Operation Failed\n";
+			print $res->status_line;
+			print "\n";
+			print $res->content;
+			return undef;
+		}
+	}
 	
-	print $res->status_line;
-	print "\n";
-	print $res->content;
-
+	return 1;
+	
 }
 
 sub create_container {
 
 	my $filename = shift;
 	my $filepath = shift; 
+
 	my $content = '<?xml version="1.0" encoding="utf-8" ?>
 <entry xmlns="http://www.w3.org/2005/Atom">
 </entry>
@@ -504,26 +554,33 @@ sub create_container {
 	
 	my $res = $ua->request($req);	
 	
-	if ($res->is_success) 
-	{
-		my $location_url = $res->header("Location");
-		my $content = $res->content;
-		my ($location_uri,$media_uri,$edit_uri) = get_uris_from_atom($content);
-		if (defined $location_url) {
-			$location_uri = $location_url;
+	if (!($res->is_success)) {
+		my $realm = $res->header("WWW-Authenticate");
+	        $realm = substr $realm, index($realm,'"') +1;
+        	$realm = substr $realm, 0, index($realm,'"');
+		if ($res->code == 401 && (!($config->{realm} eq $realm)) ) {
+			$config->{realm} = $realm;
+			return create_container($filename,$filepath);
+		} else {
+			print "Failed to create the contatiner\n";
+			print $res->status_line;
+			print "\n";
+			print $res->content;
+			return undef;
 		}
-		write_parent_uris($filename,$filepath,$media_uri,$location_uri,$edit_uri);
-		return $media_uri;
 	}
-	else 
-	{
-		print "Failed to create the Container\n";
-		print $res->status_line;
-		print "\n";
-		print $res->content;
-		return undef;
+	
+	my $location_url = $res->header("Location");
+	my $content = $res->content;
+	my ($location_uri,$media_uri,$edit_uri) = get_uris_from_atom($content);
+	
+	if (defined $location_url) {
+		$location_uri = $location_url;
 	}
-
+	
+	write_parent_uris($filename,$filepath,$media_uri,$location_uri,$edit_uri);
+	return $media_uri;
+	
 }
 
 sub deposit_file {
@@ -531,6 +588,7 @@ sub deposit_file {
 	my $filepath = shift;
 	my $filename = shift;
 	my $url = shift;
+	
 
 	print "Attempting to post $filepath to $url\n";
 
@@ -570,25 +628,31 @@ sub deposit_file {
 	my $res = $ua->request($req);	
 	
 	close(FILE);
-	if ($res->is_success) 
-	{
-		my $location_url = $res->header("Location");
-		my $content = $res->content;
-		my ($location_uri,$media_uri,$edit_uri) = get_uris_from_atom($content);
-		if (defined $location_url) {
-			$location_uri = $location_url;
+	
+	if (!($res->is_success)) {
+		my $realm = $res->header("WWW-Authenticate");
+	        $realm = substr $realm, index($realm,'"') +1;
+        	$realm = substr $realm, 0, index($realm,'"');
+		if ($res->code == 401 && (!($config->{realm} eq $realm)) ) {
+			$config->{realm} = $realm;
+			return deposit_file($filepath,$filename,$url); 
+		} else {
+			print "Failed to POST the FILE\n";
+			print $res->status_line;
+			print "\n";
+			print $res->content;
+			return undef;
 		}
-		write_uris_to_file($filename,$filepath,$media_uri,$location_uri);
 	}
-	else 
-	{
-		print "Failed to POST the FILE\n";
-		print $res->status_line;
-		print "\n";
-		print $res->content;
+		
+	my $location_url = $res->header("Location");
+	my $content = $res->content;
+	my ($location_uri,$media_uri,$edit_uri) = get_uris_from_atom($content);
+	if (defined $location_url) {
+		$location_uri = $location_url;
 	}
-
-
+	write_uris_to_file($filename,$filepath,$media_uri,$location_uri);
+	
 }
 
 sub write_parent_uris {
@@ -672,32 +736,46 @@ sub get_resource_list {
 
 	# Et Zzzzooo!
 	my $res = $ua->request($req);	
+
+	if (!($res->is_success)) {
+		my $realm = $res->header("WWW-Authenticate");
+	        $realm = substr $realm, index($realm,'"') +1;
+        	$realm = substr $realm, 0, index($realm,'"');
+		if ($res->code == 401 && (!($config->{realm} eq $realm)) ) {
+			$config->{realm} = $realm;
+			return get_resource_list();
+		} else {
+			print "Operation Failed\n";
+			print $res->status_line;
+			print "\n";
+			print $res->content;
+			return undef;
+		}
+	}
 	
-	if ($res->is_success) {
-		my $content = $res->content;
-		
-		my $xp = XML::XPath->new(xml=>$content);
-	
-		my $nodeset = $xp->find('/feed/entry'); 
-		foreach my $node ($nodeset->get_nodelist) {
-			my $eprint_id;	
-			my $sub_nodeset = $xp->find('id',$node);
-			foreach my $sub_node ($sub_nodeset->get_nodelist) {
-				$eprint_id = $sub_node->string_value;
+	my $content = $res->content;
+
+	my $xp = XML::XPath->new(xml=>$content);
+
+	my $nodeset = $xp->find('/feed/entry'); 
+	foreach my $node ($nodeset->get_nodelist) {
+		my $eprint_id;	
+		my $sub_nodeset = $xp->find('id',$node);
+		foreach my $sub_node ($sub_nodeset->get_nodelist) {
+			$eprint_id = $sub_node->string_value;
 #print "FOUND: " . $sub_node->string_value . "\n";
-			}
-			my $sub_nodeset = $xp->find('title',$node);
-			foreach my $sub_node ($sub_nodeset->get_nodelist) {
-				$items->{$eprint_id}->{"title"} = $sub_node->string_value;
+		}
+		my $sub_nodeset = $xp->find('title',$node);
+		foreach my $sub_node ($sub_nodeset->get_nodelist) {
+			$items->{$eprint_id}->{"title"} = $sub_node->string_value;
 #print "TITLE: " . $sub_node->string_value . "\n";
-			}
-			my $sub_nodeset = $xp->find('link',$node);
-			foreach my $sub_node ($sub_nodeset->get_nodelist) {
-				my $attr = $sub_node->getAttribute("rel");
-				if ($attr eq "contents") {
-					$items->{$eprint_id}->{"contents"} = $sub_node->getAttribute("href");
+		}
+		my $sub_nodeset = $xp->find('link',$node);
+		foreach my $sub_node ($sub_nodeset->get_nodelist) {
+			my $attr = $sub_node->getAttribute("rel");
+			if ($attr eq "contents") {
+				$items->{$eprint_id}->{"contents"} = $sub_node->getAttribute("href");
 #print $sub_node->getAttribute("href") . "\n";
-				}
 			}
 		}
 	}
@@ -751,11 +829,6 @@ sub get_resource_list {
 		$items->{$eprint_id}->{"documents"} = $documents;
 	}
 		
-	my $documents = $items->{"http://yomiko.ecs.soton.ac.uk:8027/id/eprint/154"}->{"documents"};
 	return $items;
 	
-	print $res->status_line;
-	print "\n";
-	print $res->content;
-
 }
