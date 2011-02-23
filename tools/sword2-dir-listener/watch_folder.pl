@@ -8,8 +8,12 @@ use LWP::UserAgent;
 use XML::XPath;
 
 my $dir = $ARGV[0];
-
-#our $debug = 0;
+if (!defined $dir) {
+	use Cwd;
+	$dir = cwd() . "/";
+}
+print "using $dir\n";
+our $debug = 0;
 
 our $config = load_config($dir);
 exit if (!check_config());
