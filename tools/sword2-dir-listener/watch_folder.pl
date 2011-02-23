@@ -12,7 +12,7 @@ if (!defined $dir) {
 	use Cwd;
 	$dir = cwd() . "/";
 }
-print "using $dir\n";
+
 our $debug = 0;
 
 our $config = load_config($dir);
@@ -84,6 +84,10 @@ sub check_config {
 
 	if ((index $host,"/") > 0) {
 		$host = substr $host,0,index($host,"/");
+	}
+
+	if (!((index $host,":") > 0)) {
+		$host = $host . ":80";
 	}
 
 	$config->{host} = $host;
