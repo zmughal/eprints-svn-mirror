@@ -259,7 +259,9 @@ sub process_directory {
 			#If it is out of date or not uploaded, upload it. 
 #print "Found the file\n";
 		} else {
-			deposit_file($file,$file_name,$parent_uri);
+			if ($depth > 0) {
+				deposit_file($file,$file_name,$parent_uri);
+			}
 		}
 	}
 
