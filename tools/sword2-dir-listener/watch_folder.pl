@@ -3,6 +3,7 @@
 #!/bin/perl
 
 use strict;
+use English;
 use File::stat;
 use LWP::UserAgent;
 use XML::XPath;
@@ -791,6 +792,11 @@ sub write_parent_uris {
 	print FILE "URI: $parent_uri\nLast-Modified: $parent_mtime\nEdit-URI: $edit_uri\nEdit-Media-URI: $media_uri\n";
 	close(FILE);
 
+	if ($OSNAME eq "MSWin32") {
+		eval "use Win32::File";
+		Win32::File::SetAttributes($parent_file,Win32::File::HIDDEN());
+	}
+
 	my $html_file = $path . "VIEW_ITEM.HTML";
 	open(FILE,">$html_file");
 	print FILE '
@@ -823,6 +829,11 @@ sub write_uris_to_file {
 	open (FILE,">$file_index");
 	print FILE "URI: $location_uri\nLast-Modified: $file_last_modified\n";
 	close (FILE);
+	
+	if ($OSNAME eq "MSWin32") {
+		eval "use Win32::File";
+		Win32::File::SetAttributes($file_index,Win32::File::HIDDEN());
+	}
 	
 }
 
