@@ -1,4 +1,6 @@
 #TODO Handle Sub Directories
+#TODO Handle repository deletes of local items
+#TODO Provide a better error if the server is inaccessible on startup
 
 #!/bin/perl
 
@@ -410,7 +412,7 @@ sub head_uri {
 			$config->{realm} = $realm;
 			return head_uri($uri,$content_type);
 		} else {
-			print "[CRITICAL] Operation Failed\n";
+			print "[CRITICAL] Head Operation Failed on $uri\n";
 			if ($debug) {
 				print $res->status_line;
 				print "\n";
