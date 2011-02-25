@@ -1,6 +1,8 @@
 #TODO Handle Sub Directories
 #TODO Handle repository deletes of local items
 #TODO Provide a better error if the server is inaccessible on startup
+#TODO Take the folder name as the default title of the EPrint.
+#TODO Check that all the locks are released by the CRUD Handlers. (Delete specifically)
 
 #!/bin/perl
 
@@ -178,8 +180,11 @@ sub process_directory {
 		}
 	}
 
+	my $edit_media_uri;
+	my $repo_docs;
 	if (defined $parent_uri) {
 		my $edit_uri = $resources->{$parent_uri}->{"Edit-URI"};
+		$edit_media_uri = $resources->{$parent_uri}->{"Edit-Media-URI"};
 		my ($server_file_modified,$server_file_md5,$status_code) = head_uri($edit_uri,"application/atom+xml");
 		my $file = $dir . "METADATA.xml";
 		if ( -e $file ) {
@@ -196,9 +201,12 @@ sub process_directory {
 		} elsif ($status_code == 200) {
 			get_file_from_uri($file,$edit_uri,"application/atom+xml");
 		}
+		$repo_docs = get_resource_contents($edit_media_uri);
 	}
 
-	my $repo_docs = $items->{$parent_uri}->{"documents"};
+	if (!defined $repo_docs) {
+		$repo_docs = $items->{$parent_uri}->{"documents"};
+	}
 
 	foreach my $file (readdir(DIR)) {
 
@@ -578,9 +586,9 @@ sub put_file_to_uri {
 	# Tell SWORD to process the XML file as EPrints XML
 	#$req->header( 'X-Packaging' => 'http://eprints.org/ep2/data/2.0' );
 	$req->header( 'Content-Disposition' => 'form-data; name="'.$filename.'"; filename="'.$filename.'"');
-	#$req->header( 'X-Extract-Media' => 'true' );
-	#$req->header( 'X-Override-Metadata' => 'true' );
-	#$req->header( 'X-Extract-Archive' => 'true' );
+	$req->header( 'X-Extract-Media' => 'true' );
+	$req->header( 'X-Override-Metadata' => 'true' );
+	$req->header( 'X-Extract-Archive' => 'true' );
 
 	use MIME::Types qw(by_suffix by_mediatype);
 
@@ -918,46 +926,75 @@ sub get_resource_list {
 		return undef;
 	}
 
-
 	foreach my $eprint_id(keys %$items) {
 		my $uri = $items->{$eprint_id}->{"edit-media"};
-		my $req = HTTP::Request->new( GET => $uri, $h );
-		# Et Zzzzooo!
-		my $res = $ua->request($req);	
-
-		next if (!($res->is_success));
-
-		my $documents;
-		
-		my $content = $res->content;
-		
-		my $xp = XML::XPath->new(xml=>$content);
-	
-		my $nodeset = $xp->find('/feed/entry'); 
-		foreach my $node ($nodeset->get_nodelist) {
-			my $doc_id;	
-			my $sub_nodeset = $xp->find('id',$node);
-			foreach my $sub_node ($sub_nodeset->get_nodelist) {
-				$doc_id = $sub_node->string_value;
-			}
-			my $sub_nodeset = $xp->find('title',$node);
-			foreach my $sub_node ($sub_nodeset->get_nodelist) {
-				$documents->{$doc_id}->{"title"} = $sub_node->string_value;
-			}
-			my $sub_nodeset = $xp->find('link',$node);
-			foreach my $sub_node ($sub_nodeset->get_nodelist) {
-				my $attr = $sub_node->getAttribute("rel");
-				if ($attr eq "alternate") {
-					my $filename = $sub_node->getAttribute("href");
-					$filename = substr $filename, rindex($filename,"/")+1,length($filename);
-					$documents->{$doc_id}->{"filename"} = $filename;
-				}
-			}
-		}
-		$items->{$eprint_id}->{"documents"} = $documents;
+		$items->{$eprint_id}->{"documents"} = get_resource_contents($uri);
 	}
 		
 	print "[MESSAGE] Sync Complete\n";
 	return $items;
 	
 }
+
+sub get_resource_contents 
+{
+	my $uri = shift;
+
+	my $ua = get_user_agent(undef);
+
+	my $h = HTTP::Headers->new(Accept => "application/atom+xml");
+	my $req = HTTP::Request->new( GET => $uri, $h );
+
+	# Et Zzzzooo!
+	my $res = $ua->request($req);	
+
+	if (!($res->is_success)) {
+		my $realm = $res->header("WWW-Authenticate");
+	        $realm = substr $realm, index($realm,'"') +1;
+        	$realm = substr $realm, 0, index($realm,'"');
+		if ($res->code == 401 && (!($config->{realm} eq $realm)) ) {
+			$config->{realm} = $realm;
+			return get_resource_contents($uri);
+		} else {
+			print "[CRITICAL] Contents Retrieve Operation Failed for $uri\n";
+			if ($debug) {
+				print $res->status_line;
+				print "\n";
+				print $res->content;
+			}
+			return undef;
+		}
+	}
+	
+	my $documents;
+
+	my $content = $res->content;
+
+	my $xp = XML::XPath->new(xml=>$content);
+
+	my $nodeset = $xp->find('/feed/entry'); 
+	foreach my $node ($nodeset->get_nodelist) {
+		my $doc_id;	
+		my $sub_nodeset = $xp->find('id',$node);
+		foreach my $sub_node ($sub_nodeset->get_nodelist) {
+			$doc_id = $sub_node->string_value;
+		}
+		my $sub_nodeset = $xp->find('title',$node);
+		foreach my $sub_node ($sub_nodeset->get_nodelist) {
+			$documents->{$doc_id}->{"title"} = $sub_node->string_value;
+		}
+		my $sub_nodeset = $xp->find('link',$node);
+		foreach my $sub_node ($sub_nodeset->get_nodelist) {
+			my $attr = $sub_node->getAttribute("rel");
+			if ($attr eq "alternate") {
+				my $filename = $sub_node->getAttribute("href");
+				$filename = substr $filename, rindex($filename,"/")+1,length($filename);
+				$documents->{$doc_id}->{"filename"} = $filename;
+			}
+		}
+	}
+
+	return $documents;
+
+}
+
