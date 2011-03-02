@@ -258,6 +258,7 @@ sub render
 			$tr = $session->make_element( "tr" );
 			$table->appendChild( $tr );
 			$td = $session->make_element( "td", colspan => 2 );
+			$tr->appendChild( $td );
 			$td->appendChild( $self->render_stage_warnings( $stage ) );
 		}
 
