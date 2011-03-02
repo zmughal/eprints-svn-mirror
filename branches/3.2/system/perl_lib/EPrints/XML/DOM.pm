@@ -34,8 +34,6 @@ use XML::Parser;
 # valid...
 $XML::DOM::SafeMode = 0;
 
-XML::DOM::setTagCompression( \&_xmldom_tag_compression );
-
 $EPrints::XML::CLASS = "EPrints::XML::DOM";
 
 $EPrints::XML::LIB_LEN = length("XML::DOM::");
@@ -70,28 +68,6 @@ $EPrints::XML::LIB_LEN = length("XML::DOM::");
 
 		return $node;
 	};
-
-######################################################################
-# 
-# EPrints::XML::_xmldom_tag_compression( $tag, $elem )
-#
-# Only used by the DOM module.
-#
-######################################################################
-
-sub _xmldom_tag_compression
-{
-	my ($tag, $elem) = @_;
-	
-	# Print empty br, hr and img tags like this: <br />
-	foreach my $ctag ( @EPrints::XML::COMPRESS_TAGS )
-	{
-		return 2 if( $ctag eq $tag );
-	}
-
-	# Print other empty tags like this: <empty></empty>
-	return 1;
-}
 
 sub parse_xml_string
 {
