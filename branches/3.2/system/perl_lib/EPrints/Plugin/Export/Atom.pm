@@ -167,7 +167,7 @@ sub output_list
 		$item->appendChild( $session->render_data_element(
 			4,
 			"id", 
-			"tag:".$host.",".($eprint->get_value( "date" )||"").":item:/".$eprint->get_id ) );
+			$eprint->uri ) );
 
 		if( $eprint->exists_and_set( "creators" ) )
 		{
