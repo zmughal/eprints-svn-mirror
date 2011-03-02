@@ -121,8 +121,7 @@ sub _read_phrases_dir
 	my( $self, $data, $repository, $dir ) = @_;
 
 	my $dh;
-	# directory doesn't exist, so there won't be any files to read
-	return if !opendir( $dh, $dir );
+	opendir( $dh, $dir ) || EPrints::abort( "Failed to read: $dir: $!" );
 	foreach my $fn (sort readdir( $dh ) )
 	{
 		next if $fn =~ m/^\./;

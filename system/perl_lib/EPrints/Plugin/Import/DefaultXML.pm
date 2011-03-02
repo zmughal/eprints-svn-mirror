@@ -48,29 +48,19 @@ sub unknown_start_element
 	die "\n"; # Break out of the parsing
 }
 
+
 sub input_fh
 {
 	my( $plugin, %opts ) = @_;
 
-	# to support sub-classes that expect xml_to_epdata( DOM ) we'll spot
-	# that and give them a DOM to convert
-	my $class;
-	if( $plugin->can( "xml_to_epdata" ) )
-	{
-		$class = "EPrints::Plugin::Import::DefaultXML::DOMHandler";
-	}
-	else
-	{
-		$class = "EPrints::Plugin::Import::DefaultXML::Handler";
-	}
-
-	my $handler = $class->new(
-		dataobj => $opts{dataobj},
+	my $handler = {
 		dataset => $opts{dataset},
+		state => 'toplevel',
 		plugin => $plugin,
 		depth => 0,
-		imported => [],
-	);
+		tmpfiles => [],
+		imported => [], };
+	bless $handler, "EPrints::Plugin::Import::DefaultXML::Handler";
 
 	eval { EPrints::XML::event_parse( $opts{fh}, $handler ) };
 	die $@ if $@ and "$@" ne "\n";
@@ -83,25 +73,37 @@ sub input_fh
 
 sub xml_to_dataobj
 {
-	my( $self, $dataset, $xml ) = @_;
+	my( $plugin, $dataset, $xml ) = @_;
 
-	my $epdata = $self->xml_to_epdata( $dataset, $xml );
-	return $self->epdata_to_dataobj( $dataset, $epdata, undef );
+	my $epdata = $plugin->xml_to_epdata( $dataset, $xml );
+
+	return $plugin->epdata_to_dataobj( $dataset, $epdata );
 }
+
+sub xml_to_epdata
+{
+	my( $plugin, $dataset, $xml ) = @_;
+
+	$plugin->error( $plugin->phrase( "no_subclass" ) );
+}
+
+# takes a chunck of XML and returns it as a utf8 string.
+# If the text contains anything but elements then this gives 
+# a warning.
 
 sub xml_to_text
 {
 	my( $plugin, $xml ) = @_;
 
-	my @list = $xml->childNodes;
+	my @list = $xml->getChildNodes;
 	my $ok = 1;
 	my @v = ();
 	foreach my $node ( @list ) 
 	{  
 		if( EPrints::XML::is_dom( $node,
-			"Text",
-			"CDATASection",
-			"EntityReference" ) ) 
+                        "Text",
+                        "CDATASection",
+                        "EntityReference" ) ) 
 		{
 			push @v, $node->nodeValue;
 		}
@@ -115,153 +117,104 @@ sub xml_to_text
 	{
 		$plugin->warning( $plugin->{session}->phrase( "Plugin/Import/DefaultXML:unexpected_xml", xml => $xml->toString ) );
 	}
+	my $r = join( "", @v );
 
-	return join( "", @v );
+	return $r;
 }
+
+
 
 package EPrints::Plugin::Import::DefaultXML::Handler;
 
 use strict;
 
-sub new
+sub characters
 {
-	my( $class, %self ) = @_;
+        my( $self , $node_info ) = @_;
 
-	return bless \%self, $class;
+	if( $self->{depth} > 1 )
+	{
+		$self->{xmlcurrent}->appendChild( $self->{plugin}->{session}->make_text( $node_info->{Data} ) );
+	}
 }
 
-sub AUTOLOAD {}
+sub end_element
+{
+        my( $self , $node_info ) = @_;
+
+	$self->{depth}--;
+
+	if( $self->{depth} == 1 )
+	{
+		my $item = $self->{plugin}->xml_to_dataobj( $self->{dataset}, $self->{xml} );
+		EPrints::XML::dispose( $self->{xml} );
+		delete $self->{xml};
+		if( defined $item )
+		{
+			push @{$self->{imported}}, $item->get_id;
+		}
+
+		# don't keep tmpfiles between items...
+		@{$self->{tmpfiles}} = ();
+	}
+
+	if( $self->{depth} > 1 )
+	{
+		if( $self->{href} )
+		{
+			my $href = delete $self->{href};
+			my $file = $self->{xmlcurrent}->getParentNode;
+			$file->removeChild( $self->{xmlcurrent} );
+			my $url = $self->{plugin}->{session}->make_element( "url" );
+			$file->insertBefore( $url, $file->firstChild() );
+			$url->appendChild( $self->{plugin}->{session}->make_text( $href ) );
+		}
+		pop @{$self->{xmlstack}};
+		
+		$self->{xmlcurrent} = $self->{xmlstack}->[-1]; # the end!
+	}
+}
 
 sub start_element
 {
-	my( $self, $info ) = @_;
+        my( $self, $node_info ) = @_;
 
-#print STDERR "start_element: ".Data::Dumper::Dumper( $info )."\n";
-	++$self->{depth};
-
-	if( defined(my $handler = $self->{handler}) )
+	my %params = ();
+	foreach ( keys %{$node_info->{Attributes}} )
 	{
-		$handler->start_element( $info, $self->{epdata}, $self->{state} );
+		$params{$node_info->{Attributes}->{$_}->{Name}} = 
+			$node_info->{Attributes}->{$_}->{Value};
 	}
-	elsif( $self->{depth} == 1 )
+
+	if( $self->{depth} == 0 )
 	{
 		my $tlt = $self->{plugin}->top_level_tag( $self->{dataset} );
-		if( defined $tlt && $tlt ne $info->{Name} )
+		if( defined $tlt && $tlt ne $node_info->{Name} )
 		{
-			$self->{plugin}->unknown_start_element( $info->{Name}, $tlt ); #dies
-		}
-	}
-	elsif( $self->{depth} == 2 )
-	{
-		$self->{epdata} = {};
-		$self->{state} = { dataset => $self->{dataset} };
-
-		my $class = $self->{dataset}->get_object_class;
-		$self->{handler} = $class;
-
-		$class->start_element( $info, $self->{epdata}, $self->{state} );
-	}
-}
-
-sub end_element
-{
-	my( $self, $info ) = @_;
-
-	if( defined(my $handler = $self->{handler}) )
-	{
-		$handler->end_element( $info, $self->{epdata}, $self->{state} );
-
-		if( $self->{depth} == 2 )
-		{
-			delete $self->{state};
-			delete $self->{handler};
-
-			my $epdata = delete $self->{epdata};
-			my $dataobj = $self->{plugin}->epdata_to_dataobj( $self->{dataset}, $epdata, $self->{dataobj} );
-			push @{$self->{imported}}, $dataobj->id if defined $dataobj;
+			$self->{plugin}->unknown_start_element( $node_info->{Name}, $tlt ); #dies
 		}
 	}
 
-	--$self->{depth};
-}
-
-sub characters
-{
-	my( $self, $info ) = @_;
-
-	if( defined(my $handler = $self->{handler}) )
+	if( $self->{depth} == 1 )
 	{
-		$handler->characters( $info, $self->{epdata}, $self->{state} );
+		$self->{xml} = $self->{plugin}->{session}->make_element( $node_info->{Name}, %params );
+		$self->{xmlstack} = [$self->{xml}];
+		$self->{xmlcurrent} = $self->{xml};
 	}
-}
 
-package EPrints::Plugin::Import::DefaultXML::DOMHandler;
-
-use strict;
-
-sub new
-{
-	my( $class, %self ) = @_;
-
-	return bless \%self, $class;
-}
-
-sub AUTOLOAD {}
-
-sub start_element
-{
-	my( $self, $info ) = @_;
-
-	++$self->{depth};
-
-	if( defined(my $handler = $self->{handler}) )
+	if( $self->{depth} > 1 )
 	{
-		$handler->start_element( $info, $self->{epdata}, $self->{state} );
-	}
-	elsif( $self->{depth} == 1 && $info->{Name} ne $self->{plugin}->top_level_tag( $self->{dataset} ) )
-	{
-		$self->{plugin}->unknown_start_element( $info->{Name}, $self->{plugin}->top_level_tag( $self->{dataset} ) ); #dies
-	}
-	elsif( $self->{depth} == 2 )
-	{
-		$self->{handler} = EPrints::XML::SAX::Builder->new(
-			repository => $self->{plugin}->{session}
-		);
-		$self->{handler}->start_document;
-		$self->{handler}->start_element( $info );
-	}
-}
-
-sub end_element
-{
-	my( $self, $info ) = @_;
-
-	if( defined(my $handler = $self->{handler}) )
-	{
-		$handler->end_element( $info, $self->{epdata}, $self->{state} );
-		if( $self->{depth} == 2 )
+		my $new = $self->{plugin}->{session}->make_element( $node_info->{Name}, %params );
+		$self->{xmlcurrent}->appendChild( $new );
+		push @{$self->{xmlstack}}, $new;
+		$self->{xmlcurrent} = $new;
+		if( $params{href} )
 		{
-			delete $self->{handler};
-
-			$handler->end_document;
-			my $xml = $handler->result;
-			my $epdata = $self->{plugin}->xml_to_epdata( $self->{dataset}, $xml );
-			my $dataobj = $self->{plugin}->epdata_to_dataobj( $self->{dataset}, $epdata, $self->{dataobj} );
-			push @{$self->{imported}}, $dataobj->id if defined $dataobj;
+			$self->{href} = $params{href};
 		}
 	}
 
-	--$self->{depth};
-}
-
-sub characters
-{
-	my( $self, $info ) = @_;
-
-	if( defined(my $handler = $self->{handler}) )
-	{
-		$handler->characters( $info, $self->{epdata}, $self->{state} );
-	}
+	$self->{depth}++;
 }
 
 1;

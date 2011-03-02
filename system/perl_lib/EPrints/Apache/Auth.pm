@@ -36,7 +36,6 @@ use strict;
 
 use EPrints::Apache::AnApache; # exports apache constants
 use URI;
-use MIME::Base64;
 
 #use EPrints::Session;
 #use EPrints::SystemSettings;
@@ -45,7 +44,7 @@ use MIME::Base64;
 
 sub authen
 {
-	my( $r, $realm ) = @_;
+	my( $r ) = @_;
 
 	return OK unless $r->is_initial_req; # only the first internal request
 	
@@ -62,7 +61,7 @@ sub authen
 	}
 	else
 	{
-		$rc = auth_basic( $r, $repository, $realm );
+		$rc = auth_basic( $r, $repository );
 	}
 
 	return $rc;
@@ -78,7 +77,7 @@ sub _use_auth_basic
 	{
 		$rc = 1;
 	}
-	if( !$rc )
+	else
 	{
 		my $uri = URI->new( $r->uri, "http" );
 		my $script = $uri->path;
@@ -98,26 +97,13 @@ sub _use_auth_basic
 			}
 		}
 	}
-	# if the user agent doesn't support text/html then use Basic Auth
-	# NOTE: browsers requesting objects in <img src> will also not specify
-	# text/html, so we always look for a cookie-authentication before checking
-	# basic auth
-	if( !$rc )
-	{
-		my $accept = $r->headers_in->{'Accept'} || '';
-		my @types = split /\s*,\s*/, $accept;
-		if( !grep { m#^text/html\b# } @types )
-		{
-			$rc = 1;
-		}
-	}
 
 	return $rc;
 }
 
 sub authen_doc
 {
-	my( $r, $realm ) = @_;
+	my( $r ) = @_;
 
 	my $repository = $EPrints::HANDLE->current_repository;
 	if( !defined $repository )
@@ -125,14 +111,14 @@ sub authen_doc
 		return FORBIDDEN;
 	}
 
-	my $rvalue = _authen_doc( $r, $repository, $realm );
+	my $rvalue = _authen_doc( $r, $repository );
 
 	return $rvalue;
 }
 
 sub _authen_doc
 {
-	my( $r, $repository, $realm ) = @_;
+	my( $r, $repository ) = @_;
 
 	my $document = $r->pnotes( "document" );
 	return NOT_FOUND if( !defined $document );
@@ -162,7 +148,7 @@ sub _authen_doc
 	}
 	else
 	{
-		$rc = auth_basic( $r, $repository, $realm );
+		$rc = auth_basic( $r, $repository );
 	}
 
 	return $rc;
@@ -233,41 +219,21 @@ sub auth_cookie
 
 sub auth_basic
 {
-	my( $r, $repository, $realm ) = @_;
+	my( $r, $repository ) = @_;
 
-	# user has been logged in by some other means
-	my $user = $repository->current_user;
-	return OK if defined $user;
+	my( $res, $passwd_sent ) = $r->get_basic_auth_pw;
+	my( $user_sent ) = $r->user;
 
-	if( !EPrints::Utils::is_set( $realm ) )
+	if( !defined $user_sent )
 	{
-		$realm = $repository->phrase( "archive_name" );
-	}
-
-	my $authorization = $r->headers_in->{'Authorization'};
-	$authorization = '' if !defined $authorization;
-
-	my( $username, $password );
-	if( $authorization =~ s/^Basic\s+// )
-	{
-		$authorization = MIME::Base64::decode_base64( $authorization );
-		($username, $password) = split /:/, $authorization, 2;
-	}
-
-	if( !defined $username )
-	{
-		$r->err_headers_out->{'WWW-Authenticate'} = "Basic realm=\"$realm\"";
 		return AUTH_REQUIRED;
 	}
 
-	if( !$repository->valid_login( $username, $password ) )
+	if( !$repository->valid_login( $user_sent, $passwd_sent ) )
 	{
 		$r->note_basic_auth_failure;
-		$r->err_headers_out->{'WWW-Authenticate'} = "Basic realm=\"$realm\"";
 		return AUTH_REQUIRED;
 	}
-
-	$r->user( $username );
 
 	return OK;
 }

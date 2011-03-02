@@ -13,13 +13,7 @@
 ######################################################################
 
 use EPrints;
-use EPrints::Const qw( :http );
-
-use Digest::MD5;
-use EPrints::Sword::Utils;
- 
-use Apache2::RequestRec ();
-use Apache2::RequestIO ();
+use Data::Dumper;
 
 use strict;
 my $repository = EPrints->new->current_repository;
@@ -66,17 +60,12 @@ if( $plugin->param( "visible" ) eq "staff" )
 	my $user = $repository->current_user;
 	if( !defined $user )
 	{
-		my $rc = EPrints::Apache::Auth::authen( $repository->get_request );
-		if( $rc != OK )
-		{
-			$repository->get_request->status( $rc );
-			exit;
-		}
-		$user = $repository->current_user;
+		$repository->get_request->status( 403 );
+		exit;
 	}
 	if( $user->get_type ne "editor" && $user->get_type ne "admin" )
 	{
-		$repository->get_request->status( HTTP_FORBIDDEN );
+		$repository->get_request->status( 403 );
 		exit;
 	}
 }
@@ -107,10 +96,6 @@ elsif( $path[0] eq "subject" && scalar @path == 2 )
 {
 	export_subject( $repository, $plugin, \%arguments, $path[1] );
 }
-elsif( $path[0] eq "records" && scalar @path == 1) 
-{
-	export_eprints( $repository, $plugin, \%arguments );
-}
 elsif( $path[1] =~ m/^ext-/ && scalar @path == 2 )
 {
 	export_rdf_resource( $repository, $plugin, \%arguments, $path[0], $path[1] );
@@ -125,33 +110,6 @@ else
 }
 	
 exit;
-
-# Export all eprints owned by logged in user
-sub export_eprints 
-{	
-	my( $repository, $plugin, $args ) = @_;
-
-	my $user = $repository->current_user;
-	if( !defined $user )
-	{
-		my $rc = EPrints::Apache::Auth::authen( $repository->get_request );
-		if( $rc != OK )
-		{
-			$repository->get_request->status( $rc );
-			exit;
-		} 
-		$user = $repository->current_user;
-	}
-
-	my $list = $user->owned_eprints_list(order=>"datestamp");
-	
-	$plugin->initialise_fh( \*STDOUT );
-	
-	$repository->send_http_header( "content_type"=>$plugin->param("mimetype") );
-	
-	$plugin->output_list( fh=>\*STDOUT, list=>$list );
-}
-
 
 # Dump ALL eprint triples. Not Subject or repository ones, though.
 sub export_rdf_dump
@@ -279,8 +237,6 @@ sub export_dataobj
 {
 	my( $repository, $plugin, $args, $datasetid, $id ) = @_;
 
-	my $r = $repository->get_request;
-
 	my $dataset = $repository->dataset( $datasetid );
 	$repository->not_found( "No such dataset" ), exit if !defined $dataset;
 
@@ -298,19 +254,47 @@ sub export_dataobj
 		$dataset = $dataobj->get_dataset;
 	}
 
-	$r->pnotes->{dataset} = $dataset;
-	$r->pnotes->{dataobj} = $dataobj;
-	$r->pnotes->{plugin} = $plugin;
+	my $user = $repository->current_user;
 
-	my $rc = EPrints::Apache::Export::authen( $r );
-	$r->status( $rc );
-	return if $rc != EPrints::Const::OK;
+	my $allowed = 0;
 
-	my $rc = EPrints::Apache::Export::authz( $r );
-	$r->status( $rc );
-	return if $rc != EPrints::Const::OK;
+	my $priv = "export";
+	if( $dataset->id ne $dataset->base_id )
+	{
+		$priv = join('/', $dataset->base_id, $dataset->id, $priv );
+	}
+	else
+	{
+		$priv = join('/', $dataset->base_id, $priv );
+	}
 
-	return EPrints::Apache::Export::handler( $r );
+	if( $repository->allow_anybody( $priv ) )
+	{
+		$allowed = 1;
+	}
+	elsif( defined $user )
+	{
+		if(
+			$user->allow( "$priv:owner", $dataobj ) ||
+			$user->allow( "$priv:editor", $dataobj )
+		  )
+		{
+			$allowed = 1;
+		}
+	}
+
+	if( !$allowed )
+	{
+		# 403 Forbidden
+		$repository->get_request->status( 403 );
+		exit;
+	}
+
+	$repository->not_found( "Can't export" ), exit if !$plugin->can_accept( "dataobj/".$dataset->base_id );
+
+	$repository->send_http_header( "content_type"=>$plugin->param("mimetype") );
+	$plugin->initialise_fh( \*STDOUT );
+	print $plugin->output_dataobj( $dataobj, %$args );
 }
 
 sub show_eprint_export_options

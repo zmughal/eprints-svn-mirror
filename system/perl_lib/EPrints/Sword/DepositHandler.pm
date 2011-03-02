@@ -40,8 +40,7 @@ sub handler
                 
 		if( $error->{no_auth} )
                 {
-			my $realm = $session->phrase( "archive_name" );
-                        $request->err_headers_out->{'WWW-Authenticate'} = 'Basic realm="'.$realm.'"';
+                        $request->headers_out->{'WWW-Authenticate'} = 'Basic realm="SWORD"';
 			$request->status( $error->{status_code} );
 			$session->terminate;
 			return Apache2::Const::DONE;
@@ -232,7 +231,7 @@ sub handler
 	}
 
 	# Create a temp directory which will be automatically removed by PERL
-	my $tmp_dir = File::Temp->newdir( "swordXXXX", TMPDIR => 1 );
+	my $tmp_dir = EPrints::TempDir->new( "swordXXX", UNLINK => 1 );	
  
 	if( !defined $tmp_dir )
         {
@@ -346,18 +345,6 @@ sub handler
         $opts{depositor_id} = $depositor->get_id if(defined $depositor);
 	$opts{verbose} = $VERBOSE;
 	$opts{no_op} = $NO_OP;
-	
-	my $grammar = EPrints::Sword::Utils::get_grammar();
-	my $flags = {};
-	my $headers_in = $request->headers_in;
-	foreach my $key (keys %{$headers_in}) {
-		my $value = $grammar->{$key};
-		if ((defined $value) and ($headers_in->{$key} eq "true")) {
-			$flags->{$value} = 1;
-		}
-	}
-	$opts{flags} = $flags;
-
 	my $eprint = $import_plugin->input_file( %opts );
 	$verbose_desc .= $import_plugin->get_verbose();
 
@@ -381,7 +368,7 @@ sub handler
 			$request->headers_out->{'Content-Length'} = length $noop_xml;
 			$request->content_type( 'application/atom+xml' );
 			$request->status( 200 );        # Successful
-			$request->print( $noop_xml );
+		        $request->print( $noop_xml );
 		        $session->terminate;
 		        return Apache2::Const::OK;
 		}
@@ -421,33 +408,20 @@ sub handler
                 $session->terminate;
                 return Apache2::Const::DONE;
         }
-	
 
-#	my %xml_opts;
-#	$xml_opts{eprint} = $eprint;
-#	$xml_opts{x_packaging} = $headers->{x_packaging};
-#	$xml_opts{sword_treatment} = $sword_treatment;
-#	$xml_opts{owner} = $owner;
-#	$xml_opts{depositor} = $depositor;
-#	$xml_opts{verbose_desc} = $verbose_desc if( $VERBOSE );
-#	$xml_opts{user_agent} = $headers->{user_agent};
-#	$xml_opts{deposited_file_docid} = $import_plugin->get_deposited_file_docid();
-#
-	my $accept = $request->headers_in->{'Accept'};
-	$accept = "application/atom+xml" if (!defined $accept);
-	my $repository = $session->get_repository();
-	my $match = EPrints::Apache::Rewrite::content_negotiate_best_plugin( 
-		$repository, 
-		accept_header => $accept,
-		plugins => [$repository->get_plugins(
-			type => "Export",
-			is_visible => "all",
-			can_accept => 'dataobj/eprint' )],
-	);
-	my $xml = $match->output_eprint($eprint);
+	my %xml_opts;
+	$xml_opts{eprint} = $eprint;
+	$xml_opts{x_packaging} = $headers->{x_packaging};
+	$xml_opts{sword_treatment} = $sword_treatment;
+	$xml_opts{owner} = $owner;
+	$xml_opts{depositor} = $depositor;
+	$xml_opts{verbose_desc} = $verbose_desc if( $VERBOSE );
+	$xml_opts{user_agent} = $headers->{user_agent};
+	$xml_opts{deposited_file_docid} = $import_plugin->get_deposited_file_docid();
 
-	$request->headers_out->{'Location'} = $eprint->uri;
-	#$request->headers_out->{'Content-Location'} = ATOM URL LOCATION;
+	my $xml = EPrints::Sword::Utils::create_xml( $session, %xml_opts );
+
+	$request->headers_out->{'Location'} = EPrints::Sword::Utils::get_atom_url( $session, $eprint );
 	$request->headers_out->{'Content-Length'} = length $xml;
 	$request->content_type('application/atom+xml');
 

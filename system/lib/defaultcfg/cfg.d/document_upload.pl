@@ -29,7 +29,7 @@ $c->{required_formats} =
 # $c->{required_formats} = sub {
 # 	my( $eprint ) = @_;
 # 
-# 	if( $eprint->value( 'type' ) eq "book" )
+# 	if( $eprint->get_value( 'type' ) eq "book" )
 # 	{
 # 		return [];
 # 	}
@@ -56,14 +56,14 @@ $c->{diskspace_warn_threshold} = 512*1024;
 # It must return a legal document format id.
 $c->{guess_doc_type} = sub
 {
-	my( $repository, $filename ) = @_;
+	my( $session, $filename ) = @_;
 
-	my @formats = $repository->get_types( "document" );
+	my @formats = $session->get_repository->get_types( "document" );
 
 	if( $filename=~m/\.([^.]+)$/ )
 	{
 		my $suffix = "\L$1";
-		my $guess = $repository->config( "mimemap", $suffix );
+		my $guess = $session->config( "mimemap", $suffix );
 		return $guess if( defined $guess );
 	}
 
@@ -82,7 +82,7 @@ $c->{mimemap}->{pptx} = "application/vnd.ms-powerpoint";
 $c->{mimemap}->{xls}  = "application/vnd.ms-excel";
 $c->{mimemap}->{xlsx} = "application/vnd.ms-excel";
 $c->{mimemap}->{doc}  = "application/msword";
-$c->{mimemap}->{docx} = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+$c->{mimemap}->{docx} = "application/msword";
 $c->{mimemap}->{rtf}  = "application/rtf";
 $c->{mimemap}->{bz2}  = "application/bzip2";
 $c->{mimemap}->{gz}   = "application/x-gzip";
@@ -117,7 +117,7 @@ $c->{mimemap}->{wma}  = "audio/x-ms-wma";
 
 $c->{on_files_modified} = sub
 {
-	my( $repository, $document ) = @_;
+	my( $session, $document ) = @_;
 
 	# do your stuff
 };

@@ -161,15 +161,12 @@ sub get_system_field_info
 			fromform=>\&EPrints::Utils::crypt_password },
 
 		{ name=>"usertype", type=>"namedset", required=>1, 
-			set_name=>"user", input_style=>"medium", default_value=>"user" },
+			set_name=>"user", input_style=>"medium" },
 	
 		{ name=>"newemail", type=>"email", show_in_html=>0 },
 	
 		{ name=>"newpassword", type=>"secret", show_in_html=>0, 
 			fromform=>\&EPrints::Utils::crypt_password },
-
-		{ name=>"openid_identifier", type=>"text", virtual=>1,
-			show_in_html=>0, export_as_xml=>0, },
 
 		{ name=>"pin", type=>"text", show_in_html=>0 },
 
@@ -561,7 +558,7 @@ Returns a L<EPrints::List> of all the L<EPrints::DataObj::EPrint>s owned by this
 sub owned_eprints_list
 {
 	my( $self, %opts ) = @_;
-		
+
 	my $dataset = $self->{session}->get_repository->get_dataset( "eprint" );
 
 	my $searchexp = EPrints::Search->new(
@@ -583,7 +580,7 @@ sub owned_eprints_list
 	}
 	
 	my $list = &$fn( $self->{session}, $self, $dataset );
-	if (!$searchexp->is_blank()) { $list = $list->intersect( $searchexp->perform_search ); }
+	$list = $list->intersect( $searchexp->perform_search );
 
 	return $list;
 }
@@ -936,6 +933,13 @@ and modify this record.
 =cut
 ######################################################################
 
+sub get_url
+{
+	my( $self ) = @_;
+
+	return $self->{session}->get_repository->get_conf( "http_cgiurl" )."/users/home?screen=User::View&userid=".$self->get_value( "userid" );
+}
+
 sub get_control_url
 {
 	my( $self ) = @_;
@@ -1268,7 +1272,8 @@ my $PRIVMAP =
 		"config/remove_field",
 		"config/regen_abstracts",
 		"config/regen_views",
-		"config/edit/perl",
+		"metafield/view",
+		"metafield/edit",
 		"import/view",
 		"import/edit",
 		"storage/manager",
@@ -1277,7 +1282,6 @@ my $PRIVMAP =
 		"event_queue/view",
 		"event_queue/destroy",
 		"eprint/archive/edit", # BatchEdit
-		"repository/epm", #EPrints Package Manager
 	],
 
 	"toolbox" => 
@@ -1305,8 +1309,9 @@ my $PRIVMAP =
 		"saved_search",
 		"create_saved_search",
 		"saved_search/view:owner",
+		"saved_search/perform:owner",
 		"saved_search/edit:owner",
-		"saved_search/destroy:owner",
+		"saved_search/remove:owner",
 	],
 
 	deposit => 

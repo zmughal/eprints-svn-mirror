@@ -65,8 +65,6 @@ Oracle doesn't support "AS" when aliasing.
 
 When specifying char column lengths use (n char) to define character semantics. Otherwise oracle uses the "nls_length_semantics" setting to determine whether you meant bytes or chars.
 
-DBD::Oracle can crash when using PERL_USE_SAFE_PUTENV-compiled Perls, see http://www.eprints.org/tech.php/13984.html
-
 =head2 TODO
 
 =over 4
@@ -116,68 +114,51 @@ our %ORACLE_TYPES = (
 	SQL_VARCHAR() => {
 		CREATE_PARAMS => "max length",
 		TYPE_NAME => "VARCHAR2",
-		COLUMN_SIZE => 255,
 	},
 	SQL_LONGVARCHAR() => {
 		CREATE_PARAMS => undef,
 		TYPE_NAME => "CLOB",
-		COLUMN_SIZE => 2**31,
-	},
-	SQL_CLOB() => {
-		CREATE_PARAMS => undef,
-		TYPE_NAME => "CLOB",
-		COLUMN_SIZE => 2**31,
 	},
 	SQL_VARBINARY() => {
 		CREATE_PARAMS => undef,
 		TYPE_NAME => "BLOB",
-		COLUMN_SIZE => 2**31,
 	},
 	SQL_LONGVARBINARY() => {
 		CREATE_PARAMS => undef,
 		TYPE_NAME => "BLOB",
-		COLUMN_SIZE => 2**31,
 	},
 	SQL_TINYINT() => {
 		CREATE_PARAMS => undef,
 		TYPE_NAME => "NUMBER(3,0)",
-		COLUMN_SIZE => 3,
 	},
 	SQL_SMALLINT() => {
 		CREATE_PARAMS => undef,
 		TYPE_NAME => "NUMBER(6,0)",
-		COLUMN_SIZE => 6,
 	},
 	SQL_INTEGER() => {
 		CREATE_PARAMS => undef,
 		TYPE_NAME => "NUMBER(*,0)",
-		COLUMN_SIZE => 10,
 	},
 	SQL_BIGINT() => {
 		CREATE_PARAMS => undef,
 		TYPE_NAME => "NUMBER(19,0)",
-		COLUMN_SIZE => 19,
 	},
 	# NUMBER becomes FLOAT if not p,s is given
 	SQL_REAL() => {
 		CREATE_PARAMS => undef,
 		TYPE_NAME => "NUMBER",
-		COLUMN_SIZE => 15,
 	},
 	SQL_DOUBLE() => {
 		CREATE_PARAMS => undef,
 		TYPE_NAME => "NUMBER",
-		COLUMN_SIZE => 15,
 	},
 	SQL_DATE() => {
 		CREATE_PARAMS => undef,
 		TYPE_NAME => "DATE",
-		COLUMN_SIZE => 10,
 	},
 	SQL_TIME() => {
 		CREATE_PARAMS => undef,
 		TYPE_NAME => "DATE",
-		COLUMN_SIZE => 10,
 	},
 );
 
@@ -309,9 +290,8 @@ sub get_column_type
 		$length = 1000 if !defined($length) || $length > 1000;
 	}
 
-	my $type_info = $self->type_info( $data_type );
-	$db_type = $type_info->{TYPE_NAME};
-	$params = $type_info->{CREATE_PARAMS};
+	$db_type = $ORACLE_TYPES{$data_type}->{TYPE_NAME};
+	$params = $ORACLE_TYPES{$data_type}->{CREATE_PARAMS};
 
 	my $type = $self->quote_identifier($name) . " " . $db_type;
 
@@ -518,64 +498,6 @@ sub retry_error
 	# ORA-03113: end-of-file on communication channel
 	# ORA-03114: not connected to ORACLE
 	return ($err == 3113) || ($err == 3114);
-}
-
-# Add the field to the main tables
-sub _add_field
-{
-	my( $self, $dataset, $field, $force ) = @_;
-
-	my $rc = 1;
-
-	return $rc if $field->is_virtual; # Virtual fields are still added to ordervalues???
-
-	if( $field->get_property( "multiple" ) )
-	{
-		return $self->_add_multiple_field( $dataset, $field, $force );
-	}
-
-	my $table = $dataset->get_sql_table_name;
-	my @names = $field->get_sql_names;
-	my @types = $field->get_sql_type( $self->{session} );
-
-	return $rc if $self->has_column( $table, $names[0] ) && !$force;
-
-	my @modify;
-	my @add;
-	for(my $i = 0; $i < @names; ++$i)
-	{
-		if( $self->has_column( $table, $names[$i] ) )
-		{
-			push @modify, $types[$i];
-		}
-		else
-		{
-			push @add, $types[$i];
-		}
-	}
-	
-	if( @modify )
-	{
-		$rc &&= $self->do( "ALTER TABLE ".$self->quote_identifier($table)." MODIFY (".join(",", @types).")");
-	}
-	if( @add )
-	{
-		$rc &&= $self->do( "ALTER TABLE ".$self->quote_identifier($table)." ADD (".join(",", @types).")");
-	}
-
-	if( my @columns = $field->get_sql_index )
-	{
-		$rc &&= $self->create_index( $table, @columns );
-	}
-
-	return $rc;
-}
-
-sub type_info
-{
-	my( $self, $data_type ) = @_;
-
-	return $ORACLE_TYPES{$data_type};
 }
 
 1; # For use/require success

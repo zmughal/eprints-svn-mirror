@@ -19,11 +19,11 @@ sub new
 		EPrints::abort( "Workflow stage with no name attribute." );
 	}
 	$self->{action_buttons} = $stage->getAttribute( "action_buttons" );
-	if( !$self->{action_buttons} )
+	if( !defined $self->{action_buttons} )
 	{
 		$self->{action_buttons} = "both";
 	}
-	elsif( $self->{action_buttons} !~ /^(top|bottom|both|none)$/ )
+	elsif( $self->{action_buttons} !~ /^(top|bottom|both)$/ )
 	{
 		$self->{session}->get_repository->log( "Warning! Workflow <stage> action_buttons attribute expected one of 'top', 'bottom' or 'both' but instead got '$self->{action_buttons}'" );
 		$self->{action_buttons} = "both";
@@ -54,8 +54,7 @@ sub _read_components
 					xml_config=>$stage_node, 
 					dataobj=>$self->{item}, 
 					stage=>$self, 	
-					workflow=>$self->{workflow},
-					processor=>$self->{workflow}->{processor} ); 
+					workflow=>$self->{workflow} ); 
 
 			# Pull out the type
 
@@ -88,13 +87,19 @@ sub _read_components
 			
 			my $pluginid = "InputForm::Component::$type";
 
-			my $plugin = $self->{session}->plugin( $pluginid, %params );
-			if( !defined $plugin )
+			# Grab any values inside
+			my $class = $self->{session}->get_repository->get_plugin_class( $pluginid );
+			if( !defined $class )
 			{
-				$params{placeholding} = $type;
-				$plugin = $self->{session}->plugin( "InputForm::Component::PlaceHolder", %params );
+				print STDERR "Using placeholder for $type\n";
+				$class = $self->{session}->get_repository->get_plugin_class( "InputForm::Component::PlaceHolder" );
+				$params{placeholding}=$type;
 			}
-			push @{$self->{components}}, $plugin;
+			if( defined $class )
+			{
+				my $plugin = $class->new( %params );
+				push @{$self->{components}}, $plugin;
+			}
 		}
 		elsif( $name eq "title" )
 		{
@@ -105,19 +110,6 @@ sub _read_components
 			$self->{short_title} = $stage_node->getFirstChild->nodeValue;
 		}
 	}
-}
-
-=item $flag = $stage->action_buttons()
-
-Returns the action buttons setting: both, top, bottom or none.
-
-=cut
-
-sub action_buttons
-{
-	my( $self ) = @_;
-
-	return $self->{action_buttons};
 }
 
 sub get_name
@@ -132,19 +124,6 @@ sub get_title
 	return $self->{title};
 }
 
-sub render_title
-{
-	my( $self ) = @_;
-
-	my $title = $self->get_title;
-	if( !defined $title )
-	{
-		my $dataset = $self->{item}->dataset;
-		return $self->{repository}->html_phrase( $dataset->id.":workflow:stage:".$self->get_name.":title" );
-	}
-
-	return $self->{repository}->xml->create_text_node( $title );
-}
 
 sub get_short_title
 {

@@ -12,14 +12,19 @@ sub new
 {
 	my( $class, %params ) = @_;
 
-	$params{actions} = exists $params{actions} ? $params{actions} : [];
-	$params{session} = exists $params{session} ? $params{session} : $params{processor}->{session};
+	my $self = $class->SUPER::new(%params);
+
+	if( !defined $self->{session} ) 
+	{
+		$self->{session} = $self->{processor}->{session};
+	}
+	$self->{actions} = [];
 
 	# flag to indicate that it takes some effort to make this screen, so
 	# don't make it up as a tab. eg. EPrint::History.
-	$params{expensive} = exists $params{expensive} ? $params{expensive} : 0; 
+	$self->{expensive} = 0; 
 
-	return $class->SUPER::new(%params);
+	return $self;
 }
 
 sub properties_from
@@ -46,11 +51,7 @@ sub render
 {
 	my( $self ) = @_;
 
-	my $phraseid = substr(__PACKAGE__, 9);
-	$phraseid =~ s/::/\//g;
-	$phraseid .= ":no_render_subclass";
-
-	return $self->{session}->html_phrase( $phraseid, screen => $self->{session}->make_text( $self ) );
+	return $self->html_phrase( "no_render_subclass", screen => $self->{session}->make_text( $self ) );
 }
 
 sub render_links
@@ -76,36 +77,16 @@ sub register_error
 		screen=>$self->{session}->make_text( $self->{processor}->{screenid} ) ) );
 }
 
-=item @params = $screen->hidden_bits()
-
-Returns a key-value list of values that must be set when referring to this screen.
-
-At the top-level this is just the 'screen' id.
-
-=cut
-
-sub hidden_bits
-{
-	my( $self ) = @_;
-
-	return(
-		screen => $self->get_subtype
-	);
-}
-
 sub render_hidden_bits
 {
 	my( $self ) = @_;
 
 	my $chunk = $self->{session}->make_doc_fragment;
 
-	my @params = $self->hidden_bits;
-	for(my $i = 0; $i < @params; $i+=2)
-	{
-		$chunk->appendChild( $self->{session}->render_hidden_field( 
-				@params[$i,$i+1]
-			) );
-	}
+	$chunk->appendChild( 
+		$self->{session}->render_hidden_field( 
+			"screen", 
+			substr($self->{id},8) ) );
 
 	return $chunk;
 }
@@ -213,7 +194,7 @@ sub from
 
 	# If you hit reload after login you can cause a
 	# login action, so we'll just ignore it.
-#	return if( $action_id eq "login" );
+	return if( $action_id eq "login" );
 
 	my $ok = 0;
 	foreach my $an_action ( @{$self->{actions}} )
@@ -288,7 +269,6 @@ Each screen opt is a hash ref of:
 Incoming opts:
 
 	filter => 1 or 0 (default 1)
-	params => {}
 
 =cut
 
@@ -420,22 +400,18 @@ sub _render_action_aux
 		$method = "POST";
 	}
 
-	my @query = (screen => substr( $params->{screen_id}, 8 ));
+	my $form = $session->render_form( $method, $session->current_url( path => "cgi" ) . "/users/home" );
 
-	my $hidden = $params->{hidden};
-	if( ref($hidden) eq "ARRAY" )
+	$form->appendChild( 
+		$session->render_hidden_field( 
+			"screen", 
+			substr( $params->{screen_id}, 8 ) ) );
+	foreach my $id ( @{$params->{hidden}} )
 	{
-		foreach my $id ( @$hidden )
-		{
-			push @query, $id => $self->{processor}->{$id};
-		}
-	}
-	else
-	{
-		foreach my $id (keys %$hidden)
-		{
-			push @query, $id => $hidden->{$id};
-		}
+		$form->appendChild( 
+			$session->render_hidden_field( 
+				$id, 
+				$self->{processor}->{$id} ) );
 	}
 	my( $action, $title, $icon );
 	if( defined $params->{action} )
@@ -446,70 +422,33 @@ sub _render_action_aux
 	}
 	else
 	{
-		$action = "";
+		$action = "null";
 		$title = $params->{screen}->phrase( "title" );
 		$icon = $params->{screen}->icon_url();
 	}
-	
-	my $path = $session->current_url( path => "cgi" ) . "/users/home";
-
-	my $frag;
-
-	if( $method eq "GET" && defined $icon && $asicon )
+	if( defined $icon && $asicon )
 	{
-		push @query, "_action_$action" => 1 if length($action);
-		my $uri = URI->new( $path );
-		$uri->query_form( @query );
-		$frag = $session->render_link( $uri );
-		if( defined $icon && $asicon )
-		{
-			$frag->appendChild( $session->make_element( "img",
+		$form->appendChild( 
+			$session->make_element(
+				"input",
+				type=>"image",
+				class=>"ep_form_action_icon",
+				name=>"_action_$action", 
 				src=>$icon,
 				title=>$title,
 				alt=>$title,
-				class=>"ep_form_action_icon",
-			) );
-		}
-		# never called because mixing <input> and <href> is ugly
-		else
-		{
-			$frag->setAttribute( class => "ep_form_action_button" );
-			$frag->appendChild( $session->make_text( $title ) );
-		}
+				value=>$title ));
 	}
 	else
 	{
-		$frag = $session->render_form( $method, $path );
-		foreach my $i (0..$#query)
-		{
-			next if $i % 2;
-			$frag->appendChild( $session->render_hidden_field( 
-				@query[$i, $i+1] ) );
-		}
-		if( defined $icon && $asicon )
-		{
-			$frag->appendChild( 
-				$session->make_element(
-					"input",
-					type=>"image",
-					class=>"ep_form_action_icon",
-					($action ? (name=>"_action_$action") : ()),
-					src=>$icon,
-					title=>$title,
-					alt=>$title,
-					value=>$title ));
-		}
-		else
-		{
-			$frag->appendChild( 
-				$session->render_button(
-					class=>"ep_form_action_button",
-					($action ? (name=>"_action_$action") : ()),
-					value=>$title ));
-		}
+		$form->appendChild( 
+			$session->render_button(
+				class=>"ep_form_action_button",
+				name=>"_action_$action", 
+				value=>$title ));
 	}
 
-	return $frag;
+	return $form;
 }
 
 sub render_action_button_if_allowed

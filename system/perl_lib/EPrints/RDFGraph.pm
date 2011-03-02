@@ -54,7 +54,7 @@ package EPrints::RDFGraph;
 
 use strict;
 
-use EPrints::Const qw( :trigger );
+use EPrints::Const;
 
 ######################################################################
 =pod

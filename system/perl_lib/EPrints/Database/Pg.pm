@@ -79,12 +79,18 @@ sub type_info
 {
 	my( $self, $data_type ) = @_;
 
-	if( $data_type eq SQL_TINYINT )
+	if( $data_type eq SQL_BIGINT )
+	{
+		return {
+			TYPE_NAME => "bigint",
+			CREATE_PARAMS => "",
+		};
+	}
+	elsif( $data_type eq SQL_TINYINT )
 	{
 		return {
 			TYPE_NAME => "smallint",
 			CREATE_PARAMS => "",
-			COLUMN_SIZE => 3,
 		};
 	}
 	# DBD::Pg maps SQL_VARCHAR to text rather than varchar(n)
@@ -93,15 +99,13 @@ sub type_info
 		return {
 			TYPE_NAME => "varchar",
 			CREATE_PARAMS => "max length",
-			COLUMN_SIZE => 255,
 		};
 	}
-	elsif( $data_type eq SQL_LONGVARCHAR || $data_type eq SQL_CLOB )
+	elsif( $data_type eq SQL_LONGVARCHAR )
 	{
 		return {
 			TYPE_NAME => "text",
 			CREATE_PARAMS => "",
-			COLUMN_SIZE => 2**31,
 		};
 	}
 	elsif( $data_type eq SQL_LONGVARBINARY )
@@ -109,12 +113,11 @@ sub type_info
 		return {
 			TYPE_NAME => "bytea",
 			CREATE_PARAMS => "",
-			COLUMN_SIZE => 2**31,
 		};
 	}
 	else
 	{
-		return $self->SUPER::type_info( $data_type );
+		return $self->{dbh}->type_info( $data_type );
 	}
 }
 

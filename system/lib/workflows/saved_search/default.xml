@@ -7,7 +7,7 @@
   </flow>
    
   <stage name="default">
-    <component type="XHTML" surround="None"><div class="ep_block"><p><epc:print expr="spec" /></p></div></component>
+    <component type="XHTML" surround="None"><div class="ep_block"><p><epc:print expr="$search_description" /></p></div></component>
 
     <component><field ref="name"/></component>
 
@@ -17,7 +17,7 @@
       <field ref="mailempty"/>
     </component>
 
-<!--    <component><field ref="public"/></component> -->
+    <component><field ref="public"/></component>
 
   </stage>
 </workflow>

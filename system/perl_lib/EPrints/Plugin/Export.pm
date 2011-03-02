@@ -10,17 +10,20 @@ sub new
 {
 	my( $class, %params ) = @_;
 
-	$params{suffix} = exists $params{suffix} ? $params{suffix} : ".txt";
-	$params{visible} = exists $params{visible} ? $params{visible} : "all";
-	$params{mimetype} = exists $params{mimetype} ? $params{mimetype} : "text/plain";
-	$params{advertise} = exists $params{advertise} ? $params{advertise} : 1;
-	$params{arguments} = exists $params{arguments} ? $params{arguments} : {};
+	my $self = $class->SUPER::new(%params);
+
+	$self->{name} = "Base output plugin: This should have been subclassed";
+	$self->{suffix} = ".txt";
+	$self->{visible} = "all";
+	$self->{mimetype} = "text/plain";
+	$self->{advertise} = 1;
+	$self->{arguments} = {};
 
 	# q is used to describe quality. Use it to increase or decrease the 
 	# desirability of using this plugin during content negotiation.
-	$params{qs} = exists $params{qs} ? $params{qs} : 0.5; 
+	$self->{qs} = 0.5; 
 
-	return $class->SUPER::new(%params);
+	return $self;
 }
 
 # Return an array of the ID's of arguemnts this plugin accepts
@@ -237,41 +240,6 @@ sub dataobj_export_url
 			$plugin->{session}->get_id,
 			$dataobj->get_dataset->base_id,
 			$dataobj->get_id,
-		).$plugin->param( "suffix" )
-	);
-
-	return $url;
-}
-
-# if this an output plugin can output results for a list of dataobjs (defined
-# as the contents as the parent object then this routine returns a URL which 
-# will export it. This routine does not check that it's actually possible.
-sub list_export_url
-{
-	my( $plugin, $dataobj, $staff ) = @_;
-
-	my $dataset = $dataobj->get_dataset;
-
-	my $pluginid = $plugin->{id};
-
-	unless( $pluginid =~ m# ^Export::(.*)$ #x )
-	{
-		$plugin->{session}->get_repository->log( "Bad pluginid in dataobj_export_url: ".$pluginid );
-		return undef;
-	}
-	my $format = $1;
-
-	my $url = $plugin->{session}->get_repository->get_conf( "http_cgiurl" );
-	$url .= '/export/' . join('/', map { URI::Escape::uri_escape($_) }
-		$dataobj->get_dataset->base_id,
-		$dataobj->get_id,
-		'contents',
-		$format,
-		join('-',
-			$plugin->{session}->get_id,
-			$dataobj->get_dataset->base_id,
-			$dataobj->get_id,
-			'contents',
 		).$plugin->param( "suffix" )
 	);
 

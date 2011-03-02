@@ -36,6 +36,7 @@ To allow for simpler local configuration Convert plugins should use SystemSettin
 use strict;
 use warnings;
 
+use EPrints::TempDir;
 use EPrints::SystemSettings;
 use EPrints::Utils;
 
@@ -54,11 +55,14 @@ Create a new plugin object using OPTIONS (should only be called by L<EPrints::Se
 
 sub new
 {
-	my( $class, %params ) = @_;
+	my( $class, %opts ) = @_;
 
-	$params{visible} = exists $params{visible} ? $params{visible} : "all";
+	my $self = $class->SUPER::new( %opts );
 
-	return $class->SUPER::new( %params );
+	$self->{name} = "Base convert plugin";
+	$self->{visible} = "all";
+
+	return $self;
 }
 
 ######################################################################
@@ -199,7 +203,7 @@ sub convert
 {
 	my ($plugin, $eprint, $doc, $type) = @_;
 
-	my $dir = File::Temp->newdir( "ep-convertXXXXX", TMPDIR => 1 );
+	my $dir = EPrints::TempDir->new( "ep-convertXXXXX", UNLINK => 1);
 
 	my @files = $plugin->export( $dir, $doc, $type );
 	unless( @files ) {
@@ -238,7 +242,6 @@ sub convert
 		eprintid => $eprint->get_id,
 		_parent => $eprint,
 		format => $type,
-		security => $doc->value( "security" ),
 		formatdesc => $plugin->{name} . ' conversion from ' . $doc->get_type . ' to ' . $type,
 		relation => [{
 			type => EPrints::Utils::make_relation( "isVersionOf" ),
@@ -258,6 +261,14 @@ sub convert
 		$session->log( "Failed to create document object during conversion: check your storage configuration" );
 		return ();
 	}
+
+	$new_doc->set_value( "security", $doc->get_value( "security" ) );
+
+	$doc->add_object_relations(
+			$new_doc,
+			EPrints::Utils::make_relation( "hasVersion" ) => undef,
+			EPrints::Utils::make_relation( "hasVolatileVersion" ) => undef,
+		);
 
 	return wantarray ? ($new_doc) : $new_doc;
 }

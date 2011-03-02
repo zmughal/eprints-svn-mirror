@@ -284,9 +284,6 @@ sub render_style
 	border: solid 1px #66c;
 	padding: 3px;
 }
-.ep_phraseedit_ref {
-	border: dashed 1px #c66;
-}
 .ep_phraseedit_null {
 	background-color: #ccf;
 }
@@ -459,19 +456,8 @@ sub render_row
 	my $phraseid = $phrase->{phraseid};
 	my $src = $phrase->{src};
 
-	my $xml = $phrase->{xml};
-	my %seen = ($phrase->{phraseid} => 1);
-	while($xml->can( "hasAttribute" ) && $xml->hasAttribute( "ref" ))
-	{
-		my $info = $session->get_lang->get_phrase_info( $xml->getAttribute( "ref" ), $session );
-		last if !defined $info;
-		last if $seen{$info->{phraseid}};
-		$seen{$info->{phraseid}} = 1;
-		$xml = $info->{xml};
-	}
-
 	my $string = "";
-	foreach my $node ($xml->childNodes)
+	foreach my $node ($phrase->{xml}->childNodes)
 	{
 		$string .= EPrints::XML::to_string( $node );
 	}
@@ -496,10 +482,6 @@ sub render_row
 
 	# phrase editing widget
 	$div = $session->make_element( "div", id => "ep_phraseedit_$phraseid", class => "ep_phraseedit_widget", onclick => "ep_phraseedit_edit(this, ep_phraseedit_phrases);" );
-	if( $xml ne $phrase->{xml} )
-	{
-		$div->setAttribute( class => "ep_phraseedit_widget ep_phraseedit_ref" );
-	}
 	$td->appendChild( $div );
 	$div->appendChild( $session->make_text( $string ) );
 

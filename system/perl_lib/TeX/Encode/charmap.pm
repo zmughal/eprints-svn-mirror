@@ -46,6 +46,8 @@ use vars qw( %RESERVED %BIBTEX_RESERVED %CHARS %ACCENTED_CHARS %LATEX_MACROS %GR
 '<' => "\\ensuremath{<}",
 '>' => "\\ensuremath{>}",
 '|' => "\\ensuremath{|}",
+'[' => '{[}', # opening argument(s)
+']' => '{]}', # closing argument(s)
 chr(0x2014) => "--", # emdash
 
 # non-accented

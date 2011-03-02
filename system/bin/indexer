@@ -1,7 +1,4 @@
-#!/usr/bin/perl -w
-
-use FindBin;
-use lib "$FindBin::Bin/../perl_lib";
+#!/usr/bin/perl -w -I/opt/eprints3/perl_lib 
 
 ######################################################################
 #
@@ -145,9 +142,6 @@ my $notdaemon = 0;
 my $once = 0;
 my $opt_clear;
 my $opt_respawn = 86400;
-# MSWin32 options
-my $opt_master = 0;
-my $opt_worker = 0; 
 
 Getopt::Long::Configure("permute");
 
@@ -166,8 +160,6 @@ GetOptions(
 	'loglevel=s' => \$loglevel,
 	'clear' => \$opt_clear,
 	'respawn=s' => \$opt_respawn,
-	'master' => \$opt_master,
-	'worker' => \$opt_worker,
 ) || pod2usage( 2 );
 EPrints::Utils::cmd_version( "indexer" ) if $version;
 pod2usage( 1 ) if $help;
@@ -238,14 +230,6 @@ elsif( $ARGV[0] eq "stop" )
 {
 	stop();
 }
-elsif( $ARGV[0] eq "install" && $^O eq 'MSWin32' )
-{
-	install();
-}
-elsif( $ARGV[0] eq "uninstall" && $^O eq 'MSWin32' )
-{
-	uninstall();
-}
 else
 {
 	pod2usage( 2 );
@@ -301,11 +285,7 @@ END
 
 sub start
 {
-	if( $opt_worker )
-	{
-		$daemon->start_worker();
-	}
-	elsif( $daemon->is_running )
+	if( $daemon->is_running )
 	{
 		my $pid = $daemon->get_pid();
 		my $pidfile = $daemon->get_pidfile();
@@ -330,28 +310,15 @@ If indexer is not already running you may either:
 END
 		exit 1;
 	}
-	elsif( $notdaemon )
+
+	if( $notdaemon )
 	{
 		$daemon->run_index();
-	}
-	elsif( $opt_master )
-	{
-		$daemon->start_master();
 	}
 	else
 	{
 		$daemon->start_daemon();
 	}
-}
-
-sub install
-{
-	$daemon->create_service();
-}
-
-sub uninstall
-{
-	$daemon->delete_service();
 }
 
 ####################################################################################

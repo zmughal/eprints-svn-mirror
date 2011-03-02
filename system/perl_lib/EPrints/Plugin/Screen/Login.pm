@@ -19,56 +19,15 @@ sub new
 #			position => 100,
 #		},
 	];
-	$self->{actions} = [qw( login )];
 
 	return $self;
 }
 
-sub allow_login { 1 }
-sub can_be_viewed { 1 }
-
-# also used by Screen::Register
-sub finished
+sub can_be_viewed
 {
-	my( $self, $uri ) = @_;
+	my( $self ) = @_;
 
-	my $repo = $self->{repository};
-
-	my $user = $self->{processor}->{user};
-
-	if( !$uri )
-	{
-		$uri = URI->new( $repo->current_url( host => 1 ) );
-		$uri->query($repo->param( "login_params" ) );
-	}
-	else
-	{
-		$uri = URI->new( $uri );
-	}
-
-	if( defined $user )
-	{
-		$uri->query_form(
-			login_params => $uri->query,
-			login_check => 1
-			);
-		# always set a new random cookie value when we login
-		my @a = ();
-		srand;
-		for(1..16) { push @a, sprintf( "%02X",int rand 256 ); }
-		my $code = join( "", @a );
-		$repo->login( $user,$code );
-		my $cookie = $repo->{query}->cookie(
-			-name    => "eprints_session",
-			-path    => "/",
-			-value   => $code,
-			-domain  => $repo->get_conf("cookie_domain"),
-		);			
-		$repo->get_request->err_headers_out->add('Set-Cookie' => $cookie);
-	}
-
-	$repo->redirect( "$uri" );
-	exit(0);
+	return 1;
 }
 
 sub render_title
@@ -105,108 +64,100 @@ sub render_action_link
 	}
 }
 
-sub action_login
-{
-	my( $self ) = @_;
-
-	my $processor = $self->{processor};
-	my $repo = $self->{repository};
-	my $r = $repo->get_request;
-
-	my $username = $self->{processor}->{username};
-
-	return if !defined $username;
-
-	my $user = $repo->user_by_username( $username );
-	if( !defined $user )
-	{
-		$processor->add_message( "error", $repo->html_phrase( "cgi/login:failed" ) );
-		return;
-	}
-
-	$self->{processor}->{user} = $user;
-}
-
 sub render
 {
 	my( $self ) = @_;
 
-	my $processor = $self->{processor};
-	my $repo = $self->{repository};
-	my $xml = $repo->xml;
-	my $r = $repo->get_request;
+	my $session = $self->{session};
 
-	# catch inifinite recursion on tab rendering
-	return $xml->create_document_fragment if ref($self) ne __PACKAGE__;
+	# problems is set by Apache::Login
+	my $problems = $self->{processor}->{problems};
 
-	$r->status( 401 );
-	$r->custom_response( 401, '' ); # disable the normal error document
-
-	my $page = $repo->make_doc_fragment;
-
-	my @tabs = map { $_->{screen} } $self->list_items( "login_tabs" );
-
-	my $show = $self->{processor}->{show};
-	$show = '' if !defined $show;
-	my $current = 0;
-	for($current = 0; $current < @tabs; ++$current)
+	my %bits;
+	if( defined $problems )
 	{
-		last if $tabs[$current]->get_subtype eq $show;
+		$bits{problems} = $session->render_message( "error", $problems );
 	}
-	$current = 0 if $current == @tabs;
-
-	if( @tabs == 1 )
+	else
 	{
-		$page->appendChild( $tabs[0]->render );
-	}
-	elsif( @tabs )
-	{
-		$page->appendChild( $repo->xhtml->tabs(
-			[map { $_->render_title } @tabs],
-			[map { $_->render } @tabs],
-			current => $current
-			) );
+		$bits{problems} = $session->make_doc_fragment;
 	}
 
+	$bits{input_username} = $session->render_input_field(
+			class => "ep_form_text",
+			id => "login_username",
+			name => 'login_username' );
 
-	my @tools = map { $_->{screen} } $self->list_items( "login_tools" );
+	$bits{input_password} = $session->render_input_field(
+			class => "ep_form_text",
+			name => 'login_password',
+			type => "password" );
 
-	my $div = $repo->make_element( "div", class => "ep_block ep_login_tools" );
+	$bits{login_button} = $session->render_button(
+			name => '_action_login',
+			value => "Login",
+			class => 'ep_form_action_button', );
 
-	my $internal;
-	foreach my $tool ( @tools )
+	my $op1;
+	my $op2;
+
+	$bits{log_in_until} = $session->make_element( "select", name=>"login_log_in_until" );
+	$op1 = $session->make_element( "option", value=>"until_close", selected=>"selected" );
+	$op1->appendChild( $session->html_phrase( "cgi/login:until_close" ) );
+	$op2 = $session->make_element( "option", value=>"forever" );
+	$op2->appendChild( $session->html_phrase( "cgi/login:forever" ) );
+	$bits{log_in_until}->appendChild( $op1 );
+	$bits{log_in_until}->appendChild( $op2 );
+	
+	$bits{bind_to_ip} = $session->make_element( "select", name=>"login_log_in_until" );
+	$op1 = $session->make_element( "option", value=>"bind", selected=>"selected" );
+	$op1->appendChild( $session->html_phrase( "cgi/login:bind" ) );
+	$op2 = $session->make_element( "option", value=>"dont_bind" );
+	$op2->appendChild( $session->html_phrase( "cgi/login:dont_bind" ) );
+	$bits{bind_to_ip}->appendChild( $op1 );
+	$bits{bind_to_ip}->appendChild( $op2 );
+
+	my $reset_ok =  $session->get_repository->get_conf(
+				"allow_reset_password");
+	if( $reset_ok ) 
 	{
-		$div->appendChild( $tool->render_action_link );
+		$bits{reset_link} = $session->html_phrase(
+					"cgi/login:reset_link" );
 	}
-	$page->appendChild( $div );
+	else
+	{
+		$bits{reset_link} = $session->make_doc_fragment;
+	}
+	
+	my $form = $session->render_form( "POST" );
+	$form->appendChild( $session->html_phrase( "cgi/login:page_layout", %bits ) );
 
+	my $login_params = $session->param( "login_params" );
 
-	return $page;
-}
-
-sub hidden_bits
-{
-	my( $self ) = @_;
-
-	my $repo = $self->{repository};
-
-	my @params = $self->hidden_bits;
-
-	my $login_params = $repo->param( "login_params" );
 	if( !defined $login_params )
 	{
-		$login_params = $repo->get_request->args;
-		$login_params = "" if !defined $login_params;
+		my @p = $session->param;
+		my @k = ();
+		foreach my $p ( @p )
+		{
+			my $v = $session->param( $p );
+			$v =~ s/([^A-Z0-9])/sprintf( "%%%02X", ord($1) )/ieg;
+			push @k, $p."=".$v;
+		}
+		$login_params = join( "&", @k );
 	}
-	push @params, login_params => $login_params;
+	$form->appendChild( $session->render_hidden_field( "login_params", $login_params ));
 
-	my $target = $repo->param( "target" );
-	if( $target )
+	my $target = $session->param( "target" );
+	if( defined $target )
 	{
-		push @params, target => $target;
+		$form->appendChild( $session->render_hidden_field( "target", $target ));
 	}
 
-	return @params;
+	my $script = $session->make_javascript( '$("login_username").focus()' );
+	$form->appendChild( $script);
+
+	return $form;
 }
 
 1;

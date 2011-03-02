@@ -3,8 +3,8 @@
 # - MetaField object
 # $value
 # - metadata value (see docs)
-# $repository 
-# - Repository object (the current repository)
+# $session 
+# - Session object (the current session)
 # $for_archive
 # - boolean (see comments at the start of the validation section)
 #
@@ -25,9 +25,7 @@
 
 $c->{validate_field} = sub
 {
-	my( $field, $value, $repository, $for_archive ) = @_;
-
-	my $xml = $repository->xml();
+	my( $field, $value, $session, $for_archive ) = @_;
 
 	# only apply checks if the value is set
 	return () if !EPrints::Utils::is_set( $value );
@@ -41,8 +39,8 @@ $c->{validate_field} = sub
 	# closure for generating the field link fragment
 	my $f_fieldname = sub {
 		my $f = defined $field->property( "parent" ) ? $field->property( "parent" ) : $field;
-		my $fieldname = $xml->create_element( "span", class=>"ep_problem_field:".$f->get_name );
-		$fieldname->appendChild( $f->render_name( $repository ) );
+		my $fieldname = $session->make_element( "span", class=>"ep_problem_field:".$f->get_name );
+		$fieldname->appendChild( $f->render_name( $session ) );
 		return $fieldname;
 	};
 
@@ -57,7 +55,7 @@ $c->{validate_field} = sub
 			if( $v !~ /^\w+:/ )
 			{
 				push @problems,
-					$repository->html_phrase( "validate:missing_http",
+					$session->html_phrase( "validate:missing_http",
 						fieldname=>&$f_fieldname );
 			}
 		}
@@ -67,14 +65,14 @@ $c->{validate_field} = sub
 			if( !EPrints::Utils::is_set( $v->{family} ) )
 			{
 				push @problems,
-					$repository->html_phrase( "validate:missing_family",
+					$session->html_phrase( "validate:missing_family",
 						fieldname=>&$f_fieldname );
 			}
 			# Check a name has a given part
 			elsif( !EPrints::Utils::is_set( $v->{given} ) )
 			{
 				push @problems,
-					$repository->html_phrase( "validate:missing_given",
+					$session->html_phrase( "validate:missing_given",
 						fieldname=>&$f_fieldname );
 			}
 		}
@@ -85,7 +83,7 @@ $c->{validate_field} = sub
 			if( $v !~ /^[^ \@]+\@[^ \@]+$/ )
 			{
 				push @problems,
-					$repository->html_phrase( "validate:bad_email",
+					$session->html_phrase( "validate:bad_email",
 						fieldname=>&$f_fieldname );
 			}
 		}
@@ -94,10 +92,10 @@ $c->{validate_field} = sub
 		# Applies to all subclasses of Id: Text, Longtext, Url etc.
 		if( $field->isa( "EPrints::MetaField::Id" ) )
 		{
-			if( length($v) > $field->property( "maxlength" ) )
+			if( length($v) > $field->get_property( "maxlength" ) )
 			{
 				push @problems,
-					$repository->html_phrase( "validate:truncated",
+					$session->html_phrase( "validate:truncated",
 						fieldname=>&$f_fieldname );
 			}
 		}

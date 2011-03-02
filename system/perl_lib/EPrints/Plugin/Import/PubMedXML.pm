@@ -19,12 +19,12 @@ sub new
 	return $self;
 }
 
-#sub top_level_tag
-#{
-#	my( $plugin, $dataset ) = @_;
-#
-#	return "PubmedArticleSet";
-#}
+sub top_level_tag
+{
+	my( $plugin, $dataset ) = @_;
+
+	return "PubmedArticleSet";
+}
 
 sub resolve_month
 {
@@ -62,7 +62,6 @@ sub resolve_month
 	}
 	return $month ;
 }
-
 
 sub xml_to_epdata
 {

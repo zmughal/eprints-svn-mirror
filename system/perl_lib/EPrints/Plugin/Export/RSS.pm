@@ -18,6 +18,8 @@ sub new
 	$self->{suffix} = ".rss";
 	$self->{mimetype} = "application/rss+xml";
 
+	$self->{number_to_show} = 10;
+
 	return $self;
 }
 
@@ -25,7 +27,7 @@ sub output_list
 {
 	my( $plugin, %opts ) = @_;
 
-	my $list = $opts{list};
+	my $list = $opts{list}->reorder( "-datestamp" );
 
 	my $session = $plugin->{session};
 
@@ -59,12 +61,12 @@ sub output_list
 	$channel->appendChild( $session->render_data_element(
 		4,
 		"pubDate", 
-		EPrints::Time::rfc822_datetime() ) );
+		RFC822_time() ) );
 
 	$channel->appendChild( $session->render_data_element(
 		4,
 		"lastBuildDate", 
-		EPrints::Time::rfc822_datetime() ) );
+		RFC822_time() ) );
 
 	$channel->appendChild( $session->render_data_element(
 		4,
@@ -83,9 +85,8 @@ sub output_list
 	my $seq = $session->make_element( "rdf:Seq" );
 	$items->appendChild( $seq );
 
-	$list->map(sub {
-		my( undef, undef, $eprint ) = @_;
-
+	foreach my $eprint ( $list->get_records( 0, $plugin->{number_to_show} ) )
+	{
 		my $li = $session->make_element( "rdf:li",
 			"rdf:resource"=>$eprint->get_url );
 		$seq->appendChild( $li );
@@ -106,7 +107,7 @@ sub output_list
 			"description",
 			EPrints::Utils::tree_to_utf8( $eprint->render_citation ) ) );
 		$response->appendChild( $item );		
-	});	
+	}	
 
 	my $rssfeed = <<END;
 <?xml version="1.0" encoding="utf-8" ?>
@@ -123,4 +124,11 @@ END
 	return $rssfeed;
 }
 
+use POSIX qw(strftime);
+sub RFC822_time
+{
+	return( strftime( "%a,  %d  %b  %Y  %H:%M:%S  %z",localtime ) );
+}
+
 1;
+

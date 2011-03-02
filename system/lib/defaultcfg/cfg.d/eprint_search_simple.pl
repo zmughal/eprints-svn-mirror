@@ -5,7 +5,7 @@ $c->{search}->{simple} =
 		{
 			id => "q",
 			meta_fields => [
-				"documents",
+				$EPrints::Utils::FULLTEXT,
 				"title",
 				"abstract",
 				"creators_name",

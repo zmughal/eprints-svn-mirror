@@ -252,12 +252,11 @@ sub process_headers
 
         if(defined $filename)
         {
-		if( $filename =~ /(.*)filename\=(.*)/)
+		if( $filename =~ /^filename\=(.*)/)
 		{
-			$filename = $2;
+			$filename = $1;
 		}
-		$filename =~ s/^"//;
-		$filename =~ s/"$//;
+
 		$filename =~ s/\s/\_/g;		# replace white chars by underscores
 		
 		$response{filename} = $filename;
@@ -357,6 +356,21 @@ sub can_user_behalf
 	return 0;
 }
 
+
+
+sub is_collection_valid_OBSOLETE_METHOD
+{
+	my ( $collection ) = @_;
+
+	if( $collection eq 'inbox' || $collection eq 'buffer' || $collection eq 'archive' )
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
+
 sub get_collections
 {
 	my ( $session ) = @_;
@@ -407,6 +421,80 @@ sub is_mime_allowed
 	
 	return 0;
 }
+
+
+sub get_files_mime_OBSOLETE_METHOD
+{
+	my ( $session, $f ) = @_;
+
+	my $mimes = {};
+
+	foreach(@$f)
+	{
+		if( -e $_ )	# does file exist?
+                {
+			# FileType defaults to 'application/octetstream', and always returns a MIME type.
+			my $mime = EPrints::Sword::FileType::checktype_filename( $_ );
+			$mimes->{$_} = $mime;
+        	}
+	}
+
+        return $mimes;
+}
+
+
+sub get_file_to_import_OBSOLETE_METHOD
+{
+	my ( $session, $files, $mime_type, $return_all ) = @_;
+
+
+print STDERR "\nWARNING Sword::FileType::get_file_to_import was called!!";
+
+
+	my $mimes = get_files_mime( $session, $files );
+        my @candidates;
+
+	$return_all = 0 unless(defined $return_all);
+
+	# some useful transformations to the correct MIME type:
+	if( $mime_type eq 'application/xml' )
+	{
+		$mime_type = 'text/xml';
+	}
+	elsif( $mime_type eq 'application/x-zip' )
+	{
+		$mime_type = 'application/zip';
+	}
+	elsif( $mime_type eq 'application/x-zip-compressed' )
+	{
+		$mime_type = 'application/zip';
+	}
+
+        foreach(keys %$mimes)
+        {
+		if( $$mimes{$_} eq $mime_type )
+                {
+                        push @candidates, $_;
+                }
+        }
+
+	# returns all matches
+	if( $return_all )
+	{
+		return \@candidates if scalar @candidates > 0;
+		return undef;
+	}
+
+	# othwerwise, returns only ONE match (or undef if there is no match, or more than one match)
+        if( scalar @candidates != 1 )
+        {
+  		return undef;
+        }
+
+	return $candidates[0];
+
+}
+
 
 sub get_atom_url
 {
@@ -513,7 +601,7 @@ sub create_xml
 
         # ID
         my $uid = $session->make_element( "atom:id" );
-	$uid->appendChild( $session->make_text( $eprint->uri ) );
+        $uid->appendChild( $session->make_text( $eprint->get_id ) );
         $entry->appendChild( $uid );
 
         # UPDATED
@@ -607,7 +695,6 @@ sub create_xml
 
 	# if docid is defined, <content> should point to that document, otherwise point to the abstract page
 	my $content;
-	my $edit_media;
 	if( defined $deposited_file_docid )
 	{
 		my $doc = EPrints::DataObj::Document->new( $session, $deposited_file_docid );
@@ -617,9 +704,6 @@ sub create_xml
 			$content = $session->make_element( "atom:content", 
 							"type" => $doc->get_value( "format" ),
 							"src" => $doc->uri );
-			$edit_media = $session->make_element( "atom:link",
-							"rel" => "edit-media",
-							"href" => $doc->uri );
 		}		
 	}
 
@@ -628,15 +712,10 @@ sub create_xml
 		$content = $session->make_element( "atom:content", "type" => "text/html", src=> $eprint->uri )
 	}
         $entry->appendChild( $content );
-	if (defined $edit_media) {
-		$entry->appendChild( $edit_media );
-	}
 
 	my $edit_link = $session->make_element( "atom:link", 
 					"rel" => "edit",
-					"href" => $eprint->uri 
-					);
-#					"href" => EPrints::Sword::Utils::get_atom_url( $session, $eprint ) );
+					"href" => EPrints::Sword::Utils::get_atom_url( $session, $eprint ) );
 
 	$entry->appendChild( $edit_link );
 
@@ -816,18 +895,6 @@ sub create_noop_xml
 
         return '<?xml version="1.0" encoding="UTF-8"?>'.$entry->toString;
 
-}
-
-our $GRAMMAR = {
-	'X-Extract-Archive' => 'explode',
-	'X-Override-Metadata' => 'metadata',
-	'X-Extract-Bibliography' => 'bibliography',
-	'X-Extract-Media' => 'media',
-};
-
-sub get_grammar
-{
-	return $GRAMMAR;
 }
 
         

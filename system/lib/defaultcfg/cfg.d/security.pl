@@ -13,10 +13,10 @@ $c->{can_request_view_document} = sub
 	my( $doc, $r ) = @_;
 
 	#my $eprint = $doc->get_eprint();
-	my $security = $doc->value( "security" );
+	my $security = $doc->get_value( "security" );
 
 	my $eprint = $doc->get_eprint();
-	my $status = $eprint->value( "eprint_status" );
+	my $status = $eprint->get_value( "eprint_status" );
 	if( $security eq "public" && $status eq "archive" )
 	{
 		return( "ALLOW" );
@@ -62,12 +62,12 @@ $c->{can_user_view_document} = sub
 	my( $doc, $user ) = @_;
 
 	my $eprint = $doc->get_eprint();
-	my $security = $doc->value( "security" );
+	my $security = $doc->get_value( "security" );
 
 	# If the document belongs to an eprint which is in the
 	# inbox or the editorial buffer then we treat the security
 	# as staff only, whatever it's actual setting.
-	if( $eprint->dataset()->id() ne "archive" )
+	if( $eprint->get_dataset()->id() ne "archive" )
 	{
 		$security = "staffonly";
 	}
@@ -111,7 +111,7 @@ $c->{can_user_view_document} = sub
 		
 	}
 
-	$doc->repository->log( 
+	$doc->get_session->get_repository->log( 
 "unrecognized user security flag '$security' on document ".$doc->get_id );
 	# Unknown security type, be paranoid and deny permission.
 	return( "DENY" );

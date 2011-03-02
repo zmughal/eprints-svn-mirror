@@ -257,40 +257,8 @@ sub handler
 		{
 			return NOT_FOUND;
 		}
-		return OK;
 	}
-	
-	#CRUD
-	my $method = $r->method();
-	if (!($method eq "GET") and $uri !~ /^(?:$cgipath)/ and $uri !~ /^\/rest\// ) 
-	{
-		$r->handler( 'perl-script' );
 
-		$r->set_handlers( PerlMapToStorageHandler => sub { OK } );
-
-		if ($method eq "DELETE") { 
-			$r->set_handlers( PerlResponseHandler => [ 'EPrints::CRUD::DeleteHandler' ] );
-			return OK;
-		}
-		if ($method eq "POST") {
-			if ($uri eq "/") {
-				my $url = $repository->config( "base_url" )."/sword-app/deposit/inbox";
-				return redir_see_other( $r, $url );
-			}
-			else 
-			{
-				$r->set_handlers( PerlResponseHandler => [ 'EPrints::CRUD::PostHandler' ] );
-				return OK;
-			}
-		}
-		if ($method eq "PUT") { 
-			$r->set_handlers( PerlResponseHandler => [ 'EPrints::CRUD::PutHandler' ] );
-			return OK;
-		};
-			
-		#return OK;
-	}
-	
 	# robots.txt (nb. only works if site is in root / of domain.)
 	if( $uri =~ m! ^$urlpath/robots\.txt$ !x )
 	{
@@ -324,28 +292,22 @@ sub handler
 	}
 
 	# URI redirection
-	if( $uri =~ m! ^$urlpath/id/(repository|dump|records)$ !x )
+	if( $uri =~ m! ^$urlpath/id/(repository|dump)$ !x )
 	{
 		my $file = $1;
 		my $accept = EPrints::Apache::AnApache::header_in( $r, "Accept" );
 		$accept = "application/rdf+xml" unless defined $accept;
-		my $can_accept = "list/triple";
 
-		if ( $file eq "records" ) 
-		{
-			$can_accept = "list/eprint";
-		}
-		
 		my $plugin = content_negotiate_best_plugin( 
 			$repository, 
 			accept_header => $accept,
 			consider_summary_page => 0,
-			plugins => [$repository->get_plugins(
+			plugins => [$repository->plugin_list(
 				type => "Export",
 				is_visible => "all",
-				can_accept => $can_accept )]
+				can_accept => "list/triple" )]
 		);
-	
+		
 		if( !defined $plugin )  { return NOT_FOUND; }
 
 		my $url = $repository->config( "http_cgiurl" )."/export/$file/".
@@ -365,7 +327,7 @@ sub handler
 			$repository, 
 			accept_header => $accept,
 			consider_summary_page => 0,
-			plugins => [$repository->get_plugins(
+			plugins => [$repository->plugin_list(
 				type => "Export",
 				is_visible => "all",
 				can_accept => "list/triple" )]
@@ -381,10 +343,9 @@ sub handler
 		return redir_see_other( $r, $url );
 	}
 
-	if( $uri =~ s! ^$urlpath/id/([^/]+)/([^/]+)(?:/([^/]+))? !!x )
+	if( $uri =~ m! ^$urlpath/id/([^/]+)/(.*)$ !x )
 	{
-		my( $datasetid, $id, $part ) = ( $1, $2, $3 );
-		$part = '' if !defined $part;
+		my( $datasetid, $id ) = ( $1, $2 );
 
 		my $dataset = $repository->get_dataset( $datasetid );
 		my $item;
@@ -392,110 +353,63 @@ sub handler
 		{
 			$item = $dataset->dataobj( $id );
 		}
-		return NOT_FOUND if !defined $item;
 
-		# Subject URI's redirect to the top of that particular subject tree
-		# rather than the node in the tree. (the ancestor with "ROOT" as a parent).
-		if( $dataset->id eq "subject" )
+		if( defined $item )
 		{
-ANCESTORS: foreach my $anc_subject_id ( @{$item->get_value( "ancestors" )} )
-		   {
-			   my $anc_subject = $dataset->dataobj($anc_subject_id);
-			   next ANCESTORS if( !$anc_subject );
-			   next ANCESTORS if( !$anc_subject->is_set( "parents" ) );
-			   foreach my $anc_subject_parent_id ( @{$anc_subject->get_value( "parents" )} )
-			   {
-				   if( $anc_subject_parent_id eq "ROOT" )
-				   {
-					   $item = $anc_subject;
-					   last ANCESTORS;
-				   }
-			   }
-		   }
-		}
-
-		# content negotiation. Only worries about type, not charset
-		# or language etc. at this stage.
-		my $accept = EPrints::Apache::AnApache::header_in( $r, "Accept" );
-		$accept = "" if !defined $accept;
-
-		# get the real eprint dataset
-		if( $dataset->base_id eq "eprint" )
-		{
-			$dataset = $item->get_dataset;
-		}
-
-		my $accept_type = "dataobj/".$dataset->base_id;
-
-		my $url;
-
-		if( $part eq "contents" )
-		{
-			if( $item->isa( "EPrints::DataObj::EPrint" ) )
+			# Subject URI's redirect to the top of that particular subject tree
+			# rather than the node in the tree. (the ancestor with "ROOT" as a parent).
+			if( $item->dataset->id eq "subject" )
 			{
-				$part = "documents";
+				ANCESTORS: foreach my $anc_subject_id ( @{$item->get_value( "ancestors" )} )
+				{
+					my $anc_subject = $repository->dataset("subject")->dataobj($anc_subject_id);
+					next ANCESTORS if( !$anc_subject );
+					next ANCESTORS if( !$anc_subject->is_set( "parents" ) );
+					foreach my $anc_subject_parent_id ( @{$anc_subject->get_value( "parents" )} )
+					{
+						if( $anc_subject_parent_id eq "ROOT" )
+						{
+							$item = $anc_subject;
+							last ANCESTORS;
+						}
+					}
+				}
 			}
-			elsif( $item->isa( "EPrint::DataObj::Document" ) )
+
+			if( $item->dataset->confid eq "eprint" && $item->dataset->id ne "archive" )
 			{
-				$part = "files";
+				return redir_see_other( $r, $item->get_control_url );
 			}
-		}
 
-		if( $part )
-		{
-			my $field = $dataset->field( $part );
-			return NOT_FOUND if !defined $field;
-			return NOT_FOUND if !$field->isa( "EPrints::MetaField::Subobject" );
-			$accept_type = "list/".$field->property( "datasetid" );
-			$r->pnotes->{field} = $field;
-		}
-		else
-		{
-			$url = $item->get_url;
-		}
+			# content negotiation. Only worries about type, not charset
+			# or language etc. at this stage.
+			#
+			my $accept = EPrints::Apache::AnApache::header_in( $r, "Accept" );
+			$accept = "text/html" unless defined $accept;
 
-		my $match = content_negotiate_best_plugin( 
-			$repository, 
-			accept_header => $accept,
-			consider_summary_page => defined( $url ),
-			plugins => [$repository->get_plugins(
-				type => "Export",
-				is_visible => "all",
-				can_accept => $accept_type )],
-		);
-		
-		if( $match eq "DEFAULT_SUMMARY_PAGE" )
-		{
-			if( $dataset->base_id eq "eprint" && $dataset->id ne "archive" )
+			my $match = content_negotiate_best_plugin( 
+				$repository, 
+				accept_header => $accept,
+				consider_summary_page => ( $dataset->confid eq "eprint" || $dataset->confid eq "document" ? 1 : 0 ),
+				plugins => [$repository->plugin_list(
+					type => "Export",
+					is_visible => "all",
+					can_accept => "dataobj/".$dataset->confid )],
+			);
+
+			if( $match eq "DEFAULT_SUMMARY_PAGE" )
 			{
-				$url = $item->get_control_url;
+				return redir_see_other( $r, $item->get_url );
 			}
-			return redir_see_other( $r, $url );
-		}
-		elsif( $dataset->base_id eq "subject" )
-		{
-			return redir_see_other( $r, $match->dataobj_export_url( $item ) );
-		}
-		else
-		{
-			$r->pnotes->{dataset} = $dataset;
-			$r->pnotes->{dataobj} = $item;
-			$r->pnotes->{plugin} = $match;
-
-			$r->handler('perl-script');
-
-			# no real file to map to
-			$r->set_handlers(PerlMapToStorageHandler => sub { OK } );
-
-			$r->push_handlers(PerlAccessHandler => [
-				\&EPrints::Apache::Export::authen,
-				\&EPrints::Apache::Export::authz
-				] );
-
-		 	$r->set_handlers(PerlResponseHandler => \&EPrints::Apache::Export::handler );
-
-			return OK;
-		}
+			else
+			{
+				my $url = $match->dataobj_export_url( $item );	
+				if( defined $url )
+				{
+					return redir_see_other( $r, $url );
+				}
+			}
+		}	
 
 		return NOT_FOUND;
 	}
@@ -566,30 +480,15 @@ ANCESTORS: foreach my $anc_subject_id ( @{$item->get_value( "ancestors" )} )
 
 			$r->pool->cleanup_register(\&EPrints::Apache::LogHandler::document, $r);
 
-			my $rc = undef;
 			$repository->run_trigger( EPrints::Const::EP_TRIGGER_DOC_URL_REWRITE,
-				# same as for URL_REWRITE
 				request => $r,
-				   lang => $lang,    # en
-				   args => $args,    # "" or "?foo=bar"
-				urlpath => $urlpath, # "" or "/subdir"
-				cgipath => $cgipath, # /cgi or /subdir/cgi
-				    uri => $uri,     # /foo/bar
-				 secure => $secure,  # boolean
-			    return_code => \$rc,     # set to trigger a return
-				# extra bits
-				 eprint => $eprint,
-			       document => $doc,
-			       filename => $filename,
-			      relations => \@relations,
+				eprint => $eprint,
+				document => $doc,
+				filename => $filename,
+				relations => \@relations,
 			);
 
-			# if the trigger has set an return code
-			return $rc if defined $rc;
-	
-			# This way of getting a status from a trigger turns out to cause 
-			# problems and is included as a legacy feature only. Don't use it, 
-			# set ${$opts->{return_code}} = 404; or whatever, instead.
+			# a trigger has set an error code
 			return $r->status if $r->status != 200;
 		}
 		# OK, It's the EPrints abstract page (or something whacky like /23/fish)
@@ -634,7 +533,7 @@ ANCESTORS: foreach my $anc_subject_id ( @{$item->get_value( "ancestors" )} )
 		# redirect /foo to /foo/ 
 		if( $uri eq "/view" || $uri =~ m! ^/view/[^/]+$ !x )
 		{
-			return redir( $r, "$urlpath$uri/" );
+			return redir( $r, "$uri/" );
 		}
 
 		local $repository->{preparing_static_page} = 1; 
@@ -694,12 +593,13 @@ sub content_negotiate_best_plugin
 		$pset->{"text/html"} = { qs=>0.99, DEFAULT_SUMMARY_PAGE=>1 };
 	}
 
-	foreach my $plugin ( @{$o{plugins}} )
+	foreach my $a_plugin_id ( @{$o{plugins}} )
 	{
-		my( $type, %params ) = split( /\s*[;=]\s*/, $plugin->{mimetype} );
+		my $a_plugin = $repository->plugin( $a_plugin_id );
+		my( $type, %params ) = split( /\s*[;=]\s*/, $a_plugin->{mimetype} );
 	
-		next if( defined $pset->{$type} && $pset->{$type}->{qs} >= $plugin->{qs} );
-		$pset->{$type} = $plugin;
+		next if( defined $pset->{$type} && $pset->{$type}->{qs} >= $a_plugin->{qs} );
+		$pset->{$type} = $a_plugin;
 	}
 	my @pset_order = sort { $pset->{$b}->{qs} <=> $pset->{$a}->{qs} } keys %{$pset};
 

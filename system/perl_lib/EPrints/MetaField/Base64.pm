@@ -38,77 +38,25 @@ BEGIN
 
 use EPrints::MetaField::Longtext;
 
-sub to_sax
+sub to_xml
 {
-	my( $self, $value, %opts ) = @_;
+	my( $self, $session, $value, $dataset, %opts ) = @_;
 
-	# MetaField::Compound relies on testing this specific attribute
-	return if defined $self->{parent_name};
+	my $tag = $self->SUPER::to_xml( $session, $value, $dataset, %opts );
 
-	return if !$opts{show_empty} && !EPrints::Utils::is_set( $value );
-
-	my $handler = $opts{Handler};
-	my $name = $self->name;
-
-	my $enc_attr = {
-		Prefix => '',
-		LocalName => 'encoding',
-		Name => 'encoding',
-		NamespaceURI => '',
-		Value => 'base64',
-	};
-
-	if( ref($value) eq "ARRAY" )
+	if( $self->get_property( "multiple" ) )
 	{
-		$handler->start_element( {
-			Prefix => '',
-			LocalName => $name,
-			Name => $name,
-			NamespaceURI => EPrints::Const::EP_NS_DATA,
-			Attributes => {},
-		});
-
-		foreach my $v (@$value)
+		foreach my $node ($tag->getElementsByTagName( "item" ) )
 		{
-			$handler->start_element( {
-				Prefix => '',
-				LocalName => "item",
-				Name => "item",
-				NamespaceURI => EPrints::Const::EP_NS_DATA,
-				Attributes => {
-					'{}encoding' => $enc_attr,
-				},
-			});
-			$self->to_sax_basic( $v, %opts );
-			$handler->end_element( {
-				Prefix => '',
-				LocalName => "item",
-				Name => "item",
-				NamespaceURI => EPrints::Const::EP_NS_DATA,
-			});
+			$node->setAttribute( encoding => "base64" );
 		}
 	}
-	else
+	elsif( EPrints::XML::is_dom( $tag, "Element" ) )
 	{
-		$handler->start_element( {
-			Prefix => '',
-			LocalName => $name,
-			Name => $name,
-			NamespaceURI => EPrints::Const::EP_NS_DATA,
-			Attributes => {
-				'{}encoding' => $enc_attr,
-			},
-		});
-
-		$self->to_sax_basic( $value, %opts );
+		$tag->setAttribute( encoding => "base64" );
 	}
 
-	$handler->end_element( {
-		Prefix => '',
-		LocalName => $name,
-		Name => $name,
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-	});
+	return $tag;
 }
 
 ######################################################################
