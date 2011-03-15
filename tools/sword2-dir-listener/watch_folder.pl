@@ -1,6 +1,5 @@
 #TODO Handle Sub Directories
 #TODO Handle repository deletes of local items
-#TODO Provide a better error if the server is inaccessible on startup
 #TODO Take the folder name as the default title of the EPrint.
 #TODO Check that all the locks are released by the CRUD Handlers. (Delete specifically)
 
@@ -542,6 +541,13 @@ sub get_file_from_uri {
 	# Et Zzzzooo!
 	my $res = $ua->request($req);	
 
+	my $content_string = substr $res->content,0,17;
+	if ($res->code == 500 and ($content_string eq "500 Can't connect")) {
+		print "[CRITICAL] Could not connect to server, please check your config or connection to the server.\n";
+		print "[CRITICAL] Exiting\n\n";
+		exit;
+	}
+
 	if (!($res->is_success)) {
 		my $realm = $res->header("WWW-Authenticate");
 	        $realm = substr $realm, index($realm,'"') +1;
@@ -664,7 +670,7 @@ sub create_container {
 	$req->content( $content );
 	
 	my $res = $ua->request($req);	
-	
+
 	if (!($res->is_success)) {
 		my $realm = $res->header("WWW-Authenticate");
 	        $realm = substr $realm, index($realm,'"') +1;
