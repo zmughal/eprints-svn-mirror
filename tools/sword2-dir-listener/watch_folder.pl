@@ -1,6 +1,6 @@
 #TODO Handle Sub Directories
 #TODO Handle repository deletes of local items
-#TODO Take the folder name as the default title of the EPrint.
+#TODO Put changes of metadata which have occured locally (by md5s) since the last update (md5).
 #TODO Check that all the locks are released by the CRUD Handlers. (Delete specifically)
 
 #!/bin/perl
@@ -643,8 +643,13 @@ sub create_container {
 	my $filepath = shift; 
 	my $no_op = shift;
 
+	my $title = substr $filepath, 0, length($filepath) - length($filename);
+	$title = substr $title, 0, length($title)-1;
+	$title = substr $title, rindex($title, "/")+1, length($title);
+
 	my $content = '<?xml version="1.0" encoding="utf-8" ?>
 <entry xmlns="http://www.w3.org/2005/Atom">
+<title>' . $title . '</title>
 </entry>
 ';
 	
