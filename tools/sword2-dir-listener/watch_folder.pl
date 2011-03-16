@@ -1,4 +1,3 @@
-#TODO Put changes of metadata which have occured locally (by md5s) since the last update (md5).
 #TODO Handle Sub Directories
 #TODO Check that all the locks are released by the CRUD Handlers. (Delete specifically)
 
@@ -19,6 +18,7 @@ if (!defined $dir) {
 our $debug = 0;
 
 our $config = load_config($dir);
+our $metadata_files = {};
 exit if (!check_config());
 exit if (!defined $config);
 my $items = get_resource_list();
@@ -187,13 +187,14 @@ sub process_directory {
 		my $file = $dir . "METADATA.xml";
 		if ( -e $file ) {
 			my ($local_file_modified, $local_file_md5) = local_info($file);
-#print STDERR "local: $local_file_modified $local_file_md5 \n";
-#print STDERR "remote: $server_file_modified $server_file_md5 \n";
+			my $last_md5 = $metadata_files->{$file};
 			if (defined $server_file_md5) {
-				if (!($local_file_md5 eq $server_file_md5) and ($local_file_modified > $server_file_modified)) {
-					put_file_to_uri($file,"METADATA.xml",$edit_uri,"application/atom+xml");
-				} elsif (!($local_file_md5 eq $server_file_md5) and ($local_file_modified < $server_file_modified)) {
+				if (!($local_file_md5 eq $server_file_md5) and ($last_md5 == $local_file_md5)) {
 					get_file_from_uri($file,$edit_uri,"application/atom+xml");
+					$metadata_files->{$file} = $local_file_md5;
+				} elsif ($last_md5 != $local_file_md5) {
+					put_file_to_uri($file,"METADATA.xml",$edit_uri,"application/atom+xml");
+					$metadata_files->{$file} = $local_file_md5;
 				}
 			}
 		} elsif ($status_code == 200) {
