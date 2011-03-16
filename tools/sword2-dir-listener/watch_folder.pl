@@ -1,6 +1,5 @@
-#TODO Handle Sub Directories
-#TODO Handle repository deletes of local items
 #TODO Put changes of metadata which have occured locally (by md5s) since the last update (md5).
+#TODO Handle Sub Directories
 #TODO Check that all the locks are released by the CRUD Handlers. (Delete specifically)
 
 #!/bin/perl
@@ -275,6 +274,14 @@ sub process_directory {
 #print "Found the file\n";
 		} else {
 			if ($depth > 0) {
+				if ( -e $dir . ".parent_uri" ) {
+					$resources = get_resources($dir . ".parent_uri");
+				}
+				foreach my $key (keys %$resources) {
+					if ((substr $key,0,4) eq "http") {
+						$parent_uri = $key;
+					}
+				}
 				deposit_file($file,$file_name,$parent_uri);
 			}
 		}
@@ -419,6 +426,9 @@ sub head_uri {
 			$config->{realm} = $realm;
 			return head_uri($uri,$content_type);
 		} else {
+			if ($res->code == 404 or $res->code == 410) {
+				return(undef,undef,$res->code);
+			} 
 			print "[CRITICAL] Head Operation Failed on $uri\n";
 			if ($debug) {
 				print $res->status_line;
@@ -721,7 +731,6 @@ sub deposit_file {
 	my $filename = shift;
 	my $url = shift;
 	
-
 	print "[MESSAGE] Attempting to post $filepath to $url\n";
 
 	# Need to create a container to deposit into
