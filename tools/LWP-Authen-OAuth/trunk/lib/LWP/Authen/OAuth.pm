@@ -71,11 +71,11 @@ Sending status updates to a single account is quite easy if you create an applic
 
 =head1 DESCRIPTION
 
-This module provides a lightweight sub-class of L<LWP::UserAgent> to generate OAuth signed requests. It has a utility method to populate the C<oauth_token> and C<oauth_token_secret> from OAuth request-token/access-token responses.
+This module provides a sub-class of L<LWP::UserAgent> that generates OAuth 1.0 signed requests. You should familiarise yourself with OAuth at L<http://oauth.net/>.
 
-If you want a complete OAuth implementation look at L<Net::OAuth>.
+This module only supports HMAC_SHA1 signing.
 
-This module currently only supports hmac_sha1 signing.
+OAuth nonces are generated using the Perl random number generator. To set a nonce manually define 'oauth_nonce' in your requests via a CGI parameter or the Authorization header - see the OAuth documentation.
 
 =head1 METHODS
 
@@ -116,7 +116,43 @@ Get and optionally set the oauth token secret.
 
 =head1 SEE ALSO
 
-L<LWP::UserAgent>, L<Net::OAuth>, L<MIME::Base64>, L<Digest::SHA>, L<URI>, L<URI::Escape>
+L<LWP::UserAgent>, L<MIME::Base64>, L<Digest::SHA>, L<URI>, L<URI::Escape>
+
+=head2 Rationale
+
+I think the complexity in OAuth is in the parameter normalisation and message signing. What this module does is to hide that complexity without replicating the higher-level protocol chatter.
+
+In Net::OAuth:
+
+	$r = Net::OAuth->request('request token')->new(
+		consumer_key => 'xxx',
+		request_url => 'https://photos.example.net/request_token',
+		callback => 'http://printer.example.com/request_token_ready',
+		...
+		extra_params {
+			scope => 'global',
+		}
+	);
+	$r->sign;
+	$res = $ua->request(POST $r->to_url);
+	$res = Net::OAuth->response('request token')
+		->from_post_body($res->content);
+	... etc
+
+In LWP::Authen::OAuth:
+
+	$ua = LWP::Authen::OAuth->new(
+		oauth_consumer_key => 'xxx'
+	);
+	$res = $ua->post( 'https://photos.example.net/request_token', [
+		oauth_callback => 'http://printer.example.com/request_token_ready',
+		...
+		scope => 'global',
+	]);
+	$ua->oauth_update_from_response( $res );
+	... etc
+
+L<Net::OAuth>, L<OAuth::Lite>.
 
 =head1 AUTHOR
 
@@ -124,7 +160,7 @@ Timothy D Brody <tdb2@ecs.soton.ac.uk>
 
 Copyright 2011 University of Southampton, UK
 
-This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself
 
 =cut
 
@@ -134,7 +170,7 @@ use URI::Escape;
 use Digest::SHA;
 use MIME::Base64;
 
-$VERSION = '1.00';
+$VERSION = '1.01';
 @ISA = qw( LWP::UserAgent );
 
 use strict;

@@ -1,16 +1,9 @@
-LWP-Authen-OAuth version 0.01
+LWP-Authen-OAuth version 1.01
 =============================
 
-The README is used to introduce the module and provide instructions on
-how to install the module, any machine dependencies it may have (for
-example C compilers and installed libraries) and any other information
-that should be provided before the module is installed.
-
-A README file is required for CPAN modules since CPAN extracts the
-README file from a module distribution so that people browsing the
-archive can use it get an idea of the modules uses. It is usually a
-good idea to provide version information here so that people can
-decide whether fixes for the module are worth downloading.
+This module provides a sub-class of LWP::UserAgent that generates OAuth 1.0
+signed requests. You should familiarise yourself with OAuth at
+http://oauth.net/.
 
 INSTALLATION
 
@@ -25,13 +18,17 @@ DEPENDENCIES
 
 This module requires these other modules and libraries:
 
-  blah blah blah
+  LWP::UserAgent
+  Digest::SHA
+  MIME::Base64
+  URI
+  URI::Escape
 
 COPYRIGHT AND LICENCE
 
-Put the correct copyright and licence information here.
+Timothy D Brody <tdb2@ecs.soton.ac.uk>
 
-Copyright (C) 2011 by Tim D Brody
+Copyright (C) 2011 by University of Southampton, UK
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.8 or,
